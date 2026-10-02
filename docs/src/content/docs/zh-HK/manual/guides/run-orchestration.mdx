@@ -1,126 +1,110 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: 執行編排
+description: 請編排者提出一份計劃，在 Plan Studio 中審閱並編輯它，批准一次，然後讓生成出來的管線完成工作。
 slug: zh-HK/手冊/操作指南/執行編排
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/zh-HK/手冊/概念/編排/) for how it works.
+本指南說明如何把一個重大目標變成一份整隊的計劃，讓它自行執行。運作方式見
+[編排](/zh-HK/手冊/概念/編排/)。
 
-## When to use an orchestration
+## 何時使用編排
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/zh-HK/手冊/操作指南/與代理聊天/); for a process you can spell out by
-hand, build a [pipeline template](/zh-HK/手冊/操作指南/建立管線/).
+當需求比單一代理更大，而你又未確切知道步驟時，就採用編排。單一任務請在
+[空間](/zh-HK/手冊/操作指南/與代理聊天/)中向代理發訊息；能夠親手寫清楚的流程，
+則建立[管線範本](/zh-HK/手冊/操作指南/建立管線/)。
 
-## Step 1: Ask for the plan
+## 第 1 步：要求計劃
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. 開啟（或建立）一個空間和一張**錨定工單**。每份提案都需要一張
+   （`propose_orchestration` 接受 `ticket_id`）；共享空間來自該工單。
+2. 可選擇把撰寫器的模式下拉選單切換到**編排**。該模式把代理收窄至讀取與提案 —
+   記憶、程式碼圖、程式庫與工單讀取、`propose_orchestration`，以及劇本工具 — 因此
+   它無法動筆寫程式碼，只能規劃。
+3. @ 提及你的編排者（通常是 CEO 代理），並用平實語言說明目標：
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo 研究離線優先會議錄音工具的競爭環境，並寫一份一頁的定位文件。
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+編排者會在空間中以一張結構化的**提案**卡回覆：它需要的角色、拆解成子工單的工作、
+選填的研究與討論階段、產出交付物的匯總步驟，以及一份預算。
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+由於提案是一個有型別的物件，應用程式會在任何東西執行之前驗證它（角色格式正確、
+已宣告的輸出結構描述、沒有循環的 DAG）。無法通過驗證的提案不能批准。
 
-## Step 2: Review and edit the proposal
+## 第 2 步：審閱並編輯提案
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+對話中的卡片提供三個操作：**核准計畫**、**拒絕**和**開啟** —— 後者會在 Plan Studio
+中以編輯器分頁開啟計劃。卡片本身不能編輯。
 
-To change anything, press **Open** and work in the right-hand inspector:
+如要作出任何變更，請按**開啟**，並在右側的檢視器中操作：
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- 任何工作步驟的**標題**、**描述**、**角色**、**依賴**及**輸出結構描述**。此處的
+  「角色」是指計劃現有的哪個角色鍵擁有該步驟 —— 你無法把某個角色固定到具名代理，
+  也無法從檢視器編輯聘用清單，而且無法編輯預算。
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+有兩件事是唯讀的：結構性節點（研究、討論、匯總），以及任何工作已經執行過的節點。
+只有在編排仍處於 `proposed` 時才可以編輯。
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/zh-HK/手冊/操作指南/plan-studio/) for the full editor.
+在批准之前，按批准列上的**預估**，查看成本、時長與影響範圍的區間。完整編輯器見
+[在 Plan Studio 工作](/zh-HK/手冊/操作指南/plan-studio/)。
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/zh-HK/手冊/操作指南/管理成本/).
+:::note[預算不是支出上限]
+提案的預算會與批准列上的_預估_比較：當預估的高端超出預算時，總額會轉為紅色並顯示
+超支警告。計劃執行期間沒有任何東西會檢查支出，因此它不會停止或令執行失敗。若要有
+真正的支出煞停，請使用按代理的預算政策 —— 見
+[管理成本](/zh-HK/手冊/操作指南/管理成本/)。
 :::
 
-## Step 3: Approve
+## 第 3 步：批准
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+從對話卡片或 Plan Studio 的批准列批准計劃。**這是你唯一要作的決定。** 批准只限
+操作者 —— 它沒有對應的 MCP 工具，因此代理可以提案和修訂，但永遠無法批准自己的
+計劃。
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/zh-HK/手冊/概念/管線/) and creates the
-scaffolding:
+接下來，一個具確定性的物化器（純函式，不含 LLM）會把提案轉換成一條真正的
+[管線](/zh-HK/手冊/概念/管線/)，並建立支架：
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- 聘用任何新角色（並記錄已聘用代理的 id，讓批准過程中途當機也能恢復，而不會重複
+  聘用）
+- 把這些角色歸組為一個**團隊**
+- 建立一個**項目**，並把父工單歸檔於其下
+- 開始驅動這一切的**管線執行**
 
-The status moves to `approved`, then `executing`.
+狀態會轉為 `approved`，然後是 `executing`。
 
-## Step 4: Watch it run
+## 第 4 步：看着它執行
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+子工單會以管線步驟的形式執行；如果你啟用了討論回合，每個角色會先發表立場。進度會
+在你已經關注的地方顯現：
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/zh-HK/手冊/操作指南/監察管線/)
-- the **project** the parent ticket was filed under
+- 編排所錨定的**父工單**
+- 團隊對話所在的共享**空間**，計劃的資料列會在此追蹤每個節點的狀態
+- **管線執行**詳情，附有它慣常的瀑布圖與按步驟成本 —— 見
+  [監察管線執行](/zh-HK/手冊/操作指南/監察管線/)
+- 父工單歸檔所在的**項目**
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+子工單完成後，狀態會轉為 `synthesizing`，匯總步驟會產出交付物。該段文字會發佈在
+共享空間中，父工單會被標記為完成，然後是 `completed`。
 
-## Stop it early
+## 提早停止
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+在對話中的卡片上按**取消編排**，或在 Plan Studio 的批准列按**取消執行**。取消會拆掉
+進行中的工作。
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+編排在物化失敗，或它生成出來的管線執行失敗時失敗（研究、討論、匯總或保存 —— 這些
+步驟在失敗時不會繼續）。生成出來的**工作**步驟則一律在失敗時繼續，因此一張子工單
+失敗不會令整次執行失敗。沒有超出預算的失敗路徑，也沒有「所有子工單都失敗」的
+門檻。
 
-## Related guides
+## 相關指南
 
-- [Work in Plan Studio](/zh-HK/手冊/操作指南/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/zh-HK/手冊/操作指南/管理工單/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/zh-HK/手冊/操作指南/項目/): where the parent ticket is filed
-- [Monitor pipeline runs](/zh-HK/手冊/操作指南/監察管線/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/zh-HK/手冊/操作指南/組成代理團隊/): the roles an orchestration fills or hires
+- [在 Plan Studio 工作](/zh-HK/手冊/操作指南/plan-studio/)：編輯、預估、差異比對並批准計劃
+- [建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)：編排所錨定的父工單
+- [以項目組織工作](/zh-HK/手冊/操作指南/項目/)：父工單歸檔何處
+- [監察管線執行](/zh-HK/手冊/操作指南/監察管線/)：物化後的編排在引擎中長甚麼樣子
+- [組成代理團隊](/zh-HK/手冊/操作指南/組成代理團隊/)：編排所填補或聘用的角色
 
-## Related concepts
+## 相關概念
 
-- [Orchestration](/zh-HK/手冊/概念/編排/)
-- [Modes](/zh-HK/手冊/概念/模式/)
+- [編排](/zh-HK/手冊/概念/編排/)
+- [模式](/zh-HK/手冊/概念/模式/)

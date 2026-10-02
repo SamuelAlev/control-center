@@ -1,216 +1,226 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Çok oyunculu — kimlik, üyelik ve varlık
+description: Control Center insanları ve ajanları eşit katılımcılar olarak nasıl modeller, bir çalışma alanına erişimi gerçekte ne denetler ve canlı farkındalık ile paylaşılan kayıtlar neden iki farklı hatta ilerler.
 slug: tr-TR/kilavuz/kavramlar/cok-oyunculu
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center tek bir operatör için çalışır, ancak altındaki model en baştan
+çok aktörlüdür. İnsanlar ve ajanlar aynı alanlarda mesajlaşır, aynı biletleri
+düzenler ve aynı katılımcı listesinde görünür. Bunu güvenli ve anlaşılır
+kılmak üç karara indirgenir: **kimin aktör sayıldığı**, **erişimi neyin
+denetlediği** ve **hangi durumun kalıcı olarak paylaşıldığı, hangisinin
+yalnızca canlı yayınlandığı**.
 
-## Principals: users and agents are co-equal actors
+## Principal'ler: kullanıcılar ve ajanlar eşit aktörlerdir
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+"Bunu kim yaptı"yı kaydeden her şey — mesajlar, biletler, incelemeler, planlar,
+çalıştırma günlükleri, denetim kayıtları — bir **Principal** üzerinden
+çözümlenir; bu, `UserPrincipal` ile `AgentPrincipal`'ın kapalı bir birleşimidir
+ve kompakt bir tel biçimi (`user:<id>` / `agent:<id>`) vardır. İsnat, N insanı
+(veya N ajanı) tek bir sentinel hesapta asla birleştirmez; böylece bir ajanın
+bıraktığı inceleme ile bir insanın bıraktığı inceleme, göründükleri her yerde
+ayırt edilebilir.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Principal kimliğin birimi olduğu için aynı zamanda sınırlama birimidir:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Hız sınırları oturum başına değil, principal başına uygulanır.** Uzak araç
+  çağrılarındaki aşırı yük koruması bütçeyi bağlantıya değil kullanıcıya göre
+  ayırır: bir üyenin tüm cihazları tek bir paylaşılan kayan pencereden çeker
+  (dakikada 120 çağrı, bunların en fazla 30'u değişiklik yapabilir); böylece
+  üç cihaz açmak kimsenin kotasını üçe katlamaz ve gürültücü bir üye
+  diğerlerini aç bırakamaz.
+- **Geri alma principal başına çalışır.** Her istemcinin eylem günlüğü yalnızca
+  _kendi_ principal'ının yaptığı değişiklikleri kaydeder. Kendi bilet
+  düzenlemenizi ⌘Z ile geri alabilirsiniz; bir ekip arkadaşınızınkini geri
+  alamazsınız — siz onu gördüğünüzde kalıcı hat onu çoktan çözümlemiştir
+  (aşağıya bakın).
 
-## Membership is the access boundary — not the pairing key
+## Erişim sınırı üyeliktir — eşleme anahtarı değil
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+İki ayrı kimlik bilgisi iki ayrı soruyu yanıtlar. **Eşleme anahtarı** (bkz.
+[Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)) bir
+_cihazın_ sunucudaki kimliğini doğrular. **Üyelik** ise o cihazın kullanıcısına
+bir _çalışma alanı_ içinde işlem yapma yetkisi verir. Kullanıcısının bir çalışma
+alanında üyeliği olmayan eşlenmiş bir cihaz, o alanı ne okuyabilir ne de
+değiştirebilir.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Üyelik, (çalışma alanı, kullanıcı) başına tek bir satırdır ve **o çalışma
+alanının kendi veritabanı dosyasında** saklanır; böylece "bu çalışma alanında
+kim var?" sıradan bir kapsamlı okumadır, tersi soru olan "hangi çalışma
+alanlarındayım?" ise zorunlu olarak dosyaları kapsar ve izin verilen birkaç
+çalışma alanları arası fan-out'tan biridir. Çalışma alanı seçicisinin, herhangi
+bir çalışma alanı seçilmeden önce çalıştırdığı şey budur.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Her satır, beş düzeyli ve rütbe sırasına göre dizilmiş bir merdivenden bir rol
+taşır:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Rol      | Yapabilecekleri                                                                                             |
+| -------- | ----------------------------------------------------------------------------------------------------------- |
+| `owner`  | Çalışma alanı silme dahil tam kontrol; her çalışma alanında tam olarak bir tane                              |
+| `admin`  | Üyeleri, davetleri, ayarları ve yıkıcı işlemleri yönetir                                                    |
+| `member` | Günlük okuma-yazma: mesajlar, biletler, ajan çalıştırmaları                                                 |
+| `viewer` | Çalışma alanı genelinde salt okunur; secret hariç tutma glob'ları, kod içeren yüzeylerde eşleşen yolları gizler |
+| `guest`  | Merdivenin en alt sırasında, viewer ile aynı salt okunur taban                                              |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Her erişim kararı "çağıranın rolü en az X mi?" sorusuna indirgenir. Taban, işlem
+açıkça bir taban bildirmediği sürece işlemin türünden türetilir: okuma `guest`
+gerektirir, değişiklik `member` gerektirir, yıkıcı bir işlem `admin` gerektirir.
+Aşağıdaki depo başına izinlerin ötesinde nesne başına ACL'ler bilinçli olarak
+kapsam dışıdır.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Davetler**, üyeliğin verilme yoludur ve Ayarlar → Çalışma alanı →
+Üyeler'den yapılır. Bir admin, varsayılan olarak yedi gün sonra süresi dolan tek
+kullanımlık bir kod (bağlantı ya da QR olarak) üretir; sunucu yalnızca kodun
+SHA-256 karmasını saklar ve kodun kendisi tam olarak bir kez gösterilir. Kodu
+kullanmak, kullanıcıyı JIT ile sağlar, üyeliği davetin rolüyle kaydeder (asla
+`owner` değil — sahiplik açıkça devredilir, davetle asla verilmez) ve cihaz
+eşleştirmeye devreder. Eşleştirmeden sonra üretilen cihaz kimlik bilgileri de
+30 günle sınırlıdır; yani bir eşleştirme kalıcı bir anahtar değildir.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Depo izinleri** üyeliğin altında yer alır. Sunucu tam checkout'ları tuttuğu
+için, tek başına çalışma alanı üyeliği kod barındırıcının yetkilerini asla
+aşmamalıdır: kod içeren her yüzey — dosyalar, diff'ler, PR incelemesi, kod
+arama — üyenin _o depodaki_ iznini denetler. İzinler (çalışma alanı, kullanıcı,
+depo) başına tanımlanır ve `none` → `read` → `review` → `write` biçiminde
+sıralanır; burada `write`, depoya yazan ajan çalıştırmalarını yürütmek anlamına
+gelir. Satırın bulunmaması `none` demektir; sahipler ve admin'ler bağlı her
+depoda örtük olarak `write` sahibidir ve hiç satır taşımaz.
 
-## Two lanes of collaboration state
+## İşbirliği durumunun iki hattı
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center paylaşılan durumu, zıt kalıcılık kurallarına sahip iki hatta
+böler; çünkü bu iki durum türü zıt biçimlerde bozulur.
 
-### The ephemeral presence lane
+### Geçici varlık hattı
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Varlık — kim çevrimiçi, nerede, ne yazıyor, bir ajan şu anda ne yapıyor —
+bayatladığı anda değersizdir. Kalıcı olsaydı, her yeniden bağlanma "veritabanı
+Sam'in bu bileti düzenlediğini söylüyor" ifadesini gerçeklikle uzlaştırmak
+zorunda kalırdı. Bu yüzden varlık **hiçbir zaman veritabanına yazılmaz**.
+Sunucudaki bellekte çalışan bir **varlık merkezinde** yaşar: istemciler
+`presence.update` ile yayınlar, eşler `presence.watch` ile abone olur ve
+kayıtlar üç kaçırılan kalp atışından sonra otomatik olarak sona erer (kalp
+atışları her 10 saniyede bir çalışır; merkez her 5 saniyede bir süpürür).
+Uzlaştırılacak bir şey yoktur — yalnızca zaman aşımına bırakılacak bir şey.
 
-Two properties keep the lane trustworthy:
+Hattı güvenilir kılan iki özellik vardır:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Kimlik istemci argümanlarından değil, oturumdan gelir.** Sunucu, bağlantının
+  kimliği doğrulanmış cihazını bir kullanıcı kimliğiyle eşler; bir istemci
+  yalnızca kendi varlığını güncelleyebilir, böylece kimse başka bir katılımcının
+  durumunu veya konumunu taklit edemez. Açık bir `offline` güncellemesi
+  (bağlantı kesme veya görünmezlik anahtarı) kaydı hemen kaldırır.
+- **Katılımcı listesi sunucu merkezlidir.** Eşler varlığı asla doğrudan
+  paylaşmaz; böylece her katılımcı, topoloji ne olursa olsun aynı listeyi görür.
+  Ajanların istemcisi yoktur; bu yüzden sunucu onların kayıtlarını canlı
+  çalıştırma durumundan _sentezler_ — düşünüyor, çalışıyor, bir onay kapısında
+  engellendi, bitti — ve bir ajanın durumunu ve konumunu tek bir temsili
+  çalıştırma belirler; böylece eşzamanlı çalıştırmalar listeyi dalgalandırmaz.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Fan-out, tüketiciye göre katmanlıdır: masaüstü ve web tam katmanda gider (100
+ms'de en fazla bir liste yayını), telefon ise özet katmanda (500 ms'de bir);
+böylece imleç hızındaki güncellemeler PWA'yı eritemez.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+Bir katılımcının **konumu** — şu anda nerede olduğu, esere kadar — kapalı bir
+birleşimdir: `Space`, `File` (depo + yol + isteğe bağlı satır), `Pr`, `Ticket`,
+`PlanNode`. Her konumun atlanacak bir yeri yoktur: dosya görüntüleyici rotası
+olmadığından bir `File` konumu, hedef yerine etiket olarak görüntülenir. Hat
+ayrıca **yumuşak iddialar** taşır ("Sam bu bileti düzenliyor", "bir ajan bu
+çalışma ağacını tutuyor"): çakışma _görünürlüğü_, kilitler değil. Bilinmeyen
+konum türleri null olarak ayrıştırılır; böylece eski bir istemci anlamadığı şeyi
+görüntülemez.
 
-### The durable shared lane
+### Kalıcı paylaşılan hat
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Ayakta kalması gereken kayıtlar — biletler, paylaşılan alan Notes belgesi,
+mesajlar — ters yolu izler: yetkili, sıralı ve kalıcı. Eşzamanlı düzenlemeler
+istemci saatlerine göre değil, **sunucuya varış sırasına göre son yazan
+kazanır** kuralıyla çözülür. Çözüm bilinçli olarak ince tanelidir: bilet
+düzenlemeleri _sütun başınadır_, yani aynı biletin farklı alanlarını düzenleyen
+iki kişi de kaydeder ve biri diğerinin üzerine yazmaz (iş akışı geçişleri bunun
+yerine iyimser kilitlemeyi korur); alan Notes belgesi tek bir sütundur,
+dolayısıyla belgenin tamamı LWW'dir ve varlık hattındaki yumuşak iddialar
+eşzamanlı düzenlemeyi kilitlenmek yerine görünür kılar. Bu bilinçli olarak bir
+CRDT değildir — ispat yükü CRDT'dedir ve varış sırasına dayalı LWW ile görünür
+iddialar gerçek işbirliği kalıplarını karşılar.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"Son yazan", istemci saatini değil **sunucuya varış sırasını** ifade eder —
+saati kaymış bir dizüstü, kaybettiği bir düzenlemeyi kazanamaz. Kalıcı hattın
+arkasında **eşitleme akışı** durur: SQLite tetikleyicileri her değişikliği
+_yazan işlemin içinde_ çalışma alanı başına bir değişiklik günlüğüne ekler ve
+değişikliğin kendisiyle aynı işlemde, çalışma alanı başına monoton bir sıra
+numarası ayırır. Bir sunucu servisi bu günlüğü sıra düzeninde sürümlenmiş delta
+çerçevelerine dönüştürerek takip eder. İstemciler tam anlık görüntülerden
+delta'lara doğru evrilir; sıradaki bir boşluk, çerçeveleri yanlış uygulamak
+yerine o veri deposunu anlık görüntü moduna düşürür.
 
-## Follow, steer, take over, hand back
+## Takip et, yönlendir, devral, geri ver
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Varlık hattı yalnızca bir katılımcı listesi değildir — işbirliği fiillerini
+yürütür:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Takip modu.** Bir katılımcıya tıklayın; istemciniz onun konumunu izler ve o
+  gezinirken siz de onunla gezinirsiniz. Takip, "siz harekete geçene kadar"
+  sürer: kendi isteğinizle gezinmeye başladığınız anda takip çözülür.
+  Başka bir katılımcı, içinde bulunduğunuz bir alanı öne çıkarırken (sunum
+  yaparken) kapatılabilir bir şerit bunu bildirir.
+- **Yönlendirme.** Çalışan bir ajana gönderilen mesaj yönlendirme olarak
+  kuyruğa alınır; ajan bir sonraki turuna devam etmeden önce onu yeniden okur;
+  böylece bir çalıştırmayı durdurmadan uçuş ortasında düzeltebilirsiniz.
+- **Devralma.** Bir konuşmanın kontrolünü üstlenmek, etkin her çalıştırmayı bir
+  sonraki temiz tur sınırında duraklatır (güvenli sınırı olmayan bir Claude Code
+  çalıştırması durdurulur); bu, tur başına bir git anlık görüntüsünün arkasında
+  yapılır, böylece devralma geri alınabilir. Kalıcı bir işaretleyici, alana yeni
+  gönderimleri engeller ve sunucu yeniden başlatıldığında da varlığını sürdürür
+  — sunucu, bir insanın yarım kalmış düzenlemesinin üzerine asla otomatik olarak
+  devam etmez. Çalışma ağacı başına tek etkin düzenleyici yumuşak bir iddiadır:
+  ikinci bir devralma görünür olur ve reddedilir, sessizce birleştirilmez.
+- **Geri verme.** Kontrolü geri vermek, çalışma ağacının yapılandırılmış bir
+  diff özetini alana gönderir, bunu duraklatılmış çalıştırmalar için yönlendirme
+  olarak kuyruğa alır, onları sürdürür ve işaretleyiciyi temizler.
 
-## The autonomy dial
+## Özerklik kadranı
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Yönlendirme ve devralma, olaydan sonraki müdahalelerdir. **Özerklik kadranı**
+ise kalıcı ayardır: alan başına, ajan başına, alan başlığından ayarlanır ve bir
+ajan onay kapısına takılan bir eyleme ulaştığında ne olacağına karar verir.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
+| Düzey             | Tel değeri        | Onay kapısına düşen bir araç çağrısındaki etkisi                                                              |
 | ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Yalnızca öner     | `proposeOnly`     | Doğrudan reddedilir; ajana iletmesi söylenen bir gerekçeyle birlikte — eylemi tanımlayabilir ama gerçekleştiremez |
+| Onayla hareket et | `actWithApproval` | Hataya kapalı onay kapısı: bağlı bir operatöre tek bir onay gösterilir ve onaylayan yoksa reddedilir          |
+| Serbest hareket et | `actFreely`       | Önceden onaylanmıştır; ancak sert bir `deny` koruma kuralının geçerli olduğu durumlar hariç — reddetme kuralı her zaman kazanır |
+| (ayarlanmamış)    | `null`            | Onayla hareket et ile aynıdır: sunucunun varsayılanı                                                         |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+İki şey, her iki yönde de kadranın dışında kalır. Bir modun kendi çıktı fiili
+sabitlenmiştir ve kadran ne derse desin asla reddedilemez — orkestrasyon modu
+bir zamanlar, bir ön ayar o fiilin bildirdiği etki sınıfını reddettiği için tek
+teslimatını yapısal olarak üretemiyordu. Ve eylem korumalarından gelen sert bir
+`deny`, `actFreely` ile geçersiz kılınamaz.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+:::note[Kadran yalnızca yerleşik harness'ı denetler]
+Harness döngüsünün onay geri çağrısı tarafından sorgulanır. Claude Code
+adaptöründe çalışan bir ajan, araç çağrılarını kendi süreci içinde yapar ve
+Control Center'ın denetleyecek bir şeyi yoktur — bkz.
+[Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
 :::
 
-## Solo zero-regression
+## Tek başına kullanımda sıfır gerileme
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Bunların hepsi eklemelidir. Tek başına çalışan bir operatörün iş akışı
+değişmez: tek bir insan ve hiç ajan yokken varlık merkezinin yayınlayacağı bir
+şey yoktur; bu yüzden hat ilk anlık görüntüsünü yayınlar ve ardından sıfır
+trafikte bekler; LWW ve eşitleme mekanizması her zaman olduğu gibi aynı tek
+yazarlı yoldur; ve eşleme anahtarı her zaman olduğu cihaz kimlik bilgisi olarak
+kalır. Üyelik zaten erişim sınırıdır — tek bir insanla tek bir owner satırı
+vardır ve hiçbir liste arayüz öğesi görünmez.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): the boundary membership enforces
-- [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/): the pairing key and device credential side of identity
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): the agent half of the principal union
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): the runs that steering and take-over pause and resume
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/): the effect-class policy the autonomy dial composes with
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): the bus that live updates ride
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): üyeliğin uyguladığı sınır
+- [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/): kimliğin eşleme anahtarı ve cihaz kimlik bilgisi tarafı
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): principal birleşiminin ajan yarısı
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): yönlendirme ve devralmanın duraklatıp sürdürdüğü çalıştırmalar
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): özerklik kadranının birlikte çalıştığı etki sınıfı politikası
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): canlı güncellemelerin üzerinden geçtiği veriyolu

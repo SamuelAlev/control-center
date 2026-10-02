@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: اخراجات منظم کریں
+description: دیکھیں کہ آپ کے ایجنٹس کتنا خرچ کر رہے ہیں، خود مختار رن کو حد میں رکھیں اور ٹوکن کا استعمال کم کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+یہ گائیڈ بتاتی ہے کہ ایجنٹ رنز پر کتنی لاگت آتی ہے اور خود مختار رن کو کیسے حد میں رکھا جائے۔
 
-## How costs are recorded
+## لاگت کیسے ریکارڈ ہوتی ہے
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+ہر ایجنٹ رن ایک رن لاگ لکھتا ہے جس میں اس کے ان پٹ ٹوکنز، آؤٹ پٹ ٹوکنز، ریزننگ ٹوکنز، کیش شدہ ریڈ اور کیش شدہ رائٹ ٹوکنز، سینٹ میں ایک تخمینی لاگت، اور اس کے پیدا کردہ ذیلی ایجنٹس کی لاگت شامل ہوتی ہے۔
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+قیمتیں models.dev کیٹلاگ سے آتی ہیں، جسے صرف ماڈل کی فہرست کو قیمت اور کانٹیکسٹ ونڈو سے مالا مال کرنے کے لیے استعمال کیا جاتا ہے — ماڈل ids کے ماخذ کے طور پر کبھی نہیں۔ جس ماڈل کی قیمت کیٹلاگ نہ لگا سکے وہ **$0** درج کرتا ہے اور صفر لاگت والے رنز **استعمال اور لاگت** کے خلاصے سے خارج رہتے ہیں۔ اس لیے ایک مقامی Ollama ماڈل بالکل کوئی خرچ نہیں دکھاتا، البتہ اس کے ٹوکن کی گنتی پھر بھی ریکارڈ ہوتی ہے۔ ایک فلیٹ ریٹ پلان (kimi-code، کوئی Claude سبسکرپشن) صرف اُس وقت ایسا ہی ہوتا ہے جب کیٹلاگ کے پاس خدمت انجام دینے والے ماڈل کی کوئی قیمت نہ ہو؛ اگر ہو، تو رن کا تخمینہ بہرحال انہی نرخوں پر لگایا جاتا ہے۔ فال بیک چین میں رن کی قیمت اُس ماڈل کے حساب سے لگتی ہے جس نے واقعی اسے انجام دیا، نہ اُس کے حساب سے جس کی درخواست کی گئی تھی۔
 
-## See what you are spending
+## دیکھیں آپ کتنا خرچ کر رہے ہیں
 
-### Observability → Insights
+### آبزرویبلٹی → بصیرتیں
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+سائیڈبار کے فوٹر → **آبزرویبلٹی** سے وہاں پہنچیں۔ پہلے **استعمال** ٹیب کھلتا ہے (اب تک کے کل ٹوکنز)؛ لاگت کی اصل سطح کے لیے **بصیرتیں** — دوسرا ٹیب — پر جائیں:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- وقت کی حد چننے والا پکر: پچھلے 24 گھنٹے، پچھلے 7 دن، پچھلے 30 دن، یا تمام وقت
+- ایجنٹ، ماڈل، اسٹیٹس اور کردار پر فیسٹڈ فلٹرز، بند کیے جا سکنے والے چپس کی صورت میں
+- ایک KPI پٹی: کل رنز، کل لاگت، ایرر ریٹ، کیش ریٹ، ٹوکنز فی سیکنڈ، اوسط لیٹنسی اور پہلے ٹوکن تک کا وقت، ہر ایک کے ساتھ پچھلی مدت کے مقابلے تبدیلی (”تمام وقت“ پر چھپی رہتی ہے)
+- ایکٹوٹی اور لاگت کے چارٹس، ساتھ میں **کردار کے حساب سے لاگت** کی تفصیل جو خرچ کو مرکزی ایجنٹ، اس کے ذیلی ایجنٹس اور اس کے ایڈوائزر میں تقسیم کرتی ہے
+- فی ایجنٹ ٹیبل جو لاگت کے حساب سے ترتیب دی گئی ہے، پہلے دس کے ساتھ سب دکھانے کا ٹوگل۔ کسی قطار پر ٹیپ کرنے سے باقی ہر سطح اُسی ایجنٹ تک فلٹر ہو جاتی ہے
+- تفصیلی رن لاگ، جو منتخب رن کے لیے ٹرانسکرپٹ دراز منسلک کر دیتا ہے
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[”تمام وقت“ تمام وقت نہیں ہے]
+رن فیڈ ہر ورک اسپیس کے 2000 تازہ ترین رن لاگز کو سبسکرائب کرتی ہے، پھر فعال ورک اسپیس پر فلٹر کرتی ہے۔ مصروف ملٹی ورک اسپیس سرور پر، کسی پرسکون ورک اسپیس کی پرانی تاریخ اُس ونڈو سے باہر رہ جاتی ہے۔
 :::
 
-### Settings → Server → Model providers
+### ترتیبات → سرور → ماڈل فراہم کنندگان
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+اس صفحے کا **استعمال اور لاگت** کارڈ گزشتہ سات دنوں کا مشاہدہ شدہ خرچ ایک واحد ڈالر عدد کی صورت میں دکھاتا ہے، ساتھ میں فی فراہم کنندہ تفصیل اور، جب کوئی فراہم کنندہ شائع کرے تو، اگلی کوٹہ ونڈو ری سیٹ ہونے تک کا وقت۔
 
-### A single agent's runs
+### ایک ایجنٹ کے رنز
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**ترتیبات → ورک اسپیس → ایجنٹس** → کوئی ایجنٹ منتخب کریں → **لاگز** اس کے رنز اسٹیٹس، دورانیے، آغاز اور تکمیل کے اوقات، PID اور اڈاپٹر کے ساتھ فہرست کرتا ہے۔ یہ ٹیب لاگت **نہیں** دکھاتا — اس کے لیے آبزرویبلٹی → بصیرتیں میں فی ایجنٹ ٹیبل استعمال کریں۔
 
-## Cap an autonomous run
+## خود مختار رن کو حد میں رکھیں
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+اسپیس کے کمپوزر میں ٹائپ کی جانے والی دو سلیش کمانڈز ہی واحد رنز ہیں جن پر خرچ کی حد ہوتی ہے:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- کسی `/goal` یا `/loop` رن کا ہر سیگمنٹ اُس وقت رک جاتا ہے جب اس کا قیمت شدہ خرچ **500 سینٹ ($5.00)** تک پہنچ جائے۔ اس کے 80% پر لوپ پہلے ماڈل کو اسٹیئر کرتا ہے کہ وہ کام سمیٹ کر ایک صاف حوالگی چھوڑ دے، تاکہ وہ کام کے بیچ میں نہ مرے۔
+- ایک مکمل پائیدار گول **5000 سینٹ ($50.00)** پر محدود ہوتا ہے، جب تک آپ `--budget <dollars>` نہ دیں۔ سپروائزر گول کے _باقی_ بجٹ کو ہر سیگمنٹ میں پہنچاتا ہے، اس لیے واضح بجٹ پر کبھی پورے سیگمنٹ سے تجاوز نہیں ہوتا۔
+- `--days N` ایک حقیقی-وقت کی آخری حد اور `--max N` رنز کی گنتی کی چھت لگاتا ہے۔ دونوں اختیاری ہیں؛ ان کے بغیر گول صرف لاگت سے محدود رہتا ہے۔
+- جو گول اپنی دیوار چھُو لے وہ `budgetExhausted` پر رک جاتا ہے اور صرف بجٹ بڑھا کر ہی دوبارہ شروع کیا جا سکتا ہے۔
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+چونکہ یہ حد قیمت پر مبنی ہے، جس ماڈل کی قیمت کیٹلاگ نہ لگا سکے وہ اس تک کبھی نہیں پہنچتا۔ ایسا رن اس کے بجائے ڈوم-لوپ تکرار گارڈ، مسلسل تین ناکامیوں کے بعد سپروائزر کا ہار مان جانا، اور آپ سے حد میں رہتا ہے۔
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+کسی اسپیس میں بھیجا گیا پیغام، کوئی @-ذکر، یا کوئی پائپ لائن قدم خرچ کی کسی حد کے بغیر ہوتا ہے۔ رن اُس وقت ختم ہوتا ہے جب ماڈل رک جائے، جب آپ اسے روکیں، یا جب ڈوم-لوپ گارڈ اسے اسٹیئر کرے۔
 
-## Cut token use
+## ٹوکن کا استعمال کم کریں
 
-### Compact a long conversation
+### طویل گفتگو کمپیکٹ کریں
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+اسپیس کے کمپوزر میں `/compact` ٹائپ کریں۔ یہ کمانڈ کلائنٹ کی طرف روک لی جاتی ہے اور ٹرانسکرپٹ میں کبھی نہیں پہنچتی؛ سرور پرانی تاریخ کو ایک اینکر شدہ خلاصے میں سمیٹ دیتا ہے اور گفتگو کمپیکٹ شدہ کانٹیکسٹ پر جاری رہتی ہے۔
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+کمپیکشن اُس وقت مسترد ہوتا ہے جب کوئی ایجنٹ ٹرن کے بیچ میں ہو اور جب سمیٹنے کے قابل اتنا پرانا کچھ نہ ہو۔ بلٹ اِن ہارنس بھی خود بخود کمپیکٹ کرتا ہے جب تاریخ ماڈل کی کانٹیکسٹ ونڈو کے قریب پہنچتی ہے۔
 
-### Choose the effort level deliberately
+### کوشش کی سطح سوچ سمجھ کر چنیں
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+کسی ایجنٹ کا **ریزننگ کا زور** (ترتیبات → ورک اسپیس → ایجنٹس) وہی سطحیں پیش کرتا ہے جو منتخب ماڈل شائع کرتا ہے۔ اونچی سطحیں زیادہ ریزننگ ٹوکنز خرچ کرتی ہیں۔ سب سے اونچی سطحیں اُس کام کے لیے رکھیں جنہیں ان کی ضرورت ہو۔
 
-### Choose the model per agent
+### فی ایجنٹ ماڈل چنیں
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+ماڈل ایک فی ایجنٹ فیلڈ ہے، اس لیے فارمیٹنگ یا ٹرائیج ایجنٹ کوئی سستا ماڈل چلا سکتا ہے جبکہ آرکیٹیکچر ایجنٹ کوئی مہنگا چلاتا ہے۔ یہ دیکھنے کے لیے کہ اصل میں کون سا جوڑ آپ پر خرچ کر رہا ہے، آبزرویبلٹی → بصیرتیں میں فی ایجنٹ ٹیبل کو ماڈل کے حساب سے فلٹر کریں۔
 
-### Look for runs with outsized token counts
+### حد سے زیادہ ٹوکن گنتی والے رنز تلاش کریں
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+بصیرتیں کا رن لاگ کھولیں (تازہ ترین 50 فلٹر شدہ رنز) اور کوئی بھی غیر معمولی چیز پر ٹرانسکرپٹ دراز۔ عام وجوہات ہیں: حد سے زیادہ طویل سسٹم پرامپٹ یا شخصیت، ایسا کانٹیکسٹ جسے کمپیکٹ ہونا چاہیے تھا، اور ایسا کام جسے کئی چھوٹے کاموں میں ہونا چاہیے تھا۔
 
-## What happens if a budget is set out of band
+## اگر بجٹ کسی اور راستے سے سیٹ کیا جائے تو کیا ہوتا ہے
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+مکمل تصویر کے لیے: اگر `monthlyBudgetCents` یا کوئی بجٹ پالیسی براہِ راست کسی ایجنٹ کی قطار میں لکھی جائے تو:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- بجٹ کا جائزہ رن مکمل ہونے کے **بعد** لیا جاتا ہے، ڈسپیچ سے پہلے نہیں۔ رن کی تکمیل پر ایک لسنر ایجنٹ کے مہینے کے اب تک کے خرچ کا اس کی چھت سے موازنہ کرتا ہے۔
+- نرم حد (ڈیفالٹ میں 80%) عبور کرنے پر ایک انتباہی واقعہ درج ہوتا ہے اور ایک `BudgetThresholdCrossed` ایونٹ شائع ہوتا ہے جس پر آپ پائپ لائن ٹریگر لگا سکتے ہیں۔
+- بجٹ ختم ہونے پر ایک سخت واقعہ درج ہوتا ہے، وہی ایونٹ شائع ہوتا ہے اور ایجنٹ کی لائف سائیکل اسٹیٹس `paused` ہو جاتی ہے۔
+- ڈسپیچ سے پہلے والا بلاک موجود ہے مگر ریکوری شیڈول کرتے وقت صرف یتیم-رن ریپر اور پھنسے-ٹکٹ ریکنسائلر ہی اس سے رجوع کرتے ہیں — ایک عام ڈسپیچ کبھی وہاں نہیں پہنچتا اور ڈسپیچ کے راستے میں کوئی چیز paused اسٹیٹس کی جانچ نہیں کرتی۔ واحد نظر آنے والا اشارہ آرگ چارٹ میں لائف سائیکل بیج ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
-- [Run agent diagnostics](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
-- [Agent configuration reference](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
+- [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
+- [ایجنٹ کنفیگریشن](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)

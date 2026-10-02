@@ -1,153 +1,162 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: 安裝
+description: 在瀏覽器中使用 Control Center，或安裝桌面應用程式、設定代理後端，並選擇伺服器的執行位置。
 slug: zh-TW/手冊/安裝
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center 有兩種使用方式：在
+[app.usectrl.dev](https://app.usectrl.dev) 以**網頁應用程式**形式使用，無須下載任何東西；或是安裝**桌面
+應用程式**。兩者是同一個應用程式，功能也完全相同。唯一的差別在於伺服器在哪裡執行——而網頁應用程式無法替你執行伺服器。
 
-## Use it in your browser
+## 在瀏覽器中使用
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) 就是將這個應用程式編譯而成的瀏覽器版本。
+無須安裝，也無須更新。開啟後連線即可。
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+瀏覽器分頁做不到的，是_成為_伺服器本身。每個用戶端——桌面、網頁、手機——都只是
+疊在無介面 `cc_server` 之上的精簡渲染層，而它擁有資料庫並負責實際工作，因此
+網頁應用程式一律要連線到你自行執行的伺服器。有兩種方式可以為它提供伺服器：
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**在你自己的機器上執行伺服器。** 在本機啟動 `cc_server`，並讓網頁應用程式指向
+`ws://localhost:9030`。瀏覽器將 `localhost` 視為可信任，因此這不需要憑證，也不需要
+通道。這是試用網頁應用程式最快的方式，你的資料也永遠不會離開你的機器。
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**在另一台機器上執行伺服器。** 由於 `app.usectrl.dev` 是透過 HTTPS 提供，非本機的
+伺服器必須能以 `wss://` 連線，並使用瀏覽器已信任的憑證。`cc_server` 在沒有 TLS 時
+會拒絕繫結非回送位址，因此請選擇下列其中一種做法：
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- 直接為它提供憑證，使用 `--tls-cert` 與 `--tls-key`
+- 將它放在負責終止 TLS 的反向代理後面，並以 `--insecure` 啟動
+- 透過提供憑證的通道或 VPN 將它公開——Tailscale、
+  cloudflared 或類似工具。**設定 → 伺服器 → 連線與狀態**在
+  **分享此伺服器**底下提供內建通道的選項。
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+只要伺服器位於代理、NAT 或通道之後，就將 `--public-url` 設為
+用戶端實際應該連線的位址。它預設為本機繫結，因此若不設定，
+用戶端會嘗試錯誤的主機。
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[自行代管網頁用戶端的副本？]
+`cc_server` 只接受其 `--allowed-origins` 清單上的瀏覽器來源，該清單預設為
+`https://app.usectrl.dev`。若你自行代管網頁組建，請將你的來源加入其中。
+無論該清單內容為何，回送與原生用戶端一律允許。
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+有幾項功能仍僅限桌面版，因為它們需要原生視窗或機器本身的音訊裝置：浮動的
+專注模式膠囊、作業系統通知快顯（應用程式內的通知中心在各處都能運作）、
+從日曆事件「開始錄製並連結」，以及重新執行會議摘要。其他一切——空間、代理、
+pull request 審查、管線、工單、記憶與會議錄製本身——行為都相同。
 
-To connect the web app to a server, follow
-[Connect to a remote server](/zh-TW/手冊/操作指南/連線至遠端伺服器/). To host the server,
-follow [Run a headless server](/zh-TW/手冊/操作指南/執行無介面伺服器/).
+要將網頁應用程式連線到伺服器，請參閱
+[連線至遠端伺服器](/zh-TW/手冊/操作指南/連線至遠端伺服器/)。要自行代管伺服器，
+請參閱[執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)。
 
-## Desktop system requirements
+## 桌面系統需求
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| 需求         | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| 作業系統版本 | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+，或其他搭載 glibc 2.35+ 與 GTK 3 的發行版   |
+| 架構         | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | 必要                                                  | 必要        | 必要                                                       |
+| 磁碟空間     | 應用程式約 200 MB，另加伺服器的資料目錄               | 約 200 MB   | 約 200 MB                                                  |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Intel Mac 沒有預先建置的下載檔。請改為[從原始碼建置](#從原始碼建置)。
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+伺服器的資料目錄會比應用程式本身大得多。`cc_server` 首次啟動時會強制安裝
+裝置端模型——文字嵌入（約 90 MB）、語者分離（約 35 MB）
+與所選的語音模型（預設為 Parakeet TDT v3，約 600 MB；Whisper
+各版本為 198–626 MB）——再加上內嵌的 code-server 組建，而每段
+代理對話都會為它處理的儲存庫取得一份寫入時複製的工作樹（Windows 上
+則是單純的 `git worktree`）。語音並非可有可無：沒有 ASR 模型，就不會提供
+會議與聽寫操作。語音模型首次下載後仍需要重新啟動一次，
+錄音功能才會亮起。
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+桌面版會將其伺服器指向作業系統的每位使用者應用程式支援目錄。手動啟動
+且未指定 `--data-dir` 的 `cc_server` 會預設為 `<application data>/control-center`——macOS 上為
+`~/Library/Application Support/control-center`，Windows 上為 `%APPDATA%\control-center`，
+Linux 上為 `$XDG_DATA_HOME/control-center`（或 `~/.local/share/control-center`）。
 
-## Download
+## 下載
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+以下每個成品都來自 [GitHub Releases](https://github.com/SamuelAlev/control-center/releases)。
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+下載 `Control-Center-<version>-arm64.dmg`，開啟它，然後將 Control Center 拖曳到「應用程式」資料夾。這個組建以
+Developer ID 簽署並經 Apple 公證，因此可正常開啟。
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`：每位使用者的安裝程式。
+- `Control-Center-<version>-windows-x64.zip`：可攜式 zip。
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows 使用 `git worktree` 處理空間的檢出（不採用寫入時複製）。
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage 內含更新資訊，因此 [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) 或 appimaged 可以就地將它更新到最新版本，只下載有變更的部分。
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+兩者都建置於 Ubuntu 22.04，並可在該版本或任何更新的版本上執行（Debian 12、Fedora 36 及後續版本）：它們連結 glibc 2.35 與 GCC 12 的 libstdc++，並從系統取得 GTK 3。一般桌面可能缺少的少數程式庫已隨附其中，因此無須安裝其他東西。音效——會議播放、聲景、機台音訊與通知提示音——透過系統的 libmpv 播放（Ubuntu 22.04 上為 `libmpv1`，較新的 Ubuntu 與 Debian 上為 `libmpv2`，Fedora 上為 `mpv-libs`）；沒有它，應用程式啟動時會隱藏這些控制項。
 
-### Standalone server
+### 獨立伺服器
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/zh-TW/手冊/操作指南/執行無介面伺服器/).
+每個版本也單獨提供無介面伺服器——`cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip`——以及 GHCR 上的 `cc-server`、`cc-webapp` 與 `cc-remote` 映像。參見[執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)。
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linux 封存檔建置於 Ubuntu 22.04，其隨附的原生程式庫連結 glibc 2.35 與 GCC 12 的 libstdc++，因此需要至少同樣新的主機（Ubuntu 22.04、Debian 12、Fedora 36 或後續版本）。在較舊的發行版上，請改為執行 `cc-server` 映像——容器自帶使用者空間，因此只有核心需要由你提供。
 
-## Agent backend
+## 代理後端
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center 透過**配接器**派送代理。配接器只有兩個，清單是固定的，而且會自動偵測——無法再註冊其他配接器。
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+**Control Center（內建）**配接器不需要外部 CLI：代理迴圈在伺服器內部執行，並透過 HTTP 與模型供應商通訊，因此永遠可用。在**設定 → 伺服器 → 模型供應商**底下連接供應商。OpenAI、Codex、Cursor 與 Kimi Code 提供瀏覽器登入；Anthropic、OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai 與 Moonshot 則需要 API 金鑰。Codex 與 Cursor 是這個執行器上的供應商，而不是獨立的 CLI。z.ai 刻意列出兩次：**z.ai** 是按用量付費的開放平台，從你的帳戶餘額扣款；而 **z.ai GLM Coding Plan** 則是訂閱方案。兩者使用同一個帳戶金鑰，但 z.ai 從不同的主機提供該方案——將編碼方案的 key 貼到一般的 z.ai 磚中，每個請求都會回傳 `429 … "Insufficient balance or no resource package"`，因為該方案沒有餘額可扣。Claude Pro/Max 訂閱不是 Anthropic API 登入；請改為透過 Claude Code 配接器使用該方案。你在該頁面_可以_新增的是**自訂供應商**——任何與 OpenAI 或 Anthropic 相容的端點（Ollama、LM Studio、vLLM、私人部署），位於**自訂供應商 → 新增供應商**底下。
 
-The other adapter wraps an external CLI:
+另一個配接器則包裝外部 CLI：
 
-- **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
+- **Claude Code**（`claude`）：`npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+偵測會探查執行 `cc_server` 的機器上的 `PATH`——桌面版自行執行伺服器時即為同一台機器，否則為遠端主機。請在那裡安裝 Claude Code CLI，而不是在用戶端上。該頁面上的**重新整理**按鈕會重新執行探查。
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/zh-TW/手冊/操作指南/配接器/).
+模型清單由每個已連線的供應商即時提供；[models.dev](https://models.dev) 只提供價格與情境視窗的中繼資料。參見[管理配接器與模型](/zh-TW/手冊/操作指南/配接器/)。
 
-## GitHub authentication
+## GitHub 身分驗證
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+GitHub 憑證是**你的，並存放在伺服器上**，以你的使用者 id 為鍵——不是在用戶端的作業系統鑰匙圈中。你登入的每部裝置都使用同一份，其他成員無法讀取。
 
-If the server has a GitHub App registered ([Create the GitHub App](/zh-TW/手冊/操作指南/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+如果伺服器已註冊 GitHub App（[建立 GitHub App](/zh-TW/手冊/操作指南/github-app/)），**設定 → 工作區 → 個人資料與身分 → 程式碼託管**會提供**以 GitHub 登入**（由伺服器執行的裝置流程）。否則請貼上個人存取權杖：
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Classic：`repo` 與 `read:org`
+- Fine-grained：**Contents** 與 **Pull requests**（讀取與寫入）、**Checks** 與 **Actions**（讀取）
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+請在 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) 建立一個。伺服器會在權杖儲存時探查其帳戶名稱，因此該列可以顯示「已登入為 …」；探查失敗仍會儲存權杖，而拼字錯誤或缺漏的權限範圍會在之後以請求失敗的形式浮現。
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/zh-TW/手冊/操作指南/連接程式碼託管/).
+入門引導的第一步就是這項連線。之後，同一張卡片就是你替換或清除它的地方。GitLab 與 Bitbucket 使用同一張卡片；參見[連接程式碼託管](/zh-TW/手冊/操作指南/連接程式碼託管/)。
 
-## Choose where the server runs
+## 選擇伺服器的執行位置
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/zh-TW/手冊/概念/部署/) explains what that split means for the desktop, web and phone.
+Control Center 是精簡用戶端，疊在擁有資料庫並承擔所有工作的無介面 `cc_server` 行程之上；[部署與用戶端](/zh-TW/手冊/概念/部署/)說明了這種拆分對桌面、網頁與手機的意義。
 
-On first launch the desktop asks **"How should Control Center run?"**:
+桌面版首次啟動時會詢問 **「Control Center 要以何種方式執行？」**：
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/zh-TW/手冊/快速入門/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **在此應用程式內執行**：桌面版會在本機啟動並監督一個 `cc_server`，並透過回送與它通訊。無須其他設定。這正是[快速入門](/zh-TW/手冊/快速入門/)所假設的設定。
+- **連線至遠端執行個體**：以 WebSocket URL、裝置 id，以及配對金鑰或一次性邀請碼，將桌面版指向在其他位置執行的 `cc_server`。資料歸那台伺服器所有；這個桌面版只負責呈現。
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/zh-TW/手冊/操作指南/連線至遠端伺服器/).
+之後可在**設定 → 伺服器 → 連線與狀態**新增或切換伺服器。切換會就地重新連線——無須重新啟動。瀏覽器無法執行伺服器，因此網頁用戶端一律是遠端的；參見[連線至遠端伺服器](/zh-TW/手冊/操作指南/連線至遠端伺服器/)。
 
-To host a server yourself, follow [Run a headless server](/zh-TW/手冊/操作指南/執行無介面伺服器/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+要自行代管伺服器，請參閱[執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)。當中涵蓋建置二進位檔、在首次啟動前產生配對金鑰，以及 `--data-dir` / `--port` / `--bind` 旗標。
 
-## Verify your setup
+## 驗證你的設定
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **設定 → 伺服器 → 模型供應商**會列出兩個配接器。「Control Center（內建）」會顯示為已找到，版本為 `built-in`；若伺服器主機的 `PATH` 上有它的 CLI，Claude Code 也會顯示為已找到。若找不到，請按**重新整理**。
+2. **設定 → 工作區 → 存放庫**會列出此工作區的儲存庫，而**新增存放庫**會瀏覽伺服器主機上的資料夾。
+3. **設定 → 工作區 → 代理**會列出你第一個工作區預置的五個代理。每個代理都需要設定**配接器**與**模型**才能執行。
+4. **設定 → 伺服器 → 診斷與隱私**會報告此主機提供的沙箱後端、嵌入模型的狀態，以及日誌。
 
-## Build from source
+## 從原始碼建置
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+原生程式庫是必要的，而且沒有降級模式：缺少任何一個都會導致啟動時硬性失敗，而不是走較慢的路徑。請先暫存它們，再做其他事。所有 Flutter 與 Dart 指令都必須透過 `fvm` 執行，因為 SDK 版本由這個儲存庫鎖定。
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +168,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+在 macOS 上，安全儲存（GitHub、Linear 與 Google 登入）需要應用程式由 Apple 團隊簽署——免費的 Apple ID 就已足夠，這是一次性設定，詳見[本機開發簽署](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos)。沒有它，應用程式仍可啟動；只有安全儲存無法使用。Windows 與 Linux 無須簽署。
 
-To build the headless server binary, stage the natives the same way first, then:
+要建置無介面伺服器二進位檔，請先用同樣方式暫存原生程式庫，然後：
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+建置掛鉤會把 `build/natives/` 中已有的內容複製到套件組合中，因此在暫存之前建置，會得到一個沒有原生程式庫的套件組合，以及一個拒絕啟動的伺服器。
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+網頁用戶端請使用 `scripts/build_web.sh`（手機 PWA 用 `--target remote`）。CI 執行的就是它：單純的 `flutter build web` 會跳過建置識別戳記、Web Worker 重新產生、部署清單，以及資源預算檢查。

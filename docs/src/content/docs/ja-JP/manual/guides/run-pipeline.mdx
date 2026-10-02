@@ -1,68 +1,70 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: パイプラインを手動実行
+description: ランチャーからパイプライン実行を開始し、その入力フォームを埋めて、実行の詳細ページに移動します。
 slug: ja-JP/マニュアル/ハウツーガイド/パイプライン実行
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/).
+このガイドでは、実行を手動で開始する方法を扱います。実行の監視、ステップ出力の
+読み取り、失敗からの復旧については、[パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)を参照してください。
 
-## Start a run
+## 実行を開始する
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. ワークスペースのサイドバーで**パイプライン**をクリックします。
+2. ヘッダーの**パイプラインを実行**を押します。ランチャー
+   （`/workspaces/<workspace-id>/pipelines/run`）が開きます。
+3. 左のレールからテンプレートを選びます。各カードには、テンプレートの名前、説明、
+   入力を取るかどうかが表示されます。
+4. 右側の入力フォームに入力します。必須フィールドは値が入るまでボタンをブロックし、
+   入力を持たないテンプレートはその旨を表示します。
+5. **パイプラインを実行**を押します。
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+実行の詳細ページが開き、タイミングウォーターフォールとグラフキャンバスがライブで
+表示されます。
 
-## If the rail is empty
+## レールが空の場合
 
-The launcher shows a template only when **both** are true:
+ランチャーがテンプレートを表示するのは、**両方**が真の場合だけです：
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- **設定 → ワークスペース → パイプラインテンプレート**で、テンプレートのスイッチが
+  オンになっている。
+- テンプレートエディターの**手動実行**ダイアログで、**手動実行を許可**がオンになって
+  いる — ランチャーが読む `manual` トリガーを作るのは、このスイッチです。
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+13 個の組み込みテンプレートのうち 8 個は無効の状態で提供されます：`external_pr_welcome`、
+`cross_review`、`ticket_to_pr`、`pr_triage`、`pre_merge_gate`、`release_notes`、
+`dep_audit`、`pr_digest` です。エンジンは無効なテンプレートの開始を拒否するため、
+ここで探す前にスイッチをオンにしてください。
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+テンプレートの一覧にテンプレートごとの**実行**アクションはなく、エディター内にも
+実行ボタンはありません — ランチャーが唯一の手動の入り口です。
 
-## Fill in a repository input
+## リポジトリの入力を埋める
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+**リポジトリ**型の入力は、ワークスペースに登録されたリポジトリを対象とするピッカーを
+表示します。1 つ選ぶと、`repo_id`、`repo_local_path`、`repo_full_name`、そして
+リポジトリに GitHub リモートがある場合は `repo_owner` と `repo_name` が実行
+ペイロードに設定されるため、下流のステップは必要なものを読み取れます。
 
-## Watch it run
+## 実行の様子を見る
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+実行の詳細ページは 3 つの部分で構成されます：メタストリップ（開始時刻、アクティブ
+時間、ステップの進捗、失敗のバナー、**再試行**と**削除**）、ステップごとの所要時間と
+コストを示す折りたたみ可能なタイミングウォーターフォール、そしてグラフキャンバス
+です。ノードを選択すると、そのステップの詳細パネルが開きます。
 
-[Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)では、
+一時停止したステップの読み方や、ステップが失敗したときの対処を含め、そのすべてを
+説明しています。
 
-Every run you start from the app is a real one.
+アプリから開始する実行はすべて実際の実行です。
 
-## Related guides
+## 関連ガイド
 
-- [Create a pipeline template](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
-- [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
-- [Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)
+- [パイプラインテンプレートを作成](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+- [パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/)
+- [パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)

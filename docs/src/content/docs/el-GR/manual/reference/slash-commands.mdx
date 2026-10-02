@@ -1,156 +1,151 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Εντολές slash
+description: Κάθε εντολή που μπορείτε να πληκτρολογήσετε στο πεδίο σύνταξης, τι κάνει και πού εκτελείται.
 slug: el-GR/εγχειρίδιο/αναφορά/εντολές-slash
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Εντολές που πληκτρολογούνται στο πεδίο σύνταξης ενός χώρου. Χωρίζονται σε τρεις ομάδες ανάλογα με το πού ενεργούν, και η διαφορά έχει σημασία: μια **τοπική** εντολή δεν ταξιδεύει ποτέ ως μήνυμα, οπότε ούτε εμφανίζεται στη μεταγραφή ούτε φτάνει σε κάποιον πράκτορα.
 
-| Where it runs | What that means                                                                    |
+| Πού εκτελείται | Τι σημαίνει αυτό                                                                   |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **Τοπική**    | Χειρίζεται στον πελάτη (ή σε λειτουργία διακομιστή που ξεκινά ο πελάτης). Η εντολή δεν ταξιδεύει ποτέ ως μήνυμα, οπότε κανένας πράκτορας δεν τη βλέπει. |
+| **Πλευρική**  | Μία κλήση μοντέλου στην πλευρά του διακομιστή σχετικά με τη συνομιλία. Η συνομιλία δεν αλλάζει. |
+| **Αποστολή**  | Ορίζει μια λειτουργία ή οδηγία για την εκτέλεση που ξεκινά το μήνυμα.               |
 
 ---
 
-## Directing a run
+## Κατεύθυνση μιας εκτέλεσης
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Τοπική → αποστολή.** Οπλίζει τη λειτουργία σχεδίου στη συνομιλία: ένα worktree απολύτως μόνο για ανάγνωση και μια επιφάνεια εργαλείων περιορισμένη στο `read`. Το παραδοτέο του πράκτορα είναι ένα σχέδιο, όχι μια επεξεργασία. Ένα σκέτο `/plan` αλλάζει μόνο τη λειτουργία και δεν ταξιδεύει ποτέ ως μήνυμα· με προτροπή, το υπόλοιπο της γραμμής είναι αυτό που ξεκινά την εκτέλεση.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Αποστολή.** Ξεκινά έναν αυτόνομο στόχο που ο επόπτης στόχων επαναποστέλλει σε τμήματα και σε επανεκκινήσεις.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Η πληκτρολόγηση του `/goal` με κείμενο ανοίγει πρώτα τη **συνέντευξη στόχου** — ένα σύντομο πέρασμα που αρνείται να δεχτεί ένα προσχέδιο μέχρι να συγκεντρώσει και τα πέντε: κριτήρια επιτυχίας για τα οποία ένας αξιολογητής μπορεί να αποφανθεί χωρίς υποκειμενική κρίση, μια ακριβή εντολή επαλήθευσης, ένα ανώτατο όριο προσπαθειών, όρια εμβέλειας και συνθήκες τερματισμού. Κάθε βήμα προσφέρει *Παράλειψη και εκτέλεση όπως γράφτηκε*: η συνέντευξη είναι προεπιλογή, όχι πύλη.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+Τα `/goal pause`, `/goal resume` και `/goal drop` δεν είναι εντολές slash. Η παύση, η συνέχεια και η διακοπή βρίσκονται στη λίστα στόχων της συνομιλίας στην πλαϊνή στήλη. Οι σημαίες εκκίνησης στον ίδιο τον στόχο είναι `--budget <dollars>`, `--max <N>` (προϋπολογισμός εκτελέσεων) και `--days <N>` (προθεσμία). Ένας στόχος που έφτασε το όριο κόστους του συνεχίζεται μόνο ανεβάζοντας αυτό το όριο, από τον ίδιο χειρισμό στην πλαϊνή στήλη.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Γιατί διακόπτει καθόλου]
+Ένας αυτόνομος στόχος είναι το μοναδικό σημείο όπου μια ασαφής εντολή κοστίζει πραγματικά ακριβά. Η εκτέλεση δουλεύει για ώρες πάνω σε έναν στόχο του οποίου το «ολοκληρώθηκε» δεν όρισε κανείς και μετά αναφέρει επιτυχία με τους δικούς της όρους. Πέντε ερωτήσεις είναι φθηνότερες από μία νυχτερινή εκτέλεση που τελείωσε όποτε ένιωσε ότι τελείωσε.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Αποστολή.** Εργάζεται επαναληπτικά μέχρι την ολοκλήρωση. Δέχεται ένα όριο: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Ένα διακριτικό που *μοιάζει* με όριο (ξεκινά με ψηφίο ή πρόσημο) και αποτυγχάνει να αναλυθεί είναι σκληρό σφάλμα. Η πρόζα είναι απλώς πρόζα, οπότε το `/loop keep going until the tests pass` είναι ένας απεριόριστος βρόχος με ενσωματωμένη προτροπή, όχι λανθασμένη ανάλυση.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κατεύθυνση-εργατών-παρασκηνίου/).
+**Αποστολή.** Μετατρέπει τη συνεδρία σε **κατευθυντή**: τα δικά του εργαλεία πέφτουν στο `read` συν πέντε ρήματα εργάτη, και οι εργάτες παρασκηνίου κάνουν την επεξεργασία. Δείτε [Κατεύθυνση εργατών παρασκηνίου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κατεύθυνση-εργατών-παρασκηνίου/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Οι εργάτες δεν επιβιώνουν ποτέ πέρα από τη λειτουργία — η έξοδος σκοτώνει κάθε έναν από αυτούς.
 
 ---
 
-## Managing context
+## Διαχείριση πλαισίου
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Τοπική → διακομιστής.** Διπλώνει το παλαιότερο ιστορικό σε μια αγκυρωμένη σύνοψη και συνεχίζει στο συμπυκνωμένο πλαίσιο. Κανένα όρισμα προς το μοντέλο: η εντολή δεν ταξιδεύει ποτέ ως μήνυμα, και το πέρασμα συμπύκνωσης δεν δέχεται υπόδειξη εστίασης.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Τοπική → διακομιστής.** Πετάει το βαρύ περιεχόμενο **χωρίς** σύνοψη: καμία κλήση μοντέλου, κάθε λέξη διατηρείται, μόνο ο όγκος που κανείς δεν επρόκειτο να ξαναδιαβάσει κενώνεται.
 
-| Target        | Drops                             |
+| Στόχος       | Τι πετάει                        |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Ασήμαντα παλαιότερα αποτελέσματα εργαλείων (προεπιλογή) |
+| `images`      | Παλιά στιγμιότυπα οθόνης, κρατώντας το κείμενό τους |
+| `all`         | Και τα δύο                        |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Αυτή είναι η δίοδος διαφυγής για το «το πλαίσιό μου είναι παχύ αλλά δεν θέλω σύνοψη».
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Τοπική.** Ανοίγει τον εξερευνητή πλαισίου για τον πράκτορα αυτής της συνομιλίας σε
+δική του καρτέλα: κάθε τμήμα και μέρος του παραθύρου πλαισίου του — προτροπή
+συστήματος, δεξιότητες, αρχεία πλαισίου, σχήματα εργαλείων, ιστορικό και εικόνες — με
+το κόστος του καθενός και το αυτολεξεί περιεχόμενο πίσω του.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Η καρτέλα κλειδώνεται στο ζεύγος (χώρος, πράκτορας), οπότε η εκτέλεσή της δύο φορές
+εστιάζει ξανά στην ίδια καρτέλα αντί να στοιβάζει αντίγραφα της ίδιας ανάλυσης.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Σε έναν χώρο με **περισσότερους από έναν πράκτορες**, ένα σκέτο `/context` ανοίγει το παράθυρο που διαβάζει ο μετρητής πλαισίου της κεφαλίδας — όποιος πράκτορας εργάστηκε τελευταίος εδώ, δηλαδή εκείνος του οποίου το μήνυμα βρίσκεται στο κάτω μέρος της διαδρομής — και η καρτέλα φέρει την ετικέτα `Context · <name>` ώστε να δηλώνει σε ποιον ανήκει. Ονομάστε άλλον για να αλλάξετε: `/context qa` (το `@` είναι προαιρετικό). Ένα πληκτρολογημένο όνομα επιλύεται ακριβώς, ποτέ προσεγγιστικά: δύο πράκτορες κρατούν δύο διαφορετικά παράθυρα, οπότε μια παραλίγο αντιστοίχιση που θα άνοιγε το άλλο θα ήταν μια εύλογη απάντηση σε ερώτηση που δεν κάνατε.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Ο ίδιος εξερευνητής κρύβεται πίσω από το τσιπ του μετρητή πλαισίου στην κεφαλίδα του
+χώρου, το οποίο ακολουθεί τον ίδιο πράκτορα — η εντολή και το τσιπ δεν μπορούν ποτέ να
+διαφωνήσουν για το τι σημαίνει «το πλαίσιο» εδώ.
 
 ---
 
-## Asking about the conversation
+## Ερωτήσεις για τη συνομιλία
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Αυτές ξοδεύουν μία κλήση μοντέλου και **δεν αλλάζουν ποτέ τη συνομιλία**. Η επόμενη πραγματική στροφή του πράκτορα βλέπει ακριβώς αυτό που θα έβλεπε ούτως ή άλλως, και αυτή είναι όλη η αξία του να ρωτάς.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Πλευρική.** Γράφει ένα έγγραφο παράδοσης για όποιον αναλάβει τη δουλειά από το μηδέν: ποια είναι η εργασία, τι μάθαμε, τι απομένει.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Πλευρική.** Απαντά σε μια ερώτηση για τη δουλειά μέχρι τώρα χωρίς να προσθέσει την ερώτηση ή την απάντηση στη μεταγραφή.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Δύο εντολές, μία υλοποίηση]
+Και οι δύο έχουν το ίδιο σχήμα — πάρε τη συνομιλία όπως είναι, κάνε μία ερώτηση γι' αυτήν, μη διατηρήσεις καμία πλευρά. Υλοποιήθηκαν μία φορά ώστε να μην εκτραπούν σε δύο διαφορετικές αντιλήψεις του «πλαισίου μέχρι τώρα».
 :::
 
 ---
 
-## Navigating and exporting
+## Πλοήγηση και εξαγωγή
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακλάδωση-συνομιλίας/).
+**Τοπική.** Ανοίγει τον πλοηγό κλάδων: πού διακλαδώθηκε η συνομιλία, σε ποια διαδρομή βρίσκεται τώρα και πώς να επιστρέψετε σε μια που αφήσατε. Δείτε [Διακλάδωση συνομιλίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακλάδωση-συνομιλίας/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Τοπική.** Γράφει τη συνομιλία σε ένα αυτοτελές αρχείο HTML — αναδιπλούμενες κάρτες εργαλείων, χωρίς φύλλο στυλ, χωρίς σενάριο, χωρίς φιλοξενία εικόνων. Αποθηκεύεται στο `Documents/ControlCenter/exports/` στο desktop και κατεβαίνει στον ιστό.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Τοπική.** Αντιγράφει τη μεταγραφή στο πρόχειρο ως markdown, με τις κλήσεις εργαλείων σε αναδιπλούμενα μπλοκ. Ο συλλογισμός εξαιρείται σκόπιμα: μια μεταγραφή που επικολλάται σε μια αναφορά σφάλματος τη διαβάζει άνθρωπος.
 
 ---
 
-## Everything else
+## Όλα τα υπόλοιπα
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Τοπική.** Προβάλλει και επεξεργάζεται τη διατηρούμενη λίστα εκκρεμοτήτων της συνομιλίας. Ένα σκέτο `/todo` ανοίγει τον επεξεργαστή. Υποεντολές: `append`, `start`, `done`, `drop` (ψευδώνυμο `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Αποστολή.** Εφαρμόζει μια εγκατεστημένη δεξιότητα. Οι δεξιότητες ζουν κάτω από το δικό τους πρόθεμα `skill:` ώστε να μη μοιράζονται χώρο ονομάτων με τις ενσωματωμένες — χωρίς αυτό, μια δεξιότητα με όνομα `plan` θα ήταν μόνιμα απρόσιτη.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Αποστολή.** Οποιοδήποτε αρχείο markdown κάτω από `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` ή `.opencode/commands` στο αποθετήριο. Ένα ένθετο `foo/bar.md` είναι επίσης προσβάσιμο ως `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Πρότυπα: `$1`, `$@`, `$@[start:length]` και `$ARGUMENTS`. Το frontmatter μπορεί να ορίσει `description` (αυτόματη συμπλήρωση στο πεδίο σύνταξης). Τα `allowed-tools` και `model` αναλύονται από το αρχείο, αλλά μια επίκληση εντολής χρήστη προς το παρόν αντικαθιστά μόνο ορίσματα στο σώμα — δεν αλλάζουν το μοντέλο ή την επιφάνεια εργαλείων της εκτέλεσης.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Μια εντολή που συνέταξε ο χρήστης υπερισχύει μιας δεξιότητας με το ίδιο όνομα — είναι μια συντόμευση που κάλεσε σκόπιμα ένας άνθρωπος, με ορίσματα.
 
 ---
 
-## Magic keywords
+## Μαγικές λέξεις-κλειδιά
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Δεν είναι εντολές. Μια αυτοτελής πεζή λέξη οπουδήποτε σε μια προτροπή προσαρτά μια κρυφή οδηγία για αυτή τη στροφή.
 
-| Word          | Effect                                                             |
+| Λέξη          | Αποτέλεσμα                                                         |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Μέγιστη προσπάθεια συλλογισμού για τη στροφή                        |
+| `orchestrate` | Αναθέτει ανεξάρτητη εργασία παράλληλα και επαληθεύει κάθε φάση     |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Ο αντιστοιχιστής είναι σκόπιμα αυστηρός στα όρια. Το `orchestrate,` ταιριάζει· τα `orchestrated`, `orchestrate.ts`, `foo::orchestrate` και `orchestrate()` όχι, και τα περιφραγμένα μπλοκ κώδικα, τα ενσωματωμένα αποσπάσματα και οι ενότητες XML καλύπτονται πρώτα. Χωρίς αυτό, η επικόλληση ενός ίχνους στοίβας θα άλλαζε τη συμπεριφορά του πράκτορα.
 
 ---

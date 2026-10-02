@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Jembatan chat
+description: Penyedia, perintah, kredensial, kemampuan, operasi RPC, dan penyimpanan untuk jembatan chat.
 slug: id-ID/panduan-pengguna/referensi/jembatan-chat
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Penyedia
 
-| Provider | Wire value | Transport                  | Space kind |
+| Penyedia | Nilai wire | Transport                  | Jenis space |
 | -------- | ---------- | -------------------------- | -------------- |
 | Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack adalah satu-satunya penyedia.** `ChatProvider` adalah enum bernilai tunggal dan `cc_server` mendaftarkan satu plugin. Skema, setiap pencarian, dan setiap indeks unik dikunci berdasarkan `provider`, sehingga id tidak pernah melintasi penyedia dan menambahkan penyedia baru hanyalah perubahan di sisi server.
 
-One provider-side app per **workspace × provider**.
+Satu aplikasi di sisi penyedia per **ruang kerja × penyedia**.
 
-## Chat commands
+## Perintah chat
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Nama perintah bersifat per aplikasi (`cc` secara bawaan, jadi `/cc`). Admin dapat menggantinya; jembatan lalu memakai nama terakhir yang dipakai untuk memanggilnya.
 
-| Command                               | Effect                                                        |
+| Perintah                              | Efek                                                          |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (atau `/cc` tanpa verba)   | Menampilkan daftar yang bisa dilakukan bot                    |
+| `/cc link <code>`                     | Menukarkan kode sekali pakai dan menautkan identitas chat pengirim |
+| `/cc ticket <title>`                  | Membuat tiket lokal yang dilaporkan oleh anggota yang tertaut |
+| `/cc ticket <title> \| <description>` | Sama, dengan semua teks setelah `\|` pertama sebagai deskripsi |
+| Verba tidak dikenal                   | Melaporkan verba yang tidak dikenal beserta teks bantuan      |
 
-Ways to reach an agent:
+Cara menjangkau agen:
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| Tindakan                                | Perilaku                                                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@bot …` di sebuah kanal                | Membuka thread Slack dan space Control Center yang cocok; agen membalas di thread Slack                                |
+| Balasan di thread Slack yang dijembatani | Melanjutkan space Control Center yang sama — tidak perlu sebutan                                                      |
+| Pesan biasa di sebuah kanal             | Diabaikan (tidak ditujukan ke bot dan bukan di thread Slack yang dijembatani)                                          |
+| DM ke bot                               | Satu space Control Center per percakapan DM; menetapkan judul thread Slack dan status "is thinking…" selama agen bekerja |
 
-## Credential fields (Slack)
+## Kolom kredensial (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Dideklarasikan oleh deskriptor penyedia, yang menghasilkan dialog koneksi dan memvalidasi kiriman.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Id kolom             | Label                          | Wajib | Prefiks | Letaknya                                                        |
+| -------------------- | ------------------------------ | ----- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Token bot                      | Ya    | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Token tingkat aplikasi         | Ya    | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | Token konfigurasi aplikasi     | Tidak | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` adalah kredensial pengelolaan aplikasi: tanpa itu koneksi tetap berfungsi, tetapi bot tidak dapat dibuat atau diedit dari Control Center. Nilainya berotasi setiap kali dipakai dan nilai hasil rotasinya langsung disimpan.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Nilai dipangkas, kunci yang tidak dideklarasikan dibuang, dan ketidakcocokan prefiks ditolak dengan kalimat yang sama di klien dan di server. Kolom wajib harus ada pada setiap koneksi; kolom opsional yang dibiarkan kosong mempertahankan nilai yang sudah tersimpan.
 
-## Slack app requirements
+## Persyaratan aplikasi Slack
 
-Bot token scopes:
+Cakupan token bot:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Langganan event bot:
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Pengaturan struktural yang dipaksakan Control Center saat membuat atau mengedit aplikasi: Socket Mode aktif, tanpa URL permintaan, tab Messages aktif dan dapat ditulis, bot `always_online`, cakupan dan event yang diperlukan digabungkan ke apa pun yang sudah dimiliki aplikasi (tidak pernah dikurangi), dan satu perintah slash yang membawa deskripsi `File a ticket or link your Control Center account` — penanda yang mengidentifikasi perintah milik Control Center dalam manifes yang diekspor.
 
-## Connection states
+## Status koneksi
 
-| State            | Wire           | Meaning                                                         |
+| Status           | Wire           | Arti                                                            |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Tidak terhubung  | `disconnected` | Tidak ada kredensial tersimpan untuk ruang kerja × penyedia ini |
+| Menghubungkan…   | `connecting`   | Kredensial tersimpan, transport sedang menghubungi atau menghubungi ulang |
+| Aktif            | `connected`    | Transport aktif dan menerima event                              |
+| Kesalahan koneksi | `error`       | Tersimpan tetapi gagal; galat dari penyedia itu sendiri ditampilkan berdampingan |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Koneksi ulang memakai backoff eksponensial dengan jitter, dibatasi maksimum 30 detik. Rotasi socket yang diprakarsai penyedia akan segera tersambung ulang tanpa menaikkan backoff. Kredensial yang ditolak (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) atau cakupan yang hilang bersifat final: jembatan berhenti mencoba ulang sampai kredensial baru datang.
 
-## Provider capabilities (Slack)
+## Kemampuan penyedia (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Jembatan ini ditulis terhadap permukaan fitur yang terkaya dan menurunkan perilakunya sesuai kemampuan yang tersedia.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Kemampuan                 | Slack  | Efek saat tidak tersedia                                                                       |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | ya     | Seluruh balasan diposkan sekali, di akhir                                                      |
+| `streamingRequiresThread` | ya     | Target balasan tanpa jangkar thread memposkan balasan secara utuh                              |
+| `ephemeralMessages`       | ya     | Jawaban perintah slash tanpa pegangan balasan yang dapat dipakai akan dibuang (penolakan selalu diposkan di dalam thread) |
+| `threadStatus`            | ya     | Tidak ada baris sementara "is thinking…"                                                       |
+| `threadTitle`             | ya     | Thread chat mempertahankan judul bawaannya                                                     |
+| `slashCommands`           | ya     | Tidak ada permukaan `/cc`                                                                      |
+| `taskCards`               | ya     | Hanya teks — tidak ada kartu di atas balasan dan tidak ada tautan "View in Control Center"     |
+| `maxMessageLength`        | 39,000 | Balasan yang lebih panjang dipotong dengan penunjuk ke Control Center                          |
+| `maxStreamChunkLength`    | 3,800  | Penambahan dipisah pada batas paragraf, baris, atau spasi                                      |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Streaming yang diiklankan belum tentu streaming yang dijanjikan: streaming Slack memerlukan fitur Agents & AI Apps pada paket berbayar. Penolakan pada saat pemanggilan (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) diingat selama koneksi itu hidup dan dimunculkan sebagai `streamingAvailable: false`. Kartu tugas Slack menumpang pemanggilan yang sama, sehingga Slack yang menolak mode tampilan kartu tetap mempertahankan streamnya dan hanya kehilangan kartunya, sekali saja, selama koneksi itu hidup.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Sebuah stream juga harus menyebutkan pembaca yang dituju. Slack mensyaratkan adanya pengguna penerima sekaligus timnya untuk membukanya di sebuah **kanal** (DM tidak bisa), dan jika tidak ada akan menolak dengan `missing_recipient_user_id` / `missing_recipient_team_id` — penolakan per pemanggilan, sehingga jembatan terus mencoba dan sementara itu giliran tersebut tiba sebagai satu balasan yang diposkan. Penerimanya adalah siapa pun yang bertanya, diambil dari pesan masuk (tim mereka, bukan tim aplikasi, sehingga kanal Slack Connect terselesaikan dengan benar). Untuk giliran yang tidak dimulai siapa pun dari chat — pekerjaan yang dijalankan di Control Center pada percakapan yang sudah dijembatani — penerimanya adalah anggota yang tautannya membuat jembatan itu; jika sejak itu mereka membatalkan tautan akun chatnya, giliran tersebut diposkan secara utuh alih-alih distreaming.
 
-## Task cards
+## Kartu tugas
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Satu kartu terkelompok per giliran agen (`task_display_mode: plan`), dengan satu baris per langkah. Setiap baris adalah `task_update` dari `id` + `title` + `status`, ditambah `details` sekali jalan saat pemikirannya siap. `details` dan `output` dengan id yang sama disambung tanpa pemisah, jadi `details` dikirim sekali dan `output` tidak pernah distreaming. Judul rencananya adalah permintaan itu; jawabannya adalah penambahan terpisah di kemudian hari yang membawa potongan `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Bagian             | Isi                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Judul rencana      | Apa yang diminta                                                                                                                                              |
+| Baris penyiapan    | `Working on it…`, lalu `Cloning …`, lalu `Starting the agent…` — satu baris, judulnya diganti                                                                |
+| Baris berpikir     | `Thinking…`, ditambahkan saat agen mulai bernalar; pemikirannya adalah `details` baris ini, dikirim sekali saat penalaran selesai                               |
+| Baris alat         | Satu per alat (`Bash which swift`), id unik agar duduk berdampingan                                                                                           |
+| Status             | Sedang berlangsung selama baris itu berjalan; selesai saat baris berikutnya mulai atau giliran berakhir; error untuk gagal, terputus, dan batas giliran        |
+| Ajakan bertindak   | `View in Control Center` sebagai baris penutup saat giliran berakhir — tidak ada selama pekerjaan masih berjalan dan tidak ada saat server tidak punya URL publik yang dapat dijangkau |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Yang tidak pernah dibawa kartu: keluaran alat, argumen di luar daftar izin itu, atau apa pun yang dibaca dari basis data. Prosa penalaran hanyalah details pada baris `Thinking…` (dibatasi 256 karakter), bukan isi pesannya. Kartu yang tidak akan mengatakan hal baru tidak dikirim ulang. Sebutan langsung membuka stream agar thread Slack tidak sepi; giliran yang kemudian tidak menghasilkan teks sama sekali akan menutup kartu yang sama dengan catatan singkat alih-alih memposkan pesan kedua. Giliran tanpa kata di space yang tidak pernah membuka stream (tanpa kartu, atau streaming sudah ditolak) tetap memposkan satu pesan yang membawa kartu yang sudah selesai dan catatannya.
 
-Streamed and posted cards are different payloads:
+Kartu yang distreaming dan yang diposkan adalah payload yang berbeda:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Bentuk     | Wujud                                              | Prosa                                            |
+| ---------- | -------------------------------------------------- | ------------------------------------------------ |
+| Distreaming | `plan_update` plus potongan `task_update` dengan kunci `id` | String biasa, dibatasi 256 karakter per potongan |
+| Diposkan   | Blok `plan` yang membungkus `task_card` dengan kunci `task_id` | Teks kaya                                        |
 
-Failure handling:
+Penanganan kegagalan:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Situasi                                      | Perilaku                                                                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Penyedia menolak kartu pada sebuah penambahan | Penambahan itu langsung dicoba ulang tanpa kartu; prosanya tetap tiba secara live dan kartu dibuang selama koneksi itu hidup |
+| Penyedia juga menolak prosanya               | Stream ditutup dan balasannya diposkan secara utuh                                                                          |
+| Stream terputus setelah sebagian balasan tiba | Stream ditutup dan tidak ada yang diposkan ulang                                                                            |
 
-See [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/) for why the payload is split this way.
+Lihat [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/) untuk alasan payload dipisah seperti ini.
 
-### Setup, before there is a turn
+### Penyiapan, sebelum ada giliran
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Kartu terbuka saat sebuah sebutan diterima, sebelum kloning dan sebelum token pertama; giliran berikutnya memakai kartu dan stream yang sama. Narasi setelahnya berasal dari `SpaceProvisioningChanged` di bus peristiwa domain — kemajuan yang sama yang dibaca banner penyiapan desktop dari baris space.
 
-| Provisioning state          | Narration                                                      |
+| Status penyiapan            | Narasi                                                          |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Sebutan diterima            | `Working on it…`                                               |
+| Langkah `repo`              | `Cloning <repo>…`                                              |
+| Langkah `prCheckout`        | `Checking out the pull request in <repo>…`                     |
+| Langkah `script`            | `Running the setup script for <repo>…`                         |
+| Langkah `agent`             | `Setting up <agent>…`                                          |
+| `provisioning`, belum ada langkah | `Preparing the workspace…`                               |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Agen bernalar               | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Narasi penyiapan memerlukan keempat syarat berikut:
 
-| Condition                                 |
+| Syarat                                    |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Penyedia merender kartu                   |
+| Streaming tersedia pada koneksi ini       |
+| Space memiliki permintaan chat yang sedang berjalan |
+| Belum ada kartu yang melaporkan giliran di sana |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Permintaan itu tetap berjalan sampai giliran dimulai atau penyiapan gagal. Event `ready` tanpa kartu yang sudah terbuka adalah space hangat dan dibiarkan sepi, dan penyiapan yang tidak ditunggu siapa pun di chat — percakapan yang dibuka di aplikasi, percakapan telantar yang dilanjutkan saat boot — tidak menghasilkan kartu sama sekali.
 
-## The `/open` bounce page
+## Halaman pengalihan `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Produk chat hanya menerima `http(s)` di dalam tautan dan tidak yang lain, jadi ajakan bertindak tidak bisa menyebut skema desktop secara langsung.
 
-| Property   | Value                                                                                                                                       |
+| Properti   | Nilai                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Rute       | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Origin     | Diturunkan dari URL publik server (`ws` → `http`, `wss` → `https`); loopback dipertahankan                                                  |
+| Respons    | Halaman HTML kecil tanpa cache yang menavigasi ke `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` dan menampilkan tombol manual |
+| Validasi   | Id harus cocok dengan `[A-Za-z0-9_.-]{1,128}`; selain itu adalah 404                                                                        |
+| Akses      | Publik dan inert — tidak membaca basis data apa pun, jadi bukan oracle keberadaan; aplikasi yang dibukanya yang melakukan otorisasi          |
 
-## Bot profile fields
+## Kolom profil bot
 
-| Field              | Limit       | Notes                                                                                             |
+| Kolom              | Batas       | Catatan                                                                                           |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 karakter  | Bawaannya `Control Center · <workspace name>`                                                 |
+| `botDisplayName`   | 1–80 karakter  | Bawaannya `control-center`                                                                    |
+| `description`      | ≤ 140 karakter |                                                                                               |
+| `agentDescription` | ≤ 300 karakter | Ditampilkan di atas DM dengan bot                                                             |
+| `command`          | ≤ 32 karakter  | Dinormalisasi: garis miring di depan dihapus, dijadikan huruf kecil, `[^a-z0-9_-]` dibuang, jika kosong kembali ke `cc` |
+| `agentEnabled`     | —           | Apakah pengalaman DM/agen tersedia                                                                |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Kotak kosong berarti "biarkan apa adanya", bukan "kosongkan". Batasnya adalah batas milik Slack, yang paling ketat di antara produk yang dimodelkan.
 
-## Link codes
+## Kode tautan
 
-| Property | Value                                                                                    |
+| Properti | Nilai                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Panjang  | 6 karakter                                                                               |
+| Alfabet  | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (tanpa `0`/`O`, `1`/`I`, `U`)                          |
+| Masa berlaku | 15 menit                                                                             |
+| Penggunaan | Sekali                                                                                 |
+| Penyimpanan | Di memori — mulai ulang server membatalkan kode yang masih berlaku                    |
+| Cakupan  | Satu ruang kerja dan satu penyedia; membuat kode baru membatalkan kode anggota sebelumnya |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Penukaran dicocokkan tanpa membedakan huruf besar/kecil. Kode yang tidak dikenal, kedaluwarsa, milik ruang kerja lain, dan penyedia yang salah semuanya gagal dengan cara yang sama secara sengaja.
 
-## Link methods
+## Metode tautan
 
-| Method | Wire    | How                                                                            |
+| Metode | Wire    | Cara                                                                            |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Kode   | `code`  | Anggota menukarkan `/cc link <code>`                                            |
+| Email  | `email` | Email terverifikasi dari penyedia cocok dengan pengguna yang sudah menjadi anggota ruang kerja |
 
-## RPC operations
+## Operasi RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Semuanya bercakupan ruang kerja. Server bersifat stateless, jadi setiap panggilan membawa `workspace_id`-nya sendiri di args; dispatcher menolak operasi bercakupan ruang kerja yang menghilangkannya, sebelum basis data apa pun dibuka. Kredensial hanya bergerak _masuk_ — pembacaan status tidak pernah mengembalikannya.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Operasi                 | Jenis       | Peran minimum                                  | Kelas tindakan                  |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | `member` untuk diri sendiri, `admin` untuk siapa pun yang lain | —                |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Operasi baca mewarisi batas bawah `guest` dari jenisnya; mutasi tanpa batas bawah eksplisit memerlukan `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` menyusun URL pembuatan aplikasi penyedia dari profil bot. Operasi ini tidak mendeklarasikan kelas tindakan karena tidak membaca rahasia apa pun dan tidak menghubungi apa pun — hanya browser pengguna sendiri yang melakukan panggilan.
 
-One reactive query completes the surface:
+Satu kueri reaktif melengkapi permukaan ini:
 
-| Query                 | Kind  | Emits                                                    |
+| Kueri                 | Jenis | Memancarkan                                              |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | Daftar anggota, dikirim ulang setiap kali tautan dibuat atau dihapus |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Kueri ini ada karena penautan terjadi di sisi _lain_: anggota mengetikkan kode sekali pakai ke dalam bot, sehingga tidak ada respons klien yang dapat membawa jawabannya kembali. Daftar di pengaturan dan dialog "hubungkan akun saya" yang terbuka keduanya mengikuti kueri ini, dan dialognya beralih ke konfirmasi begitu tautan milik anggota itu tiba.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` selalu membuat kode untuk identitas pemanggil itu sendiri. `chat.updateBotProfile` mengembalikan `remaining_step` hanya ketika masih ada langkah tersisa (biasanya instal ulang); tidak adanya nilai itu berarti editan sudah berlaku.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` mengembalikan satu entri per penyedia yang ditawarkan — deskriptornya ditambah, bila ada, status koneksi. Semua yang dirender UI pengaturan berasal dari payload itu, itulah sebabnya menambahkan penyedia hanyalah perubahan di sisi server.
 
-## Storage
+## Penyimpanan
 
-| What                       | Where                                                                                                        |
+| Apa                        | Di mana                                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Kredensial koneksi         | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Penyiapan terpandu yang belum selesai | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                   |
+| Berkas Slack lama          | `<dataDir>/<workspaceId>/slack_credentials.json` dan `slack_app_setup.json`, dibaca sekali dan dimigrasikan di tempat |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Kredensial berada di samping basis data ruang kerja, bukan di dalamnya: menghapus ruang kerja sekaligus menghapus token chatnya dan `workspace.export` atau cadangan menyalin `workspace.db` — jadi ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang masih hidup. Penulisan bersifat atomik (berkas sementara plus rename) dan diperketat hanya untuk pemiliknya.
 
-## Database tables
+## Tabel basis data
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Keduanya berada di basis data ruang kerja, yang membawa baseline v1 yang sudah dipadatkan — sehingga pembacaan lintas ruang kerja tidak dapat dikompilasi.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — satu percakapan eksternal ↔ satu space Control Center:
 
-| Column                                                 | Notes                                                                      |
+| Kolom                                                  | Catatan                                                                    |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Cakupan ruang kerja                                                        |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Tim Slack `T…`, kosong untuk penyedia yang tidak mengenal konsep ini       |
+| `external_channel_id`                                  | Kanal Slack `C…`, grup `G…`, DM `D…`                                       |
+| `external_thread_id`                                   | Jangkar thread Slack, atau null ketika seluruh percakapan menjadi jangkarnya (DM bot) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Unik pada `(workspace_id, provider, external_channel_id, external_thread_id)`, dengan indeks parsial yang menegakkan hal yang sama untuk thread id null (SQLite memperlakukan NULL sebagai berbeda).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — satu anggota eksternal ↔ satu pengguna Control Center:
 
-| Column                                 | Notes                                           |
+| Kolom                                  | Catatan                                         |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Cakupan ruang kerja                             |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Anggota Slack `U…`                              |
+| `user_id`                              | Pengguna Control Center (global, jadi tanpa kunci asing) |
+| `method`                               | `code` atau `email`                             |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Unik pada `(workspace_id, provider, external_team_id, external_user_id)` dan pada `(workspace_id, provider, user_id)` — atribusi bernilai tunggal di kedua arah, sementara satu orang dapat tertaut di beberapa penyedia.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Tautan adalah resolusi identitas, **bukan** pemberian akses: keanggotaan diperiksa ulang pada setiap event yang masuk, jadi tautan ke anggota yang sejak itu dihapus berujung pada penolakan.
 
-## Space kind and message metadata
+## Jenis space dan metadata pesan
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Space yang dijembatani dibuat dengan `SpaceKind` milik penyedia (`slack`). Perilakunya seperti space biasa yang menghadap manusia — dinotifikasi dan dikelompokkan seperti `topic` — dan `isExternalChat` adalah pemeriksaan yang dilalui setiap perilaku (pencerminan, pemberian badge, retensi).
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Setiap pesan yang dibawa masuk jembatan membawa stempel `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Stempel itu juga berfungsi sebagai penjaga gema: cermin keluar melewati setiap pesan yang membawanya, itulah yang mencegah pesan chat yang masuk diposkan kembali secara langsung.
 
-## Relay behavior
+## Perilaku relay
 
-| Behavior                               | Detail                                                                                                         |
+| Perilaku                               | Rincian                                                                                                        |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Apa yang diteruskan keluar             | Hanya **teks** agen, ditambah baris status kartu tugasnya. Prosa penalaran dan keluaran alat tetap di Control Center |
+| Irama streaming                        | Dibatasi menjadi satu pengiriman per detik selama giliran berjalan; kartu dan teks yang dijelaskannya berjalan dalam panggilan yang sama |
+| Pesan manusia yang diketik di Control Center | Dicerminkan ke thread yang tertaut, diawali dengan nama tampilan penulisnya                              |
+| Giliran kosong                         | Dilaporkan sebagai catatan singkat (Run gagal, terputus, atau berhenti di batas gilirannya) alih-alih diam   |
+| Deduplikasi                            | Dikunci berdasarkan id event milik penyedia sendiri; 512 yang terakhir diingat                                |
+| Agen pintu depan                       | Percakapan terjembatani yang baru membangunkan agen CEO ruang kerja, jika tidak ada maka agen pertamanya, jika tidak ada maka tidak ada siapa pun |
+| Penamaan space                         | `#channel · <request>` untuk thread kanal Slack, `Slack DM · <request>` untuk DM, judul dibatasi 48 karakter  |
+| Isolasi kegagalan                      | Satu event buruk tidak pernah menjatuhkan jembatan; koneksi itu tetap melayani semua percakapan lain          |
 
-## See also
+## Lihat juga
 
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
-- [Link your Slack account](/id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat/)
-- [Customize the chat bot](/id-ID/panduan-pengguna/panduan-praktis/sesuaikan-bot-chat/)
-- [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/)
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) for the action classes the ops declare
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- [Tautkan akun Slack Anda](/id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat/)
+- [Sesuaikan bot chat](/id-ID/panduan-pengguna/panduan-praktis/sesuaikan-bot-chat/)
+- [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/)
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) untuk kelas tindakan yang dideklarasikan operasi-operasi itu

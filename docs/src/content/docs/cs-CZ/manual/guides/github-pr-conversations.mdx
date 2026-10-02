@@ -1,97 +1,97 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Mluvte s Control Center z GitHub PR
+description: Požádej bota GitHub App svého serveru o kontrolu, nebo mu polož otázku, přímo z konverzace PR. Bez webhooku a bez veřejné URL.
 slug: cs-CZ/prirucka/navody/konverzace-v-github-pr
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Tenhle návod ukazuje, jak pracovat s Control Center a neopustit GitHub:
+požádat o AI kontrolu ze stránky PR, položit botovi otázku v komentáři a vést
+konverzaci dál v jeho vláknech revize.
 
-The bot is your server's own [GitHub App](/cs-CZ/prirucka/navody/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Bot je vlastní [GitHub App](/cs-CZ/prirucka/navody/github-app/) tvého serveru,
+ta samá, která už lidi přihlašuje a pouští práci na pozadí. Nic nového se
+neregistruje a nic nemusí být dostupné z internetu. Server zjistí, co se na
+GitHubu řeklo, obchůzkou, takže notebook za NAT se chová stejně jako veřejné
+nasazení.
 
-## Prerequisites
+## Předpoklady
 
-- The server has its GitHub App [registered and
-  installed](/cs-CZ/prirucka/navody/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Server má svou GitHub App [zaregistrovanou a
+  nainstalovanou](/cs-CZ/prirucka/navody/github-app/), s oprávněním **Pull requests: read and write**
+  (komentáře, vlákna a reakce) a **Issues: read** (hledání komentářů). Obojí
+  už je v seznamu oprávnění toho návodu
+- Repozitář je propojený s pracovním prostorem v Control Center
+- Žádná URL webhooku, žádný tunel, žádný callback. Na straně sítě není co
+  nastavovat
 
-## Find your bot's name
+## Najdi jméno bota
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Login bota je `<appslug>[bot]`, kde `appslug` je jméno, které jsi aplikaci
+dal při registraci.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď na kartu
+   **Aplikace poskytovatelů**
+2. Otevři blok **GitHub** a klikni na **Test**
+3. Až se vyplní, zkopíruj **Přihlášení bota**. Když pořád ukazuje prázdnou
+   nápovědu, login je vždy `<appslug>[bot]`. Napiš ten, nebo krátké `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub účty aplikací ve svém doplňování `@` nenabízí, takže login se musí
+napsat. Proto ho karta v nastavení zkopíruje jedním kliknutím. Přípona
+`[bot]` je volitelná: `@myapp` i `@myapp[bot]` bota osloví.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Vyber výrazné jméno aplikace]
+Krátký tvar se porovnává jako text. Když má nějaký člověk na GitHubu stejný
+slug jako tvoje aplikace, zmínka toho člověka v krátkém tvaru dojde i botovi.
+Plný tvar `@myapp[bot]` je vždy jednoznačný.
 :::
 
-## Request a review from GitHub
+## Požádej o kontrolu z GitHubu
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+Dvě cesty a obě spustí tutéž předpřipravenou pipeline `pr_review`, kterou
+spouští tlačítko **Zeptat se AI**:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Přidej na PR štítek `ai-review`.** Je to nejblíž tomu, co GitHub umí místo
+  přiřazení bota jako recenzenta. Účty aplikací nemůžou obsadit nativní slot
+  požadovaného recenzenta. Není tu komentář, na který by šlo reagovat, takže
+  se na GitHub nic nepošle. Kontrola se spustí v Control Center
+- **Napiš do konverzace PR `@myapp review`** (nebo jen `@myapp`). Bot
+  zareaguje 👀 a odpoví, až se kontrola spustí, nebo že už jedna běží
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Recenzenti pracují v prostoru kontroly daného PR. Zjištění čteš a zveřejňuješ
+jako v [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/).
+Zveřejnění zpět na GitHub zůstává rozhodnutím, které uděláš v Control Center.
+Spuštění kontroly z GitHubu samo na GitHub nic nezveřejní.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+Štítek se u jednoho PR spustí jednou: přidání je ta žádost a odebrání
+s opětovným přidáním ho znovu nenatáhne. Další kontrolu, třeba po pushi,
+spustíš zmínkou bota.
 
-## Ask a question
+## Polož otázku
 
-Comment on the PR conversation:
+Napiš do konverzace PR:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Co se stane, po pořádku:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Bot zareaguje 👀, abys věděl, že komentář viděl
+2. Otázka se zapíše do prostoru kontroly daného PR **jako ty**, se stejným
+   připsáním, jako bys ji napsal v Control Center
+3. Agent odpoví v prostoru a odpověď se vrátí na PR jako komentář, který tě
+   zmíní přes @
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Otázka na PR, který ještě nemá kontrolu, probudí agenta CEO daného pracovního
+prostoru. Jakmile kontrola proběhla, odpovídá agent, který mluvil naposled,
+takže navázání přijde k tomu, kdo má kontext.
 
-## Follow up in a review thread
+## Navazuj ve vlákně revize
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Odpověz uvnitř vloženého vlákna revize, kterého se bot účastní. Komentář
+u diffu, který tam nechal, nebo odpověď, kterou do toho vlákna poslal. Zmínka
+není potřeba. Vlákno **je** to oslovení:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +99,75 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Více tahů funguje stejně: každá odpověď je další otázka v té samé konverzaci,
+s prostorem kontroly jako kontextem, a odpověď se vrátí do vlákna.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+Navázání na časové ose konverzace PR je nový komentář na nejvyšší úrovni,
+takže pořád potřebuje zmínku přes @.
 
-## Who the bot talks to
+## S kým bot mluví
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Komentář z GitHubu přijde skoro jen s loginem, takže bot autora vyřeší, než
+cokoli udělá:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/cs-CZ/prirucka/navody/integrace-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **Účet GitHub musí být propojený s tvou identitou** v Control Center.
+  [Přihlas se přes GitHub](/cs-CZ/prirucka/navody/integrace-github/), nebo
+  vlož token, v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
+- **Musíš být člen s rolí pro zápis** (`member`, `admin` nebo `owner`)
+  v pracovním prostoru, který ten repozitář propojuje
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Každý jiný dostane jednu zdvořilou odpověď, která řekne, co chybí. Jsou dva
+případy: neznámý login (nepřipojený, nebo připojený, ale tady není členem)
+a role jen ke čtení. Jejich slova do pracovního prostoru nikdy nevstoupí.
+Štítek `ai-review` touhle bránou neprochází. Nemá autora, takže kontrolu
+spustí v pracovním prostoru, který repozitář už propojuje.
 
-## What to expect
+## Co čekat
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Věc                  | Chování                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------- |
+| Potvrzení            | 👀 u komentáře zhruba do minuty, což je interval obchůzky. Štítek `ai-review` nemá komentář, na který by šlo reagovat |
+| Odpovědi             | Odeslané jako bot (aplikace), ve stopě, ve které se ptalo                                       |
+| Připsání v prostoru  | Otázka je tvoje; agent běží tvým jménem, podle voliče autonomie prostoru                        |
+| Kontroly             | Zjištění skončí v prostoru kontroly; zveřejnění na GitHub je ruční                              |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Zhruba minutová latence je cena za to, že není potřeba žádný příchozí síťový
+přístup. Na obchůzce nic nespěchá a nic se neztratí, když je server offline.
+Komentář, který přijde v té době, chytí další obchůzka.
 
-## Troubleshooting
+## Řešení problémů
 
-**Nothing happens for a comment that mentions the bot.**
+**U komentáře, který bota zmiňuje, se nic nestane.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- Je aplikace **nainstalovaná** na účtu, kterému repozitář patří, a je
+  repozitář **propojený** s pracovním prostorem? Nepropojený repozitář se
+  přeskočí dřív, než se cokoli zapíše, takže pozdější propojení pořád doručí
+- Je tvůj účet GitHub propojený a jsi člen s rolí pro zápis? Podívej se na PR,
+  jestli tam bot neodmítl. Odpověď řekne, který z těch dvou případů to je
+- Pořád nic? Log serveru při selhání jmenuje obchůzku a PR. Hledej
+  `pr_conversation:` (obchůzka) a `github_pr_conversation:` (most)
 
-**The label does not start a review.**
+**Štítek kontrolu nespustí.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+U jednoho PR se spustí jednou. Když už kontrola proběhla, nebo byl štítek
+přidaný dřív, než server ten PR vůbec viděl (první obchůzka nevyřízené zapíše
+potichu, místo aby je hromadně rozjela), zmiň místo toho bota. `@myapp review`
+kontrolu vždy spustí, pokud už jedna neběží.
 
-**The bot's answer never arrived on GitHub.**
+**Odpověď bota na GitHub nedorazila.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Samotná odpověď se neztratí. Je v prostoru kontroly daného PR v Control
+Center. Nezdařené odeslání (GitHub je nedostupný, změnila se oprávnění) se
+zapíše do logu a odpověď se nezkouší znovu. Když na ní záleží, zeptej se ve
+vlákně ještě jednou.
 
-## Related guides
+## Související návody
 
-- [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/cs-CZ/prirucka/navody/prostory/): the room all of this lands in
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/): registrace, ze
+  které bot vznikne
+- [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/): čtení
+  zjištění, která vyrobí kontrola spuštěná zmínkou
+- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/):
+  propojení vlastního účtu GitHub, podle kterého tě bot vyřeší
+- [Používejte prostory](/cs-CZ/prirucka/navody/prostory/): místnost, do které
+  tohle všechno dopadne

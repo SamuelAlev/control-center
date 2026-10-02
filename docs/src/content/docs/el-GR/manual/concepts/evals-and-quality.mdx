@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Αξιολογήσεις και ποιότητα
+description: Σύνολα αξιολόγησης, το αρχικό σύνολο που εισάγεται σε κάθε χώρο εργασίας και πού εμφανίζονται στην Παρατηρησιμότητα.
 slug: el-GR/εγχειρίδιο/έννοιες/αξιολογήσεις-και-ποιότητα
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Ένα **σύνολο αξιολόγησης** είναι ένας ορισμός, στο εύρος ενός χώρου εργασίας, μιας
+εργασίας που εκτελείται σε έναν πράκτορα: μια προτροπή, ένας πράκτορας-στόχος και
+λειτουργία, προαιρετική προετοιμασία, ένα προαιρετικό fixture με καρφιτσωμένο SHA
+και μια λίστα αξιολογητών. Οι αξιολογητές είναι πρώτα ντετερμινιστικοί· ένας
+κριτής με ρουμπρίκα LLM καλύπτει ό,τι δεν μπορούν να εκφράσουν αυτοί οι έλεγχοι.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Πέντε αρχικά σύνολα εισάγονται κατά τη δημιουργία ενός χώρου εργασίας. Καλύπτουν
+προτάσεις ενορχήστρωσης, έναν έλεγχο που εντοπίζει ένα σπαρμένο σφάλμα, τη
+λειτουργία σχεδίου να παραμένει μόνο για ανάγνωση, τη λειτουργία σχεδίου να παράγει
+ένα σχέδιο και μια διαδρομή εισιτηρίου μετ' επιστροφής. Η εισαγωγή ακούει για
+`WorkspaceCreated` (`workspace.upsert` ή `workspace.create`), παραλείπει όνομα
+που υπάρχει ήδη και δεν συμπληρώνει παλαιότερους χώρους εργασίας.
 
-## Where they appear
+## Πού εμφανίζονται
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+Η **Παρατηρησιμότητα → Ποιότητα** (`/workspaces/<id>/observability`) εμφανίζει τη
+λίστα με κάθε σύνολο στον χώρο εργασίας.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Δημιουργήστε, παραθέστε, επεξεργαστείτε και διαγράψτε σύνολα μέσω των
+`evals.upsertSuite`, `evals.deleteSuite` και `evals.watchSuites`. Η καρτέλα
+Ποιότητα είναι η λίστα· αυτές οι λειτουργίες είναι ο επεξεργαστής.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): the configuration a suite
-  pins
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): the autonomy dial
-- [Manage costs and budgets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/): spend recorded
-  alongside a run
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): η διαμόρφωση που
+  καθηλώνει ένα σύνολο
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): ο διακόπτης αυτονομίας
+- [Διαχείριση κόστους](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/): δαπάνες που
+  καταγράφονται μαζί με μια εκτέλεση

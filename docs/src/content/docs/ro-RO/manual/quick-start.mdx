@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Pornire rapidă
+description: Instalează Control Center, configurează un agent și urmărește-l cum lucrează pe repo-ul tău.
 slug: ro-RO/manual/pornire-rapida
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Aceasta este cea mai scurtă cale completă de la nimic la un agent care rulează pe propriul tău cod. Urmeaz-o în ordine; fiecare pas depinde de cel dinaintea lui.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Ai nevoie de Git, de un cont GitHub și fie de un cont la un provider de modele (Anthropic, OpenAI, Codex, Cursor, Kimi Code sau orice provider cu o cheie API), fie de CLI-ul Claude Code deja instalat. Tot restul se configurează pe parcurs.
 
-## Step 1: Install and launch
+## Pasul 1: Instalare și lansare
 
-Install Control Center as described in [Install](/ro-RO/manual/instalare/), then open it.
+Instalează Control Center așa cum se descrie în [Instalare](/ro-RO/manual/instalare/), apoi deschide-l.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+La prima lansare, aplicația desktop întreabă **„Cum ar trebui să ruleze Control Center?”**. Alege **Rulează în această aplicație**. Control Center pornește un `cc_server` headless pe această mașină, care deține datele tale și face toată munca. Nu îl vezi niciodată; în schimb se deschide ecranul de onboarding.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/ro-RO/manual/instalare/#use-it-in-your-browser) for the browser route.
+:::note[Preferi să nu instalezi nimic?]
+Aceeași aplicație rulează în browser la [app.usectrl.dev](https://app.usectrl.dev) cu
+aceleași funcționalități. Un tab de browser nu poate însă găzdui serverul, așa că îl
+furnizezi tu — rulează `cc_server` local și conectează-te la `ws://localhost:9030`
+sau indică-l spre un server de pe altă mașină. Această pornire rapidă urmează calea
+desktop pentru că nu are nevoie de configurarea vreunui server; vezi
+[Instalare](/ro-RO/manual/instalare/#use-it-in-your-browser) pentru varianta din browser.
 :::
 
-## Step 2: Work through onboarding
+## Pasul 2: Parcurge onboardingul
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Onboardingul are cinci pași care se desfășoară în ordine — nu se poate sări înainte.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Conectează**: autentifică-te cu GitHub sau lipește un token de acces personal cu `repo` și `read:org`. Acreditarea este stocată pe server, atașată de contul tău.
+2. **Spațiu de lucru**: dă un nume primului tău spațiu de lucru și, opțional, alege un logo. Crearea lui generează cinci agenți — un CEO plus `qa`, `architect`, `engineer` și `librarian` — și șabloanele de pipeline încorporate.
+3. **Sandbox**: înregistrează o preferință de sandbox. Oricare alegere îți permite să continui.
+4. **Adaptor**: alege adaptorul și modelul care ar trebui să fie implicite pentru agenți. Alege **Control Center (built-in)**, apoi folosește selectorul de provideri care apare pentru a te autentifica la un provider de modele — lista de modele rămâne goală până când unul este conectat. Finalizarea acestui pas aplică adaptorul și modelul și pe agentul CEO al spațiului de lucru.
+5. **Voce (opțional)**: instalează un model vocal pe dispozitiv pentru dictare sau sari peste acest pas.
 
-Control Center then opens your workspace inbox.
+Control Center deschide apoi inbox-ul spațiului tău de lucru.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/).
+:::note[Ce limitează o rulare de agent]
+Comenzile agenților sunt învelite în sandbox-ul nativ al sistemului de operare al gazdei atunci când există unul — Seatbelt pe macOS, bubblewrap pe Linux. Windows nu are backend, așa că rulările de acolo sunt limitate doar de celelalte straturi: worktree-ul propriu al conversației (`git worktree` pe Windows; copy-on-write acolo unde vine `rift`), acreditările intermediate la fiecare lansare și revocate la finalizare, și guardrail-urile de acțiuni. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 :::
 
-## Step 3: Add a repository
+## Pasul 3: Adaugă un depozit
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Mergi la **Setări → Spațiu de lucru → Depozite** și apasă **Adaugă depozit**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+Dialogul parcurge folderele de pe mașina care rulează serverul, nu de pe clientul tău, și rămâne în interiorul rădăcinilor pe care serverul este configurat să le expună (implicit directorul home al utilizatorului său). Doar checkout-urile git primesc o casetă de bifare. Bifează-l pe al tău și înregistrează-l.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Un checkout este acceptat doar dacă se află în interiorul unui worktree git, are un remote `origin` și acel remote indică spre o forge suportată — github.com, gitlab.com sau bitbucket.org. Orice altceva este refuzat, cu motivul.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repo-urile sunt limitate la spațiul de lucru: înregistrarea unui checkout aici îl pune în _acest_ spațiu de lucru. Nu există un pas separat de legare.
 
-## Step 4: Give an agent an adapter and a model
+## Pasul 4: Dă unui agent un adaptor și un model
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Mergi la **Setări → Spațiu de lucru → Agenți**. Selectează agentul `engineer` din roster.
 
-On the **Settings** tab, set:
+Pe fila **Setări**, setează:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Adaptor**: `Control Center (built-in)`
+- **Model**: alege unul de la providerul pe care l-ai conectat în onboarding
 
-Press **Save changes**.
+Apasă **Salvează modificările**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Acest pas nu este opțional în practică. Doar agentul CEO moștenește adaptorul ales în timpul onboardingului; cei patru specialiști sunt creați fără unul. Ei recurg la **Control Center (built-in)** cu modelul implicit al Anthropic, așa că rulează doar dacă ai conectat un cont Anthropic — și pe un model pe care nu l-ai ales, dacă ai făcut-o.
 
-## Step 5: Send the agent a task
+## Pasul 5: Trimite agentului o sarcină
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. În bara laterală, găsește secțiunea **Spații** și apasă butonul **+**.
+2. Dă un nume spațiului, adaugă agentul `engineer` sub **Adaugă agenți** și creează-l.
+3. Scrie o sarcină concretă și mică pe repo-ul pe care l-ai înregistrat și apasă Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center pregătește pentru această conversație un worktree copy-on-write al repo-urilor spațiului de lucru, asamblează un prompt din rolul, persona, skill-urile agentului și contextul spațiului, apoi lansează rularea. Checkout-ul tău sursă nu este niciodată atins.
 
-## Step 6: Watch it work
+## Pasul 6: Urmărește-l cum lucrează
 
-You should see, in order:
+Ar trebui să vezi, în ordine:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Butonul de trimitere al composerului transformându-se într-un buton de oprire, pentru că un agent lucrează în această conversație
+- Raționamentul, apelurile de instrumente și textul agentului care se transmit în flux în transcript
+- Butonul de trimitere care reapare când rularea se termină
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Apoi deschide **Setări → Spațiu de lucru → Agenți**, selectează agentul și verifică fila **Jurnale**: un rând de rulare, cu starea, durata, orele de început și de sfârșit și adaptorul pe care a rulat.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Aceasta este bucla. Tot restul din Control Center — revizuirea pull request-urilor, pipeline-urile, tichetele, întâlnirile, Slack — depinde de ea.
 
-## Next steps
+## Pașii următori
 
-- [Your first workspace](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/ro-RO/manual/tutoriale/primul-pr/): take an agent's branch through review and merge
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): what an agent is made of
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/): the rest of the agent form
-- [Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/): one goal, one approval, a generated pipeline
-- [Pair your phone](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): follow the fleet from anywhere
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/): how the desktop, web and phone clients relate to the server
+- [Primul tău spațiu de lucru](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/): același teren, mai încet, cu modelul de izolare explicat
+- [Revizuiește primul pull request](/ro-RO/manual/tutoriale/primul-pr/): du ramura unui agent prin revizuire și îmbinare
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): din ce este făcut un agent
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/): restul formularului de agent
+- [Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/): un obiectiv, o aprobare, un pipeline generat
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): urmărește flota de oriunde
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/): cum se raportează clienții desktop, web și telefon la server

@@ -1,132 +1,149 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Átnézési számítás (kohorszok, tengelyek és determinisztikus diffek)
+description: Mit állít elő az átnézési számítási kör a szerveroldalon – kohorszokat, API-szerződés- és vizuális diffeket, tengelyenkénti kapukat –, és hogyan épül ez be az Átnézés fülbe.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+A PR **Átnézés** füle az átnézési pipeline élő előrehaladása, amíg az dolgozik,
+majd az általa közzétett artefaktum, a rajta elvégezhető műveletekkel. Egy fül,
+két állapottal, mert ugyanaz a dolog két időpontban. Ez nem alapértelmezett fül:
+egy PR-nek addig nincs átnézése, amíg valaki nem kér egyet, ezért a
+**Kérdezze az AI-t** az, ami megnyitja.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+A fül mögött a `cc_server` fájlkohorszokat épít, lefuttatja a determinisztikus
+tengelyeket, és kiszolgálja őket a `review_studio.*` RPC-műveleteken keresztül
+(`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` és a `watch*` ikertestvéreik).
+Egy perzisztált elrendezés, amely még mindig a `pr.reviewStudio` nevet viseli,
+ugyanezt az Átnézés fület nyitja meg.
 
-On the Review tab:
+Az Átnézés fülön:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- A konszolidáló ügynök egy közönséges beszélgetési artefaktumot tesz közzé a
+  `publish_artifact` funkcióval, így a fül ugyanazon az artefaktumnézetőn
+  keresztül jeleníti meg, amelyet egy csevegőbuborék is megnyit – nincs az
+  artefaktumrendszernek átnézésre szabott másolata.
+- A megállapítások egy mellette lévő oldalsávban helyezkednek el, az ítélet
+  pedig egy vékony sávon utazik az artefaktum fölött, nem egy
+  irányítópult-fejlécen.
+- Elavulást jelző szalaghirdetés jelenik meg, amikor a PR headje túlhaladt az
+  átnézésen.
 
-See [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/) for the flow and
-[Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/) for acting on it.
+A folyamatról lásd: [MI-alapú átnézés használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/), a vele való
+tevékenységről pedig: [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/).
 
-## Cohorts
+## Kohorszok
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+A kohorszok a PR megváltozott fájljait tartalom alapján származtatott vödrökbe
+csoportosítják: olyan fájlokba, amelyek jelentésük szerint összetartoznak,
+hatás szerint rendezve, hogy a legkockázatosabb csoport olvasódjon először.
+Minden head-SHA-változásnál újraszámítódnak, és teljes egészükben
+kicserélődnek; minden kohorsznak van egy push-stabil kulcsa, így az összefoglaló
+és az átnézés előrehaladása túléli a rebase-t.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Ha a repó nincs kódindexelve, a kohorszok az útvonal szerinti csoportosításra
+esnek vissza. Egy repó indexeléséhez használja a **Beállítások → Munkaterület →
+Tárolók** elemet – minden repósor tartalmaz egy **Kód indexelése** műveletet,
+amely lefuttatja az `index_code` pipeline-t, és helyben jelenti az
+előrehaladást.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+A kódgráf csak azoknak a nyelveknek a feldolgozására képes, amelyekhez
+szállított nyelvtannal rendelkezik (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++,
+Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada). Egy más nyelvű
+repó soha nem tud szemantikus kohorszokat előállítani, akárhányszor indexeli is.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Az ügynök markdown-összefoglalót rögzíthet egy kohorszhoz a `set_cohort_summary`
+funkcióval, és strukturált végigvezető diagramot csatolhat hozzá az
+`add_review_diagram` funkcióval – típusos szekvencia-, entitás-kapcsolat- vagy
+állapotgép-objektumot, soha nem mermaid szöveget. Minden élet egyeztetünk a
+valódi kódgráffal, és az olyan élt, amelyet a gráf nem tud megerősíteni, nem
+ellenőrzöttként jelöljük meg, nem pedig tényként rajzoljuk meg.
 
-## The API-contract axis
+## Az API-szerződés tengelye
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+A szerződéstengely csak az **explicit** specifikációs fájlokat diffeli. A hat
+alapértelmezett névhez illeszkedik – `openapi.yaml`, `openapi.yml`,
+`openapi.json`, `swagger.yaml`, `swagger.yml`, `swagger.json` –, valamint
+minden olyan megváltozott fájlhoz, amelynek neve tartalmazza az `openapi` vagy
+`swagger` szót, és `.yaml`, `.yml` vagy `.json` végződésű. A kezelőkódból
+kikövetkeztetett szerződés kívül esik a hatókörön, a GraphQL-sémákat pedig nem
+diffeljük.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Minden változás besorolást kap – végpont, paraméter, séma és válasz
+hozzáadása, eltávolítása és módosítása –, és súlyosságot hordoz: **breaking**
+(eltávolított végpont vagy paraméter, szigorított típus, új kötelező paraméter),
+nem breaking (hozzáadó jellegű) vagy tájékoztató jellegű. Egy elutasított
+változás megbuktatja a szerződéskaput, akárcsak egy döntés nélkül hagyott
+breaking változás; a breaking, de jóváhagyott változás figyelmeztet; breaking
+változások híján a kapu sikeres. Egy **származtatott (tanácsadó jellegű)**
+jelöléssel ellátott diff soha nem kapuz.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Egy változás jóváhagyása vagy elutasítása a `review_studio.setContractDecision`.
 
-## The visual axis
+## A vizuális tengely
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Ha a PR felhasználóifelület-komponenseket módosít egy Widgetbook alkalmazással
+rendelkező Flutter-repóban, a számítási kör a PR base és head worktree-jében egy
+headless `flutter test` golden-futtatással rendereli a megváltozott
+komponenseket előtte és utána, majd diffeli a képpontokat.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Ehhez Flutter SDK szükséges a szerver hosztján]
+A tisztán Dart szerver nem tud Flutter-widgeteket folyamaton belül renderelni,
+ezért külső folyamatként meghívja a `flutter test` parancsot. Az SDK-t a
+`cc_server`-t futtató gépre kell telepíteni – nem a kliensére. Enélkül a tengely
+**unavailable** állapotot jelent, „no Flutter SDK on host” indoklással. Soha nem
+jelent olyan sikert, amelyet nem érdemelt ki.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+A **changed** vagy **removed** jelöléssel ellátott pillanatképek jóváhagyásig
+visszatartják a vizuális kaput; az **unchanged**, **added** és **approved**
+pillanatképek kinyitják azt. Az elérhetetlenségnek négy oka lehet: nincs
+Flutter SDK a hoszton, nincs Widgetbook alkalmazás a repóban, nincsenek
+golden-tesztelhető használati esetek, vagy hiba történt a golden-harnessben.
 
-Approving an intended change is `review_studio.approveVisual`.
+Egy szándékolt változás jóváhagyása a `review_studio.approveVisual`.
 
-## The axes and the verdict
+## A tengelyek és az ítélet
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Tengely                   | Vezérli                             |
+| ------------------------- | ----------------------------------- |
+| Helyesség                 | Átnéző ügynökök (tokenek)           |
+| Biztonság                 | Átnéző ügynökök (tokenek)           |
+| Tesztlefedettség hiánya   | Átnéző ügynökök (tokenek)           |
+| Vizuális                  | Determinisztikus (golden-harness)   |
+| API-szerződés             | Determinisztikus (specifikációs diff) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+A három tokenalapú tengely akkor rögzül, amikor a vezető ügynök meghívja a
+`finalize_review` funkciót; a két determinisztikus tengelyt a számítási kör
+rögzíti.
 
-Each axis reports one of:
+Minden tengely a következő állapotok egyikét jelenti:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Állapot         | Jelentés                                                   |
+| --------------- | ---------------------------------------------------------- |
+| **Pass**        | Lefutott, nem talált blokkoló tényezőt                     |
+| **Warn**        | Lefutott, nem blokkoló aggályok                            |
+| **Fail**        | Lefutott, blokkoló problémát talált                        |
+| **Partial**     | Lefutott, de nem tudott befejeződni; az eredmények hiányosak |
+| **Unavailable** | Egyáltalán nem tudott lefutni                              |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Csak a **pass** és a **warn** nyit ki egy kapuzott tengelyt. A **Partial** és az
+**unavailable** szándékosan különbözik a **fail** állapottól, és egyik sem nyit
+ki kaput.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+A tengelyek **Ship**, **Hold** vagy **Block** ítéletté állnak össze, és csak
+_súlyosabbá_ tehetik az ítéletet – soha nem enyhítik. Egy **megbukó** kapuzott
+tengely **Block**ot kényszerít; egy **partial** vagy **unavailable** tengely
+legalább **Hold**ot kényszerít. Így egy blokkoló tengely, amely nem tudott
+lefutni, _visszatartja_ az ítéletet: a bizonyíték hiánya soha nem nyit ki egy
+kaput.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Az Átnézés fülön látható ítélet az, amelyet a `finalize_review` közzétett.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/)
-- [Dispatch reviewer agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Search code with the code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/)
+- [MI-alapú átnézés használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/)
+- [Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Kód keresése a kódgráffal](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/)

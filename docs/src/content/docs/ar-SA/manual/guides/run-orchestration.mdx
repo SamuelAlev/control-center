@@ -1,126 +1,124 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: تشغيل تنسيق
+description: اطلب من منسّق خطة، وراجعها وعدّلها في Plan Studio، ووافق عليها مرة واحدة، ودع خط أنابيب مُولَّدًا ينجز العمل.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) for how it works.
+يبيّن هذا الدليل كيف تحوّل هدفًا كبيرًا واحدًا إلى خطة للفريق كله تنفّذ
+نفسها. انظر [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) لطريقة عمله.
 
-## When to use an orchestration
+## متى تستخدم التنسيق
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/); for a process you can spell out by
-hand, build a [pipeline template](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/).
+استخدم التنسيق حين يكون الطلب أكبر من وكيل واحد ولا تعرف الخطوات الدقيقة
+مسبقًا. للمهمة الواحدة، أرسل إلى وكيل في
+[مساحة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)؛ ولعملية تستطيع
+تدوينها يدويًا، أنشئ
+[قالب خط أنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/).
 
-## Step 1: Ask for the plan
+## الخطوة 1: اطلب الخطة
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. افتح (أو أنشئ) مساحة و**تذكرة مرجعية**. كل مقترح يحتاج إلى واحدة
+   (`propose_orchestration` يأخذ `ticket_id`)؛ وتأتي المساحة المشتركة من
+   تلك التذكرة.
+2. بدّل، إن شئت، قائمة الوضع في حقل الكتابة إلى **تنسيق**. يقصر هذا الوضع
+   الوكيل على القراءة والاقتراح — الذاكرة، ومخطط الشفرة، وقراءة المستودعات
+   والتذاكر، و`propose_orchestration`، وأدوات كتيبات التشغيل — فلا يبدأ
+   بكتابة الشفرة بدل التخطيط.
+3. أشر بـ @ إلى منسّقك (غالبًا وكيل CEO) واذكر الهدف بلغة عادية:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo ابحث في المشهد التنافسي لمسجّل اجتماعات دون اتصال أولًا، واكتب وثيقة تموضع من صفحة واحدة.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+يجيب المنسّق ببطاقة **مقترح** منظَّمة في المساحة: الأدوار التي يحتاجها،
+والعمل مفككًا إلى تذاكر فرعية، ومرحلة اختيارية للبحث والنقاش، وخطوة تجميع
+تنتج المُخرَج، وميزانية.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+ولأن المقترح كائن ذو نوع، يتحقق التطبيق منه (أدوار سليمة البنية، ومخططات
+مخرجات معلنة، وDAG بلا دورات) قبل أن يبدأ أي تنفيذ. المقترح الذي يفشل في
+التحقق لا يمكن الموافقة عليه.
 
-## Step 2: Review and edit the proposal
+## الخطوة 2: راجع المقترح وعدّله
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+تعرض البطاقة داخل المحادثة ثلاثة إجراءات: **الموافقة على الخطة** و**رفض**
+و**فتح** — ويفتح الأخير الخطة في Plan Studio كلسان محرّر. البطاقة نفسها لا
+تُحرَّر.
 
-To change anything, press **Open** and work in the right-hand inspector:
+لتغيير أي شيء، اضغط **فتح** واعمل في المفتّش على اليسار:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **العنوان** و**الوصف** و**الدور** و**يعتمد على** و**مخطط المخرجات (JSON)**
+  لأي خطوة عمل. الدور هنا يعني أي مفتاح من مفاتيح أدوار الخطة القائمة يملك
+  الخطوة — لا يمكنك تثبيت دور على وكيل مسمّى، ولا تحرير قائمة التعيين من
+  المفتّش، ولا تحرير الميزانية.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+شيئان للقراءة فقط: العقد البنيوية (البحث، والنقاش، والتجميع) وأي عقدة نُفّذ
+عملها بالفعل. ولا يُتاح التحرير إلا ما دام التنسيق `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/) for the full editor.
+اضغط **تقدير** في شريط الموافقة لنطاقات التكلفة والمدة ونطاق التأثير قبل
+أن تلتزم بالخطة. انظر
+[العمل في Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/)
+للمحرّر كاملًا.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/).
+:::note[الميزانية ليست سقف إنفاق]
+تُقارَن ميزانية المقترح بـ_التقدير_ في شريط الموافقة: حين يتجاوز الحد الأعلى
+للتقدير الميزانية، يحمرّ المجموع مع تحذير «تجاوز الميزانية». لا شيء يفحص
+الإنفاق أثناء تنفيذ الخطة، فلا يوقف التشغيل ولا يفشّله. لإيقاف الإنفاق
+فعلًا، استخدم سياسات الميزانية لكل وكيل — انظر
+[إدارة التكاليف](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/).
 :::
 
-## Step 3: Approve
+## الخطوة 3: وافق
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+وافق على الخطة، من بطاقة المحادثة أو من شريط الموافقة في Plan Studio.
+**هذا القرار الوحيد الذي تتخذه.** الموافقة للمشغّل وحده — لا أداة MCP لها،
+فالوكيل يقترح ويعدّل، ولا يوافق أبدًا على خطته.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) and creates the
-scaffolding:
+من هنا يحوّل مُجسِّد حتمي (دالة نقية، بلا LLM) المقترح إلى
+[خط أنابيب](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) حقيقي وينشئ الهيكل:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- يعيّن أي أدوار جديدة (ويسجّل معرّفات الوكلاء المعيَّنين حتى يُستأنف بعد
+  تعطل في أثناء الموافقة من غير تعيين مكرر)
+- يجمع الأدوار في **فريق**
+- ينشئ **مشروعًا** ويسجّل التذكرة الأم تحته
+- يبدأ **تشغيل خط الأنابيب** الذي يقود ذلك كله
 
-The status moves to `approved`, then `executing`.
+تنتقل الحالة إلى `approved`، ثم `executing`.
 
-## Step 4: Watch it run
+## الخطوة 4: راقب التنفيذ
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+تُنفَّذ التذاكر الفرعية كخطوات في خط الأنابيب؛ وإن فعّلت جولة نقاش، ينشر كل
+دور موقفًا أولًا. يظهر التقدّم حيث تنظر أصلًا:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
-- the **project** the parent ticket was filed under
+- **التذكرة الأم** التي ثُبّت عليها التنسيق
+- **المساحة** المشتركة التي يتحدث فيها الفريق، حيث يتابع صف الخطة حالة كل
+  عقدة
+- تفاصيل **تشغيل خط الأنابيب**، بخطه الزمني المعتاد وتكلفته لكل خطوة — انظر
+  [مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
+- **المشروع** الذي سُجّلت تحته التذكرة الأم
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+بعد أن تكتمل التذاكر الفرعية، تنتقل الحالة إلى `synthesizing` وتنتج خطوة
+التجميع المُخرَج. يُنشر ذلك النص في المساحة المشتركة وتُعلَّم التذكرة الأم
+مكتملة، ثم تنتقل الحالة إلى `completed`.
 
-## Stop it early
+## أوقفه مبكرًا
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+اضغط **إلغاء التنسيق** على البطاقة داخل المحادثة، أو **إلغاء التشغيل** في
+شريط الموافقة في Plan Studio. والإلغاء يفكك العمل الجاري.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+يفشل التنسيق حين يفشل التجسيد، أو حين يفشل تشغيل خط الأنابيب المُولَّد
+(البحث، أو النقاش، أو التجميع، أو الحفظ — وهذه الخطوات لا تتابع عند الفشل).
+خطوات **العمل** المُولَّدة تتابع دائمًا عند الفشل، فتذكرة فرعية فاشلة واحدة
+لا تُفشل التشغيل. لا مسار فشل لتجاوز الميزانية، ولا عتبة «فشلت كل التذاكر
+الفرعية».
 
-## Related guides
+## أدلة ذات صلة
 
-- [Work in Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/): where the parent ticket is filed
-- [Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بناء-فريق/): the roles an orchestration fills or hires
+- [العمل في Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/): تحرير الخطة وتقديرها وعرض فروقها والموافقة عليها
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/): التذكرة الأم التي يُثبَّت عليها التنسيق
+- [تنظيم العمل بالمشاريع](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/): حيث تُسجَّل التذكرة الأم
+- [مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/): شكل التنسيق بعد تجسيده داخل المحرّك
+- [بناء فريق وكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بناء-فريق/): الأدوار التي يملؤها التنسيق أو يعيّنها
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/)
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)

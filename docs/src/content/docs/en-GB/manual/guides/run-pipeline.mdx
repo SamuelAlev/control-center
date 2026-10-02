@@ -2,6 +2,7 @@
 title: Run a pipeline manually
 description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
 slug: en-GB/manual/guides/run-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
 This guide covers starting a run by hand. For watching one, reading step
@@ -35,14 +36,14 @@ Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
 `dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
 turn its switch on before looking for it here.
 
-There is no per-template **Run** action on the templates list and no run button
+There is no per-template **Run** action in the templates list and no run button
 inside the editor — the launcher is the only manual entry point.
 
 ## Fill in a repository input
 
 An input of type **Repository** renders a picker over the workspace's registered
 repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
+when the repo has a GitHub remote — `repo_owner` and `repo_name` in the run
 payload, so downstream steps can read whichever they need.
 
 ## Watch it run

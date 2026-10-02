@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Depo betikleri
+description: Bir alanın çalışma ağacına karşı çalışan, depo başına kurulum ve arşiv betikleri.
 slug: tr-TR/kilavuz/nasil-yapilir/depo-betikleri
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Depo betikleri, depo başına yapılandırdığınız (Ayarlar → Depolar → bir depo
+satırındaki terminal simgesi) ve Control Center sunucusunun o deponun **bir
+alanın çalışma ağacına** karşı çalıştırdığı shell betikleridir — ajanların
+çalıştığı, `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` altındaki
+yalıtılmış checkout.
 
-There are two kinds:
+İki türü vardır:
 
-| Script | When it runs | Use it for |
+| Betik | Ne zaman çalışır | Ne için kullanılır |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Kurulum** | Bir alan için çalışma ağacı hazırlandıktan hemen sonra | Bağımlılıkları yükleme, dosya üretme, `.env` kopyalama |
+| **Arşiv** | Bir çalışma ağacı yok edilmeden ya da çöp toplanmadan hemen önce | Çalışma ağacı dışındaki kaynakları temizleme (docker ağları, tüneller, harici durum) |
 
-## Where scripts run
+## Betikler nerede çalışır
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+İki betik de `bash -lc` ile (bir oturum açma kabuğu; böylece Homebrew/nvm ile
+kurulan araçlar `PATH` üzerinde olur), **çalışma dizini çalışma ağacı olacak
+şekilde** ve şu ortam değişkenleri tanımlı olarak çalışır:
 
-| Variable | Value |
+| Değişken | Değer |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Çalışma ağacı (betiğin cwd’si) |
+| `CC_ROOT_PATH` | Kayıtlı kaynak depo — kendi checkout’unuz |
+| `CC_SPACE_ID` | Çalışma ağacının ait olduğu alan |
+| `CC_SPACE_NAME` | Alanın görünen adı |
+| `CC_REPO_NAME` | Deponun görünen adı |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Örneğin, bağımlılıkları yükleyen ve deponun `.gitignore` ile dışlanan `.env`
+dosyasını içeri alan bir kurulum betiği:
 
 ```bash
 pnpm install
@@ -39,28 +41,32 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Başarısızlık davranışı
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Sıfırdan farklı bir kodla çıkan (ya da 5 dakikalık zaman aşımını aşan) bir
+  **kurulum** betiği, alanın hazırlanmasını başarısız kılar: alan, yeniden
+  deneme seçeneğiyle birlikte başarısız durumunu gösterir ve çalıştırmanın
+  çıktı son kısmı kaydedilir. Yeniden deneme, temiz bir çalışma ağacı hazırlar
+  ve betiği yeniden çalıştırır — kurulum betiklerini kısmi bir yüklemeden
+  sonra yeniden çalıştırmanın işleyeceği şekilde yazın (paket yöneticileri
+  zaten böyle davranır).
+- Bir **arşiv** betiği en iyi çaba esasıyla çalışır: bir başarısızlık (ya da
+  2 dakikalık zaman aşımı) kaydedilir ama **silmeyi asla engellemez**. Arşiv,
+  istemi yanıtlayacak kimsenin olmadığı GC yollarında çalışır (alan silindi,
+  PR birleştirildi, planlanmış temizlik).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Kurulum yalnızca **yeni** bir çalışma ağacında çalışır: ajanları sıcak bir
+alana yeniden göndermek mevcut checkout’u yeniden kullanır ve kurulumun
+bedelini yeniden ödemez.
 
-## Run history
+## Çalıştırma geçmişi
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Her yürütme; durumu, süresi, çıkış kodu ve sınırlı bir çıktı son kısmıyla
+kaydedilir ve aynı ayarlar iletişim kutusunda “Son çalıştırmalar” altında
+görünür (`repos.watchScriptRuns` aboneliği bunu canlı olarak akıtır).
 
-## Permissions
+## İzinler
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Betikler **sunucunun** yürüttüğü shell’dir; bu nedenle yazılmaları çalışma
+alanı yöneticileriyle sınırlıdır ve `processSpawn` eylem sınıfıyla korunur —
+süreç başlatan diğer tüm işlemleri kapılayan aynı koruma ağı.

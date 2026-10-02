@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Hledejte kód v grafu kódu
+description: Zaindexuj repozitář a nástroji grafu kódu najdi symboly a zjisti, co by změna rozbila.
 slug: cs-CZ/prirucka/navody/hledani-kodu
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Tenhle návod ukáže, jak dostat repozitář do grafu kódu a pak jím odpovědět na otázku, kterou před refaktorem opravdu máš: co na tom závisí?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Graf kódu je databáze symbolů a hran. Vzniká parsováním registrovaných checkoutů přes tree-sitter. Nástroje jsou **pro agenty**: dostaneš se k nim tak, že se agenta zeptáš.
 
-## Before you start
+## Než začneš
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Graf indexuje Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB a Ada. Soubory v jiném jazyce se neparsují, takže se neobjeví v `search_code`, `code_symbol`, `code_callers`, `code_callees` ani `code_impact`.
 
-Two more things shape what gets indexed:
+Co se dostane do indexu, určují ještě dvě věci:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- V git work tree se výčet řídí příkazem `git ls-files --cached --others --exclude-standard`, takže platí každé `.gitignore`, vnořený ignore soubor, `.git/info/exclude` i globální soubor vyloučení. Tím se z grafu drží `node_modules` a výstup sestavení.
+- Generovaný Dart se zahodí vždy. Generované soubory se obvykle commitnou, takže samotný git by je nevyloučil a při každém codegenu by se v indexu přepisovaly.
 
-## Get a repo indexed
+## Zaindexuj repozitář
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+Registrace checkoutu vyvolá `RepoAdded` a ta pro něj automaticky spustí pipeline `index_code`. Viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
 
-To re-index by hand:
+Když chceš indexovat znovu ručně:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Otevři **Nastavení → Pracovní prostor → Repozitáře**.
+2. Na řádku repozitáře klikni na tlačítko **Indexovat kód**.
+3. Po dobu běhu tlačítko ukazuje hotové soubory z celkového počtu a ovládání zrušení. Po dokončení se z něj stane zaškrtnutí s počtem symbolů.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Graf je rozdělený podle pracovního prostoru, repozitáře a checkoutu: navázaný checkout je jeden oddíl a worktree každého prostoru má vlastní (klíčem je id izolovaného repozitáře).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Dvě omezení stojí za to znát, protože vysvětlí čekání, které vypadá jako zaseknutí:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Sledování souborů pustí na hostiteli najednou jen **jeden** běh indexace. Druhý checkout čeká. Pipeline `index_code` má zvlášť strop jeden běh na pracovní prostor, takže dva repozitáře ve stejném pracovním prostoru čekají ve frontě. Různé pracovní prostory můžou indexovat paralelně. Indexer sám serializuje dva běhy **téhož** checkoutu, aby start pipeline a průchod sledovače souborů nemohly tentýž checkout rozparsovat dvakrát.
+- Worktree **nečinných prostorů** (žádná zpráva za poslední týden) se nesledují ani neindexují. Navázané checkouty se sledují dál. Rozhodnutí přeskočit se po pěti minutách znovu ověří, takže prostor, který se zase rozběhne, se do indexace dostane.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Chybějící gramatika zastaví server, ne hledání]
+Tree-sitter a jeho gramatiky jsou povinné nativní knihovny. Když jedna chybí, `cc_server` odmítne naběhnout a vypíše, který dylib chybí. Server kvůli tomu nenastartuje. Hledání se potichu nezhorší. Připrav je skriptem `scripts/natives/build_natives.sh` a binárku serveru znovu sestav.
 :::
 
-## Find a symbol
+## Najdi symbol
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Požádej agenta, ať hledá. Nástroj je `search_code` a potřebuje pracovní prostor i repozitář:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Id repozitářů bereš z `list_repos`. Volitelný argument `mode` je `keyword`, `semantic` nebo `hybrid` a výchozí je hybrid: BM25 nad názvy, signaturami a dokumentačními komentáři, sloučený s vektorovou podobností.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Každý výsledek nese id symbolu, název, kvalifikovaný název, druh, cestu k souboru, počáteční a koncový řádek a signaturu, když ji má. **Id** předáš každému dalšímu nástroji na téhle stránce.
 
-When you know the exact name, look it up directly instead:
+Když znáš přesný název, vyhledej ho rovnou:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Sleduj volání
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Oba berou `symbol_id` z výsledku hledání a volitelný `limit` (výchozí 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` vrátí symboly s příchozí hranou k tomuhle. `code_callees` vrátí ty, na kterých tenhle závisí.
 
-## Check what a change would break
+## Zjisti, co by změna rozbila
 
-This is the tool the whole page exists for:
+Na tenhle nástroj celá stránka míří:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Spočítá poloměr **zpětných** závislostí: všechno, co na symbolu závisí přímo nebo tranzitivně po hranách `calls`, `extends` a `implements` (importy, mixes-in a generické reference v grafu jsou, ale tady se po nich nechodí). `depth` je nejvyšší počet skoků, od 1 do 6, výchozí 2.
 
-The result is three fields:
+Výsledek má tři pole:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root`: symbol, na který ses ptal
+- `impacted`: dosažitelná množina včetně kořene v hloubce 0, každý se svým `depth` od kořene
+- `edgeCount`: kolik hran průchod překročil, jako počet, ne jako samotné hrany
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Spusť ho, než přejmenuješ symbol nebo změníš signaturu, a agentovi dej seznam zasažených jako rozsah.
 
-## Results are checked against the caller's own working copy
+## Výsledky se ověřují proti vlastní pracovní kopii volajícího
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Když volá agent, id prostoru se doplní samo a výsledky se ověří proti pracovní kopii **toho prostoru**. Symbol, jehož soubor ve stromu volajícího už není, se vynechá. Odpověď nese počet `staleOmitted` a poznámku, že index je pro ty symboly zastaralý.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Proto se tvoje odpověď a odpověď agenta na stejný dotaz můžou lišit, stejně jako odpovědi agentů ve dvou prostorech. Všechny konverzace v prostoru sdílejí jeden worktree. Při chybě ověření se propouští: zastaralá odpověď je lepší než prázdná.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/cs-CZ/prirucka/navody/vypocet-kontroly/).
+Až budeš chtět poloměr dopadu změny, požádej agenta, ať spustí `code_impact` (nebo `review_studio.blastRadius`). Viz [Výpočet kontroly](/cs-CZ/prirucka/navody/vypocet-kontroly/).
 
-## Semantic search needs the embedding model
+## Sémantické vyhledávání potřebuje model embeddingů
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Symboly a fakta dostanou vektor při zápisu, a jen když je nainstalovaný model embeddingů na zařízení. Do té doby nemá `mode: "semantic"` ani sémantická polovina hybridu proti čemu porovnávat a hledání je prakticky jen podle klíčových slov.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Model nainstaluj v **Nastavení → Server → Diagnostika a soukromí → Sémantické vyhledávání**, než začneš indexovat. Symbol dostane vektor, když se jeho soubor načte do indexu.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Každé nové sestavení binárky serveru navíc znovu připraví dyliby gramatik a změní jejich mtime. Tím zneplatní každý checkpoint indexu a při příštím běhu vynutí jeden úplný průchod každého checkoutu. Hashe se spočítají znovu, nezměněné soubory se znovu neextrahují.
 
-## What is in the graph
+## Co je v grafu
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Druhy symbolů:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Druhy hran:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
+Kanonické signatury těchhle nástrojů jsou na stránce [Nástroje MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
 
-## Related guides
+## Související návody
 
-- [Add repos to a workspace](/cs-CZ/prirucka/navody/pridani-repozitaru/)
-- [Review compute (cohorts and axes)](/cs-CZ/prirucka/navody/vypocet-kontroly/)
-- [Use the MCP server](/cs-CZ/prirucka/navody/mcp-server/)
+- [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/)
+- [Výpočet kontroly (kohorty a osy)](/cs-CZ/prirucka/navody/vypocet-kontroly/)
+- [Používejte MCP server](/cs-CZ/prirucka/navody/mcp-server/)
 
-## Related concepts
+## Související koncepty
 
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/)

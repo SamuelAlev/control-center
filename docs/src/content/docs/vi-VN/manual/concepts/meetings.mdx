@@ -1,213 +1,222 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Cuộc họp và phiên âm
+description: Cách Control Center ghi âm một cuộc gọi, phiên âm và phân tách người nói ngay trên máy chủ, cùng chỗ của bước duy nhất rời khỏi máy chủ lưu trữ.
 slug: vi-VN/so-tay/khai-niem/cuoc-hop
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center có thể ghi âm một cuộc gọi và trả lại cho bạn một bản ghi chép
+gọn gàng — tóm tắt, mục hành động và quyết định — với nhận dạng giọng nói và
+phân tách người nói chạy trên chính phần cứng của bạn. Cứ nghĩ đến Granola,
+nhưng tự lưu trữ và được nối vào đúng không gian làm việc mà các agent của bạn
+đang sống.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Ghi âm cần một mô hình giọng nói và một lần khởi động lại máy chủ]
+Việc ghi âm và đọc chính tả chỉ bắt đầu sau khi có một mô hình giọng nói (ASR)
+trên đĩa **và** máy chủ đã được khởi động lại. Một lần khởi động bình thường sẽ
+cài đặt bắt buộc mô hình đã chọn (mặc định là Parakeet TDT 0.6B v3) trong nền,
+nhưng máy chủ phân giải đường dẫn mô hình giọng nói đúng một lần gần đầu quá
+trình khởi động — sớm hơn vài phút so với lúc bản tải về kịp hoàn tất. Sau khi
+mô hình báo đã cài đặt, hãy khởi động lại `cc_server`. Để chọn một bản dựng
+khác, dùng Cài đặt → Máy chủ → Mô hình giọng nói & cuộc họp — thao tác đó cũng
+cần một lần khởi động lại.
 :::
 
-## What a meeting is
+## Cuộc họp là gì
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/vi-VN/so-tay/khai-niem/lich/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Một **cuộc họp** là một phiên đã được ghi âm và phiên âm. Nó _không_ phải là
+một [sự kiện trên lịch](/vi-VN/so-tay/khai-niem/lich/): sự kiện là một cam kết
+đã lên lịch được đồng bộ từ Google, còn cuộc họp là thứ bạn thực sự đã ghi lại.
+Hai thứ có thể được liên kết, vì bạn có thể bắt đầu ghi từ một sự kiện, nhưng
+chúng vẫn là hai bản ghi riêng biệt.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Mọi cuộc họp đều thuộc phạm vi không gian làm việc, giống mọi thứ khác trong
+Control Center. Cuộc họp được ghi trong một không gian làm việc không bao giờ
+xuất hiện ở một không gian làm việc khác.
 
-## Where the work happens
+## Công việc diễn ra ở đâu
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+“Trên thiết bị” là trực giác đúng nhưng sai cách gọi. Máy khách thu âm thanh và
+truyền các khung PCM16 16 kHz tới **máy đang chạy `cc_server`**. Máy chủ đó làm
+mọi việc còn lại: nó ghi các tệp WAV theo từng kênh vào
+`<dataDir>/meetings/<meetingId>/`, phiên âm trong một isolate worker, lọc tiếng
+vọng và phân tách người nói sau đó. Trên một máy để bàn độc lập, máy chủ đó cũng
+chính là máy đó. Khi trỏ tới một máy chủ từ xa thì không phải vậy — nên câu
+“không gì rời khỏi laptop của tôi” chỉ đúng khi máy chủ chính là laptop của bạn.
 
-There is one further exception and it is the important one.
+Còn một ngoại lệ nữa và đó là ngoại lệ quan trọng.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Bản tóm tắt rời khỏi máy chủ lưu trữ]
+Bản ghi và ghi chú của bạn được gửi tới bất kỳ nhà cung cấp mô hình nào mà agent
+tóm tắt được cấu hình trỏ tới. Với bất kỳ nhà cung cấp đám mây nào, điều đó
+nghĩa là toàn bộ bản ghi đi tới API của nhà cung cấp đó. Nếu bản ghi không được
+phép rời khỏi máy chủ lưu trữ, hãy trỏ agent tóm tắt tới một endpoint cục bộ
+(Ollama, LM Studio hoặc một máy chủ cục bộ khác).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Mọi thứ trước bản tóm tắt — thu âm, phiên âm, khử vọng, phân tách người nói,
+khớp dấu giọng — đều chạy trên máy chủ mà không cần gọi mạng.
 
-## Which models ship
+## Những mô hình nào đi kèm sẵn
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Các mô hình **embedding, phân tách người nói và giọng nói (ASR)** được cài đặt
+bắt buộc ở lần khởi động đầu tiên (bị bỏ qua ở bản demo), nên việc phân tách
+người nói và ghi âm đã sẵn có mà bạn không cần ghé vào phần cài đặt. ASR vẫn
+**có thể chọn** — nó nặng vài trăm megabyte và có bốn bản dựng trong bộ chọn.
+Sau lần tải về đầu tiên đó, mô hình giọng nói vẫn cần một lần khởi động lại, vì
+bộ phiên âm phân giải mô hình của nó trước khi quá trình tải về kịp hoàn tất.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Bốn mục trong bộ chọn, khác nhau về kích thước, độ phủ ngôn ngữ và độ chính xác:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — đa ngôn ngữ, mặc định được khuyến nghị (~600 MB)
+- Parakeet TDT 0.6B v2 — tiếng Anh (~480 MB)
+- Whisper large-v3-turbo — đa ngôn ngữ (~626 MB)
+- Whisper base.en — chỉ tiếng Anh, mặc định cũ nhỏ gọn (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Mô hình là thứ duy nhất máy chủ tải về lúc chạy; mọi thư viện gốc đều có sẵn
+trong gói.
 
-## How capture works
+## Cách hoạt động của việc thu âm
 
-A meeting records **two audio channels at once**:
+Một cuộc họp ghi **hai kênh âm thanh cùng lúc**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Bạn (“me”)**: micro của bạn.
+- **Họ (“them”)**: đầu ra âm thanh của cuộc họp, được thu bằng một loopback
+  không cần trình điều khiển — các bộ tap process/device của Core Audio trên
+  macOS, loopback WASAPI trên Windows, một monitor PipeWire / PulseAudio trên
+  Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Vì hai kênh được thu riêng, bản ghi được gán người nói ngay từ đầu: lời của bạn
+được gắn thẻ `me`, còn mọi người trong cuộc gọi được gắn thẻ `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Giọng của chính bạn rò từ đầu ra hệ thống trở lại micro và nếu không xử lý sẽ bị
+phiên âm hai lần. Hai bộ lọc ngăn điều đó. **AEC3 ở mức tín hiệu chạy trên mọi
+bản ghi ở chế độ từ xa và là bắt buộc** — nếu thư viện AEC gốc không tải được,
+bản ghi sẽ từ chối khởi động thay vì âm thầm truyền một micro lẫn tiếng vọng.
+(Chế độ gặp trực tiếp không có tín hiệu đầu xa nào để khử, nên ở đó AEC chỉ là
+một bước chuyển tiếp nguyên vẹn.) Trên hết, một bộ lọc tiếng vọng ở mức văn bản
+phía máy chủ chạy trên mọi nền tảng.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Mọi xử lý micro ở cấp hệ điều hành đều bị tắt có chủ đích. Bật tính năng khử
+vọng hoặc tự động tăng âm của chính nền tảng trên macOS sẽ chuyển micro sang
+Voice Processing I/O, và trong bản dựng này, điều đó giết chết cả micro _lẫn_ bộ
+tap âm thanh hệ thống.
 
-## Transcription and diarization
+## Phiên âm và phân tách người nói
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Trong khi bạn ghi, âm thanh được giải mã theo **cửa sổ trượt** — cắt tại một
+khoảng lặng ngắn ở cuối hoặc tại độ dài cửa sổ tối đa — bên ngoài luồng UI. Mỗi
+cửa sổ trở thành một phân đoạn bản ghi có gắn thẻ người nói kèm mốc lệch mili
+giây.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Những cửa sổ không bao giờ vượt ngưỡng RMS sẽ bị bỏ qua **mà hoàn toàn không
+được giải mã**, vì mô hình giọng nói biến khoảng lặng thành các token ảo giác
+không phải tiếng nói và việc giải mã chỉ tốn CPU vô ích. Hệ quả thực tế: một
+người nói liên tục rất nhỏ sẽ không tạo ra bản ghi nào. Nếu ai đó trở về tay
+trắng, hãy kiểm tra mức đầu vào của họ trước khi đổ lỗi cho mô hình.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Sau khi bạn dừng, **phân tách người nói** chạy ngoại tuyến trên bản ghi âm và
+tách kênh từ xa thành từng người nói riêng (`Person 1`, `Person 2`, …) mà bạn có
+thể đổi tên. Số lượng người nói được suy ra từ một ngưỡng phân cụm chứ không từ
+con số bạn đặt — nên đó là hệ quả của ngưỡng và một người nói nhỏ hoặc nói chồng
+lấn có thể bị gộp vào người bên cạnh. Bản ghi được hiển thị thành các dòng
+`[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Hồ sơ giọng nói
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Đổi tên một người nói không chỉ là dán nhãn cho một bản ghi. Control Center có
+thể lưu dấu giọng của người nói thành một **hồ sơ giọng nói**, để tự động nhận
+ra họ trong những cuộc họp sau. Khi bạn đặt tên cho một người nói đã được phân
+tách, bạn được hỏi có muốn lưu dấu giọng hay không; nếu lưu, dấu giọng được hòa
+vào một trọng tâm động cho tên đó và được đối chiếu với những người nói mới bằng
+độ tương đồng cosine, nên lần sau chính người đó sẽ hiện ra kèm tên mà bạn không
+phải gán nhãn lại.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Hồ sơ giọng nói thuộc phạm vi không gian làm việc và không bao giờ vượt qua ranh
+giới đó. Quản lý chúng tại **Cài đặt → Không gian làm việc → Cuộc họp**. Đổi tên
+một người nói đã được lưu trước đó sẽ hủy đăng ký tên cũ và đề nghị đăng ký tên
+mới; xóa một hồ sơ sẽ gỡ dấu giọng đã lưu nhưng giữ nguyên mọi tên đã áp dụng
+cho các cuộc họp trước đó.
 
-## The summary pipeline
+## Quy trình tóm tắt
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/vi-VN/so-tay/khai-niem/su-kien-mien/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Khi một bản ghi âm dừng lại, máy chủ phát ra một
+[sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) `MeetingRecordingStopped`.
+Mẫu quy trình **`meeting_summary`** tích hợp sẵn được kích hoạt bởi sự kiện đó.
+Bộ ghi âm không chờ nó; cuộc họp chỉ chuyển qua vòng đời trạng thái của mình:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Agent tóm tắt nhận tiêu đề, ghi chú trực tiếp thô của bạn và bản ghi, rồi trả về
+**JSON có cấu trúc**. Những mục mà nó viết được định hình bởi **mẫu ghi chú cuộc
+họp đang hoạt động** của không gian làm việc (Cài đặt → Không gian làm việc →
+Cuộc họp); mẫu đang hoạt động áp dụng cho cả tóm tắt mới lẫn tóm tắt chạy lại.
+Các bước lưu trữ của quy trình sau đó ghi JSON đó thành những hàng riêng biệt:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` và `summary` → ghi chú của cuộc họp
+- mỗi mục hành động → một hàng `MeetingActionItem` (nội dung, người phụ trách, liên kết phiếu tùy chọn)
+- mỗi quyết định → một hàng `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Mục hành động và quyết định **không bao giờ** được trích ra từ markdown dạng tự
+do, mà chỉ từ các mảng có cấu trúc của agent. Nếu một lần chạy không tạo ra đầu
+ra có cấu trúc, các bước lưu trữ bị bỏ qua và bản ghi thô được giữ làm phương án
+dự phòng, nên bạn không bao giờ mất bản ghi. Không có gì trong quy trình đánh
+dấu cuộc họp là `done` — chỉ một bộ hòa giải duy nhất làm việc đó dựa trên sự
+kiện kết thúc của lần chạy, nên một bước cùng cấp thất bại không thể để lại một
+cuộc họp viết dở mà trông như đã hoàn tất.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agent không thể đọc cuộc họp của bạn]
+Không có công cụ MCP nào cho cuộc họp hay lịch. Một agent kết nối qua
+[MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/) không thể liệt kê cuộc họp,
+đọc bản ghi hay thấy mục hành động và quyết định — dữ liệu đó chỉ đến các máy
+khách dành cho người qua RPC. Các quyết định vẫn đến được với agent một cách
+gián tiếp, dưới dạng các sự kiện bộ nhớ trong miền `decisions`.
 :::
 
-## Where meetings show up
+## Cuộc họp xuất hiện ở đâu
 
-| Surface                | What it shows                                                                         |
+| Nơi xuất hiện          | Nội dung hiển thị                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | Danh sách cuộc họp, kèm số lượng mục hành động và quyết định                          |
+| `/meetings/record`     | HUD ghi âm trực tiếp: ghi chú của bạn ở một bên, bản ghi đang truyền ở bên kia        |
+| `/meetings/:meetingId` | Chi tiết một cuộc họp: các tab Ghi chú, Bản ghi, Mục việc và Quyết định                |
+| Cài đặt → Không gian làm việc → Cuộc họp | Mẫu ghi chú và hồ sơ giọng nói đã lưu cho không gian làm việc này      |
 
-## Platform support
+## Hỗ trợ nền tảng
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Việc thu âm không cần trình điều khiển trên cả ba nền tảng máy để bàn (các bộ
+tap Core Audio trên macOS, WASAPI trên Windows, PipeWire trên Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Máy khách web cũng ghi âm**, điều mà cách trình bày thiên về máy để bàn ở phần
+còn lại của trang này có thể che khuất: trình duyệt lấy micro của bạn qua
+`getUserMedia` và âm thanh cuộc họp qua `getDisplayMedia` (chia sẻ màn hình), hạ
+mẫu xuống PCM16 16 kHz rồi truyền tới cùng máy chủ đó. Ở đó có ba lưu ý:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Bề mặt được chia sẻ **buộc phải** mang một track âm thanh. Chia sẻ toàn màn
+  hình trên Safari, Firefox và macOS không tạo ra track nào và bản ghi âm sẽ từ
+  chối khởi động.
+- Không có AEC3 gốc. Tính năng khử vọng của chính trình duyệt được yêu cầu trên
+  micro; bộ lọc tiếng vọng ở mức văn bản phía máy chủ vẫn chạy. HUD hiển thị một
+  đồng hồ đo mức đầu vào lấy từ PCM của micro.
+- Chạy lại tóm tắt và hủy xử lý chỉ có trên máy tính.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Hành động **Bắt đầu ghi & liên kết** của lịch chỉ có trên máy tính và báo rõ
+điều đó trên web, dù luồng ghi âm của chính màn hình cuộc họp vẫn hoạt động ở
+đó.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Xóa một cuộc họp để lại âm thanh phía sau]
+Xóa một cuộc họp chỉ gỡ các hàng trong cơ sở dữ liệu của nó. Thư mục âm thanh
+theo từng kênh được giữ lại `<dataDir>/meetings/<meetingId>/` không bao giờ được
+dọn — không có chính sách lưu giữ, giới hạn dung lượng hay đợt GC nào cho nó.
+Thu hồi dung lượng đĩa đó là việc thủ công trên máy chủ lưu trữ.
 :::
 
-## See also
+## Xem thêm
 
-- [Calendar and scheduling](/vi-VN/so-tay/khai-niem/lich/): record a meeting straight from a calendar event
-- [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/): the engine behind `meeting_summary`
-- [Tickets and delegation](/vi-VN/so-tay/khai-niem/phieu/): link a meeting's action items to tickets
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/)
+- [Lịch và lên lịch](/vi-VN/so-tay/khai-niem/lich/): ghi một cuộc họp trực tiếp từ một sự kiện trên lịch
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/): bộ máy đằng sau `meeting_summary`
+- [Phiếu và ủy thác](/vi-VN/so-tay/khai-niem/phieu/): liên kết các mục hành động của cuộc họp với phiếu
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): `MeetingRecordingStopped` và `MeetingStartingSoon`
+- [Ghi và tóm tắt một cuộc họp](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/)

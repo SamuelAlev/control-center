@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: ایجنٹ کا ٹول کانٹیکسٹ ایڈجسٹ کریں
+description: معائنہ کریں کہ ایک رن اصل میں کیا بھیجتا ہے، یہ بدلیں کہ کون سے ٹولز شروع میں لوڈ ہوں، اور معلوم کریں کہ خراب ٹول کا انتخاب ریٹریول مس تھا یا پرامپٹ کا مسئلہ۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹول-کانٹیکسٹ-ایڈجسٹ-کریں
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ).
+یہ گائیڈ دو درجوں والی ٹول سطح کے گرد عملی کام کا احاطہ کرتی ہے: یہ دیکھنا کہ ایک رن اصل میں کیا بھیجتا ہے، اُسے بدلنا، اور ایسے ایجنٹ کی تشخیص کرنا جس نے غلط ٹول اُٹھایا۔ یہ اِس طرح کیوں کام کرتا ہے، یہ جاننے کے لیے [ٹول کانٹیکسٹ اور پرامپٹ کیشنگ](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ) پڑھیں۔
 
-## Look at what a run actually sends
+## دیکھیں کہ ایک رن اصل میں کیا بھیجتا ہے
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+کوئی گفتگو کھولیں اور گفتگو کے ہیڈر میں کانٹیکسٹ استعمال کے اشارے پر ٹیپ کریں۔ یہ بالکل وہی سطح دوبارہ بناتا ہے جو اگلا ڈسپیچ بھیجے گا، بغیر کچھ چلائے۔ **مزید دیکھیں** (یا `/context` کمانڈ) مکمل کانٹیکسٹ ایکسپلورر کھولتا ہے، جہاں آپ ہر ٹول کا جائزہ لے سکتے ہیں۔
 
-Two segments matter here:
+یہاں دو حصے اہم ہیں:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **ٹول تعریفیں** اور **MCP اور ڈائنامک ٹولز** — ریذیڈنٹ مجموعہ، ہر ٹول کی اصل ٹوکن لاگت کے ساتھ۔
+- **طلب پر لوڈ ٹولز** — طلب پر لوڈ انڈیکس۔ ہر اندراج پر صرف اُس کے نام کا معاوضہ پڑتا ہے، کیونکہ درخواست میں نام ہی جاتا ہے؛ کسی اندراج کو کھولنے پر پھر بھی مکمل تفصیل اور اسکیما دکھائی دیتی ہے، تاکہ آپ دیکھ سکیں کہ اگر رن اُسے اندر کھینچ لے تو *کیا* لاگت پڑے گی۔
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli).
+اگر طلب پر لوڈ حصہ خالی ہو، تو اِس سرور کے لیے طلب پر لوڈ بند ہے۔ [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli) پر `--tool-deferral` دیکھیں۔
 
-## Change which tools load up front
+## یہ بدلیں کہ کون سے ٹولز شروع میں لوڈ ہوں
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+ریذیڈنٹ مجموعہ پالیسی ہے، کنفیگریشن نہیں — یہ `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) میں رہتا ہے اور ہر رن پر لاگو ہوتا ہے:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ur-PK/ہدایت-نامہ/تصورات/موڈز) uses on nearly every turn.
+- `residentBuiltins` — فائل اور شیل کے الفاظ کا مجموعہ۔
+- `residentDiscovery` — `search_tools` اور `list_my_tools`۔ اِنہیں ہٹائیں نہیں؛ ایجنٹ اِنہی کے ذریعے باقی سب تک پہنچتا ہے۔
+- `residentMcpTools` — وہ مٹھی بھر Control Center ٹولز جو ہر درخواست پر اپنے اسکیما کے قابل ہیں۔
+- فی موڈ ایک بلاک، اُن ٹولز کے لیے جو کوئی دیا گیا [موڈ](/ur-PK/ہدایت-نامہ/تصورات/موڈز) تقریباً ہر باری میں استعمال کرتا ہے۔
 
-Two rules when editing it:
+اِسے ترمیم کرتے وقت دو اصول:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**ٹول صرف اُسی صورت میں شامل کریں جب زیادہ تر رنز اُسے استعمال کرتے ہوں۔** ہر نام کی قیمت اُس کے اسکیما کی صورت میں ہر رن کی ہر درخواست پر ہمیشہ پڑتی رہتی ہے۔ ایسا ٹول جو استعمال ہونے پر اہم ہو مگر مجموعی طور پر کم ہو، طلب پر لوڈ والے حصے میں رکھا جانا چاہیے — ایجنٹ اُسے پھر بھی ڈھونڈ لے گا۔
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**ٹول کا اصل نام استعمال کریں۔** ایسا ریذیڈنٹ نام جو کسی ٹول سے نہ ملے، بےاثر ہوتا ہے: نہ کوئی خرابی، نہ کوئی انتباہ، ٹول محض طلب پر لوڈ ہو جاتا ہے۔ `test/tooling/resident_tool_names_test.dart` اِسے پکڑ لیتا ہے اور یہ بھی یقینی بناتا ہے کہ ہر موڈ 40 ریذیڈنٹ ٹولز سے کم رہے، اور بات بھی یہی ہے — اُس حد سے آگے ٹول کا انتخاب قابلِ پیمائش حد تک بگڑ جاتا ہے۔
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+کسی موڈ کے لازمی اور پن شدہ فعل خودکار طور پر شامل ہو جاتے ہیں، اس لیے آپ کو موڈ کا اپنا آؤٹ پٹ فعل کبھی درج کرنے کی ضرورت نہیں۔
 
-## Diagnose a bad tool choice
+## غلط ٹول کے انتخاب کی تشخیص کریں
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+جب کسی ایجنٹ نے غلط ٹول استعمال کیا یا دعویٰ کیا کہ وہ کوئی کام نہیں کر سکتا، تو معلوم کریں کہ تین چیزوں میں سے کون سی ہوئی۔
 
-### 1. Did it look?
+### 1. کیا اُس نے دیکھا؟
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+ہر رن ریکارڈ کرتا ہے کہ اُس نے کون سے طلب پر لوڈ ٹولز لوڈ کیے اور اُسے کس چیز نے متحرک کیا — نام لے کر براہِ راست کال، یا کوئی `search_tools` استفسار۔ رن کا ایونٹ اسٹریم کھولیں (**ترتیبات → ورک اسپیس → ایجنٹس** → ایجنٹ → **لاگز** → **دیکھیں**) اور `[harness] loaded N deferred tool(s)` ڈھونڈیں۔
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **کچھ لاگ نہیں ہوا، اور ایجنٹ نے کہا کہ قابلیت موجود نہیں** — اُس نے کبھی دیکھا ہی نہیں۔ یہ پرامپٹ کا مسئلہ ہے، ریٹریول کا نہیں: طلب پر لوڈ انڈیکس اُس کے سسٹم پرامپٹ میں موجود ہوتا ہے، اِس ہدایت کے ساتھ کہ جب تک کوئی تلاش خالی واپس نہ آئے، کسی قابلیت کو غائب قرار نہ دے۔
+- **تلاش لاگ ہوئی، مگر کچھ لوڈ نہیں ہوا** — یہ واقعی ریٹریول مس ہے۔ قدم 2 پر جائیں۔
+- **ٹولز لوڈ ہوئے، غلط استعمال ہوا** — جن ٹولز کو اُس نے پایا وہ بہت زیادہ ہم شکل ہیں۔ قدم 3 پر جائیں۔
 
-### 2. Fix a retrieval miss
+### 2. ریٹریول مس ٹھیک کریں
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` ناموں، تفصیلات اور آرگیومنٹ ناموں پر مماثلت کرتا ہے۔ مس کا مطلب تقریباً ہمیشہ یہ ہوتا ہے کہ تفصیل میں وہ الفاظ نہیں جو ایجنٹ نے استعمال کیے۔
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+وہ شامل کریں۔ تفصیلات ہی ریٹریول انڈیکس ہیں، اس لیے **اُنہیں چھوٹا کرنے کے بجائے لمبا کریں** — وہی الفاظ لکھیں جو ایک آپریٹر واقعی ٹائپ کرے گا ("assign"، "hand off"، "give to")، نہ کہ صرف اندرونی اسم۔ ٹوکنز بچانے کے لیے تفصیل کاٹنا آپ کو تلاش کی کامیابی اور انتخاب کی درستگی، دونوں سے محروم کرتا ہے، اور اسکیما کے مقابلے میں تقریباً کچھ بچاتا بھی نہیں۔
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+اگر صحیح ٹول موجود ہو مگر درجہ بندی میں نیچے ہو، تو `limit` آرگیومنٹ اسی لیے ہے؛ ٹول کی اپنی تفصیل ایجنٹ کو بتاتی ہے کہ ایسی تلاش کو وسیع کرے جو قریب لگے مگر چوک جائے۔
 
-### 3. Fix look-alike tools
+### 3. ہم شکل ٹولز ٹھیک کریں
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+اگر دو ٹولز کی تفصیلات ایسے شخص کے لیے ایک جیسی پڑھی جائیں جو پہلے سے فرق نہ جانتا ہو، تو ماڈل اندازہ لگا رہا ہے۔ اُنہیں ایک ایسے ٹول میں ضم کریں جس میں فرق کرنے والا ایک آرگیومنٹ ہو۔
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` اور `ticket_pr_link` اسی نمونے کی پیروی کرتے ہیں: ہر ایک لنک کرنا اور لنک ہٹانا ایک فرق کرنے والے آرگیومنٹ کے ذریعے سنبھالتا ہے۔ ایک کال کے *اندر*، درخواست کے مکمل کانٹیکسٹ کے ساتھ کیا گیا انتخاب، دو ہم شکل تفصیلات کے درمیان کیے گئے انتخاب سے زیادہ قابلِ اعتماد ہوتا ہے۔
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+ٹولز الگ رکھیں جب اُنہیں مختلف منظوری گیٹنگ، مختلف آڈٹنگ یا مختلف رینڈرنگ درکار ہو — یہ ایسی وجوہات ہیں جن کی بنا پر ضم کرنا آپ کو واقعی کچھ مہنگا پڑے گا۔
 
-## Check the prompt cache is working
+## جانچیں کہ پرامپٹ کیش کام کر رہا ہے
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+کیش ہٹ ریٹ **آبزرویبلٹی → بصیرتیں** میں **کیش ریٹ** کے طور پر نظر آتا ہے۔ ایک صحت مند، طویل چلنے والی گفتگو اُونچی سطح پر رہتی ہے؛ اگر یہ مسلسل کم رہے، تو کوئی چیز ہر باری میں پریفکس دوبارہ لکھ رہی ہے۔
 
-Common causes, in order of likelihood:
+عام وجوہات، امکان کی ترتیب سے:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **پرامپٹ کے شروع میں کوئی بھی غیر متعین چیز۔** ایک ٹائم اسٹیمپ، درخواست کی ایک آئی ڈی، یا کوئی سیٹ جس پر مختلف ترتیب سے تکرار ہو، یہ کر ڈالے گی۔
+- **گفتگو کے بیچ ماڈل یا ریزننگ کے زور کی تبدیلی۔** دونوں پریفکس بدل دیتے ہیں۔ سب ایجنٹس کے ساتھ یہاں غلطی خاصی آسان ہے: پیسے بچانے کے لیے بچوں کو کم ریزننگ زور پر چلانا، کھوئی ہوئی کیش شیئرنگ کی صورت میں اُس سے زیادہ مہنگا پڑ سکتا ہے جتنے وہ بچاتا ہے۔
+- **بار بار کمپیکشن۔** کمپیکشن اپنی بناوٹ ہی میں تاریخ دوبارہ لکھتا ہے، اس لیے اُس کی لاگت حقیقی ہے؛ حل یہ ہے کہ کم اور گہرا کمپیکٹ کریں، بار بار اور ہلکا نہیں۔
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+`--tool-deferral=off` سے طلب پر لوڈ بند کرنا ایک جائز A/B ہے، اس بات کو الگ کرنے کے لیے کہ کسی رویے کی تبدیلی دو درجوں والی سطح سے آئی یا نہیں۔ یہ طلب پر لوڈ سے پہلے کی درخواست بالکل ویسی ہی دوبارہ بناتا ہے، اس لیے اگر اُسے بند رکھنے پر بھی رویہ برقرار رہے، تو سطح اُس کی وجہ نہیں۔

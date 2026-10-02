@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: تصحيح اختبار فاشل مع وكيل
+description: اطلب من وكيل أن يضع نقطة توقف، ويطلق تحت المصحّح، ويقرأ إطار مكدس حقيقي بدل إضافة عبارات طباعة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تصحيح-اختبار-فاشل
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+يبيّن هذا الدليل كيف تجعل وكيلًا يستخدم المصحّح لفشل تعجز عبارات الطباعة عن تفسيره.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+تقود أداة `debug` جلسة Debug Adapter Protocol حقيقية. يجيب الإطار المتوقف دفعة واحدة عن أسئلة تلك اللحظة كلها — كل متغير محلي، وكل مستدعٍ، وتعبير يُقيَّم في نطاق الإطار نفسه — بينما لا تجيب عبارة الطباعة إلا عن السؤال الذي خطر لك أن تسأله قبل التشغيل.
 
-## Before you start
+## قبل أن تبدأ
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+تبقى الأداة معروضة ليتسنى للوكيل أن يسأل لماذا لا شيء صالح للاستخدام، بدل أن يخمّن. لا يبدأ المحوّل فعلًا إلا إذا تحقّق **الشرطان معًا**:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- علامة جذر في نسخة العمل،
+- وحلّ مسار ثنائي المحوّل.
 
-Ask the agent to check:
+اطلب من الوكيل أن يفحص:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+يجيب بما وجده، أو يشرح أن المحوّل يحتاج إلى الشقين معًا.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| اللغة | المحوّل | العلامة | التثبيت |
+| --- | --- | --- | --- |
+| Dart / Flutter | `dart debug_adapter` | `pubspec.yaml` | يأتي مع SDK — لا شيء يلزم |
+| Python | `python3 -m debugpy.adapter` | `pyproject.toml`، `setup.py`، `requirements.txt` | `pip install debugpy` |
+| Rust / C / C++ | `lldb-dap` | `Cargo.toml`، `CMakeLists.txt` | يأتي مع LLVM |
+| Go | `dlv dap` | `go.mod` | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python يختار مفسّر المشروع]
+يُبحث عن `debugpy` في `.venv/bin` أو `venv/bin` قبل `$PATH`. Python على `$PATH` بيئة مختلفة، والإرفاق من البيئة الخاطئة يفشل بصورة تُقرأ على أنها شفرة معطّلة لا مفسّر خاطئ.
 :::
 
-## Set the breakpoint first, then launch
+## ضع نقطة التوقف أولًا، ثم أطلق
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+الترتيب مهم، والأداة تفرضه: يجوز وضع نقاط التوقف **قبل** أن توجد جلسة، لأن هذا هو التسلسل الذي يقتضيه البروتوكول.
 
-Ask the agent something like:
+اطلب من الوكيل شيئًا كهذا:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> الدالة `compute` في `bin/main.dart` تعيد القيمة الخطأ. ضع نقطة توقف على سطر إسناد `product`، وأطلق البرنامج تحت المصحّح، وأخبرني ما قيمة `a` و`b` فعلًا.
 
-It will run roughly:
+سينفّذ تقريبًا:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+يبلّغ الإطلاق أين توقف:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[إن بلّغ بخروج البرنامج بدل ذلك]
+لم ترتبط نقطة التوقف. السطر الفارغ، أو التعليق، أو ما لم يُصرَّف في البناء، لا يحمل نقطة توقف. استدعاء `breakpoints` على جلسة قائمة يبلّغ بعدد ما وُضع فعلًا من النقاط التي عيّنتها.
 :::
 
-## Read the frame
+## اقرأ الإطار
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+ثم انزل إليه:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+يبلّغ الكائن ذو الأبناء `[expand: reference N]`، ولا يفعل إلا حين يوجد خلفه شيء فعلًا، فلا يُعرَض توسيع يعجز الوكيل عن استخدامه.
 
-For anything not visible as a local:
+ولكل ما لا يظهر كمتغير محلي:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## تقدّم خطوة بخطوة
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| ما تريده | العملية |
+| --- | --- |
+| المتابعة حتى التوقف التالي | `continue` |
+| السطر التالي، في الإطار نفسه | `step_over` |
+| الدخول إلى الاستدعاء | `step_in` |
+| الخروج إلى المستدعي | `step_out` |
+| إيقاف برنامج قيد التشغيل | `pause` |
 
-## Attach to something already running
+## أرفق بما يعمل أصلًا
 
-For a wedged process rather than one you are starting:
+لعملية عالقة، لا لعملية تبدأها أنت:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## الإنهاء
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+أنهِ الجلسة دائمًا. يملك محوّل التصحيح **عملية متوقفة** تحتفظ بما تحتفظ به تلك العملية — منفذ، وقفل، واتصال بقاعدة بيانات.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[لا يفلت منك]
+لكل جلسة مهلة TTL صارمة تعجز عن تمديدها، ولا توجد إلا واحدة لكل محادثة، ويُفكَّك كل شيء حين يتوقف الخادم. يُرفَض `launch` ثانٍ بدل أن يحل محل الأول: الوكيل الذي يبدأ واحدة من غير إنهاء الأخرى قد فقد أثر الأولى على الأرجح.
 :::
 
-## Bounded output
+## خرج محدود
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+توسيع `variables` على شبكة كائنات عميقة غير محدود بطبيعته — ودجت Flutter واحد يصل إلى شجرة العناصر كلها. يُحَدّ الأبناء في كل نطاق بـ 50، والقيم بـ 400 حرف، وإطارات المكدس بـ 30. نتيجة أداة تملأ نافذة السياق تنهي التشغيل الذي كانت تساعده.
 
-## Related
+## انظر أيضًا
 
-- [Code intelligence](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — every `debug` op and argument
-- [Diagnose an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/) — when the problem is the agent, not the code
+- [ذكاء الشفرة](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/): لماذا يجيب المصحّح والمُصرِّف والمُطابِق عن أسئلة مختلفة
+- [أدوات الوكيل المضمّنة](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/): كل عملية `debug` ووسائطها
+- [تشخيص وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/): حين تكون المشكلة في الوكيل لا في الشفرة

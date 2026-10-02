@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: ٹکٹس بنائیں اور منظم کریں
+description: ٹکٹس بنائیں، اُنہیں اُن کے لائف سائیکل سے گزارئیں، لیبل اور لنک لگائیں اور یہ درج کریں کہ کس کے پاس کیا ہے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+یہ گائیڈ دکھاتی ہے کہ ٹکٹس کیسے بنائے اور منظم کیے جائیں۔
 
-## Create a ticket
+## ٹکٹ بنائیں
 
-### From the UI
+### UI سے
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. ورک اسپیس سائیڈ بار میں **ٹکٹس** پر کلک کریں۔
+2. **نیا ٹکٹ** دبائیں۔
+3. یہ بھریں:
+   - **عنوان** — مختصر خلاصہ۔ یہ واحد لازمی فیلڈ ہے۔
+   - **تفصیل** — markdown، فارمیٹنگ ٹول بار کے ساتھ۔
+   - **اسٹیٹس** — **کرنا ہے** (ڈیفالٹ) یا **بیک لاگ**۔ شروع شدہ اور ٹرمینل
+     حالتیں لائف سائیکل کے ذریعے پہنچتی ہیں، تخلیق کے وقت نہیں۔
+   - **ترجیح** — کوئی نہیں، فوری، زیادہ، درمیانہ یا کم۔
+   - **تفویض شدہ** — خود آپ یا ورک اسپیس کا کوئی بھی ایجنٹ۔
+   - **پروجیکٹ** — اختیاری گروہ بندی۔
+4. **بنائیں** دبائیں، یا تیز اندراج کے لیے پہلے **مزید بنائیں** آن کریں تاکہ
+   ڈائیلاگ کھلا رہے۔
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+ڈائیلاگ میں کوئی فراہم کنندہ پکر نہیں ہوتا۔ ٹکٹ ورک اسپیس کے فعال ٹکٹ فراہم
+کنندہ کے خلاف بنایا جاتا ہے۔
 
-### From an agent
+### ایجنٹ کی طرف سے
 
-Ask an agent in a space:
+کسی اسپیس میں کسی ایجنٹ سے کہیں:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> سست کنکشنوں پر لاگ اِن ٹائم آؤٹ کے مسئلے کو ٹھیک کرنے کے لیے ایک ٹکٹ بنائیں۔
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+یہ `create_ticket` MCP ٹول کال کرتا ہے۔ اُس ٹول پر ترجیح **عدد** ہوتی ہے، نام
+نہیں:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| قدر   | ترجیح      |
+| ----- | ---------- |
+| `0`   | کوئی نہیں  |
+| `1`   | فوری       |
+| `2`   | زیادہ      |
+| `3`   | درمیانہ    |
+| `4`   | کم         |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+صرف `workspace_id` اور `title` لازمی ہیں؛ `description`، `priority`، `assignee`
+(ایک ایجنٹ id) اور `team_id` اختیاری ہیں۔ یہ ٹول وینڈر سنک رائٹ کے طور پر درجہ
+بند ہے اور چلنے سے پہلے آپ کی منظوری مانگتا ہے۔
 
-## Update ticket status
+## ٹکٹ اسٹیٹس اپ ڈیٹ کریں
 
-Tickets follow this lifecycle:
+ٹکٹس اس لائف سائیکل کی پیروی کرتے ہیں:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,124 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`، `failed` اور `cancelled` ٹرمینل ہیں۔ `cancelled` کسی بھی غیر ٹرمینل
+اسٹیٹس سے پہنچا جا سکتا ہے۔ `done` اور `failed` `inProgress` یا `inReview` سے
+پہنچائے جا سکتے ہیں؛ `open` براہِ راست `blocked` میں بھی جا سکتا ہے۔ UI اسٹیٹس
+پکر `failed` کے سوا ہر اسٹیٹس کی فہرست دیتا ہے — ایجنٹس اُسے `fail_ticket` سے
+نشان زد کرتے ہیں۔
 
-To change it, use any of:
+اسے تبدیل کرنے کے لیے ان میں سے کوئی بھی استعمال کریں:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- ٹکٹ کے پراپرٹیز ریل میں **اسٹیٹس** قطار،
+- فہرست میں ٹکٹ کے رائٹ کلک مینو پر **اسٹیٹس** ذیلی مینو،
+- کئی ٹکٹس منتخب کرنے کے بعد فلوٹنگ بار پر **اسٹیٹس** چپ۔
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[لائف سائیکل گراف ایجنٹس کو باندھتا ہے، آپ کو نہیں]
+UI سے کی گئی ہر اسٹیٹس تبدیلی زبردستی نافذ ہوتی ہے اور گراف کو مکمل طور پر نظر
+انداز کر دیتی ہے — آپ ٹکٹ کو پکر کی فہرست میں موجود کسی بھی اسٹیٹس پر منتقل کر
+سکتے ہیں، بشمول کسی `done`، `failed` یا `cancelled` والے ٹکٹ کو دوبارہ کھولنا۔
+پکر `failed` کو بطور ہدف پیش نہیں کرتا۔ اوپر کا خاکہ ایجنٹس اور آٹومیشن پر لاگو
+ہوتا ہے: MCP ٹول یا ری کنسائلر کی کوشش کردہ کوئی غیر قانونی منتقلی لاگ ہو کر
+نظر انداز ہو جاتی ہے، لاگو نہیں ہوتی۔
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/).
+اسٹیٹس تبدیلیاں ڈومین ایونٹس (`TicketStatusChanged`، `TicketCompleted` اور دیگر)
+خارج کرتی ہیں جو پائپ لائنز ٹرگر کر سکتے ہیں۔ دیکھیں
+[پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)۔
 
-## Assign a ticket
+## ٹکٹ تفویض کریں
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. ٹکٹ کھولیں۔
+2. پراپرٹیز ریل میں **تفویض شدہ** سیٹ کریں — خود آپ، ورک اسپیس کا کوئی دوسرا
+   ممبر، یا کوئی ایجنٹ۔
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)).
+:::caution[تفویض کرنے سے کوئی کام شروع نہیں ہوتا]
+تفویض صرف ملکیت درج کرتی ہے اور بس۔ یہ کوئی اسپیس نہیں بناتی، کوئی اسٹیٹس
+نہیں بدلتی اور کسی ایجنٹ کو ڈسپیچ نہیں کرتی — `TicketAssigned` محض ایک آڈٹ
+سگنل ہے جس کے پیچھے کوئی ڈسپیچر نہیں۔ کسی ایجنٹ سے کام کرانے کے لیے اسے کسی
+اسپیس میں پیغام بھیجیں ([ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/) دیکھیں)۔
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+ایک استثنا: `TicketAssigned` ایک ایونٹ ٹائپ ہے جس سے آپ پائپ لائن ٹریگر وائر کر
+سکتے ہیں، اس لیے آپ کا اپنا ٹیمپلیٹ کسی تفویض پر ردِ عمل دے سکتا ہے۔
 :::
 
-## Add labels
+## لیبلز شامل کریں
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+لیبلز ٹکٹ فہرست سے بلک میں لگائے جاتے ہیں، کسی ایک ٹکٹ سے نہیں — پراپرٹیز ریل
+میں لیبل کا کوئی کنٹرول نہیں۔
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. ٹکٹ فہرست میں کسی قطار پر ہوور کریں اور اس کا چیک باکس ٹک کریں۔ جتنے چاہیں ٹک
+   کریں؛ کچھ منتخب ہونے پر ایک فلوٹنگ بار ظاہر ہوتی ہے۔
+2. اُس بار میں **لیبلز** چپ کھولیں۔
+3. کوئی لیبل چنیں۔ یہ ہر اُس منتخب ٹکٹ میں شامل ہو جاتا ہے جس میں وہ نہیں ہے؛
+   موجودہ لیبلز کبھی مٹائے نہیں جاتے۔ **لیبلز صاف کریں** اُن سب کو ہٹا دیتا ہے۔
+   پکر ورک اسپیس میں کسی ٹکٹ پر پہلے سے موجود لیبلز کی فہرست دیتا ہے۔ ایجنٹس
+   `update_ticket` یا `tickets.patch` کے ذریعے نیا نام شامل کر سکتے ہیں۔
 
-## Link tickets
+## ٹکٹس لنک کریں
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+تعلقات ٹکٹ کے پراپرٹیز ریل میں موجود **تعلقات** کارڈ پر، یا فہرست کے رائٹ کلک
+مینو میں **جوڑیں** کے پیچھے رہتے ہیں۔
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. ٹکٹ کھولیں اور **تعلقات** کارڈ تلاش کریں۔
+2. اس کا ایڈ کنٹرول دبائیں اور تعلق منتخب کریں:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| تعلق                | مطلب                                  |
+| ------------------- | ------------------------------------- |
+| **ذیلی ایشو از…**   | اس ٹکٹ کا والد دوسرا ٹکٹ ہے           |
+| **والد از…**        | دوسرا ٹکٹ اس ٹکٹ کا چائلڈ ہے          |
+| **بلاک از…**        | یہ ٹکٹ دوسرے سے بلاک ہے               |
+| **بلاک کر رہا ہے…** | یہ ٹکٹ دوسرے کو بلاک کرتا ہے          |
+| **متعلقہ از…**      | دوطرفہ، کوئی سمت مضمر نہیں            |
+| **نقل از…**         | یہ ٹکٹ دوسرے کی نقل ہے                |
 
-3. Pick the target ticket.
+3. ہدف ٹکٹ منتخب کریں۔
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**اس کی نقل** کارڈ میں ظاہر ہوتا ہے مگر پکر میں نہیں — یہ **نقل از** کا معکوس ہے
+اور دوسرے ٹکٹ سے سیٹ ہوتا ہے۔ فہرست میں درج ہر تعلق پر کلک کر کے لنک شدہ ٹکٹ
+کھولا جا سکتا ہے اور ہوور پر ہٹایا جا سکتا ہے۔
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+والد اور ذیلی ایشو کے تعلقات لنک قطاروں کے بجائے خود ٹکٹ پر محفوظ ہوتے ہیں، اس
+لیے کوئی والد حذف کرنے سے اس کے چائلڈز بھی کیسکیڈ ہو جاتے ہیں (نیچے دیکھیں)،
+جبکہ بلاک کرنے اور متعلقہ لنکس ایسا نہیں کرتے۔
 
-## Add collaborators
+## تعاون کنندگان شامل کریں
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+تعاون کنندگان ٹکٹ پر ایک روسٹر ہیں — کون شامل ہے، اور کس حیثیت میں۔
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. ٹکٹ کھولیں۔
+2. **تعاون کنندہ شامل کریں** کارڈ پر پرسن پلس کنٹرول دبائیں۔
+3. کوئی ایجنٹ منتخب کریں۔
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+تین کردار ہیں **assignee**، **collaborator** (ڈیفالٹ) اور **reviewer**۔ UI پکر
+صرف ورک اسپیس ایجنٹس کی فہرست دیتا ہے اور ہمیشہ ڈیفالٹ کردار لکھتا ہے؛ انسان
+قطاروں کے طور پر ظاہر ہو سکتے ہیں مگر اُس مینو میں پیش نہیں کیے جاتے۔ MCP ٹول
+`add_ticket_collaborator` ایک `role` قبول کرتا ہے۔
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/).
+تعاون کنندہ شامل کرنا ایک قطار لکھتا ہے اور کوئی ڈومین ایونٹ شائع نہیں کرتا؛
+یہ اسپیس تک کوئی رسائی نہیں دیتا۔ کسی ایجنٹ کو گفتگو میں لانے کے لیے اسے اسپیس
+ہیڈر سے بطور شریک شامل کریں — [اسپیسز](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/) دیکھیں۔
 
-## Delete a ticket
+## ٹکٹ حذف کریں
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+پراپرٹیز ریل کے نیچے **ٹکٹ حذف کریں**، رائٹ کلک مینو، یا کئی ٹکٹس منتخب کرنے
+کے بعد فلوٹنگ بار کے ڈیلیٹ ایکشن کا استعمال کریں۔
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[حذف کرنا صرف مقامی ہے]
+کسی بیرونی ٹریکر سے آیا ہوا ٹکٹ وہاں حذف نہیں ہوتا — کوئی فراہم کنندہ اس کی
+حمایت نہیں کرتا — اس لیے یہ اگلے سنک پر دوبارہ ظاہر ہو سکتا ہے۔ حذف کرنا
+کیسکیڈ بھی کرتا ہے: ٹکٹ کے تعاون کنندگان اور کوئی بھی ذیلی ٹکٹس اس کے ساتھ چلے
+جاتے ہیں۔
 :::
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Delegate work to agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
-- [Organize work with projects](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [Ticket lifecycle reference](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/)
+- [ایجنٹس کو کام تفویض کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
+- [پروجیکٹس سے کام منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [ٹکٹ لائف سائیکل کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Tickets](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/)
+- [ٹکٹس](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/)

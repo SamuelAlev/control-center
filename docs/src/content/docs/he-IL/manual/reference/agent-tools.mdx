@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: כלי סוכן מובנים
+description: משטח הכלים שמנגנון ההרצה המובנה נותן לסוכן — שרת שפה, חיפוש מבני, מנפה, קרנלים ושליטה בעובדים — עם כל פעולה והארגומנטים שלה.
 slug: he-IL/מדריך-למשתמש/עזר/כלי-סוכן
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/he-IL/מדריך-למשתמש/עזר/כלי-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+אלה הכלים ה**מקושרים לשרת** שמנגנון ההרצה המובנה של הסוכן רושם ישירות — שרת שפה, חיפוש מבני, מנפה, קרנלים, שאלות ושליטה בעובדים — להבדיל מ[כלי MCP](/he-IL/מדריך-למשתמש/עזר/כלי-mcp/) שהוא מגשר פנימה, ומכלי הקבצים, החיפוש והמעטפת הגנריים של מנגנון ההרצה. הם אינם נמצאים במרשם MCP: לקוח MCP חיצוני לא יראה אותם, מפני שכל אחד מהם קשור למשאב חי בצד השרת — תהליך שרת שפה, מתאם ניפוי, מפרש — ששייך להרצה אחת.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+כל כלי כאן נרשם רק כשהמשאב שעומד מאחוריו מחובר להרצה — מפקח שרת שפה או ניפוי, מנתח tree-sitter, מפעל קרנלים, יציאת שאלות, רשימת עובדי vibe. זיהוי של שרת שפה או מתאם ניפוי עבור *ה־checkout הזה* הוא בדיקה נפרדת ומאוחרת יותר (`status` / `adapters`): הכלים האלה נשארים על המשטח כדי שהסוכן יוכל לשאול מדוע שום דבר אינו שמיש, במקום לנחש.
 
-## Approval tiers
+## דרגות אישור
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+כל כלי מצהיר על דרגה, והדרגה מכריעה **אילו משטחים רואים אותו** — לא רק אם הוא מבקש אישור. מצב תוכנית וסוכני משנה לקריאה בלבד מוגבלים ל־`read`, כך שכלי בדרגת `write` או `exec` נעדר מהסכימה שלהם לחלוטין.
 
-| Tier    | Meaning                                | Tools here                                         |
+| דרגה    | משמעות                                | כלים כאן                                         |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | ללא תופעות לוואי                       | `lsp`, `ast_grep`, `ask_user`, חמשת ה־`vibe_*`   |
+| `write` | משנה קבצים                             | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | מפעיל תהליך או שולט בו                 | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — שאילתות שרת שפה
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+נרשם כאשר להרצה יש מפקח שרת שפה ותיקיית עבודה. אם שרת באמת יכול לענות מתגלה בזמן הקריאה, כ**חיתוך**: סמן שורש חייב להתקיים *וגם* קובץ ההרצה של השרת חייב להיפתר. כל אחד מהם לבדו משמעו שאף שרת לא עולה — `status` אומר זאת — במקום ניחוש שקט.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+מיקומים ממוענים לפי `line` בתוספת מחרוזת חלקית של `symbol`, ולעולם לא לפי עמודה. מודל שמתבקש לציין עמודה מנחש, וניחוש שגוי נפתר לסמל אחר באותה שורה — תשובה שנראית נכונה ועוסקת במשהו אחר. השמטת `symbol` בפעולת ניווט היא שגיאה, ולא ניחוש של העמודה הראשונה.
 
-| Action            | Arguments                        | Returns                                    |
+| פעולה            | ארגומנטים                        | מחזיר                                    |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (או `"*"`)                | שגיאות ואזהרות; `"*"` מפעיל במקום זאת את בודק הפרויקט |
+| `definition`      | `file`, `line`, `symbol`         | היכן שהסמל מוצהר               |
+| `type_definition` | `file`, `line`, `symbol`         | היכן שהטיפוס שלו מוצהר                 |
+| `implementation`  | `file`, `line`, `symbol`         | מימושים קונקרטיים                   |
+| `references`      | `file`, `line`, `symbol`         | כל שימוש, עד 50                    |
+| `hover`           | `file`, `line`, `symbol`         | חתימה והערת תיעוד                  |
+| `symbols`         | `query` או `file`                | חיפוש בסביבת העבודה עם `query` (עד 100); סמלי מסמך עם `file` (עד 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | תיקונים מהירים שהשרת מציע              |
+| `status`          | —                                | אילו שרתים פועלים, ועבור אילו שורשים |
+| `reload`          | —                                | מפעיל מחדש את השרת עבור השורש הזה          |
 
-### Diagnostics on write
+### אבחון בכתיבה
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+הרווח אינו הכלי עצמו. `write`, `edit` ו־`apply_patch` **עטופים**: אחרי הכתיבה הקובץ מסונכרן ונשמר דרך שרת השפה, ורק אבחונים **שהופיעו זה עתה** מקופלים אל תוך תוצאת הכלי. הסוכן לומד שהוא שבר את הבנייה ברגע ששבר אותה, בלי שהיה עליו לזכור לשאול.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+אבחונים שכבר דווחו מושתקים על ידי יומן לכל הרצה שממופתח לפי חומרה, קוד והודעה — המיקום הוחרג במכוון, כך שאבחון שפשוט ירד ארבע שורות למטה אינו מדווח מחדש כחדש.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — שינוי שם בכל הפרויקט
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+כלי נפרד בדרגת `write`, מסיבה אחת בדיוק: הדרגה מכריעה את הנראות. קיפול של שינוי השם אל תוך `lsp` היה או נותן לחוקר לקריאה בלבד את היכולת לשכתב את המאגר, או שם כל `hover` מאחורי בקשת אישור.
 
-| Argument | Meaning                                    |
+| ארגומנט | משמעות                                    |
 | -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| `file`   | היכן שהסמל נמצא                        |
+| `line`   | שורה באינדוקס 1                             |
+| `symbol` | מחרוזת חלקית שמזהה אותו באותה שורה      |
+| `new_name` | איך לקרוא לו                          |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — חיפוש מבני
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+מוצא קוד לפי **צורה** ולא לפי טקסט. `$NAME` מתאים לכל צומת, `$$$NAME` מתאים לרצף של אחים, ו־`$_` הוא תו כללי שאינו לוכד דבר.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+התכונה שהופכת אותו למתאים ולא לביטוי רגולרי עם כמה שלבים נוספים: מטא-משתנה שחוזר בתבנית אחת חייב ללכוד את אותו טקסט.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+מתאים לשומר שמשחרר את מה שבדק, ו**אינו** מתאים לכזה שמשחרר משהו אחר.
 
-| Argument      | Meaning                                                     |
+| ארגומנט      | משמעות                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | קטע קוד עם מטא-משתנים                          |
+| `path`        | קובץ או תיקייה לחיפוש; ברירת המחדל היא כל סביבת העבודה |
+| `language`    | מזהה דקדוק שסופק (`dart`, `python`, `rust`, `c`, …). נגזר כאשר `path` מציין קובץ |
+| `max_results` | ברירת מחדל 50                                                  |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[התבנית מנותחת לפי אותו דקדוק של הקובץ]
+לכן `dispose(x)` מתאים לקריאה בכל ריווח, שבירה או הערה — ולעולם אינו מתאים את אותם התווים בתוך מחרוזת ליטרלית או הערה.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[קטע מנותח בפיגום, לא לבדו]
+`dispose(x)` שמנותח ברמה העליונה של Dart הוא *חתימת פונקציה* תקפה. מהדר התבניות מנסה סולם של הקשרים (הצהרה, ביטוי, איבר מחלקה, הכרזה) ומשתמש בראשון שמקבל את הקטע. תבנית שאף הקשר לא מקבל מדווחת כלא ניתנת לניתוח, במקום לחפש אותה ולא למצוא אותה בשקט.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — שכתוב מבני, בהכנה
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+אותו מיתוג, בתוספת תבנית `rewrite` שאליה מוחזרים המטא-משתנים. **דבר אינו נכתב.** השינוי עובר הכנה, והתוצאה מציינת `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| ארגומנט   | משמעות                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | מה להתאים                                       |
+| `rewrite`  | מה לשים שם, עם `$NAME` מוחלף         |
+| `path`     | היקף; ברירת המחדל היא כל סביבת העבודה              |
+| `language` | מזהה שפה                                         |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — החלה או ביטול של שינוי שהוכן
 
-| Argument  | Meaning                          |
+| ארגומנט  | משמעות                          |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | מהתוצאה `(proposed)`     |
+| `action`  | `accept` או `discard`            |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+כל קובץ מושווה מול התוכן שנלכד בזמן ההכנה, ו**כל** אי-התאמה דוחה את השינוי כולו. שכתוב מבני שהוחל חלקית משאיר עץ שאינו מתקמפל לפי אף אחת מהצורות — לא הישנה ולא החדשה.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — הפעלת מנפה
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+נרשם כאשר להרצה יש מפקח סשן ניפוי, תיקיית עבודה ומזהה שיחה. אם מתאם באמת יכול לעלות מתגלה בזמן הקריאה, לפי אותו כלל חיתוך של שרת השפה (סמן שורש *וגם* קובץ הרצה). דרגת `exec`; אינו בטוח להרצה מקבילה (סשן הוא מצב שנמשך בין קריאות, ולכן `continue` שעוקף את `stack` יקרא מסגרת שכבר זזה).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+סשן אחד לכל שיחה, עם TTL קשוח (30 דקות). `launch` שני נדחה במקום להחליף בשקט את הראשון.
 
-| Op            | Arguments                     | Notes                                          |
+| פעולה            | ארגומנטים                     | הערות                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | אילו מתאמים שמישים כאן, ומדוע לא     |
+| `status`      | —                             | אם סשן פועל, והיכן הוא נעצר |
+| `breakpoints` | `file`, `lines[]`             | `lines` ריק מנקה את הקובץ. אפשר להציב **לפני** ההפעלה |
+| `launch`      | `program`, `args[]`           | מפעיל את התוכנית כשהיא עצורה בנקודות העצירה שלכם |
+| `attach`      | `port`                        | מתחבר לתוכנית מנופה שכבר רצה         |
+| `continue`    | `thread_id?`                  | רץ עד לעצירה הבאה                        |
+| `pause`       | `thread_id?`                  | עוצר אותו במקום שבו הוא נמצא                            |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | מתקדם צעד אחד                          |
+| `threads`     | —                             | מזהי תהליכונים ושמותיהם                            |
+| `stack`       | `thread_id?`                  | מסגרות, עד 30                            |
+| `scopes`      | `frame_id`                    | תחומים במסגרת, לכל אחד `reference`      |
+| `variables`   | `reference`                   | ילדים, עד 50, ערכים עד 400 תווים |
+| `evaluate`    | `expression`, `frame_id?`     | מחושב בתחום של המסגרת עצמה              |
+| `output`      | —                             | ה־stdout/stderr של התוכנית המנופה, חסום           |
+| `terminate`   | —                             | מסיים את הסשן והורג את המתאם          |
 
-### Adapters
+### מתאמים
 
-| Id        | Command                    | Root markers                                    |
+| מזהה        | פקודה                    | סמני שורש                                    |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` מעדיף `.venv/bin` או `venv/bin` מקומיים לפרויקט על פני `$PATH`: מפרש `python` מ־`$PATH` הוא סביבה אחרת, והתחברות מהלא נכון נכשלת באופן שנראה כמו קוד שבור.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — מפרשים מתמשכים
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+תא Python או JavaScript שהמשתנים, הייבואים והנתונים שנטענו בו ממשיכים להתקיים בין קריאה לקריאה. דרגת `exec`; אינו בטוח להרצה מקבילה.
 
-| Argument      | Meaning                                          |
+| ארגומנט      | משמעות                                          |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | התא                                         |
+| `description` | חובה. 5–10 מילים לתווית בתמלול    |
+| `language`    | `python` (ברירת מחדל) או `javascript`               |
+| `reset`       | משליך את המפרש ומתחיל נקי מלכתחילה    |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- הביטוי האחרון מוצג חזרה כפי שמחברת עושה.
+- `display()` עובד, DataFrame של pandas מרונדר כטבלה, ואיור של matplotlib חוזר כ**תמונה שהתמלול מציג**.
+- הקיצורים של IPython שאנשים מקלידים מתוך הרגל — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — נכתבים מחדש כקוד רגיל. `%pip` גם מפנה את `sys.modules`, כך שה־`import` הבא רואה את מה שזה עתה הותקן.
 
-### Calling your own tools from inside a cell
+### קריאה לכלים שלכם מתוך תא
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+הגשר **נכנס מחדש למרשם הכלים של מנגנון ההרצה**, כך שמעקות בטיחות, אישור וכל עטיפה חלים בדיוק כפי שהם חלים על קריאה ששלח המודל. הוא נוסע על הצינור של הקרנל עצמו ולא על סוקט לולאה: בלי פורט, בלי סוד, בלי כלל יציאה.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+הזמן הקצוב של התא הוא תקציב *אי-פעילות* (ברירת מחדל 5 דקות), והוא **מושהה** בזמן שקריאה דרך הגשר מתבצעת, כך שתא שמסתעף לסוכני משנה אינו נהרג באמצע ההסתעפות.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[היכן הקרנל רץ]
+בתוך המתחם המבודד של השיחה כשיש לה כזה, ואחרת במארח. הוא אינו מפעיל מתחם מבודד לשם כך — אותו כלל שמונע מלשונית תחנה לעלות מעצמה.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — לשאול את האדם שאלה
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+דרגת `read`. הדרך ה**יחידה** שבה הרצה שואלת את המפעיל משהו. הוא מרנדר כרטיס ממוספר בשיחה וחוסם עד שמישהו עונה, מדלג, או שתפוג תקופת ההמתנה של השאלה. לעולם אל תכתבו את השאלה כהודעת צ'אט — זה מסיים את התור.
 
-| Argument       | Meaning                                    |
+| ארגומנט       | משמעות                                    |
 | -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| `question`     | מה לשאול                                |
+| `context`      | אופציונלי: מדוע אתם שואלים ומה תלוי בתשובה |
+| `options[]`    | אפשרויות, כל אחת `{label, description?}`      |
+| `allow_free_text` | אם תשובה מוקלדת מתקבלת       |
+| `multi_select` | אם אפשר לבחור כמה אפשרויות      |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+דילוג הוא הצלחה: המשיכו על בסיס הנחה מוצהרת ואל תשאלו שוב. פג־זמן הוא שגיאה עם אותה הנחיה. בקשות אישור ("האם מותר לי לעשות את זה?") הן שער נפרד ומרונדרות כאותו כרטיס בשיחה.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+נרשם רק כאשר קיימים גם יציאת שאלות וגם מרחב יעד. בלי אדם מחובר הקריאה **נכשלת** במקום להיחסם לנצח — אותה תנוחת כשל־סגור שנוקטת הכרעת `prompt` של מעקה בטיחות כשאין מאשר מחובר.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — הכוונת עובדי רקע
 
-Registered only while [vibe mode](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הכוונת-עובדי-רקע/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+נרשמים רק כשמצב [vibe](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הכוונת-עובדי-רקע/) פעיל. כל החמישה בדרגת `read`: השער שייך לכלים של העובד, שם העריכה באמת קורית.
 
-| Tool         | Arguments                                | Notes                                       |
+| כלי         | ארגומנטים                                | הערות                                       |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | חוזר מיד; העובד ממשיך לרוץ     |
+| `vibe_send`  | `worker_id`, `message`                   | מוסיף לתדרוך ומריץ מחדש            |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | חוסם עד שהוא מגיע למצב סופי                     |
+| `vibe_kill`  | `worker_id`                              | עוצר אותו                                    |
+| `vibe_list`  | —                                        | דרגה, מצב, זמן שחלף ותוצאה אחרונה       |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` הוא `fast` (עבודה מכנית עם מפרט ברור) או `good` (עיצוב, שיקול דעת, או סקירה של הפלט של עובד `fast`).

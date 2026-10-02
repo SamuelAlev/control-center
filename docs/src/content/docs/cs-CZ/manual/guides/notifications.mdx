@@ -1,149 +1,154 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Nastavte oznámení
+description: Zapni nebo vypni kategorie, nastav tiché hodiny a zvuk a zjisti, která oznámení k tobě dorazí a kam.
 slug: cs-CZ/prirucka/navody/oznameni
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Tenhle návod ukazuje, jak nastavit oznámení a co které nastavení opravdu
+řídí.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Oznámení přicházejí dvěma cestami. **Centrum oznámení**, zvonek v titulní
+liště, čte trvalý kanál daného pracovního prostoru na serveru. **Systémové
+toasty** jsou samostatná cesta jen pro počítač a krmí je živé rámce, které
+server posílá.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Webové sestavení neukazuje systémová oznámení]
+Kanál toastů skládá jen bootstrap desktopové aplikace. Na
+`app.usectrl.dev` nejsou systémové toasty, zvuky oznámení ani ambientní
+bannery. Zvonek a jeho historie pořád fungují, protože čtou kanál na serveru.
+Telefonní klient nemá plochu oznámení vůbec.
 :::
 
-## Turn categories on or off
+## Zapni nebo vypni kategorie
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Jdi do **Nastavení → Vy → Oznámení**
+2. Nech **Zapnout oznámení** zapnuté
+3. Přepni kategorie, které chceš. Je jich přesně šestnáct:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Kategorie                          | Kdy se spustí                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| Agent dokončil                     | Agent dokončil běh                                                                |
+| PR zveřejněn                       | Agent zveřejnil PR                                                                |
+| PR sloučen                         | PR byl sloučen                                                                    |
+| Nové zprávy                        | Do prostoru, na který se právě nedíváš, přišla zpráva                             |
+| Zmíněn v pull requestu             | Dotazování na oznámení GitHubu zjistilo, že tě na PR někdo zmínil                 |
+| Vyžádána kontrola                  | O tvoji kontrolu někdo opravdu požádal u PR, který není koncept                   |
+| Kontrola je zastaralá              | Na pull request, který už jsi zkontroloval, přibyly nové commity                  |
+| Připraveno ke sloučení             | Pull request, který jsi napsal, se stal sloučitelným, nebo jím být přestal        |
+| Rozhodnutí o kontrole              | Recenzent schválil, požádal o změny, nebo mu schválení někdo zrušil               |
+| Kontroly                           | CI na pull requestu, který jsi napsal, selhalo, nebo se zotavilo                  |
+| Vlákna kontroly                    | Někdo odpověděl ve vlákně, ve kterém jsi, nebo ho vyřešil                         |
+| Ticket přiřazen                    | Ticket byl přiřazen                                                               |
+| Stav ticketu změněn                | Ticket změnil stav                                                                |
+| Schůzka brzy začíná                | Schůzka z kalendáře je uvnitř tvého okna předstihu                                |
+| Kalendář odpojen                   | Tokenu OAuth připojeného kalendáře vypršela platnost                              |
+| Aktualizace izolovaného prostředí  | Izolované prostředí někdo převzal, bylo uvolněno, nebo selhalo                    |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Co v tomhle seznamu není, oznámit ani filtrovat nejde. Kategorie „všechno
+ostatní“ neexistuje.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Tahle nastavení cestují s tvým uživatelem mezi zařízeními, takže telefon a
+notebook zůstanou ve shodě. Hlasitost je schválně výjimka a zůstává u každého
+zařízení zvlášť.
 
-## Set quiet hours
+## Nastav tiché hodiny
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Na stejné stránce zapni **Quiet hours**
+2. Napiš čas začátku a konce ve tvaru `HH:MM` (výchozí okno je 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Během tichých hodin se nenaléhavá oznámení zahodí. Neukládají se do fronty a
+později se nepřehrávají.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Dvě kategorie jsou **naléhavé** a doručí se vždy, mimo tiché hodiny _i_
+režim soustředění: **Schůzka brzy začíná** a **PR zveřejněn**. Upozornění na
+schůzku, které uvidíš až zpětně, je k ničemu. Proto.
 
-## Choose a sound
+## Vyber zvuk
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Sjeď na **Zvuk oznámení**
+2. Vyber jeden z jedenácti přibalených zvuků, nebo **Žádný**
+3. Stiskni **Test**, ať ho uslyšíš, a hlasitost nastav posuvníkem
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Zvuk přehraje aplikace sama. Systémové oznámení přijde potichu, takže ho
+neuslyšíš dvakrát.
 
-## Set the meeting lead time
+## Nastav předstih schůzky
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Sjeď na **Předstih upozornění**
+2. Zvol **5**, **10**, **15** nebo **30** minut
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Tolik minut před událostí v kalendáři se spustí oznámení **Schůzka brzy
+začíná**. Výchozí je 5 minut.
 
-## Know when a notification is suppressed
+## Poznej, kdy se oznámení potlačí
 
-A notification is dropped, silently, when any of these is true:
+Oznámení se potichu zahodí, když platí cokoli z tohoto:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Oznámení jsou globálně vypnutá, nebo je vypnutá jeho kategorie
+- Už jsi na trase, kam by tě vzalo, a u zprávy už jsi v tom prostoru
+- Režim soustředění je aktivní a kategorie není naléhavá
+- Tiché hodiny jsou aktivní a kategorie není naléhavá
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Tyhle kontroly platí pro systémové toasty. Trvalý zvonek událost pořád zapíše.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Další dvě potlačení jsou výš, v tom, co server vůbec pošle:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Zpráva od jiného člověka, ve které tě nikdo nezmínil, se oznámením nikdy
+  nestane
+- Prostory, kde si agenti píšou mezi sebou, jsou v postranním panelu ztlumené,
+  takže člověku nikdy nezvednou odznak nepřečtených
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Uvnitř prostoru není tichý kout. Oznamuje se každá konverzace stejně, včetně
+vláken. Stav přečtení patří k prostoru, takže nepřečtené se sčítá přes jeho
+konverzace a nesleduje se po jedné konverzaci.
 
-## Read and clear the notification centre
+## Přečti a vymaž centrum oznámení
 
-1. Click the bell in the title bar
+1. Klikni na zvonek v titulní liště
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Panel ukáže nedávnou aktivitu a každý řádek vede rovnou na to, čeho se týká.
+Otevření **neoznačí** všechno jako přečtené. Použij **Označit vše jako
+přečtené** v záhlaví, nebo označ jeden řádek. Stav přečtení cestuje s tvým
+uživatelem mezi zařízeními.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Vymazat vše je vodoznak, ne smazání]
+**Vymazat vše** zapíše uživateli vodoznak, který skryje všechno starší. Řádky
+zůstanou. Zvlášť si každý pracovní prostor nechává jen posledních **200**
+řádků kanálu a starší při příchodu nových ořezává. Zvonek odebírá nejnovějších
+**50** a panel jich vypíše nejvýš **15**. Historie za tou hranicí je pryč, ať
+je přečtená, nebo ne.
 :::
 
-## Troubleshooting
+## Řešení problémů
 
-### No OS notifications on macOS
+### Žádná systémová oznámení na macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Oprávnění se žádá nativně při spuštění aplikace. Když jsi ho odmítl, znovu
+zapni Control Center v Nastavení systému → Oznámení. V aplikaci není výzva,
+která by ho vyvolala znovu.
 
-### Nothing arrives on the web build
+### Na webovém sestavení nic nepřijde
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Čekané. Webové sestavení nemá kanál systémových oznámení. Použij zvonek.
 
-### The bell badge shows zero but there is clearly new activity
+### Odznak zvonku ukazuje nulu, ale nová aktivita tam zjevně je
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Než se po připojení vyřeší proud značek přečtení, položky se vykreslí jako
+přečtené, aby odznak nebliknul a hned se nevyprázdnil. Srovná se, jakmile se
+značka načte.
 
-### An agent's run finished but nothing pinged me
+### Běh agenta skončil, ale nic mě neupozornilo
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Zkontroluj, že už nejsi v prostoru, kde se to stalo. Aktivní trasa potlačí
+vlastní systémový toast.
 
-## Related guides
+## Související návody
 
-- [Use focus mode and soundscapes](/cs-CZ/prirucka/navody/rezim-soustredeni/)
-- [Triage your inbox](/cs-CZ/prirucka/navody/trideni-dorucene-posty/)
-- [Curate your newsfeed](/cs-CZ/prirucka/navody/kanal-novinek/)
+- [Používejte režim soustředění a zvukové krajiny](/cs-CZ/prirucka/navody/rezim-soustredeni/)
+- [Třídění doručené pošty](/cs-CZ/prirucka/navody/trideni-dorucene-posty/)
+- [Spravujte kanál novinek](/cs-CZ/prirucka/navody/kanal-novinek/)
 
-## Related concepts
+## Související koncepty
 
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/)
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/)

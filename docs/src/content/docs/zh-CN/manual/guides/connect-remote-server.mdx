@@ -1,109 +1,85 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: 连接到远程服务器
+description: 让桌面应用或 Web 客户端指向运行在别处的 cc_server，并在无需重启的情况下切换服务器。
 slug: zh-CN/手册/操作指南/连接远程服务器
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+每个客户端都只是 `cc_server` 之上的渲染器，而数据由它掌控。桌面端可以在自身内部运行一个服务器实例；[app.usectrl.dev](https://app.usectrl.dev) 上的 Web 应用则不行，因为浏览器标签页无法托管服务器。无论哪种情况，本指南都会让客户端指向一个运行在别处的服务器——一台小机器、一台云 VM，或一台构建服务器。
 
-## Prerequisites
+## 前置条件
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/zh-CN/手册/操作指南/运行无界面服务器/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- 一个正在运行的 `cc_server`。如果你还没有，请参阅[运行无界面服务器](/zh-CN/手册/操作指南/运行无界面服务器/)。
+- 要么是服务器生成的三个配对值——**服务器 URL**（`ws://…/rpc` 或 `wss://…/rpc`）、**设备 ID** 和**配对密钥**——**要么**是工作区管理员给出的一次性**邀请码**。兑换邀请码会为你预配用户、记录你的成员资格，并为你生成本客户端的凭据，因此你完全不必接触设备 ID 或密钥。
 
-### Make sure the server is reachable
+### 确认服务器可访问
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+本地服务器无需任何额外配置：`ws://localhost:9030/rpc` 在桌面端和浏览器中都能正常工作，因为浏览器把环回地址视为可信来源。
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+另一台机器上的服务器则不同。`app.usectrl.dev` 通过 HTTPS 提供，因此浏览器只会用自己已经信任的证书去建立 `wss://` 套接字——而且 `cc_server` 本身也拒绝在没有 TLS 的情况下绑定非环回地址。请为它提供以下之一：
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- 直接提供证书，使用 `--tls-cert` 和 `--tls-key`
+- 在前面部署一个负责终止 TLS 的反向代理，并以 `--insecure` 启动服务器（代理之后为明文，仅限可信网络）
+- 由隧道或 VPN 提供证书——Tailscale、cloudflared 或类似方案。**设置 → 服务器 → 连接与状态**在**共享此服务器**下提供了内置隧道的启用选项。
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+服务器端有两项设置很容易被忽略。在代理、NAT 或隧道之后，请把 `--public-url` 设为客户端实际应连接的地址——它默认取本地绑定地址，因此不设置的话客户端会尝试错误的主机。另外，如果你自行托管 Web 构建的副本，请把它的源加入 `--allowed-origins`；该选项默认只允许 `https://app.usectrl.dev`。环回地址和原生客户端始终被允许。
 
-## Connect the desktop app
+## 连接桌面应用
 
-On a fresh install:
+全新安装时：
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. 启动 Control Center。首次运行界面会询问 **Control Center 应如何运行？**
+2. 不要选择**在此应用中运行**，而是填写连接字段：服务器 URL，以及邀请码，或设备 ID 与配对密钥。
+3. 点击**连接**。Control Center 会连接服务器，并进入工作区收件箱。
 
-On a desktop that already runs its own server:
+对于已经在运行自己服务器的桌面端：
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. 打开**设置 → 服务器 → 连接与状态**。
+2. 点击**添加服务器**。输入服务器 URL（`wss://host:9030/rpc`），以及邀请码，或设备 ID 与配对密钥。URL 字段的后缀按钮会在你的局域网或 tailnet 上发现 `cc_server` 实例。
+3. 点击**连接**，然后在新服务器所在行点击**切换**。
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+切换是实时的：应用会就地围绕新会话重建，无需重启。如果连接失败，你会留在当前服务器上并看到错误。你当前所在服务器的那一行没有**切换**操作；本地服务器是第一行，标记为**在此应用中运行**。
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+切换之后，桌面端不再持有数据库。每个界面都通过 WebSocket 经由远程服务器读写。
 
-## Connect the web client
+## 连接 Web 客户端
 
-The web build is always remote.
+Web 构建始终是远程的。
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. 打开 [app.usectrl.dev](https://app.usectrl.dev)，或你自己的 Web 构建副本。
+2. 输入服务器 URL，以及邀请码，或设备 ID 与配对密钥。
+3. 客户端会连接服务器，并渲染出与桌面端相同的界面。
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+如果 URL 中包含配对深度链接，这些字段会预先填好。配对密钥位于 URL 的**片段**中，浏览器绝不会把它发送给托管页面的服务器，因此静态托管方永远看不到它。
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[媒体与安全]
+媒体（头像、新闻流图片、PR 截图）会通过已连接的服务器代理，因此浏览器绝不会直接向上游主机发起请求。每次请求的 Content-Security Policy 均依据一枚非敏感 cookie 生成，仅允许已连接服务器的源。
 :::
 
-### What the browser does not do
+### 浏览器做不到的事
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Web 客户端读写的是与桌面端相同的服务器，但有几个功能需要原生窗口或本机自带的设备：
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- 没有操作系统通知弹窗、通知声音或常驻横幅栏（应用内通知中心仍然可用）
+- 在**添加服务器**对话框中无法发现局域网或 tailnet 上的服务器
+- 没有应用内文章阅读器——新闻流文章会在新标签页中打开
+- 无法重新运行会议摘要，也无法取消正在处理的摘要
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+有两项并非缺失，只是行为不同。会议**录制**在浏览器中可用，会采集你的麦克风，以及带音轨的屏幕共享。**在 IDE 中打开**同样可用，但它会请求服务器在_服务器_的显示器上启动编辑器，因此在没有安装任何编辑器的无界面主机上，该按钮会自行隐藏。
 
-## Troubleshooting
+## 故障排除
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/zh-CN/手册/概念/工作区/).
+- **连接超时**：服务器必须能从客户端访问。检查绑定地址（`--bind any`）、端口是否开放，以及 `--public-url` 是否指向客户端实际能连接的地址。在开放互联网上，TLS 是强制性的——除非服务器是在代理之后以 `--insecure` 启动的，否则明文的非环回绑定会在启动时被拒绝。
+- **浏览器拒绝连接，但原生客户端正常**：浏览器的源不在服务器的 `--allowed-origins` 列表中。默认只允许 `https://app.usectrl.dev`（外加环回地址）。
+- **配对密钥被拒绝**：在服务器上重新运行 `cc_server pair` 以轮换该设备的密钥，然后输入新的密钥。被撤销的设备会发现自己的凭据已不存在，因此失败即关闭；撤销会在几秒内断开活动会话。
+- **工作区错误**：工作区是 URL 的一部分（`/workspaces/:workspaceId/…`），并随每次调用一同传递，因此在一个客户端中切换工作区只会改变你自己的视图。你只能访问自己所属的工作区——其他任何工作区都会被以 "Not a member of this workspace" 拒绝。参见[工作区与隔离](/zh-CN/手册/概念/工作区/)。
 
-## Related guides
+## 相关指南
 
-- [Run a headless server](/zh-CN/手册/操作指南/运行无界面服务器/)
-- [Pair a device](/zh-CN/手册/操作指南/配对设备/): the phone relay path
+- [运行无界面服务器](/zh-CN/手册/操作指南/运行无界面服务器/)
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)：手机中继路径
 
-## Related concepts
+## 相关概念
 
-- [Deployment and clients](/zh-CN/手册/概念/部署/)
-- [Remote control and mobile](/zh-CN/手册/概念/远程控制/)
+- [部署与客户端](/zh-CN/手册/概念/部署/)
+- [远程控制与移动端](/zh-CN/手册/概念/远程控制/)

@@ -1,207 +1,177 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: 远程控制与移动端
+description: 手机如何通过经代理中转、端到端密封的中继访问你的服务器，而不是点对点链路，以及让这种触达保持狭窄的分层访问模型。
 slug: zh-CN/手册/概念/远程控制
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center 是一款桌面应用，但它所跟踪的工作不会在你离开书桌时停下来。
+**远程控制**借助 **[Remote](https://remote.usectrl.dev/)**——位于
+remote.usectrl.dev 的伴侣应用——把你的手机与 `cc_server` 配对，让你可以在那里
+跟进机群：阅读消息与工单、回复智能体、分拣新闻流，而服务器上的音频、转录、
+源代码和凭据始终不会离开服务器。
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+可以把它看作主界面的伴侣应用，以读取为主。它并不打算取代完整的桌面客户端。
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/zh-CN/手册/概念/部署/) for how the two differ.
+:::note[两条不同的远程路径]
+手机伴侣通过一条**经代理中转的 WebSocket 中继**与 `cc_server` 配对，这条中继
+承载端到端密封的 JSON-RPC 帧。另一条远程路径是完整的 **Web 构建**（以及指向
+远程服务器的桌面端）；它通过 WebSocket 连接 `cc_server`，并渲染出完整应用。
+两者的区别见[部署与客户端](/zh-CN/手册/概念/部署/)。
 :::
 
-## Transport
+## 传输方式
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+手机通过 WebSocket 访问 `cc_server`：要么是直连（回环、LAN、tailnet 或
+`wss://`），要么是信令代理上需邀请才能加入的房间，由该代理转发密封帧。这里没有
+点对点的数据通道。
 
-## What the phone can do
+## 手机能做什么
 
-The paired phone reaches a small, intentional slice of the server's surface:
+已配对的手机只能触达服务器表面里很小、且有意划定的一块：
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **读取**工单、智能体、空间及其消息，以及你的新闻流
+- **回复**：在空间中发送消息、更新或分配工单、把文章标为已读或已保存
+- **运行剧本**：用参数实例化一个已保存的计划模板。它只会_提出_一个计划；在
+  操作者在完整客户端的 Plan Studio 中批准之前，不会有任何执行或花费
+- **切换工作区**，在手机自己的选择器里
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+大致就这些。相比完整客户端，手机是**权限更低的主体**。它不能启动进程、消耗
+LLM 预算、推送到 GitHub，也不能创建工作区。它为何是被真正强制执行而不只是设计
+意图，见[访问模型](#访问模型)。
 
-## How the link is built
+## 链路是如何建立的
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+连接依托一条**经代理中转的中继**：服务器作为所有者加入 `wss://` 代理上一个
+需邀请才能进入的房间，而每个已配对客户端——桌面端、Web、手机——都凭一个有期限
+的准入令牌加入同一个房间。有三部分共同起作用：
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| 组成部分             | 作用                                                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote（手机应用）** | 伴侣 Web 应用，默认托管在 `remote.usectrl.dev`，也可自托管。它在浏览器中加载，把配对记录保存在 IndexedDB 中。                                                                                                                                                 |
+| **中继代理**         | 一条无状态的 `wss://` 中继（`cc_signaling_server`），托管 N 方房间。它**只承载不透明的帧**：每个负载都在手机与服务器之间端到端密封，因此代理既看不到应用数据，也看不到配对密钥，更不会解释它转发的任何内容。                                                |
+| **`cc_server`**      | 房间的所有者。它通过其他所有客户端所用的同一个调度器来应答手机的调用。                                                                                                                                                                                        |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+一次配对邀约携带一个**连接描述符**，列出通往服务器的每条路径（LAN、tailnet、
+公共 `wss://`、中继）以及服务器的身份指纹。手机的解析器会选出最好的可达路径，
+并在首次连接时固定该指纹（TOFU）；即使不存在直连路径，中继也能保证连通，同时
+始终无法读取流量。
 
-## What the pairing payload is
+## 配对负载是什么
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/zh-CN/手册/操作指南/配对设备/) for the procedure. The anatomy is
-what matters here.
+配对凭据由应用生成，并以深链接的形式交付；具体步骤见
+[配对设备](/zh-CN/手册/操作指南/配对设备/)。这里重要的是它的结构。
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+负载位于 URL 的**片段**中，也就是 `#` 之后、浏览器从不发给服务器的那一段，因此
+PWA 的 HTTPS 主机也看不到它。它携带了手机访问服务器并证明自己身份所需的一切：
+连接描述符（每条路径加上身份指纹）、一个新生成的设备 id、一个 32 字节的预共享
+密钥，以及一个过期时间戳。手机会解码它，在本地保存配对记录，并去掉片段，让密钥
+从 URL 中消失。
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+负载有两种形态，二者**不可互换**。从应用内配对面板生成的手机二维码就是上面那种
+v2 `PairingPayload`，指向 Remote PWA 主机。`cc_server pair --client-url` 发出的
+是另一种更旧的 v1 链接（`{s, i, k}` —— 服务器 URL、设备 id、密钥），只面向
+**Web** 客户端。
 
-They also differ in lifetime, which is easy to get wrong:
+两者的有效期也不同，这一点很容易搞错：
 
-| Minted by                             | Credential expiry                         |
+| 生成方式                              | 凭据有效期                                |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| 应用内配对面板（`pairing.mint`）      | 始终为 30 天                              |
+| 命令行上的 `cc_server pair`           | **无** —— 凭据不会过期                    |
 
-## The access model
+## 访问模型
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+已配对的设备是**经过身份验证但不受信任**的。若干相互独立的关卡，让一次获批
+（或泄露）的配对不会变成对服务器的完全控制。
 
-### 1. Membership, not pairing, is the boundary
+### 1. 边界是成员身份，而不是配对
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+有效的配对密钥只能证明你是_哪台设备_。你可以读取或修改什么，由你的**工作区
+角色**决定——每次调用都会重新解析——凡涉及仓库内容的操作，还要看按仓库授予的
+权限。设备持有完全有效的密钥，但其所属用户不是所指定工作区的成员时，会被拒绝并
+提示 “Not a member of this workspace”。
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+角色下限由操作的类型推导，除非操作自己声明：读取需要 `guest`，变更需要
+`member`，破坏性操作需要 `admin`。
 
-### 2. A phone is a lower session tier
+### 2. 手机属于更低的会话层级
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+除角色检查之外，手机会话所携带的能力也低于桌面端或 Web 会话。声明为仅限完整
+客户端的操作，会在处理程序运行之前就对手机拒绝，无论其背后的用户权限多高：生成、
+列出、重命名和吊销设备配对；读取和设置隧道连接；服务器备份与工作区导出/导入；
+进程检测与终止；适配器探测；服务器设置；SSO 管理；机群控制；以及接管或交回
+正在运行的智能体。
 
-### 3. A default-deny tool allow-list
+### 3. 默认拒绝的工具允许列表
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+具体到 MCP 工具面（`tools/call`），哪些工具可以被手机调用，由一份默认拒绝的
+允许列表决定。未列入的工具在运行之前就会被拒绝。这份列表以读取和观察为主，另加
+少量**仅限本地**的写入——一条消息、一次工单更新、一个文章标记——它们不消耗
+LLM 预算、不启动进程，也不接触任何外部系统。
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+例如被拒绝的有：向智能体咨询、启动 AI 审查、终止智能体、把审查发布到 GitHub、
+招聘或解雇智能体、创建工作区。
 
-### 4. Per-call workspace scoping
+### 4. 按调用限定工作区范围
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/zh-CN/手册/概念/工作区/) invariant the rest of the
-product enforces.
+服务器**不**保存“当前工作区”。它按设计是无状态的：每个以工作区为作用域的调用
+都必须在其参数中给出目标的 `workspace_id`，一旦缺少该参数，或它指向一个服务器
+未注册的工作区，调度器就会直接拒绝这次调用——这发生在任何数据库被打开之前。
+因此手机永远无法继承或漂移到另一个客户端的作用域，指定一个外来的工作区也没有用，
+因为第 1 道关卡里的成员身份检查仍然适用。这与产品其余部分强制执行的
+[工作区隔离](/zh-CN/手册/概念/工作区/)是同一个不变式。
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. 以预共享密钥为密钥的端到端密封帧
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+手机与服务器之间的每一帧都用配对密钥密封；准入令牌只能让客户端进入房间，它不
+解密任何东西。代理转发的只是密文，永远看不到密钥。已吊销的设备会发现自己的凭据
+早已消失，因此它在重新连接时**失败即关闭**。
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+由应用生成的凭据有 30 天的期限；超过之后，连接关卡会判定它失败，手机必须重新
+配对。吊销是实时的：服务器监视设备表，会在几秒内断开已吊销设备的现有会话，而不是
+等它下次连接。
 
-### 6. Rate limiting per principal
+### 6. 按主体限流
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+滑动窗口限流器把远程工具流量限制在每分钟 120 次调用，并对变更类操作再加一个更严
+的每分钟 30 次子上限。配额属于**主体，而不是会话**：你的三台设备共用同一份额度，
+因此被劫持的客户端无法通过多开会话来换取余量，一个吵闹的成员也无法让其他人挨饿。
 
-### 7. A broker that learns nothing
+### 7. 什么也学不到的代理
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+中继代理被刻意做得笨拙：它托管房间、转发密封帧，不保存任何账户、应用数据或密钥。
+房间需邀请才能加入，而且是临时的。应用数据、音频、转录、源代码和凭据全都留在
+服务器上。
 
-## Live updates
+## 实时更新
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+配对之后，手机会以通知帧的形式收到**实时更新**——新的智能体消息、分配给你的工单、
+状态变化——与桌面端自己的通知如出一辙。服务器把这些帧广播给每个已连接的会话，
+工作区过滤在客户端一侧应用，因此你看到的内容被限定在你正在查看的那个工作区。
 
-## Where it lives
+## 它在哪里
 
-| Surface                                                                             | What it shows                                                                                               |
+| 界面                                                                                | 显示内容                                                                                                    |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **设置 → 你 → 你的设备**（`/workspaces/:workspaceId/settings/you/devices`）         | 已配对客户端及其实时状态，另有**配对新客户端**（网页浏览器、桌面应用或手机）和吊销                         |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+同一个面板也能为第二个浏览器或桌面应用生成配对，并不只限于手机——流程完全相同，
+只有深链接不同。
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+远程控制位于服务器端，且**不**通过 MCP 暴露。手机通过中继与服务器自己的调度器
+通信；它不是外部服务器的 MCP 客户端。
 ::::
 
-## See also
+## 另请参阅
 
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/zh-CN/手册/概念/多人协作/): roles, membership and repo grants
-- [Deployment and clients](/zh-CN/手册/概念/部署/): where remote control sits among the client tiers
-- [Architecture](/zh-CN/手册/概念/架构/): where remote control sits in the stack
-- [Pair a device](/zh-CN/手册/操作指南/配对设备/)
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)：它所依赖的按调用作用域
+- [多人协作——身份、成员身份与在线状态](/zh-CN/手册/概念/多人协作/)：角色、成员身份与仓库权限
+- [部署与客户端](/zh-CN/手册/概念/部署/)：远程控制在各客户端层级中的位置
+- [架构](/zh-CN/手册/概念/架构/)：远程控制在技术栈中的位置
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)

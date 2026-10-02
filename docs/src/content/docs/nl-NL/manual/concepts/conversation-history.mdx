@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Gespreksgeschiedenis
+description: Hoe een run zijn context bewaart, vouwt, vertakt en hervat — compressiestrategieën, de sessieboom en wat "hervatten" echt betekent.
 slug: nl-NL/handleiding/concepten/gespreksgeschiedenis
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Een lang gesprek loopt tegen een harde grens aan: het contextvenster van het model. Alles op deze pagina bestaat vanwege die grens, en het interessante deel is wat er wordt weggegooid, wat er wordt bewaard en wat er kan worden teruggehaald.
 
-## Four ways to reclaim context
+## Vier manieren om context terug te winnen
 
-They are not alternatives so much as a ladder, cheapest first.
+Het zijn niet zozeer alternatieven als wel een ladder, goedkoopste eerst.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| Mechanisme      | Kosten           | Bewaart                                | Verliest                             |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **Weglating**    | Niets        | Elk woord van het verhaal          | Rustige oudere toolresultaten     |
+| **Afbeeldingen afstoten** | Niets        | De tekst eromheen                 | Oude schermafbeeldingen                   |
+| **Momentopnames**  | Niets        | Elk woord, als pixels                | Leesbaarheid voor een model zonder visie  |
+| **Samenvatting**    | Eén modelaanroep | Een verhaal                          | De details die hij niet koos       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Weglating en afstoten draaien eerst omdat ze gratis zijn en verliesvrij op de manier die ertoe doet: ze gooien bulk weg die toch niemand opnieuw zou lezen.
 
-### Why summarizing is the last resort
+### Waarom samenvatten het laatste redmiddel is
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Een samenvatting is de enige van de vier die **een modelaanroep kost** en de enige die **voor jou bepaalt** wat belangrijk was. Beide zijn echte kosten. De aanroep is de interessantste, vanwege het moment waarop hij plaatsvindt.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Compressie draait meestal *vóór* de grens, op basis van een drempelwaarde. Maar het draait ook **reactief**, nadat de aanbieder zelf een verzoek als te groot afwijst — de heuristische schatting had minder geteld dan wat de aanbieder werkelijk had gemeten. In die situatie moet een compactor die samenvat een verzoek doen om de context te verkleinen, en het verzoek dat hij doet is juist het verzoek dat zojuist is overgelopen.
 
-### Snapshots
+### Momentopnames
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Compressie met momentopnames rendert weggegooide geschiedenis op dichte pagina's vol pixelglyphs en geeft ze terug als afbeeldingen.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Het uitgangspunt is een eigenaardigheid in de facturatie: een visiemodel rekent voor een afbeelding een vast tarief of een tarief evenredig met de oppervlakte, dat niets te maken heeft met het aantal tekens erin. Twaalfduizend tekens weggegooid gesprek kosten twaalfduizend tekens aan teksttokens. Dezelfde tekens op één pagina gerenderd kosten één afbeelding.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Wat het de moeite waard maakt in plaats van alleen maar slim, is dat het **geen modelaanroep, geen sleutel en geen netwerk** nodig heeft. Het is de enige strategie die altijd beschikbaar is tijdens het herstel van een overloop.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+De vorm van de reconstructie is een letterlijke kop, een als afbeelding weergegeven midden en een letterlijke staart. De kop is de taak en de beperkingen waarnaar alles stroomafwaarts terugverwijst; de staart is waar het werk zich nu bevindt. Het midden wordt het minst herlezen en kost het meest.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Het degradeert eerlijk]
+Een model zonder visie kan geen pagina's vol pixels lezen, en tekst renderen waar niets naar kan kijken is geen verslechterde compressie — het is een verwijderd gesprek. De capaciteit van de lezer beslist dus, en een model zonder visie krijgt altijd de samenvatting.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[De paginavorm is geprijsd voor de API, niet voor de gewichten]
+Gemini rekent een vast tarief per afbeelding, dus elk extra teken op de pagina is gratis en zijn pagina's zijn het breedst. OpenAI en Anthropic rekenen per oppervlakte, dus een grotere pagina levert niets op. Sommige processors schalen omlaag voorbij een drempel, waardoor glyphs van 5 pixels geruisloos worden vernietigd, dus hun pagina's blijven eronder. Een Claude die via een gateway wordt bediend, wordt door de gateway gefactureerd, dus de vorm volgt het model-id zoals de route het noemt.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Momentopnames worden bij elke doorgang opnieuw gerenderd uit **bewaarde brontekst**, nooit uit de pixels van de vorige doorgang. Het opnieuw afbeelden van een afbeelding tast de glyphs aan met één generatie per compressie, totdat niets ze nog kan lezen.
 
-## What a run actually resumes from
+## Waarvan een run werkelijk wordt hervat
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Historisch begon elke harness-run met een lege geschiedenis en bouwde de continuïteit opnieuw op vanuit een `<context>`-blok in de prompt — een *samenvatting* van het gesprek in plaats van het gesprek zelf. Daaruit volgden drie dingen:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Hervatten was opnieuw vertellen.** Het model zag nooit zijn eigen eerdere redeneringen of de werkelijke bytes die zijn tools teruggaven, alleen een beschrijving ervan.
+- **Rewind stierf met het proces.** Een `checkpoint` is een index in de live berichtenlijst, dus een herstart verloor elk label dat het model had gezet.
+- **Opnieuw proberen kon "niets om opnieuw te proberen" niet onderscheiden van "niets geladen".** Na een herstart is de mislukte beurt hoe dan ook verdwenen uit de actieve toestand.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Alle drie worden opgelost door het transcript te bewaren. Het wordt bij elke **beurtgrens** opgeslagen en nooit midden in een beurt: een geschiedenis die tussen een toolaanroep en het resultaat wordt vastgelegd, is er een die geen enkele aanbieder accepteert, dus een crash op dat moment herstelt de beurt *ervoor* in plaats van een halve beurt die niet kan worden afgespeeld.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Een hervatte run wordt getrimd tot zijn nieuwste berichten, met de knip op een grens die geen verweesd toolresultaat is — een resultaat waarvan de aanroep is weggeknipt, is een verzoek dat aanbieders zonder meer afwijzen, en een transcript dat niet kan worden verzonden is erger dan een kort transcript.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Waar het staat]
+Eén JSON-bestand per gesprek-en-agent, in de eigen map van de werkruimte, naast de database. Twee agenten in één gesprek houden er twee geschiedenissen op na: ze zagen verschillende toolresultaten en kregen verschillende systeemprompts, dus samenvoegen zou elk de redeneringen van de ander als de zijne geven.
 :::
 
-## The session tree
+## De sessieboom
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Elk bericht legt vast waarop het voortbouwt, en elk gesprek noemt zijn huidige **takpunt**. Die ene beslissing is de hele functie.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Vertakken schrijft niets.** Het verplaatst de wijzer. Het pad dat je verliet staat er nog, dus terugschakelen is weer een verplaatsing van de wijzer in plaats van een herstel — en een prompt aanpassen om die opnieuw uit te voeren kost je niet langer het antwoord waarmee je vergeleek.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Zonder dat moet elke vorm van teruggaan berichten verbergen of verwijderen, en verbergen is een leugen waar de volgende lezer niet doorheen prikt.
 
-### Branch versus fork
+### Tak versus aftakking
 
-|                | Branch              | Fork                        |
+|                | Tak              | Aftakking                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Wat er gebeurt   | De wijzer verschuift   | Het pad wordt gekopieerd          |
+| Waar het heen gaat  | Hetzelfde gesprek   | Een nieuw gesprek          |
+| Kosten           | Niets             | Eén kopie van de tak      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Een aftakking kopieert met **nieuwe id's** in plaats van rijen te delen. Twee gesprekken die rijen delen, zouden elkaars latere berichten tonen, en dat is het enige dat een aftakking niet mag doen.
 
-### Rewind rides the same pointer
+### Rewind lift mee op dezelfde wijzer
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Het paar `checkpoint` / `rewind` binnen een run markeert een schone beurtgrens en keert na een verkenning daarheen terug, met behoud van een digest. Omdat checkpoints samen met het transcript worden bewaard, komt een label dat het model vóór een herstart zette nog steeds terecht waar het was gezet. Een checkpoint waarvan het doel het trimmen niet heeft overleefd, wordt **verwijderd**, niet geklemd — terugspoelen "naar het label" en ergens anders uitkomen is precies de fout die een label moet voorkomen.
 
-## Related
+## Gerelateerd
 
-- [Branch a conversation](/nl-NL/handleiding/gidsen/gesprek-vertakken/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/nl-NL/handleiding/concepten/toolcontext/) — the other half of what fills a context window
-- [Slash commands](/nl-NL/handleiding/referentie/slash-commandos/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Een gesprek vertakken](/nl-NL/handleiding/gidsen/gesprek-vertakken/) — de boomnavigator, aftakken en exporteren
+- [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/) — de andere helft van wat een contextvenster vult
+- [Slash-commando’s](/nl-NL/handleiding/referentie/slash-commandos/) — `/compact`, `/shake`, `/context`, `/tree`

@@ -1,102 +1,102 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: 构建你的第一条流水线
+description: 创建一个流水线模板、配置它的步骤、允许手动运行，并启动一次运行。
 slug: zh-CN/手册/教程/第一条流水线
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+完成本教程后，你将拥有：
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- 一个保存好的流水线模板，它用提示词派发一个智能体
+- 已为它启用手动运行，因此可以手动启动
+- 一次已完成的运行，其中该步骤的输入和输出可见
 
-Prerequisites: [Dispatch your first agent](/zh-CN/手册/教程/第一个智能体/) completed, so you have an agent with an adapter and a model.
+前提条件：已完成[派发你的第一个智能体](/zh-CN/手册/教程/第一个智能体/)，这样你就有了一个带适配器和模型的智能体。
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/zh-CN/手册/概念/流水线/); for the full step vocabulary, [Pipeline step kinds](/zh-CN/手册/参考/流水线步骤/).
+流水线是由步骤构成的 DAG。模板定义图，运行则是执行。要了解其背后的模型，请阅读[流水线与自动化](/zh-CN/手册/概念/流水线/)；要了解完整的步骤词汇，请参阅[流水线步骤](/zh-CN/手册/参考/流水线步骤/)。
 
-## Step 1: Create a template
+## 第 1 步：创建模板
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. 前往 **设置 → 工作区 → 流水线模板**
+2. 点击 **新建模板**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+编辑器会打开一个名为 **新建流水线** 的预置骨架（id 为 `pipeline_N`）。
+点击页眉中的标题并重命名——对本教程来说，
+`code_quality_check` 是个好名字。没有 id 对话框，也没有描述
+字段。
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+画布并非空白。新建模板已经预先连好，形如 **Trigger → Step →
+terminal**，其中“Step”是一个提示智能体节点，而终端是一个
+不可见的哨兵，编辑器会把它改接到每一个可达的汇点。
 
-You configure the Step that is already there.
+你要配置的，就是那个已经存在的 Step 节点。
 
-## Step 2: Configure the step
+## 第 2 步：配置步骤
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. 点击画布上的 **Step** 节点
+2. 在右侧的 **节点配置** 面板中设置：
+   - **智能体**：你在上一个教程中创建的智能体
+   - **提示模板**：“审查当前分支上的代码是否有质量问题。列出你发现的问题。”
+3. **Triggers from** 保持不动——该节点已经连好线，会在 Trigger 之后触发
 
-## Step 3: Save
+## 第 3 步：保存
 
-Press **Save** in the editor header.
+在编辑器页眉中按下 **保存**。
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**检查点。**“未保存的更改”这一说明文字会消失。
 
-## Step 4: Allow manual runs
+## 第 4 步：允许手动运行
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. 点击画布上虚线框的 **添加触发器** 卡片（或从节点库的触发器分区拖入
+   **手动运行**），然后选择 **手动运行**。
+2. 选中该节点。在右侧的检查器中打开 **已启用** ——
+   “显示在运行页，可手动启动。”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+这一步不是可选的，而且很容易漏掉。新建模板创建时**根本没有触发器行**，因此在打开这个开关之前，运行页不会列出它，也就没有任何东西可以启动。这个开关会立即写入触发器，不会等待另一次保存。
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+编辑器页眉中 **手动运行** 的背后也是同一个开关，它就位于模板所声明的输入旁边。
 
-## Step 5: Run it
+## 第 5 步：运行它
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. 在侧栏中点击 **流水线**
+2. 在页眉中点击 **运行流水线**
+3. 在左侧栏中选取 `code_quality_check`
+4. 在表单上点击 **运行流水线** ——你的模板没有声明任何输入，因此无需填写任何内容
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**检查点。**一条提示会确认运行已开始，随后 Control Center 会打开运行详情页。
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+引擎会创建运行记录、完成触发器、调度步骤、派发智能体，并在终端的入站分支完成时结束这次运行。
 
-## Step 6: Inspect the result
+## 第 6 步：检查结果
 
-Click the step in the run to open its detail panel:
+在运行中点击该步骤，即可打开它的详情面板：
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- **开始** 和 **结束** 时间戳，以及 **时长**
+- **输入**：传入该步骤的状态
+- **输出**：它产生的成果——在这里，就是智能体的回复
+- **智能体活动**，并带有指向该步骤所驱动的对话的链接
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**检查点。**该步骤显示为已完成，其输出中保存着智能体的审查结果。
 
-## Adding more steps
+## 添加更多步骤
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+添加节点的方法是：把左侧节点库中的条目拖到画布上，或按下一个节点
+正后方的 **添加步骤**（`+`）。从一个节点的输出端口拖到另一个节点即可
+连接它们，也可以选中新节点，在 **Triggers from** 下勾选它的上游步骤。
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+终端节点不会被绘制，也无法选中。编辑器会把它
+改接到每一个可达的汇点，因此你在预置的 Step 之后添加的节点仍会运行。
 
-## Recap
+## 小结
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+你创建了一个模板、配置了它预置的提示智能体节点、保存了它、让它可手动运行、启动了一次运行，并读取了该步骤的输入和输出。
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+流水线会比这大得多——条件路由器、并行分支、汇合节点、for-each 扇出、人工门禁——但形态始终不变：DAG 中的步骤在传递状态。
 
-**Next:** [Bridge Slack to your workspace](/zh-CN/手册/教程/第一个聊天桥接/), the last tutorial in this sequence.
+**下一步：**[将 Slack 桥接到你的工作区](/zh-CN/手册/教程/第一个聊天桥接/)，这是本系列教程中的最后一篇。
 
-- [Set up pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/) to start pipelines from events or a schedule
-- [Pipelines and automation](/zh-CN/手册/概念/流水线/) for the model underneath
-- [Pipeline step kinds](/zh-CN/手册/参考/流水线步骤/) for every step type
+- [设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)，以便从事件或计划启动流水线
+- [流水线与自动化](/zh-CN/手册/概念/流水线/)，了解其背后的模型
+- [流水线步骤](/zh-CN/手册/参考/流水线步骤/)，了解每一种步骤类型

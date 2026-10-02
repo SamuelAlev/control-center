@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Rychlý start
+description: Nainstaluj Control Center, nastav jednoho agenta a sleduj, jak pracuje na tvém repozitáři.
 slug: cs-CZ/prirucka/rychly-start
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Tohle je nejkratší úplná cesta od nuly k agentovi, který pracuje na tvém vlastním kódu. Jdi v tomhle pořadí. Každý krok stojí na tom předchozím.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Potřebuješ Git, účet GitHub a buď účet u poskytovatele modelů (Anthropic, OpenAI, Codex, Cursor, Kimi Code nebo libovolný poskytovatel s API klíčem), nebo už nainstalované CLI Claude Code. Zbytek se nastaví cestou.
 
-## Step 1: Install and launch
+## Krok 1: Nainstaluj a spusť
 
-Install Control Center as described in [Install](/cs-CZ/prirucka/instalace/), then open it.
+Nainstaluj Control Center podle [Instalace](/cs-CZ/prirucka/instalace/) a otevři ho.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Při prvním spuštění se desktop zeptá **„Jak má Control Center běžet?“** Zvol **Spustit v této aplikaci**. Control Center na tomhle stroji spustí headless `cc_server`, který vlastní tvoje data a dělá všechnu práci. Neuvidíš ho. Místo toho se otevře obrazovka úvodního nastavení.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/cs-CZ/prirucka/instalace/#use-it-in-your-browser) for the browser route.
+:::note[Nechceš nic instalovat?]
+Ta samá aplikace běží v prohlížeči na [app.usectrl.dev](https://app.usectrl.dev) se
+stejnými funkcemi. Karta prohlížeče server hostovat neumí, takže ho dodáš ty:
+spusť `cc_server` lokálně a připoj se na `ws://localhost:9030`, nebo aplikaci namiř na
+server na jiném stroji. Tenhle rychlý start jde cestou desktopu, protože server
+nastavovat nemusíš. Cestu prohlížečem popisuje
+[Instalace](/cs-CZ/prirucka/instalace/#použij-ho-v-prohlížeči).
 :::
 
-## Step 2: Work through onboarding
+## Krok 2: Projdi úvodní nastavení
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Úvodní nastavení má pět kroků a jdou po řadě. Dopředu se přeskočit nedá.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Připojit**: přihlas se přes GitHub, nebo vlož osobní přístupový token s oprávněními `repo` a `read:org`. Pověření se uloží na server a připojí se k tvému účtu.
+2. **Pracovní prostor**: pojmenuj první pracovní prostor a volitelně vyber logo. Jeho vytvoření založí pět agentů, CEO a `qa`, `architect`, `engineer` a `librarian`, a vestavěné šablony pipeline.
+3. **Sandbox**: zapíše preferenci sandboxu. Pokračovat jde po obou volbách.
+4. **Adaptér**: vyber adaptér a model, které mají mít agenti jako výchozí. Zvol **Control Center (built-in)** a ve výběru poskytovatele, který se objeví, se přihlas k poskytovateli modelů. Seznam modelů zůstane prázdný, dokud jednoho nepřipojíš. Dokončení tohohle kroku zapíše adaptér a model i agentovi CEO v pracovním prostoru.
+5. **Hlas (volitelné)**: nainstaluj řečový model na zařízení pro diktování, nebo krok přeskoč.
 
-Control Center then opens your workspace inbox.
+Control Center pak otevře doručenou poštu pracovního prostoru.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+:::note[Co omezuje běh agenta]
+Příkazy agenta se obalí nativním sandboxem operačního systému hostitele, když je k dispozici: Seatbelt na macOS, bubblewrap na Linuxu. Windows backend nemá, takže tam běhy drží jen ostatní vrstvy. Vlastní worktree konverzace (`git worktree` na Windows; copy-on-write tam, kde je `rift`), pověření vydaná při spuštění a odebraná při úklidu a guardraily akcí. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
-## Step 3: Add a repository
+## Krok 3: Přidej repozitář
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Jdi do **Nastavení → Pracovní prostor → Repozitáře** a klepni na **Přidat repozitář**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+Dialog prochází složky na stroji, kde běží server, ne na tvém klientovi, a drží se kořenů, které server smí vystavit (ve výchozím stavu domovský adresář jeho uživatele). Zaškrtávací pole dostane jen git checkout. Zaškrtni svůj a zaregistruj ho.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Checkout se přijme, jen když leží v pracovním stromu gitu, má remote `origin` a ten míří na podporovaný forge: github.com, gitlab.com nebo bitbucket.org. Všechno ostatní se odmítne i s důvodem.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repozitáře patří k pracovnímu prostoru: registrace checkoutu ho vloží do _tohoto_ pracovního prostoru. Samostatný krok propojení není.
 
-## Step 4: Give an agent an adapter and a model
+## Krok 4: Dej agentovi adaptér a model
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Jdi do **Nastavení → Pracovní prostor → Agenti**. V soupisce vyber agenta `engineer`.
 
-On the **Settings** tab, set:
+Na kartě **Nastavení** nastav:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Adaptér**: `Control Center (built-in)`
+- **Model**: vyber jeden od poskytovatele, kterého jsi připojil v úvodním nastavení
 
-Press **Save changes**.
+Stiskni **Uložit změny**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+V praxi tenhle krok vynechat nejde. Adaptér zvolený při úvodním nastavení zdědí jen agent CEO. Čtyři specialisté vzniknou bez něj. Spadnou zpět na **Control Center (built-in)** s výchozím modelem Anthropic, takže běží jen s připojeným účtem Anthropic, a když ho máš, tak na modelu, který sis nevybral.
 
-## Step 5: Send the agent a task
+## Krok 5: Pošli agentovi úkol
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. V postranním panelu najdi sekci **Prostory** a klepni na tlačítko **+**.
+2. Pojmenuj prostor, pod **Přidat agenty** přidej agenta `engineer` a vytvoř ho.
+3. Napiš konkrétní malý úkol nad repozitářem, který jsi zaregistroval, a stiskni Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center pro tuhle konverzaci připraví copy-on-write worktree repozitářů pracovního prostoru, složí prompt z role, persony a skillů agenta a z kontextu prostoru a odešle běh. Zdrojového checkoutu se nedotkne.
 
-## Step 6: Watch it work
+## Krok 6: Sleduj, jak pracuje
 
-You should see, in order:
+Mělo by se stát tohle, v tomhle pořadí:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Tlačítko odeslání v composeru se změní na **Zastavit**, protože v téhle konverzaci pracuje agent
+- Do přepisu se streamuje uvažování agenta, volání nástrojů a text
+- Po skončení běhu se tlačítko odeslání vrátí
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Pak otevři **Nastavení → Pracovní prostor → Agenti**, vyber agenta a podívej se na kartu **Protokoly**: jeden řádek běhu se stavem, dobou trvání, časy začátku a konce a adaptérem, na kterém běžel.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+To je ta smyčka. Všechno ostatní v Control Center, revize pull requestů, pipelines, tickety, schůzky i Slack, z ní vychází.
 
-## Next steps
+## Další kroky
 
-- [Your first workspace](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/cs-CZ/prirucka/tutorialy/prvni-pr/): take an agent's branch through review and merge
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): what an agent is made of
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/): the rest of the agent form
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/): one goal, one approval, a generated pipeline
-- [Pair your phone](/cs-CZ/prirucka/navody/parovani-zarizeni/): follow the fleet from anywhere
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/): how the desktop, web and phone clients relate to the server
+- [Váš první pracovní prostor](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/): to samé, pomaleji, s vysvětleným modelem izolace
+- [Zkontrolujte první pull request](/cs-CZ/prirucka/tutorialy/prvni-pr/): vezmi větev agenta přes revizi a sloučení
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): z čeho se agent skládá
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/): zbytek formuláře agenta
+- [Spusťte orchestraci](/cs-CZ/prirucka/navody/spusteni-orchestrace/): jeden cíl, jedno schválení, vygenerovaná pipeline
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): sleduj flotilu odkudkoli
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/): jak spolu souvisejí klienti pro počítač, web a telefon a server

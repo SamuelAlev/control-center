@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: 初めてのワークスペース
+description: ワークスペースを作成し、リポジトリを登録し、分離の境界を自分の目で確認します。
 slug: ja-JP/マニュアル/チュートリアル/初めてのワークスペース
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## このチュートリアルで作るもの
 
-By the end of this tutorial, you will have:
+このチュートリアルを終えると、次のものが揃っています:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- プロジェクトの名前を付けたワークスペース
+- そこに登録された Git リポジトリ
+- シードされた 5 体のエージェント — うち 1 体は実行できる程度に設定済み
+- 分離の境界を証明する、2 つ目の空のワークスペース
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+オンボーディングですでにワークスペースが作成されています。このチュートリアルでは、プロセスのすべての部分を見られるように、あえて新しく作成します。
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+始める前に、次の 3 つすべてを満たす Git チェックアウトを用意してください — 登録ステップはそれ以外を受け付けません:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- git ワークツリーの内部にあること
+- `origin` リモートがあること
+- そのリモートが github.com、gitlab.com、bitbucket.org のいずれかを指していること
 
-## Step 1: Create a workspace
+## ステップ 1: ワークスペースを作成する
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. タイトルバーのワークスペースチップをクリックします
+2. **ワークスペースを追加…** を選択します
+3. プロジェクトを識別できる名前を入力します。たとえば "api-service" や "frontend-v2" です
+4. 任意でロゴを選びます
+5. **ワークスペースを追加** をクリックします
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center は新しいワークスペースに切り替わり、その受信トレイ（`/workspaces/<id>/inbox`）を開きます。
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+その裏で、サーバーは `WorkspaceCreated` イベントを発行し、ワークスペースに次をシードします:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **CEO エージェント** — そのペルソナは調整と委任です
+- 4 体のスペシャリスト — `qa`、`architect`、`engineer`、`librarian` — それぞれに独自の指示とスキルがあります
+- 組み込みのパイプラインテンプレートとそのトリガー行
 
-Every workspace you create gets all of this, not just the first one.
+作成するすべてのワークスペースがこれらすべてを手に入れます。最初の 1 つだけではありません。
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+確認: **設定 → ワークスペース → エージェント** を開きます。名簿には 5 体のエージェントがあり、それぞれに中空のステータスリングが付いています。
 
-## Step 2: Register a repository
+## ステップ 2: リポジトリを登録する
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. **設定 → ワークスペース → リポジトリ** に移動します
+2. **リポジトリを追加** をクリックします
+3. 自分のチェックアウトまで参照します。このダイアログがたどるのは `cc_server` を実行しているマシン上のフォルダーであり、あなたのクライアントではありません。また、そのサーバーが公開しているルート（既定ではそのユーザーのホームディレクトリ）の内部にとどまります。git のチェックアウトには専用のフォルダーアイコンとチェックボックスが付き、通常のフォルダーにはどちらも付きません。そのため選択できるのはチェックアウトだけです。
+4. 1 つ以上のチェックアウトにチェックを入れ、まとめて登録します。選択内容は移動しても保持されるため、1 回の操作で複数まとめることができ、1 つ選び損ねても残りが失われることはありません。
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center は各チェックアウトの `origin` リモートを読み取り、オーナーとリポジトリを解決して、リポジトリの行を**このワークスペースの内部に**作成します。リンクするための 2 つ目のステップはありません。スコープを決めるのは登録そのものです。
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+あとで同じチェックアウトを別のワークスペースに登録すると、独自の id を持つ 2 つ目の独立したリポジトリ行が作成されます。ワークスペースをまたぐ場合、チェックアウトはファイルシステムのパスで識別され、id で識別されることはありません。
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+確認: リポジトリが一覧に表示され、その `owner/repo` と現在のブランチが示されます。
 
-## Step 3: Make one agent runnable
+## ステップ 3: 1 体のエージェントを実行可能にする
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+このワークスペースが今シードした 5 体のエージェントには、アダプターもモデルもありません。ディスパッチはそれらを **Control Center (built-in)** 上で実行し、モデルが設定されていなければ Anthropic に既定のモデルを問い合わせます — つまり、Anthropic アカウントを接続している場合にだけ動作し、接続している場合はあなたが選んでいないモデルで実行されます。初回起動時のオンボーディングは、最初のワークスペースのすべてのエージェントにその選択を 1 回だけ刻印します。あとから作成したワークスペースは、5 体すべてが未設定の状態で始まります。ここで 1 体を設定しましょう。
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. **設定 → ワークスペース → エージェント** を開きます
+2. 名簿で `engineer` を選択します
+3. **設定** タブで、**アダプター**を `Control Center (built-in)` に設定し、**設定 → サーバー → モデルプロバイダー**で接続したプロバイダーから**モデル**を選びます
+4. **変更を保存** を押します
 
-Confirm it: reopen the agent and the two fields hold your choices.
+確認: エージェントを再度開くと、2 つのフィールドに選んだ内容が保持されています。
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/) covers the rest of the form.
+各エージェントは独自のアダプターとモデルを持ちます。使う予定の他のエージェントについても同じ手順を繰り返してください。[エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)で、フォームの残りの部分を説明します。
 
-## Step 4: See the isolation boundary
+## ステップ 4: 分離の境界を確認する
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+タイトルバーのチップから、ステップ 1 とまったく同じように 2 つ目のワークスペースを作成します。そして次を見てください:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **設定 → ワークスペース → リポジトリ** は空です。さきほど登録したリポジトリはそこにありません。
+- **設定 → ワークスペース → エージェント** には 5 体のエージェントがありますが、別の行です — ステップ 3 で設定したアダプターは消えています。
+- スペース一覧、チケット、メモリはすべて空です。
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+何も漏れていません。漏れる元がないからです。各ワークスペースの行は、そのワークスペース自身のデータベースファイルに存在します。ワークスペースをまたぐ読み取りは、フィルターされるクエリではなく、実行する場所がないクエリです。ワークスペースの削除は、ファイルのリンクを外すことにほかなりません。
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+タイトルバーのチップで切り替えて戻るか、**ワークスペースを管理** を開くと、それらを並べて見られます。
 
-For the full model, read [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/).
+モデル全体については、[ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)を参照してください。
 
-## Recap
+## まとめ
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+ワークスペースを作成し、CEO と 4 体のスペシャリストがシードされるのを見て、リポジトリを登録し、1 体のエージェントにアダプターとモデルを与え、2 つ目のワークスペースがそのどれも共有していないことを確認しました。
 
-**Next:** [Dispatch your first agent](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/) to put the workspace to work.
+**次:** [初めてのエージェントをディスパッチする](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/)で、ワークスペースを実際に働かせましょう。

@@ -1,129 +1,138 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Встановлювати й керувати навичками
+description: Додавайте репозиторії GitHub як джерела навичок, переглядайте їхні каталоги та встановлюйте, оновлюйте чи видаляйте навички через шлюз антивірусного сканування.
 slug: uk-UA/керівництво/практичні-посібники/керувати-навичками
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+У цьому посібнику показано, як наповнити робочий простір навичками з GitHub:
+додати репозиторій як джерело, установити потрібні з нього навички та
+підтримувати їх в актуальному стані.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/uk-UA/керівництво/поняття/модель-агента/); this page stays
-on the doing.
+Важливо знати перед початком: **репозиторій-джерело не є довіреним.** Його
+назву, опис і кількість зірок пише той, хто ним володіє. Єдиний сигнал безпеки,
+якому довіряє Control Center, — це вердикт антивірусного сканування, який
+проходить кожне встановлення, перш ніж щось потрапить на диск чи в промпт
+агента. Якщо хочете зрозуміти обґрунтування, читайте
+[розділ про навички в моделі агента](/uk-UA/керівництво/поняття/модель-агента/); ця сторінка
+присвячена практиці.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Навички живуть за адресою **Налаштування → Робочий простір → Навички**
+(`/workspaces/<id>/settings/workspace/skills`). Вони прив’язані до робочого
+простору: навички, установлені тут, належать лише цьому простору. Сторінка має
+дві вкладки: **Встановлені** (локальні навички, зокрема редактор
+**Нова навичка**) і **Джерела** (каталоги GitHub). Обидві операції запису
+проходять той самий шлюз сканування.
 
-## Add a skill repository
+## Додати репозиторій навичок
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Відкрийте **Налаштування → Робочий простір → Навички** і перейдіть на
+   вкладку **Джерела**.
+2. Натисніть **Додати репозиторій**.
+3. Вставте URL репозиторію GitHub, наприклад `https://github.com/anthropics/skills`,
+   і підтвердьте.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Сервер перевіряє, що репозиторій існує й видимий зі своїми обліковими даними, а
+тоді додає його до лівої бічної панелі. Жодного курованого сховища посередині
+немає: підійде будь-який репозиторій GitHub, а отже, і репутацію оцінювати вам —
+кількість зірок це свідчення, а не гарантія.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Навички репозиторію — це каталоги, що містять `SKILL.md` (до трьох рівнів
+углиб, а також розкладка плагінного маркетплейсу Claude
+`plugins/<plugin>/skills/<skill>`, пропускаючи дерева залежностей і вендорів).
+Якщо згодом сітка повідомить, що репозиторій не має навичок, це означає саме
+це: жоден каталог у ньому не відповідає умові навички.
 
-## Inspect a skill before installing
+## Оглянути навичку перед установленням
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Виберіть репозиторій на бічній панелі; його навички з’являться сіткою праворуч,
+а над нею — поле фільтра, яке звужує каталог за назвою, описом або slug.
+Натисніть картку, щоб відкрити детальний перегляд. Він показує три речі:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**, відтворений як markdown — `README.md` з каталогу навички, або
+  тіло `SKILL.md`, коли README немає.
+- **Передогляд сканування** — вердикт (`pass`, `warn` або `quarantine`),
+  можливості, які заявляє вміст навички (запускає shell, пише файли, мережевий
+  доступ…) і кожне виявлення, яке записав сканер.
+- **Кількість файлів** — установлення записує весь каталог навички, а не лише її
+  `SKILL.md`.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Передогляд сканує саме ті байти, які запише встановлення, тож вердикт, який ви
+бачите, і є вердиктом, який отримає встановлення; нічого не переоцінюють у вас
+за спиною.
 
-## Install a skill
+## Установити навичку
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Відкрийте детальний перегляд навички.
+2. Прочитайте вердикт сканування. За вердикту `warn` або `pass` натисніть
+   **Установити**.
+3. За вердикту `quarantine` кнопка встановлення лишається недоступною, доки ви не
+   позначите **Я розумію ризик — установити все одно**. Це перевизначення
+   записують, а не припускають.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+Установлення записує каталог навички в робочий простір, фіксує запис у
+`skills-lock.json` (репозиторій-джерело, шлях, коміт, з якого він походить, і
+хеш вмісту), і навичка стає доступною агентам у робочому просторі. Картка з
+позначкою **Назва зайнята** означає, що цю назву локально вже займає інша
+навичка — спершу видаліть ту.
 
-## Update skills over time
+## Оновлювати навички з часом
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Картки встановлених навичок мають позначки: **Установлено** або **Є оновлення**,
+коли репозиторій пішов далі за коміт, який ви зафіксували. Відкрийте детальний
+перегляд і натисніть **Оновити**, щоб повторно завантажити на новому коміті.
+Оновлення проходить той самий шлюз сканування, що й установлення — навичку, нова
+версія якої потрапляє на карантин, відхиляють, а версія, яка у вас була,
+лишається на місці. Хеш старої версії зберігають у файлі фіксації як посилання
+для відкату.
 
-## Uninstall a skill, remove a repository
+## Видалити навичку, вилучити репозиторій
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Видалити** (у детальному перегляді встановленої навички або через видалення на
+вкладці «Встановлені») прибирає каталог навички та її фіксацію разом — видалена
+навичка не лишає по собі нічого.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Вилучення репозиторію** з бічної панелі прибирає лише каталог: навички,
+установлені з нього, лишаються встановленими й далі оновлюються, бо фіксація
+записує репозиторій за назвою, а не посиланням на запис джерела. Додайте
+репозиторій назад, якщо хочете знову його переглядати.
 
-## Invoke a skill
+## Викликати навичку
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Навички викликають у власному просторі назв, тож вони ніколи не зіштовхуються з
+вбудованими slash-командами (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — навичка, установлена в цьому робочому просторі або
+  прикріплена до агента
+- `/skill:<repo>:<name>` — навичка, яку постачає репозиторій, вивантажений у
+  цьому просторі
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Гола назва, що не є вбудованою, усе ще розпізнається — для повідомлень,
+написаних до появи простору назв. `/skill:plan` — це те, що дістає навичку з
+назвою `plan`; `/plan` — завжди вбудована команда.
 
-## Repo-scoped skills
+## Навички в межах репозиторію
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Вивантажений репозиторій може постачати власні навички — у `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` або `skills/`. Їх
+**не** встановлюють через цю сторінку. Агент несе лише навички того репозиторію,
+у якому зараз працює; вони замінюються, коли він переходить до іншого. Редактор
+повідомлень так не обмежений: `/skill:<repo>:<name>` дістає будь-який репозиторій
+у просторі.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Навички репозиторію проходять те саме сканування з відмовою за замовчуванням
+(`pass` / `warn` / `quarantine`), перш ніж їхній frontmatter потрапить у промпт.
+`warn` допускають; `quarantine` затримують, і на цьому шляху оператор не може це
+перевизначити.
 
-See [Repo-scoped skills](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills) and
-[Slash commands](/uk-UA/керівництво/довідка/slash-команди/).
+Дивіться [Навички в межах репозиторію](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills) і
+[Slash-команди](/uk-UA/керівництво/довідка/slash-команди/).
 
-## Related guides
+## Пов’язані посібники
 
-- [Chat with an agent](/uk-UA/керівництво/практичні-посібники/спілкуватися-з-агентом/)
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/)
+- [Спілкуватися з агентом](/uk-UA/керівництво/практичні-посібники/спілкуватися-з-агентом/)
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/)
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/)

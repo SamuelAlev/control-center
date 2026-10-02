@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Munkaterület-memória kezelése
+description: Tekintse át, javítsa és ritkítsa az ügynökök által egy munkaterületbe írt tényeket és szabályzatokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/memoria-kezelese
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Ez az útmutató bemutatja, hogyan dolgozhat egy munkaterület tudástárával.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Fontos, amit még az elején tudnia kell: **a memóriafelület átnézésre való, nem szerkesztésre.** A tényeket és a szabályzatokat ügynökök írják — a `propose_fact` és a `propose_policy` útján, a lecserélésükhöz pedig a `supersede_fact` és a `supersede_policy` áll rendelkezésre. A `remember` egy munkamenethez kötött, forró szintű elemet ír, amelyet a `consolidate_memory` később ténnyé léptethet elő. A rögzített megbeszélés-döntések a `decisions` domainbe gyűlnek; a befejezett ügynökfutásokon nincs ilyen begyűjtés. Az Ön dolga itt annyi, hogy elolvassa, amit írtak, kijavítsa, deaktiválja vagy törölje.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+A memória a **Beállítások → Munkaterület → Memória** helyen található (`/workspaces/<id>/settings/memory`). Nem önálló, legfelső szintű célpont az oldalsávban.
 
-## The three tabs
+## A három fül
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Az oldalon pontosan három fül van. A Tények és a Szabályzatok élő darabszámot mutat, a gráf nem:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Tények** — a munkaterület minden ténye, valamint azon tények száma, amelyeket nem írtak felül
+- **Szabályzatok** — domain szerint csoportosított normatív szabályok, az aktívak számával
+- **Tudásgráf** — domainek, témák, tények és szabályzatok interaktív vászna
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+A domaint nem Ön hozza létre. Egy domain akkor jön létre, amikor egy ügynök beírja az első tényt vagy szabályzatot; a felhasználói felületen sehol nincs domain létrehozására szolgáló vezérlő.
 
-## Review and correct a fact
+## Tény átnézése és javítása
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Nyissa meg a **Tények** fület.
+2. A keresőmezővel szűkítse a listát. Ez egyszerű részstringszűrő az egyes tények domainje, témája és tartalma fölött — nincs kulcsszóindex és nincs rangsorolás.
+3. A hatókörszűrővel megjelenítheti az összes hatókört, csak a munkaterület szintű tényeket vagy egy adott tároló tényeit.
+4. A rendezésváltóval frissesség vagy bizonyosság szerint rendezhet.
+5. Kattintson egy tény szerkesztésvezérlőjére.
 
-The edit dialog lets you change:
+A szerkesztőpárbeszédablakban a következőket módosíthatja:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Tartomány** — a tény áthelyezése domainek között
+- **Téma** — a tény rövid címkéje
+- **Tartalom** — a tudásszöveg
+- **Bizonyosság** — csúszka 5%-os lépésekben
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+A mentéshez nyomja meg a **Mentés** gombot. Nincs **Tény hozzáadása** gomb; a párbeszédablak csak egy meglévő soron nyílik meg.
 
-## See superseded facts
+## Felülírt tények megtekintése
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+A Tények fülön van egy **Felülírtak megjelenítése** kapcsoló. A felülírt tények alapértelmezésben rejtve vannak, és ezzel a kapcsolóval jeleníthetők meg; itt él az auditnapló — a felülírás soha nem töröl.
 
-## Delete a fact
+## Tény törlése
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Használja egy tény törlésvezérlőjét, és erősítse meg. Ez valódi törlés, nem felülírás: azt használja olyan tényeknél, amelyeket egyszerűen hibás volt rögzíteni, és hagyja, hogy az ügynökök írják felül azokat a tényeket, amelyeknek a _tartalma_ továbbfejlődött.
 
-## Manage policies
+## Szabályzatok kezelése
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+A **Szabályzatok** fül domain szerint csoportosítja az aktív szabályzatokat, az inaktívakat pedig egy záró szakaszba sorolja. Szabályzatonként a következőket teheti:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Szerkesztés**
+- **Törlés**
+- **Deaktiválás** / **Aktiválás** — ez a visszafordítható lehetőség, és általában ez a helyes választás. Csak az aktív szabályzatok jutnak el az ügynökök promptjába.
 
-As with facts, there is no create control.
+A tényekhez hasonlóan itt sincs létrehozásvezérlő.
 
-## Explore the knowledge graph
+## A tudásgráf felfedezése
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+A **Tudásgráf** fül domaineket, témákat, tényeket és szabályzatokat rendez el bejárható csomópontvászonként — mozgathat, nagyíthat és húzhatja a csomópontokat. Egy csomópont megérintésével megnyílik a részletező panel, ahonnan ugyanazok a szerkesztőpárbeszédablakok érhetők el. Ez a leggyorsabb módja annak, hogy lássa, mely domainek vannak valóban feltöltve.
 
-## Edit an agent's working memory
+## Ügynök munkamemóriájának szerkesztése
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+A munkamemória ügynökönként egy privát jegyzetfüzet, amelyet a rendszer az indítás idején injektál az ügynök promptjába. Az ügynökök maguk írják a `record_observation` és az `update_my_notes` használatával, de Ön közvetlenül is elolvashatja és szerkesztheti:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Beállítások → Munkaterület → Ügynökök** → válassza ki az ügynököt → a **Memória** fül.
 
-## Access grants
+## Hozzáférési engedélyek
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+A memória-hozzáférési engedélyek ügynökszerepeket képeznek le domainenként egy engedélyre (`none`, `read`, `write`). A `memory_access_grant.*` műveletekkel írhatók.
 
-Two things to understand about how they resolve:
+Két dolgot érdemes megérteni a feloldásukkal kapcsolatban:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Az olvasás fail-open.** Ha egy (szerep, domain) párhoz nincs engedélysor, a tényleges engedély `read`. Az egyetlen írás, amely `write` nélkül kivételt dob, a `propose_policy`. A tényírásokat nem kapuzza engedély.
+- **Az engedélyek kulcsa az ügynök szerepe.** A javaslattevő eszközök a hiányzó `agent_role` értéket `general`-ra állítják. Egy másik szerephez írt engedély nem köti azokat az ügynököket; egy `general` engedély igen.
 
-## Search is not the same everywhere
+## A keresés nem mindenhol ugyanaz
 
-Three different things are called "memory search" and they do not agree:
+Három különböző dolgot neveznek „memóriakeresésnek”, és ezek nem egyeznek:
 
-| Where                               | What it does                                                                                                 |
+| Hol                                 | Mit tesz                                                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| A Tények fül keresőmezője           | Részstringszűrő a kliensben már betöltött tények fölött                                                      |
+| A `memory_fact.search` RPC-művelet  | Csak FTS5 kulcsszókeresés — egy vékony kliens nem tud lekérdezési beágyazást küldeni, ezért a hibrid keresés a hoszton belül marad |
+| Az ügynökoldali `search_memory` eszköz | `keyword`, `semantic` vagy `hybrid` (az alapértelmezett). A hibrid négy hangot von össze: lexikális, szemantikus, időbeli és gráf |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Így egy ügynök és a Memória oldal ugyanazt a lekérdezést nem ugyanúgy rangsorolja. Amikor azt ellenőrzi, hogy egy ügynök valójában mire emlékszik, kérdezze meg magát az ügynököt.
 
-## Embeddings
+## Beágyazások
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+A tények **íráskor** kapnak beágyazást, és csak akkor, ha az eszközön futó beágyazási modell telepítve van. Az állapotát itt ellenőrizheti: **Beállítások → Szerver → Diagnosztika és adatvédelem → Szemantikus keresés**. Ha szemantikus előhívást szeretne, a modellt még azelőtt telepítse, hogy az ügynökök elkezdenének memóriát írni.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
-- [Use the MCP server](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [Az MCP-szerver használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Memory and knowledge](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/)
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/)
+- [Memória és tudás](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/)
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/)

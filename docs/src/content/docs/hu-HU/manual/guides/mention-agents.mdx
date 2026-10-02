@@ -1,121 +1,135 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "Ügynökök @-említése"
+description: Említsen meg ügynököket egy térben, hogy elinduljanak, és munkatársakat, hogy értesítést kapjanak.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Ez az útmutató bemutatja, hogyan említhet meg ügynököket és munkatársakat @-tel
+egy térben.
 
-## Mention an agent
+## Ügynök megemlítése
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Írjon egy `@` jelet a beviteli mezőbe, és válasszon ügynököt az automatikus
+kiegészítésből, vagy gépelje be a nevet saját maga:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+A megemlített ügynök résztvevőként bekerül a térbe, ha még nem az, és a tér
+kontextusával és módjával indul el. A nem említett résztvevők látják az
+üzenetet, de nem indulnak el.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Ha olyan üzenetet küld, amelyben egyetlen ügynököt sem említ meg, a Control
+Center maga választ válaszolót: azt az ügynököt, amelyik utoljára beszélt a
+beszélgetésben, ha ilyen nincs, a beszélgetés tulajdonosát, amennyiben van neki,
+ha az sincs, a tér résztvevői közül az első legfelső szintű ügynököt. Egyetlen
+ügynököt tartalmazó térben ez mindig az az egyetlen ügynök.
 
-## Know how a name is matched
+## Hogyan illesztődnek a nevek
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Az említési token illesztése **kis- és nagybetűt nem megkülönböztető módon**,
+**pontos név vagy előtag** alapján történik. Így a `@arch` eléri a `architect`
+nevű ügynököt, a `@Alice` pedig az `alice`-t.
 
-Two consequences worth planning around:
+Két következmény, amelyre érdemes felkészülni:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **A rövid token nem hiba.** Ha két ügynök osztozik egy előtagon, az elsőként
+  megtalált nyer, és hogy melyik lesz az, a sorrendtől függ — nem valamilyen
+  holtversenyt feloldó szabálytól. Amikor a nevek átfednek, használja a teljes
+  nevet.
+- **A tokennek csak betűk, számjegyek és aláhúzásjel lehet a része.** Az elemző
+  a `@(\w+)` mintára illeszt, így a `@code-reviewer` a `code` tokenként, a
+  `@my agent` pedig a `my` tokenként értelmeződik. Az olyan ügynök, amelynek a
+  nevében kötőjel, pont vagy szóköz van, nem említhető meg megbízhatóan — még
+  az automatikus kiegészítéssel sem, amely a nevet sima szövegként szúrja be. Az
+  ügynökök nevét egyetlen szóban vagy aláhúzásjelekkel írja.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Az említéseket a rendszer eltávolítja a szövegből, mielőtt az eljutna az
+ügynökhöz. Az az üzenet, amely _csak_ említésekből áll (`@alice`), ezért semmit
+nem indít el — adjon neki valami tennivalót.
 
-## Mention several agents at once
+## Több ügynök megemlítése egyszerre
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Mindkét ügynök párhuzamosan indul el ugyanabba a beszélgetésbe, és mindketten
+megkapják a teljes üzenetet.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Ráadásul **megosztják az adott tér worktree-it**. A repók worktree-i térenként
+készülnek el, nem ügynökönként; mindegyik ügynök saját overlay-munkakönyvtárat
+kap az `AGENTS.md` fájljához, a készségeihez és a konfigurációjához, a megosztott
+repók pedig írás-olvasás módban vannak beléjük kapcsolva. Így előfordulhat, hogy
+két együtt megemlített ügynök látja egymás módosításait — és össze is ütközik.
 
-## Mention a teammate
+## Munkatárs megemlítése
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Bármely `@token`, amely nem illeszkedik egyetlen ügynökre sem, a munkaterület
+emberi tagjai között kerül feloldásra, handle alapján, ugyanazzal a kis- és
+nagybetűt nem megkülönböztető, pontos vagy előtag-egyezés szabályával.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Egy feloldott emberi említés **semmit nem indít el**. Kizárólag az üzenet
+metaadatain utazik, hogy az értesítés-útválasztó értesíthesse az illetőt.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Az ügynöknevek mindig elsőbbséget élveznek, és egy ügynök által lefoglalt tokent
+soha nem kínál fel a rendszer a tagok listájának — egy `@word` soha nem oldódhat
+fel egynél több jogalanyra.
 
-## What the agent receives
+## Mit kap az ügynök
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Az elindított ügynök a promptjában egy „Summons” blokkot kap, amely megnevezi,
+ki hívta, és felsorolja a tér névsorát — a többi ügynököt (legfelső szintűként
+vagy beosztottként megjelölve) és az emberi tagokat —, hogy tudja, kinek adhatja
+át a munkát. A blokk azt is elmondja neki, hogy ha a válaszában megemlít egy
+másik ügynököt, az felébred, a saját maga megemlítése pedig figyelmen kívül
+marad.
 
-## When an agent mentions an agent
+## Amikor egy ügynök megemlít egy ügynököt
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Az ügynök a saját válaszában is átadhatja a munkát. Amikor egy kör **tisztán
+fejeződik be**, a szövegében szereplő említések feloldódnak, az érintett
+ügynökök bekerülnek a térbe, és ugyanabba a beszélgetésbe indulnak el, promptként
+az említést tevő kört kapva. Az a kör, amely meghiúsult vagy megszakadt, senkit
+nem ébreszt fel — gondolat közben állt le.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+A szabályok szándékosan szigorúbbak, mint a beviteli mezőéi, mert nincs ott
+senki, aki kijavítaná a téves találgatást:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Csak pontos nevek.** Előtag-egyezés nincs. A `@arch` eléri a `architect`
+  ügynököt, ha ember gépeli be; ügynöktől kiindulva senkit nem ér el. Az a név,
+  amely két ügynökre is illeszkedik, szintén senkit nem ér el.
+- **A kód nem prózaszöveg.** A kerített kódblokkokban vagy `` `backticks` ``
+  között lévő említéseket a rendszer figyelmen kívül hagyja, így biztonságos egy
+  `@Override` annotációt vagy egy `pip install foo@1.2` parancsot idézni. Egy
+  lezáratlan kerítés hatására minden utána következő rész semmissé válik.
+- **Az előző tokenhez ragadt `@` nem említés** — a `sam@host.com`, a
+  `pkg/@scope` és a `node@20` senkit nem ér el.
+- **A kötőjelek megmaradnak**, így a `@code-reviewer` önmagaként oldódik fel,
+  nem pedig a `code` tokenként.
+- **Körönként legfeljebb három ügynök.** Az az ügynök, amely hat csapattársat
+  sorol fel egy összefoglalóban, csak felsorolja őket, nem hívja meg őket.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Az ébresztési láncot ugyanúgy korlátozza a rendszer, ahogy a delegálást:
+**legfeljebb 3 mélységig** terjed, és egy már a láncon lévő ügynököt az nem
+ébresztheti fel újra (nincs `A → B → A`). Egy adott rendezett páros a láncokon
+átívelve is sebességkorlátozott. A visszautasított ébresztés rendszerüzenetet
+helyez el a beszélgetésben, amely megmondja, melyik említés nem került
+kézbesítésre és miért — a feloldatlan név azonban nem tesz ilyet, mert különben
+a mondatban szereplő bármely `@` magáról mesélne.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Ha olyan átadásra van szükség, amely nem függhet a prózaszövegtől — kérés/válasz
+esetén, vagy amikor a téren kívüli ügynököt kell elérni —, használja helyette a
+`send_to_agent`, az `ask_agent` és a `delegate_task` eszközt.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [Use spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
-- [Run agents in parallel](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
+- [Ügynökök párhuzamos futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
+- [Az ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)

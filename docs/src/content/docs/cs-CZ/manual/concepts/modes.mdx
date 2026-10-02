@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Režimy
+description: Proč režim nese prostor a ne agent, co každý ze čtyř režimů zaručuje a kde je ta záruka strukturální, ne jen v promptu.
 slug: cs-CZ/prirucka/koncepty/rezimy
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Co je režim
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Režim je vlastnost **prostoru**, uložená jako jeden sloupec na řádku prostoru. Sdílí ho každá konverzace v prostoru, vlákna v to počítaje — vlákno dědí režim svého prostoru jako každá jiná konverzace. Stejný agent proto může být ve stejnou chvíli v různých režimech v různých prostorech a přepnutí režimu prostoru změní, co se stane v dalším tahu, aniž by se sáhalo na agenta.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Jsou přesně čtyři: `chat`, `review`, `plan`, `orchestrate`. Samotný enum žádnou politiku nenese. Všechno, co režim zaručuje, je deklarované jednou, v **profilu schopností**, a z něj každá vrstva vynucení promítá:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Plocha nástrojů** — které nástroje v tom režimu vůbec existují: maximální úroveň schválení, seznam povolených, seznam zakázaných a sada odmítnutých tříd efektů.
+2. **Povinné výstupní sloveso** — co musí běh zavolat, aby něco doručil.
+3. **Odmítnuté třídy efektů** — co strážce akcí odmítne rovnou.
+4. **Postoj worktree** — jestli se do worktree smí zapisovat. Vynucuje se tím, že se měnící nástroje z plochy úplně sundají, a proto to platí na každém hostiteli. Kde má hostitel sandbox operačního systému, stejný postoj navíc vyřeže pravidla zápisu na souborový systém — režim jen pro čtení připojí worktree jen pro čtení — ale to je druhá kopie záruky, ne ta, která práci dělá.
+5. **Blok systémového promptu** — _generovaná_ preambule schopností odvozená ze skutečného materializovaného seznamu nástrojů, plus ručně psané pokyny.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Každá vrstva vynucení vychází z toho jednoho profilu, takže plocha nástrojů, strážce, postoj worktree a prompt se nemůžou rozejít.
 
-## The four modes
+## Čtyři režimy
 
-### Chat — displayed as "Agent"
+### Chat — v composeru jako „Agent“
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Výchozí režim a jediný bez dalších omezení: plná plocha nástrojů až po úroveň provedení, zapisovatelný worktree, žádné odmítnuté třídy efektů a žádný kontrakt dokončení. Hodí se na implementaci, opravy chyb, otázky ke kódu a cokoli ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Pozor na popisek: v composeru se režim ukazuje jako **„Agent“**, ne jako „Chat“.
 
-### Plan — read-only, one deliverable
+### Plan — jen pro čtení, jeden výstup
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Režim Plan udělá worktree jen pro čtení a z plochy úplně sundá nástroje pro zápis, takže omezení je ve struktuře, ne v pokynu. Agent čte, hledá a zkoumá a doručí přesně jednu věc: volání `submit_plan` s typovaným grafem závislostí — cíl plus uzly s klíči, názvy, popisy a klíči uzlů, na kterých každý závisí.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Plán se v konverzaci vykreslí jako kompaktní řádek a vedle něj otevře Plan Studio na záložce. Schválení zkompiluje graf do orchetrace, spustí vygenerovanou práci a prostor, ve kterém plán vznikl, přepne zpět do režimu agenta.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Když běh v režimu Plan skončí, aniž by kdy zavolal `submit_plan`, smyčka nejdřív vloží pobídku: plán neexistuje, dokud to volání neuspěje. Pobídka výslovně povoluje poctivý odchod „tady plán není potřeba“, protože režim Plan je nastavení prostoru a obyčejná otázka položená uvnitř něj nemá vynutit vymyšlený plán.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).
+:::note[Nesplněný kontrakt není neúspěšný běh]
+Běh, který skončí bez plánu, se pořád zapíše se stavem `completed` — proces skončil čistě. Pravdu nese liveness běhu (`empty`), rodina chyby (`silentRun`) a souhrn, který pojmenuje, co nevzniklo. Viz [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Druhá, oddělená cesta ven je `exit_plan_mode`. Je to tvrdá brána schválení, ne výstupní sloveso — agent, který ho zavolá místo `submit_plan`, nic nedodal. První volání otevře trvalé schválení `plan_exit` a vrátí `pending` a prostor zůstane jen pro čtení; opakovaná volání zůstanou `pending` a druhou bránu neotevřou. Teprve když je schválení udělené, další volání přepne prostor na chat. Zamítnutí nechá agenta otevřít novou žádost o upravený plán.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Sám režim Plan opustíš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab). O `exit_plan_mode` se rozhoduje nástrojem MCP `decide_approval`. Řádky „schválení agenta“ v Doručené poště jsou něco jiného: potvrzovací výzvy z běžícího agenta, na každý tah zvlášť.
 
-### Review — read-only, no contract
+### Review — jen pro čtení, bez kontraktu
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Režim Review je na kontrolu PR. Worktree je jen pro čtení, plocha nástrojů je zastropovaná pod úrovní provedení a platí sestavený seznam povolených nástrojů pro kontrolu, tickety a komunikaci. Prostor otevřený pro pull request vznikne v režimu review automaticky.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Výstupem agenta jsou strukturovaná zjištění — **uzly kontroly** — a po finalizaci kontroly **verdikt**. Uzel nese druh (`bug`, `suggestion`, `recommendation`, `question` nebo `ticket`), prioritu od P0 (blokuje vydání) po P3 (drobnost), vlastní odhad jistoty, volitelnou kotvu (soubor plus rozsah řádků; poznámky k celému repozitáři žádnou nemají) a stav životního cyklu, který přejde z `open` na `consensusReady`, jakmile ho potvrdí kolega, autor nikdy. Zjištění, kterému chybí priorita nebo jistota, nebo je mimo rozsah, se na hranici čtení zahodí, aby verdikt neznečistilo.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Verdikt je Ship, Hold nebo Block a výsledky po osách ho umějí jen _zpřísnit_: osa s bránou, která selhala, vynutí `block` a osa s bránou, která nedoběhla, vynutí aspoň `hold`. Chybějící důkaz bránu nikdy neobarví na zeleno.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Na rozdíl od Plan a Orchestrate režim Review **nemá kontrakt dokončení**. Zjištění se hromadí přes `add_review_node` a zveřejňuje je `finalize_review` a obě volání smějí legitimně proběhnout nulakrát — agent pipeline v režimu review tam může být proto, aby dokončil ticket.
 
-### Orchestrate — read-only, proposes a team
+### Orchestrate — jen pro čtení, navrhuje tým
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Režim Orchestrate udělá z jednoho cíle plán pro celý tým. Stejně jako Plan je jen pro čtení a soubory zapisovat neumí; nad výzkumnou plochou má jediné privilegované sloveso `propose_orchestration`, které vydá strukturovaný návrh: role, strom podřízených ticketů, krok syntézy a rozpočet. Prompt jmenuje jen nástroje na ploše, takže model netráví tahy vyprávěním o najímání nebo práci s tickety, kterou zavolat neumí.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/).
+Z návrhu se nic nespustí, dokud ho neschválíš. Po schválení deterministický materializátor najme agenty, založí tickety a projekt a spustí vygenerovanou pipeline. Schvalovat smí jen operátor: nástroj MCP na to není, takže agent návrh podat umí a vlastní plán schválit ne. Opakované návrhy, které spustí agent, omezuje dvouminutový cooldown, takže navazující přeplánování se odmítne s pokynem sloučit je. Viz [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/).
 
-## Two rules worth knowing
+## Dvě pravidla, která stojí za to znát
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Vlastní výstupní sloveso režimu se nedá zakázat.** `submit_plan` a `propose_orchestration` jsou připnuté do plochy nástrojů a předschválené přes filtr nástrojů, bránu schválení i strážce akcí, takže volič autonomie na prostoru výstup režimu umlčet neumí. `ask_user` vestavěného harnessu je připnuté ze stejného důvodu: _tím_ se běh dostane k operátorovi, takže brána kolem něj by zablokovala běh, který se potřebuje na něco zeptat. Je na úrovni čtení, takže ho má každý režim jen pro čtení, a je vyňaté z obalu schválení — výzva před výzvou bez připojeného schvalovatele selže uzavřeně a agentovi by upřela samotné zeptání.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Režimy jen pro čtení neodpírají síť ani tajemství.** Třídy efektů, které Review, Plan a Orchestrate odmítají, jsou ty, které mění svět: mazání souborů, zápisy mimo worktree, commity, pushe, založení a zveřejnění PR, zápisy synchronizace dodavatele, instalace balíčků, spouštění procesů, mutace pracovního prostoru a řízení enclosure. Odchozí síť a přístup k tajemstvím schválně zůstávají na výchozích hodnotách — výzkum je celý smysl režimu jen pro čtení.
 
-## Choosing and changing a mode
+## Volba a změna režimu
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Rozbalovací nabídka režimu v composeru nabízí **tři** možnosti: Agent (chat), Plan a Orchestrate. `review` **nejde vybrat** — nastaví ho systém, když vznikne prostor kontroly PR, a kroky pipeline.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Uzel pipeline, který **otevírá prostor**, umí režim toho prostoru připnout klíčem `extras['mode']` (`chat`, `review` nebo `plan`). Shoda klíče je přesná: jakékoli jiné znění, včetně `orchestrate`, se potichu ignoruje a prostor dostane výchozí hodnotu těla (`review` na těle create-space). Krok agenta vstoupí do prostoru, který nezaložil, a oprávnění mu znovu nenastaví.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Samotné rozlišení je prosté. Dispečer čte sloupec `mode` prostoru; odeslání bez prostoru — one-shot, volání z CLI, nebo id prostoru z jiného pracovního prostoru, které v databázovém souboru tohoto pracovního prostoru prostě není — se rozliší na `chat`. Změna režimu platí od dalšího tahu.
 
-## Where the guarantee actually holds
+## Kde záruka skutečně drží
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Plochu nástrojů režimu sestavuje a vynucuje **vestavěný harness**. Je to jediný transport, který umí nástroj zneviditelnit, ne ho jen odmítnout, každé volání zabránit dřív, než doběhne, a sledovat kontrakt dokončení.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/).
+Na transportu Claude Code se režim jiný než chat předává jako `--permission-mode plan`. Claude to dodržuje konvencí; jeho vlastní nástroje pro čtení, zápis, úpravy a shell běží mimo dohled. Pro ten transport je režim vedení, ne hranice Control Center — viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Seznamy povolených omezují nástroje od úrovně zápisu výš. Úroveň čtení vestavěného harnessu pořád dosáhne na nástroje, které žádný seznam nejmenuje; na Claude Code se nástroj, který seznam povolených vynechá, odmítne, ať ho server má, nebo ne.
 
-## Related concepts
+## Související koncepty
 
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): where the mode is resolved and projected
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): which transports can enforce a mode
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/): what an approved orchestrate proposal does
-- [Use plan mode](/cs-CZ/prirucka/navody/rezim-planu/): the practical walkthrough
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): kde se režim rozliší a promítne
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): které transporty umějí režim vynutit
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): politika tříd efektů, do které preset režimu ústí
+- [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/): co udělá schválený návrh Orchestrate
+- [Používejte režim plánu](/cs-CZ/prirucka/navody/rezim-planu/): praktický postup

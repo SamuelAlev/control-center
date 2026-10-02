@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Scurtături de tastatură
+description: Registrul complet de scurtături, pe domenii de aplicare, cu condițiile în care se declanșează fiecare scurtătură.
 slug: ro-RO/manual/referinta/scurtaturi-de-tastatura
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Scurtăturile provin dintr-un singur registru `const`, `KeybindingRegistry` din `lib/core/constants/keybindings.dart`. El conține **48 de scurtături**. Setări → Tu → Scurtături afișează acel registru ca **referință doar în citire**: nu există interfață de reatribuire și niciun fișier de scurtături al utilizatorului.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` de mai jos este modificatorul principal de comandă — ⌘ pe macOS, Ctrl pe Windows și Linux. O scurtătură se declanșează doar când comanda ei are un handler înregistrat pe ecranul curent și clauza ei `when` este îndeplinită; `!textInputFocus` înseamnă că tasta este transmisă mai departe unui câmp de text focusat.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Nu există nicio scurtătură de navigare cu taste numerice. Inbox-ul, tichetele, pull request-urile și restul se ating din bara laterală sau cu ⌘K. Nici Observabilitate nu are scurtătură.
 
 ## Global (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Domeniul `global`, deci sunt active oriunde în shell.
 
-### System
+### Sistem
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| Scurtătură                                  | Acțiune                                          | Condiție                                                   |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | Paletă de comenzi                                | —                                                          |
+| `Shift + /` (`?`)                           | Fișă de referință cu scurtăturile de tastatură   | Nu tastezi într-un câmp                                    |
+| `Cmd/Ctrl + Z`                              | Anulează                                         | Nu tastezi într-un câmp (un câmp focusat își păstrează propria anulare) |
+| `Cmd/Ctrl + Shift + Z`                      | Refă                                             | Nu tastezi într-un câmp                                    |
+| `Cmd/Ctrl + Shift + T`                      | Comută tema                                      | —                                                          |
+| `Cmd/Ctrl + ,`                              | Deschide setările (ajunge la `/settings/you/appearance`) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | Comută modul focus                               | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | Comută selectorul de spații de lucru             | —                                                          |
+| `Cmd/Ctrl + ]`                              | Spațiul de lucru următor                         | —                                                          |
+| `Cmd/Ctrl + [`                              | Spațiul de lucru anterior                        | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Comută la spațiul de lucru 1–9                   | —                                                          |
 
-## Pull request list (3)
+## Lista de pull request-uri (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Domeniul `/pull-requests`. Toate cer `route == '/pull-requests'` și niciun câmp de text focusat, așa că nu se declanșează cât timp ruta de detaliu PR este deschisă peste listă.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Scurtătură | Acțiune                  |
+| ---------- | ------------------------ |
+| `R`        | Reîmprospătează          |
+| `Enter`    | Deschide PR              |
+| `F`        | Deschide meniul de filtre |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) este declarat în registru și apare în referința de scurtături, dar **ecranul de listă nu înregistrează un handler pentru el**, așa că momentan nu se declanșează. `F` deschide meniul de filtre (`pr.list-open-filter`), nu căutarea.
 
-## Pull request detail (2)
+## Detaliu de pull request (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Domeniul `/pull-requests/`. Reîmprospătarea nu cere niciun câmp de text focusat. Închiderea filei nu are gardă de introducere de text (o combinație cu ⌘ nu este niciodată text simplu) și are o expresie regulată de rută, ca să nu se declanșeze în listă.
 
-| Shortcut       | Action    | Condition                          |
+| Scurtătură     | Acțiune   | Condiție                           |
 | -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| `R`            | Reîmprospătează | Nu tastezi într-un câmp       |
+| `Cmd/Ctrl + W` | Închide fila | Pe o locație `/pull-requests/<…>` |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Comutarea filelor (`1`/`2`/`3`), marcarea ca vizualizat și plierea fișierului (`V`/`C`), lista de fișiere (`T`) și căutarea în diff (`Cmd/Ctrl + F`) aparțin handlerului propriu al vizualizatorului de diff — vezi [Scurtături ale vizualizatorului de diff din afara registrului](#scurtături-ale-vizualizatorului-de-diff-din-afara-registrului).
 
 ## Inbox (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Scurtătură | Acțiune                  |
+| ---------- | ------------------------ |
+| `F`        | Deschide meniul de filtre |
 
-Requires `route == '/inbox'` and no focused text field.
+Cere `route == '/inbox'` și niciun câmp de text focusat.
 
-## GitHub user and team profiles (3)
+## Profiluri de utilizator și de echipă GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Domeniul `/users/`. Clauza `when` este o expresie regulată care se potrivește cu `/users/<login>` **sau** cu `/teams/<organization>/<slug>`, plus absența unui câmp de text focusat.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Scurtătură     | Acțiune           |
+| -------------- | ----------------- |
+| `R`            | Reîmprospătează   |
+| `/`            | Focalizează căutarea |
+| `Cmd/Ctrl + F` | Focalizează căutarea |
 
-## Spaces (8)
+## Spații (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Domeniul `/spaces`. Clauzele `when` folosesc o expresie regulată, așa că se declanșează atât în lista de spații (`/spaces`), cât și într-un spațiu selectat (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| Scurtătură             | Acțiune                        | Condiție              |
+| ---------------------- | ------------------------------ | --------------------- |
+| `Enter`                | Trimite mesajul                | —                     |
+| `Cmd/Ctrl + N`         | Spațiu nou                     | Pe o rută `/spaces`   |
+| `J`                    | Spațiul următor                | Nu tastezi într-un câmp |
+| `K`                    | Spațiul anterior               | Nu tastezi într-un câmp |
+| `Cmd/Ctrl + Shift + D` | Dictare cu apăsare pentru a vorbi | —                  |
+| `Cmd/Ctrl + T`         | Deschide fila editorului       | Pe o rută `/spaces`   |
+| `Cmd/Ctrl + W`         | Închide fila editorului        | Pe o rută `/spaces`   |
+| `Cmd/Ctrl + B`         | Comută bara laterală a editorului | Pe o rută `/spaces` |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Trimiterea cu Enter aparține câmpului de text al compozitorului; apăsarea pentru a vorbi aparține butonului de microfon al compozitorului (care are propriul handler de tastatură hardware). Ambele sunt listate în registru pentru referința din setări.
 
-## Workspace picker (2)
+## Selectorul de spații de lucru (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Domeniul `/workspaces`, active doar în selectorul propriu-zis.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Scurtătură     | Acțiune                        |
+| -------------- | ------------------------------ |
+| `Cmd/Ctrl + N` | Spațiu de lucru nou            |
+| `Enter`        | Deschide spațiul de lucru selectat |
 
-`Enter` requires no focused text field.
+`Enter` nu cere niciun câmp de text focusat.
 
-## Settings (5)
+## Setări (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Scurtătură     | Acțiune                    | Ecran                               |
+| -------------- | -------------------------- | ----------------------------------- |
+| `J`            | Pagina de setări următoare | Orice rută `/settings`, fără tastare |
+| `K`            | Pagina de setări anterioară | Orice rută `/settings`, fără tastare |
+| `Cmd/Ctrl + N` | Agent nou                  | Setări → Spațiu de lucru → Agenți   |
+| `Cmd/Ctrl + N` | Adaugă depozit             | Setări → Spațiu de lucru → Depozite |
+| `R`            | Rescanează adaptorii       | Setări → Server → Provideri de modele |
 
-## Newsfeed (5)
+## Flux de știri (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Domeniul `/newsfeed`. Toate cer `route == '/newsfeed'` și niciun câmp de text focusat.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Scurtătură | Acțiune                |
+| ---------- | ---------------------- |
+| `J`        | Articolul următor      |
+| `K`        | Articolul anterior     |
+| `Enter`    | Deschide articolul     |
+| `S`        | Comută marcajul        |
+| `R`        | Reîmprospătează fluxurile |
 
-## Diff viewer keys outside the registry
+## Scurtături ale vizualizatorului de diff din afara registrului
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+Vizualizatorul de diff pentru PR le gestionează singur (`PrDiffKeyboardHandler`). Căutarea, marcarea ca vizualizat și plierea sunt listate în comentariile registrului doar pentru referința din setări — nu este înregistrat niciun handler în dispatcher, așa că dispatcherul le lasă în seama vizualizării de diff. Ele nu apar ca rânduri separate în referința de scurtături.
 
-| Shortcut        | Action                                               |
+| Scurtătură      | Acțiune                                              |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | Caută în diff                                        |
+| `J` / `K`       | Fișierul următor / anterior                          |
+| `V`             | Comută starea de vizualizat pe fișierul focusat      |
+| `C`             | Comută plierea fișierului focusat                    |
+| `T`             | Afișează lista de fișiere                            |
+| `Enter`         | Potrivirea următoare (doar cât timp căutarea în diff este deschisă) |
+| `Shift + Enter` | Potrivirea anterioară                                |
+| `Escape`        | Închide căutarea în diff sau șterge selecția de text din diff |
+| `Cmd/Ctrl + C`  | Copiază selecția din diff                            |
 
-## Browser-reserved combinations
+## Combinații rezervate de browser
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+În versiunea web, browserul consumă unele acceleratoare înainte ca pagina să le vadă, așa că scurtăturile corespunzătoare nu se pot declanșa niciodată acolo. Pe desktop funcționează normal. Sunt rezervate când sunt combinate cu modificatorul principal de comandă: `T`, `W`, `N` și cifrele `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Asta acoperă comutarea între spațiile de lucru cu `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (spațiu nou, spațiu de lucru nou, agent nou, adaugă depozit) și `Cmd/Ctrl + T` / `Cmd/Ctrl + W` în spații și în detaliul PR-ului.
 
-## See also
+## Vezi și
 
-- [Route map](/ro-RO/manual/referinta/harta-de-rute/)
-- [Focus mode](/ro-RO/manual/ghiduri-practice/modul-focus/)
+- [Hartă de rute](/ro-RO/manual/referinta/harta-de-rute/)
+- [Modul focus](/ro-RO/manual/ghiduri-practice/modul-focus/)

@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Sejarah perbualan
+description: Bagaimana sesuatu larian menyimpan, melipat, mencabang dan menyambung semula konteksnya — strategi pemampatan, pokok sesi, dan apa sebenarnya maksud "sambung semula".
 slug: ms-MY/manual-pengguna/konsep/sejarah-perbualan
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Perbualan yang panjang akan terlanggar satu dinding keras: tetingkap konteks model. Semua yang ada pada halaman ini wujud kerana dinding itu, dan bahagian yang menarik ialah apa yang dibuang, apa yang disimpan, dan apa yang boleh diperoleh semula.
 
-## Four ways to reclaim context
+## Empat cara menuntut semula konteks
 
-They are not alternatives so much as a ladder, cheapest first.
+Kesemuanya bukan sekadar pilihan alternatif, sebaliknya sebuah tangga, dengan yang paling murah didahulukan.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Mekanisme          | Kos            | Dikekalkan                           | Hilang                            |
+| ------------------ | -------------- | ------------------------------------ | --------------------------------- |
+| **Penghilangan**   | Tiada          | Setiap perkataan naratif             | Hasil alat lama yang tidak berperistiwa |
+| **Pembuangan imej** | Tiada         | Teks di sekelilingnya                | Tangkapan skrin lama              |
+| **Snapshot**       | Tiada          | Setiap perkataan, sebagai piksel     | Kebolehbacaan oleh model tanpa visi |
+| **Ringkasan**      | Satu panggilan model | Satu naratif                   | Butiran yang tidak dipilihnya     |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Penghilangan dan pembuangan imej dijalankan dahulu kerana kedua-duanya percuma dan tanpa kehilangan dalam hal yang penting: kedua-duanya membuang pukal yang tidak akan dibaca semula oleh sesiapa.
 
-### Why summarizing is the last resort
+### Mengapa meringkaskan ialah pilihan terakhir
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Ringkasan ialah satu-satunya daripada empat cara itu yang **menghabiskan satu panggilan model** dan satu-satunya yang **membuat keputusan bagi pihak anda** tentang apa yang penting. Kedua-duanya ialah kos sebenar. Panggilan model ialah yang lebih menarik, kerana masa ia berlaku.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Pemampatan biasanya berjalan *di hadapan* dinding, pada satu ambang. Tetapi ia juga berjalan **secara reaktif**, selepas penyedia sendiri menolak sesuatu permintaan sebagai terlalu besar — anggaran heuristik terkurang kira berbanding apa yang sebenarnya diukur oleh penyedia. Dalam keadaan itu, pemampat yang meringkaskan terpaksa membuat permintaan untuk mengecilkan konteks, dan permintaan yang dibuatnya ialah permintaan yang baru sahaja melimpah.
 
-### Snapshots
+### Snapshot
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Pemampatan snapshot merender sejarah yang dibuang ke atas halaman padat glif piksel lalu mengembalikannya sebagai imej.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Premisnya ialah satu keanehan pengebilan: model visi mengenakan caj bagi sesuatu imej pada kadar tetap atau berkadar dengan luas yang tidak ada kaitan dengan bilangan aksara di dalamnya. Dua belas ribu aksara perbualan yang dibuang memakan kos bersamaan token teks bagi dua belas ribu aksara. Aksara yang sama, apabila dirender ke satu halaman, hanya memakan kos satu imej.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Yang menjadikannya berbaloi untuk dimiliki dan bukan sekadar pintar ialah ia berjalan **tanpa panggilan model, tanpa kunci dan tanpa rangkaian**. Ia ialah satu-satunya strategi yang sentiasa tersedia semasa pemulihan daripada limpahan.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Bentuk pembinaan semula ialah kepala kata demi kata, tengah sebagai imej, ekor kata demi kata. Kepala ialah tugas serta kekangan yang menjadi rujukan semua bahagian hiliran; ekor ialah tempat kerja sedang berada. Bahagian tengah ialah yang paling jarang dibaca semula dan paling mahal kosnya.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Ia terdegradasi dengan jujur]
+Model tanpa visi tidak dapat membaca halaman piksel, dan merender teks yang tiada apa boleh melihatnya bukanlah pemampatan terdegradasi — ia ialah perbualan yang telah dipadam. Jadi keupayaan pembacalah yang menentukan, dan model tanpa visi sentiasa menerima ringkasan.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Bentuk halaman ditentukan oleh harga API, bukan oleh pemberat model]
+Gemini mengenakan kadar tetap bagi setiap imej, jadi setiap aksara tambahan pada halaman itu adalah percuma dan halamannya paling lebar. OpenAI dan Anthropic mengenakan caj berdasarkan luas, jadi halaman yang lebih besar tidak memberi apa-apa kelebihan. Sesetengah pemproses menurunkan skala melepasi satu ambang, yang secara senyap memusnahkan glif 5 piksel, jadi halaman mereka kekal di bawah ambang itu. Claude yang dilayan melalui gateway dicaj oleh gateway, jadi bentuknya mengikut id model sebagaimana laluan menamakannya.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Snapshot dirender semula daripada **teks sumber yang dikekalkan** pada setiap pusingan, tidak pernah daripada piksel pusingan sebelumnya. Mengimej imej akan merosotkan glif satu generasi bagi setiap pemampatan sehingga tiada apa yang dapat membacanya.
 
-## What a run actually resumes from
+## Daripada apa sesuatu larian sebenarnya menyambung semula
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Dahulunya, setiap larian harness bermula daripada sejarah yang kosong dan membina semula kesinambungan daripada blok `<context>` dalam prompt — satu *ringkasan* perbualan dan bukannya perbualan itu sendiri. Tiga perkara menyusul daripada itu:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Sambung semula hanyalah penceritaan semula.** Model tidak pernah melihat penaakulan awalnya sendiri atau bait sebenar yang dikembalikan oleh alatnya, hanya perihalannya.
+- **Putar balik mati bersama prosesnya.** Sesuatu `checkpoint` ialah indeks ke dalam senarai mesej langsung, jadi permulaan semula menghilangkan setiap label yang telah ditetapkan oleh model.
+- **Cuba semula tidak dapat membezakan "tiada apa untuk dicuba semula" daripada "tiada apa yang dimuatkan".** Selepas permulaan semula, giliran yang gagal hilang daripada keadaan langsung dalam kedua-dua kes.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Ketiga-tiganya diperbaiki dengan menyimpan transkrip secara kekal. Ia disimpan pada setiap **sempadan giliran** dan tidak pernah semasa pertengahan giliran: sejarah yang ditangkap antara panggilan alat dan hasilnya ialah sejarah yang tidak akan diterima oleh mana-mana penyedia, jadi ranap pada saat itu memulihkan giliran *sebelumnya* dan bukannya separuh giliran yang tidak dapat diputar semula.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Larian yang disambung semula dipangkas kepada mesej terbaharunya sahaja, dengan pemotongan pada sempadan yang bukan hasil alat yatim — hasil yang panggilannya telah dipangkas ialah permintaan yang terus ditolak oleh penyedia, dan transkrip yang tidak dapat dihantar adalah lebih buruk daripada transkrip yang pendek.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Di mana ia disimpan]
+Satu fail JSON bagi setiap gabungan perbualan-dan-ejen, di bawah direktori ruang kerja itu sendiri di samping pangkalan datanya. Dua ejen dalam satu perbualan memegang dua sejarah: kedua-duanya melihat hasil alat yang berbeza dan diberi prompt sistem yang berbeza, jadi menggabungkannya akan memberikan penaakulan satu ejen kepada ejen yang lain sebagai miliknya sendiri.
 :::
 
-## The session tree
+## Pokok sesi
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Setiap mesej merekodkan mesej yang disambungnya, dan setiap perbualan menamakan **hujung cabang** semasanya. Satu keputusan itulah keseluruhan ciri ini.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Pencabangan tidak menulis apa-apa.** Ia hanya menggerakkan penunjuk. Laluan yang anda tinggalkan masih ada, jadi bertukar kembali hanyalah satu lagi pergerakan penunjuk dan bukannya pemulihan — dan menyunting prompt untuk menjalankannya semula tidak lagi menghilangkan jawapan yang sedang anda bandingkan.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Tanpanya, setiap bentuk langkah kembali terpaksa menyembunyikan atau menghapuskan mesej, dan penyembunyian ialah satu pembohongan yang tidak dapat ditembusi oleh pembaca seterusnya.
 
-### Branch versus fork
+### Cabang berbanding fork
 
-|                | Branch              | Fork                        |
-| -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+|                     | Cabang                | Fork                      |
+| ------------------- | --------------------- | ------------------------- |
+| Apa yang berlaku    | Penunjuk bergerak     | Laluan disalin            |
+| Ke mana ia pergi    | Perbualan yang sama   | Perbualan baharu          |
+| Kos                 | Tiada                 | Satu salinan cabang       |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Fork menyalin dengan **id baharu** dan bukannya berkongsi baris. Dua perbualan yang berkongsi baris akan saling menunjukkan mesej kemudian masing-masing, dan itulah satu perkara yang tidak boleh dilakukan oleh fork.
 
-### Rewind rides the same pointer
+### Putar balik menggunakan penunjuk yang sama
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Pasangan `checkpoint` / `rewind` dalam larian menandakan sempadan giliran yang bersih dan kembali kepadanya selepas sesuatu penerokaan, sambil menyimpan satu ikhtisar. Oleh sebab checkpoint disimpan secara kekal bersama transkrip, label yang ditetapkan oleh model sebelum permulaan semula masih terletak di tempat ia ditetapkan. Checkpoint yang sasarannya tidak terselamat daripada pemangkasan akan **digugurkan**, bukan dijepit — memutar balik "ke label" kemudian mendarat di tempat lain ialah tepat-tepat kegagalan yang ingin dicegah oleh kewujudan label.
 
-## Related
+## Berkaitan
 
-- [Branch a conversation](/ms-MY/manual-pengguna/panduan-cara/cabangkan-perbualan/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/ms-MY/manual-pengguna/konsep/konteks-alat/) — the other half of what fills a context window
-- [Slash commands](/ms-MY/manual-pengguna/rujukan/perintah-slash/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Cabangkan perbualan](/ms-MY/manual-pengguna/panduan-cara/cabangkan-perbualan/) — penavigasi pokok, fork dan eksport
+- [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/) — separuh lagi daripada apa yang mengisi tetingkap konteks
+- [Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/) — `/compact`, `/shake`, `/context`, `/tree`

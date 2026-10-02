@@ -1,115 +1,80 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: 管理 API 金鑰
+description: 每項憑證存放在哪裏——伺服器上你的用戶帳戶、伺服器本身，還是外部 CLI——以及如何設定、輪換和移除它。
 slug: zh-HK/手冊/操作指南/api-金鑰
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+本指南說明 Control Center 使用的每一項憑證存放在何處，以及如何更換它們。
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**你正在輸入的裝置上不會儲存任何內容。**每一項憑證都存放在伺服器上；某個請求由哪一項憑證應答，取決於它背後是否有真人。
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| 憑證                                 | 儲存位置                                                  | 使用者                                                          |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| 你的程式碼託管 / 工單憑證            | 伺服器的 0600 機密檔案，以你的用戶 id 為鍵                 | 你要求的一切：PR 介面、你的代理執行、你的映像                     |
+| 伺服器的應用身分                     | 同一個檔案，非機密項則放在 `server_settings`               | 沒有真人要求的作業：webhook、PR 輪詢、工單同步                    |
+| 模型供應商金鑰與 OAuth 權杖          | 伺服器自有的憑證儲存                                       | 內建配接器，服務於此安裝上的每個工作區                            |
+| Slack 機械人權杖                     | 伺服器上的 `<dataDir>/<workspaceId>/chat_credentials/`     | 該工作區的聊天橋接                                                |
+| 外部 CLI 憑證                        | 該 CLI 所用的任何儲存                                      | 伺服器主機上的 Claude Code                                        |
 
-## Two GitHub credentials, and they answer different questions
+## 兩種 GitHub 憑證，回答不同的問題
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **你自己的憑證**，來自登入（裝置流程）或貼上權杖。所有*代表你*發出的請求都用它，因此以你的名義張貼的評論會帶上你的名字。其他成員無法讀取它，他們會連接自己的憑證
+- **伺服器的憑證**，來自操作者註冊的 GitHub App。它應答一切沒有呼叫者的請求——因此當某個人離開或輪換權杖時，程式碼託管存取不會消失
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-and [Create the GitHub App](/zh-HK/手冊/操作指南/github-app/).
+你的憑證在 **設定 → 工作區 → 個人資料與身分** 的**程式碼託管**卡片中設定；伺服器的憑證則在 **設定 → 伺服器 → 單一登入** 的**供應商應用**中設定。參見[設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)和[建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)。
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[還有一個只能透過 URL 存取的畫面]
+`/workspaces/<workspaceId>/api-keys` 會渲染與新手導引第一步相同的兩張卡片。它在**介面的任何位置都沒有導覽項目**；只能透過輸入 URL 存取。請改用 設定 → 工作區 → 個人資料與身分。
 :::
 
-## Set model provider keys
+## 設定模型供應商金鑰
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+內建配接器自行向供應商完成認證，而這些憑證存放在伺服器上。
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. 前往 **設定 → 伺服器 → 模型供應商**
+2. 捲動到**供應商與模型**
+3. 連接供應商——OpenAI、Codex、Cursor 和 Kimi Code 使用瀏覽器 OAuth；Anthropic 及其餘供應商則使用 API 金鑰
 
-See [Manage adapters and models](/zh-HK/手冊/操作指南/配接器/) for the full list and
-for adding a custom endpoint.
+完整清單以及新增自訂端點的方法，請參見[管理配接器與模型](/zh-HK/手冊/操作指南/配接器/)。
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+這些憑證是**主機全域**的：一個金鑰服務於此安裝上的每個工作區。OAuth 權杖會在過期前重新整理。
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+外部配接器 CLI 在伺服器主機上，以自己的設定保留自己的憑證——Control Center 不會管理它們。請按照 Claude Code 自身文件所述的方式，在執行 `cc_server` 的機器上完成認證。
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/zh-HK/手冊/操作指南/配接器/).
+每個配接器的**環境變數**對話框看起來像是可以為其中一個放置金鑰的地方，但事實並非如此：它會寫入你的裝置，而伺服器讀取自己的副本，兩者之間沒有任何橋接。參見[管理配接器與模型](/zh-HK/手冊/操作指南/配接器/)。
 
-## Connect a ticketing vendor
+## 連接工單供應商
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+**設定 → 工作區 → 一般** 上的**工單系統**卡片承載同一個決定的兩半：你的工單存放在哪個供應商，以及其憑證。選擇**本機**會隱藏憑證列——本機工單存放在此伺服器自己的資料庫中，沒有任何需要認證的對象。
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/zh-HK/手冊/操作指南/linear-整合/).
+你的金鑰與程式碼託管憑證一樣，會按你的用戶 id 存放在伺服器上。伺服器另外單獨保存自己的 Linear 金鑰（**供應商應用**），當沒有真人要求時，工單同步就是用它執行。代理收到的金鑰，只有在該代理具備**允許工單 API 呼叫**能力時才會被注入。參見[設定 Linear 整合](/zh-HK/手冊/操作指南/linear-整合/)。
 
-## Rotate or revoke
+## 輪換或撤銷
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/)
+- **你的 GitHub 憑證**：按**中斷連線**，然後重新登入或貼上新的權杖。在 GitHub 上撤銷舊憑證
+- **伺服器的應用**：在該應用的 GitHub 頁面上產生新的私密金鑰或用戶端密鑰，貼到**供應商應用**中並按**測試**
+- **某個模型供應商**：在其所在列上登出（OAuth）或移除金鑰，然後重新連接
+- **Slack**：在連接對話框中重新貼上權杖。參見[設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)
 
-## Troubleshooting
+## 疑難排解
 
-### The PR list is empty but my token works in `curl`
+### PR 清單是空的，但我的權杖在 `curl` 中可用
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+檢查**程式碼託管**列的副標題。如果它顯示另一個來源（「透過此伺服器的應用」、「來自環境」），那麼你正在測試的憑證並不是應答的那一個——你的憑證未被儲存。
 
-### The token is accepted but later requests fail
+### 權杖被接受，但之後的請求失敗
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+權杖在儲存時會接受探測，因此該列會顯示它背後的帳戶——但只顯示帳戶，不顯示範圍。範圍不足的權杖可以連接，然後在個別請求上失敗。請檢查範圍與有效期限：
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## 相關指南
 
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-- [Create the GitHub App](/zh-HK/手冊/操作指南/github-app/)
-- [Manage adapters and models](/zh-HK/手冊/操作指南/配接器/)
-- [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/)
-- [Set up Linear integration](/zh-HK/手冊/操作指南/linear-整合/)
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
+- [建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)
+- [管理配接器與模型](/zh-HK/手冊/操作指南/配接器/)
+- [設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)
+- [設定 Linear 整合](/zh-HK/手冊/操作指南/linear-整合/)

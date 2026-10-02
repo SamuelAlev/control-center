@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Запустите первого агента
+description: Создайте агента, дайте ему пространство и задачу и наблюдайте, как возвращается поток запуска.
 slug: ru-RU/руководство/учебники/первый-агент
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Что вы создадите
 
-By the end of this tutorial, you will have:
+К концу этого руководства у вас будет:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- агент, которого вы создали и настроили сами;
+- пространство, в котором вы и этот агент общаетесь;
+- один завершённый запуск с закоммиченной работой в изолированном worktree и строкой в журнале запусков агента.
 
-Prerequisites: [Your first workspace](/ru-RU/руководство/учебники/первое-рабочее-пространство/) completed, so this workspace has a repo registered and at least one model provider connected.
+Предварительное условие: пройденное руководство [Ваше первое рабочее пространство](/ru-RU/руководство/учебники/первое-рабочее-пространство/), так что в этом рабочем пространстве зарегистрирован репозиторий и подключён хотя бы один провайдер моделей.
 
-## Step 1: Create an agent
+## Шаг 1. Создайте агента
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Перейдите в **Настройки → Рабочее пространство → Агенты**
+2. Нажмите **Новый агент**. Сразу создаётся агент с именем «Безымянный агент», и он выбирается в списке агентов — никакого диалога создания нет, и подтверждать нечего. Вы настраиваете его на месте.
+3. На вкладке **Настройки** заполните:
+   - **Имя**: что-то короткое и запоминающееся, например `alice`. Именно это вы набираете после `@`.
+   - **Название**: чем он занимается, например «Бэкенд-инженер»
+   - **Адаптер**: `Control Center (built-in)`. Выберите его осознанно — только встроенный раннер можно направлять по ходу запуска и приостанавливать на границе хода, и ему не нужен установленный CLI на хосте сервера.
+   - **Модель**: выберите из списка, который обслуживает подключённый провайдер
+   - **Навыки**: прикрепите подходящие, например `testing` или `architecture`
+4. Нажмите **Сохранить изменения**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Агент без адаптера работает на встроенном цикле]
+Если поле «Адаптер» не задано, запуск переключается на **Control Center (built-in)** — цикл агента внутри сервера, поэтому на хост ничего устанавливать не нужно. Но модель ему всё равно нужна: если она не задана, он запрашивает у Anthropic модель по умолчанию — это сработает, если вы подключили аккаунт Anthropic, а в противном случае завершится ошибкой `No credential for provider "anthropic"`. Так или иначе задайте и то, и другое явно, иначе запуск пойдёт на модели, которую вы не выбирали.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Контрольная точка.** В строке списка агентов отображаются имя вашего агента и пустое кольцо статуса.
 
-## Step 2: Start a space
+## Шаг 2. Запустите пространство
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. На боковой панели найдите раздел **Пространства** и нажмите кнопку **+**
+2. Дайте пространству имя
+3. В разделе **Добавить агентов** выберите агента, которого только что создали
+4. Если в рабочем пространстве есть репозитории, выберите, с какими из них должно работать это пространство
+5. Нажмите **Создать**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Пространство открывается. В фоне Control Center подготавливает для этого разговора worktree с копированием при записи по выбранным репозиториям, на отдельной ветке. Ваша исходная рабочая копия никогда не изменяется.
 
-## Step 3: Send a task
+## Шаг 3. Отправьте задачу
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Введите одну конкретную, небольшую задачу для репозитория, который зарегистрировали. Лучше всего подойдёт что-то с проверяемым результатом — добавить тест, исправить замечание линтера, переименовать символ.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Нажмите Enter. Упоминать кого-либо через `@` не нужно: когда в пространстве один агент, его будит обычное сообщение. В пространстве с несколькими агентами `@name` выбирает нужного.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center собирает промпт из инструкций агента, его персоны, навыков и контекста пространства, а затем выполняет запуск.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Контрольная точка.** Кнопка отправки в композере превращается в кнопку остановки — в этом разговоре работает агент — и начинает поступать текст.
 
-## Step 4: Watch it work
+## Шаг 4. Наблюдайте за работой
 
-The conversation renders the run as it happens:
+Разговор отображает запуск по мере его выполнения:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Рассуждения** — показываются по ходу размышлений агента
+- **Вызовы инструментов**: чтение и запись файлов, поиск, команды оболочки — каждый со своим результатом
+- **Текст**: сводки, пояснения и вопросы к вам
 
-If the agent asks something, answer in the conversation and it resumes.
+Если агент о чём-то спрашивает, ответьте в разговоре — и он продолжит.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Метрики самого запуска и элементы управления паузой, продолжением и остановкой находятся там же: найдите выполняющегося агента в разделе **Агенты** панели «Общие» пространства и выберите **Открыть активность**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+На панели активности значок статуса показывает **Выполняется**, а затем **Успешно**, когда запуск завершается. Запуск, который завис или зациклился, показывает **Заблокирован**; запуск с ошибкой — **Не удалось**. В реестре агентов кольцо в списке пустое до первого запуска и заполненное, как только агент снова простаивает.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ru-RU/руководство/понятия/ограничения/).
+Что ограничивает запуск: его собственный worktree с копированием при записи, учётные данные, выданные через брокер при запуске и отозванные при завершении, очищенное окружение, набор инструментов, разрешённый его режимом, и ограничения действий. Такие эффекты, как отправка ветки или открытие pull request, ограничиваются отдельно — см. [Ограничения](/ru-RU/руководство/понятия/ограничения/).
 
-## Step 5: Check the result
+## Шаг 5. Проверьте результат
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Откройте **Настройки → Рабочее пространство → Агенты** и выберите своего агента
+2. Откройте вкладку **Журнал**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Контрольная точка.** Одна строка запуска с его статусом, длительностью, временем начала и окончания и адаптером, на котором он выполнялся.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Изменения агента закоммичены в ветке разговора, в его worktree. Автором коммитов указан агент, а вы упомянуты в трейлере `Co-Authored-By:`.
 
-## Getting a pull request
+## Как получить pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Ничто не открывает pull request само по себе. Если он вам нужен, попросите об этом в том же разговоре:
 
-> Push this branch and open a pull request against the default branch.
+> Отправьте эту ветку и откройте pull request против ветки по умолчанию.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Отправка (`gitPush`) и создание PR (`prCreate`) по умолчанию запрашивают ваше подтверждение, так что перед каждым ждите подтверждения. Если к моменту запроса ни один утверждающий не подключён, действие отклоняется, а не разрешается — ограничения срабатывают в пользу отказа.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR открывается под идентификацией GitHub, чей токен использовал запуск — вашей, если вы сохранили персональный токен, — а не под именем агента. Авторство агента видно в коммитах.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Вы можете открыть его и сами: в панели **Управление исходным кодом** пространства есть кнопка **Создать pull request**, которая переносит ветку разговора на экран создания, а **Pull requests → Новый PR** открывает тот же экран пустым. Отсюда продолжает следующее руководство.
 
-## Recap
+## Итоги
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Вы создали агента, настроили его адаптер и модель, дали ему пространство и задачу и наблюдали, как настоящий запуск завершается в изолированном worktree, не трогая вашу рабочую копию.
 
-**Next:** [Review your first pull request](/ru-RU/руководство/учебники/первый-pr/) to learn the review workflow.
+**Далее:** [Проверьте свой первый pull request](/ru-RU/руководство/учебники/первый-pr/), чтобы изучить процесс проверки.
 
-For more on agents: [The agent model](/ru-RU/руководство/понятия/модель-агента/). For dispatch details: [Agent dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/).
+Подробнее об агентах: [Модель агента](/ru-RU/руководство/понятия/модель-агента/). О деталях запуска: [Жизненный цикл запуска агента](/ru-RU/руководство/понятия/жизненный-цикл-запуска/).

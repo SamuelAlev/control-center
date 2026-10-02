@@ -1,131 +1,118 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: 将工作委派给智能体
+description: 在对话中把工单交给智能体，并让智能体在深度与循环保护之下相互委派子任务。
 slug: zh-CN/手册/操作指南/委派工单
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+本指南介绍如何把工作从你手上交到智能体手上，以及智能体之间相互传递工作时会发生
+什么。
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[把工单分配给智能体不会派发]
+对智能体负责人而言不存在工单派发器。分配只记录归属，仅此而已——不会创建空间、
+不会改变状态、不会启动任何智能体。例外是分配给**团队**的工单，它会唤醒该团队的
+负责人。具名负责人的智能体工作存在于对话中，因此你要从对话那里启动它。
 :::
 
-## Hand a ticket to an agent
+## 把工单交给智能体
 
-1. [Create the ticket](/zh-CN/手册/操作指南/管理工单/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [创建工单](/zh-CN/手册/操作指南/管理工单/)，标题和描述要足够精确，能据此
+   开展工作。
+2. 把它的**负责人**设为该智能体，让归属记录在案。
+3. 打开（或创建）一个空间，并 @提及该智能体。
+4. 在消息中用 `#` 提及引用这张工单——输入框会自动补全工作区工单——并说明你想
+   让它做什么。
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+智能体会从对话中接手这项工作。它的进度会流式输出到该空间中。
 
-## What the agent receives
+## 智能体会收到什么
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- 你的消息，包括你标记的工单引用。
+- 用于工作和汇报的空间。
+- 从工作区已关联仓库检出的隔离工作树。
+- 空间的**模式**，它决定本次运行的工具面。
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/zh-CN/手册/概念/模式/).
+模式是空间的属性，而不是工单的属性——工单没有模式。因此同一个智能体可以在一个
+空间里处于 `chat`，在另一个空间里处于 `plan`。你可以从输入框的模式下拉菜单中
+选择它（**Agent**、**Plan** 或 **Orchestrate**）；`review` 由 PR 审查空间设置，
+不可选择。参见[模式](/zh-CN/手册/概念/模式/)。
 
-## Require a structured result
+## 要求结构化结果
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+输出契约声明在派发上，而不是工单上：`expected_output_schema` 加上
+`output_contract_mode`（默认为严格模式）。智能体通过调用 `submit_output` 来满足
+它，该调用会依据 schema 校验载荷，并拒绝不符合规范的载荷。
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+被接受的输出和所有被拒绝的输出都会记录在**智能体运行日志**上。工单自身的状态
+不受影响——契约失败不会让工单失败。
 
-## Monitor progress
+## 监控进度
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **空间**——实时的智能体活动，主要视图。
+- **工单**——它的状态由改动它的人设置。
+- **可观测性 → 实时**（`/workspaces/<workspace-id>/observability`）——实时的
+  智能体名册。
+- **可观测性 → 洞察**——运行日志，含费用与耗时。
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+没有仪表盘页面；直接访问工作区 URL 会跳转到收件箱。
 
-## Let agents delegate to each other
+## 让智能体相互委派
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+遇到子问题的智能体会用 `delegate_task` MCP 工具进行委派。它会创建一张分配给另
+一个智能体的子工单，并且——当你传入 `parent_ticket_id` 时——记录这条链，好让
+保护机制能看到它。
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+有两项结构性保护始终在工单收口点运行，而不是靠提示词指令：
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **深度上限**——深度超过 3 跳的链条会被拒绝。
+- **循环检测**——跳回链中已有智能体的跳转会被拒绝。
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+当你传入 `from_agent_id` 时，还会运行另外两项保护（生产环境始终会提供解析器
+端口）：
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **自主程度上限**——被委派方在空间中的有效级别不得超过委派方。
+- **预算额度**——委派会从委派方剩余的硬性停止预算中扣减，且无法凭空增加。没有
+  策略，或策略不设上限，都会通过。
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+拒绝是明确的：工具会原样返回保护机制给出的原因，因此发起委派的智能体能确切看到
+原因。`delegatedByAgentId` 字段记录是谁发起的委派，从而构成一棵委派树。
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` 会跳过所有保护]
+较早的 `delegate_ticket` 工具仍在注册表中，并且直接调用 `createTicket`——没有
+深度上限、没有循环检测、没有自主程度上限、没有预算额度。请优先使用
+`delegate_task`。
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+委派深度上限 3 与内置执行框架的子智能体嵌套上限 2 是不同的限制——一个约束智能体
+之间的工单，另一个约束单次运行内部的子智能体。
 
-## Put several agents on one ticket
+## 让多个智能体参与同一张工单
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+把它们作为**协作者**添加到工单上（角色：assignee、collaborator、reviewer）。这
+是一份名册——记录谁参与其中——本身不授予任何权限。
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/zh-CN/手册/操作指南/空间/).
+要真正把多个智能体放进同一个对话，请从空间头部把它们添加为参与者。之后它们就
+可以在那里相互 @提及。参见[使用空间](/zh-CN/手册/操作指南/空间/)。
 
-## Automated ticket creation
+## 自动创建工单
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+流水线面板中没有任何节点会创建工单，因此流水线无法把工作拆分成已分配的工单。
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/zh-CN/手册/操作指南/运行编排/).
+确实存在的路径是编排：批准一份提案会创建一个项目和一个团队，把提案的子工单
+DAG 编译成一个**流水线模板**（每个子工单一个 `promptAgent` 步骤，而不是每个子
+工单一行 `Ticket`），并启动该次运行。参见
+[运行编排](/zh-CN/手册/操作指南/运行编排/)。
 
-## Related guides
+## 相关指南
 
-- [Create and manage tickets](/zh-CN/手册/操作指南/管理工单/)
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [Run an orchestration](/zh-CN/手册/操作指南/运行编排/)
-- [Organize work with projects](/zh-CN/手册/操作指南/项目/)
-- [Ticket lifecycle reference](/zh-CN/手册/参考/工单生命周期/)
+- [创建和管理工单](/zh-CN/手册/操作指南/管理工单/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [运行编排](/zh-CN/手册/操作指南/运行编排/)
+- [用项目组织工作](/zh-CN/手册/操作指南/项目/)
+- [工单生命周期](/zh-CN/手册/参考/工单生命周期/)
 
-## Related concepts
+## 相关概念
 
-- [Tickets](/zh-CN/手册/概念/工单/)
-- [Dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
-- [Modes](/zh-CN/手册/概念/模式/)
+- [工单](/zh-CN/手册/概念/工单/)
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)
+- [模式](/zh-CN/手册/概念/模式/)

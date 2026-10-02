@@ -1,68 +1,68 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Spusťte pipeline ručně
+description: Spusť běh pipeline z výběru pro spuštění, vyplň vstupy a skonči na detailu běhu.
 slug: cs-CZ/prirucka/navody/spusteni-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/).
+Tenhle návod popisuje ruční start běhu. Sledování, čtení výstupu kroku
+a zotavení po selhání je v
+[Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/).
 
-## Start a run
+## Spusť běh
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Klikni na **Pipelines** v postranním panelu pracovního prostoru.
+2. Stiskni **Spustit pipeline** v záhlaví. Dostaneš se na výběr pro spuštění
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Vyber šablonu z levé lišty. Každá karta ukáže název šablony, její
+   popis a jestli bere vstupy.
+4. Vyplň formulář vstupů vpravo. Povinná pole nechají tlačítko zablokované,
+   dokud nemají hodnotu; šablona bez vstupů to sama oznámí.
+5. Stiskni **Spustit pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Dostaneš se na detail běhu, s živým časovým vodopádem a plátnem grafu.
 
-## If the rail is empty
+## Když je lišta prázdná
 
-The launcher shows a template only when **both** are true:
+Výběr pro spuštění ukáže šablonu, jen když platí **obojí**:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Přepínač šablony je zapnutý v **Nastavení → Pracovní prostor → Šablony pipeline**.
+- **Povolit ruční spuštění** je zapnuté v dialogu **Ruční spuštění** editoru
+  šablony — ten přepínač založí spouštěč `manual`, který výběr pro spuštění čte.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+Osm ze třinácti vestavěných šablon se dodává vypnutých: `external_pr_welcome`,
 `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+`dep_audit` a `pr_digest`. Engine odmítne spustit vypnutou šablonu, takže
+její přepínač zapni dřív, než ji tu budeš hledat.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Na seznamu šablon není u jednotlivé šablony akce **Spustit** a v editoru
+není tlačítko spuštění — jediný ruční vstup je výběr pro spuštění.
 
-## Fill in a repository input
+## Vyplň vstup typu repozitář
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Vstup typu **Repozitář** vykreslí výběr nad registrovanými repozitáři
+pracovního prostoru. Výběrem se do payloadu běhu doplní `repo_id`,
+`repo_local_path`, `repo_full_name` a — když má repozitář remote na GitHubu —
+`repo_owner` a `repo_name`, takže následující kroky si přečtou, co potřebují.
 
-## Watch it run
+## Sleduj běh
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Detail běhu má tři části: pruh metadat (čas startu, aktivní doba,
+postup kroků, souhrn selhání, **Zopakovat** a **Smazat**), sbalitelný časový
+vodopád s dobou a náklady každého kroku a plátno grafu. Výběr uzlu otevře
+panel toho kroku.
 
-[Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/) popisuje
+všechno, včetně toho, jak číst pozastavený krok a co dělat, když selže.
 
-Every run you start from the app is a real one.
+Každý běh, který spustíš z aplikace, je skutečný.
 
-## Related guides
+## Související návody
 
-- [Create a pipeline template](/cs-CZ/prirucka/navody/vytvoreni-pipeline/)
-- [Set up pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/)
-- [Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/)
+- [Vytvořte šablonu pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/)
+- [Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/)
+- [Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/)
 
-## Related concepts
+## Související koncepty
 
-- [Pipelines](/cs-CZ/prirucka/koncepty/pipelines/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/)

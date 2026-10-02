@@ -1,97 +1,105 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Vorbește cu Control Center dintr-un PR GitHub
+description: Cere botului GitHub App al serverului o revizuire sau pune o întrebare chiar din conversația PR-ului, fără webhook și fără URL public.
 slug: ro-RO/manual/ghiduri-practice/conversatii-pr-github
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Acest ghid îți arată cum să lucrezi cu Control Center fără să părăsești GitHub:
+cere o revizuire IA chiar din pagina PR-ului, pune botului o întrebare într-un
+comentariu și continuă conversația în firele lui de revizuire.
 
-The bot is your server's own [GitHub App](/ro-RO/manual/ghiduri-practice/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Botul este chiar [GitHub App](/ro-RO/manual/ghiduri-practice/github-app/) al
+serverului tău — același care deja autentifică oameni și rulează munca din
+fundal. Nu se înregistrează nimic nou și nimic nu trebuie să fie accesibil din
+internet: serverul descoperă ce s-a spus pe GitHub prin interogare periodică,
+așa că un laptop aflat în spatele unui NAT se comportă exact ca o implementare
+publică.
 
-## Prerequisites
+## Cerințe preliminare
 
-- The server has its GitHub App [registered and
-  installed](/ro-RO/manual/ghiduri-practice/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Serverul are GitHub App-ul
+  [înregistrat și instalat](/ro-RO/manual/ghiduri-practice/github-app/), cu
+  permisiunile **Pull requests: read and write** (pentru comentarii, fire și
+  reacții) și **Issues: read** (pentru căutarea de comentarii). Ambele sunt deja
+  în lista de permisiuni din acel ghid
+- Repozitoriul este legat de un spațiu de lucru din Control Center
+- Fără URL de webhook, fără tunel, fără callback — nu e nimic de configurat pe
+  partea de rețea
 
-## Find your bot's name
+## Găsește numele botului tău
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Loginul botului este `<appslug>[bot]`, unde `appslug` este numele pe care l-ai
+dat aplicației când ai înregistrat-o.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Mergi la **Setări → Server → Autentificare unică** și derulează până la
+   cardul **Aplicații provider**
+2. Deschide secțiunea **GitHub** și apasă **Test**
+3. Copiază **Login bot** când se completează. Dacă încă afișează indicația de
+   câmp gol, loginul este întotdeauna `<appslug>[bot]` — tastează asta, sau
+   forma scurtă `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub nu oferă conturile de aplicație în autocompletarea pentru `@`, așa că
+loginul trebuie tastat — de aceea cardul din setări îl face copiabil cu un
+singur clic. Sufixul `[bot]` este opțional: atât `@myapp`, cât și `@myapp[bot]`
+ajung la bot.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Alege un nume de aplicație distinct]
+Forma scurtă este potrivită ca text. Dacă un utilizator GitHub obișnuit are din
+întâmplare același slug ca aplicația ta, menționarea acelui utilizator prin forma
+scurtă ajunge tot la bot. Forma completă `@myapp[bot]` este întotdeauna lipsită
+de ambiguitate.
 :::
 
-## Request a review from GitHub
+## Cere o revizuire din GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+Două metode, ambele pornind același pipeline predefinit `pr_review` pe care îl
+pornește butonul **Întreabă AI**:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Adaugă eticheta `ai-review`** pe PR. Este cel mai apropiat lucru de a atribui
+  botul ca recenzent pe care îl oferă GitHub — conturile de aplicație nu pot
+  ocupa locul nativ de recenzent solicitat. Nu există niciun comentariu la care
+  să se reacționeze, așa că nu se publică nimic pe GitHub; revizuirea pornește în
+  Control Center
+- **Comentează `@myapp review`** (sau doar `@myapp`) în conversația PR-ului.
+  Botul reacționează cu 👀, apoi răspunde când revizuirea a pornit (sau că una
+  rulează deja)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Recenzenții lucrează în spațiul de revizuire al PR-ului; citește și publică
+constatările ca în
+[Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/).
+Publicarea înapoi pe GitHub rămâne o decizie pe care o iei în Control Center —
+pornirea unei revizuiri din GitHub nu publică nimic pe GitHub de la sine.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+Eticheta se declanșează o singură dată per PR: adăugarea ei este cererea, și nu
+se re-armează când este eliminată și adăugată din nou. Ca să rulezi din nou o
+revizuire — după un push, de exemplu — menționează botul.
 
-## Ask a question
+## Pune o întrebare
 
-Comment on the PR conversation:
+Comentează în conversația PR-ului:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Ce se întâmplă, în ordine:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Botul reacționează cu 👀 ca să știi că comentariul a fost văzut
+2. Întrebarea este postată în spațiul de revizuire al PR-ului **ca tine** — aceeași
+   atribuire ca și cum ai fi tastat-o în Control Center
+3. Un agent răspunde în spațiu, iar răspunsul este postat înapoi pe PR ca un
+   comentariu care te menționează cu @
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+O întrebare pe un PR fără nicio revizuire încă trezește agentul CEO al spațiului
+de lucru; după ce a rulat o revizuire, răspunde agentul care a vorbit ultimul,
+așa că continuările ajung la cine are contextul.
 
-## Follow up in a review thread
+## Continuă într-un fir de revizuire
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Răspunde într-un fir de revizuire inline din care botul face parte — un comentariu
+pe diff lăsat de el, sau un răspuns postat de el în acel fir. Nu e nevoie de
+nicio mențiune; firul **este** adresarea:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +107,79 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Conversația pe mai multe replici funcționează la fel: fiecare răspuns este o nouă
+întrebare în aceeași conversație, cu spațiul de revizuire ca context, iar
+răspunsul se întoarce în fir.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+O continuare pe cronologia conversației PR-ului este un comentariu nou de nivel
+superior, așa că are nevoie în continuare de o mențiune cu @.
 
-## Who the bot talks to
+## Cu cine vorbește botul
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Un comentariu GitHub sosește purtând nu mult mai mult decât un login, așa că
+botul rezolvă autorul înainte de a face orice:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **Contul tău GitHub trebuie să fie legat de identitatea ta** în Control Center
+  — [autentifică-te cu GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+  sau lipește un token, din **Setări → Spațiu de lucru → Profil și identitate →
+  Găzduire de cod**
+- **Trebuie să fii membru cu un rol de scriere** (`member`, `admin` sau `owner`)
+  în spațiul de lucru care leagă repozitoriul
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Oricine altcineva primește un singur răspuns politicos care explică ce lipsește —
+un login necunoscut (nelegat, sau legat dar care nu este membru aici) și un rol
+doar în citire sunt cele două cazuri — iar vorbele lor nu intră niciodată în
+spațiul de lucru. Eticheta `ai-review` nu este condiționată astfel: nu are autor,
+așa că pornește revizuirea în spațiul de lucru care deja leagă repo-ul.
 
-## What to expect
+## Ce să te aștepți
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Lucru                | Comportament                                                             |
+| -------------------- | ------------------------------------------------------------------------ |
+| Confirmare           | 👀 pe un comentariu în circa un minut — intervalul de scanare. Eticheta `ai-review` nu are niciun comentariu la care să reacționeze |
+| Răspunsuri           | Postate ca botul (aplicația), în firul în care a fost pusă întrebarea     |
+| Atribuirea în spațiu | Întrebarea este a ta; agentul rulează în numele tău, sub setările de autonomie ale spațiului |
+| Revizuiri            | Constatările ajung în spațiul de revizuire; publicarea pe GitHub este manuală |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Latența de circa un minut este prețul plătit pentru a nu avea deloc nevoie de
+acces de rețea de intrare. Nimic din scanare nu este urgent și nimic nu se
+pierde cât timp serverul este offline — un comentariu care sosește în timpul unei
+perioade de nefuncționare este prins la scanarea următoare.
 
-## Troubleshooting
+## Depanare
 
-**Nothing happens for a comment that mentions the bot.**
+**Nu se întâmplă nimic pentru un comentariu care menționează botul.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- Aplicația este **instalată** pe contul care deține repo-ul, iar repo-ul este
+  **legat** de un spațiu de lucru? Un repo nelegat este sărit înainte de a se
+  înregistra ceva, așa că legarea lui mai târziu livrează totuși
+- Contul tău GitHub este legat și ești membru cu un rol de scriere? Verifică pe
+  PR răspunsul de refuz al botului — spune care dintre ele
+- Tot nimic? Jurnalul serverului numește scanarea și PR-ul când ceva eșuează;
+  caută `pr_conversation:` (interogatorul) și `github_pr_conversation:` (puntea)
 
-**The label does not start a review.**
+**Eticheta nu pornește o revizuire.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+Se declanșează o singură dată per PR. Dacă o revizuire a rulat deja, sau eticheta
+a fost adăugată înainte ca serverul să vadă vreodată PR-ul (prima scanare
+înregistrează restanța în silență, în loc să o ia cu asalt), menționează botul în
+schimb — `@myapp review` pornește întotdeauna una, dacă nu este deja o revizuire
+în curs.
 
-**The bot's answer never arrived on GitHub.**
+**Răspunsul botului nu a ajuns niciodată pe GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Răspunsul în sine nu se pierde niciodată — se află în spațiul de revizuire al
+PR-ului din Control Center. O eroare de postare (GitHub căzut, permisiuni
+schimbate) este consemnată în jurnal, iar răspunsul nu este reîncercat; întreabă
+din nou în fir dacă contează.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/ro-RO/manual/ghiduri-practice/spatii/): the room all of this lands in
+- [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): înregistrarea
+  din care se naște botul
+- [Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/):
+  cum să citești constatările produse de o revizuire pornită printr-o mențiune
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/):
+  legarea propriului cont GitHub, exact lucrul prin care te rezolvă botul
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/): camera în care
+  ajunge toate acestea

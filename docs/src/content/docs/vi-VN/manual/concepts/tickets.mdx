@@ -1,155 +1,168 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Phiếu và ủy thác
+description: Vì sao một phiếu theo dõi công việc mà không điều phối nó, ủy thác được canh chừng ra sao, và bản gương từ nhà cung cấp sở hữu những gì và không sở hữu gì.
 slug: vi-VN/so-tay/khai-niem/phieu
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Phiếu là đơn vị công việc mà Control Center theo dõi. Nó cố ý là một thực thể
+_ngốc_: một tiêu đề, một nội dung, một trạng thái, một chủ sở hữu và một vị trí
+trong cây. Nó không phải thứ mà agent thực thi dựa trên — công việc của agent
+nằm trong các cuộc hội thoại, còn đầu ra có cấu trúc của một lần chạy nằm trên
+nhật ký chạy.
 
-## Assignment records ownership; it dispatches nothing
+## Gán là ghi nhận quyền sở hữu; nó không điều phối gì cả
 
-This is the single most important thing to get right about tickets.
+Đây là điều quan trọng nhất cần nắm cho đúng về phiếu.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/vi-VN/so-tay/khai-niem/su-kien-mien/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Đặt `assignedAgentId` chỉ ghi một trường và phát ra một
+[sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) `TicketAssigned`. Sự kiện
+đó là một tín hiệu kiểm toán và thông báo, đồng thời là một trình kích hoạt quy
+trình. **Gán phiếu cho một agent không khởi động lần chạy nào.** Không có bộ
+điều phối phiếu nào theo dõi `assignedAgentId` rồi đánh thức agent đó.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Ngoại lệ là đội: khi `assignedTeamId` được đặt, `TeamRoutingService` điều phối
+trưởng đội kèm giao thức vận hành và danh sách thành viên.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Nếu bạn muốn một agent cụ thể làm một phiếu, hãy nhờ nó trong một cuộc hội
+thoại, hoặc để một bước quy trình điều phối nó, hoặc để một agent khác ủy thác
+cho nó. Gán phiếu cho một agent rồi ngồi chờ là việc duy nhất sẽ không bao giờ
+tạo ra công việc.
 
-## Mirror and overlay
+## Bản gương và lớp phủ
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Một phiếu có thể thuần cục bộ hoặc được một trình theo dõi bên ngoài hậu thuẫn,
+và nó mang cả hai trên cùng một hàng.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Bản gương** — nhà cung cấp, khóa bên ngoài, URL, tiêu đề, mô tả, mức ưu tiên,
+nhãn, trạng thái thô và trạng thái đã chuẩn hóa, dấu thời gian — là một bộ đệm
+khi phiếu ở xa. Ở đó hệ thống từ xa là nguồn chân lý, và một lần làm mới sẽ ghi
+lại toàn bộ bản gương.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Lớp phủ** — phân công, ủy thác, liên kết space, phiếu cha, dự án, các PR được
+liên kết — chỉ thuộc về Control Center. Trình theo dõi không biết gì về nó và
+một lần làm mới không bao giờ chạm tới nó.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Chính sự tách bạch đó khiến việc đồng bộ trở nên an toàn: một lần kéo từ nhà
+cung cấp có thể phá hủy bản gương mà không bao giờ làm mất siêu dữ liệu điều
+phối phủ bên trên.
 
-## The lifecycle graph binds agents, not you
+## Đồ thị vòng đời ràng buộc agent, không ràng buộc bạn
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Các trạng thái chạy `backlog → open → inProgress → inReview → done`, với
+`blocked` là một vòng phụ và `failed` / `cancelled` là các trạng thái kết thúc
+còn lại.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Đồ thị chuyển trạng thái chỉ được thực thi **trên đường đi của agent và tự động
+hóa** — các công cụ MCP và bộ đối soát. Một chuyển trạng thái không hợp lệ ở đó
+sẽ bị ghi log và bỏ qua, nên một agent lú lẫn không thể kéo ngược một phiếu ra
+khỏi trạng thái kết thúc.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Mọi thay đổi do người dùng thực hiện trong giao diện đều truyền `force: true`
+và bỏ qua hoàn toàn đồ thị. Con người có thể chuyển một phiếu sang bất kỳ trạng
+thái nào mà hộp chọn liệt kê — kể cả mở lại một trạng thái kết thúc. Hộp chọn
+không đưa ra `failed`; agent đặt trạng thái đó qua `fail_ticket`. Đồ thị là một
+thanh chắn an toàn cho tự động hóa, chứ không phải một quy tắc về cách công việc
+được phép diễn ra.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` sở hữu mọi thay đổi qua một điểm nghẽn duy nhất: nó nạp
+hàng, khẳng định hàng thuộc không gian làm việc của bên gọi và ghi với một
+`version` mong đợi, nhờ đó hai chỉnh sửa đồng thời không thể âm thầm ghi đè lên
+nhau.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/).
+Để xem bảng trạng thái đầy đủ, các chuyển trạng thái, danh sách trường và các
+loại quan hệ, xem [Vòng đời phiếu](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/).
 
-## Provenance: how a ticket came to exist
+## Nguồn gốc: một phiếu ra đời như thế nào
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Mọi phiếu đều có một `originKind`. Enum này có năm giá trị — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — nhưng hiện chỉ
+hai giá trị được ghi: `manual` (mặc định trên `createTicket`, kể cả các phiếu
+con được ủy thác) và `externalSync` (bộ máy đồng bộ, khi kéo từ nhà cung cấp).
+`TicketWorkflowService.createTicket` không nhận đối số nguồn gốc, nên
+`pipelineStep`, `agentDelegation` và `recovery` không bao giờ xuất hiện trên một
+hàng.
 
-## Guarded delegation
+## Ủy thác có canh chừng
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Ủy thác là nơi một agent tạo công việc cho một agent khác, và cũng là nơi đặc
+quyền có thể rò rỉ, nên các hàng rào nằm phía máy chủ tại một điểm nghẽn thay vì
+trong chỉ dẫn prompt.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` đi qua `TicketWorkflowService.delegateGuarded`, hàm này tính độ
+sâu và gốc của phiếu con từ chuỗi phiếu cha rồi chạy cả bốn kiểm tra của
+`DelegationGuards`: một bước nhảy vượt quá **giới hạn độ sâu 3**, một bước nhảy
+quay lại một agent đã có trong chuỗi (**phát hiện chu trình**), một **mức trần
+tự chủ** (cấp hiệu lực của bên được ủy thác trong space không được vượt quá cấp
+của bên ủy thác) và một **phong bì ngân sách** (việc ủy thác tính vào ngân sách
+dừng cứng còn lại của bên ủy thác và không thể tạo thêm). Phần đấu nối
+production cung cấp cả hai cổng resolver. Quyền tự chủ và ngân sách sẽ bị bỏ qua
+khi `from_agent_id` không được truyền (ngân sách không giới hạn / không chính
+sách cũng được chấp nhận). Một lời từ chối được ném ra dưới dạng
+`DelegationRefusedException` với thông điệp đến thẳng agent đang ủy thác nguyên
+văn — một lời từ chối rõ ràng, không bao giờ là một no-op im lặng.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` là người anh em cũ hơn, **không được canh chừng**: nó gọi
+thẳng `createTicket` và bỏ qua mọi hàng rào. Hãy ưu tiên `delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Đừng nhầm giới hạn độ sâu ủy thác (3, trên các chuỗi `delegate_task`) với giới
+hạn lồng subagent của harness tích hợp (2). Đó là hai giới hạn khác nhau trên
+hai cơ chế khác nhau.
 
-## Hierarchy, links and projects
+## Hệ thống phân cấp, liên kết và dự án
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Quan hệ cha và vấn đề con nằm trên `tickets.parent_ticket_id`, do `setParent` /
+`clearParent` quản lý. Chúng **không** phải là các hàng `ticket_links`, nên bất
+cứ thứ gì đọc quan hệ của một phiếu đều phải hợp nhất cả hai nguồn.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` chứa các cạnh có hướng giữa những phiếu vốn không liên quan với
+nhau:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Loại liên kết | Ý nghĩa                                     |
+| ------------- | ------------------------------------------- |
+| `blocks`      | Phiếu nguồn chặn phiếu đích                 |
+| `relatesTo`   | Hai phiếu có liên quan với nhau (đối xứng)  |
+| `duplicateOf` | Phiếu nguồn là bản trùng của phiếu đích     |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+Một **dự án** là cách nhóm các phiếu trong phạm vi không gian làm việc hướng tới
+một mục tiêu chung. Dự án chỉ thuộc về Control Center và không bao giờ đồng bộ
+sang nhà cung cấp bên ngoài.
 
-## Collaborators
+## Cộng tác viên
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Các hàng `TicketCollaborator` là cách gắn nhiều hơn một chủ thể vào một phiếu,
+với vai trò `assignee`, `collaborator` hoặc `reviewer`. Con người và agent là
+những hàng ngang hàng nhau — một `principalId` cộng một `collaboratorType` —
+không có giá trị đánh dấu (sentinel) cho "người dùng" và không có khóa ngoại trỏ
+tới bảng nào trong hai bảng đó.
 
-## External sync
+## Đồng bộ bên ngoài
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Phiếu của Control Center là bản chính. Việc xóa một phiếu **chỉ diễn ra cục
+bộ**, nên một phiếu được nhà cung cấp hậu thuẫn mà bạn xóa sẽ không bị xóa trên
+trình theo dõi và có thể xuất hiện lại trong lần đồng bộ kế tiếp. Cộng tác viên
+và phiếu con bị xóa theo dây chuyền.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Thông tin xác thực của adapter được phân giải từ các kho thông tin xác thực của
+máy chủ (một khóa Linear hoặc token GitHub được dán trong Cài đặt sẽ được nhận ở
+yêu cầu kế tiếp; biến môi trường chỉ gieo mầm cho các kho đó).
 
-## Tickets and pipelines
+## Phiếu và quy trình
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Không có nút quy trình nào tạo, hoàn tất hay hủy phiếu — bảng chọn không có bước
+như vậy và bộ máy không gọi `TicketWorkflowService`. Một trình kích hoạt quy
+trình vẫn có thể kích hoạt trên `TicketAssigned`, `TicketCompleted`,
+`TicketFailed` hoặc `TicketCancelled` (bốn sự kiện đó là những sự kiện phiếu mà
+`EventPayloadMapper` thực sự ánh xạ). Không có cột `pipelineRunId` trên phiếu;
+sự gắn kết với quy trình nằm trên nhật ký chạy của agent.
 
-## See also
+## Xem thêm
 
-- [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/): ticket events can trigger a pipeline
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/): where a DAG of sub-tickets comes from
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): who a ticket is assigned to
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): the ticket lifecycle events
-- [Ticket lifecycle](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/): statuses, fields, transitions, relations
-- [Create and manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
-- [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
-- [Organize work with projects](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/): các sự kiện phiếu có thể kích hoạt một quy trình
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/): một DAG các phiếu con đến từ đâu
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): phiếu được gán cho ai
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): các sự kiện trong vòng đời phiếu
+- [Vòng đời phiếu](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/): trạng thái, trường, chuyển trạng thái, quan hệ
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Tổ chức công việc bằng dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)

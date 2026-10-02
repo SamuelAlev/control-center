@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Einen Agenten diagnostizieren
+description: Geh Laufprotokoll, Adapter-Prüfung, Serverstatus und Host-Diagnose durch, wenn ein Agent keine Läufe mehr erzeugt.
 slug: de-DE/handbuch/anleitungen/agent-diagnostizieren
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Diese Anleitung zeigt, wie du herausfindest, warum ein Agent keine Läufe erzeugt.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Arbeite von oben nach unten: zuerst die eigenen Läufe des Agenten, dann sein Backend, dann der Server, dann der Host.
 
-## 1. Check the agent's run history
+## 1. Die Laufhistorie des Agenten prüfen
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Einstellungen → Arbeitsbereich → Agenten** → den Agenten auswählen → **Protokolle**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Jeder Lauf zeigt ein Status-Badge, eine Dauer („Running…“, solange er läuft), Start- und Endzeit, die PID und den verwendeten Adapter. **Ansicht** öffnet den rohen Ereignisstrom dieses Laufs. **Stoppen** beendet einen laufenden Prozess und markiert den Lauf mit „Killed by user“; **Laufenden beenden** in der Kopfzeile tut dasselbe für jeden laufenden Lauf dieses Agenten.
 
-Read it like this:
+Lies es so:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Gar keine Läufe** — die Ausführung ist nie angestoßen worden. Erwähnungen im Composer sind `@` plus Wortzeichen (Buchstaben, Ziffern, Unterstrich). Die Auflösung ist eine exakte oder Präfix-Übereinstimmung mit dem Agentennamen, deshalb wird `@code-reviewer` als `code` gelesen und kann trotzdem einen Agenten namens `code-reviewer` wecken. Ein Name mit Leerzeichen lässt sich nicht als ein Token erwähnen. Danach zu Schritt 2.
+- **Ein Lauf, der sofort mit einem Fehler endete** — öffne **Ansicht**. Ein Fehlstart des Backends erscheint hier als Prozessfehler.
+- **Ein Lauf, der bei „Running…“ hängen bleibt** — stoppe ihn und prüfe dann das **Stille-Timeout (Minuten)** des Agenten im Tab Einstellungen. Ohne gesetzten Wert gilt der Standard des jeweiligen Modus.
+- **Ein abgeschlossener Lauf ohne brauchbare Ausgabe** — der Status im Laufprotokoll bleibt `completed`, auch wenn der Lauf ohne das angekündigte Lieferergebnis endete. Das ehrliche Signal steckt im Zusammenfassungstext.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Der Tab Protokolle zeigt keine Kosten. Die Ausgaben stehen in der Tabelle je Agent unter **Observability → Übersicht**.
 
-## 2. Check the agent's backend
+## 2. Das Backend des Agenten prüfen
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Einstellungen → Server → Modellanbieter** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Die Liste **Erkannte Runner** zeigt jeden Adapter mit seinem Prüfergebnis — eine installierte Version, „Überprüfung…“ oder „Nicht gefunden“ — dazu den aufgelösten Pfad und die Befugnis-Chips einer gefundenen CLI. **Aktualisieren** in der Kopfzeile der Seite startet die Prüfung neu.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Die Prüfung läuft auf dem Rechner, der `cc_server` hostet, nicht auf dem Rechner, den du gerade ansiehst. Auf dem Web-Client oder einem gekoppelten Gerät heißt „Nicht gefunden“, dass die CLI auf dem Server-Host fehlt.
 
-Two things to confirm:
+Zwei Punkte zum Prüfen:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Der Agent hat überhaupt einen Adapter gesetzt.** Ein Agent ohne Adapter fällt auf **Control Center (built-in)** zurück, und im Laufprotokoll steht `cc-harness`, das Transkript nennt also, was gelaufen ist. Fehlt auch das Modell, fragt er Anthropic nach dessen Standard. Das scheitert mit `No credential for provider "anthropic"`, solange kein Anthropic-Konto verbunden ist. Die mit dem Arbeitsbereich angelegten Spezialisten kommen ohne Adapter.
+- **Der eingebaute Adapter hat ein Modell.** Seine Modellliste kommt live von den Anbietern, die weiter unten auf derselben Seite verbunden sind. Ein Anbieter ohne gespeicherte Zugangsdaten liefert kein Modell.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Der Adapterkatalog selbst ist fest. Einen neuen Adapter registrieren lässt sich nicht. Pro Adapter änderst du hier die Startargumente und die Umgebungsvariablen. Beim Auflösen der Zugangsdaten setzt sich eine Umgebungsüberschreibung je Adapter still gegen ein verbundenes Anbieterkonto durch.
 
-## 3. Check the server
+## 3. Den Server prüfen
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Einstellungen → Server → Verbindung und Status** (`/settings/server/connection`) zeigt, mit welchem Server dieser Client spricht und was der Server meldet.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Bei einem Headless-Server ist `GET /healthz` dieselbe Auskunft ohne Client. Die Route ist absichtlich ohne Authentifizierung und mit offenem CORS:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Sie liefert den Status des Servers, die Laufzeit in Sekunden, die Zahl der lebenden Verbindungen, den gebundenen Port, Build-Version und Git-SHA, die Schemaversion des Arbeitsbereichs, die Version des RPC-Katalogs, Server-ID, Name und Identitätsfingerabdruck, ob die Bindung unsicher ist, und einen `codeGraph`-Block mit den Zählern `watching` / `indexing` / `pending`. Hat ein Cache schon Verkehr gesehen, kommt ein `caches`-Block dazu; ein Demo-Server setzt `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Zwei Dinge, die zählen, wenn eine Änderung „in den Tests klappt, in der App aber nicht“:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Der Desktop startet bevorzugt eine **vorgefertigte** `cc_server`-Binärdatei, nicht den Quellstand. Eine neue RPC-Operation oder ein neues MCP-Tool erscheint erst nach einem Neubau der Binärdatei, und beim Start schreibt das Log eine Warnung, wenn die Git-SHA des Kindprozesses von der der App abweicht.
+- Der Desktop beendet einen gestarteten Server, der seine Bereitschaftsmeldung nicht innerhalb von 20 Sekunden ausgibt, und wechselt auf einen Fehlerbildschirm.
 
-## 4. Check the host
+## 4. Den Host prüfen
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Einstellungen → Server → Diagnose und Datenschutz** (`/settings/server/diagnostics`) ist die Seite auf Host-Ebene. Sie enthält:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Sandboxing** — den Hauptschalter, das erkannte Backend, einen Installationshinweis und die Standardschalter für Befugnisse. Vom Server kommt nur das erkannte Backend; siehe die Achtung unten. Einen Zurücksetzen-Schalter gibt es nicht.
+- **Semantische Suche** — den Lebenszyklus des Embedding-Modells auf dem Gerät: installiert, wird mit Prozentangabe heruntergeladen, nicht installiert oder ein Installationsfehler. Bis es installiert ist, bleiben Gedächtnis und Codesuche bei Schlüsselwörtern.
+- **Systemverhalten** — den Computer wach halten, während Agenten laufen.
+- **Sync-Engine** — Notausschalter je Speicher für Tickets, Nachrichten und Notizen. Das sind Notausgänge zurück zu Abos des vollständigen Snapshots. Eine Änderung gilt nur für neue Abos und wirkt erst nach einem Neuladen vollständig.
+- **Log-Level** — stell ihn höher, bevor du den Fehler nachstellst.
+- **Datenschutz** — ob roher Diff-Inhalt an das Modell des Agenten gehen darf und ob Absturzberichte gesendet werden.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Dieser Abschnitt meldet den Host, und seine Schalter liegen auf dem Client]
+Erkennung und Durchsetzung stimmen inzwischen überein: Meldet der Detektor ein natives Backend, sind Agentenläufe auf diesem Host wirklich darin eingeschlossen. Lebendig ist in diesem Abschnitt nur der Detektor. Hauptschalter, Backend-Auswahl und die Standardschalter für Befugnisse sind Einstellungen auf deinem Gerät, und der Server liest keine davon. Der eigene Schalter des Servers ist `--sandbox` (Standard `on`, `off` zum Abwählen). Steht ein Agent auf „Arbeitsbereichsstandard verwenden“, fällt der Server auf sein zurückhaltendes Standardverhalten zurück: kein git push, keine GitHub-API, kein Ticketing-Schlüssel, Netzwerk an.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Eine Warnung hier lohnt das Handeln. Warum ein Agent scheitert, steht meist woanders. Welchen Zustand der Server hat, steht im Startlog: `agent sandbox ON` mit der Backend-Notiz, `no OS-native agent sandbox on this host` mit einem Installationshinweis, oder `agent sandbox DISABLED by --sandbox off`. `GET /healthz` hat kein Sandbox-Feld.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Wo kein Backend da ist — unter Windows immer, unter Linux oder WSL2 ohne `bwrap` und `socat` — laufen die Läufe **ohne** Sandbox. Was sie begrenzt, ist der eigene Checkout der Unterhaltung, die Befugnisse, die entscheiden, welche Zugangsdaten hineingelegt werden, die Schutzregeln für Aktionen, die Bereinigung der Umgebung und die Werkzeugfläche, die der Modus zulässt.
 :::
 
-## Common failures
+## Häufige Fehler
 
-### The run never starts and the adapter shows "Not found"
+### Der Lauf startet nie und der Adapter zeigt „Nicht gefunden“
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Installiere die CLI **auf dem Server-Host** und klicke danach auf der Seite Modellanbieter auf **Aktualisieren**. Oder stell den Agenten auf den eingebauten Adapter, der keine CLI braucht, und verbinde auf derselben Seite einen Anbieter.
 
-### The agent cannot push or open a pull request
+### Der Agent kann nicht pushen oder einen Pull Request öffnen
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Die Befugnisse sind das Tor. Öffne **Einstellungen → Arbeitsbereich → Agenten** → den Agenten → **Sandbox-Berechtigungen**, schalte den Schalter ein und aktiviere **git push erlauben** und **GitHub-API-Aufrufe erlauben**. Bleibt der Schalter auf „Arbeitsbereichsstandard verwenden“, bekommt der Agent nichts davon.
 
-### Semantic search returns nothing useful
+### Die semantische Suche liefert nichts Brauchbares
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Prüfe **Einstellungen → Server → Diagnose und Datenschutz → Semantische Suche**. Bis das Embedding-Modell installiert ist, sucht die Suche nur über Schlüsselwörter. Zeilen, die vor der Installation geschrieben wurden, werden nie nachträglich aufgefüllt und bleiben auch danach bei den Schlüsselwörtern.
 
-### The server will not boot at all
+### Der Server startet überhaupt nicht
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Native Bibliotheken sind Pflicht, einen eingeschränkten Modus gibt es nicht. Eine fehlende dylib lässt `cc_server` den Start verweigern und nennt die fehlende Datei im Fehler. Die Natives stellst du mit `scripts/natives/build_natives.sh` bereit und baust danach die Server-Binärdatei neu.
 
-### An action is silently denied
+### Eine Aktion wird stillschweigend abgelehnt
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Eine Schutzregel-Entscheidung `prompt` ohne verbundenen Freigeber wird abgelehnt. So ist es vorgesehen. Die Regeln des Arbeitsbereichs stehen unter **Einstellungen → Arbeitsbereich → Agent-Berechtigungen**.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Create and configure an agent](/de-DE/handbuch/anleitungen/agent-erstellen/)
-- [Manage adapters and models](/de-DE/handbuch/anleitungen/adapter/)
-- [Configure guardrails](/de-DE/handbuch/anleitungen/schutzregeln-konfigurieren/)
-- [Run a headless server](/de-DE/handbuch/anleitungen/headless-server-betreiben/)
+- [Einen Agenten erstellen und konfigurieren](/de-DE/handbuch/anleitungen/agent-erstellen/)
+- [Adapter und Modelle verwalten](/de-DE/handbuch/anleitungen/adapter/)
+- [Schutzregeln konfigurieren](/de-DE/handbuch/anleitungen/schutzregeln-konfigurieren/)
+- [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Sandbox and security](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/)
-- [Agent dispatch lifecycle](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/)
+- [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/)
+- [Lebenszyklus der Agenten-Ausführung](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/)

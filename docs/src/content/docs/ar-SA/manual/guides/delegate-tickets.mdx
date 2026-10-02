@@ -1,131 +1,93 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: تفويض العمل إلى الوكلاء
+description: سلّم تذكرة إلى وكيل في محادثة، ودع الوكلاء يفوّضون المهام الفرعية بعضهم إلى بعض تحت حارسي العمق والدورات.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+يشرح هذا الدليل كيف تسلّم العمل إلى وكيل، وماذا يحدث حين يمرّر الوكلاء العمل بينهم.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[إسناد تذكرة إلى وكيل لا يُرسل شيئًا]
+لا موزّع تذاكر حين يكون المُسنَد إليه وكيلًا. الإسناد يسجّل الملكية ولا يزيد على ذلك — لا تُنشأ مساحة، ولا تتغيّر الحالة، ولا يبدأ وكيل. الاستثناء تذكرة مُسنَدة إلى **فريق**، وهي توقظ قائد ذلك الفريق. أما العمل المُسنَد إلى وكيل بعينه فيعيش في المحادثات، ومن هناك تبدأه.
 :::
 
-## Hand a ticket to an agent
+## تسليم تذكرة إلى وكيل
 
-1. [Create the ticket](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [أنشئ التذكرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/) بعنوان ووصف دقيقين بما يكفي للعمل منهما.
+2. اضبط **المُسنَد إليه** على الوكيل، حتى تُسجَّل الملكية.
+3. افتح مساحة (أو أنشئ واحدة) وأشِر إلى ذلك الوكيل بـ @.
+4. أشر إلى التذكرة بعلامة `#` في رسالتك — يُكمل حقل الكتابة الاسم تلقائيًا من تذاكر مساحة العمل — وقل ما تريد إنجازه.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+يلتقط الوكيل العمل من المحادثة، ويتدفّق تقدّمه إلى تلك المساحة.
 
-## What the agent receives
+## ما يتلقاه الوكيل
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- رسالتك، ومنها إشارة التذكرة التي وضعتها.
+- المساحة التي يعمل فيها ويبلّغ.
+- شجرة عمل معزولة من المستودعات المرتبطة بمساحة العمل.
+- **وضع** المساحة، وهو ما يحكم سطح أدوات التشغيل.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/).
+الوضع خاصية للمساحة لا للتذكرة — لا وضع للتذكرة. لذلك قد يكون الوكيل نفسه في وضع `chat` في مساحة وفي وضع `plan` في أخرى. اختره من قائمة الوضع في حقل الكتابة (**«الوكيل»** أو **«تخطيط»** أو **«تنسيق»**)؛ `review` تضبطه مساحات مراجعة طلبات السحب، ولا يُختار. انظر [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/).
 
-## Require a structured result
+## اشتراط نتيجة منظَّمة
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+يُعلَن عقد المخرجات على الإرسال لا على التذكرة: `expected_output_schema` مع `output_contract_mode` (صارم افتراضيًا). يستوفيه الوكيل باستدعاء `submit_output`، فيتحقق الاستدعاء من الحمولة وفق المخطط ويرفض ما لا يطابقه.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+يُكتَب المخرج المقبول وأي رفض في **سجل تشغيل الوكيل**. حالة التذكرة نفسها لا تُمَس — فعقد فاشل لا يُفشل التذكرة.
 
-## Monitor progress
+## مراقبة التقدّم
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **المساحة** — نشاط الوكيل الحي، وهو العرض الأساسي.
+- **التذكرة** — حالتها، كما يضبطها من ينقلها.
+- **قابلية الملاحظة ← مباشر** (`/workspaces/<workspace-id>/observability`) — كشف الوكلاء الحي.
+- **قابلية الملاحظة ← الرؤى** — سجل التشغيل، مع التكلفة والمدة.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+لا شاشة لوحة؛ عنوان مساحة العمل وحده يُعيد التوجيه إلى الوارد.
 
-## Let agents delegate to each other
+## تفويض الوكلاء بعضهم إلى بعض
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+الوكيل الذي يواجه مشكلة فرعية يفوّض بأداة MCP `delegate_task`. تنشئ الأداة تذكرة ابنًا مُسنَدة إلى وكيل آخر، و— حين تمرّر `parent_ticket_id` — تسجّل السلسلة حتى يراها الحراس.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+يعمل حارسان بنيويان دائمًا عند نقطة اختناق التذاكر، لا بتعليمات المطالبة:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **سقف العمق** — تُرفض سلسلة أعمق من 3 قفزات.
+- **كشف الدورات** — تُرفض قفزة ترجع إلى وكيل موجود أصلًا في السلسلة.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+حين تمرّر `from_agent_id` يعمل حارسان آخران (توصيلات الإنتاج توفّر منفذي الحل دائمًا):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **سقف الاستقلالية** — يجب ألا يتجاوز المستوى الفعلي للمفوَّض إليه في المساحة مستوى المفوِّض.
+- **غلاف الميزانية** — يُخصم التفويض من ميزانية الحد الصارم المتبقية لدى المفوِّض، ولا يستحدث ميزانية فوقها. إن غابت السياسة، أو كانت غير محدودة، يمرّ التفويض.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+الرفض مسموع: تعيد الأداة سبب الحارس بنصه، فيرى الوكيل المفوِّض السبب كما هو. يسجّل الحقل `delegatedByAgentId` من فوّض، فتتكون شجرة تفويض.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` يتخطى كل حارس]
+الأداة الأقدم `delegate_ticket` ما تزال مسجَّلة وتستدعي `createTicket` مباشرة — بلا سقف عمق، ولا كشف دورات، ولا سقف استقلالية، ولا غلاف ميزانية. فضّل `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+سقف عمق التفويض هذا، وقدره 3، حد مختلف عن سقف تداخل الوكلاء الفرعيين في الإطار المضمّن، وقدره 2 — أحدهما يحدّ التذاكر بين الوكلاء، والآخر يحدّ الوكلاء الفرعيين داخل تشغيل واحد.
 
-## Put several agents on one ticket
+## وضع عدة وكلاء على تذكرة واحدة
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+أضفهم **متعاونين** على التذكرة (الأدوار: assignee أو collaborator أو reviewer). هذا كشف — سجل بمن هو معني — ولا يمنح شيئًا بذاته.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/).
+ولجمعهم فعلًا في المحادثة نفسها، أضفهم مشاركين من ترويسة المساحة. يستطيعون عندها الإشارة بعضهم إلى بعض بـ @ هناك. انظر [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/).
 
-## Automated ticket creation
+## إنشاء التذاكر آليًا
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+لا عقدة في لوحة خط الأنابيب تنشئ تذاكر، فلا يمكن لخط الأنابيب أن يوزّع العمل كتذاكر مُسنَدة.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/).
+المسار القائم فعلًا هو التنسيق: الموافقة على مقترح تنشئ مشروعًا وفريقًا، وتحوّل مخطط DAG للتذاكر الفرعية في المقترح إلى **قالب خط أنابيب** (خطوة `promptAgent` واحدة لكل تذكرة فرعية، لا صف `Ticket` لكل منها)، وتبدأ ذلك التشغيل. انظر [تشغيل تنسيق](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
-- [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
-- [Run an orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
-- [Organize work with projects](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)
-- [Ticket lifecycle reference](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/)
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
+- [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
+- [تشغيل تنسيق](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
+- [تنظيم العمل بالمشاريع](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)
+- [دورة حياة التذكرة](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Tickets](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
-- [Dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)

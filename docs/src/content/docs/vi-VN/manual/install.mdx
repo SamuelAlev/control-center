@@ -1,153 +1,169 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Cài đặt
+description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
+[app.usectrl.dev](https://app.usectrl.dev), không phải tải xuống gì, hoặc dưới dạng
+**ứng dụng desktop** mà bạn cài đặt. Chúng là cùng một ứng dụng với cùng tính năng.
+Khác biệt duy nhất là nơi máy chủ chạy — và ứng dụng web không thể chạy máy chủ thay bạn.
 
-## Use it in your browser
+## Dùng trong trình duyệt của bạn
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) là chính ứng dụng này được biên dịch cho
+trình duyệt. Không phải cài đặt, không phải cập nhật. Mở lên và kết nối.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Điều mà một tab trình duyệt không thể làm là _trở thành_ máy chủ. Mọi máy khách —
+desktop, web, điện thoại — đều chỉ là một lớp hiển thị mỏng trên một `cc_server`
+không giao diện, thứ sở hữu cơ sở dữ liệu và làm mọi công việc, nên ứng dụng web luôn
+nói chuyện với một máy chủ do bạn chạy. Có hai cách để cung cấp máy chủ cho nó:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Máy chủ trên chính máy của bạn.** Khởi động `cc_server` cục bộ và trỏ ứng dụng web
+tới `ws://localhost:9030`. Trình duyệt coi `localhost` là đáng tin cậy, nên cách này
+không cần chứng chỉ và không cần đường hầm. Đây là cách nhanh nhất để thử ứng dụng web
+và dữ liệu của bạn không bao giờ rời khỏi máy.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Máy chủ trên một máy khác.** Vì `app.usectrl.dev` được phục vụ qua HTTPS, một máy
+chủ không cục bộ phải truy cập được qua `wss://` với chứng chỉ mà trình duyệt đã tin
+cậy. `cc_server` từ chối bind một địa chỉ không phải loopback khi không có TLS, nên hãy
+chọn một trong các cách sau:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- cấp chứng chỉ trực tiếp cho nó, bằng `--tls-cert` và `--tls-key`
+- đặt nó sau một reverse proxy kết thúc TLS và khởi động nó với `--insecure`
+- đưa nó ra ngoài qua một đường hầm hoặc VPN cung cấp chứng chỉ — Tailscale,
+  cloudflared hoặc tương tự. **Cài đặt → Máy chủ → Kết nối & trạng thái** có tùy chọn
+  bật đường hầm tích hợp nằm dưới **Chia sẻ máy chủ này**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Mỗi khi máy chủ nằm sau proxy, NAT hoặc đường hầm, hãy đặt `--public-url` thành địa
+chỉ mà máy khách thực sự cần gọi. Nó mặc định theo bind cục bộ, nên nếu không đặt,
+máy khách sẽ thử nhầm máy chủ.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Tự lưu trữ bản sao máy khách web của riêng bạn?]
+`cc_server` chỉ chấp nhận các origin trình duyệt nằm trong danh sách `--allowed-origins`
+của nó, mặc định là `https://app.usectrl.dev`. Hãy thêm origin của riêng bạn vào đó nếu
+bạn tự lưu trữ bản dựng web. Máy khách loopback và máy khách native luôn được phép bất
+kể danh sách đó.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Một vài thứ vẫn chỉ có trên desktop, vì chúng cần một cửa sổ native hoặc chính các
+thiết bị âm thanh của máy: viên nổi chế độ tập trung, thông báo nổi của hệ điều hành
+(trung tâm thông báo trong ứng dụng hoạt động ở mọi nơi), "bắt đầu ghi & liên kết" từ
+một sự kiện lịch, và chạy lại bản tóm tắt cuộc họp. Mọi thứ còn lại — space, agent, rà
+soát pull request, quy trình, phiếu, bộ nhớ và chính việc ghi cuộc họp — đều hoạt động
+như nhau.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/). To host the server,
-follow [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
+Để kết nối ứng dụng web với một máy chủ, hãy làm theo
+[Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/). Để tự lưu trữ máy chủ,
+hãy làm theo [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
 
-## Desktop system requirements
+## Yêu cầu hệ thống cho desktop
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Yêu cầu             | macOS                                                 | Windows     | Linux                                                      |
+| ------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| Phiên bản hệ điều hành | macOS 13+ (Ventura)                                | Windows 10+ | Ubuntu 22.04+ hoặc bản phân phối khác có glibc 2.35+ và GTK 3 |
+| Kiến trúc           | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git                 | Bắt buộc                                              | Bắt buộc    | Bắt buộc                                                   |
+| Dung lượng đĩa      | ~200 MB cho ứng dụng, cộng thêm thư mục dữ liệu của máy chủ | ~200 MB | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Máy Mac Intel không có bản tải xuống dựng sẵn. Hãy [xây dựng từ mã nguồn](#xây-dựng-từ-mã-nguồn).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Thư mục dữ liệu của máy chủ lớn hơn nhiều so với ứng dụng. Ở lần khởi động đầu tiên,
+`cc_server` bắt buộc cài đặt các mô hình trên thiết bị — embedding văn bản (~90 MB),
+phân tách người nói (~35 MB) và mô hình giọng nói đã chọn (mặc định là Parakeet TDT v3,
+~600 MB; các biến thể Whisper từ 198–626 MB) — cùng một bản dựng code-server nhúng, và
+mỗi cuộc hội thoại agent nhận một worktree copy-on-write của các kho mã mà nó làm việc
+trên đó (`git worktree` thuần trên Windows). Giọng nói không phải tùy chọn: nếu không
+có mô hình ASR, các tác vụ họp và đọc chính tả sẽ không được phục vụ. Lần tải xuống mô
+hình giọng nói đầu tiên vẫn cần một lần khởi động lại trước khi tính năng ghi hoạt động.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Ứng dụng desktop trỏ máy chủ của nó tới thư mục hỗ trợ ứng dụng theo từng người dùng
+của hệ điều hành. Một `cc_server` khởi động thủ công mà không có `--data-dir` sẽ mặc
+định dùng `<application data>/control-center` — `~/Library/Application Support/control-center`
+trên macOS, `%APPDATA%\control-center` trên Windows, `$XDG_DATA_HOME/control-center`
+(hoặc `~/.local/share/control-center`) trên Linux.
 
-## Download
+## Tải xuống
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Mọi tệp phát hành bên dưới đều đến từ [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Tải `Control-Center-<version>-arm64.dmg`, mở nó và kéo Control Center vào Applications. Bản dựng được ký bằng một Developer ID và được Apple công chứng, nên nó mở bình thường.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: trình cài đặt theo từng người dùng.
+- `Control-Center-<version>-windows-x64.zip`: tệp zip di động.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows dùng `git worktree` cho các bản checkout của space (không có copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage mang theo thông tin cập nhật, nên [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) hoặc appimaged có thể đưa nó lên bản phát hành mới nhất ngay tại chỗ, chỉ tải xuống những gì đã thay đổi.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Cả hai đều được dựng trên Ubuntu 22.04 và chạy trên nó hoặc bất kỳ bản nào mới hơn (Debian 12, Fedora 36 trở lên): chúng liên kết với glibc 2.35 và libstdc++ của GCC 12, đồng thời lấy GTK 3 từ hệ thống. Vài thư viện mà một bản desktop tiêu chuẩn có thể thiếu thì đi kèm bên trong chúng, nên không cần cài thêm gì. Âm thanh — phát lại cuộc họp, soundscape, âm thanh rig và âm báo thông báo — phát qua libmpv của hệ thống (`libmpv1` trên Ubuntu 22.04, `libmpv2` trên Ubuntu và Debian mới hơn, `mpv-libs` trên Fedora); nếu không có nó, ứng dụng khởi động với các điều khiển đó bị ẩn.
 
-### Standalone server
+### Máy chủ độc lập
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
+Mỗi bản phát hành cũng mang theo máy chủ không giao diện riêng — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — cùng với các ảnh `cc-server`, `cc-webapp` và `cc-remote` trên GHCR. Xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Bản lưu trữ Linux được dựng trên Ubuntu 22.04 và các thư viện native đi kèm của nó liên kết với glibc 2.35 và libstdc++ của GCC 12, nên nó cần một máy chủ ít nhất mới như vậy (Ubuntu 22.04, Debian 12, Fedora 36 trở lên). Trên một bản phân phối cũ hơn, hãy chạy ảnh `cc-server` thay thế — container mang theo userland của riêng nó, nên chỉ có kernel là phải của bạn.
 
-## Agent backend
+## Backend agent
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center điều phối agent thông qua **adapter**. Có hai adapter, danh sách này cố định và chúng được phát hiện tự động — không có cách nào đăng ký thêm một cái nữa.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Adapter **Control Center (tích hợp sẵn)** không cần CLI bên ngoài: vòng lặp agent chạy bên trong máy chủ và nói chuyện với các nhà cung cấp mô hình qua HTTP, nên nó luôn sẵn có. Kết nối một nhà cung cấp trong **Cài đặt → Máy chủ → Nhà cung cấp mô hình**. OpenAI, Codex, Cursor và Kimi Code cho phép đăng nhập qua trình duyệt; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai và Moonshot nhận khóa API. Codex và Cursor là các nhà cung cấp trên runner này, không phải CLI riêng. z.ai được liệt kê hai lần là có chủ đích: **z.ai** là nền tảng mở trả theo mức dùng, tính vào số dư tài khoản của bạn, còn **z.ai GLM Coding Plan** là gói đăng ký. Đó là cùng một khóa tài khoản, nhưng z.ai phục vụ gói này từ một host khác — dán khóa của gói lập trình vào ô z.ai thường thì mọi yêu cầu đều trả về `429 … "Insufficient balance or no resource package"`, vì gói này không có số dư để tiêu. Gói đăng ký Claude Pro/Max không phải là đăng nhập API Anthropic; thay vào đó hãy dùng gói đó qua adapter Claude Code. Thứ bạn _có thể_ thêm trên trang đó là một **nhà cung cấp tùy chỉnh** — bất kỳ endpoint tương thích OpenAI hoặc Anthropic nào (Ollama, LM Studio, vLLM, một triển khai riêng) trong **Nhà cung cấp tùy chỉnh → Thêm nhà cung cấp**.
 
-The other adapter wraps an external CLI:
+Adapter còn lại bao bọc một CLI bên ngoài:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Việc phát hiện thăm dò `PATH` của máy đang chạy `cc_server` — chính máy đó khi ứng dụng desktop tự chạy máy chủ của nó, còn nếu không thì là máy chủ từ xa. Hãy cài CLI Claude Code ở đó, không phải trên máy khách. Nút **Làm mới** trên trang đó sẽ chạy lại thăm dò.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/).
+Danh sách mô hình được phục vụ trực tiếp bởi từng nhà cung cấp đã kết nối; [models.dev](https://models.dev) chỉ cung cấp siêu dữ liệu về giá và cửa sổ ngữ cảnh. Xem [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/).
 
-## GitHub authentication
+## Xác thực GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Thông tin xác thực GitHub **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn — không nằm trong keychain của hệ điều hành máy khách. Mọi thiết bị bạn đăng nhập đều dùng cùng một thông tin xác thực, và không thành viên nào khác đọc được nó.
 
-If the server has a GitHub App registered ([Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Nếu máy chủ có đăng ký một GitHub App ([Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)), **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** có **Đăng nhập với GitHub** (một luồng thiết bị do máy chủ thực hiện). Nếu không, hãy dán một token truy cập cá nhân:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Loại Classic: `repo` và `read:org`
+- Loại Fine-grained: **Contents** và **Pull requests** (đọc và ghi), **Checks** và **Actions** (đọc)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Tạo một token tại [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Máy chủ thăm dò token để lấy tên tài khoản ngay khi nó được lưu, nên hàng đó có thể ghi "đã đăng nhập với tên …"; một thăm dò thất bại vẫn lưu token, và một lỗi đánh máy hay thiếu quyền sẽ hiện ra dưới dạng một yêu cầu thất bại sau này.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
+Bước đầu tiên của quá trình thiết lập ban đầu là kết nối này. Sau đó, chính thẻ đó là nơi bạn thay thế hoặc xóa nó. GitLab và Bitbucket dùng cùng thẻ đó; xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
 
-## Choose where the server runs
+## Chọn nơi máy chủ chạy
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/) explains what that split means for the desktop, web and phone.
+Control Center là một máy khách mỏng trên một tiến trình `cc_server` không giao diện, thứ sở hữu cơ sở dữ liệu và làm mọi công việc; [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) giải thích ý nghĩa của sự tách biệt đó đối với desktop, web và điện thoại.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Ở lần khởi chạy đầu tiên, ứng dụng desktop hỏi **"Control Center nên chạy như thế nào?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/vi-VN/so-tay/bat-dau-nhanh/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Chạy trong ứng dụng này**: ứng dụng desktop khởi tạo và giám sát một `cc_server` trên máy này rồi nói chuyện với nó qua loopback. Không cần cấu hình gì thêm. Đây là thiết lập mà [bắt đầu nhanh](/vi-VN/so-tay/bat-dau-nhanh/) giả định.
+- **Kết nối tới một phiên bản từ xa**: trỏ ứng dụng desktop tới một `cc_server` đang chạy ở nơi khác bằng URL WebSocket của nó, một id thiết bị, và hoặc một khóa ghép nối hoặc một mã mời dùng một lần. Máy chủ đó sở hữu dữ liệu; desktop này chỉ hiển thị nó.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/).
+Thêm hoặc chuyển đổi máy chủ sau này trong **Cài đặt → Máy chủ → Kết nối & trạng thái**. Việc chuyển đổi kết nối lại ngay tại chỗ — không cần khởi động lại. Trình duyệt không thể chạy máy chủ, nên máy khách web luôn là từ xa; xem [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/).
 
-To host a server yourself, follow [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Để tự lưu trữ một máy chủ, hãy làm theo [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/). Trang đó đề cập đến việc dựng tệp nhị phân, tạo khóa ghép nối trước lần khởi động đầu tiên, và các cờ `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Kiểm tra thiết lập của bạn
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Cài đặt → Máy chủ → Nhà cung cấp mô hình** liệt kê cả hai adapter. "Control Center (tích hợp sẵn)" hiển thị là đã tìm thấy với phiên bản `built-in`; Claude Code hiển thị là đã tìm thấy nếu CLI của nó nằm trên `PATH` của máy chủ. Nhấn **Làm mới** nếu nó bị thiếu.
+2. **Cài đặt → Không gian làm việc → Kho lưu trữ** liệt kê các kho mã của không gian làm việc này, và **Thêm kho lưu trữ** duyệt các thư mục của máy chủ.
+3. **Cài đặt → Không gian làm việc → Agent** liệt kê năm agent mà không gian làm việc đầu tiên của bạn tạo sẵn. Mỗi agent cần được đặt **Bộ điều hợp** và **Mô hình** trước khi có thể chạy.
+4. **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư** báo cáo các backend sandbox mà máy chủ này cung cấp, trạng thái của mô hình embedding, và việc ghi nhật ký.
 
-## Build from source
+## Xây dựng từ mã nguồn
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Các thư viện native là bắt buộc và không có chế độ suy giảm: thiếu một thư viện là lỗi khởi động cứng, không phải một đường chậm hơn. Hãy chuẩn bị chúng trước mọi thứ khác. Mọi lệnh Flutter và Dart đều đi qua `fvm`, vì phiên bản SDK được kho mã ghim cố định.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +175,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Trên macOS, kho lưu trữ bảo mật (đăng nhập GitHub, Linear và Google) cần ứng dụng được ký bởi một nhóm Apple — một Apple ID miễn phí là đủ, và đây là thiết lập một lần được mô tả trong [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Nếu không có nó, ứng dụng vẫn khởi chạy; chỉ kho lưu trữ bảo mật là không khả dụng. Windows và Linux không cần ký.
 
-To build the headless server binary, stage the natives the same way first, then:
+Để dựng tệp nhị phân máy chủ không giao diện, hãy chuẩn bị native theo cùng cách trước, rồi:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Hook của bản dựng sao chép mọi thứ đã có trong `build/natives/` vào gói, nên dựng trước khi chuẩn bị sẽ tạo ra một gói không có native và một máy chủ từ chối khởi động.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Với máy khách web, hãy dùng `scripts/build_web.sh` (`--target remote` cho PWA trên điện thoại). Đây là thứ CI chạy: lệnh `flutter build web` thông thường bỏ qua dấu nhận diện bản dựng, việc tạo lại Web Worker, manifest triển khai và kiểm tra ngân sách tài nguyên.

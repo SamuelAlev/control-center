@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: 内蔵エージェントツール
+description: 組み込みハーネスがエージェントに与えるツールサーフェス — 言語サーバー、構造検索、デバッガー、カーネル、ワーカー制御 — と、すべての操作およびその引数。
 slug: ja-JP/マニュアル/リファレンス/エージェントツール
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/ja-JP/マニュアル/リファレンス/mcp-ツール/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+これらは、組み込みエージェントランタイムが直接登録する**サーバーにバインドされた**ツールです — 言語サーバー、構造検索、デバッガー、カーネル、質問、ワーカー制御 — ブリッジして取り込む [MCP ツール](/ja-JP/マニュアル/リファレンス/mcp-ツール/)や、ハーネスランタイムの汎用のファイル・検索・シェルツールとは対照的です。これらは MCP レジストリには載りません。外部の MCP クライアントには見えません。それぞれが、1 回の実行に属する生きたサーバー側のリソース — 言語サーバープロセス、デバッグアダプター、インタープリター — にバインドされているからです。
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+ここにあるすべてのツールは、その背後にあるリソースがその実行向けに配線されている場合にのみ登録されます — 言語サーバーまたはデバッグのスーパーバイザー、tree-sitter パーサー、カーネルファクトリー、質問ポート、vibe のロスターです。*このチェックアウト*に対する言語サーバーやデバッグアダプターの検出は、別の、より後に行われるチェック（`status` / `adapters`）です。それらのツールがサーフェスに残るのは、推測するのではなく、なぜ何も使えないのかをエージェントが尋ねられるようにするためです。
 
-## Approval tiers
+## 承認ティア
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+各ツールはティアを宣言し、そのティアが**どのサーフェスから見えるか**を決めます — 単にプロンプトを出すかどうかではありません。プランモードと読み取り専用のサブエージェントは `read` が上限であるため、`write` または `exec` ティアのツールはそのスキーマにそもそも存在しません。
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| ティア  | 意味                       | ここにあるツール                                 |
+| ------- | -------------------------- | ------------------------------------------------ |
+| `read`  | 副作用なし                 | `lsp`、`ast_grep`、`ask_user`、5 つの `vibe_*`   |
+| `write` | ファイルを変更する         | `lsp_rename`、`ast_edit`、`resolve`              |
+| `exec`  | プロセスを起動または制御する | `debug`、`eval`                                |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — 言語サーバークエリ
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+実行に言語サーバーのスーパーバイザーと作業ディレクトリがある場合に登録されます。サーバーが実際に応答できるかどうかは、呼び出し時に**積集合**として検出されます。ルートマーカーが存在し、*かつ*サーバーバイナリが解決できなければなりません。どちらか片方だけではサーバーは起動しません — そう `status` が告げます — 黙って推測することはありません。
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+位置は `line` と `symbol` の部分文字列で指定し、列番号は決して使いません。列番号を求められたモデルは推測し、その推測が外れると同じ行の別のシンボルに解決されます — 正しく見えるのに、別のものについての答えです。ナビゲーションアクションで `symbol` を省略することはエラーであり、先頭列の推測ではありません。
 
-| Action            | Arguments                        | Returns                                    |
+| アクション        | 引数                             | 戻り値                                     |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file`（または `"*"`）           | エラーと警告。`"*"` は代わりにプロジェクトチェッカーを実行します |
+| `definition`      | `file`、`line`、`symbol`         | シンボルが宣言されている場所               |
+| `type_definition` | `file`、`line`、`symbol`         | その型が宣言されている場所                 |
+| `implementation`  | `file`、`line`、`symbol`         | 具体的な実装                               |
+| `references`      | `file`、`line`、`symbol`         | すべての使用箇所。上限は 50                |
+| `hover`           | `file`、`line`、`symbol`         | シグネチャとドキュメントコメント           |
+| `symbols`         | `query` または `file`            | `query` でワークスペース検索（上限 100）。`file` でドキュメントシンボル（上限 200） |
+| `code_actions`    | `file`、`line`、`symbol`         | サーバーが提示するクイックフィックス       |
+| `status`          | —                                | どのサーバーが、どのルートに対して実行中か |
+| `reload`          | —                                | このルートのサーバーを再起動します         |
 
-### Diagnostics on write
+### 書き込み時の診断
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+見返りはツールそのものではありません。`write`、`edit`、`apply_patch` が**ラップされています**。書き込みの後、ファイルは言語サーバーを通して同期・保存され、**新たに導入された**診断だけがツールの結果に折り込まれます。エージェントは、ビルドを壊したまさにその瞬間に、壊したことを知ります。尋ねるのを覚えておく必要はありません。
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+すでに報告済みの診断は、重要度・コード・メッセージをキーとする実行ごとの台帳によって抑制されます — 位置は意図的に除外されているため、4 行下にずれただけの診断が新しいものとして再報告されることはありません。
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — プロジェクト全体のリネーム
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+別個の `write` ティアのツールである理由は、ただ 1 つです。ティアが可視性を決めるからです。リネームを `lsp` に畳み込むと、読み取り専用の探索者にリポジトリを書き換える能力を与えるか、すべての `hover` を承認プロンプトの背後に置くかのどちらかになります。
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| 引数       | 意味                                   |
+| ---------- | -------------------------------------- |
+| `file`     | シンボルがある場所                     |
+| `line`     | 1 始まりの行番号                       |
+| `symbol`   | その行でシンボルを特定する部分文字列   |
+| `new_name` | 新しい名前                             |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — 構造検索
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+コードをテキストではなく**形**で見つけます。`$NAME` は任意のノードにマッチし、`$$$NAME` は連続する兄弟にマッチし、`$_` は何も捕捉しないワイルドカードです。
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+これを「ひと手間多い正規表現」ではなくマッチャーにしている性質は、ひとつのパターンの中で繰り返されるメタ変数が同じテキストを捕捉しなければならないことです。
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+これは、検査したものを破棄するガードにマッチし、別のものを破棄するガードには**マッチしません**。
 
-| Argument      | Meaning                                                     |
+| 引数          | 意味                                                        |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | メタ変数を含むコードの断片                                  |
+| `path`        | 検索するファイルまたはディレクトリ。デフォルトはワークスペース全体 |
+| `language`    | 出荷されている文法 ID（`dart`、`python`、`rust`、`c`、…）。`path` がファイルを指すときは推論されます |
+| `max_results` | デフォルトは 50                                             |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[パターンはファイルと同じ文法でパースされます]
+そのため `dispose(x)` は、スペースの入れ方や折り返し方、コメントの有無に関係なくその呼び出しにマッチし、文字列リテラルやコメントの中の同じ文字並びには決してマッチしません。
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[断片はそのままではなく、スキャフォールドの中でパースされます]
+Dart のトップレベルでパースされた `dispose(x)` は、有効な*関数シグネチャ*です。パターンコンパイラーはコンテキストのはしご（文、式、クラスメンバー、宣言）を順に試し、その断片を受け入れた最初のものを採用します。どのコンテキストも受け入れないパターンは、検索して静かに見つからなかったことにするのではなく、パース不能として報告されます。
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — ステージングされる構造書き換え
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+同じマッチングに加えて、メタ変数を戻し入れる `rewrite` テンプレートを使います。**何も書き込まれません。** 変更はステージングされ、結果が `edit_id` を名指しします。
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
-| ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| 引数       | 意味                                        |
+| ---------- | ------------------------------------------- |
+| `pattern`  | マッチするもの                              |
+| `rewrite`  | そこに置くもの。`$NAME` が置換されます      |
+| `path`     | スコープ。デフォルトはワークスペース全体    |
+| `language` | 言語 ID                                     |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — ステージングされた変更のコミットまたは破棄
 
-| Argument  | Meaning                          |
+| 引数      | 意味                             |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | `(proposed)` の結果から          |
+| `action`  | `accept` または `discard`        |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+すべてのファイルは、ステージング時に捕捉した内容と照合され、**少しでも**食い違えば変更全体が拒否されます。部分的に適用された構造的書き換えは、古い形でも新しい形でもコンパイルできないツリーを残します。
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — デバッガーを操作する
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+実行にデバッグセッションのスーパーバイザー、作業ディレクトリ、会話 ID がある場合に登録されます。アダプターが実際に起動できるかどうかは、言語サーバーと同じ積集合のルール（ルートマーカー*かつ*バイナリ）で、呼び出し時に検出されます。`exec` ティアで、並列安全ではありません（セッションは呼び出しをまたぐ状態なので、`continue` が `stack` を追い越すと、すでに動いてしまったフレームを読むことになります）。
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+会話ごとにセッションは 1 つで、厳密な TTL（30 分）があります。2 回目の `launch` は、最初のものを黙って置き換えるのではなく拒否されます。
 
-| Op            | Arguments                     | Notes                                          |
+| 操作          | 引数                          | 備考                                           |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | ここでどのアダプターが使えるか、使えないならなぜか |
+| `status`      | —                             | セッションが実行中かどうか、どこで停止したか   |
+| `breakpoints` | `file`、`lines[]`             | `lines` が空だとそのファイルのブレークポイントを消去します。起動の**前に**設定できます |
+| `launch`      | `program`、`args[]`           | ブレークポイントで停止した状態でプログラムを開始します |
+| `attach`      | `port`                        | すでに実行中のデバッグ対象に接続します         |
+| `continue`    | `thread_id?`                  | 次の停止まで実行します                         |
+| `pause`       | `thread_id?`                  | その場で停止します                             |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | 1 ステップ動かします                  |
+| `threads`     | —                             | スレッド ID と名前                             |
+| `stack`       | `thread_id?`                  | フレーム。上限は 30                            |
+| `scopes`      | `frame_id`                    | フレーム上のスコープ。それぞれ `reference` を持ちます |
+| `variables`   | `reference`                   | 子。上限は 50、値は 400 文字まで               |
+| `evaluate`    | `expression`、`frame_id?`     | フレーム自身のスコープで評価されます           |
+| `output`      | —                             | デバッグ対象の stdout/stderr。上限あり         |
+| `terminate`   | —                             | セッションを終了し、アダプターを停止します     |
 
-### Adapters
+### アダプター
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
-| `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| ID        | コマンド                     | ルートマーカー                                    |
+| --------- | ---------------------------- | ------------------------------------------------- |
+| `dart`    | `dart debug_adapter`         | `pubspec.yaml`                                    |
+| `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`、`setup.py`、`requirements.txt`  |
+| `lldb`    | `lldb-dap`                   | `Cargo.toml`、`CMakeLists.txt`                    |
+| `delve`   | `dlv dap`                    | `go.mod`                                          |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` はプロジェクトローカルの `.venv/bin` または `venv/bin` を `$PATH` より優先します。`$PATH` 上の python は別の環境であり、誤ったほうからアタッチすると、壊れたコードのように見える形で失敗します。
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — 永続インタープリター
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+変数、インポート、読み込んだデータが呼び出しをまたいで残る Python または JavaScript のセルです。`exec` ティアで、並列安全ではありません。
 
-| Argument      | Meaning                                          |
+| 引数          | 意味                                             |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | セル                                             |
+| `description` | 必須。トランスクリプトのラベル用の 5〜10 語      |
+| `language`    | `python`（デフォルト）または `javascript`        |
+| `reset`       | インタープリターを破棄し、先にまっさらな状態から始めます |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- 最後の式は、ノートブックと同じようにエコーされます。
+- `display()` は機能し、pandas のフレームは表としてレンダリングされ、matplotlib の図は**トランスクリプトが表示する画像**として返ります。
+- 人が反射的に入力する IPython のイディオム — `%pip`、`%cd`、`!cmd`、`%%bash`、`%%timeit` — は素のコードに書き換えられます。`%pip` は `sys.modules` からも追い出すため、次の `import` はたった今インストールされたものを認識します。
 
-### Calling your own tools from inside a cell
+### セルの中から自分のツールを呼び出す
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+このブリッジは**ハーネスのツールレジストリに再入する**ため、ガードレール、承認、あらゆるラッパーが、モデルが発行した呼び出しとまったく同じように適用されます。ループバックソケットではなくカーネル自身のパイプを使います。ポートも、シークレットも、外向き通信のルールも不要です。
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+セルのタイムアウトは*非アクティブ*の予算（デフォルト 5 分）であり、ブリッジされた呼び出しが未完了の間は**一時停止**されます。そのため、サブエージェントにファンアウトするセルがファンアウトの途中で停止させられることはありません。
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[カーネルがどこで実行されるか]
+会話がエンクロージャーを持つ場合はその中で、そうでなければホスト上で実行されます。そこへ行くためにエンクロージャーを起動することはありません — リグのタブが自動起動しないのと同じルールです。
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — 人間に質問する
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+`read` ティアです。実行がオペレーターに何かを尋ねる**唯一**の方法です。会話内に番号付きのカードをレンダリングし、誰かが回答するか、スキップするか、質問がタイムアウトするまでブロックします。質問をチャットメッセージとして書かないでください — それはターンを終わらせてしまいます。
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| 引数              | 意味                                       |
+| ----------------- | ------------------------------------------ |
+| `question`        | 尋ねる内容                                 |
+| `context`         | 任意: なぜ尋ねているのか、回答次第で何が変わるのか |
+| `options[]`       | 選択肢。それぞれ `{label, description?}`   |
+| `allow_free_text` | 入力された回答を受け付けるかどうか         |
+| `multi_select`    | 複数の選択肢を選べるかどうか               |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+スキップは成功です。明示した前提の上で進め、二度尋ねないでください。タイムアウトは、同じ指示を伴うエラーです。許可プロンプト（「これをやってもいいですか」）は別のゲートであり、会話内に同じカードとして表示されます。
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+質問ポートと対象スペースの両方が存在する場合にのみ登録されます。人間が接続されていない場合、その呼び出しは永遠にブロックするのではなく**失敗**します — 承認者が接続されていないときにガードレールの `prompt` が取るのと同じフェイルクローズの姿勢です。
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — バックグラウンドワーカーの指示
 
-Registered only while [vibe mode](/ja-JP/マニュアル/ハウツーガイド/バックグラウンドワーカーの指示/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+[vibe モード](/ja-JP/マニュアル/ハウツーガイド/バックグラウンドワーカーの指示/)がオンの間だけ登録されます。5 つとも `read` ティアです。ゲートは、編集が実際に起こるワーカーのツール側にあるべきです。
 
-| Tool         | Arguments                                | Notes                                       |
+| ツール       | 引数                                     | 備考                                        |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`、`label`、`tier?`                | すぐに戻ります。ワーカーは動き続けます      |
+| `vibe_send`  | `worker_id`、`message`                   | ブリーフに追記して再実行します              |
+| `vibe_wait`  | `worker_id`、`timeout_seconds?`          | 決着するまでブロックします                  |
+| `vibe_kill`  | `worker_id`                              | 停止します                                  |
+| `vibe_list`  | —                                        | ティア、ステータス、経過時間、最後の結果    |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` は `fast`（明確な仕様がある機械的な作業）または `good`（設計、判断、または `fast` ワーカーの出力のレビュー）です。

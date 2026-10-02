@@ -1,166 +1,172 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Kjør en flåteworker
+description: Bygg, par og kjør den headless utføreren cc_worker, slik at den registrerer seg hos en cc_server og vises i flåtepanelet.
 slug: nb-NO/handbok/slik-gjor-du/kjor-fleet-worker
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Kjør `cc_worker` på en ledig maskin for å legge til utførelseskapasitet i flåten
+din. Den er en ren-Dart-binær — ingen Flutter-motor — som parer seg med en
+`cc_server`, annonserer vertens kapabiliteter, sender heartbeat, henter leide
+jobber, utfører dem og strømmer prosesshendelser tilbake. Den har ingen varig
+tilstand: en supervisor starter den på nytt, og den registrerer seg på nytt.
 
-You need a running `cc_server` first — see [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
+Du trenger en kjørende `cc_server` først — se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+En paret worker registrerer seg, sender heartbeat og venter på leide jobber.
+Send inn arbeid med `fleet.submitJob`. Agentutsending på denne serveren går ikke
+gjennom flåten; suksesssignalet for denne veiledningen er at workeren vises i
+flåtepanelet med et ferskt heartbeat. Workeren i prosessen som registreres ved
+oppstart, har et tomt kjørerkart, så en jobb som plasseres på den, returnerer
+`No local runner for job kind …`.
 
-## Prerequisites
+## Forutsetninger
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). Dette repoet låser SDK-en sin med [fvm](https://fvm.app), så kommandoer må prefikses med `fvm`.
+- Dette repoet utsjekket på worker-maskinen.
+- En tilgjengelig `cc_server` (loopback for utvikling, LAN eller ekstern for produksjon).
+- `git` på `PATH` — workeren materialiserer repoer og kjører `git`-sonderinger.
 
-## Step 1: Build the binary
+## Steg 1: Bygg binæren
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Dette produserer en selvstendig pakke i `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## Steg 2: Utsted workerens legitimasjon
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+En `cc_server` godtar bare en worker som fremviser en id for en paret enhet og
+en forhåndsdelt nøkkel — også for en loopback-server. Utsted dem på
+**server**-maskinen (`pair` kan kjøres mens serveren er oppe; den nye enheten
+plukkes opp uten omstart):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Den skriver ut en `Device id` og en `Pairing key` — det er disse `--device-id`
+og `--psk` / `--psk-file` / `CC_WORKER_PSK` tar.
 
-## Step 3: Start the worker
+## Steg 3: Start workeren
 
-Against a paired server:
+Mot en paret server:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Mot en loopback-server (fortsatt paret — `cc_server` kjører alltid
+PSK-håndtrykket):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| Flagg                | Beskrivelse                                                                                       | Standard    |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
+| `--server <url>`     | cc_server-URL (`ws://`/`wss://`; `http(s)` og en manglende `/rpc`-sti tvinges). **Påkrevd.**      | —           |
+| `--name <name>`      | Operatørvendt workernavn.                                                                         | vertsnavn   |
+| `--device-id <id>`   | Stabil id for en paret enhet, brukes også som worker-id.                                          | `cc-worker` |
+| `--psk-file <path>`  | Fil der første ikke-tomme linje er paringsnøkkelen. Foretrukket fremfor `--psk`.                   | —           |
+| `--psk <key>`        | Paringsnøkkel på kommandolinjen. Synlig i `ps` og skallhistorikken — binæren advarer.             | —           |
+| `--max-jobs <n>`     | Hardt tak på antall jobber denne prosessen utfører samtidig (positivt heltall).                   | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+Rekkefølgen for oppslag av nøkkelen er `--psk-file` → `CC_WORKER_PSK` → `--psk`.
+Utelater du alle kildene, hoppes workerens autentiseringshåndtrykk over; en ekte
+`cc_server` avviser da økten (`auth_denied`) i stedet for å godta en
+uautentisert worker. Ukjente flagg er en bruksfeil (`exit 64`) — i motsetning
+til `cc_server` bruker denne binæren `package:args` og overser ikke skrivefeil.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` overstyrer katalogen for hurtiglageret for
+worktree-materialisering (standard: en `cc_worker_cache`-katalog under systemets
+temp-katalog).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+Workeren registrerer seg med `fleet.registerWorker`, sender deretter heartbeat
+hvert 20. sekund og poller etter leases hvert 2. sekund. Den kjører til
+`SIGINT`/`SIGTERM`; legg den under systemd eller launchd, slik at den starter på
+nytt og registrerer seg på nytt etter et krasj eller en omstart.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[Det finnes ikke noe vindu for protokollkompatibilitet]
+En worker hvis flåteprotokollversjon er en annen enn serverens, registreres som
+**inkompatibel** og får aldri tilbud om en lease, og `cc_worker` avbryter selv
+med `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade
+cc_worker to match the server release`. Bygg workeren fra samme utgivelse som
+serveren.
 :::
 
-## Step 4: Verify it in the fleet panel
+## Steg 4: Verifiser den i flåtepanelet
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+Åpne **Observabilitet** i skrivebords- eller nettappen, bytt til **Live**-fanen
+og rull til bunnen. **Workere** viser hver registrerte worker med plattform,
+kjerner, kapabilitetsnøkler og siste heartbeat; **Jobber** viser jobbene som er
+fordelt på dem.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+At workeren din vises der med et nylig heartbeat, bekrefter at parring og
+registrering fungerte.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+Fra flisen til en worker kan du **tømme** den (fullføre gjeldende jobber, ikke ta
+nye leases), **fortsette** en worker som tømmes, **tilbakekalle**
+legitimasjonen dens eller **fjerne** raden.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+Worker- og jobbrader ligger i serverens `global.db` — workeren selv skriver
+ingenting til disk utover hurtiglageret for materialisering.
 
-## What the worker advertises
+## Hva workeren annonserer
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+Ved registrering oppdager workeren kapabilitetene sine automatisk, og
+planleggeren matcher jobber mot dem. Du konfigurerer ikke disse for hånd:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **OS og arkitektur** (`macos`/`linux`/`windows`, `arm64`/`x64`) — nøyaktige sonderinger, med fallback til `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **Kjerner og RAM** — nøyaktig antall kjerner; RAM degraderes til `0` når det ikke kan sondres
+- **`flutter`** — settes når et Flutter-SDK er tilgjengelig (bare `flutter`, deretter `fvm flutter`); golden-render-jobber krever det
+- **`sandbox`** — `native-macos` på macOS, `native-linux` på Linux. Dette er et plasseringshint, ikke et løfte: workeren annonserer backenden plattformen dens _har_, men den pakker ikke jobbene den kjører, inn i en. I motsetning til `cc_server` starter `cc_worker` en leaset jobb direkte
+- **`always-on` og `parallel`** — en dedikert `cc_worker` annonserer alltid begge, så den er kvalifisert for eval-batcher og annen parallell kapasitet til engangsbruk
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+Oppdagelsen gjøres så godt den kan: alt den ikke klarer å sondre, degraderes til
+en trygg standard i stedet for å få oppstarten til å feile.
 
-## What the worker would execute
+## Hva workeren ville utføre
 
-The lease protocol carries six job kinds:
+Lease-protokollen bærer seks jobbtyper:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| Type           | Hva det er                                       |
+| -------------- | ------------------------------------------------ |
+| `agentRun`     | Én enkelt agentkjøring (utsending)               |
+| `pipelineStep` | Utførelse av et pipeline-steg                    |
+| `codeIndex`    | En bygging av en repo-kodeindeks                 |
+| `goldenRender` | En visuell golden-render av UI (krever `flutter`) |
+| `benchmark`    | En ytelsesbenchmark-kjøring                      |
+| `evalBatch`    | En eval-batch (foretrekker `parallel`-kapasitet) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+Utførelsen er en ekte underprosess-strømmende implementasjon, ikke en
+fullstendig innebygd agent-runtime. Når en lease bærer `repoRemote`, gjør
+workeren `git clone --depth 1` inn i en hurtiglagerkatalog nøklet på remote og
+SHA, deretter `git fetch` og `git checkout`. For `agentRun` kjører den
+kommandoen i `CC_JOB_COMMAND` fra lease-miljøet i arbeidskatalogen og strømmer
+stdout og stderr tilbake som hendelser; uten `CC_JOB_COMMAND` ekkoer den
+prompten, slik at transporten fortsatt blir prøvd ende til ende. De andre
+typene kjører små, ekte kommandoer (`git rev-parse HEAD`, `git --version`) som
+ærlige sonderinger. Legitimasjon med jobbomfang i lease-miljøet injiseres i hver
+underprosess og skrives aldri til en logg.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Hendelser samles i batcher og skyves ut hvert 250 ms eller for hver 32.
+hendelse; hver jobb avsluttes med en ferdig-hendelse og en
+fullføringsrapport. Modellen er heartbeat pluss leases med kort levealder:
+hvis en worker mister kontakten, utløper leasen, og serveren rydder opp jobben
+for nytt forsøk. Det finnes ingen varig tilstand på workeren, og ingen konsensus
+eller arbeidsstjeling mellom workere.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/)
-- [Connect to a remote server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/)
-- [Pair a device](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/)
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/)
+- [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/)
+- [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Deployment and clients](/nb-NO/handbok/konsepter/drift/)
+- [Drift og klienter](/nb-NO/handbok/konsepter/drift/)

@@ -1,37 +1,41 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Scripts de repo
+description: Scripts de configuração e de arquivamento por repositório, executados contra a worktree de um espaço.
 slug: pt-PT/manual/guias/scripts-de-repo
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Os scripts de repo são scripts shell que configura por repositório
+(**Definições → Repositórios** → o ícone de terminal na linha de um repo) e que
+o servidor do Control Center executa contra **a worktree de um espaço** desse
+repo — o checkout isolado em
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`, onde os agentes
+trabalham.
 
-There are two kinds:
+Existem dois tipos:
 
-| Script | When it runs | Use it for |
+| Script | Quando é executado | Para que serve |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Configuração** | Logo após o aprovisionamento de uma worktree para um espaço | Instalar dependências, gerar ficheiros, copiar `.env` |
+| **Arquivamento** | Pouco antes de uma worktree ser destruída ou recolhida pelo GC | Limpar recursos fora da worktree (redes do Docker, túneis, estado externo) |
 
-## Where scripts run
+## Onde são executados os scripts
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Ambos os scripts são executados através de `bash -lc` (um shell de início de
+sessão, para que as ferramentas instaladas com Homebrew/nvm fiquem no `PATH`),
+com a **worktree como diretório de trabalho**, e com estas variáveis de
+ambiente definidas:
 
-| Variable | Value |
+| Variável | Valor |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | A worktree (o diretório de trabalho do script) |
+| `CC_ROOT_PATH` | O repo de origem registado — o seu próprio checkout |
+| `CC_SPACE_ID` | O espaço a que a worktree pertence |
+| `CC_SPACE_NAME` | O nome a apresentar do espaço |
+| `CC_REPO_NAME` | O nome a apresentar do repo |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Por exemplo, um script de configuração que instala as dependências e traz o
+`.env` ignorado pelo Git do repo:
 
 ```bash
 pnpm install
@@ -39,28 +43,35 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Comportamento em caso de falha
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Um script de **configuração** que termina com um código de saída diferente de
+  zero (ou que excede o seu tempo limite de 5 minutos) faz falhar o
+  aprovisionamento do espaço: o espaço mostra o estado de falha com uma opção
+  de repetir, e a cauda da saída da execução é registada. Uma nova tentativa
+  aprovisiona a partir de uma worktree limpa e volta a executar o script —
+  escreva os scripts de configuração de modo a que uma nova execução após uma
+  instalação parcial funcione (os gestores de pacotes já se comportam assim).
+- Um script de **arquivamento** é executado ao melhor esforço: uma falha (ou o
+  seu tempo limite de 2 minutos) é registada, mas **nunca bloqueia a
+  eliminação**. O arquivamento é executado em caminhos de GC onde não há
+  ninguém para responder a um pedido (espaço eliminado, PR com merge, limpeza
+  agendada).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+A configuração só é executada numa worktree **nova**: voltar a despachar
+agentes para um espaço quente reutiliza o checkout existente e não volta a pagar
+a instalação.
 
-## Run history
+## Histórico de execuções
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Cada execução é registada com o seu estado, a sua duração, o seu código de
+saída e uma cauda de saída limitada, visível na mesma caixa de diálogo de
+definições em «Execuções recentes» (a subscrição `repos.watchScriptRuns`
+transmite-a em direto).
 
-## Permissions
+## Permissões
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Como os scripts são shell que o **servidor** executa, escrevê-los está reservado
+aos administradores do espaço de trabalho e é protegido pela classe de ações
+`processSpawn` — a mesma rede de guardrails que controla qualquer outra operação
+de lançamento de processos.

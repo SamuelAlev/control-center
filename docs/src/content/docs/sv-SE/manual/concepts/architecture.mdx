@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Arkitektur
+description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Översikt
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center följer en funktionsorienterad Clean Architecture med mönstret portar och adaptrar. Kodbasen är organiserad kring affärsdomäner (funktioner), med strikta beroenderegler som upprätthålls av ett automatiskt arkitekturtest.
 
-## A thin client over a headless server
+## En tunn klient ovanpå en headless-server
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center har en **tunn klientarkitektur**. Ingen klient öppnar databasen — en headless **`cc_server`**-process äger data (en liten `global.db` plus en SQLite-fil per arbetsyta, som öppnas först vid behov) och exponerar den över WebSocket-RPC. Skrivbordsappen, webbversionen och telefonkompanjonen är alla renderare ovanpå den enda RPC-anslutningen.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Skrivbordsappen väljer vid första starten hur den når sin server: **lokalt** (den startar en `cc_server` på den här maskinen och kommunicerar över loopback — standard) eller **fjärr** (den ansluter till en `cc_server` någon annanstans över en säker WebSocket). Webbklienten är alltid fjärr. Startupplösaren (`bootstrap/server_backend.dart`) väljer väg innan Riverpod finns och skriver sedan över `rpcClientProvider` med den anslutna klienten — så varje funktion läser och skriver via servern i stället för en lokal databas.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Själva RPC-lagret är **tillståndslöst**: en session autentiseras, men den är inte bunden till en arbetsyta. Varje anrop som gäller en arbetsyta bär sitt eget `workspace_id` i argumenten, och dispatcharen avvisar ett sådant anrop utan det. Det är det som gör att två klienter på en och samma server kan ha olika aktiva arbetsytor utan en serverhållen "aktuell arbetsyta" att vara oense om — och det innebär att isoleringen upprätthålls per anrop, inte per anslutning.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/) for the full client matrix and what runs where.
+Det här är en **Dart-arbetsyta** med en enda resolverad lockfil och tjugoen medlemmar — femton paket plus sex appar — med skrivbords- och webbappen (`control_center`) som arbetsytans rot. De sex apparna är den headless serverbinären (`cc_server`), den headless fleet-exekutorn (`cc_worker`), telefon-PWA:n (`cc_remote`), WebSocket-reläbrokern (`cc_signaling_server`), Widgetbook-galleriet (`cc_gallery`) och den publika demovärden (`cc_demo_server`). De femton paketen är `cc_ui` (designsystem), `cc_domain` (delad kärna i ren Dart: entiteter, värdeobjekt, portar, händelser och varje funktions domänlager), `cc_harness` (den inbyggda agentkärnan: en agentloop i ren Dart — meddelanden, leverantörsport, verktyg, kompaktering, styrning, hooks, subagenter — utan `dart:io` och utan något annat `cc_*`-beroende), `cc_harness_runtime` (den inbyggda harness-runtime-adaptern: strömmande leverantörer som bara finns på Dart-VM:en, förmedling av autentiseringsuppgifter via OAuth/PKCE, förråd för autentiseringsuppgifter och den generiska verktygsuppsättningen — kör agenter utan att någon extern CLI är installerad), `cc_rpc` (klienttransport), `cc_host` (serverkärna), `cc_data` (fjärrarkiv), `cc_persistence` (serverdatabas), `cc_server_core` (app-server-sammansättning + körtid för identitet/närvaro/fleet/utvärderingar), `cc_infra` (adaptrar som bara finns på Dart-VM:en), `cc_mcp` (MCP-verktyg), `cc_mcp_client` (klient för externa MCP-servrar, som bryggar deras verktyg in i det lokala registret), `cc_markdown` (markdownmotor i repot), `cc_natives` (FFI-löv) och `system_audio_capture`. Se [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) för hela klientmatrisen och vad som körs var.
 
-## Dependency rule
+## Beroenderegel
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Domänlagret**: entiteter, värdeobjekt, repository-gränssnitt, portar och domäntjänster i ren Dart. Noll importer från infrastrukturen (ingen dio, drift eller nätverksmodeller).
+- **Presentationslagret**: skärmar, widgets, notifiers. Ingen direkt åtkomst till drift/DAO/datalagret; allt går via Riverpod-providers → repositories.
+- **Infrastrukturlagret**: konkreta implementationer av domänportar och repository-gränssnitt. Är beroende av domänen, aldrig tvärtom.
 
-## Feature structure
+## Funktionsstruktur
 
-The full feature shape is:
+Den fullständiga formen för en funktion är:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Väldigt få funktioner under `lib/features/` har faktiskt alla fyra, och luckorna är informativa snarare än oavsiktliga. Den delade kärnan har införlivat varje funktions `domain/` i `cc_domain`, och den tunna klienten innehåller inga repository-implementationer, så de flesta funktioner under `lib/` är `presentation/` plus `providers/` och inget annat. En `data/`- eller `domain/`-katalog som blir kvar i klienten markerar något som verkligen hör till klientsidan.
 
-Two named exceptions are worth knowing:
+Två namngivna undantag är värda att känna till:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** har bara providers. Dess inställnings- och statusgränssnitt ligger under `settings/`, och själva verktygsytan är ett paket (`cc_mcp`), inte en funktionsmapp.
+- **`orchestration`** och **`plan_studio`** har bara `presentation/` och `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/sv-SE/handbok/koncept/racken/) for the model.
+Funktionen **`guardrails`** lägger sitt domänlager i `cc_domain/features/guardrails/` i stället för i rotappen, eftersom servern upprätthåller den: en regel mappar en `ActionClass` (eller ett `commandPrefix` i skalet) till ett beslut — `allow`, `prompt` eller `deny` — i en omfattning, regler lagras per arbetsyta och varje styrd agentåtgärd löses genom policykedjan innan den körs. Upplösningen går `space > agent > workspace > mode preset > built-in default` och **den första omfattningen med en matchande regel avgör**; mest restriktiv fungerar bara som utslagsregel inom en omfattning och för att kombinera de klasser en åtgärd deklarerar. Ytan som operatören möter är Inställningar → Arbetsyta → Agentbehörigheter, på `/workspaces/<id>/settings/workspace/permissions`. Se [Räcken](/sv-SE/handbok/koncept/racken/) för modellen.
 
-## Shared kernel
+## Delad kärna
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` innehåller entiteter och repositories som delas av tre eller fler funktioner. Det är ren Dart utan några infrastruktursberoenden, vilket är det som gör att både Flutter-klienten och den Flutter-fria serverbinären kan importera samma definitioner:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Kärnentiteter: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identitet och multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Minneentiteter: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Delade värdeobjekt: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Delade portar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Domäntjänster: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + händelsetyper (arbetsyta/agent, PR/granskning, meddelanden, ärenden, pipeline, orkestrering, minne, kalender/möten, identitet och medlemskap, observerbarhet)
 
-## Identity & multiplayer
+## Identitet och multiplayer
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center är byggt för flera användare: människor och agenter är likställda aktörer som förenas av en `Principal`. En arbetsytas medlem är en `User` som är bunden till en `Workspace` med en `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Medlemskapet är åtkomstgränsen** — inte en parkopplingsnyckel — och beviljanden per repo hindrar arbetsytans medlemskap från att ge fler privilegier än kodvärden. Den första användaren som skapas på en ny server äger installationen; andra ansluter via inbjudan eller OIDC. När en arbetsyta skapas stämplas användaren som `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Samarbete i realtid bygger på **auktoritativ server + last-writer-wins (LWW) per fält**, inte på en CRDT. Närvaro (vilka som är här, var de är, markörer, skrivande, en agents live-status och pågående kostnad) är en separat **efemär kanal som aldrig sparas**; beständigt tillstånd färdas på en ryggrad av optimistiska mutationer + server-rebase + LWW. Människor och agenter delar en och samma deltagarlista. Med en enda mänsklig operatör står närvarokanalen stilla och ingen deltagarlista visas i gränssnittet — multiplayer kostar ingenting för den som kör själv.
 
-## Ports and adapters
+## Portar och adaptrar
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Portar är abstrakta gränssnitt i domänlagret. Adaptrar är konkreta implementationer i infrastrukturen. Eftersom headless-servern äger data och måste kunna byggas utan Flutter finns nästan varje adapter bara för Dart-VM:en och ligger i `packages/cc_infra/lib/src/`, ordnade efter ansvarsområde:
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Adapterplats                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (klientsida: återger serverhändelser lokalt)                                      |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp och GitHub Issues är ärendesynkroniserande adaptrar i `cc_infra/lib/src/tickets/sync/`; lokala ärenden ligger i arbetsytans databas utan någon `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (en domäntjänst i ren Dart — den behöver ingen infrastruktur) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Appens sammansättningsrot (`di/providers.dart`) binder portar på klientsidan till implementationer via Riverpod-providers; servern sätter samman sina adaptrar i `cc_server_core`.
 
-## State management
+## Tillståndshantering
 
-**Riverpod** for all client state:
+**Riverpod** för allt klienttillstånd:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` och `AsyncNotifier<T>` för föränderligt tillstånd
+- `FutureProvider<T>` för asynkrona data
+- Listor och liverader kommer in via RPC-prenumerationer som `AsyncValue<List<T>>` — servern använder Drift `.watch()` internt; ingen klient öppnar Drift
+- MCP-verktyg tar emot beroenden som typade konstruktorparametrar, aldrig `Ref`
 
-## Database
+## Databas
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), uppdelat i två databaser, båda i `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — en kort lista med tabeller som verkligen gäller hela servern: arbetsyteregistret, användare/inställningar/parkopplade enheter, SSO-anslutningar, serverinställningar för hela installationen, hanterade åtgärdspolicyer (en installationstäckande spärr som bara kan skärpa arbetsytornas räcken), nyhetsflödet per användare, fleet-kön (fleet-workers, jobb, placeringslogg), `workspace_routes`-indexet före autentisering och installationsmetadata. Vid start öppnas bara den här filen, så startkostnaden förblir konstant hur mycket historik arbetsytorna än samlar på sig. Att lägga till en tabell här är ett isoleringsbeslut som ett spärrtest tvingar dig att argumentera för.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — en _katalog_ per arbetsyta som innehåller en SQLite-fil plus allt annat som bara hör till den arbetsytan, så att ett samtals worktrees och agentfiler ligger bredvid databasen och raderas med den. Nästan allt bor här: agenter, ytor, ärenden, minne, pipelines, möten, kodgrafen, granskningar, repos. Filerna öppnas först vid första åtkomst via `WorkspaceDatabaseManager.of(workspaceId)` och betalar då sin egen `quick_check`, installation av FTS/triggers och `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Båda halvorna utgick från en sammanslagen v1-baslinje — `onCreate` bygger det aktuella schemat — och migreringssteg läggs bara till när en driftsatt databas måste föras framåt.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Eftersom en arbetsyta är en fil är export av en arbetsyta en enda `VACUUM INTO`-sats (`workspace.export`), inte en dump tabell för tabell; `workspace.import` tar över en sådan fil och använder den inbäddade `workspace_meta` för att avgöra om det är en egen fil som tagits över igen eller en fil som kommer från en annan installation.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Båda databaserna ägs av `cc_persistence` och öppnas bara av `cc_server`; ingen klient öppnar en databas — varje klient läser och skriver över RPC. Tabeller definieras i `packages/cc_persistence/lib/database/tables/`, DAO:er i `.../daos/`; domänentiteter är ren Dart, åtskilda från Drift-tabellklasser, med mappning i datalagren. FTS5 hanterar fritextsökning och `sqlite_vector`-inbäddningar, båda endast på servern; båda databaserna kör `PRAGMA foreign_keys=ON` i WAL-journalläge.
 
-## Routing
+## Routning
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, med ett faktum som styr resten: **varje destination i appen har arbetsyteprefix** i form av `/workspaces/:workspaceId/…`. Arbetsytans id i URL:en är den enda källan till sanning för den aktiva arbetsytan — `activeWorkspaceIdProvider` drivs från routen, inte tvärtom — vilket är anledningen till att läsning av arbetsytespecifika data utanför en prefixad route inte har någonstans att hämta sitt id ifrån.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- Routebyggar-_funktioner_ i `router/routes.dart`, som var och en tar arbetsytans id som sitt första argument, inte strängkonstanter
+- Fyra routes före kontexten saknar prefix: `/splash`, `/onboarding`, `/signed-out` och `/workspaces` (väljaren)
+- `ShellRoute` omsluter appskalet; de fyra ytorna återges i fullskärm utanför det
+- Autentiseringsvakt: ofullständig konfiguration går till `/onboarding`; en slutförd konfiguration vars kodvärdsuppgifter har försvunnit går till `/signed-out`. Slutförd betyder att minst en kodvärd är ansluten för den inloggade användaren och att minst en arbetsyta finns — inte GitHub specifikt, och `gh`-CLI:t är inte en autentiseringsmetod
+- Onboardinggrind i `features/auth/providers/`
 
-## Networking (server-side)
+## Nätverk (serversidan)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+All extern HTTP finns i servern. Klienter ansluter aldrig direkt till GitHub, Linear eller Google — de anropar serverns RPC-operationer, och till och med fjärrmedia hämtas via serverns `/proxy/media`-ändpunkt i stället för från den ursprungliga källan.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- **dio**-klienter i `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` och `GoogleCalendarApiClient`
+- Injektion av autentiseringstoken via interceptors, inklusive en kontospecifik Google OAuth-interceptor i `cc_server_core` som förnyar tokens vid 401
+- Alla fel mappas via `packages/cc_infra/lib/src/network/error_mapper.dart` → typade `AppException`-subklasser som definieras i `cc_domain`
 
-## Security
+## Säkerhet
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Servern håller de autentiseringsuppgifter som spelar roll: GitHub- och ärendetokens för agentstarter, nycklar till LLM-leverantörer och OAuth-tokens finns alla under serverns datakatalog eller i dess miljö. Det som klientens nyckelring fortfarande håller är dess egen enhetsautentiseringsuppgift och parkopplingsnyckeln för en fjärrserver.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Hemligheter i `flutter_secure_storage` (macOS-nyckelring, Windows-autentiseringshanteraren, Linux libsecret) — klientens enhetsautentiseringsuppgift och fjärrparkopplingsnycklar, inte leverantörstokens
+- `shared_preferences` endast för icke-känsliga inställningar (tema, typsnitt, layout)
+- Kvarblivna leverantörshemligheter från äldre installationer lämnas en gång över till servern av `features/auth/providers/credential_migration.dart` och raderas sedan från klientens nyckelring
 
-## Architecture enforcement
+## Upprätthållande av arkitekturen
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Arkitekturbegränsningar valideras av `test/core/architecture_constraints_test.dart`, som misslyckas om beroendereglerna bryts.
 
-## Related concepts
+## Relaterade koncept
 
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/): how isolation is enforced
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/): the dispatch flow
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/): cross-feature communication
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/): the thin-client server model and the client matrix
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/): hur isoleringen upprätthålls
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/): hur en dispatch går till
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): kommunikation mellan funktioner
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/): modellen med tunn klient mot server och klientmatrisen

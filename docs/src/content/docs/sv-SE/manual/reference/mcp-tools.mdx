@@ -1,310 +1,312 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP-verktyg
+description: Komplett katalog över de MCP-verktyg som cc_server registrerar, per familj.
 slug: sv-SE/handbok/referens/mcp-verktyg
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar kan bryggas in i samma register som ett dynamiskt lager.
 
-## Registry size
+## Registrets storlek
 
-| Measure                                                                   | Count |
+| Mått                                                                      | Antal |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Verktyg som registreras av `cc_server`                                    | 110   |
+| Från `packages/cc_mcp`                                                    | 108   |
+| Från `packages/cc_mcp_client` (verktygsupptäckt)                          | 2     |
+| Registrerade i basregistret (`server_mcp_registry.dart`)                  | 63    |
+| Registrerade efter start allteftersom tjänsterna kommer upp (`cc_server_runtime.dart`) | 47 |
+| Av basregistrets 63, villkorade av ett kodgraf-repo                       | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+De fem kodgrafverktygen registreras bara när värden skickar in ett kodgraf-repo till `buildServerMcpRegistry`. `cc_server` skickar alltid in ett, så alla 110 är aktiva i den levererade binärfilen.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Hela registret annonseras i `tools/list` utan någon upptäcktsgrind. Ändringar av ärenden görs med typade verktyg.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Externa klienter ser alltid hela katalogen]
+`tools/list` beskärs aldrig. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/sv-SE/handbok/koncept/verktygskontext).
+Den **inbyggda harnessen** fungerar annorlunda: den läser bara in en resident delmängd av definitionerna per förfrågan och hämtar resten vid första användning, vilket är ett beteende på harness-sidan och inte ändrar det här registret. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Varje verktygsklass registreras]
+En källfil under `packages/cc_mcp/lib/src/tools/` är ett verktyg som en agent kan
+anropa. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+får bygget att misslyckas om en ny verktygsklass inte konstrueras av någonting.
 :::
 
-## Common parameters
+## Gemensamma parametrar
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Obligatorisk** för varje verktyg som rör data knuten till en arbetsyta. Ett saknat eller ogiltigt `workspace_id` ger ett uttryckligt fel, och ett värde som inte matchar målentitetens arbetsyta avvisas i stället för att tyst ignoreras. Utelämna den på de verkligt globala verktygen: `list_workspaces` och de sex nyhetsflödesverktygen (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), som följer serverägarens användarspecifika flödeslista. Upptäcktsverktygen (`search_tool_bm25`, `list_my_tools`) tar den frivilligt så att de kan klassificera anropbarhet efter samtalsläge. När en agent skickas ut av servern tvingas arbetsytan fram på serversidan, så agenten kan inte nå en annan arbetsyta genom att skicka in ett främmande id.
 
-## Tool discovery
+## Verktygsupptäckt
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Båda kommer från `cc_mcp_client`, inte `cc_mcp`, och båda konsulterar lägesvakten så att de rapporterar vad som är anropbart i det _aktuella_ samtalsläget.
 
-| Tool               | Description                                                                                                                 |
+| Verktyg            | Beskrivning                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | Sök i verktygskatalogen med nyckelord; returnerar matchande verktyg, deras argumentscheman och huruvida var och ett är anropbart just nu |
+| `list_my_tools`    | Lista de verktyg som är anropbara just nu i det här samtalet, filtrerat efter dess läge                                     |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Ett tredje upptäcktsverktyg, **`search_tools`**, finns bara inuti den inbyggda harnessen och ingår inte i det här MCP-registret. Det rangordnar körningens egen verktygsyta och **läser in** – till skillnad från `search_tool_bm25` – scheman för det den hittar, så att agenten kan anropa en träff i sin nästa tur. Agenter som kör på harnessen bör föredra det; MCP-klienter har `search_tool_bm25`.
 
-## Agent tools
+## Agentverktyg
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Verktyg       | Beskrivning                                      |
+| ------------- | ------------------------------------------------ |
+| `list_agents` | Lista de registrerade agenterna i en arbetsyta   |
 
-## Agent peer messaging and delegation
+## Meddelanden och delegering mellan agenter
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Agenter pratar med varandra över ytor (varaktiga och synliga i agentlistan). `ask_agent` är fråga/svar med en obligatorisk tidsgräns; `delegate_task` skyddas på serversidan av en djupgräns, cykeldetektering, en budgetram och ett autonomitak.
 
-| Tool            | Description                                                                                    |
+| Verktyg         | Beskrivning                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | Skicka ett enkelriktat meddelande till en annan agent, adresserat med `to_agent_id` eller exakt `to_agent_name` |
+| `ask_agent`     | Ställ en fråga till en annan agent och vänta på svaret, eller låt tidsgränsen nås              |
+| `delegate_task` | Delegera en uppgift till en annan agent som ett spårat underordnat ärende                      |
+| `consult_agent` | Lägg till den specialist som matchar bäst på skills i ytan och skicka ut den med en fokuserad uppdragsbeskrivning |
+| `todo_read`     | Läs det här samtalets sparade uppgiftschecklista                                               |
 
-## Skill tools
+## Skill-verktyg
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Varje installation och uppdatering passerar en skanningsgrind som stänger vid fel innan något skill-innehåll når disken eller en agentprompt.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Verktyg              | Beskrivning                                                                 |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_skills`        | Lista de skill-slugs som finns i en arbetsyta                               |
+| `create_skill`       | Skapa en ny skill från markdown-innehåll                                    |
+| `install_skill`      | Installera en skills hela katalog från ett GitHub-repo vid en pinnad ref     |
+| `update_skill`       | Uppdatera en installerad GitHub-skill till en ny ref, skanna och pinna om   |
+| `list_skill_updates` | Lista skills som har en nyare version tillgänglig                           |
+| `verify_skills`      | Verifiera låsta skills mot deras innehållshashar på disken                   |
+| `pin_skill`          | Hasha en befintlig skill på disken in i `skills-lock.json`                  |
 
-## Plan, playbook and artifact tools
+## Verktyg för planer, playbooks och artefakter
 
-| Tool               | Description                                                                                                           |
+| Verktyg            | Beskrivning                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | Planlägets utdatakontrakt: avge ett typat `PlanDocument` som öppnas i Plan Studio                                     |
+| `create_playbook`  | Spara en plan som en namngiven, versionshanterad mall med typade `{{param}}`-platshållare                             |
+| `run_playbook`     | Instansiera en playbook med parametervärden och producera en plan som operatören godkänner                            |
+| `publish_artifact` | Publicera en ordnad lista av typade block (markdown, tabell, diagram, mermaid, kod, JSON) som renderas nativt i klienten |
+| `revise_artifact`  | Ersätt innehållet i en publicerad artefakt                                                                             |
+| `list_artifacts`   | Lista arbetsytans artefakter                                                                                           |
+| `get_artifact`     | Läs en artefakt                                                                                                        |
+| `complete_goal`    | Deklarera att samtalets aktiva varaktiga mål (startat med `/goal` eller `/loop`) är uppnått                           |
 
-## Workspace tools
+## Verktyg för arbetsytor
 
-| Tool              | Description                                                              |
+| Verktyg           | Beskrivning                                                              |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | Lista alla arbetsytor med deras id:n och namn (globalt; ingen `workspace_id`) |
 
-## Repo tools
+## Repo-verktyg
 
-| Tool         | Description                                                                                                                                              |
+| Verktyg      | Beskrivning                                                                                                                                              |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | Lista de repos som är registrerade i en arbetsyta. Agentanropare får sina samtals isolerade copy-on-write-worktree-sökvägar, aldrig originalutcheckningarna |
 
-## Messaging tools
+## Meddelandeverktyg
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Verktyg              | Beskrivning                                                               |
+| -------------------- | ------------------------------------------------------------------------- |
+| `list_spaces`        | Lista meddelandeytorna i en arbetsyta                                   |
+| `get_messages`       | Hämta meddelanden från en yta                                             |
+| `send_message`       | Skicka ett meddelande till en yta som en namngiven avsändaragent          |
+| `get_space_notes`    | Läs en ytas delade överlämningsdokument                                   |
+| `update_space_notes` | Ersätt en ytas delade överlämningsdokument                                |
+| `todo_write`         | Ersätt det här samtalets uppgiftschecklista i ett anrop (skicka in hela listan) |
 
-## Review tools
+## Granskningsverktyg
 
-| Tool                       | Description                                                                                            |
+| Verktyg                    | Beskrivning                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| `start_ai_review`          | Starta AI-granskningen för en PR: beräkna granskningsområdena, skicka ut specialistgranskare i PR-ytan, skriv genomgången och slutför |
+| `add_review_node`          | Lägg till ett strukturerat granskningsfynd (fil, rad, prioritet P0–P3) i en granskningsyta            |
+| `confirm_review_node`      | Bekräfta en kollegas fynd; författaren kan inte bekräfta sitt eget                                     |
+| `resolve_review_node`      | Markera ett fynd som åtgärdat efter att faktiskt ha gjort ändringen; publicerar ett spår i granskningsytan |
+| `dismiss_review_node`      | Avvisa ett fynd som inte är tillämpligt; registrerar ett undertryckningsfaktum så att granskare slutar flagga det igen |
+| `request_peer_review`      | Be en annan granskaragent om en andra titt på ett fynd                                                 |
+| `dispatch_reviewers`       | Skicka ut matchade granskaragenter i en granskningsyta, samtidigt                                     |
+| `submit_reviewer_verdict`  | Publicera en ship/hold/block-dom per granskare med konfidens och en förklaring                          |
+| `finalize_review`          | Beräkna samsyn per nod och domen per PR och stäng granskningen                                          |
+| `set_cohort_summary`       | Ange en granskningskohorts sammandrag på vardagligt språk                                              |
+| `add_review_diagram`       | Bifoga ett strukturerat, grafverifierat diagram (`sequence`, `entityRelation`, `stateMachine`) till en kohort |
+| `publish_review_to_github` | Publicera den slutförda granskningen till GitHub som inline-kommentarer plus en sammanfattande brödtext |
 
-## Memory tools
+## Minnesverktyg
 
-| Tool                    | Description                                                                                         |
+| Verktyg                 | Beskrivning                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| `search_memory`         | Sök efter fakta och policyer (nyckelord, semantiskt eller hybrid – hybrid är standard)               |
+| `propose_fact`          | Lagra ett kort markdown-faktum i en domän                                                           |
+| `supersede_fact`        | Markera ett faktum som ersatt av ett annat                                                          |
+| `propose_policy`        | Lagra en normativ regel i en domän (kräver skrivbehörighet på den)                                   |
+| `supersede_policy`      | Dra tillbaka en policy – markerar den inaktiv men behåller den för revision                         |
+| `list_policies`         | Lista aktiva policyer, valfritt filtrerat på domän                                                  |
+| `list_memory_domains`   | Lista arbetsytans minnesdomäner med antal fakta och policyer                                         |
+| `record_observation`    | Registrera en rå observation i agentens arbetsminne                                                 |
+| `get_my_notes`          | Läs den anropande agentens anteckningsblock i arbetsminnet                                          |
+| `update_my_notes`       | Uppdatera den anropande agentens anteckningsblock i arbetsminnet                                     |
+| `remember`              | Lägg till en anteckning i agentens heta arbetsminne för den här sessionen (begränsat av TTL och antal) |
+| `consolidate_memory`    | Kör en konsolideringsomgång ("sömn"): vräk ut utgångna heta poster, rulla in varaktiga som långtidsfakta |
+| `harmonize_memory`      | Kör harmonisering av övertygelser mellan agenter (SHMR) och flagga motsägelser                       |
+| `list_memory_conflicts` | Lista upptäckta motsägelser och hur var och en löstes                                               |
 
-## Governance tools
+## Styrningsverktyg
 
-| Tool                         | Description                                                                                           |
+| Verktyg                      | Beskrivning                                                                                           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | Skapa ett organisatoriskt mål (på företags-, team-, agent- eller uppgiftsnivå)                        |
+| `list_goals`                 | Lista mål med nivå, status och aggregerad framdrift                                                   |
+| `update_goal_progress`       | Ange framdriften för ett mål                                                                          |
+| `create_approval`            | Öppna ett styrelsegodkännande för en styrd åtgärd (planavslut, sammanslagning, release, anställning, anpassad) |
+| `list_approvals`             | Lista godkännanden, valfritt filtrerat på status                                                      |
+| `decide_approval`            | Registrera ett beslut: godkänn, avvisa, begär omarbetning eller skicka in på nytt                     |
+| `comment_approval`           | Kommentera ett styrelsegodkännande                                                                    |
+| `exit_plan_mode`             | Öppna (och, när det godkänts, förbruka) ett `plan_exit`-godkännande och växla samtalet ut ur planläget |
+| `agent_heartbeat`            | Rapportera livstecken (vid liv, inaktiv, fastnad); tystnad växlar körningshälsan till nyligen-förlorad och sedan offline |
+| `list_runtime_health`        | Lista varje agents körningshälsa                                                                      |
+| `list_agent_presence`        | Lista varje agents närvaro (hälsa, livscykel, körande och köade antal, kapacitet)                     |
+| `get_org_chart`              | Läs rapporteringsträdet, med VD i roten, nästlat efter `reports_to`                                   |
+| `create_work_product`        | Skapa en varaktig leverabel kopplad till ett ärende                                                   |
+| `save_work_product_revision` | Spara en ny version; skicka `base_revision_id` för att avvisas vid en samtidig redigering              |
+| `list_work_products`         | Lista arbetsprodukter, valfritt filtrerat till ett ärende                                             |
+| `get_work_product`           | Läs en arbetsprodukt med dess versionshistorik                                                        |
+| `create_runtime_profile`     | Definiera en återanvändbar runtime-profil (protokollfamilj, CLI-kommando, fasta startargument)        |
+| `list_runtime_profiles`      | Lista arbetsytans runtime-profiler                                                                    |
 
-## Code graph tools
+## Kodgrafverktyg
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Registreras bara när värden tillhandahåller ett kodgraf-repo. Indexet täcker den medföljande grammatikuppsättningen (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symboler i något annat språk finns inte med.
 
-| Tool           | Description                                                                        |
+| Verktyg        | Beskrivning                                                                        |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Sök i indexerade symboler på namn, signatur och doc-kommentar (hybrid BM25 + semantisk) |
+| `code_symbol`  | Slå upp symboler på exakt namn; returnerar `file:line` och signatur                |
+| `code_callers` | Lista de symboler som anropar eller är beroende av en symbol (inkommande kanter)   |
+| `code_callees` | Lista de symboler som en symbol anropar eller är beroende av (utgående kanter)     |
+| `code_impact`  | Beräkna en symbols transitiva påverkansradie, till ett djup                        |
 
-## Ticketing tools
+## Ärendeverktyg
 
-| Tool                      | Description                                                                                                                  |
+| Verktyg                   | Beskrivning                                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | Skapa ett ärende hos den konfigurerade leverantören                                                                          |
+| `get_ticket`              | Hämta ett ärende med id                                                                                                      |
+| `list_tickets`            | Lista ärenden, valfritt filtrerat på status eller tilldelad                                                                  |
+| `update_ticket`           | Uppdatera status, titel, beskrivning, prioritet eller etiketter (status accepterar alias som `in_progress` / `completed`)    |
+| `assign_ticket`           | Tilldela ett ärende till en agent och/eller ett team                                                                         |
+| `reassign_ticket`         | Omfördela ett ärende till en annan agent                                                                                     |
+| `add_ticket_collaborator` | Bjud in en agent att samarbeta om ett ärende (läggs till i ärendets yta)                                                    |
+| `comment_on_ticket`       | Kommentera ett ärende                                                                                                        |
+| `close_ticket`            | Stäng ett ärende (markerar det som klart) med valfri utdata                                                                  |
+| `fail_ticket`             | Markera ett ärende som misslyckat med ett felmeddelande                                                                      |
+| `delegate_ticket`         | Delegera ett ärende till en agent och skapa ett spårat ärende                                                                |
+| `ticket_pr_link`          | Länka eller avlänka ett ärende och en pull request via PR-nodens id (`action`: `link` \| `unlink`)                           |
+| `ticket_relation`         | Lägg till eller ta bort en relation mellan två ärenden – `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Lista ett ärendes förälder, delärenden och beroendelänkar                                                                    |
 
-## Team and pipeline tools
+## Verktyg för team och pipelines
 
-| Tool                   | Description                                                                                                                    |
+| Verktyg                | Beskrivning                                                                                                                    |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| `record_team_activity` | Registrera en teamledares aktivitetspost mot ett ärende                                                                        |
+| `preview_trigger`      | Testkör vilka pipelinekörningar en hypotetisk händelse skulle starta, utan att något verkställs                                |
+| `submit_output`        | Skicka in den strukturerade utdatanyttolasten för anroparens aktuella pipelinekörning; valideras mot körningens deklarerade utdataschema |
 
-## Orchestration tools
+## Orkestreringsverktyg
 
-| Tool                    | Description                                                                                                     |
+| Verktyg                 | Beskrivning                                                                                                     |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| `propose_orchestration` | Avge en strukturerad plan för orkestrering av flera agenter för ett enda förhandsgodkännande; validerar och returnerar eventuella överträdelser |
 
-## Newsfeed tools
+## Nyhetsflödesverktyg
 
-| Tool                | Description                                                  |
+| Verktyg             | Beskrivning                                                  |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | Lista de registrerade RSS-/Atom-flödena                      |
+| `list_articles`     | Lista artiklar, valfritt filtrerat på flöde, olästa eller sparade |
+| `get_article`       | Hämta en artikel                                             |
+| `set_article_read`  | Markera en artikel som läst eller oläst                      |
+| `set_article_saved` | Spara eller avspara en artikel                               |
+| `refresh_feeds`     | Hämta om varje aktiverat flöde nu                            |
 
-## Enclosure (rig) tools
+## Verktyg för avskilda miljöer (stationer)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/sv-SE/handbok/koncept/racken/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/sv-SE/handbok/referens/stationer/#action-verbs).
+Kör engångsmaskiner – en innesluten webbläsare eller Linux-skrivbord, en Android-
+emulator eller en iOS-simulator – inifrån en körning. Registreras efter start,
+ovillkorligt: huruvida en maskin verkligen kan starta är en sondfråga som
+verktygen svarar på per anrop. Upprepade anrop i ett samtal återanvänder en maskin;
+skärmbilder returneras som bildinnehåll med en budget på en bild per resultat, och
+extraherat sida-/gränssnittsinnehåll inramas som opålitlig data. De fyra
+användningsverktygen plus `rig_close` deklarerar `enclosureControl`
+[åtgärdsklassen](/sv-SE/handbok/koncept/racken/) (användningsverktygen deklarerar också `networkEgress` och
+`processSpawn`; `mobile_use` och `ios_use` deklarerar också `packageInstall`), så
+skrivskyddade lägen nekar dem. `rig_list` deklarerar ingen – det läser bara
+arbetsytans tillstånd. Hela verbförrådet per yta finns i
+[stationsreferensen](/sv-SE/handbok/referens/stationer/#action-verbs).
 
-| Tool           | Description                                                                                     |
+| Verktyg        | Beskrivning                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| `computer_use` | Styr ett Linux-skrivbord i en avskild VM: flytta, klicka, dra, rulla, skriva, ändra storlek, urklipp, skärmbild |
+| `browser_use`  | Styr en headless Chromium, Firefox eller WebKit (`engine`): navigera, klicka, fylla i, extrahera (a11y/DOM/konsol), urklipp, skärmbild |
+| `mobile_use`   | Styr Android över ADB: inspektera/mata in, skärmbilder, installera/starta/stoppa/återställa/avinstallera appar, djuplänkar och argv-formade enhetskommandon |
+| `ios_use`      | Styr iOS-simulatorn via WebDriverAgent/CoreSimulator: inspektera/mata in, skärmbilder, installera/starta/stoppa/avinstallera appar, djuplänkar och argv-formade simulatorprocesser |
+| `rig_list`     | Lista en arbetsytas stationer med yta, status, skärmstorlek och styrenhet                      |
+| `rig_close`    | Förstör en station och kassera dess ägda maskintillstånd                                        |
 
-## Not exposed over MCP
+## Exponeras inte över MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/sv-SE/handbok/koncept/moten/), not as a tool an agent can call.
+Kalender och möten har inga MCP-verktyg. Agenter kan inte läsa din kalender, dina möten, transkript, åtgärdspunkter eller beslut. Sammanfattningen som tar fram åtgärdspunkter och beslut körs som den inbyggda [`meeting_summary`-pipelinen](/sv-SE/handbok/koncept/moten/), inte som ett verktyg en agent kan anropa.
 
-## Tool gating by mode
+## Verktygsgrindar per läge
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Grindarna tillämpas två gånger från en och samma tabell (`ModeToolPolicy`): en gång i MCP-dispatchern för Claude Code-adaptern och en gång i den inbyggda harnessens register. Ett blockerat anrop returnerar orsaken.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| Läge          | Verktygsyta                                                                                                                                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | Alla registrerade verktyg; ingen tillåtelselista                                                                                                                                                                                     |
+| `plan`        | En kurerad tillåtelselista. Inga worktree-skrivningar och inga `create`- / `assign`- / `delegate`-ärendeverb, men minne, artefakter, att-göra-poster, `submit_plan`, `exit_plan_mode` och ärendeslutförandeverben på det utskickade ärendet är tillåtna |
+| `review`      | En kurerad tillåtelselista: granskningsdeltagande, kommunikation, skrivskyddade kontexthämtare och hela uppsättningen ärendeverb inklusive `create_ticket` och `assign_ticket`                                                     |
+| `orchestrate` | En kurerad tillåtelselista: forsknings- och läsverktyg plus `propose_orchestration`, `create_playbook` och `run_playbook`. Anställning, nedbrytning och ärendeavslut sker deterministiskt efter godkännande, aldrig mitt i körningen |
 
-Permitted in every mode regardless of allow-list:
+Tillåtet i alla lägen oavsett tillåtelselista:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Uppsättning        | Verktyg                                                                                                                                                                                                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Minne och artefakter | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Kodgraf            | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Körningsmekanik    | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Att stå på en tillåtelselista gör inte ett verktyg anropbart, och det omvända gäller också: förmågan att ställa frågor till operatören är ett **harness**-verktyg (`ask_user`), så det förekommer aldrig i den här MCP-katalogen.
 
-## Approval-gated tools
+## Verktyg bakom godkännande
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Ett verktyg kan deklarera `requiresApproval`. Dispatchern bygger då en `ApprovalPayload` och visar den via `ConfirmationPort` innan verktyget körs; `cc_server` kopplar in den porten, så godkännandegrinden är aktiv.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Registrerade verktyg som deklarerar det: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/sv-SE/handbok/koncept/racken/).
+Oberoende av detta grindar de enhetliga åtgärdsräckena varje verktyg som deklarerar en icke-tom uppsättning `ActionClass`. Ett `prompt`-beslut utan ansluten godkännare nekas. Se [Räcken](/sv-SE/handbok/koncept/racken/).
 
-## Capabilities with no tool behind them
+## Förmågor utan verktyg bakom sig
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Inte varje förmåga i produkten går att nå för en agent. De här har inget verktyg
+alls, så ett namn du kan ha sett hänvisat till någon annanstans returnerar "unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/sv-SE/handbok/how-to-guider/projekt/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/sv-SE/handbok/how-to-guider/felsok-agent/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Förmåga                                 | Var den finns i stället                                                                      |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Att anställa, avskeda eller redigera en agent | Agentgränssnittet. Det finns inget `hire_agent` / `fire_agent` / `update_agent`-verktyg     |
+| Att skapa en arbetsyta                  | `workspace.upsert` över RPC, som skapar grunddata och stämplar ägandet                        |
+| Projekt (skapa / lista / uppdatera / lägga in) | Ärendegränssnittet. Projekt är en operatörsyta – se [Projekt](/sv-SE/handbok/how-to-guider/projekt/) |
+| Att ställa en blockerande fråga till operatören | **harness**-verktyget `ask_user`, inte MCP. Det renderar ett formulär i samtalet och blockerar på svaret |
+| Felsökning per agent                    | Ingenting. Det finns ingen `doctor` – se [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/) |
+| Kalender och möten                      | RPC endast för mänskliga klienter (se ovan)                                                   |
 
-## See also
+## Se även
 
-- [Use Control Center as an MCP server](/sv-SE/handbok/how-to-guider/mcp-server/)
-- [Modes](/sv-SE/handbok/koncept/lagen/)
-- [Guardrails](/sv-SE/handbok/koncept/racken/)
+- [Använd Control Center som MCP-server](/sv-SE/handbok/how-to-guider/mcp-server/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)
+- [Räcken](/sv-SE/handbok/koncept/racken/)

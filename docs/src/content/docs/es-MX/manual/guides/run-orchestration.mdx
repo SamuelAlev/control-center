@@ -1,126 +1,138 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Ejecutar una orquestación
+description: Pídele un plan a un orquestador, revísalo y edítalo en Plan Studio, apruébalo una sola vez y deja que un pipeline generado haga el trabajo.
 slug: es-MX/manual/guias/ejecutar-orquestacion
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/es-MX/manual/conceptos/orquestacion/) for how it works.
+Esta guía te muestra cómo convertir un objetivo grande en un plan de todo el
+equipo que se ejecuta solo. Consulta
+[Orquestación](/es-MX/manual/conceptos/orquestacion/) para saber cómo funciona.
 
-## When to use an orchestration
+## Cuándo usar una orquestación
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/es-MX/manual/guias/chatear-con-agente/); for a process you can spell out by
-hand, build a [pipeline template](/es-MX/manual/guias/crear-pipeline/).
+Recurre a una orquestación cuando la petición es más grande que un solo agente y
+todavía no conoces los pasos exactos. Para una sola tarea, envía un mensaje a un
+agente en un [espacio](/es-MX/manual/guias/chatear-con-agente/); para un proceso
+que puedes detallar a mano, crea una
+[plantilla de pipeline](/es-MX/manual/guias/crear-pipeline/).
 
-## Step 1: Ask for the plan
+## Paso 1: Pide el plan
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Abre (o crea) un espacio y un **ticket de anclaje**. Toda propuesta requiere
+   uno (`propose_orchestration` toma `ticket_id`); el espacio compartido proviene
+   de ese ticket.
+2. Opcionalmente, cambia el desplegable de modo del compositor a
+   **Orquestación**. Ese modo limita al agente a leer y proponer —memoria, el
+   grafo de código, lecturas de repos y tickets, `propose_orchestration` y las
+   herramientas de playbook—, así que no puede ponerse a escribir código en
+   lugar de planificar.
+3. Menciona con @ a tu orquestador (normalmente el agente CEO) y expón el
+   objetivo en lenguaje llano:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Investiga el panorama competitivo de una grabadora de reuniones
+> offline-first y escribe un documento de posicionamiento de una página.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+El orquestador responde con una **tarjeta de propuesta** estructurada en el
+espacio: los roles que necesita, el trabajo desglosado en subtickets, una fase
+opcional de investigación y debate, un paso de síntesis que produce el
+entregable y un presupuesto.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Como la propuesta es un objeto tipado, la aplicación la valida (roles bien
+formados, esquemas de salida declarados, un DAG sin ciclos) antes de que se
+ejecute nada. Una propuesta que no supera la validación no se puede aprobar.
 
-## Step 2: Review and edit the proposal
+## Paso 2: Revisa y edita la propuesta
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+La tarjeta del chat ofrece tres acciones: **Aprobar plan**, **Rechazar** y
+**Abrir**, que abre el plan en Plan Studio como una pestaña de editor. La propia
+tarjeta no se puede editar.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Para cambiar algo, presiona **Abrir** y trabaja en el inspector de la derecha:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Título**, **descripción**, **rol**, **dependencias** y **esquema de salida**
+  de cualquier paso de trabajo. Aquí rol significa cuál de las claves de rol
+  existentes del plan posee el paso: no puedes fijar un rol a un agente con
+  nombre ni editar la lista de contrataciones desde el inspector, y tampoco
+  puedes editar el presupuesto.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Dos cosas son de solo lectura: los nodos estructurales (investigación, debate,
+síntesis) y cualquier nodo cuyo trabajo ya se haya ejecutado. Solo se puede
+editar mientras la orquestación siga en `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/es-MX/manual/guias/plan-studio/) for the full editor.
+Presiona **Estimar** en la barra de aprobación para ver rangos de costo,
+duración y radio de impacto antes de comprometerte. Consulta
+[Trabajar en Plan Studio](/es-MX/manual/guias/plan-studio/) para conocer el
+editor completo.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/es-MX/manual/guias/administrar-costos/).
+:::note[El presupuesto no es un límite de gasto]
+El presupuesto de una propuesta se compara con la _estimación_ de la barra de
+aprobación: cuando el extremo superior de la estimación lo supera, el total se
+pone en rojo con un aviso de presupuesto excedido. Nada revisa el gasto mientras
+el plan se ejecuta, así que no detendrá ni hará fallar una ejecución. Para
+detener el gasto de verdad, usa las políticas de presupuesto por agente;
+consulta [Administrar costos](/es-MX/manual/guias/administrar-costos/).
 :::
 
-## Step 3: Approve
+## Paso 3: Aprueba
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Aprueba el plan desde la tarjeta del chat o desde la barra de aprobación de Plan
+Studio. **Esta es la única decisión que tomas.** Aprobar es exclusivo del
+operador: no hay ninguna herramienta MCP para ello, así que un agente puede
+proponer y revisar, pero nunca aprobar su propio plan.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/es-MX/manual/conceptos/pipelines/) and creates the
-scaffolding:
+A partir de aquí, un materializador determinista (una función pura, sin LLM)
+convierte la propuesta en un [pipeline](/es-MX/manual/conceptos/pipelines/) real y
+crea el andamiaje:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- contrata cualquier rol nuevo (y registra los identificadores de los agentes
+  contratados para que un fallo a mitad de la aprobación pueda reanudarse sin
+  contrataciones duplicadas)
+- agrupa los roles en un **equipo**
+- crea un **proyecto** y archiva el ticket principal en él
+- inicia la **ejecución de pipeline** que lo impulsa todo
 
-The status moves to `approved`, then `executing`.
+El estado pasa a `approved` y después a `executing`.
 
-## Step 4: Watch it run
+## Paso 4: Observa cómo se ejecuta
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Los subtickets se ejecutan como pasos de pipeline; si activaste una ronda de
+debate, cada rol publica primero su postura. El progreso aparece donde ya miras:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/es-MX/manual/guias/monitorear-pipelines/)
-- the **project** the parent ticket was filed under
+- el **ticket principal** sobre el que se ancló la orquestación
+- el **espacio** compartido en el que habla el equipo, donde la fila del plan
+  sigue el estado de cada nodo
+- el detalle de la **ejecución de pipeline**, con su cascada de tiempos y su
+  costo por paso habituales; consulta
+  [Monitorear ejecuciones de pipeline](/es-MX/manual/guias/monitorear-pipelines/)
+- el **proyecto** en el que se archivó el ticket principal
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Cuando los subtickets terminan, el estado pasa a `synthesizing` y el paso de
+síntesis produce el entregable. Ese texto se publica en el espacio compartido y
+el ticket principal se marca como completado; después, `completed`.
 
-## Stop it early
+## Detenla antes de tiempo
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Presiona **Cancelar orquestación** en la tarjeta del chat, o **Cancelar
+ejecución** en la barra de aprobación de Plan Studio. La cancelación desmonta el
+trabajo en curso.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Una orquestación falla cuando falla la materialización, o cuando falla la
+ejecución del pipeline generado (investigación, debate, síntesis o persistencia:
+esos pasos no continúan si fallan). Los pasos de **trabajo** generados siempre
+continúan aunque fallen, así que un subticket fallido no hace fallar la
+ejecución. No hay ninguna vía de fallo por presupuesto excedido ni ningún umbral
+de «todos los subtickets fallaron».
 
-## Related guides
+## Guías relacionadas
 
-- [Work in Plan Studio](/es-MX/manual/guias/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/es-MX/manual/guias/administrar-tickets/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/es-MX/manual/guias/proyectos/): where the parent ticket is filed
-- [Monitor pipeline runs](/es-MX/manual/guias/monitorear-pipelines/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/es-MX/manual/guias/formar-equipo/): the roles an orchestration fills or hires
+- [Trabajar en Plan Studio](/es-MX/manual/guias/plan-studio/): edita, estima, compara y aprueba el plan
+- [Crear y administrar tickets](/es-MX/manual/guias/administrar-tickets/): el ticket principal sobre el que se ancla una orquestación
+- [Organizar el trabajo con proyectos](/es-MX/manual/guias/proyectos/): dónde se archiva el ticket principal
+- [Monitorear ejecuciones de pipeline](/es-MX/manual/guias/monitorear-pipelines/): cómo se ve una orquestación materializada en el motor
+- [Formar un equipo de agentes](/es-MX/manual/guias/formar-equipo/): los roles que una orquestación cubre o contrata
 
-## Related concepts
+## Conceptos relacionados
 
-- [Orchestration](/es-MX/manual/conceptos/orquestacion/)
-- [Modes](/es-MX/manual/conceptos/modos/)
+- [Orquestación](/es-MX/manual/conceptos/orquestacion/)
+- [Modos](/es-MX/manual/conceptos/modos/)

@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: El modelo de agentes
+description: Qué es en realidad un agente en Control Center, cuáles de sus campos cambian el comportamiento y cómo decide el adaptador sobre el que se ejecuta qué se puede aplicar.
 slug: es-MX/manual/conceptos/modelo-de-agentes
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## ¿Qué es un agente?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Un agente es un actor con nombre que tiene una personalidad, un conjunto de skills, un adaptador sobre el que ejecutarse y un conjunto de capacidades. Los agentes son sujetos de pleno derecho igual que lo son las personas: escriben mensajes, son responsables de tickets, dejan revisiones y aparecen en la misma lista de presencia. Son las entidades que hacen el trabajo.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Cada agente pertenece exactamente a un espacio de trabajo. Es un invariante estricto — `agent.workspaceId` no admite nulos, el propio espacio de trabajo del agente es lo que determina en qué archivo de base de datos acaban sus filas, y crear un agente sin espacio de trabajo se rechaza.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Un agente es también un directorio. Su definición vive en `agents/<slug>/AGENTS.md`, dentro del directorio de datos del espacio de trabajo, con las skills que tiene enlazadas simbólicamente en `agents/<slug>/.agents/skills`. La fila de la base de datos y el archivo se escriben juntos. El sembrado es idempotente: si la fila del agente ya existe, los archivos en disco y los enlaces de skills se reescriben de todos modos. El llamador de producción es la creación del espacio de trabajo, no cada arranque del servidor.
 
-## What an agent carries
+## Qué lleva consigo un agente
 
-| Attribute               | What it does                                                                          |
+| Atributo                | Qué hace                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | Identificador corto tipo slug (`architect`, `qa`). También es aquello con lo que se resuelven las `@mentions` |
+| `title`                 | Puesto de trabajo legible para personas                                               |
+| `persona`               | Personalidad e instrucciones de comportamiento en texto libre, inyectadas como una sección del prompt |
+| `systemPrompt`          | Instrucciones adicionales opcionales, inyectadas como una sección "Agent instructions" — no reemplazan al resto del prompt ensamblado |
+| `skills`                | Conjunto de nombres de skills que no distingue mayúsculas de minúsculas, replicado como enlaces de skills en disco |
+| `adapterId`             | A qué ejecutor despacha el agente. **Si es nulo, se recurre al bucle integrado**      |
+| `modelId`               | Qué modelo dentro de ese adaptador                                                    |
+| `effort`                | Nivel de razonamiento, tomado del vocabulario propio del modelo seleccionado          |
+| `contextSize`           | Anulación de la ventana de contexto                                                   |
+| `capabilities`          | Indicadores de credenciales y de salida a la red, comprobados al lanzar               |
+| `silenceTimeoutMinutes` | Anulación por agente (1–240) del vigilante de silencio                                |
+| `reportsTo`             | Id del agente superior — la cadena de mando que dibuja el organigrama                 |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Puedes editar todo esto en Ajustes → Espacio de trabajo → Agentes. **Nuevo agente** crea un agente sin nombre que después completas.
 
 ## Skills
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Las skills son nombres en la entidad del agente que no distinguen mayúsculas de minúsculas. Con ellas ocurren dos cosas distintas:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Los nombres se listan en el prompt ensamblado bajo un encabezado "Skills". Eso es todo lo que hace por sí solo el conjunto de la entidad — no hay ninguna biblioteca de prompts por skill que dependa de él.
+- El directorio de cada skill con nombre (`skills/<slug>/SKILL.md` en el espacio de trabajo) se enlaza en la carpeta del propio agente. En el arnés integrado, el frontmatter de las skills enlazadas se carga automáticamente en el prompt del sistema y el agente lee un cuerpo cuando lo necesita; escribir `/skill:<name>` en una conversación carga ese cuerpo como directiva para el turno.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/es-MX/manual/guias/administrar-skills/).
+Las skills que se obtienen del exterior pasan un análisis fail-closed de la cadena de suministro entre la descarga y la escritura — ningún contenido de skill llega al disco ni a un prompt sin un veredicto. El exterior son repositorios de GitHub que tú mismo registras como fuentes de skills: no hay una tienda curada, así que los metadatos del propio repositorio (su descripción, sus estrellas, el nombre de la skill) son datos de visualización que no son de confianza y el veredicto del análisis es la única señal de seguridad. Una instalación descarga el directorio completo de la skill, la fija al commit del que provino en `skills-lock.json`, y una actualización posterior vuelve a pasar la compuerta antes de reemplazar nada. El procedimiento está en [instalar y administrar skills](/es-MX/manual/guias/administrar-skills/).
 
-### Repo-scoped skills
+### Skills con alcance de repositorio
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Un repo puede incluir sus propias skills, en cualquiera de los lugares convencionales (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Un espacio hace el checkout de cada repo vinculado uno al lado del otro bajo `repos/<name>/`, pero un agente trabaja en un solo repo a la vez — así que lleva **solo las skills de ese repo**, y estas cambian cuando se mueve.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Qué repo está activo se infiere de los archivos que toca el agente: escribir un archivo bajo `repos/<name>/` convierte ese repo en el activo, mientras que solo leer entre repos no lo hace, así que perseguir un símbolo hasta un servicio hermano nunca cambia el conjunto bajo los pies de una tarea. En un espacio de un solo repo, la respuesta se conoce antes del primer turno.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+El alcance es una decisión de presupuesto de contexto. El índice de skills está en el prompt en cada turno mientras que los cuerpos no, así que listar las skills de todos los repos a la vez cuesta tokens de forma continua — y una skill `testing` de un servicio induce a error cuando el trabajo está en otro. El mismo razonamiento explica por qué el índice de un agente lleva un solo repo pero el compositor no tiene ese alcance: nombrar tú mismo una skill es un acto explícito, así que `/skill:<repo>:<name>` llega a cualquier repo del espacio.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Las skills de un repo se cargan para **todos** los adaptadores, no solo para el arnés integrado. Las skills del repo activo se materializan en el directorio de trabajo del agente, que es la ruta que Claude Code ya examina; el mismo índice se compone en el `AGENTS.md` que lee el arnés integrado. Las skills de un repo pasan el mismo análisis fail-closed que una skill instalada antes de que ocurra nada de eso — un repo del que se hizo checkout es contenido clonado, y su frontmatter llega a un prompt.
 
-## Capabilities
+## Capacidades
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Las capacidades controlan lo que se le _entrega_ a una ejecución, no lo que su sistema de archivos le permite tocar. El intermediario de credenciales las comprueba al lanzar: si una capacidad está desactivada, el token correspondiente simplemente no se inyecta.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Push al repositorio** — controla la inyección del token de GitHub que se usa para `git push`.
+- **API de GitHub** — controla la inyección de `GH_TOKEN` y la salida a api.github.com.
+- **Tickets** — controla la clave de API del proveedor de tickets y la salida a sus dominios.
+- **Salida a la red** — solicitudes salientes arbitrarias.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Una ejecución las resuelve a partir de la propia fila del agente. Cuando el agente no tiene ninguna, se aplica un valor predeterminado conservador fijo: los tres indicadores de credenciales desactivados y la salida a la red activada. El interruptor "Permisos del sandbox" del formulario del agente elige entre ese valor de reserva y un conjunto personalizado almacenado en el agente.
 
-See [Sandbox and security](/es-MX/manual/conceptos/sandbox-y-seguridad/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Consulta [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/) para conocer la otra mitad de la historia, incluido qué se aplica y qué no a nivel del sistema de archivos.
 
-## The adapter decides what can be enforced
+## El adaptador decide qué se puede aplicar
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+El campo más determinante de un agente es su adaptador, porque el transporte del adaptador determina cuánta de la política de Control Center es realmente aplicable.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| Transporte       | Adaptadores               | Qué aplica Control Center                                                                                                                                                                                                                                                  |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Arnés integrado  | Control Center (integrado) | Todo. La superficie de herramientas se _construye_ a partir del modo, así que una herramienta no permitida es invisible en lugar de simplemente denegada; cada llamada pasa por la compuerta de aprobación y por las barandillas de acción; el contrato de finalización puede instar al agente y luego hacer fallar una ejecución que termina sin su entregable |
+| Claude CLI       | Claude Code               | Solo las herramientas `mcp__*` que se le sirven. Las propias herramientas de lectura, escritura, edición y shell de Claude viven en su proceso y se ejecutan sin que nadie las vea — y se lanza con `--dangerously-skip-permissions`, porque `claude -p` en modo no interactivo se bloquearía para siempre en su propio prompt    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+En concreto, **solo el arnés integrado admite subagentes, orientación a mitad de ejecución, pausa y reanudación (y por tanto la toma de control) y la aplicación estructural de modos.** Claude Code no recibe nada de eso.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[El sandbox del sistema operativo es un piso, no un aplicador de modos, y no todos los hosts tienen uno]
+La matriz anterior trata de lo que Control Center puede _ver y filtrar_. Por debajo, `cc_server` envuelve la CLI de Claude Code en el sandbox del sistema operativo del host cuando existe — Seatbelt en macOS, bubblewrap en Linux y WSL2 —, así que un `rm` que no se ve o una escritura que no se ve siguen limitados por el sistema operativo. En **Windows no hay ningún backend en absoluto** y en Linux o WSL2 sin `bwrap` y `socat` la sonda no informa de ninguno, así que allí esas ejecuciones recurren a la sanitización del entorno, las credenciales intermediadas, las barandillas sobre las llamadas que Control Center sí puede ver y el worktree propio de la conversación (copia en escritura donde se distribuye `rift`; `git worktree` en Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/es-MX/manual/conceptos/sandbox-y-seguridad/).
+Lo que el sandbox no es es una _compuerta_. Delimita dónde puede un proceso leer, escribir y conectarse — un modo de solo lectura sí llega a él, en forma de montajes bind de solo lectura —, pero no puede interceptar una llamada, levantar una aprobación ni decirte después qué intentó la CLI. Eso, más las cuatro capacidades que acabo de mencionar, sigue siendo lo que tiene el arnés integrado y los demás no. Consulta [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Un agente **sin** adaptador recurre a **Control Center (integrado)** — el bucle dentro del servidor, así que no hay ninguna CLI que instalar — y su registro de ejecución anota `cc-harness`. Todos los agentes sembrados se crean sin adaptador ni modelo, así que los cinco agentes de un espacio de trabajo recién creado se ejecutan ahí, con el modelo predeterminado de Anthropic, hasta que definas un adaptador y un modelo por agente. La elección de "adaptador predeterminado" de la incorporación inicial es una preferencia del cliente que el servidor nunca lee y no se aplica retroactivamente a los agentes ya creados.
 
-## Where agents come from
+## De dónde vienen los agentes
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/es-MX/manual/conceptos/espacios-de-trabajo/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Se siembran con el espacio de trabajo.** Todos los espacios de trabajo — no solo el primero — reciben un CEO más cuatro especialistas (`qa`, `architect`, `engineer`, `librarian`) que le reportan, creados de forma idempotente en segundo plano cuando se crea el espacio de trabajo. Consulta [Espacios de trabajo y aislamiento](/es-MX/manual/conceptos/espacios-de-trabajo/).
+- **Se agregan a mano** en Ajustes → Espacio de trabajo → Agentes. Pedirle a un agente que contrate a un colega no crea ninguna fila; usa esa pantalla.
 
-## Live state
+## Estado en vivo
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Un agente no tiene ninguna columna de estado almacenada. Su estado en vivo se deriva de sus registros de ejecución más recientes cada vez que se lee:
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| Estado     | Significado                                                                  |
+| ---------- | ---------------------------------------------------------------------------- |
+| `neverRun` | No existe ningún registro de ejecución                                       |
+| `running`  | Hay al menos una ejecución en curso                                          |
+| `failed`   | La última ejecución dio error, o su estado de actividad es failed o dead     |
+| `blocked`  | El estado de actividad de la última ejecución es blocked, stalled o looping  |
+| `idle`     | Todo lo demás — el agente ya se ejecutó antes y no tiene nada en curso       |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Existen dos estados más, `queued` y `succeeded`, para ejecuciones individuales dentro del árbol de ejecuciones de la conversación; la lista de presencia nunca los produce, porque que una ejecución terminada esté en verde es un hecho sobre la ejecución, no sobre el agente.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/es-MX/manual/conceptos/multijugador/).
+La lista de presencia muestra una imagen paralela y más gruesa, sintetizada del lado del servidor a partir de los eventos de ejecución en vivo — Pensando, En curso, Bloqueado, Listo —, que es lo que hace que los agentes aparezcan junto a las personas. Consulta [Multijugador y presencia](/es-MX/manual/conceptos/multijugador/).
 
-## Related concepts
+## Conceptos relacionados
 
-- [Agent dispatch lifecycle](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/): what happens when an agent is actually run
-- [Modes](/es-MX/manual/conceptos/modos/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/es-MX/manual/conceptos/multijugador/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/es-MX/manual/conceptos/sandbox-y-seguridad/): what constrains a run today
-- [Agent configuration reference](/es-MX/manual/referencia/configuracion-de-agentes/): the full field list
+- [Ciclo de vida del despacho de un agente](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/): qué ocurre cuando un agente se ejecuta de verdad
+- [Modos](/es-MX/manual/conceptos/modos/): el ajuste por conversación que da forma a la superficie de herramientas de un agente
+- [Multijugador y presencia](/es-MX/manual/conceptos/multijugador/): los agentes como sujetos de pleno derecho, la presencia y el dial de autonomía
+- [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/): qué limita hoy una ejecución
+- [Configuración de agentes](/es-MX/manual/referencia/configuracion-de-agentes/): la lista completa de campos

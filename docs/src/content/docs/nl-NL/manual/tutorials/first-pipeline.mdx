@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Je eerste pipeline bouwen
+description: Maak een pipeline-sjabloon, configureer de stap, sta handmatige uitvoeringen toe en start er een.
 slug: nl-NL/handleiding/zelfstudies/eerste-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Wat je gaat bouwen
 
-By the end of this tutorial, you will have:
+Aan het einde van deze zelfstudie heb je:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Een opgeslagen pipeline-sjabloon dat een agent met een prompt dispatcht
+- Handmatige uitvoeringen ingeschakeld erop, zodat het met de hand kan worden gestart
+- Eén voltooide run, met de invoer en uitvoer van de stap zichtbaar
 
-Prerequisites: [Dispatch your first agent](/nl-NL/handleiding/zelfstudies/eerste-agent/) completed, so you have an agent with an adapter and a model.
+Vereisten: [Je eerste agent starten](/nl-NL/handleiding/zelfstudies/eerste-agent/) is afgerond, dus je hebt een agent met een adapter en een model.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/); for the full step vocabulary, [Pipeline step kinds](/nl-NL/handleiding/referentie/pipeline-stappen/).
+Een pipeline is een DAG van stappen. Sjablonen leggen de graaf vast; runs zijn uitvoeringen. Lees [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/) voor het model erachter; het volledige vocabulaire aan stappen staat in [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/).
 
-## Step 1: Create a template
+## Stap 1: Een sjabloon aanmaken
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Ga naar **Instellingen → Werkruimte → Pipelinesjablonen**
+2. Klik op **Nieuwe template**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+De editor opent op een voorbereid skelet met de naam **Nieuwe pipeline** (id `pipeline_N`).
+Klik op de titel in de koptekst en hernoem hem — voor deze zelfstudie is
+`code_quality_check` een goede naam. Er is geen dialoogvenster voor de id en geen
+beschrijvingsveld.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Het canvas is niet leeg. Een nieuw sjabloon is al voorbedraad als **Trigger → Step →
+terminal**, waarbij “Step” een prompt-agent-node is en de terminal een
+onzichtbare sentinel die de editor opnieuw verbindt met elke bereikbare sink.
 
-You configure the Step that is already there.
+Je configureert de Step die er al staat.
 
-## Step 2: Configure the step
+## Stap 2: De stap configureren
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Klik op de node **Step** op het canvas
+2. Stel in het paneel **Node-configuratie** aan de rechterkant in:
+   - **Agent**: je agent uit de vorige zelfstudie
+   - **Prompt-template**: “Controleer de code op de huidige branch op kwaliteitsproblemen. Som op wat je vindt.”
+3. Laat **Triggers van** staan — de node is al bedraad om na Trigger af te gaan
 
-## Step 3: Save
+## Stap 3: Opslaan
 
-Press **Save** in the editor header.
+Druk op **Opslaan** in de koptekst van de editor.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Controlepunt.** De vermelding “Niet-opgeslagen wijzigingen” verdwijnt.
 
-## Step 4: Allow manual runs
+## Stap 4: Handmatige uitvoeringen toestaan
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Klik op de gestippelde tegel **Trigger toevoegen** op het canvas (of sleep **Handmatige uitvoering**
+   uit de sectie Triggers van de node-bibliotheek) en kies **Handmatige uitvoering**.
+2. Selecteer die node. Zet in de inspecteur aan de rechterkant **Ingeschakeld** aan —
+   “Toon op de uitvoerpagina en start handmatig.”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Dit is niet optioneel en het is makkelijk te missen. Een nieuw sjabloon wordt aangemaakt met **helemaal geen triggerrij**, dus zolang je dit niet aanzet, vermeldt de uitvoerpagina het niet en valt er niets te starten. De schakelaar schrijft de trigger meteen weg; hij wacht niet op nog een keer opslaan.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Dezelfde schakelaar zit achter **Handmatige uitvoering** in de koptekst van de editor, naast de gedeclareerde invoer van het sjabloon.
 
-## Step 5: Run it
+## Stap 5: Uitvoeren
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Klik op **Pipelines** in de zijbalk
+2. Klik op **Pipeline uitvoeren** in de koptekst
+3. Kies `code_quality_check` in de linkerkolom
+4. Klik op **Pipeline uitvoeren** in het formulier — je sjabloon declareert geen invoer, dus er valt niets in te vullen
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Controlepunt.** Een toast bevestigt dat de run is gestart en Control Center opent de detailpagina van de run.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+De engine maakt het runrecord aan, voltooit de trigger, plant de stap in, dispatcht de agent en voltooit de run wanneer de inkomende tak van de terminal klaar is.
 
-## Step 6: Inspect the result
+## Stap 6: Het resultaat controleren
 
-Click the step in the run to open its detail panel:
+Klik op de stap in de run om het detailpaneel ervan te openen:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- De tijdstempels **Gestart** en **Voltooid** en de **Duur**
+- **Invoer**: de status die aan de stap is doorgegeven
+- **Uitvoer**: wat hij heeft geproduceerd — hier de respons van de agent
+- **Agentactiviteit**, met een link naar het gesprek dat de stap heeft aangestuurd
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Controlepunt.** De stap staat op voltooid en de uitvoer bevat de review van de agent.
 
-## Adding more steps
+## Meer stappen toevoegen
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Nodes voeg je toe door een item uit de node-bibliotheek links naar het canvas te
+slepen, of door net voorbij een node op **Stap toevoegen** (`+`) te drukken.
+Sleep van de uitvoerpoort van een node naar een andere node om ze te verbinden,
+of selecteer de nieuwe node en vink zijn stroomopwaartse stap aan onder
+**Triggers van**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+De terminal-node wordt niet getekend en kan niet worden geselecteerd. De editor
+verbindt hem opnieuw met elke bereikbare sink, zodat een node die je achter de
+voorbereide Step toevoegt alsnog wordt uitgevoerd.
 
-## Recap
+## Samenvatting
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Je hebt een sjabloon aangemaakt, de prompt-agent-node geconfigureerd waarmee het is voorbereid, het opgeslagen, het handmatig uitvoerbaar gemaakt, een run gestart en de invoer en uitvoer van de stap gelezen.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipelines worden veel groter dan dit — voorwaardelijke routers, parallelle takken, join-nodes, for-each-fan-out, menselijke poorten — maar de vorm verandert nooit: stappen in een DAG, die status doorgeven.
 
-**Next:** [Bridge Slack to your workspace](/nl-NL/handleiding/zelfstudies/eerste-chatbrug/), the last tutorial in this sequence.
+**Volgende:** [Slack koppelen aan je werkruimte](/nl-NL/handleiding/zelfstudies/eerste-chatbrug/), de laatste zelfstudie in deze reeks.
 
-- [Set up pipeline triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/) to start pipelines from events or a schedule
-- [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/) for the model underneath
-- [Pipeline step kinds](/nl-NL/handleiding/referentie/pipeline-stappen/) for every step type
+- [Pipeline-triggers instellen](/nl-NL/handleiding/gidsen/pipeline-triggers/) om pipelines te starten vanuit gebeurtenissen of een schema
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/) voor het model eronder
+- [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/) voor elke stapsoort

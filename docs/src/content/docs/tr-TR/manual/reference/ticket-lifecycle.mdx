@@ -1,37 +1,38 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Bilet yaşam döngüsü
+description: Bilet alanları, durumlar, geçişler, ilişkiler ve değişiklik darboğazı.
 slug: tr-TR/kilavuz/referans/bilet-yasam-dongusu
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Bilet durumları
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Durum        | Depolama dizesi | Açıklama                                          |
+| ------------ | --------------- | ------------------------------------------------- |
+| `backlog`    | `backlog`       | Kaydedildi, henüz etkin kuyruğa triyaj edilmedi   |
+| `open`       | `open`          | Triyaj edildi ve üzerinde çalışılmaya hazır, başlatılmadı |
+| `inProgress` | `inProgress`    | Etkin olarak üzerinde çalışılıyor                 |
+| `blocked`    | `blocked`       | Başladı ancak harici bir şey tarafından engellendi |
+| `inReview`   | `inReview`      | İş tamamlandı, inceleme bekliyor                  |
+| `done`       | `done`          | Başarıyla tamamlandı (terminal)                   |
+| `failed`     | `failed`        | Bir hatayla tamamlandı (terminal)                 |
+| `cancelled`  | `cancelled`     | Terk edildi (terminal)                            |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Durum değerleri camelCase olarak (`inProgress`, `inReview`) depolanır, asla `in_progress` biçiminde değil. Depolanmış null bir değer `open` olarak ayrıştırılır; bilinmeyen bir değer ise zorlanmak yerine hata fırlatır.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose`, ajan tarafından sağlanan takma adları kabul eder; büyük/küçük harf ile `-` / `_` / boşluğu yok sayar:
 
-| Status       | Accepted aliases                              |
-| ------------ | --------------------------------------------- |
-| `open`       | `todo`, `ready`, `pending`, `new`             |
-| `inProgress` | `doing`, `started`, `active`, `wip`           |
-| `blocked`    | `stuck`                                       |
-| `inReview`   | `review`, `reviewing`                         |
-| `done`       | `closed`, `complete`, `completed`, `finished` |
-| `failed`     | `error`, `errored`                            |
-| `cancelled`  | `canceled`, `abandoned`, `dropped`            |
+| Durum        | Kabul edilen takma adlar                       |
+| ------------ | ---------------------------------------------- |
+| `open`       | `todo`, `ready`, `pending`, `new`              |
+| `inProgress` | `doing`, `started`, `active`, `wip`            |
+| `blocked`    | `stuck`                                        |
+| `inReview`   | `review`, `reviewing`                          |
+| `done`       | `closed`, `complete`, `completed`, `finished`  |
+| `failed`     | `error`, `errored`                             |
+| `cancelled`  | `canceled`, `abandoned`, `dropped`             |
 
-## Status transitions
+## Durum geçişleri
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,11 +43,11 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Bu grafik yalnızca ajanları ve otomasyonu bağlar.** `TicketWorkflowService.transitionStatus`, `force` false olduğunda bunu denetler — MCP araçları ve uzlaştırıcılar. Orada geçersiz bir geçiş günlüğe yazılır ve yok sayılır. Arayüzdeki kullanıcı kaynaklı her durum değişikliği `force: true` geçirir ve grafiği tümüyle atlar; böylece bir insan bir bileti seçicinin listelediği her duruma (`failed` dışındaki her durum), terminal bir durumu yeniden açmak dahil taşıyabilir. Ajanlar `failed` durumunu `fail_ticket` ile işaretler.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Bir durum her zaman kendisine geçebilir. Terminal durumların dışarı çıkan kenarı yoktur.
 
-| From         | Allowed targets                                      |
+| Kaynak       | İzin verilen hedefler                                |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
@@ -57,144 +58,145 @@ A status may always transition to itself. Terminal states have no outgoing edges
 | `failed`     | — (terminal)                                         |
 | `cancelled`  | — (terminal)                                         |
 
-## Ticket priorities
+## Bilet öncelikleri
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Linear'ın yerel 0–4 ölçeğinde bir tamsayı olarak depolanır. Bilinmeyen bir değer `none` olarak ayrıştırılır.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Öncelik  | Depolanan değer |
+| -------- | --------------- |
+| `none`   | `0`             |
+| `urgent` | `1`             |
+| `high`   | `2`             |
+| `medium` | `3`             |
+| `low`    | `4`             |
 
-## Ticket providers
+## Bilet sağlayıcıları
 
-An unknown or null stored value parses to `local`.
+Bilinmeyen veya null bir depolanmış değer `local` olarak ayrıştırılır.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Sağlayıcı | Durum                                                   |
+| --------- | ------------------------------------------------------- |
+| `local`   | Tamamen çalışma alanı veritabanında depolanır; varsayılan |
+| `linear`  | Uzakta sahiplenilir, yerelde aynalanır                  |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Eşitleme adaptörleri Linear, GitHub Issues, Jira Cloud ve ClickUp için
+`packages/cc_infra/lib/src/tickets/sync/` altında bulunur. GitHub Issues yalnızca
+bir eşitleme adaptörü satıcısıdır (`vendorId: github`) — bir `TicketProvider`
+değeri değildir; bu yüzden çekilen bir GitHub issue, `originKind: externalSync`
+ve varsayılan `provider: local` ile depolanır. Satıcı eşlemesi
+`ticket_sync_links` üzerinde bulunur.
 
-## Ticket origin
+## Bilet kökeni
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` `manual` yazar. Bir satıcı çekmesi `externalSync` yazar. Devredilen
+alt biletler `manual` olarak kalır.
 
-| Value          | Meaning                                                      |
+| Değer          | Anlamı                                                       |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | `createTicket` üzerindeki varsayılan (insan, ajan ve devredilen satırlar) |
+| `externalSync` | Bir satıcı çekmesinde `TicketSyncEngine` tarafından ayarlanır |
 
-## Ticket fields
+## Bilet alanları
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Agrega, tek bir satırda iki ayrı kaygıyı kapsar. **Ayna** (sağlayıcı, anahtarlar, başlık, açıklama, öncelik, etiketler, durumlar, zaman damgaları) uzak bir sağlayıcı için bir önbellektir ve bir yenileme tarafından tümüyle yeniden yazılır. **Üst katman** (atama, devretme, alan, üst öğe, proje, bağlı PR'lar) yalnızca Control Center'a özgüdür ve bir yenileme ona asla dokunmaz.
 
-| Field                    | Type                       | Description                                                                                |
+| Alan                     | Tür                        | Açıklama                                                                                   |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Biletin ait olduğu çalışma alanı                                                         |
+| `provider`               | `TicketProvider`           | Kanonik veriye sahip arka uç (varsayılan `local`)                                        |
+| `externalKey`            | `String?`                  | Sağlayıcıya özgü anahtar (örn. `LIN-123`). Yerel `createTicket` buraya satırın `id` değerini değil, *ayrı* bir UUID yazar |
+| `url`                    | `String?`                  | Uzak sağlayıcıdaki web URL'si                                                               |
+| `title`                  | `String`                   | Kısa özet; boş olamaz                                                                       |
+| `description`            | `String?`                  | Daha uzun Markdown gövdesi                                                                  |
+| `priority`               | `TicketPriority`           | Varsayılan `none`                                                                           |
+| `labels`                 | `List<String>`             | Serbest biçimli etiketler                                                                   |
+| `status`                 | `TicketStatus`             | Kanonik normalleştirilmiş durum                                                             |
+| `rawStatus`              | `String?`                  | Uzak sağlayıcının yerel durum adı; kayıpsız görüntüleme için saklanır                       |
+| `externalSyncedAt`       | `DateTime?`                | Son çoklu satıcı eşitlemesi; ilk eşitlemeye kadar null. Satıcı başına eşleme `ticket_sync_links` içinde bulunur |
+| `parentTicketId`         | `String?`                  | Devretme / iş kırılımı ağacındaki üst öğe                                                |
+| `projectId`              | `String?`                  | Biletin ait olduğu proje; asla uzak tarafa gönderilmez                                   |
+| `assignedAgentId`        | `String?`                  | Atanan Principal'ın kimliği (yalnızca meta veri — atama hiçbir şey göndermez)            |
+| `assigneeType`           | `PrincipalType`            | `assignedAgentId` değerinin adlandırdığı Principal türü — `user` ya da `agent` (varsayılan `agent`) |
+| `createdByType`          | `PrincipalType?`           | Bileti oluşturan Principal türü (`user` ya da `agent`); eski/sistem satırları için null      |
+| `createdById`            | `String?`                  | Oluşturan Principal'ın kimliği                                                              |
+| `assignedTeamId`         | `String?`                  | Atanan ekip (yalnızca meta veri)                                                            |
+| `delegatedByAgentId`     | `String?`                  | Bu bileti devreden ajan                                                                     |
+| `delegationDepth`        | `int`                      | Devretme zincirindeki derinlik; kök `0`'dır, azami derinlik sınırına göre denetlenir         |
+| `delegationRootTicketId` | `String?`                  | Devretme zincirinin kökü; kök bilet için null                                               |
+| `spaceId`                | `String?`                  | Biletin doğduğu konuşma ya da devreden ajanın alanı                                         |
+| `errorMessage`           | `String?`                  | `status` `failed` olduğunda ayarlanır                                                       |
+| `linkedPrIds`            | `List<String>`             | Bu biletin bağlı olduğu PR düğüm kimlikleri                                                 |
+| `metadata`               | `Map<String, dynamic>`     | Serbest biçimli torba                                                                       |
+| `createdAt`              | `DateTime`                 | Oluşturulma zamanı                                                                          |
+| `startedAt`              | `DateTime?`                | İşin başladığı zaman                                                                        |
+| `blockedAt`              | `DateTime?`                | Biletin engellendiği zaman                                                                  |
+| `cancelledAt`            | `DateTime?`                | Biletin iptal edildiği zaman                                                                |
+| `completedAt`            | `DateTime?`                | Biletin başarıyla tamamlandığı zaman                                                        |
+| `finishedAt`             | `DateTime?`                | Biletin herhangi bir terminal duruma ulaştığı zaman                                         |
+| `updatedAt`              | `DateTime`                 | Son değişiklik (ayna yenilemesi ya da üst katman değişikliği)                              |
+| `version`                | `int`                      | İyimser eşzamanlılık sayacı; her değişiklikte artırılır                                     |
+| `originKind`             | `TicketOriginKind`         | Biletin nasıl oluşturulduğu (varsayılan `manual`)                                           |
+| `collaborators`          | `List<TicketCollaborator>` | Depo tarafından istek üzerine yüklenir                                                      |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Türetilenler: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` ve `displayKey` (`externalKey ?? id` — bu nedenle yerel biletler satırın `id` değerini değil, oluşturma anındaki ayrı UUID'yi görüntüler).
 
-## Ticket relations
+## Bilet ilişkileri
 
-Stored edges are directional rows in `ticket_links`:
+Depolanan kenarlar `ticket_links` içindeki yönlü satırlardır:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| Tür           | Depolama dizesi | Anlamı                          |
+| ------------- | --------------- | ------------------------------- |
+| `blocks`      | `blocks`        | Kaynak, hedefi engeller         |
+| `relatesTo`   | `relates_to`    | Simetrik ilişki                 |
+| `duplicateOf` | `duplicate_of`  | Kaynak, hedefin kopyasıdır      |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Arayüzün ve `ticket_relation` aracının konuştuğu sözlük `TicketRelationKind`'tır; depolanan bir kenardan ve öznenin hangi uçta yer aldığından türetilir:
 
-| Kind           | Derived from                                         |
+| Tür            | Türetildiği kaynak                                   |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Öznenin hedef olduğu bir `blocks` satırı             |
+| `blocking`     | Öznenin kaynak olduğu bir `blocks` satırı            |
+| `relatedTo`    | Bir `relates_to` satırı (simetrik)                   |
+| `duplicateOf`  | Öznenin kaynak olduğu bir `duplicate_of` satırı      |
+| `duplicatedBy` | Öznenin hedef olduğu bir `duplicate_of` satırı       |
+| `subIssueOf`   | Özne üzerindeki `tickets.parent_ticket_id`           |
+| `parentOf`     | Diğer bilet üzerindeki `tickets.parent_ticket_id`    |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Üst ve alt konu bağlantıları `ticket_links` satırları **değildir** — `tickets.parent_ticket_id` üzerinde bulunur.
 
-## Domain events
+## Alan olayları
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Bu sekiz sınıf `packages/cc_domain/lib/core/domain/events/ticketing_events.dart` içinde bulunur. `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` veya `ExternalTicketWebhookReceived` yoktur.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| Olay                      | Tetiklendiği durum                                  |
+| ------------------------- | --------------------------------------------------- |
+| `TicketCreated`           | Bilet oluşturulur                                   |
+| `TicketAssigned`          | Bilet bir Principal'a ya da ekibe atanır            |
+| `TicketCompleted`         | İş başarıyla tamamlanır                             |
+| `TicketFailed`            | İş başarısız olur                                   |
+| `TicketCancelled`         | Bilet iptal edilir                                  |
+| `TicketStatusChanged`     | Herhangi bir durum değişikliği                      |
+| `TicketReassigned`        | Bilet yeniden atanır                                |
+| `TicketDetailsUpdated`    | Başlık, açıklama, öncelik veya etiketler değişir    |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` bir denetim ve bildirim sinyali ile bir pipeline tetikleyicisidir. Bir ajana atama hiçbir çalıştırma başlatmaz — `assignedAgentId` değerini izleyen bir bilet göndericisi yoktur. Bir ekibe atama istisnadır: `TeamRoutingService` ekip liderini gönderir. İşbirlikçi eklemek bir satır yazar ve hiçbir şey yayımlamaz. Bir satıcı webhook'u, bir alan olayı olmadan `TicketSyncEngine` üzerinden uygulanır.
 
-## Mutation chokepoint
+## Değişiklik darboğazı
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` her değişikliğe sahiptir.
 
-| Mechanism              | Detail                                                                                                                                            |
+| Mekanizma              | Ayrıntı                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Tek darboğaz           | Tüm değişiklikler `_mutate` üzerinden yönlenir; bu metot satırı yükler ve uygulamadan önce `_assertWorkspace` çağırır                              |
+| Çalışma alanı yalıtımı | Yüklenen satırın `workspaceId` değeri çağıranınkiyle eşleşmediğinde `_assertWorkspace` bir `WorkspaceMismatchException` fırlatır                    |
+| İyimser eşzamanlılık   | `_mutate`, az önce okuduğu `version` değerine ayarlanmış `expectedVersion` ile yazar ve `ConcurrencyConflictException` durumunda taze durumu yeniden okuyarak yeniden dener |
+| Özel sahiplenme        | `tryCheckout` / `releaseCheckout`; checkout edilmiş bir bileti talep eden ikinci bir ajan `CheckoutConflictException` alır                          |
+| Geçiş koruması         | `canTransitionTo`, yalnızca `force` false olduğunda uygulanır                                                                                      |
 
-## See also
+## Ayrıca bakınız
 
-- [Tickets](/tr-TR/kilavuz/kavramlar/biletler/)
-- [Manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
-- [Delegate tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
-- [Domain events](/tr-TR/kilavuz/referans/alan-olaylari/)
+- [Biletler](/tr-TR/kilavuz/kavramlar/biletler/)
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [Alan olayları](/tr-TR/kilavuz/referans/alan-olaylari/)

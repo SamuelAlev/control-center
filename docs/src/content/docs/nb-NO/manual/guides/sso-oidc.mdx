@@ -1,95 +1,103 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Koble til en OpenID Connect-leverandør
+description: Koble en hvilken som helst OIDC-utsteder — Pocket ID, Keycloak, Auth0, Zitadel — til innloggingen i Control Center.
 slug: nb-NO/handbok/slik-gjor-du/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Bruk denne veiledningen når identitetsleverandøren din snakker **OpenID
+Connect** i stedet for SAML. En hvilken som helst OIDC-sertifisert utsteder
+virker — Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace og lignende
+følger alle de samme stegene; det er bare stedet der leverandøren din viser
+verdiene, som er forskjellig.
 
-## Prerequisites
+## Forutsetninger
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- en OIDC-leverandør der du kan opprette en klient — noter **klient-id-en**
+  og **utsteder-URL-en** (basen dokumentet
+  `.well-known/openid-configuration` ligger under), pluss
+  **klienthemmeligheten** når klienten er av den konfidensielle typen
+  (offentlige PKCE-klienter har ingen),
+- en Control Center-server du administrerer (**servereieren**).
 
-## Steps
+## Steg
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Åpne **Innstillinger → Server → Enkel pålogging**, og bytt til
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Fyll inn **Utsteder-URL**, **Client ID** og **Klienthemmelighet
+   (valgfritt)** når leverandøren har utstedt en. Control Center oppdager
+   endepunktene fra utstederens standard discovery-dokument — ingen
+   konfigurasjon per leverandør.
+3. Hos leverandøren registrerer du redirect-URI-en
+   `https://<your-server>/oidc/callback` på den klienten.
+4. Hvis gruppene dine ligger under et annet claim enn `groups`, angir du
+   navnet i **Gruppeclaim**; koble grupper til roller hvis du vil (SSO kan
+   aldri gi eierrollen).
+5. Velg medlemskapspolicyen (legg brukere til hvert arbeidsområde
+   automatisk, eller krev en invitasjon per arbeidsområde), slå på **Bruk
+   OpenID Connect til innlogging**, og trykk **Lagre tilkobling**.
+6. Trykk **Test tilkobling** — serveren henter utstederens
+   discovery-dokument og bekrefter endepunktene, så en grønn melding betyr
+   at alt unntatt nettleserrundturen virker. Vil du også sjekke
+   klientregistreringen, bruker du
+   [sjekkeren nedenfor](#sjekk-konfigurasjonen-din-fra-denne-siden).
+7. Logg inn: koblingsskjermen på nettet viser **Logg inn med OpenID
+   Connect**, eller du kan åpne `https://<your-server>/oidc/login`
+   direkte.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claims (e-post, navn, grupper) leses fra utstederens token-endepunkt over
+TLS av serveren din — nettleseren leverer dem aldri, så det er ingen lokal
+verifisering av JWT-signaturer involvert. Klienten bør få lov til å be om
+scopet `openid profile email`, som er nøyaktig det Control Center ber om.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Fordi den TLS-kanalen er det eneste som autentiserer claimene, må
+utsteder-URL-en være **https** — en utsteder i klartekst ville la en
+angriper på veien forfalske identiteter i stor skala. `http` godtas bare for
+loopback-utstedere (`localhost`, `127.0.0.1`, `::1`), og da kun for lokal
+utvikling.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Offentlig eller konfidensiell klient?]
+Standardformen — og den anbefalte — er en **offentlig klient** som bruker
+autorisasjonskodeflyt med **PKCE** (RFC 7636): engangsverifisereren for koden
+som serveren holder, erstatter hemmeligheten, og tokenutvekslingen er bundet
+til autorisasjonsforespørselen som startet den. Det finnes ingen hemmelighet
+å lekke, og en stjålet autorisasjonskode er ubrukelig uten verifisereren.
+Noen leverandører kaller dette klienttypen «SPA» eller «native» når du
+oppretter den.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Hvis leverandøren din i stedet utstedte en **konfidensiell** klient, kan du
+enten merke klienten som offentlig hos leverandøren (PKCE er på uansett),
+eller lime inn klienthemmeligheten i feltet **Klienthemmelighet
+(valgfritt)** på tilkoblingen. Hemmeligheten lagres i serverens
+hemmelighetsfil med 0600-rettigheter (aldri i databasen), sendes til
+token-endepunktet som `client_secret_post` og returneres aldri over RPC; lar
+du feltet stå tomt ved lagring, beholdes den lagrede hemmeligheten. Når en
+innlogging mislykkes i tokenutvekslingen, navngir serverloggen leverandørens
+egen feil (`invalid_client` betyr nesten alltid at hemmeligheten mangler
+eller er feil).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim).
+:::note[Nåbarhet]
+Selve innloggingen er nettleserformidlet: utstederen omdirigerer bare
+brukerens nettleser tilbake til `/oidc/callback`, og serveren din gjør et
+utgående HTTPS-kall til token-endepunktet — ingen innkommende tilkobling fra
+utstederen er nødvendig, så en server bak NAT virker så lenge brukernes
+nettlesere når den (LAN, VPN, Tailscale eller en tunnel).
+**SCIM-provisjonering er unntaket**: IdP-en kaller serveren din direkte,
+noe som krever en tunnel eller en offentlig URL — se
+[provisjoner brukere med SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim).
 :::
 
-## Check your configuration from this page
+## Sjekk konfigurasjonen din fra denne siden
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Sjekkeren nedenfor kjører i nettleseren din. Den henter utstederens
+discovery-dokument direkte, så dette nettstedet ser det aldri, og bruker
+serverens regler: en https-utsteder som samsvarer med dokumentet,
+endepunkter på utstederens egen origin, PKCE S256 og
+token-autentiseringsmetoden klienttypen din trenger. Med en client ID og en
+serveradresse kan den åpne en testinnlogging som viser om klienten og
+redirect-URI-en er registrert. Den spør aldri om klienthemmeligheten.
 
 <SsoCheck kind="oidc" />

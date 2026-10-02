@@ -1,97 +1,103 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Nói chuyện với Control Center từ một PR GitHub
+description: Yêu cầu bot GitHub App của máy chủ đánh giá hoặc đặt câu hỏi ngay từ cuộc hội thoại trong PR, không cần webhook hay URL công khai.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Hướng dẫn này chỉ cách làm việc với Control Center mà không cần rời khỏi GitHub:
+yêu cầu một lượt đánh giá bằng AI ngay từ trang PR, đặt câu hỏi cho bot trong
+một bình luận, và tiếp tục cuộc hội thoại trong các luồng đánh giá của bot.
 
-The bot is your server's own [GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Bot chính là [GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) của
+riêng máy chủ bạn — cũng là app đã đảm nhiệm việc đăng nhập cho mọi người và
+chạy công việc nền. Không có gì mới được đăng ký, và không có gì phải truy cập
+được từ internet: máy chủ phát hiện những gì đã được nói trên GitHub qua thăm dò
+định kỳ, nên một chiếc laptop nằm sau NAT hành xử y hệt một bản triển khai công
+khai.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- The server has its GitHub App [registered and
-  installed](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Máy chủ đã [đăng ký và
+  cài đặt](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) GitHub App của mình, với
+  **Pull requests: read and write** (để bình luận, tạo luồng và thả cảm xúc) và
+  **Issues: read** (để tìm kiếm bình luận). Cả hai quyền này đều đã có trong
+  danh sách quyền của hướng dẫn đó
+- Kho mã đã được liên kết với một không gian làm việc trong Control Center
+- Không cần URL webhook, không cần tunnel, không cần callback — không có gì phải
+  cấu hình ở phía mạng
 
-## Find your bot's name
+## Tìm tên bot của bạn
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Tên đăng nhập của bot là `<appslug>[bot]`, trong đó `appslug` là tên bạn đã đặt
+cho app khi đăng ký nó.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
+   **Ứng dụng nhà cung cấp**
+2. Mở khối **GitHub** và nhấp **Kiểm thử**
+3. Sao chép **Tên đăng nhập bot** khi giá trị được điền vào. Nếu ô đó vẫn hiển
+   thị gợi ý trống, thì tên đăng nhập luôn là `<appslug>[bot]` — hãy gõ giá trị
+   đó, hoặc dạng ngắn `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub không cung cấp tài khoản app trong tính năng tự động hoàn thành `@` của
+mình, nên tên đăng nhập phải được gõ thủ công — đó là lý do thẻ cài đặt giúp bạn
+sao chép nó chỉ bằng một cú nhấp. Hậu tố `[bot]` là tùy chọn: cả `@myapp` lẫn
+`@myapp[bot]` đều gọi tới bot.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Chọn một tên app đủ đặc trưng]
+Dạng ngắn được so khớp như văn bản. Nếu một người dùng GitHub nào đó trùng slug
+với app của bạn, thì việc nhắc đến người đó bằng dạng ngắn cũng chạm tới bot.
+Dạng đầy đủ `@myapp[bot]` thì luôn rõ ràng, không thể nhầm lẫn.
 :::
 
-## Request a review from GitHub
+## Yêu cầu đánh giá từ GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+Có hai cách, cả hai đều khởi động đúng quy trình `pr_review` được gieo tạo mà
+nút **Hỏi AI** khởi động:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Thêm nhãn `ai-review`** vào PR. Đây là thứ gần nhất mà GitHub có thể cung
+  cấp cho việc gán bot làm người đánh giá — tài khoản app không thể giữ vị trí
+  người được yêu cầu đánh giá gốc của GitHub. Không có bình luận nào để thả cảm
+  xúc, nên không có gì được đăng lên GitHub; lượt đánh giá bắt đầu trong Control
+  Center
+- **Bình luận `@myapp review`** (hoặc chỉ `@myapp`) trong cuộc hội thoại của PR.
+  Bot thả cảm xúc 👀, rồi trả lời khi lượt đánh giá đã bắt đầu (hoặc rằng một
+  lượt đang chạy rồi)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Các agent đánh giá làm việc trong không gian đánh giá của PR; hãy đọc và công bố
+các phát hiện như trong [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/).
+Việc công bố trở lại GitHub vẫn là quyết định bạn đưa ra trong Control Center —
+khởi động một lượt đánh giá từ GitHub không tự nó công bố gì lên GitHub.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+Nhãn chỉ kích hoạt một lần cho mỗi PR: thêm nhãn chính là yêu cầu, và nó không
+được nạp lại khi bạn gỡ rồi thêm lại. Muốn chạy lại một lượt đánh giá — chẳng hạn
+sau một lần push — hãy nhắc đến bot.
 
-## Ask a question
+## Đặt một câu hỏi
 
-Comment on the PR conversation:
+Bình luận trong cuộc hội thoại của PR:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Những gì diễn ra, theo thứ tự:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Bot thả cảm xúc 👀 để bạn biết bình luận đã được thấy
+2. Câu hỏi được đăng vào không gian đánh giá của PR **dưới danh nghĩa bạn** —
+   cùng cách quy kết như khi bạn tự gõ nó trong Control Center
+3. Một agent trả lời trong space, và câu trả lời được đăng trở lại trên PR dưới
+   dạng bình luận có nhắc đến bạn bằng @
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Một câu hỏi trên PR chưa có lượt đánh giá nào sẽ đánh thức agent CEO của không
+gian làm việc; khi đã có một lượt đánh giá chạy, agent nói sau cùng sẽ trả lời,
+nên những câu hỏi tiếp theo rơi đúng vào người nắm ngữ cảnh.
 
-## Follow up in a review thread
+## Trả lời tiếp trong một luồng đánh giá
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Hãy trả lời bên trong một luồng đánh giá nội tuyến mà bot tham gia — một bình
+luận trên diff do bot để lại, hoặc một câu trả lời bot đã đăng trong luồng đó.
+Không cần nhắc đến ai; chính luồng **là** cách gọi tới bot:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +105,81 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Nhiều lượt cũng hoạt động như vậy: mỗi câu trả lời là một câu hỏi nữa trong cùng
+cuộc hội thoại, lấy không gian đánh giá làm ngữ cảnh, và câu trả lời quay về
+ngay trong luồng.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+Một câu hỏi tiếp trên dòng thời gian hội thoại của PR là một bình luận cấp cao
+nhất mới, nên nó vẫn cần một lượt nhắc đến bằng @.
 
-## Who the bot talks to
+## Bot nói chuyện với ai
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Một bình luận GitHub đến chỉ mang theo không hơn gì một tên đăng nhập, nên bot
+phân giải tác giả trước khi làm bất cứ điều gì:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **Tài khoản GitHub của bạn phải được liên kết với danh tính của bạn** trong
+  Control Center — hãy [đăng nhập bằng GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/),
+  hoặc dán một token, từ **Cài đặt → Không gian làm việc → Hồ sơ & danh tính →
+  Lưu trữ mã**
+- **Bạn phải là thành viên có vai trò ghi** (`member`, `admin` hoặc `owner`)
+  trong không gian làm việc đã liên kết kho mã đó
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Mọi người khác đều nhận một câu trả lời lịch sự giải thích điều còn thiếu — một
+tên đăng nhập không rõ (chưa liên kết, hoặc đã liên kết nhưng không phải thành
+viên ở đây) và một vai trò chỉ đọc là hai trường hợp đó — và lời của họ không bao
+giờ bước vào không gian làm việc. Nhãn `ai-review` không bị chặn theo cách này:
+nó không có tác giả, nên nó khởi động lượt đánh giá trong không gian làm việc vốn
+đã liên kết kho mã.
 
-## What to expect
+## Điều cần mong đợi
 
-| Thing               | Behaviour                                                                 |
+| Hạng mục            | Hành vi                                                                  |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Phản hồi xác nhận   | 👀 trên một bình luận trong khoảng một phút — đó là khoảng quét. Nhãn `ai-review` không có bình luận nào để thả cảm xúc |
+| Câu trả lời         | Được đăng dưới danh nghĩa bot (ứng dụng), trong làn mà câu hỏi được đặt ra |
+| Quy kết trong space | Câu hỏi là của bạn; agent chạy thay mặt bạn, theo núm tự chủ của space    |
+| Đánh giá            | Các phát hiện đáp xuống không gian đánh giá; việc công bố lên GitHub là thủ công |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Độ trễ chừng một phút là cái giá phải trả để không cần bất kỳ quyền truy cập
+mạng vào nào. Không có gì trong lượt quét là gấp gáp, và không có gì bị mất khi
+máy chủ ngoại tuyến — một bình luận đến trong lúc ngừng hoạt động sẽ được bắt ở
+lượt quét kế tiếp.
 
-## Troubleshooting
+## Xử lý sự cố
 
-**Nothing happens for a comment that mentions the bot.**
+**Không có gì xảy ra với một bình luận có nhắc đến bot.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- App đã được **cài đặt** trên tài khoản sở hữu kho mã chưa, và kho mã đã được
+  **liên kết** với một không gian làm việc chưa? Một kho mã chưa liên kết sẽ bị
+  bỏ qua trước khi bất cứ thứ gì được ghi lại, nên liên kết nó sau đó vẫn được
+  xử lý
+- Tài khoản GitHub của bạn đã được liên kết chưa, và bạn có phải thành viên với
+  vai trò ghi không? Hãy xem câu trả lời từ chối của bot trên PR — nó cho biết
+  bạn vướng điều kiện nào
+- Vẫn không có gì? Nhật ký máy chủ nêu tên lượt quét và PR khi có gì đó thất bại;
+  hãy tìm `pr_conversation:` (bộ thăm dò) và `github_pr_conversation:` (cầu)
 
-**The label does not start a review.**
+**Nhãn không khởi động một lượt đánh giá.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+Nó chỉ kích hoạt một lần cho mỗi PR. Nếu một lượt đánh giá đã chạy, hoặc nhãn
+được thêm trước khi máy chủ từng thấy PR (lượt quét đầu tiên ghi lại phần tồn
+đọng một cách âm thầm thay vì xả ồ ạt), thì hãy nhắc đến bot — `@myapp review`
+luôn khởi động một lượt, trừ khi đã có một lượt đang chạy.
 
-**The bot's answer never arrived on GitHub.**
+**Câu trả lời của bot không bao giờ đến GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Bản thân câu trả lời không bao giờ bị mất — nó nằm trong không gian đánh giá của
+PR trong Control Center. Một lần đăng thất bại (GitHub sập, quyền thay đổi) sẽ
+được ghi nhật ký và câu trả lời không được thử lại; hãy hỏi lại trong luồng nếu
+điều đó quan trọng.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/): the room all of this lands in
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): bản đăng ký mà
+  bot ra đời từ đó
+- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/): đọc
+  các phát hiện mà một lượt đánh giá do nhắc đến tạo ra
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/):
+  liên kết tài khoản GitHub của riêng bạn, thứ mà bot dùng để phân giải bạn
+- [Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/): căn phòng mà tất cả
+  những điều trên đáp xuống

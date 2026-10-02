@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Comenzi slash
+description: Fiecare comandă pe care o poți tasta în composer, ce face și unde rulează.
 slug: ro-RO/manual/referinta/comenzi-slash
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Comenzi tastate în composerul unui spațiu. Ele se împart în trei grupuri după locul unde își fac efectul, iar diferența contează: o comandă **locală** nu circulă niciodată ca mesaj, așa că nu apare în transcript și nu ajunge la niciun agent.
 
-| Where it runs | What that means                                                                    |
+| Unde rulează | Ce înseamnă                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **Local**     | Gestionată în client (sau printr-o operație de server inițiată de client). Comanda nu circulă niciodată ca mesaj, deci niciun agent nu o vede. |
+| **Lateral**      | Un singur apel de model pe partea de server despre conversație. Conversația nu este modificată. |
+| **Trimitere**  | Setează un mod sau o directivă pentru rularea pe care o pornește mesajul.                            |
 
 ---
 
-## Directing a run
+## Dirijarea unei rulări
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Local → trimitere.** Armează modul plan pe conversație: un worktree complet doar în citire și o suprafață de instrumente limitată la `read`. Livrabilul agentului este un plan, nu o editare. Un `/plan` simplu doar comută modul și nu circulă niciodată ca mesaj; cu o cerere, restul liniei este ceea ce pornește rularea.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Trimitere.** Pornește un obiectiv autonom pe care supraveghetorul de obiective îl redistribuie pe segmente și îl repornește.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Tastarea `/goal` cu text mai întâi deschide **interviul de clarificare a obiectivului** — o trecere scurtă care refuză să accepte o schiță până când aceasta nu le are pe toate cinci: criterii de succes pe care un evaluator le poate tranșa fără judecată, o comandă exactă de verificare, un plafon de încercări, limite de scop și condiții de oprire. Fiecare pas oferă *Sari și rulează așa cum e scris*: interviul este o valoare implicită, nu o poartă.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` și `/goal drop` nu sunt comenzi slash. Pauza, reluarea și oprirea stau în lista de obiective a conversației, din bara laterală. Flagurile de pornire pe obiectivul propriu-zis sunt `--budget <dollars>`, `--max <N>` (plafon de rulări) și `--days <N>` (termen limită). Un obiectiv care și-a atins plafonul de cost se reia doar ridicând acel plafon, din același control din bara laterală.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[De ce întrerupe totuși]
+Un obiectiv autonom este singurul loc în care un brief vag este cu adevărat scump. Rularea lucrează ore întregi la un obiectiv al cărui „gata” nu l-a definit nimeni, apoi raportează succes în termenii ei. Cinci întrebări sunt mai ieftine decât o rulare peste noapte care s-a terminat când a simțit ea că s-a terminat.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Trimitere.** Lucrează iterativ până când termină. Acceptă o limită: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Un token care *pare* o limită (începe cu o cifră sau cu un semn) și nu poate fi citit ca limită este o eroare gravă. Proza rămâne proză, așa că `/loop keep going until the tests pass` este o buclă nemărginită cu un prompt inline, nu o interpretare greșită.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ro-RO/manual/ghiduri-practice/dirijeaza-workeri-din-fundal/).
+**Trimitere.** Transformă sesiunea într-un **director**: propriile instrumente coboară la `read` plus cinci verbe pentru workeri, iar workerii din fundal fac editările. Vezi [Dirijează workerii din fundal](/ro-RO/manual/ghiduri-practice/dirijeaza-workeri-din-fundal/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Workerii nu supraviețuiesc niciodată modului — ieșirea îi oprește pe toți.
 
 ---
 
-## Managing context
+## Gestionarea contextului
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Local → server.** Pliază istoricul mai vechi într-un rezumat ancorat și continuă pe contextul compactat. Fără argument adresat modelului: comanda nu circulă niciodată ca mesaj, iar trecerea de compactare nu acceptă un indiciu de focalizare.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Local → server.** Elimină conținutul greu **fără** a rezuma: niciun apel de model, fiecare cuvânt păstrat, doar volumul pe care oricum nimeni nu l-ar fi recitit este golit.
 
-| Target        | Drops                             |
+| Țintă        | Elimină                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Rezultate de instrument mai vechi, fără evenimente (implicit) |
+| `images`      | Capturi de ecran vechi, păstrându-le textul |
+| `all`         | Ambele                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Aceasta este supapa de siguranță pentru „contextul meu e umflat, dar nu vreau un rezumat”.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Local.** Deschide exploratorul de context pentru agentul acestei conversații într-o filă proprie: fiecare segment și parte a ferestrei lui de context — prompt de sistem, abilități, fișiere de context, scheme de instrumente, istoric și imagini — cu cât costă fiecare și conținutul exact din spatele lor.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Fila este indexată după perechea (spațiu, agent), așa că rularea ei de două ori refocalizează aceeași filă în loc să adune copii ale aceleiași defalcări.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Într-un spațiu cu **mai mult de un agent**, un `/context` simplu deschide fereastra pe care o citește contorul de context din antet — agentul care a lucrat ultima dată aici, adică cel al cărui mesaj se află la baza traseului — iar fila este etichetată `Context · <name>`, ca să spună al cui este. Numește alt agent ca să comuți: `/context qa` (`@` este opțional). Un nume tastat se rezolvă exact, niciodată aproximativ: doi agenți au două ferestre diferite, așa că o potrivire apropiată care ar fi deschis-o pe cealaltă ar fi un răspuns plauzibil la o întrebare pe care nu ai pus-o.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Același explorator stă în spatele insignei contorului de context din antetul spațiului, care urmărește același agent — comanda și insigna nu pot fi niciodată în dezacord cu privire la ce înseamnă „contextul” aici.
 
 ---
 
-## Asking about the conversation
+## Întrebări despre conversație
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Acestea consumă un apel de model și **nu schimbă niciodată conversația**. Următorul tur real al agentului vede exact ce ar fi văzut oricum, iar aceasta este întreaga valoare a întrebării.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Lateral.** Scrie un document de predare pentru cine preia munca de la zero: care este sarcina, ce s-a aflat, ce rămâne.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Lateral.** Răspunde la o întrebare despre munca de până acum fără să adauge întrebarea sau răspunsul în transcript.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Două comenzi, o singură implementare]
+Ambele au aceeași formă — ia conversația așa cum este, pune o singură întrebare despre ea, nu persistă niciuna dintre părți. Implementate o dată, ca să nu poată deriva în două noțiuni diferite de „contextul de până acum”.
 :::
 
 ---
 
-## Navigating and exporting
+## Navigare și export
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ro-RO/manual/ghiduri-practice/ramifica-conversatie/).
+**Local.** Deschide navigatorul de ramuri: unde s-a bifurcat conversația, pe ce cale se află acum și cum revii la una pe care ai părăsit-o. Vezi [Ramifică o conversație](/ro-RO/manual/ghiduri-practice/ramifica-conversatie/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Local.** Scrie conversația într-un fișier HTML autonom — carduri de instrument pliabile, fără foaie de stil, fără script, fără gazdă de imagini. Ajunge în `Documents/ControlCenter/exports/` pe desktop și se descarcă pe web.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Local.** Copiază transcriptul în clipboard ca markdown, cu apelurile de instrument în blocuri pliabile. Raționamentul este exclus în mod deliberat: un transcript lipit într-un raport de eroare este citit de o persoană.
 
 ---
 
-## Everything else
+## Toate celelalte
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Local.** Vizualizează și editează lista de todo-uri persistată a conversației. Un `/todo` simplu deschide editorul. Subcomenzi: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Trimitere.** Aplică un skill instalat. Skill-urile stau sub propriul prefix `skill:`, ca să nu împartă niciun spațiu de nume cu comenzile încorporate — fără asta, un skill numit `plan` ar fi imposibil de accesat pentru totdeauna.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Trimitere.** Orice fișier markdown din `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` sau `.opencode/commands` din repo. Un `foo/bar.md` imbricat este accesibil și ca `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Șabloane: `$1`, `$@`, `$@[start:length]` și `$ARGUMENTS`. Frontmatter-ul poate seta `description` (completare automată în composer). `allowed-tools` și `model` se citesc din fișier, dar o invocare de comandă de utilizator momentan doar substituie argumentele în corp — nu schimbă modelul sau suprafața de instrumente a rulării.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+O comandă scrisă de un utilizator are prioritate în fața unui skill cu același nume — este o scurtătură pe care un om a invocat-o deliberat, cu argumente.
 
 ---
 
-## Magic keywords
+## Cuvinte magice
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Nu sunt comenzi. Un cuvânt independent scris cu litere mici, oriunde într-un prompt, atașează o instrucțiune ascunsă pentru acel tur.
 
-| Word          | Effect                                                             |
+| Cuvânt          | Efect                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Efort de raționament maxim pentru tur                              |
+| `orchestrate` | Delegă munca independentă în paralel și verifică fiecare fază        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Potrivitorul este deliberat de strict cu limitele. `orchestrate,` se potrivește; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` și `orchestrate()` nu, iar blocurile de cod delimitate, fragmentele inline și secțiunile XML sunt mascate mai întâi. Fără asta, lipirea unui stack trace ar schimba comportamentul agentului.
 
 ---

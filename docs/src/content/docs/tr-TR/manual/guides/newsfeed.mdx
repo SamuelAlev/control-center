@@ -1,130 +1,140 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Haber akışınızı düzenleme
+description: RSS/Atom akışları ekleyin ve yönetin, makaleleri içerik engellemeyle okuyun ve akışlarınızın her çalışma alanında sizinle geldiğini bilin.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/nasil-yapilir/haber-akisi
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Bu kılavuz haber akışını nasıl şekillendireceğinizi gösterir: hangi
+kaynaklardan beslendiğini, makalelerin nasıl okunduğunu ve içerik engellemenin
+ne yaptığını.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Haber akışı kullanıcıya özeldir, çalışma alanına değil]
+Akışlar ve makaleler oturum açmış kullanıcıya aittir: akış listeniz, okundu
+durumunuz ve yer imleriniz her çalışma alanına ve oturum açtığınız her cihaza
+sizinle gelir; onları başka hiçbir kullanıcı görmez. Akışlar sunucunun küresel
+veritabanında yaşar; bu nedenle `/newsfeed` URL’sinin bir çalışma alanı kimliği
+taşımasının tek nedeni, uygulama içindeki her rotanın taşımasıdır.
 :::
 
-## Read articles
+## Makaleleri okuma
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Kenar çubuğunda **Haber akışı**’na tıklayın
+2. Araç çubuğu bölümleriyle **Tümü**, **Okunmamış** ve **Kaydedilenler**
+   arasında geçiş yapın
+3. Listeyi arama kutusuyla veya kaynak seçiciyle daraltın
+4. Düzen düğmeleriyle dergi ızgarası ile yoğun liste arasında geçiş yapın
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Bir makaleyi açmak onu okundu olarak işaretler. Birikmişleri tek seferde
+temizlemek için sayfa başlığındaki **Tümünü okundu olarak işaretle**’yi
+kullanın — yalnızca okunmamış bir şey varken görünür — ve bir makaleyi sonrası
+için kaydetmek üzere karttaki yer imi denetimini kullanın.
 
-The layout choice persists across launches.
+Düzen seçimi, uygulamanın her açılışında korunur.
 
-## Add a feed
+## Akış ekleme
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. **Ayarlar → Siz → Haber akışı** yolunu açın (haber akışı başlığındaki
+   ayarlar simgesi doğrudan oraya götürür)
+2. **Akış ekle**’ye basın
+3. Bir **ad** ve bir **akış URL’si** (RSS veya Atom) girin
+4. İsteğe bağlı olarak **Gelişmiş**’i genişletip özel bir **User-Agent**
+   ayarlayın — bazı yayıncılar varsayılan bir istemciye farklı bir yanıt verir
+5. **Akış ekle**’ye basın
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Kontrol noktası: akış **Akışlar** listesinde görünür ve makaleleri ilk
+getirmeden sonra düşer. Zaten abone olunmuş bir URL, “Bu URL'ye sahip bir akış
+zaten var.” mesajıyla reddedilir.
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+İlk kullanımda her kullanıcı için on dört akış hazırlanır: Control Center, The
+Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI,
+The Pragmatic Engineer, Martin Fowler, Will Larson’ın Irrational Exuberance’ı,
+The Engineering Manager, Lea Verou ve CSS-Tricks.
 
-## Manage feeds
+## Akışları yönetme
 
-Each row in the **Feeds** list gives you three controls:
+**Akışlar** listesindeki her satır size üç denetim sunar:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Denetim            | Etkisi                                                                      |
+| ------------------ | --------------------------------------------------------------------------- |
+| Anahtar            | Akışı devre dışı bırakır. Devre dışı bir satır soluklaşır ve artık getirilmez |
+| Yenileme simgesi   | Yalnızca bu akışı şimdi getirir                                             |
+| Çöp kutusu simgesi | Bir onaydan sonra akışı siler                                               |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+Listenin üst kısmındaki **Tümünü yenile**, etkinleştirilmiş her akışı getirir.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Bir akışın alt başlığı açıklamasını ve en son ne kadar önce getirildiğini
+gösterir; başarısız olan bir akış ise açıklamanın yerine hatayı uyarı renginde
+gösterir.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Düzenleme olanağı yoktur — bir akışın adını, URL’sini veya user agent’ını
+değiştirmek için onu silip yeniden ekleyin.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Getirme işlemi tamamen sunucuda çalışır: her kullanıcı için açılışta bir kez
+(ve sonradan oluşturulan hesaplar için ilk kullanımda), ardından her 30 dakikada
+bir.
 
-## Block ads and trackers in the reader
+## Okuyucuda reklamları ve izleyicileri engelleme
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Ayarlar → Siz → Haber akışı bölümünde **Okuyucu tercihleri**’ni bulun
+2. Yerleşik okuyucuyu kullanmak için **Makaleleri uygulamada aç** seçeneğini
+   açık bırakın, makaleleri sistem tarayıcınıza devretmek için kapatın
+3. **Reklamları, izleyicileri ve çerez bildirimlerini engelle** seçeneğini açık
+   bırakın
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Engelleme varsayılan olarak açıktır. Gömülü okuyucu yalnızca macOS ve
+Windows’ta bulunur: web yapımında ve Linux’ta okuyucu _sistem tarayıcısının
+kendisidir_ ve makale orada açılır (web’de yeni bir sekmede). Web’de engelleme
+anahtarı, **Listeleri filtrele** kartı ve **Güvenilir siteler** kartı gizlidir.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Uygulama içi okuyucu makaleyi yeniden biçimlendirmez. Yayıncının sayfasını
+gömülü bir web görünümünde işler ve önbelleğe alınmış filtre listelerini
+kullanarak reklamları, izleyicileri ve çerez bildirimlerini bastırır.
 
-### Check or update the filter lists
+### Filtre listelerini denetleme veya güncelleme
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+**Listeleri filtrele** kartı kaç çerez gizleme, reklam gizleme ve ağ engelleme
+kuralının yüklendiğini, ayrıca kaldırdığı izleme parametrelerini ve listelerin
+en son ne zaman güncellendiğini gösterir. Bunları yenilemek için
+**Güncellemeleri denetle**’ye basın.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Kaynaklar EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, birkaç
+uBlock Origin listesi ve uBO’nun izleme parametresi listesidir. Bir indirme
+başarılı olana kadar kart listeleri hiç güncellenmemiş paketlenmiş varsayılanlar
+olarak etiketler — reklam, çerez ve ağ kuralı sayıları sıfırda kalır; izleme
+parametresi kaldırma yine de yerleşik bir varsayılan kümesini kullanır.
 
-### Allowlist a site
+### Bir siteyi izin listesine ekleme
 
-Some sites break under blocking.
+Bazı siteler engelleme altında bozulur.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Ayarlar → Siz → Haber akışı bölümünde **Güvenilir siteler**’e gidin
+2. **Güvenilir site ekle**’ye basın ve alan adını girin
 
-Blocking is skipped there.
+Orada engelleme atlanır.
 
-## Troubleshooting
+## Sorun giderme
 
-### A feed I added shows up in another workspace
+### Eklediğim bir akış başka bir çalışma alanında görünüyor
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Beklenen bir durumdur. Haber akışı çalışma alanına değil, kullanıcıya özeldir —
+akışlarınız oturum açtığınız her yere sizinle gelir. Yukarıdaki uyarıya bakın.
 
-### A feed row shows an error instead of a description
+### Bir akış satırı açıklama yerine hata gösteriyor
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Son getirme başarısız oldu ve satır nedeni olduğu gibi gösteriyor. Yeniden
+denemek için yenileme simgesine basın ve URL’nin hâlâ RSS veya Atom sunduğunu
+denetleyin. Bilinmeyen istemcileri reddeden bir yayıncı özel bir user agent
+gerektirebilir; bu da akışı silip yeniden eklemek anlamına gelir.
 
-### An article page renders badly
+### Bir makale sayfası kötü görüntüleniyor
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+O alan adı için **Reklamları, izleyicileri ve çerez bildirimlerini engelle**
+seçeneğini **Güvenilir siteler** üzerinden kapatın veya **Makaleleri uygulamada
+aç** seçeneğini kapatıp makaleyi tarayıcınızda okuyun.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Configure notifications](/tr-TR/kilavuz/nasil-yapilir/bildirimler/)
-- [Triage your inbox](/tr-TR/kilavuz/nasil-yapilir/gelen-kutusu-triyaji/)
+- [Bildirimleri yapılandırma](/tr-TR/kilavuz/nasil-yapilir/bildirimler/)
+- [Gelen kutunuzu triyaj etme](/tr-TR/kilavuz/nasil-yapilir/gelen-kutusu-triyaji/)

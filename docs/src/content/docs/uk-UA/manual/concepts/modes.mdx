@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Режими
+description: Чому режим носить простір, а не агент; що гарантує кожен із чотирьох режимів; і де ця гарантія структурна, а не лише задана промптом.
 slug: uk-UA/керівництво/поняття/режими
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Що таке режим
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Режим — це властивість **простору**, що зберігається в одній колонці рядка простору. Його поділяють усі розмови всередині простору, гілки включно — гілка успадковує режим свого простору, як і будь-яка інша розмова. Тож той самий агент може одночасно перебувати в різних режимах у різних просторах, а зміна режиму простору змінює те, що станеться на наступному ході, не торкаючись агента.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Їх рівно чотири: `chat`, `review`, `plan`, `orchestrate`. Сам перелік значень не несе жодної політики. Усе, що гарантує режим, оголошується один раз у **профілі можливостей**, з якого проєктує кожен шар забезпечення:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Поверхня інструментів** — які інструменти взагалі існують у цьому режимі, виражені як максимальний рівень схвалення, список дозволених, список заборонених і набір відхилених класів ефектів.
+2. **Обов’язкове дієслово виводу** — що запуск має викликати, щоб уважатися таким, що щось створив.
+3. **Заборонені класи ефектів** — те, що запобіжник дій відхиляє одразу.
+4. **Стан worktree** — чи можна писати в worktree. Це забезпечується тим, що з поверхні вилучають інструменти, які вносять зміни, і саме тому воно тримається на кожному хості. Там, де хост має пісочницю ОС, той самий стан також визначає правила запису у файлову систему — режим лише читання монтує worktree лише для читання — але це друга копія гарантії, а не та, що виконує роботу.
+5. **Блок системного промпту** — _згенерована_ преамбула можливостей, виведена з фактичного матеріалізованого списку інструментів, плюс писане від руки керівництво.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Кожен шар забезпечення проєктує з цього єдиного профілю, тож поверхня інструментів, запобіжник, стан worktree і промпт не можуть суперечити одне одному.
 
-## The four modes
+## Чотири режими
 
-### Chat — displayed as "Agent"
+### Чат — показується як «Агент»
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Типовий і єдиний режим без додаткових обмежень: повна поверхня інструментів до рівня виконання, worktree, доступний для запису, жодних заборонених класів ефектів і жодного контракту завершення. Використовуйте його для реалізації, виправлення багів, запитань про кодову базу та будь-яких ситуативних задач.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Зверніть увагу на назву: у композері режим показано як **«Агент»**, а не «Чат».
 
-### Plan — read-only, one deliverable
+### План — лише читання, один результат
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Режим плану робить worktree доступним лише для читання й повністю вилучає з поверхні інструменти запису, тож це обмеження структурне, а не задане інструкцією. Агент читає, шукає й досліджує та створює рівно одне: виклик `submit_plan` із типізованим графом залежностей — мета плюс вузли з ключами, назвами, описами та ключами вузлів, від яких залежить кожен із них.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+План відображається компактним рядком у розмові й відкриває Plan Studio на вкладці поруч. Його схвалення компілює граф в оркестрацію, запускає згенеровану роботу й повертає простір, де створено план, назад у режим агента.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Якщо запуск у режимі плану завершується, жодного разу не викликавши `submit_plan`, цикл спершу вставляє нагадування про те, що плану не існує, доки цей виклик не вдасться. Нагадування явно дозволяє чесний вихід «план тут не потрібен», бо режим плану — це налаштування простору, і звичайне запитання, поставлене в ньому, не має примушувати до фіктивного плану.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/).
+:::note[Невиконаний контракт — це не невдалий запуск]
+Запуск, що завершується без свого плану, усе одно записується зі статусом `completed` — процес завершився чисто. Істина тримається на живучості запуску (`empty`), родині помилок (`silentRun`) і підсумку, який називає те, чого не створено. Див. [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Є й другий, окремий вихід: `exit_plan_mode`. Це жорсткий шлюз схвалення, а не дієслово виводу — агент, який викликає його замість `submit_plan`, не створив нічого. Перший виклик відкриває тривале схвалення `plan_exit` і повертає `pending`, а простір лишається доступним лише для читання; повторні виклики лишаються `pending`, а не відкривають другий шлюз. Лише після схвалення наступний виклик перемикає простір на чат. Відмова дає агенту змогу відкрити новий запит на переглянутий план.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Щоб вийти з режиму плану самостійно, перемкніть випадний список у композері (або Shift+Tab). `exit_plan_mode` вирішують через інструмент MCP `decide_approval`. Рядки «схвалення агента» у Вхідних — це інше: запити підтвердження на кожен хід від запущеного агента.
 
-### Review — read-only, no contract
+### Огляд — лише читання, без контракту
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Режим огляду призначено для рев’ю PR. Він робить worktree доступним лише для читання, обмежує поверхню інструментів нижче рівня виконання й застосовує дібраний список дозволених з інструментів рев’ю, тікетів і спілкування. Простір, відкритий для pull request, створюється в режимі огляду автоматично.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Вивід агента — це структуровані знахідки, **вузли огляду**, а коли рев’ю фіналізують — **вердикт**. Вузол несе тип (`bug`, `suggestion`, `recommendation`, `question` або `ticket`), пріоритет від P0 (блокує випуск) до P3 (необов’язково), самооцінену впевненість, необов’язкову прив’язку (файл плюс діапазон рядків; нотатки на весь репозиторій її не мають) і статус життєвого циклу, який переходить з `open` у `consensusReady`, щойно його підтвердить колега — ніколи автор. Знахідку, у якої бракує пріоритету чи впевненості або вони поза діапазоном, відкидають на межі читання, а не лишають забруднювати вердикт.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Вердикт — це ship, hold або block, і результати за осями, згорнуті в нього, можуть зробити його лише _суворішим_: вісь зі шлюзом, що провалилася, примусово дає `block`, а вісь зі шлюзом, яка не змогла виконатися, примусово дає щонайменше `hold`. Відсутність доказів ніколи не робить шлюз зеленим.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+На відміну від плану й оркестрації, огляд не несе **жодного контракту завершення**. Знахідки накопичуються через `add_review_node` і публікуються `finalize_review`, і обидва цілком законно можуть не викликатися жодного разу — агент конвеєра в режимі огляду може бути тут, щоб натомість завершити тікет.
 
-### Orchestrate — read-only, proposes a team
+### Оркестрація — лише читання, пропонує команду
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Режим оркестрації перетворює одну мету на план для всієї команди. Як і режим плану, він доступний лише для читання й не може писати файли; поверх дослідницької поверхні він має єдине привілейоване дієслово, `propose_orchestration`, яке видає структуровану пропозицію: ролі, дерево підтікетів, крок синтезу й бюджет. Промпт називає лише ті інструменти, що є на поверхні, тож модель не витрачає ходи на переповідання найму чи роботи з тікетами, які не може викликати.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/uk-UA/керівництво/поняття/оркестрація/).
+Ніщо в пропозиції не виконується, доки ви її не схвалите. Після схвалення детермінований матеріалізатор наймає агентів, створює тікети й проєкт і запускає згенерований конвеєр. Схвалювати може лише оператор: інструмента MCP для цього немає, тож агент може запропонувати, але ніколи не схвалити власний план. Повторні пропозиції, ініційовані агентом, обмежуються перервою у дві хвилини, тож послідовні перепланування відхиляють і радять об’єднатися. Див. [Оркестрація](/uk-UA/керівництво/поняття/оркестрація/).
 
-## Two rules worth knowing
+## Два правила, які варто знати
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Власне дієслово виводу режиму не можна відхилити ніколи.** `submit_plan` і `propose_orchestration` закріплено в поверхні інструментів і попередньо схвалено в обхід фільтра інструментів, шлюзу схвалення та запобіжника дій однаково, тож регулятор автономності для кожного простору не може заглушити результат режиму. `ask_user` у harness закріплено з тієї ж причини: саме через нього запуск дістається до оператора, тож шлюз на ньому заблокував би запуск, якому треба щось запитати. Він належить до рівня читання, тож кожен режим лише читання його зберігає, і він не підпадає під обгортку схвалення — запит перед запитом закривається відмовою, коли не під’єднано жодного, хто міг би схвалити, а це позбавило б агента самого акту запитання.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Режими лише читання не забороняють доступ до мережі чи секретів.** Класи ефектів, які відхиляють огляд, план і оркестрація, — це ті, що змінюють світ: видалення файлів, записи поза worktree, коміти, пуші, створення й публікація PR, записи синхронізації з вендорами, встановлення пакетів, породження процесів, зміна робочого простору та керування ізольованим середовищем. Вихід у мережу й доступ до секретів навмисно лишаються на типових значеннях — дослідження і є всім сенсом режиму лише читання.
 
-## Choosing and changing a mode
+## Вибір і зміна режиму
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Випадний список режимів у композері пропонує **три** варіанти: Агент (чат), План та Оркестрація. `review` **не вибирає користувач** — його задає система під час створення простору рев’ю PR і кроки конвеєра.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Вузол конвеєра, який **відкриває простір**, може закріпити режим цієї кімнати ключем `extras['mode']` (`chat`, `review` або `plan`). Ключ збігається точно: будь-яке інше написання — зокрема `orchestrate` — мовчки ігнорується, і кімната отримує типове значення тіла (`review` для тіла create-space). Крок агента приєднується до кімнати, якої не створював, і не перевизначає її дозволи.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Саме визначення просте. Диспетчер читає колонку `mode` простору; виклик без простору — одноразовий запуск, виклик із CLI або ідентифікатор простору з іншого робочого простору, якого просто немає у файлі бази даних цього робочого простору, — визначається як `chat`. Зміна режиму набирає чинності з наступного ходу.
 
-## Where the guarantee actually holds
+## Де гарантія справді діє
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Поверхню інструментів режиму будує й забезпечує **вбудований harness**. Це єдиний транспорт, який може зробити інструмент невидимим, а не просто відхиленим, поставити шлюз перед кожним викликом до його виконання та спостерігати за контрактом завершення.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/uk-UA/керівництво/поняття/модель-агента/).
+У транспорті Claude Code режим, відмінний від чату, передається як `--permission-mode plan`. Claude дотримується цього за домовленістю; його власні інструменти читання, запису, редагування та оболонки працюють непоміченими. Для цього транспорту режим — це орієнтир, а не межа Control Center — див. [Модель агента](/uk-UA/керівництво/поняття/модель-агента/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Списки дозволених обмежують інструменти рівня запису й вище. Рівень читання вбудованого harness усе одно дістається інструментів, яких не називає жоден список; у Claude Code інструмент, якого бракує у списку дозволених, відхиляється незалежно від того, чи має його сервер.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): where the mode is resolved and projected
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): which transports can enforce a mode
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/uk-UA/керівництво/поняття/оркестрація/): what an approved orchestrate proposal does
-- [Use plan mode](/uk-UA/керівництво/практичні-посібники/режим-плану/): the practical walkthrough
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): де режим визначається й проєктується
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): які транспорти можуть забезпечити режим
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/): політика класів ефектів, у яку входить пресет режиму
+- [Оркестрація](/uk-UA/керівництво/поняття/оркестрація/): що робить схвалена пропозиція оркестрації
+- [Використовувати режим плану](/uk-UA/керівництво/практичні-посібники/режим-плану/): практичний посібник

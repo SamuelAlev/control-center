@@ -1,19 +1,15 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Ouverture de session unique
+description: Comment fonctionnent les connexions SAML et OIDC, ce qu’elles vérifient et comment les comptes restent protégés.
 slug: fr-CA/manuel/concepts/sso
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+L’ouverture de session unique permet à un fournisseur d’identité (IdP) externe de décider qui peut se connecter à votre serveur Control Center. Deux protocoles sont pris en charge — SAML 2.0 et OpenID Connect — et les deux aboutissent au même endroit : un identifiant d’appareil fraîchement créé, impossible à distinguer d’une invitation ou d’un appairage par code QR partout en aval.
 
-## The shape of a login
+## La forme d’une connexion
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Les connexions SAML sont **intermédiées par le navigateur**. L’IdP n’ouvre jamais de connexion vers votre serveur ; c’est le navigateur de l’utilisateur qui transporte tout :
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +22,48 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Parce que le navigateur sert de courrier, **un serveur derrière un NAT fonctionne très bien** pour les connexions : localhost, LAN, Tailscale, VPN ou tunnel font tous l’affaire — seul le navigateur de l’utilisateur doit joindre l’URL ACS. Le relais WebSocket qu’utilise le contrôle à distance par téléphone ne peut pas transporter l’aller-retour HTTP, et c’est pourquoi les points d’entrée SSO ciblent toujours l’origine HTTP du serveur.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect suit la même forme avec un aller-retour code d’autorisation + PKCE ; les revendications sont lues depuis le point de terminaison de jeton de l’émetteur par TLS, de sorte que le navigateur ne fournit jamais de données d’identité.
 
-## The adapters
+## Les adaptateurs
 
-Control Center splits the responsibility deliberately:
+Control Center répartit délibérément les responsabilités :
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| Élément                       | Emplacement                        | Responsabilité                                                                                                                                                                                             |
+| ----------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| natif `cc_saml`               | `packages/cc_natives/native/saml/` | vérification XML-DSig, canonicalisation, validation du profil SAML — déléguées à la crate `saml` en pur Rust épinglée, derrière une ABI C sans état                                                          |
+| `SamlService` / `OidcService` | `cc_server_core`                   | l’état de connexion (suivi des requêtes en attente, déduplication des rejeux), les réglages de politique de validation, l’appel de provisionnement partagé                                                   |
+| `SsoProvisioner`              | `cc_server_core`                   | trouver ou créer l’utilisateur, épingler le sujet du fournisseur, accorder les appartenances selon la politique d’ajout automatique de membres                                                              |
+| `ScimService`                 | `cc_server_core`                   | la surface de poussée SCIM 2.0 (cycle de vie de provisionnement et de déprovisionnement)                                                                                                                   |
+| `SsoSettingsService`          | `cc_server_core`                   | les lignes de connexion enregistrées, la réapplication à chaud, le jeton SCIM                                                                                                                              |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Il n’existe délibérément **aucune solution de repli cryptographique SAML en pur Dart** : la vérification XML-DSig et la canonicalisation écrites à la main sont exactement là où logent les vulnérabilités d’enveloppement de signature ; l’absence de la bibliothèque `cc_saml` fait donc échouer à la fois la connexion SAML et le démarrage du serveur. Le natif est sans état par conception — l’état inter-requêtes vit dans les services Dart, à usage unique et de courte durée.
 
-## What a login verifies
+## Ce qu’une connexion vérifie
 
-Inside the verified native and the service, in order:
+À l’intérieur du natif vérifié et du service, dans l’ordre :
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. la **signature** de l’assertion (toujours exigée ; celle de l’enveloppe de réponse est facultative selon la configuration) — structurellement résistante à l’enveloppement de signature, parce que la charge utile validée est liée à l’élément vérifié,
+2. l’**émetteur** correspond à l’IdP configuré,
+3. l’**audience** désigne ce fournisseur de service,
+4. la **destination** est notre URL ACS,
+5. `InResponseTo` correspond à un AuthnRequest en attente que nous avons émis (les réponses non sollicitées, initiées par l’IdP, sont désactivées par défaut),
+6. les fenêtres de **durée de vie** tiennent dans le décalage d’horloge (90 s par défaut) et
+7. l’**identifiant d’assertion** n’a jamais été vu auparavant (cache anti-rejeu).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Les échecs reviennent sous forme de codes typés — signature, expiré, audience, destination, émetteur, correspondance de requête — et les points de terminaison répondent par des erreurs génériques, de sorte qu’un attaquant n’apprend rien sur la raison de l’échec d’une falsification.
 
-## Accounts and subject pinning
+## Comptes et épinglage du sujet
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+La première connexion SSO épingle sur le compte le sujet immuable du fournisseur (`issuer` plus SAML NameID / OIDC `sub`, ou SCIM externalId). À partir de là, c’est le sujet — et non le courriel — qui identifie la connexion. Si quelqu’un d’autre présente plus tard le même courriel depuis le même IdP ou un autre, le compte épinglé le refuse. C’est ce qui empêche un courriel recyclé chez un fournisseur de devenir une prise de contrôle de compte.
 
-## Provisioning and deprovisioning
+## Provisionnement et déprovisionnement
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Le provisionnement JIT se produit à la connexion (`SsoProvisioner`). SCIM est une surface de poussée distincte (`ScimService`) qui épingle le même sujet sur la ligne d’utilisateur ; il n’accorde pas d’appartenances à des espaces de travail. Le déprovisionnement — SCIM `active: false` ou `DELETE` — refuse si le compte est propriétaire d’un espace de travail (transférez d’abord). Sinon, il révoque d’abord chaque identifiant d’appareil (les sessions tombent en quelques secondes grâce à la surveillance des appareils), retire chaque appartenance à un espace de travail et marque le compte comme désactivé. La ligne d’utilisateur survit : l’attribution est permanente. La réactivation rétablit la connexion, mais ne réaccorde jamais les appartenances.
 
-## What stays out
+## Ce qui reste à l’écart
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **La correspondance groupe→rôle se fait à la connexion** à partir des attributs SAML / des revendications OIDC — les groupes poussés par SCIM ne sont pas stockés.
+- **Le rôle de propriétaire est inatteignable depuis le SSO** — ni comme rôle par défaut, ni par une correspondance de groupes.
+- Le relais WebSocket n’est jamais un canal SSO ; les téléphones qui ne joignent le serveur que par le relais ne peuvent pas effectuer d’aller-retour de navigateur contre lui.

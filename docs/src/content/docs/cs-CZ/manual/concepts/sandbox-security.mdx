@@ -1,267 +1,263 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Sandbox a zabezpečení
+description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Kam sandbox operačního systému sahá a kam ne]
+`cc_server` hostitele při startu osondá a provádění příkazů agenta obalí
+nativním sandboxem operačního systému, když nějaký je: Seatbelt na macOS,
+bubblewrap na Linuxu a na WSL2 (ten potřebuje `bwrap` a `socat` na `PATH`).
+Kde backend není, na Windows nebo na Linuxu bez těch nástrojů, běhy spadnou
+na ostatní hranice níže a server to řekne ve startovacím logu.
+`--sandbox off` ho vypne schválně.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Dvě skuliny zůstanou i se sandboxem a stojí za to si je podržet:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- **Souborové nástroje vestavěného harnessu v procesu** (`read`, `write`,
+  `edit`, `apply_patch`, `search`, `find`, `search_files`) běží uvnitř procesu
+  serveru, takže se obalí jen `bash`. Omezuje je omezení cest v samotných
+  nástrojích a guardraily akcí.
+- **Claude Code se spouští s `--dangerously-skip-permissions`**, protože
+  neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu. Jeho
+  volání souborů a shellu proto nehlídají guardraily Control Center. Kolem
+  nich je hranicí sandbox operačního systému.
   :::
 
-## Why isolation matters here
+## Proč tu na izolaci záleží
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Agent čte soubory, spouští příkazy shellu a volá externí API za tebe. Selhání,
+na kterém záleží, málokdy je zlý úmysl. Je to agent, který špatně přečte cestu
+a přepíše tvůj pracovní checkout, nebo který odešle větev, kterou jsi ještě
+neměl zkontrolovanou. Otázka, na kterou produkt musí odpovědět, tedy není
+„je agent důvěryhodný“, ale „jaký je dosah, když se splete“.
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center na to odpovídá vrstvami a vrstvy jsou nezávislé schválně. Když
+jedna chybí, ostatní pořád drží. Na tom záleží, protože vnější vrstva, sandbox
+operačního systému, je jediná podmíněná: záleží na tom, jestli hostitel backend
+nabídne, a na Windows ho nenabídne žádný.
 
-## What actually constrains an agent
+## Co agenta skutečně omezuje
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Pět věcí ohraničuje běh agenta na každém hostiteli, se sandboxem i bez něj.
+Žádná není hranice jádra a všechny jsou skutečné. Kde hostitel nabídne backend,
+sedí nad nimi sandbox operačního systému a „Co sandbox přidává a kde končí“
+níže popisuje, co se tím změní.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Vlastní copy-on-write worktree.** Každá konverzace si založí vlastní checkout
+každého propojeného repozitáře, klonovaný copy-on-write přes přibalené nativní
+`rift`, ne kopírovaný bajt po bajtu, takže izolace je dost levná na to, aby
+byla výchozí. Registrovaný repozitář, který jsi přidal do pracovního prostoru,
+není adresář, ve kterém agent pracuje. Dvě konverzace nad stejným repozitářem
+si navzájem nevidí úpravy a ani jedna neupravuje tvůj checkout.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Rozlišení stojí za přesnost: **worktree je na konverzaci, ne na agenta.** Dva
+agenti v jedné konverzaci dostanou odlišné overlay pracovní adresáře, které
+_sdílejí_ `repos/` té konverzace. O to jde, spolupracují na jedné změně,
+zatímco jejich soukromé adresáře agentů zůstanou oddělené. Copy-on-write je
+jediný backend všude, kde se dodává `rift`. Když souborový systém neumí
+reflink, nebo když datový adresář leží na jiném svazku než repozitář,
+provisioning selže, místo aby spadl na náhradní cestu. Windows je výjimka:
+copy-on-write backend tam není, takže backendem je `git worktree`, a nejde
+o tiché zhoršení.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Omezení cest v souborových nástrojích vestavěného harnessu.** Nástroje
+harnessu `read`, `write`, `edit`, `apply_patch`, `search`, `find` a
+`search_files` rozřeší každou cestu vůči pracovnímu adresáři běhu a vůči
+sdíleným kořenům, adresáři `repos/` konverzace, kde leží worktree, a adresáři
+příloh prostoru, když existuje, a odmítnou všechno, co skončí mimo. Absolutní
+cesta projde, jen když už uvnitř byla. Symlink uvnitř worktree, který z něj
+ukazuje ven, se rozřeší a taky odmítne. Proto agent neumí `write` do `~/.ssh`,
+ani když tu žádný sandbox není.
 
-**The mode's tool surface.** A conversation's [mode](/cs-CZ/prirucka/koncepty/rezimy/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Plocha nástrojů režimu.** [Režim](/cs-CZ/prirucka/koncepty/rezimy/) konverzace
+rozhoduje, které nástroje se pro běh vůbec sestaví. V režimech jen pro čtení
+(`plan`, `review`, `orchestrate`) mutující nástroje v registru prostě nejsou
+a politika příkazů shellu v těchto režimech každý mutující příkaz rovnou
+zamítne, `git commit`, `git push`, `npm install`, `docker` a zbytek, a neptá
+se na ně. Nástroj, který tam není, se zavolat nedá, a to je silnější záruka
+než nástroj, který tam je a jen se hlídá.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/cs-CZ/prirucka/koncepty/guardraily/) for the resolution model.
+**Sjednocené guardraily akcí.** Každý mutující nástroj deklaruje třídy efektů,
+které umí způsobit, a motor politik každou vyhodnotí na allow, prompt nebo
+deny, než se volání spustí. `prompt` bez připojeného schvalovatele se
+vyhodnotí jako _denied_: otázka, na kterou nikdo nemůže odpovědět, není nikdy
+ano. Viz [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/) pro model
+rozhodování.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Pověření vázaná na schopnosti a očištěné prostředí.** Pověření se vystaví
+při každém spuštění z příznaků schopností konverzace a odeberou se, když běh
+skončí. ACP, `bash` harnessu a Claude Code pod nativním obalem dostanou
+prostředí očištěné od vektorů injekce dynamického linkeru a interpretu
+(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND`
+a příbuzné), než se proces spustí. Claude Code přes `NoSandboxAdapter` dědí
+prostředí hostitele.
 
-### Where those bounds thin out
+### Kde ty hranice řídnou
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Souborové nástroje harnessu běží _v procesu serveru_, ne v podřízeném procesu,
+takže by je neomezil žádný profil sandboxu, ani kdyby k nim byl připojený.
+Sandboxovaným runnerem příkazů projde jen `bash`. Jejich omezení je kontrola
+cest popsaná výš a ta kontrola je proto nosná, ne druhá linie obrany.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+U nástroje `bash` je třeba být stejně přesný. Jeho příkazy se vyhodnotí proti
+politice příkazů režimu a pak se spustí s očištěným prostředím a s worktree
+jako pracovním adresářem. Kde backend je, ten start se obalí, takže zápis
+příkazu shellu mimo worktree zastaví sandbox. Kde není, na Windows nebo na
+Linuxu bez `bwrap` a `socat`, je politika příkazů jediné, co stojí mezi
+příkazem a zbytkem disku. V režimu `chat` politika natvrdo zamítá pevný seznam
+(eskalace oprávnění, destrukce systému a disku, únik z kontejneru a jmenného
+prostoru) a u změn vzdáleného stavu se ptá (`git push`, `gh pr create`,
+publikace a instalace balíčků). Co není na žádném ze seznamů, běží. Roury,
+řetězy a subshelly se rozloží a každý dílčí příkaz se vyhodnotí zvlášť.
+Vyhraje nejpřísnější rozhodnutí.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/cs-CZ/prirucka/koncepty/guardraily/#the-adapter-honesty-matrix).
+Claude Code použitý jako adaptér je případ, kde sandbox nese největší váhu.
+Control Center ho spouští s `--dangerously-skip-permissions`, protože
+neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu ke
+schválení. Jeho čtení, zápis, úpravy a volání shellu probíhají v jeho vlastním
+procesu a Control Center je nikdy nevidí. K bráně dojdou jen nástroje
+`mcp__*`, které obsluhuje samotné Control Center. Kde backend je, ta neviděná
+volání pořád probíhají uvnitř obalu sandboxu, takže hranicí kolem nich je
+operační systém. Kde není, není tam nic. Každý adaptér to uvádí ve své matici
+vynucení. Viz [matice upřímnosti
+adaptéru](/cs-CZ/prirucka/koncepty/guardraily/#matice-upřímnosti-adaptéru).
 
-## Capability gating is enforcement by absence
+## Schopnosti se vynucují nepřítomností
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Konverzace nese čtyři příznaky schopností: push do repozitáře, volání GitHub
+API, volání poskytovatele ticketů a přístup k síti. Nekontrolují se ve chvíli,
+kdy agent jedná. Zkontroluje je jednou, při spuštění, broker přihlašovacích
+údajů. Vypnutá schopnost znamená, že se odpovídající token do prostředí prostě
+nikdy nevloží.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+To je celý mechanismus a stojí za to ho říct rovnou, protože režim selhání
+není ten, který lidé čekají. Vypnutí „GitHub API“ nevyrobí zprávu „schopnost
+zamítnuta“. Uvnitř agenta vznikne obyčejné `401`, protože není žádný
+`GH_TOKEN`, který by se poslal. Agent to klidně popíše jako problém
+s přihlašovacími údaji. Vynucení nepřítomností je odolné, není tu kontrola,
+kterou by šlo obejít, ale je tiché a agent neví, proč selhal.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Příznak sítě se chová stejně. Když je vypnutý, nástroje harnessu `web_fetch`
+a `web_search` odmítnou každé volání a seznam povolených u proxy
+sandboxovaného startu je prázdný, takže se odmítne každé odchozí spojení.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Při úklidu běhu se pověření odeberou, takže získaný údaj nepřežije běh, který
+ho vystavil.
 
-## What the sandbox adds and where it stops
+## Co sandbox přidává a kde končí
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+Enum `SandboxBackend` má tři hodnoty: `native` (Seatbelt na macOS, bubblewrap
+na Linuxu a na WSL2), `none` a `microvm`. Obal příkazů agenta používá jen
+první dvě. `microvm` je backend uzavřeného virtuálního stroje pro interaktivní
+terminály a stanice, ne tiché povýšení obalu `bash`. Tvar nativního backendu
+vysvětluje, co získáš tam, kde je připojený, a co ti nikdy dát neměl.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` hostitele při startu jednou osondá a kde backend odpoví, napojí
+oba švy cesty odeslání, protože transporty jeden nesdílejí. První
+(`SandboxPort`) obalí CLI Claude Code. Druhý (`SandboxManager`) obalí adaptéry
+ACP a nástroj `bash` vestavěného harnessu. Napojit jen jeden by nechal ostatní
+startovat bez obalu, a přesně to se dřív dělo. Na hostiteli bez backendu, nebo
+pod `--sandbox off`, startují všechny bez obalu a server na startovním řádku
+řekne, ve kterém případě jsi. ACP a `bash` harnessu prostředí pořád čistí.
+Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Jedna plocha se záměrně vynechává. Terminál hostovaný na serveru bere argument
+backendu pro každou relaci a `cc_server` ho sestaví s výchozím shellem
+hostitele, takže terminál, který z aplikace otevřeš, běží bez sandboxu, dokud
+klient výslovně neuvede `native`. Je to skutečný shell na hostiteli serveru,
+ne běh agenta.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Na Linuxu `bubblewrap` postaví jmenný prostor připojení, takže agent opravdu
+vidí jen to, co se do něj navázalo. Na macOS `sandbox-exec` aplikuje profil
+Seatbelt, který je **ve výchozím stavu permisivní**. Profil, který ve výchozím
+stavu všechno zakáže, udělá interaktivní shell nepoužitelný, protože vypsat
+všechna volání dyld, XPC a Mach je nepraktické. Profil na macOS proto vychází
+z `(allow default)` a vykrajuje zákazy: čtení tajných cest, politiku zápisu
+vrácenou na zákaz s výslovnými povoleními nad ní, blokování unlink na každé
+zakázané cestě a jejích předcích, aby přejmenování neobešlo zákaz zápisu,
+zákazy exec pro binárky, které jsou vždy nebezpečné, a pro cokoli zkopírované
+do zapisovatelného adresáře, a síť omezenou na porty loopback proxy plus DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Praktický důsledek: na Linuxu je pohled agenta na souborový systém zúžený, na
+macOS agent pořád může _číst_ většinu hostitele a tvoje registrované checkouty
+chrání výslovné zákazy zápisu a přejmenování, ne neviditelnost. Obojí je
+izolace na úrovni jmenného prostoru, ne bezpečnostní hranice jádra. Backendy
+to samy říkají ve svých poznámkách ke schopnostem.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Sada bind mountů je místo, kudy vede hranice mezi agenty. Overlay odeslání
+(Claude Code a ACP) připojí až čtyři cesty, rozřešené pro každý běh: overlay
+pracovní adresář agenta pro čtení i zápis, konfigurační adresář agenta jen pro
+čtení, sdílený adresář `repos/` konverzace pro čtení i zápis, když existuje,
+a adresář příloh prostoru jen pro čtení, když existuje. Adresář sousedního
+agenta se nikdy nepřipojí. Obal `bash` harnessu je užší: bind mountuje jen
+pracovní adresář běhu. Stejný tvar v softwaru vynucuje kontrola cest harnessu
+v procesu, takže se shodují. Jen kontrola cest ale pokrývá vlastní souborové
+nástroje harnessu, které se k jmennému prostoru připojení nikdy nedostanou.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Tvoje registrované checkouty se nad to přidají do sady zákazů zápisu, v každém
+režimu a na všech třech obalených cestách (Claude Code, ACP, `bash` harnessu).
+Každé pravidlo se vypíše v doslovném zápisu i v zápisu po rozřešení symlinku.
+Druhý zápis není ozdoba. Jádro porovnává zákaz s rozřešenou cestou a macOS
+dělá z rozřešení běžný případ, ne výjimku: `/tmp` je ve skutečnosti
+`/private/tmp` a `/var/folders/…` je ve skutečnosti `/private/var/folders/…`.
+Checkout dosažený kterýmkoli zápisem by šel zapisovat, a profil by přitom
+vypadal, že to zakazuje.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Síť v sandboxu je seznam povolených **domén** pro každou relaci a vynucují ho
+loopback proxy v procesu. Odchozí provoz je ve výchozím stavu zakázaný. Když
+je schopnost sítě vypnutá, proxy se pořád spustí, ale seznam povolených je
+prázdný, takže se odmítne každé odchozí spojení. Když je zapnutá, resolver
+sestaví seznam povolených z vybraného základu (poskytovatelé LLM API, hosting
+gitu, registry balíčků, katalog modelů) a z domén GitHubu, které agentovi
+vynese schopnost GitHub nebo push, a porovná s ním cílového hostitele každého
+spojení. Zástupné znaky fungují (`*.example.com` odpovídá subdoménám, ne
+apexu). Samostatný seznam vždy zamítnutých má přednost před seznamem
+povolených a pokrývá endpointy metadat cloudu a cíle telemetrie. Co se
+_nastavit nedá_, je samotný seznam. Specifikace nese pole `egressAllowlist`
+pro další domény a háček na doménu ticketů, ale cesta odeslání ani jedno
+nenaplní, takže v praxi každý běh dostane základ plus domény odvozené ze
+schopností a nic navíc.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+Zamítnutí jsou na macOS pozorovatelná. Monitor čte systémový log a hledá
+zamítnutí Sandboxu, odfiltruje známý šum, sloučí vlny opakovaných pokusů
+a každé vynese jako `SandboxViolation` s tím, co se zkoušelo a která schopnost
+by to odblokovala. Na Linuxu cesta obalu parsuje stderr a hledá `EPERM`,
+`Operation not permitted` a `Permission denied` a vypíše stejný typ události.
+Odposlech systémového logu tam není. Dorazí na vlastní proud událostí běhu,
+takže se odepřené systémové volání ukáže v přepisu, ne jen v logu. Telemetrie
+existuje jen dokud nativní sandbox proces opravdu obaluje. Na hostiteli bez
+backendu není co pozorovat. Se schopnostmi to taky nesouvisí. Porušení
+pochází z odepřeného systémového volání, nikdy z vyhledání schopnosti.
 
-## Confirmations come from the guardrails, not the sandbox
+## Potvrzení přicházejí z guardrailů, ne ze sandboxu
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Sandbox nemá cestu schválení. Spustí se, provede práci, vypíše události
+a skončí. Není v něm místo, kde by člověk odpověděl na otázku. Když v prostoru
+uvidíš potvrzení, schválit tenhle push nebo schválit tohle smazání, vyvolal ho
+motor guardrailů (nebo politika příkazů harnessu) _ještě předtím_, než akce
+vůbec došla k běhu.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Tohle pořadí je záměr. Schválení až po systémovém volání by bylo záznamem
+auditu, ne bránou. Proto taky pravidlo zavření při selhání žije v guardrailech.
+Když není připojený schvalovatel, rozhodnutí padne dřív, než cokoli poběží,
+a je to zamítnutí.
 
-## Diagnostics
+## Diagnostika
 
-[Run agent diagnostics](/cs-CZ/prirucka/navody/diagnostika-agenta/) is the single place
-that states what can be checked by hand.
+[Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/) je jediné
+místo, které říká, co se dá zkontrolovat ručně.
 
-## Related concepts
+## Související koncepty
 
-- [Rigs and enclosures](/cs-CZ/prirucka/koncepty/stanice/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): where isolation fits in the dispatch flow
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/): the backends and their configuration
+- [Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/): stupeň nad sandboxem, když práce potřebuje celý jednorázový stroj s hranicí jádra, ne obalený proces
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): vrstva politiky nad spodní hranicí operačního systému a místo, odkud schválení skutečně přicházejí
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): kam izolace zapadá do toku odeslání
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/): jak režim zužuje plochu nástrojů a politiku příkazů
+- [Backendy sandboxu](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/): backendy a jejich konfigurace
 
-## Related guides
+## Související návody
 
-- [Configure sandbox policies](/cs-CZ/prirucka/navody/politiky-sandboxu/): capability flags and filesystem posture
-- [Run agent diagnostics](/cs-CZ/prirucka/navody/diagnostika-agenta/): what the diagnostic checks cover
+- [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/): příznaky schopností a podoba souborového systému
+- [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/): co kontroly diagnostiky pokrývají

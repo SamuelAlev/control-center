@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: מחזור חיי שליחת סוכן
+description: מה קורה בין הגעתה של הודעה לסגירת יומן הרצה — הרכבת ההנחיה, עצי עבודה, זהות, מה תוחם הרצה ואיך התוצאה שלה נרשמת בכנות.
 slug: he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## מהי שליחה
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+שליחה היא הרצה אחת של סוכן אחד, בשיחה אחת, על מתאם אחד. כל מה שקשור בה קורה ב-`cc_server`: הלקוח שולח הודעה ואז צופה באירועים שזורמים בחזרה. אין מסלול שליחה באף לקוח.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+סוכנים מתעוררים משש סיבות, וההרצה נושאת אותן כ**הקשר ההתעוררות** שלה, כך שהסוכן יודע _למה_ הוא ער:
 
-| Wake reason      | Trigger                                                      |
+| סיבת התעוררות   | טריגר                                                      |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | מישהו שלח הודעה במרחב, או אזכר את הסוכן |
+| `assignment`     | כרטיס הוקצה לסוכן                           |
+| `pipelineStep`   | שלב פייפליין שלח אותו                                |
+| `childCompleted` | כרטיס בן הסתיים                                      |
+| `followUp`       | פעימת מעקב מתוזמנת                              |
+| `recovery`       | מסלול ההתאוששות שלח מחדש לאחר כשל              |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+הקשר ההתעוררות נושא את המזהים שמתלווים לסיבה — כרטיס, מרחב, הודעה, הרצת פייפליין — והם מוזרקים לסביבה של הסוכן ולהנחיה שלו.
 
-## Prompt assembly
+## הרכבת ההנחיה
 
-The prompt is built in layers, each one a labelled section:
+ההנחיה נבנית בשכבות, שכל אחת מהן היא מקטע מתויג:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **זהות** — המזהה, השם ומזהה סביבת העבודה של הסוכן עצמו, עם הוראה מפורשת להעביר את אותם UUIDs בדיוק לכלים שמוגבלים לסביבת עבודה. סביבת העבודה טבועה בסוכן, ולכן היא תמיד נוכחת.
+- **קטלוג הכלים ופרוטוקולי המשאבים**, ואחריהם **פריסת סביבת העבודה**.
+- **עקיפת הנחיית המערכת**, אם לסוכן יש כזו, ואחריה **פרסונה** (המקבלת פרמטרים לפי תפקיד) ו**תדריך הצוות**.
+- **מיומנויות** — השמות הרשומים על הסוכן.
+- **חוזה ההרצה והנוהל** של המצב הנוכחי.
+- **הקשר ההתעוררות** ו**הקשר האזכור**: מי זימן את הסוכן והסגל שמסביבו.
+- **מקטע המצב** — נוצר מפרופיל היכולות של המצב _וכן מרשימת הכלים הממומשת שלו_, כך שההנחיה לעולם לא תזכיר כלי שלהרצה אין אותו בפועל.
+- **הקשר הזיכרון** — עובדות שאוחזרו עבור המשימה.
+- **הקשר השיחה** — היסטוריית המרחב האחרונה, מוגבלת לחלון של 50,000 תווים מילוליים בלי קשר לגודל ההקשר המוגדר של הסוכן. היסטוריה ישנה יותר אינה נחתכת: הסוכן שולף אותה לפי דרישה עם `get_messages`, והודעות ישנות יותר רלוונטיות מבחינה סמנטית עדיין צפות.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[פקודות קו נטוי מפורשות מתוך הטקסט הגולמי של המשתמש]
+ההנחיה המורכבת נפתחת במקטע הקשר, ולכן אינה מתחילה בלוכסן. הפקודות מפורשות מהודעת המשתמש ככתבה, ואז מוצאות מזנב ההנחיה המורכבת כדי שכל שכבת הקשר תשרוד.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+הפקודות מפוצלות בין שני מקומות. `/todo` ו-`/compact` נלכדות בתיבת הכתיבה ולעולם, במכוון, אינן נשמרות כהודעות ואינן נשלחות לסוכן — שמירת `/compact` הייתה דוחפת את חיתוך הדחיסה אחורה תור אחד ומזהמת את התמלול. `/plan` מטופלת בשניהם: תיבת הכתיבה מחליפה את מצב המרחב, וזה מה שגורם למשטח הכלים, לקבוצת מעקות הבטיחות ולהנחיה להסכים בתור הזה ובכל תור שאחריו. `/goal`, `/loop` ו-`/skill:<name>` מטופלות בתוך ההרצה עצמה ורק במנגנון ההרצה המובנה — `/goal` ו-`/loop` מתחילות עבודה אוטונומית עם תקציב עלות, ושם עם קידומת `skill:` מאותר כמיומנות שגוף ה-`SKILL.md` שלה הופך לדירקטיבה של התור. מרחב השמות הוא מה שמפריד בין שני מכלולי השמות: איתור שם חשוף מול המיומנויות גרם לכך שמיומנות בשם `plan` או `compact` הוצללה לצמיתות על ידי הפקודה המובנית. שם חשוף שאינו מובנה עדיין מאותר, עבור הודעות שנכתבו לפני שמרחב השמות נוצר. שם שאינו מזוהה פשוט נופל דרך כטקסט רגיל.
 
-## Worktree provisioning
+## הקצאת עצי עבודה
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+לפני שדבר כלשהו רץ, השיחה מקבלת שורש עבודה משלה, ומתחתיו עץ עבודה מבודד בהעתקה בזמן כתיבה לכל מאגר. כברירת מחדל אלו כל המאגרים המקושרים לסביבת העבודה; מרחב PR — או מרחב שנוצר עם בחירה מפורשת — מקצה רק את אלה שברשימת ההיתר, ושיחה לסקירת PR מצמידה את המאגר האחד שלה ל-head ref של בקשת המשיכה בעוד שהאחרים יושבים על ענף ברירת המחדל שלהם. הצ׳קאאוט המקורי לעולם אינו משתנה, וכל תיקיית השיחה מפונה כשהמרחב נמחק.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+העתקה בזמן כתיבה היא ה**יחידה** שמיושמת בכל מקום שבו `rift` נשלח, בגיבוי רכיב נייטיב מצורף. מערכת קבצים שלא יכולה לבצע reflink — או תיקיית נתונים שנמצאת בכרך אחר מהמאגר — מכשילה את ההקצאה במקום ליפול חזרה. `git worktree` הוא המנוע ב-Windows, שם אין מנוע העתקה בזמן כתיבה שאפשר לבנות, והוא אינו נסיגה שקטה במארחים אחרים. `rift` חסר בפלטפורמה שהוא נשלח בה הוא התקנה שבורה — השרת מסרב לעלות במקום ליפול חזרה בשקט, מפני שנפילה לאחור שקטה מסתירה את הקלקול מאחורי מסלול איטי יותר לנצח.
 
-## Identity and credentials
+## זהות ופרטי גישה
 
-Two identities are resolved per run, before any process launches.
+שתי זהויות נקבעות בכל הרצה, לפני שכל תהליך עולה.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**בעלות Git.** קומיטים שסוכן יוצר נכתבים _בשם הסוכן_ — `<Name> (agent) <agentId@agents.control-center.local>` בשני המשתנים `GIT_AUTHOR_*` ו-`GIT_COMMITTER_*` — ולעולם לא בהתחזות לאדם. החלק המקומי הוא ה-UUID של הסוכן, לא ה-slug של שמו. האדם המבקש נזקף בנספח `Co-Authored-By:`, שנישא בסביבה ומונחה בהנחיית המערכת. זהות מפורשת שנקבעה על ידי הקורא תמיד גוברת על שתיהן.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**זהות מארח הקוד.** פרטי הגישה של ההרצה ל-GitHub הם תמיד ורק של המתווך — אסימון התקנת App בהיקף מאגר, או נפילת ה-PAT שלו לסביבה — ולעולם לא האסימון השמור של החבר המבקש עצמו. `actingUserId` תוחם את נפילת ה-PAT כך שחבר שאינו בעל השרת לא יורש את הטווח של השרת; הוא אינו מניח אסימון אישי על גבי סביבת הסוכן.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**פרטי הגישה של ספק המודל** נקבעים בסדר קבוע, והסדר חשוב:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. עקיפת סביבה לפי מתאם,
+2. הסביבה של הקורא,
+3. מאגר פרטי הגישה של השרת (רענון אסימון OAuth אם הוא קרוב לפקיעה),
+4. סביבת התהליך.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+מכיוון שעקיפת המתאם באה ראשונה, היא גוברת בשקט על חשבון ספק שמחובר באפליקציה. אם הרצה מחויבת לחשבון הלא נכון, שם כדאי לחפש קודם. פרטי הגישה של הספק הם גלובליים למארח — משותפים לכל סביבות העבודה בהתקנה.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
+אסימונים הכפופים ליכולות (GitHub, כרטוס) מגיעים מתווך פרטי הגישה, שמזריק רק את מה שהיכולות של ההרצה מתירות. ראו [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
 
-## Launch
+## הפעלה
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+ההרצה מופעלת כשעץ העבודה שלה משמש כתיקיית העבודה, ועבור Claude Code — עם תצורת MCP מחוללת, כדי שהסוכן יוכל להגיע למשטח הכלים של Control Center. ACP וה-`bash` של מנגנון ההרצה מקבלים סביבה מסוננת; Claude Code דרך `NoSandboxAdapter` יורש את סביבת המארח.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[ארגז החול של מערכת ההפעלה עוטף הרצה רק במקום שבו למארח יש מנוע]
+`cc_server` בודק את המארח פעם אחת בעלייה, וכשמנוע זמין הוא עוטף בו את תהליכי הסוכן — Seatbelt ב-macOS, bubblewrap ב-Linux וב-WSL2. שני תפרי השליחה עטופים, מפני שהם אינם חולקים אחד: ה-CLI של Claude Code עובר דרך פורט ארגז החול; מתאמי ACP וכלי ה-`bash` של מנגנון ההרצה המובנה עוברים דרך מנהל ארגז החול. הוא גם מה שמחיל את הנתיבים המוגנים של ההרצה: הצ׳קאאוטים הרשומים של המאגרים שלכם חסומים לכתיבה בתוך ארגז החול, בכל מצב.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+במקום שאין מנוע, ההרצה **אינה** נעטפת בארגז חול, ושום דבר אחר לא משתנה כדי לפצות על כך. כלומר תמיד ב-Windows (אין עטיפה נייטיב — `microvm` הוא מסלול נפרד, הכפוף לבדיקה, עבור מסופים ותחנות) וב-Linux או WSL2 בלי `bwrap` ו-`socat` ב-`PATH`. השרת מציין באיזה מצב הוא נמצא בשורת יומן העלייה, ו-`--sandbox off` מבטל זאת במכוון.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+שני פערים שורדים את ארגז החול גם כשהוא פעיל. כלי הקבצים בתהליך של מנגנון ההרצה (read, write, edit, apply patch, search, find, search_files) רצים בתוך תהליך השרת, כך שאף פרופיל לא מגביל אותם — הגבול שלהם הוא הגבלת הנתיבים של הכלים עצמם בתוספת מעקות הבטיחות. ו-Claude Code מופעל עם `--dangerously-skip-permissions`, כך שקריאות הקבצים והמעטפת שלו עצמו אינן משעורות על ידי Control Center; ארגז החול של מערכת ההפעלה הוא הגבול שמסביבן.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+שאר הגבולות תקפים בכל מארח, עם ארגז חול או בלעדיו: עץ העבודה של ההרצה עצמה (העתקה בזמן כתיבה במקום שבו `rift` נשלח; `git worktree` ב-Windows), פרטי גישה הכפופים ליכולות ומתווכים בכל הפעלה ומבוטלים עם הפירוק, מעקות הבטיחות המאוחדים של הפעולות (נכשלים באופן סגור — הכרעת `prompt` בלי מאשר מחובר נדחית) ומשטח הכלים שהמצב של השיחה מתיר. ACP וה-`bash` של מנגנון ההרצה עדיין מסננים את הסביבה; Claude Code דרך `NoSandboxAdapter` יורש את סביבת המארח.
 :::
 
-## Streaming
+## זרימה
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+ההרצה מזרימה בחזרה רצף אירועים בעל טיפוסים, שמעבד הזרימה שומר כדלתות של הודעות, מקפל למקטעי תמלול והופך לאירועי הודעות:
 
-| Event              | What it carries                                                                                                  |
+| אירוע              | מה שהוא נושא                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | פלט החשיבה, מוצג בתוך השורה                                                                                |
+| `text`             | פלט גלוי                                                                                                   |
+| `toolCall`         | הפעלה של כלי, עם המזהה והארגומנטים המובנים שלו                                                          |
+| `toolResult`       | התוצאה המתאימה, מסומנת כשיש שגיאה או כשהיא זרם חלקי                                              |
+| `usage`            | ספירת אסימונים ועלות עבור חלון מדידה                                                                   |
+| `error`            | שגיאה, עם הקוד המובנה של המתאם כשהוא דיווח על אחד                                                |
+| `sandboxViolation` | מערכת ההפעלה חסמה קריאת מערכת. נפלט רק במקום שבו ארגז חול באמת עוטף את התהליך — ראו את ההערה למעלה |
+| `debug`            | אבחון זמן ריצה (סמני הפעלה, הכרעות מעקות הבטיחות, תזכורות חוזה)                                           |
+| `done`             | ההרצה הסתיימה                                                                                                 |
 
-## What bounds a run
+## מה תוחם הרצה
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+במכוון **אין תקרת תורים בשום מקום**. ספירת איטרציות קשיחה הורגת עבודה ארוכה לגיטימית (מיגרציות, ניקוי התפצלות) ואינה תופסת דבר שהמעקות שלמטה תופסים קודם. הרצה מסתיימת כאשר:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **המודל עוצר** מעצמו;
+- **אדם עוצר אותה**, או משתלט על השיחה (דבר שמשהה את מנגנון ההרצה המובנה בגבול התור הנקי הבא שלו — הרצת Claude Code, שאין לה גבול בטוח, נעצרת במקום זאת);
+- **מנגנון ניטור השקט מופעל.** אין פלט לאורך הסף, וההפעלה מופסקת עם כשל `silentRun`. ברירת המחדל היא 15 דקות, ויורדת ל-10 במצבים שהם בעיקר קריאה (סקירה ותוכנית); סוכן יכול לעקוף אותה בין 1 ל-240 דקות. מנגנון ניטור השקט נדרך כשתהליך בן מדווח על ה-PID שלו, ולכן הוא מכסה את ה-CLI של Claude Code — ו**לא** את מנגנון ההרצה המובנה, שאינו מפעיל דבר;
+- **תקרת עלות נכנסת לפעולה** — אבל רק בפקודות אוטונומיות.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+מעקה לולאת האבדון אינו מסיים: שלוש קריאות כלי זהות ברצף והלולאה _מנווטת_ את הסוכן לשנות גישה.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[לתור רגיל אין תקרת עלות]
+מעקה העלות בתוך ההפעלה מחווט רק עבור `/goal` ו-`/loop`; כל הרצה אחרת אינה מעבירה תקציב כלל. בפקודות האלה, מקטע אחד ללא השגחה עשוי לשרוף 500 סנטים ($5.00) כברירת מחדל, עם היגוי רך ב-80% שמבקש מהסוכן לסגור בצורה נקייה לפני העצירה הקשיחה ותקציב מטרה עמיד של 5000 סנטים ($50.00) על פני מקטעים. תקציב מפורש ב-`/goal --budget` לעולם לא נחצה במקטע שלם.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+ביחד, לתור אינטראקטיבי רגיל במנגנון ההרצה המובנה אין תקרת תורים, אין תקרת עלות ואין מנגנון ניטור שקט. הוא מסתיים כשהמודל עוצר או כשאתם עוצרים אותו. זהו ויתור מכוון — כל החלופות הורגות עבודה ארוכה לגיטימית — אבל הוא אכן אומר שהרצה אינטראקטיבית ללא השגחה אינה תחומה על ידי דבר מלבד שיקול הדעת של המודל עצמו.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+באמצע הרצה, הודעה שנשלחת לסוכן פעיל נכנסת לתור כ**היגוי** ומנוקזת בגבול התור הבא, כך שאתם יכולים לכוון הרצה בעדינות בלי להרוג אותה. היגוי, השהיה, סוכני משנה וחוזה ההשלמה הם תכונות של מנגנון ההרצה המובנה; ל-Claude Code אין אף אחת מהן.
 
-## How a run is recorded
+## איך הרצה נרשמת
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+כל שליחה כותבת `AgentRunLog`: זמן התחלה וסיום, סיכום, ספירת אסימונים ועלות מוערכת (כולל עלות שנצברת מסוכני משנה), מתאם ומודל, מזהה התהליך ונתיב היומן, השיחה וכל כרטיס או הרצת פייפליין שהיא שייכת להם, ועוד שני שדות סיווג שנושאים את רוב האמת.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **סטטוס** הוא גס: `pending`, `running`, `completed`, `error`.
+- **מצב החיות** הוא הקריאה העדינה יותר: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **משפחת שגיאות** מקבצת כשלים בצורה מועילה: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` אינו אומר "נמסר"]
+כשהרצה מסתיימת בלי התוצר שהמצב שלה דרש — הרצת מצב תוכנית שלעולם לא קראה ל-`submit_plan`, הרצת תזמור שלעולם לא הציעה — הסטטוס נשאר `completed`, כי התהליך כן יצא בצורה נקייה. האות הכנה נשען על מצב החיות (`empty`), על משפחת השגיאות (`silentRun`) ועל סיכום שאומר בדיוק מה לא הופק. הסיכום הזה מוגן: הסיום לא ידרוס אותו בפטפוט האחרון של המודל.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+זה מכוון. החלפת הסטטוס הייתה מזיזה מכונות מצב של כרטיסים ופייפליינים שאין להן דבר עם התוצר החסר. זה גם אומר ש"סטטוס: completed" לבדו לעולם אינו מספיק כדי להסיק שהרצה הצליחה — קראו את הסיכום.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+סגירת ההרצה מפרסמת `AgentRunCompleted` והרבה תלוי בו: מסגרת ההתראה ופריט ההזנה העמיד שלה, המעביר החי שדוחף אותה ללקוחות מחוברים, צבירת עלויות הפייפליין, חידוש שלב פייפליין שחיכה להרצה, השלמת הכרטיס המגבה, מיפוי תזמור למצב סופי, החלטת ההמשך-או-עצירה של מפקח המטרה, תפקיד הבודק והערכת התקציב שלאחר ההרצה. סגל הנוכחות מגיע בנפרד, בכך שהוא צופה ביומני ההרצה האחרונים ולא באירוע.
 
-## Budgets, after the fact
+## תקציבים, בדיעבד
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+אכיפת התקציב היא _תגובה_, לא שער. כשהרצה מסתיימת, המעריך משווה את ההוצאה של הסוכן מתחילת החודש לתקרה האפקטיבית שלו (מדיניות תקציב מקושרת אם יש כזו, אחרת הנתון החודשי של הסוכן עצמו; אפס פירושו ללא הגבלה). חציית הסף הרך רושמת תקרית אזהרה; מיצוי התקציב רושם תקרית קשה ומחליף את סטטוס מחזור החיים של הסוכן ל-`paused` בתרשים הארגון. השליחה עדיין מקבלת עבודה מהסוכן הזה. טריגר פייפליין `BudgetThresholdCrossed` יכול להתחיל עבודת המשך מאותו אירוע.
 
-## Retry lineage
+## שושלת ניסיונות חוזרים
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+כל יומן הרצה יכול לשאת שושלת ניסיונות חוזרים — מזהה הרצת אב, מונה ניסיונות וסיכום המשך. עץ ההרצות של השיחה מציג את מספר הניסיון כשהוא שונה מאפס. "נסו שוב" מהצ׳אט הוא שליחה חדשה עם יומן הרצה חדש.
 
-## Related concepts
+## מושגים קשורים
 
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): what the adapter can and cannot enforce
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/): where the tool surface and the completion contract come from
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): the effect-class policy every gated call passes
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/): the isolation story in full
-- [Multiplayer](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): steering, take-over and the autonomy dial
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): what `AgentRunCompleted` sets off
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): מה המתאם יכול לאכוף ומה לא
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/): מהיכן מגיעים משטח הכלים וחוזה ההשלמה
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): מדיניות מחלקות ההשפעה שכל קריאה משעורת עוברת
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/): סיפור הבידוד במלואו
+- [רב־משתמשים](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): היגוי, השתלטות ומחוון האוטונומיה
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): מה ש-`AgentRunCompleted` מפעיל

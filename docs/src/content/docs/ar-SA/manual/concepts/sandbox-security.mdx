@@ -1,267 +1,103 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: البيئة المعزولة والأمان
+description: ما الذي يقيّد الوكيل في Control Center اليوم فعلًا، وإلى أين تصل بيئة نظام التشغيل المعزولة، وأي الحدود تبقى قائمة على مضيف بلا خلفية.
 slug: ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[أين تصل بيئة نظام التشغيل المعزولة وأين لا تصل]
+يفحص `cc_server` المضيف عند الإقلاع، ويغلّف تنفيذ أوامر الوكيل ببيئة نظام
+التشغيل المعزولة الأصلية حين تتوفر: Seatbelt على macOS، وbubblewrap على
+Linux وWSL2 (وذلك يحتاج `bwrap` و`socat` على `PATH`). حيث لا توجد
+خلفية، على Windows أو على جهاز Linux تنقصه تلك الأدوات، ترجع التشغيلات إلى
+الحدود الأخرى أدناه، ويقول الخادم ذلك في سجل إقلاعه.
+`--sandbox off` يطفئها عمدًا.
 
-Two gaps survive the sandbox and are worth holding in mind:
+ثغرتان تبقيان رغم البيئة المعزولة، ويجدر إبقاؤهما في الحسبان:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- تعمل **أدوات الملفات داخل العملية** في الإطار المضمّن (`read` و`write` و`edit` و`apply_patch` و`search` و`find` و`search_files`) داخل عملية الخادم، فلا يُغلَّف إلا `bash`. ما يحدّها هو حصر المسارات داخل الأدوات نفسها، إضافة إلى ضوابط الإجراء.
+- **يُطلَق Claude Code مع `--dangerously-skip-permissions`**، لأن `claude -p` غير التفاعلي سيتوقف إلى الأبد على طلبه الخاص. لذلك لا تمر استدعاءات الملفات والصدفة عنده ببوابة ضوابط Control Center، والحد حولها هو بيئة نظام التشغيل المعزولة.
   :::
 
-## Why isolation matters here
+## لماذا يهم العزل هنا
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+يقرأ الوكيل الملفات، ويشغّل أوامر الصدفة، ويستدعي واجهات خارجية نيابة عنك. الفشل الذي يعنيك قلّما يكون خبثًا: وكيل يخطئ قراءة مسار فيعيد كتابة نسخة عملك، أو يدفع فرعًا لم تفرغ من مراجعته. السؤال الذي على المنتج أن يجيب عنه ليس «هل الوكيل موضع ثقة؟»، بل «ما نطاق الأثر حين يخطئ؟».
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+يجيب Control Center بطبقات مستقلة عن قصد. إن غابت واحدة بقيت الأخريات. وذلك لأن الطبقة الخارجية، بيئة نظام التشغيل المعزولة، هي الوحيدة المشروطة: تتوقف على أن يقدّم المضيف خلفية، وعلى Windows لا يقدّم أي مضيف خلفية.
 
-## What actually constrains an agent
+## ما الذي يقيّد الوكيل فعلًا
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+خمسة أمور تحدّ تشغيل الوكيل على كل مضيف، ببيئة معزولة أو من دونها. ليس أي منها حدًا في النواة، وكلها حقيقية. حيث يقدّم المضيف خلفية تقع بيئة نظام التشغيل المعزولة فوقها، وقسم «ما تضيفه البيئة المعزولة وأين تتوقف» أدناه يبيّن ما يتغيّر.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**شجرة عمل خاصة بها بالنسخ عند الكتابة.** تجهّز كل محادثة سحبها الخاص من كل مستودع مرتبط، مستنسخًا بالنسخ عند الكتابة عبر `rift` الأصلي المضمّن، لا بنسخ البايتات واحدًا واحدًا، فيصير العزل رخيصًا بما يكفي ليكون الافتراضي. المستودع المسجّل الذي أضفته إلى مساحة العمل ليس الدليل الذي يعمل فيه الوكيل. محادثتان تلمسان المستودع نفسه لا ترى إحداهما تعديلات الأخرى، ولا تعدّل أي منهما نسخة عملك.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+ويجدر التدقيق في مستوى هذا الحد: **شجرة العمل لكل محادثة لا لكل وكيل.** يحصل الوكيلان في المحادثة الواحدة على دليلي عمل متراكبين منفصلين _يشتركان_ في `repos/` الخاص بتلك المحادثة، وهذا هو المقصود، فهما يتعاونان على تغيير واحد، بينما تبقى أدلة كل وكيل الخاصة منفصلة. النسخ عند الكتابة هو الخلفية الوحيدة حيثما يُشحَن `rift`. إن كان نظام الملفات لا يدعم reflink، أو كان دليل البيانات على وحدة تخزين غير وحدة المستودع، فشل التجهيز ولم يرجع إلى بديل. Windows هو الاستثناء: لا خلفية للنسخ عند الكتابة هناك، فالخلفية `git worktree`، وليست تدهورًا صامتًا.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**حصر المسارات في أدوات الملفات لدى الإطار المضمّن.** تحل أدوات الإطار `read` و`write` و`edit` و`apply_patch` و`search` و`find` و`search_files` كل مسار مقابل دليل عمل التشغيل والجذور المشتركة، دليل `repos/` الخاص بالمحادثة حيث تعيش أشجار العمل، ودليل مرفقات المساحة إن وُجد، وترفض كل ما يقع خارجها. لا تُقبل المسارات المطلقة إلا إن كانت داخلها أصلًا. والوصلة الرمزية داخل شجرة العمل، إن أشارت إلى خارجها، تُحَل وتُرفض أيضًا. لهذا لا يستطيع الوكيل تنفيذ `write` على `~/.ssh` حتى من غير بيئة معزولة.
 
-**The mode's tool surface.** A conversation's [mode](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**سطح أدوات الوضع.** يقرّر [وضع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) المحادثة أي الأدوات تُبنى للتشغيل أصلًا. في أوضاع القراءة فقط (`plan` و`review` و`orchestrate`) لا تكون الأدوات المعدِّلة في السجل أصلًا، وترفض سياسة أوامر الصدفة في تلك الأوضاع كل أمر معدِّل رفضًا مباشرًا، مثل `git commit` و`git push` و`npm install` و`docker` وسواها، بدل أن تطلب الموافقة عليها. الأداة الغائبة لا تُستدعى، وهذا ضمان أقوى من أداة حاضرة وتخضع لبوابة.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) for the resolution model.
+**ضوابط الإجراء الموحّدة.** تصرّح كل أداة معدِّلة بأصناف الأثر التي يمكن أن تنتجها، ويحسم محرك السياسة كل صنف إلى allow أو prompt أو deny قبل أن يجري الاستدعاء. يُحسم `prompt` من غير معتمِد متصل إلى _مرفوض_. السؤال الذي لا يجد مجيبًا لا يُعدّ موافقة أبدًا. انظر [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) لنموذج الحسم.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**بيانات اعتماد مقيّدة بالقدرات وبيئة معقّمة.** تُصدَر بيانات الاعتماد عند كل إطلاق من أعلام قدرات المحادثة، وتُسحَب حين ينتهي التشغيل. يحصل ACP و`bash` في الإطار وClaude Code تحت التغليف الأصلي على بيئة مجرّدة من متجهات حقن الرابط الديناميكي والمفسّر (`LD_PRELOAD` و`DYLD_INSERT_LIBRARIES` و`NODE_OPTIONS` و`GIT_SSH_COMMAND` ونظائرها) قبل أن تبدأ العملية. ويرث Claude Code عبر `NoSandboxAdapter` بيئة المضيف.
 
-### Where those bounds thin out
+### أين تضعف هذه الحدود
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+تعمل أدوات الملفات في الإطار _داخل عملية الخادم_ لا في عملية ابنة، فلا يستطيع ملف تعريف للبيئة المعزولة أن يقيّدها ولو أُلحق بها. `bash` وحده يمر بمشغّل الأوامر المعزول. حصرها هو فحص المسار الموصوف أعلاه، وهذا الفحص هو الحد الذي يعتمد عليه التشغيل، لا خط دفاع ثانٍ.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+أداة `bash` هي الموضع الآخر الذي يجدر تحديده. تُقيَّم أوامرها وفق سياسة أوامر الوضع، ثم تُطلَق ببيئة معقّمة ويكون دليل عملها شجرة العمل. حيث توجد خلفية يُغلَّف هذا الإطلاق، فالبيئة المعزولة هي التي تمنع أمر الصدفة من الكتابة خارج شجرة العمل. حيث لا توجد، على Windows أو على Linux من غير `bwrap` و`socat`، تبقى سياسة الأوامر الفاصل الوحيد بين الأمر وبقية القرص. في وضع `chat` ترفض السياسة رفضًا قاطعًا قائمة ثابتة، هي تصعيد الامتيازات وتدمير النظام والقرص والهروب من الحاوية ومن فضاء الأسماء، وتطلب الموافقة على تعديلات الحالة البعيدة، `git push` و`gh pr create` ونشر الحزم وتثبيتها. ما لا يقع في أي من القائمتين يُنفَّذ. تُحلَّل الأنابيب والسلاسل والأصداف الفرعية، ويُقيَّم كل أمر فرعي على حدة، ويُعتمد القرار الأشد تقييدًا.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/#the-adapter-honesty-matrix).
+Claude Code، حين يُستخدَم محوّلًا، هو الحالة التي تحمل فيها البيئة المعزولة الوزن الأكبر. يطلقه Control Center مع `--dangerously-skip-permissions`، لأن `claude -p` غير التفاعلي سيتوقف إلى الأبد على طلب الموافقة الخاص به. تحدث استدعاءات القراءة والكتابة والتحرير والصدفة داخل عمليته، ولا يراها Control Center. الاستدعاءات الوحيدة التي تبلغ بوابة هي أدوات `mcp__*` التي يقدّمها Control Center نفسه. حيث توجد خلفية تبقى تلك الاستدعاءات غير المرئية داخل تغليف البيئة المعزولة، فنظام التشغيل هو الحد حولها. حيث لا توجد خلفية، فلا شيء يحدّها. يصرّح كل محوّل بهذا في مصفوفة فرضه، انظر [مصفوفة صدق المحوّل](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/#مصفوفة-صدق-المحوّل).
 
-## Capability gating is enforcement by absence
+## تقييد القدرات فرض بالغياب
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+تحمل المحادثة أربعة أعلام قدرات: الدفع إلى المستودع، واستدعاء GitHub API، واستدعاء مزوّد التذاكر، والوصول إلى الشبكة. لا تُفحص حين يتصرف الوكيل. تُفحص مرة واحدة عند الإطلاق، يفحصها وسيط بيانات الاعتماد، والقدرة المطفأة تعني أن الرمز المطابق لا يُوضع في البيئة أصلًا.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+هذه الآلية كلها، ويجدر التصريح بها لأن نمط الفشل ليس ما يتوقعه الناس. إطفاء «GitHub API» لا ينتج رسالة «رُفضت القدرة». ينتج `401` عاديًا داخل الوكيل، إذ لا يوجد `GH_TOKEN` ليُرسَل. قد يروي الوكيل ذلك على أنه مشكلة في بيانات الاعتماد. الفرض بالغياب متين، فلا فحص يمكن تجاوزه، لكنه صامت والوكيل لا يعرف سبب الفشل.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+علم الوصول إلى الشبكة يسلك المسلك نفسه. حين يُطفأ، ترفض أداتا الإطار `web_fetch` و`web_search` كل استدعاء، وتكون قائمة سماح البروكسي لإطلاق معزول فارغة، فيُرفض كل اتصال صادر.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+تُسحَب بيانات الاعتماد حين يُفكَّك التشغيل، فلا يعيش المقبض أطول من التشغيل الذي أصدره.
 
-## What the sandbox adds and where it stops
+## ما تضيفه البيئة المعزولة وأين تتوقف
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+للتعداد `SandboxBackend` ثلاث قيم: `native` (Seatbelt على macOS، وbubblewrap على Linux وWSL2)، و`none`، و`microvm`. تغليف أوامر الوكيل لا يستخدم إلا الأوليين. `microvm` خلفية جهاز VM في حاوية معزولة، للطرفيّات التفاعلية والمنصات، لا ترقية صامتة لتغليف `bash`. فهم الشكل الأصلي يفسّر ما تكسبه حيث تُلحَق خلفية، وما لم يكن ليُعطيك أصلًا.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+يفحص `cc_server` المضيف مرة واحدة عند الإقلاع، وحيث تجيب خلفية يغذّي وصلتي مسار الإرسال كلتيهما، لأن قناتي النقل لا تشتركان في وصلة واحدة. الأولى (`SandboxPort`) تغلّف سطر أوامر Claude Code. والثانية (`SandboxManager`) تغلّف محوّلات ACP وأداة `bash` في الإطار المضمّن. الاكتفاء بتغذية واحدة يترك الباقي يُطلَق بلا تغليف، وهذا ما كان يحدث. على مضيف بلا خلفية، أو مع `--sandbox off`، يُطلَق الجميع بلا تغليف، ويقول الخادم أي الحالتين أنت فيها على سطر إقلاعه. ويعقّم ACP و`bash` في الإطار البيئة مع ذلك، ويرث Claude Code عبر `NoSandboxAdapter` بيئة المضيف.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+سطح واحد يُستثنى عمدًا: تقبل الطرفية المستضافة على الخادم معامل خلفية لكل جلسة، ويبنيها `cc_server` على صدفة المضيف افتراضيًا، فالطرفية التي تفتحها من التطبيق تعمل بلا عزل إلا إذا سمّى العميل `native` صراحة. هذه صدفة حقيقية على مضيف الخادم، لا تشغيل وكيل.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+على Linux يبني `bubblewrap` فضاء أسماء للتركيب، فيرى الوكيل فعلًا ما رُبط فيه فقط. على macOS يطبّق `sandbox-exec` ملف Seatbelt **متساهلًا افتراضيًا**. الملف الذي يرفض كل شيء افتراضيًا يجعل الصدفة التفاعلية غير صالحة للاستعمال، لأن تعداد استدعاءات dyld وXPC وMach غير عملي. لذلك يبدأ ملف macOS من `(allow default)` ويقتطع منه الرفض: قراءة المسارات السرية، وإعادة ضبط سياسة الكتابة إلى الرفض مع سماح صريح فوقها، وحظر unlink على كل مسار مرفوض وعلى أسلافه حتى لا تتجاوز إعادة التسمية رفض الكتابة، ورفض التنفيذ للثنائيات الخطرة دائمًا ولكل ما يُنسَخ إلى دليل قابل للكتابة، وحصر الشبكة في منافذ بروكسي loopback إضافة إلى DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+النتيجة العملية: على Linux يضيق ما يراه الوكيل من نظام الملفات، وعلى macOS يظل قادرًا على _قراءة_ معظم المضيف، وتُحمى نسخ العمل المسجّلة برفض صريح للكتابة ولإعادة التسمية، لا بإخفائها. كلاهما عزل على مستوى فضاء الأسماء، لا حد أمان في النواة، والخلفيات تقول ذلك في ملاحظات قدراتها.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+مجموعة تركيبات الربط هي الموضع الذي يُرسَم فيه الحد بين الوكلاء. يركّب إرسال التراكب (Claude Code وACP) ما يصل إلى أربعة مسارات، تُحَل في كل تشغيل: دليل عمل الوكيل المتراكب للقراءة والكتابة، ودليل إعداد الوكيل للقراءة فقط، ودليل `repos/` المشترك للمحادثة للقراءة والكتابة إن وُجد، ودليل مرفقات المساحة للقراءة فقط إن وُجد. لا يُركَّب دليل وكيل شقيق أبدًا. تغليف `bash` في الإطار أضيق، فلا يركب ربطًا إلا دليل عمل التشغيل. هذا الشكل نفسه الذي يفرضه فحص المسار داخل العملية في البرمجيات، فيتفق الشكلان، لكن فحص المسار وحده يغطي أدوات الملفات الخاصة بالإطار، وهي لا تبلغ فضاء أسماء تركيب أصلًا.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+وتنضم نسخ العمل المسجّلة إلى مجموعة رفض الكتابة فوق ذلك، في كل وضع وعلى المسارات المغلَّفة الثلاثة (Claude Code وACP و`bash` في الإطار)، وتُصدَر كل قاعدة بصيغتين، الحرفية وبعد حل الوصلة الرمزية. الصيغة الثانية ليست تحسينًا شكليًا. تطابق النواة قاعدة الرفض مع المسار المحلول، ويجعل macOS الحل الحالة الشائعة لا النادرة: `/tmp` هو في الحقيقة `/private/tmp`، و`/var/folders/…` هو في الحقيقة `/private/var/folders/…`. فنسخة العمل التي تُبلَغ عبر أي منهما كانت ستبقى قابلة للكتابة، بينما يبدو ملف التعريف مانعًا لها.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+الشبكة، تحت بيئة معزولة، قائمة سماح **بالنطاق** لكل جلسة، تفرضها بروكسيات loopback داخل العملية. الخروج مرفوض افتراضيًا: مع إطفاء قدرة الشبكة تظل البروكسيات تبدأ لكن قائمة سماحها فارغة، فيُرفض كل اتصال صادر. مع تشغيلها يبني المحلّل قائمة السماح من خط أساس منتقى، مزوّدو واجهات نماذج اللغة واستضافة git وسجلات الحزم وفهرس النماذج، إضافة إلى نطاقات GitHub التي تكسبها قدرة GitHub أو قدرة الدفع لدى الوكيل، ويطابق مضيف وجهة كل اتصال مع القائمة. أحرف البدل تعمل (`*.example.com` يطابق النطاقات الفرعية لا نطاق القمة). قائمة رفض دائمة منفصلة تغلب قائمة السماح، وتغطي نقاط بيانات التعريف السحابية ووجهات القياس عن بُعد. ما هو _غير_ قابل للتهيئة هو القائمة نفسها: تحمل المواصفة حقل `egressAllowlist` لنطاقات إضافية وخطاف نطاق للتذاكر، ولا شيء في مسار الإرسال يملأ أيًا منهما، فيحصل كل تشغيل عمليًا على خط الأساس مضافًا إليه نطاقات قدراته، ولا شيء بعد ذلك.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+حالات الرفض على macOS يمكن رصدها. يقرأ مراقب سجل النظام بحثًا عن رفض Sandbox، ويصفّي الضوضاء المعروفة، ويزيل تكرار عواصف إعادة المحاولة، ويُظهر كل حالة على هيئة `SandboxViolation` تسمّي ما جرت محاولته والقدرة التي يرفع تشغيلها المنع. على Linux يحلّل مسار التغليف stderr بحثًا عن `EPERM` و`Operation not permitted` و`Permission denied`، ويصدر نوع الحدث نفسه، بلا التقاط لسجل النظام. تصل هذه الأحداث إلى مجرى أحداث التشغيل نفسه، فيظهر استدعاء النظام المرفوض في نص المحادثة لا في سجل فحسب. لا يوجد هذا القياس إلا حين يغلّف العزل الأصلي العملية فعلًا. على مضيف بلا خلفية لا يوجد ما يُرصَد. وهو منفصل عن تقييد القدرات: المخالفة تأتي من استدعاء نظام مرفوض، لا من استعلام عن قدرة.
 
-## Confirmations come from the guardrails, not the sandbox
+## التأكيدات تأتي من الضوابط لا من البيئة المعزولة
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+ليس للبيئة المعزولة مسار موافقة. تُطلَق، وتنفّذ، وتصدر أحداثًا، ثم تُفكَّك، ولا موضع فيها لإنسان يجيب عن سؤال. حين ترى تأكيدًا في مساحة، موافقة على هذا الدفع أو موافقة على هذا الحذف، فقد رفعه محرك الضوابط (أو سياسة أوامر الإطار) _قبل_ أن يبلغ الإجراء بيئة التشغيل أصلًا.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+هذا الترتيب مقصود. موافقة تأتي بعد استدعاء النظام تكون سجل تدقيق لا بوابة. ولهذا تعيش قاعدة الفشل المغلق في الضوابط: إن لم يكن هناك معتمِد متصل، يُحسم القرار قبل أن يجري أي شيء، والحسم رفض.
 
-## Diagnostics
+## التشخيص
 
-[Run agent diagnostics](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/) is the single place
-that states what can be checked by hand.
+[تشخيص وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/) هو الموضع الوحيد الذي يبيّن ما يمكن فحصه يدويًا.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Rigs and enclosures](/ar-SA/دليل-المستخدم/مفاهيم/منصات/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): where isolation fits in the dispatch flow
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/ar-SA/دليل-المستخدم/مرجع/خلفيات-البيئة-المعزولة/): the backends and their configuration
+- [المنصات والحاويات المعزولة](/ar-SA/دليل-المستخدم/مفاهيم/منصات/): الخطوة فوق البيئة المعزولة، حين يحتاج العمل آلة كاملة يمكن التخلص منها، بحد في النواة، لا عملية مغلَّفة
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): طبقة السياسة فوق أرضية نظام التشغيل، ومنها تأتي الموافقات فعلًا
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): أين يقع العزل في مجرى الإرسال
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): كيف يضيّق الوضع سطح الأدوات وسياسة الأوامر
+- [خلفيات البيئة المعزولة](/ar-SA/دليل-المستخدم/مرجع/خلفيات-البيئة-المعزولة/): الخلفيات وتهيئتها
 
-## Related guides
+## أدلة ذات صلة
 
-- [Configure sandbox policies](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/): capability flags and filesystem posture
-- [Run agent diagnostics](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/): what the diagnostic checks cover
+- [تهيئة سياسات البيئة المعزولة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/): أعلام القدرات ووضعية نظام الملفات
+- [تشخيص وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/): ما تغطيه فحوص التشخيص

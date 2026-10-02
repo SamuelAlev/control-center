@@ -1,98 +1,99 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: ปรับแต่งแชทบอต
+description: เปลี่ยนชื่อบอท เปลี่ยนคำที่มันพูดเกี่ยวกับตัวเอง หรือเปลี่ยนคำสั่งสแลชได้จาก Control Center
 slug: th-TH/คู่มือ/วิธีทำ/ปรับแต่งแชทบอต
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+คู่มือนี้แสดงวิธีปรับรูปร่างแอปบอทฝั่งผู้ให้บริการ โดยไม่ต้องออกจาก Control Center
 
-## Prerequisites
+## สิ่งที่ต้องมีก่อน
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- บทบาท `owner` หรือ `admin` ในเวิร์กสเปซ
+- ผู้ให้บริการที่ **เชื่อมต่อแล้ว** แถว **ปรับแต่งบอท** จะปรากฏก็ต่อเมื่อเวิร์กสเปซเชื่อมต่อแล้วเท่านั้น
+- แอปที่ Control Center จัดการได้ สำหรับ Slack นั่นหมายความว่าการเชื่อมต่อเก็บรีเฟรชโทเค็นของการตั้งค่าแอป (`xoxe-…`) ไว้ หากไม่มี แถวนั้นจะบอกเช่นนั้นและยังคงถูกปิดใช้งาน
 
-## What you can change
+## สิ่งที่คุณเปลี่ยนได้
 
-| Field                 | Meaning                                         | Limit                                                      |
+| ฟิลด์                 | ความหมาย                                         | ขีดจำกัด                                                      |
 | --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| **ชื่อแอป**          | ผู้ให้บริการแสดงแอปในรายการอย่างไร                  | 1–35 ตัวอักษร                                            |
+| **ชื่อบอท (สิ่งที่สมาชิกพิมพ์หลัง @)**  | สิ่งที่สมาชิกพิมพ์หลัง `@`                     | 1–80 ตัวอักษร                                            |
+| **คำอธิบายสั้น**       | หนึ่งบรรทัดที่ผู้ให้บริการแสดง                     | ไม่เกิน 140 ตัวอักษร                                    |
+| **สิ่งที่บอทบอกว่าทำได้** | แสดงเหนือ DM ที่คุยกับบอท                   | ไม่เกิน 300 ตัวอักษร                                    |
+| **คำสั่งสแลช**     | คำสั่งที่สมาชิกเรียกใช้ โดยไม่มีเครื่องหมายสแลช   | ตัวพิมพ์เล็ก เฉพาะ `a–z 0–9 _ -` และตัดที่ 32 ตัวอักษร |
+| **ข้อความตรง**   | บอทเปิดประสบการณ์ DM/เอเจนต์หรือไม่ | เปิดหรือปิด                                                  |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center ตรวจสอบฟิลด์ข้อความทั้งสี่ก่อนเรียกผู้ให้บริการ คุณจึงได้ข้อความ "the app name must be between 1 and 35 characters" แทนที่จะเป็น `invalid_manifest` ที่อ่านไม่ออกจากเซิร์ฟเวอร์ที่คุณมองไม่เห็น คำสั่งไม่ถูกปฏิเสธ แต่ถูกปรับให้เป็นรูปแบบมาตรฐาน: เครื่องหมายสแลชนำหน้าถูกตัดออก ส่วนที่เหลือถูกแปลงเป็นตัวพิมพ์เล็ก อักขระใดที่อยู่นอก `a–z 0–9 _ -` จะถูกทิ้ง และผลลัพธ์ที่ว่างเปล่าจะกลับไปใช้ `cc`
 
-## Edit the bot
+## แก้ไขบอท
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → ทั่วไป** แล้วเลื่อนไปที่การ์ด **สะพานแชท**
+2. ในบล็อกของผู้ให้บริการ คลิก **ปรับแต่งบอท**
+3. กล่องโต้ตอบจะเปิดด้วยค่า _สด_ ของแอปที่อ่านกลับมาจากผู้ให้บริการ — สิ่งที่คุณเริ่มต้นจึงเป็นการเปลี่ยนแปลงที่ใครบางคนทำไว้ใน UI ของ Slack เอง
+4. แก้ไขสิ่งที่คุณต้องการแล้วบันทึก
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+การอ่านค่าสดเหล่านั้นทำให้เกิดการหมุนโทเค็นฝั่ง Slack จึงเป็นเหตุผลว่าทำไมแถวจึงต้องคลิกอย่างตั้งใจ ไม่ใช่สิ่งที่หน้าเว็บทำเองเมื่อโหลด
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+การเขียนจะซ้อนทับการเปลี่ยนแปลงของคุณลงบนคำจำกัดความปัจจุบันของแอป สิ่งใดก็ตามที่ Control Center ไม่ได้จำลองไว้ — คำสั่งสแลชคำที่สองที่คุณเพิ่มใน Slack ขั้นตอนของเวิร์กโฟลว์ การตั้งค่าที่ไม่เกี่ยวข้อง — จะคงอยู่โดยไม่ถูกแตะต้อง สโคปและเหตุการณ์จะถูกผสานเข้าไป ไม่เคยถูกหักออก
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+หลังจากบันทึก Control Center จะอ่านตัวตนของบอทใหม่ เพื่อให้ชื่อในการตั้งค่าตรงกับชื่อในแอปแชท
 
-## Reinstall when permissions change
+## ติดตั้งใหม่เมื่อสิทธิ์เปลี่ยน
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[ติดตั้งใหม่หลังการเปลี่ยนสิทธิ์]
+Slack นำคำจำกัดความใหม่ของแอปไปใช้ทันที แต่ยังคงการอนุญาตที่ติดตั้งไว้
+ตามเดิม ติดตั้งแอปใหม่เพื่อให้การเปลี่ยนสิทธิ์มีผล สะพานจะทำงานต่อไป
+ด้วยการอนุญาตเดิมจนกว่าคุณจะติดตั้งใหม่
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+เมื่อการบันทึกเปลี่ยนสิทธิ์ กล่องโต้ตอบจะยังเปิดอยู่และแสดงข้อความ
+"Slack เปลี่ยนสิทธิ์ของแอป ติดตั้งแอปใหม่เพื่อให้มีผล" พร้อมปุ่ม
+**ติดตั้งแอปใหม่** ที่เปิดหน้าติดตั้งแอปในทีมของ Slack สำหรับแอปนั้น
+ใน Slack นั่นคือ **Install App → Reinstall to Workspace**
 
-## Rename the slash command
+## เปลี่ยนชื่อคำสั่งสแลช
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+เปลี่ยน **คำสั่งสแลช** แล้วบันทึก จากนั้นสะพานจะเขียนคำแนะนำโดยใช้คำสั่งใดก็ตามที่มันถูกเรียกใช้ครั้งล่าสุด ข้อความช่วยเหลือและคำแนะนำการลิงก์จึงเปลี่ยนตามชื่อใหม่ แทนที่จะระบุชื่อคำสั่งที่ไม่มีอยู่แล้ว
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+การเปลี่ยนชื่อไม่ทำให้เธรดที่เชื่อมไว้แล้วเสียหาย เพราะเธรดถูกคีย์ด้วยบทสนทนา ไม่ใช่ด้วยคำสั่ง
 
-## What Control Center will not change
+## สิ่งที่ Control Center จะไม่เปลี่ยน
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **การตั้งค่าเชิงโครงสร้าง** ทรานสปอร์ต (Socket Mode) สโคปที่จำเป็น และการสมัครรับเหตุการณ์ เป็นสิ่งที่ถูกกำหนดตายตัว ไม่ใช่สิ่งที่ให้เลือก แอปที่ตั้งค่าให้เงียบได้จากหน้าจอตั้งค่าคือตั๋วซัพพอร์ต ไม่ใช่ฟีเจอร์
+- **ไอคอนของบอท** มีเพียงการตั้งค่าแอปของผู้ให้บริการเองเท่านั้นที่เปลี่ยนได้ และกล่องโต้ตอบก็บอกไว้เช่นนั้น
+- **การย้ายฟีเจอร์ของผู้ให้บริการเอง** แอปที่อยู่ในรูปแบบผู้ช่วยรุ่นเก่าของ Slack แล้วจะคงรูปแบบนั้นไว้ กล่องโต้ตอบนี้แก้ไขคำอธิบาย ไม่ได้ย้ายแอป
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### There is no Customize bot row at all
+### ไม่มีแถว "ปรับแต่งบอท" เลย
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/).
+เวิร์กสเปซยังไม่ได้เชื่อมต่อ แถวนี้จะปรากฏก็ต่อเมื่อบล็อกของผู้ให้บริการ
+แสดงการเชื่อมต่อที่ใช้งานอยู่ ดู [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
 
-### The Customize bot row is disabled
+### แถว "ปรับแต่งบอท" ถูกปิดใช้งาน
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+การเชื่อมต่อไม่มีข้อมูลรับรองสำหรับจัดการแอป — คำบรรยายใต้แถวระบุว่า
+"Control Center ต้องมีโทเค็นการตั้งค่าแอปเพื่อแก้ไขบอท เชื่อมต่อใหม่และ
+ใส่หนึ่งอัน" สำหรับ Slack ให้สร้างคู่โทเค็นการตั้งค่าแอปที่
+[api.slack.com/apps](https://api.slack.com/apps) แล้วเชื่อมต่อใหม่โดยกรอก
+รีเฟรชโทเค็นไว้ นี่เป็นเรื่องคาดหมายสำหรับแอปที่สร้างด้วยมือหรือสร้างผ่าน
+**สร้างใน Slack** เพราะ Slack ไม่เคยรายงานว่าแอปใดที่มันสร้างขึ้น
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+การเชื่อมต่อที่จัดเก็บไว้ไม่มี app id — โดยทั่วไปคือแอปที่เชื่อมต่อด้วยมือก่อนที่จะมีการบันทึก id ให้เชื่อมต่อเวิร์กสเปซใหม่ หรือสร้างแอปจาก Control Center
 
-### The bot's new name has not appeared in chat
+### ชื่อใหม่ของบอทยังไม่ปรากฏในแชท
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+ผู้ให้บริการแคชเมทาดาทาของแอปไว้ชั่วคราว หากชื่อยังเป็นค่าเก่าอยู่หลังจากผ่านไปหนึ่งนาที ให้ตรวจสอบว่าการบันทึกขอให้คุณติดตั้งแอปใหม่หรือไม่
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
-- [Link your Slack account](/th-TH/คู่มือ/วิธีทำ/เชื่อมบัญชีแชท/)
-- [Chat bridge](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/)
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- [เชื่อมบัญชี Slack ของคุณ](/th-TH/คู่มือ/วิธีทำ/เชื่อมบัญชีแชท/)
+- [สะพานแชท](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)

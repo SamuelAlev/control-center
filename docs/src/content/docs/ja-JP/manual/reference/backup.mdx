@@ -1,29 +1,31 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: バックアップ、エクスポート、インポート
+description: スナップショットのレイアウト、マニフェスト、すべてのバックアップ操作と転送ルート、そしてバックアップに含まれるファイルと含まれないファイルの正確な内訳を説明します。
 slug: ja-JP/マニュアル/リファレンス/バックアップ
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/); for why persistence is
-split this way, see [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/).
+Control Center がコピー、受け渡し、採用できるものすべてと、各アーティファクトの正確な形を
+まとめます。実際にバックアップを取得する方法は
+[バックアップと復元](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/)を、永続化が
+このように分割されている理由は
+[ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)を参照してください。
 
-## Artifacts
+## アーティファクト
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+データベースのコピーを伴うアーティファクトは 3 つあり、スコープと削除ポリシーがそれぞれ異なります。
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| アーティファクト                | 書き込み元                   | 形                                 | 対象                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **インストール全体のスナップショット**    | `server.backupNow`           | タイムスタンプ付きの**ディレクトリ**           | インストール上のすべてのデータベース |
+| **ワークスペースのバックアップ**    | `Workspace backup` パイプライン  | `.db` を 1 つ含むタイムスタンプ付きディレクトリ  | 1 つのワークスペースのデータベース      |
+| **ワークスペースのエクスポート**    | `workspace.export`           | 単一の `.db` **ファイル**               | 1 つのワークスペースのデータベース      |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+いずれも SQLite の `VACUUM INTO` で書き込まれるため、稼働中の WAL データベースに対しても
+安全です。読み取りトランザクションを取得し、断片化を解消したトランザクション整合性のある
+コピーを生成し、サーバーを停止する必要は一切ありません。
 
-## Snapshot layout
+## スナップショットのレイアウト
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +34,125 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+このレイアウトは稼働中のデータディレクトリを正確に反映しているため、インストールの復元は
+変換ではなくコピーを書き戻すだけの操作になります。ディレクトリ名は UTC タイムスタンプの
+`:` と `.` を `-` に置き換えたもので、Windows でもファイルシステム上安全であり、プレーンな
+文字列として時系列順に並びます。
 
-Scheduled workspace backups live separately at
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+スケジュールされたワークスペースのバックアップは、別途
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` に置かれます。
+これらにはマニフェストも `global.db` も含まれず、インストール全体のスナップショットでは
+ありません。週次パイプラインの保持ステップが削除するのは、設定された期間（既定では 30 日）
+より古い、そのワークスペース自身のバックアップだけです。手動で作成したインストール全体の
+スナップショットがこのステップでローテーションされることはありません。
+`server.listBackups` が一覧に出すのはインストール全体のスナップショットだけで、不完全な
+ものも含まれます。
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| フィールド                      | 型            | 意味                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | マニフェストのフォーマットバージョン。現在は `1`                              |
+| `created_at`               | ISO-8601 UTC    | スナップショットを取得した時刻                                         |
+| `global.file`              | string          | 常に `global.db`                                                  |
+| `global.schema_version`    | int             | 取得時点の `GlobalDatabase` スキーマバージョン                     |
+| `global.bytes`             | int             | 書き込まれた `global.db` のサイズ                                     |
+| `workspace_schema_version` | int             | すべてのワークスペースファイルで共通の `WorkspaceDatabase` スキーマバージョン   |
+| `workspaces[]`             | array           | 取得したワークスペースごとに 1 エントリ                                    |
+| `workspaces[].workspace_id`| string          | このファイルが保持するワークスペース                                       |
+| `workspaces[].file`        | string          | スナップショットルートからの相対パス、`<workspaceId>/workspace.db`    |
+| `workspaces[].bytes`       | int             | そのファイルのサイズ                                                   |
+| `skipped_workspaces[]`     | array of string | バックアップが取得**できなかった**ワークスペース                         |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+ワークスペースがスキップされるのは、登録されているものの一度も書き込まれていない場合
+（ファイルがまだ存在しない）、またはその `VACUUM INTO` が失敗した場合です。どちらの場合も
+スナップショットは完了し、マニフェストに何が欠けているかが記録されます。
 
-### Completeness
+### 完全性
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` はスナップショットごとに `complete` フラグを報告します。マニフェストが
+存在しないか解析できない場合、`global.db` が欠けている場合、またはマニフェストが
+ディスク上にないワークスペースファイルを指している場合に false になります。
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+不完全なスナップショットも引き続き一覧に表示されます。運用者に見えないスナップショットは、
+持っていると信じてしまうスナップショットだからです。マニフェストが読めない場合、一覧は
+レイアウトそのものにフォールバックし、見つかった `<workspaceId>/workspace.db` ファイルを
+報告します。スナップショット全体としてはインストールを復元できませんが、これらは
+`workspace.import` を通じて個別に採用できます。
 
-## What a backup does not contain
+## バックアップに含まれないもの
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+どちらのアーティファクトも**データベースのみ**です。ワークスペースのディレクトリには
+データベース以外のものもあり、それらは一切持ち出されません。
 
-| Path                                | In a snapshot? | In a workspace export? |
+| パス                                | スナップショットに含まれる？ | ワークスペースのエクスポートに含まれる？ |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | はい            | いいえ                     |
+| `<workspaceId>/workspace.db`        | はい            | はい（それ自体がそのファイル） |
+| `<workspaceId>/blobs/`              | いいえ             | いいえ                     |
+| `<workspaceId>/skills/`             | いいえ             | いいえ                     |
+| `<workspaceId>/agents/`             | いいえ             | いいえ                     |
+| `<workspaceId>/chat_credentials/`   | いいえ             | いいえ                     |
+| `<workspaceId>/spaces/<spaceId>/`   | いいえ             | いいえ                     |
+| `<workspaceId>/pr_clones/`          | いいえ             | いいえ                     |
+| `secrets.json`                      | いいえ             | いいえ                     |
+| `models/`                           | いいえ             | いいえ                     |
+| `meetings/<meetingId>/`             | いいえ             | いいえ                     |
+| `rigs/`                             | いいえ             | いいえ                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/ja-JP/マニュアル/リファレンス/チャットブリッジ/).
+その一部は捨ててよいものです。`spaces/` はリポジトリから再プロビジョニングされる
+コピーオンライトのワークツリー、`pr_clones/` はキャッシュ、`models/` は
+再ダウンロードされるもの、`rigs/` はマシンの状態です。そうでないものもあります。
+`blobs/` はデータベースの行が参照する貼り付け画像を保持し、`skills/` と `agents/` は
+エージェントが実行時に使うファイルを保持し、`secrets.json` はインストール上のすべての
+ペアリングキー、プロバイダーの認証情報、SSO 設定を保持します。残りをカバーする方法は
+[バックアップと復元](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/#copy-backups-off-the-machine)を
+参照してください。
+:::note[チャットトークンは意図的に持ち出されません]
+`chat_credentials/` がデータベースの中ではなく隣に置かれているため、他人に渡した
+ワークスペースに有効なボットトークンは含まれません。詳しくは
+[チャットブリッジのリファレンス](/ja-JP/マニュアル/リファレンス/チャットブリッジ/)を
+参照してください。
 :::
 
-## Operations
+## 操作
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+インストールのバックアップ RPC とワークスペースのエクスポート／インポートは `fullClient`
+専用です。ペアリングされたスマートフォンからは実行できません。バックアップポートが
+構成されていないサーバー（デモサーバーなど）では、これらはすべて、拒否されるのではなく
+構造的に存在しません。
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
+| 操作                   | 種別   | スコープ     | 最小ロール | 引数     | 戻り値                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| `server.backupNow`   | 変更 | インストール   | インストールの**オーナー** | なし     | `{ok, path}`                  |
+| `server.listBackups` | 読み取り   | インストール   | インストールの**オーナー** | なし     | `{backups: [...]}`            |
+| `server.deleteBackup` | 変更 | インストール | インストールの**オーナー** | `name` | `{ok}` |
+| `workspace.export`   | 読み取り   | ワークスペース | `admin`      | なし          | `{ok, path}`                  |
+| `workspace.import`   | 変更   | ワークスペース | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | 変更   | インストール*  | `owner`      | `id`          | レジストリの行に削除済みの印を付ける   |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` がスコープを持たないのは、印を付ける行がグローバルレジストリに
+あるためです。そのハンドラーは、呼び出し元が指定されたワークスペースのメンバーかどうかを
+確認し、`owner` を要求します。
 
-`path` in every response is a path on the **server host**.
+すべてのレスポンスの `path` は、**サーバーホスト**上のパスです。
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[インストール全体のスナップショットはどちらの経路でもオーナー限定です]
+`server.backupNow`、`server.listBackups`、`server.deleteBackup` にはインストールの
+**オーナー**（`ServerAuthority.serverOwner`）が必要で、`GET /backup/snapshot` と同じ
+ゲートです。スナップショットはすべてのワークスペースのデータベースを取得するため、
+1 つのワークスペースの管理者であるだけでは、他のワークスペースを管理するには足りません。
+削除が受け付けるのは一覧に表示されるタイムスタンプのディレクトリ名だけで、任意の
+サーバーパスは受け付けません。また、スナップショット全体（不完全なものも含む）を削除
+します。ワークスペース単位のエクスポート／インポートは、インストールのオーナーではなく、
+ワークスペースの管理者／オーナーの権限のままです。
 :::
 
-### `server.listBackups` response
+### `server.listBackups` のレスポンス
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+新しい順に、ディレクトリ名（タイムスタンプ）で並びます。そのため、マニフェストを
+読み取れなかったスナップショットでも順序は保たれます。
 
 ```json
 {
@@ -169,99 +176,102 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+マニフェストを読み取れなかった場合、`created_at` は省略されます。トップレベルの `bytes` は、
+マニフェスト自身の合計ではなく、ディレクトリ全体のディスク上の実際のサイズです。
+スナップショットを整理する運用者が知りたいのは、バックアップが書き込むつもりだった量では
+なく、そのディレクトリが占める容量だからです。
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+各 `workspaces[].path` は、`workspace.import` が `source_path` として受け取る値そのものです。
+これは意図的で、「このスナップショットからこのワークスペースを復元する」ことはインポート
+操作そのものなので、両者が同じファイルを別々に扱う方向へずれていくことはありません。
 
-### `workspace.import` validation
+### `workspace.import` の検証
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+何かを置き換える前に、候補のファイルを短命な生の SQLite 接続で読み取り専用として開き、
+その `workspace_meta` 行を読み取ります。
 
-| Condition                                        | Result                                                          |
+| 条件                                        | 結果                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| 読み取り可能な SQLite データベースではない、または `workspace_meta` がない | 拒否。何も変更されません                                |
+| 記録されたワークスペース ID ≠ 対象                | **許可**され、ログに記録されます。これがワークスペースを複製したり、新しい ID で復元したりする方法です |
+| 記録されたインストール ID ≠ このインストール                | **許可**され、ログに記録されます。そのペアリング済みデバイスとユーザー ID はそのインストールに属しており、ここでは解決されません |
+| 無効なワークスペース ID、またはファイルが存在しない      | 拒否                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+受け入れると、対象ワークスペースのデータベースは、ファイルを上書きコピーする前に閉じられ、
+マネージャーから外されます（開いている drift 接続がファイルとその `-wal` を保持している
+ためです）。その後で再度開かれ、`beforeOpen` が FTS と同期トリガーを再インストールし、
+FTS インデックスが再構築されます。インポートしたファイルのコンテンツテーブルにはデータが
+入っていますが、そのインデックスは古い可能性があります。
 
-## Transfer routes
+## 転送ルート
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+上記のすべての操作はサーバー側のパスで語られるため、サーバーが自分のマシンである場合に
+のみ完全な答えになります。次の 3 つは、メディアプロキシと Blob ストアが使うのと同じ
+PSK 署名付きの経路で、実際のバイトを運びます。呼び出し元はデバイスの事前共有鍵で
+ターゲット文字列に署名し、その署名を `s` として渡します。
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| ルート                   | メソッド | クエリ           | 署名対象                  | 必要な権限                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | ワークスペースの**管理者**   |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | インストールの**オーナー**     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | ワークスペースの**オーナー**   |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` はワークスペース ID、`n` はスナップショットのディレクトリ名、`d` は呼び出し元の
+デバイス ID、`s` は署名です。`n` はバックアップのルートに連結されるのではなく、
+バックアップの一覧に対して解決されるため、一覧に表示されないディレクトリをルートに
+指定することはできません。
 
-| Status | Cause                                                                              |
+| ステータス | 原因                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | 必須のクエリパラメータが欠けているか、アップロードのボディが空です                   |
+| `403`  | 不明または失効したデバイス、不正な署名、または呼び出し元にロールがありません              |
+| `404`  | このホストにバックアップポートがない、または指定されたスナップショット／ワークスペースファイルが存在しません    |
+| `405`  | `/backup/restore` が `POST` 以外で呼び出されました                                   |
+| `413`  | アップロードのボディが 8 GiB を超えています（宣言された content-length でも、実際に読み取ったバイト数でも）     |
+| `500`  | エクスポートまたはアーカイブがサーバー側で失敗しました                                            |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+どちらのダウンロードも `Cache-Control: no-store` と `Accept-Ranges: none` を返します。
+各リクエストは**新しい**コピーを作成し、ストリーミングが終わるとそれを削除します。そのため、
+キャッシュされたり再開されたりしたレスポンスは、2 つの異なるエクスポートのバイトを
+つなぎ合わせ、有効に見えて実際には有効でない 1 つのファイルを作ってしまいます。
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` は `<name>.zip` を返します。エントリはスナップショットルートからの
+相対パスなので、展開すると `manifest.json` + `global.db` + `<workspaceId>/workspace.db` が
+そのまま再現されます。エントリはソート順に書き込まれるため、同じスナップショットの
+2 つのアーカイブは同一のアーカイブになります。
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` はボディをバッファリングせず、そのままステージングファイルへ
+ストリーミングし、読み取り前と読み取り中にサイズを制限し、拒否を含む**あらゆる**終了経路で
+ステージングファイルを削除します。
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[リレー経由の接続には HTTP オリジンがありません]
+ブローカー経由のリレーが運ぶのは RPC フレームであり、ファイル転送ではありません。
+サーバー側のパスで語るものはすべてリレー越しでも動作し続けますが、3 つの転送ルートには
+直接接続が必要です。UI はダウンロードの途中で失敗させるのではなく、注記とともにこれらを
+無効にします。
 :::
 
-## Paths and limits
+## パスと制限
 
-| Thing                          | Value                                                        |
+| 項目                          | 値                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| スナップショット                      | `<dataDir>/backups/<timestamp>/`                             |
+| スケジュールされたワークスペースのバックアップ    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| ワークスペースのエクスポート              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| 転送のステージング               | `<dataDir>/backups/transfer/` — 作業台であり、そこに書き込むルートによって掃除されます |
+| スナップショットのアーカイブ名          | `<snapshot directory name>.zip`                              |
+| アップロードの上限                 | `POST /backup/restore` あたり 8 GiB                             |
+| 保持                      | インストール全体のスナップショットは手動削除。ワークスペースのバックアップは週次パイプラインで、既定は 30 日 |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+`exports/`、`transfer/`、`workspace-backups/` の各ディレクトリはインストール全体の
+スナップショットではなく、`server.listBackups` から除外されます。スケジュールされた保持が
+あるのは最後のディレクトリだけです。インストール全体のスナップショットを削除するには、
+インストールのオーナーが明示的に操作する必要があります。
 
-## See also
+## 関連項目
 
-- [Back up and restore](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/) — the recipes these operations belong to
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/) — why one workspace is one file
-- [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/ja-JP/マニュアル/リファレンス/ルートマップ/) — where the UI lives
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/) — the client/server split the paths follow
+- [バックアップと復元](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/) — これらの操作が属する手順
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/) — 1 つのワークスペースが 1 つのファイルである理由
+- [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/) — これらのパスが置かれるデータディレクトリ
+- [ルートマップ](/ja-JP/マニュアル/リファレンス/ルートマップ/) — UI がどこにあるか
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/) — パスが従うクライアント／サーバー分割

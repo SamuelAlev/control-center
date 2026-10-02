@@ -1,97 +1,100 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Bir ajana test için makine verme
+description: Bir ajana atılabilir bir tarayıcı, masaüstü, Android emülatörü ya da iOS Simülatörü verin — canlı izlenir ve denetimini devralabilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/rig-kullanma
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**Rig**, bir ajanın gerçekten bir şey denemesi gerektiğinde açtığı atılabilir bir
+makinedir: bir sayfa yüklemek, bir masaüstü uygulamasında tıklamak, bir telefonu
+kurcalamak. Çalışmasını gerçek zamanlı izleyebilir ve denetimi istediğiniz an
+devralabilirsiniz.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Yalıtılmış terminal, tarayıcı ve masaüstü rig'leri, tek kullanımlık disklere ve
+kapılı ağlara sahip VM'lerdir. Android ve iOS ise ana makine tarafından
+yönetilen emülatörlerdir: aygıt durumları atılabilir, ancak ağ bağlantıları
+sunucu ana makinesini izler.
 
-## Set it up once
+## Bir kez kurun
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Rig'ler `cc_server`'ı barındıran makinede çalışır — baktığınız makinede değil,
+aynı makinede. Beş kullanıcıya dönük yüzey vardır; masaüstü ve mobil yüzeyler ana
+makine kurulumu gerektirir:
 
-| Surface | Runs on | Setup |
+| Yüzey | Çalıştığı yer | Kurulum |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | Sabitlenmiş bir Ubuntu imajı önyükleyen bir microVM | Yok — imaj ilk kullanımda otomatik olarak indirilir |
+| **Tarayıcı (VM)** | İlk kullanımda Chromium, Firefox veya WebKit kurulan sabitlenmiş bir Debian imajı önyükleyen bir microVM | Yok — aynı |
+| **Bilgisayar (VM)** | Chromium, Firefox, WebKit ve GitHub tarafından barındırılan runner tarzı bir CLI temeli içeren bir Linux masaüstü imajıyla QEMU | QEMU'yu kurun (`brew install qemu`), ardından **Ayarlar → Sunucu → Rigs** altından bir masaüstü imajını **İçe aktar** ile ekleyin |
+| **Android** | Google'ın Android emülatörü | Android SDK'yı kurun, bir AVD oluşturun ve başlatın (aşağıda) |
+| **iOS Simülatörü** | Sunucu Mac'inde CoreSimulator | Xcode'u ve istenen iOS çalışma zamanını kurun, ardından **Ayarlar → Sunucu → Rigs** altından otomasyon köprüsünü kurun |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Terminal ve tarayıcı makineleri özetle sabitlenmiş imajlardan önyüklenir: tam
+bayt dizisi önceden adlandırılır, ilk önyüklemede bir kez indirilir ve önbelleğe
+alınır — her türün ilk önyüklemesinden sonra, sonraki makineler indirmeyi
+tamamen atlar ve saniyeler içinde açılır. **Ayarlar → Sunucu → Rigs**, sunucunuzun
+neleri önyükleyebileceğini ve şu an çalışan tüm makineleri gösterir.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Kurulu bir masaüstü imajı aynı sayfadan yönetilebilir durumda kalır: **İçe
+aktar** onu daha yeni bir qcow2 ile değiştirir, **Sil** ise onu kaldırır; böylece
+yeni bir derleme kurabilirsiniz.
 
-### Mobile devices are set up differently
+### Mobil cihazlar farklı kurulur
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Android veya iOS için bize ait bir imaj yoktur ve bu bir eksiklik değildir.
+Android sistem imajları Google'ın SDK'sından; iOS çalışma zamanları Xcode'dan
+gelir. Android için Android Studio'yu (veya komut satırı SDK araçlarını) kurun,
+**Device Manager** içinde bir sanal cihaz ekleyin ve başlatın. Rigs sayfası
+ardından Android'i kullanılabilir olarak bildirir.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Ayrıca tam olarak hangi adımı atladığınızı da söyler — SDK yok, emülatör yok,
+sanal cihaz yok ya da yalnızca çalışmayan bir cihaz — çünkü bunların dört farklı
+çözümü vardır ve yalnızca biri indirmedir. `cc_server`'ı SDK'yı göremeyen bir
+kabuktan başlatıyorsanız, onu dışa aktarın:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+iOS için sunucunun kendisi, Xcode ve kurulu bir iOS Simülatörü çalışma zamanıyla
+macOS üzerinde çalışmalıdır. **Ayarlar → Sunucu → Rigs** bölümünü açın ve
+**iOS otomasyon köprüsünü yükle** düğmesine basın. Sunucu, sağlama toplamıyla
+sabitlenmiş WebDriverAgent artefaktını indirir, doğrular ve sunucuya ait
+otomasyon deposuna kurar. Kurulum sırasında hiçbir simülatör önyüklenmez.
 
-## Open a machine
+## Bir makine açın
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Makineler, sohbetin ve diff'in yanında **sekmeler** olarak yaşar — bir alanda ya
+da bir PR sayfasında, aynı `+` menüsünde, **Makineler** altında:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Bilgisayar** — Chromium, Firefox ve WebKit içeren bir Linux masaüstü
+- **Chromium**, **Firefox** veya **WebKit** — bir tarayıcı
+- **Android** — çalışan Android emülatörü
+- **iOS Simülatörü** — bu konuşma için oluşturulan atılabilir bir simülatör
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Birini seçin ve **Makineyi başlat** düğmesine basın. Sekme, yalnızca dönen bir
+simge göstermek yerine önyüklemenin hangi aşamada olduğunu söyler (“Starting the
+microVM”, “Waiting for the guest to come up”).
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Sekme konuşmaya kapsamlanır ve ajan aracı da öyledir. Bir Chromium, Firefox veya
+WebKit sekmesi ile `browser_use`, Android ile `mobile_use`, iOS Simülatörü ile
+`ios_use` aynı varsayılan makineyi adresler. Ek arayüz yuvaları ayrı
+karşılaştırma makineleridir; ajan araçları her zaman varsayılanı kullanır.
 
-To build, install and start a Flutter app on Android:
+Android'de bir Flutter uygulamasını derlemek, kurmak ve başlatmak için:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Ardından `mobile_use` aracını `install_apk` ve
+`build/app/outputs/flutter-apk/app-debug.apk` ile çağırın; peşinden `start_app`
+ve Android paket adını verin. `ui_dump`, ekran görüntüleri ve girdi, insan
+sekmesinde gösterilen aynı aygıtı sürer. `stop_app`, `clear_app_data`,
+`uninstall_app`, `open_url` ve argv biçimli `shell` çağrıları, geliştirme
+döngüsünün geri kalanını sunucu ana makinesinde bir kabuk çağırmadan kapsar.
 
-To build, install and start a Flutter app on iOS Simulator:
+iOS Simülatörü'nde bir Flutter uygulamasını derlemek, kurmak ve başlatmak için:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +102,217 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Ardından `ios_use` aracını `install_app` ve `.app` dizini ile çağırın; peşinden
+`start_app` ve `plutil` tarafından yazdırılan paket tanımlayıcısını verin.
+iOS aracı ayrıca `stop_app`, `uninstall_app`, `open_url` ve simülatöre özel
+tanılamalar için argv biçimli bir `spawn` eylemi sunar.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Masaüstü ve tarayıcı görüntüleri panele göre yeniden boyutlanır. iOS, simülatörün
+sabit punto boyutunu korur ve görüntüyü siyah bantlarla çerçeveler. Her yüzeyin
+hâlâ iki bağımsız kanalı vardır: ajan küçük ve ucuz ekran görüntüleri alırken siz
+canlı görünümü alırsınız. Sekmeler arasında geçiş yapmak insan akışını durdurur;
+böylece arka plandaki bir makine görüntü bant genişliği harcamaz.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Bir rig sekmesi, düzen geri yükleme sırasında dahil olmak üzere, kendi başına bir
+makine başlatmaz. Bu kural, bir uygulama başlatmanın beklenmedik biçimde VM
+önyüklemesini ya da simülatör aygıtı oluşturmasını önler.
 
-## Drive the machine
+## Makineyi yönetin
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Tuval, başka biri özel denetimi elinde tutmadığı sürece — ya da o kilidi siz
+tutuyorsanız — yazmanıza ve tıklamanıza açıktır. Bu kilidi elinizde tuttuğunuz
+sürece durum etiketi **Kontrol sizde** diye okunur, ajan yine de ekran görüntüsü
+alabilir ve sunucu, onun değiştirici eylemlerini her eylemin geçtiği tek geçiş
+noktasında reddeder. Yaptığınız her şey adınıza kaydedilir.
 
-Press **Stop the machine** when you are done.
+İşiniz bittiğinde **Makineyi durdur** düğmesine basın.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Denetim bilinçli olarak tekeldir: tek bir makineye iki aktörün yazması, ikisinin
+de amaçlamadığı girdiler üretir.
 
-## Move things in and out
+## İçeri ve dışarı taşıma
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Kopyalama ve yapıştırma, rig tuvali üzerinde iki yönde de çalışır; dosya
+sürüklemek de öyle.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Kopyala ve yapıştır.** Tuvalin üzerindeyken kopyalama kısayoluna basın;
+makinenin kopyaladığı şey — metin, bir görüntü, bir dosya listesi — panonuza
+düşer. Yapıştırma sizinkini ters yönde gönderir ve makinenin içinde yapıştırmaya
+basar. macOS'ta kısayol ⌘C/⌘V'dir; ⌃C ise misafir kabuğa hâlâ kesme sinyali
+olarak ulaşır. Windows ve Linux'ta ⌃C/⌃V kullanın — misafir, zaten alacağı aynı
+tuş vuruşunu alır; böylece misafir terminaldeki ⌃C yine kesme yapar ve sizin
+panonuz olduğu gibi kalır.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Arka planda hiçbir şey eşitlenmez. Kendi makinenizde kopyaladığınız bir parola,
+bir zamanlayıcı çaldı diye bir VM'in içine ulaşmaz; ancak siz yapıştırdığınızda
+geçer.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Bir rig'e yapıştırmaya varsayılan olarak izin verilir. Bir rig'den kopyalamak ise
+önce sorar — on dakikalık bir izin ya da **Ayarlar → Sunucu → Rigs → Pano
+erişimi** altındaki **Her zaman izin ver**. İki yön birbirinden bağımsızdır ve
+çalışma alanını değil, sizi izler.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Dosyaları içeri sürükleyin.** Onları tuvalin herhangi bir yerine bırakın.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- **Tarayıcı (VM)** üzerinde sayfa, bıraktığınız noktada *gerçek* bir bırakma
+  olayı alır; böylece bir yükleme alanı, yerel bir dosyayla tam olarak nasıl
+  davranıyorsa öyle davranır.
+- **Bilgisayar (VM)** üzerinde dosyalar `~/Drops` içine düşer ve yolları
+  makinenin panosuna konur; böylece ⌃V onları bir dosya yöneticisine ya da bir
+  yükleme alanına yapıştırır. Bir ana makine, VM'in içinde ayrıcalıklı bir daemon
+  çalıştırmadan rastgele bir Linux uygulamasına sürükleme üretemez — rig'lerde bu
+  bilinçli olarak yoktur — bu yüzden toast, bir bırakma olmuş gibi davranmak
+  yerine dosyaların nereye gittiğini söyler.
+- Bir **terminalde** dosya içeri kopyalanır ve yolu istem satırına yazılır,
+  komuta geçirilmeye hazır olur. Bir terminale *görüntü* yapıştırmak da aynı şeyi
+  yapar: makinede kaydedilir ve yolu size verilir.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Dosyaları dışarı sürükleyin** özelliği Bilgisayar (VM)'den çalışır. Makinenin içinde
+bir dosyayı sürüklemeye başlayın, imleci tuvalin dışına taşıyın; dosya
+masaüstünüzde gerçek bir sürüklemeye dönüşür — onu Finder veya Explorer'a
+bırakın. Makinenin dosya yöneticisinde dosyaları kopyalayıp kendi tarafınızda
+yapıştırmak da çalışır. Tarayıcı (VM) bunu sunmaz: başsız bir tarayıcının
+okuyacağı bir sürükleme yükü yoktur ve sayfanın metin seçiminden tahmin yürütmek
+sıradan tıklamaları ele geçirirdi.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Bilgisayar (VM), pano desteği geldikten sonra derlenmiş bir imaj gerektirir.
+Kendinizinkini daha önce içe aktardıysanız, `scripts/rigs/build_image.sh` ile
+yeniden derleyin, ardından kurulu imajı değiştirmek için **İçe aktar** seçeneğini
+kullanın.
 :::
 
-## Terminals inside a rig
+## Bir rig içindeki terminaller
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Bir alandaki ya da bir PR sayfasındaki terminaller, sunucunun kendi makinesi
+yerine bir rig'in içinde çalışabilir. Çalıştıklarında panel bir **Kapalı VM**
+rozeti gösterir.
 
-What changes:
+Değişenler:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Çalıştırdığınız hiçbir şey ana makineye ulaşmaz. Oradaki bir `rm -rf` size
+  rig'e mal olur.
+- Ağ varsayılan olarak reddeder. Yalnızca rig'in izin listesindeki host'lara
+  erişilebilir ve her şey bunu uygulayan bir kapıdan geçer.
+- `git push` yine çalışır. Rig'de saklı bir kimlik bilgisi yoktur; her işlem için
+  sunucudan kısa ömürlü bir tane ister ve bu token rig kapandığında iptal edilir.
 
-What to know:
+Bilinmesi gerekenler:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Geri yüklenen yalıtılmış terminal sizi bekler.** Bir rig sekmesi gibi,
+  düzeninizle birlikte geri gelen bir `microvm` terminali de başlatma sırasında
+  VM'ini önyüklemek yerine bir **Shell'i aç** düğmesi gösterir. Ana makine
+  kabuğundaki bir terminal bir sürece mal olur; yalıtılmış olan ise bir makineye.
+- **Terminale bırakılan dosyalar açılmaz, yazılır.** Yalıtılmış bir terminale bir
+  CSV bırakın; dosya makineye kopyalanır ve istem satırında misafirdeki yolu
+  görünür — ana makinedeki yol, orada başarısız olacak bir komut olurdu.
+- **Rig'deki kopya bir kopyadır.** Ana makinedeki worktree'niz doğruluk kaynağı
+  olarak kalır. Bir rig'in içinde yaptığınız commit'ler, siz istediğinizde
+  `refs/rigs/<id>/*` içine geri taşınır — dalınızı asla taşımaz ve çalışma
+  ağacınıza dokunmaz.
+- **Ana makineyi hedefleyen iş yine ana makinede çalışır.** Bir Linux misafiri
+  macOS için derleme yapamaz ya da `xcodebuild` çalıştıramaz. Bunun için yerel
+  arka ucu açıkça seçin; uygulama sessizce geçiş yapmak yerine sizden onay ister.
 
-## Ports
+## Portlar
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/tr-TR/kilavuz/nasil-yapilir/port-yonlendirme/).
+Terminal (VM) içinde bir geliştirme sunucusu çalıştırın — diyelim ki 3000
+portunda `pnpm dev` — ve birkaç saniye içinde terminalin köşesindeki fiş simgesi
+yanar: port, makinenizdeki `localhost:3000` adresine yönlendirilir, Tarayıcı (VM)
+içinde `localhost:3000` adresinden erişilebilir, ağınızda paylaşılabilir ve
+`https://myapp.test` olarak adlandırılabilir. Akışın tamamı — otomatik
+yönlendirme, LAN paylaşımı, HTTPS'li geliştirme etki alanları — kendi
+kılavuzunda: [Bir terminalden port
+yönlendirme](/tr-TR/kilavuz/nasil-yapilir/port-yonlendirme/).
 
-## Custom images
+## Özel imajlar
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Bir çalışma alanı, Terminal (VM) ve Tarayıcı (VM)'yi kendi imajlarına
+yönlendirebilir — **Ayarlar → Sunucu → Rigs → Özel imajlar (bu çalışma alanı)**
+altından. Tipik kullanım: varsayılan imajı, projenizin ihtiyaç duyduğu araç
+zinciriyle genişleterek her terminalin hazır başlamasını sağlamak ya da
+ekibinizin zaten yayımladığı bir imajı yeniden kullanmak.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Makine yine aynı yalıtılmış ortamın içinde önyüklenir: aynı çıkış kapısı, aynı
+kimlik bilgisi broker'ı, aynı yaşam döngüsü. Bu ayarı yalnızca çalışma alanı
+yöneticileri değiştirebilir, yeni makineler bunu alır (çalışanlar kendilerininkini
+korur) ve referans bir registry imajı olmalıdır — yerel yollar reddedilir.
 
-What an image must provide:
+Bir imajın sağlaması gerekenler:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — `bash` içeren bir Linux imajı. Ayrıca `git`, `curl` ve
+  `socat` gerekir — ya önceden kurulu ya da ilk başlatmada kurulabilir olmalıdır
+  (Debian/Ubuntu tabanlı her imaj çalışır: bunlar, GitHub tarafından barındırılan
+  runner tarzı bir CLI araç setiyle — derleyiciler, Python 3, `jq`, arşiv
+  araçları, `rsync` — birlikte otomatik olarak kurulur. Node/Go/Java gibi dil
+  çalışma zamanları ve Docker önceden kurulu değildir). Misafir portu `7911`
+  port yönlendiricisi için ayrılmıştır.
+- **Tarayıcı (VM)** — `bash` ve `socat` ile bir `chromium` ikilisi içeren bir
+  Debian/Ubuntu imajı. Sunucu, Chromium'u kendisi
+  `chromium --headless=new` olarak başlatır ve DevTools'u misafirdeki `9223`
+  portundan `9222`'ye aktarır. PulseAudio ve ffmpeg ilk başlatmada kurulur.
+  `FROM chromedp/headless-shell` ile derlemeyin — o ikilide ses yoktur. Bu
+  geçersiz kılma yalnızca Chromium rig'leri için geçerlidir; Firefox ve WebKit
+  bunu yok sayar ve sabitlenmiş Debian imajını önyükler. Misafir portları
+  `9222`/`9223` ayrılmıştır.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+İki öneri: referansı özetle (`@sha256:…`) sabitleyin ki baytlar altınızdan
+değişemesin ve imajı Docker Hub ya da GitHub Container Registry'de barındırın —
+bu registry'lerin indirme host'ları çıkış kapısından otomatik olarak geçirilir;
+diğerlerinin çekilebilmesi için içerik dağıtım host'larının erişilebilir olması
+gerekebilir.
 
-## When a rig goes away
+## Bir rig ortadan kalktığında
 
-Rigs are meant to be temporary:
+Rig'ler geçici olacak şekilde tasarlanmıştır:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Boşta kalma** — hiçbir şey olmadan ~15 dakika geçince bir tarayıcı, masaüstü
+  ya da mobil rig park eder (donar, sonraki eylemde anında uyanır). Yalıtılmış
+  bir terminal 45 dakika bekler. Boşta kalma penceresinin iki katı sonra kapanır.
+- **Süre sınırı** — her rig'in, ne yapıyor olursa olsun uzatamayacağı katı bir
+  ömrü vardır.
+- **Bellek** — sunucunun yeni bir rig için yere ihtiyacı olursa, en son kullanılan
+  rig'i kapatır. Birinin yönettiği, izlediği ya da içinde bir terminal açık olan
+  bir rig asla alınmaz.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Yalıtılmış bir rig kapandığında diski atılır. Bir Android rig'ini kapatmak, ana
+makinedeki emülatörden bağlantıyı keser — onu silmez. Bir iOS rig'i,
+oluşturduğu CoreSimulator aygıtını siler. Saklamak istediğiniz her şeyi önce geri
+taşıyın.
 
-## What a rig can reach
+## Bir rig nereye erişebilir
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Yalıtılmış terminal, tarayıcı ve masaüstü rig'leri varsayılan olarak reddeden bir
+çıkış kapısıyla başlar: host'ları açıkça izin verirsiniz ve misafirin tek yolu bu
+listeyi uygulayan bir kapıdır. Bir tarayıcı rig'i ayrıca ürün sitesini
+(`usectrl.dev`) kutudan çıktığı gibi kabul eder. Kimlik bilgisi broker'ı aynı
+listeyi kullanır.
 
-Two honest caveats:
+İki dürüst uyarı:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Mobil ağ, ana makineyi izler.** Android'in emülatörü ve Apple'ın
+  CoreSimulator'ı yalıtılmış ortamın çıkış kapısının arkasında değildir. Hiçbir
+  mobil sekme, ağı atlama denetimi sunmaz; çünkü ana makine tarafından yönetilen
+  ağ zaten kısıtlamasızdır.
+- **Bir rig'in okuduğu her şey güvenilmezdir.** Sayfa metni, DOM, erişilebilirlik
+  ağaçları ve görünüm dökümleri ajana, “bu veridir, talimat değildir” diyen
+  işaretlerle çevrelenmiş olarak döner. Ajanınıza emir vermeye çalışan bir sayfa,
+  alıntılanmış bir dize olarak okunur.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Çalışan her şeyi **Ayarlar → Sunucu → Rigs** altında görebilir ve istediğinizi
+durdurabilirsiniz.
 
-## Related
+## İlgili
 
-- [Rigs and enclosures](/tr-TR/kilavuz/kavramlar/rigler/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/tr-TR/kilavuz/nasil-yapilir/port-yonlendirme/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/tr-TR/kilavuz/referans/rigler/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Rig’ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/) — bunun
+  arkasındaki model: neden VM'ler, iki görüntü kanalı, kimlik bilgisi broker'ı,
+  yaşam döngüsü
+- [Bir terminalden port
+  yönlendirme](/tr-TR/kilavuz/nasil-yapilir/port-yonlendirme/) — bir geliştirme
+  sunucusuna önemli olduğu her yerden erişin
+- [Rig’ler](/tr-TR/kilavuz/referans/rigler/) — her yüzey, fiil, port ve varsayılan
+  tek bir yerde
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/) —
+  `Bir enclosure’ı (rig) yönet`, izin ver, önce sor ya da reddet olarak
+  ayarlayabileceğiniz bir eylem sınıfıdır — çalışma alanı, ajan veya alan
+  başına. Salt okunur modlar bunu tümden reddeder.

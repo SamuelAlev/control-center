@@ -1,131 +1,133 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: İşi ajanlara devretme
+description: Bir bileti bir konuşmada ajana verin ve ajanların, derinlik ile döngü korumaları altında birbirlerine alt görevler devretmesine izin verin.
 slug: tr-TR/kilavuz/nasil-yapilir/biletleri-devretme
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Bu kılavuz, işi üzerinizden alıp bir ajana yüklemenin ve ajanların işi kendi
+aralarında aktarması durumunda ne olduğunu ele alır.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Bir bileti bir ajana atamak gönderim başlatmaz]
+Ajan atanmış bir bilet için bilet göndericisi yoktur. Atama yalnızca sahipliği
+kaydeder, fazlasını değil — hiçbir alan oluşturulmaz, hiçbir durum değişmez,
+hiçbir ajan başlamaz. Tek istisna, bir **ekibe** atanan bilettir; bu, o ekibin
+liderini uyandırır. Adlandırılmış bir atanan için ajan işi konuşmalarda yaşar,
+dolayısıyla başlatacağınız yer orasıdır.
 :::
 
-## Hand a ticket to an agent
+## Bir bileti bir ajana verme
 
-1. [Create the ticket](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. Üzerinden çalışılabilecek kadar net bir başlık ve açıklamayla
+   [bileti oluşturun](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/).
+2. **Atanan** alanını ajana ayarlayın; böylece sahiplik kayda geçsin.
+3. Bir alan açın (veya oluşturun) ve o ajanı @ ile anın.
+4. İletinizde bilete `#` anmasıyla başvurun — ileti alanı çalışma alanı
+   biletlerini otomatik tamamlar — ve ne yapılmasını istediğinizi söyleyin.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Ajan işi konuşmadan alır. İlerlemesi o alana akar.
 
-## What the agent receives
+## Ajanın aldıkları
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- İletiniz; etiketlediğiniz bilet referansı dahil.
+- İçinde çalışıp rapor vereceği alan.
+- Çalışma alanının bağlı depolarından yalıtılmış bir çalışma ağacı.
+- Alanın **modu**; çalıştırmanın araç yüzeyini yöneten şey budur.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/tr-TR/kilavuz/kavramlar/modlar/).
+Mod bir alanın özelliğidir, biletin değil — bir biletin modu yoktur. Bu nedenle
+tek bir ajan bir alanda `chat`, bir başkasında `plan` olabilir. Modu ileti
+alanındaki mod açılır menüsünden seçin (**Agent**, **Plan** veya
+**Orchestrate**); `review` PR inceleme alanları tarafından ayarlanır ve
+seçilemez. Bkz. [Modlar](/tr-TR/kilavuz/kavramlar/modlar/).
 
-## Require a structured result
+## Yapılandırılmış bir sonuç zorunlu tutma
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Çıktı sözleşmesi bilette değil gönderimde bildirilir: `expected_output_schema`
+ve `output_contract_mode` (varsayılan olarak katı). Ajan bunu `submit_output`
+çağırarak karşılar; bu çağrı yükü şemaya göre doğrular ve uymayanı reddeder.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Kabul edilen çıktı da olası retler de **ajan çalıştırma günlüğüne** düşer.
+Biletin kendi durumu bundan etkilenmez — başarısız bir sözleşme bileti
+başarısız kılmaz.
 
-## Monitor progress
+## İlerlemeyi izleme
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Alan** — canlı ajan etkinliği, birincil görünüm.
+- **Bilet** — durumu, onu ilerleten kimse onun belirlediği gibi.
+- **Gözlemlenebilirlik → Canlı** (`/workspaces/<workspace-id>/observability`) —
+  canlı ajan kadrosu.
+- **Gözlemlenebilirlik → İçgörüler** — maliyet ve süreyle birlikte çalıştırma
+  günlüğü.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Bir gösterge paneli ekranı yoktur; yalın bir çalışma alanı URL'si gelen kutusuna
+yönlendirir.
 
-## Let agents delegate to each other
+## Ajanların birbirine devretmesine izin verme
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Bir alt sorunla karşılaşan ajan, `delegate_task` MCP aracıyla devreder. Bu araç
+başka bir ajana atanmış bir alt bilet oluşturur ve `parent_ticket_id`
+verdiğinizde, korumaların görebilmesi için zinciri kaydeder.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+İki yapısal koruma biletleme darboğazında her zaman çalışır, asla istem
+talimatıyla değil:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Derinlik sınırı** — 3 atlamadan daha derin bir zincir reddedilir.
+- **Döngü algılama** — zincirde zaten bulunan bir ajana geri atlama reddedilir.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+`from_agent_id` verdiğinizde iki koruma daha çalışır (üretim her zaman
+çözümleyici portlarını sağlar):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Özerklik tavanı** — devredilenin alandaki etkin düzeyi, devredenin düzeyini
+  aşmamalıdır.
+- **Bütçe zarfı** — devretme, devredenin kalan sert durdurma bütçesinden
+  faturalandırır ve daha fazlasını üretemez. Politika yoksa ya da politika
+  sınırsızsa geçer.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Bir ret yüksek seslidir: araç, korumanın gerekçesini birebir döndürür; böylece
+devreden ajan nedenini tam olarak görür. `delegatedByAgentId` alanı kimin
+devrettiğini kaydeder ve bir devretme ağacı oluşturur.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` tüm korumaları atlar]
+Daha eski `delegate_ticket` aracı hâlâ kayıtlıdır ve doğrudan `createTicket`
+çağırır — derinlik sınırı yok, döngü denetimi yok, özerklik tavanı yok, bütçe
+zarfı yok. `delegate_task` tercih edin.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Devretme derinlik sınırı (3), yerleşik harness'ın alt ajan iç içe geçme
+sınırından (2) farklı bir sınırdır — biri ajanlar arasındaki biletleri, diğeri
+tek bir çalıştırma içindeki alt ajanları sınırlar.
 
-## Put several agents on one ticket
+## Bir bilete birkaç ajan koyma
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Onları bilete **işbirlikçi** olarak ekleyin (roller: atanan, işbirlikçi,
+inceleyen). Bu bir kadrodur — kimin dahil olduğunun kaydı — ve kendi başına
+hiçbir şey vermez.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/).
+Ajanları gerçekten aynı konuşmaya koymak için onları alan başlığından katılımcı
+olarak ekleyin. Ardından orada birbirlerini @ ile anabilirler. Bkz.
+[Alanlar](/tr-TR/kilavuz/nasil-yapilir/alanlar/).
 
-## Automated ticket creation
+## Otomatik bilet oluşturma
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Pipeline paletindeki hiçbir düğüm bilet oluşturmaz; dolayısıyla bir pipeline
+işi atanmış biletler hâlinde dağıtamaz.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/).
+Var olan yol orkestrasyondur: bir öneriyi onaylamak bir proje ve bir ekip
+oluşturur, önerinin alt bilet DAG'ını bir **pipeline şablonuna** derler (her alt
+bilet için bir `promptAgent` adımı, her biri için bir `Ticket` satırı değil) ve o
+çalıştırmayı başlatır. Bkz.
+[Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/).
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
-- [Chat with an agent](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
-- [Organize work with projects](/tr-TR/kilavuz/nasil-yapilir/projeler/)
-- [Ticket lifecycle reference](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/)
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
+- [Bir ajanla sohbet etme](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
+- [İşleri projelerle düzenleme](/tr-TR/kilavuz/nasil-yapilir/projeler/)
+- [Bilet yaşam döngüsü referansı](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Tickets](/tr-TR/kilavuz/kavramlar/biletler/)
-- [Dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Biletler](/tr-TR/kilavuz/kavramlar/biletler/)
+- [Gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)

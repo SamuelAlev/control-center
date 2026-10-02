@@ -1,159 +1,178 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Ρύθμιση ενεργοποιητών pipeline
+description: Συνδέστε ένα πρότυπο ώστε να ξεκινά με ένα γεγονός τομέα, ένα χρονοδιάγραμμα ή ένα εισερχόμενο webhook — από τη βιβλιοθήκη κόμβων και τον επιθεωρητή του επιλεγμένου ενεργοποιητή.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Ένας ενεργοποιητής είναι αυτό που ξεκινά ένα pipeline. Κάθε ένας είναι ένας
+κόμβος στον καμβά, τον οποίο σύρετε από την ενότητα **Εναύσματα** της
+βιβλιοθήκης κόμβων. Η επιλογή αυτού του κόμβου ανοίγει τον επιθεωρητή του στα
+δεξιά — δεν υπάρχει μόνιμα διαθέσιμη λίστα ενεργοποιητών, ούτε καρτέλα
+ενεργοποιητών ούτε οθόνη ενεργοποιητών.
 
-## Open a trigger inspector
+## Άνοιγμα επιθεωρητή ενεργοποιητή
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Πρότυπα pipeline**.
+2. Πατήστε το μολύβι στη γραμμή του προτύπου για να ανοίξετε τον επεξεργαστή.
+3. Επιλέξτε έναν κόμβο ενεργοποιητή στον καμβά. Το δεξιό πλαίσιο εμφανίζεται
+   με τις ρυθμίσεις αυτού του ενεργοποιητή. Όταν δεν έχετε επιλέξει τίποτα, το
+   πλαίσιο είναι κρυφό.
 
-## Add a trigger
+## Προσθήκη ενεργοποιητή
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+Η ενότητα **Εναύσματα** της βιβλιοθήκης κόμβων παραθέτει κάθε είδος εκκίνησης
+ως ξεχωριστό κόμβο: χειροκίνητη εκκίνηση, χρονοδιάγραμμα, webhook και μία κάρτα
+ανά γεγονός τομέα. Αναζητήστε `merged`, `ticket` ή το όνομα τύπου (`PrMerged`)
+και σύρετε την κάρτα στον καμβά. Ένα νέο πρότυπο εμφανίζει επίσης ένα
+πλακίδιο-φάντασμα **Προσθήκη εναύσματος** στο σημείο εισόδου — επιλέξτε από την
+ίδια λίστα αναζήτησης.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+Ο ενεργοποιητής εισάγεται αμέσως. Οι νέοι αυτόματοι ενεργοποιητές ξεκινούν
+απενεργοποιημένοι, ώστε μια απόθεση να μην ξεκινά μια εκτέλεση προτού τη
+διαμορφώσετε. Χρησιμοποιήστε τον διακόπτη **Ενεργοποιημένο** του επιθεωρητή
+για να τον ενεργοποιήσετε ή το εικονίδιο κάδου για να τον διαγράψετε.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Ένας ενεργοποιητής ανά τύπο γεγονότος]
+Το `pipeline_triggers` είναι μοναδικό ως προς τον χώρο εργασίας, τον τύπο
+γεγονότος και το πρότυπο. Ένας τύπος γεγονότος που έχετε ήδη συνδέσει
+εξαφανίζεται από τον επιλογέα. Κάθε ενεργοποιητής webhook μοιράζεται τον
+συνθετικό τύπο γεγονότος `webhook`, οπότε ένα πρότυπο μπορεί να έχει το πολύ
+ένα webhook.
 :::
 
-## Allow manual runs
+## Να επιτρέπετε χειροκίνητες εκτελέσεις
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Αποθέστε το **Χειροκίνητη εκτέλεση** (ή επιλέξτε το από το πλακίδιο-φάντασμα)
+και ενεργοποιήστε το **Ενεργοποιημένο** στον επιθεωρητή του. Αυτό είναι που
+κάνει το πρότυπο να εμφανίζεται στον επιλογέα εκτέλεσης. Δεν αποτελεί ειδική
+περίπτωση — ο διακόπτης γράφει μια συνηθισμένη γραμμή ενεργοποιητή με τύπο
+γεγονότος `manual`. Αποθηκεύεται αμέσως· δεν υπάρχει τίποτα να αποθηκεύσετε.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+Ο ίδιος διακόπτης βρίσκεται πίσω από το **Χειροκίνητη εκτέλεση** στην κεφαλίδα
+του επεξεργαστή, όπου στέκεται δίπλα στις δηλωμένες εισόδους του προτύπου.
 
-## On an event
+## Σε ένα γεγονός
 
-These events start a run:
+Αυτά τα γεγονότα ξεκινούν μια εκτέλεση:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Ετικέτα επιλογέα             | Γεγονός                    |
+| ---------------------------- | -------------------------- |
+| Άνοιξε εξωτερικό PR          | `ExternalPrDetected`       |
+| Δημοσιεύτηκε PR              | `PullRequestPublished`     |
+| Άλλαξε η κατάσταση του PR    | `PullRequestStatusChanged` |
+| Συγχωνεύθηκε PR              | `PrMerged`                 |
+| Ελήφθη μήνυμα                | `MessageReceived`          |
+| Δημιουργήθηκε εισιτήριο      | `TicketCreated`            |
+| Άλλαξε η κατάσταση εισιτηρίου | `TicketStatusChanged`      |
+| Ανατέθηκε εισιτήριο          | `TicketAssigned`           |
+| Το εισιτήριο ολοκληρώθηκε    | `TicketCompleted`          |
+| Το εισιτήριο απέτυχε         | `TicketFailed`             |
+| Το εισιτήριο ακυρώθηκε       | `TicketCancelled`          |
+| Υπερβήθηκε το όριο προϋπολογισμού | `BudgetThresholdCrossed` |
+| Προστέθηκε αποθετήριο        | `RepoAdded`                |
+| Η εγγραφή συνάντησης σταμάτησε | `MeetingRecordingStopped` |
+| Η δεξιότητα ενημερώθηκε      | `SkillUpdated`             |
+| Ο χώρος διαγράφηκε           | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+Το `SpaceDeleted` είναι αυτό στο οποίο ακούει το ενσωματωμένο pipeline
+καθαρισμού worktree: μεταφέρει το id του διαγραμμένου χώρου, ώστε η εκτέλεση να
+ανακτά ακριβώς τα worktree αυτού του χώρου αντί να σαρώνει ολόκληρο τον χώρο
+εργασίας.
 
-For the payload keys each event carries, see the
-[domain events reference](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/).
+Για τα κλειδιά ωφέλιμου φορτίου που μεταφέρει κάθε γεγονός, δείτε την
+[αναφορά γεγονότων τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/).
 
-### Filter an event trigger
+### Φιλτράρισμα ενεργοποιητή γεγονότος
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Επιλέξτε τον κόμβο **Άλλαξε η κατάσταση του PR**. Τα τσιπ κατάστασης του
+επιθεωρητή είναι το μόνο φίλτρο που μπορεί να συντάξει το περιβάλλον χρήστη.
+Πατήστε οποιοδήποτε από τα `merged`, `closed`, `approved`, `opened`,
+`reopened`· ο ενεργοποιητής τότε ενεργοποιείται μόνο όταν το `status` του
+γεγονότος ταιριάζει με ένα από αυτά. Αν δεν επιλέξετε κανένα τσιπ, δεν υπάρχει
+φίλτρο.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Δεν υπάρχει πεδίο ελεύθερου JSON για φίλτρα. Ένα κλειδί φίλτρου που δεν υπάρχει
+στο ωφέλιμο φορτίο του γεγονότος δεν ταιριάζει ποτέ, οπότε μην συντάσσετε με το
+χέρι κάποιο για κλειδί που δεν έχετε επιβεβαιώσει στην αναφορά γεγονότων τομέα.
 
-## On a schedule
+## Με χρονοδιάγραμμα
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Επιλέξτε τον κόμβο **Χρονοδιάγραμμα** για να επεξεργαστείτε πότε
+ενεργοποιείται. Τα πεδία του επιθεωρητή παραμένουν όπως τα αφήνετε:
 
-| Field                                | Description                                                                                                                                                                         |
+| Πεδίο                                | Περιγραφή                                                                                                                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| **Χρονοδιάγραμμα (cron ή every:seconds)** | Μια έκφραση cron πέντε πεδίων, όπως `0 9 * * 1`, ή ένα διάστημα όπως `every:86400`. Ένας αριθμός χωρίς πρόθεμα μετατρέπεται σε `every:<n>`.                                     |
+| **Ζώνη ώρας (προαιρετικά)**          | Μια ζώνη IANA, όπως `Europe/Paris`. Προεπιλογή το UTC.                                                                                                                             |
+| **Σε χαμένες εκτελέσεις**            | Τι να γίνεται με ενεργοποιήσεις που χάθηκαν όσο ο διακομιστής ήταν εκτός λειτουργίας: το **Εκτέλεση μία φορά** συγχωνεύει κάθε χαμένη χρονική θέση σε μία ενεργοποίηση κατά την επανεκκίνηση (η προεπιλογή), ενώ το **Παράλειψη** συνεχίζει από την επόμενη μελλοντική χρονική θέση. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+Η γραμμή σύνοψης του πλακιδίου στον καμβά αναφέρει ρητά το διάστημα μόνο για τη
+μορφή `every:<seconds>`· μια έκφραση cron εμφανίζεται απλώς ως
+«Χρονοδιάγραμμα».
 
-## Via a webhook
+## Μέσω webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Η απόθεση του **Webhook** δημιουργεί ένα τυχαίο διακριτικό. Επιλέξτε τον κόμβο
+για να αντιγράψετε τη διαδρομή `POST /webhooks/<token>` από τον επιθεωρητή.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+Το διακριτικό είναι επίσης το μυστικό HMAC: το αίτημα πρέπει να φέρει
+`X-Hub-Signature-256: sha256=<hex>`, όπου το hex είναι
+`HMAC-SHA256(body, token)`. Μια παράδοση που αποτυγχάνει στην επαλήθευση
+απορρίπτεται και καταγράφεται και δεν μπορεί να επαναληφθεί. Τα διπλότυπα
+αγνοούνται με βάση το κλειδί αποδιπλοποίησής τους.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[Το διακριτικό βρίσκεται στη βάση δεδομένων]
+Ο επιθεωρητής δείχνει τη διαδρομή. Το ίδιο το διακριτικό είναι το τμήμα της
+διαδρομής· αποθηκεύεται επίσης στη γραμμή `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Κάθε σημείο εκκίνησης είναι δικός του κόμβος στο γράφημα. Το τράβηγμα ενός
+καλωδίου από το **Χρονοδιάγραμμα** συνδέει μόνο το Χρονοδιάγραμμα· το
+**Χειροκίνητη εκτέλεση** μπορεί να ακολουθήσει διαφορετική διαδρομή (για
+παράδειγμα έναν κόμβο συνθήκης) πριν ενωθεί με την ίδια εργασία. Μια εκτέλεση
+εισέρχεται στο σημείο εκκίνησης που ταιριάζει με τον τύπο γεγονότος της και
+παραλείπει τα υπογραφήματα που ανήκουν στα άλλα σημεία εκκίνησης.
 
-## How a trigger reaches a run
+## Πώς ένας ενεργοποιητής φτάνει σε μια εκτέλεση
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Ένας ενεργοποιημένος ενεργοποιητής του οποίου ο τύπος γεγονότος και το φίλτρο
+ταιριάζουν και τα δύο ξεκινά μια εκτέλεση με το ωφέλιμο φορτίο του γεγονότος ως
+ωφέλιμο φορτίο ενεργοποίησης της εκτέλεσης — αυτό είναι στο οποίο επιλύεται το
+`{{key}}` στην προτροπή ή το σενάριο ενός βήματος. Τα γεγονότα που φέρουν
+φυσικό κλειδί αποδιπλοποιούνται, ώστε το ίδιο γεγονός να μην ξεκινά δύο
+εκτελέσεις όταν ενεργοποιηθεί δύο φορές.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Ένα απενεργοποιημένο _πρότυπο_ απορρίπτεται ακόμη και όταν ο ενεργοποιητής του
+ταιριάζει. Οκτώ από τα δεκατρία ενσωματωμένα πρότυπα παραδίδονται
+απενεργοποιημένα, οπότε οι αρχικοί τους ενεργοποιητές ενεργοποιούνται στο κενό
+μέχρι να ενεργοποιήσετε το πρότυπο.
 
-## Useful patterns
+## Χρήσιμα μοτίβα
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Περιορίστε μόνο τη χειροκίνητη διαδρομή** — συνδέστε το **Χειροκίνητη
+  εκτέλεση** μέσω ενός κόμβου συνθήκης και το **Χρονοδιάγραμμα** απευθείας στην
+  εργασία. Κάθε σημείο εκκίνησης έχει τα δικά του καλώδια.
+- **Ελέγξτε κάθε νέο PR** — γεγονός **Δημοσιεύτηκε PR** στο πρότυπο `pr_review`.
+- **Καθαρισμός μετά από συγχώνευση** — γεγονός **Άλλαξε η κατάσταση του PR**, με
+  φίλτρο `merged` / `closed` / `approved`. Το ενσωματωμένο πρότυπο
+  `pr_merged_cleanup` ακούει ήδη με αυτόν τον τρόπο, καθώς και σε ολοκληρωμένο/
+  ακυρωμένο εισιτήριο, `SpaceDeleted`, και ένα καθημερινό χρονοδιάγραμμα που
+  ενεργοποιείται με εξαναγκασμό σε κάθε επαναρχικοποίηση επειδή αποτελεί συλλογή
+  απορριμμάτων.
+- **Νυχτερινή σάρωση** — χρονοδιάγραμμα `0 2 * * *` με ζώνη ώρας, σε πρότυπο του
+  οποίου ο πρώτος κόμβος είναι σενάριο bash.
+- **Αντίδραση σε εξωτερικό σύστημα** — ενεργοποιητής webhook, με το σύστημα που
+  καλεί να υπογράφει το σώμα του αιτήματός του όπως παραπάνω.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create a pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
-- [Run a pipeline manually](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
-- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
-- [Domain events reference](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)
+- [Δημιουργία προτύπου pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
+- [Χειροκίνητη εκτέλεση pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
+- [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+- [Αναφορά γεγονότων τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)
+- [Pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)

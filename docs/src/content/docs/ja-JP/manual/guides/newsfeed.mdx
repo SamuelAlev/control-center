@@ -1,130 +1,98 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: ニュースフィードをキュレートする
+description: RSS/Atom フィードを追加・管理し、コンテンツブロックを有効にして記事を読み、フィードがどのワークスペースにもついてくることを説明します。
 dateModified: 2026-09-19
 slug: ja-JP/マニュアル/ハウツーガイド/ニュースフィード
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+このガイドでは、ニュースフィードをどう形作るかを説明します: どのソースから取得するか、記事をどう読むか、コンテンツブロックが何をするかです。
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[ニュースフィードはユーザー単位で、ワークスペース単位ではありません]
+フィードと記事はサインインしているユーザーに属します。フィード一覧、既読状態、ブックマークは、どのワークスペースに移動しても、サインインしたどのデバイスでもついてきて、ほかのユーザーには見えません。フィードはサーバーのグローバルデータベースに保存されるため、`/newsfeed` URL にワークスペース ID が付くのは、すべてのアプリ内ルートがそうなっているからにすぎません。
 :::
 
-## Read articles
+## 記事を読む
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. サイドバーの**ニュースフィード**をクリックします
+2. ツールバーのセグメントで**すべて**、**未読**、**保存済み**を切り替えます
+3. 検索ボックスまたはソースの絞り込みで一覧を絞り込みます
+4. レイアウトボタンでマガジングリッドと高密度リストを切り替えます
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+記事を開くと既読になります。たまっている記事を一度に片付けるには、ページヘッダーの**すべて既読にする**（未読の記事がある間だけ表示されます）を使います。あとで読むために 1 件保存するには、カードのブックマークコントロールを使います。
 
-The layout choice persists across launches.
+レイアウトの選択は起動をまたいで保持されます。
 
-## Add a feed
+## フィードを追加する
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. **設定 → 自分 → ニュースフィード**を開きます（ニュースフィードのヘッダーにある設定アイコンから直接移動できます）
+2. **フィードを追加**を押します
+3. **名前**と**フィードURL**（RSS または Atom）を入力します
+4. 必要に応じて**詳細**を展開し、カスタムの **User-Agent** を設定します — デフォルトのクライアントには別の応答を返すパブリッシャーもあります
+5. **フィードを追加**を押します
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+チェックポイント: フィードは**フィード**一覧に表示され、最初の取得後にその記事が届きます。すでに購読している URL は「このURLのフィードはすでに存在します。」で拒否されます。
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+初回利用時に、すべてのユーザーへ 14 件のフィードが用意されます: Control Center、The Verge、TechCrunch、Hacker News、ByteByteGo、Product Hunt、TLDR AI、Import AI、The Pragmatic Engineer、Martin Fowler、Will Larson の Irrational Exuberance、The Engineering Manager、Lea Verou、CSS-Tricks。
 
-## Manage feeds
+## フィードを管理する
 
-Each row in the **Feeds** list gives you three controls:
+**フィード**一覧の各行には 3 つのコントロールがあります:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| コントロール | 効果 |
+| --- | --- |
+| スイッチ | フィードを無効にします。無効な行は淡色表示になり、取得されなくなります |
+| 更新アイコン | このフィードだけを今すぐ更新します |
+| ゴミ箱アイコン | 確認のうえ、フィードを削除します |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+一覧の上部にある**すべて更新**は、有効なすべてのフィードを更新します。
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+フィードのサブタイトルには、その説明と最後に更新してからの経過時間が表示されます。取得に失敗したフィードでは、その代わりにエラーが警告色で表示されます。
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+編集の手段はありません。フィードの名前、URL、ユーザーエージェントを変更するには、削除してからもう一度追加してください。
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+取得は完全にサーバー上で実行されます: 起動時にユーザーごとに 1 回（あとから作成されたアカウントでは初回利用時に）、その後は 30 分ごとです。
 
-## Block ads and trackers in the reader
+## リーダーで広告とトラッカーをブロックする
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. 設定 → 自分 → ニュースフィードで、**リーダー設定**を探します
+2. 内蔵リーダーを使うには**アプリで記事を開く**をオンのままにし、記事をシステムのブラウザーに渡すにはオフにします
+3. **広告、トラッカー、Cookieバナーをブロック**をオンのままにします
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+ブロックはデフォルトでオンです。埋め込みリーダーは macOS と Windows のみです: Web ビルドと Linux では、システムのブラウザーが_リーダーそのもの_で、記事はそこで開きます（Web では新しいタブ）。Web では、ブロックのトグル、**リストを絞り込む**カード、**信頼済みサイト**カードは非表示になります。
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+アプリ内リーダーは記事を再整形しません。パブリッシャーのページを埋め込み WebView でレンダリングし、キャッシュされたフィルターリストを使って広告、トラッカー、Cookie バナーを抑止します。
 
-### Check or update the filter lists
+### フィルターリストを確認または更新する
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+**リストを絞り込む**カードには、Cookie 非表示、広告非表示、ネットワークブロックのルールがいくつ読み込まれているかに加えて、削除するトラッキングパラメータと、リストが最後に更新された日時が表示されます。更新するには**更新を確認**を押します。
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+ソースは EasyList、i-dont-care-about-cookies、Fanboy Cookiemonster、いくつかの uBlock Origin リスト、uBO のトラッキングパラメータリストです。ダウンロードが成功するまで、カードはリストを「同梱のデフォルト — 更新されません」と表示します — 広告、Cookie、ネットワークのルール数は 0 のままで、トラッキングパラメータの削除には引き続き内蔵のデフォルトセットが使われます。
 
-### Allowlist a site
+### サイトを許可リストに追加する
 
-Some sites break under blocking.
+ブロックによって壊れてしまうサイトもあります。
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. 設定 → 自分 → ニュースフィードで、**信頼済みサイト**に移動します
+2. **信頼済みサイトを追加**を押し、ドメインを入力します
 
-Blocking is skipped there.
+そのサイトではブロックがスキップされます。
 
-## Troubleshooting
+## トラブルシューティング
 
-### A feed I added shows up in another workspace
+### 追加したフィードが別のワークスペースに表示される
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+想定どおりです。ニュースフィードはユーザー単位であり、ワークスペース単位ではありません — フィードは、サインインしているすべての場所についてきます。冒頭の注意を参照してください。
 
-### A feed row shows an error instead of a description
+### フィードの行に説明ではなくエラーが表示される
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+最後の取得が失敗し、行にはその理由がそのまま表示されています。更新アイコンを押して再試行し、URL が今も RSS または Atom を配信しているか確認してください。未知のクライアントを拒否するパブリッシャーではカスタムのユーザーエージェントが必要なことがあり、その場合はフィードを削除して追加し直すことになります。
 
-### An article page renders badly
+### 記事ページが正しく表示されない
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+**信頼済みサイト**でそのドメインの**広告、トラッカー、Cookieバナーをブロック**をオフにするか、**アプリで記事を開く**をオフにしてブラウザーで読んでください。
 
-## Related guides
+## 関連するガイド
 
-- [Configure notifications](/ja-JP/マニュアル/ハウツーガイド/通知/)
-- [Triage your inbox](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)
+- [通知を設定](/ja-JP/マニュアル/ハウツーガイド/通知/)
+- [受信トレイをトリアージ](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)

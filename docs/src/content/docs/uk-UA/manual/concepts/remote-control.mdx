@@ -1,207 +1,220 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Віддалене керування та мобільний клієнт
+description: Як телефон дістається вашого сервера через реле з брокером і наскрізним запечатуванням, а не через пряме з’єднання між пристроями, і як багаторівнева модель доступу утримує це охоплення вузьким.
 slug: uk-UA/керівництво/поняття/віддалене-керування
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center — застосунок для комп’ютера, але робота, за якою він стежить, не
+зупиняється, коли ви відходите від столу. **Віддалене керування** сполучає ваш
+телефон із вашим `cc_server` через
+**[Remote](https://remote.usectrl.dev/)** — супровідний застосунок на
+remote.usectrl.dev, — щоб ви могли стежити за флотом звідти: читати повідомлення
+й тікети, відповідати агенту, розбирати стрічку новин, і при цьому аудіо,
+транскрипт, вихідний код і облікові дані, що лежать на сервері, ніколи його не
+покидають.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Сприймайте його як супровідний засіб до робочого столу, переважно для читання.
+Він не покликаний замінити повноцінний настільний клієнт.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/uk-UA/керівництво/поняття/розгортання/) for how the two differ.
+:::note[Два різні віддалені шляхи]
+Телефонний супровідний застосунок сполучається з `cc_server` через **реле з
+брокером** (WebSocket), яке переносить кадри JSON-RPC, запечатані наскрізним
+шифруванням. Повна **вебзбірка** (і настільний застосунок, націлений на
+віддалений сервер) — це другий віддалений шлях: вона під’єднується до
+`cc_server` по WebSocket і відтворює застосунок повністю. Про те, чим ці два
+шляхи різняться, див.
+[Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/).
 :::
 
-## Transport
+## Транспорт
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Телефон дістається `cc_server` по WebSocket: або прямим з’єднанням (loopback,
+локальна мережа, tailnet або `wss://`), або через кімнату за запрошенням на
+сигнальному брокері, який ретранслює запечатані кадри. Каналу даних
+безпосередньо між пристроями немає.
 
-## What the phone can do
+## Що вміє телефон
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Спарований телефон дістає невеликий, навмисно окреслений зріз можливостей
+сервера:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Читати** тікети, агентів, простори, їхні повідомлення та вашу стрічку новин
+- **Відповідати**: надіслати повідомлення в просторі, оновити або призначити
+  тікет, позначити статтю прочитаною чи збереженою
+- **Запустити плейбук**: інстанціювати збережений шаблон плану з його
+  параметрами. Це лише _пропонує_ план; нічого не виконується й не
+  витрачається, доки оператор не схвалить його в Plan Studio у повноцінному
+  клієнті
+- **Перемикати робочі простори** — з власного засобу вибору на телефоні
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Це майже все. Телефон — **принципал із нижчими привілеями**, ніж повноцінний
+клієнт. Він не може запускати процеси, витрачати бюджет LLM, надсилати зміни в
+GitHub чи створювати робочі простори. Про те, як це забезпечується насправді, а
+не лише задумано, див. [модель доступу](#модель-доступу).
 
-## How the link is built
+## Як будується з’єднання
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+З’єднання йде через **реле з брокером**: сервер як власник заходить в одну
+кімнату за запрошенням на брокері `wss://`, і кожен спарований клієнт —
+настільний, веб, телефон — заходить у ту саму кімнату з токеном допуску,
+обмеженим у часі. Складається це з трьох частин:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Частина                  | Роль                                                                                                                                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Remote (телефонний застосунок)** | Супровідний вебзастосунок, розміщений за замовчуванням на `remote.usectrl.dev`, або розміщений самостійно. Завантажується в браузері, тримає запис спарювання в IndexedDB.                                                                                              |
+| **Брокер реле**          | Безстанове реле `wss://` (`cc_signaling_server`), що обслуговує кімнати на N учасників. Воно переносить **лише непрозорі кадри**: кожне навантаження запечатане наскрізним шифруванням між телефоном і сервером, тож брокер ніколи не бачить даних застосунку чи секрету спарювання і ніколи не тлумачить те, що пересилає. |
+| **`cc_server`**          | Власник кімнати. Він відповідає на виклики телефону через той самий диспетчер, який використовують усі інші клієнти.                                                                                                                                                           |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Пропозиція спарювання містить **дескриптор з’єднання** зі списком усіх шляхів
+до сервера (локальна мережа, tailnet, публічний `wss://`, реле) та відбитком
+його ідентичності. Резолвер телефону обирає найкращий доступний шлях і
+закріплює відбиток під час першого з’єднання (TOFU); реле гарантує зв’язок,
+навіть коли прямого шляху немає, і при цьому ніколи не може прочитати трафік.
 
-## What the pairing payload is
+## Що являє собою навантаження спарювання
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/) for the procedure. The anatomy is
-what matters here.
+Спарювання створюють у застосунку й доставляють як глибоке посилання;
+процедуру див. у
+[Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/).
+Тут важлива його анатомія.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Навантаження їде у **фрагменті** URL — частині після `#`, яку браузери ніколи не
+надсилають на сервер, тож HTTPS-хост PWA його не бачить. Воно містить усе, що
+потрібно телефону, щоб дістатися сервера й довести, хто він: дескриптор
+з’єднання (усі шляхи плюс відбиток ідентичності), щойно створений ідентифікатор
+пристрою, 32-байтовий попередньо спільний ключ і позначку строку дії. Телефон
+його декодує, зберігає запис спарювання локально та прибирає фрагмент, щоб
+секрет зник з URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Є дві форми навантаження, і вони **не взаємозамінні**. QR-код телефону,
+створений із панелі спарювання в застосунку, — це описаний вище `PairingPayload`
+v2, націлений на хост Remote PWA. `cc_server pair --client-url` створює інше,
+старіше посилання v1 (`{s, i, k}` — URL сервера, ідентифікатор пристрою, ключ),
+призначене лише для **веб**клієнта.
 
-They also differ in lifetime, which is easy to get wrong:
+Вони також різняться строком дії, у чому легко помилитися:
 
-| Minted by                             | Credential expiry                         |
+| Ким створено                          | Строк дії облікових даних                 |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Панель спарювання в застосунку (`pairing.mint`) | 30 днів, завжди                   |
+| `cc_server pair` у командному рядку   | **Немає** — облікові дані не спливають    |
 
-## The access model
+## Модель доступу
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Спарований пристрій **автентифікований, але недовірений**. Кілька незалежних
+шлюзів не дають схваленому (або злитому) спарюванню перетворитися на повний
+контроль над сервером.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Межа — це членство, а не спарювання
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Дійсний ключ спарювання доводить, _який пристрій_ ви є. Те, що ви можете читати
+чи змінювати, визначають ваша **роль у робочому просторі**, яку перераховують
+під час кожного окремого виклику, та дозволи на окремі репозиторії для всього,
+що відкриває вміст репозиторію. Пристрій із цілком робочим ключем, але
+користувач якого не є учасником названого робочого простору, отримує відмову
+«Not a member of this workspace».
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Мінімальна роль виводиться з виду операції, якщо вона не оголошує власної:
+читання потребує `guest`, зміни — `member`, руйнівні операції — `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Телефон — це нижчий рівень сеансу
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Окрім перевірки ролі, телефонний сеанс має менші можливості, ніж настільний або
+вебсеанс. Операції, оголошені як доступні лише повноцінному клієнту,
+відхиляються для телефону до запуску обробника, хоч би який привілейований
+користувач за ним стояв: створення, перелік, перейменування та відкликання
+спарювань пристроїв; читання й налаштування тунельного з’єднання; резервне
+копіювання сервера та експорт/імпорт робочого простору; виявлення й завершення
+процесів; перевірка адаптерів; налаштування сервера; адміністрування SSO;
+керування флотом; а також перехоплення агента, що виконується, чи повернення
+його назад.
 
-### 3. A default-deny tool allow-list
+### 3. Список дозволених інструментів із забороною за замовчуванням
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Саме для поверхні інструментів MCP (`tools/call`) тим, які інструменти телефон
+може викликати, керує список дозволених із забороною за замовчуванням. Усе,
+чого немає в списку, відхиляється до запуску. Список здебільшого про читання й
+спостереження, плюс кілька **суто локальних** записів — повідомлення, оновлення
+тікета, позначка статті, — які не витрачають бюджет LLM, не запускають процесів
+і не торкаються зовнішніх систем.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Відмовлено, наприклад: консультація з агентом, запуск ШІ-перевірки, завершення
+агента, публікація перевірки в GitHub, наймання чи звільнення агентів, створення
+робочого простору.
 
-### 4. Per-call workspace scoping
+### 4. Прив’язка до робочого простору на кожен виклик
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/uk-UA/керівництво/поняття/робочі-простори/) invariant the rest of the
-product enforces.
+Сервер **не** тримає «поточного робочого простору». Він за задумом безстановий:
+кожен виклик у межах робочого простору має назвати свій цільовий `workspace_id`
+в аргументах, і диспетчер відхиляє виклик одразу, якщо його немає або якщо
+названо робочий простір, якого сервер не зареєстрував, — ще до того, як щось
+відкриє базу даних. Тож телефон ніколи не може успадкувати межі іншого клієнта
+чи з’їхати в них, і назвати чужий робочий простір теж не зарадить, бо перевірка
+членства зі шлюзу 1 усе одно діє. Це той самий інваріант
+[ізоляції робочих просторів](/uk-UA/керівництво/поняття/робочі-простори/), якого
+дотримується решта продукту.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Кадри, запечатані наскрізним шифруванням під попередньо спільним ключем
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Кожен кадр між телефоном і сервером запечатано ключем спарювання; токен допуску
+лише впускає клієнта в кімнату, він нічого не розшифровує. Брокер ретранслює
+шифротекст і ніколи не бачить ключа. Відкликаний пристрій виявляє, що його
+облікові дані вже зникли, тож під час повторного з’єднання він **відмовляє, а не
+пропускає**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Облікові дані, створені в застосунку, обмежені 30 днями; після цього шлюз
+з’єднання їх відхиляє, і телефон має спаруватися заново. Відкликання діє наживо:
+сервер стежить за таблицею пристроїв і розриває відкриті сеанси відкликаного
+пристрою за секунди, а не чекає на його наступне з’єднання.
 
-### 6. Rate limiting per principal
+### 6. Обмеження швидкості на принципал
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Обмежувач із ковзним вікном тримає віддалений трафік інструментів на рівні 120
+викликів за хвилину, з тугішим підлімітом у 30 на хвилину для змінювальних дій.
+Бюджет належить **принципалу, а не сеансу**: три ваші пристрої вичерпують один
+спільний ліміт, тож викрадений клієнт не може купити запас, відкриваючи більше
+сеансів, а один галасливий учасник не може заморити голодом інших.
 
-### 7. A broker that learns nothing
+### 7. Брокер, який нічого не дізнається
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Брокер реле навмисно примітивний: він обслуговує кімнати, пересилає запечатані
+кадри й не тримає ні облікових записів, ні даних застосунку, ні ключів. Кімнати
+доступні за запрошенням і тимчасові. Дані застосунку, аудіо, транскрипт,
+вихідний код і облікові дані — усе залишається на сервері.
 
-## Live updates
+## Оновлення наживо
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Після спарювання телефон отримує **оновлення наживо** як кадри сповіщень — нові
+повідомлення агентів, призначені вам тікети, зміни стану, — дзеркалячи власні
+сповіщення робочого столу. Сервер розсилає ці кадри кожному з’єднаному сеансу, а
+фільтр робочого простору застосовується на клієнті, тож те, що ви бачите,
+обмежено робочим простором, на який ви дивитеся.
 
-## Where it lives
+## Де це розташовано
 
-| Surface                                                                             | What it shows                                                                                               |
+| Поверхня                                                                            | Що вона показує                                                                                             |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **Налаштування → Ви → Ваші пристрої** (`/workspaces/:workspaceId/settings/you/devices`) | Спаровані клієнти зі станом наживо, а також **Спарувати новий клієнт** (веббраузер, настільний застосунок або телефон) і відкликання |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Та сама панель створює спарювання для другого браузера чи настільного
+застосунку, не лише для телефонів — процес ідентичний, різниться тільки глибоке
+посилання.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Віддалене керування працює на боці сервера й **не** відкривається через MCP.
+Телефон говорить із власним диспетчером сервера через реле; він не є клієнтом
+MCP зовнішнього сервера.
 ::::
 
-## See also
+## Див. також
 
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/): roles, membership and repo grants
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/): where remote control sits among the client tiers
-- [Architecture](/uk-UA/керівництво/поняття/архітектура/): where remote control sits in the stack
-- [Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/)
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/): прив’язка на кожен виклик, на яку це спирається
+- [Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/): ролі, членство та дозволи на репозиторії
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/): де віддалене керування стоїть серед рівнів клієнтів
+- [Архітектура](/uk-UA/керівництво/поняття/архітектура/): де віддалене керування стоїть у стеку
+- [Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/)

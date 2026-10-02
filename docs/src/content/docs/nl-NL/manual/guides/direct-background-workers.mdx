@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Achtergrondworkers sturen
+description: Gebruik de vibe-modus om het werk niet meer zelf te doen en in plaats daarvan meerdere agents aan te sturen die het parallel uitvoeren.
 slug: nl-NL/handleiding/gidsen/achtergrondworkers-sturen
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Deze handleiding laat zien hoe je een gesprek als **regisseur** voert in plaats van als worker: de sessie leest en verifieert, en achtergrondagents doen het bewerken.
 
-## What changes when you type `/vibe`
+## Wat er verandert wanneer je `/vibe` typt
 
-Two things, and only the first is enforced by the machinery:
+Twee dingen, en alleen het eerste wordt door het mechanisme afgedwongen:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **De eigen tools van de sessie gaan naar alleen-lezen**, plus vijf worker-werkwoorden. De enige manier waarop de sessie de repo kan beïnvloeden is via een worker, en de enige manier om te weten wat er is gebeurd, is door de bestanden te lezen die een worker heeft aangeraakt.
+2. **De sessie krijgt de opdracht te verifiëren door te lezen, niet door te geloven.** Het rapport van een worker is een bewering over wat hij heeft gedaan, geen bewijs dat het heeft gewerkt.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Het eerste is het dragende deel. Een regisseur die nog steeds kan zoeken en bewerken, doet het werk onder druk zelf, en dat is precies de faalmodus die dit moet voorkomen.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Workers beginnen blanco
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Een worker heeft je gesprek nooit gezien en zal dat ook nooit doen. De briefing is zijn volledige context.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Dat is wat het patroon goedkoop houdt — twintig workers die elk de geschiedenis van de regisseur vasthouden, zouden twintig keer de context van de regisseur kosten — en het is ook het enige dat briefings moeilijk te schrijven maakt. "Doe nu ook de andere" leest voor de regisseur als een volledige instructie en voor een verse sessie als helemaal niets.
 
-A good brief names files, commands and the definition of done:
+Een goede briefing noemt bestanden, commando's en de definitie van klaar:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> Vervang in `lib/features/auth/` elke aanroep van `SessionStore.read(key)` door `SessionStore.get(key)`. De nieuwe methode retourneert `Future<String?>` waar de oude `String?` retourneerde, dus aanroepers hebben `await` nodig. Voer `fvm flutter analyze lib/features/auth` uit als je klaar bent en meld eventuele fouten die je niet kon oplossen.
 
-## The five verbs
+## De vijf werkwoorden
 
-| Verb         | What it does                                            |
+| Werkwoord   | Wat het doet                                            |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Start een worker met een briefing. **Keert onmiddellijk terug.** |
+| `vibe_list`  | Niveau, status, verstreken tijd en laatste resultaat voor iedereen |
+| `vibe_send`  | Een vervolgbeurt voor een worker die klaar is           |
+| `vibe_wait`  | Blokkeert tot één worker is afgerond                    |
+| `vibe_kill`  | Stopt er één                                            |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Het starten is bewust asynchroon. Een regisseur die bij elke start blokkeert, draait workers één voor één, wat een langzamere manier is om te doen wat hij al zelf deed. Gebruik `vibe_wait` alleen wanneer je echt niet verder kunt zonder een specifiek antwoord.
 
-## Two tiers
+## Twee niveaus
 
-| Tier   | For                                                              |
+| Niveau | Voor                                                             |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Mechanisch werk met een duidelijke specificatie — bewerkingen, hernoemingen, concepten, commando's uitvoeren |
+| `good` | Ontwerp, beoordeling, of het reviewen van wat een `fast`-worker heeft geproduceerd |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Een veelvoorkomende vorm is om `fast`-workers over onafhankelijke bestanden uit te waaieren en daarna één `good`-worker te starten die beoordeelt wat ze samen hebben gedaan.
 
-## Verifying
+## Verifiëren
 
-This is the part that decides whether the pattern is worth anything.
+Dit is het deel dat bepaalt of het patroon iets waard is.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Lees daarna **de bestanden die hij noemde**. De regisseur heeft `read`, `search`, `lsp` en `ast_grep`; dat is precies het punt van ze behouden. Een regisseur die het rapport voor waar aanneemt, is een samenvatter van het optimisme van andere agents.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` na een ronde workers is meestal de snelste enkele controle.
 
-## When a worker loses the thread
+## Wanneer een worker de draad kwijtraakt
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Beëindig hem en geef een nieuwe briefing. Een verse, gecorrigeerde briefing is goedkoper dan een discussie, en `vibe_send` werkt alleen voor een worker die zijn beurt al heeft afgerond.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Grenzen
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Acht gelijktijdige workers.** Een plafond op de kosten, geen technische limiet: elk is een volledige modelsessie, en een regisseur die er twintig uitwaaiert, volgt niet meer wat ze allemaal doen.
+- **Geen enkele worker overleeft de modus.** Wanneer de run eindigt, worden ze allemaal gestopt en vermeldt het transcript hoeveel het er waren. Een achtergrondagent die nog bestanden bewerkt nadat het gesprek verder is gegaan, is de enige fout die dit zich niet kan permitteren.
+- **Workers zijn onderhuids gewone subagenten.** Hetzelfde dieptelimiet, hetzelfde beveiligingsbeleid, hetzelfde kind in het runlog. Vibe verandert wie hen aanstuurt, niet wat ze mogen doen — daarom verschijnen er nog steeds goedkeuringsprompts bij schrijf- en uitvoeringsaanroepen van een worker.
 
-## When not to use it
+## Wanneer je het niet moet gebruiken
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/nl-NL/handleiding/gidsen/pipeline-maken/) or an [orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+De vibe-modus is bedoeld voor werk dat uiteenvalt in onafhankelijke briefings. Als de volgende stap afhangt van de uitvoer van de vorige stap, beschrijf je een [pipeline](/nl-NL/handleiding/gidsen/pipeline-maken/) of een [orkestratie](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/), en beide drukken afhankelijkheden goed uit in plaats van de regisseur ze met `vibe_wait` te laten simuleren.
 
-## Related
+## Gerelateerd
 
-- [Run agents in parallel](/nl-NL/handleiding/gidsen/parallelle-agenten/) — the other ways to fan out
-- [Orchestration](/nl-NL/handleiding/concepten/orkestratie/) — when the work has a shape
-- [Built-in agent tools](/nl-NL/handleiding/referentie/agenttools/) — the verbs and their arguments
+- [Agenten parallel uitvoeren](/nl-NL/handleiding/gidsen/parallelle-agenten/) — de andere manieren om uit te waaieren
+- [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/) — wanneer het werk een vorm heeft
+- [Ingebouwde agenttools](/nl-NL/handleiding/referentie/agenttools/) — de werkwoorden en hun argumenten

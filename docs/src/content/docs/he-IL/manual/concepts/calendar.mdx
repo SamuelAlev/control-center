@@ -1,128 +1,121 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: לוח שנה ותזמון
+description: כיצד Control Center מסנכרן את Google Calendar בשרת, מדוע הכניסה היא הרשאת קוד מכשיר ומה מכסה ההיקף לקריאה בלבד.
 slug: he-IL/מדריך-למשתמש/מושגים/לוח-שנה
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/he-IL/מדריך-למשתמש/מושגים/פגישות/).
+Control Center מתחבר ל-Google Calendar כדי שהיום שלכם יתנהל לצד הצי שלכם. הוא
+מסנכרן את האירועים שלכם, מציג אותם בתצוגות חודש, שבוע, יום וסדר יום, מתריע לכם
+לפני שפגישה מתחילה והופך כל אירוע ל[פגישה](/he-IL/מדריך-למשתמש/מושגים/פגישות/)
+מוקלטת ומסוכמת.
 
-## What it changes on Google
+## מה זה משנה ב-Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+כמעט כלום. האינטגרציה מושכת אירועים פנימה ומציגה אותם. היא אינה יוצרת, עורכת,
+מוחקת או מגיבה להזמנות. כל חיבור בקוד מכשיר, בין מובנה ובין כזה שאתם מביאים
+משלכם, מבקש `calendar.readonly` וכן `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+האירועים מסונכרנים אל מסד הנתונים של סביבת העבודה עצמה **בשרת**
+(`<dataDir>/<workspaceId>/workspace.db`) ומוצגים בכל לקוח דרך RPC. שום לקוח
+אינו מחזיק באישורי Google.
 
-## Per-workspace accounts
+## חשבונות לפי סביבת עבודה
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+חשבונות לוח שנה מוגבלים לסביבת עבודה, כמו כל דבר אחר ב-Control Center. כל
+[סביבת עבודה](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) מחברת חשבון Google משלה
+(או כמה), והאירועים והאסימונים של סביבת עבודה אחת לעולם אינם גלויים מאחרת.
+החלפת סביבת עבודה מחליפה אילו לוחות שנה אתם רואים.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+סביבת עבודה יכולה לחבר **כמה** חשבונות Google, למשל חשבון עבודה וחשבון אישי,
+והאירועים שלהם ממוזגים לאותן תצוגות.
 
-## Why sign-in is a device code
+## מדוע הכניסה היא קוד מכשיר
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+לשרת `cc_server` ללא ממשק אין דפדפן שילכוד הפניית OAuth. לכן הוא אינו משתמש
+בהפניה: הוא מאשר באמצעות **הרשאת קוד מכשיר** (RFC 8628). השרת מציג קוד משתמש
+קצר וכתובת URL של Google, אתם מאשרים בכל מכשיר שיש בו דפדפן והשרת בודק שוב ושוב
+עד שתעשו זאת. התקנה ללא ממשק יכולה לחבר חשבון בדיוק מפני שאין נקודת קצה להפנייה
+שצריך לארח.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+ההשלכה שכדאי להכיר לפני שאתם מביאים אישורים משלכם: סוג הלקוח חייב להיות
+"TV and Limited Input devices" של Google. Google מעניקה רק סט היקפים מתוך רשימה
+מאושרת לסוג לקוח זה, ופרויקט שבו Calendar אינו מורשה עבורו נכשל עם
+`invalid_scope` — תצטרכו לקוח loopback או לקוח אינטרנט במקום.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+אסימונים לעולם אינם עוזבים את השרת. הם נכתבים אל `secrets.json` של השרת בספריית
+הנתונים שלו, במפתח `google_google:<workspaceId>:<email>`, לצד מסדי הנתונים ותחת
+אותו גבול אמון של מערכת הקבצים של המארח. השרת מרענן גישה אוטומטית, וכאשר Google
+מבטלת חשבון באופן קבוע (הפעלה שבוטלה או שפג תוקפה מזמן), הוא מפרסם
+`CalendarAuthExpired` ומציג באנר **חבר מחדש** במקום להיכשל בשקט.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+בנייה מהמקור אינה כוללת **שום** אישורי Google — אתם מספקים מזהה לקוח וסוד
+משלכם. בניות רשמיות צורבות לקוח קוד מכשיר שאינו סודי כדי שזרימת החיבור תעבוד
+מיד; השרת שומר רק סמן שמפנה אליו, ולעולם לא עותק. `GOOGLE_OAUTH_CLIENT_ID`
+(והסוד שלו) בסביבה מקבלים תמיד עדיפות על הזוג הצרוב. אין במכוון דגל
+`--google-client-id`: דגלים לא מוכרים מתעלמים מהם, וסוד בשורת פקודה ניתן לקריאה
+דרך `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/).
+להרצת פרויקט Google משלכם, ראו
+[חיבור Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/).
 
-## Sync
+## סנכרון
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+השרת מושך חלון מתגלגל של אירועי כל חשבון מחובר — כל לוח שנה בחשבון, לא רק הראשי —
+**כל שתי דקות**, ובנוסף לפי דרישה (הפעלה, חיבור, רענון ידני). הקצב הקצר אפשרי כי
+הסריקה מצטברת: כל לוח שנה נושא אסימון סנכרון משלו, כך שלוח שנה שלא השתנה עולה
+תגובה אחת כמעט ריקה במקום שליפה מחדש של חלון של חמישה חודשים.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+אירועים חוזרים מורחבים בצד השרת, כך שאף לקוח אינו מפרסר כלל חזרה. מעבר לחודש
+מחוץ לחלון הנוכחי טוען את הטווח הזה בעצלתיים. אירועים שנמחקו או שעברו מחוץ
+לטווח מיושבים בסנכרון הבא.
 
-## Views
+## תצוגות
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| תצוגה       | מה היא מציגה                                          |
+| ----------- | ----------------------------------------------------- |
+| **חודש**    | רשת של חודש שלם (מופעלת על ידי החבילה `kalender`)     |
+| **שבוע**    | האירועים המתוזמנים של שבוע ברשת זמנים                 |
+| **יום**     | האירועים המתוזמנים של יום אחד ברשת זמנים              |
+| **סדר יום** | רשימה נגללת של אירועים קרובים                         |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+פתחו את לוח השנה בכתובת `/calendar`; בחירת אירוע פותחת את הפרטים שלו בכתובת
+`/calendar/:eventId`. התצוגה שתבחרו נשמרת בהעדפות של אותו לקוח, כך שהיא אינה
+עוברת איתכם למכשיר אחר.
 
-## Meeting alerts
+## התראות פגישה
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+מתזמן שפועל מדי דקה סורק אירועים שמתחילים בתוך חלון התראה מראש שאפשר להגדיר
+ומפעיל התראת **"פגישה מתחילה בקרוב"** (שהיא
+[אירוע תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) `MeetingStartingSoon`).
+ההתראה נושאת את כתובת ההצטרפות כשזו קיימת, ולחיצה עליה פותחת את פרטי האירוע.
+ההתראות מונפקות פעם אחת בלבד לפי השדה `alertedAt` של האירוע, כך שאותה פגישה
+לעולם אינה מתריעה פעמיים — אפילו לאורך הפעלות מחדש — ואירוע שזמן ההתחלה שלו חלף
+בזמן שהאפליקציה הייתה סגורה לעולם אינו מוצג שוב.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+שתי מגבלות שקל למעוד בהן. המתזמן פועל **בצד הלקוח, בשולחן העבודה**, ורק עבור
+סביבת העבודה שפתוחה כרגע — סביבת עבודה שאינכם נמצאים בה אינה מתריעה כלל. ולגרסת
+האינטרנט אין כלל צינור התראות של מערכת ההפעלה, כך שגם היא אינה מתריעה.
 
-## Record and link
+## הקלטה וקישור
 
-From a calendar event you can start a [meeting recording](/he-IL/מדריך-למשתמש/מושגים/פגישות/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+מתוך אירוע בלוח השנה תוכלו להתחיל
+[הקלטת פגישה](/he-IL/מדריך-למשתמש/מושגים/פגישות/) שמאותחלת עם כותרת האירוע.
+Control Center שומר קישור אחד-לאחד בין ההקלטה לאירוע, כך שההערות של הפגישה
+והרשומה בלוח השנה נשארות מחוברות בלי שאף אחת מהתכונות תהיה תלויה בשנייה.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**התחל הקלטה וקישור** זמין רק בשולחן העבודה. בלקוח האינטרנט הפעולה מדווחת
+שההקלטה אינה זמינה — למרות שזרימת ההקלטה של מסך הפגישות עצמו כן עובדת בדפדפן.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[סוכנים אינם יכולים לקרוא את לוח השנה שלכם]
+אין כלי MCP של לוח שנה. סוכן אינו יכול לפרט אירועים, לקרוא את פרטי האירוע או
+לאשר הגעה בשמכם; משטח ה-`calendar.*` הוא RPC ללקוחות אנושיים בלבד.
 :::
 
-## See also
+## ראו גם
 
-- [Meetings and transcription](/he-IL/מדריך-למשתמש/מושגים/פגישות/): what happens after you start a recording
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): why calendar accounts are per-workspace
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
-- [Record and summarize a meeting](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הקלטת-פגישה/)
+- [פגישות ותמלול](/he-IL/מדריך-למשתמש/מושגים/פגישות/): מה קורה אחרי שאתם מתחילים הקלטה
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): מדוע חשבונות לוח שנה הם לפי סביבת עבודה
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): `MeetingStartingSoon` ו-`CalendarAuthExpired`
+- [חיבור Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
+- [הקלטה וסיכום של פגישה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הקלטת-פגישה/)

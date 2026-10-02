@@ -1,137 +1,151 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Пробросити порти з термінала
+description: Дістаньтеся dev-сервера, запущеного в Terminal (VM) або хост-шелі, — зі своєї машини, з Browser (VM), з Android, у своїй мережі або за dev-доменом із HTTPS.
 slug: uk-UA/керівництво/практичні-посібники/проброс-портів
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Сервер, який ви запускаєте в терміналі розмови, публікується лише для **того
+простору**. Панель портів помічає слухачів, запущених цим застосунком у тому
+просторі, зіставляє їм порти й дає адресу для кожного місця, звідки ви можете
+до них дістатися. Два простори можуть обидва слухати `5173`; їхні карти ніколи
+не змішуються.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Тут ніщо не відкриває машину назовні: кожен шлях створює сервер, на запит, і
+він зникає разом із терміналом або rig.
 
-## See what is listening
+## Що слухає
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Відкрийте **Terminal (VM)** цієї розмови або хост-шел (у просторі або на
+   сторінці PR).
+2. Запустіть свій сервер — `pnpm dev`, `python -m http.server 8000`, будь-що.
+3. За кілька секунд на **іконці вилки** у правому верхньому куті термінала
+   з’явиться крапка. Натисніть її.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Панель перелічує кожен порт, що слухає, разом із процесом, який ним володіє, у
+вигляді `3000 → 3000`: ліворуч — порт, який процес зайняв, праворуч — порт, на
+якому він відповідає локально (те саме число, якщо воно було вільним на вашій
+машині). Кожен рядок також показує, чи можуть до нього дістатися десктопний
+`localhost`, Browser (VM) і Android.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Виявлення обмежене: Terminal (VM) опитують усередині того гостя; хост-шел —
+з дерева процесів PTY тієї сесії. Інші простори й інші процеси на вашому Mac
+до списку не потрапляють.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Нові порти в **цьому** терміналі переадресовуються автоматично. Вимкніть
+**Автопереадресацію портів** у тій самій панелі, якщо хочете бачити лише ті,
+які додали самі.
 
-## Reach it from this computer
+## Доступ із цього комп’ютера
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Скористайтеся пунктом **Копіювати локальний URL** у рядку —
+`http://localhost:3000`. Переадресація слухає лише на loopback, тож ніщо інше
+у вашій мережі її не бачить.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Якщо два простори відкривають гостьовий `5173`, а ваша машина вже тримає
+`127.0.0.1:5173`, другий простір зберігає гостьовий `5173` і отримує ефемерний
+локальний порт. Копіювання URL використовує праворучне число.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+У хост-шелі процес уже на вашій машині. Зіставлення того самого локального
+порту нічого не змінює; вибір **іншого** локального порту прив’язує
+loopback-проксі до обраного.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (або прив’язка до `0.0.0.0`) **не** дає вбудованому Browser (VM)
+дістатися сервера на Mac. Гість має власний loopback; сервер прокладає тунель
+у того гостя, коли вкладка браузера перебуває в **тому самому просторі**.
 
-## Reach it from the Browser (VM)
+## Доступ із Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Відкрийте вбудований браузер у **тій самій розмові**. Введіть
+`localhost:<left-hand port>` — число, яке зайняв процес. Перезіставлення
+(`5173 → 3000`) також відповідає за праворучним числом у тому браузері, тож і
+копіювання URL там працює. `browser_use` агента може перейти за будь-якою з
+них. Сервер у просторі A ніколи не з’являється як `localhost:5173` у браузері
+простору B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Використовуйте `localhost`, а не IP у LAN і не `--host`. Гість має власний
+loopback; тунель слухає там і на IPv4, і на IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Сторінки, які відкривають багато з’єднань одразу (десятки ресурсів, сокет
+перезавантаження в реальному часі), використовують той самий тунель.
+Browser (VM) мультиплексує їх в один постійний exec, тож сплеск запитів не
+створює окремий процес на кожне з’єднання й не обертається тайм-аутом і білою
+сторінкою.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+У межах одного простору переадресація з Terminal (VM) має перевагу над
+хост-шелом на тому самому числі. Між просторами переваги немає — це окремі
+карти.
 
-## Reach it from Android
+## Доступ із Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Відкрийте вкладку **Android** того простору. Тоді `localhost:<port>` емулятора
+реверсується на опублікований порт цього простору (`adb reverse`). Емулятор
+один на весь пристрій: під’єднання простору B перенацілює `:5173` на B і
+відкидає A. Закрийте вкладку — і реверс-правила, які встановив цей rig,
+зникають.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS Simulator і так є Mac — реверс не потрібен. А фізичному iPhone все ще
+потрібен доступ через локальну мережу.
 
-## Share it on your network
+## Поділіться ним у своїй мережі
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Поділитися в локальній мережі** публікує порт за адресою
+`<server-ip>:<random port>` — стане в пригоді, щоб відкрити сторінку на
+телефоні або коли сервер працює на іншій машині.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Порт у LAN завжди призначає ОС, ніколи — число гостя, тож відкриття назовні
+  дає навмисну, видиму адресу, а не таку, яку можна вгадати.
+- Він лишається приватним (лише loopback), доки ви його не ввімкнете, а
+  **⋯ → Лише локально** прибирає його з мережі.
 
-## Give it a name — with HTTPS
+## Дайте йому ім’я — з HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Задати домен браузера (.test)** призначає порту dev-домен, наприклад
+`myapp.test`. Тоді всередині Browser (VM) `https://myapp.test` завантажує ваш
+сервер із чинним замочком — це стане в пригоді для всього, що поводиться
+інакше на іменованому origin або в безпечному контексті (cookies, service
+workers, колбеки OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Домени мають закінчуватися на `.test` або `.localhost` — це два TLD,
+  зарезервовані для розробки, тож dev-ім’я ніколи не заступить справжній
+  сайт.
+- Доменні **імена** унікальні на сервері; **номери** портів — ні. Два простори
+  можуть обидва використовувати `5173`, але не можуть обидва заявити
+  `myapp.test`.
+- Сертифікат походить від локального центру сертифікації, створеного на вашому
+  сервері тоді, коли він уперше знадобився. Його ключі лежать у каталозі даних
+  сервера й ніколи не потрапляють до жодного гостя; вбудований браузер
+  довіряє рівно цьому одному ключу, тож TLS до справжнього інтернету й далі
+  перевіряється як звичайно.
+- Домен розв’язується **лише всередині Browser (VM)**. Ваш власний браузер на
+  хості натомість використовує `localhost:<port>`.
+- Звичайний `http://myapp.test` теж працює.
 
-## Forward a port by hand
+## Переадресуйте порт вручну
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Додати порт** унизу панелі зіставляє порт іще до того, як щось почне його
+слухати (або незалежно від того, чи слухає воно). Ручна переадресація зберігає
+свою адресу, поки ваш сервер перезапускається, — рядок показує *не слухає*,
+доки сервер не повернеться, — тоді як автопереадресації зникають разом зі
+своїм портом. У хост-шелі ви також можете задати інший локальний порт.
 
-## How it stays contained
+## Як зберігається ізоляція
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/uk-UA/керівництво/поняття/rigs/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/uk-UA/керівництво/довідка/rigs/#ports-and-dev-domains).
+Порти прив’язані до робочого простору та простору. Власна карта портів
+гіпервізора фіксується під час завантаження машини, тож Terminal (VM) їде
+двома вузькими каналами, які контролює сервер: одним заздалегідь створеним
+вхідним каналом у гостя, який відмовляється з’єднуватися з будь-яким портом,
+який гість насправді не слухає, і зворотними тунелями, які сервер тримає
+відкритими для Browser (VM) та Android. Хост-шел ніколи не сканує всю машину.
+Усередині гостя ніколи не створюють слухача, якого туди не поставив сервер, і
+все згортається разом із терміналом або rig. Дизайн пояснено в
+[Rigs та ізольовані середовища](/uk-UA/керівництво/поняття/rigs/#ports-without-holes);
+точні зарезервовані порти й правила доменів — у
+[довідці з rigs](/uk-UA/керівництво/довідка/rigs/#ports-and-dev-domains).
 
-## Related
+## Пов’язане
 
-- [Give an agent a machine to test on](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/uk-UA/керівництво/довідка/rigs/) — reserved ports, dev TLDs,
-  defaults
+- [Дати агенту машину для тестів](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/) — відкриття,
+  спостереження й перехоплення керування rig
+- [Довідка з rigs](/uk-UA/керівництво/довідка/rigs/) — зарезервовані порти,
+  dev-TLD, типові значення

@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Cabangkan percakapan
+description: Coba pendekatan lain dari titik yang lebih awal tanpa kehilangan yang sudah Anda punya, lalu fork atau ekspor apa yang ingin Anda simpan.
 slug: id-ID/panduan-pengguna/panduan-praktis/cabangkan-percakapan
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Panduan ini menunjukkan cara kembali ke titik yang lebih awal dalam sebuah percakapan dan membawanya ke arah lain — sambil tetap menyimpan jalur yang Anda tinggalkan.
 
-## The one thing worth knowing
+## Satu hal yang perlu diketahui
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Pencabangan tidak menulis apa pun.** Percakapan adalah pohon pesan dengan penunjuk di ujungnya, dan kembali ke belakang berarti menggerakkan penunjuk itu. Tidak ada yang dihapus, tidak ada yang disembunyikan, dan beralih kembali hanyalah menggerakkan penunjuk sekali lagi.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Itulah sebabnya menyunting prompt dan menjalankannya ulang aman di sini: jawaban yang sedang Anda bandingkan masih ada.
 
-## See the branches
+## Lihat cabangnya
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Penjelajah mencantumkan setiap pesan, menjorok pada setiap percabangan, dengan jalur saat ini ditandai **Di cabang ini**. Percakapan yang tidak pernah bercabang ditampilkan sebagai daftar datar seperti biasanya — melihat penjelajah ini tidak memakan biaya apa pun sampai ada sesuatu yang perlu dinavigasi.
 
-Each row offers two actions.
+Setiap baris menawarkan dua tindakan.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| Tindakan                         | Efek                                                      |
+| -------------------------------- | --------------------------------------------------------- |
+| **Lanjutkan dari sini**          | Menggerakkan penunjuk. Pesan Anda berikutnya dilanjutkan dari pesan itu. |
+| **Cabangkan ke percakapan baru** | Menyalin jalur hingga pesan itu ke percakapan baru.        |
 
-## Branch: try a different approach
+## Cabang: coba pendekatan lain
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Temukan pesan tempat Anda ingin memulai lagi — biasanya pesan terakhir yang menurut Anda sudah bagus.
+3. **Lanjutkan dari sini.**
+4. Ketik prompt baru.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Lanjutan yang lama masih ada di pohon; `/tree` sekarang akan menampilkan dua jalur dari titik itu, dan Anda dapat bebas beralih di antara keduanya.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Jalur yang Anda tinggalkan masih ada]
+Pencabangan tidak menyembunyikan atau menghapus apa pun. `/tree` mencantumkan setiap jalur, menandai jalur saat ini **Di cabang ini**, dan di situlah Anda beralih.
 :::
 
-## Fork: take it somewhere else
+## Fork: bawa ke arah lain
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Fork menyalin jalur ke **percakapan baru** di space yang sama. Gunakan ini ketika kedua arah akan terus menyimpang dan Anda ingin keduanya berdampingan alih-alih beralih.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Salinan itu memiliki id pesan yang baru. Dua percakapan yang berbagi baris akan saling memperlihatkan pesan berikutnya, dan itulah tepatnya yang ingin dicegah oleh fork.
 
-## Revert versus branch
+## Pengembalian versus pencabangan
 
-They are different tools and the difference matters.
+Keduanya alat yang berbeda dan perbedaannya penting.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                      | Kembalikan                                        | Cabang                          |
+| -------------------- | ------------------------------------------------- | ------------------------------- |
+| Pesan-pesan setelahnya | Disembunyikan dari transkrip                      | Masih terlihat di `/tree`       |
+| **Worktree**-nya     | Dikembalikan ke snapshot giliran itu              | Tidak disentuh                  |
+| Batalkan             | **Batalkan pengembalian** memulihkan batch tersebut | Gerakkan penunjuk kembali      |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Pengembalian adalah yang Anda inginkan ketika agen mengubah *file* yang ingin Anda pulihkan. Pencabangan adalah yang Anda inginkan ketika percakapan menempuh arah yang salah tetapi file-nya baik-baik saja.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Mengembalikan juga menggerakkan ujung cabang, sehingga pesan Anda berikutnya dilanjutkan dari tempat yang benar, bukan dari ekor yang sudah tidak dapat dilihat siapa pun.
 
-## Take it out of the app
+## Bawa keluar dari aplikasi
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Menulis **file HTML mandiri**: seluruh percakapan dengan kartu alat yang dapat dilipat yang menunjukkan apa yang diberikan ke setiap panggilan dan apa yang dikembalikannya. Tanpa stylesheet, tanpa skrip, tanpa host gambar — file ini berfungsi dari stik USB dan tetap berfungsi lima tahun lagi.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Desktop:** `Documents/ControlCenter/exports/`, diberi stempel waktu sehingga ekspor kedua tidak menimpa yang pertama.
+- **Web:** unduhan browser.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Menyalin transkrip ke papan klip sebagai markdown, dengan panggilan alat dalam blok yang dapat dilipat. Inilah yang sebaiknya Anda tempelkan ke issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Penalaran sengaja tidak disertakan: itu adalah ruang coretan model, dan laporan bug dibaca oleh manusia.
 
-## Related
+## Terkait
 
-- [Conversation history](/id-ID/panduan-pengguna/konsep/riwayat-percakapan/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/id-ID/panduan-pengguna/referensi/perintah-slash/) — `/tree`, `/export`, `/dump`
+- [Riwayat percakapan](/id-ID/panduan-pengguna/konsep/riwayat-percakapan/) — mengapa pohonnya hanyalah perpindahan penunjuk, dan apa yang sebenarnya dipulihkan saat melanjutkan
+- [Perintah slash](/id-ID/panduan-pengguna/referensi/perintah-slash/) — `/tree`, `/export`, `/dump`

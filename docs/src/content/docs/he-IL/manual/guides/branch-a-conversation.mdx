@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: פיצול שיחה
+description: נסו גישה אחרת מנקודה מוקדמת יותר בלי לאבד את זו שכבר יש לכם, ואחר כך פצלו או ייצאו את מה שתרצו לשמור.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/פיצול-שיחה
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+המדריך הזה מראה איך לחזור לנקודה מוקדמת יותר בשיחה ולקחת אותה למקום אחר — תוך שמירה על המסלול שעזבתם.
 
-## The one thing worth knowing
+## הדבר האחד שכדאי לדעת
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**הסתעפות לא כותבת דבר.** שיחה היא עץ של הודעות עם מצביע בקצה, וחזרה אחורה מזיזה את המצביע. דבר לא נמחק, דבר לא מוסתר, ומעבר חזרה הוא עוד הזזת מצביע.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+זו הסיבה שעריכת הנחיה והרצה מחדש בטוחות כאן: התשובה שהשוויתם מולה עדיין שם.
 
-## See the branches
+## ראו את הענפים
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+המנווט מפרט כל הודעה, עם הזחה בכל פיצול, כשהמסלול הנוכחי מסומן **בענף הזה**. שיחה שמעולם לא התפצלה מוצגת כרשימה השטוחה שהייתה תמיד — להסתכל במנווט לא עולה דבר כל עוד אין במה לנווט.
 
-Each row offers two actions.
+כל שורה מציעה שתי פעולות.
 
-| Action                          | Effect                                                    |
+| פעולה                          | השפעה                                                    |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **המשך מכאן**          | מזיז את המצביע. ההודעה הבאה שלכם ממשיכה מאותה הודעה. |
+| **פיצול לשיחה חדשה** | מעתיק את המסלול עד אותה הודעה אל שיחה חדשה. |
 
-## Branch: try a different approach
+## ענף: נסו גישה אחרת
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. מצאו את ההודעה שממנה תרצו להתחיל מחדש — בדרך כלל האחרונה שהייתם מרוצים ממנה.
+3. **המשך מכאן.**
+4. הקלידו את ההנחיה החדשה.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+ההמשך הישן עדיין נמצא בעץ; `/tree` יציג כעת שני מסלולים מאותה נקודה, ותוכלו לעבור ביניהם בחופשיות.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[המסלול שעזבתם עדיין שם]
+הסתעפות לא מסתירה ולא מוחקת דבר. `/tree` מפרט כל מסלול, מסמן את הנוכחי **בענף הזה**, והוא הדרך לעבור בין המסלולים.
 :::
 
-## Fork: take it somewhere else
+## פיצול: קחו את זה למקום אחר
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+פיצול מעתיק את המסלול אל **שיחה חדשה** באותו מרחב. השתמשו בו כששני הכיוונים עתידים להמשיך ולהתפצל, ואתם רוצים אותם זה לצד זה במקום לעבור ביניהם.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+לעותק יש מזהי הודעות חדשים. שתי שיחות שחולקות שורות היו מציגות זו לזו הודעות מאוחרות יותר, וזה בדיוק מה שפיצול אמור למנוע.
 
-## Revert versus branch
+## שחזור מול ענף
 
-They are different tools and the difference matters.
+אלה כלים שונים, וההבדל ביניהם חשוב.
 
-|                     | Revert                                             | Branch                          |
+|                     | שחזור                                             | ענף                          |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| ההודעות המאוחרות  | מוסתרות מהתמליל                          | עדיין גלויות ב־`/tree`         |
+| **עץ העבודה**    | מוחזר לתמונת המצב של אותו תור                 | ללא שינוי                        |
+| ביטול                | **ביטול השחזור** מחזיר את האצווה                  | הזזת המצביע בחזרה            |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+שחזור הוא מה שתרצו כשהסוכן שינה *קבצים* שתרצו להחזיר. ענף הוא מה שתרצו כשהשיחה פנתה לדרך הלא נכונה אבל הקבצים בסדר.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+שחזור מזיז גם את קצה הענף, כך שההודעה הבאה שלכם ממשיכה מהמקום הנכון ולא מזנב שאיש כבר לא רואה.
 
-## Take it out of the app
+## הוציאו את זה מהאפליקציה
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+כותב **קובץ HTML עצמאי לחלוטין**: את כל השיחה עם כרטיסי כלים מתקפלים שמציגים מה הוזן לכל קריאה ומה היא החזירה. בלי גיליון סגנונות, בלי סקריפט ובלי שרת תמונות — זה עובד מדיסק און-קי וזה יעבוד גם בעוד חמש שנים.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **שולחן העבודה:** `Documents/ControlCenter/exports/`, עם חתימת זמן כך שייצוא שני לא ידרוס את הראשון.
+- **ווב:** הורדה בדפדפן.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+מעתיק את התמליל ללוח כ־markdown, עם קריאות כלים בבלוקים מתקפלים. זה הפריט שמדביקים ל־issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+החשיבה מושמטת בכוונה: זה מרחב הטיוטה של המודל, ודוח באגים נקרא בידי אדם.
 
-## Related
+## נושאים קשורים
 
-- [Conversation history](/he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/) — `/tree`, `/export`, `/dump`
+- [היסטוריית שיחה](/he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה/) — למה העץ הוא הזזת מצביע, ומה חידוש באמת משחזר
+- [פקודות קו נטוי](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/) — `/tree`, `/export`, `/dump`

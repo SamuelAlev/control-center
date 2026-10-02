@@ -1,54 +1,57 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Bevezetés
+description: A Control Center a többügynökös szoftverfejlesztés pilótafülkéje.
 slug: hu-HU/kezikonyv
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+A Control Center irányítást ad egy MI-kódoló ügynökökből álló flotta fölött. Indítson ügynököket, nézze őket valós időben dolgozni, nézze át a PR-jeiket, és kezelje a repókat, munkaterületeket és integrációkat — natív asztali alkalmazásból, böngészőből vagy a telefonjáról.
 
 <div className="docs-start not-content">
-  <LinkButton href="/hu-HU/kezikonyv/gyors-kezdes/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/hu-HU/kezikonyv/telepites/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/hu-HU/kezikonyv/gyors-kezdes/" icon="right-arrow">Gyors kezdés</LinkButton>
+  <LinkButton href="/hu-HU/kezikonyv/telepites/" variant="minimal" icon="download">A Control Center telepítése</LinkButton>
 </div>
 
-## What you can do
+## Mit tehet meg
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Üzenjen az ügynököknek**: a terek a flotta vezérlésének elsődleges módja. @-említse meg az ügynököt, és az a saját copy-on-write worktree-jébe indul, így több ügynök is kódolhat és nézhet át párhuzamosan anélkül, hogy hozzányúlna az Ön checkoutjához
+- **Orchestrálja a nagy kéréseket**: adjon az orchestratornak egy célt, hagyja jóvá egyszer az általa javasolt, az egész csapatra szóló tervet, és egy generált [pipeline](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) végrehajtja azt
+- **Nézze át és fésülje össze a PR-eket** beépített diff-megjelenítővel, soron belüli megjegyzésekkel és MI-alapú átnézéssel
+- **Adjon az ügynököknek eldobható gépeket**: az [állomás](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/) egy eldobható VM — egy böngésző, egy asztali környezet, egy telefon vagy egy elszigetelt terminál —, amelyet az ügynök vezet, miközben Ön élőben nézi, és át is veheti az irányítást; a benne futó fejlesztői szerverek a `localhost`, az ügynök böngészője és a `https://myapp.test` felé továbbítódnak
+- **Automatizálja a munkafolyamatokat** események vagy ütemezések által indított, DAG-alapú pipeline-okkal
+- **Kezelje a tudást** munkaterület-hatókörű memóriával, tényekkel és szabályzatokkal
+- **Kövesse nyomon a munkát** szállítófüggetlen jegyekkel, projektekkel és delegálással
+- **Rögzítse a megbeszéléseket** eszközön futó rögzítéssel, átírással és beszélőszétválasztással, majd összefoglalva jegyzetekké, teendőkké és döntésekké
+- **Lássa át a napját** a Google Calendar szinkronizálásával, RSVP-vel, megbeszélés-értesítésekkel, valamint rögzítéssel és összekapcsolással
+- **Kövesse a flottát a telefonjáról**: párosítson egy eszközt a szerverével, olvassa az üzeneteket, válaszoljon és triázsolja a jegyeket. A telefon a lehető legjobb elérhető útvonalat választja — loopback, LAN, tailnet vagy TLS —, és ha máshogy nem megy, egy végponttól végpontig lezárt relayre vált, amely olyan kereteket továbbít, amelyeket nem tud elolvasni
+- **Vezérelje az ügynököket Slackből**: kössön össze egy munkaterületet egy csevegőalkalmazással, és említse meg a botot, válaszoljon egy Slack-szálban, vagy nyisson jegyet egy slash-paranccsal — kimenő kapcsolaton keresztül, így nincs szükség nyilvános végpontra
+- **Integráljon** a GitHubbal, a Linearral, a Slackkel, a Google Calendarral és több mint 100 MCP-eszközzel
 
-## You do not have to install it
+## Nem kell telepítenie
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Ugyanez az alkalmazás fut a böngészőjében, a
+[app.usectrl.dev](https://app.usectrl.dev) címen, ugyanazokkal a funkciókkal.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Minden kliens — az asztali, a webes és a telefonos — vékony megjelenítőréteg egy
+headless szerver fölött, amely az Ön adatait birtokolja, és a munkát végzi. Az
+asztali alkalmazás elindíthatja Önnek ezt a szervert; egy böngészőfül nem tudja,
+ezért a webes alkalmazás egy Ön által futtatott szerverhez csatlakozik. Ez a
+szerver lehet a saját gépén (`ws://localhost:9030`, tanúsítvány nélkül is), vagy
+egy távoli gazdagépen, amely TLS-en, VPN-en vagy alagúton keresztül érhető el.
 
-See [Install](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) for how the three clients relate.
+A böngészős útvonalhoz lásd a [Telepítés](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser)
+oldalt, arról pedig, hogy hogyan viszonyul egymáshoz a három kliens, a
+[Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/) oldalt.
 
-## Next steps
+## Következő lépések
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/hu-HU/kezikonyv/telepites/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/hu-HU/kezikonyv/gyors-kezdes/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/hu-HU/kezikonyv/oktatoanyagok/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/hu-HU/kezikonyv/gyakorlati-utmutatok/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/hu-HU/kezikonyv/fogalmak/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/hu-HU/kezikonyv/referencia/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Telepítés" href="/hu-HU/kezikonyv/telepites/" description="Letöltések, rendszerkövetelmények és hogy hol fut a szerver." />
+  <LinkCard title="Gyors kezdés" href="/hu-HU/kezikonyv/gyors-kezdes/" description="A legrövidebb teljes út odáig, hogy egy ügynök az Ön repóján dolgozzon." />
+  <LinkCard title="Oktatóanyagok" href="/hu-HU/kezikonyv/oktatoanyagok/" description="Hosszabb leckék sorrendben, az első munkaterületétől kezdve." />
+  <LinkCard title="Gyakorlati útmutatók" href="/hu-HU/kezikonyv/gyakorlati-utmutatok/" description="Receptek egyszerre egy feladatra: repók hozzáadása, korlátok konfigurálása vagy a telefon párosítása." />
+  <LinkCard title="Fogalmak" href="/hu-HU/kezikonyv/fogalmak/" description="Miért úgy működik a termék, ahogy: a telepítéssel és a kliensekkel kezdve." />
+  <LinkCard title="Referencia" href="/hu-HU/kezikonyv/referencia/" description="Teljes táblázatok az útvonalakhoz, MCP-eszközökhöz, billentyűparancsokhoz és domaineseményekhez." />
 </div>

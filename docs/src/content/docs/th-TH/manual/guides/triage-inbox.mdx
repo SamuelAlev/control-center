@@ -1,164 +1,158 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: คัดแยกกล่องขาเข้าของคุณ
+description: ทำงานกับกล่องขาเข้าแบบรวม — เคลียร์สิ่งที่บล็อกคุณ รีวิวสิ่งที่รอคุณอยู่ และติดตาม PR ของคุณเอง
 slug: th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+คู่มือนี้แสดงวิธีทำงานกับกล่องขาเข้า: พื้นผิวเดียวที่รวมทุกอย่างที่บล็อกคุณหรือ
+ร้องขอคุณอย่างชัดเจน — การอนุมัติของเอเจนต์ที่ค้างอยู่ การซิงค์ตั๋วงานที่ล้มเหลว
+และ pull request ทุกใบที่เกี่ยวข้องกับคุณในฐานะผู้รีวิวหรือผู้เขียน
 
-## Open the inbox
+## เปิดกล่องขาเข้า
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. คลิก **กล่องขาเข้า** ในแถบข้าง ป้ายตัวเลขของมันนับการอนุมัติของเอเจนต์ที่
+   ค้างอยู่ การซิงค์ที่ล้มเหลว และ PR ที่เปิดอยู่ซึ่งรอการรีวิวของคุณ
+2. หรือกด <kbd>⌘K</kbd> แล้วรันคำสั่งนำทาง **กล่องขาเข้า**
+3. หรือลิงก์ตรงไปที่ `/workspaces/<workspace-id>/inbox`
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+รายการในแถบข้างแสดงจำนวนสดเสมอ คุณจึงเห็นงานคัดแยกสะสมได้โดยไม่ต้องเปิดหน้า
 
-## Read severity at a glance
+## อ่านความรุนแรงได้ในพริบตา
 
-Scan top to bottom; the inbox is already ordered by urgency:
+ไล่จากบนลงล่าง กล่องขาเข้าเรียงตามความเร่งด่วนอยู่แล้ว:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. แถบ **ต้องการความสนใจของคุณ** ที่ปักหมุดไว้อยู่เหนือส่วนต่าง ๆ ของ PR
+   ทุกการ์ดมีชิปความรุนแรง แหล่งที่ลงทะเบียนไว้ (เอเจนต์ที่ติดอยู่ที่พรอมป์ต์
+   ยืนยัน การซิงค์ตั๋วงานที่มีมิเรอร์จากผู้ให้บริการล้าสมัย) จะส่ง **ถูกบล็อก**
+2. ภายในแถบ ความรุนแรงที่เร่งด่วนที่สุดมาก่อน เสมอกันให้รายการที่รอนานที่สุด
+3. ใต้แถบลงมา PR ถูกจัดกลุ่มเป็นส่วนตามวงจรชีวิตการรีวิวแบบตายตัว —
+   **ต้องการการรีวิวของคุณ**, **คืนมาให้คุณ**, **อนุมัติแล้ว**, **ฉบับร่าง**,
+   **รอผู้รีวิว**, **กำลังรวมและรวมล่าสุด**, **รอผู้เขียน** ส่วนบนคือสิ่งที่ต้อง
+   การ _คุณ_ ส่วนที่เหลือคือสถานะของ PR _ของคุณ_ **ต้องการการรีวิวของคุณ** รวม
+   PR ที่ยังร้องขอทีมที่คุณสังกัดอยู่บน forge ที่รองรับทีม (GitHub จะตัดทีมทิ้ง
+   เมื่อสมาชิกทีมคนใดรีวิว)
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+รายการจะตกเข้ากล่องขาเข้าเมื่อมันบล็อกอะไรบางอย่างหรือร้องขอคุณอย่างชัดเจนเท่านั้น
+แถบว่างบวกรายการส่วนที่ว่างจะแสดง **คุณตามทันหมดแล้ว** เฉพาะเมื่อความว่างนั้น
+เชื่อถือได้
 
-## One inbox across every forge
+## กล่องขาเข้าเดียวครอบทุก forge
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+หากเวิร์กสเปซมีรีโปอยู่บนโฮสต์โค้ดมากกว่าหนึ่ง กล่องขาเข้าจะรวมมันเป็นสตรีมเดียว —
+pull request จาก GitHub กับ pull request จาก Bitbucket อยู่ในส่วนเดียวกัน เรียง
+ตามเวลา มิได้จัดกลุ่มตามผู้ให้บริการ เมตา `repo #number` ของแถวคือสิ่งที่แยก
+สองอันนั้นออกจากกัน
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+"ของคุณ" ถูกตัดสิน **ต่อ forge** เพราะคุณเป็นบัญชีที่ต่างกันในแต่ละแห่ง
+pull request จะนับเป็นของคุณ หรือนับว่าร้องขอการรีวิวของคุณ เฉพาะเมื่อมันตรงกับ
+ตัวตนของคุณบน forge ที่รีโปนั้นอยู่จริง
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+forge ที่ล่มหรือยังไม่เชื่อมต่อจะไม่ส่งอะไรเข้ามา และปล่อยให้ส่วนอื่นของ
+กล่องขาเข้าไม่เสียหาย — การเชื่อมต่อที่พังจุดเดียวไม่เคยทำให้ทั้งลิสต์ว่างเปล่า
+สถานะว่างจะบอกข้อแม้แทน **คุณตามทันหมดแล้ว** เมื่อการลงชื่อเข้าใช้ forge ทุกแห่ง
+ยังแก้ไม่สำเร็จ (**ยืนยันบัญชี GitHub ของคุณไม่ได้** — ข้อความยังคงระบุชื่อ GitHub)
+เมื่อ githubstatus.com รายงานเหตุขัดข้อง หรือเมื่อการติดตั้ง GitHub App ที่
+ครอบคลุมรีโปที่เชื่อมไว้ถูกระงับ
 
-## Clear the attention strip
+## เคลียร์แถบความสนใจ
 
-Each strip card has one next action:
+การ์ดในแถบแต่ละใบมีการกระทำถัดไปหนึ่งอย่าง:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. หากการ์ดเป็นการยืนยันของเอเจนต์ที่ค้างอยู่ ให้คลิก **รีวิว** — คุณจะไปที่
+   สเปซของเอเจนต์นั้นพร้อมการยืนยันที่ค้างอยู่ อนุมัติหรือปฏิเสธที่นั่น
+   (ดู [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/))
+2. หากการ์ดเขียนว่า **ซิงค์ไม่สำเร็จ** สำหรับผู้ให้บริการรายหนึ่ง ให้คลิก **เปิด**
+   — คุณจะไปที่ **การตั้งค่า → เวิร์กสเปซ → ทั่วไป** ซึ่งการ์ด
+   **สุขภาพการซิงค์** แสดงการซิงค์ล่าสุดของแต่ละการเชื่อมต่อ จำนวนครั้งที่
+   ล้มเหลวติดต่อกัน และผลลัพธ์ล่าสุด มีเพียงความล้มเหลวล่าสุดต่อผู้ให้บริการ
+   หนึ่งรายเท่านั้นที่ปรากฏในกล่องขาเข้า การซิงค์ที่ฟื้นตัวจึงเคลียร์การ์ดไป
+3. การ์ดหายไปเองเมื่อสถานะเบื้องหลังคลี่คลาย (เอเจนต์ได้รับคำตอบ การซิงค์ฟื้นตัว)
+   — ไม่มีอะไรให้ปิดทิ้งด้วยมือ
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[นี่คือการยืนยันต่อเทิร์น ไม่ใช่การอนุมัติเชิงธรรมาภิบาล]
+การ์ด "การอนุมัติของเอเจนต์" คือเอเจนต์ที่กำลังรันอยู่หยุดชั่วคราวเพื่อขออนุญาต
+สำหรับการกระทำหนึ่งอย่าง ในบทสนทนาของมันเอง มันเป็นคนละเรื่องกับเรกคอร์ด
+`Approval` เชิงธรรมาภิบาลที่เอเจนต์สร้างด้วยเครื่องมือ MCP การอนุมัติ — พวกนั้น
+ไม่มีหน้าจอสำหรับมนุษย์ที่ไหนในแอปเลย และไม่เคยปรากฏที่นี่
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[สุขภาพการซิงค์เป็นแบบอ่านอย่างเดียว]
+การ์ดรายงานเกี่ยวกับการเชื่อมต่อการซิงค์ตั๋วงาน นอกจากปุ่ม **ซิงค์ตอนนี้** แล้ว
+มันสร้าง แก้ไข หรือเชื่อมต่อใหม่ไม่ได้ และไม่มีหน้าจออื่นที่ทำได้เช่นกัน เมื่อยัง
+ไม่ได้ตั้งค่าการเชื่อมต่อใด ๆ มันก็แค่อ่านว่า "ยังไม่มีการเชื่อมต่อซิงค์" ซึ่งเป็น
+สิ่งที่เวิร์กสเปซใหม่แสดง
 :::
 
-## Filter to what is blocking
+## กรองให้เหลือเฉพาะสิ่งที่บล็อกอยู่
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. กด <kbd>f</kbd> (โดยไม่มีช่องข้อความใดถูกโฟกัส) เพื่อเปิดเมนูตัวกรอง หรือ
+   คลิกปุ่มตัวกรองในแถบเครื่องมือ
+2. เลือกผสมใด ๆ ของสถานะ ผู้เขียน ผู้รีวิว เนื้อหา เจ้าของ/ชื่อรีโป ช่วงวันที่
+   หรือรีวิวเร็ว จำนวนแง่มุมในเมนูแสดงว่าตัวเลือกแต่ละอย่างตรงกับรายการใน
+   กล่องขาเข้ากี่รายการ
+3. ตัวกรองที่ใช้งานอยู่จะปรากฏเป็นชิปในแถบเหนือรายการ คลิก ✕ ของชิปเพื่อยกเลิก
+   เกณฑ์นั้น
+4. ใช้แถบด้านซ้ายเพื่อกระโดดระหว่างส่วน — แต่ละรายการแสดงจำนวนสด และไฮไลต์
+   ติดตามตำแหน่งเลื่อนของคุณ คลิกหัวข้อส่วนเพื่อยุบส่วนที่คุณไม่ได้คัดแยก
+   (เช่น **ฉบับร่าง** ขณะเคลียร์รีวิว)
+5. คลิกหัวคอลัมน์ (ชื่อเรื่อง การเปลี่ยนแปลง หรืออัปเดตแล้ว) เพื่อเรียงทุกส่วน
+   คลิกคอลัมน์ที่ใช้งานอยู่อีกครั้งเพื่อสลับทิศทาง ปุ่มตัวเลือกการแสดงผลควบคุม
+   การมองเห็นฉบับร่าง หน้าต่างที่รวมล่าสุด คุณสมบัติของแถว การเรียงลำดับ และ
+   การจัดกลุ่ม (มีเพียงการจัดกลุ่มตามผู้เขียนที่เปลี่ยนเลย์เอาต์ของกล่องขาเข้า)
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+ตัวกรองที่นี่เป็นอิสระจากคิว PR — การจำกัดขอบเขตกล่องขาเข้าไม่เคยเปลี่ยนตัวกรอง
+ของคิว และในทางกลับกันก็เช่นกัน
 
-## Act on a PR item
+## ลงมือกับรายการ PR
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/) and
-   [the dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/).
+1. คลิกแถวใดก็ได้เพื่อเปิดหน้ารายละเอียด PR
+2. หาก PR อยู่ใน **ต้องการการรีวิวของคุณ** ให้รีวิวและส่งคำตัดสินของคุณ — ดู
+   [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+3. หาก PR อยู่ใน **คืนมาให้คุณ** (ขอให้แก้ไขหรือ CI ล้มเหลว) ให้พุชการแก้ไขจาก
+   เช็คเอาท์ของคุณ หรือยกงานต่อให้เอเจนต์
+4. หาก PR อยู่ใน **อนุมัติแล้ว** ให้รวมมันจากหน้ารายละเอียด
+5. หากคุณอยากมอบหมายการรีวิวมากกว่าทำเอง ดู
+   [สั่งงานเอเจนต์รีวิวเวอร์](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/) และ
+   [วงจรชีวิตการสั่งงาน](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+เมื่อสถานะเบื้องหลังเปลี่ยน (รีวิวของคุณเข้าที่ PR ถูกรวม) ตัวจำแนกจะจัด PR
+เข้าส่วนใหม่โดยอัตโนมัติ
 
-## Undo a mistaken action
+## เลิกทำการกระทำที่พลาดไป
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. กด <kbd>⌘Z</kbd> เพื่อเลิกทำการกระทำล่าสุด กด <kbd>⌘⇧Z</kbd> เพื่อทำซ้ำ
+2. หากช่องข้อความถูกโฟกัส ⌘Z จะแก้ข้อความในช่องแทน — คลิกออกจากช่องก่อนเพื่อ
+   เลิกทำการกระทำระดับแอป
 
-## Look up shortcuts in place
+## ดูทางลัดในที่
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/).
+กด <kbd>?</kbd> (โดยไม่มีช่องข้อความใดถูกโฟกัส) เพื่อเปิดแผ่นสรุปทางลัดแป้นพิมพ์
+มันแสดงทุกการผูกปุ่มที่ใช้งานบนเส้นทางปัจจุบัน รวมถึงทางลัดตัวกรอง <kbd>f</kbd>
+ของกล่องขาเข้า แผนที่เต็มอยู่ใน
+[เอกสารอ้างอิงทางลัดแป้นพิมพ์](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/)
 
-## Drive it from the command palette
+## ขับเคลื่อนด้วยจานคำสั่ง
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. กด <kbd>⌘K</kbd> ที่ไหนก็ได้เพื่อเปิดจานคำสั่ง
+2. พิมพ์ **กล่องขาเข้า** เพื่อกระโดดไปที่หน้า หรือพิมพ์ชื่อเรื่อง PR —
+   จานคำสั่งจะแสดง pull request ที่ตรงกันและเปิดอันที่คุณเลือก
+3. ขณะกล่องขาเข้าเปิดอยู่ รัน **คัดลอกลิงก์ไปหน้านี้** เพื่อคัดลอก URL นั้นไว้
+   แชร์ คำสั่งนี้คัดลอกเส้นทางปัจจุบัน จึงเป็น URL ของกล่องขาเข้าเฉพาะเมื่อคุณอยู่
+   บนหน้านี้
 
-## Refresh on demand
+## รีเฟรชเมื่อต้องการ
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+กล่องขาเข้าอัปเดตสด แต่หากคุณสงสัยว่าข้อมูลล้าสมัย ให้คลิกตัวควบคุมรีเฟรชใน
+แถบเครื่องมือ — มันบังคับให้เซิร์ฟเวอร์กวาดทุก forge ที่เชื่อมต่อทันที และดึง
+โอเวอร์เลย์ที่รวม/รีวิวแล้วมาใหม่ ไอคอนจะหมุนจนทุกการดึงข้อมูลเสร็จสิ้น
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Dispatch reviewers](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/)
+- [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [สั่งงานเอเจนต์รีวิวเวอร์](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [วงจรชีวิตการสั่งงาน](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

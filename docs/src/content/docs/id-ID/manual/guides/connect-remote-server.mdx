@@ -1,109 +1,115 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Hubungkan ke server jarak jauh
+description: Arahkan aplikasi desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antar server tanpa memulai ulang.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Setiap klien adalah perender di atas `cc_server` yang memiliki data. Aplikasi
+desktop dapat menjalankan servernya di dalam dirinya sendiri; aplikasi web di
+[app.usectrl.dev](https://app.usectrl.dev) tidak dapat melakukannya, karena tab
+peramban tidak dapat menghosting server. Apa pun caranya, panduan ini mengarahkan
+klien ke server yang berjalan di tempat lain — mesin kecil, VM cloud, atau server
+build.
 
-## Prerequisites
+## Prasyarat
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- `cc_server` yang berjalan. Jika Anda belum memilikinya, lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
+- Salah satu dari tiga nilai pairing yang dibuat server — **URL server** (`ws://…/rpc` atau `wss://…/rpc`), **ID perangkat**, dan **kunci pairing** — **atau** **kode undangan** sekali pakai dari admin ruang kerja. Menukarkan undangan akan memprovisikan pengguna Anda, mencatat keanggotaan Anda, dan membuat kredensial klien ini untuk Anda, sehingga Anda tidak pernah menangani ID perangkat atau kunci.
 
-### Make sure the server is reachable
+### Pastikan server dapat dijangkau
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Server lokal tidak memerlukan apa pun: `ws://localhost:9030/rpc` berfungsi dari
+desktop maupun peramban, karena peramban menganggap loopback sebagai origin yang
+dapat dipercaya.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Server di mesin lain berbeda. `app.usectrl.dev` disajikan melalui HTTPS, jadi
+peramban hanya akan membuka soket `wss://` dengan sertifikat yang sudah
+dipercayainya — dan `cc_server` memang menolak mengikat alamat non-loopback tanpa
+TLS. Berikan salah satu dari:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- sertifikat secara langsung, dengan `--tls-cert` dan `--tls-key`
+- proxy terbalik yang menterminasi TLS di depannya, dengan server dijalankan `--insecure` (teks polos di balik proxy, hanya pada jaringan yang tepercaya)
+- tunnel atau VPN yang menyediakan sertifikatnya — Tailscale, cloudflared, atau serupa. **Pengaturan → Server → Koneksi & status** memiliki opsi ikut serta tunnel bawaan di bawah **Bagikan server ini**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Ada dua pengaturan di sisi server yang mudah terlewat. Di balik proxy, NAT, atau
+tunnel, setel `--public-url` ke alamat yang sebenarnya harus dihubungi klien —
+bawaannya adalah pengikatan lokal, jadi tanpanya klien akan mencoba host yang
+salah. Dan jika Anda menghosting sendiri salinan build web, tambahkan origin-nya
+ke `--allowed-origins`, yang bawaannya hanya `https://app.usectrl.dev`; klien
+loopback dan native selalu diizinkan.
 
-## Connect the desktop app
+## Hubungkan aplikasi desktop
 
-On a fresh install:
+Pada instalasi baru:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Jalankan Control Center. Layar pertama kali dijalankan menanyakan **Bagaimana Control Center harus dijalankan?**
+2. Alih-alih **Jalankan di aplikasi ini**, isi kolom koneksi: URL server, plus kode undangan atau ID perangkat dan kunci pairing.
+3. Klik **Hubungkan**. Control Center menghubungi server dan mendarat di kotak masuk ruang kerja.
 
-On a desktop that already runs its own server:
+Pada desktop yang sudah menjalankan servernya sendiri:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Buka **Pengaturan → Server → Koneksi & status**.
+2. Klik **Tambah server**. Masukkan URL server (`wss://host:9030/rpc`) dan kode undangan atau ID perangkat dan kunci pairing. Tombol sufiks pada kolom URL menemukan instans `cc_server` di LAN atau tailnet Anda.
+3. Klik **Hubungkan**, lalu **Alihkan** pada baris server baru.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Pengalihan berlangsung langsung: aplikasi dibangun ulang di sekitar sesi baru di
+tempat, tanpa mulai ulang. Jika koneksi gagal, Anda tetap berada di
+server saat ini dan melihat error-nya. Baris untuk server yang sedang Anda pakai
+tidak memiliki tindakan **Alihkan**; server lokal adalah baris pertama, berlabel
+**Jalankan di aplikasi ini**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Setelah beralih, desktop tidak lagi memiliki basis data. Setiap layar membaca dan
+menulis melalui server jarak jauh lewat WebSocket.
 
-## Connect the web client
+## Hubungkan klien web
 
-The web build is always remote.
+Build web selalu jarak jauh.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Buka [app.usectrl.dev](https://app.usectrl.dev), atau salinan build web Anda sendiri.
+2. Masukkan URL server plus kode undangan atau ID perangkat dan kunci pairing.
+3. Klien menghubungi server dan menampilkan antarmuka yang sama dengan desktop.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Jika ada tautan mendalam pairing di URL, kolom-kolomnya sudah terisi otomatis.
+Kunci pairing berada di **fragmen** URL, yang tidak pernah dikirim peramban ke
+server yang menghosting halaman, sehingga host statis tidak pernah melihatnya.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media dan keamanan]
+Media (avatar, gambar feed, tangkapan layar PR) dirutekan melalui proxy server
+yang terhubung, sehingga peramban tidak pernah mengambil host hulu secara
+langsung. Content-Security Policy per permintaan, yang disematkan dari cookie
+non-sensitif, hanya mengizinkan origin server yang terhubung.
 :::
 
-### What the browser does not do
+### Yang tidak dilakukan peramban
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Klien web membaca dan menulis server yang sama dengan desktop, tetapi beberapa
+permukaan memerlukan jendela native atau perangkat milik mesin itu sendiri:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- tidak ada toast notifikasi OS, suara notifikasi, atau rel banner ambien (pusat notifikasi di dalam aplikasi tetap berfungsi)
+- tidak ada penemuan server LAN atau tailnet di dialog **Tambah server**
+- tidak ada pembaca artikel di dalam aplikasi — artikel umpan berita terbuka di tab baru
+- tidak ada menjalankan ulang ringkasan rapat dan tidak ada pembatalan ringkasan yang sedang diproses
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Dua hal berperilaku berbeda alih-alih tidak ada. **Perekaman** rapat berfungsi di
+peramban, menangkap mikrofon Anda plus berbagi layar yang menyertakan trek audio.
+**Buka di IDE** juga berfungsi, tetapi meminta server meluncurkan editor di layar
+_server_, jadi tombolnya menyembunyikan diri sendiri terhadap host headless tanpa
+editor terpasang.
 
-## Troubleshooting
+## Pemecahan masalah
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
+- **Koneksi kehabisan waktu**: server harus dapat dijangkau dari klien. Periksa pengikatan (`--bind any`), bahwa port-nya terbuka, dan bahwa `--public-url` menyebutkan alamat yang benar-benar dapat dihubungi klien. Di internet terbuka, TLS bersifat wajib — pengikatan non-loopback dengan teks polos ditolak saat startup kecuali server dijalankan `--insecure` di balik proxy.
+- **Peramban menolak terhubung tetapi klien native berfungsi**: origin peramban tidak ada dalam daftar `--allowed-origins` server. Bawaannya hanya mengizinkan `https://app.usectrl.dev` (plus loopback).
+- **Kunci pairing ditolak**: jalankan ulang `cc_server pair` di server untuk memutar kunci perangkat itu, lalu masukkan kunci baru. Perangkat yang dicabut mendapati kredensialnya sudah hilang dan gagal secara tertutup; pencabutan memutus sesi aktif dalam hitungan detik.
+- **Ruang kerja salah**: ruang kerja adalah bagian dari URL (`/workspaces/:workspaceId/…`) dan ikut serta di setiap panggilan, jadi beralih ruang kerja di satu klien hanya mengubah tampilan Anda sendiri. Anda hanya dapat menjangkau ruang kerja tempat Anda menjadi anggota — selain itu ditolak dengan "Not a member of this workspace". Lihat [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
 
-## Related guides
+## Panduan terkait
 
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
-- [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): the phone relay path
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
+- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): jalur relay ponsel
 
-## Related concepts
+## Konsep terkait
 
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/)
-- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/)
+- [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)

@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Σύνδεση κεντρικού υπολογιστή κώδικα
+description: Συνδέστε το GitHub, το GitLab ή το Bitbucket, ώστε να λειτουργούν η επιφάνεια PR, η καταχώριση αποθετηρίων και οι εκτελέσεις πρακτόρων — ένας χώρος εργασίας μπορεί να χρησιμοποιεί και τους τρεις.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Το Control Center συνεργάζεται με τρεις κεντρικούς υπολογιστές κώδικα, που σε όλη την εφαρμογή αποκαλούνται **forges**: **GitHub**, **GitLab** και **Bitbucket Cloud**. Κανένας τους δεν είναι ο προεπιλεγμένος. Συνδέστε έναν και όλα λειτουργούν· συνδέστε πολλούς και ένας μόνο χώρος εργασίας μπορεί να φιλοξενεί ταυτόχρονα αποθετήρια από όλους.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Ο κεντρικός υπολογιστής κώδικα είναι ιδιότητα κάθε **αποθετηρίου** και διαβάζεται από το remote `origin` του όταν το καταχωρίζετε. Δεν τον επιλέγετε ποτέ μόνοι σας και δεν υπάρχει ρύθμιση ανά χώρο εργασίας που να μπορεί να πάει στραβά.
 
-## Connect a forge
+## Σύνδεση κεντρικού υπολογιστή κώδικα
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Ανοίξτε **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα** (`/settings/workspace/profile`).
+2. Βρείτε την κάρτα **Φιλοξενία κώδικα**. Εκεί εμφανίζεται κάθε υποστηριζόμενος κεντρικός υπολογιστής κώδικα, συνδεδεμένος ή όχι.
+3. Πατήστε **Σύνδεση με …** αν η γραμμή το προσφέρει, ή **Προσθήκη token** και επικολλήστε ένα.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+Η **Σύνδεση** εμφανίζεται για έναν κεντρικό υπολογιστή κώδικα για τον οποίο ο διακομιστής σας έχει καταχωρισμένη εφαρμογή — σήμερα αυτός είναι το GitHub, μέσω device flow (δείτε [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)). Σε κάθε άλλη περίπτωση το διαπιστευτήριο είναι ένα επικολλημένο token, που είναι η ειλικρινής λύση αντί για ένα κουμπί που δεν μπορεί να ολοκληρωθεί.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Σε κάθε περίπτωση, το διαπιστευτήριο είναι **δικό σας και φιλοξενείται στον διακομιστή**, με κλειδί το αναγνωριστικό χρήστη σας: κανένα token δεν αποθηκεύεται στη μηχανή στην οποία το πληκτρολογήσατε, κάθε συσκευή από την οποία συνδέεστε χρησιμοποιεί το ίδιο και κανένα άλλο μέλος δεν μπορεί να το διαβάσει. Τίθεται σε ισχύ από το **επόμενο αίτημα** — δεν χρειάζεται επανεκκίνηση, και η αποσύνδεση σταματά αμέσως την αποστολή του.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Κάθε γραμμή σάς δείχνει από πού προέρχεται το διαπιστευτήριό της, γιατί εκεί κρίνεται η διαφορά ανάμεσα στο «το token μου δεν λειτουργεί» και στο «απαντά ένα άλλο token»:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Υπότιτλος | Σημασία |
+| --------- | ------- |
+| `Συνδεθήκατε ως octocat` | Χρησιμοποιείται το δικό σας διαπιστευτήριο |
+| `Συνδεθήκατε ως octocat · μέσω της εφαρμογής αυτού του διακομιστή` | Απαντά η ταυτότητα εφαρμογής του διακομιστή — δεν έχετε συνδεθεί |
+| `Συνδεθήκατε ως octocat · από το περιβάλλον` | Απαντά μια μεταβλητή περιβάλλοντος του διακομιστή, όχι το δικό σας διαπιστευτήριο |
+| `Δεν έχει συνδεθεί` | Δεν έχετε διαπιστευτήριο για αυτόν τον κεντρικό υπολογιστή κώδικα |
 
-### What token each forge wants
+### Τι token θέλει κάθε κεντρικός υπολογιστής κώδικα
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| Κεντρικός υπολογιστής | Token | Πού να το δημιουργήσετε |
+| --------------------- | ----- | ----------------------- |
+| **GitHub** | Classic: `repo` και `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab** | Ένα προσωπικό token πρόσβασης με `api` | gitlab.com → User settings → Access tokens |
+| **Bitbucket** | Ένα Atlassian API token, συν το email του λογαριασμού σας | id.atlassian.com → Security → API tokens |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Το Bitbucket αυθεντικοποιείται με το **email του λογαριασμού σας ως όνομα χρήστη** και με το token ως κωδικό πρόσβασης. Ορίστε το `BITBUCKET_EMAIL` στο περιβάλλον του διακομιστή, ώστε να γνωρίζει ποιο email να συνδυάσει με το token.
 
-### Or use the environment
+### Ή χρησιμοποιήστε το περιβάλλον
 
-For a headless or CI install, the server reads these:
+Για εγκατάσταση headless ή CI, ο διακομιστής διαβάζει τα εξής:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, μετά `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, μετά `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, μετά `BITBUCKET_TOKEN` (μαζί με `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Αυτά είναι διαπιστευτήρια **του διακομιστή**, όχι δικά σας, και η διάκριση είναι καθοριστική: ένα αίτημα που γίνεται για λογαριασμό σας χρησιμοποιεί το δικό σας διαπιστευτήριο και τίποτε άλλο, οπότε το περιβάλλον δεν υποκαθιστά ποτέ σιωπηλά εσάς. Η εργασία χωρίς άνθρωπο πίσω της — webhooks, polling PR, συγχρονισμός εισιτηρίων — επιλύει πρώτα την ταυτότητα εφαρμογής του διακομιστή, μετά το διαπιστευτήριο του ιδιοκτήτη του διακομιστή και τέλος το περιβάλλον. Η σειρά είναι σταθερή, ώστε το «συνδέθηκα και τίποτα δεν άλλαξε» να μην αποτελεί ποτέ υποστηριζόμενο αποτέλεσμα.
 
-## You are a different person on each forge
+## Είστε διαφορετικό πρόσωπο σε κάθε κεντρικό υπολογιστή κώδικα
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Ο ίδιος άνθρωπος είναι `octocat` στο GitHub και κάτι εντελώς διαφορετικό στο GitLab. Το Control Center επιλύει την ταυτότητά σας **ανά κεντρικό υπολογιστή κώδικα** και χρησιμοποιεί τη σωστή για κάθε αποθετήριο, και έτσι οι ενδείξεις «χρειάζεται τον έλεγχό μου», «δημιουργήθηκαν από εμένα» και «το εγκρίνατε» είναι σωστές σε έναν μικτό χώρο εργασίας.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Αν η ταυτότητα ενός κεντρικού υπολογιστή κώδικα δεν έχει επιλυθεί, τα αποθετήριά του δεν συνεισφέρουν τίποτα στα εισερχόμενα, αντί να ταιριάζουν με τα πάντα. Τα εισερχόμενα το δηλώνουν, αντί να ισχυρίζονται ότι είστε πλήρως ενημερωμένοι.
 
-## One inbox, every forge
+## Ένα εισερχόμενο για όλους τους κεντρικούς υπολογιστές κώδικα
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Τα εισερχόμενα και η ουρά PR απλώνονται σε κάθε κεντρικό υπολογιστή κώδικα που εκπροσωπείται στον χώρο εργασίας και συγχωνεύουν τα αποτελέσματα σε μία ροή — ένα pull request από το GitHub και ένα από το Bitbucket βρίσκονται δίπλα-δίπλα, ταξινομημένα κατά χρόνο και όχι ομαδοποιημένα κατά προμηθευτή.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Οι αποτυχίες είναι απομονωμένες. Ένας κεντρικός υπολογιστής κώδικα που είναι εκτός λειτουργίας, έχει φτάσει σε όριο ρυθμού ή δεν είναι συνδεδεμένος δεν συνεισφέρει τίποτα και αφήνει τους άλλους ανέπαφους· δεν αδειάζει ποτέ ολόκληρα τα εισερχόμενα. Τα δικά του αποθετήρια εξακολουθούν να εμφανίζουν την τελευταία γνωστή κατάστασή τους μέχρι να ανακάμψει.
 
-## What each forge can do
+## Τι μπορεί να κάνει κάθε κεντρικός υπολογιστής κώδικα
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Κάθε κεντρικός υπολογιστής κώδικα υποστηρίζει τον βασικό κύκλο: προβολή και άνοιγμα pull requests, ανάγνωση diffs, σχολιασμό inline και σε επίπεδο κορυφής, έλεγχο, συγχώνευση και κλείσιμο. Πέρα από αυτά διαφέρουν πραγματικά, και το Control Center κρύβει ό,τι δεν μπορεί να κάνει ένας κεντρικός υπολογιστής κώδικα, αντί να εμφανίζει ένα χειριστήριο που αποτυγχάνει σιωπηλά.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Δυνατότητα | GitHub | GitLab | Bitbucket |
+| ---------- | :----: | :----: | :-------: |
+| Ομαδοποιημένοι (εκκρεμείς) έλεγχοι |   ✓    |   ✓    |     —     |
+| Αίτημα αλλαγών |   ✓    |   ✓    |     ✓     |
+| Συγχρονισμένη κατάσταση «προβλήθηκε» ανά αρχείο |   ✓    |   —    |     —     |
+| Αντιδράσεις emoji |   ✓    |   ✓    |     —     |
+| Ελεγκτές ομάδας ή γκρουπ |   ✓    |   ✓    |     —     |
+| Προτεινόμενοι ελεγκτές |   ✓    |   —    |     ✓     |
+| Αποτελέσματα CI σε ένα PR |   ✓    |   ✓    |     ✓     |
+| Εμβάθυνση στα βήματα/αρχεία καταγραφής μιας εργασίας CI |   ✓    |   ✓    |     —     |
+| Στοιβαγμένα pull requests |   ✓    |   —    |     —     |
+| Πρότυπα περιγραφής PR |   ✓    |   ✓    |     —     |
+| Polling ειδοποιήσεων |   ✓    |   —    |     —     |
+| Πλούσια προφίλ χρηστών |   ✓    |   ✓    |     —     |
+| PR head ref στην πλευρά του διακομιστή |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Όπου λείπει μια δυνατότητα, η λειτουργία υποβαθμίζεται με ειλικρίνεια:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- Η **κατάσταση «προβλήθηκε»** εξακολουθεί να λειτουργεί, αλλά μόνο στη συσκευή όπου την ορίσατε.
+- Οι **ομαδοποιημένοι έλεγχοι** στο Bitbucket αναρτώνται σχόλιο προς σχόλιο, οπότε οι ελεγκτές τα βλέπουν να φτάνουν μεμονωμένα και όχι όλα μαζί.
+- Η **απουσία PR head ref** στο Bitbucket σημαίνει ότι το checkout ενός pull request ανακτά το branch προέλευσής του με το όνομά του, κάτι που αποτυγχάνει μόλις διαγραφεί αυτό το branch.
 
-## Vocabulary
+## Ορολογία
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+Το GitLab αποκαλεί το pull request **merge request**. Το Control Center λέει «pull request» σε όλο το δικό του μοντέλο και χρησιμοποιεί τον όρο του εκάστοτε κεντρικού υπολογιστή κώδικα όταν μιλάει για αυτόν.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The PR list is empty and says a forge is not connected
+### Η λίστα PR είναι κενή και αναφέρει ότι ένας κεντρικός υπολογιστής κώδικα δεν είναι συνδεδεμένος
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Δεν έχετε διαπιστευτήριο για αυτόν τον κεντρικό υπολογιστή κώδικα. Συνδεθείτε ή επικολλήστε ένα token στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα**. Τα αποθετήρια των άλλων κεντρικών υπολογιστών κώδικα δεν επηρεάζονται.
 
-### I connected a forge but its repos still show nothing
+### Σύνδεσα έναν κεντρικό υπολογιστή κώδικα, αλλά τα αποθετήριά του δεν δείχνουν ακόμη τίποτα
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Ελέγξτε τον υπότιτλο της γραμμής. Αν αναγράφει «μέσω της εφαρμογής αυτού του διακομιστή» ή «από το περιβάλλον», απαντά διαφορετικό διαπιστευτήριο από αυτό που περιμένατε — το δικό σας διαπιστευτήριο υπερισχύει για ό,τι ζητάτε, οπότε αν εμφανίζεται κάτι άλλο, το δικό σας δεν αποθηκεύτηκε.
 
-### A repo will not register
+### Ένα αποθετήριο δεν καταχωρίζεται
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
+Η καταχώριση απαιτεί και τα τρία: η διαδρομή βρίσκεται μέσα σε ένα worktree του git, υπάρχει ένα remote `origin` και αυτό το remote δείχνει στο github.com, το gitlab.com ή το bitbucket.org. Δείτε [Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
 
-### Everything stops working for a while after heavy use
+### Όλα σταματούν να λειτουργούν για λίγο μετά από εντατική χρήση
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Αυτός είναι ο διακόπτης ασφαλείας του ορίου ρυθμού. Όταν ένας κεντρικός υπολογιστής κώδικα σηματοδοτεί το πρωτεύον όριό του, ο πελάτης αποτυγχάνει τοπικά τα επόμενα αιτήματα, χωρίς κλήση δικτύου, μέχρι να παρέλθει το παράθυρο — έτσι μια καταιγίδα επαναλήψεων δεν μπορεί να επιδεινώσει το όριο. Οι παροδικές αποτυχίες επαναλαμβάνονται με εκθετικό backoff.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
-- [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
-- [Review and merge a PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
-- [Triage the inbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)
+- [Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
+- [Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+- [Έλεγχος και συγχώνευση PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
+- [Ταξινόμηση εισερχομένων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)

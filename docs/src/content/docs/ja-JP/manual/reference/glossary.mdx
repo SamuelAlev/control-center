@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: 用語集
+description: Control Center 全体で使われる主要な用語の定義。
 slug: ja-JP/マニュアル/リファレンス/用語集
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['エージェント', 'アイデンティティ、ロール、スキル、ケイパビリティを持つ AI ワーカー。ちょうど 1 つのワークスペースに属する。システムにおける主要なアクター。'],
+['アダプター', 'エージェントのターンを実行するランナー。2 つが同梱される: Control Center（組み込み）— モデルプロバイダーと対話するインプロセスのハーネス — と、claude CLI 経由の Claude Code。Cursor、Codex、その他のモデルプロバイダーは、別個のランナーとしてではなく、組み込みアダプターに接続する。'],
+['ワークスペース', '最上位の分離テナント。エージェント、リポジトリ、スペース、チケット、メモリ、パイプラインをまとめる。分離は慣習ではなく構造的である: 各ワークスペースは独自の SQLite ファイルを持つため、ワークスペースをまたぐ読み取りはコンパイルできない。アプリ内のすべてのルートには /workspaces/:workspaceId が前置される。'],
+['フォージ', 'コードホスト — GitHub、GitLab、Bitbucket Cloud。各リポジトリのプロパティであり、登録時に origin リモートから読み取られる。1 つのワークスペースが 3 つすべてのリポジトリを保持できる。'],
+['リポジトリ', '1 つのワークスペース内に登録された Git リポジトリ。ワークスペース単位: 同じチェックアウトを 2 つのワークスペースに登録すると、2 つの id を持つ 2 つの行になり、ワークスペースをまたぐリポジトリの同一性は id ではなくファイルシステムのパスで決まる。登録には、origin リモートがサポート対象のフォージ（GitHub、GitLab、Bitbucket Cloud）を指す git ワークツリーが必要。'],
+['分離リポジトリ', '登録済みリポジトリのワークスペース単位のワークツリー。そのネイティブが同梱されている場所では rift によるコピーオンライト、Windows では git worktree。スペースごとにプロビジョニングされるため、そのスペースのすべての会話が 1 つのチェックアウトを共有し、エージェントがソースを書き換えることはない。'],
+['スペース', '人間とエージェントの参加者、永続化された Mode、プロビジョニング状態、そして SpaceKind（topic、agentPeer、system、pr、slack）を持つ、ワークスペース単位のコラボレーションコンテナ。SpaceKind は、どのようにセクション分けされ、ミュートされ、バッジが付き、ガベージコレクションされるかを決める。会話が共有する分離ワークツリーを所有する（rift によるコピーオンライト、Windows では git worktree）。'],
+['会話', 'スペース内の 1 つのメッセージストリームで、独自の id、履歴、エージェント実行コンテキストを持つ。スペース内の会話は対等なフラットな存在で、primary や main のストリームはない。それぞれがエディタータブとして開き、スペースの未読状態はそれらすべてを集約する。'],
+['スレッド', 'anchorMessageId が設定された会話。同じスペース内の兄弟会話の 1 つのメッセージにアンカーされ、そのアンカーメッセージをシードとする新しいエージェントコンテキストを持つ。深さは 1 レベルで、スレッドがスレッドにアンカーされることはない。'],
+['チケット', '作業単位のアグリゲート。ベンダー中立で、既定では local であり、Linear、GitHub Issues、Jira Cloud、ClickUp 向けの同期アダプターを持つが、アプリ内で同期接続を作成するサーフェスはない。階層、リンク、委任をサポートする。エージェントへの割り当ては所有権を記録するだけで何もディスパッチしない。例外はチームへの割り当て（TeamRoutingService がリーダーをディスパッチする）。'],
+['パイプライン', 'ステップ（エージェントのディスパッチ、スクリプト、条件分岐）を連鎖させる DAG ベースのワークフロー。テンプレートで定義され、実行として実行される。'],
+['ミーティング', 'ローカルに録音され文字起こしされたミーティングセッション。マイクとシステム音声を取り込み、選択可能な ASR モデル（既定では Parakeet TDT v3。Parakeet TDT v2、Whisper large-v3-turbo、Whisper base.en が代替）でオンデバイスで文字起こしし、話者をダイアライズして、ノート、アクションアイテム、決定事項に要約する。選択した ASR モデルは起動時に強制インストールされ、録音操作は 1 回の再起動後に有効になる。ワークスペース単位。'],
+['CalendarEvent', 'ワークスペースと接続済みアカウントにスコープされた、同期された Google Calendar のエントリ。ミーティングとは異なる: イベントは予定された約束であり、ミーティングは録音されたセッション。'],
+['CalendarAccount', 'ワークスペースとメールアドレスごとの、接続された Google アカウント。OAuth リフレッシュトークンはデータディレクトリ配下の secrets.json ファイルに google_* キーとしてサーバー側で保存され、クライアントに到達することはない。authExpiredAt フラグが再接続バナーを駆動する。'],
+['AgentRole', '列挙されたロール（CEO、coder、reviewer、QA、designer、security、devops、PM、general）。ペルソナ、メモリへのアクセス、階層を決める。'],
+['AgentSkills', 'ディスパッチ時に関連するコンテキストをプロンプトへ注入する、大文字小文字を区別しないスキル識別子の集合。'],
+['スキルのソース', 'スキルカタログとしてワークスペースごとに登録された GitHub リポジトリ。構造上信頼されない: リポジトリのメタデータは表示専用であり、すべてのインストールは、内容がディスクやプロンプトに到達する前にフェイルクローズのスキャンゲートを通過する。'],
+['skills-lock.json', 'インストール済みスキルのワークスペース単位のマニフェスト。各スキルについて、そのソースリポジトリ、リポジトリ内パス、ピン留めされたコミット、およびロールアップされたコンテンツハッシュを持つ。インストール、更新、アンインストールがこれを最新に保ち、verify_skills がディスクと照合する。'],
+['AgentCapabilities', '4 つのフラグ（リポジトリへのプッシュ、GitHub API、チケッティング、ネットワークエグレス）で、ディスパッチごとに解決される: まずエージェントの既定、次にユーザーの既定で、会話単位の上書きがある。無効化されたケイパビリティとはトークンやエグレスが単に注入されないことなので、不在によって強制される。'],
+['Mode', 'chat、plan、review、orchestrate のいずれか。スペース単位で保存されるため、1 つのエージェントがスペースごとに異なるモードになり、スペース内のすべての会話がそれを共有する。システムプロンプト、サンドボックスの書き込みルール、MCP ツールの許可リストをゲートする。'],
+['SandboxBackend', 'microvm（囲まれた VM — カーネル境界を持つ唯一のバックエンドで、対話型ターミナルに適用される）、native（macOS では OS ネイティブの Seatbelt、Linux と WSL2 では bubblewrap）、または none。起動時に一度プローブされる。native は利用可能な場合にエージェントのディスパッチをラップする。Windows にはネイティブバックエンドがなく、Linux には bwrap と socat が必要なため、そこでの実行はラップされない。--sandbox off は意図的にオプトアウトする。'],
+['リグ', 'エージェントがリアルタイムで操作する使い捨てのマシン: 囲まれたブラウザまたは Linux デスクトップ、ホストが管理する Android エミュレータまたは iOS シミュレータ、あるいは囲まれたターミナル。独自のフル解像度レーンでライブに表示され、テイクオーバーはサーバー側で強制される。会話にスコープされるため、人間のタブとエージェントのツールが 1 つのマシンを対象にする。'],
+['エンクロージャー', 'VM ベースのリグが利用できる、より強力な分離特性: カーネル境界、使い捨てのオーバーレイディスク、既定で拒否するネットワークゲート、資格情報ブローカー。Android と iOS のリグは使い捨てだが、ホストが管理するネットワークを使うため、この境界を主張しない。どのリグを操作する場合も enclosureControl ガードレールクラスを使う。'],
+['RunCost', '1 回のエージェント実行のトークン／コスト集計（入力トークン、出力トークン、セント単位の推定コスト）。'],
+['WakeReason', 'エージェントがディスパッチされた理由。6 つの値がある: ユーザーメッセージ、チケットの割り当て、失敗後のリカバリ再ディスパッチ、子チケットの完了、スケジュールされたフォローアップのハートビート、パイプラインステップ。'],
+['SandboxPort', 'サンドボックスのライフサイクル（プローブ、起動、イベント、exec、破棄）を管理する。'],
+['CredentialBrokerPort', 'サンドボックス起動用の、スコープ付きでケイパビリティによってゲートされた資格情報を発行し、破棄時に失効させる。'],
+['GitRepoInspectorPort', 'ローカルの Git リポジトリパスからメタデータ（owner、repo、branch）を抽出する。'],
+['EmbeddingPort', 'セマンティック検索用の単位ノルムのテキスト埋め込みベクトルを生成する。'],
+['NotificationPort', 'カテゴリ／ルートのゲートを尊重してネイティブのデスクトップ通知を表示する。'],
+['TicketProviderPort', 'チケッティングバックエンドへのベンダー非依存の境界（create、get、list、update、transition、assign）。'],
+['PipelineEnginePort', 'テンプレートからパイプライン実行を開始し、呼び出し元を具体的なエンジンから切り離す。'],
+['AgentDispatchService', 'エージェント実行を起動する: 分離リポジトリをプロビジョニングし、プロンプトを組み立て、実行ログを作成し、ライブのイベントストリームを返す。'],
+['TicketWorkflowService', '楽観的並行性の変更チョークポイントとワークスペース分離の強制を備えた、純粋なドメインのチケットライフサイクルエンジン。これが強制する遷移グラフはエージェントと自動化だけを縛り、ユーザー主導の UI 変更は force true を渡して迂回する。'],
+['PipelineEngine', '実行の実行をオーケストレートする: 実行を開始し、ステップをスケジュールし、状態を永続化し、ルーター／ジョイン／continue-on-fail を処理し、再起動後に進行中の実行を再開する。'],
+['PipelineTriggerDispatcher', 'ドメインイベントをサブスクライブし、有効なトリガーに対して一致するパイプライン実行を自動開始する。'],
+['MemoryAccessPolicy', 'ドメインに対するエージェントロールのメモリ権限を解決して強制する。'],
+['HarnessCostCalculator', 'models.dev カタログから、組み込みハーネスのトークン使用量を RunCost として価格計算する。ディスパッチはその集計を実行ログに永続化する。'],
+['BudgetEnforcementService', 'エージェントごとの月間支出と、ディスパッチ前のブロック（checkInvocationBlock）を計算する。このブロックを参照するのはリカバリのリコンサイラー（OrphanRunReaper、StrandedTicketReconciler）だけで、通常のディスパッチは決して参照しない。'],
+['BudgetGovernanceService', '各実行後にエージェントごとの月間支出を評価する: ソフトしきい値は警告インシデントを記録し、使い切るとハードインシデントを記録してエージェントのライフサイクルを paused に切り替える。'],
+['DomainEventBus', 'フィーチャーをまたぐ通信用の、インプロセスのブロードキャスト型パブリッシュ／サブスクライブバス。イベントは型付きで、サブスクライバーは型ごとのストリームを消費する。'],
+['DomainEvent', '基底インターフェース。すべてのイベントは occurredAt を持つ。主要なカテゴリ: workspace/agent、PR/review、messaging、ticketing、pipeline、meetings/calendar、identity、rigs、observability。'],
+['クリーンアーキテクチャ', '依存関係のルール: Presentation → Application/Providers → Domain で、Infrastructure は内側を向く。Domain にはインフラストラクチャのインポートが一切ない。'],
+['ポートとアダプター', 'ドメインが抽象インターフェース（ポート）を定義し、インフラストラクチャが具体的な実装（アダプター）を提供する。コンポジションルートがそれらをバインドする。'],
+['共有カーネル', '3 つ以上のフィーチャーで共有される core/domain/ のエンティティ、値オブジェクト、ポート、サービス。'],
+['フィーチャー優先', 'コードは技術レイヤーではなくビジネスドメイン（agents、pipelines、messaging）ごとに構成される。'],
+['シンクライアントアーキテクチャ', 'どのクライアントもデータベースを開かない。ヘッドレスの cc_server プロセスがデータを所有し、WebSocket RPC 経由で提供する。すべてのクライアント（デスクトップ、Web、スマートフォン）は、その 1 つの RPC 接続上のレンダラーである。'],
+['cc_server', 'ヘッドレスサーバーバイナリ（純粋な Dart、Flutter エンジンなし）。Drift/SQLite データベースを所有し、WebSocket 経由で repo-RPC を提供し、バックグラウンドサービス（パイプライン、MCP、リコンサイラー）を実行する。'],
+['ServerConnectionMode', 'デスクトップがサーバーに到達する方法: local（このマシンで cc_server を起動する）または remote（別の場所のサーバーに接続する）。Web クライアントは常に remote。'],
+['RemoteRpcClient', 'すべてのシンクライアントがサーバーと通信するために使う、トランスポート非依存の JSON-RPC クライアント。WSS、ループバック、またはブローカー経由のリレーを介する。'],
+['コール単位のワークスペーススコープ', 'サーバーはステートレスである: セッション単位のワークスペース束縛は存在しないため、1 つのサーバー上の複数のクライアントが現在のワークスペースを共有することはない。ワークスペーススコープのすべての repo/call と sub/subscribe は、引数に workspace_id を含まなければならない。欠落した id、または未登録の id は、データベースを開く前に拒否される。アクセスはその後、セッションではなく、ワークスペースのメンバーシップとロールによってゲートされる。'],
+['cc_remote', 'スマートフォン用のシンクライアント — ブローカー経由のリレーを介してフリートをリモートコントロールする、既定で拒否のツールポリシーを持つ Flutter Web の PWA。'],
+['cc_signaling_server', '招待でゲートされたルームをホストする、ステートレスな WebSocket リレーブローカー。愚直なリレーであり、エンドツーエンドで密封されたフレームだけを転送し、アプリのデータを一切保持せず、ペアリング PSK を見ることもない。'],
+['プリンシパル', '人間とエージェントを単一のアクター抽象として統合する sealed な値。UserPrincipal(userId) または AgentPrincipal(agentId)。すべてのメッセージ、チケット、レビュー、プラン、実行ログはプリンシパルを通じて帰属する。'],
+['ユーザー', '人間のアイデンティティで、global.db に保存されるためワークスペースをまたいでグローバル。ワークスペースを作成したプリンシパルがそのオーナーになり、Workspace.ownerUserId にオーナーロールのメンバーシップ行とともに記録される。その他は招待または SSO で参加する。'],
+['WorkspaceMember', 'ユーザーを WorkspaceRole でワークスペースに束縛するメンバーシップ行。アクセスの境界となるのは、ペアリングキーではなくメンバーシップである。'],
+['WorkspaceRole', '段階的なメンバーシップロール: owner、admin、member、viewer、guest。リポジトリ操作のチョークポイントが、操作の種類ごとに最低ロールの下限を導出する。'],
+['ParticipantPresence', 'プリンシパルの一時的な気配（ステータス、ローカス、カーソル、タイピング、エージェントのライブステータスと実行中コスト）。決して永続化されず、サーバーハブ方式で、ファンアウト前にリポジトリの許可でフィルタリングされる。'],
+['フォローモード', 'アバターをクリックすると、あなたが操作するまでそのビューポートに追従し、その後デタッチする。人間にもエージェントにも機能する（「エージェントの作業を眺める」）。'],
+['自律度ダイヤル', 'スペースごと、エージェントごとの制御で、propose-only / act-with-approval / act-freely のいずれか。アクションガードレールストア上の名前付きプロファイルとして実装される。'],
+['cc_worker', 'ヘッドレスの純粋な Dart のフリート実行者バイナリ。cc_server とペアリングし、ケイパビリティを宣言し、リースされたジョブを取得して実行し、イベントをストリームで返す。永続状態を一切持たない。'],
+['JobSpec', '実行可能なものすべて（エージェント実行、パイプラインステップ、コードインデックス、ゴールデンレンダー、ベンチマーク、評価バッチ）の型付き仕様: 必要なケイパビリティ、優先度、予算、ワークスペース。'],
+['ActionClass', '13 個のエフェクトクラスからなる閉じた集合（fileDelete、gitPush、prCreate、networkEgress、processSpawn、enclosureControl、…）。すべての変更ツールが自分のクラスを宣言し、ガードレールエンジンがスコープごとに allow / prompt / deny を解決する。'],
+['WriteLedger', 'ワークスペース単位の冪等性台帳。すべての変更は論理アクション単位の冪等キーを運び、再生はバイト単位で同一の元の結果を返す。これにより、再接続とマルチクライアントが構造的に安全になる。'],
+['冪等キー', '論理アクションごと（試行ごとではなく）に発行される、クライアント生成の UUIDv7。再接続やクライアントをまたいでリトライを重複排除する。'],
+['要対応の受信トレイ', '厳格なルールを持つ横断的なキュー: 何か（エージェント、マージ、同期）をブロックしているか、明示的にオペレーターを要求している場合にのみ、項目が現れる。'],
+['Plan Studio', 'インタラクティブなプランニングサーフェス: オーケストレーションの提案または単一エージェントのプランが、編集可能な型付き DAG として描画され、ステップごとのコスト／時間／リスクの見積もり、プラン差分のバージョニング、部分承認を備える。'],
+['レビューコンピュート', 'PR のサーバー側レビューコンピュート: グラフから導かれたファイルコホート、型付きウォークスルー図、UI のビジュアル差分、OpenAPI 契約差分、ブラスト半径マップ、軸ごとのゲートで、review_studio.* 経由で提供され、レビュータブの判定に組み込まれる。'],
+['レビュースペース', 'PR の唯一の基盤スペース（モード review、種類 pr）で、冪等に作成され、ReviewSpaceAssociation によって PR にリンクされる。すべてのレビュアーがそこに指摘を登録し、それが比較可能性を生む。その分離ワークツリーには、ヘッド時点の PR がチェックアウトされている。'],
+['レビューノード', 'AI レビューの指摘の構造化された単位: 種別（bug、suggestion、recommendation、question、ticket）、優先度 P0-P3、カテゴリ／重大度／工数のトリアージ三点、ファイルと行のアンカー、任意の修正案、確信度スコア。add_review_node で登録され、判定は散文ではなくノードから算出される。'],
+['コンセンサス準備完了', 'ピアのレビュアーが指摘を確認したときにだけ到達するレビューノードのステータス — エージェントが自分の指摘を確認することはできない。レビュータブの公開ボタンは残っているすべてのオープンな指摘を送信し、MCP ツール publish_review_to_github は今もピアが確認した指摘のみを既定とする。'],
+['レビューレベル', 'どのレビュアーがファンアウトするか（エンジニアのみ、+qa+architect、+security+perf）と、しきい値未満の指摘をどこに表示するかを定めるワークスペースポリシー（light、balanced、thorough）。指摘を削除することは決してない。'],
+['レビュー軸', 'レビューごとの 5 つのスコアリングレーンの 1 つ: correctness、security、testGap はレビュアーの指摘から導かれ、visual と apiContract は決定論的。ゲート対象の軸は判定に組み込まれ、それをより厳しくすることしかできない — partial または unavailable のゲートは、判定を通過させるのではなく引き留める。'],
+['レビュー判定', 'ship、hold、block のいずれか。確信度 >= 0.7 の P0 の指摘は block にする。それ以外の P0 または P1 は hold にする。それ以外は ship。ゲート対象の失敗した軸は block を強制し、指摘による多数決で覆すことはできない。'],
+['SessionRecording', '1 回の実行で取得されたイベントストリームと HTTP/LLM カセット、ツール I/O で、AgentConfigHash と対になる。'],
+['ゴールデンセッション', 'エージェントまたはプレイブックごとにピン留めされた、承認済みの SessionRecording。'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "Control Center の用語集",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## コアエンティティ
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**エージェント**: アイデンティティ、ロール、スキル、ケイパビリティを持つ AI ワーカーです。ちょうど 1 つのワークスペースに属します。システムにおける主要なアクターです。
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/).
+**アダプター**: エージェントのターンを実行するランナーです。2 つが同梱されます: **Control Center（組み込み）** — モデルプロバイダーと対話するインプロセスのハーネス — と、`claude -p` 経由の **Claude Code** です。Cursor、Codex、Anthropic、OpenAI、その他は、別個の CLI ではなく、組み込みアダプター上のプロバイダーです。[アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)を参照してください。
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/ja-JP/マニュアル/リファレンス/ルートマップ/).
+**ワークスペース**: 最上位の分離テナントです。エージェント、リポジトリ、スペース、チケット、メモリ、パイプラインをまとめます。分離は慣習ではなく構造的です: 各ワークスペースは独自の SQLite ファイル（`<dataDir>/<workspaceId>/workspace.db`）を持つため、ワークスペースをまたぐ読み取りはコンパイルできません。アプリ内のすべてのルートには `/workspaces/:workspaceId` が前置されます — [ルートマップ](/ja-JP/マニュアル/リファレンス/ルートマップ/)を参照してください。
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/).
+**フォージ**: コードホスト — **GitHub**、**GitLab**、**Bitbucket Cloud** です。フォージは各リポジトリのプロパティで、登録時に `origin` リモートから読み取られ、そのリポジトリの API アダプターと資格情報を選びます。1 つのワークスペースが 3 つすべてのリポジトリを保持できます。集約するサーフェス（受信トレイ、PR キュー）は、存在するすべてのフォージにファンアウトして結果をマージし、障害を分離するため、到達できないフォージが他を空にすることはありません。フォージはサポート内容が異なります — [コードホストを接続](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)のケイパビリティ表を参照してください。
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**リポジトリ**: 1 つのワークスペース内に登録された Git リポジトリです。**ワークスペース単位** — 同じチェックアウトを 2 つのワークスペースに登録すると、2 つの id を持つ 2 つの独立した行になります。ワークスペースをまたぐリポジトリの同一性はファイルシステムのパスで決まり、id では決まりません。登録には、`origin` リモートがサポート対象のフォージを指す git ワークツリーが必要です。各リポジトリはその**フォージ**（`github` / `gitlab` / `bitbucket`）を持ち、それが使用する API アダプターと資格情報を選びます。
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**分離リポジトリ**: 登録済みリポジトリのワークスペース単位のワークツリーです。そのネイティブが同梱されている場所では `rift` によるコピーオンライト、Windows では `git worktree` です。**スペースごとに**プロビジョニングされ、そのスペースのすべての会話が 1 つのチェックアウトを共有するため、エージェントがソースを書き換えることはありません。
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**スペース**: 人間とエージェントの参加者、永続化された `Mode`、プロビジョニング状態、そして `SpaceKind`（`topic` / `agentPeer` / `system` / `pr` / `slack`）を持つ、ワークスペース単位のコラボレーションコンテナです。`SpaceKind` は、どのようにセクション分けされ、ミュートされ、バッジが付き、ガベージコレクションされるかを決めます。会話が共有する分離ワークツリーを所有します（`rift` によるコピーオンライト、Windows では `git worktree`）。
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**会話**: スペース内の 1 つのメッセージストリームで、独自の id、履歴、エージェント実行コンテキストを持ちます。スペース内の会話は対等なフラットな存在で、primary や「main」のストリームはありません。それぞれがエディタータブとして開き、スペースの未読状態はそれらすべてを集約します。
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**スレッド**: `anchorMessageId` が設定された会話です: 同じスペース内の兄弟会話の 1 つのメッセージにアンカーされ、そのアンカーメッセージをシードとする新しいエージェントコンテキストを持ちます。深さは 1 レベルで、スレッドがスレッドにアンカーされることはありません。
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**チケット**: 作業単位のアグリゲートです。ベンダー中立で、既定では `local`、Linear、GitHub Issues、Jira Cloud、ClickUp 向けの同期アダプターを持ちますが、アプリ内で同期接続を作成するサーフェスはありません。階層、リンク、委任をサポートします。エージェントへの割り当ては所有権を記録するだけで何もディスパッチしません。例外はチームへの割り当てです（`TeamRoutingService` がリーダーをディスパッチします）。
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**パイプライン**: ステップ（エージェントのディスパッチ、スクリプト、条件分岐）を連鎖させる DAG ベースのワークフローです。テンプレートで定義され、実行として実行されます。
 
-## Value objects
+## 値オブジェクト
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: 列挙されたロール（CEO、coder、reviewer、QA、designer、security、devops、PM、general）です。ペルソナ、メモリへのアクセス、階層を決めます。
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: ディスパッチ時に関連するコンテキストをプロンプトへ注入する、大文字小文字を区別しないスキル識別子の集合です。
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/ja-JP/マニュアル/ハウツーガイド/スキル管理/).
+**スキルのソース**: スキルカタログとしてワークスペースごとに登録された GitHub リポジトリです。構造上信頼されません: リポジトリのメタデータは表示専用であり、すべてのインストールは、内容がディスクやプロンプトに到達する前にフェイルクローズのスキャンゲートを通過します。[スキルのインストールと管理](/ja-JP/マニュアル/ハウツーガイド/スキル管理/)を参照してください。
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: インストール済みスキルのワークスペース単位のマニフェストです: 各スキルについて、そのソースリポジトリ、リポジトリ内パス、ピン留めされたコミット、およびロールアップされたコンテンツハッシュを持ちます。インストール、更新、アンインストールがこれを最新に保ち、`verify_skills` がディスクと照合します。
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: 4 つのフラグ（リポジトリへのプッシュ、GitHub API、チケッティング、ネットワークエグレス）で、ディスパッチごとに解決されます — まずエージェントの既定、次にユーザーの既定で、会話単位の上書きがあります。不在によって強制されます: 無効化されたケイパビリティとはトークンやエグレスが単に注入されないことだからです。
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Mode**: `chat`、`plan`、`review`、`orchestrate` のいずれかです。**スペース単位**で保存されるため、1 つのエージェントがスペースごとに異なるモードになり、スペース内のすべての会話がそれを共有します。システムプロンプト、サンドボックスの書き込みルール、MCP ツールの許可リストをゲートします。コンポーザーが提供するのは `chat`、`plan`、`orchestrate` だけで、`chat` のラベルは「Agent」です。
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm`（囲まれた VM — カーネル境界を持つ唯一のバックエンドで、対話型ターミナルに適用されます）、`native`（macOS では Seatbelt、Linux と WSL2 では bubblewrap）、または `none` です。起動時に一度プローブされます。`native` は利用可能な場合に**エージェントのディスパッチに適用**され、Claude Code CLI とハーネスの `bash` ツールをラップします。Windows にはネイティブバックエンドがなく、Linux には `bwrap` と `socat` が必要なため、そこでの実行はラップされません。`--sandbox off` は意図的にオプトアウトします。
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/).
+**リグ**: エージェントがリアルタイムで操作する使い捨てのマシンです — 囲まれたブラウザまたは Linux デスクトップ、ホストが管理する Android エミュレータまたは iOS シミュレータ、あるいは囲まれたターミナルです。独自のフル解像度レーンでライブに表示され、テイクオーバーはサーバー側で強制されます。会話にスコープされるため、人間のタブとエージェントの `browser_use` / `computer_use` / `mobile_use` / `ios_use` 呼び出しが 1 つの既定のマシンを対象にします。[リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/)を参照してください。
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**エンクロージャー**: VM ベースのリグが持つより強力な境界です — カーネル境界、使い捨てのオーバーレイディスク、既定で拒否するネットワークゲート、資格情報ブローカーです。Android と iOS のリグは使い捨てですが、ホストが管理するネットワークを使うため、この境界を主張しません。どのリグを操作する場合も `enclosureControl` ガードレールクラスを使います。
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: 1 回のエージェント実行のトークン／コスト集計（入力トークン、出力トークン、セント単位の推定コスト）です。
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: エージェントがディスパッチされた理由です。6 つの値があります: ユーザーメッセージ、チケットの割り当て、失敗後のリカバリ再ディスパッチ、子チケットの完了、スケジュールされたフォローアップのハートビート、パイプラインステップです。
 
-## Ports
+## ポート
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: サンドボックスのライフサイクル（プローブ、起動、イベント、exec、破棄）を管理します。
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: サンドボックス起動用の、スコープ付きでケイパビリティによってゲートされた資格情報を発行し、破棄時に失効させます。
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: ローカルの Git リポジトリパスからメタデータ（owner、repo、branch）を抽出します。
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: セマンティック検索用の単位ノルムのテキスト埋め込みベクトルを生成します。
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: カテゴリ／ルートのゲートを尊重してネイティブのデスクトップ通知を表示します。
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: チケッティングバックエンドへのベンダー非依存の境界です（create、get、list、update、transition、assign）。
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: テンプレートからパイプライン実行を開始し、呼び出し元を具体的なエンジンから切り離します。
 
-## Domain services
+## ドメインサービス
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: エージェント実行を起動します: 分離リポジトリをプロビジョニングし、プロンプトを組み立て、実行ログを作成し、ライブのイベントストリームを返します。
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: 楽観的並行性の変更チョークポイントとワークスペース分離の強制を備えた、純粋なドメインのチケットライフサイクルエンジンです。これが強制する遷移グラフはエージェントと自動化だけを縛り、ユーザー主導の UI 変更は `force: true` を渡して迂回します。エージェントの担当者向けのチケットディスパッチャーは存在しません — ディスパッチを担うのは `AgentDispatchService` であり、チケットをエージェントに割り当てても実行は始まりません。例外はチケットをチームに割り当てる場合です（`TeamRoutingService` がリーダーをディスパッチします）。
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: 実行の実行をオーケストレートします: 実行を開始し、ステップをスケジュールし、状態を永続化し、ルーター／ジョイン／continue-on-fail を処理し、再起動後に進行中の実行を再開します。
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: ドメインイベントをサブスクライブし、有効なトリガーに対して一致するパイプライン実行を自動開始します。
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: ドメインに対するエージェントロールのメモリ権限を解決して強制します。
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: models.dev カタログから、組み込みハーネスのトークン使用量を `RunCost` として価格計算します。ディスパッチはその集計を実行ログに永続化します。
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: エージェントごとの月間支出と、ディスパッチ前のブロック（`checkInvocationBlock`）を計算します。このブロックを参照するのはリカバリのリコンサイラー（`OrphanRunReaper`、`StrandedTicketReconciler`）だけで、通常のユーザーやエージェントのディスパッチは決して参照しません。
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: 各実行後にエージェントごとの月間支出を評価します — ソフトしきい値は警告インシデントを記録し、使い切るとハードインシデントを記録してエージェントのライフサイクルを `paused` に切り替えます。
 
-## Events
+## イベント
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: フィーチャーをまたぐ通信用の、インプロセスのブロードキャスト型パブリッシュ／サブスクライブバスです。イベントは型付きで、サブスクライバーは `on<T>()` ストリームを消費します。
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: 基底インターフェースです。すべてのイベントは `occurredAt` を持ちます。主要なカテゴリ: workspace/agent、PR/review、messaging、ticketing、pipeline、meetings/calendar、identity、rigs、observability。
 
-## Meetings and calendar
+## ミーティングとカレンダー
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**ミーティング**: ローカルに録音され文字起こしされたミーティングセッションです。マイクとシステム音声を取り込み、選択可能な ASR モデル（既定では Parakeet TDT v3。Parakeet TDT v2、Whisper large-v3-turbo、Whisper base.en が代替です）でオンデバイスで文字起こしし、話者をダイアライズして、ノート、アクションアイテム、決定事項に要約します。選択した ASR モデルは起動時に強制インストールされ、録音操作は 1 回の再起動後に有効になります。ワークスペース単位で、マシン上にとどまります。
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: 文字起こしされた 1 つの音声ウィンドウで、話者タグ（`me`/`them`）、ダイアライゼーションラベル、ミリ秒単位のオフセットを持ちます。
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: 要約パイプラインが抽出し、個別の行として保存する構造化された出力です。アクションアイテムはチケットにリンクできます。
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: ワークスペースと接続済みアカウントにスコープされた、同期された Google Calendar のエントリです。ミーティングとは異なります: イベントは予定された約束であり、ミーティングは録音されたセッションです。`MeetingCalendarLink` を通じて 1 対 1 でリンクされます。
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: ワークスペースとメールアドレスごとの、接続された Google アカウントです。OAuth リフレッシュトークンは `<dataDir>/secrets.json` に `google_*` キーとしてサーバー側で保存され、クライアントに到達することはありません。デバイスコードフローはサーバー上で完了します。`authExpiredAt` フラグが再接続バナーを駆動します。
 
-## Architecture terms
+## アーキテクチャ用語
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**クリーンアーキテクチャ**: 依存関係のルール: Presentation → Application/Providers → Domain ← Infrastructure。Domain にはインフラストラクチャのインポートが一切ありません。
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**ポートとアダプター**: ドメインが抽象インターフェース（ポート）を定義し、インフラストラクチャが具体的な実装（アダプター）を提供します。コンポジションルートがそれらをバインドします。
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**共有カーネル**: 3 つ以上のフィーチャーで共有される `core/domain/` のエンティティ、値オブジェクト、ポート、サービスです。
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**フィーチャー優先**: コードは技術レイヤーではなくビジネスドメイン（agents、pipelines、messaging）ごとに構成されます。
 
-## Multiplayer, identity and velocity
+## マルチプレイヤー、アイデンティティ、ベロシティ
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**プリンシパル**: 人間とエージェントを単一のアクター抽象として統合する sealed な値です — `UserPrincipal(userId)` または `AgentPrincipal(agentId)`。すべてのメッセージ、チケット、レビュー、プラン、実行ログはプリンシパルを通じて帰属します。
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**ユーザー**: 人間のアイデンティティで、`global.db` に保存されるためワークスペースをまたいでグローバルです。ワークスペースを作成したプリンシパルがその**オーナー**になり、`Workspace.ownerUserId` に、同じ操作でオーナーロールのメンバーシップ行とともに記録されます。その他は招待または SSO で参加します。
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: ユーザーをロール（`owner` / `admin` / `member` / `viewer` / `guest`）でワークスペースに束縛するメンバーシップ行です。**アクセスの境界となるのは、ペアリングキーではなくメンバーシップです。** リポジトリ単位の許可が、メンバーシップによってフォージを上回る権限が得られないようにします。
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: プリンシパルの一時的な気配です（ステータス、ローカス、カーソル、タイピング、エージェントのライブステータスと実行中コスト）。決して永続化されず、サーバーハブ方式で、ファンアウト前にリポジトリの許可でフィルタリングされます。
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**フォローモード**: アバターをクリックすると、あなたが操作するまでそのビューポートに追従し、その後デタッチします。人間にもエージェントにも機能します（「エージェントの作業を眺める」）。
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**自律度ダイヤル**: スペースごと、エージェントごとの制御で、`propose-only` / `act-with-approval` / `act-freely` のいずれかです。アクションガードレールストア上の名前付きプロファイルとして実装されています。
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: 13 個のエフェクトクラスからなる閉じた集合です（`fileDelete`、`gitPush`、`prCreate`、`networkEgress`、`processSpawn`、`enclosureControl`、…）。すべての変更ツールが自分のクラスを宣言し、ガードレールエンジンがスコープごとに `allow` / `prompt` / `deny` を解決します（space > agent > workspace > mode preset > built-in default）。
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **冪等キー**: すべての変更は、クライアント生成の冪等キー（UUIDv7、論理アクション単位）を運びます。ワークスペース単位の台帳がハンドラー実行前に重複を排除し、再生はバイト単位で同一の元の結果を返します。これにより、再接続とマルチクライアントが構造的に安全になります。
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**要対応の受信トレイ**: 厳格なルールを持つ横断的なキューです — 何か（エージェント、マージ、同期）を _ブロック_ しているか、明示的にオペレーターを要求している場合にのみ、項目が現れます。
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: インタラクティブなプランニングサーフェスです — ステップごとのコスト、時間、リスクと部分承認を備えた、編集可能な型付き DAG のプランです。
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**レビューコンピュート**: サーバー側の PR レビューコンピュート（グラフから導かれたコホート、型付き図、ビジュアル差分、API 契約差分、複数軸のゲート）で、`review_studio.*` 経由で提供され、レビュータブに組み込まれます。
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**レビュースペース**: PR の唯一の基盤スペース（モード `review`、種類 `pr`）で、冪等に作成され、`ReviewSpaceAssociation` によって PR にリンクされます。すべてのレビュアーがそこに指摘を登録し、それが比較可能性を生みます。その分離ワークツリーには、ヘッド時点の PR がチェックアウトされています。
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**レビューノード**: AI レビューの指摘の構造化された単位です: 種別（`bug`、`suggestion`、`recommendation`、`question`、`ticket`）、優先度 P0〜P3、カテゴリ／重大度／工数のトリアージ三点、ファイルと行のアンカー、任意の修正案、確信度スコアです。`add_review_node` で登録され、判定は散文ではなくノードから算出されます。
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**コンセンサス準備完了**: ピアのレビュアーが指摘を確認したときにだけ到達するレビューノードのステータスです — エージェントが自分の指摘を確認することはできません。レビュータブの **GitHubに公開** ボタンは残っているすべてのオープンな指摘を送信し（`selection: all_open`）、MCP ツール `publish_review_to_github` は今もピアが確認した指摘のみを既定とします。
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**レビューレベル**: どのレビュアーがファンアウトするか（エンジニアのみ、+qa+architect、+security+perf）と、しきい値未満の指摘をどこに表示するかを定めるワークスペースポリシー（`light`、`balanced`、`thorough`）です。指摘を削除することは決してありません。
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**レビュー軸**: レビューごとの 5 つのスコアリングレーンの 1 つです: `correctness`、`security`、`testGap` はレビュアーの指摘から導かれ、`visual` と `apiContract` は決定論的です。ゲート対象の軸は判定に組み込まれ、それをより厳しくすることしかできません — `partial` または `unavailable` のゲートは、判定を通過させるのではなく引き留めます。
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**レビュー判定**: `ship`、`hold`、`block` のいずれかです。確信度 ≥ 0.7 の P0 の指摘は block にします。それ以外の P0 または P1 は hold にします。それ以外は ship です。ゲート対象の失敗した軸は block を強制し、指摘による多数決で覆すことはできません。
 
-## Fleet and evals
+## フリートと評価
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: ヘッドレスの純粋な Dart のフリート実行者バイナリです。`cc_server` とペアリングし、ホストのケイパビリティを宣言し、リースされたジョブを取得して実行し、プロセスイベントをストリームで返します。**永続状態を一切持ちません** — 権威あるサーバーが 1 つ、愚直な手足が N 個です。
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: 実行可能なものすべて（エージェント実行、パイプラインステップ、コードインデックス、ゴールデンレンダー、ベンチマーク、評価バッチ）の型付き仕様です。
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**評価スイート**: ワークスペース単位の評価定義です（プロンプト、対象のエージェントとモード、グレーダー）。ワークスペースの作成時に 5 つのスターターがシードされ、オブザーバビリティ → 品質に一覧表示されます。
 
-## Deployment and clients
+## デプロイメントとクライアント
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**シンクライアントアーキテクチャ**: どのクライアントもデータベースを開きません。ヘッドレスの `cc_server` プロセスがデータを所有し、WebSocket RPC 経由で提供します。すべてのクライアント（デスクトップ、Web、スマートフォン）は、その 1 つの RPC 接続上のレンダラーです。
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: ヘッドレスサーバーバイナリです（純粋な Dart、Flutter エンジンなし）。Drift/SQLite データベースを所有し、WebSocket 経由で repo-RPC を提供し、バックグラウンドサービス（パイプライン、MCP、リコンサイラー）を実行します。
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: デスクトップがサーバーに到達する方法です — `local`（このマシンで `cc_server` を起動する。既定）または `remote`（別の場所のサーバーに接続する）。Web クライアントは常に `remote` です。
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: すべてのシンクライアントがサーバーと通信するために使う、トランスポート非依存の JSON-RPC クライアントです — WSS、ループバック、またはブローカー経由のリレーを介します。
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**コール単位のワークスペーススコープ**: サーバーはステートレスです — セッション単位のワークスペース束縛は**存在しない**ため、1 つのサーバー上の複数のクライアントが「現在のワークスペース」を共有することはありません。ワークスペーススコープのすべての `repo/call` と `sub/subscribe` は、引数に `workspace_id` を含まなければなりません。欠落した id、または未登録の id は、データベースを開く前に拒否されます。アクセスはその後、セッションではなく、ワークスペースのメンバーシップとロールによってゲートされます。
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: スマートフォン用のシンクライアントです — ブローカー経由のリレーを介してフリートをリモートコントロールする、既定で拒否のツールポリシーを持つ Flutter Web の PWA です。
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: 招待でゲートされたルームをホストする、ステートレスな WebSocket リレーブローカーです — エンドツーエンドで密封されたフレームだけを転送し、アプリのデータを一切保持せず、ペアリング PSK を見ることもない愚直なリレーです。
 
-## See also
+## 関連項目
 
-- [Route map](/ja-JP/マニュアル/リファレンス/ルートマップ/)
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/)
-- [Workspaces](/ja-JP/マニュアル/コンセプト/ワークスペース/)
-- [Domain events](/ja-JP/マニュアル/リファレンス/ドメインイベント/)
+- [ルートマップ](/ja-JP/マニュアル/リファレンス/ルートマップ/)
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/)
+- [ワークスペース](/ja-JP/マニュアル/コンセプト/ワークスペース/)
+- [ドメインイベント](/ja-JP/マニュアル/リファレンス/ドメインイベント/)

@@ -1,34 +1,34 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: ตั้งค่าการผสาน Linear
+description: เก็บคีย์ API ของ Linear ไว้บนเซิร์ฟเวอร์เพื่อให้เอเจนต์เรียกใช้ Linear ได้ และเลือก Linear เป็นผู้ให้บริการตั๋วงานสำหรับตั๋วงานใหม่
 slug: th-TH/คู่มือ/วิธีทำ/การผสาน-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/).
+วางคีย์ API ของ Linear ลงบนเซิร์ฟเวอร์โดยผูกกับผู้ใช้ของคุณ เหมือนกับวิธีที่คุณ
+เชื่อมต่อโฮสต์โค้ด ตั๋วงาน โปรเจกต์ ลิงก์ ผู้ร่วมงาน การมอบหมายงาน และการกำหนด
+ผู้รับผิดชอบ ทำงานกับฐานข้อมูลของ Control Center เองทั้งหมด โดยไม่ต้องพึ่งบริการ
+ภายนอก — ดูที่ [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
 
-## Store your Linear key
+## จัดเก็บคีย์ Linear ของคุณ
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**คีย์ API ของตั๋วงาน** อยู่ที่ **การตั้งค่า → เวิร์กสเปซ → ทั่วไป** บนการ์ดตั๋วงาน
+โดยเก็บคีย์ไว้บนเซิร์ฟเวอร์ผูกกับ id ผู้ใช้ของคุณ คีย์ของเซิร์ฟเวอร์เองสำหรับงานที่
+ไม่มีคนเฝ้า มาจาก `LINEAR_API_KEY` หรือการ์ด **แอปผู้ให้บริการ** และจะถูกฉีดเป็น
+`TICKETING_API_KEY` เฉพาะเมื่อเอเจนต์นั้นมีความสามารถ **อนุญาตการเรียก ticketing API**
 
-## Stamp new tickets as Linear
+## ประทับตั๋วงานใหม่เป็น Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**ผู้ให้บริการตั๋วงาน** (ขั้นตอนแรกของการตั้งค่าเริ่มต้น และ
+`/workspaces/<workspaceId>/api-keys`) มีให้เลือก `local` และ `linear` การเลือก
+`linear` จะประทับ `provider: linear` ลงบนตั๋วงานที่คุณสร้างต่อจากนั้น
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
-- [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
-- [Manage API keys](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
+- [ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
+- [จัดการคีย์ API](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Tickets and delegation](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
+- [ตั๋วงานและการมอบหมาย](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)

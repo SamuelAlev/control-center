@@ -1,54 +1,56 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Pengenalan
+description: Control Center ialah kokpit untuk pembangunan perisian berbilang ejen.
 slug: ms-MY/manual-pengguna
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center memberi anda kawalan penuh ke atas armada ejen pengekodan AI. Lahirkan ejen, saksikan mereka bekerja secara masa nyata, semak PR mereka dan urus repositori, ruang kerja serta integrasi — daripada aplikasi desktop asli, pelayar, atau telefon anda.
 
 <div className="docs-start not-content">
-  <LinkButton href="/ms-MY/manual-pengguna/mula-pantas/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/ms-MY/manual-pengguna/pasang/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/ms-MY/manual-pengguna/mula-pantas/" icon="right-arrow">Mula pantas</LinkButton>
+  <LinkButton href="/ms-MY/manual-pengguna/pasang/" variant="minimal" icon="download">Pasang Control Center</LinkButton>
 </div>
 
-## What you can do
+## Apa yang boleh anda lakukan
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/ms-MY/manual-pengguna/konsep/pipeline/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Hantar mesej kepada ejen**: ruang ialah cara utama untuk menggerakkan armada. @-sebut ejen dan ia dihantar ke worktree copy-on-write-nya sendiri, jadi beberapa ejen boleh mengekod dan menyemak secara selari tanpa menyentuh checkout anda
+- **Orkestrasi permintaan besar**: beri orkestrator satu matlamat, luluskan pelan seluruh pasukan yang dicadangkannya sekali dan [pipeline](/ms-MY/manual-pengguna/konsep/pipeline/) yang dijana akan menjalankannya
+- **Semak dan cantumkan PR** dengan pemapar diff terbina dalam, ulasan sebaris dan semakan berkuasa AI
+- **Berikan ejen mesin boleh buang**: [stesen](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/) ialah VM sekali guna — pelayar, desktop, telefon, atau terminal tertutup — yang dipandu oleh ejen sementara anda menonton secara langsung dan boleh mengambil alih; pelayan dev di dalamnya dimajukan ke `localhost`, pelayar ejen dan `https://myapp.test`
+- **Automasikan aliran kerja** dengan pipeline berasaskan DAG yang dicetuskan oleh acara atau jadual
+- **Urus pengetahuan** dengan memori, fakta dan polisi berskop ruang kerja
+- **Jejak kerja** dengan tiket, projek dan perwakilan yang tidak terikat pada vendor
+- **Rakam mesyuarat** dengan tangkapan pada peranti, transkripsi dan diarisasi, kemudian diringkaskan menjadi nota, item tindakan dan keputusan
+- **Lihat hari anda** dengan penyegerakan Google Calendar, RSVP, makluman mesyuarat dan rakam-dan-paut
+- **Ikuti armada daripada telefon anda**: gandingkan peranti dengan pelayan anda dan baca mesej, balas serta triage tiket. Telefon memilih laluan terbaik yang dapat dicapainya — loopback, LAN, tailnet, atau TLS — dan berpatah balik kepada geganti berkedap hujung-ke-hujung yang memajukan bingkai yang tidak dapat dibacanya
+- **Pandu ejen daripada Slack**: jambatkan ruang kerja ke aplikasi sembang dan sebut bot, balas dalam utas Slack, atau failkan tiket dengan perintah slash — melalui sambungan keluar, jadi tiada titik akhir awam diperlukan
+- **Berintegrasi** dengan GitHub, Linear, Slack, Google Calendar dan lebih 100 alat MCP
 
-## You do not have to install it
+## Anda tidak perlu memasangnya
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Aplikasi yang sama berjalan dalam pelayar anda di
+[app.usectrl.dev](https://app.usectrl.dev), dengan ciri yang sama.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Setiap klien — desktop, web dan telefon — ialah pemapar nipis di atas pelayan tanpa
+kepala yang memiliki data anda dan melakukan kerja itu. Desktop boleh melahirkan
+pelayan itu untuk anda; tab pelayar tidak boleh, jadi aplikasi web menyambung kepada
+pelayan yang anda jalankan. Pelayan itu boleh berada pada mesin anda sendiri
+(`ws://localhost:9030`, tiada sijil diperlukan) atau pada hos jauh yang boleh dicapai
+melalui TLS, VPN, atau terowong.
 
-See [Install](/ms-MY/manual-pengguna/pasang/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/) for how the three clients relate.
+Lihat [Pasang](/ms-MY/manual-pengguna/pasang/#use-it-in-your-browser) untuk laluan pelayar dan
+[Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) untuk cara ketiga-tiga klien ini berkaitan.
 
-## Next steps
+## Langkah seterusnya
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/ms-MY/manual-pengguna/pasang/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/ms-MY/manual-pengguna/mula-pantas/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/ms-MY/manual-pengguna/tutorial/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/ms-MY/manual-pengguna/panduan-cara/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/ms-MY/manual-pengguna/konsep/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/ms-MY/manual-pengguna/rujukan/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Pasang" href="/ms-MY/manual-pengguna/pasang/" description="Muat turun, keperluan sistem dan tempat pelayan berjalan." />
+  <LinkCard title="Mula pantas" href="/ms-MY/manual-pengguna/mula-pantas/" description="Laluan lengkap terpendek menuju ejen yang bekerja pada repositori anda." />
+  <LinkCard title="Tutorial" href="/ms-MY/manual-pengguna/tutorial/" description="Pelajaran lebih panjang, mengikut urutan, bermula dengan ruang kerja pertama anda." />
+  <LinkCard title="Panduan cara" href="/ms-MY/manual-pengguna/panduan-cara/" description="Resipi untuk satu tugasan pada satu masa: tambah repositori, konfigurasikan guardrail atau gandingkan telefon anda." />
+  <LinkCard title="Konsep" href="/ms-MY/manual-pengguna/konsep/" description="Sebab produk ini berfungsi seperti ini, bermula dengan penerapan dan klien." />
+  <LinkCard title="Rujukan" href="/ms-MY/manual-pengguna/rujukan/" description="Jadual lengkap untuk laluan, alat MCP, pintasan papan kekunci dan acara domain." />
 </div>

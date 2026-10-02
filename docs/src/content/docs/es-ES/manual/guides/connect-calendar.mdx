@@ -1,123 +1,135 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Conectar un Google Calendar
+description: Conecta Google Calendar a un espacio de trabajo, gestiona varias cuentas y vuelve a conectar cuando caduque un token.
 slug: es-ES/manual/guias/conectar-calendario
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/es-ES/manual/conceptos/calendario/) for the full picture.
+Esta guía te muestra cómo conectar Google Calendar a un espacio de trabajo. La
+conexión es por espacio de trabajo: sincroniza los eventos de ese espacio en
+Control Center, en modo de solo lectura. Consulta [Calendario y
+programación](/es-ES/manual/conceptos/calendario/) para ver el panorama
+completo.
 
-## Connect an account
+## Conectar una cuenta
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Abre **Calendario** en la barra lateral.
+2. Haz clic en **Añadir cuenta de calendario** en la barra lateral del calendario. (La misma sección está en **Ajustes → Espacio de trabajo → Perfil e identidad**, dentro de **Google Calendar**.)
+3. Elige cómo autorizar:
+   - **Usar la app de Google de Control Center** — no hay nada que configurar. Es la opción predeterminada cuando tu compilación incluye una.
+   - **Usar mi propio cliente de Google Cloud** — pega el ID de cliente y el secreto de tu propio proyecto (consulta [Trae tu propio cliente de Google](#trae-tu-propio-cliente-de-google-forks-y-autohospedaje)).
+4. Haz clic en **Conectar Google Calendar**. El cuadro de diálogo muestra un código corto y un enlace a la página de dispositivos de Google.
+5. Abre esa página en cualquier dispositivo, introduce el código y aprueba el acceso solicitado. El cuadro de diálogo se cierra solo y tus eventos empiezan a sincronizarse.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+El servidor, y no tu dispositivo, realiza este intercambio y conserva el token
+de actualización resultante — por eso el código se aprueba en «cualquier
+dispositivo» y no en esta app en concreto.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+La cuenta se conecta **solo al espacio de trabajo activo**. Cambia de espacio de
+trabajo y verás los calendarios de ese espacio en su lugar.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+El flujo de conexión solicita `calendar.readonly` además de tu correo — los
+mismos ámbitos para la app integrada y para un cliente que pegues tú. Control
+Center lee los eventos; no crea, edita ni elimina eventos en Google, ni responde
+a invitaciones.
 
-## How syncing works
+## Cómo funciona la sincronización
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+El **servidor** es el dueño de la programación: recorre las cuentas conectadas
+de todos los espacios de trabajo cada dos minutos y escribe los eventos en la
+base de datos del espacio de trabajo. Los clientes nunca hablan con Google —
+leen lo que escribió el servidor.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+El barrido es incremental. La primera pasada por calendario obtiene una ventana
+deslizante (60 días hacia atrás y 90 hacia delante) y captura el token de
+sincronización de Google; las pasadas posteriores presentan ese token y reciben
+solo lo que ha cambiado, que es lo que hace asumible una cadencia de dos minutos.
+La ventana se reancla con una sincronización completa cada 24 horas y siempre
+que Google invalide el token.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Los tokens de actualización residen en el servidor, en `secrets.json` dentro del
+directorio de datos del servidor, con permisos solo para el propietario (`0600`)
+— no en el llavero del sistema operativo y nunca en un dispositivo cliente.
 
-## Connect multiple accounts
+## Conectar varias cuentas
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Un espacio de trabajo puede conectar varias cuentas de Google (por ejemplo, la
+del trabajo y la personal). Repite el paso de conexión para cada una; sus
+eventos se combinan en las mismas vistas Mes / Semana / Agenda. Cada cuenta se
+sincroniza y se actualiza de forma independiente, y cada una puede desconectarse
+por separado.
 
-## Reconnect an expired account
+## Reconectar una cuenta caducada
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Si Google invalida de forma permanente el token de una cuenta (una sesión
+revocada o caducada desde hace mucho), la sincronización se detiene y Control
+Center muestra un aviso de **Reconectar** en el calendario, además de una
+notificación de escritorio. Haz clic en **Reconectar** y aprueba un código
+nuevo; el aviso desaparece con la siguiente sincronización correcta.
 
-## Disconnect an account
+## Desconectar una cuenta
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Desde la barra lateral del calendario (o **Ajustes → Espacio de trabajo → Perfil
+e identidad**), haz clic en **Desconectar** en la cuenta. Esto elimina sus
+eventos sincronizados y borra sus tokens almacenados en el servidor.
 
-## Connect from a headless server
+## Conectar desde un servidor headless
 
-A server with no GUI attached connects the same account from its own terminal:
+Un servidor sin interfaz gráfica conecta la misma cuenta desde su propio
+terminal:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Imprime un código y una URL, espera la aprobación y luego almacena los tokens y
+sincroniza en el siguiente barrido.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Una compilación desde el código fuente **no** incluye ningún cliente de Google,
+así que el ID y el secreto son obligatorios — define
+`GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET`. No existe ningún flag
+`--google-client-id` (los flags desconocidos se ignoran). Sin el par de variables
+de entorno, el comando finaliza con un error de cliente ausente.
 
-## Bring your own Google client (forks and self-hosting)
+## Trae tu propio cliente de Google (forks y autohospedaje)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Las compilaciones publicadas incluyen un cliente de Google, así que la mayoría
+de la gente nunca necesita tocar esto. Trae el tuyo si compilas desde el código
+fuente, ejecutas tu propio servidor o quieres que la pantalla de consentimiento
+muestre el nombre de tu propio proyecto.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. En la [Google Cloud Console](https://console.cloud.google.com/apis/credentials), habilita la **Google Calendar API** y configura la **pantalla de consentimiento de OAuth**, añadiendo los ámbitos `calendar.readonly`, `openid` y `email`. Mientras la app no esté verificada, añádete como **usuario de prueba**. Añadir `calendar.events` en la pantalla de consentimiento no habilita la respuesta a invitaciones — Control Center nunca solicita ese ámbito.
+2. Crea un **ID de cliente de OAuth** con el tipo de aplicación **Televisores y dispositivos de entrada limitada** y copia tanto el ID de cliente como el secreto de cliente.
+3. Proporciónalos por conexión (elige **Usar mi propio cliente de Google Cloud** en el cuadro de diálogo) o para todo el servidor con `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Un par definido para todo el servidor sustituye al integrado en todas partes,
+incluso detrás de la opción «usar la app de Google de Control Center» — así que,
+en tu propio servidor, esa opción es tu app.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+El secreto de cliente nunca sale del servidor: ninguna respuesta RPC lo
+transporta, y una cuenta conectada mediante el cliente propio del servidor
+almacena un marcador en lugar de una copia del par, así que rotarlo es cuestión
+de reiniciar con un valor nuevo.
 
-### Troubleshooting
+### Solución de problemas
 
-| Symptom                                             | Likely cause                                                                                                                                          |
+| Síntoma                                             | Causa probable                                                                                                                                          |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| El cuadro de diálogo no ofrece la opción integrada  | Esta compilación no incluye ningún cliente de Google (una compilación desde el código fuente), o el servidor se inició solo con una mitad del par. Tanto el ID como el secreto son obligatorios |
+| `invalid_scope` al iniciar el flujo                 | El calendario no está permitido para un cliente de código de dispositivo en ese proyecto de Cloud. Usa mejor un proyecto con un cliente de bucle invertido o web |
+| `invalid_client` de Google                          | El cliente no es un cliente de **Televisores y dispositivos de entrada limitada**, o el ID y el secreto son de clientes distintos                      |
+| La aprobación se realiza pero la sincronización está vacía | Tu cuenta no es **usuario de prueba** en la pantalla de consentimiento, o no se concedió `calendar.readonly`                                          |
+| El código caduca antes de que lo apruebes           | Los códigos de dispositivo duran poco. Inicia de nuevo la conexión para obtener uno nuevo                                                             |
+| «No se pudo actualizar tu respuesta» al responder a una invitación | Es lo esperado: el flujo de conexión nunca solicita `calendar.events`                                                                     |
+| La sincronización se detiene con un aviso de actualización en el registro del servidor | La cuenta se conectó con un cliente que ya no está configurado. Vuelve a conectar la cuenta, o restaura ese ID de cliente y ese secreto |
 
-## Related guides
+## Guías relacionadas
 
-- [Record and summarize a meeting](/es-ES/manual/guias/grabar-reunion/): turn an event into a recording
-- [Run a headless server](/es-ES/manual/guias/ejecutar-servidor-headless/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/es-ES/manual/guias/integracion-github/)
+- [Grabar y resumir una reunión](/es-ES/manual/guias/grabar-reunion/): convierte un evento en una grabación
+- [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/): dónde residen los tokens y la programación de la sincronización
+- [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Calendar and scheduling](/es-ES/manual/conceptos/calendario/)
+- [Calendario y programación](/es-ES/manual/conceptos/calendario/)

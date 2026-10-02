@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: מושגים
+description: איך Control Center עובד ולמה הוא בנוי כך — קריאת הרקע שמאחורי המדריכים.
 slug: he-IL/מדריך-למשתמש/מושגים
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/); when you want to look
-something up, go to the [reference](/he-IL/מדריך-למשתמש/עזר/).
+הדפים האלה מסבירים **איך Control Center עובד ולמה**. הם נועדו להבנה, לא לעשייה:
+אין כאן דף שהוא נוהל שיש לפעול לפיו. כשרוצים לבצע משימה מסוימת, פנו אל
+[מדריכי How-to](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/); וכשרוצים לחפש משהו, פנו אל
+[העזר](/he-IL/מדריך-למשתמש/עזר/).
 
-Read them in any order. If you are new, the core model is the place to start.
+קראו אותם בכל סדר. אם אתם חדשים, מודל הליבה הוא נקודת ההתחלה.
 
-## Core model
+## מודל הליבה
 
-The four ideas everything else is built on.
+ארבעת הרעיונות שכל השאר נבנה עליהם.
 
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) — what happens between your message and the agent's first token
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — the code graph, language server, structural search and debugger
-- [Conversation history](/he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה/) — persistence, compaction and forking a transcript
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) — גבול הדייר ולמה הוא נאכף על ידי מבנה מסד הנתונים ולא על ידי משמעת בשאילתות
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/) — ממה מורכב סוכן: זהות, תפקיד, מיומנויות, יכולות, מתאם ומודל
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) — מה קורה בין ההודעה שלכם לאסימון הראשון של הסוכן
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/) — איך `chat`, `plan`, `review` ו־`orchestrate` משנים את מה שסוכן רשאי לעשות
+- [הקשר כלים ומטמון הנחיות](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים/) — למה סוכן רואה תת־קבוצה של הכלים שלו, איך הוא מגיע לשאר ומה משאיר את המטמון של הספק חם
+- [אינטליגנציית קוד](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — גרף הקוד, שרת השפה, חיפוש מבני ומנפה באגים
+- [היסטוריית שיחה](/he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה/) — שמירה, דחיסה ופיצול של תמליל
 
-## Safety and control
+## בטיחות ובקרה
 
-What an agent is allowed to touch and who decides.
+למה מותר לסוכן לגעת ומי מחליט.
 
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) — what actually constrains an agent run today
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/he-IL/מדריך-למשתמש/מושגים/הרשאות/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/he-IL/מדריך-למשתמש/מושגים/תחנות/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) — מה שלמעשה מגביל ריצת סוכן כיום
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) — מנוע מדיניות אחד לכל פעולה משנה, ואיך מוכרע כלל
+- [הרשאות](/he-IL/מדריך-למשתמש/מושגים/הרשאות/) — תפקידים, קטלוג ההרשאות ומסלול הביקורת
+- [תחנות ומתחמים מבודדים](/he-IL/מדריך-למשתמש/מושגים/תחנות/) — למה סוכנים מקבלים מכונות וירטואליות חד־פעמיות במקום את המחשב שלכם, ומהו הגבול בפועל
 
-## Directing the work
+## הכוונת העבודה
 
-Turning intent into work that gets done.
+הפיכת כוונה לעבודה שמתבצעת.
 
-- [Tickets and delegation](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/) — one goal, one approval, a generated pipeline
-- [AI review](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/he-IL/מדריך-למשתמש/מושגים/הערכות-ואיכות/) — eval suites and the Quality tab
+- [כרטיסים והאצלה](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/) — יחידת העבודה הבלתי־תלויה בספק שכל הצי חולק
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) — זרימות DAG, טריגרים והרצות שאפשר לחדש
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/) — מטרה אחת, אישור אחד, פייפליין שנוצר
+- [סקירת AI](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/) — איך בקשת משיכה הופכת למשוכה: מרחבי סקירה, קונצנזוס בין עמיתים, צירים והכרעת Ship/Hold/Block
+- [שיחות בקשות משיכה](/he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה/) — מענה לאזכור ב־GitHub או לתווית `ai-review` מתוך מארח הקוד עצמו
+- [זיכרון וידע](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/) — עובדות, מדיניויות ומה שסוכן רשאי לדעת
+- [הערכות ואיכות](/he-IL/מדריך-למשתמש/מושגים/הערכות-ואיכות/) — חבילות הערכה ולשונית איכות
 
-## People and reach
+## אנשים והגעה
 
-Working with other humans and reaching the fleet from elsewhere.
+עבודה עם אנשים אחרים והגעה אל הצי ממקומות אחרים.
 
-- [Multiplayer and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/he-IL/מדריך-למשתמש/מושגים/כניסה-מאוחדת/) — SAML and OIDC logins
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/he-IL/מדריך-למשתמש/מושגים/פגישות/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/he-IL/מדריך-למשתמש/מושגים/לוח-שנה/) — Google Calendar sync and meeting alerts
+- [רב־משתמשים ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/) — בני אדם וסוכנים כמשתתפים שווי־מעמד ומה ששולט בגישה
+- [כניסה מאוחדת](/he-IL/מדריך-למשתמש/מושגים/כניסה-מאוחדת/) — התחברויות SAML ו־OIDC
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) — למה גשר Slack מחייג החוצה ומה מאשר הודעה מהצ'אט
+- [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/) — איך טלפון מגיע אל השרת שלכם ומודל האבטחה שסביב לכך
+- [פגישות ותמלול](/he-IL/מדריך-למשתמש/מושגים/פגישות/) — הקלטה, תמלול וסיכום במכשיר
+- [לוח שנה ותזמון](/he-IL/מדריך-למשתמש/מושגים/לוח-שנה/) — סנכרון עם Google Calendar והתראות על פגישות
 
-## Under the hood
+## מתחת למכסה
 
-The shape of the system itself.
+הצורה של המערכת עצמה.
 
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) — the in-process bus features talk over
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/) — שכבות, הליבה המשותפת, פורטים ומתאמים
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/) — איך לקוחות המחשב, האינטרנט והטלפון מתייחסים לשרת אחד
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) — האפיק בתהליך שדרכו מדברות התכונות

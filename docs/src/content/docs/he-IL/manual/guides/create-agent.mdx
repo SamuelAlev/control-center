@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: יצירה והגדרה של סוכן
+description: הוסיפו סוכן לסביבת עבודה, הגדירו לו מתאם, מודל, מיומנויות והרשאות, וודאו שהוא רץ.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+המדריך הזה מראה כיצד להוסיף סוכן לסביבת עבודה ולהגדיר אותו עד שהוא באמת רץ.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+כל סביבת עבודה נזרעת עם חמישה סוכנים — CEO וארבעה מומחים `qa`, `architect`, `engineer` ו־`librarian` — כך שלרוב יש לכם סוכנים עוד לפני שהגדרתם ולו אחד מהם. השלבים שלהלן חלים באותה מידה על סוכן שנזרע ועל סוכן חדש.
 
-## Before you start
+## לפני שמתחילים
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- אתם בתוך סביבת עבודה. כל המשטח נמצא ב**הגדרות ← סביבת עבודה ← סוכנים** (`/settings/workspace/agents`).
+- הסוכן יזדקק לבקאנד. או חברו ספק עבור מנגנון ההרצה המובנה תחת **הגדרות ← שרת ← ספקי מודלים**, או התקינו את ה-CLI של Claude Code במכונה שמארחת את `cc_server`.
+- אם אתם רוצים שהסוכן יישא מיומנויות, התקינו אותן קודם תחת **הגדרות ← סביבת עבודה ← מיומנויות**. טופס הסוכן מאפשר רק להדליק ולכבות מיומנויות שכבר קיימות בסביבת העבודה.
 
-## Add the agent
+## הוספת הסוכן
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. פתחו את **הגדרות ← סביבת עבודה ← סוכנים**.
+2. לחצו על **סוכן חדש**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+אין תיבת דו־שיח ואין בורר תפקידים. סוכן בשם "סוכן ללא שם" נוצר מיד ונבחר בחלונית הפרטים משמאל.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+כעת אמורים לראות "סוכן ללא שם" בסגל מימין, כשהלשונית **הגדרות** של חלונית הפרטים שלו פתוחה ושדה **שם** מכיל "סוכן ללא שם".
 
-## Name it
+## מתן שם
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **שם** — המזהה הקצר שמשמש באזכורים ב־@, למשל `alice`. ניתוח האזכור מתאים `@` ואחריו תווי מילה, ולכן שם שמכיל מקף, נקודה או רווח לא ניתן לאזכר לעולם.
+- **כותרת** — התווית בשפה אנושית, למשל "מפתחת בכירה".
+- **הנחיית מערכת** — הוראות נוספות אופציונליות, המוזרקות כקטע "הוראות הסוכן"; הן אינן מחליפות את שאר ההנחיה המורכבת.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+לחצו על **שמור שינויים** בתחתית הטופס. כל השדות בעמוד הזה נשמרים בכפתור האחד הזה.
 
-## Give it an adapter and a model
+## מתאם ומודל
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+התפריט הנפתח **מתאם** מפרט את המריצים שקיימים בפועל במארח השרת. המתאם המובנה תמיד נמצא (הוא השרת). Claude Code מופיע רק כשזוהה ה-CLI שלו במארח הזה:
 
-| Adapter                   | Backend                                     |
+| מתאם                   | בקאנד                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (מובנה) | לולאת הסוכן בתוך התהליך — ללא CLI חיצוני |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+רק המתאם המובנה אוכף מצבים, היגוי, השהיה והמשך, חוזי השלמה וסוכני משנה. Claude Code לא נותן אף אחד מאלה. Cursor, Codex ושאר ספקי המודלים מצטרפים למתאם המובנה, ולא כמה מריצים נפרדים.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[מתאם ריק פירושו הלולאה המובנית]
+סוכן שהמתאם שלו לא הוגדר נשלח אל **Control Center (מובנה)**, הלולאה שבתוך השרת, כך שאין צורך להתקין דבר במארח. אם גם מודל לא הוגדר, הוא מבקש מ-Anthropic את ברירת המחדל שלה, ולכן סוכן שלא הוגדר בו דבר רץ רק אם חיברתם חשבון Anthropic. המומחים שנזרעו מגיעים בלי זה ובלי זה; הגדירו את שניהם בכל סוכן שבכוונתכם להשתמש בו.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+התפריט הנפתח **מודל** נגזר מהמתאם שבחרתם. עבור המתאם המובנה הרשימה מגיעה חיה מהספקים שחיברתם תחת **הגדרות ← שרת ← ספקי מודלים**, כך שספק בלי פרטי גישה שמורים תורם אפס מודלים.
 
-## Add skills
+## הוספת מיומנויות
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**מיומנויות** הוא בורר צ'יפים מעל חבילות המיומנויות המותקנות בסביבת העבודה הזו. הקישו על צ'יפ כדי להדליק או לכבות אותו; סימן הסימון מסמן את הנבחרים. אם אין מיומנויות בסביבת העבודה, השדה מציג "No skills available. Create skills in Settings → Skills first."
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills).
+כאן אתם לא בוחרים את המיומנויות של מאגר מסוים. מאגר שמוסר אותן (ב־`.agents/skills/`, `.claude/skills/` או `.opencode/skills/`) תורם אותן אוטומטית לכל סוכן שעובד באותו מאגר, והן מתחלפות כשהוא עובר לאחר — ראו [מיומנויות בהיקף מאגר](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## הגדרת שרשרת הדיווח והפרסונה
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **מדווח אל** — בחרו סוכן אחר לפי שם. זה בונה את עץ הדיווח שמוצג בכפתור **תרשים ארגוני** בכותרת העמוד. זה אינו הסגל שראש צוות משתמש בו כשהוא מאציל — הוא נגזר מחברי הצוות ומהמיומנויות שלהם.
+- **פרסונה** — טקסט חופשי שמעצב טון והתנהגות, למשל: "מעדיפה פתרונות פשוטים וקריאים. כותבת בדיקות לכל קוד חדש."
 
-## Tune the run
+## כוונון ההרצה
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **מאמץ חשיבה** — האפשרויות מגיעות מהרמות המפורסמות של המודל הנבחר עצמו: Low / Medium / High, ובנוסף Extra High במודלים בסגנון OpenAI ו-Extra High + Max במודלים בסגנון Claude. השדה מוסתר לחלוטין כשהמודל הנבחר אינו מצהיר על רמות חשיבה, והוא נופל לברירת המחדל של המודל עצמו.
+- **גודל חלון ההקשר** — ממולא מראש מחלון ההקשר של המודל בכל פעם שאתם מחליפים מודל, עם צ'יפים בלחיצה אחת עבור ברירת המחדל של המודל, 200k, 500k ו-1M. ערך שהקלדתם אחרי בחירת המודל גובר עד להחלפת המודל הבאה.
+- **זמן קצוב לשקט (דקות)** — לסיים הרצה לאחר פרק זמן זה בלי פלט. השאירו ריק כדי להשתמש בברירת המחדל לפי מצב.
 
-## Grant permissions
+## הענקת הרשאות
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**הרשאות ארגז חול** מתחיל על "שימוש בברירת המחדל של סביבת העבודה". הדליקו את המתג כדי להגדיר אותן לסוכן הזה, ואז הפעילו או כבו:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **אפשר git push** — מזריק את טוקן ה-GitHub שהסוכן צריך כדי לדחוף
+- **אפשר קריאות ל־API של GitHub** — מאפשר לסוכן לקרוא בקשות משיכה, נושאים ומטא־נתוני מאגרים
+- **התרת קריאות API של ניהול כרטיסים** — מזריק את המפתח של ספק הכרטוס
+- **אפשר גישה כללית לרשת** — מפעיל גם את הכלים `web_fetch` ו-`web_search` של מנגנון ההרצה המובנה
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+כל מתג נבדק בידי מתווך פרטי הגישה כשההרצה יוצאת לדרך: יכולת שכבויה פשוט אומרת שהטוקן המתאים לעולם אינו מונפק לסביבת ההרצה.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[ברירת המחדל של סביבת העבודה היא הסט השמרני של השרת]
+סוכן שנשאר על "שימוש בברירת המחדל של סביבת העבודה" רץ כשדחיפה ל-GitHub, API של GitHub וכרטוס **כבויים** ורשת **דלוקה**. ברירות המחדל של היכולות שמוצגות תחת הגדרות ← שרת ← אבחון ופרטיות הן העדפה בצד הלקוח. אם אתם רוצים שסוכן ידחוף או יפתח בקשות משיכה, הדליקו את המתג והעניקו את היכולות במפורש.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) for the full set of boundaries.
+היכולות האלה שולטות בפרטי גישה ובכלי מנגנון ההרצה, וזו שכבה נפרדת מארגז החול של מערכת ההפעלה. `cc_server` עוטף הרצות סוכן בארגז החול של המארח היכן שקיים כזה — ב-Windows אין בקאנד מקורי, וב-Linux וב-WSL2 נדרשים `bwrap` ו-`socat`. ראו [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) לכלל הגבולות.
 :::
 
-## Verify it runs
+## אימות שהסוכן רץ
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. פתחו את **הגדרות ← שרת ← ספקי מודלים** וודאו שהמתאם שבחרתם מדווח על גרסה מותקנת ולא "לא נמצא". לחצו על **רענן** כדי לבדוק מחדש — הבדיקה רצה במכונה שמארחת את `cc_server`, לא במכונה שאתם מסתכלים עליה.
+2. פתחו מרחב עם הסוכן ושלחו לו הודעה, או אזכרו אותו ב־@ במרחב קיים.
+3. חזרו אל **הגדרות ← סביבת עבודה ← סוכנים**, בחרו את הסוכן ופתחו את הלשונית **יומנים**. אמורה להופיע הרצה עם תג סטטוס, משך, זמן התחלה והמתאם שבו השתמשה. **הצגה** פותחת את זרם האירועים של אותה הרצה.
 
-If no run appears at all, work through [Run agent diagnostics](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/).
+אם לא מופיעה שום הרצה, עברו על [אבחון סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/).
 
-## Delete an agent
+## מחיקת סוכן
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+בחרו אותו בסגל. בלשונית **הגדרות**, גללו אל **אזור מסוכן** בתחתית הטופס ולחצו על **מחיקה**.
 
-## Related guides
+## מדריכים קשורים
 
-- [Run agents in parallel](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/)
-- [Build an agent team](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/)
-- [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
-- [Run agent diagnostics](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)
-- [Agent configuration reference](/he-IL/מדריך-למשתמש/עזר/הגדרת-סוכן/)
+- [הפעלת סוכנים במקביל](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/)
+- [בניית צוות סוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/)
+- [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
+- [אבחון סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)
+- [הגדרת סוכן](/he-IL/מדריך-למשתמש/עזר/הגדרת-סוכן/)
 
-## Related concepts
+## מושגים קשורים
 
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)

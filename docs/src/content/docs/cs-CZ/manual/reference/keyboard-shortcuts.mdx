@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Klávesové zkratky
+description: Úplný registr klávesových zkratek podle rozsahu, včetně podmínek, za kterých se každá zkratka spustí.
 slug: cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Zkratky vycházejí z jednoho registru `const`, `KeybindingRegistry` v `lib/core/constants/keybindings.dart`. Je v něm **48 vazeb**. Nastavení → Vy → Klávesové zkratky ten registr vykreslí jako **referenci jen ke čtení**: zkratky nejdou přemapovat a uživatelský soubor zkratek neexistuje.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` níže je hlavní modifikátor příkazu — ⌘ na macOS, Ctrl na Windows a Linuxu. Vazba se spustí jen tehdy, když má její příkaz na aktuální obrazovce zaregistrovaný handler a platí její klauzule `when`. `!textInputFocus` znamená, že se klávesa předá zaměřenému textovému poli.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Zkratka pro přechod číslicí neexistuje. K doručené poště, ticketům, pull requestům a ostatním plochám se jde z postranního panelu nebo přes ⌘K. Observabilita zkratku nemá.
 
-## Global (19)
+## Globální (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Rozsah `global`, takže platí kdekoli v shellu aplikace.
 
-### System
+### Systém
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| Zkratka                                     | Akce                                                | Podmínka                                                         |
+| ------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | Paleta příkazů                                      | —                                                                |
+| `Shift + /` (`?`)                           | Přehled klávesových zkratek                         | Mimo textové pole                                                |
+| `Cmd/Ctrl + Z`                              | Zpět                                                | Mimo textové pole (zaměřené pole si nechá vlastní vrácení zpět) |
+| `Cmd/Ctrl + Shift + Z`                      | Znovu                                               | Mimo textové pole                                                |
+| `Cmd/Ctrl + Shift + T`                      | Přepnout motiv                                      | —                                                                |
+| `Cmd/Ctrl + ,`                              | Otevřít nastavení (otevře `/settings/you/appearance`) | —                                                                |
+| `Cmd/Ctrl + Shift + Alt + F`                | Přepnout režim soustředění                          | —                                                                |
+| `Cmd/Ctrl + Shift + W`                      | Přepnout přepínač pracovních prostorů               | —                                                                |
+| `Cmd/Ctrl + ]`                              | Další pracovní prostor                              | —                                                                |
+| `Cmd/Ctrl + [`                              | Předchozí pracovní prostor                          | —                                                                |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Přepnout na pracovní prostor 1–9                    | —                                                                |
 
-## Pull request list (3)
+## Seznam pull requestů (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Rozsah `/pull-requests`. Všechny vyžadují `route == '/pull-requests'` a žádné zaměřené textové pole, takže se nespustí, dokud je nad seznamem otevřená trasa detailu PR.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Zkratka | Akce                    |
+| ------- | ----------------------- |
+| `R`     | Obnovit                 |
+| `Enter` | Otevřít PR              |
+| `F`     | Otevřít nabídku filtrů  |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) je v registru a na referenci zkratek se ukáže, ale **obrazovka seznamu pro něj neregistruje handler**, takže se teď nespustí. `F` otevírá nabídku filtrů (`pr.list-open-filter`), hledání ne.
 
-## Pull request detail (2)
+## Detail pull requestu (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Rozsah `/pull-requests/`. Obnovení vyžaduje, aby nebylo zaměřené textové pole. Zavření karty nemá pojistku proti textovému vstupu (úhoz s ⌘ nikdy není prostý text) a má regulární výraz trasy, takže se na seznamu nespustí.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| Zkratka        | Akce         | Podmínka                        |
+| -------------- | ------------ | ------------------------------- |
+| `R`            | Obnovit      | Mimo textové pole               |
+| `Cmd/Ctrl + W` | Zavřít kartu | Na trase `/pull-requests/<…>`   |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Přepínání karet (`1`/`2`/`3`), prohlédnutí a sbalení souboru (`V`/`C`), seznam souborů (`T`) a hledání v diffu (`Cmd/Ctrl + F`) obsluhuje vlastní handler prohlížeče diffů — viz [Klávesy prohlížeče diffů mimo registr](#klávesy-prohlížeče-diffů-mimo-registr).
 
-## Inbox (1)
+## Doručená pošta (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Zkratka | Akce                   |
+| ------- | ---------------------- |
+| `F`     | Otevřít nabídku filtrů |
 
-Requires `route == '/inbox'` and no focused text field.
+Vyžaduje `route == '/inbox'` a žádné zaměřené textové pole.
 
-## GitHub user and team profiles (3)
+## Profily uživatelů a týmů GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Rozsah `/users/`. Klauzule `when` je regulární výraz na `/users/<login>` **nebo** `/teams/<organization>/<slug>`, plus žádné zaměřené textové pole.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Zkratka        | Akce             |
+| -------------- | ---------------- |
+| `R`            | Obnovit          |
+| `/`            | Zaměřit hledání  |
+| `Cmd/Ctrl + F` | Zaměřit hledání  |
 
-## Spaces (8)
+## Prostory (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Rozsah `/spaces`. Klauzule `when` používají regulární výraz, takže se spustí jak na seznamu prostorů (`/spaces`), tak ve vybraném prostoru (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| Zkratka                | Akce                   | Podmínka          |
+| ---------------------- | ---------------------- | ----------------- |
+| `Enter`                | Odeslat zprávu         | —                 |
+| `Cmd/Ctrl + N`         | Nový prostor           | Na trase `/spaces` |
+| `J`                    | Další prostor          | Mimo textové pole |
+| `K`                    | Předchozí prostor      | Mimo textové pole |
+| `Cmd/Ctrl + Shift + D` | Stisknout a mluvit     | —                 |
+| `Cmd/Ctrl + T`         | Otevřít editor         | Na trase `/spaces` |
+| `Cmd/Ctrl + W`         | Zavřít kartu           | Na trase `/spaces` |
+| `Cmd/Ctrl + B`         | Přepnout postranní panel | Na trase `/spaces` |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Odeslání Enterem patří textovému poli composeru. Stisknout a mluvit patří tlačítku mikrofonu v composeru (vlastní handler hardwarové klávesnice). Obojí je v registru kvůli referenci v nastavení.
 
-## Workspace picker (2)
+## Výběr pracovního prostoru (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Rozsah `/workspaces`, platí jen na samotném výběru.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Zkratka        | Akce                              |
+| -------------- | --------------------------------- |
+| `Cmd/Ctrl + N` | Nový pracovní prostor             |
+| `Enter`        | Otevřít vybraný pracovní prostor  |
 
-`Enter` requires no focused text field.
+`Enter` vyžaduje, aby nebylo zaměřené textové pole.
 
-## Settings (5)
+## Nastavení (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Zkratka        | Akce                        | Obrazovka                                |
+| -------------- | --------------------------- | ---------------------------------------- |
+| `J`            | Další stránka nastavení     | Libovolná trasa `/settings`, mimo psaní  |
+| `K`            | Předchozí stránka nastavení | Libovolná trasa `/settings`, mimo psaní  |
+| `Cmd/Ctrl + N` | Nový agent                  | Nastavení → Pracovní prostor → Agenti    |
+| `Cmd/Ctrl + N` | Přidat repozitář            | Nastavení → Pracovní prostor → Repozitáře |
+| `R`            | Znovu vyhledat adaptéry     | Nastavení → Server → Poskytovatelé modelů |
 
-## Newsfeed (5)
+## Kanál novinek (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Rozsah `/newsfeed`. Všechny vyžadují `route == '/newsfeed'` a žádné zaměřené textové pole.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Zkratka | Akce                |
+| ------- | ------------------- |
+| `J`     | Další článek        |
+| `K`     | Předchozí článek    |
+| `Enter` | Otevřít článek      |
+| `S`     | Přepnout záložku    |
+| `R`     | Obnovit kanály      |
 
-## Diff viewer keys outside the registry
+## Klávesy prohlížeče diffů mimo registr
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+Prohlížeč diffu PR je obsluhuje sám (`PrDiffKeyboardHandler`). Hledání, prohlédnutí a sbalení jsou v komentářích registru jen kvůli referenci v nastavení — zaregistrovaný handler dispečera není, takže je dispečer nechá prohlížeči diffu. Na referenci zkratek nemají vlastní řádky.
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| Zkratka         | Akce                                                      |
+| --------------- | --------------------------------------------------------- |
+| `Cmd/Ctrl + F`  | Hledat v diffu                                            |
+| `J` / `K`       | Další / předchozí soubor                                  |
+| `V`             | Přepnout prohlédnutí zaměřeného souboru                   |
+| `C`             | Přepnout sbalení zaměřeného souboru                       |
+| `T`             | Zobrazit seznam souborů                                   |
+| `Enter`         | Další shoda hledání (jen dokud je hledání v diffu otevřené) |
+| `Shift + Enter` | Předchozí shoda hledání                                   |
+| `Escape`        | Zavřít hledání v diffu, nebo zrušit výběr textu v diffu   |
+| `Cmd/Ctrl + C`  | Zkopírovat výběr v diffu                                  |
 
-## Browser-reserved combinations
+## Kombinace vyhrazené prohlížeči
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+Na webovém sestavení prohlížeč některé akcelerátory spotřebuje dřív, než je stránka uvidí, takže odpovídající zkratky se tam nikdy nespustí. Na počítači fungují normálně. Vyhrazené v kombinaci s hlavním modifikátorem příkazu: `T`, `W`, `N` a číslice `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Tím se pokryje přepínání pracovních prostorů `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (nový prostor, nový pracovní prostor, nový agent, přidání repozitáře) a `Cmd/Ctrl + T` / `Cmd/Ctrl + W` v prostorech a v detailu PR.
 
-## See also
+## Viz také
 
-- [Route map](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/)
-- [Focus mode](/cs-CZ/prirucka/navody/rezim-soustredeni/)
+- [Mapa tras](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/)
+- [Režim soustředění](/cs-CZ/prirucka/navody/rezim-soustredeni/)

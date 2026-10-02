@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Model agentů
+description: Co agent v Control Center skutečně je, která jeho pole mění chování a jak adaptér, na kterém běží, rozhoduje, co se dá vynutit.
 slug: cs-CZ/prirucka/koncepty/model-agentu
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Co je agent?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Agent je pojmenovaný aktér s personou, sadou skillů, adaptérem, na kterém běží, a sadou schopností. Agenti jsou principálové ve stejném smyslu jako lidé: píší zprávy, vlastní tickety, odevzdávají revize a objevují se na stejném seznamu. Práci dělají oni.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Každý agent patří právě do jednoho pracovního prostoru. To je tvrdý invariant: `agent.workspaceId` není null, vlastní pracovní prostor agenta vybírá databázový soubor, do kterého spadnou jeho řádky, a vytvoření agenta bez pracovního prostoru se odmítne.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Agent je také adresář. Jeho definice leží v `agents/<slug>/AGENTS.md` v datovém adresáři pracovního prostoru a skilly, které drží, jsou do `agents/<slug>/.agents/skills` připojené symbolickými odkazy. Řádek v databázi a soubor se zapisují společně. Naplnění je idempotentní: když řádek agenta už existuje, soubory na disku a odkazy na skilly se stejně přepíšou. V produkci to spouští vytvoření pracovního prostoru, ne každé spuštění serveru.
 
-## What an agent carries
+## Co agent nese
 
-| Attribute               | What it does                                                                          |
+| Atribut                 | K čemu slouží                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | Krátký identifikátor ve tvaru slugu (`architect`, `qa`). Podle něj se také rozpoznávají `@mentions` |
+| `title`                 | Lidsky čitelný název pozice                                                           |
+| `persona`               | Volný text osobnosti a pokynů k chování, vložený jako sekce promptu                  |
+| `systemPrompt`          | Volitelné další pokyny, vložené jako sekce „Agent instructions“. Zbytek složeného promptu nenahrazují |
+| `skills`                | Množina názvů skillů bez rozlišení velikosti písmen, na disku zrcadlená jako odkazy na skilly |
+| `adapterId`             | Na který runner se agent odesílá. **Null spadne zpět na vestavěnou smyčku**           |
+| `modelId`               | Který model v rámci daného adaptéru                                                   |
+| `effort`                | Úroveň uvažování podle slovníku vybraného modelu                                     |
+| `contextSize`           | Přepsání velikosti kontextového okna                                                 |
+| `capabilities`          | Příznaky přihlašovacích údajů a odchozího provozu, kontrolované při spuštění         |
+| `silenceTimeoutMinutes` | Přepsání pro tohoto agenta (1–240) u watchdogu ticha                                  |
+| `reportsTo`             | Id nadřízeného agenta: řetězec podřízenosti, který kreslí organizační schéma         |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Tohle všechno upravujete v Nastavení → Pracovní prostor → Agenti. **Nový agent** založí nepojmenovaného agenta, kterého pak doplníte.
 
-## Skills
+## Skilly
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Skilly jsou na entitě agenta názvy bez rozlišení velikosti písmen. Dějí se s nimi dvě oddělené věci:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Názvy se vypíšou ve složeném promptu pod nadpisem „Skills“. To je vše, co sada na entitě sama dělá. Knihovna promptů po jednotlivých skillech, která by se z ní odvozovala, neexistuje.
+- Adresář každého pojmenovaného skillu (`skills/<slug>/SKILL.md` v pracovním prostoru) se nalinkuje do vlastní složky agenta. Ve vestavěném harnessi se frontmatter nalinkovaných skillů automaticky načte do systémového promptu a tělo si agent přečte, až ho potřebuje. Zadání `/skill:<name>` v konverzaci načte toto tělo jako pokyn pro daný tah.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/cs-CZ/prirucka/navody/sprava-skillu/).
+Skilly stažené zvenčí procházejí mezi stažením a zápisem kontrolou dodavatelského řetězce, která bez verdiktu nic nepropustí: žádný obsah skillu se nedostane na disk ani do promptu. Tím vnějškem jsou repozitáře na GitHubu, které sami zaregistrujete jako zdroje skillů. Spravovaný katalog neexistuje, takže vlastní metadata repozitáře (popis, hvězdičky, název skillu) jsou nedůvěryhodná data k zobrazení a verdikt kontroly je jediný bezpečnostní signál. Instalace stáhne celý adresář skillu, v `skills-lock.json` ho připne ke commitu, ze kterého přišel, a pozdější aktualizace znovu projde branou, než cokoli nahradí. Postup popisuje stránka [Instalujte a spravujte skilly](/cs-CZ/prirucka/navody/sprava-skillu/).
 
-### Repo-scoped skills
+### Skilly vázané na repozitář
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Repozitář si může vézt vlastní skilly, v kterémkoli z obvyklých míst (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Prostor si všechny propojené repozitáře vycheckoutuje vedle sebe pod `repos/<name>/`, ale agent pracuje vždy v jednom repozitáři. Nese tedy **jen skilly tohoto repozitáře** a při přesunu se vymění.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Aktivní repozitář se pozná podle souborů, kterých se agent dotkne: zápis souboru pod `repos/<name>/` z něj udělá aktivní repozitář, pouhé čtení napříč repozitáři ne. Dohledání symbolu v sousední službě proto sadu pod rozpracovaným úkolem nikdy nevymění. V prostoru s jedním repozitářem je to jasné ještě před prvním tahem.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Omezení na jeden repozitář je rozhodnutí o rozpočtu kontextu. Index skillů je v promptu při každém tahu, těla ne. Vypsat skilly všech repozitářů najednou proto stojí tokeny pořád. Skill `testing` z jedné služby navíc mate, když práce probíhá v jiné. Ze stejného důvodu nese index agenta jeden repozitář, composer takto omezený není: sami skill pojmenovat je jeden výslovný krok, takže `/skill:<repo>:<name>` dosáhne na libovolný repozitář v prostoru.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Skilly repozitáře se načítají pro **každý** adaptér, nejen pro vestavěný harness. Skilly aktivního repozitáře se zapíšou do pracovního adresáře agenta. To je cesta, kterou Claude Code už prochází. Stejný index se složí do `AGENTS.md`, který čte vestavěný harness. Než k tomu dojde, skilly repozitáře projdou stejnou kontrolou jako nainstalovaný skill, která bez verdiktu nic nepropustí. Repozitář po checkoutu je naklonovaný obsah a jeho frontmatter se dostane do promptu.
 
-## Capabilities
+## Schopnosti
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Schopnosti rozhodují o tom, co se běhu _předá_, ne o tom, čeho se smí dotknout na souborovém systému. Broker přihlašovacích údajů je kontroluje při spuštění: je-li schopnost vypnutá, odpovídající token se prostě nevloží.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Push do repozitáře** řídí vložení tokenu GitHub použitého pro `git push`.
+- **GitHub API** řídí vložení `GH_TOKEN` a odchozí provoz na api.github.com.
+- **Ticketing** řídí API klíč poskytovatele ticketů a odchozí provoz na jeho domény.
+- **Odchozí síť** jsou libovolné odchozí požadavky.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Běh je bere z vlastního řádku agenta. Když agent žádné nemá, platí pevný konzervativní výchozí stav: tři příznaky přihlašovacích údajů vypnuté, odchozí síť zapnutá. Přepínač „Oprávnění sandboxu“ ve formuláři agenta volí mezi tímto záložním stavem a vlastní sadou uloženou u agenta.
 
-See [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Druhou polovinu, včetně toho, co se na úrovni souborového systému vynucuje a co ne, popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 
-## The adapter decides what can be enforced
+## O vynucení rozhoduje adaptér
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Pole s největšími důsledky je adaptér, protože jeho transport určuje, kolik z politiky Control Center se skutečně dá vynutit.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Transport          | Adaptéry                  | Co Control Center vynucuje                                                                                                                                                                                                                                                 |
+| ------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vestavěný harness  | Control Center (built-in) | Všechno. Plocha nástrojů se z režimu _sestaví_, takže zakázaný nástroj je neviditelný a nestačí ho jen odmítnout. Každé volání projde bránou schválení a guardraily akcí. Kontrakt dokončení umí běh pobídnout a pak ho ukončit chybou, když skončí bez požadovaného výstupu |
+| Claude CLI         | Claude Code               | Jen nástroje `mcp__*`, které dostane. Vlastní nástroje Claude pro čtení, zápis, úpravy a shell žijí v jeho procesu a běží mimo dohled. Spouští se s `--dangerously-skip-permissions`, protože neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu          |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Konkrétně **jen vestavěný harness umí subagenty, řízení uprostřed běhu, pozastavení a obnovení (a tedy převzetí) a strukturální vynucení režimu.** Claude Code z toho neumí nic.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Sandbox operačního systému je spodní hranice, režim nevynucuje a ne každý hostitel ho má]
+Matice výše je o tom, co Control Center _vidí a brání_. Pod ní `cc_server` obalí CLI Claude Code sandboxem operačního systému hostitele, pokud tam nějaký je: Seatbelt na macOS, bubblewrap na Linuxu a ve WSL2. Neviděné `rm` i neviděný zápis proto pořád omezuje operační systém. **Na Windows backend vůbec není** a na Linuxu nebo WSL2 bez `bwrap` a `socat` sonda nehlásí žádný, takže tam tyto běhy spadnou na sanitizaci prostředí, zprostředkované přihlašovací údaje, guardraily na voláních, která Control Center vidí, a vlastní worktree konverzace (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+Sandbox _bránou_ není. Omezuje, kde proces smí číst, zapisovat a kam se smí připojit. Režim jen pro čtení k němu dospěje, a to jako bind mounty jen pro čtení, ale zachytit volání, vyvolat schválení ani potom říct, co CLI zkusilo, nedokáže. Tohle a čtyři schopnosti pojmenované těsně výše má vestavěný harness. Ostatní ne. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Agent **bez** adaptéru spadne zpět na **Control Center (built-in)**, smyčku uvnitř serveru, takže není žádné CLI k instalaci, a záznam běhu zapíše `cc-harness`. Každý takto založený agent vznikne bez adaptéru i modelu, takže pět agentů v novém pracovním prostoru tam běží všichni, na výchozím modelu Anthropic, dokud u každého nenastavíte adaptér a model. Volba „výchozího adaptéru“ při úvodním nastavení je preference na straně klienta. Server ji nečte a na už vytvořené agenty se zpětně nepromítne.
 
-## Where agents come from
+## Odkud se agenti berou
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Založeni s pracovním prostorem.** Každý pracovní prostor, nejen první, dostane CEO a čtyři specialisty (`qa`, `architect`, `engineer`, `librarian`), kteří jsou mu podřízeni. Vzniknou idempotentně na pozadí při vytvoření pracovního prostoru. Viz [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
+- **Přidaní ručně** v Nastavení → Pracovní prostor → Agenti. Požádat agenta, aby najal kolegu, řádek nevytvoří. Použijte tuto obrazovku.
 
-## Live state
+## Živý stav
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Agent nemá uložený sloupec stavu. Při každém čtení se jeho živý stav odvodí z nejnovějších záznamů běhů:
 
-| State      | Meaning                                                              |
+| Stav       | Význam                                                               |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | Neexistuje žádný záznam běhu                                         |
+| `running`  | Alespoň jeden běh právě probíhá                                      |
+| `failed`   | Poslední běh skončil chybou, nebo je jeho liveness failed či dead    |
+| `blocked`  | Liveness posledního běhu je blocked, stalled nebo looping            |
+| `idle`     | Všechno ostatní: agent už dříve běžel a nic nemá rozběhnuté          |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Další dva stavy, `queued` a `succeeded`, existují pro jednotlivé běhy ve stromu běhů konverzace. Seznam je nikdy neukáže, protože zelený dokončený běh je fakt o běhu, ne o agentovi.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/).
+Přehled přítomnosti ukazuje souběžný, hrubší obraz sestavený na serveru ze živých událostí běhu: přemýšlí, běží, blokováno na schválení, hotovo. Díky tomu se agenti objevují vedle lidí. Viz [Multiplayer a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/).
 
-## Related concepts
+## Související koncepty
 
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): what happens when an agent is actually run
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): what constrains a run today
-- [Agent configuration reference](/cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu/): the full field list
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): co se stane, když se agent skutečně spustí
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/): nastavení dané konverzace, které tvaruje plochu nástrojů agenta
+- [Multiplayer a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): agenti jako principálové, přítomnost a volič autonomie
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): co běh dnes omezuje
+- [Konfigurace agentů](/cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu/): úplný seznam polí

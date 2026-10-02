@@ -1,96 +1,94 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: שיוך מכשיר
+description: שייכו את הטלפון (או דפדפן או שולחן עבודה שניים) לשרת Control Center שלכם, כדי שתוכלו לעקוב אחרי הצי מרחוק.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/) for how the link
-works and its security model.
+מדריך זה מראה כיצד לשייך טלפון אל Control Center, כדי שתוכלו לקרוא הודעות
+וכרטיסים ולהשיב מכל מקום. אותה זרימה משייכת גם דפדפן או אפליקציית שולחן עבודה
+שניים. ראו [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/) כדי
+להבין איך הקישור עובד ומהו מודל האבטחה שלו.
 
-## Prerequisites
+## דרישות מקדימות
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- לקוח שולחן עבודה או לקוח ווב שמחובר לשרת שלכם, וסביבת עבודה מוגדרת. פעולות שיוך דורשות לקוח מלא, ולכן טלפון משויך לעולם אינו יכול לשייך — או לשלול — מכשיר אחר.
+- השרת נגיש מהמכשיר שאתם משייכים. באותה רשת זה פשוט עובד; ממרחק גדול יותר מעביר הממסר המתווך את התעבורה. אם הפאנל משיב **לא נגיש** במקום קוד QR או פרטי התחברות, פרסמו נתיב תחילה — הצטרפות המנהרה בהסכמה נמצאת ב**הגדרות ← שרת ← חיבור וסטטוס** (**שתף שרת זה**), או בהגדרה `--public-url` של השרת (ראו [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)).
+- לטלפון: אין מה להתקין. קוד ה-QR פותח את אפליקציית הווב **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) כברירת מחדל).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**אירוח עצמי.** Remote ומתווך הממסר הם קוד פתוח במאגר הזה: אפליקציית הטלפון
+(`apps/cc_remote`, PWA של Flutter לווב שאותה אפשר לפרוס ל-Cloudflare Pages דרך
+ה-`wrangler.jsonc` שלה, לתמונת ה-nginx של `docker/cc_remote`, או לכל מארח סטטי
+עם HTTPS — service workers ו-IndexedDB מחייבים הקשר מאובטח) והממסר
+(`apps/cc_signaling_server`, קובץ בינארי יחיד וחסר מצב ב-Dart שאינו מחזיק נתוני
+אפליקציה ולעולם אינו רואה את סוד השיוך — הוא מעביר רק מסגרות אטומות מקצה
+לקצה). ראו את קובצי ה-README שלהם לשלבי הבנייה וההפעלה.
 
-## Step 1: Open the pairing panel
+## שלב 1: פתיחת פאנל השיוך
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+פתחו את **הגדרות ← אישי ← המכשירים שלכם**. הקטע **המכשירים שלכם** מפרט את
+הלקוחות המשויכים לחשבון שלכם בשרת הזה. (בעל השרת רואה כל מכשיר בשרת; כל השאר
+רואים רק את שלהם.)
 
-## Step 2: Pair a new client
+## שלב 2: שיוך לקוח חדש
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+לחצו על **צמד לקוח חדש** בכותרת העמוד, תנו לו תווית (למשל "הטלפון שלי"), בחרו
+את הסוג — **דפדפן אינטרנט**, **אפליקציית שולחן עבודה** או **טלפון** — ולחצו על
+**צמד**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- ב**טלפון** מופיע קוד QR. סרקו אותו במצלמת הטלפון, או העתיקו את הקישור ופתחו אותו בכל דפדפן. הוא מפנה את אפליקציית Remote אל השרת שלכם ונושא את פרטי ההתחברות.
+- ב**דפדפן** או ב**שולחן עבודה**, העתיקו במקום זאת את הקישור המוצג (או את מזהה המכשיר ומפתח הצימוד) אל הלקוח החדש. קישור ההקשה האחת מוצע רק כשאתם משייכים מלקוח הווב, מפני שלבינארי של שולחן עבודה אין מקור ווב שממנו לבנות אותו.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+קוד ה-QR של הטלפון והקישור ש-`cc_server pair --client-url` מדפיס ב-CLI הם
+**מטענים שונים שאינם ניתנים להחלפה**: קישור ה-CLI ממלא את טופס ההתחברות של
+לקוח הווב, ואילו קוד ה-QR הזה נושא את מתאר החיבור המלא של השרת ואת טביעת
+האצבע של זהותו עבור ה-PWA של Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+בצד הטלפון, פתיחת קישור שיוך אינה משייכת בשקט. Remote מציג את השם המפורסם של
+השרת ומבקש מכם לאשר לפני שהוא שומר משהו, כך שקישור מזויף אינו יכול לחטוף את
+האפליקציה אל השרת של מישהו אחר.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[קוד QR שנסרק מקנה גישה מיד]
+אין שלב של המתנה ואז אישור: מכשיר שהונפק פעיל מרגע יצירתו, ושער החיבור בודק
+רק שפרטי ההתחברות פעילים ולא פגו. התייחסו לקוד ה-QR ולמפתח הצימוד כמו לסיסמה,
+ובטלו כל דבר שלא התכוונתם למסור.
 :::
 
-## Manage paired devices
+## ניהול מכשירים משויכים
 
-From **Settings → You → Your devices** you can:
+מ**הגדרות ← אישי ← המכשירים שלכם** אתם יכולים:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **שינוי שם** של מכשיר
+- **בטל גישה** למכשיר שאינכם סומכים עליו עוד. ביטול משמיד את פרטי ההתחברות שלו ומפיל את הסשן הפעיל שלו בתוך שניות, כך שהוא נכשל באופן סגור בחיבור מחדש
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+ביטול הוא הצעד הנכון לטלפון שאבד או הוחלף. הוא מיידי ובלתי הפיך מנקודת המבט
+של המכשיר.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+פרטי התחברות שהונפקו מהפאנל הזה מוגבלים בזמן: הם פגים 30 יום לאחר הנפקתם,
+ושער החיבור מכשיל אותם באופן סגור לאחר מכן. פרטי התחברות שהונפקו עם
+`cc_server pair` בשורת הפקודה **אינם פגים כלל** — בטלו אותם ביד כשהמכונה
+שנועדו עבורה יוצאת משימוש.
 
-## Switch workspaces from the phone
+## החלפת סביבות עבודה מהטלפון
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+טלפון משויך יכול לעבור בין סביבות עבודה בנפרד משולחן העבודה. הטלפון שולח את
+סביבת העבודה עם כל קריאה, והשרת בודק את החברות והתפקיד שלכם באותה סביבת עבודה
+בכל אחת מהן — כך שהטלפון מגיע רק לסביבות עבודה שאתם חברים בהן, וההחלפה שם
+לעולם אינה משנה את מה ששולחן העבודה מציג.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+סשן טלפון מוגבל בנוסף לרשימת היתר קטנה של כלים עתירי קריאה: הוא יכול להציג
+ולקרוא כרטיסים, סוכנים, מרחבים, הודעות ומאמרי עדכוני חדשות, והוא יכול לעדכן
+או להקצות כרטיס, לשלוח הודעה במרחב ולסמן מאמר כנקרא או כנשמר. כל דבר מחוץ
+לקבוצה הזו נדחה לפני שהוא מגיע למפיץ של השרת.
 
-## Related guides
+## מדריכים קשורים
 
-- [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/): make the server reachable in the first place
-- [Connect to a remote server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/): point a full client at it
-- [Use spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/): what you'll mostly do from the phone
-- [Create and manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/): triage from the road
+- [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/): הפכו את השרת לנגיש מלכתחילה
+- [התחברות לשרת מרוחק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/): כוונו אליו לקוח מלא
+- [שימוש במרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/): מה שרוב הזמן תעשו מהטלפון
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/): טריאז׳ מהדרך
 
-## Related concepts
+## מושגים קשורים
 
-- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/)
+- [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/)

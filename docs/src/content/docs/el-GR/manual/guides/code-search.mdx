@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Αναζήτηση κώδικα με το γράφημα κώδικα
+description: Ευρετηριάστε ένα αποθετήριο και χρησιμοποιήστε τα εργαλεία του γραφήματος κώδικα για να βρείτε σύμβολα και να δείτε τι θα έσπαγε μια αλλαγή.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Αυτός ο οδηγός δείχνει πώς να φέρετε ένα αποθετήριο στο γράφημα κώδικα και μετά να το χρησιμοποιήσετε για να απαντήσετε στην ερώτηση που πραγματικά έχετε πριν από μια αναδιάρθρωση: από τι εξαρτάται αυτό;
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Το γράφημα κώδικα είναι μια βάση δεδομένων συμβόλων και ακμών που χτίζεται αναλύοντας τα καταχωρισμένα checkout σας με το tree-sitter. Τα εργαλεία του **απευθύνονται σε πράκτορες** — τα προσεγγίζετε ζητώντας από έναν πράκτορα.
 
-## Before you start
+## Πριν ξεκινήσετε
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Το γράφημα ευρετηριάζει Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB και Ada. Αρχεία σε οποιαδήποτε άλλη γλώσσα δεν αναλύονται, οπότε δεν εμφανίζονται στα `search_code`, `code_symbol`, `code_callers`, `code_callees` ή `code_impact`.
 
-Two more things shape what gets indexed:
+Δύο ακόμη πράγματα καθορίζουν τι ευρετηριάζεται:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Σε ένα git work tree, η απαρίθμηση βασίζεται στο `git ls-files --cached --others --exclude-standard`, οπότε τηρείται κάθε `.gitignore`, ένθετο αρχείο ignore, `.git/info/exclude` και το καθολικό αρχείο εξαιρέσεων. Αυτό κρατά τα `node_modules` και την έξοδο build έξω από το γράφημα.
+- Τα παραγόμενα Dart απορρίπτονται ανεξαρτήτως. Τα παραγόμενα αρχεία συνήθως καταχωρίζονται στο git, οπότε το git από μόνο του δεν θα τα απέκλειε και αλλάζουν σε κάθε εκτέλεση codegen.
 
-## Get a repo indexed
+## Ευρετηριάστε ένα αποθετήριο
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
+Η καταχώριση ενός checkout πυροδοτεί το `RepoAdded`, το οποίο ξεκινά αυτόματα το pipeline `index_code` για αυτό. Δείτε [Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
 
-To re-index by hand:
+Για να κάνετε εκ νέου ευρετηρίαση με το χέρι:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Ανοίξτε **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια**.
+2. Κάντε κλικ στο κουμπί **Ευρετηρίαση κώδικα** στη γραμμή του αποθετηρίου.
+3. Όσο εκτελείται, το κουμπί δείχνει τα αρχεία που ολοκληρώθηκαν προς το σύνολο, με χειριστήριο ακύρωσης. Όταν τελειώσει, καταλήγει σε ένα σημάδι ελέγχου με τον αριθμό των συμβόλων.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Το γράφημα είναι κατατμημένο ανά χώρο εργασίας, αποθετήριο και checkout: το συνδεδεμένο checkout είναι ένα τμήμα, και κάθε worktree χώρου παίρνει το δικό του (με κλειδί το αναγνωριστικό του απομονωμένου αποθετηρίου του).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Αξίζει να γνωρίζετε δύο περιορισμούς, γιατί εξηγούν μια αναμονή που μοιάζει με κόλλημα:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Ο παρατηρητής αρχείων επιτρέπει μόνο **μία** εκτέλεση ευρετηρίασης τη φορά στον κεντρικό υπολογιστή — ένα δεύτερο checkout περιμένει. Το pipeline `index_code` έχει ξεχωριστό όριο μίας εκτέλεσης ανά χώρο εργασίας, οπότε δύο αποθετήρια στον ίδιο χώρο εργασίας μπαίνουν σε ουρά· διαφορετικοί χώροι εργασίας μπορούν να ευρετηριάζουν παράλληλα. Ο ίδιος ο ευρετηριαστής σειριοποιεί δύο εκτελέσεις του **ίδιου** checkout, ώστε μια εκκίνηση pipeline και μια σάρωση του παρατηρητή να μην μπορούν να το αναλύσουν δύο φορές.
+- Τα worktree που ανήκουν σε **ανενεργούς χώρους** (κανένα μήνυμα την τελευταία εβδομάδα) ούτε παρατηρούνται ούτε ευρετηριάζονται. Τα συνδεδεμένα checkout παραμένουν υπό παρατήρηση. Μια απόφαση παράλειψης επανελέγχεται μετά από πέντε λεπτά, οπότε ένας χώρος που γίνεται ξανά ενεργός εντοπίζεται.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Μια γραμματική που λείπει σταματά τον διακομιστή, όχι την αναζήτηση]
+Το Tree-sitter και οι γραμματικές του είναι απαιτούμενα native αρχεία. Αν λείπει ένα, το `cc_server` αρνείται να εκκινήσει και αναφέρει το dylib που λείπει — το σύμπτωμα είναι ένας διακομιστής που δεν ξεκινά, ποτέ μια υποβαθμισμένη αναζήτηση. Προετοιμάστε τα με το `scripts/natives/build_natives.sh` και ξαναχτίστε το εκτελέσιμο του διακομιστή.
 :::
 
-## Find a symbol
+## Βρείτε ένα σύμβολο
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Ζητήστε από έναν πράκτορα να κάνει αναζήτηση. Το εργαλείο είναι το `search_code` και χρειάζεται και χώρο εργασίας και αποθετήριο:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Τα αναγνωριστικά αποθετηρίων προέρχονται από το `list_repos`. Το προαιρετικό όρισμα `mode` είναι `keyword`, `semantic` ή `hybrid` και έχει προεπιλογή το hybrid — BM25 πάνω σε ονόματα, υπογραφές και σχόλια τεκμηρίωσης, συνδυασμένο με ομοιότητα διανυσμάτων.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Κάθε αποτέλεσμα φέρει το αναγνωριστικό, το όνομα, το πλήρες όνομα, το είδος, τη διαδρομή αρχείου, τη γραμμή αρχής και τέλους του συμβόλου και την υπογραφή του όταν έχει. Το **id** είναι η λαβή που δίνετε σε κάθε άλλο εργαλείο αυτής της σελίδας.
 
-When you know the exact name, look it up directly instead:
+Όταν γνωρίζετε το ακριβές όνομα, αναζητήστε το απευθείας αντ' αυτού:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Ιχνηλάτηση κλήσεων
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Και τα δύο παίρνουν ένα `symbol_id` από ένα αποτέλεσμα αναζήτησης, συν ένα προαιρετικό `limit` (προεπιλογή 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+Το `code_callers` επιστρέφει τα σύμβολα που έχουν εισερχόμενη ακμή προς αυτό· το `code_callees` επιστρέφει εκείνα από τα οποία εξαρτάται.
 
-## Check what a change would break
+## Ελέγξτε τι θα έσπαγε μια αλλαγή
 
-This is the tool the whole page exists for:
+Αυτό είναι το εργαλείο για χάρη του οποίου υπάρχει όλη η σελίδα:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Υπολογίζει την ακτίνα **αντίστροφης** εξάρτησης: ό,τι εξαρτάται άμεσα ή μεταβατικά από το σύμβολο κατά μήκος ακμών `calls`, `extends` και `implements` (τα imports, τα mixes-in και οι γενικές αναφορές αποθηκεύονται στο γράφημα αλλά δεν διατρέχονται εδώ). Το `depth` είναι ο μέγιστος αριθμός αλμάτων, μεταξύ 1 και 6, με προεπιλογή το 2.
 
-The result is three fields:
+Το αποτέλεσμα έχει τρία πεδία:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — το σύμβολο για το οποίο ρωτήσατε
+- `impacted` — το σύνολο που είναι προσπελάσιμο, μαζί με τη ρίζα σε βάθος 0, καθένα με το `depth` του από τη ρίζα
+- `edgeCount` — πόσες ακμές διέσχισε η διάσχιση, ως αριθμός και όχι οι ίδιες οι ακμές
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Εκτελέστε το πριν μετονομάσετε ή αλλάξετε μια υπογραφή και δώστε στον πράκτορα τη λίστα των επηρεαζόμενων ως πεδίο ευθύνης του.
 
-## Results are checked against the caller's own working copy
+## Τα αποτελέσματα ελέγχονται ως προς το αντίγραφο εργασίας του ίδιου του καλούντος
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Για έναν καλούντα πράκτορα, το αναγνωριστικό χώρου εισάγεται αυτόματα και τα αποτελέσματα επαληθεύονται ως προς το αντίγραφο εργασίας **αυτού του χώρου**. Ένα σύμβολο του οποίου το αρχείο δεν υπάρχει πλέον στο δέντρο του καλούντος παραλείπεται, και η απάντηση φέρει έναν αριθμό `staleOmitted` καθώς και μια σημείωση ότι το ευρετήριο είναι ξεπερασμένο για αυτά τα σύμβολα.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Γι' αυτό εσείς και ένας πράκτορας μπορείτε να πάρετε διαφορετικές απαντήσεις στο ίδιο ερώτημα και γι' αυτό ένας πράκτορας σε έναν χώρο μπορεί να πάρει διαφορετική απάντηση από έναν πράκτορα σε άλλον. Κάθε συνομιλία σε έναν χώρο μοιράζεται αυτό το ένα worktree. Η επαλήθευση αποτυγχάνει ανοιχτά: προτιμάται μια ξεπερασμένη απάντηση από μια κενή.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/).
+Ζητήστε από έναν πράκτορα να εκτελέσει το `code_impact` (ή το `review_studio.blastRadius`) όταν θέλετε την ακτίνα επιρροής μιας αλλαγής. Δείτε [Υπολογισμός ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/).
 
-## Semantic search needs the embedding model
+## Η σημασιολογική αναζήτηση χρειάζεται το μοντέλο ενσωματώσεων
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Τα σύμβολα και τα γεγονότα ενσωματώνονται τη στιγμή της εγγραφής και μόνο όταν είναι εγκατεστημένο το μοντέλο ενσωματώσεων στη συσκευή. Μέχρι τότε, το `mode: "semantic"` και το σημασιολογικό μισό της υβριδικής λειτουργίας δεν έχουν τίποτα να αντιστοιχίσουν και η αναζήτηση είναι ουσιαστικά μόνο με λέξεις-κλειδιά.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Εγκαταστήστε το μοντέλο στις **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο → Σημασιολογική αναζήτηση** πριν κάνετε ευρετηρίαση. Τα σύμβολα αποκτούν ένα διάνυσμα όταν εισάγεται το αρχείο τους.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Σημειώστε επίσης ότι κάθε επαναχτίσιμο του εκτελέσιμου του διακομιστή επανατοποθετεί τα dylib των γραμματικών και αλλάζει τους χρόνους τροποποίησής τους, κάτι που ακυρώνει κάθε σημείο ελέγχου του ευρετηρίου και αναγκάζει μια πλήρη νέα σάρωση κάθε checkout στην επόμενη εκτέλεση. Κάνει εκ νέου κατακερματισμό, αλλά δεν εξάγει ξανά τα αμετάβλητα αρχεία.
 
-## What is in the graph
+## Τι υπάρχει στο γράφημα
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Είδη συμβόλων:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Είδη ακμών:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
+Οι κανονικές υπογραφές αυτών των εργαλείων βρίσκονται στα [Εργαλεία MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
-- [Review compute (cohorts and axes)](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/)
-- [Use the MCP server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
+- [Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
+- [Υπολογισμός ελέγχου (κοόρτες και άξονες)](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/)
+- [Χρήση του διακομιστή MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)

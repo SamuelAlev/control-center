@@ -1,118 +1,130 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Καταγραφή και σύνοψη σύσκεψης
+description: Καταγράψτε μια κλήση, πάρτε απομαγνητοφώνηση και μετατρέψτε την σε σημειώσεις, στοιχεία ενέργειας και αποφάσεις.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) for how it works.
+Αυτός ο οδηγός δείχνει πώς να καταγράψετε μια σύσκεψη και να πάρετε μια σύνοψη
+που τη γράφει AI. Δείτε τις [Συσκέψεις και μεταγραφή](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) για το πώς λειτουργεί.
 
-## Before you start
+## Πριν ξεκινήσετε
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Περιμένετε το μοντέλο ομιλίας και μετά επανεκκινήστε τον διακομιστή.** Μια
+  κανονική εκκίνηση εγκαθιστά αναγκαστικά στο παρασκήνιο το επιλεγμένο μοντέλο
+  ASR (Parakeet TDT 0.6B v3, το πολύγλωσσο προεπιλεγμένο, περίπου 600 MB). Ο
+  διακομιστής επιλύει το μοντέλο **μία φορά κατά την εκκίνηση**, οπότε η πρώτη
+  εκτέλεση δεν έχει ακόμη λειτουργίες καταγραφής μέχρι να κάνετε επανεκκίνηση.
+  Χωρίς μοντέλο στον δίσκο, η καταγραφή αποτυγχάνει με `Could not start
+  recording on the host: …`. Για να διαλέξετε άλλο build, πηγαίνετε στις
+  **Ρυθμίσεις → Διακομιστής → Μοντέλα φωνής και συσκέψεων** — κι αυτό χρειάζεται
+  επανεκκίνηση.
+- Χορηγήστε άδεια **μικροφώνου** όταν σας τη ζητήσει το λειτουργικό σύστημα στην πρώτη καταγραφή.
+- Στο **macOS 14.4+**, ο ήχος συστήματος συλλαμβάνεται με taps διεργασίας του Core Audio — δεν χρειάζεται οδηγός, αλλά το λειτουργικό σύστημα ζητά δεύτερη φορά άδεια _καταγραφής ήχου_. Αυτή δεν είναι η Καταγραφή οθόνης και δεν ανάβει ποτέ την ένδειξη καταγραφής οθόνης. Αν την αρνηθείτε, η έναρξη αποτυγχάνει με `System-audio capture permission denied.` Κάτω από το macOS 14.4 δεν υπάρχει καταγραφή ήχου συστήματος.
+- Στο **Linux**, το `parecord` (pulseaudio-utils) ή το `pw-record` (pipewire) πρέπει να βρίσκεται στο `PATH` — η καταγραφή ξεκινά ένα από τα δύο πάνω σε πηγή monitor του PipeWire/PulseAudio. Χωρίς κανένα από τα δύο, η έναρξη αποτυγχάνει με `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Πού πηγαίνει ο ήχος της σύσκεψής σας]
+Η καταγραφή, η μεταγραφή, η ακύρωση ηχούς και ο διαχωρισμός ομιλητών εκτελούνται
+όλα στη συσκευή, χωρίς κλήση στο cloud — αλλά «συσκευή» σημαίνει τον **κεντρικό
+υπολογιστή του cc_server**, που είναι άλλο μηχάνημα όταν εκτελείτε τον διακομιστή
+απομακρυσμένα. Και η τελική σύνοψη είναι μια συνηθισμένη εκτέλεση πράκτορα: το
+pipeline `meeting_summary` στέλνει ολόκληρη την απομαγνητοφώνηση και τις πρόχειρες
+σημειώσεις σας σε όποιον πάροχο μοντέλου χρησιμοποιεί εκείνος ο πράκτορας. Στρέψτε
+αυτόν τον πράκτορα σε τοπικό πάροχο, αν η απομαγνητοφώνηση δεν πρέπει να φύγει από
+το μηχάνημα.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Η οθόνη καταγραφής το δηλώνει αυτό όσο καταγράφετε, ώστε η απόφαση να είναι
+μπροστά σας πριν υπάρξει απομαγνητοφώνηση προς αποστολή.
 :::
 
-## Start a recording
+## Έναρξη καταγραφής
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Ανοίξτε τις **Συσκέψεις** στην πλαϊνή στήλη.
+2. Κάντε κλικ στην **Εγγραφή σύσκεψης**. Το HUD ζωντανής εγγραφής ανοίγει στο `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Η καταγραφή ξεκινά αμέσως και συλλαμβάνει το μικρόφωνό σας μαζί με τον ήχο εξόδου
+του συστήματος — τους άλλους συμμετέχοντες. Δεν υπάρχει προτροπή λειτουργίας ούτε
+επιλογέας πηγής ήχου: η λειτουργία αυτοπρόσωπης παρουσίας με ένα μικρόφωνο
+υπάρχει στο API αλλά δεν έχει UI σήμερα.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Στον περιηγητή, η ίδια ροή λειτουργεί, με μία διαφορά: ο «ήχος συστήματος» είναι
+κοινή χρήση οθόνης που πρέπει να περιλαμβάνει κομμάτι ήχου. Μοιραστείτε μια
+καρτέλα του περιηγητή (ή ολόκληρη την οθόνη σας) και ενεργοποιήστε την επιλογή
+«Κοινή χρήση ήχου καρτέλας» / «Κοινή χρήση ήχου συστήματος» στον επιλογέα. Ο
+Safari και ο Firefox, καθώς και η κοινή χρήση σε πλήρη οθόνη στο macOS, συχνά δεν
+μπορούν να παρέχουν κάτι τέτοιο.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+Το HUD εμφανίζει μετρητή στάθμης, τον χρόνο που έχει περάσει και ζωντανή
+απομαγνητοφώνηση που χτίζεται στη μία πλευρά.
 
-## During the meeting
+## Κατά τη διάρκεια της σύσκεψης
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Κρατήστε πρόχειρες σημειώσεις** στο παράθυρο σημειώσεων. Αποθηκεύονται καθώς πληκτρολογείτε και δίνονται αργότερα στον πράκτορα σύνοψης, οπότε σημειώστε ό,τι μπορεί να χάσει η απομαγνητοφώνηση.
+- **Διαλέξτε το πρότυπο σημειώσεων** στη γραμμή **Ενεργό πρότυπο**. Διαμορφώνει τη σύνοψη αυτής της σύσκεψης και καταγράφεται μαζί με την εγγραφή, ώστε μια μεταγενέστερη επανεκτέλεση να αναπαράγει το πρότυπο που διαλέξατε εδώ.
+- **Παύση και συνέχεια** με το χειριστήριο παύσης. Η μεταγραφή σταματά όσο είναι σε παύση και το χρονόμετρο παγώνει.
+- Η απομαγνητοφώνηση φτάνει σε ροή με ετικέτες ομιλητή: τα δικά σας λόγια ως **Εσείς**, όλοι στη σύνδεση ως **Άλλοι** — μέχρι ο διαχωρισμός ομιλητών να σπάσει τους Άλλους σε `Person 1`, `Person 2`, … που μπορείτε να μετονομάσετε.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Ένας πολύ ήσυχος ομιλητής μπορεί να μη μεταγραφεί]
+Η μεταγραφή παραλείπει κάθε παράθυρο ήχου που δεν ξεπέρασε ποτέ ένα κατώφλι
+σιωπής, χωρίς να το αποκωδικοποιήσει καθόλου. Αυτό εμποδίζει ένα ήσυχο κανάλι να
+καίει CPU σε παραισθησιακά διακριτικά που δεν είναι ομιλία, αλλά σημαίνει επίσης
+ότι ένας αμυδρός ή μακρινός ομιλητής μπορεί να μην παράγει καθόλου
+απομαγνητοφώνηση. Ελέγξτε τον μετρητή στάθμης νωρίς και όχι στο τέλος.
 :::
 
-## Stop and summarize
+## Διακοπή και σύνοψη
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Κάντε κλικ στη **Διακοπή και σύνοψη**.
+2. Το Control Center σας πηγαίνει κατευθείαν στην προβολή λεπτομερειών της σύσκεψης, με ένδειξη **Επεξεργασία**: ο διαχωρισμός ομιλητών σπάει το απομακρυσμένο κανάλι σε μεμονωμένους ομιλητές και το pipeline `meeting_summary` παράγει τη σύνοψη.
+3. Η σύσκεψη γυρίζει σε **Ολοκληρώθηκε** μόλις τελειώσει αυτό το pipeline. Δεν χρειάζεται να το περιμένετε — η προβολή λεπτομερειών ενημερώνεται μόνη της.
 
-## Review the writeup
+## Έλεγχος της σύνοψης
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Οι λεπτομέρειες της σύσκεψης (`/meetings/:meetingId`) έχουν τέσσερις καρτέλες:
 
-| Tab              | What's there                                                                    |
+| Καρτέλα          | Τι υπάρχει                                                                      |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **Σημειώσεις**   | Η σύνοψη AI και οι βελτιωμένες σημειώσεις, φτιαγμένες από τις πρόχειρες σημειώσεις σας + την απομαγνητοφώνηση |
+| **Πρακτικό**     | Ολόκληρη η απομαγνητοφώνηση με ετικέτες ομιλητή και χρονοσημάνσεις              |
+| **Στοιχεία ενέργειας** | Οι εξαγόμενες εκκρεμότητες, καθεμία με προαιρετικό υπεύθυνο               |
+| **Αποφάσεις**    | Αποφάσεις που καταγράφηκαν κατά τη διάρκεια της κλήσης                          |
 
-From here you can:
+Από εδώ μπορείτε να:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Μετονομάσετε ομιλητές**: αλλάξτε το `Person 1` σε πραγματικό όνομα· εφαρμόζεται σε όλη την απομαγνητοφώνηση.
+- **Τσεκάρετε στοιχεία ενέργειας** καθώς τα ολοκληρώνετε.
+- **Δημιουργήσετε εισιτήριο** από ένα στοιχείο ενέργειας: καταχωρεί ένα νέο, αδιανέμητο εισιτήριο με τίτλο το στοιχείο ενέργειας και το συνδέει πίσω στη γραμμή. Αναθέστε το σε πράκτορα από το ίδιο το εισιτήριο (δείτε [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)).
+- **Επανεκτέλεση σύνοψης** για νέο πέρασμα (για παράδειγμα αφού μετονομάσετε ομιλητές). Επαναχρησιμοποιεί το πρότυπο που καταγράφηκε όταν ηχογραφήθηκε η σύσκεψη. Διαλέξτε το ενεργό πρότυπο στις **Ρυθμίσεις → Χώρος εργασίας → Συσκέψεις**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Η επεξεργασία σημειώσεων, τίτλου, στοιχείων ενέργειας και αποφάσεων λειτουργεί
+παντού. Η **Επανεκτέλεση σύνοψης** και η ακύρωση μιας σύσκεψης σε επεξεργασία
+είναι **μόνο για επιφάνεια εργασίας** — στον περιηγητή και τα δύο κουμπιά δεν
+κάνουν τίποτα.
 
-## Record straight from a calendar event
+## Καταγραφή απευθείας από γεγονός ημερολογίου
 
-If you've [connected a calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Αν έχετε [συνδέσει ημερολόγιο](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/), μπορείτε να
+παραλείψετε τη χειροκίνητη έναρξη. Αυτό είναι **μόνο για επιφάνεια εργασίας**· ο
+πελάτης web το αρνείται.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Ανοίξτε το γεγονός από το **Ημερολόγιο**.
+2. Κάντε κλικ στην **Έναρξη εγγραφής και σύνδεση**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Η καταγραφή αρχίζει με τον τίτλο του γεγονότος και συνδέεται πίσω σε αυτό, ώστε
+οι σημειώσεις και η καταχώριση ημερολογίου να μένουν συνδεδεμένες.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Η διαγραφή μιας σύσκεψης δεν διαγράφει τον ήχο της]
+Η διαγραφή μιας σύσκεψης αφαιρεί τις γραμμές της, αλλά τα ηχογραφημένα αρχεία WAV
+κάτω από το `<dataDir>/meetings/<meetingId>/` μένουν στον δίσκο — δεν υπάρχει
+πολιτική διατήρησης, όριο μεγέθους ή σάρωση καθαρισμού. Αφαιρέστε τον κατάλογο
+μόνοι σας, αν ο ήχος έχει σημασία.
 :::
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Connect a Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
-- [Delegate work to agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
+- [Σύνδεση Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
+- [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Meetings and transcription](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/)
+- [Συσκέψεις και μεταγραφή](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/)

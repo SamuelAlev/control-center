@@ -1,134 +1,137 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: Konverzace v PR
+description: Jak se z komentáře u GitHub PR stane tah agenta bez webhooku, co autora autorizuje a komu se připisuje každá strana konverzace.
 slug: cs-CZ/prirucka/koncepty/konverzace-v-pr
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/cs-CZ/prirucka/koncepty/chatove-mosty/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+Pull request už je místo, kde se o kódu mluví. Konverzace v PR z něj udělají
+plochu pracovního prostoru Control Center, stejně jako
+[chatový most](/cs-CZ/prirucka/koncepty/chatove-mosty/) udělá plochu ze Slacku:
+zmíníš bota GitHub App serveru na PR, odpovíš v jeho vláknech revize, nebo
+přidáš štítek `ai-review`, a práce proběhne v prostoru kontroly toho PR — se
+stejným připsáním a stejnými guardraily jako cokoli napsané v aplikaci.
+Komentář navíc podléhá členství; štítek ne, protože nemá autora. Odpovědi
+bota se vracejí na GitHub, do té stopy, ve které se ptalo.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+Funkci tvarují tři rozhodnutí a každé je totéž rozhodnutí, které chatový most
+udělal pro chat, jen přeřčené pro hostitele kódu: **kterým směrem spojení
+běží**, **co autorizuje komentář, který přijde zvenku**, a **komu se připisuje
+každá strana**.
 
-## Polling is the transport
+## Transportem je obchůzka
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+Jediný push kanál, který GitHub aplikaci dává, je webhook a webhook potřebuje
+příchozí URL — to jediné, co tahle plocha záměrně nikdy nevyžaduje. Objevování
+je proto obchůzka: zhruba každou minutu se jedno hledání s aliasy na každou
+instalaci aplikace zeptá GitHubu na PR, které zmiňují bota (nebo jeho krátký
+slug), a na otevřené PR se štítkem kontroly. PR, které už mají prostor
+kontroly, si nechají přečíst vlákna komentářů a všechno se porovná podle id
+komentáře s tím, co viděla minulá obchůzka.
 
-The design consequences are worth naming:
+Důsledky návrhu stojí za pojmenování:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **Latence je interval obchůzky, ne událost.** Potvrzení 👀 přijde zhruba do
+  minuty. Nic naléhavého na tom nestojí.
+- **Přesně jednou, na každý komentář.** Id komentářů jsou na GitHubu
+  jedinečná; každé se zapíše v okamžiku, kdy se klasifikuje jako způsobilé,
+  dřív než s ním cokoli začne jednat. Pád může zpracování komentáře ztratit,
+  dvakrát ho nespustí.
+- **Výpadek se dožene, nepřehrává.** Množina viděného se ukládá, takže restart
+  doručí to, co přišlo, když byl server dole. Jediná výjimka je úplně první
+  obchůzka: bez paměti, proti které by se porovnávalo, se všechno, co ještě
+  visí, zapíše potichu — operátor, který dvaceti PR přidal štítek dřív, než
+  tenhle server existoval, se nesmí vrátit k dvaceti rozjetým kontrolám.
+- **Štítek je množina, ne událost.** Hledání hlásí _přítomnost_ štítku, takže
+  označený PR spustí akci jednou a pak už nikdy. Štítek odebraný a znovu
+  přidaný obchůzka nevidí; cestou k opětovnému spuštění je zmínka.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+Hledání běží jednou na každý účet instalace, na vlastním klientovi toho
+vlastníka, protože token instalace vidí jen repozitáře své instalace — jeden
+přihlašovací údaj pro celý server by potichu minul každý PR pod ostatními
+instalacemi aplikace.
 
-## Membership authorizes, not the comment
+## Autorizuje členství, ne komentář
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+Komentář u PR přijde skoro jen s loginem autora — neověřená vnější identita,
+dokud se neprokáže. Bot ji vyřeší proti reverznímu indexu členů pracovního
+prostoru a jejich připojených účtů GitHub, který se přebuduje podle TTL,
+protože se lidé přihlašují a dostávají pozvánky, zatímco server běží.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+Selhání do zamítnutí má podobu žebříku a každý stupeň odpovídá ve vlákně,
+které odmítl:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **Neznámý login** — nepřipojený, nebo připojený někým, kdo není členem
+  tohoto pracovního prostoru — dostane vzkaz, ať se přihlásí a ověří, že sem
+  patří
+- **Člen jen ke čtení** (`viewer` nebo `guest`) dostane vzkaz, že jeho role
+  práci spustit nemůže
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+Oba případy neznámého loginu sdílejí jednu odpověď: reverzní index vrací jen
+člena _tohoto_ pracovního prostoru, takže nepřipojený účet a připojený nečlen
+jsou tentýž neúspěch. Nikdo z nich dál nepokračuje. Komentář se nikdy
+nepřipíše někomu, kdo ho neposlal, a slova cizího člověka nikdy nevstoupí do
+pracovního prostoru, do kterého nevidí.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+Štítek `ai-review` nemá autora, kterého by šlo vyřešit, takže po tomhle
+žebříku nestoupá. Jeho přidání spustí kontrolu v pracovním prostoru, který ten
+repozitář už propojuje.
 
-## Two identities, on purpose
+## Dvě identity, schválně
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+Každá strana konverzace nese jinou identitu a ten rozdíl je ta funkce:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **Na GitHubu je bot server.** Každý komentář, reakce i odpověď, které most
+  pošle, jedou na tokenu instalace aplikace. V klientovi nikdo nic neklikl,
+  takže se nepůjčuje účet člověka — stejné pravidlo, které drží webhooky i
+  obchůzku mimo lidské přihlašovací údaje.
+- **V prostoru je otázka tvoje.** Zpráva se připíše členovi, na kterého se
+  autor vyřešil, a běh agenta se vykoná jeho jménem: commity ho zapíšou jako
+  spoluautora a volič autonomie prostoru i guardraily akcí platí přesně tak
+  jako u zprávy napsané v aplikaci. Zápisy na hostitele kódu z běhu pořád
+  odcházejí jako aplikace — stejné pravidlo jako v odrážce výše — ne na
+  osobním tokenu člena.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+Zveřejnit zjištění kontroly zpět na GitHub zůstává rozhodnutím člověka a padá
+v Control Center. Zmínka může kontrolu _spustit_; zveřejní ji jen člověk.
 
-## The loop guard, and the short name
+## Pojistka proti smyčce a krátké jméno
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+Všechno, co napsal účet bota, se zahodí dřív, než se spustí jakákoli brána —
+náš konkrétně a každá přípona `[bot]`, aby kontrolní bot jiné aplikace
+neprobudil ani toho našeho. Bez toho by vlastní odpovědi bota přicházely jako
+nové komentáře a spouštěly ho donekonečna.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+Přípona `[bot]` je taky důvod, proč existuje krátký tvar. GitHub login účtu
+aplikace natvrdo nastaví na `<slug>[bot]`, nenabízí na něj doplňování a
+`@slug` na aplikaci nikdy nevyřeší — přijmout holý slug je tedy rozhodnutí
+_našeho_ porovnávače a najít ho chce vyhledávací stopu nad surovým **textem**
+komentáře, ne index zmínek GitHubu. Cena se pojmenuje, nezamlčí: člověk,
+který má stejný slug jako aplikace, osloví bota každou zmínkou sebe sama
+v krátkém tvaru. U výrazných jmen aplikace ta kolize zůstane hypotetická.
 
-## What is deliberately not offered
+## Co záměrně nenabízíme
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **Žádné automatické zveřejnění.** Zjištění skončí v prostoru kontroly;
+  zveřejnění na GitHub je samostatná lidská akce
+- **Žádná přibližná identita.** Autor se vyřeší na právě jednoho člena, nebo
+  se odmítne — žádné připsání podle nejlepšího odhadu
+- **Žádný webhook GitHub App.** Tahle plocha ho nikdy neregistruje, takže
+  pro komentáře u PR není příchozí URL, kterou by šlo vystavit. Ostatní
+  webhooky produktu (pipelines, synchronizace ticketů) jsou samostatné
+  volitelné nastavení.
 
-## See also
+## Viz také
 
-- [Talk to Control Center from a GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/):
-  the how-to for all of this
-- [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/):
-  the principals and roles a login resolves through
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/): the pipeline a mention
-  or label starts
+- [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/):
+  návod k tomu všemu
+- [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/): tatáž tři
+  rozhodnutí, udělaná pro chat
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/): odkud se bere
+  identita bota
+- [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/):
+  principálové a role, přes které se login vyřeší
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): co smí dělat agent,
+  který odpovídá
+- [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/): pipeline,
+  kterou spustí zmínka nebo štítek

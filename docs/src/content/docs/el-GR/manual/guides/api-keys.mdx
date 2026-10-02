@@ -1,115 +1,127 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Διαχείριση κλειδιών API
+description: Πού ζει κάθε διαπιστευτήριο — στον λογαριασμό χρήστη σας στον διακομιστή, στον ίδιο τον διακομιστή ή σε ένα εξωτερικό CLI — και πώς να το ορίσετε, να το αλλάξετε και να το αφαιρέσετε.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κλειδιά-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Αυτός ο οδηγός δείχνει πού αποθηκεύεται κάθε διαπιστευτήριο που χρησιμοποιεί το
+Control Center και πώς να το αλλάξετε.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Τίποτα δεν αποθηκεύεται στο μηχάνημα στο οποίο πληκτρολογείτε.** Κάθε
+διαπιστευτήριο ζει στον διακομιστή· ποιο απαντά σε ένα δεδομένο αίτημα εξαρτάται
+από το αν υπάρχει άνθρωπος πίσω του.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Διαπιστευτήριο                           | Αποθήκευση                                                    | Ποιος το χρησιμοποιεί                                                     |
+| ---------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Το διαπιστευτήριό σας για τη φιλοξενία κώδικα και τα εισιτήρια | Το αρχείο μυστικών του διακομιστή με δικαιώματα 0600, με κλειδί το αναγνωριστικό χρήστη σας | Ό,τι ζητάτε εσείς: η επιφάνεια PR, οι εκτελέσεις των πρακτόρων σας, οι εικόνες σας |
+| Η ταυτότητα εφαρμογής του διακομιστή     | Το ίδιο αρχείο, συν το `server_settings` για τα μη μυστικά     | Εργασία που δεν τη ζήτησε άνθρωπος: webhooks, polling PR, συγχρονισμός εισιτηρίων |
+| Κλειδιά παρόχων μοντέλων και token OAuth | Η δική του αποθήκη διαπιστευτηρίων του διακομιστή             | Ο ενσωματωμένος προσαρμογέας, για κάθε χώρο εργασίας της εγκατάστασης     |
+| Token bot του Slack                      | `<dataDir>/<workspaceId>/chat_credentials/` στον διακομιστή   | Η γέφυρα συνομιλίας για αυτόν τον χώρο εργασίας                           |
+| Διαπιστευτήρια εξωτερικών CLI            | Ό,τι χρησιμοποιεί αυτό το CLI                                 | Claude Code, στον κεντρικό υπολογιστή του διακομιστή                      |
 
-## Two GitHub credentials, and they answer different questions
+## Δύο διαπιστευτήρια GitHub, που απαντούν σε διαφορετικά ερωτήματα
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Το δικό σας**, από τη σύνδεση (ροή συσκευής) ή την επικόλληση ενός token.
+  Είναι αυτό που χρησιμοποιεί κάθε αίτημα που γίνεται *για λογαριασμό σας*, οπότε
+  ένα σχόλιο που αναρτάται για εσάς φέρει το όνομά σας. Κανένα άλλο μέλος δεν
+  μπορεί να το διαβάσει, και συνδέει το δικό του
+- **Του διακομιστή**, από τη GitHub App που καταχώρισε ο χειριστής. Απαντά σε ό,τι
+  δεν έχει καλούντα — έτσι η πρόσβαση στη φιλοξενία κώδικα δεν χάνεται όταν ένα
+  άτομο φύγει ή αλλάξει ένα token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
-and [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/).
+Το δικό σας ορίζεται στην κάρτα **Φιλοξενία κώδικα** στις **Ρυθμίσεις → Χώρος
+εργασίας → Προφίλ και ταυτότητα**· του διακομιστή στην κάρτα **Εφαρμογές
+παρόχων** στις **Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση**. Δείτε τη
+[Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+και τη [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Υπάρχει και μια οθόνη μόνο για URL]
+Το `/workspaces/<workspaceId>/api-keys` εμφανίζει τις ίδιες δύο κάρτες με το
+πρώτο βήμα της αρχικής διαμόρφωσης. Δεν έχει **καμία καταχώριση πλοήγησης
+πουθενά στη διεπαφή**· είναι προσβάσιμο μόνο αν πληκτρολογήσετε το URL.
+Χρησιμοποιήστε αντ' αυτού τις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα.
 :::
 
-## Set model provider keys
+## Ορισμός κλειδιών παρόχων μοντέλων
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Ο ενσωματωμένος προσαρμογέας πιστοποιεί ο ίδιος τους παρόχους και αυτά τα
+διαπιστευτήρια ζουν στον διακομιστή.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Μεταβείτε στις **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων**
+2. Μετακινηθείτε στην ενότητα **Πάροχοι και μοντέλα**
+3. Συνδέστε τον πάροχο — OAuth μέσω προγράμματος περιήγησης για OpenAI, Codex,
+   Cursor και Kimi Code· κλειδί API για Anthropic και τους υπόλοιπους
 
-See [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/) for the full list and
-for adding a custom endpoint.
+Δείτε τη [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+για την πλήρη λίστα και για την προσθήκη προσαρμοσμένου endpoint.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Αυτά τα διαπιστευτήρια είναι **καθολικά στον κεντρικό υπολογιστή**: ένα κλειδί
+εξυπηρετεί κάθε χώρο εργασίας της εγκατάστασης. Τα token OAuth ανανεώνονται πριν
+λήξουν.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Τα εξωτερικά CLI προσαρμογέων κρατούν τα δικά τους διαπιστευτήρια, στη δική τους
+διαμόρφωση, στον κεντρικό υπολογιστή του διακομιστή — το Control Center δεν τα
+διαχειρίζεται. Πιστοποιήστε το Claude Code όπως λέει η δική του τεκμηρίωση, στο
+μηχάνημα όπου εκτελείται το `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
+Ο διάλογος **Μεταβλητές περιβάλλοντος** κάθε προσαρμογέα μοιάζει με μέρος για να
+βάλετε κλειδί για ένα από αυτά, αλλά δεν είναι: γράφει στη συσκευή σας, ενώ ο
+διακομιστής διαβάζει το δικό του αντίγραφο και τίποτα δεν γεφυρώνει τα δύο. Δείτε
+τη [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
 
-## Connect a ticketing vendor
+## Σύνδεση παρόχου εισιτηρίων
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Η κάρτα **Εισιτήρια** στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** περιέχει και
+τα δύο σκέλη μιας απόφασης: σε ποιον πάροχο ζουν τα εισιτήριά σας και το
+διαπιστευτήριο για αυτόν. Η επιλογή **Τοπικό** κρύβει τη γραμμή διαπιστευτηρίου —
+τα τοπικά εισιτήρια ζουν στη βάση δεδομένων αυτού του διακομιστή και δεν έχουν
+τίποτα να πιστοποιήσουν.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-linear/).
+Το κλειδί σας αποθηκεύεται στον διακομιστή με βάση το αναγνωριστικό χρήστη σας,
+όπως αυτό της φιλοξενίας κώδικα. Ο διακομιστής κρατά το δικό του κλειδί Linear
+ξεχωριστά (**Εφαρμογές παρόχων**), και σε αυτό τρέχει ο συγχρονισμός εισιτηρίων
+όταν δεν το ζήτησε άνθρωπος. Ένα κλειδί που λαμβάνει ένας πράκτορας εισάγεται
+μόνο όταν ο πράκτορας διαθέτει τη δυνατότητα **Να επιτρέπονται κλήσεις API
+εισιτηρίων**. Δείτε τη
+[Ρύθμιση ενσωμάτωσης Linear](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-linear/).
 
-## Rotate or revoke
+## Αλλαγή ή ανάκληση
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- **Το διαπιστευτήριό σας στο GitHub**: πατήστε **Αποσύνδεση** και μετά συνδεθείτε
+  ξανά ή επικολλήστε το νέο token. Ανακαλέστε το παλιό στο GitHub
+- **Η εφαρμογή του διακομιστή**: δημιουργήστε νέο ιδιωτικό κλειδί ή client secret
+  στη σελίδα της εφαρμογής στο GitHub, επικολλήστε το στις **Εφαρμογές παρόχων**
+  και πατήστε **Δοκιμή**
+- **Ένας πάροχος μοντέλων**: στη γραμμή του, αποσυνδεθείτε (OAuth) ή αφαιρέστε το
+  κλειδί και μετά συνδεθείτε ξανά
+- **Το Slack**: επικολλήστε ξανά τα token στον διάλογο σύνδεσης. Δείτε τη
+  [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The PR list is empty but my token works in `curl`
+### Η λίστα PR είναι άδεια, αλλά το token μου δουλεύει στο `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Ελέγξτε τον υπότιτλο της γραμμής **Φιλοξενία κώδικα**. Αν αναφέρει άλλη πηγή
+(«μέσω της εφαρμογής αυτού του διακομιστή», «από το περιβάλλον»), το
+διαπιστευτήριο που δοκιμάζετε δεν είναι αυτό που απαντά — το δικό σας δεν
+αποθηκεύτηκε.
 
-### The token is accepted but later requests fail
+### Το token γίνεται δεκτό, αλλά μεταγενέστερα αιτήματα αποτυγχάνουν
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Το token ελέγχεται όπως είναι αποθηκευμένο, οπότε η γραμμή ονομάζει τον
+λογαριασμό πίσω του — αλλά μόνο τον λογαριασμό, όχι τα scopes. Ένα token με πολύ
+λίγα scopes συνδέεται και μετά αποτυγχάνει σε μεμονωμένα αιτήματα. Ελέγξτε τα
+scopes και τη λήξη:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
-- [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)
-- [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
-- [Set up Linear integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-linear/)
+- [Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+- [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)
+- [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Ρύθμιση ενσωμάτωσης Linear](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-linear/)

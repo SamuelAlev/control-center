@@ -1,118 +1,133 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Bir toplantıyı kaydetme ve özetleme
+description: Bir görüşmeyi kaydedin, transkriptini alın ve bunu notlara, eylem öğelerine ve kararlara dönüştürün.
 slug: tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/tr-TR/kilavuz/kavramlar/toplantilar/) for how it works.
+Bu kılavuz bir toplantıyı nasıl kaydedeceğinizi ve YZ tarafından oluşturulmuş bir
+yazılı çıktıyı nasıl alacağınızı gösterir. Nasıl çalıştığını görmek için
+[Toplantılar ve transkripsiyon](/tr-TR/kilavuz/kavramlar/toplantilar/) sayfasına bakın.
 
-## Before you start
+## Başlamadan önce
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Konuşma modelini bekleyin, ardından sunucuyu yeniden başlatın.** Normal bir
+  açılış, seçili ASR modelini (çok dilli varsayılan Parakeet TDT 0.6B v3, yaklaşık
+  600 MB) arka planda zorla kurar. Sunucu modeli **açılışta bir kez** çözer;
+  dolayısıyla siz yeniden başlatana kadar ilk çalıştırmada hâlâ kayıt işlemi
+  yoktur. Diskte bir model yoksa kayıt, `Could not start
+  recording on the host: …` hatasıyla başarısız olur. Farklı bir derleme seçmek
+  için **Ayarlar → Sunucu → Ses ve toplantı modelleri** yoluna gidin — bu da
+  yeniden başlatma gerektirir.
+- İlk kayıtta işletim sisteminiz sorduğunda **mikrofon** iznini verin.
+- **macOS 14.4+** üzerinde sistem sesi Core Audio süreç tap’leriyle yakalanır —
+  kurulacak bir sürücü yoktur, ancak işletim sistemi _ses yakalama_ izni için
+  ikinci kez sorar. Bu, Ekran Kaydı değildir ve ekran kaydı göstergesini asla
+  yakmaz. İzni reddetmek, başlatmayı `System-audio capture permission denied.`
+  hatasıyla düşürür. macOS 14.4 altında sistem sesi yakalama yoktur.
+- **Linux**’ta `parecord` (pulseaudio-utils) ya da `pw-record` (pipewire) `PATH`
+  üzerinde olmalıdır — yakalama, bunlardan birini bir PipeWire/PulseAudio monitör
+  kaynağına karşı başlatır. İkisi de yoksa başlatma
+  `No system-audio capture tool found` hatasıyla başarısız olur.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Toplantı sesinizin gittiği yer]
+Yakalama, transkripsiyon, yankı iptali ve konuşmacı ayırma, bulut çağrısı
+yapılmadan cihaz üzerinde çalışır — ancak "cihaz", sunucuyu uzaktan
+çalıştırdığınızda farklı bir makine olan **cc_server ana makinesi** anlamına
+gelir. Son yazılı çıktı ise sıradan bir ajan çalıştırmasıdır: `meeting_summary`
+pipeline’ı tam transkripti ve kaba notlarınızı, o ajanın kullandığı model
+sağlayıcısına gönderir. Transkriptin makineden çıkmaması gerekiyorsa o ajanı
+yerel bir sağlayıcıya yönlendirin.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Kayıt ekranı bunu siz kaydederken bildirir; böylece gönderilecek bir transkript
+ortaya çıkmadan önce karar önünüzde olur.
 :::
 
-## Start a recording
+## Kaydı başlatma
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Kenar çubuğunda **Toplantılar**’ı açın.
+2. **Toplantı kaydet**’e tıklayın. Canlı kayıt HUD’ı `/meetings/record` adresinde açılır.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Kayıt hemen başlar ve mikrofonunuzla birlikte sistem çıkış sesini — diğer
+katılımcıları — yakalar. Mod istemi ve ses kaynağı seçici yoktur: yüz yüze tek
+mikrofon modu API’de vardır ama bugün bir arayüzü yoktur.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Tarayıcıda aynı akış çalışır, tek bir farkla: "sistem sesi", bir ses parçası
+içermesi gereken bir ekran paylaşımıdır. Bir tarayıcı sekmesini (ya da tüm
+ekranınızı) paylaşın ve seçicide "Sekme sesini paylaş" / "Sistem sesini paylaş"
+seçeneğini etkinleştirin. Safari, Firefox ve macOS’te tam ekran paylaşımı
+genellikle bir ses parçası sağlayamaz.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD bir seviye ölçer, geçen süreyi ve bir yanda canlı olarak oluşan bir
+transkripti gösterir.
 
-## During the meeting
+## Toplantı sırasında
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- Notlar bölmesinde **kaba notlar alın**. Siz yazarken kaydedilir ve sonradan özet ajanına verilir; bu yüzden transkriptin kaçırabileceği her şeyi not edin.
+- **Etkin şablon** satırından **not şablonunu seçin**. Bu, toplantının özetini şekillendirir ve kayıtla birlikte saklanır; böylece sonraki bir yeniden çalıştırma burada seçtiğiniz şablonu yeniden üretir.
+- Duraklatma denetimiyle **duraklatın ve sürdürün**. Duraklatıldığında transkripsiyon durur ve zamanlayıcı donar.
+- Transkript konuşmacı etiketli olarak akar: sizin sözleriniz **Siz**, görüşmedeki herkes **Diğerleri** — konuşmacı ayırma, Diğerleri’ni yeniden adlandırabileceğiniz `Person 1`, `Person 2`, … biçiminde bölene kadar.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Çok sessiz bir konuşmacı transkripte girmeyebilir]
+Transkripsiyon, hiçbir zaman bir sessizlik eşiğinin üzerine çıkmamış her ses
+penceresini hiç çözmeden atlar. Bu, sessiz bir kanalın halüsinasyon görmüş
+konuşma dışı token’lar için CPU harcamasını önler; ama aynı zamanda kısık ya da
+uzak bir konuşmacının hiç transkript üretememesi anlamına gelir. Seviye ölçeri
+sonunda değil, erkenden kontrol edin.
 :::
 
-## Stop and summarize
+## Durdurma ve özetleme
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. **Durdur ve özetle**’ye tıklayın.
+2. Control Center sizi doğrudan, **İşleniyor** olarak işaretlenmiş toplantı ayrıntısı görünümüne götürür: konuşmacı ayırma uzak kanalı ayrı konuşmacılara böler ve `meeting_summary` pipeline’ı yazılı çıktıyı üretir.
+3. Bu pipeline bittiğinde toplantı **Tamamlandı** durumuna geçer. Bunu beklemeniz gerekmez — ayrıntı görünümü kendini günceller.
 
-## Review the writeup
+## Yazılı çıktıyı inceleme
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Toplantı ayrıntısının (`/meetings/:meetingId`) dört sekmesi vardır:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Sekme             | İçeriği                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| **Notlar**        | Kaba notlarınız + transkriptten oluşturulan YZ özeti ve zenginleştirilmiş notlar |
+| **Transkript**    | Zaman damgalarıyla birlikte konuşmacı etiketli tam transkript                    |
+| **Eylem öğeleri** | Çıkarılan yapılacaklar; her biri isteğe bağlı bir sorumluyla                     |
+| **Kararlar**      | Görüşme sırasında kaydedilen kararlar                                            |
 
-From here you can:
+Buradan şunları yapabilirsiniz:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Konuşmacıları yeniden adlandırın**: `Person 1` yerine gerçek bir ad yazın; bu, transkriptin tamamına uygulanır.
+- Tamamladıkça **eylem öğelerini işaretleyin**.
+- Bir eylem öğesinden **Bilet oluştur**: bu, başlığı eylem öğesi olan yeni ve atanmamış bir bilet açar ve öğeyi o bilete bağlar. Bileti, biletin kendisinden bir ajana atayın (bkz. [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)).
+- Yeni bir tur için **Özeti yeniden çalıştır** (örneğin konuşmacıları yeniden adlandırdıktan sonra). Toplantı kaydedilirken yakalanan şablonu yeniden kullanır. Etkin şablonu **Ayarlar → Çalışma alanı → Toplantılar** yolundan seçin.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Notları, başlığı, eylem öğelerini ve kararları düzenlemek her yerde çalışır.
+**Özeti yeniden çalıştır** ve işlenen bir toplantıyı iptal etme **yalnızca
+masaüstünde** çalışır — tarayıcıda her iki düğme de hiçbir şey yapmaz.
 
-## Record straight from a calendar event
+## Doğrudan bir takvim etkinliğinden kaydetme
 
-If you've [connected a calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+[Bir takvim bağladıysanız](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/), elle
+başlatmayı atlayabilirsiniz. Bu **yalnızca masaüstünde** çalışır; web istemcisi
+bunu reddeder.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Etkinliği **Takvim**’den açın.
+2. **Kaydı başlat ve bağla**’ya tıklayın.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Kayıt, etkinliğin başlığıyla başlatılır ve etkinliğe geri bağlanır; böylece
+notlar ve takvim girdisi bağlantılı kalır.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Bir toplantıyı silmek sesini silmez]
+Bir toplantıyı silmek satırlarını kaldırır, ancak
+`<dataDir>/meetings/<meetingId>/` altındaki kayıtlı WAV dosyaları diskte kalır —
+bir saklama ilkesi, boyut sınırı ya da temizleme taraması yoktur. Ses önemliyse o
+dizini kendiniz silin.
 :::
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Connect a Google Calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
-- [Delegate work to agents](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Meetings and transcription](/tr-TR/kilavuz/kavramlar/toplantilar/)
+- [Toplantılar ve transkripsiyon](/tr-TR/kilavuz/kavramlar/toplantilar/)

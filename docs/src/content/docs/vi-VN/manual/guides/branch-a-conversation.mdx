@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Nhánh một cuộc hội thoại
+description: Thử một hướng khác từ một điểm trước đó mà không đánh mất hướng bạn đang có, rồi tách nhánh hoặc xuất những gì bạn muốn giữ lại.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/nhanh-hoi-thoai
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Hướng dẫn này chỉ cho bạn cách quay lại một điểm trước đó trong cuộc hội thoại và rẽ nó sang một hướng khác — mà vẫn giữ nguyên đường đi bạn đã rời bỏ.
 
-## The one thing worth knowing
+## Một điều duy nhất đáng biết
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Tạo nhánh không ghi gì cả.** Một cuộc hội thoại là một cây tin nhắn với một con trỏ ở đầu ngọn, và quay lại chỉ là di chuyển con trỏ đó. Không gì bị xóa, không gì bị ẩn, và chuyển ngược lại cũng chỉ là một lần di chuyển con trỏ nữa.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Đó là lý do vì sao việc sửa một prompt rồi chạy lại là an toàn ở đây: câu trả lời mà bạn đang đối chiếu vẫn còn nguyên.
 
-## See the branches
+## Xem các nhánh
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Trình điều hướng liệt kê mọi tin nhắn, thụt lề tại mỗi điểm rẽ, với đường đi hiện tại được đánh dấu **Trên nhánh này**. Một cuộc hội thoại chưa từng tách nhánh vẫn hiển thị như danh sách phẳng vốn có — nhìn vào trình điều hướng chẳng tốn gì cho đến khi có thứ gì đó để điều hướng.
 
-Each row offers two actions.
+Mỗi dòng có hai hành động.
 
-| Action                          | Effect                                                    |
+| Hành động                       | Tác dụng                                                  |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **Tiếp tục từ đây**             | Di chuyển con trỏ. Tin nhắn tiếp theo của bạn tiếp nối từ tin nhắn đó. |
+| **Tách sang hội thoại mới**     | Sao chép đường đi tính đến tin nhắn đó vào một cuộc hội thoại mới. |
 
-## Branch: try a different approach
+## Tạo nhánh: thử một hướng khác
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Tìm tin nhắn mà bạn muốn bắt đầu lại từ đó — thường là tin nhắn cuối cùng mà bạn thấy ưng ý.
+3. **Tiếp tục từ đây.**
+4. Nhập prompt mới.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Phần tiếp nối cũ vẫn còn trong cây; `/tree` giờ sẽ hiển thị hai đường đi từ điểm đó, và bạn có thể chuyển qua lại giữa chúng thoải mái.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Đường đi bạn rời bỏ vẫn còn đó]
+Tạo nhánh không ẩn hay xóa bất cứ thứ gì. `/tree` liệt kê mọi đường đi, đánh dấu đường hiện tại là **Trên nhánh này**, và chính là cách bạn chuyển đổi.
 :::
 
-## Fork: take it somewhere else
+## Tách nhánh: mang nó đi nơi khác
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Tách nhánh sao chép đường đi vào một **cuộc hội thoại mới** trong cùng không gian. Dùng cách này khi hai hướng sẽ ngày càng rẽ xa nhau và bạn muốn chúng song song với nhau thay vì phải chuyển qua lại.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Bản sao có các id tin nhắn hoàn toàn mới. Hai cuộc hội thoại dùng chung các hàng sẽ cho thấy những tin nhắn về sau của nhau, đúng điều mà việc tách nhánh sinh ra để ngăn chặn.
 
-## Revert versus branch
+## Hoàn nguyên so với tạo nhánh
 
-They are different tools and the difference matters.
+Đây là hai công cụ khác nhau và sự khác biệt giữa chúng rất quan trọng.
 
-|                     | Revert                                             | Branch                          |
+|                     | Hoàn nguyên                                        | Tạo nhánh                       |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| Những tin nhắn về sau | Bị ẩn khỏi bản tường thuật                        | Vẫn hiển thị trong `/tree`       |
+| **worktree**        | Được cuộn lại về ảnh chụp nhanh của lượt đó         | Không bị đụng tới                |
+| Hoàn tác            | **Hoàn tác hoàn nguyên** khôi phục cả lô            | Di chuyển con trỏ ngược lại      |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Hoàn nguyên là thứ bạn cần khi agent đã thay đổi những *tệp* mà bạn muốn lấy lại. Tạo nhánh là thứ bạn cần khi cuộc hội thoại đi sai hướng nhưng các tệp vẫn ổn.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Việc hoàn nguyên cũng di chuyển đầu nhánh, nên tin nhắn tiếp theo của bạn tiếp nối từ đúng chỗ thay vì từ một cái đuôi mà không ai còn nhìn thấy nữa.
 
-## Take it out of the app
+## Mang nó ra khỏi ứng dụng
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Ghi ra một **tệp HTML khép kín**: toàn bộ cuộc hội thoại cùng những thẻ công cụ có thể thu gọn, cho thấy mỗi lời gọi được truyền vào gì và trả về gì. Không cần bảng định kiểu, không cần script, không cần dịch vụ lưu trữ ảnh — nó chạy được từ một chiếc USB và vẫn chạy được sau năm năm nữa.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Máy tính để bàn:** `Documents/ControlCenter/exports/`, có gắn dấu thời gian nên lần xuất thứ hai không ghi đè lần đầu.
+- **Web:** một bản tải xuống từ trình duyệt.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Sao chép bản tường thuật vào clipboard dưới dạng markdown, với các lời gọi công cụ nằm trong những khối có thể thu gọn. Đây chính là thứ để dán vào một issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Phần lập luận được cố ý bỏ ra ngoài: đó là chỗ nháp của mô hình, còn báo cáo lỗi là thứ do con người đọc.
 
-## Related
+## Liên quan
 
-- [Conversation history](/vi-VN/so-tay/khai-niem/lich-su-hoi-thoai/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/vi-VN/so-tay/tham-chieu/lenh-slash/) — `/tree`, `/export`, `/dump`
+- [Lịch sử hội thoại](/vi-VN/so-tay/khai-niem/lich-su-hoi-thoai/) — vì sao cây chỉ là một lần di chuyển con trỏ, và việc khôi phục thực sự lấy lại những gì
+- [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/) — `/tree`, `/export`, `/dump`

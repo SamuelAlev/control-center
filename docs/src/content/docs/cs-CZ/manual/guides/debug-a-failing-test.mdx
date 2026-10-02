@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Laděte padající test s agentem
+description: Nech agenta nastavit breakpoint, spustit program pod debuggerem a přečíst skutečný rámec zásobníku místo příkazů print.
 slug: cs-CZ/prirucka/navody/ladeni-padajiciho-testu
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Tenhle návod ukáže, jak nechat agenta použít debugger na selhání, které příkazy print nevysvětlují.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Nástroj `debug` řídí skutečnou relaci Debug Adapter Protocol. Zastavený rámec odpoví najednou na každou otázku o tom okamžiku: každá lokální proměnná, každý volající a výraz vyhodnocený ve vlastním rozsahu rámce. Příkaz print odpoví jen na to, na co ses zeptal před během.
 
-## Before you start
+## Než začneš
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Nástroj zůstává na povrchu, aby se agent mohl zeptat, proč se nic nedá použít, a nemusel hádat. Adaptér se opravdu spustí, jen když platí **obojí**:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- v checkoutu leží značka projektu a
+- najde se binárka adaptéru.
 
-Ask the agent to check:
+Požádej agenta, ať to ověří:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Odpoví tím, co našel, nebo vysvětlí, že adaptér potřebuje obě poloviny.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Jazyk          | Adaptér                      | Značka                                           | Instalace                                             |
+| -------------- | ---------------------------- | ------------------------------------------------ | ----------------------------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | Dodává se s SDK, nic se neinstaluje                   |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`                                 |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Dodává se s LLVM                                      |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python bere interpret projektu]
+`debugpy` se hledá v `.venv/bin` nebo `venv/bin` dřív než na `$PATH`. Python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód, ne jako špatný interpret.
 :::
 
-## Set the breakpoint first, then launch
+## Nejdřív breakpoint, potom spuštění
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Na pořadí záleží a nástroj ho vynucuje: breakpointy jde nastavit **před** tím, než relace existuje, protože právě tohle pořadí protokol vyžaduje.
 
-Ask the agent something like:
+Požádej agenta třeba takhle:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Funkce `compute` v `bin/main.dart` vrací špatnou hodnotu. Nastav breakpoint na řádku, který přiřazuje `product`, spusť ji pod debuggerem a řekni mi, jaké `a` a `b` ve skutečnosti jsou.
 
-It will run roughly:
+Spustí zhruba tohle:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Spuštění nahlásí, kde se zastavilo:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Když místo toho hlásí, že program skončil]
+Breakpoint se nenavázal. Prázdný řádek, komentář nebo řádek, který se do sestavení nepřeložil, ho neudrží. Volání `breakpoints` proti živé relaci nahlásí, kolik z nastavených se opravdu umístilo.
 :::
 
-## Read the frame
+## Přečti rámec
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Pak jdi dovnitř:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Objekt s potomky hlásí `[expand: reference N]`, ale jen když za ním opravdu něco je. Rozbalení, se kterým agent nic neudělá, se nikdy nenabídne.
 
-For anything not visible as a local:
+Na to, co mezi lokálními proměnnými není:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Krokuj
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Co chceš                  | Operace     |
+| ------------------------- | ----------- |
+| Běž k dalšímu zastavení   | `continue`  |
+| Další řádek, stejný rámec | `step_over` |
+| Dovnitř volání            | `step_in`   |
+| Ven k volajícímu          | `step_out`  |
+| Zastav běžící program     | `pause`     |
 
-## Attach to something already running
+## Připoj se k tomu, co už běží
 
-For a wedged process rather than one you are starting:
+U zaseknutého procesu, který nespouštíš ty:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Ukonči
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Relaci vždycky ukonči. Adaptér debuggeru vlastní **zastavený proces**, který drží všechno, co ten proces drží: port, zámek, spojení s databází.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Utéct ti nemůže]
+Každá relace má tvrdou TTL, kterou sama neprodlouží, na konverzaci je přesně jedna a při zastavení serveru se všechno zruší. Druhý `launch` se odmítne, místo aby první nahradil. Agent, který spustí druhou, aniž první ukončil, o té první skoro jistě ztratil přehled.
 :::
 
-## Bounded output
+## Ohraničený výstup
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Rozbalení `variables` na hlubokém grafu objektů je ze své podstaty neomezené. Jeden widget Flutteru dosáhne na celý strom elementů. Potomků v jednom rozsahu je nejvýš 50, hodnoty mají nejvýš 400 znaků a rámců zásobníku nejvýš 30. Výsledek nástroje, který zaplní kontextové okno, ukončí běh, kterému měl pomáhat.
 
-## Related
+## Související
 
-- [Code intelligence](/cs-CZ/prirucka/koncepty/inteligence-kodu/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — every `debug` op and argument
-- [Diagnose an agent](/cs-CZ/prirucka/navody/diagnostika-agenta/) — when the problem is the agent, not the code
+- [Inteligence kódu](/cs-CZ/prirucka/koncepty/inteligence-kodu/) — proč debugger, překladač a porovnávač odpovídají na jiné otázky
+- [Vestavěné nástroje agentů](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — každá operace `debug` a její argumenty
+- [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/) — když je problém v agentovi, ne v kódu

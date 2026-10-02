@@ -1,65 +1,83 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Nyahpepijat ujian yang gagal dengan ejen
+description: Minta ejen menetapkan titik henti, melancarkan di bawah penyahpepijat dan membaca bingkai tindanan sebenar dan bukannya menambah pernyataan cetak.
 slug: ms-MY/manual-pengguna/panduan-cara/nyahpepijat-ujian-gagal
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Panduan ini menunjukkan cara membuat ejen menggunakan penyahpepijat pada
+kegagalan yang tidak dapat dijelaskan oleh pernyataan cetak.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Alat `debug` memandu sesi Debug Adapter Protocol sebenar. Bingkai yang dihentikan
+menjawab setiap soalan tentang saat itu sekali gus — setiap pembolehubah
+setempat, setiap pemanggil, dan satu ungkapan yang dinilai dalam skop bingkai
+itu sendiri — manakala pernyataan cetak hanya menjawab soalan yang anda terfikir
+untuk tanyakan sebelum menjalankannya.
 
-## Before you start
+## Sebelum anda bermula
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Alat ini kekal di permukaan supaya ejen boleh bertanya mengapa tiada apa yang
+boleh digunakan, dan bukannya meneka. Penyesuai hanya boleh bermula apabila
+**kedua-dua** perkara berikut dipenuhi:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- penanda projek dalam checkout, dan
+- binari penyesuai itu dapat diselesaikan.
 
-Ask the agent to check:
+Minta ejen menyemak:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Ia menjawab dengan apa yang dijumpainya, atau menerangkan bahawa penyesuai
+memerlukan kedua-dua bahagian itu.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| Bahasa          | Penyesuai                    | Penanda                                         | Pemasangan                        |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Disertakan dengan SDK — tiada apa-apa perlu dilakukan |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Disertakan dengan LLVM             |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python memilih jurubahasa projek]
+`debugpy` dicari dalam `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python `$PATH`
+ialah persekitaran yang berbeza, dan melampirkan daripada yang salah akan gagal
+dengan cara yang kelihatan seperti kod rosak dan bukan seperti jurubahasa yang
+salah.
 :::
 
-## Set the breakpoint first, then launch
+## Tetapkan titik henti dahulu, kemudian lancarkan
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Urutan itu penting dan alat ini menguatkuasakannya: titik henti boleh ditetapkan
+**sebelum** sesi wujud, kerana itulah urutan yang dikehendaki oleh protokol.
 
-Ask the agent something like:
+Tanyakan kepada ejen sesuatu seperti:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Fungsi `compute` dalam `bin/main.dart` mengembalikan nilai yang salah.
+> Tetapkan titik henti pada baris yang menetapkan `product`, lancarkannya di
+> bawah penyahpepijat dan beritahu saya apakah sebenarnya `a` dan `b`.
 
-It will run roughly:
+Ia akan menjalankan lebih kurang:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Pelancaran melaporkan tempat ia berhenti:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Jika ia sebaliknya melaporkan program keluar]
+Titik henti itu tidak terikat. Baris yang kosong, ulasan, atau tidak dikompil ke
+dalam binaan tidak boleh memegangnya. Memanggil `breakpoints` terhadap sesi yang
+hidup melaporkan berapa banyak titik henti yang anda tetapkan benar-benar
+diletakkan.
 :::
 
-## Read the frame
+## Baca bingkai itu
 
 ```
 debug(op: "stack")
@@ -67,7 +85,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Kemudian masuk ke dalamnya:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +97,61 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Objek yang mempunyai anak melaporkan `[expand: reference N]` — tetapi hanya
+apabila benar-benar ada sesuatu di belakangnya, jadi pengembangan yang tidak
+boleh digunakan oleh ejen tidak pernah ditawarkan.
 
-For anything not visible as a local:
+Untuk apa-apa yang tidak kelihatan sebagai pembolehubah setempat:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Melangkah melalui
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Apa yang anda mahu            | Op          |
+| ----------------------------- | ----------- |
+| Jalankan ke hentian seterusnya | `continue` |
+| Baris seterusnya, bingkai sama | `step_over` |
+| Masuk ke dalam panggilan      | `step_in`   |
+| Keluar ke pemanggil           | `step_out`  |
+| Hentikan program yang sedang berjalan | `pause` |
 
-## Attach to something already running
+## Lampirkan pada sesuatu yang sudah berjalan
 
-For a wedged process rather than one you are starting:
+Untuk proses yang tersekat dan bukan proses yang anda mulakan:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Tamatkan
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Sentiasa tamatkan sesi. Penyesuai nyahpepijat memiliki **proses yang
+dihentikan** yang memegang apa sahaja yang dipegang oleh proses itu — satu port,
+satu kunci, satu sambungan pangkalan data.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Ia tidak boleh lari daripada anda]
+Setiap sesi mempunyai TTL keras yang tidak boleh dipanjangkannya, terdapat tepat
+satu sesi bagi setiap perbualan, dan semuanya dibongkar apabila pelayan berhenti.
+`launch` kedua ditolak dan tidak menggantikan yang pertama: ejen yang memulakan
+satu tanpa menamatkan yang lain hampir pasti telah hilang jejak yang pertama.
 :::
 
-## Bounded output
+## Output terbatas
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Pengembangan `variables` pada graf objek yang dalam memang tidak terbatas secara
+semula jadi — satu widget Flutter mencapai keseluruhan pokok elemen. Anak bagi
+setiap skop dihadkan pada 50, nilai pada 400 aksara dan bingkai tindanan pada
+30. Hasil alat yang memenuhi tetingkap konteks ialah alat yang menamatkan larian
+yang dibantunya.
 
-## Related
+## Berkaitan
 
-- [Code intelligence](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — every `debug` op and argument
-- [Diagnose an agent](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/) — when the problem is the agent, not the code
+- [Kepintaran kod](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — mengapa penyahpepijat, pengkompil dan pemadan menjawab soalan yang berbeza
+- [Alat ejen terbina](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — setiap operasi dan argumen `debug`
+- [Diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/) — apabila masalahnya ialah ejen, bukan kod

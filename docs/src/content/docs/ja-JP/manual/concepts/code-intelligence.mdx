@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: コードインテリジェンス
+description: エージェントがコンパイラー、構造マッチャー、デバッガーを必要とする理由と、それぞれがほかのものには答えられない何に答えるのか。
 slug: ja-JP/マニュアル/コンセプト/コードインテリジェンス
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center は、コードを読む以外にコードを理解する4つの手段をエージェントに与えます。それぞれが本当に異なる問いに答え、4つあって1つではないのは、単一のメカニズムではそのすべてに答えられないからです。
 
-| Mechanism            | Answers                                          | Costs                                  |
+| メカニズム | 答えること | コスト |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **コードグラフ** | ここに何があり、何がそれに依存しているか | インデックスの1パス。クエリは安価 |
+| **言語サーバー** | これは本当にコンパイルが通るのか、この型は何か | プロジェクトごとにサーバープロセス1つ |
+| **構造検索** | この形はどこに現れるか | ファイルごとに1回のパース |
+| **デバッガー** | この瞬間、このフレームで何が真だったか | 停止したプロセス |
 
-## The gap the language server closes
+## 言語サーバーが埋めるギャップ
 
-The [code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[コードグラフ](/ja-JP/マニュアル/ハウツーガイド/コード検索/)は tree-sitter から構築されます。シンボル、呼び出しエッジ、影響範囲です。高速で、安価で、**型**については何も知りません。いま書いた呼び出しがコンパイルを通るか、そのフィールドがオブジェクトに存在するか、リネームが再エクスポートを見落としていないかは、コードグラフには分かりません。
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+言語サーバーがなければ、エージェントはテスト時に初めてそれに気づきます。あるいは、永遠に気づきません。もっともらしいものを書き、先へ進み、失敗は3ターン後に別の変更に紐づいた形で表面化します。
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+つまり、見返りは実際には `lsp` ツールではありません。`write`、`edit`、`apply_patch` がラップされていることです。書き込みのたびにファイルが言語サーバーを通り、**新たに導入された**診断がツールの結果に折り込まれます。エージェントは、ビルドを壊したまさにその瞬間に、尋ねようと思っていたかどうかに関係なく、壊したことを知ります。
 
-### Only new diagnostics
+### 新しい診断のみ
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+すでに伝えたことを繰り返すのは、何も言わないよりも有害です。結果がノイズで埋まると、エージェントはそれを読み飛ばすようになり、唯一の新しいエラーも一緒に流されてしまいます。実行ごとの台帳が、報告済みの内容を重要度・コード・メッセージをキーに追跡し、位置はキーに**しません**。そのため、4行下にずれただけの診断が新しいものとして再報告されることはありません。
 
-### Lazy, and honest about being absent
+### 遅延起動で、存在しないことにも正直
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+サーバーは起動時に立ち上がりません。必要とする最初のリクエスト、ほとんどはそのサーバーが担当するファイルへの最初の編集で立ち上がり、アイドル状態のものは回収されます。Dart に一切触れないホストがアナライザーを起動することはありません。
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+検出は**積集合**です。チェックアウトにルートマーカーが存在し、*かつ*バイナリが解決できなければなりません。マーカーだけでは「このプロジェクトは Python だ」と言えるだけで、サーバーがインストールされているかは分かりません。解決できるバイナリだけでは、ホストにツールチェーンがあると言えるだけで、このチェックアウトについては何も分かりません。両方が揃って初めてクエリが成功しうるのであり、提示されるのに常に失敗するツールは、存在しないツールよりも悪いのです。
 
-## Why structural search, when grep exists
+## grep があるのに、なぜ構造検索なのか
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` は文字にマッチします。名前には適したツールで、形には適しません。
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+構造パターンは**ファイルと同じ文法**でパースされるため、`dispose($X)` はスペースの入れ方や折り返し方、改行の位置に関係なくその呼び出しを見つけ、文字列リテラルやコメントの中の同じ文字並びには決してマッチしません。
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+これを「ひと手間多い正規表現」以上のものにしている性質は、ひとつのパターンの中で繰り返されるメタ変数が同じテキストを捕捉しなければならないことです。
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+これは、検査したものを破棄するガードにはマッチし、別のものを破棄するガードにはマッチしません。これはテキストではそもそも表現できないバグの種類です。
 
-### It runs on the tree-sitter already linked
+### すでにリンク済みの tree-sitter 上で動く
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+第二のエンジンはありません。`cc_natives` はコードグラフのために tree-sitter とその文法をすでに読み込んでおり、コンパイル済みクエリのキャッシュと言語テーブルを備えています。マッチャーは、どのみちパースされていたツリーに対する純粋な Dart です。第二の構造エンジンは、第二のパーサー、あらゆるプラットフォームでビルドして展開すべき第二の文法セット、そして「呼び出し式とは何か」に対する2つの答えを意味します。
 
-### A fragment needs somewhere to live
+### 断片には居場所が必要
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+文法は、完全な*ファイル*とは何かしか定義しません。Dart のトップレベルでそのままパースすると、`dispose(x)` は完全に妥当な**関数シグネチャ**、つまり `x` というパラメーターを取る `dispose` という宣言になり、それを知らせるエラーはどこにも出ません。そのパースを前提に作られたマッチャーは宣言を探し、呼び出しは見つからず、見た目どおりには一度も読まれていないパターンに対して「マッチなし」と報告します。
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+そこで、パターンはスキャフォールドのはしご、つまり文、式、クラスメンバー、トップレベルで順に試され、最初に受け入れたものが採用されます。どのコンテキストも受け入れない断片は、検索して静かに見つからなかったことにするのではなく、パース不能として報告されます。
 
-## Why a rewrite stages instead of writing
+## 書き換えが、書き込みではなくステージングする理由
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+構造的な書き換えは、エージェントができる最も広範囲な編集です。ひとつのパターン、40ファイル、そして結果を行単位で読む人は誰もいません。モデルも、それを依頼した人もです。それを書き込んで「完了」と報告するということは、変更を正直に初めて見るのが後からの `git diff` になるということです。
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+そのため `ast_edit` は、*何をするつもりか*、つまり件数、ファイル、マッチした箇所を報告し、変更は `resolve` がコミットしたときに初めて確定します。これによって、ディスクに届く前に差分と「承認/破棄」を人間の前に出すこともできます。
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+コミットはオール・オア・ナッシングで、すべてのファイルはステージング時に捕捉した内容と照合されます。ステージングとコミットの間に、エージェントがそれらのファイルの1つを手で編集したかもしれませんし、診断パスが書き換えたかもしれませんし、フォーマッターが触れたかもしれません。そのままコミットすればその作業は破棄され、差分は意図的なものに見えてしまいます。少しでも食い違えば変更全体が拒否されます。部分的に適用された構造的書き換えは、どちらの形でもコンパイルできないツリーを残すからです。
 
-## What a debugger answers that a print statement cannot
+## print 文には答えられないことに、デバッガーが答える
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+print 文のループはこうです。print を追加し、全体をもう一度実行し、出力を読み、print を削除する。問いごとにテストの完全な実行がかかり、*実行する前に*思いついた問いにしか答えられません。
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+停止したフレームは、その瞬間に関するあらゆる問いに一度に答えます。すべてのローカル変数、すべての呼び出し元、そしてフレーム自身のスコープで評価される式です。固まったプロセスや、10回に1回しか再現しない失敗にとって、これは午後が数分になるかどうかの違いです。
 
-### Bounded like an enclosure, and for the same reason
+### エンクロージャーと同じ理由で、同じように制限される
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+デバッグアダプターは、そのプロセスが保持するもの、つまりポート、ロック、データベース接続を保持する**停止したプロセス**を所有します。誰も操作していないセッションは、それを開始したターンより長生きするリークです。そこで厳密な TTL があり、会話ごとにセッションはちょうど1つで、2回目の `launch` は最初のものを黙って置き換えるのではなく拒否されます。最初のものを終わらせずに2つ目を起動するエージェントは、ほぼ確実に最初のものを見失っています。
 
-### One transport, two protocols
+### ひとつのトランスポート、ふたつのプロトコル
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol は Language Server Protocol の `Content-Length` フレーミングだけを共有し、それより上の層は共有しません。相関キーは異なり、失敗の形も異なり、LSP に対応するものがない3番目のメッセージ種別（イベント）があります。フレーミングは1か所にあり、各プロトコルはその上に別々に載っています。
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+フレーミングを2回書くということは、「メッセージが2つのチャンクにまたがる」「1つのチャンクに3つのメッセージが入る」「サーバーが最初のフレームの前に stdout へバナーを出力した」に対する答えが2つになり、そのうち片方しか修正されないということです。
 
-## Related
+## 関連項目
 
-- [Search code with the code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/) — the symbol and impact side
-- [Debug a failing test](/ja-JP/マニュアル/ハウツーガイド/失敗テストのデバッグ/) — the debugger, end to end
-- [Refactor structurally](/ja-JP/マニュアル/ハウツーガイド/構造的リファクタ/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ja-JP/マニュアル/リファレンス/エージェントツール/) — every operation and argument
+- [コードグラフでコードを検索](/ja-JP/マニュアル/ハウツーガイド/コード検索/) — シンボルと影響の側面
+- [失敗したテストをデバッグ](/ja-JP/マニュアル/ハウツーガイド/失敗テストのデバッグ/) — デバッガーを端から端まで
+- [構造的にリファクタ](/ja-JP/マニュアル/ハウツーガイド/構造的リファクタ/) — `ast_grep` と `ast_edit`
+- [内蔵エージェントツール](/ja-JP/マニュアル/リファレンス/エージェントツール/) — すべての操作と引数

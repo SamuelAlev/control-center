@@ -1,115 +1,121 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Urus kunci API
+description: Di mana setiap kelayakan berada — akaun pengguna anda pada pelayan, pelayan itu sendiri, atau CLI luaran — dan cara menetapkannya, memutarnya serta membuangnya.
 slug: ms-MY/manual-pengguna/panduan-cara/kunci-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Panduan ini menunjukkan kepada anda di mana setiap kelayakan yang digunakan oleh
+Control Center disimpan dan cara mengubahnya.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Tiada apa-apa disimpan pada mesin yang anda sedang taip ini.** Setiap kelayakan
+berada pada pelayan; kelayakan mana yang menjawab sesuatu permintaan bergantung
+pada sama ada ada manusia di belakangnya.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Kelayakan                            | Disimpan                                                   | Siapa yang menggunakannya                                          |
+| ------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| Kelayakan hos kod / penetikan anda   | Fail rahsia 0600 pelayan, dikunci mengikut id pengguna anda | Apa sahaja yang anda minta: permukaan PR, larian ejen, imej anda   |
+| Identiti apl pelayan                 | Fail yang sama, ditambah `server_settings` untuk yang bukan rahsia | Kerja yang tiada manusia meminta: webhook, pengundian PR, penyegerakan tiket |
+| Kunci penyedia model dan token OAuth | Stor kelayakan pelayan sendiri                              | Penyesuai terbina, untuk setiap ruang kerja pada pemasangan ini    |
+| Token bot Slack                      | `<dataDir>/<workspaceId>/chat_credentials/` pada pelayan    | Jambatan sembang bagi ruang kerja itu                              |
+| Kelayakan CLI luaran                 | Apa sahaja yang digunakan oleh CLI itu                      | Claude Code, pada hos pelayan                                      |
 
-## Two GitHub credentials, and they answer different questions
+## Dua kelayakan GitHub, dan keduanya menjawab soalan yang berbeza
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Milik anda**, daripada daftar masuk (aliran peranti) atau menampal token.
+  Ia yang digunakan oleh setiap permintaan yang dibuat *bagi pihak anda*, jadi
+  komen yang disiarkan untuk anda membawa nama anda. Ahli lain tidak boleh
+  membacanya, dan mereka menyambungkan milik mereka sendiri
+- **Milik pelayan**, daripada GitHub App yang didaftarkan oleh pengendali. Ia
+  menjawab semua perkara yang tiada pemanggil — jadi akses hos kod tidak hilang
+  apabila seseorang keluar atau memutar token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
-and [Create the GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
+Milik anda ditetapkan dalam kad **Hos kod** di **Tetapan → Ruang kerja → Profil &
+identiti**; milik pelayan dalam **Apl penyedia** di **Tetapan → Pelayan → Daftar
+masuk tunggal**. Lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
+dan [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Ada juga skrin URL sahaja]
+`/workspaces/<workspaceId>/api-keys` memaparkan dua kad yang sama seperti langkah
+pertama onboarding. Ia **tiada entri navigasi di mana-mana dalam UI**; ia hanya
+boleh dicapai dengan menaip URL itu. Gunakan Tetapan → Ruang kerja → Profil &
+identiti sebaliknya.
 :::
 
-## Set model provider keys
+## Tetapkan kunci penyedia model
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Penyesuai terbina mengesahkan penyedia sendiri dan kelayakan tersebut berada pada
+pelayan.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Pergi ke **Tetapan → Pelayan → Penyedia model**
+2. Tatal ke **Penyedia & model**
+3. Sambungkan penyedia — OAuth pelayar untuk OpenAI, Codex, Cursor dan Kimi Code;
+   kunci API untuk Anthropic dan selebihnya
 
-See [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/) for the full list and
-for adding a custom endpoint.
+Lihat [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/) untuk senarai penuh
+dan untuk menambah titik akhir tersuai.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Kelayakan ini **global hos**: satu kunci melayani setiap ruang kerja pada
+pemasangan ini. Token OAuth disegarkan sebelum ia tamat tempoh.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLI penyesuai luaran menyimpan kelayakannya sendiri, dalam konfigurasinya sendiri,
+pada hos pelayan — Control Center tidak menguruskannya. Sahkan Claude Code seperti
+yang dinyatakan dalam dokumentasinya sendiri, pada mesin yang menjalankan `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
+Dialog **Pemboleh ubah persekitaran** bagi setiap penyesuai kelihatan seperti
+tempat untuk meletakkan kunci bagi salah satu daripadanya, tetapi bukan: ia
+menulis ke peranti anda, manakala pelayan membaca salinannya sendiri dan tiada
+apa yang menghubungkan keduanya. Lihat
+[Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
 
-## Connect a ticketing vendor
+## Sambungkan vendor penetikan
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Kad **Tiket** pada **Tetapan → Ruang kerja → Umum** memegang kedua-dua belah satu
+keputusan: vendor tempat tiket anda berada, dan kelayakan untuknya. Memilih
+**Setempat** menyembunyikan baris kelayakan — tiket setempat berada dalam pangkalan
+data pelayan ini sendiri dan tiada apa-apa untuk disahkan.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/).
+Kunci anda disimpan pada pelayan terhadap id pengguna anda, seperti kunci hos kod.
+Pelayan menyimpan kunci Linear-nya sendiri secara berasingan (**Apl penyedia**),
+iaitu yang digunakan oleh penyegerakan tiket apabila tiada manusia memintanya.
+Kunci yang diterima oleh ejen hanya disuntik apabila ejen mempunyai keupayaan
+**Benarkan panggilan API tiket**. Lihat
+[Sediakan integrasi Linear](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/).
 
-## Rotate or revoke
+## Putar atau tarik balik
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
+- **Kelayakan GitHub anda**: tekan **Putuskan**, kemudian daftar masuk semula
+  atau tampal token baharu. Tarik balik yang lama pada GitHub
+- **Apl pelayan**: jana kunci persendirian atau rahsia klien baharu pada halaman
+  GitHub apl itu, tampalkannya dalam **Apl penyedia** dan tekan **Uji**
+- **Penyedia model**: pada barisnya, daftar keluar (OAuth) atau buang kunci itu,
+  kemudian sambung semula
+- **Slack**: tampal semula token dalam dialog sambungan. Lihat
+  [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### The PR list is empty but my token works in `curl`
+### Senarai PR kosong tetapi token saya berfungsi dalam `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Semak subtajuk baris **Hos kod**. Jika ia menamakan sumber lain ("melalui apl
+pelayan ini", "daripada persekitaran"), kelayakan yang anda uji bukan yang
+menjawab — milik anda tidak disimpan.
 
-### The token is accepted but later requests fail
+### Token diterima tetapi permintaan kemudiannya gagal
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Token itu diperiksa semasa ia disimpan, jadi baris itu menamakan akaun di
+belakangnya — tetapi hanya akaun, bukan skop. Token dengan skop yang terlalu
+sedikit akan bersambung dan kemudian gagal pada permintaan individu. Semak skop
+dan tarikh luputnya:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Panduan berkaitan
 
-- [Set up GitHub integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
-- [Create the GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
-- [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
-- [Set up Slack integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
-- [Set up Linear integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/)
+- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
+- [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)
+- [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
+- [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
+- [Sediakan integrasi Linear](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/)

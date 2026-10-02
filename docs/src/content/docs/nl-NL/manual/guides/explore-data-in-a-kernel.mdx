@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Data verkennen in een persistente kernel
+description: Geef een agent een Python- of JavaScript-interpreter die zijn variabelen tussen aanroepen behoudt, grafieken in de chat tekent en je eigen tools vanuit een cel kan aanroepen.
 slug: nl-NL/handleiding/gidsen/data-verkennen-in-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Deze gids laat zien hoe je een agent iets duurs één keer laat laden en er daarna meerdere vragen over laat stellen, in plaats van de laadtijd bij elke vraag opnieuw te betalen.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+De tool `eval` draait een **persistente interpreter**. Variabelen, imports en geladen data blijven tussen aanroepen behouden.
 
-## Why not just run a script
+## Waarom niet gewoon een script draaien
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Een eenmalige `python -c` betaalt de opzet bij elke vraag. Het laden van een dataframe kost seconden en honderd megabyte; er een grafiek van maken kost milliseconden. Wanneer elke vraag de laadtijd kost, stelt een agent minder vragen dan hij zou moeten — en elk antwoord komt terug als tekst die hij daarna opnieuw moet parsen.
 
-## Load once, then ask
+## Eén keer laden, dan vragen stellen
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Laad `data/runs.csv` en vertel me de p95-duur per agent.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+De laatste expressie wordt weergegeven zoals een notebook dat doet, zodat `len(runs)` het aantal rijen rapporteert zonder een `print`.
 
-Then, in a **separate call**:
+Dan, in een **aparte aanroep**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` is nog steeds geladen. Een pandas-frame komt terug weergegeven als een tabel in plaats van als een repr.
 
-## Charts land in the chat
+## Grafieken belanden in de chat
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Figuren worden na de cel vastgelegd en als afbeeldingen teruggegeven, die het transcript weergeeft. Jij ziet de grafiek; de agent ook.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Figuren worden na het vastleggen gesloten. Een niet-opgevangen figuur zou ook door de *volgende* cel opnieuw worden getekend en verzonden, waardoor een sessie van vijf cellen de eerste grafiek vijf keer zou uitsturen.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Geen Jupyter, geen pip, geen installatiestap]
+De runner is gewoon `python3 -u` die een regelprotocol over stdio spreekt. Hij implementeert `display()`, MIME-bundle-dispatch en het vastleggen van figuren zelf, dus hij werkt op elke Python 3 — ook in een sandbox waar installeren nu juist precies is wat de sandbox hoort te voorkomen.
 :::
 
-## The idioms you would type anyway
+## De idiomen die je toch al zou typen
 
-These are rewritten into plain code rather than erroring:
+Deze worden herschreven naar gewone code in plaats van een fout te geven:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| Wat je typt     | Wat er gebeurt                                      |
+| --------------- | --------------------------------------------------- |
+| `%pip install x` | Draait pip en **leegt daarna de modulecache**, zodat de volgende `import` het ziet |
+| `%cd path`      | `os.chdir`                                          |
+| `!command`      | Een opgevangen subproces                            |
+| `%%bash`        | De rest van de cel als shellscript                  |
+| `%%timeit`      | 1000 getimede runs                                  |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Het leegmaken van de `%pip`-cache is degene die ertoe doet: installeren in een levende interpreter doet niets voor een module die al is geïmporteerd, dus zonder dat is de versie die je net hebt geïnstalleerd niet de versie die draait.
 
-## Calling your own tools from inside a cell
+## Je eigen tools aanroepen vanuit een cel
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` gaat weer het eigen toolregister van de agent binnen. Dat betekent dat een cel kan uitwaaieren over honderd bestanden, of kan delegeren via `task`, zonder dat het model per item een beurt hoeft te besteden.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[De brug gaat niet om je beveiligingen heen]
+Een aanroep via de brug wordt afgehandeld tegen **hetzelfde** toolregister als een aanroep die het model zelf doet, dus het `ActionClass`-beleid, goedkeuringsprompts en elke wrapper gelden identiek. Een brug die langs het register heen reikte, zou een gat zijn met precies de vorm van "schrijf een Python-one-liner".
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Een aanroep via de brug **pauzeert de time-out van de cel** zolang hij loopt. Het budget meet inactiviteit, niet kloktijd — een cel die uitwaaiert naar subagenten en vier minuten wacht, is niet vastgelopen, en hem midden in die uitwaaiering doden zou de volledige toestand van de kernel verliezen.
 
-## Starting over
+## Opnieuw beginnen
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Gooit de interpreter weg en start een schone. Alles wat geladen was, is weg — en dat is precies de bedoeling.
 
-## Where the kernel runs
+## Waar de kernel draait
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+In de **omhulling** van het gesprek als die er is, anders op de host.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Een persistente interpreter die wordt aangestuurd door een model dat een niet-vertrouwde repo leest, is precies waarom uitvoering alleen binnen een omhulling bestaat: een eenmalige `bash`-aanroep eindigt tenminste, terwijl een kernel een shell is die dingen onthoudt.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/nl-NL/handleiding/gidsen/rigs-gebruiken/).
+Hij start **geen** omhulling op om daar te komen — dezelfde regel die voorkomt dat een rigtab automatisch start. Wil je de kernel omhuld hebben, open dan eerst de shell van het gesprek. Zie [Een agent een testmachine geven](/nl-NL/handleiding/gidsen/rigs-gebruiken/).
 
-## Limits
+## Beperkingen
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Eén cel tegelijk per kernel.** Twee cellen die in één interpreter om het snelst racen, zijn twee helften van twee programma's die in één namespace door elkaar lopen.
+- **Uitvoer is begrensd.** Een cel in een print-lus wordt afgekapt in plaats van het contextvenster te mogen vullen.
+- **Vier afbeeldingen per cel.** Een plot-lus kan per iteratie een figuur uitsturen, en elke afbeelding is een grote vaste kostenpost in het request dat hem meedraagt.
+- **De kernel sterft mee met de run.** Een kernel die na het einde van het gesprek nog een dataframe vasthoudt, is een lek.
 
-## Related
+## Gerelateerd
 
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) — what "enclosed" means here
-- [Give an agent a machine to test on](/nl-NL/handleiding/gidsen/rigs-gebruiken/) — opening the enclosure
-- [Built-in agent tools](/nl-NL/handleiding/referentie/agenttools/) — the arguments
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) — wat "omhuld" hier betekent
+- [Een agent een testmachine geven](/nl-NL/handleiding/gidsen/rigs-gebruiken/) — de omhulling openen
+- [Ingebouwde agenttools](/nl-NL/handleiding/referentie/agenttools/) — de argumenten

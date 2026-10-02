@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Skapa och konfigurera en agent
+description: Lägg till en agent i en arbetsyta, ge den en adapter, modell, skills och behörigheter och bekräfta att den körs.
 slug: sv-SE/handbok/how-to-guider/skapa-agent
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Den här guiden visar hur du lägger till en agent i en arbetsyta och konfigurerar den tills den faktiskt kan köra.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Varje arbetsyta skapas med fem agenter – en CEO plus `qa`, `architect`, `engineer` och `librarian` – så du har oftast agenter redan innan du har konfigurerat någon. Stegen nedan gäller lika mycket för en medföljande agent som för en ny.
 
-## Before you start
+## Innan du börjar
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Du är inne i en arbetsyta. Hela gränssnittet ligger under **Inställningar → Arbetsyta → Agenter** (`/settings/workspace/agents`).
+- Agenten behöver en backend. Antingen ansluter du en leverantör för den inbyggda harnessen under **Inställningar → Server → Modellleverantörer**, eller så installerar du Claude Code CLI på maskinen som kör `cc_server`.
+- Om du vill att agenten ska ha skills installerar du dem först under **Inställningar → Arbetsyta → Färdigheter**. I agentformuläret kan du bara slå på skills som redan finns i arbetsytan.
 
-## Add the agent
+## Lägg till agenten
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Öppna **Inställningar → Arbetsyta → Agenter**.
+2. Klicka på **Ny agent**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Det finns ingen dialog och ingen rollväljare. En agent med namnet ”Namnlös agent” skapas direkt och markeras i detaljpanelen till höger.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Nu bör du se ”Namnlös agent” i listan till vänster, med fliken **Inställningar** i detaljpanelen öppen och ett fält **Namn** som innehåller ”Namnlös agent”.
 
-## Name it
+## Ge den ett namn
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Namn** – den korta identifieraren som används i @-omnämnanden, till exempel `alice`. Tolkningen av omnämnanden matchar `@` följt av ordtecken, så ett namn med bindestreck, punkt eller mellanslag kan aldrig nämnas.
+- **Titel** – den läsbara etiketten, till exempel ”Seniorutvecklare”.
+- **Systemprompt** – valfria extra instruktioner som injiceras som avsnittet Agent instructions; de ersätter inte resten av den sammansatta prompten.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Klicka på **Spara ändringar** längst ned i formuläret. Varje fält på den här sidan sparas med den enda knappen.
 
-## Give it an adapter and a model
+## Ge den en adapter och en modell
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Listrutan **Adapter** visar de körare som servervärden faktiskt har. Den inbyggda adaptern hittas alltid (den är servern). Claude Code visas bara om dess CLI har upptäckts på den värden:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| Adapter                   | Backend                                       |
+| ------------------------- | --------------------------------------------- |
+| Control Center (built-in) | Den processinterna agentloopen – ingen extern CLI |
+| Claude Code               | `claude -p --output-format stream-json`       |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Bara den inbyggda adaptern upprätthåller lägen, styrning, paus/återupptagning, slutförandekontrakt och subagenter. Claude Code ger dig inget av det. Cursor, Codex och de andra modellleverantörerna kopplas till den inbyggda adaptern, inte som egna körare.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[En tom adapter betyder den inbyggda loopen]
+En agent vars adapter inte är angiven skickas till **Control Center (built-in)**, loopen inuti servern, så inget behöver installeras på värden. Om inte heller någon modell är angiven frågar den Anthropic efter dennes standard, så en helt oangiven agent körs bara om du har anslutit ett Anthropic-konto. De medföljande specialisterna levereras utan båda; ange båda på varje agent du tänker använda.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Listrutan **Modell** styrs av den adapter du valde. För den inbyggda adaptern kommer listan direkt från de leverantörer du har anslutit under **Inställningar → Server → Modellleverantörer**, så en leverantör utan sparad inloggningsuppgift bidrar med noll modeller.
 
-## Add skills
+## Lägg till skills
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Färdigheter** är en chipväljare över de skill-paket som är installerade i den här arbetsytan. Tryck på en chip för att slå på eller av den; bockikonen markerar de valda. Om arbetsytan inte har några skills står det ”No skills available. Create skills in Settings → Skills first.” i fältet.
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills).
+Du väljer inte ett repos egna skills här. Ett repo som levererar dem (i `.agents/skills/`, `.claude/skills/` eller `.opencode/skills/`) bidrar automatiskt med dem till den agent som arbetar i det repot, och de byts ut när den flyttar till ett annat – se [Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Ange rapporteringslinje och persona
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Rapporterar till** – välj en annan agent via namnet. Det här bygger rapporteringsträdet som knappen **Organisationsschema** i sidhuvudet visar. Det är inte den lista som en teamledare använder när den delegerar – den kommer från teamets medlemmar och deras skills.
+- **Persona** – fri text som formar ton och beteende, till exempel: ”Föredrar enkla, läsbara lösningar. Skriver tester för all ny kod.”
 
-## Tune the run
+## Finjustera körningen
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Resonemangsinsats** – alternativen kommer från den valda modellens egna publicerade nivåer: Low / Medium / High, plus Extra High på modeller i OpenAI-stil och Extra High + Max på modeller i Claude-stil. Fältet döljs helt när den valda modellen inte anger några resonemangsnivåer, och det står på modellens egen standard.
+- **Storlek på kontextfönster** – förifylls från modellens kontextfönster varje gång du byter modell, med chips för ett tryck för modellens standard, 200k, 500k och 1M. Ett värde som du skriver in efter att ha valt modellen gäller till nästa modellbyte.
+- **Tystnadstimeout (minuter)** – avsluta en körning efter så här lång tid utan utdata. Lämna tomt för att använda standarden per läge.
 
-## Grant permissions
+## Bevilja behörigheter
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Sandlådebehörigheter** börjar på ”Använd arbetsytans standard”. Slå på växeln för att ange dem för den här agenten och växla sedan:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Tillåt git push** – injicerar GitHub-token som agenten behöver för att pusha
+- **Tillåt GitHub API-anrop** – låter agenten läsa PR:ar, issues och repometadata
+- **Tillåt API-anrop för ärenden** – injicerar ärendeleverantörens nyckel
+- **Tillåt allmän nätverksåtkomst** – aktiverar även den inbyggda harnessens verktyg `web_fetch` och `web_search`
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Varje växel kontrolleras av brokern när körningen startar: en förmåga som är av betyder helt enkelt att den matchande token aldrig skapas och läggs i körningens miljö.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Arbetsytans standard betyder serverns försiktiga uppsättning]
+En agent som lämnas på ”Använd arbetsytans standard” körs med git push, GitHub-API och ärenden **av** och nätverk **på**. Standardförmågorna som visas under Inställningar → Server → Diagnostik och integritet är en inställning på klientsidan. Om du vill att en agent ska pusha eller öppna PR:ar slår du på växeln och beviljar förmågorna uttryckligen.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) for the full set of boundaries.
+De här förmågorna reglerar åtkomsten till inloggningsuppgifter och harness-verktyg, vilket är ett separat lager från OS-sandlådan. `cc_server` omsluter agentkörningar i värdens sandlåda där en sådan finns – Windows har ingen inbyggd backend, och Linux och WSL2 behöver `bwrap` och `socat`. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för alla gränser.
 :::
 
-## Verify it runs
+## Verifiera att den körs
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Öppna **Inställningar → Server → Modellleverantörer** och bekräfta att adaptern du valde rapporterar en installerad version i stället för ”Hittades inte”. Klicka på **Uppdatera** för att söka igen – sökningen körs på maskinen som kör `cc_server`, inte på maskinen du tittar på.
+2. Öppna en yta med agenten och skicka ett meddelande till den, eller @-nämn den i en befintlig yta.
+3. Gå tillbaka till **Inställningar → Arbetsyta → Agenter**, välj agenten och öppna fliken **Loggar**. En körning bör visas med en statusbricka, en varaktighet, en starttid och adaptern den använde. **Visa** öppnar körningens händelseström.
 
-If no run appears at all, work through [Run agent diagnostics](/sv-SE/handbok/how-to-guider/felsok-agent/).
+Om ingen körning visas alls går du igenom [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/).
 
-## Delete an agent
+## Ta bort en agent
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Välj den i listan. På fliken **Inställningar** rullar du ned till **Farozon** längst ned i formuläret och klickar på **Ta bort**.
 
-## Related guides
+## Relaterade guider
 
-- [Run agents in parallel](/sv-SE/handbok/how-to-guider/parallella-agenter/)
-- [Build an agent team](/sv-SE/handbok/how-to-guider/bygg-agentteam/)
-- [Manage adapters and models](/sv-SE/handbok/how-to-guider/adapters/)
-- [Run agent diagnostics](/sv-SE/handbok/how-to-guider/felsok-agent/)
-- [Agent configuration reference](/sv-SE/handbok/referens/agentkonfiguration/)
+- [Kör agenter parallellt](/sv-SE/handbok/how-to-guider/parallella-agenter/)
+- [Bygg ett agentteam](/sv-SE/handbok/how-to-guider/bygg-agentteam/)
+- [Hantera adapters och modeller](/sv-SE/handbok/how-to-guider/adapters/)
+- [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
+- [Agentkonfiguration](/sv-SE/handbok/referens/agentkonfiguration/)
 
-## Related concepts
+## Relaterade koncept
 
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/)
-- [Modes](/sv-SE/handbok/koncept/lagen/)
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)

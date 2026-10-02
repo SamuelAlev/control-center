@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Een codehost verbinden
+description: Verbind GitHub, GitLab of Bitbucket zodat het PR-oppervlak, reporegistratie en agent-runs werken — één werkruimte kan alle drie gebruiken.
 slug: nl-NL/handleiding/gidsen/codehost-verbinden
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center werkt met drie codehosts, die in de hele app **forges** heten: **GitHub**, **GitLab** en **Bitbucket Cloud**. Geen van de drie is de standaard. Verbind er één en alles werkt; verbind er meerdere en één werkruimte kan tegelijk repo's van alle drie bevatten.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+De forge is een eigenschap van elke **repo**, uitgelezen uit de `origin`-remote wanneer je die registreert. Je kiest er nooit een, en er is geen instelling per werkruimte die je fout kunt zetten.
 
-## Connect a forge
+## Een forge verbinden
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Open **Instellingen → Werkruimte → Profiel en identiteit** (`/settings/workspace/profile`).
+2. Zoek de kaart **Codehosting**. Elke ondersteunde forge staat erin, verbonden of niet.
+3. Druk op **Inloggen met …** als de rij die optie biedt, of op **Token toevoegen** en plak er een.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/nl-NL/handleiding/gidsen/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Inloggen** verschijnt voor een forge waarvoor je server een app geregistreerd heeft — vandaag is dat GitHub, via een deviceflow (zie [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)). Al het andere is een geplakt token: het eerlijke aanbod in plaats van een knop die niet kan afronden.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Hoe dan ook zijn de inloggegevens **van jou en staan ze op de server**, gekoppeld aan je gebruikers-id: er wordt geen token opgeslagen op de machine waarop je hem hebt ingevoerd, elk apparaat waarop je inlogt gebruikt hetzelfde token, en geen ander lid kan het lezen. Ze gaan in bij de **volgende aanvraag** — er valt niets te herstarten, en loskoppelen stopt het versturen onmiddellijk.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Elke rij vertelt waar de inloggegevens vandaan komen, want dat is het verschil tussen “mijn token werkt niet” en “een ander token antwoordt”:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Ondertitel                                    | Betekenis                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| `Ingelogd als octocat`                        | Je eigen inloggegevens worden gebruikt                             |
+| `Ingelogd als octocat · via de app van deze server` | De app-identiteit van de server antwoordt — je bent niet ingelogd |
+| `Ingelogd als octocat · uit de omgeving`      | Een omgevingsvariabele van de server antwoordt, niet je inloggegevens |
+| `Niet verbonden`                              | Je hebt geen inloggegevens voor deze forge                         |
 
-### What token each forge wants
+### Welk token elke forge nodig heeft
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Forge         | Token                                                     | Waar je hem aanmaakt                                      |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Klassiek: `repo` en `read:org`. Fijnmazig: Contents + Pull requests (lezen/schrijven), Checks + Actions (lezen) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Een persoonlijk toegangstoken met `api`                   | gitlab.com → User settings → Access tokens                |
+| **Bitbucket** | Een Atlassian API-token, plus je account-e-mailadres      | id.atlassian.com → Security → API tokens                  |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket authenticeert met je **account-e-mailadres als gebruikersnaam** en het token als wachtwoord. Zet `BITBUCKET_EMAIL` in de serveromgeving, zodat duidelijk is welk e-mailadres bij het token hoort.
 
-### Or use the environment
+### Of gebruik de omgeving
 
-For a headless or CI install, the server reads these:
+Voor een headless installatie of een CI-installatie leest de server deze:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, dan `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, dan `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, dan `BITBUCKET_TOKEN` (met `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Dit zijn de inloggegevens van de **server**, niet die van jou, en dat onderscheid is essentieel: een aanvraag die namens jou wordt gedaan, gebruikt jouw inloggegevens en niets anders, dus de omgeving neemt het nooit stilletjes van je over. Werk zonder mens erachter — webhooks, PR-polling, ticketsynchronisatie — bepaalt eerst de app-identiteit van de server, dan de inloggegevens van de eigenaar van de server, dan de omgeving. Die volgorde ligt vast, zodat “ik heb me ingelogd en er is niets veranderd” nooit een uitkomst kan zijn.
 
-## You are a different person on each forge
+## Je bent een ander persoon op elke forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Dezelfde persoon is `octocat` op GitHub en iets heel anders op GitLab. Control Center bepaalt je identiteit **per forge** en gebruikt de juiste voor elke repo; daardoor kloppen “vraagt om mijn review”, “door mij gemaakt” en “jij hebt dit goedgekeurd” in een gemengde werkruimte.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Als de identiteit voor een forge niet is bepaald, dragen de repo's ervan niets bij aan het postvak in plaats van alles te matchen. Het postvak zegt dat, in plaats van te beweren dat je helemaal bij bent.
 
-## One inbox, every forge
+## Één postvak, elke forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Het postvak en de PR-wachtrij waaieren uit over elke forge die in de werkruimte voorkomt en voegen de resultaten samen tot één stroom — een GitHub-pull request en een Bitbucket-pull request staan naast elkaar, geordend op tijd in plaats van gegroepeerd per leverancier.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Storingen blijven geïsoleerd. Een forge die platligt, tegen een limiet is aangelopen of niet verbonden is, draagt niets bij en laat de andere ongemoeid; hij maakt nooit het hele postvak leeg. De eigen repo's blijven hun laatst bekende status tonen tot hij weer werkt.
 
-## What each forge can do
+## Wat elke forge kan
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Elke forge ondersteunt de kernlus: pull requests tonen en openen, diffs lezen, inline en op het hoogste niveau reageren, reviewen, mergen en sluiten. Daarbuiten verschillen ze echt van elkaar, en Control Center verbergt wat een forge niet kan in plaats van een bediening te tonen die stilletjes faalt.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Mogelijkheid                      | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Gebundelde reviews (in wachtrij)  |   ✓    |   ✓    |     —     |
+| Wijzigingen aanvragen             |   ✓    |   ✓    |     ✓     |
+| Status “bekeken” per bestand gesynchroniseerd |   ✓    |   —    |     —     |
+| Emoji-reacties                    |   ✓    |   ✓    |     —     |
+| Team-/groepsreviewers             |   ✓    |   ✓    |     —     |
+| Voorgestelde reviewers            |   ✓    |   —    |     ✓     |
+| CI-resultaten op een PR           |   ✓    |   ✓    |     ✓     |
+| Inzoomen op de stappen/logs van een CI-job |   ✓    |   ✓    |     —     |
+| Gestapelde pull requests          |   ✓    |   —    |     —     |
+| Sjablonen voor PR-beschrijvingen  |   ✓    |   ✓    |     —     |
+| Meldingen pollen                  |   ✓    |   —    |     —     |
+| Uitgebreide gebruikersprofielen   |   ✓    |   ✓    |     —     |
+| PR-headref aan de serverzijde     |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Waar een mogelijkheid ontbreekt, verslechtert de functie op een eerlijke manier:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Bekeken-status** werkt nog steeds, maar alleen op het apparaat waarop je hem instelt.
+- **Gebundelde reviews** op Bitbucket plaatsen opmerking na opmerking, dus reviewers zien ze afzonderlijk binnenkomen in plaats van allemaal tegelijk.
+- **Geen PR-headref** op Bitbucket betekent dat het uitchecken van een pull request de bronbranch op naam ophaalt; dat mislukt zodra die branch is verwijderd.
 
-## Vocabulary
+## Terminologie
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab noemt een pull request een **merge request**. Control Center zegt in zijn eigen model overal “pull request”, en gebruikt het eigen woord van elke forge waar het over die forge gaat.
 
-## Troubleshooting
+## Problemen oplossen
 
-### The PR list is empty and says a forge is not connected
+### De PR-lijst is leeg en zegt dat een forge niet verbonden is
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Je hebt geen inloggegevens voor die forge. Log in of plak een token in **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**. De repo's van andere forges blijven onaangetast.
 
-### I connected a forge but its repos still show nothing
+### Ik heb een forge verbonden, maar de repo's tonen nog niets
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Controleer de ondertitel van de rij. Staat daar “via de app van deze server” of “uit de omgeving”, dan antwoorden andere inloggegevens dan je verwachtte — voor alles wat jij opvraagt, winnen je eigen inloggegevens, dus als er iets anders staat, zijn die van jou niet opgeslagen.
 
-### A repo will not register
+### Een repo laat zich niet registreren
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+Registratie vereist alle drie: het pad ligt binnen een git-worktree, er is een `origin`-remote, en die remote wijst naar github.com, gitlab.com of bitbucket.org. Zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
 
-### Everything stops working for a while after heavy use
+### Alles stopt een tijdje na zwaar gebruik
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Dat is de circuit breaker voor limieten. Een forge die zijn primaire limiet meldt, zorgt dat de client verdere aanvragen lokaal laat mislukken, zonder netwerkoproep, tot het venster is verstreken — zo kan een storm van herhaalpogingen de limiet niet verzwaren. Tijdelijke fouten worden opnieuw geprobeerd met exponentiële backoff.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Add repos to a workspace](/nl-NL/handleiding/gidsen/repos-toevoegen/)
-- [Set up GitHub integration](/nl-NL/handleiding/gidsen/github-integratie/)
-- [Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
-- [Triage the inbox](/nl-NL/handleiding/gidsen/postvak-in-trieren/)
+- [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/)
+- [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)
+- [Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
+- [Je postvak in triëren](/nl-NL/handleiding/gidsen/postvak-in-trieren/)

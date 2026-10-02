@@ -1,166 +1,162 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: 플릿 워커 실행
+description: cc_worker 헤드리스 실행기를 빌드하고 페어링해 실행하면 cc_server에 등록되고 플릿 패널에 표시됩니다.
 slug: ko-KR/매뉴얼/사용-가이드/플릿-워커-실행
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+여유 있는 머신에서 `cc_worker`를 실행하면 플릿에 실행 용량을 추가할 수 있습니다.
+Flutter 엔진이 없는 순수 Dart 바이너리인 이 실행기는 `cc_server`와 페어링해
+호스트의 기능을 알리고, 하트비트를 보내고, 리스된 작업을 가져와 실행한 뒤
+프로세스 이벤트를 스트리밍으로 돌려보냅니다. 영구 상태를 보관하지 않으므로
+감독 프로세스가 재시작하면 다시 등록합니다.
 
-You need a running `cc_server` first — see [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/).
+먼저 실행 중인 `cc_server`가 필요합니다. [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)을 참고하세요.
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+페어링된 워커는 등록하고 하트비트를 보내며 리스된 작업을 기다립니다. 작업은
+`fleet.submitJob`으로 제출합니다. 이 서버의 에이전트 디스패치는 플릿을 거치지
+않으므로, 이 가이드의 성공 신호는 워커가 최신 하트비트와 함께 플릿 패널에
+나타나는 것입니다. 부팅 시 등록되는 인프로세스 워커는 러너 맵이 비어 있어,
+여기에 작업을 배치하면 `No local runner for job kind …`가 반환됩니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). 이 저장소는 [fvm](https://fvm.app)으로 SDK를 고정하므로 명령 앞에 `fvm`을 붙입니다.
+- 워커 머신에 이 저장소를 체크아웃해 두어야 합니다.
+- 접근 가능한 `cc_server`(개발용은 루프백, 프로덕션은 LAN 또는 원격).
+- `PATH`에 있는 `git` — 워커는 저장소를 구체화하고 `git` 프로브를 실행합니다.
 
-## Step 1: Build the binary
+## 1단계: 바이너리 빌드
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+그러면 `./build/cli/<os_arch>/bundle/bin/cc_worker`에 자체 포함 번들이 생성됩니다.
 
-## Step 2: Mint the worker's credential
+## 2단계: 워커 자격 증명 발급
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+`cc_server`는 페어링된 기기 ID와 사전 공유 키를 제시하는 워커만 허용하며,
+루프백 서버도 마찬가지입니다. 이 값들은 **서버** 머신에서 발급합니다(`pair`는
+서버가 실행 중일 때도 실행할 수 있고, 새 기기는 재시작 없이 반영됩니다):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+`Device id`와 `Pairing key`를 출력하며, 이 값이 바로 `--device-id`와 `--psk` /
+`--psk-file` / `CC_WORKER_PSK`가 받는 값입니다.
 
-## Step 3: Start the worker
+## 3단계: 워커 시작
 
-Against a paired server:
+페어링된 서버를 상대로 실행하는 경우:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+루프백 서버를 상대로 실행하는 경우(역시 페어링 필요 — `cc_server`는 항상 PSK
+핸드셰이크를 수행합니다):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
+| 플래그               | 설명                                                                                             | 기본값      |
 | -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| `--server <url>`     | cc_server URL(`ws://`/`wss://`이며 `http(s)`와 누락된 `/rpc` 경로는 강제 변환됩니다). **필수.**  | —           |
+| `--name <name>`      | 운영자에게 표시되는 워커 이름.                                                                   | 호스트 이름 |
+| `--device-id <id>`   | 안정적인 페어링된 기기 ID로, 워커 ID로도 사용됩니다.                                             | `cc-worker` |
+| `--psk-file <path>`  | 첫 번째 비어 있지 않은 줄이 페어링 키인 파일입니다. `--psk`보다 권장됩니다.                      | —           |
+| `--psk <key>`        | 명령줄로 전달하는 페어링 키입니다. `ps`와 셸 기록에 노출되며, 바이너리가 경고합니다.             | —           |
+| `--max-jobs <n>`     | 이 프로세스가 동시에 실행하는 작업의 상한(양의 정수)입니다.                                      | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+키 확인 순서는 `--psk-file` → `CC_WORKER_PSK` → `--psk`입니다. 모든 출처를
+생략하면 워커의 인증 핸드셰이크를 건너뛰며, 이때 실제 `cc_server`는 인증되지
+않은 워커를 받아들이는 대신 세션을 거부합니다(`auth_denied`). 알 수 없는
+플래그는 사용법 오류이며(`exit 64`), `cc_server`와 달리 이 바이너리는
+`package:args`를 사용하므로 오타를 무시하지 않습니다.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE`는 워크트리 구체화 캐시 디렉터리를 재정의합니다(기본값: 시스템
+임시 디렉터리 아래의 `cc_worker_cache` 디렉터리).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+워커는 `fleet.registerWorker`로 등록한 뒤 20초마다 하트비트를 보내고 2초마다
+리스를 폴링합니다. `SIGINT`/`SIGTERM`을 받을 때까지 실행되므로, systemd나
+launchd 아래에 두어 충돌이나 재부팅 후 다시 시작하고 재등록하도록 하세요.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[프로토콜 호환성 유지 구간이 없습니다]
+플릿 프로토콜 버전이 서버와 다른 워커는 **호환되지 않음**으로 등록되어 리스를
+전혀 받지 못하며, `cc_worker` 자체도 `Incompatible fleet protocol: worker speaks
+v… server speaks v… Upgrade cc_worker to match the server release`와 함께
+중단됩니다. 서버와 동일한 릴리스로 워커를 빌드하세요.
 :::
 
-## Step 4: Verify it in the fleet panel
+## 4단계: 플릿 패널에서 확인
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+데스크톱 또는 웹 앱에서 **옵저버빌리티**를 열고 **실시간** 탭으로 전환한 뒤 맨
+아래로 스크롤합니다. **워커**는 등록된 모든 워커를 플랫폼, 코어, 기능 키,
+마지막 하트비트와 함께 나열하고, **작업**은 이들에게 분산된 작업을 나열합니다.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+워커가 최근 하트비트와 함께 여기에 나타나면 페어링과 등록이 성공한 것입니다.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+워커 타일에서 워커를 **드레인**하거나(현재 작업을 마치고 새 리스를 받지 않음),
+드레인 중인 워커를 **재개**하거나, 자격 증명을 **철회**하거나, 행을 **제거**할 수
+있습니다.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+워커와 작업 행은 서버의 `global.db`에 있으며, 워커 자체는 구체화 캐시 외에는
+디스크에 아무것도 쓰지 않습니다.
 
-## What the worker advertises
+## 워커가 알리는 정보
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+등록 시 워커는 자신의 기능을 자동으로 감지하고, 스케줄러는 이에 맞춰 작업을
+매칭합니다. 다음 항목은 직접 구성하지 않습니다:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **OS와 아키텍처** (`macos`/`linux`/`windows`, `arm64`/`x64`) — 정확한 프로브를 사용하며, `uname -m` / `PROCESSOR_ARCHITECTURE`로 폴백합니다
+- **코어와 RAM** — 정확한 코어 수이며, RAM은 확인할 수 없을 때 `0`으로 저하됩니다
+- **`flutter`** — Flutter SDK에 접근할 수 있을 때 설정됩니다(맨 `flutter`, 그다음 `fvm flutter`). 골든 렌더 작업에는 이 기능이 필요합니다
+- **`sandbox`** — macOS에서는 `native-macos`, Linux에서는 `native-linux`입니다. 이는 배치 힌트일 뿐 보장이 아닙니다. 워커는 해당 플랫폼이 _가진_ 백엔드를 알리지만, 실행하는 작업을 그 백엔드로 감싸지는 않습니다. `cc_server`와 달리 `cc_worker`는 리스된 작업을 직접 실행합니다
+- **`always-on`과 `parallel`** — 전용 `cc_worker`는 항상 두 가지를 모두 알리므로, 평가 배치와 기타 일회성 병렬 용량의 대상이 될 수 있습니다
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+감지는 최선 노력 방식입니다. 확인할 수 없는 항목은 시작에 실패하는 대신 안전한
+기본값으로 저하됩니다.
 
-## What the worker would execute
+## 워커가 실행하는 작업
 
-The lease protocol carries six job kinds:
+리스 프로토콜은 여섯 가지 작업 종류를 전달합니다:
 
-| Kind           | What it is                                     |
+| 종류           | 설명                                           |
 | -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| `agentRun`     | 단일 에이전트 실행(디스패치)                   |
+| `pipelineStep` | 파이프라인 단계 실행                           |
+| `codeIndex`    | 저장소 코드 인덱스 빌드                        |
+| `goldenRender` | UI 시각적 골든 렌더(`flutter` 필요)            |
+| `benchmark`    | 성능 벤치마크 실행                             |
+| `evalBatch`    | 평가 배치(`parallel` 용량 선호)                |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+실행은 실제 서브프로세스 스트리밍 구현이며, 완전한 내장 에이전트 런타임이
+아닙니다. 리스에 `repoRemote`가 있으면 워커는 원격과 SHA를 키로 하는 캐시
+디렉터리로 `git clone --depth 1`을 수행한 뒤 `git fetch`와 `git checkout`을
+실행합니다. `agentRun`의 경우 리스 환경의 `CC_JOB_COMMAND`에 있는 명령을 작업
+디렉터리에서 실행하고 stdout과 stderr를 이벤트로 스트리밍합니다.
+`CC_JOB_COMMAND`가 없으면 프롬프트를 그대로 출력해 전송 경로를 끝까지
+점검합니다. 나머지 종류는 작은 실제 명령(`git rev-parse HEAD`, `git --version`)을
+정직한 프로브로 실행합니다. 리스 환경의 작업 범위 자격 증명은 모든
+서브프로세스에 주입되며 로그에는 기록되지 않습니다.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+이벤트는 배치로 모아 250ms마다 또는 32개 이벤트마다 플러시되며, 각 작업은 done
+이벤트와 완료 보고로 끝납니다. 모델은 하트비트와 짧은 TTL의 리스로 구성됩니다.
+워커가 연결을 잃으면 리스가 만료되고 서버가 재시도를 위해 해당 작업을
+회수합니다. 워커에는 영구 상태가 없고, 워커 간 합의나 작업 훔치기도 없습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
-- [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/)
-- [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
+- [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/)
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)
 
-## Related concepts
+## 관련 개념
 
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/)
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/)

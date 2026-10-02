@@ -1,125 +1,132 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Masukkan tim Anda dengan SSO
+description: Hubungkan Okta (SAML) ke server Control Center Anda dan lakukan login dari awal hingga akhir.
 slug: id-ID/panduan-pengguna/tutorial/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Yang akan Anda bangun
 
-By the end of this tutorial, you will have:
+Pada akhir tutorial ini, Anda akan memiliki:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- koneksi SAML antara server Control Center Anda dan penyedia
+  identitas (kami memakai Okta sebagai contoh),
+- satu pengguna yang disediakan secara otomatis pada login pertamanya dan
+- kebijakan keanggotaan ruang kerja yang Anda pilih dengan sengaja.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Anda memerlukan server yang Anda kelola (sang **pemilik server** — operator
+instalasi) dan aplikasi IdP yang dapat Anda konfigurasi. Sediakan waktu 20
+menit.
 
-## 1. Open the single sign-on settings
+## 1. Buka pengaturan single sign-on
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Masuk ke Control Center, lalu buka
+**Pengaturan → Server → Single sign-on**. Layar ini beralih antara
+**SAML** dan **OpenID Connect**, plus kartu **Penyediaan pengguna (SCIM)**.
+Tetap di SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Semua yang ada di layar ini bersifat server-wide: satu IdP mengautentikasi
+setiap manusia di semua ruang kerja, jadi hanya pemilik server yang dapat
+mengeditnya.
 
-## 2. Paste the IdP metadata
+## 2. Tempel metadata IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Di Okta, buka tab **Sign On** aplikasi Anda dan salin XML metadata (atau
+unduh lalu tempelkan isi filenya). Kembali di Control Center, tempelkan ke
+**XML metadata IdP** lalu tekan **Uji koneksi**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Toast melaporkan endpoint sign-on milik IdP — bukti bahwa metadata berhasil
+diurai, sertifikat berhasil dibaca, dan server dapat membangun permintaan
+login terhadapnya (uji ini menguji semuanya kecuali perjalanan bolak-balik
+browser). Jika gagal, XML tersebut bukan `EntityDescriptor` yang lengkap
+(tab SAML di Okta menyebutnya "Metadata URL"; buka URL tersebut dan salin
+yang disajikannya). Tombol yang sama di **OpenID Connect** memeriksa
+dokumen discovery issuer Anda sebagai gantinya. Untuk sekaligus menangkap
+sertifikat yang mendekati kedaluwarsa dan melihat apakah IdP mengenali
+Control Center, gunakan
+[pemeriksa di langkah 6](#6-periksa-dari-halaman-ini).
 
-## 3. Register Control Center at the IdP
+## 3. Daftarkan Control Center di IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Tekan **Salin metadata SP** dan serahkan kepada orang yang mengonfigurasi
+sisi Okta (atau bacakan dua nilai yang mereka tanyakan):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+URL diturunkan dari origin yang dijangkau browser pengguna Anda. Jika server
+berjalan di balik tunnel atau reverse proxy, pastikan origin-nya stabil
+(Pengaturan → Server → Koneksi & status → Bagikan server ini menampilkan URL publik) — atau sematkan entity ID
+secara eksplisit di kolom **ID entitas SP**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[Di balik NAT?]
+Login SAML **tidak** memerlukan IP publik atau domain: IdP tidak pernah
+terhubung ke server Anda — browser pengguna yang membawa perjalanan bolak-balik,
+sehingga localhost, LAN, VPN, Tailscale, atau tunnel semuanya berfungsi. Dua
+hal yang perlu diperhatikan dengan benar:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim)).
+- origin yang dipakai browser harus **cocok** dengan ACS URL / entity ID
+  yang terdaftar di IdP (sematkan entity ID jika pengguna menjangkau server
+  melalui lebih dari satu origin),
+- **provisioning SCIM adalah pengecualiannya** — IdP memanggil server Anda
+  secara langsung, jadi diperlukan tunnel atau URL publik
+  ([provision pengguna dengan SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Pilih apa yang diberikan oleh login
 
-Two policies decide what a first login does:
+Dua kebijakan menentukan apa yang dilakukan login pertama:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Tambahkan pengguna ke setiap ruang kerja pada login pertama** — biarkan
+  aktif untuk deployment satu tim di mana SSO berarti kepercayaan. Matikan
+  ketika beberapa tim atau pelanggan berbagi server: setiap pendatang baru
+  kemudian memerlukan undangan ruang kerja eksplisit, yang merupakan default
+  yang lebih aman.
+- **Sediakan pengguna yang belum dikenal pada login pertama** — aktif secara
+  default; matikan untuk menolak siapa pun yang akunnya belum ada.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Secara opsional, petakan atribut yang membawa nama grup (milik Okta umumnya
+`groups`) dan terjemahkan grup menjadi peran dengan peta tersebut — misalnya
+`{"platform-leads": "admin"}`. SSO tidak pernah dapat memberikan peran pemilik.
 
-## 5. Enable and take a login
+## 5. Aktifkan dan lakukan login
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Aktifkan **Gunakan SAML untuk masuk**, tekan **Simpan koneksi**, lalu buka
+jendela browser privat di `https://<your-server>/saml/login`. Masuk di Okta
+dan Anda kembali ke klien web — sudah login, dengan akun Anda dibuat dan
+keanggotaannya diberikan sesuai kebijakan yang Anda pilih.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Titik masuk yang sama muncul di layar koneksi web (**Masuk dengan SAML**)
+begitu Anda mengetikkan alamat server — formulir menyesuaikan dengan apa
+yang ditawarkan server (OpenID Connect menampilkan **Masuk dengan OpenID
+Connect**). Tombol tersebut membuka login di **tab baru**; saat perjalanan
+bolak-balik selesai, tab yang menunggu mengambil sesi itu secara otomatis.
+Layar penyiapan server di desktop melakukan hal yang sama: ketik URL server,
+tombol **Masuk dengan SAML** muncul yang membuka browser Anda dan aplikasi
+login saat perjalanan bolak-balik selesai.
 
-## 6. Check it from this page
+## 6. Periksa dari halaman ini
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Sebelum Anda meluncurkan SSO, atau ketika login gagal, periksa komponennya
+di sini. Pemeriksa berjalan sepenuhnya di browser Anda: ia membaca metadata
+yang Anda tempelkan di tab ini dan menerapkan aturan yang sama seperti
+server. Diberikan alamat server Anda, ia juga menanyakan ke server tersebut
+apakah login SAML aktif.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Ia menangkap apa yang tidak dapat dilihat oleh **Uji koneksi** di aplikasi:
+sertifikat penandatangan yang mendekati kedaluwarsa, IdP yang memaksa
+permintaan bertanda tangan, dan, dengan uji login, apakah IdP mengenali
+Control Center sama sekali.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Panduan terkait
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/id-ID/panduan-pengguna/konsep/masuk-tunggal).
+- Berikan juga kendali siklus hidup kepada IdP Anda:
+  [sediakan dan deprovision pengguna dengan SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim).
+- IdP Anda berbicara OpenID Connect, bukan SAML?
+  [Hubungkan penyedia OpenID Connect](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc).
+- Penasaran apa yang sebenarnya diverifikasi oleh perjalanan bolak-balik browser?
+  [Cara kerja masuk tunggal](/id-ID/panduan-pengguna/konsep/masuk-tunggal).

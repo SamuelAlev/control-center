@@ -1,152 +1,164 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Beveiligingen configureren
+description: Stel regels voor toestaan, eerst vragen en weigeren in voor agentacties, test ze met de wat-als-probe en stem de autonomie per ruimte af.
 slug: nl-NL/handleiding/gidsen/beveiligingen-configureren
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Deze gids laat je zien hoe je beveiligingen configureert: de regels die bepalen
+of een actie van een agent wordt uitgevoerd, eerst om goedkeuring vraagt of wordt
+geweigerd.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Beveiligingen dekken de dertien effectklassen die elke muterende tool
+declareert. Ze worden server-side afgedwongen op het moment dat de tool wordt
+aangeroepen, nooit door een instructie in een prompt.
 
-## Set a decision for an action class
+## Een beslissing instellen voor een actieklasse
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Ga naar **Instellingen → Werkruimte → Agentmachtigingen**
+2. Kies een bereik met de segmentschakelaar: **Werkruimte**, **Agent** (kies
+   daarna de agent) of **Ruimte** (kies daarna de ruimte)
+3. Kies op de rij van de actieklasse **Toestaan**, **Eerst vragen** of **Weigeren**
+4. Wil je een regel die je hebt ingesteld weghalen, druk dan op de resetknop die
+   aan het einde van die rij verschijnt (**Terug naar overgenomen waarde**) — de
+   beslissing valt dan terug op het bredere bereik
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Elke rij toont de effectieve beslissing als een statustag en een badge voor de
+herkomst: **Dit bereik**, **Overgenomen** of **Standaardwaarde**. De matrix
+wordt berekend voor de **Agent**-modus (`chat`), dus **Modusvoorinstelling**
+verschijnt hier nooit — gebruik de wat-als-probe met een gekozen alleen-lezen-
+modus om die laag te zien.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Voor het schrijven van een regel is de rol `admin` nodig. De matrix lezen kan
+zonder die rol.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Controlepunt: zet **Naar een remote pushen** op **Weigeren** op het niveau van de
+werkruimte en voer hieronder de wat-als-probe uit voor `git push origin main`.
+Het resultaat luidt `deny` met bron `workspace`.
 
-## Understand how a decision is resolved
+## Hoe een beslissing wordt bepaald
 
-Resolution is **specificity first, then restrictiveness**:
+De bepaling verloopt volgens **eerst specificiteit, dan beperkendheid**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. **Ruimte**-regels, dan **agent**, dan **werkruimte**. Het eerste bereik met
+   een overeenkomende regel beslist en de bepaling stopt
+2. Komt geen regel overeen, dan geldt de **modusvoorinstelling** — een
+   alleen-lezen-modus (plan, review, orkestratie) weigert elf van de dertien
+   klassen
+3. Heeft de modus niets te zeggen, dan geldt de **standaardwaarde**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Binnen één bereik wordt een opdrachtregel bepaald door de langst overeenkomende
+prefix en wordt een even specifiek conflict bepaald als **het meest beperkend** —
+weigeren wint van eerst vragen, dat wint van toestaan. Een actie die meerdere
+klassen declareert, bepaalt elke klasse afzonderlijk en combineert ze daarna
+volgens de meest beperkende.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Toestaan wint niet van weigeren]
+Een smallere regel wint op specificiteit en een gelijkspel wordt beslecht op
+beperkendheid — dus een **Toestaan** op het niveau van de werkruimte
+overschrijft nooit een **Weigeren**, waar dan ook.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Een beslissing **Eerst vragen** levert één goedkeuringsprompt op voor elke klasse
+die op `prompt` is uitgekomen. **Zonder verbonden goedkeurder wordt de actie
+geweigerd**, voor zowel shell-opdrachten als toolaanroepen van de harness. Dat is
+bewust: een run zonder poortwachter is erger dan een geweigerde run.
 
-### Action classes and built-in defaults
+### Actieklassen en ingebouwde standaardwaarden
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Actieklasse                          | Standaardwaarde |
+| ------------------------------------ | --------------- |
+| Een bestand verwijderen              | Eerst vragen    |
+| Buiten de worktree schrijven         | Toestaan        |
+| Een commit maken                     | Toestaan        |
+| Naar een remote pushen               | Eerst vragen    |
+| Een pull request openen              | Eerst vragen    |
+| Een review publiceren of mergen      | Eerst vragen    |
+| Naar een externe tracker schrijven   | Eerst vragen    |
+| Toegang tot het netwerk              | Toestaan        |
+| Een secret lezen                     | Toestaan        |
+| Een pakket installeren               | Toestaan        |
+| Een proces uitvoeren                 | Toestaan        |
+| Werkruimtestructuur wijzigen         | Toestaan        |
+| Een omhulling (rig) aansturen        | Toestaan        |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+De taxonomie is gesloten. Een nieuwe tool die wordt uitgebracht zonder zijn
+klassen te declareren, faalt op een ratchet-test in CI, zodat niets aankomt met
+een stilzwijgend lege effectverzameling.
 
-## Test a rule with the what-if probe
+## Een regel testen met de wat-als-probe
 
-Before changing a rule, check how the current policy already resolves it.
+Controleer voordat je een regel wijzigt hoe het huidige beleid deze al bepaalt.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Scroll op dezelfde pagina naar **Wat als?**
+2. Kies een **Actie** (een van de dertien klassen)
+3. Vul optioneel **Opdracht** in (bijvoorbeeld `git push origin main`),
+   **Agent**, **Ruimte** en **Modus**
+4. Lees het resultaat: de beslissing, de reden en **Bron:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+De probe gebruikt dezelfde resolver als het afdwingingspad, tegen je actuele
+regels, dus het antwoord is exact. Verrast het je, wijzig dan een regel in de
+matrix hierboven en probeer het opnieuw.
 
-## Set a space's autonomy dial
+## De autonomieschakelaar van een ruimte instellen
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+De schakelaar geldt per agent per ruimte en werkt samen met de regels in plaats
+van ze te vervangen.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Open de ruimte
+2. Open **Deelnemers beheren** vanuit de ruimtekop
+3. Kies onder **Autonomie** op de rij van de agent een niveau:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Niveau                    | Effect                                                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Standaard**             | Geen ruimte-instelling — gedraagt zich als **Handelen met goedkeuring**                                    |
+| **Alleen voorstellen**    | Elke tool die langs de poort moet, wordt direct geweigerd, met een bericht waarin de agent wordt gevraagd de actie in plaats daarvan voor te stellen |
+| **Handelen met goedkeuring** | Risicovolle acties stuiten op de fail-closed-goedkeuringspoort                                          |
+| **Vrij handelen**         | Keurt alles vooraf goed wat niet op een harde weigering is uitgekomen                                      |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Vrij handelen slikt elke prompt in]
+Onder **Vrij handelen** wordt een beslissing **Eerst vragen** toegekend zonder jou
+te vragen. Alleen een `deny` — uit een regel, uit de modusvoorinstelling of uit
+een ingebouwde standaardwaarde — blokkeert nog. Gebruik het wanneer je de ruimte
+in de gaten houdt, niet als standaardinstelling.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+De schakelaar reikt alleen tot de ingebouwde harness. De Claude Code-adapter
+draait zijn eigen tools buiten deze poort.
 
-## Know where guardrails do not reach
+## Weten waar beveiligingen niet reiken
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+De tabel **Waar regels worden afgedwongen** onderaan dezelfde pagina is de
+in-app-versie hiervan: per effectklasse geeft die aan of elke runner het bij de
+beleidscontrole onderschept, het aan de sandbox overlaat of het helemaal niet kan
+onderscheppen.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/nl-NL/handleiding/gidsen/sandboxbeleid/).
+- **De Claude Code-adapter** heeft geen poort voor zijn eigen toolaanroepen.
+  Claude Code wordt gestart met `--dangerously-skip-permissions`, dus de
+  aanroepen voor lezen, schrijven, bewerken en bash gaan nooit langs de
+  bewaking. Wat voor die adapter wel langs de poort gaat, is het MCP-tooloppervlak
+  waarnaar hij terugbelt en de shell-opdracht die Control Center start om hem te
+  lanceren.
+- **Het eigen uitvoerwerkwoord van een modus** (`submit_plan`,
+  `propose_orchestration`) is vastgezet en kan nooit worden geweigerd — anders zou
+  een modus structureel niet in staat zijn zijn enige eindresultaat te produceren.
+- **Of de sandbox deze regels ondersteunt, hangt van de host af.** Waar
+  `cc_server` een backend vindt, omhult het de Claude Code CLI en de
+  `bash`-tool van de harness, zodat een regel die je niet zelf hebt geschreven
+  toch een OS-basis onder zich heeft. Op **Windows is die er niet** en op Linux
+  of WSL2 zonder `bwrap` en `socat` is die er ook niet — daar zijn de
+  beveiligingen plus het tooloppervlak van de modus de hele afdwinging, niet een
+  tweede linie daarvan. Controleer in welk geval je zit met
+  [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Configure sandbox policies](/nl-NL/handleiding/gidsen/sandboxbeleid/)
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
-- [Manage adapters and models](/nl-NL/handleiding/gidsen/adapters/)
+- [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
+- [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Guardrails — one policy for every mutating action](/nl-NL/handleiding/concepten/beveiligingen/)
-- [Modes](/nl-NL/handleiding/concepten/modi/)
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)
+- [Beveiligingen — één beleid voor elke muterende actie](/nl-NL/handleiding/concepten/beveiligingen/)
+- [Modi](/nl-NL/handleiding/concepten/modi/)
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)

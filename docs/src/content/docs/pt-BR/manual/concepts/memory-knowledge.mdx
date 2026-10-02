@@ -1,199 +1,216 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Memória e conhecimento
+description: Como o Control Center armazena o conhecimento dos agentes, o que de fato chega ao prompt de um agente e por que as leituras de memória são fail-open.
 slug: pt-BR/manual/conceitos/memoria-e-conhecimento
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Para que serve a memória
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Sem memória, toda conversa com um agente começa do zero: a mesma convenção
+precisa ser explicada de novo, a mesma decisão precisa ser debatida de novo, o
+mesmo beco sem saída precisa ser explorado de novo. A memória é o armazenamento
+com escopo de espaço de trabalho que sobrevive às execuções e existe para que o
+conhecimento produzido por um agente possa ser encontrado por outro mais tarde.
 
-It has three layers and they answer different questions:
+Ela tem três camadas, e elas respondem a perguntas diferentes:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Fatos** — o que é verdade (uma convenção, um resultado, uma decisão).
+2. **Políticas** — o que os agentes devem fazer a respeito (uma regra normativa).
+3. **Memória de trabalho** — o que um agente estava no meio de fazer.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+A distinção importa porque elas chegam ao agente por caminhos diferentes. Os
+fatos são pesquisados. As políticas são empurradas. A memória de trabalho é
+privada.
 
-## Facts
+## Fatos
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Um `MemoryFact` é uma unidade de conhecimento com escopo de um espaço de
+trabalho e um domínio.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Atributo                                    | O que é                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `domain`                                    | O domínio de conhecimento ("conventions", "decisions", "codebase")                                          |
+| `topic`                                     | Um rótulo curto de tópico                                                                                   |
+| `content`                                   | O texto do conhecimento                                                                                     |
+| `confidence`                                | 0,0–1,0, inicializada pela proveniência e elevada a cada nova menção                                        |
+| `memoryType`                                | O tipo do fato — determina sua curva de decaimento temporal                                                 |
+| `veracity`                                  | Como ele passou a ser conhecido — inicializa a confiança e define o tamanho de cada aumento por nova menção |
+| `sourceObservationIds`                      | Quais observações levaram a ele                                                                             |
+| `supersededBy`                              | O fato mais recente que o substituiu, se houver                                                             |
+| `validUntil`, `recallCount`, `mentionCount` | Sinais de expiração e de uso usados na recuperação                                                          |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+As duas últimas linhas são as que as pessoas ignoram, e são elas que decidem
+_qual_ fato aparece. `memoryType` carrega parâmetros de decaimento de Weibull
+por tipo, então um compromisso com prazo definido desaparece rápido, enquanto
+um fato de perfil estável não. `veracity` registra a proveniência — declarado
+por um humano (peso 1,0), inferido por um agente (0,7), produzido por uma
+ferramenta (0,5), importado (0,6) — e esse peso inicializa a confiança inicial
+do fato.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Fatos nunca são editados no lugar quando são contraditos. Gravar um fato executa
+a detecção de conflitos contra fatos do mesmo domínio e do mesmo tópico e
+substitui o perdedor, registrando uma linha de conflito. A trilha de auditoria é
+o ponto: você sempre pode ver o que se acreditava antes e o que tomou o seu
+lugar.
 
-## Policies
+## Políticas
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+Uma `MemoryPolicy` é uma regra normativa derivada de fatos, com escopo de um
+espaço de trabalho e um domínio, com um sinalizador de ativação e um
+`requiredRole` opcional.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Toda política **ativa** do espaço de trabalho é injetada em **todo** despacho,
+sem filtro — nenhum filtro por domínio, papel, tarefa ou espaço. Vale a pena
+saber disso antes de escrever sua vigésima política, porque as políticas
+disputam a mesma janela de contexto que a tarefa. É também por isso que o
+`requiredRole` de uma política é apenas indicativo: ele descreve a quem a regra
+se destina, mas não impede que a regra chegue a todos os demais.
 
-## Domains
+## Domínios
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Um `MemoryDomain` agrupa fatos e políticas dentro de um espaço de trabalho. Os
+domínios dão estrutura organizacional ao conhecimento e são a unidade sobre a
+qual as concessões de acesso são gravadas — mas leia o aviso abaixo antes de
+tratar um domínio como fronteira de confidencialidade.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Um domínio é ou de todo o espaço de trabalho (`architecture`) ou com escopo de
+um repositório (`repo:<slug>/architecture`). O mesmo nome nos dois escopos são
+dois armazenamentos independentes: um fato que é verdadeiro para uma base de
+código não sobrescreve o de todo o espaço de trabalho. `search_memory` e o
+preâmbulo de despacho classificam primeiro a memória com escopo de repositório
+quando o agente está trabalhando nesse repositório; eles não filtram o resto.
+Passe `repo` em `propose_fact` / `propose_policy` / `search_memory` para gravar
+ou reforçar esse escopo.
 
-## Access control is fail-open for reads
+## O controle de acesso é fail-open para leituras
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` mapeia um papel de agente e um domínio para um de três
+níveis de permissão:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Permissão | Significado                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `none`    | Sem acesso                                                                                                          |
+| `read`    | Pode pesquisar e recuperar fatos                                                                                    |
+| `write`   | Exigido por `propose_policy`. Gravações de fatos (`propose_fact`, `supersede_fact`) não são condicionadas a concessão |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Uma concessão ausente significa leitura, não negação]
+Quando não há linha de concessão para um par `(role, domain)`, a permissão
+efetiva é **`read`**. As leituras são fail-open por projeto. A única gravação
+que lança erro é `propose_policy` sem permissão `write`
+(`InsufficientMemoryPermission`). Colocar conteúdo sensível em um domínio de
+memória não restringe quem pode lê-lo, a menos que você tenha gravado
+explicitamente uma concessão `none` para cada papel que não deveria vê-lo.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Também não existe nenhuma interface para concessões em nenhum lugar do produto
+hoje. A tela de memória tem abas Fatos, Políticas e Grafo de conhecimento e mais
+nada; as concessões só são acessíveis pelas operações RPC
+`memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+A assimetria — branda nas leituras, rígida nas gravações de políticas — é uma
+troca deliberada. A memória é mais útil quando circula, e uma negação de leitura
+produz um agente que silenciosamente sabe menos, em vez de um que relata um
+problema. Uma negação de gravação de política, em contrapartida, é ruidosa e
+corrigível, então é aí que está a aplicação da regra. Um domínio recém-criado
+inicializa `write` para todos os papéis; restringi-lo depois é uma edição
+exclusiva de RPC, porque não há interface de concessões.
 
-## Working memory
+## Memória de trabalho
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Cada agente tem uma `AgentWorkingMemory`: um bloco de anotações em texto livre
+indexado por espaço de trabalho e por agente. Ela persiste entre execuções, é
+privada daquele agente e é injetada no prompt dele a cada despacho. É onde vive
+"eu estava no meio da refatoração da autenticação" — o estado que vale a pena
+levar para a próxima execução, mas que não vale a pena promover a fato durável.
 
-## What actually reaches an agent's prompt
+## O que de fato chega ao prompt de um agente
 
-At dispatch, the memory preamble is assembled from exactly three things:
+No despacho, o preâmbulo de memória é montado a partir de exatamente três
+coisas:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Toda política ativa do espaço de trabalho**, como linhas `- [domain] rule`.
+- **A própria memória de trabalho do agente**, na íntegra.
+- **Uma lista curta de fatos correspondentes por palavra-chave** para esta
+  tarefa — no máximo cinco, dentro de um orçamento de ~1.200 caracteres e
+  somente quando a descrição da tarefa tem pelo menos 20 caracteres. Tarefas
+  mais curtas não recebem fato nenhum.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+A lista curta é somente FTS/palavra-chave e é limitada de propósito. Gerar o
+embedding de uma consulta é lento, e o caminho de despacho é o único lugar onde
+a latência é imediatamente visível, então o caminho semântico lento é
+deliberadamente mantido fora dele. O preâmbulo termina dizendo ao agente para
+verificar os itens essenciais com `search_memory`, que é onde vive o modelo
+completo de recuperação.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Nenhuma concessão de acesso é consultada nesse caminho. O que a lista curta
+encontrar é o que o agente vê.
 
-## Recall: one query, four voices
+## Recuperação: uma consulta, quatro vozes
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+A ferramenta `search_memory`, voltada ao agente, tem três modos e eles são
+pesquisas genuinamente diferentes:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — somente FTS5.
+- **`semantic`** — resultados BM25 e vetoriais fundidos por fusão de postos
+  recíprocos.
+- **`hybrid`** (o padrão) — recuperação polifônica: quatro vozes classificadas
+  fundidas e depois diversificadas.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+As quatro vozes são lexical (FTS), semântica (KNN vetorial), temporal (fatos
+ativos recentes) e de grafo — uma caminhada de dois saltos pelas arestas
+episódicas a partir das sementes lexicais e semânticas mais fortes. A voz de
+grafo é a razão de as arestas episódicas existirem: ela traz à tona o fato que
+está _conectado à_ sua resposta sem corresponder a nenhuma das suas palavras. As
+vozes são ponderadas por uma intenção de consulta classificada (a semântica tem
+o maior peso por padrão, depois o grafo e a lexical, depois a recência), a
+pontuação de cada candidato é escalada pelo seu decaimento de Weibull, e o
+conjunto de resultados é diversificado por MMR para que cinco repetições de um
+fato não suplantem quatro fatos diferentes.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[A recuperação semântica fica silenciosa até o modelo ser instalado]
+A voz vetorial só contribui depois que o modelo de embeddings no dispositivo for
+baixado. Até lá, a recuperação híbrida funciona com três vozes e não há
+preenchimento retroativo — fatos gravados antes da instalação do modelo nunca
+ganham vetores. O caminho vetorial se degrada ainda mais, para uma varredura em
+Dart sobre os embeddings empacotados, se a própria extensão vetorial do SQLite
+falhar ao carregar; a recuperação ainda responde, só que mais devagar.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+A pesquisa de memória no desktop e na web é um caminho separado e mais simples:
+a operação RPC `memory_fact.search` é **somente FTS5**, porque um cliente leve
+não consegue enviar um embedding de consulta e o caminho híbrido permanece
+interno ao host. Então a classificação que você vê no navegador de memória não
+é a classificação que um agente recebe de `search_memory`. Isso é esperado, não
+é um bug, mas significa que "pesquisei e não encontrei" na interface não é prova
+de que o agente não vai encontrar.
 
-## Where memory lives and who writes it
+## Onde a memória fica e quem a escreve
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+O navegador de memória fica em **Configurações → Espaço de trabalho → Memória**
+(`/workspaces/<id>/settings/memory`), com abas Fatos, Políticas e Grafo de
+conhecimento.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Há ali uma assimetria que surpreende as pessoas: **você pode editar e excluir a
+memória, mas não pode criá-la.** Nem a aba Fatos nem a aba Políticas tem um
+controle para adicionar. A criação é feita pelo lado do agente, por meio de
+`propose_fact` e `propose_policy` (`supersede_fact` / `supersede_policy` para
+substituí-los). `remember` grava um item de camada quente limitado à sessão que
+`consolidate_memory` pode mais tarde promover a fato; `record_observation` e
+`update_my_notes` gravam o bloco de anotações privado injetado no despacho. O
+navegador é uma superfície de revisão e correção, não de criação — então, se
+você quer um fato na memória, a forma de colocá-lo lá é dizer a um agente.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Duas operações de manutenção também são invocadas por um agente, e não
+agendadas: `consolidate_memory` mescla e poda os fatos acumulados, e
+`harmonize_memory` reconcilia crenças que divergiram entre agentes.
+`list_memory_conflicts` mostra o que a detecção de conflitos já registrou. Nada
+as executa para você em um temporizador. As decisões de reunião são coletadas no
+domínio `decisions` quando uma etapa de persistência de reunião as registra;
+isso não é um temporizador sobre execuções de agente concluídas.
 
-## Related concepts
+## Conceitos relacionados
 
-- [The agent model](/pt-BR/manual/conceitos/modelo-de-agentes/): roles are what grants are written against
-- [Workspaces and isolation](/pt-BR/manual/conceitos/espacos-de-trabalho/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/pt-BR/manual/guias/gerenciar-memoria/): working with memory in practice
+- [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/): os papéis são aquilo sobre o que as concessões são gravadas
+- [Espaços de trabalho e isolamento](/pt-BR/manual/conceitos/espacos-de-trabalho/): a memória tem escopo de espaço de trabalho e fica no arquivo de banco de dados próprio desse espaço de trabalho
+- [Gerenciar a memória do espaço de trabalho](/pt-BR/manual/guias/gerenciar-memoria/): trabalhando com memória na prática

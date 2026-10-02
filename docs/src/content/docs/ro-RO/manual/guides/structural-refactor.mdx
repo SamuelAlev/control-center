@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Refactorează codul structural
+description: Pune un agent să găsească și să rescrie cod după formă, nu după text, și verifică modificarea înainte să ajungă pe disc.
 slug: ro-RO/manual/ghiduri-practice/refactorizare-structurala
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Acest ghid îți arată cum să pui un agent să facă o modificare mecanică de mare amploare — un codemod, o migrare în bloc a unui API, un șablon de care vrei să scapi — folosind căutarea și rescrierea structurală, cu modificarea pregătită pentru revizuire înainte de a se scrie ceva.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` potrivește codul după **formă**. `ast_edit` îl rescrie. `resolve` comite sau renunță.
 
-## Before you start
+## Înainte de a începe
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Instrumentele structurale acoperă limbajele pe care le analizează sintactic graful de cod: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB și Ada. Au nevoie de gramaticile tree-sitter pregătite, ceea ce se întâmplă întotdeauna într-o versiune livrată — o gramatică lipsă oprește serverul, în loc să degradeze căutarea.
 
-## Find the shape first
+## Găsește mai întâi forma
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Nu rescrie niciodată ceva ce nu ai privit. Cere-i agentului să caute:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Găsește fiecare loc în care apelăm `dispose()` pe un nullable pentru care tocmai am verificat că nu este null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Rezultatul este `file:line` plus sursa potrivită pentru fiecare loc.
 
-### What the pattern syntax buys you
+### Ce îți oferă sintaxa șablonului
 
-| Token      | Matches                                    |
+| Token      | Potrivește                                 |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | Orice nod individual, capturat             |
+| `$$$NAME`  | Orice serie de noduri surori — argumente, instrucțiuni |
+| `$_`       | Orice, capturat fără nume                  |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Cel care contează: **un `$NAME` repetat trebuie să capteze același text**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+găsește o gardă care eliberează exact ce a testat. **Nu** găsește `if (a != null) b.dispose()` — care este de obicei chiar bug-ul pe care îl căutai. Nicio căutare textuală nu poate exprima asta.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Nu poate potrivi în interiorul unui șir sau al unui comentariu]
+Șablonul este analizat sintactic de aceeași gramatică precum fișierul, așa că `dispose(x)` scris într-un comentariu de documentație sau într-un literal de șir nu este un apel și nu este potrivit. Exact acesta este motivul pentru care apelezi la asta în locul lui `grep`.
 :::
 
-### When the pattern finds nothing
+### Când șablonul nu găsește nimic
 
-Two things to try, in order:
+Două lucruri de încercat, în ordine:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Fă-l mai mic.** `foo($X)` înainte de `if (a) { foo($X); }`. Un șablon care nu este cod valid de unul singur nu este adesea construcția pe care o aveai în minte.
+2. **Numește limbajul.** `language:` este dedus numai când `path` indică un singur fișier.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Un șablon pe care nu îl acceptă niciun context de analiză este raportat ca neanalizabil — instrumentul spune asta, în loc să raporteze „nicio potrivire” pentru ceva ce nu era citit niciodată așa cum arată.
 
-## Rewrite, and look before it lands
+## Rescrie și verifică înainte de aplicare
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Rezultatul este o **propunere**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Încă nu este nimic pe disc. Citește lista, verifică câteva dintre locurile raportate de căutare, apoi:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+sau
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Commit-ul este totul-sau-nimic]
+Fiecare fișier este comparat cu conținutul capturat când a fost pregătită modificarea. Dacă vreunul dintre ele s-a schimbat — agentul l-a editat manual, a rulat un formator, o trecere de diagnostice l-a rescris — **întreaga** modificare este refuzată și aruncată. O rescriere structurală aplicată parțial lasă un arbore care nu se compilează nici în forma veche, nici în cea nouă.
 
-Re-run the tool against the current files; do not retry the stale id.
+Rulează din nou instrumentul pe fișierele actuale; nu reîncerca id-ul învechit.
 :::
 
-## Check your work with the compiler
+## Verifică-ți munca cu compilatorul
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Rostul de a face asta structural este că este larg. Modificările largi sunt exact locul unde o rescriere care pare plauzibilă strică un tip. Cere diagnostice după ce rezolvi:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` rulează verificatorul propriu al proiectului (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) în locul unei interogări per fișier — forma corectă de întrebare după o modificare care a atins patruzeci de fișiere.
 
-## Worked example: migrating a call
+## Exemplu lucrat: migrarea unui apel
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Să presupunem că `log(msg, level)` devine `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Privește potrivirile. Dacă unele dintre ele sunt un `log` *diferit* cu două argumente, restrânge șablonul limitând `path` la directorul care îl conține pe cel vizat, în loc să încerci să exprimi diferența în șablon.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Apoi `resolve`, apoi `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Când să folosești altceva
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Situație                                   | Instrument mai bun                   |
+| ------------------------------------------ | ------------------------------------ |
+| Redenumirea unui simbol                    | `lsp_rename` — urmărește referințe, nu forme |
+| Găsirea unui șir, a unui comentariu sau a unui nume de fișier | `search` (conținut) / `search_files` (nume) |
+| „Ce se strică dacă modific asta?”          | [Graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/) |
+| Un limbaj pe care gramaticile nu îl acoperă | `search` plus `edit`                 |
 
-## Related
+## Vezi și
 
-- [Code intelligence](/ro-RO/manual/concepte/intelligence-pentru-cod/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ro-RO/manual/referinta/instrumente-agent/) — the full argument list
-- [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/) — the symbol and impact side
+- [Intelligence pentru cod](/ro-RO/manual/concepte/intelligence-pentru-cod/) — de ce potrivirea structurală nu este o expresie regulată cu pași în plus
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/) — lista completă de argumente
+- [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/) — partea de simboluri și de impact

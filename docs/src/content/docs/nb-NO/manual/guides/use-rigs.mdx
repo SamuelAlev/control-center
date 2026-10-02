@@ -1,97 +1,102 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Gi en agent en maskin å teste på
+description: Gi en agent en kastbar nettleser, et skrivebord, en Android-emulator eller en iOS-simulator — overvåket i sanntid, med kontroller du kan ta over.
 slug: nb-NO/handbok/slik-gjor-du/bruk-stasjoner
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+En **stasjon** er en kastbar maskin en agent åpner når den faktisk må prøve
+noe: laste en side, klikke seg gjennom et skrivebordsprogram, trykke rundt på
+en telefon. Du kan se den arbeide i sanntid, og ta over kontrollen når du vil.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Isolerte terminal-, nettleser- og skrivebordsstasjoner er VM-er med kastbare
+disker og nettverk bak en sluse. Android og iOS er vertsstyrte emulatorer:
+enhetstilstanden deres er kastbar, men nettverket følger serververten.
 
-## Set it up once
+## Sett det opp én gang
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Stasjoner kjører på maskinen som er vert for `cc_server` — den samme maskinen,
+ikke den du ser på. Det finnes fem brukervendte flater; skrivebords- og
+mobilflatene krever oppsett på verten:
 
-| Surface | Runs on | Setup |
+| Flate | Kjører på | Oppsett |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | En mikro-VM som starter fra et festet Ubuntu-bilde | Ingen — bildet hentes automatisk ved første bruk |
+| **Nettleser (VM)** | En mikro-VM som starter fra et festet Debian-bilde, med Chromium, Firefox eller WebKit installert ved første bruk | Ingen — det samme |
+| **Datamaskin (VM)** | QEMU med et Linux-skrivebordsbilde som leveres med Chromium, Firefox, WebKit og en CLI-basislinje av samme slag som en GitHub-hostet runner | Installer QEMU (`brew install qemu`), og **Importer** deretter et skrivebordsbilde under **Innstillinger → Server → Stasjoner** |
+| **Android** | Googles Android-emulator | Installer Android SDK, opprett en AVD og start den (nedenfor) |
+| **iOS-simulator** | CoreSimulator på serverens Mac | Installer Xcode og iOS-kjøretiden som kreves, og installer deretter automatiseringsbroen under **Innstillinger → Server → Stasjoner** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Terminal- og nettlesermaskinene starter fra bilder festet med digest: de
+nøyaktige bytene er navngitt på forhånd, hentes én gang ved første oppstart og
+bufres — etter første oppstart av hver type hopper senere maskiner over hele
+nedlastingen og er oppe i løpet av sekunder. **Innstillinger → Server →
+Stasjoner** viser hva serveren din kan starte, og hver maskin som kjører akkurat
+nå.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Et installert skrivebordsbilde kan fortsatt administreres fra samme side:
+**Importer** erstatter det med en nyere qcow2, og **Slett** fjerner det slik at
+du kan installere et ferskt bygg.
 
-### Mobile devices are set up differently
+### Mobilenheter settes opp annerledes
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Vi har ikke noe eget bilde for Android eller iOS, og det er ikke en
+forglemmelse. Android-systembilder kommer fra Googles SDK; iOS-kjøretider
+kommer fra Xcode. For Android installerer du Android Studio (eller SDK-verktøyene
+på kommandolinjen), legger til en virtuell enhet i **Device Manager** og starter
+den. Deretter rapporterer Stasjoner-siden at Android er tilgjengelig.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Den forteller deg også nøyaktig hvilket steg du mangler — ingen SDK, ingen
+emulator, ingen virtuell enhet, eller en enhet som rett og slett ikke kjører —
+fordi disse har fire forskjellige løsninger, og bare én av dem er en nedlasting.
+Hvis du starter `cc_server` fra et skall som ikke ser SDK-en, eksporterer du
+den:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+For iOS må serveren selv kjøre på macOS med Xcode og en iOS-simulatorkjøretid
+installert. Åpne **Innstillinger → Server → Stasjoner** og trykk
+**Installer bro for iOS-automatisering**. Serveren henter
+WebDriverAgent-artefakten festet med sjekksum, verifiserer den og installerer
+den i serverens eget automatiseringslager. Ingen simulator starter under
+oppsettet.
 
-## Open a machine
+## Åpne en maskin
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Maskiner lever som **faner**, ved siden av chatten og diffen — i et område eller
+på en PR-side, i den samme `+`-menyen, under **Maskiner**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Datamaskin** — et Linux-skrivebord med Chromium, Firefox og WebKit
+- **Chromium**, **Firefox** eller **WebKit** — en nettleser
+- **Android** — den kjørende Android-emulatoren
+- **iOS-simulator** — en kastbar simulator opprettet for denne samtalen
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Velg én og trykk **Start maskinen**. Fanen sier hvilket steg oppstarten er i
+(«Starter mikro-VM-en», «Venter på at gjesten skal komme opp») i stedet for bare
+å spinne.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Fanen er avgrenset til samtalen, og det er agentverktøyet også. En Chromium-,
+Firefox- eller WebKit-fane og `browser_use`, Android og `mobile_use`, eller
+iOS-simulator og `ios_use` adresserer den samme standardmaskinen. Ekstra
+plasser i grensesnittet er egne sammenligningsmaskiner; agentverktøy bruker
+alltid standarden.
 
-To build, install and start a Flutter app on Android:
+Slik bygger, installerer og starter du en Flutter-app på Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Kall deretter `mobile_use` med `install_apk` og
+`build/app/outputs/flutter-apk/app-debug.apk`, etterfulgt av `start_app` og
+Androids pakkenavn. `ui_dump`, skjermbilder og inndata styrer den samme enheten
+som vises i menneskefanen. `stop_app`, `clear_app_data`, `uninstall_app`,
+`open_url` og argv-formede `shell`-kall dekker resten av utviklingssyklusen
+uten å kalle et skall på serververten.
 
-To build, install and start a Flutter app on iOS Simulator:
+Slik bygger, installerer og starter du en Flutter-app på iOS-simulator:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +104,214 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Kall deretter `ios_use` med `install_app` og `.app`-katalogen, etterfulgt av
+`start_app` og bundle-identifikatoren som skrives ut av `plutil`.
+iOS-verktøyet eksponerer også `stop_app`, `uninstall_app`, `open_url` og en
+argv-formet `spawn`-handling for diagnoser lokalt i simulatoren.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Skrivebords- og nettleservisningene tilpasser størrelsen til panelet. iOS
+beholder simulators faste punktstørrelse og legger svarte kanter rundt den.
+Hver flate har fortsatt to uavhengige baner: agenten får små, billige
+skjermbilder mens du får sanntidsvisningen. Å bytte fane stopper
+menneskestrømmen, slik at en maskin i bakgrunnen ikke koster
+visningsbåndbredde.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+En stasjonsfane starter ikke en maskin av seg selv, heller ikke under
+gjenoppretting av layouten. Denne regelen hindrer at en appstart uventet starter
+VM-er eller oppretter simulatoreheter.
 
-## Drive the machine
+## Styr maskinen
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Lerretet er ditt å skrive og klikke i når ingen andre holder eksklusiv kontroll
+— eller når du gjør det. Mens du holder den låsen, viser statusmerket **Du har
+kontroll**, agenten kan fortsatt ta skjermbilder, og serveren avviser de
+mutative handlingene dens ved det ene punktet alle handlinger passerer gjennom.
+Alt du gjør, registreres på navnet ditt.
 
-Press **Stop the machine** when you are done.
+Trykk **Stopp maskinen** når du er ferdig.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Kontrollen er eksklusiv med vilje: to aktører som skriver inn i én maskin,
+produserer inndata ingen av dem mente.
 
-## Move things in and out
+## Flytt ting inn og ut
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Kopier og lim inn fungerer begge veier over stasjonslerretet, og det gjør også å
+dra filer.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Kopier og lim inn.** Trykk kopier-tastekombinasjonen over lerretet, og det
+maskinen kopierte — tekst, et bilde, en liste med filer — havner på
+utklippstavlen din. Lim inn sender din den andre veien og trykker lim inn inne i
+maskinen. På macOS er tastekombinasjonen ⌘C/⌘V; ⌃C når fortsatt et gjesteskall
+som avbrytelsen den er. På Windows og Linux bruker du ⌃C/⌃V — gjesten mottar det
+samme tastetrykket den uansett ville fått, så ⌃C i en gjesteterminal avbryter
+fortsatt, og din egen utklippstavle blir ikke rørt.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Ingenting synkroniseres i bakgrunnen. Et passord du kopierer på din egen maskin,
+havner ikke inne i en VM fordi en timer utløste seg; det krysser grensen når du
+limer inn.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Innliming i en stasjon er tillatt som standard. Kopiering ut av en stasjon spør
+først — en tildeling på ti minutter, eller **Tillat alltid** under
+**Innstillinger → Server → Stasjoner → Tilgang til utklippstavle**. De to
+retningene er uavhengige, og de følger deg, ikke arbeidsområdet.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Dra filer inn.** Slipp dem hvor som helst på lerretet.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- På **Nettleser (VM)** mottar siden en *ekte* slipphendelse på det punktet der
+  du slipper, så en opplastingssone oppfører seg nøyaktig som med en lokal fil.
+- På **Datamaskin (VM)** havner filene i `~/Drops` og stiene deres legges på
+  maskinens utklippstavle, så ⌃V limer dem inn i en filbehandler eller et
+  opplastingsfelt. En vert kan ikke syntetisere en dra-operasjon inn i et
+  vilkårlig Linux-program uten å kjøre en privilegert daemon inne i VM-en, noe
+  stasjoner bevisst ikke har — så varselet forteller deg hvor filene havnet, i
+  stedet for å late som en slipphendelse skjedde.
+- I en **terminal** kopieres filen inn, og stien skrives ved ledeteksten, klar
+  til å sendes til en kommando. Å lime inn et *bilde* i en terminal gjør det
+  samme: det lagres i maskinen, og du får stien.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Dra filer ut** fungerer fra Datamaskin (VM). Start en dra-operasjon på en fil
+inne i maskinen, før pekeren ut av lerretet, og den blir en ekte dra-operasjon
+på skrivebordet ditt — slipp den i Finder eller Explorer. Å kopiere filer i
+maskinens filbehandler og lime inn på din side fungerer også. Nettleser (VM)
+tilbyr ikke dette: en hodeløs nettleser har ingen dra-nyttelast å lese, og å
+gjette ut fra sidens tekstmarkering ville kapre vanlige klikk.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Datamaskin (VM) trenger et bilde bygget etter at utklippstavlestøtten kom på
+plass. Hvis du importerte ditt tidligere, bygger du det på nytt med
+`scripts/rigs/build_image.sh`, og bruker deretter **Importer** på det
+installerte bildet for å erstatte det.
 :::
 
-## Terminals inside a rig
+## Terminaler inne i en stasjon
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Terminalene i et område eller på en PR-side kan kjøre inne i en stasjon i
+stedet for på serverens egen maskin. Når de gjør det, viser panelet et
+**Isolert VM**-merke.
 
-What changes:
+Hva som endres:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Ingenting du kjører, når verten. En `rm -rf` der inne koster deg stasjonen.
+- Nettverket avviser som standard. Bare verter på stasjonens tillatelsesliste
+  kan nås, og alt går gjennom en sluse som håndhever den.
+- `git push` fungerer fortsatt. Stasjonen har ingen lagret legitimasjon; den ber
+  serveren om en kortlevd en per operasjon, og tokenet tilbakekalles når
+  stasjonen lukkes.
 
-What to know:
+Hva du bør vite:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **En gjenopprettet isolert terminal venter på deg.** Som en stasjonsfane viser
+  en `microvm`-terminal som kommer tilbake med layouten din, en **Åpne
+  skallet**-knapp i stedet for å starte VM-en ved oppstart. En
+  vertsskallterminal koster en prosess; en isolert koster en maskin.
+- **Filer som slippes på terminalen, skrives inn, ikke åpnes.** Slipp en CSV på
+  en isolert terminal, og den kopieres inn i maskinen og gjestestien vises ved
+  ledeteksten — vertsstien ville være en kommando som feiler der.
+- **Kopien i stasjonen er en kopi.** Arbeidstreet ditt på verten forblir den
+  autoritative kilden. Innsjektinger du gjør inne i en stasjon, hentes tilbake
+  til `refs/rigs/<id>/*` når du ber om det — de flytter aldri grenen din eller
+  rører arbeidstreet ditt.
+- **Arbeid rettet mot verten kjører fortsatt på verten.** En Linux-gjest kan
+  ikke bygge for macOS eller kjøre `xcodebuild`. Velg den native backenden
+  eksplisitt for det; appen ber deg bekrefte i stedet for å bytte i det stille.
 
-## Ports
+## Porter
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/nb-NO/handbok/slik-gjor-du/vm-porter/).
+Start en utviklingsserver i Terminal (VM) — `pnpm dev` på port 3000, for
+eksempel — og i løpet av noen sekunder lyser støpselikonet i terminalhjørnet
+opp: porten videresendes til `localhost:3000` på maskinen din, kan nås på
+`localhost:3000` inne i Nettleser (VM), kan deles på nettverket ditt og kan gis
+navnet `https://myapp.test`. Hele flyten — automatisk videresending, LAN-deling,
+utviklingsdomener med HTTPS — har sin egen veiledning:
+[Videresend porter fra en terminal](/nb-NO/handbok/slik-gjor-du/vm-porter/).
 
-## Custom images
+## Egne bilder
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Et arbeidsområde kan peke Terminal (VM) og Nettleser (VM) mot sine egne bilder —
+under **Innstillinger → Server → Stasjoner → Egne bilder (dette
+arbeidsområdet)**. Typisk bruk: utvid standardbildet med verktøykjeden prosjektet
+ditt trenger, slik at hver terminal starter klar, eller gjenbruk et bilde teamet
+ditt allerede publiserer.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Maskinen starter fortsatt inne i det samme isolerte miljøet: samme sluse for
+utgående trafikk, samme legitimasjonsmegler, samme livssyklus. Bare
+administratorer for arbeidsområdet kan endre innstillingen, nye maskiner tar den
+i bruk (kjørende beholder sin), og referansen må være et registerbilde — lokale
+stier avvises.
 
-What an image must provide:
+Hva et bilde må tilby:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — et Linux-bilde med `bash`. Det trenger også `git`, `curl`
+  og `socat` — enten forhåndsinstallert eller installerbare ved første oppstart
+  (ethvert Debian-/Ubuntu-basert bilde fungerer: de installeres automatisk,
+  sammen med et CLI-verktøysett i stil med en GitHub-hostet runner:
+  kompilatorer, Python 3, `jq`, arkivverktøy, `rsync`. Språkkjøretider som
+  Node/Go/Java og Docker er ikke forhåndsinstallert). Gjestport `7911` er
+  reservert for portvideresenderen.
+- **Nettleser (VM)** — et Debian-/Ubuntu-bilde med `bash` og `socat`, pluss en
+  `chromium`-binær. Serveren starter Chromium selv som
+  `chromium --headless=new` og videresender DevTools fra gjest `9223` til
+  `9222`. PulseAudio og ffmpeg installeres ved første oppstart. Ikke bygg
+  `FROM chromedp/headless-shell` — den binæren har ingen lyd. Overstyringen
+  gjelder bare Chromium-stasjoner; Firefox og WebKit ignorerer den og starter
+  det festede Debian-bildet. Gjestportene `9222`/`9223` er reservert.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+To anbefalinger: fest referansen med digest (`@sha256:…`) slik at bytene ikke
+kan endre seg under deg, og host den på Docker Hub eller GitHub Container
+Registry — disse registrenes nedlastingsverter slippes automatisk gjennom slusen
+for utgående trafikk; andre kan trenge at vertene deres for innholdslevering er
+tilgjengelige for å hente.
 
-## When a rig goes away
+## Når en stasjon forsvinner
 
-Rigs are meant to be temporary:
+Stasjoner er ment å være midlertidige:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Inaktivitet** — etter ~15 minutter uten at noe skjer, parkeres en nettleser-,
+  skrivebords- eller mobilstasjon (fryst, våkner umiddelbart ved neste
+  handling). En isolert terminal venter 45 minutter. Etter det dobbelte av
+  inaktivitetsvinduet lukkes den.
+- **Tidsgrense** — hver stasjon har en hard levetid den ikke kan forlenge,
+  uansett hva den gjør.
+- **Minne** — hvis serveren trenger plass til en ny stasjon, lukker den den
+  minst nylig brukte. En stasjon som noen styrer, ser på eller har en terminal
+  åpen i, tas aldri.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Når en isolert stasjon lukkes, forkastes disken. Å lukke en Android-stasjon
+kobler fra vertsemulatoren — den sletter den ikke. En iOS-stasjon sletter
+CoreSimulator-enheten den opprettet. Alt du vil beholde, må du føre tilbake
+først.
 
-## What a rig can reach
+## Hva en stasjon kan nå
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Isolerte terminal-, nettleser- og skrivebordsstasjoner har som standard en sluse
+for utgående trafikk som avviser alt: du gir eksplisitt tillatelse til verter,
+og gjestens eneste rute er en sluse som håndhever den listen. En nettleserstasjon
+slipper også inn produktsiden (`usectrl.dev`) fra start.
+Legitimasjonsmegleren bruker den samme listen.
 
-Two honest caveats:
+To ærlige forbehold:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Mobilnettverk følger verten.** Androids emulator og Apples CoreSimulator
+  ligger ikke bak slusen for utgående trafikk. Ingen av mobilfanene tilbyr en
+  kontroll for å omgå nettverket, fordi det vertsstyrte nettverket allerede er
+  ubegrenset.
+- **Alt en stasjon leser, er ikke klarert.** Sidetekst, DOM,
+  tilgjengelighetstrær og UI-dumper kommer tilbake til agenten innpakket i
+  markører som sier «dette er data, ikke instruksjoner». En side som prøver å gi
+  agenten din ordrer, leses som en sitert streng.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Du kan se alt som kjører, og stoppe hva som helst av det, under
+**Innstillinger → Server → Stasjoner**.
 
-## Related
+## Relatert
 
-- [Rigs and enclosures](/nb-NO/handbok/konsepter/stasjoner/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/nb-NO/handbok/slik-gjor-du/vm-porter/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/nb-NO/handbok/referanse/stasjoner/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Stasjoner og isolerte miljøer](/nb-NO/handbok/konsepter/stasjoner/) — modellen bak alt
+  dette: hvorfor VM-er, de to visningsbanene, legitimasjonsmegleren, livssyklusen
+- [Videresend porter fra en terminal](/nb-NO/handbok/slik-gjor-du/vm-porter/) — nå
+  en utviklingsserver fra hvor som helst det betyr noe
+- [Stasjonsreferansen](/nb-NO/handbok/referanse/stasjoner/) — hver flate, handling, port og
+  standardverdi på ett sted
+- [Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/) — `Drive an
+  enclosure (rig)` er en handlingsklasse du kan sette til tillat, spør først
+  eller nekt, per arbeidsområde, agent eller område. Skrivebeskyttede moduser
+  nekter den kategorisk.

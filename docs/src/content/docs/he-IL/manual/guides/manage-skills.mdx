@@ -1,129 +1,121 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: התקנה וניהול מיומנויות
+description: הוסיפו מאגרי GitHub כמקורות מיומנויות, עיינו בקטלוגים שלהם והתקינו, עדכנו או הסירו מיומנויות דרך שער סריקת האנטי־וירוס.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-מיומנויות
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+המדריך הזה מראה כיצד למלא סביבת עבודה במיומנויות מ-GitHub: הוסיפו מאגר כמקור,
+התקינו ממנו את המיומנויות שתרצו ושמרו עליהן מעודכנות לאורך זמן.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/); this page stays
-on the doing.
+הדבר החשוב לדעת לפני שמתחילים: **מאגר מקור אינו מהימן.** השם, התיאור ומספר
+הכוכבים שלו נכתבים בידי מי שבבעלותו. אות הבטיחות היחיד ש-Control Center סומך
+עליו הוא הכרעת סריקת האנטי־וירוס, שכל התקנה עוברת דרכה לפני שמשהו מגיע לדיסק או
+להנחיה של סוכן. אם אתם רוצים את הנימוק, קראו את
+[קטע המיומנויות במודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/); הדף הזה נשאר
+בצד המעשי.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+המיומנויות יושבות ב**הגדרות ← סביבת עבודה ← מיומנויות**
+(`/workspaces/<id>/settings/workspace/skills`). הן מוגבלות לסביבת עבודה: המיומנויות
+שאתם מתקינים כאן שייכות לסביבת העבודה הזו בלבד. לדף שתי לשוניות: **מותקנות**
+(מיומנויות מקומיות, ובהן עורך **מיומנות חדשה**) ו**מקורות** (קטלוגים של GitHub).
+שתי פעולות הכתיבה עוברות באותו שער סריקה.
 
-## Add a skill repository
+## הוספת מאגר מיומנויות
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. פתחו את **הגדרות ← סביבת עבודה ← מיומנויות** ועברו ללשונית **מקורות**.
+2. לחצו על **הוסף מאגר**.
+3. הדביקו כתובת URL של מאגר GitHub, למשל `https://github.com/anthropics/skills`,
+   ואשרו.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+השרת בודק שהמאגר קיים ושגלוי עם פרטי הגישה שלו, ואז מוסיף אותו למסילה השמאלית.
+אין חנות מסודרת באמצע: כל מאגר GitHub עובד, מה שאומר גם שהמוניטין נתון לשיפוטכם —
+מספר כוכבים הוא ראיה, ולעולם לא ערובה.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+המיומנויות של מאגר הן הספריות שמכילות `SKILL.md` (עד שלוש רמות עומק, ובנוסף
+פריסת שוק התוספים של Claude
+`plugins/<plugin>/skills/<skill>`, כשעצי תלויות ו-vendor מדולגים). אם הרשת אומרת
+בהמשך שלמאגר אין מיומנויות, זה בדיוק מה שזה אומר: שום ספרייה בו אינה תואמת
+למוסכמת המיומנויות.
 
-## Inspect a skill before installing
+## בדיקת מיומנות לפני התקנה
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+בחרו מאגר במסילה; המיומנויות שלו מופיעות כרשת בצד ימין, עם שדה סינון מעליה
+שמצמצם את הקטלוג לפי שם, תיאור או slug. לחצו על כרטיס כדי לפתוח את תצוגת הפרטים.
+היא מציגה שלושה דברים:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **קובץ ה-README**, מרונדר כ-markdown — ה-`README.md` של ספריית המיומנות, או
+  גוף ה-`SKILL.md` כשאין README.
+- **תצוגת הסריקה המקדימה** — הכרעת הסריקה (`pass`, `warn` או `quarantine`),
+  היכולות שתכני המיומנות מצהיר עליהן (הרצת shell, כתיבת קבצים, גישה לרשת…)
+  וכל ממצא שהסורק רשם.
+- **מספר הקבצים** — התקנה כותבת את כל ספריית המיומנות, ולא רק את ה-`SKILL.md`
+  שלה.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+התצוגה המקדימה סורקת בדיוק את הבתים שההתקנה תכתוב, כך שההכרעה שאתם רואים היא
+ההכרעה שההתקנה תקבל; שום דבר לא נשפט מחדש מאחורי הגב שלכם.
 
-## Install a skill
+## התקנת מיומנות
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. פתחו את תצוגת הפרטים של המיומנות.
+2. קראו את הכרעת הסריקה. בהכרעה `warn` או `pass`, לחצו על **התקנה**.
+3. בהכרעת `quarantine`, ההתקנה נשארת מושבתת עד שתסמנו
+   **אני מבין את הסיכון — התקן בכל זאת**. העקיפה הזו נרשמת, ולא מונחת מאליה.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+ההתקנה כותבת את ספריית המיומנות לתוך סביבת העבודה, רושמת הצמדה ב-`skills-lock.json`
+(מאגר המקור, הנתיב, הקומיט שממנו הגיעה וגיבוב תוכן), והמיומנות נעשית זמינה לסוכנים
+בסביבת העבודה. כרטיס שמסומן **השם תפוס** אומר שמיומנות אחרת כבר מחזיקה בשם הזה
+מקומית — הסירו את ההתקנה שלה קודם.
 
-## Update skills over time
+## עדכון מיומנויות לאורך זמן
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+כרטיסים של מיומנויות מותקנות נושאים תגים: **מותקנת**, או **עדכון זמין** כשהמאגר
+התקדם מעבר לקומיט שהצמדתם. פתחו את תצוגת הפרטים ולחצו על **עדכן** כדי לשלוף מחדש
+בקומיט החדש. עדכון עובר באותו שער סריקה כמו התקנה — מיומנות שהגרסה החדשה שלה נכנסת
+להסגר נדחית, והגרסה שהייתה לכם נשארת במקומה. הגיבוב של הגרסה הישנה נשמר כהפניה
+לשחזור בקובץ הנעילה.
 
-## Uninstall a skill, remove a repository
+## הסרת ההתקנה של מיומנות והסרת מאגר
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**הסר התקנה** (בתצוגת הפרטים של מיומנות מותקנת, או מחיקה בלשונית מותקנות) מסיר
+יחד את ספריית המיומנות ואת הצמדת הנעילה שלה — מיומנות שהוסרה אינה משאירה דבר
+אחריה.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**הסרת מאגר** מהמסילה מסירה רק את הקטלוג: מיומנויות שהתקנתם ממנו נשארות מותקנות
+ואף ממשיכות להתעדכן, מפני שהצמדה רושמת את המאגר לפי שם ולא לפי הפניה לרשומת
+המקור. הוסיפו את המאגר בחזרה אם תרצו לעיין בו שוב.
 
-## Invoke a skill
+## הפעלת מיומנות
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+מיומנויות מופעלות תחת מרחב השמות שלהן עצמן, ולכן הן לעולם אינן מתנגשות בפקודות
+קו נטוי מובנות (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — מיומנות מותקנת בסביבת העבודה הזו, או מיומנות שמחוברת לסוכן
+- `/skill:<repo>:<name>` — מיומנות שמסופקת על ידי מאגר שבוצע לו checkout במרחב הזה
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+שם חשוף שאינו מובנה עדיין נפתר, עבור הודעות שנכתבו לפני שמרחב השמות היה קיים.
+`/skill:plan` הוא מה שמגיע למיומנות בשם `plan`; `/plan` הוא תמיד המובנה.
 
-## Repo-scoped skills
+## מיומנויות בהיקף מאגר
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+מאגר שבוצע לו checkout יכול לספק מיומנויות משלו, ב-`.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` או `skills/`. אלה **אינן**
+מותקנות דרך הדף הזה. סוכן נושא רק את המיומנויות של המאגר שהוא עובד בו כרגע; הן
+מתחלפות כשהוא עובר. תיבת הכתיבה אינה מוגבלת כך: `/skill:<repo>:<name>` מגיע לכל
+מאגר במרחב.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+מיומנויות של מאגר עוברות את אותה סריקה שנכשלת באופן סגור
+(`pass` / `warn` / `quarantine`) לפני שה-frontmatter שלהן מגיע להנחיה. `warn`
+מתקבלת; `quarantine` נחסמת, בלי עקיפת מפעיל במסלול הזה.
 
-See [Repo-scoped skills](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills) and
-[Slash commands](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/).
+ראו [מיומנויות בהיקף מאגר](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills)
+ו[פקודות קו נטוי](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Chat with an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [צ'אט עם סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
 
-## Related concepts
+## מושגים קשורים
 
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)

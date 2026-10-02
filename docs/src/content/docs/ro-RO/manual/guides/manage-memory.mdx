@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Gestionează memoria spațiului de lucru
+description: Revizuiește, corectează și curăță faptele și politicile pe care agenții le-au scris într-un spațiu de lucru.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-memoria
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Acest ghid îți arată cum să lucrezi cu depozitul de cunoștințe al unui spațiu de lucru.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Lucrul important de știut înainte de a începe: **interfața de memorie este o suprafață de revizuire, nu una de autorare.** Faptele și politicile sunt scrise de agenți — prin `propose_fact` și `propose_policy`, cu `supersede_fact` și `supersede_policy` pentru a le înlocui. `remember` scrie un element de nivel fierbinte, limitat la sesiune, pe care `consolidate_memory` îl poate promova ulterior la fapt. Deciziile consemnate din ședințe sunt colectate în domeniul `decisions`; nu există nicio colectare la rulările de agent finalizate. Ce faci aici este să citești ce au scris, să corectezi, să dezactivezi sau să ștergi.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Memoria se află la **Setări → Spațiu de lucru → Memorie** (`/workspaces/<id>/settings/memory`). Nu este o destinație de nivel superior în bara laterală.
 
-## The three tabs
+## Cele trei file
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Pagina are exact trei file. Fapte și Politici afișează un contor în timp real; graful, nu:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fapte** — fiecare fapt din spațiul de lucru, cu un contor al celor care nu sunt înlocuite
+- **Politici** — reguli normative grupate pe domenii, cu un contor al celor active
+- **Graf de cunoștințe** — o suprafață interactivă de domenii, subiecte, fapte și politici
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domeniile nu sunt ceva ce creezi. Un domeniu apare atunci când un agent scrie primul fapt sau prima politică în el; nu există niciun control de creare a domeniilor nicăieri în interfață.
 
-## Review and correct a fact
+## Revizuiește și corectează un fapt
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Deschide fila **Fapte**.
+2. Folosește caseta de căutare pentru a restrânge lista. Este un simplu filtru de subșir peste domeniul, subiectul și conținutul fiecărui fapt — fără index de cuvinte-cheie, fără clasament.
+3. Folosește filtrul de perimetru pentru a afișa toate perimetrele, doar faptele la nivel de spațiu de lucru sau faptele unui singur depozit.
+4. Folosește comutatorul de sortare pentru a ordona după recență sau după încredere.
+5. Dă clic pe controlul de editare al unui fapt.
 
-The edit dialog lets you change:
+Dialogul de editare îți permite să modifici:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domeniu** — mutarea unui fapt între domenii
+- **Subiect** — eticheta sa scurtă
+- **Conținut** — textul cunoștinței
+- **Încredere** — un glisor în pași de 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Salvează pentru a scrie modificările înapoi. Nu există un buton **Adaugă fapt**; dialogul se deschide doar pe un rând existent.
 
-## See superseded facts
+## Vezi faptele înlocuite
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Fila Fapte are un comutator **Afișează înlocuite**. Faptele înlocuite sunt ascunse implicit și sunt dezvăluite de acel comutator, care este locul unde trăiește jurnalul de audit — înlocuirea nu șterge niciodată.
 
-## Delete a fact
+## Șterge un fapt
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Folosește controlul de ștergere al unui fapt și confirmă. Aceasta este o ștergere reală, nu o înlocuire: folosește-o pentru faptele care pur și simplu au fost greșit de consemnat și lasă agenții să înlocuiască faptele al căror _conținut_ a evoluat.
 
-## Manage policies
+## Gestionează politicile
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Fila **Politici** grupează politicile active pe domenii și le retrogradează pe cele inactive într-o secțiune finală. Pentru fiecare politică poți:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- Să o **editezi**
+- Să o **ștergi**
+- Să o **dezactivezi** / **activezi** — opțiunea reversibilă și, de obicei, cea corectă. Doar politicile active ajung în prompturile agenților.
 
-As with facts, there is no create control.
+Ca și în cazul faptelor, nu există un control de creare.
 
-## Explore the knowledge graph
+## Explorează graful de cunoștințe
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Fila **Graf de cunoștințe** așază domeniile, subiectele, faptele și politicile ca o suprafață navigabilă de noduri — deplasează, mărește, trage de noduri. Atingerea unui nod deschide panoul său de detalii, din care sunt accesibile aceleași dialoguri de editare. Este cea mai rapidă cale de a vedea ce domenii sunt chiar populate.
 
-## Edit an agent's working memory
+## Editează memoria de lucru a unui agent
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Memoria de lucru este un bloc de notițe privat pentru fiecare agent, injectat în promptul său în momentul trimiterii. Agenții o scriu singuri cu `record_observation` și `update_my_notes`, dar tu o poți citi și edita direct:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Setări → Spațiu de lucru → Agenți** → selectează agentul → fila **Memorie**.
 
-## Access grants
+## Acordările de acces
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Acordările de acces la memorie asociază rolul unui agent cu o permisiune (`none`, `read`, `write`) pentru fiecare domeniu. Scrie-le cu operațiunile `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Două lucruri de înțeles despre modul în care se rezolvă:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Citirile sunt permisive la eroare.** Când nu există un rând de acordare pentru o pereche (rol, domeniu), permisiunea efectivă este `read`. Singura scriere care aruncă o eroare fără `write` este `propose_policy`. Scrierile de fapte nu sunt condiționate de o acordare.
+- **Acordările sunt indexate după rolul agentului.** Instrumentele de propunere atribuie implicit valoarea `general` unui `agent_role` lipsă. O acordare scrisă pentru alt rol nu îi obligă pe acei agenți; o acordare `general`, da.
 
-## Search is not the same everywhere
+## Căutarea nu este la fel peste tot
 
-Three different things are called "memory search" and they do not agree:
+Trei lucruri diferite se numesc „căutare în memorie” și nu sunt de acord:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Unde                                  | Ce face                                                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Caseta de căutare din fila Fapte      | Filtru de subșir peste faptele deja încărcate în client                                                        |
+| Operațiunea RPC `memory_fact.search`  | Doar căutare prin cuvinte-cheie FTS5 — un client subțire nu poate trimite o înglobare de interogare, așa că căutarea hibridă rămâne internă gazdei |
+| Instrumentul `search_memory` din partea agentului | `keyword`, `semantic` sau `hybrid` (implicit). Hibrid fuzionează patru voci: lexicală, semantică, temporală și de graf |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Așadar, un agent și pagina Memorie nu vor clasa aceeași interogare la fel. Când verifici ce poate rechema de fapt un agent, întreabă agentul.
 
-## Embeddings
+## Înglobări
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Faptele sunt înglobate **în momentul scrierii** și doar când modelul de înglobare de pe dispozitiv este instalat. Verifică-i starea la **Setări → Server → Diagnosticări și confidențialitate → Căutare semantică**. Instalează modelul înainte ca agenții să înceapă să scrie în memorie dacă vrei rechemare semantică.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Use the MCP server](/ro-RO/manual/ghiduri-practice/server-mcp/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Folosește serverul MCP](/ro-RO/manual/ghiduri-practice/server-mcp/)
 
-## Related concepts
+## Concepte conexe
 
-- [Memory and knowledge](/ro-RO/manual/concepte/memorie-si-cunostinte/)
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/)
+- [Memorie și cunoștințe](/ro-RO/manual/concepte/memorie-si-cunostinte/)
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/)

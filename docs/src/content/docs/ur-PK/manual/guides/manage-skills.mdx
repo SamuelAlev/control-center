@@ -1,129 +1,127 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: مہارتیں انسٹال اور منظم کریں
+description: GitHub ریپوزٹریز کو مہارت کے ماخذ کے طور پر شامل کریں، اُن کی کیٹلاگ دیکھیں، اور اینٹی وائرس اسکین گیٹ سے گزر کر مہارتیں انسٹال، اپ ڈیٹ یا ان انسٹال کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/مہارتیں-منظم-کریں
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+یہ گائیڈ دکھاتی ہے کہ GitHub سے کسی ورک اسپیس کو مہارتوں سے کیسے بھرا جائے: کوئی
+ریپوزٹری ماخذ کے طور پر شامل کریں، اُس سے اپنی مطلوبہ مہارتیں انسٹال کریں، اور اُنہیں
+وقت کے ساتھ تازہ رکھیں۔
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/); this page stays
-on the doing.
+شروع کرنے سے پہلے جاننے والی اہم بات: **ماخذ ریپوزٹری غیر معتبر ہے۔** اُس کا نام،
+تفصیل اور اسٹار گنتی وہ لکھتا ہے جس کی وہ ملکیت ہو۔ Control Center جس واحد حفاظتی
+اشارے پر بھروسا کرتا ہے وہ اینٹی وائرس اسکین کا فیصلہ ہے، جس سے ہر انسٹال اِس سے پہلے
+گزرتا ہے کہ کچھ بھی ڈسک یا ایجنٹ پرامپٹ تک پہنچے۔ اگر آپ کو استدلال چاہیے تو
+[ایجنٹ ماڈل کا مہارتوں والا حصہ](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/) پڑھیں؛ یہ صفحہ
+عملی پہلو پر رہتا ہے۔
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+مہارتیں **ترتیبات → ورک اسپیس → مہارتیں**
+(`/workspaces/<id>/settings/workspace/skills`) پر رہتی ہیں۔ یہ ورک اسپیس تک محدود ہیں:
+یہاں انسٹال کردہ مہارتیں صرف اِسی ورک اسپیس کی ہوتی ہیں۔ صفحے پر دو ٹیب ہوتے ہیں:
+**انسٹال شدہ** (مقامی مہارتیں، بشمول **نئی مہارت** ایڈیٹر) اور **ذرائع** (GitHub
+کیٹلاگ)۔ دونوں لکھائیاں اُسی اسکین گیٹ سے گزرتی ہیں۔
 
-## Add a skill repository
+## مہارت ریپوزٹری شامل کریں
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. **ترتیبات → ورک اسپیس → مہارتیں** کھولیں اور **ذرائع** ٹیب پر سوئچ کریں۔
+2. **ریپوزٹری شامل کریں** دبائیں۔
+3. ایک GitHub ریپوزٹری URL چسپاں کریں، مثلاً `https://github.com/anthropics/skills`،
+   اور تصدیق کریں۔
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+سرور جانچتا ہے کہ ریپوزٹری موجود ہے اور اُس کے کریڈینشل سے نظر آتی ہے، پھر اُسے بائیں
+ریْل میں شامل کر دیتا ہے۔ درمیان میں کوئی چنا ہوا اسٹور نہیں: کوئی بھی GitHub
+ریپوزٹری چل جاتی ہے، جس کا مطلب یہ بھی ہے کہ ساکھ کا فیصلہ آپ کا ہے — اسٹار گنتی ایک
+ثبوت ہے، کبھی ضمانت نہیں۔
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+کسی ریپوزٹری کی مہارتیں وہ ڈائریکٹریاں ہیں جن میں `SKILL.md` ہو (زیادہ سے زیادہ تین
+سطح گہری، نیز Claude کا plugin-marketplace لے آؤٹ
+`plugins/<plugin>/skills/<skill>`، جبکہ انحصار اور وینڈر ٹریز چھوڑ دیے جاتے
+ہیں)۔ اگر بعد میں گرڈ بتائے کہ ریپوزٹری میں کوئی مہارت نہیں، تو مطلب یہی ہے: اُس کی
+کوئی ڈائریکٹری مہارت کے کنونشن سے میل نہیں کھاتی۔
 
-## Inspect a skill before installing
+## انسٹال کرنے سے پہلے مہارت کا معائنہ کریں
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+ریْل میں کوئی ریپوزٹری منتخب کریں؛ اُس کی مہارتیں دائیں طرف ایک گرڈ کی صورت میں آتی
+ہیں، جس کے اوپر ایک فلٹر فیلڈ ہوتا ہے جو کیٹلاگ کو نام، تفصیل یا slug کے ذریعے تنگ
+کرتا ہے۔ تفصیلی منظر کھولنے کے لیے کسی کارڈ پر کلک کریں۔ یہ تین چیزیں دکھاتا ہے:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**، markdown کی صورت میں رینڈر شدہ — مہارت کی ڈائریکٹری کی `README.md`، یا
+  README نہ ہونے پر `SKILL.md` کا باڈی۔
+- **اسکین پیش نظارہ** — فیصلہ (`pass`، `warn` یا `quarantine`)، مہارت کا مواد جو
+  صلاحیتیں بیان کرتا ہے (شیل چلاتا ہے، فائلیں لکھتا ہے، نیٹ ورک رسائی…) اور اسکینر
+  کا درج کردہ ہر نتیجہ۔
+- **فائلوں کی گنتی** — انسٹال مہارت کی پوری ڈائریکٹری لکھتا ہے، نہ کہ صرف اُس کی
+  `SKILL.md`۔
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+پیش نظارہ اُنہی بائٹس کو اسکین کرتا ہے جو انسٹال لکھے گا، اس لیے آپ جو فیصلہ دیکھتے
+ہیں وہی فیصلہ انسٹال کو ملتا ہے؛ آپ کی پیٹھ پیچھے کسی چیز کا دوبارہ فیصلہ نہیں ہوتا۔
 
-## Install a skill
+## مہارت انسٹال کریں
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. مہارت کا تفصیلی منظر کھولیں۔
+2. اسکین فیصلہ پڑھیں۔ `warn` یا `pass` فیصلے کے لیے **انسٹال** دبائیں۔
+3. `quarantine` فیصلے کے لیے، انسٹال اُس وقت تک غیر فعال رہتا ہے جب تک آپ
+   **میں خطرہ سمجھتا ہوں — پھر بھی انسٹال کریں** کو ٹک نہ کریں۔ وہ اوور رائیڈ درج
+   ہوتی ہے، فرض نہیں کی جاتی۔
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+انسٹال مہارت کی ڈائریکٹری ورک اسپیس میں لکھتا ہے، `skills-lock.json` میں ایک پن درج
+کرتا ہے (ماخذ ریپوزٹری، پاتھ، وہ کمیٹ جہاں سے آیا اور مواد کا ہیش)، اور مہارت ورک
+اسپیس کے ایجنٹس کے لیے دستیاب ہو جاتی ہے۔ **نام استعمال میں ہے** کے نشان والے کارڈ کا
+مطلب ہے کہ مقامی طور پر اُس نام کی ملکیت پہلے سے کسی دوسری مہارت کے پاس ہے — پہلے اُسے
+ان انسٹال کریں۔
 
-## Update skills over time
+## مہارتیں وقت کے ساتھ اپ ڈیٹ کریں
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+انسٹال شدہ مہارتوں کے کارڈز پر بیج ہوتے ہیں: **انسٹال شدہ**، یا **اپ ڈیٹ دستیاب** جب
+ریپوزٹری آپ کے پن کیے گئے کمیٹ سے آگے بڑھ جائے۔ تفصیلی منظر کھولیں اور نئی کمیٹ پر
+دوبارہ لانے کے لیے **اپ ڈیٹ** دبائیں۔ کوئی اپ ڈیٹ اُسی اسکین گیٹ سے گزرتا ہے جس سے
+انسٹال — جس مہارت کا نیا ورژن قرنطینہ ہو جائے وہ مسترد ہو جاتی ہے اور آپ کے پاس موجود
+ورژن اپنی جگہ رہتا ہے۔ پرانے ورژن کا ہیش لاک میں رول بیک حوالے کے طور پر رکھا جاتا ہے۔
 
-## Uninstall a skill, remove a repository
+## مہارت ان انسٹال کریں، ریپوزٹری ہٹائیں
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**ان انسٹال** (کسی انسٹال شدہ مہارت کے تفصیلی منظر پر، یا انسٹال شدہ ٹیب میں حذف کریں)
+مہارت کی ڈائریکٹری اور اُس کا لاک پن ایک ساتھ ہٹاتا ہے — ان انسٹال شدہ مہارت اپنے پیچھے
+کچھ نہیں چھوڑتی۔
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+ریْل سے **ریپوزٹری ہٹانا** صرف کیٹلاگ ہٹاتا ہے: اُس سے انسٹال کردہ مہارتیں انسٹال رہتی
+ہیں اور اپ ڈیٹ بھی ہوتی رہتی ہیں، کیونکہ پن ریپوزٹری کو ماخذ اندراج کے حوالے کے بجائے
+نام سے درج کرتا ہے۔ اگر دوبارہ براؤز کرنا ہو تو ریپوزٹری دوبارہ شامل کریں۔
 
-## Invoke a skill
+## مہارت کو بلائیں
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+مہارتیں اپنے ہی نام کی جگہ کے تحت بلائی جاتی ہیں، اس لیے وہ بلٹ اِن سلیش کمانڈز
+(`/plan`، `/goal`، `/loop`، `/compact`) سے کبھی نہیں ٹکراتیں:
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — اِس ورک اسپیس میں انسٹال کوئی مہارت، یا ایجنٹ سے منسلک کوئی
+  مہارت
+- `/skill:<repo>:<name>` — اِس اسپیس میں چیک آؤٹ کسی ریپو کی بھیجی ہوئی مہارت
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+کوئی ننگی غیر بلٹ اِن نام بھی حل ہو جاتا ہے، اُن پیغامات کے لیے جو نام کی جگہ وجود میں
+آنے سے پہلے لکھے گئے۔ `plan` نامی مہارت تک `/skill:plan` پہنچتا ہے؛ `/plan` ہمیشہ
+بلٹ اِن ہی ہوتا ہے۔
 
-## Repo-scoped skills
+## ریپو کے دائرہ کار کی مہارتیں
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+کوئی چیک آؤٹ شدہ ریپو اپنی مہارتیں `.agents/skills/`، `.agent/skills/`،
+`.claude/skills/`، `.opencode/skills/` یا `skills/` میں بھیج سکتا ہے۔ وہ اِس صفحے سے
+انسٹال **نہیں** ہوتیں۔ ایجنٹ صرف اُسی ریپو کی مہارتیں ساتھ رکھتا ہے جس میں وہ اس وقت
+کام کر رہا ہو؛ وہ منتقل ہونے پر بدل جاتی ہیں۔ کمپوزر اُس طرح دائرہ بند نہیں:
+`/skill:<repo>:<name>` اسپیس کے کسی بھی ریپو تک پہنچ جاتا ہے۔
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+ریپو کی مہارتیں اپنے frontmatter کے پرامپٹ تک پہنچنے سے پہلے وہی ناکامی پر بند ہو جانے
+والا اسکین (`pass` / `warn` / `quarantine`) پاس کرتی ہیں۔ `warn` قبول ہوتا ہے؛
+`quarantine` روک لیا جاتا ہے، اُس راستے پر آپریٹر کے لیے کوئی اوور رائیڈ نہیں۔
 
-See [Repo-scoped skills](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills) and
-[Slash commands](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/).
+دیکھیں [ریپو کے دائرہ کار کی مہارتیں](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills)
+اور [سلیش کمانڈز](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/)۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)

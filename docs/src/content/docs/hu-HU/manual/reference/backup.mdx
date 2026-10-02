@@ -1,29 +1,32 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Mentés, exportálás és importálás
+description: A pillanatkép felépítése, a manifest, minden mentési művelet és átviteli útvonal, valamint pontosan azok a fájlok, amelyeket egy biztonsági mentés tartalmaz, és amelyeket nem.
 slug: hu-HU/kezikonyv/referencia/mentes
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/); for why persistence is
-split this way, see [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/).
+Minden, amit a Control Center másolni, átadni vagy átvenni képes, és az egyes
+artefaktumok pontos felépítése. Ha ténylegesen biztonsági mentést készítene, lásd a
+[Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/) oldalt; arról,
+hogy miért oszlik meg így az adatmegőrzés, a
+[Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) oldalon olvashat.
 
-## Artifacts
+## Artefaktumok
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Három adatbázist másoló artefaktum létezik, eltérő hatókörrel és törlési szabályzattal.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Artefaktum                 | Ki írja                     | Forma                                               | Mit fed le                     |
+| -------------------------- | --------------------------- | --------------------------------------------------- | ------------------------------ |
+| **Telepítési pillanatkép** | `server.backupNow`          | Időbélyeggel ellátott **könyvtár**                  | A telepítés minden adatbázisa  |
+| **Munkaterület-mentés**    | `Workspace backup` pipeline | Időbélyeggel ellátott könyvtár egyetlen `.db` fájllal | Egy munkaterület adatbázisa  |
+| **Munkaterület-export**    | `workspace.export`          | Egyetlen `.db` **fájl**                             | Egy munkaterület adatbázisa    |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Mindegyik SQLite `VACUUM INTO` utasítással íródik, amely egy futó WAL-adatbázissal
+szemben is biztonságos: olvasási tranzakciót indít, töredezettségmentesített és
+tranzakcionálisan konzisztens másolatot készít, és soha nem teszi szükségessé a szerver
+leállítását.
 
-## Snapshot layout
+## A pillanatkép felépítése
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +35,126 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+A felépítés pontosan tükrözi az élő adatkönyvtárat, és éppen ez teszi egy telepítés
+visszaállítását visszamásolássá, nem pedig átalakítássá. A könyvtárnév az UTC-időbélyeg,
+amelyben a `:` és a `.` helyére `-` kerül, így fájlrendszer-biztos Windows alatt, és
+egyszerű szövegként is kronologikusan rendeződik.
 
-Scheduled workspace backups live separately at
+Az ütemezett munkaterület-mentések külön helyen élnek:
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Nem tartalmaznak manifestet és `global.db`-t, és nem telepítési pillanatképek.
+A heti pipeline megőrzési lépése csak a saját munkaterületének a beállított életkornál
+(alapértelmezésben 30 napnál) régebbi mentéseit törli; a kézzel készített telepítési
+pillanatképeket ez a lépés soha nem törli. A `server.listBackups` csak telepítési
+pillanatképeket listáz, a hiányosakat is beleértve.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
-| -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| Mező                        | Típus                 | Jelentés                                                                             |
+| --------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| `version`                   | egész szám            | A manifest formátumverziója. Jelenleg `1`                                            |
+| `created_at`                | ISO-8601 UTC          | A pillanatkép készítésének időpontja                                                 |
+| `global.file`               | karakterlánc          | Mindig `global.db`                                                                   |
+| `global.schema_version`     | egész szám            | A `GlobalDatabase` sémaváltozata a rögzítés pillanatában                             |
+| `global.bytes`              | egész szám            | A kiírt `global.db` mérete                                                           |
+| `workspace_schema_version`  | egész szám            | A `WorkspaceDatabase` sémaváltozata, amelyet minden munkaterület-fájl közösen használ |
+| `workspaces[]`              | tömb                  | Egy bejegyzés minden rögzített munkaterülethez                                       |
+| `workspaces[].workspace_id` | karakterlánc          | Az a munkaterület, amelyet ez a fájl tartalmaz                                       |
+| `workspaces[].file`         | karakterlánc          | A pillanatkép gyökeréhez viszonyított útvonal, `<workspaceId>/workspace.db`         |
+| `workspaces[].bytes`        | egész szám            | Az adott fájl mérete                                                                 |
+| `skipped_workspaces[]`      | karakterláncok tömbje | Munkaterületek, amelyeket a mentés **nem** tudott rögzíteni                          |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Egy munkaterület akkor marad ki, ha regisztrálva van, de soha nem írtak bele (így még
+nincs fájlja), vagy ha a `VACUUM INTO` művelete meghiúsult. Mindkét esetben a pillanatkép
+elkészül, és a manifest megnevezi, mi hiányzik.
 
-### Completeness
+### Teljesség
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+A `server.listBackups` pillanatképenként egy `complete` jelzőt ad vissza. Ez hamis, ha a
+manifest hiányzik vagy nem értelmezhető, ha a `global.db` hiányzik, vagy ha a manifest
+olyan munkaterület-fájlt nevez meg, amely nincs a lemezen.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Egy hiányos pillanatkép is szerepel a listán, mert az a pillanatkép, amelyet az
+üzemeltető nem lát, olyan, amelyről azt hiszi, hogy megvan. Ha a manifest olvashatatlan,
+a listázás magára a felépítésre esik vissza, és minden megtalált
+`<workspaceId>/workspace.db` fájlt jelenti — ezek egyenként továbbra is átvehetők a
+`workspace.import` művelettel, még ha a pillanatkép egésze nem is tud visszaállítani egy
+telepítést.
 
-## What a backup does not contain
+## Mit nem tartalmaz egy biztonsági mentés
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Mindkét artefaktum **kizárólag adatbázis**. Egy munkaterület könyvtára többet tartalmaz
+az adatbázisánál, és a többi semmi nem utazik vele:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Útvonal                           | Szerepel egy pillanatképben? | Szerepel egy munkaterület-exportban? |
+| --------------------------------- | ---------------------------- | ------------------------------------ |
+| `global.db`                       | Igen                         | Nem                                  |
+| `<workspaceId>/workspace.db`      | Igen                         | Igen (ez *maga* a fájl)              |
+| `<workspaceId>/blobs/`            | Nem                          | Nem                                  |
+| `<workspaceId>/skills/`           | Nem                          | Nem                                  |
+| `<workspaceId>/agents/`           | Nem                          | Nem                                  |
+| `<workspaceId>/chat_credentials/` | Nem                          | Nem                                  |
+| `<workspaceId>/spaces/<spaceId>/` | Nem                          | Nem                                  |
+| `<workspaceId>/pr_clones/`        | Nem                          | Nem                                  |
+| `secrets.json`                    | Nem                          | Nem                                  |
+| `models/`                         | Nem                          | Nem                                  |
+| `meetings/<meetingId>/`           | Nem                          | Nem                                  |
+| `rigs/`                           | Nem                          | Nem                                  |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/hu-HU/kezikonyv/referencia/csevegohid/).
+Ennek egy része eldobható — a `spaces/` másolás-írás munkakönyvtárakat tartalmaz, amelyek
+a repókból újra előállnak, a `pr_clones/` gyorsítótár, a `models/` újra letöltődik, a
+`rigs/` gépállapot. Egy másik része viszont nem az: a `blobs/` azokat a beillesztett
+képeket tartalmazza, amelyekre az adatbázis sorai hivatkoznak, a `skills/` és az
+`agents/` azokat a fájlokat, amelyekkel egy ügynök fut, a `secrets.json` pedig a
+telepítés minden párosítási kulcsát, szolgáltatói hitelesítő adatát és SSO-beállítását. A
+többi lefedéséről a
+[Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#copy-backups-off-the-machine)
+oldal szól.
+:::note[A csevegőtokenek szándékosan kimaradnak]
+Az, hogy a `chat_credentials/` az adatbázis mellett van, nem pedig benne, azért van, hogy
+egy másvalakinek átadott munkaterület ne vigyen magával élő bot-tokeneket. Lásd a
+[csevegőhíd-referenciát](/hu-HU/kezikonyv/referencia/csevegohid/).
 :::
 
-## Operations
+## Műveletek
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+A telepítési mentés RPC-műveletei, valamint a munkaterület exportálása/importálása
+kizárólag `fullClient`-tel érhetők el: egy párosított telefon nem tudja elindítani őket.
+Ezek egy olyan szerveren, ahol nincs bekötve mentési port — például a demószerveren —,
+teljesen hiányoznak: nem arról van szó, hogy elutasítanák őket, hanem szerkezetileg
+nincsenek ott.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Művelet               | Fajta   | Hatókör      | Legkisebb szerepkör         | Argumentumok  | Visszatérés                                            |
+| --------------------- | ------- | ------------ | --------------------------- | ------------- | ------------------------------------------------------ |
+| `server.backupNow`    | Írás    | Telepítés    | a telepítés **tulajdonosa** | nincs         | `{ok, path}`                                           |
+| `server.listBackups`  | Olvasás | Telepítés    | a telepítés **tulajdonosa** | nincs         | `{backups: [...]}`                                     |
+| `server.deleteBackup` | Írás    | Telepítés    | a telepítés **tulajdonosa** | `name`        | `{ok}`                                                 |
+| `workspace.export`    | Olvasás | Munkaterület | `admin`                     | nincs         | `{ok, path}`                                           |
+| `workspace.import`    | Írás    | Munkaterület | `owner`                     | `source_path` | `{ok, workspace_id}`                                   |
+| `workspace.delete`    | Írás    | Telepítés*   | `owner`                     | `id`          | a nyilvántartási sor töröltként megjelölve             |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* A `workspace.delete` azért hatókör nélküli, mert a sor, amelyet megjelöl, a globális
+nyilvántartásban él; a kezelője ellenőrzi a hívó tagságát a megnevezett munkaterületben,
+és `owner` szerepkört követel.
 
-`path` in every response is a path on the **server host**.
+A `path` minden válaszban a **szervergép** egy útvonala.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[A teljes telepítésről készült pillanatkép mindkét útvonalon tulajdonosi kapu mögött van]
+A `server.backupNow`, a `server.listBackups` és a `server.deleteBackup` a telepítés
+**tulajdonosát** igényli (`ServerAuthority.serverOwner`) — ugyanazt a kaput, mint a
+`GET /backup/snapshot`. Egy pillanatkép minden munkaterület adatbázisát rögzíti, így
+önmagában attól, hogy valaki egy munkaterület adminja, még nem kezelheti a többit. A
+törlés kizárólag a listázott időbélyeg-könyvtárnevet fogadja el, nem tetszőleges
+szerverútvonalat, és a teljes pillanatképet eltávolítja (a hiányosakat is). A
+munkaterületenkénti exportálás/importálás továbbra is a munkaterület adminjánál, illetve
+tulajdonosánál marad, nem a telepítés tulajdonosánál.
 :::
 
-### `server.listBackups` response
+### A `server.listBackups` válasza
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+A legfrissebbel kezdve, könyvtárnév szerint rendezve (ami maga az időbélyeg, így a
+sorrend akkor is tartja magát, ha egy pillanatkép manifestjét nem sikerült beolvasni).
 
 ```json
 {
@@ -169,99 +178,104 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+A `created_at` kimarad, ha a manifestet nem sikerült beolvasni. A legfelső szintű `bytes`
+a teljes könyvtár valódi lemezmérete, nem a manifest saját összege — egy pillanatképeket
+ritkító üzemeltető azt a kérdést teszi fel, hogy mennyibe kerül a könyvtár, nem azt, hogy
+a mentés mennyit szándékozott írni.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Minden `workspaces[].path` pontosan az, amit a `workspace.import` `source_path`
+értékként elfogad. Ez szándékos: a „munkaterület visszaállítása ebből a pillanatképből”
+*maga* az importálási művelet, így a kettő nem csúszhat el egymástól úgy, hogy ugyanazt a
+fájlt másképp kezelje.
 
-### `workspace.import` validation
+### A `workspace.import` érvényesítése
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Mielőtt bármi lecserélődne, a jelölt fájl csak olvasható módban nyílik meg egy rövid
+életű nyers SQLite-kapcsolattal, és beolvasásra kerül a `workspace_meta` sora.
 
-| Condition                                        | Result                                                          |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Feltétel                                                    | Eredmény                                                                                                              |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Nem olvasható SQLite-adatbázis, vagy nincs `workspace_meta` | Elutasítva. Semmi nem változik                                                                                        |
+| A rögzített munkaterület-azonosító ≠ a cél                  | **Engedélyezve**, naplózva. Így duplikálódik vagy áll vissza egy munkaterület új azonosító alatt                       |
+| A rögzített telepítés-azonosító ≠ ez a telepítés            | **Engedélyezve**, naplózva. A párosított eszközei és felhasználóazonosítói ahhoz a telepítéshez tartoznak, és itt nem oldódnak fel |
+| Érvénytelen munkaterület-azonosító, vagy a fájl nem létezik | Elutasítva                                                                                                            |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Elfogadás esetén a cél-munkaterület adatbázisa bezárul, és a kezelő elengedi, mielőtt a
+fájl rákerül (egy nyitott drift-kapcsolat fogva tartja a fájlt és annak `-wal`
+állományát), majd újra megnyílik, hogy a `beforeOpen` újratelepítse az FTS- és
+szinkronizációs triggereket, és az FTS-indexek újraépüljenek — egy importált fájl
+tartalomtáblái feltöltöttek, de az indexe elavult lehet.
 
-## Transfer routes
+## Átviteli útvonalak
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+A fenti műveletek mindegyike szerveroldali útvonalakkal dolgozik, ami csak akkor teljes
+válasz, ha a szerver a saját gépe. Az alábbi három viszi át a bájtokat, ugyanazon a
+PSK-val aláírt sávon, amelyet a médiaproxy és a blobtár használ. A hívó az eszköze
+előzetesen megosztott kulcsával írja alá a célkarakterláncot, és az aláírást `s` néven
+adja át.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| Útvonal             | Metódus | Lekérdezés    | Aláírt cél                       | Szükséges                 |
+| ------------------- | ------- | ------------- | -------------------------------- | ------------------------- |
+| `/backup/workspace` | GET     | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Munkaterület **admin**    |
+| `/backup/snapshot`  | GET     | `n`, `d`, `s` | `backup-snapshot:<name>`         | Telepítés **tulajdonosa** |
+| `/backup/restore`   | POST    | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Munkaterület **tulajdonosa** |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+A `w` egy munkaterület-azonosító, az `n` egy pillanatkép-könyvtárnév, a `d` a hívó
+eszköz azonosítója, az `s` pedig az aláírás. Az `n` a mentéslistázás alapján oldódik fel,
+nem a mentések gyökérkönyvtárához fűzve, így az útvonal nem irányítható olyan könyvtárra,
+amelyet a listázás nem mutatott volna.
 
-| Status | Cause                                                                              |
-| ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| Állapot | Ok                                                                                                                     |
+| ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `400`   | Hiányzik egy kötelező lekérdezési paraméter, vagy üres a feltöltés törzse                                              |
+| `403`   | Ismeretlen vagy visszavont eszköz, hibás aláírás, vagy a hívónak nincs meg a szerepköre                                |
+| `404`   | Nincs mentési port ezen a gazdagépen, vagy a megnevezett pillanatkép- vagy munkaterület-fájl nem létezik               |
+| `405`   | A `/backup/restore` hívása `POST`-on kívül bármi mással                                                                 |
+| `413`   | A feltöltés törzse meghaladja a 8 GiB-ot, akár a megadott content-length, akár a ténylegesen beolvasott bájtok szerint |
+| `500`   | Az exportálás vagy az archiválás szerveroldalon meghiúsult                                                             |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Mindkét letöltés `Cache-Control: no-store`, illetve `Accept-Ranges: none` fejléccel
+válaszol. Minden kérés egy **friss** másolatot készít, és a streamelés után törli, így egy
+gyorsítótárazott vagy folytatott válasz két különböző exportálás bájtjait fűzné össze
+egyetlen, érvényesnek látszó, de nem az fájlba.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+A `/backup/snapshot` `<name>.zip` fájlt ad vissza, a bejegyzések a pillanatkép gyökeréhez
+képes relatívak, így a kicsomagolás a `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db` szerkezetet állítja elő. A bejegyzések rendezett sorrendben
+íródnak, így ugyanannak a pillanatképnek a két archívuma ugyanaz az archívum.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+A `/backup/restore` a törzset egyenesen egy előkészítő fájlba streameli, ahelyett hogy
+pufferelné, a beolvasás előtt és közben is korlátot szab neki, és **minden** kivezető úton
+törli az előkészített fájlt, az elutasítást is beleértve.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Egy továbbított kapcsolatnak nincs HTTP-eredete]
+A brókerezett továbbító RPC-kereteket szállít, nem fájlátvitelt. Minden, ami szerveroldali
+útvonalakkal dolgozik, továbbra is működik rajta; a három átviteli útvonal közvetlen
+kapcsolatot igényel, ezért a felhasználói felület letiltja őket egy megjegyzéssel,
+ahelyett hogy a letöltés közepén hibázna.
 :::
 
-## Paths and limits
+## Útvonalak és korlátok
 
-| Thing                          | Value                                                        |
-| ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Dolog                           | Érték                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| Pillanatképek                   | `<dataDir>/backups/<timestamp>/`                                                      |
+| Ütemezett munkaterület-mentések | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`          |
+| Munkaterület-exportok           | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`                              |
+| Átviteli előkészítés            | `<dataDir>/backups/transfer/` — egy munkapad, amelyet az őt író útvonal söpör ki      |
+| A pillanatkép-archívum neve     | `<snapshot directory name>.zip`                                                       |
+| Feltöltési felső korlát         | 8 GiB `POST /backup/restore`-onként                                                   |
+| Megőrzés                        | Telepítési pillanatképek: kézi törlés. Munkaterület-mentések: heti pipeline, alapértelmezésben 30 nap |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Az `exports/`, a `transfer/` és a `workspace-backups/` könyvtár nem telepítési
+pillanatkép, és ki van zárva a `server.listBackups` listájából. Csak az utolsó
+könyvtárnak van ütemezett megőrzése; egy telepítési pillanatkép törléséhez a telepítés
+tulajdonosának kifejezett művelete kell.
 
-## See also
+## Lásd még
 
-- [Back up and restore](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/) — the recipes these operations belong to
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/) — why one workspace is one file
-- [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/hu-HU/kezikonyv/referencia/utvonalterkep/) — where the UI lives
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/) — the client/server split the paths follow
+- [Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/) — azok a receptek, amelyekhez ezek a műveletek tartoznak
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) — miért jelent egy munkaterület egyetlen fájlt
+- [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli/) — az az adatkönyvtár, amelyben ezek az útvonalak vannak
+- [Útvonaltérkép](/hu-HU/kezikonyv/referencia/utvonalterkep/) — hol él a felhasználói felület
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/) — az az ügyfél/szerver felosztás, amelyet az útvonalak követnek

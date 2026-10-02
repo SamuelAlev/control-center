@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: سياق الأدوات وتخزين المطالبات مؤقتًا
+description: لماذا يُعرض على الوكيل مجموعة صغيرة من الأدوات لا كلها، وكيف يصل إلى البقية، والقواعد التي تُبقي ذاكرة المزوّد المؤقتة دافئة طوال التشغيل.
 slug: ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+في كل طلب يرسله الإطار المضمّن أمران: تعريفات الأدوات أكبر كلفة ثابتة فيه، ولن يُستخدم منها إلا أقل القليل. تشرح هذه الصفحة ما يفعله Control Center في ذلك، ولماذا لا يكفي الجواب «أرسِل أدوات أقل».
 
-## The problem is attention, not bytes
+## المشكلة في الانتباه لا في البايتات
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+يسجّل Control Center نحو 126 أداة. إن أُرسلت تعريفاتها كاملة كلفت نحو **23,000 رمز في كل طلب**، وهي كلفة لا يطالها الضغط، لأن تعريفات الأدوات تسير في جزء من الطلب منفصل عن المحادثة.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+فاتورة الرموز هي الشكوى الظاهرة، ومع تخزين المطالبات مؤقتًا تصير الشكوى الأصغر أيضًا. الكلفة الحقيقية هي **دقة الاختيار**. تتفق التقييمات المنشورة لاستدعاء الأدوات على أن النماذج تختار الأداة الصحيحة بثبات حتى نحو 30–50 أداة في السياق، ثم يضعف أداؤها تدريجيًا بعد ذلك. السبب الذي تسمّيه هذه التقييمات ليس عدد الرموز بل **التداخل الدلالي**: متى ضمّ الفهرس عدة أدوات تُقرأ أوصافها متشابهة، صار النموذج يختار بين أشباه لا يستحضر قدرة.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+ومع 126 أداة يكون الوكيل قد جاوز ذلك النطاق بمسافة في كل جولة بلا استثناء، ومنها جولات كثيرة لم يحتج فيها إلا إلى قراءة ملف.
 
-## The two-tier surface
+## السطح ذو الطبقتين
 
-A run is therefore shown two things:
+لذلك يُعرض على التشغيل شيئان:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- مجموعة **مقيمة**: نحو عشرين أداة، تُرسل بمخططاتها الكاملة في كل طلب؛
+- **فهرس أسماء** لكل ما عداها، يُجمَّع تحت عناوين مثل "Tickets and projects" أو "Memory and knowledge"، بكلفة بضع مئات من الرموز للفهرس كله.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+والقياس على فهرس الأدوات الحالي يهبط بكتلة الأدوات من **نحو 23.1k رمز إلى نحو 5.0k، أي أصغر بنحو 78%**، ويُدخل المجموعة الظاهرة دائمًا في النطاق الذي يكون فيه الاختيار موثوقًا.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+المجموعة المقيمة هي ما يستخدمه التشغيل في *معظم* التشغيلات: مفردات الملفات والصدفة (`read` و`write` و`edit` و`search` و`bash`، …)، وأدوات الاكتشاف، وقائمة المهام، والبحث في الذاكرة، وفعل الإخراج الذي يجب أن يستدعيه [الوضع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع) الحالي ليسلّم ناتجه. فعل الإخراج الخاص بالوضع مقيم دائمًا، فلا يُضطَر التشغيل إلى البحث عن الاستدعاء الوحيد الذي يُخرج ما يسلّمه.
 
-### Deferred does not mean unavailable
+### التأجيل لا يعني عدم الإتاحة
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+هذا الجزء هو ما يجعل التصميم آمنًا لا رخيصًا وحسب. **الأداة المؤجَّلة قابلة للاستدعاء من الجولة الأولى.** ما يُحجب هو مخططها لا غير.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+يرى الوكيل الاسم في مطالبته. إن استدعى ذلك الاسم مباشرة، حمّل الإطار المخطط وشغّل الأداة في الخطوة نفسها، بلا خطأ وبلا جولة زائدة. لا يحتاج النموذج إلى أن يعرف أن الأداة كانت «غير محمّلة» يومًا.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+وحين يعرف الوكيل المهمة ويجهل الاسم، يأخذ `search_tools` وصفًا بلغة عادية («أسند تذكرة إلى شخص»)، ويرتّب سطح التشغيل كله، ويعيد المطابقات *مع مخططاتها محمّلة سلفًا*، فتستطيع الجولة التالية أن تستدعي إحداها. إن لم يجد البحث شيئًا، قال ذلك بصراحة واقترح صياغة أخرى أو بحثًا أوسع، عن قصد: الوكيل الذي يقرأ نتيجة فارغة على أنها «هذه القدرة غير موجودة» يخترع بديلًا بدل أن يبحث من جديد.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` موجود في الإطار المضمّن وحده. ولدى عملاء MCP الخارجيين `search_tool_bm25` بدلًا منه، يرتّب الفهرس نفسه ويكتفي بوصف المطابقات. هؤلاء العملاء تلقّوا كل المخططات من `tools/list`، فلا شيء يُحمَّل.
 
-### What deferral never does
+### ما لا يفعله التأجيل
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+يُطبَّق التأجيل **بعد** مرشّح أدوات الوضع، لا بدلًا منه. يخفي مخططًا، ولا يستطيع كشف أداة منعها الوضع. والأداة المفعَّلة تمرّ بطلب الموافقة وب[ضوابط الإجراء](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط) كما تمرّ بهما الأداة المقيمة تمامًا، ولا تستطيع أداة أن تحمّل اسمًا لم يكن على سطح التشغيل من الأصل.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+سطح MCP الذي يراه العملاء الخارجيون **لا** يتأثر. وما زال `tools/list` يعيد فهرس الأدوات كاملًا. محاولة سابقة لقصّه عطّلت الوكلاء تمامًا: عملاء MCP يطابقون أسماء الأدوات مع قائمتهم المخزَّنة، ويرفضون ما ليس في القائمة من غير أن يسألوا الخادم، فكانت الأداة «المخفية والقابلة للاستدعاء» بعيدة المنال. التأجيل مكانه الإطار، وتحميل أداة في منتصف التشغيل شيء يستطيع الإطار أن يفعله فعلًا.
 
-### Turning it off
+### إيقاف التأجيل
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/ar-SA/دليل-المستخدم/مرجع/سطر-أوامر-cc-server).
+`--tool-deferral=off` (أو `CC_SERVER_TOOL_DEFERRAL=off`) يعيد كل أداة قُبلت إلى المجموعة المقيمة، ويُنتج الطلبات عينها التي كان الخادم يرسلها قبل وجود التأجيل. انظر [مرجع واجهة سطر أوامر `cc_server`](/ar-SA/دليل-المستخدم/مرجع/سطر-أوامر-cc-server).
 
-## Prompt caching
+## تخزين المطالبات مؤقتًا
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+أحمال الوكلاء مائلة: مطالبة ضخمة في الإرسال وإجابة صغيرة في العودة، جولة بعد جولة، بالبادئة نفسها كل مرة. يخزّن المزوّدون تلك البادئة، وقراءة المخزَّن تكلف نحو عُشر القراءة الجديدة. معدّل الإصابة إذن خاصية من خصائص الإطار، لا تحسين يُلحق به. وعلى Anthropic يرفع ذلك الإنتاجية أيضًا، لأن الرموز المخزَّنة مؤقتًا لا تُحتسب ضمن حد الإدخال في الدقيقة.
 
-Caching works on an exact prefix match, which yields one governing rule.
+يعمل التخزين المؤقت على مطابقة تامة للبادئة، ومن ذلك تخرج قاعدة واحدة تحكم الباقي.
 
-### Never rewrite what was already sent
+### لا تُعِد كتابة ما أُرسل
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+أي بايت يتغيّر يُبطل الذاكرة المؤقتة من تلك النقطة فصاعدًا. لذلك لا يفعل الإطار إلا **الإلحاق**: رسائل جديدة في آخر الطلب، ومخططات الأدوات التي فُعّلت للتو تُوضع *بعد* كتلة الأدوات المخزَّنة ولا تُدمج فيها. هذا الترتيب هو سبب رخص التفعيل: تبقى البادئة المخزَّنة على حالها، ولا يدفع التشغيل إلا ثمن المخططات التي حمّلها للتو.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+وتغفل الحلقة أيضًا مخرجات الأدوات البالية من الجولات الأقدم لتسترد سعة من السياق. تنتظر حتى يبلغ ما يُسترد حدًا يستحق إعادة الكتابة، فيصير الإغفال إعادة كتابة عميقة نادرة، لا إخفاقًا متواصلًا في الذاكرة المؤقتة.
 
-### Where the breakpoints go
+### أين تُوضع نقاط القطع
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+يسمح المزوّد بعدد محدود من علامات التخزين المؤقت، وينفقها Control Center عن قصد:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| العلامة | تغطي | مدة البقاء |
+| --- | --- | --- |
+| آخر أداة **مقيمة** | كتلة الأدوات | ساعة واحدة |
+| آخر كتلة نظام | الأدوات + موجّه النظام | ساعة واحدة |
+| ذيل الجولة السابقة | السجل حتى آخر طلب | 5 دقائق |
+| ذيل الجولة الحالية | السجل كاملًا | 5 دقائق |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+العلامتان الأخيرتان زوج متحرّك، وعلّة الزوج خفية: البحث في الذاكرة المؤقتة يرجع إلى الوراء عددًا محدودًا من الكتل، بحثًا عما خزّنه طلب سابق. جولة واحدة تشغّل أدوات كثيرة بالتوازي قد تُخرج كتلًا أكثر من تلك النافذة، فتخفق عندها علامة ذيل واحدة في صمت، ويدفع الطلب السعر كاملًا، ولا شيء في الاستجابة يقول ذلك. وسم الموضع الذي توقف عنده الطلب السابق يجعل الإصابة بنيوية لا حالة تسابق.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+تأخذ بادئة الأدوات وموجّه النظام المدة الطويلة لأنها ثابتة طوال التشغيل، ويشترك فيها كل تشغيل وكل وكيل فرعي من الشكل نفسه، ولأن الساعة تبدأ حين *يبدأ* الطلب. جولة تبث عدة دقائق تكون قد أنفقت معظم النافذة القصيرة قبل أن يتكوّن الطلب التالي.
 
-### Subagents share one prefix
+### الوكلاء الفرعيون يشتركون في بادئة واحدة
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+الوكلاء الفرعيون من النوع نفسه يُنتجون بادئات مطالبة متطابقة بايتًا ببايت، فيُفترض أن يقرأوا مدخلًا واحدًا في الذاكرة المؤقتة، لا أن يكتب كل منهم مدخله. لكن المدخل لا يصير مقروءًا إلا حين يبدأ الطلب الذي كتبه بالاستجابة، فالتفريع الذي ينطلق دفعة واحدة يجعل كل ابن يدفع السعر الكامل لبادئة تجمعهم جميعًا.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+يدع الإطار الابن الأول من شكل معيّن يبدأ، ثم يُطلق أشقاءه ما إن يبدأ ذلك الابن البث. والانتظار محدود: ابن أول بطيء يضيّع إصابة الذاكرة المؤقتة، ولا يوقف التفريع نفسه. وللسبب نفسه يحصل كل وكيل فرعي على مجموعة الأدوات المقيمة ذاتها، أيًا كان ملف تعريفه. تغييرها بحسب الملف يفتّت البادئة المشتركة بلا كسب، فالملف قد حسم ما يجوز للابن أن يستدعيه.
 
-## Watching it work
+## مراقبته أثناء العمل
 
-Both halves are observable rather than assumed:
+الشقان مرصودان، لا مفترضان:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- يعرض **السياق** في المحادثة الأدوات المقيمة، وفهرس المؤجَّل، وما *كان* سيكلّفه كل مخطط محجوب، وهو مبني من مسار الشفرة نفسه الذي يستخدمه التشغيل الحقيقي.
+- يسجّل كل تشغيل الأدوات المؤجَّلة التي حمّلها وما الذي أطلق التحميل، فيبقى البحث الذي لا يجد شيئًا ظاهرًا بوصفه إخفاق استرجاع، ولا يختفي داخل وكيل يمضي بهدوء إلى عمل مجاور.
+- تعرض قابلية الملاحظة **معدل الذاكرة المؤقتة** على أنه قراءات الذاكرة المؤقتة منسوبة إلى كل رموز المطالبة التي عُولجت، وكتابات الذاكرة المؤقتة داخلة في الحساب. التشغيل الذي يواصل إعادة بناء بادئته يسجّل معدّلًا منخفضًا، لا معدّل تشغيل لم يحتج إلى الذاكرة المؤقتة أصلًا.

@@ -1,150 +1,152 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Sledujte běhy pipeline
+description: Procházej frontu běhů, čti vodopád běhu a panel kroku a znovu rozjeď spadlý nebo zaseknutý krok.
 slug: cs-CZ/prirucka/navody/sledovani-pipeline
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/cs-CZ/prirucka/navody/spusteni-pipeline/).
+Po startu běhu se všechno děje tady: najdeš ho, přečteš, co který krok udělal,
+a spadlý běh znovu rozjedeš. Spuštění popisuje
+[Spusťte pipeline ručně](/cs-CZ/prirucka/navody/spusteni-pipeline/).
 
-## Find a run
+## Najdi běh
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Klikni na **Pipelines** v postranním panelu pracovního prostoru. Obrazovka
+   je fronta běhů pracovního prostoru: každý běh, nejnovější první.
+2. Filtruj levou lištou. Filtry jsou přesně tři a každý má aktuální počet:
+   **Vše**, **Běží**, **Selhalo**.
+3. Tabulku procházej pomocí <kbd>↑</kbd>/<kbd>↓</kbd> (nebo <kbd>j</kbd>/<kbd>k</kbd>)
+   a <kbd>Enter</kbd> otevře zaměřený běh. Kliknutí na řádek udělá totéž.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Každý řádek ukáže glyf toho, jak běh začal (play u ručního spuštění, glyf
+souboru u sledování grafu kódu, jinak automatický spouštěč). Tooltip
+pojmenuje spouštěč — **Ručně**, **PR zveřejněn**, **Změna souboru** a podobně — a u
+běhu ze sledování přidá, které soubory se změnily. Pak je na řádku název
+pipeline, odznak stavu, aktivní doba (nebo pozice ve frontě u běhu `queued`)
+a jak je to dlouho, co tenhle pokus začal. Aktivní doba vynechává nečinné
+mezery mezi zastavením a novým startem a počítá jen čas, kdy běh pracoval.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Pro dokončené, pozastavené a zrušené běhy filtr není. Není tu ani filtr podle
+šablony, časové okno ani pohled na historii běhů jedné šablony. Běhy jedné
+šablony porovnáš tak, že ve frontě hledáš její název.
 
-## Read the run detail
+## Přečti detail běhu
 
-A run's page has three stacked parts.
+Stránka běhu má tři části nad sebou.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Pruh metadat** nese čas startu, aktivní dobu, postup kroků
+(„3 z 7 kroků“), souhrn selhání (který krok selhal a proč) a akce
+**Zopakovat** a **Smazat**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Časový vodopád** dává jeden pruh na krok, s jeho dobou a u kroků agenta
+i s náklady v centech. Krok, který se opakoval, ukáže za dobou příponu `×N`.
+Tahle přípona je jediné místo, kde se počty pokusů objeví.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Plátno grafu** vykreslí šablonu se živým stavem každého uzlu. Výběr uzlu
+otevře jeho panel kroku.
 
-### Run and step statuses
+### Stavy běhu a kroku
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Stav            | Význam                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| **Čeká**        | Vytvořený, ještě nespustěný                                                                     |
+| **Ve frontě**   | Přijatý, ale držený: strop **Max. souběžných běhů** téhle šablony je plný; řádky kroků ještě nejsou |
+| **Běží**        | Provádí se                                                                                      |
+| **Pozastaveno** | Čeká na něco vnějšího. Běžný stav čekání, ne zaseknutý běh                  |
+| **Dokončeno**   | Skončil úspěšně                                                                                 |
+| **Selhalo**     | Skončil chybou                                                                                  |
+| **Zrušeno**     | Zastavil ho uživatel nebo systém                                                                |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Kroky mají tyhle stavy bez **Ve frontě** a navíc **Přeskočeno** pro větev,
+kterou router nezvolil, a pro potomky, kteří jsou teď nedosažitelní.
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Pozastaveno** je stav, ve kterém krok agenta stráví většinu času: odeslaný
+agent nebo brána schválení drží krok, dokud práce nedorazí. Dvě pojistky
+enginu nechají spadnout celý běh, místo aby ho obnovily: krok pozastavený
+déle než 24 hodin (`extras.awaitApproval` — tělo `orchestration.awaitApproval`
+— má výjimku; `human.gate` ji nemá) a neidempotentní krok, který byl v půli
+provádění, když se server zastavil.
 
-## Inspect a step
+## Prohlédni krok
 
-Select a node on the canvas. The step panel shows, in order:
+Vyber uzel na plátně. Panel kroku ukáže, v tomhle pořadí:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Blok **Chyba**, když krok selhal, nebo blok **Přeskočeno** s důvodem, když
+  byl přeskočený.
+- **Spuštěno**, **Dokončeno** a trvání.
+- **Větev** — index větve u paralelních větví.
+- **Zobrazit konverzaci** — skočí do konverzace, ve které krok běžel.
+  Konverzace pipeline se v postranním panelu neukazují, takže tudy vede
+  jediná cesta dovnitř.
+- **Vstup** a **Výstup** jako sbalitelné JSON.
+- **Aktivita agenta** — jedna dlaždice na každý běh agenta, který krok
+  odeslal, se stavem, souhrnem, dobou a náklady.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+U kroku agenta je **Výstup** strukturovaný payload, který agent odeslal přes
+`submit_output`, ne jeho text. Stopa uvažování je v části **Aktivita agenta**
+a v konverzaci za **Zobrazit konverzaci**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+U bash kroku je **Výstup** oříznutý stdout, který skript zapsal při ukončení
+s kódem 0. Nenulové ukončení nechá krok selhat a jako chybovou zprávu dá
+konec stderr.
 
-## Recover a failed run
+## Rozjeď znovu spadlý běh
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Přečti souhrn selhání v pruhu metadat; jmenuje krok, který selhal. Blok
+   **Chyba** v panelu kroku má zprávu.
+2. Zkontroluj **Vstup** kroku. Nejběžnější příčina je chybějící nebo špatně
+   napsaný klíč stavu. Krok prompt-agenta selže rovnou a vyjmenuje
+   nevyřešené zástupné symboly; bash krok je dosadí jako prázdné řetězce a
+   stejně se spustí, což se obvykle ukáže o krok později.
+3. U kroku agenta otevři **Zobrazit konverzaci** a přečti, co agent
+   skutečně udělal.
+4. V pruhu metadat stiskni **Zopakovat**. Kroky ve stavu **Dokončeno** a
+   **Přeskočeno** si nechají výstupy; ostatní se smažou a spustí znovu. Běh
+   se vrátí do **Běží** a měření doby se pro tenhle pokus spustí znovu.
 
-Common causes worth checking first:
+Nejčastější příčiny, které stojí za kontrolu jako první:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Časový limit** — krok překročil své pole **Časový limit (ms)**. Pole je
+  v milisekundách.
+- **Chyba skriptu** — příkaz bash skončil nenulovým kódem, nebo `bash` není
+  na `PATH` hostitele serveru.
+- **Ověření schématu** — payload `submit_output` od agenta nesplnil výstupní
+  schéma kroku.
+- **Nevyřešený zástupný symbol** — `{{key}}`, na který se krok prompt-agenta
+  odkazoval, nikdo výše v toku nezapsal. Chyba vyjmenuje každý nevyřešený klíč.
+- **Neregistrované tělo** — krok, jehož klíč těla není registrovaný, při
+  načtení šablony varuje a pak se prostě nikdy nespustí.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Zopakovat funguje jen u selhaného nebo zrušeného běhu]
+Tlačítko **Zopakovat** se ukáže, jen když je běh `failed` nebo `cancelled`.
+U každého jiného stavu se engine vrátí hned a nic nespustí.
 :::
 
-## Stop a step that is stuck
+## Zastav zaseknutý krok
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Vyber běžící krok a v záhlaví panelu kroku stiskni **Ukončit běžící**. Tím
+se zabije proces kroku, krok se označí jako selhaný a spadne celý běh. Každá
+otevřená sourozenecká větev se uzavře s ním.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Tahle obrazovka zrušení běhu nenabízí. `pipeline.cancel` existuje jako
+operace RPC a engine ji implementuje, ale rozhraní Pipelines ji nikde nevolá.
+**Ukončit běžící** u kroku a **Smazat** u běhu jsou jediné dostupné způsoby,
+jak běh zastavit.
 
-## Track cost
+## Sleduj náklady
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Náklady se uvádějí po krocích, v pravém sloupci vodopádu a na každé dlaždici
+pod **Aktivita agenta**. Na stránce detailu není součet za celý běh a ve
+frontě běhů není sloupec nákladů, takže porovnání nákladů dvou běhů znamená
+sečíst jejich kroky.
 
-## Related guides
+## Související návody
 
-- [Run a pipeline manually](/cs-CZ/prirucka/navody/spusteni-pipeline/)
-- [Create a pipeline template](/cs-CZ/prirucka/navody/vytvoreni-pipeline/)
-- [Manage costs](/cs-CZ/prirucka/navody/sprava-nakladu/)
-- [Pipeline steps reference](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/)
+- [Spusťte pipeline ručně](/cs-CZ/prirucka/navody/spusteni-pipeline/)
+- [Vytvořte šablonu pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/)
+- [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/)
+- [Typy kroků pipeline](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/)
 
-## Related concepts
+## Související koncepty
 
-- [Pipelines](/cs-CZ/prirucka/koncepty/pipelines/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/)

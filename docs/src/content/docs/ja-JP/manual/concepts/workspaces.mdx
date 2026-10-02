@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: ワークスペースと分離
+description: ワークスペースがなぜ厳格なテナント境界なのか、データベースの分割がその境界をいかに構造的なものにするのか、そして意図的に境界を越えるのは何かを説明します。
 slug: ja-JP/マニュアル/コンセプト/ワークスペース
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## ワークスペースとは何か
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+ワークスペースは Control Center における最上位の分離テナントです。エージェント、リポジトリ、スペース、チケット、メモリ、パイプライン、メンバーをひとつの境界づけられたコンテキストにまとめます。ワークスペース内で起きることは、すべてその中にとどまります。
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+通常、ワークスペースは 1 つのプロジェクトまたは 1 つのコードベースに対応します。「api-service」「frontend-v2」「infrastructure」に別々のワークスペースを用意することもあるでしょう。
 
-## Workspace-scoped data
+## ワークスペース単位のデータ
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+ワークスペースの行は、そのワークスペース自身の SQLite ファイル、`<dataDir>/<workspaceId>/workspace.db` に存在します。各ワークスペースに裸のファイルではなくディレクトリが割り当てられるのは、ワークスペースがデータベース以上のものを蓄積するからです — 会話ごとのワークツリー、エージェントとスキルのファイル、チャットボットの資格情報 — フォルダを与えることで、それらすべてが一緒に存在し、一緒に削除されます。
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| エンティティ                                 | スコープ                                                    |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| エージェント                                 | ちょうど 1 つのワークスペースに属する                       |
+| リポジトリ                                   | 1 つのワークスペースに登録される（後述）                    |
+| スペース、会話、メッセージ                   | ワークスペース単位                                          |
+| チケット、プロジェクト、プラン、オーケストレーション | ワークスペース単位                                          |
+| メモリのファクト、ポリシー、ドメイン、アクセスグラント | ワークスペース単位                                          |
+| パイプラインの実行、テンプレート、トリガー   | ワークスペース単位                                          |
+| プルリクエストの状態、レビュースペース、レビューコホート | ワークスペース単位                                          |
+| エージェント実行ログとワーキングメモリ       | ワークスペース単位                                          |
+| メンバー、招待、リポジトリ単位のグラント     | ワークスペース単位                                          |
+| コードグラフのシンボルとエッジ               | ワークスペースファイル内で `repoId` によってスコープされる |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+これらの行のほとんどは `workspaceId` 列を持ちますが、分離を強制するのはデータベースファイルを分けていることです。後述の分離の不変条件を参照してください。
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## リポジトリはワークスペース単位。ワークスペースをまたぐ同一性はパスで決まる
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+リポジトリの行は、そのワークスペース自身のデータベースファイルに存在します — ファイルが_スコープそのもの_であるため、テーブルに `workspaceId` 列も結合テーブルもありません。
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+リポジトリをワークスペースに追加するには 設定 → ワークスペース → リポジトリ を使います。同じチェックアウトを 2 つのワークスペースに登録すると、2 つの id を持つ 2 つの独立した行が作られます。_ワークスペースをまたいだ_リポジトリの同一性はファイルシステムのパス（または GitHub の owner/name）で決まり、id で決まることはありません。
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+登録は厳格です。パスは git ワークツリーの内側にあり、`origin` リモートを持ち、そのリモートがサポート対象のコードホスト（github.com、gitlab.com、bitbucket.org）を指している必要があります。コードホストはリモートから読み取られてリポジトリに保存されるため、1 つのワークスペースが 3 つすべてのホストのリポジトリを保持できます。それ以外は拒否されます。フォルダブラウザーが一覧するのは **サーバーホストの**ファイルシステムで、サーバーの `--repo-roots` 許可リスト（既定ではサーバーユーザーのホームディレクトリ）に限定されます。
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+リポジトリをワークスペースから削除すると、行はそのまま削除され、そのコードシンボル、エッジ、ファイル、インデックスのチェックポイント、メンバー単位のグラントがカスケード削除されます。ディスク上のチェックアウトはそのまま残ります。
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+コードグラフが同じファイルに `repoId` をキーとして置かれるのは、異なるワークスペースが同じリポジトリを異なるブランチで、異なるコードとして持つ可能性があるからです。
 
-## The isolation invariant
+## 分離の不変条件
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+ワークスペースをまたぐデータ漏えいはバグとして扱われます。分離は**構造的**であり、複数の層で強制されます:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **データベース層。** 各ワークスペースは独自の SQLite ファイルを持ち、`WorkspaceDatabaseManager.of(workspaceId)` によって払い出されます。ワークスペースのデータベースは `users`、`workspaces`、その他のワークスペースのテーブルを宣言していないため、ワークスペースをまたぐ読み取りは書こうとしても書けないバグです — コンパイルが通りません。リポジトリは DAO をキャッシュせず呼び出しごとに解決し、すべてのリポジトリメソッドが必須の `workspaceId` を受け取るため、ワークスペースを推測したり既定値にしたりすることはできません。
+- **ワークスペース id はパスのセグメント。** id はディレクトリ名になるため、安全な単一セグメントのパターン（先頭は英数字、以降は英数字、ドット、アンダースコア、ハイフン。`..` は不可）に一致しなければなりません。製品内のどこでも id は UUID です。それ以外はサニタイズされるのではなく例外を投げます — これがパストラバーサル対策であり、ワークスペースのデータを誰かが選んだパスに書き込むのではなく、大きな音を立てて失敗します。
+- **多層防御。** `workspaceId` 列は今も存在し、今も書き込まれます。1 つのファイルの中では冗長ですが、同期フィードのトリガー、FTS インデックス、既存の行の形を変えずに保ち、ファイルを単体で検査したときに自己記述的にします — エクスポートとインポートが依存しているのはこれです。
+- **ドメイン層。** id によってエンティティを変更するサービスは、処理を進める前に単一のチョークポイントで `entity.workspaceId == workspaceId` を検証し、一致しない場合は `WorkspaceMismatchException` を投げます — 誤ったコンテキストから届いた id に対する、大きな音を立てる失敗です。大きな音を立てて拒否することは重要です。静かな無操作はバグを隠し、処理を続ければ漏えいに至ります。
+- **RPC 層。** リポジトリ RPC ディスパッチャーがチョークポイントです。ワークスペース単位の操作はすべて、自身の引数に `workspace_id` を持たなければなりません — 漏えいしうるセッション単位の「現在のワークスペース」は存在せず、未知の id はデータベースを開く_前に_ not-found として拒否されるため、不正な id が幽霊の `workspace.db` を実体化することはできません。真にグローバルな操作（ニュースフィード、フリートキュー）は、明示的でレビュー済みの決定として自らをスコープ外と宣言します。MCP ツールも同じ規則に従います。ワークスペース単位のデータに触れるツールは `workspace_id` を必須とします。
+- **ワークスペースをまたぐファンアウトは列挙可能。** 複数のワークスペースに関する問いに答えるには、複数のデータベースを開くことになります。そのファンアウトは 1 つのヘルパー `CrossWorkspaceQueries` に閉じ込められているため、正当に境界を越えるものの完全なリストは、doc コメントの背後に拡散するのではなく、1 つのファイルの呼び出し箇所に存在します。その呼び出し箇所は、サーバー全体の集約、起動時のリコンサイラー、保持と GC のスイープ、バックアップ、イベントルーター — そして後述のメンバーシップの参照です。
+- **id だけによるアクセスでは不十分。** エンティティを UUID で参照しても、それが呼び出し元のワークスペースに属することの証明にはなりません。ファイルの分割は誤ったファイルを到達不能にし、ドメイン層の検証は正当なファイルを通って届いた誤った id を捕捉します。
 
-## Membership, not the pairing key, is what grants access
+## アクセスを許可するのはペアリングキーではなくメンバーシップ
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+デバイスの資格情報を保持することは、_デバイス_を認証するだけです。ワークスペース内部の何かを認可するものではありません。ワークスペース単位のすべての操作は、呼び出し元のメンバーシップロールを解決し、操作の種類から導かれる下限を強制します — 読み取りには `guest`、変更には `member`、破壊的な操作には `admin` — さらにリポジトリの内容を露出する操作は、呼び出し元のリポジトリ単位のグラントを追加で確認します。メンバーシップを持たない有効なペアリングキーは `Not a member of this workspace` を受け取ります。
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+分離にとっての帰結は明快です。メンバーシップの行は_ワークスペース自身の_ファイルに存在するため、「このワークスペースには誰がいるか?」はごく普通のスコープ付き読み取りです。逆の問い — 「自分はどのワークスペースにいるか?」 — は定義上ファイルをまたぐため、数少ない公認の `CrossWorkspaceQueries` ファンアウトの 1 つであり、ワークスペースがまだ選ばれていない段階でワークスペースピッカーが実行するものです。
 
-See [Multiplayer](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/) for the role ladder and repo grants.
+ロールのはしごとリポジトリ単位のグラントについては、[マルチプレイヤー](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)を参照してください。
 
-## The global registry
+## グローバルレジストリ
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+すべてがワークスペース単位というわけではありません。2 つ目のデータベース `<dataDir>/global.db` には、真にサーバー全体にわたるものが入ります:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **ワークスペースレジストリ** — 切り替え UI がワークスペースファイルを 1 つも開かずにあらゆるワークスペースを一覧できるようにし、またワークスペースの名前、ロゴ、オーナー、手動の並び順、ソフト削除マーカーが、それらが記述するファイルの外に置かれるようにします。
+- **アイデンティティ**: ユーザー、ユーザー設定、ペアリング済みデバイス。1 人の人間はすべてのワークスペースを通じて 1 人のユーザーであり、ペアリング済みデバイスはワークスペースの削除を越えて存続するからです。
+- **フリートキュー**（ワーカー、ジョブ、配置ログ）。そのスケジューラーはティックごとにキュー全体をすべてのワーカーと突き合わせます。
+- **ニュースフィード**。これはワークスペース単位ではなくユーザー単位です — フィードを追加すると、すべてのワークスペースに付いてきます。
+- **`workspace_routes`**。認証前のインデックスで、シークレットまたは不透明な id（招待ハッシュ、Webhook トークン、ディープリンク）だけを持ちワークスペースを持たないエントリーポイントに対して「このキーを所有するのはどのワークスペースか?」に答えます。ここで見つからなければ not-found です。スキャンによるフォールバックは意図的にありません。
+- **インストール全体の設定とアイデンティティ**: インストール id、ホストレベルの設定、SSO 接続、管理対象アクションポリシー（ワークスペースのガードレールを厳しくすることしかできないインストール全体のクランプ）。
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+起動時に開くのはこのファイルだけです。ワークスペースファイルは最初のアクセス時に遅延して開かれるため、ワークスペースがどれだけの履歴を蓄積しても起動コストは一定に保たれ、ファイル単位の `quick_check` は準備完了バナーに至る経路ではなく、最初の使用時に支払われます。
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+ワークスペースファイルが自己識別のために持つのは、単一行の `workspace_meta` だけです（その id、作成したインストール、作成時のスキーマバージョン、作成日時）。ワークスペースに関する説明的な情報はすべてレジストリにあります。
 
-## Creating a workspace
+## ワークスペースの作成
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+ワークスペースの作成は、レジストリの行を挿入するだけでは終わりません。1 つの操作で、サーバーは作成したユーザーを `ownerUserId` として記録し、そのユーザーのオーナーロールのメンバーシップを登録し、`WorkspaceCreated` ドメインイベントを発行します。このイベントのリスナーが、冪等に、バックグラウンドで次をシードします:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **CEO エージェント**と 4 人のスペシャリスト — `qa`、`architect`、`engineer`、`librarian` — スペシャリストは CEO に報告します。
+- **組み込みのパイプラインテンプレート**とそのトリガー（イベントトリガーと手動トリガーは有効な状態で提供されます。スケジュールトリガーは、日次のワークツリー GC スイープを除いてオプトインです）。
+- **スターター評価スイート**。
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/).
+これは最初のワークスペースだけでなく、_すべての_ワークスペースで起こります。シードされたエージェントはアダプターなしで作成されるため、設定 → ワークスペース → エージェントでエージェントごとにアダプターとモデルを設定するまで、**Control Center (built-in)** 上で Anthropic の既定モデル（別のモデルを固定しない限り `claude-opus-4-8`）で実行されます。[エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)を参照してください。
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+オーナーメンバーシップの書き込みは見た目以上に重要です。これがなければ、作成されたばかりのワークスペースにはメンバーが 1 人もおらず、作成者が次に行うワークスペース単位の呼び出しはすべて拒否されてしまいます。
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[エージェントはワークスペースを作成できない]
+`create_workspace` MCP ツールは存在しません。人間は `workspace.create`（名前のみのチョークポイント）または `workspace.upsert`（完全なレコード。更新にも使われます）でワークスペースを作成します。どちらも作成したユーザーを `owner` として記録し、`WorkspaceCreated` を発行します。
 :::
 
-## Deleting, exporting, importing
+## 削除、エクスポート、インポート
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+ワークスペースを削除すると、**レジストリの行にマークを付け、ディレクトリのリンクを解除します**。ワークスペースはあらゆる一覧と参照から消えます。レジストリの行は（ソフト削除として）残るため、id はバックアップとメンテナンスに引き続き知られていますが、`workspace.delete` はそのワークスペースのディレクトリ — データベース、ワークツリー、エージェントファイルなど — を `WorkspaceDatabaseManager.dropAndClose` によって直ちに破棄します。削除できるのはワークスペースの**オーナー**だけです。
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+1 つのワークスペースが 1 つのファイルであるため、ワークスペースの受け渡しはテーブルごとのダンプではなくファイル操作になります:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` は単一の `VACUUM INTO` です — サーバーが提供を続けるなか、読み取りトランザクションの下で取られる、一貫性がありデフラグされたスナップショットです。
+- `workspace.import` はそのようなファイルを採用し、対象のワークスペースが現在保持しているものを置き換えます。埋め込まれた `workspace_meta` により、インポートは「自分のファイルを再採用した」のか「別のインストールのファイル」なのかを区別できます（後者も許可されますが、見えないのではなくログに残ります）。
+- `server.backupNow` はインストール全体を、ライブのデータディレクトリを写したタイムスタンプ付きディレクトリにスナップショットします — `manifest.json`、`global.db`、そしてワークスペースごとの 1 つの `<workspaceId>/workspace.db` — そのため、復元はそれをコピーして戻すだけです。
+- `server.listBackups` はそのディレクトリを新しい順に読み戻し、各スナップショットのサイズとワークスペース一覧を返します。マニフェストが欠けている、または存在しないファイルを名指ししているスナップショットも、不完全としてフラグを立てたうえで報告されます — それを隠すことが、オペレーターに持っていないバックアップを持っていると思い込ませる道です。
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+バックアップ操作は **設定 → サーバー → バックアップと復元** にあります:
+**今すぐバックアップ** はインストールのスナップショットを取り、一覧はどのスナップショットが
+完全かを示し、インストールのオーナーが確認後に削除できるようにします。また各
+ワークスペースはエクスポートとインポートを提供します。組み込みの **Workspace backup** パイプライン
+は、そのワークスペースのデータベースだけを週次スケジュールで取得し、設定された保持期間より
+古い自身のバックアップを削除します。インストールスナップショットからワークスペースを
+復元するのは、スナップショットの `<workspaceId>/workspace.db` を指した
+`workspace.import` です。インストール全体の復元は、これまでどおりサーバーを停止したうえでの
+スナップショットディレクトリのコピー戻しです。
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ja-JP/マニュアル/リファレンス/バックアップ/#what-a-backup-does-not-contain) has the full table.
+いずれも運ばないのは、ワークスペースディレクトリの残りの部分です。ワークスペースはデータベース以上のものを蓄積し — 貼り付けた画像、スキルとエージェントのファイル、チャットの資格情報、ワークツリー — エクスポートとインポートが移動するのは**ファイル**なので、その隣にあるものはすべてその場にとどまります。これは資格情報については意図的であり、ワークツリーについては使い捨てであり、それ以外については機能ではなく知っておくべき制約です。[バックアップリファレンス](/ja-JP/マニュアル/リファレンス/バックアップ/#what-a-backup-does-not-contain)に完全な表があります。
 
-## Moving a backup between the server and your device
+## サーバーとデバイスの間でバックアップを移動する
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ja-JP/マニュアル/リファレンス/バックアップ/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+上記のすべての操作は**サーバー**上のパスで語られます。それが完全な答えになるのは、サーバーが自分のマシンである場合だけです。3 つの署名付き HTTP ルート — [`/backup/workspace`、`/backup/snapshot`、`/backup/restore`](/ja-JP/マニュアル/リファレンス/バックアップ/#transfer-routes) — が、それ以外のすべてのトポロジー向けにバイト列を運びます。メディアプロキシと画像ストアがすでに使っているのと同じ認証済みレーンです。ページ上ではこれが、各エクスポートと各スナップショットの横の **ダウンロード** ボタン（保存先は自分で選びます）と、使っているマシン上にあるファイルから復元するための **ファイルを選んでアップロード** です。サーバーが自分のマシンでないときに機能するのはアップロードのほうです。`workspace.import` はファイルがすでにホスト上にあることを必要とし、それを届けるのがこれです。
 
-Three properties are worth knowing:
+知っておく価値のある 3 つの性質があります:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **ダウンロードは新しいコピーを作り、サーバーはそのどれも保持しません。** ダウンロードは「エクスポートボタンが作ったファイルを取ってくる」ことではありません — もう一度エクスポートし、それをストリーミングし、削除します。応答が `no-store` で `Accept-Ranges: none` なのも同じ理由です。レンジを再開すると 2 つの異なるエクスポートがつなぎ合わされ、有効に見えて実際にはそうでない 1 つのファイルになってしまいます。
+- **アップロードは両端でディスクへストリーミングされ、バッファリングされることは決してありません**。また、ステージングされたコピーは、拒否された場合を含め、あらゆる出口で削除されます。ワークスペースのデータベースはスクリーンショットではありません。
+- **リレー接続には HTTP オリジンがありません**。そのため、そこでは転送コントロールが無効になり、理由を示す注記が付きます。サーバー側のパスで語られるものはすべてリレー経由でも動き続けます。直接接続を必要とするのはバイトのレーンだけです。
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[どちらのパスが誰のものか]
+ページが*表示する*パス — スナップショットディレクトリ、エクスポートが書き出したファイル、インポートが読み取るソース — は `cc_server` を実行しているマシン上のものです。**ダウンロード**が報告するパスは、自分が座っているマシン上のものです。この区別があるからこそ両方が存在します。前者はメンテナンススクリプトや ssh セッションが必要とするもので、後者はバックアップを集める人が必要とするものです。
 :::
 
-## Multiple workspaces
+## 複数のワークスペース
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+複数のワークスペースを並行して実行できます。それぞれが独立して動作します。あるワークスペースのエージェントは別のワークスペースのエージェントにメッセージを送れず、別のワークスペースのメモリを読めず、そのチケットを見ることもできません。エージェント間メッセージングの宛先解決は厳密で、ワークスペースをまたぐことは決してありません。
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+ワークスペースをまたぐダッシュボードはありません。`/workspaces/:workspaceId/observability` の分析サーフェスは、最近の実行の限定的なグローバルフィードを購読し、それを直ちにアクティブなワークスペースへ絞り込むため、そこで見えるのは常に 1 つのワークスペースです。人が触れる唯一の真にマルチワークスペースなサーフェスは、ワークスペースピッカーと切り替え UI です。
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+知っておく価値のある実用的な制限が 1 つあります。誰かが使用中のワークスペースは開いたままです — LRU はありません。それが 32 を超えると、サーバーは拒否するのではなく警告します。開かれた各ファイルがバックグラウンドアイソレートとページキャッシュを保持するからです。ワークスペースをまたぐファンアウトはファイルを一時的に開き、他に誰もそれらを要求していなければ後で閉じます。
 
-## Related concepts
+## 関連するコンセプト
 
-- [Multiplayer](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): agents belong to exactly one workspace
-- [Memory and knowledge](/ja-JP/マニュアル/コンセプト/メモリとナレッジ/): memory is workspace-scoped
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): where the databases sit in the client/server split
-- [Back up and restore](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ja-JP/マニュアル/リファレンス/バックアップ/): every operation, route, manifest field and limit
-- [Add repositories](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/): registering a checkout into a workspace
+- [マルチプレイヤー](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): メンバーシップ、ロール、リポジトリ単位のグラント — 分離のアクセス面
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): エージェントはちょうど 1 つのワークスペースに属します
+- [メモリとナレッジ](/ja-JP/マニュアル/コンセプト/メモリとナレッジ/): メモリはワークスペース単位です
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): データベースがクライアント/サーバー分割のどこにあるか
+- [バックアップと復元](/ja-JP/マニュアル/ハウツーガイド/バックアップと復元/): スナップショットの取得、ワークスペースの移動、別の場所へのコピー保持
+- [バックアップ、エクスポート、インポート](/ja-JP/マニュアル/リファレンス/バックアップ/): すべての操作、ルート、マニフェストフィールド、制限
+- [リポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/): チェックアウトをワークスペースに登録する

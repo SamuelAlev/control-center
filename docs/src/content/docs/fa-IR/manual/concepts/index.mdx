@@ -1,64 +1,62 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: مفهوم‌ها
+description: اینکه Control Center چگونه کار می‌کند و چرا این‌گونه ساخته شده است — خواندنی پس‌زمینه‌ای که پشت راهنماهای عملی قرار دارد.
 slug: fa-IR/راهنمای-کاربر/مفهومها
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/); when you want to look
-something up, go to the [reference](/fa-IR/راهنمای-کاربر/مرجع/).
+این صفحه‌ها توضیح می‌دهند که **Control Center چگونه کار می‌کند و چرا**. هدفشان فهمیدن است، نه انجام دادن: هیچ صفحه‌ای در اینجا رویه‌ای برای پیروی نیست. وقتی می‌خواهید کار مشخصی را به انجام برسانید، به [راهنماهای عملی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/) بروید؛ و وقتی می‌خواهید چیزی را جست‌وجو کنید، به [مرجع(/fa-IR/راهنمای-کاربر/مرجع/) سر بزنید.
 
-Read them in any order. If you are new, the core model is the place to start.
+آن‌ها را به هر ترتیبی که می‌خواهید بخوانید. اگر تازه‌کار هستید، مدل هسته جای خوبی برای شروع است.
 
-## Core model
+## مدل هسته
 
-The four ideas everything else is built on.
+چهار ایده‌ای که همه‌چیز دیگر بر آن‌ها بنا شده است.
 
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/) — what happens between your message and the agent's first token
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/fa-IR/راهنمای-کاربر/مفهومها/هوش-کد/) — the code graph, language server, structural search and debugger
-- [Conversation history](/fa-IR/راهنمای-کاربر/مفهومها/تاریخچه-گفتگو/) — persistence, compaction and forking a transcript
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) — مرز مستأجر و اینکه چرا این مرز با چیدمان پایگاه داده اعمال می‌شود، نه با نظم و دقت در نوشتن کوئری
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) — یک عامل از چه ساخته شده است: هویت، نقش، مهارت‌ها، توانایی‌ها، آداپتور و مدل
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/) — چه چیزی میان پیام شما و نخستین توکن عامل رخ می‌دهد
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) — چگونه `chat`، `plan`، `review` و `orchestrate` تغییر می‌دهند که یک عامل چه کاری می‌تواند انجام دهد
+- [بافت ابزار و کش پرامپت(/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار/) — چرا یک عامل تنها زیرمجموعه‌ای از ابزارهایش را می‌بیند، چگونه به بقیه دست می‌یابد و چه چیزی کش ارائه‌دهنده را گرم نگه می‌دارد
+- [هوش کد(/fa-IR/راهنمای-کاربر/مفهومها/هوش-کد/) — گراف کد، سرور زبان، جست‌وجوی ساختاری و اشکال‌زدا
+- [تاریخچهٔ گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/تاریخچه-گفتگو/) — ماندگاری، فشرده‌سازی و شاخه‌کردن یک رونوشت
 
-## Safety and control
+## ایمنی و کنترل
 
-What an agent is allowed to touch and who decides.
+یک عامل اجازهٔ دست‌زدن به چه چیزهایی را دارد و چه کسی تصمیم می‌گیرد.
 
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) — what actually constrains an agent run today
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/fa-IR/راهنمای-کاربر/مفهومها/مجوزدهی/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/fa-IR/راهنمای-کاربر/مفهومها/ریگها/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) — امروز چه چیزی واقعاً اجرای یک عامل را محدود می‌کند
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) — یک موتور سیاست برای هر کنش تغییردهنده و اینکه یک قاعده چگونه حل‌وفصل می‌شود
+- [مجوزدهی(/fa-IR/راهنمای-کاربر/مفهومها/مجوزدهی/) — نقش‌ها، فهرست مجوزها و رد حسابرسی
+- [ریگ‌ها و محفظه‌ها(/fa-IR/راهنمای-کاربر/مفهومها/ریگها/) — چرا عامل‌ها به‌جای ماشین شما VM یک‌بارمصرف می‌گیرند و مرز واقعی چیست
 
-## Directing the work
+## هدایت کار
 
-Turning intent into work that gets done.
+تبدیل قصد و نیت به کاری که به انجام می‌رسد.
 
-- [Tickets and delegation](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) — one goal, one approval, a generated pipeline
-- [AI review](/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/fa-IR/راهنمای-کاربر/مفهومها/گفتگوهای-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/fa-IR/راهنمای-کاربر/مفهومها/ارزیابی-و-کیفیت/) — eval suites and the Quality tab
+- [تیکت‌ها و واگذاری(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/) — واحد کار مستقل از فروشنده که کل ناوگان در آن شریک است
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) — گردش‌کارهای DAG، تریگرها و اجراهای قابل‌ازسرگیری
+- [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) — یک هدف، یک تأیید، یک پایپ‌لاین تولیدشده
+- [بازبینی هوش مصنوعی(/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/) — چگونه یک PR بازبینی‌شده می‌شود: فضاهای بازبینی، اجماع همتا، محورها و حکم Ship/Hold/Block
+- [گفتگوهای pull request(/fa-IR/راهنمای-کاربر/مفهومها/گفتگوهای-pr/) — پاسخ‌دادن به منشن GitHub یا برچسب `ai-review` از خود forge
+- [حافظه و دانش(/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/) — واقعیت‌ها، سیاست‌ها و آنچه یک عامل اجازه دارد بداند
+- [ارزیابی‌ها و کیفیت(/fa-IR/راهنمای-کاربر/مفهومها/ارزیابی-و-کیفیت/) — مجموعه‌های ارزیابی و زبانهٔ کیفیت
 
-## People and reach
+## افراد و دسترسی
 
-Working with other humans and reaching the fleet from elsewhere.
+کار کردن با انسان‌های دیگر و رسیدن به ناوگان از جای دیگر.
 
-- [Multiplayer and presence](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/fa-IR/راهنمای-کاربر/مفهومها/ورود-یکپارچه/) — SAML and OIDC logins
-- [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/fa-IR/راهنمای-کاربر/مفهومها/تقویم/) — Google Calendar sync and meeting alerts
+- [چندنفره و حضور(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) — انسان‌ها و عامل‌ها به‌عنوان مشارکت‌کنندگان هم‌تراز و اینکه چه چیزی دسترسی را تعیین می‌کند
+- [ورود یکپارچه(/fa-IR/راهنمای-کاربر/مفهومها/ورود-یکپارچه/) — ورودهای SAML و OIDC
+- [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/) — چرا پل Slack به بیرون تماس می‌گیرد و چه چیزی به پیام از گفتگو مجوز می‌دهد
+- [کنترل از راه دور و موبایل(/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/) — چگونه یک تلفن به سرور شما می‌رسد و مدل امنیتی پیرامون آن
+- [جلسه‌ها و رونویسی(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) — ضبط روی دستگاه، رونویسی و خلاصه‌سازی
+- [تقویم و زمان‌بندی(/fa-IR/راهنمای-کاربر/مفهومها/تقویم/) — همگام‌سازی Google Calendar و هشدارهای جلسه
 
-## Under the hood
+## زیر پوست
 
-The shape of the system itself.
+شکل خود سیستم.
 
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/) — the in-process bus features talk over
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/) — لایه‌بندی، هستهٔ مشترک، پورت و آداپتور
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) — کارخواه‌های رومیزی، وب و تلفن چگونه به یک سرور مرتبط می‌شوند
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/) — گذرگاه درون‌فرایندی که قابلیت‌ها روی آن گفتگو می‌کنند

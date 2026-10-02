@@ -1,193 +1,126 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: ตั้งค่านโยบายแซนด์บ็อกซ์
+description: อะไรที่เป็นข้อจำกัดต่อการรันของเอเจนต์ วิธีดูว่าแซนด์บ็อกซ์ของ OS กำลังห่อการรันนั้นอยู่หรือไม่ และการตั้งค่าความสามารถใดที่เซิร์ฟเวอร์อ่านจริง
 slug: th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+การรันของเอเจนต์จะอยู่ในแซนด์บ็อกซ์หรือไม่นั้นถูกตัดสินบนเซิร์ฟเวอร์ตอนบูต (`--sandbox`) สวิตช์ **เปิดใช้แซนด์บ็อกซ์** ตัวเลือก **แบ็กเอนด์** และสวิตช์ **ความสามารถเริ่มต้น · สเปซใหม่** ภายใต้ **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว** เป็นค่ากำหนดที่จัดเก็บไว้บนอุปกรณ์ของคุณ การตรวจหาโฮสต์ของการ์ด **แซนด์บ็อกซ์** รายงานว่าโฮสต์ของเซิร์ฟเวอร์ห่ออะไรได้บ้าง
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+มีส่วนควบคุมสองอย่างที่ไปถึงการรัน และคู่มือนี้ครอบคลุมทั้งคู่: **สิทธิ์แซนด์บ็อกซ์** แบบรายเอเจนต์ด้านล่าง และแฟล็ก `--sandbox` ของเซิร์ฟเวอร์เอง
 
-## What constrains an agent run
+## อะไรที่เป็นข้อจำกัดต่อการรันของเอเจนต์
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+มีหกสิ่งที่เป็นข้อจำกัดต่อเอเจนต์ อย่างแรกคือแซนด์บ็อกซ์ของ OS และเป็นสิ่งเดียวที่มีเงื่อนไข — อีกห้าสิ่งคงอยู่บนทุกโฮสต์
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| ขอบเขต | สิ่งที่มันทำ |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| แซนด์บ็อกซ์ของ OS | Seatbelt บน macOS, bubblewrap บน Linux และ WSL2 ห่อ Claude Code CLI อะแดปเตอร์ ACP และเครื่องมือ `bash` ของฮาร์เนส **ไม่มีบน Windows และบน Linux ที่ไม่มี `bwrap` และ `socat`** |
+| worktree ของตัวเอง | การสนทนาแต่ละรายการได้เช็กเอาต์แบบ copy-on-write เช็กเอาต์ต้นฉบับถูกพับเข้าในการรันเป็นเส้นทางที่ห้ามเขียน และแซนด์บ็อกซ์คือสิ่งที่บังคับใช้มัน |
+| ข้อมูลรับรองที่ผ่านนายหน้า | นายหน้าข้อมูลรับรองสร้างสภาพแวดล้อมต่อการรันหนึ่งครั้งจากความสามารถของเอเจนต์ และเพิกถอนมันตอนรื้อถอน ไม่มีความสามารถ ก็ไม่มีโทเคนในสภาพแวดล้อม |
+| กฎคุมการกระทำ | เครื่องมือที่เปลี่ยนแปลงสถานะทุกตัวประกาศคลาสผลกระทบของมัน และตัวคุมแปลงคลาสเหล่านั้นก่อนที่การเรียกจะรัน `prompt` ที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะถูกปฏิเสธ |
+| การชำระล้างสภาพแวดล้อม | ACP และเครื่องมือ `bash` ของฮาร์เนสได้สภาพแวดล้อมที่ถูกกรอง Claude Code ผ่าน `NoSandboxAdapter` สืบทอดสภาพแวดล้อมของโฮสต์ |
+| พื้นผิวเครื่องมือของโหมด | โหมดอ่านอย่างเดียวถอดเครื่องมือที่เปลี่ยนแปลง worktree ออกไปเลย และตรึงคำกริยาผลลัพธ์ของโหมดเองไว้เพื่อให้ยังส่งมอบได้ |
 
-Three things stay weaker than they look:
+มีสามสิ่งที่ยังอ่อนกว่าที่มันดู:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- มีเพียง **ฮาร์เนสในตัว** เท่านั้นที่บังคับใช้ด่านเครื่องมือ ข้อกำหนดการเสร็จงาน และกฎเชิงโครงสร้างของโหมด อะแดปเตอร์ Claude Code ไม่ทำเช่นนั้น โดยเฉพาะ Claude Code นั้นถูกเรียกใช้ด้วย `--dangerously-skip-permissions` เพราะ `claude -p` แบบไม่มีการโต้ตอบจะค้างอยู่ตลอดไปที่พรอมต์ของมันเอง — การเรียกอ่าน เขียน แก้ไข และเชลล์ของ Claude เองจึงไม่ถูกมองเห็นและไม่ผ่านด่านของ Control Center ที่ใดแซนด์บ็อกซ์เปิดอยู่ มันคือขอบเขตรอบ ๆ การเรียกเหล่านั้น
+- เครื่องมือไฟล์ในโปรเซสของฮาร์เนส (read, write, edit, apply patch, search, find, search_files) ทำงานอยู่ภายในโปรเซสของเซิร์ฟเวอร์ จึงไม่มีโปรไฟล์แซนด์บ็อกซ์ใดคุมมัน มีเพียงเครื่องมือ `bash` เท่านั้นที่ผ่านตัวรันคำสั่งที่อยู่ในแซนด์บ็อกซ์ เครื่องมือเหล่านั้นถูกจำกัดด้วยการจำกัดเส้นทางในตัวมันเองบวกกับกฎคุมการกระทำ
+- บนโฮสต์ที่ไม่มีแบ็กเอนด์ แถวแรกใช้ไม่ได้เลย ACP และเครื่องมือ `bash` ของฮาร์เนสถอยกลับไปพึ่งการชำระล้างสภาพแวดล้อมบวกกับนโยบายคำสั่ง; Claude Code สืบทอดสภาพแวดล้อมของโฮสต์ผ่าน `NoSandboxAdapter` เซิร์ฟเวอร์บอกเรื่องนี้ในล็อกเริ่มต้นของมัน ตรวจสอบของตัวเองด้านล่าง
 
-## Set an agent's capabilities
+## ตั้งค่าความสามารถของเอเจนต์
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+นี่คือส่วนควบคุมความสามารถเพียงอย่างเดียวที่เซิร์ฟเวอร์อ่าน มันเป็นรายเอเจนต์ และเป็นตัวตัดสินว่านายหน้าข้อมูลรับรองใส่อะไรลงในสภาพแวดล้อมของเอเจนต์ตัวนั้น
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → เอเจนต์**
+2. เลือกเอเจนต์ในรายการ
+3. ในแท็บ **การตั้งค่า** เลื่อนไปที่ **สิทธิ์แซนด์บ็อกซ์**
+4. เปิดสวิตช์ — คำบรรยายใต้แถวจะเปลี่ยนจาก **ใช้ค่าเริ่มต้นของเวิร์กสเปซ**
+5. ตั้งสวิตช์ทั้งสี่ตัว:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| สวิตช์ | สิ่งที่มันกั้น |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **อนุญาต git push** | เมื่อปิดอยู่ การรันจะได้ `GIT_ASKPASS=/usr/bin/false` และ `GIT_TERMINAL_PROMPT=0` การพุชจึงถามหาข้อมูลรับรองไม่ได้ |
+| **อนุญาตการเรียก GitHub API** | ทำงานร่วมกับ **อนุญาต git push** เป็นตัวกั้นว่านายหน้าใส่โทเคน GitHub เป็น `GH_TOKEN` / `GITHUB_TOKEN` หรือไม่ |
+| **อนุญาตการเรียก ticketing API** | กั้นว่านายหน้าใส่ `TICKETING_API_KEY` หรือไม่ |
+| **อนุญาตการเข้าถึงเครือข่ายทั่วไป** | ที่ใดแซนด์บ็อกซ์เปิดอยู่ นี่คือด่านขาออกจริง: เมื่อปิดอยู่ รายการที่อนุญาตของการรันจะว่างเปล่า และทุกคำขอขาออกจะถูกปฏิเสธที่พร็อกซี ที่ใดไม่มีแบ็กเอนด์ มันถูกบันทึกไว้บนการรันแต่ไม่ได้กั้นอะไรที่โปรเซสลูกทำ |
 
-6. Save
+6. บันทึก
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+จุดตรวจสอบ: เปิดเอเจนต์อีกครั้ง แล้วสวิตช์ยังเปิดอยู่พร้อมสวิตช์ของคุณ — ชุดความสามารถที่บันทึกไว้จะวนกลับมาผ่านเซิร์ฟเวอร์ และเอเจนต์ที่ไม่มีชุดใดเลยจะถอยกลับไปใช้ค่าเริ่มต้นแบบอนุรักษ์นิยม (พุชปิด, GitHub API ปิด, ticketing ปิด, เครือข่ายเปิด)
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[สองจุดที่มักทำให้พลาด]
+คำบรรยายใต้แถวบอกว่า **ใช้ค่าเริ่มต้นของเวิร์กสเปซ** แต่ไม่มีการตั้งค่าความสามารถระดับเวิร์กสเปซที่เซิร์ฟเวอร์อ่าน เอเจนต์ที่ปิดสวิตช์อยู่จะได้ค่าเริ่มต้นแบบอนุรักษ์นิยมในตัว
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+อีกเรื่องหนึ่ง ข้อมูลรับรอง GitHub ของการรันเป็นของนายหน้าเท่านั้นเสมอ — โทเคนการติดตั้ง GitHub App ที่จำกัดขอบเขตกับรีโป หรือ PAT ตัวสำรองจากสภาพแวดล้อม — ไม่เคยเป็นโทเคนที่จัดเก็บไว้ของสมาชิกผู้ร้องขอเอง `actingUserId` ถูกส่งไปเพื่อให้นายหน้า *ระงับ* PAT ของเซิร์ฟเวอร์จากสมาชิกที่ไม่ได้เป็นเจ้าของและยังไม่ได้เชื่อม GitHub; มันไม่ได้รวมโทเคนส่วนตัวทับความสามารถที่ปิดอยู่ อย่าถือว่า **อนุญาตการเรียก GitHub API** เป็นขอบเขตขาออกแบบแข็งบนโฮสต์ที่ไม่มีแซนด์บ็อกซ์ของ OS: โปรเซสลูกยังเข้าถึงเครือข่ายได้อยู่ดี
 :::
 
-## Check whether your agent runs are sandboxed
+## ตรวจสอบว่าการรันเอเจนต์ของคุณอยู่ในแซนด์บ็อกซ์หรือไม่
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+มีสองสิ่งตัดสินเรื่องนี้ ทั้งคู่อยู่บนเซิร์ฟเวอร์: ว่าโฮสต์มีแบ็กเอนด์ให้หรือไม่ และว่า `--sandbox` เปิดอยู่หรือไม่ ตรวจตามลำดับนั้น
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. ไปที่ **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว**
+2. อ่านการ์ด **แซนด์บ็อกซ์** ข้อเท็จจริง **โฮสต์** คือเครื่องที่ `cc_server` รันอยู่ ไม่ใช่เครื่องที่คุณกำลังดูอยู่ ฟิลด์ **แบ็กเอนด์** แสดง **แซนด์บ็อกซ์เนทีฟ** (Seatbelt บน macOS, bubblewrap บน Linux และ WSL2) หรือ **ไม่แยก** ข้อเท็จจริง **มีผล** คือค่ากำหนดของอุปกรณ์นี้ ไม่ใช่การห่อที่เซิร์ฟเวอร์ใช้จริง
+3. อ่านล็อกเริ่มต้นของเซิร์ฟเวอร์ มันพิมพ์หนึ่งในสามบรรทัดนี้เท่านั้น:
+   - `agent sandbox ON` บวกกับบันทึกแบ็กเอนด์ — การรันถูกห่อ
+   - `no OS-native agent sandbox on this host` บวกกับคำแนะนำการติดตั้งเมื่อมี — การรันไม่ถูกห่อ
+   - `agent sandbox DISABLED by --sandbox off` — การเลือกปิดโดยเจตนา
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` ไม่รายงานสถานะแซนด์บ็อกซ์ ล็อกเริ่มต้นจึงเป็นการตรวจสอบ
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+หากต้องการปิดแซนด์บ็อกซ์โดยเจตนา — โฮสต์ที่โปรไฟล์ทำงานผิดพลาดคือเหตุผลที่มันมีอยู่ — ให้เริ่มเซิร์ฟเวอร์ด้วย `--sandbox off` หรือตั้ง `CC_SERVER_SANDBOX=off` ค่าเริ่มต้นคือ `on` และ `on` หมายถึง “ใช้แบ็กเอนด์ถ้าโฮสต์มี” ไม่เคยหมายถึง “บังคับว่าต้องมี”
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+มีสองสถานการณ์ที่ไม่เคยได้รับการห่อด้วยแซนด์บ็อกซ์เนทีฟ บน **Windows** การตรวจหาแบบเนทีฟจะรายงานว่าไม่มีให้ใช้เสมอ และไม่มีอะไรให้ติดตั้ง — การสั่งงานเอเจนต์ใช้ `none` แบ็กเอนด์ `microvm` แยกต่างหาก (เทอร์มินัลแบบโต้ตอบและริก) และถูกกั้นด้วยการตรวจหาบนรันไทม์ของมันเอง บน **Linux และ WSL2** ทั้ง `bwrap` และ `socat` ต้องอยู่บน `PATH`; หากไม่มี การตรวจหาจะรายงานว่าไม่มีให้ใช้และระบุชื่อแพ็กเกจที่ขาดไป
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+บน Linux/WSL2 ที่ติดตั้ง bubblewrap แล้ว กลอบของไฟล์ลับในนโยบายมาตรฐานไม่สามารถบังคับใช้กับไฟล์ที่เอเจนต์สร้างขึ้นในภายหลังได้ การรันแบบเนทีฟเช่นนั้นตอนนี้จะล้มเหลว แทนที่จะเพิกเฉยต่อกฎอย่างเงียบ ๆ การตรวจหาตอนบูตที่ผ่านจึงไม่รับประกันว่าการสั่งงานบน Linux จะเริ่มได้ `--sandbox off` เป็นการเลือกปิดโดยเจตนาให้ไม่ถูกกักขอบ ไม่ใช่ขอบเขตความปลอดภัยทดแทน
 
-## Know what a mode already forbids
+## รู้ว่าโหมดหนึ่งห้ามอะไรไว้แล้ว
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+โหมดถูกจัดเก็บเป็นรายสเปซ และป้อนเข้าตัวแปลงคำตัดสินของกฎคุมในฐานะชั้น **พรีเซ็ตโหมด** สามในสี่โหมดเป็นอ่านอย่างเดียว และโหมดอ่านอย่างเดียวจะปฏิเสธคลาสผลกระทบสิบเอ็ดคลาสทันที:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| โหมด | Worktree | ถูกปฏิเสธโดยพรีเซ็ต |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **เอเจนต์** (`chat`) | เขียนได้ | ไม่มี — ค่าเริ่มต้นในตัวมีผล |
+| **แผน** | อ่านอย่างเดียว | ลบไฟล์, เขียนนอก worktree, คอมมิต, พุช, เปิด PR, เผยแพร่หรือรวม, เขียนไปยังตัวติดตามภายนอก, ติดตั้งแพ็กเกจ, รันโปรเซส, เปลี่ยนโครงสร้างเวิร์กสเปซ, บูตหรือควบคุมเอนโคลเจอร์ |
+| **รีวิว** | อ่านอย่างเดียว | สิบเอ็ดคลาสเดิม ไม่ให้ผู้ใช้เลือก — ช่องเขียนข้อความมีเพียงเอเจนต์ แผน และประสานงาน |
+| **ประสานงาน** | อ่านอย่างเดียว | สิบเอ็ดคลาสเดิม |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+การเข้าถึงเครือข่ายและการเข้าถึงข้อมูลลับนั้น _ไม่_ ถูกปฏิเสธโดยโหมดอ่านอย่างเดียวโดยเจตนา: การค้นคว้าคือจุดหมายของมัน
 
-## Require approval before an action runs
+## กำหนดให้ต้องอนุมัติก่อนการกระทำจะรัน
 
-Approval is a guardrail decision, not a sandbox setting.
+การอนุมัติเป็นคำตัดสินของกฎคุม ไม่ใช่การตั้งค่าแซนด์บ็อกซ์
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → สิทธิ์ของเอเจนต์**
+2. ตั้งคลาสการกระทำเป็น **ถามก่อน** ที่ขอบเขตเวิร์กสเปซ เอเจนต์ หรือสเปซ
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/) for the full
-resolution order.
+คำตัดสิน **ถามก่อน** จะขัดจังหวะการรันและถามคุณ เมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่ มันจะปิดเมื่อล้มเหลวและการกระทำนั้นถูกปฏิเสธ ดู[ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/) สำหรับลำดับการแปลงคำตัดสินทั้งหมด
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### An agent cannot push and I never denied it
+### เอเจนต์พุชไม่ได้และฉันไม่ได้ห้ามมันเลย
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+ตรวจสอบ **สิทธิ์แซนด์บ็อกซ์** ของเอเจนต์ เอเจนต์ที่ไม่มีชุดความสามารถที่กำหนดเองจะได้ค่าเริ่มต้นแบบอนุรักษ์นิยม ซึ่งปิด **อนุญาต git push** อยู่ — นายหน้าจึงไม่ใส่โทเคน GitHub และ git ไม่มีทางยืนยันตัวตน
 
-### The Sandboxing card reports no native sandbox
+### การ์ดแซนด์บ็อกซ์รายงานว่าไม่มีแซนด์บ็อกซ์เนทีฟ
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/).
+แสดงว่าการรันเอเจนต์บนโฮสต์นั้นไม่ถูกห่อด้วย Seatbelt หรือ bubblewrap และขอบเขตที่เหลืออยู่คือสิ่งที่มี บน Linux และ WSL2 ให้ติดตั้งเครื่องมือที่ขาดทั้งสองตัว — `sudo apt-get install bubblewrap socat` — แล้วรีสตาร์ตเซิร์ฟเวอร์ ล็อกเริ่มต้นจึงควรบอกว่าแซนด์บ็อกซ์เปิดอยู่ บน Windows ไม่มีแบ็กเอนด์เนทีฟให้ติดตั้ง จึงควรกระชับกฎคุมแทน: ดู[ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/)
 
-### An agent reached a file outside its worktree
+### เอเจนต์เข้าถึงไฟล์นอก worktree ของมัน
 
-Which tool reached it decides whether this is expected.
+เครื่องมือตัวใดที่เข้าถึงมันเป็นตัวตัดสินว่านี่เป็นเรื่องที่คาดหมายได้หรือไม่
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+เครื่องมือไฟล์ในโปรเซสของฮาร์เนส (read, write, edit, apply patch, search, find, search_files) ทำงานในโปรเซสของเซิร์ฟเวอร์ จึงไม่มีโปรไฟล์แซนด์บ็อกซ์ใดใช้กับมัน — ขอบเขตของมันคือการจำกัดเส้นทางในตัวมันเองบวกกับกฎคุม คำสั่ง `bash` หรือ Claude Code CLI _ถูก_ ห่อที่ใดมีแบ็กเอนด์ และเช็กเอาต์ที่ลงทะเบียนไว้ของคุณเป็นเส้นทางที่ห้ามเขียนภายในที่ห่อนั้นในทุกโหมด รวมถึงรูปที่แปลงซิมลิงก์แล้วของมันด้วย (บน macOS เส้นทางที่เข้าถึงผ่าน `/tmp` หรือ `/var/folders` จะแปลงค่าอยู่ใต้ `/private` และทั้งสองรูปแบบถูกปฏิเสธในตอนนี้) บนโฮสต์ที่ไม่มีแบ็กเอนด์ ไม่มีข้อใดนั้นใช้เลย ไม่ทางใดก็ทางหนึ่ง กฎคุมสามารถปฏิเสธ **เขียนนอก worktree** ได้ทันที
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/)
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Diagnose an agent](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
-- [Sandbox backends](/th-TH/คู่มือ/อ้างอิง/แบ็กเอนด์แซนด์บ็อกซ์/)
-- [cc_server CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/): the `--sandbox` flag
+- [ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [วินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
+- [แบ็กเอนด์แซนด์บ็อกซ์](/th-TH/คู่มือ/อ้างอิง/แบ็กเอนด์แซนด์บ็อกซ์/)
+- [cc_server CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/): แฟล็ก `--sandbox`
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)

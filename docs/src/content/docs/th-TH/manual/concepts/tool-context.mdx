@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: บริบทเครื่องมือและการแคชพรอมต์
+description: ทำไมเอเจนต์จึงเห็นเครื่องมือเพียงชุดเล็กแทนที่จะเห็นทั้งหมด มันเข้าถึงส่วนที่เหลืออย่างไร และกฎที่ทำให้แคชพรอมต์ของผู้ให้บริการยังอุ่นอยู่ตลอดการรัน
 slug: th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+ทุกคำขอที่ฮาร์เนสในตัวส่งออกมีสองสิ่งเป็นจริงเสมอ: นิยามเครื่องมือคือต้นทุนคงที่ก้อนใหญ่ที่สุดในคำขอนั้น และแทบไม่มีสักตัวที่จะถูกใช้เลย หน้านี้อธิบายว่า Control Center จัดการเรื่องนี้อย่างไร และทำไมคำตอบจึงไม่ใช่แค่ “ส่งเครื่องมือให้น้อยลง”
 
-## The problem is attention, not bytes
+## ปัญหาคือความใส่ใจ ไม่ใช่จำนวนไบต์
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center ลงทะเบียนเครื่องมือไว้ราว 126 รายการ เมื่อส่งทั้งหมด นิยามของพวกมันกินราว **23,000 โทเคนในทุกคำขอ** — ต้นทุนที่การบีบอัดบริบทแตะต้องไม่ได้ เพราะนิยามเครื่องมือเดินทางไปในส่วนของคำขอที่แยกจากบทสนทนา
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+บิลโทเคนคือข้อร้องเรียนที่เห็นได้ชัด และเมื่อมีแคชพรอมต์ มันก็เป็นต้นทุนที่เล็กกว่าด้วย ต้นทุนจริงคือ **ความแม่นยำในการเลือก** ผลการประเมินที่เผยแพร่เกี่ยวกับการเรียกใช้เครื่องมือเห็นตรงกันว่า โมเดลเลือกเครื่องมือได้อย่างเชื่อถือได้ถึงราว 30–50 เครื่องมือในบริบท และยิ่งแย่ลงเรื่อย ๆ เมื่อเกินกว่านั้น สาเหตุที่ระบุไว้ไม่ใช่จำนวนโทเคน แต่เป็น **ความทับซ้อนเชิงความหมาย**: เมื่อแค็ตตาล็อกมีเครื่องมือหลายตัวที่คำอธิบายอ่านคล้ายกัน โมเดลก็กำลังเลือกระหว่างของที่หน้าตาเหมือนกัน แทนที่จะนึกถึงขีดความสามารถหนึ่งขึ้นมา
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+เมื่อมีเครื่องมือ 126 ตัว เอเจนต์จึงอยู่ไกลเกินช่วงนั้นไปแล้วในทุก ๆ เทิร์น — รวมถึงหลายเทิร์นที่มันแค่ต้องอ่านไฟล์
 
-## The two-tier surface
+## พื้นผิวสองชั้น
 
-A run is therefore shown two things:
+การรันหนึ่งครั้งจึงได้รับข้อมูลสองอย่าง:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- ชุด **ประจำ** — เครื่องมือราวสองโหล ส่งพร้อมสคีมาเต็มในทุกคำขอ;
+- **ดัชนีชื่อ** ของอย่างอื่นทั้งหมด จัดกลุ่มใต้หัวข้ออย่าง “Tickets and projects” หรือ “Memory and knowledge” กินโทเคนเพียงไม่กี่ร้อยตัวสำหรับทั้งแค็ตตาล็อก
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+เมื่อวัดกับแค็ตตาล็อกปัจจุบัน วิธีนี้พาบล็อกเครื่องมือจาก **~23.1k โทเคนเหลือ ~5.0k เล็กลงราว 78%** และวางชุดที่มองเห็นได้เสมอไว้ในช่วงที่การเลือกเชื่อถือได้
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/th-TH/คู่มือ/แนวคิด/โหมด) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+ชุดประจำคือเครื่องมือที่การรันใช้ใน *เกือบทุก* การรัน: คำศัพท์ว่าด้วยไฟล์และเชลล์ (`read`, `write`, `edit`, `search`, `bash`, …) เครื่องมือสำหรับค้นหา เช็กลิสต์งาน การค้นหาหน่วยความจำ และคำกริยาใดก็ตามที่[โหมด](/th-TH/คู่มือ/แนวคิด/โหมด)ปัจจุบันต้องเรียกเพื่อส่งผลลัพธ์ของมัน คำกริยาส่งผลลัพธ์ของโหมดเองอยู่ในชุดประจำเสมอ — การรันต้องไม่ต้องออกตามหาการเรียกเพียงหนึ่งเดียวที่ผลิตสิ่งที่ต้องส่งมอบ
 
-### Deferred does not mean unavailable
+### การหน่วงไว้ไม่ได้แปลว่าใช้ไม่ได้
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+นี่คือส่วนที่ทำให้การออกแบบนี้ปลอดภัย ไม่ใช่แค่ประหยัด **เครื่องมือที่ถูกหน่วงไว้เรียกใช้ได้ตั้งแต่เทิร์นแรก** มีเพียงสคีมาของมันที่ถูกกันไว้
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+เอเจนต์เห็นชื่อนั้นอยู่ในพรอมต์ของมัน ถ้ามันเรียกชื่อนั้นโดยตรง ฮาร์เนสจะโหลดสคีมาและรันเครื่องมือในขั้นตอนเดียวกัน — ไม่มีข้อผิดพลาด ไม่มีรอบไปกลับ โมเดลไม่จำเป็นต้องรู้ว่าเครื่องมือนั้นเคย “ถูกถอดออก” มาก่อน
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+เมื่อเอเจนต์รู้ว่างานคืออะไรแต่ไม่รู้ชื่อเครื่องมือ `search_tools` รับคำอธิบายภาษาธรรมชาติ (“assign a ticket to someone”) จัดอันดับพื้นผิวทั้งหมดของการรัน แล้วคืนรายการที่ตรง *พร้อมสคีมาที่โหลดไว้แล้ว* เทิร์นถัดไปจึงเรียกตัวใดตัวหนึ่งได้ทันที ถ้าการค้นหาไม่พบอะไร มันจะบอกตรง ๆ และเสนอถ้อยคำอื่นหรือการค้นหาที่กว้างขึ้น — จงใจให้เป็นเช่นนั้น เพราะเอเจนต์ที่อ่านผลการค้นหาว่างเปล่าว่า “ขีดความสามารถนี้ไม่มีอยู่” จะคิดค้นสิ่งทดแทนขึ้นมาแทนที่จะมองหาอีกครั้ง
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` มีอยู่เฉพาะในฮาร์เนสในตัว ไคลเอนต์ MCP ภายนอกใช้ `search_tool_bm25` แทน ซึ่งจัดอันดับดัชนีเดียวกันแต่เพียงบอกถึงรายการที่ตรง — ไคลเอนต์เหล่านั้นได้รับสคีมาทุกตัวจาก `tools/list` ไปแล้ว จึงไม่มีอะไรต้องโหลด
 
-### What deferral never does
+### สิ่งที่การหน่วงไม่เคยทำ
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+การหน่วงถูกนำมาใช้ **หลัง** ตัวกรองเครื่องมือของโหมด ไม่เคยใช้แทนตัวกรองนั้น มันซ่อนสคีมาเท่านั้น ไม่สามารถเปิดเผยเครื่องมือที่โหมดปฏิเสธไปแล้วได้ เครื่องมือที่ถูกเปิดใช้งานยังต้องผ่านพรอมต์ขออนุมัติและ[กฎคุมการกระทำ](/th-TH/คู่มือ/แนวคิด/กฎคุม)เหมือนเครื่องมือประจำทุกประการ และเครื่องมือไม่สามารถโหลดชื่อที่ไม่ได้อยู่บนพื้นผิวของการรันตั้งแต่แรกได้
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+พื้นผิว MCP ที่ไคลเอนต์ภายนอกเห็น **ไม่** ได้รับผลกระทบ `tools/list` ยังคืนแค็ตตาล็อกครบถ้วนเหมือนเดิม ความพยายามตัดทอนมันในอดีตทำให้เอเจนต์พังไปเลย: ไคลเอนต์ MCP ตรวจสอบชื่อเครื่องมือกับรายการที่แคชไว้ของตนเอง และปฏิเสธทุกชื่อที่ไม่อยู่ในรายการโดยไม่ถามเซิร์ฟเวอร์เลย เครื่องมือที่ “ซ่อนแต่เรียกได้” จึงเข้าถึงไม่ได้เสียเปล่า การหน่วงอยู่ในฮาร์เนส ซึ่งการโหลดเครื่องมือกลางการรันเป็นสิ่งที่ฮาร์เนสทำได้จริง
 
-### Turning it off
+### การปิดการหน่วง
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/th-TH/คู่มือ/อ้างอิง/cc-server-cli).
+`--tool-deferral=off` (หรือ `CC_SERVER_TOOL_DEFERRAL=off`) ทำให้เครื่องมือทุกตัวที่ได้รับอนุญาตกลับเข้าชุดประจำอีกครั้ง ส่งคำขอเหมือนที่เซิร์ฟเวอร์เคยส่งก่อนมีการหน่วงทุกประการ ดู[เอกสารอ้างอิง CLI ของ `cc_server`](/th-TH/คู่มือ/อ้างอิง/cc-server-cli)
 
-## Prompt caching
+## การแคชพรอมต์
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+ภาระงานของเอเจนต์ไม่สมดุล: มันส่งพรอมต์ขนาดมหึมาและรับคำตอบเล็ก ๆ ซ้ำแล้วซ้ำอีกในแต่ละเทิร์น โดยมีคำนำหน้าเดิมทุกครั้ง ผู้ให้บริการแคชคำนำหน้านั้นไว้ และการอ่านจากแคชมีต้นทุนราวหนึ่งในสิบของการอ่านใหม่ อัตราการเข้าแคชจึงเป็นคุณสมบัติชั้นต้นของฮาร์เนส ไม่ใช่เรื่องของการปรับแต่ง — และบน Anthropic มันยังซื้ออัตราการประมวลผลให้ด้วย เพราะโทเคนที่แคชไว้ไม่นับรวมกับขีดจำกัดอินพุตต่อนาที
 
-Caching works on an exact prefix match, which yields one governing rule.
+การแคชทำงานบนการจับคู่คำนำหน้าแบบตรงกันทุกไบต์ ซึ่งนำมาสู่กฎครอบคลุมข้อเดียว
 
-### Never rewrite what was already sent
+### ไม่เขียนทับสิ่งที่ส่งไปแล้วเด็ดขาด
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+ไบต์ใดก็ตามที่เปลี่ยนไปจะทำให้แคชเป็นโมฆะตั้งแต่จุดนั้นเป็นต้นไป ฮาร์เนสจึง **ต่อท้าย** เท่านั้น: ข้อความใหม่ต่อท้าย และสคีมาเครื่องมือที่เพิ่งเปิดใช้งานวางไว้ *หลัง* บล็อกเครื่องมือที่แคชไว้ ไม่ใช่ผสานเข้าไปในบล็อกนั้น ลำดับเช่นนี้คือเหตุผลที่การเปิดใช้งานมีต้นทุนต่ำ — คำนำหน้าที่แคชไว้ยังคงเหมือนเดิม และการรันจ่ายเฉพาะสคีมาที่เพิ่งโหลดเข้ามา
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+ลูปยังตัดผลลัพธ์เครื่องมือที่เก่าเกินไปจากเทิร์นก่อน ๆ ออกเพื่อคืนพื้นที่บริบท มันรอจนมีของให้คืนมากพอที่จะคุ้มกับการเขียนใหม่ การตัดทิ้งจึงเป็นการเขียนใหม่ครั้งใหญ่ที่เกิดไม่บ่อย แทนที่จะเป็นการพลาดแคชอย่างต่อเนื่อง
 
-### Where the breakpoints go
+### จุดตัดแคชอยู่ตรงไหน
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+ผู้ให้บริการอนุญาตจุดทำเครื่องหมายแคชได้จำนวนจำกัด และ Control Center ใช้มันอย่างมีเจตนา:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| จุดทำเครื่องหมาย             | ครอบคลุม                     | อายุ      |
+| ---------------------------- | ---------------------------- | --------- |
+| เครื่องมือ**ประจำ**ตัวสุดท้าย | บล็อกเครื่องมือ              | 1 ชั่วโมง |
+| บล็อกระบบตัวสุดท้าย          | เครื่องมือ + พรอมต์ระบบ      | 1 ชั่วโมง |
+| ส่วนท้ายของเทิร์นก่อนหน้า     | ประวัติจนถึงคำขอล่าสุด        | 5 นาที    |
+| ส่วนท้ายของเทิร์นปัจจุบัน      | ประวัติทั้งหมด                | 5 นาที    |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+สองจุดหลังเป็นคู่ที่หมุนเวียนกัน และเหตุผลของคู่นี้ออกจะละเอียดอ่อน: การค้นหาแคชจะย้อนกลับไปในจำนวนบล็อกที่จำกัดเพื่อหาสิ่งที่คำขอก่อนหน้าเคยเก็บไว้ เทิร์นเดียวที่รันเครื่องมือหลายตัวพร้อมกันอาจปล่อยบล็อกออกมามากกว่าหน้าต่างนั้น เมื่อถึงจุดนั้นจุดทำเครื่องหมายส่วนท้ายจุดหนึ่งจะพลาดอย่างเงียบ ๆ และคำขอต้องจ่ายเต็มราคาโดยไม่มีอะไรในคำตอบบอกว่ามันเกิดขึ้น การทำเครื่องหมายตรงจุดที่คำขอก่อนหน้าหยุดพอดีทำให้การเข้าแคชเป็นเรื่องเชิงโครงสร้าง ไม่ใช่การแข่งขัน
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+คำนำหน้าของเครื่องมือและระบบได้อายุยาว เพราะมันคงที่ตลอดการรัน ถูกใช้ร่วมกันโดยทุกการรันและซับเอเจนต์ที่มีรูปร่างเดียวกัน และเพราะนาฬิกาเริ่มนับเมื่อคำขอ *เริ่มต้น* — เทิร์นที่สตรีมหลายนาทีได้ใช้หน้าต่างสั้น ๆ ไปเกือบหมดแล้วก่อนคำขอถัดไปจะก่อตัวขึ้น
 
-### Subagents share one prefix
+### ซับเอเจนต์ใช้คำนำหน้าร่วมกัน
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+ซับเอเจนต์ชนิดเดียวกันให้คำนำหน้าพรอมต์ที่เหมือนกันทุกไบต์ จึงควรอ่านรายการแคชรายการเดียวแทนที่ต่างคนต่างเขียนของตัวเอง แต่รายการหนึ่งจะอ่านได้ก็ต่อเมื่อคำขอที่เขียนมันเริ่มตอบกลับ การกระจายงานที่เริ่มขึ้นพร้อมกันทั้งหมดจึงทำให้ลูกทุกตัวต้องจ่ายราคาที่แพงกว่าสำหรับคำนำหน้าที่ทุกตัวใช้ร่วมกัน
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+ฮาร์เนสให้ลูกตัวแรกของรูปร่างหนึ่งเริ่มก่อน แล้วปล่อยพี่น้องของมันทันทีที่มันเริ่มสตรีม การรอนี้มีขอบเขต: ลูกตัวแรกที่ช้าทำให้เสียการเข้าแคชหนึ่งครั้ง ไม่เคยทำให้การกระจายงานทั้งชุดเสียหาย ด้วยเหตุผลเดียวกัน ซับเอเจนต์ทุกตัวได้ชุดเครื่องมือประจำชุดเดียวกันไม่ว่าโปรไฟล์ของมันจะเป็นอย่างไร — การแปรเปลี่ยนตามโปรไฟล์จะทำให้คำนำหน้าที่ยังใช้ร่วมกันแตกร้าวโดยไม่ได้อะไรตอบแทน เพราะโปรไฟล์ตัดสินไปแล้วว่าลูกเรียกอะไรได้บ้าง
 
-## Watching it work
+## ดูการทำงานจริง
 
-Both halves are observable rather than assumed:
+ทั้งสองส่วนนี้สังเกตได้ ไม่ใช่เรื่องที่ต้องสมมติ:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **ตัวสำรวจบริบท**ในบทสนทนารายงานเครื่องมือประจำ ดัชนีที่ถูกหน่วงไว้ และสคีมาที่ถูกกันไว้แต่ละตัว *จะ* มีต้นทุนเท่าใด โดยสร้างจากเส้นทางโค้ดเดียวกับที่การรันจริงใช้
+- การรันแต่ละครั้งบันทึกว่าโหลดเครื่องมือที่ถูกหน่วงไว้ตัวใดและอะไรเป็นตัวกระตุ้น ผลการค้นหาที่ไม่พบอะไรจึงปรากฏให้เห็นว่าเป็นการพลาดในการดึงข้อมูล แทนที่จะหายไปกับเอเจนต์ที่เงียบ ๆ ไปทำอะไรที่ใกล้เคียงกัน
+- การสังเกตการณ์รายงาน **อัตราแคช** เป็นสัดส่วนของการอ่านแคชต่อโทเคนพรอมต์ทั้งหมดที่ประมวลผล รวมการเขียนแคชด้วย — การรันที่เอาแต่สร้างคำนำหน้าขึ้นใหม่จะได้คะแนนต่ำ แทนที่จะได้คะแนนเหมือนการรันที่ไม่เคยต้องใช้แคชเลย

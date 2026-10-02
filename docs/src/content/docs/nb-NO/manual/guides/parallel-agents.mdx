@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Kjør agenter parallelt
+description: Send ut flere agenter samtidig og hindre at arbeidet deres kolliderer.
 slug: nb-NO/handbok/slik-gjor-du/parallelle-agenter
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Denne veiledningen viser deg hvordan du kjører flere agenter samtidig uten at de overskriver hverandre.
 
-## The unit of isolation is the space, not the agent
+## Isolasjonsenheten er området, ikke agenten
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Når arbeid starter i et område, klargjør Control Center én copy-on-write-checkout per registrerte repo under områdets egen rot, på en gren utledet fra arbeidsområdets mal for grenavn. Hver agent i området får deretter sin egen overlay-arbeidskatalog – men overlayoutene **deler** områdets `repos/`-katalog.
 
-So:
+Altså:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- To agenter i **forskjellige områder** jobber i forskjellige checkouts, på forskjellige grener. Det er ekte isolasjon.
+- To agenter i **samme område** jobber i samme checkout, på samme gren. Overlay-stiene deres er forskjellige, så låsen for utsendingsbanen (som bare serialiserer kjøringer når de ber om nøyaktig samme arbeidskatalog) serialiserer dem heller ikke. De kan skrive til de samme filene samtidig.
 
-The rule that follows: **one space per parallel task.**
+Regelen som følger: **ett område per parallelle oppgave.**
 
-## Run tasks in parallel — separate spaces
+## Kjør oppgaver parallelt – separate områder
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Åpne et område med agent A og send den en oppgave.
+2. Åpne et nytt område med agent B og send den en annen oppgave.
+3. Begge sendes ut umiddelbart, hver i sin egen område-checkout på sin egen gren.
 
-This is the recipe to use whenever the agents will be editing files.
+Dette er oppskriften du bruker hver gang agentene skal redigere filer.
 
-## Work together in one space — several mentions
+## Jobb sammen i ett område – flere @-nevninger
 
-In a single space, @-mention more than one agent:
+I ett enkelt område kan du @-nevne mer enn én agent:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Begge agentene sendes ut parallelt og strømmer inn i det samme området, merket med avsender. Siden de deler områdets checkout, bør du bruke dette til samarbeid – én som skriver, én som leser, eller to agenter som resonnerer om det samme treet – ikke til to uavhengige redigeringer.
 
-## Fan out from a pipeline
+## Fan-out fra en pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Den innebygde malen `pr_review` er det ferdigleverte eksempelet på en fan-out: flere reviewer-noder kjører samtidig fra én utløser, og en **Consolidate (join)**-node samler funnene deres i én rapport. Kjør den fra pipelines-skjermen, og hver reviewer sendes ut parallelt.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Pipeline-editoren skjuler terminalvaktposten og kobler den om til å vente på hvert levende sluk når du legger til eller kobler sammen et steg, slik at grener du tegner selv, faktisk kjører.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Å tildele en sak sender ingenting ut]
+Å tildele en sak til en agent registrerer eierskap. Det finnes ingen utsender for saker – `TicketAssigned` er et revisjonssignal, og det starter ikke noe arbeid. Det ene unntaket er en sak som er tildelt et _team_, som vekker lederen for det teamet.
 :::
 
-## Watch them run
+## Se dem kjøre
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observabilitet → Live** (nederst i sidestolpen → Observabilitet, deretter fanen Live) viser agentlisten i dette arbeidsområdet, som tikker på nytt hvert sekund: status (kjører / inaktiv / parkert / avbrutt), hva hver enkelt holder på med, tokens og kostnad for den siste kjøringen, og en avslutt-kontroll for en kjørende prosess. Velger du en rad, festes en skuff med live-transkript.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Innstillinger → Arbeidsområde → Agenter** viser den samme listen med et annet statusvokabular der oppmerksomhet kommer først, utledet fra hver agents kjørehistorikk – kjører, blokkert, mislyktes, inaktiv, aldri kjørt – sortert slik at alt som trenger oppmerksomhet, flyter til toppen. Fanen **Logger** for hver agent inneholder dens egen kjørehistorikk.
 
-Both surfaces are scoped to the active workspace.
+Begge flatene er avgrenset til det aktive arbeidsområdet.
 
-## Handle conflicts
+## Håndter konflikter
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+På tvers av områder ligger hvert område på sin egen gren, så en kollisjon dukker opp som en vanlig Git-sammenslåingskonflikt når du slår sammen den andre pull requesten. Løs den slik du ville løst enhver sammenslåingskonflikt.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Inne i ett område finnes det verken noen grense mellom grener eller noen lås: agentene skriver til de samme filene fortløpende, og den som taper, blir rett og slett overskrevet. Hvis du oppdager at du vil at to agenter skal redigere i ett område, del arbeidet i to områder i stedet.
 
-To reduce collisions either way:
+Slik reduserer du kollisjoner i begge tilfeller:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/nb-NO/handbok/slik-gjor-du/kodesok/).
-- Review and merge each agent's pull request promptly.
+- Gi hver agent et eget ansvarsområde – forskjellige filer, forskjellige moduler.
+- Bruk kodegrafen til å sjekke hva en endring berører, før du sender ut. Se [Søk i kode med kodegrafen](/nb-NO/handbok/slik-gjor-du/kodesok/).
+- Gjennomgå og slå sammen hver agents pull request raskt.
 
-## Resource considerations
+## Ressurshensyn
 
-Each running agent costs:
+Hver kjørende agent koster:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- En område-checkout – ubetydelig på disk så lenge copy-on-write er tilgjengelig; på Windows en `git worktree`. Et filsystem som ikke kan reflinke, feiler klargjøringen i stedet for å kopiere.
+- En prosess på serververten
+- Modelltokens, som akkumuleres per agent
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/) for the two commands that do have one.
+Kostnadene lander i **Observabilitet → Innsikt**. Merk at en vanlig interaktiv runde ikke har noe forbrukstak; se [Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/) for de to kommandoene som har det.
 
-## Related guides
+## Relaterte guider
 
-- [Create and configure an agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/)
-- [Build an agent team](/nb-NO/handbok/slik-gjor-du/bygg-agentteam/)
-- [Manage costs](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/)
-- [Add repos to a workspace](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)
+- [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/)
+- [Bygg et agentteam](/nb-NO/handbok/slik-gjor-du/bygg-agentteam/)
+- [Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/)
+- [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)
-- [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/)
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)
+- [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/)

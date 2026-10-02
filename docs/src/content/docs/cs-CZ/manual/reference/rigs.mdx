@@ -1,137 +1,138 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: Stanice
+description: Každá plocha stanice, backend, sloveso akce, stav životního cyklu, port, výchozí hodnota a kontrakt — úplný faktický katalog.
 slug: cs-CZ/prirucka/referencni-prirucka/stanice
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/cs-CZ/prirucka/koncepty/stanice/); to open a machine, follow [the
-guide](/cs-CZ/prirucka/navody/pouziti-stanic/).
+Jen fakta. Model za nimi je ve [Stanicích a izolovaných
+prostředích](/cs-CZ/prirucka/koncepty/stanice/); stroj otevřeš podle
+[návodu](/cs-CZ/prirucka/navody/pouziti-stanic/).
 
-## Surfaces and backends
+## Plochy a backendy
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Plocha | Řídí | Backend | Hodnota | Uzavřený odchozí provoz |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminál (exec) | Shell přes exec kanál VM | microVM | `smolvm` | Ano |
+| Prohlížeč | Bezhlavý Chromium (CDP), Firefox (WebDriver BiDi) nebo WebKit (W3C WebDriver) | microVM | `smolvm` | Ano |
+| Počítač | Plocha X11: vstup přes hypervisor, záznam přes agenta hosta | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (nezrychlený záložní režim, nikdy se nevybere sám) | Ano |
+| Android | Android přes ADB | Emulátor Googlu | `android-emulator` | **Ne** — síť si řídí emulátor |
+| iOS | Simulátor iOS přes WebDriverAgent | CoreSimulator | `ios-simulator` | **Ne** — síť sleduje hostitelský Mac |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Terminál a plocha `computer_use` sdílejí hodnotu plochy `computer`; terminál
+se pozná podle značky exec obrazu a nikdy se znovu nepoužije jako plocha,
+kterou jde řídit (ani naopak). Jedna konverzace znovu použije jeden stroj
+terminálu.
 
-## Browser engines
+## Enginy prohlížeče
 
-| Engine | Value | Protocol | Live view | Stills |
+| Engine | Hodnota | Protokol | Živý náhled | Snímky |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (výchozí) | Chrome DevTools Protocol | Screencast — prohlížeč tlačí snímky, jak se stránka překresluje | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Dotazované snímky (BiDi screencast nemá), strop 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (klasický) | Dotazované snímky, překódované ffmpeg hostitele | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Stanice běží celý život na **jednom** enginu. Jedna konverzace unese jednu
+stanici **na engine**, a právě proto jde srovnání vedle sebe: otevření
+„Firefox (VM)“ vedle „Chromium (VM)“ jsou dva stroje a zavření jednoho nechá
+druhý běžet.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+`engine` se předává `rig.open` nebo nástroji `browser_use`. Neznámé jméno se
+odmítne, místo aby se dosadilo výchozí — žádat prohlížeč a potichu dostat
+jiný odpovídá na otázku kompatibility špatnou odpovědí.
 
-Engine-specific limits, stated rather than worked around:
+Limity konkrétních enginů, pojmenované, ne obcházené:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** nemá znovunačtení, které obchází cache (`ignoreCache` z BiDi
+  rovnou odmítne), takže tvrdé znovunačtení je obyčejné znovunačtení.
+- **WebKit** taky nemá znovunačtení, které obchází cache, nemá kanál konzole
+  (výstup se chytá zaháknutím `console.*` až po každé navigaci, takže cokoli
+  zapsané během načítání chybí — každý výpis konzole to říká) a na živý
+  náhled potřebuje na hostiteli `ffmpeg`.
+- **Ani jeden** nevystaví přes svůj protokol platformní strom přístupnosti,
+  takže `extract (a11y)` vrací aproximaci odvozenou z DOM a tak ji i označí.
+- **Ani jeden** neumí skutečné puštění souboru; vstup souboru se pořád dá
+  namířit na cesty uvnitř stroje.
 
-## Machine images
+## Obrazy strojů
 
-| Surface | Image | Fetched |
+| Plocha | Obraz | Získání |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminál | `ubuntu:24.04`, připnutý digestem | Automaticky při prvním startu, přes vlastní hradlovanou síť stroje |
+| Prohlížeč (Chromium, Firefox, WebKit) | `debian:trixie-slim`, připnutý digestem, plus vlastní balíčky enginu | Automaticky při prvním startu, pak v cache jako zahřátý balík |
+| Počítač | Obraz plochy qcow2 s Chromium, Firefox, WebKit a stejnou základní sadou CLI runneru hostovaného na GitHubu, kterou zahřívá terminál | **Importovat** v Nastavení → Server → Stanice (stažení připnutá kontrolním součtem, kde jsou publikovaná) |
+| Android | Systémové obrazy Googlu | Přes Android SDK |
+| iOS | Runtime simulátoru Xcode plus WebDriverAgent připnutý kontrolním součtem | Runtime přes Xcode; automatizační most z Nastavení → Server → Stanice |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Po prvním startu každého druhu microVM si server do datového adresáře uloží
+předem rozbalenou kopii a z ní bootuje každý další stroj — včetně
+předehřátých obrazů, které už mají balíčky nainstalované. Terminál zahřeje
+sadu CLI ve stylu runneru hostovaného na GitHubu (`git`, `gcc`, `python3`,
+`jq`, `rsync`, nástroje na archivy a zbytek základní sady apt; ne Docker ani
+jazykový toolcache). Obraz Počítač zapeče stejná jména CLI už při sestavení,
+vedle XFCE a tří prohlížečů. Každý prohlížeč zahřeje svůj engine. Všechny tři
+enginy sdílejí základ Debianu, ale balík nesdílejí nikdy: cache se klíčuje
+obrazem, enginem **a** revizí zvuku (`audio-v1-<engine>`), protože stroj
+zahřátý pro jeden engine — nebo dřív, než byly PulseAudio a ffmpeg součástí
+zátěže — v sobě nic z toho druhého nemá. Balík terminálu se ze stejného
+důvodu klíčuje revizí sady nástrojů (`tools-v1`): balík zahřátý dřív, než byl
+překladač součástí obrazu, nesmí obsloužit stroj, který ho má mít.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Neexistuje zapečený automatizační obraz, který by stálo za to vzít —
+`chromedp/headless-shell` od Chromia se překládá bez ALSA i bez PulseAudio,
+takže zvuk vydat neumí; jediný udržovaný od Firefoxu je 33× větší než základ
+Debianu a pořád neobsahuje `socat`; udržovaný obraz WebKitu neexistuje
+vůbec. Každý engine se proto nainstaluje při prvním startu (`chromium`,
+`firefox-esr` nebo `webkit2gtk-driver`) a přitom sahá do archivů Debianu
+(`deb.debian.org`, `security.debian.org`, `cloudfront.debian.net`). Chromium
+je distribuční binárka spouštěná jako `chromium --headless=new`.
 
-### Per-workspace custom images
+### Vlastní obrazy po pracovních prostorech
 
-| Setting key | Overrides |
+| Klíč nastavení | Přepisuje |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Obraz Terminal (VM) |
+| `rigs.smolvm.browserImage` | Obraz Chromium Browser (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Zapisuje se přes úložiště nastavení pracovního prostoru za branou správce
+(Nastavení → Server → Stanice → Vlastní obrazy (tento pracovní prostor)).
+Hodnota musí být odkaz na registr — místní cesty, archivy a řetězce ve tvaru
+přepínače se odmítnou, u pole i znovu při startu. Neplatná uložená hodnota
+se ignoruje a ohlásí; nabootuje výchozí. Vlastní registr obrazu (plus známé
+doprovodné blob-CDN pro Docker Hub, GHCR, Quay, GitLab a GCR) se na dobu
+stažení pustí branou odchozího provozu.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Kontrakt obrazu terminálu** — přítomný `bash`; `git`, `curl` a `socat`
+předinstalované *nebo* apt základ Debian/Ubuntu (izolované prostředí při
+prvním startu doinstaluje ty tři plus sadu CLI ve stylu runneru hostovaného
+na GitHubu: překladače, Python 3, `jq`, nástroje na archivy, `rsync`.
+Jazykový toolcache a Docker se neinstalují).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Kontrakt obrazu prohlížeče** — apt základ Debian/Ubuntu (nebo už
+nainstalované balíčky) s `bash` a `socat`, plus binárka `chromium`, kterou
+server sám spouští jako `chromium --headless=new` s DevTools na loopbacku
+hosta `9223`, předávaným na port hosta `9222`. PulseAudio a ffmpeg se kvůli
+zvukovému kanálu nainstalují při prvním startu. Nestav
+`FROM chromedp/headless-shell`: upstream `headless.gn` se překládá bez ALSA
+i bez PulseAudio, takže tahle binárka zvuk vydat neumí. Přepis platí **jen
+pro stanice Chromium** — příkaz zátěže, se kterým se bootuje, patří Chromiu,
+a předat ho Firefoxu nebo WebKitu by spustilo binárku, která tam není.
+Stanice Firefoxu nebo WebKitu ho ignoruje a ohlásí to; nabootuje svůj
+připnutý obraz.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Automatizační porty** — každý stroj prohlížeče předává přesně jeden
+loopbackový port hostitele na `9222` hosta. Za ním: DevTools Chromia
+a vzdálený agent Firefoxu sedí na loopbacku hosta `9223` a před nimi je relé
+`socat` (oba se bezpodmínečně vážou na loopback); ovladač WebKitu bere
+`--host` a sám se váže na síťové rozhraní hosta. Firefox navíc ověřuje
+hlavičku `Host` proti vlastnímu portu, takže klient posílá autoritu ze strany
+hosta, ne tu, kterou vytočil.
 
-## Action verbs
+## Slovesa akcí
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Každá akce se parsuje beze zbytku: poškozený payload vrátí zprávu, která
+pojmenuje pole, nikdy výjimku. Pozorovací slovesa (označená ○) zůstávají
+povolená, dokud řízení drží člověk; měnící slovesa se odmítnou.
 
 ### `computer_use`
 
@@ -141,219 +142,225 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
+Souřadnice jsou pixely hosta v jeho aktuálním režimu; každý snímek uvede
+velikost displeje. Kombinace kláves používají zápisy X11 (`ctrl+s`,
 `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` bere `selection`: `clipboard` (to, co naplní ctrl+C,
+výchozí), `primary` (výběr ke kopírování v X11) nebo `xdnd` (probíhající
+přetažení). Prázdný výsledek je u všech tří normální odpověď.
+`clipboard_write` bere jen `text` — obrázky a soubory jedou po souborovém
+kanálu, protože argumenty akce se ukládají do auditního záznamu a bajty
+obrázku tam nemají co dělat. Obsah schránky se vrací ohrazený jako
+nedůvěryhodná data.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (jen http/https), `reload` (`hard` volitelně), `stop_loading`,
+`click` (selektor nebo souřadnice), `fill`, `type`, `key` (jména kláves DOM),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
+volitelně), `set_viewport` (nejméně 320×240), `history`, `wait_for`○ (selektor,
 0.1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Extrahovaný obsah stránky se vrací ohrazený jako nedůvěryhodná data.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Prohlížeč má právě jednu schránku, takže `clipboard_read` nebere
+`selection`. Obě slovesa schránky potřebují **zabezpečený kontext**: stránka
+podávaná přes holé `http://` nemá API schránky vůbec a sloveso to řekne,
+místo aby hlásilo prázdnou — tam použij `type`, které vloží text ke kurzoru
+a přes schránku nejde.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (aliasy `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power`, nebo libovolný `KEYCODE_*`),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(omezené na worktree stanice a datový adresář serveru), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` a `shell`.
+`shell` bere seznam argv a běží uvnitř Androidu, nikdy přes shell hostitele;
+pokryje vývojářskou diagnostiku jako `logcat`, `dumpsys` a `pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` nemá slovesa schránky. Od Androidu 10 smí schránku číst jen
+aplikace, která má fokus.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, šipky nebo jeden tisknutelný znak; volitelné modifikátory `command`,
+`control`, `option` a `shift`), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (adresář simulátoru `.app`
+omezený na worktree stanice nebo datový adresář serveru), `start_app`, `stop_app`,
+`uninstall_app`, `open_url` a `spawn`. `spawn` bere argv a spouští se
+uvnitř simulátoru přes `simctl`; shell hostitele nespouští nikdy.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Souřadnice jsou **body** obrazovky iOS, ne pixely snímku. Živý proud drží
+pevnou velikost simulátoru a letterboxuje ji, místo aby měnil velikost
+zařízení. Přenos textu schránky z hostitele do simulátoru a ze simulátoru
+na hostitele používá stejnou politiku oprávnění po uživateli a po směru jako
+ostatní stanice; soubory a obrázky kanál pasteboardu iOS nepřijímá.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Každá stanice si vytvoří vlastní zařízení CoreSimulator a relaci
+WebDriverAgent. Zavření zastaví WebDriverAgent, zařízení vypne a smaže
+a odstraní jeho záznam v registru. Stanice iOS běží jen na serveru s macOS,
+s Xcode, nainstalovaným runtime iOS a připnutým automatizačním mostem.
+Nevystavují zvuk, mikrofon, puštění souboru, shell hostitele ani záruku
+uzavřené sítě.
 
-### Management tools
+### Nástroje správy
 
-| Tool | Description |
+| Nástroj | Popis |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Vypíše stanice pracovního prostoru s plochou, stavem, displejem a tím, kdo je řídí |
+| `rig_close` | Zničí stanici a zahodí její disk |
 
-## Lifecycle
+## Životní cyklus
 
-| Phase | Meaning |
+| Fáze | Význam |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Bootuje se; detail stavu nese aktuální krok doslova |
+| `ready` | Dosažitelná a přijímá akce |
+| `parked` | Zaparkovaná za nečinnost: vCPU zastavené, RAM pořád rezidentní; další akce ji probudí |
+| `closing` | Vypíná se |
+| `closed` | Pryč; řádek zůstane kvůli auditní stopě |
+| `failed` | Spadla, nebo vůbec nenaběhla; jde to rozlišit, aby rozhraní mohlo nabídnout opakování |
 
-| Close reason | Fired when |
+| Důvod zavření | Kdy se spustí |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Požádal o to člověk nebo agent |
+| `idleTimeout` | Nečinnost delší než 2× okno nečinnosti, nebo vyhození kvůli paměti |
+| `ttlExpired` | Vypršela tvrdá životnost |
+| `conversationEnded` | Skončila vlastnící konverzace |
+| `workspaceGone` | Pracovní prostor se smazal, nebo se ztratilo členství |
+| `serverShutdown` | Server se zastavuje |
+| `backendFailure` | Hypervisor pod ní spadl |
 
-## Defaults and ceilings
+## Výchozí hodnoty a stropy
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Hodnota | Terminál | Prohlížeč | Počítač | Mobil |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| Paměť | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Tvrdé TTL | 8 h | 2 h | 2 h | 2 h |
+| Okno nečinnosti | 45 min | 15 min | 15 min | 15 min |
+| Displej při startu | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Snímky kanálu agenta mají strop **1280×800**; lidský kanál vyjedná až
+  **2560×1600**.
+- Rozpočet rezidentní paměti hostitele na všechny stanice je ve výchozím
+  stavu **12 GB**, počítaný v rezidentních megabajtech (zaparkované VM pořád
+  drží svou RAM). Vyhazuje se stroj, který se nepoužíval nejdéle, a nikdy
+  ten, který někdo řídí, sleduje, nebo v něm má otevřený terminál.
+- Otevřený terminál nebo kanál sledování drží stanici proti parkování
+  a uzavření za nečinnost; tvrdé TTL pořád platí.
 
-## Ports and dev domains
+## Porty a vývojové domény
 
-| Port | Where | Reserved for |
+| Port | Kde | Vyhrazeno pro |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Host terminálu | Multiplexor portů, po kterém jede každé předání |
+| `9222`, `9223` | Host prohlížeče | Relé a koncový bod automatizace (WebKit váže `9222` přímo a relé nepoužívá) |
+| `80`, `443` | Loopback hosta prohlížeče | Kanály HTTP/HTTPS vývojové domény |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Zjišťování se na straně serveru každých ~4 s ptá na naslouchající TCP
+  porty hosta terminálu.
+- Automaticky se předá nejvýš **16** portů na stanici; další se jen zapíšou
+  do logu.
+- Předání na straně hostitele se váže na loopback a dává přednost vlastnímu
+  číslu portu hosta; **Sdílet v místní síti** přidá port v LAN, který přidělí
+  operační systém.
+- Vývojové domény musí sedět na `name.test` nebo `name.localhost` (malá
+  písmena, návěští nejvýš 63 znaků). Jedna doména patří jednomu portu.
+- HTTPS vývojové domény používá CA místní pro server (EC P-256, pod
+  `<dataDir>/rigs/tls/`, klíče 0600 a nikdy v hostu) s jedním wildcard
+  listem pro `*.test` / `*.localhost`. Není-li na hostiteli `openssl`, není
+  ani kanál HTTPS; holé HTTP se pořád směruje.
 
-## Egress defaults
+## Výchozí odchozí provoz
 
-| Surface | Default allowlist |
+| Plocha | Výchozí seznam povolených |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminál | Vývojářská základní sada sandboxu (forge, registry balíčků, poskytovatelé modelů) + zrcadla apt Ubuntu + vlastní hostitel forge daného worktree |
+| Prohlížeč | `usectrl.dev` (web produktu) — plus archivy Debianu při prvním startu každého enginu, dokud instaluje své balíčky. Domovská stránka je místní dokument `file://` a odchozí provoz nepotřebuje |
+| Počítač | Prázdný — odmítnout vše — dokud volající nepovolí cílové hostitele |
+| Mobil | Nevynucuje se (síť řídí emulátor) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Každé microVM navíc dostane hostitele registru svého obrazu, jen na stažení.
+Množina povolených hostitelů u brokeru přihlašovacích údajů se odvozuje ze
+stejného seznamu: token se nevystaví pro hostitele, na kterého host
+nedosáhne.
 
-## Clipboard and file transfer
+## Schránka a přenos souborů
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Kopírování a vkládání oběma směry a přetahování souborů dovnitř i ven. Má to
+člověk, který stanici řídí; agent dostane schránku přes slovesa výše a přenos
+souborů vůbec ne (shell uvnitř izolovaného prostředí už má).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Přechod schránky je po uživateli a po směru. Vložení z hostitele do stanice
+je ve výchozím stavu povolené; kopírování ze stanice na hostitele se nejdřív
+zeptá (povolení na deset minut, nebo **Vždy povolit** v Nastavení → Server →
+Stanice → Přístup ke schránce). Obě volby jsou nezávislé a nikdy to není
+nastavení pracovního prostoru.
 
-| Lane | Route | Carries |
+| Kanál | Trasa | Nese |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Schránka | `GET`/`POST /rig/clipboard/<rigId>` | Text, jeden PNG/JPEG (≤16 MB) a cesty hosta k souborům na schránce |
+| Soubory | `POST /rig/files/<rigId>` | Až 64 souborů, každý ≤256 MB a ≤512 MB na jedno puštění, s volitelným bodem puštění v pixelech hosta |
+| Soubory | `GET /rig/files/<rigId>?p=<base64url path>` | Bajty jednoho souboru, ven |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, ne RPC.** Soket RPC zavře spojení na příchozím rámci nad 256 KB —
+  ochrana proti DoS, která sedí na příkazy JSON a je smrtelná pro vložený
+  snímek. Bajty jedou stejným druhem trasy, jakou už jedou snímky stanice
+  a zvuk schůzky.
+- **Ověření** je podepsaný cíl `rig-files:<workspaceId>/<rigId>` plus
+  členství v pracovním prostoru — vlastní cíl, takže URL vystavené ke
+  *sledování* stroje do něj nemůže taky zapisovat soubory.
+- **Převzetí platí.** Zápis do schránky a puštění souborů jsou měnící
+  a odmítnou se, dokud řízení drží někdo jiný; čtení schránky a čtení
+  souboru ven jsou pozorování a neodmítnou se.
+- **Kam puštění dopadne:** `~/Drops` (plocha), `~/drops` (terminál — vedle
+  worktree, nikdy uvnitř, takže se puštění nikdy neukáže jako nesledovaná
+  změna), `/tmp/cc-drops` (prohlížeč). Adresář vybírá server; volající ho
+  neumí pojmenovat. Existující soubory se nikdy nepřepíšou — kolidující
+  jméno dopadne jako `2-name.ext`.
+- **Co se řekne hostu:** stránka prohlížeče dostane v požadovaném bodě
+  skutečnou událost puštění (`Input.dispatchDragEvent`); plocha dostane
+  soubory a jejich URI na schránku, protože žádný hostitel neumí
+  syntetizovat přetažení XDND do libovolného toolkitu bez privilegovaného
+  démona v hostu. Odpověď řekne, která z těch dvou věcí nastala.
+- **Tahání ven** je jen na ploše a čte `XdndSelection` hosta, dokud
+  přetažení běží. Payload shodný s tím, co host už držel na začátku stisku,
+  se bere jako zastaralý výběr z dokončeného přetažení, ne jako nové — X
+  nemá krok „přetažení skončilo“.
+- **Požadavky na obraz:** obraz plochy musí být protokol 2 nebo novější
+  (sestavený až poté, co přistála podpora schránky). Starší obraz odpoví
+  404 a aplikace řekne, ať se sestaví znovu, místo aby hlásila rozbitý
+  stroj.
+- **Auditní záznam zapisuje tvar, nikdy obsah**: řádky `clipboard_read`,
+  `clipboard_write`, `drop_files` a `read_file` nesou počty, velikosti
+  a cesty. Ve schránce žijí přihlašovací údaje vždy jen pár sekund a nic
+  z toho se nezapisuje.
 
-## Guardrails, events, storage
+## Guardraily, události, úložiště
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Nástroje stanic deklarují třídu akce **`enclosureControl`** (plus
+  `networkEgress` a `processSpawn` u nástrojů použití; `mobile_use` a
+  `ios_use` deklarují taky `packageInstall`). `rig_close` deklaruje
+  `enclosureControl`; `rig_list` nedeklaruje nic. Ve výchozím stavu
+  povolené; režimy jen pro čtení to odmítnou celé; volič autonomie na
+  prostor to umí srazit na nejdřív se zeptat.
+- Doménové události: `RigClosedEvent` (s důvodem zavření),
+  `RigControlChanged` (převzetí / vrácení), `RigReaped` (nečinnost, TTL nebo
+  vyhození kvůli paměti, s řídícím agentem). Otevření stanice událost není.
+  Viz [doménové události](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/).
+- Úložiště: `rig_sessions` a `rig_action_log` v databázi každého pracovního
+  prostoru. Záznam akcí zapíše každou vstupní událost s jejím principálem
+  a monotónní posloupností v rámci stanice; napsaný text se před zápisem
+  nahradí délkou a hashem.
+- Datový adresář: `rigs/images/` (importované obrazy qcow2), `rigs/smolvm/`
+  (běhový stav po stanicích), `rigs/smolvm-packs/` (předem rozbalené balíky
+  strojů), `rigs/tls/` (CA vývojové domény), `rigs/run/` (překryvy a seedy
+  QEMU).
+- Trasy: živý náhled je karta v prostoru nebo na stránce PR;
+  `/settings/server/rigs` je obrazovka nastavení Stanice.

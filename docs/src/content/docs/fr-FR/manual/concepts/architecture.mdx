@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: "Architecture"
+description: "Comment Control Center est structuré : modèle de serveur à client léger, Clean Architecture « feature-first » et ports et adaptateurs."
 dateModified: 2026-09-19
 slug: fr-FR/manuel/concepts/architecture
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Vue d’ensemble
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center suit une Clean Architecture « feature-first » avec un motif ports et adaptateurs. La base de code est organisée autour de domaines métier (les fonctionnalités), et des règles de dépendance strictes sont appliquées par un test d’architecture automatisé.
 
-## A thin client over a headless server
+## Un client léger au-dessus d’un serveur sans interface
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center repose sur une **architecture de client léger**. Aucun client n’ouvre la base de données — un processus **`cc_server`** sans interface détient les données (un petit `global.db` plus un fichier SQLite par espace de travail, ouverts de façon paresseuse) et les sert par RPC WebSocket. L’application de bureau, la version web et l’application compagnon pour téléphone ne sont que des interfaces de rendu au-dessus de cette unique connexion RPC.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Au premier lancement, l’application de bureau choisit comment joindre son serveur : **local** (elle lance un `cc_server` sur cette machine et communique via l’interface de bouclage — c’est le comportement par défaut) ou **distant** (elle joint un `cc_server` ailleurs par WebSocket sécurisé). Le client web est toujours distant. Le résolveur d’amorçage (`bootstrap/server_backend.dart`) choisit le chemin avant même que Riverpod n’existe, puis remplace `rpcClientProvider` par le client connecté — si bien que chaque fonctionnalité lit et écrit à travers le serveur plutôt que dans une base de données locale.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+La couche RPC elle-même est **sans état** : une session est authentifiée, mais elle n’est liée à aucun espace de travail. Chaque appel propre à un espace de travail transmet son propre `workspace_id` dans ses arguments, et le répartiteur refuse un tel appel sans cet identifiant. C’est ce qui permet à deux clients d’un même serveur de conserver des espaces de travail actifs différents sans qu’un « espace de travail courant » détenu par le serveur puisse les contredire — et cela signifie que l’isolation est appliquée appel par appel, et non par connexion.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/fr-FR/manuel/concepts/deploiement/) for the full client matrix and what runs where.
+Il s’agit d’un **espace de travail Dart** à fichier de verrouillage résolu unique, comptant vingt et un membres — quinze paquets plus six applications — avec l’application bureau+web (`control_center`) comme racine de l’espace de travail. Les six applications sont le binaire de serveur sans interface (`cc_server`), l’exécuteur de flotte sans interface (`cc_worker`), la PWA pour téléphone (`cc_remote`), le courtier relais WebSocket (`cc_signaling_server`), la galerie Widgetbook (`cc_gallery`) et l’hôte de démonstration public (`cc_demo_server`). Les quinze paquets sont `cc_ui` (système de design), `cc_domain` (noyau partagé en Dart pur : entités, objets valeur, ports, événements et la couche domaine de chaque fonctionnalité), `cc_harness` (le noyau d’agent intégré : une boucle d’agent en Dart pur — messages, port de fournisseur, outils, compaction, pilotage, crochets, sous-agents — sans `dart:io` ni aucune autre dépendance `cc_*`), `cc_harness_runtime` (l’adaptateur d’exécution du noyau intégré : fournisseurs de flux réservés à la VM, courtage d’identifiants OAuth/PKCE, magasins d’identifiants et ensemble d’outils génériques — exécute des agents sans aucune interface de ligne de commande externe installée), `cc_rpc` (transports clients), `cc_host` (noyau du serveur), `cc_data` (dépôts distants), `cc_persistence` (base de données côté serveur), `cc_server_core` (composition application-serveur + exécution identité/présence/flotte/évaluations), `cc_infra` (adaptateurs réservés à la VM), `cc_mcp` (outils MCP), `cc_mcp_client` (client pour les serveurs MCP externes, qui intègre leurs outils au registre local), `cc_markdown` (moteur Markdown interne au dépôt), `cc_natives` (feuille FFI) et `system_audio_capture`. Voir [Déploiement et clients](/fr-FR/manuel/concepts/deploiement/) pour la matrice complète des clients et ce qui s’exécute où.
 
-## Dependency rule
+## Règle de dépendance
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Couche domaine** : entités, objets valeur, interfaces de dépôt, ports et services de domaine en Dart pur. Aucun import d’infrastructure (ni dio, ni drift, ni modèles réseau).
+- **Couche présentation** : écrans, widgets, notificateurs. Aucun accès direct à drift/DAO/couche de données ; tout passe par les fournisseurs Riverpod → dépôts.
+- **Couche infrastructure** : implémentations concrètes des ports et des interfaces de dépôt du domaine. Dépend du domaine, jamais l’inverse.
 
-## Feature structure
+## Structure des fonctionnalités
 
-The full feature shape is:
+La forme complète d’une fonctionnalité est la suivante :
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Très peu de fonctionnalités sous `lib/features/` comportent réellement ces quatre répertoires, et les manques sont instructifs plutôt qu’accidentels. Le noyau partagé a absorbé le `domain/` de chaque fonctionnalité dans `cc_domain`, et le client léger ne contient aucune implémentation de dépôt ; la plupart des fonctionnalités sous `lib/` se composent donc de `presentation/` et de `providers/`, rien de plus. Un répertoire `data/` ou `domain/` qui subsiste dans le client signale quelque chose de réellement côté client.
 
-Two named exceptions are worth knowing:
+Deux exceptions nommées méritent d’être connues :
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** ne contient que des fournisseurs. Son interface de paramètres et d’état vit sous `settings/`, et la surface d’outils elle-même est un paquet (`cc_mcp`), pas un dossier de fonctionnalité.
+- **`orchestration`** et **`plan_studio`** ne comportent que `presentation/` et `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/fr-FR/manuel/concepts/garde-fous/) for the model.
+La fonctionnalité **`guardrails`** place sa couche domaine dans `cc_domain/features/guardrails/` plutôt que dans l’application racine, parce que c’est le serveur qui l’applique : une règle associe un `ActionClass` (ou un `commandPrefix` de shell) à une décision — `allow`, `prompt` ou `deny` — au sein d’une portée donnée, les règles sont stockées par espace de travail et chaque action d’agent encadrée passe par la chaîne de politiques avant de s’exécuter. La résolution parcourt `space > agent > workspace > mode preset > built-in default` et **la première portée comportant une règle correspondante décide** ; le choix le plus restrictif ne sert que de départage au sein d’une même portée et pour combiner les différentes classes que déclare une action. La surface destinée à l’opérateur est Paramètres → Espace de travail → Autorisations des agents, à l’adresse `/workspaces/<id>/settings/workspace/permissions`. Voir [Garde-fous](/fr-FR/manuel/concepts/garde-fous/) pour le modèle.
 
-## Shared kernel
+## Noyau partagé
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` contient les entités et les dépôts partagés par 3 fonctionnalités ou plus. C’est du Dart pur, sans aucune dépendance d’infrastructure, ce qui permet au client Flutter comme au binaire serveur sans Flutter d’importer les mêmes définitions :
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Entités de base : `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identité et multijoueur : `User`, `Principal` (scellé `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Entités de mémoire : `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Objets valeur partagés : `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Ports partagés : `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Services de domaine : `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + types d’événements (espace de travail/agent, PR/revue, messagerie, billetterie, pipeline, orchestration, mémoire, calendrier/réunions, identité et appartenance, observabilité)
 
-## Identity & multiplayer
+## Identité et multijoueur
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center est multi-utilisateur : humains et agents sont des acteurs sur un pied d’égalité, unifiés par un `Principal`. Un membre d’un espace de travail est un `User` lié à un `Workspace` selon un `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **L’appartenance constitue la frontière d’accès** — et non une clé d’appairage — et les autorisations par dépôt évitent que l’appartenance à un espace de travail n’accorde plus de droits que la forge. Le premier utilisateur créé sur un serveur neuf possède l’installation ; les autres rejoignent par invitation ou par OIDC. Créer un espace de travail inscrit cet utilisateur comme `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+La collaboration en temps réel repose sur un **serveur autoritaire + dernière écriture gagnante par champ (LWW)**, et non sur un CRDT. La présence (qui est là, où chacun se trouve, les curseurs, la saisie en cours, l’état en direct d’un agent et son coût en cours) forme une **voie éphémère distincte qui n’est jamais conservée** ; l’état durable repose sur une colonne vertébrale mutation optimiste + rebasage serveur + LWW. Humains et agents partagent une même liste. Avec un seul opérateur humain, la voie de présence reste inactive et aucun élément d’interface de liste n’apparaît — le multijoueur ne coûte rien à l’utilisateur seul.
 
-## Ports and adapters
+## Ports et adaptateurs
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Les ports sont des interfaces abstraites de la couche domaine. Les adaptateurs sont des implémentations concrètes dans l’infrastructure. Comme le serveur sans interface détient les données et doit se compiler sans Flutter, presque tous les adaptateurs sont réservés à la VM et vivent dans `packages/cc_infra/lib/src/`, organisés par préoccupation :
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Emplacement de l’adaptateur                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (côté client : affiche localement les événements du serveur)                      |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp et GitHub Issues sont des adaptateurs de synchronisation de tickets dans `cc_infra/lib/src/tickets/sync/` ; les tickets locaux vivent dans la base de données de l’espace de travail, sans `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (un service de domaine en Dart pur — il n’a besoin d’aucune infrastructure) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+La racine de composition de l’application (`di/providers.dart`) lie les ports côté client à des implémentations par le biais de fournisseurs Riverpod ; le serveur compose ses adaptateurs dans `cc_server_core`.
 
-## State management
+## Gestion d’état
 
-**Riverpod** for all client state:
+**Riverpod** pour tout l’état client :
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` et `AsyncNotifier<T>` pour l’état mutable
+- `FutureProvider<T>` pour les données asynchrones
+- Les listes et les lignes en direct arrivent par abonnements RPC sous la forme d’`AsyncValue<List<T>>` — le serveur utilise Drift `.watch()` en interne ; aucun client n’ouvre Drift
+- Les outils MCP reçoivent leurs dépendances sous forme de paramètres de constructeur typés, jamais `Ref`
 
-## Database
+## Base de données
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), réparti en deux bases de données, toutes deux dans `cc_persistence` :
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — une courte liste de tables réellement communes à tout le serveur : le registre des espaces de travail, les utilisateurs/préférences/appareils appairés, les connexions SSO, les paramètres de serveur à l’échelle de l’installation, les politiques d’actions gérées (un verrou à l’échelle de l’installation qui ne peut que resserrer les garde-fous des espaces de travail), le fil d’actualités par utilisateur, la file de la flotte (workers/tâches/journal de placement), l’index `workspace_routes` avant authentification et les métadonnées de l’installation. Le démarrage n’ouvre que ce fichier, si bien que le coût de démarrage reste constant, quelle que soit la quantité d’historique accumulée par les espaces de travail. Ajouter une table ici est une décision d’isolation qu’un test à cliquet vous oblige à justifier.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _répertoire_ par espace de travail, contenant un fichier SQLite et tout le reste qui n’appartient qu’à cet espace de travail, de sorte que les arbres de travail et les fichiers d’agent d’une conversation se trouvent à côté de la base de données et sont supprimés avec elle. Presque tout vit ici : agents, espaces, tickets, mémoire, pipelines, réunions, graphe de code, revues, dépôts. Les fichiers s’ouvrent de façon paresseuse au premier accès via `WorkspaceDatabaseManager.of(workspaceId)` et paient alors leur propre `quick_check`, l’installation FTS/déclencheurs et `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Les deux moitiés sont parties d’un socle v1 consolidé — `onCreate` construit le schéma actuel — avec des étapes de migration ajoutées uniquement lorsqu’une base de données déployée doit être reprise.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Comme un espace de travail correspond à un seul fichier, exporter un espace de travail se fait par une unique instruction `VACUUM INTO` (`workspace.export`), et non par un export table par table ; `workspace.import` adopte un tel fichier et se sert du `workspace_meta` intégré pour distinguer un fichier réadopté par sa propre installation d’un fichier provenant d’une autre.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Les deux bases de données appartiennent à `cc_persistence` et ne sont ouvertes que par `cc_server` ; aucun client n’ouvre de base de données — chaque client lit et écrit par RPC. Les tables sont définies dans `packages/cc_persistence/lib/database/tables/`, les DAO dans `.../daos/` ; les entités du domaine sont en Dart pur, distinctes des classes de tables Drift, avec le mappage dans les couches de données. FTS5 assure la recherche plein texte et les plongements vectoriels `sqlite_vector`, tous deux réservés au serveur ; les deux bases s’exécutent avec `PRAGMA foreign_keys=ON` en mode journal WAL.
 
-## Routing
+## Routage
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, avec un fait qui régit tout le reste : **chaque destination dans l’application est préfixée par l’espace de travail** sous la forme `/workspaces/:workspaceId/…`. L’identifiant d’espace de travail présent dans l’URL est la source unique de vérité de l’espace de travail actif — `activeWorkspaceIdProvider` est piloté par la route, et non l’inverse — ce qui explique pourquoi la lecture de données propres à un espace de travail en dehors d’une route préfixée ne peut nulle part trouver son identifiant.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- Des _fonctions_ de construction de routes dans `router/routes.dart`, chacune prenant l’identifiant d’espace de travail comme premier argument, et non des constantes de chaîne
+- Quatre routes hors contexte ne sont pas préfixées : `/splash`, `/onboarding`, `/signed-out` et `/workspaces` (le sélecteur)
+- `ShellRoute` enveloppe la coquille de l’application ; ces quatre surfaces s’affichent en plein écran en dehors
+- Garde d’authentification : une configuration incomplète mène à `/onboarding` ; une configuration complète dont l’identifiant de forge a disparu mène à `/signed-out`. Complète signifie qu’au moins une forge est connectée pour l’utilisateur connecté et qu’au moins un espace de travail existe — pas GitHub en particulier, et l’interface de ligne de commande `gh` n’est pas une méthode d’authentification
+- Filtre d’intégration initiale dans `features/auth/providers/`
 
-## Networking (server-side)
+## Réseau (côté serveur)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Tout le HTTP externe réside dans le serveur. Les clients ne contactent jamais GitHub, Linear ou Google directement — ils appellent des opérations RPC du serveur, et même les médias distants sont récupérés via le point de terminaison `/proxy/media` du serveur plutôt qu’à partir de l’origine en amont.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Clients **dio** dans `packages/cc_infra/lib/src/` : `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` et `GoogleCalendarApiClient`
+- Injection des jetons d’authentification par des intercepteurs, dont un intercepteur Google OAuth par compte dans `cc_server_core` qui rafraîchit les jetons sur une réponse 401
+- Toutes les erreurs passent par `packages/cc_infra/lib/src/network/error_mapper.dart` → des sous-classes typées d’`AppException` définies dans `cc_domain`
 
-## Security
+## Sécurité
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Le serveur détient les identifiants qui comptent : les jetons GitHub et de billetterie pour les lancements d’agents, les clés de fournisseur LLM et les jetons OAuth résident tous sous le répertoire de données du serveur ou dans son environnement. Ce que le trousseau du client conserve encore, c’est son propre identifiant d’appareil et la clé d’appairage d’un serveur distant.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Secrets dans `flutter_secure_storage` (trousseau macOS, gestionnaire d’identifiants Windows, libsecret Linux) — l’identifiant d’appareil du client et les clés d’appairage distantes, et non les jetons de fournisseur
+- `shared_preferences` uniquement pour les préférences non sensibles (thème, police, disposition)
+- Les secrets de fournisseur résiduels d’anciennes installations sont remis une seule fois au serveur par `features/auth/providers/credential_migration.dart`, puis supprimés du trousseau du client
 
-## Architecture enforcement
+## Vérification de l’architecture
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Les contraintes d’architecture sont validées par `test/core/architecture_constraints_test.dart`, qui échoue si les règles de dépendance sont violées.
 
-## Related concepts
+## Concepts connexes
 
-- [Workspaces and isolation](/fr-FR/manuel/concepts/espaces-de-travail/): how isolation is enforced
-- [Agent dispatch lifecycle](/fr-FR/manuel/concepts/cycle-de-vie-du-lancement/): the dispatch flow
-- [Domain events](/fr-FR/manuel/concepts/evenements-de-domaine/): cross-feature communication
-- [Deployment and clients](/fr-FR/manuel/concepts/deploiement/): the thin-client server model and the client matrix
+- [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/) : comment l’isolation est appliquée
+- [Cycle de vie du lancement d’un agent](/fr-FR/manuel/concepts/cycle-de-vie-du-lancement/) : le déroulement du lancement
+- [Événements de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/) : la communication entre fonctionnalités
+- [Déploiement et clients](/fr-FR/manuel/concepts/deploiement/) : le modèle de serveur à client léger et la matrice des clients

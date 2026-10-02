@@ -1,39 +1,42 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Crear y gestionar tickets
+description: Crea tickets, acompáñalos por su ciclo de vida, etiquétalos y vincúlalos, y deja constancia de quién es responsable de qué.
 slug: es-ES/manual/guias/gestionar-tickets
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Esta guía te muestra cómo crear y gestionar tickets.
 
-## Create a ticket
+## Crear un ticket
 
-### From the UI
+### Desde la interfaz
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Haz clic en **Tickets** en la barra lateral del espacio de trabajo.
+2. Pulsa **Nuevo ticket**.
+3. Rellena:
+   - **Título** — resumen breve. Es el único campo obligatorio.
+   - **Descripción** — markdown, con una barra de formato.
+   - **Estado** — **Por hacer** (el valor predeterminado) o **Backlog**. Los
+     estados ya iniciados y los terminales se alcanzan mediante el ciclo de
+     vida, no en el momento de la creación.
+   - **Prioridad** — ninguna, urgente, alta, media o baja.
+   - **Asignado a** — tú mismo o cualquier agente del espacio de trabajo.
+   - **Proyecto** — agrupación opcional.
+4. Pulsa **Crear**, o activa antes **Crear más** para mantener abierto el
+   cuadro de diálogo e introducir tickets rápidamente.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+En el cuadro de diálogo no hay selector de proveedor. El ticket se crea con
+el proveedor de tickets activo del espacio de trabajo.
 
-### From an agent
+### Desde un agente
 
-Ask an agent in a space:
+Pide a un agente en un espacio:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Crea un ticket para arreglar el problema de tiempo de espera de inicio de
+> sesión en conexiones lentas.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Llama a la herramienta MCP `create_ticket`. La prioridad en esa herramienta es
+un **entero**, no un nombre:
 
 ```
 create_ticket(
@@ -44,21 +47,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Valor | Prioridad |
+| ----- | --------- |
+| `0`   | Ninguna   |
+| `1`   | Urgente   |
+| `2`   | Alta      |
+| `3`   | Media     |
+| `4`   | Baja      |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Solo `workspace_id` y `title` son obligatorios; `description`, `priority`,
+`assignee` (un id de agente) y `team_id` son opcionales. La herramienta está
+clasificada como escritura de sincronización con el proveedor y solicita tu
+aprobación antes de ejecutarse.
 
-## Update ticket status
+## Cambiar el estado de un ticket
 
-Tickets follow this lifecycle:
+Los tickets siguen este ciclo de vida:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +72,134 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` y `cancelled` son estados terminales. Se puede llegar a
+`cancelled` desde cualquier estado no terminal. Se puede llegar a `done` y
+`failed` desde `inProgress` o `inReview`; `open` también puede pasar
+directamente a `blocked`. El selector de estado de la interfaz lista todos los
+estados excepto `failed`: los agentes marcan ese con `fail_ticket`.
 
-To change it, use any of:
+Para cambiarlo, usa cualquiera de estos:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- la fila **Estado** en la barra de propiedades del ticket,
+- el submenú **Estado** del menú contextual de un ticket en la lista,
+- el chip **Estado** de la barra flotante tras seleccionar varios tickets.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[El grafo del ciclo de vida vincula a los agentes, no a ti]
+Todos los cambios de estado hechos desde la interfaz se fuerzan y se saltan el
+grafo por completo: puedes mover un ticket a cualquier estado que liste el
+selector, incluido reabrir uno `done`, `failed` o `cancelled`. El selector no
+ofrece `failed` como destino. El diagrama anterior gobierna a los agentes y la
+automatización: una transición ilegal intentada por una herramienta MCP o un
+reconciliador se registra y se ignora, no se aplica.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/es-ES/manual/guias/disparadores-de-pipeline/).
+Los cambios de estado emiten eventos de dominio (`TicketStatusChanged`,
+`TicketCompleted` y otros) que pueden disparar pipelines. Consulta
+[Configurar disparadores de pipeline](/es-ES/manual/guias/disparadores-de-pipeline/).
 
-## Assign a ticket
+## Asignar un ticket
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Abre el ticket.
+2. En la barra de propiedades, define **Asignado a** — tú mismo, otro miembro
+   del espacio de trabajo o un agente.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/es-ES/manual/guias/chatear-con-agente/)).
+:::caution[Asignar no inicia ningún trabajo]
+La asignación registra la responsabilidad y nada más. No crea ningún espacio,
+no cambia ningún estado y no despacha ningún agente: `TicketAssigned` es una
+señal de auditoría pura, sin ningún despachador detrás. Para que un agente se
+ponga a trabajar, escríbele en un espacio (consulta
+[Chatear con un agente](/es-ES/manual/guias/chatear-con-agente/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+La única excepción: `TicketAssigned` es un tipo de evento al que puedes
+conectar un disparador de pipeline, de modo que una plantilla propia puede
+reaccionar a una asignación.
 :::
 
-## Add labels
+## Añadir etiquetas
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Las etiquetas se aplican en bloque desde la lista de tickets, no desde un
+ticket individual: la barra de propiedades no tiene ningún control de
+etiquetas.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Pasa el cursor sobre una fila de la lista de tickets y marca su casilla.
+   Marca tantas como necesites; en cuanto haya algo seleccionado, aparece una
+   barra flotante.
+2. En esa barra, abre el chip **Etiquetas**.
+3. Elige una etiqueta. Se añade a todos los tickets seleccionados que no la
+   tengan; las etiquetas existentes nunca se borran. **Borrar etiquetas** las
+   quita todas. El selector lista las etiquetas que ya hay en algún ticket del
+   espacio de trabajo. Los agentes pueden añadir un nombre nuevo mediante
+   `update_ticket` o `tickets.patch`.
 
-## Link tickets
+## Vincular tickets
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Las relaciones viven en la tarjeta **Relaciones** del ticket, en la barra de
+propiedades, o detrás de **Relacionar con** en el menú contextual de la lista.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Abre el ticket y busca la tarjeta **Relaciones**.
+2. Pulsa su control de añadir y elige la relación:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relación             | Significado                            |
+| -------------------- | -------------------------------------- |
+| **Subtarea de…**     | El padre de este ticket es el otro     |
+| **Padre de…**        | El otro ticket es hijo de este         |
+| **Bloqueado por…**   | Este ticket está bloqueado por el otro |
+| **Bloquea…**         | Este ticket bloquea al otro            |
+| **Relacionado con…** | Simétrica, sin dirección implícita     |
+| **Duplicado de…**    | Este ticket duplica al otro            |
 
-3. Pick the target ticket.
+3. Elige el ticket de destino.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Duplicado por** aparece en la tarjeta pero no en el selector: es la inversa
+de **Duplicado de** y se define desde el otro ticket. Cada relación listada se
+puede pulsar para abrir el ticket vinculado y se puede quitar al pasar el
+cursor por encima.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Las relaciones de padre y subtarea se guardan en el propio ticket, no como
+filas de vínculo, así que eliminar un padre se propaga en cascada a sus hijos
+(consulta más abajo), mientras que los vínculos de bloqueo y de relación no.
 
-## Add collaborators
+## Añadir colaboradores
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Los colaboradores son un listado del ticket: quién participa y con qué rol.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Abre el ticket.
+2. Pulsa el control de persona con signo más de la tarjeta **Añadir
+   colaborador**.
+3. Elige un agente.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Los tres roles son **assignee**, **collaborator** (el predeterminado) y
+**reviewer**. El selector de la interfaz solo lista agentes del espacio de
+trabajo y siempre escribe el rol predeterminado; las personas pueden aparecer
+como filas, pero no se ofrecen en ese menú. La herramienta MCP
+`add_ticket_collaborator` acepta un `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/es-ES/manual/guias/espacios/).
+Añadir un colaborador escribe una fila y no publica ningún evento de dominio;
+no concede acceso a ningún espacio. Para meter a un agente en una conversación,
+añádelo como participante desde la cabecera del espacio: consulta
+[Espacios](/es-ES/manual/guias/espacios/).
 
-## Delete a ticket
+## Eliminar un ticket
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Usa **Eliminar ticket** en la parte inferior de la barra de propiedades, el
+menú contextual o la acción de eliminar de la barra flotante tras seleccionar
+varios tickets.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Eliminar es solo local]
+Un ticket que vino de un sistema de seguimiento externo no se elimina allí
+—ningún proveedor lo admite—, así que puede reaparecer en la siguiente
+sincronización. Además, eliminar se propaga en cascada: los colaboradores del
+ticket y cualquier ticket hijo se van con él.
 :::
 
-## Related guides
+## Guías relacionadas
 
-- [Delegate work to agents](/es-ES/manual/guias/delegar-tickets/)
-- [Organize work with projects](/es-ES/manual/guias/proyectos/)
-- [Chat with an agent](/es-ES/manual/guias/chatear-con-agente/)
-- [Ticket lifecycle reference](/es-ES/manual/referencia/ciclo-de-vida-de-tickets/)
+- [Delegar trabajo a agentes](/es-ES/manual/guias/delegar-tickets/)
+- [Organizar el trabajo con proyectos](/es-ES/manual/guias/proyectos/)
+- [Chatear con un agente](/es-ES/manual/guias/chatear-con-agente/)
+- [Ciclo de vida de tickets](/es-ES/manual/referencia/ciclo-de-vida-de-tickets/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Tickets](/es-ES/manual/conceptos/tickets/)
-- [Domain events](/es-ES/manual/conceptos/eventos-de-dominio/)
+- [Tickets y delegación](/es-ES/manual/conceptos/tickets/)
+- [Eventos de dominio](/es-ES/manual/conceptos/eventos-de-dominio/)

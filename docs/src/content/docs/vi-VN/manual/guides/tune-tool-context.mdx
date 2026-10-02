@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Điều chỉnh ngữ cảnh công cụ của agent
+description: Kiểm tra xem một lượt chạy thực sự gửi đi những gì, thay đổi công cụ nào được nạp sẵn, và xác định xem một lựa chọn công cụ tồi là do truy hồi trượt hay do vấn đề ở prompt.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/dieu-chinh-ngu-canh-cong-cu
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
+Hướng dẫn này đề cập đến phần thực hành xoay quanh bề mặt công cụ hai tầng: xem một lượt chạy gửi đi những gì, thay đổi nó, và chẩn đoán một agent đã với tay lấy nhầm công cụ. Để hiểu vì sao nó hoạt động như vậy, hãy đọc [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
 
-## Look at what a run actually sends
+## Xem một lượt chạy thực sự gửi đi những gì
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Mở một cuộc hội thoại và nhấn vào chỉ báo mức sử dụng ngữ cảnh ở đầu cuộc hội thoại. Nó dựng lại đúng bề mặt mà lần điều phối kế tiếp sẽ gửi, mà không chạy bất cứ thứ gì. **Xem thêm** (hoặc lệnh `/context`) mở trình khám phá ngữ cảnh đầy đủ, nơi bạn có thể kiểm tra từng công cụ.
 
-Two segments matter here:
+Ở đây có hai phân đoạn đáng chú ý:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Định nghĩa công cụ** và **MCP và công cụ động** — tập thường trú, kèm chi phí token thật của từng công cụ.
+- **Công cụ tải khi cần** — chỉ mục bị trì hoãn. Mỗi mục chỉ bị tính đúng cái tên của nó, bởi yêu cầu chỉ mang theo tên; nhưng mở một mục vẫn hiển thị đầy đủ phần mô tả và lược đồ, để bạn thấy nó *sẽ* tốn bao nhiêu nếu lượt chạy kéo nó vào.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server).
+Nếu phân đoạn bị trì hoãn trống, tính năng trì hoãn đang tắt trên máy chủ này. Hãy kiểm tra `--tool-deferral` trong [CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server).
 
-## Change which tools load up front
+## Thay đổi công cụ nào được nạp sẵn
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Tập thường trú là chính sách, không phải cấu hình — nó nằm trong `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) và áp dụng cho mọi lượt chạy:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/vi-VN/so-tay/khai-niem/che-do) uses on nearly every turn.
+- `residentBuiltins` — từ vựng về tệp và shell.
+- `residentDiscovery` — `search_tools` và `list_my_tools`. Đừng loại bỏ chúng; chúng là cách agent tiếp cận mọi thứ còn lại.
+- `residentMcpTools` — một số ít công cụ Control Center đáng để mang theo lược đồ trong mọi yêu cầu.
+- Một khối riêng cho từng chế độ, dành cho những công cụ mà một [chế độ](/vi-VN/so-tay/khai-niem/che-do) nhất định dùng trong gần như mọi lượt.
 
-Two rules when editing it:
+Hai quy tắc khi chỉnh sửa nó:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Chỉ thêm một công cụ nếu hầu hết các lượt chạy đều dùng nó.** Mỗi cái tên đều khiến mọi yêu cầu của mọi lượt chạy phải trả giá bằng lược đồ của nó, mãi mãi. Một công cụ quan trọng khi được dùng nhưng tổng thể thì hiếm khi dùng nên nằm ở nửa bị trì hoãn — agent vẫn sẽ tìm thấy nó.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Dùng tên thật của công cụ.** Một tên thường trú không khớp với công cụ nào là vô tác dụng: không lỗi, không cảnh báo, công cụ đơn giản là bị trì hoãn. `test/tooling/resident_tool_names_test.dart` bắt được điều này và cũng giữ mỗi chế độ dưới 40 công cụ thường trú, đó chính là mục đích của việc này — vượt qua ngưỡng đó, việc chọn công cụ xuống cấp thấy rõ.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Các động từ bắt buộc và được ghim của một chế độ được thêm tự động, nên bạn không bao giờ cần liệt kê động từ đầu ra của chính chế độ đó.
 
-## Diagnose a bad tool choice
+## Chẩn đoán một lựa chọn công cụ tồi
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Khi một agent dùng nhầm công cụ hoặc khẳng định nó không thể làm điều gì đó, hãy xác định xem trong ba tình huống sau, tình huống nào đã xảy ra.
 
-### 1. Did it look?
+### 1. Nó có tìm chưa?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Mỗi lượt chạy ghi lại những công cụ bị trì hoãn mà nó đã nạp cùng tác nhân kích hoạt — một lời gọi trực tiếp theo tên, hoặc một truy vấn `search_tools`. Hãy mở dòng sự kiện của lượt chạy (**Cài đặt → Không gian làm việc → Agent** → agent → **Nhật ký** → **Xem**) và tìm dòng `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Không ghi gì, và agent nói rằng năng lực đó không tồn tại** — nó chưa từng tìm. Đó là vấn đề ở prompt, không phải ở việc truy hồi: chỉ mục bị trì hoãn nằm trong prompt hệ thống của nó kèm chỉ dẫn không được tuyên bố một năng lực là thiếu cho tới khi một lần tìm kiếm trả về rỗng.
+- **Có ghi một lần tìm kiếm, nhưng không nạp gì** — một lần truy hồi trượt thật sự. Chuyển sang bước 2.
+- **Có nạp công cụ, nhưng dùng nhầm** — những công cụ nó tìm thấy quá giống nhau. Chuyển sang bước 3.
 
-### 2. Fix a retrieval miss
+### 2. Khắc phục một lần truy hồi trượt
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` khớp dựa trên tên, phần mô tả và tên tham số. Một lần trượt gần như luôn có nghĩa là phần mô tả không chứa những từ mà agent đã dùng.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Hãy thêm chúng vào. Phần mô tả chính là chỉ mục truy hồi, nên hãy **viết dài ra thay vì cắt bớt** — hãy viết bằng từ vựng mà người vận hành thật sự sẽ gõ ("assign", "hand off", "give to"), chứ không chỉ là danh từ nội bộ. Cắt bớt một phần mô tả để tiết kiệm token khiến bạn mất cả khả năng khớp tìm kiếm lẫn độ chính xác khi chọn lựa, mà tiết kiệm được gần như không đáng kể so với lược đồ.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Nếu công cụ đúng có tồn tại nhưng xếp hạng thấp, đó chính là mục đích của tham số `limit`; phần mô tả của chính công cụ đó nhắc agent mở rộng một tìm kiếm có vẻ gần đúng nhưng lại trượt.
 
-### 3. Fix look-alike tools
+### 3. Khắc phục các công cụ na ná nhau
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Nếu hai công cụ có phần mô tả mà một người chưa biết trước sự khác biệt sẽ đọc ra như nhau, thì mô hình đang đoán. Hãy gộp chúng thành một công cụ với một tham số phân biệt.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` và `ticket_pr_link` đi theo khuôn mẫu này: mỗi công cụ xử lý việc liên kết và hủy liên kết thông qua một tham số phân biệt. Một lựa chọn được đưa ra *bên trong* một lời gọi, với đầy đủ ngữ cảnh của yêu cầu, đáng tin cậy hơn một lựa chọn được đưa ra giữa hai phần mô tả na ná nhau.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Hãy giữ các công cụ tách riêng khi chúng cần cổng phê duyệt khác nhau, kiểm toán khác nhau hoặc cách hiển thị khác nhau — đó là những lý do khiến việc gộp lại sẽ làm bạn mất đi thứ gì đó có thật.
 
-## Check the prompt cache is working
+## Kiểm tra xem bộ nhớ đệm prompt có hoạt động không
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Tỷ lệ trúng bộ nhớ đệm xuất hiện trong **Quan sát → Phân tích** dưới dạng **Tỷ lệ cache**. Một cuộc hội thoại chạy dài khỏe mạnh sẽ giữ mức cao; nếu nó liên tục thấp, tức là có thứ gì đó đang viết lại tiền tố ở mỗi lượt.
 
-Common causes, in order of likelihood:
+Những nguyên nhân phổ biến, xếp theo mức độ khả dĩ:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Bất cứ thứ gì không tất định ở đầu prompt.** Một dấu thời gian, một id yêu cầu, hay một tập hợp được duyệt theo thứ tự thay đổi đều đủ gây ra điều đó.
+- **Thay đổi mô hình hoặc mức suy luận giữa cuộc hội thoại.** Cả hai đều thay đổi tiền tố. Agent con đặc biệt dễ bị làm sai ở điểm này: chạy các agent con ở mức suy luận thấp hơn để tiết kiệm tiền có thể tốn nhiều hơn ở phần chia sẻ bộ nhớ đệm bị mất so với khoản tiết kiệm được.
+- **Nén quá thường xuyên.** Việc nén viết lại lịch sử theo thiết kế, nên cái giá của nó là có thật; cách khắc phục là nén thưa và sâu, thay vì nén thường xuyên và nông.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Tắt tính năng trì hoãn bằng `--tool-deferral=off` là một phép A/B hợp lệ để tách bạch xem một thay đổi hành vi có phải đến từ bề mặt hai tầng hay không. Nó tái tạo chính xác yêu cầu trước thời kỳ trì hoãn, nên nếu hành vi vẫn còn khi tắt nó đi, thì bề mặt không phải là nguyên nhân.

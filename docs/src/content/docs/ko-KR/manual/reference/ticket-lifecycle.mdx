@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: 티켓 수명주기
+description: 티켓의 필드, 상태, 전이, 관계와 변경 병목 지점.
 slug: ko-KR/매뉴얼/레퍼런스/티켓-수명주기
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## 티켓 상태
 
-| Status       | Storage string | Description                                     |
+| 상태         | 저장 문자열    | 설명                                            |
 | ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| `backlog`    | `backlog`      | 접수되었지만 아직 활성 큐로 분류되지 않음       |
+| `open`       | `open`         | 분류되어 작업 준비가 되었지만 시작되지 않음     |
+| `inProgress` | `inProgress`   | 현재 작업 중                                     |
+| `blocked`    | `blocked`      | 시작되었지만 외부 요인으로 차단됨               |
+| `inReview`   | `inReview`     | 작업이 완료되어 리뷰 대기 중                    |
+| `done`       | `done`         | 성공적으로 완료됨(종료 상태)                    |
+| `failed`     | `failed`       | 오류와 함께 종료됨(종료 상태)                   |
+| `cancelled`  | `cancelled`    | 중단됨(종료 상태)                               |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+상태 값은 camelCase(`inProgress`, `inReview`)로 저장되며 `in_progress`로 저장되는 일은 없습니다. 저장된 값이 null이면 `open`으로 파싱되고, 알 수 없는 값은 강제 변환되지 않고 예외를 던집니다.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose`는 에이전트가 제공한 별칭을 대소문자와 `-` / `_` / 공백을 무시하고 받아들입니다:
 
-| Status       | Accepted aliases                              |
+| 상태         | 허용되는 별칭                                 |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## 상태 전이
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,26 +43,26 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**이 그래프는 에이전트와 자동화만 구속합니다.** `TicketWorkflowService.transitionStatus`는 `force`가 false일 때, 즉 MCP 도구와 조정기 경로에서 이를 검사합니다. 이 경로에서 허용되지 않는 전이는 로그에 기록되고 무시됩니다. UI에서 사용자가 일으키는 모든 상태 변경은 `force: true`를 전달해 그래프를 완전히 우회하므로, 사람은 선택기에 나열된 어떤 상태로든(`failed`를 제외한 모든 상태) 티켓을 옮길 수 있으며 종료된 상태를 다시 여는 것도 가능합니다. 에이전트는 `fail_ticket`으로 `failed`를 표시합니다.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+상태는 언제나 자기 자신으로 전이될 수 있습니다. 종료 상태에는 나가는 간선이 없습니다.
 
-| From         | Allowed targets                                      |
+| 시작 상태    | 허용되는 대상                                        |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (종료 상태)                                        |
+| `failed`     | — (종료 상태)                                        |
+| `cancelled`  | — (종료 상태)                                        |
 
-## Ticket priorities
+## 티켓 우선순위
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Linear의 기본 0–4 척도에 따라 정수로 저장됩니다. 알 수 없는 값은 `none`으로 파싱됩니다.
 
-| Priority | Stored as |
+| 우선순위 | 저장되는 값 |
 | -------- | --------- |
 | `none`   | `0`       |
 | `urgent` | `1`       |
@@ -69,132 +70,132 @@ Stored as an integer on Linear's native 0–4 scale. An unknown value parses to 
 | `medium` | `3`       |
 | `low`    | `4`       |
 
-## Ticket providers
+## 티켓 공급자
 
-An unknown or null stored value parses to `local`.
+저장된 값이 알 수 없거나 null이면 `local`로 파싱됩니다.
 
-| Provider | Status                                                 |
+| 공급자   | 상태                                                   |
 | -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| `local`  | 전적으로 워크스페이스 데이터베이스에 저장됨. 기본값    |
+| `linear` | 원격이 소유하며 로컬에 미러링됨                        |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+동기화 어댑터는 Linear, GitHub Issues, Jira Cloud, ClickUp용으로
+`packages/cc_infra/lib/src/tickets/sync/` 아래에 있습니다. GitHub Issues는 동기화
+어댑터 공급업체(`vendorId: github`)일 뿐이며 `TicketProvider` 값이 아닙니다. 따라서
+가져온 GitHub 이슈는 `originKind: externalSync`와 기본값 `provider: local`로
+저장됩니다. 공급업체 매핑은 `ticket_sync_links`에 있습니다.
 
-## Ticket origin
+## 티켓 출처
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket`은 `manual`을 기록합니다. 공급업체에서 가져오면 `externalSync`가 기록됩니다. 위임된
+하위 티켓은 `manual`로 유지됩니다.
 
-| Value          | Meaning                                                      |
+| 값             | 의미                                                         |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | `createTicket`의 기본값(사람, 에이전트, 위임된 행)           |
+| `externalSync` | 공급업체에서 가져올 때 `TicketSyncEngine`이 설정             |
 
-## Ticket fields
+## 티켓 필드
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+티켓 애그리거트는 하나의 행에 두 가지 관심사를 담습니다. **미러**(공급자, 키, 제목, 설명, 우선순위, 레이블, 상태, 타임스탬프)는 원격 공급자를 위한 캐시이며 새로 고침이 이를 통째로 다시 씁니다. **오버레이**(배정, 위임, 스페이스, 상위 티켓, 프로젝트, 연결된 PR)는 Control Center에만 있으며 새로 고침이 이를 건드리는 일은 없습니다.
 
-| Field                    | Type                       | Description                                                                                |
+| 필드                     | 타입                       | 설명                                                                                       |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | 소유 워크스페이스                                                                          |
+| `provider`               | `TicketProvider`           | 정규 데이터를 소유하는 백엔드(기본값 `local`)                                              |
+| `externalKey`            | `String?`                  | 공급자 고유 키(예: `LIN-123`). 로컬 `createTicket`은 행 `id`가 아닌 *별도의* UUID를 여기에 기록 |
+| `url`                    | `String?`                  | 원격 공급자의 웹 URL                                                                       |
+| `title`                  | `String`                   | 짧은 요약이며 비어 있을 수 없음                                                            |
+| `description`            | `String?`                  | 더 긴 Markdown 본문                                                                        |
+| `priority`               | `TicketPriority`           | 기본값 `none`                                                                              |
+| `labels`                 | `List<String>`             | 자유 형식 레이블                                                                           |
+| `status`                 | `TicketStatus`             | 정규화된 표준 상태                                                                         |
+| `rawStatus`              | `String?`                  | 원격 공급자의 고유 상태 이름으로, 손실 없는 표시를 위해 보관됨                             |
+| `externalSyncedAt`       | `DateTime?`                | 마지막 다중 공급업체 동기화 시각이며 첫 동기화 전까지는 null. 공급업체별 매핑은 `ticket_sync_links`에 있음 |
+| `parentTicketId`         | `String?`                  | 위임/분해 트리의 상위 티켓                                                                 |
+| `projectId`              | `String?`                  | 소유 프로젝트이며 원격으로 푸시되지 않음                                                   |
+| `assignedAgentId`        | `String?`                  | 배정된 주체의 id(메타데이터일 뿐이며, 배정해도 아무것도 디스패치되지 않음)                 |
+| `assigneeType`           | `PrincipalType`            | `assignedAgentId`가 가리키는 주체의 종류 — `user` 또는 `agent`(기본값 `agent`)             |
+| `createdByType`          | `PrincipalType?`           | 티켓을 생성한 주체의 종류(`user` 또는 `agent`)이며, 레거시/시스템 행에서는 null             |
+| `createdById`            | `String?`                  | 생성한 주체의 id                                                                           |
+| `assignedTeamId`         | `String?`                  | 배정된 팀(메타데이터일 뿐)                                                                 |
+| `delegatedByAgentId`     | `String?`                  | 이 티켓을 위임한 에이전트                                                                  |
+| `delegationDepth`        | `int`                      | 위임 체인에서의 깊이이며 루트는 `0`이고, 최대 깊이 상한과 비교해 검사함                    |
+| `delegationRootTicketId` | `String?`                  | 위임 체인의 루트이며, 루트 티켓에서는 null                                                 |
+| `spaceId`                | `String?`                  | 티켓이 파생된 대화 또는 위임한 에이전트의 스페이스                                         |
+| `errorMessage`           | `String?`                  | `status`가 `failed`일 때 설정됨                                                            |
+| `linkedPrIds`            | `List<String>`             | 이 티켓이 연결된 PR 노드 id                                                                |
+| `metadata`               | `Map<String, dynamic>`     | 자유 형식 값 모음                                                                          |
+| `createdAt`              | `DateTime`                 | 생성 시각                                                                                  |
+| `startedAt`              | `DateTime?`                | 작업이 시작된 시각                                                                         |
+| `blockedAt`              | `DateTime?`                | 티켓이 차단된 시각                                                                         |
+| `cancelledAt`            | `DateTime?`                | 티켓이 취소된 시각                                                                         |
+| `completedAt`            | `DateTime?`                | 티켓이 성공적으로 완료된 시각                                                              |
+| `finishedAt`             | `DateTime?`                | 티켓이 종료 상태에 도달한 시각                                                             |
+| `updatedAt`              | `DateTime`                 | 마지막 변경(미러 새로 고침 또는 오버레이 변경)                                             |
+| `version`                | `int`                      | 낙관적 동시성 카운터이며 모든 변경마다 증가함                                              |
+| `originKind`             | `TicketOriginKind`         | 티켓이 생성된 방식(기본값 `manual`)                                                        |
+| `collaborators`          | `List<TicketCollaborator>` | 리포지토리가 요청 시 채움                                                                  |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+파생: `isTerminal`, `isRemote`(`provider != local`), `isAssignedToUser`, `displayKey`(`externalKey ?? id` — 따라서 로컬 티켓은 행 `id`가 아니라 생성 시 별도로 부여된 UUID를 표시합니다).
 
-## Ticket relations
+## 티켓 관계
 
-Stored edges are directional rows in `ticket_links`:
+저장된 간선은 `ticket_links`의 방향성 행입니다:
 
-| Type          | Storage string | Meaning                         |
+| 유형          | 저장 문자열    | 의미                            |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | 소스가 대상을 차단함            |
+| `relatesTo`   | `relates_to`   | 대칭 관계                       |
+| `duplicateOf` | `duplicate_of` | 소스가 대상의 중복임            |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+UI와 `ticket_relation`이 사용하는 어휘는 `TicketRelationKind`이며, 저장된 간선과 해당 주체가 어느 끝점에 있는지를 조합해 파생됩니다:
 
-| Kind           | Derived from                                         |
+| 종류           | 파생 근거                                            |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | 주체가 대상인 `blocks` 행                            |
+| `blocking`     | 주체가 소스인 `blocks` 행                            |
+| `relatedTo`    | `relates_to` 행(대칭)                                |
+| `duplicateOf`  | 주체가 소스인 `duplicate_of` 행                      |
+| `duplicatedBy` | 주체가 대상인 `duplicate_of` 행                      |
+| `subIssueOf`   | 주체의 `tickets.parent_ticket_id`                    |
+| `parentOf`     | 상대 티켓의 `tickets.parent_ticket_id`               |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+상위 및 하위 이슈 링크는 `ticket_links` 행이 **아니며**, `tickets.parent_ticket_id`에 있습니다.
 
-## Domain events
+## 도메인 이벤트
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+이 여덟 개 클래스는 `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`에 있습니다. `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, `ExternalTicketWebhookReceived`는 없습니다.
 
-| Event                     | Fired when                                         |
+| 이벤트                    | 발생 시점                                          |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | 티켓이 생성될 때                                   |
+| `TicketAssigned`          | 티켓이 주체 또는 팀에 배정될 때                    |
+| `TicketCompleted`         | 작업이 성공적으로 끝날 때                          |
+| `TicketFailed`            | 작업이 실패할 때                                   |
+| `TicketCancelled`         | 티켓이 취소될 때                                   |
+| `TicketStatusChanged`     | 상태가 변경될 때                                   |
+| `TicketReassigned`        | 티켓이 다시 배정될 때                              |
+| `TicketDetailsUpdated`    | 제목, 설명, 우선순위 또는 레이블이 변경될 때       |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned`는 감사 및 알림 신호이자 파이프라인 트리거입니다. 에이전트에 배정해도 실행은 시작되지 않으며, `assignedAgentId`를 지켜보는 티켓 디스패처는 없습니다. 팀에 배정하는 경우는 예외로, `TeamRoutingService`가 팀 리더를 디스패치합니다. 협업자를 추가하면 행 하나를 기록할 뿐 아무것도 발행하지 않습니다. 공급업체 웹훅은 도메인 이벤트 없이 `TicketSyncEngine`을 통해 적용됩니다.
 
-## Mutation chokepoint
+## 변경 병목 지점
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService`가 모든 변경을 소유합니다.
 
-| Mechanism              | Detail                                                                                                                                            |
+| 메커니즘               | 세부 사항                                                                                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| 단일 병목 지점         | 모든 변경은 `_mutate`를 거치며, 이 메서드는 행을 로드하고 적용 전에 `_assertWorkspace`를 호출합니다                                               |
+| 워크스페이스 격리      | 로드한 행의 `workspaceId`가 호출자의 것과 일치하지 않으면 `_assertWorkspace`가 `WorkspaceMismatchException`을 던집니다                            |
+| 낙관적 동시성          | `_mutate`는 방금 읽은 `version`을 `expectedVersion`으로 설정해 기록하고, `ConcurrencyConflictException`이 발생하면 최신 상태를 다시 읽어 재시도합니다 |
+| 배타적 점유            | `tryCheckout` / `releaseCheckout`이며, 이미 체크아웃된 티켓을 두 번째 에이전트가 차지하려 하면 `CheckoutConflictException`이 발생합니다           |
+| 전이 가드              | `canTransitionTo`이며, `force`가 false일 때만 적용됩니다                                                                                          |
 
-## See also
+## 함께 보기
 
-- [Tickets](/ko-KR/매뉴얼/개념/티켓/)
-- [Manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
-- [Delegate tickets](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
-- [Domain events](/ko-KR/매뉴얼/레퍼런스/도메인-이벤트/)
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/)
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
+- [에이전트에 작업 위임](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
+- [도메인 이벤트](/ko-KR/매뉴얼/레퍼런스/도메인-이벤트/)

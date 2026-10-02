@@ -1,239 +1,119 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: 部署与客户端
+description: Control Center 的瘦客户端架构如何将无界面服务器与其桌面、Web 和移动客户端分开。
 slug: zh-CN/手册/概念/部署
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center 不是一个程序，而是一种**瘦客户端架构**：一个拥有你数据的无界面服务器，加上一组客户端，它们通过到该服务器的单条 RPC 连接渲染界面。理解这种拆分，就能解释为什么某些东西运行在它们所在的位置，以及每个客户端能够触及和无法触及什么。
 
-## The server owns the data
+## 服务器拥有数据
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/zh-CN/手册/概念/工作区/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+一个名为 **`cc_server`** 的进程持有数据库——用于服务器级状态的一个小型 `global.db`，外加每个[工作区](/zh-CN/手册/概念/工作区/)一个延迟打开的 SQLite 文件——并运行长期存在的工作：流水线引擎、协调器、MCP 工具接口和编排监听器。所有需要比一个窗口活得更久、或者两个客户端应当看到完全相同内容的东西，都放在那里。
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+没有任何客户端自己打开数据库文件。相反，每个客户端持有一个 **`RemoteRpcClient`**，并通过它发出仓库操作和订阅。服务器依据配对设备的预共享密钥对连接进行认证——然后就再也不关心这个连接。**会话并不绑定到某个工作区。** 分派器是无状态的：每个工作区范围的调用都在参数中携带自己的 `workspace_id`，而省略它的调用会被拒绝。
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+这是有意为之的，也正是它让同一台服务器上的两个客户端可以各自处于不同的工作区，而不需要服务器持有一个供它们产生分歧的“当前工作区”。隔离改为在每次调用时执行，分四步：
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. 操作会声明自己是否属于工作区范围；如果属于而调用中又没有传来 `workspace_id`，该调用会被拒绝。
+2. 这个 id 必须是一个**已注册**的工作区，并且要在任何东西打开数据库之前检查——否则未知 id 会在每个请求上凭空产生一个空的幽灵 `workspace.db`。未命中就是未找到。
+3. 调用者的 `WorkspaceRole` 必须达到该操作的下限，下限由其类型推导：读取需要 guest，变更需要 member，破坏性操作需要 admin。
+4. 暴露仓库内容的操作还额外需要在它所声明的级别上获得逐仓库授权——`none` / `read` / `review` / `write`——因此工作区成员身份绝不会悄然赋予超过代码托管平台的权限。
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+关键的一句话是：**持有配对密钥并不是访问边界；成员身份才是。**
 
-## Why split it this way
+## 为什么要这样拆分
 
-Three pressures pushed toward a server:
+有三股压力推动了向服务器架构的转变：
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **单一事实来源。** 一台桌面和一部手机，或者一台笔记本和一台桌面，应当看到同一套机群状态。如果各自拥有自己的数据库，它们就会逐渐漂移。单一服务器意味着每个客户端读取的是同一份实时数据。
+2. **Web 无法自给自足。** 浏览器无法启动子进程或打开本地文件，因此 Web 构建永远无法拥有数据库或运行智能体。它必须与能够做到这些的服务器通信。与其另建一条仅限 Web 的数据路径，不如把桌面也放到同一条路径上。
+3. **无界面运行。** 一台可以跑在小机器上的服务器——在火车上用手机就能访问，或者在任何地方的浏览器里访问——比你必须一直开着的图形界面更有用。
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+代价是服务器现在成了一种依赖：如果它没有运行，什么都做不了。桌面对此的默认答案是**自己启动一个**。
 
-## The clients
+## 客户端
 
-Five clients reach the server, each with a different shape and trust profile.
+共有五类客户端连接到服务器，各自的形态和信任级别都不同。
 
-### Desktop app
+### 桌面应用
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter 桌面应用（macOS、Windows、Linux）是完整客户端。首次启动时它会询问以何种方式运行，并记住这个选择：
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **本地**：在本机启动并监管一个 `cc_server`——这是默认的、自包含的单用户设置。桌面会启动这个服务器，由它拥有应用支持根目录下的数据库，并通过环回地址与之通信。
+- **远程**：通过安全的 WebSocket 连接到在别处运行的 `cc_server`。数据位于那台服务器上；这台桌面纯粹是一个渲染器。
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+在两种情况下，得到的 RPC 客户端都会覆盖应用的数据提供者，因此整个界面——每个屏幕、每项功能——都通过服务器读写。桌面从不直接接触数据库文件。
 
-### Web client
+### Web 客户端
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Web 构建是同一个 Flutter 应用编译成可在浏览器中运行的版本，托管在 [app.usectrl.dev](https://app.usectrl.dev)，因此无需安装任何东西。浏览器无法启动子进程，所以 Web 客户端**始终**是远程的：它通过 `wss://` 连接一个 `cc_server`，并渲染完整的桌面界面。连接后，它会针对同一套机群显示同样的屏幕，因为它是同一份代码、走同一条 RPC。缺口在于少数几处需要浏览器所不具备的原生能力的地方——下面的会议采集质量层是主要的一处，操作系统通知是另一处。
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+这就是为什么“无需下载”和“无需服务器”是两种不同的说法。Web 客户端省去了安装；它并没有省去服务器。它连接的对象可以是同一台笔记本上的 `cc_server`——`ws://localhost:9030`，这不需要证书，因为浏览器把环回视为可信——也可以是另一台机器上的，那台机器必须能通过 `wss://` 访问，并使用浏览器信任的证书。`cc_server` 拒绝在没有 TLS 的情况下绑定非环回地址，所以远程服务器意味着它自己的证书、一个终止 TLS 的代理，或者一个提供证书的隧道或 VPN。
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+打包产物本身与它所通信的服务器分开托管。独立的 `cc_server` 提供 RPC 端点、MCP 接口及其代理，但**不**提供 Web 打包产物——服务器中存在静态文件路径，但独立二进制文件上没有配置 Web 根目录，因此它在 `/` 处没有东西可提供。已发布的 `cc-webapp` 容器镜像才是承载该打包产物的东西，而 `scripts/build_web.sh` 才是构建它的东西。服务器只接受其 `--allowed-origins` 列表中的浏览器来源，该列表默认为 `https://app.usectrl.dev`，所以自行托管该打包产物意味着要把它自己的来源加进去。
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+媒体（头像、动态图片、PR 截图）经由服务器的代理端点路由，而不是直接访问上游主机，因此浏览器绝不会抓取任意来源。已部署的客户端会根据一个非敏感 cookie 为每个请求盖上 Content-Security Policy，从而只允许已连接服务器的来源。
 
-### Phone companion (cc_remote)
+### 手机伴侣应用 (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**Remote** 应用是一个独立的、更轻量的客户端——一个位于 [remote.usectrl.dev](https://remote.usectrl.dev/) 的 Flutter Web PWA。它有意**不是**完整应用。它通过一个经中转代理撮合、端到端密封的 WebSocket 中继进行配对，并使用工具接口中以读取为主的一个子集：读取工单、消息和新闻流；发送回复或更新工单。
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/zh-CN/手册/概念/远程控制/) for the full
-security model.
+手机是比本地智能体**权限更低的主体**。一套默认拒绝的工具策略、为每一帧加密的预共享密钥、一项把特权操作（例如配对）挡在伴侣客户端之外的会话能力、上面提到的逐调用角色与仓库授权检查，以及速率限制，共同阻止一次已批准（或已泄露）的配对变成完全的远程控制。完整的安全模型见[远程控制与移动端](/zh-CN/手册/概念/远程控制/)。
 
-### MCP clients
+### MCP 客户端
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/zh-CN/手册/操作指南/mcp-服务器/) and the
-[MCP tools reference](/zh-CN/手册/参考/mcp-工具/).
+讲 Model Context Protocol 的外部工具——编辑器、其他智能体、CLI——连接到服务器的 MCP 接口并消费带类型的工具注册表。这是编程化的集成路径；它不是图形界面。参见[使用 MCP 服务器](/zh-CN/手册/操作指南/mcp-服务器/)和 [MCP 工具参考](/zh-CN/手册/参考/mcp-工具/)。
 
-### Fleet executors (cc_worker)
+### 机群执行器 (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** 是一个无界面的纯 Dart 二进制文件，它与一个 `cc_server` 配对、声明其主机能力，并拉取租约作业来执行。它通过同一 RPC 把进程事件流式传回，并且**不保存任何持久状态**：没有数据库、没有认证、没有审批、没有预算——这些永远不会离开 `cc_server`。工作进程是肢体，不是第二个大脑。一个权威服务器，N 个笨肢体；没有共识，也没有工作进程之间的通信。
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+租约执行仍然只是租约管道。`agentRun` 是唯一会运行真实命令的类型（`CC_JOB_COMMAND`，如果未提供任何命令则回显提示词）。`pipelineStep`、`codeIndex`、`goldenRender`、`benchmark` 和 `evalBatch` 目前用 `git --version` / `rev-parse HEAD` 进行探测，以便在不假装这些作业真的运行过的前提下演练流式路径。
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+它对外声明的是操作系统、CPU 架构、核心数、内存、是否能访问到 Flutter SDK，以及主机具有哪些沙盒后端（Windows 上没有）。专用工作进程还始终声明 `alwaysOn` 和 `acceptsParallel`，pin → prefer → spill 调度器正是据此进行放置的。没有 GPU 或 ML 探测。
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+单机桌面应用对这些毫无察觉，因为普通分派根本不经过机群。服务器主机确实注册了一个隐式的进程内工作进程，但它只是一个注册接缝，其中没有接入任何运行器——真正放到本地工作进程上的作业会失败，而不是执行。如今，只有真正的 `cc_worker` 会执行租约作业。
 
-## What runs where
+## 什么在哪里运行
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
+| 关注点                                         | 服务器（`cc_server`）      | 机群执行器（`cc_worker`） | 桌面客户端 | Web / 手机客户端                 |
 | ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| 数据库（Drift/SQLite）                         | 拥有它们                   | —                            | —              | —                                |
+| 认证、审批、预算、身份                         | 拥有它们                   | —                            | —              | —                                |
+| 流水线、协调器、编排监听器                     | 运行它们                   | —                            | —              | —                                |
+| MCP 工具接口                                   | 提供它                     | —                            | —              | —                                |
+| 智能体执行                                     | 运行它（或把它租借出去）   | 执行租约作业                 | —              | —                                |
+| UI 渲染                                        | —                          | —                            | 完整           | 完整（Web）/ 以读取为主（手机）  |
+| 会议采集（麦克风 + 会议音频）                  | —                          | —                            | 原生采集       | 仅 Web，通过屏幕共享音频         |
+| 日历 OAuth（Google）                           | 存储令牌                   | —                            | —              | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/)
-for what bounds a run in each case.
+这两个层级并不以同样的方式实施沙盒隔离。`cc_server` 在存在后端的情况下，把它自己执行的运行包裹在宿主操作系统的沙盒中——macOS 上的 Seatbelt、Linux 和 WSL2 上的 bubblewrap——并在 Windows 上、或在缺少 `bwrap` 和 `socat` 时退回到其他边界机制。**`cc_worker` 完全不实施沙盒。** 它声明一项 `sandbox` 能力，以便服务器按平台放置作业，但工作进程中没有任何东西会加以实施：租约作业会被直接启动，只受租约环境和分配给它的工作树约束。因此，即使主机本身有沙盒，把工作租借出去也会把执行移到沙盒之外。每种情况下运行受什么约束，见[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+会议采集发生在客户端上，因为它需要麦克风和会议音频——放在机柜里的服务器无法录制你的通话。随后服务器流水线会对录音进行总结，笔记存储在每台客户端都能读到的地方。
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Web 客户端也会录制，这一点可能会被表格的结构所掩盖：它在浏览器中采集麦克风外加一条屏幕共享音轨，并把 16 kHz PCM 流式传给服务器。它_要求_必须有这条音轨，因此在浏览器无法提供时它会明确失败。真正仅限桌面的是采集周围的质量层——通过原生处理器进行的信号级回声消除、输入电平表和麦克风失效警告、重新运行总结、取消处理，以及日历的“录制并链接”操作。
 
-## Pairing and trust
+## 配对与信任
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+每个客户端都用一个一次性配置的**预共享密钥**来证明自己是谁：
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- 本地模式下的桌面应用每次启动都会生成一个新密钥，并通过环境变量把它交给所启动的服务器，因此桌面上不会持久保存任何机密。
+- 远程客户端（远程桌面、Web、手机）使用由服务器的 `pair` 命令签发、并存储在操作系统钥匙串中的密钥（手机上则存储在本地）。
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+吊销是**实时**的，而非惰性的。服务器监视其配对设备表，一旦某个设备离开了活跃集合，就在数秒内断开该设备的所有已打开会话——无论直连 WebSocket 路径还是中继路径都一样。你不必等设备重新连接才能把它切断。
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+密钥绝不会经过静态托管方能够看到的 URL。当它通过链接到达时——无论手机上还是浏览器里——它都位于 **URL 片段**中，也就是 `#` 之后的部分，浏览器从不把这一部分发送给托管页面的服务器。这是值得记住的不变式，而且对两者都适用。Web 客户端还有另外两个入口：连接表单，你可以在其中直接粘贴服务器和密钥；以及邀请码，它会用邀请码换取一份仅为此浏览器签发的凭证。
 
-## Related concepts
+## 相关概念
 
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/zh-CN/手册/概念/架构/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/zh-CN/手册/概念/远程控制/): the phone pairing and security model
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)：为什么每次 RPC 调用都携带自己的工作区 id，以及数据库拆分如何使隔离成为结构性的
+- [架构](/zh-CN/手册/概念/架构/)：代码库如何围绕服务器及其客户端组织
+- [远程控制与移动端](/zh-CN/手册/概念/远程控制/)：手机配对与安全模型
 
-## Related guides
+## 相关指南
 
-- [Run a headless server](/zh-CN/手册/操作指南/运行无界面服务器/): start `cc_server` and pair a client
-- [Connect to a remote server](/zh-CN/手册/操作指南/连接远程服务器/): point the desktop or web client at a server elsewhere
-- [Pair a device](/zh-CN/手册/操作指南/配对设备/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/zh-CN/手册/操作指南/运行机群工作进程/): add a `cc_worker` that pulls leased jobs
+- [运行无界面服务器](/zh-CN/手册/操作指南/运行无界面服务器/)：启动 `cc_server` 并配对客户端
+- [连接到远程服务器](/zh-CN/手册/操作指南/连接远程服务器/)：把桌面或 Web 客户端指向别处的服务器
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)：添加一部手机、第二个浏览器或另一台桌面
+- [运行机群工作进程](/zh-CN/手册/操作指南/运行机群工作进程/)：添加一个拉取租约作业的 `cc_worker`

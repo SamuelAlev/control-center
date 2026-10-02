@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: افزودن مخزن به فضای کاری
+description: ثبت چک‌اوت‌های Git در یک فضای کاری تا عامل‌ها بتوانند روی آن‌ها کار کنند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+این راهنما نشان می‌دهد چگونه یک چک‌اوت Git را در یک فضای کاری ثبت کنید، دوباره ایندکسش کنید و دوباره برداریدش.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+مخزن‌ها **محدود به فضای کاری**اند. فهرست سراسری و مرحلهٔ پیونددادن وجود ندارد: افزودن یک مخزن و گذاشتنش در یک فضای کاری همان یک کارند. همان چک‌اوت اگر در دو فضای کاری ثبت شود، به دو سطر مستقل با دو شناسهٔ متفاوت تبدیل می‌شود — در میان فضاهای کاری، هویت یک مخزن مسیرش روی فایل‌سیستم است، هرگز شناسه‌اش.
 
-## Before you start
+## پیش از شروع
 
-A folder can only be registered if all three of these hold:
+یک پوشه تنها وقتی ثبت می‌شود که هر سه شرط زیر برقرار باشد:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. درون یک **work tree از git** قرار دارد.
+2. آن work tree یک **remote `origin`** دارد.
+3. آن remote `origin` به یک **میزبان کد پشتیبانی‌شده** اشاره می‌کند: github.com، gitlab.com یا bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+هر چیز دیگری هنگام ثبت با پیامی صریح رد می‌شود: "Folder is not inside a git work tree."، "No `origin` remote configured for this repository."، یا "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". حالت فقط‌محلی وجود ندارد.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+میزبان کد از remote خوانده و روی مخزن ذخیره می‌شود — هرگز خودتان آن را انتخاب نمی‌کنید. یک فضای کاری می‌تواند هم‌زمان مخزن‌هایی از هر سه داشته باشد و با هرکدام از طریق API خودش و با اعتبارنامهٔ خودش صحبت می‌شود. فضای‌نام‌های تودرتوی GitLab حفظ می‌شوند، پس `gitlab.com/group/subgroup/project` با مالک `group/subgroup` و نام `project` ثبت می‌شود.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+پوشه همچنین باید روی ماشینی باشد که `cc_server` را میزبانی می‌کند، درون یکی از پوشه‌های `--repo-roots` آن سرور. این فهرست مجاز به‌طور پیش‌فرض پوشهٔ خانهٔ کاربر سرور است و پیمایش بالاتر از یک ریشه رد می‌شود.
 
-## Register a checkout
+## ثبت یک چک‌اوت
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. **تنظیمات → فضای کاری → مخزن‌ها** را باز کنید (`/workspaces/<id>/settings/workspace/repositories`).
+2. روی **افزودن مخزن** کلیک کنید.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+این پنجره یک مرورگر پیمایش‌پذیر روی فایل‌سیستم **سرور** است، نه فایل‌سیستم شما. این جریان روی دسکتاپ، وب و تلفن یکسان است، چون یک انتخابگر پوشهٔ بومی پوشه‌ای روی ماشین اشتباه انتخاب می‌کرد.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. درون ریشه‌های پیکربندی‌شدهٔ سرور پیمایش کنید. پوشه‌هایی که چک‌اوت git هستند علامت می‌خورند.
+4. هر تعداد از آن‌ها را تیک بزنید. انتخاب هنگام پیمایش پایدار می‌ماند، پس می‌توانید چک‌اوت‌هایی از چند پوشه جمع کنید.
+5. همه را در یک دسته ثبت کنید.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+یک انتخاب ناموفق هرگز بقیهٔ دسته را حذف نمی‌کند — شناسه‌هایی که ساخته شده‌اند را می‌گیرید، به‌همراه یک خطای به‌ازای‌هر‌مسیر برای هر موردی که رد شده است. ثبت دوبارهٔ مسیری که از قبل در این فضای کاری هست، مخزن موجود را برمی‌گرداند نه یک رونوشت تکراری.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+هر مخزن ثبت‌شده در فهرست با `owner/name`، نشانی که میزبان کدش را نام می‌برد و مسیرش روی سرور ظاهر می‌شود. مخزن‌های GitHub آواتار مالک را هم نشان می‌دهند؛ میزبان‌های کد دیگر URL قابل‌حدسی برای آواتار مالک ندارند، پس به حرف اول نام برمی‌گردند.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+نشان میزبان کد در یک فضای کاری مختلط مهم است: دو مخزن می‌توانند روی میزبان‌های کد متفاوت هر دو `acme/web` نام داشته باشند و رفتارشان فرق می‌کند — اینکه یک بازبینی چه می‌تواند بکند و یک پیوند به کجا می‌رود.
 
-## What happens next
+## پس از آن چه می‌شود
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+ثبت، رویداد `RepoAdded` محدود به این فضای کاری را راه می‌اندازد که پایپ‌لاین `index_code` را برای آن چک‌اوت شروع می‌کند. همین است که گراف کد را پر می‌کند تا جستجو و تحلیل اثر چیزی برای پاسخ دادن داشته باشند.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/).
+فقط فایل‌هایی ایندکس می‌شوند که زبانشان گرامر همراه دارد (Dart، JavaScript، TypeScript، TSX، PHP، Python، Rust، Zig، C، C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB و Ada). [جستجوی کد با گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) را ببینید.
 
-## Re-index a repo
+## ایندکس دوبارهٔ یک مخزن
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+هر سطر یک دکمهٔ **ایندکس کد** دارد. رویش کلیک کنید تا ایندکسر برای آن چک‌اوت دوباره اجرا شود؛ تا وقتی اجرا می‌شود، دکمه به نمایشگر پیشرفت تبدیل می‌شود که فایل‌های انجام‌شده از کل را نشان می‌دهد، با یک کنترل لغو. وقتی تمام شد، به یک تیک همراه با تعداد نماد می‌رسد، یا اگر اجرا ناموفق بوده به یک هشدار.
 
-## Reorder repos
+## تغییر ترتیب مخزن‌ها
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+دستهٔ هر سطر را بکشید. ترتیبی که می‌گذارید همان ترتیبی است که هر فهرست مخزن در برنامه بازمی‌خواند.
 
-## Fix the GitHub link
+## اصلاح پیوند GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+آیکون پیوند روی یک سطر، ویرایشگری برای مالک GitHub و نام مخزن آن باز می‌کند — وقتی remote تغییر نام داده یا منتقل شده مفید است.
 
-## Remove a repo
+## برداشتن یک مخزن
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. **تنظیمات → فضای کاری → مخزن‌ها** را باز کنید.
+2. روی آیکون سطل زباله در سطر کلیک کنید.
+3. «مخزن از فضای کاری برداشته شود؟» را تأیید کنید.
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+پنجره می‌گوید چه می‌کند: «_name_ از این فضای کاری برداشته می‌شود. فایل‌های محلی روی دیسک دست نخورده می‌مانند.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+برداشتن، سطر مخزن را از این فضای کاری حذف می‌کند و سطرهای گراف کد آن را آبشاری پاک می‌کند — نمادها، یال‌ها، فایل‌ها و نقاط بازرسی ایندکس — به‌همراه هر مجوز مخزن به‌ازای هر عضو روی آن، پیوندهای فضا‌مخزنش و رکوردهای چک‌اوت ایزوله‌اش. همان چک‌اوت که در فضای کاری دیگری ثبت شده، سطری مستقل است و دست نمی‌خورد. worktreeهای روی دیسک که این رکوردها به آن‌ها اشاره داشتند با این حذف تخریب نمی‌شوند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Search code with the code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/)
-- [Run agents in parallel](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
-- [Your first workspace](/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/)
+- [جستجوی کد با گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/)
+- [اجرای موازی عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
+- [اولین فضای کاری شما(/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)

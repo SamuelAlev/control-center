@@ -1,54 +1,56 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Giới thiệu
+description: Control Center là buồng lái cho phát triển phần mềm đa agent.
 slug: vi-VN/so-tay
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center cho bạn quyền chỉ huy cả một đội máy agent lập trình AI. Khởi tạo agent, xem chúng làm việc trong thời gian thực, rà soát PR của chúng và quản lý kho mã, không gian làm việc cùng các tích hợp — từ ứng dụng desktop gốc, trình duyệt hoặc điện thoại.
 
 <div className="docs-start not-content">
-  <LinkButton href="/vi-VN/so-tay/bat-dau-nhanh/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/vi-VN/so-tay/cai-dat/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/vi-VN/so-tay/bat-dau-nhanh/" icon="right-arrow">Bắt đầu nhanh</LinkButton>
+  <LinkButton href="/vi-VN/so-tay/cai-dat/" variant="minimal" icon="download">Cài đặt Control Center</LinkButton>
 </div>
 
-## What you can do
+## Bạn có thể làm gì
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/vi-VN/so-tay/khai-niem/quy-trinh/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Nhắn tin cho agent**: space là cách chính để điều khiển đội máy. @-mention một agent và nó được điều phối vào worktree copy-on-write riêng, nên nhiều agent có thể lập trình và rà soát song song mà không đụng đến bản checkout của bạn
+- **Điều phối những yêu cầu lớn**: giao cho bộ điều phối một mục tiêu, phê duyệt một lần kế hoạch toàn đội mà nó đề xuất và một [quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/) đã tạo sẽ chạy kế hoạch đó
+- **Rà soát và merge PR** bằng trình xem diff tích hợp, bình luận nội tuyến và đánh giá hỗ trợ AI
+- **Giao cho agent những cỗ máy dùng một lần**: một [rig](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) là một VM dùng một lần — trình duyệt, desktop, điện thoại hay terminal khép kín — do agent điều khiển trong khi bạn xem trực tiếp và có thể tiếp quản; các máy chủ dev bên trong được chuyển tiếp tới `localhost`, trình duyệt của agent và `https://myapp.test`
+- **Tự động hóa luồng việc** bằng các quy trình dựa trên DAG, được kích hoạt bởi sự kiện hoặc lịch
+- **Quản lý tri thức** bằng bộ nhớ, dữ kiện và chính sách theo phạm vi không gian làm việc
+- **Theo dõi công việc** bằng phiếu, dự án và ủy thác không phụ thuộc nhà cung cấp
+- **Ghi lại cuộc họp** bằng cách thu ngay trên thiết bị, phiên âm và phân tách người nói, rồi tóm tắt thành ghi chú, việc cần làm và quyết định
+- **Nhìn bao quát ngày của bạn** với đồng bộ Google Calendar, RSVP, nhắc nhở cuộc họp cùng ghi và liên kết
+- **Theo dõi đội máy từ điện thoại**: ghép nối thiết bị với máy chủ rồi đọc tin nhắn, trả lời và phân loại phiếu. Điện thoại chọn đường đi tốt nhất mà nó tiếp cận được — loopback, LAN, tailnet hoặc TLS — và dự phòng sang một relay được niêm phong đầu-cuối, thứ chỉ chuyển tiếp những khung mà nó không thể đọc
+- **Điều khiển agent từ Slack**: nối một không gian làm việc với ứng dụng chat rồi nhắc đến bot, trả lời trong một luồng Slack, hoặc tạo phiếu bằng lệnh slash — qua một kết nối hướng ra ngoài, nên không cần endpoint công khai
+- **Tích hợp** với GitHub, Linear, Slack, Google Calendar và hơn 100 công cụ MCP
 
-## You do not have to install it
+## Bạn không nhất thiết phải cài đặt
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Ứng dụng tương tự cũng chạy trong trình duyệt của bạn tại
+[app.usectrl.dev](https://app.usectrl.dev), với đầy đủ tính năng như vậy.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Mọi máy khách — desktop, web và điện thoại — đều chỉ là một lớp hiển thị mỏng trên
+một máy chủ không giao diện, thứ sở hữu dữ liệu của bạn và làm mọi công việc. Ứng dụng
+desktop có thể khởi chạy máy chủ đó thay bạn; một tab trình duyệt thì không, nên ứng
+dụng web kết nối tới máy chủ do bạn chạy. Máy chủ đó có thể nằm trên chính máy của bạn
+(`ws://localhost:9030`, không cần chứng chỉ) hoặc trên một máy chủ từ xa truy cập được
+qua TLS, VPN hoặc đường hầm.
 
-See [Install](/vi-VN/so-tay/cai-dat/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/) for how the three clients relate.
+Xem [Cài đặt](/vi-VN/so-tay/cai-dat/#use-it-in-your-browser) để biết cách dùng trên trình duyệt và
+[Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) để hiểu ba máy khách liên hệ với nhau ra sao.
 
-## Next steps
+## Các bước tiếp theo
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/vi-VN/so-tay/cai-dat/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/vi-VN/so-tay/bat-dau-nhanh/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/vi-VN/so-tay/huong-dan/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/vi-VN/so-tay/huong-dan-thuc-hanh/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/vi-VN/so-tay/khai-niem/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/vi-VN/so-tay/tham-chieu/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Cài đặt" href="/vi-VN/so-tay/cai-dat/" description="Tải xuống, yêu cầu hệ thống và nơi máy chủ chạy." />
+  <LinkCard title="Bắt đầu nhanh" href="/vi-VN/so-tay/bat-dau-nhanh/" description="Con đường hoàn chỉnh ngắn nhất để một agent làm việc trên kho mã của bạn." />
+  <LinkCard title="Hướng dẫn" href="/vi-VN/so-tay/huong-dan/" description="Các bài học dài hơn, theo thứ tự, bắt đầu với không gian làm việc đầu tiên của bạn." />
+  <LinkCard title="Hướng dẫn thực hành" href="/vi-VN/so-tay/huong-dan-thuc-hanh/" description="Công thức cho từng tác vụ một: thêm kho mã, cấu hình rào chắn hoặc ghép nối điện thoại." />
+  <LinkCard title="Khái niệm" href="/vi-VN/so-tay/khai-niem/" description="Vì sao sản phẩm hoạt động theo cách này, bắt đầu với triển khai và máy khách." />
+  <LinkCard title="Tham chiếu" href="/vi-VN/so-tay/tham-chieu/" description="Bảng đầy đủ về tuyến, công cụ MCP, phím tắt và sự kiện miền." />
 </div>

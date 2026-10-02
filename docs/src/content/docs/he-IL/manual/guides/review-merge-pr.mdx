@@ -1,135 +1,134 @@
 ---
-title: Review and merge a PR
-description: Open a PR workbench, read the diff, leave inline comments, submit a review and merge.
+title: סקירה ומיזוג של בקשת משיכה
+description: פתחו משטח עבודה לבקשת משיכה, קראו את ה-diff, השאירו הערות מוטבעות, שלחו סקירה ומזגו.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr
+sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
 ---
 
-This guide shows you how to review and merge a pull request.
+המדריך הזה מראה לכם איך לסקור ולמזג בקשת משיכה.
 
-## Open the PR workbench
+## פתיחת משטח העבודה של בקשת המשיכה
 
-1. Navigate to **Pull requests** in the sidebar
-2. Select a PR from the list
+1. עברו אל **בקשות משיכה** בסרגל הצד
+2. בחרו בקשת משיכה מהרשימה
 
-A PR opens as a tabbed workbench, not a single page. Five tabs open by default, in
-this order: **Overview**, **Diff**, **Source control**, **Chat** and **Actions**
-(CI checks grouped by workflow). **Review** — the review pipeline's progress, then
-the artifact it published with its findings rail — is deliberately not one of them:
-a PR has no review until someone asks for one, so **Ask AI** opens it. A terminal,
-a single-file editor, an embedded code-server and an in-app browser open on demand;
-deployment-preview tabs are injected automatically when a preview URL is detected
-on the PR. Your tab layout is remembered per PR.
+בקשת משיכה נפתחת כמשטח עבודה עם לשוניות, ולא כדף בודד. חמש לשוניות נפתחות
+כברירת מחדל, בסדר הזה: **סקירה כללית**, **הבדלים**, **בקרת מקור**, **צ'אט**
+ו**פעולות** (בדיקות CI מקובצות לפי תהליך עבודה). **סקירה** — ההתקדמות של פייפליין
+הסקירה, ואחר כך הארטיפקט שהוא פרסם עם מסילת הממצאים שלו — במכוון אינה אחת מהן:
+לבקשת משיכה אין סקירה עד שמישהו מבקש אחת, ולכן **שאל את ה־AI** הוא שפותח אותה.
+טרמינל, עורך לקובץ בודד, code-server מוטמע ודפדפן בתוך האפליקציה נפתחים לפי
+דרישה; לשוניות של תצוגה מקדימה לפריסה מוזרקות אוטומטית כשמזוהה כתובת URL של תצוגה
+מקדימה בבקשת המשיכה. פריסת הלשוניות שלכם נשמרת לכל בקשת משיכה בנפרד.
 
-The Overview tab carries the PR's metadata (author, branch, labels, assignees,
-reactions, commits, check status) and the action row: refresh, **Review**,
-**Merge**, open in IDE and a ⋯ overflow menu.
+לשונית **סקירה כללית** נושאת את המטא-נתונים של בקשת המשיכה (מחבר, ענף, תוויות,
+אחראים, ריאקציות, קומיטים, מצב הבדיקות) ואת שורת הפעולות: רענון, **סקירה**,
+**מזג**, פתיחה ב-IDE ותפריט הצפה ⋯.
 
-## Read the diff
+## קריאת ה-diff
 
-Open the **Diff** tab to see the whole PR diff at once, with a file tree for
-jumping between files.
+פתחו את לשונית **הבדלים** כדי לראות את כל ה-diff של בקשת המשיכה בבת אחת, עם עץ
+קבצים למעבר בין קבצים.
 
-- The settings button in the diff toolbar switches **split** (side-by-side) and
-  **unified** view and toggles line wrapping and code-font ligatures.
-- `@@` hunk headers are replaced by **Show N lines** / **Show end of file**
-  affordances that splice in the surrounding context on click.
-- Press `j` / `k` to step between files, `c` to collapse or expand the focused
-  file, `t` to return the sidebar to the file tree and `⌘F` to search across the
-  whole diff (`Enter` / `Shift+Enter` walk the matches).
-- Press `v` to mark the focused file as viewed, and the cursor advances to the
-  next file. On GitHub the viewed state is stored on the forge, so it follows you
-  between clients; GitLab and Bitbucket have no such API, so there it is
-  remembered on this device only.
+- כפתור ההגדרות בסרגל הכלים של ה-diff מחליף בין תצוגה **מפוצלת** (זה לצד זה)
+  לתצוגה **מאוחדת**, ומפעיל או מכבה גלישת שורות וליגטורות בגופן הקוד.
+- כותרות hunk מסוג `@@` מוחלפות בלחצנים **Show N lines** / **Show end of file**
+  שמלבישים בלחיצה את ההקשר שמסביב.
+- הקישו על `j` / `k` כדי לדלג בין קבצים, על `c` כדי לקפל או לפרוס את הקובץ
+  שבמיקוד, על `t` כדי להחזיר את סרגל הצד לעץ הקבצים ועל `⌘F` כדי לחפש בכל
+  ה-diff (`Enter` / `Shift+Enter` עוברים בין ההתאמות).
+- הקישו על `v` כדי לסמן את הקובץ שבמיקוד כנצפה, והסמן מתקדם לקובץ הבא. ב-GitHub
+  מצב הצפייה נשמר במארח הקוד, כך שהוא עוקב אחריכם בין לקוחות; ל-GitLab
+  ול-Bitbucket אין API כזה, ולכן שם הוא נזכר רק במכשיר הזה.
 
-Mouse-drag in the code area selects text down to the exact column and `⌘C`
-copies the raw source rather than the rendered diff markers.
+גרירת עכבר באזור הקוד בוחרת טקסט עד העמודה המדויקת, ו-`⌘C` מעתיק את קוד המקור
+הגולמי ולא את סמני ה-diff המוצגים.
 
-## Leave inline comments
+## השארת הערות מוטבעות
 
-1. Tap a code row's gutter to open a composer anchored to that line, or use the
-   `+` button on a file header for a file-level comment
-2. Write your feedback in Markdown
-3. Submit
+1. הקישו על השוליים של שורת קוד כדי לפתוח תיבת כתיבה המעוגנת לאותה שורה, או
+   השתמשו בלחצן `+` בכותרת קובץ להערה ברמת הקובץ
+2. כתבו את המשוב שלכם ב-Markdown
+3. שלחו
 
-On GitHub and GitLab the composer offers two submits: **Add single comment**
-posts immediately, and **Start a review** / **Add to review** queues the
-comment onto a pending review that goes out with **Approve**, **Request
-changes** or **Comment**. Bitbucket has no pending-review batching, so there
-every submit posts immediately. An immediate post shows a pending state until
-the forge confirms it, then flips to synced. If the post fails, the thread is
-marked with the error and offers a retry.
+ב-GitHub וב-GitLab תיבת הכתיבה מציעה שתי דרכי שליחה: **הוספת תגובה בודדת**
+מפרסמת מיד, ו**התחלת סקירה** / **הוספה לסקירה** משייכת את התגובה לסקירה ממתינה
+שיוצאת עם **אישור**, **בקש שינויים** או **תגובה**. ל-Bitbucket אין קיבוץ
+לסקירה ממתינה, ולכן שם כל שליחה מפרסמת מיד. פרסום מיידי מציג מצב ממתין עד שמארח
+הקוד מאשר אותו, ואז מתחלף למסונכרן. אם הפרסום נכשל, השרשור מסומן בשגיאה ומציע
+ניסיון חוזר.
 
-Only the review _body_ is a draft: it is saved server-side against
-(owner, repo, PR number) a moment after you stop typing, so it survives a reload
-and follows you between the desktop and web clients.
+רק _הגוף_ של הסקירה הוא טיוטה: הוא נשמר בצד השרת לפי (בעלים, מאגר, מספר בקשת
+המשיכה) רגע אחרי שאתם מפסיקים להקליד, כך שהוא שורד רענון ועוקב אחריכם בין לקוח
+שולחן העבודה ללקוח הווב.
 
-## Submit a review
+## שליחת סקירה
 
-1. Press **Review** in the Overview action row (it is hidden on your own PRs and
-   on a closed or merged PR)
-2. Write the review body. You can attach an image, insert an emoji or a GIF and
-   toggle between write and preview
-3. Press **Request changes**, **Comment** or **Approve**
+1. לחצו על **סקירה** בשורת הפעולות של **סקירה כללית** (הוא מוסתר בבקשות המשיכה
+   שלכם ובבקשת משיכה סגורה או מוזגת)
+2. כתבו את גוף הסקירה. אפשר לצרף תמונה, להוסיף אימוג'י או GIF ולהחליף בין כתיבה
+   לתצוגה מקדימה
+3. לחצו על **בקש שינויים**, **תגובה** או **אישור**
 
-The verdict _is_ the button — there is no separate verdict picker. After
-**Approve** or **Request changes**, the button relabels itself to **Approved**
-or **Requested changes** and the draft body is cleared. A **Comment** verdict
-leaves the button labelled **Review**.
+ההכרעה _היא_ הלחצן — אין בורר הכרעה נפרד. אחרי **אישור** או **בקש שינויים**,
+הלחצן מתויג מחדש כ**אושר** או **ביקש שינויים**, וגוף הטיוטה נמחק. הכרעה של
+**תגובה** משאירה את הלחצן בתווית **סקירה**.
 
-:::caution[Submitting is irreversible]
-`pr_review.submitReview` publishes to the forge and never enters the undo stack.
-There is no "unsubmit" from Control Center.
+:::caution[השליחה אינה הפיכה]
+`pr_review.submitReview` מפרסם למארח הקוד ולעולם אינו נכנס למחסנית הביטול.
+אין „ביטול שליחה" מתוך Control Center.
 :::
 
-## Merge
+## מיזוג
 
-The **Merge** button appears when you have write access and the PR is open and not
-a draft. Its colour is a readiness signal derived from required approvals and
-check state (ready / pending / blocked) — it is advisory only. The button is never
-disabled by review state; the forge's own branch protection is what enforces
-the rules.
+הלחצן **מזג** מופיע כשיש לכם הרשאת כתיבה ובקשת המשיכה פתוחה ואינה טיוטה. הצבע
+שלו הוא אות מוכנות הנגזר מהאישורים הנדרשים וממצב הבדיקות (מוכן / ממתין / חסום) —
+והוא בגדר המלצה בלבד. מצב הסקירה לעולם אינו מנטרל את הלחצן; הגנת הענפים של מארח
+הקוד עצמו היא שאכופה את הכללים.
 
-1. Press **Merge** to open the merge flyout
-2. Pick a merge method: **squash**, **merge commit** or **rebase** (squash is the
-   default). Bitbucket has no true rebase merge, so rebase maps to its
-   fast-forward strategy and fails on a diverged branch
-3. For squash and merge commit, edit the prefilled commit title and description.
-   Rebase takes neither and hides both fields
-4. Read the warnings panel — it names failing checks and pending reviews, but does
-   not block you
-5. Press the merge button in the flyout to confirm
+1. לחצו על **מזג** כדי לפתוח את חלונית המיזוג
+2. בחרו שיטת מיזוג: **squash**, **merge commit** או **rebase** (squash הוא
+   ברירת המחדל). ל-Bitbucket אין מיזוג rebase אמיתי, ולכן rebase ממופה
+   לאסטרטגיית ה-fast-forward שלו ונכשל בענף שהסתעף
+3. ב-squash וב-merge commit, ערכו את כותרת הקומיט והתיאור שמולאו מראש. rebase
+   לא מקבל אף אחד מהם ומסתיר את שני השדות
+4. קראו את חלונית האזהרות — היא מפרטת בדיקות שנכשלו וסקירות שממתינות, אבל אינה
+   חוסמת אתכם
+5. לחצו על לחצן המיזוג בחלונית כדי לאשר
 
-Merging is irreversible: it pushes commits to the forge, so it gets a confirmation
-step instead of an undo entry. Afterwards the PR's cache is invalidated, its status
-flips to **Merged** and a `PullRequestStatusChanged` event fires with status
-`merged`. That event releases the ephemeral "open in editor" worktree and starts
-two seeded pipelines: **Stale repository cleanup**, which removes the PR's stale
-worktrees and conversation folders and **Release notes**, which drafts a changelog
-entry.
+המיזוג אינו הפיך: הוא דוחף קומיטים למארח הקוד, ולכן הוא מקבל שלב אישור במקום
+רשומת ביטול. אחר כך המטמון של בקשת המשיכה מבוטל, הסטטוס שלה מתחלף ל**מוזג**,
+ואירוע `PullRequestStatusChanged` נורה עם הסטטוס `merged`. האירוע הזה משחרר את עץ
+העבודה הזמני של „פתיחה בעורך" ומפעיל שני פייפליינים מובנים מראש: **Stale
+repository cleanup**, שמסיר את עצי העבודה ותיקיות השיחה הישנים של בקשת המשיכה,
+ו**Release notes**, שמנסח רשומה ביומן השינויים.
 
-:::note[The PR review space is not auto-archived]
-Auto-archiving the review space's conversations is wired to a separate `PrMerged`
-domain event that nothing in the product currently emits, so the space stays as
-you left it after a merge. The daily cleanup sweep still reclaims its worktree;
-delete the space yourself if you want it out of the sidebar.
+:::note[מרחב הסקירה של בקשת המשיכה אינו נארכב אוטומטית]
+ארכוב אוטומטי של השיחות במרחב הסקירה מחובר לאירוע תחום נפרד בשם `PrMerged` ששום
+דבר במוצר אינו מפיק כיום, ולכן המרחב נשאר כפי שהשארתם אותו אחרי מיזוג. סריקת
+הניקוי היומית עדיין מפנה את עץ העבודה שלו; מחקו את המרחב בעצמכם אם אתם רוצים
+אותו מחוץ לסרגל הצד.
 :::
 
-## Hand the PR to reviewer agents
+## העברת בקשת המשיכה לסוכני סקירה
 
-The ⋯ overflow menu on the Overview tab carries **Ask AI**, which starts the
-seeded `pr_review` pipeline for this PR. It only appears while the PR is open. See
-[Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) for what the pipeline does and
-how to publish its findings, and [Review compute](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
-for the deterministic cohort and axis model.
+תפריט ההצפה ⋯ בלשונית **סקירה כללית** מכיל את **שאל את ה־AI**, שמפעיל את
+הפייפליין המובנה מראש `pr_review` עבור בקשת המשיכה הזו. הוא מופיע רק כשבקשת
+המשיכה פתוחה. ראו
+[שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) כדי לדעת מה
+הפייפליין עושה ואיך לפרסם את הממצאים שלו, ו[חישוב
+סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/) למודל הדטרמיניסטי של קבוצות
+וצירים.
 
-## Review an external PR
+## סקירת בקשת משיכה חיצונית
 
-Control Center also imports PRs opened by humans outside the app. The review flow
-above is identical. External PRs are detected by the PR polling service.
+Control Center מייבא גם בקשות משיכה שנפתחו בידי אנשים מחוץ לאפליקציה. זרימת
+הסקירה שלמעלה זהה. בקשות משיכה חיצוניות מזוהות על ידי שירות הסקירה המחזורית של
+בקשות משיכה.
 
-## Related guides
+## מדריכים קשורים
 
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
-- [Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
-- [Review compute (cohorts and axes)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
-- [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
+- [שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
+- [חישוב סקירה (קבוצות וצירים)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
+- [חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)

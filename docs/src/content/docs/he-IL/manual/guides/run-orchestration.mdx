@@ -1,126 +1,117 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: הרצת תזמור
+description: בקשו ממתזמר תוכנית, סקרו וערכו אותה ב-Plan Studio, אשרו אותה פעם אחת ותנו לפייפליין שנוצר לעשות את העבודה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/) for how it works.
+מדריך זה מראה כיצד להפוך מטרה גדולה אחת לתוכנית של צוות שלם שרצה מעצמה. ראו
+[תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/) כדי להבין איך זה עובד.
 
-## When to use an orchestration
+## מתי להשתמש בתזמור
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/); for a process you can spell out by
-hand, build a [pipeline template](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/).
+פנו לתזמור כשהבקשה גדולה מסוכן אחד ואתם כבר לא יודעים מה הם הצעדים המדויקים.
+למשימה בודדת, שלחו הודעה לסוכן ב[מרחב](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/); לתהליך
+שאתם יכולים לפרט ביד, בנו [תבנית פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/).
 
-## Step 1: Ask for the plan
+## שלב 1: בקשו את התוכנית
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. פתחו (או צרו) מרחב ו**כרטיס עוגן**. כל הצעה מחייבת אחד כזה
+   (`propose_orchestration` מקבל `ticket_id`); המרחב המשותף מגיע מאותו כרטיס.
+2. אפשר גם להחליף את התפריט הנפתח של המצב בתיבת הכתיבה ל**תזמור**. מצב זה
+   מצמצם את הסוכן לקריאה ולהצעה — זיכרון, גרף הקוד, קריאות של מאגרים וכרטיסים,
+   `propose_orchestration` וכלי הפלייבוק — כך שהוא לא יכול להתחיל לכתוב קוד
+   במקום לתכנן.
+3. תייגו ב-@ את המתזמר שלכם (בדרך כלל סוכן ה-CEO) ונסחו את המטרה בשפה פשוטה:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo חקרו את נוף התחרות של מקליט פגישות שעובד קודם כל לא־מקוון וכתבו מסמך
+> מיצוב של עמוד אחד.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+המתזמר עונה בכרטיס **הצעה** מובנה במרחב: התפקידים שהוא צריך, העבודה מפורקת
+לתת־כרטיסים, שלב מחקר ודיון אופציונלי, שלב סינתזה שמפיק את התוצר ותקציב.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+מכיוון שההצעה היא אובייקט טיפוסי, האפליקציה מאמתת אותה (תפקידים תקינים, סכמות
+פלט מוצהרות, DAG בלי מעגלים) לפני שמשהו רץ. הצעה שנכשלת באימות אינה ניתנת
+לאישור.
 
-## Step 2: Review and edit the proposal
+## שלב 2: סקרו וערכו את ההצעה
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+הכרטיס שבצ'אט מציע שלוש פעולות: **אישור התוכנית**, **דחייה** ו**פתיחה** —
+שפותחת את התוכנית ב-Plan Studio כלשונית עורך. הכרטיס עצמו אינו ניתן לעריכה.
 
-To change anything, press **Open** and work in the right-hand inspector:
+כדי לשנות משהו, לחצו על **פתיחה** ועבדו בחלונית הימנית:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **כותרת**, **תיאור**, **תפקיד**, **תלויות** ו**סכמת פלט** של כל שלב עבודה.
+  תפקיד כאן פירושו איזה ממפתחות התפקידים הקיימים של התוכנית הוא הבעלים של
+  השלב — אי אפשר להצמיד תפקיד לסוכן בשמו או לערוך את רשימת הגיוסים מהחלונית,
+  ואי אפשר לערוך את התקציב.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+שני דברים הם לקריאה בלבד: צמתים מבניים (מחקר, דיון, סינתזה) וכל צומת שעבודתו
+כבר רצה. עריכה אפשרית רק כל עוד התזמור עודנו `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/) for the full editor.
+לחצו על **חישוב אומדן** בסרגל האישור כדי לראות טווחי עלות, משך ורדיוס פגיעה
+לפני שאתם מאשרים. ראו
+[עבודה ב־Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/) לעורך המלא.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/).
+:::note[התקציב אינו תקרת הוצאה]
+התקציב של הצעה מושווה מול ה_אומדן_ בסרגל האישור: כשהקצה העליון של האומדן חורג
+ממנו, הסכום הכולל מאדים עם אזהרת חריגה מהתקציב. שום דבר לא בודק הוצאה בזמן
+שהתוכנית רצה, כך שזה לא יעצור ולא יכשיל הרצה. לעצירת הוצאה ממשית, השתמשו
+במדיניויות תקציב לפי סוכן — ראו
+[ניהול עלויות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/).
 :::
 
-## Step 3: Approve
+## שלב 3: אשרו
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+אשרו את התוכנית, מהכרטיס בצ'אט או מסרגל האישור של Plan Studio.
+**זו ההחלטה היחידה שאתם מקבלים.** האישור הוא למפעיל בלבד — אין כלי MCP לכך, כך
+שסוכן יכול להציע ולשנות גרסה אך לעולם לא לאשר את התוכנית של עצמו.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) and creates the
-scaffolding:
+מכאן, מממש דטרמיניסטי (פונקציה טהורה, בלי LLM) הופך את ההצעה
+ל[פייפליין](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) אמיתי ויוצר את התשתית:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- מגייס כל תפקיד חדש (ורושם את מזהי הסוכנים המגויסים כך שקריסה באמצע האישור
+  תוכל לחדש בלי גיוסים כפולים)
+- מקבץ את התפקידים ל**צוות**
+- יוצר **פרויקט** ומשייך אליו את כרטיס האב
+- מתחיל את **הרצת הפייפליין** שמניעה את הכול
 
-The status moves to `approved`, then `executing`.
+הסטטוס עובר ל-`approved`, ואחר כך ל-`executing`.
 
-## Step 4: Watch it run
+## שלב 4: עקבו אחרי ההרצה
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+תת־הכרטיסים מבוצעים כשלבי פייפליין; אם הפעלתם סבב דיון, כל תפקיד מפרסם תחילה
+עמדה. ההתקדמות מופיעה במקומות שאתם ממילא מביטים בהם:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
-- the **project** the parent ticket was filed under
+- **כרטיס האב** שהתזמור עוגן עליו
+- ה**מרחב** המשותף שהצוות מדבר בו, שבו השורה של התוכנית עוקבת אחרי מצבו של כל
+  צומת
+- פרטי **הרצת הפייפליין**, עם מפל הזמנים הרגיל שלו והעלות לפי שלב — ראו
+  [מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
+- ה**פרויקט** שכרטיס האב שויך אליו
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+כשהתת־כרטיסים מסתיימים, הסטטוס עובר ל-`synthesizing` ושלב הסינתזה מפיק את
+התוצר. הטקסט הזה מתפרסם במרחב המשותף וכרטיס האב מסומן כהושלם, ואז `completed`.
 
-## Stop it early
+## עצרו את זה מוקדם
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+לחצו על **ביטול התזמור** בכרטיס שבצ'אט, או על **ביטול ההרצה** בסרגל האישור של
+Plan Studio. הביטול מפרק את העבודה שבאוויר.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+תזמור נכשל כשהמימוש נכשל, או כשהרצת הפייפליין שנוצרה נכשלת (מחקר, דיון, סינתזה
+או שימור — השלבים האלה אינם ממשיכים בכישלון). שלבי **עבודה** שנוצרו ממשיכים תמיד
+בכישלון, כך שתת־כרטיס אחד שנכשל לא מכשיל את ההרצה. אין מסלול כישלון של חריגה
+מהתקציב ואין סף של "כל תת־הכרטיסים נכשלו".
 
-## Related guides
+## מדריכים קשורים
 
-- [Work in Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/): where the parent ticket is filed
-- [Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/): the roles an orchestration fills or hires
+- [עבודה ב־Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/): עריכה, אומדן, השוואת גרסאות ואישור התוכנית
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/): כרטיס האב שהתזמור מעוגן עליו
+- [ארגון עבודה בפרויקטים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/): המקום שאליו כרטיס האב משויך
+- [מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/): איך נראה תזמור ממומש במנוע
+- [בניית צוות סוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/): התפקידים שהתזמור ממלא או מגייס
 
-## Related concepts
+## מושגים קשורים
 
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)

@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Introduzione
+description: Control Center è il cockpit per lo sviluppo software multi-agente.
 slug: it-IT/manuale
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center ti dà il comando di una flotta di agenti di codifica IA. Avvia agenti, guardali lavorare in tempo reale, revisiona le loro PR e gestisci repo, spazi di lavoro e integrazioni — da un'app desktop nativa, da un browser o dal tuo telefono.
 
 <div className="docs-start not-content">
-  <LinkButton href="/it-IT/manuale/avvio-rapido/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/it-IT/manuale/installazione/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/it-IT/manuale/avvio-rapido/" icon="right-arrow">Avvio rapido</LinkButton>
+  <LinkButton href="/it-IT/manuale/installazione/" variant="minimal" icon="download">Installa Control Center</LinkButton>
 </div>
 
-## What you can do
+## Cosa puoi fare
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/it-IT/manuale/concetti/pipeline/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/it-IT/manuale/guide/usa-rig/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Invia messaggi agli agenti**: gli spazi sono il modo principale per pilotare la flotta. Menziona un agente con @ e viene inviato in un worktree copy-on-write tutto suo, così più agenti possono scrivere codice e revisionare in parallelo senza toccare la tua copia di lavoro
+- **Orchestra le grandi richieste**: assegna un obiettivo all'orchestratore, approva una volta il piano dell'intero team che propone e una [pipeline](/it-IT/manuale/concetti/pipeline/) generata lo esegue
+- **Revisiona e unisci le PR** con un visualizzatore di diff integrato, commenti in linea e revisione IA
+- **Assegna agli agenti macchine usa e getta**: un [rig](/it-IT/manuale/guide/usa-rig/) è una VM usa e getta — un browser, un desktop, un telefono o un terminale isolato — che l'agente pilota mentre tu osservi in diretta e puoi prendere il controllo; i server di sviluppo al suo interno sono inoltrati verso `localhost`, il browser dell'agente e `https://myapp.test`
+- **Automatizza i flussi di lavoro** con pipeline basate su DAG, attivate da eventi o pianificazioni
+- **Gestisci la conoscenza** con memoria, fatti e policy con ambito di spazio di lavoro
+- **Segui il lavoro** con ticket, progetti e delega indipendenti dal fornitore
+- **Registra le riunioni** con acquisizione, trascrizione e diarizzazione sul dispositivo, poi riassunte in note, attività da fare e decisioni
+- **Guarda la tua giornata** con la sincronizzazione con Google Calendar, RSVP, avvisi delle riunioni e registrazione con collegamento
+- **Segui la flotta dal telefono**: associa un dispositivo al tuo server e leggi i messaggi, rispondi e smista i ticket. Il telefono sceglie il percorso migliore che riesce a raggiungere — loopback, LAN, tailnet o TLS — e ripiega su un relay sigillato end-to-end che inoltra frame che non riesce a leggere
+- **Pilota gli agenti da Slack**: collega uno spazio di lavoro a un'app di chat e menziona il bot, rispondi in un thread Slack o crea un ticket con un comando slash — tramite una connessione in uscita, quindi non serve un endpoint pubblico
+- **Integra** GitHub, Linear, Slack, Google Calendar e oltre 100 strumenti MCP
 
-## You do not have to install it
+## Non devi installarlo
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+La stessa applicazione gira nel tuo browser su
+[app.usectrl.dev](https://app.usectrl.dev), con le stesse funzionalità.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Ogni client — desktop, web e telefono — è un semplice renderer sopra un server headless che
+possiede i tuoi dati e fa il lavoro. Il desktop può avviare quel server per te; una scheda
+del browser non può farlo, quindi l'app web si connette a un server che esegui tu. Quel
+server può risiedere sulla tua macchina (`ws://localhost:9030`, nessun certificato necessario)
+o su un host remoto raggiungibile tramite TLS, una VPN o un tunnel.
 
-See [Install](/it-IT/manuale/installazione/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/it-IT/manuale/concetti/deployment/) for how the three clients relate.
+Vedi [Installazione](/it-IT/manuale/installazione/#use-it-in-your-browser) per la via del browser e
+[Deployment e client](/it-IT/manuale/concetti/deployment/) per capire come si rapportano i tre client.
 
-## Next steps
+## Prossimi passi
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/it-IT/manuale/installazione/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/it-IT/manuale/avvio-rapido/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/it-IT/manuale/tutorial/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/it-IT/manuale/guide/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/it-IT/manuale/concetti/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/it-IT/manuale/riferimento/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Installazione" href="/it-IT/manuale/installazione/" description="Download, requisiti di sistema e dove gira il server." />
+  <LinkCard title="Avvio rapido" href="/it-IT/manuale/avvio-rapido/" description="Il percorso completo più breve verso un agente che lavora sul tuo repo." />
+  <LinkCard title="Tutorial" href="/it-IT/manuale/tutorial/" description="Lezioni più lunghe, in ordine, a partire dal tuo primo spazio di lavoro." />
+  <LinkCard title="Guide pratiche" href="/it-IT/manuale/guide/" description="Ricette per un compito alla volta: aggiungi repo, configura i guardrail o associa il tuo telefono." />
+  <LinkCard title="Concetti" href="/it-IT/manuale/concetti/" description="Perché il prodotto funziona come funziona, a partire da deployment e client." />
+  <LinkCard title="Riferimento" href="/it-IT/manuale/riferimento/" description="Tabelle complete per route, strumenti MCP, scorciatoie da tastiera ed eventi di dominio." />
 </div>

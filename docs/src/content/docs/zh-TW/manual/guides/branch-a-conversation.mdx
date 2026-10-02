@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: 分支對話
+description: 從較早的時間點嘗試另一種做法，同時不失去你已經有的那一條，再分叉或匯出你想留下的部分。
 slug: zh-TW/手冊/操作指南/分支對話
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+本指南說明如何回到對話中較早的時間點，把對話帶往別的方向——同時保留你離開的那條路徑。
 
-## The one thing worth knowing
+## 唯一一件值得知道的事
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**分支不會寫入任何東西。** 對話是一棵訊息樹，頂端有一個指標，而往回走只是移動那個指標。沒有任何東西被刪除，也沒有任何東西被藏起來，切換回去同樣只是再移動一次指標。
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+這就是為什麼在這裡編輯提示並重新執行是安全的：你拿來對照的那個答案依然在原處。
 
-## See the branches
+## 查看分支
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+導覽器會列出每一則訊息，並在每個分叉處縮排，目前的路徑則標示為 **在此分支上**。從未分叉過的對話，仍會呈現成它一向的那份扁平清單——在有東西可導覽之前，看這個導覽器不需要付出任何代價。
 
-Each row offers two actions.
+每一列提供兩個操作。
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| 操作               | 效果                                                    |
+| ------------------ | ------------------------------------------------------- |
+| **從這裡繼續**     | 移動指標。你的下一則訊息會從那一則訊息接續下去。         |
+| **分叉成新對話**   | 把到那則訊息為止的路徑複製到一個新對話。                 |
 
-## Branch: try a different approach
+## 分支：嘗試另一種做法
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. 找到你想重新開始的那則訊息——通常是你最後一次覺得滿意的那則。
+3. **從這裡繼續。**
+4. 輸入新的提示。
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+原本的後續內容仍在樹裡；`/tree` 現在會從那個點顯示出兩條路徑，你可以自由地在兩者之間切換。
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[你離開的那條路徑仍在原處]
+分支不會隱藏或刪除任何東西。`/tree` 會列出每一條路徑，把目前這條標示為 **在此分支上**，而切換就是透過它來完成。
 :::
 
-## Fork: take it somewhere else
+## 分叉：把它帶往別處
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+分叉會把路徑複製成同一個空間裡的**新對話**。當兩個方向將持續分道揚鑣，而你想要它們並排存在、而不是來回切換時，就用這個。
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+這份複本擁有全新的訊息 id。兩個共用資料列的對話會互相顯示對方後來的訊息，而這正是分叉存在的目的所要防止的事。
 
-## Revert versus branch
+## 還原與分支的差別
 
-They are different tools and the difference matters.
+它們是不同的工具，而這個差別很重要。
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                     | 還原                                 | 分支                          |
+| ------------------- | ------------------------------------ | ----------------------------- |
+| 後來的訊息          | 從逐字稿中隱藏                       | 在 `/tree` 中仍然可見         |
+| **工作樹**          | 回復到該回合的快照                   | 不受影響                      |
+| 復原                | **取消還原**會還原整個批次           | 把指標移回去                  |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+當代理改動了你想要拿回的*檔案*時，你要的是還原。當對話走錯了方向、但檔案沒事時，你要的是分支。
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+還原也會移動分支頂端，因此你的下一則訊息會從正確的位置接續，而不是從一段再也沒有人看得見的尾端接下去。
 
-## Take it out of the app
+## 把它帶出應用程式
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+寫出一個**自成一體的 HTML 檔案**：整段對話，加上可摺疊的工具卡片，顯示每次呼叫拿到什麼、又回傳了什麼。沒有樣式表、沒有指令碼、沒有圖片主機——它放在 USB 隨身碟裡也照樣能開，五年後也一樣。
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **桌面版：** `Documents/ControlCenter/exports/`，檔名帶有時間戳，因此第二次匯出不會覆蓋第一次。
+- **網頁版：** 由瀏覽器下載。
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+把逐字稿以 markdown 複製到剪貼簿，工具呼叫則放在可摺疊的區塊裡。要貼進議題的就是這一個。
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+推理是刻意排除在外的：那是模型的草稿空間，而錯誤回報是給人讀的。
 
-## Related
+## 相關內容
 
-- [Conversation history](/zh-TW/手冊/概念/對話紀錄/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/zh-TW/手冊/參考/斜線指令/) — `/tree`, `/export`, `/dump`
+- [對話紀錄](/zh-TW/手冊/概念/對話紀錄/) — 為什麼樹狀結構是一次指標移動，以及接續實際上還原了什麼
+- [斜線指令](/zh-TW/手冊/參考/斜線指令/) — `/tree`, `/export`, `/dump`

@@ -1,113 +1,98 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: 編排
+description: 一個「大型需求」如何變成你只核准一次的整團隊計畫，接著再化為執行該計畫的生成管線。
 slug: zh-TW/手冊/概念/編排
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+單一代理擅長做好一件事。有些需求的格局比這更大：「研究 X 的市場並寫出一份定位文件」、「把這項功能端到端交付上線」、「稽核這個模組並修正你發現的問題」。**編排**就是 Control Center 處理這類需求的方式：由編排器（通常是你的 CEO 代理）提出一份整團隊計畫，你核准**一次**，接著由確定性的具體化器把它轉成一條負責實際執行工作的管線。
 
-It sits between the two existing ways of getting work done:
+它介於現有兩種完成工作的方式之間：
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/zh-TW/手冊/概念/派送生命週期/) |
-| Encode a process you already know, by hand        | A [pipeline template](/zh-TW/手冊/概念/管線/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| 當你想要…                                         | 使用                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| 把一項任務交給一個代理                            | [空間中的訊息](/zh-TW/手冊/概念/派送生命週期/)                 |
+| 以手動方式編寫你已經知道的流程                    | [管線範本](/zh-TW/手冊/概念/管線/)                            |
+| 說出目標，讓團隊自行想出計畫                      | **編排**                                                      |
 
-## The shape of a proposal
+## 提案的樣貌
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+當你把一個目標交給編排器，它會回傳一份結構化的
+**`OrchestrationProposal`**：一份有型別的計畫，讓應用程式可以驗證與執行，而不是
+自由形式的散文。一份提案包含：
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/zh-TW/手冊/概念/工單/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **目標**：你的高層次需求，以重新表述的方式呈現。
+- **角色**：由誰來做這些工作。每個角色不是由你挑選的**現有代理**，就是編排在
+  核准時建立的**新進人員**。
+- **子工單**：把工作拆解成由[工單](/zh-TW/手冊/概念/工單/)組成的 DAG。
+- **研究** _（選用）_：最先執行、並把結果餵給其餘階段的研究階段。
+- **討論** _（選用）_：在有界範圍內進行的一輪流程，讓每個角色在工作開始前
+  發表一份結構化的立場。
+- **彙整**：產出交付成果的最後一個步驟。
+- **預算**：宣告的支出上限。
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[預算僅供參考]
+提案的支出上限會與計畫的預估總額相比，並在你核准_之前_於核准列中標示出超出預算的
+計畫。執行開始之後就沒有任何機制會讀取它，因此它不會阻止或使超支的編排失敗。
+各代理與各工作區的預算原則是另一套機制，真正會暫停支出的正是它。
 :::
 
-## Where you review it
+## 你可以在哪裡檢視它
 
-Two surfaces show the same orchestration.
+有兩個介面會顯示同一份編排。
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**提案卡片**位於產生該計畫的對話中。它是一則訊息，會隨著整個生命週期
+（已提出、執行中、已完成）重新轉譯，並在卡片上帶有核准與取消動作。
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** 則是編輯器：包含 DAG 畫布、節點檢視器、修訂版本與差異抽屜，
+以及帶有預估值的核准列。它會直接從該卡片以編輯器分頁開啟。側邊欄刻意沒有
+「計畫」項目；`/plans` 與 `/plans/:kind/:id` 只是供分享用的深層連結。
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+核准是**僅限操作者**的動作。它沒有對應的 MCP 工具：代理可以提出提案
+（`propose_orchestration`）、提交計畫（`submit_plan`）或具現化 playbook
+（`run_playbook`），但只有人類能核准。代理發起的修訂版本另受兩分鐘冷卻時間的
+速率限制，因此重新規劃的迴圈會合併處理，而不是淹沒你的動態。
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+在核准之前你能更動的內容，就是節點檢視器所揭露的項目：重新命名或改寫子工單、
+變更它由哪個**角色**擁有、重新連接它的相依項、編輯它的輸出結構描述，或直接
+刪除該節點。結構性節點（研究、討論、彙整）以及已經執行過的節點都是唯讀。你不能
+把角色固定到某個特定的具名代理，也不能從編輯器編輯預算。
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+一份計畫有兩個編輯器同時編輯時，是以樂觀並行控制解決，而不是合併。每次編輯都會
+帶上它所依據的 `base_revision`；以過期修訂版本為基礎的編輯會以「計畫已繼續推進」
+遭到拒絕，而不是悄悄覆蓋別人的變更。回溯也不是刪除——它會把較早的提案附加成
+新的修訂版本，因此修訂時程只會不斷增長。
 
-## Honest estimates, or none
+## 誠實的預估，否則就不預估
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+核准列上的預估值，是以每個角色真實的已完成執行歷史為基礎，並以四分位距
+（p25–p75）區間呈現。成本總計會**加總**可預估的節點；所需時間則是 DAG 中的
+**關鍵路徑**，而不是加總（平行分支會重疊）。
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+某個節點的角色若**沒有已完成執行的歷史**，會回報 `sampleSize: 0` 與 null 範圍。
+這會如實呈現為——未知——而絕不會是捏造出來的單點數值，因為無法信任的預估比沒有
+預估更糟。當有些節點有歷史、有些沒有時，總計會標示為部分。影響範圍只有在節點
+宣告了 `symbol` 或 `file` 出處參照時才會出現；沒有這些參照的節點會維持「未知」，
+而不會從散文中推測。
 
-## One approval, then deterministic execution
+## 一次核准，接著確定性地執行
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/zh-TW/手冊/概念/管線/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+核心概念是：**代理負責規劃；確定性的函式負責執行。**當你核准時，
+`OrchestrationMaterializer`（一個沒有 LLM、沒有 I/O 的純函式）會把提案轉成
+一條真正的[管線](/zh-TW/手冊/概念/管線/)。給定相同的提案與相同解析出的角色，
+它永遠會產生相同的 DAG。這很重要，因為生成的管線會免費繼承引擎已經具備的一切：
+跨重新啟動的暫停與繼續、當機復原、每次執行的成本與 token 彙總，以及執行詳細
+資料介面。
 
-Approval also creates the scaffolding the work needs:
+核准也會建立工作所需的鷹架：
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **聘僱**任何標記為新增的角色（並記錄已聘僱的代理 id，讓核准途中當機時能
+  繼續，而不會重複聘僱）
+- 一個用來歸組這些角色的**團隊**
+- 一個用來歸檔父工單的**專案**
+- 驅動這一切的**管線範本 + 執行**
 
-## The lifecycle
+## 生命週期
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +100,40 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| 狀態           | 意義                                                                             |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | 計畫已就緒，正在等待你那一次的前置核准                                           |
+| `approved`     | 你已核准；具體化正在進行（聘僱、團隊、專案、管線）                               |
+| `executing`    | 生成的管線正在執行：子工單、討論、工作                                           |
+| `synthesizing` | 子工單已完成；彙整步驟正在產出交付成果                                           |
+| `completed`    | 完成：父工單已標示為完成，交付成果已張貼於共用空間                               |
+| `failed`       | 具體化失敗，或生成的管線執行失敗                                                 |
+| `cancelled`    | 你取消了它                                                                       |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+單調遞增的**修訂版本**編號會追蹤提案，因為編排器會在它仍處於 `proposed` 時修訂
+它；應用程式會記錄你核准的是哪個修訂版本。一旦狀態不再是 `proposed`，
+`propose_orchestration` 就會拒絕修訂。
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+一份編排一律以**父工單**為對象開啟，並共用一個討論**空間**，因此整項工作可
+追溯到單一工作項目，團隊也都在同一個房間裡對話。
 
-## What happens when it finishes
+## 完成之後會發生什麼事
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+一個常駐的監聽器會監看生成的管線，並把它的終態映射回編排與父工單，因此完成與
+失敗會浮現在你本來就會關注的地方。編排功能不需要自己的執行引擎。
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+你隨時可以取消編排；取消會拆除正在進行中的工作。
 
 ::::note
-Orchestration builds on [pipelines](/zh-TW/手冊/概念/管線/) and
-[tickets](/zh-TW/手冊/概念/工單/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+編排建構於[管線](/zh-TW/手冊/概念/管線/)與
+[工單](/zh-TW/手冊/概念/工單/)之上。它是在它們之上的規劃與核准層，
+而不是另一套執行環境。
 ::::
 
-## See also
+## 另請參閱
 
-- [Pipelines and automation](/zh-TW/手冊/概念/管線/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/zh-TW/手冊/概念/工單/): the parent ticket an orchestration is anchored on
-- [The agent model](/zh-TW/手冊/概念/代理模型/): the roles an orchestration fills or hires
-- [Run an orchestration](/zh-TW/手冊/操作指南/執行編排/)
-- [Work in Plan Studio](/zh-TW/手冊/操作指南/plan-studio/)
+- [管線與自動化](/zh-TW/手冊/概念/管線/)：具體化後的編排所運作的引擎
+- [工單與委派](/zh-TW/手冊/概念/工單/)：編排所錨定的父工單
+- [代理模型](/zh-TW/手冊/概念/代理模型/)：編排所填補或聘僱的角色
+- [執行編排](/zh-TW/手冊/操作指南/執行編排/)
+- [在 Plan Studio 中工作](/zh-TW/手冊/操作指南/plan-studio/)

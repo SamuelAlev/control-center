@@ -1,152 +1,163 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Bruk AI-drevet gjennomgang
+description: Kjør pr_review-pipelinen på en PR, les funnene og vedtaket, og publiser deretter gjennomgangen til GitHub.
 slug: nb-NO/handbok/slik-gjor-du/ai-gjennomgang
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Denne guiden viser deg hvordan du lar reviewer-agenter gjennomgå en pull request,
+og hvordan du publiserer resultatet til GitHub.
 
-## Start an AI review
+## Start en AI-gjennomgang
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Åpne PR-en og gå til **Oversikt**-fanen
+2. Åpne overflytsmenyen ⋯ i handlingsraden og velg **Spør AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Elementet vises bare mens PR-en er åpen — det er en handling før sammenslåing. Den
+samme knappen tilbys som **Spør AI** i tomtilstanden til **Gjennomgang**-fanen, før
+noen gjennomgang finnes.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center starter den forhåndsdefinerte `pr_review`-pipelinen og åpner
+**Gjennomgang**-fanen til PR-en så du kan følge med. Pipelinen:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Åpner PR-ens eget gjennomgangsområde, der det isolerte worktreet har PR-en
+   sjekket ut på head
+2. Sprer ut reviewerne for arbeidsområdets gjennomgangsnivå — tre som standard
+   (de forhåndsdefinerte agentene **qa**, **architect** og **engineer**,
+   parallelt). Det gjøres ingen språk- eller domenegjenkjenning
+3. Lar lederagenten (CEO) samle funnene deres i en guidet gjennomgang
+4. Fullfører: sorterer funnene i konsensusgrupper og beregner vedtaket. Når
+   koblingen når `awaiting approval`, vises **Publiser til GitHub** i
+   Gjennomgang-fanen
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Hvor dypt gjennomgangen går, styres av arbeidsområdets **gjennomgangsnivå** —
+`light` (én reviewer), `balanced` (tre, standard) eller `thorough` (alle fem, med
+sikkerhets- og ytelsesspesialistene i tillegg) — angitt under
+**Innstillinger → Arbeidsområde → Generelt**, på **Arbeidsområdepolicy**-kortet. Et
+lettere nivå registrerer like mange funn; det løfter bare færre av dem fram i
+forgrunnen.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/nb-NO/handbok/konsepter/ai-gjennomgang/) for how the pieces fit together.
+Alle reviewerne legger inn i PR-ens ene gjennomgangsområde, og det er nettopp det
+som gjør funnene deres sammenlignbare. Se
+[AI-gjennomgang](/nb-NO/handbok/konsepter/ai-gjennomgang/) for hvordan bitene
+henger sammen.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/).
+`pr_review` leveres bare med en manuell utløser. For å få den til å kjøre på hver
+publiserte PR, legg til en utløser selv — se
+[Send ut reviewer-agenter](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/). Du kan også
+starte en fra GitHub selv, uten pipeline-utløser: nevn serverens bot i PR-en eller
+legg til etiketten `ai-review` — se
+[Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Hvis et varsel sier at en gjennomgang allerede kjører for denne pull requesten, er
+en allerede i gang; bli på **Gjennomgang**-fanen eller åpne **Pipelines** for å
+finne den.
 
-## Read the findings
+## Les funnene
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Reviewere registrerer funn som **gjennomgangsnoder** i gjennomgangsområdet. Hver
+node har:
 
-| Field          | Description                                                   |
+| Felt           | Beskrivelse                                                   |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Type           | `bug`, `suggestion`, `recommendation`, `question` eller `ticket` |
+| Prioritet      | P0 (kritisk) → P3 (pirk)                                      |
+| Kategori       | `security`, `stability`, `data_integrity`, `correctness`, `performance` eller `maintainability` |
+| Fil og linje   | Hvor funnet er forankret                                      |
+| Opprinnelig kode | Koden funnet gjelder                                        |
+| Foreslått kode | Den foreslåtte rettelsen                                      |
+| Konfidens      | Hvor sikker revieweren er                                     |
+| Status         | `open` → `consensus-ready` → `resolved` eller `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Et funn når bare **consensus-ready** når en _annen_ reviewer bekrefter det. En
+agent kan ikke bekrefte sitt eget funn, så én enkelt reviewers mening går aldri
+videre på egen hånd.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/nb-NO/handbok/slik-gjor-du/gjennomgangsberegning/) for what the pass produces.
+**Gjennomgang**-fanen viser funnlisten, filtrerbar på type og status, med en
+veksleknapp for avviste funn, ved siden av artefakten den samlende agenten
+publiserte. Den deterministiske visningen — kohorter, dashbordet med flere akser,
+kontrakt- og visuelle differ — beregnes på serversiden, men finnes ikke som egen
+visning i appen; se
+[Gjennomgangsberegning](/nb-NO/handbok/slik-gjor-du/gjennomgangsberegning/) for hva kjøringen
+produserer.
 
-## Check the disagreements panel
+## Sjekk uenighetspanelet
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Når to reviewere forankrer funn til samme fil og linje, men vurderer dem svært
+ulikt — prioriteringer to eller flere nivåer fra hverandre, eller én kaller det en
+`bug` mens den andre kaller det en `suggestion` — vises et uenighetspanel over
+funnlisten. Les dem først: det er der reviewernes meninger spriker, og der din
+vurdering er verdt mest.
 
-## Read the verdict
+## Les vedtaket
 
-When the lead agent finalizes, it computes a **verdict**:
+Når lederagenten fullfører, beregner den et **vedtak**:
 
-| Verdict   | Meaning                                      |
+| Vedtak    | Betydning                                    |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Ingenting blokkerende funnet                 |
+| **Hold**  | Problemer som bør håndteres før sammenslåing |
+| **Block** | Kritiske problemer som må rettes              |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Vedtaket har en samlet konfidensskår og antall funn per prioritet.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Gjennomgangsaksene veves deretter inn i det, og de kan bare gjøre det **mer**
+alvorlig. En sperret akse som feiler, tvinger fram **Block**; en sperret akse som
+ikke kunne fullføres (`partial`) eller ikke kunne kjøre i det hele tatt
+(`unavailable`), tvinger fram minst **Hold**. Fravær av bevis opphever aldri en
+sperre.
 
-## Publish the review to GitHub
+## Publiser gjennomgangen til GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publisering er et eget steg som bevisst krever at brukeren godkjenner det.
+`pr_review`-pipelinen beholder gjennomgangen i Control Center; den legger den ikke
+ut på GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. På **Gjennomgang**-fanen venter du til **Publiser til GitHub** vises
+2. Trykk **Publiser til GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center sender **én** GitHub-gjennomgang. Funn som allerede er løst eller
+avvist, hoppes over. Knappen tar med hvert gjenstående åpne funn og sender
+`APPROVE` ved **Ship**. (MCP-verktøyet `publish_review_to_github` bruker fortsatt
+bare funn bekreftet av andre reviewere som standard, og godkjenner ikke med mindre
+du oppgir `approve_on_ship`.) De som har et fil- og linjefeste, blir innebygde
+kommentarer; alt annet legges inn i sammendragsteksten, hver med en
+«— Control Center AI review»-footer, slik at kilden er entydig. Et **Block**-vedtak
+sendes som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som `APPROVE` fra
+denne knappen. Et varsel viser deretter **Publisert**. Gjennomgangen legges ut
+under serverens appidentitet.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Hvis GitHub avviser et innebygd feste fordi linjen ikke er en del av diffen,
+sendes hele gjennomgangen på nytt med hvert funn lagt inn i teksten, slik at
+ingenting forsvinner i stillhet.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publisering er sperret av tillatelsesregler]
+`pr_review.publishReview` erklærer handlingsklassen `prPublish` og kjører gjennom
+tillatelsesreglenes kontrollpunkt. Hvis den avgjorte beslutningen er `prompt` og
+ingen godkjenner er koblet til, avvises publiseringen — tillatelsesregler feiler
+lukket. Sett en eksplisitt regel under Innstillinger → Arbeidsområde →
+Agenttillatelser hvis du vil at den skal kjøre uten tilsyn.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Andre innebygde pipelines legger faktisk ut på GitHub direkte: `cross_review`,
+`pr_triage`, `ticket_to_pr` og `pre_merge_gate` avsluttes alle med et
+kommentarsteg. Bare `pr_review` holder tilbake resultatet til deg.
 
-## Dispatch reviewers yourself
+## Send ut reviewere selv
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/).
+For å styre hvilke roller som gjennomgår PR-en, og hvilke filer hver av dem ser
+på, bruker du MCP-verktøyet `dispatch_reviewers` inne i et eksisterende
+gjennomgangsområde, eller legger til reviewer-noder i en pipeline. Begge veiene,
+med verktøyets nøyaktige signatur, står i
+[Send ut reviewer-agenter](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/).
 
-## Related guides
+## Relaterte guider
 
-- [Review and merge a PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
-- [Dispatch reviewer agents](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/)
-- [Review compute (cohorts and axes)](/nb-NO/handbok/slik-gjor-du/gjennomgangsberegning/)
+- [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
+- [Send ut reviewer-agenter](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/)
+- [Gjennomgangsberegning (kohorter og akser)](/nb-NO/handbok/slik-gjor-du/gjennomgangsberegning/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [AI review](/nb-NO/handbok/konsepter/ai-gjennomgang/)
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/)
+- [AI-gjennomgang](/nb-NO/handbok/konsepter/ai-gjennomgang/)
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/)

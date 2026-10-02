@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: 連接程式碼託管
+description: 連接 GitHub、GitLab 或 Bitbucket，讓 PR 介面、程式庫註冊與代理執行得以運作 —— 同一個工作區可以同時使用三者。
 slug: zh-HK/手冊/操作指南/連接程式碼託管
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center 支援三個程式碼託管平台，應用程式中一律稱為**託管平台**：**GitHub**、**GitLab** 和 **Bitbucket Cloud**。三者都不是預設選項。連接其中一個，一切就能運作；連接多個，同一個工作區便能同時容納來自它們全部的程式庫。
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+託管平台是每個**程式庫**的一項屬性，在你註冊該程式庫時從它的 `origin` 遠端讀取。你永遠不需要挑選，也沒有任何按工作區劃分的設定可以出錯。
 
-## Connect a forge
+## 連接託管平台
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. 開啟 **設定 → 工作區 → 個人資料與身分**（`/settings/workspace/profile`）。
+2. 找到 **程式碼託管** 卡片。所有支援的託管平台都會列出，無論是否已連接。
+3. 若該列提供 **使用 … 登入**，就按下它；否則按 **新增權杖**，再貼上一個權杖。
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/zh-HK/手冊/操作指南/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**登入**只會出現在你的伺服器已為其註冊應用程式的託管平台上 —— 目前就是 GitHub，經由裝置流程（見[建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)）。其他一律是貼上的權杖，這是誠實的操作方式，而不是一顆無法完成的按鈕。
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+不論哪一種，憑證都是**你的，並且存放在伺服器上**，以你的使用者 id 為鍵：你輸入權杖的那部機器不會儲存任何權杖，你登入的每部裝置都使用同一個權杖，其他成員也讀不到。它會在**下一個請求**生效 —— 沒有東西需要重新啟動，而中斷連接後，它就會立即停止被送出。
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+每一列都會告訴你它的憑證來自哪裏，因為那正是「我的權杖沒有生效」與「回答的是另一個權杖」之間的差別：
 
-| Subtitle                         | Meaning                                                            |
+| 副標題                         | 含義                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Signed in as octocat`           | 正在使用你自己的憑證                                   |
+| `Signed in as octocat · via this server's app` | 回答的是伺服器的應用程式身分 —— 你尚未登入 |
+| `Signed in as octocat · from the environment` | 回答的是伺服器環境變數，而不是你的憑證 |
+| `Not connected`                  | 你沒有這個託管平台的憑證                               |
 
-### What token each forge wants
+### 每個託管平台需要哪種權杖
 
-| Forge         | Token                                                     | Where to create it                                        |
+| 託管平台         | 權杖                                                     | 在哪裏建立                                        |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Classic：`repo` 與 `read:org`。Fine-grained：Contents + Pull requests（讀寫）、Checks + Actions（讀取） | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | 具備 `api` 的個人存取權杖                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Atlassian API 權杖，加上你的帳戶電郵           | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket 以你的**帳戶電郵作為使用者名稱**、以權杖作為密碼來驗證。請在伺服器環境中設定 `BITBUCKET_EMAIL`，它才知道要讓哪個電郵與該權杖配對。
 
-### Or use the environment
+### 或改用環境變數
 
-For a headless or CI install, the server reads these:
+對於無介面或 CI 安裝，伺服器會讀取這些：
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`，然後 `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`，然後 `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`，然後 `BITBUCKET_TOKEN`（連同 `BITBUCKET_EMAIL`）
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+這些是**伺服器的**憑證，而不是你的，而且這個區別至關重要：以你的名義發出的請求只會使用你的憑證，不會用其他任何東西，所以環境永遠不會悄悄代替你。沒有人類在背後的工作 —— webhook、PR 輪詢、工單同步 —— 會先解析伺服器的應用程式身分，然後是伺服器擁有者的憑證，最後才是環境。這個順序是固定的，因此「我登入了，但甚麼都沒變」永遠不會是一種受支援的結果。
 
-## You are a different person on each forge
+## 你在每個託管平台上都是另一個人
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+同一個人在 GitHub 上是 `octocat`，在 GitLab 上則完全是另一個身分。Control Center **按託管平台**解析你的身分，並為每個程式庫使用正確的那一個；這正是「有待我審查」、「由我建立」和「你已批准」在混合的工作區中依然正確的原因。
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+如果某個託管平台的身分尚未解析，它的程式庫就不會為收件箱貢獻任何內容，而不是比對到所有東西。收件箱會如實說明，而不是聲稱你已經全部看完。
 
-## One inbox, every forge
+## 一個收件箱，涵蓋每個託管平台
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+收件箱與 PR 佇列會分散查詢工作區中出現的每個託管平台，並把結果合併成單一資料流 —— 一個 GitHub pull request 和一個 Bitbucket pull request 會並排出現，按時間排序，而不是按供應商分組。
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+失敗是互相隔離的。某個託管平台若無法連線、受到速率限制或尚未連接，就不會貢獻任何內容，也不會影響其他平台；它永遠不會令整個收件箱變空。它自己的程式庫會繼續顯示最後已知的狀態，直到它恢復為止。
 
-## What each forge can do
+## 每個託管平台能做甚麼
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+每個託管平台都支援核心流程：列出並開啟 pull request、閱讀 diff、在行內與頂層留言、審查、合併與關閉。除此之外，它們確實各有不同，而 Control Center 會把託管平台做不到的事隱藏起來，而不是顯示一個會靜默失敗的控制項。
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| 能力                        | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| 批次（待提交）審查         |   ✓    |   ✓    |     —     |
+| 要求變更                   |   ✓    |   ✓    |     ✓     |
+| 每個檔案的「已檢視」狀態同步    |   ✓    |   —    |     —     |
+| Emoji 反應                   |   ✓    |   ✓    |     —     |
+| 團隊／群組審查者            |   ✓    |   ✓    |     —     |
+| 建議審查者               |   ✓    |   —    |     ✓     |
+| PR 上的 CI 結果                |   ✓    |   ✓    |     ✓     |
+| 深入查看 CI 工作的步驟／日誌  |   ✓    |   ✓    |     —     |
+| 堆疊式 pull request             |   ✓    |   —    |     —     |
+| PR 描述範本          |   ✓    |   ✓    |     —     |
+| 通知輪詢              |   ✓    |   —    |     —     |
+| 豐富的使用者個人資料                |   ✓    |   ✓    |     —     |
+| 伺服器端 PR head ref           |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+當某項能力缺失時，功能會如實降級：
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **已檢視狀態**仍然有效，但只限於你設定它的那部裝置。
+- Bitbucket 上的**批次審查**會逐條留言送出，所以審查者會看到它們逐條抵達，而不是一次全部出現。
+- Bitbucket 上**沒有 PR head ref**，意味着檢出一個 pull request 時會按名稱取得其來源分支，而該分支一旦被刪除就會失敗。
 
-## Vocabulary
+## 用語
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab 把 pull request 稱為 **merge request**。Control Center 在自己的模型中一律說「pull request」，而在談到某個託管平台時，則使用該平台自己的名詞。
 
-## Troubleshooting
+## 疑難排解
 
-### The PR list is empty and says a forge is not connected
+### PR 清單是空的，並說某個託管平台尚未連接
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+你沒有那個託管平台的憑證。請在 **設定 → 工作區 → 個人資料與身分 → 程式碼託管** 中登入或貼上權杖。其他託管平台的程式庫不受影響。
 
-### I connected a forge but its repos still show nothing
+### 我連接了託管平台，但它的程式庫仍然甚麼都不顯示
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+檢查該列的副標題。如果它顯示「via this server's app」或「from the environment」，那麼正在回答的就是另一個憑證，而不是你預期的那個 —— 你自己要求的一切都以你的憑證為優先，所以若它顯示的是別的，就代表你的憑證沒有儲存成功。
 
-### A repo will not register
+### 某個程式庫無法註冊
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/zh-HK/手冊/操作指南/加入程式庫/).
+註冊需要同時滿足三項：路徑位於 git 工作樹內、它有一個 `origin` 遠端，而且該遠端指向 github.com、gitlab.com 或 bitbucket.org。見[將程式庫加入工作區](/zh-HK/手冊/操作指南/加入程式庫/)。
 
-### Everything stops working for a while after heavy use
+### 大量使用後，一切都會停擺一陣子
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+那是速率限制的斷路器。當某個託管平台發出已達主要限制的訊號，用戶端就會在本機令後續請求失敗，不發出網絡呼叫，直到該時窗過去 —— 因此重試風暴無法加深限制。暫時性失敗會以指數退避重試。
 
-## Related guides
+## 相關指南
 
-- [Add repos to a workspace](/zh-HK/手冊/操作指南/加入程式庫/)
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-- [Review and merge a PR](/zh-HK/手冊/操作指南/審查並合併-pr/)
-- [Triage the inbox](/zh-HK/手冊/操作指南/整理收件箱/)
+- [將程式庫加入工作區](/zh-HK/手冊/操作指南/加入程式庫/)
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
+- [審查並合併 PR](/zh-HK/手冊/操作指南/審查並合併-pr/)
+- [整理收件箱](/zh-HK/手冊/操作指南/整理收件箱/)

@@ -1,37 +1,41 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Scripts de dépôt
+description: Scripts de configuration et d’archivage par dépôt, exécutés dans l’arbre de travail d’un espace.
 slug: fr-CA/manuel/guides/scripts-de-depot
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Les scripts de dépôt sont des scripts de shell que vous configurez par dépôt
+(Paramètres → Dépôts → l’icône de terminal sur la ligne d’un dépôt) et que le
+serveur de Control Center exécute contre **l’arbre de travail d’un espace**
+pour ce dépôt — la copie isolée sous
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` où les agents
+travaillent.
 
-There are two kinds:
+Il en existe deux types :
 
-| Script | When it runs | Use it for |
+| Script | Quand il s’exécute | À quoi il sert |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Configuration** | Juste après le provisionnement d’un arbre de travail pour un espace | Installer les dépendances, générer des fichiers, copier `.env` |
+| **Archivage** | Juste avant qu’un arbre de travail soit détruit ou récupéré par le GC | Nettoyer des ressources à l’extérieur de l’arbre de travail (réseaux Docker, tunnels, état externe) |
 
-## Where scripts run
+## Où les scripts s’exécutent
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Les deux scripts s’exécutent par `bash -lc` (un shell de connexion, de sorte que
+les outils installés par Homebrew ou nvm sont dans le `PATH`) avec **l’arbre de
+travail comme répertoire de travail**, et avec ces variables d’environnement
+définies :
 
-| Variable | Value |
+| Variable | Valeur |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | L’arbre de travail (le répertoire de travail du script) |
+| `CC_ROOT_PATH` | Le dépôt source enregistré — votre propre copie |
+| `CC_SPACE_ID` | L’espace auquel appartient l’arbre de travail |
+| `CC_SPACE_NAME` | Le nom d’affichage de l’espace |
+| `CC_REPO_NAME` | Le nom d’affichage du dépôt |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Par exemple, un script de configuration qui installe les dépendances et
+récupère le `.env` ignoré par git du dépôt :
 
 ```bash
 pnpm install
@@ -39,28 +43,36 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Comportement en cas d’échec
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Un script de **configuration** qui se termine avec un code non nul (ou qui
+  dépasse son délai d’expiration de 5 minutes) fait échouer le provisionnement
+  de l’espace : l’espace affiche l’état d’échec avec une nouvelle tentative, et
+  la fin de la sortie de l’exécution est consignée. Une nouvelle tentative
+  provisionne à partir d’un arbre de travail propre et exécute de nouveau le
+  script — écrivez donc vos scripts de configuration pour qu’une réexécution
+  après une installation partielle fonctionne (les gestionnaires de paquets se
+  comportent déjà ainsi).
+- Un script d’**archivage** s’exécute au mieux : un échec (ou son délai
+  d’expiration de 2 minutes) est consigné, mais **ne bloque jamais la
+  suppression**. L’archivage s’exécute sur les chemins de GC où personne ne
+  peut répondre à une invite (espace supprimé, PR fusionnée, nettoyage
+  planifié).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+La configuration ne s’exécute que sur un arbre de travail **neuf** : relancer
+des agents dans un espace chaud réutilise la copie existante et ne repaye pas
+l’installation.
 
-## Run history
+## Historique des exécutions
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Chaque exécution est consignée avec son état, sa durée, son code de sortie et
+une fin de sortie bornée, visibles dans la même boîte de dialogue de paramètres
+sous « Exécutions récentes » (l’abonnement `repos.watchScriptRuns` les diffuse
+en direct).
 
-## Permissions
+## Autorisations
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Les scripts sont des commandes shell que le **serveur** exécute, de sorte que
+leur écriture est réservée aux administrateurs d’espace de travail et protégée
+par la classe d’action `processSpawn` — le même filet de garde-fous qui encadre
+toute autre opération lançant un processus.

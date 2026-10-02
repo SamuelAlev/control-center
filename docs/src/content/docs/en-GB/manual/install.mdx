@@ -2,6 +2,7 @@
 title: Install
 description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
 slug: en-GB/manual/install
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
 Control Center runs two ways: as a **web app** at
@@ -64,17 +65,17 @@ follow [Run a headless server](/en-GB/manual/guides/run-headless-server/).
 
 Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarisation (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
 
 The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
 
 ## Download
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Every artefact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarised by Apple, so it opens normally.
 
 ### Windows (x64)
 

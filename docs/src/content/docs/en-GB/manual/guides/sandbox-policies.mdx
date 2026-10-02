@@ -2,6 +2,7 @@
 title: Configure sandbox policies
 description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
 slug: en-GB/manual/guides/sandbox-policies
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
 Whether an agent run is sandboxed is decided on the server, at boot
@@ -24,7 +25,7 @@ that is conditional — the other five hold on every host.
 | Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
 | Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
 | Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
+| Environment sanitisation | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
 | The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
 
 Three things stay weaker than they look:
@@ -40,7 +41,7 @@ Three things stay weaker than they look:
   Only the `bash` tool goes through the sandboxed command runner. Those tools are
   bounded by their own path confinement plus the action guardrails.
 - On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
+  harness `bash` tool fall back to environment sanitisation plus the command
   policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
   The server says so in its startup log. Check yours below.
 

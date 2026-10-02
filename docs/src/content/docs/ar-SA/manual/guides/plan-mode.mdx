@@ -1,135 +1,79 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: استخدام وضع الخطة
+description: بدّل مساحة إلى وضع التخطيط، واحصل على خطة مُنمَّطة، ووافق عليها ليتحول إلى عمل جارٍ.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+يبيّن هذا الدليل كيف تحصل من وكيل على خطة منظَّمة قبل أن يكتب أي شفرة.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+في وضع التخطيط يستقصي الوكيل للقراءة فقط، وتسليمه الوحيد **خطة مُنمَّطة**: مخطط تبعية لخطوات توافق عليها، ثم يصرّفها Control Center إلى عمل حقيقي. استخدمه حين تريد أن ترى نطاق التغيير، أو أن تُفصَّل الخطوات، أو أن تُسمّى المخاطر والتبعيات قبل أن يُمس شيء.
 
-## Switch a space into plan mode
+## نقل مساحة إلى وضع التخطيط
 
-Any of these flips the space's mode and the change is persisted:
+أي من هذه يقلب وضع المساحة، ويُحفظ التغيير:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- اختر **تخطيط** من قائمة الوضع في أقصى يمين شريط أدوات حقل الكتابة
+- اضغط **Shift+Tab**
+- أرسل `/plan`. `/plan` وحده يضبط الوضع؛ و`/plan <request>` يضبطه ويرسل الباقي على أنه رسالتك
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+لا يُرسَل `/plan` نصًا. هو يضبط الوضع المخزَّن، وهو المرجع الذي يقرأه سطح الأدوات والضبط المسبق للضوابط والمطالبة. فيثبت الوضع لهذه الجولة ولكل جولة بعدها، إلى أن تبدّله.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+يُخزَّن الوضع على المساحة، فيستطيع الوكيل نفسه أن يكون هنا في وضع التخطيط وفي مساحة أخرى في وضع الوكيل.
 
-## What the agent produces
+## ما ينتجه الوكيل
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. يستقصي للقراءة فقط: الذاكرة، وفهرس الشفرة، والملفات
+2. يستدعي `submit_plan` **مرة واحدة**، ومعه `goal` و`nodes`، وتحمل كل عقدة `key` ثابتًا و`title` و`description` ومفاتيح العُقد في `dependsOn` (وهذا ما يتيح للعمل المستقل أن يجري بالتوازي)
+3. يتوقف
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+تتحقق الأداة من المخطط، من المفاتيح المكررة والتبعيات المتدلية والدورات، وتعيد المخالفات ليصلحها الوكيل بدل أن تقبل خطة مكسورة.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+تظهر الخطة **في المحادثة** صفًا مختصرًا يعرض الهدف وحالته وعدد الخطوات. **Plan Studio** — مخطط التبعية، ومفتّش كل عقدة، وتقدير التكلفة — يفتح لسانًا إلى جوار المحادثة: اضغط **فتح** على الصف، أو انتظر فحسب، لأن الخطة التي تصل خلال 30 ثانية وأنت تنظر إلى المحادثة تفتح لسانها بنفسها.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[ضمان القراءة فقط بنيوي، وعلى الإطار المضمّن وحده]
+يبني الإطار المضمّن في Control Center سجل أدوات الوكيل من مواصفة سطح وضع التخطيط، فلا توجد أصلًا أداة كتابة ولا أداة تحرير ولا أداة أمر يمكن استدعاؤها. القيد في السطح نفسه، لا في تعليمة مطالبة يستطيع النموذج أن يجادل حتى يخرج منها.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+لا يحصل محوّل Claude Code على هذا الترشيح: يبلغه الوضع طلبًا قد يلتزم به مشغّله وقد لا يلتزم، ولا يرى Control Center من استدعاءاته إلا `mcp__*`. تظهر شارة الفرض إلى جوار قائمة الوضع في هذه الحالة بالضبط.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[يستطيع الوكيل أن يسأل أسئلة توضيحية]
+حين يلتبس الطلب، يستطيع الوكيل في وضع التخطيط أن يتوقف ويسألك حتى ثلاثة أسئلة حاجزة بأداة `ask_user`. يعرض نموذجًا في المحادثة، خيارات أو نصًا حرًا، ويبقى التشغيل محجوبًا حتى تجيب. الأداة في مستوى القراءة، فتبقى على سطح وضع التخطيط للقراءة فقط، وهي معفاة من غلاف الموافقة (مطالبة أمام مطالبة تفشل مغلقة إذا لم يكن هناك معتمِد متصل، وذلك يمنع الوكيل من فعل السؤال).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+تحتاج إلى مساحة تُرسَم فيها، فإرسال لمرة واحدة بلا محادثة لا يحصل عليها. وضع النطاق والمستودع المستهدف ومعايير القبول في رسالتك الأولى يبقى أسرع من جولة ذهاب وإياب.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+النثر ليس تسليمًا هنا. التشغيل الذي ينتهي من غير استدعاء `submit_plan` ينشر في المحادثة سطرًا ظاهرًا: «انتهى من غير تسليم خطة (لا استدعاء `submit_plan`).»، ويعلّم التشغيل بأنه فوّت تسليمه. تبقى حالة التشغيل عمدًا _completed_، حتى لا تُمَسّ آلات حالة خط الأنابيب والتذاكر، فاقرأ السطر، لا شارة الحالة.
 
-## Approve the plan
+## الموافقة على الخطة
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+من صف الخطة في المحادثة، اضغط **الموافقة والتشغيل**. من شريط الموافقة في Plan Studio، اضغط **الموافقة على الخطة** (أو **رفض** إلى جوارها؛ تتعطّل الموافقة ما دام في المخطط خطأ تحقق).
 
-Then:
+ثم:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. يصرّف Control Center الخطة إلى تنسيق ويجسّدها: التذاكر والتشغيل. لا يتدخل أي نموذج في هذه الخطوة، فهي حتمية
+2. تُنفَّذ الخطة بالوكيل الذي كتبها، وقرار إشراك غيره له عند التشغيل: يستطيع أن يستدعي `delegate_task` فيفوّض خطوة إلى زميل أنسب، ضمن سقف عمق التفويض في مساحة العمل
+3. يصير هدف الخطة **هدف المحادثة**، ويجري العمل **في المحادثة نفسها**: تنشر كل خطوة ما طُلب من الوكيل وتبث جولته، فتابعه، وتستطيع إيقاف جولة، من حيث أنت أصلًا
+4. يحمل صف الهدف في اللوحة الجانبية **عام** للمحادثة (تحت المهام) تقدّم التشغيل بالشكل `settled/total` وزر إيقافه، ويعرض Plan Studio حالة كل عقدة على المخطط ويلغي من هناك أيضًا
 
-## Keep working without approving
+## متابعة العمل من غير موافقة
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+إن آثرت البقاء في هذه المحادثة على الموافقة على الخطة، يستطيع الوكيل استدعاء `exit_plan_mode`. هو المخرج الوحيد المجاز: يفتح طلب موافقة دائمًا مرتبطًا بالمحادثة ويعيد `pending`، فتبقى المساحة في وضع التخطيط ولا يجوز للوكيل أن يتصرف. بعد الموافقة على الطلب، يقلب استدعاء `exit_plan_mode` التالي المساحة من وضع التخطيط إلى وضع الوكيل ويفتح أدوات التغيير. الرفض يتيح له فتح طلب جديد لخطة منقَّحة.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+للخروج من وضع التخطيط، بدّل قائمة الوضع في حقل الكتابة (أو Shift+Tab)، أو وافق على الخطة المسلَّمة. يفتح `exit_plan_mode` موافقة دائمة تُحسم بأداة MCP `decide_approval`. تراكب الضوابط لاستدعاءات الأدوات المحظورة طابور آخر في الذاكرة، ولا يحمل طلبات الخروج من وضع التخطيط.
 
-## Plan mode in a pipeline step
+## وضع التخطيط في خطوة خط أنابيب
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+تقرأ عقدة خط أنابيب `messaging.createSpace` وضع المحادثة من **الإضافي** `mode` في إعداد العقدة: `extras['mode']: 'plan'`. المفتاح مطابقة تامة: أي إملاء آخر، بما في ذلك `conversationMode` أو `dispatchMode`، يُتجاهل في صمت، وترجع الغرفة إلى افتراضي الجسم، وهو وضع **المراجعة**، لا الدردشة. خطوة `promptAgent` تنضم إلى غرفة لم تنشئها، ولا تعيد منحها الأذونات. منتقي **وضع الإرسال** في محرّر إعداد العقدة (`allParallel` / `manager`) لعقد إرسال الفريق. اضبط وضع المحادثة بـ `extras['mode']` على قالب يفتح المساحة، أو على إعداد تلك العقدة عبر واجهة API.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
-- [Use spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
-- [Work in Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/)
-- [Run an orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
+- [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
+- [العمل في Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/)
+- [تشغيل تنسيق](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/)

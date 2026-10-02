@@ -1,109 +1,113 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: ریموٹ سرور سے جڑیں
+description: ڈیسک ٹاپ ایپ یا ویب کلائنٹ کو کہیں اور چل رہے cc_server کی طرف لگائیں اور سرورز کے درمیان بغیر ری اسٹارٹ کیے بدلیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+ہر کلائنٹ ایک ایسے `cc_server` کے اوپر رینڈرر ہے جو ڈیٹا کا مالک ہوتا ہے۔ ڈیسک
+ٹاپ اپنے اندر ہی ایک چلا سکتا ہے؛ [app.usectrl.dev](https://app.usectrl.dev) پر
+موجود ویب ایپ نہیں چلا سکتی، کیونکہ ایک براؤزر ٹیب کوئی سرور میزبانی نہیں کر سکتا۔
+دونوں صورتوں میں یہ گائیڈ ایک کلائنٹ کو کہیں اور چل رہے سرور کی طرف لگاتی ہے —
+کوئی چھوٹا باکس، کلاؤڈ VM، یا بلڈ سرور۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- ایک چل رہا `cc_server`۔ اگر آپ کے پاس نہیں ہے تو [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/) دیکھیں۔
+- یا تو وہ تین پیئرنگ ویلیوز جو سرور نے بنائیں — **سرور URL** (`ws://…/rpc` یا `wss://…/rpc`)، ایک **ڈیوائس id** اور ایک **پیئرنگ کلید** — **یا** کسی ورک اسپیس ایڈمن کی طرف سے ایک بار استعمال ہونے والا **انوائٹ کوڈ**۔ کوئی دعوت نامہ چھڑانے پر آپ کا صارف فراہم کیا جاتا ہے، آپ کی رکنیت درج ہوتی ہے اور اِس کلائنٹ کی اسناد آپ کے لیے بنائی جاتی ہیں، چنانچہ آپ کو کبھی کوئی ڈیوائس id یا کلید خود نہیں سنبھالنی پڑتی۔
 
-### Make sure the server is reachable
+### یقینی بنائیں کہ سرور قابلِ رسائی ہے
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+مقامی سرور کو کسی چیز کی ضرورت نہیں: `ws://localhost:9030/rpc` ڈیسک ٹاپ اور
+براؤزر دونوں سے کام کرتا ہے، کیونکہ براؤزر لوپ بیک کو ایک قابلِ اعتماد اوریجن
+سمجھتے ہیں۔
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+کسی دوسری مشین پر موجود سرور مختلف ہے۔ `app.usectrl.dev` HTTPS پر پیش کیا جاتا ہے،
+چنانچہ براؤزر صرف ایسے سرٹیفکیٹ کے ساتھ `wss://` سوکٹ کھولے گا جس پر وہ پہلے سے
+بھروسا کرتا ہو — اور `cc_server` تو TLS کے بغیر غیر لوپ بیک ایڈریس بائنڈ کرنے سے
+شروع ہی میں انکار کر دیتا ہے۔ اِسے اِن میں سے کوئی ایک دیں:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- براہِ راست ایک سرٹیفکیٹ، `--tls-cert` اور `--tls-key` کے ساتھ
+- سامنے TLS ختم کرنے والا ریورس پراکسی، جبکہ سرور `--insecure` کے ساتھ شروع کیا گیا ہو (پراکسی کے پیچھے پلین ٹیکسٹ، صرف قابلِ اعتماد نیٹ ورک پر)
+- کوئی ٹنل یا VPN جو سرٹیفکیٹ مہیا کرے — Tailscale، cloudflared یا اِسی طرح کا کوئی اور۔ **ترتیبات → سرور → کنکشن اور اسٹیٹس** میں بلٹ اِن ٹنل کی رضامندی **یہ سرور شیئر کریں** کے تحت موجود ہے۔
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+سرور کی طرف کی دو سیٹنگز آسانی سے نظر سے رہ جاتی ہیں۔ پراکسی، NAT یا ٹنل کے
+پیچھے `--public-url` کو اُس ایڈریس پر سیٹ کریں جس پر کلائنٹس کو واقعی ڈائل کرنا
+چاہیے — یہ بطور ڈیفالٹ مقامی بائنڈ ہوتا ہے، چنانچہ اِس کے بغیر کلائنٹس غلط ہوسٹ
+آزماتے ہیں۔ اور اگر آپ ویب بلڈ کی اپنی کاپی کی میزبانی کرتے ہیں تو اُس کا اوریجن
+`--allowed-origins` میں شامل کریں، جس کا ڈیفالٹ صرف `https://app.usectrl.dev` ہے؛
+لوپ بیک اور نیٹو کلائنٹس کو ہمیشہ اجازت ہوتی ہے۔
 
-## Connect the desktop app
+## ڈیسک ٹاپ ایپ سے جڑیں
 
-On a fresh install:
+تازہ انسٹال پر:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Control Center لانچ کریں۔ پہلی بار چلنے والی اسکرین پوچھتی ہے **Control Center کیسے چلے؟**
+2. **اس ایپ میں چلائیں** کے بجائے کنیکٹ فیلڈز بھریں: سرور URL، نیز انوائٹ کوڈ یا ڈیوائس id اور پیئرنگ کلید۔
+3. **منسلک ہوں** پر کلک کریں۔ Control Center سرور کو ڈائل کرتا ہے اور ورک اسپیس کے ان باکس پر پہنچتا ہے۔
 
-On a desktop that already runs its own server:
+اُس ڈیسک ٹاپ پر جو پہلے سے اپنا سرور چلاتا ہے:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. **ترتیبات → سرور → کنکشن اور اسٹیٹس** کھولیں۔
+2. **سرور شامل کریں** پر کلک کریں۔ سرور URL (`wss://host:9030/rpc`) اور انوائٹ کوڈ یا ڈیوائس id اور پیئرنگ کلید درج کریں۔ URL فیلڈ کا سوفکس بٹن آپ کے LAN یا ٹیل نیٹ پر `cc_server` انسٹینسز دریافت کرتا ہے۔
+3. **منسلک ہوں** پر کلک کریں، پھر نئے سرور کی قطار پر **تبدیل کریں**۔
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+تبدیلی لائیو ہوتی ہے: ایپ جگہ کے اندر ہی نئے سیشن کے گرد دوبارہ بن جاتی ہے، بغیر
+کسی ری اسٹارٹ کے۔ اگر کنکٹ ناکام ہو تو آپ موجودہ سرور پر ہی رہتے ہیں اور خرابی
+دیکھتے ہیں۔ جس سرور پر آپ ہیں اُس کی قطار میں **تبدیل کریں** کا کوئی ایکشن نہیں
+ہوتا؛ مقامی سرور پہلی قطار ہے، جس کا لیبل **اس ایپ میں چلائیں** ہے۔
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+تبدیل کرنے کے بعد ڈیسک ٹاپ کسی ڈیٹا بیس کا مالک نہیں رہتا۔ ہر اسکرین WebSocket
+کے ذریعے ریموٹ سرور سے پڑھتی اور لکھتی ہے۔
 
-## Connect the web client
+## ویب کلائنٹ سے جڑیں
 
-The web build is always remote.
+ویب بلڈ ہمیشہ ریموٹ ہوتا ہے۔
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. [app.usectrl.dev](https://app.usectrl.dev) کھولیں، یا ویب بلڈ کی اپنی کاپی۔
+2. سرور URL کے ساتھ انوائٹ کوڈ یا ڈیوائس id اور پیئرنگ کلید درج کریں۔
+3. کلائنٹ سرور کو ڈائل کرتا ہے اور وہی انٹرفیس رینڈر کرتا ہے جو ڈیسک ٹاپ کرتا ہے۔
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+اگر URL میں کوئی پیئرنگ ڈیپ لنک موجود ہو تو فیلڈز پہلے سے بھری ہوتی ہیں۔ پیئرنگ
+کلید URL کے **فریگمنٹ** میں سوار ہوتی ہے، جسے براؤزر صفحے کی میزبانی کرنے والے
+سرور کو کبھی نہیں بھیجتا، لہٰذا اسٹیٹک ہوسٹ اُسے کبھی نہیں دیکھتا۔
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[میڈیا اور سیکیورٹی]
+میڈیا (اوتار، فیڈ کی تصاویر، PR اسکرین شاٹس) جڑے ہوئے سرور کے ذریعے پراکسی ہوتا
+ہے، چنانچہ براؤزر کبھی کسی اپ اسٹریم ہوسٹ سے براہِ راست ڈیٹا نہیں لاتا۔ فی
+درخواست ایک Content-Security Policy، جو ایک غیر حساس کوکی سے لگائی جاتی ہے، صرف
+جڑے ہوئے سرور کے اوریجن کو اجازت دیتی ہے۔
 :::
 
-### What the browser does not do
+### براؤزر کیا نہیں کرتا
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+ویب کلائنٹ اُسی سرور سے پڑھتا اور لکھتا ہے جس سے ڈیسک ٹاپ، مگر چند سطحوں کو ایک
+نیٹو ونڈو یا مشین کے اپنے ڈیوائسز درکار ہوتے ہیں:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- کوئی OS اطلاعاتی ٹوسٹ، اطلاع کی آواز یا محیطی بینر نہیں (ایپ کے اندر اطلاعات کا مرکز پھر بھی کام کرتا ہے)
+- **سرور شامل کریں** ڈائلاگ میں کوئی LAN یا ٹیل نیٹ سرور کی دریافت نہیں
+- ایپ کے اندر مضمون پڑھنے والا کوئی ریڈر نہیں — نیوز فیڈ کے مضامین ایک نئے ٹیب میں کھلتے ہیں
+- نہ کسی میٹنگ کے خلاصے کو دوبارہ چلانا، نہ پروسیس ہو رہے خلاصے کو منسوخ کرنا
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+دو چیزیں غائب ہونے کے بجائے مختلف طور پر برتاؤ کرتی ہیں۔ میٹنگ کی **ریکارڈنگ**
+براؤزر میں کام کرتی ہے، جو آپ کا مائیکروفون نیز ایک ایسا اسکرین شیئر کیپچر کرتی ہے
+جس میں آڈیو ٹریک شامل ہو۔ **IDE میں کھولیں** بھی کام کرتا ہے، مگر سرور سے کہتا ہے
+کہ ایڈیٹر کو _سرور_ کے ڈسپلے پر لانچ کرے، چنانچہ ایسے ہیڈلیس ہوسٹ پر جہاں کوئی
+ایڈیٹر انسٹال نہ ہو، بٹن خود کو چھپا لیتا ہے۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/).
+- **کنکشن ٹائم آؤٹ ہو جاتا ہے**: سرور کلائنٹ سے قابلِ رسائی ہونا چاہیے۔ بائنڈ (`--bind any`) چیک کریں، کہ پورٹ کھلا ہے اور کہ `--public-url` وہ ایڈریس بتاتا ہے جس پر کلائنٹ واقعی ڈائل کر سکے۔ کھلے انٹرنیٹ پر TLS لازمی ہے — پلین ٹیکسٹ غیر لوپ بیک بائنڈ اسٹارٹ اپ پر مسترد کر دیا جاتا ہے، الا یہ کہ سرور کسی پراکسی کے پیچھے `--insecure` کے ساتھ شروع کیا گیا ہو۔
+- **براؤزر جڑنے سے انکار کرتا ہے مگر نیٹو کلائنٹ کام کرتا ہے**: براؤزر کا اوریجن سرور کی `--allowed-origins` فہرست میں نہیں ہے۔ ڈیفالٹ صرف `https://app.usectrl.dev` (نیز لوپ بیک) کو اجازت دیتا ہے۔
+- **پیئرنگ کلید مسترد ہوئی**: سرور پر `cc_server pair` دوبارہ چلائیں تاکہ اُس ڈیوائس کی کلید بدل جائے، پھر نئی کلید درج کریں۔ منسوخ شدہ ڈیوائس اپنی اسناد غائب پاتی ہے اور بند حالت میں ناکام ہو جاتی ہے؛ منسوخی کسی زندہ سیشن کو سیکنڈوں میں گرا دیتی ہے۔
+- **غلط ورک اسپیس**: ورک اسپیس URL کا حصہ ہے (`/workspaces/:workspaceId/…`) اور ہر کال کے ساتھ سفر کرتی ہے، چنانچہ ایک کلائنٹ میں ورک اسپیس بدلنے سے صرف آپ کا اپنا ویو بدلتا ہے۔ آپ صرف اُن ورک اسپیسز تک پہنچ سکتے ہیں جن کے آپ رکن ہیں — باقی سب "Not a member of this workspace" کے ساتھ مسترد کر دیا جاتا ہے۔ [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) دیکھیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): the phone relay path
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): فون ریلے کا راستہ
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)

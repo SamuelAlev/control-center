@@ -1,185 +1,196 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Focusmodus en klanklandschappen gebruiken
+description: Start een getimede focussessie met een zwevende aftel-pil en onderdrukte meldingen, en geef vorm aan het adaptieve klanklandschap dat eronder speelt.
 dateModified: 2026-08-17
 slug: nl-NL/handleiding/gidsen/focusmodus
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Deze gids laat zien hoe je een focussessie uitvoert: een blok met timer waarin
+Control Center niet-dringende meldingen onderdrukt en een aftel-pil over je
+andere vensters laat zweven. De gids behandelt ook het klanklandschap dat er
+(standaard) onder speelt — een eindeloze ambienttrack die je server live
+synthetiseert, gevormd door de sfeer die je kiest, het weer buiten en het uur van
+de dag.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Een focussessie is een functie op shellniveau. Hij hangt aan geen enkele pijler —
+de sessie verandert de indeling niet, verbergt de zijbalk niet en wijzigt geen
+PR-review-oppervlak.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Alleen op desktop]
+De zwevende pil en de losgemaakte mini-speler van het klanklandschap zijn native
+vensters naast het hoofdvenster, die alleen de desktopbootstrap aanmaakt. De
+webbuild op `app.usectrl.dev` heeft geen van beide, en ook geen pijplijn voor
+OS-meldingen, dus een focussessie heeft daar niets om te tonen of te onderdrukken.
+Het paneel van het klanklandschap en de weergave ervan werken overal waar je
+verbinding maakt met een server.
 :::
 
-## Start a focus session
+## Een focussessie starten
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Klik op het focuspictogram rechts in de titelbalk (tooltip **Focussessie
+   starten**)
+2. Typ in het dialoogvenster een optioneel **Doel** — waar je aan werkt
+3. Kies een **Duur**: 25m, 50m, 1h, 1h 30m of 2h. De standaardwaarde is 50m en je
+   laatste keuze wordt onthouden
+4. Druk op **Starten**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Controlepunt: de knop in de titelbalk wordt vervangen door een accentchip die de
+resterende minuten toont, de zwevende pil verschijnt over je andere vensters en —
+met **Starten met focusmodus** aan — begint het klanklandschap te spelen.
 
-Two other entry points reach the same session:
+Twee andere ingangen komen bij dezelfde sessie uit:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** opent hetzelfde dialoogvenster.
+- **⌘⇧⌥F** start onmiddellijk een sessie met je onthouden duur en zonder doel —
+  het dialoogvenster wordt overgeslagen. Nogmaals indrukken beëindigt de sessie.
 
-## Read the floating pill
+## De zwevende pil lezen
 
-The pill is a small frameless window you can drag anywhere. It shows:
+De pil is een klein kaderloos venster dat je overal naartoe kunt slepen. Hij
+toont:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Een live aanwezigheidsstip en de resterende tijd als `mm:ss`
+- Je doel, of "Focus session" als je er geen hebt ingesteld
+- Een dunne voortgangsbalk langs de onderrand
 
-Hover it to reveal two actions:
+Beweeg eroverheen om twee acties te tonen:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — stopt het aftellen. Pauzeren is lokaal voor de pil; de
+  sessie zelf blijft actief.
+- **Complete** — beëindigt de sessie.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+De pil gebruikt altijd het donkere palet, welk thema het hoofdvenster ook
+gebruikt, omdat hij boven willekeurige desktopinhoud zweeft.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Als je de pil sluit vanuit de titelbalk, blijft de sessie doorlopen. Druk op de
+picture-in-picture-knop naast de focuschip (tooltip **Naar balk minimaliseren**)
+om hem terug te halen.
 
-## Know what gets suppressed
+## Weten wat er onderdrukt wordt
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Zolang een sessie actief is, laat Control Center elke melding vallen, behalve
+twee categorieën die altijd worden bezorgd:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Vergadering begint zo** — een vergaderingsmelding die je pas achteraf ziet, is
+  waardeloos
+- **PR gepubliceerd**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Al het andere wordt tijdens de hele sessie stil onderdrukt — geen geluid, geen
+OS-toast. Onderdrukte meldingen worden niet in de wachtrij gezet voor latere
+bezorging.
 
-## Play a soundscape
+## Een klanklandschap afspelen
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Klik op het luidsprekerpictogram rechts in de titelbalk (tooltip
+   **Klanklandschappen**) om het paneel te openen
+2. Kies een **Sfeer** — **Focus**, **Stijging**, **Ontspanning** of **Slaap**
+3. Druk op **Afspelen**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Controlepunt: de kaart **Speelt nu af** noemt de huidige scène — het weer op de
+locatie van je werkruimte, de temperatuur in °C en het locatielabel. Zolang er
+"De sfeer wordt afgestemd…" staat, wordt de scène nog bepaald.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+De track is geen loop. Je server synthetiseert hem continu op basis van de sfeer,
+het actuele weer op de locatie van de werkruimte en het tijdstip van de dag. Regen
+klinkt helder en druk, een storm luid en winderig, mist gedempt; de nacht is
+donkerder en galmender dan het midden van de dag. De sfeer bepaalt het
+vocabulaire:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Sfeer       | Geluid                                                                        |
+| ----------- | ----------------------------------------------------------------------------- |
+| Focus       | Rustige, alerte ambiance met een lage puls — bedoeld als achtergrond bij werk |
+| Stijging    | Opgewekte melodie met een zachte puls — voor als werk zwaar voelt             |
+| Ontspanning | Warmere, meer consonante pads, geen beat                                      |
+| Slaap       | Lage drones met bijna geen events, diepe reverb                               |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Wisselen van sfeer tijdens het afspelen draagt de weergave over aan de nieuwe
+sfeer zonder te stoppen.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Het paneel is ook bereikbaar via ⌘K onder de categorie **Focus**, naast de
+focussessie zelf.
 
-## Shape the sound
+## Het geluid vormgeven
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Afstemming** (Focus, Stijging en Ontspanning) — een vierkant pad met een
+  versleepbare puck. Horizontaal loopt van **Zacht** naar **Energiek** (hoeveel er
+  gebeurt), verticaal van **Ruimtelijk** naar **Helder** (hoe open het klinkt).
+  Dubbeltik op het pad om terug te keren naar het neutrale midden;
+  pijltjestoetsen verschuiven de puck. Je afstemming wordt per sfeer onthouden en
+  aanpassingen glijden in de lopende mix — de stream herstart nooit. De sfeer
+  Slaap is bewust niet af te stemmen.
+- **Volume** — een schuifregelaar van 0 tot 100%, standaard 60%. Hij staat los van
+  het systeemvolume en wordt onthouden.
+- **Locatie** — automatisch gedetecteerd op basis van de werkruimte. Druk op
+  **Weer vernieuwen** om de scène opnieuw op te halen.
 
-## Pop out the mini player
+## De mini-speler losmaken
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Terwijl er audio speelt, krijgt de titelbalk er een tweede knop bij (tooltip
+**Speler losmaken**). Die laat een kleine HUD zweven die altijd bovenop blijft,
+met afspelen/pauzeren, het weerpictogram, de scènenaam en een knop **Terug naar
+app** — handig zodra een focussessie je helemaal in een andere app heeft.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Pauzeren vanuit de mini-speler sluit hem niet; alleen de sluitknop (of de app
+afsluiten) laat hem verdwijnen.
 
-## Run them together
+## Ze samen gebruiken
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+De twee functies zijn aan elkaar gekoppeld via één schakelaar in het paneel van
+het klanklandschap: **Starten met focusmodus**, standaard aan.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Een focussessie starten start ook het klanklandschap als er nog niets speelt.
+- De sessie beëindigen — hoe die ook eindigt, ook als de timer afloopt — stopt
+  het klanklandschap, zelfs als je het met de hand hebt gestart.
 
-Turn the switch off to keep the two independent.
+Zet de schakelaar uit om de twee onafhankelijk te houden.
 
-## End a session
+## Een sessie beëindigen
 
-Any one of these ends it:
+Elk van deze acties beëindigt de sessie:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Klik op de focuschip in de titelbalk (tooltip **Focusmodus actief — tik om te
+  beëindigen**)
+- Druk op **Complete** op de pil
+- Druk op **⌘⇧⌥F**
+- Kies **Exit focus mode** in ⌘K
+- Laat de timer aflopen — bij nul wordt de sessie automatisch voltooid
 
-The pill closes, notifications resume immediately and the soundscape stops.
+De pil sluit, meldingen worden onmiddellijk hervat en het klanklandschap stopt.
 
-## Understand what does not persist
+## Begrijpen wat niet bewaard blijft
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Een sessie leeft precies één app-run. Sluit Control Center af en open het
+opnieuw, dan begin je inactief met een geresette timer, zelfs midden in een
+sessie — er is geen crashherstel en geen sessiegeschiedenis.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Slechts twee dingen blijven bewaard: je voorkeursduur en de vlag voor het
+blokkeren van meldingen. Het doel, de verstreken tijd en de open staat van de pil
+blijven niet bewaard.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+De weergave is net zo vergankelijk — het klanklandschap staat bij het opstarten
+altijd uit. Je sfeer, volume en afstemmingen per sfeer blijven bewaard; de stream
+zelf hervat nooit vanzelf.
 
-## Troubleshooting
+## Problemen oplossen
 
-### The tune pad is missing
+### Het afstemmingspad ontbreekt
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Je zit in de sfeer Slaap, die bewust niet af te stemmen is. Schakel over naar
+Focus of Ontspanning om het pad terug te krijgen.
 
-### Nothing plays after restarting the app
+### Er speelt niets na het herstarten van de app
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Bewust — bij het opstarten van de app staat de weergave altijd uit. Open het
+paneel en druk opnieuw op **Afspelen**. Blijft het stil, controleer dan de
+volumeschuifregelaar van het paneel, die losstaat van het systeemvolume.
 
-### The weather or temperature looks wrong
+### Het weer of de temperatuur lijkt niet te kloppen
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+De scène volgt de locatie van de actieve werkruimte. Druk in het paneel op
+**Weer vernieuwen** om die opnieuw op te halen.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Configure notifications](/nl-NL/handleiding/gidsen/meldingen/)
-- [Keyboard shortcuts](/nl-NL/handleiding/referentie/sneltoetsen/)
+- [Meldingen configureren](/nl-NL/handleiding/gidsen/meldingen/)
+- [Sneltoetsen](/nl-NL/handleiding/referentie/sneltoetsen/)

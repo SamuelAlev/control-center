@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: تشغيل الوكلاء بالتوازي
+description: أرسل عدة وكلاء دفعة واحدة، وامنع تصادم أعمالهم.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+يبيّن هذا الدليل كيف تشغّل عدة وكلاء في الوقت نفسه من غير أن يكتب أحدهم فوق عمل الآخر.
 
-## The unit of isolation is the space, not the agent
+## وحدة العزل هي المساحة لا الوكيل
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+حين يبدأ العمل في مساحة، يجهّز Control Center، لكل مستودع مسجّل، شجرة عمل واحدة بالنسخ عند الكتابة تحت جذر تلك المساحة الخاص، على فرع مشتق من قالب اسم الفرع في مساحة العمل. ثم يحصل كل وكيل في المساحة على دليل عمل متراكب خاص به — لكن الأدلة المتراكبة **تشترك** في دليل `repos/` الخاص بتلك المساحة.
 
-So:
+إذن:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- وكيلان في **مساحات مختلفة** يعملان في أشجار عمل مختلفة وعلى فروع مختلفة. هذا عزل حقيقي.
+- وكيلان في **المساحة نفسها** يعملان في شجرة العمل نفسها وعلى الفرع نفسه. مسارات التراكب تختلف، فقفل مسار الإرسال (الذي لا يُسلسل التشغيلات إلا حين تطلب دليل العمل نفسه) لا يُسلسلهما أيضًا. يستطيعان كتابة الملفات نفسها في الوقت نفسه.
 
-The rule that follows: **one space per parallel task.**
+فالقاعدة: **مساحة واحدة لكل مهمة متوازية.**
 
-## Run tasks in parallel — separate spaces
+## تشغيل المهام بالتوازي — مساحات منفصلة
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. افتح مساحة مع الوكيل A وأرسل إليه مهمة.
+2. افتح مساحة ثانية مع الوكيل B وأرسل إليه مهمة مختلفة.
+3. يُرسَل الاثنان فورًا، كل منهما في شجرة عمل مساحته وعلى فرعه.
 
-This is the recipe to use whenever the agents will be editing files.
+هذه الطريقة التي تعتمدها كلما كان الوكلاء سيعدّلون ملفات.
 
-## Work together in one space — several mentions
+## العمل معًا في مساحة واحدة — عدة إشارات
 
-In a single space, @-mention more than one agent:
+في المساحة الواحدة، أشر بـ @ إلى أكثر من وكيل:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+يُرسَل الوكيلان بالتوازي ويبثّان في المساحة نفسها، والبث موسوم بمرسله. ولأنهما يشتركان في شجرة عمل المساحة، فاستخدم هذا للتعاون — واحد يكتب وآخر يقرأ، أو وكيلان يستدلان على الشجرة نفسها — لا لتحريرين مستقلين.
 
-## Fan out from a pipeline
+## التفرّع من خط أنابيب
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+قالب `pr_review` المضمّن هو المثال المشحون للتفرّع: تعمل عدة عقد مراجع بالتزامن انطلاقًا من مشغّل واحد، وتجمع عقدة **تجميع (ضم)** نتائج المراجعين في تقرير واحد. شغّله من شاشة خطوط الأنابيب، فيُرسَل كل مراجع بالتوازي.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+يخفي محرّر خط الأنابيب الحارس الطرفي ويعيد توصيله لينتظر كل عقدة يمكن بلوغها وليس لها مخرج حين تضيف خطوة أو تصلها، فالفروع التي ترسمها أنت تعمل.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[إسناد تذكرة لا يُرسل شيئًا]
+إسناد تذكرة إلى وكيل يسجّل الملكية. لا موزّع تذاكر — `TicketAssigned` إشارة تدقيق، ولا يبدأ منها أي عمل. الاستثناء الوحيد تذكرة تُسنَد إلى _فريق_، وهي توقظ قائد ذلك الفريق.
 :::
 
-## Watch them run
+## راقب تشغيلهم
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**قابلية الملاحظة ← مباشر** (تذييل الشريط الجانبي ← قابلية الملاحظة، ثم علامة تبويب مباشر) يعرض كشف وكلاء مساحة العمل هذه، ويُحدَّث كل ثانية: الحالة (قيد التشغيل / خامل / مركون / أُجهِض)، وما يفعله كل وكيل، ورموز آخر تشغيل وتكلفته، وتحكم لإنهاء العملية الجارية. اختيار صف يثبّت درج نص حي.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**الإعدادات ← مساحة العمل ← الوكلاء** يعرض الكشف نفسه بمفردات حالة مختلفة تضع ما يحتاج انتباهًا أولًا، وهي مشتقة من سجل تشغيل كل وكيل — قيد التشغيل، ومحظور، وفشل، وخامل، ولا عمليات تشغيل بعد — ومرتّبًا بحيث يُرفَع ما يحتاج انتباهًا إلى الأعلى. علامة تبويب **السجلات** لكل وكيل تحمل سجل تشغيله.
 
-Both surfaces are scoped to the active workspace.
+السطحان محصوران بمساحة العمل النشطة.
 
-## Handle conflicts
+## معالجة التعارضات
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+عبر المساحات، كل مساحة على فرعها، فيظهر الاصطدام تعارض دمج Git عاديًا حين تدمج طلب السحب الثاني. حلّه كما تحل أي تعارض دمج.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+داخل المساحة الواحدة لا فاصل فرع ولا قفل: الوكلاء يكتبون الملفات نفسها في الوقت نفسه، والخاسر يُطمس ببساطة. إن أردت أن يحرّر وكيلان في مساحة واحدة، فاقسم العمل على مساحتين.
 
-To reduce collisions either way:
+لتقليل الاصطدام في الحالين:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/).
-- Review and merge each agent's pull request promptly.
+- أعطِ كل وكيل نطاقًا مستقلًا — ملفات مختلفة، ووحدات مختلفة.
+- استخدم مخطط الشفرة لتتبين ما يمسّه التغيير قبل الإرسال. انظر [البحث في الشفرة عبر مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/).
+- راجع طلب سحب كل وكيل وادمجه أولًا بأول.
 
-## Resource considerations
+## اعتبارات الموارد
 
-Each running agent costs:
+كل وكيل قيد التشغيل يكلّف:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- شجرة عمل للمساحة — حيزها على القرص ضئيل ما دام النسخ عند الكتابة متاحًا؛ وعلى Windows فهي `git worktree`. نظام الملفات الذي لا يدعم reflink يُفشل التجهيز بدل أن ينسخ.
+- عملية على مضيف الخادم
+- رموز النموذج، وتتراكم لكل وكيل
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/) for the two commands that do have one.
+تظهر التكاليف في **قابلية الملاحظة ← الرؤى**. والجولة التفاعلية العادية بلا سقف إنفاق؛ انظر [إدارة التكاليف](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/) للأمرين اللذين لهما سقف.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
-- [Build an agent team](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بناء-فريق/)
-- [Manage costs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/)
-- [Add repos to a workspace](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [بناء فريق وكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بناء-فريق/)
+- [إدارة التكاليف](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/)
+- [إضافة مستودعات إلى مساحة عمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/)
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/)

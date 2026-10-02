@@ -1,153 +1,226 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: التثبيت
+description: استخدم Control Center في المتصفح أو ثبّت تطبيق سطح المكتب، وأعدّ خلفية وكيل، واختر أين يعمل خادمه.
 slug: ar-SA/دليل-المستخدم/تثبيت
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+يعمل Control Center بطريقتين: **تطبيق ويب** على
+[app.usectrl.dev](https://app.usectrl.dev) بلا شيء تنزّله، أو **تطبيق سطح
+المكتب** تثبّته. هما التطبيق نفسه بالميزات نفسها. الفرق الوحيد أين يعمل
+الخادم — وتطبيق الويب لا يستطيع أن يشغّل واحدًا لك.
 
-## Use it in your browser
+## استخدمه في المتصفح
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) هو هذا التطبيق مُجمَّعًا للمتصفح.
+لا تثبيت، ولا تحديث. افتحه واتصل.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+ما يعجز عنه لسان المتصفح هو أن _يكون_ الخادم. كل عميل — سطح المكتب، والويب،
+والهاتف — عارض رقيق فوق `cc_server` بلا واجهة يملك قاعدة البيانات ويقوم بالعمل،
+فتطبيق الويب يتحدث دائمًا إلى خادم تشغّله أنت. طريقتان لتزويده بواحد:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**خادم على جهازك.** ابدأ `cc_server` محليًا ووجّه تطبيق الويب إلى
+`ws://localhost:9030`. المتصفحات تعدّ `localhost` موثوقًا، فلا شهادة ولا نفق.
+هذه أسرع طريقة لتجربة تطبيق الويب، وبياناتك لا تغادر جهازك.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**خادم على جهاز آخر.** لأن `app.usectrl.dev` يُقدَّم عبر HTTPS، لا بد لخادم
+غير محلي أن يُبلَغ عبر `wss://` بشهادة يثق بها المتصفح أصلًا. يرفض `cc_server`
+ربط عنوان غير loopback من غير TLS، فاختر واحدًا مما يلي:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- أعطه شهادة مباشرة، عبر `--tls-cert` و`--tls-key`
+- ضعه خلف بروكسي عكسي ينهي TLS، وشغّله بـ `--insecure`
+- اكشفه عبر نفق أو VPN يوفّر الشهادة — Tailscale أو cloudflared أو ما شابه.
+  في **الإعدادات ← الخادم ← الاتصال والحالة** خيار تفعيل النفق المضمّن، تحت
+  **مشاركة هذا الخادم**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+متى وقف الخادم خلف بروكسي أو NAT أو نفق، اضبط `--public-url` على العنوان الذي
+ينبغي أن يتصل به العملاء فعلًا. افتراضه الربط المحلي، فمن دونه يحاول العملاء
+المضيف الخطأ.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[تستضيف نسختك من عميل الويب؟]
+لا يقبل `cc_server` من أصول المتصفح إلا ما في قائمة `--allowed-origins`،
+وافتراضها `https://app.usectrl.dev`. أضف أصلك إليها إن استضفت حزمة الويب
+بنفسك. يُسمح دائمًا بـ loopback وبالعملاء الأصيلين، أيًا كانت القائمة.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+يبقى القليل لسطح المكتب وحده، لأنها تحتاج نافذة أصيلة أو أجهزة الصوت في
+الجهاز نفسه: كبسولة وضع التركيز العائمة، وإشعارات النظام المنبثقة (مركز
+الإشعارات داخل التطبيق يعمل في كل مكان)، و«بدء التسجيل والربط» من حدث في
+التقويم، وإعادة تشغيل ملخص اجتماع. كل ما عدا ذلك — المساحات، والوكلاء، ومراجعة
+طلبات السحب، وخطوط الأنابيب، والتذاكر، والذاكرة، وتسجيل الاجتماع نفسه — يسلك
+السلوك نفسه.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/). To host the server,
-follow [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
+لوصل تطبيق الويب بخادم، اتبع
+[الاتصال بخادم بعيد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/). لاستضافة الخادم،
+اتبع [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
 
-## Desktop system requirements
+## متطلبات نظام سطح المكتب
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| المتطلب | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| إصدار النظام | macOS 13+ (Ventura) | Windows 10+ | Ubuntu 22.04+ أو توزيعة أخرى فيها glibc 2.35+ وGTK 3 |
+| المعمارية | Apple Silicon (arm64) | x64 | x86_64 |
+| Git | مطلوب | مطلوب | مطلوب |
+| مساحة القرص | نحو 200 MB للتطبيق، بالإضافة إلى دليل بيانات الخادم | نحو 200 MB | نحو 200 MB |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+لا يتوفر لأجهزة Mac بمعالج Intel تنزيل مبني مسبقًا.
+[البناء من المصدر](#البناء-من-المصدر) هو السبيل.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+يكبر دليل بيانات الخادم عن التطبيق. عند أول تشغيل يثبّت `cc_server` قسرًا
+النماذج على الجهاز — تضمينات النص (نحو 90 MB)، وفصل المتحدثين (نحو 35 MB)،
+ونموذج الكلام المختار (Parakeet TDT v3 افتراضيًا، نحو 600 MB؛ ومتغيرات Whisper
+بين 198 و626 MB) — مع بناء code-server مضمّن، وتحصل كل محادثة وكيل على شجرة
+عمل بالنسخ عند الكتابة للمستودعات التي تعمل عليها (`git worktree` العادي على
+Windows). الكلام ليس اختياريًا: من غير نموذج ASR لا تُقدَّم عمليات الاجتماع ولا
+الإملاء. والتنزيل الأول لنموذج الكلام يحتاج إعادة تشغيل واحدة قبل أن يصبح
+التسجيل جاهزًا.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+يوجّه سطح المكتب خادمه إلى دليل دعم التطبيقات لكل مستخدم في نظام التشغيل.
+و`cc_server` الذي يُبدأ يدويًا بلا `--data-dir` يفترض
+`<application data>/control-center` — `~/Library/Application Support/control-center`
+على macOS، و`%APPDATA%\control-center` على Windows،
+و`$XDG_DATA_HOME/control-center` (أو `~/.local/share/control-center`) على Linux.
 
-## Download
+## التنزيل
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+كل الملفات أدناه من [إصدارات GitHub](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+نزّل `Control-Center-<version>-arm64.dmg`، وافتحه، واسحب Control Center إلى
+مجلد Applications. البناء موقّع بـ Developer ID وموثّق من Apple، فيُفتح كالمعتاد.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: مثبّت لكل مستخدم.
+- `Control-Center-<version>-windows-x64.zip`: أرشيف zip محمول.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+يستخدم Windows `git worktree` لسحب المساحات (بلا نسخ عند الكتابة).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+يحمل AppImage معلومات التحديث، فيستطيع
+[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) أو appimaged
+رفعه إلى أحدث إصدار في مكانه، ولا ينزّل إلا ما تغيّر.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+كلاهما مبني على Ubuntu 22.04، ويعمل عليها وعلى أي أحدث منها (Debian 12،
+وFedora 36 وما بعدها): يربطان glibc 2.35 وlibstdc++ الخاص بـ GCC 12، ويأخذان
+GTK 3 من النظام. المكتبات القليلة التي قد يخلو منها سطح مكتب اعتيادي تُشحَن
+داخلهما، فلا حاجة لتثبيت شيء آخر. الصوت — تشغيل الاجتماع، والمشهد الصوتي، وصوت
+المنصات، ونغمات الإشعارات — يمر عبر libmpv في النظام (`libmpv1` على Ubuntu
+22.04، و`libmpv2` على Ubuntu وDebian الأحدث، و`mpv-libs` على Fedora)؛ ومن دونه
+يقلع التطبيق وتلك عناصر التحكم مخفية.
 
-### Standalone server
+### الخادم المستقل
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
+يحمل كل إصدار الخادم بلا واجهة منفصلًا أيضًا —
+`cc_server-<version>-macos-arm64.tar.gz` و`cc_server-<version>-linux-x64.tar.gz`
+و`cc_server-<version>-windows-x64.zip` — إلى جانب صور `cc-server` و`cc-webapp`
+و`cc-remote` على GHCR. انظر
+[تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+أرشيف Linux مبني على Ubuntu 22.04، ومكتباته الأصيلة المضمّنة تربط glibc 2.35
+وlibstdc++ الخاص بـ GCC 12، فيحتاج مضيفًا بهذه الحداثة على الأقل (Ubuntu 22.04،
+أو Debian 12، أو Fedora 36 أو أحدث). على توزيعة أقدم شغّل صورة `cc-server` —
+الحاوية تأتي بمساحة مستخدمها، فلا يلزمك إلا النواة.
 
-## Agent backend
+## خلفية الوكيل
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+يرسل Control Center الوكلاء عبر **المحوّلات**. هما اثنان، والقائمة ثابتة،
+ويُكتشفان تلقائيًا — ولا سبيل لتسجيل محوّل آخر.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+محوّل **Control Center (built-in)** لا يحتاج سطر أوامر خارجيًا: حلقة الوكيل
+تعمل داخل الخادم وتخاطب مزوّدي النماذج عبر HTTP، فهو متاح دائمًا. اربط مزوّدًا
+من **الإعدادات ← الخادم ← مزوّدو النماذج**. تتيح OpenAI وCodex وCursor وKimi
+Code تسجيل الدخول من المتصفح، وتأخذ Anthropic وOpenRouter وGroq وGoogle Gemini
+وDeepSeek وMistral وxAI وz.ai وMoonshot مفتاح API. Codex وCursor مزوّدان على هذا
+المشعّل، وليسا سطرَي أوامر منفصلين. يُذكر z.ai مرتين عن قصد: **z.ai** المنصة
+المفتوحة بالدفع حسب الاستخدام، وتُخصم من رصيد حسابك، أما **z.ai GLM Coding
+Plan** فهو الاشتراك. مفتاح الحساب نفسه، لكن z.ai تقدّم الخطة من مضيف آخر — إن
+لصقت مفتاح خطة البرمجة في بطاقة z.ai العادية عاد كل طلب بـ `429 … "Insufficient balance or no resource package"`،
+لأن الخطة بلا رصيد يُنفق. اشتراك Claude Pro/Max ليس تسجيل دخول إلى واجهة
+Anthropic؛ وتُبلَغ تلك الخطة من محوّل Claude Code. ما _تستطيع_ إضافته في تلك
+الصفحة **مزوّد مخصص** — أي نقطة نهاية متوافقة مع OpenAI أو Anthropic (Ollama
+أو LM Studio أو vLLM أو نشر خاص) من **مزوّدون مخصصون ← إضافة مزود**.
 
-The other adapter wraps an external CLI:
+المحوّل الآخر يغلّف سطر أوامر خارجيًا:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+يسبر الكشف `PATH` على الجهاز الذي يشغّل `cc_server` — الجهاز نفسه حين يشغّل
+سطح المكتب خادمه، والمضيف البعيد في ما عدا ذلك. ثبّت سطر أوامر Claude Code
+هناك، لا على العميل. زر **تحديث** في تلك الصفحة يعيد السبر.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/).
+تُقدَّم قوائم النماذج مباشرة من كل مزوّد متصل، ولا يوفّر
+[models.dev](https://models.dev) إلا بيانات السعر ونافذة السياق. انظر
+[إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/).
 
-## GitHub authentication
+## مصادقة GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+اعتماد GitHub **لك ويعيش على الخادم**، ومفتاحه معرّف مستخدمك — لا في سلسلة
+مفاتيح نظام العميل. كل جهاز تسجّل الدخول منه يستخدم الاعتماد نفسه، ولا يقرؤه
+عضو آخر.
 
-If the server has a GitHub App registered ([Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+إن كان للخادم تطبيق GitHub مسجّل
+([إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/))، تعرض
+**الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود** زر
+**تسجيل الدخول عبر GitHub** (تدفق جهاز يشغّله الخادم). وإلا فالصق رمز وصول
+شخصي:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- كلاسيكي: `repo` و`read:org`
+- دقيق الصلاحيات: **المحتويات** و**طلبات السحب** (قراءة وكتابة)، و**الفحوصات** و**الإجراءات** (قراءة)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+أنشئه من
+[GitHub ← الإعدادات ← إعدادات المطوّر ← رموز الوصول الشخصية](https://github.com/settings/tokens).
+يسبر الخادم الرمز لاسم الحساب عند تخزينه، فيستطيع الصف أن يقول «تم تسجيل الدخول
+باسم …»؛ والسبر الفاشل يحفظ الرمز مع ذلك، ويظهر الخطأ الإملائي أو الصلاحية
+الناقصة لاحقًا في طلب فاشل.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/).
+الخطوة الأولى في الإعداد الأولي هي هذا الاتصال. وبعدها البطاقة نفسها موضع
+استبداله أو مسحه. ويستخدم GitLab وBitbucket البطاقة نفسها؛ انظر
+[ربط مضيف شفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/).
 
-## Choose where the server runs
+## اختر أين يعمل الخادم
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) explains what that split means for the desktop, web and phone.
+Control Center عميل خفيف فوق عملية `cc_server` بلا واجهة تملك قاعدة البيانات
+وتقوم بكل العمل؛ ويشرح
+[النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)
+ما يعنيه هذا الفصل لسطح المكتب والويب والهاتف.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+عند أول تشغيل يسأل سطح المكتب **«كيف ينبغي أن يعمل Control Center؟»**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ar-SA/دليل-المستخدم/بداية-سريعة/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **التشغيل داخل هذا التطبيق**: يطلق سطح المكتب `cc_server` على هذا الجهاز
+  ويشرف عليه، ويخاطبه عبر loopback. لا شيء آخر يُضبط. هذا الإعداد الذي تفترضه
+  [بداية سريعة](/ar-SA/دليل-المستخدم/بداية-سريعة/).
+- **الاتصال بمثيل بعيد**: وجّه سطح المكتب إلى `cc_server` يعمل في مكان آخر،
+  بعنوان WebSocket، ومعرّف جهاز، وإما مفتاح اقتران أو رمز دعوة لمرة واحدة.
+  ذلك الخادم يملك البيانات، وهذا التطبيق يرسمها فقط.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/).
+تضيف خادمًا أو تبدّله لاحقًا من **الإعدادات ← الخادم ← الاتصال والحالة**.
+التبديل يعيد الاتصال في مكانه — بلا إعادة تشغيل. المتصفح لا يشغّل خادمًا،
+فعميل الويب بعيد دائمًا؛ انظر
+[الاتصال بخادم بعيد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/).
 
-To host a server yourself, follow [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+لاستضافة خادم بنفسك، اتبع
+[تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
+يغطي بناء الثنائي، وصك مفتاح اقتران قبل أول تشغيل، وأعلام `--data-dir`
+و`--port` و`--bind`.
 
-## Verify your setup
+## تحقق من الإعداد
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. يسرد **الإعدادات ← الخادم ← مزوّدو النماذج** المحوّلين. يُقرأ «Control Center (built-in)» موجودًا بالإصدار `built-in`، ويُقرأ Claude Code موجودًا إن كان سطر أوامره على `PATH` لمضيف الخادم. اضغط **تحديث** إن غاب.
+2. يسرد **الإعدادات ← مساحة العمل ← المستودعات** مستودعات مساحة العمل هذه، و**إضافة مستودع** يتصفّح مجلدات مضيف الخادم.
+3. يسرد **الإعدادات ← مساحة العمل ← الوكلاء** الوكلاء الخمسة التي بذرتها مساحة عملك الأولى. كل واحد يحتاج ضبط **المحوّل** و**النموذج** قبل أن يعمل.
+4. يبلّغ **الإعدادات ← الخادم ← التشخيص والخصوصية** بخلفيات البيئة المعزولة التي يوفّرها هذا المضيف، وبحالة نموذج التضمين، وبالتسجيل.
 
-## Build from source
+## البناء من المصدر
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+المكتبات الأصيلة مطلوبة، ولا وضع منقوص: غياب واحدة فشل إقلاع قاطع، لا مسار
+أبطأ. جهّزها قبل أي شيء آخر. كل أمر Flutter وDart يمر بـ `fvm`، لأن المستودع
+يثبّت إصدار SDK.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +232,22 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+على macOS، التخزين الآمن (تسجيل الدخول إلى GitHub وLinear وGoogle) يحتاج توقيع
+التطبيق من فريق Apple — ويكفي Apple ID مجاني، وهو إعداد لمرة واحدة موصوف في
+[توقيع التطوير المحلي](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos).
+من دونه يقلع التطبيق، ويتعطل التخزين الآمن وحده. Windows وLinux لا يحتاجان
+توقيعًا.
 
-To build the headless server binary, stage the natives the same way first, then:
+لبناء ثنائي الخادم بلا واجهة، جهّز المكتبات الأصيلة بالطريقة نفسها أولًا، ثم:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+ينسخ خطاف البناء ما هو موجود في `build/natives/` إلى الحزمة، فالبناء قبل
+التجهيز يعطي حزمة بلا مكتبات أصيلة، وخادمًا يرفض الإقلاع.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+لعميل الويب استخدم `scripts/build_web.sh` (`--target remote` لتطبيق الويب
+التقدّمي للهاتف). هذا ما يشغّله CI: فـ `flutter build web` المجرّد يتخطى ختم
+هوية البناء، وإعادة توليد Web Worker، وبيان النشر، وفحص ميزانية الأصول.

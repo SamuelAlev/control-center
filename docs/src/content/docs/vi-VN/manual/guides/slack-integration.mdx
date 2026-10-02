@@ -1,73 +1,75 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Thiết lập tích hợp Slack
+description: Kết nối một app Slack với không gian làm việc Control Center để thành viên có thể điều khiển agent ngay từ Slack.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Hướng dẫn này chỉ cho bạn cách kết nối Slack với một không gian làm việc Control Center, hoặc bằng cách để Control Center tạo app, hoặc bằng cách tự bạn dựng lấy.
 
-For a guided first run, see [Bridge Slack to your workspace](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/).
+Để có một lần chạy đầu tiên theo hướng dẫn, xem [Nối Slack với không gian làm việc của bạn](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack là nhà cung cấp chat duy nhất]
+Cầu nối vốn được viết mà không biết gì về nhà cung cấp — một giao diện điều
+khiển bằng descriptor trên một adapter cho mỗi nhà cung cấp — nhưng Slack là
+adapter duy nhất tồn tại. Không hề có bản triển khai Discord, Telegram, Teams
+hay Matrix.
 :::
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Vai trò `owner` hoặc `admin` trong không gian làm việc Control Center — kết nối một app chat là một thay đổi cài đặt không gian làm việc
+- Quyền tạo và cài app trong không gian làm việc Slack
+- Không cần gì truy cập được từ công khai: kết nối là hướng ra (Socket Mode), nên máy chủ không cần cổng vào, tunnel hay tên miền
 
-## Three ways to get the app
+## Ba cách để có app
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Cách                | Bạn cung cấp                           | Control Center làm                                                                                                        |
+| ------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Theo hướng dẫn**          | Token cấu hình app (`xoxe-…`) | Tạo app với đúng scope, sự kiện, Socket Mode và lệnh slash; đưa cho bạn hai bước mà Slack không có API cho chúng |
+| **Tạo trên Slack** | Không gì cả                               | Mở Slack với cùng cấu hình đã điền sẵn; bạn chọn một không gian làm việc và xác nhận                                       |
+| **Làm thủ công**         | Token của app đã hoàn tất             | Xác minh chúng rồi kết nối                                                                                                 |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Cách theo hướng dẫn là cách duy nhất còn giúp app vẫn _quản lý được_ từ Control Center, và chính điều đó mở ra khả năng [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/). Một app **Tạo trên Slack** có thể được nâng thành app được quản lý sau đó bằng cách dán token cấu hình vào hộp thoại kết nối.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Cố ý không có nút "cài app Slack của Control Center". Cài một app Slack phân tán đòi hỏi một client secret dùng chung (Slack không có PKCE), còn Socket Mode phân phối sự kiện của một app ngẫu nhiên qua các kết nối của nó — nên một app dùng chung sẽ chuyển tin nhắn của không gian làm việc bạn tới máy chủ của người khác. Vì vậy mỗi không gian làm việc sở hữu app riêng của mình, và ba cách trên nói về việc điều đó tốn của bạn ít công sức đến đâu.
 
-## Option A: let Control Center create the app
+## Phương án A: để Control Center tạo app
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Tạo một cặp token cấu hình app tại [api.slack.com/apps](https://api.slack.com/apps) và sao chép token **làm mới** (`xoxe-…`)
+2. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+3. Trên khối Slack, nhấp vào **Tạo app giúp tôi**
+4. Dán token, chỉnh tên app, tên bot, các mô tả và lệnh slash, rồi nhấp vào **Tạo app**
+5. Thực hiện hai bước còn lại mà hộp thoại hiển thị, mỗi bước là một liên kết vào Slack:
+   - **Basic Information → App-Level Tokens**: tạo một token với scope `connections:write` (`xapp-…`)
+   - **Install App**: cài vào không gian làm việc và sao chép **Bot User OAuth Token** (`xoxb-…`)
+6. Nhấp vào **Dán thông tin xác thực** và tiếp tục với [Kết nối](#kết-nối)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Token cấu hình được xoay vòng sau mỗi lần dùng. Control Center lưu giá trị đã xoay ngay khi thực hiện, nên bạn không bao giờ phải dán lại.
 
-## Option B: create it in Slack, pre-filled
+## Phương án B: tạo trên Slack, với cấu hình điền sẵn
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Vẫn là app đó, không cần token cấu hình — Slack mở cho bạn màn hình tạo app của chính nó với toàn bộ manifest đã điền sẵn.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+2. Trên khối Slack, nhấp vào **Tạo app giúp tôi**
+3. Chỉnh tên app, tên bot, các mô tả và lệnh slash — những thông tin này đi kèm theo liên kết
+4. Nhấp vào **Tạo trên Slack**. Trình duyệt của bạn mở trang tạo app của Slack với cấu hình điền sẵn
+5. Chọn không gian làm việc Slack và xác nhận. Các scope, sự kiện, Socket Mode và lệnh slash đều đã đúng
+6. Quay lại Control Center, thực hiện hai bước còn lại mà hộp thoại hiển thị:
+   - **Basic Information → App-Level Tokens**: tạo một token với scope `connections:write` (`xapp-…`)
+   - **Install App**: cài vào không gian làm việc và sao chép **Bot User OAuth Token** (`xoxb-…`)
+7. Nhấp vào **Dán thông tin xác thực** và tiếp tục với [Kết nối](#kết-nối)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack không báo nó đã tạo app nào, nên Control Center không biết id của app và các liên kết ở bước 6 dẫn tới danh sách app của bạn thay vì mở thẳng app đó. **Tùy chỉnh bot** cần token cấu hình.
 
-## Option C: build the app yourself
+## Phương án C: tự dựng app
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Tạo một app tại [api.slack.com/apps](https://api.slack.com/apps), rồi thiết lập như sau.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: bật nó và để trống mọi URL yêu cầu. Slack từ chối một manifest yêu cầu cả Socket Mode lẫn phân phối qua webhook.
 
-**Bot token scopes** (OAuth & Permissions):
+**Scope của token bot** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +83,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Đăng ký sự kiện** (sự kiện của bot):
 
 ```text
 app_home_opened
@@ -91,134 +93,137 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` và `message.groups` chính là thứ khiến một _phản hồi_ bên trong một luồng Slack đã được nối hoạt động. Không có chúng, chỉ lượt nhắc đầu tiên mới đến được.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Lệnh slash**: `/cc` (tên nào cũng được — cầu nối dùng đúng lệnh mà nó được gọi lần gần nhất).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: bật tab Messages và để nó cho phép ghi, để thành viên có thể nhắn tin riêng cho bot.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Token**: tạo một token cấp ứng dụng với `connections:write`, rồi cài app và sao chép token OAuth của người dùng bot.
 
-## Connect
+## Kết nối
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+2. Trên khối Slack, nhấp vào **Kết nối Slack**
+3. Điền vào các trường:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
+| Trường                                          | Giá trị    | Nằm ở đâu trong Slack                                    |
 | ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| **Token OAuth của người dùng bot**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Token cấp ứng dụng**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Token làm mới cấu hình app** (tùy chọn) | `xoxe-…` | Cặp token cấu hình app trên api.slack.com/apps     |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Tiền tố của mỗi giá trị đều được kiểm tra ở cả hai phía trước khi gửi bất cứ thứ
+gì, nên một giá trị bị dán vào sai ô sẽ bị từ chối bằng đúng cùng một câu trong
+cả hai trường hợp.
 
-4. Click **Connect**
+4. Nhấp vào **Kết nối**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center xác minh token bot bằng `auth.test` của Slack _trước khi_ lưu bất cứ thứ gì, nên một lỗi gõ sẽ được báo cho bạn thay vì biến thành một socket âm thầm không bao giờ hoạt động. Token cấp ứng dụng chỉ có thể được chứng minh bằng cách mở socket, nên một token hỏng sẽ hiện ra ngay sau đó dưới dạng lỗi kết nối trên cùng dòng.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Nếu không có token làm mới cấu hình app (tùy chọn), kết nối vẫn chạy tốt — bạn chỉ không thể chỉnh bot từ Control Center.
 
-## What connecting does
+## Việc kết nối làm gì
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Lưu thông tin xác thực trong thư mục riêng của không gian làm việc, bên cạnh cơ sở dữ liệu của nó, chỉ chủ sở hữu đọc được. Chúng không bao giờ đi ngược về máy khách
+- Mở một kết nối Socket Mode cho không gian làm việc này và bắt đầu nhận các lượt nhắc, phản hồi trong luồng Slack, DM và lệnh slash
+- Trang bị lại mọi luồng Slack đã được nối trước đó, nên việc kết nối lại sẽ tiếp tục các cuộc hội thoại đang có thay vì bỏ mặc chúng
+- Không tốn gì cho những không gian làm việc không có app chat: không socket, không timer, không lưu lượng
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Token nằm ở đâu và vì sao không dùng keychain]
+Thông tin xác thực của bot là một tệp JSON thuần cho mỗi nhà cung cấp tại
+`<dataDir>/<workspaceId>/chat_credentials/`, được ghi theo kiểu nguyên tử và
+siết quyền chỉ chủ sở hữu. Đó là chủ đích, không phải sơ suất: xóa một không
+gian làm việc sẽ gỡ liên kết thư mục đó nên token đi theo nó, còn
+`workspace.export` và các bản sao lưu chỉ sao chép `workspace.db` — không sao
+chép thư mục — nên một không gian làm việc bạn chuyển cho người khác không bao
+giờ mang theo token bot còn sống bên trong. Hệ quả là khôi phục một không gian
+làm việc ở nơi khác đồng nghĩa với việc kết nối lại Slack tại đó.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Quyền truy cập cầu nối dựa trên **tư cách thành viên** của không gian làm việc,
+không bao giờ dựa trên việc nắm giữ token. Một tài khoản Slack phải được liên
+kết với người dùng Control Center là thành viên có vai trò ghi. Kết nối, ngắt
+kết nối, thiết lập theo hướng dẫn, liên kết thiết lập và tùy chỉnh bot đều yêu
+cầu quyền quản trị viên.
 :::
 
-## Verify
+## Kiểm tra
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Dòng Slack hiển thị một nhãn trạng thái: **Trực tiếp**, **Đang kết nối…**, **Lỗi kết nối** (kèm lỗi của chính Slack ngay bên cạnh), hoặc **Chưa kết nối**. Để kiểm tra từ đầu đến cuối:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Trong Slack, mời bot vào một kênh: `/invite @your-bot-name`
+2. Nhắc tới nó kèm một yêu cầu
+3. Một phản hồi trong luồng Slack xuất hiện và một space tương ứng xuất hiện trong Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/).
+Sau đó mỗi thành viên muốn dùng cầu nối sẽ liên kết tài khoản của riêng mình — xem [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/).
 
-## What a reply looks like in Slack
+## Một phản hồi trông như thế nào trong Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Phía trên những từ được truyền theo luồng là một thẻ được nhóm lại, với một dòng cho mỗi bước. Phần thiết lập là một dòng có tiêu đề chuyển từ `Working on it…` sang `Cloning …` rồi sang `Starting the agent…`. Việc suy luận thêm một dòng `Thinking…`; khi bước đó kết thúc, một suy nghĩ ngắn có thể xuất hiện trên dòng đó. Mỗi công cụ có một dòng riêng (`Read lib/main.dart`). Câu trả lời đến dưới dạng văn bản thông thường bên dưới thẻ. Thẻ chuyển sang trạng thái hoàn tất khi lượt kết thúc và sang trạng thái lỗi khi lượt chạy thất bại, bị ngắt, hoặc chạm giới hạn lượt.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Thẻ bắt đầu ngay khi bot chấp nhận lượt nhắc — `Working on it…` — nên luồng Slack không im lặng trong lúc không gian làm việc vẫn đang được dựng. Lượt nhắc đầu tiên của bạn trong một kênh Slack sẽ tạo cuộc hội thoại, và việc đó clone các repo mà agent làm việc trong đó, nên dòng thiết lập lần lượt đọc `Cloning acme/widgets…`, rồi `Setting up Reviewer…`, rồi `Starting the agent…`, rồi một dòng `Thinking…` ngay khi agent thực sự suy luận. Với một kho mã lớn, lần thiết lập đầu tiên mất khá lâu; thẻ chính là cách bạn biết nó đang làm việc chứ không phải đang phớt lờ bạn. Những lượt nhắc sau trong cùng luồng Slack vẫn mở đầu bằng `Working on it…`, rồi bỏ qua các bước clone vì không gian làm việc đã có sẵn.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Phần suy luận dưới dạng một bức tường chữ và đầu ra công cụ không bao giờ rời khỏi Control Center — suy nghĩ trên dòng `Thinking…` là một dòng ngắn, không phải bản ghi hội thoại. **View in Control Center** trên thẻ mở cuộc hội thoại đầy đủ trong ứng dụng desktop — liên kết trỏ tới máy chủ Control Center của chính bạn, máy chủ này chuyển trình duyệt sang ứng dụng.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Nếu không có gì xảy ra khi bạn nhấp vào, nghĩa là máy chủ đã gửi tin nhắn không truy cập được từ máy bạn đang nhấp (ví dụ một máy chủ chỉ chạy trên loopback bị nhấp từ điện thoại), hoặc Control Center không chạy ở đó. Một máy chủ không có địa chỉ truy cập được sẽ gửi một thẻ không có nút, chứ không gửi một nút dẫn tới hư không.
 
-## Rotate a token
+## Xoay vòng token
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Dán lại giá trị mới trong hộp thoại kết nối và nhấp vào **Kết nối**. Việc kết nối sẽ thay thế kết nối đang chạy cho không gian làm việc này, nên socket được quay số lại bằng thông tin xác thực mới.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Hai token bắt buộc phải có mặt trong mọi lần kết nối. Token làm mới cấu hình app (tùy chọn) giữ nguyên giá trị đã lưu khi bạn để trống ô, nên việc xoay vòng token bot không bao giờ làm bạn mất khả năng chỉnh app.
 
-## Disconnect
+## Ngắt kết nối
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Nhấp vào **Ngắt kết nối** trên dòng Slack (chỉ quản trị viên). Socket đóng lại và thông tin xác thực bị quên.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Các liên kết space và người dùng cố ý được giữ lại: kết nối lại cùng một app sẽ khôi phục mọi luồng Slack đã được nối. Chúng là những hàng thuộc phạm vi không gian làm việc, nên xóa không gian làm việc thì chúng cũng bị xóa.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The row says "Connection error"
+### Dòng đó ghi "Lỗi kết nối"
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Đọc lỗi hiển thị bên cạnh nhãn. Một thông tin xác thực bị từ chối (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) là dứt điểm — cầu nối ngừng thử lại và chờ token mới, vì thử lại mãi một token đã bị thu hồi thì chỉ chuốc lấy giới hạn tần suất. Hãy dán lại các token trong hộp thoại kết nối.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Lỗi `missing_scope` nghĩa là app được cài với ít scope hơn mức cầu nối cần. Thêm scope còn thiếu, cài lại app trong Slack, rồi kết nối lại.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Mọi trục trặc tạm thời (socket bị rớt, Slack chập chờn) đều tự kết nối lại với backoff lũy thừa giới hạn ở 30 giây, và việc xoay socket định kỳ của Slack không làm tăng backoff đó.
 
-### The bot does not answer a mention
+### Bot không trả lời một lượt nhắc
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Bot đã ở trong kênh chưa?** Slack chỉ chuyển tin nhắn kênh tới những app là thành viên. Chạy `/invite @your-bot-name`
+- **Bạn đã liên kết chưa?** Một thành viên chưa liên kết sẽ nhận được phản hồi ngay trong luồng Slack đó giải thích cách liên kết. Xem [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
+- **Bạn có phải thành viên của không gian làm việc với vai trò ghi không?** Một `viewer` hoặc `guest` sẽ được thông báo rằng vai trò của họ là chỉ đọc. Cầu nối không bao giờ bắt đầu công việc thay cho người mà nó không thể quy kết
+- **Không gian làm việc có agent nào không?** Khi không có agent, tin nhắn vẫn được lưu nhưng không có ai trả lời nó
 
-### It answers in a channel but ignores plain messages
+### Nó trả lời trong kênh nhưng phớt lờ tin nhắn thường
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Đó là chủ đích. Ngoài DM, cầu nối chỉ hành động trên một tin nhắn có nhắc tới bot, hoặc một phản hồi bên trong luồng Slack mà nó đã sở hữu. Mọi thứ khác là cuộc hội thoại của người khác.
 
-### Replies arrive as one big message instead of streaming
+### Phản hồi đến thành một tin nhắn lớn thay vì được truyền theo luồng
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Dòng đó ghi "Luồng trực tiếp đang tắt cho ứng dụng Slack này — phản hồi đến thành một tin nhắn." Phản hồi theo luồng của Slack cần tính năng Agents & AI Apps trên gói trả phí; khi Slack từ chối, cầu nối ngừng yêu cầu nó trong suốt phần đời còn lại của kết nối đó và đăng nguyên phản hồi thay vào đó. Không mất gì cả — bản ghi hội thoại đầy đủ luôn nằm trong Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Việc truyền theo luồng cũng cần một điểm neo luồng Slack, nên một phản hồi không có luồng Slack nào để lớn lên sẽ được đăng nguyên vẹn. Thẻ công việc vẫn đến trong cả hai trường hợp: với một phản hồi nguyên vẹn, nó đi kèm cùng tin nhắn đó và đã hoàn tất sẵn.
 
-### The reply has no card above it
+### Phản hồi không có thẻ nào phía trên
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Thẻ công việc của Slack thuộc cùng bề mặt Agents & AI Apps mới như việc truyền theo luồng, và Slack chỉ từ chối vào lúc gọi. Khi điều đó xảy ra, Control Center giữ lại phản hồi và bỏ thẻ trong suốt phần đời còn lại của kết nối đó — một câu trả lời không có dòng trạng thái vẫn hơn một dòng trạng thái không có câu trả lời.
 
-### "Control Center needs an app configuration token to edit the bot"
+### "Control Center cần token cấu hình app để chỉnh bot"
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Dòng **Tùy chỉnh bot** bị vô hiệu hóa vì kết nối không có token cấu hình app. Đây là điều dễ hiểu với một app làm thủ công hoặc tạo qua **Tạo trên Slack** — Slack chưa bao giờ cho Control Center biết đó là app nào. Hãy tạo một cặp token trên api.slack.com/apps và kết nối lại với token làm mới đã được điền.
 
-### A long answer is cut off
+### Một câu trả lời dài bị cắt cụt
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack giới hạn một tin nhắn ở 40.000 ký tự, nên cầu nối cắt ở 39.000 và nối thêm một con trỏ tới Control Center — một phản hồi bị rút ngắn vẫn hơn một phản hồi bị Slack từ chối thẳng. Toàn bộ văn bản luôn nằm trong bản ghi hội thoại của space.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
-- [Customize the chat bot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
-- [Chat bridge](/vi-VN/so-tay/tham-chieu/cau-chat/)
+- [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
+- [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
+- [Cầu chat](/vi-VN/so-tay/tham-chieu/cau-chat/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/)
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/)

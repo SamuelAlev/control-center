@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: 创建并配置智能体
+description: 向工作区添加智能体，为它配置适配器、模型、技能和权限，并确认它能正常运行。
 slug: zh-CN/手册/操作指南/创建智能体
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+本指南介绍如何向工作区添加智能体，并把它配置到真正可以运行的程度。
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+每个工作区在创建时都会预置五个智能体——一名 CEO，再加上 `qa`、`architect`、`engineer` 和 `librarian`——因此你通常在尚未配置任何智能体之前就已经拥有它们。以下步骤对预置智能体和新建智能体同样适用。
 
-## Before you start
+## 开始之前
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- 你已处于某个工作区内。整个界面位于 **设置 → 工作区 → 智能体**（`/settings/workspace/agents`）。
+- 智能体需要一个后端。你可以在 **设置 → 服务器 → 模型提供商** 中为内置执行框架连接一个提供商，也可以在托管 `cc_server` 的机器上安装 Claude Code CLI。
+- 如果你希望智能体具备技能，请先在 **设置 → 工作区 → 技能** 中安装它们。智能体表单只能让你开关工作区中已存在的技能。
 
-## Add the agent
+## 添加智能体
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. 打开 **设置 → 工作区 → 智能体**。
+2. 点击 **新建智能体**。
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+这里不会弹出对话框，也没有角色选择器。系统会立即创建一个名为“未命名智能体”的智能体，并在右侧的详情面板中选中它。
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+此时你应当能在左侧的名册中看到“未命名智能体”，其详情面板已打开 **设置** 标签页，且 **名称** 字段中包含“未命名智能体”。
 
-## Name it
+## 给它命名
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **名称**——用于 @提及的简短标识符，例如 `alice`。提及解析会匹配 `@` 后紧跟的单词字符，因此包含连字符、点或空格的名字永远无法被提及。
+- **标题**——面向人阅读的标签，例如“资深程序员”。
+- **系统提示词**——可选的额外指令，会作为 Agent instructions 一节注入；它们不会替换组装后的提示词的其余部分。
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+点击表单底部的 **保存更改**。本页上的所有字段都由这一个按钮保存。
 
-## Give it an adapter and a model
+## 为它配置适配器和模型
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**适配器** 下拉菜单会列出服务器主机上实际存在的运行器。内置适配器始终会被检测到（它就是服务器本身）。只有当该主机上检测到 Claude Code CLI 时，Claude Code 才会出现：
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| 适配器                    | 后端                                          |
+| ------------------------- | --------------------------------------------- |
+| Control Center (built-in) | 进程内智能体循环——无需外部 CLI                |
+| Claude Code               | `claude -p --output-format stream-json`       |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+只有内置适配器会强制执行模式、引导、暂停/恢复、完成契约和子智能体。Claude Code 这些一样都没有。Cursor、Codex 以及其他模型提供商都挂接到内置适配器上，而不是作为独立的运行器。
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[适配器为空意味着使用内置循环]
+适配器未设置的智能体会被派发到 **Control Center (built-in)**，也就是服务器内部的循环，因此主机上无需安装任何东西。如果模型也未设置，它会向 Anthropic 请求默认模型，所以一个完全未设置的智能体只有在你已连接 Anthropic 账户时才能运行。预置的专业智能体出厂时两者都没有；对于你打算使用的任何智能体，请把两者都设置好。
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**模型** 下拉菜单由你所选的适配器决定。对于内置适配器，该列表实时来自你在 **设置 → 服务器 → 模型提供商** 中已连接的提供商，因此没有存储凭据的提供商会贡献零个模型。
 
-## Add skills
+## 添加技能
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**技能** 是一个芯片选择器，覆盖此工作区中已安装的技能包。点按芯片即可切换；对勾标记表示已选中。如果工作区中没有技能，该字段会显示“No skills available. Create skills in Settings → Skills first.”
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills).
+你在这里无法选择某个仓库自带的技能。带有技能的仓库（技能位于 `.agents/skills/`、`.claude/skills/` 或 `.opencode/skills/`）会自动把它们贡献给在该仓库中工作的任何智能体，当智能体转到另一个仓库时这些技能就会被替换——参见[仓库范围的技能](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills)。
 
-## Set the reporting line and persona
+## 设置汇报关系和角色设定
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **汇报对象**——按名称选择另一个智能体。这会构建页面标题栏中 **组织架构图** 按钮所显示的汇报树。它并不是团队负责人在委派时使用的名册——那名册来自团队的成员及其技能。
+- **角色设定**——用于塑造语气和行为的自由文本，例如：“偏好简单、可读的解决方案。为所有新代码编写测试。”
 
-## Tune the run
+## 调整运行参数
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **推理力度**——可选项来自所选模型自身发布的级别：Low / Medium / High，在 OpenAI 风格的模型上还有 Extra High，在 Claude 风格的模型上还有 Extra High + Max。当所选模型未声明任何思考级别时，该字段会被完全隐藏，并采用模型自身的默认值。
+- **上下文窗口大小**——每次更换模型时，都会根据模型的上下文窗口预先填入，并提供一键芯片按钮：模型默认值、200k、500k 和 1M。在你选定模型之后手动输入的值会生效，直到下一次更换模型。
+- **静默超时（分钟）**——在这么长时间没有任何输出后终止运行。留空则使用按模式设定的默认值。
 
-## Grant permissions
+## 授予权限
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**沙箱权限** 初始为“使用工作区默认值”。打开开关即可为此智能体单独设置，然后开关以下各项：
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **允许 git push**——注入智能体推送所需的 GitHub 令牌
+- **允许调用 GitHub API**——让智能体读取 PR、issue 和仓库元数据
+- **允许工单 API 调用**——注入工单提供商的密钥
+- **允许常规网络访问**——同时启用内置执行框架的 `web_fetch` 和 `web_search` 工具
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+每次运行启动时，凭据代理都会检查每个开关：某项能力关闭，就意味着相应的令牌永远不会被签发到该运行的环境中。
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[工作区默认值意味着服务器那套保守设置]
+留在“使用工作区默认值”上的智能体运行时，git push、GitHub API 和工单全都为 **关闭**，而网络为 **开启**。设置 → 服务器 → 诊断与隐私 下显示的能力默认值只是客户端的偏好设置。如果你希望某个智能体推送或创建 PR，请打开开关并显式授予这些能力。
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/) for the full set of boundaries.
+这些能力用于把关凭据和执行框架工具，与操作系统沙盒是相互独立的一层。主机上存在沙盒时，`cc_server` 会把智能体运行包裹在该沙盒中——Windows 没有原生后端，Linux 和 WSL2 则需要 `bwrap` 和 `socat`。完整的边界集合请参见[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 :::
 
-## Verify it runs
+## 验证它能否运行
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. 打开 **设置 → 服务器 → 模型提供商**，确认你选择的适配器报告的是已安装版本，而不是“未找到”。点击 **刷新** 可重新探测——探测在托管 `cc_server` 的机器上运行，而不是在你正在查看的这台机器上。
+2. 打开一个包含该智能体的空间并给它发送消息，或者在现有空间中 @提及它。
+3. 回到 **设置 → 工作区 → 智能体**，选中该智能体并打开其 **日志** 标签页。应当会出现一条运行记录，带有状态徽标、时长、开始时间以及所使用的适配器。**查看** 会打开该运行的事件流。
 
-If no run appears at all, work through [Run agent diagnostics](/zh-CN/手册/操作指南/诊断智能体/).
+如果完全没有出现任何运行记录，请按[诊断智能体](/zh-CN/手册/操作指南/诊断智能体/)逐步排查。
 
-## Delete an agent
+## 删除智能体
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+在名册中选中它。在 **设置** 标签页上，滚动到表单底部的 **危险区域**，然后点击 **删除**。
 
-## Related guides
+## 相关指南
 
-- [Run agents in parallel](/zh-CN/手册/操作指南/并行智能体/)
-- [Build an agent team](/zh-CN/手册/操作指南/组建智能体团队/)
-- [Manage adapters and models](/zh-CN/手册/操作指南/适配器/)
-- [Run agent diagnostics](/zh-CN/手册/操作指南/诊断智能体/)
-- [Agent configuration reference](/zh-CN/手册/参考/智能体配置/)
+- [并行运行智能体](/zh-CN/手册/操作指南/并行智能体/)
+- [组建智能体团队](/zh-CN/手册/操作指南/组建智能体团队/)
+- [管理适配器与模型](/zh-CN/手册/操作指南/适配器/)
+- [诊断智能体](/zh-CN/手册/操作指南/诊断智能体/)
+- [智能体配置参考](/zh-CN/手册/参考/智能体配置/)
 
-## Related concepts
+## 相关概念
 
-- [The agent model](/zh-CN/手册/概念/智能体模型/)
-- [Modes](/zh-CN/手册/概念/模式/)
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/)
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)
+- [模式](/zh-CN/手册/概念/模式/)
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)

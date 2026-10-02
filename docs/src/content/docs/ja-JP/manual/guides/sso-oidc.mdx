@@ -1,95 +1,45 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: OpenID Connect プロバイダーを接続
+description: 任意の OIDC 発行元 — Pocket ID、Keycloak、Auth0、Zitadel — を Control Center のサインインに接続します。
 slug: ja-JP/マニュアル/ハウツーガイド/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+アイデンティティプロバイダーが SAML ではなく **OpenID Connect** を使う場合は、このガイドを参照してください。OIDC 認定の発行元であればどれでも機能します — Pocket ID、Keycloak、Auth0、Zitadel、Google Workspace などもすべて同じ手順で、違うのはプロバイダーが値を表示する場所だけです。
 
-## Prerequisites
+## 前提条件
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- クライアントを作成できる OIDC プロバイダー — その**クライアントID**と**Issuer URL**（`.well-known/openid-configuration` ドキュメントが置かれている基底 URL）を控え、クライアントがコンフィデンシャル型の場合は**クライアントシークレット**も控えます（パブリックな PKCE クライアントにはシークレットはありません）
+- 自分が管理する Control Center サーバー（**サーバー所有者**）
 
-## Steps
+## 手順
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. **設定 → サーバー → シングルサインオン**を開き、**OpenID Connect** に切り替えます。
+2. **Issuer URL**、**クライアントID**、そしてプロバイダーが発行していれば**クライアントシークレット（任意）**を入力します。Control Center は発行元の標準ディスカバリドキュメントからエンドポイントを検出するため、プロバイダーごとの設定は不要です。
+3. プロバイダー側で、そのクライアントにリダイレクト先 `https://<your-server>/oidc/callback` を登録します。
+4. グループが `groups` 以外のクレームに入っている場合は、**グループクレーム**の名前を設定します。必要ならグループをロールにマッピングします（SSO が所有者ロールを付与することは決してありません）。
+5. メンバーシップポリシーを選び（全ワークスペースに自動追加、またはワークスペースごとの招待を必須にする）、**サインインにOpenID Connectを使用**をオンにして**接続を保存**を押します。
+6. **接続をテスト**を押します — サーバーが発行元のディスカバリドキュメントを取得してエンドポイントを確認するので、緑のトーストが出ればブラウザーの往復を除くすべてが機能していることになります。クライアント登録も確認するには、[下のチェッカー](#このページから設定を確認する)を使います。
+7. ログインを試します: Web の接続画面には**OpenID Connectでサインイン**と表示されるので、そこからサインインするか、`https://<your-server>/oidc/login` を直接開きます。
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+クレーム（email、name、groups）は、あなたのサーバーが TLS 経由で発行元のトークンエンドポイントから読み取ります — ブラウザーがこれらを渡すことはないため、ローカルでの JWT 署名検証は関与しません。クライアントには `openid profile email` スコープの要求を許可しておく必要があります。これはまさに Control Center が要求する内容です。
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+クレームを認証しているのはこの TLS チャネルだけなので、Issuer URL は **https** でなければなりません — 平文の発行元を使うと、経路上の攻撃者がアイデンティティを好き放題に偽造できてしまいます。`http` が許可されるのは、ローカル開発向けにループバックの発行元（`localhost`、`127.0.0.1`、`::1`）だけでです。
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[パブリッククライアントかコンフィデンシャルクライアントか]
+既定で推奨される形は、**PKCE**（RFC 7636）を使った認可コードフローの**パブリッククライアント**です。サーバーが保持するワンタイムのコードベリファイアがシークレットの代わりになり、トークン交換はそれを開始した認可リクエストに結び付けられます。漏えいするシークレットはなく、認可コードが盗まれてもベリファイアがなければ役に立ちません。プロバイダーによっては、作成時にこれを「SPA」や「native」というクライアントタイプと呼びます。
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+プロバイダーが代わりに**コンフィデンシャル**クライアントを発行した場合は、プロバイダー側でクライアントをパブリックとして扱うか（どちらでも PKCE は有効なままです）、クライアントシークレットを接続の**クライアントシークレット（任意）**フィールドに貼り付けます。シークレットはサーバーの 0600 のシークレットファイルに保存され（データベースには保存されません）、`client_secret_post` としてトークンエンドポイントに送信され、RPC で返されることはありません。保存時にフィールドを空のままにすると、保存済みのシークレットが維持されます。トークン交換でログインが失敗した場合、サーバーログにプロバイダー自身のエラーが記録されます（`invalid_client` はほとんどの場合、シークレットの欠落か誤りを意味します）。
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ja-JP/マニュアル/ハウツーガイド/sso-scim).
+:::note[到達可能性]
+ログイン自体はブラウザー経由で行われます。発行元はユーザーのブラウザーを `/oidc/callback` にリダイレクトするだけで、あなたのサーバーがトークンエンドポイントへ外向きの HTTPS 呼び出しを行います — 発行元からの受信接続は不要なので、NAT の内側にあるサーバーでも、ユーザーのブラウザーから到達できれば（LAN、VPN、Tailscale、トンネルなど）機能します。**SCIM プロビジョニングは例外です**: IdP があなたのサーバーを直接呼び出すため、トンネルまたは公開 URL が必要になります — [SCIM でユーザーをプロビジョニング](/ja-JP/マニュアル/ハウツーガイド/sso-scim) を参照してください。
 :::
 
-## Check your configuration from this page
+## このページから設定を確認する
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+下のチェッカーはブラウザー内で実行されます。発行元のディスカバリドキュメントを直接取得するため、このサイトがそれを目にすることはありません。そしてサーバーのルールを適用します。ドキュメントと一致する https の発行元、発行元自身のオリジン上のエンドポイント、PKCE S256、およびクライアントタイプに必要なトークン認証方式です。クライアントIDとサーバーアドレスを指定すると、クライアントとそのリダイレクト URI が登録されているかを示すテストサインインを開けます。クライアントシークレットを求めることはありません。
 
 <SsoCheck kind="oidc" />

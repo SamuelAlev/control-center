@@ -1,97 +1,99 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: ให้เอเจนต์มีเครื่องสำหรับทดสอบ
+description: ให้เอเจนต์มีเบราว์เซอร์ เดสก์ท็อป โปรแกรมจำลอง Android หรือเครื่องจำลอง iOS แบบใช้แล้วทิ้ง — เฝ้าดูแบบเรียลไทม์ พร้อมการควบคุมที่คุณรับช่วงได้ทุกเมื่อ
 slug: th-TH/คู่มือ/วิธีทำ/ใช้ริก
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**ริก** คือเครื่องใช้แล้วทิ้งที่เอเจนต์เปิดขึ้นเมื่อมันต้องลองอะไรจริง ๆ: โหลด
+หน้าเว็บ คลิกไปทั่วแอปเดสก์ท็อป แตะไปรอบ ๆ โทรศัพท์ คุณสามารถเฝ้าดูมันทำงานแบบ
+เรียลไทม์ และรับช่วงการควบคุมได้ทุกเมื่อที่ต้องการ
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+ริกเทอร์มินัล เบราว์เซอร์ และเดสก์ท็อปแบบเอนโคลเจอร์เป็น VM ที่มีดิสก์ใช้แล้ว
+ทิ้งและเครือข่ายที่มีประตูกั้น ส่วน Android และ iOS เป็นโปรแกรมจำลองที่โฮสต์
+จัดการเอง: สถานะอุปกรณ์ของมันใช้แล้วทิ้งได้ แต่เครือข่ายของมันเป็นไปตามโฮสต์
+เซิร์ฟเวอร์
 
-## Set it up once
+## ตั้งค่าครั้งเดียว
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+ริกรันอยู่บนเครื่องที่โฮสต์ `cc_server` — เครื่องเดียวกันกับที่โฮสต์ ไม่ใช่
+เครื่องที่คุณกำลังมองอยู่ มีพื้นผิวที่ผู้ใช้เห็นห้าแบบ พื้นผิวเดสก์ท็อปและมือถือ
+ต้องตั้งค่าบนโฮสต์:
 
-| Surface | Runs on | Setup |
+| พื้นผิว | รันบน | การตั้งค่า |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **เทอร์มินัล (VM)** | microVM ที่บูตอิมเมจ Ubuntu ที่ปักหมุดไว้ | ไม่มี — อิมเมจจะถูกดึงมาโดยอัตโนมัติเมื่อใช้ครั้งแรก |
+| **เบราว์เซอร์ (VM)** | microVM ที่บูตอิมเมจ Debian ที่ปักหมุดไว้ โดยติดตั้ง Chromium, Firefox หรือ WebKit เมื่อใช้ครั้งแรก | ไม่มี — เหมือนกัน |
+| **คอมพิวเตอร์ (VM)** | QEMU พร้อมอิมเมจเดสก์ท็อป Linux ที่มี Chromium, Firefox, WebKit และชุดเครื่องมือ CLI พื้นฐานแบบ GitHub-hosted runner ติดมาด้วย | ติดตั้ง QEMU (`brew install qemu`) จากนั้น **นำเข้า** อิมเมจเดสก์ท็อปที่ **การตั้งค่า → เซิร์ฟเวอร์ → ริก** |
+| **Android** | โปรแกรมจำลอง Android ของ Google | ติดตั้ง Android SDK สร้าง AVD แล้วเริ่มมัน (ดูด้านล่าง) |
+| **เครื่องจำลอง iOS** | CoreSimulator บน Mac ของเซิร์ฟเวอร์ | ติดตั้ง Xcode และรันไทม์ iOS ที่ต้องการ จากนั้นติดตั้งบริดจ์ระบบอัตโนมัติที่ **การตั้งค่า → เซิร์ฟเวอร์ → ริก** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+เครื่องเทอร์มินัลและเบราว์เซอร์บูตจากอิมเมจที่ปักหมุดด้วยไดเจสต์: ไบต์ที่แน่นอน
+ถูกระบุไว้ล่วงหน้า ดึงมาครั้งเดียวตอนบูตครั้งแรก และแคชไว้ — หลังการบูตครั้งแรก
+ของแต่ละชนิด เครื่องรุ่นหลังจะข้ามการดาวน์โหลดไปเลยและพร้อมใช้ในไม่กี่วินาที
+**การตั้งค่า → เซิร์ฟเวอร์ → ริก** แสดงสิ่งที่เซิร์ฟเวอร์ของคุณบูตได้และเครื่อง
+ทุกเครื่องที่กำลังรันอยู่ตอนนี้
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+อิมเมจเดสก์ท็อปที่ติดตั้งแล้วยังจัดการได้จากหน้าเดียวกัน: **นำเข้า** จะแทนที่มัน
+ด้วย qcow2 ที่ใหม่กว่า และ **ลบ** จะลบมันออกเพื่อให้คุณติดตั้งบิลด์ใหม่ได้
 
-### Mobile devices are set up differently
+### อุปกรณ์มือถือตั้งค่าต่างออกไป
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+เราไม่มีอิมเมจของเราเองสำหรับ Android หรือ iOS และนั่นไม่ใช่การมองข้าม อิมเมจ
+ระบบของ Android มาจาก SDK ของ Google ส่วนรันไทม์ของ iOS มาจาก Xcode สำหรับ
+Android ให้ติดตั้ง Android Studio (หรือเครื่องมือ SDK แบบบรรทัดคำสั่ง) เพิ่ม
+อุปกรณ์เสมือนใน **Device Manager** แล้วเริ่มมัน จากนั้นหน้าริกจะรายงานว่า
+Android พร้อมใช้งาน
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+มันยังบอกด้วยว่าคุณขาดขั้นตอนใดไปกันแน่ — ไม่มี SDK ไม่มีโปรแกรมจำลอง ไม่มี
+อุปกรณ์เสมือน หรือมีอุปกรณ์ที่ไม่ได้รันอยู่เลย — เพราะแต่ละอย่างมีวิธีแก้ที่
+ต่างกันสี่แบบ และมีเพียงแบบเดียวที่เป็นการดาวน์โหลด หากคุณเริ่ม `cc_server`
+จากเชลล์ที่มองไม่เห็น SDK ให้ export มัน:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+สำหรับ iOS ตัวเซิร์ฟเวอร์เองต้องรันบน macOS ที่ติดตั้ง Xcode และรันไทม์ของ
+เครื่องจำลอง iOS ไว้ เปิด **การตั้งค่า → เซิร์ฟเวอร์ → ริก** แล้วกด
+**ติดตั้งบริดจ์ระบบอัตโนมัติของ iOS** เซิร์ฟเวอร์จะดึงอาร์ติแฟกต์
+WebDriverAgent ที่ปักหมุดด้วยเช็กซัม ตรวจสอบมัน และติดตั้งลงในที่เก็บระบบ
+อัตโนมัติที่เซิร์ฟเวอร์เป็นเจ้าของ ไม่มีเครื่องจำลองใดบูตระหว่างการตั้งค่า
 
-## Open a machine
+## เปิดเครื่อง
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+เครื่องอยู่เป็น **แท็บ** ข้าง ๆ แชตและดิฟ — ในสเปซหรือบนหน้า PR ในเมนู `+`
+เดียวกัน ใต้ **เครื่อง**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **คอมพิวเตอร์** — เดสก์ท็อป Linux ที่มี Chromium, Firefox และ WebKit
+- **Chromium**, **Firefox** หรือ **WebKit** — เบราว์เซอร์
+- **Android** — โปรแกรมจำลอง Android ที่กำลังรันอยู่
+- **เครื่องจำลอง iOS** — เครื่องจำลองใช้แล้วทิ้งที่สร้างขึ้นสำหรับการสนทนานี้
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+เลือกอันหนึ่งแล้วกด **เริ่มเครื่อง** แท็บจะบอกว่าการบูตอยู่ขั้นตอนใด
+("Starting the microVM", "Waiting for the guest to come up") แทนที่จะหมุน
+ค้างเฉย ๆ
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+แท็บถูกจำกัดขอบเขตอยู่ที่การสนทนา และเครื่องมือของเอเจนต์ก็เช่นกัน แท็บ
+Chromium, Firefox หรือ WebKit กับ `browser_use` แท็บ Android กับ `mobile_use`
+หรือเครื่องจำลอง iOS กับ `ios_use` ล้วนมุ่งไปที่เครื่องเริ่มต้นเครื่องเดียวกัน
+ช่อง UI เพิ่มเติมเป็นเครื่องเปรียบเทียบแยกต่างหาก ส่วนเครื่องมือของเอเจนต์
+ใช้ค่าเริ่มต้นเสมอ
 
-To build, install and start a Flutter app on Android:
+วิธีบิลด์ ติดตั้ง และเริ่มแอป Flutter บน Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+จากนั้นเรียก `mobile_use` ด้วย `install_apk` และ
+`build/app/outputs/flutter-apk/app-debug.apk` ตามด้วย `start_app` และชื่อ
+แพ็กเกจของ Android `ui_dump` ภาพหน้าจอ และอินพุตขับเคลื่อนอุปกรณ์เดียวกันกับ
+ที่แสดงในแท็บของมนุษย์ `stop_app`, `clear_app_data`, `uninstall_app`,
+`open_url` และการเรียก `shell` ในรูป argv ครอบคลุมส่วนที่เหลือของวงจรการพัฒนา
+โดยไม่ต้องเรียกเชลล์บนโฮสต์เซิร์ฟเวอร์
 
-To build, install and start a Flutter app on iOS Simulator:
+วิธีบิลด์ ติดตั้ง และเริ่มแอป Flutter บนเครื่องจำลอง iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +101,196 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+จากนั้นเรียก `ios_use` ด้วย `install_app` และไดเรกทอรี `.app` ตามด้วย
+`start_app` และบันเดิลไอเดนทิฟายเออร์ที่พิมพ์โดย `plutil` เครื่องมือ iOS
+ยังเปิดให้ใช้ `stop_app`, `uninstall_app`, `open_url` และการกระทำ `spawn`
+ในรูป argv สำหรับการวินิจฉัยภายในเครื่องจำลอง
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+จอภาพของเดสก์ท็อปและเบราว์เซอร์ปรับขนาดตามพาเนล ส่วน iOS คงขนาดพอยต์คงที่ของ
+เครื่องจำลองไว้และจัดวางโดยเว้นแถบว่างรอบด้าน ทุกพื้นผิวยังมีสองเลนที่เป็นอิสระ
+ต่อกัน: เอเจนต์ได้ภาพหน้าจอขนาดเล็กที่ประหยัด ส่วนคุณได้มุมมองสด การสลับแท็บ
+จะหยุดสตรีมของมนุษย์ เครื่องที่อยู่เบื้องหลังจึงไม่กินแบนด์วิดท์ของการแสดงผล
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+แท็บริกไม่ได้เริ่มเครื่องด้วยตัวเอง รวมถึงระหว่างการคืนค่าเลย์เอาต์ด้วย กฎนี้
+ป้องกันไม่ให้การเปิดแอปบูต VM หรือสร้างอุปกรณ์เครื่องจำลองขึ้นมาโดยไม่คาดคิด
 
-## Drive the machine
+## ขับเครื่อง
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+แคนวาสเป็นของคุณสำหรับพิมพ์และคลิกเมื่อไม่มีใครอื่นถือการควบคุมแบบเอกสิทธิ์อยู่
+— หรือเมื่อคุณถืออยู่ ขณะที่คุณถือล็อกนั้น แท็กสถานะจะอ่านว่า **คุณกำลังควบคุม**
+เอเจนต์ยังคงถ่ายภาพหน้าจอได้ และเซิร์ฟเวอร์จะปฏิเสธการกระทำที่เปลี่ยนแปลง
+สถานะของมันที่จุดคอขวดจุดเดียวที่ทุกการกระทำต้องผ่าน ทุกสิ่งที่คุณทำถูกบันทึก
+ไว้ในชื่อของคุณ
 
-Press **Stop the machine** when you are done.
+กด **หยุดเครื่อง** เมื่อคุณทำเสร็จแล้ว
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+การควบคุมเป็นแบบเอกสิทธิ์โดยเจตนา: ผู้กระทำสองรายพิมพ์ใส่เครื่องเดียวกันย่อม
+สร้างอินพุตที่ทั้งคู่ไม่ได้ตั้งใจ
 
-## Move things in and out
+## ย้ายสิ่งของเข้าและออก
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+การคัดลอกและวางทำงานได้ทั้งสองทิศทางข้ามแคนวาสริก และการลากไฟล์ก็เช่นกัน
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**คัดลอกและวาง** กดคีย์ผสมคัดลอกบนแคนวาส แล้วสิ่งที่เครื่องคัดลอกไว้ — ข้อความ
+รูปภาพ รายการไฟล์ — จะมาอยู่บนคลิปบอร์ดของคุณ การวางจะส่งของของคุณไปอีกทาง
+และกดวางภายในเครื่อง บน macOS คีย์ผสมคือ ⌘C/⌘V ส่วน ⌃C ยังคงไปถึงเชลล์ของ
+เกสต์ในฐานะการขัดจังหวะ บน Windows และ Linux ให้ใช้ ⌃C/⌃V — เกสต์จะได้รับ
+คีย์เดียวกันกับที่จะได้รับอยู่แล้ว ดังนั้น ⌃C ในเทอร์มินัลของเกสต์ยังคงขัดจังหวะ
+และคลิปบอร์ดของคุณเองไม่ถูกแตะต้อง
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+ไม่มีอะไรซิงก์อยู่ในเบื้องหลัง รหัสผ่านที่คุณคัดลอกบนเครื่องของคุณเองจะไม่เข้า
+ไปใน VM เพราะตัวจับเวลาทำงาน มันจะข้ามไปก็ต่อเมื่อคุณวาง
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+การวางเข้าริกได้รับอนุญาตโดยค่าเริ่มต้น ส่วนการคัดลอกออกริกจะถามก่อน — ให้
+สิทธิ์สิบนาที หรือ **อนุญาตเสมอ** ที่ **การตั้งค่า → เซิร์ฟเวอร์ → ริก →
+การเข้าถึงคลิปบอร์ด** ทั้งสองทิศทางเป็นอิสระต่อกัน และมันติดตามคุณ ไม่ใช่
+เวิร์กสเปซ
 
-**Drag files in.** Drop them anywhere on the canvas.
+**ลากไฟล์เข้า** ปล่อยไฟล์ที่ใดก็ได้บนแคนวาส
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- บน **เบราว์เซอร์ (VM)** หน้าเว็บจะได้รับเหตุการณ์ดรอป *จริง* ณ จุดที่คุณปล่อย
+  ดังนั้นโซนอัปโหลดจึงทำงานเหมือนกับไฟล์ในเครื่องทุกประการ
+- บน **คอมพิวเตอร์ (VM)** ไฟล์จะไปอยู่ใน `~/Drops` และพาธของมันจะอยู่บน
+  คลิปบอร์ดของเครื่อง ดังนั้น ⌃V จะวางไฟล์เหล่านั้นลงในโปรแกรมจัดการไฟล์หรือ
+  ช่องอัปโหลด โฮสต์ไม่สามารถสังเคราะห์การลากเข้าสู่แอป Linux ใด ๆ ได้โดยไม่รัน
+  เดมอนที่ได้สิทธิ์พิเศษภายใน VM ซึ่งริกจงใจไม่มี — ทอสต์จึงบอกคุณว่าไฟล์ไปอยู่
+  ที่ใด แทนที่จะแสร้งว่าเกิดการดรอปขึ้น
+- บน **เทอร์มินัล** ไฟล์จะถูกคัดลอกเข้าไปและพาธของมันถูกพิมพ์ที่พรอมป์ พร้อม
+  ส่งต่อให้คำสั่ง ส่วนการวาง *รูปภาพ* ลงในเทอร์มินัลก็ทำแบบเดียวกัน: มันถูก
+  บันทึกไว้ในเครื่องและคุณจะได้พาธมา
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**ลากไฟล์ออก** ทำงานได้จากคอมพิวเตอร์ (VM) เริ่มลากไฟล์ภายในเครื่อง ลากตัวชี้
+ให้ออกนอกแคนวาส แล้วมันจะกลายเป็นการลากจริงบนเดสก์ท็อปของคุณ — ปล่อยลงใน
+Finder หรือ Explorer การคัดลอกไฟล์ในโปรแกรมจัดการไฟล์ของเครื่องแล้ววางฝั่งของ
+คุณก็ทำได้เช่นกัน ส่วนเบราว์เซอร์ (VM) ไม่เสนอความสามารถนี้: เบราว์เซอร์แบบไม่มี
+หน้าจอไม่มีเพย์โหลดการลากให้อ่าน และการเดาจากการเลือกข้อความบนหน้าเว็บจะยึด
+การคลิกปกติไป
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+คอมพิวเตอร์ (VM) ต้องใช้อิมเมจที่บิลด์หลังรองรับคลิปบอร์ดแล้ว หากคุณนำเข้าอิมเมจ
+ของตัวเองไว้ก่อนหน้านี้ ให้บิลด์มันใหม่ด้วย `scripts/rigs/build_image.sh` จากนั้น
+ใช้ **นำเข้า** บนอิมเมจที่ติดตั้งไว้เพื่อแทนที่มัน
 :::
 
-## Terminals inside a rig
+## เทอร์มินัลในริก
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+เทอร์มินัลในสเปซหรือบนหน้า PR สามารถรันอยู่ภายในริกแทนที่จะรันบนเครื่องของ
+เซิร์ฟเวอร์เองได้ เมื่อเป็นเช่นนั้น พาเนลจะแสดงป้าย **VM ที่หุ้ม**
 
-What changes:
+สิ่งที่เปลี่ยนไป:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- ไม่มีอะไรที่คุณรันไปถึงโฮสต์ `rm -rf` ในนั้นทำให้คุณเสียริกไป
+- เครือข่ายเป็นแบบปฏิเสธโดยค่าเริ่มต้น เฉพาะโฮสต์ในรายการที่อนุญาตของริกเท่านั้น
+  ที่เข้าถึงได้ และทุกอย่างต้องผ่านประตูที่บังคับใช้รายการนั้น
+- `git push` ยังทำงานได้ ริกไม่มีการจัดเก็บข้อมูลรับรอง มันขอจากเซิร์ฟเวอร์เป็น
+  รายการดำเนินการแบบอายุสั้น และโทเค็นนั้นจะถูกเพิกถอนเมื่อปิดริก
 
-What to know:
+สิ่งที่ควรรู้:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **เทอร์มินัลแบบเอนโคลเจอร์ที่ถูกคืนค่าจะรอคุณอยู่** เช่นเดียวกับแท็บริก
+  เทอร์มินัล `microvm` ที่กลับมาพร้อมเลย์เอาต์ของคุณจะแสดงปุ่ม **เปิดเชลล์**
+  แทนที่จะบูต VM ของมันตอนเปิด เทอร์มินัลแบบเชลล์โฮสต์กินเพียงโพรเซสเดียว
+  ส่วนแบบเอนโคลเจอร์กินเครื่องหนึ่งเครื่อง
+- **ไฟล์ที่วางลงบนเทอร์มินัลจะถูกพิมพ์ ไม่ใช่เปิด** วาง CSV ลงบนเทอร์มินัลแบบ
+  เอนโคลเจอร์ แล้วมันจะถูกคัดลอกเข้าเครื่องและพาธในเกสต์จะปรากฏที่พรอมป์ —
+  พาธของโฮสต์จะเป็นคำสั่งที่ล้มเหลวที่นั่น
+- **สำเนาในริกก็คือสำเนา** worktree ของคุณบนโฮสต์ยังคงเป็นแหล่งอ้างอิงหลัก
+  คอมมิตที่คุณทำภายในริกจะถูกพากลับเข้า `refs/rigs/<id>/*` เมื่อคุณขอ — มันไม่เคย
+  ย้ายสาขาของคุณหรือแตะ working tree ของคุณ
+- **งานที่มุ่งเป้าไปที่โฮสต์ยังรันบนโฮสต์** เกสต์ Linux บิลด์สำหรับ macOS หรือรัน
+  `xcodebuild` ไม่ได้ ให้เลือกแบ็กเอนด์เนทีฟอย่างชัดเจนสำหรับงานนั้น แอปจะขอให้
+  คุณยืนยันแทนที่จะสลับให้เงียบ ๆ
 
-## Ports
+## พอร์ต
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/th-TH/คู่มือ/วิธีทำ/ส่งต่อพอร์ต/).
+รันเซิร์ฟเวอร์พัฒนาบนเทอร์มินัล (VM) — อย่าง `pnpm dev` บนพอร์ต 3000 — แล้ว
+ภายในไม่กี่วินาทีไอคอนปลั๊กที่มุมเทอร์มินัลจะสว่างขึ้น: พอร์ตจะถูกส่งต่อไปยัง
+`localhost:3000` บนเครื่องของคุณ เข้าถึงได้ที่ `localhost:3000` ภายใน
+เบราว์เซอร์ (VM) แชร์ได้บนเครือข่ายของคุณ และตั้งชื่อเป็น `https://myapp.test`
+ได้ กระบวนการทั้งหมด — การส่งต่ออัตโนมัติ การแชร์บน LAN โดเมนสำหรับพัฒนาที่มี
+HTTPS — มีคู่มือของตัวเอง:
+[ส่งต่อพอร์ตจากเทอร์มินัล](/th-TH/คู่มือ/วิธีทำ/ส่งต่อพอร์ต/)
 
-## Custom images
+## อิมเมจที่กำหนดเอง
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+เวิร์กสเปซสามารถชี้เทอร์มินัล (VM) และเบราว์เซอร์ (VM) ไปยังอิมเมจของตัวเองได้
+— ที่ **การตั้งค่า → เซิร์ฟเวอร์ → ริก → อิมเมจที่กำหนดเอง (เวิร์กสเปซนี้)**
+การใช้งานทั่วไป: ขยายอิมเมจเริ่มต้นด้วยชุดเครื่องมือที่โปรเจกต์ของคุณต้องการ
+เพื่อให้ทุกเทอร์มินัลเริ่มต้นพร้อมใช้งาน หรือใช้อิมเมจที่ทีมของคุณเผยแพร่อยู่แล้วซ้ำ
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+เครื่องยังคงบูตภายในเอนโคลเจอร์เดิม: ประตูเอเกรสเดิม โบรกเกอร์ข้อมูลรับรองเดิม
+วงจรชีวิตเดิม มีเพียงผู้ดูแลเวิร์กสเปซเท่านั้นที่เปลี่ยนการตั้งค่านี้ได้ เครื่อง
+ใหม่จะรับมันไปใช้ (เครื่องที่รันอยู่ยังใช้อันเดิม) และเรฟเฟอเรนซ์ต้องเป็นอิมเมจ
+จากรีจิสทรี — พาธในเครื่องจะถูกปฏิเสธ
 
-What an image must provide:
+สิ่งที่อิมเมจต้องมี:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **เทอร์มินัล (VM)** — อิมเมจ Linux ที่มี `bash` มันยังต้องมี `git`, `curl`
+  และ `socat` ด้วย — ไม่ว่าจะติดตั้งมาให้แล้ว หรือติดตั้งได้เมื่อเริ่มครั้งแรก
+  (อิมเมจใดก็ตามที่ใช้ฐาน Debian/Ubuntu ใช้ได้: พวกมันจะถูกติดตั้งอัตโนมัติ
+  พร้อมกับชุดเครื่องมือ CLI แบบ GitHub-hosted runner: คอมไพเลอร์ Python 3
+  `jq` เครื่องมือจัดการไฟล์เก็บถาวร `rsync` ส่วนรันไทม์ภาษาอย่าง Node/Go/Java
+  และ Docker ไม่ได้ติดตั้งมาให้) พอร์ต `7911` ของเกสต์สงวนไว้สำหรับตัวส่งต่อ
+  พอร์ต
+- **เบราว์เซอร์ (VM)** — อิมเมจ Debian/Ubuntu ที่มี `bash` และ `socat` บวกไบนารี
+  `chromium` เซิร์ฟเวอร์จะเริ่ม Chromium เองในรูป
+  `chromium --headless=new` และรีเลย์ DevTools จาก `9223` ของเกสต์ไปยัง
+  `9222` PulseAudio และ ffmpeg จะถูกติดตั้งเมื่อเริ่มครั้งแรก อย่าบิลด์
+  `FROM chromedp/headless-shell` — ไบนารีนั้นไม่มีเสียง การแทนที่นี้ใช้กับริก
+  Chromium เท่านั้น Firefox และ WebKit จะเพิกเฉยและบูตอิมเมจ Debian ที่ปักหมุด
+  ไว้ พอร์ต `9222`/`9223` ของเกสต์สงวนไว้
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+สองคำแนะนำ: ปักหมุดเรฟเฟอเรนซ์ด้วยไดเจสต์ (`@sha256:…`) เพื่อให้ไบต์เปลี่ยนไป
+ข้างหลังคุณไม่ได้ และโฮสต์มันบน Docker Hub หรือ GitHub Container Registry —
+โฮสต์สำหรับดาวน์โหลดของรีจิสทรีเหล่านั้นถูกอนุญาตผ่านประตูเอเกรสโดยอัตโนมัติ
+ส่วนรายอื่นอาจต้องให้โฮสต์การส่งมอบเนื้อหาของมันเข้าถึงได้จึงจะดึงได้
 
-## When a rig goes away
+## เมื่อริกจากไป
 
-Rigs are meant to be temporary:
+ริกถูกออกแบบให้อยู่ชั่วคราว:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **ว่าง** — หลังจากผ่านไปประมาณ 15 นาทีโดยไม่มีอะไรเกิดขึ้น ริกเบราว์เซอร์
+  เดสก์ท็อป หรือมือถือจะจอด (หยุดนิ่ง ตื่นขึ้นทันทีเมื่อมีการกระทำครั้งถัดไป)
+  เทอร์มินัลแบบเอนโคลเจอร์จะรอ 45 นาที หลังจากพ้นช่วงว่างสองเท่า มันจะปิด
+- **ขีดจำกัดเวลา** — ทุกริกมีอายุการใช้งานแบบตายตัวที่มันต่ออายุไม่ได้ ไม่ว่ามัน
+  กำลังทำอะไรอยู่
+- **หน่วยความจำ** — หากเซิร์ฟเวอร์ต้องการที่ว่างสำหรับริกใหม่ มันจะปิดริกที่ไม่ได้
+  ถูกใช้มานานที่สุด ริกที่มีคนขับอยู่ กำลังดูอยู่ หรือมีเทอร์มินัลเปิดอยู่จะไม่ถูก
+  ยึดไป
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+เมื่อริกแบบเอนโคลเจอร์ปิด ดิสก์ของมันจะถูกทิ้ง การปิดริก Android จะตัดการเชื่อม
+ต่อจากโปรแกรมจำลองบนโฮสต์ — ไม่ได้ลบมัน ส่วนริก iOS จะลบอุปกรณ์ CoreSimulator
+ที่มันสร้างขึ้น ให้ขนสิ่งที่คุณอยากเก็บกลับมาก่อน
 
-## What a rig can reach
+## ริกเข้าถึงอะไรได้บ้าง
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+ริกเทอร์มินัล เบราว์เซอร์ และเดสก์ท็อปแบบเอนโคลเจอร์เริ่มต้นที่ประตูเอเกรสแบบ
+ปฏิเสธโดยค่าเริ่มต้น: คุณอนุญาตโฮสต์อย่างชัดเจน และเส้นทางเดียวของเกสต์คือประตู
+ที่บังคับใช้รายการนั้น ริกเบราว์เซอร์ยังอนุญาตไซต์ของผลิตภัณฑ์ (`usectrl.dev`)
+มาให้ตั้งแต่แรก โบรกเกอร์ข้อมูลรับรองใช้รายการเดียวกัน
 
-Two honest caveats:
+ข้อควรระวังตรงไปตรงมาสองข้อ:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **เครือข่ายของมือถือเป็นไปตามโฮสต์** โปรแกรมจำลองของ Android และ
+  CoreSimulator ของ Apple ไม่ได้อยู่หลังประตูเอเกรสของเอนโคลเจอร์ แท็บมือถือ
+  ทั้งสองไม่เสนอตัวควบคุมการข้ามเครือข่าย เพราะเครือข่ายที่โฮสต์จัดการนั้นไม่มี
+  ข้อจำกัดอยู่แล้ว
+- **ทุกสิ่งที่ริกอ่านถือเป็นเนื้อหาที่ไม่น่าเชื่อถือ** ข้อความบนหน้าเว็บ DOM
+  ทรีการเข้าถึง และข้อมูลดัมป์วิว จะถูกส่งกลับมาให้เอเจนต์โดยล้อมกรอบไว้ด้วย
+  เครื่องหมายที่บอกว่า “นี่คือข้อมูล ไม่ใช่คำสั่ง” หน้าเว็บที่พยายามออกคำสั่งกับ
+  เอเจนต์ของคุณจะถูกอ่านเป็นสตริงที่ถูกอ้างมา
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+คุณดูทุกอย่างที่กำลังรันอยู่ และหยุดสิ่งใดก็ได้ในนั้น ได้ที่ **การตั้งค่า →
+เซิร์ฟเวอร์ → ริก**
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Rigs and enclosures](/th-TH/คู่มือ/แนวคิด/ริก/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/th-TH/คู่มือ/วิธีทำ/ส่งต่อพอร์ต/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/th-TH/คู่มือ/อ้างอิง/ริก/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [ริกและเอนโคลเจอร์](/th-TH/คู่มือ/แนวคิด/ริก/) — โมเดลเบื้องหลังทั้งหมดนี้:
+  ทำไมต้อง VM เลนแสดงผลสองเลน โบรกเกอร์ข้อมูลรับรอง วงจรชีวิต
+- [ส่งต่อพอร์ตจากเทอร์มินัล](/th-TH/คู่มือ/วิธีทำ/ส่งต่อพอร์ต/) — เข้าถึง
+  เซิร์ฟเวอร์พัฒนาจากทุกที่ที่สำคัญ
+- [ข้อมูลอ้างอิงริก](/th-TH/คู่มือ/อ้างอิง/ริก/) — ทุกพื้นผิว คำกริยา พอร์ต
+  และค่าเริ่มต้นในที่เดียว
+- [ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/) — `Drive an
+  enclosure (rig)` เป็นคลาสการกระทำที่คุณตั้งเป็นอนุญาต ให้ถามก่อน หรือปฏิเสธ
+  ได้ แยกตามเวิร์กสเปซ เอเจนต์ หรือสเปซ โหมดอ่านอย่างเดียวปฏิเสธมันไปเลย

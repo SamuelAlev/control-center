@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Punte de chat
+description: Provideri, comenzi, credențiale, capabilități, operații RPC și stocare pentru puntea de chat.
 slug: ro-RO/manual/referinta/punte-de-chat
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Provideri
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Provider | Valoare serializată | Transport                  | Tip de spațiu |
+| -------- | ------------------- | -------------------------- | ------------- |
+| Slack    | `slack`             | Socket Mode (WSS spre exterior) | `slack`   |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack este singurul provider.** `ChatProvider` este un enum cu o singură valoare, iar `cc_server` înregistrează un singur plugin. Schema, fiecare căutare și fiecare index unic au cheia `provider`, așa că id-urile nu trec niciodată de la un provider la altul, iar adăugarea unuia este o schimbare doar pe server.
 
-One provider-side app per **workspace × provider**.
+O aplicație de partea providerului per **spațiu de lucru × provider**.
 
-## Chat commands
+## Comenzi de chat
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Numele comenzii este propriu fiecărei aplicații (`cc` implicit, deci `/cc`). Un admin îl poate redenumi; puntea folosește apoi numele cu care a fost invocată ultima dată.
 
-| Command                               | Effect                                                        |
+| Comandă                               | Efect                                                         |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (sau `/cc` fără verb)      | Listează ce poate face botul                                  |
+| `/cc link <code>`                     | Valorifică un cod de unică folosință și leagă identitatea de chat a expeditorului |
+| `/cc ticket <title>`                  | Înregistrează un tichet local raportat de membrul legat       |
+| `/cc ticket <title> \| <description>` | La fel, cu tot ce urmează după primul `\|` ca descriere       |
+| Verb necunoscut                       | Raportează verbul necunoscut plus textul de ajutor            |
 
-Ways to reach an agent:
+Modalități de a ajunge la un agent:
 
-| Gesture                    | Behavior                                                                                                               |
+| Gest                       | Comportament                                                                                                           |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` într-un canal     | Deschide un fir Slack și un spațiu Control Center corespunzător; agentul răspunde în firul Slack                       |
+| Răspuns într-un fir Slack legat | Continuă același spațiu Control Center — nu este nevoie de mențiune                                               |
+| Mesaj obișnuit într-un canal | Ignorat (nu este adresat botului și nu se află într-un fir Slack legat)                                              |
+| DM către bot               | Un spațiu Control Center per conversație DM; setează un titlu de fir Slack și un status „is thinking…” cât timp lucrează agentul |
 
-## Credential fields (Slack)
+## Câmpuri de credențiale (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Declarate de descriptorul providerului, care este cel ce generează dialogul de conectare și validează trimiterea.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Id de câmp           | Etichetă                        | Obligatoriu | Prefix  | Unde se află                                                    |
+| -------------------- | ------------------------------- | ----------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Token OAuth al utilizatorului bot | Da        | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Token la nivel de aplicație     | Da          | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | Token de reîmprospătare a configurației aplicației | Nu | `xoxe` | App configuration tokens on api.slack.com/apps                |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` este credențialul de administrare a aplicației: fără el conexiunea funcționează, dar botul nu poate fi creat sau editat din Control Center. Se rotește la fiecare utilizare, iar valoarea rotită este stocată imediat.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Valorilor li se taie spațiile albe de la capete, cheile nedeclarate sunt eliminate, iar un prefix care nu se potrivește este refuzat cu aceeași frază pe client și pe server. Câmpurile obligatorii trebuie să fie prezente la fiecare conectare; un câmp opțional lăsat gol păstrează ce era deja stocat.
 
-## Slack app requirements
+## Cerințe pentru aplicația Slack
 
-Bot token scopes:
+Scope-urile tokenului de bot:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Abonamentele la evenimente ale botului:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Setările structurale pe care Control Center le impune când creează sau editează aplicația: Socket Mode activat, niciun URL de cerere, fila Messages activată și cu drept de scriere, botul `always_online`, scope-urile și evenimentele necesare fuzionate cu tot ce are deja aplicația (niciodată scăzute) și o comandă slash care poartă descrierea `File a ticket or link your Control Center account` — markerul ce identifică propria comandă a Control Center într-un manifest exportat.
 
-## Connection states
+## Stări de conexiune
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Stare             | Valoare serializată | Semnificație                                                   |
+| ----------------- | ------------------- | --------------------------------------------------------------- |
+| Neconectat        | `disconnected`      | Nu există credențiale stocate pentru acest spațiu de lucru × provider |
+| Se conectează…    | `connecting`        | Credențiale stocate, transportul se conectează sau se reconectează |
+| Activ             | `connected`         | Transportul este pornit și primește evenimente                 |
+| Eroare de conexiune | `error`           | Stocate, dar în eșec; eroarea proprie a providerului este afișată alături |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Reconectarea folosește un backoff exponențial cu jitter, plafonat la 30 de secunde. O rotire de socket inițiată de provider se reconectează prompt, fără să escaladeze backoff-ul. Un credențial respins (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) sau un scope lipsă este definitiv: puntea nu mai reîncearcă până când nu sosesc credențiale noi.
 
-## Provider capabilities (Slack)
+## Capabilități ale providerului (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Puntea este scrisă pentru cea mai bogată suprafață și degradează o capabilitate pe rând.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Capabilitate              | Slack  | Efectul în lipsa ei                                                                            |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | da     | Întregul răspuns este postat o dată, la final                                                   |
+| `streamingRequiresThread` | da     | O țintă de răspuns fără punct de ancorare în fir postează răspunsuri întregi                    |
+| `ephemeralMessages`       | da     | Un răspuns la o comandă slash fără un identificator de răspuns utilizabil este aruncat (refuzurile sunt postate mereu în fir) |
+| `threadStatus`            | da     | Nicio linie temporară „is thinking…”                                                           |
+| `threadTitle`             | da     | Firul de chat își păstrează titlul implicit                                                     |
+| `slashCommands`           | da     | Nicio suprafață `/cc`                                                                           |
+| `taskCards`               | da     | Doar text — niciun card deasupra răspunsului și niciun link „View in Control Center”             |
+| `maxMessageLength`        | 39.000 | Răspunsurile mai lungi sunt trunchiate, cu o trimitere către Control Center                     |
+| `maxStreamChunkLength`    | 3.800  | Adăugările sunt împărțite la granița dintre paragrafe, linii sau spații                        |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+A anunța streaming nu înseamnă a-l promite: cel al Slack are nevoie de funcția Agents & AI Apps pe un plan plătit. Un refuz din momentul apelului (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) este reținut pentru întreaga viață a conexiunii și expus ca `streamingAvailable: false`. Cardurile de sarcină ale Slack călătoresc în același apel, așa că un Slack care refuză modul de afișare al cardului își păstrează fluxul și pierde doar cardul, o singură dată, pentru întreaga viață a conexiunii.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Un flux trebuie să numească și cititorul căruia îi este destinat. Slack cere atât un utilizator destinatar, cât și echipa acestuia pentru a deschide unul într-un **canal** (un DM nu este suficient) și refuză cu `missing_recipient_user_id` / `missing_recipient_team_id` în caz contrar — un refuz per apel, așa că puntea continuă să încerce, iar între timp tura sosește ca un singur răspuns postat. Destinatarul este cine a întrebat, luat din mesajul de intrare (echipa acestuia, nu a aplicației, așa că un canal Slack Connect se rezolvă corect). Pentru o tură pe care nimeni nu a pornit-o din chat — muncă lansată în Control Center pe o conversație deja legată — acesta este membrul a cărui legătură a creat puntea; dacă între timp și-a dezlegat contul de chat, acea tură este postată întreagă, nu transmisă în flux.
 
-## Task cards
+## Carduri de sarcină
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Un card grupat per tură de agent (`task_display_mode: plan`), cu un rând per pas. Fiecare rând este un `task_update` cu `id` + `title` + `status`, plus un `details` trimis o singură dată când gândul este gata. `details` și `output` cu același id se concatenează fără separator, așa că `details` sunt trimise o singură dată, iar `output` nu este niciodată transmis în flux. Titlul planului este cererea; răspunsul este o adăugare separată, ulterioară, care poartă un fragment `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
+| Parte          | Conținut                                                                                                                                                      |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Titlul planului | Ce s-a cerut                                                                                                                                                 |
+| Rândul de configurare | `Working on it…`, apoi `Cloning …`, apoi `Starting the agent…` — un singur rând, cu titlul înlocuit                                                     |
+| Rândul de gândire | `Thinking…`, adăugat când agentul începe să raționeze; gândul sunt `details` ale acestui rând, trimise o singură dată când raționamentul se termină          |
+| Rândurile de instrumente | Unul per instrument (`Bash which swift`), cu id unic, așa că stau unul lângă altul                                                                    |
+| Stare          | În curs cât rulează acel rând; complet când începe rândul următor sau se termină tura; eroare pentru eșec, întrerupere și limita de ture                      |
+| Îndemn la acțiune | `View in Control Center` ca rând final când se termină tura — absent cât timp munca încă rulează și absent când serverul nu are un URL public accesibil        |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Ce nu poartă niciodată un card: ieșirea instrumentelor, un argument din afara acelei liste de valori permise sau orice citit din baza de date. Textul raționamentului sunt doar `details` ale rândului `Thinking…` (plafonate la 256 de caractere), nu corpul mesajului. Un card care nu ar spune nimic nou nu este retrimis. O mențiune deschide fluxul imediat, ca firul Slack să nu rămână mut; o tură care apoi nu a produs niciun text încheie același card cu o notă scurtă, în loc să posteze un al doilea mesaj. O tură fără cuvinte pe un spațiu care nu a deschis niciodată un flux (fără carduri sau cu streamingul deja refuzat) postează totuși un mesaj care poartă cardul încheiat și nota.
 
-Streamed and posted cards are different payloads:
+Cardurile transmise în flux și cele postate sunt încărcături utile diferite:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Formă            | Structură                                            | Text                                             |
+| ---------------- | ---------------------------------------------------- | ------------------------------------------------ |
+| Transmis în flux | `plan_update` plus fragmente `task_update` indexate după `id` | Șir simplu, plafonat la 256 de caractere per fragment |
+| Postat           | Un bloc `plan` care înfășoară `task_card`-uri indexate după `task_id` | Text îmbogățit                    |
 
-Failure handling:
+Gestionarea eșecurilor:
 
-| Situation                                    | Behavior                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Situație                                        | Comportament                                                                                                                |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Providerul refuză cardul la o adăugare          | Adăugarea este reîncercată imediat fără el; textul sosește în continuare în direct, iar cardurile sunt eliminate pentru întreaga viață a conexiunii |
+| Providerul refuză și textul                     | Fluxul este închis, iar răspunsul este postat întreg                                                                        |
+| Fluxul se rupe după ce o parte a răspunsului a ajuns | Fluxul este închis și nimic nu este repostat                                                                            |
 
-See [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/) for why the payload is split this way.
+Vezi [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/) pentru motivul pentru care încărcătura utilă este împărțită astfel.
 
-### Setup, before there is a turn
+### Configurarea inițială, înainte de a exista o tură
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Cardul se deschide când o mențiune este acceptată, înainte de clonare și înainte de primul token; tura care urmează adoptă același card și același flux. Narațiunea de după vine de la `SpaceProvisioningChanged` de pe bus-ul de evenimente de domeniu — exact același progres pe care bannerul de pregătire al aplicației de desktop îl citește de pe rândul spațiului.
 
-| Provisioning state          | Narration                                                      |
+| Stare de pregătire          | Narațiune                                                      |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Mențiune acceptată          | `Working on it…`                                               |
+| Pasul `repo`                | `Cloning <repo>…`                                              |
+| Pasul `prCheckout`          | `Checking out the pull request in <repo>…`                     |
+| Pasul `script`              | `Running the setup script for <repo>…`                         |
+| Pasul `agent`               | `Setting up <agent>…`                                          |
+| `provisioning`, încă niciun pas | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Agentul raționează          | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Narațiunea de configurare cere toate cele patru condiții:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Condiție                                          |
+| ------------------------------------------------- |
+| Providerul afișează carduri                       |
+| Streamingul este disponibil pe această conexiune  |
+| Spațiul are o cerere de chat în curs              |
+| Niciun card nu raportează deja o tură acolo       |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Cererea rămâne în curs până când începe o tură sau configurarea eșuează. Un eveniment `ready` fără niciun card deja deschis este un spațiu deja cald și este lăsat în tăcere, iar o pregătire pe care nimeni din chat nu o așteaptă — o conversație deschisă în aplicație, una rămasă în pană, reluată la pornire — nu produce niciun card.
 
-## The `/open` bounce page
+## Pagina de redirecționare `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Produsele de chat acceptă `http(s)` într-un link și nimic altceva, așa că un îndemn la acțiune nu poate numi direct schema aplicației de desktop.
 
-| Property   | Value                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Proprietate | Valoare                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rută        | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Origine     | Derivată din URL-ul public al serverului (`ws` → `http`, `wss` → `https`); adresa de loopback este păstrată                                 |
+| Răspuns     | O pagină HTML mică, fără stocare, care navighează către `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` și afișează un buton manual |
+| Validare    | Id-urile trebuie să corespundă lui `[A-Za-z0-9_.-]{1,128}`; orice altceva este un 404                                                        |
+| Acces       | Publică și inertă — nu citește nicio bază de date, deci nu este un oracol de existență; aplicația pe care o deschide face autorizarea       |
 
-## Bot profile fields
+## Câmpuri de profil ale botului
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| Câmp               | Limită          | Note                                                                                              |
+| ------------------ | --------------- | ------------------------------------------------------------------------------------------------- |
+| `appName`          | 1–35 caractere  | Implicit: `Control Center · <workspace name>`                                                     |
+| `botDisplayName`   | 1–80 caractere  | Implicit: `control-center`                                                                         |
+| `description`      | ≤ 140 caractere |                                                                                                   |
+| `agentDescription` | ≤ 300 caractere | Afișat deasupra unui DM cu botul                                                                  |
+| `command`          | ≤ 32 caractere  | Normalizat: barele oblice de la început sunt eliminate, textul este trecut în litere mici, `[^a-z0-9_-]` este eliminat, iar dacă rămâne gol se folosește `cc` |
+| `agentEnabled`     | —               | Dacă experiența de DM/agent este expusă                                                           |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+O casetă goală înseamnă „las-o așa”, nu „golește-o”. Limitele sunt ale Slack, cele mai strânse dintre produsele modelate.
 
-## Link codes
+## Coduri de legare
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Proprietate      | Valoare                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| Lungime          | 6 caractere                                                                              |
+| Alfabet          | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (fără `0`/`O`, `1`/`I`, `U`)                            |
+| Durată de viață  | 15 minute                                                                                |
+| Utilizări        | Una                                                                                      |
+| Stocare          | În memorie — o repornire a serverului invalidează codurile încă nefolosite               |
+| Domeniu de aplicare | Un spațiu de lucru și un provider; generarea unui cod nou îl invalidează pe cel anterior al membrului |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Utilizarea codului este potrivită fără a ține cont de majuscule. Codurile necunoscute, expirate, din alt spațiu de lucru și pentru alt provider eșuează toate identic, intenționat.
 
-## Link methods
+## Metode de legare
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Metodă | Valoare serializată | Cum                                                                          |
+| ------ | ------------------- | ---------------------------------------------------------------------------- |
+| Cod    | `code`              | Membrul a utilizat `/cc link <code>`                                         |
+| Email  | `email`             | Emailul verificat al providerului s-a potrivit cu un utilizator care este deja membru al spațiului de lucru |
 
-## RPC operations
+## Operații RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Toate sunt limitate la spațiul de lucru. Serverul este fără stare, așa că fiecare apel își poartă propriul `workspace_id` în argumente; dispecerul refuză o operație limitată la spațiul de lucru care îl omite, înainte de a se deschide vreo bază de date. Credențialele circulă doar _spre interior_ — citirile de stare nu le returnează niciodată.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Operație                | Tip         | Rol minim                                      | Clase de acțiuni                |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| `chat.providers`        | citire      | `guest`                                        | —                               |
+| `chat.status`           | citire      | `guest`                                        | —                               |
+| `chat.connect`          | mutare      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | distructivă | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | citire      | `guest`                                        | —                               |
+| `chat.beginUserLink`    | mutare      | `member`                                       | —                               |
+| `chat.unlinkUser`       | mutare      | `member` pentru tine, `admin` pentru oricine altcineva | —                        |
+| `chat.createApp`        | mutare      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | citire      | `admin`                                        | —                               |
+| `chat.botProfile`       | citire      | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | mutare      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Operațiile de citire moștenesc pragul `guest` de la tipul lor; mutările fără un prag explicit cer `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` compune un URL de creare a aplicației providerului pornind de la profilul botului. Nu declară nicio clasă de acțiuni pentru că nu citește niciun secret și nu apelează nimic — singurul apel este făcut de browserul utilizatorului.
 
-One reactive query completes the surface:
+O interogare reactivă completează suprafața:
 
-| Query                 | Kind  | Emits                                                    |
+| Interogare            | Tip   | Emite                                                    |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | Conturile legate, retrimise ori de câte ori se creează sau se elimină o legătură |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Există pentru că legarea se întâmplă de _cealaltă_ parte: un membru tastează codul de unică folosință în bot, așa că niciun răspuns al clientului nu poate duce răspunsul înapoi. Rosterul din setări și dialogul deschis „leagă-mi contul” o urmăresc amândouă, iar dialogul trece într-o confirmare în momentul în care legătura membrului sosește.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` generează întotdeauna un cod pentru identitatea celui care apelează. `chat.updateBotProfile` returnează un `remaining_step` doar când mai rămâne un pas (de obicei o reinstalare); lipsa lui înseamnă că modificarea este deja activă.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` returnează o intrare per provider oferit — descriptorul plus, când există, starea conexiunii. Tot ce afișează interfața de setări vine din această încărcătură utilă, motiv pentru care adăugarea unui provider este o schimbare doar pe server.
 
-## Storage
+## Stocare
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Ce                          | Unde                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Credențialele conexiunii    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Configurarea asistată neterminată | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                       |
+| Fișierele Slack vechi       | `<dataDir>/<workspaceId>/slack_credentials.json` și `slack_app_setup.json`, citite o dată și migrate pe loc |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Credențialele stau lângă baza de date a spațiului de lucru, nu în ea: ștergerea unui spațiu de lucru ia cu el și tokenurile de chat, iar `workspace.export` sau o copie de siguranță copiază `workspace.db` — așa că un spațiu de lucru înmânat altcuiva nu duce cu el tokenuri de bot active. Scrierile sunt atomice (fișier temporar plus redenumire) și restrânse la doar proprietar.
 
-## Database tables
+## Tabele de bază de date
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Ambele se află în baza de date a spațiului de lucru, care are o bază v1 comprimată — așa că o citire din alt spațiu de lucru nu se compilează.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — o conversație externă ↔ un spațiu Control Center:
 
-| Column                                                 | Notes                                                                      |
+| Coloană                                                | Note                                                                       |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Domeniul spațiului de lucru                                                |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Echipa Slack `T…`, gol pentru providerii fără acest concept                |
+| `external_channel_id`                                  | Canal Slack `C…`, grup `G…`, DM `D…`                                       |
+| `external_thread_id`                                   | Punctul de ancorare al firului Slack sau null când întreaga conversație este ancorajul (DM-urile botului) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Unic pe `(workspace_id, provider, external_channel_id, external_thread_id)`, cu un index parțial care impune același lucru pentru id-urile de fir null (SQLite tratează NULL-urile ca distincte).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — un membru extern ↔ un utilizator Control Center:
 
-| Column                                 | Notes                                           |
-| -------------------------------------- | ----------------------------------------------- |
-| `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
-| `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
-| `linked_at`                            |                                                 |
+| Coloană                                | Note                                             |
+| -------------------------------------- | ------------------------------------------------ |
+| `id`                                   | UUID v4                                          |
+| `workspace_id`                         | Domeniul spațiului de lucru                      |
+| `provider`                             | `ChatProvider.wire`                              |
+| `external_team_id`, `external_user_id` | Membrul Slack `U…`                               |
+| `user_id`                              | Utilizator Control Center (global, deci fără cheie străină) |
+| `method`                               | `code` sau `email`                               |
+| `linked_at`                            |                                                  |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Unic pe `(workspace_id, provider, external_team_id, external_user_id)` și pe `(workspace_id, provider, user_id)` — atribuire cu o singură valoare în ambele direcții, în timp ce o persoană poate fi legată la mai mulți provideri.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+O legătură este o rezolvare de identitate, **nu** o acordare de acces: apartenența este reverificată la fiecare eveniment de intrare, așa că o legătură către un membru care a fost între timp eliminat se rezolvă într-un refuz.
 
-## Space kind and message metadata
+## Tipul de spațiu și metadatele mesajelor
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Un spațiu legat este creat cu `SpaceKind` al providerului (`slack`). Se comportă ca un spațiu obișnuit pentru oameni — notificat și încadrat la fel ca `topic` — iar `isExternalChat` este verificarea prin care trece fiecare comportament (oglindire, ecusoane, păstrare).
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Fiecare mesaj pe care puntea îl aduce poartă o marcă `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Marca este și paza anti-ecou: oglinda spre exterior sare peste orice mesaj care o poartă, și exact asta împiedică un mesaj de chat sosit din exterior să fie postat imediat înapoi.
 
-## Relay behavior
+## Comportamentul releului
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Comportament                            | Detaliu                                                                                                        |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Ce este transmis spre exterior          | Doar **textul** agentului, plus linia de stare a cardului de sarcină. Textul raționamentului și ieșirea instrumentelor rămân în Control Center |
+| Cadența streamingului                   | Limitată la o singură golire pe secundă cât rulează o tură; cardul și textul pe care îl explică călătoresc în același apel |
+| Mesajele scrise de oameni în Control Center | Oglindite în firul legat, cu numele afișat al autorului ca prefix                                           |
+| Turele fără conținut                    | Raportate ca o notă scurtă (rularea a eșuat, a fost întreruptă sau s-a oprit la limita de ture), nu ca tăcere |
+| Deduplicare                             | Indexată după id-ul de eveniment propriu al providerului; ultimele 512 sunt reținute                           |
+| Agentul de întâmpinare                  | O conversație legată nouă trezește agentul CEO al spațiului de lucru, altfel primul său agent, altfel nimeni    |
+| Denumirea spațiului                     | `#channel · <request>` pentru un fir de canal Slack, `Slack DM · <request>` pentru un DM, titluri plafonate la 48 de caractere |
+| Izolarea eșecurilor                     | Un singur eveniment defect nu doboară niciodată puntea; conexiunea continuă să deservească toate celelalte conversații |
 
-## See also
+## Vezi și
 
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
-- [Link your Slack account](/ro-RO/manual/ghiduri-practice/leaga-cont-de-chat/)
-- [Customize the chat bot](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
-- [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/)
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/) for the action classes the ops declare
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Leagă contul tău Slack](/ro-RO/manual/ghiduri-practice/leaga-cont-de-chat/)
+- [Personalizează botul de chat](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
+- [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/)
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) pentru clasele de acțiuni pe care le declară operațiile

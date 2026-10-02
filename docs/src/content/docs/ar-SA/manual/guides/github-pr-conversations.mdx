@@ -1,97 +1,98 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: التحدث إلى Control Center من طلب سحب على GitHub
+description: اطلب مراجعة من بوت تطبيق GitHub التابع للخادم، أو اطرح عليه سؤالًا، من محادثة طلب السحب نفسها، من غير خطاف ويب ولا عنوان عام.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+يبيّن هذا الدليل كيف تعمل مع Control Center من غير أن تغادر GitHub:
+تطلب مراجعة بالذكاء الاصطناعي من صفحة طلب السحب، وتسأل البوت سؤالًا في
+تعليق، وتواصل الحديث في سلاسل مراجعته.
 
-The bot is your server's own [GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+البوت هو [تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/) التابع لخادمك — التطبيق
+نفسه الذي يسجّل دخول الأشخاص ويشغّل العمل في الخلفية. لا يُسجَّل شيء
+جديد، ولا يلزم أن يكون شيء قابلًا للوصول من الإنترنت: يكتشف الخادم ما
+قيل على GitHub بالاستطلاع، فيسلك حاسوب محمول خلف NAT سلوك النشر العام
+نفسه.
 
-## Prerequisites
+## المتطلبات
 
-- The server has its GitHub App [registered and
-  installed](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- لدى الخادم تطبيق GitHub [مسجَّل ومثبَّت](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)، مع **طلبات السحب: قراءة وكتابة**
+  (للتعليقات والسلاسل والتفاعلات) و**المشكلات: قراءة** (للبحث في
+  التعليقات). الاثنتان واردتان أصلًا في قائمة أذونات ذلك الدليل
+- المستودع مربوط بمساحة عمل في Control Center
+- لا عنوان URL لخطاف ويب، ولا نفق، ولا عنوان callback — لا شيء يُضبط
+  من جهة الشبكة
 
-## Find your bot's name
+## اعثر على اسم دخول البوت
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+اسم دخول البوت هو `<appslug>[bot]`، و`appslug` هو الاسم الذي أعطيته
+التطبيق عند تسجيله.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. انتقل إلى **الإعدادات ← الخادم ← تسجيل الدخول الموحّد** وانزل إلى
+   بطاقة **تطبيقات الموفّرين**
+2. افتح قسم **GitHub** وانقر **اختبار**
+3. انسخ **اسم دخول البوت** حين يُملأ الحقل. إن بقي التلميح الفارغ
+   ظاهرًا، فاسم الدخول دائمًا `<appslug>[bot]` — اكتب ذلك، أو الصيغة
+   القصيرة `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+لا يعرض GitHub حسابات التطبيقات في الإكمال التلقائي لـ `@`، فيلزم كتابة
+اسم الدخول — ولهذا تتيح بطاقة الإعدادات نسخه بنقرة واحدة. لاحقة
+`[bot]` اختيارية: `@myapp` و`@myapp[bot]` يخاطبان البوت كليهما.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[اختر اسمًا مميزًا للتطبيق]
+تُطابَق الصيغة القصيرة كنص. إن صادف أن يشارك مستخدم بشري على GitHub
+معرّف تطبيقك، فالإشارة إلى ذلك المستخدم بالصيغة القصيرة تصل إلى البوت
+أيضًا. الصيغة الكاملة `@myapp[bot]` لا لبس فيها أبدًا.
 :::
 
-## Request a review from GitHub
+## اطلب مراجعة من GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+طريقتان، وكلتاهما تبدأ خط الأنابيب `pr_review` المُنشأ مع مساحة العمل،
+وهو نفسه الذي يبدأه زر **اسأل الذكاء الاصطناعي**:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **أضف التسمية `ai-review`** إلى طلب السحب. هذا أقرب ما يتيحه GitHub
+  إلى تعيين البوت مراجعًا — حسابات التطبيقات لا تشغل خانة المراجع
+  المطلوب الأصلية. لا تعليق يُتفاعل معه، فلا يُنشر شيء على GitHub،
+  وتبدأ المراجعة في Control Center
+- **علّق `@myapp review`** (أو `@myapp` فقط) على محادثة طلب السحب.
+  يتفاعل البوت بـ 👀، ثم يرد حين تبدأ المراجعة (أو إن كانت واحدة قيد
+  التشغيل أصلًا)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+يعمل المراجعون في مساحة مراجعة طلب السحب. اقرأ النتائج وانشرها كما في
+[استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/).
+يبقى النشر إلى GitHub قرارًا تتخذه في Control Center — بدء مراجعة من
+GitHub لا ينشر شيئًا إلى GitHub من تلقاء نفسه.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+تُطلَق التسمية مرة واحدة لكل طلب سحب: إضافتها هي الطلب، وإزالتها ثم
+إعادتها لا تطلقها من جديد. لتشغيل مراجعة من جديد — بعد دفعة مثلًا —
+أشر إلى البوت.
 
-## Ask a question
+## اطرح سؤالًا
 
-Comment on the PR conversation:
+علّق على محادثة طلب السحب:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+ما يحدث، بالترتيب:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. يتفاعل البوت بـ 👀 لتعرف أن التعليق شُوهد
+2. يُنشر السؤال في مساحة مراجعة طلب السحب **باسمك** — الإسناد نفسه
+   كما لو كتبته في Control Center
+3. يجيب وكيل في المساحة، ويُنشر الجواب على طلب السحب تعليقًا يشير
+   إليك بـ @
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+سؤال على طلب سحب بلا مراجعة بعد يوقظ وكيل CEO في مساحة العمل. بعد أن
+تجري مراجعة، يجيب الوكيل الذي تكلم آخرًا، فتصل المتابعات إلى من يملك
+السياق.
 
-## Follow up in a review thread
+## تابع في سلسلة مراجعة
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+رُد داخل سلسلة مراجعة مضمّنة يكون البوت طرفًا فيها — تعليق على الفرق
+تركه، أو جواب نشره في تلك السلسلة. لا حاجة إلى إشارة؛ السلسلة **هي**
+المخاطبة:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +100,70 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+الردود اللاحقة تسير بالطريقة نفسها: كل رد سؤال آخر في المحادثة نفسها،
+وسياقها مساحة المراجعة، ويعود الجواب في السلسلة.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+المتابعة على الخط الزمني لمحادثة طلب السحب تعليق جديد في المستوى
+الأعلى، فتظل تحتاج إشارة @.
 
-## Who the bot talks to
+## إلى من يتحدث البوت
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+يصل تعليق GitHub ولا يحمل تقريبًا إلا اسم دخول، فيحلّ البوت المؤلف قبل
+أن يفعل شيئًا:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **يجب أن يكون حساب GitHub مربوطًا بهويتك** في Control Center —
+  [سجّل الدخول عبر GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)، أو الصق رمزًا،
+  من **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود**
+- **يجب أن تكون عضوًا بدور كتابة** (`member` أو `admin` أو `owner`)
+  في مساحة العمل التي تربط المستودع
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+غيرك يتلقى ردًا مهذبًا واحدًا يشرح ما ينقص — اسم دخول غير معروف (غير
+مربوط، أو مربوط وليس عضوًا هنا) ودور للقراءة فقط هما الحالتان — ولا
+تدخل كلماته إلى مساحة العمل. تسمية `ai-review` لا تخضع لهذه البوابة:
+بلا مؤلف، فتبدأ المراجعة في مساحة العمل التي تربط المستودع أصلًا.
 
-## What to expect
+## ما تتوقعه
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| الأمر | السلوك |
+| --- | --- |
+| الإقرار | 👀 على التعليق خلال دقيقة تقريبًا — فاصل المسح. تسمية `ai-review` بلا تعليق يُتفاعل معه |
+| الإجابات | تُنشر باسم البوت (التطبيق)، في المسار الذي طُرح فيه السؤال |
+| الإسناد داخل المساحة | السؤال لك، والوكيل يعمل نيابة عنك، تحت إعدادات استقلالية المساحة |
+| المراجعات | تستقر النتائج في مساحة المراجعة، والنشر إلى GitHub يدوي |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+دقيقة واحدة تقريبًا هي مقابل الاستغناء عن أي وصول شبكي وارد. لا شيء في
+المسح عاجل، ولا يضيع شيء ما دام الخادم متوقفًا — تعليق يصل أثناء التوقف
+يُلتقط في المسح التالي.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-**Nothing happens for a comment that mentions the bot.**
+**لا يحدث شيء لتعليق يذكر البوت.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- هل التطبيق **مثبَّت** على الحساب الذي يملك المستودع، والمستودع
+  **مربوط** بمساحة عمل؟ يُتخطى المستودع غير المربوط قبل أن يُسجَّل
+  شيء، فربطه لاحقًا يسلّم التعليق رغم ذلك
+- هل حساب GitHub مربوط، وهل أنت عضو بدور كتابة؟ رد الرفض من البوت على
+  طلب السحب يقول أيهما
+- ما زال لا شيء؟ يسمّي سجل الخادم المسح وطلب السحب حين يفشل شيء. ابحث
+  عن `pr_conversation:` (أداة الاستطلاع) و
+  `github_pr_conversation:` (الجسر)
 
-**The label does not start a review.**
+**التسمية لا تبدأ مراجعة.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+تُطلَق مرة واحدة لكل طلب سحب. إن كانت مراجعة قد جرت، أو أُضيفت التسمية
+قبل أن يرى الخادم طلب السحب (المسح الأول يسجّل المتراكم في صمت بدل أن
+يطلقه دفعة)، فأشر إلى البوت — `@myapp review` يبدأ مراجعة دائمًا ما لم
+تكن واحدة قيد التشغيل.
 
-**The bot's answer never arrived on GitHub.**
+**جواب البوت لم يصل إلى GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+الجواب نفسه لا يضيع — هو في مساحة مراجعة طلب السحب في Control Center.
+فشل النشر (GitHub متوقف، أو تغيّرت الأذونات) يُسجَّل ولا يُعاد إرسال
+الرد. اسأل مرة أخرى في السلسلة إن كان الأمر يهم.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): the registration the bot
-  is born from
-- [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/): the room all of this lands in
+- [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): التسجيل الذي يُنشأ منه البوت
+- [استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/): قراءة النتائج التي تنتجها مراجعة بدأت بإشارة
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/): ربط حساب GitHub الخاص بك، وهو ما يحلّ به البوت هويتك
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/): الغرفة التي يستقر فيها هذا كله

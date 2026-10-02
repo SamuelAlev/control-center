@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Wyślij pierwszego agenta
+description: Utwórz agenta, daj mu przestrzeń i zadanie, i obserwuj, jak napływają wyniki jego uruchomienia.
 slug: pl-PL/podrecznik/samouczki/pierwszy-agent
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Co zbudujesz
 
-By the end of this tutorial, you will have:
+Po ukończeniu tego samouczka będziesz mieć:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Agenta, którego sam utworzyłeś i skonfigurowałeś
+- Przestrzeń, w której rozmawiacie Ty i ten agent
+- Jedno ukończone uruchomienie, z pracą zapisaną w commitach w izolowanym worktree i wierszem w dzienniku uruchomień agenta
 
-Prerequisites: [Your first workspace](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/) completed, so this workspace has a repo registered and at least one model provider connected.
+Wymagania wstępne: ukończony [Twój pierwszy obszar roboczy](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/), dzięki czemu w tym obszarze roboczym jest zarejestrowane repozytorium i podłączony co najmniej jeden dostawca modeli.
 
-## Step 1: Create an agent
+## Krok 1: Utwórz agenta
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Przejdź do **Ustawienia → Obszar roboczy → Agenci**
+2. Kliknij **Nowy agent**. Agent o nazwie „Agent bez nazwy” powstaje od razu i zostaje wybrany na liście — nie ma okna dialogowego tworzenia ani niczego do potwierdzenia. Konfigurujesz go w miejscu.
+3. Na karcie **Ustawienia** wypełnij:
+   - **Nazwa**: coś krótkiego i łatwego do zapamiętania, na przykład `alice`. To właśnie wpisujesz po `@`.
+   - **Tytuł**: czym się zajmuje, np. „Inżynier backendu”
+   - **Adapter**: `Control Center (built-in)`. Wybierz go świadomie — tylko wbudowanym harnessem można sterować w trakcie uruchomienia i wstrzymywać go na granicy tury, a na hoście serwera nie trzeba instalować żadnego CLI.
+   - **Model**: wybierz z listy, którą serwuje podłączony dostawca
+   - **Umiejętności**: dołącz te, które pasują, np. `testing` lub `architecture`
+4. Kliknij **Zapisz zmiany**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Agent bez adaptera działa na wbudowanej pętli]
+Gdy pole Adaptera jest nieustawione, wysyłanie wraca do **Control Center (built-in)** — pętli agenta wewnątrz serwera, więc na hoście nie ma nic do zainstalowania. Nadal potrzebuje modelu: gdy żaden nie jest ustawiony, pyta Anthropic o jego model domyślny, co działa, jeśli masz podłączone konto Anthropic, a w przeciwnym razie kończy się błędem `No credential for provider "anthropic"`. Tak czy inaczej ustaw oba jawnie, bo inaczej będziesz działać na modelu, którego nie wybrałeś.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Punkt kontrolny.** Wiersz na liście pokazuje nazwę Twojego agenta i pusty pierścień statusu.
 
-## Step 2: Start a space
+## Krok 2: Utwórz przestrzeń
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. Na pasku bocznym znajdź sekcję **Przestrzenie** i kliknij przycisk **+**
+2. Nadaj przestrzeni nazwę
+3. W sekcji **Dodaj agentów** wybierz agenta, którego właśnie utworzyłeś
+4. Jeśli obszar roboczy ma jakieś repozytoria, wybierz te, na których ta przestrzeń ma pracować
+5. Kliknij **Utwórz**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Przestrzeń się otwiera. W tle Control Center przygotowuje dla tej rozmowy worktree wybranych repozytoriów w trybie copy-on-write, na własnej gałęzi. Twoja źródłowa kopia robocza nigdy nie jest zmieniana.
 
-## Step 3: Send a task
+## Krok 3: Wyślij zadanie
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Wpisz jedno konkretne, niewielkie zadanie dotyczące repozytorium, które zarejestrowałeś. Najlepiej sprawdza się coś z weryfikowalnym wynikiem — dodaj test, napraw ostrzeżenie lintera, zmień nazwę symbolu.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Naciśnij Enter. Nie musisz nikogo wspominać przez `@`: gdy w przestrzeni jest jeden agent, zwykła wiadomość go budzi. W przestrzeni z kilkoma agentami `@name` wybiera jednego.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center składa prompt z instrukcji agenta, persony, skillów i kontekstu przestrzeni, a następnie wysyła uruchomienie.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Punkt kontrolny.** Przycisk wysyłania w kompozytorze zmienia się w przycisk zatrzymania — agent pracuje w tej rozmowie — i zaczyna napływać tekst.
 
-## Step 4: Watch it work
+## Krok 4: Obserwuj, jak pracuje
 
-The conversation renders the run as it happens:
+Rozmowa renderuje uruchomienie na bieżąco:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Rozumowanie**, pokazywane na miejscu, gdy agent myśli
+- **Wywołania narzędzi**: odczyty i zapisy plików, wyszukiwania, polecenia powłoki, każde wraz z wynikiem
+- **Tekst**: podsumowania, wyjaśnienia i pytania do Ciebie
 
-If the agent asks something, answer in the conversation and it resumes.
+Jeśli agent o coś zapyta, odpowiedz w rozmowie, a on wznowi pracę.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Aby zobaczyć metryki danego uruchomienia oraz jego kontrolki pauzy, wznowienia i zatrzymania, znajdź działającego agenta w sekcji **Agenci** panelu **Ogólne** przestrzeni i wybierz **Otwórz aktywność**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+W panelu aktywności plakietka statusu pokazuje **Działa**, a gdy uruchomienie się kończy — **Zakończono pomyślnie**. Uruchomienie, które utknie albo się zapętli, pokazuje **Zablokowany**; takie, które zakończy się błędem — **Niepowodzenie**. Na liście agentów pierścień statusu jest pusty przed pierwszym uruchomieniem, a wypełniony, gdy agent znów jest bezczynny.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/pl-PL/podrecznik/koncepcje/guardraile/).
+Co ogranicza uruchomienie: jego własny worktree copy-on-write, poświadczenia przyznawane mu przy starcie i odbierane przy zakończeniu, oczyszczone środowisko, powierzchnia narzędzi dozwolona przez jego tryb oraz guardraile akcji. Efekty takie jak wypchnięcie gałęzi czy otwarcie pull requesta są bramkowane osobno — zobacz [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 
-## Step 5: Check the result
+## Krok 5: Sprawdź wynik
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Otwórz **Ustawienia → Obszar roboczy → Agenci** i wybierz swojego agenta
+2. Otwórz kartę **Logi**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Punkt kontrolny.** Jeden wiersz uruchomienia, pokazujący jego status, czas trwania, godziny rozpoczęcia i zakończenia oraz adapter, na którym działał.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Zmiany agenta są zatwierdzane na gałęzi rozmowy, w jej worktree. Commity są tworzone jako agent, a Ty jesteś uwzględniony w stopce `Co-Authored-By:`.
 
-## Getting a pull request
+## Uzyskanie pull requesta
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Nic nie otwiera pull requesta samo z siebie. Jeśli go chcesz, poproś o niego w tej samej rozmowie:
 
-> Push this branch and open a pull request against the default branch.
+> Wypchnij tę gałąź i otwórz pull request względem domyślnej gałęzi.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Wypychanie (`gitPush`) i tworzenie PR (`prCreate`) domyślnie proszą o Twoje zatwierdzenie, więc przed każdym z nich spodziewaj się potwierdzenia. Jeśli w chwili pojawienia się prośby nie jest podłączony żaden zatwierdzający, akcja zostaje odrzucona, a nie dozwolona — guardraile zawodzą w bezpieczną stronę.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR jest otwierany pod tożsamością GitHub, której tokenu użyło uruchomienie — Twoją, jeśli zapisałeś osobisty token — a nie pod nazwą agenta. Autorstwo agenta widać na commitach.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Możesz też otworzyć go samodzielnie: panel **Kontrola wersji** przestrzeni ma przycisk **Utwórz pull request**, który przenosi gałąź rozmowy do ekranu tworzenia, a **Pull requesty → Nowy PR** otwiera ten sam ekran pusty. W tym miejscu podejmuje kolejny samouczek.
 
-## Recap
+## Podsumowanie
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Utworzyłeś agenta, skonfigurowałeś jego adapter i model, dałeś mu przestrzeń i zadanie i obserwowałeś, jak prawdziwe uruchomienie kończy się w izolowanym worktree, nie ruszając Twojej kopii roboczej.
 
-**Next:** [Review your first pull request](/pl-PL/podrecznik/samouczki/pierwszy-pr/) to learn the review workflow.
+**Dalej:** [Zrecenzuj pierwszy pull request](/pl-PL/podrecznik/samouczki/pierwszy-pr/), aby poznać proces recenzji.
 
-For more on agents: [The agent model](/pl-PL/podrecznik/koncepcje/model-agentow/). For dispatch details: [Agent dispatch lifecycle](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/).
+Więcej o agentach: [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/). Szczegóły wysyłania: [Cykl życia wysyłania agentów](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/).

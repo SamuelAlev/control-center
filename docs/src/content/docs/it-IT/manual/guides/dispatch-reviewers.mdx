@@ -1,26 +1,29 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Invia agenti revisori
+description: Invia agenti revisori specializzati su una PR dalla vista della PR, da uno strumento MCP o da un passaggio di pipeline.
 slug: it-IT/manuale/guide/invia-revisori
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Questa guida mostra come inviare agenti revisori per revisionare le pull
+request.
 
-## From the PR view
+## Dalla vista della PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Apri la PR e vai nella sua scheda **Panoramica**
+2. Apri il menu a comparsa ⋯ e scegli **Ask AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Questa azione avvia la pipeline `pr_review` preconfigurata, che apre lo spazio di
+revisione della PR e invia i revisori previsti dal livello di revisione dello
+spazio di lavoro — tre per impostazione predefinita (gli agenti preconfigurati
+**qa**, **architect** e **engineer**) — poi fa consolidare il tutto all'agente
+lead. Su questo percorso i ruoli non li scegli tu. Per controllare quali ruoli
+vengono eseguiti e quali file esamina ciascuno, usa lo strumento MCP o un
+passaggio di pipeline descritti di seguito.
 
-## Via the `dispatch_reviewers` MCP tool
+## Tramite lo strumento MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Chiamalo dall'interno di uno spazio di revisione esistente:
 
 ```
 dispatch_reviewers(
@@ -33,109 +36,119 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` e `reviewers` sono tutti obbligatori. Ogni specifica
+di revisore accetta un `role`, più un `scope` facoltativo con glob di file e un
+`prompt_override` che sostituisce il brief predefinito. Una `concurrency`
+facoltativa (1–8) limita gli invii paralleli; se la ometti, si applica
+l'impostazione `review_concurrency` dello spazio di lavoro (valore predefinito 3,
+impostabile in Impostazioni → Spazio di lavoro → Generale).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Lo strumento restituisce subito gli elenchi `dispatched` e `unmatched`. Ogni
+revisore inviato viene aggiunto allo spazio come partecipante, annunciato con un
+messaggio di sistema e inviato con il proprio brief. I rilievi arrivano in quello
+spazio come messaggi `review_node`.
 
-## From a pipeline step
+## Da un passaggio di pipeline
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Apri **Impostazioni → Spazio di lavoro → Modelli di pipeline**, apri un modello,
+poi:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Aggiungi un nodo **Reviewer (prompt)** dalla palette
+2. Scegli l'agente da inviare e scrivi il prompt del revisore, usando i
+   segnaposto `{{key}}` per gli output a monte (ad esempio
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Imposta la chiave di output (predefinita `reviewer_findings`) così i passaggi
+   a valle possono leggere i rilievi
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Il passaggio invia l'agente e resta sospeso finché quell'esecuzione non termina.
+Il motore poi raccoglie il payload `submit_output` dell'esecuzione nello stato
+della pipeline, sotto la chiave di output del nodo. (La descrizione nella palette
+dice ancora che il passaggio attende una chiamata `complete_task` — quello
+strumento non esiste; ignora la stringa.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Per fare fan-out, collega diversi nodi revisori allo stesso passaggio a monte,
+poi consolida i loro output con un nodo **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+L'editor ricollega il terminale nascosto a ogni destinazione raggiungibile, così
+un nodo che aggiungi dopo il nodo Step preconfigurato viene comunque eseguito. I
+nodi in fan-out collegati allo stesso passaggio a monte vengono eseguiti in
+parallelo.
 
-## Automatic dispatch on a new PR
+## Invio automatico su una nuova PR
 
-To have a review pipeline fire by itself:
+Per far scattare da sola una pipeline di revisione:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Apri il modello in **Impostazioni → Spazio di lavoro → Modelli di pipeline**
+2. Trascina **PR pubblicata** o **PR esterna aperta** dalla sezione Trigger della
+   libreria nodi sul canvas (oppure prendile dal riquadro fantasma **Aggiungi un
+   trigger**)
+3. Seleziona il nuovo nodo e attiva l'interruttore **Attivato** nel suo
+   ispettore, poi abilita il modello
 
-Two events matter here and they are not interchangeable:
+Qui contano due eventi, e non sono intercambiabili:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Evento                  | Quando scatta                                                                                                                      | Chiavi del payload                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `PullRequestPublished`  | Una PR viene aperta **tramite Control Center** — la superficie di composizione, oppure un agente che chiama `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
+| `ExternalPrDetected`    | Il servizio di polling delle PR trova una PR aperta direttamente su GitHub                                                         | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+Una PR aperta su github.com non genera mai `PullRequestPublished`, quindi un
+modello collegato solo a quell'evento non la vedrà. Nota anche che
+`PullRequestPublished` non porta con sé alcun `pr_number`: un passaggio il cui
+script o prompt fa riferimento a `{{pr_number}}` deve riceverlo da
+`ExternalPrDetected`, oppure da un'esecuzione manuale che lo fornisce.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Checkpoint: dopo aver abilitato il modello, apri **Pipelines** e verifica che
+compaia un'esecuzione per la prossima PR corrispondente. Un modello lasciato
+disabilitato fa scattare il proprio trigger nel vuoto: il motore rifiuta un
+modello disabilitato e termina senza avviare alcuna esecuzione.
 
-## How a role is matched to an agent
+## Come un ruolo viene associato a un agente
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` assegna un punteggio a ogni agente dello spazio di lavoro
+rispetto a ciascuna etichetta di ruolo richiesta, senza distinguere maiuscole e
+minuscole:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Corrispondenza                                          | Punteggio |
+| ------------------------------------------------------- | --------- |
+| Una skill che contiene l'etichetta di ruolo             | +3        |
+| Un titolo che contiene l'etichetta di ruolo             | +2        |
+| Il nome di un agente che contiene l'etichetta di ruolo  | +1        |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+I punteggi si sommano e vince il totale più alto (in caso di parità, il primo
+candidato trovato). Se nessun candidato supera lo zero, la specifica compare
+nell'elenco `unmatched` dello strumento invece di essere inviata: così un ruolo
+che nessuno soddisfa viene segnalato, mai saltato in silenzio.
 
-## The review space
+## Lo spazio di revisione
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Una PR ha esattamente **uno** spazio di revisione, non uno per revisore. Viene
+creato in modo idempotente da `pr.ensureSpace`, collegato alla PR tramite un
+`ReviewSpaceAssociation` e predisposto rispetto all'head ref della PR. Ogni
+revisore inviato entra in quello spazio e vi pubblica i propri rilievi
+`review_node`: è questo che rende confrontabili i rilievi e permette all'agente
+lead di raggiungere un consenso tra loro.
 
-## Monitor the dispatch
+## Monitora l'invio
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Ogni revisore inviato riceve il proprio `AgentRunLog`. Segui l'avanzamento in:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- Lo **spazio di revisione**, dove i rilievi arrivano in tempo reale
+- La scheda **Revisione** della PR, che mostra la barra di stato della revisione
+  e il verdetto
+- **Osservabilità → Dal vivo** (`/workspaces/:id/observability`), l'elenco degli
+  agenti con lo stato di ogni esecuzione, il tempo trascorso in diretta, un
+  pannello a scomparsa con la trascrizione e un comando di terminazione. Non
+  esiste una scorciatoia da tastiera: raggiungila dal piè di pagina della barra
+  laterale.
 
-## Related guides
+## Guide correlate
 
-- [Use AI-powered review](/it-IT/manuale/guide/revisione-ia/)
-- [Review and merge a PR](/it-IT/manuale/guide/revisiona-e-unisci-pr/)
-- [Set up pipeline triggers](/it-IT/manuale/guide/trigger-pipeline/)
+- [Usa la revisione basata sull'IA](/it-IT/manuale/guide/revisione-ia/)
+- [Revisiona e unisci una PR](/it-IT/manuale/guide/revisiona-e-unisci-pr/)
+- [Configura i trigger delle pipeline](/it-IT/manuale/guide/trigger-pipeline/)
 
-## Related concepts
+## Concetti correlati
 
-- [AI review](/it-IT/manuale/concetti/revisione-ia/)
-- [Pipelines](/it-IT/manuale/concetti/pipeline/)
+- [Revisione IA](/it-IT/manuale/concetti/revisione-ia/)
+- [Pipeline e automazione](/it-IT/manuale/concetti/pipeline/)

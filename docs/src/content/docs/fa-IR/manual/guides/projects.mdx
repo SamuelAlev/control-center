@@ -1,94 +1,96 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: سازمان‌دهی کار با پروژه‌ها
+description: تیکت‌ها را از نوار کناری در پروژه‌ها گروه‌بندی کنید، پیشرفت را پیگیری کنید و پروژه را وقتی تمام شد بایگانی کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+یک پروژه، گروه‌بندیِ تیکت‌ها در محدودهٔ یک فضای کاری به‌سوی یک هدف مشترک است.
+پروژه‌ها فقط مخصوص Control Center هستند — هرگز با یک ارائه‌دهندهٔ بیرونی مانند
+Linear همگام‌سازی نمی‌شوند.
 
-## Create a project
+## ایجاد یک پروژه
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. گروه **تیکت‌ها** را در نوار کناری فضای کاری باز کنید. این گروه
+   **همهٔ تیکت‌ها**، یک ردیف برای هر پروژهٔ بایگانی‌نشده و سپس
+   **پروژهٔ جدید** را فهرست می‌کند.
+2. روی **پروژهٔ جدید** کلیک کنید.
+3. **نام پروژه**، یک **شرح** اختیاری را پر کنید و یک **رنگ** انتخاب کنید.
+4. **ایجاد پروژه** را بزنید.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+به نمای کلی پروژهٔ جدید می‌رسید و پروژه به‌عنوان یک ردیف در نوار کناری،
+زیر **تیکت‌ها** ظاهر می‌شود.
 
-## Add tickets to a project
+## افزودن تیکت به یک پروژه
 
-Project is a single-ticket field, set in either of two places:
+پروژه یک فیلد تک‌تیکتی است که در هر یک از دو جا تنظیم می‌شود:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- تیکت را باز کنید و **پروژه** را در نوار ویژگی‌هایش تنظیم کنید.
+- روی تیکت در فهرست راست‌کلیک کنید و از زیرمنوی **پروژه** استفاده کنید.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+انتخابگرِ نوار ویژگی‌ها همچنین **پروژهٔ جدید** را عرضه می‌کند، بنابراین می‌توانید
+تیکتی را در پروژه‌ای که همان‌جا می‌سازید جای دهید. **بدون پروژه** فیلد را پاک می‌کند.
 
-A ticket belongs to at most one project.
+هر تیکت حداکثر به یک پروژه تعلق دارد.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[پروژه یک کنش گروهی نیست]
+نوار شناوری که هنگام انتخاب چند تیکت ظاهر می‌شود، وضعیت،
+اولویت، تخصیص‌یافته، برچسب‌ها و حذف را پوشش می‌دهد. هیچ چیپ پروژه‌ای ندارد، پس
+جای دادن تیکت‌های بسیار یعنی انجام دادن‌شان یکی‌یکی.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+همچنین می‌توانید از خود پروژه شروع کنید: **تیکت جدید** در نمای کلی پروژه
+یک تیکت می‌سازد و آن را همان‌جا جای می‌دهد.
 
-## Read project progress
+## مشاهدهٔ پیشرفت پروژه
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+پروژه‌ای را از ردیف نوار کناری‌اش باز کنید، یا به
+`/workspaces/<workspace-id>/projects/<project-id>` بروید.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+نمای کلی، نماد و نام پروژه، یک نشان وضعیت، شرح و یک نوار پیشرفتِ
+انجام‌شده از کل را نشان می‌دهد. پایین‌تر از آن، تیکت‌های پروژه
+بر پایهٔ وضعیت گروه‌بندی شده‌اند.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+چیز دیگری را تجمیع نمی‌کند — تفکیک تخصیص‌یافته و توزیع
+اولویت وجود ندارد. برای این‌ها، به‌جایش فهرست اصلی تیکت‌ها را پالایش کنید.
 
-## Change project status
+## تغییر وضعیت پروژه
 
-Projects have three states:
+پروژه‌ها سه وضعیت دارند:
 
-| Status        | Meaning              |
+| وضعیت         | معنا                 |
 | ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| **فعال**      | کار در جریان است     |
+| **کامل‌شده**  | همهٔ کار انجام شده است |
+| **بایگانی‌شده** | ارجاع تاریخی        |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+از منوی **⋯** روی سرصفحهٔ پروژه استفاده کنید. این منو **ویرایش پروژه**،
+**علامت کامل‌شده** / **علامت فعال**، **بایگانی** / **بازیابی** و
+**حذف پروژه** را عرضه می‌کند.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+بایگانی پروژه را از فهرست نوار کناری و از انتخابگرهای تیکت پنهان می‌کند.
+برگشت‌پذیر است — **بازیابی** پروژه را به فعال بازمی‌گرداند — اما پروژه
+تا وقتی بایگانی است فقط از راه URL در دسترس است.
 
-## Projects created for you
+## پروژه‌هایی که برایتان ساخته می‌شوند
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/).
+تأیید یک ارکستراسیون یک پروژه می‌سازد و تیکت والد را زیر آن جای می‌دهد،
+در کنار هر چیزی که خودتان دستی جای داده‌اید. موارد کاری تولیدشده
+گام‌های پایپ‌لاین‌اند، نه ردیف تیکت، پس روی برد پروژه ظاهر نمی‌شوند.
+این تنها مسیر خودکار است: هیچ گره پایپ‌لاینی تیکت نمی‌سازد، پس یک
+پایپ‌لاین نمی‌تواند پروژه‌ای را پر کند.
+[اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/) را ببینید.
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[پروژه‌ها سطحی در اختیار اپراتور هستند]
+پروژه‌ها را در برنامه بسازید، فهرست کنید، به‌روزرسانی کنید و حذف کنید. عامل‌ها
+ابزار پروژه ندارند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and manage tickets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
-- [Delegate work to agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
-- [Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/)
+- [ایجاد و مدیریت تیکت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
+- [واگذاری کار به عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
+- [اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Tickets](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
+- [تیکت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)

@@ -1,216 +1,233 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Multiplayer — identitas, keanggotaan, dan kehadiran
+description: Bagaimana Control Center memodelkan manusia dan agen sebagai peserta yang setara, apa yang sesungguhnya menggerbangi akses ke sebuah ruang kerja, dan mengapa kesadaran langsung serta catatan bersama melintas di dua jalur yang berbeda.
 slug: id-ID/panduan-pengguna/konsep/multiplayer
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center bekerja untuk satu operator, tetapi model di baliknya bersifat
+multi-aktor sejak awal. Manusia dan agen mengirim pesan di space yang sama,
+menyunting tiket yang sama, dan muncul pada daftar kehadiran yang sama.
+Membuat itu aman dan mudah dipahami bermuara pada tiga keputusan: **siapa yang
+dihitung sebagai aktor**, **apa yang menggerbangi akses**, dan **state mana yang
+dibagikan secara tahan lama versus sekadar disiarkan langsung**.
 
-## Principals: users and agents are co-equal actors
+## Prinsipal: pengguna dan agen adalah aktor yang setara
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Segala sesuatu yang mencatat "siapa melakukan ini" — pesan, tiket, tinjauan,
+rencana, log run, entri audit — diselesaikan melalui sebuah **Principal**, union
+tersegel dari `UserPrincipal` dan `AgentPrincipal` dengan bentuk wire yang
+ringkas (`user:<id>` / `agent:<id>`). Atribusi tidak pernah meleburkan N manusia
+(atau N agen) menjadi satu akun sentinel, sehingga tinjauan yang ditinggalkan
+agen dan tinjauan yang ditinggalkan manusia dapat dibedakan di mana pun keduanya
+muncul.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Karena prinsipal adalah unit identitas, ia juga unit pembatasan:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Batas laju bersifat per prinsipal, bukan per sesi.** Pengaman banjir pada
+  panggilan alat jarak jauh menganggarkan per pengguna, bukan per koneksi:
+  semua perangkat seorang anggota mengambil dari satu jendela geser bersama
+  (120 panggilan per menit, yang paling banyak 30 di antaranya boleh mengubah
+  data), sehingga membuka tiga perangkat tidak melipattigakan jatah siapa pun
+  dan satu anggota yang berisik tidak bisa membuat yang lain kelaparan.
+- **Pembatalan bersifat per prinsipal.** Jurnal tindakan setiap klien hanya
+  mencatat mutasi yang dilakukan prinsipal _itu_. Anda dapat ⌘Z edit tiket Anda
+  sendiri; Anda tidak bisa membatalkan milik rekan satu tim — saat Anda
+  melihatnya, jalur tahan lama sudah menyelesaikannya (lihat di bawah).
 
-## Membership is the access boundary — not the pairing key
+## Keanggotaan adalah batas akses — bukan kunci pemasangan
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Dua kredensial terpisah menjawab dua pertanyaan yang terpisah. **Kunci
+pemasangan** (lihat [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/))
+mengautentikasi sebuah _perangkat_ ke server. **Keanggotaan** memberi wewenang
+kepada pengguna perangkat itu untuk bertindak di dalam sebuah _ruang kerja_.
+Perangkat yang dipasangkan tetapi penggunanya tidak memegang keanggotaan di
+suatu ruang kerja tidak dapat membaca maupun mengubahnya.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Keanggotaan adalah satu baris per (ruang kerja, pengguna), yang disimpan di
+**berkas basis data milik ruang kerja itu sendiri** — jadi "siapa saja yang ada
+di ruang kerja ini?" adalah pembacaan bercakupan biasa, sedangkan pertanyaan
+kebalikannya, "saya berada di ruang kerja mana saja?", pasti melintasi berkas
+dan merupakan salah satu dari sedikit fan-out antar-ruang kerja yang diizinkan.
+Itulah yang dijalankan oleh pemilih ruang kerja sebelum ruang kerja mana pun
+dipilih.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Setiap baris membawa peran dari tangga lima tingkat yang diurutkan berdasarkan
+peringkat:
 
-| Role     | May                                                                                                        |
+| Peran     | Boleh                                                                                                        |
 | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| `owner`  | Kendali penuh, termasuk penghapusan ruang kerja; tepat satu per ruang kerja                                |
+| `admin`  | Mengelola anggota, undangan, pengaturan, operasi destruktif                                                |
+| `member` | Baca-tulis sehari-hari: pesan, tiket, run agen                                                             |
+| `viewer` | Hanya-baca di seluruh ruang kerja; glob pengecualian rahasia menyembunyikan path yang cocok pada permukaan yang memuat kode |
+| `guest`  | Tingkat hanya-baca yang sama dengan viewer, pada peringkat terendah di tangga                              |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Setiap keputusan akses bermuara pada "apakah peran pemanggil setidaknya X".
+Tingkat lantainya diturunkan dari jenis operasi kecuali operasi itu
+mendeklarasikannya secara eksplisit: pembacaan membutuhkan `guest`, mutasi
+membutuhkan `member`, operasi destruktif membutuhkan `admin`. ACL per objek di
+luar pemberian izin per repo di bawah ini sengaja berada di luar cakupan.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Undangan** adalah cara keanggotaan diberikan, dari Pengaturan → Ruang kerja →
+Anggota. Seorang admin menerbitkan kode sekali pakai (berupa tautan atau QR)
+yang kedaluwarsa setelah tujuh hari secara bawaan; server hanya menyimpan hash
+SHA-256 dari kode itu dan kodenya sendiri ditampilkan tepat sekali. Menukarkannya
+menyediakan pengguna tersebut secara JIT, mencatat keanggotaan pada peran
+undangan (tidak pernah `owner` — kepemilikan dialihkan secara eksplisit, tidak
+pernah diberikan lewat undangan) dan menyerahkannya ke pemasangan perangkat.
+Kredensial perangkat yang diterbitkan setelah pemasangan pun dibatasi waktunya
+30 hari, jadi pemasangan bukan kunci permanen.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Pemberian izin repo** berada di bawah keanggotaan. Karena server memegang
+checkout penuh, keanggotaan ruang kerja saja tidak boleh pernah memberi hak
+istimewa melebihi forge: setiap permukaan yang memuat kode — berkas, diff,
+tinjauan PR, pencarian kode — memeriksa izin anggota pada _repo itu_. Pemberian
+izin bersifat per (ruang kerja, pengguna, repo) dan diperingkat `none` → `read`
+→ `review` → `write`, di mana `write` berarti menjalankan run agen yang menulis
+ke repo. Tidak adanya baris berarti `none`; pemilik dan admin secara implisit
+memegang `write` pada setiap repo yang tertaut dan tidak membawa baris sama
+sekali.
 
-## Two lanes of collaboration state
+## Dua jalur state kolaborasi
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center memisahkan state bersama ke dalam dua jalur dengan aturan
+ketahanan yang berlawanan, karena kedua jenis state itu gagal dengan cara yang
+berlawanan.
 
-### The ephemeral presence lane
+### Jalur kehadiran yang sementara
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Kehadiran — siapa yang online, di mana mereka berada, apa yang sedang mereka
+ketik, apa yang sedang dilakukan agen saat ini — tidak bernilai begitu menjadi
+basi. Seandainya dipersistenkan, setiap penyambungan ulang harus
+merekonsiliasi "basis data mengatakan Sam sedang menyunting tiket ini" dengan
+kenyataan. Jadi kehadiran **tidak pernah ditulis ke basis data**. Ia hidup di
+**hub kehadiran** dalam memori di server: klien memublikasikan dengan
+`presence.update`, peer berlangganan dengan `presence.watch`, dan entri
+kedaluwarsa otomatis setelah tiga heartbeat yang terlewat (heartbeat berjalan
+setiap 10 detik; hub menyapu setiap 5 detik). Tidak ada yang perlu
+direkonsiliasi — hanya dibiarkan luntur.
 
-Two properties keep the lane trustworthy:
+Dua sifat menjaga jalur ini tetap dapat dipercaya:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Identitas berasal dari sesi, tidak pernah dari argumen klien.** Server
+  memetakan perangkat terautentikasi milik koneksi ke sebuah id pengguna; klien
+  hanya pernah bisa memperbarui kehadirannya sendiri, sehingga tidak ada yang
+  dapat memalsukan status atau lokasi peserta lain. Pembaruan `offline` yang
+  eksplisit (terputus atau tombol tak terlihat) menghapus entri itu seketika.
+- **Daftar kehadiran dipusatkan di server.** Peer tidak pernah bertukar
+  kehadiran secara langsung, sehingga setiap peserta melihat daftar yang sama
+  apa pun topologinya. Agen tidak punya klien, jadi server _menyintesis_ entri
+  mereka dari state run langsung — berpikir, berjalan, terblokir di gerbang
+  persetujuan, selesai — dengan satu run perwakilan yang menentukan state dan
+  lokasi seorang agen agar run yang bersamaan tidak membuat daftar itu
+  bergetar.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Fan-out bertingkat per konsumen: desktop dan web menempuh tingkat penuh (paling
+banyak satu emisi daftar per 100 ms), ponsel menempuh tingkat ringkasan (per
+500 ms), sehingga pembaruan secepat kursor tidak bisa melelehkan PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+**Lokasi** seorang peserta — tempat mereka berada saat ini, hingga ke
+artefaknya — adalah union tersegel: `Space`, `File` (repo + path + baris
+opsional), `Pr`, `Ticket`, `PlanNode`. Tidak setiap lokasi punya tempat untuk
+dituju: tidak ada rute penampil berkas, jadi lokasi `File` dirender sebagai
+label alih-alih tujuan. Jalur ini juga membawa **klaim lunak** ("Sam sedang
+menyunting tiket ini", "seorang agen memegang worktree ini"): _visibilitas_
+konflik, bukan kunci. Jenis lokasi yang tidak dikenal diuraikan menjadi null,
+sehingga klien lama sekadar tidak merender apa yang tidak dipahaminya.
 
-### The durable shared lane
+### Jalur bersama yang tahan lama
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Catatan yang harus bertahan — tiket, dokumen Catatan space bersama, pesan —
+menempuh jalur sebaliknya: otoritatif, terurut, dan dipersistenkan. Edit yang
+bersamaan diselesaikan dengan **last-writer-wins dalam urutan penerimaan
+server**, bukan berdasarkan jam klien. Penyelesaiannya sengaja dibuat berbutir
+halus: edit tiket bersifat _per kolom_, sehingga dua orang yang menyunting
+bidang berbeda pada tiket yang sama sama-sama diterapkan dan tidak ada yang
+menimpa yang lain (transisi alur kerja tetap memakai penguncian optimistis);
+dokumen Catatan space adalah satu kolom, sehingga seluruh dokumen bersifat LWW
+dengan klaim lunak di jalur kehadiran yang membuat penyuntingan bersamaan
+terlihat alih-alih terkunci. Ini sengaja bukan CRDT — beban pembuktian ada pada
+CRDT, dan LWW berdasar urutan penerimaan plus klaim yang terlihat mencakup pola
+kolaborasi yang nyata.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"Penulis terakhir" berarti **urutan penerimaan server**, tidak pernah jam klien
+— laptop dengan jam yang melenceng tidak dapat memenangkan edit yang sudah
+kalah. Di balik jalur tahan lama berdiri **feed sinkronisasi**: trigger SQLite
+menambahkan setiap mutasi ke log perubahan per ruang kerja _di dalam transaksi
+penulisan_, mengalokasikan nomor urut monotonik per ruang kerja dalam transaksi
+yang sama dengan mutasinya. Sebuah layanan server mengekor log itu menjadi
+frame delta berversi sesuai urutan. Klien berkembang dari snapshot penuh
+menjadi delta; celah dalam urutan menjatuhkan penyimpanan itu kembali ke mode
+snapshot alih-alih salah menerapkan frame.
 
-## Follow, steer, take over, hand back
+## Ikuti, arahkan, ambil alih, kembalikan
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Jalur kehadiran bukan sekadar daftar — ia menggerakkan verba kolaborasi:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Mode ikuti.** Klik seorang peserta dan klien Anda mengikuti lokasinya,
+  bernavigasi saat ia bernavigasi. Ikuti bersifat "sampai Anda bertindak":
+  begitu Anda bernavigasi atas kemauan sendiri, mode ikuti melepas. Spanduk
+  yang dapat ditutup memberi tahu saat peserta lain sedang menyorot
+  (mempresentasikan) space tempat Anda berada.
+- **Arahkan.** Pesan ke agen yang sedang berjalan diantrekan sebagai
+  pengarahan; agen membacanya ulang sebelum melanjutkan giliran berikutnya,
+  sehingga Anda dapat mendorong sebuah run di tengah jalan tanpa
+  menghentikannya.
+- **Ambil alih.** Mengambil kendali atas sebuah percakapan menjeda setiap run
+  aktif di batas giliran bersih berikutnya (run Claude Code, yang tidak punya
+  batas aman, dihentikan) di balik snapshot git per giliran, sehingga
+  pengambilalihan dapat dibalik. Penanda tahan lama memblokir pengiriman baru
+  ke space itu dan bertahan melewati mulai ulang server — server tidak pernah
+  melanjutkan otomatis ke edit manusia yang belum selesai. Satu editor aktif per
+  worktree adalah klaim lunak: pengambilalihan kedua terlihat dan ditolak, bukan
+  digabungkan diam-diam.
+- **Kembalikan.** Mengembalikan kendali memposting ringkasan diff terstruktur
+  worktree ke space, mengantrekannya sebagai pengarahan untuk run yang dijeda,
+  melanjutkan run itu, dan menghapus penanda.
 
-## The autonomy dial
+## Dial otonomi
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Pengarahan dan pengambilalihan adalah intervensi setelah kejadian. **Dial
+otonomi** adalah pengaturan tetap: per space, per agen, ditetapkan dari header
+space, ia menentukan apa yang terjadi saat agen mencapai tindakan yang
+digerbangi.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Tingkat                    | Nilai wire        | Efek pada panggilan alat yang digerbangi                                                                     |
+| -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Hanya usulkan              | `proposeOnly`     | Ditolak langsung, dengan alasan yang harus disampaikan agen — ia dapat menjelaskan tindakan itu tetapi tidak melakukannya |
+| Bertindak dengan persetujuan | `actWithApproval` | Gerbang persetujuan yang fail-closed: satu konfirmasi muncul ke operator yang terhubung dan tanpa penyetuju berarti ditolak |
+| Bertindak bebas            | `actFreely`       | Disetujui sebelumnya, kecuali jika aturan pagar pengaman `deny` yang keras berlaku — aturan deny selalu menang |
+| (tidak ditetapkan)         | `null`            | Sama dengan bertindak dengan persetujuan: bawaan server                                                       |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Dua hal berada di luar dial itu ke dua arah. Verba keluaran milik sebuah mode
+dipatok dan tidak pernah bisa ditolak, apa pun kata dial itu — mode orkestrasi
+pernah secara struktural tidak mampu mengeluarkan satu-satunya luarannya karena
+sebuah preset menolak kelas efek yang dideklarasikan verba tersebut. Dan `deny`
+keras dari pagar pengaman tindakan tidak dapat ditimpa oleh `actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/id-ID/panduan-pengguna/konsep/model-agen/).
+:::note[Dial hanya menggerbangi harness bawaan]
+Ia dikonsultasikan oleh callback persetujuan loop harness. Agen yang berjalan pada
+adapter Claude Code melakukan panggilan alatnya sendiri di dalam prosesnya sendiri,
+tempat Control Center tidak punya apa pun untuk digerbangi — lihat
+[Model agen](/id-ID/panduan-pengguna/konsep/model-agen/).
 :::
 
-## Solo zero-regression
+## Solo tanpa regresi
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Semua ini bersifat aditif. Alur kerja operator solo tidak berubah: dengan satu
+manusia dan tanpa agen, hub kehadiran tidak punya apa pun untuk disiarkan,
+sehingga jalur itu memancarkan snapshot awalnya lalu menganggur tanpa lalu
+lintas sama sekali; mesin LWW dan sinkronisasi adalah jalur penulis tunggal yang
+sama seperti selama ini; dan kunci pemasangan tetap menjadi kredensial perangkat
+seperti selama ini. Keanggotaan sudah menjadi batas akses — dengan satu manusia
+hanya ada satu baris owner dan tidak ada elemen antarmuka daftar kehadiran.
 
-## Related concepts
+## Konsep terkait
 
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/): the boundary membership enforces
-- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/): the pairing key and device credential side of identity
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): the agent half of the principal union
-- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/): the runs that steering and take-over pause and resume
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): the effect-class policy the autonomy dial composes with
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): the bus that live updates ride
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/): batas yang ditegakkan keanggotaan
+- [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/): sisi kunci pemasangan dan kredensial perangkat dari identitas
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): separuh agen dari union prinsipal
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/): run yang dijeda dan dilanjutkan oleh pengarahan dan pengambilalihan
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): kebijakan kelas efek yang dipadukan dengan dial otonomi
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): bus yang ditumpangi pembaruan langsung

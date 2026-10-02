@@ -1,153 +1,151 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Doménové události
+description: Proč spolu moduly mluví přes sběrnici událostí uvnitř procesu, místo aby se navzájem importovaly, k čemu je sběrnice zdroj pravdy a k čemu ne, a které události opravdu pohánějí automatizaci.
 slug: cs-CZ/prirucka/koncepty/domenove-udalosti
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Co je doménová událost
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Doménové události jsou mechanismus, kterým spolu moduly komunikují bez přímé
+závislosti. Místo aby modul A volal modul B, modul A událost publikuje a modul B
+se na ni přihlásí.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` je broadcastová sběrnice publish/subscribe uvnitř procesu.
+Publikující volají `publish(event)`, odběratelé konzumují typovaný proud
+`on<T>()`. Každá událost implementuje `DomainEvent` a nese `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Sběrnice běží uvnitř `cc_server`.** Každý publikující i každý živý odběratel
+žije tam. Žádný klient tuhle sběrnici nevidí. Klient vidí vybranou podmnožinu,
+kterou server znovu vysílá jako JSON-RPC rámce `notifications/*`.
 
-## Why a bus at all
+## Proč vůbec sběrnice
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Bez událostí je každá reakce napříč moduly import. Cesta oznámení by musela
+importovat modul agentů, modul pull requestů, tickety a schůzky jen proto, aby
+věděla, kdy zvednout toast. A každý z těch modulů by pak musel vědět, že
+oznámení existují. Tickety by importovaly pipeline, aby dokončený ticket
+posunul běh. Graf závislostí se zauzlí a sdílené jádro přestane být sdílené.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Publikování události ten uzel rozváže. Cesta oznámení se přihlásí k 21 třídám
+událostí a moduly, které je vyvolávají, neimportuje. Dispečer spouštěčů
+pipeline se přihlásí k celé sběrnici. Pull requesty, tickety ani schůzky nezná.
+Observabilita agreguje výsledky běhů a do odeslání nesahá.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Cena je obvyklá. Publikující nepozná, jestli někdo poslouchá, a posluchač,
+který se nikdy nezkonstruuje, zůstane tiše nečinný. `TicketRemoteSyncHandler`
+je stálý příklad. Je deklarovaný, pokrytý testy a v produkci nezapojený.
 
-## What the bus is not
+## Čím sběrnice není
 
-It is worth being precise about one thing the bus does _not_ own.
+Jednu věc sběrnice _nevlastní_.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Auditní stopa není projekce proudu událostí.** Každá měnící RPC operace se
+audituje ve výchozím stavu. `RepoOp.audited` má výchozí hodnotu true a operace
+se z auditu vyváže jedině deklarací `audited: false`. Je to záměrný krok,
+viditelný na operaci samotné. Dispečer hned po úspěšném volání připojí řádek
+„kdo co udělal a odkud“. `DomainEventAuditBridge` neexistuje.
+`ActivityLogPersister` zapisuje řádky `activity_log` z událostí
+`ActivityLogged`. Je to samostatný kanál, mimo RPC audit.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Sběrnice událostí _je_ přenos pro oznámení a pro automatizaci. Závaznou
+evidencí systému není.
 
-## What the bus does drive
+## Co sběrnice skutečně řídí
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Oznámení.** Z 21 tříd událostí server udělá rámce na drátě `notifications/*`,
+  zapíše je do trvalého kanálu daného pracovního prostoru a rozešle je
+  připojeným relacím. Rámec, jehož `workspace_id` míří na pracovní prostor, kde
+  uživatel relace není členem, server zahodí. Klient pak zbytek omezí na
+  pracovní prostor, který má otevřený.
+- **Automatizace řízená událostmi.** Spouštěče pipeline se přihlásí ke sběrnici
+  a samy spustí pipeline, které sedí (viz níže).
+- **Reakce životního cyklu.** Vytvoření pracovního prostoru osadí jeho CEO a
+  specializované agenty, vestavěné šablony pipeline a startovní sady evalů.
+  Dokončený běh agenta obnoví pozastavený krok pipeline, uzavře úkol, předá
+  podnět supervizorovi cíle, může probudit pojmenovaného kontrolora a může
+  znovu spustit vedoucího týmu. Sloučený PR nebo smazaný prostor spustí
+  garbage collection worktree.
+- **Synchronizace mezi dodavateli.** Koordinátor, který poslouchá pět událostí
+  ticketu, odešle místní změny ticketů nakonfigurovaným dodavatelům.
 
-## Event categories
+## Kategorie událostí
 
-Events span the whole product surface. At a high level:
+Události pokrývají celý produkt. V hrubém členění:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Pracovní prostory, agenti a repozitáře** – vytvoření pracovního prostoru, dokončení běhu, registrace repozitáře, aktualizace skillů
+- **Pull requesty** – publikování, změny stavu, sloučení, žádosti o revizi, zmínky, sledování vlastních PR, externě zjištěné PR
+- **Zprávy** – zprávy, prostory a průběh zřizování prostoru
+- **Tickety** – vytvoření, přiřazení, přeřazení, detaily, stav a tři konečné výsledky
+- **Úkoly** – seřazené rámce životního cyklu jednoho odeslaného běhu, aby je klienti uměli seřadit a zbavit duplicit
+- **Pipelines** – jen konečné události běhu (dokončeno, zrušeno, selhalo)
+- **Observabilita** – záznamy activity logu a prahy rozpočtu
+- **Identita a členství** – přidání člena, odebrání člena, změna role
+- **Kalendář a schůzky** – vypršení ověření, začínající schůzky a dokončené nahrávky
+- **Stanice** – převzetí, uvolnění a neočekávané zavření
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Paměť, orchestrace, dokumenty plánu, artefakty, schválení, příjem synchronizace
+ticketů, obnovení kalendáře, sloučení worktree, vytvoření uživatele, pozvánky
+a odvolání zařízení nejsou doménové události. Viz referenci.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/). That page is the
-inventory; this one is the model.
+Úplný katalog (všech 53 konkrétních tříd událostí, jejich payloady a 24
+odběratelů, kteří je konzumují) je v
+[Referenci doménových událostí](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/).
+Ta stránka je soupis. Tahle je model.
 
-## Live access control rides two different mechanisms
+## Řízení přístupu za běhu stojí na dvou mechanismech
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Události členství a události zařízení vypadají symetricky. Mechanismus je
+pokaždé jiný, a právě na tom záleží, když odhaduješ, jak rychle se odebrání
+přístupu projeví.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Odvolání zařízení jeho relace ukončí.** Server sleduje tabulku spárovaných
+zařízení a do několika sekund zahodí každou živou relaci, jejíž zařízení
+opustilo aktivní sadu.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Odebrání člena soket nezavírá.** `WorkspaceMemberRemoved` se konzumuje.
+`LocalRpcServer` a `RemoteRelayHost` zahodí připojené odběry pracovního
+prostoru toho uživatele a `RemoteEventForwarder` zneplatní svou cache členství,
+takže další rámce pro ten pracovní prostor se neposílají. Další RPC pořád
+odmítá brána rolí, která členství znovu vyhodnotí při **každém** volání, takže
+další požadavek dostane "Not a member of this workspace". Na cokoli, co zkusí
+udělat, to platí hned. Spojení se jim kvůli tomu nezavěšuje.
 
-## Pipeline triggers
+## Spouštěče pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Spouštěče pipeline se přihlásí k doménovým událostem a samy spustí pipeline,
+které sedí. `PipelineTriggerDispatcher` poslouchá celou sběrnici a pak:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Hned skončí, pokud typ události neumí namapovat na payload
+2. Vyhledá zapnuté spouštěče pro ten typ události, ve všech pracovních prostorech
+3. Omezí každý na jeho vlastní pracovní prostor a použije jeho filtr shody payloadu
+4. Spustí běh pro každý spouštěč, který projde
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Podstatné omezení je krok 1. Sběrnice nese 53 typů událostí. Výběr při přidání
+spouštěče spustí běh pro těchto čtrnáct (větve payloadu `EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+a `SpaceDeleted`. Nic jiného pipeline nespustí.
 
-## How a client sees any of this
+## Jak z toho klient cokoli vidí
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/cs-CZ/prirucka/koncepty/architektura/).
+`RemoteEventForwarder` překládá události třídy oznámení na rámce na drátě a
+posílá je přes RPC připojeným relacím. Mapovač rámců z nich udělá oznámení v
+aplikaci. Tenký klient tak vidí projekci proudu událostí serveru a žádné
+provádění nevlastní. O to v
+[oddělení tenkého klienta](/cs-CZ/prirucka/koncepty/architektura/) jde.
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Ne každý poslaný rámec je oznámení. Proud životního cyklu úkolu a přeřazení
+ticketu se předávají živě, aby poháněly rozhraní. Do kanálu oznámení se
+nezapisují a toast nezvednou.
 
-## See also
+## Viz také
 
-- [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/): what a trigger starts
-- [Tickets and delegation](/cs-CZ/prirucka/koncepty/tickety/): assignment to an agent vs a team
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/): how events fit the dependency rule
-- [Domain events reference](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/)
-- [Configure notifications](/cs-CZ/prirucka/navody/oznameni/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/): co spouštěč spustí
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/): přiřazení agentovi a přiřazení týmu
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/): jak události zapadají do pravidla závislostí
+- [Reference doménových událostí](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/): úplný katalog a jeho odběratelé
+- [Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/)
+- [Nastavte oznámení](/cs-CZ/prirucka/navody/oznameni/)

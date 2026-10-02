@@ -1,97 +1,99 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Snakk med Control Center fra en GitHub-PR
+description: Be serverens GitHub App-bot om en gjennomgang eller still et spørsmål direkte fra PR-samtalen, uten webhook eller offentlig URL.
 slug: nb-NO/handbok/slik-gjor-du/github-pr-samtaler
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Denne guiden viser deg hvordan du kan jobbe med Control Center uten å forlate
+GitHub: be om en AI-gjennomgang fra PR-siden, still boten et spørsmål i en
+kommentar, og hold samtalen gående i gjennomgangstrådene dens.
 
-The bot is your server's own [GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Boten er serverens egen [GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/) — den samme
+som allerede logger folk inn og kjører bakgrunnsarbeid. Ingenting nytt
+registreres, og ingenting trenger å være tilgjengelig fra internett: serveren
+oppdager det som ble sagt på GitHub ved polling, så en bærbar maskin bak NAT
+oppfører seg nøyaktig som en offentlig utrulling.
 
-## Prerequisites
+## Forutsetninger
 
-- The server has its GitHub App [registered and
-  installed](/nb-NO/handbok/slik-gjor-du/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Serveren har sin GitHub App [registrert og
+  installert](/nb-NO/handbok/slik-gjor-du/github-app/), med **Pull requests: read and write**
+  (for kommentarer, tråder og reaksjoner) og **Issues: read** (for
+  kommentarsøket). Begge står allerede i den guidens tillatelsesliste
+- Repoet er koblet til et arbeidsområde i Control Center
+- Ingen webhook-URL, ingen tunnel, ingen callback — det finnes ingenting å
+  konfigurere på nettverkssiden
 
-## Find your bot's name
+## Finn navnet på boten din
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Botens pålogging er `<appslug>[bot]`, der `appslug` er navnet du ga appen da du
+registrerte den.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til
+   **Leverandørapper**-kortet
+2. Åpne **GitHub**-blokken og klikk på **Test**
+3. Kopier **Bot-innlogging** når den fylles ut. Hvis den fortsatt viser hintet
+   for tomt felt, er påloggingen alltid `<appslug>[bot]` — skriv det, eller den
+   korte formen `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub tilbyr ikke appkontoer i `@`-autofullføringen, så påloggingen må
+skrives — derfor gjør innstillingskortet det til ett klikk å kopiere den.
+`[bot]`-endelsen er valgfri: både `@myapp` og `@myapp[bot]` adresserer boten.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Velg et særegent appnavn]
+Kortformen matches som tekst. Hvis en menneskelig GitHub-bruker tilfeldigvis
+deler appens slug, når en omtale av den brukeren på kortform også boten. Den
+fulle formen `@myapp[bot]` er alltid entydig.
 :::
 
-## Request a review from GitHub
+## Be om en gjennomgang fra GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+To måter, som begge starter den samme forhåndsdefinerte `pr_review`-pipelinen
+som **Spør AI**-knappen starter:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Legg til etiketten `ai-review`** på PR-en. Dette er det nærmeste GitHub
+  kommer å tildele boten som reviewer — appkontoer kan ikke fylle den innebygde
+  plassen for forespurte reviewere. Det er ingen kommentar å reagere på, så
+  ingenting publiseres på GitHub; gjennomgangen starter i Control Center
+- **Kommenter `@myapp review`** (eller bare `@myapp`) i PR-samtalen. Boten
+  reagerer med 👀 og svarer deretter når gjennomgangen har startet (eller at en
+  allerede kjører)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Reviewerne arbeider i PR-ens gjennomgangsområde; les og publiser funnene som i
+[Bruk AI-drevet gjennomgang](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/). Å publisere tilbake til
+GitHub er fortsatt en beslutning du tar i Control Center — å starte en
+gjennomgang fra GitHub publiserer ikke noe til GitHub av seg selv.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+Etiketten utløses én gang per PR: å legge den til er henvendelsen, og den
+aktiveres ikke på nytt når den fjernes og legges til igjen. For å kjøre en
+gjennomgang på nytt — etter en push, for eksempel — omtaler du boten.
 
-## Ask a question
+## Still et spørsmål
 
-Comment on the PR conversation:
+Kommenter i PR-samtalen:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Dette skjer, i rekkefølge:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Boten reagerer med 👀 så du vet at kommentaren ble sett
+2. Spørsmålet legges inn i PR-ens gjennomgangsområde **som deg** — samme
+   tilskrivning som om du hadde skrevet det i Control Center
+3. En agent svarer i området, og svaret publiseres tilbake på PR-en som en
+   kommentar som @-nevner deg
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Et spørsmål på en PR uten noen gjennomgang ennå vekker arbeidsområdets
+CEO-agent; når en gjennomgang har kjørt, svarer agenten som snakket sist, så
+oppfølginger havner hos den som har konteksten.
 
-## Follow up in a review thread
+## Følg opp i en gjennomgangstråd
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Svar inne i en innebygd gjennomgangstråd som boten er en del av — en
+diff-kommentar den la igjen, eller et svar den publiserte i den tråden. Ingen
+omtale er nødvendig; tråden **er** adresseringen:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +101,78 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Flere runder fungerer på samme måte: hvert svar er et nytt spørsmål i samme
+samtale, med gjennomgangsområdet som kontekst, og svaret kommer tilbake i
+tråden.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+En oppfølging i tidslinjen for PR-samtalen er en ny kommentar på øverste nivå,
+så den trenger fortsatt en @-omtale.
 
-## Who the bot talks to
+## Hvem boten snakker med
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+En GitHub-kommentar kommer inn som lite annet enn en pålogging, så boten løser
+opp forfatteren før den gjør noe:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **GitHub-kontoen din må være koblet til identiteten din** i Control Center —
+  [logg inn med GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/), eller lim inn et token,
+  fra **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**
+- **Du må være medlem med en skriverolle** (`member`, `admin` eller `owner`)
+  i arbeidsområdet som kobler til repoet
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Alle andre får ett høflig svar som forklarer hva som mangler — en ukjent
+pålogging (ikke tilkoblet, eller tilkoblet men ikke medlem her) og en
+skrivebeskyttet rolle er de to tilfellene — og ordene deres kommer aldri inn i
+arbeidsområdet. Etiketten `ai-review` er ikke betinget på denne måten: den har
+ingen forfatter, så den starter gjennomgangen i arbeidsområdet som allerede har
+repoet tilkoblet.
 
-## What to expect
+## Hva du kan forvente
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Ting               | Oppførsel                                                                |
+| ------------------ | ------------------------------------------------------------------------ |
+| Bekreftelse         | 👀 på en kommentar innen omtrent et minutt — søkerundeintervallet. Etiketten `ai-review` har ingen kommentar å reagere på |
+| Svar                | Publiseres som boten (appen), i sporet spørsmålet ble stilt i             |
+| Tilskrivning i området | Spørsmålet er ditt; agenten kjører på dine vegne, under områdets autonomiinnstillinger |
+| Gjennomganger       | Funn lander i gjennomgangsområdet; publisering til GitHub er manuell      |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Forsinkelsen på omtrent ett minutt er prisen for å ikke trenge noen innkommende
+nettverkstilgang i det hele tatt. Ingenting med søkerunden haster, og ingenting
+går tapt mens serveren er offline — en kommentar som kommer inn i nedetiden,
+fanges opp i neste søkerunde.
 
-## Troubleshooting
+## Feilsøking
 
-**Nothing happens for a comment that mentions the bot.**
+**Ingenting skjer for en kommentar som omtaler boten.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- Er appen **installert** på kontoen som eier repoet, og er repoet **koblet**
+  til et arbeidsområde? Et ukoblet repo hoppes over før noe registreres, så å
+  koble det til senere leverer fortsatt
+- Er GitHub-kontoen din koblet, og er du medlem med en skriverolle? Sjekk PR-en
+  for botens avvisningssvar — det sier hvilken av delene det gjelder
+- Fortsatt ingenting? Serverloggen navngir søkerunden og PR-en når noe
+  mislykkes; se etter `pr_conversation:` (søket) og
+  `github_pr_conversation:` (broen)
 
-**The label does not start a review.**
+**Etiketten starter ikke en gjennomgang.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+Den utløses én gang per PR. Hvis en gjennomgang allerede har kjørt, eller
+etiketten ble lagt til før serveren noen gang så PR-en (den første søkerunden
+registrerer etterslepet i stillhet i stedet for å storme det), omtaler du boten
+i stedet — `@myapp review` starter alltid én med mindre en gjennomgang allerede
+er i gang.
 
-**The bot's answer never arrived on GitHub.**
+**Botens svar kom aldri fram til GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Selve svaret går aldri tapt — det ligger i PR-ens gjennomgangsområde i Control
+Center. En publiseringsfeil (GitHub nede, endrede tillatelser) logges, og svaret
+prøves ikke på nytt; spør igjen i tråden hvis det er viktig.
 
-## Related guides
+## Relaterte guider
 
-- [Create the GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/nb-NO/handbok/slik-gjor-du/omrader/): the room all of this lands in
+- [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/): registreringen boten
+  fødes fra
+- [Bruk AI-drevet gjennomgang](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/): å lese funnene en
+  gjennomgang som ble startet av en omtale, gir
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/): å koble til din
+  egen GitHub-konto, som er det boten løser deg opp mot
+- [Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/): rommet alt dette lander i

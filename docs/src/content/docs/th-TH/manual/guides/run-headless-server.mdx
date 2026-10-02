@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
+description: รันไบนารีแบบไม่มีส่วนติดต่อของ cc_server หรืออิมเมจ Docker ของมัน จับคู่ไคลเอนต์เข้ากับมัน และกำหนดค่ามันด้วยแฟล็ก CLI และพื้นผิวตัวแปรสภาพแวดล้อมทั้งหมด
 dateModified: 2026-09-10
 slug: th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+รัน `cc_server` บนเครื่องที่เปิดค้างไว้ แล้วเชื่อมต่อกับมันจากเดสก์ท็อป
+เบราว์เซอร์ หรือโทรศัพท์ของคุณ เซิร์ฟเวอร์เป็นไบนารีเนทีฟที่เขียนด้วย Dart ล้วน —
+ไม่มีเอนจิน Flutter — จึงรันแบบไม่มีส่วนติดต่อได้บน macOS, Linux หรือ Windows
+มันเป็นเจ้าของฐานข้อมูล รันเอเจนต์ และเรียก API ภายนอกทุกครั้ง ส่วนไคลเอนต์
+เพียงเรนเดอร์เท่านั้น
 
-## Run in Docker (prebuilt images)
+## รันใน Docker (อิมเมจสำเร็จรูป)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+ทุกการเผยแพร่จะส่งสแตกแบบโฮสต์เองซึ่งมีอิมเมจ GHCR สี่ตัว — แบ็กเอนด์
+ไคลเอนต์แบบบางแบบสแตติกสองตัว และรีเลย์จับคู่ที่เป็นตัวเลือก — พร้อมอิมเมจ
+`cc-server-demo` แยกต่างหากสำหรับโฮสต์เดโมสาธารณะ การติดตั้งแบบโฮสต์เอง
+ไม่ต้องเช็กเอาต์ซอร์ส ตรึงแท็กเวอร์ชัน (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
+หรือใช้ `latest`
 
-| Image                                             | What it is                                   | Publishes        |
+| อิมเมจ                                            | สิ่งที่มันเป็น                                     | เผยแพร่พอร์ต     |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | แบ็กเอนด์: ฐานข้อมูล เอเจนต์ MCP เว็บฮุก        | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | ไคลเอนต์เว็บ (nginx แบบสแตติก)                | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA คู่หูบนโทรศัพท์ (nginx แบบสแตติก)       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | รีเลย์จับคู่ WebRTC (ตัวเลือก)          | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+สแตกทั้งหมดในรูปไฟล์ compose:
 
 ```yaml
 services:
@@ -51,91 +53,89 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+เรื่องที่ควรรู้ก่อนเปิดเผยสิ่งเหล่านี้พ้นลูปแบ็ก:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **อิมเมจ `cc-server` มาพร้อม `CC_SERVER_INSECURE=1`** (มันต้องผูกกับ `0.0.0.0`
+  เพื่อรับทราฟฟิกจากพอร์ตที่เผยแพร่) ซึ่งปลอดภัยเฉพาะเมื่ออยู่หลัง
+  รีเวิร์สพร็อกซีที่ยุติ TLS — Caddy, Traefik, nginx หรือ Cloudflare Tunnel —
+  บนเครือข่ายที่เชื่อถือได้ หากต้องการยุติ TLS ในโปรเซสเอง ให้เมานต์ใบรับรอง
+  และตั้ง `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (แล้วยกเลิก
+  `CC_SERVER_INSECURE`) ทุกอย่างแก้ทับได้ด้วย `docker run -e …` หรือบล็อก
+  `environment:` ใน compose
+- **`/data` คือสถานะเดียว** ฐานข้อมูล SQLite, ข้อมูลลับของอุปกรณ์ที่จับคู่,
+  โมเดลที่ดาวน์โหลด และเสียงการประชุม ล้วนอยู่ในวอลุ่ม — สำรองมันไว้ แล้ว
+  คอนเทนเนอร์จะกลายเป็นสิ่งที่ทิ้งได้
+- **จับคู่ไคลเอนต์จากภายในอิมเมจ** ก่อนการเชื่อมต่อครั้งแรก ซึ่งเทียบเท่ากับ
+  [ขั้นตอนที่ 3](#ขั้นตอนที่-3-จับคู่ไคลเอนต์ก่อนเริ่มครั้งแรก) ในคอนเทนเนอร์:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **อิมเมจไคลเอนต์ทั้งสองเป็นโฮสต์ nginx แบบสแตติก** — ไม่มีอะไรต้องตั้งค่า
+  ในขณะรัน ฟอร์มเชื่อมต่อของไคลเอนต์แต่ละตัวรับ URL ของเซิร์ฟเวอร์, ID อุปกรณ์
+  และคีย์จับคู่ของคุณ รีเลย์สัญญาณก็เช่นกัน ต้องการแค่พอร์ตของมัน
+  (แก้ทับได้ด้วย `SIGNALING_HOST` / `SIGNALING_PORT`) มันไม่มีสถานะ ไม่เก็บ
+  ข้อมูลลับ และเป็น**ทางเลือกสำรอง** — โทรศัพท์จะใช้ลูปแบ็ก, LAN, tailnet หรือ
+  เส้นทาง `wss://` ตรง ๆ เมื่อมีเส้นทางใดเข้าถึงได้ และจะถอยไปใช้รีเลย์เฉพาะ
+  เมื่อไม่มีเลย ข้ามมันได้หากไคลเอนต์ของคุณเข้าถึงเซิร์ฟเวอร์โดยตรงเสมอ
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+ส่วนที่เหลือของคู่มือนี้บิลด์เซิร์ฟเวอร์จากซอร์ส แฟล็กและพฤติกรรมที่มันกล่าวถึง
+เป็นชุดเดียวกับที่ตัวแปรสภาพแวดล้อมของอิมเมจป้อนเข้าไป
 
-## Prerequisites
+## สิ่งที่ต้องมีก่อน
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart) รีโปนี้ตรึง SDK ไว้ด้วย [fvm](https://fvm.app) จึงต้องนำหน้าทุกคำสั่งด้วย `fvm`
+- รีโปนี้ที่เช็กเอาต์ไว้แล้ว
+- ชุดเครื่องมือเนทีฟที่สคริปต์จัดเตรียมต้องการ — Rust/`cargo` รวมถึง `meson`, `ninja`, `pkg-config`, `git` และคอมไพเลอร์ C++ สคริปต์บิลด์แต่ละตัวจะระบุสิ่งที่มันหาไม่พบและวิธีติดตั้ง
+- โฮสต์ที่เข้าถึงได้: ลูปแบ็กสำหรับใช้ในเครื่อง หรือที่อยู่ LAN/สาธารณะที่มี TLS สำหรับไคลเอนต์ระยะไกล
 
-## Step 1: Stage the native libraries
+## ขั้นตอนที่ 1: จัดเตรียมไลบรารีเนทีฟ
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+ไลบรารีเนทีฟเป็นสิ่ง**จำเป็น** — ไม่มีโหมดลดความสามารถ บิลด์มันจากรากรีโป
+ก่อนสิ่งอื่นใด:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+คำสั่งนี้บิลด์ `rift`, `fff`, tree-sitter พร้อมไวยากรณ์ของมัน, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` และเนทีฟ SAML ลงใน `build/natives/`
+ฮุกบิลด์ของ `cc_server` จะส่งสิ่งที่จัดเตรียมไว้ตรงนั้นซ้ำเข้าไปในบันเดิล
+การข้ามขั้นตอนนี้จึงทำให้บิลด์ล้มเหลวไปเลย หรือ — ด้วยช่องทางเฉพาะด้านล่าง —
+สร้างไบนารีที่การตรวจสอบก่อนบูตปฏิเสธที่จะเริ่มและระบุชื่อไลบรารีที่ขาดหาย
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[ช่องทางเฉพาะสำหรับการคอมไพล์เท่านั้น]
+การสร้างไฟล์ `.cc_natives_allow_missing` เปล่า ๆ ที่รากรีโปจะลดระดับความล้มเหลว
+ของบิลด์เพราะไลบรารีเนทีฟขาดหายให้กลายเป็นคำเตือน มันมีไว้สำหรับตรวจไวยากรณ์
+ของโคลนใหม่ เซิร์ฟเวอร์ที่บิลด์ด้วยวิธีนี้จะบูตไม่ได้ มันต้องเป็น**ไฟล์** —
+ตัวรันฮุกบิลด์ไม่ส่งต่อสภาพแวดล้อมของผู้เรียก จึงไม่สนใจตัวแปรสภาพแวดล้อม
 :::
 
-## Step 2: Build the binary
+## ขั้นตอนที่ 2: บิลด์ไบนารี
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+บันเดิลจะพา `libsqlite3` และเนทีฟที่จัดเตรียมไว้มาพร้อมกับไบนารี — ไม่ต้องใช้
+SQLite ของระบบและไม่ต้องใช้เอนจิน Flutter ไฟล์ปฏิบัติการจะไปอยู่ที่
+`./build/cli/<os_arch>/bundle/bin/cc_server`
 
-## Step 3: Pair a client before first start
+## ขั้นตอนที่ 3: จับคู่ไคลเอนต์ก่อนเริ่มครั้งแรก
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+ไดเรกทอรีข้อมูลใหม่ยังไม่มีอุปกรณ์ที่จับคู่และไม่มีคีย์ที่แชร์ล่วงหน้า จึงยัง
+ตอบพรอมป์ต์คีย์จับคู่ของไคลเอนต์ไม่ได้ สร้างขึ้นมาด้วยคำสั่งย่อย `pair`
+มันเขียน `global.db` และ `secrets.json` โดยตรง เซิร์ฟเวอร์ที่ให้บริการ
+ไดเรกทอรีข้อมูลนั้นอยู่แล้วจะรับอุปกรณ์ใหม่โดยไม่ต้องรีสตาร์ต:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+มันพิมพ์ค่าสามค่าสำหรับวางลงในฟอร์มเชื่อมต่อของไคลเอนต์:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +144,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+แฟล็กที่มีประโยชน์: `--device` (ค่าเริ่มต้น `web-client`; ID ยังเลือกได้ว่า
+ระดับของอุปกรณ์เป็นอะไร — `desktop`, `ios`, `android` นอกนั้นเป็นไคลเอนต์เว็บ),
+`--label` (ค่าเริ่มต้นคือชื่อแพลตฟอร์มบวกชื่อโฮสต์ของเครื่องนี้), `--host`
+(โฮสต์ที่จะพิมพ์ใน URL เนื่องจากเครื่องอื่นเข้าถึงลูปแบ็กไม่ได้) และ
+`--client-url` การรัน `pair` ซ้ำจะหมุนคีย์ของอุปกรณ์นั้นและตัดเซสชันที่ใช้งานอยู่
+ทิ้ง การจับคู่ไม่เคยสร้างเวิร์กสเปซ ไคลเอนต์ที่เชื่อมต่อจะตั้งชื่อและสร้าง
+เวิร์กสเปซแรกผ่านขั้นตอนเริ่มต้นใช้งาน
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+เมื่อใช้ `--client-url` มันยังพิมพ์ QR ที่สแกนได้จากเทอร์มินัล ซึ่งเปิดไคลเอนต์เว็บ
+ที่กรอกข้อมูลไว้แล้ว:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/).
+:::caution[QR นี้ไม่ใช่ QR ของโทรศัพท์]
+`--client-url` สร้างลิงก์สำหรับ**ไคลเอนต์เว็บ** — URL ของเซิร์ฟเวอร์, ID อุปกรณ์
+และคีย์อยู่ในแฟรกเมนต์ของ URL แอป **Remote** บนโทรศัพท์คาดหวังเพย์โหลดที่
+ต่างออกไป (ตัวบอกการเชื่อมต่อฉบับเต็มของเซิร์ฟเวอร์พร้อมเวลาหมดอายุ) ซึ่งสร้างจาก
+**การตั้งค่า → คุณ → อุปกรณ์ของคุณ** ในไคลเอนต์ที่กำลังรัน ทั้งสองใช้แทนกันไม่ได้
+ดู[จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+ข้อมูลรับรองที่สร้างโดย `cc_server pair` **ไม่มีเวลาหมดอายุ** ส่วนที่สร้างในแอป
+จะหมดอายุหลัง 30 วันเสมอ เพิกถอนอุปกรณ์ที่สร้างจาก CLI ได้จาก
+**การตั้งค่า → คุณ → อุปกรณ์ของคุณ** เมื่อใช้เสร็จแล้ว
 
-## Step 4: Start the server
+## ขั้นตอนที่ 4: เริ่มเซิร์ฟเวอร์
 
-On loopback — the default and all you need for a client on the same machine:
+บนลูปแบ็ก — ค่าเริ่มต้นและเพียงพอสำหรับไคลเอนต์บนเครื่องเดียวกัน:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+หากต้องการให้เครื่องอื่นเข้าถึง ให้ผูกกับทุกอินเทอร์เฟซ การผูกกับที่อยู่ที่ไม่ใช่
+ลูปแบ็กโดยไม่มี TLS จะถูก**ปฏิเสธตอนเริ่มระบบ**
+(`Refusing to bind non-loopback address … without TLS`) จึงต้องมีใบรับรอง:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +190,40 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+หรือยุติ TLS ที่รีเวิร์สพร็อกซีบนเครือข่ายส่วนตัวที่เชื่อถือได้ แล้วเลือกผูกแบบ
+ข้อความล้วนไว้ข้างหลัง:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` จะถูกเพิกเฉยเมื่อตั้งทั้ง `--tls-cert` และ `--tls-key` — TLS
+ชนะเสมอ เซิร์ฟเวอร์ประกาศสถานะข้อความล้วนเป็น `insecure: true` ใน
+`GET /healthz` และไคลเอนต์จะติดป้ายการเชื่อมต่อแบบนั้นว่าไม่ปลอดภัย
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+เซิร์ฟเวอร์จะรันจนถึง `SIGINT`/`SIGTERM` แล้วปิดตัวลงอย่างสะอาด
 
-## Step 5: Connect a client
+## ขั้นตอนที่ 5: เชื่อมต่อไคลเอนต์
 
-Point a client at the server URL and pairing key from step 3:
+ชี้ไคลเอนต์ไปยัง URL ของเซิร์ฟเวอร์และคีย์จับคู่จากขั้นตอนที่ 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/).
+- **แอปเดสก์ท็อป**: บนหน้าจอเปิดครั้งแรก (**Control Center ควรรันอย่างไร?**) ให้กรอกช่องเชื่อมต่อแทน **รันในแอปนี้** หรือเพิ่มเซิร์ฟเวอร์ภายหลังที่ **การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ** ดู[เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
+- **ไคลเอนต์เว็บ**: เปิด [app.usectrl.dev](https://app.usectrl.dev) (หรือสำเนาบิลด์เว็บของคุณเอง) แล้วป้อน URL ของเซิร์ฟเวอร์, ID อุปกรณ์ และคีย์จับคู่
+- **โทรศัพท์**: จับคู่แอป **Remote** จากไคลเอนต์ที่กำลังรัน — ดู[จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server ไม่ให้บริการเว็บบันเดิล]
+`cc_server` แบบสแตนด์อโลนไม่เคยเมานต์เว็บรูท `GET /` จึงคืนค่า 404 ไคลเอนต์เว็บ
+ถูกโฮสต์แยกต่างหาก — ใช้ `app.usectrl.dev` หรือโฮสต์บิลด์เว็บเองบนโฮสต์ HTTPS
+แบบสแตติกใดก็ได้ (อิมเมจ `cc-webapp` ข้างต้นคือสิ่งนั้นพอดี) ออริจินของเบราว์เซอร์
+ที่ไม่ใช่ลูปแบ็กต้องอยู่ใน `--allowed-origins` ไม่อย่างนั้นการอัปเกรด WebSocket
+ไปยัง `/rpc` จะถูกปฏิเสธ รายการเริ่มต้นคือ `https://app.usectrl.dev` และ
+`localhost` / `127.0.0.1` ได้รับอนุญาตเสมอ
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## ขั้นตอนที่ 6: เชื่อมต่อ Google Calendar (ตัวเลือก)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+หากต้องการซิงค์ปฏิทินของเวิร์กสเปซโดยไม่ต้องมี GUI ให้ใช้ขั้นตอน device code:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +231,62 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/).
+มันพิมพ์โค้ดและ URL สำหรับอนุมัติบนอุปกรณ์อื่น เก็บรีเฟรชโทเค็นไว้ฝั่งเซิร์ฟเวอร์
+แล้วออก บิลด์จากซอร์สไม่ได้พาไคลเอนต์ Google มาให้ จึงต้องใช้ตัวแปรสภาพแวดล้อม
+id และ secret — ไม่มีแฟล็ก `--google-client-id` ดู[เชื่อมต่อ Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
 
-## Configuration
+## การตั้งค่า
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/).
+แฟล็กที่ใช้ข้างต้นคือชุดที่การตั้งค่าครั้งแรกต้องใช้ พื้นผิวฉบับเต็ม — แฟล็กและ
+ตัวแปรสภาพแวดล้อม 23 คู่ คำสั่งย่อยสี่คำสั่ง และเลย์เอาต์ของไดเรกทอรีข้อมูล —
+อยู่ใน[เอกสารอ้างอิง CLI ของ `cc_server`](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/)
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[แฟล็กที่ไม่รู้จักจะถูกเพิกเฉยอย่างเงียบ ๆ]
+ตัวแยกวิเคราะห์อาร์กิวเมนต์เขียนขึ้นเองและข้ามสิ่งที่ไม่รู้จัก พิมพ์ผิด
+(`--tls-key-file`, `--bindany`) จึงไม่เกิดข้อผิดพลาด — เซิร์ฟเวอร์แค่เริ่มด้วย
+ค่าเริ่มต้น ให้ตรวจบรรทัดบันทึกตอนเริ่มระบบเมื่อแฟล็กดูเหมือนไม่มีผล
 :::
 
-The four you are most likely to need:
+สี่ตัวที่คุณน่าจะต้องใช้มากที่สุด:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| แฟล็ก          | ค่าเริ่มต้น                            | ความหมาย                                                                                          |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | ไดเรกทอรีข้อมูลแอปพลิเคชันต่อผู้ใช้ของระบบปฏิบัติการ | ฐานข้อมูล ข้อมูลลับ โมเดล และสื่อที่แคชไว้                                                      |
+| `--port`       | `9030`                               | พอร์ต TCP (`0` = ชั่วคราว)                                                                       |
+| `--bind`       | `loopback`                           | `loopback` หรือ `any` สำหรับทุกอินเทอร์เฟซ (ต้องมี TLS หรือ `--insecure`)                             |
+| `--public-url` | อนุมานจากค่าที่ผูก                | URL ของ RPC ที่ประกาศให้ไคลเอนต์ที่จับคู่ไว้ **ตั้งค่านี้อย่างชัดเจนเมื่ออยู่หลังพร็อกซี, NAT หรือทันเนล** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+ไดเรกทอรีข้อมูลเริ่มต้นคือ `~/Library/Application Support/control-center` บน macOS,
+`%APPDATA%\control-center` บน Windows และ `$XDG_DATA_HOME/control-center`
+(หรือ `~/.local/share/control-center`) ที่อื่น ๆ จะใช้ `.cc_server` สัมพัทธ์กับ
+cwd ก็เฉพาะเมื่อหาไดเรกทอรีโฮมหรือไดเรกทอรีข้อมูลแอปไม่เจอเท่านั้น
 
-## What the server serves
+## สิ่งที่เซิร์ฟเวอร์ให้บริการ
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` คือพื้นผิวผลิตภัณฑ์ทั้งหมด ไม่ใช่ส่วนย่อย: เส้นทางข้อมูล repo-RPC
+และการสมัครรับข้อมูล, ปลายทางเครื่องมือ MCP ที่ `POST /mcp` และ `GET /sse`
+บนพอร์ตเดียวกัน, เว็บฮุกขาเข้า, พร็อกซีสื่อและฟอนต์, คอลแบ็กการลงชื่อเข้าใช้
+ครั้งเดียว, โปรโตคอลลีสของฟลีต, การดึง RSS ฝั่งเซิร์ฟเวอร์ตามกำหนดทุก 30 นาที
+และการค้นหาแบบเวกเตอร์ (ส่วนขยาย `sqlite_vector` ลงทะเบียนเป็นส่วนขยายอัตโนมัติ
+ระดับโปรเซส โดยลดลงเป็นการค้นหาแบบข้อความเต็มเฉพาะที่ส่วนขยายใช้ไม่ได้)
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+ดิสแพตเชอร์**ไม่มีสถานะ**: ไม่มีการผูกเวิร์กสเปซต่อเซสชัน ทุกการเรียกที่อยู่ใน
+ขอบเขตเวิร์กสเปซจะพา `workspace_id` ของตัวเองมา และการเข้าถึงตัดสินจาก
+สมาชิกภาพเวิร์กสเปซและบทบาทของผู้เรียก — ไม่ใช่จากการถือคีย์จับคู่
 
-Two things to know before you expose the port beyond loopback:
+สองเรื่องที่ควรรู้ก่อนเปิดพอร์ตพ้นลูปแบ็ก:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP ปิดกั้นแบบล้มเหลวปลอดภัยนอกโฮสต์** พื้นผิว MCP ที่ไม่มีโทเค็นจะตอบเฉพาะลูปแบ็ก การผูกกับ `any` ไม่ได้ขยายขอบเขตนั้น — คำขอจากนอกโฮสต์จะถูกปฏิเสธด้วย "MCP requires a bearer token to answer non-loopback clients" จนกว่าจะตั้งค่าไว้ (`mcp.setToken` หรือ **การตั้งค่า → เซิร์ฟเวอร์ → เซิร์ฟเวอร์ MCP**)
+- **`GET /healthz` ไม่ต้องยืนยันตัวตนโดยการออกแบบ** เปิด CORS แบบไวลด์การ์ด และเปิดเผย id, ชื่อ, ลายนิ้วมือตัวตน และเวอร์ชันบิลด์ของเซิร์ฟเวอร์ ไคลเอนต์ต้องใช้ลายนิ้วมือเพื่อปักหมุดเซิร์ฟเวอร์ จึงเป็นเจตนา — แต่มันหมายความว่า `cc_server` ใดก็ตามที่เข้าถึงได้จะเปิดเผยข้อมูลเท่านั้นให้ใครก็ตามที่ถาม
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
-- [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
-- [Run a fleet worker](/th-TH/คู่มือ/วิธีทำ/รันวอร์กเกอร์ของฟลีต/)
-- [Connect a Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
+- [เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
+- [จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
+- [รันวอร์กเกอร์ของฟลีต](/th-TH/คู่มือ/วิธีทำ/รันวอร์กเกอร์ของฟลีต/)
+- [เชื่อมต่อ Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)
-- [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/)
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)
+- [ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/)

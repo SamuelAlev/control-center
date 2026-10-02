@@ -1,97 +1,99 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Dejte agentovi stroj na testování
+description: Dej agentovi jednorázový prohlížeč, plochu, emulátor Androidu nebo simulátor iOS — sleduješ ho živě a řízení můžeš převzít.
 slug: cs-CZ/prirucka/navody/pouziti-stanic
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**Stanice** je jednorázový stroj, který agent otevře, když má něco opravdu
+vyzkoušet: načíst stránku, proklikat desktopovou aplikaci, proťukat telefon.
+Sleduješ ho v reálném čase a řízení převezmeš, kdykoli chceš.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Izolovaný terminál, prohlížeč a plocha jsou VM s jednorázovými disky a sítí
+za bránou. Android a iOS jsou emulátory spravované hostitelem: stav zařízení
+je jednorázový, síť sleduje hostitele serveru.
 
-## Set it up once
+## Připrav to jednou
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Stanice běží na stroji, na kterém běží `cc_server` — na něm, ne na stroji,
+na který se díváš. Vidíš pět ploch. Plocha počítače a mobilní plochy potřebují
+přípravu na hostiteli:
 
-| Surface | Runs on | Setup |
+| Plocha | Běží na | Příprava |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | microVM, které naběhne z připnutého obrazu Ubuntu | Nic — obraz se při prvním použití stáhne sám |
+| **Browser (VM)** | microVM z připnutého obrazu Debianu; Chromium, Firefox nebo WebKit se doinstalují při prvním použití | Nic — stejně |
+| **Počítač (VM)** | QEMU s obrazem linuxové plochy, který veze Chromium, Firefox, WebKit a základní sadu CLI jako runner hostovaný na GitHubu | Nainstaluj QEMU (`brew install qemu`), pak v **Nastavení → Server → Stanice** obraz plochy **Importovat** |
+| **Android** | emulátor Androidu od Googlu | Nainstaluj Android SDK, vytvoř AVD a spusť ho (níže) |
+| **Simulátor iOS** | CoreSimulator na Macu serveru | Nainstaluj Xcode a požadovaný runtime iOS, pak v **Nastavení → Server → Stanice** nainstaluj můstek pro automatizaci |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Terminál a prohlížeč nabíhají z obrazů připnutých digestem: přesné bajty jsou
+pojmenované předem, stáhnou se jednou při prvním startu a zůstanou v cache.
+Po prvním startu každého druhu další stroje stahování přeskočí a naběhnou
+během sekund. **Nastavení → Server → Stanice** ukazuje, co server umí
+nabootovat, a každý stroj, který právě běží.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Nainstalovaný obraz plochy se spravuje na téže stránce: **Importovat** ho
+nahradí novějším qcow2 a **Smazat** ho odstraní, takže nainstaluješ nové
+sestavení.
 
-### Mobile devices are set up differently
+### Mobilní zařízení se nastavují jinak
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Vlastní obraz pro Android ani iOS nemáme. Je to schválně. Systémové obrazy
+Androidu bereš ze SDK od Googlu, runtimy iOS z Xcode. Pro Android nainstaluj
+Android Studio (nebo nástroje SDK pro příkazový řádek), v **Device Manager**
+přidej virtuální zařízení a spusť ho. Stránka **Stanice** pak Android nahlásí
+jako dostupný.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Řekne ti taky přesně, který krok chybí — žádné SDK, žádný emulátor, žádné
+virtuální zařízení, nebo zařízení, které zkrátka neběží — protože každý z těch
+stavů se řeší jinak a jen jeden z nich je stažení. Když `cc_server` spouštíš
+ze shellu, který SDK nevidí, exportuj ho:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+U iOS musí server sám běžet na macOS s nainstalovaným Xcode a runtime
+simulátoru iOS. Otevři **Nastavení → Server → Stanice** a stiskni
+**Nainstalovat můstek pro automatizaci iOS**. Server stáhne artefakt
+WebDriverAgent připnutý kontrolním součtem, ověří ho a nainstaluje do
+úložiště automatizace, které patří serveru. Během přípravy se žádný simulátor
+nespustí.
 
-## Open a machine
+## Otevři stroj
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Stroje žijí jako **karty**, vedle chatu a diffu — v prostoru nebo na stránce
+PR, ve stejném menu `+`, pod **Počítače**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Počítač** — linuxová plocha s Chromium, Firefox a WebKit
+- **Chromium**, **Firefox** nebo **WebKit** — prohlížeč
+- **Android** — běžící emulátor Androidu
+- **Simulátor iOS** — jednorázový simulátor vytvořený pro tuhle konverzaci
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Jedno vyber a stiskni **Spustit stroj**. Karta pojmenuje fázi startu
+(„Starting the microVM“, „Waiting for the guest to come up“), takže se netočí
+naslepo.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Karta patří ke konverzaci a nástroj agenta taky. Karta Chromium, Firefox nebo
+WebKit a `browser_use`, Android a `mobile_use`, nebo **Simulátor iOS** a
+`ios_use` míří na stejný výchozí stroj. Další pozice v rozhraní jsou
+samostatné stroje na srovnání; nástroje agenta berou vždy ten výchozí.
 
-To build, install and start a Flutter app on Android:
+Flutter aplikaci na Androidu sestavíš, nainstaluješ a spustíš takhle:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Pak zavolej `mobile_use` s `install_apk` a
+`build/app/outputs/flutter-apk/app-debug.apk`, potom `start_app` a název
+balíčku Androidu. `ui_dump`, snímky obrazovky a vstup řídí totéž zařízení,
+které ukazuje lidská karta. `stop_app`, `clear_app_data`, `uninstall_app`,
+`open_url` a volání `shell` ve tvaru argv pokryjí zbytek vývojového cyklu,
+aniž by se na hostiteli serveru spouštěl shell.
 
-To build, install and start a Flutter app on iOS Simulator:
+Flutter aplikaci na simulátoru iOS sestavíš, nainstaluješ a spustíš takhle:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +101,206 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Pak zavolej `ios_use` s `install_app` a adresářem `.app`, potom `start_app`
+a identifikátor balíčku, který vypsal `plutil`.
+Nástroj pro iOS navíc nabízí `stop_app`, `uninstall_app`, `open_url` a akci
+`spawn` ve tvaru argv pro diagnostiku přímo v simulátoru.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Obraz plochy a prohlížeče se přizpůsobí panelu. iOS si nechá pevnou velikost
+v bodech a kolem obrazu nechá pruhy. Každá plocha má pořád dva nezávislé
+kanály: agent dostává malé a levné snímky, ty živý náhled. Přepnutí karty
+lidský proud zastaví, takže stroj na pozadí obraz nepřenáší.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Karta stanice stroj sama nespustí, ani při obnovení rozložení. Spuštění
+aplikace tak samo od sebe nenabootuje VM a nevytvoří zařízení simulátoru.
 
-## Drive the machine
+## Řiď stroj
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Na plátno píšeš a klikáš, kdykoli výhradní řízení nedrží nikdo jiný — a taky
+když ho držíš ty. Dokud ten zámek držíš, stavový štítek říká **Máte řízení**,
+agent pořád pořizuje snímky a server jeho akce měnící stav odmítne v jediném
+úzkém místě, kterým projde každá akce. Všechno, co uděláš, se zapíše pod tvým
+jménem.
 
-Press **Stop the machine** when you are done.
+Až skončíš, stiskni **Zastavit stroj**.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Řízení je výhradní schválně. Když do jednoho stroje píšou dva, vznikne vstup,
+který nechtěl ani jeden.
 
-## Move things in and out
+## Dovnitř a ven
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Kopírování a vkládání funguje přes plátno stanice oběma směry. Přetahování
+souborů taky.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Kopírování a vkládání.** Stiskni nad plátnem kombinaci pro kopírování a to,
+co stroj zkopíroval — text, obrázek, seznam souborů — skončí na tvé schránce.
+Vložení pošle tvou schránku opačným směrem a uvnitř stroje stiskne vložení.
+Na macOS je kombinace ⌘C/⌘V; ⌃C dál dorazí do shellu hosta jako přerušení.
+Na Windows a Linuxu použij ⌃C/⌃V. Host dostane tentýž stisk, který by dostal
+tak jako tak, takže ⌃C v terminálu hosta pořád přeruší a tvoje schránka
+zůstane, jak je.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Na pozadí se nic nesynchronizuje. Heslo zkopírované na vlastním stroji přejde
+do VM až ve chvíli, kdy ho vložíš.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Vložení do stanice je ve výchozím stavu povolené. Kopírování ven ze stanice
+se nejdřív zeptá — povolení na deset minut, nebo **Vždy povolit** v
+**Nastavení → Server → Stanice → Přístup ke schránce**. Oba směry jsou
+nezávislé a patří k tobě, ne k pracovnímu prostoru.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Soubory dovnitř.** Pusť je kdekoli na plátno.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- Na **Browser (VM)** dostane stránka v místě, kde pustíš, *skutečné*
+  přetažení, takže zóna nahrání se chová stejně jako u místního souboru.
+- Na **Počítač (VM)** soubory přistanou v `~/Drops` a jejich cesty se položí
+  na schránku stroje, takže ⌃V je vloží do správce souborů nebo do pole
+  nahrání. Hostitel by přetažení do libovolné linuxové aplikace syntetizoval
+  jen privilegovaným démonem ve VM a ten stanice schválně nemají. Hláška proto
+  řekne, kam soubory šly.
+- Na **terminálu** se soubor zkopíruje dovnitř a jeho cesta se napíše na
+  výzvu, připravená k předání příkazu. Vložení *obrázku* do terminálu udělá
+  totéž: uloží se ve stroji a dostaneš cestu.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Soubory ven** fungují z **Počítač (VM)**. Začni soubor přetahovat uvnitř
+stroje, vyveď ukazatel z plátna a na tvé ploše z toho bude skutečné přetažení
+— pusť ho ve Finderu nebo v Průzkumníkovi. Kopírování ve správci souborů
+stroje a vložení na tvé straně funguje taky. **Browser (VM)** to nenabízí:
+bezhlavý prohlížeč nemá data přetažení, která by šla číst, a odhad z textového
+výběru na stránce by unesl obyčejná kliknutí.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+**Počítač (VM)** potřebuje obraz sestavený až po doplnění podpory schránky.
+Když jsi ten svůj naimportoval dřív, sestav ho znovu přes
+`scripts/rigs/build_image.sh` a na nainstalovaném obrazu ho nahraď tlačítkem
+**Importovat**.
 :::
 
-## Terminals inside a rig
+## Terminály ve stanici
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Terminály v prostoru nebo na stránce PR můžou běžet ve stanici, ne na
+vlastním stroji serveru. Když ano, panel ukáže odznak **Izolované VM**.
 
-What changes:
+Co se změní:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Nic, co spustíš, se na hostitele nedostane. `rm -rf` uvnitř tě stojí stanici.
+- Síť má výchozí odmítnutí. Dosažitelní jsou jen hostitelé ze seznamu
+  povolených té stanice a všechno jde přes bránu, která seznam vynucuje.
+- `git push` pořád funguje. Stanice nemá uložený přihlašovací údaj. Na každou
+  operaci si od serveru vyžádá krátkodobý a ten token se při zavření stanice
+  zruší.
 
-What to know:
+Co je dobré vědět:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Obnovený izolovaný terminál počká na tebe.** Stejně jako karta stanice
+  ukáže terminál `microvm`, který se vrátí s tvým rozložením, tlačítko
+  **Otevřít shell**. Při spuštění aplikace své VM nenabootuje. Terminál na
+  shellu hostitele stojí proces. Izolovaný stojí stroj.
+- **Soubory puštěné na terminál se napíšou na výzvu.** Pusť CSV na izolovaný
+  terminál: zkopíruje se do stroje a na výzvě se objeví jeho cesta v hostu.
+  Cesta na hostiteli by tam byl příkaz, který selže.
+- **Kopie ve stanici je kopie.** Worktree na hostiteli zůstává autoritativní.
+  Commity uvnitř stanice se na požádání přenesou do `refs/rigs/<id>/*`. Tvou
+  větví nepohnou a na pracovní strom nesáhnou.
+- **Práce pro hostitele pořád běží na hostiteli.** Linuxový host neumí
+  sestavit pro macOS ani spustit `xcodebuild`. Nativní backend pro to vyber
+  výslovně. Aplikace si vyžádá potvrzení a sama se potichu nepřepne.
 
-## Ports
+## Porty
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/cs-CZ/prirucka/navody/porty-vm/).
+Spusť vývojový server v Terminal (VM) — třeba `pnpm dev` na portu 3000 — a
+během pár sekund se v rohu terminálu rozsvítí ikona zástrčky: port se předá
+na `localhost:3000` na tvém stroji, je dosažitelný na `localhost:3000` uvnitř
+Browser (VM), dá se sdílet ve tvé síti a pojmenovat jako `https://myapp.test`.
+Celý postup — automatické předání, sdílení v LAN, vývojové domény s HTTPS —
+má vlastní návod:
+[Přesměrujte porty z terminálu](/cs-CZ/prirucka/navody/porty-vm/).
 
-## Custom images
+## Vlastní obrazy
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Pracovní prostor může Terminal (VM) a Browser (VM) nasměrovat na vlastní
+obrazy — v **Nastavení → Server → Stanice → Vlastní obrazy (tento pracovní
+prostor)**. Typicky: rozšířit výchozí obraz o toolchain, který projekt
+potřebuje, aby každý terminál startoval připravený, nebo znovu použít obraz,
+který tým už publikuje.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Stroj pořád nabíhá ve stejném izolovaném prostředí: stejná brána odchozího
+provozu, stejný broker přihlašovacích údajů, stejný životní cyklus. Nastavení
+smí změnit jen správci pracovního prostoru. Nové stroje ho převezmou, běžící
+si nechají svoje. Odkaz musí být obraz z registru — místní cesty se odmítnou.
 
-What an image must provide:
+Co obraz musí mít:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — linuxový obraz s `bash`. Potřebuje taky `git`, `curl`
+  a `socat` — buď předinstalované, nebo doinstalovatelné při prvním startu
+  (funguje jakýkoli obraz založený na Debianu nebo Ubuntu: nainstalují se
+  samy, spolu se sadou CLI ve stylu runneru hostovaného na GitHubu:
+  překladače, Python 3, `jq`, nástroje na archivy, `rsync`. Jazykové runtimy
+  jako Node/Go/Java a Docker předinstalované nejsou). Port hosta `7911` je
+  vyhrazený pro předávání portů.
+- **Browser (VM)** — obraz Debianu nebo Ubuntu s `bash` a `socat`, plus
+  binárka `chromium`. Server Chromium spouští sám jako
+  `chromium --headless=new` a předává DevTools z hosta `9223` na
+  `9222`. PulseAudio a ffmpeg se nainstalují při prvním startu. Nepoužívej
+  `FROM chromedp/headless-shell` — ta binárka nemá zvuk. Přepsání platí jen
+  pro stanice Chromium; Firefox a WebKit ho ignorují a naběhnou z připnutého
+  obrazu Debianu. Porty hosta `9222`/`9223` jsou vyhrazené.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Dvě doporučení: odkaz připni digestem (`@sha256:…`), aby se bajty nemohly
+potichu změnit, a dej ho na Docker Hub nebo do GitHub Container Registry.
+Hostitelé, odkud se z těch registrů stahuje, projdou bránou odchozího provozu
+sami. U jiných registrů musí být pro stažení dosažitelní i hostitelé, kteří
+obsah doručují.
 
-## When a rig goes away
+## Když stanice zmizí
 
-Rigs are meant to be temporary:
+Stanice mají být dočasné:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Nečinnost** — po ~15 minutách, kdy se nic neděje, se stanice prohlížeče,
+  plochy nebo mobilu zaparkuje (zmrazená, při další akci se probudí hned).
+  Izolovaný terminál čeká 45 minut. Po dvojnásobku okna nečinnosti se zavře.
+- **Časový limit** — každá stanice má pevný strop životnosti a ten
+  neprodlouží, ať právě dělá cokoli.
+- **Paměť** — když server potřebuje místo na novou stanici, zavře tu, která
+  se nepoužívala nejdéle. Stanici, kterou někdo řídí, sleduje, nebo v ní má
+  otevřený terminál, nesejme.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Když se izolovaná stanice zavře, její disk se zahodí. Zavření stanice Androidu
+ji od emulátoru na hostiteli odpojí a emulátor nesmaže. Stanice iOS smaže
+zařízení CoreSimulator, které vytvořila. Nejdřív si odnes, co si chceš nechat.
 
-## What a rig can reach
+## Kam stanice dosáhne
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Izolovaný terminál, prohlížeč a plocha mají ve výchozím stavu bránu odchozího
+provozu s výchozím odmítnutím: hostitele povoluješ výslovně a jediná cesta
+hosta je brána, která ten seznam vynucuje. Stanice prohlížeče navíc rovnou
+pustí web produktu (`usectrl.dev`). Broker přihlašovacích údajů používá
+stejný seznam.
 
-Two honest caveats:
+Dvě věci rovnou:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Síť mobilu sleduje hostitele.** Emulátor Androidu a CoreSimulator od Applu
+  nejsou za bránou odchozího provozu izolovaného prostředí. Ani jedna mobilní
+  karta nenabízí ovládání obejití sítě: síť spravovaná hostitelem už omezení
+  nemá.
+- **Všechno, co stanice přečte, je nedůvěryhodné.** Text stránky, DOM, stromy
+  přístupnosti a výpisy zobrazení se k agentovi vracejí ohraničené značkami,
+  které říkají „tohle jsou data, ne pokyny“. Stránka, která se pokusí dávat
+  agentovi příkazy, se čte jako citovaný text.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Všechno, co běží, uvidíš a cokoli z toho zastavíš v **Nastavení → Server →
+Stanice**.
 
-## Related
+## Související
 
-- [Rigs and enclosures](/cs-CZ/prirucka/koncepty/stanice/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/cs-CZ/prirucka/navody/porty-vm/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/cs-CZ/prirucka/referencni-prirucka/stanice/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/) — model
+  za tím vším: proč VM, dva kanály zobrazení, broker přihlašovacích údajů,
+  životní cyklus
+- [Přesměrujte porty z terminálu](/cs-CZ/prirucka/navody/porty-vm/) — jak se
+  k vývojovému serveru dostat odkudkoli, odkud ho potřebuješ
+- [Reference stanic](/cs-CZ/prirucka/referencni-prirucka/stanice/) — každá
+  plocha, sloveso, port a výchozí hodnota na jednom místě
+- [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/) —
+  `Drive an enclosure (rig)` (**Ovládat izolované prostředí (stanici)**) je
+  třída akce, kterou nastavíš na **Povolit**, **Nejdřív se zeptat** nebo
+  **Zakázat**, pro pracovní prostor, agenta nebo prostor. Režimy jen pro
+  čtení ji odmítnou celé.

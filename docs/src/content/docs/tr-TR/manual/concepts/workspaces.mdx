@@ -1,148 +1,150 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Çalışma alanları ve yalıtım
+description: Bir çalışma alanının neden katı bir kiracı sınırı olduğu, veritabanı bölünmesinin bu sınırı nasıl yapısal kıldığı ve onu bilinçli olarak neyin aştığı.
 slug: tr-TR/kilavuz/kavramlar/calisma-alanlari
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Çalışma alanı nedir?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Çalışma alanı, Control Center'daki en üst düzey yalıtım kiracısıdır. Ajanları, depoları, alanları, biletleri, belleği, pipeline'ları ve üyeleri sınırları belirli bir bağlama toplar. Bir çalışma alanının içinde olan her şey orada kalır.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Tipik bir çalışma alanı bir projeye ya da bir kod tabanına karşılık gelir. "api-service", "frontend-v2" ve "infrastructure" için ayrı çalışma alanlarınız olabilir.
 
-## Workspace-scoped data
+## Çalışma alanı kapsamlı veriler
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Bir çalışma alanının satırları, o çalışma alanının kendi SQLite dosyasında, `<dataDir>/<workspaceId>/workspace.db` yolunda yaşar. Her çalışma alanı çıplak bir dosya yerine bir dizin alır; çünkü bir çalışma alanı bir veritabanından fazlasını biriktirir — konuşma başına worktree'ler, ajan ve beceri dosyaları, sohbet botu kimlik bilgileri — ve ona bir klasör vermek, tüm bunların birlikte yaşaması ve birlikte silinmesi anlamına gelir.
 
-| Entity                                              | Scope                                        |
+| Varlık                                              | Kapsam                                        |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Ajanlar                                             | Tam olarak bir çalışma alanına aittir        |
+| Depolar                                             | Bir çalışma alanına kaydedilir (aşağıya bakın) |
+| Alanlar, konuşmalar ve mesajlar                     | Çalışma alanı kapsamlı                       |
+| Biletler, projeler, planlar, orkestrasyonlar        | Çalışma alanı kapsamlı                       |
+| Bellek olguları, politikalar, bilgi alanları, erişim izinleri | Çalışma alanı kapsamlı             |
+| Pipeline çalıştırmaları, şablonlar, tetikleyiciler  | Çalışma alanı kapsamlı                       |
+| Pull request durumu, inceleme alanları, inceleme kohortları | Çalışma alanı kapsamlı                |
+| Ajan çalıştırma günlükleri ve çalışma belleği       | Çalışma alanı kapsamlı                       |
+| Üyeler, davetler, depo başına izinler               | Çalışma alanı kapsamlı                       |
+| Kod grafiği sembolleri ve kenarları                 | Çalışma alanı dosyasında `repoId` ile kapsamlanır |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Bu satırların çoğu bir `workspaceId` sütunu taşır; yalıtımı ayrı veritabanı dosyaları uygular. Aşağıdaki yalıtım değişmezine bakın.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Depolar çalışma alanı kapsamlıdır; çalışma alanları arası kimlik yola göredir
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Bir depo satırı, çalışma alanının kendi veritabanı dosyasında yaşar — kapsam _dosyanın kendisidir_, bu yüzden tabloda `workspaceId` sütunu ve birleştirme tablosu yoktur.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Bir çalışma alanına depo eklemeyi Ayarlar → Çalışma alanı → Depolar'dan yaparsınız. Aynı checkout'u iki çalışma alanına kaydetmek, iki farklı kimliğe sahip iki bağımsız satır oluşturur; depoların çalışma alanları _arasındaki_ kimliği dosya sistemi yoluna (ya da GitHub owner/name değerine) göredir, asla kimliğe göre değil.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Kayıt katıdır: yol bir git çalışma ağacının içinde olmalı, bir `origin` uzak deposu bulunmalı ve bu uzak depo desteklenen bir kod barındırıcısına (github.com, gitlab.com veya bitbucket.org) işaret etmelidir. Kod barındırıcı, uzak depodan okunur ve depoda saklanır; böylece tek bir çalışma alanı üçünün de depolarını barındırabilir. Bunun dışındaki her şey reddedilir. Seçim yaptığınız klasör tarayıcısı **sunucu ana makinesinin** dosya sistemini listeler ve sunucunun `--repo-roots` izin listesiyle (varsayılanı sunucu kullanıcısının ev dizinidir) sınırlıdır.
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Bir depoyu çalışma alanından kaldırmak, satırı tamamen siler ve kod sembollerini, kenarlarını, dosyalarını, indeks kontrol noktalarını ve üye başına izinleri zincirleme siler. Diskteki checkout'a dokunulmaz.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Kod grafiği aynı dosyada, `repoId` anahtarıyla yaşar; çünkü farklı çalışma alanları aynı depoyu farklı dallarda ve farklı kodlarla bulundurabilir.
 
-## The isolation invariant
+## Yalıtım değişmezi
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Çalışma alanları arası veri sızıntıları hata olarak kabul edilir. Yalıtım **yapısaldır** ve birkaç düzeyde uygulanır:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Veritabanı katmanı.** Her çalışma alanının kendi SQLite dosyası vardır ve bu dosya `WorkspaceDatabaseManager.of(workspaceId)` tarafından verilir. Bir çalışma alanı veritabanı `users`, `workspaces` ya da başka bir çalışma alanının tablolarını bildirmez; dolayısıyla çalışma alanları arası bir okuma, yazabileceğiniz bir hata değildir — derlenmez. Depolar DAO'larını önbelleğe almak yerine her çağrıda çözer ve her depo yöntemi zorunlu bir `workspaceId` aldığı için çalışma alanı hiçbir zaman çıkarılamaz ya da varsayılana düşürülemez.
+- **Çalışma alanı kimliği bir yol segmentidir.** Kimlik bir dizin adına dönüştüğü için güvenli, tek segmentli bir desenle eşleşmelidir (alfanümerik bir başlangıç, ardından alfanümerik karakterler, noktalar, alt çizgiler, tireler; `..` yok). Ürünün her yerinde kimlikler UUID'dir. Bunun dışındaki her şey temizlenmek yerine hata fırlatır — yol geçişi koruması budur ve bir çalışma alanının verisini başkasının seçtiği bir yola yazmak yerine yüksek sesle başarısız olur.
+- **Derinlemesine savunma.** `workspaceId` sütunları hâlâ orada ve hâlâ yazılıyor. Bir dosya içinde gereksiz olsalar da senkronizasyon akışı tetikleyicilerini, FTS dizinlerini ve mevcut satır biçimlerini değiştirmeden korurlar ve bir dosya tek başına incelendiğinde onu kendi kendini tanımlar hâle getirirler — dışa ve içe aktarmanın güvendiği şey de budur.
+- **Alan katmanı.** Varlıkları kimliğe göre değiştiren servisler, devam etmeden önce tek bir geçiş noktasında `entity.workspaceId == workspaceId` doğrulaması yapar ve uyuşmazlıkta `WorkspaceMismatchException` fırlatır — yanlış bağlamdan gelen bir kimlik için yüksek sesli başarısızlık. Yüksek sesle reddetmek önemlidir: sessiz bir no-op hatayı gizler, devam etmek ise veri sızdırır.
+- **RPC katmanı.** Depo-RPC göndericisi geçiş noktasıdır. Çalışma alanı kapsamlı her işlem, `workspace_id` değerini kendi argümanlarında taşımalıdır — sızabilecek oturum başına bir "geçerli çalışma alanı" yoktur ve bilinmeyen bir kimlik, herhangi bir şey bir veritabanı açmadan _önce_ bulunamadı olarak reddedilir; böylece kötü bir kimlik hayalet bir `workspace.db` ortaya çıkaramaz. Gerçekten genel işlemler (haber akışı, filo kuyruğu) kendilerini açık, gözden geçirilmiş bir kararla kapsamsız ilan eder. MCP araçları aynı kuralı izler: çalışma alanı kapsamlı veriye dokunan her araç `workspace_id` gerektirir.
+- **Çalışma alanları arası fan-out sayılabilirdir.** Birkaç çalışma alanıyla ilgili bir soruyu yanıtlamak, birkaç veritabanı açmak anlamına gelir. Bu fan-out tek bir yardımcıya, `CrossWorkspaceQueries`'e hapsedilmiştir; böylece sınırı meşru şekilde aşan şeylerin tam listesi, doküman yorumlarının arkasına dağılmak yerine tek bir dosyanın çağrı noktalarında yaşar. Bu çağrı noktaları şunlardır: sunucu geneli toplama, başlangıç uzlaştırıcıları, saklama ve GC süpürmeleri, yedekleme, olay yönlendiricileri — ve aşağıdaki üyelik araması.
+- **Yalnızca kimlikle erişim yeterli değildir.** Bir varlığı UUID'siyle aramak, onun çağıranın çalışma alanına ait olduğunu kanıtlamaz. Dosya bölünmesi yanlış dosyayı erişilemez kılar; alan katmanı doğrulaması ise meşru bir dosya üzerinden gelen yanlış bir kimliği yakalar.
 
-## Membership, not the pairing key, is what grants access
+## Erişimi veren şey eşleştirme anahtarı değil, üyeliktir
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Bir cihaz kimlik bilgisine sahip olmak bir _cihazın_ kimliğini doğrular. Çalışma alanının içindeki hiçbir şeye yetki vermez. Çalışma alanı kapsamlı her işlem, çağıranın üyelik rolünü çözer ve işlemin türünden türetilen bir taban uygular — okuma `guest` gerektirir, bir değişiklik `member` gerektirir, yıkıcı bir işlem `admin` gerektirir — depo içeriğini açığa çıkaran işlemler ayrıca çağıranın depo başına iznini denetler. Üyeliği olmayan geçerli bir eşleştirme anahtarı `Not a member of this workspace` yanıtını alır.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Bunun yalıtım açısından sonucu nettir: üyelik satırları _çalışma alanının kendi_ dosyasında yaşar; böylece "bu çalışma alanında kim var?" sıradan bir kapsamlı okumadır. Ters soru — "hangi çalışma alanlarındayım?" — tanım gereği dosyalara yayılmıştır; bu yüzden izin verilen birkaç `CrossWorkspaceQueries` fan-out'undan biridir ve çalışma alanı seçicisinin, herhangi bir çalışma alanı seçilmeden önce çalıştırdığı şeydir.
 
-See [Multiplayer](/tr-TR/kilavuz/kavramlar/cok-oyunculu/) for the role ladder and repo grants.
+Rol merdiveni ve depo izinleri için [Çok oyunculu](/tr-TR/kilavuz/kavramlar/cok-oyunculu/) sayfasına bakın.
 
-## The global registry
+## Genel kayıt defteri
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Her şey çalışma alanı kapsamlı değildir. İkinci bir veritabanı, `<dataDir>/global.db`, gerçekten sunucu geneli olanları barındırır:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **çalışma alanı kaydı**; böylece değiştirici, tek bir çalışma alanı dosyası bile açmadan her çalışma alanını listeleyebilir — ve bir çalışma alanının adı, logosu, sahibi, elle sıralaması ve yumuşak silme işareti, tanımladıkları dosyanın dışında yaşar;
+- **kimlik**: kullanıcılar, kullanıcı tercihleri ve eşleştirilmiş cihazlar; çünkü tek bir insan, her çalışma alanında tek bir kullanıcıdır ve eşleştirilmiş bir cihaz, bir çalışma alanı silinse de varlığını sürdürür;
+- **filo kuyruğu** (worker'lar, işler, yerleştirme günlüğü); zamanlayıcısı her tikte kuyruğun tamamını her worker'la eşleştirir;
+- **haber akışı**, kullanıcı başına (çalışma alanı başına değil) — eklediğiniz bir akış sizi her çalışma alanına kadar izler;
+- **`workspace_routes`**, kimlik doğrulama öncesi dizin; yalnızca bir sırla ya da opak bir kimlikle (bir davet karması, bir webhook token'ı, bir derin bağlantı) gelen ve hiçbir çalışma alanı bilgisi taşımayan giriş noktaları için "bu anahtar hangi çalışma alanına ait?" sorusunu yanıtlar. Burada bir ıska, bulunamadı demektir; bilinçli olarak tarama yedeği yoktur;
+- **kurulum geneli ayarlar ve kimlik**: kurulum kimliği, ana makine düzeyi ayarlar, SSO bağlantıları ve yönetilen eylem politikaları (çalışma alanı korumalarını yalnızca sıkılaştırabilen kurulum geneli bir sınırlama).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Önyükleme yalnızca bu dosyayı açar. Çalışma alanı dosyaları ilk dokunuşta tembelce açılır; böylece çalışma alanları ne kadar geçmiş biriktirirse biriktirsin başlangıç maliyeti sabit kalır ve dosya başına `quick_check`, hazır bildirimine giden yolda değil ilk kullanımda ödenir.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Bir çalışma alanı dosyası, kendini tanımlamak için yalnızca tek satırlık bir `workspace_meta` taşır (kimliği, onu oluşturan kurulum, oluşturulduğu şema sürümü, ne zaman oluşturulduğu). Bir çalışma alanı hakkında tanımlayıcı olan her şey kayıt defterindedir.
 
-## Creating a workspace
+## Çalışma alanı oluşturma
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Çalışma alanı oluşturmak, bir kayıt satırı eklemekten fazlasını yapar. Sunucu tek bir işlemde, oluşturan kullanıcıyı `ownerUserId` olarak damgalar, o kullanıcının sahip rolündeki üyeliğini kaydeder ve bir `WorkspaceCreated` alan olayı yayımlar. Bu olayı dinleyenler ardından, arka planda ve idempotent biçimde şunları tohumlar:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- bir **CEO ajanı** ve dört uzman — `qa`, `architect`, `engineer`, `librarian` — uzmanlar CEO'ya rapor verir;
+- **yerleşik pipeline şablonları** ve tetikleyicileri (olay ve elle tetikleyiciler etkin olarak gelir; zamanlanmış olanlar, günlük worktree-GC süpürmesi dışında isteğe bağlıdır);
+- **başlangıç eval takımları**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+Bu, yalnızca ilki için değil, _her_ çalışma alanı için gerçekleşir. Tohumlanan ajanlar adaptörsüz oluşturulur; bu yüzden siz her ajan için Ayarlar → Çalışma alanı → Ajanlar'dan bir adaptör ve model belirleyene kadar Anthropic'in varsayılan modeliyle (`claude-opus-4-8`, başka bir model sabitlemediyseniz) **Control Center (built-in)** üzerinde çalışırlar. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/) sayfasına bakın.
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Sahip üyeliğinin yazımı göründüğünden daha önemlidir: o olmasaydı, yeni oluşturulan çalışma alanının hiç üyesi olmazdı ve oluşturanın sonraki her çalışma alanı kapsamlı çağrısı reddedilirdi.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Ajanlar çalışma alanı oluşturamaz]
+`create_workspace` diye bir MCP aracı yoktur. İnsanlar bir çalışma alanını `workspace.create` (yalnızca adı alan geçiş noktası) ya da `workspace.upsert` (tam kayıt, güncellemeler için de kullanılır) üzerinden oluşturur. Her ikisi de oluşturan kullanıcıyı `owner` olarak damgalar ve `WorkspaceCreated` yayımlar.
 :::
 
-## Deleting, exporting, importing
+## Silme, dışa aktarma, içe aktarma
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Bir çalışma alanını silmek **kayıt satırını işaretler ve dizinin bağlantısını keser**. Çalışma alanı her listeden ve aramadan kaybolur. Kayıt satırı (yumuşak silinmiş olarak) kalır; böylece kimlik, yedekleme ve bakım tarafından hâlâ bilinir, ancak `workspace.delete` o çalışma alanının dizinini — veritabanı, worktree'ler, ajan dosyaları ve geri kalanı — `WorkspaceDatabaseManager.dropAndClose` üzerinden anında siler. Yalnızca çalışma alanı **sahibi** silebilir.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Bir çalışma alanı tek bir dosya olduğundan, bir çalışma alanını elden ele geçirmek tablo tablo bir döküm değil, bir dosya işlemidir:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` tek bir `VACUUM INTO` deyimidir — sunucu hizmet vermeye devam ederken bir okuma işlemi altında alınan tutarlı, parçalanması giderilmiş bir anlık görüntü.
+- `workspace.import` böyle bir dosyayı sahiplenir ve hedef çalışma alanının o anda tuttuğu her şeyin yerine geçer. Gömülü `workspace_meta`, bir içe aktarmanın "kendi dosyam, yeniden sahiplenildi" ile "başka bir kurulumdan gelen dosya" arasında ayrım yapmasını sağlar (ikincisine izin verilir, ama görünmez kalmak yerine günlüğe yazılır).
+- `server.backupNow`, kurulumun tamamının anlık görüntüsünü, canlı veri dizinini yansıtan zaman damgalı bir dizine alır — `manifest.json`, `global.db` ve her çalışma alanı için bir `<workspaceId>/workspace.db` — böylece geri yüklemek, onu geri kopyalamaktır.
+- `server.listBackups` o dizini en yeniden en eskiye doğru geri okur; her anlık görüntünün boyutunu ve çalışma alanı listesini verir. Manifestosu eksik olan ya da orada olmayan dosyaları adlandıran bir anlık görüntü yine de bildirilir ve eksik olarak işaretlenir — onu gizlemek, bir operatörün aslında sahip olmadığı bir yedeğe sahip olduğuna inanmasının yoludur.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Yedekleme işlemleri **Ayarlar → Sunucu → Yedekleme ve geri yükleme**
+altında yaşar: **Şimdi yedekle** bir kurulum anlık görüntüsü alır, liste
+hangi anlık görüntülerin tam olduğunu gösterir ve kurulum sahibinin onaydan
+sonra birini silmesine izin verir; her çalışma alanı da dışa ve içe aktarma
+sunar. Yerleşik **Workspace backup** pipeline'ı haftalık bir programla yalnızca
+o çalışma alanının veritabanını alır ve yapılandırılmış saklama süresinden eski
+kendi yedeklerini siler. Bir çalışma alanını kurulum anlık görüntüsünden geri
+yüklemek, anlık görüntünün `<workspaceId>/workspace.db` yolunu gösteren
+`workspace.import` çağrısıdır; kurulumun tamamını geri yüklemek ise anlık
+görüntü dizininin, sunucu durdurulmuşken geri kopyalanması olarak kalır.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/tr-TR/kilavuz/referans/yedekleme/#what-a-backup-does-not-contain) has the full table.
+Hiçbirinin taşımadığı şey, çalışma alanı dizininin geri kalanıdır. Bir çalışma alanı bir veritabanından fazlasını biriktirir — yapıştırılmış görseller, beceri ve ajan dosyaları, sohbet kimlik bilgileri, worktree'ler — dışa ve içe aktarma ise **dosyayı** taşır; dolayısıyla yanındaki her şey olduğu yerde kalır. Bu, kimlik bilgileri için bilinçli bir tercih, worktree'ler için gözden çıkarılabilir bir durumdur; geri kalanı içinse bir özellik değil, bilinmesi gereken bir sınırlamadır. Tam tablo için [yedekleme referansına](/tr-TR/kilavuz/referans/yedekleme/#what-a-backup-does-not-contain) bakın.
 
-## Moving a backup between the server and your device
+## Yedeği sunucu ile cihazınız arasında taşıma
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Yukarıdaki her işlem **sunucudaki** yollarla konuşur; bu, yalnızca sunucu kendi makinenizse eksiksiz bir yanıttır. İmzalı üç HTTP rotası — [`/backup/workspace`, `/backup/snapshot` ve `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#transfer-routes) — diğer tüm topolojiler için baytları taşır; medya proxy'sinin ve görsel deposunun zaten kullandığı aynı kimliği doğrulanmış hat üzerinden. Sayfada bu, her dışa aktarmanın ve her anlık görüntünün yanındaki bir **İndir** düğmesidir (nereye ineceğini siz seçersiniz) ve kullandığınız makinede duran bir dosyadan geri yüklemek için **Bir dosya seçin ve yükleyin**. Sunucu sizin makineniz olmadığında işleyen yol, yüklemedir: `workspace.import` dosyanın ana makinede zaten bulunmasını gerektirir ve dosya oraya bu şekilde ulaşır.
 
-Three properties are worth knowing:
+Bilinmeye değer üç özellik var:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **İndirme yeni bir kopya üretir ve sunucu ondan hiçbir şey saklamaz.** İndirmek, "dışa aktarma düğmesinin oluşturduğu dosyayı getir" demek değildir — yeniden dışa aktarır, onu akıtır ve siler. Yanıt da aynı nedenle `no-store` ve `Accept-Ranges: none` taşır: kaldığı yerden devam eden bir aralık, iki farklı dışa aktarmayı geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi.
+- **Bir yükleme, iki uçta da diske akıtılır, asla arabelleğe alınmaz** ve hazırlanan kopya, her çıkış yolunda — bir ret dahil — silinir. Bir çalışma alanı veritabanı bir ekran görüntüsü değildir.
+- **Aktarılan bir bağlantının HTTP kaynağı yoktur**; bu yüzden aktarım denetimleri orada, nedenini söyleyen bir notla devre dışıdır. Sunucu tarafı yollarla konuşan her şey aktarım üzerinden çalışmaya devam eder; yalnızca bayt hatları doğrudan bir bağlantı gerektirir.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Hangi yollar kime ait]
+Sayfanın *gösterdiği* yollar — anlık görüntü dizini, bir dışa aktarmanın yazdığı dosya, bir içe aktarmanın okuduğu kaynak — `cc_server` çalıştıran makinededir. Bir **indirmenin** bildirdiği yol ise oturduğunuz makinededir. İkisinin de var olmasının nedeni bu ayrımdır: ilki bir bakım betiğinin ya da bir ssh oturumunun ihtiyacı olan şeydir, ikincisi ise yedek toplayan bir kişinin ihtiyacı olan.
 :::
 
-## Multiple workspaces
+## Birden çok çalışma alanı
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Birden çok çalışma alanını yan yana çalıştırabilirsiniz. Her biri bağımsız çalışır: bir çalışma alanındaki ajanlar başka bir çalışma alanındaki ajanlara mesaj gönderemez, başka bir çalışma alanının belleğini okuyamaz ve onun biletlerini göremez. Ajanlar arası mesajlaşmada alıcı çözümlemesi kesindir ve hiçbir zaman bir çalışma alanını aşmaz.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Çalışma alanları arası bir gösterge paneli yoktur. `/workspaces/:workspaceId/observability` adresindeki analitik yüzeyi, son çalıştırmalardan oluşan sınırlı bir genel akışa abone olur ve onu hemen etkin çalışma alanına daraltır; yani orada gördüğünüz şey bir seferde tek bir çalışma alanıdır. Bir kişinin dokunduğu gerçekten çok çalışma alanlı tek yüzeyler, çalışma alanı seçicisi ve değiştiricidir.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Bilinmeye değer pratik bir sınır: birinin kullandığı bir çalışma alanı açık kalır — LRU yoktur. Bunların sayısı 32'yi geçtiğinde sunucu reddetmek yerine uyarır; çünkü açık her dosya bir arka plan isolate'i ve bir sayfa önbelleği tutar. Çalışma alanları arası fan-out dosyaları geçici olarak açar ve ardından, başka hiçbir şey onlara sahip çıkmadıysa kapatır.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Multiplayer](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): agents belong to exactly one workspace
-- [Memory and knowledge](/tr-TR/kilavuz/kavramlar/bellek-ve-bilgi/): memory is workspace-scoped
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/): where the databases sit in the client/server split
-- [Back up and restore](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/tr-TR/kilavuz/referans/yedekleme/): every operation, route, manifest field and limit
-- [Add repositories](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/): registering a checkout into a workspace
+- [Çok oyunculu](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): üyelik, roller ve depo izinleri — yalıtımın erişim yarısı
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): ajanlar tam olarak bir çalışma alanına aittir
+- [Bellek ve bilgi](/tr-TR/kilavuz/kavramlar/bellek-ve-bilgi/): bellek çalışma alanı kapsamlıdır
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/): veritabanlarının istemci/sunucu bölünmesindeki yeri
+- [Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/): anlık görüntü almak, bir çalışma alanını taşımak, kopyaları başka yerde tutmak
+- [Yedekleme, dışa ve içe aktarma](/tr-TR/kilavuz/referans/yedekleme/): her işlem, rota, manifest alanı ve sınır
+- [Depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/): bir checkout'u çalışma alanına kaydetmek

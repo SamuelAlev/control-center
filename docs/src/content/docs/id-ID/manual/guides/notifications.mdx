@@ -1,149 +1,161 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Konfigurasi notifikasi
+description: Nyalakan atau matikan kategori, atur Quiet hours dan suara, serta ketahui notifikasi mana yang sampai kepada Anda dan di mana.
 slug: id-ID/panduan-pengguna/panduan-praktis/notifikasi
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Panduan ini menunjukkan cara mengonfigurasi notifikasi dan apa yang sebenarnya
+dikendalikan oleh setiap pengaturan.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Notifikasi tiba di dua permukaan. **Pusat notifikasi** — lonceng di bilah judul —
+membaca feed per ruang kerja yang tahan lama di server. **Toast OS** adalah jalur
+terpisah yang hanya ada di desktop, disuapi oleh frame langsung yang dikirim
+server.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Build web tidak menampilkan notifikasi OS]
+Pipeline toast hanya dibangun oleh bootstrap desktop. Di `app.usectrl.dev` tidak
+ada toast OS, tidak ada suara notifikasi, dan tidak ada banner ambien — lonceng
+beserta riwayatnya tetap berfungsi, karena keduanya membaca feed server. Klien
+ponsel sama sekali tidak memiliki permukaan notifikasi.
 :::
 
-## Turn categories on or off
+## Nyalakan atau matikan kategori
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Buka **Pengaturan → Anda → Notifikasi**
+2. Biarkan **Aktifkan notifikasi** tetap aktif
+3. Nyalakan kategori yang Anda inginkan. Jumlahnya tepat enam belas:
 
-| Category                  | Fires when                                                                 |
+| Kategori                  | Memicu ketika                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Agen selesai              | Agen menyelesaikan sebuah run                                              |
+| PR dipublikasikan         | Agen memublikasikan sebuah PR                                              |
+| PR digabungkan            | Sebuah PR digabungkan                                                      |
+| Pesan baru                | Pesan tiba di space yang sedang tidak Anda lihat                           |
+| Disebutkan di pull request | Polling notifikasi GitHub melihat Anda disebutkan di sebuah PR            |
+| Tinjauan diminta          | Tinjauan Anda benar-benar diminta pada PR yang bukan draf                  |
+| Tinjauan kedaluwarsa      | Commit baru masuk ke pull request yang sudah Anda tinjau                   |
+| Siap digabungkan          | Pull request yang Anda tulis menjadi dapat digabungkan, atau berhenti begitu |
+| Keputusan tinjauan        | Peninjau menyetujui, meminta perubahan, atau persetujuannya dibatalkan     |
+| Checks                    | CI gagal pada pull request yang Anda tulis, atau pulih kembali             |
+| Utas tinjauan             | Seseorang membalas atau menyelesaikan utas tempat Anda berada              |
+| Tiket ditugaskan          | Sebuah tiket ditugaskan                                                    |
+| Status tiket berubah      | Sebuah tiket berubah status                                                |
+| Rapat segera dimulai      | Rapat kalender berada di dalam jendela jeda Anda                           |
+| Kalender terputus         | Token OAuth kalender yang terhubung kedaluwarsa                            |
+| Pembaruan enclosure       | Sebuah enclosure diambil alih, diklaim kembali, atau gagal                 |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Apa pun di luar daftar ini tidak dapat dinotifikasi atau difilter — tidak ada
+kategori "segala hal lainnya".
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Preferensi ini mengikuti pengguna Anda lintas perangkat, sehingga ponsel dan
+laptop tetap selaras. Volume adalah pengecualian yang disengaja dan tetap per
+perangkat.
 
-## Set quiet hours
+## Atur Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Di halaman yang sama, nyalakan **Quiet hours**
+2. Ketik waktu mulai dan waktu selesai dalam format `HH:MM` (jendela bawaannya
+   22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Selama Quiet hours, notifikasi yang tidak mendesak dibuang — bukan diantrekan
+lalu diputar ulang nanti.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Dua kategori bersifat **mendesak** dan selalu terkirim, melewati Quiet hours
+_dan_ mode fokus: **Rapat segera dimulai** dan **PR dipublikasikan**. Peringatan
+rapat yang baru Anda lihat setelahnya tidak ada gunanya, dan itulah alasannya.
 
-## Choose a sound
+## Pilih suara
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Gulir ke **Suara notifikasi**
+2. Pilih salah satu dari sebelas suara bawaan, atau **Tidak ada**
+3. Tekan tombol tes untuk mendengarkannya dan atur volumenya dengan penggeser
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Aplikasi memutar suaranya sendiri; notifikasi OS dikirim tanpa suara sehingga
+Anda tidak pernah mendengarnya dua kali.
 
-## Set the meeting lead time
+## Atur waktu jeda rapat
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Gulir ke **Waktu jeda peringatan**
+2. Pilih **5**, **10**, **15**, atau **30** menit
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Itulah seberapa jauh sebelum acara kalender notifikasi **Rapat segera dimulai**
+dipicu. Bawaannya 5 menit.
 
-## Know when a notification is suppressed
+## Ketahui kapan sebuah notifikasi dibuang
 
-A notification is dropped, silently, when any of these is true:
+Sebuah notifikasi dibuang, secara senyap, ketika salah satu dari ini benar:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Notifikasi dimatikan secara global, atau kategorinya dimatikan
+- Anda sudah berada di rute yang akan dituju olehnya — dan, untuk sebuah pesan,
+  sudah berada di space tersebut
+- Mode fokus aktif dan kategorinya tidak mendesak
+- Quiet hours aktif dan kategorinya tidak mendesak
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Pemeriksaan itu berlaku untuk toast OS. Lonceng yang tahan lama tetap mencatat
+peristiwanya.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Dua pembuangan lain terjadi lebih jauh di hulu, pada apa yang benar-benar
+dikirim server:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Pesan dari **manusia** lain yang tidak menyebut Anda tidak pernah menjadi
+  notifikasi
+- Space antar-agen dibisukan di bilah sisi, sehingga tidak pernah menambah
+  lencana belum dibaca milik manusia
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Di dalam sebuah space tidak ada sudut yang tenang: setiap percakapan memberitahu
+dengan setara, termasuk utas. Status baca berskala space, sehingga yang belum
+dibaca teragregasi di seluruh percakapan sebuah space alih-alih dilacak per
+percakapan.
 
-## Read and clear the notification centre
+## Baca dan bersihkan pusat notifikasi
 
-1. Click the bell in the title bar
+1. Klik lonceng di bilah judul
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Popover-nya menampilkan aktivitas terbaru, dan setiap entri bertaut langsung ke
+hal yang dibahasnya. Membukanya **tidak** menandai semuanya sudah dibaca —
+gunakan **Tandai semua sudah dibaca** di header, atau tandai satu baris saja.
+Status baca mengikuti pengguna Anda lintas perangkat.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Hapus semua adalah tanda air, bukan penghapusan]
+**Hapus semua** membubuhkan tanda air per pengguna yang menyembunyikan semua
+yang lebih lama; barisnya tetap ada. Secara terpisah, setiap ruang kerja hanya
+menyimpan **200** baris feed terbarunya, dipangkas saat baris baru datang,
+sementara lonceng berlangganan **50** baris terbaru dan popover mencantumkan
+hingga **15** di antaranya. Riwayat di luar itu hilang terlepas dari status
+baca.
 :::
 
-## Troubleshooting
+## Pemecahan masalah
 
-### No OS notifications on macOS
+### Tidak ada notifikasi OS di macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Izin diminta secara native saat aplikasi diluncurkan. Jika Anda menolaknya,
+aktifkan kembali Control Center di Pengaturan Sistem → Notifikasi; tidak ada
+perintah di dalam aplikasi untuk memicunya lagi.
 
-### Nothing arrives on the web build
+### Tidak ada yang tiba di build web
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Sesuai harapan — build web tidak memiliki pipeline notifikasi OS. Gunakan
+lonceng.
 
-### The bell badge shows zero but there is clearly new activity
+### Lencana lonceng menunjukkan nol padahal jelas ada aktivitas baru
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Sampai aliran penanda baca selesai setelah terhubung, entri ditampilkan sebagai
+sudah dibaca agar lencana tidak berkedip lalu kosong. Keadaannya stabil begitu
+penandanya dimuat.
 
-### An agent's run finished but nothing pinged me
+### Run seorang agen selesai tetapi tidak ada yang memberitahu saya
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Periksa apakah Anda belum berada di space tempat hal itu terjadi — rute yang
+aktif menekan toast OS-nya sendiri.
 
-## Related guides
+## Panduan terkait
 
-- [Use focus mode and soundscapes](/id-ID/panduan-pengguna/panduan-praktis/mode-fokus/)
-- [Triage your inbox](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)
-- [Curate your newsfeed](/id-ID/panduan-pengguna/panduan-praktis/umpan-berita/)
+- [Gunakan mode fokus dan soundscape](/id-ID/panduan-pengguna/panduan-praktis/mode-fokus/)
+- [Triage kotak masuk Anda](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)
+- [Kurasi umpan berita Anda](/id-ID/panduan-pengguna/panduan-praktis/umpan-berita/)
 
-## Related concepts
+## Konsep terkait
 
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)

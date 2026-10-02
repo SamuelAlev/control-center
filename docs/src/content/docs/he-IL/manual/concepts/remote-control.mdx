@@ -1,207 +1,194 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: שליטה מרחוק ונייד
+description: איך הטלפון מגיע לשרת שלכם דרך ממסר מתווך ואטום מקצה לקצה ולא דרך חיבור עמית-לעמית, ומודל הגישה השכבתי שמשאיר את הטווח הזה צר.
 slug: he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center הוא אפליקציית שולחן עבודה, אבל העבודה שהוא עוקב אחריה לא
+נעצרת כשאתם מתרחקים משולחן העבודה. **שליטה מרחוק** משייכת את הטלפון שלכם אל
+`cc_server` שלכם, באמצעות **[Remote](https://remote.usectrl.dev/)**, אפליקציית
+הלוויה שכתובתה remote.usectrl.dev, כדי שתוכלו לעקוב אחרי הצי משם: לקרוא
+הודעות וכרטיסים, להשיב לסוכן, לעשות טריאז׳ לעדכוני החדשות — בלי שהשמע,
+התמליל, קוד המקור או פרטי ההתחברות שיושבים על השרת יעזבו אותו אי פעם.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+חישבו עליו כעל בן לוויה לשולחן העבודה שנועד בעיקר לקריאה. הוא לא נועד להחליף
+את לקוח שולחן העבודה המלא.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/) for how the two differ.
+:::note[שני מסלולים מרוחקים שונים]
+אפליקציית הלוויה בטלפון משויכת אל `cc_server` דרך **ממסר WebSocket מתווך**
+שנושא מסגרות JSON-RPC אטומות מקצה לקצה. **גרסת האינטרנט** המלאה (ושולחן עבודה
+שמצביע על שרת מרוחק) היא המסלול המרוחק האחר; היא מחייגת אל `cc_server` דרך
+WebSocket ומציגה את האפליקציה כולה. ראו
+[פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/) כדי להבין איך השתיים נבדלות.
 :::
 
-## Transport
+## תעבורה
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+הטלפון מגיע אל `cc_server` דרך WebSocket: או בחיבור ישיר (loopback, LAN,
+tailnet או `wss://`) או בחדר שמוגן בהזמנה במתווך איתות שמעביר מסגרות אטומות.
+אין ערוץ נתונים עמית-לעמית.
 
-## What the phone can do
+## מה הטלפון יכול לעשות
 
-The paired phone reaches a small, intentional slice of the server's surface:
+הטלפון המשויך מגיע לפרוסה קטנה ומכוונת של משטח השרת:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **לקרוא** כרטיסים, סוכנים, מרחבים וההודעות שלהם ואת עדכוני החדשות שלכם
+- **להשיב**: לשלוח הודעה במרחב, לעדכן כרטיס או להקצות אותו, לסמן מאמר כנקרא
+  או כנשמר
+- **להריץ פלייבוק**: ליצור מופע של תבנית תוכנית שמורה עם הפרמטרים שלה.
+  הפעולה רק _מציעה_ תוכנית; שום דבר לא מתבצע ולא מוציא תקציב עד שמפעיל מאשר
+  אותה ב-Plan Studio בלקוח מלא
+- **להחליף סביבות עבודה**, מתוך הבורר של הטלפון עצמו
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+זה כמעט כל מה שיש. הטלפון הוא **ישות בעלת הרשאה נמוכה יותר** מאשר לקוח מלא.
+הוא לא יכול להריץ תהליכים, להוציא תקציב LLM, לדחוף ל-GitHub או ליצור סביבות
+עבודה. ראו [מודל הגישה](#מודל-הגישה) כדי להבין איך זה נאכף ולא רק
+מיועד לכך.
 
-## How the link is built
+## איך נבנה הקישור
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+החיבור נוסע על **ממסר מתווך**: השרת מצטרף לחדר אחד שמוגן בהזמנה במתווך
+`wss://` בתור הבעלים שלו, וכל לקוח משויך — שולחן עבודה, אינטרנט, טלפון —
+מצטרף לאותו חדר עם אסימון כניסה מוגבל בזמן. שלושה רכיבים מתחברים יחד:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| רכיב                     | תפקיד                                                                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Remote (אפליקציית הטלפון)** | אפליקציית האינטרנט הנלווית, שמתארחת כברירת מחדל ב-`remote.usectrl.dev`, או באירוח עצמי. נטענת בדפדפן ושומרת את רשומת השיוך ב-IndexedDB.                                                                                                                                       |
+| **מתווך הממסר**          | ממסר `wss://` חסר מצב (`cc_signaling_server`) שמארח חדרים של N צדדים. הוא נושא **רק מסגרות אטומות**: כל מטען נאטם מקצה לקצה בין הטלפון לשרת, כך שהמתווך לעולם אינו רואה נתוני אפליקציה או את סוד השיוך ולעולם אינו מפרש את מה שהוא מעביר. |
+| **`cc_server`**          | הבעלים של החדר. הוא עונה לקריאות של הטלפון דרך אותו מפיץ שכל לקוח אחר משתמש בו.                                                                                                                  |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+הצעת שיוך נושאת **מתאר חיבור** שמפרט כל נתיב אל השרת (LAN, tailnet, `wss://`
+ציבורי, ממסר) וגם טביעת אצבע של הזהות שלו. הפותר של הטלפון בוחר את הנתיב
+הנגיש הטוב ביותר ומצמיד את טביעת האצבע בחיבור הראשון (TOFU); הממסר מבטיח
+קישוריות גם כשאין נתיב ישיר, בלי יכולת לקרוא את התעבורה.
 
-## What the pairing payload is
+## מה מכיל מטען השיוך
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/) for the procedure. The anatomy is
-what matters here.
+השיוך מונפק מהאפליקציה ונמסר כקישור עמוק; ראו
+[שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/) לתיאור ההליך.
+מה שחשוב כאן הוא האנטומיה.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+המטען נוסע ב**קטע** של כתובת ה-URL — החלק שאחרי `#` שדפדפנים לעולם אינם
+שולחים לשרת, כך שמארח ה-HTTPS של ה-PWA לעולם אינו רואה אותו. הוא נושא את כל
+מה שהטלפון צריך כדי להגיע לשרת ולהוכיח מי הוא: מתאר החיבור (כל נתיב וגם
+טביעת האצבע של הזהות), מזהה מכשיר שזה עתה הונפק, מפתח בן 32 בתים ששותף מראש
+וחותמת תפוגה. הטלפון מפענח אותו, שומר רשומת שיוך מקומית ומסיר את הקטע כך
+שהסוד יוצא מכתובת ה-URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+למטען יש שתי צורות והן **אינן ניתנות להחלפה**. קוד ה-QR לטלפון
+שמונפק מפאנל השיוך שבתוך האפליקציה הוא ה-`PairingPayload` מגרסה v2 שלמעלה,
+ומצביע על מארח ה-PWA של Remote. `cc_server pair --client-url` מפיק קישור שונה
+וישן יותר מגרסה v1 (`{s, i, k}` — כתובת השרת, מזהה מכשיר, מפתח) שמיועד ללקוח
+**האינטרנט** בלבד.
 
-They also differ in lifetime, which is easy to get wrong:
+הם גם נבדלים בתוקף, וקל לטעות בכך:
 
-| Minted by                             | Credential expiry                         |
+| הונפק על ידי                          | תפוגת פרטי ההתחברות                        |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| פאנל השיוך שבתוך האפליקציה (`pairing.mint`) | 30 יום, תמיד                              |
+| `cc_server pair` משורת הפקודה         | **אין** — פרטי ההתחברות אינם פגים            |
 
-## The access model
+## מודל הגישה
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+מכשיר משויך הוא **מאומת אך לא מהימן**. כמה שערים בלתי תלויים מונעים משיוך
+מאושר (או שהודלף) להפוך לשליטה מלאה בשרת.
 
-### 1. Membership, not pairing, is the boundary
+### 1. החברות, לא השיוך, היא הגבול
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+מפתח שיוך תקף מוכיח _איזה מכשיר_ אתם. מה שמותר לכם לקרוא או לשנות נקבע לפי
+**התפקיד שלכם בסביבת העבודה**, שנפתר מחדש בכל קריאה וקריאה, ולפי הענקות לפי
+מאגר בכל דבר שחושף תוכן של מאגר. מכשיר שמחזיק מפתח תקין לחלוטין אך שייך
+למשתמש שאינו חבר בסביבת העבודה הנקובה נדחה עם "Not a member of this
+workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+רצפת התפקיד נגזרת מסוג הפעולה, אלא אם היא מצהירה על רצפה משלה: קריאות דורשות
+`guest`, שינויים דורשים `member`, ופעולות הרסניות דורשות `admin`.
 
-### 2. A phone is a lower session tier
+### 2. הטלפון הוא דרג סשן נמוך יותר
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+מעבר לבדיקת התפקיד, סשן של טלפון נושא יכולת נמוכה יותר מסשן של שולחן עבודה או
+של אינטרנט. פעולות שמוצהרות כ"ללקוח מלא בלבד" נדחות עבור טלפון לפני שהמטפל
+רץ, ולא משנה מה מידת ההרשאה של המשתמש שמאחוריו: הנפקה, רישום, שינוי שם וביטול
+של שיוכי מכשירים; קריאה וקביעה של קישוריות מנהרה; גיבוי שרת וייצוא/ייבוא של
+סביבת עבודה; זיהוי תהליכים והריגתם; בדיקות מתאמים; הגדרות השרת; ניהול SSO;
+שליטה בצי; והשתלטות על סוכן שרץ או החזרתו.
 
-### 3. A default-deny tool allow-list
+### 3. רשימת היתר לכלים עם דחייה כברירת מחדל
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+במשטח כלי ה-MCP ספציפית (`tools/call`), רשימת היתר שדוחה כברירת מחדל קובעת
+אילו כלים הטלפון רשאי להפעיל. כל מה שאינו ברשימה נדחה לפני שהוא רץ. הרשימה
+מוטה לקריאה ולתצפית, בתוספת קומץ כתיבות **מקומיות בלבד** — הודעה, עדכון
+כרטיס, סימון מאמר — שאינן מוציאות תקציב LLM, אינן מפעילות תהליך ואינן נוגעות
+במערכת חיצונית.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+נדחים, למשל: התייעצות עם סוכן, התחלת סקירת AI, הריגת סוכן, פרסום סקירה
+ל-GitHub, גיוס סוכנים או פיטוריהם, ויצירת סביבת עבודה.
 
-### 4. Per-call workspace scoping
+### 4. תחימת סביבת עבודה לכל קריאה
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) invariant the rest of the
-product enforces.
+השרת אינו מחזיק **שום** "סביבת עבודה נוכחית". הוא חסר מצב בתכנונו: כל קריאה
+בתחום סביבת עבודה חייבת לציין את ה-`workspace_id` של היעד בארגומנטים שלה,
+והמפיץ דוחה את הקריאה על הסף כשזה חסר או כשהוא מציין סביבת עבודה שאינה רשומה
+בשרת — לפני שמשהו פותח מסד נתונים. לכן טלפון לעולם אינו יכול לרשת את התחום
+של לקוח אחר או לגלוש לתוכו, וציון סביבת עבודה זרה גם הוא לא עוזר, מפני
+שבדיקת החברות בשער 1 עדיין חלה. זהו אותו אינווריאנט של
+[בידוד סביבות עבודה](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) שכל שאר המוצר
+אוכף.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. מסגרות אטומות מקצה לקצה עם מפתח ששותף מראש
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+כל מסגרת בין הטלפון לשרת נאטמת במפתח השיוך; אסימון הכניסה רק מכניס לקוח
+לחדר, והוא אינו מפענח דבר. המתווך מעביר טקסט מוצפן ולעולם אינו רואה את
+המפתח. מכשיר שנשלל מגלה שפרטי ההתחברות שלו כבר אינם, ולכן הוא **נכשל באופן
+סגור** בחיבור מחדש.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+פרטי התחברות שהונפקו באפליקציה מוגבלים ל-30 יום; לאחר מכן שער החיבור מכשיל
+אותם ועל הטלפון לבצע שיוך מחדש. השלילה חיה: השרת עוקב אחר טבלת המכשירים
+ומפיל סשנים פתוחים של מכשיר שנשלל בתוך שניות במקום להמתין לחיבור הבא שלו.
 
-### 6. Rate limiting per principal
+### 6. הגבלת קצב לפי ישות
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+מגביל בחלון מחליק חוסם תעבורת כלים מרוחקת ב-120 קריאות בדקה, עם תקרה משנה
+צרה יותר של 30 בדקה לפעלים המשנים. התקציב שייך ל**ישות, לא לסשן**: שלושה
+מהמכשירים שלכם יונקים מהקצאה אחת, כך שלקוח שנחטף אינו יכול לקנות מרווח על
+ידי פתיחת סשנים נוספים, וחבר רועש אחד אינו יכול להרעיב את האחרים.
 
-### 7. A broker that learns nothing
+### 7. מתווך שלא לומד דבר
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+מתווך הממסר טיפש בכוונה: הוא מארח חדרים, מעביר מסגרות אטומות ואינו מחזיק
+חשבונות, נתוני אפליקציה או מפתחות. חדרים מוגנים בהזמנה וחולפים. נתוני
+האפליקציה, השמע, התמליל, קוד המקור ופרטי ההתחברות — כולם נשארים על השרת.
 
-## Live updates
+## עדכונים חיים
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+לאחר השיוך, הטלפון מקבל **עדכונים חיים** כמסגרות התראה — הודעות חדשות של
+סוכנים, כרטיסים שהוקצו לכם, שינויי סטטוס — בשיקוף של ההתראות של שולחן העבודה
+עצמו. השרת משדר את המסגרות האלה לכל סשן מחובר, והסינון לפי סביבת עבודה
+מיושם בצד הלקוח, כך שמה שאתם רואים מתוחם לסביבת העבודה שאתם צופים בה.
 
-## Where it lives
+## היכן זה נמצא
 
-| Surface                                                                             | What it shows                                                                                               |
+| משטח                                                                             | מה הוא מציג                                                                                               |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **הגדרות ← אישי ← המכשירים שלכם** (`/workspaces/:workspaceId/settings/you/devices`) | לקוחות משויכים עם סטטוס חי, בתוספת **צמד לקוח חדש** (דפדפן אינטרנט, אפליקציית שולחן עבודה או טלפון) וביטול גישה |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+אותו פאנל מנפיק שיוכים גם עבור דפדפן או אפליקציית שולחן עבודה שניים, לא רק
+עבור טלפונים — הזרימה זהה, ורק הקישור העמוק שונה.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+שליטה מרחוק היא בצד השרת והיא **אינה** חשופה דרך MCP. הטלפון מדבר עם המפיץ
+של השרת עצמו דרך הממסר; הוא אינו לקוח MCP של שרת חיצוני.
 ::::
 
-## See also
+## ראו גם
 
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): roles, membership and repo grants
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/): where remote control sits among the client tiers
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): where remote control sits in the stack
-- [Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/)
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): התחימה לכל קריאה שעליה זה נשען
+- [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): תפקידים, חברות והענקות לפי מאגר
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/): היכן השליטה מרחוק יושבת בין דרגי הלקוחות
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): היכן השליטה מרחוק יושבת במערכת השכבות
+- [שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/)

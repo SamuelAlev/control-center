@@ -1,135 +1,121 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: 使用计划模式
+description: 将空间切换到计划模式，拿到一份带类型的计划，并批准它成为正在运行的工作。
 slug: zh-CN/手册/操作指南/计划模式
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+本指南介绍如何在智能体编写任何代码之前，先让它产出一份结构化的计划。
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+在计划模式中，智能体以只读方式调研，唯一的交付物是一份**带类型的计划**：一张由你
+批准的步骤依赖图，Control Center 随后把它编译成真正的工作。当你想要看清一项改动的
+范围、拿到拆解后的步骤，或者希望在动任何东西之前先明确风险和依赖关系时，就用它。
 
-## Switch a space into plan mode
+## 将空间切换到计划模式
 
-Any of these flips the space's mode and the change is persisted:
+以下任一操作都会翻转空间的模式，并且这项改动会被持久化：
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- 在输入框工具栏最左侧的模式下拉菜单中选择 **规划**
+- 按 **Shift+Tab**
+- 发送 `/plan`。单独一个 `/plan` 只是启用该模式；`/plan <request>` 会启用它，并把
+  其余内容作为你的消息发送
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` 绝不会以文本形式传递——它设置的是存储的模式，也正是工具面、护栏预设和
+提示词共同读取的那个权威来源。因此该模式对这一轮以及之后的每一轮都生效，直到你把它
+改回来。
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+模式存储在空间上，因此同一个智能体可以在这里处于计划模式，在别处处于智能体模式。
 
-## What the agent produces
+## 智能体产出什么
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. 它以只读方式调研——记忆、代码索引、文件
+2. 它调用 `submit_plan` **一次**，带上一个 `goal` 以及 `nodes`，每个节点都携带一个
+   稳定的 `key`、一个 `title`、一个 `description`，以及它所 `dependsOn` 的节点键
+   （这正是让彼此独立的工作可以并行运行的原因）
+3. 它停下来
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+该工具会校验这张图——重复的键、悬空的依赖、环——并把违规内容返回给智能体去修复，
+而不是接受一份坏掉的计划。
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+计划会**在对话中**显示为一行紧凑的条目，展示目标、它的状态和步骤数。**Plan Studio**
+——依赖图、逐节点检查器和费用估算——会作为对话旁的标签页打开：点击该行上的**打开**，
+或者干脆等着，因为在你正看着对话时，30 秒内落地的计划会自己打开它的标签页。
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[只读保证是结构性的，但仅限于内置运行器]
+Control Center 自己的运行器会根据计划模式的工具面规格构建该智能体的工具注册表，
+因此压根就不存在可供调用的写入、编辑或命令工具——这项限制不是一条模型可以说服
+自己绕过的提示词指令。
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code 适配器没有这样的过滤：模式传给它时只是一个请求，它自己的运行器可能
+遵守也可能不遵守，而 Control Center 永远只能看到它的 `mcp__*` 调用。模式下拉菜单
+旁的强制执行徽标，恰好在属于这种情况时出现。
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[智能体可以向你提出澄清问题]
+当请求含糊不清时，计划智能体可以暂停，并用 `ask_user` 工具向你提出最多三个阻塞式
+问题。它会在对话中渲染一张表单——选项，或自由文本——在你回答之前，运行会一直阻塞。
+该工具属于读取层级，因此能在计划模式的只读工具面下存活；它也豁免于审批包装层
+（在一个提示词前面再加一个提示词，在没有连接任何审批者时会失败关闭，从而剥夺智能体
+提问这一行为）。
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+它需要一个可渲染的空间，因此没有对话的一次性派发拿不到它。把范围、目标仓库和验收
+标准都塞进你的第一条消息里，仍然比来回一次更快。
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+在这里，文字叙述算不上交付物。一次运行如果没有调用 `submit_plan` 就结束，会在对话中
+发出一条可见的“Ended without submitting a plan (no `submit_plan` call).”提示行，并把
+该运行标记为没有交付它应有的交付物。该运行的状态有意保持为 _completed_——这样流水线
+和工单的状态机就不会被触动——所以要读那一行提示，而不是状态徽标。
 
-## Approve the plan
+## 批准计划
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+在对话中计划的那一行上，按**批准并运行**。在 Plan Studio 的审批栏中，按**批准计划**
+（或它旁边的**拒绝**；当图存在校验错误时，批准会被禁用）。
 
-Then:
+然后：
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center 把计划编译成一次编排并把它物化——工单和运行。这一步不涉及任何
+   模型；它是确定性的
+2. 计划由写出它的那个智能体执行。是否要拉别人进来，由该智能体在运行时决定——它
+   可以用 `delegate_task` 把某个步骤交给更合适的队友，前提是不超过工作区的委派深度
+   上限
+3. 计划的目标会成为**该对话的目标**，工作**在同一个对话中**运行：每个步骤都会发布
+   智能体被要求做什么，并把它那一轮流式返回，因此你就在自己已经待着的地方跟进它
+   （并且可以停止某一轮）
+4. 对话的**通用**侧面板（**待办**下方）中的目标行会以 `settled/total` 显示该运行的
+   进度，并带有它的停止按钮；Plan Studio 会在图上显示每个节点的状态，也可以在那里
+   取消
 
-## Keep working without approving
+## 不批准也继续工作
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+如果你宁愿留在这个对话里，而不是批准这份计划，智能体可以调用 `exit_plan_mode`。
+这是唯一被认可的退出方式：它会打开一个与该对话关联的持久审批请求并返回 `pending`
+——空间保持在计划模式，智能体不得行动。一旦请求获批，智能体下一次调用
+`exit_plan_mode` 就会把空间从计划模式翻转到智能体模式，并解锁它的变更类工具。
+如果请求被拒绝，它则可以针对一份修订后的计划新开一个请求。
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+要离开计划模式，请切换输入框下拉菜单（或按 Shift+Tab），或者批准已提交的计划。
+`exit_plan_mode` 会打开一项持久的审批，由 MCP 工具 `decide_approval` 裁决。用于被
+阻止的工具调用的护栏浮层是另一套内存中的队列，不承载计划退出请求。
 
-## Plan mode in a pipeline step
+## 流水线步骤中的计划模式
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+一个 `messaging.createSpace` 流水线节点从节点配置的 `mode` **extra** 读取对话模式
+——`extras['mode']: 'plan'`。该键要求精确匹配：其他任何写法，包括
+`conversationMode` 或 `dispatchMode`，都会被静默忽略，房间会回退到请求体的默认值，
+也就是**审查**模式，而不是聊天模式。`promptAgent` 步骤加入的是它没有创建的房间，
+不会重新设置其权限。节点配置编辑器中的**调度模式**选择器（`allParallel` /
+`manager`）是给团队派发节点用的。请在打开空间的模板上，或通过 API 在该节点的配置
+上，用 `extras['mode']` 设置对话模式。
 
-## Related guides
+## 相关指南
 
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [Use spaces](/zh-CN/手册/操作指南/空间/)
-- [Work in Plan Studio](/zh-CN/手册/操作指南/plan-studio/)
-- [Run an orchestration](/zh-CN/手册/操作指南/运行编排/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [使用空间](/zh-CN/手册/操作指南/空间/)
+- [在 Plan Studio 中工作](/zh-CN/手册/操作指南/plan-studio/)
+- [运行编排](/zh-CN/手册/操作指南/运行编排/)
 
-## Related concepts
+## 相关概念
 
-- [Modes](/zh-CN/手册/概念/模式/)
-- [Orchestration](/zh-CN/手册/概念/编排/)
+- [模式](/zh-CN/手册/概念/模式/)
+- [编排](/zh-CN/手册/概念/编排/)

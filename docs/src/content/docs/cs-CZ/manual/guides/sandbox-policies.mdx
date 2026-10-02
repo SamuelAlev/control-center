@@ -1,193 +1,196 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Nastavte politiky sandboxu
+description: Co omezuje běh agenta, jak poznáš, jestli ho obaluje sandbox operačního systému, a která nastavení schopností server opravdu čte.
 slug: cs-CZ/prirucka/navody/politiky-sandboxu
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Jestli běh agenta běží v sandboxu, rozhoduje se na serveru při startu
+(`--sandbox`). Přepínač **Zapnout sandboxing**, výběr **Backend** a
+přepínače **Výchozí schopnosti · nové prostory** v **Nastavení → Server →
+Diagnostika a soukromí** jsou preference uložené na tvém zařízení. Detekce
+hostitele na kartě **Sandboxing** hlásí, co umí obalit hostitel serveru.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+K běhu sahají dva ovládací prvky a tenhle návod pokrývá oba: **Oprávnění
+sandboxu** u agenta níže a vlastní příznak `--sandbox` serveru.
 
-## What constrains an agent run
+## Co omezuje běh agenta
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Agenta drží šest věcí. První je sandbox operačního systému a ta je
+podmíněná — zbylých pět drží na každém hostiteli.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Hranice                  | Co dělá                                                                                                                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sandbox operačního systému | Seatbelt na macOS, bubblewrap na Linuxu a na WSL2. Obalí CLI Claude Code, adaptéry ACP a nástroj `bash` harnessu. **Chybí na Windows a na Linuxu bez `bwrap` a `socat`** |
+| Vlastní worktree         | Každá konverzace dostane copy-on-write checkout. Původní checkout se do běhu vloží jako cesta se zákazem zápisu a vynucuje to sandbox                                              |
+| Pověření od brokera      | Broker přihlašovacích údajů vystaví prostředí pro daný běh ze schopností agenta a při úklidu ho odebere. Žádná schopnost, žádný token v prostředí                                  |
+| Guardraily akcí          | Každý mutující nástroj deklaruje své třídy efektů a strážce je vyhodnotí, než se volání spustí. `prompt` bez připojeného schvalovatele se odmítne                                 |
+| Očištění prostředí       | ACP a nástroj `bash` harnessu dostanou filtrované prostředí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele                                                         |
+| Plocha nástrojů režimu   | Režim jen pro čtení sundá nástroje, které mění worktree, a připne vlastní výstupní sloveso režimu, aby pořád uměl doručit                                                         |
 
-Three things stay weaker than they look:
+Tři věci jsou slabší, než vypadají:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Jen **vestavěný harness** vynucuje bránu nástrojů, kontrakty dokončení a
+  strukturální pravidla režimu. Adaptér Claude Code ne. Claude
+  Code se navíc spouští s `--dangerously-skip-permissions`, protože
+  neinteraktivní `claude -p` by jinak navždy čekalo na vlastní výzvu —
+  takže vlastní volání Claude na čtení, zápis, úpravy a bash Control Center
+  ani nevidí, ani nehlídá. Kde je sandbox zapnutý, je hranicí kolem nich.
+- Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search,
+  find, search_files) běží uvnitř procesu serveru, takže je neomezuje žádný profil sandboxu.
+  Sandboxovaným runnerem příkazů projde jen nástroj `bash`. Ty nástroje
+  omezuje jejich vlastní omezení cest a k tomu guardraily akcí.
+- Na hostiteli bez backendu první řádek neplatí vůbec. ACP a
+  nástroj `bash` harnessu spadnou na očištění prostředí a politiku
+  příkazů; Claude Code dědí prostředí hostitele přes `NoSandboxAdapter`.
+  Server to řekne ve startovacím logu. Svůj si zkontroluj níže.
 
-## Set an agent's capabilities
+## Nastav schopnosti agenta
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Tohle je jediný ovládací prvek schopností, který server čte. Je na agenta a
+rozhoduje, co broker přihlašovacích údajů vloží do prostředí toho agenta.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Jdi do **Nastavení → Pracovní prostor → Agenti**
+2. V soupisce vyber agenta
+3. Na kartě **Nastavení** sjeď k **Oprávnění sandboxu**
+4. Zapni přepínač — popisek řádku se změní z **Použít výchozí pracovního prostoru**
+5. Nastav čtyři přepínače:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| Přepínač                         | Co hlídá                                                                                                                                                                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Povolit git push**             | Když je vypnutý, běh dostane `GIT_ASKPASS=/usr/bin/false` a `GIT_TERMINAL_PROMPT=0`, takže push si nemůže vyžádat přihlašovací údaj                                                                                                     |
+| **Povolit volání GitHub API**    | Spolu s **Povolit git push** rozhoduje, jestli broker vloží token GitHub jako `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
+| **Povolit volání ticketing API** | Rozhoduje, jestli broker vloží `TICKETING_API_KEY`                                                                                                                                                                                      |
+| **Povolit obecný přístup k síti** | Kde je sandbox zapnutý, je to skutečná brána odchozího provozu: když je vypnutý, seznam povolených běhu je prázdný a každé odchozí spojení proxy odmítne. Kde backend není, zapíše se to na běh, ale nezablokuje nic, co udělá spuštěný proces |
 
-6. Save
+6. Ulož
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Kontrolní bod: otevři agenta znovu a přepínač je pořád zapnutý s tvými
+volbami — uložená sada schopností se přes server vrátí a agent, který žádnou
+nemá, spadne na konzervativní výchozí stav (push vypnutý, GitHub API vypnuté,
+ticketing vypnutý, síť zapnutá).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Dvě pasti]
+Popisek říká **Použít výchozí pracovního prostoru**, ale žádné nastavení
+schopností na úrovni pracovního prostoru server nečte. Agent s vypnutým
+přepínačem dostane vestavěný konzervativní výchozí stav.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Zvlášť: přihlašovací údaj GitHubu u běhu je vždycky jen ten od brokera —
+token instalace GitHub App vázaný na repozitář, nebo záložní PAT z prostředí —
+nikdy vlastní uložený token člena, který o běh požádal. `actingUserId` se
+předává, aby broker mohl *odepřít* PAT serveru členovi, který není vlastník a
+nemá připojený GitHub; nesloží osobní token přes schopnost, která je vypnutá.
+**Povolit volání GitHub API** neber jako tvrdou hranici odchozího provozu
+na hostiteli bez sandboxu operačního systému: spuštěný proces se k síti pořád
+dostane.
 :::
 
-## Check whether your agent runs are sandboxed
+## Zkontroluj, jestli jsou běhy agenta v sandboxu
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Rozhodují o tom dvě věci, obě na serveru: jestli hostitel nabízí backend a
+jestli je `--sandbox` zapnutý. Zkontroluj je v tomhle pořadí.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Jdi do **Nastavení → Server → Diagnostika a soukromí**
+2. Přečti kartu **Sandboxing**. Údaj **Hostitel** je stroj, na kterém běží
+   `cc_server`, ne stroj, na který se díváš. Pole **Backend** uvádí
+   **Nativní sandbox** (Seatbelt na macOS, bubblewrap na Linuxu a na WSL2) nebo
+   **Bez izolace**. Údaj **V platnosti** je preference tohohle zařízení, ne
+   obal, který server skutečně používá.
+3. Přečti startovací log serveru. Vypíše přesně jeden ze tří řádků:
+   - `agent sandbox ON` plus poznámka k backendu — běhy jsou obalené
+   - `no OS-native agent sandbox on this host` plus nápověda k instalaci, kde
+     nějaká je — běhy obalené nejsou
+   - `agent sandbox DISABLED by --sandbox off` — záměrné vypnutí
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` stav sandboxu nehlásí, takže kontrolou je startovací log.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Sandbox vypneš schválně — existuje proto, že na některém hostiteli se profil
+chová špatně — tak, že server spustíš s `--sandbox off`, nebo nastavíš
+`CC_SERVER_SANDBOX=off`. Výchozí hodnota je `on` a `on` znamená „použij
+backend, když ho hostitel má“, nikdy „vyžaduj ho“.
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Nativní obal sandboxu ve dvou situacích nevznikne vůbec. Na **Windows** nativní
+sonda vždycky hlásí, že není k dispozici, a není co instalovat — odeslání
+agenta používá `none`. Backend `microvm` je zvlášť (interaktivní terminály a
+stanice) a pouští ho vlastní sonda podle jeho runtime. Na **Linuxu a WSL2**
+musí být na `PATH` jak `bwrap`, tak `socat`; bez nich sonda hlásí, že není
+k dispozici, a pojmenuje chybějící balíčky.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Na Linuxu a WSL2 s nainstalovaným bubblewrapem se globy tajných souborů
+standardní politiky nedají vynutit u souborů, které agent vytvoří až později.
+Takový nativní běh teď selže, místo aby pravidla potichu ignoroval. Kladná
+sonda při startu proto nezaručí, že se odeslání na Linuxu umí rozběhnout.
+`--sandbox off` je záměrné vypnutí bez omezení, ne náhradní bezpečnostní
+hranice.
 
-## Know what a mode already forbids
+## Zjisti, co režim už zakazuje
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Režim se ukládá na prostor a do vyhodnocovače guardrailů vstupuje jako vrstva
+**Předvolba režimu**. Tři ze čtyř režimů jsou jen pro čtení a režim jen pro
+čtení odmítne jedenáct tříd efektů rovnou:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Režim               | Worktree         | Co předvolba odmítá                                                                                                                                                                                                                     |
+| ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent** (`chat`)  | Zapisovatelný    | Nic — platí vestavěné výchozí hodnoty                                                                                                                                                                                                   |
+| **Plán**            | Jen pro čtení    | Smazat soubor, zápis mimo worktree, vytvořit commit, odeslat na remote, otevřít pull request, zveřejnit kontrolu nebo sloučení, zápis do externího trackeru, nainstalovat balíček, spustit proces, změnit strukturu pracovního prostoru, ovládat izolované prostředí (stanici) |
+| **Kontrola**        | Jen pro čtení    | Stejných jedenáct. Nejde vybrat — composer nabízí jen Agent, Plán a Orchestraci                                                                                                                                                        |
+| **Orchestrace**     | Jen pro čtení    | Stejných jedenáct                                                                                                                                                                                                                       |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Přístup k síti a čtení tajemství režim jen pro čtení schválně _neodmítá_:
+výzkum je jeho smysl.
 
-## Require approval before an action runs
+## Vyžaduj schválení, než akce proběhne
 
-Approval is a guardrail decision, not a sandbox setting.
+Schválení je rozhodnutí guardrailu, ne nastavení sandboxu.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Jdi do **Nastavení → Pracovní prostor → Oprávnění agentů**
+2. Nastav třídu akce na **Nejdřív se zeptat** v rozsahu pracovního prostoru, agenta nebo prostoru
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/) for the full
-resolution order.
+Rozhodnutí **Nejdřív se zeptat** běh přeruší a zeptá se tě. Když není
+připojený schvalovatel, selže uzavřeně a akce se odmítne. Celé pořadí
+vyhodnocení je v
+[Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
 
-## Troubleshooting
+## Řešení problémů
 
-### An agent cannot push and I never denied it
+### Agent nemůže pushnout a já jsem to nezakázal
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Zkontroluj **Oprávnění sandboxu** agenta. Agent bez vlastní sady schopností
+dostane konzervativní výchozí stav, ve kterém je **Povolit git push** vypnutý —
+broker tedy nevloží token GitHub a git se nemá čím ověřit.
 
-### The Sandboxing card reports no native sandbox
+### Karta Sandboxing nehlásí nativní sandbox
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
+Pak běhy agenta na tom hostiteli neobaluje Seatbelt ani bubblewrap a zbývající
+hranice jsou to, co máš. Na Linuxu a na WSL2 nainstaluj oba chybějící
+nástroje — `sudo apt-get install bubblewrap socat` — a restartuj server;
+startovací log by pak měl říct, že je sandbox zapnutý. Na Windows není nativní
+backend k instalaci, takže místo toho utáhni guardraily: viz
+[Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
 
-### An agent reached a file outside its worktree
+### Agent se dostal k souboru mimo svůj worktree
 
-Which tool reached it decides whether this is expected.
+Jestli je to očekávané, rozhoduje, který nástroj se k němu dostal.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search,
+find, search_files) běží v procesu serveru, takže se na ně žádný profil
+sandboxu nevztahuje — jejich mez je vlastní omezení cest a k tomu guardraily.
+Příkaz `bash` nebo CLI Claude Code se _obaluje_ tam, kde backend existuje, a
+tvoje registrované checkouty jsou uvnitř toho obalu v každém režimu se zákazem
+zápisu, včetně zápisů po rozřešení symlinku (na macOS se cesta dosažená přes
+`/tmp` nebo `/var/folders` rozřeší pod `/private` a oba zápisy se teď odmítají).
+Na hostiteli bez backendu nic z toho neplatí. V obou případech umí guardraily
+rovnou odmítnout **Zápis mimo worktree**.
 
-## Related guides
+## Související návody
 
-- [Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/)
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
-- [Diagnose an agent](/cs-CZ/prirucka/navody/diagnostika-agenta/)
-- [Sandbox backends](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/)
-- [cc_server CLI](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/): the `--sandbox` flag
+- [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/)
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
+- [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/)
+- [Backendy sandboxu](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/)
+- [CLI cc_server](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/): příznak `--sandbox`
 
-## Related concepts
+## Související koncepty
 
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)

@@ -1,115 +1,105 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: إدارة مفاتيح API
+description: أين تعيش كل بيانات اعتماد — حسابك على الخادم، أو الخادم نفسه، أو واجهة سطر أوامر خارجية — وكيف تضبطها وتدوّرها وتزيلها.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+يبيّن هذا الدليل أين تُخزَّن كل بيانات اعتماد يستخدمها Control Center، وكيف
+تغيّرها.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**لا يُخزَّن شيء على الجهاز الذي تكتب عليه.** تعيش بيانات الاعتماد كلها على
+الخادم، وأيها يجيب عن طلب بعينه يتوقف على وجود إنسان خلفه.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| الاعتماد | مكان التخزين | من يستخدمه |
+| --- | --- | --- |
+| اعتمادك لمضيف الشفرة والتذاكر | ملف أسرار الخادم بصلاحية 0600، ومفتاحه معرّف المستخدم | كل ما تطلبه: سطح طلبات السحب، وتشغيلات وكيلك، وصورك |
+| هوية تطبيق الخادم | الملف نفسه، مع `server_settings` لما ليس سرًا | ما لم يطلبه إنسان: خطافات الويب، واستطلاع طلبات السحب، ومزامنة التذاكر |
+| مفاتيح مزوّدي النماذج ورموز OAuth | مخزن بيانات اعتماد الخادم | المحوّل المضمّن، لكل مساحة عمل في التثبيت |
+| رموز بوت Slack | `<dataDir>/<workspaceId>/chat_credentials/` على الخادم | جسر الدردشة لمساحة العمل تلك |
+| بيانات اعتماد واجهة سطر الأوامر الخارجية | ما تستخدمه تلك الواجهة | Claude Code، على مضيف الخادم |
 
-## Two GitHub credentials, and they answer different questions
+## اعتمادان لـ GitHub يجيبان عن سؤالين مختلفين
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **اعتمادك** يأتي من تسجيل الدخول (تدفق الجهاز) أو من لصق رمز. هو ما يستخدمه
+  كل طلب يُقدَّم *نيابة عنك*، فيحمل التعليق المنشور عنك اسمك. لا يقرأه عضو
+  آخر، ويتصل كل عضو بحسابه
+- **اعتماد الخادم** يأتي من تطبيق GitHub الذي سجّله المشغّل. يجيب عما لا إنسان
+  خلفه، فيبقى الوصول إلى مضيف الشفرة قائمًا إذا غادر شخص أو دوّر رمزه
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-and [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/).
+يُضبط اعتمادك في بطاقة **استضافة الكود** ضمن **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية**، واعتماد الخادم في **تطبيقات الموفّرين** ضمن **الإعدادات ← الخادم ← تسجيل الدخول الموحّد**. انظر [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+و[إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[شاشة لا تُفتح إلا بالعنوان]
+`/workspaces/<workspaceId>/api-keys` تعرض البطاقتين نفسيهما كما في الخطوة
+الأولى من الإعداد الأولي. **لا مدخل لها في التنقل في أي موضع من الواجهة**، ولا
+تُفتح إلا بكتابة العنوان. استخدم الإعدادات ← مساحة العمل ← الملف الشخصي والهوية بدلًا من ذلك.
 :::
 
-## Set model provider keys
+## ضبط مفاتيح مزوّدي النماذج
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+يتولى المحوّل المضمّن مصادقة المزوّدين بنفسه، وتعيش بيانات الاعتماد هذه على الخادم.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. افتح **الإعدادات ← الخادم ← مزوّدو النماذج**
+2. انزل إلى **الموفّرون والنماذج**
+3. اربط المزوّد: OAuth عبر المتصفح لـ OpenAI وCodex وCursor وKimi Code، ومفتاح API لـ Anthropic والبقية
 
-See [Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/) for the full list and
-for adding a custom endpoint.
+انظر [إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/) للقائمة الكاملة
+ولإضافة نقطة نهاية مخصصة.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+بيانات الاعتماد هذه **عامة على المضيف**: مفتاح واحد يخدم كل مساحة عمل في
+التثبيت. تُجدَّد رموز OAuth قبل أن تنتهي.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+تحتفظ واجهات سطر أوامر المحوّلات الخارجية ببيانات اعتمادها، في تهيئتها
+الخاصة، على مضيف الخادم. Control Center لا يديرها. صادق Claude Code كما
+تقول وثائقه، على الجهاز الذي يعمل عليه `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/).
+حوار **متغيرات البيئة** لكل محوّل يكتب إلى جهازك، والخادم يقرأ نسخته، ولا شيء
+يصل بين الاثنين. مفتاح يُوضع هناك لإحدى واجهات سطر الأوامر تلك لا يبلغ الخادم. انظر
+[إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/).
 
-## Connect a ticketing vendor
+## ربط مورّد تذاكر
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+تجمع بطاقة **التذاكر** في **الإعدادات ← مساحة العمل ← عام** طرفي قرار واحد: المورّد الذي
+تعيش فيه تذاكرك، وبيانات الاعتماد الخاصة به. اختيار **محلي** يخفي صف
+الاعتماد. التذاكر المحلية تعيش في قاعدة هذا الخادم، ولا جهة تُصادَق إليها.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-linear/).
+يُخزَّن مفتاحك على الخادم مقابل معرّف المستخدم، كاعتماد مضيف الشفرة. يحتفظ
+الخادم بمفتاح Linear الخاص به منفصلًا (**تطبيقات الموفّرين**)، وعليه تعمل
+مزامنة التذاكر حين لا يطلب إنسان. لا يُحقن مفتاح يتلقاه وكيل إلا إذا ملك
+الوكيل قدرة **السماح باستدعاءات API للتذاكر**. انظر
+[إعداد تكامل Linear](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-linear/).
 
-## Rotate or revoke
+## التدوير أو الإبطال
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- **اعتماد GitHub الخاص بك**: انقر **قطع الاتصال**، ثم سجّل الدخول مجددًا أو
+  الصق الرمز الجديد. أبطل القديم على GitHub
+- **تطبيق الخادم**: ولّد مفتاحًا خاصًا جديدًا أو سر العميل من صفحة التطبيق على
+  GitHub، والصقه في **تطبيقات الموفّرين**، وانقر **اختبار**
+- **مزوّد نموذج**: من صفه، سجّل الخروج (OAuth) أو أزل المفتاح، ثم اربطه من جديد
+- **Slack**: أعد لصق الرموز في حوار الاتصال. انظر
+  [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The PR list is empty but my token works in `curl`
+### قائمة طلبات السحب فارغة مع أن رمزي يعمل في `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+افحص العنوان الفرعي لصف **استضافة الكود**. إن سمّى مصدرًا آخر («عبر تطبيق هذا الخادم» أو «من البيئة»)، فالاعتماد الذي تختبره ليس الذي يجيب، واعتمادك لم يُحفظ.
 
-### The token is accepted but later requests fail
+### يُقبل الرمز ثم تفشل الطلبات اللاحقة
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+يُسبَر الرمز لحظة تخزينه، فيسمّي الصف الحساب الذي يقف خلفه وحده، لا نطاقاته.
+رمز نطاقاته أقل مما يلزم يُقبَل، ثم تفشل طلباته واحدًا واحدًا. افحص النطاقات
+وانتهاء الصلاحية:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## أدلة ذات صلة
 
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-- [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)
-- [Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
-- [Set up Linear integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-linear/)
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)
+- [إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- [إعداد تكامل Linear](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-linear/)

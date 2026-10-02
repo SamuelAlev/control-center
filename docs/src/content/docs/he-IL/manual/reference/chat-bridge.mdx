@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: גשר צ'אט
+description: ספקים, פקודות, פרטי גישה, יכולות, פעולות RPC ואחסון עבור גשר הצ'אט.
 slug: he-IL/מדריך-למשתמש/עזר/גשר-צאט
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## ספקים
 
-| Provider | Wire value | Transport                  | Space kind |
+| ספק   | ערך תעבורה | תעבורה                    | סוג מרחב |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode (WSS יוצא) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack הוא הספק היחיד.** `ChatProvider` הוא enum בעל ערך יחיד ו-`cc_server` רושם תוסף אחד. הסכימה, כל חיפוש וכל אינדקס ייחודי ממופתחים לפי `provider`, כך שמזהים לעולם לא חוצים ספקים והוספת ספק היא שינוי בצד השרת בלבד.
 
-One provider-side app per **workspace × provider**.
+אפליקציה אחת בצד הספק לכל **סביבת עבודה × ספק**.
 
-## Chat commands
+## פקודות צ'אט
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+שם הפקודה הוא לפי אפליקציה (`cc` כברירת מחדל, ולכן `/cc`). מנהל יכול לשנות את שמו; הגשר משתמש אז במה שאיתו הופעל לאחרונה.
 
-| Command                               | Effect                                                        |
+| פקודה                               | השפעה                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (או `/cc` בלי פועל)    | מפרט מה הבוט יודע לעשות                                     |
+| `/cc link <code>`                     | מממש קוד חד־פעמי ומקשר את זהות הצ'אט של השולח  |
+| `/cc ticket <title>`                  | פותח כרטיס מקומי שמדווח על ידי החבר המקושר            |
+| `/cc ticket <title> \| <description>` | אותו דבר, כשכל מה שאחרי ה-`\|` הראשון הוא התיאור |
+| פועל לא מוכר                          | מדווח על הפועל הלא מוכר יחד עם טקסט העזרה                   |
 
-Ways to reach an agent:
+דרכים להגיע לסוכן:
 
-| Gesture                    | Behavior                                                                                                               |
+| מחווה                    | התנהגות                                                                                                               |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` בערוץ      | פותח שרשור ב-Slack ומרחב Control Center תואם; הסוכן משיב בשרשור ה-Slack                        |
+| תשובה בשרשור Slack מגושר | ממשיכה את אותו מרחב Control Center — בלי צורך באזכור                                                       |
+| הודעה רגילה בערוץ | מתעלמים ממנה (לא מכוונת לבוט ולא בתוך שרשור Slack מגושר)                                                   |
+| הודעה ישירה לבוט              | מרחב Control Center אחד לכל שיחת הודעה ישירה; מגדיר כותרת לשרשור ה-Slack וסטטוס "is thinking…" בזמן שהסוכן עובד   |
 
-## Credential fields (Slack)
+## שדות פרטי גישה (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+מוצהרים על ידי מתאר הספק, שהוא זה שמייצר את דיאלוג החיבור ומאמת את השליחה.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| מזהה שדה             | תווית                           | נדרש | קידומת  | היכן הוא נמצא                                                  |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | אסימון גישה של הבוט            | כן      | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | אסימון גישה ברמת האפליקציה                 | כן      | `xapp-` | Basic Information → App-Level Tokens, הרשאה `connections:write` |
+| `configRefreshToken` | אסימון גישה לתצורת האפליקציה | לא       | `xoxe`  | אסימוני תצורת אפליקציה ב-api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` הוא פרט הגישה לניהול האפליקציה: בלעדיו החיבור עובד, אבל אי אפשר ליצור או לערוך את הבוט מ-Control Center. הוא מתחלף בכל שימוש והערך המתחלף נשמר מיד.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+הערכים נחתכים מרווחים מיותרים, מפתחות שלא הוצהרו נזרקים, ואי־התאמה בקידומת נדחית באותה מחרוזת גם בלקוח וגם בשרת. שדות נדרשים חייבים להיות נוכחים בכל חיבור; שדה אופציונלי שנשאר ריק שומר על מה שכבר היה שמור.
 
-## Slack app requirements
+## דרישות אפליקציית Slack
 
-Bot token scopes:
+הרשאות אסימון הבוט:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+מינויים לאירועי הבוט:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+הגדרות מבניות ש-Control Center כופה כשהוא יוצר או עורך את האפליקציה: Socket Mode מופעל, בלי כתובת URL של בקשה, לשונית Messages מופעלת וניתנת לכתיבה, `always_online` לבוט, ההרשאות והאירועים הנדרשים ממוזגים אל מה שכבר יש לאפליקציה (ולעולם לא נגרעים ממנו), ופקודת קו נטוי אחת שנושאת את התיאור `File a ticket or link your Control Center account` — הסימן שמזהה את הפקודה של Control Center עצמו ב-manifest מיוצא.
 
-## Connection states
+## מצבי חיבור
 
-| State            | Wire           | Meaning                                                         |
+| מצב            | ערך תעבורה           | משמעות                                                         |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| לא מחובר    | `disconnected` | לא נשמרו פרטי גישה עבור סביבת עבודה × ספק זו             |
+| מתחבר…      | `connecting`   | פרטי הגישה נשמרו, התעבורה מחייגת או מחייגת מחדש             |
+| פעיל             | `connected`    | התעבורה פעילה ומקבלת אירועים                               |
+| שגיאת חיבור | `error`        | נשמרו אבל נכשלים; השגיאה של הספק עצמו מוצגת לצידם |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+ההתחברות מחדש היא השהיה מעריכית עם jitter, שמוגבלת ל-30 שניות. סבב החלפת socket שיזם הספק מתחבר מחדש מיידית בלי להחמיר את ההשהיה. פרט גישה שנדחה (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) או הרשאה חסרה הם סוף הדרך: הגשר מפסיק לנסות שוב עד שמגיעים פרטי גישה חדשים.
 
-## Provider capabilities (Slack)
+## יכולות הספק (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+הגשר נכתב מול המשטח העשיר ביותר ומדרדר יכולת אחת בכל פעם.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| יכולת                | Slack  | השפעה כשהיא חסרה                                                                             |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | כן    | התשובה כולה מפורסמת פעם אחת, בסוף                                                     |
+| `streamingRequiresThread` | כן    | יעד תשובה בלי עוגן שרשור מפרסם תשובות שלמות                                       |
+| `ephemeralMessages`       | כן    | תשובה לפקודת קו נטוי בלי ידית תשובה שמישה נזרקת (סירובים תמיד מפורסמים בתוך השרשור) |
+| `threadStatus`            | כן    | אין שורה חולפת של "is thinking…"                                                               |
+| `threadTitle`             | כן    | שרשור הצ'אט שומר על כותרת ברירת המחדל שלו                                                        |
+| `slashCommands`           | כן    | אין משטח `/cc`                                                                               |
+| `taskCards`               | כן    | טקסט בלבד — בלי כרטיס מעל התשובה ובלי קישור "View in Control Center"                       |
+| `maxMessageLength`        | 39,000 | תשובות ארוכות יותר נחתכות עם הפניה ל-Control Center                                  |
+| `maxStreamChunkLength`    | 3,800  | תוספות מפוצלות בגבול של פסקה, שורה או רווח                                      |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+הצהרה על הזרמה אינה הבטחה להזרמה: זו של Slack דורשת את התכונה Agents & AI Apps בתוכנית בתשלום. סירוב בזמן הקריאה (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) נזכר לכל חיי החיבור ומוצג כ-`streamingAvailable: false`. כרטיסי המשימה של Slack נוסעים על אותה קריאה, ולכן Slack שמסרב למצב התצוגה של הכרטיס שומר על הזרם שלו ומאבד רק את הכרטיס, פעם אחת, לכל חיי החיבור.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+זרם גם צריך לנקוב בקורא שלו. Slack דורש גם משתמש נמען וגם את הצוות שלו כדי לפתוח אחד ב**ערוץ** (הודעה ישירה לא) ומסרב עם `missing_recipient_user_id` / `missing_recipient_team_id` אחרת — סירוב לפי קריאה, ולכן הגשר ממשיך לנסות ובינתיים התור מגיע כתשובה אחת מפורסמת. הנמען הוא מי ששאל, נלקח מההודעה הנכנסת (הצוות שלו, לא של האפליקציה, כך שערוץ Slack Connect נפתר נכון). לתור שאיש לא התחיל מהצ'אט — עבודה שהופעלה ב-Control Center על שיחה שכבר מגושרת — זה החבר שקישורו יצר את הגשר; אם הוא ביטל מאז את הקישור של חשבון הצ'אט שלו, אותו תור מפורסם שלם במקום להיות מוזרם.
 
-## Task cards
+## כרטיסי משימה
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+כרטיס מקובץ אחד לכל תור של סוכן (`task_display_mode: plan`), עם שורה לכל שלב. כל שורה היא `task_update` של `id` + `title` + `status`, ובנוסף `details` חד־פעמי כשהמחשבה מוכנה. `details` ו-`output` עם אותו מזהה משורשרים בלי מפריד, ולכן `details` נשלחים פעם אחת ו-`output` לעולם אינו מוזרם. הכותרת של התוכנית היא הבקשה; התשובה היא תוספת נפרדת ומאוחרת יותר שנושאת מקטע `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
+| חלק           | תוכן                                                                                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| כותרת התוכנית     | מה שהתבקש                                                                                                                                                |
+| שורת הקמה      | `Working on it…`, אחר כך `Cloning …`, אחר כך `Starting the agent…` — שורה אחת, הכותרת מוחלפת                                                                      |
+| שורת חשיבה   | `Thinking…`, נוספת כשהסוכן מתחיל לחשוב; המחשבה היא ה-`details` של השורה הזו, נשלחת פעם אחת כשהחשיבה מסתיימת                                    |
+| שורות כלים      | אחת לכל כלי (`Bash which swift`), מזהה ייחודי כך שהן יושבות זו לצד זו                                                                                         |
+| סטטוס         | בתהליך בזמן שהשורה הזו רצה; הושלם כשהשורה הבאה מתחילה או שהתור מסתיים; שגיאה במקרה של כשל, הפסקה או הגעה למגבלת התור                         |
+| קריאה לפעולה | `View in Control Center` כשורה אחרונה כשהתור מסתיים — נעדרת כשהעבודה עדיין רצה ונעדרת כשהלשרת אין כתובת ציבורית נגישה |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+מה שכרטיס לעולם אינו נושא: פלט כלים, ארגומנט שמחוץ לרשימת ההיתר הזו, או כל דבר שנקרא ממסד הנתונים. פרוזת החשיבה היא רק ה-details של שורת ה-`Thinking…` (מוגבלת ל-256 תווים), לא גוף ההודעה. כרטיס שלא יאמר דבר חדש אינו נשלח שוב. אזכור פותח את הזרם מיד כדי ששרשור ה-Slack לא יישאר שקט; תור שלא הפיק אחר כך שום טקסט מסיים את אותו כרטיס בהערה קצרה במקום לפרסם הודעה שנייה. תור בלי מילים במרחב שמעולם לא פתח זרם (אין כרטיסים, או שההזרמה כבר נדחתה) עדיין מפרסם הודעה אחת שנושאת את הכרטיס המוגמר ואת ההערה.
 
-Streamed and posted cards are different payloads:
+כרטיסים מוזרמים ומפורסמים הם מטענים שונים:
 
-| Form     | Shape                                                | Prose                                            |
+| צורה     | מבנה                                                | פרוזה                                            |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| מוזרם | `plan_update` בתוספת מקטעי `task_update` שממופתחים לפי `id`   | מחרוזת פשוטה, מוגבלת ל-256 תווים לכל מקטע |
+| מפורסם   | בלוק `plan` שעוטף `task_card`-ים שממופתחים לפי `task_id` | טקסט עשיר                                        |
 
-Failure handling:
+טיפול בכשלים:
 
-| Situation                                    | Behavior                                                                                                                    |
+| מצב                                    | התנהגות                                                                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| הספק מסרב לכרטיס בתוספת       | התוספת נשלחת שוב מיד בלעדיו; הפרוזה עדיין מגיעה בזמן אמת והכרטיסים מושלכים לכל חיי החיבור |
+| הספק מסרב גם לפרוזה               | הזרם נסגר והתשובה מפורסמת שלמה                                                                          |
+| הזרם נשבר אחרי שחלק מהתשובה כבר נחת | הזרם נסגר ושום דבר לא מפורסם שוב                                                                               |
 
-See [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) for why the payload is split this way.
+ראו [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) למה המטען מפוצל כך.
 
-### Setup, before there is a turn
+### הקמה, לפני שיש תור
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+הכרטיס נפתח כשאזכור מתקבל, לפני השיבוט ולפני האסימון הראשון; התור שבא אחר כך מאמץ את אותו כרטיס וזרם. הקריינות שאחרי זה מגיעה מ-`SpaceProvisioningChanged` על אפיק אירועי התחום — אותה התקדמות שבאנר ההקמה של אפליקציית שולחן העבודה קורא משורת המרחב.
 
-| Provisioning state          | Narration                                                      |
+| מצב הקמה          | קריינות                                                      |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| האזכור התקבל            | `Working on it…`                                               |
+| שלב `repo`                 | `Cloning <repo>…`                                              |
+| שלב `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| שלב `script`               | `Running the setup script for <repo>…`                         |
+| שלב `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, עדיין בלי שלב | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| הסוכן חושב             | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+קריינות ההקמה דורשת את כל ארבעת התנאים:
 
-| Condition                                 |
+| תנאי                                 |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| הספק מציג כרטיסים                |
+| הזרמה זמינה בחיבור הזה |
+| במרחב יש בקשת צ'אט בדרך    |
+| שום כרטיס לא מדווח כבר על תור שם |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+הבקשה נשארת בדרך עד שתור מתחיל או שההקמה נכשלת. אירוע `ready` בלי כרטיס שכבר פתוח הוא מרחב חם ונשאר בשקט, והקמה שאיש בצ'אט לא ממתין לה — שיחה שנפתחה באפליקציה, או תקועה שהתחדשה באתחול — אינה מייצרת כרטיס כלל.
 
-## The `/open` bounce page
+## עמוד ההפניה של `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+מוצרי צ'אט מקבלים `http(s)` בקישור ושום דבר אחר, ולכן קריאה לפעולה לא יכולה לנקוב ישירות בסכימה של אפליקציית שולחן העבודה.
 
-| Property   | Value                                                                                                                                       |
+| מאפיין   | ערך                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| נתיב      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| מקור     | נגזר מכתובת ה-URL הציבורית של השרת (`ws` → `http`, `wss` → `https`); loopback נשמר                                                     |
+| תגובה   | עמוד HTML קטן עם no-store שמנווט אל `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` ומציג כפתור ידני |
+| אימות | מזהים חייבים להתאים ל-`[A-Za-z0-9_.-]{1,128}`; כל דבר אחר הוא 404                                                                              |
+| גישה     | ציבורי ואינרטי — הוא לא קורא שום מסד נתונים, ולכן אינו אורקל קיום; האפליקציה שהוא פותח מבצעת את האישור                          |
 
-## Bot profile fields
+## שדות פרופיל הבוט
 
-| Field              | Limit       | Notes                                                                                             |
+| שדה              | מגבלה       | הערות                                                                                             |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 תווים  | ברירת מחדל: `Control Center · <workspace name>`                                                   |
+| `botDisplayName`   | 1–80 תווים  | ברירת מחדל: `control-center`                                                                      |
+| `description`      | ≤ 140 תווים |                                                                                                   |
+| `agentDescription` | ≤ 300 תווים | מוצג מעל הודעה ישירה עם הבוט                                                                     |
+| `command`          | ≤ 32 תווים  | מנורמל: קווים נטויים מובילים מוסרים, אותיות מוקטנות, `[^a-z0-9_-]` מוסר, ריק נופל חזרה ל-`cc` |
+| `agentEnabled`     | —           | האם חוויית ההודעה הישירה/סוכן חשופה                                                        |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+תיבה ריקה פירושה "השאר אותו כמו שהוא", לא "נקה אותו". המגבלות הן של Slack, שהן ההדוקות מבין המוצרים שמופו.
 
-## Link codes
+## קודי קישור
 
-| Property | Value                                                                                    |
+| מאפיין | ערך                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| אורך   | 6 תווים                                                                             |
+| אלפבית | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (בלי `0`/`O`, `1`/`I`, `U`)                             |
+| תוקף | 15 דקות                                                                               |
+| שימושים     | אחד                                                                                      |
+| אחסון  | בזיכרון — הפעלה מחדש של השרת מבטלת קודים פתוחים                               |
+| היקף    | סביבת עבודה אחת וספק אחד; הנפקת קוד חדש מבטלת את הקוד הקודם של החבר |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+המימוש מותאם בלי תלות ברישיות. קודים לא מוכרים, שפג תוקפם, של סביבת עבודה זרה ושל ספק שגוי נכשלים כולם באופן זהה בכוונה.
 
-## Link methods
+## שיטות קישור
 
-| Method | Wire    | How                                                                            |
+| שיטה | ערך תעבורה    | איך                                                                            |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| קוד   | `code`  | החבר מימש `/cc link <code>`                                          |
+| אימייל  | `email` | האימייל המאומת של הספק התאים למשתמש שהוא כבר חבר בסביבת העבודה |
 
-## RPC operations
+## פעולות RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+כולן בהיקף סביבת עבודה. השרת חסר מצב, ולכן כל קריאה נושאת את ה-`workspace_id` שלה ב-args; המשגר מסרב לפעולה בהיקף סביבת עבודה שמשמיטה אותו, לפני שמסד נתונים כלשהו נפתח. פרטי גישה נוסעים _פנימה_ בלבד — קריאות סטטוס לעולם אינן מחזירות אותם.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| פעולה               | סוג        | תפקיד מזערי                                       | מחלקות פעולה                  |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| `chat.providers`        | קריאה        | `guest`                                        | —                               |
+| `chat.status`           | קריאה        | `guest`                                        | —                               |
+| `chat.connect`          | שינוי      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | הרסנית | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | קריאה        | `guest`                                        | —                               |
+| `chat.beginUserLink`    | שינוי      | `member`                                       | —                               |
+| `chat.unlinkUser`       | שינוי      | `member` עבור עצמכם, `admin` עבור כל אחד אחר | —                               |
+| `chat.createApp`        | שינוי      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | קריאה        | `admin`                                        | —                               |
+| `chat.botProfile`       | קריאה        | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | שינוי      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+פעולות קריאה יורשות את רצפת ה-`guest` מהסוג שלהן; פעולות שינוי בלי רצפה מפורשת דורשות `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` מרכיב כתובת URL ליצירת אפליקציית ספק מתוך פרופיל הבוט. הוא לא מצהיר על מחלקת פעולה כי הוא לא קורא שום סוד ולא מחייג לשום מקום — הדפדפן של המשתמש עצמו מבצע את הקריאה היחידה.
 
-One reactive query completes the surface:
+שאילתה ריאקטיבית אחת משלימה את המשטח:
 
-| Query                 | Kind  | Emits                                                    |
+| שאילתה                 | סוג  | פולטת                                                    |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | מעקב | הרשימה, נדחפת מחדש בכל פעם שקישור נוצר או מוסר |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+היא קיימת כי הקישור קורה ב_צד האחר_: חבר מקליד את הקוד החד־פעמי אל תוך הבוט, ולכן שום תגובת לקוח לא יכולה לשאת את התשובה בחזרה. רשימת ההגדרות והדיאלוג הפתוח "קישור החשבון שלי" עוקבים אחריה, והדיאלוג עובר לאישור ברגע שהקישור של החבר עצמו נוחת.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` תמיד מנפיק קוד עבור הזהות של הקורא עצמו. `chat.updateBotProfile` מחזיר `remaining_step` רק כשנשאר שלב (בדרך כלל התקנה מחדש); היעדרו פירושו שהעריכה חיה.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` מחזיר רשומה אחת לכל ספק מוצע — המתאר ובנוסף, כשיש, סטטוס החיבור. כל מה שממשק ההגדרות מציג מגיע מהמטען הזה, ולכן הוספת ספק היא שינוי בצד השרת בלבד.
 
-## Storage
+## אחסון
 
-| What                       | Where                                                                                                        |
+| מה                       | איפה                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| פרטי גישה של חיבור     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| הקמה מודרכת שנותרה באמצע | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| קובצי Slack מדורות קודמים         | `<dataDir>/<workspaceId>/slack_credentials.json` ו-`slack_app_setup.json`, נקראים פעם אחת ומומרים במקום |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+פרטי הגישה יושבים לצד מסד הנתונים של סביבת העבודה, לא בתוכו: מחיקת סביבת עבודה מסירה איתה את אסימוני הצ'אט שלה, ו-`workspace.export` או גיבוי מעתיקים את `workspace.db` — כך שסביבת עבודה שנמסרת למישהו אחר אינה נושאת אסימוני בוט חיים. הכתיבות אטומיות (קובץ זמני ובנוסף שינוי שם) ומוקשחות להרשאת בעלים בלבד.
 
-## Database tables
+## טבלאות מסד הנתונים
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+שתיהן יושבות במסד הנתונים של סביבת העבודה, שנושא בסיס v1 מכווץ — ולכן קריאה חוצת סביבות עבודה לא מתקמפלת.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — שיחה חיצונית אחת ↔ מרחב Control Center אחד:
 
-| Column                                                 | Notes                                                                      |
+| עמודה                                                 | הערות                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | היקף סביבת עבודה                                                            |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | צוות Slack `T…`, ריק עבור ספקים בלי המושג                   |
+| `external_channel_id`                                  | ערוץ Slack `C…`, קבוצה `G…`, הודעה ישירה `D…`                                    |
+| `external_thread_id`                                   | עוגן השרשור ב-Slack, או null כשכל השיחה היא העוגן (הודעות ישירות לבוט) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+ייחודי על `(workspace_id, provider, external_channel_id, external_thread_id)`, עם אינדקס חלקי שאוכף את אותו דבר עבור מזהי שרשור null (SQLite מתייחס ל-NULLs כנפרדים).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — חבר חיצוני אחד ↔ משתמש Control Center אחד:
 
-| Column                                 | Notes                                           |
+| עמודה                                 | הערות                                           |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | היקף סביבת עבודה                                 |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | חבר Slack `U…`                               |
+| `user_id`                              | משתמש Control Center (גלובלי, ולכן בלי מפתח זר) |
+| `method`                               | `code` או `email`                               |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+ייחודי על `(workspace_id, provider, external_team_id, external_user_id)` ועל `(workspace_id, provider, user_id)` — ייחוס חד־ערכי בשני הכיוונים, בעוד שאדם אחד יכול להיות מקושר בכמה ספקים.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+קישור הוא פענוח זהות, **לא** הענקת גישה: החברות נבדקת מחדש בכל אירוע נכנס, כך שקישור לחבר שהוסר מאז מפוענח כסירוב.
 
-## Space kind and message metadata
+## סוג המרחב ומטא־נתוני ההודעה
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+מרחב מגושר נוצר עם ה-`SpaceKind` של הספק (`slack`). הוא מתנהג כמו מרחב רגיל שפונה לאנשים — מתריע ומסווג כמו `topic` — ו-`isExternalChat` הוא הבדיקה שכל התנהגות (שיקוף, תג, שימור) עוברת דרכה.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+כל הודעה שהגשר מכניס נושאת חתימה של `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+החתימה היא גם שמירת ההד: השיקוף היוצא מדלג על כל הודעה שנושאת אותה, וזה מה שמונע מהודעת צ'אט נכנסת להתפרסם מיד בחזרה.
 
-## Relay behavior
+## התנהגות הממסר
 
-| Behavior                               | Detail                                                                                                         |
+| התנהגות                               | פירוט                                                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| מה מועבר החוצה                    | ה**טקסט** של הסוכן בלבד, בתוספת שורת הסטטוס של כרטיס המשימה. פרוזת החשיבה ופלט הכלים נשארים ב-Control Center  |
+| קצב ההזרמה                      | מווסת לשטיפה אחת בשנייה בזמן שהתור רץ; הכרטיס והטקסט שהוא מסביר נוסעים באותה קריאה |
+| הודעות של אנשים שהוקלדו ב-Control Center | משוקפות אל השרשור המקושר, עם שם התצוגה של הכותב לפני כן                                         |
+| תורים ריקים                            | מדווחים כהערה קצרה (ההרצה נכשלה, הופסקה או נעצרה במגבלת התורים שלה) ולא כשתיקה           |
+| הסרת כפילויות                          | ממופתח לפי מזהה האירוע של הספק עצמו; 512 האחרונים נזכרים                                              |
+| סוכן החזית                       | שיחה מגושרת חדשה מעירה את סוכן ה-CEO של סביבת העבודה, ואם אין — את הסוכן הראשון שלה, ואם אין — איש                  |
+| שמות מרחבים                           | `#channel · <request>` עבור שרשור בערוץ Slack, `Slack DM · <request>` עבור הודעה ישירה, כותרות מוגבלות ל-48 תווים |
+| בידוד כשלים                      | אירוע רע אחד לעולם לא מפיל את הגשר; החיבור ממשיך לשרת כל שיחה אחרת               |
 
-## See also
+## ראו גם
 
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
-- [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
-- [Customize the chat bot](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) for the action classes the ops declare
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
+- [התאמת בוט הצ'אט](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) עבור מחלקות הפעולה שפעולות ה-RPC מצהירות עליהן

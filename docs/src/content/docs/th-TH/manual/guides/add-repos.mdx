@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: เพิ่มรีโปในเวิร์กสเปซ
+description: ลงทะเบียนเช็กเอาต์ Git เข้าเวิร์กสเปซเพื่อให้เอเจนต์ทำงานกับมันได้
 slug: th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+คู่มือนี้แสดงวิธีลงทะเบียนเช็กเอาต์ Git เข้าเวิร์กสเปซ จัดทำดัชนีใหม่ และลบมันออกอีกครั้ง
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+รีโปมี**ขอบเขตอยู่ที่เวิร์กสเปซ** ไม่มีทะเบียนส่วนกลางและไม่มีขั้นตอนเชื่อมโยงใด ๆ การเพิ่มรีโปกับการใส่รีโปเข้าเวิร์กสเปซคือการกระทำเดียวกัน เช็กเอาต์เดียวกันที่ลงทะเบียนในสองเวิร์กสเปซจะกลายเป็นสองแถวอิสระที่มี id ต่างกันสองค่า — เมื่อข้ามเวิร์กสเปซแล้ว ตัวตนของรีโปคือพาธในระบบไฟล์ของมัน ไม่ใช่ id ของมันเลย
 
-## Before you start
+## ก่อนที่คุณจะเริ่ม
 
-A folder can only be registered if all three of these hold:
+โฟลเดอร์จะลงทะเบียนได้ก็ต่อเมื่อเข้าเงื่อนไขทั้งสามข้อนี้พร้อมกัน:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. อยู่ภายใน **git work tree**
+2. work tree นั้นมี **remote `origin`**
+3. remote `origin` ชี้ไปที่ **โฮสต์โค้ดที่รองรับ**: github.com, gitlab.com หรือ bitbucket.org
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+สิ่งอื่นใดจะถูกปฏิเสธตอนลงทะเบียนพร้อมข้อความที่ชัดเจน: “Folder is not inside a git work tree.”, “No `origin` remote configured for this repository.” หรือ “The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).” ไม่มีโหมดที่ทำงานในเครื่องเท่านั้น
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+โฮสต์โค้ดถูกอ่านจาก remote และเก็บไว้บนรีโป — คุณไม่เคยต้องเลือกมันเอง เวิร์กสเปซหนึ่งแห่งเก็บรีโปจากทั้งสามแห่งพร้อมกันได้ และแต่ละแห่งจะถูกสื่อสารผ่าน API ของตัวเองด้วยข้อมูลรับรองของตัวเอง เนมสเปซซ้อนกันของ GitLab จะถูกเก็บไว้ ดังนั้น `gitlab.com/group/subgroup/project` จึงลงทะเบียนด้วย owner `group/subgroup` และ name `project`
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+โฟลเดอร์ยังต้องอยู่บนเครื่องที่โฮสต์ `cc_server` ภายในไดเรกทอรี `--repo-roots` ตัวใดตัวหนึ่งของเซิร์ฟเวอร์นั้นด้วย รายการที่อนุญาตนี้มีค่าเริ่มต้นเป็นโฮมไดเรกทอรีของผู้ใช้เซิร์ฟเวอร์ และการเรียกดูเหนือรากขึ้นไปจะถูกปฏิเสธ
 
-## Register a checkout
+## ลงทะเบียนเช็กเอาต์
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี** (`/workspaces/<id>/settings/workspace/repositories`)
+2. คลิก **เพิ่มรีโพสิทอรี**
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+ไดอะล็อกนี้เป็นเบราว์เซอร์ที่เรียกดูได้บนระบบไฟล์ของ**เซิร์ฟเวอร์** ไม่ใช่ของคุณ ขั้นตอนเดียวกันทั้งบนเดสก์ท็อป เว็บ และโทรศัพท์ เพราะตัวเลือกโฟลเดอร์แบบเนทีฟจะเลือกโฟลเดอร์บนเครื่องผิดเครื่อง
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. เรียกดูภายในรากที่กำหนดค่าไว้ของเซิร์ฟเวอร์ โฟลเดอร์ที่เป็นเช็กเอาต์ git จะถูกทำเครื่องหมายไว้
+4. เลือกได้ตามจำนวนที่ต้องการ และการเลือกจะคงอยู่แม้คุณจะเรียกดูต่อไป คุณจึงรวบรวมเช็กเอาต์จากหลายโฟลเดอร์ได้
+5. ลงทะเบียนทั้งหมดในคราวเดียว
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+การเลือกที่ล้มเหลวหนึ่งรายการไม่เคยทำให้ส่วนที่เหลือของชุดหลุดไป — คุณจะได้ id ที่ถูกสร้างขึ้น บวกกับข้อผิดพลาดรายพาธสำหรับแต่ละรายการที่ถูกปฏิเสธ การลงทะเบียนพาธที่อยู่ในเวิร์กสเปซนี้อยู่แล้วซ้ำจะคืนรีโปที่มีอยู่แล้ว แทนที่จะสร้างรายการซ้ำขึ้นใหม่
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+รีโปที่ลงทะเบียนแต่ละรายการจะปรากฏในรายการพร้อม `owner/name` ป้ายชื่อที่บอกโฮสต์โค้ดของมัน และพาธของมันบนเซิร์ฟเวอร์ รีโป GitHub ยังแสดงอวตารของเจ้าของด้วย ส่วนโฮสต์โค้ดอื่นไม่มี URL อวตารของเจ้าของที่เดาได้ จึงถอยกลับไปใช้อักษรย่อ
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+ป้ายโฮสต์โค้ดสำคัญในเวิร์กสเปซแบบผสม: รีโปสองรายการอาจชื่อ `acme/web` เหมือนกันบนโฮสต์โค้ดต่างกัน และมันทำงานต่างกัน — รีวิวทำอะไรได้ และลิงก์จะพาไปที่ไหน
 
-## What happens next
+## สิ่งที่เกิดขึ้นต่อไป
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+การลงทะเบียนจะยิงเหตุการณ์ `RepoAdded` ที่มีขอบเขตอยู่ที่เวิร์กสเปซนี้ ซึ่งจะเริ่มไปป์ไลน์ `index_code` สำหรับเช็กเอาต์นั้น นั่นคือสิ่งที่เติมข้อมูลให้กราฟโค้ด การค้นหาและการวิเคราะห์ผลกระทบจึงมีอะไรให้ตอบ
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/).
+เฉพาะไฟล์ที่ภาษาของมันมีไวยากรณ์ที่จัดส่งมาด้วยเท่านั้นที่จะถูกจัดทำดัชนี (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB และ Ada) ดู[ค้นหาโค้ดด้วยกราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/)
 
-## Re-index a repo
+## จัดทำดัชนีรีโปใหม่
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+แต่ละแถวมีปุ่ม **จัดทำดัชนีโค้ด** คลิกเพื่อรันตัวจัดทำดัชนีซ้ำสำหรับเช็กเอาต์นั้น ระหว่างที่มันรัน ปุ่มจะกลายเป็นตัวแสดงความคืบหน้าที่บอกจำนวนไฟล์ที่ทำเสร็จเทียบกับทั้งหมด พร้อมตัวควบคุมการยกเลิก เมื่อเสร็จ มันจะหยุดนิ่งเป็นเครื่องหมายถูกพร้อมจำนวนสัญลักษณ์ หรือเป็นคำเตือนหากการรันล้มเหลว
 
-## Reorder repos
+## จัดลำดับรีโปใหม่
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+ลากที่จับบนแถว ลำดับที่คุณตั้งไว้คือลำดับที่รายการรีโปทุกแห่งในแอปอ่านกลับมา
 
-## Fix the GitHub link
+## แก้ไขลิงก์ GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+ไอคอนลิงก์บนแถวจะเปิดตัวแก้ไข owner และชื่อรีโพสิทอรีของ GitHub ของรีโป — มีประโยชน์เมื่อ remote ถูกเปลี่ยนชื่อหรือถูกโอนย้าย
 
-## Remove a repo
+## ลบรีโป
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี**
+2. คลิกไอคอนถังขยะบนแถว
+3. ยืนยัน “ลบรีโพสิทอรีออกจากเวิร์กสเปซหรือไม่?”
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+ไดอะล็อกบอกว่ามันทำอะไร: “_name_ จะถูกลบออกจากเวิร์กสเปซนี้ ไฟล์ในเครื่องบนดิสก์จะไม่ถูกแตะต้อง”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+การลบจะลบแถวรีโปออกจากเวิร์กสเปซนี้ และลบแถวกราฟโค้ดของมันตามไปเป็นทอด — สัญลักษณ์ เส้นเชื่อม ไฟล์ และจุดตรวจสอบการจัดทำดัชนี — รวมถึงสิทธิ์รีโปต่อสมาชิกแต่ละคนบนมัน ลิงก์สเปซ-รีโปของมัน และบันทึกเช็กเอาต์แบบแยกโดดของมัน เช็กเอาต์เดียวกันที่ลงทะเบียนในเวิร์กสเปซอื่นเป็นแถวอิสระและไม่ได้รับผลกระทบ worktree บนดิสก์ที่บันทึกเหล่านั้นชี้ไปจะไม่ถูกรื้อถอนโดยการลบนี้
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Search code with the code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/)
-- [Run agents in parallel](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/)
-- [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
-- [Your first workspace](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/)
+- [ค้นหาโค้ดด้วยกราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/)
+- [รันเอเจนต์แบบขนาน](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/)
+- [ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
+- [เวิร์กสเปซแรกของคุณ](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)

@@ -1,125 +1,136 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Autentifică echipa cu SSO
+description: Conectează Okta (SAML) la serverul tău Control Center și parcurge o autentificare de la un capăt la altul.
 slug: ro-RO/manual/tutoriale/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Ce vei construi
 
-By the end of this tutorial, you will have:
+La finalul acestui tutorial vei avea:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- o conexiune SAML între serverul tău Control Center și un furnizor de
+  identitate (folosim Okta ca exemplu),
+- un utilizator provisionat automat la prima autentificare și
+- o politică de apartenență la spațiile de lucru pe care ai ales-o deliberat.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Vei avea nevoie de un server pe care îl administrezi (**proprietarul
+serverului** — operatorul instalării) și de o aplicație IdP pe care o poți
+configura. Rezervă 20 de minute.
 
-## 1. Open the single sign-on settings
+## 1. Deschide setările de autentificare unică
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Autentifică-te în Control Center, apoi mergi la
+**Setări → Server → Autentificare unică**. Ecranul comută între
+**SAML** și **OpenID Connect**, plus un card **Provisionare utilizatori
+(SCIM)**. Rămâi pe SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Tot ce ține de acest ecran este la nivel de server: un singur IdP
+autentifică oamenii din toate spațiile de lucru, așa că doar proprietarul
+serverului îl poate edita.
 
-## 2. Paste the IdP metadata
+## 2. Lipește metadatele IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+În Okta, deschide tab-ul **Sign On** al aplicației tale și copiază XML-ul de
+metadate (sau descarcă-l și lipește conținutul fișierului). Înapoi în Control
+Center, lipește-l în **Metadate XML IdP** și apasă **Testează conexiunea**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Notificarea afișează endpointul de autentificare al IdP-ului — dovada că
+metadatele au fost analizate, certificatul a fost citit și serverul poate
+construi o cerere de autentificare pe baza lor (testul exersează tot, mai
+puțin ciclul dus-întors din browser). Dacă eșuează, XML-ul nu a fost un
+`EntityDescriptor` complet (tab-ul SAML din Okta îl numește „Metadata URL”;
+deschide URL-ul și copiază ce servește). Același buton de pe **OpenID
+Connect** verifică în schimb documentul de discovery al emitentului tău. Ca
+să prinzi și un certificat care expiră și să vezi dacă IdP-ul recunoaște
+Control Center, folosește
+[verificatorul de la pasul 6](#6-verifică-din-această-pagină).
 
-## 3. Register Control Center at the IdP
+## 3. Înregistrează Control Center la IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Apasă **Copiază metadatele SP** și dă-le celui care configurează partea de
+Okta (sau citește cele două valori pe care ți le cere):
 
-- **ACS URL**: `https://<your-server>/saml/acs`
+- **URL ACS**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+URL-urile derivă din originea pe care o ating browserele utilizatorilor tăi.
+Dacă serverul rulează în spatele unui tunel sau al unui reverse proxy,
+asigură-te că originea este stabilă
+(Setări → Server → Conexiune și stare → Partajează acest server arată URL-ul public) — sau fixează entity ID-ul
+explicit în câmpul **SP entity ID**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[În spatele NAT?]
+Autentificarea SAML **nu** are nevoie de o adresă IP publică sau de un
+domeniu: IdP-ul nu se conectează niciodată la serverul tău — ciclul
+dus-întors este purtat de browserul utilizatorului, așa că localhost, LAN,
+VPN, Tailscale sau un tunel funcționează toate. Două lucruri de reținut:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/ro-RO/manual/ghiduri-practice/sso-scim)).
+- originea folosită de browser trebuie să **corespundă** cu URL-ul ACS /
+  entity ID-ul înregistrat la IdP (fixează entity ID-ul dacă utilizatorii
+  ating serverul sub mai multe origini),
+- **provisionarea SCIM este excepția** — IdP-ul apelează direct serverul
+  tău, deci are nevoie de un tunel sau de un URL public
+  ([provisionează utilizatori cu SCIM](/ro-RO/manual/ghiduri-practice/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Alege ce acordă o autentificare
 
-Two policies decide what a first login does:
+Două politici decid ce face o primă autentificare:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Adaugă utilizatorii în fiecare spațiu de lucru la prima autentificare** — lasă-l activat pentru o
+  implementare cu o singură echipă, unde SSO înseamnă încredere. Dezactivează-l
+  când mai multe echipe sau clienți împart serverul: fiecare nou-venit are
+  atunci nevoie de o invitație explicită în spațiul de lucru, ceea ce este
+  varianta implicită mai sigură.
+- **Provisionare utilizatori necunoscuți la prima autentificare** — activat
+  implicit; dezactivează-l ca să respingi pe oricine nu are deja un cont.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Opțional, mapează un atribut care poartă numele grupurilor (la Okta este de
+obicei `groups`) și traduce grupurile în roluri cu ajutorul mapării — de
+exemplu `{"platform-leads": "admin"}`. SSO nu poate acorda niciodată rolul de
+proprietar.
 
-## 5. Enable and take a login
+## 5. Activează și fă o autentificare
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Activează **Folosește SAML pentru autentificare**, apasă **Salvează
+conexiunea**, apoi deschide o fereastră privată de browser la
+`https://<your-server>/saml/login`. Autentifică-te la Okta și ajungi înapoi
+în clientul web — autentificat, cu contul creat și apartenența acordată
+conform politicii pe care ai ales-o.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Același punct de intrare apare pe ecranul de conectare web (**Autentifică-te
+cu SAML**) în momentul în care tastezi adresa serverului — formularul se
+adaptă la ce oferă serverul (OpenID Connect afișează **Autentifică-te cu
+OpenID Connect**). Butonul deschide autentificarea într-un **tab nou**; când
+ciclul dus-întors se încheie, tab-ul care aștepta preia sesiunea automat.
+Ecranul de configurare a serverului din aplicația desktop face la fel:
+tastează URL-ul serverului, apare un buton **Autentifică-te cu SAML** care
+îți deschide browserul, iar aplicația se autentifică atunci când ciclul
+dus-întors se încheie.
 
-## 6. Check it from this page
+## 6. Verifică din această pagină
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Înainte să extinzi SSO, sau când o autentificare eșuează, verifică aici
+componentele. Verificatorul rulează în întregime în browserul tău: citește
+metadatele pe care le lipești în acest tab și aplică aceleași reguli ca
+serverul. Dacă îi dai adresa serverului, întreabă acel server și dacă
+autentificarea SAML este activă.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Prinde ceea ce **Testează conexiunea** din aplicație nu poate vedea: un
+certificat de semnare aproape de expirare, un IdP care insistă pe cereri
+semnate și, cu autentificarea de test, dacă IdP-ul recunoaște deloc Control
+Center.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Unde mergi mai departe
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/ro-RO/manual/ghiduri-practice/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/ro-RO/manual/ghiduri-practice/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/ro-RO/manual/concepte/autentificare-unica).
+- Dă-i IdP-ului tău și controlul ciclului de viață:
+  [provisionează și deprovisionează utilizatori cu SCIM](/ro-RO/manual/ghiduri-practice/sso-scim).
+- IdP-ul tău vorbește OpenID Connect în loc de SAML?
+  [Conectează un provider OpenID Connect](/ro-RO/manual/ghiduri-practice/sso-oidc).
+- Ești curios ce verifică de fapt ciclul dus-întors din browser?
+  [Cum funcționează autentificarea unică](/ro-RO/manual/concepte/autentificare-unica).

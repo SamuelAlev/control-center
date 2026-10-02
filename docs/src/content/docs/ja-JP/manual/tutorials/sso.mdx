@@ -1,125 +1,78 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: SSO でチームをサインインさせる
+description: Okta（SAML）を Control Center サーバーに接続し、ログインを最初から最後まで通します。
 slug: ja-JP/マニュアル/チュートリアル/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## 作るもの
 
-By the end of this tutorial, you will have:
+このチュートリアルを終えると、次のものが揃っています:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- Control Center サーバーとアイデンティティプロバイダー（例として Okta を使います）の間の SAML 接続
+- 初回ログイン時に自動でプロビジョニングされる 1 人のユーザー
+- あなたが意図的に選んだワークスペースメンバーシップポリシー
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+自分で管理するサーバー（**サーバー所有者** — インストールのオペレーター）と、設定できる IdP アプリケーションが必要です。所要時間の目安は 20 分です。
 
-## 1. Open the single sign-on settings
+## 1. シングルサインオン設定を開く
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Control Center にサインインし、**設定 → サーバー → シングルサインオン**を開きます。画面は **SAML** と **OpenID Connect** を切り替えられ、さらに **ユーザープロビジョニング（SCIM）**カードがあります。SAML のままにしておきます。
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+この画面の内容はすべてサーバー全体に及びます。1 つの IdP がすべてのワークスペースのユーザーを認証するため、編集できるのはサーバー所有者だけです。
 
-## 2. Paste the IdP metadata
+## 2. IdP メタデータを貼り付ける
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Okta でアプリの **Sign On** タブを開き、メタデータ XML をコピーします（またはダウンロードして、そのファイルの内容を貼り付けます）。Control Center に戻り、**IdPメタデータXML** に貼り付けて **接続をテスト**を押します。
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+トーストには IdP のサインオンエンドポイントが表示されます — メタデータが解析され、証明書が読み取られ、それを基にサーバーがログインリクエストを組み立てられることの証拠です（このテストは、ブラウザーの往復を除くすべてを実行します）。失敗した場合、その XML は完全な `EntityDescriptor` ではありませんでした（Okta の SAML タブではこれを「Metadata URL」と呼びます。その URL を開いて、配信される内容をコピーしてください）。**OpenID Connect** では、同じボタンが代わりに発行元のディスカバリドキュメントを確認します。期限切れが近い証明書の検出や、IdP が Control Center を認識しているかどうかの確認も行うには、[ステップ 6 のチェッカー](#6-このページから確認する)を使ってください。
 
-## 3. Register Control Center at the IdP
+## 3. IdP に Control Center を登録する
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+**SPメタデータをコピー**を押し、Okta 側を設定する担当者に渡します（または、相手が求める 2 つの値を伝えます）:
 
 - **ACS URL**: `https://<your-server>/saml/acs`
-- **Entity ID**: `https://<your-server>/saml`
+- **エンティティ ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+これらの URL は、ユーザーのブラウザーが到達するオリジンから導出されます。サーバーがトンネルやリバースプロキシの背後で動作している場合は、オリジンが安定していることを確認してください（設定 → サーバー → 接続とステータス → このサーバーを共有 に公開 URL が表示されます）— または、**SPエンティティID** フィールドでエンティティ ID を明示的に固定します。
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[NAT の背後にある場合]
+SAML ログインに公開 IP やドメインは **必要ありません**。IdP があなたのサーバーに接続することは決してなく、往復を運ぶのはユーザーのブラウザーです。そのため、localhost、LAN、VPN、Tailscale、トンネルのいずれでも機能します。押さえておくべき点が 2 つあります:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/ja-JP/マニュアル/ハウツーガイド/sso-scim)).
+- ブラウザーが使うオリジンは、IdP に登録した ACS URL / エンティティ ID と **一致**していなければなりません（ユーザーが複数のオリジンでサーバーに到達する場合は、エンティティ ID を固定します）。
+- **SCIM プロビジョニングは例外です** — IdP があなたのサーバーを直接呼び出すため、トンネルまたは公開 URL が必要です（[SCIM でユーザーをプロビジョニング](/ja-JP/マニュアル/ハウツーガイド/sso-scim)）。
   :::
 
-## 4. Choose what a login grants
+## 4. ログインで何が付与されるかを選ぶ
 
-Two policies decide what a first login does:
+初回ログインの動作を決めるポリシーが 2 つあります:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **初回ログイン時にユーザーを全ワークスペースに追加** — SSO が信頼と同義である単一チームのデプロイではオンのままにします。複数のチームや顧客がサーバーを共有する場合はオフにします。その場合、新規参加者にはワークスペースへの明示的な招待が必要になり、これがより安全な既定です。
+- **初回ログイン時に未知のユーザーをプロビジョニング** — 既定でオンです。アカウントがまだ存在しないユーザーを拒否するにはオフにします。
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+任意で、グループ名を運ぶ属性をマッピングし（Okta では一般に `groups` です）、マップでグループをロールに変換できます — 例えば `{"platform-leads": "admin"}` です。SSO がオーナーロールを付与することは決してありません。
 
-## 5. Enable and take a login
+## 5. 有効化してログインする
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+**サインインにSAMLを使用**をオンにし、**接続を保存**を押してから、プライベートブラウザーウィンドウで `https://<your-server>/saml/login` を開きます。Okta でサインインすると、Web クライアントに戻ります — ログイン済みで、アカウントが作成され、選んだポリシーに従ってメンバーシップが付与されています。
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+サーバーアドレスを入力した瞬間に、同じエントリーポイントが Web の接続画面に表示されます（**SAMLでサインイン**）。フォームはサーバーが提供する内容に適応します（OpenID Connect の場合は **OpenID Connectでサインイン** と表示されます）。このボタンは**新しいタブ**でサインインを開きます。往復が完了すると、待機していたタブが自動的にセッションを引き継ぎます。デスクトップのサーバーセットアップ画面も同じです。サーバー URL を入力すると **SAMLでサインイン** ボタンが表示され、それがブラウザーを開き、往復が完了するとアプリがログインします。
 
-## 6. Check it from this page
+## 6. このページから確認する
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+SSO を展開する前に、またはログインが失敗したときに、ここで各部を確認してください。チェッカーは完全にあなたのブラウザー内で実行されます。このタブで貼り付けたメタデータを読み取り、サーバーと同じルールを適用します。サーバーアドレスを指定すると、そのサーバーに SAML サインインが有効かどうかも問い合わせます。
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+アプリの **接続をテスト**では見えないものを検出します。期限切れが近い署名証明書、署名付きリクエストを要求する IdP、そしてテストサインインによる、IdP が Control Center を認識しているかどうかです。
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## 次のステップ
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/ja-JP/マニュアル/ハウツーガイド/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/ja-JP/マニュアル/ハウツーガイド/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/ja-JP/マニュアル/コンセプト/シングルサインオン).
+- IdP にライフサイクル制御も任せる:
+  [SCIM でユーザーのプロビジョニングとプロビジョニング解除を行う](/ja-JP/マニュアル/ハウツーガイド/sso-scim)。
+- IdP が SAML ではなく OpenID Connect を使っていますか？
+  [OpenID Connect プロバイダーを接続](/ja-JP/マニュアル/ハウツーガイド/sso-oidc)。
+- ブラウザーの往復が実際に何を検証するのか気になりますか？
+  [シングルサインオンの仕組み](/ja-JP/マニュアル/コンセプト/シングルサインオン)。

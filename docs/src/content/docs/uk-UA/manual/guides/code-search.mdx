@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Шукати код через граф коду
+description: Проіндексуйте репозиторій і скористайтеся інструментами графа коду, щоб знаходити символи й бачити, що зламає зміна.
 slug: uk-UA/керівництво/практичні-посібники/пошук-коду
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Цей посібник показує, як занести репозиторій у граф коду, а потім скористатися ним, щоб відповісти на питання, яке насправді постає перед рефакторингом: від чого це залежить?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Граф коду — це база даних символів і ребер, яку будують, розбираючи ваші зареєстровані чекаути через tree-sitter. Його інструменти **призначені для агентів** — дістатися до них можна, попросивши агента.
 
-## Before you start
+## Перш ніж почати
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Граф індексує Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB і Ada. Файли будь-якою іншою мовою не розбираються, тож вони не потрапляють у `search_code`, `code_symbol`, `code_callers`, `code_callees` чи `code_impact`.
 
-Two more things shape what gets indexed:
+Ще дві речі визначають, що саме потрапляє в індекс:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- У робочому дереві git перелік файлів покладається на `git ls-files --cached --others --exclude-standard`, тож дотримано кожного `.gitignore`, вкладеного ignore-файлу, `.git/info/exclude` і глобального файлу винятків. Саме це тримає `node_modules` і результати збірки поза графом.
+- Згенерований Dart відкидають у будь-якому разі. Згенеровані файли зазвичай закомічено, тож сам git їх не виключив би, а вони змінюються під час кожного запуску кодогенерації.
 
-## Get a repo indexed
+## Проіндексувати репозиторій
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/).
+Реєстрація чекауту породжує `RepoAdded`, яка автоматично запускає для нього конвеєр `index_code`. Див. [Додати репозиторії до робочого простору](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/).
 
-To re-index by hand:
+Щоб переіндексувати вручну:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Відкрийте **Налаштування → Робочий простір → Репозиторії**.
+2. Натисніть кнопку **Індексувати код** у рядку репозиторію.
+3. Поки вона виконується, кнопка показує, скільки файлів уже оброблено із загальної кількості, та елемент керування скасуванням. Коли все завершується, вона стає позначкою з кількістю символів.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Граф розбито на партиції за робочим простором, репозиторієм і чекаутом: прив’язаний чекаут — це одна партиція, а кожен worktree простору отримує власну (з ключем за його id ізольованого репозиторію).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Варто знати про два обмежувачі, бо вони пояснюють очікування, яке виглядає як зависання:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Файловий спостерігач допускає на хості лише **один** запуск індексування водночас — другий чекаут чекає. Конвеєр `index_code` окремо обмежено одним запуском на робочий простір, тож два репозиторії в одному робочому просторі стають у чергу; різні робочі простори можуть індексуватися паралельно. Сам індексатор серіалізує два запуски **того самого** чекауту, щоб старт конвеєра й прохід спостерігача не розібрали його двічі.
+- Worktree, що належать **неактивним просторам** (жодного повідомлення за останній тиждень), не спостерігаються й не індексуються. Прив’язані чекаути залишаються під спостереженням. Рішення про пропуск перевіряють знову за п’ять хвилин, тож простір, який знову стає активним, підхоплюється.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Відсутня граматика зупиняє сервер, а не пошук]
+Tree-sitter і його граматики — обов’язкові нативні модулі. Якщо якоїсь бракує, `cc_server` відмовляється запускатися й називає відсутню dylib — симптомом є сервер, який не стартує, а не погіршений пошук. Підготуйте їх за допомогою `scripts/natives/build_natives.sh` і перезіберіть бінарник сервера.
 :::
 
-## Find a symbol
+## Знайти символ
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Попросіть агента виконати пошук. Інструмент називається `search_code` і потребує і робочого простору, і репозиторію:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Id репозиторіїв беруться з `list_repos`. Необов’язковий аргумент `mode` — це `keyword`, `semantic` або `hybrid`, і типово він має значення hybrid — BM25 за назвами, сигнатурами й doc-коментарями, об’єднаний із векторною схожістю.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Кожен результат містить id символу, назву, кваліфіковану назву, вид, шлях до файлу, початковий і кінцевий рядок, а також його сигнатуру, якщо вона є. **id** — це дескриптор, який ви передаєте в кожен інший інструмент на цій сторінці.
 
-When you know the exact name, look it up directly instead:
+Коли ви знаєте точну назву, натомість знайдіть його напряму:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Простежити виклики
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Обидва приймають `symbol_id` з результату пошуку та необов’язковий `limit` (типово 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` повертає символи, які мають ребро, що входить до цього; `code_callees` повертає ті, від яких він залежить.
 
-## Check what a change would break
+## Перевірити, що зламає зміна
 
-This is the tool the whole page exists for:
+Це той інструмент, заради якого існує вся ця сторінка:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Він обчислює радіус **зворотних** залежностей: усе, що прямо чи транзитивно залежить від символу вздовж ребер `calls`, `extends` та `implements` (імпорти, mixes-in та узагальнені посилання зберігаються в графі, але тут ними не проходять). `depth` — це максимальна кількість переходів, від 1 до 6, типово 2.
 
-The result is three fields:
+Результат містить три поля:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — символ, про який ви запитали
+- `impacted` — досяжна множина, включно з коренем на глибині 0, де кожен елемент несе свій `depth` від кореня
+- `edgeCount` — скільки ребер перетнув обхід, як число, а не самі ребра
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Запускайте його перед перейменуванням чи зміною сигнатури й передавайте агенту список impacted як обсяг його роботи.
 
-## Results are checked against the caller's own working copy
+## Результати звіряють із власною робочою копією того, хто викликає
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Коли викликає агент, id простору підставляють автоматично, і результати звіряють із робочою копією **того простору**. Символ, чийого файлу вже немає в дереві того, хто викликає, пропускають, а відповідь містить лічильник `staleOmitted` і примітку про те, що індекс застарілий для цих символів.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Саме тому ви й агент можете отримати різні відповіді на той самий запит, і саме тому агент в одному просторі може отримати іншу відповідь, ніж агент в іншому. Кожна розмова в просторі поділяє той самий worktree. Перевірка поводиться за принципом fail-open: застарілій відповіді віддають перевагу перед порожньою.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/).
+Попросіть агента запустити `code_impact` (або `review_studio.blastRadius`), коли вам потрібен радіус впливу зміни. Див. [Обчислення перевірки](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/).
 
-## Semantic search needs the embedding model
+## Семантичний пошук потребує моделі ембедингів
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Символи й факти отримують ембединг під час запису і лише тоді, коли встановлено локальну модель ембедингів. До того часу `mode: "semantic"` і семантична половина гібридного пошуку не мають із чим зіставлятися, тож пошук фактично працює лише за ключовими словами.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Установіть модель у **Налаштування → Сервер → Діагностика та приватність → Семантичний пошук** ще до індексування. Символи отримують вектор, коли їхній файл потрапляє в індекс.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Зауважте також, що будь-яке перезбирання бінарника сервера заново готує dylib-и граматик і змінює їхні mtime, а це робить недійсною кожну контрольну точку індексу й змушує заново повністю обійти кожен чекаут під час наступного запуску. Він перегешовує файли, але не витягує повторно незмінені.
 
-## What is in the graph
+## Що є в графі
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Види символів:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Види ребер:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/uk-UA/керівництво/довідка/інструменти-mcp/).
+Канонічні сигнатури цих інструментів наведено в [Інструменти MCP](/uk-UA/керівництво/довідка/інструменти-mcp/).
 
-## Related guides
+## Пов’язані посібники
 
-- [Add repos to a workspace](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
-- [Review compute (cohorts and axes)](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/)
-- [Use the MCP server](/uk-UA/керівництво/практичні-посібники/mcp-сервер/)
+- [Додати репозиторії до робочого простору](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
+- [Обчислення перевірки (когорти та осі)](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/)
+- [Використовувати MCP-сервер](/uk-UA/керівництво/практичні-посібники/mcp-сервер/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/)
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/)

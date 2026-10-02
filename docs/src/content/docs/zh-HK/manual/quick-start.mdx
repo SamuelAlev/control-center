@@ -1,92 +1,92 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: 快速入門
+description: 安裝 Control Center，設定一個代理，然後看它在你的程式庫上工作。
 slug: zh-HK/手冊/快速入門
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+這是從零開始、到代理在你自己的程式碼上執行起來的最短完整途徑。請按順序操作；每一步都依賴前一步。
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+你需要 Git、一個 GitHub 帳戶，以及一個模型供應商帳戶（Anthropic、OpenAI、Codex、Cursor、Kimi Code，或任何提供 API 金鑰的供應商），或者已安裝好的 Claude Code CLI。其餘一切會在過程中設定完成。
 
-## Step 1: Install and launch
+## 第 1 步：安裝並啟動
 
-Install Control Center as described in [Install](/zh-HK/手冊/安裝/), then open it.
+按[安裝](/zh-HK/手冊/安裝/)中的說明安裝 Control Center，然後開啟它。
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+首次啟動時，桌面應用程式會詢問 **「Control Center 要以何種方式執行？」**。選擇 **在此應用程式內執行**。Control Center 會在這部機器上啟動一個無介面的 `cc_server`，它掌管你的資料並完成所有工作。你永遠不會看到它；取而代之開啟的是新手導引畫面。
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/zh-HK/手冊/安裝/#use-it-in-your-browser) for the browser route.
+:::note[不想安裝任何東西？]
+同一個應用程式也可在瀏覽器上於 [app.usectrl.dev](https://app.usectrl.dev) 執行，功能完全相同。不過，瀏覽器分頁無法
+託管伺服器，因此得由你自行提供一個——在本機執行 `cc_server` 並連線到 `ws://localhost:9030`，或把它指向
+另一部機器上的伺服器。本快速入門走的是桌面途徑，因為它不需要設定伺服器；瀏覽器途徑請參閱
+[安裝](/zh-HK/手冊/安裝/#use-it-in-your-browser)。
 :::
 
-## Step 2: Work through onboarding
+## 第 2 步：走完新手導引
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+新手導引共有五個步驟，並按順序進行——無法跳過其中任何一步。
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **連接**：以 GitHub 登入，或貼上一個帶有 `repo` 與 `read:org` 的個人存取權杖。憑證會儲存在伺服器上，並掛到你的帳戶。
+2. **工作區**：為你的第一個工作區命名，並可選擇挑一個標誌。建立它會預置五個代理——一位 CEO 加上 `qa`、`architect`、`engineer` 與 `librarian`——以及內建管線範本。
+3. **沙箱**：記錄沙箱偏好設定。兩種選擇都可以讓你繼續。
+4. **配接器**：選擇代理預設應使用的配接器與模型。選擇 **Control Center (built-in)**，然後用隨後出現的供應商選擇器登入某個模型供應商——在連接一個供應商之前，模型清單會一直保持空白。完成這一步也會把配接器與模型寫入工作區的 CEO 代理。
+5. **語音（可選）**：安裝用於聽寫的裝置端語音模型，或跳過它。
 
-Control Center then opens your workspace inbox.
+隨後 Control Center 會開啟你的工作區收件箱。
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/).
+:::note[一次代理執行受甚麼約束]
+在可用的情況下，代理的指令會被包進主機作業系統的原生沙箱——macOS 上是 Seatbelt，Linux 上是 bubblewrap。Windows 沒有後端，因此那裏的執行只受其他幾層約束：對話自己的 worktree（Windows 上使用 `git worktree`；`rift` 隨附的地方採用寫入時複製）、按每次啟動中介並在拆卸時撤銷的憑證，以及操作護欄。見[沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/)。
 :::
 
-## Step 3: Add a repository
+## 第 3 步：加入程式庫
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+前往 **設定 → 工作區 → 程式庫**，然後點擊 **新增程式庫**。
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+該對話方塊瀏覽的是執行伺服器那部機器上的資料夾，而不是你的用戶端，並且它會停留在伺服器設定為對外暴露的根目錄之內（預設是該使用者的主目錄）。只有 git 檢出會取得核取方塊。勾選你自己的那一個並把它註冊進來。
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+只有當檢出位於 git 工作樹之內、帶有 `origin` 遠端，且該遠端指向受支援的程式碼託管平台——github.com、gitlab.com 或 bitbucket.org——時，它才會被接受。其他任何情況都會連同原因一併拒絕。
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+程式庫以工作區為作用域：在這裏註冊一個檢出，就會把它放進_這個_工作區。沒有另外的連結步驟。
 
-## Step 4: Give an agent an adapter and a model
+## 第 4 步：為代理設定配接器與模型
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+前往 **設定 → 工作區 → 代理**。在名冊中選取 `engineer` 代理。
 
-On the **Settings** tab, set:
+在 **設定** 分頁上設定：
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **配接器**：`Control Center (built-in)`
+- **模型**：從你在新手導引中連接的供應商中挑一個
 
-Press **Save changes**.
+按 **儲存變更**。
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+實際上這一步並非可選。只有 CEO 代理會繼承新手導引中選定的配接器；四個專才代理建立時都沒有配接器。它們會回退到 **Control Center (built-in)** 並使用 Anthropic 的預設模型，因此只有在你已連接 Anthropic 帳戶時才能執行——而如果你已連接，跑的會是一個你沒有挑選的模型。
 
-## Step 5: Send the agent a task
+## 第 5 步：給代理一項任務
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. 在側邊欄中找到 **空間** 區段，然後點擊 **+** 按鈕。
+2. 為空間命名，在 **新增代理** 之下加入 `engineer` 代理，然後建立它。
+3. 針對你註冊的程式庫輸入一項具體的小任務，然後按 Enter。
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center 會為這段對話預備工作區各程式庫的寫入時複製 worktree，並依據代理的角色、人設、技能與該空間的上下文組裝提示詞，然後派發這次執行。你的原始碼檢出永遠不會被觸碰。
 
-## Step 6: Watch it work
+## 第 6 步：看它工作
 
-You should see, in order:
+你應該會依次看到：
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- 撰寫器的傳送按鈕變成停止按鈕，因為這段對話中有代理正在工作
+- 代理的推理、工具呼叫與文字串流寫入轉錄
+- 執行結束時傳送按鈕回復原狀
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+然後開啟 **設定 → 工作區 → 代理**，選取該代理並查看 **日誌** 分頁：一行執行記錄，包含它的狀態、時長、開始與結束時間，以及它執行時所用的配接器。
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+這就是那個循環。Control Center 中其他的一切——pull request 審查、管線、工單、會議、Slack——都掛在這上面。
 
-## Next steps
+## 後續步驟
 
-- [Your first workspace](/zh-HK/手冊/教學/第一個工作區/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/zh-HK/手冊/教學/第一個-pr/): take an agent's branch through review and merge
-- [The agent model](/zh-HK/手冊/概念/代理模型/): what an agent is made of
-- [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/): the rest of the agent form
-- [Run an orchestration](/zh-HK/手冊/操作指南/執行編排/): one goal, one approval, a generated pipeline
-- [Pair your phone](/zh-HK/手冊/操作指南/配對裝置/): follow the fleet from anywhere
-- [Deployment and clients](/zh-HK/手冊/概念/部署/): how the desktop, web and phone clients relate to the server
+- [你的第一個工作區](/zh-HK/手冊/教學/第一個工作區/)：同樣的內容，但節奏較慢，並解釋了隔離模型
+- [審查你的第一個 pull request](/zh-HK/手冊/教學/第一個-pr/)：把代理的分支走完審查與合併
+- [代理模型](/zh-HK/手冊/概念/代理模型/)：代理由哪些部分構成
+- [建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)：代理表單的其餘部分
+- [執行編排](/zh-HK/手冊/操作指南/執行編排/)：一個目標、一次核准、一條自動產生的管線
+- [配對裝置](/zh-HK/手冊/操作指南/配對裝置/)：隨時隨地跟進機群
+- [部署與用戶端](/zh-HK/手冊/概念/部署/)：桌面、網頁與手機用戶端與伺服器之間的關係

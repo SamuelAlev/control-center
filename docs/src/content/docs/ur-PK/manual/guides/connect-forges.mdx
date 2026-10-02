@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: کوڈ ہوسٹ جوڑیں
+description: GitHub، GitLab یا Bitbucket کو جوڑیں تاکہ PR کی سطح، ریپو کی رجسٹریشن اور ایجنٹ کے رن کام کریں — ایک ورک اسپیس تینوں استعمال کر سکتی ہے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center تین کوڈ ہوسٹس کے ساتھ کام کرتا ہے، جنہیں پوری ایپ میں **forge** کہا جاتا ہے: **GitHub**، **GitLab** اور **Bitbucket Cloud**۔ اِن میں سے کوئی بھی ڈیفالٹ نہیں ہوتا۔ ایک جوڑیں اور سب کچھ کام کرتا ہے؛ کئی جوڑیں تو ایک ہی ورک اسپیس ایک ساتھ اُن سب کے ریپوز رکھ سکتی ہے۔
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+forge ہر **ریپو** کی ایک خصوصیت ہے، جو آپ کے رجسٹر کرنے کے وقت اُس کے `origin` ریموٹ سے پڑھی جاتی ہے۔ آپ اسے کبھی خود منتخب نہیں کرتے، اور کوئی فی ورک اسپیس سیٹنگ ایسی نہیں جو غلط ہو سکے۔
 
-## Connect a forge
+## forge جوڑیں
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت** کھولیں (`/settings/workspace/profile`)۔
+2. **کوڈ ہوسٹنگ** کارڈ تلاش کریں۔ ہر معاون forge یہاں درج ہے، جوڑا ہوا ہو یا نہ ہو۔
+3. اگر قطار یہ پیش کرتی ہو تو **… سے سائن اِن** دبائیں، ورنہ **ٹوکن شامل کریں** دبا کر ایک پیسٹ کریں۔
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**سائن اِن** اُس forge کے لیے ظاہر ہوتا ہے جس کے لیے آپ کے سرور پر کوئی ایپ رجسٹرڈ ہو — آج یہ GitHub ہے، ڈیوائس فلو کے ذریعے ([GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) دیکھیں)۔ باقی سب کے لیے ٹوکن پیسٹ کرنا ہے، جو اُس بٹن سے زیادہ ایماندار راستہ ہے جو مکمل ہی نہ ہو سکے۔
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+کسی بھی صورت میں کریڈینشل **آپ ہی کا ہے اور سرور پر رہتا ہے**، جو آپ کی یوزر آئی ڈی سے منسلک ہوتا ہے: جس مشین پر آپ نے ٹائپ کیا اُس پر کوئی ٹوکن محفوظ نہیں ہوتا، جس بھی ڈیوائس سے آپ سائن اِن کریں وہی ایک استعمال کرتی ہے، اور کوئی دوسرا رکن اسے پڑھ نہیں سکتا۔ یہ **اگلی درخواست** پر مؤثر ہوتا ہے — ری اسٹارٹ کرنے کی کوئی چیز نہیں، اور کنکشن منقطع کرنے سے یہ فوراً بھیجنا بند ہو جاتا ہے۔
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+ہر قطار بتاتی ہے کہ اُس کا کریڈینشل کہاں سے آیا، کیونکہ فرق اِسی میں ہے — “میرا ٹوکن کام نہیں کر رہا” اور “کوئی دوسرا ٹوکن جواب دے رہا ہے”:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| ذیلی عنوان                                      | مطلب                                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| `octocat کے طور پر سائن اِن`                     | آپ ہی کا کریڈینشل استعمال ہو رہا ہے                                      |
+| `octocat کے طور پر سائن اِن · اس سرور کی ایپ کے ذریعے` | سرور کی ایپ شناخت جواب دے رہی ہے — آپ نے سائن اِن نہیں کیا          |
+| `octocat کے طور پر سائن اِن · ماحول سے`          | سرور کا ماحول ویری ایبل جواب دے رہا ہے، آپ کا کریڈینشل نہیں            |
+| `منسلک نہیں`                                     | اِس forge کے لیے آپ کے پاس کوئی کریڈینشل نہیں                            |
 
-### What token each forge wants
+### ہر forge کون سا ٹوکن چاہتا ہے
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| forge         | ٹوکن                                                                                                                   | کہاں بنائیں                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **GitHub**    | کلاسک: `repo` اور `read:org`۔ فائن گرینڈ: Contents + Pull requests (read/write)، Checks + Actions (read)                | github.com → Settings → Developer settings → Tokens  |
+| **GitLab**    | `api` والا ذاتی رسائی ٹوکن                                                                                             | gitlab.com → User settings → Access tokens           |
+| **Bitbucket** | ایک Atlassian API ٹوکن، نیز آپ کے اکاؤنٹ کا ای میل                                                                      | id.atlassian.com → Security → API tokens             |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket آپ کے **اکاؤنٹ کے ای میل کو بطور صارف نام** اور ٹوکن کو بطور پاس ورڈ استعمال کرتا ہے۔ سرور کے ماحول میں `BITBUCKET_EMAIL` مقرر کریں تاکہ اُسے معلوم ہو کہ ٹوکن کے ساتھ کون سا ای میل جوڑنا ہے۔
 
-### Or use the environment
+### یا ماحول استعمال کریں
 
-For a headless or CI install, the server reads these:
+ہیڈ لیس یا CI انسٹالیشن کے لیے سرور یہ پڑھتا ہے:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`، پھر `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`، پھر `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`، پھر `BITBUCKET_TOKEN` (`BITBUCKET_EMAIL` کے ساتھ)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+یہ **سرور کا** کریڈینشل ہے، آپ کا نہیں، اور یہ فرق بنیادی اہمیت رکھتا ہے: آپ کی طرف سے کی گئی درخواست صرف آپ ہی کا کریڈینشل استعمال کرتی ہے، کوئی اور نہیں، چنانچہ ماحول کبھی خاموشی سے آپ کی جگہ نہیں لیتا۔ جس کام کے پیچھے کوئی انسان نہ ہو — ویب ہکس، PR پولنگ، ٹکٹ سنک — وہ پہلے سرور کی ایپ شناخت، پھر سرور کے مالک کا کریڈینشل، اور پھر ماحول حل کرتا ہے۔ ترتیب مقرر ہے تاکہ “میں نے سائن اِن کیا اور کچھ نہیں بدلا” کبھی قابلِ قبول نتیجہ نہ ہو۔
 
-## You are a different person on each forge
+## آپ ہر forge پر ایک مختلف شخص ہیں
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+وہی انسان GitHub پر `octocat` ہے اور GitLab پر بالکل کچھ اور۔ Control Center آپ کی شناخت **فی forge** حل کرتا ہے اور ہر ریپو کے لیے موزوں شناخت استعمال کرتا ہے، اور اِسی سے ملی جلی ورک اسپیس میں “میرے جائزے کی ضرورت ہے”، “میرے بنائے ہوئے” اور “آپ نے اس کی منظوری دی” درست رہتے ہیں۔
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+اگر کسی forge کی شناخت حل نہ ہوئی ہو تو اُس کے ریپوز ان باکس میں کچھ شامل نہیں کرتے، بجائے اس کے کہ سب کچھ مماثل سمجھ لیں۔ ان باکس یہ بتا دیتا ہے، بجائے یہ دعویٰ کرنے کے کہ آپ سب کچھ دیکھ چکے ہیں۔
 
-## One inbox, every forge
+## ایک ان باکس، ہر forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+ان باکس اور PR قطار ورک اسپیس میں موجود ہر forge تک پھیل جاتے ہیں اور نتائج کو ایک ہی سلسلے میں مل دیتے ہیں — ایک GitHub pull request اور ایک Bitbucket pull request ساتھ ساتھ بیٹھتے ہیں، وقت کے حساب سے ترتیب پاتے ہیں، وینڈر کے لحاظ سے گروہ بند نہیں ہوتے۔
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+ناکامیاں الگ تھلگ رہتی ہیں۔ کوئی forge جو ڈاؤن ہو، ریٹ لِمٹ کا شکار ہو یا غیر منسلک ہو، کچھ شامل نہیں کرتا اور باقیوں کو چھوڑ دیتا ہے؛ وہ کبھی پورا ان باکس خالی نہیں کرتا۔ اُس کے اپنے ریپوز بحالی تک اپنی آخری معلوم حالت دکھاتے رہتے ہیں۔
 
-## What each forge can do
+## ہر forge کیا کر سکتا ہے
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+ہر forge بنیادی چکر کی حمایت کرتا ہے: pull requests کی فہرست اور کھولنا، ڈف پڑھنا، اِن لائن اور اوپری سطح پر تبصرہ کرنا، ریویو، مرج اور بند کرنا۔ اِس کے علاوہ وہ واقعی مختلف ہیں، اور Control Center وہ چھپا دیتا ہے جو کوئی forge نہیں کر سکتا، بجائے ایسا کنٹرول دکھانے کے جو خاموشی سے ناکام ہو جائے۔
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| صلاحیت                             | GitHub | GitLab | Bitbucket |
+| ---------------------------------- | :----: | :----: | :-------: |
+| بیچ کی شکل میں (زیر التوا) ریویوز  |   ✓    |   ✓    |     —     |
+| تبدیلیاں طلب کریں                  |   ✓    |   ✓    |     ✓     |
+| فی فائل “دیکھا گیا” حالت کی ہم آہنگی |   ✓    |   —    |     —     |
+| ایموجی ری ایکشنز                   |   ✓    |   ✓    |     —     |
+| ٹیم / گروپ ریویوورز                |   ✓    |   ✓    |     —     |
+| تجویز کردہ ریویوورز                |   ✓    |   —    |     ✓     |
+| PR پر CI نتائج                     |   ✓    |   ✓    |     ✓     |
+| CI جاب کے مراحل/لاگز میں اترنا     |   ✓    |   ✓    |     —     |
+| اسٹیکڈ pull requests               |   ✓    |   —    |     —     |
+| PR تفصیل کے ٹیمپلیٹس               |   ✓    |   ✓    |     —     |
+| اطلاعات کی پولنگ                   |   ✓    |   —    |     —     |
+| بھرپور صارف پروفائلز               |   ✓    |   ✓    |     —     |
+| سرور سائیڈ PR head ref             |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+جہاں کوئی صلاحیت نہ ہو وہاں فیچر ایمانداری سے گر جاتا ہے:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **دیکھی گئی حالت** پھر بھی کام کرتی ہے، مگر صرف اُسی ڈیوائس پر جس پر آپ نے مقرر کی۔
+- Bitbucket پر **بیچ ریویوز** ایک ایک تبصرے کے طور پر شائع ہوتے ہیں، چنانچہ ریویوورز اُنہیں ایک ساتھ آنے کے بجائے الگ الگ آتے دیکھتے ہیں۔
+- Bitbucket پر **PR head ref نہ ہونے** کا مطلب ہے کہ pull request چیک آؤٹ کرنے پر اُس کی سورس برانچ نام سے لائی جاتی ہے، جو اُس برانچ کے حذف ہو جانے پر ناکام ہو جاتا ہے۔
 
-## Vocabulary
+## اصطلاحات
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab pull request کو **merge request** کہتا ہے۔ Control Center اپنے پورے ماڈل میں “pull request” کہتا ہے، اور جہاں کسی forge کی بات ہو رہی ہو وہاں اُس forge کا اپنا اسم استعمال کرتا ہے۔
 
-## Troubleshooting
+## مسائل کا حل
 
-### The PR list is empty and says a forge is not connected
+### PR کی فہرست خالی ہے اور کہتی ہے کہ کوئی forge منسلک نہیں
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+اُس forge کے لیے آپ کے پاس کوئی کریڈینشل نہیں۔ **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** میں سائن اِن کریں یا ٹوکن پیسٹ کریں۔ باقی forges کے ریپوز پر کوئی اثر نہیں پڑتا۔
 
-### I connected a forge but its repos still show nothing
+### میں نے forge جوڑا مگر اُس کے ریپوز پھر بھی کچھ نہیں دکھاتے
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+قطار کا ذیلی عنوان دیکھیں۔ اگر وہاں “اس سرور کی ایپ کے ذریعے” یا “ماحول سے” لکھا ہو تو جواب دینے والا کریڈینشل کوئی اور ہے، اُس سے مختلف جس کی آپ توقع کر رہے تھے — آپ کی مانگی ہوئی ہر چیز کے لیے آپ ہی کا کریڈینشل جیتتا ہے، چنانچہ اگر وہاں کچھ اور لکھا ہو تو آپ کا محفوظ نہیں ہوا۔
 
-### A repo will not register
+### کوئی ریپو رجسٹر نہیں ہوتا
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/).
+رجسٹریشن کے لیے تینوں چیزیں درکار ہیں: راستہ کسی git work tree کے اندر ہو، اُس کا کوئی `origin` ریموٹ ہو، اور وہ ریموٹ github.com، gitlab.com یا bitbucket.org کی طرف اشارہ کرے۔ [ورک اسپیس میں ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/) دیکھیں۔
 
-### Everything stops working for a while after heavy use
+### بھاری استعمال کے بعد کچھ دیر کے لیے سب کچھ کام کرنا بند کر دیتا ہے
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+یہ ریٹ لِمٹ سرکٹ بریکر ہے۔ جب کوئی forge اپنی بنیادی حد کا اشارہ دیتا ہے تو کلائنٹ مزید درخواستیں مقامی طور پر، بغیر نیٹ ورک کال کے، ناکام کر دیتا ہے جب تک ونڈو گزر نہ جائے — چنانچہ دوبارہ کوششوں کا طوفان حد کو مزید گہرا نہیں کر سکتا۔ عارضی ناکامیاں ایکسپونینشل بیک آف کے ساتھ دوبارہ آزمائی جاتی ہیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Add repos to a workspace](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-- [Review and merge a PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
-- [Triage the inbox](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ان-باکس-ٹرائیج/)
+- [ورک اسپیس میں ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [PR ریویو اور مرج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
+- [اپنا ان باکس ٹرائیج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ان-باکس-ٹرائیج/)

@@ -1,207 +1,179 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: 遙控與流動裝置
+description: 手機如何經由中介轉發、端到端密封的中繼（而非點對點連線）觸達你的伺服器，以及讓這種觸達保持狹窄的分層存取模型。
 slug: zh-HK/手冊/概念/遙控
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center 是一款桌面應用程式，但它所追蹤的工作不會在你離開書桌時停下來。
+**遙控**會把你的手機與你的 `cc_server` 配對，所用的是
+**[Remote](https://remote.usectrl.dev/)**——位於 remote.usectrl.dev 的夥伴應用程式
+——讓你可以從手機跟進機群：閱讀訊息與工單、回覆代理、整理你的資訊動態，而伺服器上
+的音訊、轉錄、原始碼與憑證，始終不會離開伺服器。
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+不妨把它看成桌面主介面一個以讀取為主的夥伴。它並非用來取代完整的桌面用戶端。
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/zh-HK/手冊/概念/部署/) for how the two differ.
+:::note[兩條不同的遙控路徑]
+手機夥伴經由一條**中介轉發的 WebSocket 中繼**與 `cc_server` 配對，該中繼承載端到
+端密封的 JSON-RPC 訊框。另一條遙控路徑是完整的 **Web 組建**（以及指向遠端伺服器的
+桌面端）；它經 WebSocket 連線 `cc_server`，並渲染出完整應用程式。兩者的分別見
+[部署與用戶端](/zh-HK/手冊/概念/部署/)。
 :::
 
-## Transport
+## 傳輸
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+手機經由 WebSocket 觸達 `cc_server`：可以是直接連線（回送、LAN、tailnet 或
+`wss://`），也可以是訊號中介上需邀請才能加入的房間，由該中介轉發已密封的訊框。
+這裏沒有點對點的資料通道。
 
-## What the phone can do
+## 手機可以做甚麼
 
-The paired phone reaches a small, intentional slice of the server's surface:
+已配對的手機只能觸達伺服器介面中一小塊刻意劃定的範圍：
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **讀取**工單、代理、空間及其訊息，以及你的資訊動態
+- **回覆**：在空間中傳送訊息、更新或指派工單、把文章標為已讀或已儲存
+- **執行劇本**：以參數實例化一個已儲存的計劃範本。它只會_提出_計劃；在操作人員
+  於完整用戶端的 Plan Studio 批准之前，不會有任何執行或花費
+- **切換工作區**，在手機自己的選擇器裏
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+差不多就是全部。相比完整用戶端，手機是**權限較低的主體**。它不能啟動程序、動用
+LLM 預算、推送到 GitHub，也不能建立工作區。它是如何被真正強制執行而不只是設計
+意圖，見[存取模型](#存取模型)。
 
-## How the link is built
+## 連線是如何建立的
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+連線依托一條**中介轉發的中繼**：伺服器以房間擁有者的身分，加入 `wss://` 中介上
+一個需邀請才能進入的房間，而每個已配對的用戶端——桌面、Web、手機——都憑一個有
+時限的准入權杖加入同一個房間。有三部分共同發揮作用：
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
+| 組成部分                  | 角色                                                                                                                                                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| **Remote（手機應用程式）** | 夥伴 Web 應用程式，預設由 `remote.usectrl.dev` 託管，亦可自託管。它在瀏覽器中載入，並把配對記錄保存在 IndexedDB 中。                                                                                                                                   |
+| **中繼中介**       | 一條無狀態的 `wss://` 中繼（`cc_signaling_server`），託管 N 方房間。它**只承載不透明的訊框**：每個負載都在手機與伺服器之間端到端密封，因此中介從不會看到應用程式資料或配對密鑰，也從不解讀它所轉發的內容。 |
+| **`cc_server`**        | 房間的擁有者。它經由其他所有用戶端所用的同一個調度器，回應手機的呼叫。                                                                                                                                                                            |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+一次配對邀約會帶上一個**連線描述符**，列出通往伺服器的每一條路徑（LAN、tailnet、
+公開 `wss://`、中繼），以及伺服器的身分指紋。手機的解析器會挑選最佳的可達路徑，
+並在首次連線時釘選該指紋（TOFU）；即使沒有直接路徑，中繼也能保證連通，同時始終
+無法讀取流量。
 
-## What the pairing payload is
+## 配對負載是甚麼
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/zh-HK/手冊/操作指南/配對裝置/) for the procedure. The anatomy is
-what matters here.
+配對憑證由應用程式簽發，並以深層連結交付；具體步驟見
+[配對裝置](/zh-HK/手冊/操作指南/配對裝置/)。這裏重要的是它的結構。
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+負載位於 URL 的**片段**，也就是 `#` 之後、瀏覽器從不傳送給伺服器的那一段，因此
+PWA 的 HTTPS 主機從不會看到它。它帶齊手機觸達伺服器並證明自己身分所需的一切：
+連線描述符（每條路徑加上身分指紋）、一個新簽發的裝置 id、一個 32 位元組的預共享
+密鑰，以及一個到期時間戳。手機會解碼它、在本地儲存配對記錄，並去掉片段，讓密鑰
+離開 URL。
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+負載有兩種形態，二者**不可互換**。由應用程式內配對面板簽發的手機二維碼，就是上述
+指向 Remote PWA 主機的 v2 `PairingPayload`。`cc_server pair --client-url` 發出的
+是另一種較舊的 v1 連結（`{s, i, k}` —— 伺服器 URL、裝置 id、密鑰），只供 **Web**
+用戶端使用。
 
-They also differ in lifetime, which is easy to get wrong:
+兩者的有效期也不同，這一點很容易搞錯：
 
-| Minted by                             | Credential expiry                         |
+| 簽發方式                              | 憑證到期時間                              |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| 應用程式內配對面板（`pairing.mint`）  | 一律 30 天                                |
+| 命令列上的 `cc_server pair`           | **無** —— 憑證不會到期                    |
 
-## The access model
+## 存取模型
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+已配對的裝置是**已驗證但不受信任**的。若干道各自獨立的關卡，令一次獲批（或洩漏）
+的配對不會變成對伺服器的完全控制。
 
-### 1. Membership, not pairing, is the boundary
+### 1. 邊界在於成員身分，而非配對
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+有效的配對密鑰只證明你是_哪部裝置_。你可以讀取或更改甚麼，取決於你的**工作區
+角色**——每次呼叫都會重新解析——以及任何會揭露程式庫內容的操作上按程式庫授予的
+權限。一部持有完全有效密鑰、但所屬使用者並非所指名工作區成員的裝置，會被拒絕，
+並回覆 “Not a member of this workspace”。
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+角色下限由操作的種類推導，除非操作自行聲明：讀取需要 `guest`，變更需要
+`member`，破壞性操作需要 `admin`。
 
-### 2. A phone is a lower session tier
+### 2. 手機屬於較低的工作階段層級
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+除角色檢查之外，手機工作階段所帶的能力也低於桌面或 Web 工作階段。聲明為僅限完整
+用戶端的操作，會在處理程式執行之前就對手機拒絕，無論其背後的使用者權限有多高：
+簽發、列出、重新命名與撤銷裝置配對；讀取與設定隧道連線；伺服器備份與工作區
+匯出／匯入；程序偵測與終止；配接器探測；伺服器設定；SSO 管理；機群控制；以及
+接管或交回正在執行的代理。
 
-### 3. A default-deny tool allow-list
+### 3. 預設拒絕的工具允許清單
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+具體到 MCP 工具介面（`tools/call`），哪些工具可由手機呼叫，由一份預設拒絕的允許
+清單決定。未列入清單的工具會在執行之前被拒絕。這份清單以讀取與觀察為主，另加少量
+**僅限本機**的寫入——一則訊息、一次工單更新、一個文章標記——它們不消耗 LLM 預算、
+不啟動程序，也不接觸任何外部系統。
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+例如會被拒絕的：諮詢代理、開始 AI 審查、終止代理、把審查發佈到 GitHub、招募或
+解僱代理、建立工作區。
 
-### 4. Per-call workspace scoping
+### 4. 每次呼叫的工作區範圍限定
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/zh-HK/手冊/概念/工作區/) invariant the rest of the
-product enforces.
+伺服器**不**保存「當前工作區」。它按設計是無狀態的：每個以工作區為範圍的呼叫，
+都必須在其引數中指明目標 `workspace_id`，而當該項缺失、或所指的工作區並非伺服器
+已註冊的，調度器會在開啟任何資料庫之前直接拒絕該呼叫。因此手機永遠無法繼承或
+漂移到另一個用戶端的範圍，而指名一個外來工作區也無補於事，因為第 1 道關卡中的
+成員身分檢查仍然適用。這與產品其餘部分所強制執行的
+[工作區隔離](/zh-HK/手冊/概念/工作區/)是同一項不變式。
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. 以預共享密鑰為金鑰的端到端密封訊框
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+手機與伺服器之間的每個訊框都以配對密鑰密封；准入權杖只讓用戶端進入房間，它不
+解密任何東西。中介轉發的只是密文，從不會看到密鑰。已撤銷的裝置會發現自己的憑證
+早已消失，因此重新連線時會**失敗即關閉**。
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+由應用程式簽發的憑證有時限，為 30 天；過了期限，連線關卡會判定它失敗，手機必須
+重新配對。撤銷是即時的：伺服器監看裝置資料表，會在數秒內中斷已撤銷裝置的現有
+工作階段，而不是等它下次連線。
 
-### 6. Rate limiting per principal
+### 6. 按主體限制速率
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+滑動視窗限速器把遙控工具流量限制在每分鐘 120 次呼叫，並對變更類動作再加一個較緊
+的每分鐘 30 次子上限。額度屬於**主體，而不是工作階段**：你的三部裝置共用同一份
+額度，因此被騎劫的用戶端無法藉着開更多工作階段來換取餘裕，一個吵鬧的成員也無法
+令其他人無額度可用。
 
-### 7. A broker that learns nothing
+### 7. 甚麼也學不到的中介
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+中繼中介刻意保持笨拙：它託管房間、轉發密封訊框，不保存任何帳戶、應用程式資料或
+密鑰。房間需邀請才能進入，而且是暫時性的。應用程式資料、音訊、轉錄、原始碼與
+憑證全都留在伺服器上。
 
-## Live updates
+## 即時更新
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+配對之後，手機會以通知訊框的形式收到**即時更新**——新的代理訊息、指派給你的工單、
+狀態變更——與桌面端自己的通知如出一轍。伺服器會把這些訊框廣播給每個已連線的
+工作階段，而工作區篩選在用戶端一側套用，因此你看到的內容限定於你正在查看的那個
+工作區。
 
-## Where it lives
+## 所在位置
 
-| Surface                                                                             | What it shows                                                                                               |
+| 介面                                                                                | 顯示內容                                                                                                    |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **設定 → 你 → 你的裝置**（`/workspaces/:workspaceId/settings/you/devices`）         | 已配對的用戶端及其即時狀態，另有**配對新用戶端**（網頁瀏覽器、桌面應用程式或手機）與撤銷                      |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+同一個面板也會為第二個瀏覽器或桌面應用程式簽發配對，並不限於手機——流程完全相同，
+只有深層連結不同。
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+遙控屬於伺服器端，且**不**經 MCP 對外提供。手機經由中繼與伺服器自己的調度器
+通訊；它不是外部伺服器的 MCP 用戶端。
 ::::
 
-## See also
+## 另請參閱
 
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/zh-HK/手冊/概念/多人協作/): roles, membership and repo grants
-- [Deployment and clients](/zh-HK/手冊/概念/部署/): where remote control sits among the client tiers
-- [Architecture](/zh-HK/手冊/概念/架構/): where remote control sits in the stack
-- [Pair a device](/zh-HK/手冊/操作指南/配對裝置/)
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/)：它所依托的每次呼叫範圍限定
+- [多人協作——身分、成員身分與線上狀態](/zh-HK/手冊/概念/多人協作/)：角色、成員身分與程式庫權限
+- [部署與用戶端](/zh-HK/手冊/概念/部署/)：遙控在各種用戶端層級中的位置
+- [架構](/zh-HK/手冊/概念/架構/)：遙控在技術堆疊中的位置
+- [配對裝置](/zh-HK/手冊/操作指南/配對裝置/)

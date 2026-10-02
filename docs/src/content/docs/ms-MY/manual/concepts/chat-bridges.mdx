@@ -1,249 +1,273 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Jambatan sembang
+description: Mengapa integrasi Slack menghubungi keluar dan bukannya mendengar, apa yang sebenarnya membenarkan mesej yang tiba daripada sembang dan bagaimana satu jambatan melayani mana-mana produk sembang.
 slug: ms-MY/manual-pengguna/konsep/jambatan-sembang
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Jambatan sembang menjadikan produk sembang luaran — Slack buat masa ini — cara
+kelas pertama untuk masuk ke ruang kerja Control Center. Sebut bot dan ejen akan
+terjaga; balas dalam utas Slack dan perbualan berterusan; taip perintah slash dan
+satu tiket difailkan. Di sebaliknya, ruang, transkrip, tiket dan atribusi yang
+sama seperti yang digunakan oleh aplikasi desktop. Sembang ialah _permukaan_ pada
+ruang kerja, bukan salinannya.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack ialah satu-satunya penyedia yang disediakan.** Tiada pelaksanaan Discord,
+Telegram, Teams atau Matrix di mana-mana dalam produk ini. Ciri ini sengaja
+ditulis secara bebas penyedia — menambah produk kedua hanya memerlukan satu nilai
+enum, satu penyesuai dan satu plugin — tetapi hari ini "sembang" bermaksud Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Dua permukaan merangkumi ciri ini dan kedua-duanya milik orang yang berbeza.
+Menyambungkan ruang kerja ke Slack dan menyesuaikan bot ialah tindakan
+**pentadbir** di bawah Tetapan → Ruang kerja → Umum. Memautkan akaun sembang anda
+sendiri kepada identiti Control Center anda ialah tindakan **ahli** di bawah
+Tetapan → Ruang kerja → Profil & identiti.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Tiga keputusan membentuk keseluruhan ciri ini: **ke arah mana sambungan itu
+berjalan**, **apa yang membenarkan mesej yang tiba dari luar** dan **di mana
+pengetahuan khusus produk dibenarkan berada**.
 
-## Outbound by design
+## Keluar mengikut reka bentuk
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Jambatan ini tidak pernah mendengar daripada penyedia. Slack dicapai melalui
+**Socket Mode**: pelayan meminta URL soket daripada Slack dan menghubungi keluar,
+kemudian menerima sebutan, DM dan perintah slash melalui sambungan itu.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Kesannya itulah yang penting. Komputer riba di belakang NAT, pelayan rumah tanpa
+domain, mesin yang berpindah antara rangkaian — semuanya boleh menjalankan
+jambatan tanpa port masuk, tanpa terowong, tanpa sijil TLS dan tanpa URL awam
+yang perlu diganti apabila ia berubah. Tiada titik akhir webhook untuk diamankan
+kerana memang tiada titik akhir webhook. Apabila Control Center menyusun definisi
+apl, ia menetapkan Socket Mode dan membuang sebarang URL permintaan, kerana apl
+yang dikonfigurasikan untuk kedua-duanya ialah apl yang hanya berfungsi separuh.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Kosnya ialah sambungan yang perlu dikekalkan hidup, dan itu tugas pelayan:
+penyambungan semula menggunakan backoff eksponen dengan jitter yang dihadkan pada
+30 saat, putaran soket yang dimulakan oleh penyedia akan menyambung semula tanpa
+meningkatkan backoff tersebut dan _kelayakan yang ditolak_ bersifat muktamad —
+mencuba semula token yang telah dibatalkan selama-lamanya hanya akan mendatangkan
+had kadar, jadi jambatan berhenti dan menunggu token baharu sambil melaporkan
+ralat penyedia itu sendiri secara verbatim dalam tetapan.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Ruang kerja tanpa apl sembang tidak menelan kos sama sekali: tiada soket, tiada
+pemasa, tiada trafik. Dan keseluruhannya bermula _selepas_ sepanduk sedia
+pelayan, kerana apl sembang yang lambat menjawab tidak boleh sesekali
+melengahkan boot.
 
-## Membership authorizes, not token possession
+## Keahlian yang membenarkan, bukan pemilikan token
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Orang yang memasang apl bukanlah orang yang menghantar mesej. Jadi setiap
+peristiwa masuk diselesaikan kepada **Principal** sebelum apa-apa berlaku dan ia
+gagal secara tertutup dengan penjelasan:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Akaun sembang yang belum dipautkan** diberitahu cara memautkannya, dalam
+  utas Slack tempat ia menulis.
+- **Akaun berpaut yang penggunanya bukan ahli** ruang kerja ini diberitahu supaya
+  meminta jemputan daripada pentadbir.
+- **Ahli yang peranannya hanya baca** (`viewer`, `guest`) diberitahu bahawa
+  peranannya tidak boleh memulakan kerja.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/ms-MY/manual-pengguna/konsep/multipemain/)
-for the membership model this leans on.
+Tiada satu pun daripada kes itu diteruskan. Mesej sembang tidak pernah
+diatribusikan kepada seseorang yang tidak menghantarnya — inilah yang
+mengekalkan jejak audit, had kadar per Principal dan pelapor tiket supaya jujur.
+Lihat
+[Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/)
+untuk model keahlian yang menjadi sandarannya.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Memautkan ialah penyelesaian identiti, **bukan** pemberian akses. Keahlian
+diperiksa semula pada setiap peristiwa, jadi pautan milik seseorang yang sejak itu
+telah dibuang akan menghasilkan penolakan dan bukan keistimewaan lamanya. Dua
+laluan mewujudkan pautan: kod sekali guna yang berumur pendek yang ditaip ahli
+dalam sembang, atau padanan automatik pada e-mel _disahkan_ penyedia — dan laluan
+e-mel masih memerlukan pengguna yang dipadankan sudah menjadi ahli, jadi orang
+asing yang alamatnya kebetulan wujud pada pelayan tidak dipautkan kepada apa-apa.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Kod-kod itu sengaja disimpan dalam memori, dengan masa hayat 15 minit.
+Menyimpannya secara kekal akan mencipta baris berbentuk kelayakan yang tahan lama
+untuk sesuatu yang memang bertujuan menguap, dan but semula pelayan yang
+membatalkan setiap kod yang masih belum digunakan ialah tingkah laku yang betul,
+bukan regresi — ahli hanya perlu menekan "pautkan" sekali lagi.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Penolakan dijawab **dalam utas Slack tempat mesej itu dibuka**, sebagai balasan
+sebenar. Balasan berutas memberi lencana kepada mesej yang dijawabnya, sampai
+kepada satu-satunya orang yang memerlukannya dan masih mengekalkan "anda belum
+dipautkan" di luar saluran itu sendiri. Menyiarkan mesej juga satu-satunya
+keupayaan yang dimiliki oleh setiap penyedia, jadi penjelasan itu tidak pernah
+bergantung pada ciri yang mungkin tidak dibawa oleh apl.
 
-## Provenance and the echo problem
+## Asal usul dan masalah gema
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Jambatan yang mencerminkan kedua-dua arah akan berulang tanpa henti melainkan ada
+sesuatu yang membezakan kedua-dua arah itu. Setiap mesej yang dibawa masuk oleh
+jambatan dicap dengan `metadata['chat']` — penyedia, pasukan, perbualan, utas,
+mesej dan penghantar. Cermin keluar melangkau mana-mana mesej yang membawa cap
+itu.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Peraturan tunggal itulah yang menjadikan pencerminan dua hala selamat: mesej
+manusia yang ditaip dalam Control Center disalurkan keluar ke utas berpaut
+(diawali dengan nama penulis), manakala mesej yang datang _dari_ sembang berhenti
+di tempat ia masuk.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Apa yang melintas ke luar sengaja dibataskan. **Jawapan** ejen disalurkan sebagai
+teks sembang biasa. Fikiran pendek boleh muncul pada baris `Thinking…` pada kad
+itu. Keluaran alat ialah longgokan diff dan kekal dalam Control Center, yang juga
+menjadi tempat balasan yang dipotong menunjuk.
 
-## A card reports the work; the text is still the message
+## Kad melaporkan kerja; teks tetap menjadi mesej
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Di tempat penyedia merendernya, satu giliran membawa **satu kad tugas**, yang
+disunting di tempat selama giliran itu berjalan dan terletak di atas jawapan yang
+dijelaskannya.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Kad itu ialah satu pelan yang dikumpulkan, bukan perenggan yang dilecek. Slack
+menggabungkan `details` dan `output` pada tugas yang sama, jadi butiran sesuatu
+baris dihantar sekali sahaja (fikiran pada `Thinking…`) dan `output` tidak pernah
+dialirkan. Persediaan ialah satu baris yang tajuknya diganti (`Working on it…`,
+`Cloning …`). Penaakulan menambah baris `Thinking…`. Setiap alat mempunyai
+barisnya sendiri (`Read lib/main.dart`). Jawapan ialah teks biasa di bawah kad —
+paparan pelan Slack membacanya daripada lampiran markdown yang datang kemudian,
+bukan daripada cebisan yang dicampur ke dalam tugasan. Tiada apa-apa lagi: tiada
+keluaran alat dan hanya argumen alat daripada senarai izin yang pendek, kerana
+argumen alat yang tidak dikenali boleh menjadi keseluruhan isi fail manakala satu
+baris hanyalah satu baris.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Kad itu juga merangkumi masa menunggu _sebelum_ giliran. Sebutan pertama mencipta
+perbualan dan penciptaannya mengklon setiap repo yang akan digunakan oleh ejen
+untuk bekerja — yang pada repo sebenar mengambil masa beberapa minit ketika ejen
+belum diminta apa-apa lagi dan utas itu kelihatan seperti bot mengabaikan
+permintaan tersebut. Jadi kad itu terbuka sebaik sahaja sebutan diterima
+(`Working on it…`) dan kemudian baris persediaan itu dikemas kini dengan perkataan
+yang sama seperti yang ditunjukkan oleh desktop — `Cloning acme/widgets…`,
+`Setting up Reviewer…`, `Starting the agent…` — kemudian baris `Thinking…` sebaik
+sahaja ejen mula menaakul, kemudian satu baris bagi setiap alat. Satu kad, satu
+mesej, daripada "saya mendengar anda" sehingga jawapan sebagai teks biasa di
+bawahnya. Persediaan hanya dilaporkan apabila ada seseorang dalam sembang yang
+menunggunya: perbualan yang sedang disediakan dalam apl, atau perbualan terkandas
+yang disambung semula semasa boot pelayan, menyediakan sumber tanpa kad sama
+sekali.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Ia membawa satu-satunya perkara yang tidak dapat diberikan oleh sembang kepada
+pembaca: pautan **View in Control Center** ke perbualan di sebalik balasan itu.
+Produk sembang hanya menerima `http(s)` dalam pautan dan tidak menerima selainnya,
+jadi butang itu menunjuk kepada halaman kecil yang dilayani oleh pelayan ini, yang
+melantunkan pelayar ke pautan `control-center://` aplikasi desktop. Halaman itu
+tidak membaca apa-apa dan tidak menyelesaikan apa-apa — id dalam URL-nya
+digaungkan ke pautan mendalam dan tidak ke mana-mana lagi — dan pelayan tanpa URL
+awam yang boleh dicapai hanya menghasilkan kad tanpa butang dan bukan kad yang
+rosak.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Kad ialah satu keupayaan seperti keupayaan lain. Penyedia yang tidak memilikinya
+berkelakuan tepat seperti sebelum ini, teks sahaja, dan penyedia yang menolak
+satu kad pada masa panggilan mengekalkan alirannya: balasan sentiasa mengatasi
+kad yang menerangkannya. Apabila penstriman dimatikan sepenuhnya, kad yang telah
+siap menaiki satu-satunya mesej yang disiarkan sebaliknya. Tiket yang difailkan
+mendapat layanan yang sama — pengesahan `/cc ticket` ialah kad yang telah siap
+yang sebab kewujudannya ialah pautan ke tiket yang baru dicipta.
 
-## Capabilities are negotiated, then remembered
+## Keupayaan dirundingkan, kemudian diingati
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Produk sembang berbeza dari segi apa yang boleh direndernya, jadi jambatan ini
+ditulis untuk permukaan terkaya — balasan yang membesar secara langsung di dalam
+utas, status sementara "is thinking…", utas bertajuk, jawapan seketika kepada
+perintah slash — dan menurunkan satu keupayaan pada satu masa. Penyedia yang
+tidak memiliki satu pun daripadanya masih berfungsi; balasan hanya tiba sebagai
+satu mesej.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Mengiklankan sesuatu keupayaan bukan bermakna menjanjikannya. Balasan penstriman
+Slack memerlukan ciri pelan berbayar dan Slack hanya menolaknya pada masa
+panggilan. Penolakan yang ditandakan kekal diingati sepanjang **seluruh hayat
+sambungan itu**: jambatan berhenti meminta dan menyiarkan balasan penuh selepas
+itu dan tetapan menyatakannya secara terang, kerana "balasan saya berhenti
+menstrim" harus boleh dijawab tanpa membaca log. Kad tugas digugurkan dengan cara
+yang sama jika Slack menolak satu.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Setiap had milik penyedia dan bukan milik relai: had siling mesej, had siling
+cebisan strim dan sama ada sesuatu strim memerlukan sauh utas semuanya
+diisytiharkan oleh penyesuai, dan balasan panjang dipecah pada sempadan perenggan,
+baris atau perkataan dan bukan di tengah perkataan.
 
-## One bridge, one adapter per product
+## Satu jambatan, satu penyesuai bagi setiap produk
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Segala yang berbentuk produk berada di sebalik port. Teras generik mengetahui
+tentang markdown, perbualan sembang, utas sembang dan ahli; ia tidak mengetahui
+apa-apa tentang sampul Slack, `mrkdwn` atau intent gerbang. Tiga bahagian
+menjadikannya berkesan:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Penyesuai** menormalkan satu produk: pengangkutannya, panggilan API-nya, kodek
+  teksnya dan keanehan sampulnya. Milik Slack memberi pengajaran — sebutan saluran
+  tiba dua kali (sebagai `app_mention` _dan_ sebagai `message`) dan kebanyakan
+  subjenis mesej hanyalah hiasan dan bukan permintaan baharu. Kedua-duanya
+  diselesaikan dalam penyesuai, jadi teras tidak pernah tahu bahawa Slack
+  menghantar dua kali.
+- **Penerang** ialah bentuk awam penyedia: kelayakan apa yang diperlukannya, apa
+  formatnya, URL mana yang membantu pengguna menemuinya, apa yang boleh
+  dilakukannya dan sama ada aplnya boleh dicipta atau disunting dari sini. Kad
+  tetapan, dialog sambungan dan pengesahan argumen semuanya _dijana_ daripadanya —
+  klien menghantar balik penyedia serta peta yang dikunci oleh id medan.
+- **Plugin** ialah gubahan di sisi pelayan: bagaimana kelayakan menjadi sambungan
+  yang disahkan, bagaimana penyesuai dibina dan bagaimana apl di sisi penyedia
+  diuruskan.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Jadi menambah produk ialah satu nilai enum, satu penyesuai dan satu plugin. Tiada
+op RPC baharu, tiada perubahan skema, tiada perubahan klien — dan klien kekal
+jujur, kerana medan yang tidak pernah didengarnya masih dirender dengan label yang
+dibekalkan oleh pelayan.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Dua butiran menghalang abstraksi itu daripada meresap ke atas. Langkah pengurusan
+apl yang tidak mempunyai API pada penyedia (jana token, pasang apl, pasang semula
+selepas perubahan kebenaran) dikembalikan sebagai **langkah bernama dengan
+pautannya sendiri**, supaya skrin selesai persediaan boleh memaparkannya tanpa
+tahu penyedia mana itu. Dan setiap arahan yang ditulis oleh jambatan menyebut
+penyedia dan perintah yang sebenarnya digunakan oleh apl, supaya perintah yang
+dinamakan semula atau penyedia kedua terbaca dengan betul tanpa rentetan baharu.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Pasang semula selepas perubahan kebenaran]
+Menyunting nama, perihalan atau ikon bot berkuat kuasa serta-merta. Perubahan
+**kebenaran** memerlukan pemasangan semula: Slack menerapkan manifes baharu
+tetapi mengekalkan pemberian pada keadaan semasa ia dipasang. Suntingan itu
+mengembalikan langkah yang tinggal bersama pautan ke halaman "Reinstall to
+Workspace" milik Slack.
 :::
 
-## Where credentials live
+## Di mana kelayakan disimpan
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Token sembang sesuatu ruang kerja berada dalam **direktori ruang kerja itu
+sendiri, di sebelah pangkalan datanya** — sebagai JSON biasa di
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, bukan dalam pangkalan
+data dan sengaja bukan dalam keychain OS. Dua kesannya mudah dilupakan kemudian
+hari: memadam ruang kerja akan menyahpaut direktori itu dan tokennya turut hilang,
+dan mengeksport atau menyandarkan ruang kerja menyalin `workspace.db`, jadi ruang
+kerja yang diserahkan kepada orang lain tidak membawa token bot yang masih aktif
+di dalamnya. Fail itu mewarisi sempadan kepercayaan sistem fail hos pelayan —
+apa-apa yang mempunyai akses baca ke direktori data boleh membaca token bot, dan
+itulah sempadan yang sama yang melindungi pangkalan data.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Satu fail bagi setiap penyedia, ditulis secara atomik dan hanya untuk pemilik:
+apl yang dibatalkan dipadam dengan menyahpaut satu fail dan fail yang rosak hanya
+merugikan satu penyedia dan bukan kesemuanya. Kelayakan masuk _ke dalam_ melalui
+operasi sambungan dan tidak pernah keluar semula — bacaan status hanya menjawab
+dengan metadata sambungan.
 
-## What is deliberately not offered
+## Apa yang sengaja tidak ditawarkan
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Tetapan apl yang bersifat struktur.** Pengangkutan, skop dan langganan
+  peristiwa ditetapkan dan bukan didedahkan. Apl yang boleh dikonfigurasikan
+  sehingga membisu daripada skrin tetapan ialah tiket sokongan dan bukan ciri.
+- **Perbualan serta perintah slash.** Permukaan Slack ialah mesej, balasan utas
+  dan perintah slash.
+- **Sumber kebenaran kedua.** Sembang bukan tempat kerja disimpan. Utas Slack
+  ialah ruang, balasannya ialah transkrip, tiketnya ialah tiket — semuanya dalam
+  ruang kerja, boleh dicapai daripada setiap klien.
 
-## See also
+## Lihat juga
 
-- [Multiplayer — identity, membership and presence](/ms-MY/manual-pengguna/konsep/multipemain/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/): why links and credentials are per workspace
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/): what wakes when a mention arrives
-- [Tickets and delegation](/ms-MY/manual-pengguna/konsep/tiket/): what `/cc ticket` files
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/ms-MY/manual-pengguna/tutorial/jambatan-sembang-pertama/)
-- [Set up Slack integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
-- [Link your Slack account](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
-- [Customize the chat bot](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
-- [PR conversations](/ms-MY/manual-pengguna/konsep/perbualan-pr/): the same three decisions, made for a forge
+- [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/): Principal dan peranan yang diselesaikan oleh jambatan
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/): mengapa pautan dan kelayakan adalah bagi setiap ruang kerja
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): apa yang terjaga apabila sebutan tiba
+- [Tiket dan perwakilan](/ms-MY/manual-pengguna/konsep/tiket/): apa yang difailkan oleh `/cc ticket`
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/): di mana jambatan berada di antara pelayan dan klien
+- [Jambatkan Slack ke ruang kerja anda](/ms-MY/manual-pengguna/tutorial/jambatan-sembang-pertama/)
+- [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
+- [Pautkan akaun Slack anda](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
+- [Sesuaikan bot sembang](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
+- [Perbualan PR](/ms-MY/manual-pengguna/konsep/perbualan-pr/): tiga keputusan yang sama, dibuat untuk sebuah forge

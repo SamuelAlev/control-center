@@ -1,248 +1,258 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Tillatelsesregler — én policy for hver muterende handling
+description: Hvorfor Control Center fører hver bivirkning fra en agent gjennom én enkelt allow/prompt/deny-motor, hvorfor ActionClass-taksonomien med vilje holdes liten, og hva autonomivriden egentlig endrer.
 slug: nb-NO/handbok/konsepter/tillatelsesregler
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agenter i Control Center kan slette filer, pushe grener, publisere pull
+requests og kalle eksterne API-er. Hver av disse er en annen _type_ risiko, og
+lenge var det bare én av dem — shell-kommandoer — som hadde en policy.
+Tillatelsesreglene finnes for å svare på ett spørsmål på samme måte, for hver
+muterende handling en agent kan utføre, uansett hvilken kjøretid eller hvilket
+verktøy som foreslår den: **er dette tillatt, trenger det en godkjenning, eller
+blir det avslått?**
 
-## One engine, every chokepoint
+## Én motor, alle kontrollpunkter
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Det finnes nøyaktig én policymotor. Den blir spurt på hvert punkt der en
+handling kan forlate systemet: verktøyregisteret til den innebygde harnessen,
+porten i MCP-dispatchseren på serversiden og mutasjoner fra repo-operasjoner.
+En regel som skrives én gang, gjelder derfor både for den innebygde kjøretiden
+og for eksterne agent-CLI-er — det finnes ingen andre, stillere vei rundt den.
+Den eldre kommando-policyen som bare gjaldt bash, fungerer fortsatt: en regel
+kan treffe et kommandoprefiks i stedet for en handlingsklasse, og begge formene
+lever side om side i samme lager.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Motoren er likevel ikke en erstatning for OS-sandkassen, og sandkassen er ikke
+en erstatning for den. De svarer på ulike spørsmål: tillatelsesreglene avgjør om
+et kall Control Center kan se, i det hele tatt får skje, mens sandkassen
+begrenser hvor den resulterende prosessen kan nå. `cc_server` legger på
+sandkassen der verten tilbyr en backend — men [Windows tilbyr ingen, og Linux
+trenger `bwrap` og `socat`](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
+På slike verter er tillatelsesreglene det ytterste håndhevelseslaget i stedet
+for en policy som ligger oppå et gulv, og det er verdt å vite når du bestemmer
+hvor romslig du vil være.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: en med vilje lukket taksonomi
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Hvert muterende verktøy erklærer hvilke **ActionClasses** det hører til, fra et
+lukket sett på tretten effektklasser. Fem av dem spør med én gang; resten
+tillater, og en regel er det som endrer det.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Klasse                     | Innebygd standard | Hva den dekker                                                   |
+| -------------------------- | ----------------- | ---------------------------------------------------------------- |
+| `fileDelete`               | **prompt**        | Slette en fil (en slettelignende skriving, `rm`)                 |
+| `gitPush`                  | **prompt**        | Pushe til en git-remote                                          |
+| `prCreate`                 | **prompt**        | Opprette en pull request                                         |
+| `prPublish`                | **prompt**        | Publisere en gjennomgang, slå sammen en PR                       |
+| `vendorSyncWrite`          | **prompt**        | Skrive til et eksternt oppfølgingssystem (Linear, Jira, GitHub-synk) |
+| `fileWriteOutsideWorktree` | allow             | Skrive en fil utenfor den isolerte worktreen                     |
+| `gitCommit`                | allow             | Opprette en git-commit                                           |
+| `networkEgress`            | allow             | Nettverkstrafikk ut (netthenting, vilkårlig HTTP)                |
+| `secretAccess`             | allow             | Lese en hemmelighet eller påloggingsdetaljer                     |
+| `packageInstall`           | allow             | Installere en pakke (npm, pip, pub, brew)                        |
+| `processSpawn`             | allow             | Starte en prosess (shell og alt som starter en shell)            |
+| `workspaceMutation`        | allow             | Endre strukturen i arbeidsområdet (repoer, områder, agenter)     |
+| `enclosureControl`         | allow             | Styre et isolert miljø (stasjon): starte en VM, sende den input  |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+De åtte klassene som tillater som standard, ble valgt ut fra en antagelse om at
+sandkassegulvet gjelder under dem. Det gjør det der verten tilbyr en backend, og
+det gjør det ikke på Windows eller på en Linux-boks som mangler `bwrap` og
+`socat` — så hvis du vil at `fileWriteOutsideWorktree` eller `packageInstall`
+skal styres av en regel der, er det en regel du må skrive selv.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Settet er lukket med vilje. Et nytt muterende verktøy som ikke erklærer noen
+klasse, feiler ratchet-testen, så taksonomien kan bare vokse gjennom en
+uttrykkelig, begrunnet beslutning — «villvekst i taksonomien er døden for denne
+funksjonen». Tretten klasser er nok til å uttrykke de policyene folk faktisk
+skriver (aldri push uten å spørre, aldri slett utenfor en worktree, alltid
+tillat lesing), og få nok til at innstillingsgrensesnittet fortsatt er
+forståelig.
 
-## Rules and scope resolution
+## Regler og hvordan omfang avgjøres
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+En regel avbilder `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Omfangene ligger i lag fra mest til minst spesifikt:
 
-**space > agent > workspace > mode preset > built-in default**
+**område > agent > arbeidsområde > modusforhåndsvalg > innebygd standard**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Oppslaget går **etter spesifisitet først**: det første omfanget med en regel som
+passer, bestemmer, og oppslaget stopper der. Mest restriktiv er bare en
+skilleavgjørelse — mellom to like spesifikke regler i samme omfang og når de
+flere klassene en enkelt handling erklærer, kombineres. Innenfor et omfang
+treffer en kommandoregel på det lengste kommandoprefikset. allow slår ikke deny
+noe sted.
 
-Two decisions carry hard guarantees:
+To avgjørelser har harde garantier:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Fail-closed ved forespørsler.** En `prompt` uten en tilkoblet godkjenner
+  løses opp til _avslått_. Et ubesvart spørsmål er aldri et ja.
+- **Mest restriktiv kombinasjon.** En handling som spenner over flere klasser,
+  kombinerer dem mest restriktivt; når flere klasser spør, lister én
+  bekreftelse opp dem alle.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Det finnes med vilje ingen lås per runde. Hvert verktøykall løser opp policyen
+på nytt fra bunnen av, så gjentatt spørring for den samme handlingen begrenses
+av operatørens egen «Godkjenn i 8 timer», ikke av noe som er knyttet til en
+runde.
 
-## Argument-level rules
+## Regler på argumentnivå
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+En regel kan begrense ARGUMENTENE til en handling, ikke bare verbet. «Kan
+pushe» og «kan pushe til `feature/*`» er forskjellige påstander, og bare den
+andre er en kontroll — en kapabilitetsport som bare autoriserer verbet, er
+formen bak de fleste publiserte agenthendelser.
 
-A constraint may name:
+En begrensning kan navngi:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **stier** — glob-mønstre (`repos/**`, `!**/.env`)
+- **refs** — git-refs, med `!`-negasjon (`['**', '!main']` leses som «hvilken
+  som helst gren unntatt main»)
+- **verter** — nettverksmål, med jokertegn for underdomener (`*.internal`)
+- **kommandoer** — kommandoprefikser, matchet på en ordgrense
+- **tak** — `maxCount` / `maxCents`, slik at «slett opptil 50 filer» lar seg
+  uttrykke
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Tre egenskaper følger av å holde grammatikken lukket og uten løkker, og alle
+tre er poenget: hver regel kan leses tilbake som en setning, hvert avslag kan
+navngi begrensningen som traff, og hele policyen kan listes opp — du kan se hva
+en agent får gjøre *før* den kjører.
 
-Three rules that matter:
+Tre regler som betyr noe:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- En **begrenset regel er mer spesifikk** enn en ubegrenset i samme omfang, så
+  «nekt push til `main`» slår «tillat push» uten at noen trenger å tenke på
+  rekkefølgen.
+- En **restriktiv** regel (deny / prompt) gjelder når forespørselen berører
+  *noen* verdi den navngir; en **permissiv** regel (allow) gjelder bare når
+  forespørselen er *helt* innenfor den. Å lese begge på samme måte ville la en
+  agent hvitvaske en forbudt sti ved å pakke en uskyldig en ved siden av.
+- En regel som navngir et aspekt forespørselen ikke sier noe om, blir verken
+  brukt eller hoppet over: den **eskalerer til en godkjenning**. Å hoppe stille
+  over ville gjøre hver regel for beskyttede grener virkningsløs mot et verktøy
+  som ikke rapporterer refen sin; å nekte stille ville avslå hver push
+  uttrekkeren ikke kan beskrive. Uten en tilkoblet godkjenner gjør den
+  eksisterende fail-closed-regelen denne eskaleringen om til et avslag.
 
-## What a command rule can and cannot catch
+## Hva en kommandoregel fanger og ikke fanger
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+En `commandPrefix`-regel matcher på en ordgrense: `git push` dekker
+`git push origin main` og ikke `git pushx`. Den **normaliserer ikke** shellen.
+`git  push` (to mellomrom), `cd sub && git push` og `GIT_DIR=… git push` er alle
+forskjellige strenger, og ingen av dem matcher en regel om `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Det er en reell grense, og den sies som den er i stedet for å feies under
+teppet: kommandoregler er en bekvemmelighet for operatøren for å forme vanlig
+agentatferd, **ikke** en grense mot en fiendsk en. Grensene er effektklassene
+(som et verktøy erklærer og ikke kan skrive om), kommandonettet i modusen under
+policylageret, og OS-sandkassen under begge. En kommandoregel som løses opp til
+`allow`, løsner aldri noen av dem — modusnettet kjører etterpå, og `deny` er
+endelig.
 
-## Standing approvals
+## Varige godkjenninger
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Å svare på en forespørsel med «Godkjenn i 8 timer» skriver en ekte policyregel:
+avgrenset til et omfang (område / agent / arbeidsområde), **bundet til
+argumentene** (å godkjenne en push til `feature/login` gir `feature/**`, ikke
+`main`) og **opphever seg selv** etter en uttrykkelig TTL. Å si ja for de neste
+timene er ikke det samme som å stille skrive om den varige policyen din, og
+reglene den skriver, havner i samme lager med opphavet `remembered` og en
+utløpstid, slik at de kan trekkes tilbake tidlig.
 
-## Enforcement levels
+## Håndhevelsesnivåer
 
-Each rule carries one:
+Hver regel har ett:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — tillat, men registrer at regelen traff. Dette er
+  innføringsveien: rull ut en streng regel i advisory-modus, les revisjonssporet
+  i en uke for å se nøyaktig hva den *ville* ha blokkert, og fremm den så. Uten
+  dette nivået blir strenge policyer aldri slått på.
+- **soft** — nekt, men kan overstyres av noen som har overstyringsrettigheten,
+  med en registrert begrunnelse. Overstyringen er i seg selv en revidert
+  hendelse.
+- **hard** (standard) — nekt. Ingenting overstyrer den.
 
-## The managed tier
+## Det forvaltede nivået
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Den som drifter en installasjon, kan låse fast en policy som ingen
+arbeidsområdeadministrator kan løsne. Forvaltede regler ligger på serversiden og
+slås sammen **mest restriktivt** med hvert arbeidsområdes egen kjede — de er
+ikke et omfang på toppen av den, for en forvaltet `allow` øverst i kjeden ville
+la installasjonen overstyre et nekt fra et arbeidsområde, det motsatte av
+hensikten med en innstramming. En forvaltet regel kan derfor bare stramme til.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Å sette `CC_SERVER_MANAGED_POLICY` til en JSON-fil overstyrer de lagrede reglene
+helt, og det er dette som lar en operatør låse fast en holdning som ingen
+admin-grensesnitt kan vippe — svaret på «kan jeg hindre utviklerne mine i å slå
+av sikkerhetskontrollene?».
 
-## The autonomy dial is a profile, not a parallel system
+## Autonomivriden er en profil, ikke et parallelt system
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Autonomivriden per område er en navngitt profil over det samme policylageret,
+ikke en andre mekanisme. De tre innstillingene lagres og sendes som
+`proposeOnly`, `actWithApproval` og `actFreely` (formene med bindestrek er bare
+prosa i grensesnittet, og `autonomy.setForSpace` avviser alt annet). Å la den
+stå usatt oppfører seg som `actWithApproval`.
 
-What each one does to a resolved decision:
+Hva hver av dem gjør med en avgjørelse etter oppslaget:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** avslår hvert verktøy bak porten tvert. Agenten kan fortsatt
+  resonnere og svare; den kan bare ikke handle, og meldingen sier hvorfor.
+- **`actWithApproval`** (og usatt) er den fail-closed-godkjenningsporten som er
+  beskrevet ovenfor.
+- **`actFreely`** forhåndsgodkjenner alt som ikke løste seg opp til en hard
+  `deny`.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Den siste fortjener å sies rett ut i stedet for å mykes opp: under `actFreely`
+blir en `prompt`-avgjørelse **ikke** eskalert til en godkjenner — den tillates,
+og ingen blir spurt. Bare en uttrykkelig `deny`-regel overlever vriden. Så
+`actFreely` er en bevisst tildeling av autonomi, ikke en
+bekvemmelighetsinnstilling, og fail-closed-regelen beskytter nøyaktig det
+tilfellet der det betyr noe (`actWithApproval`, standarden).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Delegering mellom agenter voktes ved kontrollpunktet `delegate_task` av alle
+fire vokterne: en dybdegrense (standard 3), syklusdeteksjon, et **autonomitak**
+(en delegat kan aldri handle med mer autonomi enn den som delegerte — privilegier
+kan ikke hvitvaskes ved å overlate arbeid til en friere agent) og en
+**budsjettramme** (delegering belaster det gjenstående budsjettet til
+oppdragsgiveren og kan ikke trylle fram mer). Hver av dem avvises høylytt, med
+vokterens begrunnelse returnert til agenten ordrett.
 
-## The adapter honesty matrix
+## Ærlighetsmatrisen for adaptere
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Ikke alle kjøretider lar Control Center avskjære hver handling. Eksterne
+agent-CLI-er kjører noen verktøy nativt, i samme prosess, der ingen port kan
+sitte. I stedet for å late som noe annet, har hver adapter en
+**ærlighetsmatrise**: per adapter, om Control Center filtrerer verktøyflaten,
+avskjærer verktøykall, observerer fullføringskontrakten, kan se kjørerens
+native verktøy, og om verktøy i samme prosess er dekket av en sandkasseprofil.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+To oppføringer er verdt å lese før du stoler på en konfigurasjon. Den innebygde
+harnessen erklærer at filverktøyene dens i samme prosess **ikke** er sandkasset
+— verktøyflaten og denne policymotoren er den eneste filsystemgrensen den har.
+Claude Code erklærer at dens egne verktøykall **ikke** kan avskjæres, fordi den
+startes med `--dangerously-skip-permissions`; Control Center ser bare
+`mcp__*`-kallene dens, og dens egne verktøy for lesing, skriving, redigering og
+shell kjører usett.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Innstillingsskjermen viser denne matrisen, for den ene utilgivelige feilen for
+et tillatelsesregelsystem er å påstå dekning som ikke finnes.
 
-## Probing policy before it bites
+## Prøv policyen før den biter
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Tillatelsesreglene ligger under **Innstillinger → Arbeidsområde →
+Agenttillatelser** (`/workspaces/<id>/settings/workspace/permissions`).
+Skjermen har policymatrisen der regler skrives, policy-maler, en hva-om-prøve,
+revisjonssporet for autorisasjon og ærlighetsmatrisen for adaptere.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Prøven tar en handlingsklasse (eller en kommando) og et omfang og viser hvilken
+regel som bestemte og hvorfor. Fordi oppslaget er rent og deterministisk — samme
+handling, samme omfang, samme avgjørelse — er svaret fra prøven det svaret
+agenten vil få.
 
-## Related concepts
+## Relaterte konsepter
 
-- [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/nb-NO/handbok/konsepter/flerbruker/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/): writing and testing rules in practice
+- [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/): hva som faktisk begrenser en agentkjøring, og hvor langt OS-gulvet under denne motoren rekker
+- [Flerbruker — identitet, medlemskap og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/): områder, parter og hvor autonomivriden ligger
+- [Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/): å skrive og teste regler i praksis

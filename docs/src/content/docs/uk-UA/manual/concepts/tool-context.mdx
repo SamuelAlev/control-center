@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Контекст інструментів і кеш промптів
+description: Чому агенту показують невеликий набір інструментів, а не всі одразу, як він дістається решти та які правила зберігають кеш промптів провайдера гарячим упродовж запуску.
 slug: uk-UA/керівництво/поняття/контекст-інструментів
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Про кожен запит, який робить вбудований harness, справджуються дві речі: визначення інструментів — найбільша фіксована стаття витрат у ньому, і майже жодне з них не буде використано. Ця сторінка пояснює, що із цим робить Control Center і чому відповідь — не просто «надсилати менше інструментів».
 
-## The problem is attention, not bytes
+## Проблема — в увазі, а не в байтах
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center реєструє близько 126 інструментів. Надіслані повністю, їхні визначення коштують приблизно **23 000 токенів на кожен запит** — витрата, якої не торкається жодне згортання, бо визначення інструментів подорожують в окремій частині запиту, ніж розмова.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+Рахунок за токени — очевидна скарга, і з кешуванням промптів він також менший із двох. Справжня витрата — **точність вибору**. Опубліковані оцінювання виклику інструментів сходяться на тому, що моделі надійно обирають правильний інструмент приблизно до 30–50 інструментів у контексті, а далі дедалі гіршають. Названа причина — не кількість токенів, а **семантичне перекриття**: щойно в каталозі з’являється кілька інструментів, чиї описи читаються однаково, модель обирає між двійниками, а не пригадує можливість.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Маючи 126 інструментів, агент виходить далеко за межі цієї смуги на кожному ході — включно з багатьма ходами, де йому треба було лише прочитати файл.
 
-## The two-tier surface
+## Дворівнева поверхня
 
-A run is therefore shown two things:
+Тож запуску показують дві речі:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- **резидентний** набір — приблизно два десятки інструментів, які надсилаються з повними схемами в кожному запиті;
+- **індекс назв** усіх решти, згрупованих під заголовками на кшталт «Tickets and projects» або «Memory and knowledge», що коштує кілька сотень токенів на весь каталог.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Виміряно на поточному каталозі: це скорочує блок інструментів з **~23,1 тис. токенів до ~5,0 тис., приблизно на 78% менше**, і вкладає постійно видимий набір у смугу, де вибір надійний.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/uk-UA/керівництво/поняття/режими) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+Резидентний набір — це інструменти, які запуск використовує в *більшості* запусків: лексика файлів і оболонки (`read`, `write`, `edit`, `search`, `bash`, …), інструменти пошуку, контрольний список завдань, пошук у пам’яті та те дієслово, яке поточний [режим](/uk-UA/керівництво/поняття/режими) мусить викликати, щоб видати свій результат. Власне вихідне дієслово режиму завжди резидентне — запуск ніколи не має вирушати на пошуки того єдиного виклику, що продукує його результат.
 
-### Deferred does not mean unavailable
+### Відкладений — не означає недоступний
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Саме ця частина робить задум безпечним, а не лише дешевим. **Відкладений інструмент можна викликати вже з першого ходу.** Утримують лише його схему.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Агент бачить назву у своєму промпті. Якщо він викличе цю назву напряму, harness завантажить схему й виконає інструмент тим самим кроком — без помилки, без додаткового кола. Моделі не потрібно знати, що інструмент колись був «вивантажений».
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Коли агент знає завдання, але не назву, `search_tools` приймає опис звичайною мовою («призначити тікет комусь»), ранжує всю поверхню запуску й повертає збіги *уже із завантаженими схемами*, тож наступний-таки хід може щось викликати. Якщо пошук нічого не знаходить, він прямо про це каже й пропонує інше формулювання або ширший пошук — навмисно, бо агент, який читає порожній пошук як «цієї можливості не існує», вигадає замінник замість того, щоб пошукати ще раз.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` існує лише у вбудованому harness. Зовнішні клієнти MCP мають натомість `search_tool_bm25`, який ранжує той самий індекс, але лише описує збіги — ці клієнти вже отримали всі схеми з `tools/list`, тож завантажувати нічого.
 
-### What deferral never does
+### Чого відкладення ніколи не робить
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/uk-UA/керівництво/поняття/обмеження) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Відкладення застосовують **після** фільтра інструментів режиму, а не замість нього. Воно ховає схему; воно не може відкрити інструмент, який режим відхилив. Активований інструмент усе одно проходить запит на схвалення та [обмеження дій](/uk-UA/керівництво/поняття/обмеження) точно так само, як резидентний, і жоден інструмент не може завантажити назву, якої від початку не було на поверхні запуску.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Поверхня MCP, яку бачать зовнішні клієнти, цим **не** зачеплена. `tools/list` усе ще повертає повний каталог. Раніша спроба його підрізати зламала агентів остаточно: клієнти MCP звіряють назви інструментів зі своїм кешованим списком і відкидають усе, чого в ньому немає, навіть не питаючи сервер, тож «прихований, але доступний для виклику» інструмент був просто недосяжним. Відкладення живе в harness, де завантажити інструмент посеред запуску — це те, що harness справді вміє робити.
 
-### Turning it off
+### Як це вимкнути
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/uk-UA/керівництво/довідка/cc-server-cli).
+`--tool-deferral=off` (або `CC_SERVER_TOOL_DEFERRAL=off`) знову робить резидентним кожен допущений інструмент, відтворюючи точно ті запити, які сервер робив до появи відкладення. Див. [довідку з CLI `cc_server`](/uk-UA/керівництво/довідка/cc-server-cli).
 
-## Prompt caching
+## Кешування промптів
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Робочі навантаження агентів нерівні: вони надсилають величезні промпти й отримують невеликі відповіді, хід за ходом, з однаковим префіксом щоразу. Провайдери кешують цей префікс, і читання з кешу коштує близько десятої частини свіжого. Тож частка влучань у кеш — це першокласна властивість harness, а не оптимізація — а на Anthropic вона ще й дає пропускну здатність, бо кешовані токени не зараховуються до поминутного ліміту вхідних даних.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Кешування працює за точним збігом префікса, з чого випливає одне керівне правило.
 
-### Never rewrite what was already sent
+### Ніколи не переписувати те, що вже надіслано
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Будь-який байт, що змінився, анулює кеш від цієї точки далі. Тож harness лише **дописує**: нові повідомлення в кінець, а щойно активовані схеми інструментів — *після* кешованого блоку інструментів, а не влитими в нього. Саме цей порядок робить активацію дешевою — кешований префікс залишається незмінним, і запуск платить лише за схеми, які тільки-но завантажив.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+Цикл також обрізає застарілий вивід інструментів зі старіших ходів, щоб повернути контекст. Він чекає, доки назбирається достатньо, щоб переписування було варте себе, тож обрізання — це рідкісний глибокий перепис, а не безперервні промахи кешу.
 
-### Where the breakpoints go
+### Де стоять межі кешу
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Провайдер дозволяє обмежену кількість маркерів кешу, і Control Center витрачає їх навмисно:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Маркер                            | Покриває                       | Час життя |
+| --------------------------------- | ------------------------------ | --------- |
+| Останній **резидентний** інструмент | Блок інструментів            | 1 година  |
+| Останній системний блок           | Інструменти + системний промпт | 1 година  |
+| Хвіст попереднього ходу           | Історія до останнього запиту   | 5 хвилин  |
+| Хвіст поточного ходу              | Повна історія                  | 5 хвилин  |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Останні два — це рухома пара, і причина для пари тонка: пошук у кеші переглядає назад обмежену кількість блоків у пошуках того, що зберіг раніший запит. Один хід, що запускає багато інструментів паралельно, може видати більше блоків, ніж це вікно, і тоді один маркер хвоста тихо не влучає, а запит платить повну ціну, і у відповіді немає нічого, що про це сказало б. Позначення точного місця, де зупинився попередній запит, робить влучання структурним, а не гонкою.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Префікс «інструменти й система» отримує довгий час життя, бо він незмінний упродовж усього запуску, спільний для кожного запуску й субагента однакової форми, а ще тому, що відлік починається, коли запит *починається* — хід, що стрімить кілька хвилин, уже витратив більшість короткого вікна до того, як сформується наступний запит.
 
-### Subagents share one prefix
+### Субагенти ділять один префікс
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Субагенти одного типу продукують побайтово ідентичні префікси промптів, тож мали б читати один запис кешу, а не кожен писати свій. Але запис стає читабельним лише тоді, коли запит, що його записав, починає відповідати, тож віяло, запущене все одразу, змушує кожну дитину платити надбавку за префікс, який вони всі поділяють.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+Harness дає першій дитині заданої форми стартувати, а тоді випускає її братів і сестер, щойно вона почне стрімити. Очікування обмежене: повільна перша дитина коштує влучання в кеш, але ніколи — самого віялового запуску. З тієї ж причини кожен субагент отримує той самий резидентний набір інструментів незалежно від свого профілю — змінювати його за профілем означало б фрагментувати спільний префікс без жодної вигоди, адже профіль уже вирішив, що дитина може викликати.
 
-## Watching it work
+## Як це спостерігати
 
-Both halves are observable rather than assumed:
+Обидві половини можна спостерігати, а не припускати:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **Оглядач контексту** на розмові показує резидентні інструменти, відкладений індекс і те, скільки *коштувала б* кожна утримана схема, — і все це будується тим самим шляхом коду, яким користується справжній запуск.
+- Кожен запуск записує, які відкладені інструменти він завантажив і що це спричинило, тож пошук, який нічого не знаходить, видно як промах пошуку, а не як зникання в агенті, що тихо робить щось сусіднє.
+- Спостережуваність показує показник **Частка кешу** — це читання з кешу, поділені на всі опрацьовані токени промпту, включно із записами в кеш: запуск, який постійно перебудовує свій префікс, дістає низький показник, а не такий, ніби кеш йому ніколи не був потрібен.

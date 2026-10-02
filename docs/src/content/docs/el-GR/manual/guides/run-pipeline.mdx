@@ -1,68 +1,77 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Χειροκίνητη εκτέλεση pipeline
+description: Ξεκινήστε μια εκτέλεση pipeline από τον επιλογέα εκτέλεσης, συμπληρώστε τις εισόδους της και καταλήξτε στη σελίδα λεπτομερειών της εκτέλεσης.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/).
+Αυτός ο οδηγός καλύπτει την έναρξη μιας εκτέλεσης με το χέρι. Για την
+παρακολούθηση μιας εκτέλεσης, την ανάγνωση της εξόδου των βημάτων και την
+ανάκαμψη από μια αποτυχία, δείτε
+[Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/).
 
-## Start a run
+## Έναρξη εκτέλεσης
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. Κάντε κλικ στο **Pipelines** στην πλαϊνή στήλη του χώρου εργασίας.
+2. Πατήστε **Εκτέλεση pipeline** στην κεφαλίδα. Καταλήγετε στον επιλογέα
+   εκτέλεσης (`/workspaces/<workspace-id>/pipelines/run`).
+3. Επιλέξτε ένα πρότυπο από την αριστερή στήλη. Κάθε κάρτα δείχνει το όνομα του
+   προτύπου, την περιγραφή του και αν δέχεται εισόδους.
+4. Συμπληρώστε τη φόρμα εισόδου στα δεξιά. Τα υποχρεωτικά πεδία μπλοκάρουν το
+   κουμπί μέχρι να αποκτήσουν τιμή· ένα πρότυπο χωρίς εισόδους το δηλώνει.
+5. Πατήστε **Εκτέλεση pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Καταλήγετε στη σελίδα λεπτομερειών της εκτέλεσης, με τον καταρράκτη χρονισμού και
+τον καμβά του γραφήματος ζωντανούς.
 
-## If the rail is empty
+## Αν η στήλη είναι κενή
 
-The launcher shows a template only when **both** are true:
+Ο επιλογέας εκτέλεσης εμφανίζει ένα πρότυπο μόνο όταν ισχύουν **και** τα δύο:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Ο διακόπτης του προτύπου είναι ενεργός στις **Ρυθμίσεις → Χώρος εργασίας →
+  Πρότυπα pipeline**.
+- Η επιλογή **Να επιτρέπεται χειροκίνητη εκτέλεση** είναι ενεργή στο παράθυρο
+  **Χειροκίνητη εκτέλεση** του επεξεργαστή προτύπων — αυτός ο διακόπτης είναι που
+  δημιουργεί το έναυσμα `manual` που διαβάζει ο επιλογέας εκτέλεσης.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Οκτώ από τα δεκατρία ενσωματωμένα πρότυπα παραδίδονται απενεργοποιημένα:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` και `pr_digest`. Ο μηχανισμός
+αρνείται να εκκινήσει ένα απενεργοποιημένο πρότυπο, οπότε ενεργοποιήστε τον
+διακόπτη του πριν το αναζητήσετε εδώ.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Δεν υπάρχει ενέργεια **Εκτέλεση** ανά πρότυπο στη λίστα προτύπων ούτε κουμπί
+εκτέλεσης μέσα στον επεξεργαστή — ο επιλογέας εκτέλεσης είναι το μόνο σημείο
+χειροκίνητης εισόδου.
 
-## Fill in a repository input
+## Συμπλήρωση εισόδου αποθετηρίου
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Μια είσοδος τύπου **Αποθετήριο** εμφανίζει έναν επιλογέα πάνω από τα
+καταχωρισμένα αποθετήρια του χώρου εργασίας. Όταν επιλέξετε ένα, συμπληρώνονται
+τα `repo_id`, `repo_local_path`, `repo_full_name` και — όταν το αποθετήριο έχει
+απομακρυσμένο GitHub — τα `repo_owner` και `repo_name` στο ωφέλιμο φορτίο της
+εκτέλεσης, ώστε τα κατάντη βήματα να μπορούν να διαβάσουν όποιο χρειάζονται.
 
-## Watch it run
+## Παρακολούθηση της εκτέλεσης
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Η σελίδα λεπτομερειών της εκτέλεσης έχει τρία μέρη: μια λωρίδα μεταδεδομένων (ώρα
+έναρξης, ενεργή διάρκεια, πρόοδο βημάτων, πανό αποτυχίας, **Επανάληψη** και
+**Διαγραφή**), έναν αναδιπλούμενο καταρράκτη χρονισμού με διάρκεια και κόστος ανά
+βήμα και τον καμβά του γραφήματος. Η επιλογή ενός κόμβου ανοίγει το πλαίσιο
+λεπτομερειών αυτού του βήματος.
 
-[Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+Η [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+τα καλύπτει όλα, συμπεριλαμβανομένου του πώς να διαβάσετε ένα βήμα που βρίσκεται
+σε κατάσταση `suspended` και τι να κάνετε όταν ένα αποτύχει.
 
-Every run you start from the app is a real one.
+Κάθε εκτέλεση που ξεκινάτε από την εφαρμογή είναι πραγματική.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create a pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
-- [Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
-- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+- [Δημιουργία προτύπου pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
+- [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
+- [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/)

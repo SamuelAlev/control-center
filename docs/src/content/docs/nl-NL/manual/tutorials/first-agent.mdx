@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Je eerste agent starten
+description: Maak een agent aan, geef hem een ruimte en een taak en zie de run terugstromen.
 slug: nl-NL/handleiding/zelfstudies/eerste-agent
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Wat je gaat bouwen
 
-By the end of this tutorial, you will have:
+Aan het einde van deze zelfstudie heb je:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Een agent die je zelf hebt aangemaakt en geconfigureerd
+- Een ruimte waarin jij en die agent praten
+- Eén voltooide run, met gecommit werk in een geïsoleerde worktree en een regel in het runlog van de agent
 
-Prerequisites: [Your first workspace](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/) completed, so this workspace has a repo registered and at least one model provider connected.
+Vereisten: [Je eerste werkruimte](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/) is afgerond, dus in deze werkruimte is een repo geregistreerd en is minstens één modelprovider verbonden.
 
-## Step 1: Create an agent
+## Stap 1: Een agent aanmaken
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Ga naar **Instellingen → Werkruimte → Agenten**
+2. Klik op **Nieuwe agent**. Er wordt meteen een agent met de naam “Naamloze agent” aangemaakt, die in de agentenlijst wordt geselecteerd — er is geen dialoogvenster om aan te maken en niets te bevestigen. Je configureert hem op zijn plek.
+3. Vul op het tabblad **Instellingen** in:
+   - **Naam**: iets korts en makkelijk te onthouden, zoals `alice`. Dit is wat je na `@` typt.
+   - **Titel**: wat hij doet, bijvoorbeeld “Backend-ontwikkelaar”
+   - **Adapter**: `Control Center (built-in)`. Kies deze bewust — alleen de ingebouwde harness kan tijdens een run worden bijgestuurd en aan het einde van een beurt worden gepauzeerd, en er hoeft geen CLI op de serverhost te zijn geïnstalleerd.
+   - **Model**: kies er een uit de lijst die de verbonden provider aanbiedt
+   - **Vaardigheden**: voeg er een paar toe die passen, bijvoorbeeld `testing` of `architecture`
+4. Klik op **Wijzigingen opslaan**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Een agent zonder adapter draait op de ingebouwde lus]
+Als het veld Adapter niet is ingesteld, valt de dispatch terug op **Control Center (built-in)** — de agentloop in de server, dus er hoeft niets op de host te worden geïnstalleerd. Een model heeft hij nog steeds nodig: is er geen ingesteld, dan vraagt hij Anthropic om diens standaard, wat werkt als je een Anthropic-account hebt verbonden en anders mislukt met `No credential for provider "anthropic"`. Stel ze toch allebei expliciet in, anders draai je op een model dat je niet zelf hebt gekozen.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Controlepunt.** De rij in de agentenlijst toont de naam van je agent en een holle statusring.
 
-## Step 2: Start a space
+## Stap 2: Een ruimte starten
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. Zoek in de zijbalk de sectie **Ruimtes** en klik op de knop **+**
+2. Geef de ruimte een naam
+3. Selecteer onder **Agenten toevoegen** de agent die je net hebt aangemaakt
+4. Kies, als de werkruimte repo's heeft, op welke repo's deze ruimte moet werken
+5. Klik op **Aanmaken**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+De ruimte gaat open. Op de achtergrond voorziet Control Center dit gesprek van een copy-on-write-worktree van de geselecteerde repo's, op zijn eigen branch. Je broncheckout wordt nooit gewijzigd.
 
-## Step 3: Send a task
+## Stap 3: Een taak sturen
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Typ één concrete, kleine taak voor de repo die je hebt geregistreerd. Iets met een controleerbare uitkomst werkt het beste — voeg een test toe, los een lint op, hernoem een symbool.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Druk op Enter. Je hoeft niemand met `@` te vermelden: met één agent in de ruimte wekt een gewoon bericht hem. In een ruimte met meerdere agenten kies je er met `@name` één uit.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center stelt de prompt samen uit de instructies, persona en skills van de agent en de context van de ruimte, en dispatcht daarna de run.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Controlepunt.** De verzendknop van de composer verandert in een stopknop — er werkt een agent in dit gesprek — en er begint tekst binnen te komen.
 
-## Step 4: Watch it work
+## Stap 4: Kijken hoe hij werkt
 
-The conversation renders the run as it happens:
+Het gesprek toont de run terwijl hij plaatsvindt:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Redenering**, inline weergegeven terwijl de agent nadenkt
+- **Toolaanroepen**: bestanden lezen en schrijven, zoekopdrachten, shell-commando's, elk met hun resultaat
+- **Tekst**: samenvattingen, uitleg en vragen aan jou
 
-If the agent asks something, answer in the conversation and it resumes.
+Als de agent iets vraagt, antwoord je in het gesprek en gaat hij verder.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Voor de eigen statistieken van een run en de bediening om te pauzeren, te hervatten en te stoppen zoek je de draaiende agent op in de sectie **Agenten** van het paneel **Algemeen** van de ruimte en kies je **Activiteit openen**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+In het activiteitenpaneel staat de statusbadge op **Actief**, en daarna op **Geslaagd** wanneer de run eindigt. Een run die blijft hangen of in een lus raakt, toont **Geblokkeerd**; een run met een fout toont **Mislukt**. In het agentenregister is de statusring hol voordat de agent voor het eerst draait, en gevuld zodra hij weer inactief is.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/).
+Wat de run begrenst: zijn eigen copy-on-write-worktree, de inloggegevens die bij de start voor hem worden bemiddeld en bij het opruimen worden ingetrokken, een gesaneerde omgeving, het tooloppervlak dat zijn modus toestaat en de actiebeveiligingen. Effecten zoals het pushen van een branch of het openen van een pull request gaan door een aparte poort — zie [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/).
 
-## Step 5: Check the result
+## Stap 5: Het resultaat controleren
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Open **Instellingen → Werkruimte → Agenten** en selecteer je agent
+2. Open het tabblad **Logboeken**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Controlepunt.** Eén runrij, met de status, duur, begin- en eindtijd en de adapter waarop hij heeft gedraaid.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+De wijzigingen van de agent staan gecommit op de branch van het gesprek, in zijn worktree. Commits worden gemaakt onder de naam van de agent, en jij wordt vermeld in een `Co-Authored-By:`-trailer.
 
-## Getting a pull request
+## Een pull request krijgen
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Er opent niets vanzelf een pull request. Wil je er een, vraag er dan om in hetzelfde gesprek:
 
-> Push this branch and open a pull request against the default branch.
+> Push deze branch en open een pull request tegen de standaardbranch.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Pushen (`gitPush`) en het aanmaken van een PR (`prCreate`) vragen standaard om je goedkeuring, dus verwacht voor elk een bevestiging. Als er geen goedkeurder is verbonden wanneer de vraag verschijnt, wordt de actie geweigerd in plaats van toegestaan — de beveiligingen vallen gesloten uit.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+De PR wordt geopend onder de GitHub-identiteit waarvan de run het token gebruikte — de jouwe, als je een persoonlijk token hebt opgeslagen — en niet onder de naam van de agent. Het auteurschap van de agent staat op de commits.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Je kunt hem ook zelf openen: het paneel **Broncodebeheer** van de ruimte heeft een knop **Pull request aanmaken** die de branch van het gesprek meeneemt naar het scherm waarin je de PR opstelt, en **Pull requests → Nieuwe PR** opent datzelfde scherm leeg. Daar pakt de volgende zelfstudie het op.
 
-## Recap
+## Samenvatting
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Je hebt een agent aangemaakt, de adapter en het model ingesteld, hem een ruimte en een taak gegeven en toegekeken hoe een echte run in een geïsoleerde worktree werd afgerond zonder je checkout aan te raken.
 
-**Next:** [Review your first pull request](/nl-NL/handleiding/zelfstudies/eerste-pr/) to learn the review workflow.
+**Volgende:** [Je eerste pull request reviewen](/nl-NL/handleiding/zelfstudies/eerste-pr/) om de reviewworkflow te leren.
 
-For more on agents: [The agent model](/nl-NL/handleiding/concepten/agentmodel/). For dispatch details: [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).
+Meer over agenten: [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/). Voor de details van de dispatch: [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).

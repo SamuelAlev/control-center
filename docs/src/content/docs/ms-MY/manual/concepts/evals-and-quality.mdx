@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Evals dan kualiti
+description: Suite eval, set permulaan yang disemai ke dalam setiap ruang kerja dan tempat ia muncul dalam Kebolehcerapan.
 slug: ms-MY/manual-pengguna/konsep/evals-dan-kualiti
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Satu **suite eval** ialah definisi berlingkup ruang kerja bagi sesuatu tugasan
+untuk dijalankan terhadap ejen: satu prompt, ejen sasaran dan modus, persediaan
+pilihan, fixture pilihan dengan SHA yang dipinkan dan senarai penggred.
+Penggred dijalankan secara deterministik dahulu; hakim rubrik LLM meliputi
+perkara yang tidak dapat dinyatakan oleh pemeriksaan tersebut.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Lima suite permulaan disemai apabila ruang kerja dicipta. Ia merangkumi cadangan
+orkestrasi, semakan yang menemui pepijat yang disemai, modus pelan yang kekal
+baca sahaja, modus pelan yang menghasilkan pelan dan pusingan pergi-balik tiket.
+Penyemaian mendengar `WorkspaceCreated` (`workspace.upsert` atau
+`workspace.create`), melangkau nama yang sudah wujud dan tidak mengisi semula
+ruang kerja lama.
 
-## Where they appear
+## Di mana ia muncul
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Kebolehcerapan → Kualiti** (`/workspaces/<id>/observability`)
+menyenaraikan setiap suite dalam ruang kerja itu.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Cipta, senaraikan, sunting dan padam suite melalui `evals.upsertSuite`,
+`evals.deleteSuite` dan `evals.watchSuites`. Tab Kualiti ialah senarai itu;
+operasi tersebut ialah editor.
 
-## Related concepts
+## Konsep berkaitan
 
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/): the configuration a suite
-  pins
-- [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/): the autonomy dial
-- [Manage costs and budgets](/ms-MY/manual-pengguna/panduan-cara/urus-kos/): spend recorded
-  alongside a run
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): konfigurasi yang
+  dipinkan oleh satu suite
+- [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): dail autonomi
+- [Urus kos dan belanjawan](/ms-MY/manual-pengguna/panduan-cara/urus-kos/):
+  perbelanjaan yang direkodkan bersebelahan satu larian

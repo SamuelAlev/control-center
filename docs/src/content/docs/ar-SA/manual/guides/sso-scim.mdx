@@ -1,60 +1,63 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: توفير المستخدمين عبر SCIM
+description: يتيح لموفّر الهوية إنشاء حسابات Control Center وتحديثها وإلغاء توفيرها تلقائيًا.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+استخدم هذا الدليل حين تريد التحكم في دورة حياة الحسابات: عند إنهاء الخدمة
+يجب أن يُسحب الوصول تلقائيًا، لا أن يُكتفى بمنع تسجيلات الدخول اللاحقة.
+SCIM هو بروتوكول الدفع الذي تستخدمه موفّرات الهوية (Okta وEntra ID وغيرها)
+لهذا الغرض بالضبط.
 
-## Prerequisites
+## المتطلبات
 
-- SSO already working (the [SSO tutorial](/ar-SA/دليل-المستخدم/دروس/sso) or the
-  [OIDC guide](/ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO يعمل أصلًا ([درس SSO](/ar-SA/دليل-المستخدم/دروس/sso) أو
+  [دليل OIDC](/ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-oidc))،
+- **خادم يبلغه IdP عبر HTTPS**: تصل استدعاءات SCIM من IdP، لا من متصفح
+  المستخدم. استخدم النفق المدمج
+  (الإعدادات ← الخادم ← الاتصال والحالة ← مشاركة هذا الخادم ← Cloudflared/ngrok/Tailscale)
+  أو عنوان URL عامًا. الخادم الذي لا يُبلَغ إلا عبر مرحّل WebSocket لا
+  يستقبل دفعات SCIM؛ يظل توفير JIT يعمل هناك، ولا يصلح هذا الدليل.
 
-## Steps
+## الخطوات
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. افتح **الإعدادات ← الخادم ← تسجيل الدخول الموحّد** ← بطاقة
+   **توفير المستخدمين (SCIM)**. تعرض البطاقة نقطة النهاية، مثل
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. اضغط **إنشاء رمز وصول** (أو **إعادة إنشاء رمز الوصول** إن وُجد واحد
+   أصلًا): يظهر رمز وصول bearer مرة واحدة في حوار ويُنسخ إلى الحافظة.
+   احفظه في مدير كلمات المرور؛ فالخادم لا يحتفظ إلا بنسخة يُتحقَّق منها في
+   زمن ثابت.
+3. في إعدادات التوفير لدى IdP، فعّل SCIM بما يلي:
+   - **عنوان URL الأساسي**: نقطة النهاية أعلاه
+   - **المصادقة**: `Authorization: Bearer <token>`
+   - **معرّف المستخدم**: `userName` (البريد الإلكتروني) أو `externalId`،
+     وكلاهما يطابق
+4. اختبر بمستخدم واحد: ادفعه من IdP وتأكد من ظهوره (إنشاء المستخدم عبر
+   SCIM يثبّت `externalId` الخاص بالموفّر على الحساب، وهو التثبيت نفسه
+   الذي يضعه أول تسجيل دخول عبر SSO).
 
-## What deprovisioning does
+## ما يفعله إلغاء التوفير
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+حين يرسل IdP القيمة `active: false` (أو `DELETE`)، يرفض SCIM أولًا إن كان
+الحساب **مالك** مساحة عمل (انقل الملكية أولًا). وإلا:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. تُبطَل أولًا كل بيانات اعتماد جهاز، فتسقط الجلسات الجارية خلال ثوانٍ،
+2. تُزال كل عضوية في مساحات العمل،
+3. يُختَم الحساب بأنه مُعطَّل (لا يستطيع تسجيل الدخول أبدًا، مهما أرسل
+   IdP لاحقًا، إلى أن يُعاد تفعيله صراحةً).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+يبقى صف المستخدم نفسه: الإسناد على التذاكر والرسائل والإيداعات دائم. إعادة
+التفعيل (`active: true` في SCIM) تعيد تسجيل الدخول لكن **لا** تعيد
+العضويات: تلك تحتاج دعوة جديدة، أو سياسة الإضافة التلقائية إلى كل مساحة
+عمل عند تسجيل الدخول.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 على كل استدعاء**: تغيّر الرمز؛ أعد إنشاءه وحدّثه في IdP.
+- **نقطة النهاية غير قابلة للوصول**: النفق متوقف، أو الخادم يعمل عبر
+  المرحّل فقط. يحتاج SCIM إلى HTTPS مباشر، ويظل JIT يعمل على أي حال.
+- **أخطاء دفع المجموعات (501)**: مقصود. تعيين المجموعات إلى الأدوار يحدث
+  عند تسجيل الدخول من سمات المجموعات في SAML وOIDC، لا من المجموعات
+  المدفوعة.

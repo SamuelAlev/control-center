@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: تنظیم بافت ابزار یک عامل
+description: ببینید یک اجرا واقعاً چه می‌فرستد، تغییر دهید کدام ابزارها از ابتدا بارگذاری می‌شوند، و مشخص کنید که یک انتخاب نامناسب ابزار ناشی از خطای بازیابی بوده یا مشکلی در پرامپت.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/تنظیم-بافت-ابزار
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار).
+این راهنما کار عملی پیرامون سطح دوسطحی ابزار را پوشش می‌دهد: دیدن آنچه یک اجرا می‌فرستد، تغییر دادنش، و عیب‌یابی عاملی که سراغ ابزار اشتباه رفته است. برای اینکه چرا کار به این شکل است، [بافت ابزار و کش پرامپت(/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار) را بخوانید.
 
-## Look at what a run actually sends
+## ببینید یک اجرا واقعاً چه می‌فرستد
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+یک گفتگو را باز کنید و در سرصفحهٔ گفتگو روی نشانگر مصرف بافت بزنید. این نشانگر دقیقاً همان سطحی را بازمی‌سازد که اعزام بعدی می‌فرستد، بی‌آنکه چیزی اجرا شود. **مشاهدهٔ بیشتر** (یا دستور `/context`) کاوشگر کامل بافت را باز می‌کند، جایی که می‌توانید هر ابزار را بررسی کنید.
 
-Two segments matter here:
+دو بخش اینجا اهمیت دارند:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **تعریف ابزارها** و **ابزارهای MCP و پویا** — مجموعهٔ ساکن، همراه با هزینهٔ واقعی توکن هر ابزار.
+- **ابزارهای بارگذاری‌شده به‌درخواست** — نمایهٔ به‌تعویق‌افتاده. هر مدخل تنها بابت نامش هزینه می‌گیرد، چون تنها چیزی که درخواست حمل می‌کند نام است؛ باز کردن یکی از آن‌ها همچنان توصیف و اسکیمای کامل را نشان می‌دهد، تا ببینید اگر اجرا آن را بار می‌کشید *چه هزینه‌ای می‌داشت*.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli).
+اگر بخش به‌تعویق‌افتاده خالی است، تعویق برای این سرور خاموش است. `--tool-deferral` را در [CLI مربوط به `cc_server`(/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli) بررسی کنید.
 
-## Change which tools load up front
+## تغییر اینکه کدام ابزارها از ابتدا بارگذاری می‌شوند
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+مجموعهٔ ساکن سیاست است، نه پیکربندی — در `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) زندگی می‌کند و به هر اجرا اعمال می‌شود:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/fa-IR/راهنمای-کاربر/مفهومها/حالتها) uses on nearly every turn.
+- `residentBuiltins` — واژگان فایل و شل.
+- `residentDiscovery` — `search_tools` و `list_my_tools`. این‌ها را حذف نکنید؛ آن‌ها راه رسیدن عامل به هر چیز دیگری هستند.
+- `residentMcpTools` — همان اندک ابزارهای Control Center که ارزش اسکیمای‌شان را در هر درخواست دارند.
+- یک بلوک به‌ازای هر حالت، برای ابزارهایی که یک [حالت(/fa-IR/راهنمای-کاربر/مفهومها/حالتها) مشخص تقریباً در هر نوبت به کار می‌برد.
 
-Two rules when editing it:
+دو قاعده هنگام ویرایش آن:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**تنها زمانی ابزاری را اضافه کنید که بیشتر اجراها از آن استفاده می‌کنند.** هر نام، هزینهٔ اسکیمایش را در هر درخواست از هر اجرا می‌پردازد، برای همیشه. ابزاری که هنگام استفاده مهم است ولی در کل کم‌کاربرد، جای‌اش در نیمهٔ به‌تعویق‌افتاده است — عامل همچنان آن را پیدا خواهد کرد.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**نام واقعی ابزار را به کار ببرید.** نام ساکنی که با هیچ ابزاری مطابقت ندارد بی‌اثر است: نه خطایی، نه هشداری؛ ابزار به‌سادگی به تعویق می‌افتد. `test/tooling/resident_tool_names_test.dart` این را می‌گیرد و همچنین هر حالت را زیر 40 ابزار ساکن نگه می‌دارد، که همین هدف این کار است — فراتر از آن باند، دقت انتخاب ابزار به‌طور قابل‌سنجش بدتر می‌شود.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+فعل‌های الزامی و پین‌شدهٔ یک حالت خودکار اضافه می‌شوند، پس هیچ‌وقت لازم نیست فعل خروجی خودِ یک حالت را فهرست کنید.
 
-## Diagnose a bad tool choice
+## عیب‌یابی یک انتخاب نامناسب ابزار
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+وقتی عاملی از ابزار اشتباه استفاده کرد یا ادعا کرد کاری را نمی‌تواند انجام دهد، مشخص کنید کدام‌یک از این سه اتفاق افتاده است.
 
-### 1. Did it look?
+### 1. آیا نگاه کرد؟
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+هر اجرا ابزارهای به‌تعویق‌افتاده‌ای را که بارگذاری کرده، و اینکه چه چیزی آن را برانگیخته ثبت می‌کند — یک فراخوانی مستقیم با نام، یا یک جست‌وجوی `search_tools`. جریان رویدادهای اجرا را باز کنید (**تنظیمات → فضای کاری → عامل‌ها** → عامل → **گزارش‌ها** → **نمایش**) و به دنبال `[harness] loaded N deferred tool(s)` بگردید.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **چیزی ثبت نشده، و عامل گفته که آن قابلیت وجود ندارد** — هرگز نگاه نکرده است. این یک مشکل پرامپت است، نه مشکل بازیابی: نمایهٔ به‌تعویق‌افتاده در پرامپت سیستمی آن است، همراه با دستوری که می‌گوید تا وقتی جست‌وجو خالی برنگردد، قابلیت را غایب اعلام نکن.
+- **یک جست‌وجو ثبت شده، ولی چیزی بارگذاری نشده** — یک خطای بازیابی واقعی. به گام 2 بروید.
+- **ابزارها بارگذاری شده‌اند، ولی ابزار اشتباه به کار رفته** — ابزارهایی که پیدا کرده بیش از حد به هم شبیه‌اند. به گام 3 بروید.
 
-### 2. Fix a retrieval miss
+### 2. رفع یک خطای بازیابی
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` بر پایهٔ نام‌ها، توصیف‌ها و نام آرگومان‌ها تطبیق می‌دهد. یک خطای بازیابی تقریباً همیشه یعنی توصیف شامل واژه‌هایی که عامل به کار برده نیست.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+آن‌ها را اضافه کنید. توصیف‌ها همان نمایهٔ بازیابی‌اند، پس **آن‌ها را بلندتر کنید، نه کوتاه‌تر** — واژگانی را بنویسید که یک اپراتور واقعاً تایپ می‌کند ("assign"، "hand off"، "give to")، نه فقط اسم داخلی را. کوتاه کردن یک توصیف برای صرفه‌جویی در توکن، هم اصابت جست‌وجو را از شما می‌گیرد و هم دقت انتخاب را، و در مقابل اسکیما تقریباً چیزی ذخیره نمی‌کند.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+اگر ابزار درست وجود دارد ولی رتبه‌اش پایین است، آرگومان `limit` برای همین است؛ توصیف خودِ ابزار به عامل می‌گوید جست‌وجویی را که نزدیک به نظر می‌رسد ولی نتیجه نمی‌دهد گسترده‌تر کند.
 
-### 3. Fix look-alike tools
+### 3. رفع ابزارهای هم‌شکل
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+اگر دو ابزار توصیف‌هایی داشته باشند که برای کسی که از پیش تفاوت را نمی‌داند یکسان خوانده می‌شوند، مدل دارد حدس می‌زند. آن‌ها را در یک ابزار با یک آرگومان تفکیک‌کننده ادغام کنید.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` و `ticket_pr_link` از همین الگو پیروی می‌کنند: هرکدام پیوند زدن و برداشتن پیوند را از طریق یک آرگومان تفکیک‌کننده انجام می‌دهد. انتخاب *درون* یک فراخوانی، با بافت کامل درخواست، قابل‌اعتمادتر از انتخابی است که میان دو توصیف هم‌شکل انجام شود.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+ابزارها را جدا نگه دارید وقتی به دروازه‌بانی تأیید متفاوت، حسابرسی متفاوت یا رندر متفاوت نیاز دارند — این‌ها دلایلی‌اند که ادغام چیزی واقعی را از شما می‌گیرد.
 
-## Check the prompt cache is working
+## بررسی اینکه کش پرامپت کار می‌کند
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+نرخ اصابت کش در **مشاهده‌پذیری → بینش‌ها** زیر عنوان **نرخ کش** دیده می‌شود. یک گفتگوی طولانی و سالم بالا می‌نشیند؛ اگر پیوسته پایین باشد، چیزی هر نوبت پیشوند را بازنویسی می‌کند.
 
-Common causes, in order of likelihood:
+دلایل رایج، به ترتیب احتمال:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **هر چیز غیرقطعی در ابتدای پرامپت.** یک برچسب زمانی، یک شناسهٔ درخواست، یا مجموعه‌ای که با ترتیبی متغیر پیمایش شود، همین کار را می‌کند.
+- **تغییر مدل یا تلاش در میانهٔ گفتگو.** هر دو پیشوند را تغییر می‌دهند. زیرعامل‌ها به‌ویژه اینجا آسان اشتباه می‌شوند: اجرای فرزندان با تلاش کمتر برای صرفه‌جویی در هزینه می‌تواند بیش از آنچه صرفه‌جویی می‌کند، به‌خاطر از دست رفتن اشتراک کش گران تمام شود.
+- **فشرده‌سازی مکرر.** فشرده‌سازی تاریخچه را بنا به طراحی بازنویسی می‌کند، پس هزینه‌اش واقعی است؛ راه‌حل این است که کم و عمیق فشرده کنید، نه زیاد و سطحی.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+خاموش کردن تعویق با `--tool-deferral=off` یک آزمون A/B معتبر برای جدا کردن این است که آیا تغییر رفتار از سطح دوسطحی آمده است. این کار دقیقاً همان درخواست پیش از تعویق را بازتولید می‌کند، پس اگر رفتار با خاموش بودن آن هم ادامه داشت، سطح مقصر نیست.

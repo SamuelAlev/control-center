@@ -1,192 +1,192 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: 샌드박스 백엔드
+description: 샌드박스 백엔드, 각 백엔드가 적용되는 위치, 그리고 샌드박스 런타임이 사용하는 모든 값 객체를 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/샌드박스-백엔드
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[실행이 샌드박스로 감싸지는지는 호스트에 달려 있습니다]
+`cc_server`는 부팅할 때 호스트를 한 번 탐지하고, 탐지 결과 사용할 수 있는 백엔드가 있고 `--sandbox`가 `off`가 아닐 때 에이전트 디스패치를 네이티브 백엔드로 감쌉니다. 두 디스패치 이음매가 모두 감싸집니다. Claude Code CLI는 샌드박스 포트를 통해, ACP와 기본 제공 하네스의 `bash` 도구는 샌드박스 관리자를 통해 감싸집니다.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/ko-KR/매뉴얼/개념/가드레일/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+탐지가 백엔드가 없다고 보고하는 곳 — **항상 Windows**, 그리고 `bwrap`과 `socat`이 없는 Linux나 WSL2 — 에서는 에이전트 실행이 샌드박스로 감싸지지 **않습니다**. ACP와 하네스 `bash` 도구는 여전히 환경 정리를 거쳐 스폰됩니다. Claude Code는 `NoSandboxAdapter`를 거치며 호스트 환경을 물려받습니다. 나머지 경계는 실행 자신의 워크트리(`rift`가 제공되는 곳에서는 쓰기 시 복사, Windows에서는 `git worktree`), 실행마다 브로커를 거쳐 발급되고 정리 시 회수되는 기능 제한 자격 증명, 모드별 명령 정책, 통합된 [작업 가드레일](/ko-KR/매뉴얼/개념/가드레일/)(실패 시 차단), ACP와 하네스 `bash` 경로의 환경 정리, 그리고 해당 모드가 허용하는 도구 표면입니다.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+하네스의 프로세스 내 파일 도구(read, write, edit, apply patch, search, find, search_files)는 모든 호스트에서 샌드박스 밖에 있습니다. 이들은 서버 프로세스 안에서 실행되므로 `bash`만 감싸집니다.
 :::
 
-## Backend overview
+## 백엔드 개요
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
+| 백엔드      | 값        | 플랫폼                                        | 가용성                                                                                                      |
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/ko-KR/매뉴얼/개념/리그/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| 격리 VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | microVM 런타임에 대해 탐지로 게이트됩니다. 대화형 터미널에 적용됩니다 — 셸은 호스트가 아니라 [리그](/ko-KR/매뉴얼/개념/리그/) 안에서 실행됩니다 |
+| 네이티브      | `native`  | macOS(Seatbelt), Linux와 WSL2(bubblewrap) | 부팅할 때 탐지됩니다. Linux는 bubblewrap이 강제할 수 없는 파일 이름 글로브 쓰기 거부를 요구하는 실행을 거부합니다 |
+| 격리 없음    | `none`    | 모두                                           | 파싱 기본값이자 터미널의 기본값이며, 사용할 수 있는 백엔드가 없거나 `--sandbox off`가 설정되었을 때의 폴백입니다 |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName`은 저장된 값이 null이거나 인식할 수 없으면 `none`을 반환합니다. 저장된 `"docker"`는 `native`로 매핑됩니다.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/ko-KR/매뉴얼/레퍼런스/리그/).
+**`microvm`은 커널 경계를 가진 유일한 백엔드입니다** — 워크로드가
+실제로 호스트에서 실행되지 않습니다. 어느 방향으로도 조용한 폴백이 되지
+않습니다. VM을 부팅할 수 없는 호스트에서 이를 명시적으로 요청하면 크게
+실패하며("VM을 요청했는데 노트북이 나왔다"는 것이 인클로저가 감당할 수 없는
+유일한 저하입니다), *지정되지 않은 기본값*만이 그 사실을 로그 줄에 남기고
+`native`로 내려갑니다. 세션의 실제 백엔드는 클라이언트에 보고되고 배지로
+표시되므로, 터미널이 호스트에서 실행되면서 인클로저라고 주장할 수는 없습니다.
+VM 자체의 수명주기, 이미지, 이그레스는 [리그 레퍼런스](/ko-KR/매뉴얼/레퍼런스/리그/)에서 다룹니다.
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows에는 네이티브 샌드박스가 없습니다.** `NativeSandboxAdapter.probe`는 macOS나 Linux/WSL2가 아닌 모든 호스트에서 `available: false`를 반환합니다. 따라서 Windows의 에이전트 디스패치는 `none`을 사용합니다. `microvm` 백엔드는 별개입니다. microVM 런타임에 대해 탐지로 게이트되며, 호스트에서 `bash`를 감싸는 것이 아니라 대화형 터미널과 리그에 적용됩니다.
 
-## Probe results
+## 탐지 결과
 
-The probe is what gates enforcement. It runs once, at server boot.
+탐지가 강제를 게이트합니다. 서버 부팅 시 한 번 실행됩니다.
 
-| Host                                   | `available` | Note / hint                                                               |
+| 호스트                                   | `available` | 참고 / 힌트                                                               |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — 네임스페이스 격리, 커널 경계 없음                 |
+| `bwrap`과 `socat`이 있는 Linux 또는 WSL2 | `true`      | bubblewrap — 네임스페이스 격리, 커널 경계 없음                                |
+| 도구가 하나라도 없는 Linux 또는 WSL2      | `false`     | `requiresInstall: true`, 누락된 패키지를 알려 주는 설치 힌트가 함께 제공됩니다 |
+| 그 밖의 모든 플랫폼                        | `false`     | 이 플랫폼에서는 네이티브 샌드박스를 제공하지 않습니다                          |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+서버는 그 결과를 시작 줄 하나에 기록합니다. `agent sandbox ON`에 해당 설명이 붙거나, `no OS-native agent sandbox on this host`에 힌트가 붙거나, `agent sandbox DISABLED by --sandbox off`입니다. `GET /healthz`에는 샌드박스 필드가 없습니다.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX`는 `on`(기본값) 또는 `off`를 받습니다. 이것은 옵트인이 아니라 옵트아웃입니다. `on`은 "호스트가 백엔드를 제공하면 감싼다"는 뜻이며, 결코 "백엔드를 요구한다"는 뜻이 아닙니다.
 
-## Native backend
+## 네이티브 백엔드
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Apple의 Seatbelt 샌드박스 메커니즘을 사용합니다(macOS App Sandbox가 사용하는 것과 같은 시스템).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+생성되는 프로필은 **기본적으로 허용하는** 방식(`(allow default)`)이며 거부 항목을 도려냅니다. 완전히 기본 거부인 프로필은 대화형 셸을 쓸 수 없게 만들기 때문입니다 — 열거해야 할 dyld, XPC, Mach 호출이 너무 많습니다. 실질적인 결과는 에이전트가 여전히 호스트의 대부분을 읽을 수 있다는 것입니다. 등록된 체크아웃은 보이지 않음으로써가 아니라 명시적인 쓰기 및 이름 바꾸기 거부로 보호됩니다.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **파일시스템 읽기**: 시크릿 경로(`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` 및 나머지 읽기 거부 집합)에 대해 거부됩니다
+- **파일시스템 쓰기**: 거부로 재설정한 뒤 하위 경로를 명시적으로 허용하며, 필수 거부 경로(셸 rc 파일, `.git/hooks`, Claude 구성, 보호된 체크아웃)는 쓰기 가능한 루트 안에서도 차단됩니다. `file-write-unlink`는 거부된 모든 경로와 그 조상에서 거부되므로 이름 바꾸기로 쓰기 거부를 우회할 수 없습니다
+- **프로세스**: 항상 위험한 바이너리에 대해 `process-exec`를 거부하고, 쓰기 가능한 디렉터리에서 무언가를 실행하는 것도 차단합니다
+- **네트워크**: 프로세스 내 프록시 포트와 DNS로 제한됩니다 — 루프백이 일괄 허용되지 않으며 Unix 소켓도 허용되지 않습니다. 프록시가 세션별 도메인 허용 목록을 강제합니다([네트워크 이그레스](#네트워크-이그레스) 참고)
+- **구성**: 프로필은 실행마다 `SandboxSpec`에서 생성됩니다
 
-Requirements:
+요구 사항:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec`(`/usr/bin/sandbox-exec`)는 모든 macOS 설치에 포함되어 있으며 추가 도구가 필요하지 않습니다
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+bubblewrap(`bwrap`)을 사용해 마운트 및 PID 네임스페이스를 만듭니다.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **파일시스템**: 바인드된 경로만 보이는 마운트 네임스페이스를 만듭니다
+- **네트워크**: 공유되지 않은 네트워크 네임스페이스에서 실행되며, 트래픽은 `socat` Unix 소켓 브리지를 통해 호스트 프록시에 도달합니다
+- **프로세스**: PID 네임스페이스 격리
 
-Requirements:
+요구 사항:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- `bubblewrap`과 `socat` 설치(Debian/Ubuntu에서는 `sudo apt-get install bubblewrap socat`)
+- 커널 네임스페이스 지원(최신 Linux에서는 표준)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+bubblewrap은 기존 경로를 가릴 수는 있지만 쓰기 가능한 바인드 안에 *새*
+`.env`, `*.key`, `*.pem` 파일이 생기는 것을 금지할 수는 없습니다. 표준 디스패치
+정책은 이런 파일 이름 글로브 거부를 요구하므로, 현재 Linux/WSL2의 네이티브
+에이전트 디스패치는 **탐지가 bubblewrap을 찾아내더라도 실패 시 차단됩니다**.
+조용히 더 약한 정책으로 실행되지 않습니다. Linux 네이티브 디스패치를 복원하려면
+생성 시점의 파일 이름 규칙을 지원하는 백엔드가 필요합니다. 샌드박싱을 끄는 것은
+명시적인 무제한 옵트아웃이며, 동등한 우회 방법이 아닙니다.
 
-## None backend
+## 격리 없음 백엔드
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+샌드박싱이 없습니다. 프로세스는 호스트의 파일시스템, 네트워크, 프로세스 접근을 그대로 가진 채 호스트에서 직접 실행됩니다. ACP와 하네스 `bash` 도구는 여전히 환경 정리와 명령 정책을 받습니다. `NoSandboxAdapter`를 거치는 Claude Code는 호스트 환경을 물려받습니다. 사용할 수 있는 백엔드가 없거나 `--sandbox off`인 호스트에서 에이전트 디스패치가 대체되는 대상이며, 클라이언트가 아무것도 지정하지 않았을 때 터미널의 기본값입니다.
 
-## Server-hosted terminal
+## 서버 호스팅 터미널
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+터미널은 디스패치 탐지가 아니라 자체 기준에 따라 샌드박스로 감싸집니다. `TerminalSessionService`의 `defaultBackend`는 `none`이고 `cc_server`는 이를 재정의하지 않으므로, 클라이언트가 `native`를 명시적으로 요청하지 않는 한 터미널 세션은 호스트 셸을 실행합니다 — 데스크톱의 터미널 패널은 요청하지 않습니다.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+`native`를 요청하면 고정된 터미널 프로필 아래에서 `SandboxManager`를 통해 셸이 감싸집니다. `$HOME`과 세션의 작업 디렉터리는 쓰기 가능하고, 네트워크는 열려 있으며 `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains`는 읽기가 거부됩니다. 기능 게이팅은 적용되지 않습니다 — 그것은 디스패치의 관심사입니다. 래핑이 지원되지 않으면 세션은 호스트 셸 PTY에 네이티브 배지를 표시하는 대신 실패합니다.
 
-## Network egress
+## 네트워크 이그레스
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+샌드박스가 시작되면 아웃바운드 네트워크 접근은 커널 방화벽 규칙이 아니라 프로세스 내 프록시가 강제합니다. 사용할 수 있는 백엔드가 없는 호스트에서는 이 중 어느 것도 적용되지 않으며, 스폰된 프로세스는 서버 사용자와 똑같이 네트워크에 접근합니다.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- 샌드박스 런타임은 `cc_server` 프로세스 안에서 `127.0.0.1`에 HTTP/HTTPS 프록시와 SOCKS5 프록시를 실행합니다. **제한된 세션마다 한 쌍**입니다(`http_proxy.dart`, `socks_proxy.dart`). 동시 실행은 한 쌍을 공유하지 않습니다.
+- 샌드박스로 감싸진 프로세스는 프록시 환경 변수를 받습니다(`HTTP_PROXY`/`HTTPS_PROXY` → HTTP 프록시, `ALL_PROXY` → SOCKS 프록시, `GIT_SSH_COMMAND`는 git-over-SSH를 SOCKS 프록시로 라우팅합니다). Linux에서는 네트워크 네임스페이스가 공유되지 않으므로 프록시가 유일한 출구이고, macOS에서는 샌드박스가 호스트 루프백을 공유하며 프록시와 직접 통신합니다.
+- 각 연결의 대상 호스트는 세션의 도메인 허용 목록과 대조되며, 그 밖의 모든 것은 거부됩니다. 와일드카드 형식은 두 가지이며 각각 `*`가 정확히 하나입니다. 맨 앞의 `*.example.com`은 모든 하위 도메인(`a.b.example.com` 포함)과 일치하지만 최상위 도메인 자체와는 일치하지 않습니다. 중간 레이블 형식 `bedrock.*.amazonaws.com`은 정확히 레이블 하나와 일치합니다(`bedrock.us-east-1.amazonaws.com`은 일치하고 `bedrock.evil.attacker.amazonaws.com`은 일치하지 않습니다).
+- 허용 목록은 세션마다 큐레이션된 기준선(`kBaselineAllowedDomains`: LLM 공급자, Git 호스팅, 패키지 레지스트리)과, 에이전트에 GitHub 또는 푸시 기능이 있으면 GitHub 도메인, 그리고 `SandboxSpec.egressAllowlist`에서 해석됩니다. 리졸버는 에이전트가 티켓팅을 호출할 수 있을 때 티켓팅 공급자 도메인도 받아들이지만, 디스패치 경로는 그 목록(또는 추가 `egressAllowlist` 항목)을 결코 전달하지 않으므로 실제로는 모든 실행이 기준선과 자신의 기능이 얻어낸 GitHub 도메인을 받습니다.
+- 고정된 거부 목록(`kBaselineDeniedDomains`: 클라우드 메타데이터 엔드포인트, 텔레메트리 싱크)이 모든 허용보다 우선합니다.
+- `networkEnabled: false`(또는 네트워크 기능이 없는 에이전트)에서도 세션별 프록시는 시작되지만 허용 목록이 비어 있으므로 모든 아웃바운드 연결이 거부됩니다.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+`SandboxPort.launch`에 전달되는 명세입니다:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| 필드             | 타입                                        | 설명                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId`       | `String`                                    | 안정적인 세션 식별자(일반적으로 스페이스 ID)                                                                                          |
+| `workspaceId`     | `String`                                    | 소유 워크스페이스 ID                                                                                                                         |
+| `agentId`         | `String?`                                   | 현재 샌드박스에 바인딩된 에이전트(있는 경우)                                                                                                |
+| `bindMounts`      | `List<SandboxBindMount>`                    | 호스트→게스트 마운트. 샌드박스는 여기에 나열된 호스트 경로만 봅니다                                                                         |
+| `networkEnabled`  | `bool` (기본값 `true`)                     | 에이전트의 네트워크 기능과 결합됩니다. 꺼져 있으면 세션별 프록시는 여전히 시작되지만 허용 목록이 비어 있어 모든 아웃바운드 연결이 거부됩니다 |
+| `egressAllowlist` | `List<String>` (기본값 `[]`)               | 추가로 허용되는 이그레스 도메인으로, 와일드카드(`*.example.com` 및 레이블 하나짜리 중간 형식)를 지원합니다. 디스패치는 이 필드를 채우지 않으므로 감싸진 실행은 큐레이션된 기준선과 자신의 기능이 얻어낸 GitHub 도메인을 받습니다 |
+| `guestWorkdir`    | `String?`                                   | 샌드박스 안의 기본 작업 디렉터리로, 개별 `exec` 호출이 재정의할 수 있습니다                                                                   |
+| `mode`            | `Mode` (기본값 `chat`)                     | 파일시스템 쓰기 규칙을 정합니다. `chat`은 바인드 마운트를 쓰기 가능하게 유지하고, `review`, `plan`, `orchestrate`는 읽기 전용입니다         |
+| `capabilities`    | `AgentCapabilities` (기본값 `safeDefault`) | 네트워크 켜짐/꺼짐 결정과 GitHub 이그레스 도메인을 도출합니다. 티켓팅 도메인은 리졸버 인자이지만 디스패치 경로는 이를 결코 제공하지 않습니다 |
+| `protectedPaths`  | `List<String>` (기본값 `[]`)               | 어떤 모드에서든 샌드박스 안에서 결코 쓰기 가능해서는 안 되는 호스트 경로                                                                      |
+| `runnerStateDirs` | `List<String>` (기본값 `[]`)               | 러너가 자체 상태를 보관하는 호스트 디렉터리로, 모든 모드에서 쓰기 가능합니다(현재는 Control-Center가 관리하는 `CLAUDE_CONFIG_DIR`) |
+| `execGrantRoots`  | `List<String>` (기본값 `[]`)               | macOS에서 쓰기 가능 디렉터리 실행 차단을 다시 여는, 운영자가 승인한 디렉터리 트리입니다. Linux에서는 무시됩니다 — bwrap에는 다시 열 `$HOME` 실행 차단이 없습니다 |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths`는 등록된 원본 리포지토리 체크아웃을 담으며, 디스패치마다 워크스페이스의 리포지토리에서 해석됩니다. 에이전트는 대화별 쓰기 시 복사 워크트리에서만 작업하므로, 원본은 샌드박스 안에서 결코 쓰기 가능해서는 안 됩니다 — 그렇지 않으면 macOS에서 Seatbelt의 일괄 `$HOME` 쓰기 허용 때문에 `bash`를 통해 원본에 쓸 수 있게 됩니다. 이 경로들은 `chat`을 포함한 모든 모드에서 시크릿 쓰기 거부 집합에 합류합니다.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+모든 읽기 거부 및 쓰기 거부 경로는 리터럴 표기와 심볼릭 링크 해석 표기 두 가지로 내보내집니다. 커널은 거부 규칙을 해석된 경로에 대조하므로, 심볼릭 링크된 경로를 기준으로 작성된 규칙은 결코 발동하지 않습니다 — 그리고 macOS에서는 이것이 예외가 아니라 일반적인 경우인데, `/tmp`는 `/private/tmp`로, `/var/folders/…`는 `/private/var/folders/…`로 해석되기 때문입니다. `*`나 `?`가 포함된 항목은 글로브로 취급되어 그대로 둡니다. 해석되지 않는 경로는 작성된 그대로 유지됩니다.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| 필드       | 타입                     | 설명                                                                                             |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | 호스트의 절대 경로                                                                               |
+| `guestPath` | `String`                 | 샌드박스 안의 경로(네이티브 샌드박스에서는 `hostPath`와 같으며, 어댑터 대칭을 위해 유지됩니다) |
+| `readOnly`  | `bool` (기본값 `false`) | true이면 읽기 전용으로 마운트합니다                                                               |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+`SandboxPort.launch`가 반환합니다:
 
-| Field       | Type                   | Description                                                              |
+| 필드       | 타입                   | 설명                                                              |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | 세션 식별자                                                       |
+| `backend`   | `SandboxBackend`       | 실행 중인 백엔드                                                 |
+| `state`     | `SandboxState`         | 수명주기 상태                                                          |
+| `error`     | `Object?`              | `state`가 `error`일 때 설정됩니다                                              |
+| `details`   | `Map<String, Object?>` | 어댑터 내부의 부기 정보(작업 디렉터리, PID, 프로필 경로 등) |
 
 ### SandboxState
 
-| State       | Description                                 |
+| 상태       | 설명                                 |
 | ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| `created`   | 명세는 만들어졌지만 VM이 아직 시작되지 않음 |
+| `warm`      | 실행 중이며 명령을 exec할 준비가 됨          |
+| `active`    | 현재 명령을 실행 중               |
+| `suspended` | RAM을 절약하기 위해 일시 중지되거나 디스크에 체크포인트됨   |
+| `destroyed` | 정리되었으며 핸들이 더 이상 유효하지 않음    |
+| `error`     | 시작 실패 — `SandboxHandle.error` 참고   |
 
-## Sandbox events
+## 샌드박스 이벤트
 
-| Event type  | Description                                                  |
+| 이벤트 유형  | 설명                                                  |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout`    | 샌드박스의 표준 출력                             |
+| `stderr`    | 샌드박스의 표준 오류                              |
+| `exit`      | 샌드박스 프로세스가 종료됨(`exitCode`를 함께 전달)                  |
+| `starting`  | 샌드박스가 시작 중                                       |
+| `ready`     | 샌드박스가 exec 호출을 받을 준비가 됨                        |
+| `killed`    | 호스트가 프로세스를 종료함(OOM, 타임아웃, 수동 중지)       |
+| `violation` | 샌드박스 정책이 위반됨(`SandboxViolation`을 함께 전달) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| 필드                 | 타입      | 설명                                                                |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | 거부된 동작(예: `file-read*`, `network-outbound`)                    |
+| `target`              | `String`  | 거부된 작업의 대상이 된 경로 또는 호스트                   |
+| `suggestedCapability` | `String?` | 이 작업을 허용하게 될 기능 플래그(예: `canCallGitHubApi`) |
+| `raw`                 | `String?` | 디버깅에 유용한 원시 로그 줄                                         |
 
-## See also
+## 함께 보기
 
-- [Sandbox security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
-- [Sandbox policies](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/)
-- [cc_server CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): the `--sandbox` flag
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [샌드박스 정책](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/)
+- [cc_server CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): `--sandbox` 플래그

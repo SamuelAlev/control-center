@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Життєвий цикл запуску агента
+description: Що відбувається між надходженням повідомлення та закриттям журналу виконання — складання промпту, worktree, ідентичність, що обмежує виконання і як його результат записується чесно.
 slug: uk-UA/керівництво/поняття/життєвий-цикл-запуску
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Що таке запуск
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Запуск — це одне виконання одного агента, в одній розмові, на одному адаптері. Усе, що з ним пов’язано, відбувається на `cc_server`: клієнт надсилає повідомлення, а потім спостерігає, як у відповідь ллються події. У жодному клієнті немає шляху запуску.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Агентів будять із шести причин, які виконання несе як свій **контекст пробудження**, щоб агент знав, _чому_ він прокинувся:
 
-| Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| Причина пробудження | Тригер                                                        |
+| ------------------- | ------------------------------------------------------------- |
+| `userMessage`       | Хтось надіслав повідомлення в просторі або згадав агента      |
+| `assignment`        | Агенту призначили тікет                                       |
+| `pipelineStep`      | Крок конвеєра запустив його                                   |
+| `childCompleted`    | Дочірній тікет завершився                                     |
+| `followUp`          | Запланований пульс для подальшої роботи                       |
+| `recovery`          | Шлях відновлення перезапустив його після збою                 |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Контекст пробудження несе ідентифікатори, що супроводжують причину, — тікет, простір, повідомлення, запуск конвеєра — і вони впорскуються в середовище та промпт агента.
 
-## Prompt assembly
+## Складання промпту
 
-The prompt is built in layers, each one a labelled section:
+Промпт будується шарами, кожен з яких є позначеним розділом:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Ідентичність** — власний ідентифікатор агента, його ім’я та ідентифікатор робочого простору, з явною вказівкою передавати ці самі UUID інструментам з областю робочого простору. Робочий простір невіддільний від агента, тож він присутній завжди.
+- **Каталог інструментів і протоколи ресурсів**, потім **структура робочого простору**.
+- **Перевизначення системного промпту**, якщо воно в агента є, потім **персона** (параметризована роллю) і **бриф команди**.
+- **Навички** — назви, прив’язані до агента.
+- **Контракт і процедура виконання** для поточного режиму.
+- **Контекст пробудження** і **контекст згадки**: хто викликав агента і хто є поряд.
+- **Блок режиму** — сформований із профілю можливостей режиму _та його матеріалізованого списку інструментів_, тож промпт ніколи не може назвати інструмент, якого у виконання насправді немає.
+- **Контекст пам’яті** — факти, вилучені для завдання.
+- **Контекст розмови** — недавня історія простору, обмежена дослівним вікном у 50 000 символів, незалежно від налаштованого розміру контексту агента. Старша історія не відкидається: агент дістає її на вимогу через `get_messages`, і семантично доречні старші повідомлення все одно спливають.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Slash-команди розбираються з необробленого тексту користувача]
+Багатошаровий промпт починається з блоку контексту, тож він не починається зі слеша. Команди розбираються з повідомлення користувача дослівно, а потім вирізаються з хвоста багатошарового промпту, щоб кожен шар контексту вцілів.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Команди поділені між двома місцями. `/todo` і `/compact` перехоплюються в редакторі повідомлень і свідомо ніколи не зберігаються як повідомлення та не надсилаються агенту — збереження `/compact` відсунуло б межу ущільнення на один хід назад і засмітило б транскрипт. `/plan` обробляється в обох: редактор повідомлень перемикає режим простору, і саме завдяки цьому набір інструментів, набір обмежень і промпт узгоджуються на цей хід і на кожен наступний. `/goal`, `/loop` і `/skill:<name>` обробляються всередині самого виконання і лише у вбудованому harness — `/goal` і `/loop` розпочинають автономну роботу з бюджетом витрат, а ім’я з префіксом `skill:` шукається як навичка, чиє тіло `SKILL.md` стає директивою ходу. Саме простір імен розділяє ці два словники: якби ім’я без префікса зіставлялося з навичками, навичку з назвою `plan` або `compact` назавжди затіняла б вбудована команда. Ім’я без префікса, яке не є вбудованою командою, усе ще зіставляється — для повідомлень, написаних до появи простору імен. Нерозпізнане ім’я просто проходить далі як звичайний текст.
 
-## Worktree provisioning
+## Підготовка worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Перш ніж щось запуститься, розмова отримує власний робочий корінь, а під ним — ізольований worktree з copy-on-write для кожного репозиторію. Типово це кожен репозиторій, прив’язаний до робочого простору; простір PR — або простір, створений із явним вибором, — готує лише дозволені, а розмова перевірки PR закріплює свій єдиний репозиторій за head-рефом pull request, тоді як решта лишаються на гілці за замовчуванням. Вихідний checkout ніколи не змінюється, а весь каталог розмови звільняється, коли простір видаляють.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write — **єдина** реалізація всюди, де постачається `rift`, на основі вбудованого нативного модуля. Файлова система, яка не вміє reflink, — або каталог даних на іншому томі, ніж репозиторій, — не дає підготувати worktree замість відкату. `git worktree` — це бекенд у Windows, де бекенда copy-on-write для збірки немає, і на інших хостах це не тиха деградація. Відсутній `rift` на платформі, де він постачається, — це зламане встановлення: сервер відмовляється запускатися, а не тихо відкочується, бо тихий відкат назавжди ховає поломку за повільнішим шляхом.
 
-## Identity and credentials
+## Ідентичність і облікові дані
 
-Two identities are resolved per run, before any process launches.
+На кожне виконання, перш ніж запуститься будь-який процес, визначаються дві ідентичності.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Авторство Git.** Коміти, які робить агент, створюються _від імені агента_ — `<Name> (agent) <agentId@agents.control-center.local>` і в `GIT_AUTHOR_*`, і в `GIT_COMMITTER_*` — і ніколи не видаються за людину. Локальна частина — це UUID агента, а не його slug імені. Людину, яка зробила запит, зазначають трейлером `Co-Authored-By:`, який передається в середовищі та згадується в системному промпті. Явно задана тим, хто викликає, ідентичність завжди переважає обидві.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Ідентичність на хості коду.** Облікові дані GitHub для виконання завжди належать лише брокеру — токен інсталяції App з областю репозиторію або його резервний PAT із середовища — і ніколи не є власним збереженим токеном учасника, який зробив запит. `actingUserId` обмежує резервний PAT, щоб учасник, який не є власником сервера, не успадковував досяжність сервера; він не накладає особистий токен на середовище агента.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Облікові дані провайдера моделей** визначаються у фіксованому порядку, і цей порядок важливий:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. перевизначення середовища для конкретного адаптера;
+2. середовище того, хто викликає;
+3. сховище облікових даних сервера (з оновленням токена OAuth, якщо спливає строк його дії);
+4. середовище процесу.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Оскільки перевизначення для адаптера стоїть першим, воно тихо переважає обліковий запис провайдера, підключений у застосунку. Якщо витрати виконання потрапляють на неправильний обліковий запис, це перевизначення — перше місце, куди варто зазирнути. Облікові дані провайдера глобальні для хоста — спільні для всіх робочих просторів у цьому встановленні.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/uk-UA/керівництво/поняття/модель-агента/).
+Токени, доступні за можливостями (GitHub, тікетинг), надходять від брокера облікових даних, який впорскує лише те, що дозволяють можливості виконання. Див. [Модель агента](/uk-UA/керівництво/поняття/модель-агента/).
 
-## Launch
+## Запуск
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Виконання породжується зі своїм worktree як робочим каталогом, а для Claude Code — ще й зі згенерованою конфігурацією MCP, щоб агент міг дістатися до набору інструментів Control Center. ACP і `bash` harness отримують очищене середовище; Claude Code через `NoSandboxAdapter` успадковує середовище хоста.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Пісочниця ОС загортає виконання лише там, де хост має бекенд]
+`cc_server` один раз під час завантаження перевіряє хост і, якщо бекенд доступний, загортає в нього процеси агентів — Seatbelt у macOS, bubblewrap у Linux і WSL2. Загортаються обидві точки запуску, бо вони не мають спільної: CLI Claude Code проходить через порт пісочниці; ACP-адаптери та інструмент `bash` вбудованого harness — через менеджер пісочниці. Саме вона застосовує й захищені шляхи виконання: у ваших зареєстрованих checkout репозиторіїв запис у пісочниці заборонено — в кожному режимі.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Там, де бекенда немає, виконання **не** поміщається в пісочницю, і ніщо інше не змінюється, щоб це компенсувати. Це означає, що так завжди у Windows (жодного нативного загортання — `microvm` це окремий шлях для терміналів і rigs, доступний лише після перевірки) і в Linux чи WSL2 без `bwrap` та `socat` у `PATH`. Сервер називає свій стан у рядку журналу під час запуску, а `--sandbox off` свідомо відмовляється від пісочниці.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Навіть коли пісочниця ввімкнена, лишаються дві прогалини. Внутрішньопроцесні файлові інструменти harness (read, write, edit, apply patch, search, find, search_files) виконуються всередині процесу сервера, тож жоден профіль їх не обмежує — їхня межа це власне обмеження шляхів в інструментах плюс обмеження. А Claude Code запускається з `--dangerously-skip-permissions`, тож його власні звернення до файлів і оболонки не контролює Control Center; пісочниця ОС — це межа навколо них.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Решта обмежень діє на кожному хості, з пісочницею чи без: власний worktree виконання (copy-on-write там, де постачається `rift`; `git worktree` у Windows), облікові дані з обмеженням за можливостями, які брокер видає на кожен запуск і відкликає під час згортання, уніфіковані обмеження дій (заборона за замовчуванням — рішення `prompt` без під’єднаного затверджувача відхиляється) і набір інструментів, який дозволяє режим розмови. ACP і `bash` harness усе одно очищують середовище; Claude Code через `NoSandboxAdapter` успадковує середовище хоста.
 :::
 
-## Streaming
+## Потокова передача
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Виконання повертає типізовану послідовність подій, яку потоковий процесор зберігає як дельти повідомлень, згортає в сегменти транскрипту й перетворює на події обміну повідомленнями:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| Подія              | Що вона несе                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `thinking`         | Вивід міркувань, відображений у тексті                                                                              |
+| `text`             | Видимий вивід                                                                                                       |
+| `toolCall`         | Виклик інструмента з його ідентифікатором і структурованими аргументами                                             |
+| `toolResult`       | Відповідний результат; позначений, якщо стався збій або потік частковий                                             |
+| `usage`            | Кількість токенів і вартість за вікно вимірювання                                                                   |
+| `error`            | Помилка; зі структурованим кодом адаптера, якщо той його надав                                                      |
+| `sandboxViolation` | ОС відхилила системний виклик. Надсилається лише там, де пісочниця справді загортає процес — див. заувагу вище      |
+| `debug`            | Діагностика під час виконання (маркери запуску, рішення обмежень, нагадування щодо контракту)                       |
+| `done`             | Виконання завершилося                                                                                               |
 
-## What bounds a run
+## Що обмежує виконання
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Тут свідомо **немає жодного обмеження на кількість ходів**. Жорсткий ліміт ітерацій убиває законну довгу роботу (міграції, прибирання після розгалуження) і не ловить нічого, чого не зловили б раніше запобіжники нижче. Виконання завершується, коли:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **модель зупиняється** сама;
+- **людина зупиняє його** або перебирає керування розмовою (це призупиняє вбудований harness на наступній чистій межі ходу — виконання Claude Code, яке не має безпечної межі, натомість зупиняється);
+- **спрацьовує сторожовий таймер тиші.** Жодного виводу протягом порогового часу — і сеанс завершується збоєм `silentRun`. Типово це 15 хвилин, а в переважно читальних режимах (огляд і план) — 10; агент може перевизначити його в межах від 1 до 240 хвилин. Таймер озброюється, коли дочірній процес повідомляє свій PID, тож він охоплює CLI Claude Code — і **не** вбудований harness, який нічого не породжує;
+- **спрацьовує обмеження витрат** — але лише для автономних команд.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Запобіжник зациклення — не завершувач: після трьох однакових викликів інструмента поспіль цикл _коригує_ агента, щоб той змінив підхід.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Звичайний хід не має обмеження витрат]
+Обмеження витрат у межах сеансу під’єднано лише для `/goal` і `/loop`; будь-яке інше виконання не передає бюджету взагалі. Для цих команд один відрізок без нагляду типово може спалити 500 центів ($5.00), з м’яким коригуванням на 80%, яке просить агента чисто завершити роботу до жорсткої зупинки, і довготривалим бюджетом цілі в 5000 центів ($50.00) на всі відрізки. Явний `/goal --budget` ніколи не перевищується на цілий відрізок.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+У підсумку звичайний інтерактивний хід у вбудованому harness не має ні обмеження на кількість ходів, ні обмеження витрат, ні сторожового таймера тиші. Він завершується, коли зупиняється модель або коли його зупиняєте ви. Це свідомий компроміс — усі альтернативи вбивають законну довгу роботу — але він означає, що інтерактивне виконання без нагляду не обмежує ніщо, крім власного розсуду моделі.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Під час виконання повідомлення, надіслане агенту, який працює, ставиться в чергу як **коригувальне** і зчитується на межі наступного ходу, тож ви можете підштовхнути виконання, не вбиваючи його. Коригування, призупинення, субагенти й контракт завершення — це можливості вбудованого harness; у Claude Code немає жодної з них.
 
-## How a run is recorded
+## Як записується виконання
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Кожен запуск пише `AgentRunLog`: час початку й завершення, резюме, кількість токенів і оцінену вартість (зокрема вартість, зведену від субагентів), адаптер і модель, ідентифікатор процесу й шлях до журналу, розмову та будь-який тікет чи запуск конвеєра, до якого він належить, а також два класифікаційні поля, які несуть більшу частину правди.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Статус** — грубий: `pending`, `running`, `completed`, `error`.
+- **Живучість** — точніший показник: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Сімейство помилок** змістовно групує збої: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` не означає «доставлено»]
+Коли виконання завершується без результату, якого вимагав його режим — виконання в режимі плану, яке так і не викликало `submit_plan`, виконання в режимі оркестрації, яке так і не запропонувало план, — статус лишається `completed`, бо процес справді завершився чисто. Честний сигнал тримається на живучості (`empty`), сімействі помилок (`silentRun`) і резюме, яке точно каже, що саме не було створено. Це резюме захищене: фіналізація не перезапише його останніми балачками моделі.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Це зроблено свідомо. Зміна статусу зрушила б автомати станів тікетів і конвеєрів, які не мають нічого спільного з відсутнім артефактом. Це також означає, що самого лише «status: completed» ніколи не досить, щоб зробити висновок про успіх виконання — читайте резюме.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Закриття виконання публікує `AgentRunCompleted`, і від нього залежить багато чого: кадр сповіщення та його довготривалий запис у стрічці, пересилач у реальному часі, який штовхає його підключеним клієнтам, зведення витрат конвеєра, відновлення кроку конвеєра, що чекав на виконання, завершення тікета, який за ним стоїть, переведення оркестрації в кінцевий стан, рішення наглядача цілей продовжити чи зупинитися, роль перевіряльника та оцінювання бюджету після виконання. Список присутності оновлюється окремо — за останніми журналами виконань, а не за подією.
 
-## Budgets, after the fact
+## Бюджети — постфактум
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Застосування бюджету — це _реакція_, а не бар’єр. Коли виконання завершується, оцінювач порівнює витрати агента з початку місяця з його чинною межею (пов’язана політика бюджету, якщо вона є, інакше — власна місячна цифра агента; нуль означає без обмежень). Перетин м’якого порогу записує інцидент-попередження; вичерпання бюджету записує жорсткий інцидент і перемикає статус життєвого циклу агента на `paused` в оргсхемі. Запуск усе одно приймає роботу від цього агента. Тригер конвеєра `BudgetThresholdCrossed` може розпочати подальшу роботу з тієї самої події.
 
-## Retry lineage
+## Родовід повторів
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Кожен журнал виконання може нести родовід повторів — ідентифікатор батьківського виконання, лічильник спроб і резюме продовження. Дерево виконань розмови показує номер спроби, коли він не нульовий. «Спробувати ще раз» із чату — це новий запуск із новим журналом виконання.
 
-## Related concepts
+## Пов’язані поняття
 
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): what the adapter can and cannot enforce
-- [Modes](/uk-UA/керівництво/поняття/режими/): where the tool surface and the completion contract come from
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/): the effect-class policy every gated call passes
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): the isolation story in full
-- [Multiplayer](/uk-UA/керівництво/поняття/спільна-робота/): steering, take-over and the autonomy dial
-- [Domain events](/uk-UA/керівництво/поняття/доменні-події/): what `AgentRunCompleted` sets off
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): що адаптер може й не може забезпечити
+- [Режими](/uk-UA/керівництво/поняття/режими/): звідки беруться набір інструментів і контракт завершення
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/): політика класів ефектів, крізь яку проходить кожен контрольований виклик
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): повна історія ізоляції
+- [Спільна робота](/uk-UA/керівництво/поняття/спільна-робота/): коригування, перебирання керування й регулятор автономності
+- [Доменні події](/uk-UA/керівництво/поняття/доменні-події/): що запускає `AgentRunCompleted`

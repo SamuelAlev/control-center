@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: موڈز
+description: موڈ کسی ایجنٹ کے بجائے اسپیس کا وصف کیوں ہوتا ہے؛ چاروں موڈز میں سے ہر ایک کس چیز کی ضمانت دیتا ہے؛ اور یہ ضمانت کہاں محض ایک پرامپٹ کے بجائے ساختی ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/موڈز
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## موڈ کیا ہے
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+موڈ **اسپیس** کا ایک وصف ہے، جو اسپیس والی قطار میں ایک کالم کے طور پر محفوظ ہوتا ہے۔ اسپیس کے اندر ہر گفتگو، تھریڈز سمیت، یہی موڈ رکھتی ہے — کوئی تھریڈ بھی باقی گفتگو کی طرح اپنے اسپیس کا موڈ ورثے میں لیتا ہے۔ چنانچہ ایک ہی ایجنٹ بیک وقت مختلف اسپیسز میں مختلف موڈز میں ہو سکتا ہے، اور کسی اسپیس کا موڈ بدلنے سے ایجنٹ کو چھوئے بغیر اگلی باری میں ہونے والا رویہ بدل جاتا ہے۔
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+بالکل چار موڈز ہیں: `chat`، `review`، `plan`، `orchestrate`۔ خود enum کوئی پالیسی نہیں رکھتا۔ موڈ جو کچھ بھی ضمانت دیتا ہے، وہ ایک بار **صلاحیتوں کے پروفائل** میں بیان ہوتا ہے، اور نفاذ کی ہر پرت اُسی سے اخذ کرتی ہے:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **ٹول سطح** — اُس موڈ میں کون سے ٹولز سرے سے موجود ہیں، جو ایک زیادہ سے زیادہ منظوری ٹیئر، ایک اجازت فہرست، ایک انکار فہرست اور مسترد اثر کلاسز کے ایک مجموعے کی صورت میں بیان کی جاتی ہے۔
+2. **لازمی آؤٹ پٹ فعل** — کچھ بھی حوالے کرنے کے لیے رن کو کس چیز کی کال کرنی ہوتی ہے۔
+3. **انکار شدہ اثر کلاسز** — جن سے اقدام گارڈ سرے سے انکار کر دیتا ہے۔
+4. **worktree کی حالت** — کیا worktree میں لکھا جا سکتا ہے۔ یہ ٹول سطح سے تبدیلی کرنے والے ٹولز نکال کر نافذ کی جاتی ہے، اور یہی چیز اسے ہر ہوسٹ پر قائم رکھتی ہے۔ جہاں ہوسٹ کے پاس OS سینڈ باکس ہوتا ہے، وہی حالت فائل سسٹم کے لکھنے کے قواعد بھی تراشتی ہے — ایک ریڈ اونلی موڈ worktree کو ریڈ اونلی ماؤنٹ کرتا ہے — مگر یہ ضمانت کی ایک دوسری نقل ہے، وہ نہیں جو اصل کام کر رہی ہے۔
+5. **سسٹم پرامپٹ بلاک** — ایک _جنریٹ شدہ_ صلاحیتوں کی تمہید جو اصل میں تشکیل پانے والی ٹول فہرست سے اخذ کی جاتی ہے، اس کے ساتھ ہاتھ سے لکھی ہدایات۔
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+نفاذ کی ہر پرت اُسی ایک پروفائل سے اخذ کرتی ہے، اس لیے ٹول سطح، گارڈ، worktree کی حالت اور پرامپٹ آپس میں متصادم نہیں ہو سکتے۔
 
-## The four modes
+## چاروں موڈز
 
-### Chat — displayed as "Agent"
+### چیٹ — بطور “ایجنٹ” دکھایا جاتا ہے
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+ڈیفالٹ اور واحد موڈ جس پر کوئی اضافی پابندی نہیں: ایگزیکیوشن ٹیئر تک مکمل ٹول سطح، ایک قابلِ تحریر worktree، کوئی انکار شدہ اثر کلاس نہیں اور کوئی تکمیل کا معاہدہ نہیں۔ اسے عمل درآمد، بگ فکسز، کوڈ بیس سے متعلق سوالات اور ہر عارضی کام کے لیے استعمال کریں۔
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+لیبل پر دھیان دیں: کمپوزر میں یہ موڈ **“ایجنٹ”** کے طور پر دکھایا جاتا ہے، “چیٹ” کے طور پر نہیں۔
 
-### Plan — read-only, one deliverable
+### پلان — ریڈ اونلی، ایک ڈیلیوریبل
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+پلان موڈ worktree کو ریڈ اونلی بنا دیتا ہے اور سطح سے لکھنے والے ٹولز مکمل طور پر نکال دیتا ہے، اس لیے یہ پابندی ہدایت کے بجائے ساختی ہوتی ہے۔ ایجنٹ پڑھتا، تلاش کرتا اور تحقیق کرتا ہے اور ٹھیک ایک چیز حوالے کرتا ہے: ایک `submit_plan` کال جس میں ایک ٹائپ شدہ انحصار گراف ہوتا ہے — ایک ہدف کے ساتھ ایسے نوڈز جن کی اپنی کلیدیں، عنوانات اور وضاحتیں ہوں اور ہر ایک کن نوڈ کلیدوں پر منحصر ہے۔
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+پلان گفتگو میں ایک مختصر قطار کی صورت میں ظاہر ہوتا ہے اور اُس کے ساتھ والے ٹیب میں Plan Studio کھولتا ہے۔ اس کی منظوری گراف کو ایک آرکیسٹریشن میں کمپائل کرتی ہے، پیدا شدہ کام چلاتی ہے اور تصنیف کرنے والے اسپیس کو واپس ایجنٹ موڈ میں لے آتی ہے۔
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+اگر پلان موڈ کا رن کبھی `submit_plan` کال کیے بغیر ختم ہو جائے، تو لوپ پہلے ایک دھکا لگاتا ہے جو بتاتا ہے کہ جب تک وہ کال کامیاب نہ ہو، پلان وجود نہیں رکھتا۔ یہ دھکا واضح طور پر ایک ایماندار “یہاں کوئی پلان درکار نہیں” خروج کی اجازت دیتا ہے، کیونکہ پلان موڈ اسپیس کی ایک ترتیب ہے اور اس کے اندر پوچھا گیا ایک معمولی سوال کسی بےبنیاد پلان کا پابند نہیں ہونا چاہیے۔
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/).
+:::note[ناپورا معاہدہ ناکام رن نہیں]
+وہ رن جو اپنے پلان کے بغیر ختم ہو، پھر بھی `completed` اسٹیٹس کے ساتھ ریکارڈ ہوتا ہے — پروسیس صاف طور پر ختم ہوا تھا۔ اصل حقیقت رن کی زندہ حالت (`empty`)، غلطی کی فیملی (`silentRun`) اور ایسے خلاصے پر منحصر ہے جو بتاتا ہے کہ کیا پیدا نہیں ہوا۔ دیکھیں [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)۔
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+باہر نکلنے کا ایک دوسرا، الگ راستہ بھی ہے: `exit_plan_mode`۔ یہ ایک سخت منظوری گیٹ ہے، کوئی آؤٹ پٹ فعل نہیں — جو ایجنٹ `submit_plan` کے بجائے اسے کال کرے، اس نے کچھ بھی حوالے نہیں کیا۔ پہلی کال ایک پائیدار `plan_exit` منظوری کھولتی ہے اور `pending` واپس کرتی ہے، اور اسپیس ریڈ اونلی ہی رہتا ہے؛ دہرائی گئی کالیں دوسرا گیٹ کھولنے کے بجائے `pending` ہی رہتی ہیں۔ منظوری ملنے کے بعد ہی کوئی اگلی کال اسپیس کو چیٹ پر منتقل کرتی ہے۔ مسترد ہونے پر ایجنٹ ایک نظرثانی شدہ پلان کے لیے نئی درخواست کھول سکتا ہے۔
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+خود پلان موڈ سے نکلنے کے لیے کمپوزر کا ڈراپ ڈاؤن بدلیں (یا Shift+Tab)۔ `exit_plan_mode` کا فیصلہ `decide_approval` MCP ٹول سے ہوتا ہے۔ ان باکس کی “ایجنٹ منظوری” قطاریں ایک الگ چیز ہیں: چلتے ایجنٹ کی طرف سے فی باری تصدیقی پرامپٹس۔
 
-### Review — read-only, no contract
+### ریویو — ریڈ اونلی، کوئی معاہدہ نہیں
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+ریویو موڈ PR ریویو کے لیے ہے۔ یہ worktree کو ریڈ اونلی بناتا ہے، ٹول سطح کو ایگزیکیوشن ٹیئر سے نیچے محدود کرتا ہے اور ریویو، ٹکٹنگ اور مواصلاتی ٹولز کی ایک چنی ہوئی اجازت فہرست لاگو کرتا ہے۔ کسی pull request کے لیے کھولا گیا اسپیس خود بخود ریویو موڈ میں بنتا ہے۔
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+ایجنٹ کا آؤٹ پٹ ساختیافته نتائج ہوتے ہیں — **ریویو نوڈز** — اور جب ریویو حتمی شکل لے لے تو ایک **فیصلہ**۔ ایک نوڈ میں ایک قسم (`bug`، `suggestion`، `recommendation`، `question`، یا `ticket`)، P0 (ریلیز روکتا ہے) سے P3 (بونس) تک ایک ترجیح، ایک خود تشخیص کردہ اعتماد، ایک اختیاری اینکر (فائل کے ساتھ ایک لائن رینج؛ ریپو بھر کے نوٹس میں کوئی نہیں ہوتا) اور ایک لائف سائیکل حالت ہوتی ہے جو اُس وقت `open` سے `consensusReady` پر پہنچتی ہے جب کوئی ہم مرتبہ — کبھی خود مصنف نہیں — اُس کی تصدیق کرے۔ وہ نتیجہ جس کی ترجیح یا اعتماد غائب ہو یا حد سے باہر ہو، فیصلے کو آلودہ کرنے کے بجائے پڑھنے کی حد پر ہی گرا دیا جاتا ہے۔
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+یہ فیصلہ ship، hold یا block ہوتا ہے اور اس میں شامل فی محور نتائج اسے صرف _زیادہ_ سخت ہی بناتے ہیں: کوئی گیٹڈ محور جو ناکام ہو `block` لازم کر دیتا ہے اور کوئی گیٹڈ محور جو چل ہی نہ سکا کم از کم `hold` لازم کرتا ہے۔ ثبوت کی عدم موجودگی کبھی کسی گیٹ کو سبز نہیں کرتی۔
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+پلان اور آرکیسٹریٹ کے برعکس، ریویو پر **کوئی تکمیل کا معاہدہ نہیں** ہوتا۔ نتائج `add_review_node` کے ذریعے جمع ہوتے اور `finalize_review` سے شائع ہوتے ہیں، اور دونوں کو صفر بار کال کرنا بھی جائز ہے — ریویو موڈ میں چل رہا کوئی پائپ لائن ایجنٹ وہاں اس کے بجائے کوئی ٹکٹ مکمل کرنے آیا ہو سکتا ہے۔
 
-### Orchestrate — read-only, proposes a team
+### آرکیسٹریٹ — ریڈ اونلی، ایک ٹیم تجویز کرتا ہے
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+آرکیسٹریٹ موڈ ایک ہدف کو پوری ٹیم کے پلان میں بدل دیتا ہے۔ پلان موڈ کی طرح یہ بھی ریڈ اونلی ہے اور فائلیں نہیں لکھ سکتا؛ تحقیق کی سطح کے اوپر اس کے پاس ایک ہی مراعات یافتہ فعل `propose_orchestration` ہے، جو ایک ساختی تجویز جاری کرتا ہے: کردار، ایک ذیلی ٹکٹ درخت، ایک ترکیبی قدم اور ایک بجٹ۔ پرامپٹ صرف سطح پر موجود ٹولز کے نام لیتا ہے، اس لیے ماڈل اُن بھرتیوں یا ٹکٹ کاموں کو بیان کرنے میں باریاں ضائع نہیں کرتا جنہیں وہ کال ہی نہیں کر سکتا۔
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/).
+تجویز میں کچھ بھی اُس وقت تک عمل میں نہیں آتا جب تک آپ منظوری نہ دیں۔ منظوری ملنے پر ایک ڈٹرمینسٹک میٹیریلائزر ایجنٹس کی بھرتی کرتا ہے، ٹکٹس اور ایک پروجیکٹ بناتا ہے اور ایک پیدا شدہ پائپ لائن چلاتا ہے۔ منظوری صرف آپریٹر دے سکتا ہے: اس کے لیے کوئی MCP ٹول نہیں، اس لیے کوئی ایجنٹ اپنا پلان تجویز کر سکتا ہے مگر خود منظور نہیں کر سکتا۔ ایجنٹ کی طرف سے شروع کی گئی دوبارہ تجاویز پر دو منٹ کے کول ڈاؤن کی شرح حد لگاتی ہے، اس لیے لگاتار دوبارہ پلانز مسترد ہو کر یکجا ہونے کا کہہ دیے جاتے ہیں۔ دیکھیں [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)۔
 
-## Two rules worth knowing
+## جاننے کے قابل دو اصول
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**کسی موڈ کے اپنے آؤٹ پٹ فعل سے کبھی انکار نہیں ہو سکتا۔** `submit_plan` اور `propose_orchestration` ٹول سطح میں پن کر دیے جاتے ہیں اور ٹول فلٹر، منظوری گیٹ نیز اقدام گارڈ سب کو پیچھے چھوڑ کر پہلے سے منظور شدہ ہوتے ہیں، اس لیے فی اسپیس خود مختاری کا ڈائل کسی موڈ کے ڈیلیوریبل کو خاموش نہیں کر سکتا۔ ہارنس کا `ask_user` بھی اسی وجہ سے پن کیا گیا ہے: یہی وہ ذریعہ _ہے_ جس سے کوئی رن آپریٹر تک پہنچتا ہے، اس لیے اسے گیٹ کرنا ایسے رن کو تعطل کا شکار کر دیتا جو کچھ پوچھنا چاہتا ہو۔ یہ ریڈ ٹیئر میں ہے، اس لیے ہر ریڈ اونلی موڈ اسے رکھتا ہے، اور یہ منظوری ریپر سے مستثنیٰ ہے — ایک پرامپٹ کے سامنے دوسرا پرامپٹ، کوئی منظوری دینے والا جڑا نہ ہونے پر بند ہو کر ناکام ہوتا ہے، جو ایجنٹ کو پوچھنے کے عمل سے محروم کر دیتا۔
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**ریڈ اونلی موڈز نیٹ ورک تک رسائی یا سیکرٹس سے انکار نہیں کرتے۔** ریویو، پلان اور آرکیسٹریٹ جن اثر کلاسز سے انکار کرتے ہیں وہ وہی ہیں جو دنیا بدلتی ہیں: فائل ڈیلیشن، worktree سے باہر تحریر، کمٹس، پشز، PR کی تخلیق اور اشاعت، وینڈر سنک کی تحریریں، پیکیج انسٹالز، پروسیس اسپاننگ، ورک اسپیس میں تبدیلی اور انکلوژر کنٹرول۔ نیٹ ورک سے باہر جانا اور سیکرٹ تک رسائی جان بوجھ کر اپنے ڈیفالٹس پر رہتے ہیں — تحقیق ہی تو ریڈ اونلی موڈ کا پورا مقصد ہے۔
 
-## Choosing and changing a mode
+## موڈ چننا اور بدلنا
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+کمپوزر کا موڈ ڈراپ ڈاؤن **تین** اختیار دیتا ہے: ایجنٹ (چیٹ)، پلان اور آرکیسٹریٹ۔ `review` **صارف کے لیے قابلِ انتخاب نہیں** — یہ سسٹم کی طرف سے اُس وقت مقرر ہوتا ہے جب کوئی PR ریویو اسپیس بنے، اور پائپ لائن قدموں کی طرف سے بھی۔
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+وہ پائپ لائن نوڈ جو **اسپیس کھولتا ہے**، اُس کمرے کا موڈ `extras['mode']` کلید (`chat`، `review`، یا `plan`) سے پن کر سکتا ہے۔ یہ کلید عین مطابق ہونی چاہیے: کوئی بھی دوسری ہجے — بشمول `orchestrate` — خاموشی سے نظر انداز ہو جاتی ہے اور کمرے کو باڈی کا ڈیفالٹ ملتا ہے (create-space باڈی پر `review`)۔ ایجنٹ کا قدم ایسے کمرے میں شامل ہوتا ہے جو اُس نے نہیں بنایا اور اُس کی اجازتیں دوبارہ مقرر نہیں کرتا۔
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+طے کرنا خود سادہ ہے۔ ڈسپیچر اسپیس کا `mode` کالم پڑھتا ہے؛ بغیر اسپیس والا ڈسپیچ — ایک ون شاٹ، کوئی CLI کال، یا کسی دوسرے ورک اسپیس کا اسپیس id، جو سادہ طور پر اِس ورک اسپیس کی ڈیٹا بیس فائل میں ہے ہی نہیں — `chat` پر طے ہوتا ہے۔ موڈ بدلنے کا اثر اگلی باری سے ہوتا ہے۔
 
-## Where the guarantee actually holds
+## ضمانت اصل میں کہاں قائم رہتی ہے
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+کسی موڈ کی ٹول سطح **بلٹ اِن ہارنس** بناتا اور نافذ کرتا ہے۔ یہ واحد ٹرانسپورٹ ہے جو کسی ٹول کو محض مسترد کرنے کے بجائے پوشیدہ بنا سکتا ہے، ہر کال کو چلنے سے پہلے گیٹ کر سکتا ہے اور تکمیل کے معاہدے کا مشاہدہ کر سکتا ہے۔
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/).
+Claude Code ٹرانسپورٹ پر غیر چیٹ موڈ `--permission-mode plan` کے طور پر بھیجا جاتا ہے۔ Claude کنونشن کی بنا پر اس کا احترام کرتا ہے؛ اس کے اپنے ریڈ، رائٹ، ایڈیٹ اور شیل ٹولز آنکھوں سے اوجھل چلتے ہیں۔ اُس ٹرانسپورٹ کے لیے موڈ محض رہنمائی ہے، Control Center کی کوئی حد نہیں — دیکھیں [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)۔
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+اجازت فہرستیں رائٹ ٹیئر اور اُس سے اوپر کے ٹولز کو محدود کرتی ہیں۔ بلٹ اِن ہارنس کا ریڈ ٹیئر پھر بھی ایسے ٹولز تک پہنچتا ہے جن کا نام کسی فہرست میں نہیں؛ Claude Code پر، وہ ٹول جسے اجازت فہرست چھوڑ دیتی ہے، مسترد ہو جاتا ہے چاہے سرور میں موجود ہو یا نہ ہو۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): where the mode is resolved and projected
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): which transports can enforce a mode
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/): what an approved orchestrate proposal does
-- [Use plan mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/): the practical walkthrough
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): موڈ کہاں طے اور پیش کیا جاتا ہے
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): کون سے ٹرانسپورٹ موڈ نافذ کر سکتے ہیں
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): وہ اثر کلاس پالیسی جس میں موڈ کا پریسیٹ جاتا ہے
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/): منظور شدہ آرکیسٹریٹ تجویز کیا کرتی ہے
+- [پلان موڈ استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/): عملی رہنمائی

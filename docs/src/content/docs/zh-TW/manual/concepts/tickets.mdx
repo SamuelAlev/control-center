@@ -1,155 +1,93 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: 工單與委派
+description: 為什麼工單只追蹤工作而不派送工作、委派如何受到防護，以及供應商鏡像擁有與不擁有什麼。
 slug: zh-TW/手冊/概念/工單
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+工單是 Control Center 追蹤工作的單位。它刻意是個_笨拙_的產物：標題、內容、狀態、負責人，以及在樹狀結構中的位置。它並不是代理執行時所依據的東西——代理的工作存在於對話中，而一次執行的結構化輸出則保存在執行紀錄上。
 
-## Assignment records ownership; it dispatches nothing
+## 指派只記錄擁有權，不會派送任何工作
 
-This is the single most important thing to get right about tickets.
+這是關於工單最重要、務必弄對的一件事。
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/zh-TW/手冊/概念/領域事件/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+設定 `assignedAgentId` 會寫入一個欄位，並發布一個 `TicketAssigned` [領域事件](/zh-TW/手冊/概念/領域事件/)。該事件是稽核與通知訊號，也是管線觸發器。**將工單指派給代理不會啟動任何執行。** 沒有任何工單派送器會監看 `assignedAgentId` 並喚醒該代理。
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+例外是團隊：當設定 `assignedTeamId` 時，`TeamRoutingService` 會以作業協定與名冊派送團隊領導者。
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+若你想讓特定代理處理某張工單，你得在對話中要求它、由管線步驟派送它，或由另一個代理對它委派工作。把工單指派給代理後枯等，是唯一永遠不會產生任何工作成果的做法。
 
-## Mirror and overlay
+## 鏡像與覆蓋層
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+工單可以純粹是本地資料，也可以由外部追蹤器支援，而它會在單一資料列上同時承載兩者。
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**鏡像**——供應商、外部識別碼、URL、標題、描述、優先順序、標籤、原始與正規化狀態、時間戳記——在工單屬於遠端時是快取。此時遠端才是真實來源，而重新整理會整批改寫鏡像。
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**覆蓋層**——指派、委派、空間連結、父項、專案、連結的 PR——只存在於 Control Center。追蹤器對它一無所知，重新整理也永遠不會觸及它。
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+正是這種切分讓同步得以安全進行：供應商拉取可以盡情破壞鏡像，卻永遠不會遺失疊加在上面的編排中繼資料。
 
-## The lifecycle graph binds agents, not you
+## 生命週期圖約束的是代理，不是你
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+狀態依序為 `backlog → open → inProgress → inReview → done`，其中 `blocked` 是側邊迴圈，`failed` / `cancelled` 則是另外兩個終止狀態。
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+轉換圖**只在代理與自動化路徑上**強制執行——也就是 MCP 工具與對帳器。在該路徑上，不合法的轉換會被記錄並忽略，因此狀況混亂的代理無法把工單倒退著帶出終止狀態。
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+UI 中每一項由使用者發起的變更都會傳入 `force: true`，完全繞過這張圖。人可以將工單移到選單所列出的任何狀態——包括重新開啟已進入終止狀態的工單。選單不提供 `failed`；代理會透過 `fail_ticket` 設定該狀態。這張圖是給自動化用的護欄，而不是規定工作該如何進行的規則。
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` 透過單一關卡掌控每一項變更：它會載入該資料列、確認它屬於呼叫端的工作區，並以預期的 `version` 寫入，讓兩筆並行編輯無法悄悄互相覆寫。
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/zh-TW/手冊/參考/工單生命週期/).
+完整的狀態表、轉換、欄位清單與關係種類，請參閱 [工單生命週期](/zh-TW/手冊/參考/工單生命週期/)。
 
-## Provenance: how a ticket came to exist
+## 來源：工單如何產生
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+每張工單都有一個 `originKind`。這個列舉有五個值——`manual`、`pipelineStep`、`agentDelegation`、`externalSync`、`recovery`——但目前只會寫入其中兩個：`manual`（`createTicket` 的預設值，包含委派建立的子工單）與 `externalSync`（同步引擎在供應商拉取時使用）。`TicketWorkflowService.createTicket` 不接受來源參數，因此 `pipelineStep`、`agentDelegation` 與 `recovery` 永遠不會寫入資料列。
 
-## Guarded delegation
+## 受防護的委派
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+委派是代理為另一個代理建立工作的地方，也是權限可能外洩之處，因此防護機制位於伺服器端的關卡，而不是放在提示指令中。
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` 會經由 `TicketWorkflowService.delegateGuarded` 處理，它會從父項鏈結計算子工單的深度與根，接著執行全部四項 `DelegationGuards` 檢查：會超過**深度上限 3** 的一次跳躍、跳回鏈結中已存在的代理（**循環偵測**）、**自主程度上限**（被委派者在該空間中的有效層級不得超過委派者），以及**預算額度**（委派會計入委派者剩餘的硬性停止預算，且無法再增發）。正式環境的相依組態會提供這兩個解析器埠。省略 `from_agent_id` 時會略過自主程度與預算（無限制／無原則的預算也會通過）。拒絕會擲出 `DelegationRefusedException`，其訊息會原封不動地送達發起委派的代理——是明確大聲的拒絕，絕不是靜默無聲的略過。
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` 是較舊的**未受防護**同類工具：它直接呼叫 `createTicket`，略過所有防護。請優先使用 `delegate_task`。
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+請勿將委派深度上限（在 `delegate_task` 鏈結上為 3）與內建執行框架的子代理巢狀上限（2）混為一談。它們是不同機制上的不同限制。
 
-## Hierarchy, links and projects
+## 階層、連結與專案
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+父項與子議題關係儲存在 `tickets.parent_ticket_id`，由 `setParent` / `clearParent` 管理。它們**不是** `ticket_links` 資料列，因此任何讀取工單關係的程式都必須合併這兩個來源。
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` 儲存彼此原本無關的工單之間的有向邊：
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| 連結類型      | 含義                     |
+| ------------- | ------------------------ |
+| `blocks`      | 來源封鎖目標             |
+| `relatesTo`   | 兩張工單彼此相關（對稱） |
+| `duplicateOf` | 來源是目標的重複項       |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**專案**是工作區範圍內、為共同目標而將工單分組的方式。專案只存在於 Control Center，永遠不會同步到外部供應商。
 
-## Collaborators
+## 協作者
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+`TicketCollaborator` 資料列是多個主體附加到同一張工單的方式，角色可為 `assignee`、`collaborator` 或 `reviewer`。人類與代理是對等的資料列——一個 `principalId` 加上一個 `collaboratorType`——沒有代表「使用者」的哨兵值，也沒有指向這兩張表中任一者的外鍵。
 
-## External sync
+## 外部同步
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Center 的工單是主要來源。刪除工單**只在本機生效**，因此你刪除的供應商支援工單不會在追蹤器上被刪除，並可能在下次同步時再次出現。協作者與子工單會串聯刪除。
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+配接器憑證會從伺服器的憑證存放區解析（在設定中貼上的 Linear 金鑰或 GitHub token 會在下一次請求時被讀取；環境只會為這些存放區提供初始內容）。
 
-## Tickets and pipelines
+## 工單與管線
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+沒有任何管線節點會建立、完成或取消工單——步驟面板中沒有這類步驟，引擎也不會呼叫 `TicketWorkflowService`。管線觸發器仍可在 `TicketAssigned`、`TicketCompleted`、`TicketFailed` 或 `TicketCancelled` 時觸發（這四個正是 `EventPayloadMapper` 實際對應的工單事件）。工單上沒有 `pipelineRunId` 欄位；與管線的耦合關係保存在代理執行紀錄中。
 
-## See also
+## 另請參閱
 
-- [Pipelines and automation](/zh-TW/手冊/概念/管線/): ticket events can trigger a pipeline
-- [Orchestration](/zh-TW/手冊/概念/編排/): where a DAG of sub-tickets comes from
-- [The agent model](/zh-TW/手冊/概念/代理模型/): who a ticket is assigned to
-- [Domain events](/zh-TW/手冊/概念/領域事件/): the ticket lifecycle events
-- [Ticket lifecycle](/zh-TW/手冊/參考/工單生命週期/): statuses, fields, transitions, relations
-- [Create and manage tickets](/zh-TW/手冊/操作指南/管理工單/)
-- [Delegate work to agents](/zh-TW/手冊/操作指南/委派工單/)
-- [Organize work with projects](/zh-TW/手冊/操作指南/專案/)
+- [管線與自動化](/zh-TW/手冊/概念/管線/)：工單事件可以觸發管線
+- [編排](/zh-TW/手冊/概念/編排/)：子工單的 DAG 從何而來
+- [代理模型](/zh-TW/手冊/概念/代理模型/)：工單會指派給誰
+- [領域事件](/zh-TW/手冊/概念/領域事件/)：工單生命週期事件
+- [工單生命週期](/zh-TW/手冊/參考/工單生命週期/)：狀態、欄位、轉換、關係
+- [建立與管理工單](/zh-TW/手冊/操作指南/管理工單/)
+- [將工作委派給代理](/zh-TW/手冊/操作指南/委派工單/)
+- [用專案組織工作](/zh-TW/手冊/操作指南/專案/)

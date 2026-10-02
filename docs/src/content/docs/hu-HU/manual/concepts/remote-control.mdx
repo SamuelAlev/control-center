@@ -1,207 +1,227 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Távoli vezérlés és mobil
+description: Hogyan éri el a telefon a szervert egy közvetített, végpontok között lezárt relén keresztül, peer-to-peer kapcsolat helyett, és milyen rétegzett hozzáférési modell tartja szűken ezt az elérést.
 slug: hu-HU/kezikonyv/fogalmak/tavoli-vezerles
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+A Control Center asztali alkalmazás, de a munka, amelyet nyomon követ, nem áll
+meg, amikor feláll az íróasztalától. A **távoli vezérlés** a
+**[Remote](https://remote.usectrl.dev/)** társalkalmazással párosítja a
+telefonját a `cc_server` példányával — a Remote a remote.usectrl.dev címen
+érhető el —, így onnan is követheti a flottát: elolvassa az üzeneteket és a
+jegyeket, válaszol egy ügynöknek, triázsolja a hírfolyamát, anélkül hogy a
+szerveren tárolt hanganyag, átirat, forráskód vagy hitelesítő adatok valaha
+elhagynák a szervert.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Gondoljon rá úgy, mint a munkaasztal túlnyomórészt olvasásra szánt társára. Nem
+a teljes asztali kliens kiváltására készült.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) for how the two differ.
+:::note[Két különböző távoli útvonal]
+A telefonos társalkalmazás egy **közvetített WebSocket-relén** keresztül
+párosítódik egy `cc_server` példányhoz, amely végpontok között lezárt JSON-RPC
+kereteket szállít. A teljes **webes build** (és egy távoli szerverre mutató
+asztali kliens) a másik távoli útvonal; ez WebSocketen keresztül hívja a
+`cc_server`-t, és a teljes alkalmazást jeleníti meg. A kettő különbségét lásd a
+[Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/) oldalon.
 :::
 
-## Transport
+## Átvitel
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+A telefon WebSocketen keresztül éri el a `cc_server`-t: vagy közvetlen
+kapcsolaton (loopback, LAN, tailnet vagy `wss://`), vagy egy jelzőközvetítőn
+lévő, meghívóval védett szobán keresztül, amely lezárt kereteket továbbít.
+Peer-to-peer adatcsatorna nincs.
 
-## What the phone can do
+## Mit tud a telefon
 
-The paired phone reaches a small, intentional slice of the server's surface:
+A párosított telefon a szerver felületének egy szűk, szándékosan kijelölt
+szeletét éri el:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Olvasás**: jegyek, ügynökök, terek és azok üzenetei, valamint a hírfolyama
+- **Válasz**: üzenet küldése egy térben, jegy frissítése vagy hozzárendelése,
+  cikk olvasottként vagy mentettként jelölése
+- **Playbook futtatása**: egy mentett tervsablon példányosítása a
+  paramétereivel. Ez csak _javasol_ egy tervet; semmi nem fut le és semmi nem
+  kerül elköltésre, amíg egy kezelő jóvá nem hagyja a Plan Studióban, teljes
+  klienst használva
+- **Munkaterület-váltás**, a telefon saját választójából
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Ez már majdnem mindent lefed. A telefon **alacsonyabb jogosultságú szereplő**,
+mint egy teljes kliens. Nem tud folyamatokat indítani, LLM-keretet elkölteni, a
+GitHubra pusholni vagy munkaterületet létrehozni. Hogy mindez nem puszta
+szándék, hanem kikényszerített szabály, arról a
+[hozzáférési modell](#a-hozzáférési-modell) alatt olvashat.
 
-## How the link is built
+## Hogyan épül fel a kapcsolat
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+A kapcsolat egy **közvetített relén** halad át: a szerver tulajdonosként belép
+egy meghívóval védett szobába egy `wss://` közvetítőn, és minden párosított
+kliens — asztali, webes, telefonos — ugyanabba a szobába lép be egy időben
+korlátozott belépési tokennel. Három elem áll össze:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Elem | Szerep |
+| --- | --- |
+| **Remote (telefonos alkalmazás)** | A társ-webalkalmazás, amely alapértelmezés szerint a `remote.usectrl.dev` címen fut, de saját szerveren is hosztolható. Böngészőben töltődik be, és a párosítási rekordot IndexedDB-ben tárolja. |
+| **Relé-közvetítő** | Egy állapotmentes `wss://` relé (`cc_signaling_server`), amely N irányú szobákat szolgál ki. **Csak átlátszatlan kereteket** szállít: minden hasznos teher végpontok között le van zárva a telefon és a szerver között, így a közvetítő soha nem lát alkalmazásadatot vagy párosítási titkot, és soha nem értelmezi azt, amit továbbít. |
+| **`cc_server`** | A szoba tulajdonosa. A telefon hívásaira ugyanazon a diszpécseren keresztül válaszol, amelyet minden más kliens is használ. |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+A párosítási ajánlat egy **kapcsolatleírót** szállít, amely felsorolja a
+szerverhez vezető összes útvonalat (LAN, tailnet, nyilvános `wss://`, relé),
+valamint az identitás-ujjlenyomatát. A telefon feloldója a legjobban elérhető
+útvonalat választja, és az első csatlakozáskor rögzíti az ujjlenyomatot (TOFU);
+a relé akkor is garantálja a kapcsolatot, ha egyetlen közvetlen útvonal sem
+létezik, miközben soha nem képes elolvasni a forgalmat.
 
-## What the pairing payload is
+## Mi a párosítási csomag
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/) for the procedure. The anatomy is
-what matters here.
+A párosítás az alkalmazásból indul ki, és deep linkként jut el a telefonra; az
+eljárást lásd az [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/) oldalon. Itt
+az összetétel a lényeg.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+A hasznos teher az URL **töredékében** utazik — a `#` utáni részben, amelyet a
+böngészők soha nem küldenek el a szervernek —, így a PWA HTTPS-gazdagépe soha
+nem látja. Mindent tartalmaz, amire a telefonnak szüksége van ahhoz, hogy elérje
+a szervert és igazolja, ki ő: a kapcsolatleírót (minden útvonalat és az
+identitás-ujjlenyomatot), egy frissen kiállított eszközazonosítót, egy 32 bájtos
+előre megosztott kulcsot és egy lejárati időbélyeget. A telefon dekódolja,
+helyben tárol egy párosítási rekordot, majd eltávolítja a töredéket, hogy a
+titok kikerüljön az URL-ből.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Két csomagforma létezik, és ezek **nem felcserélhetők**. Az alkalmazáson belüli
+párosítási panelen kiállított telefonos QR a fenti v2 `PairingPayload`, amely a
+Remote PWA gazdagépére mutat. A `cc_server pair --client-url` egy másik, régebbi
+v1 hivatkozást bocsát ki (`{s, i, k}` — szerver URL, eszközazonosító, kulcs),
+amelyet kizárólag a **webes** klienshez szántak.
 
-They also differ in lifetime, which is easy to get wrong:
+Az élettartamukban is különböznek, amit könnyű eltéveszteni:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Kiállítója | A hitelesítő adat lejárata |
+| --- | --- |
+| Alkalmazáson belüli párosítási panel (`pairing.mint`) | 30 nap, mindig |
+| `cc_server pair` a parancssorból | **Nincs** — a hitelesítő adat nem jár le |
 
-## The access model
+## A hozzáférési modell
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+A párosított eszköz **hitelesített, de nem megbízható**. Több egymástól
+független kapu gondoskodik róla, hogy egy jóváhagyott (vagy kiszivárgott)
+párosítás ne váljon a szerver teljes irányításává.
 
-### 1. Membership, not pairing, is the boundary
+### 1. A határvonal a tagság, nem a párosítás
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Egy érvényes párosítási kulcs azt bizonyítja, _melyik eszköz_ Ön. Azt, hogy mit
+olvashat vagy módosíthat, a **munkaterület-szerepköre** dönti el, amely minden
+egyes híváskor újra feloldódik, valamint a repó tartalmát felfedő dolgoknál a
+repónkénti jogosultságok. Egy eszközt, amely tökéletesen érvényes kulccsal
+rendelkezik, de olyan felhasználóhoz tartozik, aki nem tagja a megnevezett
+munkaterületnek, a rendszer „Not a member of this workspace” üzenettel utasítja
+el.
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+A szerepminimum a művelet fajtájából következik, hacsak a művelet nem deklarál
+sajátot: az olvasáshoz `guest`, a módosításokhoz `member`, a destruktív
+műveletekhez `admin` szükséges.
 
-### 2. A phone is a lower session tier
+### 2. A telefon alacsonyabb szintű munkamenet
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+A szerepkör-ellenőrzésen túl a telefonos munkamenet alacsonyabb képességekkel
+bír, mint egy asztali vagy webes munkamenet. A kizárólag teljes kliensen
+elérhetőnek deklarált műveleteket a telefon számára már a kezelő lefutása előtt
+elutasítja a rendszer, függetlenül attól, hogy a mögötte álló felhasználó milyen
+jogosultsággal rendelkezik: eszközpárosítások kiállítása, listázása, átnevezése
+és visszavonása; az alagútkapcsolat olvasása és beállítása; szervermentés,
+valamint munkaterület exportálása/importálása; folyamatok felderítése és
+leállítása; adapterpróbák; szerverbeállítások; SSO-adminisztráció;
+flottairányítás; továbbá egy futó ügynök átvétele vagy visszaadása.
 
-### 3. A default-deny tool allow-list
+### 3. Alapértelmezés szerint tiltó eszköz-engedélylista
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Kifejezetten az MCP eszközfelületre (`tools/call`) egy alapértelmezés szerint
+tiltó engedélylista szabályozza, mely eszközöket hívhatja meg a telefon. Minden,
+ami nem szerepel a listán, már a lefutása előtt elutasításra kerül. A lista
+túlnyomórészt olvasó és megfigyelő jellegű, plusz néhány **csak helyben**
+végrehajtható írás — üzenet, jegyfrissítés, cikk megjelölése —, amelyek nem
+költenek LLM-keretet, nem indítanak folyamatot és nem nyúlnak külső rendszerhez.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Tiltott például: ügynök megkérdezése, MI-átnézés indítása, ügynök leállítása,
+átnézés közzététele a GitHubon, ügynökök felvétele vagy elbocsátása,
+munkaterület létrehozása.
 
-### 4. Per-call workspace scoping
+### 4. Hívásonkénti munkaterület-hatókör
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/) invariant the rest of the
-product enforces.
+A szerver **nem** tart nyilván „aktuális munkaterületet”. Tervezéséből adódóan
+állapotmentes: minden munkaterület-hatókörű hívásnak meg kell neveznie a cél
+`workspace_id`-t az argumentumaiban, és a diszpécser azonnal elutasítja a
+hívást, ha az hiányzik, vagy ha olyan munkaterületet nevez meg, amelyet a
+szerver nem tart nyilván — mindezt még azelőtt, hogy bármi adatbázist nyitna. A
+telefon ezért soha nem örökölheti és nem is csúszhat át egy másik kliens
+hatókörébe, és egy idegen munkaterület megnevezése sem segít, mert az 1. kapuban
+lévő tagságellenőrzés továbbra is érvényes. Ez ugyanaz a
+[munkaterület-elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) invariáns, amelyet a termék
+többi része is érvényesít.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Az előre megosztott kulccsal lezárt, végpontok közötti keretek
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+A telefon és a szerver közötti minden keret a párosítási kulccsal van lezárva; a
+belépési token csak bejuttatja a klienst a szobába, semmit nem fejt vissza. A
+közvetítő titkosított szöveget továbbít, és soha nem látja a kulcsot. Egy
+visszavont eszköz azt tapasztalja, hogy a hitelesítő adata már eltűnt, így
+újracsatlakozáskor **zártan hibázik**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Az alkalmazás által kiállított hitelesítő adat 30 napra szól; ezen túl a
+csatlakozási kapu elutasítja, és a telefont újra kell párosítani. A visszavonás
+azonnali: a szerver figyeli az eszköztáblát, és egy visszavont eszköz nyitott
+munkameneteit másodperceken belül bontja, ahelyett hogy a következő
+csatlakozására várna.
 
-### 6. Rate limiting per principal
+### 6. Szereplőnkénti sebességkorlátozás
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Egy csúszóablakos korlátozó a távoli eszközforgalmat percenként 120 hívásra
+korlátozza, a módosító műveletekre pedig szigorúbb, percenként 30 hívásos
+alkorlát vonatkozik. A keret a **szereplőt illeti meg, nem a munkamenetet**: az
+Ön három eszköze egyetlen keretből gazdálkodik, így egy eltérített kliens nem
+tud több mozgásteret vásárolni magának további munkamenetek megnyitásával, és
+egy zajos tag sem tudja kizárni a többieket.
 
-### 7. A broker that learns nothing
+### 7. Egy közvetítő, amely semmit nem tud meg
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+A relé-közvetítő szándékosan buta: szobákat üzemeltet, lezárt kereteket
+továbbít, és nem tart nyilván fiókokat, alkalmazásadatokat vagy kulcsokat. A
+szobák meghívóval védettek és átmenetiek. Az alkalmazásadatok, a hanganyag, az
+átirat, a forráskód és a hitelesítő adatok mind a szerveren maradnak.
 
-## Live updates
+## Élő frissítések
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+A párosítás után a telefon **élő frissítéseket** kap értesítési keretek
+formájában — új ügynöküzenetek, önhöz rendelt jegyek, állapotváltozások —,
+tükrözve az asztali kliens saját értesítéseit. A szerver ezeket a kereteket
+minden csatlakozott munkamenetnek szétküldi, a munkaterület-szűrést pedig a
+kliens alkalmazza, így az, amit lát, arra a munkaterületre korlátozódik, amelyet
+éppen néz.
 
-## Where it lives
+## Hol található
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Felület | Mit mutat |
+| --- | --- |
+| **Beállítások → Ön → Az Ön eszközei** (`/workspaces/:workspaceId/settings/you/devices`) | Párosított kliensek élő állapottal, valamint **Új kliens párosítása** (webböngésző, asztali alkalmazás vagy telefon) és a visszavonás |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Ugyanez a panel párosításokat állít ki egy második böngésző vagy asztali
+alkalmazás számára is, nem csak telefonokhoz — a folyamat ugyanaz, csak a deep
+link tér el.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+A távoli vezérlés szerveroldali, és MCP-n **nem** érhető el. A telefon a relén
+keresztül a szerver saját diszpécserével beszél; nem egy külső szerver
+MCP-kliense.
 ::::
 
-## See also
+## Lásd még
 
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): roles, membership and repo grants
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/): where remote control sits among the client tiers
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/): where remote control sits in the stack
-- [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): a hívásonkénti hatókör, amelyre ez támaszkodik
+- [Többszereplős mód — identitás, tagság és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): szerepkörök, tagság és repónkénti jogosultságok
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/): hol helyezkedik el a távoli vezérlés a kliensszintek között
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/): hol helyezkedik el a távoli vezérlés a stackben
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)

@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Eine Unterhaltung verzweigen
+description: Probiere von einem früheren Punkt einen anderen Weg, ohne den bisherigen zu verlieren, und nimm per Fork oder Export mit, was du behalten willst.
 slug: de-DE/handbuch/anleitungen/unterhaltung-verzweigen
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Diese Anleitung zeigt, wie du zu einem früheren Punkt einer Unterhaltung zurückgehst und sie von dort woanders hinführst, den Pfad aber behältst, den du verlassen hast.
 
-## The one thing worth knowing
+## Das eine, das zählt
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Verzweigen schreibt nichts.** Eine Unterhaltung ist ein Baum aus Nachrichten mit einem Zeiger an der Spitze, und Zurückgehen verschiebt den Zeiger. Nichts wird gelöscht, nichts wird versteckt, und Zurückwechseln ist wieder nur eine Zeigerbewegung.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Genau deshalb ist es hier ungefährlich, einen Prompt zu bearbeiten und neu laufen zu lassen: Die Antwort, gegen die du verglichen hast, ist noch da.
 
-## See the branches
+## Die Zweige ansehen
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Der Navigator listet jede Nachricht, an jedem Fork eingerückt, und markiert den aktuellen Pfad mit **Auf diesem Zweig**. Eine Unterhaltung ohne Fork erscheint als die flache Liste, die sie immer war. Anzusehen kostet der Navigator nichts, bis es etwas zu navigieren gibt.
 
-Each row offers two actions.
+Jede Zeile bietet zwei Aktionen.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| Aktion                           | Wirkung                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| **Von hier fortsetzen**          | Verschiebt den Zeiger. Deine nächste Nachricht setzt an dieser Nachricht fort. |
+| **In neue Unterhaltung abzweigen** | Kopiert den Pfad bis zu dieser Nachricht in eine neue Unterhaltung.   |
 
-## Branch: try a different approach
+## Zweig: einen anderen Weg probieren
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Finde die Nachricht, ab der du neu starten willst, meist die letzte, mit der du zufrieden warst.
+3. **Von hier fortsetzen.**
+4. Tippe den neuen Prompt.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Die alte Fortsetzung bleibt im Baum. `/tree` zeigt von diesem Punkt jetzt zwei Pfade, und du wechselst frei zwischen ihnen.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Der Pfad, den du verlassen hast, ist noch da]
+Verzweigen versteckt nichts und löscht nichts. `/tree` listet jeden Pfad, markiert den aktuellen mit **Auf diesem Zweig**, und darüber wechselst du.
 :::
 
-## Fork: take it somewhere else
+## Fork: woanders hin mitnehmen
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Ein Fork kopiert den Pfad in eine **neue Unterhaltung** im selben Bereich. Nimm ihn, wenn die beiden Richtungen weiter auseinanderlaufen und du sie nebeneinander haben willst, statt zu wechseln.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Die Kopie hat **neue Nachrichten-IDs**. Zwei Unterhaltungen mit gemeinsamen Zeilen würden die späteren Nachrichten der anderen zeigen. Genau das darf ein Fork nicht.
 
-## Revert versus branch
+## Zurücksetzen gegen Zweig
 
-They are different tools and the difference matters.
+Das sind verschiedene Werkzeuge, und der Unterschied zählt.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                            | Zurücksetzen                                                    | Zweig                            |
+| -------------------------- | --------------------------------------------------------------- | -------------------------------- |
+| Die späteren Nachrichten   | Im Transkript ausgeblendet                                      | Weiter in `/tree` sichtbar       |
+| Der **Worktree**           | Auf den Snapshot dieses Zugs zurückgesetzt                      | Unberührt                        |
+| Rückgängig                 | **Zurücksetzen rückgängig machen** stellt den Stapel wieder her | Den Zeiger zurückschieben        |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Zurücksetzen nimmst du, wenn der Agent *Dateien* geändert hat, die du zurückhaben willst. Den Zweig nimmst du, wenn die Unterhaltung falsch gelaufen ist, die Dateien aber in Ordnung sind.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Zurücksetzen verschiebt auch die Zweigspitze, damit deine nächste Nachricht an der richtigen Stelle ansetzt und nicht an einem Ende, das niemand mehr sieht.
 
-## Take it out of the app
+## Aus der App holen
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Schreibt eine **eigenständige HTML-Datei**: die ganze Unterhaltung mit einklappbaren Tool-Karten, die zeigen, was jeder Aufruf bekommen hat und was er zurückgegeben hat. Kein Stylesheet, kein Skript, kein Bildhost. Sie funktioniert von einem USB-Stick, und sie funktioniert in fünf Jahren.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Desktop:** `Documents/ControlCenter/exports/`, mit Zeitstempel, damit ein zweiter Export den ersten nicht überschreibt.
+- **Web:** ein Download im Browser.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Kopiert das Transkript als Markdown in die Zwischenablage, mit Tool-Aufrufen in einklappbaren Blöcken. Das nimmst du zum Einfügen in ein Issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Das Denken bleibt absichtlich draußen: Es ist das Schmierpapier des Modells, und einen Fehlerbericht liest ein Mensch.
 
-## Related
+## Verwandt
 
-- [Conversation history](/de-DE/handbuch/konzepte/unterhaltungsverlauf/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/de-DE/handbuch/referenz/slash-befehle/) — `/tree`, `/export`, `/dump`
+- [Unterhaltungsverlauf](/de-DE/handbuch/konzepte/unterhaltungsverlauf/) – warum der Baum eine Zeigerbewegung ist und was „Fortsetzen“ wirklich wiederherstellt
+- [Slash-Befehle](/de-DE/handbuch/referenz/slash-befehle/) – `/tree`, `/export`, `/dump`

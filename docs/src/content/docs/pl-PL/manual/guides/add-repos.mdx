@@ -1,79 +1,130 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Dodaj repozytoria do obszaru roboczego
+description: Zarejestruj kopie robocze Git w obszarze roboczym, aby agenci mogli na nich pracować.
 slug: pl-PL/podrecznik/poradniki/dodawanie-repozytoriow
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Ten poradnik pokazuje, jak zarejestrować kopię roboczą Git w obszarze roboczym,
+zindeksować ją ponownie i usunąć.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repozytoria należą **do obszaru roboczego**. Nie ma globalnego rejestru ani
+osobnego kroku łączenia: dodanie repozytorium i umieszczenie go w obszarze
+roboczym to jedno i to samo działanie. Ta sama kopia robocza zarejestrowana
+w dwóch obszarach roboczych staje się dwoma niezależnymi wierszami o dwóch różnych
+identyfikatorach — między obszarami roboczymi tożsamością repozytorium jest jego
+ścieżka w systemie plików, nigdy jego identyfikator.
 
-## Before you start
+## Zanim zaczniesz
 
-A folder can only be registered if all three of these hold:
+Folder można zarejestrować tylko wtedy, gdy spełnione są wszystkie trzy warunki:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Znajduje się w **drzewie roboczym gita**.
+2. To drzewo robocze ma zdalne repozytorium **`origin`**.
+3. Zdalne repozytorium `origin` wskazuje na **obsługiwaną forge**: github.com,
+   gitlab.com lub bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Wszystko inne jest odrzucane już przy rejestracji, z jednoznacznym komunikatem:
+„Folder is not inside a git work tree.”, „No `origin` remote configured for this
+repository.” lub „The `origin` remote is not hosted on a supported forge
+(github.com, gitlab.com, bitbucket.org).”. Nie istnieje tryb wyłącznie lokalny.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forge jest odczytywana ze zdalnego repozytorium i zapisywana przy repozytorium —
+nigdy nie wybierasz jej samodzielnie. Obszar roboczy może jednocześnie zawierać
+repozytoria ze wszystkich trzech, a z każdą rozmawiamy przez jej własne API
+i własne poświadczenie. Zagnieżdżone przestrzenie nazw GitLaba są zachowywane,
+więc `gitlab.com/group/subgroup/project` rejestruje się jako właściciel
+`group/subgroup` i nazwa `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Folder musi też znajdować się na maszynie hostującej `cc_server`, w jednym
+z katalogów `--repo-roots` tego serwera. Ta lista dozwolonych domyślnie wskazuje
+katalog domowy użytkownika serwera, a nawigowanie powyżej korzenia jest odrzucane.
 
-## Register a checkout
+## Zarejestruj kopię roboczą
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Otwórz **Ustawienia → Obszar roboczy → Repozytoria**
+   (`/workspaces/<id>/settings/workspace/repositories`).
+2. Kliknij **Dodaj repozytorium**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Okno dialogowe to przeglądarka systemu plików **serwera**, po której można
+nawigować — nie Twojego. Ten sam przebieg obowiązuje na komputerze, w sieci
+i na telefonie, bo natywny wybór folderu wskazałby folder na niewłaściwej
+maszynie.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Nawiguj w obrębie skonfigurowanych korzeni serwera. Foldery będące kopiami
+   roboczymi gita są oznaczane.
+4. Zaznacz dowolną liczbę z nich. Wybór zachowuje się podczas nawigowania, więc
+   możesz zebrać kopie robocze z kilku folderów.
+5. Zarejestruj je w jednej partii.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Jedno nieudane wskazanie nigdy nie porzuca reszty partii — otrzymujesz utworzone
+identyfikatory oraz błąd dla każdej odrzuconej ścieżki. Ponowna rejestracja
+ścieżki, która już istnieje w tym obszarze roboczym, zwraca istniejące
+repozytorium, zamiast tworzyć duplikat.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Każde zarejestrowane repozytorium pojawia się na liście ze swoim `owner/name`,
+plakietką z nazwą forge oraz swoją ścieżką na serwerze. Repozytoria GitHub
+pokazują też awatar właściciela; pozostałe forge nie mają adresu URL awatara
+właściciela, którego można by się domyślić, więc wracają do inicjałów.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Plakietka forge ma znaczenie w mieszanym obszarze roboczym: dwa repozytoria mogą
+na różnych forge nazywać się `acme/web` i zachowują się inaczej — inaczej wygląda
+to, co może zrobić recenzja, i to, dokąd prowadzi link.
 
-## What happens next
+## Co dzieje się dalej
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Rejestracja wyzwala zdarzenie `RepoAdded` w zakresie tego obszaru roboczego,
+które uruchamia potok `index_code` dla tej kopii roboczej. To właśnie wypełnia
+graf kodu, dzięki czemu wyszukiwanie i analiza wpływu mają na co odpowiadać.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/).
+Indeksowane są tylko pliki, których język ma dostarczoną gramatykę (Dart,
+JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#,
+Swift, Kotlin, R, Assembly, MATLAB i Ada). Zobacz
+[Szukaj kodu w grafie kodu](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/).
 
-## Re-index a repo
+## Zindeksuj repozytorium ponownie
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Każdy wiersz ma przycisk **Indeksuj kod**. Kliknij go, aby ponownie uruchomić
+indekser dla tej kopii roboczej; podczas działania przycisk staje się wskaźnikiem
+postępu pokazującym liczbę przetworzonych plików względem wszystkich, ze
+sterowaniem anulowaniem. Po zakończeniu zmienia się w znacznik potwierdzenia
+z liczbą symboli albo w ostrzeżenie, jeśli uruchomienie się nie powiodło.
 
-## Reorder repos
+## Zmień kolejność repozytoriów
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Przeciągnij uchwyt w wierszu. Ustawiona kolejność to kolejność, w jakiej
+odczytywana jest każda lista repozytoriów w aplikacji.
 
-## Fix the GitHub link
+## Popraw link do GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Ikona linku w wierszu otwiera edytor właściciela i nazwy repozytorium na
+GitHubie — przydatne, gdy zdalne repozytorium zmieniło nazwę lub zostało
+przeniesione.
 
-## Remove a repo
+## Usuń repozytorium
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Otwórz **Ustawienia → Obszar roboczy → Repozytoria**.
+2. Kliknij ikonę kosza w wierszu.
+3. Potwierdź „Usunąć repozytorium z obszaru roboczego?”.
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Okno dialogowe mówi, co robi: „_name_ zostanie usunięty z tego obszaru
+roboczego. Lokalne pliki na dysku nie zostaną dotknięte.”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Usunięcie kasuje wiersz repozytorium z tego obszaru roboczego i kaskadowo usuwa
+jego wiersze w grafie kodu — symbole, krawędzie, pliki i punkty kontrolne indeksu
+— a także wszystkie uprawnienia do tego repozytorium dla poszczególnych członków,
+jego powiązania przestrzeni z repozytorium oraz zapisy jego izolowanych kopii
+roboczych. Ta sama kopia robocza zarejestrowana w innym obszarze roboczym to
+niezależny wiersz i pozostaje nienaruszona. Worktree na dysku, na które
+wskazywały te zapisy, nie są usuwane przez tę operację.
 
-## Related guides
+## Powiązane poradniki
 
-- [Search code with the code graph](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/)
-- [Run agents in parallel](/pl-PL/podrecznik/poradniki/agenci-rownolegle/)
-- [Set up GitHub integration](/pl-PL/podrecznik/poradniki/integracja-github/)
-- [Your first workspace](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/)
+- [Szukaj kodu w grafie kodu](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/)
+- [Uruchamiaj agentów równolegle](/pl-PL/podrecznik/poradniki/agenci-rownolegle/)
+- [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
+- [Twój pierwszy obszar roboczy](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/)
+- [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/)

@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: ریپو اسکرپٹس
+description: فی ریپو سیٹ اپ اور آرکائیو اسکرپٹس جو کسی اسپیس کے worktree پر چلتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپو-اسکرپٹس
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+ریپو اسکرپٹس وہ شیل اسکرپٹس ہیں جو آپ فی ریپو کنفیگر کرتے ہیں (**ترتیبات →
+ریپوزٹریز** → ریپو کی قطار پر ٹرمینل آئیکن) اور جنہیں Control Center کا سرور اُس
+ریپو کے **کسی اسپیس کے worktree** پر چلاتا ہے — یعنی
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` کے تحت الگ تھلگ چیک
+آؤٹ، جہاں ایجنٹ کام کرتے ہیں۔
 
-There are two kinds:
+یہ دو اقسام میں ہوتے ہیں:
 
-| Script | When it runs | Use it for |
+| اسکرپٹ | کب چلتا ہے | کس لیے استعمال کریں |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **سیٹ اپ** | کسی اسپیس کے لیے worktree کی پروویژننگ کے فوراً بعد | ڈیپینڈنسیز انسٹال کرنا، فائلیں جنریٹ کرنا، `.env` کاپی کرنا |
+| **آرکائیو** | worktree کے تباہ ہونے یا garbage-collect ہونے سے ٹھیک پہلے | worktree سے باہر کے وسائل صاف کرنا (docker نیٹ ورکس، ٹنلز، بیرونی حالت) |
 
-## Where scripts run
+## اسکرپٹس کہاں چلتے ہیں
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+دونوں اسکرپٹس `bash -lc` کے ذریعے چلتے ہیں (لاگ اِن شیل، چنانچہ Homebrew/nvm سے
+انسٹال شدہ ٹولز `PATH` پر ہوتے ہیں)، **worktree بطور ورکنگ ڈائریکٹری**، اور یہ
+ماحول متغیرات سیٹ ہوتے ہیں:
 
-| Variable | Value |
+| متغیر | قدر |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | worktree (اسکرپٹ کی cwd) |
+| `CC_ROOT_PATH` | رجسٹر شدہ سورس ریپو — آپ کا اپنا چیک آؤٹ |
+| `CC_SPACE_ID` | وہ اسپیس جس سے worktree تعلق رکھتا ہے |
+| `CC_SPACE_NAME` | اسپیس کا ڈسپلے نام |
+| `CC_REPO_NAME` | ریپو کا ڈسپلے نام |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+مثال کے طور پر، ایک سیٹ اپ اسکرپٹ جو ڈیپینڈنسیز انسٹال کرتا ہے اور ریپو کی
+gitignore شدہ `.env` لے آتا ہے:
 
 ```bash
 pnpm install
@@ -39,28 +41,31 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## ناکامی پر رویہ
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- کوئی **سیٹ اپ** اسکرپٹ جو غیر صفر کے ساتھ ختم ہو (یا اپنی 5 منٹ کی ٹائم آؤٹ حد
+  سے بڑھ جائے) اسپیس کی پروویژننگ ناکام کر دیتا ہے: اسپیس ناکام حالت میں دوبارہ
+  کوشش کے ساتھ دکھائی دیتی ہے، اور رن کے آؤٹ پٹ کا ٹیل درج کر لیا جاتا ہے۔ دوبارہ
+  کوشش صاف worktree سے پروویژن کرتی ہے اور اسکرپٹ پھر چلاتی ہے — سیٹ اپ اسکرپٹس
+  ایسے لکھیں کہ جزوی انسٹال کے بعد دوبارہ چلانا کام کرے (پیکیج مینیجرز پہلے ہی
+  ایسا برتاؤ کرتے ہیں)۔
+- **آرکائیو** اسکرپٹ بہترین کوشش کے اصول پر چلتا ہے: ناکامی (یا اس کی 2 منٹ کی
+  ٹائم آؤٹ) درج ہوتی ہے مگر **حذف کو کبھی نہیں روکتی**۔ آرکائیو اُن GC راستوں پر
+  چلتا ہے جہاں پرامپٹ کا جواب دینے والا کوئی نہیں ہوتا (اسپیس حذف، PR مرج،
+  طے شدہ صفائی)۔
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+سیٹ اپ صرف **نئے** worktree پر چلتا ہے: کسی گرم اسپیس میں ایجنٹس دوبارہ ڈسپیچ
+کرنے پر موجودہ چیک آؤٹ ہی دوبارہ استعمال ہوتا ہے اور انسٹال کا خرچ دوبارہ نہیں
+اٹھانا پڑتا۔
 
-## Run history
+## رن کی تاریخ
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+ہر عمل درآمد اپنی حالت، دورانیے، ایگزٹ کوڈ اور ایک محدود آؤٹ پٹ ٹیل کے ساتھ درج
+ہوتا ہے، جو اُسی ترتیبات ڈائیلاگ میں “حالیہ رنز” کے تحت نظر آتا ہے
+(`repos.watchScriptRuns` سبسکرپشن اسے براہِ راست اسٹریم کرتی ہے)۔
 
-## Permissions
+## اجازتیں
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+اسکرپٹس وہ شیل ہیں جو **سرور** چلاتا ہے، چنانچہ انہیں لکھنے کا اختیار صرف
+ورک اسپیس ایڈمنز تک محدود ہے اور یہ `processSpawn` ایکشن کلاس کی حفاظت میں ہیں —
+وہی گارڈریل جال جو ہر دوسرے پراسیس اسپان کرنے والے آپریشن کو گیٹ کرتا ہے۔

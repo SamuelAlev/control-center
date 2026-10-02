@@ -1,132 +1,150 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Calcul de révision (cohortes, axes et diffs déterministes)
+description: Ce que produit la passe de calcul de révision côté serveur — cohortes, diffs de contrat d’API et visuels, verrous par axe — et comment le tout se fond dans l’onglet Revue.
 slug: fr-CA/manuel/guides/calcul-de-revision
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+L’onglet **Revue** d’une PR, c’est la progression en direct du pipeline de
+révision pendant qu’il travaille, puis l’artéfact qu’il a publié, avec les
+actions qui s’y rattachent. Un seul onglet, deux états, parce qu’il s’agit de la
+même chose à deux moments. Ce n’est pas un onglet par défaut : une PR n’a pas de
+révision tant que personne n’en demande une, et c’est donc **Ask AI** qui
+l’ouvre.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+Derrière cet onglet, `cc_server` construit les cohortes de fichiers, exécute les
+axes déterministes et les expose par les opérations RPC `review_studio.*`
+(`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` et leurs jumelles `watch*`).
+Une disposition persistée qui nomme encore `pr.reviewStudio` ouvre ce même
+onglet Revue.
 
-On the Review tab:
+Dans l’onglet Revue :
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- L’agent de consolidation publie un artéfact de conversation ordinaire avec
+  `publish_artifact` ; l’onglet le rend donc dans le même visualiseur
+  d’artéfacts qu’ouvre une bulle de clavardage — il n’existe aucune copie du
+  système d’artéfacts propre à la révision.
+- Les constats figurent dans un rail à côté, et le verdict s’affiche dans une
+  mince barre au-dessus de l’artéfact plutôt que dans un en-tête de tableau de
+  bord.
+- Une bannière d’obsolescence apparaît lorsque la tête de la PR a avancé depuis
+  la révision.
 
-See [Use AI-powered review](/fr-CA/manuel/guides/revision-par-ia/) for the flow and
-[Review and merge a PR](/fr-CA/manuel/guides/examiner-et-fusionner-pr/) for acting on it.
+Voyez [Utiliser la révision assistée par IA](/fr-CA/manuel/guides/revision-par-ia/)
+pour le déroulement et [Examiner et fusionner une
+PR](/fr-CA/manuel/guides/examiner-et-fusionner-pr/) pour passer à l’action.
 
-## Cohorts
+## Cohortes
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Les cohortes regroupent les fichiers modifiés d’une PR en groupes dérivés du
+contenu, réunissant des fichiers qui vont ensemble par leur sens, et les
+classent par impact pour que le groupe le plus risqué se lise en premier. Elles
+sont recalculées à chaque changement de SHA de tête et remplacées en bloc ;
+chaque cohorte a une clé stable d’un push à l’autre, de sorte qu’un résumé et la
+progression d’une révision survivent à un rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Si le dépôt n’est pas indexé, les cohortes se rabattent sur un regroupement par
+chemin. Pour indexer un dépôt, utilisez **Paramètres → Espace de travail →
+Dépôts** — chaque ligne de dépôt porte une action **Indexer le code** qui exécute
+le pipeline `index_code` et signale sa progression sur place.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+Le graphe de code n’analyse que les langages pour lesquels une grammaire est
+livrée (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift,
+Kotlin, R, Assembly, MATLAB, Ada). Un dépôt dans tout autre langage ne pourra
+jamais produire de cohortes sémantiques, peu importe le nombre de fois où vous
+l’indexez.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Un agent peut consigner un résumé markdown pour une cohorte avec
+`set_cohort_summary` et y joindre un diagramme de parcours structuré avec
+`add_review_diagram` — un objet typé de séquence, de relation d’entités ou de
+machine à états, jamais du texte mermaid. Chaque arête est recoupée avec le
+graphe de code réel, et une arête que le graphe ne peut pas corroborer est
+marquée comme non vérifiée plutôt que tracée comme un fait.
 
-## The API-contract axis
+## L’axe du contrat d’API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+L’axe du contrat ne compare que les fichiers de spécification **explicites**. Il
+correspond aux six noms par défaut — `openapi.yaml`, `openapi.yml`,
+`openapi.json`, `swagger.yaml`, `swagger.yml`, `swagger.json` — ainsi qu’à tout
+fichier modifié dont le nom contient `openapi` ou `swagger` et se termine par
+`.yaml`, `.yml` ou `.json`. Un contrat déduit du code d’un gestionnaire est hors
+portée, et les schémas GraphQL ne sont pas comparés.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Chaque changement est classé — ajouts, suppressions et modifications de points
+de terminaison, de paramètres, de schémas et de réponses — et porte une gravité :
+**breaking** (point de terminaison ou paramètre supprimé, type resserré, nouveau
+paramètre obligatoire), non-breaking (additif) ou informational. Un changement
+rejeté fait échouer le verrou du contrat, tout comme un changement breaking
+laissé sans décision ; un changement breaking approuvé produit un avertissement ;
+l’absence de changement breaking passe. Un diff marqué **derived (advisory)** ne
+verrouille jamais.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Approuver ou rejeter un changement, c’est `review_studio.setContractDecision`.
 
-## The visual axis
+## L’axe visuel
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Si la PR modifie des composants d’interface dans un dépôt Flutter doté d’une
+appli Widgetbook, la passe de calcul rend les composants modifiés avant et après
+au moyen d’une passe golden `flutter test` sans interface, dans les arbres de
+travail de base et de tête de la PR, puis compare les pixels.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Un SDK Flutter est requis sur l’hôte du serveur]
+Le serveur en Dart pur ne peut pas rendre les widgets Flutter dans son propre
+processus ; il lance donc `flutter test` comme processus externe. Le SDK doit
+être installé sur la machine qui exécute `cc_server`, et non sur votre client.
+Sans lui, l’axe signale **unavailable** avec la raison « no Flutter SDK on
+host ». Il ne signale jamais une réussite qu’il n’a pas méritée.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Les instantanés marqués **changed** ou **removed** maintiennent le verrou visuel
+jusqu’à leur approbation ; les instantanés **unchanged**, **added** et
+**approved** le lèvent. L’indisponibilité a l’une de quatre causes : « no Flutter
+SDK on host », « no Widgetbook app in repo », « no golden-testable use-cases » ou
+« golden harness error ».
 
-Approving an intended change is `review_studio.approveVisual`.
+Approuver un changement souhaité, c’est `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Les axes et le verdict
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Axe            | Piloté par                      |
+| -------------- | ------------------------------- |
+| Exactitude     | Agents relecteurs (jetons)      |
+| Sécurité       | Agents relecteurs (jetons)      |
+| Lacune de tests | Agents relecteurs (jetons)     |
+| Visuel         | Déterministe (harnais golden)   |
+| Contrat d’API  | Déterministe (diff de spécification) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Les trois axes à jetons sont consignés quand un agent principal appelle
+`finalize_review` ; les deux axes déterministes sont consignés par la passe de
+calcul.
 
-Each axis reports one of:
+Chaque axe signale l’un des états suivants :
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| État            | Signification                                          |
+| --------------- | ------------------------------------------------------ |
+| **Pass**        | A été exécuté, rien de bloquant n’a été trouvé         |
+| **Warn**        | A été exécuté, des préoccupations non bloquantes       |
+| **Fail**        | A été exécuté, un problème bloquant a été trouvé       |
+| **Partial**     | A été exécuté, mais n’a pas pu se terminer ; les résultats sont incomplets |
+| **Unavailable** | N’a pas pu s’exécuter du tout                          |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Seuls **pass** et **warn** lèvent le verrou d’un axe. **Partial** et
+**unavailable** se distinguent délibérément de **fail**, et ni l’un ni l’autre ne
+lève un verrou.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Les axes se combinent en **Ship**, **Hold** ou **Block**, et ils ne peuvent que
+rendre le verdict _plus_ sévère — il n’est jamais revu à la baisse. Un axe
+verrouillé qui **échoue** force **Block** ; un axe **partial** ou **unavailable**
+force au moins **Hold**. Ainsi, un axe bloquant qui n’a pas pu s’exécuter
+_retient_ le verdict : l’absence de preuve ne fait jamais passer un verrou au
+vert.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Le verdict affiché dans l’onglet Revue est celui que `finalize_review` a publié.
 
-## Related guides
+## Guides connexes
 
-- [Use AI-powered review](/fr-CA/manuel/guides/revision-par-ia/)
-- [Dispatch reviewer agents](/fr-CA/manuel/guides/lancer-relecteurs/)
-- [Review and merge a PR](/fr-CA/manuel/guides/examiner-et-fusionner-pr/)
-- [Search code with the code graph](/fr-CA/manuel/guides/recherche-de-code/)
+- [Utiliser la révision assistée par IA](/fr-CA/manuel/guides/revision-par-ia/)
+- [Lancer des agents relecteurs](/fr-CA/manuel/guides/lancer-relecteurs/)
+- [Examiner et fusionner une PR](/fr-CA/manuel/guides/examiner-et-fusionner-pr/)
+- [Rechercher du code avec le graphe de code](/fr-CA/manuel/guides/recherche-de-code/)

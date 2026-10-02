@@ -1,138 +1,140 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Vytvořte GitHub App
+description: Zaregistruj pro svůj server GitHub App, aby se členové mohli přihlásit a aby práce na pozadí běžela jako aplikace, ne jako člověk.
 slug: cs-CZ/prirucka/navody/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Tenhle návod ukáže, jak serveru dát vlastní identitu na GitHubu. Zabere to
+asi dvě minuty, dělá to jen vlastník serveru a na každý server stačí jednou.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/cs-CZ/prirucka/navody/integrace-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Možná ji nepotřebuješ]
+Oficiální vydání už vozí GitHub **client id**, takže
+[Přihlásit se přes GitHub](/cs-CZ/prirucka/navody/integrace-github/) funguje hned
+a nic neregistruješ. Device flow se ověřuje jen tím client id, a proto ho lze
+bezpečně přibalit do sestavení. Vlastní aplikaci registruj, když chceš, aby
+**server** jednal sám za sebe (webhooky, dotazování na PR a synchronizace
+ticketů na instalaci aplikace, ne na přihlašovacím údaji člověka), nebo když
+stavíš ze zdrojového kódu.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/).
+Vlastní účet připojíš potom podle
+[Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/).
 
-## Why your server needs its own app
+## Proč server potřebuje vlastní aplikaci
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Z jedné registrace vycházejí dvě různé práce a aplikace je to, co obě drží
+poctivě:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Práce                  | Čím se plní                                    | Proč na tom záleží                                                                                            |
+| ---------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Přihlásí se člověk** | Client id aplikace, přes device flow           | Dostaneš přihlašovací údaj, který je tvůj, na serveru a na každém zařízení, bez tokenu k vložení nebo obměně |
+| **Jedná server**       | Id aplikace + soukromý klíč → instalační token | Webhooky, dotazování na PR a synchronizace ticketů přestanou viset na tom, jestli token jednoho člověka ještě platí |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+V tabulce **není** client secret. Device flow GitHubu se ověřuje jen client id,
+jak žádost o device code, tak poll tokenu, takže k přihlášení žádné tajemství
+nedržíš.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Bez vlastní aplikace ta první pořád funguje přes client id, které vozí
+sestavení. Ta druhá spadne na přihlašovací údaj vlastníka serveru, takže práce
+na pozadí visí na tom, kdo server nastavil jako první.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Tlačítko „nainstaluj GitHub App od Control Center“ neexistuje]
+Distribuovaná GitHub App by znamenala jeden sdílený client secret a jednu
+sdílenou instalaci na serverech všech, takže přístup k repozitářům každého
+pracovního prostoru by šel přes údaje, které v tom prostoru nikdo neřídí.
+Každý server proto vlastní svou aplikaci. Tenhle návod je o tom, jak málo to
+stojí.
 :::
 
-## Prerequisites
+## Než začneš
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Jsi **vlastník serveru**. Operace `providerApps.*` jsou vázané na něj
+  a kartu nikdo jiný nevidí
+- Účet na GitHubu, nebo organizace, ve které umíš zakládat aplikace
+- Nic veřejně dosažitelného: přihlášení je **device flow**, takže server
+  nepotřebuje příchozí port, tunel, callback URL ani doménu
 
-## Register the app
+## Zaregistruj aplikaci
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Otevři [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (u organizace: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — cokoli; `Control Center (yourname)` stačí. Jméno
+   se ukáže u commitů a komentářů, které dělá server
+3. **Homepage URL** — cokoli, třeba `https://github.com/your-name`
+4. **Callback URL** — nech prázdné. Device flow žádné nemá
+5. Zaškrtni **Enable Device Flow**. Bez tohohle nastavení přihlášení nefunguje
+6. Odškrtni **Webhook → Active**, pokud webhooky nezapojíš zvlášť
+7. Pod **Repository permissions** dej aspoň:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (povinné)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, pokud tickety vedeš v GitHub Issues a
+     kvůli hledání komentářů bota v konverzaci PR
+     (viz [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/))
+   - **Checks**: Read-only, kvůli stavu CI na stránce PR
+8. Pod **Where can this GitHub App be installed?** vyber, co sedí.
+   „Only on this account“ je správně pro osobní server
+9. Klikni na **Create GitHub App**
 
-## Collect the three values
+## Získej tři hodnoty
 
-On the app's page, immediately after creation:
+Na stránce aplikace, hned po vytvoření:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Hodnota         | Kde                                             |
+| --------------- | ----------------------------------------------- |
+| **App ID**      | Záložka **General**, nahoře                     |
+| **Client ID**   | Záložka **General**, pod „Client secrets“       |
+| **Private key** | **Generate a private key** — stáhne se `.pem`   |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Soubor se soukromým klíčem se stáhne jednou a GitHub ho už neukáže. Nech si ho,
+dokud ho nevložíš. Další můžeš vygenerovat kdykoli.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**Client secret** je volitelný a koupí přesně jednu věc: když necháš
+„Expire user authorization tokens“ zapnuté, právě on potichu obnoví něčí token,
+místo aby se člověk musel každých osm hodin přihlásit znovu. Samotné přihlášení
+ho nepoužívá.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Jednodušší je to vypršení vypnout. Pak tajemství nikde nepotřebuješ. Když ho
+necháš zapnuté, vygeneruj secret a vlož ho v
+**Nastavení → Server → Jednotné přihlášení** (karta **Aplikace poskytovatelů**).
+Proměnná prostředí pro něj není a do sestavení se žádná nezapeče, takže zůstane
+na tvém serveru.
 
-## Install it on your account
+## Nainstaluj ji na svůj účet
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Aplikace, která je zaregistrovaná a nenainstalovaná, umí lidi ověřit a
+nepřečte nic.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Na stránce aplikace otevři **Install App**
+2. Nainstaluj ji na svůj účet nebo organizaci
+3. Zvol **All repositories**, nebo vyber ty, které má tenhle server vidět
 
-## Paste it into Control Center
+## Vlož ji do Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď ke kartě
+   **Aplikace poskytovatelů**
+2. V bloku **GitHub** vyplň pole:
+   - **ID aplikace** — číselné App ID
+   - **Soukromý klíč** — vlož celé `.pem`, včetně řádků `BEGIN` a `END`
+   - **Client id** — z téže stránky
+   - **Client secret** — jen když jsi nějaké vygeneroval (kvůli obnově tokenu)
+3. Klikni na **Test**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Klíč se při uložení parsuje, takže oříznuté vložení nebo špatný formát se
+odmítne hned, a ne až na požadavku na pozadí o několik hodin později.
+**Test** jde dál a zeptá se GitHubu, na kterých účtech je aplikace
+nainstalovaná. „Uložené“ a „funguje“ jsou dvě různá tvrzení a jen to druhé
+znamená, že něco poběží.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Kontrola: blok GitHub hlásí „Server může jednat jako on sám a lidé se můžou přihlásit.“
+a řádek **GitHub** v **Nastavení → Pracovní prostor → Profil a identita →
+Hostování kódu** teď nabízí **Přihlásit se přes GitHub**.
 
-## Configure it with environment variables instead
+## Nastav to radši proměnnými prostředí
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+U instalace bez rozhraní nebo ze skriptu server každé pole naplní z prostředí
+poprvé, kdy pro něj nemá uloženou hodnotu:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +142,63 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Příznaky příkazové řádky pro ně nejsou. Tajemství na příkazové řádce přečte
+každý proces na hostiteli přes `ps`. Prostředí je jediné místo, kam je dáš,
+a přebije to, co vozí sestavení. Úplný seznam je `.env.template`.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Při místním vývoji nese tytéž hodnoty `.env` v kořeni repozitáře a desktop je
+předá serveru, který spustí. Klíč tam dej na **jeden řádek**: hodnota v `.env`
+je jeden řádek a `\n` ve dvojitých uvozovkách se dekóduje jako nový řádek.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` a `GITHUB_APP_PRIVATE_KEY` jsou tatáž jména, která už čte
+broker tokenů sandboxu. Hostitel nastavený na tokeny agentů s úzkým rozsahem
+tak dostane přihlášení navíc. Naplnění proběhne **u každého pole jen jednou**.
+Potom vyhraje uložená hodnota, takže úprava v Nastavení se dalším restartem
+nezruší.
 
-## Do the same for Linear
+## Totéž pro Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear device flow nemá, takže jeho přihlášení je cesta přes prohlížeč a
+callback URL potřebuje. Karta **Aplikace poskytovatelů** ukáže přesně tu,
+kterou zaregistruješ.
 
-1. Create an OAuth application at
+1. Vytvoř OAuth aplikaci na
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. **Callback URL** nastav na URL, které karta ukazuje, doslova
+3. Do bloku Linear vlož **Client ID** a **Client secret**
+4. Volitelně přidej **API klíč** pracovního prostoru. Tím údajem server
+   synchronizuje tickety, když o to nikdo nepožádal
 
-## Troubleshooting
+## Řešení problémů
 
-### The sign-in dialog says the provider returned no device code
+### Dialog přihlášení hlásí, že poskytovatel nevrátil žádný device code
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** je na aplikaci vypnuté. Zapni ho pod **General** a zkus to znovu.
 
-### Test says the credentials work but the app is not installed anywhere
+### Test hlásí, že údaje fungují, ale aplikace není nikde nainstalovaná
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Registrace a instalace jsou dva kroky. Na stránce aplikace otevři **Install App**
+a nainstaluj ji.
 
-### Test says the private key could not be read
+### Test hlásí, že soukromý klíč nešel přečíst
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Vlož celý soubor `.pem`, včetně řádků `-----BEGIN` a `-----END`. Klíč `ed25519`
+ani EC použít nejde. GitHub Apps se podepisují RSA.
 
-### A member signed in but sees no repositories
+### Člen se přihlásil, ale nevidí žádné repozitáře
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Aplikace není nainstalovaná na účtu, který je vlastní, nebo její instalace
+vybírá jiné repozitáře. Jeho vlastní přihlášení pustí jen to, co aplikace
+smí vidět.
 
-## Related guides
+## Související návody
 
-- [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/)
-- [Talk to Control Center from a GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/)
-- [Connect a code host](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
-- [Manage API keys](/cs-CZ/prirucka/navody/api-klice/)
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
+- [Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/)
+- [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
+- [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)

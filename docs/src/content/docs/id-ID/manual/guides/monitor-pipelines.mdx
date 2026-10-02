@@ -1,150 +1,162 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Pantau eksekusi pipeline
+description: Tangani antrean eksekusi, baca waterfall waktu dan panel langkah sebuah eksekusi, serta pulihkan dari langkah yang gagal atau macet.
 slug: id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pipeline/).
+Halaman ini membahas semua hal setelah sebuah eksekusi dimulai: menemukannya,
+membaca apa yang dilakukan setiap langkah, dan membuat eksekusi yang gagal
+berjalan lagi. Untuk memulainya, lihat
+[Jalankan pipeline secara manual](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pipeline/).
 
-## Find a run
+## Menemukan eksekusi
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Klik **Pipeline** di bilah sisi ruang kerja. Layar ini adalah antrean
+   eksekusi ruang kerja — semua eksekusi, terbaru lebih dulu.
+2. Gunakan rel kiri untuk memfilter. Ada tepat tiga filter, masing-masing dengan
+   jumlah langsung: **Semua**, **Berjalan**, **Gagal**.
+3. Telusuri tabel dengan <kbd>↑</kbd>/<kbd>↓</kbd> (atau <kbd>j</kbd>/<kbd>k</kbd>)
+   dan tekan <kbd>Enter</kbd> untuk membuka eksekusi yang sedang difokuskan.
+   Mengklik baris melakukan hal yang sama.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Setiap baris menampilkan glif tentang bagaimana eksekusi dimulai (ikon putar untuk
+manual; glif berkas untuk pemantauan graf kode; selain itu pemicu otomatis).
+Keterangan yang muncul saat kursor diarahkan menyebutkan pemicunya — **Manual**,
+**PR dipublikasikan**, **Perubahan file**, dan seterusnya — dan, untuk eksekusi
+pemantauan, berkas mana yang berubah. Lalu nama pipeline, lencana status, durasi
+aktif (atau posisi antrean untuk eksekusi `queued`) dan berapa lama sejak
+percobaan ini dimulai. Durasi aktif tidak menghitung jeda menganggur saat berhenti
+lalu mulai ulang, jadi bukan rentang waktu sebenarnya.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Tidak ada filter untuk eksekusi yang selesai, ditangguhkan, atau dibatalkan,
+tidak ada filter per templat, tidak ada jendela waktu, dan tidak ada tampilan
+riwayat eksekusi per templat. Membandingkan eksekusi dari satu templat berarti
+menelusuri antrean untuk mencari namanya.
 
-## Read the run detail
+## Membaca detail eksekusi
 
-A run's page has three stacked parts.
+Halaman sebuah eksekusi terdiri atas tiga bagian bertumpuk.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Strip meta** memuat waktu mulai, durasi aktif, kemajuan langkah
+("3 dari 7 langkah"), ringkasan kegagalan yang menyebutkan langkah yang gagal
+beserta alasannya, dan tindakan **Coba lagi** serta **Hapus**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Waterfall waktu** memberi satu batang per langkah, lengkap dengan durasinya dan
+— untuk langkah agen — biayanya dalam sen. Langkah yang dicoba ulang menampilkan
+akhiran `×N` setelah durasinya; akhiran itu satu-satunya tempat jumlah percobaan
+muncul.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Kanvas graf** menggambar templat dengan status langsung setiap node. Memilih
+sebuah node akan membuka panel langkahnya.
 
-### Run and step statuses
+### Status eksekusi dan langkah
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Status            | Arti                                              |
+| ----------------- | ------------------------------------------------- |
+| **Menunggu**      | Dibuat, belum dimulai                             |
+| **Dalam antrean** | Diterima tetapi ditahan: batas paralel maksimum templat ini penuh; belum ada baris langkah |
+| **Berjalan**      | Sedang dieksekusi                                 |
+| **Ditangguhkan**  | Menunggu sesuatu dari luar — normal, bukan macet  |
+| **Selesai**       | Selesai dengan sukses                             |
+| **Gagal**         | Berakhir dengan galat                             |
+| **Dibatalkan**    | Dihentikan oleh pengguna atau oleh sistem         |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Langkah memiliki status-status itu tanpa **Dalam antrean**, ditambah
+**Dilewati**, untuk cabang yang tidak diambil router (beserta keturunan yang
+karenanya tidak lagi terjangkau).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Ditangguhkan** adalah tempat sebagian besar umur sebuah langkah agen
+dihabiskan: agen yang dikirim atau gerbang persetujuan menahan langkah itu
+sampai pekerjaannya selesai. Dua jaring pengaman mesin menggagalkan seluruh
+eksekusi alih-alih melanjutkannya: langkah yang ditangguhkan lebih lama daripada
+24 jam (`extras.awaitApproval` — badan `orchestration.awaitApproval` —
+dikecualikan; `human.gate` tidak) dan langkah non-idempoten yang sedang
+berjalan ketika server berhenti.
 
-## Inspect a step
+## Memeriksa sebuah langkah
 
-Select a node on the canvas. The step panel shows, in order:
+Pilih node di kanvas. Panel langkah menampilkan, secara berurutan:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Kotak **Error** saat langkah gagal, atau kotak **Dilewati** beserta alasannya
+  saat langkah dilewati.
+- **Dimulai**, **Selesai**, dan durasi.
+- **Branch** — indeks cabang, untuk cabang paralel.
+- **Lihat percakapan** — melompat ke percakapan tempat langkah dijalankan.
+  Percakapan pipeline disembunyikan dari bilah sisi, jadi ini satu-satunya cara
+  masuk.
+- **Input** dan **Output**, sebagai JSON yang dapat dilipat.
+- **Aktivitas agen** — satu ubin per eksekusi agen yang dikirim langkah
+  tersebut, dengan status, ringkasan, durasi, dan biayanya.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Untuk langkah agen, **Output** adalah payload terstruktur yang dikirim agen
+melalui `submit_output`, bukan prosanya. Jejak penalaran berada di **Aktivitas
+agen** dan di percakapan yang ada di balik **Lihat percakapan**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Untuk langkah bash, **Output** adalah stdout yang telah dipangkas dan ditulis
+skrip saat keluar dengan kode 0. Keluar dengan kode bukan nol menggagalkan
+langkah dengan ekor stderr sebagai pesan galatnya.
 
-## Recover a failed run
+## Memulihkan eksekusi yang gagal
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Baca ringkasan kegagalan di strip meta; ringkasan itu menyebutkan langkah
+   yang gagal. Kotak **Error** di panel langkah memuat pesannya.
+2. Periksa **Input** langkah — kunci state yang hilang atau salah ejaan adalah
+   penyebab paling umum. Langkah prompt-agent langsung gagal dan menyebutkan
+   placeholder yang belum terselesaikan; langkah bash merendernya sebagai string
+   kosong dan tetap berjalan, yang biasanya baru muncul satu langkah kemudian.
+3. Untuk langkah agen, buka **Lihat percakapan** dan baca apa yang sebenarnya
+   dilakukan agen.
+4. Tekan **Coba lagi** di strip meta. Langkah yang selesai dan dilewati
+   mempertahankan outputnya; semua yang lain dihapus lalu dieksekusi ulang, dan
+   eksekusi kembali berjalan. Penghitung durasi dimulai ulang untuk percobaan
+   ini.
 
-Common causes worth checking first:
+Penyebab umum yang layak diperiksa lebih dahulu:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Batas waktu** — langkah melewati **Batas waktu (ms)**-nya. Ingat, kolom itu
+  dalam milidetik.
+- **Kesalahan skrip** — perintah bash keluar dengan kode bukan nol, atau `bash`
+  tidak ada di `PATH` host server.
+- **Validasi skema** — payload `submit_output` milik agen tidak memenuhi skema
+  output langkah.
+- **Placeholder yang belum terselesaikan** — `{{key}}` yang dirujuk langkah
+  prompt-agent tidak pernah ditulis di hulu. Pesan galatnya menyebutkan setiap
+  kunci yang belum terselesaikan.
+- **Badan yang tidak terdaftar** — langkah yang kunci badannya tidak terdaftar
+  memberi peringatan saat templat dimuat lalu tidak pernah dieksekusi.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Coba lagi hanya berfungsi pada eksekusi yang gagal atau dibatalkan]
+Tombol **Coba lagi** hanya ditampilkan ketika eksekusi berstatus `failed` atau
+`cancelled`. Untuk status lainnya, mesin langsung berhenti.
 :::
 
-## Stop a step that is stuck
+## Menghentikan langkah yang macet
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Pilih langkah yang sedang berjalan dan tekan tombol **Hentikan yang berjalan**
+di header panel langkah. Ini mematikan proses langkah tersebut, menandai langkah
+gagal sehingga menggagalkan seluruh eksekusi — setiap cabang saudara yang masih
+terbuka ditutup bersamanya.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Tidak ada kontrol pembatalan eksekusi di layar ini. `pipeline.cancel` ada sebagai
+operasi RPC dan mesin mengimplementasikannya, tetapi tidak ada apa pun di UI
+pipeline yang memanggilnya; **Hentikan yang berjalan** pada sebuah langkah, atau
+**Hapus** pada eksekusinya, adalah satu-satunya cara menghentikan yang tersedia.
 
-## Track cost
+## Melacak biaya
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Biaya dilaporkan per langkah, di kolom kanan waterfall dan pada setiap ubin di
+bawah **Aktivitas agen**. Tidak ada total eksekusi di halaman detail dan tidak
+ada kolom biaya di antrean eksekusi, jadi membandingkan biaya dua eksekusi
+berarti menjumlahkan langkah-langkahnya.
 
-## Related guides
+## Panduan terkait
 
-- [Run a pipeline manually](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pipeline/)
-- [Create a pipeline template](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/)
-- [Manage costs](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/)
-- [Pipeline steps reference](/id-ID/panduan-pengguna/referensi/langkah-pipeline/)
+- [Jalankan pipeline secara manual](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pipeline/)
+- [Buat templat pipeline](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/)
+- [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/)
+- [Referensi jenis langkah pipeline](/id-ID/panduan-pengguna/referensi/langkah-pipeline/)
 
-## Related concepts
+## Konsep terkait
 
-- [Pipelines](/id-ID/panduan-pengguna/konsep/pipeline/)
+- [Pipeline](/id-ID/panduan-pengguna/konsep/pipeline/)

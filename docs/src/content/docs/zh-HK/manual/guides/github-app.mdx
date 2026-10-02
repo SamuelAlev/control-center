@@ -1,138 +1,131 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: 建立 GitHub App
+description: 為你的伺服器註冊 GitHub App，讓成員可以登入，並讓背景工作以應用程式的身分執行，而不是以某個人的身分執行。
 slug: zh-HK/手冊/操作指南/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+本指南說明如何為你的伺服器賦予專屬的 GitHub 身分。整個過程約需兩分鐘，
+只有伺服器擁有者需要動手，而且每部伺服器只需做一次。
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/zh-HK/手冊/操作指南/github-整合/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[你可能不需要這樣做]
+官方組建已隨附一個 GitHub **用戶端 ID**，因此
+[使用 GitHub 登入](/zh-HK/手冊/操作指南/github-整合/)毋須註冊任何東西即可直接運作
+——裝置流程僅憑用戶端 ID 就能完成認證，所以隨附它是安全的。當你希望**伺服器**
+以自身身分行事（webhook、PR 輪詢與工單同步改為在應用程式的安裝上執行，
+而不是靠某個人的憑證），或你正在從原始碼自行建置時，才需要註冊自己的應用程式。
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/).
+之後要連接你自己的帳戶，請參見
+[設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)。
 
-## Why your server needs its own app
+## 為何你的伺服器需要自己的應用程式
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+一次註冊會產生兩項不同的工作，而應用程式正是令兩者都名副其實的關鍵：
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| 工作               | 由誰應答                                     | 為何重要                                                                                             |
+| ------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **有人登入**       | 應用程式的用戶端 ID，經裝置流程               | 你得到一份屬於你自己的憑證，放在伺服器上、每部裝置都可用——無須貼上或輪替任何權杖                     |
+| **伺服器自行行事** | 應用程式的 ID 加私密金鑰 → 安裝權杖            | webhook、PR 輪詢與工單同步，不再取決於某個人的權杖是否仍然有效                                        |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+請留意表中**沒有**的東西：用戶端密鑰。GitHub 的裝置流程僅憑用戶端 ID
+完成認證——無論是裝置碼請求，還是權杖輪詢皆然——因此登入並不需要保留
+任何密鑰。
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+沒有自己的應用程式時，第一項仍可透過組建隨附的用戶端 ID 運作；第二項
+則會退回使用伺服器擁有者的憑證，於是背景工作便搭在某位最先完成新手導引的
+人身上。
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[沒有「安裝 Control Center 的 GitHub App」按鈕]
+一個由所有人共用的 GitHub App，意味着大家的伺服器共用同一個用戶端密鑰與
+同一個安裝，於是每個工作區的程式庫存取，都會流經該工作區內沒有人控制得了的
+憑證。因此每部伺服器各自擁有自己的應用程式——本指南要說明的，正是這麼做的
+代價有多小。
 :::
 
-## Prerequisites
+## 先決條件
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- 你是**伺服器擁有者**——`providerApps.*` 操作只限擁有者使用，其他人根本
+  看不到這張卡片
+- 一個 GitHub 帳戶，或一個你可以在其中建立應用程式的組織
+- 不需要任何對外開放的東西：登入採用**裝置流程**，因此伺服器不需要入站
+  連接埠、通道、回呼 URL 或網域
 
-## Register the app
+## 註冊應用程式
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/zh-HK/手冊/操作指南/github-pr-對話/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+1. 前往 [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   （如為組織：**Settings → Developer settings → GitHub Apps → New GitHub App**）
+2. **GitHub App name**——任何名稱皆可；`Control Center (yourname)` 就可以。
+   它會顯示在伺服器所作的提交和評論上
+3. **Homepage URL**——任何網址皆可，例如 `https://github.com/your-name`
+4. **Callback URL**——留空。裝置流程沒有回呼 URL
+5. 勾選 **Enable Device Flow**。這是登入運作不可或缺的唯一一項設定
+6. 取消勾選 **Webhook → Active**，除非你另外接好了 webhook
+7. 在 **Repository permissions** 下，至少授予：
+   - **Contents**：Read and write
+   - **Metadata**：Read-only（必要）
+   - **Pull requests**：Read and write
+   - **Issues**：Read and write，適用於你以 GitHub Issues 作為工單，以及
+     供機械人搜尋 PR 對話中的評論
+     （參見[從 GitHub PR 與 Control Center 對話](/zh-HK/手冊/操作指南/github-pr-對話/)）
+   - **Checks**：Read-only，用於 PR 頁面上的 CI 狀態
+8. 在 **Where can this GitHub App be installed?** 下，選擇適合你的選項——
+   「Only on this account」適合個人伺服器
+9. 按一下 **Create GitHub App**
 
-## Collect the three values
+## 收集三項數值
 
-On the app's page, immediately after creation:
+建立之後，立即在應用程式的頁面上：
 
-| Value           | Where                                             |
+| 數值            | 位置                                              |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | **General** 分頁，靠近頂部                        |
+| **Client ID**   | **General** 分頁，「Client secrets」之下          |
+| **Private key** | **Generate a private key**——會下載一個 `.pem`     |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+私密金鑰檔案只會下載一次，GitHub 之後不會再顯示。請保留它，直到你已貼上
+為止；你隨時可以再產生一個。
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**用戶端密鑰**是可選的，而且只換來一樣東西：若你把「Expire user
+authorization tokens」保持開啟，它就是那個在背後為對方更新權杖、而不必每
+八小時請對方重新登入一次的東西。登入本身從不使用它。
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+較簡單的做法是把該到期設定關掉，這樣就完全不需要任何密鑰。若你保持開啟，
+請產生一個密鑰並貼到 **設定 → 伺服器 → 單一登入**（**供應商應用**卡片）
+——它沒有對應的環境變數，也沒有任何組建把它內建進去，因此它只會留在你的
+伺服器上。
 
-## Install it on your account
+## 在你的帳戶上安裝
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+一個已註冊但尚未安裝的應用程式，可以為人完成認證，但讀不到任何東西。
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. 在應用程式的頁面上開啟 **Install App**
+2. 把它安裝在你的帳戶或組織上
+3. 選擇 **All repositories**，或挑選這部伺服器應該看到的程式庫
 
-## Paste it into Control Center
+## 貼到 Control Center 中
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. 前往 **設定 → 伺服器 → 單一登入**，並捲動到 **供應商應用**卡片
+2. 在 **GitHub** 區塊上設定各個欄位：
+   - **應用 ID**——數字形式的 App ID
+   - **私密金鑰**——貼上整個 `.pem`，包括 `BEGIN` 與 `END` 兩行
+   - **用戶端 ID**——取自同一頁
+   - **用戶端密鑰**——僅在你已產生一個時才填（用於權杖更新）
+3. 按一下 **測試**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+金鑰會在儲存時即時解析，因此被截斷或格式錯誤的貼上內容，會當場被拒絕，
+而不是數小時後才在背景請求中失敗。**測試**會更進一步，向 GitHub 查詢這個
+應用程式安裝在哪些帳戶上——「已儲存」與「可運作」是兩回事，只有後者才
+意味着真的會有東西跑起來。
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+檢查點：GitHub 區塊顯示「伺服器能夠以自身身分行事，人們亦可登入」，而
+**設定 → 工作區 → 個人資料與身分 → 程式碼託管** 下的 **GitHub** 列，現在會
+提供**使用 GitHub 登入**。
 
-## Configure it with environment variables instead
+## 改用環境變數設定
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+對於無介面或腳本化的安裝，伺服器在每個欄位還沒有儲存值時，會首次從環境中
+為它填入初值：
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +133,62 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+這些項目沒有對應的命令列旗標——命令列上的機密，可被主機上任何行程透過
+`ps` 讀取。環境是設定它們的唯一地方，而且它的優先次序高於組建隨附的任何
+值。`.env.template` 是完整清單。
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+在本機開發時，程式庫根目錄的 `.env` 帶有同樣的值，桌面應用程式會把它們
+傳給自己衍生的伺服器。請把金鑰放在那裏的**同一行**：`.env` 的值只佔一行，
+而雙引號內的 `\n` 會解碼成換行。
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` 與 `GITHUB_APP_PRIVATE_KEY` 正是沙箱權杖仲介已在讀取的
+同一組名稱，因此已設定精細權限代理權杖的主機，可免費獲得這條登入通道。
+填入初值只會在**每個欄位發生一次**——之後以儲存的值為準，所以在設定中
+所作的編輯，不會被下次重新啟動還原。
 
-## Do the same for Linear
+## Linear 也照樣設定
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear 沒有裝置流程，因此它的登入需要瀏覽器往返，也就確實需要一個回呼
+URL——**供應商應用**卡片會顯示你應該註冊的確切那一個。
 
-1. Create an OAuth application at
+1. 在
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+   建立一個 OAuth 應用程式
+2. 把 **Callback URL** 設為卡片所示的那個 URL，一字不改
+3. 把 **Client ID** 與 **Client secret** 貼到 Linear 區塊
+4. 可選：加入工作區的 **API 金鑰**——那就是沒有真人要求時，伺服器用來同步
+   工單的憑證
 
-## Troubleshooting
+## 疑難排解
 
-### The sign-in dialog says the provider returned no device code
+### 登入對話框顯示供應商沒有回傳裝置碼
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+應用程式上的 **Enable Device Flow** 處於關閉狀態。請在 **General** 下開啟它，
+然後重試。
 
-### Test says the credentials work but the app is not installed anywhere
+### 測試顯示憑證有效，但應用程式沒有安裝在任何地方
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+註冊與安裝是兩個獨立的步驟。請在應用程式的頁面上開啟 **Install App** 並
+安裝它。
 
-### Test says the private key could not be read
+### 測試顯示無法讀取私密金鑰
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+請貼上整個 `.pem` 檔案，包括 `-----BEGIN` 與 `-----END` 兩行。`ed25519` 或
+EC 金鑰無法使用——GitHub App 是以 RSA 簽署的。
 
-### A member signed in but sees no repositories
+### 成員已登入但看不到任何程式庫
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+應用程式並未安裝在擁有這些程式庫的帳戶上，或者它的安裝只選取了其他
+程式庫。對方自己的登入只會授予應用程式被允許看到的範圍。
 
-## Related guides
+## 相關指南
 
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-- [Talk to Control Center from a GitHub PR](/zh-HK/手冊/操作指南/github-pr-對話/)
-- [Connect a code host](/zh-HK/手冊/操作指南/連接程式碼託管/)
-- [Manage API keys](/zh-HK/手冊/操作指南/api-金鑰/)
-- [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/)
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
+- [從 GitHub PR 與 Control Center 對話](/zh-HK/手冊/操作指南/github-pr-對話/)
+- [連接程式碼託管](/zh-HK/手冊/操作指南/連接程式碼託管/)
+- [管理 API 金鑰](/zh-HK/手冊/操作指南/api-金鑰/)
+- [設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)

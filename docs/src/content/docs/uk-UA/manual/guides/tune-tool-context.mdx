@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Налаштувати контекст інструментів агента
+description: Подивіться, що насправді надсилає запуск, змініть, які інструменти завантажуються наперед, і з’ясуйте, чи невдалий вибір інструмента був промахом пошуку, чи проблемою промпту.
 slug: uk-UA/керівництво/практичні-посібники/налаштувати-контекст-інструментів
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/uk-UA/керівництво/поняття/контекст-інструментів).
+Цей посібник охоплює практичну роботу з дворівневою поверхнею інструментів: побачити, що надсилає запуск, змінити це й діагностувати агента, який узявся не за той інструмент. Про те, чому це працює саме так, читайте в [Контекст інструментів і кеш промптів](/uk-UA/керівництво/поняття/контекст-інструментів).
 
-## Look at what a run actually sends
+## Подивіться, що насправді надсилає запуск
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Відкрийте розмову й торкніться індикатора використання контексту в заголовку розмови. Він перебудовує ту саму поверхню, яку надіслав би наступний запуск, нічого не виконуючи. **Показати більше** (або команда `/context`) відкриває повний оглядач контексту, де можна переглянути кожен інструмент.
 
-Two segments matter here:
+Тут важливі два сегменти:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Визначення інструментів** і **MCP і динамічні інструменти** — резидентний набір, із реальною вартістю в токенах для кожного інструмента.
+- **Інструменти, що завантажуються за потреби** — відкладений індекс. Кожен запис оплачується лише своєю назвою, бо назва — це все, що несе запит; відкриття запису все одно показує повний опис і схему, тож видно, скільки він *коштував би*, якби запуск його підтягнув.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/uk-UA/керівництво/довідка/cc-server-cli).
+Якщо відкладений сегмент порожній, відкладення вимкнено для цього сервера. Перевірте `--tool-deferral` у [довідці з CLI `cc_server`](/uk-UA/керівництво/довідка/cc-server-cli).
 
-## Change which tools load up front
+## Змінити, які інструменти завантажуються наперед
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Резидентний набір — це політика, а не конфігурація: він живе в `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) і застосовується до кожного запуску:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/uk-UA/керівництво/поняття/режими) uses on nearly every turn.
+- `residentBuiltins` — лексика файлів і оболонки.
+- `residentDiscovery` — `search_tools` і `list_my_tools`. Не видаляйте їх; саме через них агент дістається всього іншого.
+- `residentMcpTools` — жменя інструментів Control Center, чия схема варта того, щоб бути в кожному запиті.
+- Блок для кожного [режиму](/uk-UA/керівництво/поняття/режими) — для інструментів, які цей режим використовує майже кожного ходу.
 
-Two rules when editing it:
+Два правила під час редагування:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Додавайте інструмент, лише якщо його використовує більшість запусків.** Кожна назва коштує свою схему в кожному запиті кожного запуску, завжди. Інструмент, важливий тоді, коли вживається, але загалом рідкісний, належить до відкладеної половини — агент усе одно його знайде.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Використовуйте справжню назву інструмента.** Резидентна назва, яка не збігається з жодним інструментом, інертна: жодної помилки, жодного попередження, інструмент просто відкладено. `test/tooling/resident_tool_names_test.dart` ловить це, а також тримає кожен режим під 40 резидентними інструментами — у цьому й сенс вправи: за цією межею вибір інструментів помітно гіршає.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Обов’язкові та закріплені дієслова режиму додаються автоматично, тож вам ніколи не потрібно перелічувати власне вихідне дієслово режиму.
 
-## Diagnose a bad tool choice
+## Діагностувати невдалий вибір інструмента
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Коли агент використав не той інструмент або заявив, що не може чогось зробити, з’ясуйте, що саме з трьох речей сталося.
 
-### 1. Did it look?
+### 1. Чи він шукав?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Кожен запуск записує відкладені інструменти, які він завантажив, і що це спричинило — прямий виклик за назвою чи запит `search_tools`. Відкрийте потік подій запуску (**Налаштування → Робочий простір → Агенти** → агент → **Журнали** → **Перегляд**) і знайдіть `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Нічого не записано, а агент сказав, що можливості немає** — він не шукав. Це проблема промпту, а не пошуку: відкладений індекс є в його системному промпті разом з інструкцією не оголошувати можливість відсутньою, доки пошук не повернеться порожнім.
+- **Пошук записано, але нічого не завантажено** — справжній промах пошуку. Перейдіть до кроку 2.
+- **Інструменти завантажено, але використано не той** — знайдені інструменти занадто схожі. Перейдіть до кроку 3.
 
-### 2. Fix a retrieval miss
+### 2. Виправити промах пошуку
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` зіставляє назви, описи та назви аргументів. Промах майже завжди означає, що опис не містить слів, які використав агент.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Додайте їх. Описи — це індекс пошуку, тож **подовжуйте їх, а не підрізайте** — пишіть лексику, яку оператор справді набрав би («призначити», «передати», «віддати»), а не лише внутрішній іменник. Підрізання опису заради економії токенів коштує вам і влучання в пошуку, і точності вибору, а економить майже нічого порівняно зі схемою.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Якщо потрібний інструмент існує, але має низький рейтинг, для цього й потрібен аргумент `limit`; власний опис інструмента підказує агенту розширити пошук, який виглядає близьким, але не влучає.
 
-### 3. Fix look-alike tools
+### 3. Виправити схожі інструменти
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Якщо описи двох інструментів читалися б однаково для того, хто ще не знає різниці, модель просто вгадує. Об’єднайте їх в один інструмент із розрізнювальним аргументом.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` і `ticket_pr_link` дотримуються цього зразка: кожен обробляє зв’язування та роз’єднування через розрізнювальний аргумент. Вибір, зроблений *усередині* одного виклику, з повним контекстом запиту, надійніший за вибір між двома схожими описами.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Залишайте інструменти окремими, коли їм потрібні різні шлюзи схвалення, різний аудит або різне відображення — це причини, через які об’єднання коштувало б вам чогось реального.
 
-## Check the prompt cache is working
+## Перевірте, чи працює кеш промптів
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Частка влучань у кеш відображається в **Спостережуваність → Інсайти** як **Частка кешу**. Здорова тривала розмова тримається високо; якщо вона стабільно низька, щось переписує префікс кожного ходу.
 
-Common causes, in order of likelihood:
+Типові причини, у порядку ймовірності:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Будь-що недетерміноване на початку промпту.** Позначка часу, ідентифікатор запиту або множина, що перебирається в різному порядку, уже зроблять це.
+- **Зміна моделі або рівня міркування посеред розмови.** Обидві змінюють префікс. Із субагентами тут особливо легко помилитися: запуск дочірніх із нижчим рівнем міркування, щоб зекономити, може коштувати більше через втрачене спільне кешування, ніж зекономити.
+- **Часта компакція.** Компакція за задумом переписує історію, тож її ціна реальна; рішення — ущільнювати рідко й глибоко, а не часто й поверхово.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Вимкнення відкладення через `--tool-deferral=off` — слушний A/B для з’ясування, чи зміна поведінки походить від дворівневої поверхні. Він точно відтворює запит до появи відкладення, тож якщо поведінка зберігається з вимкненим відкладенням, причина не в поверхні.

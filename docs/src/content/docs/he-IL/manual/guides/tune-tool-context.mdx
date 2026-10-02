@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: כוונון הקשר הכלים של סוכן
+description: בדקו מה הרצה באמת שולחת, שנו אילו כלים נטענים מראש, והבינו אם בחירה גרועה בכלי נבעה מהחמצת שליפה או מבעיה בהנחיה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/כוונון-הקשר-כלים
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים).
+המדריך הזה עוסק בעבודה המעשית סביב משטח הכלים הדו־שכבתי: לראות מה הרצה שולחת, לשנות אותו, ולאבחן סוכן שהושיט יד לכלי הלא נכון. כדי להבין למה זה עובד כך, קראו את [הקשר כלים ומטמון הנחיות](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים).
 
-## Look at what a run actually sends
+## לראות מה הרצה באמת שולחת
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+פתחו שיחה והקישו על מחוון השימוש בהקשר בכותרת השיחה. הוא בונה מחדש את המשטח המדויק שהשיגור הבא ישלח, בלי להריץ דבר. **הצגת עוד** (או הפקודה `/context`) פותחת את סייר ההקשר המלא, שבו תוכלו לבדוק כל כלי.
 
-Two segments matter here:
+שני מקטעים חשובים כאן:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **הגדרות כלים** ו**כלי MCP וכלים דינמיים** — הקבוצה התושבת, עם עלות האסימונים האמיתית של כל כלי.
+- **כלים שנטענים לפי דרישה** — מדד הטעינה לפי דרישה. כל רשומה מחויבת רק בשמה, מפני ששם הוא כל מה שהבקשה נושאת; פתיחת רשומה עדיין מציגה את התיאור והסכימה המלאים, כך שתוכלו לראות מה זה *היה* עולה אילו ההרצה משכה אותו פנימה.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli).
+אם המקטע של הטעינה לפי דרישה ריק, הטעינה לפי דרישה כבויה בשרת הזה. בדקו את `--tool-deferral` ב[תיעוד ה-CLI של `cc_server`](/he-IL/מדריך-למשתמש/עזר/cc-server-cli).
 
-## Change which tools load up front
+## לשנות אילו כלים נטענים מראש
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+הקבוצה התושבת היא מדיניות, לא תצורה — היא נמצאת ב־`ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) וחלה על כל הרצה:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/he-IL/מדריך-למשתמש/מושגים/מצבים) uses on nearly every turn.
+- `residentBuiltins` — אוצר המילים של קבצים ומעטפת.
+- `residentDiscovery` — `search_tools` ו־`list_my_tools`. אל תסירו אותם; דרכם סוכן מגיע לכל השאר.
+- `residentMcpTools` — קומץ כלי Control Center ששווים את הסכימה שלהם בכל בקשה.
+- בלוק לכל מצב, עבור הכלים ש[מצב](/he-IL/מדריך-למשתמש/מושגים/מצבים) נתון משתמש בהם כמעט בכל תור.
 
-Two rules when editing it:
+שני כללים בעת עריכתה:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**הוסיפו כלי רק אם רוב ההרצות משתמשות בו.** כל שם עולה את הסכימה שלו בכל בקשה של כל הרצה, לנצח. כלי שחשוב כשהוא בשימוש אבל נדיר בסך הכול שייך לחצי שנטען לפי דרישה — הסוכן עדיין ימצא אותו.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**השתמשו בשם האמיתי של הכלי.** שם תושב שאינו תואם שום כלי הוא אינרטי: בלי שגיאה, בלי אזהרה, הכלי פשוט נטען לפי דרישה. `test/tooling/resident_tool_names_test.dart` תופס זאת וגם מחזיק כל מצב מתחת ל־40 כלים תושבים, וזו כל מטרת התרגיל — מעבר לטווח הזה, בחירת הכלים מתדרדרת באופן מדיד.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+הפעלים הנדרשים והמוצמדים של מצב מתווספים אוטומטית, כך שלעולם אין צורך לפרט את פועל הפלט של המצב עצמו.
 
-## Diagnose a bad tool choice
+## לאבחן בחירה גרועה בכלי
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+כשסוכן השתמש בכלי הלא נכון או הצהיר שהוא לא יכול לעשות משהו, בררו מה מבין שלושה דברים קרה.
 
-### 1. Did it look?
+### 1. האם הוא חיפש?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+כל הרצה מתעדת את הכלים שנטענו לפי דרישה ואת מה שהפעיל אותם — קריאה ישירה בשם, או שאילתת `search_tools`. פתחו את זרם האירועים של ההרצה (**הגדרות → סביבת עבודה → סוכנים** → הסוכן → **יומנים** → **הצגה**) וחפשו `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **לא תועד דבר, והסוכן אמר שהיכולת חסרה** — הוא לא חיפש כלל. זו בעיה בהנחיה, לא בעיית שליפה: מדד הטעינה לפי דרישה נמצא בהנחיית המערכת שלו עם הוראה שלא להצהיר שהיכולת חסרה עד שחיפוש חוזר ריק.
+- **חיפוש תועד, אבל דבר לא נטען** — החמצת שליפה אמיתית. עברו לשלב 2.
+- **כלים נטענו, אבל נעשה שימוש בכלי הלא נכון** — הכלים שהוא מצא דומים מדי זה לזה. עברו לשלב 3.
 
-### 2. Fix a retrieval miss
+### 2. לתקן החמצת שליפה
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` מתאים לפי שמות, תיאורים ושמות ארגומנטים. החמצה כמעט תמיד משמעה שהתיאור אינו מכיל את המילים שבהן הסוכן השתמש.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+הוסיפו אותן. התיאורים הם מדד השליפה, לכן **האריכו אותם במקום לקצץ** — כתבו את אוצר המילים שמפעיל באמת היה מקליד („להקצות", „להעביר הלאה", „לתת ל־"), ולא רק את שם העצם הפנימי. קיצור תיאור כדי לחסוך אסימונים עולה לכם גם בהצלחת החיפוש וגם בדיוק הבחירה, וחוסך כמעט כלום לעומת הסכימה.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+אם הכלי הנכון קיים אבל מדורג נמוך, לשם כך קיים הארגומנט `limit`; התיאור של הכלי עצמו אומר לסוכן להרחיב חיפוש שנראה קרוב אבל מפספס.
 
-### 3. Fix look-alike tools
+### 3. לתקן כלים דומים־מראה
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+אם לשני כלים יש תיאורים שנקראים אותו דבר למי שכבר לא יודע את ההבדל, המודל מנחש. מזגו אותם לכלי אחד עם ארגומנט מבדיל.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` ו־`ticket_pr_link` הולכים לפי התבנית הזו: כל אחד מטפל בקישור ובניתוק קישור דרך ארגומנט מבדיל. בחירה שנעשית *בתוך* קריאה אחת, עם ההקשר המלא של הבקשה, מהימנה יותר מבחירה בין שני תיאורים דומים־מראה.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+השאירו כלים נפרדים כשהם זקוקים לשערי אישור שונים, לביקורת שונה או לרינדור שונה — אלה סיבות שבגללן מיזוג יעלה לכם משהו אמיתי.
 
-## Check the prompt cache is working
+## לוודא שמטמון ההנחיות עובד
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+שיעור הפגיעות במטמון מופיע ב**ניטור → תובנות** בתור **שיעור מטמון**. שיחה ארוכה בריאה נמצאת גבוה; אם הוא נמוך באופן מתמשך, משהו משכתב את הקידומת בכל תור.
 
-Common causes, in order of likelihood:
+סיבות נפוצות, לפי סדר ההסתברות:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **משהו לא דטרמיניסטי בתחילת ההנחיה.** חתימת זמן, מזהה בקשה, או קבוצה שנעברת בסדר משתנה יעשו את זה.
+- **החלפת מודל או מאמץ באמצע השיחה.** שניהם משנים את הקידומת. תת־סוכנים הם מקום שקל במיוחד לטעות בו: הרצת ילדים במאמץ נמוך יותר כדי לחסוך כסף יכולה לעלות יותר באובדן שיתוף המטמון ממה שהיא חוסכת.
+- **דחיסה תכופה.** דחיסה משכתבת היסטוריה מעצם תכנונה, כך שהעלות שלה אמיתית; התיקון הוא לדחוס לעתים נדירות ובעומק, ולא לעתים קרובות וברדידות.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+כיבוי הטעינה לפי דרישה עם `--tool-deferral=off` הוא השוואת A/B תקפה כדי לבודד אם שינוי התנהגות נבע מהמשטח הדו־שכבתי. הוא משחזר בדיוק את הבקשה שלפני הטעינה לפי דרישה, כך שאם ההתנהגות נמשכת כשזה כבוי, המשטח אינו הסיבה.

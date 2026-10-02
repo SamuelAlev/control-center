@@ -1,216 +1,209 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: การทำงานร่วมกันแบบหลายคน — ตัวตน สมาชิกภาพ และสถานะออนไลน์
+description: Control Center มองมนุษย์และเอเจนต์เป็นผู้เข้าร่วมที่เท่าเทียมกันอย่างไร อะไรกันการเข้าถึงเวิร์กสเปซไว้จริง ๆ และทำไมการรับรู้แบบสดกับข้อมูลที่ใช้ร่วมกันจึงเดินบนคนละเลน
 slug: th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center ทำงานได้กับผู้ปฏิบัติงานคนเดียว แต่โมเดลภายใต้มันเป็นแบบหลาย
+ผู้กระทำมาตั้งแต่แรก มนุษย์และเอเจนต์ส่งข้อความในสเปซเดียวกัน
+แก้ตั๋วงานใบเดียวกัน และปรากฏในรายชื่อเดียวกัน การทำให้สิ่งนี้ปลอดภัยและ
+เข้าใจได้สรุปอยู่ที่การตัดสินใจสามข้อ: **ใครนับเป็นผู้กระทำ**,
+**อะไรกันการเข้าถึง** และ **สถานะใดถูกใช้ร่วมกันอย่างคงทน เทียบกับที่แค่
+กระจายแบบสด**
 
-## Principals: users and agents are co-equal actors
+## Principal: ผู้ใช้และเอเจนต์เป็นผู้กระทำที่เท่าเทียมกัน
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+ทุกอย่างที่บันทึกว่า "ใครทำสิ่งนี้" — ข้อความ ตั๋วงาน รีวิว แผน บันทึกการรัน
+รายการตรวจสอบ — ล้วนผ่าน **Principal** ซึ่งเป็นยูเนียนแบบปิดของ
+`UserPrincipal` และ `AgentPrincipal` ที่มีรูปแบบบนไวร์กะทัดรัด
+(`user:<id>` / `agent:<id>`) การระบุที่มาไม่เคยยุบ N มนุษย์ (หรือ N เอเจนต์)
+ให้เป็นบัญชีตัวแทนบัญชีเดียว รีวิวที่เอเจนต์ทิ้งไว้กับรีวิวที่คนทิ้งไว้จึงแยก
+ออกจากกันได้ทุกที่ที่ปรากฏ
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+เพราะ Principal เป็นหน่วยของตัวตน มันจึงเป็นหน่วยของการจำกัดขอบเขตด้วย:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **ขีดจำกัดอัตราคิดต่อ Principal ไม่ใช่ต่อเซสชัน** ตัวกันการถล่มสำหรับการ
+  เรียกเครื่องมือระยะไกลคิดงบตามผู้ใช้ ไม่ใช่ตามการเชื่อมต่อ อุปกรณ์ทุกเครื่อง
+  ของสมาชิกคนหนึ่งจึงดึงจากหน้าต่างเลื่อนหน้าต่างเดียวที่ใช้ร่วมกัน (120 ครั้ง
+  ต่อนาที โดยเปลี่ยนแปลงสถานะได้ไม่เกิน 30 ครั้ง) การเปิดสามอุปกรณ์จึงไม่ทำ
+  ให้โควตาของใครเพิ่มเป็นสามเท่า และสมาชิกที่ส่งถี่เกินไปคนเดียวก็อดอาหาร
+  คนอื่นไม่ได้
+- **การเลิกทำคิดต่อ Principal** บันทึกการกระทำของไคลเอนต์แต่ละตัวบันทึกเฉพาะ
+  การเปลี่ยนแปลงที่ Principal _ของมัน_ ทำ คุณกด ⌘Z แก้ไขตั๋วงานของตัวเองได้
+  แต่เลิกทำของเพื่อนร่วมทีมไม่ได้ — กว่าคุณจะเห็นมัน เลนคงทนได้ตัดสินมันไปแล้ว
+  (ดูด้านล่าง)
 
-## Membership is the access boundary — not the pairing key
+## สมาชิกภาพคือขอบเขตการเข้าถึง — ไม่ใช่คีย์จับคู่
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+ข้อมูลรับรองสองชิ้นที่แยกกันตอบคำถามสองข้อที่แยกกัน **คีย์จับคู่**
+(ดู [ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/))
+ยืนยันตัวตนของ_อุปกรณ์_กับเซิร์ฟเวอร์ **สมาชิกภาพ** ให้สิทธิ์ผู้ใช้ของอุปกรณ์
+นั้นลงมือทำภายใน_เวิร์กสเปซ_ อุปกรณ์ที่จับคู่แล้วแต่ผู้ใช้ไม่ถือสมาชิกภาพใน
+เวิร์กสเปซใด จะอ่านหรือแก้เวิร์กสเปซนั้นไม่ได้ทั้งคู่
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+สมาชิกภาพคือหนึ่งแถวต่อ (เวิร์กสเปซ, ผู้ใช้) เก็บไว้ใน**ไฟล์ฐานข้อมูลของ
+เวิร์กสเปซนั้นเอง** — คำถามว่า "ใครอยู่ในเวิร์กสเปซนี้?" จึงเป็นการอ่านแบบจำกัด
+ขอบเขตธรรมดา ขณะที่คำถามกลับกัน "ฉันอยู่ในเวิร์กสเปซใดบ้าง?" จำเป็นต้องข้าม
+ไฟล์ และเป็นการกระจายข้ามเวิร์กสเปซเพียงไม่กี่แห่งที่ได้รับอนุญาต มันคือสิ่งที่
+ตัวเลือกเวิร์กสเปซรันก่อนจะเลือกเวิร์กสเปซใดได้
 
-Each row carries a role from a five-level, rank-ordered ladder:
+แต่ละแถวมีบทบาทจากบันไดห้าระดับที่เรียงตามลำดับชั้น:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| บทบาท    | ทำอะไรได้                                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| `owner`  | ควบคุมเต็มรูปแบบ รวมถึงลบเวิร์กสเปซ; มีได้เพียงหนึ่งเดียวต่อเวิร์กสเปซ                                        |
+| `admin`  | จัดการสมาชิก คำเชิญ การตั้งค่า และการดำเนินการที่ทำลายได้                                                     |
+| `member` | อ่าน-เขียนในชีวิตประจำวัน: ข้อความ ตั๋วงาน การรันเอเจนต์                                                     |
+| `viewer` | อ่านอย่างเดียวทั่วเวิร์กสเปซ; glob ยกเว้นความลับซ่อนพาธที่ตรงกันบนพื้นผิวที่มีโค้ด                     |
+| `guest`  | พื้นการอ่านอย่างเดียวเหมือน viewer แต่อยู่ในขั้นต่ำสุดของบันได                                               |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+การตัดสินใจเข้าถึงทุกครั้งลดรูปเป็น "บทบาทของผู้เรียกอย่างน้อยคือ X หรือไม่"
+พื้นขั้นต่ำได้มาจากชนิดของการดำเนินการ เว้นแต่การดำเนินการนั้นประกาศไว้เองอย่าง
+ชัดเจน: การอ่านต้องใช้ `guest` การเปลี่ยนแปลงต้องใช้ `member` การดำเนินการที่
+ทำลายได้ต้องใช้ `admin` ACL ระดับวัตถุที่เกินไปกว่าสิทธิ์ระดับรีโปด้านล่างนี้
+อยู่นอกขอบเขตโดยเจตนา
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**คำเชิญ**คือวิธีมอบสมาชิกภาพ จาก การตั้งค่า → เวิร์กสเปซ → สมาชิก แอดมินออก
+รหัสใช้ครั้งเดียว (เป็นลิงก์หรือ QR) ที่หมดอายุในเจ็ดวันโดยค่าเริ่มต้น เซิร์ฟเวอร์
+เก็บเฉพาะแฮช SHA-256 ของรหัส และตัวรหัสเองแสดงให้เห็นเพียงครั้งเดียว การแลก
+รหัสจะจัดสรรผู้ใช้แบบ JIT บันทึกสมาชิกภาพตามบทบาทของคำเชิญ (ไม่เคยเป็น
+`owner` — ความเป็นเจ้าของถูกโอนอย่างชัดเจน ไม่เคยให้ผ่านคำเชิญ) แล้วส่งต่อไปสู่
+การจับคู่อุปกรณ์ ข้อมูลรับรองของอุปกรณ์ที่ออกหลังการจับคู่ก็มีอายุจำกัด 30 วัน
+เช่นกัน การจับคู่จึงไม่ใช่คีย์ถาวร
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**สิทธิ์ระดับรีโป**อยู่ใต้สมาชิกภาพ เพราะเซิร์ฟเวอร์ถือ checkout แบบเต็ม
+สมาชิกภาพในเวิร์กสเปซเพียงอย่างเดียวต้องไม่ให้สิทธิ์เกินโฮสต์โค้ดเด็ดขาด:
+พื้นผิวที่มีโค้ดทุกแห่ง — ไฟล์ ดิฟ รีวิว PR ค้นหาโค้ด — ตรวจสอบสิทธิ์ของสมาชิก
+บน_รีโปนั้น_ สิทธิ์เป็นราย (เวิร์กสเปซ, ผู้ใช้, รีโป) และเรียงเป็น `none` →
+`read` → `review` → `write` โดย `write` หมายถึงการสั่งรันเอเจนต์ที่เขียนลงรีโป
+การไม่มีแถวหมายถึง `none` เจ้าของและแอดมินถือ `write` โดยปริยายบนทุกรีโปที่
+เชื่อมไว้ และไม่มีแถวเลย
 
-## Two lanes of collaboration state
+## สองเลนของสถานะการทำงานร่วมกัน
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center แยกสถานะที่ใช้ร่วมกันออกเป็นสองเลนที่มีกฎความคงทนตรงข้ามกัน
+เพราะสถานะสองชนิดล้มเหลวคนละแบบ
 
-### The ephemeral presence lane
+### เลนสถานะออนไลน์ชั่วคราว
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+สถานะออนไลน์ — ใครออนไลน์อยู่ อยู่ที่ไหน กำลังพิมพ์อะไร เอเจนต์กำลังทำอะไร
+อยู่ตอนนี้ — ไร้ค่าทันทีที่ล้าสมัย ถ้ามันถูกเก็บถาวร การเชื่อมต่อใหม่ทุกครั้ง
+จะต้องไกล่เกลี่ย "ฐานข้อมูลบอกว่า Sam กำลังแก้ตั๋วงานนี้" กับความจริง ดังนั้น
+สถานะออนไลน์จึง**ไม่เคยถูกเขียนลงฐานข้อมูล** มันอยู่ใน**ฮับสถานะออนไลน์**
+ที่เก็บในหน่วยความจำบนเซิร์ฟเวอร์: ไคลเอนต์เผยแพร่ด้วย `presence.update`
+เพื่อนร่วมงานสมัครรับด้วย `presence.watch` และรายการจะหมดอายุอัตโนมัติหลัง
+พลาดฮาร์ตบีตสามครั้ง (ฮาร์ตบีตวิ่งทุก 10 วินาที ฮับกวาดทุก 5) ไม่มีอะไร
+ให้ไกล่เกลี่ย — มีแต่ปล่อยให้ล่วงเลยไป
 
-Two properties keep the lane trustworthy:
+คุณสมบัติสองข้อทำให้เลนนี้น่าเชื่อถือ:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **ตัวตนมาจากเซสชัน ไม่เคยมาจากอาร์กิวเมนต์ของไคลเอนต์** เซิร์ฟเวอร์แมป
+  อุปกรณ์ที่ยืนยันตัวตนแล้วของการเชื่อต่อไปยัง id ผู้ใช้ ไคลเอนต์อัปเดตได้
+  เฉพาะสถานะออนไลน์ของตัวเองเท่านั้น ไม่มีใครปลอมสถานะหรือ locus ของ
+  ผู้เข้าร่วมคนอื่นได้ การอัปเดต `offline` อย่างชัดเจน (ตัดการเชื่อมต่อหรือ
+  สวิตช์ซ่อนตัว) จะลบรายการทันที
+- **รายชื่อถูกฮับที่เซิร์ฟเวอร์** เพื่อนร่วมงานไม่แลกเปลี่ยนสถานะออนไลน์กัน
+  โดยตรง ผู้เข้าร่วมทุกคนจึงเห็นรายชื่อเดียวกันไม่ว่าโครงข่ายจะเป็นอย่างไร
+  เอเจนต์ไม่มีไคลเอนต์ เซิร์ฟเวอร์จึง_สังเคราะห์_รายการของเอเจนต์จากสถานะ
+  การรันสด — กำลังคิด กำลังรัน ติดอยู่ที่เกตอนุมัติ เสร็จแล้ว — โดยมีรัน
+  ตัวแทนเพียงหนึ่งเดียวเป็นตัวกำหนดสถานะและ locus ของเอเจนต์ เพื่อให้การรัน
+  ที่ซ้อนกันไม่ทำให้รายชื่อกระพริบ
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+การกระจายแบ่งเป็นระดับตามผู้รับ: เดสก์ท็อปและเว็บอยู่ในระดับเต็ม (ส่งรายชื่อ
+ได้ไม่เกินหนึ่งครั้งต่อ 100 มิลลิวินาที) ส่วนโทรศัพท์อยู่ระดับสรุป (ต่อ 500
+มิลลิวินาที) การอัปเดตความถี่ระดับเคอร์เซอร์จึงละลาย PWA ไม่ได้
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+**locus** ของผู้เข้าร่วม — ตำแหน่งที่เขาอยู่ตอนนี้ ละเอียดถึงชิ้นงาน — เป็น
+ยูเนียนแบบปิด: `Space`, `File` (รีโป + พาธ + เลขบรรทัดถ้ามี), `Pr`, `Ticket`,
+`PlanNode` ไม่ใช่ทุก locus ที่มีที่ให้กระโดดไป: ไม่มีเส้นทางไปยังตัวดูไฟล์
+locus แบบ `File` จึงแสดงเป็นป้ายแทนที่จะเป็นปลายทาง เลนนี้ยังพา**การอ้างสิทธิ์
+แบบหลวม**มาด้วย ("Sam กำลังแก้ตั๋วงานนี้", "เอเจนต์ถือ worktree นี้อยู่"):
+เป็น_การมองเห็น_ความขัดแย้ง ไม่ใช่การล็อก ชนิด locus ที่ไม่รู้จักจะถูกแปลง
+เป็น null ไคลเอนต์เก่าจึงแค่ไม่แสดงสิ่งที่มันไม่เข้าใจ
 
-### The durable shared lane
+### เลนข้อมูลที่ใช้ร่วมกันอย่างคงทน
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+ระเบียนที่ต้องอยู่รอด — ตั๋วงาน เอกสารบันทึกที่ใช้ร่วมกันของสเปซ ข้อความ —
+ไปอีกทางหนึ่ง: เป็นแหล่งอ้างอิงหลัก เรียงลำดับ และถูกเก็บถาวร การแก้ไขที่เกิดขึ้นพร้อมกัน
+ตัดสินด้วย**ผู้เขียนรายหลังสุดชนะตามลำดับที่เซิร์ฟเวอร์ได้รับ** ไม่เคยใช้เวลา
+ของไคลเอนต์ การตัดสินใจตั้งใจให้ละเอียด: การแก้ตั๋วงานเป็น_รายคอลัมน์_ คนสองคน
+ที่แก้คนละฟิลด์ของตั๋วงานใบเดียวกันจึงลงได้ทั้งคู่และไม่มีใครทับอีกคน
+(การเปลี่ยนสถานะเวิร์กโฟลว์ยังใช้การล็อกแบบ optimistic แทน) ส่วนเอกสารบันทึก
+ของสเปซเป็นคอลัมน์เดียว เอกสารทั้งใบจึงเป็น LWW โดยการอ้างสิทธิ์แบบหลวมบน
+เลนสถานะออนไลน์ทำให้การแก้ไขพร้อมกันมองเห็นได้แทนที่จะถูกล็อก มันไม่ใช่ CRDT
+โดยเจตนา — ภาระการพิสูจน์อยู่ที่ CRDT เอง และ LWW ตามลำดับที่ได้รับบวกกับ
+การอ้างสิทธิ์ที่มองเห็นได้ก็ครอบคลุมรูปแบบการทำงานร่วมกันจริง ๆ ที่เกิดขึ้น
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"ผู้เขียนรายหลังสุด" หมายถึง**ลำดับที่เซิร์ฟเวอร์ได้รับ** ไม่เคยเป็นเวลาของ
+ไคลเอนต์ — แล็ปท็อปที่เวลาคลาดเคลื่อนชนะการแก้ไขที่มันแพ้ไม่ได้ ข้างหลัง
+เลนคงทนมี**ฟีดซิงค์**: ทริกเกอร์ของ SQLite ต่อทุกการเปลี่ยนแปลงเข้าบันทึก
+การเปลี่ยนแปลงรายเวิร์กสเปซ_ภายในทรานแซกชันที่เขียน_ โดยจัดสรรหมายเลขลำดับ
+แบบโมโนโทนิกต่อเวิร์กสเปซในทรานแซกชันเดียวกับการเปลี่ยนแปลงนั้นเอง บริการ
+บนเซิร์ฟเวอร์ไล่อ่านบันทึกนั้นเป็นเฟรมเดลตาที่มีเวอร์ชันตามลำดับหมายเลข
+ไคลเอนต์พัฒนาจากสแนปชอตเต็มไปสู่เดลตา ช่องว่างในลำดับจะทำให้สโตร์นั้นถอยกลับ
+ไปใช้โหมดสแนปชอตแทนที่จะนำเฟรมไปใช้ผิด ๆ
 
-## Follow, steer, take over, hand back
+## ติดตาม ชี้นำ เข้าควบคุม คืนงาน
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+เลนสถานะออนไลน์ไม่ใช่แค่รายชื่อ — มันขับเคลื่อนกริยาของการทำงานร่วมกัน:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **โหมดติดตาม** คลิกผู้เข้าร่วมคนหนึ่ง แล้วไคลเอนต์ของคุณจะตาม locus ของเขา
+  เปลี่ยนหน้าไปขณะที่เขาเปลี่ยนหน้า การติดตามเป็นแบบ "จนกว่าคุณจะลงมือ":
+  ทันทีที่คุณเปลี่ยนหน้าด้วยตัวเอง การติดตามจะหลุดออก แบนเนอร์ที่ปิดได้จะ
+  ประกาศเมื่อผู้เข้าร่วมคนอื่นกำลังสปอตไลต์ (นำเสนอ) สเปซที่คุณอยู่
+- **ชี้นำ** ข้อความถึงเอเจนต์ที่กำลังรันจะถูกเข้าคิวเป็นคำชี้นำ เอเจนต์จะอ่าน
+  มันใหม่ก่อนรันเทิร์นถัดไป คุณจึงสะกิดการรันกลางทางได้โดยไม่ต้องฆ่ามัน
+- **เข้าควบคุม** การเข้ารับควบคุมการสนทนาจะหยุดการรันที่ทำงานอยู่ทุกรายการ
+  ที่ขอบเทิร์นสะอาดถัดไป (การรันของ Claude Code ซึ่งไม่มีขอบเขตปลอดภัยจะถูก
+  หยุด) โดยมีสแนปชอต git ต่อเทิร์นรองรับ การเข้าควบคุมจึงย้อนกลับได้
+  ตัวทำเครื่องหมายแบบคงทนจะบล็อกการสั่งงานใหม่เข้าสเปซ และอยู่รอดการรีสตาร์ต
+  เซิร์ฟเวอร์ — เซิร์ฟเวอร์ไม่เคยกลับมาทำงานต่ออัตโนมัติทับการแก้ไขที่มนุษย์
+  ทำค้างไว้ การมีบรรณาธิการสดหนึ่งคนต่อ worktree เป็นการอ้างสิทธิ์แบบหลวม:
+  การเข้าควบคุมครั้งที่สองจะมองเห็นได้และถูกปฏิเสธ ไม่ใช่ถูกรวมเงียบ ๆ
+- **คืนงาน** การคืนการควบคุมจะโพสต์สรุปดิฟแบบมีโครงสร้างของ worktree ลงสเปซ
+  เข้าคิวเป็นคำชี้นำสำหรับการรันที่หยุดไว้ ทำการรันเหล่านั้นต่อ และล้าง
+  เครื่องหมาย
 
-## The autonomy dial
+## ปุ่มปรับความเป็นอิสระ
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+การชี้นำและการเข้าควบคุมเป็นการแทรกแซงหลังเกิดเหตุ **ปุ่มปรับความเป็นอิสระ**
+คือการตั้งค่าถาวร: ต่อสเปซ ต่อเอเจนต์ ตั้งจากส่วนหัวของสเปซ มันตัดสินว่าเกิด
+อะไรขึ้นเมื่อเอเจนต์ไปถึงการกระทำที่มีเกต
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| ระดับ            | ค่าบนไวร์         | ผลต่อการเรียกเครื่องมือที่มีเกต                                                                             |
+| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| เสนออย่างเดียว   | `proposeOnly`     | ถูกปฏิเสธทันที พร้อมเหตุผลที่เอเจนต์ได้รับคำสั่งให้ถ่ายทอด — อธิบายการกระทำได้แต่ทำไม่ได้                   |
+| ทำเมื่อได้รับอนุมัติ | `actWithApproval` | เกตการอนุมัติแบบปิดเมื่อไม่ผ่าน: การยืนยันหนึ่งครั้งจะปรากฏต่อผู้ปฏิบัติงานที่เชื่อมต่ออยู่ และไม่มีผู้อนุมัติหมายถึงถูกปฏิเสธ |
+| ทำได้อย่างอิสระ  | `actFreely`       | อนุมัติล่วงหน้าแล้ว ยกเว้นเมื่อมีกฎ `deny` แบบเด็ดขาดของกฎคุมใช้บังคับ — กฎ deny ชนะเสมอ                   |
+| (ไม่ได้ตั้งค่า)   | `null`            | เหมือนทำเมื่อได้รับอนุมัติ: ค่าเริ่มต้นของเซิร์ฟเวอร์                                                       |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+มีสองอย่างที่อยู่นอกปุ่มนี้ทั้งสองทิศทาง กริยาเอาต์พุตของโหมดหนึ่งถูกปักหมุดไว้
+และปฏิเสธไม่ได้ไม่ว่าปุ่มจะพูดว่าอะไร — โหมดประสานงานเคยไม่สามารถส่งมอบ
+สิ่งเดียวที่มันต้องส่งมอบได้เชิงโครงสร้าง เพราะพรีเซ็ตปฏิเสธคลาสเอฟเฟกต์ที่
+กริยานั้นประกาศ และ `deny` แบบเด็ดขาดจากกฎคุมการกระทำก็ไม่อาจถูกแทนที่ด้วย
+`actFreely`
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/).
+:::note[ปุ่มนี้ควบคุมเฉพาะฮาร์เนสในตัวเท่านั้น]
+มันถูกเรียกดูโดยคอลแบ็กการอนุมัติของลูปฮาร์เนส เอเจนต์ที่รันบนอะแดปเตอร์
+Claude Code จะเรียกเครื่องมือของตัวเองภายในโปรเซสของมันเอง ซึ่ง Control Center
+ไม่มีอะไรให้ควบคุม — ดู[โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
 :::
 
-## Solo zero-regression
+## การทำงานคนเดียวโดยไม่มีการถดถอย
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+ทั้งหมดนี้เป็นการเพิ่มเติม ขั้นตอนการทำงานของผู้ปฏิบัติงานคนเดียวไม่เปลี่ยน:
+เมื่อมีมนุษย์หนึ่งคนและไม่มีเอเจนต์ ฮับสถานะออนไลน์ก็ไม่มีอะไรให้กระจาย เลนจึง
+ส่งสแนปชอตเริ่มต้นแล้วก็ว่างที่ทราฟฟิกศูนย์ กลไก LWW และการซิงค์ก็เป็น
+เส้นทางเขียนคนเดียวแบบเดิม และคีย์จับคู่ก็ยังคงเป็นข้อมูลรับรองอุปกรณ์อย่างที่
+เคยเป็น สมาชิกภาพเป็นขอบเขตการเข้าถึงอยู่แล้ว — เมื่อมีมนุษย์คนเดียวก็มีแถว
+เจ้าของแถวเดียว และไม่มีส่วนติดต่อของรายชื่อ
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): the boundary membership enforces
-- [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/): the pairing key and device credential side of identity
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): the agent half of the principal union
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): the runs that steering and take-over pause and resume
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): the effect-class policy the autonomy dial composes with
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): the bus that live updates ride
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): ขอบเขตที่สมาชิกภาพบังคับใช้
+- [ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/): ด้านคีย์จับคู่และข้อมูลรับรองอุปกรณ์ของตัวตน
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): ครึ่งเอเจนต์ของยูเนียน Principal
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): การรันที่การชี้นำและการเข้าควบคุมหยุดและทำต่อ
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): นโยบายคลาสเอฟเฟกต์ที่ปุ่มปรับความเป็นอิสระประกอบเข้ากับ
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): บัสที่การอัปเดตสดอาศัยอยู่

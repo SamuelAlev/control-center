@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Caută cod cu graful de cod
+description: Indexează un repo și folosește instrumentele grafului de cod pentru a găsi simboluri și pentru a vedea ce ar strica o modificare.
 slug: ro-RO/manual/ghiduri-practice/cautare-cod
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Acest ghid îți arată cum să aduci un repo în graful de cod și apoi cum să îl folosești ca să răspundă întrebării pe care o ai de fapt înainte de o refactorizare: de ce depinde asta?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Graful de cod este o bază de date de simboluri și muchii, construită prin analizarea sintactică a checkout-urilor tale înregistrate cu tree-sitter. Instrumentele sale sunt **destinate agenților** — le folosești cerându-i unui agent.
 
-## Before you start
+## Înainte de a începe
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Graful indexează Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB și Ada. Fișierele din orice alt limbaj nu sunt analizate sintactic, deci nu apar în `search_code`, `code_symbol`, `code_callers`, `code_callees` sau `code_impact`.
 
-Two more things shape what gets indexed:
+Încă două lucruri influențează ce se indexează:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Într-un arbore de lucru git, enumerarea se bazează pe `git ls-files --cached --others --exclude-standard`, așa că fiecare `.gitignore`, fișier de ignorare imbricat, `.git/info/exclude` și fișierul global de excluderi sunt respectate. Acesta este mecanismul care ține `node_modules` și rezultatele de build în afara grafului.
+- Codul Dart generat este eliminat indiferent de situație. Fișierele generate sunt de obicei incluse în commit, așa că git singur nu le-ar exclude, iar ele se schimbă la fiecare rulare de generare de cod.
 
-## Get a repo indexed
+## Indexează un repo
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+Înregistrarea unui checkout declanșează `RepoAdded`, care pornește automat pipeline-ul `index_code` pentru el. Vezi [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
 
-To re-index by hand:
+Pentru a reindexa manual:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Deschide **Setări → Spațiu de lucru → Depozite**.
+2. Apasă butonul **Indexează codul** din rândul repo-ului.
+3. Cât timp rulează, butonul afișează fișierele finalizate din total, împreună cu un control de anulare. Când se termină, se stabilizează într-o bifă cu numărul de simboluri.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Graful este partiționat pe spațiu de lucru, repo și checkout: checkout-ul legat este o partiție, iar fiecare worktree de spațiu primește propria partiție (identificată prin id-ul ei de repo izolat).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Merită să cunoști două limitări, pentru că ele explică o așteptare care pare o blocare:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Monitorul de fișiere admite o singură rulare de indexare simultan pe gazdă — un al doilea checkout așteaptă. Pipeline-ul `index_code` este limitat separat la o rulare pe spațiu de lucru, așa că două repo-uri din același spațiu de lucru stau la coadă; spații de lucru diferite pot indexa în paralel. Indexatorul însuși serializează două rulări ale **aceluiași** checkout, astfel încât pornirea unui pipeline și o trecere a monitorului să nu îl poată analiza de două ori.
+- Worktree-urile care aparțin **spațiilor inactive** (niciun mesaj în ultima săptămână) nu sunt nici monitorizate, nici indexate. Checkout-urile legate rămân monitorizate. O decizie de omitere este reverificată după cinci minute, așa că un spațiu care redevine activ este preluat.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[O gramatică lipsă oprește serverul, nu căutarea]
+Tree-sitter și gramaticile sale sunt componente native obligatorii. Dacă lipsește una, `cc_server` refuză să pornească și numește dylib-ul lipsă — simptomul este un server care nu pornește, niciodată o căutare degradată. Pregătește-le cu `scripts/natives/build_natives.sh` și recompilează binarul serverului.
 :::
 
-## Find a symbol
+## Găsește un simbol
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Cere-i unui agent să caute. Instrumentul este `search_code` și are nevoie atât de un spațiu de lucru, cât și de un repo:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Id-urile de repo vin de la `list_repos`. Argumentul opțional `mode` este `keyword`, `semantic` sau `hybrid` și are valoarea implicită hybrid — BM25 peste nume, semnături și comentarii de documentație, combinat cu similaritatea vectorială.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Fiecare rezultat conține id-ul simbolului, numele, numele calificat, tipul, calea fișierului, linia de început și de sfârșit și semnătura lui, atunci când are una. **id**-ul este identificatorul pe care îl transmiți oricărui alt instrument de pe această pagină.
 
-When you know the exact name, look it up directly instead:
+Când știi numele exact, caută-l direct în schimb:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Urmărește apelurile
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Ambele primesc un `symbol_id` dintr-un rezultat de căutare, plus un `limit` opțional (implicit 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` returnează simbolurile cu o muchie de intrare către acesta; `code_callees` le returnează pe cele de care depinde.
 
-## Check what a change would break
+## Verifică ce ar strica o modificare
 
-This is the tool the whole page exists for:
+Acesta este instrumentul pentru care există toată pagina:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Calculează raza dependențelor **inverse**: tot ce depinde direct sau tranzitiv de simbol pe muchiile `calls`, `extends` și `implements` (importurile, mixin-urile și referințele generice sunt stocate în graf, dar nu sunt parcurse aici). `depth` este numărul maxim de salturi, între 1 și 6, cu valoarea implicită 2.
 
-The result is three fields:
+Rezultatul are trei câmpuri:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — simbolul despre care ai întrebat
+- `impacted` — mulțimea accesibilă, inclusiv rădăcina la adâncimea 0, fiecare purtându-și `depth` față de rădăcină
+- `edgeCount` — câte muchii a traversat parcurgerea, ca număr, nu muchiile în sine
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Rulează-l înainte de a redenumi sau de a schimba o semnătură și dă-i agentului lista celor impactate drept sfera lui de lucru.
 
-## Results are checked against the caller's own working copy
+## Rezultatele sunt verificate față de copia de lucru proprie a apelantului
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Pentru un apelant de tip agent, id-ul spațiului este injectat automat, iar rezultatele sunt verificate față de copia de lucru a **acelui spațiu**. Un simbol al cărui fișier nu mai există în arborele apelantului este omis, iar răspunsul conține un număr `staleOmitted` și o notă care spune că indexul este învechit pentru acele simboluri.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+De aceea tu și un agent puteți primi răspunsuri diferite la aceeași interogare și de aceea un agent dintr-un spațiu poate primi un răspuns diferit de al unui agent din alt spațiu. Fiecare conversație dintr-un spațiu partajează acel unic worktree. Verificarea e permisivă la eșec: un răspuns învechit este preferat unuia gol.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/).
+Cere-i unui agent să ruleze `code_impact` (sau `review_studio.blastRadius`) când vrei raza de impact a unei modificări. Vezi [Calculul revizuirii](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/).
 
-## Semantic search needs the embedding model
+## Căutarea semantică are nevoie de modelul de embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Simbolurile și faptele sunt încorporate vectorial în momentul scrierii și numai când modelul de embedding de pe dispozitiv este instalat. Până atunci, `mode: "semantic"` și jumătatea semantică a modului hybrid nu au cu ce să se potrivească, iar căutarea este practic doar pe cuvinte-cheie.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Instalează modelul la **Setări → Server → Diagnosticări și confidențialitate → Căutare semantică** înainte de a indexa. Simbolurile primesc un vector în momentul în care fișierul lor este ingerat.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Reține și că orice recompilare a binarului serverului repregătește dylib-urile gramaticilor și le schimbă mtime-urile, ceea ce invalidează fiecare checkpoint de index și forțează o nouă parcurgere completă a fiecărui checkout la următoarea rulare. Recalculează hash-urile, dar nu reextrage fișierele nemodificate.
 
-## What is in the graph
+## Ce se află în graf
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Tipuri de simboluri:** funcție, metodă, clasă, câmp, enum, constructor, getter, setter, typedef, extensie, mixin, variabilă.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Tipuri de muchii:** apeluri, importuri, extindere, implementare, mixin-uri, referințe.
 
-The canonical signatures for these tools live in [MCP tools](/ro-RO/manual/referinta/instrumente-mcp/).
+Semnăturile canonice pentru aceste instrumente se află în [Instrumente MCP](/ro-RO/manual/referinta/instrumente-mcp/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
-- [Review compute (cohorts and axes)](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/)
-- [Use the MCP server](/ro-RO/manual/ghiduri-practice/server-mcp/)
+- [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
+- [Calculul revizuirii (cohorte și axe)](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/)
+- [Folosește serverul MCP](/ro-RO/manual/ghiduri-practice/server-mcp/)
 
-## Related concepts
+## Concepte conexe
 
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/)
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/)

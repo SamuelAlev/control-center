@@ -1,155 +1,146 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: כרטיסים והאצלה
+description: למה כרטיס עוקב אחרי עבודה בלי לשגר אותה, איך ההאצלה מוגנת, ומה שיקוף הספק מחזיק — ומה לא.
 slug: he-IL/מדריך-למשתמש/מושגים/כרטיסים
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+כרטיס הוא יחידת העבודה ש-Control Center עוקב אחריה. הוא בכוונה חפץ _טיפש_:
+כותרת, גוף, סטטוס, בעלים ומקום בעץ. הוא אינו הדבר שסוכנים מבצעים מולו — עבודת
+סוכנים מתקיימת בשיחות, והפלט המובנה של ריצה יושב ביומן ההרצות.
 
-## Assignment records ownership; it dispatches nothing
+## הקצאה רושמת בעלות; היא אינה משגרת דבר
 
-This is the single most important thing to get right about tickets.
+זה הדבר היחיד והחשוב ביותר להבין נכון בכרטיסים.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+הגדרת `assignedAgentId` כותבת שדה ומפרסמת
+[אירוע תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) בשם `TicketAssigned`. האירוע
+הזה הוא אות ביקורת והתראה וגם טריגר לפייפליין. **הקצאה לסוכן אינה מפעילה שום
+ריצה.** אין משגר כרטיסים שצופה ב-`assignedAgentId` ומעיר את אותו סוכן.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+החריג הוא צוות: כאשר `assignedTeamId` מוגדר, `TeamRoutingService` משגר את המוביל
+של הצוות עם פרוטוקול ההפעלה ורשימת הצוות.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+אם אתם רוצים שסוכן מסוים יעבוד על כרטיס, אתם מבקשים זאת בשיחה, או ששלב
+בפייפליין משגר אותו, או שסוכן אחר מאציל לו. הקצאת כרטיס לסוכן והמתנה היא הדבר
+היחיד שלעולם לא יניב עבודה.
 
-## Mirror and overlay
+## שיקוף ושכבת־על
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+כרטיס יכול להיות מקומי בלבד או מגובה במערכת ניהול כרטיסים חיצונית, והוא נושא את
+שניהם באותה שורה.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+ה**שיקוף** — ספק, מפתח חיצוני, URL, כותרת, תיאור, עדיפות, תוויות, סטטוס גולמי
+ומנורמל, חותמות זמן — הוא מטמון כשהכרטיס מרוחק. המרוחק הוא מקור האמת שם, ורענון
+כותב מחדש את השיקוף כולו.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+ה**שכבת־על** — הקצאה, האצלה, קישור למרחב, הורה, פרויקט, בקשות משיכה מקושרות —
+קיימת רק ב-Control Center. מערכת ניהול הכרטיסים לא יודעת עליה דבר, ורענון לעולם
+אינו נוגע בה.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+הפיצול הזה הוא מה שהופך את הסנכרון לבטוח מלכתחילה: משיכה מהספק יכולה להיות
+הרסנית לשיקוף בלי לאבד לעולם את מטא־נתוני התזמור שנשכבו מעליו.
 
-## The lifecycle graph binds agents, not you
+## גרף מחזור החיים מחייב סוכנים, לא אתכם
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+הסטטוסים נעים `backlog → open → inProgress → inReview → done`, כאשר `blocked`
+הוא לולאת צד ו-`failed` / `cancelled` הם מצבי הסיום האחרים.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+גרף המעברים נאכף **רק במסלול של הסוכנים והאוטומציה** — כלי MCP ומנגנוני יישור.
+מעבר לא חוקי שם נרשם ביומן ומתעלמים ממנו, כך שסוכן מבולבל לא יכול להזיז כרטיס
+לאחור החוצה ממצב סיום.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+כל שינוי שנעשה בידי משתמש בממשק עובר עם `force: true` ועוקף את הגרף לחלוטין.
+אדם רשאי להעביר כרטיס לכל סטטוס שהבורר מציג — כולל פתיחה מחדש של כרטיס במצב
+סיום. הבורר אינו מציע `failed`; סוכנים קובעים אותו דרך `fail_ticket`. הגרף הוא
+מעקה בטיחות לאוטומציה, ולא כלל שקובע איך מותר לעבודה להתנהל.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` מחזיק בכל שינוי דרך נקודת חנק אחת שטוענת את השורה, מוודאת
+שהיא שייכת לסביבת העבודה של הקורא וכותבת עם `version` צפוי, כך ששתי עריכות
+במקביל לא יכולות לדרוס זו את זו בשקט.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/).
+לטבלת הסטטוסים המלאה, המעברים, רשימת השדות וסוגי הקשרים, ראו
+[מחזור חיי כרטיס](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/).
 
-## Provenance: how a ticket came to exist
+## מקוריות: איך כרטיס נוצר
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+לכל כרטיס יש `originKind`. לטיפוס המנוי יש חמישה ערכים — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — אבל רק שניים
+נכתבים בפועל היום: `manual` (ברירת המחדל ב-`createTicket`, כולל ילדים מואצלים)
+ו-`externalSync` (מנוע הסנכרון, במשיכה מהספק). `TicketWorkflowService.createTicket`
+אינו מקבל ארגומנט מקור, ולכן `pipelineStep`, `agentDelegation` ו-`recovery` לעולם
+אינם נוחתים על שורה.
 
-## Guarded delegation
+## האצלה מוגנת
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+האצלה היא המקום שבו סוכן יוצר עבודה לסוכן אחר, והיא הנקודה שבה הרשאה עלולה
+לדלוף, ולכן ההגנות יושבות בצד השרת בנקודת חנק ולא בהוראות שבתוך ההנחיה.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` עובר דרך `TicketWorkflowService.delegateGuarded`, שמחשב את העומק
+והשורש של הילד משרשרת ההורים ואז מריץ את כל ארבע הבדיקות של `DelegationGuards`:
+קפיצה שתחרוג מ**תקרת עומק של 3**, קפיצה חזרה אל סוכן שכבר נמצא בשרשרת (**זיהוי
+מעגלים**), **תקרת אוטונומיה** (הרמה האפקטיבית של המואצל במרחב לא תעלה על זו של
+המאציל) ו**מעטפת תקציב** (ההאצלה מחייבת את תקציב העצירה הקשה שנותר למאציל ואינה
+יכולה להנפיק עוד). החיווט בייצור מספק את שתי יציאות הפותר. אוטונומיה ותקציב
+מדולגים כאשר `from_agent_id` מושמט (תקציב בלתי מוגבל / בלי מדיניות גם עובר).
+סירוב נזרק כ-`DelegationRefusedException` שההודעה שלו מגיעה לסוכן המאציל מילה
+במילה — דחייה קולנית, ולעולם לא אי־פעולה שקטה.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` הוא האח המבוגר, **חסר ההגנות**: הוא קורא ל-`createTicket`
+ישירות ומדלג על כל הגנה. עדיפו `delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+אל תבלבלו בין תקרת העומק של ההאצלה (3, בשרשראות `delegate_task`) לבין תקרת
+הקינון של תתי־סוכנים במנגנון ההרצה המובנה (2). אלה מגבלות שונות על מנגנונים
+שונים.
 
-## Hierarchy, links and projects
+## היררכיה, קשרים ופרויקטים
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+יחסי הורה ותת־סוגיה יושבים על `tickets.parent_ticket_id`, בבעלות `setParent` /
+`clearParent`. הם **אינם** רשומות ב-`ticket_links`, ולכן כל דבר שקורא את הקשרים
+של כרטיס חייב למזג את שני המקורות.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` מחזיק את הקצוות הכיווניים בין כרטיסים שאינם קשורים אחרת:
 
-| Link type     | Meaning                                 |
+| סוג קשר       | משמעות                                  |
 | ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| `blocks`      | המקור חוסם את היעד                      |
+| `relatesTo`   | שני הכרטיסים קשורים זה לזה (סימטרי)     |
+| `duplicateOf` | המקור הוא כפיל של היעד                  |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**פרויקט** הוא קיבוץ של כרטיסים בהיקף סביבת עבודה לקראת מטרה משותפת. פרויקטים
+קיימים רק ב-Control Center ולעולם אינם מסונכרנים לספק חיצוני.
 
-## Collaborators
+## משתפי פעולה
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+רשומות `TicketCollaborator` הן הדרך שבה יותר משחקן אחד משויך לכרטיס, בתפקיד
+`assignee`, `collaborator` או `reviewer`. בני אדם וסוכנים הם רשומות שוות־מעמד —
+`principalId` בתוספת `collaboratorType` — בלי ערך סימן מיוחד ל"המשתמש" ובלי
+מפתח זר לאף אחד משני הטבלאות.
 
-## External sync
+## סנכרון חיצוני
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+הכרטיס של Control Center הוא הראשי. מחיקת כרטיס היא **מקומית בלבד**, ולכן כרטיס
+שמגובה בספק ואתם מוחקים לא נמחק במערכת ניהול הכרטיסים ועלול להופיע שוב בסנכרון
+הבא. משתפי פעולה וכרטיסי ילד נמחקים בשרשור.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+פרטי הגישה של המתאם נפתרים ממאגרי פרטי הגישה של השרת (מפתח Linear או אסימון
+GitHub שהודבקו ב**הגדרות** נקלטים בבקשה הבאה; הסביבה רק זורעת את המאגרים האלה).
 
-## Tickets and pipelines
+## כרטיסים ופייפליינים
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+אף צומת בפייפליין לא יוצר, משלים או מבטל כרטיסים — לפלטה אין שלב כזה והמנוע אינו
+קורא ל-`TicketWorkflowService`. טריגר של פייפליין עדיין יכול לפעול על
+`TicketAssigned`, `TicketCompleted`, `TicketFailed` או `TicketCancelled` (אלה
+ארבעת אירועי הכרטיס ש-`EventPayloadMapper` ממפה בפועל). אין עמודת `pipelineRunId`
+בכרטיס; הצימוד לפייפליין יושב ביומן ההרצות של הסוכן.
 
-## See also
+## ראו גם
 
-- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/): ticket events can trigger a pipeline
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/): where a DAG of sub-tickets comes from
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): who a ticket is assigned to
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): the ticket lifecycle events
-- [Ticket lifecycle](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/): statuses, fields, transitions, relations
-- [Create and manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
-- [Delegate work to agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
-- [Organize work with projects](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/): אירועי כרטיס יכולים להפעיל פייפליין
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/): מהיכן מגיע DAG של תת־כרטיסים
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): למי כרטיס מוקצה
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): אירועי מחזור החיים של הכרטיס
+- [מחזור חיי כרטיס](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/): סטטוסים, שדות, מעברים וקשרים
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
+- [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
+- [ארגון עבודה בפרויקטים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)

@@ -1,166 +1,174 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Siapkan integrasi GitHub
+description: Masuk ke GitHub agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Panduan ini membahas bagian-bagian penyiapan yang khusus untuk GitHub. GitHub
+adalah salah satu dari tiga host kode yang didukung — lihat
+[Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
+untuk menghubungkan GitLab atau Bitbucket, dan untuk cara sebuah ruang kerja
+memadukan ketiganya.
 
-## Prerequisites
+## Prasyarat
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Akun GitHub dengan akses ke repo yang ingin Anda kerjakan
+- Baik GitHub App yang terdaftar untuk server Anda (lihat
+  [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)) agar Anda dapat **masuk**,
+  **atau** personal access token dengan `repo` dan `read:org` untuk ditempel
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Kredensial tersimpan di server dan melekat pada Anda]
+Tidak ada yang disimpan di mesin yang sedang Anda pakai untuk mengetik.
+Kredensial Anda dipegang oleh `cc_server` Anda, dikunci berdasarkan id pengguna
+Anda, dan setiap perangkat tempat Anda masuk memakainya — desktop, web, dan
+ponsel. Anggota lain di server yang sama tidak dapat membacanya, dan
+memasukkan mereka adalah hal yang mereka lakukan sendiri.
 :::
 
-## Sign in with GitHub
+## Masuk dengan GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Sebuah **alur perangkat**: GitHub menampilkan kode singkat kepada Anda, Anda
+menyetujuinya di github.com, lalu server menerima kredensialnya — tanpa URL
+callback, tanpa port, tidak ada yang perlu diekspos. Tersedia kapan pun server
+punya client id, yang sudah disertakan pada build resmi.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Buka **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** (atau langkah pertama
+   onboarding)
+2. Pada baris **GitHub**, klik **Masuk dengan GitHub**
+3. Dialog menampilkan kode delapan karakter dan membuka
+   [github.com/login/device](https://github.com/login/device) di browser Anda.
+   Kodenya sudah ada di papan klip Anda
+4. Tempel kode itu, setujui aplikasinya, lalu kembali. Barisnya berubah sendiri
+   menjadi "Masuk sebagai _your-username_"
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Dialog boleh ditutup selama Anda menyelesaikan prosesnya di browser — server
+terus melakukan polling sampai kodenya kedaluwarsa (sekitar 15 menit), sehingga
+proses masuknya tetap berhasil.
 
-## Or paste a token
+## Atau tempel token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Alternatif yang dipakai saat server tidak punya app, saat app tidak terpasang
+di akun yang Anda butuhkan, atau saat Anda memang lebih suka memakai PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Buka **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**
+2. Pada baris **GitHub**, klik **Tambah token**
+3. Tempel token dengan `repo` dan `read:org` (classic) lalu simpan. Token
+   **fine-grained** memerlukan **Contents** dan **Pull requests** pada repositori
+   (baca dan tulis), ditambah **Checks** dan **Actions** (baca).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Token diperiksa saat disimpan, sehingga barisnya dapat menyebutkan akun
+pemiliknya. Klik **Putuskan** untuk menghapusnya.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Titik pemeriksaan: baris **GitHub** berbunyi "Masuk sebagai _your-username_".
+Sebuah sufiks menyebutkan sumbernya saat kredensial yang menjawab bukan milik
+Anda — "lewat aplikasi server ini" atau "dari environment".
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Prioritasnya tetap]
+Permintaan yang dibuat atas nama Anda memakai kredensial **Anda**, bukan yang
+lain — environment adalah kredensial server, bukan milik Anda, jadi ia tidak
+pernah menggantikan posisi Anda. Pekerjaan yang tidak punya manusia di
+belakangnya (webhook, polling PR, sinkronisasi tiket) memakai identitas app
+server, lalu kredensial pemilik server, lalu environment.
 :::
 
-## What the integration gives you
+## Yang Anda dapatkan dari integrasi ini
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Fitur                 | Cara                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Daftar dan detail PR  | API REST GitHub, dari server, dengan identitas app atau kredensial Anda sendiri                               |
+| Hasil pemeriksaan     | API Checks GitHub                                                                                             |
+| Publikasi tinjauan    | Langkah dengan gerbang pengguna yang memposting tinjauan Anda ke PR                                           |
+| Pendaftaran repo      | Sebuah checkout diterima jika remote `origin`-nya menunjuk ke github.com — atau ke gitlab.com / bitbucket.org |
+| Akses GitHub agen     | Broker kredensial menyuntikkan token sebagai `GH_TOKEN` / `GITHUB_TOKEN`, dibatasi oleh kemampuan agen       |
+| Ping notifikasi       | Polling di sisi server atas kotak masuk notifikasi GitHub Anda memunculkan "Disebutkan di pull request" dan "Tinjauan diminta" |
+| Profil pengguna       | Kartu hover profil dan pemfilteran PR per penulis                                                             |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Sejumlah jalur memakai API GraphQL alih-alih REST jika lebih murah — aktivitas
+cabang untuk pemilih compose-PR dan keadaan tinjauan langsung yang menentukan
+apakah notifikasi permintaan tinjauan masih menggantung.
 
-## Watch for GitHub outages
+## Perhatikan gangguan GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Bilah judul menampilkan chip status saat sebuah penyedia sedang terganggu,
+mencakup GitHub, Claude, OpenAI, dan Kimi. **Chip itu disembunyikan selama
+semuanya sehat** — kehadirannya menandakan ada masalah, bukan ketiadaannya.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Klik chip itu untuk membuka panel sembul berisi status tiap penyedia dan tombol
+segarkan. Statusnya diperbarui sendiri setiap dua menit.
 
-## Know how agents act on GitHub
+## Pahami cara agen bertindak di GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Agen mendapatkan token GitHub hanya jika agen tersebut punya **Izinkan panggilan API GitHub** atau
+  **Izinkan git push**. Lihat
+  [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
+- Commit yang dibuat agen ditulis **atas nama agen** — nama tampilan ditambah
+  ` (agent)`, pada alamat sintetis yang dikunci berdasarkan id agen — tidak
+  pernah atas nama manusia. Orang yang memintanya dicantumkan lewat trailer
+  `Co-Authored-By`
+- Jika GitHub App dikonfigurasi, broker menerbitkan token instalasi
+  fine-grained, terbatas pada repo, berdurasi sekitar satu jam untuk setiap
+  peluncuran, alih-alih menyerahkan token yang luas. Instalasinya ditentukan
+  dari **owner** repo run tersebut, sehingga satu app yang terpasang di
+  beberapa akun tercakup dengan benar ke akun mana pun yang disentuh run itu.
+  Tanpa app, agen menerima token dari environment
+- Run yang diminta oleh anggota yang sudah masuk akan bertindak dengan identitas
+  GitHub **anggota tersebut** — kredensialnya digabungkan setelah environment
+  milik broker, sehingga commit atau komentar yang dibuat agen untuknya dapat
+  diatribusikan kepadanya
 
-## Troubleshooting
+## Pemecahan masalah
 
-### The PR list is empty and says GitHub is not connected
+### Daftar PR kosong dan menyebut GitHub tidak terhubung
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Anda tidak punya kredensial GitHub di server ini. Masuk atau tempel token di
+**Hosting kode**. Repo di host kode lain tidak terpengaruh — hanya repo GitHub
+yang tidak menyumbang apa pun.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Baris menawarkan "Tambah token" tetapi tidak ada "Masuk dengan GitHub"
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Server tidak punya client id — kondisi yang normal untuk build dari sumber,
+karena kredensial hanya ditanam pada build resmi. Lihat
+[Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/): prosesnya sekitar dua menit
+dan hanya pemilik server yang perlu melakukannya, sekali saja.
 
-### The sign-in dialog says the provider returned no device code
+### Dialog masuk menyebutkan penyedia tidak mengembalikan kode perangkat
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App-nya ada, tetapi centang **Device flow**-nya mati. Aktifkan di
+pengaturan app tersebut (General → Device flow) lalu coba lagi.
 
-### The row says "via this server's app" when I expected my own account
+### Baris menyebutkan "lewat aplikasi server ini" padahal saya mengharapkan akun saya sendiri
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Anda belum masuk; yang Anda lihat adalah identitas app server yang menjawab.
+Klik **Masuk dengan GitHub** pada baris tersebut.
 
-### A fine-grained PAT shows no merge button or check status
+### PAT fine-grained tidak menampilkan tombol merge atau status pemeriksaan
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Token tersebut memerlukan **Contents** dan **Pull requests** (baca dan tulis),
+ditambah **Checks** dan **Actions** (baca). Setelah mengubahnya, tempel lagi di
+Hosting kode.
 
-### Adding a repo is rejected
+### Penambahan repo ditolak
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+Pendaftaran mensyaratkan ketiganya: path berada di dalam work tree git, ada
+remote `origin`, dan remote tersebut menunjuk ke host kode yang didukung
+(github.com, gitlab.com, atau bitbucket.org). Lihat
+[Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
 
-### Everything stops working for a while after heavy use
+### Semua berhenti berfungsi untuk sementara setelah pemakaian berat
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Itulah pemutus sirkuit batas laju. GitHub menandai batas utamanya dengan `403`
+yang membawa `x-ratelimit-remaining: 0` dan waktu reset; ketika melihatnya,
+klien menggagalkan permintaan berikutnya secara lokal tanpa panggilan jaringan
+sampai jendela waktunya lewat, sehingga badai percobaan ulang tidak dapat
+memperparah batas tersebut. Kegagalan sementara dicoba ulang hingga tiga kali
+dengan backoff eksponensial, dengan menghormati `retry-after`.
 
-## Related guides
+## Panduan terkait
 
-- [Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
-- [Connect a code host](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
-- [Manage API keys](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
-- [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
-- [Review and merge a PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
+- [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
+- [Kelola kunci API](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
+- [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
+- [Tinjau dan gabungkan PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)

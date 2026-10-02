@@ -1,97 +1,111 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Δώστε σε πράκτορα μηχανή για δοκιμές
+description: Δώστε σε έναν πράκτορα έναν αναλώσιμο περιηγητή, επιφάνεια εργασίας, εξομοιωτή Android ή Προσομοιωτή iOS — με ζωντανή παρακολούθηση και χειριστήρια που μπορείτε να αναλάβετε.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+Ένας **σταθμός** είναι μια αναλώσιμη μηχανή που ανοίγει ένας πράκτορας όταν
+χρειάζεται να δοκιμάσει κάτι στην πράξη: να φορτώσει μια σελίδα, να κάνει κλικ
+σε μια εφαρμογή επιφάνειας εργασίας, να πατήσει σε ένα τηλέφωνο. Μπορείτε να
+τον παρακολουθείτε να δουλεύει σε πραγματικό χρόνο και να αναλαμβάνετε τον
+έλεγχο όποτε θέλετε.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Οι περίκλειστοι σταθμοί τερματικού, περιηγητή και επιφάνειας εργασίας είναι
+εικονικές μηχανές με αναλώσιμους δίσκους και δίκτυα πίσω από πύλη. Το Android
+και το iOS είναι εξομοιωτές που διαχειρίζεται ο ξενιστής: η κατάσταση της
+συσκευής τους είναι αναλώσιμη, αλλά το δίκτυό τους ακολουθεί τον ξενιστή του
+διακομιστή.
 
-## Set it up once
+## Ρυθμίστε το μία φορά
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Οι σταθμοί εκτελούνται στη μηχανή που φιλοξενεί το `cc_server` — την ίδια
+μηχανή, όχι αυτή που κοιτάτε. Υπάρχουν πέντε επιφάνειες που βλέπει ο χρήστης·
+οι επιφάνειες για υπολογιστή και κινητά χρειάζονται ρύθμιση στον ξενιστή:
 
-| Surface | Runs on | Setup |
+| Επιφάνεια | Εκτελείται σε | Ρύθμιση |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Τερματικό (VM)** | Ένα microVM που εκκινεί μια καθηλωμένη εικόνα Ubuntu | Καμία — η εικόνα λαμβάνεται αυτόματα κατά την πρώτη χρήση |
+| **Περιηγητής (VM)** | Ένα microVM που εκκινεί μια καθηλωμένη εικόνα Debian, με Chromium, Firefox ή WebKit να εγκαθίσταται κατά την πρώτη χρήση | Καμία — το ίδιο |
+| **Υπολογιστής (VM)** | QEMU με εικόνα επιφάνειας εργασίας Linux που περιλαμβάνει Chromium, Firefox, WebKit και μια βάση CLI τύπου GitHub-hosted runner | Εγκαταστήστε το QEMU (`brew install qemu`) και μετά κάντε **Εισαγωγή** μιας εικόνας επιφάνειας εργασίας από **Ρυθμίσεις → Διακομιστής → Σταθμοί** |
+| **Android** | Τον εξομοιωτή Android της Google | Εγκαταστήστε το Android SDK, δημιουργήστε ένα AVD και εκκινήστε το (παρακάτω) |
+| **Προσομοιωτής iOS** | CoreSimulator στον Mac του διακομιστή | Εγκαταστήστε το Xcode και το ζητούμενο runtime iOS και μετά εγκαταστήστε τη γέφυρα αυτοματοποίησης από **Ρυθμίσεις → Διακομιστής → Σταθμοί** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Οι μηχανές τερματικού και περιηγητή εκκινούν από εικόνες καθηλωμένες σε digest:
+τα ακριβή byte ονομάζονται εκ των προτέρων, λαμβάνονται μία φορά κατά την πρώτη
+εκκίνηση και αποθηκεύονται προσωρινά — μετά την πρώτη εκκίνηση κάθε είδους, οι
+επόμενες μηχανές παραλείπουν εντελώς τη λήψη και εμφανίζονται σε δευτερόλεπτα.
+Η σελίδα **Ρυθμίσεις → Διακομιστής → Σταθμοί** δείχνει τι μπορεί να εκκινήσει ο
+διακομιστής σας και κάθε μηχανή που εκτελείται αυτή τη στιγμή.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Μια εγκατεστημένη εικόνα επιφάνειας εργασίας παραμένει διαχειρίσιμη από την
+ίδια σελίδα: η **Εισαγωγή** την αντικαθιστά με ένα νεότερο qcow2 και η
+**Διαγραφή** την αφαιρεί, ώστε να μπορείτε να εγκαταστήσετε μια νέα έκδοση.
 
-### Mobile devices are set up differently
+### Οι κινητές συσκευές ρυθμίζονται διαφορετικά
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Δεν υπάρχει δική μας εικόνα για Android ή iOS, και αυτό δεν είναι παράλειψη.
+Οι εικόνες συστήματος Android προέρχονται από το SDK της Google· τα runtime iOS
+προέρχονται από το Xcode. Για το Android, εγκαταστήστε το Android Studio (ή τα
+εργαλεία SDK της γραμμής εντολών), προσθέστε μια εικονική συσκευή στο **Device
+Manager** και εκκινήστε την. Η σελίδα Σταθμοί αναφέρει τότε το Android ως
+διαθέσιμο.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Σας λέει επίσης ακριβώς ποιο βήμα λείπει — χωρίς SDK, χωρίς εξομοιωτή, χωρίς
+εικονική συσκευή ή με μια συσκευή που απλώς δεν εκτελείται — γιατί αυτά έχουν
+τέσσερις διαφορετικές λύσεις και μόνο μία από αυτές είναι λήψη. Αν εκκινήσετε το
+`cc_server` από ένα κέλυφος που δεν βλέπει το SDK, εξάγετέ το:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Για το iOS, ο ίδιος ο διακομιστής πρέπει να εκτελείται σε macOS με
+εγκατεστημένο το Xcode και ένα runtime Προσομοιωτή iOS. Ανοίξτε τις
+**Ρυθμίσεις → Διακομιστής → Σταθμοί** και πατήστε **Εγκατάσταση γέφυρας
+αυτοματοποίησης iOS**. Ο διακομιστής λαμβάνει το artifact WebDriverAgent που
+είναι καθηλωμένο σε checksum, το επαληθεύει και το εγκαθιστά στην αποθήκη
+αυτοματοποίησης που ανήκει στον διακομιστή. Κανένας προσομοιωτής δεν εκκινεί
+κατά τη ρύθμιση.
 
-## Open a machine
+## Ανοίξτε μια μηχανή
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Οι μηχανές ζουν ως **καρτέλες**, δίπλα στη συνομιλία και το diff — σε έναν χώρο
+ή σε σελίδα PR, στο ίδιο μενού `+`, κάτω από το **Μηχανήματα**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Υπολογιστής** — μια επιφάνεια εργασίας Linux με Chromium, Firefox και WebKit
+- **Chromium**, **Firefox** ή **WebKit** — ένας περιηγητής
+- **Android** — ο εξομοιωτής Android που εκτελείται
+- **Προσομοιωτής iOS** — ένας αναλώσιμος προσομοιωτής που δημιουργήθηκε για αυτή τη συνομιλία
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Επιλέξτε μία και πατήστε **Εκκίνηση της μηχανής**. Η καρτέλα δείχνει σε ποιο
+στάδιο βρίσκεται η εκκίνηση («Starting the microVM», «Waiting for the guest to
+come up») αντί να γυρίζει απλώς.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Η καρτέλα περιορίζεται στη συνομιλία, και το ίδιο ισχύει για το εργαλείο του
+πράκτορα. Μια καρτέλα Chromium, Firefox ή WebKit και το `browser_use`, το
+Android και το `mobile_use`, ή ο Προσομοιωτής iOS και το `ios_use`
+απευθύνονται στην ίδια προεπιλεγμένη μηχανή. Οι πρόσθετες θέσεις UI είναι
+ξεχωριστές μηχανές σύγκρισης· τα εργαλεία του πράκτορα χρησιμοποιούν πάντα την
+προεπιλεγμένη.
 
-To build, install and start a Flutter app on Android:
+Για να κάνετε build, εγκατάσταση και εκκίνηση μιας εφαρμογής Flutter στο
+Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Στη συνέχεια καλέστε το `mobile_use` με το `install_apk` και το
+`build/app/outputs/flutter-apk/app-debug.apk`, ακολουθούμενο από το `start_app`
+και το όνομα πακέτου Android. Το `ui_dump`, τα στιγμιότυπα οθόνης και η
+εισαγωγή οδηγούν την ίδια συσκευή που εμφανίζεται στην ανθρώπινη καρτέλα. Τα
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` και οι κλήσεις `shell`
+σε μορφή argv καλύπτουν τον υπόλοιπο κύκλο ανάπτυξης χωρίς να καλείται κέλυφος
+στη μηχανή του διακομιστή.
 
-To build, install and start a Flutter app on iOS Simulator:
+Για να κάνετε build, εγκατάσταση και εκκίνηση μιας εφαρμογής Flutter στον
+Προσομοιωτή iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +113,232 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Στη συνέχεια καλέστε το `ios_use` με το `install_app` και τον κατάλογο `.app`,
+ακολουθούμενο από το `start_app` και το bundle identifier που εκτυπώνει το
+`plutil`. Το εργαλείο iOS εκθέτει επίσης τα `stop_app`, `uninstall_app`,
+`open_url` και μια ενέργεια `spawn` σε μορφή argv για διαγνωστικά τοπικά στον
+προσομοιωτή.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Οι προβολές επιφάνειας εργασίας και περιηγητή προσαρμόζονται στο μέγεθος του
+πλαισίου. Το iOS διατηρεί το σταθερό μέγεθος σε points του προσομοιωτή και το
+τοποθετεί με μαύρες λωρίδες. Κάθε επιφάνεια έχει ακόμα δύο ανεξάρτητες ροές: ο
+πράκτορας παίρνει μικρά, φθηνά στιγμιότυπα οθόνης, ενώ εσείς παίρνετε τη
+ζωντανή προβολή. Η αλλαγή καρτέλας σταματά τη ροή για τον άνθρωπο, ώστε μια
+μηχανή στο παρασκήνιο να μην καταναλώνει εύρος ζώνης προβολής.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Μια καρτέλα σταθμού δεν εκκινεί μηχανή από μόνη της, ούτε κατά την επαναφορά
+διάταξης. Ο κανόνας αυτός αποτρέπει το άνοιγμα της εφαρμογής από το να εκκινήσει
+απροσδόκητα εικονικές μηχανές ή να δημιουργήσει συσκευές προσομοιωτή.
 
-## Drive the machine
+## Οδηγήστε τη μηχανή
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Ο καμβάς είναι δικός σας για πληκτρολόγηση και κλικ όποτε κανείς άλλος δεν έχει
+αποκλειστικό έλεγχο — ή όταν τον έχετε εσείς. Όσο κρατάτε αυτό το κλείδωμα, η
+ετικέτα κατάστασης γράφει **Έχετε τον έλεγχο**, ο πράκτορας μπορεί ακόμα να
+παίρνει στιγμιότυπα οθόνης και ο διακομιστής αρνείται τις ενέργειες που αλλάζουν
+κατάσταση στο μοναδικό σημείο από το οποίο περνούν όλες οι ενέργειες. Ό,τι κάνετε
+καταγράφεται στο όνομά σας.
 
-Press **Stop the machine** when you are done.
+Πατήστε **Διακοπή της μηχανής** όταν τελειώσετε.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Ο έλεγχος είναι αποκλειστικός σκόπιμα: δύο δρώντες που πληκτρολογούν σε μία
+μηχανή παράγουν εισαγωγή που δεν σκόπευε κανένας από τους δύο.
 
-## Move things in and out
+## Μετακινήστε πράγματα μέσα και έξω
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Η αντιγραφή και η επικόλληση λειτουργούν και προς τις δύο κατευθύνσεις στον
+καμβά του σταθμού, όπως και η μεταφορά αρχείων με σύρσιμο.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Αντιγραφή και επικόλληση.** Πατήστε τον συνδυασμό αντιγραφής πάνω στον καμβά
+και ό,τι αντέγραψε η μηχανή — κείμενο, εικόνα, λίστα αρχείων — προσγειώνεται
+στο πρόχειρό σας. Η επικόλληση στέλνει το δικό σας προς την άλλη κατεύθυνση και
+εκτελεί επικόλληση μέσα στη μηχανή. Στο macOS ο συνδυασμός είναι ⌘C/⌘V· το ⌃C
+φτάνει ακόμα σε ένα φιλοξενούμενο κέλυφος ως διακοπή. Στα Windows και το Linux
+χρησιμοποιήστε ⌃C/⌃V — το φιλοξενούμενο λαμβάνει το ίδιο πλήκτρο που θα λάμβανε
+ούτως ή άλλως, οπότε το ⌃C σε φιλοξενούμενο τερματικό εξακολουθεί να διακόπτει
+και το δικό σας πρόχειρο μένει ανέπαφο.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Τίποτα δεν συγχρονίζεται στο παρασκήνιο. Ένας κωδικός που αντιγράφετε στη δική
+σας μηχανή δεν φτάνει μέσα σε ένα VM επειδή ενεργοποιήθηκε κάποιος
+χρονοδιακόπτης· περνά όταν κάνετε επικόλληση.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Η επικόλληση προς έναν σταθμό επιτρέπεται εξ ορισμού. Η αντιγραφή από έναν
+σταθμό ζητά πρώτα άδεια — παραχώρηση δέκα λεπτών ή **Να επιτρέπεται πάντα** από
+**Ρυθμίσεις → Διακομιστής → Σταθμοί → Πρόσβαση στο πρόχειρο**. Οι δύο
+κατευθύνσεις είναι ανεξάρτητες και σας ακολουθούν εσάς, όχι τον χώρο εργασίας.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Σύρετε αρχεία μέσα.** Αφήστε τα οπουδήποτε στον καμβά.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- Στον **Περιηγητή (VM)**, η σελίδα λαμβάνει ένα *πραγματικό* άφημα στο σημείο
+  που αφήνετε το αρχείο, οπότε μια ζώνη μεταφόρτωσης συμπεριφέρεται ακριβώς όπως
+  θα έκανε με ένα τοπικό αρχείο.
+- Στον **Υπολογιστή (VM)**, τα αρχεία καταλήγουν στο `~/Drops` και οι διαδρομές
+  τους πηγαίνουν στο πρόχειρο της μηχανής, ώστε το ⌃V να τα επικολλά σε έναν
+  διαχειριστή αρχείων ή σε ένα πεδίο μεταφόρτωσης. Ο ξενιστής δεν μπορεί να
+  συνθέσει ένα σύρσιμο προς μια αυθαίρετη εφαρμογή Linux χωρίς να εκτελεί έναν
+  δαίμονα με προνόμια μέσα στο VM, κάτι που οι σταθμοί σκόπιμα δεν έχουν — γι'
+  αυτό το μήνυμα σας λέει πού πήγαν τα αρχεία αντί να προσποιείται ότι έγινε
+  άφημα.
+- Σε ένα **τερματικό**, το αρχείο αντιγράφεται μέσα και η διαδρομή του
+  πληκτρολογείται στο prompt, έτοιμη να περαστεί σε μια εντολή. Η επικόλληση μιας
+  *εικόνας* σε ένα τερματικό κάνει το ίδιο: αποθηκεύεται στη μηχανή και παίρνετε
+  τη διαδρομή.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Το σύρσιμο αρχείων έξω** λειτουργεί από τον Υπολογιστή (VM). Ξεκινήστε να
+σύρετε ένα αρχείο μέσα στη μηχανή, βγάλτε τον δείκτη έξω από τον καμβά και
+γίνεται πραγματικό σύρσιμο στην επιφάνεια εργασίας σας — αφήστε το στο Finder ή
+τον Explorer. Η αντιγραφή αρχείων από τον διαχειριστή αρχείων της μηχανής και η
+επικόλληση στη δική σας πλευρά λειτουργεί επίσης. Ο Περιηγητής (VM) δεν το
+προσφέρει αυτό: ένας headless περιηγητής δεν έχει ωφέλιμο φορτίο συρσίματος για
+ανάγνωση και το να μαντεύει κανείς από την επιλογή κειμένου της σελίδας θα
+υφάρπαζε συνηθισμένα κλικ.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Ο Υπολογιστής (VM) χρειάζεται εικόνα χτισμένη μετά την προσθήκη υποστήριξης
+προχείρου. Αν εισαγάγατε τη δική σας νωρίτερα, ξαναχτίστε την με το
+`scripts/rigs/build_image.sh` και μετά χρησιμοποιήστε την **Εισαγωγή** στην
+εγκατεστημένη εικόνα για να την αντικαταστήσετε.
 :::
 
-## Terminals inside a rig
+## Τερματικά μέσα σε έναν σταθμό
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Τα τερματικά σε έναν χώρο ή σε μια σελίδα PR μπορούν να εκτελούνται μέσα σε έναν
+σταθμό αντί στη μηχανή του ίδιου του διακομιστή. Όταν συμβαίνει αυτό, το
+πλαίσιο εμφανίζει μια ετικέτα **Απομονωμένο VM**.
 
-What changes:
+Τι αλλάζει:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Τίποτα από όσα εκτελείτε δεν φτάνει στον ξενιστή. Ένα `rm -rf` εκεί μέσα σας
+  κοστίζει τον σταθμό.
+- Το δίκτυο είναι κλειστό εξ ορισμού. Μόνο οι κεντρικοί υπολογιστές στη λίστα
+  επιτρεπόμενων του σταθμού είναι προσβάσιμοι και τα πάντα περνούν από μια πύλη
+  που την επιβάλλει.
+- Το `git push` λειτουργεί ακόμα. Ο σταθμός δεν έχει αποθηκευμένο διαπιστευτήριο·
+  ζητά από τον διακομιστή ένα βραχύβιο για κάθε ενέργεια και το token ανακαλείται
+  όταν κλείσει ο σταθμός.
 
-What to know:
+Τι πρέπει να γνωρίζετε:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Ένα περίκλειστο τερματικό που επαναφέρεται σας περιμένει.** Όπως μια καρτέλα
+  σταθμού, ένα τερματικό `microvm` που επιστρέφει με τη διάταξή σας εμφανίζει ένα
+  κουμπί **Άνοιγμα του κελύφους** αντί να εκκινεί το VM του κατά την εκκίνηση.
+  Ένα τερματικό κελύφους στον ξενιστή κοστίζει μια διεργασία· ένα περίκλειστο
+  κοστίζει μια μηχανή.
+- **Τα αρχεία που αφήνετε στο τερματικό πληκτρολογούνται, δεν ανοίγουν.** Αφήστε
+  ένα CSV σε ένα περίκλειστο τερματικό και αντιγράφεται στη μηχανή και η διαδρομή
+  του φιλοξενούμενου εμφανίζεται στο prompt — η διαδρομή του ξενιστή θα ήταν
+  εντολή που αποτυγχάνει εκεί.
+- **Το αντίγραφο στον σταθμό είναι αντίγραφο.** Το worktree σας στον ξενιστή
+  παραμένει η πηγή αλήθειας. Τα commits που κάνετε μέσα σε έναν σταθμό
+  μεταφέρονται πίσω στο `refs/rigs/<id>/*` όταν το ζητήσετε — δεν μετακινούν ποτέ
+  το branch σας ούτε αγγίζουν το working tree σας.
+- **Η εργασία με στόχο τον ξενιστή εκτελείται ακόμα στον ξενιστή.** Ένα
+  φιλοξενούμενο Linux δεν μπορεί να κάνει build για macOS ή να εκτελέσει
+  `xcodebuild`. Επιλέξτε ρητά το εγγενές υποσύστημα γι' αυτό· η εφαρμογή θα σας
+  ζητήσει επιβεβαίωση αντί να αλλάξει σιωπηλά.
 
-## Ports
+## Θύρες
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/).
+Εκτελέστε έναν διακομιστή ανάπτυξης στο Τερματικό (VM) — ας πούμε `pnpm dev` στη
+θύρα 3000 — και μέσα σε λίγα δευτερόλεπτα το εικονίδιο του βύσματος στη γωνία
+του τερματικού ανάβει: η θύρα προωθείται στο `localhost:3000` της μηχανής σας,
+είναι προσβάσιμη στο `localhost:3000` μέσα στον Περιηγητή (VM), μοιράζεται στο
+δίκτυό σας και μπορεί να ονομαστεί `https://myapp.test`. Όλη η ροή — αυτόματη
+προώθηση, κοινή χρήση στο LAN, τομείς ανάπτυξης με HTTPS — έχει τον δικό της
+οδηγό: [Προώθηση θυρών από τερματικό](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/).
 
-## Custom images
+## Προσαρμοσμένες εικόνες
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Ένας χώρος εργασίας μπορεί να στρέψει το Τερματικό (VM) και τον Περιηγητή (VM)
+στις δικές του εικόνες — από **Ρυθμίσεις → Διακομιστής → Σταθμοί → Προσαρμοσμένες
+εικόνες (αυτός ο χώρος εργασίας)**. Συνήθης χρήση: επεκτείνετε την προεπιλεγμένη
+εικόνα με την αλυσίδα εργαλείων που χρειάζεται το project σας, ώστε κάθε τερματικό
+να ξεκινά έτοιμο, ή επαναχρησιμοποιήστε μια εικόνα που δημοσιεύει ήδη η ομάδα σας.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Η μηχανή εκκινεί ακόμα μέσα στο ίδιο περίβλημα: ίδια πύλη εξερχόμενης κίνησης,
+ίδιος μεσίτης διαπιστευτηρίων, ίδιος κύκλος ζωής. Μόνο οι διαχειριστές του χώρου
+εργασίας μπορούν να αλλάξουν τη ρύθμιση, οι νέες μηχανές την υιοθετούν (οι
+εκτελούμενες κρατούν τη δική τους) και η αναφορά πρέπει να είναι εικόνα από
+registry — οι τοπικές διαδρομές απορρίπτονται.
 
-What an image must provide:
+Τι πρέπει να παρέχει μια εικόνα:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Τερματικό (VM)** — μια εικόνα Linux με `bash`. Χρειάζεται επίσης `git`,
+  `curl` και `socat` — είτε προεγκατεστημένα είτε εγκαταστάσιμα κατά την πρώτη
+  εκκίνηση (οποιαδήποτε εικόνα βασισμένη σε Debian/Ubuntu κάνει: εγκαθίστανται
+  αυτόματα, μαζί με ένα σύνολο εργαλείων CLI τύπου GitHub-hosted runner:
+  μεταγλωττιστές, Python 3, `jq`, εργαλεία αρχειοθέτησης, `rsync`. Runtime γλωσσών
+  όπως Node/Go/Java και το Docker δεν είναι προεγκατεστημένα). Η θύρα
+  φιλοξενούμενου `7911` είναι δεσμευμένη για τον προωθητή θυρών.
+- **Περιηγητής (VM)** — μια εικόνα Debian/Ubuntu με `bash` και `socat`, συν ένα
+  εκτελέσιμο `chromium`. Ο διακομιστής εκκινεί ο ίδιος τον Chromium ως
+  `chromium --headless=new` και μεταφέρει το DevTools από τη θύρα φιλοξενούμενου
+  `9223` στη `9222`. Το PulseAudio και το ffmpeg εγκαθίστανται κατά την πρώτη
+  εκκίνηση. Μην κάνετε build `FROM chromedp/headless-shell` — αυτό το εκτελέσιμο
+  δεν έχει ήχο. Η παράκαμψη ισχύει μόνο για σταθμούς Chromium· ο Firefox και το
+  WebKit την αγνοούν και εκκινούν την καθηλωμένη εικόνα Debian. Οι θύρες
+  φιλοξενούμενου `9222`/`9223` είναι δεσμευμένες.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Δύο συστάσεις: καθηλώστε την αναφορά με digest (`@sha256:…`) ώστε τα byte να μην
+μπορούν να αλλάξουν κάτω από τα πόδια σας, και φιλοξενήστε την στο Docker Hub ή
+στο GitHub Container Registry — οι κεντρικοί υπολογιστές λήψης αυτών των
+registries γίνονται δεκτοί από την πύλη εξερχόμενης κίνησης αυτόματα· άλλοι μπορεί
+να χρειάζονται τους κεντρικούς υπολογιστές παράδοσης περιεχομένου τους
+προσβάσιμους για τη λήψη.
 
-## When a rig goes away
+## Όταν ένας σταθμός φεύγει
 
-Rigs are meant to be temporary:
+Οι σταθμοί προορίζονται να είναι προσωρινοί:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Αδράνεια** — μετά από ~15 λεπτά χωρίς τίποτα να συμβαίνει, ένας σταθμός
+  περιηγητή, επιφάνειας εργασίας ή κινητού σταθμεύει (παγώνει, ξυπνά αμέσως στην
+  επόμενη ενέργεια). Ένα περίκλειστο τερματικό περιμένει 45 λεπτά. Μετά το
+  διπλάσιο διάστημα αδράνειας, κλείνει.
+- **Χρονικό όριο** — κάθε σταθμός έχει μια αυστηρή διάρκεια ζωής που δεν μπορεί να
+  παρατείνει, ό,τι κι αν κάνει.
+- **Μνήμη** — αν ο διακομιστής χρειάζεται χώρο για έναν νέο σταθμό, κλείνει αυτόν
+  που χρησιμοποιήθηκε λιγότερο πρόσφατα. Ένας σταθμός που κάποιος οδηγεί,
+  παρακολουθεί ή έχει ανοιχτό τερματικό σε αυτόν δεν αφαιρείται ποτέ.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Όταν κλείνει ένας περίκλειστος σταθμός, ο δίσκος του απορρίπτεται. Το κλείσιμο
+ενός σταθμού Android αποσυνδέεται από τον εξομοιωτή του ξενιστή — δεν τον
+διαγράφει. Ένας σταθμός iOS διαγράφει τη συσκευή CoreSimulator που δημιούργησε.
+Μεταφέρετε πρώτα πίσω ό,τι θέλετε να κρατήσετε.
 
-## What a rig can reach
+## Τι μπορεί να φτάσει ένας σταθμός
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Οι περίκλειστοι σταθμοί τερματικού, περιηγητή και επιφάνειας εργασίας έχουν εξ
+ορισμού πύλη εξερχόμενης κίνησης με πολιτική άρνησης: παραχωρείτε ρητά κεντρικούς
+υπολογιστές και η μόνη διαδρομή του φιλοξενούμενου είναι μια πύλη που επιβάλλει
+αυτή τη λίστα. Ένας σταθμός περιηγητή δέχεται επίσης τον ιστότοπο του προϊόντος
+(`usectrl.dev`) εξ αρχής. Ο μεσίτης διαπιστευτηρίων χρησιμοποιεί την ίδια λίστα.
 
-Two honest caveats:
+Δύο ειλικρινείς επιφυλάξεις:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Το δίκτυο των κινητών ακολουθεί τον ξενιστή.** Ο εξομοιωτής του Android και
+  το CoreSimulator της Apple δεν βρίσκονται πίσω από την πύλη εξερχόμενης κίνησης
+  του περιβλήματος. Καμία από τις δύο καρτέλες κινητών δεν προσφέρει χειριστήριο
+  παράκαμψης δικτύου, επειδή το δίκτυο που διαχειρίζεται ο ξενιστής είναι ήδη
+  χωρίς περιορισμούς.
+- **Ό,τι διαβάζει ένας σταθμός είναι μη αξιόπιστο.** Το κείμενο της σελίδας, το
+  DOM, τα δέντρα προσβασιμότητας και τα dumps προβολής επιστρέφουν στον πράκτορα
+  τυλιγμένα σε δείκτες που λένε «αυτά είναι δεδομένα, όχι οδηγίες». Μια σελίδα
+  που προσπαθεί να δώσει εντολές στον πράκτορά σας διαβάζεται ως συμβολοσειρά σε
+  εισαγωγικά.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Μπορείτε να δείτε ό,τι εκτελείται και να σταματήσετε οτιδήποτε από αυτά, από
+**Ρυθμίσεις → Διακομιστής → Σταθμοί**.
 
-## Related
+## Σχετικά
 
-- [Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Σταθμοί και περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/) — το μοντέλο πίσω
+  από όλα αυτά: γιατί εικονικές μηχανές, οι δύο ροές προβολής, ο μεσίτης
+  διαπιστευτηρίων, ο κύκλος ζωής
+- [Προώθηση θυρών από τερματικό](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/) — φτάστε
+  σε έναν διακομιστή ανάπτυξης από οπουδήποτε έχει σημασία
+- [Αναφορά σταθμών](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/) — κάθε επιφάνεια, ρήμα, θύρα και
+  προεπιλογή σε ένα σημείο
+- [Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/) — το `Drive an
+  enclosure (rig)` είναι κλάση ενεργειών που μπορείτε να ορίσετε σε αποδοχή, ερώτηση
+  πρώτα ή απόρριψη, ανά χώρο εργασίας, πράκτορα ή χώρο. Οι λειτουργίες μόνο για
+  ανάγνωση το απορρίπτουν εντελώς.

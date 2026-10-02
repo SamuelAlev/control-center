@@ -1,102 +1,104 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Crea la tua prima pipeline
+description: Crea un modello di pipeline, configura il suo passaggio, consenti le esecuzioni manuali e avviane una.
 slug: it-IT/manuale/tutorial/prima-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Che cosa creerai
 
-By the end of this tutorial, you will have:
+Al termine di questo tutorial avrai:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Un modello di pipeline salvato che invia un agente con un prompt
+- Le esecuzioni manuali attivate su di esso, così da poterlo avviare a mano
+- Un'esecuzione completata, con l'input e l'output del passaggio visibili
 
-Prerequisites: [Dispatch your first agent](/it-IT/manuale/tutorial/primo-agente/) completed, so you have an agent with an adapter and a model.
+Prerequisiti: [Invia il tuo primo agente](/it-IT/manuale/tutorial/primo-agente/) completato, così da avere un agente con un adattatore e un modello.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/it-IT/manuale/concetti/pipeline/); for the full step vocabulary, [Pipeline step kinds](/it-IT/manuale/riferimento/passaggi-pipeline/).
+Una pipeline è un DAG di passaggi. I modelli definiscono il grafo; le esecuzioni lo mettono in atto. Per il modello che sta dietro, leggi [Pipeline e automazione](/it-IT/manuale/concetti/pipeline/); per il vocabolario completo dei passaggi, [Tipi di passaggio delle pipeline](/it-IT/manuale/riferimento/passaggi-pipeline/).
 
-## Step 1: Create a template
+## Passaggio 1: crea un modello
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Vai in **Impostazioni → Spazio di lavoro → Modelli di pipeline**
+2. Fai clic su **Nuovo modello**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+L'editor si apre su uno scheletro preimpostato chiamato **Nuova pipeline** (id `pipeline_N`).
+Fai clic sul titolo nell'intestazione e rinominalo — per questo tutorial,
+`code_quality_check` è un buon nome. Non c'è alcuna finestra di dialogo per l'id
+e nessun campo per la descrizione.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Il canvas non è vuoto. Un nuovo modello arriva pre-cablato come **Trigger → Step →
+terminal**, dove «Step» è un nodo agente con prompt e il terminal è una
+sentinella invisibile che l'editor ricollega a ogni sink raggiungibile.
 
-You configure the Step that is already there.
+Il passaggio che devi configurare è lo Step già presente.
 
-## Step 2: Configure the step
+## Passaggio 2: configura il passaggio
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Fai clic sul nodo **Step** sul canvas
+2. Nel pannello **Configurazione nodo** a destra, imposta:
+   - **Agente**: il tuo agente del tutorial precedente
+   - **Template del prompt**: «Rivedi il codice sul branch corrente per problemi di qualità. Elenca ciò che trovi.»
+3. Lascia **Triggers from** invariato — il nodo è già cablato per attivarsi dopo Trigger
 
-## Step 3: Save
+## Passaggio 3: salva
 
-Press **Save** in the editor header.
+Premi **Salva** nell'intestazione dell'editor.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Punto di controllo.** La dicitura «Modifiche non salvate» scompare.
 
-## Step 4: Allow manual runs
+## Passaggio 4: consenti le esecuzioni manuali
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Fai clic sulla tile tratteggiata **Aggiungi un trigger** sul canvas (oppure trascina **Esecuzione manuale**
+   dalla sezione Trigger della libreria nodi) e scegli **Esecuzione manuale**.
+2. Seleziona quel nodo. Nell'inspector a destra, attiva **Attivato** —
+   «Mostra nella pagina di esecuzione e avvia manualmente.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Non è facoltativo ed è facile dimenticarsene. Un nuovo modello viene creato con **nessuna riga di trigger**, quindi finché non lo attivi la pagina di esecuzione non lo elenca e non c'è nulla da avviare. L'interruttore scrive il trigger immediatamente; non attende un altro salvataggio.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Lo stesso interruttore si trova dietro **Esecuzione manuale** nell'intestazione dell'editor, accanto agli input dichiarati del modello.
 
-## Step 5: Run it
+## Passaggio 5: avviala
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Fai clic su **Pipelines** nella barra laterale
+2. Fai clic su **Esegui pipeline** nell'intestazione
+3. Scegli `code_quality_check` nella barra di sinistra
+4. Fai clic su **Esegui pipeline** nel modulo — il tuo modello non dichiara input, quindi non c'è nulla da compilare
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Punto di controllo.** Un toast conferma l'avvio dell'esecuzione e Control Center apre il dettaglio dell'esecuzione.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Il motore crea il record dell'esecuzione, completa il trigger, pianifica il passaggio, invia l'agente e completa l'esecuzione quando il ramo in entrata del terminal termina.
 
-## Step 6: Inspect the result
+## Passaggio 6: ispeziona il risultato
 
-Click the step in the run to open its detail panel:
+Fai clic sul passaggio nell'esecuzione per aprire il suo pannello di dettaglio:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Gli orari di **Avviato** e **Completato** e la **Durata**
+- **Input**: lo stato passato al passaggio
+- **Output**: ciò che ha prodotto — qui, la risposta dell'agente
+- **Attività dell'agente**, con un link alla conversazione che il passaggio ha condotto
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Punto di controllo.** Il passaggio risulta completato e il suo output contiene la revisione dell'agente.
 
-## Adding more steps
+## Aggiungere altri passaggi
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+I nodi si aggiungono trascinando una voce dalla libreria nodi a sinistra sul
+canvas, oppure premendo **Aggiungi passaggio** (`+`) subito dopo un nodo. Trascina
+dalla porta di output di un nodo su un altro nodo per collegarli, oppure seleziona
+il nuovo nodo e spunta il suo passaggio a monte sotto **Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Il nodo terminal non viene disegnato e non può essere selezionato. L'editor lo
+ricollega a ogni sink raggiungibile, quindi un nodo che aggiungi dopo lo Step
+preimpostato viene comunque eseguito.
 
-## Recap
+## Riepilogo
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Hai creato un modello, configurato il nodo agente con prompt con cui è stato preimpostato, l'hai salvato, reso eseguibile manualmente, avviato un'esecuzione e letto l'input e l'output del passaggio.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Le pipeline diventano molto più grandi di così — router condizionali, rami paralleli, nodi di join, fan-out for-each, gate umani — ma la forma non cambia mai: passaggi in un DAG, che trasmettono stato.
 
-**Next:** [Bridge Slack to your workspace](/it-IT/manuale/tutorial/primo-ponte-di-chat/), the last tutorial in this sequence.
+**Avanti:** [Collega Slack al tuo spazio di lavoro](/it-IT/manuale/tutorial/primo-ponte-di-chat/), l'ultimo tutorial di questa sequenza.
 
-- [Set up pipeline triggers](/it-IT/manuale/guide/trigger-pipeline/) to start pipelines from events or a schedule
-- [Pipelines and automation](/it-IT/manuale/concetti/pipeline/) for the model underneath
-- [Pipeline step kinds](/it-IT/manuale/riferimento/passaggi-pipeline/) for every step type
+- [Configura i trigger delle pipeline](/it-IT/manuale/guide/trigger-pipeline/) per avviare le pipeline da eventi o da una pianificazione
+- [Pipeline e automazione](/it-IT/manuale/concetti/pipeline/) per il modello che sta sotto
+- [Tipi di passaggio delle pipeline](/it-IT/manuale/riferimento/passaggi-pipeline/) per ogni tipo di passaggio

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: کوڈ کو ساختی طور پر ری فیکٹر کریں
+description: کسی ایجنٹ سے کوڈ متن کے بجائے ساخت کے ذریعے ڈھونڈ کر دوبارہ لکھوائیں، اور تبدیلی نافذ ہونے سے پہلے اس کا جائزہ لیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ساختی-ری-فیکٹر
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+یہ گائیڈ دکھاتی ہے کہ کسی ایجنٹ سے وسیع میکانیکی تبدیلی کیسے کرائی جائے — کوئی کودم، کوئی بلک API منتقلی، کوئی ایسا پیٹرن جسے آپ ختم کرنا چاہتے ہیں — ساختی تلاش اور ری رائٹ کے ذریعے، اور تبدیلی کچھ بھی لکھے جانے سے پہلے جائزے کے لیے اسٹیج کر دی جائے۔
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` کوڈ کو **شکل** سے میچ کرتا ہے۔ `ast_edit` اسے دوبارہ لکھتا ہے۔ `resolve` کمٹ یا مسترد کرتا ہے۔
 
-## Before you start
+## شروع کرنے سے پہلے
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+ساختی ٹولز اُن زبانوں کا احاطہ کرتے ہیں جو کوڈ گراف پارس کرتا ہے: Dart، JavaScript، TypeScript، TSX، PHP، Python، Rust، Zig، C، C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB اور Ada۔ انہیں tree-sitter گرامرز اسٹیج شدہ چاہیے ہوتے ہیں، جو شپ شدہ بلڈ میں ہمیشہ ہوتے ہیں — گرامر کی کمی تلاش کو کمزور کرنے کے بجائے سرور روک دیتی ہے۔
 
-## Find the shape first
+## پہلے ساخت ڈھونڈیں
 
-Never rewrite something you have not looked at. Ask the agent to search:
+جس چیز کو آپ نے دیکھا نہ ہو، اُسے کبھی دوبارہ نہ لکھیں۔ ایجنٹ سے تلاش کرنے کو کہیں:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> ہر وہ جگہ ڈھونڈیں جہاں ہم کسی نل ایبل پر `dispose()` کال کرتے ہیں جس کا ابھی null چیک کیا گیا ہو۔
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+آؤٹ پٹ ہر جگہ کے لیے `file:line` کے ساتھ میچ شدہ سورس پر مشتمل ہوتا ہے۔
 
-### What the pattern syntax buys you
+### پیٹرن سنٹیکس آپ کو کیا دیتی ہے
 
-| Token      | Matches                                    |
+| ٹوکن       | میچ                                        |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | کوئی ایک نوڈ، کیپچر شدہ                     |
+| `$$$NAME`  | بہن بھائیوں کا کوئی بھی تسلسل — آرگیومنٹس، اسٹیٹمنٹس |
+| `$_`       | کچھ بھی، بغیر نام کے کیپچر شدہ               |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+اہم بات یہ ہے: **دہرایا گیا `$NAME` لازماً وہی متن پکڑتا ہے**۔
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+یہ ایسی گارڈ ڈھونڈتا ہے جو اُسی چیز کو ڈسپوز کرے جس کی اس نے جانچ کی تھی۔ یہ `if (a != null) b.dispose()` **نہیں** ڈھونڈتا — جو عموماً وہی بگ ہوتا ہے جس کی آپ کو تلاش تھی۔ کوئی متنی تلاش اس کا اظہار نہیں کر سکتی۔
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[یہ کسی سٹرنگ یا تبصرے کے اندر میچ نہیں کر سکتا]
+پیٹرن اُسی گرامر سے پارس ہوتا ہے جو فائل کا ہوتا ہے، چنانچہ کسی doc comment یا سٹرنگ لٹرل میں لکھا گیا `dispose(x)` کوئی کال نہیں اور اس سے میچ نہیں ہوتا۔ `grep` کے بجائے اسے استعمال کرنے کی پوری وجہ یہی ہے۔
 :::
 
-### When the pattern finds nothing
+### جب پیٹرن کچھ نہ ڈھونڈے
 
-Two things to try, in order:
+دو چیزیں ہیں جو ترتیب سے آزمائیں:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **اسے چھوٹا کریں۔** `if (a) { foo($X); }` سے پہلے `foo($X)`۔ جو پیٹرن اپنے طور پر درست کوڈ نہ ہو، وہ عموماً وہی ساخت بھی نہیں ہوتا جو آپ کا مطلب تھا۔
+2. **زبان کا نام دیں۔** `language:` صرف اُس وقت خود بخود سمجھا جاتا ہے جب `path` کسی ایک فائل کا نام لے۔
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+جو پیٹرن کوئی پارس سیاق قبول نہ کرے، اُسے ناقابلِ پارس بتا دیا جاتا ہے — ٹول ایسی چیز کے لیے "کوئی میچ نہیں" بتانے کے بجائے صاف کہہ دیتا ہے، جسے کبھی اُس نظر سے پڑھا ہی نہیں جا رہا تھا جیسا وہ دکھتا ہے۔
 
-## Rewrite, and look before it lands
+## دوبارہ لکھیں، اور نافذ ہونے سے پہلے دیکھ لیں
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+نتیجہ ایک **تجویز** ہوتا ہے:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+ابھی ڈسک پر کچھ نہیں۔ فہرست پڑھیں، تلاش کے بتائے ہوئے ایک آدھ مقام کا جائزہ لیں، پھر:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+یا
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[کمٹ سب یا کچھ نہیں]
+ہر فائل کا موازنہ اُس مواد سے کیا جاتا ہے جو تبدیلی کے اسٹیج ہونے کے وقت محفوظ کیا گیا تھا۔ اگر ان میں سے کوئی ایک بھی بدل چکی ہو — ایجنٹ نے اسے ہاتھ سے ایڈٹ کر دیا، کوئی فارمیٹر چل گیا، کسی تشخیصی پاس نے اسے دوبارہ لکھ دیا — تو **پوری** تبدیلی مسترد اور ضائع کر دی جاتی ہے۔ ادھورا لاگو ہوا ساختی ری رائٹ ایسا درخت چھوڑتا ہے جو نہ پرانی شکل میں کمپائل ہوتا ہے نہ نئی میں۔
 
-Re-run the tool against the current files; do not retry the stale id.
+ٹول موجودہ فائلوں کے خلاف دوبارہ چلائیں؛ پرانی id کے ساتھ دوبارہ کوشش نہ کریں۔
 :::
 
-## Check your work with the compiler
+## کمپائلر سے اپنے کام کی جانچ کریں
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+اسے ساختی طور پر کرنے کا مقصد یہی ہے کہ یہ وسیع ہوتا ہے۔ وسیع تبدیلیاں بالکل وہیں ہوتی ہیں جہاں کوئی صحیح دکھنے والا ری رائٹ کوئی ٹائپ توڑ دیتا ہے۔ تجویز طے ہو جانے کے بعد تشخیص طلب کریں:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` فی فائل کوئری کے بجائے پروجیکٹ کا اپنا چیکر (`dart analyze`، `tsc --noEmit`، `cargo check`، `go build`) چلاتا ہے — چالیس فائلوں کو چھونے والی تبدیلی کے بعد سوال کی صحیح شکل یہی ہے۔
 
-## Worked example: migrating a call
+## مکمل مثال: ایک کال کی منتقلی
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+فرض کریں `log(msg, level)` اب `log(level: level, message: msg)` بن رہا ہے۔
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+ملنے والی جگہیں دیکھیں۔ اگر ان میں سے کچھ کوئی *دوسرا* دو آرگیومنٹ والا `log` ہو، تو فرق کو پیٹرن میں بیان کرنے کی کوشش کے بجائے پیٹرن کو تنگ کریں اور `path` کو اُس ڈائریکٹری تک محدود کر دیں جس کا وہ `log` ہے جو آپ کا مطلب ہے۔
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+پھر `resolve`، پھر `lsp(action: "diagnostics", file: "*")`۔
 
-## When to use something else
+## کب کوئی اور چیز استعمال کریں
 
-| Situation                                 | Better tool                          |
+| صورت حال                                    | بہتر ٹول                              |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| کسی سمبل کا نام بدلنا                       | `lsp_rename` — یہ شکلوں کے بجائے حوالوں کا پیچھا کرتا ہے |
+| کوئی سٹرنگ، تبصرہ یا فائل نام ڈھونڈنا        | `search` (مواد) / `search_files` (نام) |
+| "اگر یہ تبدیل کروں تو کیا ٹوٹے گا؟"           | یہ [کوڈ گراف](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) |
+| ایسی زبان جس کا احاطہ گرامرز نہ کریں          | `search` کے ساتھ `edit`               |
 
-## Related
+## متعلقہ
 
-- [Code intelligence](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — the full argument list
-- [Search code with the code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) — the symbol and impact side
+- [کوڈ انٹیلیجنس](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — ساختی میچنگ محض چند اضافی قدموں والا ریجیکس کیوں نہیں
+- [بلٹ اِن ایجنٹ ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — مکمل آرگیومنٹ فہرست
+- [کوڈ گراف سے کوڈ تلاش کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) — علامات اور اثر کا پہلو

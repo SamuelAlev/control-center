@@ -1,241 +1,100 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: 機台與隔離艙
+description: 為什麼代理拿到的是用完即丟的機器，而不是你的電腦——隔離邊界、顯示通道、憑證、連接埠與生命週期。
 slug: zh-TW/手冊/概念/機台
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/zh-TW/手冊/操作指南/使用機台/); for the exact
-verbs, ports and defaults, see the [rigs reference](/zh-TW/手冊/參考/機台/).
+**機台**是一台用完即丟的機器，由代理即時操控——可能是一個瀏覽器、一個 Linux 桌面、一個 Android 模擬器、一個 iOS 模擬器，或是隔離艙終端機背後的那台機器。大多數機台是 VM；由主機管理的行動模擬器是明確的例外。本頁說明每一道邊界，以及這些部件為何被做成現在的樣子。要開啟一台機台，請參閱[給代理一台用於測試的機器](/zh-TW/手冊/操作指南/使用機台/)；確切的動作動詞、連接埠與預設值，請見[機台參考](/zh-TW/手冊/參考/機台/)。
 
-## Why a VM, not a sandbox
+## 為什麼是 VM，而不是沙箱
 
-The [native sandbox](/zh-TW/手冊/概念/沙箱與資安/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[原生沙箱](/zh-TW/手冊/概念/沙箱與資安/)把行程包進命名空間隔離——這是真實的，但它與你共用核心，而且約束的是一個*行程*，不是一台*電腦*。一旦代理需要在桌面應用程式裡四處點擊、在真實瀏覽器中渲染頁面，或執行一些你寧願不去想的 `rm -rf` 實驗，誠實的邊界就是一台機器：它自己的核心、自己的磁碟、自己的網路堆疊。
 
-The enclosed surfaces use two VM backends:
+隔離艙表面使用兩種 VM 後端：
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM** 用於終端機與瀏覽器——從以摘要鎖定的容器映像啟動，Hypervisor 在不到一秒內完成開機。
+- **QEMU** 用於完整的 Linux 桌面，因為它需要 microVM 所沒有的顯示裝置。
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+行動表面由主機管理，並直接說明自己的邊界較弱：
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** 透過 ADB 操控 Google 的模擬器。
+- **iOS** 在 Mac 主機上建立並擁有一個 CoreSimulator 裝置，並透過 WebDriverAgent 操控它。機台關閉時，該裝置及其資料會被刪除，但它的網路仍跟隨主機 Mac。
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+隔離艙機台寫入的是唯讀基礎映像之上的一次性覆疊層，因此一台機台無法改變下一台機台的開機基礎。iOS 機台擁有專屬的一次性 CoreSimulator 裝置，機台關閉時即被刪除。Android 則連接上一個生命週期長於該工作階段的主機模擬器。
 
-## Deny-by-default egress
+## 預設拒絕的對外連線
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+機台的網路一開始**什麼都沒有**。主機是逐台機台放行的，放行要經過一道客體無法繞開的閘門：這台機器對外的路徑，只有啟動設定所建立的那些。隔離艙終端機取得開發者基準線（套件登錄庫、程式碼託管平台、apt 鏡像站）；瀏覽器機台放行產品網站（`usectrl.dev`），並開機到一個不需要對外連線的本機 `file://` 頁面；其餘一切都在連線時被拒絕。
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android 與 iOS 不受這道閘門涵蓋。它們的主機模擬器與模擬器使用伺服器主機的網路，因此介面與能力報告會把對外連線標示為未強制執行，並且絕不提供帶有誤導性的「以不受限模式重新啟動」控制項。
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+對外連線與憑證是同一套政策的兩面——憑證仲介（見下文）不會為客體連不到的主機簽發權杖。
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+機台*讀取*到的一切都被當成不受信任的內容：頁面文字、DOM 與無障礙樹、UI 傾印與主控台輸出，回到代理手上時都圍著一道常設的「這是資料，不是指令」規則所架的圍欄。圍欄是一種框限；而在它背後負責強制執行的，是對外連線閘門。
 
-## Input goes through the hypervisor, capture through the guest
+## 輸入經由 Hypervisor，擷取經由客體
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+在桌面表面上，鍵盤與指標事件是由 *Hypervisor* 自己的虛擬輸入裝置注入。客體從不執行能夠合成輸入的特權常駐程式——因此，就算客體的軟體遭到入侵，也不會把鍵盤交到攻擊者手上。擷取則反向流動，經由客體內一個小型的非特權代理程式，因為客體可以在影格跨越網路之前先縮放它們。
 
-## Two display lanes
+## 兩條顯示通道
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+觀看的人與操控的模型需求正好相反，因此機台提供兩條獨立的串流：
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **人類通道**是以你的面板尺寸呈現的完整解析度，並在你調整大小時重新協商，由伺服器以不透明位元組轉送——伺服器從不解碼影格，因為在請求路徑上放一個視訊解碼器，正是讓它無法回應 RPC 的原因。
+- **代理通道**是縮小後的靜態畫面，上限為對模型友善的尺寸，每個工具結果一張影像；較舊的影格會在壓縮時被捨棄，但它們的文字描述會保留下來。
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+兩條通道互不遷就：你得到流暢的畫面，模型得到便宜的畫面。
 
-## Take-over is a chokepoint, not a request
+## 接管是一道關卡，不是一項請求
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+獨佔控制是在每個動作都必經的單一節點上強制執行——而不是靠要求模型自律。當人類持有控制權時，伺服器會拒絕代理的*變更型*動作。代理仍保留它的觀察類動詞（螢幕擷取畫面、內容擷取），因此能描述你正在做什麼；而接管這件事會經由它的引導通道告知它，而不是任由它從被拒絕的點擊中自行發現。只要沒有其他人持有那個鎖定，你就可以在畫布上點擊與輸入——或者持有者就是你時也可以；狀態標籤會顯示**你有控制權**。每一個輸入事件——你的與代理的——都會寫進各機台專屬的稽核記錄，附上其主體與單調遞增的序號，因此「是誰點了那個」在機器消失之後依然問得出答案。
 
-## Content crosses the boundary; the machines stay separate
+## 內容跨越邊界，機器保持分離
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+複製與貼上雙向都能運作，把檔案拖進拖出也一樣——但機台是另一台電腦，這套設計從不假裝它不是。
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**剪貼簿**是按需求傳送的，而不是持續鏡射。在機台上按下複製組合鍵，系統會要客體執行複製，接著它放進剪貼簿的東西——文字、一張影像、一份檔案清單——都會被取回並放到你的剪貼簿上。貼上則把同樣的內容反向送出，然後在客體內按下貼上。背景不會同步任何東西：你在自己機器上複製的密碼，不會因為計時器觸發就悄悄出現在 VM 裡。
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+跨越是逐使用者、逐方向各自獨立把關的。貼上到機台預設允許；從機台複製出去則會先跳出提示（可授予十分鐘權限，或在**設定 → 伺服器 → 機台 → 剪貼簿存取**下選擇**一律允許**）。它從來不是工作區設定：一位成員無法替另一位成員的剪貼簿表示同意。
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+在 macOS 上，跨越用的組合鍵是 ⌘C/⌘V，沒有歧義——⌃C 依然會以中斷訊號的身分送達客體的 shell。在 Windows 與 Linux 上，這兩個組合鍵是同一個按鍵，因此客體會原樣收到它，而你的剪貼簿只有在客體的剪貼簿真的變了時才會被覆寫。中斷訊號依然是中斷訊號。
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**拖入的檔案**會複製到機器的拖放資料夾，然後提供給它。「提供」是什麼意思，取決於實際上能誠實做到什麼：瀏覽器頁面會在你放開的那一刻收到*真正的*拖放事件，因此上傳區的行為與本機檔案完全相同；桌面則是把檔案放進 `~/Drops`，並把它們的路徑放進它的剪貼簿，因為沒有主機能不靠客體內執行的特權常駐程式，就把拖放合成進任意 Linux 工具組——而這正是這套設計拒絕擁有的東西。結果會說明實際發生的是哪一種，因此拖到上傳區的 CSV，不會在它其實只是資料夾裡的一個檔案時被回報成已上傳。拖放到隔離艙**終端機**上，會把檔案複製進去，並在提示字元處輸入它在客體中的路徑，這才是 shell 真正用得上的東西。
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**拖出的檔案**在桌面表面上可行，因為 X11 的拖放協定讓酬載在拖放進行中就能被讀取。在客體內開始拖曳，把它帶出畫布，檔案就會被取回你的機器，並以真正的拖放交給作業系統。在客體的檔案管理員中複製檔案，再到主機上貼上，運作方式相同。瀏覽器表面刻意*不*提供這項功能：無介面瀏覽器沒有可讀取的拖放選取範圍，而最接近的可用訊號——頁面的文字選取——根本不是拖放的證據，因此據此動作只會劫持一般的點擊。
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+從客體讀出的一切都仍是不受信任的內容：剪貼簿文字送達模型時，圍著的是與頁面擷取相同的圍欄；而稽核記錄只記下發生過一次貼上、內容有多少——絕不記錄它說了什麼。
 
-## Credentials never live in the guest
+## 憑證從不存放在客體內
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` 可以從隔離艙終端機運作，但客體內不儲存任何程式碼託管平台權杖。它只持有一個每 VM 一組的祕密，這個祕密的唯一能力是向主機的憑證仲介*索取*——經由主機控制的隧道——一個短效、限定單一儲存庫的權杖：每次操作各一個、受速率限制、與對外連線受同一份主機允許清單約束，並在機台關閉的那一刻被撤銷。一台注定要被丟棄的機器，裡面不能有任何值得偷的東西。
 
-## The worktree in a rig is a satellite
+## 機台裡的工作樹是衛星
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+當機台帶著你的儲存庫時，主機上的工作樹仍是具權威性的那一份。副本會在開機時*同步進來*（排除 `.env` 之類的祕密檔案），而提交只有在你要的時候才會回來——取回到 `refs/rigs/<id>/*`，從不推送、從不簽出。VM 裡的任何東西都無法移動你的分支或碰觸你的工作樹；合併機台產出的內容，永遠是由人在主機上做的決定。
 
-## Ports without holes
+## 沒有破口的連接埠
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/zh-TW/手冊/操作指南/vm-連接埠/).
+在終端機 VM 內啟動的開發伺服器會變得可連線——在你的機器上、在瀏覽器 (VM) 裡、可選地在你的區域網路上、可選地在帶 HTTPS 的開發網域下——而完全不必把機器對外開放。Hypervisor 的連接埠對應在開機時就固定了，因此之後所有的轉送都走兩條狹窄、由主機控制的通道：一條預先建立的入站多工器，它拒絕撥接客體實際上並未監聽的任何東西；以及主機為客體發起的連線保持開啟的反向隧道。開發網域的 HTTPS 在伺服器終止，使用本機簽發的憑證授權單位，其金鑰從不進入任何客體。機制說明請見[從終端機轉送連接埠](/zh-TW/手冊/操作指南/vm-連接埠/)。
 
-## Machines are bounded by construction
+## 機器在構造上就有界
 
-A rig cannot become a pet:
+機台不可能變成寵物：
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- **硬性 TTL**，客體無法延長；
+- **閒置階梯**——超過閒置時間窗後停駐（vCPU 停止、RAM 常駐），達到其兩倍時間後關閉——其中開啟的終端機或正在觀看的檢視者都算作「使用中」；
+- **記憶體預算**，以*常駐百萬位元組*而非工作階段數計算，因為已停駐的 VM 會釋放 CPU，卻保留每一個位元組的 RAM；最久未使用的機器會先被淘汰，而且絕不會是有人正在操控或觀看的那一台；
+- 伺服器關閉時拆除，並在下次啟動時執行一次帶所有權標記的孤兒清理，因此崩潰過的伺服器絕不會留下一個不聽任何人指揮的 Hypervisor。
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+首次開機會拉取機器所鎖定的映像；接著伺服器會在背景快取一份預先解壓縮的副本，因此同類機器之後每次都只要幾秒就能開機，而隔離艙終端機啟動時，就已經裝好 GitHub 託管執行器那一種的 CLI 基準線——編譯器、Python、`jq`、封存工具——而不是某種語言的工具快取或 Docker。電腦映像則在建置時把同一套 CLI 基準線烘焙進去，與 XFCE 和各種瀏覽器放在一起。
 
-## Three browsers, not one
+## 三種瀏覽器，而不是一種
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+「在我機器上可以跑」這句話，講的只是一個渲染引擎。因此瀏覽器機台不是「那個瀏覽器」——它是 **Chromium、Firefox 或 WebKit**，在你開啟它時選定，而一台機台終其一生都執行它被開啟時所依據的那一種。一個對話可以各有一台：在 *Chromium (VM)* 旁開啟 *Firefox (VM)*，你就得到兩台機器，把兩者指向同一個頁面，就是那次比較。WebKit 是所有能在 Linux 上執行的東西中最接近 Safari 的——引擎同源，因此 Safari 使用者會撞上的落差，它也抓得到。
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+三者的動作動詞完全相同；底下的協定則不然，而這些差異會被明說，而不是被抹平。Chromium 講的是 DevTools Protocol，並*推送*影格，因此頁面靜止時，它的即時畫面不耗費任何成本。Firefox 講的是 WebDriver BiDi，WebKit 講的是經典 WebDriver，兩者都沒有螢幕串流，因此它們的即時畫面靠輪詢——每秒幾個影格，這適合觀看頁面，不適合觀看動畫。當某個引擎真的做不到某件事時（Firefox 沒有略過快取的重新載入；WebKit 看不到頁面載入完成前所記錄的主控台輸出），回應會如實說明，而不是悄悄改做別的事。
 
-## Where rigs live in the product
+## 機台在產品中的位置
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/zh-TW/手冊/概念/護欄/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+機台刻意**不是**一個全域目的地。即時畫面是工作所在的那個空間或 PR 裡的一個分頁，作用域限於那個對話——因此你的分頁和代理的 `browser_use` 呼叫指向的是*同一台*機器（在瀏覽器表面上，每個引擎一台）。機台能否啟動是主機層級的屬性，因此能力、映像、各工作區的自訂映像與執行中機器清單都位於**設定 → 伺服器 → 機台**下。操控隔離艙屬於它自己的[護欄動作類別](/zh-TW/手冊/概念/護欄/)，因此一個工作區、代理或空間可以允許它、要求核准，或直接拒絕——唯讀模式則一概拒絕。

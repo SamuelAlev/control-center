@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Kódhoszt csatlakoztatása
+description: Csatlakoztassa a GitHubot, a GitLabot vagy a Bitbucketet, hogy a PR-felület, a repóregisztráció és az ügynökfutások működjenek — egy munkaterület mindhármat használhatja.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+A Control Center három kódhoszttal működik együtt, amelyeket az alkalmazás végig **forge** néven említ: **GitHub**, **GitLab** és **Bitbucket Cloud**. Egyik sem az alapértelmezett. Ha egyet csatlakoztat, minden működik; ha többet, egyetlen munkaterület egyszerre mindháromról tarthat repókat.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+A forge minden **repó** tulajdonsága: regisztráláskor annak `origin` remote-jából olvassuk ki. Ezt soha nem kell kiválasztania, és nincs munkaterületenkénti beállítás, amit el lehetne rontani.
 
-## Connect a forge
+## Forge csatlakoztatása
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás** (`/settings/workspace/profile`) oldalt.
+2. Keresse meg a **Kódtárhely** kártyát. Minden támogatott forge szerepel rajta, akár csatlakoztatva van, akár nem.
+3. Nyomja meg a **Bejelentkezés ezzel: …** gombot, ha a sor felkínálja, vagy a **Token hozzáadása** gombot, és illesszen be egyet.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+A **Bejelentkezés** azoknál a forge-oknál jelenik meg, amelyekhez a szerverének van regisztrált alkalmazása — ez ma a GitHub, eszközkódos folyamattal (lásd [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)). Minden más esetben beillesztett tokenről van szó, ami az őszinte megoldás, nem pedig egy gomb, amely nem tud sikerrel járni.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Akár így, akár úgy, a hitelesítő adat **az Öné, és a szerveren él**, a felhasználói azonosítójához rendelve: nem tárolódik token azon a gépen, amelyre beírta, minden eszköz, amelyről bejelentkezik, ugyanazt használja, és más tag nem tudja kiolvasni. A **következő kérésnél** lép életbe — nincs mit újraindítani, a leválasztás pedig azonnal leállítja a küldését.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Minden sor megmondja, honnan származik a hitelesítő adata, mert ez a különbség aközött, hogy „nem működik a tokenem”, és aközött, hogy „egy másik token válaszol”:
 
-| Subtitle                         | Meaning                                                            |
+| Felirat                          | Jelentés                                                           |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Bejelentkezve mint octocat`     | A saját hitelesítő adata van használatban                          |
+| `Bejelentkezve mint octocat · ennek a szervernek az alkalmazásán keresztül` | A szerver alkalmazásidentitása válaszol — Ön nincs bejelentkezve |
+| `Bejelentkezve mint octocat · a környezetből` | Egy szerverkörnyezeti változó válaszol, nem az Ön hitelesítő adata |
+| `Nincs csatlakoztatva`           | Nincs hitelesítő adata ehhez a forge-hoz                           |
 
-### What token each forge wants
+### Milyen tokent vár el az egyes forge-ok
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Forge         | Token                                                     | Hol hozza létre                                           |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Klasszikus: `repo` és `read:org`. Finomhangolt: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Személyes hozzáférési token `api` jogosultsággal          | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Atlassian API-token, valamint a fiókja e-mail-címe        | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+A Bitbucket a **fiókja e-mail-címét használja felhasználónévként**, a tokent pedig jelszóként. Állítsa be a `BITBUCKET_EMAIL` változót a szerver környezetében, hogy tudja, melyik e-mail-címet párosítsa a tokenhez.
 
-### Or use the environment
+### Vagy használja a környezetet
 
-For a headless or CI install, the server reads these:
+Headless vagy CI-telepítés esetén a szerver ezeket olvassa:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, majd `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, majd `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, majd `BITBUCKET_TOKEN` (a `BITBUCKET_EMAIL` változóval)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Ezek a **szerver** hitelesítő adatai, nem az Öné, és ez a megkülönböztetés döntő: az Ön nevében indított kérés az Ön hitelesítő adatát használja, és semmi mást, így a környezet soha nem lép csendben az Ön helyébe. Az ember nélkül futó munka — webhookok, PR-lekérdezés, jegyszinkronizálás — először a szerver alkalmazásidentitását oldja fel, aztán a szerver tulajdonosának hitelesítő adatát, végül a környezetet. A sorrend rögzített, hogy a „Bejelentkeztem, és semmi sem változott” soha ne legyen támogatott eredmény.
 
-## You are a different person on each forge
+## Ön minden forge-on más személy
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Ugyanaz az ember a GitHubon `octocat`, a GitLabon pedig valami egészen más. A Control Center **forge-onként** oldja fel az identitását, és minden repóhoz a megfelelőt használja; ez teszi helyessé az „átnézésre vár”, az „én hoztam létre” és az „ezt Ön hagyta jóvá” megjelöléseket egy vegyes munkaterületen.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Ha egy forge identitása nem oldható fel, a repói semmivel sem járulnak hozzá a Beérkezetthez, ahelyett hogy mindenre illeszkednének. A Beérkezett ezt jelzi, ahelyett hogy azt állítaná, minden elolvasva.
 
-## One inbox, every forge
+## Egy Beérkezett, minden forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+A Beérkezett és a PR-várólista szétágazik a munkaterületen képviselt minden forge-ra, és az eredményeket egyetlen folyamba vonja össze — egy GitHub pull request és egy Bitbucket pull request egymás mellett áll, idő szerint rendezve, nem szállító szerint csoportosítva.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+A hibák elkülönülnek. Az a forge, amelyik leállt, sebességkorlátozás alá esik vagy nincs csatlakoztatva, semmivel sem járul hozzá, és a többit érintetlenül hagyja; soha nem üríti ki a teljes Beérkezettet. A saját repói továbbra is a legutóbb ismert állapotukat mutatják, amíg helyre nem áll.
 
-## What each forge can do
+## Mire képes az egyes forge-ok
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Minden forge támogatja az alapvető ciklust: a pull requestek listázása és megnyitása, a diffek olvasása, beágyazott és legfelső szintű megjegyzés írása, átnézés, összefésülés és lezárás. Azon túl azonban valóban különböznek, és a Control Center elrejti azt, amire egy forge nem képes, ahelyett hogy olyan vezérlőt mutatna, amely csendben meghibásodik.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Képesség                          | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Kötegelt (függőben lévő) átnézések |   ✓    |   ✓    |     —     |
+| Módosítás kérése                  |   ✓    |   ✓    |     ✓     |
+| Fájlonkénti „megtekintett” állapot szinkronizálva |   ✓    |   —    |     —     |
+| Emodzsi-reakciók                  |   ✓    |   ✓    |     —     |
+| Csapat- vagy csoportátnézők      |   ✓    |   ✓    |     —     |
+| Javasolt átnézők                  |   ✓    |   —    |     ✓     |
+| CI-eredmények egy PR-en           |   ✓    |   ✓    |     ✓     |
+| Egy CI-feladat lépéseinek/naplóinak megtekintése |   ✓    |   ✓    |     —     |
+| Halmozott pull requestek          |   ✓    |   —    |     —     |
+| PR-leírássablonok                 |   ✓    |   ✓    |     —     |
+| Értesítések lekérdezése           |   ✓    |   —    |     —     |
+| Részletes felhasználói profilok   |   ✓    |   ✓    |     —     |
+| Szerveroldali PR head ref         |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Ahol egy képesség hiányzik, a funkció korlátozottan, de őszintén működik:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- A **megtekintett állapot** továbbra is működik, de csak azon az eszközön, amelyen beállította.
+- A **kötegelt átnézések** a Bitbucketnél megjegyzésenként küldődnek el, így az átnézők egyenként látják megérkezni őket, nem egyszerre.
+- A Bitbucketnél nincs **PR head ref**, ezért egy pull request kivétele a forráságát név szerint hozza le, ami az ág törlése után meghiúsul.
 
-## Vocabulary
+## Szóhasználat
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+A GitLab a pull requestet **merge request**nek hívja. A Control Center a saját modelljében végig „pull requestet” mond, és ott használja az adott forge saját szavát, ahol arról a forge-ról beszél.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The PR list is empty and says a forge is not connected
+### A PR-lista üres, és azt írja, hogy egy forge nincs csatlakoztatva
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Nincs hitelesítő adata ahhoz a forge-hoz. Jelentkezzen be, vagy illesszen be egy tokent a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** alatt. A többi forge repóit ez nem érinti.
 
-### I connected a forge but its repos still show nothing
+### Csatlakoztattam egy forge-ot, de a repói továbbra sem mutatnak semmit
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Ellenőrizze a sor feliratát. Ha az áll ott, hogy „ennek a szervernek az alkalmazásán keresztül” vagy „a környezetből”, akkor más hitelesítő adat válaszol, mint amire számított — bármit is kér, az Ön saját hitelesítő adata élvez elsőbbséget, tehát ha más szerepel, az Öné nem lett elmentve.
 
-### A repo will not register
+### Egy repó nem regisztrálódik
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
+A regisztrációhoz mindhárom kell: az útvonal egy git work tree-n belül van, van `origin` remote-ja, és az a remote a github.com, a gitlab.com vagy a bitbucket.org címre mutat. Lásd: [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
 
-### Everything stops working for a while after heavy use
+### Nagy használat után egy időre minden leáll
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Ez a sebességkorlát áramkör-megszakítója. Ha egy forge jelzi az elsődleges korlátját, a kliens a további kéréseket helyben, hálózati hívás nélkül buktatja el, amíg az időablak le nem telik — így az újrapróbálkozások vihara nem mélyítheti el a korlátot. Az átmeneti hibákat exponenciális visszalépéssel próbálja újra.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Add repos to a workspace](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
-- [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Triage the inbox](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)
+- [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
+- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Beérkezett üzenetek triázsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)

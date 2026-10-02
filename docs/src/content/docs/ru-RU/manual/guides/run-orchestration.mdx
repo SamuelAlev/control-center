@@ -1,126 +1,138 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Запустить оркестрацию
+description: Попросите оркестратора составить план, просмотрите и отредактируйте его в Plan Studio, утвердите один раз — и пусть работу выполнит сгенерированный конвейер.
 slug: ru-RU/руководство/практические-руководства/запустить-оркестрацию
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ru-RU/руководство/понятия/оркестрация/) for how it works.
+Это руководство показывает, как превратить одну большую цель в план для всей
+команды, который выполняется сам. О том, как это устроено, см.
+[Оркестрация](/ru-RU/руководство/понятия/оркестрация/).
 
-## When to use an orchestration
+## Когда использовать оркестрацию
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ru-RU/руководство/практические-руководства/общаться-с-агентом/); for a process you can spell out by
-hand, build a [pipeline template](/ru-RU/руководство/практические-руководства/создать-конвейер/).
+Прибегайте к оркестрации, когда задача больше одного агента и вы ещё не знаете
+точных шагов. Для одной задачи напишите агенту в
+[пространстве](/ru-RU/руководство/практические-руководства/общаться-с-агентом/);
+для процесса, который вы можете расписать вручную, соберите
+[шаблон конвейера](/ru-RU/руководство/практические-руководства/создать-конвейер/).
 
-## Step 1: Ask for the plan
+## Шаг 1. Попросите план
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Откройте (или создайте) пространство и **якорный тикет**. Он нужен для
+   каждого предложения (`propose_orchestration` принимает `ticket_id`); общее
+   пространство берётся из этого тикета.
+2. При желании переключите выпадающий список режимов в композере на
+   **Оркестрация**. Этот режим сужает возможности агента до чтения и
+   предложения — память, граф кода, чтение репозиториев и тикетов,
+   `propose_orchestration` и инструменты плейбука, — поэтому он не может начать
+   писать код вместо планирования.
+3. @-упомяните своего оркестратора (обычно агента CEO) и сформулируйте цель
+   простыми словами:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Исследуй конкурентный ландшафт для диктофона встреч, работающего в
+> первую очередь офлайн, и напиши одностраничный документ о позиционировании.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Оркестратор отвечает в пространстве структурированной карточкой
+**предложения**: нужные ему роли, работа, разбитая на подтикеты, необязательная
+фаза исследования и обсуждения, шаг синтеза, создающий итоговый результат, и
+бюджет.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Поскольку предложение — это типизированный объект, приложение проверяет его
+(корректно оформленные роли, объявленные схемы вывода, DAG без циклов), прежде
+чем что-либо запустится. Предложение, не прошедшее проверку, нельзя утвердить.
 
-## Step 2: Review and edit the proposal
+## Шаг 2. Просмотрите и отредактируйте предложение
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Карточка в чате предлагает три действия: **Утвердить план**, **Отклонить** и
+**Открыть** — последнее открывает план в Plan Studio как вкладку редактора.
+Саму карточку редактировать нельзя.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Чтобы что-то изменить, нажмите **Открыть** и работайте в инспекторе справа:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Название**, **описание**, **роль**, **зависимости** и **схема вывода**
+  любого рабочего шага. **Роль** здесь означает, какой из существующих ключей
+  ролей плана владеет шагом — закрепить роль за именованным агентом или
+  отредактировать список найма из инспектора нельзя, и бюджет редактировать
+  тоже нельзя.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Две вещи доступны только для чтения: структурные узлы (исследование,
+обсуждение, синтез) и любой узел, работа которого уже выполнялась.
+Редактирование возможно, только пока оркестрация остаётся в статусе `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/) for the full editor.
+Нажмите **Оценить** на панели утверждения, чтобы до подтверждения увидеть
+диапазоны стоимости, длительности и радиуса воздействия. Полный обзор редактора
+см. в разделе
+[Работать в Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/).
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ru-RU/руководство/практические-руководства/управлять-затратами/).
+:::note[Бюджет — не предел расходов]
+Бюджет предложения сравнивается с _оценкой_ на панели утверждения: когда
+верхняя граница оценки превышает его, итог становится красным с предупреждением
+о превышении бюджета. Пока план выполняется, расходы никто не проверяет,
+поэтому он не остановит и не провалит запуск. Чтобы расходы действительно
+останавливались, используйте политики бюджета для отдельных агентов — см.
+[Управлять затратами](/ru-RU/руководство/практические-руководства/управлять-затратами/).
 :::
 
-## Step 3: Approve
+## Шаг 3. Утвердите
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Утвердите план — из карточки в чате или с панели утверждения Plan Studio.
+**Это единственное решение, которое вы принимаете.** Утверждение доступно
+только оператору — для него нет инструмента MCP, поэтому агент может предлагать
+и дорабатывать план, но никогда не может утвердить свой собственный.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ru-RU/руководство/понятия/конвейеры/) and creates the
-scaffolding:
+Дальше детерминированный материализатор (чистая функция, без LLM) превращает
+предложение в настоящий [конвейер](/ru-RU/руководство/понятия/конвейеры/) и
+создаёт каркас:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- нанимает все новые роли (и записывает id нанятых агентов, чтобы сбой посреди
+  утверждения можно было возобновить без дублирующих наймов)
+- объединяет роли в **команду**
+- создаёт **проект** и помещает в него родительский тикет
+- запускает **запуск конвейера**, который всем этим управляет
 
-The status moves to `approved`, then `executing`.
+Статус переходит в `approved`, затем в `executing`.
 
-## Step 4: Watch it run
+## Шаг 4. Наблюдайте за выполнением
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Подтикеты выполняются как шаги конвейера; если вы включили раунд обсуждения,
+каждая роль сначала публикует позицию. Прогресс появляется там, куда вы и так
+смотрите:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
-- the **project** the parent ticket was filed under
+- **родительский тикет**, к которому была привязана оркестрация
+- общее **пространство**, в котором общается команда, где строка плана
+  отслеживает состояние каждого узла
+- детали **запуска конвейера** с привычным водопадом и стоимостью по шагам —
+  см.
+  [Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
+- **проект**, в который был помещён родительский тикет
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Когда подтикеты готовы, статус переходит в `synthesizing`, и шаг синтеза создаёт
+итоговый результат. Этот текст публикуется в общем пространстве, родительский
+тикет помечается завершённым, а затем статус становится `completed`.
 
-## Stop it early
+## Остановите её досрочно
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Нажмите **Отменить оркестрацию** на карточке в чате или **Отменить запуск** на
+панели утверждения Plan Studio. Отмена сворачивает работу, находящуюся в
+процессе.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Оркестрация завершается сбоем, когда не удаётся материализация или когда сбоем
+завершается запуск её сгенерированного конвейера (исследование, обсуждение,
+синтез или persist — эти шаги не продолжаются при сбое). Сгенерированные шаги
+**work** всегда продолжаются при сбое, поэтому один провалившийся подтикет не
+проваливает запуск. Не существует пути сбоя из-за превышения бюджета и порога
+«все подтикеты провалились».
 
-## Related guides
+## Связанные руководства
 
-- [Work in Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ru-RU/руководство/практические-руководства/проекты/): where the parent ticket is filed
-- [Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ru-RU/руководство/практические-руководства/собрать-команду/): the roles an orchestration fills or hires
+- [Работать в Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/): редактирование, оценка, diff и утверждение плана
+- [Создавать и управлять тикетами](/ru-RU/руководство/практические-руководства/управлять-тикетами/): родительский тикет, к которому привязана оркестрация
+- [Организовать работу через проекты](/ru-RU/руководство/практические-руководства/проекты/): куда помещается родительский тикет
+- [Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/): как материализованная оркестрация выглядит в движке
+- [Собрать команду агентов](/ru-RU/руководство/практические-руководства/собрать-команду/): роли, которые оркестрация заполняет или нанимает
 
-## Related concepts
+## Связанные понятия
 
-- [Orchestration](/ru-RU/руководство/понятия/оркестрация/)
-- [Modes](/ru-RU/руководство/понятия/режимы/)
+- [Оркестрация](/ru-RU/руководство/понятия/оркестрация/)
+- [Режимы](/ru-RU/руководство/понятия/режимы/)

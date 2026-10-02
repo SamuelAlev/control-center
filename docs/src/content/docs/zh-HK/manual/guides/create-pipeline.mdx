@@ -1,241 +1,220 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: 建立管線範本
+description: 在管線編輯器中編寫 DAG 工作流程範本——新增節點、把它們連接起來、宣告輸入，並讓它可以執行。
 slug: zh-HK/手冊/操作指南/建立管線
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+管線範本是在工作區設定中編寫的。工作區側邊欄中的 **管線** 入口是_執行佇列_，
+而不是範本清單——它沒有「新增範本」操作。
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/zh-HK/手冊/參考/管線步驟/).
+關於每種步驟種類、主體鍵與設定欄位的含義，請參閱
+[管線步驟參考](/zh-HK/手冊/參考/管線步驟/)。
 
-## Create a template
+## 建立範本
 
-1. Go to **Settings → Workspace → Pipeline templates**
-   (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+1. 前往 **設定 → 工作區 → 管線範本**
+   （`/workspaces/<workspace-id>/settings/pipelines`）。
+2. 按 **新增範本**。
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+不會出現 id 對話方塊。編輯器會立即開啟一個名為 **新增管線** 的預先植入骨架，
+其 id 會自動分配（`pipeline_1`，然後 `pipeline_2`，……）。按一下頁首中的標題
+即可重新命名。
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+畫布並非空白：有一個 **Trigger** 入口節點、一個標示為 **Step** 的提示代理
+節點，以及一個結束執行的終端哨兵。哨兵不會被繪製出來。編輯器會把那個隱藏的
+終端改接到每個可達的匯點，因此你在 **Step** 之後接上的工作仍會執行。
 
-## Add nodes
+## 新增節點
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+**節點庫** 側邊欄常駐於編輯器左側。用 **搜尋節點** 方塊篩選它，並把一個項目
+拖到畫布上——節點會落在你放開的位置，而且沒有入站連接。
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| 節點庫項目                      | 步驟種類 | 作用                                                                                    |
+| ------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen   | 執行帶 `{{state}}` 替換的 shell 指令碼；不派發代理                                      |
+| **Open conversation**           | listen   | 開啟該次執行唯一可見的空間及其檢出；代理節點會加入這個房間                              |
+| **Clone PR branch**             | listen   | 透過 `gh pr view` 找出 PR 的 head 分支，並將它複製到執行目錄                             |
+| **Post PR comment**             | listen   | 把彙整後的發現以 GitHub 審查留言的形式發佈到該 PR                                       |
+| **Reviewer (prompt)**           | listen   | 派發一名專門的審查代理；暫停直到該代理提交結果                                          |
+| **Consolidate (join)**          | join     | 等待多個上游分支，然後請一個代理彙整它們的輸出                                          |
+| **Custom prompt**               | listen   | 經由 `promptAgent` 主體路由的一般提示驅動節點                                           |
+| **Post to space**               | listen   | 向訊息空間傳送一則訊息                                                                  |
+| **Condition / switch (router)** | router   | 根據狀態值讓流程分支                                                                    |
+| **If file exists (router)**     | router   | 當複製本下存在某個路徑時路由到 `"true"`，否則路由到 `"false"`                           |
+| **Any file exists (OR router)** | router   | 當列出的任一路徑存在時路由到 `"true"`                                                   |
+| **All conditions (AND router)** | router   | 僅當列出的每個路徑都存在時路由到 `"true"`                                               |
+| **Team dispatch**               | listen   | 派發整個團隊並暫停，直到它完成                                                          |
+| **Approval gate**               | listen   | 暫停以等待核准決定                                                                      |
+| **For each (map)**              | forEach  | 為每個項目渲染一個提示，然後把這些提示串接後一次派發代理                                |
+| **Call sub-pipeline**           | listen   | 以巢狀步驟的形式執行另一個範本                                                          |
+| **Clean up worktrees**          | listen   | 移除過期的隔離 worktree；確定性操作，不派發代理                                         |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+節點庫把它們歸入 **流程與邏輯**、**PR 審查**、**代理**、**訊息** 與 **程式碼**
+之下。沒有 Demo 分組。
 
-## Wire nodes together
+## 將節點連接起來
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+每個工作節點右邊都有一個圓形的 **輸出連接埠**。從該埠拖到另一個節點即可連接
+它們。起始觸發器也一樣：每個都擁有自己的埠，因此從 **排程** 引出的連線不會
+同時從 **手動執行** 引出。在節點之後不遠處按 **新增步驟**（`+`），即可在其後
+插入一個節點種類。把游標懸停在現有連線的中點並按 × 即可中斷連接。
 
-Connections are also edited from the node that _receives_ them:
+連接也可以從_接收_它們的節點編輯：
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. 選取下游節點。它的設定面板會從右側開啟。
+2. 捲動到 **Triggers from**，為這個節點應監聽的每個上游節點輕觸對應的晶片。
+   輕觸已選取的晶片會移除該連接。
+3. 如果某個上游節點是路由器，晶片下方會出現一個 **路由鍵** 區塊，每條路由器
+   連線對應一個 **來自 &lt;node&gt; 的路由鍵** 欄位。輸入該連線觸發時所用的
+   鍵——對於檔案存在類路由器是 `true` 或 `false`，對於切換則是分支名稱。
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+每個觸發器節點都是一個入口點。一個節點可以監聽多個上游（扇入），並供給多個
+下游（扇出），而圖必須保持無環——編輯器不會阻止你連出一個環，因此請自行檢查
+你的工作。
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+終端哨兵會被從畫布中過濾掉，因此無法被選取。每當圖有變更，編輯器都會把它
+重新接到每個可達的匯點，因此你在植入的 **Step** 之後接上的工作仍會執行。空圖
+（觸發器沒有任何後繼工作節點）會列出觸發器本身，使執行立即完成。
 
-## Configure a node
+## 設定節點
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+選取一個節點即可開啟它的設定面板。會出現哪些欄位取決於該節點的主體。
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+每個節點都有 **標籤**、**輸入鍵**（執行時讀取的、以逗號分隔的狀態鍵），並在
+**進階** 之下有 **縮減器**、**逾時（毫秒）**、**重試次數**、**失敗時繼續** 及
+**輸出結構描述**。listen 與 join 節點也可以在兩者之間切換它們的 **種類**。
 
-### Open conversation
+### 開啟對話
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+會新增一個 **儲存庫範圍** 選擇器（要檢出哪些工作區儲存庫；留空表示不檢出任何
+儲存庫）、一個 **空間名稱**，以及一個 **建立對話** 核取方塊。當該核取方塊開啟
+時，**對話標題** 欄位會為房間開啟時所在的串流命名。代理節點會加入這個房間——
+它們不會自己開一個。
 
-### Prompt agent
+### 提示代理
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+會新增 **代理**（要派發哪個代理）、**提示範本**（用 `{{key}}` 引用輸入或上游
+輸出）及 **輸出鍵**。
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**逾時（毫秒）** 的單位是_毫秒_，而不是秒——`900000` 是 15 分鐘。輸入 `900`
+會讓該步驟有 0.9 秒。
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+提示代理節點以哪種對話模式執行，在代理節點上並沒有編輯器欄位。它由建立該房間
+的 **Open conversation** 節點上的 `extras['mode']`（`chat`、`plan` 或
+`review`）決定（預設 `review`）。在代理步驟上設定它會被忽略。該鍵按精確比對
+處理：任何其他寫法都會被靜默忽略。
 
-### Bash script
+### Bash 指令碼
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+會新增 **指令碼**。沒有工作目錄或環境變數欄位，因為兩者都不可設定：
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- 一次執行中的每個 bash 步驟都共用 cwd `<cc_root>/pipelines/<runId>/`。
+- `GITHUB_TOKEN` 會從憑證存放區注入，因此 `gh` 與
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` 無需設定即可運作。
+- 指令碼會以字面可執行檔 `bash` 啟動，因此伺服器主機的 `PATH` 中必須有
+  `bash`。這是 Windows 上的一項考量。
 
-### Router
+### 路由器
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+路由器會求值一個條件並傳回一個路由鍵；引擎只會觸發路由鍵相符的那條下游連線，
+並把其他分支標記為已跳過。
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+選取路由器會把 **輸出鍵** 欄位替換為條件編輯器。從它的四種模式中選一種：
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **檔案存在—任一** —— 當列出的任一路徑存在時路由到 `"true"`。
+- **檔案存在—全部** —— 僅當列出的每個路徑都存在時路由到 `"true"`。
+- **比較** —— 將狀態值與字面值比較。
+- **切換** —— 根據某個狀態鍵的值路由，並帶一個預設分支。
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+然後在出站連線上設定相符的路由鍵（參見
+[將節點連接起來](#將節點連接起來)）。
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/zh-HK/手冊/參考/管線步驟/).
+布林 `and` / `or` / `not` 群組由主體支援，但無法從這個表單編寫——它們需要在
+`extras.predicate` 下手寫的述詞樹。完整的述詞與運算子詞彙見
+[管線步驟參考](/zh-HK/手冊/參考/管線步驟/)。
 
-### Join
+### 匯合
 
-No configuration of its own: it waits for all of its upstream steps.
+沒有自己的設定：它會等待它所有的上游步驟。
 
-### Approval gate
+### 核准閘門
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+閘門會把核准者代理派發到一個帶有閘門提示的隱藏對話中，然後暫停。核准者會在該
+對話中徵求你的決定，並透過 `submit_output` 以
+`{ "decision": "approved" | "rejected", "reason": "..." }` 提交。該決定會寫入
+輸出鍵（預設 `approval_decision`）之下，因此下游的切換路由器可以據此分支。
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+把 **代理** 設為核准者，把 **提示範本** 設為閘門問題。閘門會透過
+`submit_output` 以 `{ "decision": "approved" | "rejected", "reason": "..." }`
+的形式得出結果。Reviewer (prompt) 節點以同樣的方式提交。
 
-### Team dispatch
+### 團隊派發
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+會新增 **團隊 ID** 與 **分派模式**。選擇器只提供兩種模式：
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` —— 每個成員一個任務，暫停直到全部完成。
+- `manager` —— 派發領導者，由後者委派。
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+其他任何已儲存的值都按 `allParallel` 處理。把 **縮減器** 設為 `append`，即可把
+每個成員的結果收集成輸出鍵下的一個清單。
 
-### For each and Call sub-pipeline
+### For each 與 Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** 預設對 `items` 狀態鍵做映射（節點上的 `extras.iterableKey` /
+`extras.itemKey`）。它會為每個項目渲染一次提示（預設 `{{item}}`），並把這些
+提示串接後**一次**派發代理。空集合會立即以空清單完成。它並不是為每個項目各做
+一次並行派發。
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** 會暫停，直到子執行達到終態，然後把子執行的最終狀態合併
+到輸出鍵（預設 `subflow_result`）之下。用 `extras.templateId` 將它指向一個
+子範本。範本不能呼叫自身；子執行失敗或被取消會使父步驟失敗，之後便交由該步驟
+的重試與失敗後繼續政策處理。
 
-## Declare inputs and allow manual runs
+## 宣告輸入並允許手動執行
 
-Both live behind **Manual run** in the editor header.
+兩者都在編輯器頁首的 **手動執行** 之下。
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. 按 **手動執行**。
+2. 開啟 **允許手動執行**。這個開關會立即持久化——它會建立（或刪除）`manual`
+   觸發器資料列，讓範本出現在執行選擇器中。
+3. 如果想設上限，可設定 **最大並行執行數**（留空表示不限）。多出的啟動會以
+   `queued` 狀態等待，直到有名額空出。
+4. 對每次手動執行應收集的每個表單欄位按 **新增輸入**：
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| 欄位         | 描述                                       |
+| ------------ | ------------------------------------------ |
+| **鍵**       | 值儲存所用的狀態鍵；以 `{{key}}` 引用它    |
+| **標籤**     | 顯示標籤（預設為該鍵）                     |
+| **類型**     | 文字、多行文字、數字、開關、下拉選單、儲存庫 |
+| **選項**     | 以逗號分隔的選項，僅用於下拉選單           |
+| **預設值**   | 預先填入的值                               |
+| **預留位置** | 空欄位內的提示文字                         |
+| **說明文字** | 欄位下方的輔助文字                         |
+| **必填**     | 執行表單是否會在值為空時阻止提交           |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+**儲存庫** 輸入會針對工作區的儲存庫渲染一個選擇器，並把 `repo_id`、
+`repo_local_path`、`repo_full_name` 以及——當儲存庫有 GitHub 遠端時——
+`repo_owner` 與 `repo_name` 填入執行負載中。
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. 在對話方塊中按 **儲存**。對輸入的編輯會併入草稿；當你儲存範本時它們便會
+   持久化。
 
-## Save and enable
+## 儲存並啟用
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/zh-HK/手冊/操作指南/管線觸發器/).
+1. 在編輯器頁首按 **儲存**。在此之前，頁首會顯示「有未儲存的變更」。
+2. 回到 **設定 → 工作區 → 管線範本**，確認該範本所在列的開關已開啟。引擎
+   會拒絕啟動已停用的範本，已停用的範本也永遠不會出現在執行選擇器中。
+3. 若要讓它自動啟動，請從節點庫中把一個觸發器拖到畫布上——參見
+   [設定管線觸發器](/zh-HK/手冊/操作指南/管線觸發器/)。
 
-## Related guides
+## 相關指南
 
-- [Run a pipeline manually](/zh-HK/手冊/操作指南/執行管線/)
-- [Set up pipeline triggers](/zh-HK/手冊/操作指南/管線觸發器/)
-- [Monitor pipeline runs](/zh-HK/手冊/操作指南/監察管線/)
-- [Pipeline steps reference](/zh-HK/手冊/參考/管線步驟/)
+- [手動執行管線](/zh-HK/手冊/操作指南/執行管線/)
+- [設定管線觸發器](/zh-HK/手冊/操作指南/管線觸發器/)
+- [監察管線執行](/zh-HK/手冊/操作指南/監察管線/)
+- [管線步驟參考](/zh-HK/手冊/參考/管線步驟/)
 
-## Related concepts
+## 相關概念
 
-- [Pipelines](/zh-HK/手冊/概念/管線/)
+- [管線](/zh-HK/手冊/概念/管線/)

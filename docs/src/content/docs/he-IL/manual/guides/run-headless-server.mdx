@@ -1,31 +1,32 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: הפעלת שרת ללא ממשק
+description: הפעילו את הבינארי ללא הממשק של cc_server או את תמונת ה-Docker שלו, צמדו לקוח אליו והגדירו אותו עם מלוא הדגלים ומשתני הסביבה של ה-CLI.
 dateModified: 2026-09-10
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+הריצו את `cc_server` על מכונה שנשארת דלוקה, ואז התחברו אליו משולחן העבודה,
+מדפדפן או מהטלפון. השרת הוא בינארי נייטיבי של Dart טהור — בלי מנוע Flutter —
+ולכן הוא רץ ללא ממשק ב-macOS, ב-Linux וב-Windows. הוא מחזיק במסד הנתונים, מריץ
+את הסוכנים ומבצע כל קריאת API חיצונית; הלקוחות רק מרנדרים.
 
-## Run in Docker (prebuilt images)
+## הרצה ב-Docker (תמונות מוכנות מראש)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+כל גרסה מפרסמת ערימה באירוח עצמי של ארבע תמונות GHCR — ה-backend, שני
+הלקוחות הדקים הסטטיים וממסר הצימוד האופציונלי — ובנוסף תמונת `cc-server-demo`
+נפרדת עבור מארח ההדגמה הציבורי. התקנה באירוח עצמי אינה מחייבת הוצאה של קוד
+המקור. נעצו תג גרסה (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) או הישארו על
+`latest`.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| תמונה                                        | מה היא                                      | מפרסמת          |
+| -------------------------------------------- | ------------------------------------------- | --------------- |
+| `ghcr.io/samuelalev/cc-server`               | ה-backend: מסד נתונים, סוכנים, MCP, webhooks | `-p 9030:9030`  |
+| `ghcr.io/samuelalev/cc-webapp`               | לקוח הווב (nginx סטטי)                      | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`               | בן הלוויה לטלפון כ-PWA (nginx סטטי)         | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | ממסר הצימוד של WebRTC (אופציונלי)           | `-p 8788:8788`  |
 
-The whole stack as a compose file:
+הערימה כולה כקובץ compose:
 
 ```yaml
 services:
@@ -51,91 +52,93 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+כמה דברים שכדאי לדעת לפני שאתם חושפים את כל זה מעבר ללולאה המקומית:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **תמונת `cc-server` מגיעה עם `CC_SERVER_INSECURE=1`** (היא חייבת לאגד את
+  `0.0.0.0` כדי לקבל תעבורה של פורט מפורסם), וזה בטוח רק מאחורי פרוקסי שמסיים
+  TLS — Caddy, Traefik, nginx או Cloudflare Tunnel — ברשת מהימנת. כדי לסיים TLS
+  בתוך התהליך במקום זאת, תלו תעודה והגדירו `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (ואז בטלו את `CC_SERVER_INSECURE`). הכול ניתן לעקיפה עם
+  `docker run -e …` או עם בלוק ה-`environment:` ב-compose.
+- **`/data` הוא המצב היחיד.** מסדי הנתונים של SQLite, הסודות של מכשירים
+  מצומדים, המודלים שהורדו ושמע הפגישות — כולם יושבים בכרך. גיבו אותו,
+  והקונטיינר הופך לחד־פעמי.
+- **צמדו לקוח מתוך התמונה עצמה** לפני החיבור הראשון — המקבילה הקונטיינרית של
+  [שלב 3](#שלב-3-צימוד-לקוח-לפני-ההפעלה-הראשונה):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **שתי תמונות הלקוח הן מארחי nginx סטטיים** — אין מה להגדיר בזמן ריצה; טופס
+  ההתחברות של כל לקוח מקבל את כתובת השרת, מזהה המכשיר ומפתח הצימוד. ממסר
+  האיתות גם הוא זקוק רק לפורט שלו (`SIGNALING_HOST` / `SIGNALING_PORT` ניתנים
+  לעקיפה); הוא חסר מצב, אינו מחזיק סודות והוא **נסיגה** — טלפון משתמש בלולאה
+  המקומית, ב-LAN, ב-tailnet או בנתיב `wss://` ישיר כשאחד מהם נגיש, ורק כשאף
+  אחד מהם אינו נגיש הוא נופל חזרה אל הממסר. דלגו עליו אם הלקוחות שלכם תמיד
+  מגיעים ישירות לשרת.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+שאר המדריך הזה בונה את השרת מקוד המקור; הדגלים וההתנהגות שהוא מכסה הם אותם
+דגלים שמשתני הסביבה של התמונה מזינים.
 
-## Prerequisites
+## דרישות מקדימות
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). המאגר הזה נועל את גרסת ה-SDK שלו
+  באמצעות [fvm](https://fvm.app), ולכן הקדימו `fvm` לכל פקודה.
+- המאגר הזה, כשהוא זמין בהוצאה מקומית.
+- שרשרת הכלים הנייטיבית שסקריפט ההכנה זקוק לה — Rust/`cargo`, ובנוסף `meson`,
+  `ninja`, `pkg-config`, `git` ומהדר C++. כל סקריפט בנייה מפרט מה הוא לא מצליח
+  למצוא וכיצד להתקין אותו.
+- מארח נגיש: לולאה מקומית לשימוש מקומי, או כתובת LAN/ציבורית עם TLS ללקוחות
+  מרוחקים.
 
-## Step 1: Stage the native libraries
+## שלב 1: הכנת הספריות הנייטיביות
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+הספריות הנייטיביות הן **חובה** — אין מצב מופחת. בנו אותן משורש המאגר לפני כל
+דבר אחר:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+הבנייה הזו מייצרת את `rift`, `fff`, tree-sitter בתוספת הדקדוקים שלו, `aec`,
+`lame`, `ccpty`, `cc_watcher`, `cc_inference` ואת הספרייה הנייטיבית של SAML אל
+תוך `build/natives/`. וו הבנייה של `cc_server` מפיק מחדש כל מה שהוכן שם אל תוך
+החבילה, ולכן דילוג על השלב הזה או מכשיל את הבנייה לחלוטין או — עם פתח המילוט
+שלהלן — מייצר בינארי שבדיקת הטרום־עלייה שלו מסרבת להתחיל ומציינת את הספרייה
+החסרה.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[פתח מילוט להידור בלבד]
+יצירת קובץ `.cc_natives_allow_missing` ריק בשורש המאגר מדרדרת את כשל הבנייה של
+ספריות נייטיביות חסרות לאזהרה. היא נועדה לבדיקת תחביר של שכפול טרי; שרת שנבנה
+כך אינו יכול לעלות. זה חייב להיות **קובץ** — מריץ וו הבנייה אינו מעביר הלאה את
+הסביבה של הקורא, ולכן משתנה סביבה נדחה.
 :::
 
-## Step 2: Build the binary
+## שלב 2: בניית הבינארי
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+החבילה כוללת את `libsqlite3` ואת הספריות הנייטיביות שהוכנו לצד הבינארי — אין
+צורך ב-SQLite של המערכת ובלי מנוע Flutter. קובץ ההרצה נוחת
+ב-`./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## שלב 3: צימוד לקוח לפני ההפעלה הראשונה
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+תיקיית נתונים טרייה אינה מכילה מכשיר מצומד ואין בה מפתח מקדים משותף, ולכן
+אי אפשר עדיין לספק את בקשת מפתח הצימוד של לקוח. הנפיקו אחד עם תת־הפקודה `pair`.
+היא כותבת ישירות את `global.db` ואת `secrets.json`; שרת שכבר מגיש את תיקיית
+הנתונים הזו קולט את המכשיר החדש בלי הפעלה מחדש:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+היא מדפיסה שלושה ערכים שיש להדביק בטופס ההתחברות של הלקוח:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +147,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+דגלים שימושיים: `--device` (ברירת מחדל `web-client`; המזהה קובע גם את דרג
+המכשיר — `desktop`, `ios`, `android`, וכל דבר אחר הוא לקוח ווב), `--label`
+(ברירת המחדל היא שם הפלטפורמה בתוספת שם המארח של מכונה זו), `--host` (המארח
+שיודפס בכתובת ה-URL, מאחר שלולאה מקומית אינה נגישה ממכונה אחרת) ו-`--client-url`.
+הרצה חוזרת של `pair` מסובבת את המפתח של אותו מכשיר ומפילה את הסשנים החיים שלו.
+צימוד לעולם אינו יוצר סביבת עבודה: תהליך הכניסה הראשונית של הלקוח המתחבר נותן
+שם ויוצר את הראשונה.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+עם `--client-url` היא מדפיסה גם קוד QR סריק מהמסוף שפותח את לקוח הווב כשהוא כבר
+ממולא:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/).
+:::caution[ה-QR הזה אינו ה-QR של הטלפון]
+`--client-url` בונה קישור ל**לקוח הווב** — כתובת השרת, מזהה המכשיר והמפתח בקטע
+ה-URL. אפליקציית הטלפון **Remote** מצפה למטען אחר (תיאור החיבור המלא של השרת
+בתוספת תפוגה), שמונפק מ**הגדרות → אישי → המכשירים שלכם** בלקוח פועל. השניים
+אינם ניתנים להחלפה זה בזה. ראו
+[שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+אישור שמונפק על ידי `cc_server pair` אינו נושא **תפוגה**; אישור שמונפק באפליקציה
+תמיד פג אחרי 30 ימים. בטלו מכשיר שהונפק ב-CLI מ**הגדרות → אישי → המכשירים
+שלכם** כשסיימתם איתו.
 
-## Step 4: Start the server
+## שלב 4: הפעלת השרת
 
-On loopback — the default and all you need for a client on the same machine:
+בלולאה המקומית — ברירת המחדל וכל מה שאתם צריכים ללקוח על אותה מכונה:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+כדי להגיע אליו ממכונה אחרת, אגדו כל ממשק. אגדה שאינה לולאה מקומית בלי TLS
+**נדחית בעלייה** (`Refusing to bind non-loopback address … without TLS`), ולכן
+ספקו תעודה:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +193,46 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+לחלופין, סיימו TLS בפרוקסי הפוך ברשת פרטית מהימנת ובחרו במפורש באגדה בטקסט גלוי
+מאחוריו:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` נדחה כשגם `--tls-cert` וגם `--tls-key` מוגדרים — TLS תמיד מנצח.
+השרת מפרסם את מצב הטקסט הגלוי כ-`insecure: true` ב-`GET /healthz`, והלקוחות
+מתייגים חיבור כזה כלא מאובטח.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+השרת רץ עד `SIGINT`/`SIGTERM`, ואז נסגר באופן נקי.
 
-## Step 5: Connect a client
+## שלב 5: חיבור לקוח
 
-Point a client at the server URL and pairing key from step 3:
+כוונו לקוח אל כתובת השרת ומפתח הצימוד משלב 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/).
+- **אפליקציית שולחן עבודה**: במסך ההפעלה הראשונה (**כיצד להריץ את Control
+  Center?**) מלאו את שדות ההתחברות במקום **הרץ באפליקציה זו**, או הוסיפו את
+  השרת מאוחר יותר ב**הגדרות → שרת → חיבור וסטטוס**. ראו
+  [התחברות לשרת מרוחק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/).
+- **לקוח הווב**: פתחו את [app.usectrl.dev](https://app.usectrl.dev) (או עותק
+  משלכם של בניית הווב) והזינו את כתובת השרת, מזהה המכשיר ומפתח הצימוד.
+- **טלפון**: צמדו את אפליקציית **Remote** מלקוח פועל — ראו
+  [שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server אינו מגיש חבילת ווב]
+`cc_server` עצמאי לעולם אינו תולה שורש ווב, ולכן `GET /` מחזיר 404. לקוח הווב
+מתארח בנפרד — השתמשו ב-`app.usectrl.dev`, או ארחו את בניית הווב בעצמכם על כל
+מארח HTTPS סטטי (תמונת ה-`cc-webapp` שלמעלה היא בדיוק זה). מקור דפדפן שאינו
+לולאה מקומית חייב להופיע ב-`--allowed-origins`, אחרת שדרוג ה-WebSocket אל
+`/rpc` נדחה; רשימת ברירת המחדל היא `https://app.usectrl.dev`, ו-`localhost` /
+`127.0.0.1` תמיד מותרים.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## שלב 6: חיבור Google Calendar (אופציונלי)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+כדי לסנכרן את לוח השנה של סביבת עבודה בלי ממשק גרפי מחובר, השתמשו בזרימת קוד
+המכשיר:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +240,63 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/).
+היא מדפיסה קוד וכתובת URL לאישור במכשיר אחר, שומרת את אסימון הרענון בצד השרת
+ויוצאת. בנייה מקוד מקור אינה כוללת לקוח Google, ולכן משתני הסביבה של המזהה
+והסוד הם חובה — אין דגל `--google-client-id`. ראו
+[חיבור Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/).
 
-## Configuration
+## הגדרה
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/).
+הדגלים שבהם השתמשנו לעיל הם אלה שהתקנה ראשונה צריכה. המשטח המלא — 23 זוגות של
+דגל ומשתנה סביבה, ארבע תת־הפקודות ופריסת תיקיית הנתונים — נמצא
+ב[עזר ה-CLI של `cc_server`](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[דגלים לא מוכרים נדחים בשקט]
+מנתח הארגומנטים כתוב ביד ומדלג על כל דבר שאינו מזהה, ולכן שגיאת הקלדה
+(`--tls-key-file`, `--bindany`) אינה מייצרת שגיאה — השרת פשוט עולה עם ברירת
+המחדל. בדקו את שורות היומן בעלייה כשנראה שדגל אינו משפיע.
 :::
 
-The four you are most likely to need:
+ארבעת אלה שסביר שתזדקקו להם:
 
-| Flag           | Default                              | Meaning                                                                                          |
-| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| דגל           | ברירת מחדל                           | משמעות                                                                                       |
+| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--data-dir`  | תיקיית נתוני היישום לכל משתמש של מערכת ההפעלה | מסדי נתונים, סודות, מודלים ומדיה במטמון                                             |
+| `--port`      | `9030`                               | פורט TCP (`0` = ארעי)                                                                        |
+| `--bind`      | `loopback`                           | `loopback`, או `any` עבור כל ממשק (דורש TLS או `--insecure`)                                  |
+| `--public-url` | נגזרת מהאגדה                        | כתובת ה-RPC שמפורסמת ללקוחות מצומדים. **הגדירו אותה במפורש מאחורי פרוקסי, NAT או מנהרה**      |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+ברירת המחדל של תיקיית הנתונים היא `~/Library/Application Support/control-center`
+ב-macOS, `%APPDATA%\control-center` ב-Windows ו-`$XDG_DATA_HOME/control-center`
+(אחרת `~/.local/share/control-center`) בשאר המקומות. `.cc_server` יחסית לתיקיית
+העבודה הנוכחית משמשת רק כששום תיקיית בית או תיקיית נתוני יישום אינה נפתרת.
 
-## What the server serves
+## מה השרת מגיש
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` הוא כל משטח המוצר, לא תת־קבוצה שלו: נתיב הנתונים והמינויים של RPC
+המאגר, נקודת הקצה של כלי MCP ב-`POST /mcp` וב-`GET /sse` על אותו פורט, webhooks
+נכנסים, פרוקסי המדיה והגופנים, חזרות כניסה מאוחדת, פרוטוקול החכירה של הצי,
+שליפת RSS בצד השרת לפי לוח זמנים של 30 דקות וחיפוש וקטורי (ההרחבה
+`sqlite_vector` נרשמת כהרחבה אוטומטית כלל־תהליכית, ומדרדרת לחיפוש טקסט מלא רק
+היכן שההרחבה אינה זמינה).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+המשגר הוא **חסר מצב**: אין כריכה של סביבת עבודה לכל סשן. כל קריאה שהיקפה הוא
+סביבת עבודה נושאת את ה-`workspace_id` שלה, והגישה נקבעת לפי החברות והתפקיד של
+הקורא באותה סביבת עבודה — ולא לפי החזקת מפתח צימוד.
 
-Two things to know before you expose the port beyond loopback:
+שני דברים שכדאי לדעת לפני שאתם חושפים את הפורט מעבר ללולאה המקומית:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP נכשל באופן סגור מחוץ למארח.** משטח MCP בלי אסימון עונה רק ללולאה המקומית. אגדת `any` אינה מרחיבה זאת — בקשה מחוץ למארח נדחית עם "MCP requires a bearer token to answer non-loopback clients" עד שתגדירו אסימון (`mcp.setToken`, או **הגדרות → שרת → שרתי MCP**).
+- **`GET /healthz` אינו מאומת במכוון**, עם CORS פתוח לכל המקורות, והוא מפרסם את המזהה, השם, טביעת האצבע של הזהות וגרסת הבנייה של השרת. לקוחות זקוקים לטביעת האצבע כדי להצמיד את השרת, ולכן זה מכוון — אבל זה אכן אומר שכל `cc_server` נגיש חושף את כל זה לכל מי שמבקש.
 
-## Related guides
+## מדריכים קשורים
 
-- [Connect to a remote server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/)
-- [Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/)
-- [Run a fleet worker](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-worker-בצי/)
-- [Connect a Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
+- [התחברות לשרת מרוחק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/)
+- [שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/)
+- [הפעלת worker בצי](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-worker-בצי/)
+- [חיבור Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/)
-- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/)
+- [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)

@@ -1,150 +1,99 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: 监控流水线运行
+description: 处理运行队列，查看运行的瀑布图和步骤面板，并从失败或卡住的步骤中恢复。
 slug: zh-CN/手册/操作指南/监控流水线
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/zh-CN/手册/操作指南/运行流水线/).
+本页介绍运行启动之后的一切：找到它、了解每个步骤做了什么，以及让失败的运行重新动起来。要启动一次运行，请参阅[手动运行流水线](/zh-CN/手册/操作指南/运行流水线/)。
 
-## Find a run
+## 找到一次运行
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. 在工作区侧栏中点击 **流水线**。此界面即工作区的运行队列——包含每一次运行，最新的排在最前。
+2. 用左侧栏筛选。筛选器恰好有三个，每个都带有实时计数：**全部**、**运行中**、**失败**。
+3. 用 <kbd>↑</kbd>/<kbd>↓</kbd>（或 <kbd>j</kbd>/<kbd>k</kbd>）在表格中移动，按 <kbd>Enter</kbd> 打开聚焦的运行。点击某一行也有同样的效果。
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+每一行都用一个图标表示运行的启动方式（手动运行显示播放图标；代码图监听显示文件图标；其他情况显示自动触发器）。工具提示会给出触发器的名称——**手动**、**PR 已发布**、**文件变更**等——对于监听运行，还会说明哪些文件发生了变更。接着是流水线名称、状态徽章、有效时长（对于 `queued` 运行则是队列位置），以及本次尝试是多久前开始的。有效时长不包含空闲的停止与重启间隔，因此并不等于墙上时钟跨度。
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+没有针对已完成、已挂起或已取消运行的筛选器，没有按模板筛选，没有时间窗口，也没有按模板查看运行历史的功能。要比较同一模板的运行，只能按名称在队列中逐一查找。
 
-## Read the run detail
+## 查看运行详情
 
-A run's page has three stacked parts.
+运行页面由三个上下排列的部分组成。
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**元信息条**包含开始时间、有效时长、步骤进度（“3/7 个步骤”）、指出出错步骤及其原因的失败摘要，以及 **重试** 和 **删除** 操作。
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**时序瀑布图**为每个步骤显示一个条形，标注其时长，对于智能体步骤还会标注以分为单位的成本。被重试过的步骤会在时长后显示 `×N` 后缀；该后缀是尝试次数唯一出现的地方。
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**图画布**绘制模板，并显示每个节点的实时状态。选中某个节点会打开它的步骤面板。
 
-### Run and step statuses
+### 运行与步骤状态
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| 状态       | 含义                                              |
+| ---------- | ------------------------------------------------- |
+| **等待中** | 已创建，尚未开始                                  |
+| **排队中** | 已接纳但被暂缓：此模板的最大并行上限已满；尚无步骤记录 |
+| **运行中** | 正在执行                                          |
+| **已挂起** | 正在等待外部事项——属正常情况，并非卡住             |
+| **已完成** | 成功完成                                          |
+| **失败**   | 以错误结束                                        |
+| **已取消** | 被用户或系统停止                                  |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+步骤具有上述除 **排队中** 以外的状态，另外还有 **已跳过**，用于表示路由器未走的分支（以及该分支中现已无法到达的后代步骤）。
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**已挂起** 是智能体步骤大部分时间所处的状态：派发出去的智能体或审批门会一直占住该步骤，直到其工作完成。引擎有两道兜底机制会让整个运行失败而不是恢复：挂起超过 24 小时的步骤（`extras.awaitApproval`——即 `orchestration.awaitApproval` 主体——可豁免；`human.gate` 不豁免），以及服务器停止时正处于中途的非幂等步骤。
 
-## Inspect a step
+## 检查步骤
 
-Select a node on the canvas. The step panel shows, in order:
+在画布上选中一个节点。步骤面板按顺序显示：
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- 步骤失败时显示 **错误** 提示框，被跳过时显示带原因的 **已跳过** 提示框。
+- **开始**、**结束** 和时长。
+- **分支**——并行分支的分支索引。
+- **查看对话**——跳转到该步骤运行所在的对话。流水线对话在侧栏中是隐藏的，因此这是唯一的进入方式。
+- **输入** 和 **输出**，以可折叠的 JSON 呈现。
+- **智能体活动**——该步骤派发的每个智能体运行对应一个卡片，显示其状态、摘要、时长和成本。
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+对于智能体步骤，**输出** 是智能体通过 `submit_output` 提交的结构化载荷，而不是它的文字叙述。推理过程记录位于 **智能体活动** 以及 **查看对话** 背后的对话中。
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+对于 bash 步骤，**输出** 是脚本在退出码为 0 时写入的、经过修剪的 stdout。非零退出会使该步骤失败，并以 stderr 的末尾部分作为错误消息。
 
-## Recover a failed run
+## 恢复失败的运行
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. 阅读元信息条上的失败摘要；它会指出失败的步骤。步骤面板的 **错误** 提示框中包含具体消息。
+2. 检查该步骤的 **输入**——状态键缺失或拼写错误是最常见的原因。提示词智能体步骤会直接失败并指出未解析的占位符；bash 步骤则会把它们渲染为空字符串并照常运行，问题通常会在下一个步骤才暴露出来。
+3. 对于智能体步骤，打开 **查看对话**，看看智能体实际做了什么。
+4. 点击元信息条上的 **重试**。已完成和已跳过的步骤保留其输出；其余步骤会被删除并重新执行，运行状态重新变为运行中。本次尝试的时长计时会重新开始。
 
-Common causes worth checking first:
+值得优先检查的常见原因：
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **超时**——该步骤超过了其 **超时（毫秒）**。请记住该字段的单位是毫秒。
+- **脚本错误**——bash 命令以非零码退出，或者服务器主机的 `PATH` 中没有 `bash`。
+- **Schema 校验**——智能体 `submit_output` 的载荷不满足该步骤的输出 schema。
+- **未解析的占位符**——提示词智能体步骤引用的某个 `{{key}}` 从未在上游写入。错误会列出每一个未解析的键。
+- **未注册的主体**——主体键未注册的步骤会在模板加载时发出警告，然后就是完全不执行。
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[重试仅适用于失败或已取消的运行]
+**重试** 按钮仅在运行状态为 `failed` 或 `cancelled` 时显示。对于任何其他状态，引擎会立即返回。
 :::
 
-## Stop a step that is stuck
+## 停止卡住的步骤
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+选中正在运行的步骤，然后点击步骤面板标题栏中的 **终止运行** 按钮。这会杀死该步骤的进程，将步骤标记为失败，从而使整个运行失败——所有仍在进行的同级分支也会随之结束。
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+此界面没有取消运行的操作控件。`pipeline.cancel` 作为一项 RPC 操作存在，引擎也实现了它，但流水线界面中没有任何地方调用它；步骤上的 **终止运行**，或运行上的 **删除**，是仅有的停止手段。
 
-## Track cost
+## 跟踪成本
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+成本按步骤报告，显示在瀑布图的右侧列中以及 **智能体活动** 下的每个卡片上。详情页没有运行总计，运行队列中也没有成本列，因此要比较两次运行的成本，只能把各自步骤的成本相加。
 
-## Related guides
+## 相关指南
 
-- [Run a pipeline manually](/zh-CN/手册/操作指南/运行流水线/)
-- [Create a pipeline template](/zh-CN/手册/操作指南/创建流水线/)
-- [Manage costs](/zh-CN/手册/操作指南/管理成本/)
-- [Pipeline steps reference](/zh-CN/手册/参考/流水线步骤/)
+- [手动运行流水线](/zh-CN/手册/操作指南/运行流水线/)
+- [创建流水线模板](/zh-CN/手册/操作指南/创建流水线/)
+- [管理成本](/zh-CN/手册/操作指南/管理成本/)
+- [流水线步骤参考](/zh-CN/手册/参考/流水线步骤/)
 
-## Related concepts
+## 相关概念
 
-- [Pipelines](/zh-CN/手册/概念/流水线/)
+- [流水线](/zh-CN/手册/概念/流水线/)

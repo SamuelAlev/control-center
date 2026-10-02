@@ -1,310 +1,308 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: כלי MCP
+description: קטלוג מלא של כלי ה-MCP ש-cc_server רושם, לפי משפחות.
 slug: he-IL/מדריך-למשתמש/עזר/כלי-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` מארח מרשם כלים אחד של MCP (‏JSON-RPC 2.0), הנחשף בפורט הראשי של השרת (ברירת מחדל `9030`) בנתיבים `POST /mcp` ו-`GET /sse`, בגרסת פרוטוקול `2024-11-05`. כל לקוח מגיע לאותו מרשם: היישום השולחני, גרסת הווב, לקוחות MCP חיצוניים ומנגנון ההרצה המובנה של הסוכן. אפשר לגשר שרתי MCP חיצוניים אל אותו מרשם כשכבה דינמית.
 
-## Registry size
+## גודל המרשם
 
-| Measure                                                                   | Count |
+| מדד                                                                        | מספר |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| כלים ש-`cc_server` רושם                                                    | 110   |
+| מ-`packages/cc_mcp`                                                       | 108   |
+| מ-`packages/cc_mcp_client` (גילוי כלים)                                    | 2     |
+| נרשמים במרשם הבסיס (`server_mcp_registry.dart`)                            | 63    |
+| נרשמים לאחר האתחול כשהשירותים שלהם עולים (`cc_server_runtime.dart`)        | 47    |
+| מתוך 63 של מרשם הבסיס, מותנים במאגר גרף קוד                                 | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+חמשת כלי גרף הקוד נרשמים רק כשהמארח מעביר מאגר גרף קוד אל `buildServerMcpRegistry`. `cc_server` תמיד מעביר אחד, ולכן כל 110 הכלים פעילים בבינארי המשולח.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+המרשם המלא מוצהר ב-`tools/list` בלי שער גילוי. עריכות כרטיסים מתבצעות בכלים בעלי טיפוסים מוגדרים.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[לקוחות חיצוניים תמיד רואים את כל הקטלוג]
+`tools/list` לעולם אינו מקוצר. לקוחות MCP מאמתים שמות כלים מול העותק השמור שלהם של הרשימה הזו ומסרבים לכל דבר שאינו ברשימה בלי לשאול את השרת, כך שכלי שמוסתר שם הוא בלתי נגיש, ולא סתם שקט.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים).
+**מנגנון ההרצה המובנה** שונה: הוא טוען רק תת-קבוצה תושבת של הגדרות בכל בקשה ומושך את השאר בשימוש הראשון, וזו התנהגות של המנגנון שאינה משנה את המרשם הזה. ראו [הקשר כלים ומטמון הנחיות](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[כל מחלקת כלי נרשמת]
+קובץ מקור תחת `packages/cc_mcp/lib/src/tools/` הוא כלי שסוכן יכול לקרוא לו. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart` מכשיל את הבנייה אם שום דבר לא בונה מחלקת כלי חדשה.
 :::
 
-## Common parameters
+## פרמטרים משותפים
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**חובה** בכל כלי שנוגע בנתונים בעלי היקף של סביבת עבודה. `workspace_id` חסר או שגוי מחזיר שגיאה מפורשת, וערך שאינו תואם את סביבת העבודה של הישות שאליה הוא מכוון נדחה ולא מתעלמים ממנו בשקט. השמיטו אותו בכלים גלובליים באמת: `list_workspaces` וששת כלי עדכוני החדשות (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), שנשענים על רשימת הפידים האישית של בעל השרת. כלי הגילוי (`search_tool_bm25`, `list_my_tools`) מקבלים אותו באופן אופציונלי כדי שיוכלו לסווג את יכולת הקריאה לפי מצב השיחה. כשהשרת שולח סוכן, סביבת העבודה נכפית בצד השרת, כך שהסוכן אינו יכול להגיע לסביבת עבודה אחרת באמצעות מזהה זר.
 
-## Tool discovery
+## גילוי כלים
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+שניהם מגיעים מ-`cc_mcp_client` ולא מ-`cc_mcp`, ושניהם מתייעצים עם שומר המצב כדי לדווח מה ניתן לקריאה ב_מצב השיחה הנוכחי_.
 
-| Tool               | Description                                                                                                                 |
+| כלי                | תיאור                                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | חיפוש בקטלוג הכלים לפי מילת מפתח; מחזיר כלים תואמים, את סכימות הארגומנטים שלהם ואם כל אחד מהם ניתן לקריאה כרגע                 |
+| `list_my_tools`    | הצגת הכלים הניתנים לקריאה כרגע בשיחה הזו, מסוננים לפי המצב שלה                                                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+כלי גילוי שלישי, **`search_tools`**, קיים רק בתוך מנגנון ההרצה המובנה ואינו חלק ממרשם ה-MCP הזה. הוא מדרג את משטח הכלים של ההרצה עצמה, ובשונה מ-`search_tool_bm25` הוא **טוען** את הסכימות של מה שהוא מוצא כדי שהסוכן יוכל לקרוא לתוצאה מתאימה בתור הבא שלו. סוכנים שרצים על המנגנון צריכים להעדיף אותו; ללקוחות MCP יש את `search_tool_bm25`.
 
-## Agent tools
+## כלי סוכן
 
-| Tool          | Description                               |
+| כלי           | תיאור                                     |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | הצגת הסוכנים הרשומים בסביבת עבודה         |
 
-## Agent peer messaging and delegation
+## הודעות בין סוכנים עמיתים והאצלה
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+סוכנים מדברים זה עם זה דרך מרחבים (עמידים וגלויים בסגל). `ask_agent` הוא בקשה/תשובה עם פסק זמן מחייב; `delegate_task` מוגן בצד השרת באמצעות תקרת עומק, זיהוי מחזורים, מעטפת תקציב ותקרת אוטונומיה.
 
-| Tool            | Description                                                                                    |
+| כלי             | תיאור                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | שליחת הודעה חד-כיוונית לסוכן אחר, במיעון לפי `to_agent_id` או `to_agent_name` מדויק             |
+| `ask_agent`     | שאלת סוכן אחר והמתנה לתשובתו, או פסק זמן                                                         |
+| `delegate_task` | האצלת משימה לסוכן אחר ככרטיס ילד במעקב                                                          |
+| `consult_agent` | הוספת המומחה המתאים ביותר לפי מיומנויות אל המרחב ושליחתו עם תדריך ממוקד                          |
+| `todo_read`     | קריאת רשימת המשימות הנשמרת של השיחה הזו                                                         |
 
-## Skill tools
+## כלי מיומנויות
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+כל התקנה ועדכון עוברים דרך שער סריקה שנסגר בעת כשל לפני שתוכן מיומנות כלשהו מגיע לדיסק או להנחיה של סוכן.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| כלי                  | תיאור                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `list_skills`        | הצגת מזהי המיומנויות (slug) הזמינות בסביבת עבודה                              |
+| `create_skill`       | יצירת מיומנות חדשה מתוכן markdown                                            |
+| `install_skill`      | התקנת התיקייה כולה של מיומנות ממאגר GitHub ב-ref מוצמד                        |
+| `update_skill`       | עדכון מיומנות GitHub מותקנת ל-ref חדש, עם סריקה מחדש והצמדה מחדש                |
+| `list_skill_updates` | הצגת מיומנויות שיש להן גרסה חדשה יותר                                        |
+| `verify_skills`      | אימות מיומנויות נעולות מול גיבובי התוכן שלהן בדיסק                             |
+| `pin_skill`          | גיבוב מיומנות קיימת בדיסק אל `skills-lock.json`                              |
 
-## Plan, playbook and artifact tools
+## כלי תוכנית, פלייבוק וארטיפקט
 
-| Tool               | Description                                                                                                           |
+| כלי                | תיאור                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | חוזה הפלט של מצב תוכנית: פליטת `PlanDocument` טיפוסי שנפתח ב-Plan Studio                                               |
+| `create_playbook`  | שמירת תוכנית כתבנית בעלת שם וגרסאות עם מצייני מקום טיפוסיים `{{param}}`                                                |
+| `run_playbook`     | יצירת מופע של פלייבוק עם ערכי פרמטרים, שמייצר תוכנית שהמפעיל מאשר                                                      |
+| `publish_artifact` | פרסום רשימה מסודרת של בלוקים טיפוסיים (markdown, table, chart, mermaid, code, JSON) שמוצגים באופן מקורי בלקוח          |
+| `revise_artifact`  | החלפת התוכן של ארטיפקט שפורסם                                                                                          |
+| `list_artifacts`   | הצגת הארטיפקטים של סביבת העבודה                                                                                       |
+| `get_artifact`     | קריאת ארטיפקט אחד                                                                                                     |
+| `complete_goal`    | הצהרה שהיעד העמיד הפעיל של השיחה (שהותחל עם `/goal` או `/loop`) הושג                                                  |
 
-## Workspace tools
+## כלי סביבת עבודה
 
-| Tool              | Description                                                              |
+| כלי               | תיאור                                                                    |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | הצגת כל סביבות העבודה עם המזהים והשמות שלהן (גלובלי; בלי `workspace_id`) |
 
-## Repo tools
+## כלי מאגרים
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| כלי          | תיאור                                                                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | הצגת המאגרים הרשומים בסביבת עבודה. סוכנים שקוראים לכלי מקבלים את נתיבי עצי העבודה המבודדים מסוג העתקה-בעת-כתיבה של השיחה שלהם, ולעולם לא את ה-checkouts המקוריים |
 
-## Messaging tools
+## כלי הודעות
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| כלי                  | תיאור                                                                        |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_spaces`        | הצגת מרחבי ההודעות בסביבת עבודה                                            |
+| `get_messages`       | שליפת הודעות ממרחב                                                          |
+| `send_message`       | שליחת הודעה למרחב כסוכן שולח בעל שם                                          |
+| `get_space_notes`    | קריאת מסמך המסירה המשותף של מרחב                                            |
+| `update_space_notes` | החלפת מסמך המסירה המשותף של מרחב                                            |
+| `todo_write`         | החלפת רשימת המשימות של השיחה הזו בקריאה אחת (העבירו את הרשימה המלאה)         |
 
-## Review tools
+## כלי סקירה
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| כלי                        | תיאור                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | התחלת סקירת ה-AI לבקשת משיכה: חישוב אזורי הסקירה, פיזור סוקרים מומחים אל מרחב ה-PR, כתיבת הסיור המודרך וסיום הסקירה                         |
+| `add_review_node`          | הוספת ממצא סקירה מובנה (קובץ, שורה, עדיפות P0–P3) למרחב סקירה                                                                              |
+| `confirm_review_node`      | אישור הממצא של עמית; המחבר אינו יכול לאשר את עצמו                                                                                        |
+| `resolve_review_node`      | סימון ממצא כתוקן לאחר ביצוע השינוי בפועל; מפרסם עקבה במרחב הסקירה                                                                            |
+| `dismiss_review_node`      | דחיית ממצא שאינו רלוונטי; רושם עובדת דיכוי כדי שסוקרים יפסיקו לסמן אותו שוב                                                                 |
+| `request_peer_review`      | בקשה מסוכן סוקר אחר לבחינה שנייה של ממצא                                                                                                 |
+| `dispatch_reviewers`       | שליחת סוכני סוקרים מותאמים אל מרחב סקירה, במקביל                                                                                        |
+| `submit_reviewer_verdict`  | פרסום הכרעת ship/hold/block לכל סוקר, עם ציון ביטחון והסבר                                                                                |
+| `finalize_review`          | חישוב קונצנזוס לכל צומת וההכרעה לכל בקשת משיכה, וסגירת הסקירה                                                                              |
+| `set_cohort_summary`       | קביעת סיכום בשפה פשוטה לקבוצת סקירה                                                                                                      |
+| `add_review_diagram`       | צירוף תרשים מובנה ומאומת בגרף (`sequence`, `entityRelation`, `stateMachine`) לקבוצה                                                      |
+| `publish_review_to_github` | פרסום הסקירה המוגמרת ב-GitHub כהערות מוטבעות בתוספת גוף סיכום                                                                             |
 
-## Memory tools
+## כלי זיכרון
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| כלי                     | תיאור                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `search_memory`         | חיפוש עובדות ומדיניות (מילת מפתח, סמנטי או היברידי — היברידי הוא ברירת המחדל)                                 |
+| `propose_fact`          | אחסון עובדת markdown קצרה בתחום                                                                              |
+| `supersede_fact`        | סימון עובדה כמוחלפת על ידי אחרת                                                                              |
+| `propose_policy`        | אחסון כלל נורמטיבי בתחום (דורש הרשאת כתיבה עליו)                                                             |
+| `supersede_policy`      | הוצאת מדיניות מכלל שימוש — מסמן אותה כלא פעילה תוך שמירתה לביקורת                                            |
+| `list_policies`         | הצגת מדיניויות פעילות, עם סינון אפשרי לפי תחום                                                               |
+| `list_memory_domains`   | הצגת תחומי הזיכרון של סביבת העבודה עם מספרי העובדות והמדיניויות                                              |
+| `record_observation`    | רישום תצפית גולמית בזיכרון העבודה של הסוכן                                                                   |
+| `get_my_notes`          | קריאת פנקס הרשימות של זיכרון העבודה של הסוכן הקורא                                                           |
+| `update_my_notes`       | עדכון פנקס הרשימות של זיכרון העבודה של הסוכן הקורא                                                           |
+| `remember`              | הוספת הערה לזיכרון העבודה החם של הסוכן עבור ההפעלה הזו (חסום לפי TTL ולפי מספר)                               |
+| `consolidate_memory`    | הרצת מעבר איחוד (”שינה”): פינוי פריטים חמים שפג תוקפם וגלגול עמידים לעובדות ארוכות טווח                      |
+| `harmonize_memory`      | הרצת הרמוניזציה של אמונות בין סוכנים (SHMR) וסימון סתירות                                                    |
+| `list_memory_conflicts` | הצגת סתירות שזוהו וכיצד כל אחת מהן נפתרה                                                                     |
 
-## Governance tools
+## כלי ממשל
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| כלי                          | תיאור                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `create_goal`                | יצירת יעד ארגוני (ברמת חברה, צוות, סוכן או משימה)                                                            |
+| `list_goals`                 | הצגת יעדים עם הרמה, הסטטוס וההתקדמות המצטברת                                                                  |
+| `update_goal_progress`       | קביעת ההתקדמות של יעד                                                                                        |
+| `create_approval`            | פתיחת אישור הנהלה עבור פעולה נשלטת (יציאה ממצב תוכנית, מיזוג, שחרור, גיוס, מותאם אישית)                        |
+| `list_approvals`             | הצגת אישורים, עם סינון אפשרי לפי סטטוס                                                                       |
+| `decide_approval`            | רישום החלטה: אישור, דחייה, בקשת שינוי או הגשה מחדש                                                           |
+| `comment_approval`           | הוספת תגובה לאישור הנהלה                                                                                     |
+| `exit_plan_mode`             | פתיחת אישור `plan_exit` (וצריכתו לאחר אישור), שמוציא את השיחה ממצב תוכנית                                    |
+| `agent_heartbeat`            | דיווח חיוניות (חי, פנוי, תקוע); שתיקה ממושכת מעבירה את בריאות ההרצה למצב ”אבד לאחרונה”, ואחר כך ל”לא מקוון”     |
+| `list_runtime_health`        | הצגת בריאות ההרצה של כל סוכן                                                                                 |
+| `list_agent_presence`        | הצגת הנוכחות של כל סוכן (בריאות, מחזור חיים, מספרים של הרצות פעילות ובתור, קיבולת)                            |
+| `get_org_chart`              | קריאת עץ הדיווח, כשה-CEO בשורש ומקונן לפי `reports_to`                                                       |
+| `create_work_product`        | יצירת תוצר עבודה עמיד המשויך לכרטיס                                                                          |
+| `save_work_product_revision` | שמירת גרסה חדשה; העבירו `base_revision_id` כדי שהשמירה תידחה בעת עריכה מקבילה                                 |
+| `list_work_products`         | הצגת תוצרי עבודה, עם סינון אפשרי לכרטיס אחד                                                                  |
+| `get_work_product`           | קריאת תוצר עבודה עם היסטוריית הגרסאות שלו                                                                    |
+| `create_runtime_profile`     | הגדרת פרופיל הרצה לשימוש חוזר (משפחת פרוטוקולים, פקודת CLI, ארגומנטים קבועים להפעלה)                          |
+| `list_runtime_profiles`      | הצגת פרופילי ההרצה של סביבת העבודה                                                                           |
 
-## Code graph tools
+## כלי גרף קוד
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+נרשמים רק כשהמארח מספק מאגר גרף קוד. האינדקס מכסה את ערכת הדקדוקים הנשלחת (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); סמלים בכל שפה אחרת אינם נוכחים.
 
-| Tool           | Description                                                                        |
+| כלי            | תיאור                                                                              |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | חיפוש סמלים מאונדקסים לפי שם, חתימה והערת תיעוד (היברידי BM25 + סמנטי)               |
+| `code_symbol`  | איתור סמלים לפי שם מדויק; מחזיר `file:line` וחתימה                                  |
+| `code_callers` | הצגת הסמלים שקוראים לסמל או תלויים בו (קשתות נכנסות)                               |
+| `code_callees` | הצגת הסמלים שסמל קורא להם או תלוי בהם (קשתות יוצאות)                               |
+| `code_impact`  | חישוב רדיוס הפגיעה העקיף של סמל, עד לעומק נתון                                     |
 
-## Ticketing tools
+## כלי כרטוס
 
-| Tool                      | Description                                                                                                                  |
+| כלי                       | תיאור                                                                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | יצירת כרטיס אצל הספק המוגדר                                                                                                   |
+| `get_ticket`              | שליפת כרטיס אחד לפי מזהה                                                                                                     |
+| `list_tickets`            | הצגת כרטיסים, עם סינון אפשרי לפי סטטוס או גורם מוקצה                                                                         |
+| `update_ticket`           | עדכון סטטוס, כותרת, תיאור, עדיפות או תגיות (הסטטוס מקבל כינויים כגון `in_progress` / `completed`)                            |
+| `assign_ticket`           | הקצאת כרטיס לסוכן ו/או לצוות                                                                                                  |
+| `reassign_ticket`         | הקצאת כרטיס מחדש לסוכן אחר                                                                                                   |
+| `add_ticket_collaborator` | הזמנת סוכן לשתף פעולה בכרטיס (נוסף למרחב שלו)                                                                                |
+| `comment_on_ticket`       | הוספת תגובה לכרטיס                                                                                                           |
+| `close_ticket`            | סגירת כרטיס (מסמן אותו כבוצע) עם פלט אופציונלי                                                                                |
+| `fail_ticket`             | סימון כרטיס ככשל עם הודעת שגיאה                                                                                              |
+| `delegate_ticket`         | האצלת כרטיס לסוכן, ויצירת כרטיס במעקב                                                                                        |
+| `ticket_pr_link`          | קישור או ביטול קישור בין כרטיס לבקשת משיכה לפי מזהה צומת ה-PR (`action`: `link` \| `unlink`)                                 |
+| `ticket_relation`         | הוספה או הסרה של קשר בין שני כרטיסים — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | הצגת הכרטיס האב, תתי-הכרטיסים וקישורי התלות של כרטיס                                                                         |
 
-## Team and pipeline tools
+## כלי צוות ופייפליין
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| כלי                    | תיאור                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | רישום רשומת פעילות של מוביל צוות מול כרטיס                                                                                            |
+| `preview_trigger`      | הרצה יבשה שמראה אילו הרצות פייפליין אירוע היפותטי היה מפעיל, בלי לבצע דבר                                                             |
+| `submit_output`        | הגשת מטען הפלט המובנה עבור הרצת הפייפליין הנוכחית של הקורא; נבדק מול סכימת הפלט המוצהרת של ההרצה                                       |
 
-## Orchestration tools
+## כלי תזמור
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| כלי                     | תיאור                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | פליטת תוכנית תזמור מובנית של ריבוי סוכנים לאישור חד-פעמי מראש; מאמת ומחזיר כל הפרה                          |
 
-## Newsfeed tools
+## כלי עדכוני חדשות
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| כלי                 | תיאור                                                         |
+| ------------------- | ------------------------------------------------------------- |
+| `list_feeds`        | הצגת פידי ה-RSS/Atom הרשומים                                  |
+| `list_articles`     | הצגת כתבות, עם סינון אפשרי לפי פיד, שלא נקראו או שנשמרו        |
+| `get_article`       | שליפת כתבה אחת                                                |
+| `set_article_read`  | סימון כתבה כנקראה או כלא נקראה                                |
+| `set_article_saved` | שמירת כתבה או ביטול השמירה                                    |
+| `refresh_feeds`     | שליפה מחדש של כל פיד מופעל כעת                                |
 
-## Enclosure (rig) tools
+## כלי מתחם מבודד (תחנה)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/#action-verbs).
+הפעלת מכונות חד-פעמיות — דפדפן או שולחן עבודה של Linux במתחם מבודד,
+אמולטור של Android או סימולטור iOS — מתוך הרצה. נרשמים לאחר האתחול,
+ללא תנאי: האם מכונה מסוגלת באמת לעלות היא שאלת בדיקה שהכלים עונים עליה בכל
+קריאה. קריאות חוזרות באותה שיחה עושות שימוש חוזר במכונה אחת; צילומי מסך חוזרים
+כתוכן תמונה עם תקציב של תמונה אחת לכל תוצאה, ותוכן דף/ממשק שחולץ מגודר כנתון לא
+מהימן. ארבעת כלי השימוש יחד עם `rig_close` מצהירים על [מחלקת הפעולה](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
+`enclosureControl` (כלי השימוש מצהירים גם על `networkEgress` ו-`processSpawn`;
+`mobile_use` ו-`ios_use` מצהירים גם על `packageInstall`), ולכן מצבים לקריאה
+בלבד חוסמים אותם. `rig_list` אינו מצהיר על דבר — הוא רק קורא את מצב סביבת
+העבודה. מלוא אוצר הפעלים לכל משטח נמצא ב[מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/#action-verbs).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| כלי            | תיאור                                                                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `computer_use` | הפעלת שולחן עבודה של Linux במכונה וירטואלית מבודדת: הזזה, לחיצה, גרירה, גלילה, הקלדה, שינוי גודל, לוח גזירים, צילום מסך          |
+| `browser_use`  | הפעלת Chromium, Firefox או WebKit ללא ממשק (`engine`): ניווט, לחיצה, מילוי, חילוץ (a11y/DOM/console), לוח גזירים, צילום מסך           |
+| `mobile_use`   | הפעלת Android דרך ADB: בדיקה וקלט, צילומי מסך, התקנה/הפעלה/עצירה/איפוס/הסרה של אפליקציות, קישורים עמוקים ופקודות מכשיר בצורת argv    |
+| `ios_use`      | הפעלת סימולטור iOS דרך WebDriverAgent/CoreSimulator: בדיקה וקלט, צילומי מסך, התקנה/הפעלה/עצירה/הסרה של אפליקציות, קישורים עמוקים ותהליכי סימולטור בצורת argv |
+| `rig_list`     | הצגת התחנות של סביבת עבודה עם המשטח, הסטטוס, גודל התצוגה והבקר                                                                       |
+| `rig_close`    | השמדת תחנה והשלכת מצב המכונה שבבעלותה                                                                                              |
 
-## Not exposed over MCP
+## לא נחשף דרך MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/he-IL/מדריך-למשתמש/מושגים/פגישות/), not as a tool an agent can call.
+ללוח השנה ולפגישות אין כלי MCP. סוכנים אינם יכולים לקרוא את לוח השנה, הפגישות, התמלולים, פריטי הפעולה או ההחלטות שלכם. הסיכום שמייצר פריטי פעולה והחלטות רץ כפייפליין המובנה [`meeting_summary`](/he-IL/מדריך-למשתמש/מושגים/פגישות/), ולא ככלי שסוכן יכול לקרוא לו.
 
-## Tool gating by mode
+## שער כלים לפי מצב
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+השער נאכף פעמיים מאותה טבלה (`ModeToolPolicy`): פעם אחת במפעיל ה-MCP עבור מתאם Claude Code, ופעם אחת במרשם מנגנון ההרצה המובנה. קריאה חסומה מחזירה את הסיבה.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| מצב           | משטח כלים                                                                                                                                                                                                                             |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | כל כלי רשום; בלי רשימת היתר                                                                                                                                                                                                          |
+| `plan`        | רשימת היתר מצומצמת. אין כתיבה לעצי עבודה ואין פעלי כרטיס `create` / `assign` / `delegate`, אבל זיכרון, ארטיפקטים, רשימות משימות, `submit_plan`, `exit_plan_mode` ופעלי השלמת הכרטיס על הכרטיס שנשלח מותרים                             |
+| `review`      | רשימת היתר מצומצמת: השתתפות בסקירה, תקשורת, מביאי הקשר לקריאה בלבד ומלוא מערכת פעלי הכרטיס, כולל `create_ticket` ו-`assign_ticket`                                                                                                     |
+| `orchestrate` | רשימת היתר מצומצמת: כלי מחקר וקריאה בתוספת `propose_orchestration`, `create_playbook` ו-`run_playbook`. גיוס, פירוק לתת-משימות והשלמת כרטיסים קורים באופן דטרמיניסטי לאחר האישור, ולעולם לא באמצע ההרצה                                    |
 
-Permitted in every mode regardless of allow-list:
+מותרים בכל מצב, ללא תלות ברשימת ההיתר:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| קבוצה              | כלים                                                                                                                                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| זיכרון וארטיפקטים  | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| גרף קוד            | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| מכניקת הרצה        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+הכללת כלי ברשימת היתר אינה הופכת אותו לקריא, וההפך נכון גם כן: היכולת לשאול את המפעיל היא כלי של **מנגנון ההרצה** (`ask_user`), ולכן היא כלל אינה מופיעה בקטלוג ה-MCP הזה.
 
-## Approval-gated tools
+## כלים הדורשים אישור
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+כלי יכול להצהיר `requiresApproval`. מפעיל ה-MCP בונה אז `ApprovalPayload` וחושף אותו דרך `ConfirmationPort` לפני שהכלי רץ; `cc_server` מחבר את הפורט הזה, ולכן השער פעיל.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+כלים רשומים שמצהירים עליו: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
+באופן בלתי תלוי, מעקות הבטיחות המאוחדים של הפעולות שמים שער על כל כלי שמצהיר על סט לא ריק של `ActionClass`. החלטת `prompt` בלי מאשר מחובר נדחית. ראו [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
 
-## Capabilities with no tool behind them
+## יכולות בלי כלי מאחוריהן
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+לא כל יכולת במוצר נגישה לסוכן. לאלה אין כלי
+כלל, ולכן שם שאולי ראיתם במקום אחר מחזיר "unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| יכולת                                   | היכן היא נמצאת במקום זאת                                                                              |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| גיוס, פיטורים או עריכה של סוכן          | ממשק הסוכנים. אין כלי `hire_agent` / `fire_agent` / `update_agent`                                    |
+| יצירת סביבת עבודה                       | `workspace.upsert` דרך RPC, שמזריע וחותם בעלות                                                        |
+| פרויקטים (יצירה / הצגה / עדכון / שיוך)  | ממשק הכרטיסים. פרויקטים הם משטח של המפעיל — ראו [פרויקטים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/) |
+| שאלת המפעיל שאלה חוסמת                  | הכלי `ask_user` של **מנגנון ההרצה**, ולא MCP. הוא מציג טופס בשיחה וחוסם עד לקבלת התשובה                |
+| אבחון לפי סוכן                          | כלום. אין `doctor` — ראו [אבחון סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)                  |
+| לוח שנה ופגישות                         | RPC ללקוחות אנושיים בלבד (ראו לעיל)                                                                   |
 
-## See also
+## ראו גם
 
-- [Use Control Center as an MCP server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
+- [שימוש ב-Control Center כשרת MCP](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)

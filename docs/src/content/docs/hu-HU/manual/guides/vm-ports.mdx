@@ -1,137 +1,158 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Portok továbbítása terminálból
+description: Érjen el egy Terminálban (VM) vagy egy gazdagépshellben indított devszervert – a gépéről, a Böngészőből (VM), Androidról, a hálózatán vagy egy dev-tartomány alatt HTTPS-sel.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Egy beszélgetés termináljában indított szerver csak **abban a térben** kerül
+közzétételre. A portok panelja észleli azokat a figyelőket, amelyeket ez az
+alkalmazás ott indított, leképezi őket, és címet ad minden helyhez, ahonnan el
+szeretné érni őket. Két tér ugyanúgy figyelhet az `5173` porton; a leképezéseik
+soha nem keverednek.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Itt semmi sem nyitja meg a gépet: minden útvonalat a szerver hoz létre,
+kérésre, és a terminállal vagy az állomással együtt szűnik meg.
 
-## See what is listening
+## Nézze meg, mi figyel
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Nyissa meg a beszélgetés **Terminál (VM)** vagy gazdagépshell felületét (egy
+   térben vagy egy PR-oldalon).
+2. Indítsa el a szerverét – `pnpm dev`, `python -m http.server 8000`, bármit.
+3. Néhány másodpercen belül a terminál jobb felső sarkában lévő **csatlakozó
+   ikon** pontot kap. Kattintson rá.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+A panel minden figyelt portot felsorol, a hozzá tartozó folyamattal együtt,
+`3000 → 3000` formában: a bal oldalon az a port, amelyre a folyamat kötötte
+magát, a jobb oldalon az, amelyen helyben válaszol (ugyanaz a szám, amikor az
+szabad volt a gépén). Minden sor azt is jelzi, hogy az asztali `localhost`, a
+Böngésző (VM) és az Android el tudja-e érni.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+A felderítés elszigetelt: a Terminál (VM) lekérdezése az adott vendéggépen
+belül történik; a gazdagépshell lekérdezése az adott munkamenet
+PTY-folyamatfából. Más terek és a Mac gépén futó egyéb folyamatok nem
+kerülnek listázásra.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Az **ebben** a terminálban megjelenő új portok automatikusan továbbításra
+kerülnek. Kapcsolja ki ugyanabban a panelben a **Portok automatikus
+továbbítása** lehetőséget, ha csak a saját maga által hozzáadottakat szeretné.
 
-## Reach it from this computer
+## Érje el erről a számítógépről
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Használja a sorban a **Helyi URL másolása** lehetőséget – `http://localhost:3000`.
+A továbbítás csak loopbacken figyel, így a hálózatán semmi más nem látja.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Ha két tér egyaránt a vendéggép `5173` portját teszi elérhetővé, és a gépén már
+foglalt a `127.0.0.1:5173`, a második tér megtartja a vendéggép `5173` portját,
+és egy ideiglenes helyi portot kap. A Másolás URL a jobb oldali számot
+használja.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Gazdagépshell esetén a folyamat már a gépén fut. Ugyanazon helyi port
+leképezése hatástalan; ha egy **másik** helyi portot választ, a loopback proxy
+az Ön által választott portra kötődik.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+A `--host` (vagy a `0.0.0.0`-ra kötés) **nem** teszi képessé az elszigetelt
+Böngészőt (VM) arra, hogy elérjen egy a Macen futó szervert. A vendéggépnek
+saját loopbackje van; a szerver akkor létesít alagutat abba a vendéggépbe,
+amikor a Böngésző fül ugyanabban a **térben** van.
 
-## Reach it from the Browser (VM)
+## Érje el a Böngészőből (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Nyissa meg az elszigetelt böngészőt ugyanabban a **beszélgetésben**. Írja be,
+hogy `localhost:<left-hand port>` – az a szám, amelyre a folyamat kötötte
+magát. Egy eltérő hozzárendelés (`5173 → 3000`) esetén a böngésző a jobb oldali
+számon is válaszol, így a Másolás URL ott is működik. Egy ügynök `browser_use`
+hívása bármelyikre navigálhat. Az A térben futó szerver soha nem jelenik meg
+`localhost:5173` címként a B tér böngészőjében.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+A `localhost`-ot használja, ne egy LAN IP-t és ne a `--host` kapcsolót. A
+vendéggépnek saját loopbackje van; az alagút ott az IPv4-en és az IPv6-on is
+figyel.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Azok az oldalak, amelyek egyszerre sok kapcsolatot nyitnak (tucatnyi erőforrás,
+egy live reload socket), ugyanazt az alagutat használják. A Böngésző (VM)
+egyetlen állandó exec folyamatra multiplexeli őket, így a hirtelen lecsapó
+lekérések nem kapcsolatonként egy-egy új folyamatot indítanak, és nem futnak
+időtúllépésbe egy üres fehér oldalként.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Egy térben belül az ugyanazon a számon futó Terminál (VM) továbbítása
+elsőbbséget élvez a gazdagépshell-lel szemben. A tereken átívelve nincs
+elsőbbség – ezek külön leképezések.
 
-## Reach it from Android
+## Érje el Androidról
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Nyissa meg az adott tér **Android** fülét. Az emulátor `localhost:<port>` címe
+ekkor erre a térre közzétett portra lesz fordítva (`adb reverse`). Egy emulátor
+az egész eszközre érvényes: ha a B teret csatlakoztatja, a `:5173` átirányul
+B-re, és az A-é megszűnik. Zárja be a fület, és azok a fordított továbbítások,
+amelyeket ez az állomás létrehozott, eltávolításra kerülnek.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Az iOS Simulator maga a Mac – itt nincs fordított továbbítás. Egy fizikai
+iPhone-hoz továbbra is helyi hálózati megosztás kell.
 
-## Share it on your network
+## Ossza meg a hálózatán
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+A **⋯ → Megosztás a helyi hálózaton** a portot `<server-ip>:<random port>`
+címen teszi elérhetővé – hasznos, ha a telefonján akarja megnyitni az oldalt,
+vagy ha a szerver egy másik gépen fut.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- A helyi hálózati portot mindig az operációs rendszer osztja ki, soha nem a
+  vendéggép száma, így a kitettség egy szándékos, látható cím, nem pedig
+  kitalálható.
+- Privát (csak loopback) marad, amíg át nem állítja, és a **⋯ → Csak helyi**
+  leveszi a hálózatról.
 
-## Give it a name — with HTTPS
+## Adjon neki nevet – HTTPS-sel
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+A **⋯ → Böngésződomain beállítása (.test)** egy dev-tartományt rendel a
+porthoz, például `myapp.test`. A Böngészőn (VM) belül a `https://myapp.test`
+ezután érvényes lakat kíséretében tölti be a szervert – hasznos mindenhez, ami
+másképp viselkedik egy elnevezett originon vagy egy biztonságos kontextusban
+(sütik, service workerek, OAuth-visszahívások).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- A tartományoknak `.test` vagy `.localhost` végződésűnek kell lenniük – ez a
+  két, fejlesztésre fenntartott TLD, így egy dev-név soha nem fedhet el egy
+  valódi webhelyet.
+- A tartomány**nevek** egyediek a szerveren; a port**számok** nem. Két tér
+  egyaránt használhatja az `5173`-at, de nem jelenthetik be mindketten a
+  `myapp.test` nevet.
+- A tanúsítvány egy helyi hitelesítésszolgáltatótól származik, amelyet a
+  szerverén állítanak ki, amikor először szükség van rá. A kulcsai a szerver
+  adatkönyvtára alatt élnek, és soha nem kerülnek be egyetlen vendéggépbe sem;
+  az elszigetelt böngésző pontosan azt az egy kulcsot bízza meg, így a valódi
+  internet felé irányuló TLS továbbra is a szokásos módon érvényesül.
+- A tartománynév **csak a Böngészőn (VM) belül** oldható fel. A gazdagépen futó
+  saját böngészője helyette a `localhost:<port>` címet használja.
+- A sima `http://myapp.test` is működik.
 
-## Forward a port by hand
+## Továbbítson portot kézzel
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+A panel alján lévő **Port hozzáadása** egy portot még azelőtt leképez, hogy
+bármi figyelne rajta (illetve attól függetlenül, hogy figyel-e). A kézi
+továbbítás megtartja a címét, miközben a szervere újraindul – a sor addig *nem
+figyel* állapotot mutat, amíg vissza nem tér –, míg az automatikus továbbítások
+eltűnnek, amikor a portjuk megszűnik. Gazdagépshell esetén más helyi portot is
+beállíthat.
 
-## How it stays contained
+## Hogyan marad elszigetelt
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/hu-HU/kezikonyv/referencia/allomasok/#ports-and-dev-domains).
+A portok munkaterület és tér szerint vannak kulcsolva. A hypervisor saját
+porttérképe a gép indításakor rögzül, így a Terminál (VM) két szűk, a szerver
+által vezérelt csatornán halad: egy előre létrehozott bejövő sávon a
+vendéggépbe, amely nem hajlandó olyan portra csatlakozni, amelyen a vendéggép
+valójában nem figyel, valamint a szerver által a Böngésző (VM) és az Android
+számára nyitva tartott fordított alagutakon. A gazdagépshell soha nem
+pásztázza végig az egész gépet. Soha nem jön létre figyelő egyetlen vendéggépen
+belül sem, amelyet a szerver ne tett volna oda, és minden a terminállal vagy az
+állomással együtt lebontásra kerül. A tervet az [Állomások és elszigetelt
+környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/#ports-without-holes)
+ismerteti; a pontos fenntartott portok és tartományszabályok az [állomások
+referenciájában](/hu-HU/kezikonyv/referencia/allomasok/#ports-and-dev-domains)
+találhatók.
 
-## Related
+## Kapcsolódó
 
-- [Give an agent a machine to test on](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/hu-HU/kezikonyv/referencia/allomasok/) — reserved ports, dev TLDs,
-  defaults
+- [Tesztgép adása egy ügynöknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/) –
+  állomások megnyitása, figyelése és átvétele
+- [Állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/) –
+  fenntartott portok, dev-TLD-k, alapértékek

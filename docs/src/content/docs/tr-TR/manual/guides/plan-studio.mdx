@@ -1,180 +1,190 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Plan Studio’da çalışma
+description: Plan Studio düzenleyicisinde bir planı inceleyin, düzenleyin, tahmin edin, farkını alın ve onaylayın; parametreli playbook’ları çalıştırın.
 slug: tr-TR/kilavuz/nasil-yapilir/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/) and
-[Use plan mode](/tr-TR/kilavuz/nasil-yapilir/plan-modu/).
+Bu kılavuz, Plan Studio’da planlarla nasıl çalışacağınızı gösterir. Orkestrasyonların
+ve plan belgelerinin ne olduğunu öğrenmek için
+[Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/) ve
+[Plan modunu kullanma](/tr-TR/kilavuz/nasil-yapilir/plan-modu/) sayfalarına bakın.
 
-## Open a plan
+## Bir plan açma
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Bir plan, onu üreten konuşmaya aittir; dolayısıyla ona normalde oradan ulaşırsınız:
+konuşmadaki plan satırında bir **Aç** eylemi bulunur ve Plan Studio, konuşmanın
+yanında bir düzenleyici sekmesi olarak açılır.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Kenar çubuğunda “Planlar” öğesi yok]
+Bu bilinçli bir tercihtir, bir gözden kaçırma değil. `/workspaces/<workspace-id>/plans`
+adresindeki merkez yalnızca rotalanabilir bir derin bağlantıdır; kalıcı bir liste
+istiyorsanız yer imlerine ekleyin.
 :::
 
-The hub lists three sections:
+Merkez üç bölüm listeler:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/tr-TR/kilavuz/nasil-yapilir/plan-modu/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Aktif planlar** — önce önerilenler olmak üzere orkestrasyonlar; durumları, adım
+  sayıları ve revizyon numaralarıyla birlikte.
+- **Plan belgeleri** — tek bir ajanın [plan modunda](/tr-TR/kilavuz/nasil-yapilir/plan-modu/)
+  `submit_plan` ile gönderdiği ve hâlâ önerilmiş ya da onaylanmış durumda olan planlar.
+- **Playbook’lar** — kaydedilmiş, parametreli plan şablonları.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Bir kartı Plan Studio’da açmak için tıklayın. Rota
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>` biçimindedir; burada `kind` ya
+`orchestration` ya da `document` olur, böylece tek bir plana da derin bağlantı
+verebilirsiniz.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Bir **orkestrasyon** açtıysanız düzenlenebilir tuvali, sürüm zaman çizelgesini ve
+onay çubuğunu görürsünüz. Bir **plan belgesi** açtıysanız aynı grafik salt okunur
+olarak görüntülenir — plan belgelerini ajanlar yazar; siz onları inceler, tahmin
+eder ve onaylar ya da reddedersiniz; onaylanmış bir belge ise derlendiği
+orkestrasyondaki düğüm başına canlı çalıştırma durumunu gösterir.
 
-## Edit the DAG
+## DAG’ı düzenleme
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Bir **orkestrasyon**, `proposed` durumundayken düzenlenebilir. Tuvaldeki tüm
+düzenlemeler klavyeyle yapılır:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Tuvale tıklayın, ardından seçimi **ok tuşlarıyla** hareket ettirin.
+2. Bir adım eklemek için **n** tuşuna basın. “Yeni adım” olarak seçili görünür;
+   sağdaki denetçide adını değiştirin.
+3. Önce çalışması gereken adımda **e** tuşuna basın, ardından bağımlı adıma tıklayın
+   (veya onu seçip **Enter**’a basın) ve böylece bir bağımlılık bağlayın. Bekleyen
+   bir bağlantıdan vazgeçmek için **Esc** tuşuna basın.
+4. Seçili adımın en yeni bağımlılığını kesmek için **x** tuşuna basın ya da
+   denetçideki bağımlılık düzenleyicisinden tam bağımlılıkları açıp kapatın.
+5. Seçili adımı kaldırmak için **Delete** tuşuna basın; ona yapılan başvurular kalan
+   adımların bağımlılıklarından çıkarılır.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Denetçide ayrıca adımın açıklamasını, rolünü ve çıktı şemasını düzenleyebilirsiniz.
+Düzenlemeler kısa bir duraklamanın ardından otomatik olarak yeni bir revizyon
+hâlinde kaydedilir; bir doğrulama hatası (onay çubuğunda gösterilir) siz düzeltene
+kadar kaydetmeyi engeller.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Yalnızca iş adımları düzenlenebilir. Yapısal düğümler — araştırma, tartışma ve
+sentez — salt okunurdur; işi hâlihazırda çalışmış olan her adım da öyledir (“zaten
+çalıştırıldı” olarak işaretlenir, çünkü onu düzenlemek planı çatallar).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Kaydetme, başladığınız revizyon üzerinde iyimser eşzamanlılıkla yapılır. Orkestratör
+sizin altınızdan planı yeniden planlarsa, kaydınız birleştirilmek veya sessizce
+ezilmek yerine “the plan moved on” mesajıyla reddedilir; güncel revizyonu yeniden
+okuyun ve düzenlemenizi baştan yapın. Ajan tarafından başlatılan yeniden planlamalar
+da iki dakikada bir olacak şekilde sınırlandırılmıştır, bu yüzden bu durum ender
+kalır.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Tuvalde sürükleyip yeniden konumlandırma yoktur: yerleşim bağımlılık yapısından
+hesaplanır, dolayısıyla bir adımı “taşımak” bağımlılıklarını yeniden bağlamak
+anlamına gelir.
 :::
 
-## Read cost, time and risk estimates
+## Maliyet, süre ve risk tahminlerini okuma
 
-Press **Estimate** in the approval bar.
+Onay çubuğunda **Tahmin et**’e basın.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Tuvaldeki her adım, bir maliyet aralığı ve bunun arkasındaki örneklem boyutunu
+  gösteren bir rozet alır; adımın rolü hiç çalışmadıysa bunun yerine “Henüz geçmiş
+  yok” görünür. Ayrıntıların tamamı için denetçiden bir adım seçin: örneklem
+  boyutuyla birlikte maliyet aralığı, bir süre aralığı ve adımın kaynağından
+  türetilen bir etki alanı (dosyalar ve semboller) — adımda kaynak bilgisi yoksa
+  “bilinmiyor”.
+- Onay çubuğu plan toplamını gösterir: genel bir maliyet aralığı, kritik yol için bir
+  süre aralığı (paralel dallar çakışır, dolayısıyla bu toplam değildir) ve plan bir
+  üst sınır belirlediyse bütçe üst sınırı.
+- Yalnızca bazı adımların geçmişi varsa toplam **kısmi** olarak işaretlenir ve
+  yalnızca tahmin edilebilir adımları kapsar. Tahminin üst ucu bütçe üst sınırını
+  aşarsa toplam kırmızıya döner ve bütçe aşımı uyarısı gösterilir.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Tahminler ya dürüsttür ya da hiç yoktur: rolü için tamamlanmış çalıştırma geçmişi
+olmayan bir adım, hiç aralık vermeden sıfır örneklem boyutu bildirir ve tahmin
+edilmek yerine bilinmiyor olarak gösterilir. “Henüz geçmiş yok”u “kimse bilmiyor”
+olarak anlayın, “ucuz” olarak değil.
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/) for controls that actually stop
-spending.
+Bütçe üst sınırı, bu tahmine karşı yapılan bir gösterim karşılaştırmasıdır. Plan
+çalışmaya başladıktan sonra bunu hiçbir şey uygulamaz — harcamayı gerçekten
+durduran kontroller için
+[Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/) sayfasına
+bakın.
 
-## Diff a revision against an earlier proposal
+## Bir revizyonu önceki bir öneriyle karşılaştırma
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Her düzenleme ve orkestratörün yaptığı her yeniden planlama, yalnızca ekleme
+yapılabilen revizyon zaman çizelgesine eklenir; bu çizelge bir orkestrasyon planının
+solundaki **Sürümler** panelinde gösterilir.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Bir revizyonu güncel öneriyle karşılaştırmak için tıklayın. Seçim yapılmadığında
+   panel, önceki revizyonu güncel revizyonla karşılaştırır.
+2. Farkı panelin alt yarısından okuyun: iki revizyon arasında eklenen, kaldırılan
+   veya değişen adımlar.
+3. Plan hâlâ `proposed` durumundaysa, ona geri dönmek için bir revizyonun geri sarma
+   simgesine tıklayın. Geri sarma, o öneriyi **yeni** bir revizyon olarak kaydeder —
+   hiçbir şey kaybolmaz.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+Plan artık `proposed` olmadığında hem `propose_orchestration` hem de düzenleyici
+değişiklikleri reddeder; böylece yürüyen bir çalıştırma, yürütme ortasında yapılan
+bir yeniden planlamayı almaz.
 
-## Approve, reject, or widen a plan
+## Bir planı onaylama, reddetme veya genişletme
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Uygulamada önerilen bir plan tek bir karardır ve bütün olarak verilir: onay
+çubuğundaki **Planı onayla** veya **Reddet**. **Planı onayla** her zaman her adımı
+onaylar — önce bir alt küme seçmenin yolu yoktur. Öneride doğrulama hataları varken
+onaylama engellenir; bu hatalar düğmelerin yanında gösterilir.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Onaylama yalnızca operatöre açıktır. Bunun için bir MCP aracı yoktur; dolayısıyla
+bir ajan plan önerebilir ve planı revize edebilir, ancak asla onaylayamaz.
 
-Once an orchestration is executing, the bar changes:
+Bir orkestrasyon yürümeye başladığında çubuk değişir:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Bir adım çalıştırma ortasında soru sormak için durduysa, onu seçin ve sürdürmek
+  için **Düğümü sürdür**’e basın.
+- _Kısmi_ bir onayı, seçili adım ile onun dolaylı olarak bağımlı olduğu her şeye
+  genişletmek için **Seçilenleri onayla**’ya basın (bir adım bağımlılıkları olmadan
+  asla onaylanamaz). Bu kontrol, her orkestrasyonda yürütme çubuğunda bulunur; plan
+  bütün olarak onaylandığında hiçbir işlem yapmaz.
+- Tüm orkestrasyonu durdurmak için **Çalıştırmayı iptal et**’e basın.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Kısmi olarak onaylanmış kümenin dışındaki adımlar ertelenmiş olarak görüntülenir ve
+siz kümeyi genişletene kadar çalışmaz.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Kısmi onaylar uygulamadan kaynaklanamaz]
+Kısmi bir onay yalnızca bir şeyin RPC üzerinden açık bir `approved_node_keys`
+listesiyle `orchestration.approve` çağırması durumunda var olur. Uygulamadaki
+**Planı onayla** her zaman her adımı onaylar. Plan belgeleri her durumda bütün
+olarak onaylanır; dolayısıyla yürüyen bir belge yalnızca **Çalıştırmayı iptal et**
+sunar.
 :::
 
-## Run a playbook with parameters
+## Parametrelerle bir playbook çalıştırma
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/) instead.
+Bir playbook, hedefinde, adım başlıklarında, açıklamalarında ve istemlerinde tipli
+`{{param}}` yer tutucuları bulunan kaydedilmiş bir plan şablonudur. Değiştirme
+birebir yapılır — bir ifade dili yoktur; mantığa ihtiyacınız varsa bunun yerine bir
+[pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/) kullanın.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Merkezin **Playbook’lar** bölümünde playbook’un üzerindeki **Çalıştır**’a basın
+   (veya ⌘K paletini açıp playbook’u oradan seçin).
+2. Parametreleri doldurun. Numaralandırma parametreleri açılır liste olarak
+   görüntülenir; depo ve ajan parametreleri bir depo veya ajan referansı alır;
+   isteğe bağlı parametreler varsayılan değerlerine döner.
+3. Planın kendisine karşı önerildiği **çapa bileti** seçin, ardından onaylayın.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Bir playbook çalıştırmak yalnızca bir plan **önerir** — örneklenen orkestrasyon Plan
+Studio’da `proposed` olarak açılır ve siz orada onaylayana kadar hiçbir şey yürümez.
+Bir playbook’u kaldırmak için kartındaki çöp kutusu simgesine basın.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/tr-TR/kilavuz/referans/mcp-araclari/).
+Ajanlar playbook’ları `create_playbook` ve `run_playbook` MCP araçlarıyla oluşturur
+ve çalıştırır; [MCP araçları referansına](/tr-TR/kilavuz/referans/mcp-araclari/)
+bakın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Use plan mode](/tr-TR/kilavuz/nasil-yapilir/plan-modu/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/): the engine view of an approved plan
+- [Plan modunu kullanma](/tr-TR/kilavuz/nasil-yapilir/plan-modu/): bir ajanın `submit_plan` ile nasıl plan belgesi ürettiği
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/): konuşma tarafından tek onaylı yaşam döngüsü
+- [Bir pipeline şablonu oluşturma](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/): bir playbook’un ifade edemediği mantığa ihtiyaç duyduğunuzda
+- [Pipeline çalıştırmalarını izleme](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/): onaylanmış bir planın motor görünümü
 
-## Related concepts
+## İlgili kavramlar
 
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/)
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/)

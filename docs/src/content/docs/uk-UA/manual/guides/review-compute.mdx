@@ -1,132 +1,141 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Обчислення перевірки (когорти, осі та детерміновані diff)
+description: Що прохід обчислення перевірки створює на боці сервера — когорти, diff контракту API та візуальні diff, гейти за кожною віссю — і як це вкладається у вкладку Рев’ю.
 slug: uk-UA/керівництво/практичні-посібники/обчислення-перевірки
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Вкладка **Рев’ю** цього PR — це живий поступ конвеєра перевірки, поки він
+працює, а потім опублікований ним артефакт разом із доступними на ньому діями.
+Одна вкладка з двома станами, бо це те саме в два різні моменти. Це не вкладка
+за замовчуванням: у PR немає рев’ю, доки хтось його не попросить, тож
+відкриває її саме **Запитати AI**.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+За цією вкладкою `cc_server` формує когорти файлів, виконує детерміновані осі та
+віддає їх через RPC-операції `review_studio.*` (`cohorts`, `blastRadius`,
+`cohortImpact`, `ciSignals`, `dependencyDiffs`, `setContractDecision`,
+`approveVisual`, `compute` та їхні `watch*`-двійники). Збережена розкладка, яка
+досі вказує `pr.reviewStudio`, відкриває цю саму вкладку Рев’ю.
 
-On the Review tab:
+На вкладці Рев’ю:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Агент-упорядник публікує звичайний артефакт розмови через
+  `publish_artifact`, тож вкладка показує його в тому самому засобі перегляду
+  артефактів, який відкриває бульбашка чату — окремої копії системи артефактів
+  під рев’ю не існує.
+- Знахідки лежать у бічній панелі поруч, а вердикт розміщено на вузькій смузі
+  над артефактом, а не в заголовку дашборда.
+- Коли head PR просунувся далі за рев’ю, з’являється банер застарілості.
 
-See [Use AI-powered review](/uk-UA/керівництво/практичні-посібники/ші-перевірка/) for the flow and
-[Review and merge a PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/) for acting on it.
+Про перебіг дивіться [Використовувати ШІ-перевірку](/uk-UA/керівництво/практичні-посібники/ші-перевірка/), а про дії за його
+результатами — [Перевірити й змерджити PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/).
 
-## Cohorts
+## Когорти
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Когорти групують змінені файли PR у похідні від вмісту кошики файлів, що
+належать одне одному за змістом, упорядковані за впливом, тож найризикованіша
+група читається першою. Їх переобчислюють за кожної зміни head-SHA і повністю
+замінюють; кожна когорта має ключ, стабільний між push-ами, тож підсумок і
+поступ рев’ю переживають rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Якщо в репозиторії немає індексу коду, когорти відкочуються до групування за
+шляхами. Щоб проіндексувати репозиторій, скористайтеся
+**Налаштування → Робочий простір → Репозиторії** — кожен рядок репозиторію має
+дію **Індексувати код**, яка запускає конвеєр `index_code` і звітує про поступ
+на місці.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+Граф коду розбирає лише мови, для яких постачається граматика (Dart, JS/TS, PHP,
+Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB,
+Ada). Репозиторій будь-якою іншою мовою ніколи не дасть семантичних когорт, хоч
+як часто ви його індексуватимете.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Агент може записати для когорти підсумок у markdown за допомогою
+`set_cohort_summary` і долучити структуровану діаграму покрокового огляду за
+допомогою `add_review_diagram` — типізований об’єкт послідовності, зв’язків
+сутностей або машини станів, але ніколи не текст mermaid. Кожне ребро звіряють
+із справжнім графом коду, і ребро, яке граф не може підтвердити, позначають як
+непідтверджене, а не малюють як факт.
 
-## The API-contract axis
+## Вісь контракту API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Вісь контракту порівнює лише **явні** файли специфікації. Вона зіставляє шість
+типових назв — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — а також будь-який змінений файл, назва якого
+містить `openapi` або `swagger` і закінчується на `.yaml`, `.yml` чи `.json`.
+Контракт, виведений із коду обробника, поза розглядом, а схеми GraphQL не
+порівнюються.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Кожну зміну класифікують — додавання, вилучення та зміни кінцевих точок,
+параметрів, схем і відповідей — і надають їй рівень серйозності: **breaking**
+(вилучена кінцева точка чи параметр, звужений тип, новий обов’язковий параметр),
+non-breaking (доповнювальна) або informational. Відхилена зміна провалює гейт
+контракту, як і breaking-зміна, залишена без рішення; breaking, але схвалена —
+попереджає; якщо breaking-змін немає, гейт пройдено. Diff із позначкою
+**derived (advisory)** ніколи не бере участі в гейті.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Схвалення або відхилення зміни — це `review_studio.setContractDecision`.
 
-## The visual axis
+## Візуальна вісь
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Якщо PR змінює компоненти інтерфейсу в репозиторії Flutter із застосунком
+Widgetbook, прохід обчислення рендерить змінені компоненти до і після через
+headless-прохід golden `flutter test` у робочих деревах base і head цього PR, а
+потім порівнює пікселі.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Для цього потрібен Flutter SDK на хості сервера]
+Сервер на чистому Dart не може рендерити віджети Flutter у власному процесі, тож
+він викликає `flutter test` як окремий процес. SDK має бути встановлений на
+машині, де працює `cc_server`, — не на вашому клієнті. Без нього вісь повідомляє
+**unavailable** з причиною «no Flutter SDK on host». Вона ніколи не повідомляє
+про успіх, якого не заробила.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Знімки з позначкою **changed** або **removed** утримують візуальний гейт, доки їх
+не схвалять; знімки **unchanged**, **added** і **approved** знімають його.
+Недоступність має одну з чотирьох причин: немає Flutter SDK на хості, немає
+застосунку Widgetbook у репозиторії, немає сценаріїв використання, придатних для
+golden-тестів, або помилка golden-стенду.
 
-Approving an intended change is `review_studio.approveVisual`.
+Схвалення навмисної зміни — це `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Осі та вердикт
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Вісь              | Керує                             |
+| ----------------- | --------------------------------- |
+| Коректність       | Агенти-рецензенти (токени)        |
+| Безпека           | Агенти-рецензенти (токени)        |
+| Прогалини в тестах | Агенти-рецензенти (токени)       |
+| Візуальна         | Детерміновано (golden-стенд)      |
+| Контракт API      | Детерміновано (diff специфікації) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Три осі з токенами фіксуються, коли головний агент викликає `finalize_review`;
+дві детерміновані осі фіксує прохід обчислення.
 
-Each axis reports one of:
+Кожна вісь повідомляє один зі станів:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Стан            | Значення                                            |
+| --------------- | --------------------------------------------------- |
+| **Pass**        | Виконано, нічого блокуючого не знайдено             |
+| **Warn**        | Виконано, є неблокуючі зауваження                   |
+| **Fail**        | Виконано, знайдено блокуючу проблему                |
+| **Partial**     | Виконано, але не завершено; результати неповні      |
+| **Unavailable** | Не вдалося запустити взагалі                        |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Лише **pass** і **warn** відкривають вісь із гейтом. **Partial** і
+**unavailable** навмисно відрізняються від **fail**, і жоден із них не відкриває
+гейт.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Осі зводяться в **Ship**, **Hold** або **Block**, і вони можуть зробити вердикт
+лише _суворішим_ — його ніколи не знижують. Вісь із гейтом у стані **Fail**
+примусово дає **Block**; вісь у стані **Partial** або **unavailable** примусово
+дає щонайменше **Hold**. Тож блокуюча вісь, яку не вдалося запустити, _утримує_
+вердикт: відсутність доказів ніколи не робить гейт зеленим.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Вердикт на вкладці Рев’ю — той, який опублікував `finalize_review`.
 
-## Related guides
+## Пов’язані посібники
 
-- [Use AI-powered review](/uk-UA/керівництво/практичні-посібники/ші-перевірка/)
-- [Dispatch reviewer agents](/uk-UA/керівництво/практичні-посібники/запускати-рецензентів/)
-- [Review and merge a PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/)
-- [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/)
+- [Використовувати ШІ-перевірку](/uk-UA/керівництво/практичні-посібники/ші-перевірка/)
+- [Запускати агентів-рев’юерів](/uk-UA/керівництво/практичні-посібники/запускати-рецензентів/)
+- [Перевірити й змерджити PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/)
+- [Шукати код через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/)

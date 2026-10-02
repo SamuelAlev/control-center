@@ -1,115 +1,122 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Kelola kunci API
+description: Di mana setiap kredensial disimpan — akun pengguna Anda di server, server itu sendiri, atau CLI eksternal — serta cara menetapkan, merotasi, dan menghapusnya.
 slug: id-ID/panduan-pengguna/panduan-praktis/kunci-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Panduan ini menunjukkan kepada Anda di mana setiap kredensial yang digunakan
+Control Center disimpan dan cara mengubahnya.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Tidak ada yang disimpan di mesin yang Anda pakai untuk mengetik.** Setiap
+kredensial berada di server; kredensial mana yang menjawab suatu permintaan
+bergantung pada apakah ada manusia di baliknya.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| Kredensial                           | Disimpan                                                  | Siapa yang memakainya                                            |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Kredensial host kode / tiket Anda    | Berkas rahasia 0600 milik server, dikunci berdasarkan id pengguna Anda | Apa pun yang Anda minta: permukaan PR, eksekusi agen Anda, image Anda |
+| Identitas aplikasi server            | Berkas yang sama, ditambah `server_settings` untuk bagian yang bukan rahasia | Pekerjaan yang tidak diminta manusia: webhook, polling PR, sinkronisasi tiket |
+| Kunci penyedia model dan token OAuth | Penyimpanan kredensial milik server sendiri               | Adapter bawaan, untuk setiap ruang kerja pada instalasi          |
+| Token bot Slack                      | `<dataDir>/<workspaceId>/chat_credentials/` di server     | Jembatan chat untuk ruang kerja tersebut                         |
+| Kredensial CLI eksternal             | Apa pun yang digunakan CLI tersebut                       | Claude Code, di host server                                      |
 
-## Two GitHub credentials, and they answer different questions
+## Dua kredensial GitHub, dan keduanya menjawab pertanyaan yang berbeda
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Milik Anda**, dari proses masuk (device flow) atau penempelan token. Inilah
+  yang dipakai setiap permintaan yang dibuat *atas nama Anda*, sehingga komentar
+  yang dikirim untuk Anda membawa nama Anda. Anggota lain tidak dapat
+  membacanya, dan setiap anggota menghubungkan kredensialnya sendiri
+- **Milik server**, dari GitHub App yang didaftarkan operator. Ini menjawab
+  semuanya tanpa pemanggil — sehingga akses host kode tidak hilang ketika satu
+  orang keluar atau merotasi token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-and [Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
+Milik Anda diatur di kartu **Hosting kode** pada **Pengaturan → Ruang kerja →
+Profil & identitas**; milik server di **Aplikasi penyedia** pada **Pengaturan →
+Server → Single sign-on**. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+dan [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Ada juga layar yang hanya bisa diakses lewat URL]
+`/workspaces/<workspaceId>/api-keys` menampilkan dua kartu yang sama seperti
+langkah pertama onboarding. Layar ini **tidak punya entri navigasi di mana pun
+dalam UI**; hanya bisa dicapai dengan mengetik URL-nya. Gunakan Pengaturan →
+Ruang kerja → Profil & identitas sebagai gantinya.
 :::
 
-## Set model provider keys
+## Tetapkan kunci penyedia model
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Adapter bawaan mengautentikasi penyedia sendiri dan kredensial tersebut berada
+di server.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Buka **Pengaturan → Server → Penyedia model**
+2. Gulir ke **Penyedia & model**
+3. Hubungkan penyedianya — OAuth browser untuk OpenAI, Codex, Cursor, dan Kimi
+   Code; kunci API untuk Anthropic dan sisanya
 
-See [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/) for the full list and
-for adding a custom endpoint.
+Lihat [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/) untuk daftar lengkapnya dan
+untuk menambahkan endpoint kustom.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Kredensial ini **global per host**: satu kunci melayani setiap ruang kerja pada
+instalasi. Token OAuth disegarkan sebelum kedaluwarsa.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLI adapter eksternal menyimpan kredensialnya sendiri, di konfigurasinya sendiri,
+di host server — Control Center tidak mengelolanya. Autentikasi Claude Code
+sesuai yang dijelaskan dokumentasinya sendiri, di mesin tempat `cc_server`
+berjalan.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/).
+Dialog **Variabel lingkungan** per adapter tampak seperti tempat menaruh kunci
+untuk salah satunya, tetapi bukan: dialog itu menulis ke perangkat Anda,
+sementara server membaca salinannya sendiri dan tidak ada yang menjembatani
+keduanya. Lihat
+[Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/).
 
-## Connect a ticketing vendor
+## Hubungkan vendor tiket
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Kartu **Tiket** pada **Pengaturan → Ruang kerja → Umum** memuat kedua bagian
+dari satu keputusan: di mana tiket Anda berada, dan kredensial untuknya. Memilih
+**Lokal** menyembunyikan baris kredensial — tiket lokal berada di basis data
+server ini sendiri dan tidak ada yang perlu diautentikasi.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/).
+Kunci Anda disimpan di server dan dikaitkan dengan id pengguna Anda, seperti
+kunci host kode. Server menyimpan kunci Linear-nya sendiri secara terpisah
+(**Aplikasi penyedia**), yang menjadi sandaran sinkronisasi tiket saat tidak ada
+manusia yang meminta. Kunci yang diterima agen hanya disuntikkan ketika agen
+memiliki kemampuan **Izinkan panggilan API ticketing**. Lihat
+[Siapkan integrasi Linear](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/).
 
-## Rotate or revoke
+## Rotasi atau cabut
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- **Kredensial GitHub Anda**: tekan **Putuskan**, lalu masuk lagi atau tempel
+  token barunya. Cabut token lama di GitHub
+- **Aplikasi server**: buat kunci privat atau client secret baru di halaman
+  GitHub aplikasi tersebut, tempel di **Aplikasi penyedia** dan tekan **Tes**
+- **Penyedia model**: pada barisnya, keluar (OAuth) atau hapus kuncinya, lalu
+  hubungkan lagi
+- **Slack**: tempel ulang token di dialog koneksi. Lihat
+  [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
 
-## Troubleshooting
+## Pemecahan masalah
 
-### The PR list is empty but my token works in `curl`
+### Daftar PR kosong tetapi token saya berfungsi di `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Periksa subjudul baris **Hosting kode**. Jika subjudul itu menyebut sumber lain
+("lewat aplikasi server ini", "dari environment"), kredensial yang Anda uji bukan
+yang menjawab — milik Anda tidak tersimpan.
 
-### The token is accepted but later requests fail
+### Token diterima tetapi permintaan berikutnya gagal
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Token diuji sebagaimana disimpannya, sehingga barisnya menyebut akun di baliknya
+— tetapi hanya akunnya, bukan scope-nya. Token dengan scope terlalu sedikit
+berhasil terhubung lalu gagal pada permintaan individual. Periksa scope dan masa
+berlakunya:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Panduan terkait
 
-- [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-- [Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
-- [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
-- [Set up Linear integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/)
+- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
+- [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- [Siapkan integrasi Linear](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/)

@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Opprett og konfigurer en agent
+description: Legg til en agent i et arbeidsområde, gi den en adapter, modell, skills og tillatelser, og bekreft at den kjører.
 slug: nb-NO/handbok/slik-gjor-du/opprett-agent
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Denne veiledningen viser hvordan du legger en agent til i et arbeidsområde og konfigurerer den til den faktisk kan kjøre.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Hvert arbeidsområde opprettes med fem agenter — en CEO pluss `qa`, `architect`, `engineer` og `librarian` — så du har som regel agenter før du har konfigurert noen. Trinnene nedenfor gjelder like mye for en agent som følger med arbeidsområdet, som for en ny.
 
-## Before you start
+## Før du begynner
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Du er inne i et arbeidsområde. Hele flaten ligger under **Innstillinger → Arbeidsområde → Agenter** (`/settings/workspace/agents`).
+- Agenten trenger et backend. Koble enten til en leverandør for det innebygde harnesset under **Innstillinger → Server → Modellleverandører**, eller installer Claude Code-CLI-en på maskinen som kjører `cc_server`.
+- Hvis du vil at agenten skal ha skills, må du installere dem først under **Innstillinger → Arbeidsområde → Ferdigheter**. Agent-skjemaet lar deg bare slå av og på skills som allerede finnes i arbeidsområdet.
 
-## Add the agent
+## Legg til agenten
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Åpne **Innstillinger → Arbeidsområde → Agenter**.
+2. Klikk på **Ny agent**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Det finnes ingen dialog og ingen rollevelger. En agent med navnet «Navnløs agent» opprettes umiddelbart og merkes i detaljruten til høyre.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Nå skal du se «Navnløs agent» i agentlisten til venstre, med **Innstillinger**-fanen i detaljruten åpen og et **Navn**-felt som inneholder «Navnløs agent».
 
-## Name it
+## Gi den navn
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Navn** — den korte identifikatoren som brukes i @-nevnelser, for eksempel `alice`. Parsingen av nevnelser matcher `@` etterfulgt av ordtegn, så et navn med bindestrek, punktum eller mellomrom kan aldri nevnes.
+- **Tittel** — den lesbare etiketten, for eksempel «Seniorutvikler».
+- **Systemprompt** — valgfrie tilleggsinstruksjoner, injisert som en «Agent instructions»-seksjon; de erstatter ikke resten av den sammensatte prompten.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Klikk på **Lagre endringer** nederst i skjemaet. Hvert felt på denne siden lagres av den ene knappen.
 
-## Give it an adapter and a model
+## Gi den en adapter og en modell
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Nedtrekkslisten **Adapter** viser kjørerne serververten faktisk har. Den innebygde adapteren finnes alltid (den er serveren). Claude Code vises bare når CLI-en ble oppdaget på den verten:
 
 | Adapter                   | Backend                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | Den prosessinterne agentsløyfen — ingen ekstern CLI |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Bare den innebygde adapteren håndhever moduser, styring, pause/gjenoppta, fullføringskontrakter og subagenter. Claude Code gir deg ingen av disse. Cursor, Codex og de andre modellleverandørene kobles til den innebygde adapteren, ikke som egne kjørere.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[En tom adapter betyr den innebygde løkken]
+En agent som ikke har satt adapter, sendes til **Control Center (built-in)**, løkken inne i serveren, så ingenting trenger å installeres på verten. Er heller ingen modell satt, spør den Anthropic om standarden sin, så en helt usatt agent kjører bare hvis du har koblet til en Anthropic-konto. Spesialistene som følger med, leveres uten noen av dem; sett begge på enhver agent du har tenkt å bruke.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Nedtrekkslisten **Modell** styres av adapteren du valgte. For den innebygde adapteren kommer listen direkte fra leverandørene du har koblet til under **Innstillinger → Server → Modellleverandører**, så en leverandør uten lagret påloggingsinformasjon bidrar med null modeller.
 
-## Add skills
+## Legg til skills
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Ferdigheter** er en chipvelger over skill-pakkene som er installert i dette arbeidsområdet. Trykk på en chip for å slå den av eller på; hakeglyfen markerer de valgte. Hvis arbeidsområdet ikke har noen skills, står det «No skills available. Create skills in Settings → Skills first.» i feltet.
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills).
+Du velger ikke et repos egne skills her. Et repo som leverer dem (i `.agents/skills/`, `.claude/skills/` eller `.opencode/skills/`), bidrar med dem automatisk til den agenten som arbeider i det repoet, og de byttes ut når den flytter til et annet — se [Repo-avgrensede skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Sett rapporteringslinjen og personaen
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Rapporterer til** — velg en annen agent etter navn. Dette bygger rapporteringstreet som vises av **Organisasjonskart**-knappen i sidehodet. Det er ikke listen en teamleder bruker når den delegerer — den kommer fra teamets medlemmer og skillene deres.
+- **Persona** — fritekst som former tone og atferd, for eksempel: «Foretrekker enkle, lesbare løsninger. Skriver tester for all ny kode.»
 
-## Tune the run
+## Juster kjøringen
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Resonneringsinnsats** — alternativene kommer fra den valgte modellens egne publiserte nivåer: Low / Medium / High, pluss Extra High på modeller i OpenAI-stil og Extra High + Max på modeller i Claude-stil. Feltet skjules helt når den valgte modellen ikke oppgir noen tenkenivåer, og ellers står det på modellens egen standard.
+- **Størrelse på kontekstvindu** — forhåndsutfylt fra modellens kontekstvindu hver gang du bytter modell, med ett-trykks-chips for modellstandarden, 200k, 500k og 1M. En verdi du skriver inn etter at du har valgt modellen, gjelder til neste modellbytte.
+- **Stillhetstidsavbrudd (minutter)** — avslutt en kjøring etter så lang tid uten utdata. La det stå tomt for å bruke standarden per modus.
 
-## Grant permissions
+## Gi tillatelser
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Sandkassetillatelser** starter på «Bruk standard for arbeidsområde». Slå på bryteren for å angi dem for denne agenten, og slå deretter av og på:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Tillat git push** — injiserer GitHub-tokenet agenten trenger for å pushe
+- **Tillat GitHub API-kall** — lar agenten lese PR-er, saker og repometadata
+- **Tillat API-kall for saker** — injiserer nøkkelen til saksleverandøren
+- **Tillat generell nettverkstilgang** — slår også på det innebygde harnessets `web_fetch`- og `web_search`-verktøy
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Hver bryter kontrolleres av påloggingsmegleren når kjøringen starter: en kapasitet som er av, betyr rett og slett at det tilhørende tokenet aldri utstedes inn i kjøringens miljø.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Standard for arbeidsområde betyr serverens konservative sett]
+En agent som står på «Bruk standard for arbeidsområde», kjører med git push, GitHub API og saker alle **av** og nettverk **på**. Kapasitetsstandardene som vises under Innstillinger → Server → Diagnostikk og personvern, er en klientinnstilling. Vil du at en agent skal pushe eller åpne PR-er, slår du på bryteren og gir kapasitetene eksplisitt.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for the full set of boundaries.
+Disse kapasitetene kontrollerer påloggingsinformasjon og harness-verktøy, som er et eget lag fra OS-sandkassen. `cc_server` pakker agentkjøringer inn i vertens sandkasse der en finnes — Windows har ingen innebygd backend, og Linux og WSL2 trenger `bwrap` og `socat`. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hele settet av grenser.
 :::
 
-## Verify it runs
+## Kontroller at den kjører
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Åpne **Innstillinger → Server → Modellleverandører** og bekreft at adapteren du valgte, oppgir en installert versjon i stedet for «Ikke funnet». Klikk på **Oppdater** for å sondere på nytt — sonderingen kjører på maskinen som er vert for `cc_server`, ikke på maskinen du ser på.
+2. Åpne et område med agenten og send den en melding, eller @-nevn den i et eksisterende område.
+3. Gå tilbake til **Innstillinger → Arbeidsområde → Agenter**, velg agenten og åpne **Logger**-fanen. En kjøring skal vises med et statusmerke, en varighet, et starttidspunkt og adapteren den brukte. **Vis** åpner hendelsesstrømmen for den kjøringen.
 
-If no run appears at all, work through [Run agent diagnostics](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/).
+Hvis det ikke vises noen kjøring i det hele tatt, kan du gå gjennom [Diagnostiser en agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/).
 
-## Delete an agent
+## Slett en agent
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Velg den i listen. På **Innstillinger**-fanen ruller du ned til **Faresone** nederst i skjemaet og klikker på **Slett**.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Run agents in parallel](/nb-NO/handbok/slik-gjor-du/parallelle-agenter/)
-- [Build an agent team](/nb-NO/handbok/slik-gjor-du/bygg-agentteam/)
-- [Manage adapters and models](/nb-NO/handbok/slik-gjor-du/adaptere/)
-- [Run agent diagnostics](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/)
-- [Agent configuration reference](/nb-NO/handbok/referanse/agentkonfigurasjon/)
+- [Kjør agenter parallelt](/nb-NO/handbok/slik-gjor-du/parallelle-agenter/)
+- [Bygg et agentteam](/nb-NO/handbok/slik-gjor-du/bygg-agentteam/)
+- [Administrer adaptere og modeller](/nb-NO/handbok/slik-gjor-du/adaptere/)
+- [Diagnostiser en agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/)
+- [Agentkonfigurasjon](/nb-NO/handbok/referanse/agentkonfigurasjon/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/)
-- [Modes](/nb-NO/handbok/konsepter/moduser/)
-- [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/)
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/)
+- [Moduser](/nb-NO/handbok/konsepter/moduser/)
+- [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/)

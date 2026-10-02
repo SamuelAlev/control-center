@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: استكشاف البيانات في نواة دائمة
+description: امنح وكيلًا مفسّر Python أو JavaScript يحتفظ بمتغيراته بين الاستدعاءات، ويرسم المخططات في الدردشة، ويستطيع استدعاء أدواتك من داخل خلية.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/استكشاف-البيانات-في-نواة
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+يبيّن هذا الدليل كيف تجعل الوكيل يحمّل ما يكلّف مرة واحدة، ثم تطرح عدة أسئلة عنه، بدل أن تُحتسب كلفة التحميل مع كل سؤال.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+أداة `eval` تشغّل **مفسّر دائم**. تبقى المتغيرات والوحدات المستورَدة والبيانات المحمّلة بين الاستدعاءات.
 
-## Why not just run a script
+## لماذا لا تشغّل سكربتًا وحسب
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+استدعاء `python -c` لمرة واحدة يتحمّل كلفة التجهيز مع كل سؤال. تحميل إطار بيانات يكلّف ثوانٍ ومئة ميجابايت؛ ورسمه يكلّف مللي ثوانٍ. حين يكلّف كل سؤال التحميل، يسأل الوكيل أقل مما ينبغي — ويعود كل جواب نصًا يحلّله من جديد.
 
-## Load once, then ask
+## حمّل مرة واحدة، ثم اسأل
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> حمّل `data/runs.csv` وأخبرني بمدة p95 حسب الوكيل.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+يُعاد آخر تعبير كما يفعل دفتر الملاحظات، فيُبلّغ `len(runs)` عن عدد الصفوف من غير `print`.
 
-Then, in a **separate call**:
+ثم، في **استدعاء منفصل**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` ما زال محمّلًا. يُعرَض إطار pandas جدولًا، لا تمثيل `repr`.
 
-## Charts land in the chat
+## المخططات تصل إلى الدردشة
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+تُلتقَط الأشكال بعد انتهاء الخلية وتُعاد صورًا يعرضها نص المحادثة. ترى المخطط، ويراه الوكيل.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+تُغلَق الأشكال بعد التقاطها. شكل لم يُجمَّع كانت الخلية *التالية* ستعيد رسمه وإرساله أيضًا، فجلسة من خمس خلايا كانت لتُخرج المخطط الأول خمس مرات.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[لا Jupyter، ولا pip، ولا خطوة تثبيت]
+المشغّل مجرّد `python3 -u` يتكلم بروتوكول أسطر على stdio. ينفّذ بنفسه `display()` وتوزيع حزم MIME والتقاط الأشكال، فيعمل على أي Python 3 — بما في ذلك داخل بيئة معزولة، حيث التثبيت هو بالضبط ما وُجدت البيئة المعزولة لتمنعه.
 :::
 
-## The idioms you would type anyway
+## ما تكتبه على كل حال
 
-These are rewritten into plain code rather than erroring:
+هذه تُحوَّل إلى شفرة عادية بدل أن ترفع خطأ:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| ما تكتبه | ما يحدث |
+| --- | --- |
+| `%pip install x` | يشغّل pip، ثم **يمسح الذاكرة المؤقتة للوحدات** حتى يرى `import` التالي ما ثُبّت للتو |
+| `%cd path` | `os.chdir` |
+| `!command` | عملية فرعية يُلتقَط خرجها |
+| `%%bash` | بقية الخلية سكربت صدفة |
+| `%%timeit` | 1000 تشغيل موقوت |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+ما يهم هو إخلاء `%pip` للذاكرة المؤقتة: التثبيت في مفسّر يعمل لا يغيّر وحدة سبق استيرادها، فمن دونه لا تكون النسخة التي ثبّتها للتو هي التي تعمل.
 
-## Calling your own tools from inside a cell
+## استدعاء أدواتك من داخل خلية
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+يعيد `tool(name, args)` الدخول إلى سجل أدوات الوكيل نفسه. فتستطيع الخلية أن تتفرّع على مئة ملف، أو أن تفوّض عبر `task`، من غير أن ينفق النموذج جولة لكل عنصر.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[الجسر لا يلتف على ضوابطك]
+يُحَلّ الاستدعاء المُجسَّر على سجل الأدوات **نفسه** الذي يُحَلّ عليه استدعاء يصدره النموذج، فتُطبَّق سياسة `ActionClass` وطلبات الموافقة وكل غلاف بالطريقة نفسها. جسر يتخطى السجل يكون ثغرة على هيئة «اكتب سطر Python واحدًا».
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+الاستدعاء المُجسَّر **يعلّق مهلة الخلية** ما دام لم يرجع. الميزانية تقيس الخمول لا الزمن الفعلي — خلية تتفرّع إلى وكلاء فرعيين وتنتظر أربع دقائق ليست عالقة، وقتلها في منتصف التفريع يفقد حالة النواة كلها.
 
-## Starting over
+## البدء من جديد
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+يتخلّص من المفسّر ويبدأ مفسّرًا نظيفًا. يزول كل ما حُمّل، وهذا المقصود.
 
-## Where the kernel runs
+## أين تعمل النواة
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+في **الحاوية المعزولة** للمحادثة إن كانت لها واحدة، وعلى المضيف فيما عدا ذلك.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+وجود مفسّر دائم يقوده نموذج يقرأ مستودعًا غير موثوق هو بالضبط الغرض من قصر التنفيذ على الحاوية المعزولة: استدعاء `bash` لمرة واحدة ينتهي على الأقل، أما النواة فصدفة تتذكّر.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/).
+النواة **لا** تقلع حاوية معزولة كي تعمل داخلها — القاعدة نفسها التي تمنع تبويب المنصة من الإقلاع تلقائيًا. إن أردت النواة داخل الحاوية المعزولة، افتح صدفة المحادثة أولًا. انظر [امنح وكيلًا آلة للاختبار عليها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/).
 
-## Limits
+## الحدود
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **خلية واحدة في كل مرة لكل نواة.** خليتان تتسابقان في مفسّر واحد هما نصفان لبرنامجين يتداخلان في فضاء أسماء واحد.
+- **للمخرجات سقف.** خلية في حلقة طباعة تُقتطَع بدل أن يُسمَح لها بملء نافذة السياق.
+- **أربع صور لكل خلية.** حلقة رسم قد تُخرج شكلًا في كل تكرار، وكل صورة كلفة ثابتة كبيرة في الطلب الذي يحملها.
+- **تموت النواة مع التشغيل.** نواة تبقى ممسكة بإطار بيانات بعد انتهاء المحادثة تسرّب.
 
-## Related
+## ذات صلة
 
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) — what "enclosed" means here
-- [Give an agent a machine to test on](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/) — opening the enclosure
-- [Built-in agent tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — the arguments
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) — ما تعنيه «معزولة» هنا
+- [امنح وكيلًا آلة للاختبار عليها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/) — فتح الحاوية المعزولة
+- [أدوات الوكيل المضمّنة](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — المعاملات

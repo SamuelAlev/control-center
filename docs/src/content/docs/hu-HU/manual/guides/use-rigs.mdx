@@ -1,97 +1,105 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Tesztgép adása egy ügynöknek
+description: Adjon az ügynöknek egy eldobható böngészőt, asztali környezetet, Android-emulátort vagy iOS-szimulátort — élőben figyelhető, és bármikor átveheti a vezérlést.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+Az **állomás** egy eldobható gép, amelyet az ügynök akkor nyit meg, amikor
+tényleg ki kell próbálnia valamit: be kell töltenie egy oldalt, végig kell
+kattintania egy asztali alkalmazást, körbe kell tapogatnia egy telefont. Valós
+időben figyelheti, ahogy dolgozik, és bármikor átveheti a vezérlést.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Az elszigetelt terminál-, böngésző- és asztali állomások eldobható lemezzel és
+szabályozott hálózattal rendelkező VM-ek. Az Android és az iOS gazdagép által
+kezelt emulátorok: az eszköz állapota eldobható, a hálózatuk viszont a szerver
+gazdagépét követi.
 
-## Set it up once
+## Egyszeri beállítás
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Az állomások a `cc_server`-t futtató gépen futnak — ugyanazon a gépen, nem azon,
+amelyet éppen néz. Öt felhasználói felület létezik; az asztali és a mobil
+felületek gazdagépoldali beállítást igényelnek:
 
-| Surface | Runs on | Setup |
+| Felület | Ezen fut | Beállítás |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminál (VM)** | Egy microVM, amely egy rögzített Ubuntu-képről indul | Nincs — a képet az első használatkor automatikusan letölti |
+| **Böngésző (VM)** | Egy microVM, amely egy rögzített Debian-képről indul, és az első használatkor telepíti a Chromiumot, a Firefoxot vagy a WebKitet | Nincs — ugyanaz |
+| **Számítógép (VM)** | QEMU egy Linuxos asztali képpel, amely Chromiumot, Firefoxot, WebKitet és egy GitHub által üzemeltetett runnerhez hasonló parancssori alapeszközkészletet tartalmaz | Telepítse a QEMU-t (`brew install qemu`), majd az **Importálás** paranccsal töltsön be egy asztali képet a **Beállítások → Szerver → Állomások** alatt |
+| **Android** | A Google Android-emulátora | Telepítse az Android SDK-t, hozzon létre egy AVD-t, és indítsa el (lásd alább) |
+| **iOS-szimulátor** | CoreSimulator a szerver Mac gépén | Telepítse az Xcode-ot és a kért iOS-futtatókörnyezetet, majd telepítse az automatizálási hidat a **Beállítások → Szerver → Állomások** alatt |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+A terminál- és böngészőgépek digesttel rögzített képekből indulnak: a pontos
+bájtok előre meg vannak nevezve, az első indításkor egyszer töltődnek le, és
+gyorsítótárba kerülnek — miután mindegyik fajtából egyszer elindult egy gép, a
+későbbiek teljesen kihagyják a letöltést, és másodpercek alatt elindulnak. A
+**Beállítások → Szerver → Állomások** megmutatja, mit tud a szervere indítani,
+és minden gépet, amely éppen fut.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Egy telepített asztali kép ugyanerről az oldalról kezelhető: az **Importálás**
+lecseréli egy újabb qcow2-re, a **Törlés** pedig eltávolítja, így friss buildet
+telepíthet.
 
-### Mobile devices are set up differently
+### A mobileszközök beállítása más
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Az Androidhoz és az iOS-hez nincs saját képünk, és ez nem kihagyás. Az Android
+rendszerképei a Google SDK-jából származnak; az iOS-futtatókörnyezetek az
+Xcode-ból. Androidhoz telepítse az Android Studiót (vagy a parancssori
+SDK-eszközöket), adjon hozzá egy virtuális eszközt a **Device Manager** alatt,
+és indítsa el. Az Állomások oldal ezután az Androidot elérhetőként jelenti.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Azt is pontosan megmondja, melyik lépés hiányzik — nincs SDK, nincs emulátor,
+nincs virtuális eszköz, vagy az eszköz egyszerűen nem fut —, mert ezeknek négy
+különböző javítása van, és közülük csak az egyik letöltés. Ha a `cc_server`-t
+olyan shellből indítja, amely nem látja az SDK-t, exportálja:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+iOS esetén magának a szervernek kell macOS-en futnia, telepített Xcode-dal és
+iOS-szimulátor-futtatókörnyezettel. Nyissa meg a **Beállítások → Szerver →
+Állomások** oldalt, és nyomja meg az **iOS-automatizálási híd telepítése**
+gombot. A szerver letölti az ellenőrzőösszeggel rögzített WebDriverAgent
+csomagot, ellenőrzi, és telepíti a szerver tulajdonában lévő automatizálási
+tárolóba. A beállítás során egyetlen szimulátor sem indul el.
 
-## Open a machine
+## Gép megnyitása
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+A gépek **fülekként** élnek, a csevegés és a diff mellett — egy térben vagy egy
+PR-oldalon, ugyanabban a `+` menüben, a **Gépek** alatt:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Számítógép** — Linuxos asztal Chromiummal, Firefoxszal és WebKittel
+- **Chromium**, **Firefox** vagy **WebKit** — egy böngésző
+- **Android** — a futó Android-emulátor
+- **iOS-szimulátor** — egy eldobható szimulátor, amelyet ehhez a beszélgetéshez
+  hoz létre
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Válasszon egyet, és nyomja meg a **Gép indítása** gombot. A fül megmondja, hogy
+az indítás melyik szakaszban tart („A microVM indítása”, „Várakozás a vendéggép
+indulására”), ahelyett hogy csak pörögne.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+A fül a beszélgetéshez van rendelve, és az ügynökeszköz is. Egy Chromium-,
+Firefox- vagy WebKit-fül és a `browser_use`, az Android és a `mobile_use`, vagy
+az iOS-szimulátor és az `ios_use` ugyanazt az alapértelmezett gépet szólítja
+meg. A további felületi helyek külön összehasonlítógépek; az ügynökeszközök
+mindig az alapértelmezettet használják.
 
-To build, install and start a Flutter app on Android:
+Flutter-alkalmazás Androidon való buildelése, telepítése és indítása:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Ezután hívja meg a `mobile_use` eszközt az `install_apk` művelettel és a
+`build/app/outputs/flutter-apk/app-debug.apk` útvonallal, majd a `start_app`
+műveletet az Android csomagnévvel. A `ui_dump`, a képernyőképek és a bemenet
+ugyanazt az eszközt vezérlik, amely az emberi fülön látható. A `stop_app`, a
+`clear_app_data`, az `uninstall_app`, az `open_url` és az argv alakú `shell`
+hívások a fejlesztési ciklus többi részét is lefedik anélkül, hogy shellt
+indítanának a szerver gazdagépén.
 
-To build, install and start a Flutter app on iOS Simulator:
+Flutter-alkalmazás buildelése, telepítése és indítása iOS-szimulátoron:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +107,228 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Ezután hívja meg az `ios_use` eszközt az `install_app` művelettel és a `.app`
+könyvtárral, majd a `start_app` műveletet a `plutil` által kiírt
+bundle-azonosítóval. Az iOS-eszköz emellett elérhetővé teszi a `stop_app`, az
+`uninstall_app` és az `open_url` műveletet, valamint egy argv alakú `spawn`
+műveletet a szimulátoron belüli diagnosztikához.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Az asztali és a böngészős megjelenítés a panelhez igazodik. Az iOS megtartja a
+szimulátor rögzített pontméretét, és fekete sávokkal tölti ki a maradék helyet.
+Minden felületnek továbbra is két független sávja van: az ügynök kicsi, olcsó
+képernyőképeket kap, Ön pedig az élő képet. A fülek váltása leállítja az emberi
+adatfolyamot, így egy háttérben futó gép nem foglal megjelenítési sávszélességet.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Egy állomásfül önmagától nem indít gépet, az elrendezés visszaállítása közben
+sem. Ez a szabály akadályozza meg, hogy egy alkalmazásindítás váratlanul VM-eket
+indítson vagy szimulátoroszközöket hozzon létre.
 
-## Drive the machine
+## A gép irányítása
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+A vászon az Öné: bármikor gépelhet és kattinthat bele, amikor a kizárólagos
+vezérlést éppen senki más nem tartja — vagy amikor Ön tartja. Amíg Ön tartja a
+zárat, az állapotjelző címke **Ön irányít** feliratot mutat, az ügynök továbbra
+is készíthet képernyőképeket, a szerver viszont azon az egyetlen kapun utasítja
+el a módosító műveleteit, amelyen minden művelet átmegy. Mindent, amit tesz, az
+Ön neve alatt rögzítünk.
 
-Press **Stop the machine** when you are done.
+Ha végzett, nyomja meg a **Gép leállítása** gombot.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+A vezérlés szándékosan kizárólagos: ha ketten gépelnek ugyanabba a gépbe, abból
+olyan bemenet lesz, amelyet egyikük sem szánt.
 
-## Move things in and out
+## Tartalom be- és kijuttatása
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+A másolás és a beillesztés mindkét irányban működik az állomás vásznán, ahogy a
+fájlok behúzása is.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Másolás és beillesztés.** Nyomja le a másolási billentyűkombinációt a vászon
+fölött, és mindaz, amit a gép másolt — szöveg, kép, fájllista —, az Ön
+vágólapjára kerül. A beillesztés a sajátját küldi a másik irányba, és
+beillesztést nyom le a gépen belül. macOS-en a kombináció a ⌘C/⌘V; a ⌃C
+továbbra is megszakításként érkezik a vendéggép shelljébe. Windowson és Linuxon
+a ⌃C/⌃V használatos — a vendéggép ugyanazt a leütést kapja, mint egyébként, így
+a ⌃C a vendég termináljában továbbra is megszakít, és az Ön vágólapja
+érintetlen marad.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+A háttérben semmi sem szinkronizálódik. Egy jelszó, amelyet a saját gépén másol
+ki, nem azért érkezik meg egy VM belsejébe, mert lejárt egy időzítő; akkor lép
+át, amikor beilleszti.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Az állomásra való beillesztés alapértelmezés szerint engedélyezett. Az
+állomásról kifelé másolás előbb rákérdez — tízperces engedély, vagy **Mindig
+engedélyez** a **Beállítások → Szerver → Állomások → Vágólap-hozzáférés**
+alatt. A két irány független, és Önt követi, nem a munkaterületet.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Fájlok behúzása.** Ejtse el őket bárhol a vásznon.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- A **Böngésző (VM)** esetén az oldal *valódi* drop eseményt kap azon a ponton,
+  ahol elengedi, így a feltöltési zóna pontosan úgy viselkedik, mintha helyi
+  fájl lenne.
+- A **Számítógép (VM)** esetén a fájlok a `~/Drops` mappába kerülnek, az
+  elérési útjaik pedig a gép vágólapjára, így a ⌃V beilleszti őket egy
+  fájlkezelőbe vagy egy feltöltési mezőbe. A gazdagép nem tud húzást
+  szintetizálni egy tetszőleges Linuxos alkalmazásba anélkül, hogy privilegizált
+  démont futtatna a VM belsejében, ami viszont szándékosan nincs az állomásokon
+  — ezért az értesítés megmondja, hová kerültek a fájlok, ahelyett hogy úgy
+  tenne, mintha megtörtént volna egy drop.
+- Egy **terminál** esetén a fájl bekerül a gépbe, az elérési útja pedig
+  beíródik a promptba, készen arra, hogy egy parancsnak átadja. Ha egy *képet*
+  illeszt be egy terminálba, ugyanez történik: elmentődik a gépben, és megkapja
+  az elérési útját.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Fájlok kihúzása** a Számítógép (VM) esetén működik. Kezdjen el húzni egy
+fájlt a gépen belül, vigye ki a mutatót a vászonról, és az valódi húzássá válik
+az asztalán — ejtse el a Finderben vagy az Explorerben. Az is működik, ha a gép
+fájlkezelőjében másol fájlokat, és az Ön oldalán illeszti be. A **Böngésző
+(VM)** ezt nem kínálja: egy headless böngészőnek nincs olvasható húzáscsomagja,
+és ha az oldal szövegkijelöléséből találgatnánk, az eltérítené a hétköznapi
+kattintásokat.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+A Számítógép (VM) olyan képet igényel, amely a vágólaptámogatás megjelenése után
+készült. Ha korábban importálta a sajátját, építse újra a
+`scripts/rigs/build_image.sh` szkripttel, majd a telepített képen használja az
+**Importálás** műveletet a lecseréléséhez.
 :::
 
-## Terminals inside a rig
+## Terminálok egy állomáson belül
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+A térben vagy egy PR-oldalon lévő terminálok az állomáson belül is futhatnak a
+szerver saját gépe helyett. Ilyenkor a panel egy **Elszigetelt VM** jelvényt
+mutat.
 
-What changes:
+Mi változik:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Semmi, amit futtat, nem éri el a gazdagépet. Egy `rm -rf` odabent az állomásba
+  kerül.
+- A hálózat alapértelmezés szerint tilt. Csak az állomás engedélyezési listáján
+  szereplő hosztok érhetők el, és minden egy olyan kapun megy át, amely
+  kikényszeríti ezt a listát.
+- A `git push` továbbra is működik. Az állomás nem tárol hitelesítő adatot;
+  műveletenként egy rövid életű tokent kér a szervertől, amely az állomás
+  bezárásakor visszavonásra kerül.
 
-What to know:
+Amit érdemes tudni:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **A visszaállított elszigetelt terminál Önre vár.** Az állomásfülhöz hasonlóan
+  egy `microvm` terminál, amely az elrendezésével együtt tér vissza, egy **Shell
+  megnyitása** gombot mutat, ahelyett hogy indításkor elindítaná a VM-jét. Egy
+  gazdagép-shell terminál egy folyamatba kerül; egy elszigetelt egy gépbe.
+- **A terminálra ejtett fájlok beíródnak, nem megnyílnak.** Ejtse el a CSV-t egy
+  elszigetelt terminálon, és az bekerül a gépbe, a vendéggépbeli elérési útja
+  pedig megjelenik a promptban — a gazdagépbeli út egy olyan parancs lenne,
+  amely ott hibára fut.
+- **Az állomáson lévő másolat másolat.** A gazdagépen lévő worktree marad a
+  mérvadó. Az állomáson belül készített commitokat akkor viszi vissza a
+  `refs/rigs/<id>/*` alá, amikor Ön kéri — soha nem mozdítják el az ágát, és nem
+  nyúlnak a munkakönyvtárához.
+- **A gazdagépre irányuló munka továbbra is a gazdagépen fut.** Egy Linuxos
+  vendéggép nem tud macOS-re buildelni, és nem tud `xcodebuild`-et futtatni.
+  Ehhez válassza ki kifejezetten a natív háttérrendszert; az alkalmazás
+  megerősítést kér, ahelyett hogy csendben átváltana.
 
-## Ports
+## Portok
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas/).
+Indítson egy devszervert a Terminál (VM) felületen — mondjuk a `pnpm dev`
+parancsot a 3000-es porton —, és néhány másodpercen belül kigyullad a terminál
+sarkában lévő dugaszikon: a port továbbítódik a gépén a `localhost:3000`
+címre, elérhető a `localhost:3000` címen a Böngésző (VM) belsejéből,
+megosztható a hálózatán, és elnevezhető `https://myapp.test` néven. A teljes
+folyamat — az automatikus továbbítás, a LAN-megosztás, a HTTPS-sel működő
+dev-tartományok — külön útmutatót kapott:
+[Portok továbbítása terminálból](/hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas/).
 
-## Custom images
+## Egyéni képek
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Egy munkaterület a saját képeire irányíthatja a Terminál (VM) és a Böngésző
+(VM) felületet — a **Beállítások → Szerver → Állomások → Egyéni képek (ez a
+munkaterület)** alatt. Tipikus használat: bővítse az alapértelmezett képet a
+projektjéhez szükséges eszközkészlettel, hogy minden terminál készen álljon az
+indulásra, vagy használja újra egy olyan képet, amelyet a csapata már publikál.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+A gép továbbra is ugyanabban az elszigetelt környezetben indul: ugyanaz a
+kimenőforgalom-kapu, ugyanaz a hitelesítőadat-közvetítő, ugyanaz az életciklus.
+A beállítást csak a munkaterület adminisztrátorai módosíthatják, az új gépek
+átveszik (a futók megtartják a sajátjukat), a hivatkozásnak pedig registrybeli
+képnek kell lennie — a helyi elérési utakat elutasítjuk.
 
-What an image must provide:
+Mit kell egy képnek nyújtania:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminál (VM)** — Linuxos kép `bash`-sal. Emellett szüksége van a `git`, a
+  `curl` és a `socat` eszközre — vagy előre telepítve, vagy az első indításkor
+  telepíthetően (bármely Debian/Ubuntu-alapú kép megfelel: ezek automatikusan
+  telepítésre kerülnek, egy GitHub által üzemeltetett runnerhez hasonló
+  parancssori eszközkészlettel együtt: fordítók, Python 3, `jq`, archiváló
+  eszközök, `rsync`. A Node/Go/Java típusú nyelvi futtatókörnyezetek és a Docker
+  nincsenek előre telepítve). A `7911`-es vendégport a porttovábbítónak van
+  fenntartva.
+- **Böngésző (VM)** — Debian/Ubuntu-kép `bash`-sal és `socat`-tal, valamint egy
+  `chromium` bináris. A szerver maga indítja el a Chromiumot
+  `chromium --headless=new` formában, és a DevTools csatornát a `9223`-as
+  vendégportról a `9222`-re továbbítja. A PulseAudio és az ffmpeg az első
+  indításkor telepítésre kerül. Ne építsen `FROM chromedp/headless-shell` alapra
+  — annak a binárisnak nincs hangja. A felülírás csak a Chromium-állomásokra
+  vonatkozik; a Firefox és a WebKit figyelmen kívül hagyja, és a rögzített
+  Debian-képből indul. A `9222`/`9223` vendégportok fenntartottak.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Két javaslat: rögzítse a hivatkozást digesttel (`@sha256:…`), hogy a bájtok ne
+változhassanak meg Ön alatt, és tartsa a képet a Docker Hubon vagy a GitHub
+Container Registryben — ezeknek a registryknek a letöltési hosztjait a
+kimenőforgalom-kapu automatikusan beengedi; másoknál előfordulhat, hogy a
+letöltéshez a tartalomkiszolgáló hosztjaiknak is elérhetőnek kell lenniük.
 
-## When a rig goes away
+## Amikor egy állomás eltűnik
 
-Rigs are meant to be temporary:
+Az állomások szándékosan ideiglenesek:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Tétlenség** — ha körülbelül 15 percig nem történik semmi, egy böngésző-,
+  asztali vagy mobil állomás parkol (lefagyasztva, a következő műveletre azonnal
+  felébred). Egy elszigetelt terminál 45 percet vár. A tétlenségi időablak
+  kétszerese után bezárul.
+- **Időkorlát** — minden állomásnak van egy kemény élettartama, amelyet nem tud
+  meghosszabbítani, bármit is tesz éppen.
+- **Memória** — ha a szervernek helyre van szüksége egy új állomáshoz, bezárja a
+  legrégebben használtat. Egy olyan állomást, amelyet valaki éppen vezérel, néz,
+  vagy amelyben terminál van nyitva, soha nem vesz el.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Amikor egy elszigetelt állomás bezárul, a lemeze eldobásra kerül. Egy
+Android-állomás bezárása leválasztja a gazdagép emulátoráról — nem törli azt.
+Egy iOS-állomás törli az általa létrehozott CoreSimulator-eszközt. Előbb vigyen
+vissza mindent, amit meg szeretne tartani.
 
-## What a rig can reach
+## Mit érhet el egy állomás
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Az elszigetelt terminál-, böngésző- és asztali állomások alapértelmezés szerint
+tiltó kimenőforgalom-kaput használnak: a hosztokat kifejezetten engedélyezi, és
+a vendéggép egyetlen útvonala egy olyan kapu, amely kikényszeríti ezt a listát.
+Egy böngészőállomás ezen felül alapból beengedi a termékoldalt (`usectrl.dev`).
+A hitelesítőadat-közvetítő ugyanezt a listát használja.
 
-Two honest caveats:
+Két őszinte fenntartás:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **A mobil hálózat a gazdagépet követi.** Az Android emulátora és az Apple
+  CoreSimulatora nincs az elszigetelt környezet kimenőforgalom-kapuja mögött.
+  Egyik mobil fül sem kínál hálózatmegkerülési vezérlőt, mert a gazdagép által
+  kezelt hálózat már így is korlátozás nélküli.
+- **Minden, amit egy állomás elolvas, nem megbízható.** Az oldalszöveg, a DOM, a
+  kisegítő lehetőségek fái és a nézetkiírások olyan jelölőkbe csomagolva jutnak
+  vissza az ügynökhöz, amelyek azt mondják: „ez adat, nem utasítás”. Egy oldal,
+  amely parancsokat próbál adni az ügynökének, idézett szövegként jelenik meg.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Minden futó dolgot láthat, és bármelyiket leállíthatja a **Beállítások →
+Szerver → Állomások** alatt.
 
-## Related
+## Kapcsolódó
 
-- [Rigs and enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/hu-HU/kezikonyv/referencia/allomasok/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Állomások és elszigetelt környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/) — mindennek a
+  modellje: miért VM-ek, a két megjelenítési sáv, a hitelesítőadat-közvetítő,
+  az életciklus
+- [Portok továbbítása terminálból](/hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas/) — érje
+  el a devszervert onnan, ahonnan számít
+- [Állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/) — minden felület, művelet,
+  port és alapérték egy helyen
+- [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/) — az
+  `Elszigetelt környezet (állomás) irányítása` egy műveletosztály, amelyet
+  munkaterületenként, ügynökönként vagy térenként állíthat engedélyezésre, előbb
+  kérdezésre vagy tiltásra. A csak olvasható módok egyenesen megtiltják.

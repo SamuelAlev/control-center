@@ -1,89 +1,169 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: ٹول کانٹیکسٹ اور پرامپٹ کیشنگ
+description: ایک ایجنٹ کو اُن سب کے بجائے ٹولز کا ایک چھوٹا مجموعہ کیوں دکھایا جاتا ہے، وہ باقی تک کیسے پہنچتا ہے، اور وہ کون سے اصول ہیں جو پورے رن کے دوران فراہم کنندہ کا پرامپٹ کیش گرم رکھتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+بلٹ اِن ہارنس کی بنائی گئی ہر درخواست کے بارے میں دو باتیں درست ہیں: اُس میں
+ٹول تعریفیں سب سے بڑا مستقل خرچ ہیں، اور اُن میں سے تقریباً کوئی بھی استعمال
+نہیں ہوگا۔ یہ صفحہ بتاتا ہے کہ Control Center اس بارے میں کیا کرتا ہے، اور جواب
+محض ”کم ٹولز بھیجیں“ کیوں نہیں ہے۔
 
-## The problem is attention, not bytes
+## مسئلہ توجہ کا ہے، بائٹس کا نہیں
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center تقریباً 126 ٹولز رجسٹر کرتا ہے۔ مکمل بھیجنے پر اُن کی تعریفیں
+**ہر درخواست پر تقریباً 23,000 ٹوکنز** پر پڑتی ہیں — ایسا خرچ جسے کوئی کمپیکشن
+چھو نہیں سکتا، کیونکہ ٹول تعریفیں درخواست کے اُس حصے میں سفر کرتی ہیں جو گفتگو
+سے الگ ہے۔
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+ٹوکن کا بل سب سے نمایاں شکایت ہے، اور پرامپٹ کیشنگ کے ساتھ یہ چھوٹا مسئلہ بھی
+ہے۔ اصل خرچ **انتخاب کی درستگی** ہے۔ ٹول کالنگ کے شائع شدہ جائزوں کا اتفاق ہے
+کہ ماڈلز کانٹیکسٹ میں تقریباً 30–50 ٹولز تک درست ٹول قابلِ اعتماد طور پر چنتے
+ہیں، اور اُس کے بعد بتدریج بگڑتے جاتے ہیں۔ بتائی جانے والی وجہ ٹوکن کی تعداد نہیں
+بلکہ **معنوی اوورلیپ** ہے: جب کسی کیٹلاگ میں کئی ایسے ٹولز ہوں جن کی تفصیلات ایک
+جیسی پڑھی جائیں، تو ماڈل کسی قابلیت کو یاد کرنے کے بجائے ہم شکل چیزوں میں سے
+انتخاب کر رہا ہوتا ہے۔
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+126 ٹولز پر ایک ایجنٹ ہر ایک باری میں اُس حد سے کہیں آگے ہوتا ہے — اُن کئی
+باریوں سمیت جہاں اُسے صرف ایک فائل پڑھنی تھی۔
 
-## The two-tier surface
+## دو درجوں والی سطح
 
-A run is therefore shown two things:
+اس لیے ایک رن کو دو چیزیں دکھائی جاتی ہیں:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- ایک **ریذیڈنٹ** مجموعہ — تقریباً دو درجن ٹولز، جو ہر درخواست پر مکمل اسکیموں
+  کے ساتھ بھیجے جاتے ہیں؛
+- باقی سب کا ایک **نام انڈیکس**، جو ”Tickets and projects“ یا ”Memory and
+  knowledge“ جیسے عنوانات کے تحت گروہ بند ہوتا ہے اور پورے کیٹلاگ کے لیے چند سو
+  ٹوکنز پر پڑتا ہے۔
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+موجودہ کیٹلاگ پر ناپا گیا تو یہ ٹول بلاک کو **~23.1k ٹوکنز سے ~5.0k تک لے آتا
+ہے، یعنی تقریباً 78% کم**، اور ہمیشہ نظر آنے والے مجموعے کو اُس حد کے اندر رکھتا
+ہے جہاں انتخاب قابلِ اعتماد ہوتا ہے۔
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/ur-PK/ہدایت-نامہ/تصورات/موڈز) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+ریذیڈنٹ مجموعہ وہ ٹولز ہیں جو ایک رن *زیادہ تر* رنز میں استعمال کرتا ہے: فائل اور
+شیل کے الفاظ کا مجموعہ (`read`، `write`، `edit`، `search`، `bash`، …)، دریافت کے
+ٹولز، ٹاسک چیک لسٹ، میموری سرچ، اور وہ فعل جسے موجودہ
+[موڈ](/ur-PK/ہدایت-نامہ/تصورات/موڈز) کو اپنا نتیجہ پیش کرنے کے لیے کال کرنا ضروری
+ہوتا ہے۔ موڈ کا اپنا آؤٹ پٹ فعل ہمیشہ ریذیڈنٹ رہتا ہے — کسی رن کو کبھی اُس ایک
+کال کو ڈھونڈنے نہیں جانا پڑنا چاہیے جو اُس کا ڈیلیوریبل بناتی ہے۔
 
-### Deferred does not mean unavailable
+### طلب پر لوڈ ہونے کا مطلب دستیاب نہ ہونا نہیں
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+یہی وہ حصہ ہے جو اِس ڈیزائن کو محض سستا نہیں بلکہ محفوظ بناتا ہے۔ **ایک طلب پر
+لوڈ ٹول پہلی باری ہی سے کال کے قابل ہوتا ہے۔** صرف اُس کا اسکیما روکا جاتا ہے۔
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+ایجنٹ اپنے پرامپٹ میں نام دیکھتا ہے۔ اگر وہ اُس نام کو براہِ راست کال کرے تو ہارنس
+اُسی قدم میں اسکیما لوڈ کر کے ٹول چلا دیتا ہے — نہ کوئی خرابی، نہ کوئی راؤنڈ
+ٹرپ۔ ماڈل کو یہ جاننے کی ضرورت نہیں کہ ٹول کبھی ”ان لوڈ“ ہوا تھا۔
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+جب ایجنٹ کو کام معلوم ہو مگر نام نہ ہو، تو `search_tools` سادہ زبان میں دی گئی
+تفصیل (”کسی کو ٹکٹ تفویض کریں“) لیتا ہے، رن کی پوری سطح کی درجہ بندی کرتا ہے،
+اور نتائج *اُن کے اسکیموں کے ساتھ جو پہلے ہی لوڈ ہو چکے ہوتے ہیں* واپس کرتا ہے،
+تاکہ اگلی ہی باری اُن میں سے کوئی کال کر سکے۔ اگر کوئی تلاش کچھ نہ پائے تو صاف بتا
+دیتی ہے اور مختلف الفاظ یا وسیع تر تلاش تجویز کرتی ہے — جان بوجھ کر، کیونکہ جو
+ایجنٹ خالی تلاش کو ”یہ قابلیت موجود نہیں“ پڑھے گا وہ دوبارہ دیکھنے کے بجائے کوئی
+متبادل گھڑ لے گا۔
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` صرف بلٹ اِن ہارنس میں موجود ہے۔ بیرونی MCP کلائنٹس کے پاس اس کے
+بجائے `search_tool_bm25` ہے، جو وہی انڈیکس درجہ بند کرتا ہے مگر صرف نتائج کی
+تفصیل دیتا ہے — اُن کلائنٹس کو `tools/list` سے پہلے ہی ہر اسکیما مل چکا ہوتا ہے،
+اس لیے لوڈ کرنے کو کچھ نہیں بچتا۔
 
-### What deferral never does
+### طلب پر لوڈ کبھی جو نہیں کرتا
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+طلب پر لوڈ موڈ کے ٹول فلٹر کے **بعد** لاگو ہوتا ہے، اُس کے بدلے کبھی نہیں۔ یہ ایک
+اسکیما چھپاتا ہے؛ جو ٹول موڈ نے مسترد کیا ہو اُسے ظاہر نہیں کر سکتا۔ فعال شدہ ٹول
+بھی منظوری کے پرامپٹ اور [ایکشن
+گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز) سے بالکل ویسے ہی گزرتا ہے جیسے کوئی
+ریذیڈنٹ ٹول گزرتا، اور کوئی ٹول ایسا نام لوڈ نہیں کر سکتا جو شروع ہی سے رن کی سطح
+پر نہ تھا۔
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+بیرونی کلائنٹس کو نظر آنے والی MCP سطح متاثر **نہیں** ہوتی۔ `tools/list` اب بھی
+مکمل کیٹلاگ واپس کرتا ہے۔ اُسے کاٹنے کی ایک پہلے کی کوشش نے ایجنٹس کو بالکل توڑ
+دیا تھا: MCP کلائنٹس ٹول کے نام اپنی کیش شدہ فہرست کے خلاف جانچتے ہیں اور سرور سے
+پوچھے بغیر ہر غیر درج نام سے انکار کر دیتے ہیں، اس لیے ”چھپا ہوا مگر کال کے قابل“
+ٹول محض ناقابلِ رسائی تھا۔ طلب پر لوڈ ہارنس ہی میں رہتا ہے، جہاں رن کے دوران ٹول
+لوڈ کرنا واقعی ہارنس کا کام ہے۔
 
-### Turning it off
+### اِسے بند کرنا
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli).
+`--tool-deferral=off` (یا `CC_SERVER_TOOL_DEFERRAL=off`) ہر منظور شدہ ٹول کو دوبارہ
+ریذیڈنٹ بنا دیتا ہے، اور بالکل وہی درخواستیں بناتا ہے جو سرور طلب پر لوڈ سے پہلے
+بناتا تھا۔ دیکھیں [`cc_server` CLI
+حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli)۔
 
-## Prompt caching
+## پرامپٹ کیشنگ
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+ایجنٹ کے کام کا بوجھ ایک طرف جھکا ہوتا ہے: وہ باری در باری بہت بڑے پرامپٹ بھیجتے
+اور چھوٹے جواب پاتے ہیں، ہر بار وہی پریفکس لے کر۔ فراہم کنندہ اُس پریفکس کو کیش
+کرتے ہیں، اور ایک کیش ریڈ تازہ ریڈ کے تقریباً دسویں حصے پر پڑتا ہے۔ اس لیے کیش ہٹ
+ریٹ ہارنس کی ایک بنیادی خصوصیت ہے، کوئی آپٹیمائزیشن نہیں — اور Anthropic پر یہ
+تھرو پٹ بھی دیتا ہے، کیونکہ کیش شدہ ٹوکنز فی منٹ ان پٹ کی حد میں نہیں گنے جاتے۔
 
-Caching works on an exact prefix match, which yields one governing rule.
+کیشنگ عین پریفکس کی مماثلت پر کام کرتی ہے، جس سے ایک ہی حاکم اصول برآمد ہوتا ہے۔
 
-### Never rewrite what was already sent
+### جو پہلے بھیجا جا چکا اُسے کبھی نہ لکھیں
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+کوئی بھی بدلتا ہوا بائٹ اُس مقام سے آگے کیش کو باطل کر دیتا ہے۔ اس لیے ہارنس صرف
+**جوڑتا** ہے: نئے پیغام آخر میں، اور نئے فعال ہونے والے ٹول اسکیمے کیش شدہ ٹول بلاک
+کے *بعد*، نہ کہ اُس میں ضم۔ یہی ترتیب ایکٹیویشن کو سستا بناتی ہے — کیش شدہ پریفکس
+جوں کا توں رہتا ہے اور رن صرف اُن اسکیموں کی قیمت دیتا ہے جو اُس نے ابھی لوڈ کیے۔
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+لوپ کانٹیکسٹ واپس پانے کے لیے پرانی باریوں کے باسی ٹول آؤٹ پٹ کو بھی کاٹتا ہے۔ یہ
+اُس وقت تک انتظار کرتا ہے جب واپس پانے کے لیے اتنا کچھ ہو کہ دوبارہ لکھنا پڑے، اس
+لیے کاٹنا مسلسل کیش مس کے بجائے کوئی کبھی کبھار کی گہری دوبارہ تحریر ہوتا ہے۔
 
-### Where the breakpoints go
+### بریک پوائنٹ کہاں لگتے ہیں
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+فراہم کنندہ محدود تعداد میں کیش مارکر کی اجازت دیتا ہے، اور Control Center اُنہیں
+سوچ سمجھ کر خرچ کرتا ہے:
 
-| Marker                       | Covers                             | Lifetime |
+| مارکر                       | کیا ڈھانپتا ہے                           | دورانیہ |
 | ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| آخری **ریذیڈنٹ** ٹول       | ٹول بلاک                     | 1 گھنٹہ   |
+| آخری سسٹم بلاک            | ٹولز + سسٹم پرامپٹ              | 1 گھنٹہ   |
+| پچھلی باری کی دم         | آخری درخواست تک کی تاریخ     | 5 منٹ    |
+| موجودہ باری کی دم          | مکمل تاریخ                   | 5 منٹ    |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+آخری دو ایک گھومتا جوڑا ہیں، اور اِس جوڑے کی وجہ باریک ہے: کیش کی تلاش کسی پہلے کی
+درخواست کے ذخیرہ کردہ کے لیے محدود تعداد میں بلاکس پیچھے کی طرف دیکھتی ہے۔ ایک ہی
+باری جو کئی ٹولز متوازی چلائے، اُس کھڑکی سے زیادہ بلاکس نکال سکتی ہے، اور تب ایک
+دم کا مارکر خاموشی سے مس ہو جاتا ہے اور درخواست پوری قیمت دیتی ہے جبکہ جواب میں
+ایسا کہنے کو کچھ نہیں ہوتا۔ پچھلی درخواست جہاں رکی تھی اُس عین مقام کو نشان زد
+کرنا ہٹ کو دوڑ کے بجائے ساختی بنا دیتا ہے۔
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+ٹولز اور سسٹم والا پریفکس طویل دورانیہ لیتا ہے کیونکہ یہ پورے رن کے لیے مستقل رہتا
+ہے، ایک ہی شکل رکھنے والے ہر رن اور سب ایجنٹ میں مشترک ہوتا ہے، اور کیونکہ گھڑی
+اُس وقت شروع ہوتی ہے جب درخواست *شروع* ہوتی ہے — کئی منٹ تک اسٹریم کرنے والی باری
+اگلی درخواست بننے سے پہلے ہی کسی مختصر کھڑکی کا بیشتر حصہ خرچ کر چکی ہوتی ہے۔
 
-### Subagents share one prefix
+### سب ایجنٹ ایک پریفکس بانٹتے ہیں
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+ایک ہی قسم کے سب ایجنٹ بائٹ بہ بائٹ یکساں پرامپٹ پریفکس بناتے ہیں، اس لیے اُنہیں
+اپنا اپنا لکھنے کے بجائے ایک ہی کیش اندراج پڑھنا چاہیے۔ مگر کوئی اندراج پڑھنے کے
+قابل اُس وقت ہوتا ہے جب اُسے لکھنے والی درخواست جواب دینا شروع کرے، اس لیے ایک
+ساتھ شروع کیا گیا فین آؤٹ ہر بچے سے اُس پریفکس کی قیمت وصول کرتا ہے جو اُن سب کا
+مشترک ہے۔
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+ہارنس کسی دی گئی شکل کے پہلے بچے کو شروع ہونے دیتا ہے، پھر اُس کے اسٹریم کرنا شروع
+کرتے ہی اُس کے بہن بھائیوں کو چھوڑ دیتا ہے۔ انتظار محدود ہے: سست پہلا بچہ ایک کیش
+ہٹ کی قیمت ہے، خود فین آؤٹ کی نہیں۔ اسی وجہ سے ہر سب ایجنٹ کو اُس کے پروفائل سے
+قطع نظر وہی ریذیڈنٹ ٹول سیٹ ملتا ہے — اسے فی پروفائل بدلنا مشترکہ پریفکس کو بغیر
+کسی فائدے کے ٹکڑوں میں بانٹ دیتا، کیونکہ پروفائل پہلے ہی طے کر چکا ہوتا ہے کہ بچہ
+کیا کال کر سکتا ہے۔
 
-## Watching it work
+## اِسے کام کرتے دیکھنا
 
-Both halves are observable rather than assumed:
+دونوں حصے فرض کیے جانے کے بجائے قابلِ مشاہدہ ہیں:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- کسی گفتگو پر **کانٹیکسٹ ایکسپلورر** ریذیڈنٹ ٹولز، طلب پر لوڈ انڈیکس، اور یہ کہ
+  روکی گئی ہر اسکیما کی قیمت *کیا* ہوگی — سب اُسی کوڈ راستے سے بنا کر بتاتا ہے جو
+  ایک حقیقی رن استعمال کرتا ہے۔
+- ہر رن ریکارڈ کرتا ہے کہ اُس نے کون سے طلب پر لوڈ ٹولز لوڈ کیے اور اُسے کس چیز نے
+  متحرک کیا، اس لیے کوئی ایسی تلاش جو کچھ نہ پائے، کسی ایجنٹ کے خاموشی سے کوئی
+  قریبی کام کرنے میں گم ہونے کے بجائے ایک ریٹریول مس کے طور پر نظر آتی ہے۔
+- آبزرویبلٹی **کیش ریٹ** کو کارروائی شدہ تمام پرامپٹ ٹوکنز پر کیش ریڈز کے طور پر
+  بتاتی ہے، کیش رائٹس سمیت — اپنا پریفکس بار بار دوبارہ بنانے والا رن کم اسکور
+  کرتا ہے، اُس طرح نہیں جیسے کسی کو کیش کی ضرورت ہی نہ ہو۔

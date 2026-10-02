@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: 将 Slack 桥接到你的工作区
+description: 创建 Slack 应用、连接它、关联你的账户，然后让智能体在 Slack 话题中回答你。
 slug: zh-CN/手册/教程/第一个聊天桥接
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+学完本教程，你将拥有：
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- 一个为你的工作区创建的 Slack 应用，权限和事件都已设置妥当
+- Slack 与 Control Center 之间的一条实时连接
+- 你自己的 Slack 账户已关联到你的 Control Center 用户
+- 一个在 Slack 话题中回答你的智能体，以及一张由斜杠命令登记的工单
 
-Prerequisites:
+先决条件：
 
-- [Your first workspace](/zh-CN/手册/教程/第一个工作区/) and [Dispatch your first agent](/zh-CN/手册/教程/第一个智能体/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [你的第一个工作区](/zh-CN/手册/教程/第一个工作区/) 与 [派发你的第一个智能体](/zh-CN/手册/教程/第一个智能体/) 已完成——没有智能体的工作区能收到 Slack 消息，却没有人来回答它
+- 工作区的 **CEO 智能体**已在 **设置 → 工作区 → 智能体**中设置好适配器和模型。桥接唤醒的是 CEO，而不是你在上一个教程中配置的智能体；没有适配器的智能体会在内置循环上运行，并使用 Anthropic 的默认模型。
+- 在 Control Center 工作区中拥有 `owner` 或 `admin` 角色（连接聊天应用代表的是整个工作区）
+- 在你的 Slack 工作区中创建和安装应用的权限
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+这里不需要公网地址、隧道或入站端口。Control Center 会通过 Socket Mode 向 Slack _主动外连_，因此这在 NAT 之后的笔记本电脑上也能用。
 
-## Step 1: Get a Slack app configuration token
+## 第 1 步：获取 Slack 应用配置 token
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+这是唯一需要你手动获取的密钥。有了它，Control Center 才能替你创建、并在之后编辑这个应用。
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. 打开 [api.slack.com/apps](https://api.slack.com/apps)
+2. 滚动到页面底部的应用配置 token 部分
+3. 为你的 Slack 工作区生成一对 token
+4. 复制 **refresh** token——它以 `xoxe-` 开头
 
-## Step 2: Let Control Center create the app
+## 第 2 步：让 Control Center 创建应用
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. 在 Control Center 中，前往 **设置 → 工作区 → 通用**，找到 **聊天桥接** 卡片
+2. 在 **Slack** 区块上，点击 **为我创建应用**
+3. 粘贴应用配置 token
+4. 查看机器人将呈现的样子：
+   - **应用名称**：Slack 中该应用的显示名，例如 `Control Center · Acme`
+   - **机器人名称**：成员在 `@` 之后输入的内容，例如 `control-center`
+   - **简短描述**与**机器人对自己能力的介绍**
+   - **斜杠命令**：默认为 `cc`，因此命令是 `/cc`
+   - **私信**：保持开启，成员就能私信机器人
+5. 点击 **创建应用**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center 会组装出完整的应用定义——开启 Socket Mode、机器人所需的权限范围和事件订阅、斜杠命令、Messages 标签页——并在 Slack 中创建它。
 
-## Step 3: Finish the two steps only Slack can do
+## 第 3 步：完成只有 Slack 能做的两个步骤
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack 没有用于生成应用级 token 或安装应用的 API，所以对话框会把这两件事都以链接的形式交给你：
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **生成应用级 token**——打开 **Basic Information → App-Level Tokens**。创建一个具有 `connections:write` 权限范围的 token 并复制它。它以 `xapp-` 开头
+2. **安装应用**——打开 **Install App**。安装到你的工作区，然后复制 **Bot User OAuth Token**。它以 `xoxb-` 开头
 
-Keep both values around for the next step.
+把这两个值留到下一步使用。
 
-## Step 4: Connect
+## 第 4 步：连接
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. 回到对话框中，点击 **粘贴凭据**
+2. 输入 **机器人 token**（`xoxb-…`）和 **应用级 token**（`xapp-…`）
+3. 将 **应用配置 token** 留空——第 1 步中的那个已经存好了（Slack 轮换了它，Control Center 保存了新的那个）
+4. 点击 **连接**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center 会先向 Slack 验证机器人 token，然后才存储任何内容，接着打开套接字。这一行现在会显示机器人的名称和你的 Slack 工作区名称，并带有一个 **已连接** 标签。
 
-## Step 5: Link your own Slack account
+## 第 5 步：关联你自己的 Slack 账户
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+连接让机器人可以被触达；关联则让机器人能认出_你_。在你的 Slack 身份被关联之前，机器人不会对你的消息采取行动——它绝不会把消息归属到安装应用的人身上。
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+关联是个人行为，因此它与整个工作区共享的连接位于不同的页面上。
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. 前往 **设置 → 工作区 → 个人资料与身份**，找到 **已关联的聊天账户** 卡片
+2. 点击 **关联我的 Slack 账户**
+3. 复制它显示的命令，例如 `/cc link K7M2QP`
+4. 在 Slack 中，通过私信把该命令发送给机器人
+5. 机器人会回答“已关联到 …”
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+该代码只能使用一次，并在 15 分钟后过期。如果你的 Slack 邮箱与某个已经是此工作区成员的 Control Center 用户匹配，那么你第一次与桥接对话时它就会自动完成关联，你可以跳过这一步。
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+如果在这之前你就提及了机器人，它会拒绝并说明原因。三种拒绝各不相同，因此请看清你遇到的是哪一种：
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **未关联的发送者**：机器人会告诉你如何关联。请回到这一步。
+- **已关联，但不是此工作区的成员**：请让管理员邀请你。
+- **角色为只读的成员**（`viewer` 或 `guest`）：机器人不会代表你启动工作。
 
-## Step 6: Put an agent on something
+## 第 6 步：让智能体着手某件事
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. 在 Slack 中，把机器人邀请进某个频道：`/invite @control-center`
+2. 用一个真实请求提及它：
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center 总结一下 api 仓库上所有打开的 PR
 
-The bridge:
+桥接会：
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. 为该 Slack 话题创建一个 Control Center 空间，以 Slack 频道名和你的请求命名
+2. 唤醒工作区的入口智能体（有 CEO 智能体时就是它，否则就是第一个智能体）
+3. 在智能体的回答被写出的同时，把它流式传回该 Slack 话题
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+在同一个 Slack 话题中回复即可继续——无需再次提及，因为该 Slack 话题现在已被桥接。你也可以不用频道，改为私信机器人；每个私信会话都会驱动它自己的 Control Center 空间，并带有一个标题，以及在智能体工作期间显示“正在思考…”的状态行。
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+流式输出需要 Slack 的流式 API，而并非每个套餐都有。如果你的应用被它拒绝，桥接会在这条连接的整个生命周期内不再尝试，改为把每条回复作为单条消息发送，并且 **聊天桥接** 卡片会显示“此 Slack 应用未开启实时流式传输——回复会作为一条消息送达。”其他一切照旧。
 
-## Step 7: File a ticket without leaving Slack
+## 第 7 步：不离开 Slack 就能登记工单
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+机器人会用它所登记工单的工单键作答。该工单是一张普通的本地 Control Center 工单，由你报告，随时可以分配给某个智能体。`/cc help` 会列出该命令能做的一切。
 
-## Recap
+## 回顾
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+你从 Control Center 创建了一个 Slack 应用，通过出站套接字连接了它，把你的 Slack 身份关联到了你的 Control Center 用户，并从一条 Slack 话题驱动了一个智能体。Slack 中发生的一切在 Control Center 里同样存在：Slack 话题是一个空间，回复是一份转录，工单就是工单。
 
-**Next:** [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/zh-CN/手册/概念/聊天桥接/).
+**下一步：** [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/) 介绍了手动操作路径、轮换 token 和故障排查。要了解其背后的模型，请阅读 [聊天桥接](/zh-CN/手册/概念/聊天桥接/)。

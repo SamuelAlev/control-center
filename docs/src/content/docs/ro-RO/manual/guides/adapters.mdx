@@ -1,172 +1,191 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Gestionează adaptoarele și modelele
+description: Conectează provideri de modele, alege modelul pe care rulează un agent și verifică ce CLI-uri de runner are mașina gazdă a serverului.
 slug: ro-RO/manual/ghiduri-practice/adaptoare
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Acest ghid îți arată cum să conectezi provideri de modele și cum să alegi pe ce
+rulează un agent.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Tot ce este aici se află pe o singură pagină: **Setări → Server → Provideri de
+modele**. Intrarea din sub-bara laterală scrie „Provideri de modele”; titlul
+paginii scrie „Adaptori”.
 
-## What an adapter is
+## Ce este un adaptor
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Un adaptor este _runnerul_ care execută o rundă de agent. Există două, iar lista
+este fixă — nu poți adăuga un al treilea.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Adaptor                   | CLI       | Transport                                                     |
+| ------------------------- | --------- | ------------------------------------------------------------- |
+| Control Center (încorporat) | niciunul | Bucla de agent din proces, vorbește cu providerii prin HTTP    |
+| Claude Code               | `claude`  | `claude -p --output-format stream-json`                       |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI și restul sunt **provideri** pe adaptorul
+încorporat, nu CLI-uri separate. Ce _poți_ adăuga este un alt provider — orice
+endpoint compatibil OpenAI sau Anthropic. Despre asta este secțiunea următoare.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Detectarea interoghează serverul, nu mașina ta]
+Cardul **Runnere detectate** listează ce a găsit `cc_server` în `PATH`-ul
+_mașinii gazdă a serverului_. Pe un client subțire sau web, aceea este o altă
+mașină decât cea la care te uiți. Instalează CLI-ul pe mașina care rulează
+`cc_server`.
 :::
 
-## Connect a model provider
+## Conectează un provider de model
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Adaptorul încorporat are nevoie de cel puțin un provider conectat ca să poată
+rula. Catalogul include paisprezece.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Mergi la **Setări → Server → Provideri de modele**
+2. Derulează până la **Provideri și modele**
+3. Găsește-ți providerul și conectează-l:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Provider                                                                                                 | Cum se conectează                                                                                                             |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | Cheie API. Un abonament Claude Pro/Max nu este o autentificare API Anthropic — pentru acel plan folosește adaptorul Claude Code |
+| OpenAI, Codex, Cursor                                                                                    | Autentificare OAuth în browser sau o cheie API. Codex este ChatGPT Plus/Pro prin backend-ul Codex Responses, nu o lansare de CLI |
+| Kimi Code                                                                                                | Doar OAuth în browser — un flux de tip device-code. Este un plan cu tarif forfetar, deci nu are preț pe token                 |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | Cheie API                                                                                                                     |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Punct de verificare: insigna rândului trece în starea conectat, iar extinderea
+lui listează modelele pe care le servește providerul, fiecare cu prețul pe milion
+de tokeni și fereastra de context.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+Tokenurile OAuth ajung în depozitul propriu de credențiale al serverului și sunt
+reîmprospătate înainte de a expira. Credențialele providerilor sunt **globale la
+nivel de gazdă** — sunt partajate de fiecare spațiu de lucru de pe instalare, nu
+sunt limitate la unul singur.
 
-### Add a custom provider
+### Adaugă un provider personalizat
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Folosește asta pentru Ollama, LM Studio, vLLM sau o implementare privată.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. În **Provideri și modele**, sub **Provideri personalizați**, apasă **Adaugă
+   provider**
+2. Completează un **nume**, alege **tipul de API** (compatibil OpenAI sau
+   compatibil Anthropic) și dă **URL-ul de bază** (de exemplu
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Adaugă o **cheie API** dacă endpointul are nevoie de una, apoi apasă **Adaugă
+   provider**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Un provider personalizat apare în aceeași listă, cu un buton de ștergere pe care
+frații lui încorporați nu îl au.
 
-## Pick a model for an agent
+## Alege un model pentru un agent
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Mergi la **Setări → Spațiu de lucru → Agenți** și selectează agentul
+2. În fila **Setări**, alege **adaptorul**
+3. Alege **modelul** din lista derulantă de lângă el
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Pentru adaptorul încorporat, lista derulantă este compusă în timp real din
+catalogul propriu al fiecărui provider conectat. Un provider fără nicio
+credențială stocată contribuie cu zero modele, motiv pentru care o listă
+derulantă goală înseamnă aproape întotdeauna „încă nu este conectat nimic”, nu
+„nimic disponibil”.
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev este un plus de informație, niciodată o sursă de id-uri]
+Catalogul [models.dev](https://models.dev) inclus furnizează prețul și fereastra
+de context pentru un model care se află deja în lista live. Nu adaugă niciodată
+un id de model. Dacă un model pe care îl aștepți lipsește, endpointul
+providerului nu îl returnează.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Id-urile de model pentru adaptorul încorporat sunt calificate `provider/model`
+și pot purta un lanț de rezervă separat cu `|`. În cazul unui lanț de rezervă,
+costul este calculat pentru modelul care a servit efectiv runda, nu pentru cel
+pe care l-ai cerut.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Un agent fără adaptor rulează pe bucla încorporată]
+Fiecare spațiu de lucru creează cinci agenți — un CEO plus `qa`, `architect`,
+`engineer` și `librarian` — fără adaptor și fără model. Trimiterea revine la
+**Control Center (încorporat)**, nu la setarea **Runnere implicite** de pe
+această pagină, care este o preferință de client ce nu este citită niciodată de
+calea de trimitere. Jurnalul rulării înregistrează `cc-harness` pentru acele
+rulări, astfel încât transcriptul numește ce a rulat efectiv.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Fără model, bucla încorporată cere de la Anthropic modelul său implicit. Un
+agent lăsat complet neconfigurat rulează așadar dacă ai conectat un cont
+Anthropic și, în caz contrar, eșuează cu `No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Finalizarea pasului de adaptor din onboarding **modifică retroactiv fiecare**
+agent căruia îi lipsește încă un adaptor sau un model — CEO și specialiști, în
+fiecare spațiu de lucru care există în acel moment — cu perechea pe care ai
+ales-o. Spațiile de lucru create mai târziu tot pornesc cu toți cinci
+neconfigurați. Setează explicit adaptorul și modelul pe fiecare agent pe care
+intenționezi să îl folosești.
 :::
 
-## Install a runner CLI
+## Instalează un CLI de runner
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Adaptorul încorporat nu are nevoie de instalare. Pentru Claude Code, instalează
+CLI-ul **pe mașina gazdă a serverului** cu managerul de pachete al acelui
+instrument, de exemplu:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Apoi apasă **Reîmprospătează** în partea de sus a paginii. Fiecare rând detectat
+arată versiunea și calea rezolvate, plus etichete pentru dacă suportă modul JSON
+și selectarea modelului.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Un CLI extern își păstrează propriile credențiale, în propria configurare, pe
+mașina gazdă a serverului. Control Center nu le gestionează.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Argumentele adaptorului și variabilele de mediu rămân pe acest dispozitiv]
+Fiecare rând de adaptor oferă un câmp **Argumente** și un dialog **Variabile de
+mediu**. Acele valori sunt stocate pe dispozitivul tău. Serverul citește argv-ul
+de lansare și variabilele de mediu din propriul depozit de setări. Pune cheile
+providerilor pe server (OAuth sau câmpul de cheie din pagina Provideri de
+modele), nu în acele două câmpuri.
 :::
 
-## Restrict which providers a workspace may use
+## Restrânge ce provideri poate folosi un spațiu de lucru
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Guvernanța providerilor este per spațiu de lucru și se evaluează după regula
+ultimul-potrivit-câștigă.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. În **Provideri și modele**, dezactivează comutatorul **Permite** de pe rândul
+   unui provider
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Asta scrie o instrucțiune `deny` pentru acel provider în spațiul de lucru activ,
+iar modelele lui ies din catalog pentru acel spațiu de lucru. Revenirea
+comutatorului în poziția pornit elimină instrucțiunea.
 
-## Troubleshooting
+## Depanare
 
-### A runner shows as not found
+### Un runner apare ca negăsit
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Verifică faptul că CLI-ul este în `PATH`-ul **mașinii gazdă a serverului**, nu
+  doar în al tău
+- O aplicație desktop lansată din GUI își pornește serverul cu un `PATH`
+  minimal; un CLI instalat într-o cale disponibilă doar în shell poate fi
+  invizibil pentru ea
+- Apasă **Reîmprospătează** după instalare
 
-### The model dropdown is empty
+### Lista derulantă de modele este goală
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Adaptorul este cel încorporat și niciun provider nu este conectat — conectează
+  unul în **Provideri și modele**
+- Sau providerul este conectat, dar este blocat de comutatorul de guvernanță al
+  acestui spațiu de lucru
 
-### A model runs but the price shows as unknown
+### Un model rulează, dar prețul apare ca necunoscut
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Lista live de modele conține id-ul; prețul și contextul vin de la models.dev. Un
+model nou-nouț sau unul de la un provider personalizat nu are încă o intrare în
+catalog.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Manage API keys](/ro-RO/manual/ghiduri-practice/chei-api/)
-- [Diagnose an agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/)
-- [Manage costs](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Gestionează cheile API](/ro-RO/manual/ghiduri-practice/chei-api/)
+- [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/)
+- [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/)
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)

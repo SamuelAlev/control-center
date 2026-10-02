@@ -1,310 +1,314 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: Công cụ MCP
+description: Danh mục đầy đủ các công cụ MCP mà cc_server đăng ký, theo từng nhóm.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Các máy chủ MCP bên ngoài có thể được bắc cầu vào cùng sổ đăng ký như một lớp động.
 
-## Registry size
+## Quy mô sổ đăng ký
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Chỉ số | Số lượng |
+| --- | --- |
+| Công cụ do `cc_server` đăng ký | 110 |
+| Đến từ `packages/cc_mcp` | 108 |
+| Đến từ `packages/cc_mcp_client` (khám phá công cụ) | 2 |
+| Được đăng ký trong sổ đăng ký cơ sở (`server_mcp_registry.dart`) | 63 |
+| Được đăng ký sau khi khởi động, khi các dịch vụ của chúng sẵn sàng (`cc_server_runtime.dart`) | 47 |
+| Trong số 63 công cụ của sổ đăng ký cơ sở, phụ thuộc vào một kho mã đồ thị mã | 5 |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Năm công cụ đồ thị mã chỉ được đăng ký khi máy chủ truyền một kho mã đồ thị mã cho `buildServerMcpRegistry`. `cc_server` luôn truyền một kho như vậy, nên cả 110 công cụ đều hoạt động trong bản nhị phân phát hành.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Toàn bộ sổ đăng ký được quảng bá trong `tools/list` mà không có cổng gác khám phá nào. Các thao tác chỉnh sửa phiếu là công cụ có kiểu.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Máy khách bên ngoài luôn thấy toàn bộ danh mục]
+`tools/list` không bao giờ bị cắt gọn. Các máy khách MCP đối chiếu tên công cụ với bản sao đã lưu trong bộ nhớ đệm của chính chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ bị giấu ở đó là không thể tiếp cận chứ không chỉ đơn thuần là im lặng.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
+**Harness tích hợp** thì khác: nó chỉ nạp một tập định nghĩa thường trú cho mỗi yêu cầu và kéo phần còn lại vào ở lần dùng đầu tiên, đó là hành vi phía harness và không thay đổi sổ đăng ký này. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Mọi lớp công cụ đều được đăng ký]
+Một tệp mã nguồn nằm dưới `packages/cc_mcp/lib/src/tools/` là một công cụ mà agent có
+thể gọi. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+làm hỏng bản dựng nếu không có gì khởi tạo một lớp công cụ mới.
 :::
 
-## Common parameters
+## Các tham số chung
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Bắt buộc** trên mọi công cụ chạm tới dữ liệu thuộc phạm vi không gian làm việc. Một `workspace_id` thiếu hoặc không hợp lệ sẽ trả về lỗi tường minh, và một giá trị không khớp với không gian làm việc của thực thể đích sẽ bị từ chối thay vì bị bỏ qua trong im lặng. Hãy bỏ qua nó ở những công cụ thực sự toàn cục: `list_workspaces` và sáu công cụ bảng tin (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), vốn dùng danh sách nguồn cấp theo từng người dùng của chủ máy chủ. Các công cụ khám phá (`search_tool_bm25`, `list_my_tools`) nhận nó một cách tùy chọn để có thể phân loại khả năng gọi được theo chế độ hội thoại. Khi máy chủ điều phối một agent, không gian làm việc được ép buộc ở phía máy chủ, nên agent không thể chạm tới một không gian làm việc khác bằng cách truyền vào một id lạ.
 
-## Tool discovery
+## Khám phá công cụ
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Cả hai đều đến từ `cc_mcp_client` chứ không phải `cc_mcp`, và cả hai đều hỏi bộ gác chế độ nên chúng báo cáo những gì có thể gọi được trong chế độ hội thoại _hiện tại_.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Công cụ | Mô tả |
+| --- | --- |
+| `search_tool_bm25` | Tìm kiếm danh mục công cụ theo từ khóa; trả về các công cụ khớp, lược đồ đối số của chúng và liệu mỗi công cụ có thể gọi được ngay bây giờ hay không |
+| `list_my_tools` | Liệt kê những công cụ có thể gọi được ngay bây giờ trong cuộc hội thoại này, đã lọc theo chế độ của nó |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Công cụ khám phá thứ ba, **`search_tools`**, chỉ tồn tại bên trong harness tích hợp và không thuộc sổ đăng ký MCP này. Nó xếp hạng chính bề mặt công cụ của lượt chạy và, khác với `search_tool_bm25`, **nạp** lược đồ của những gì nó tìm thấy để agent có thể gọi một kết quả khớp ngay ở lượt kế tiếp. Agent chạy trên harness nên ưu tiên nó; máy khách MCP thì có `search_tool_bm25`.
 
-## Agent tools
+## Công cụ agent
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_agents` | Liệt kê các agent đã đăng ký trong một không gian làm việc |
 
-## Agent peer messaging and delegation
+## Nhắn tin và ủy thác giữa các agent
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Các agent nói chuyện với nhau qua space (bền vững, hiển thị trên danh sách thành viên). `ask_agent` là dạng yêu cầu/trả lời với thời gian chờ bắt buộc; `delegate_task` được gác ở phía máy chủ bằng giới hạn độ sâu, phát hiện chu trình, phong bì ngân sách và mức trần tự chủ.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| Công cụ | Mô tả |
+| --- | --- |
+| `send_to_agent` | Gửi một tin nhắn một chiều tới agent khác, định địa chỉ bằng `to_agent_id` hoặc `to_agent_name` chính xác |
+| `ask_agent` | Hỏi một agent khác một câu và chờ câu trả lời, hoặc hết thời gian chờ |
+| `delegate_task` | Ủy thác một nhiệm vụ cho agent khác dưới dạng một phiếu con được theo dõi |
+| `consult_agent` | Thêm chuyên gia khớp nhất theo kỹ năng vào space và điều phối nó bằng một bản giao việc tập trung |
+| `todo_read` | Đọc danh sách việc cần làm đã lưu của cuộc hội thoại này |
 
-## Skill tools
+## Công cụ kỹ năng
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Mọi lần cài đặt và cập nhật đều đi qua một cổng quét đóng-khi-lỗi trước khi bất kỳ nội dung kỹ năng nào chạm tới đĩa hay prompt của agent.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_skills` | Liệt kê các slug kỹ năng có sẵn trong một không gian làm việc |
+| `create_skill` | Tạo một kỹ năng mới từ nội dung markdown |
+| `install_skill` | Cài đặt toàn bộ thư mục của một kỹ năng từ một kho mã GitHub tại một ref đã ghim |
+| `update_skill` | Cập nhật một kỹ năng GitHub đã cài đặt lên một ref mới, quét lại và ghim lại |
+| `list_skill_updates` | Liệt kê các kỹ năng có phiên bản mới hơn |
+| `verify_skills` | Đối chiếu các kỹ năng đã khóa với hash nội dung trên đĩa của chúng |
+| `pin_skill` | Băm một kỹ năng đang có trên đĩa vào `skills-lock.json` |
 
-## Plan, playbook and artifact tools
+## Công cụ kế hoạch, playbook và artifact
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| Công cụ | Mô tả |
+| --- | --- |
+| `submit_plan` | Hợp đồng đầu ra của chế độ Kế hoạch: phát ra một `PlanDocument` có kiểu, mở được trong Plan Studio |
+| `create_playbook` | Lưu một kế hoạch thành mẫu có tên và có phiên bản với các chỗ giữ chỗ `{{param}}` có kiểu |
+| `run_playbook` | Khởi tạo một playbook với các giá trị tham số, tạo ra một kế hoạch để người vận hành phê duyệt |
+| `publish_artifact` | Xuất bản một danh sách có thứ tự gồm các khối có kiểu (markdown, table, chart, mermaid, code, JSON) được hiển thị gốc trong máy khách |
+| `revise_artifact` | Thay thế nội dung của một artifact đã xuất bản |
+| `list_artifacts` | Liệt kê các artifact của không gian làm việc |
+| `get_artifact` | Đọc một artifact |
+| `complete_goal` | Tuyên bố mục tiêu bền vững đang hoạt động của cuộc hội thoại (khởi tạo bằng `/goal` hoặc `/loop`) đã đạt được |
 
-## Workspace tools
+## Công cụ không gian làm việc
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_workspaces` | Liệt kê mọi không gian làm việc cùng id và tên của chúng (toàn cục; không cần `workspace_id`) |
 
-## Repo tools
+## Công cụ kho mã
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_repos` | Liệt kê các kho mã đã đăng ký trong một không gian làm việc. Bên gọi là agent nhận được đường dẫn worktree copy-on-write tách biệt của cuộc hội thoại mình, không bao giờ là các bản checkout gốc |
 
-## Messaging tools
+## Công cụ nhắn tin
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_spaces` | Liệt kê các space nhắn tin trong một không gian làm việc |
+| `get_messages` | Lấy tin nhắn từ một space |
+| `send_message` | Gửi một tin nhắn tới một space với tư cách một agent gửi có tên |
+| `get_space_notes` | Đọc tài liệu bàn giao dùng chung của một space |
+| `update_space_notes` | Thay thế tài liệu bàn giao dùng chung của một space |
+| `todo_write` | Thay thế danh sách việc cần làm của cuộc hội thoại này trong một lần gọi (truyền toàn bộ danh sách) |
 
-## Review tools
+## Công cụ đánh giá
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Công cụ | Mô tả |
+| --- | --- |
+| `start_ai_review` | Bắt đầu đánh giá bằng AI cho một PR: tính toán các vùng đánh giá, tỏa các người đánh giá chuyên môn vào space PR, soạn bản dẫn dắt và chốt lại |
+| `add_review_node` | Thêm một phát hiện đánh giá có cấu trúc (tệp, dòng, mức ưu tiên P0–P3) vào một space đánh giá |
+| `confirm_review_node` | Xác nhận phát hiện của một agent ngang hàng; tác giả không thể tự xác nhận |
+| `resolve_review_node` | Đánh dấu một phát hiện đã được sửa sau khi thực sự thực hiện thay đổi; đăng một dấu vết vào space đánh giá |
+| `dismiss_review_node` | Bỏ qua một phát hiện không áp dụng; ghi lại một dữ kiện ức chế để những người đánh giá thôi đánh dấu lại nó |
+| `request_peer_review` | Yêu cầu một agent đánh giá khác xem lại một phát hiện |
+| `dispatch_reviewers` | Điều phối đồng thời các agent đánh giá khớp vào một space đánh giá |
+| `submit_reviewer_verdict` | Đăng phán quyết ship/hold/block cho từng người đánh giá kèm độ tin cậy và một phần giải thích |
+| `finalize_review` | Tính đồng thuận theo từng node và phán quyết theo từng PR rồi đóng cuộc đánh giá |
+| `set_cohort_summary` | Đặt bản tóm tắt bằng ngôn ngữ đơn giản cho một cohort đánh giá |
+| `add_review_diagram` | Gắn một sơ đồ có cấu trúc, đã được đồ thị mã kiểm chứng (`sequence`, `entityRelation`, `stateMachine`) vào một cohort |
+| `publish_review_to_github` | Xuất bản bản đánh giá đã chốt lên GitHub dưới dạng bình luận nội tuyến cùng một phần thân tóm tắt |
 
-## Memory tools
+## Công cụ bộ nhớ
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Công cụ | Mô tả |
+| --- | --- |
+| `search_memory` | Tìm kiếm dữ kiện và chính sách (từ khóa, ngữ nghĩa hoặc hybrid — hybrid là mặc định) |
+| `propose_fact` | Lưu một dữ kiện markdown ngắn vào một miền |
+| `supersede_fact` | Đánh dấu một dữ kiện đã bị một dữ kiện khác thay thế |
+| `propose_policy` | Lưu một quy tắc quy phạm vào một miền (cần quyền ghi trên miền đó) |
+| `supersede_policy` | Cho một chính sách nghỉ hưu — đánh dấu nó không còn hiệu lực nhưng vẫn giữ lại để kiểm toán |
+| `list_policies` | Liệt kê các chính sách đang hiệu lực, tùy chọn lọc theo miền |
+| `list_memory_domains` | Liệt kê các miền bộ nhớ của không gian làm việc kèm số lượng dữ kiện và chính sách |
+| `record_observation` | Ghi một quan sát thô vào bộ nhớ làm việc của agent |
+| `get_my_notes` | Đọc sổ nháp bộ nhớ làm việc của agent đang gọi |
+| `update_my_notes` | Cập nhật sổ nháp bộ nhớ làm việc của agent đang gọi |
+| `remember` | Thêm một ghi chú vào bộ nhớ làm việc nóng của agent cho phiên này (giới hạn theo TTL và số lượng) |
+| `consolidate_memory` | Chạy một lượt cố kết (“giấc ngủ”): loại bỏ các mục nóng đã hết hạn, chuyển những mục bền vững thành dữ kiện dài hạn |
+| `harmonize_memory` | Chạy việc hài hòa niềm tin giữa các agent (SHMR) và đánh dấu các mâu thuẫn |
+| `list_memory_conflicts` | Liệt kê các mâu thuẫn đã phát hiện và cách mỗi mâu thuẫn được giải quyết |
 
-## Governance tools
+## Công cụ quản trị
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Công cụ | Mô tả |
+| --- | --- |
+| `create_goal` | Tạo một mục tiêu tổ chức (cấp công ty, đội nhóm, agent hoặc tác vụ) |
+| `list_goals` | Liệt kê các mục tiêu kèm cấp, trạng thái và tiến độ tổng hợp |
+| `update_goal_progress` | Đặt tiến độ của một mục tiêu |
+| `create_approval` | Mở một phê duyệt trên bảng phê duyệt cho một hành động được quản trị (thoát chế độ kế hoạch, merge, phát hành, tuyển dụng, tùy chỉnh) |
+| `list_approvals` | Liệt kê các phê duyệt, tùy chọn lọc theo trạng thái |
+| `decide_approval` | Ghi lại một quyết định: phê duyệt, từ chối, yêu cầu sửa đổi hoặc gửi lại |
+| `comment_approval` | Bình luận trên một phê duyệt trên bảng phê duyệt |
+| `exit_plan_mode` | Mở (và, sau khi được phê duyệt, tiêu thụ) một phê duyệt `plan_exit`, đưa cuộc hội thoại ra khỏi chế độ kế hoạch |
+| `agent_heartbeat` | Báo cáo tình trạng sống (đang sống, nhàn rỗi, kẹt); việc im lặng sẽ chuyển sức khỏe runtime sang mới mất liên lạc, rồi ngoại tuyến |
+| `list_runtime_health` | Liệt kê sức khỏe runtime của từng agent |
+| `list_agent_presence` | Liệt kê hiện diện của từng agent (sức khỏe, vòng đời, số lượng đang chạy và đang xếp hàng, công suất) |
+| `get_org_chart` | Đọc cây báo cáo, CEO ở gốc, lồng nhau theo `reports_to` |
+| `create_work_product` | Tạo một sản phẩm công việc bền vững gắn với một phiếu |
+| `save_work_product_revision` | Lưu một bản sửa đổi mới; truyền `base_revision_id` để bị từ chối khi có chỉnh sửa đồng thời |
+| `list_work_products` | Liệt kê các sản phẩm công việc, tùy chọn lọc theo một phiếu |
+| `get_work_product` | Đọc một sản phẩm công việc cùng lịch sử sửa đổi của nó |
+| `create_runtime_profile` | Định nghĩa một hồ sơ runtime dùng lại được (họ giao thức, lệnh CLI, đối số khởi chạy cố định) |
+| `list_runtime_profiles` | Liệt kê các hồ sơ runtime của không gian làm việc |
 
-## Code graph tools
+## Công cụ đồ thị mã
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Chỉ được đăng ký khi máy chủ cung cấp một kho mã đồ thị mã. Chỉ mục bao phủ bộ ngữ pháp được phát hành (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); ký hiệu ở bất kỳ ngôn ngữ nào khác đều không có mặt.
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| Công cụ | Mô tả |
+| --- | --- |
+| `search_code` | Tìm kiếm ký hiệu đã lập chỉ mục theo tên, chữ ký và chú thích tài liệu (hybrid BM25 + ngữ nghĩa) |
+| `code_symbol` | Tra cứu ký hiệu theo tên chính xác; trả về `file:line` và chữ ký |
+| `code_callers` | Liệt kê các ký hiệu gọi hoặc phụ thuộc vào một ký hiệu (cạnh đi vào) |
+| `code_callees` | Liệt kê các ký hiệu mà một ký hiệu gọi hoặc phụ thuộc vào (cạnh đi ra) |
+| `code_impact` | Tính bán kính ảnh hưởng bắc cầu của một ký hiệu, tới một độ sâu nhất định |
 
-## Ticketing tools
+## Công cụ phiếu
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| Công cụ | Mô tả |
+| --- | --- |
+| `create_ticket` | Tạo một phiếu trên nhà cung cấp đã cấu hình |
+| `get_ticket` | Lấy một phiếu theo id |
+| `list_tickets` | Liệt kê các phiếu, tùy chọn lọc theo trạng thái hoặc người được gán |
+| `update_ticket` | Cập nhật trạng thái, tiêu đề, mô tả, mức ưu tiên hoặc nhãn (trạng thái chấp nhận các bí danh như `in_progress` / `completed`) |
+| `assign_ticket` | Gán một phiếu cho một agent và/hoặc một đội |
+| `reassign_ticket` | Gán lại một phiếu cho một agent khác |
+| `add_ticket_collaborator` | Mời một agent cộng tác trên một phiếu (được thêm vào space của phiếu đó) |
+| `comment_on_ticket` | Bình luận trên một phiếu |
+| `close_ticket` | Đóng một phiếu (đánh dấu hoàn tất) kèm đầu ra tùy chọn |
+| `fail_ticket` | Đánh dấu một phiếu thất bại kèm một thông điệp lỗi |
+| `delegate_ticket` | Ủy thác một phiếu cho một agent, tạo ra một phiếu được theo dõi |
+| `ticket_pr_link` | Liên kết hoặc hủy liên kết một phiếu với một pull request theo id node của PR (`action`: `link` \| `unlink`) |
+| `ticket_relation` | Thêm hoặc gỡ một quan hệ giữa hai phiếu — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations` | Liệt kê phiếu cha, các phiếu con và các liên kết phụ thuộc của một phiếu |
 
-## Team and pipeline tools
+## Công cụ đội nhóm và quy trình
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Công cụ | Mô tả |
+| --- | --- |
+| `record_team_activity` | Ghi một mục hoạt động của trưởng nhóm gắn với một phiếu |
+| `preview_trigger` | Chạy thử xem một sự kiện giả định sẽ khởi động những lần chạy quy trình nào, không cam kết gì cả |
+| `submit_output` | Gửi payload đầu ra có cấu trúc cho lần chạy quy trình hiện tại của bên gọi; được xác thực dựa trên lược đồ đầu ra đã khai báo của lần chạy |
 
-## Orchestration tools
+## Công cụ điều phối
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Công cụ | Mô tả |
+| --- | --- |
+| `propose_orchestration` | Phát ra một kế hoạch điều phối đa agent có cấu trúc để xin một lần phê duyệt trước; xác thực và trả về mọi vi phạm |
 
-## Newsfeed tools
+## Công cụ bảng tin
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| Công cụ | Mô tả |
+| --- | --- |
+| `list_feeds` | Liệt kê các nguồn cấp RSS/Atom đã đăng ký |
+| `list_articles` | Liệt kê các bài viết, tùy chọn lọc theo nguồn cấp, chưa đọc hoặc đã lưu |
+| `get_article` | Lấy một bài viết |
+| `set_article_read` | Đánh dấu một bài viết đã đọc hoặc chưa đọc |
+| `set_article_saved` | Lưu hoặc bỏ lưu một bài viết |
+| `refresh_feeds` | Tải lại mọi nguồn cấp đang bật ngay bây giờ |
 
-## Enclosure (rig) tools
+## Công cụ enclosure (rig)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/vi-VN/so-tay/khai-niem/rao-chan/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/vi-VN/so-tay/tham-chieu/rigs/#action-verbs).
+Điều khiển những cỗ máy dùng-một-lần — một trình duyệt hay desktop Linux được
+bao kín, một trình giả lập Android, hoặc một iOS Simulator — ngay từ bên trong
+một lượt chạy. Được đăng ký sau khi khởi động, không kèm điều kiện: liệu một cỗ
+máy có thực sự khởi động được hay không là một câu hỏi thăm dò mà các công cụ
+trả lời theo từng lần gọi. Các lời gọi lặp lại trong cùng một cuộc hội thoại dùng
+lại một cỗ máy; ảnh chụp màn hình trả về dưới dạng nội dung hình ảnh với hạn mức
+một ảnh cho mỗi kết quả, và nội dung trang/giao diện được trích xuất được rào lại
+như dữ liệu không đáng tin cậy. Bốn công cụ dùng và `rig_close` cùng khai báo
+[lớp hành động](/vi-VN/so-tay/khai-niem/rao-chan/) `enclosureControl` (các công cụ
+dùng còn khai báo `networkEgress` và `processSpawn`; `mobile_use` và `ios_use`
+còn khai báo `packageInstall`), nên các chế độ chỉ đọc từ chối chúng. `rig_list`
+không khai báo lớp nào — nó chỉ đọc trạng thái không gian làm việc. Toàn bộ từ
+vựng động từ cho từng bề mặt nằm trong
+[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#action-verbs).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Công cụ | Mô tả |
+| --- | --- |
+| `computer_use` | Điều khiển một desktop Linux trong một VM được bao kín: di chuyển, nhấp, kéo, cuộn, gõ, đổi kích thước, clipboard, chụp màn hình |
+| `browser_use` | Điều khiển Chromium, Firefox hoặc WebKit không giao diện (`engine`): điều hướng, nhấp, điền, trích xuất (a11y/DOM/console), clipboard, chụp màn hình |
+| `mobile_use` | Điều khiển Android qua ADB: kiểm tra/đầu vào, ảnh chụp màn hình, cài/chạy/dừng/đặt lại/gỡ ứng dụng, deep link và các lệnh thiết bị dạng argv |
+| `ios_use` | Điều khiển iOS Simulator qua WebDriverAgent/CoreSimulator: kiểm tra/đầu vào, ảnh chụp màn hình, cài/chạy/dừng/gỡ ứng dụng, deep link và các tiến trình simulator dạng argv |
+| `rig_list` | Liệt kê các rig của một không gian làm việc kèm bề mặt, trạng thái, kích thước màn hình và bộ điều khiển |
+| `rig_close` | Hủy một rig và vứt bỏ trạng thái cỗ máy thuộc sở hữu của nó |
 
-## Not exposed over MCP
+## Không được phơi ra qua MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/vi-VN/so-tay/khai-niem/cuoc-hop/), not as a tool an agent can call.
+Lịch và cuộc họp không có công cụ MCP nào. Agent không thể đọc lịch, cuộc họp, bản ghi chép, các mục hành động hay quyết định của bạn. Bản tóm tắt tạo ra các mục hành động và quyết định chạy dưới dạng [quy trình `meeting_summary` tích hợp](/vi-VN/so-tay/khai-niem/cuoc-hop/), chứ không phải một công cụ mà agent có thể gọi.
 
-## Tool gating by mode
+## Gác công cụ theo chế độ
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Việc gác được thực thi hai lần từ một bảng duy nhất (`ModeToolPolicy`): một lần trong bộ điều phối MCP cho adapter Claude Code và một lần trong sổ đăng ký của harness tích hợp. Một lời gọi bị chặn sẽ trả về lý do.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| Chế độ | Bề mặt công cụ |
+| --- | --- |
+| `chat` | Mọi công cụ đã đăng ký; không có danh sách cho phép |
+| `plan` | Một danh sách cho phép được tuyển chọn. Không có ghi lên worktree và không có các động từ phiếu `create` / `assign` / `delegate`, nhưng bộ nhớ, artifact, việc cần làm, `submit_plan`, `exit_plan_mode` cùng các động từ hoàn tất phiếu trên phiếu được điều phối đều được phép |
+| `review` | Một danh sách cho phép được tuyển chọn: tham gia đánh giá, liên lạc, các công cụ lấy ngữ cảnh chỉ đọc và toàn bộ tập động từ phiếu, kể cả `create_ticket` và `assign_ticket` |
+| `orchestrate` | Một danh sách cho phép được tuyển chọn: các công cụ nghiên cứu và đọc cùng `propose_orchestration`, `create_playbook` và `run_playbook`. Việc tuyển người, phân rã và hoàn tất phiếu diễn ra một cách tất định sau khi phê duyệt, không bao giờ giữa lượt chạy |
 
-Permitted in every mode regardless of allow-list:
+Được phép trong mọi chế độ bất kể danh sách cho phép:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Nhóm | Công cụ |
+| --- | --- |
+| Bộ nhớ và artifact | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Đồ thị mã | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact` |
+| Cơ chế lượt chạy | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read` |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Nằm trong danh sách cho phép không khiến một công cụ gọi được, và điều ngược lại cũng đúng: năng lực hỏi người vận hành là một công cụ **harness** (`ask_user`), nên nó hoàn toàn không bao giờ xuất hiện trong danh mục MCP này.
 
-## Approval-gated tools
+## Công cụ được gác bằng phê duyệt
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Một công cụ có thể khai báo `requiresApproval`. Khi đó bộ điều phối dựng một `ApprovalPayload` và phơi nó ra qua `ConfirmationPort` trước khi công cụ chạy; `cc_server` đấu nối cổng đó, nên cổng gác này đang hoạt động.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Các công cụ đã đăng ký khai báo thuộc tính này: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/).
+Độc lập với đó, rào chắn hành động thống nhất gác mọi công cụ khai báo một tập `ActionClass` không rỗng. Một quyết định `prompt` không có người phê duyệt kết nối sẽ bị từ chối. Xem [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/).
 
-## Capabilities with no tool behind them
+## Những năng lực không có công cụ đằng sau
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Không phải mọi năng lực trong sản phẩm đều có thể tiếp cận bởi agent. Những năng lực dưới đây hoàn toàn không có công cụ,
+nên một cái tên bạn có thể đã thấy được nhắc tới ở đâu đó sẽ trả về “unknown tool”:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Năng lực | Nơi nó thực sự nằm |
+| --- | --- |
+| Tuyển, sa thải hoặc sửa một agent | Giao diện agent. Không có công cụ `hire_agent` / `fire_agent` / `update_agent` |
+| Tạo một không gian làm việc | `workspace.upsert` qua RPC, thao tác này gieo tạo và đóng dấu quyền sở hữu |
+| Dự án (tạo / liệt kê / cập nhật / xếp vào) | Giao diện phiếu. Dự án là một bề mặt dành cho người vận hành — xem [Dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/) |
+| Hỏi người vận hành một câu hỏi chặn | Công cụ `ask_user` của **harness**, không phải MCP. Nó hiển thị một biểu mẫu ngay trong cuộc hội thoại và chặn chờ câu trả lời |
+| Chẩn đoán theo từng agent | Không có gì. Không có `doctor` — xem [Chẩn đoán agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) |
+| Lịch và cuộc họp | RPC chỉ dành cho máy khách là con người (xem ở trên) |
 
-## See also
+## Xem thêm
 
-- [Use Control Center as an MCP server](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/)
+- [Dùng Control Center làm máy chủ MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/)

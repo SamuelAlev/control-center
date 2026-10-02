@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Code zoeken met de codegraph
+description: Indexeer een repo en gebruik de codegraph-tools om symbolen te vinden en te zien wat een wijziging zou breken.
 slug: nl-NL/handleiding/gidsen/code-zoeken
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Deze gids laat zien hoe je een repo in de codegraph krijgt en hem daarna gebruikt om de vraag te beantwoorden die je vóór een refactor echt hebt: wat hangt hiervan af?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+De codegraph is een database van symbolen en randen, opgebouwd door je geregistreerde checkouts met tree-sitter te parsen. De tools zijn **op agenten gericht** — je bereikt ze door het een agent te vragen.
 
-## Before you start
+## Voordat je begint
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+De codegraph indexeert Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB en Ada. Bestanden in een andere taal worden niet geparseerd en komen dus niet voor in `search_code`, `code_symbol`, `code_callers`, `code_callees` of `code_impact`.
 
-Two more things shape what gets indexed:
+Nog twee dingen bepalen wat er wordt geïndexeerd:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- In een git-worktree laat de enumeratie zich leiden door `git ls-files --cached --others --exclude-standard`, dus elk `.gitignore`, genest ignore-bestand, `.git/info/exclude` en het globale excludes-bestand wordt gerespecteerd. Dat houdt `node_modules` en builduitvoer uit de codegraph.
+- Gegenereerde Dart wordt hoe dan ook overgeslagen. Gegenereerde bestanden worden meestal gecommit, dus git alleen zou ze niet uitsluiten en ze veranderen bij elke codegen-run.
 
-## Get a repo indexed
+## Een repo laten indexeren
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+Het registreren van een checkout activeert `RepoAdded`, wat automatisch de pipeline `index_code` start. Zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
 
-To re-index by hand:
+Om handmatig opnieuw te indexeren:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Open **Instellingen → Werkruimte → Repository's**.
+2. Klik op de knop **Code indexeren** in de rij van de repo.
+3. Terwijl hij draait toont de knop het aantal gedane bestanden van het totaal, met een annuleerknop. Als hij klaar is, verandert hij in een vinkje met het aantal symbolen.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+De codegraph is opgedeeld per werkruimte, repo en checkout: de gekoppelde checkout is één partitie, en elke worktree van een ruimte krijgt zijn eigen partitie (met de id van zijn geïsoleerde repo als sleutel).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Twee begrenzingen zijn het kennen waard, want ze verklaren een wachttijd die op een hang lijkt:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- De bestandswatcher laat op de host maar **één** indexering tegelijk toe — een tweede checkout wacht. De pipeline `index_code` is apart beperkt tot één run per werkruimte, dus twee repo's in dezelfde werkruimte komen in de wachtrij; verschillende werkruimtes kunnen parallel indexeren. De indexeerder zelf serialiseert twee runs van **dezelfde** checkout, zodat een pipelinestart en een watchersweep hem niet dubbel kunnen parsen.
+- Worktrees van **slapende ruimtes** (geen bericht in de afgelopen week) worden noch gevolgd noch geïndexeerd. Gekoppelde checkouts blijven gevolgd. Een beslissing om over te slaan wordt na vijf minuten opnieuw bekeken, dus een ruimte die weer actief wordt, wordt opgepakt.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Een ontbrekende grammatica stopt de server, niet het zoeken]
+Tree-sitter en zijn grammatica's zijn vereiste natives. Als er één ontbreekt, weigert `cc_server` op te starten en noemt hij de ontbrekende dylib — het symptoom is een server die niet start, nooit een verslechterde zoekopdracht. Zet ze klaar met `scripts/natives/build_natives.sh` en bouw de serverbinary opnieuw.
 :::
 
-## Find a symbol
+## Een symbool vinden
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Vraag een agent om te zoeken. De tool is `search_code` en heeft zowel een werkruimte als een repo nodig:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Repo-id's komen uit `list_repos`. Het optionele argument `mode` is `keyword`, `semantic` of `hybrid` en staat standaard op hybrid — BM25 over namen, signaturen en doc-commentaar, samengevoegd met vectorsimilariteit.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Elk resultaat bevat de id, naam, gekwalificeerde naam, soort, bestandspad, begin- en eindregel van het symbool, en zijn signatuur als die er is. De **id** is het handvat dat je aan elke andere tool op deze pagina geeft.
 
-When you know the exact name, look it up directly instead:
+Als je de exacte naam kent, kun je hem in plaats daarvan direct opzoeken:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Aanroepen traceren
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Beide nemen een `symbol_id` uit een zoekresultaat, plus een optionele `limit` (standaard 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` geeft de symbolen terug met een inkomende rand naar dit symbool; `code_callees` geeft degene terug waarvan het afhangt.
 
-## Check what a change would break
+## Controleren wat een wijziging zou breken
 
-This is the tool the whole page exists for:
+Dit is de tool waarvoor deze hele pagina bestaat:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Hij berekent de **reverse**-dependencyradius: alles wat direct of transitief van het symbool afhangt via `calls`-, `extends`- en `implements`-randen (imports, mixes-in en generieke verwijzingen worden in de codegraph opgeslagen, maar hier niet doorlopen). `depth` is het maximale aantal hops, tussen 1 en 6, met 2 als standaard.
 
-The result is three fields:
+Het resultaat bestaat uit drie velden:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — het symbool waar je naar vroeg
+- `impacted` — de bereikbare verzameling, inclusief de root op depth 0, elk met hun `depth` vanaf de root
+- `edgeCount` — hoeveel randen de traversal overstak, als aantal en niet als de randen zelf
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Draai hem voordat je iets hernoemt of een signatuur wijzigt, en geef de agent de `impacted`-lijst als zijn scope.
 
-## Results are checked against the caller's own working copy
+## Resultaten worden gecontroleerd tegen de werkkopie van de aanroeper zelf
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Voor een agent als aanroeper wordt de ruimte-id automatisch geïnjecteerd en worden resultaten geverifieerd tegen de werkkopie van **die ruimte**. Een symbool waarvan het bestand niet meer bestaat in de boom van de aanroeper, wordt weggelaten en het antwoord bevat een `staleOmitted`-telling plus een opmerking dat de index voor die symbolen verouderd is.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Daarom kunnen jij en een agent verschillende antwoorden krijgen op dezelfde query, en daarom kan een agent in de ene ruimte een ander antwoord krijgen dan een agent in een andere. Elk gesprek in een ruimte deelt die ene worktree. Verificatie faalt open: een verouderd antwoord heeft de voorkeur boven een leeg antwoord.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/nl-NL/handleiding/gidsen/review-compute/).
+Vraag een agent om `code_impact` (of `review_studio.blastRadius`) te draaien als je de blast radius van een wijziging wilt weten. Zie [Review-compute](/nl-NL/handleiding/gidsen/review-compute/).
 
-## Semantic search needs the embedding model
+## Semantisch zoeken heeft het embeddingmodel nodig
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Symbolen en feiten worden op het moment van schrijven geëmbed en alleen als het embeddingmodel op het apparaat is geïnstalleerd. Tot dan hebben `mode: "semantic"` en de semantische helft van hybrid niets om tegen te matchen en is zoeken in de praktijk alleen op trefwoorden gebaseerd.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Installeer het model via **Instellingen → Server → Diagnose en privacy → Semantisch zoeken** voordat je indexeert. Symbolen krijgen een vector zodra hun bestand wordt ingelezen.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Let ook op dat elke herbouw van de serverbinary de grammatica-dylibs opnieuw klaarzet en hun mtimes wijzigt, wat elk indexcontrolepunt ongeldig maakt en bij de volgende run één volledige herwandeling van elke checkout afdwingt. Hij herhasht wel, maar extraheert ongewijzigde bestanden niet opnieuw.
 
-## What is in the graph
+## Wat er in de codegraph zit
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Soorten symbolen:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Soorten randen:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/nl-NL/handleiding/referentie/mcp-tools/).
+De canonieke signaturen voor deze tools staan in [MCP-tools](/nl-NL/handleiding/referentie/mcp-tools/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Add repos to a workspace](/nl-NL/handleiding/gidsen/repos-toevoegen/)
-- [Review compute (cohorts and axes)](/nl-NL/handleiding/gidsen/review-compute/)
-- [Use the MCP server](/nl-NL/handleiding/gidsen/mcp-server/)
+- [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/)
+- [Review-compute (cohorten en assen)](/nl-NL/handleiding/gidsen/review-compute/)
+- [De MCP-server gebruiken](/nl-NL/handleiding/gidsen/mcp-server/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/)
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/)

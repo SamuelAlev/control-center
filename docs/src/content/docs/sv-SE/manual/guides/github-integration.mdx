@@ -1,166 +1,170 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Konfigurera GitHub-integration
+description: Logga in på GitHub så att PR-ytan, reporegistreringen och agentkörningarna fungerar.
 slug: sv-SE/handbok/how-to-guider/github-integration
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Den här guiden handlar om de GitHub-specifika delarna av uppsättningen. GitHub är
+en av tre kodvärdar som stöds — se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
+för att ansluta GitLab eller Bitbucket, och för hur en arbetsyta blandar dem.
 
-## Prerequisites
+## Förutsättningar
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Ett GitHub-konto med åtkomst till de repos du vill arbeta med
+- Antingen en GitHub-app registrerad för din server (se
+  [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) så att du kan **logga in**,
+  **eller** en personlig åtkomsttoken med `repo` och `read:org` att klistra in
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Inloggningsuppgifterna ligger på servern, knutna till dig]
+Inget lagras på maskinen du skriver på. Din inloggningsuppgift hålls av din
+`cc_server`, knuten till ditt användar-id, och varje enhet du loggar in från
+använder den — skrivbord, webb och telefon. En annan medlem på samma server kan
+inte läsa den, och att logga in dem är något de gör själva.
 :::
 
-## Sign in with GitHub
+## Logga in med GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Ett **enhetsflöde**: GitHub visar en kort kod, du godkänner den på github.com och
+servern tar emot inloggningsuppgiften — ingen callback-URL, ingen port, inget att
+exponera. Tillgängligt närhelst servern har ett klient-ID, vilket ett officiellt
+bygge redan levereras med.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Gå till **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** (eller första
+   steget i introduktionen)
+2. På raden **GitHub**, klicka på **Logga in med GitHub**
+3. En dialog visar en åttateckens kod och öppnar
+   [github.com/login/device](https://github.com/login/device) i din webbläsare.
+   Koden finns redan i urklipp
+4. Klistra in den, godkänn appen och kom tillbaka. Raden växlar till
+   ”Inloggad som _ditt-användarnamn_” av sig själv
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Dialogen kan stängas medan du gör klart i webbläsaren — servern fortsätter att
+polla tills koden går ut (cirka 15 minuter), så inloggningen landar ändå.
 
-## Or paste a token
+## Eller klistra in en token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Reservvägen när servern inte har någon app, när appen inte är installerad på ett
+konto du behöver, eller när du helt enkelt hellre använder en PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Gå till **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**
+2. På raden **GitHub**, klicka på **Lägg till token**
+3. Klistra in en token med `repo` och `read:org` (classic) och spara. En
+   **fine-grained**-token behöver **Contents** och **Pull requests** (read and write)
+   på repositoryt, plus **Checks** och **Actions** (read).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Token provas när den sparas, så raden kan namnge kontot den tillhör. Klicka på
+**Koppla från** för att ta bort den.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Kontrollpunkt: raden **GitHub** visar ”Inloggad som _ditt-användarnamn_”. Ett
+suffix namnger källan när inloggningsuppgiften som svarar inte är din — ”via
+den här serverns app” eller ”från miljön”.
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Ordningen är fast]
+En begäran som görs för din räkning använder **din** inloggningsuppgift och inget
+annat — miljön är serverns inloggningsuppgift, inte din, så den kliver aldrig in i
+ditt ställe. Arbete utan en människa bakom sig (webhooks, PR-pollning,
+ärendesynkronisering) använder serverns appidentitet, sedan serverägarens
+inloggningsuppgift och sist miljön.
 :::
 
-## What the integration gives you
+## Vad integrationen ger dig
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Funktion              | Hur                                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| PR-lista och detaljvy | GitHub REST-API:et, från servern, på appidentiteten eller din egen inloggningsuppgift                          |
+| Kontrollkörningar     | GitHub Checks API                                                                                              |
+| Publicera granskning  | Ett steg som en användare måste godkänna och som publicerar din granskning på PR:en                            |
+| Reporegistrering      | En utcheckning godtas om dess `origin`-remote pekar på github.com — eller på gitlab.com / bitbucket.org        |
+| Agenters GitHub-åtkomst | Mäklaren för inloggningsuppgifter injicerar token som `GH_TOKEN` / `GITHUB_TOKEN`, styrt av agentens förmågor |
+| Aviseringsping        | En pollning på serversidan av din GitHub-aviseringsinkorg väcker ”Omnämnd i pull request” och ”Granskning begärd” |
+| Användarprofiler      | Profilkort vid hovring och filtrering av PR:er per författare                                                  |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Vissa vägar använder GraphQL-API:et i stället för REST där det är billigare —
+grenaktivitet för väljaren när du skriver en PR och den aktuella
+granskningsstatus som avgör om en avisering om begärd granskning fortfarande
+väntar.
 
-## Watch for GitHub outages
+## Håll koll på GitHub-avbrott
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Titelraden visar en statustagg när en leverantör är nedsatt, och täcker GitHub,
+Claude, OpenAI och Kimi. **Den är dold så länge allt är friskt** — närvaro
+rapporterar problem, inte frånvaro.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Klicka på taggen för att öppna en utfällbar panel med varje leverantörs tillstånd
+och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
 
-## Know how agents act on GitHub
+## Så agerar agenter på GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- En agent får bara en GitHub-token om den har **Tillåt GitHub API-anrop** eller
+  **Tillåt git push**. Se
+  [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
+- Commits som en agent gör skapas **som agenten** — visningsnamnet plus
+  ` (agent)`, på en syntetisk adress som härleds från agentens id — aldrig som en
+  människa. Personen som bad om det krediteras med en `Co-Authored-By`-trailer
+- Med en GitHub-app konfigurerad utfärdar mäklaren för inloggningsuppgifter
+  finkorniga installationstoken, begränsade till repot och giltiga i ungefär en
+  timme, per start i stället för att lämna över en bred token. Installationen
+  löses från körningens repo-**ägare**, så en app som är installerad på flera
+  konton begränsas korrekt till det konto körningen rör. Utan en app får
+  agenterna token från miljön
+- En körning som begärs av en medlem som har loggat in agerar under **den
+  medlemmens** GitHub-identitet — deras inloggningsuppgift läggs in efter
+  mäklarens miljö, så en commit eller kommentar som en agent gör för dem kan
+  tillskrivas dem
 
-## Troubleshooting
+## Felsökning
 
-### The PR list is empty and says GitHub is not connected
+### PR-listan är tom och säger att GitHub inte är anslutet
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Du har ingen GitHub-inloggningsuppgift på den här servern. Logga in eller klistra
+in en token under **Kodvärd**. Repos på andra kodvärdar påverkas inte — bara
+GitHubs bidrar inte med något.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Raden erbjuder ”Lägg till token” men inte ”Logga in med GitHub”
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Servern har inget klient-ID — vilket är normaltillståndet för ett bygge från
+källkoden, eftersom inloggningsuppgifter bara bakas in i officiella byggen. Se
+[Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/): det tar ungefär två minuter
+och bara serverägaren behöver göra det, en gång.
 
-### The sign-in dialog says the provider returned no device code
+### Inloggningsdialogen säger att leverantören inte returnerade någon enhetskod
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub-appen finns, men kryssrutan **Device flow** är av. Slå på den i appens
+inställningar (General → Device flow) och försök igen.
 
-### The row says "via this server's app" when I expected my own account
+### Raden säger ”via den här serverns app” trots att jag väntade mig mitt eget konto
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Du har inte loggat in; det du ser är serverns appidentitet som svarar. Klicka på
+**Logga in med GitHub** på den raden.
 
-### A fine-grained PAT shows no merge button or check status
+### En fine-grained-PAT visar ingen sammanfogningsknapp eller kontrollstatus
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Token behöver **Contents** och **Pull requests** (read and write), plus
+**Checks** och **Actions** (read). När du har ändrat den klistrar du in den igen
+under Kodvärd.
 
-### Adding a repo is rejected
+### Ett repo avvisas när det läggs till
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+Registreringen kräver alla tre: sökvägen ligger i ett git-arbetsträd, den har en
+`origin`-remote och den remoten pekar på en kodvärd som stöds (github.com,
+gitlab.com eller bitbucket.org). Se
+[Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
 
-### Everything stops working for a while after heavy use
+### Allt slutar fungera en stund efter hård användning
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Det är brytaren för hastighetsgränsen. GitHub signalerar sin primära gräns med en
+`403` som bär `x-ratelimit-remaining: 0` och en återställningstid; när klienten ser
+en sådan låter den ytterligare begäranden misslyckas lokalt utan nätverksanrop
+tills fönstret har passerat, så en storm av återförsök kan inte fördjupa gränsen.
+Tillfälliga fel görs om upp till tre gånger med exponentiell backoff, och
+`retry-after` respekteras.
 
-## Related guides
+## Relaterade guider
 
-- [Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/)
-- [Connect a code host](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
-- [Manage API keys](/sv-SE/handbok/how-to-guider/api-nycklar/)
-- [Add repos to a workspace](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/)
+- [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)
+- [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/)
+- [Hantera API-nycklar](/sv-SE/handbok/how-to-guider/api-nycklar/)
+- [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)

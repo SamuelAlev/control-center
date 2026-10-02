@@ -1,137 +1,130 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: העברת פורטים ממסוף
+description: הגיעו לשרת פיתוח שהופעל בטרמינל (VM) או במעטפת מארח — מהמכונה שלכם, מהדפדפן (VM), מ-Android, ברשת שלכם, או תחת דומיין פיתוח עם HTTPS.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+שרת שאתם מפעילים בטרמינל של שיחה מפורסם רק עבור **המרחב הזה**. לוח הפורטים מזהה
+מאזינים שהאפליקציה הזאת הפעילה שם, ממפה אותם, ונותן לכם כתובת לכל מקום שממנו
+תרצו להגיע אליהם. שני מרחבים יכולים להאזין שניהם על `5173`; המפות שלהם לעולם לא
+מתערבבות.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+שום דבר כאן לא פותח את המכונה: כל נתיב נוצר על ידי השרת, לפי בקשה, ומת יחד עם
+הטרמינל או התחנה.
 
-## See what is listening
+## מה מאזין
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. פתחו את **הטרמינל (VM)** של השיחה או מעטפת מארח (במרחב או בעמוד PR).
+2. הפעילו את השרת שלכם — `pnpm dev`, `python -m http.server 8000`, כל דבר.
+3. תוך שניות אחדות **סמל התקע** בפינה הימנית העליונה של הטרמינל מקבל נקודה.
+   לחצו עליו.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+הלוח מפרט כל פורט מאזין עם התהליך שבבעלותו, כ-`3000 → 3000`: הפורט שהתהליך
+נקשר אליו משמאל, הפורט שהוא עונה עליו מקומית מימין (אותו מספר בכל פעם שהוא היה
+פנוי במכונה שלכם). כל שורה גם מציינת אם `localhost` בשולחן העבודה, הדפדפן (VM)
+ו-Android יכולים להגיע אליו.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+הגילוי תחום: טרמינל (VM) נסרק בתוך האורח הזה; מעטפת מארח נסרקת מתוך עץ
+התהליכים של ה-PTY של אותה שיחה. מרחבים אחרים, ותהליכים אחרים ב-Mac שלכם, אינם
+מופיעים ברשימה.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+פורטים חדשים בטרמינל **הזה** מועברים אוטומטית. כבו את **העברת פורטים אוטומטית**
+באותו לוח אם אתם רוצים רק את אלה שאתם מוסיפים בעצמכם.
 
-## Reach it from this computer
+## הגעה מהמחשב הזה
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+השתמשו ב**העתק URL מקומי** בשורה — `http://localhost:3000`. ההעברה מאזינה על
+loopback בלבד, ולכן שום דבר אחר ברשת שלכם לא יכול לראות אותה.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+אם שני מרחבים חושפים את האורח `5173` והמכונה שלכם כבר תופסת את
+`127.0.0.1:5173`, המרחב השני שומר על האורח `5173` ומקבל פורט מקומי זמני. העתקת
+URL משתמשת במספר הימני.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+במעטפת מארח, התהליך כבר נמצא במכונה שלכם. מיפוי של אותו פורט מקומי אינו משנה
+דבר; בחירה של פורט מקומי **אחר** קושרת פרוקסי loopback לזה שבחרתם.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (או קשירה ל-`0.0.0.0`) **לא** מאפשר לדפדפן (VM) מבודד להגיע לשרת על
+ה-Mac. לאורח יש loopback משלו; השרת נוטע מנהרה לתוך האורח הזה כשהלשונית של
+הדפדפן נמצאת ב**אותו מרחב**.
 
-## Reach it from the Browser (VM)
+## הגעה מהדפדפן (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+פתחו את הדפדפן המבודד ב**אותה שיחה**. הקלידו `localhost:<left-hand port>` —
+המספר שהתהליך נקשר אליו. מיפוי מחדש (`5173 → 3000`) עונה גם הוא במספר הימני
+באותו דפדפן, כך שהעתקת URL עובדת גם שם. ה-`browser_use` של סוכן יכול לנווט
+לאחד מהם. שרת במרחב A לעולם לא מופיע כ-`localhost:5173` בדפדפן של מרחב B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+השתמשו ב-`localhost`, ולא בכתובת IP של LAN ולא ב-`--host`. לאורח יש loopback
+משלו; המנהרה מאזינה שם גם ב-IPv4 וגם ב-IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+דפים שפותחים חיבורים רבים בבת אחת (עשרות נכסים, שקע רענון חי) חולקים את אותה
+מנהרה. הדפדפן (VM) מרבב אותם על exec מתמשך אחד, כך שפרץ של בקשות אינו הפעלת
+תהליך לכל חיבור ואינו מסתיים בפסק זמן כדף לבן.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+בתוך מרחב אחד, העברה של טרמינל (VM) גוברת על מעטפת מארח באותו מספר. בין מרחבים
+אין קדימות — אלה מפות נפרדות.
 
-## Reach it from Android
+## הגעה מ-Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+פתחו את הלשונית **Android** של אותו מרחב. ה-`localhost:<port>` של האמולטור
+מופנה אז לאחור אל הפורט המפורסם של המרחב הזה (`adb reverse`). אמולטור אחד הוא
+גלובלי למכשיר: חיבור של מרחב B מכוון מחדש את `:5173` ל-B ומפיל את זה של A.
+סגרו את הלשונית וההפניות לאחור שהתחנה הזאת נטעה מוסרות.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+סימולטור iOS הוא ממילא ה-Mac — בלי הפניה לאחור. iPhone פיזי עדיין זקוק לשיתוף
+ברשת המקומית.
 
-## Share it on your network
+## שיתוף ברשת שלכם
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → שתף ברשת המקומית** מפרסם את הפורט ב-`<server-ip>:<random port>` — שימושי
+לפתיחת הדף בטלפון שלכם, או כשהשרת רץ על מכונה אחרת.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- פורט ה-LAN מוקצה תמיד על ידי מערכת ההפעלה, אף פעם לא המספר של האורח, כך
+  שהחשיפה היא כתובת מכוונת וגלויה ולא כתובת שאפשר לנחש.
+- הוא נשאר פרטי (loopback בלבד) עד שתהפכו אותו, ו**⋯ → מקומי בלבד** מוציא אותו
+  בחזרה מהרשת.
 
-## Give it a name — with HTTPS
+## תנו לו שם — עם HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → הגדר דומיין דפדפן (.test)** מקצה לפורט דומיין פיתוח כגון `myapp.test`.
+בתוך הדפדפן (VM), `https://myapp.test` טוען אז את השרת שלכם עם מנעול תקף —
+שימושי לכל דבר שמתנהג אחרת במקור בעל שם או בהקשר מאובטח (עוגיות,
+service workers, callbacks של OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- דומיינים חייבים להסתיים ב-`.test` או ב-`.localhost` — שני ה-TLD-ים השמורים
+  לפיתוח, כך ששם פיתוח לעולם לא יסתיר אתר אמיתי.
+- **שמות** דומיין ייחודיים בשרת; **מספרי** פורט לא. שני מרחבים יכולים להשתמש
+  שניהם ב-`5173`, אבל הם לא יכולים לתבוע שניהם את `myapp.test`.
+- האישור מגיע מרשות מקומית שהונפקה בשרת שלכם בפעם הראשונה שנדרש. המפתחות שלה
+  נמצאים תחת ספריית הנתונים של השרת ולעולם לא נכנסים לשום אורח; הדפדפן המבודד
+  נותן אמון בדיוק במפתח הזה, כך ש-TLS לאינטרנט האמיתי עדיין מאומת כרגיל.
+- הדומיין נפתר **בתוך הדפדפן (VM) בלבד**. הדפדפן שלכם במארח משתמש
+  ב-`localhost:<port>` במקום.
+- גם `http://myapp.test` פשוט עובד.
 
-## Forward a port by hand
+## העברת פורט ידנית
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**הוסף פורט** בתחתית הלוח ממפה פורט לפני שמשהו מאזין עליו (או בלי קשר לכך).
+העברה ידנית שומרת על הכתובת שלה בזמן שהשרת שלכם מופעל מחדש — השורה מציגה
+*לא מאזין* עד שהוא חוזר — בעוד שהעברות אוטומטיות נעלמות כשהפורט שלהן נעלם.
+במעטפת מארח אפשר גם להגדיר פורט מקומי אחר.
 
-## How it stays contained
+## איך זה נשאר מבודד
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/he-IL/מדריך-למשתמש/מושגים/תחנות/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/#ports-and-dev-domains).
+פורטים נקבעים לפי סביבת עבודה ומרחב. מפת הפורטים של ההיפרוויזר קבועה כשמכונה
+מאותחלת, ולכן טרמינל (VM) נסמך על שני ערוצים צרים שהשרת שולט בהם: נתיב נכנס
+אחד שנוצר מראש לתוך האורח, שמסרב להתחבר לכל פורט שהאורח לא באמת מאזין לו,
+ומנהרות הפוכות שהשרת מחזיק פתוחות עבור הדפדפן (VM) ו-Android. מעטפת מארח לעולם
+לא סורקת את כל המכונה. שום מאזין לא נוצר אי פעם בתוך אורח שהשרת לא הציב אותו
+שם, והכול מפורק יחד עם הטרמינל או התחנה. התכנון מוסבר ב
+[תחנות ומתחמים מבודדים](/he-IL/מדריך-למשתמש/מושגים/תחנות/#ports-without-holes);
+הפורטים השמורים המדויקים וכללי הדומיין נמצאים ב
+[מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/#ports-and-dev-domains).
 
-## Related
+## נושאים קשורים
 
-- [Give an agent a machine to test on](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/) — reserved ports, dev TLDs,
-  defaults
+- [תנו לסוכן מחשב לבדיקות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/) —
+  פתיחה, צפייה והשתלטות על תחנות
+- [מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/) — פורטים שמורים, TLD-ים
+  לפיתוח, ברירות מחדל

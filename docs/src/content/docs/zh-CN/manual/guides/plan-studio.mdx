@@ -1,180 +1,111 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: 在 Plan Studio 中工作
+description: 在 Plan Studio 编辑器中审查、编辑、预估、对比并批准计划，并运行带参数的剧本。
 slug: zh-CN/手册/操作指南/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/zh-CN/手册/概念/编排/) and
-[Use plan mode](/zh-CN/手册/操作指南/计划模式/).
+本指南展示如何在 Plan Studio 中处理计划。关于编排和计划文档究竟是什么，参见[编排](/zh-CN/手册/概念/编排/)和[使用计划模式](/zh-CN/手册/操作指南/计划模式/)。
 
-## Open a plan
+## 打开计划
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+计划从属于生成它的那个对话，因此你通常也是在对话里打开它：对话中该计划所在的行有一个**打开**操作，Plan Studio 会作为编辑器标签页在对话旁边打开。
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[侧边栏中没有“计划”这一项]
+这是刻意为之，并非疏漏。位于 `/workspaces/<workspace-id>/plans` 的中心页只是一个可路由的深层链接，所以如果你想要一份常驻列表，请把它加入书签。
 :::
 
-The hub lists three sections:
+该中心页列出三个部分：
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/zh-CN/手册/操作指南/计划模式/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **进行中的计划**——编排，已提议的排在最前，并附上它们的状态、步骤数和修订号。
+- **计划文档**——单个智能体在[计划模式](/zh-CN/手册/操作指南/计划模式/)中用 `submit_plan` 提交的计划，只要它们处于已提议或已批准状态。
+- **剧本**——已保存的带参数计划模板。
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+点击卡片即可在 Plan Studio 中打开它。路由是
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`，其中 `kind` 是
+`orchestration` 或 `document`，因此你也可以对单个计划使用深层链接。
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+如果你打开的是**编排**，你会看到可编辑的画布、版本时间线和审批栏。如果你打开的是**计划文档**，同一张图会以只读方式呈现——计划文档由智能体撰写；你审查、预估并批准或拒绝它们，而一份已批准的文档会显示它所编译成的编排中每个节点的实时运行状态。
 
-## Edit the DAG
+## 编辑 DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+当**编排**处于 `proposed` 状态时可以进行编辑。所有画布编辑都通过键盘完成：
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. 点击画布，然后用**方向键**移动选中项。
+2. 按 **n** 添加一个步骤。它会以“新建步骤”之名被选中；在右侧的检查器中重命名它。
+3. 在必须最先运行的步骤上按 **e**，然后点击依赖它的步骤（或选中该步骤并按 **Enter**）以建立依赖关系。按 **Esc** 放弃尚未确认的连接。
+4. 按 **x** 剪掉所选步骤最新的依赖关系，或在检查器的依赖关系编辑器中切换精确的依赖关系。
+5. 按 **Delete** 删除所选步骤；其余步骤的依赖关系中对该步骤的引用也会被移除。
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+在检查器中，你还可以编辑步骤的描述、角色和输出模式。编辑会在短暂停顿后自动保存为一个新修订；校验错误（显示在审批栏中）会阻止保存，直到你修复它。
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+只有工作步骤可以编辑。结构性节点——调研、讨论和汇总——是只读的，任何工作已经运行过的步骤也是只读的（它会被标记为“已执行”，因为编辑它会让计划分叉）。
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+保存以你开始时所在的修订为基础进行乐观并发。如果编排器在你脚下重新规划，你的保存会被拒绝并提示“计划已发生变化”，而不会被合并或静默覆盖；请重新读取当前修订并重做你的编辑。智能体发起的重新规划本身也被限流为每两分钟一次，因此这种情况很少发生。
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+画布不支持拖拽重新定位：布局由依赖关系结构计算得出，因此“移动”一个步骤意味着重新连接它的依赖关系。
 :::
 
-## Read cost, time and risk estimates
+## 查看费用、时间和风险预估
 
-Press **Estimate** in the approval bar.
+按审批栏中的**预估**。
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- 画布上的每个步骤都会得到一个徽标，其中包含费用区间以及支撑这一区间的样本量；当该步骤的角色从未运行过时，则显示“暂无历史记录”。选中某个步骤可在检查器中查看完整详情：带样本量的费用区间、时长区间，以及由该步骤的来源推导出的影响范围（文件和符号）——当该步骤没有来源时则显示“未知”。
+- 审批栏显示计划总计：整体费用区间、关键路径的时长区间（并行分支会重叠，因此这不是各区间之和），以及计划设置了预算时的预算上限。
+- 如果只有部分步骤有历史记录，总计会被标记为**部分**，且只覆盖可估算的步骤。如果估算的上限超出预算上限，总计会变红并给出超预算警告。
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+预估要么诚实，要么缺席：角色没有已完成运行历史的步骤会报告样本量为零，且完全不给出任何区间，并显示为未知，而不是被猜测。请把“暂无历史记录”理解为“没人知道”，而不是“很便宜”。
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/zh-CN/手册/操作指南/管理成本/) for controls that actually stop
-spending.
+预算上限只是与这份预估进行展示层面的比较。计划开始运行后，没有任何东西会强制执行它——关于真正能停止支出的控制手段，参见[管理成本](/zh-CN/手册/操作指南/管理成本/)。
 
-## Diff a revision against an earlier proposal
+## 对比某个修订与更早的提案
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+每一次编辑和编排器的每一次重新规划都会追加到一个只增不减的修订时间线上，该时间线显示在编排计划左侧的**版本**面板中。
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. 点击某个修订，将它和当前提案进行对比。未选中任何修订时，面板会把上一个修订与当前修订进行对比。
+2. 在面板下半部分阅读差异：两个修订之间新增、删除或更改的步骤。
+3. 如果计划仍处于 `proposed`，点击某个修订上的回退图标即可回到该修订。回退会把那份提案保存为一个**新**修订——什么也不会丢失。
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` 和编辑器都会在计划不再是 `proposed` 之后拒绝更改，因此正在进行的运行不会把执行中途的重新规划纳入进来。
 
-## Approve, reject, or widen a plan
+## 批准、拒绝或扩大计划
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+在应用中，对一份已提议计划的决定是一整次做出的：审批栏中的**批准计划**或**拒绝**。**批准计划**始终会批准每一个步骤——没有办法先选中一个子集。当提案存在校验错误时，批准会被阻止，而这些错误就显示在按钮旁边。
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+批准仅限操作员。它没有对应的 MCP 工具，因此智能体可以提出提案并修订计划，但永远无法批准计划。
 
-Once an orchestration is executing, the bar changes:
+一旦编排进入执行中，审批栏会发生变化：
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- 如果某个步骤在运行中途停下来提问，选中它并按**继续节点**以恢复它。
+- 按**批准所选**可将一个_部分_批准扩大到所选步骤以及它间接依赖的一切（步骤永远不能在其依赖项未被批准的情况下被批准）。该控件出现在每个编排的执行中审批栏上；当计划是被整体批准时，它不产生任何效果。
+- 按**取消运行**停止整个编排。
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+部分批准集合之外的步骤会呈现为已延后，在你扩大该集合之前不会运行。
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[部分批准不可能从应用中发起]
+只有当某个调用方通过 RPC 调用 `orchestration.approve` 并显式给出 `approved_node_keys` 列表时，部分批准才会存在。应用中的**批准计划**始终批准每一个步骤。计划文档在任何情况下都是整体批准，因此正在执行的文档只提供**取消运行**。
 :::
 
-## Run a playbook with parameters
+## 运行带参数的剧本
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/zh-CN/手册/操作指南/创建流水线/) instead.
+剧本是一份已保存的计划模板，其目标、步骤标题、描述和提示词中带有带类型的 `{{param}}` 占位符。替换是字面进行的——没有表达式语言；如果你需要逻辑，请改用[流水线](/zh-CN/手册/操作指南/创建流水线/)。
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. 在中心页的**剧本**部分，按剧本上的**运行**（或打开 ⌘K 命令面板，在那里选择该剧本）。
+2. 填写参数。枚举参数会呈现为下拉菜单；仓库和智能体参数接受仓库或智能体引用；可选参数则回退到其默认值。
+3. 选择计划所锚定的**锚定工单**，然后确认。
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+运行剧本只会**提议**一份计划——实例化出的编排会在 Plan Studio 中以 `proposed` 打开，在你于那里批准它之前什么都不会执行。要删除某个剧本，按其卡片上的垃圾桶图标。
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/zh-CN/手册/参考/mcp-工具/).
+智能体使用 `create_playbook` 和 `run_playbook` 这两个 MCP 工具创建和运行剧本；参见 [MCP 工具参考](/zh-CN/手册/参考/mcp-工具/)。
 
-## Related guides
+## 相关指南
 
-- [Use plan mode](/zh-CN/手册/操作指南/计划模式/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/zh-CN/手册/操作指南/运行编排/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/zh-CN/手册/操作指南/创建流水线/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/zh-CN/手册/操作指南/监控流水线/): the engine view of an approved plan
+- [使用计划模式](/zh-CN/手册/操作指南/计划模式/)：智能体如何用 `submit_plan` 产出计划文档
+- [运行编排](/zh-CN/手册/操作指南/运行编排/)：从对话一侧看到的“批准一次”生命周期
+- [创建流水线模板](/zh-CN/手册/操作指南/创建流水线/)：当你需要剧本无法表达的逻辑时
+- [监控流水线运行](/zh-CN/手册/操作指南/监控流水线/)：已批准计划在引擎中的视图
 
-## Related concepts
+## 相关概念
 
-- [Orchestration](/zh-CN/手册/概念/编排/)
+- [编排](/zh-CN/手册/概念/编排/)

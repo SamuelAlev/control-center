@@ -1,267 +1,98 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: แซนด์บ็อกซ์และความปลอดภัย
+description: สิ่งที่เป็นข้อจำกัดจริงต่อเอเจนต์ใน Control Center วันนี้ แซนด์บ็อกซ์ของ OS ไปถึงไหน และขอบเขตใดยังคงอยู่บนโฮสต์ที่ไม่มีแบ็กเอนด์
 slug: th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[จุดที่แซนด์บ็อกซ์ของ OS ไปถึงและไม่ไปถึง]
+`cc_server` ตรวจสอบโฮสต์ตอนบูตและห่อการรันคำสั่งของเอเจนต์ด้วยแซนด์บ็อกซ์พื้นเมืองของ OS เมื่อมีให้ใช้ — Seatbelt บน macOS, bubblewrap บน Linux และ WSL2 (ซึ่งต้องมี `bwrap` และ `socat` บน `PATH`) ที่ใดไม่มีแบ็กเอนด์ — Windows หรือเครื่อง Linux ที่ขาดเครื่องมือเหล่านั้น — การรันจะถอยกลับไปพึ่งขอบเขตอื่น ๆ ด้านล่าง และเซิร์ฟเวอร์จะบอกเช่นนั้นในล็อกเริ่มต้นของมัน `--sandbox off` ปิดมันโดยเจตนา
 
-Two gaps survive the sandbox and are worth holding in mind:
+ยังมีช่องโหว่สองจุดที่รอดพ้นแซนด์บ็อกซ์มาได้ และควรจดจำไว้:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- **เครื่องมือไฟล์ในโปรเซสของฮาร์เนสในตัว** (`read`, `write`, `edit`, `apply_patch`, `search`, `find`, `search_files`) ทำงานอยู่ภายในโปรเซสของเซิร์ฟเวอร์ จึงมีเพียง `bash` เท่านั้นที่ถูกห่อ สิ่งที่คุมมันไว้คือการจำกัดเส้นทางในตัวเครื่องมือเองบวกกับกฎคุมการกระทำ
+- **Claude Code ถูกเรียกใช้ด้วย `--dangerously-skip-permissions`** เพราะ `claude -p` แบบไม่มีการโต้ตอบจะค้างอยู่ตลอดไปที่พรอมต์ของมันเอง การเรียกไฟล์และเชลล์ของมันจึงไม่ผ่านด่านของกฎคุมของ Control Center — แซนด์บ็อกซ์ของ OS คือขอบเขตรอบ ๆ มัน
   :::
 
-## Why isolation matters here
+## ทำไมการแยกตัวจึงสำคัญที่นี่
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+เอเจนต์อ่านไฟล์ รันคำสั่งเชลล์ และเรียก API ภายนอกในนามของคุณ ความล้มเหลวที่คุณกังวลนั้นแทบไม่เคยเกิดจากเจตนาร้าย — แต่เป็นเอเจนต์ที่อ่านเส้นทางผิดแล้วเขียนทับเช็กเอาต์ที่คุณกำลังทำงานอยู่ หรือตัวที่พุชสาขาที่คุณยังรีวิวไม่จบ คำถามที่ผลิตภัณฑ์ต้องตอบจึงไม่ใช่ “เอเจนต์เชื่อถือได้ไหม” แต่เป็น “ขอบเขตความเสียหายจะกว้างแค่ไหนเมื่อมันทำผิด”
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center ตอบคำถามนั้นเป็นชั้น ๆ และชั้นเหล่านั้นเป็นอิสระจากกันโดยเจตนา หากชั้นหนึ่งหายไป ชั้นอื่นยังคงอยู่ นั่นสำคัญ เพราะชั้นนอกสุด — แซนด์บ็อกซ์ของ OS — เป็นชั้นเดียวที่มีเงื่อนไข: มันขึ้นอยู่กับว่าโฮสต์มีแบ็กเอนด์ให้หรือไม่ และบน Windows ไม่มีโฮสต์ใดมี
 
-## What actually constrains an agent
+## อะไรคือข้อจำกัดจริงต่อเอเจนต์
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+มีห้าสิ่งที่คุมการรันของเอเจนต์บนทุกโฮสต์ ไม่ว่าจะมีแซนด์บ็อกซ์หรือไม่ ไม่มีสิ่งใดเป็นขอบเขตระดับเคอร์เนล แต่ทั้งหมดเป็นของจริง ที่ใดโฮสต์มีแบ็กเอนด์ แซนด์บ็อกซ์ของ OS จะวางอยู่เหนือสิ่งเหล่านี้ และหัวข้อ “แซนด์บ็อกซ์เพิ่มอะไรและหยุดตรงไหน” ด้านล่างอธิบายว่ามันเปลี่ยนอะไรไปบ้าง
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**worktree แบบ copy-on-write ของตัวเอง** การสนทนาทุกครั้งจัดสรรเช็กเอาต์ของตัวเองสำหรับแต่ละรีโปที่เชื่อมไว้ โดยโคลนแบบ copy-on-write ผ่าน `rift` เนทีฟที่มาพร้อมระบบ แทนที่จะคัดลอกทีละไบต์ การแยกตัวจึงถูกพอที่จะเป็นค่าเริ่มต้น รีโปที่ลงทะเบียนซึ่งคุณเพิ่มเข้าเวิร์กสเปซไม่ใช่ไดเรกทอรีที่เอเจนต์ทำงานอยู่ — การสนทนาสองรายการที่แตะรีโปเดียวกันมองไม่เห็นการแก้ไขของกันและกัน และไม่มีรายใดกำลังแก้ไขเช็กเอาต์ของคุณ
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+ความละเอียดของมันควรพูดให้แม่น: **worktree เป็นรายการต่อการสนทนา ไม่ใช่ต่อเอเจนต์** เอเจนต์สองตัวในการสนทนาเดียวกันได้ไดเรกทอรีทำงานแบบโอเวอร์เลย์ที่แยกจากกัน ซึ่ง _ใช้ร่วมกัน_ `repos/` ของการสนทนานั้น — นั่นแหละคือประเด็น เพราะมันกำลังร่วมมือกันในหนึ่งการเปลี่ยนแปลง — ขณะที่ไดเรกทอรีส่วนตัวของแต่ละเอเจนต์ยังแยกจากกัน copy-on-write เป็นแบ็กเอนด์เดียวในทุกที่ที่ `rift` ถูกส่งมาให้ใช้: ระบบไฟล์ที่ไม่สามารถ reflink ได้ หรือไดเรกทอรีข้อมูลที่อยู่คนละโวลุ่มกับรีโป จะทำให้การจัดสรรล้มเหลวแทนที่จะถอยกลับไปใช้วิธีอื่น Windows เป็นข้อยกเว้น — ที่นั่นไม่มีแบ็กเอนด์ copy-on-write ดังนั้น `git worktree` จึงเป็นแบ็กเอนด์ ไม่ใช่การถดถอยอย่างเงียบ ๆ
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**การจำกัดเส้นทางในเครื่องมือไฟล์ของฮาร์เนสในตัว** เครื่องมือ `read`, `write`, `edit`, `apply_patch`, `search`, `find` และ `search_files` ของฮาร์เนสจะแปลงทุกเส้นทางเทียบกับไดเรกทอรีทำงานของการรันบวกกับรูทที่ใช้ร่วมกัน — ไดเรกทอรี `repos/` ของการสนทนา ซึ่งเป็นที่อยู่ของ worktree ต่าง ๆ และไดเรกทอรีไฟล์แนบของสเปซเมื่อมีอยู่ — และปฏิเสธทุกอย่างที่ตกอยู่นอกนั้น เส้นทางแบบสัมบูรณ์จะถูกยอมรับก็ต่อเมื่อมันอยู่ข้างในอยู่แล้ว ซิมลิงก์ที่อยู่ภายใน worktree แล้วชี้ไปข้างนอกก็ถูกแปลงค่าและปฏิเสธเช่นกัน นี่คือเหตุผลที่เอเจนต์ `write` ไปยัง `~/.ssh` ไม่ได้ แม้จะไม่มีแซนด์บ็อกซ์อยู่ในภาพเลย
 
-**The mode's tool surface.** A conversation's [mode](/th-TH/คู่มือ/แนวคิด/โหมด/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**พื้นผิวเครื่องมือของโหมด** [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)ของการสนทนาเป็นตัวตัดสินว่าเครื่องมือใดถูกทำให้มีอยู่สำหรับการรันตั้งแต่แรก ในโหมดอ่านอย่างเดียว (`plan`, `review`, `orchestrate`) เครื่องมือที่เปลี่ยนแปลงสถานะไม่ได้อยู่ในรีจิสทรีเลย และนโยบายคำสั่งเชลล์ของโหมดเหล่านั้นปฏิเสธทุกคำสั่งที่เปลี่ยนแปลงสถานะโดยตรง — `git commit`, `git push`, `npm install`, `docker` และอื่น ๆ — แทนที่จะถามก่อนสำหรับคำสั่งเหล่านั้น เครื่องมือที่ไม่มีอยู่ย่อมเรียกใช้ไม่ได้ ซึ่งเป็นหลักประกันที่แข็งแรงกว่าเครื่องมือที่มีอยู่และถูกกั้นไว้
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) for the resolution model.
+**กฎคุมการกระทำแบบรวมศูนย์** เครื่องมือที่เปลี่ยนแปลงสถานะทุกตัวประกาศคลาสผลกระทบที่มันก่อได้ และเอนจินนโยบายแปลงแต่ละคลาสเป็น อนุญาต, ถามก่อน หรือ ปฏิเสธ ก่อนที่การเรียกจะรัน `prompt` ที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะแปลงเป็น _ปฏิเสธ_ — คำถามที่ไม่มีใครตอบได้ไม่เคยเป็นคำตอบว่าใช่ ดู[กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)สำหรับแบบจำลองการแปลงคำตัดสิน
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**ข้อมูลรับรองที่กั้นด้วยความสามารถและสภาพแวดล้อมที่ชำระล้างแล้ว** ข้อมูลรับรองถูกสร้างขึ้นใหม่ต่อการเรียกใช้หนึ่งครั้งจากแฟล็กความสามารถของการสนทนา และถูกเพิกถอนเมื่อการรันสิ้นสุด ACP, `bash` ของฮาร์เนส และ Claude Code ภายใต้การห่อแบบเนทีฟจะได้สภาพแวดล้อมที่ตัดเวกเตอร์การแทรกผ่านตัวเชื่อมไดนามิกและตัวแปลคำสั่ง (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` และญาติ ๆ ของมัน) ออกก่อนที่โปรเซสจะเริ่ม Claude Code ผ่าน `NoSandboxAdapter` สืบทอดสภาพแวดล้อมของโฮสต์
 
-### Where those bounds thin out
+### จุดที่ขอบเขตเหล่านั้นบางลง
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+เครื่องมือไฟล์ของฮาร์เนสทำงาน _ในโปรเซสของเซิร์ฟเวอร์_ ไม่ใช่ในโปรเซสลูก ดังนั้นไม่มีโปรไฟล์แซนด์บ็อกซ์ใดคุมมันได้ แม้จะถูกแนบไว้ก็ตาม — มีเพียง `bash` ที่ผ่านตัวรันคำสั่งที่อยู่ในแซนด์บ็อกซ์ การจำกัดของมันคือการตรวจเส้นทางที่อธิบายข้างต้น การตรวจนั้นจึงเป็นชิ้นส่วนที่รับน้ำหนักจริง ไม่ใช่แนวป้องกันชั้นที่สอง
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+เครื่องมือ `bash` เป็นอีกจุดที่ต้องพูดให้แม่น คำสั่งของมันถูกประเมินเทียบกับนโยบายคำสั่งของโหมด แล้วจึงสปอว์นด้วยสภาพแวดล้อมที่ชำระล้างแล้วและมี worktree เป็นไดเรกทอรีทำงาน ที่ใดมีแบ็กเอนด์ การสปอว์นนั้นจะถูกห่อ แซนด์บ็อกซ์จึงเป็นสิ่งที่หยุดคำสั่งเชลล์ไม่ให้เขียนนอก worktree; ที่ใดไม่มี — Windows หรือ Linux ที่ไม่มี `bwrap` และ `socat` — นโยบายคำสั่งเป็นสิ่งเดียวที่คั่นระหว่างคำสั่งกับส่วนที่เหลือของดิสก์ ในโหมด `chat` นโยบายจะปฏิเสธแบบเด็ดขาดรายการที่กำหนดตายตัวไว้ (การยกระดับสิทธิ์ การทำลายระบบและดิสก์ การหลบหนีออกจากคอนเทนเนอร์และเนมสเปซ) และถามก่อนกับการเปลี่ยนแปลงสถานะระยะไกล (`git push`, `gh pr create`, การเผยแพร่และการติดตั้งแพ็กเกจ) อะไรที่ไม่อยู่ในทั้งสองรายการจะรันได้ ไปป์ไลน์ การเชื่อมด้วยเชน และซับเชลล์จะถูกแยกวิเคราะห์ และประเมินแต่ละคำสั่งย่อยแยกกัน โดยคำตัดสินที่เข้มงวดที่สุดเป็นผู้ชนะ
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/th-TH/คู่มือ/แนวคิด/กฎคุม/#the-adapter-honesty-matrix).
+Claude Code เมื่อใช้เป็นอะแดปเตอร์ คือกรณีที่แซนด์บ็อกซ์รับน้ำหนักมากที่สุด Control Center เรียกมันด้วย `--dangerously-skip-permissions` เพราะ `claude -p` แบบไม่โต้ตอบจะค้างอยู่ตลอดไปที่พรอมต์อนุมัติของตัวเอง การเรียกอ่าน เขียน แก้ไข และเชลล์ของมันเกิดขึ้นในโปรเซสของมันเอง และ Control Center ไม่เคยเห็นเลย; การเรียกเดียวที่มันทำแล้วไปถึงด่านคือเครื่องมือ `mcp__*` ที่ Control Center ให้บริการเอง ที่ใดมีแบ็กเอนด์ การเรียกที่มองไม่เห็นเหล่านั้นก็ยังเกิดขึ้นภายในที่ห่อของแซนด์บ็อกซ์ OS จึงเป็นขอบเขตรอบ ๆ มัน ที่ใดไม่มี ก็ไม่มีอะไรเลย อะแดปเตอร์แต่ละตัวระบุเรื่องนี้ในเมทริกซ์การบังคับใช้ของมัน — ดู[เมทริกซ์ความซื่อตรงของอะแดปเตอร์](/th-TH/คู่มือ/แนวคิด/กฎคุม/#the-adapter-honesty-matrix)
 
-## Capability gating is enforcement by absence
+## การกั้นด้วยความสามารถคือการบังคับใช้ผ่านการไม่มี
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+การสนทนาหนึ่งรายการพกแฟล็กความสามารถสี่ตัว: การพุชไปยังรีโป, การเรียก GitHub API, การเรียกผู้ให้บริการตั๋วงาน และการเข้าถึงเครือข่าย มันไม่ได้ถูกตรวจตอนที่เอเจนต์ลงมือ มันถูกตรวจครั้งเดียว ตอนเรียกใช้ โดยนายหน้าข้อมูลรับรอง — และความสามารถที่ปิดอยู่หมายความว่าโทเคนที่ตรงกันจะไม่ถูกใส่ลงในสภาพแวดล้อมเลย
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+นั่นคือกลไกทั้งหมด และควรพูดให้ตรง ๆ เพราะโหมดความล้มเหลวไม่ใช่สิ่งที่คนคาดคิด การปิด “GitHub API” ไม่ได้ก่อข้อความ “ความสามารถถูกปฏิเสธ” มันก่อ `401` ธรรมดาภายในเอเจนต์ เพราะไม่มี `GH_TOKEN` ให้ส่ง เอเจนต์อาจเล่าเรื่องนั้นว่าเป็นปัญหาข้อมูลรับรองก็ได้ การบังคับใช้ผ่านการไม่มีนั้นทนทาน — ไม่มีจุดตรวจให้ข้าม — แต่มันเงียบ และเอเจนต์ไม่รู้ว่าทำไมมันจึงล้มเหลว
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+แฟล็กเครือข่ายทำงานแบบเดียวกัน เมื่อปิดอยู่ เครื่องมือ `web_fetch` และ `web_search` ของฮาร์เนสจะปฏิเสธทุกการเรียก และรายการที่อนุญาตของพร็อกซีของการสปอว์นที่อยู่ในแซนด์บ็อกซ์จะว่างเปล่า ทุกการเชื่อมต่อขาออกจึงถูกปฏิเสธ
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+ข้อมูลรับรองถูกเพิกถอนเมื่อการรันรื้อถอน แฮนเดิลจึงไม่อายุยืนกว่าการรันที่สร้างมันขึ้นมา
 
-## What the sandbox adds and where it stops
+## แซนด์บ็อกซ์เพิ่มอะไร และมันหยุดตรงไหน
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+อีนัม `SandboxBackend` มีสามค่า — `native` (Seatbelt บน macOS, bubblewrap บน Linux และ WSL2), `none` และ `microvm` การห่อคำสั่งของเอเจนต์ใช้เพียงสองค่าแรก: `microvm` เป็นแบ็กเอนด์แบบ VM ปิดล้อมสำหรับเทอร์มินัลแบบโต้ตอบและริก ไม่ใช่การอัปเกรดการห่อ `bash` อย่างเงียบ ๆ การเข้าใจรูปร่างของแบบเนทีฟอธิบายว่าคุณได้อะไรเมื่อมีมันแนบอยู่ และสิ่งที่มันไม่เคยจะให้คุณได้เลย
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` ตรวจสอบโฮสต์ครั้งเดียวตอนบูต และที่ใดแบ็กเอนด์ตอบรับ มันจะป้อนทั้งสองรอยต่อที่เส้นทางการสั่งงานมี เพราะทรานสปอร์ตไม่ได้ใช้รอยต่อร่วมกัน ตัวแรก (`SandboxPort`) ห่อ Claude Code CLI ตัวที่สอง (`SandboxManager`) ห่ออะแดปเตอร์ ACP และเครื่องมือ `bash` ของฮาร์เนสในตัว การป้อนเพียงรอยต่อเดียวจะปล่อยให้ตัวอื่นสปอว์นแบบไม่ถูกห่อ ซึ่งเป็นสิ่งที่เคยเกิดขึ้น บนโฮสต์ที่ไม่มีแบ็กเอนด์ หรือภายใต้ `--sandbox off` พวกมันทั้งหมดสปอว์นแบบไม่ถูกห่อ และเซิร์ฟเวอร์จะบอกว่าคุณอยู่กรณีใดบนบรรทัดเริ่มต้นของมัน ACP และ `bash` ของฮาร์เนสยังคงชำระล้างสภาพแวดล้อม; Claude Code ผ่าน `NoSandboxAdapter` สืบทอดสภาพแวดล้อมของโฮสต์
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+มีพื้นผิวหนึ่งที่จงใจเลือกไม่ใช้: เทอร์มินัลที่โฮสต์บนเซิร์ฟเวอร์รับอาร์กิวเมนต์แบ็กเอนด์ต่อเซสชัน และ `cc_server` สร้างมันโดยปริยายเป็นเชลล์ของโฮสต์ เทอร์มินัลที่คุณเปิดจากแอปจึงรันโดยไม่มีแซนด์บ็อกซ์ เว้นแต่ไคลเอนต์จะระบุ `native` อย่างชัดเจน นั่นคือเชลล์จริงบนโฮสต์ของเซิร์ฟเวอร์ ไม่ใช่การรันของเอเจนต์
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+บน Linux `bubblewrap` สร้างเมานต์เนมสเปซ เอเจนต์จึงเห็นเฉพาะสิ่งที่ถูกผูกเข้าไปเท่านั้น บน macOS `sandbox-exec` ใช้โปรไฟล์ Seatbelt ที่ **ผ่อนปรนโดยค่าเริ่มต้น** — โปรไฟล์ที่ปฏิเสธโดยค่าเริ่มต้นทั้งหมดจะทำให้เชลล์แบบโต้ตอบใช้ไม่ได้ เพราะจำนวนการเรียก dyld, XPC และ Mach ที่ต้องแจกแจงนั้นทำได้ไม่จริง โปรไฟล์ของ macOS จึงเริ่มจาก `(allow default)` แล้วเจาะออกเป็นข้อปฏิเสธต่าง ๆ: การอ่านเส้นทางลับ, นโยบายการเขียนที่รีเซ็ตเป็นปฏิเสธโดยมีข้อยกเว้นแบบอนุญาตที่ระบุชัดเจนวางทับ, การบล็อก unlink บนทุกเส้นทางที่ถูกปฏิเสธและบรรพบุรุษของมัน เพื่อไม่ให้การเปลี่ยนชื่อข้ามข้อปฏิเสธการเขียนได้, การปฏิเสธ exec สำหรับไบนารีที่อันตรายเสมอและสำหรับอะไรก็ตามที่ถูกคัดลอกเข้าไปในไดเรกทอรีที่เขียนได้ และจำกัดเครือข่ายไว้ที่พอร์ตพร็อกซีลูปแบ็กบวก DNS
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+ผลในทางปฏิบัติ: บน Linux มุมมองระบบไฟล์ของเอเจนต์ถูกทำให้แคบลง; บน macOS เอเจนต์ยังคง _อ่าน_ ส่วนใหญ่ของโฮสต์ได้ และเช็กเอาต์ที่ลงทะเบียนไว้ของคุณได้รับการปกป้องด้วยข้อปฏิเสธการเขียนและการเปลี่ยนชื่อที่ระบุชัดเจน แทนที่จะด้วยการมองไม่เห็น ทั้งสองเป็นการแยกตัวระดับเนมสเปซ ไม่ใช่ขอบเขตความปลอดภัยระดับเคอร์เนล — แบ็กเอนด์บอกเช่นนั้นในบันทึกความสามารถของตัวเอง
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+ชุดการเมานต์แบบผูกคือจุดที่ขอบเขตระหว่างเอเจนต์ถูกวาดขึ้น การสั่งงานแบบโอเวอร์เลย์ (Claude Code และ ACP) เมานต์ได้ถึงสี่เส้นทาง ซึ่งแปลงต่อการรัน: ไดเรกทอรีทำงานแบบโอเวอร์เลย์ของเอเจนต์แบบอ่าน-เขียน, ไดเรกทอรีการกำหนดค่าของเอเจนต์แบบอ่านอย่างเดียว, ไดเรกทอรี `repos/` ที่ใช้ร่วมกันของการสนทนาแบบอ่าน-เขียนเมื่อมีอยู่ และไดเรกทอรีไฟล์แนบของสเปซแบบอ่านอย่างเดียวเมื่อมีอยู่ ไดเรกทอรีของเอเจนต์พี่น้องไม่เคยถูกเมานต์ การห่อ `bash` ของฮาร์เนสแคบกว่า: มันเมานต์แบบผูกเฉพาะไดเรกทอรีทำงานของการรัน นี่คือรูปร่างเดียวกับการตรวจเส้นทางในโปรเซสของฮาร์เนสที่บังคับใช้ในซอฟต์แวร์ ทั้งสองจึงสอดคล้องกัน — แต่มีเพียงการตรวจเส้นทางเท่านั้นที่ครอบคลุมเครื่องมือไฟล์ของฮาร์เนสเอง ซึ่งไม่เคยไปถึงเมานต์เนมสเปซเลย
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+เช็กเอาต์ที่ลงทะเบียนไว้ของคุณเข้าร่วมชุดปฏิเสธการเขียนบนนั้นอีกชั้น ในทุกโหมดและบนทั้งสามเส้นทางที่ถูกห่อ (Claude Code, ACP, `bash` ของฮาร์เนส) และแต่ละกฎถูกปล่อยออกมาทั้งในรูปตามตัวอักษรและรูปที่แปลงซิมลิงก์แล้ว รูปที่สองไม่ใช่เรื่องเล่น ๆ: เคอร์เนลจับคู่กฎปฏิเสธกับเส้นทางที่แปลงค่าแล้ว และ macOS ทำให้การแปลงค่าเป็นกรณีปกติมากกว่ากรณีพิเศษ — `/tmp` จริง ๆ คือ `/private/tmp`, `/var/folders/…` จริง ๆ คือ `/private/var/folders/…` — เช็กเอาต์ที่เข้าถึงผ่านทางใดทางหนึ่งจึงเขียนได้ ทั้งที่โปรไฟล์ดูเหมือนห้ามไว้
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+เครือข่ายภายใต้แซนด์บ็อกซ์คือรายการที่อนุญาตระดับ **โดเมน** ต่อเซสชัน ซึ่งบังคับใช้ด้วยพร็อกซีลูปแบ็กในโปรเซส การเชื่อมต่อขาออกถูกปฏิเสธโดยค่าเริ่มต้น: เมื่อความสามารถเครือข่ายปิดอยู่ พร็อกซียังคงเริ่มทำงานแต่รายการที่อนุญาตของมันว่างเปล่า ทุกการเชื่อมต่อขาออกจึงถูกปฏิเสธ เมื่อเปิดอยู่ ตัวแปลงจะสร้างรายการที่อนุญาตจากฐานที่คัดสรรไว้ — ผู้ให้บริการ API ของ LLM, โฮสติ้ง git, รีจิสทรีแพ็กเกจ, แค็ตตาล็อกโมเดล — บวกโดเมน GitHub ที่ความสามารถ GitHub หรือการพุชของเอเจนต์หาให้ และจับคู่โฮสต์เป้าหมายของการเชื่อมต่อทุกครั้งกับรายการนั้น ไวลด์การ์ดใช้ได้ (`*.example.com` จับคู่ซับโดเมน ไม่ใช่โดเมนหลัก) รายการที่ถูกปฏิเสธเสมอซึ่งแยกต่างหากจะชนะรายการที่อนุญาต และครอบคลุมปลายทางเมทาดาทาของคลาวด์และจุดรับส่งเทเลเมตรี สิ่งที่ _ไม่_ กำหนดค่าได้คือตัวรายการเอง: สเปกพกฟิลด์ `egressAllowlist` สำหรับโดเมนเพิ่มเติมและฮุกโดเมนของระบบตั๋วงาน แต่ไม่มีอะไรในเส้นทางการสั่งงานเติมค่าใดในสองอย่างนั้น ในทางปฏิบัติการรันทุกครั้งจึงได้ฐานบวกโดเมนที่มาจากความสามารถของมัน และไม่มีอะไรอีก
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+การปฏิเสธบน macOS สังเกตได้: ตัวมอนิเตอร์ดึงล็อกระบบเพื่อหาการปฏิเสธของ Sandbox กรองสัญญาณรบกวนที่รู้จัก ลบรายการซ้ำจากพายุการลองซ้ำ และเปิดเผยแต่ละครั้งเป็น `SandboxViolation` ที่ระบุว่าพยายามทำอะไรและความสามารถใดจะปลดล็อกมันได้ บน Linux เส้นทางการห่อจะแยกวิเคราะห์ stderr เพื่อหา `EPERM`, `Operation not permitted` และ `Permission denied` แล้วปล่อยเหตุการณ์ชนิดเดียวกัน — ไม่มีการดึงล็อกระบบ สิ่งเหล่านี้มาถึงบนสตรีมเหตุการณ์ของการรันเอง การเรียกซิสคอลที่ถูกปฏิเสธจึงปรากฏในทรานสคริปต์ ไม่ใช่แค่ในล็อก เทเลเมตรีนี้มีอยู่เฉพาะขณะที่แซนด์บ็อกซ์แบบเนทีฟกำลังห่อโปรเซสจริง ๆ — บนโฮสต์ที่ไม่มีแบ็กเอนด์ไม่มีอะไรให้สังเกต มันยังไม่เกี่ยวข้องกับการกั้นด้วยความสามารถ: การละเมิดมาจากซิสคอลที่ถูกปฏิเสธ ไม่เคยมาจากการค้นหาความสามารถ
 
-## Confirmations come from the guardrails, not the sandbox
+## การยืนยันมาจากกฎคุม ไม่ใช่จากแซนด์บ็อกซ์
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+แซนด์บ็อกซ์ไม่มีเส้นทางการอนุมัติ มันเรียกใช้ ดำเนินการ ปล่อยเหตุการณ์ และรื้อถอน; ไม่มีที่ไหนในนั้นให้มนุษย์ตอบคำถาม เมื่อคุณเห็นการยืนยันในสเปซ — อนุมัติการพุชนี้, อนุมัติการลบนี้ — มันถูกยกโดยเอนจินกฎคุม (หรือนโยบายคำสั่งของฮาร์เนส) _ก่อน_ ที่การกระทำจะไปถึงรันไทม์เลย
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+ลำดับนี้เป็นเจตนา การอนุมัติที่เกิดหลังซิสคอลจะเป็นบันทึกการตรวจสอบ ไม่ใช่ด่านกั้น มันยังเป็นเหตุผลที่กฎแบบปิดเมื่อล้มเหลว (fail-closed) อยู่ในกฎคุม: เมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่ คำตัดสินถูกทำก่อนอะไรจะรัน และมันคือการปฏิเสธ
 
-## Diagnostics
+## การวินิจฉัย
 
-[Run agent diagnostics](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/) is the single place
-that states what can be checked by hand.
+[รันการวินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/) เป็นที่เดียวที่ระบุว่าอะไรตรวจสอบด้วยมือได้
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Rigs and enclosures](/th-TH/คู่มือ/แนวคิด/ริก/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): where isolation fits in the dispatch flow
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/th-TH/คู่มือ/อ้างอิง/แบ็กเอนด์แซนด์บ็อกซ์/): the backends and their configuration
+- [ริกและเอนโคลเจอร์](/th-TH/คู่มือ/แนวคิด/ริก/): ขั้นที่อยู่เหนือแซนด์บ็อกซ์ — เมื่องานต้องใช้เครื่องทิ้งได้ทั้งเครื่องที่มีขอบเขตระดับเคอร์เนล ไม่ใช่โปรเซสที่ถูกห่อ
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): ชั้นนโยบายที่อยู่เหนือพื้นของ OS และที่มาของการอนุมัติจริง ๆ
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): การแยกตัวอยู่ตรงไหนในกระแสการสั่งงาน
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/): โหมดทำให้พื้นผิวเครื่องมือและนโยบายคำสั่งแคบลงอย่างไร
+- [ข้อมูลอ้างอิงแบ็กเอนด์แซนด์บ็อกซ์](/th-TH/คู่มือ/อ้างอิง/แบ็กเอนด์แซนด์บ็อกซ์/): แบ็กเอนด์และการกำหนดค่าของมัน
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Configure sandbox policies](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/): capability flags and filesystem posture
-- [Run agent diagnostics](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/): what the diagnostic checks cover
+- [ตั้งค่านโยบายแซนด์บ็อกซ์](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/): แฟล็กความสามารถและท่าทีของระบบไฟล์
+- [รันการวินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/): สิ่งที่การตรวจวินิจฉัยครอบคลุม

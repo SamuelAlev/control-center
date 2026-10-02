@@ -1,118 +1,118 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: บันทึกและสรุปการประชุม
+description: บันทึกการสนทนา รับทรานสคริปต์ แล้วเปลี่ยนเป็นโน้ต รายการดำเนินการ และการตัดสินใจ
 slug: th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/th-TH/คู่มือ/แนวคิด/การประชุม/) for how it works.
+คู่มือนี้แสดงวิธีบันทึกการประชุมและรับบันทึกสรุปที่สร้างโดย AI
+ดู [การประชุมและการถอดเสียง](/th-TH/คู่มือ/แนวคิด/การประชุม/) เพื่อทำความเข้าใจกลไกการทำงาน
 
-## Before you start
+## ก่อนเริ่ม
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **รอบลโมเดลเสียง แล้วรีสตาร์ตเซิร์ฟเวอร์** การบูตตามปกติจะบังคับติดตั้งโมเดล
+  ASR ที่เลือกไว้ (Parakeet TDT 0.6B v3 ซึ่งเป็นค่าเริ่มต้นแบบหลายภาษา
+  ขนาดประมาณ 600 MB) ในเบื้องหลัง เซิร์ฟเวอร์แปลงพาธของโมเดล
+  **ครั้งเดียวตอนบูต** การรันครั้งแรกจึงยังบันทึกไม่ได้จนกว่าคุณจะรีสตาร์ต
+  หากไม่มีโมเดลอยู่บนดิสก์ การบันทึกจะล้มเหลวโดยขึ้นข้อความ `Could not start
+  recording on the host: …` หากต้องการเลือกบิลด์อื่น ให้ไปที่ **การตั้งค่า →
+  เซิร์ฟเวอร์ → โมเดลเสียงและการประชุม** ซึ่งก็ต้องรีสตาร์ตเช่นกัน
+- อนุญาตสิทธิ์ **ไมโครโฟน** เมื่อระบบปฏิบัติการขอตอนบันทึกครั้งแรก
+- บน **macOS 14.4+** เสียงระบบถูกเก็บด้วย Core Audio process taps — ไม่ต้องติดตั้งไดรเวอร์ แต่ระบบปฏิบัติการจะขอสิทธิ์ _การเก็บเสียง_ เป็นครั้งที่สอง ซึ่งไม่ใช่ Screen Recording และไม่ทำให้ไฟแสดงการบันทึกหน้าจอติดเลย หากปฏิเสธ การเริ่มบันทึกจะล้มเหลวโดยขึ้นข้อความ `System-audio capture permission denied.` ส่วน macOS ที่ต่ำกว่า 14.4 ไม่มีการเก็บเสียงระบบ
+- บน **Linux** ต้องมี `parecord` (pulseaudio-utils) หรือ `pw-record` (pipewire) อยู่ใน `PATH` — การเก็บเสียงจะเรียกใช้ตัวใดตัวหนึ่งกับมอนิเตอร์ซอร์สของ PipeWire/PulseAudio หากไม่มีทั้งสอง การเริ่มบันทึกจะล้มเหลวโดยขึ้นข้อความ `No system-audio capture tool found`
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[เสียงการประชุมของคุณไปที่ไหน]
+การเก็บเสียง การถอดเสียง การตัดเสียงสะท้อน และการแยกผู้พูด ล้วนทำงาน
+บนอุปกรณ์ โดยไม่มีการเรียกผ่านคลาวด์ — แต่คำว่า "อุปกรณ์" หมายถึง **โฮสต์ cc_server**
+ซึ่งเป็นคนละเครื่องเมื่อคุณรันเซิร์ฟเวอร์ระยะไกล และบันทึกสรุปสุดท้ายก็คือ
+การรันเอเจนต์ตามปกติ: ไปป์ไลน์ `meeting_summary` ส่งทรานสคริปต์ทั้งหมด
+และโน้ตคร่าวๆ ของคุณไปยังผู้ให้บริการโมเดลที่เอเจนต์นั้นใช้อยู่ หากทรานสคริปต์
+ต้องไม่ออกจากเครื่อง ให้ชี้เอเจนต์นั้นไปยังผู้ให้บริการภายในเครื่อง
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+หน้าจอบันทึกจะแจ้งเรื่องนี้ขณะคุณบันทึก การตัดสินใจจึงอยู่ตรงหน้าคุณก่อน
+ที่จะมีทรานสคริปต์ให้ส่ง
 :::
 
-## Start a recording
+## เริ่มบันทึก
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. เปิด **การประชุม** ในแถบด้านข้าง
+2. คลิก **บันทึกการประชุม** ระบบจะเปิด HUD การบันทึกสดที่ `/meetings/record`
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+การบันทึกเริ่มทันทีและเก็บเสียงไมโครโฟนของคุณบวกกับเสียงเอาต์พุตของระบบ —
+นั่นคือผู้เข้าร่วมคนอื่นๆ ไม่มีหน้าจอให้เลือกโหมดและไม่มีตัวเลือกแหล่งเสียง:
+โหมดไมค์เดียวแบบนั่งประชุมต่อหน้ามีอยู่ใน API แต่ยังไม่มี UI ในตอนนี้
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+ในเบราว์เซอร์ ขั้นตอนเดียวกันใช้ได้ แต่มีข้อต่างอยู่หนึ่งอย่าง: "เสียงระบบ" คือ
+การแชร์หน้าจอที่ต้องมีแทร็กเสียงด้วย ให้แชร์แท็บของเบราว์เซอร์ (หรือทั้งหน้าจอ)
+แล้วเปิด "Share tab audio" / "Share system audio" ในตัวเลือก Safari กับ Firefox
+และการแชร์เต็มจอบน macOS มักให้แทร็กเสียงไม่ได้
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD แสดงมาตรวัดระดับ เวลาที่ผ่านไป และทรานสคริปต์สดที่ค่อยๆ ต่อขึ้นทางด้านหนึ่ง
 
-## During the meeting
+## ระหว่างการประชุม
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **จดโน้ตคร่าวๆ** ในบานหน้าต่างโน้ต โน้ตจะถูกบันทึกขณะคุณพิมพ์และส่งให้เอเจนต์สรุปในภายหลัง จึงควรจดทุกอย่างที่ทรานสคริปต์อาจพลาดไป
+- **เลือกเทมเพลตบันทึก** ในแถว **เทมเพลตที่ใช้งาน** เทมเพลตนี้กำหนดรูปร่างของสรุปการประชุมครั้งนี้และถูกบันทึกไว้พร้อมกับการบันทึก การรันสรุปใหม่ในภายหลังจึงได้เทมเพลตเดียวกับที่คุณเลือกไว้ที่นี่
+- **หยุดชั่วคราวและทำต่อ** ด้วยปุ่มหยุดชั่วคราว การถอดเสียงจะหยุดขณะพัก และตัวจับเวลาจะหยุดชั่วคราว
+- ทรานสคริปต์สตรีมเข้ามาพร้อมแท็กผู้พูด: คำของคุณเป็น **คุณ** ทุกคนในสายเป็น **คนอื่น** — จนกว่าการแยกผู้พูดจะแบ่งคนอื่นออกเป็น `Person 1`, `Person 2`, … ซึ่งคุณเปลี่ยนชื่อได้
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[ผู้พูดที่เบามากอาจไม่ถูกถอดเสียง]
+การถอดเสียงจะข้ามหน้าต่างเสียงใดก็ตามที่ไม่เคยสูงเกินเกณฑ์ความเงียบ
+โดยไม่ถอดรหัสเลย วิธีนี้กันไม่ให้ช่องสัญญาณที่เบาไปเผา CPU
+กับโทเคนที่ไม่ใช่คำพูดซึ่งโมเดลหลอนขึ้นมา แต่ก็หมายความว่าผู้พูดที่เบาหรือ
+อยู่ไกลอาจไม่เกิดทรานสคริปต์เลย ควรตรวจมาตรวัดระดับตั้งแต่เนิ่นๆ ดีกว่าไปตรวจตอนท้าย
 :::
 
-## Stop and summarize
+## หยุดและสรุป
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. คลิก **หยุดและสรุป**
+2. Control Center จะพาคุณไปที่มุมมองรายละเอียดของการประชุมทันที ซึ่งทำเครื่องหมายว่า **กำลังประมวลผล**: การแยกผู้พูดจะแบ่งช่องสัญญาณระยะไกลออกเป็นผู้พูดแต่ละคน และไปป์ไลน์ `meeting_summary` จะสร้างบันทึกสรุป
+3. การประชุมจะเปลี่ยนเป็น **เสร็จแล้ว** เมื่อไปป์ไลน์นั้นทำงานเสร็จ คุณไม่จำเป็นต้องรอ — มุมมองรายละเอียดอัปเดตตัวเอง
 
-## Review the writeup
+## ตรวจทานบันทึกสรุป
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+รายละเอียดการประชุม (`/meetings/:meetingId`) มีสี่แท็บ:
 
-| Tab              | What's there                                                                    |
+| แท็บ             | มีอะไรอยู่                                                                       |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **โน้ต**         | สรุปจาก AI และโน้ตที่เสริมแล้ว ซึ่งสร้างจากโน้ตคร่าวๆ ของคุณ + ทรานสคริปต์       |
+| **ทรานสคริปต์**  | ทรานสคริปต์ทั้งหมดที่ติดแท็กผู้พูดพร้อมการประทับเวลา                              |
+| **รายการดำเนินการ** | งานที่ต้องทำซึ่งถูกสกัดออกมา แต่ละรายการมีเจ้าของซึ่งไม่บังคับ                 |
+| **การตัดสินใจ**  | การตัดสินใจที่บันทึกไว้ระหว่างการสนทนา                                           |
 
-From here you can:
+จากตรงนี้คุณสามารถ:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **เปลี่ยนชื่อผู้พูด**: เปลี่ยน `Person 1` เป็นชื่อจริง การเปลี่ยนจะมีผลทั้งทรานสคริปต์
+- **ติ๊กทำเครื่องหมายรายการดำเนินการ** เมื่อทำเสร็จ
+- **สร้างตั๋วงาน** จากรายการดำเนินการ: ระบบจะสร้างตั๋วงานใหม่ที่ยังไม่มอบหมาย โดยใช้ชื่อรายการดำเนินการเป็นชื่อเรื่อง และลิงก์กลับมาที่แถวนั้น มอบหมายให้เอเจนต์ได้จากตัวตั๋วงานเอง (ดู [มอบงานให้เอเจนต์](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/))
+- **รันสรุปใหม่** เพื่อสรุปอีกรอบ (เช่น หลังเปลี่ยนชื่อผู้พูด) ระบบจะใช้เทมเพลตที่บันทึกไว้ตอนบันทึกการประชุม เลือกเทมเพลตที่ใช้งานได้ที่ **การตั้งค่า → เวิร์กสเปซ → การประชุม**
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+การแก้ไขโน้ต ชื่อเรื่อง รายการดำเนินการ และการตัดสินใจ ทำได้ทุกที่
+ส่วน **รันสรุปใหม่** และการยกเลิกการประชุมที่กำลังประมวลผลเป็น **เฉพาะเดสก์ท็อป** — ใน
+เบราว์เซอร์ปุ่มทั้งสองไม่ทำงาน
 
-## Record straight from a calendar event
+## บันทึกจากเหตุการณ์ในปฏิทินโดยตรง
 
-If you've [connected a calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+หากคุณ[เชื่อมต่อปฏิทิน](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)แล้ว คุณข้าม
+การเริ่มด้วยตนเองได้ ฟีเจอร์นี้ **เฉพาะเดสก์ท็อป** เท่านั้น ไคลเอนต์เว็บจะปฏิเสธ
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. เปิดเหตุการณ์จาก **ปฏิทิน**
+2. คลิก **เริ่มบันทึกและลิงก์**
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+การบันทึกจะถูกตั้งชื่อเริ่มต้นตามชื่อเหตุการณ์และลิงก์กลับไปยังเหตุการณ์นั้น
+โน้ตกับรายการในปฏิทินจึงยังเชื่อมโยงกันอยู่
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[การลบการประชุมไม่ได้ลบไฟล์เสียง]
+การลบการประชุมจะลบเฉพาะแถวข้อมูล แต่ไฟล์ WAV ที่บันทึกไว้ใต้
+`<dataDir>/meetings/<meetingId>/` ยังคงอยู่บนดิสก์ — ไม่มีนโยบายเก็บรักษา
+ไม่มีเพดานขนาด และไม่มีการกวาดล้าง หากเสียงสำคัญ ให้ลบไดเรกทอรีนั้นด้วยตนเอง
 :::
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Connect a Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
-- [Delegate work to agents](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
+- [เชื่อมต่อ Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
+- [มอบงานให้เอเจนต์](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Meetings and transcription](/th-TH/คู่มือ/แนวคิด/การประชุม/)
+- [การประชุมและการถอดเสียง](/th-TH/คู่มือ/แนวคิด/การประชุม/)

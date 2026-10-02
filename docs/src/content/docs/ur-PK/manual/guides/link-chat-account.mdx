@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: اپنا Slack اکاؤنٹ لنک کریں
+description: ثابت کریں کہ کوئی Slack شناخت آپ کی ہے تاکہ ایجنٹس آپ کے پیغامات پر عمل کریں اور آپ کا کام آپ سے منسوب ہو۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+یہ گائیڈ بتاتی ہے کہ اپنی چیٹ شناخت کو اپنے Control Center صارف سے کیسے لنک کریں، اور کوئی لنک کیسے ہٹائیں۔
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+ہر رکن یہ کام فی چیٹ فراہم کنندہ ایک بار کرتا ہے۔ یہ ایپ جوڑنے سے الگ چیز ہے: کنکشن بوٹ کو پورے ورک اسپیس کے لیے قابلِ رسائی بناتا ہے، جبکہ لنک اُس کے اندر _آپ_ کو پہچاننے کے قابل بناتا ہے۔
 
-## Why linking is required
+## لنک کرنا کیوں ضروری ہے
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+برج ایسے چیٹ اکاؤنٹ کی طرف سے عمل کرنے سے انکار کر دیتا ہے جسے وہ کسی ورک اسپیس رکن سے جوڑ نہ سکے۔ یہ جان بوجھ کر ہے — لنک کے بغیر Slack کا ہر پیغام اُس شخص سے منسوب کرنا پڑتا جس نے ایپ انسٹال کی، اور آڈٹ ٹریل، فی پرنسپل ریٹ لمٹس اور ٹکٹ رپورٹ کرنے والوں کے نام بھی غلط شخص کا ہوتا۔
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+جو رکن لنک شدہ نہ ہو اور بوٹ کا ذکر کرے، اُسے اُسی Slack تھریڈ میں جواب ملتا ہے جس میں لنک کرنے کا طریقہ بتایا جاتا ہے۔ کچھ ڈسپیچ نہیں ہوتا۔
 
-## Link with a code
+## کوڈ سے لنک کریں
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت** پر جائیں اور **لنک شدہ چیٹ اکاؤنٹس** کارڈ تک اسکرول کریں
+2. Slack بلاک میں **میرا Slack اکاؤنٹ لنک کریں** پر کلک کریں
+3. جو کمانڈ وہ دکھاتا ہے اُسے کاپی کریں، مثلاً:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Slack میں وہ کمانڈ بوٹ کو بھیجیں — براہِ راست پیغام سب سے آسان جگہ ہے
+5. بوٹ اُس Control Center صارف کی تصدیق کرتا ہے جس سے آپ اب لنک ہو چکے ہیں، اور جو ڈائیلاگ آپ نے کھلا چھوڑا تھا وہ اُسی لمحے یہی بتانے کے لیے اپ ڈیٹ ہو جاتا ہے — آپ کو اُسے بند کر کے دیکھنے کی ضرورت نہیں
 
-The code:
+یہ کوڈ:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- ایک بار استعمال ہوتا ہے اور بنائے جانے کے **15 منٹ** بعد ختم ہو جاتا ہے
+- ہمیشہ _آپ_ کے لیے بنایا جاتا ہے، کبھی کسی ساتھی کے لیے نہیں
+- آپ کے پاس پہلے سے موجود کسی بھی کوڈ کی جگہ لے لیتا ہے، چنانچہ بٹن دوبارہ دبانے سے پچھلا کوڈ باطل ہو جاتا ہے
+- صرف میموری میں رہتا ہے، چنانچہ سرور دوبارہ شروع ہونے پر باقی کوڈ باطل ہو جاتے ہیں — بٹن دوبارہ دبائیں
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+نامعلوم، ختم شدہ یا کسی دوسرے ورک اسپیس کے لیے بنایا گیا کوڈ ایک ہی، ناقابلِ تمیز انداز میں ناکام ہوتا ہے: ”یہ کوڈ درست نہیں (یا ختم ہو چکا ہے)“۔
 
-## Automatic linking by email
+## ای میل سے خودکار لنک
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+اگر آپ کے Slack پروفائل میں کوئی تصدیق شدہ ای میل ہے جو کسی ایسے Control Center صارف سے میل کھاتی ہے جو **پہلے ہی اِس ورک اسپیس کا رکن ہے**، تو برج آپ کو پہلی بار بات کرنے پر ہی لنک کر دیتا ہے۔ کسی کوڈ کی ضرورت نہیں۔
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+دونوں حصے اہم ہیں: ای میل کا میل کھانا شناخت ثابت کرتا ہے، مگر رسائی صرف رکنیت دیتی ہے، چنانچہ ایسا اجنبی جس کی ای میل اتفاقاً سرور پر موجود ہو، کسی سے بھی لنک نہیں ہوتا۔ روسٹر دکھاتا ہے کہ ہر لنک کیسے بنایا گیا (”ای میل سے میل“ یا ”کوڈ سے لنک“)۔
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+خودکار لنک کے لیے `users:read.email` اسکوپ درکار ہے۔ اِس کے بغیر Slack ایڈریس ظاہر نہیں کرے گا اور کوڈ کا راستہ ہی واحد چارہ ہوگا۔
 
-## See who is linked
+## دیکھیں کون لنک شدہ ہے
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+روسٹر ورک اسپیس کی انتظامیہ ہے، اس لیے وہ سطح کے دوسرے حصے پر رہتا ہے: **ترتیبات → ورک اسپیس → عام → چیٹ برجز → لنک شدہ اکاؤنٹس**۔ یہ ورک اسپیس کے ہر لنک شدہ رکن کی فہرست دیتا ہے، ہر ایک کے متعلقہ Slack اکاؤنٹ اور یہ کہ لنک کیسے بنایا گیا۔
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+آپ کی اپنی حالت آپ کے پروفائل صفحے پر ہے: **میرا Slack اکاؤنٹ لنک کریں** والی قطار لنک ہو جانے پر ”_your-slack-id_ سے لنک“ پڑھتی ہے اور لنک نہ ہونے پر آپ کو لنک کرنے کی ہدایت کرتی ہے۔
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+روسٹر ایک لائیو سبسکرپشن ہے، کیونکہ تبدیلی دوسرے سرے پر ہوتی ہے — کوڈ آپ Slack میں لکھتے ہیں، اس لیے ایپ کی کوئی درخواست جواب واپس نہیں لا سکتی۔
 
-## Unlink
+## ان لنک کرنا
 
-Click **Unlink** on a row in the workspace roster.
+ورک اسپیس روسٹر کی کسی قطار پر **ان لنک** پر کلک کریں۔
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- کوئی بھی خود کو ان لنک کر سکتا ہے
+- صرف ایڈمن کسی دوسرے رکن کو ان لنک کر سکتا ہے
+- ان لنک کرنے سے اُس رکن کا کوئی بھی باقی لنک کوڈ بھی منسوخ ہو جاتا ہے
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+ان لنک کرنے کے بعد وہ Slack اکاؤنٹ دوبارہ لنک ہونے تک ایجنٹس کو چلا نہیں سکتا۔ موجودہ اسپیسز، ٹرانسکرپٹس اور ٹکٹس اپنا اصل انتساب برقرار رکھتے ہیں — ان لنک کرنا پچھلے کام سے دستبرداری نہیں ہے۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The bot says I am not a member of this workspace
+### بوٹ کہتا ہے کہ میں اِس ورک اسپیس کا رکن نہیں ہوں
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/).
+آپ کا Slack اکاؤنٹ کسی Control Center صارف سے لنک ہے، مگر اُس صارف کی اِس ورک اسپیس میں کوئی رکنیت نہیں۔ کسی ایڈمن سے کہیں کہ آپ کو دعوت دے؛ دیکھیں [ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/)۔
 
-### The bot says my role is read-only
+### بوٹ کہتا ہے کہ میرا کردار صرف پڑھنے والا ہے
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+`viewer` اور `guest` کردار کام شروع نہیں کر سکتے۔ کسی ایڈمن کو آپ کا کردار `member` یا اُس سے بلند کرنا ہوگا۔
 
-### The slash command is not recognized
+### سلیش کمانڈ شناخت نہیں ہوتی
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+جانچیں کہ سلیش کمانڈ Slack میں موجود ہے اور آپ وہی کمانڈ بھیج رہے ہیں جو ترتیبات کے ڈائیلاگ نے آپ کو دکھایا تھا — ممکن ہے کسی ایڈمن نے اُس کا نام بدل دیا ہو، اِس صورت میں ڈائیلاگ موجودہ نام دکھاتا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
-- [Customize the chat bot](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
-- [Chat bridge](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [چیٹ بوٹ حسب ضرورت بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
+- [چیٹ برج](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)
-- [Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/)
+- [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)
+- [ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/)

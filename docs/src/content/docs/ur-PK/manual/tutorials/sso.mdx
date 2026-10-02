@@ -1,125 +1,127 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: اپنی ٹیم کو SSO سے سائن اِن کرائیں
+description: Okta (SAML) کو اپنے Control Center سرور سے جوڑیں اور ایک لاگ اِن شروع سے آخر تک آزمائیں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اِس ٹیوٹوریل کے اختتام تک آپ کے پاس یہ سب ہوگا:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- آپ کے Control Center سرور اور ایک شناخت فراہم کنندہ کے درمیان ایک SAML
+  کنکشن (مثال کے طور پر ہم Okta استعمال کرتے ہیں)،
+- ایک صارف جو اُس کے پہلے لاگ اِن پر خودکار طور پر پروویژن ہو جائے اور
+- ایک ورک اسپیس رکنیت پالیسی جو آپ نے خود سوچ سمجھ کر چنی ہو۔
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+آپ کو ایک ایسا سرور درکار ہوگا جس کے آپ منتظم ہوں (**سرور مالک** — اِس
+انسٹال کا آپریٹر) اور ایک IdP ایپلیکیشن جسے آپ کنفیگر کر سکیں۔ 20 منٹ کا
+وقت رکھیں۔
 
-## 1. Open the single sign-on settings
+## 1. سنگل سائن آن کی ترتیبات کھولیں
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Control Center میں سائن اِن کریں، پھر
+**ترتیبات → سرور → سنگل سائن آن** پر جائیں۔ اسکرین **SAML** اور
+**OpenID Connect** کے درمیان بدلتی ہے، اور اُس پر ایک **صارف پروویژنگ
+(SCIM)** کارڈ بھی ہے۔ SAML ہی پر رہیں۔
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+اِس اسکرین کی ہر چیز سرور بھر کی ہے: ایک IdP ہر ورک اسپیس کے انسانوں کی
+تصدیق کرتا ہے، اس لیے صرف سرور مالک ہی اِس میں ترمیم کر سکتا ہے۔
 
-## 2. Paste the IdP metadata
+## 2. IdP میٹا ڈیٹا چسپاں کریں
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Okta میں اپنی ایپ کا **Sign On** ٹیب کھولیں اور میٹا ڈیٹا XML کاپی کریں (یا
+اُسے ڈاؤن لوڈ کر کے فائل کا مواد چسپاں کریں)۔ واپس Control Center میں، اُسے
+**IdP میٹا ڈیٹا XML** میں چسپاں کریں اور **کنکشن ٹیسٹ کریں** دبائیں۔
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+ٹوسٹ IdP کے سائن آن اینڈ پوائنٹ کی اطلاع دیتا ہے — ثبوت کہ میٹا ڈیٹا پارس ہو
+گیا، سرٹیفکیٹ پڑھ لیا گیا اور سرور اُس کے خلاف لاگ اِن درخواست بنا سکتا ہے
+(یہ ٹیسٹ براؤزر راؤنڈ ٹرپ کے سوا سب کچھ جانچ لیتا ہے)۔ اگر یہ ناکام ہو تو XML
+مکمل `EntityDescriptor` نہیں تھا (Okta کے SAML ٹیب میں اِسے "Metadata URL"
+کہا جاتا ہے؛ وہ URL کھولیں اور جو وہ پیش کرے وہ کاپی کریں)۔ **OpenID
+Connect** پر وہی بٹن اِس کے بجائے آپ کے جاری کنندہ کی discovery دستاویز
+جانچتا ہے۔ میعاد ختم ہونے کے قریب سرٹیفکیٹ بھی پکڑنا ہو اور دیکھنا ہو کہ IdP
+Control Center کو پہچانتا ہے یا نہیں، تو
+[قدم 6 کا چیکر](#6-یہیں-اِس-صفحے-سے-جانچیں) استعمال کریں۔
 
-## 3. Register Control Center at the IdP
+## 3. IdP پر Control Center رجسٹر کریں
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+**SP میٹا ڈیٹا کاپی کریں** دبائیں اور یہ اُس شخص کے حوالے کریں جو Okta کی طرف
+کنفیگر کرتا ہے (یا وہ دو اقدار پڑھ دیں جو وہ طلب کرتا ہے):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+یہ URLs اُس اوریجن سے اخذ ہوتے ہیں جہاں آپ کے صارفین کے براؤزر پہنچتے ہیں۔ اگر
+سرور کسی ٹنل یا ریورس پراکسی کے پیچھے چلتا ہو تو یقینی بنائیں کہ اوریجن مستحکم
+ہے (ترتیبات → سرور → کنکشن اور اسٹیٹس → یہ سرور شیئر کریں عوامی URL دکھاتا ہے) — یا
+**SP entity ID** فیلڈ میں entity ID کو واضح طور پر پن کر دیں۔
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[NAT کے پیچھے؟]
+SAML لاگ اِن کے لیے عوامی IP یا ڈومین **درکار نہیں**: IdP کبھی آپ کے سرور سے
+کنیکشن نہیں جوڑتا — راؤنڈ ٹرپ صارف کا براؤزر اُٹھاتا ہے، چنانچہ localhost،
+LAN، VPN، Tailscale یا کوئی ٹنل — سب کام کرتے ہیں۔ دو باتیں یاد رکھیں:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim)).
+- براؤزر جو اوریجن استعمال کرتا ہے وہ IdP پر رجسٹرڈ ACS URL / entity ID سے
+  **مطابقت** رکھنا چاہیے (اگر صارفین سرور تک ایک سے زیادہ اوریجن سے پہنچتے ہیں
+  تو entity ID پن کر دیں)،
+- **SCIM پروویژنگ اِس کی استثنا ہے** — IdP سیدھا آپ کے سرور کو کال کرتا ہے،
+  اس لیے اُسے ٹنل یا عوامی URL درکار ہوتا ہے
+  ([SCIM سے صارفین فراہم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim))۔
   :::
 
-## 4. Choose what a login grants
+## 4. طے کریں کہ ایک لاگ اِن کیا دیتا ہے
 
-Two policies decide what a first login does:
+دو پالیسیاں فیصلہ کرتی ہیں کہ پہلا لاگ اِن کیا کرتا ہے:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **پہلے لاگ اِن پر صارفین ہر ورک اسپیس میں شامل کریں** — ایک ہی ٹیم والی
+  ڈیپلائمنٹ کے لیے آن رہنے دیں جہاں SSO کا مطلب بھروسا ہو۔ جب کئی ٹیمیں یا
+  گاہک ایک ہی سرور شیئر کریں تو اُسے بند کر دیں: پھر ہر نیا آنے والا ایک واضح
+  ورک اسپیس دعوت کا محتاج ہوتا ہے، جو زیادہ محفوظ ڈیفالٹ ہے۔
+- **پہلے لاگ اِن پر نامعلوم صارفین پروویژن کریں** — ڈیفالٹ طور پر آن؛ اُسے
+  بند کر دیں تو ہر وہ شخص مسترد ہو جاتا ہے جس کا اکاؤنٹ پہلے سے موجود نہ ہو۔
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+اختیاری طور پر ایسی صفت میپ کریں جو گروپ نام رکھتی ہو (Okta کی عموماً
+`groups` ہوتی ہے) اور میپ کے ذریعے گروپس کو کرداروں میں بدلیں — مثلاً
+`{"platform-leads": "admin"}`۔ SSO کبھی مالک کا کردار نہیں دے سکتا۔
 
-## 5. Enable and take a login
+## 5. فعال کریں اور ایک لاگ اِن آزمائیں
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+**سائن اِن کے لیے SAML استعمال کریں** آن کریں، **کنکشن محفوظ کریں** دبائیں،
+پھر `https://<your-server>/saml/login` پر ایک نجی براؤزر ونڈو کھولیں۔ Okta پر
+سائن اِن کریں اور آپ واپس ویب کلائنٹ پر اُتر آتے ہیں — سائن اِن شدہ، آپ کا
+اکاؤنٹ بن چکا اور اُس کی رکنیت آپ کی چنی ہوئی پالیسی کے مطابق دے دی گئی۔
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+یہی انٹری پوائنٹ ویب کنیکٹ اسکرین پر (**SAML سے سائن اِن**) اُس لمحے ظاہر ہوتا
+ہے جب آپ سرور کا پتہ لکھتے ہیں — فارم خود کو ڈھال لیتا ہے کہ سرور کیا پیش کرتا
+ہے (OpenID Connect **OpenID Connect سے سائن اِن** دکھاتا ہے)۔ بٹن سائن اِن ایک
+**نئے ٹیب** میں کھولتا ہے؛ راؤنڈ ٹرپ مکمل ہونے پر انتظار کرتا ٹیب سیشن خودکار
+طور پر اُٹھا لیتا ہے۔ ڈیسک ٹاپ کی سرور سیٹ اپ اسکرین بھی یہی کرتی ہے: سرور کا
+URL لکھیں، ایک **SAML سے سائن اِن** بٹن ظاہر ہوتا ہے جو آپ کا براؤزر کھولتا
+ہے اور راؤنڈ ٹرپ مکمل ہونے پر ایپ سائن اِن کر لیتی ہے۔
 
-## 6. Check it from this page
+## 6. یہیں اِس صفحے سے جانچیں
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+SSO رول آؤٹ کرنے سے پہلے، یا جب کوئی لاگ اِن ناکام ہو، یہاں پرزوں کو جانچیں۔
+چیکر مکمل طور پر آپ کے براؤزر میں چلتا ہے: یہ اُس میٹا ڈیٹا کو پڑھتا ہے جو آپ
+اِس ٹیب میں چسپاں کرتے ہیں اور وہی اصول لاگو کرتا ہے جو سرور لگاتا ہے۔ آپ کے
+سرور کا پتہ دینے پر یہ اُس سرور سے یہ بھی پوچھتا ہے کہ SAML سائن اِن آن ہے یا
+نہیں۔
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+یہ وہ چیزیں پکڑتا ہے جو ایپ میں **کنکشن ٹیسٹ کریں** نہیں دیکھ سکتا: میعاد ختم
+ہونے کے قریب سائننگ سرٹیفکیٹ، ایسا IdP جو دستخط شدہ درخواستوں پر اصرار کرتا
+ہو، اور ٹیسٹ سائن اِن کے ذریعے یہ کہ IdP Control Center کو پہچانتا بھی ہے یا
+نہیں۔
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## آگے کہاں جائیں
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/ur-PK/ہدایت-نامہ/تصورات/سنگل-سائن-ان).
+- اپنے IdP کو بھی لائف سائیکل کنٹرول دیں:
+  [SCIM سے صارفین فراہم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim)۔
+- آپ کا IdP SAML کے بجائے OpenID Connect بولتا ہے؟
+  [OpenID Connect فراہم کنندہ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-oidc)۔
+- جاننا چاہتے ہیں کہ براؤزر کا راؤنڈ ٹرپ حقیقت میں کس چیز کی تصدیق کرتا ہے؟
+  [سنگل سائن اَن کیسے کام کرتا ہے](/ur-PK/ہدایت-نامہ/تصورات/سنگل-سائن-ان)۔

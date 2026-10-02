@@ -1,123 +1,91 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: 連接 Google Calendar
+description: 將 Google Calendar 連接到工作區、管理多個帳戶，並在權杖過期時重新連線。
 slug: zh-HK/手冊/操作指南/連接日曆
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/zh-HK/手冊/概念/日曆/) for the full picture.
+本指南說明如何將 Google Calendar 連接到工作區。這項連接以工作區為單位：它會把該工作區的活動以唯讀方式同步到 Control Center。完整說明請參閱[日曆與排程](/zh-HK/手冊/概念/日曆/)。
 
-## Connect an account
+## 連接帳戶
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. 在側邊欄開啟**日曆**。
+2. 在日曆側邊欄中點擊**新增日曆帳號**。（同一區段也位於**設定 → 工作區 → 個人資料與身分**的 **Google Calendar** 之下。）
+3. 選擇授權方式：
+   - **使用 Control Center 的 Google 應用程式** — 無需任何設定。當你的組建附帶此應用程式時，這就是預設選項。
+   - **使用我自己的 Google Cloud 用戶端** — 貼上你自己專案的用戶端 ID 和密鑰（請參閱[自備 Google 用戶端](#自備-google-用戶端分支與自行託管)）。
+4. 點擊**連接 Google Calendar**。對話框會顯示一組簡短代碼，以及 Google 裝置頁面的連結。
+5. 在任何裝置上開啟該頁面，輸入代碼並核准所要求的存取權。對話框會自行關閉，你的活動隨即開始同步。
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+執行這段交換、並保存所產生重新整理權杖的是伺服器，而不是你的裝置——這正是代碼要在「任何裝置」上核准，而非必須在本應用程式中的原因。
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+帳戶只會連接到**目前作用中的工作區**。切換工作區後，你看到的會是該工作區的日曆。
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+連接流程會要求 `calendar.readonly` 加上你的電郵——內建應用程式和你貼上的用戶端所要求的範圍相同。Control Center 會讀取活動，不會在 Google 上建立、編輯、刪除或回覆邀請。
 
-## How syncing works
+## 同步的運作方式
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+排程由**伺服器**掌管：它每兩分鐘掃描每個工作區已連接的帳戶，並把活動寫入該工作區的資料庫。用戶端從不直接與 Google 通訊——它們只讀取伺服器寫入的內容。
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+掃描是增量式的。每個日曆的第一次掃描會擷取一段滾動視窗（往前 60 天、往後 90 天），並記下 Google 的同步權杖；之後的掃描會帶上該權杖，只接收有變更的內容，這正是兩分鐘一次的頻率仍可負擔的原因。視窗每 24 小時會以一次完整同步重新定位，Google 每次使權杖失效時也是如此。
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+重新整理權杖存放於伺服器端的 `secrets.json`，位於伺服器的資料目錄下，僅限擁有者讀寫（`0600`）——不在作業系統鑰匙圈中，也永遠不會出現在用戶端裝置上。
 
-## Connect multiple accounts
+## 連接多個帳戶
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+一個工作區可以連接多個 Google 帳戶（例如工作和個人帳戶）。為每個帳戶重複連接步驟；它們的活動會合併到相同的月／週／議程檢視中。每個帳戶各自獨立同步與重新整理，也可以各自中斷連線。
 
-## Reconnect an expired account
+## 重新連線已過期的帳戶
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+如果 Google 永久使某個帳戶的權杖失效（工作階段被撤銷或長期過期），同步就會停止，Control Center 會在日曆上顯示**重新連線**橫幅，並發出桌面通知。點擊**重新連線**並核准新的代碼；下次同步成功後橫幅便會消失。
 
-## Disconnect an account
+## 中斷連線帳戶
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+在日曆側邊欄（或**設定 → 工作區 → 個人資料與身分**）中，點擊該帳戶的**中斷連線**。這會刪除其已同步的活動，並清除伺服器上儲存的權杖。
 
-## Connect from a headless server
+## 從無介面伺服器連接
 
-A server with no GUI attached connects the same account from its own terminal:
+沒有接上圖形介面的伺服器，可以從自己的終端機連接同一個帳戶：
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+它會印出一組代碼和一個 URL，等待核准，然後儲存權杖，並在下一次掃描時同步。
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+從原始碼建置的版本**不**附帶 Google 用戶端，因此必須提供 ID 和密鑰——請設定 `GOOGLE_OAUTH_CLIENT_ID` 和 `GOOGLE_OAUTH_CLIENT_SECRET`。這裡沒有 `--google-client-id` 旗標（未知旗標會被忽略）。若缺少這對環境變數，指令會以缺少用戶端的錯誤結束。
 
-## Bring your own Google client (forks and self-hosting)
+## 自備 Google 用戶端（分支與自行託管）
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+已發行的組建會附帶 Google 用戶端，因此大多數人都不需要碰這一節。如果你是從原始碼建置、自行執行伺服器，或想讓同意畫面顯示你自己專案的名稱，才需要自備用戶端。
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. 在 [Google Cloud Console](https://console.cloud.google.com/apis/credentials) 中啟用 **Google Calendar API**，並設定 **OAuth 同意畫面**，加入 `calendar.readonly`、`openid` 和 `email` 範圍。應用程式尚未通過驗證時，請把自己加入為**測試使用者**。在同意畫面加入 `calendar.events` 並不會啟用 RSVP——Control Center 從不要求該範圍。
+2. 建立應用程式類型為 **TVs and limited input devices** 的 **OAuth 用戶端 ID**，並複製用戶端 ID 和用戶端密鑰。
+3. 你可以逐次連接提供它們（在對話框中選擇**使用我自己的 Google Cloud 用戶端**），或透過 `GOOGLE_OAUTH_CLIENT_ID` 和 `GOOGLE_OAUTH_CLIENT_SECRET` 在整個伺服器範圍提供。
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+伺服器範圍的一對憑證會全面取代內建的一對，包括「使用 Control Center 的 Google 應用程式」選項背後的憑證——因此在你自己的伺服器上，該選項用的就是你的應用程式。
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+用戶端密鑰永遠不會離開伺服器：沒有任何 RPC 回應會帶上它，而透過伺服器自己的用戶端連接的帳戶，只會儲存一個標記，而非該對憑證的副本，因此輪替密鑰只需以新值重新啟動。
 
-### Troubleshooting
+### 疑難排解
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| 症狀 | 可能原因 |
+| ---- | -------- |
+| 對話框沒有提供內建選項 | 此組建不附帶 Google 用戶端（原始碼建置），或伺服器啟動時只提供了該對憑證的其中一半。ID 和密鑰兩者都必須提供 |
+| 啟動流程時出現 `invalid_scope` | 該 Cloud 專案中的裝置代碼用戶端未獲准使用 Calendar。請改用回送或網頁用戶端專案 |
+| Google 傳回 `invalid_client` | 該用戶端不是 **TVs and limited input devices** 用戶端，或 ID 與密鑰來自不同的用戶端 |
+| 核准成功但同步內容為空 | 你的帳戶不是同意畫面上的**測試使用者**，或未獲授予 `calendar.readonly` |
+| 代碼在你核准之前就過期 | 裝置代碼的有效時間很短。請重新開始連接以取得新的代碼 |
+| RSVP 時出現「無法更新你的回覆」 | 這是預期情況：連接流程從不要求 `calendar.events` |
+| 同步停止，伺服器日誌中出現重新整理警告 | 該帳戶是以已不再設定的用戶端連接。請重新連線該帳戶，或還原該用戶端 ID 和密鑰 |
 
-## Related guides
+## 相關指南
 
-- [Record and summarize a meeting](/zh-HK/手冊/操作指南/錄製會議/): turn an event into a recording
-- [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
+- [錄製並摘要會議](/zh-HK/手冊/操作指南/錄製會議/)：把活動變成錄音
+- [執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)：權杖與同步排程所在之處
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
 
-## Related concepts
+## 相關概念
 
-- [Calendar and scheduling](/zh-HK/手冊/概念/日曆/)
+- [日曆與排程](/zh-HK/手冊/概念/日曆/)

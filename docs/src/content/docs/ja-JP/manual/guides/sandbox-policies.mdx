@@ -1,193 +1,193 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: サンドボックスポリシーを設定
+description: エージェントの実行を制約するもの、OS サンドボックスがそれをラップしているかどうかの見分け方、そしてサーバーが実際に読み取るケイパビリティ設定について説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+エージェントの実行がサンドボックス化されるかどうかは、サーバー側で起動時に決まります
+（`--sandbox`）。**設定 → サーバー →
+診断とプライバシー** にある **サンドボックスを有効にする** トグル、**バックエンド** ピッカー、
+**デフォルトの機能 · 新しいスペース** トグルは、お使いのデバイスに保存される設定です。
+**サンドボックス化** カードのホスト検出は、サーバーホストが何をラップできるかを報告します。
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+実行に届く制御は 2 つあり、このガイドではその両方を扱います: 後述するエージェント単位の
+**サンドボックスの権限** と、サーバー自身の `--sandbox` フラグです。
 
-## What constrains an agent run
+## エージェントの実行を制約するもの
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+エージェントを制約しているのは 6 つです。1 つ目は OS サンドボックスで、唯一条件付きの
+ものです — 残りの 5 つはどのホストでも保たれます。
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| 境界                 | 動作                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| OS サンドボックス           | macOS では Seatbelt、Linux と WSL2 では bubblewrap。Claude Code CLI、ACP アダプター、ハーネスの `bash` ツールをラップします。**Windows、および `bwrap` と `socat` のない Linux では存在しません** |
+| エージェント自身のワークツリー         | 会話ごとにコピーオンライトのチェックアウトを取得します。元のチェックアウトは書き込み拒否パスとして実行に折り込まれ、それを強制するのはサンドボックスです                                            |
+| ブローカー経由の資格情報     | 資格情報ブローカーは、エージェントのケイパビリティから実行ごとの環境を発行し、終了時に取り消します。ケイパビリティがなければ、環境にトークンもありません                                            |
+| アクションガードレール        | 変更を伴うすべてのツールがエフェクトクラスを宣言し、ガードが呼び出しの実行前にそれを解決します。承認者が接続されていない `prompt` は拒否されます                                                 |
+| 環境のサニタイズ | ACP とハーネスの `bash` ツールはフィルタリングされた環境を受け取ります。`NoSandboxAdapter` 経由の Claude Code はホストの環境を継承します                                                                  |
+| モードのツールサーフェス  | 読み取り専用モードはワークツリーを変更するツールを完全に取り除き、それでも成果を届けられるようモード自身の出力動詞を固定します                                                                         |
 
-Three things stay weaker than they look:
+見た目よりも弱いままの点が 3 つあります:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- ツールゲート、完了契約、構造的なモードルールを強制するのは **内蔵ハーネス** だけです。
+  Claude Code アダプターは強制しません。特に Claude
+  Code は `--dangerously-skip-permissions` 付きで起動されます。非対話の
+  `claude -p` はそうしなければ自身のプロンプトで永久にブロックしてしまうからです —
+  そのため Claude 自身の read、write、edit、bash 呼び出しは Control Center
+  からも見えず、ゲートもされません。サンドボックスがオンの場合、それらを取り囲む境界がサンドボックスです。
+- ハーネスのインプロセスのファイルツール（read、write、edit、apply patch、search、
+  find、search_files）はサーバープロセス内で動作するため、サンドボックスプロファイルが
+  それらを制約することはありません。サンドボックス化されたコマンドランナーを通るのは `bash`
+  ツールだけです。これらのツールは自身のパス閉じ込めとアクションガードレールによって制限されています。
+- バックエンドのないホストでは、最初の行がまったく当てはまりません。ACP とハーネスの
+  `bash` ツールは、環境のサニタイズとコマンドポリシーにフォールバックします。Claude Code は
+  `NoSandboxAdapter` 経由でホストの環境を継承します。サーバーはその旨を起動ログで通知します。
+  お使いの環境は後述の方法で確認してください。
 
-## Set an agent's capabilities
+## エージェントのケイパビリティを設定する
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+これはサーバーが読み取る唯一のケイパビリティ制御です。エージェント単位で、資格情報
+ブローカーがそのエージェントの環境に何を入れるかを決めます。
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. **設定 → ワークスペース → エージェント** に移動します
+2. 一覧からエージェントを選択します
+3. **設定** タブで **サンドボックスの権限** までスクロールします
+4. スイッチをオンにします — 行のキャプションが **ワークスペースのデフォルトを使用** から変わります
+5. 4 つのトグルを設定します:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| トグル                           | 制御する内容                                                                                                                                                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **git push を許可**               | これがオフの場合、実行には `GIT_ASKPASS=/usr/bin/false` と `GIT_TERMINAL_PROMPT=0` が設定されるため、プッシュが資格情報を要求することはできません                                                                                                                   |
+| **GitHub API の呼び出しを許可**       | **git push を許可** と合わせて、ブローカーが GitHub トークンを `GH_TOKEN` / `GITHUB_TOKEN` として注入するかどうかを制御します                                                                                                                               |
+| **チケット API の呼び出しを許可**    | ブローカーが `TICKETING_API_KEY` を注入するかどうかを制御します                                                                                                                                                                                             |
+| **一般的なネットワークアクセスを許可** | サンドボックスがオンの場合、これは実際の外向き通信ゲートです: オフにすると実行の許可リストが空になり、外向きのあらゆるリクエストがプロキシで拒否されます。バックエンドがない場合は、実行に記録されるだけで、スポーンされたプロセスが行うことを何もブロックしません |
 
-6. Save
+6. 保存
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+チェックポイント: エージェントを再度開くと、スイッチはオンのままでトグルも保持されています —
+保存されたケイパビリティセットはサーバーを往復し、何も設定していないエージェントは
+保守的なデフォルト（プッシュ オフ、GitHub API オフ、チケット オフ、
+ネットワーク オン）にフォールバックします。
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[この落とし穴に陥る 2 つの経路]
+キャプションには **ワークスペースのデフォルトを使用** とありますが、サーバーが読み取る
+ワークスペースレベルのケイパビリティ設定は存在しません。スイッチがオフのエージェントには、
+組み込みの保守的なデフォルトが適用されます。
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+これとは別に、実行の GitHub 資格情報は常にブローカーのものだけです — リポジトリ単位の
+GitHub App インストールトークン、または環境の PAT フォールバックであり —
+要求したメンバー自身が保存したトークンが使われることは決してありません。`actingUserId` が
+渡されるのは、オーナーではなく GitHub を接続していないメンバーからサーバーの PAT を
+*伏せる*ためであり、オフのケイパビリティに個人トークンを上書きするものではありません。
+OS サンドボックスのないホストでは、**GitHub API の呼び出しを許可** を厳格な外向き通信の
+境界として扱わないでください: スポーンされたプロセスは依然としてネットワークに到達できます。
 :::
 
-## Check whether your agent runs are sandboxed
+## エージェントの実行がサンドボックス化されているか確認する
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+決めるのは 2 つで、どちらもサーバー側にあります: ホストがバックエンドを提供するかどうかと、
+`--sandbox` がオンかどうかです。この順に確認します。
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. **設定 → サーバー → 診断とプライバシー** に移動します
+2. **サンドボックス化** カードを読みます。**ホスト** の項目は `cc_server`
+   が動作しているマシンであり、今見ているマシンではありません。**バックエンド** フィールドには
+   **ネイティブサンドボックス**（macOS では Seatbelt、Linux と WSL2 では bubblewrap）または
+   **分離なし** が表示されます。**有効** の項目はこのデバイスの設定であり、
+   サーバーが実際に使うラップではありません。
+3. サーバーの起動ログを読みます。次の 3 行のうち正確に 1 行が出力されます:
+   - `agent sandbox ON` とバックエンドの注記 — 実行はラップされます
+   - `no OS-native agent sandbox on this host` と、あればインストールのヒント —
+     実行はラップされません
+   - `agent sandbox DISABLED by --sandbox off` — 意図的なオプトアウト
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` はサンドボックスの状態を報告しないため、確認するのは起動ログです。
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+意図的にサンドボックスをオフにするには — プロファイルが誤動作するホストが、
+このオプションの存在理由です — サーバーを `--sandbox off` で起動するか、
+`CC_SERVER_SANDBOX=off` を設定します。デフォルトは `on` で、`on` は「ホストに
+バックエンドがあれば使う」という意味であり、「バックエンドを必須にする」という意味では決してありません。
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+ネイティブサンドボックスのラップが得られない状況が 2 つあります。**Windows** では
+ネイティブプローブが常に利用不可を報告し、インストールできるものもありません — エージェントの
+ディスパッチは `none` を使います。`microvm` バックエンドは別系統（対話ターミナルとリグ）
+であり、独自のランタイムを対象にプローブでゲートされます。**Linux と WSL2** では `bwrap` と
+`socat` の両方が `PATH` 上になければなりません。なければプローブは利用不可を報告し、
+不足しているパッケージを名指しします。
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+bubblewrap がインストールされた Linux/WSL2 では、標準ポリシーのシークレットファイル
+glob を、エージェントが後から作成するファイルに対して強制できません。そのようなネイティブ
+実行は、ルールを黙って無視するのではなく、今では失敗します。したがって、起動プローブが
+成功しても、Linux のディスパッチが開始できることを保証するものではありません。`--sandbox off`
+は意図的な非閉じ込めのオプトアウトであり、セキュリティ境界の代替ではありません。
 
-## Know what a mode already forbids
+## モードがすでに禁止していることを知る
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+モードはスペースごとに保存され、**モードプリセット** レイヤーとしてガードレール
+リゾルバーに渡されます。4 つのモードのうち 3 つは読み取り専用で、読み取り専用モード
+は 11 のエフェクトクラスを即座に拒否します:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| モード               | ワークツリー  | プリセットによる拒否                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **Agent**（`chat`） | 書き込み可能  | なし — 組み込みのデフォルトが適用されます                                                                                                                                            |
+| **Plan**           | 読み取り専用 | ファイルの削除、ワークツリー外への書き込み、コミット、プッシュ、PR の作成、公開またはマージ、外部トラッカーへの書き込み、パッケージのインストール、プロセスの実行、ワークスペース構造の変更、エンクロージャーの起動または操作 |
+| **Review**         | 読み取り専用 | 同じ 11 個です。ユーザーが選択することはできません — コンポーザーが提供するのは Agent、Plan、Orchestrate だけです                                                                                         |
+| **Orchestrate**    | 読み取り専用 | 同じ 11 個です                                                                                                                                                                     |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+ネットワークアクセスとシークレットへのアクセスは、読み取り専用モードでも意図的に
+拒否_されません_。調査こそが読み取り専用モードの目的だからです。
 
-## Require approval before an action runs
+## アクションの実行前に承認を必須にする
 
-Approval is a guardrail decision, not a sandbox setting.
+承認はガードレールの決定であり、サンドボックスの設定ではありません。
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. **設定 → ワークスペース → エージェントの権限** に移動します
+2. ワークスペース、エージェント、スペースのいずれかのスコープで、アクションクラスを **先に確認** に設定します
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/) for the full
-resolution order.
+**先に確認** の決定は実行を中断してあなたに尋ねます。承認者が接続されていない場合は
+フェイルクローズし、アクションは拒否されます。解決順序の全体は
+[ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/) を参照してください。
 
-## Troubleshooting
+## トラブルシューティング
 
-### An agent cannot push and I never denied it
+### エージェントがプッシュできず、拒否した覚えもない
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+エージェントの **サンドボックスの権限** を確認します。カスタムのケイパビリティセットを
+持たないエージェントには保守的なデフォルトが適用され、**git push を許可** はオフです —
+そのためブローカーは GitHub トークンを注入せず、git には認証する手段がありません。
 
-### The Sandboxing card reports no native sandbox
+### サンドボックス化カードがネイティブサンドボックスなしと報告する
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/).
+そのホストのエージェント実行は Seatbelt や bubblewrap でラップされておらず、
+残りの境界があなたの持っているものです。Linux と WSL2 では、不足している両方の
+ツール — `sudo apt-get install bubblewrap socat` — をインストールし、サーバーを
+再起動します。そうすれば起動ログにサンドボックスがオンであると表示されるはずです。Windows には
+インストールできるネイティブバックエンドがないため、代わりにガードレールを厳しくします:
+[ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/) を参照してください。
 
-### An agent reached a file outside its worktree
+### エージェントがワークツリー外のファイルに到達した
 
-Which tool reached it decides whether this is expected.
+それに到達したのがどのツールかで、これが想定どおりかどうかが決まります。
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+ハーネスのインプロセスのファイルツール（read、write、edit、apply patch、search、
+find、search_files）はサーバープロセス内で動作するため、サンドボックスプロファイルは
+適用されません — それらの境界は、自身のパス閉じ込めとガードレールです。`bash` コマンドや Claude Code
+CLI は、バックエンドが存在する場合はラップ_され_、登録済みの
+チェックアウトはそのラップ内でどのモードでも書き込み拒否になります。シンボリックリンクを
+解決した綴りも含まれます（macOS では `/tmp` や `/var/folders` を通して到達したパスは
+`/private` 配下に解決され、どちらの綴りも拒否されるようになりました）。バックエンドの
+ないホストでは、そのいずれも当てはまりません。どちらの場合でも、ガードレールは
+**ワークツリー外への書き込み** を即座に拒否できます。
 
-## Related guides
+## 関連ガイド
 
-- [Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/)
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [Diagnose an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
-- [Sandbox backends](/ja-JP/マニュアル/リファレンス/サンドボックスバックエンド/)
-- [cc_server CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/): the `--sandbox` flag
+- [ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
+- [サンドボックスバックエンド](/ja-JP/マニュアル/リファレンス/サンドボックスバックエンド/)
+- [cc_server CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/): `--sandbox` フラグ
 
-## Related concepts
+## 関連コンセプト
 
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)

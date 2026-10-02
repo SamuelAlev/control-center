@@ -1,121 +1,135 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-mention agen"
+description: Sebutkan agen di sebuah space untuk mengirimnya, dan rekan tim untuk memberi tahu mereka.
 slug: id-ID/panduan-pengguna/panduan-praktis/mention-agen
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Panduan ini menunjukkan cara menyebut agen dan rekan tim dengan @ di sebuah
+space.
 
-## Mention an agent
+## Menyebut agen
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Ketik `@` di composer lalu pilih agen dari pelengkapan otomatis, atau ketik
+sendiri namanya:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Agen yang disebutkan ditambahkan ke space sebagai peserta bila belum menjadi
+peserta, lalu dikirim dengan konteks dan mode space tersebut. Peserta yang tidak
+disebutkan melihat pesannya tetapi tidak dikirim.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Jika Anda mengirim pesan tanpa sebutan agen, Control Center memilih sendiri agen
+yang merespons: agen yang terakhir berbicara di percakapan itu, jika tidak ada
+maka pemilik percakapan bila percakapan itu memilikinya, jika tidak maka agen
+tingkat teratas pertama di antara peserta space tersebut. Di space dengan satu
+agen, pilihannya selalu agen tunggal itu.
 
-## Know how a name is matched
+## Memahami cara nama dicocokkan
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Token sebutan dicocokkan **tanpa memedulikan huruf besar/kecil**, berdasarkan
+**nama persis atau awalan**. Jadi `@arch` mencapai agen bernama `architect` dan
+`@Alice` mencapai `alice`.
 
-Two consequences worth planning around:
+Dua konsekuensi yang perlu Anda perhitungkan sejak awal:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Token pendek bukanlah error.** Jika dua agen berbagi awalan yang sama, agen
+  pertama yang ditemukan yang menang, dan agen mana itu bergantung pada urutan —
+  bukan pada aturan pemecah seri apa pun. Gunakan nama lengkap setiap kali nama
+  saling tumpang tindih.
+- **Hanya huruf, angka, dan garis bawah yang menjadi bagian dari token.** Pengurai
+  mencocokkan `@(\w+)`, sehingga `@code-reviewer` dibaca sebagai token `code` dan
+  `@my agent` sebagai `my`. Agen yang namanya memuat tanda hubung, titik, atau
+  spasi tidak dapat disebutkan secara andal — termasuk melalui pelengkapan
+  otomatis, yang menyisipkan nama itu sebagai teks biasa. Beri nama agen dengan
+  satu kata, atau dengan garis bawah.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Sebutan dihapus dari teks sebelum teks itu mencapai agen. Pesan yang _hanya_
+berisi sebutan (`@alice`) karena itu tidak mengirim apa pun — berilah pesan itu
+sesuatu untuk dikerjakan.
 
-## Mention several agents at once
+## Menyebut beberapa agen sekaligus
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Kedua agen dikirim secara paralel ke percakapan yang sama dan keduanya menerima
+pesan lengkapnya.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Keduanya juga **berbagi worktree space tersebut**. Worktree repo disediakan per
+space, bukan per agen; setiap agen mendapat direktori kerja overlay-nya sendiri
+untuk `AGENTS.md`, skill, dan konfigurasinya, dengan repo bersama yang ditautkan
+secara baca-tulis. Jadi dua agen yang disebutkan bersamaan dapat melihat — dan
+bertabrakan dengan — hasil edit satu sama lain.
 
-## Mention a teammate
+## Menyebut rekan tim
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+`@token` apa pun yang tidak cocok dengan agen akan dicoba terhadap anggota
+manusia di ruang kerja itu, berdasarkan handle, dengan aturan nama persis atau
+awalan yang sama dan tetap tanpa memedulikan huruf besar/kecil.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Sebutan manusia yang berhasil dicocokkan **tidak mengirim apa pun**. Sebutan itu
+hanya menumpang pada metadata pesan agar router notifikasi dapat memberi tahu
+orang tersebut.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Nama agen selalu dicoba terlebih dahulu, dan token yang sudah diklaim agen tidak
+pernah ditawarkan ke daftar anggota — satu `@word` hanya dapat mengarah ke satu
+prinsipal.
 
-## What the agent receives
+## Apa yang diterima agen
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Agen yang dikirim menerima blok "Summons" di prompt-nya yang menyebut siapa yang
+memanggilnya dan mencantumkan daftar anggota space — agen-agen lain (ditandai
+tingkat teratas atau bawahan) dan anggota manusia — sehingga ia tahu kepada siapa
+ia dapat mengalihkan pekerjaan. Blok itu juga memberitahunya bahwa menyebut agen
+lain dalam balasannya akan membangunkan agen tersebut dan bahwa menyebut dirinya
+sendiri akan diabaikan.
 
-## When an agent mentions an agent
+## Saat agen menyebut agen
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Agen dapat mengalihkan pekerjaan dalam balasannya sendiri. Saat sebuah giliran
+**selesai dengan bersih**, sebutan di dalam teksnya diresolusikan, lalu agen-agen
+itu ditambahkan ke space dan dikirim ke percakapan yang sama, dengan giliran yang
+menyebut sebagai prompt mereka. Giliran yang gagal atau yang terinterupsi tidak
+membangunkan siapa pun — giliran itu berhenti di tengah jalan.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Aturannya sengaja dibuat lebih ketat daripada aturan composer, karena tidak ada
+yang mengawasi untuk mengoreksi tebakan yang salah:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Hanya nama persis.** Tanpa pencocokan awalan. `@arch` mencapai `architect`
+  saat diketik manusia; dari agen, sebutan itu tidak mencapai siapa pun. Nama yang
+  cocok dengan dua agen juga tidak mencapai siapa pun.
+- **Kode bukan prosa.** Sebutan di dalam blok berpagar atau `` `backticks` ``
+  diabaikan, sehingga mengutip anotasi `@Override` atau `pip install foo@1.2`
+  tetap aman. Pagar yang tidak ditutup mengosongkan semua yang ada setelahnya.
+- **`@` yang menempel pada token sebelumnya bukan sebutan** — `sam@host.com`,
+  `pkg/@scope`, dan `node@20` tidak mengarah ke siapa pun.
+- **Tanda hubung dipertahankan**, sehingga `@code-reviewer` mengarah pada dirinya
+  sendiri, bukan sebagai token `code`.
+- **Paling banyak tiga agen per giliran.** Agen yang mencantumkan enam rekan tim
+  dalam sebuah ringkasan sedang mencantumkan mereka, bukan memanggil mereka.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Rantai pembangunan dibatasi dengan cara yang sama seperti delegasi: **kedalaman
+3**, dan agen yang sudah ada di rantai itu tidak dapat dibangunkan lagi olehnya
+(tidak ada `A → B → A`). Pasangan berurutan juga dibatasi lajunya lintas rantai.
+Pembangunan yang ditolak akan memposting pesan sistem ke percakapan yang
+menyebutkan sebutan mana yang tidak terkirim dan mengapa — nama yang tidak
+terselesaikan tidak melakukan itu, karena jika tidak, setiap `@` dalam sebuah
+kalimat akan menarasikan dirinya sendiri.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Untuk pengalihan yang tidak boleh bergantung pada prosa — permintaan/balasan,
+atau menjangkau agen di luar space — gunakan alat `send_to_agent`, `ask_agent`,
+dan `delegate_task` sebagai gantinya.
 
-## Related guides
+## Panduan terkait
 
-- [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
-- [Use spaces](/id-ID/panduan-pengguna/panduan-praktis/space/)
-- [Run agents in parallel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
+- [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
+- [Gunakan space](/id-ID/panduan-pengguna/panduan-praktis/space/)
+- [Jalankan agen secara paralel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
 
-## Related concepts
+## Konsep terkait
 
-- [Dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)

@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: 에이전트 병렬 실행
+description: 여러 에이전트를 한 번에 디스패치하고 서로의 작업이 충돌하지 않게 하세요.
 slug: ko-KR/매뉴얼/사용-가이드/병렬-에이전트
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+이 가이드에서는 여러 에이전트를 동시에 실행하면서 서로를 덮어쓰지 않게 하는 방법을 설명합니다.
 
-## The unit of isolation is the space, not the agent
+## 격리 단위는 에이전트가 아니라 스페이스입니다
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+스페이스에서 작업이 시작되면 Control Center는 해당 스페이스 자체 루트 아래에 등록된 저장소마다 copy-on-write 체크아웃을 하나씩 프로비저닝하며, 브랜치는 워크스페이스의 브랜치 템플릿에서 파생됩니다. 그런 다음 스페이스의 각 에이전트는 자체 오버레이 작업 디렉터리를 받습니다. 하지만 오버레이는 그 스페이스의 `repos/` 디렉터리를 **공유**합니다.
 
-So:
+따라서:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- **서로 다른 스페이스**의 에이전트 두 개는 서로 다른 체크아웃, 서로 다른 브랜치에서 작업합니다. 이것이 진정한 격리입니다.
+- **같은 스페이스**의 에이전트 두 개는 같은 체크아웃, 같은 브랜치에서 작업합니다. 오버레이 경로는 서로 다르므로, 디스패치 경로 잠금(동일한 작업 디렉터리를 요청할 때만 실행을 직렬화합니다)도 이 둘을 직렬화하지 않습니다. 두 에이전트는 같은 파일에 동시에 쓸 수 있습니다.
 
-The rule that follows: **one space per parallel task.**
+여기서 나오는 규칙은 **병렬 작업마다 스페이스 하나**입니다.
 
-## Run tasks in parallel — separate spaces
+## 작업을 병렬로 실행 — 스페이스 분리
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. 에이전트 A로 스페이스를 열고 작업을 보냅니다.
+2. 에이전트 B로 두 번째 스페이스를 열고 다른 작업을 보냅니다.
+3. 둘 다 즉시 디스패치되며, 각자 자기 스페이스의 체크아웃에서 자기 브랜치로 실행됩니다.
 
-This is the recipe to use whenever the agents will be editing files.
+에이전트가 파일을 편집할 때는 항상 이 방법을 사용하세요.
 
-## Work together in one space — several mentions
+## 한 스페이스에서 함께 작업 — 여러 멘션
 
-In a single space, @-mention more than one agent:
+스페이스 하나에서 에이전트를 두 개 이상 @멘션합니다:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+두 에이전트는 병렬로 디스패치되고 보낸 사람으로 태그가 붙은 채 같은 스페이스로 스트리밍됩니다. 둘이 스페이스의 체크아웃을 공유하므로, 이것은 협업 — 한쪽은 쓰고 한쪽은 읽거나, 두 에이전트가 같은 트리에 대해 추론하는 경우 — 에 사용하고, 서로 독립적인 편집 두 개에는 사용하지 마세요.
 
-## Fan out from a pipeline
+## 파이프라인에서 팬아웃
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+내장 `pr_review` 템플릿은 팬아웃의 기본 제공 예시입니다. 여러 리뷰어 노드가 하나의 트리거에서 동시에 실행되고, **Consolidate (join)** 노드가 그 발견 사항을 하나의 보고서로 모읍니다. 파이프라인 화면에서 실행하면 모든 리뷰어가 병렬로 디스패치됩니다.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+파이프라인 편집기는 단계를 추가하거나 연결할 때 터미널 센티널을 숨기고 모든 활성 싱크를 기다리도록 다시 연결하므로, 직접 그린 분기도 실제로 실행됩니다.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[티켓을 할당해도 아무것도 디스패치되지 않습니다]
+티켓을 에이전트에 할당하면 소유권만 기록됩니다. 티켓 디스패처는 없습니다 — `TicketAssigned`는 감사 신호이며 여기서 작업이 시작되지 않습니다. 유일한 예외는 _팀_에 할당된 티켓으로, 이 경우 그 팀의 리더가 깨어납니다.
 :::
 
-## Watch them run
+## 실행 지켜보기
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**옵저버빌리티 → 실시간**(사이드바 하단 → **옵저버빌리티**, 그다음 **실시간** 탭)에는 이 워크스페이스의 에이전트 로스터가 1초마다 갱신되어 표시됩니다. 상태(실행 중 / 유휴 / 주차됨 / 중단됨), 각 에이전트가 하는 일, 최근 실행의 토큰과 비용, 실행 중인 프로세스에 대한 강제 종료 컨트롤입니다. 행을 선택하면 실시간 대화록 드로어가 도킹됩니다.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**설정 → 워크스페이스 → 에이전트**에는 같은 로스터가 각 에이전트의 실행 이력에서 도출된, 주의를 우선하는 다른 상태 용어 — 실행 중, 차단됨, 실패, 유휴, 실행한 적 없음 — 로 표시되며, 주의가 필요한 항목이 위로 떠오르도록 정렬됩니다. 각 에이전트의 **로그** 탭에는 해당 에이전트의 실행 이력이 들어 있습니다.
 
-Both surfaces are scoped to the active workspace.
+두 화면 모두 활성 워크스페이스 범위로 한정됩니다.
 
-## Handle conflicts
+## 충돌 처리
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+스페이스 간에는 각 스페이스가 자기 브랜치에 있으므로, 충돌은 두 번째 풀 리퀘스트를 병합할 때 평범한 Git 병합 충돌로 나타납니다. 다른 병합 충돌과 같은 방식으로 해결하세요.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+스페이스 하나 안에는 브랜치 경계도 잠금도 없습니다. 에이전트들이 같은 파일을 실시간으로 쓰고 있고, 진 쪽은 그냥 덮어써집니다. 두 에이전트가 한 스페이스에서 편집하기를 원하게 된다면, 대신 작업을 두 스페이스로 나누세요.
 
-To reduce collisions either way:
+어느 쪽이든 충돌을 줄이려면:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/ko-KR/매뉴얼/사용-가이드/코드-검색/).
-- Review and merge each agent's pull request promptly.
+- 각 에이전트에 서로 다른 범위 — 다른 파일, 다른 모듈 — 를 부여합니다.
+- 디스패치하기 전에 코드 그래프로 그 변경이 무엇을 건드리는지 확인합니다. [코드 그래프로 코드 검색](/ko-KR/매뉴얼/사용-가이드/코드-검색/)을 참고하세요.
+- 각 에이전트의 풀 리퀘스트를 신속히 리뷰하고 병합합니다.
 
-## Resource considerations
+## 리소스 고려 사항
 
-Each running agent costs:
+실행 중인 에이전트마다 다음 비용이 듭니다:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- 스페이스 체크아웃 — copy-on-write를 사용할 수 있는 동안에는 디스크에서 무시할 수 있는 수준입니다. Windows에서는 `git worktree`입니다. reflink를 할 수 없는 파일 시스템에서는 복사하는 대신 프로비저닝이 실패합니다.
+- 서버 호스트의 프로세스
+- 에이전트마다 누적되는 모델 토큰
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/ko-KR/매뉴얼/사용-가이드/비용-관리/) for the two commands that do have one.
+비용은 **옵저버빌리티 → 인사이트**에 집계됩니다. 일반적인 대화형 턴에는 지출 상한이 없다는 점에 유의하세요. 상한이 있는 두 명령은 [비용 관리](/ko-KR/매뉴얼/사용-가이드/비용-관리/)를 참고하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Build an agent team](/ko-KR/매뉴얼/사용-가이드/에이전트-팀-구성/)
-- [Manage costs](/ko-KR/매뉴얼/사용-가이드/비용-관리/)
-- [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [에이전트 팀 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-팀-구성/)
+- [비용 관리](/ko-KR/매뉴얼/사용-가이드/비용-관리/)
+- [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
 
-## Related concepts
+## 관련 개념
 
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)

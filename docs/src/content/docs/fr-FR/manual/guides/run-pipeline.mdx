@@ -1,68 +1,75 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Exécuter un pipeline manuellement
+description: Démarrez une exécution de pipeline depuis le lanceur, renseignez ses entrées et arrivez sur le détail de l’exécution.
 slug: fr-FR/manuel/guides/executer-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/fr-FR/manuel/guides/surveiller-pipelines/).
+Ce guide explique comment démarrer une exécution à la main. Pour en suivre une,
+lire la sortie des étapes et vous remettre d’un échec, consultez
+[Surveiller les exécutions de pipeline](/fr-FR/manuel/guides/surveiller-pipelines/).
 
-## Start a run
+## Démarrer une exécution
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. Cliquez sur **Pipelines** dans la barre latérale de l’espace de travail.
+2. Appuyez sur **Exécuter le pipeline** dans l’en-tête. Vous arrivez sur le
+   lanceur (`/workspaces/<workspace-id>/pipelines/run`).
+3. Choisissez un modèle dans le rail de gauche. Chaque carte affiche le nom du
+   modèle, sa description et s’il accepte des entrées.
+4. Remplissez le formulaire d’entrées à droite. Les champs obligatoires bloquent
+   le bouton tant qu’ils n’ont pas de valeur ; un modèle sans entrée le signale.
+5. Appuyez sur **Exécuter le pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Vous arrivez sur la page de détail de l’exécution, avec la chronologie et le
+canevas du graphe en direct.
 
-## If the rail is empty
+## Si le rail est vide
 
-The launcher shows a template only when **both** are true:
+Le lanceur n’affiche un modèle que lorsque **les deux** conditions sont réunies :
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- L’interrupteur du modèle est activé dans
+  **Paramètres → Espace de travail → Modèles de pipeline**.
+- **Autoriser l’exécution manuelle** est activé dans la boîte de dialogue
+  **Exécution manuelle** de l’éditeur de modèle — c’est cet interrupteur qui
+  crée le déclencheur `manual` que lit le lanceur.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+Huit des treize modèles intégrés sont livrés désactivés : `external_pr_welcome`,
 `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+`dep_audit` et `pr_digest`. Le moteur refuse de démarrer un modèle désactivé,
+alors activez son interrupteur avant de le chercher ici.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Il n’existe aucune action **Exécuter** par modèle dans la liste des modèles, ni
+aucun bouton d’exécution dans l’éditeur — le lanceur est le seul point d’entrée
+manuel.
 
-## Fill in a repository input
+## Renseigner une entrée de dépôt
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Une entrée de type **Dépôt** affiche un sélecteur sur les dépôts enregistrés de
+l’espace de travail. En choisir un renseigne `repo_id`, `repo_local_path`,
+`repo_full_name` et — lorsque le dépôt a un dépôt distant GitHub — `repo_owner`
+et `repo_name` dans la charge utile de l’exécution, pour que les étapes en aval
+puissent lire celui dont elles ont besoin.
 
-## Watch it run
+## Suivre l’exécution
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+La page de détail de l’exécution comporte trois parties : un bandeau de
+métadonnées (heure de début, durée active, progression des étapes, une bannière
+d’échec, **Réessayer** et **Supprimer**), une chronologie repliable avec la durée
+et le coût par étape, et le canevas du graphe. Sélectionner un nœud ouvre le
+panneau de détail de cette étape.
 
-[Monitor pipeline runs](/fr-FR/manuel/guides/surveiller-pipelines/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Surveiller les exécutions de pipeline](/fr-FR/manuel/guides/surveiller-pipelines/)
+couvre tout cela, notamment comment lire une étape suspendue et quoi faire
+lorsqu’une étape échoue.
 
-Every run you start from the app is a real one.
+Chaque exécution que vous lancez depuis l’application est réelle.
 
-## Related guides
+## Guides connexes
 
-- [Create a pipeline template](/fr-FR/manuel/guides/creer-pipeline/)
-- [Set up pipeline triggers](/fr-FR/manuel/guides/declencheurs-de-pipeline/)
-- [Monitor pipeline runs](/fr-FR/manuel/guides/surveiller-pipelines/)
+- [Créer un modèle de pipeline](/fr-FR/manuel/guides/creer-pipeline/)
+- [Configurer des déclencheurs de pipeline](/fr-FR/manuel/guides/declencheurs-de-pipeline/)
+- [Surveiller les exécutions de pipeline](/fr-FR/manuel/guides/surveiller-pipelines/)
 
-## Related concepts
+## Concepts connexes
 
 - [Pipelines](/fr-FR/manuel/concepts/pipelines/)

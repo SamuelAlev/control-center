@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: پل گفتگو
+description: ارائه‌دهندگان، دستورات، اعتبارنامه‌ها، قابلیت‌ها، عملیات RPC و ذخیره‌سازی پل گفتگو.
 slug: fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## ارائه‌دهندگان
 
-| Provider | Wire value | Transport                  | Space kind |
+| ارائه‌دهنده | مقدار سیمی | ترابری                     | نوع فضا |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode (WSS رو به بیرون) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack تنها ارائه‌دهنده است.** `ChatProvider` یک enum تک‌مقداری است و `cc_server` یک افزونه ثبت می‌کند. schema، هر جست‌وجو و هر ایندکس یکتا با `provider` کلید می‌خورند، پس شناسه‌ها هرگز از مرز ارائه‌دهنده‌ها نمی‌گذرند و افزودن یکی، تغییری تنها در سمت سرور است.
 
-One provider-side app per **workspace × provider**.
+یک برنامهٔ سمت ارائه‌دهنده به‌ازای هر **فضای کاری × ارائه‌دهنده**.
 
-## Chat commands
+## دستورات گفتگو
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+نام دستور به ازای هر برنامه است (`cc` به‌طور پیش‌فرض، یعنی `/cc`). مدیر می‌تواند نامش را عوض کند؛ پل از آن پس همان نامی را به کار می‌برد که آخرین بار با آن فراخوانی شده است.
 
-| Command                               | Effect                                                        |
+| دستور                                 | اثر                                                           |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (یا `/cc` بدون فعل)        | آنچه ربات می‌تواند انجام دهد را فهرست می‌کند                   |
+| `/cc link <code>`                     | یک کد یک‌بارمصرف را نقد می‌کند و هویت گفتگوی فرستنده را پیوند می‌زند |
+| `/cc ticket <title>`                  | یک تیکت محلی را که عضو پیوندشده گزارش کرده ثبت می‌کند          |
+| `/cc ticket <title> \| <description>` | همان کار، با هرچه پس از نخستین `\|` بیاید به‌عنوان توضیح       |
+| فعل ناشناخته                          | فعل ناشناخته را همراه با متن راهنما گزارش می‌کند               |
 
-Ways to reach an agent:
+راه‌های رسیدن به یک عامل:
 
-| Gesture                    | Behavior                                                                                                               |
+| کنش                        | رفتار                                                                                                               |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` در یک کانال       | یک رشتهٔ Slack و فضایی متناظر در Control Center باز می‌کند؛ عامل در همان رشتهٔ Slack پاسخ می‌دهد                      |
+| پاسخ در یک رشتهٔ پل‌شدهٔ Slack | همان فضای Control Center را ادامه می‌دهد — بدون نیاز به منشن                                                       |
+| پیام معمولی در یک کانال    | نادیده گرفته می‌شود (نه خطاب به ربات است و نه در یک رشتهٔ پل‌شدهٔ Slack)                                            |
+| پیام مستقیم به ربات        | یک فضای Control Center به‌ازای هر گفتگوی مستقیم؛ هنگام کار عامل یک عنوان رشتهٔ Slack و یک وضعیت «is thinking…» تنظیم می‌کند |
 
-## Credential fields (Slack)
+## فیلدهای اعتبارنامه (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+توسط توصیف‌گر ارائه‌دهنده اعلام می‌شوند؛ همان چیزی که دیالوگ اتصال را تولید می‌کند و ارسال را اعتبارسنجی می‌کند.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| شناسهٔ فیلد           | برچسب                          | الزامی | پیشوند  | محل قرارگیری                                                    |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | توکن OAuth کاربر ربات           | بله      | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | توکن سطح برنامه                 | بله      | `xapp-` | Basic Information → App-Level Tokens، با مجوز `connections:write` |
+| `configRefreshToken` | توکن تازه‌سازی پیکربندی برنامه  | خیر      | `xoxe`  | توکن‌های پیکربندی برنامه در api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` اعتبارنامهٔ مدیریت برنامه است: بدون آن اتصال کار می‌کند، اما ربات را نمی‌توان از Control Center ساخت یا ویرایش کرد. با هر بار استفاده می‌چرخد و مقدار چرخیده بی‌درنگ ذخیره می‌شود.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+فاصله‌های ابتدا و انتهای مقدارها حذف می‌شود، کلیدهای اعلام‌نشده دور ریخته می‌شوند و ناسازگاری پیشوند با همان یک جمله در کلاینت و سرور رد می‌شود. فیلدهای الزامی باید در هر اتصال حاضر باشند؛ فیلد اختیاری‌ای که خالی بماند همان چیزی را نگه می‌دارد که از قبل ذخیره شده است.
 
-## Slack app requirements
+## الزامات برنامهٔ Slack
 
-Bot token scopes:
+مجوزهای توکن ربات:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+اشتراک‌های رویداد ربات:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+تنظیمات ساختاری‌ای که Control Center هنگام ساخت یا ویرایش برنامه تحمیل می‌کند: Socket Mode فعال، بدون request URL، تب Messages فعال و قابل‌نوشتن، وضعیت `always_online` ربات، مجوزها و رویدادهای الزامی که با هرچه برنامه از قبل دارد ادغام می‌شوند (هرگز کم نمی‌شوند) و یک دستور اسلش با توضیح `File a ticket or link your Control Center account` — همان نشانه‌ای که دستور خودِ Control Center را در یک manifest برون‌بری‌شده مشخص می‌کند.
 
-## Connection states
+## وضعیت‌های اتصال
 
-| State            | Wire           | Meaning                                                         |
+| وضعیت            | مقدار سیمی    | معنا                                                           |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| متصل نیست        | `disconnected` | هیچ اعتبارنامه‌ای برای این فضای کاری × ارائه‌دهنده ذخیره نشده است |
+| در حال اتصال…    | `connecting`   | اعتبارنامه‌ها ذخیره شده‌اند، ترابری در حال برقراری یا برقراری دوباره است |
+| زنده             | `connected`    | ترابری برپاست و رویدادها را دریافت می‌کند                       |
+| خطای اتصال       | `error`        | ذخیره شده اما ناموفق است؛ خطای خودِ ارائه‌دهنده هم در کنارش نمایش داده می‌شود |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+اتصال دوباره با عقب‌نشینی نمایی و jitter انجام می‌شود، با سقف ۳۰ ثانیه. چرخش socket که خود ارائه‌دهنده آغاز کند بی‌درنگ دوباره وصل می‌شود، بدون تشدید عقب‌نشینی. اعتبارنامهٔ ردشده (`invalid_auth`، `not_authed`، `token_revoked`، `account_inactive`، `token_expired`، `invalid_app_id`) یا مجوز غایب پایانی است: پل تا رسیدن اعتبارنامه‌های تازه دیگر تلاش نمی‌کند.
 
-## Provider capabilities (Slack)
+## قابلیت‌های ارائه‌دهنده (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+پل بر پایهٔ پرمایه‌ترین سطح نوشته شده است و هر بار یک قابلیت را تنزل می‌دهد.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| قابلیت                    | Slack  | اثر در صورت نبود                                                                               |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | بله    | کل پاسخ یک‌بار، در پایان، فرستاده می‌شود                                                       |
+| `streamingRequiresThread` | بله    | مقصد پاسخی که لنگر رشته ندارد، پاسخ‌ها را کامل می‌فرستد                                        |
+| `ephemeralMessages`       | بله    | پاسخ یک دستور اسلش که دستگیرهٔ پاسخ قابل‌استفاده‌ای ندارد دور ریخته می‌شود (ردها همیشه درون رشته فرستاده می‌شوند) |
+| `threadStatus`            | بله    | بدون خط گذرای «is thinking…»                                                                   |
+| `threadTitle`             | بله    | رشتهٔ گفتگو عنوان پیش‌فرضش را نگه می‌دارد                                                       |
+| `slashCommands`           | بله    | بدون سطح `/cc`                                                                                 |
+| `taskCards`               | بله    | فقط متن — بدون کارتی بالای پاسخ و بدون پیوند «View in Control Center»                          |
+| `maxMessageLength`        | ۳۹٬۰۰۰ | پاسخ‌های بلندتر با اشاره‌ای به Control Center بریده می‌شوند                                     |
+| `maxStreamChunkLength`    | ۳٬۸۰۰  | افزودن‌ها روی مرز پاراگراف، خط یا فاصله شکسته می‌شوند                                           |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+اعلام استریم، وعدهٔ استریم نیست: استریم Slack به قابلیت Agents & AI Apps روی یک طرح پولی نیاز دارد. ردی که هنگام فراخوانی رخ دهد (`streaming_not_supported`، `feature_not_enabled`، `paid_only`، …) در تمام عمر اتصال به یاد می‌ماند و به‌صورت `streamingAvailable: false` آشکار می‌شود. کارت‌های وظیفهٔ Slack سوار همان فراخوانی‌اند، پس Slackی که حالت نمایش کارت را رد کند استریمش را نگه می‌دارد و فقط کارت را از دست می‌دهد، یک‌بار، در تمام عمر اتصال.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+یک استریم همچنین باید خواننده‌ای را که برایش است نام ببرد. Slack برای باز کردن آن در یک **کانال** هم به کاربر گیرنده و هم به تیم او نیاز دارد (پیام مستقیم چنین نیست) و در غیر این صورت با `missing_recipient_user_id` / `missing_recipient_team_id` رد می‌کند — ردی در سطح هر فراخوانی، پس پل به تلاش ادامه می‌دهد و نوبت در این میان به‌شکل یک پاسخ کامل فرستاده می‌شود. گیرنده همان کسی است که پرسیده، برگرفته از پیام ورودی (تیم خودش، نه تیم برنامه، پس یک کانال Slack Connect درست حل می‌شود). برای نوبتی که کسی از گفتگو شروعش نکرده — کاری که در Control Center روی گفتگویی از قبل پل‌شده راه افتاده — گیرنده عضوی است که پیوندش پل را ساخته؛ اگر او از آن پس حساب گفتگویش را جدا کرده باشد، آن نوبت کامل فرستاده می‌شود نه استریم‌شده.
 
-## Task cards
+## کارت‌های وظیفه
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+هر نوبت عامل یک کارت گروه‌بندی‌شده (`task_display_mode: plan`) با یک ردیف برای هر گام. هر ردیف یک `task_update` شامل `id` + `title` + `status` است، به‌علاوهٔ یک `details` یک‌باره وقتی اندیشه آماده می‌شود. `details` و `output` با شناسهٔ یکسان بدون جداکننده به هم می‌چسبند، پس `details` یک‌بار فرستاده می‌شوند و `output` هرگز استریم نمی‌شود. عنوان طرح همان درخواست است؛ پاسخ یک افزودن بعدی جداگانه است که یک تکهٔ `markdown_text` را حمل می‌کند.
 
-| Part           | Content                                                                                                                                                       |
+| بخش            | محتوا                                                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| عنوان طرح      | آنچه پرسیده شده                                                                                                                                               |
+| ردیف راه‌اندازی | `Working on it…`، سپس `Cloning …`، سپس `Starting the agent…` — یک ردیف، با عنوان جایگزین‌شده                                                                |
+| ردیف اندیشه    | `Thinking…`، وقتی عامل شروع به استدلال می‌کند اضافه می‌شود؛ اندیشه همان `details` این ردیف است که یک‌بار و هنگام پایان استدلال فرستاده می‌شود                  |
+| ردیف‌های ابزار  | یک ردیف برای هر ابزار (`Bash which swift`)، با شناسهٔ یکتا تا کنار هم بنشینند                                                                                 |
+| وضعیت          | تا وقتی آن ردیف اجرا می‌شود در جریان؛ با شروع ردیف بعدی یا پایان نوبت کامل؛ و خطا برای شکست، وقفه و سقف نوبت                                                 |
+| فراخوان به اقدام | `View in Control Center` به‌شکل ردیفی در انتها وقتی نوبت تمام می‌شود — تا وقتی کار در جریان است غایب، و وقتی سرور نشانی عمومی قابل‌دسترسی ندارد هم غایب        |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+کارتی که هرگز چه چیزی را حمل نمی‌کند: خروجی ابزار، آرگومانی بیرون از همان فهرست مجاز، یا هر چیزی که از پایگاه داده خوانده شده باشد. متن استدلال فقط details ردیف `Thinking…` است (با سقف ۲۵۶ نویسه)، نه بدنهٔ پیام. کارتی که حرف تازه‌ای برای گفتن نداشته باشد دوباره فرستاده نمی‌شود. یک منشن استریم را بی‌درنگ باز می‌کند تا رشتهٔ Slack ساکت نماند؛ نوبتی که پس از آن هیچ متنی تولید نکرده باشد همان کارت را با یک یادداشت کوتاه تمام می‌کند، به‌جای فرستادن پیام دوم. نوبت بی‌واژه روی فضایی که هرگز استریمی باز نکرده (بدون کارت، یا استریمی که از قبل رد شده) باز هم یک پیام می‌فرستد که کارت تمام‌شده و یادداشت را حمل می‌کند.
 
-Streamed and posted cards are different payloads:
+کارت‌های استریم‌شده و فرستاده‌شده دو محمولهٔ متفاوت‌اند:
 
-| Form     | Shape                                                | Prose                                            |
+| شکل          | ساختار                                              | متن                                             |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| استریم‌شده | `plan_update` به‌علاوهٔ تکه‌های `task_update` با کلید `id` | رشتهٔ ساده، با سقف ۲۵۶ نویسه در هر تکه            |
+| فرستاده‌شده | یک بلوک `plan` که `task_card`های با کلید `task_id` را در بر می‌گیرد | متن غنی                                          |
 
-Failure handling:
+مدیریت شکست:
 
-| Situation                                    | Behavior                                                                                                                    |
+| وضعیت                                        | رفتار                                                                                                                       |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| ارائه‌دهنده کارت را در یک افزودن رد می‌کند     | همان افزودن بی‌درنگ و بدون کارت دوباره تلاش می‌شود؛ متن همچنان زنده می‌رسد و کارت‌ها در تمام عمر اتصال کنار گذاشته می‌شوند    |
+| ارائه‌دهنده متن را هم رد می‌کند                | استریم بسته می‌شود و پاسخ کامل فرستاده می‌شود                                                                                |
+| استریم پس از رسیدن بخشی از پاسخ می‌شکند       | استریم بسته می‌شود و هیچ‌چیز دوباره فرستاده نمی‌شود                                                                          |
 
-See [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/) for why the payload is split this way.
+برای اینکه چرا محموله این‌گونه تقسیم شده است، [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/) را ببینید.
 
-### Setup, before there is a turn
+### راه‌اندازی، پیش از آنکه نوبتی وجود داشته باشد
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+کارت وقتی باز می‌شود که یک منشن پذیرفته شود، پیش از کلون و پیش از نخستین توکن؛ نوبتی که پس از آن می‌آید همان کارت و همان استریم را برمی‌گیرد. روایت پس از آن از `SpaceProvisioningChanged` روی باس رویداد دامنه می‌آید — همان پیشرفتی که بنر آماده‌سازی برنامهٔ رومیزی از ردیف فضا می‌خواند.
 
-| Provisioning state          | Narration                                                      |
+| وضعیت آماده‌سازی            | روایت                                                          |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| منشن پذیرفته شد             | `Working on it…`                                               |
+| گام `repo`                  | `Cloning <repo>…`                                              |
+| گام `prCheckout`            | `Checking out the pull request in <repo>…`                     |
+| گام `script`                | `Running the setup script for <repo>…`                         |
+| گام `agent`                 | `Setting up <agent>…`                                          |
+| `provisioning`، بدون گام تا این لحظه | `Preparing the workspace…`                             |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| استدلال عامل                | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+روایت راه‌اندازی به هر چهار شرط نیاز دارد:
 
-| Condition                                 |
+| شرط                                       |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| ارائه‌دهنده کارت‌ها را نمایش دهد           |
+| استریم روی این اتصال در دسترس باشد        |
+| فضا یک درخواست گفتگوی در جریان داشته باشد |
+| هیچ کارتی از قبل نوبتی را در آنجا گزارش نکند |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+درخواست تا وقتی نوبتی شروع شود یا راه‌اندازی شکست بخورد در جریان می‌ماند. رویداد `ready` بدون کارتی که از قبل باز باشد، یک فضای گرم است و بی‌صدا رها می‌شود، و راه‌اندازی‌ای که کسی در گفتگو منتظرش نیست — گفتگویی که در برنامه باز شده، یا گفتگویی رهاشده که هنگام راه‌اندازی از سر گرفته می‌شود — هیچ کارتی تولید نمی‌کند.
 
-## The `/open` bounce page
+## صفحهٔ بازگشت `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+محصولات گفتگو در یک پیوند فقط `http(s)` را می‌پذیرند و نه چیز دیگری، پس یک فراخوان به اقدام نمی‌تواند مستقیماً طرح برنامهٔ رومیزی را نام ببرد.
 
-| Property   | Value                                                                                                                                       |
+| ویژگی      | مقدار                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| مسیر       | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| منشأ       | برگرفته از نشانی عمومی سرور (`ws` → `http`، `wss` → `https`)؛ loopback حفظ می‌شود                                                            |
+| پاسخ       | یک صفحهٔ HTML کوچک no-store که به `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` می‌رود و یک دکمهٔ دستی نشان می‌دهد     |
+| اعتبارسنجی | شناسه‌ها باید با `[A-Za-z0-9_.-]{1,128}` بخوانند؛ هر چیز دیگری 404 است                                                                       |
+| دسترسی     | عمومی و بی‌اثر — هیچ پایگاه داده‌ای نمی‌خواند، پس اوراکل وجود نیست؛ برنامه‌ای که باز می‌کند خودش مجوزدهی را انجام می‌دهد                      |
 
-## Bot profile fields
+## فیلدهای نمایهٔ ربات
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| فیلد               | حد           | یادداشت‌ها                                                                                              |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------- |
+| `appName`          | ۱–۳۵ نویسه   | به‌طور پیش‌فرض `Control Center · <workspace name>`                                                        |
+| `botDisplayName`   | ۱–۸۰ نویسه   | به‌طور پیش‌فرض `control-center`                                                                           |
+| `description`      | ≤ ۱۴۰ نویسه  |                                                                                                          |
+| `agentDescription` | ≤ ۳۰۰ نویسه  | بالای یک پیام مستقیم با ربات نمایش داده می‌شود                                                            |
+| `command`          | ≤ ۳۲ نویسه   | بهنجار می‌شود: اسلش‌های ابتدایی حذف، به حروف کوچک تبدیل، `[^a-z0-9_-]` پاک و در صورت خالی بودن به `cc` برمی‌گردد |
+| `agentEnabled`     | —            | اینکه تجربهٔ پیام مستقیم/عامل عرضه می‌شود یا نه                                                           |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+کادر خالی یعنی «دست به آن نزن»، نه «پاکش کن». محدودیت‌ها از آنِ Slack است که تنگ‌ترین میان محصولات مدل‌سازی‌شده است.
 
-## Link codes
+## کدهای پیوند
 
-| Property | Value                                                                                    |
+| ویژگی         | مقدار                                                                                     |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| طول      | ۶ نویسه                                                                                  |
+| الفبا    | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (بدون `0`/`O`، `1`/`I`، `U`)                            |
+| عمر      | ۱۵ دقیقه                                                                                 |
+| استفاده  | یک‌بار                                                                                   |
+| ذخیره‌سازی | در حافظه — راه‌اندازی دوبارهٔ سرور کدهای باقی‌مانده را باطل می‌کند                        |
+| دامنه    | یک فضای کاری و یک ارائه‌دهنده؛ ضرب یک کد تازه، کد پیشین عضو را باطل می‌کند                |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+نقد کد بدون توجه به بزرگی و کوچکی حروف تطبیق داده می‌شود. کدهای ناشناخته، منقضی، متعلق به فضای کاری دیگر و متعلق به ارائه‌دهندهٔ اشتباه، همگی به‌عمد یکسان شکست می‌خورند.
 
-## Link methods
+## روش‌های پیوند
 
-| Method | Wire    | How                                                                            |
+| روش    | مقدار سیمی | چگونه                                                                        |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| کد     | `code`  | عضو `/cc link <code>` را نقد کرد                                               |
+| ایمیل | `email` | ایمیل تأییدشدهٔ ارائه‌دهنده با کاربری که از قبل عضو فضای کاری است تطبیق داده شد |
 
-## RPC operations
+## عملیات RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+همه محدود به فضای کاری‌اند. سرور بی‌حالت است، پس هر فراخوانی `workspace_id` خودش را در آرگومان‌ها حمل می‌کند؛ دیسپچر عملیاتی محدود به فضای کاری را که آن را جا انداخته باشد، پیش از باز شدن هر پایگاه داده‌ای رد می‌کند. اعتبارنامه‌ها فقط _به داخل_ می‌روند — خواندن‌های وضعیت هرگز آن‌ها را برنمی‌گردانند.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| عملیات                  | نوع         | کمترین نقش                                    | کلاس‌های اقدام                  |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| `chat.providers`        | خواندن      | `guest`                                        | —                               |
+| `chat.status`           | خواندن      | `guest`                                        | —                               |
+| `chat.connect`          | تغییر       | `admin`                                        | `secretAccess`، `networkEgress` |
+| `chat.disconnect`       | مخرب        | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | خواندن      | `guest`                                        | —                               |
+| `chat.beginUserLink`    | تغییر       | `member`                                       | —                               |
+| `chat.unlinkUser`       | تغییر       | `member` برای خودتان، `admin` برای هر کس دیگر  | —                               |
+| `chat.createApp`        | تغییر       | `admin`                                        | `secretAccess`، `networkEgress` |
+| `chat.setupLink`        | خواندن      | `admin`                                        | —                               |
+| `chat.botProfile`       | خواندن      | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | تغییر       | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+عملیات خواندن کف `guest` را از نوعشان به ارث می‌برند؛ تغییرهای بدون کف صریح به `member` نیاز دارند.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` یک URL ساخت برنامهٔ ارائه‌دهنده را از نمایهٔ ربات ترکیب می‌کند. هیچ کلاس اقدامی اعلام نمی‌کند، چون هیچ رازی نمی‌خواند و به جایی وصل نمی‌شود — تنها فراخوانی را مرورگر خودِ کاربر انجام می‌دهد.
 
-One reactive query completes the surface:
+یک پرس‌وجوی واکنشی این سطح را کامل می‌کند:
 
-| Query                 | Kind  | Emits                                                    |
+| پرس‌وجو                | نوع   | منتشر می‌کند                                             |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | تماشا | فهرست اعضا، که با ساخته یا حذف شدن هر پیوند دوباره فرستاده می‌شود |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+وجود دارد چون پیوند زدن در _سمت دیگر_ رخ می‌دهد: عضو کد یک‌بارمصرف را در ربات می‌نویسد، پس هیچ پاسخی از کلاینت نمی‌تواند جواب را برگرداند. هم فهرست اعضای تنظیمات و هم دیالوگ بازِ «پیوند حساب من» آن را دنبال می‌کنند و دیالوگ همان لحظه‌ای که پیوند خودِ عضو می‌نشیند به یک تأییدیه سوئیچ می‌کند.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` همیشه کدی برای هویت خودِ فراخوان می‌ضربد. `chat.updateBotProfile` تنها وقتی یک `remaining_step` برمی‌گرداند که گامی باقی مانده باشد (معمولاً یک نصب دوباره)؛ نبودنش یعنی ویرایش اعمال شده است.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` برای هر ارائه‌دهندهٔ عرضه‌شده یک ورودی برمی‌گرداند — توصیف‌گر به‌علاوهٔ وضعیت اتصال، وقتی وجود داشته باشد. هر چیزی که رابط تنظیمات رندر می‌کند از همان محموله می‌آید و همین است که افزودن یک ارائه‌دهنده را به تغییری تنها در سمت سرور تبدیل می‌کند.
 
-## Storage
+## ذخیره‌سازی
 
-| What                       | Where                                                                                                        |
+| چه چیزی                        | کجا                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| اعتبارنامه‌های اتصال         | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| راه‌اندازی هدایت‌شدهٔ نیمه‌تمام | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| فایل‌های قدیمی Slack         | `<dataDir>/<workspaceId>/slack_credentials.json` و `slack_app_setup.json`، که یک‌بار خوانده و در جای خود مهاجرت داده می‌شوند |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+اعتبارنامه‌ها کنار پایگاه دادهٔ فضای کاری زندگی می‌کنند، نه درون آن: حذف یک فضای کاری توکن‌های گفتگویش را با خود می‌برد و `workspace.export` یا یک پشتیبان، `workspace.db` را کپی می‌کند — پس فضای کاری‌ای که به کس دیگری سپرده می‌شود هیچ توکن ربات زنده‌ای با خود نمی‌برد. نوشتن‌ها اتمی‌اند (فایل موقت به‌علاوهٔ تغییر نام) و به فقط-مالک محدود می‌شوند.
 
-## Database tables
+## جدول‌های پایگاه داده
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+هر دو در پایگاه دادهٔ فضای کاری زندگی می‌کنند که یک خط پایهٔ v1 فشرده‌شده دارد — پس خواندن میان‌فضایی کامپایل نمی‌شود.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — یک گفتگوی بیرونی ↔ یک فضای Control Center:
 
-| Column                                                 | Notes                                                                      |
+| ستون                                                   | یادداشت‌ها                                                                  |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | دامنهٔ فضای کاری                                                           |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | تیم Slack `T…`، برای ارائه‌دهندگانی که این مفهوم را ندارند خالی             |
+| `external_channel_id`                                  | کانال Slack `C…`، گروه `G…`، پیام مستقیم `D…`                              |
+| `external_thread_id`                                   | لنگر رشتهٔ Slack، یا null وقتی کل گفتگو لنگر است (پیام‌های مستقیم ربات)    |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
-| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+| `created_by_user_id`، `created_at`، `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+یکتا روی `(workspace_id, provider, external_channel_id, external_thread_id)`، با یک ایندکس جزئی که همان را برای شناسه‌های رشتهٔ null اعمال می‌کند (SQLite مقدارهای NULL را متمایز می‌شمارد).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — یک عضو بیرونی ↔ یک کاربر Control Center:
 
-| Column                                 | Notes                                           |
+| ستون                                   | یادداشت‌ها                                      |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | دامنهٔ فضای کاری                                |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`، `external_user_id` | عضو Slack `U…`                                  |
+| `user_id`                              | کاربر Control Center (سراسری، پس بدون کلید خارجی) |
+| `method`                               | `code` یا `email`                               |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+یکتا روی `(workspace_id, provider, external_team_id, external_user_id)` و روی `(workspace_id, provider, user_id)` — انتساب تک‌مقداری در هر دو جهت، در حالی که یک نفر می‌تواند روی چند ارائه‌دهنده پیوند شده باشد.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+پیوند تشخیص هویت است، **نه** اعطای دسترسی: عضویت در هر رویداد ورودی دوباره بررسی می‌شود، پس پیوندی که به عضوی تعلق دارد که از آن پس حذف شده، به یک رد می‌انجامد.
 
-## Space kind and message metadata
+## نوع فضا و فرادادهٔ پیام
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+یک فضای پل‌شده با `SpaceKind` ارائه‌دهنده (`slack`) ساخته می‌شود. مثل یک فضای معمولی رو به انسان رفتار می‌کند — مثل `topic` اطلاع‌رسانی و بخش‌بندی می‌شود — و `isExternalChat` همان بررسی‌ای است که هر رفتار (آینه‌سازی، نشان‌گذاری، نگه‌داشت) از آن می‌گذرد.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+هر پیامی که پل وارد می‌کند یک مهر `metadata['chat']` با خود دارد:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+این مهر همچنین نگهبان پژواک است: آینهٔ خروجی از هر پیامی که آن را داشته باشد می‌گذرد و همین است که نمی‌گذارد پیام گفتگوی ورودی بی‌درنگ دوباره به همان‌جا فرستاده شود.
 
-## Relay behavior
+## رفتار رله
 
-| Behavior                               | Detail                                                                                                         |
+| رفتار                                  | جزئیات                                                                                                          |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| آنچه به بیرون رله می‌شود               | فقط **متن** عامل، به‌علاوهٔ خط وضعیت کارت وظیفه. متن استدلال و خروجی ابزار در Control Center می‌مانند            |
+| آهنگ استریم                            | در طول اجرای یک نوبت به یک تخلیه در ثانیه محدود می‌شود؛ کارت و متنی که توضیح می‌دهد در همان فراخوانی سفر می‌کنند |
+| پیام‌های انسانی نوشته‌شده در Control Center | به رشتهٔ پیوندشده آینه می‌شوند، با نام نمایشی نویسنده در آغاز                                                 |
+| نوبت‌های خالی                          | به‌شکل یک یادداشت کوتاه گزارش می‌شوند (اجرا شکست خورده، متوقف شده یا در سقف نوبتش ایستاده) نه سکوت             |
+| حذف تکراری                             | با شناسهٔ رویداد خودِ ارائه‌دهنده کلید می‌خورد؛ ۵۱۲ مورد آخر به یاد می‌مانند                                    |
+| عامل درِ ورودی                         | یک گفتگوی پل‌شدهٔ تازه، عامل CEO فضای کاری را بیدار می‌کند، وگرنه نخستین عامل آن، وگرنه هیچ‌کس                  |
+| نام‌گذاری فضا                          | `#channel · <request>` برای رشتهٔ یک کانال Slack، `Slack DM · <request>` برای یک پیام مستقیم، با سقف ۴۸ نویسه برای عنوان‌ها |
+| انزوای شکست                            | یک رویداد خراب هرگز پل را از کار نمی‌اندازد؛ اتصال به خدمت‌رسانی به هر گفتگوی دیگر ادامه می‌دهد                 |
 
-## See also
+## همچنین ببینید
 
-- [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
-- [Link your Slack account](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-حساب-گفتگو/)
-- [Customize the chat bot](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سفارشیسازی-ربات-گفتگو/)
-- [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) for the action classes the ops declare
+- [راه‌اندازی یکپارچه‌سازی Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
+- [اتصال حساب Slack شما(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-حساب-گفتگو/)
+- [سفارشی‌سازی ربات گفتگو(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سفارشیسازی-ربات-گفتگو/)
+- [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) برای کلاس‌های اقدامی که این عملیات اعلام می‌کنند

@@ -1,113 +1,121 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orquestração
+description: Como um «grande pedido» se transforma num plano de toda a equipa que aprova uma só vez e, depois, num pipeline gerado que o executa.
 slug: pt-PT/manual/conceitos/orquestracao
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Um único agente é bom numa só coisa. Alguns pedidos são maiores do que isso:
+«investigar o mercado de X e escrever um documento de posicionamento», «lançar
+esta funcionalidade de ponta a ponta», «auditar este módulo e corrigir o que
+encontrar». Uma **orquestração** é a forma como o Control Center trata esses
+casos: um orquestrador (normalmente o seu agente CEO) propõe um plano de toda a
+equipa, você aprova-o **uma única vez** e um materializador determinístico
+transforma-o num pipeline que faz o trabalho.
 
-It sits between the two existing ways of getting work done:
+Situa-se entre as duas formas existentes de realizar trabalho:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/) |
-| Encode a process you already know, by hand        | A [pipeline template](/pt-PT/manual/conceitos/pipelines/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Quando quer…                                         | Use                                                       |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| Entregar uma tarefa a um agente                      | Uma [mensagem num espaço](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/) |
+| Codificar à mão um processo que já conhece           | Um [modelo de pipeline](/pt-PT/manual/conceitos/pipelines/) |
+| Dizer o objetivo e deixar a equipa descobrir o plano | **Uma orquestração**                                      |
 
-## The shape of a proposal
+## A forma de uma proposta
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Quando dá um objetivo ao orquestrador, este devolve uma **`OrchestrationProposal`**
+estruturada: um plano tipado que a aplicação pode validar e executar, em vez de
+texto livre. Uma proposta tem:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/pt-PT/manual/conceitos/tickets/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Objetivo**: o seu pedido de alto nível, reformulado.
+- **Papéis**: quem faz o trabalho. Cada papel é um **agente existente** que
+  escolhe, ou uma **nova contratação** que a orquestração cria aquando da aprovação.
+- **Subtarefas**: o trabalho, dividido num DAG de [tickets](/pt-PT/manual/conceitos/tickets/).
+- **Investigação** _(opcional)_: uma fase de investigação que corre primeiro e alimenta o resto.
+- **Discussão** _(opcional)_: uma ronda delimitada em que cada papel publica uma
+  posição estruturada antes de o trabalho começar.
+- **Síntese**: o passo final que produz o entregável.
+- **Orçamento**: um limite de custo declarado.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[O orçamento é apenas indicativo]
+O limite de custo da proposta é comparado com o total estimado do plano e
+assinala um plano acima do orçamento na barra de aprovação _antes_ de aprovar.
+Nada o consulta depois de a execução começar, pelo que não para nem faz falhar
+uma orquestração que ultrapasse o orçamento. As políticas de orçamento por
+agente e por espaço de trabalho são um mecanismo separado e são o que realmente
+pausa os gastos.
 :::
 
-## Where you review it
+## Onde a revê
 
-Two surfaces show the same orchestration.
+Duas superfícies mostram a mesma orquestração.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+O **cartão de proposta** vive na conversa que produziu o plano. É uma única
+mensagem que se volta a renderizar ao longo de todo o ciclo de vida — proposta,
+em execução, concluída — com as ações de aprovar e cancelar na própria mensagem.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+O **Plan Studio** é o editor: uma área de desenho de DAG, um inspetor de nós,
+uma gaveta de revisões e diferenças e a barra de aprovação com a estimativa.
+Abre como separador de editor diretamente a partir desse cartão. Não existe
+deliberadamente um item «Planos» na barra lateral; `/plans` e
+`/plans/:kind/:id` existem como ligações diretas para partilha.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+A aprovação é **exclusiva do operador**. Não existe nenhuma ferramenta MCP para
+isso: um agente pode propor (`propose_orchestration`), submeter um plano
+(`submit_plan`) ou instanciar um playbook (`run_playbook`), mas só um humano
+aprova. As revisões iniciadas por agentes estão ainda sujeitas a um período de
+espera de dois minutos, pelo que um ciclo de replaneamento se agrega em vez de
+inundar o seu fluxo de atividade.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Aquilo que pode alterar antes de aprovar é o que o inspetor de nós expõe: mudar
+o título ou reescrever uma subtarefa, mudar o **papel** que a detém, religar as
+respetivas dependências, editar o respetivo esquema de saída ou eliminar o nó
+por completo. Os nós estruturais (investigação, discussão, síntese) e os nós que
+já foram executados são só de leitura. A partir do editor, não pode fixar um
+papel a um agente específico com nome nem editar o orçamento.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Dois editores no mesmo plano são resolvidos por concorrência otimista, e não por
+fusão. Cada edição transporta a `base_revision` sobre a qual foi feita; uma
+edição baseada numa revisão desatualizada é recusada com «o plano avançou» em
+vez de substituir silenciosamente a de outra pessoa. Rebobinar também não é
+eliminar — acrescenta a proposta mais antiga como uma nova revisão, pelo que a
+linha temporal de revisões só cresce.
 
-## Honest estimates, or none
+## Estimativas honestas, ou nenhumas
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+A estimativa na barra de aprovação é construída a partir do histórico real de
+execuções concluídas de cada papel, como um intervalo interquartil (p25–p75). Os
+totais de custo **somam** os nós estimáveis; a duração é o **caminho crítico**
+através do DAG, e não a soma (os ramos paralelos sobrepõem-se).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Um nó cujo papel **não tem histórico de execuções concluídas** comunica
+`sampleSize: 0` e intervalos nulos. Isso é apresentado exatamente como isso —
+desconhecido —, nunca como um valor pontual inventado, porque uma estimativa em
+que não pode confiar é pior do que nenhuma estimativa. Quando alguns nós têm
+histórico e outros não, o total é marcado como parcial. O raio de impacto só
+aparece quando um nó declarou referências de proveniência `symbol` ou `file`; um
+nó sem elas permanece «desconhecido», em vez de inferir a partir do texto.
 
-## One approval, then deterministic execution
+## Uma aprovação, depois execução determinística
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/pt-PT/manual/conceitos/pipelines/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Esta é a ideia central: **o agente planeia; uma função determinística executa.**
+Quando aprova, o `OrchestrationMaterializer`, uma função pura sem LLM e sem I/O,
+converte a proposta num verdadeiro [pipeline](/pt-PT/manual/conceitos/pipelines/).
+Dada a mesma proposta e os mesmos papéis resolvidos, produz sempre o mesmo DAG.
+Isso é importante porque o pipeline gerado herda tudo o que o motor já faz
+gratuitamente: suspensão e retoma entre reinícios, recuperação de falhas, totais
+de custo e de tokens por execução e a interface de detalhe da execução.
 
-Approval also creates the scaffolding the work needs:
+A aprovação também cria a estrutura de apoio de que o trabalho precisa:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **contrata** todos os papéis marcados como novos (e regista os identificadores
+  dos agentes contratados, para que uma falha a meio da aprovação possa ser
+  retomada sem contratações duplicadas)
+- uma **equipa** que agrupa os papéis
+- um **projeto** onde fica arquivado o ticket principal
+- o **modelo de pipeline + execução** que impulsiona tudo isto
 
-## The lifecycle
+## O ciclo de vida
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +123,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Estado         | Significado                                                                      |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | O plano está pronto e à espera da sua aprovação única e prévia                   |
+| `approved`     | Aprovou-o; a materialização está em curso (contratações, equipa, projeto, pipeline) |
+| `executing`    | O pipeline gerado está em execução: subtarefas, discussão, trabalho              |
+| `synthesizing` | As subtarefas terminaram; o passo de síntese está a produzir o entregável        |
+| `completed`    | Concluído: o ticket principal é marcado como concluído e o entregável é publicado no espaço partilhado |
+| `failed`       | A materialização falhou, ou a execução do pipeline gerado falhou                 |
+| `cancelled`    | Cancelou-a                                                                       |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Um número de **revisão** monotónico acompanha a proposta à medida que o
+orquestrador a revê enquanto esta ainda está `proposed`; a aplicação regista
+qual foi a revisão que aprovou. `propose_orchestration` recusa uma revisão a
+partir do momento em que o estado já não é `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Uma orquestração abre sempre contra um **ticket principal** e partilha um único
+**espaço** de discussão, para que todo o esforço seja rastreável a um único item
+de trabalho e a equipa converse numa só sala.
 
-## What happens when it finishes
+## O que acontece quando termina
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Um serviço de escuta mantido ativo vigia o pipeline gerado e mapeia o respetivo
+estado terminal de volta para a orquestração e para o ticket principal, para que
+a conclusão e a falha apareçam nos locais que já acompanha. A funcionalidade de
+orquestração não precisa de um motor de execução próprio.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Pode cancelar uma orquestração em qualquer altura; o cancelamento desmancha o
+trabalho em curso.
 
 ::::note
-Orchestration builds on [pipelines](/pt-PT/manual/conceitos/pipelines/) and
-[tickets](/pt-PT/manual/conceitos/tickets/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+A orquestração baseia-se em [pipelines](/pt-PT/manual/conceitos/pipelines/) e
+[tickets](/pt-PT/manual/conceitos/tickets/). É uma camada de planeamento e aprovação
+por cima deles, e não um ambiente de execução separado.
 ::::
 
-## See also
+## Ver também
 
-- [Pipelines and automation](/pt-PT/manual/conceitos/pipelines/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/pt-PT/manual/conceitos/tickets/): the parent ticket an orchestration is anchored on
-- [The agent model](/pt-PT/manual/conceitos/modelo-de-agentes/): the roles an orchestration fills or hires
-- [Run an orchestration](/pt-PT/manual/guias/executar-orquestracao/)
-- [Work in Plan Studio](/pt-PT/manual/guias/plan-studio/)
+- [Pipelines e automatização](/pt-PT/manual/conceitos/pipelines/): o motor sobre o qual corre uma orquestração materializada
+- [Tickets e delegação](/pt-PT/manual/conceitos/tickets/): o ticket principal em que uma orquestração é ancorada
+- [O modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/): os papéis que uma orquestração preenche ou contrata
+- [Executar uma orquestração](/pt-PT/manual/guias/executar-orquestracao/)
+- [Trabalhar no Plan Studio](/pt-PT/manual/guias/plan-studio/)

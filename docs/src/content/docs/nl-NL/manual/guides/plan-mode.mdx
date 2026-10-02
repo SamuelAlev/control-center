@@ -1,135 +1,145 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Planmodus gebruiken
+description: Zet een ruimte om naar planmodus, krijg een getypeerd plan en keur het goed tot draaiend werk.
 slug: nl-NL/handleiding/gidsen/planmodus
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Deze gids laat zien hoe je een gestructureerd plan uit een agent krijgt voordat hij
+ook maar een regel code schrijft.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+In planmodus doet de agent alleen-lezen onderzoek en levert hij precies één ding op:
+een **getypeerd plan** — een afhankelijkheidsgraaf van stappen die je goedkeurt,
+waarna Control Center hem omzet in echt werk. Gebruik het wanneer je de omvang van
+een wijziging wilt zien, de stappen uitgesplitst wilt krijgen, of risico's en
+afhankelijkheden benoemd wilt hebben voordat er iets wordt aangeraakt.
 
-## Switch a space into plan mode
+## Een ruimte omzetten naar planmodus
 
-Any of these flips the space's mode and the change is persisted:
+Elk van deze zet de modus van de ruimte om, en de wijziging wordt opgeslagen:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Kies **Plan** in de modusvervolgkeuzelijst helemaal links in de werkbalk van de
+  composer
+- Druk op **Shift+Tab**
+- Stuur `/plan`. Een kaal `/plan` zet de modus alleen scherp; `/plan <request>` zet
+  hem scherp en stuurt de rest als je bericht
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` reist nooit als tekst mee — het commando zet de opgeslagen modus, en dat is
+de autoriteit die het toolaanbod, de modusvoorinstelling en de prompt allemaal
+lezen. De modus geldt dus voor deze beurt en elke beurt daarna, totdat je hem
+terugzet.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+De modus wordt op de ruimte opgeslagen, dus dezelfde agent kan hier in planmodus
+zitten en elders in agentmodus.
 
-## What the agent produces
+## Wat de agent oplevert
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Hij doet alleen-lezen onderzoek — geheugen, de code-index, bestanden
+2. Hij roept `submit_plan` **één keer** aan, met een `goal` plus `nodes`; elke node
+   draagt een stabiele `key`, een `title`, een `description` en de nodesleutels
+   waarvan hij `dependsOn` (dat is juist wat onafhankelijk werk parallel laat lopen)
+3. Hij stopt
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+De tool valideert de graaf — dubbele sleutels, losse afhankelijkheden, cycli — en
+geeft overtredingen terug die de agent moet oplossen, in plaats van een kapot plan
+te accepteren.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Het plan verschijnt **in het gesprek** als een compacte rij met het doel, de status
+en het aantal stappen. **Plan Studio** — de afhankelijkheidsgraaf, de inspecteur per
+node en de kostenschatting — opent als een tab naast het gesprek: druk op **Openen**
+in de rij, of wacht gewoon, want een plan dat binnen 30 seconden binnenkomt terwijl
+je naar het gesprek kijkt, opent zijn tab vanzelf.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[De alleen-lezen garantie is structureel, maar alleen op de ingebouwde harness]
+De eigen harness van Control Center bouwt de toolregistry van de agent op uit de
+oppervlaktespecificatie van de planmodus, dus er is simpelweg geen schrijf-,
+bewerkings- of commandotool om aan te roepen — de beperking is geen
+promptinstructie waar het model zich uit kan praten.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+De Claude Code-adapter krijgt die filtering niet: de modus bereikt hem als een
+verzoek dat zijn eigen runner al dan niet honoreert, en Control Center ziet alleen
+ooit zijn `mcp__*`-aanroepen. De afdwingingsbadge naast de modusvervolgkeuzelijst
+verschijnt precies in dat geval.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[De agent kan je verduidelijkende vragen stellen]
+Wanneer het verzoek dubbelzinnig is, kan een plan-agent pauzeren en je met de tool
+`ask_user` tot drie blokkerende vragen stellen. Die tekent een formulier in het
+gesprek — opties of vrije tekst — en de run blokkeert totdat je antwoordt. De tool
+zit op leesniveau, dus hij overleeft het alleen-lezen aanbod van de planmodus, en
+hij is vrijgesteld van de goedkeuringswrapper (een prompt vóór een prompt zou
+gesloten vallen wanneer er geen goedkeurder is verbonden, waardoor de agent het
+stellen van de vraag zelf wordt ontzegd).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Hij heeft een ruimte nodig om in te tekenen, dus een one-shot-dispatch zonder
+gesprek krijgt hem niet. De scope, de doelrepo en de acceptatiecriteria al in je
+eerste bericht zetten, is nog altijd sneller dan een heen-en-weertje.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Proza is hier geen resultaat. Een run die eindigt zonder `submit_plan` aan te roepen,
+plaatst een zichtbare regel "Ended without submitting a plan (no `submit_plan`
+call)." in het gesprek en markeert de run als eentje die zijn resultaat heeft
+gemist. De status van de run blijft bewust _completed_ — dat laat de statusmachines
+van pipelines en tickets ongemoeid — dus lees de regel, niet de statusbadge.
 
-## Approve the plan
+## Het plan goedkeuren
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Druk in de rij van het plan in het gesprek op **Goedkeuren en uitvoeren**. Druk in
+de goedkeuringsbalk van Plan Studio op **Plan goedkeuren** (of op **Afwijzen**
+ernaast; goedkeuren is uitgeschakeld zolang de graaf een validatiefout heeft).
 
-Then:
+Daarna:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center compileert het plan tot een orkestratie en materialiseert die —
+   de tickets en de run. Bij deze stap is geen model betrokken; hij is
+   deterministisch
+2. Het plan wordt uitgevoerd als de agent die het heeft geschreven. Of er nog
+   iemand anders bij komt, is aan die agent op het moment van uitvoering — hij kan
+   een stap met `delegate_task` aan een beter geschikte teamgenoot geven, binnen de
+   delegatiedieptelimiet van de werkruimte
+3. Het doel van het plan wordt **het doel van het gesprek** en het werk loopt **in
+   datzelfde gesprek**: elke stap plaatst wat de agent is gevraagd en streamt zijn
+   beurt terug, zodat je het volgt (en een beurt kunt stoppen) waar je al bent
+4. De doelrij in het **Algemeen**-zijpaneel van het gesprek (onder Taken) toont de
+   voortgang van de run als `settled/total` en de stopknop; Plan Studio toont de
+   status per node op de graaf en annuleert daar ook
 
-## Keep working without approving
+## Blijven doorwerken zonder goed te keuren
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Als je liever in dit gesprek blijft dan het plan goed te keuren, kan de agent
+`exit_plan_mode` aanroepen. Dat is de enige toegestane uitweg: hij opent een
+duurzame goedkeuringsaanvraag die aan het gesprek is gekoppeld en geeft `pending`
+terug — de ruimte blijft in planmodus en de agent mag niet handelen. Zodra de
+aanvraag is goedgekeurd, zet de volgende `exit_plan_mode`-aanroep van de agent de
+ruimte van planmodus naar agentmodus en worden zijn muterende tools ontgrendeld. Bij
+een afwijzing kan hij een nieuwe aanvraag openen voor een herzien plan.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Om planmodus te verlaten, wissel je de vervolgkeuzelijst van de composer (of
+Shift+Tab), of keur je het ingediende plan goed. `exit_plan_mode` opent een duurzame
+goedkeuring die met de MCP-tool `decide_approval` wordt beslist. De
+beveiligingsoverlay voor geblokkeerde toolaanroepen is een andere, in-memory
+wachtrij en bevat geen plan-uitstapverzoeken.
 
-## Plan mode in a pipeline step
+## Planmodus in een pipelinestap
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Een pipelinenode `messaging.createSpace` leest de gespreksmodus uit de **extra**
+`mode` van de nodeconfig — `extras['mode']: 'plan'`. De sleutel moet exact
+overeenkomen: elke andere spelling, ook `conversationMode` of `dispatchMode`, wordt
+stil genegeerd en de ruimte valt terug op de standaardwaarde van de body, namelijk
+**review**modus, niet chat. Een stap `promptAgent` voegt zich bij een ruimte die hij
+niet zelf heeft gemaakt en past de rechten ervan niet aan. De keuzelijst
+**Verzendmodus** (`allParallel` / `manager`) in de nodeconfiguratie-editor is voor
+**Team dispatch**-nodes. Stel de gespreksmodus in met `extras['mode']` op een
+sjabloon dat de ruimte opent, of via de API op de config van die node.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
-- [Use spaces](/nl-NL/handleiding/gidsen/ruimtes/)
-- [Work in Plan Studio](/nl-NL/handleiding/gidsen/plan-studio/)
-- [Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
+- [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
+- [Ruimtes gebruiken](/nl-NL/handleiding/gidsen/ruimtes/)
+- [Werken in Plan Studio](/nl-NL/handleiding/gidsen/plan-studio/)
+- [Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Modes](/nl-NL/handleiding/concepten/modi/)
-- [Orchestration](/nl-NL/handleiding/concepten/orkestratie/)
+- [Modi](/nl-NL/handleiding/concepten/modi/)
+- [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/)

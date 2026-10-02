@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: パイプラインステップ
+description: パイプラインステップの種類、ステップボディのキー、その設定とステップ結果についてのリファレンス。
 slug: ja-JP/マニュアル/リファレンス/パイプラインステップ
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+パイプラインのステップには、互いに独立した 2 つの軸があります:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **種別**（`StepKind`）— エンジンがトリガーに対してそのステップをどのように*スケジュール*するか。
+- **ボディキー**（`BuiltInBodyKeys`）— 登録されたどのボディクロージャがステップの作業を*実行*するか。
 
-## Step kinds
+## ステップの種類
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+`packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart` で定義されています。
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| 種別       | スケジューリングのセマンティクス                                                                                                                                                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | 必須のエントリーポイント — テンプレートごとにちょうど 1 つで、常に最初のノードです。それ自体は何の作業も行いません。実行を開始するもの（手動／イベント／スケジュール）は `PipelineTrigger` の行として別途追跡されます。そのボディは何もしない `pipeline.trigger` です。 |
+| `listen`   | すべてのソースステップ（`StepTrigger.sourceStepIds` 内）が完了したときに発火します。                                                                                                                                                                   |
+| `join`     | `waitForStepIds` 内のすべてのステップが終端状態に達したときに発火します。                                                                                                                                                                           |
+| `router`   | 条件分岐 — ボディは `StepResult.route(key)` を返し、`routeKey` が一致する下流のエッジだけを発火させます。選択されなかったブランチはスキップ済みとしてマークされます。                                                                                 |
+| `forEach`  | `listen` と同じようにスケジュールされます（すべての `sourceStepIds` が完了したときに発火）。反復するのは登録された `flow.forEach` ボディであり、エンジンが項目ごとに子ステップを生成するわけではありません。                                               |
+| `terminal` | ボディを持たないスケジューラーのセンチネルです。終端ステップが完了するとパイプライン実行が完了します。                                                                                                                                               |
 
-## Step bodies
+## ステップボディ
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+`BuiltInBodyKeys`（`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`）の定数をキーとして登録されたボディクロージャです。25 個あり、すべて下記に挙げます。特に断りのない限り、設定はステップの `PipelineNodeConfig`（下記参照）から読み取られます。「ステートキー」は実行時にパイプラインステート／トリガーペイロードから読み取られます。
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+`bodyKey` が登録されていないステップは、テンプレートの読み込み時に警告を出し、その後は決して実行されません — 実行を失敗させることはありません。`trigger` と `terminal` のステップはこの警告の対象外です。trigger は何もしない `pipeline.trigger` ボディを実行し、`terminal` ステップはボディを持ちません。
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+必須の `trigger` ノードの何もしないボディです — 即座に完了し、エンジンが下流のリスナーへファンアウトできるようにします。設定はありません。
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+エージェントを使わないシェルステップ（`bash -c`）です。スクリプト内の `{{key}}` プレースホルダーは、ステート + トリガーペイロードからシェルエスケープ済みの値で置換されます。
 
-| Config field | Description                                      |
+| 設定フィールド | 説明                                      |
 | ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| `script`     | 実行するシェルコマンド（必須）              |
+| `outputKey`  | 終了コード 0 のときにトリム済みの stdout を受け取るステートキー |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+cwd を `<cc_root>/pipelines/<pipelineRunId>/`（実行内のすべての bash ステップで共有）とし、環境変数に `GITHUB_TOKEN` を設定して実行されます。また、`<stepId>_runDir` をステートに書き込みます。ゼロ以外の終了コードは、stderr の末尾とともにステップを失敗させます。
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+汎用のプロンプト＆ディスパッチノードです。プロンプトをレンダリングし、エージェントを会話へディスパッチし、その実行が完了するまでサスペンドします。エージェントの `submit_output` ペイロードは `outputKey` の下でステートに回収されます。
 
-| Config field       | Description                                                  |
+| 設定フィールド       | 説明                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| `agentId`          | ディスパッチするワークスペーススコープのエージェント UUID（必須）           |
+| `prompt`           | 指示テキスト。`{{key}}` の置換に対応（必須） |
+| `outputKey`        | 回収された出力のステートキー                           |
+| `outputSchema`     | 出力が満たす必要のある JSON Schema                          |
+| `label`            | キャンバスに表示される人間向けラベル                              |
+| `extras.spaceId`   | 作業対象とする既存の会話（デフォルト: 非表示の会話）     |
+| `extras.conversationTitle` | そのスペース内の名前付きストリーム（任意）             |
+| `extras.mode`      | ここではなく、ルームを*開く*ノード（`messaging.createSpace`）で読み取られます。デフォルトは `review`。 |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+ルーターボディです — `config.extras` を読み取り、条件を評価して `StepResult.route(key)` を返します。条件は JavaScript 式では**ありません**。3 つの記述形式を優先順にサポートしています:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **述語ツリー**（`extras.predicate`）— `"true"` / `"false"` にルーティングするブールツリーです。各ノードは `type` を持つマップです:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — リストされたパスのいずれかがディスク上に存在するときに true になります。`negate` はそれを反転させます。`recursive` はサブディレクトリも検索します（`.git`、`node_modules`、`build`、`.dart_tool` をスキップ）。相対パスは `state[baseKey]`（デフォルトは `repo_local_path`）を基準に解決され、そうでなければ実行ごとのワークスペースディレクトリを基準にします。
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — 演算子は `equals`、`notEquals`、`contains`、`exists`、`notExists`、`gt`、`lt` です。ファイルシステムではなくパイプラインステートを読み取ります。
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — ブールグループです。
+  - `{"type": "not", "of": <predicate>}` — 否定です。
+- **スイッチ**（`extras.switchKey`）— `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`。ステートの値が大文字小文字を区別せずに含む最初の case へルーティングし、どれにも含まれなければ `default` へルーティングします。
+- **比較**（レガシーのトップレベル `extras.left` / `extras.op` / `extras.right`）— `comparison` 述語と同等で、ツリー以前に作成されたテンプレートのために残されています。
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+ノードから出るエッジは、返されたキーと一致しなければならない `routeKey` を持ちます。
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+統合された指摘を、GitHub PR クライアントを介して PR レビューコメントとして投稿します。
 
-| State key                 | Description                                  |
+| ステートキー                 | 説明                                  |
 | ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| `repo_full_name`          | `owner/repo`（必須）                      |
+| `pr_number`               | PR 番号 — int または数値文字列（必須） |
+| `consolidated_findings`   | コメント本文（必須）                      |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+ステートに `comment_review_id` と `commented_at` を伴う `StepResult.terminal` を返します。
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+`MessagingPort` を介してメッセージングスペースにメッセージを投稿します。
 
-| State key   | Description                                       |
+| ステートキー   | 説明                                       |
 | ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| `space_id`  | 対象のスペース（必須）                           |
+| `content`   | メッセージ本文。ステートからそのまま読み取られます（必須） |
 
-Writes `posted_space_id` and `posted_at` to state.
+`posted_space_id` と `posted_at` をステートに書き込みます。
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+単一のエージェントではなくチーム全体をディスパッチし、メンバーの実行が完了するまでサスペンドします。
 
-| Config field                                | Description                                                                                         |
+| 設定フィールド                                | 説明                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| `teamId`                                    | ディスパッチするワークスペーススコープのチーム（必須。`agentId` とは排他的）                     |
+| `prompt`                                    | ゴールのテキスト。`{{key}}` の置換に対応（必須）                                               |
+| `dispatchMode`                              | `allParallel`（デフォルト — メンバーごとに 1 タスク）または `manager`（調整役のリーダーだけをディスパッチ） |
+| `outputKey`                                 | 回収されたメンバー出力のステートキー                                                          |
+| `outputSchema`, `label`, `extras.spaceId` | `conversation.promptAgent` と同様                                                                       |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+承認ゲートです。承認者エージェントを、ゲートプロンプトと `{decision, reason}` の出力契約を伴って会話（review モード）へディスパッチし、承認者が `submit_output` を介して送信するまでサスペンドします。
 
-| Config field                | Description                                                                    |
+| 設定フィールド                | 説明                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | 承認者エージェント（必須）                                                  |
+| `prompt`                    | ゲートプロンプト（任意。省略時はデフォルトが使われます）                          |
+| `outputKey`                 | 回収された `{decision, reason}` ペイロードのステートキー                       |
+| `outputSchema`              | デフォルトは承認スキーマ（`decision`: `approved` / `rejected`、`reason`） |
+| `label`, `extras.spaceId` | `conversation.promptAgent` と同様                                                  |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+ゲートは `submit_output` を介してのみ解決されます。`BuiltInBodyKeys.humanGate`、ノードタイプライブラリ、およびある組み込みテンプレートのプロンプトテキストは、いずれも `approve_step` と `reject_step` という MCP ツールを指していますが、**どちらのツールも**どのパッケージやレジストリにも**存在しません**。
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+古くなった分離ワークツリーを削除します。モードはトリガーペイロードから選びます。実行の `dryRun` フラグを尊重します。
 
-| State key                     | Description                                                                           |
+| ステートキー                     | 説明                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| `ticket_id`                   | そのチケットのワークツリーを解放します                                                       |
+| `repo_full_name` + `pr_number` | 一時的な PR エディターのワークツリーを解放します                                             |
+| `space_id`                    | その会話のワークツリーとフォルダを破棄します                                    |
+| （上記のいずれでもない）           | ワークスペースをスイープします: 消えたディレクトリ、死んだスペース、孤立した会話フォルダ |
 
-`outputKey` (optional) receives a summary string.
+`outputKey`（任意）は要約文字列を受け取ります。
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+ステートのコレクションに対するマップ／ファンアウトです。項目ごとにプロンプトを 1 回レンダリングし、それらのプロンプトを連結した（`---` 区切り）うえでエージェントを**1 回**ディスパッチし、その実行が完了するまでサスペンドします。空のコレクションは、空のリストとともに即座に完了します。項目ごとに 1 回ずつ並列ディスパッチするわけではありません。
 
-| Config field         | Description                                                     |
+| 設定フィールド         | 説明                                                     |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | 項目ごとにディスパッチするエージェント（必須）                           |
+| `prompt`             | 項目ごとのプロンプト。`{{key}}` の置換に対応（必須）     |
+| `extras.iterableKey` | コレクションを保持するステートキー（必須）                     |
+| `extras.itemKey`     | プロンプト内で現在の項目がバインドされるキー（デフォルトは `item`） |
+| `outputKey`          | 回収された出力のステートキー（1 回のディスパッチで、リストではありません） |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+別のパイプラインテンプレートをネストされたサブステップとして実行します（サブパイプラインは `parentPipelineRunId` が設定された子実行として実行されます）。ステップは子が終端状態に達するまでサスペンドし、その後、子の最終ステートが `outputKey` の下にマージされます。
 
-| Config field        | Description                                                     |
+| 設定フィールド        | 説明                                                     |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | 実行する子テンプレート（必須。パイプラインは自身を呼び出せません） |
+| `inputKeys`         | 子のトリガーペイロードへコピーされるステートキー              |
+| `outputKey`         | 子のマージされた最終ステートのステートキー                    |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+バックグラウンドの tree-sitter インデックス作成です。リポジトリを走査し、ワーカーアイソレートでシンボル／エッジを抽出して、ワークスペースのコードグラフに取り込みます。進捗はステップ実行の行へストリーミングされます。ドライランに対応します。tree-sitter とその文法は必須のネイティブであり、dylib が欠けていればサーバーは起動すらしていません。実行中に解決に失敗する文法は、スキップされるのではなくステップを失敗させます。
 
-| State key         | Description                           |
+| ステートキー         | 説明                           |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | インデックスを作成するリポジトリ（必須）              |
+| `repo_local_path` | チェックアウトのローカルパス（必須） |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+オフラインの話者分離です。ミーティングで保持されている音声を読み込み、話者（`Person 1`、`Person 2`、…）へクラスタリングし、文字起こしのセグメントにラベルを付け直し、`transcript` ステートを書き換えます。並行する `meeting.updateTranscript` ステップ向けに `diarization_spans` も出力します。音声が保持されていない場合やモデルがインストールされていない場合は、文字起こしをそのまま通します。
 
-| State key     | Description                   |
+| ステートキー     | 説明                   |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | 話者分離するミーティング（必須） |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+決定論的なミーティング要約の永続化ボディです。それぞれが、ステートから `meeting_id` とエージェントステップの構造化された `meeting_outcome` ペイロード（`{summary, enhancedNotes, actionItems[], decisions[]}`）を読み取り、自身の担当部分（ノート、アクションアイテム、または決定事項）を自身のテーブルに書き込みます。以前に保存された行が、劣化した実行で消去されることはありません。
 
-### Other built-in bodies
+### その他の組み込みボディ
 
-| Body key                           | Description                                                                                                                                                                              |
+| ボディキー                           | 説明                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | ミーティングをまたぐ話者認識です。話者分離された話者を保存済みの音声プロファイルと照合し、確度の高い一致を自動適用します。プロファイル／埋め込みがない場合は何もしません。                         |
+| `meeting.updateTranscript`         | `diarization_spans` から `Person N` ラベルを適用し、ウィンドウごとの断片を話者ごとの発話へマージして、クリーンアップされた文字起こしを永続化します。話者分離が何も生成しなかった場合は何もしません。 |
+| `meeting.assemblePlayback`         | 保持されているチャンネルごとの WAV から、ミーティングのミックス再生トラックを組み立てます。音声が保持されていない場合は何もしません。                                                                           |
+| `orchestration.markPhase`          | 作業 DAG の最後に、出力のないサブチケットの失敗センチネルを書き込み、オーケストレーションを `synthesizing` に切り替えます。                                                       |
+| `orchestration.persistDeliverable` | 統合の出力を親チケットに書き込み、それを完了させ、成果物を投稿して、オーケストレーションを `completed` としてマークします。                                                           |
+| `orchestration.awaitApproval`      | 部分承認ゲートです。ステップのノードキーがオーケストレーションの承認済みセットに含まれていれば即座に完了し、そうでなければ後続の承認が再開するまでサスペンドします。`extras.awaitApproval` を設定する唯一のボディであり、これにより 24 時間のサスペンドステップタイムアウトから免除されます。 |
+| `messaging.createSpace`            | テンプレートの残りの部分が作業する会話を開き、ステップの `outputKey` の下に公開します（組み込みでは `pipeline_space_id` を使用）。`repoIds` リストが空であれば何もチェックアウトしません。`extras['allRepos']` はワークスペースのすべてのリポジトリをチェックアウトします。`extras['createConversation']`（デフォルトではオフ）は名前付きストリームも開きます。エージェントステップはルームに参加するだけで、ルームを開くことはないため、このノードのないファンアウトはディスパッチ時に失敗します。そしてこれを一度配線しておけば、ファンアウト全体が 1 つのチェックアウトを共有し、それぞれに 1 つずつ用意する必要がなくなります。 |
+| `prReview.finalize`                | PR レビューテンプレートの最後のステップです。蓄積されたレビューノードをコンセンサスバケットに振り分け、PR ごとの判定を算出します。                                                     |
+| `skills.analyze`                   | ワークスペースにインストールされたスキルに対してスキルのサプライチェーンスキャンを行い、各判定を記録します。                                                                                          |
 
-## Step results
+## ステップの結果
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+ステップボディは `StepResult`（`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`）を返します。すべてのファクトリは、パイプラインステートにマージされる任意の `mutatedState` マップを受け取りますが、`failed` は例外です。
 
-| Factory                     | Signature                                                       | Description                                                               |
+| ファクトリ                     | シグネチャ                                                       | 説明                                                               |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | 通常の完了。下流のリスナーが評価されます                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | ルーターの完了。`routeKey` が一致する下流のブランチを選択します |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | 特定のドメインイベント種別が発火するまで一時停止します                            |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | リストされたすべてのタスクが終端状態に達するまで一時停止します                         |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | パイプライン実行が終了しました — これ以上のステップはありません                              |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | ステップがエラーメッセージとともに失敗しました                                     |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+失敗するノードボディの再試行動作です（`PipelineNodeConfig.retryPolicy`。null は再試行を無効にします）。
 
-| Field            | Type     | Description                                                                    |
+| フィールド            | 型     | 説明                                                                    |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | 最初の試行を含む総試行回数（3 = 1 回の試行 + 2 回の再試行）。≥ 1 でなければなりません        |
+| `backoff`        | `String` | `linear` または `exponential`（デフォルト）                                            |
+| `initialDelayMs` | `int`    | 最初の再試行前の遅延（ミリ秒）。以降の遅延は `backoff` に従って増加します |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+ステップ定義の内部に保持されるノードごとの設定です（`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`）。組み込みノードとカスタムノードはどちらもこの形を共有し、各ボディは自身が関心のあるフィールドだけを読み取ります。
 
-| Field            | Type                    | Description                                                                                                                           |
+| フィールド            | 型                    | 説明                                                                                                                           |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | `{{key}}` 置換対応のプロンプトテンプレート                                                                                           |
+| `script`         | `String?`               | `{{key}}` 置換対応の Bash スクリプトボディ                                                                                          |
+| `agentId`        | `String?`               | ディスパッチするワークスペーススコープのエージェント UUID                                                                                               |
+| `inputKeys`      | `List<String>`          | このノードが入力として消費するステートキー                                                                                                |
+| `repoIds`        | `List<String>`          | `messaging.createSpace` ノードがチェックアウトするリポジトリ（`<repoId>` または `<repoId>@<branch>`）。空 = なし。`extras['allRepos']` = ワークスペースのすべてのリポジトリ。エージェントステップでは無視されます。 |
+| `outputKey`      | `String?`               | このノードの出力が書き込まれるステートキー                                                                                         |
+| `label`          | `String?`               | キャンバスに表示される人間向けラベル（デフォルトはステップ ID）                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | 出力値が満たす必要のある JSON Schema（サブセット）                                                                                    |
+| `reducer`        | `String?`               | 並列ブランチが同じ `outputKey` に書き込むときのマージ戦略: `append`、`mergeLists`、`mergeMaps`、`sum`、または `override`（デフォルト） |
+| `retryPolicy`    | `StepRetryPolicy?`      | ボディ失敗時の再試行ポリシー。null = 1 回だけ試行                                                                                   |
+| `continueOnFail` | `bool`                  | true のとき、終端の失敗は実行を失敗させません。エラーは `state['_stepErrors'][stepId]` の下に退避されます                        |
+| `timeoutMs`      | `int?`                  | ノードボディの実時間タイムアウト（ミリ秒）。null = タイムアウトなし                                                               |
+| `teamId`         | `String?`               | ディスパッチするチーム（`team.dispatch` ノード）。`agentId` とは排他的                                                           |
+| `dispatchMode`   | `String?`               | チームの実行モード: `allParallel` または `manager`                                                                                       |
+| `extras`         | `Map<String, dynamic>`  | 自由形式のボディ固有の設定（例: `iterableKey`、`templateId`、条件ツリー）                                                    |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+派生アクセサー: `spaceId`（`extras['spaceId']` — 作業対象とする既存の会話）、`createsConversation`（`extras['createConversation']`）、`conversationTitle`（`extras['conversationTitle']`）、`modeName`（`extras['mode']` — `chat` / `review` / `plan`。スペースを開くノードで読み取られます）、`runWhen`（`extras['runWhen']` — 満たされない場合はノードをスキップします）。
 
-## See also
+## 関連項目
 
-- [Pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/)
-- [Create a pipeline](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
-- [Pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
-- [Run a pipeline](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)
+- [パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)
+- [パイプラインテンプレートを作成](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+- [パイプラインを手動実行](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)

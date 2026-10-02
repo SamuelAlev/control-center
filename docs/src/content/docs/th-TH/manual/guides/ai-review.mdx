@@ -1,152 +1,150 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: ใช้รีวิวด้วย AI
+description: รันไปป์ไลน์ pr_review บน PR อ่านข้อค้นพบและคำตัดสิน แล้วเผยแพร่รีวิวไปยัง GitHub
 slug: th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+คู่มือนี้แสดงวิธีให้เอเจนต์รีวิวเวอร์รีวิว pull request และวิธีเผยแพร่ผลลัพธ์
+ไปยัง GitHub
 
-## Start an AI review
+## เริ่มรีวิวด้วย AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. เปิด PR แล้วไปที่แท็บ **ภาพรวม** ของมัน
+2. เปิดเมนู ⋯ ในแถวการกระทำ แล้วเลือก **ถาม AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+รายการนี้ปรากฏเฉพาะขณะที่ PR ยังเปิดอยู่ — มันเป็นการกระทำก่อนการรวม ปุ่มเดียวกันนี้
+ปรากฏเป็น **ถาม AI** บนสถานะว่างของแท็บ **รีวิว** ก่อนที่รีวิวใด ๆ จะมีอยู่
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center จะเริ่มไปป์ไลน์ `pr_review` ที่มาพร้อมระบบ และเปิดแท็บ **รีวิว**
+ของ PR ให้คุณเฝ้าดู ไปป์ไลน์จะ:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. เปิดสเปซรีวิวของ PR นั้นเอง ซึ่ง worktree ที่แยกโดดของมันมี PR ถูกเช็คเอาท์ไว้ที่
+   head ref ของมัน
+2. กระจายรีวิวเวอร์ออกไปตามระดับรีวิวของเวิร์กสเปซ — ค่าเริ่มต้นคือสามตัว
+   (เอเจนต์ **qa**, **architect** และ **engineer** ที่มาพร้อมระบบ ทำงานขนานกัน)
+   ไม่มีการตรวจจับภาษาหรือโดเมน
+3. ให้เอเจนต์หัวหน้า (CEO) รวบรวมข้อค้นพบของพวกมันเป็นคำอธิบายแบบพาไล่ดู
+4. สรุปผล: จัดกลุ่มข้อค้นพบตามฉันทามติและคำนวณคำตัดสิน เมื่อความเชื่อมโยงมาถึง
+   `awaiting approval` ปุ่ม **เผยแพร่ไปยัง GitHub** จะปรากฏบนแท็บรีวิว
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+ความลึกของรีวิวคือ**ระดับรีวิว**ของเวิร์กสเปซ — `light` (รีวิวเวอร์หนึ่งตัว),
+`balanced` (สามตัว ซึ่งเป็นค่าเริ่มต้น) หรือ `thorough` (ทั้งห้าตัว โดยเพิ่ม
+ผู้เชี่ยวชาญด้านความปลอดภัยและประสิทธิภาพ) — ตั้งค่าได้ที่
+**การตั้งค่า → เวิร์กสเปซ → ทั่วไป** บนการ์ด **นโยบายเวิร์กสเปซ** ระดับที่เบากว่า
+บันทึกข้อค้นพบมากเท่ากัน เพียงแต่นำมาแสดงเด่นน้อยกว่า
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/) for how the pieces fit together.
+รีวิวเวอร์ทุกตัวโพสต์ลงสเปซรีวิวเดียวของ PR ซึ่งเป็นสิ่งที่ทำให้ข้อค้นพบของพวกมัน
+เปรียบเทียบกันได้ ดู
+[รีวิวด้วย AI](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/) สำหรับวิธีที่ชิ้นส่วนต่าง ๆ
+ประกอบเข้าด้วยกัน
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/th-TH/คู่มือ/วิธีทำ/การสนทนาบน-github-pr/).
+`pr_review` มาพร้อมทริกเกอร์แบบสั่งด้วยตนเองเท่านั้น หากต้องการให้มันทำงานทุกครั้งที่
+มีการเผยแพร่ PR ให้เพิ่มทริกเกอร์ด้วยตัวคุณเอง — ดู
+[สั่งงานเอเจนต์รีวิวเวอร์](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/) คุณยังเริ่มรีวิว
+จาก GitHub เองได้ด้วย โดยไม่ต้องใช้ทริกเกอร์ไปป์ไลน์: กล่าวถึงบอตของเซิร์ฟเวอร์บน PR
+หรือเพิ่มเลเบล `ai-review` — ดู
+[คุยกับ Control Center จาก GitHub PR](/th-TH/คู่มือ/วิธีทำ/การสนทนาบน-github-pr/)
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+หากข้อความแจ้งเตือนบอกว่ารีวิวกำลังรันอยู่แล้วสำหรับ pull request นี้ ก็หมายความว่า
+มีรีวิวกำลังดำเนินอยู่ ให้อยู่ที่แท็บ **รีวิว** หรือเปิด **ไปป์ไลน์** เพื่อค้นหามัน
 
-## Read the findings
+## อ่านข้อค้นพบ
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+รีวิวเวอร์บันทึกข้อค้นพบเป็น**โหนดรีวิว**ในสเปซรีวิว แต่ละโหนดบรรจุ:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| ฟิลด์            | คำอธิบาย                                                      |
+| ---------------- | ------------------------------------------------------------- |
+| ชนิด             | `bug`, `suggestion`, `recommendation`, `question` หรือ `ticket` |
+| ลำดับความสำคัญ   | P0 (วิกฤต) → P3 (เรื่องเล็กน้อย)                              |
+| หมวดหมู่         | `security`, `stability`, `data_integrity`, `correctness`, `performance` หรือ `maintainability` |
+| ไฟล์และบรรทัด    | ตำแหน่งที่ข้อค้นพบถูกยึดไว้                                    |
+| โค้ดเดิม         | โค้ดที่ข้อค้นพบกล่าวถึง                                       |
+| โค้ดที่แนะนำ     | วิธีแก้ไขที่เสนอ                                               |
+| ความมั่นใจ       | รีวิวเวอร์มั่นใจแค่ไหน                                        |
+| สถานะ            | `open` → `consensus-ready` → `resolved` หรือ `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+ข้อค้นพบจะไปถึง **consensus-ready** ก็ต่อเมื่อมีรีวิวเวอร์_เพื่อนร่วมงาน_ยืนยันมัน
+เอเจนต์ไม่สามารถยืนยันข้อค้นพบของตัวเองได้ ความเห็นของรีวิวเวอร์เพียงตัวเดียวจึงไม่เคย
+เลื่อนขั้นด้วยตัวเอง
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/) for what the pass produces.
+แท็บ **รีวิว** แสดงรายการข้อค้นพบ ซึ่งกรองได้ตามชนิดและสถานะ พร้อมสวิตช์สำหรับ
+ข้อค้นพบที่ปิดไปแล้ว อยู่ข้างอาร์ติแฟกต์ที่เอเจนต์ผู้รวบรวมเผยแพร่ ส่วนมุมมองที่
+กำหนดแน่นอน — cohort แดชบอร์ดหลายแกน และ diff สัญญากับ diff ภาพ — คำนวณฝั่ง
+เซิร์ฟเวอร์แต่ไม่มีพื้นผิวในแอป ดู
+[การคำนวณรีวิว](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/) ว่าการรันนั้นผลิตอะไรออกมา
 
-## Check the disagreements panel
+## ตรวจดูแผงความขัดแย้ง
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+เมื่อรีวิวเวอร์สองตัวยึดข้อค้นพบไว้ที่ไฟล์และบรรทัดเดียวกัน แต่ให้คะแนนมันต่างกันมาก
+— ลำดับความสำคัญห่างกันตั้งแต่สองระดับขึ้นไป หรือตัวหนึ่งเรียกว่า `bug` ขณะที่อีกตัว
+เรียกว่า `suggestion` — แผงความขัดแย้งจะปรากฏเหนือรายการข้อค้นพบ อ่านรายการเหล่านี้
+ก่อน: นั่นคือจุดที่ความเห็นของรีวิวเวอร์แยกจากกัน และดุลยพินิจของคุณมีค่ามากที่สุด
 
-## Read the verdict
+## อ่านคำตัดสิน
 
-When the lead agent finalizes, it computes a **verdict**:
+เมื่อเอเจนต์หัวหน้าสรุปผล มันจะคำนวณ**คำตัดสิน**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| คำตัดสิน  | ความหมาย                                  |
+| --------- | ----------------------------------------- |
+| **Ship**  | ไม่พบสิ่งใดที่ขวางการรวม                  |
+| **Hold**  | มีปัญหาที่ควรจัดการก่อนการรวม              |
+| **Block** | มีปัญหาวิกฤตที่ต้องแก้ไข                   |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+คำตัดสินพกคะแนนความมั่นใจรวมและจำนวนข้อค้นพบแยกตามลำดับความสำคัญ
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+จากนั้นแกนรีวิวจะถูกพับเข้ามา และมันทำได้เพียงทำให้คำตัดสิน**รุนแรงขึ้น**เท่านั้น
+แกนที่มีเกตและล้มเหลวบังคับให้เป็น **Block** แกนที่มีเกตซึ่งทำงานไม่ครบ (`partial`)
+หรือรันไม่ได้เลย (`unavailable`) บังคับให้เป็น **Hold** อย่างน้อย การไม่มีหลักฐาน
+ไม่เคยทำให้เกตผ่านไปได้
 
-## Publish the review to GitHub
+## เผยแพร่รีวิวไปยัง GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+การเผยแพร่เป็นขั้นตอนแยกต่างหากที่ให้ผู้ใช้เป็นผู้กั้นโดยเจตนา ไปป์ไลน์ `pr_review`
+เก็บรีวิวไว้ใน Control Center; มันไม่โพสต์ไปยัง GitHub
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. บนแท็บ **รีวิว** รอจนปุ่ม **เผยแพร่ไปยัง GitHub** ปรากฏ
+2. กด **เผยแพร่ไปยัง GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center ส่งรีวิว GitHub **หนึ่งครั้ง** ข้อค้นพบที่แก้ไขหรือปิดไปแล้วจะถูกข้าม
+ปุ่มนี้รวมข้อค้นพบที่ยังเปิดอยู่ทั้งหมดที่เหลือ และเมื่อคำตัดสินเป็น **Ship** จะส่ง
+`APPROVE` (เครื่องมือ MCP `publish_review_to_github` ยังคงมีค่าเริ่มต้นเป็นข้อค้นพบ
+ที่เพื่อนยืนยันแล้วเท่านั้น และจะไม่อนุมัติเว้นแต่คุณส่ง `approve_on_ship`) ข้อค้นพบ
+ที่ยึดกับไฟล์และบรรทัดจะกลายเป็นความคิดเห็นแบบอินไลน์ ส่วนที่เหลือทั้งหมดถูกพับเข้า
+ไปในเนื้อหาสรุป แต่ละอันมีส่วนท้าย "— Control Center AI review" เพื่อให้ที่มา
+ไม่กำกวม คำตัดสิน **Block** ถูกส่งเป็น `REQUEST_CHANGES`; **Hold** เป็น `COMMENT`;
+**Ship** เป็น `APPROVE` จากปุ่มนี้ จากนั้นข้อความแจ้งเตือนจะระบุว่า **เผยแพร่แล้ว**
+รีวิวถูกโพสต์ภายใต้ตัวตนแอปของเซิร์ฟเวอร์
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+หาก GitHub ปฏิเสธจุดยึดแบบอินไลน์เพราะบรรทัดนั้นไม่ได้เป็นส่วนหนึ่งของ diff
+รีวิวทั้งหมดจะถูกส่งใหม่โดยพับทุกข้อค้นพบเข้าไปในเนื้อหา เพื่อไม่ให้มีสิ่งใดถูกทิ้ง
+อย่างเงียบ ๆ
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[การเผยแพร่อยู่ภายใต้กฎคุม]
+`pr_review.publishReview` ประกาศคลาสการกระทำ `prPublish` และทำงานผ่านจุดคอขวด
+ของกฎคุม หากผลตัดสินที่ได้คือ `prompt` และไม่มีผู้อนุมัติเชื่อมต่ออยู่ การเผยแพร่
+จะถูกปฏิเสธ — กฎคุมจะปฏิเสธไว้ก่อนเมื่อไม่แน่ใจ ตั้งกฎอย่างชัดเจนที่
+การตั้งค่า → เวิร์กสเปซ → สิทธิ์ของเอเจนต์ หากคุณต้องการให้มันรันโดยไม่มีคนเฝ้า
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+ไปป์ไลน์ในตัวอื่น ๆ โพสต์ไปยัง GitHub โดยตรง: `cross_review`, `pr_triage`,
+`ticket_to_pr` และ `pre_merge_gate` ต่างจบด้วยขั้นตอนแสดงความคิดเห็น มีเพียง
+`pr_review` เท่านั้นที่กันเอาต์พุตไว้ให้คุณ
 
-## Dispatch reviewers yourself
+## สั่งงานรีวิวเวอร์ด้วยตัวคุณเอง
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/).
+หากต้องการควบคุมว่าบทบาทใดรีวิว PR และแต่ละตัวดูไฟล์ใด ให้ใช้เครื่องมือ MCP
+`dispatch_reviewers` ภายในสเปซรีวิวที่มีอยู่ หรือเพิ่มโหนดรีวิวเวอร์ลงในไปป์ไลน์
+ทั้งสองเส้นทาง พร้อมลายเซ็นที่แน่นอนของเครื่องมือ อยู่ใน
+[สั่งงานเอเจนต์รีวิวเวอร์](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
-- [Dispatch reviewer agents](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/)
-- [Review compute (cohorts and axes)](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/)
+- [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+- [สั่งงานเอเจนต์รีวิวเวอร์](/th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์/)
+- [การคำนวณรีวิว (cohort และแกน)](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [AI review](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/)
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
+- [รีวิวด้วย AI](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/)
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)

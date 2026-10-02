@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Pipeline-stegtyper
+description: Referens för pipeline-stegtyper, kroppsnycklar för steg, deras konfiguration och stegresultat.
 slug: sv-SE/handbok/referens/pipeline-steg
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Ett pipelinesteg har två oberoende axlar:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Typ** (`StepKind`) – hur motorn _schemalägger_ steget i förhållande till dess triggers.
+- **Kroppsnyckel** (`BuiltInBodyKeys`) – vilken registrerad kropp som _utför_ stegets arbete.
 
-## Step kinds
+## Stegtyper
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Definierade i `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| Typ        | Schemaläggningssemantik                                                                                                                                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`  | Obligatorisk ingångspunkt – exakt en per mall, alltid den första noden. Utför inget arbete själv; det som startar körningen (manuellt / händelse / schema) spåras separat som rader av typen `PipelineTrigger`. Dess kropp är den verkanslösa `pipeline.trigger`. |
+| `listen`   | Utlöses när alla källsteg (i `StepTrigger.sourceStepIds`) har slutförts.                                                                                                                                                            |
+| `join`     | Utlöses när alla steg i `waitForStepIds` når ett terminalt tillstånd.                                                                                                                                                               |
+| `router`   | Villkorlig förgrening – kroppen returnerar `StepResult.route(key)`, vilket bara utlöser den nedströms kant vars `routeKey` matchar; ovalda grenar markeras som överhoppade.                                                        |
+| `forEach`  | Schemaläggs som `listen` (utlöses när alla `sourceStepIds` har slutförts). Det är den registrerade kroppen `flow.forEach` som itererar; motorn skapar inte ett understeg per objekt.                                                |
+| `terminal` | Markör för schemaläggaren utan kropp. Pipelinekörningen slutförs när ett terminalsteg är klart.                                                                                                                                     |
 
-## Step bodies
+## Stegkroppar
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Registrerade kroppar (closures) som nycklas av konstanterna i `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Det finns 25 stycken, alla listade nedan. Konfigurationen läses från stegets `PipelineNodeConfig` (se nedan) om inget annat anges; ”tillståndsnycklar” läses från pipelinens tillstånd / triggerns nyttolast vid körning.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Ett steg vars `bodyKey` inte är registrerad ger en varning vid inläsning av mallen och körs sedan aldrig – det får inte körningen att misslyckas. Stegen `trigger` och `terminal` omfattas inte av den varningen: triggern kör fortfarande den verkanslösa kroppen `pipeline.trigger`; ett `terminal`-steg har ingen kropp.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Verkanslös kropp till den obligatoriska noden `trigger` – slutförs direkt så att motorn kan sprida ut arbetet till nedströms lyssnare. Ingen konfiguration.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Shellsteg utan agent (`bash -c`). Platshållare av typen `{{key}}` i skriptet ersätts från tillstånd och triggerns nyttolast med shell-escapeade värden.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Konfigurationsfält | Beskrivning                                      |
+| ------------------ | ------------------------------------------------ |
+| `script`           | Shellkommando att köra (obligatoriskt)           |
+| `outputKey`        | Tillståndsnyckel som tar emot trimmad stdout vid exit 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Körs med cwd `<cc_root>/pipelines/<pipelineRunId>/` (delas av alla bash-steg i en körning) och `GITHUB_TOKEN` i miljön. Skriver även `<stepId>_runDir` till tillståndet. En exit-kod som inte är noll får steget att misslyckas med slutet av stderr som felmeddelande.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Generisk nod för prompt och utskick: renderar prompten, skickar ut agenten i ett samtal och pausar tills körningen är klar. Agentens nyttolast från `submit_output` samlas in i tillståndet under `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Konfigurationsfält         | Beskrivning                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `agentId`                  | Arbetsytebunden agent-UUID att skicka ut (obligatoriskt)      |
+| `prompt`                   | Instruktionstext; stöder `{{key}}`-ersättning (obligatoriskt) |
+| `outputKey`                | Tillståndsnyckel för den insamlade utdatan                    |
+| `outputSchema`             | JSON-schema som utdatan måste uppfylla                        |
+| `label`                    | Mänsklig etikett som visas på duken                           |
+| `extras.spaceId`           | Befintligt samtal att arbeta i (standard: ett dolt)           |
+| `extras.conversationTitle` | Namngiven ström i den ytan (valfritt)                         |
+| `extras.mode`              | Läses på den nod som *öppnar* rummet (`messaging.createSpace`), inte här. Standard `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Kropp för routern – läser `config.extras`, utvärderar ett villkor och returnerar `StepResult.route(key)`. Villkor är **inte** JavaScript-uttryck; tre sätt att skriva dem stöds, i prioritetsordning:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Predikatträd** (`extras.predicate`) – ett booleskt träd som dirigerar `"true"` / `"false"`. Varje nod är en map med ett `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` – sant när någon av de angivna sökvägarna finns på disken; `negate` vänder på det; `recursive` söker även i underkataloger (och hoppar över `.git`, `node_modules`, `build`, `.dart_tool`). Relativa sökvägar löses mot `state[baseKey]` (standard `repo_local_path`), annars mot arbetsytans katalog för körningen.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` – operatorer `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; läser pipelinens tillstånd, inte filsystemet.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` – booleska grupper.
+  - `{"type": "not", "of": <predicate>}` – negation.
+- **Switch** (`extras.switchKey`) – `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; dirigerar till det första fall som tillståndsvärdet innehåller utan hänsyn till skiftläge, annars `default`.
+- **Jämförelse** (äldre toppnivå: `extras.left` / `extras.op` / `extras.right`) – likvärdig med predikatet `comparison`, finns kvar för mallar som skrevs innan trädet.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Kanter ut från noden bär en `routeKey` som måste matcha den returnerade nyckeln.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Publicerar de sammanställda fynden som en PR-granskningskommentar via GitHub-PR-klienten.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Tillståndsnyckel        | Beskrivning                                   |
+| ----------------------- | --------------------------------------------- |
+| `repo_full_name`        | `owner/repo` (obligatoriskt)                  |
+| `pr_number`             | PR-nummer – int eller numerisk sträng (obligatoriskt) |
+| `consolidated_findings` | Kommentarens brödtext (obligatoriskt)         |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Returnerar `StepResult.terminal` med `comment_review_id` och `commented_at` i tillståndet.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Publicerar ett meddelande till en meddelandeyta via `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Tillståndsnyckel | Beskrivning                                        |
+| ---------------- | -------------------------------------------------- |
+| `space_id`       | Målyta (obligatoriskt)                             |
+| `content`        | Meddelandets brödtext, läses ordagrant från tillståndet (obligatoriskt) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Skriver `posted_space_id` och `posted_at` till tillståndet.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Skickar ut ett helt team i stället för en enskild agent och pausar sedan tills medlemmarnas körningar är klara.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Konfigurationsfält                         | Beskrivning                                                                                          |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `teamId`                                   | Arbetsytebundet team att skicka ut (obligatoriskt; ömsesidigt uteslutande mot `agentId`)              |
+| `prompt`                                   | Måltext; stöder `{{key}}`-ersättning (obligatoriskt)                                                  |
+| `dispatchMode`                             | `allParallel` (standard – en uppgift per medlem) eller `manager` (skicka bara ledaren, som samordnar) |
+| `outputKey`                                | Tillståndsnyckel för medlemmarnas insamlade utdata                                                    |
+| `outputSchema`, `label`, `extras.spaceId`  | Som för `conversation.promptAgent`                                                                    |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Godkännandegrind. Skickar ut godkännaragenten i ett samtal (review-läget) med grindens prompt och ett utdatakontrakt `{decision, reason}` och pausar sedan tills godkännaren skickar in via `submit_output`.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| Konfigurationsfält          | Beskrivning                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `agentId`                   | Godkännaragenten (obligatoriskt)                                                |
+| `prompt`                    | Grindens prompt (valfritt; en standard används när det saknas)                  |
+| `outputKey`                 | Tillståndsnyckel för den insamlade nyttolasten `{decision, reason}`             |
+| `outputSchema`              | Standard är ett godkännandeschema (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId`   | Som för `conversation.promptAgent`                                              |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Grinden avgörs bara genom `submit_output`. `BuiltInBodyKeys.humanGate`, biblioteket över nodtyper och prompttexten i en av de inbyggda mallarna namnger alla MCP-verktygen `approve_step` och `reject_step`; **inget av verktygen finns** i något paket eller register.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Tar bort föråldrade avskilda worktrees; väljer sitt läge utifrån triggerns nyttolast. Respekterar körningens flagga `dryRun`.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Tillståndsnyckel                      | Beskrivning                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------------- |
+| `ticket_id`                           | Frigör ärendets worktrees                                                              |
+| `repo_full_name` + `pr_number`        | Frigör den tillfälliga PR-redigerarens worktree                                        |
+| `space_id`                            | Riv ner det samtalets worktrees och mapp                                               |
+| (inget av ovanstående)                | Svep arbetsytan: försvunna kataloger, döda ytor, föräldralösa samtalsmappar            |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (valfritt) tar emot en sammanfattande sträng.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Map / fan-out över en samling i tillståndet: renderar prompten en gång per objekt och skickar sedan ut agenten **en gång** med dessa prompter sammanfogade (`---` som avgränsare) och pausar tills den körningen är klar. En tom samling slutförs direkt med en tom lista. Det är inte ett parallellt utskick per objekt.
 
-| Config field         | Description                                                     |
+| Konfigurationsfält   | Beskrivning                                                     |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Agent att skicka ut per objekt (obligatoriskt)                  |
+| `prompt`             | Prompt per objekt; stöder `{{key}}`-ersättning (obligatoriskt)  |
+| `extras.iterableKey` | Tillståndsnyckel som innehåller samlingen (obligatoriskt)       |
+| `extras.itemKey`     | Nyckeln som det aktuella objektet binds till i prompten (standard `item`) |
+| `outputKey`          | Tillståndsnyckel för den insamlade utdatan (ett utskick, inte en lista) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Kör en annan pipelinemall som ett nästlat delsteg (underpipelines körs som en barnkörning med `parentPipelineRunId` satt). Steget pausar tills barnet når ett terminalt tillstånd; därefter slås barnets sluttillstånd ihop under `outputKey`.
 
-| Config field        | Description                                                     |
+| Konfigurationsfält  | Beskrivning                                                     |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | Barnmall att köra (obligatoriskt; en pipeline kan inte anropa sig själv) |
+| `inputKeys`         | Tillståndsnycklar som kopieras in i barnets triggernyttolast    |
+| `outputKey`         | Tillståndsnyckel för barnets sammanslagna sluttillstånd         |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Bakgrundsindexering med tree-sitter: går igenom ett repo, extraherar symboler/kanter i worker-isolates och matar in dem i arbetsytans kodgraf. Strömmar förlopp till stegets körningsrad; stöder dry-run. Tree-sitter och dess grammatiker är nödvändiga native-bibliotek – en saknad dylib betyder att servern aldrig startade, och en grammatik som inte kan lösas upp mitt i körningen får steget att misslyckas i stället för att hoppas över.
 
-| State key         | Description                           |
+| Tillståndsnyckel  | Beskrivning                           |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Repo att indexera (obligatoriskt)     |
+| `repo_local_path` | Lokal sökväg till utcheckningen (obligatoriskt) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Offline-talarseparation. Läser mötets bevarade ljud, klustrar det till talare (`Person 1`, `Person 2`, …), märker om transkriptets segment och skriver om tillståndet `transcript`; avger även `diarization_spans` till det parallella steget `meeting.updateTranscript`. Skickar transkriptet oförändrat vidare när inget ljud bevarades eller modellerna inte är installerade.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Tillståndsnyckel | Beskrivning                                  |
+| ---------------- | -------------------------------------------- |
+| `meeting_id`     | Möte att separera talare i (obligatoriskt)   |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Deterministiska kroppar som sparar mötessammanfattningen. Var och en läser `meeting_id` och agentstegets strukturerade nyttolast `meeting_outcome` (`{summary, enhancedNotes, actionItems[], decisions[]}`) från tillståndet och skriver sin del till sin egen tabell – anteckningar, åtgärdspunkter eller beslut. Rader som sparats tidigare raderas aldrig vid en degraderad körning.
 
-### Other built-in bodies
+### Övriga inbyggda kroppar
 
-| Body key                           | Description                                                                                                                                                                              |
+| Kroppsnyckel                       | Beskrivning                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Taligenkänning över möten: matchar separerade talare mot sparade röstprofiler och tillämpar säkra matchningar automatiskt. Verkar inte utan profiler/embeddingar.                          |
+| `meeting.updateTranscript`         | Tillämpar etiketterna `Person N` från `diarization_spans` och slår ihop fragment per fönster till turer per talare och sparar sedan det rensade transkriptet. Verkar inte när talarseparationen inte gav något. |
+| `meeting.assemblePlayback`         | Sätter ihop mötets mixade uppspelningsspår från bevarade WAV-filer per kanal. Verkar inte när inget ljud bevarades.                                                                      |
+| `orchestration.markPhase`          | I slutet av arbets-DAG:en skriver den felmarkörer för underärenden utan utdata och växlar orkestreringen till `synthesizing`.                                                             |
+| `orchestration.persistDeliverable` | Skriver syntesutdatan till föräldraärendet, slutför det, publicerar leveransen och markerar orkestreringen som `completed`.                                                              |
+| `orchestration.awaitApproval`      | Grind för delgodkännande: slutförs direkt när stegets nodnyckel finns i orkestreringens godkända mängd, annars pausar den tills ett senare godkännande återupptar den. Detta är den enda kroppen som sätter `extras.awaitApproval`, vilket befriar den från timeoutern på 24 timmar för pausade steg. |
+| `messaging.createSpace`            | Öppnar samtalet som resten av mallen arbetar i, publicerat under stegets `outputKey` (inbyggda använder `pipeline_space_id`). En tom lista `repoIds` checkar inte ut något; `extras['allRepos']` checkar ut alla arbetsytans repos. `extras['createConversation']` (av som standard) öppnar dessutom en namngiven ström. Ett agentsteg GÅR MED i ett rum och öppnar aldrig ett, så en fan-out utan den här noden misslyckas vid utskicket – och kopplar du in den en gång delar hela fan-outen på en utcheckning i stället för att skaffa en var. |
+| `prReview.finalize`                | Det sista steget i PR-granskningsmallen: sorterar de ackumulerade granskningsnoderna i konsensusgrupper och beräknar utlåtandet för PR:en.                                               |
+| `skills.analyze`                   | Kör leverantörskedjeskanningen av en arbetsytas installerade skills och registrerar varje utlåtande.                                                                                      |
 
-## Step results
+## Stegresultat
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+En stegkropp returnerar en `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Alla fabriker tar emot en valfri `mutatedState`-map som slås ihop med pipelinens tillstånd, utom `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
-| --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| Fabrik                      | Signatur                                                        | Beskrivning                                                              |
+| --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normalt slutförande; nedströms lyssnare utvärderas                       |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Routerns slutförande; väljer den nedströms gren vars `routeKey` matchar   |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pausar tills en specifik domänhändelsetyp utlöses                        |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pausar tills alla angivna uppgifter når ett terminalt tillstånd          |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Pipelinekörningen är klar – inga fler steg                               |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Steget misslyckades med ett felmeddelande                                |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Återförsöksbeteende för en nodkropp som misslyckas (`PipelineNodeConfig.retryPolicy`; null stänger av återförsök).
 
-| Field            | Type     | Description                                                                    |
+| Fält             | Typ      | Beskrivning                                                                    |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | Totalt antal försök inklusive det första (3 = 1 försök + 2 återförsök); måste vara ≥ 1 |
+| `backoff`        | `String` | `linear` eller `exponential` (standard)                                        |
+| `initialDelayMs` | `int`    | Fördröjning före första återförsöket, i millisekunder; senare fördröjningar växer enligt `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Konfiguration per nod som bärs inuti stegdefinitionen (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Både inbyggda och anpassade noder delar den här formen; varje kropp läser bara de fält den bryr sig om.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Fält             | Typ                     | Beskrivning                                                                                                                           |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Promptmall med `{{key}}`-ersättning                                                                                                    |
+| `script`         | `String?`               | Bash-skriptets kropp med `{{key}}`-ersättning                                                                                          |
+| `agentId`        | `String?`               | Arbetsytebunden agent-UUID att skicka ut                                                                                               |
+| `inputKeys`      | `List<String>`          | Tillståndsnycklar som noden konsumerar som indata                                                                                      |
+| `repoIds`        | `List<String>`          | Repos som noden `messaging.createSpace` checkar ut (`<repoId>` eller `<repoId>@<branch>`). Tom = inga; `extras['allRepos']` = alla arbetsytans repos. Ignoreras på agentsteg. |
+| `outputKey`      | `String?`               | Tillståndsnyckel som nodens utdata skrivs under                                                                                        |
+| `label`          | `String?`               | Mänsklig etikett som visas på duken (standard: stegets id)                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON-schema (delmängd) som utdatavärdet måste uppfylla                                                                                 |
+| `reducer`        | `String?`               | Sammanfogningsstrategi när parallella grenar skriver till samma `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum` eller `override` (standard) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Återförsökspolicy vid kroppsfel; null = ett enda försök                                                                                |
+| `continueOnFail` | `bool`                  | När sant får ett terminalt fel inte körningen att misslyckas; felet sparas undan under `state['_stepErrors'][stepId]`                   |
+| `timeoutMs`      | `int?`                  | Timeout i klocktid för nodkroppen i millisekunder; null = ingen timeout                                                                |
+| `teamId`         | `String?`               | Team att skicka ut (`team.dispatch`-noder); ömsesidigt uteslutande mot `agentId`                                                       |
+| `dispatchMode`   | `String?`               | Teamets körningsläge: `allParallel` eller `manager`                                                                                    |
+| `extras`         | `Map<String, dynamic>`  | Fri kroppsspecifik konfiguration (t.ex. `iterableKey`, `templateId`, villkorsträd)                                                     |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Härledda accessorer: `spaceId` (`extras['spaceId']` – befintligt samtal att arbeta i), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` – `chat` / `review` / `plan`, läses på den ytöppnande noden) och `runWhen` (`extras['runWhen']` – hoppa över noden när villkoret inte är uppfyllt).
 
-## See also
+## Se även
 
-- [Pipelines](/sv-SE/handbok/koncept/pipelines/)
-- [Create a pipeline](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
-- [Pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
-- [Run a pipeline](/sv-SE/handbok/how-to-guider/kor-pipeline/)
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/)
+- [Skapa en pipelinemall](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
+- [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
+- [Kör en pipeline manuellt](/sv-SE/handbok/how-to-guider/kor-pipeline/)

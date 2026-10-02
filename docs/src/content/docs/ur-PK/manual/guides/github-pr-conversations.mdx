@@ -1,97 +1,96 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: GitHub PR سے Control Center سے بات کریں
+description: سرور کے GitHub App بوٹ سے PR کی گفتگو ہی میں ریویو یا سوال طلب کریں — بغیر کسی ویب ہک یا عوامی URL کے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+یہ گائیڈ دکھاتی ہے کہ GitHub سے باہر نکلے بغیر Control Center کے ساتھ کیسے کام کریں:
+PR کے صفحے سے AI ریویو طلب کریں، کسی تبصرے میں بوٹ سے سوال پوچھیں، اور گفتگو اُس کے
+ریویو تھریڈز میں جاری رکھیں۔
 
-The bot is your server's own [GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+بوٹ آپ کے سرور کا اپنا [GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) ہے — وہی
+جو پہلے سے لوگوں کو سائن اِن کراتا ہے اور پس منظر کا کام چلاتا ہے۔ کوئی نئی چیز
+رجسٹر نہیں ہوتی، اور کوئی چیز انٹرنیٹ سے قابلِ رسائی ہونے کی ضرورت نہیں: سرور
+پولنگ کے ذریعے دریافت کرتا ہے کہ GitHub پر کیا کہا گیا، اس لیے NAT کے پیچھے پڑا لیپ
+ٹاپ بالکل ویسے ہی برتاؤ کرتا ہے جیسے کوئی عوامی ڈیپلائمنٹ۔
 
-## Prerequisites
+## شروع کرنے سے پہلے
 
-- The server has its GitHub App [registered and
-  installed](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- سرور کا GitHub App [رجسٹر اور انسٹال](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) ہو،
+  جس کے پاس **Pull requests: read and write** (تبصروں، تھریڈز اور ری ایکشنز کے لیے)
+  اور **Issues: read** (تبصرہ تلاش کے لیے) ہو۔ دونوں پہلے سے اُس گائیڈ کی اجازت فہرست
+  میں شامل ہیں
+- ریپوزٹری Control Center کے کسی ورک اسپیس سے جڑی ہو
+- نہ کوئی ویب ہک URL، نہ ٹنل، نہ کال بیک — نیٹ ورک کی طرف کنفیگر کرنے کو کچھ نہیں
 
-## Find your bot's name
+## اپنے بوٹ کا نام تلاش کریں
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+بوٹ کا لاگ اِن `<appslug>[bot]` ہوتا ہے، جہاں `appslug` وہ نام ہے جو آپ نے ایپ کو
+رجسٹر کرتے وقت دیا تھا۔
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. **ترتیبات → سرور → سنگل سائن آن** پر جائیں اور **فراہم کنندہ ایپس** کارڈ تک اسکرول
+   کریں
+2. **GitHub** بلاک کھولیں اور **ٹیسٹ** پر کلک کریں
+3. **بوٹ لاگ اِن** بھرتے ہی اسے کاپی کریں۔ اگر وہ اب بھی خالی اشارہ دکھائے تو لاگ اِن
+   ہمیشہ `<appslug>[bot]` ہوتا ہے — وہی ٹائپ کریں، یا مختصر `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub اپنے `@` آٹو کمپلیٹ میں ایپ اکاؤنٹس پیش نہیں کرتا، اس لیے لاگ اِن ٹائپ کرنا
+پڑتا ہے — اسی لیے سیٹنگز کارڈ اسے ایک کلک میں کاپی کے قابل بناتا ہے۔ `[bot]` لاحقہ
+اختیاری ہے: `@myapp` اور `@myapp[bot]` دونوں بوٹ کو مخاطب کرتے ہیں۔
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[ایک نمایاں ایپ نام چنیں]
+مختصر شکل کا موازنہ متن کے طور پر ہوتا ہے۔ اگر کوئی انسانی GitHub صارف اتفاقاً آپ کی
+ایپ کا slug شیئر کرتا ہو، تو مختصر شکل سے اُس صارف کا ذکر بھی بوٹ تک پہنچ جاتا ہے۔
+مکمل `@myapp[bot]` شکل ہمیشہ غیر مبہم ہوتی ہے۔
 :::
 
-## Request a review from GitHub
+## GitHub سے ریویو طلب کریں
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+دو طریقے، اور دونوں وہی پہلے سے فراہم کردہ `pr_review` پائپ لائن شروع کرتے ہیں جو
+**AI سے پوچھیں** بٹن شروع کرتا ہے:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- PR پر **`ai-review` لیبل شامل کریں**۔ GitHub کے پاس بوٹ کو بطور ریویوور تفویض کرنے
+  کے لیے اس سے زیادہ قریب کوئی چیز نہیں — ایپ اکاؤنٹس GitHub کے اصل requested-reviewer
+  سلاٹ پر نہیں بیٹھ سکتے۔ ری ایکٹ کرنے کے لیے کوئی تبصرہ نہیں ہوتا، اس لیے GitHub پر
+  کچھ پوسٹ نہیں ہوتا؛ ریویو Control Center میں شروع ہوتا ہے
+- PR کی گفتگو پر **`@myapp review` تبصرہ کریں** (یا صرف `@myapp`)۔ بوٹ 👀 کے ساتھ ری
+  ایکٹ کرتا ہے، پھر جب ریویو شروع ہو جائے (یا کوئی پہلے ہی چل رہا ہو) تو جواب دیتا ہے
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+ریویوورز PR کے ریویو اسپیس میں کام کرتے ہیں؛ نتائج پڑھنے اور شائع کرنے کا طور وہی ہے
+جو [AI سے چلنے والا ریویو استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/) میں ہے۔
+GitHub پر واپس شائع کرنا پھر بھی وہ فیصلہ ہے جو آپ Control Center میں کرتے ہیں — GitHub
+سے ریویو شروع کرنا خود بخود GitHub پر کچھ شائع نہیں کرتا۔
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+لیبل فی PR ایک بار چلتا ہے: اسے شامل کرنا ہی طلب ہے، اور ہٹا کر دوبارہ لگانے پر وہ
+دوبارہ تیار نہیں ہوتا۔ ریویو دوبارہ چلانے کے لیے — مثلاً کسی پش کے بعد — بوٹ کا ذکر
+کریں۔
 
-## Ask a question
+## سوال پوچھیں
 
-Comment on the PR conversation:
+PR کی گفتگو پر تبصرہ کریں:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+ترتیب وار کیا ہوتا ہے:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. بوٹ 👀 کے ساتھ ری ایکٹ کرتا ہے تاکہ آپ کو معلوم ہو کہ تبصرہ دیکھ لیا گیا
+2. سوال PR کے ریویو اسپیس میں **آپ کی حیثیت سے** پوسٹ ہوتا ہے — وہی انتساب جیسے آپ
+   نے اسے Control Center میں ٹائپ کیا ہو
+3. کوئی ایجنٹ اسپیس میں جواب دیتا ہے، اور جواب PR پر ایک تبصرے کے طور پر واپس پوسٹ
+   ہوتا ہے جو آپ کا @-ذکر کرتا ہے
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+جس PR پر ابھی کوئی ریویو نہ چلا ہو، اُس پر سوال ورک اسپیس کے CEO ایجنٹ کو جگاتا ہے؛
+ایک بار ریویو چل جانے کے بعد آخری بات کرنے والا ایجنٹ جواب دیتا ہے، چنانچہ پیروی والے
+سوالات اُسی کے پاس پہنچتے ہیں جس کے پاس سیاق و سباق ہو۔
 
-## Follow up in a review thread
+## ریویو تھریڈ میں جواب دیں
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+کسی ایسے اِن لائن ریویو تھریڈ کے اندر جواب دیں جس کا بوٹ حصہ ہو — کوئی ڈف تبصرہ جو
+اُس نے چھوڑا ہو، یا کوئی جواب جو اُس نے اُسی تھریڈ میں پوسٹ کیا ہو۔ کسی ذکر کی ضرورت
+نہیں؛ تھریڈ **ہی** مخاطب کرنے کا ذریعہ ہے:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +98,73 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+کئی باریوں والی گفتگو بھی ویسے ہی چلتی ہے: ہر جواب اُسی گفتگو میں ایک اور سوال ہوتا
+ہے، ریویو اسپیس بطور سیاق، اور جواب اُسی تھریڈ میں واپس آتا ہے۔
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+PR کی گفتگو کی ٹائم لائن پر کوئی پیروی ایک نیا ٹاپ لیول تبصرہ ہوتا ہے، اس لیے اُسے
+پھر بھی @-ذکر کی ضرورت پڑتی ہے۔
 
-## Who the bot talks to
+## بوٹ کس سے بات کرتا ہے
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+GitHub کا تبصرہ اپنے ساتھ لاگ اِن سے زیادہ کچھ نہیں لاتا، اس لیے بوٹ کچھ کرنے سے پہلے
+مصنف کو حل کرتا ہے:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **آپ کا GitHub اکاؤنٹ Control Center میں آپ کی شناخت سے جڑا ہونا چاہیے** —
+  [GitHub سے سائن اِن کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)، یا کوئی ٹوکن پیسٹ
+  کریں، **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** سے
+- **آپ کو اُس ورک اسپیس کا لکھنے کے کردار والا رکن ہونا چاہیے** (`member`، `admin`،
+  یا `owner`) جو ریپوزٹری سے جڑا ہو
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+کسی اور کو ایک شائستہ جواب ملتا ہے جو بتاتا ہے کہ کیا کمی ہے — نامعلوم لاگ اِن (نہ
+جڑا ہوا، یا جڑا ہوا مگر یہاں کا رکن نہ ہونا) اور صرف پڑھنے والا کردار، یہ دو صورتیں
+ہیں — اور اُن کے الفاظ کبھی ورک اسپیس میں داخل نہیں ہوتے۔ `ai-review` لیبل پر یہ
+پابندی نہیں: اُس کا کوئی مصنف نہیں، اس لیے وہ ریویو اُس ورک اسپیس میں شروع کرتا ہے جو
+پہلے سے ریپو سے جڑا ہو۔
 
-## What to expect
+## کیا توقع رکھیں
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| چیز                | رویہ                                                                     |
+| ------------------ | ------------------------------------------------------------------------ |
+| تصدیق              | تقریباً ایک منٹ میں تبصرے پر 👀 — اسکین کا وقفہ۔ `ai-review` لیبل کے پاس ری ایکٹ کرنے کو کوئی تبصرہ نہیں ہوتا |
+| جوابات             | بوٹ (ایپ) کے طور پر پوسٹ ہوتے ہیں، اُسی لین میں جہاں سوال پوچھا گیا تھا   |
+| اسپیس میں انتساب   | سوال آپ کا ہے؛ ایجنٹ آپ کی طرف سے چلتا ہے، اسپیس کی خود مختاری کی سیٹنگز کے تحت |
+| ریویوز             | نتائج ریویو اسپیس میں پہنچتے ہیں؛ GitHub پر شائع کرنا دستی ہے             |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+تقریباً ایک منٹ کی تاخیر اُس سودے کا مول ہے کہ کسی اِن باؤنڈ نیٹ ورک رسائی کی ضرورت
+بالکل نہیں۔ اسکین کے بارے میں کچھ بھی فوری نہیں، اور سرور آف لائن رہنے کے دوران کچھ
+ضائع نہیں ہوتا — ڈاؤن ٹائم میں آنے والا تبصرہ اگلے اسکین میں پکڑ لیا جاتا ہے۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-**Nothing happens for a comment that mentions the bot.**
+**بوٹ کا ذکر کرنے والے تبصرے پر کچھ نہیں ہوتا۔**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- کیا ایپ اُس اکاؤنٹ پر **انسٹال** ہے جو ریپو کا مالک ہے، اور کیا ریپو کسی ورک اسپیس
+  سے **جڑا** ہے؟ غیر جڑا ریپو کچھ ریکارڈ ہونے سے پہلے ہی چھوڑ دیا جاتا ہے، اس لیے بعد
+  میں جڑنے پر پھر بھی سب پہنچ جاتا ہے
+- کیا آپ کا GitHub اکاؤنٹ جڑا ہوا ہے، اور کیا آپ لکھنے کے کردار والے رکن ہیں؟ PR پر
+  بوٹ کے انکار والے جواب کو دیکھیں — وہ بتا دیتا ہے کہ کون سی بات ہے
+- پھر بھی کچھ نہیں؟ کچھ ناکام ہونے پر سرور لاگ اسکین اور PR کا نام لیتا ہے؛
+  `pr_conversation:` (پولر) اور `github_pr_conversation:` (برج) تلاش کریں
 
-**The label does not start a review.**
+**لیبل ریویو شروع نہیں کرتا۔**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+یہ فی PR ایک بار چلتا ہے۔ اگر ریویو پہلے ہی چل چکا ہو، یا لیبل اُس وقت لگایا گیا ہو
+جب سرور نے PR کو کبھی دیکھا ہی نہ ہو (پہلا اسکین بیک لاگ کو طوفان کی طرح چلانے کے
+بجائے خاموشی سے ریکارڈ کر لیتا ہے)، تو اس کے بجائے بوٹ کا ذکر کریں — `@myapp review`
+ہمیشہ ایک شروع کرتا ہے، اِلا یہ کہ کوئی ریویو پہلے ہی جاری ہو۔
 
-**The bot's answer never arrived on GitHub.**
+**بوٹ کا جواب GitHub پر کبھی نہیں پہنچا۔**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+جواب خود کبھی ضائع نہیں ہوتا — وہ Control Center میں PR کے ریویو اسپیس میں موجود ہوتا
+ہے۔ پوسٹ کرنے کی ناکامی (GitHub ڈاؤن، اجازتیں بدل جانا) لاگ ہو جاتی ہے اور جواب دوبارہ
+نہیں بھیجا جاتا؛ اگر اہم ہو تو تھریڈ میں دوبارہ پوچھیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/): the room all of this lands in
+- [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/): وہ رجسٹریشن جس سے بوٹ جنم
+  لیتا ہے
+- [AI سے چلنے والا ریویو استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/): کسی ذکر سے شروع
+  ہونے والے ریویو کے پیدا کردہ نتائج پڑھنا
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/): اپنا GitHub اکاؤنٹ جوڑنا،
+  جس سے بوٹ آپ کو حل کرتا ہے
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/): وہ کمرہ جہاں یہ سب پہنچتا ہے

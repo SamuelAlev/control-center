@@ -1,54 +1,50 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: مقدمة
+description: Control Center هو قمرة القيادة لتطوير البرمجيات بوكلاء متعددين.
 slug: ar-SA/دليل-المستخدم
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+يمنحك Control Center القيادة على أسطول من وكلاء البرمجة بالذكاء الاصطناعي. شغّل الوكلاء، وراقب عملهم مباشرة، وراجع طلبات سحبهم، وأدر المستودعات ومساحات العمل والتكاملات — من تطبيق حاسوب أصيل، أو من المتصفح، أو من هاتفك.
 
 <div className="docs-start not-content">
-  <LinkButton href="/ar-SA/دليل-المستخدم/بداية-سريعة/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/ar-SA/دليل-المستخدم/تثبيت/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/ar-SA/دليل-المستخدم/بداية-سريعة/" icon="right-arrow">بداية سريعة</LinkButton>
+  <LinkButton href="/ar-SA/دليل-المستخدم/تثبيت/" variant="minimal" icon="download">ثبّت Control Center</LinkButton>
 </div>
 
-## What you can do
+## ما تستطيع فعله
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **مراسلة الوكلاء**: المساحات هي الطريقة الأساسية لقيادة الأسطول. أشر إلى وكيل بـ @ فيُرسَل إلى شجرة عمل خاصة به بالنسخ عند الكتابة، فيستطيع عدة وكلاء أن يكتبوا الشفرة ويراجعوا بالتوازي من غير أن يمسوا نسخة عملك
+- **تنسيق الطلبات الكبيرة**: أعطِ المنسّق هدفًا، ووافق مرة واحدة على خطة الفريق كله التي يقترحها، فينفّذها [خط أنابيب](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) مُولَّد
+- **مراجعة طلبات السحب ودمجها** بعارض فروق مدمج، وتعليقات مضمّنة، ومراجعة بالذكاء الاصطناعي
+- **منح الوكلاء آلات تُرمى**: [المنصة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/) آلة افتراضية تُرمى — متصفح، أو سطح مكتب، أو هاتف، أو طرفية معزولة — يقودها الوكيل وأنت تشاهد مباشرة، وتستطيع أن تتولّى التحكم؛ تُوجَّه خوادم التطوير داخلها إلى `localhost` ومتصفح الوكيل و`https://myapp.test`
+- **أتمتة سير العمل** بخطوط أنابيب مبنية على DAG تُطلَق بأحداث أو بجداول
+- **إدارة المعرفة** بذاكرة مساحة العمل وحقائقها وسياساتها
+- **تتبّع العمل** بتذاكر ومشاريع وتفويض، على نحو محايد تجاه المورّد
+- **تسجيل الاجتماعات** بالتقاط ونسخ نصي وفصل للمتحدثين، وكلها على عتادك، ثم يُلخَّص التسجيل في ملاحظات وبنود عمل وقرارات
+- **رؤية يومك** بمزامنة Google Calendar، والرد على الدعوة، وتنبيهات الاجتماع، والتسجيل والربط
+- **متابعة الأسطول من هاتفك**: اقرن جهازًا بخادمك، واقرأ الرسائل، وردّ عليها، وافرِز التذاكر. يختار الهاتف أفضل مسار يمكن بلوغه — loopback أو LAN أو tailnet أو TLS — فإن تعذّر بلوغه رجع إلى مرحّل مختوم طرفًا لطرف يمرّر إطارات من غير أن يستطيع قراءتها
+- **قيادة الوكلاء من Slack**: اربط مساحة عمل بتطبيق دردشة، وأشر إلى البوت، أو أجب في خيط Slack، أو افتح تذكرة بأمر شرطة مائلة — عبر اتصال صادر، فلا حاجة إلى نقطة نهاية عامة
+- **التكامل** مع GitHub وLinear وSlack وGoogle Calendar وأكثر من 100 أداة MCP
 
-## You do not have to install it
+## لا يلزمك تثبيته
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+التطبيق نفسه يعمل في المتصفح على
+[app.usectrl.dev](https://app.usectrl.dev)، بالميزات نفسها.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+كل عميل — الحاسوب والويب والهاتف — هو عارض خفيف فوق خادم بلا واجهة يملك بياناتك وينجز العمل. يستطيع الحاسوب أن يشغّل ذلك الخادم لك، أما لسان المتصفح فلا يستطيع، فيتصل تطبيق الويب بخادم تشغّله أنت. قد يعمل ذلك الخادم على جهازك (`ws://localhost:9030`، بلا حاجة إلى شهادة) أو على مضيف بعيد يمكن بلوغه عبر TLS أو VPN أو نفق.
 
-See [Install](/ar-SA/دليل-المستخدم/تثبيت/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) for how the three clients relate.
+انظر [التثبيت](/ar-SA/دليل-المستخدم/تثبيت/#استخدمه-في-المتصفح) للاستخدام من المتصفح، و[النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) لكيف يرتبط العملاء الثلاثة بعضهم ببعض.
 
-## Next steps
+## الخطوات التالية
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/ar-SA/دليل-المستخدم/تثبيت/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/ar-SA/دليل-المستخدم/بداية-سريعة/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/ar-SA/دليل-المستخدم/دروس/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/ar-SA/دليل-المستخدم/أدلة-إرشادية/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/ar-SA/دليل-المستخدم/مفاهيم/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/ar-SA/دليل-المستخدم/مرجع/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="التثبيت" href="/ar-SA/دليل-المستخدم/تثبيت/" description="التنزيلات، ومتطلبات النظام، وأين يعمل الخادم." />
+  <LinkCard title="بداية سريعة" href="/ar-SA/دليل-المستخدم/بداية-سريعة/" description="أقصر مسار كامل حتى يعمل وكيل على مستودعك." />
+  <LinkCard title="الدروس" href="/ar-SA/دليل-المستخدم/دروس/" description="دروس أطول بالترتيب، تبدأ بمساحة عملك الأولى." />
+  <LinkCard title="أدلة إرشادية" href="/ar-SA/دليل-المستخدم/أدلة-إرشادية/" description="وصفات لمهمة واحدة في كل مرة: إضافة مستودعات، أو تهيئة الضوابط، أو اقتران هاتفك." />
+  <LinkCard title="المفاهيم" href="/ar-SA/دليل-المستخدم/مفاهيم/" description="لماذا يعمل المنتج بهذه الطريقة، بدءًا من النشر والعملاء." />
+  <LinkCard title="المرجع" href="/ar-SA/دليل-المستخدم/مرجع/" description="جداول كاملة للمسارات، وأدوات MCP، واختصارات لوحة المفاتيح، وأحداث النطاق." />
 </div>

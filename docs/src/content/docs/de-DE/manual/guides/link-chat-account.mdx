@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Dein Slack-Konto verknüpfen
+description: Weise nach, dass eine Slack-Identität dir gehört, damit Agenten auf deine Nachrichten hin handeln und deine Arbeit dir zugeordnet wird.
 slug: de-DE/handbuch/anleitungen/chat-konto-verknuepfen
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Diese Anleitung zeigt dir, wie du deine Chat-Identität mit deinem Nutzer in Control Center verknüpfst und wie du eine Verknüpfung wieder löst.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Jedes Mitglied macht das einmal pro Chat-Anbieter. Das ist etwas anderes, als die App zu verbinden: Die Verbindung macht den Bot für den ganzen Arbeitsbereich erreichbar, die Verknüpfung macht _dich_ darin erkennbar.
 
-## Why linking is required
+## Warum die Verknüpfung nötig ist
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Die Brücke weigert sich, für ein Chat-Konto zu handeln, das sie keinem Mitglied des Arbeitsbereichs zuordnen kann. Das ist Absicht — ohne Verknüpfung müsste jede Nachricht aus Slack der Person zugerechnet werden, die die App installiert hat, und Prüfpfad, Rate-Limits pro Prinzipal und die Melder der Tickets würden alle die falsche Person nennen.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Ein nicht verknüpftes Mitglied, das den Bot erwähnt, bekommt in diesem Slack-Thread eine Antwort, die erklärt, wie die Verknüpfung geht. Es wird nichts ausgeführt.
 
-## Link with a code
+## Mit einem Code verknüpfen
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Geh zu **Einstellungen → Arbeitsbereich → Profil und Identität** und scrolle zur Karte **Verknüpfte Chat-Konten**
+2. Klicke im Slack-Block auf **Mein Slack-Konto verknüpfen**
+3. Kopiere den Befehl, den sie anzeigt, zum Beispiel:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Schick diesen Befehl in Slack an den Bot — eine Direktnachricht ist der einfachste Ort
+5. Der Bot bestätigt mit dem Nutzer in Control Center, mit dem du jetzt verknüpft bist, und der Dialog, den du offen gelassen hast, sagt im selben Moment dasselbe — du musst ihn nicht schließen und nachsehen
 
-The code:
+Der Code:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Ist einmalig und läuft **15 Minuten** nach dem Erzeugen ab
+- Wird immer für _dich_ erzeugt, nie für ein Teammitglied
+- Ersetzt jeden Code, den du schon hältst, sodass ein erneuter Klick auf die Schaltfläche den vorherigen ungültig macht
+- Liegt nur im Speicher, sodass ein Neustart des Servers noch offene Codes ungültig macht — tippe erneut auf die Schaltfläche
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Ein Code, der unbekannt, abgelaufen oder für einen anderen Arbeitsbereich erzeugt wurde, scheitert jedes Mal auf dieselbe, nicht unterscheidbare Weise: „that code is not valid (or has expired)“.
 
-## Automatic linking by email
+## Automatisch per E-Mail verknüpfen
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Trägt dein Slack-Profil eine verifizierte E-Mail, die zu einem Nutzer in Control Center passt, der **bereits Mitglied dieses Arbeitsbereichs** ist, verknüpft die Brücke dich beim ersten Gespräch. Kein Code nötig.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Beide Hälften zählen: Der E-Mail-Abgleich beweist die Identität, aber nur die Mitgliedschaft gewährt Zugang, sodass ein Fremder, dessen E-Mail zufällig auf dem Server liegt, mit nichts verknüpft wird. Die Liste zeigt, wie jede Verknüpfung entstanden ist („per E-Mail zugeordnet“ oder „mit einem Code verknüpft“).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Die automatische Verknüpfung braucht den Scope `users:read.email`. Ohne ihn gibt Slack die Adresse nicht preis, und der Weg über den Code ist der einzige.
 
-## See who is linked
+## Sehen, wer verknüpft ist
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Die Liste gehört zur Verwaltung des Arbeitsbereichs, sie liegt also auf der anderen Hälfte der Oberfläche: **Einstellungen → Arbeitsbereich → Allgemein → Chat-Brücken → Verknüpfte Konten**. Sie führt jedes verknüpfte Mitglied des Arbeitsbereichs auf, mit dem Slack-Konto, auf das es abbildet, und damit, wie die Verknüpfung entstanden ist.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Deinen eigenen Stand siehst du auf deiner Profilseite: Die Zeile **Mein Slack-Konto verknüpfen** liest „Verknüpft mit _your-slack-id_“, sobald du verknüpft bist, und fordert dich zum Verknüpfen auf, solange du es nicht bist.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Die Liste ist ein Live-Abonnement, weil die Änderung auf der anderen Seite geschieht — du tippst den Code in Slack, also kann keine Anfrage aus der App die Antwort zurücktragen.
 
-## Unlink
+## Verknüpfung lösen
 
-Click **Unlink** on a row in the workspace roster.
+Klicke in einer Zeile der Liste des Arbeitsbereichs auf **Verknüpfung lösen**.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Jede Person kann die eigene Verknüpfung lösen
+- Nur ein Admin kann die Verknüpfung eines anderen Mitglieds lösen
+- Das Lösen widerruft auch jeden noch offenen Verknüpfungscode dieses Mitglieds
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Danach kann dieses Slack-Konto keine Agenten mehr steuern, bis es erneut verknüpft wird. Vorhandene Bereiche, Transkripte und Tickets behalten ihre ursprüngliche Zuordnung — das Lösen nimmt vergangene Arbeit nicht zurück.
 
-## Troubleshooting
+## Fehlersuche
 
-### The bot says I am not a member of this workspace
+### Der Bot sagt, ich sei kein Mitglied dieses Arbeitsbereichs
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/de-DE/handbuch/konzepte/multiplayer/).
+Dein Slack-Konto ist mit einem Nutzer in Control Center verknüpft, aber dieser Nutzer hat in diesem Arbeitsbereich keine Mitgliedschaft. Bitte einen Admin, dich einzuladen; siehe [Multiplayer — Identität, Mitgliedschaft und Präsenz](/de-DE/handbuch/konzepte/multiplayer/).
 
-### The bot says my role is read-only
+### Der Bot sagt, meine Rolle sei nur lesend
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Die Rollen `viewer` und `guest` können keine Arbeit starten. Ein Admin muss deine Rolle auf `member` oder höher setzen.
 
-### The slash command is not recognized
+### Der Slash-Befehl wird nicht erkannt
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Prüfe, dass der Slash-Befehl in Slack existiert und dass du den Befehl schickst, den dir der Einstellungsdialog gezeigt hat — ein Admin kann ihn umbenannt haben, dann zeigt der Dialog den aktuellen Namen.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Set up Slack integration](/de-DE/handbuch/anleitungen/slack-integration/)
-- [Customize the chat bot](/de-DE/handbuch/anleitungen/chatbot-anpassen/)
-- [Chat bridge](/de-DE/handbuch/referenz/chat-bruecke/)
+- [Slack-Integration einrichten](/de-DE/handbuch/anleitungen/slack-integration/)
+- [Den Chatbot anpassen](/de-DE/handbuch/anleitungen/chatbot-anpassen/)
+- [Chat-Brücke](/de-DE/handbuch/referenz/chat-bruecke/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Chat bridges](/de-DE/handbuch/konzepte/chat-bruecken/)
-- [Multiplayer — identity, membership and presence](/de-DE/handbuch/konzepte/multiplayer/)
+- [Chat-Brücken](/de-DE/handbuch/konzepte/chat-bruecken/)
+- [Multiplayer — Identität, Mitgliedschaft und Präsenz](/de-DE/handbuch/konzepte/multiplayer/)

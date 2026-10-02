@@ -1,104 +1,107 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: Tham chiếu cấu hình SSO
+description: Mọi tham số điều chỉnh, endpoint, thao tác và mã lỗi của đăng nhập một lần.
 slug: vi-VN/so-tay/tham-chieu/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Mọi thứ có thể cấu hình về đăng nhập một lần, gói gọn trong một trang. Các giá
+trị nằm trong những dòng `sso_connections` của `global.db` (vốn ở phạm vi toàn
+máy chủ theo thiết kế), được chỉnh sửa qua
+**Cài đặt → Máy chủ → Đăng nhập một lần** hoặc các thao tác RPC `sso.*`. Dòng
+đã lưu là nguồn chân lý duy nhất — không có đường dẫn biến môi trường
+`CC_SAML_*` / `CC_OIDC_*` nào (một kết nối có thể đến từ hai nơi chính là kết
+nối mà màn hình cài đặt có thể phản đối).
 
-## Connection fields
+## Các trường của kết nối
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Trường                 | Áp dụng cho | Mặc định       | Ý nghĩa                                                                                                                                                |
+| ---------------------- | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `enabled`              | cả hai      | tắt            | các lần đăng nhập có thể dùng kết nối này                                                                                                             |
+| `idpMetadataXml`       | SAML        | —              | XML `EntityDescriptor` của IdP (bắt buộc để bật)                                                                                                      |
+| `spEntityId`           | SAML        | `<origin>/saml` | entity ID của chúng ta, được ghim khi origin thay đổi                                                                                                |
+| `emailAttribute`       | SAML        | `email`        | thuộc tính chứa email; NameID có dạng email là phương án dự phòng                                                                                     |
+| `displayNameAttribute` | SAML        | `displayName`  | thuộc tính tên hiển thị                                                                                                                               |
+| `groupsAttribute`      | SAML        | `groups`       | thuộc tính tên nhóm                                                                                                                                    |
+| `clockSkewSeconds`     | SAML        | 90             | mức cho phép lệch đồng hồ khi xác thực thời hạn hiệu lực                                                                                              |
+| `allowIdpInitiated`    | SAML        | tắt            | chấp nhận các Response không được yêu cầu (không có `InResponseTo`)                                                                                   |
+| `wantResponseSigned`   | SAML        | tắt            | yêu cầu chữ ký ở gốc Response (chữ ký khẳng định luôn bắt buộc)                                                                                       |
+| `issuer`               | OIDC        | —              | URL gốc của issuer (bắt buộc để bật)                                                                                                                   |
+| `clientId`             | OIDC        | —              | id client công khai (bắt buộc để bật)                                                                                                                 |
+| `clientSecret`         | OIDC        | —              | chỉ dành cho client confidential; được lưu trong tệp secrets 0600, không bao giờ trong cơ sở dữ liệu — chỉ ghi qua RPC (`sso.getConfig` báo cáo `clientSecretPresent`) |
+| `groupsClaim`          | OIDC        | `groups`       | claim chứa tên nhóm                                                                                                                                   |
+| `defaultRole`          | cả hai      | `member`       | vai trò khi không có nhóm nào được ánh xạ — không bao giờ là `owner`                                                                                  |
+| `groupRoleMap`         | cả hai      | `{}`           | nhóm → vai trò; các ánh xạ tới chủ sở hữu bị từ chối khi lưu                                                                                           |
+| `autoMember`           | cả hai      | bật            | tự động thêm người dùng vào mọi không gian làm việc ở lần đăng nhập đầu tiên                                                                          |
+| `allowJit`             | cả hai      | bật            | cấp phát người dùng chưa biết khi đăng nhập                                                                                                           |
 
-## Process configuration
+## Cấu hình tiến trình
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+Các kết nối SSO không được nạp sẵn từ môi trường. Một cờ tiến trình còn lại nói
+về **bước chuyển tiếp qua trình duyệt**, chứ không phải dòng kết nối:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Biến / cờ                                        | Ý nghĩa                                                                                                                                                        |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origin mà các callback SSO chuyển hướng trình duyệt tới (thông tin xác thực đi kèm trong phần fragment của URL). Để trống thì bước chuyển tiếp vẫn cùng origin. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+Bản thân URL issuer phải là `https` (`http` chỉ được chấp nhận cho các issuer
+loopback `localhost`, `127.0.0.1` và `::1`).
 
-## HTTP endpoints
+## Các endpoint HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| Endpoint                                         | Xác thực            | Mục đích                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /saml/login?relay=…`                        | không (chuyển hướng) | bắt đầu đăng nhập do SP khởi tạo; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` gửi postMessage tới thẻ kết nối đang chờ (thẻ này khai báo `client_origin` của nó, chỉ được tôn trọng khi danh sách origin tin cậy cho phép)                                      |
+| `POST /saml/acs`                                 | không (IdP POST)    | bộ tiếp nhận khẳng định — xác minh, cấp phát, tạo mới                                                                                                                                                                                                                          |
+| `GET /saml/metadata`                             | không               | `EntityDescriptor` SP của chúng ta                                                                                                                                                                                                                                             |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | không               | vòng khứ hồi OIDC; `relay=desktop` chuyển tiếp sang ứng dụng, `relay=web-popup` tới thẻ kết nối đang chờ (cùng quy ước `client_origin`)                                                                                                                                        |
+| `GET /auth/providers`                            | không, CORS `*`     | phép dò của màn hình kết nối: các kết nối SSO được cung cấp (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                                                           |
+| `/scim/v2/Users…`                                | Bearer (token SCIM) | Users: tạo/đọc/liệt kê+lọc/PUT/PATCH/DELETE                                                                                                                                                                                                                                    |
+| `/scim/v2/Groups`                                | Bearer              | chỉ đọc; việc đẩy nhóm trả về 501 có chủ đích                                                                                                                                                                                                                                  |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | tài liệu mô tả năng lực                                                                                                                                                                                                                                                        |
 
-## RPC ops
+## Các thao tác RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Mọi thao tác `sso.*` đều thuộc phạm vi máy chủ và chỉ dành cho **chủ sở hữu máy
+chủ** (người vận hành bản cài đặt, `ServerAuthority.serverOwner`). Sở hữu một
+không gian làm việc là chưa đủ; chỉ riêng việc ghép nối không bao giờ cấp được
+chúng.
 
-| Op                        | Purpose                                                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| Thao tác                  | Mục đích                                                                                                                                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sso.getConfig`           | kết nối đã lưu cho một loại                                                                                                                                                                  |
+| `sso.saveConfig`          | xác thực, lưu trữ và áp dụng trực tiếp                                                                                                                                                       |
+| `sso.status`              | các cờ đã bật/đã cấu hình, sự hiện diện của token SCIM, origin chuẩn                                                                                                                         |
+| `sso.testConnection`      | kiểm thử một kết nối mà không cần vòng khứ hồi qua trình duyệt (SAML: phân tích metadata + dựng AuthnRequest; OIDC: khám phá issuer), có thể dùng các giá trị chưa lưu trên màn hình           |
+| `sso.spMetadata`          | phát ra `EntityDescriptor` SP cho một origin                                                                                                                                                 |
+| `sso.setPairingEnabled`   | cho phép/cấm ghép nối thủ công (mã mời, khóa ghép nối); việc từ chối tắt nó khi chưa có kết nối SSO nào hoạt động giúp phòng ngừa tình trạng khóa tài khoản                                           |
+| `sso.sessionPolicy`       | đọc tuổi thọ tối đa của thông tin xác thực thiết bị và thời gian chờ nhàn rỗi của bản cài đặt (phút; `0` = không đặt)                                                                          |
+| `sso.setSessionPolicy`    | đặt các giới hạn đó; được thực thi ở bước kiểm tra thiết bị, không được công bố cho máy khách                                                                                                 |
+| `sso.scimRegenerateToken` | tạo và trả về bearer token SCIM (một lần)                                                                                                                                                    |
 
-## Validation error codes
+## Mã lỗi xác thực
 
-`cc_saml_verify_response` failures carry a stable code:
+Các lỗi của `cc_saml_verify_response` mang một mã ổn định:
 
-| Code                   | Meaning                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| Mã                     | Ý nghĩa                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `signature`            | chữ ký bị thiếu/không đáng tin/bị sửa đổi, hoặc thuật toán/phép biến đổi bị cấm    |
+| `expired`              | nằm ngoài `NotBefore`/`NotOnOrAfter` (vượt quá độ lệch)                            |
+| `audience`             | hạn chế đối tượng không nêu tên chúng ta                                           |
+| `destination`          | đích của response không phải ACS của chúng ta                                      |
+| `request_match`        | `InResponseTo` không khớp với một yêu cầu đang chờ, hoặc không được yêu cầu trong khi bị cấm |
+| `issuer`               | issuer không phải IdP đã cấu hình                                                  |
+| `recipient`            | bên nhận xác nhận chủ thể không phải ACS của chúng ta                              |
+| `malformed`            | lỗi ở mức XML/schema                                                               |
+| `status`               | trạng thái do IdP báo cáo không phải Success                                       |
+| `invalid` / `internal` | mọi trường hợp khác / lỗi ở đường nối                                              |
 
-## Database surfaces
+## Các bề mặt cơ sở dữ liệu
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — một dòng cho mỗi loại, XUYÊN KHÔNG GIAN LÀM
+  VIỆC THEO THIẾT KẾ.
+- `users.sso_subject` + `users.sso_issuer` — việc ghim chủ thể của nhà cung
+  cấp, duy nhất theo `(issuer, subject)` nhờ một chỉ mục bộ phận.
+- `users.deactivated_at` — dấu thời gian vô hiệu hóa của SCIM.
+- Bearer token của SCIM và client secret của OIDC nằm trong tệp secrets 0600,
+  không bao giờ trong cơ sở dữ liệu.

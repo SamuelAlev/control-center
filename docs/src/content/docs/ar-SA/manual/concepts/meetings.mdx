@@ -1,213 +1,197 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: الاجتماعات والنسخ النصي
+description: كيف يسجّل Control Center مكالمة، وينسخها ويفصل المتحدثين على الخادم، وأين الخطوة الوحيدة التي تغادر المضيف.
 slug: ar-SA/دليل-المستخدم/مفاهيم/اجتماعات
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+يستطيع Control Center تسجيل مكالمة وإعادة خلاصة مرتبة إليك: ملخص، وبنود عمل،
+وقرارات، مع تعرّف على الكلام وفصل للمتحدثين يعملان على عتادك. مثل Granola، لكن
+على خادمك وموصولًا بمساحة العمل نفسها التي يعيش فيها وكلاؤك.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[التسجيل يحتاج نموذج صوت وإعادة تشغيل للخادم]
+يبدأ التسجيل والإملاء بعد أن يصير نموذج الكلام (ASR) على القرص **و**يُعاد تشغيل
+الخادم. الإقلاع العادي يثبّت النموذج المختار قسرًا
+(Parakeet TDT 0.6B v3 افتراضيًا) في الخلفية، لكن الخادم يحلّ مسارات نماذج الصوت
+مرة واحدة فقط قرب بداية الإقلاع — قبل دقائق من اكتمال ذلك التنزيل. بعد أن يبلّغ
+النموذج أنه مثبّت، أعد تشغيل `cc_server`. لاختيار بناء آخر، استخدم
+الإعدادات ← الخادم ← نماذج الصوت والاجتماعات، وهذا يحتاج إعادة تشغيل أيضًا.
 :::
 
-## What a meeting is
+## ما الاجتماع
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**الاجتماع** جلسة مُسجَّلة ومُفرَّغة. وهو _ليس_ [حدث تقويم](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/)
+بالمعنى نفسه: الحدث التزام مُجدوَل يُزامَن من Google، والاجتماع ما سجّلته فعلًا.
+يمكن ربط الاثنين، إذ تستطيع بدء التسجيل من حدث، لكنهما يبقيان سجلين منفصلين.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+كل اجتماع نطاقه مساحة العمل، كسائر ما في Control Center. ما يُسجَّل في مساحة لا
+يظهر في مساحة أخرى.
 
-## Where the work happens
+## أين يحدث العمل
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+«على الجهاز» حدس في محله، والاسم ليس كذلك. يلتقط العميل الصوت ويبث إطارات
+16 kHz PCM16 إلى **الجهاز الذي يشغّل `cc_server`**. ينجز ذلك المضيف الباقي: يكتب
+ملفات WAV لكل قناة تحت `<dataDir>/meetings/<meetingId>/`، ويفرّغ النص في
+isolate عامل، ويرشّح الصدى، ويفصل المتحدثين لاحقًا. على حاسوب مستقل يكون هذا
+المضيف الجهاز نفسه. وإذا وُجّه العميل إلى خادم بعيد فلا، فجملة «لا شيء يغادر
+حاسوبي المحمول» لا تصح إلا إذا كان الخادم هو حاسوبك المحمول.
 
-There is one further exception and it is the important one.
+يبقى استثناء واحد، وهو الأهم.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[الملخص يغادر المضيف]
+يُرسَل التفريغ النصي وملاحظاتك إلى مزوّد النموذج الذي ضُبط عليه وكيل التلخيص. مع
+أي مزوّد سحابي يذهب التفريغ كاملًا إلى API ذلك المزوّد. إذا كان يجب ألا يغادر
+التفريغ المضيف، وجّه وكيل التلخيص إلى نقطة نهاية محلية (Ollama أو LM Studio أو
+خادم محلي آخر).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+كل ما يسبق الملخص يجري على الخادم من غير استدعاء شبكي: الالتقاط، والنسخ، وإلغاء
+الصدى، وفصل المتحدثين، ومطابقة بصمة الصوت.
 
-## Which models ship
+## أي النماذج تُشحَن
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+تُثبَّت نماذج **التضمين وفصل المتحدثين والكلام (ASR)** قسرًا عند أول إقلاع
+(ويُتخطى ذلك في النسخة التجريبية)، فيتوفر فصل المتحدثين والتسجيل من غير زيارة
+للإعدادات. يبقى ASR **قابلًا للاختيار** — حجمه عدة مئات من الميغابايت، وتُشحَن
+أربعة بناءات في المنتقي. وما زال الكلام يحتاج إعادة تشغيل واحدة بعد ذلك التنزيل
+الأول، لأن المفرّغ يحلّ نموذجه قبل أن يكتمل الجلب.
 
-The four picker entries, differing in size, language coverage and accuracy:
+تختلف مدخلات المنتقي الأربع في الحجم وتغطية اللغات والدقة:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3، متعدد اللغات، وهو الافتراضي الموصى به (~600 MB)
+- Parakeet TDT 0.6B v2، الإنجليزية (~480 MB)
+- Whisper large-v3-turbo، متعدد اللغات (~626 MB)
+- Whisper base.en، الإنجليزية فقط، وهو الافتراضي التاريخي الصغير (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+النماذج هي الأثر الوحيد الذي يجلبه الخادم أثناء التشغيل، وكل مكتبة أصلية تُشحَن
+داخل الحزمة.
 
-## How capture works
+## كيف يعمل الالتقاط
 
-A meeting records **two audio channels at once**:
+يسجّل الاجتماع **قناتين صوتيتين في آن واحد**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **أنت ("me")**: ميكروفونك.
+- **هم ("them")**: خرج صوت الاجتماع، يُلتقط بحلقة عودة من غير مشغّل إضافي —
+  التقاطات Core Audio للعملية والجهاز (process/device taps) على macOS، وحلقة
+  عودة WASAPI على Windows، ومراقب PipeWire / PulseAudio على Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+ولأن القناتين تُلتقطان منفصلتين، يُنسب التفريغ إلى المتحدث منذ البداية: كلماتك
+تُوسَم بـ `me`، وكل من في المكالمة يُوسَم بـ `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+يتسرّب صوتك من خرج النظام عائدًا إلى الميكروفون، ولولا المرشّحان لَفُرّغ مرتين.
+**يعمل AEC3 على مستوى الإشارة في كل تسجيل بالوضع البعيد للالتقاط، وهو مطلوب** —
+إذا تعذّر تحميل مكتبة AEC الأصلية، يرفض التسجيل البدء بدل أن يبث الميكروفون
+بصمت وهو ملوّث بالصدى. (في وضع الحضور الشخصي لا توجد إشارة طرف بعيد تُستخدم
+لإلغاء الصدى، فيمرّر AEC الإشارة من غير تعديل.) وفوقه يعمل مرشّح صدى على مستوى
+النص، من جهة المضيف، على كل المنصات.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+تُعطَّل معالجة الميكروفون على مستوى نظام التشغيل عمدًا. تفعيل إلغاء الصدى أو
+الكسب التلقائي الخاص بالمنصة على macOS ينقل الميكروفون إلى Voice Processing I/O،
+وفي هذا البناء عطّل ذلك الميكروفون _والتقاط_ صوت النظام معًا.
 
-## Transcription and diarization
+## النسخ وفصل المتحدثين
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+أثناء التسجيل يُفَك الصوت في **نوافذ متحركة**، تُقطَع عند صمت ذيل قصير أو عند
+بلوغ أقصى طول للنافذة، خارج خيط الواجهة. تصير كل نافذة مقطع تفريغ موسومًا
+بالمتحدث، مع إزاحات بالملي ثانية.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+النوافذ التي لم ترتفع فوق عتبة RMS تُتخطى **من غير فك أصلًا**، لأن نموذج الكلام
+يحوّل الصمت إلى رموز مهلوسة لغير الكلام، والفك يهدر المعالج. النتيجة العملية:
+المتحدث الهادئ جدًا طوال الوقت لا يُنتج تفريغًا. إذا عاد أحدهم فارغًا، افحص
+مستوى دخله قبل لوم النموذج.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+بعد الإيقاف يعمل **فصل المتحدثين** على التسجيل كاملًا، ويقسم القناة البعيدة إلى
+متحدثين منفردين (`Person 1` و`Person 2` و…) تستطيع إعادة تسميتهم. يُستنتج عدد
+المتحدثين من عتبة تجميع، لا من عدد تحدده أنت، فهو أثر لتلك العتبة، وقد يُدمَج
+متحدث هادئ أو متداخل في جاره. يُعرَض التفريغ أسطرًا على شكل
+`[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## ملفات تعريف الصوت
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+إعادة تسمية المتحدث تتجاوز وسم تفريغ واحد. يستطيع Control Center حفظ بصمة صوت
+المتحدث في **ملف تعريف الصوت**، فيتعرّف عليه تلقائيًا في الاجتماعات القادمة.
+حين تسمّي متحدثًا بعد الفصل، يُسأَل إن كنت تريد حفظ البصمة؛ وإن حفظتها، تُمزَج
+في مركز ثقل جارٍ لذلك الاسم، وتُطابَق مع المتحدثين الجدد بتشابه جيب التمام،
+فيظهر الشخص نفسه باسمه في المرة التالية من غير أن تعيد وسمه.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+ملفات تعريف الصوت نطاقها مساحة العمل، ولا تعبر حدّها. تُدار من
+**الإعدادات ← مساحة العمل ← الاجتماعات**. إعادة تسمية متحدث كان محفوظًا تُخرج
+الاسم القديم وتعرض حفظ الاسم الجديد، وحذف ملف التعريف يزيل بصمة الصوت المخزّنة
+ويبقي الأسماء التي طُبّقت على اجتماعات سابقة.
 
-## The summary pipeline
+## خط أنابيب الملخص
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+حين يتوقف التسجيل ينشر الخادم `MeetingRecordingStopped`، وهو
+[حدث نطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/). يُشغَّل بذلك الحدث قالب خط
+الأنابيب المضمّن **`meeting_summary`**. لا ينتظره المسجّل. ينتقل
+الاجتماع عبر دورة حالته:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+يتلقى وكيل التلخيص العنوان وملاحظاتك الحية التقريبية والتفريغ النصي، ويعيد
+**JSON مهيكلًا**. الأقسام التي يكتبها يحدّدها **قالب ملاحظات الاجتماع النشط**
+لمساحة العمل (الإعدادات ← مساحة العمل ← الاجتماعات). يُطبَّق القالب النشط على
+الملخصات الجديدة والمعاد توليدها. ثم تكتب خطوات الحفظ الـ JSON الناتج في صفوف
+منفصلة:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` و`summary` في ملاحظات الاجتماع
+- كل بند عمل في صف `MeetingActionItem` (المحتوى، والمالك، ورابط تذكرة اختياري)
+- كل قرار في صف `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+لا تُستخرَج بنود العمل والقرارات **أبدًا** من markdown حر، بل من مصفوفات الوكيل
+المهيكلة فقط. إذا لم يُنتج التشغيل خرجًا مهيكلًا، تُتخطى خطوات الحفظ ويُحفَظ
+التفريغ الخام بديلًا، فلا يضيع السجل. لا شيء في خط الأنابيب يضع الاجتماع في
+حالة `done`. يفعل ذلك مُوفِّق واحد من الحدث النهائي للتشغيل، فلا يترك فشل خطوة
+شقيقة اجتماعًا نصف مكتوب يبدو منجزًا.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[لا يستطيع الوكلاء قراءة اجتماعاتك]
+لا توجد أدوات MCP للاجتماعات ولا للتقويم. لا يستطيع وكيل متصل عبر
+[MCP](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/) سرد الاجتماعات، ولا قراءة تفريغ،
+ولا رؤية بنود العمل والقرارات. تصل هذه البيانات إلى عملاء البشر عبر RPC فقط.
+تصل القرارات إلى الوكلاء بصورة غير مباشرة، حقائق ذاكرة في نطاق `decisions`.
 :::
 
-## Where meetings show up
+## أين تظهر الاجتماعات
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| السطح | ما يعرضه |
+| --- | --- |
+| `/meetings` | قائمة الاجتماعات، مع أعداد بنود العمل والقرارات |
+| `/meetings/record` | شاشة التسجيل الحي: ملاحظاتك في جانب، والتفريغ النصي المباشر في الجانب الآخر |
+| `/meetings/:meetingId` | تفاصيل الاجتماع: علامات تبويب الملاحظات والتفريغ النصي وبنود العمل والقرارات |
+| الإعدادات ← مساحة العمل ← الاجتماعات | قوالب الملاحظات وملفات تعريف الصوت المحفوظة لمساحة العمل هذه |
 
-## Platform support
+## دعم المنصات
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+الالتقاط بلا مشغّل إضافي على منصات الحاسوب الثلاث (التقاطات Core Audio على
+macOS، وWASAPI على Windows، وPipeWire على Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**عميل الويب يسجّل أيضًا**، وقد يخفي ذلك تأطير بقية هذه الصفحة على أنها
+للحاسوب: يأخذ المتصفح الميكروفون عبر `getUserMedia` وصوت الاجتماع عبر
+`getDisplayMedia` (مشاركة الشاشة)، ويحوّله إلى 16 kHz PCM16 ويبث إلى المضيف
+نفسه. ثلاثة قيود:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- السطح الذي تشاركه **يجب** أن يحمل مسارًا صوتيًا. مشاركة Safari وFirefox،
+  ومشاركة الشاشة الكاملة على macOS، لا تعطي مسارًا، فيرفض التسجيل البدء.
+- لا يوجد AEC3 أصلي. يُطلب إلغاء الصدى الخاص بالمتصفح على الميكروفون، ويظل
+  مرشّح الصدى النصي على المضيف يعمل. تعرض شاشة التسجيل مقياس مستوى الدخل
+  مستمدًا من PCM الميكروفون.
+- إعادة تشغيل التلخيص وإيقاف المعالجة متاحان على الحاسوب فقط.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+إجراء التقويم **بدء التسجيل والربط** على الحاسوب فقط، ويصرّح بذلك على الويب، مع
+أن مسار التسجيل في شاشة الاجتماعات نفسها يعمل هناك.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[حذف اجتماع يُبقي ملفاته الصوتية]
+حذف اجتماع يزيل صفوف قاعدة البيانات فقط. دليل صوت كل قناة
+`<dataDir>/meetings/<meetingId>/` يبقى ولا يُنظَّف أبدًا. لا سياسة احتفاظ، ولا
+سقف للحجم، ولا مسح GC. استعادة ذلك القرص عمل يدوي على مضيف الخادم.
 :::
 
-## See also
+## انظر أيضًا
 
-- [Calendar and scheduling](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): link a meeting's action items to tickets
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/)
+- [التقويم والجدولة](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/): تسجيل اجتماع مباشرة من حدث تقويم
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): المحرك وراء `meeting_summary`
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): ربط بنود عمل الاجتماع بالتذاكر
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): `MeetingRecordingStopped` و`MeetingStartingSoon`
+- [تسجيل اجتماع وتلخيصه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/)

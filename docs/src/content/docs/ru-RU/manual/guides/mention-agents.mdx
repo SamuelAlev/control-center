@@ -1,121 +1,131 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-упоминания агентов"
+description: Упоминайте агентов в пространстве, чтобы запустить их, а коллег — чтобы уведомить.
 slug: ru-RU/руководство/практические-руководства/упоминать-агентов
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+В этом руководстве рассказано, как @-упоминать агентов и коллег в пространстве.
 
-## Mention an agent
+## Упомянуть агента
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Введите `@` в поле ввода и выберите агента из автодополнения или наберите имя
+сами:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Упомянутый агент, если он ещё не участник, добавляется в пространство как
+участник и запускается с контекстом и режимом пространства. Неупомянутые
+участники видят сообщение, но не запускаются.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Если вы отправляете сообщение без упоминания агента, Control Center сам выбирает
+отвечающего: агента, который говорил в разговоре последним; иначе владельца
+разговора, если он есть; иначе первого агента верхнего уровня среди участников
+пространства. В пространстве с одним агентом это всегда его единственный агент.
 
-## Know how a name is matched
+## Как сопоставляется имя
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Токен упоминания сопоставляется **без учёта регистра**, по **точному имени или
+префиксу**. Так `@arch` доходит до агента с именем `architect`, а `@Alice` — до
+`alice`.
 
-Two consequences worth planning around:
+Два следствия, которые стоит учесть заранее:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Короткий токен — не ошибка.** Если два агента имеют общий префикс,
+  побеждает первый найденный, а какой именно — зависит от порядка, а не от
+  какого-либо правила разрешения ничьей. Если имена пересекаются, используйте
+  полное имя.
+- **В токен входят только буквы, цифры и подчёркивания.** Парсер сопоставляет
+  `@(\w+)`, поэтому `@code-reviewer` читается как токен `code`, а `@my agent` —
+  как `my`. Агента, в имени которого есть дефис, точка или пробел, невозможно
+  упомянуть надёжно — в том числе через автодополнение, которое вставляет имя как
+  обычный текст. Называйте агентов одним словом или с подчёркиваниями.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Упоминания вырезаются из текста до того, как он дойдёт до агента. Поэтому
+сообщение, состоящее _только_ из упоминаний (`@alice`), никого не запускает —
+дайте ему задачу.
 
-## Mention several agents at once
+## Упомянуть сразу несколько агентов
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Оба агента запускаются параллельно в одном разговоре, и оба получают полное
+сообщение.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Они также **делят worktree этого пространства**. Worktree репозиториев
+подготавливаются на пространство, а не на агента; каждый агент получает
+собственный рабочий каталог-оверлей для своего `AGENTS.md`, навыков и
+конфигурации, а общие репозитории подключены в него для чтения и записи. Поэтому
+два упомянутых вместе агента видят правки друг друга — и могут с ними
+столкнуться.
 
-## Mention a teammate
+## Упомянуть коллегу
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Любой `@token`, не совпавший с агентом, проверяется по участникам-людям рабочего
+пространства — по нику, с тем же правилом точного совпадения или префикса без
+учёта регистра.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Разрешённое упоминание человека **никого не запускает**. Оно передаётся в
+метаданных сообщения только для того, чтобы маршрутизатор уведомлений мог
+оповестить этого человека.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Имена агентов всегда проверяются первыми, и токен, занятый агентом, никогда не
+предлагается списку участников, — один `@word` может разрешиться только в одного
+субъекта.
 
-## What the agent receives
+## Что получает агент
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Запущенный агент получает в своём промпте блок «Summons», в котором названо, кто
+его вызвал, и перечислен состав пространства — другие агенты (помеченные как
+агенты верхнего уровня или дочерние) и участники-люди, — чтобы он знал, кому может
+передать работу. В блоке также сказано, что упоминание другого агента в его ответе
+пробуждает этого агента, а упоминание самого себя игнорируется.
 
-## When an agent mentions an agent
+## Когда агент упоминает агента
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Агент может передать работу в собственном ответе. Когда ход **завершается
+чисто**, упоминания в его тексте разрешаются, и эти агенты добавляются в
+пространство и запускаются в тот же разговор, а их промптом становится
+упомянувший их ход. Ход, который завершился сбоем или был прерван, никого не
+пробуждает — он остановился на середине мысли.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Правила намеренно строже, чем у поля ввода, потому что за исправлением ошибочной
+догадки никто не следит:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Только точные имена.** Совпадения по префиксу нет. `@arch` доходит до
+  `architect`, когда его набирает человек; от агента он не доходит ни до кого.
+  Имя, совпадающее с двумя агентами, тоже не доходит ни до кого.
+- **Код — не текст.** Упоминания внутри блоков кода или в `` `обратных кавычках` ``
+  игнорируются, поэтому цитировать аннотацию `@Override` или
+  `pip install foo@1.2` безопасно. Незакрытый блок обнуляет всё после себя.
+- **`@`, приклеенный к предыдущему токену, — не упоминание** — `sam@host.com`,
+  `pkg/@scope` и `node@20` не разрешаются ни в кого.
+- **Дефисы сохраняются**, поэтому `@code-reviewer` разрешается как сам собой, а не
+  как токен `code`.
+- **Не более трёх агентов на ход.** Агент, перечисляющий в сводке шесть коллег,
+  перечисляет их, а не вызывает.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Цепочка пробуждений ограничена так же, как делегирование: **глубина 3**, и агент,
+уже находящийся в цепочке, не может быть разбужен ею снова (никаких `A → B → A`).
+Упорядоченная пара также ограничена по частоте между цепочками. Отклонённое
+пробуждение публикует в разговоре системное сообщение о том, какое упоминание не
+было доставлено и почему, — а неразрешённое имя этого не делает, иначе любое `@` в
+предложении рассказывало бы о себе само.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Для передачи работы, которая не должна зависеть от текста, — запрос/ответ или
+обращение к агенту вне пространства — вместо этого используйте инструменты
+`send_to_agent`, `ask_agent` и `delegate_task`.
 
-## Related guides
+## Связанные руководства
 
-- [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
-- [Use spaces](/ru-RU/руководство/практические-руководства/пространства/)
-- [Run agents in parallel](/ru-RU/руководство/практические-руководства/параллельные-агенты/)
+- [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
+- [Использовать пространства](/ru-RU/руководство/практические-руководства/пространства/)
+- [Запускать агентов параллельно](/ru-RU/руководство/практические-руководства/параллельные-агенты/)
 
-## Related concepts
+## Связанные понятия
 
-- [Dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)
+- [Жизненный цикл запуска агента](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)

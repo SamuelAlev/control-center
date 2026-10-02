@@ -1,138 +1,151 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Δημιουργία της GitHub App
+description: Καταχωρίστε μια GitHub App για τον διακομιστή σας, ώστε τα μέλη να μπορούν να συνδέονται και η εργασία παρασκηνίου να εκτελείται ως η εφαρμογή και όχι ως κάποιο άτομο.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Αυτός ο οδηγός δείχνει πώς να δώσετε στον διακομιστή σας τη δική του ταυτότητα
+GitHub. Διαρκεί περίπου δύο λεπτά, το κάνει μόνο ο ιδιοκτήτης του διακομιστή και
+χρειάζεται να γίνει μία μόνο φορά ανά διακομιστή.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Μπορεί να μη χρειάζεται]
+Μια επίσημη έκδοση φέρνει ήδη ένα **client id** του GitHub, οπότε η
+[Σύνδεση με GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/) λειτουργεί αμέσως,
+χωρίς καμία καταχώριση — μια ροή με κωδικό συσκευής αυθεντικοποιείται μόνο με το
+client id, οπότε είναι ασφαλές να διανέμεται. Καταχωρίστε τη δική σας εφαρμογή
+όταν θέλετε ο **ίδιος ο διακομιστής** να ενεργεί ως ο εαυτός του (webhooks,
+περιοδικός έλεγχος PR και συγχρονισμός εισιτηρίων να εκτελούνται σε μια
+εγκατάσταση εφαρμογής αντί στα διαπιστευτήρια ενός ατόμου), ή όταν κάνετε build
+από πηγαίο κώδικα.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/).
+Για να συνδέσετε τον δικό σας λογαριασμό στη συνέχεια, δείτε
+[Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/).
 
-## Why your server needs its own app
+## Γιατί ο διακομιστής σας χρειάζεται τη δική του εφαρμογή
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Από μία καταχώριση προκύπτουν δύο διαφορετικές δουλειές, και η εφαρμογή είναι
+αυτό που κάνει και τις δύο ειλικρινείς:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Δουλειά                  | Τι την απαντά                                    | Γιατί έχει σημασία                                                                                     |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Ένα άτομο συνδέεται**  | Το client id της εφαρμογής, μέσω της ροής με κωδικό συσκευής | Παίρνετε ένα διαπιστευτήριο που είναι δικό σας, στον διακομιστή, σε κάθε συσκευή — χωρίς token για επικόλληση ή ανανέωση |
+| **Ο διακομιστής ενεργεί** | Το id της εφαρμογής + το ιδιωτικό κλειδί → token εγκατάστασης | Τα webhooks, ο περιοδικός έλεγχος PR και ο συγχρονισμός εισιτηρίων σταματούν να εξαρτώνται από το αν το token ενός ανθρώπου είναι ακόμη έγκυρο |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Προσέξτε τι **δεν** υπάρχει σε αυτόν τον πίνακα: ένα μυστικό πελάτη. Η ροή με
+κωδικό συσκευής του GitHub αυθεντικοποιείται μόνο με το client id — τόσο το
+αίτημα του κωδικού συσκευής όσο και ο περιοδικός έλεγχος του token — οπότε δεν
+υπάρχει μυστικό να κρατήσετε για τη σύνδεση.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Χωρίς δική σας εφαρμογή, το πρώτο λειτουργεί ακόμη μέσω του client id που φέρνει
+η έκδοση· το δεύτερο πέφτει στο διαπιστευτήριο του ιδιοκτήτη του διακομιστή,
+οπότε η εργασία παρασκηνίου βασίζεται σε όποιον ολοκλήρωσε πρώτος την αρχική
+διαμόρφωση.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Δεν υπάρχει κουμπί «εγκατάσταση του GitHub App του Control Center»]
+Μια διανεμόμενη GitHub App θα σήμαινε ένα κοινόχρηστο client secret και μία
+κοινόχρηστη εγκατάσταση σε όλους τους διακομιστές, οπότε η πρόσβαση στα
+αποθετήρια κάθε χώρου εργασίας θα περνούσε μέσα από διαπιστευτήρια που δεν
+ελέγχει κανείς μέσα σε αυτόν τον χώρο. Γι' αυτό κάθε διακομιστής έχει τη δική του
+εφαρμογή — αυτός ο οδηγός δείχνει πόσο λίγο κοστίζει αυτό.
 :::
 
-## Prerequisites
+## Προϋποθέσεις
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Είστε ο **ιδιοκτήτης του διακομιστή** — οι λειτουργίες `providerApps.*` είναι
+  περιορισμένες σε αυτόν, και η κάρτα είναι αόρατη σε όλους τους άλλους
+- Ένας λογαριασμός GitHub, ή ένας οργανισμός στον οποίο μπορείτε να
+  δημιουργήσετε εφαρμογές
+- Τίποτα δημόσια προσβάσιμο: η σύνδεση είναι **ροή με κωδικό συσκευής**, οπότε ο
+  διακομιστής δεν χρειάζεται εισερχόμενη θύρα, σήραγγα, URL επιστροφής ή τομέα
 
-## Register the app
+## Καταχωρίστε την εφαρμογή
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Μεταβείτε στο [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (για οργανισμό: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — ό,τι θέλετε· το `Control Center (yourname)` είναι
+   εντάξει. Εμφανίζεται στα commits και στα σχόλια που κάνει ο διακομιστής
+3. **Homepage URL** — ό,τι θέλετε, π.χ. `https://github.com/your-name`
+4. **Callback URL** — αφήστε το κενό. Η ροή με κωδικό συσκευής δεν έχει
+5. Επιλέξτε **Enable Device Flow**. Αυτή είναι η μοναδική ρύθμιση χωρίς την οποία
+   η σύνδεση δεν μπορεί να λειτουργήσει
+6. Αποεπιλέξτε **Webhook → Active**, εκτός αν ρυθμίζετε τα webhooks ξεχωριστά
+7. Στο **Repository permissions**, παραχωρήστε τουλάχιστον:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (υποχρεωτικό)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, αν χρησιμοποιείτε τα GitHub Issues για εισιτήρια,
+     και για την αναζήτηση σχολίων του bot στις συνομιλίες PR
+     (δείτε [Συνομιλία με το Control Center από GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/))
+   - **Checks**: Read-only, για την κατάσταση του CI στη σελίδα PR
+8. Στο **Where can this GitHub App be installed?**, επιλέξτε ό,τι ταιριάζει —
+   το «Only on this account» είναι το σωστό για προσωπικό διακομιστή
+9. Πατήστε **Create GitHub App**
 
-## Collect the three values
+## Συλλέξτε τις τρεις τιμές
 
-On the app's page, immediately after creation:
+Στη σελίδα της εφαρμογής, αμέσως μετά τη δημιουργία:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Τιμή            | Πού                                             |
+| --------------- | ----------------------------------------------- |
+| **App ID**      | Στην καρτέλα **General**, κοντά στην κορυφή     |
+| **Client ID**   | Στην καρτέλα **General**, στο «Client secrets»  |
+| **Private key** | **Generate a private key** — κατεβαίνει ένα `.pem` |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Το αρχείο του ιδιωτικού κλειδιού κατεβαίνει μία φορά και το GitHub δεν το
+ξαναδείχνει ποτέ. Κρατήστε το μέχρι να το επικολλήσετε· μπορείτε πάντα να
+δημιουργήσετε άλλο.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+Ένα **μυστικό πελάτη** είναι προαιρετικό και προσφέρει ακριβώς ένα πράγμα: αν
+αφήσετε ενεργή την επιλογή «Expire user authorization tokens», είναι αυτό που
+ανανεώνει σιωπηλά το token κάποιου αντί να του ζητά να συνδεθεί ξανά κάθε οκτώ
+ώρες. Η ίδια η σύνδεση δεν το χρησιμοποιεί ποτέ.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Η απλούστερη ρύθμιση είναι να απενεργοποιήσετε αυτή τη λήξη, και τότε δεν
+χρειάζεται μυστικό πουθενά. Αν την κρατήσετε ενεργή, δημιουργήστε ένα μυστικό και
+επικολλήστε το στις **Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση** (κάρτα
+**Εφαρμογές παρόχων**) — δεν υπάρχει μεταβλητή περιβάλλοντος για αυτό, και καμία
+δεν είναι ενσωματωμένη σε κάποια έκδοση, οπότε παραμένει στον διακομιστή σας.
 
-## Install it on your account
+## Εγκαταστήστε τη στον λογαριασμό σας
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Μια εφαρμογή που έχει καταχωριστεί αλλά δεν έχει εγκατασταθεί μπορεί να
+αυθεντικοποιεί ανθρώπους και δεν μπορεί να διαβάσει τίποτα.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Στη σελίδα της εφαρμογής, ανοίξτε **Install App**
+2. Εγκαταστήστε τη στον λογαριασμό ή στον οργανισμό σας
+3. Επιλέξτε **All repositories**, ή τα αποθετήρια που πρέπει να βλέπει αυτός ο
+   διακομιστής
 
-## Paste it into Control Center
+## Επικολλήστε τη στο Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Μεταβείτε στις **Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση** και κυλήστε στην
+   κάρτα **Εφαρμογές παρόχων**
+2. Στο μπλοκ **GitHub**, ορίστε κάθε πεδίο:
+   - **ID εφαρμογής** — το αριθμητικό App ID
+   - **Ιδιωτικό κλειδί** — επικολλήστε ολόκληρο το `.pem`, μαζί με τις γραμμές
+     `BEGIN` και `END`
+   - **Client id** — από την ίδια σελίδα
+   - **Μυστικό πελάτη** — μόνο αν δημιουργήσατε ένα (για την ανανέωση του token)
+3. Πατήστε **Δοκιμή**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Το κλειδί αναλύεται τη στιγμή που αποθηκεύεται, οπότε μια κολοβωμένη ή
+λανθασμένης μορφής επικόλληση απορρίπτεται εκεί και τότε, αντί να αποτύχει σε ένα
+αίτημα παρασκηνίου ώρες αργότερα. Η **Δοκιμή** πάει παραπέρα και ρωτά το GitHub
+σε ποιους λογαριασμούς είναι εγκατεστημένη η εφαρμογή — το «αποθηκεύτηκε» και το
+«λειτουργεί» είναι διαφορετικοί ισχυρισμοί, και μόνο ο δεύτερος σημαίνει ότι
+κάτι θα εκτελεστεί.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Σημείο ελέγχου: το μπλοκ GitHub γράφει «Ο διακομιστής μπορεί να ενεργεί ως ο
+εαυτός του και οι άνθρωποι μπορούν να συνδεθούν.», και η γραμμή **GitHub** στις
+**Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα**
+προσφέρει πλέον **Σύνδεση με GitHub**.
 
-## Configure it with environment variables instead
+## Διαμορφώστε τη με μεταβλητές περιβάλλοντος
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Για εγκατάσταση headless ή μέσω σεναρίου, ο διακομιστής αρχικοποιεί κάθε πεδίο
+από το περιβάλλον την πρώτη φορά που δεν έχει αποθηκευμένη τιμή:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +153,68 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Δεν υπάρχουν σημαίες γραμμής εντολών για αυτά — ένα μυστικό στη γραμμή εντολών
+είναι αναγνώσιμο από κάθε διεργασία του κεντρικού υπολογιστή μέσω του `ps`. Το
+περιβάλλον είναι το μόνο σημείο για τη διαμόρφωσή τους και υπερισχύει ό,τι φέρνει
+η έκδοση. Το `.env.template` είναι η πλήρης λίστα.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Για τοπική ανάπτυξη, το `.env` στη ρίζα του αποθετηρίου φέρει τις ίδιες τιμές και
+η εφαρμογή επιφάνειας εργασίας τις περνά στον διακομιστή που εκκινεί. Βάλτε το
+κλειδί σε **μία γραμμή** εκεί: μια τιμή του `.env` είναι μία γραμμή, και το `\n`
+μέσα σε διπλά εισαγωγικά αποκωδικοποιείται σε αλλαγή γραμμής.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+Το `GITHUB_APP_ID` και το `GITHUB_APP_PRIVATE_KEY` είναι τα ίδια ονόματα που
+διαβάζει ήδη ο μεσίτης token του sandbox, οπότε ένας κεντρικός υπολογιστής που
+έχει ρυθμίσει εκλεπτυσμένα token πρακτόρων παίρνει δωρεάν τη διαδρομή σύνδεσης.
+Η αρχικοποίηση γίνεται **μία φορά ανά πεδίο** — μετά κερδίζει η αποθηκευμένη τιμή,
+οπότε μια αλλαγή στις Ρυθμίσεις δεν αναιρείται από την επόμενη επανεκκίνηση.
 
-## Do the same for Linear
+## Κάντε το ίδιο για το Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Το Linear δεν έχει ροή με κωδικό συσκευής, οπότε η σύνδεσή του γίνεται μέσω
+περιηγητή και χρειάζεται όντως URL επιστροφής — η κάρτα **Εφαρμογές παρόχων**
+σας δείχνει το ακριβές που πρέπει να καταχωρίσετε.
 
-1. Create an OAuth application at
+1. Δημιουργήστε μια εφαρμογή OAuth στο
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Ορίστε το **Callback URL** στο URL που δείχνει η κάρτα, αυτολεξεί
+3. Επικολλήστε το **Client ID** και το **Client secret** στο μπλοκ Linear
+4. Προαιρετικά προσθέστε ένα **Κλειδί API** του χώρου εργασίας — αυτό είναι το
+   διαπιστευτήριο που χρησιμοποιεί ο διακομιστής για τον συγχρονισμό εισιτηρίων
+   όταν δεν το ζήτησε άνθρωπος
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The sign-in dialog says the provider returned no device code
+### Το παράθυρο σύνδεσης λέει ότι ο πάροχος δεν επέστρεψε κωδικό συσκευής
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+Το **Enable Device Flow** είναι απενεργοποιημένο στην εφαρμογή. Ενεργοποιήστε το
+στο **General** και δοκιμάστε ξανά.
 
-### Test says the credentials work but the app is not installed anywhere
+### Η δοκιμή λέει ότι τα διαπιστευτήρια λειτουργούν αλλά η εφαρμογή δεν είναι εγκατεστημένη πουθενά
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Η καταχώριση και η εγκατάσταση είναι ξεχωριστά βήματα. Ανοίξτε **Install App**
+στη σελίδα της εφαρμογής και εγκαταστήστε την.
 
-### Test says the private key could not be read
+### Η δοκιμή λέει ότι δεν ήταν δυνατή η ανάγνωση του ιδιωτικού κλειδιού
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Επικολλήστε ολόκληρο το αρχείο `.pem`, μαζί με τις γραμμές `-----BEGIN` και
+`-----END`. Ένα κλειδί `ed25519` ή EC δεν μπορεί να χρησιμοποιηθεί — οι GitHub
+Apps υπογράφουν με RSA.
 
-### A member signed in but sees no repositories
+### Ένα μέλος συνδέθηκε αλλά δεν βλέπει αποθετήρια
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Η εφαρμογή δεν είναι εγκατεστημένη στον λογαριασμό που τα κατέχει, ή η
+εγκατάστασή της επιλέγει άλλα αποθετήρια. Η δική του σύνδεση παραχωρεί μόνο ό,τι
+επιτρέπεται να βλέπει η εφαρμογή.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
-- [Talk to Control Center from a GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/)
-- [Connect a code host](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
-- [Manage API keys](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κλειδιά-api/)
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+- [Συνομιλία με το Control Center από GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/)
+- [Σύνδεση κεντρικού υπολογιστή κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
+- [Διαχείριση κλειδιών API](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κλειδιά-api/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)

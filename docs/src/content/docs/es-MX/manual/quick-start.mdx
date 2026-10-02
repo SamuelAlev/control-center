@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Inicio rápido
+description: Instala Control Center, configura un agente y míralo trabajar en tu repositorio.
 slug: es-MX/manual/inicio-rapido
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Esta es la ruta completa más corta desde cero hasta tener un agente trabajando sobre tu propio código. Síguela en orden; cada paso depende del anterior.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Necesitas Git, una cuenta de GitHub y, o bien una cuenta de proveedor de modelos (Anthropic, OpenAI, Codex, Cursor, Kimi Code o cualquier proveedor con clave de API), o bien la CLI de Claude Code ya instalada. Todo lo demás se configura por el camino.
 
-## Step 1: Install and launch
+## Paso 1: Instalar e iniciar
 
-Install Control Center as described in [Install](/es-MX/manual/instalar/), then open it.
+Instala Control Center como se describe en [Instalar](/es-MX/manual/instalar/) y luego ábrelo.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+En el primer arranque, la aplicación de escritorio pregunta **«¿Cómo debe ejecutarse Control Center?»**. Elige **Ejecutar en esta aplicación**. Control Center lanza un `cc_server` headless en este equipo, que es dueño de tus datos y hace todo el trabajo. Tú nunca lo ves; en su lugar se abre la pantalla de incorporación inicial.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/es-MX/manual/instalar/#use-it-in-your-browser) for the browser route.
+:::note[¿Prefieres no instalar nada?]
+La misma aplicación funciona en el navegador en [app.usectrl.dev](https://app.usectrl.dev) con las
+mismas funciones. Sin embargo, una pestaña del navegador no puede alojar el servidor, así que
+tendrás que aportar uno: ejecuta `cc_server` en local y conéctate a `ws://localhost:9030`, o
+apúntalo a un servidor en otra máquina. Este inicio rápido sigue la ruta de escritorio porque no
+necesita configurar ningún servidor; consulta [Instalar](/es-MX/manual/instalar/#use-it-in-your-browser) para la ruta del navegador.
 :::
 
-## Step 2: Work through onboarding
+## Paso 2: Completar la incorporación inicial
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+La incorporación inicial tiene cinco pasos y se ejecutan en orden: no se puede saltar ninguno.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Conectar**: inicia sesión con GitHub o pega un token de acceso personal con `repo` y `read:org`. La credencial se guarda en el servidor, asociada a tu cuenta.
+2. **Espacio de trabajo**: ponle nombre a tu primer espacio de trabajo y, si quieres, elige un logotipo. Al crearlo se siembran cinco agentes —un CEO más `qa`, `architect`, `engineer` y `librarian`— y las plantillas de pipeline integradas.
+3. **Entorno aislado**: registra una preferencia de aislamiento. Cualquiera de las dos opciones te permite continuar.
+4. **Adaptador**: elige el adaptador y el modelo que los agentes deben usar de forma predeterminada. Selecciona **Control Center (built-in)** y luego usa el selector de proveedores que aparece para iniciar sesión en un proveedor de modelos: la lista de modelos permanece vacía hasta que haya uno conectado. Completar este paso también fija el adaptador y el modelo en el agente CEO del espacio de trabajo.
+5. **Voz (opcional)**: instala un modelo de voz en el dispositivo para el dictado, u omítelo.
 
-Control Center then opens your workspace inbox.
+Después, Control Center abre la bandeja de entrada de tu espacio de trabajo.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/es-MX/manual/conceptos/sandbox-y-seguridad/).
+:::note[Qué limita una ejecución de agente]
+Los comandos de los agentes se envuelven en el sandbox nativo del sistema operativo del host cuando hay uno disponible —Seatbelt en macOS, bubblewrap en Linux—. Windows no tiene backend, así que allí las ejecuciones solo quedan limitadas por las demás capas: el worktree propio de la conversación (`git worktree` en Windows; copy-on-write donde se distribuye `rift`), las credenciales negociadas en cada lanzamiento y revocadas al desmontar, y las barandillas de acción. Consulta [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/).
 :::
 
-## Step 3: Add a repository
+## Paso 3: Agregar un repositorio
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Ve a **Ajustes → Espacio de trabajo → Repositorios** y haz clic en **Añadir repositorio**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+El cuadro de diálogo explora las carpetas de la máquina que ejecuta el servidor, no las de tu cliente, y se mantiene dentro de las raíces que ese servidor está configurado para exponer (el directorio personal de su usuario, de forma predeterminada). Solo los checkouts de git obtienen una casilla. Marca el tuyo y regístralo.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Un checkout solo se acepta si está dentro de un árbol de trabajo de git, tiene un remoto `origin` y ese remoto apunta a un host de código compatible: github.com, gitlab.com o bitbucket.org. Cualquier otra cosa se rechaza con el motivo.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Los repos tienen alcance de espacio de trabajo: registrar un checkout aquí lo coloca en _este_ espacio de trabajo. No hay ningún paso de vinculación aparte.
 
-## Step 4: Give an agent an adapter and a model
+## Paso 4: Dar a un agente un adaptador y un modelo
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Ve a **Ajustes → Espacio de trabajo → Agentes**. Selecciona el agente `engineer` en la lista.
 
-On the **Settings** tab, set:
+En la pestaña **Ajustes**, define:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Adaptador**: `Control Center (built-in)`
+- **Modelo**: elige uno del proveedor que conectaste en la incorporación inicial
 
-Press **Save changes**.
+Presiona **Guardar cambios**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Este paso no es opcional en la práctica. Solo el agente CEO hereda el adaptador elegido durante la incorporación inicial; los cuatro especialistas se crean sin ninguno. Recurren a **Control Center (built-in)** con el modelo predeterminado de Anthropic, así que solo se ejecutan si conectaste una cuenta de Anthropic, y lo hacen con un modelo que no elegiste.
 
-## Step 5: Send the agent a task
+## Paso 5: Enviar una tarea al agente
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. En la barra lateral, busca la sección **Espacios** y haz clic en el botón **+**.
+2. Ponle nombre al espacio, agrega el agente `engineer` en **Añadir agentes** y créalo.
+3. Escribe una tarea concreta y pequeña contra el repositorio que registraste y presiona Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center aprovisiona un worktree con copy-on-write de los repos del espacio de trabajo para esta conversación, arma un prompt con el rol, la persona y las skills del agente y el contexto del espacio, y despacha la ejecución. Tu checkout de origen no se toca nunca.
 
-## Step 6: Watch it work
+## Paso 6: Míralo trabajar
 
-You should see, in order:
+Deberías ver, en este orden:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Que el botón de enviar del compositor se convierta en un botón de detener, porque hay un agente trabajando en esta conversación
+- El razonamiento del agente, sus llamadas a herramientas y su texto llegando en streaming a la transcripción
+- Que el botón de enviar reaparezca cuando termina la ejecución
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Luego abre **Ajustes → Espacio de trabajo → Agentes**, selecciona el agente y consulta la pestaña **Registros**: una fila de ejecución, con su estado, su duración, sus horas de inicio y fin y el adaptador con el que se ejecutó.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Ese es el bucle. Todo lo demás de Control Center —revisión de pull requests, pipelines, tickets, reuniones, Slack— cuelga de él.
 
-## Next steps
+## Próximos pasos
 
-- [Your first workspace](/es-MX/manual/tutoriales/primer-espacio-de-trabajo/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/es-MX/manual/tutoriales/primera-pr/): take an agent's branch through review and merge
-- [The agent model](/es-MX/manual/conceptos/modelo-de-agentes/): what an agent is made of
-- [Create and configure an agent](/es-MX/manual/guias/crear-agente/): the rest of the agent form
-- [Run an orchestration](/es-MX/manual/guias/ejecutar-orquestacion/): one goal, one approval, a generated pipeline
-- [Pair your phone](/es-MX/manual/guias/emparejar-dispositivo/): follow the fleet from anywhere
-- [Deployment and clients](/es-MX/manual/conceptos/implementacion/): how the desktop, web and phone clients relate to the server
+- [Tu primer espacio de trabajo](/es-MX/manual/tutoriales/primer-espacio-de-trabajo/): el mismo terreno, más despacio, con el modelo de aislamiento explicado
+- [Revisa tu primera pull request](/es-MX/manual/tutoriales/primera-pr/): lleva la rama de un agente por la revisión y la fusión
+- [El modelo de agentes](/es-MX/manual/conceptos/modelo-de-agentes/): de qué está hecho un agente
+- [Crear y configurar un agente](/es-MX/manual/guias/crear-agente/): el resto del formulario del agente
+- [Ejecutar una orquestación](/es-MX/manual/guias/ejecutar-orquestacion/): un objetivo, una aprobación y un pipeline generado
+- [Empareja tu teléfono](/es-MX/manual/guias/emparejar-dispositivo/): sigue la flota desde cualquier lugar
+- [Implementación y clientes](/es-MX/manual/conceptos/implementacion/): cómo se relacionan los clientes de escritorio, web y móvil con el servidor

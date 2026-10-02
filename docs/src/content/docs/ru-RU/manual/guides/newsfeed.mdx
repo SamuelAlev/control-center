@@ -1,130 +1,143 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Настроить ленту новостей
+description: Добавляйте ленты RSS/Atom и управляйте ими, читайте статьи с блокировкой контента и знайте, что ваши ленты доступны во всех рабочих пространствах.
 dateModified: 2026-09-19
 slug: ru-RU/руководство/практические-руководства/лента-новостей
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Это руководство показывает, как настроить ленту новостей: из каких источников
+она берёт материалы, как читаются статьи и что делает блокировка контента.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Лента новостей принадлежит пользователю, а не рабочему пространству]
+Ленты и статьи принадлежат вошедшему пользователю: список лент, отметки о
+прочтении и закладки следуют за вами в каждое рабочее пространство и на каждое
+устройство, где вы входите, и никакой другой пользователь их не видит. Ленты
+хранятся в глобальной базе данных сервера, поэтому URL `/newsfeed` содержит
+идентификатор рабочего пространства только потому, что так устроен любой
+внутренний маршрут приложения.
 :::
 
-## Read articles
+## Читать статьи
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Нажмите **Лента новостей** на боковой панели
+2. Переключайтесь между **Все**, **Непрочитанные** и **Сохранённые** с помощью
+   сегментов на панели инструментов
+3. Сузьте список с помощью поля поиска или выбора источника
+4. Переключайтесь между журнальной сеткой и плотным списком кнопками выбора
+   раскладки
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Открытие статьи отмечает её как прочитанную. Используйте **Отметить все как
+прочитанные** в шапке страницы — она появляется, только пока есть непрочитанные, —
+чтобы разом очистить накопившееся, а элемент закладки на карточке — чтобы
+сохранить статью на потом.
 
-The layout choice persists across launches.
+Выбранная раскладка сохраняется между запусками.
 
-## Add a feed
+## Добавить ленту
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Откройте **Настройки → Вы → Лента новостей** (значок настроек в шапке ленты
+   новостей ведёт прямо туда)
+2. Нажмите **Добавить ленту**
+3. Укажите **название** и **URL ленты** (RSS или Atom)
+4. При необходимости разверните **Дополнительно** и задайте свой **User-Agent** —
+   некоторые издатели отвечают иначе на клиент по умолчанию
+5. Нажмите **Добавить ленту**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Проверка: лента появляется в списке **Ленты**, а её статьи подтягиваются после
+первой загрузки. URL, на который вы уже подписаны, отклоняется с сообщением
+«Лента с таким URL уже существует».
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+При первом использовании каждому пользователю добавляются четырнадцать лент:
+Control Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt,
+TLDR AI, Import AI, The Pragmatic Engineer, Martin Fowler, Will Larson's
+Irrational Exuberance, The Engineering Manager, Lea Verou и CSS-Tricks.
 
-## Manage feeds
+## Управлять лентами
 
-Each row in the **Feeds** list gives you three controls:
+Каждая строка в списке **Ленты** даёт три элемента управления:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Элемент          | Действие                                                                 |
+| ---------------- | ------------------------------------------------------------------------ |
+| Переключатель    | Отключает ленту. Отключённая строка затемняется и больше не загружается   |
+| Значок обновления | Загружает эту ленту прямо сейчас                                        |
+| Значок корзины   | Удаляет ленту после подтверждения                                        |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Обновить все** в верхней части списка загружает все включённые ленты.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+В подписи ленты показываются её описание и время с момента последней загрузки;
+если загрузка не удалась, вместо этого выводится ошибка предупреждающим цветом.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Возможности редактирования нет: чтобы изменить название ленты, URL или
+User-Agent, удалите её и добавьте заново.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Загрузка выполняется полностью на сервере: один раз на пользователя при запуске
+(и при первом использовании для аккаунтов, созданных позже), затем каждые
+30 минут.
 
-## Block ads and trackers in the reader
+## Блокировать рекламу и трекеры в читалке
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. В разделе «Настройки → Вы → Лента новостей» найдите **Настройки чтения**
+2. Оставьте **Открыть статьи в приложении** включённым, чтобы пользоваться
+   встроенной читалкой, или выключите его, чтобы статьи открывались в системном
+   браузере
+3. Оставьте **Блокировать рекламу, трекеры и баннеры cookie** включённым
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Блокировка включена по умолчанию. Встроенная читалка доступна только в macOS и
+Windows: в веб-сборке и в Linux системный браузер _и есть_ читалка, и статья
+открывается там (в веб-версии — в новой вкладке). В веб-версии переключатель
+блокировки, карточка **Фильтровать списки** и карточка **Доверенные сайты**
+скрыты.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Читалка в приложении не переформатирует статью. Она отображает страницу издателя
+во встроенном webview и подавляет рекламу, трекеры и cookie-баннеры с помощью
+кэшированных списков фильтров.
 
-### Check or update the filter lists
+### Проверить или обновить списки фильтров
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Карточка **Фильтровать списки** показывает, сколько правил сокрытия cookie,
+сокрытия рекламы и блокировки сети загружено, какие параметры отслеживания она
+удаляет и когда списки обновлялись в последний раз. Нажмите **Проверить
+обновления**, чтобы обновить их.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Источники: EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, несколько
+списков uBlock Origin и список параметров отслеживания uBO. Пока загрузка не
+завершится успешно, карточка помечает списки как встроенные значения по
+умолчанию, которые ни разу не обновлялись: счётчики правил рекламы, cookie и сети
+остаются на нуле, а удаление параметров отслеживания по-прежнему использует
+встроенный набор по умолчанию.
 
-### Allowlist a site
+### Добавить сайт в доверенные
 
-Some sites break under blocking.
+Некоторые сайты ломаются при блокировке.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. В разделе «Настройки → Вы → Лента новостей» перейдите в **Доверенные сайты**
+2. Нажмите **Добавить доверенный сайт** и укажите домен
 
-Blocking is skipped there.
+Там блокировка пропускается.
 
-## Troubleshooting
+## Устранение неполадок
 
-### A feed I added shows up in another workspace
+### Добавленная лента появляется в другом рабочем пространстве
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Так и должно быть. Лента новостей принадлежит пользователю, а не рабочему
+пространству: ваши ленты следуют за вами всюду, где вы вошли. См. врезку
+«Осторожно» в начале страницы.
 
-### A feed row shows an error instead of a description
+### В строке ленты показывается ошибка вместо описания
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Последняя загрузка не удалась, и в строке дословно показана её причина. Нажмите
+значок обновления, чтобы повторить попытку, и проверьте, что по URL по-прежнему
+отдаётся RSS или Atom. Издателю, который отклоняет неизвестные клиенты, может
+понадобиться свой User-Agent — для этого удалите ленту и добавьте её заново.
 
-### An article page renders badly
+### Страница статьи отображается неправильно
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Отключите **Блокировать рекламу, трекеры и баннеры cookie** для этого домена
+через **Доверенные сайты** либо выключите **Открыть статьи в приложении** и
+читайте статью в браузере.
 
-## Related guides
+## Связанные руководства
 
-- [Configure notifications](/ru-RU/руководство/практические-руководства/уведомления/)
-- [Triage your inbox](/ru-RU/руководство/практические-руководства/разобрать-входящие/)
+- [Настроить уведомления](/ru-RU/руководство/практические-руководства/уведомления/)
+- [Разобрать входящие](/ru-RU/руководство/практические-руководства/разобрать-входящие/)

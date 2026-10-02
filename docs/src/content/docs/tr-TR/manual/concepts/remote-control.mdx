@@ -1,207 +1,218 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Uzaktan kontrol ve mobil
+description: Telefonun sunucunuza, eşten eşe bir bağlantı yerine aracılı ve uçtan uca mühürlenmiş bir aktarıcı üzerinden nasıl ulaştığı ve bu erişimi dar tutan katmanlı erişim modeli.
 slug: tr-TR/kilavuz/kavramlar/uzaktan-kontrol
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center bir masaüstü uygulamasıdır, ancak izlediği iş siz masanızdan
+uzaklaştığınızda durmaz. **Uzaktan kontrol**, remote.usectrl.dev adresindeki
+yardımcı uygulama **[Remote](https://remote.usectrl.dev/)** ile telefonunuzu
+`cc_server`'ınıza eşleştirir; böylece filoyu oradan izleyebilirsiniz: mesajları
+ve biletleri okuyun, bir ajana yanıt verin, haber akışınızı triyaj edin —
+sunucuda yaşayan ses, transkript, kaynak kod veya kimlik bilgileri oradan hiç
+ayrılmadan.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Onu, Control Center'ın ağırlıklı olarak okuma amaçlı bir yardımcısı olarak
+düşünün. Tam masaüstü istemcisinin yerini alması amaçlanmamıştır.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/) for how the two differ.
+:::note[İki farklı uzaktan erişim yolu]
+Telefon yardımcı istemcisi, uçtan uca mühürlenmiş JSON-RPC çerçeveleri taşıyan
+**aracılı bir WebSocket aktarıcısı** üzerinden bir `cc_server` ile eşleşir. Tam
+**web yapısı** (ve uzak bir sunucuya yönlendirilmiş bir masaüstü) diğer uzak
+yoldur; `cc_server`'a WebSocket üzerinden bağlanır ve uygulamanın tamamını
+çizer. İkisinin nasıl farklılaştığını
+[Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/) sayfasında görün.
 :::
 
-## Transport
+## Aktarım
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Telefon `cc_server`'a bir WebSocket üzerinden ulaşır: ya doğrudan bir bağlantı
+(loopback, LAN, tailnet veya `wss://`) ya da mühürlenmiş çerçeveleri aktaran
+bir sinyal aracısındaki davetle korunan bir oda. Eşten eşe bir veri kanalı
+yoktur.
 
-## What the phone can do
+## Telefon neler yapabilir
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Eşleştirilmiş telefon, sunucunun yüzeyinin küçük ve kasıtlı bir dilimine
+ulaşır:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Okuma**: biletler, ajanlar, alanlar ve bunların mesajları ile haber
+  akışınız
+- **Yanıt verme**: bir alanda mesaj gönderin, bir bileti güncelleyin veya
+  atayın, bir makaleyi okundu ya da kaydedildi olarak işaretleyin
+- **Bir playbook çalıştırma**: kaydedilmiş bir plan şablonunu parametreleriyle
+  örnekleyin. Bu yalnızca bir plan _önerir_; bir operatör tam istemcide Plan
+  Studio'da onaylayana kadar hiçbir şey yürütülmez ve hiçbir harcama yapılmaz
+- **Çalışma alanlarını değiştirme**: telefonun kendi seçicisinden
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Neredeyse hepsi bu kadardır. Telefon, tam bir istemciden **daha düşük
+ayrıcalıklı bir principal**'dır. Süreç başlatamaz, LLM bütçesi harcayamaz,
+GitHub'a push yapamaz veya çalışma alanı oluşturamaz. Bunun yalnızca
+amaçlanmadığını, nasıl uygulandığını
+[erişim modelinde](#erişim-modeli) görün.
 
-## How the link is built
+## Bağlantı nasıl kurulur
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Bağlantı **aracılı bir aktarıcı** üzerinden ilerler: sunucu, bir `wss://`
+aracısındaki davetle korunan tek bir odaya sahibi olarak katılır ve
+eşleştirilmiş her istemci — masaüstü, web, telefon — süreyle sınırlı bir giriş
+belirteciyle aynı odaya katılır. Üç parça bir araya gelir:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Parça                          | Rol                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Remote (telefon uygulaması)** | Varsayılan olarak `remote.usectrl.dev` adresinde ya da kendi sunucunuzda barındırılan yardımcı web uygulaması. Tarayıcıda yüklenir, eşleştirme kaydını IndexedDB'de tutar.                                                                                                                                                     |
+| **Aktarma aracısı**            | N yönlü odalar barındıran durumsuz bir `wss://` aktarıcısı (`cc_signaling_server`). **Yalnızca opak çerçeveler** taşır: her yük, telefon ile sunucu arasında uçtan uca mühürlenir; böylece aracı ne uygulama verisini ne de eşleştirme sırrını görür ve ilettiği şeyi hiçbir zaman yorumlamaz.                                    |
+| **`cc_server`**                | Odanın sahibi. Telefonun çağrılarını, diğer tüm istemcilerin kullandığı aynı dağıtıcı üzerinden yanıtlar.                                                                                                                                                                                                                       |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Bir eşleştirme teklifi, sunucuya giden her yolu (LAN, tailnet, genel `wss://`,
+aktarıcı) ve kimlik parmak izini listeleyen bir **bağlantı tanımlayıcısı**
+taşır. Telefonun çözümleyicisi erişilebilen en iyi yolu seçer ve ilk bağlantıda
+parmak izini sabitler (TOFU); aktarıcı, doğrudan bir yol olmasa bile bağlantıyı
+garanti eder ve trafiği hiçbir zaman okuyamaz.
 
-## What the pairing payload is
+## Eşleştirme yükü nedir
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/) for the procedure. The anatomy is
-what matters here.
+Eşleştirme uygulamadan üretilir ve bir derin bağlantı olarak iletilir; yordam
+için [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)
+sayfasına bakın. Burada önemli olan yapısıdır.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Yük, URL **parçasında** — `#` sonrasındaki ve tarayıcıların sunucuya asla
+göndermediği bölümde — ilerler; böylece PWA'nın HTTPS ana makinesi onu hiç
+görmez. Telefonun sunucuya ulaşmak ve kim olduğunu kanıtlamak için ihtiyaç
+duyduğu her şeyi taşır: bağlantı tanımlayıcısı (her yol artı kimlik parmak
+izi), yeni üretilmiş bir cihaz kimliği, 32 baytlık bir ön paylaşımlı anahtar ve
+bir son kullanma damgası. Telefon bunu çözer, yerel olarak bir eşleştirme kaydı
+saklar ve parçayı kaldırır; böylece sır URL'den çıkar.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+İki yük biçimi vardır ve bunlar **birbirinin yerine geçmez**. Uygulama içi
+eşleştirme panelinden üretilen telefon QR'ı, Remote PWA ana makinesine
+yöneltilmiş yukarıdaki v2 `PairingPayload`'dır. `cc_server pair --client-url`
+ise yalnızca **web** istemcisi için tasarlanmış, farklı ve daha eski bir v1
+bağlantısı üretir (`{s, i, k}` — sunucu URL'si, cihaz kimliği, anahtar).
 
-They also differ in lifetime, which is easy to get wrong:
+Ayrıca ömürleri de farklıdır ve bu kolayca yanlış anlaşılır:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Üreten                                | Kimlik bilgisinin son kullanma süresi        |
+| ------------------------------------- | -------------------------------------------- |
+| Uygulama içi eşleştirme paneli (`pairing.mint`) | Her zaman 30 gün                    |
+| Komut satırında `cc_server pair`      | **Yok** — kimlik bilgisinin süresi dolmaz    |
 
-## The access model
+## Erişim modeli
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Eşleştirilmiş bir cihazın kimliği doğrulanır ama **güvenilmez**. Birkaç
+bağımsız kapı, onaylanmış (ya da sızdırılmış) bir eşleştirmenin sunucunun tam
+denetimine dönüşmesini engeller.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Sınır eşleştirme değil, üyeliktir
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Geçerli bir eşleştirme anahtarı, _hangi cihaz_ olduğunuzu kanıtlar. Neyi
+okuyabileceğinize veya değiştirebileceğinize **çalışma alanı rolünüz** karar
+verir; rol her bir çağrıda yeniden çözümlenir ve depo içeriğini açığa çıkaran
+her şeyde depo başına yetkiler geçerlidir. Sağlam bir anahtar taşıyan ancak adı
+verilen çalışma alanının üyesi olmayan bir kullanıcıya ait cihaz, "Not a member
+of this workspace" ile reddedilir.
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Rol tabanı, işlem kendi tabanını bildirmediği sürece türünden türetilir:
+okumalar `guest`, değişiklikler `member`, yıkıcı işlemler `admin` gerektirir.
 
-### 2. A phone is a lower session tier
+### 2. Telefon daha düşük bir oturum katmanıdır
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Rol denetiminin ötesinde, bir telefon oturumu masaüstü veya web oturumundan
+daha düşük bir yetenek taşır. Yalnızca tam istemciye açık olduğu bildirilen
+işlemler, arkasındaki kullanıcı ne kadar ayrıcalıklı olursa olsun, işleyici
+çalışmadan önce telefon için reddedilir: cihaz eşleştirmelerini üretme,
+listeleme, yeniden adlandırma ve iptal etme; tünel bağlantısını okuma ve
+ayarlama; sunucu yedekleme ve çalışma alanı dışa/içe aktarma; süreç algılama ve
+sonlandırma; adaptör yoklamaları; sunucu ayarları; SSO yönetimi; filo denetimi;
+ve çalışan bir ajanı devralma veya geri verme.
 
-### 3. A default-deny tool allow-list
+### 3. Varsayılanı ret olan bir araç izin listesi
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Özellikle MCP araç yüzeyi için (`tools/call`), telefonun hangi araçları
+çağırabileceğini varsayılanı ret olan bir izin listesi belirler. Listede
+olmayan her şey, çalışmadan önce reddedilir. Liste ağırlıklı olarak okuma ve
+gözlem ağırlıklıdır; buna LLM bütçesi harcamayan, süreç başlatmayan ve hiçbir
+dış sisteme dokunmayan birkaç **yalnızca yerel** yazma eklenir — bir mesaj, bir
+bilet güncellemesi, bir makale işareti.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Örneğin reddedilenler: bir ajana danışmak, bir YZ incelemesi başlatmak, bir
+ajanı sonlandırmak, bir incelemeyi GitHub'a yayımlamak, ajanları işe almak veya
+işten çıkarmak, bir çalışma alanı oluşturmak.
 
-### 4. Per-call workspace scoping
+### 4. Çağrı başına çalışma alanı kapsamı
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) invariant the rest of the
-product enforces.
+Sunucu **hiçbir** "geçerli çalışma alanı" tutmaz. Tasarımı gereği
+durumsuzdur: çalışma alanı kapsamlı her çağrı, hedefini bağımsız
+değişkenlerinde `workspace_id` olarak adlandırmak zorundadır; bu eksikse ya da
+sunucunun kayıtlı olmadığı bir çalışma alanını adlandırıyorsa, herhangi bir şey
+veritabanı açmadan önce dağıtıcı çağrıyı doğrudan reddeder. Dolayısıyla telefon,
+başka bir istemcinin kapsamını asla devralamaz veya oraya kayamaz; yabancı bir
+çalışma alanını adlandırmak da işe yaramaz, çünkü 1. kapıdaki üyelik denetimi
+yine geçerlidir. Bu, ürünün geri kalanının uyguladığı aynı
+[çalışma alanı yalıtımı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+değişmezidir.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Ön paylaşımlı anahtarla anahtarlanan uçtan uca mühürlenmiş çerçeveler
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Telefon ile sunucu arasındaki her çerçeve eşleştirme anahtarıyla mühürlenir;
+giriş belirteci yalnızca bir istemciyi odaya sokar, hiçbir şeyin şifresini
+çözmez. Aracı yalnızca şifreli metni aktarır ve anahtarı hiç görmez. İptal
+edilen bir cihaz, kimlik bilgisinin çoktan gittiğini görür; bu yüzden yeniden
+bağlandığında **kapalı yönde başarısız olur**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Uygulamanın ürettiği kimlik bilgisi 30 günle sınırlıdır; bu süreden sonra
+bağlantı kapısı onu geçersiz kılar ve telefonun yeniden eşleştirmesi gerekir.
+İptal canlıdır: sunucu cihaz tablosunu izler ve iptal edilmiş bir cihazın açık
+oturumlarını, bir sonraki bağlantısını beklemeden saniyeler içinde düşürür.
 
-### 6. Rate limiting per principal
+### 6. Principal başına hız sınırlama
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Kayan pencereli bir sınırlayıcı, uzak araç trafiğini dakikada 120 çağrıyla
+sınırlar; değişiklik yapan fiiller için daha sıkı, dakikada 30'luk bir alt sınır
+vardır. Bütçe **oturuma değil, principal'a** aittir: üç cihazınız tek bir
+ödenekten çeker; böylece ele geçirilmiş bir istemci daha fazla oturum açarak
+kendine pay satın alamaz ve gürültücü bir üye diğerlerini aç bırakamaz.
 
-### 7. A broker that learns nothing
+### 7. Hiçbir şey öğrenmeyen bir aracı
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Aktarma aracısı kasıtlı olarak aptaldır: odalar barındırır, mühürlenmiş
+çerçeveleri iletir ve hiçbir hesap, uygulama verisi veya anahtar tutmaz. Odalar
+davetle korunur ve geçicidir. Uygulama verisi, ses, transkript, kaynak ve
+kimlik bilgileri sunucuda kalır.
 
-## Live updates
+## Canlı güncellemeler
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Eşleştirildikten sonra telefon, masaüstünün kendi bildirimlerini yansıtan
+bildirim çerçeveleri biçiminde **canlı güncellemeler** alır — yeni ajan
+mesajları, size atanan biletler, durum değişiklikleri. Sunucu bu çerçeveleri
+bağlı her oturuma yayınlar ve çalışma alanı filtresi istemci tarafında
+uygulanır; böylece gördükleriniz, baktığınız çalışma alanıyla sınırlıdır.
 
-## Where it lives
+## Nerede bulunur
 
-| Surface                                                                             | What it shows                                                                                               |
+| Yüzey                                                                               | Ne gösterir                                                                                                 |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **Ayarlar → Siz → Cihazlarınız** (`/workspaces/:workspaceId/settings/you/devices`) | Canlı durumlarıyla eşleştirilmiş istemciler, ayrıca **Yeni istemci eşle** (web tarayıcısı, masaüstü uygulaması veya telefon) ve iptal etme |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Aynı panel, yalnızca telefonlar için değil, ikinci bir tarayıcı ya da masaüstü
+uygulaması için de eşleştirme üretir — akış aynıdır, yalnızca derin bağlantı
+farklıdır.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Uzaktan kontrol sunucu tarafındadır ve MCP üzerinden **sunulmaz**. Telefon,
+aktarıcı üzerinden sunucunun kendi dağıtıcısıyla konuşur; harici bir sunucunun
+MCP istemcisi değildir.
 ::::
 
-## See also
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): roles, membership and repo grants
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/): where remote control sits among the client tiers
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/): where remote control sits in the stack
-- [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): bu sayfanın dayandığı çağrı başına kapsam
+- [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): roller, üyelik ve depo yetkileri
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/): uzaktan kontrolün istemci katmanları arasındaki yeri
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/): uzaktan kontrolün yığındaki yeri
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)

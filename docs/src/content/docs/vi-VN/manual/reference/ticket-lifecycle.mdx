@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Vòng đời phiếu
+description: Các trường, trạng thái, chuyển trạng thái, quan hệ của phiếu và điểm nghẽn thay đổi.
 slug: vi-VN/so-tay/tham-chieu/vong-doi-phieu
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Trạng thái phiếu
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Trạng thái   | Chuỗi lưu trữ  | Mô tả                                                  |
+| ------------ | -------------- | ------------------------------------------------------ |
+| `backlog`    | `backlog`      | Đã ghi nhận, chưa được phân loại vào hàng đợi đang chạy |
+| `open`       | `open`         | Đã phân loại và sẵn sàng để làm, chưa bắt đầu          |
+| `inProgress` | `inProgress`   | Đang được xử lý                                        |
+| `blocked`    | `blocked`      | Đã bắt đầu nhưng bị chặn bởi một thứ gì đó bên ngoài   |
+| `inReview`   | `inReview`     | Đã xong việc, đang chờ đánh giá                        |
+| `done`       | `done`         | Hoàn tất thành công (trạng thái kết thúc)              |
+| `failed`     | `failed`       | Kết thúc với lỗi (trạng thái kết thúc)                 |
+| `cancelled`  | `cancelled`    | Bị bỏ dở (trạng thái kết thúc)                         |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Các giá trị trạng thái được lưu ở dạng camelCase (`inProgress`, `inReview`), không bao giờ là `in_progress`. Một giá trị lưu là null được phân tích thành `open`; một giá trị không xác định sẽ ném lỗi thay vì ép kiểu.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` chấp nhận các bí danh do agent cung cấp, bỏ qua chữ hoa chữ thường và `-` / `_` / dấu cách:
 
-| Status       | Accepted aliases                              |
+| Trạng thái   | Bí danh được chấp nhận                        |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Chuyển trạng thái
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,159 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Đồ thị này chỉ ràng buộc agent và tự động hóa.** `TicketWorkflowService.transitionStatus` kiểm tra nó khi `force` là false — tức các công cụ MCP và các bộ đối soát. Một chuyển trạng thái không hợp lệ ở đó sẽ bị ghi log và bỏ qua. Mọi thay đổi trạng thái do người dùng thực hiện trong giao diện đều truyền `force: true` và bỏ qua hoàn toàn đồ thị, nên con người có thể chuyển một phiếu sang bất kỳ trạng thái nào mà hộp chọn liệt kê (mọi trạng thái trừ `failed`), kể cả mở lại một trạng thái kết thúc. Agent đánh dấu `failed` bằng `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Một trạng thái luôn có thể chuyển sang chính nó. Các trạng thái kết thúc không có cạnh đi ra.
 
-| From         | Allowed targets                                      |
+| Từ           | Đích được phép                                       |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (trạng thái kết thúc)                              |
+| `failed`     | — (trạng thái kết thúc)                              |
+| `cancelled`  | — (trạng thái kết thúc)                              |
 
-## Ticket priorities
+## Độ ưu tiên của phiếu
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Được lưu dưới dạng số nguyên theo thang 0–4 gốc của Linear. Một giá trị không xác định được phân tích thành `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Độ ưu tiên | Lưu dưới dạng |
+| ---------- | ------------- |
+| `none`     | `0`           |
+| `urgent`   | `1`           |
+| `high`     | `2`           |
+| `medium`   | `3`           |
+| `low`      | `4`           |
 
-## Ticket providers
+## Nhà cung cấp phiếu
 
-An unknown or null stored value parses to `local`.
+Một giá trị lưu không xác định hoặc null được phân tích thành `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Nhà cung cấp | Trạng thái                                                      |
+| ------------ | --------------------------------------------------------------- |
+| `local`      | Được lưu hoàn toàn trong cơ sở dữ liệu không gian làm việc; mặc định |
+| `linear`     | Do hệ thống từ xa sở hữu, được sao gương cục bộ                 |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Các adapter đồng bộ nằm trong `packages/cc_infra/lib/src/tickets/sync/` cho Linear,
+GitHub Issues, Jira Cloud và ClickUp. GitHub Issues chỉ là một vendor của adapter
+đồng bộ (`vendorId: github`) — nó không phải là một giá trị `TicketProvider`, nên
+một issue GitHub được kéo về sẽ được lưu với `originKind: externalSync` và
+`provider: local` mặc định. Ánh xạ vendor nằm trên `ticket_sync_links`.
 
-## Ticket origin
+## Nguồn gốc phiếu
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` ghi `manual`. Một lần kéo từ vendor ghi `externalSync`. Các phiếu
+con được ủy thác vẫn giữ `manual`.
 
-| Value          | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| Giá trị        | Ý nghĩa                                                     |
+| -------------- | ----------------------------------------------------------- |
+| `manual`       | Mặc định trên `createTicket` (hàng do con người, agent và ủy thác tạo) |
+| `externalSync` | Được `TicketSyncEngine` đặt khi kéo từ vendor               |
 
-## Ticket fields
+## Các trường của phiếu
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Thực thể tổng hợp trải hai mối quan tâm trên cùng một hàng. **Bản gương** (nhà cung cấp, khóa, tiêu đề, mô tả, mức ưu tiên, nhãn, trạng thái, dấu thời gian) là bộ đệm cho một nhà cung cấp từ xa và bị một lần làm mới ghi lại toàn bộ. **Lớp phủ** (phân công, ủy thác, space, phiếu cha, dự án, các PR được liên kết) chỉ thuộc về Control Center và một lần làm mới không bao giờ chạm tới nó.
 
-| Field                    | Type                       | Description                                                                                |
+| Trường                   | Kiểu                       | Mô tả                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Không gian làm việc sở hữu                                                                 |
+| `provider`               | `TicketProvider`           | Backend sở hữu dữ liệu chuẩn tắc (mặc định `local`)                                        |
+| `externalKey`            | `String?`                  | Khóa gốc của nhà cung cấp (ví dụ `LIN-123`). `createTicket` cục bộ ghi một UUID *riêng* vào đây, chứ không phải `id` của hàng |
+| `url`                    | `String?`                  | URL web trên nhà cung cấp từ xa                                                            |
+| `title`                  | `String`                   | Tóm tắt ngắn; không được để trống                                                          |
+| `description`            | `String?`                  | Nội dung Markdown dài hơn                                                                  |
+| `priority`               | `TicketPriority`           | Mặc định `none`                                                                            |
+| `labels`                 | `List<String>`             | Nhãn tự do                                                                                 |
+| `status`                 | `TicketStatus`             | Trạng thái chuẩn hóa chuẩn tắc                                                             |
+| `rawStatus`              | `String?`                  | Tên trạng thái gốc của nhà cung cấp từ xa, được giữ để hiển thị không mất mát              |
+| `externalSyncedAt`       | `DateTime?`                | Lần đồng bộ đa vendor gần nhất; null cho đến lần đầu tiên. Ánh xạ theo từng vendor nằm trong `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Phiếu cha trong cây ủy thác / chia nhỏ                                                     |
+| `projectId`              | `String?`                  | Dự án sở hữu; không bao giờ được đẩy lên hệ thống từ xa                                    |
+| `assignedAgentId`        | `String?`                  | Id của chủ thể được gán (chỉ là siêu dữ liệu — gán không điều phối gì cả)                  |
+| `assigneeType`           | `PrincipalType`            | Loại chủ thể mà `assignedAgentId` chỉ tới — `user` hoặc `agent` (mặc định `agent`)         |
+| `createdByType`          | `PrincipalType?`           | Loại chủ thể đã tạo phiếu (`user` hoặc `agent`); null với các hàng cũ/hệ thống             |
+| `createdById`            | `String?`                  | Id của chủ thể đã tạo                                                                      |
+| `assignedTeamId`         | `String?`                  | Đội được gán (chỉ là siêu dữ liệu)                                                         |
+| `delegatedByAgentId`     | `String?`                  | Agent đã ủy thác phiếu này                                                                 |
+| `delegationDepth`        | `int`                      | Độ sâu trong chuỗi ủy thác; gốc là `0`, được kiểm tra với giới hạn độ sâu tối đa           |
+| `delegationRootTicketId` | `String?`                  | Gốc của chuỗi ủy thác; null với một phiếu gốc                                              |
+| `spaceId`                | `String?`                  | Cuộc hội thoại mà phiếu được tách ra từ đó, hoặc space của agent ủy thác                   |
+| `errorMessage`           | `String?`                  | Được đặt khi `status` là `failed`                                                          |
+| `linkedPrIds`            | `List<String>`             | Id nút PR mà phiếu này được liên kết tới                                                   |
+| `metadata`               | `Map<String, dynamic>`     | Túi dữ liệu tự do                                                                          |
+| `createdAt`              | `DateTime`                 | Thời điểm tạo                                                                              |
+| `startedAt`              | `DateTime?`                | Khi công việc bắt đầu                                                                      |
+| `blockedAt`              | `DateTime?`                | Khi phiếu bị chặn                                                                          |
+| `cancelledAt`            | `DateTime?`                | Khi phiếu bị hủy                                                                           |
+| `completedAt`            | `DateTime?`                | Khi phiếu hoàn tất thành công                                                              |
+| `finishedAt`             | `DateTime?`                | Khi phiếu đạt tới bất kỳ trạng thái kết thúc nào                                            |
+| `updatedAt`              | `DateTime`                 | Lần thay đổi gần nhất (làm mới bản gương hoặc thay đổi lớp phủ)                            |
+| `version`                | `int`                      | Bộ đếm đồng thời lạc quan, tăng lên sau mỗi thay đổi                                        |
+| `originKind`             | `TicketOriginKind`         | Cách phiếu được tạo (mặc định `manual`)                                                    |
+| `collaborators`          | `List<TicketCollaborator>` | Được repository nạp theo yêu cầu                                                           |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Suy ra: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` và `displayKey` (`externalKey ?? id` — do đó phiếu cục bộ hiển thị UUID riêng được tạo lúc tạo phiếu, chứ không phải `id` của hàng).
 
-## Ticket relations
+## Quan hệ phiếu
 
-Stored edges are directional rows in `ticket_links`:
+Các cạnh được lưu là những hàng có hướng trong `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
+| Loại          | Chuỗi lưu trữ  | Ý nghĩa                         |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | Phiếu nguồn chặn phiếu đích     |
+| `relatesTo`   | `relates_to`   | Quan hệ đối xứng                |
+| `duplicateOf` | `duplicate_of` | Phiếu nguồn là bản trùng của phiếu đích |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Từ vựng mà giao diện và `ticket_relation` dùng là `TicketRelationKind`, được suy ra từ một cạnh đã lưu cộng với việc chủ thể nằm ở đầu nào của cạnh đó:
 
-| Kind           | Derived from                                         |
-| -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| Loại           | Suy ra từ                                                  |
+| -------------- | ---------------------------------------------------------- |
+| `blockedBy`    | Một hàng `blocks` trong đó chủ thể là phiếu đích           |
+| `blocking`     | Một hàng `blocks` trong đó chủ thể là phiếu nguồn          |
+| `relatedTo`    | Một hàng `relates_to` (đối xứng)                           |
+| `duplicateOf`  | Một hàng `duplicate_of` trong đó chủ thể là phiếu nguồn    |
+| `duplicatedBy` | Một hàng `duplicate_of` trong đó chủ thể là phiếu đích     |
+| `subIssueOf`   | `tickets.parent_ticket_id` trên chủ thể                    |
+| `parentOf`     | `tickets.parent_ticket_id` trên phiếu kia                  |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Các liên kết cha và vấn đề con **không** phải là hàng `ticket_links` — chúng nằm trên `tickets.parent_ticket_id`.
 
-## Domain events
+## Sự kiện miền
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Tám lớp này nằm trong `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Không có `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` hay `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
+| Sự kiện                   | Kích hoạt khi                                      |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | Phiếu được tạo                                     |
+| `TicketAssigned`          | Phiếu được gán cho một chủ thể hoặc một đội        |
+| `TicketCompleted`         | Công việc kết thúc thành công                      |
+| `TicketFailed`            | Công việc thất bại                                 |
+| `TicketCancelled`         | Phiếu bị hủy                                       |
+| `TicketStatusChanged`     | Mọi thay đổi trạng thái                            |
+| `TicketReassigned`        | Phiếu được gán lại                                 |
+| `TicketDetailsUpdated`    | Tiêu đề, mô tả, mức ưu tiên hoặc nhãn thay đổi     |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` là một tín hiệu kiểm toán và thông báo, đồng thời là một trình kích hoạt quy trình. Gán cho một agent không khởi động lần chạy nào — không có bộ điều phối phiếu nào theo dõi `assignedAgentId`. Gán cho một đội là ngoại lệ: `TeamRoutingService` điều phối trưởng đội. Thêm một cộng tác viên chỉ ghi một hàng và không phát ra gì. Một webhook từ vendor được áp dụng qua `TicketSyncEngine` mà không có sự kiện miền nào.
 
-## Mutation chokepoint
+## Điểm nghẽn thay đổi
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` sở hữu mọi thay đổi.
 
-| Mechanism              | Detail                                                                                                                                            |
+| Cơ chế                 | Chi tiết                                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Điểm nghẽn duy nhất    | Mọi thay đổi đều đi qua `_mutate`, hàm này nạp hàng và gọi `_assertWorkspace` trước khi áp dụng                                                    |
+| Cô lập không gian làm việc | `_assertWorkspace` ném `WorkspaceMismatchException` khi `workspaceId` của hàng được nạp không khớp với `workspaceId` của bên gọi                |
+| Đồng thời lạc quan     | `_mutate` ghi với `expectedVersion` được đặt bằng `version` mà nó vừa đọc và thử lại khi gặp `ConcurrencyConflictException` bằng cách đọc lại trạng thái mới |
+| Giành quyền độc quyền  | `tryCheckout` / `releaseCheckout`; agent thứ hai giành một phiếu đã được checkout sẽ nhận `CheckoutConflictException`                            |
+| Chốt chuyển trạng thái | `canTransitionTo`, chỉ được áp dụng khi `force` là false                                                                                          |
 
-## See also
+## Xem thêm
 
-- [Tickets](/vi-VN/so-tay/khai-niem/phieu/)
-- [Manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
-- [Delegate tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
-- [Domain events](/vi-VN/so-tay/tham-chieu/su-kien-mien/)
+- [Phiếu và ủy thác](/vi-VN/so-tay/khai-niem/phieu/)
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Sự kiện miền](/vi-VN/so-tay/tham-chieu/su-kien-mien/)

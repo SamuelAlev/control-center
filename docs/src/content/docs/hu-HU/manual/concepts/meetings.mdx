@@ -1,213 +1,228 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Megbeszélések és átírás
+description: Hogyan rögzít, ír át és diarizál a Control Center egy hívást a szerveren, és hol van az az egyetlen lépés, amely elhagyja a gazdagépet.
 slug: hu-HU/kezikonyv/fogalmak/megbeszelesek
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+A Control Center fel tud venni egy hívást, és cserébe rendezett leiratot ad
+vissza — összefoglalót, teendőket és döntéseket —, miközben a beszédfelismerés és
+a beszélőszétválasztás az Ön saját hardverén fut. Képzelje el a Granolát, csak
+saját üzemeltetésben, és bekötve ugyanabba a munkaterületbe, amelyben az
+ügynökei élnek.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[A felvételhez hangmodell és a szerver újraindítása kell]
+A felvétel és a diktálás akkor indul el, ha egy beszéd- (ASR-) modell már a
+lemezen van, **és** a szervert újraindították. Egy normál indítás a háttérben
+erőltetetten telepíti a kiválasztott modellt (alapértelmezésben a Parakeet
+TDT 0.6B v3-at), a szerver azonban a hangmodell-útvonalakat pontosan egyszer,
+az indítás elején oldja fel — percekkel azelőtt, hogy ez a letöltés
+befejeződhetne. Miután a modell jelzi, hogy telepítve van, indítsa újra a
+`cc_server`-t. Másik buildet a **Beállítások → Szerver → Hang- és
+megbeszélésmodellek** helyen választhat — ehhez is újraindítás kell.
 :::
 
-## What a meeting is
+## Mi a megbeszélés
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/hu-HU/kezikonyv/fogalmak/naptar/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+A **megbeszélés** egy rögzített, átírt munkamenet. _Nem_ ugyanaz, mint egy
+[naptáresemény](/hu-HU/kezikonyv/fogalmak/naptar/): az esemény egy Google-ból
+szinkronizált, ütemezett kötelezettség, a megbeszélés pedig valami, amit
+ténylegesen felvett. A kettő összekapcsolható, hiszen egy eseményből is
+indíthat felvételt, de külön rekordok maradnak.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Minden megbeszélés munkaterület-hatókörű, mint a Control Centerben minden más.
+Az egyik munkaterületen rögzített megbeszélések soha nem bukkannak fel egy
+másikban.
 
-## Where the work happens
+## Hol történik a munka
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+Az „eszközön” jó megérzés, de rossz főnév. A kliens rögzíti a hangot, és 16 kHz-es
+PCM16-kereteket streamel a **`cc_server`-t futtató gépre**. A többit mindent az a
+gazdagép végez: a csatornánkénti WAV-fájlokat a
+`<dataDir>/meetings/<meetingId>/` alá írja, egy worker-izolátumban átír,
+visszhangot szűr, és utólag diarizál. Önálló asztali telepítésen ez a gazdagép
+ugyanaz a gép. Távoli szerverre mutatva viszont nem — így a „semmi sem hagyja el
+a laptopomat” csak akkor igaz, ha a szerver az Ön laptopja.
 
-There is one further exception and it is the important one.
+Van még egy kivétel, és épp ez a fontos.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Az összefoglaló elhagyja a gazdagépet]
+Az átirat és a jegyzetei ahhoz a modellszolgáltatóhoz kerülnek, amelyre az
+összegző ügynök be van állítva. Bármely felhőszolgáltatónál ez azt jelenti, hogy
+a teljes átirat eljut a szolgáltató API-jára. Ha az átiratnak nem szabad
+elhagynia a gazdagépet, állítsa az összegző ügynököt helyi végpontra (Ollama,
+LM Studio vagy egy másik helyi szerver).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Az összefoglaló előtti minden lépés — rögzítés, átírás, visszhangszűrés,
+diarizálás, hanglenyomat-egyeztetés — hálózati hívás nélkül, a szerveren fut.
 
-## Which models ship
+## Milyen modelleket szállít
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Az **embedding-, a diarizációs és a beszéd- (ASR-) modellek** az első indításkor
+erőltetetten telepítődnek (demóban kimaradnak), így a beszélőszétválasztás és a
+felvétel a beállítások megnyitása nélkül is elérhető. Az ASR továbbra is
+**választható** — több száz megabájt, és négy build van a választóban. A
+beszédhez az első letöltés után még egy újraindítás kell, mert az átíró a
+letöltés befejeződése előtt feloldja a modelljét.
 
-The four picker entries, differing in size, language coverage and accuracy:
+A választó négy eleme méretben, nyelvi lefedettségben és pontosságban tér el:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — többnyelvű, az ajánlott alapértelmezés (~600 MB)
+- Parakeet TDT 0.6B v2 — angol (~480 MB)
+- Whisper large-v3-turbo — többnyelvű (~626 MB)
+- Whisper base.en — csak angol, a kicsi, történelmi alapértelmezés (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+A szerver futásidőben kizárólag modelleket tölt le; minden natív könyvtár a
+csomagban érkezik.
 
-## How capture works
+## Hogyan működik a rögzítés
 
-A meeting records **two audio channels at once**:
+Egy megbeszélés **egyszerre két hangcsatornát** rögzít:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Ön („me”)**: az Ön mikrofonja.
+- **A többiek („them”)**: a megbeszélés hangkimenete, amelyet illesztőprogram
+  nélküli loopback rögzít — macOS-en Core Audio folyamat- és eszköztapok,
+  Windows alatt WASAPI loopback, Linuxon PipeWire / PulseAudio monitor.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Mivel a két csatorna külön rögzül, az átirat már az elejétől beszélőhöz
+rendelt: az Ön szavai a `me`, a hívásban mindenki más a `them` címkét kapja.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Az Ön saját hangja a rendszerkimenetből visszaszivárog a mikrofonba, és enélkül
+kétszer átíródna. Két szűrő akadályozza ezt meg. A jel szintjén az **AEC3 minden
+távoli módú felvételen fut, és kötelező** — ha a natív AEC-könyvtár nem tölthető
+be, a felvétel nem indul el, ahelyett hogy csendben visszhangtól szennyezett
+mikrofont streamelne. (A személyes jelenléti módban nincs távoli végponti
+referencia, amelyhez képest törölni lehetne, így ott az AEC azonosságként engedi
+át a jelet.) Ezen felül minden platformon fut egy gazdagépoldali, szövegszintű
+visszhangszűrő.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Minden operációsrendszer-szintű mikrofonfeldolgozás szándékosan le van tiltva.
+Ha macOS-en bekapcsolja a platform saját visszhangszűrését vagy automatikus
+erősítését, a mikrofon Voice Processing I/O módra vált, ami ebben a buildben
+_mind_ a mikrofont, _mind_ a rendszerhang rögzítését tönkretette.
 
-## Transcription and diarization
+## Átírás és diarizálás
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Felvétel közben a hang **gördülő ablakokban** dekódolódik — rövid záró csendnél
+vagy egy maximális ablakhossznál elvágva —, a felületi száltól függetlenül.
+Minden ablak egy beszélővel címkézett átiratszegmens lesz, ezredmásodperces
+eltolásokkal.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Azok az ablakok, amelyek soha nem emelkedtek egy RMS-küszöb fölé,
+**dekódolás nélkül** kimaradnak, mert a beszédmodell a csendet hallucinált, nem
+beszédhangú tokenekként jeleníti meg, a dekódolás pedig elpazarolt CPU. Ennek
+gyakorlati következménye: egy tartósan nagyon halk beszélőnek nem lesz átirata.
+Ha valaki üresen jön vissza, előbb a bemeneti szintjét ellenőrizze, mielőtt a
+modellt hibáztatná.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Miután leállítja, a **diarizálás** offline fut a felvételen, és a távoli
+csatornát külön beszélőkre bontja (`Person 1`, `Person 2`, …), akiket
+átnevezhet. A beszélők számát egy klaszterezési küszöb alapján becsüli, nem az
+Ön által beállított darabszámból — így ez küszöbhatás, és egy halk vagy átfedő
+beszélő beleolvadhat a szomszédjába. Az átirat `[mm:ss] SPEAKER: text`
+sorokként jelenik meg.
 
-## Voice profiles
+## Hangprofilok
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Egy beszélő átnevezése többet tesz, mint hogy megcímkéz egy átiratot. A Control
+Center a beszélő hanglenyomatát **hangprofilként** mentheti, így a jövőbeli
+megbeszéléseken automatikusan felismeri őt. Amikor elnevez egy diarizált
+beszélőt, a program megkérdezi, mentse-e a hanglenyomatot; ha igen, az
+beleolvad az adott névhez tartozó futó centroidba, és az új beszélőket
+koszinusz-hasonlósággal veti össze velük, így ugyanaz a személy a következő
+alkalommal a nevével jelenik meg, anélkül hogy Önnek újra címkéznie kellene.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+A hangprofilok munkaterület-hatókörűek, és soha nem lépik át a határt. A
+**Beállítások → Munkaterület → Megbeszélések** helyen kezelheti őket. Egy
+korábban mentett beszélő átnevezése kiveszi a regisztrációból a régi nevet, és
+felajánlja az új beregisztrálását; egy profil törlése eltávolítja a tárolt
+hanglenyomatot, de a korábbi megbeszéléseken már alkalmazott neveket
+érintetlenül hagyja.
 
-## The summary pipeline
+## Az összefoglaló pipeline
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/hu-HU/kezikonyv/fogalmak/domainesemenyek/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Amikor egy felvétel leáll, a szerver közzétesz egy `MeetingRecordingStopped`
+[domaineseményt](/hu-HU/kezikonyv/fogalmak/domainesemenyek/). A beépített
+**`meeting_summary`** pipeline-sablont ez az esemény indítja el. A felvevő nem
+vár rá; a megbeszélés egyszerűen végighalad az állapotai életciklusán:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Az összegző ügynök megkapja a címet, az élőben készített nyers jegyzeteit és az
+átiratot, és **strukturált JSON**-t ad vissza. Hogy mely szakaszokat írja meg,
+azt a munkaterület **aktív megbeszélésjegyzet-sablonja** alakítja (Beállítások →
+Munkaterület → Megbeszélések); az aktív sablon az új és az újrafuttatott
+összefoglalókra érvényes. A pipeline mentési lépései ezután ezt a JSON-t
+különálló sorokba írják:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` és `summary` → a megbeszélés jegyzetei
+- minden teendő → egy `MeetingActionItem` sor (tartalom, felelős, opcionális jegylink)
+- minden döntés → egy `MeetingDecision` sor
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+A teendőket és a döntéseket **soha** nem szabad formátumú markdownból bontja ki,
+hanem kizárólag az ügynök strukturált tömbjeiből. Ha egy futtatás nem ad
+strukturált kimenetet, a mentési lépések kimaradnak, és a nyers átirat marad meg
+tartalékként, így soha nem veszíti el a feljegyzést. A pipeline-ban semmi nem
+jelöli `done` állapotúra a megbeszélést — ezt egyetlen reconciler teszi meg a
+futtatás lezáró eseményéből, így egy testvérlépés hibája nem hagyhat félig
+megírt, de már késznek látszó megbeszélést.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Az ügynökök nem olvashatják a megbeszéléseit]
+Nincsenek megbeszélés- vagy naptár-MCP-eszközök. Az
+[MCP-n](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/) keresztül csatlakozó
+ügynök nem tudja listázni a megbeszéléseket, elolvasni egy átiratot, vagy látni
+a teendőket és a döntéseket — ezek az adatok kizárólag RPC-n keresztül jutnak el
+az emberi kliensekhez. A döntések viszont közvetve eljutnak az ügynökökhöz,
+memóriatényként a `decisions` domainben.
 :::
 
-## Where meetings show up
+## Hol jelennek meg a megbeszélések
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Felület                          | Mit mutat                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| `/meetings`                      | A megbeszélések listája, teendő- és döntésszámmal                              |
+| `/meetings/record`               | Az élő felvétel HUD-ja: az egyik oldalon a jegyzetei, a másikon a folyamatosan érkező átirat |
+| `/meetings/:meetingId`           | Egy megbeszélés részletei: Jegyzetek, Átirat, Teendők és Döntések fülek        |
+| Beállítások → Munkaterület → Megbeszélések | Jegyzetsablonok és mentett hangprofilok ehhez a munkaterülethez      |
 
-## Platform support
+## Platformtámogatás
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+A rögzítés mindhárom asztali platformon illesztőprogram nélküli (Core Audio
+tapok macOS-en, WASAPI Windows alatt, PipeWire Linuxon).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**A webes kliens is rögzít**, amit az oldal többi, asztali szemléletű része
+elfedhet: a böngésző a `getUserMedia`-mel veszi át a mikrofont, a megbeszélés
+hangját pedig a `getDisplayMedia`-vel (képernyőmegosztás), 16 kHz-es PCM16-ra
+mintavételezi le, és ugyanarra a gazdagépre streamel. Ott három megkötés
+érvényes:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- A megosztott felületnek **feltétlenül** tartalmaznia kell hangsávot. A Safari,
+  a Firefox és a macOS teljes képernyős megosztása nem ad ilyet, és a felvétel
+  nem indul el.
+- Nincs natív AEC3. A böngésző saját visszhangszűrését kéri a program a
+  mikrofonra; a gazdagépoldali szöveges visszhangszűrő továbbra is fut. A HUD
+  egy, a mikrofon PCM-jéből vezérelt bemenetszint-mérőt mutat.
+- Az összefoglaló újrafuttatása és a feldolgozás leállítása csak asztali gépen
+  érhető el.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+A naptár **Felvétel indítása és összekapcsolás** művelete csak asztali gépen
+érhető el, és a weben ezt egyértelműen jelzi is, pedig a megbeszélések képernyő
+saját rögzítési folyamata ott is működik.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Egy megbeszélés törlése hátrahagyja a hangját]
+Egy megbeszélés törlése csak az adatbázissorait távolítja el. A megtartott,
+csatornánkénti hangkönyvtár (`<dataDir>/meetings/<meetingId>/`) soha nem
+törlődik — nincs rá megőrzési szabályzat, méretkorlát vagy GC-takarítás. A
+lemez felszabadítása kézi munka a szerver gazdagépén.
 :::
 
-## See also
+## Lásd még
 
-- [Calendar and scheduling](/hu-HU/kezikonyv/fogalmak/naptar/): record a meeting straight from a calendar event
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): the engine behind `meeting_summary`
-- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/): link a meeting's action items to tickets
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/)
+- [Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/): megbeszélés rögzítése egyenesen naptáreseményből
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): a `meeting_summary` mögötti motor
+- [Jegyek és delegálás](/hu-HU/kezikonyv/fogalmak/jegyek/): a megbeszélés teendőinek összekapcsolása jegyekkel
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): `MeetingRecordingStopped` és `MeetingStartingSoon`
+- [Megbeszélés rögzítése és összefoglalása](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/)

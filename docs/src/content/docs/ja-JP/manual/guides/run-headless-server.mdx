@@ -1,31 +1,30 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: ヘッドレスサーバーを実行
+description: cc_server のヘッドレスバイナリまたはその Docker イメージを実行し、クライアントをペアリングして、CLI フラグと環境変数の完全なサーフェスで設定します。
 dateModified: 2026-09-10
 slug: ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+常時稼働するマシンで `cc_server` を実行し、デスクトップ、ブラウザー、またはスマートフォンから接続します。サーバーは純粋な Dart のネイティブバイナリで、Flutter
+エンジンを必要としないため、macOS、Linux、Windows 上でヘッドレスに動作します。サーバーがデータベースを所有し、
+エージェントを実行し、すべての外部 API 呼び出しを行います。クライアントは描画するだけです。
 
-## Run in Docker (prebuilt images)
+## Docker で実行する（ビルド済みイメージ）
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+各リリースでは、4 つの GHCR イメージからなるセルフホスト用スタック — バックエンド、
+2 つの静的なシンクライアント、任意のペアリングリレー — と、公開デモホスト用の別個の
+`cc-server-demo` イメージが公開されます。セルフホストでのインストールにソースのチェックアウトは
+不要です。バージョンタグ（`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`）を固定するか、`latest` を使い続けます。
 
-| Image                                             | What it is                                   | Publishes        |
+| イメージ                                             | 内容                                   | 公開ポート        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | バックエンド: データベース、エージェント、MCP、Webhook | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Web クライアント（静的な nginx）                | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | スマートフォンコンパニオン PWA（静的な nginx）       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC ペアリングリレー（任意）          | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+スタック全体を Compose ファイルにしたもの:
 
 ```yaml
 services:
@@ -51,91 +50,91 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+これをループバックの外に公開する前に知っておくべきこと:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server` イメージは `CC_SERVER_INSECURE=1` を同梱しています**（公開ポートの
+  トラフィックを受け取るには `0.0.0.0` にバインドする必要があるためです）。これが安全なのは、
+  信頼できるネットワーク上で TLS を終端するリバースプロキシ — Caddy、Traefik、nginx、Cloudflare Tunnel —
+  の背後に置く場合だけです。代わりにプロセス内で TLS を終端するには、証明書をマウントして
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` を設定します（そのうえで
+  `CC_SERVER_INSECURE` を解除します）。すべては `docker run -e …` または
+  Compose の `environment:` ブロックで上書きできます。
+- **`/data` が唯一の状態です。** SQLite データベース、ペアリング済みデバイスのシークレット、
+  ダウンロードしたモデル、ミーティングの音声はすべてこのボリュームにあります — これを
+  バックアップしておけば、コンテナは使い捨てにできます。
+- **最初の接続の前に、イメージの内部からクライアントをペアリングします** — [ステップ 3](#ステップ-3-初回起動の前にクライアントをペアリングする) の
+  コンテナ版です:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **2 つのクライアントイメージは静的な nginx ホストです** — 実行時に設定するものは
+  何もありません。各クライアントの接続フォームに、サーバー URL、デバイス ID、
+  ペアリングキーを入力します。シグナリングリレーも同様に、必要なのはポートだけです
+  （`SIGNALING_HOST` / `SIGNALING_PORT` は上書き可能）。リレーはステートレスでシークレットを
+  保持せず、あくまで**フォールバック**です — スマートフォンは到達可能な経路（ループバック、LAN、
+  tailnet、直接の `wss://`）があればそれを使い、どれも使えないときにだけリレーに
+  フォールバックします。クライアントが常にサーバーに直接到達できるなら、リレーは省略してください。
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+このガイドの残りでは、サーバーをソースからビルドします。ここで扱うフラグと挙動は、
+イメージの環境変数が渡すものと同じです。
 
-## Prerequisites
+## 前提条件
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart)。このリポジトリは SDK を [fvm](https://fvm.app) で固定しているため、すべてのコマンドの先頭に `fvm` を付けます。
+- このリポジトリをチェックアウト済みであること。
+- ステージングスクリプトが必要とするネイティブツールチェーン — Rust/`cargo`、および `meson`、`ninja`、`pkg-config`、`git` と C++ コンパイラー。各ビルドスクリプトは、見つからないものとそのインストール方法を明示します。
+- 到達可能なホスト: ローカルで使うならループバック、リモートクライアントから使うなら TLS 付きの LAN／公開アドレス。
 
-## Step 1: Stage the native libraries
+## ステップ 1: ネイティブライブラリをステージングする
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+ネイティブは**必須**です — 劣化モードはありません。何よりも先に、リポジトリの
+ルートからビルドします:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+これにより `rift`、`fff`、tree-sitter とその文法、`aec`、`lame`、
+`ccpty`、`cc_watcher`、`cc_inference`、および SAML ネイティブが
+`build/natives/` にビルドされます。`cc_server` のビルド
+フックは、そこでステージングされたものをそのままバンドルに再出力するため、このステップを飛ばすと
+ビルドがそのまま失敗するか、後述の回避手段を使った場合は、起動前チェックで不足している
+ライブラリ名が示されて起動が拒否されるバイナリができあがります。
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[コンパイル専用の回避手段]
+リポジトリのルートに空の `.cc_natives_allow_missing` ファイルを作成すると、
+ネイティブ不足によるビルド失敗が警告に格下げされます。これは新しいクローンの
+構文チェック用であり、この方法でビルドしたサーバーは起動できません。必ず**ファイル**で
+なければなりません — ビルドフックのランナーは呼び出し元の環境を引き継がないため、環境
+変数は無視されます。
 :::
 
-## Step 2: Build the binary
+## ステップ 2: バイナリをビルドする
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+バンドルには `libsqlite3` とステージング済みのネイティブがバイナリと一緒に含まれます —
+システムの SQLite も Flutter エンジンも不要です。実行ファイルは
+`./build/cli/<os_arch>/bundle/bin/cc_server` に生成されます。
 
-## Step 3: Pair a client before first start
+## ステップ 3: 初回起動の前にクライアントをペアリングする
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+新しいデータディレクトリにはペアリング済みデバイスも事前共有キーもないため、クライアントの
+ペアリングキーの入力をまだ満たすことができません。`pair` サブコマンドで発行します。
+これは `global.db` と `secrets.json` を直接書き込みます。すでにそのデータディレクトリを
+提供しているサーバーは、再起動なしで新しいデバイスを認識します:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+クライアントの接続フォームに貼り付ける 3 つの値が出力されます:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +143,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+便利なフラグ: `--device`（既定は `web-client`。この id はデバイス
+階層も決めます — `desktop`、`ios`、`android`、それ以外はすべて Web クライアント）、`--label`
+（既定はプラットフォーム名とこのマシンのホスト名）、`--host`（URL に出力する
+ホスト。ループバックは別のマシンから到達できないためです）、`--client-url`。`pair` を
+再実行すると、そのデバイスのキーがローテーションされ、ライブセッションが切断されます。ペアリングで
+ワークスペースが作成されることはありません。接続したクライアントのオンボーディングで最初の
+ワークスペースに名前を付けて作成します。
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+`--client-url` を付けると、入力済みの Web
+クライアントを開く、ターミナルでスキャン可能な QR も出力されます:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/).
+:::caution[この QR はスマートフォン用の QR ではありません]
+`--client-url` が組み立てるのは **Web クライアント**用のリンクです — サーバー URL、デバイス ID、
+キーが URL のフラグメントに乗ります。**Remote** スマートフォンアプリが期待するペイロードは
+異なり（サーバーの完全な接続記述子と有効期限）、稼働中のクライアントの
+**設定 → 自分 → 自分のデバイス**から発行されます。両者に互換性はありません。
+[デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)を参照してください。
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+`cc_server pair` で発行された資格情報には**有効期限がありません**。アプリで発行されたものは
+常に 30 日で失効します。CLI で発行したデバイスは、使い終わったら
+**設定 → 自分 → 自分のデバイス**から取り消してください。
 
-## Step 4: Start the server
+## ステップ 4: サーバーを起動する
 
-On loopback — the default and all you need for a client on the same machine:
+ループバックの場合 — 既定であり、同じマシン上のクライアントにはこれだけで十分です:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+別のマシンから到達させたい場合は、すべてのインターフェースにバインドします。TLS なしの
+非ループバックバインドは**起動時に拒否される**ため（`Refusing to bind non-loopback address …
+without TLS`）、証明書を指定します:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +189,41 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+または、信頼できるプライベートネットワーク上のリバースプロキシで TLS を終端し、
+その背後で平文バインドを有効にします:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--tls-cert` と `--tls-key` の両方が設定されている場合、`--insecure` は無視されます — TLS
+が常に優先されます。サーバーは平文状態を `GET /healthz` で `insecure: true` として通知し、
+クライアントはそのような接続に安全でないことを示すバッジを付けます。
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+サーバーは `SIGINT`/`SIGTERM` まで動作し続け、その後クリーンにシャットダウンします。
 
-## Step 5: Connect a client
+## ステップ 5: クライアントを接続する
 
-Point a client at the server URL and pairing key from step 3:
+クライアントを、ステップ 3 のサーバー URL とペアリングキーに向けます:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/).
+- **デスクトップアプリ**: 初回起動画面（**Control Centerをどのように実行しますか？**）で、**このアプリで実行**ではなく接続用のフィールドに入力します。あるいは後から**設定 → サーバー → 接続とステータス**でサーバーを追加します。[リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/)を参照してください。
+- **Web クライアント**: [app.usectrl.dev](https://app.usectrl.dev)（または自分でホストしている Web ビルドのコピー）を開き、サーバー URL、デバイス ID、ペアリングキーを入力します。
+- **スマートフォン**: 稼働中のクライアントから **Remote** アプリをペアリングします — [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)を参照してください。
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server は Web バンドルを提供しません]
+スタンドアロンの `cc_server` は Web ルートをマウントしないため、`GET /` は 404 を返します。Web
+クライアントは別にホストされます — `app.usectrl.dev` を使うか、HTTPS を備えた任意の静的
+ホストで Web ビルドを自分でホストしてください（前述の `cc-webapp` イメージが
+まさにそれです）。ループバック以外のブラウザーオリジンは
+`--allowed-origins` に含まれていないと `/rpc` への WebSocket アップグレードが拒否されます。既定の
+リストは `https://app.usectrl.dev` で、`localhost` / `127.0.0.1` は常に
+許可されます。
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## ステップ 6: Google Calendar を接続する（任意）
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+GUI を伴わずにワークスペースのカレンダーを同期するには、デバイスコードフローを使います:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +231,65 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/).
+別のデバイスで承認するためのコードと URL が出力され、リフレッシュトークンはサーバー側に
+保存されて終了します。ソースからのビルドには Google クライアントが同梱されないため、id と
+secret の環境変数が必須です — `--google-client-id`
+というフラグはありません。[Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)を参照してください。
 
-## Configuration
+## 設定
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/ja-JP/マニュアル/リファレンス/cc-server-cli/).
+これまでに使ったフラグは、最初のセットアップに必要なものです。完全なサーフェス — 23
+組のフラグと環境変数、4 つのサブコマンド、データディレクトリの
+レイアウト — は [`cc_server` CLI リファレンス](/ja-JP/マニュアル/リファレンス/cc-server-cli/)にあります。
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[不明なフラグは黙って無視されます]
+引数パーサーは自作で、認識しないものはすべて読み飛ばすため、
+タイプミス（`--tls-key-file`、`--bindany`）でもエラーにはなりません — サーバーは既定値のまま起動
+するだけです。フラグが効いていないように見えるときは、起動時のログ行を確認してください。
 :::
 
-The four you are most likely to need:
+もっとも必要になる可能性が高い 4 つ:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| フラグ           | 既定値                              | 意味                                                                                          |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | OS のユーザーごとのアプリケーションデータディレクトリ | データベース、シークレット、モデル、キャッシュされたメディア                                                      |
+| `--port`       | `9030`                               | TCP ポート（`0` = エフェメラル）                                                                       |
+| `--bind`       | `loopback`                           | `loopback`、または全インターフェースなら `any`（TLS または `--insecure` が必要）                             |
+| `--public-url` | バインドから導出                | ペアリング済みクライアントに通知される RPC URL。**プロキシ、NAT、トンネルの背後では明示的に設定してください** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+既定のデータディレクトリは、macOS では `~/Library/Application Support/control-center`、
+Windows では `%APPDATA%\control-center`、それ以外では `$XDG_DATA_HOME/control-center`（なければ
+`~/.local/share/control-center`）です。カレントディレクトリ相対の `.cc_server` が使われるのは、
+ホームディレクトリもアプリデータディレクトリも解決できない場合だけです。
 
-## What the server serves
+## サーバーが提供するもの
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` は製品サーフェスの一部ではなく、その全体です。リポジトリ RPC のデータ経路
+とサブスクリプション、同じポート上の `POST /mcp` と `GET /sse` にある MCP ツール
+エンドポイント、受信 Webhook、メディアとフォントのプロキシ、シングルサインオン
+のコールバック、フリートリースプロトコル、30 分間隔のサーバー側 RSS 取得、そして
+ベクター検索（`sqlite_vector` 拡張は
+プロセス全体の自動拡張として登録され、拡張が利用できない場合にのみ
+全文検索にフォールバックします）です。
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+ディスパッチャーは**ステートレス**です。セッションごとのワークスペースの紐づけは
+ありません。ワークスペースを対象とするすべての呼び出しが自身の `workspace_id` を持ち、アクセスは
+呼び出し元のワークスペースのメンバーシップとロールによって決まります — ペアリングキーを
+保持しているかどうかでは決まりません。
 
-Two things to know before you expose the port beyond loopback:
+ポートをループバックの外に公開する前に知っておくべき 2 つのこと:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP はホスト外でフェイルクローズします。** トークンのない MCP サーフェスはループバックにしか応答しません。`any` にバインドしてもこの範囲は広がりません — トークンを設定するまで（`mcp.setToken`、または **設定 → サーバー → MCP サーバー**）、ホスト外のリクエストは "MCP requires a bearer token to answer non-loopback clients" で拒否されます。
+- **`GET /healthz` は設計上認証を必要としません。** ワイルドカード CORS を備え、サーバーの ID、名前、アイデンティティフィンガープリント、ビルドバージョンを公開します。クライアントはサーバーをピン留めするためにフィンガープリントを必要とするため、これは意図的なものです — ただし、到達可能な `cc_server` は誰に対してもそれだけの情報を開示するという意味でもあります。
 
-## Related guides
+## 関連ガイド
 
-- [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/)
-- [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)
-- [Run a fleet worker](/ja-JP/マニュアル/ハウツーガイド/フリートワーカー実行/)
-- [Connect a Google Calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
+- [リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/)
+- [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)
+- [フリートワーカーを実行](/ja-JP/マニュアル/ハウツーガイド/フリートワーカー実行/)
+- [Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/)
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/)
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)

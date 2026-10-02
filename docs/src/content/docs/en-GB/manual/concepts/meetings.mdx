@@ -1,10 +1,11 @@
 ---
 title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+description: How Control Center records a call, transcribes and diarises it on the server, and which single step leaves the host.
 slug: en-GB/manual/concepts/meetings
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
+Control Center can record a call and hand you back a clean write-up — a summary,
 action items and decisions — with speech recognition and speaker separation
 running on your own hardware. Think Granola, but self-hosted and wired into the
 same workspace your agents live in.
@@ -36,7 +37,7 @@ Meetings recorded in one workspace never surface in another.
 and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
 host does everything else: it writes the per-channel WAVs under
 `<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
+echo and diarises after the fact. On a standalone desktop that host is the same
 machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
 is only true when the server is your laptop.
 
@@ -44,18 +45,18 @@ There is one further exception and it is the important one.
 
 :::caution[The summary leaves the host]
 The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
+summarising agent is configured against. For any cloud provider that means the
 full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
+host, point the summarising agent at a local endpoint (Ollama, LM Studio, or
 another local server).
 :::
 
 Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+diarisation, voiceprint matching — runs on the server with no network call.
 
 ## Which models ship
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
+The **embedding, diarisation and speech (ASR)** models are force-installed on
 first boot (skipped on a demo), so speaker separation and recording exist
 without a settings visit. ASR is still **selectable** — it is several hundred
 megabytes, and four builds ship in the picker. Speech still needs one restart
@@ -69,7 +70,7 @@ The four picker entries, differing in size, language coverage and accuracy:
 - Whisper large-v3-turbo — multilingual (~626 MB)
 - Whisper base.en — English-only, the small historical default (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
+Models are the only artefacts the server fetches at runtime; every native
 library ships in the bundle.
 
 ## How capture works
@@ -98,7 +99,7 @@ platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
 Processing I/O, which in this build killed both the mic _and_ the system-audio
 tap.
 
-## Transcription and diarization
+## Transcription and diarisation
 
 While you record, audio is decoded in **rolling windows** — cut on a short
 trailing silence, or at a maximum window length — off the UI thread. Each window
@@ -110,25 +111,25 @@ non-speech tokens and the decode is wasted CPU. The practical consequence: a
 consistently very quiet speaker produces no transcript. If someone comes back
 empty, check their input level before blaming the model.
 
-After you stop, **diarization** runs offline over the recording and splits the
+After you stop, **diarisation** runs offline over the recording and splits the
 remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
 rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
+a count you set — so it is a threshold artefact and a quiet or overlapping
 speaker can be merged into a neighbour. The transcript is rendered as
 `[mm:ss] SPEAKER: text` lines.
 
 ## Voice profiles
 
 Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
+the speaker's voiceprint as a **voice profile**, so it recognises them
+automatically in future meetings. When you name a diarised speaker, you're asked
 whether to save the voiceprint; if you do, it's blended into a running centroid
 for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+person shows up with their name next time without you relabelling them.
 
 Voice profiles are workspace-scoped and never cross the boundary. Manage them
 at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
+saved un-enrols the old name and offers to enrol the new one; deleting a
 profile removes the stored voiceprint but leaves any names already applied to
 past meetings intact.
 
@@ -210,4 +211,4 @@ manual job on the server host.
 - [Pipelines and automation](/en-GB/manual/concepts/pipelines/): the engine behind `meeting_summary`
 - [Tickets and delegation](/en-GB/manual/concepts/tickets/): link a meeting's action items to tickets
 - [Domain events](/en-GB/manual/concepts/domain-events/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/en-GB/manual/guides/record-meeting/)
+- [Record and summarise a meeting](/en-GB/manual/guides/record-meeting/)

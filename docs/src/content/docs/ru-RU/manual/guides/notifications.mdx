@@ -1,149 +1,161 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Настроить уведомления
+description: Включайте и отключайте категории, задавайте тихие часы и звук и узнавайте, какие уведомления доходят до вас и куда.
 slug: ru-RU/руководство/практические-руководства/уведомления
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+В этом руководстве описано, как настраивать уведомления и что на самом деле
+контролирует каждая настройка.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Уведомления приходят на две поверхности. **Центр уведомлений** — колокольчик в
+строке заголовка — читает постоянную ленту уведомлений для каждого рабочего
+пространства на сервере. **Тосты ОС** — отдельный путь, доступный только на
+десктопе; их питают живые кадры, которые присылает сервер.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[В веб-сборке уведомления ОС не показываются]
+Конвейер тостов создаёт только загрузчик десктопного приложения. На
+`app.usectrl.dev` нет ни тостов ОС, ни звуков уведомлений, ни фоновых баннеров —
+колокольчик и его история по-прежнему работают, потому что читают серверную
+ленту. У телефонного клиента поверхности уведомлений нет вообще.
 :::
 
-## Turn categories on or off
+## Включение и отключение категорий
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Откройте **Настройки → Вы → Уведомления**
+2. Оставьте **Включить уведомления** включённым
+3. Включите нужные категории. Всего их ровно шестнадцать:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Категория                       | Срабатывает, когда                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| Агент завершил работу           | Агент завершил запуск                                                               |
+| PR опубликован                  | Агент опубликовал PR                                                                |
+| PR объединён                    | PR был объединён                                                                    |
+| Новые сообщения                 | Сообщение пришло в пространство, которое вы сейчас не смотрите                      |
+| Упоминание в pull request       | Опрос уведомлений GitHub увидел, что вас упомянули в PR                             |
+| Запрошено ревью                 | Ревью действительно запросили для PR, который не является черновиком                |
+| Ревью устарело                  | В pull request, который вы уже проверили, появились новые коммиты                   |
+| Готово к слиянию                | Pull request, автором которого вы являетесь, стал готов к слиянию или перестал быть |
+| Решения по ревью                | Ревьюер одобрил, запросил изменения или его одобрение было отменено                 |
+| Проверки                       | CI упал на pull request, автором которого вы являетесь, или восстановился            |
+| Ветки обсуждения                | Кто-то ответил в ветке обсуждения, где вы участвуете, или закрыл её                 |
+| Тикет назначен                  | Тикет был назначен                                                                  |
+| Статус тикета изменён           | Тикет сменил статус                                                                 |
+| Встреча скоро начнётся          | Календарная встреча попала в ваше окно опережения                                   |
+| Календарь отключён              | Истёк OAuth-токен подключённого календаря                                           |
+| Обновления стенда               | Стенд был перехвачен, возвращён или вышел из строя                                  |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Всё, что не входит в этот список, нельзя ни уведомить, ни отфильтровать —
+категории «всё остальное» не существует.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Эти настройки следуют за вашим пользователем на всех устройствах, поэтому
+телефон и ноутбук остаются синхронными. Громкость — намеренное исключение: она
+задаётся отдельно для каждого устройства.
 
-## Set quiet hours
+## Настроить тихие часы
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. На той же странице включите **Quiet hours**
+2. Введите время начала и окончания в формате `HH:MM` (по умолчанию окно
+   22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+В тихие часы несрочные уведомления отбрасываются — они не ставятся в очередь и
+не воспроизводятся позже.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Две категории считаются **срочными** и доставляются всегда, обходя тихие часы _и_
+режим фокуса: **Встреча скоро начнётся** и **PR опубликован**. Предупреждение о
+встрече, которое вы увидите только после неё, бесполезно — именно поэтому.
 
-## Choose a sound
+## Выбрать звук
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Прокрутите до **Звук уведомления**
+2. Выберите один из одиннадцати встроенных звуков или **Нет**
+3. Нажмите кнопку **Тест**, чтобы услышать звук, и задайте громкость ползунком
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Звук воспроизводит само приложение, а уведомление ОС приходит без звука, чтобы
+вы не услышали его дважды.
 
-## Set the meeting lead time
+## Настроить время предупреждения о встречах
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Прокрутите до **За сколько предупреждать**
+2. Выберите **5**, **10**, **15** или **30** минут
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Столько времени проходит до события календаря, когда срабатывает уведомление
+**Встреча скоро начнётся**. По умолчанию — 5 минут.
 
-## Know when a notification is suppressed
+## Когда уведомление подавляется
 
-A notification is dropped, silently, when any of these is true:
+Уведомление молча отбрасывается, если верно хотя бы одно из условий:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Уведомления отключены глобально или отключена его категория
+- Вы уже находитесь на маршруте, куда оно вас привело бы, — а для сообщения ещё
+  и в том самом пространстве
+- Активен режим фокуса, а категория не срочная
+- Включены тихие часы, а категория не срочная
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Эти проверки касаются тостов ОС. Постоянный колокольчик всё равно фиксирует
+событие.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Ещё два механизма подавления работают выше по потоку — в том, что сервер вообще
+отправляет:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Сообщение от другого **человека** без упоминания вас никогда не становится
+  уведомлением
+- Пространства «агент — агент» заглушены в боковой панели, поэтому они никогда
+  не увеличивают счётчик непрочитанного у людей
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Внутри пространства тихого уголка нет: каждый разговор уведомляет одинаково,
+включая ветки обсуждения. Состояние прочтения привязано к пространству, поэтому
+непрочитанное суммируется по всем разговорам пространства, а не отслеживается
+отдельно по каждому разговору.
 
-## Read and clear the notification centre
+## Просмотр и очистка центра уведомлений
 
-1. Click the bell in the title bar
+1. Нажмите на колокольчик в строке заголовка
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Всплывающее окно показывает недавнюю активность, снабжая каждую запись прямой
+ссылкой на то, о чём она. Открытие окна **не** помечает всё прочитанным —
+используйте **Отметить все как прочитанные** в заголовке или отметьте отдельную
+строку. Состояние прочтения следует за вашим пользователем на всех устройствах.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[«Очистить всё» — это водяной знак, а не удаление]
+**Очистить всё** ставит пользовательский водяной знак, который скрывает всё
+более старое; сами строки остаются. Отдельно от этого каждое рабочее
+пространство хранит только **200** последних строк ленты, которые вытесняются по
+мере поступления новых, колокольчик подписан на **50** самых свежих, а
+всплывающее окно показывает до **15** из них. Всё, что старше, исчезает
+независимо от состояния прочтения.
 :::
 
-## Troubleshooting
+## Решение проблем
 
-### No OS notifications on macOS
+### Нет уведомлений ОС в macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Разрешение запрашивается нативно при запуске приложения. Если вы его отклонили,
+снова включите Control Center в разделе «Системные настройки → Уведомления»;
+внутри приложения нет запроса, который запустил бы его повторно.
 
-### Nothing arrives on the web build
+### В веб-сборке ничего не приходит
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Так и задумано: в веб-сборке нет конвейера уведомлений ОС. Пользуйтесь
+колокольчиком.
 
-### The bell badge shows zero but there is clearly new activity
+### Бейдж колокольчика показывает ноль, хотя новая активность явно есть
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Пока после подключения не разрешится поток отметок о прочтении, записи
+отображаются как прочитанные, чтобы бейдж не мигал и не пустел. Как только
+отметка загрузится, всё придёт в норму.
 
-### An agent's run finished but nothing pinged me
+### Запуск агента завершился, но мне ничего не пришло
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Проверьте, не находились ли вы уже в пространстве, где это произошло: активный
+маршрут подавляет собственный тост ОС.
 
-## Related guides
+## Связанные руководства
 
-- [Use focus mode and soundscapes](/ru-RU/руководство/практические-руководства/режим-фокуса/)
-- [Triage your inbox](/ru-RU/руководство/практические-руководства/разобрать-входящие/)
-- [Curate your newsfeed](/ru-RU/руководство/практические-руководства/лента-новостей/)
+- [Использовать режим фокуса и звуковые пейзажи](/ru-RU/руководство/практические-руководства/режим-фокуса/)
+- [Разобрать входящие](/ru-RU/руководство/практические-руководства/разобрать-входящие/)
+- [Настроить ленту новостей](/ru-RU/руководство/практические-руководства/лента-новостей/)
 
-## Related concepts
+## Связанные понятия
 
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/)
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/)

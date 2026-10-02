@@ -1,267 +1,277 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Sandbox ve güvenlik
+description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
+`cc_server` önyükleme sırasında ana makineyi yoklar ve kullanılabilir olduğunda
+ajan komut yürütmesini işletim sistemi yerel sandbox'ına sarar — macOS'ta
+Seatbelt, Linux ve WSL2'de bubblewrap (`PATH` üzerinde `bwrap` ve `socat`
+gerektirir). Arka uç bulunmayan yerlerde — Windows ya da bu araçlardan yoksun
+bir Linux makinesi — çalıştırmalar aşağıdaki diğer sınırlara geri düşer ve
+sunucu bunu başlangıç günlüğünde söyler.
+`--sandbox off` bunu bilerek kapatır.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Sandbox'tan sağ çıkan iki boşluk vardır ve bunları akılda tutmakta fayda var:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- Yerleşik harness'ın **süreç içi dosya araçları** (`read`, `write`, `edit`,
+  `apply_patch`, `search`, `find`, `search_files`) sunucu süreci içinde
+  çalışır, dolayısıyla yalnızca `bash` sarılır. Bunları sınırlayan şey,
+  araçların kendi içindeki yol hapsi ve buna eklenen eylem korumalarıdır.
+- **Claude Code `--dangerously-skip-permissions` ile başlatılır**, çünkü
+  etkileşimsiz bir `claude -p` aksi hâlde kendi isteminde sonsuza dek
+  bloklanır. Dolayısıyla dosya ve kabuk çağrıları Control Center'ın
+  korumalarının kapısından geçmez — etraflarındaki sınır işletim sistemi
+  sandbox'ıdır.
   :::
 
-## Why isolation matters here
+## Yalıtım burada neden önemli
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Bir ajan sizin adınıza dosyalar okur, kabuk komutları çalıştırır ve harici
+API'ler çağırır. Önemsediğiniz arıza nadiren kötü niyettir — bir yol adresini
+yanlış okuyup çalışma kopyanızı baştan yazan ya da incelemesini bitirmediğiniz
+bir dalı push eden bir ajandır. Dolayısıyla ürünün yanıtlaması gereken soru
+"ajan güvenilir mi" değil, "yanıldığında hasar yarıçapı nedir" sorusudur.
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center bunu katmanlarla yanıtlar ve katmanlar bilerek bağımsızdır. Biri
+eksikse diğerleri yine de geçerli kalır. Bu önemlidir, çünkü en dış katman —
+işletim sistemi sandbox'ı — tek koşullu olanıdır: ana makinenin bir arka uç
+sunmasına bağlıdır ve Windows'ta hiçbir ana makine sunmaz.
 
-## What actually constrains an agent
+## Bir ajanı gerçekte ne kısıtlıyor
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Sandbox olsun ya da olmasın, her ana makinede bir ajan çalıştırmasını beş şey
+sınırlar. Hiçbiri bir çekirdek sınırı değildir; hepsi gerçektir. Ana makine bir
+arka uç sunduğunda işletim sistemi sandbox'ı bunların üzerinde oturur ve
+aşağıdaki "Sandbox neyi ekler ve nerede durur" bölümü bunun neyi değiştirdiğini
+ele alır.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Kendi copy-on-write çalışma ağacı.** Her konuşma, bağlı her deponun kendi
+çalışma kopyasını hazırlar; bayt bayt kopyalanmak yerine paketlenmiş `rift`
+yerel bileşeni üzerinden copy-on-write ile klonlanır, böylece yalıtım varsayılan
+olacak kadar ucuzdur. Çalışma alanına eklediğiniz kayıtlı depo, ajanın içinde
+çalıştığı dizin değildir — aynı depoya dokunan iki konuşma birbirinin
+düzenlemelerini göremez ve ikisi de sizin kopyanızı düzenlemez.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Buradaki ayrıntı düzeyinde kesin olmakta fayda var: **çalışma ağacı ajan başına
+değil, konuşma başınadır.** Aynı konuşmadaki iki ajan, o konuşmanın `repos/`
+dizinini _paylaşan_ ayrı overlay çalışma dizinleri alır — tek bir değişiklik
+üzerinde birlikte çalıştıkları için mesele de budur — kendi özel ajan dizinleri
+ise ayrı kalır. `rift`in bulunduğu her yerde copy-on-write tek arka uçtur:
+reflink yapamayan bir dosya sistemi ya da depodan farklı bir birimde duran bir
+veri dizini, geri düşmek yerine hazırlamayı başarısız kılar. Windows
+istisnadır — orada copy-on-write arka ucu yoktur, dolayısıyla arka uç
+`git worktree`dir, sessiz bir bozulma değil.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Yerleşik harness'ın dosya araçlarında yol hapsi.** Harness'ın `read`,
+`write`, `edit`, `apply_patch`, `search`, `find` ve `search_files` araçları her
+yolu, çalıştırmanın çalışma dizinine artı paylaşılan köklere göre çözer —
+konuşmanın `repos/` dizini, yani çalışma ağaçlarının yaşadığı yer ve varsa
+alanın ekler dizini — ve dışarıya düşen her şeyi reddeder. Mutlak yollar
+yalnızca zaten içerideyse kabul edilir. Çalışma ağacının içinden dışarıyı
+işaret eden bir sembolik bağ da çözülür ve reddedilir. Bir ajanın, ortada
+sandbox yokken bile `~/.ssh` dizinine `write` yapamamasının nedeni budur.
 
-**The mode's tool surface.** A conversation's [mode](/tr-TR/kilavuz/kavramlar/modlar/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Modun araç yüzeyi.** Bir konuşmanın [modu](/tr-TR/kilavuz/kavramlar/modlar/)
+çalıştırma için hangi araçların somutlaştırılacağına karar verir. Salt okunur
+modlarda (`plan`, `review`, `orchestrate`) değiştirici araçlar kayıt defterinde
+hiç bulunmaz ve bu modların kabuk komutu politikası, her değiştirici komutu
+istemek yerine doğrudan reddeder — `git commit`, `git push`, `npm install`,
+`docker` ve geri kalanını. Var olmayan bir araç çağrılamaz; bu, var olan ama
+kapıya tabi tutulan bir araçtan daha güçlü bir güvencedir.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/) for the resolution model.
+**Birleşik eylem korumaları.** Her değiştirici araç üretebileceği etki
+sınıflarını bildirir ve politika motoru, çağrı çalışmadan önce her birini izin
+ver, sor veya reddet biçiminde çözer. Bağlı bir onaylayan yokken bir `prompt`,
+_reddedildi_ olarak çözülür — kimsenin yanıtlayamadığı bir soru asla evet
+değildir. Çözümleme modeli için
+[Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) sayfasına bakın.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Yetenekle kapılanan kimlik bilgileri ve arındırılmış bir ortam.** Kimlik
+bilgileri, konuşmanın yetenek bayraklarından her başlatmada üretilir ve
+çalıştırma bittiğinde iptal edilir. ACP, harness `bash` ve yerel sarmalama
+altındaki Claude Code, süreç başlamadan önce dinamik bağlayıcı ve yorumlayıcı
+enjeksiyon vektörlerinden (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`,
+`NODE_OPTIONS`, `GIT_SSH_COMMAND` ve benzerlerinden) arındırılmış bir ortam
+alır. `NoSandboxAdapter` üzerinden Claude Code ise ana makinenin ortamını
+devralır.
 
-### Where those bounds thin out
+### Bu sınırların seyreldiği yerler
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Harness'ın dosya araçları bir alt süreçte değil, _sunucu süreci içinde_ çalışır;
+dolayısıyla bir sandbox profili bağlansa bile onları kısıtlayamazdı — sandbox'lı
+komut çalıştırıcısından yalnızca `bash` geçer. Bunların hapsi yukarıda anlatılan
+yol denetimidir ve bu nedenle o denetim, ikinci bir savunma hattı değil, yük
+taşıyan bir unsurdur.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+Kesin olunması gereken diğer yer `bash` aracıdır. Komutları modun komut
+politikasına göre değerlendirilir, ardından arındırılmış bir ortamla ve çalışma
+dizini olarak çalışma ağacıyla başlatılır. Bir arka uç varsa bu başlatma
+sarılır, dolayısıyla bir kabuk komutunun çalışma ağacının dışına yazmasını
+engelleyen şey sandbox'tır; yoksa — Windows ya da `bwrap` ve `socat` bulunmayan
+Linux — komut ile diskin geri kalanı arasındaki tek şey komut politikasıdır.
+`chat` modunda politika sabit bir listeyi kesin olarak reddeder (ayrıcalık
+yükseltme, sistem ve disk imhası, konteyner ve ad alanı kaçışı) ve uzak durum
+mutasyonlarında (`git push`, `gh pr create`, paket yayımlama ve kurma) istemde
+bulunur. İki listenin hiçbirinde olmayan her şey çalışır. Pipeline'lar, zincirler
+ve alt kabuklar ayrıştırılır ve her alt komut ayrı ayrı değerlendirilir; en
+kısıtlayıcı karar kazanır.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/tr-TR/kilavuz/kavramlar/korumalar/#the-adapter-honesty-matrix).
+Bir adaptör olarak kullanıldığında Claude Code, sandbox'ın en çok ağırlık
+taşıdığı durumdur. Control Center onu `--dangerously-skip-permissions` ile
+başlatır, çünkü etkileşimsiz bir `claude -p` aksi hâlde kendi onay isteminde
+sonsuza dek bloklanır. Okuma, yazma, düzenleme ve kabuk çağrıları kendi süreci
+içinde gerçekleşir ve Control Center onları asla görmez; bir kapıya ulaşan tek
+çağrıları, Control Center'ın kendisinin sunduğu `mcp__*` araçlarıdır. Bir arka
+uç varsa bu görünmeyen çağrılar yine de sandbox sarmalamasının içinde
+gerçekleşir, dolayısıyla etraflarındaki sınırı işletim sistemi oluşturur.
+Yoksa hiçbir şey oluşturmaz. Her adaptör bunu kendi uygulama matrisinde belirtir
+— bkz. [adaptör dürüstlük
+matrisi](/tr-TR/kilavuz/kavramlar/korumalar/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Yetenek kapılaması yoklukla uygulamadır
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Bir konuşma dört yetenek bayrağı taşır: depoya push, GitHub API'sini çağırma,
+biletleme sağlayıcısını çağırma ve ağa erişim. Bunlar ajan işlem yaptığında
+denetlenmez. Bir kez, başlatma sırasında, kimlik bilgisi broker'ı tarafından
+denetlenir — kapalı bir yetenek, eşleşen token'ın ortama hiç konmaması anlamına
+gelir.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Mekanizmanın tamamı budur ve bunu açıkça söylemekte fayda var, çünkü arıza
+biçimi insanların beklediği gibi değildir. "GitHub API"yi kapatmak bir "yetenek
+reddedildi" iletisi üretmez. Ajanın içinde sıradan bir `401` üretir, çünkü
+gönderilecek bir `GH_TOKEN` yoktur. Ajan bunu pekâlâ bir kimlik bilgisi sorunu
+olarak anlatabilir. Yoklukla uygulama sağlamdır — atlanacak bir denetim yoktur —
+ama sessizdir ve ajan neden başarısız olduğunu bilmez.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Ağ bayrağı da aynı şekilde davranır. Kapalıyken harness'ın `web_fetch` ve
+`web_search` araçları her çağrıyı reddeder ve sandbox'lı bir başlatmanın proxy
+izin listesi boştur, dolayısıyla her giden bağlantı reddedilir.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Çalıştırma yıkıldığında kimlik bilgileri iptal edilir, böylece bir tutamaç onu
+üreten çalıştırmadan daha uzun yaşamaz.
 
-## What the sandbox adds and where it stops
+## Sandbox neyi ekler ve nerede durur
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+`SandboxBackend` enum'unun üç değeri vardır — `native` (macOS'ta Seatbelt, Linux
+ve WSL2'de bubblewrap), `none` ve `microvm`. Ajan komutu sarmalama yalnızca ilk
+ikisini kullanır: `microvm`, etkileşimli terminaller ve rig'ler için kapalı-VM
+arka ucudur; bir `bash` sarmalamasının sessiz yükseltmesi değildir. Yerel biçimi
+anlamak, bir arka ucun bağlı olduğu yerde ne kazandığınızı ve size asla
+vermeyeceği şeyin ne olduğunu açıklar.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` ana makineyi önyüklemede bir kez yoklar ve bir arka uç yanıt verdiği
+yerde, gönderim yolunda bulunan iki ek noktasının ikisini de besler, çünkü
+taşıyıcılar tek bir noktayı paylaşmaz. Birincisi (`SandboxPort`) Claude Code
+CLI'sını sarar. İkincisi (`SandboxManager`) ACP adaptörlerini ve yerleşik
+harness'ın `bash` aracını sarar. Yalnızca birini beslemek, diğerlerinin
+sarılmadan başlatılmasına yol açardı; eskiden olan da buydu. Arka ucu olmayan
+bir ana makinede ya da `--sandbox off` altında hepsi sarılmadan başlatılır ve
+sunucu başlangıç satırında hangi durumda olduğunuzu söyler. ACP ve harness
+`bash` yine de ortamı arındırır; `NoSandboxAdapter` üzerinden Claude Code ise
+ana makinenin ortamını devralır.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Bir yüzey bilerek bunun dışında kalır: sunucuda barındırılan terminal, oturum
+başına bir arka uç argümanı kabul eder ve `cc_server` onu ana makine kabuğunu
+varsayılan alacak şekilde kurar; dolayısıyla uygulamadan açtığınız bir terminal,
+bir istemci açıkça `native` adını vermedikçe sandbox'sız çalışır. Bu, sunucu ana
+makinesindeki gerçek bir kabuktur, bir ajan çalıştırması değildir.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Linux'ta `bubblewrap` bir mount ad alanı kurar, böylece ajan gerçekten yalnızca
+içine bağlanmış olanı görür. macOS'ta `sandbox-exec`, **varsayılan olarak izin veren**
+bir Seatbelt profili uygular — tamamen varsayılan olarak reddeden bir
+profil, etkileşimli bir kabuğu kullanılamaz hâle getirir, çünkü
+numaralandırılacak dyld, XPC ve Mach çağrısı sayısı pratik değildir. Bu nedenle
+macOS profili `(allow default)` ile başlar ve retler oyar: gizli yolların
+okunması, üzerine açık izinler eklenmiş şekilde redde sıfırlanan bir yazma
+politikası, bir yeniden adlandırmanın yazma-reddini atlayamaması için reddedilen
+her yol ve üstünde unlink engelleme, her zaman tehlikeli ikililer ve yazılabilir
+bir dizine kopyalanan her şey için exec retleri ve loopback proxy portlarına
+artı DNS'ye kısıtlanan ağ.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Pratik sonuç: Linux'ta ajanın dosya sistemine bakışı daraltılır; macOS'ta ajan
+ana makinenin çoğunu hâlâ _okuyabilir_ ve kayıtlı kopyalarınız görünmezlikle
+değil, açık yazma ve yeniden adlandırma retleriyle korunur. Her ikisi de ad
+alanı düzeyinde yalıtımdır, bir çekirdek güvenlik sınırı değildir — arka uçlar
+bunu kendi yetenek notlarında söyler.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Ajanlar arası sınırın çizildiği yer bind-mount kümesidir. Overlay gönderimi
+(Claude Code ve ACP) çalıştırma başına çözülen en fazla dört yolu bağlar:
+ajanın overlay çalışma dizini okuma-yazma, ajanın yapılandırma dizini salt
+okunur, konuşmanın paylaşılan `repos/` dizini varsa okuma-yazma ve alanın ekler
+dizini varsa salt okunur. Kardeş bir ajanın dizini asla bağlanmaz. Harness
+`bash` sarmalaması daha dardır: yalnızca çalıştırmanın çalışma dizinini
+bind-mount eder. Bu, harness'ın süreç içi yol denetiminin yazılımda uyguladığı
+biçimin aynısıdır, dolayısıyla ikisi uyuşur — ancak mount ad alanına hiç
+ulaşmayan harness'ın kendi dosya araçlarını yalnızca yol denetimi kapsar.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Kayıtlı kopyalarınız bunun üzerine yazma-reddi kümesine katılır; her modda ve
+sarılan üç yolun üçünde de (Claude Code, ACP, harness `bash`) ve her kural hem
+düz hem de sembolik bağdan çözülmüş yazımıyla yayımlanır. İkinci yazım bir
+incelik değildir:
+çekirdek, bir ret kuralını
+çözülmüş yola göre eşleştirir ve macOS, çözümlemeyi sıra dışı olan değil olağan
+durum hâline getirir — `/tmp` aslında `/private/tmp`dir, `/var/folders/…`
+aslında `/private/var/folders/…`dir — dolayısıyla ikisinden biri üzerinden
+erişilen bir kopya, profil onu yasaklıyor görünürken yazılabilir olurdu.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Bir sandbox altında ağ, süreç içi loopback proxy'leri tarafından uygulanan oturum
+başına bir **alan adı** izin listesidir. Çıkış varsayılan olarak reddedilir: ağ
+yeteneği kapalıyken proxy'ler yine başlar ama izin listeleri boştur, dolayısıyla
+her giden bağlantı reddedilir. Açıkken çözümleyici izin listesini özenle
+seçilmiş bir temelden — LLM API sağlayıcıları, git barındırma, paket kayıt
+defterleri, model kataloğu — artı bir ajanın GitHub veya push yeteneğinin ona
+kazandırdığı GitHub alan adlarından kurar ve her bağlantının hedef ana
+makinesini bununla eşleştirir. Joker karakterler çalışır (`*.example.com` alt
+alan adlarıyla eşleşir, kök alanla değil). Ayrı ve her zaman reddedilen bir
+liste, izin listesini yener ve bulut meta veri uç noktaları ile telemetri
+hedeflerini kapsar. _Yapılandırılamayan_ şey listenin kendisidir: belirtim, ek
+alan adları için bir `egressAllowlist` alanı ve bir biletleme alan adı kancası
+taşır, ama gönderim yolunda hiçbir şey ikisini de doldurmaz; dolayısıyla
+pratikte her çalıştırma temeli artı yeteneğinden türeyen alan adlarını alır,
+fazlasını değil.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+macOS'ta retler gözlemlenebilir: bir monitör, Sandbox retleri için sistem
+günlüğünü dinler, bilinen gürültüyü süzer, yeniden deneme fırtınalarını
+tekilleştirir ve her birini, neyin denendiğini ve hangi yeteneğin bunu açacağını
+adlandıran bir `SandboxViolation` olarak ortaya çıkarır. Linux'ta sarmalama
+yolu, `EPERM`, `Operation not permitted` ve `Permission denied` için stderr'i
+ayrıştırır ve aynı olay türünü yayar — sistem günlüğü dinleyicisi yoktur. Bunlar
+çalıştırmanın kendi olay akışına varır, böylece reddedilen bir sistem çağrısı
+yalnızca bir günlükte değil, dökümde de görünür. Telemetri yalnızca yerel bir
+sandbox süreci gerçekten sararken vardır — arka ucu olmayan bir ana makinede
+gözlemlenecek bir şey yoktur. Ayrıca yetenek kapılamasıyla ilgisizdir: bir
+ihlal, bir yetenek sorgusundan değil, reddedilen bir sistem çağrısından gelir.
 
-## Confirmations come from the guardrails, not the sandbox
+## Onaylar sandbox'tan değil, korumalardan gelir
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Sandbox'ın onay yolu yoktur. Başlatır, yürütür, olaylar yayar ve yıkılır; içinde
+bir insanın bir soruyu yanıtlayacağı hiçbir yer yoktur. Bir alanda bir onay
+istemi gördüğünüzde — bu push'u onayla, bu silmeyi onayla — bu, eylem çalışma
+zamanına hiç ulaşmadan _önce_ koruma motoru (ya da harness'ın komut politikası)
+tarafından ortaya çıkarılmıştır.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Bu sıralama bilinçlidir. Sistem çağrısından sonra gerçekleşen bir onay, bir kapı
+değil, bir denetim kaydı olurdu. Başarısızlıkta-kapalı kuralının korumalarda
+yaşamasının nedeni de budur: bağlı bir onaylayan yokken karar, herhangi bir şey
+çalışmadan önce verilir ve bu bir rettir.
 
-## Diagnostics
+## Tanılama
 
-[Run agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) is the single place
-that states what can be checked by hand.
+[Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) elle nelerin
+denetlenebileceğini belirten tek yerdir.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Rigs and enclosures](/tr-TR/kilavuz/kavramlar/rigler/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): where isolation fits in the dispatch flow
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/tr-TR/kilavuz/referans/sandbox-arka-uclari/): the backends and their configuration
+- [Rig'ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/): sandbox'ın bir üstündeki adım — iş, sarmalanmış bir süreç değil de çekirdek sınırı olan tek kullanımlık bir makinenin tamamını gerektirdiğinde
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): işletim sistemi zemininin üzerindeki politika katmanı ve onayların gerçekte nereden geldiği
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): yalıtımın gönderim akışına nerede oturduğu
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/): bir modun araç yüzeyini ve komut politikasını nasıl daralttığı
+- [Sandbox arka uçları referansı](/tr-TR/kilavuz/referans/sandbox-arka-uclari/): arka uçlar ve yapılandırmaları
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Configure sandbox policies](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/): capability flags and filesystem posture
-- [Run agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/): what the diagnostic checks cover
+- [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/): yetenek bayrakları ve dosya sistemi duruşu
+- [Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/): tanılama denetimlerinin neleri kapsadığı

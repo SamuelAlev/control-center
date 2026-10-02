@@ -1,193 +1,196 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: پیکربندی سیاست‌های سندباکس
+description: چه چیزی اجرای یک عامل را محدود می‌کند، چگونه بفهمیم سندباکس سیستم‌عامل آن را می‌پیچد یا نه، و سرور در واقع کدام تنظیم‌های قابلیت را می‌خواند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/سیاستهای-سندباکس
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+اینکه اجرای یک عامل سندباکس می‌شود یا نه، سمت سرور و در زمان بوت تصمیم گرفته
+می‌شود (`--sandbox`). کلید **فعال‌سازی سندباکس**، انتخابگر **بک‌اند** و کلیدهای
+**قابلیت‌های پیش‌فرض · فضاهای جدید** زیر **تنظیمات → سرور → تشخیص و حریم خصوصی**
+ترجیحاتی هستند که روی دستگاه شما ذخیره می‌شوند. تشخیص میزبان در کارت **سندباکس**
+گزارش می‌دهد که میزبان سرور چه چیزی را می‌تواند بپیچد.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+دو کنترل به یک اجرا می‌رسند و این راهنما هر دو را پوشش می‌دهد: **مجوزهای سندباکس**
+به‌ازای هر عامل که در ادامه می‌آید، و پرچم `--sandbox` خود سرور.
 
-## What constrains an agent run
+## چه چیزی اجرای یک عامل را محدود می‌کند
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+شش چیز یک عامل را نگه می‌دارد. نخستین مورد سندباکس سیستم‌عامل است و همان موردی
+است که مشروط است — پنج مورد دیگر روی هر میزبانی برقرارند.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| مرز                      | چه می‌کند                                                                                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| سندباکس سیستم‌عامل        | Seatbelt روی macOS، bubblewrap روی Linux و WSL2. CLI مربوط به Claude Code، آداپتورهای ACP و ابزار `bash` هارنس را می‌پیچد. **روی Windows و روی Linux بدون `bwrap` و `socat` وجود ندارد** |
+| worktree خودش            | هر گفتگو یک چک‌اوت کپی-در-نوشتن می‌گیرد. چک‌اوت اصلی به‌عنوان یک مسیر رد-نوشتن در اجرا گنجانده می‌شود و این سندباکس است که آن را اعمال می‌کند                                                                        |
+| اعتبارنامه‌های کارگزاری‌شده | کارگزار اعتبارنامه از روی قابلیت‌های عامل یک محیط به‌ازای هر اجرا می‌سازد و آن را هنگام برچیدن باطل می‌کند. بدون قابلیت، هیچ توکنی در محیط نیست                                                                       |
+| گاردریل‌های کنش           | هر ابزار تغییردهنده کلاس‌های اثرش را اعلام می‌کند و نگهبان آن را پیش از اجرای فراخوانی حل می‌کند. یک `prompt` بدون هیچ تأییدکنندهٔ متصل رد می‌شود                                                               |
+| پاک‌سازی محیط             | ACP و ابزار `bash` هارنس یک محیط پالایش‌شده می‌گیرند. Claude Code از مسیر `NoSandboxAdapter` محیط میزبان را به ارث می‌برد                                                                              |
+| سطح ابزار حالت           | یک حالت فقط‌خواندنی ابزارهای تغییردهندهٔ worktree را یکسره حذف می‌کند و فعل خروجی خودِ حالت را سنجاق می‌کند تا باز هم بتواند تحویل‌دادنی‌اش را ارائه کند                                                             |
 
-Three things stay weaker than they look:
+سه چیز ضعیف‌تر از آنچه به نظر می‌رسد باقی می‌ماند:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- تنها **هارنس داخلی** دروازهٔ ابزار، قراردادهای تکمیل و قواعد ساختاری حالت را
+  اعمال می‌کند. آداپتور Claude Code این کار را نمی‌کند. به‌ویژه Claude Code با
+  `--dangerously-skip-permissions` راه‌اندازی می‌شود، چون یک `claude -p`
+  غیرتعاملی در غیر این صورت برای همیشه پشت پرامپت خودش گیر می‌کند — بنابراین
+  فراخوانی‌های خواندن، نوشتن، ویرایش و bash خود Claude نه دیده می‌شوند و نه توسط
+  Control Center دروازه‌بندی می‌شوند. جایی که سندباکس روشن است، همان مرز پیرامون
+  آن‌هاست.
+- ابزارهای فایلی درون‌پردازشی هارنس (read، write، edit، apply patch، search، find،
+  search_files) درون فرایند سرور اجرا می‌شوند، پس هیچ پروفایل سندباکسی آن‌ها را
+  محدود نمی‌کند. تنها ابزار `bash` از مسیر اجراکنندهٔ فرمان سندباکس‌شده می‌گذرد.
+  آن ابزارها با محدودسازی مسیر خودشان به‌علاوهٔ گاردریل‌های کنش محدود می‌شوند.
+- روی میزبانی بدون بک‌اند، ردیف اول اصلاً اعمال نمی‌شود. ACP و ابزار `bash`
+  هارنس به پاک‌سازی محیط به‌علاوهٔ سیاست فرمان برمی‌گردند؛ Claude Code از مسیر
+  `NoSandboxAdapter` محیط میزبان را به ارث می‌برد. سرور این را در لاگ راه‌اندازی‌اش
+  می‌گوید. وضعیت خود را در ادامه بررسی کنید.
 
-## Set an agent's capabilities
+## تنظیم قابلیت‌های یک عامل
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+این تنها کنترل قابلیتی است که سرور می‌خواند. به‌ازای هر عامل است و تعیین می‌کند
+کارگزار اعتبارنامه چه چیزی در محیط آن عامل می‌گذارد.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. به **تنظیمات → فضای کاری → عامل‌ها** بروید
+2. عامل را در فهرست انتخاب کنید
+3. در زبانهٔ **تنظیمات**، تا **مجوزهای سندباکس** پایین بروید
+4. کلید را روشن کنید — شرح ردیف از **استفاده از پیش‌فرض فضای کاری** تغییر می‌کند
+5. چهار کلید را تنظیم کنید:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| کلید                              | چه چیزی را دروازه‌بانی می‌کند                                                                                                                                                                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **اجازهٔ git push**                | با خاموش بودنش، اجرا `GIT_ASKPASS=/usr/bin/false` و `GIT_TERMINAL_PROMPT=0` می‌گیرد، پس یک push نمی‌تواند برای اعتبارنامه پرسش کند                                                                                                                |
+| **اجازهٔ فراخوانی‌های GitHub API** | همراه با **اجازهٔ git push** دروازه‌بانی می‌کند که کارگزار توکن GitHub را به‌صورت `GH_TOKEN` / `GITHUB_TOKEN` تزریق می‌کند یا نه                                                                                                                    |
+| **اجازهٔ فراخوانی‌های API تیکتینگ** | دروازه‌بانی می‌کند که کارگزار `TICKETING_API_KEY` را تزریق می‌کند یا نه                                                                                                                                                                             |
+| **اجازهٔ دسترسی عمومی به شبکه**    | جایی که سندباکس روشن است، این یک دروازهٔ خروج واقعی است: با خاموش بودنش فهرست مجاز اجرا خالی است و هر درخواست خروجی در پروکسی رد می‌شود. جایی که بک‌اندی نیست، روی اجرا ثبت می‌شود اما جلوی هیچ کاری که یک فرایند spawn‌شده انجام می‌دهد را نمی‌گیرد |
 
-6. Save
+6. ذخیره کنید
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+چک‌پوینت: عامل را دوباره باز کنید؛ کلید هنوز روشن است و کلیدهای شما سر جایشان‌اند —
+یک مجموعهٔ قابلیت ذخیره‌شده از میان سرور رفت‌وبرگشت می‌کند و عاملی که هیچ مجموعه‌ای
+ندارد به پیش‌فرض محافظه‌کارانه برمی‌گردد (push خاموش، GitHub API خاموش، تیکتینگ
+خاموش، شبکه روشن).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[دو جا این موضوع گاز می‌گیرد]
+شرح ردیف می‌گوید **استفاده از پیش‌فرض فضای کاری**، اما هیچ تنظیم قابلیتی در سطح
+فضای کاری وجود ندارد که سرور بخواند. عاملی که کلیدش خاموش است، پیش‌فرض محافظه‌کارانهٔ
+داخلی را می‌گیرد.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+جدا از این، اعتبارنامهٔ GitHub یک اجرا همیشه فقط مال کارگزار است — یک توکن نصب
+GitHub App با دامنهٔ محدود به مخزن، یا بازگشت به PAT محیطی — هرگز توکن ذخیره‌شدهٔ
+خودِ عضوی که درخواست داده. `actingUserId` فرستاده می‌شود تا کارگزار بتواند PAT
+سرور را از عضوی که مالک نیست و GitHub را متصل نکرده *بازدارد*؛ این کار یک توکن
+شخصی را روی قابلیتی که خاموش است نمی‌آمیزد. روی میزبانی بدون سندباکس سیستم‌عامل،
+**اجازهٔ فراخوانی‌های GitHub API** را یک مرز خروج سخت در نظر نگیرید: یک فرایند
+spawn‌شده باز هم می‌تواند به شبکه برسد.
 :::
 
-## Check whether your agent runs are sandboxed
+## بررسی اینکه اجراهای عامل شما سندباکس می‌شوند یا نه
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+دو چیز آن را تعیین می‌کند، هر دو سمت سرور: اینکه میزبان بک‌اندی عرضه می‌کند یا نه
+و اینکه `--sandbox` روشن است یا نه. به همین ترتیب بررسی‌شان کنید.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. به **تنظیمات → سرور → تشخیص و حریم خصوصی** بروید
+2. کارت **سندباکس** را بخوانید. مقدار **میزبان** ماشینی است که `cc_server` روی آن
+   اجرا می‌شود، نه ماشینی که به آن نگاه می‌کنید. فیلد **بک‌اند** **سندباکس بومی**
+   (Seatbelt روی macOS، bubblewrap روی Linux و WSL2) یا **بدون جداسازی** را فهرست
+   می‌کند. مقدار **در حال اجرا** ترجیح این دستگاه است، نه پوششی که سرور در واقع
+   استفاده می‌کند.
+3. لاگ راه‌اندازی سرور را بخوانید. دقیقاً یکی از این سه خط را چاپ می‌کند:
+   - `agent sandbox ON` به‌همراه یادداشت بک‌اند — اجراها پیچیده می‌شوند
+   - `no OS-native agent sandbox on this host` به‌همراه یک راهنمای نصب، جایی که
+     وجود دارد — اجراها پیچیده نمی‌شوند
+   - `agent sandbox DISABLED by --sandbox off` — یک انصراف عامدانه
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` وضعیت سندباکس را گزارش نمی‌کند، پس همان لاگ راه‌اندازی بررسی است.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+برای خاموش‌کردن عامدانهٔ سندباکس — میزبانی که پروفایل در آن بدرفتاری می‌کند دلیل
+وجود این گزینه است — سرور را با `--sandbox off` راه‌اندازی کنید، یا
+`CC_SERVER_SANDBOX=off` را تنظیم کنید. پیش‌فرض `on` است و `on` یعنی «اگر میزبان
+بک‌اندی دارد از آن استفاده کن»، هرگز یعنی «بک‌اند را الزام کن».
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+دو وضعیت هرگز پوشش سندباکس بومی نمی‌گیرند. روی **Windows** تشخیص‌دهندهٔ بومی همیشه
+«در دسترس نیست» گزارش می‌دهد و چیزی برای نصب وجود ندارد — اعزام عامل از `none`
+استفاده می‌کند. بک‌اند `microvm` جداست (ترمینال‌های تعاملی و ریگ‌ها) و دسترسی‌اش با
+تشخیص به زمان اجرای خودش گره خورده است. روی **Linux و WSL2** هر دوی `bwrap` و
+`socat` باید روی `PATH` باشند؛ بدون آن‌ها تشخیص‌دهنده «در دسترس نیست» گزارش می‌دهد
+و بسته‌های غایب را نام می‌برد.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+روی Linux/WSL2 با bubblewrap نصب‌شده، الگوهای فایل محرمانهٔ سیاست استاندارد برای
+فایل‌هایی که عامل بعداً می‌سازد قابل اعمال نیستند. چنین اجرای بومی اکنون شکست
+می‌خورد، به‌جای آنکه قواعد را بی‌صدا نادیده بگیرد. پس یک تشخیص مثبت در هنگام بوت
+تضمین نمی‌کند که یک اعزام Linux می‌تواند شروع شود. `--sandbox off` یک انصراف
+عامدانه و بدون محدودیت است، نه یک مرز امنیتی جانشین.
 
-## Know what a mode already forbids
+## بدانید یک حالت از قبل چه چیزی را ممنوع می‌کند
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+حالت به‌ازای هر فضا ذخیره می‌شود و به‌عنوان لایهٔ **پیش‌تنظیم حالت** به حل‌کنندهٔ
+گاردریل تغذیه می‌شود. سه تا از چهار حالت فقط‌خواندنی‌اند و یک حالت فقط‌خواندنی
+یازده کلاس اثر را یکسره رد می‌کند:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| حالت              | worktree  | ردشده توسط پیش‌تنظیم                                                                                                                                                                |
+| ----------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **عامل** (`chat`) | نوشتنی    | هیچ‌چیز — پیش‌فرض‌های داخلی اعمال می‌شوند                                                                                                                                             |
+| **برنامه**        | فقط‌خواندنی | حذف یک فایل، نوشتن بیرون از worktree، کامیت، پوش، باز کردن یک PR، انتشار یا ادغام، نوشتن در یک ردیاب خارجی، نصب یک بسته، اجرای یک فرایند، تغییر ساختار فضای کاری، راه‌اندازی یا راندن یک محفظه |
+| **بازبینی**       | فقط‌خواندنی | همان یازده مورد. توسط کاربر قابل انتخاب نیست — نویسندهٔ پیام تنها عامل، برنامه و ارکستر را عرضه می‌کند                                                                                    |
+| **ارکستر**        | فقط‌خواندنی | همان یازده مورد                                                                                                                                                                      |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+دسترسی به شبکه و دسترسی به راز عامدانه توسط یک حالت فقط‌خواندنی رد _نمی‌شوند_:
+پژوهش همان نقطهٔ وجودی چنین حالتی است.
 
-## Require approval before an action runs
+## پیش از اجرای یک کنش، تأیید بخواهید
 
-Approval is a guardrail decision, not a sandbox setting.
+تأیید یک تصمیم گاردریل است، نه یک تنظیم سندباکس.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. به **تنظیمات → فضای کاری → مجوزهای عامل** بروید
+2. کلاس کنش را در محدودهٔ فضای کاری، عامل یا فضا روی **ابتدا بپرس** بگذارید
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) for the full
-resolution order.
+یک تصمیم **ابتدا بپرس** اجرا را متوقف می‌کند و از شما می‌پرسد. با نبود تأییدکنندهٔ
+متصل، به‌صورت بسته شکست می‌خورد و کنش رد می‌شود. برای ترتیب کامل حل‌وفصل
+[پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) را
+ببینید.
 
-## Troubleshooting
+## عیب‌یابی
 
-### An agent cannot push and I never denied it
+### یک عامل نمی‌تواند push کند و من هرگز آن را رد نکرده‌ام
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+**مجوزهای سندباکس** عامل را بررسی کنید. عاملی که مجموعهٔ قابلیت سفارشی ندارد،
+پیش‌فرض محافظه‌کارانه را می‌گیرد که **اجازهٔ git push** در آن خاموش است — پس
+کارگزار هیچ توکن GitHub تزریق نمی‌کند و git راهی برای احراز هویت ندارد.
 
-### The Sandboxing card reports no native sandbox
+### کارت سندباکس سندباکس بومی گزارش نمی‌کند
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/).
+در آن صورت اجراهای عامل روی آن میزبان با Seatbelt یا bubblewrap پیچیده نمی‌شوند و
+مرزهای باقی‌مانده همان‌هایی هستند که دارید. روی Linux و WSL2 هر دو ابزار غایب را
+نصب کنید — `sudo apt-get install bubblewrap socat` — و سرور را دوباره راه‌اندازی
+کنید؛ لاگ راه‌اندازی باید بگوید سندباکس روشن است. روی Windows هیچ بک‌اند بومی‌ای
+برای نصب وجود ندارد، پس در عوض گاردریل‌ها را سخت‌تر کنید:
+[پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) را
+ببینید.
 
-### An agent reached a file outside its worktree
+### یک عامل به فایلی بیرون از worktree خودش رسیده است
 
-Which tool reached it decides whether this is expected.
+اینکه کدام ابزار به آن رسیده تعیین می‌کند که آیا این انتظارمی‌رفته است یا نه.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+ابزارهای فایلی درون‌پردازشی هارنس (read، write، edit، apply patch، search، find،
+search_files) درون فرایند سرور اجرا می‌شوند، پس هیچ پروفایل سندباکسی بر آن‌ها اعمال
+نمی‌شود — کرانشان محدودسازی مسیر خودشان به‌علاوهٔ گاردریل‌هاست. یک فرمان `bash` یا
+CLI مربوط به Claude Code جایی که بک‌اندی وجود دارد _پیچیده_ می‌شوند و چک‌اوت‌های
+ثبت‌شدهٔ شما درون آن پوشش، در هر حالتی، رد-نوشتن هستند، از جمله صورت‌های حل‌شدهٔ
+symlinkشان (روی macOS مسیری که از `/tmp` یا `/var/folders` رسیده باشد زیر `/private`
+حل می‌شود و هر دو صورت اکنون رد هستند). روی میزبانی بدون بک‌اند هیچ‌یک از این‌ها
+اعمال نمی‌شود. در هر صورت، گاردریل‌ها می‌توانند **نوشتن بیرون از worktree** را
+یکسره رد کنند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/)
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Diagnose an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
-- [Sandbox backends](/fa-IR/راهنمای-کاربر/مرجع/بکاندهای-سندباکس/)
-- [cc_server CLI](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/): the `--sandbox` flag
+- [پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
+- [بک‌اندهای سندباکس(/fa-IR/راهنمای-کاربر/مرجع/بکاندهای-سندباکس/)
+- [CLI مربوط به cc_server(/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/): پرچم `--sandbox`
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)

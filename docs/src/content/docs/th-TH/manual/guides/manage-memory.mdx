@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: จัดการหน่วยความจำของเวิร์กสเปซ
+description: ตรวจทาน แก้ไข และตัดแต่งข้อเท็จจริงกับนโยบายที่เอเจนต์เขียนไว้ในเวิร์กสเปซ
 slug: th-TH/คู่มือ/วิธีทำ/จัดการหน่วยความจำ
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+คู่มือนี้แสดงวิธีทำงานกับที่จัดเก็บความรู้ของเวิร์กสเปซ
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+สิ่งสำคัญที่ควรรู้ก่อนเริ่ม: **UI ของหน่วยความจำนั้นเป็นพื้นที่สำหรับตรวจทาน ไม่ใช่พื้นที่สำหรับสร้างเนื้อหา** ข้อเท็จจริงและนโยบายเขียนโดยเอเจนต์ — ผ่าน `propose_fact` และ `propose_policy` โดยมี `supersede_fact` และ `supersede_policy` ใช้แทนที่ `remember` เขียนรายการ hot-tier ที่ผูกกับเซสชัน ซึ่ง `consolidate_memory` อาจยกระดับเป็นข้อเท็จจริงในภายหลัง ข้อตัดสินใจจากการประชุมจะถูกเก็บเข้าสู่โดเมน `decisions`; ไม่มีการเก็บจากการรันเอเจนต์ที่เสร็จสิ้น สิ่งที่คุณทำที่นี่คืออ่านสิ่งที่เอเจนต์เขียน แก้ไข ปิดใช้ หรือลบมัน
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+หน่วยความจำอยู่ที่ **การตั้งค่า → เวิร์กสเปซ → หน่วยความจำ** (`/workspaces/<id>/settings/memory`) ไม่ใช่จุดหมายระดับบนสุดในแถบข้าง
 
-## The three tabs
+## แท็บทั้งสาม
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+หน้านี้มีสามแท็บพอดี ข้อเท็จจริงและนโยบายแสดงจำนวนแบบเรียลไทม์ ส่วนกราฟไม่แสดง:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **ข้อเท็จจริง** — ข้อเท็จจริงทุกตัวในเวิร์กสเปซ พร้อมจำนวนของตัวที่ยังไม่ถูกแทนที่
+- **นโยบาย** — กฎเชิงบรรทัดฐานที่จัดกลุ่มตามโดเมน พร้อมจำนวนของตัวที่ active
+- **กราฟความรู้** — แคนวาสแบบโต้ตอบของโดเมน หัวข้อ ข้อเท็จจริง และนโยบาย
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+โดเมนไม่ใช่สิ่งที่คุณสร้างขึ้น โดเมนจะถือกำเนิดเมื่อเอเจนต์เขียนข้อเท็จจริงหรือนโยบายตัวแรกเข้าไป; ไม่มีตัวควบคุมสำหรับสร้างโดเมนที่ไหนใน UI เลย
 
-## Review and correct a fact
+## ตรวจทานและแก้ไขข้อเท็จจริง
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. เปิดแท็บ **ข้อเท็จจริง**
+2. ใช้กล่องค้นหาเพื่อกรองรายการให้แคบลง มันเป็นตัวกรองสตริงย่อยธรรมดาบนโดเมน หัวข้อ และเนื้อหาของข้อเท็จจริงแต่ละตัว — ไม่มีดัชนีคำค้น ไม่มีการจัดอันดับ
+3. ใช้ตัวกรองขอบเขตเพื่อแสดงทุกขอบเขต เฉพาะข้อเท็จจริงระดับทั้งเวิร์กสเปซ หรือข้อเท็จจริงของรีโพสิทอรีเดียว
+4. ใช้ตัวสลับการเรียงลำดับเพื่อจัดเรียงตามล่าสุดหรือตามความมั่นใจ
+5. คลิกตัวควบคุมแก้ไขของข้อเท็จจริง
 
-The edit dialog lets you change:
+กล่องโต้ตอบแก้ไขให้คุณเปลี่ยน:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **โดเมน** — ย้ายข้อเท็จจริงระหว่างโดเมน
+- **หัวข้อ** — ป้ายสั้น ๆ ของมัน
+- **เนื้อหา** — ข้อความความรู้
+- **ความมั่นใจ** — สไลเดอร์ที่เพิ่มทีละ 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+บันทึกเพื่อเขียนกลับ ไม่มีปุ่ม **เพิ่มข้อเท็จจริง**; กล่องโต้ตอบเปิดได้เฉพาะบนแถวที่มีอยู่แล้ว
 
-## See superseded facts
+## ดูข้อเท็จจริงที่ถูกแทนที่
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+แท็บข้อเท็จจริงมีสวิตช์ **แสดงที่ถูกแทนที่** ข้อเท็จจริงที่ถูกแทนที่จะถูกซ่อนไว้โดยค่าเริ่มต้นและถูกเปิดเผยด้วยสวิตช์นั้น ซึ่งเป็นที่อยู่ของร่องรอยการตรวจสอบ — การแทนที่ไม่มีวันลบ
 
-## Delete a fact
+## ลบข้อเท็จจริง
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+ใช้ตัวควบคุมลบของข้อเท็จจริงแล้วยืนยัน นี่เป็นการลบจริง ไม่ใช่การแทนที่: ใช้มันกับข้อเท็จจริงที่บันทึกไว้ผิดตั้งแต่แรก และปล่อยให้เอเจนต์แทนที่ข้อเท็จจริงที่_เนื้อหา_เปลี่ยนไปแล้ว
 
-## Manage policies
+## จัดการนโยบาย
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+แท็บ **นโยบาย** จัดกลุ่มนโยบายที่ active ตามโดเมน และลดตัวที่ไม่ active ลงไปไว้ในส่วนท้าย ต่อนโยบายหนึ่งตัวคุณสามารถ:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **แก้ไข** มัน
+- **ลบ** มัน
+- **ปิดใช้** / **เปิดใช้** มัน — ตัวเลือกที่ย้อนกลับได้และมักเป็นตัวที่ถูกต้อง มีเพียงนโยบายที่ active เท่านั้นที่ไปถึงพรอมต์ของเอเจนต์
 
-As with facts, there is no create control.
+เช่นเดียวกับข้อเท็จจริง ไม่มีตัวควบคุมสำหรับสร้าง
 
-## Explore the knowledge graph
+## สำรวจกราฟความรู้
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+แท็บ **กราฟความรู้** จัดวางโดเมน หัวข้อ ข้อเท็จจริง และนโยบายเป็นแคนวาสโหนดที่นำทางได้ — เลื่อน ซูม ลากโหนด แตะโหนดหนึ่งจะเปิดแผ่นรายละเอียดของมัน ซึ่งเข้าถึงกล่องโต้ตอบแก้ไขชุดเดียวกันได้ มันเป็นวิธีที่เร็วที่สุดในการดูว่าโดเมนใดมีข้อมูลอยู่จริง
 
-## Edit an agent's working memory
+## แก้ไขหน่วยความจำทำงานของเอเจนต์
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+หน่วยความจำทำงานเป็นสมุดจดชั่วคราวส่วนตัวของเอเจนต์แต่ละตัว ถูกฉีดเข้าไปในพรอมต์ของมันตอนสั่งงาน เอเจนต์เขียนมันเองด้วย `record_observation` และ `update_my_notes` แต่คุณสามารถอ่านและแก้ไขมันได้โดยตรง:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**การตั้งค่า → เวิร์กสเปซ → เอเจนต์** → เลือกเอเจนต์ → แท็บ **หน่วยความจำ**
 
-## Access grants
+## การให้สิทธิ์เข้าถึง
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+การให้สิทธิ์เข้าถึงหน่วยความจำจับคู่บทบาทของเอเจนต์เข้ากับสิทธิ์ (`none`, `read`, `write`) ต่อโดเมน เขียนมันด้วยการดำเนินการ `memory_access_grant.*`
 
-Two things to understand about how they resolve:
+มีสองเรื่องที่ต้องเข้าใจเกี่ยวกับวิธีที่สิทธิ์มีผลจริง:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **การอ่านเป็นแบบ fail-open** เมื่อไม่มีแถวการให้สิทธิ์สำหรับคู่ (role, domain) สิทธิ์ที่มีผลจริงคือ `read` การเขียนเดียวที่โยนข้อผิดพลาดเมื่อไม่มี `write` คือ `propose_policy` การเขียนข้อเท็จจริงไม่ได้ถูกควบคุมด้วยการให้สิทธิ์
+- **การให้สิทธิ์ผูกกับบทบาทของเอเจนต์** เครื่องมือที่ใช้เสนอจะตั้งค่า `agent_role` ที่หายไปเป็น `general` โดยค่าเริ่มต้น การให้สิทธิ์ที่เขียนสำหรับบทบาทอื่นไม่ผูกมัดเอเจนต์เหล่านั้น; แต่การให้สิทธิ์ `general` ผูกมัด
 
-## Search is not the same everywhere
+## การค้นหาไม่เหมือนกันทุกที่
 
-Three different things are called "memory search" and they do not agree:
+มีสามสิ่งที่ต่างกันถูกเรียกว่า “การค้นหาหน่วยความจำ” และพวกมันไม่ตรงกัน:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| ที่ไหน                              | ทำอะไร                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| กล่องค้นหาของแท็บข้อเท็จจริง         | ตัวกรองสตริงย่อยบนข้อเท็จจริงที่โหลดไว้ในไคลเอนต์แล้ว                                                                       |
+| op ของ RPC `memory_fact.search`     | การค้นหาคำค้นแบบ FTS5 เท่านั้น — ไคลเอนต์แบบบางไม่สามารถส่ง embedding ของคำค้นไปด้วยได้ การค้นหาแบบ hybrid จึงอยู่ภายในโฮสต์ |
+| เครื่องมือ `search_memory` ฝั่งเอเจนต์ | `keyword`, `semantic` หรือ `hybrid` (ค่าเริ่มต้น) Hybrid หลอมรวมสี่เสียง: lexical, semantic, temporal และ graph              |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+ดังนั้นเอเจนต์กับหน้าหน่วยความจำจะไม่จัดอันดับคำค้นเดียวกันในแบบเดียวกัน เมื่อคุณกำลังตรวจสอบว่าเอเจนต์เรียกคืนอะไรได้จริง ๆ ให้ถามเอเจนต์
 
-## Embeddings
+## Embedding
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+ข้อเท็จจริงจะถูกสร้าง embedding **ตอนเขียน** และเฉพาะเมื่อโมเดล embedding บนอุปกรณ์ถูกติดตั้งไว้แล้วเท่านั้น ตรวจสอบสถานะของมันที่ **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว → ค้นหาเชิงความหมาย** ติดตั้งโมเดลก่อนที่เอเจนต์จะเริ่มเขียนหน่วยความจำ หากคุณต้องการการเรียกคืนเชิงความหมาย
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Use the MCP server](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [ใช้เซิร์ฟเวอร์ MCP](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Memory and knowledge](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/)
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
+- [หน่วยความจำและความรู้](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/)
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)

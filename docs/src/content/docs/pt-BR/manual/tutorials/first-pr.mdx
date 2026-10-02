@@ -1,98 +1,153 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: Revise sua primeira pull request
+description: Abra uma PR no ambiente de trabalho, leia o diff, comente, aprove e faça o merge.
 slug: pt-BR/manual/tutoriais/primeira-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## O que você vai construir
 
-By the end of this tutorial, you will have:
+Ao final deste tutorial, você terá:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Aberto uma pull request no ambiente de trabalho de PR do Control Center
+- Lido o diff dela e deixado um comentário em linha
+- Enviado um veredito de revisão
+- Feito o merge da PR
 
-Prerequisites: [Dispatch your first agent](/pt-BR/manual/tutoriais/primeiro-agente/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+Pré-requisitos: [Despache seu primeiro agente](/pt-BR/manual/tutoriais/primeiro-agente/)
+concluído e uma pull request aberta em um repo registrado neste espaço de
+trabalho. Para as etapas de revisão, escolha uma PR que você não abriu — o botão
+**Revisão** fica oculto nas suas próprias PRs. O merge ainda funciona em uma PR
+de sua autoria.
 
-## Step 1: Open the pull request
+## Etapa 1: Abrir a pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. Clique em **Pull requests** na barra lateral
+2. Encontre a sua PR e clique nela
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**Ponto de verificação:** a PR abre como um ambiente de trabalho com abas —
+Visão geral, Diff, Controle de versão, Chat, Ações — focada em **Visão geral**:
+o título e as ações, a descrição e a linha do tempo de atividades e uma barra
+lateral com status, revisores, responsáveis, verificações e arquivos alterados.
+Clicar em um arquivo ali leva direto para ele na aba Diff. A aba **Revisão** não
+fica aberta até alguém pedir uma revisão com IA.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[Fila vazia com um aviso para conectar o GitHub]
+Esse estado significa que o _servidor_ não tem nenhum token do GitHub — seu
+cliente nunca tem um. Defina um em **Configurações → Espaço de trabalho → Perfil
+e identidade → Hospedagem de código** e atualize a lista.
 :::
 
-## Step 2: Read the diff
+## Etapa 2: Ler o diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+Abra a aba **Diff**. Uma árvore de arquivos recolhível fica à esquerda, e a faixa
+acima do diff traz um seletor de intervalo de commits — restrinja o diff a um
+commit ou a um intervalo deles — além da contagem de arquivos e das adições e
+exclusões acumuladas.
 
-The settings button in the diff toolbar controls how it renders:
+O botão de configurações na barra de ferramentas do diff controla como ele é
+renderizado:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- Exibição **dividida** ou **unificada**
+- **Quebrar linhas** ou rolar as linhas longas
+- **Ligaduras da fonte de código**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/pt-BR/manual/referencia/atalhos-de-teclado/).
+Marque um arquivo como visto para acompanhar seu progresso em um diff grande. A
+navegação por teclado está em
+[Atalhos de teclado](/pt-BR/manual/referencia/atalhos-de-teclado/).
 
-## Step 3: Leave an inline comment
+## Etapa 3: Deixar um comentário em linha
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. Passe o mouse sobre uma linha no diff — uma pequena pílula `+` aparece na
+   margem
+2. Clique nela para comentar naquela linha, ou arraste-a verticalmente antes
+   para selecionar um intervalo
+3. Digite o seu comentário. O campo de comentário oferece dois envios:
+   - **Iniciar uma revisão** (ou **Adicionar à revisão**, se já houver uma
+     revisão em andamento) enfileira o comentário. A conversa mostra **Revisão
+     pendente** até você enviar um veredito na etapa 4.
+   - **Adicionar um único comentário** publica no GitHub imediatamente. A
+     conversa mostra **Publicando…**, depois **Sincronizado**, e oferece uma
+     nova tentativa se a publicação falhar.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+Para este tutorial, use **Iniciar uma revisão** para que o comentário saia junto
+com o veredito.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[Um comentário enfileirado ainda não está no GitHub]
+**Iniciar uma revisão** / **Adicionar à revisão** mantêm o comentário localmente
+até você enviar um veredito. Apenas **Adicionar um único comentário** publica
+imediatamente. O _corpo_ da revisão que você escreve na etapa 4 é um rascunho
+separado.
 :::
 
-## Step 4: Submit a review
+## Etapa 4: Enviar uma revisão
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. Clique em **Revisão** na linha de ações da Visão geral — o mesmo botão também
+   fica na barra de ferramentas da aba Diff. Ele fica oculto em PRs de sua
+   autoria e em uma PR fechada ou já mesclada.
+2. Escreva um resumo no campo de comentário. Ele é salvo automaticamente como
+   rascunho, então você pode fechar o overlay e voltar depois.
+3. Escolha um veredito:
+   - **Solicitar alterações**
+   - **Comentário**
+   - **Aprovar**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+O veredito é o botão. Depois de **Aprovar** ou **Solicitar alterações**, o botão
+muda de rótulo para **Aprovado** ou **Alterações solicitadas**. Um veredito
+**Comentário** deixa o botão com o rótulo **Revisão**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**Ponto de verificação:** o botão exibe "Aprovado" ou "Alterações solicitadas"
+se você escolheu uma dessas duas opções.
 
-## Step 5: Merge
+## Etapa 5: Fazer merge
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+O botão **Merge** aparece sempre que o GitHub informa que a PR pode ser mesclada
+— ele não depende da sua própria aprovação. A cor dele indica prontidão, e não
+permissão: primária quando as aprovações obrigatórias e as verificações estão
+verdes, secundária enquanto uma verificação ainda está em execução, destrutiva
+quando um revisor solicitado não aprovou ou uma verificação está falhando.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. Clique em **Merge**
+2. Escolha um método: **Squash and merge**, **Create a merge commit** ou
+   **Rebase and merge**
+3. Nos dois primeiros, edite o título e a mensagem de commit preenchidos
+   previamente
+4. Confirme
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+Qualquer problema pendente — "Verificações com falha", "Some reviews are
+pending" — é listado no painel flutuante antes de você confirmar.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[Fazer merge é irreversível]
+Fazer merge envia commits para o GitHub. Ele nunca entra na pilha de desfazer do
+Control Center e não pode ser desfeito daqui.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/pt-BR/manual/referencia/eventos-de-dominio/) for what else listens.
+Depois do merge, um evento de domínio `PrMerged` é disparado; a análise e as
+notificações o consomem. Consulte
+[Eventos de domínio](/pt-BR/manual/referencia/eventos-de-dominio/) para saber o
+que mais o escuta.
 
-## Reviewing with AI
+## Revisar com IA
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+O Control Center pode colocar um pipeline de revisores em uma PR aberta, mas
+apenas quando você pedir: o modelo `pr_review` tem um gatilho manual e nada mais.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. Abra o menu de overflow na linha de ações da Visão geral e escolha **Ask AI**.
+   O Control Center inicia a execução e abre a aba **Revisão**, para você
+   acompanhar o trabalho dos especialistas.
+2. Os agentes revisores registram os achados como nós de revisão no espaço da
+   PR; uma etapa final os consolida em um único relatório.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/pt-BR/manual/guias/revisao-com-ia/).
+O pipeline de propósito não publica no GitHub — ele termina depois de
+consolidar. A publicação é um passo separado, que você mesmo dá, com o botão
+**Publicar no GitHub** na aba **Revisão**. Consulte
+[Usar revisão com IA](/pt-BR/manual/guias/revisao-com-ia/).
 
-## Recap
+## Recapitulação
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+Você abriu uma PR no ambiente de trabalho, leu o diff com realce de sintaxe,
+deixou um comentário em linha, enviou um veredito e fez o merge — sem sair do
+app.
 
-**Next:** [Build your first pipeline](/pt-BR/manual/tutoriais/primeiro-pipeline/) to automate multi-step workflows.
+**A seguir:** [Crie seu primeiro pipeline](/pt-BR/manual/tutoriais/primeiro-pipeline/)
+para automatizar fluxos de trabalho com várias etapas.

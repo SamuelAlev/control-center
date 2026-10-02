@@ -1,248 +1,264 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Rào chắn — một chính sách cho mọi hành động gây thay đổi
+description: Vì sao Control Center đưa mọi tác động phụ của agent qua một cỗ máy cho phép/hỏi trước/từ chối duy nhất, cách hệ phân loại ActionClass cố ý giữ nhỏ, và núm tự chủ thực sự thay đổi điều gì.
 slug: vi-VN/so-tay/khai-niem/rao-chan
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agent trong Control Center có thể xóa tệp, push nhánh, xuất bản pull request
+và gọi API bên ngoài. Mỗi việc trong số đó là một _loại_ rủi ro khác nhau, và
+trong một thời gian dài chỉ một trong số đó — lệnh shell — có chính sách. Rào
+chắn ra đời để trả lời thống nhất một câu hỏi, cho mọi hành động gây thay đổi
+mà agent có thể thực hiện, bất kể runtime hay công cụ nào đề xuất nó: **việc
+này có được phép không, có cần phê duyệt không, hay bị từ chối?**
 
-## One engine, every chokepoint
+## Một cỗ máy, mọi cửa ngõ
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Chỉ có đúng một cỗ máy chính sách. Nó được hỏi ý kiến tại mọi điểm mà một hành
+động có thể rời khỏi hệ thống: sổ đăng ký công cụ của harness tích hợp, cổng
+điều phối MCP phía máy chủ và các thao tác thay đổi repo. Nhờ vậy, một quy tắc
+viết một lần sẽ áp dụng cho cả runtime tích hợp lẫn các CLI agent bên ngoài —
+không có con đường thứ hai nào lặng lẽ vòng qua nó. Chính sách lệnh chỉ dành
+cho bash trước đây vẫn hoạt động: một quy tắc có thể khớp theo tiền tố lệnh
+thay vì theo lớp hành động, và hai dạng này cùng tồn tại trong cùng một kho.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Tuy nhiên, cỗ máy này không thay thế sandbox của hệ điều hành, và sandbox cũng
+không thay thế nó. Chúng trả lời những câu hỏi khác nhau: rào chắn quyết định
+liệu một lời gọi mà Control Center nhìn thấy có được phép xảy ra hay không,
+còn sandbox giới hạn phạm vi mà tiến trình sinh ra có thể vươn tới. `cc_server`
+áp dụng sandbox khi máy chủ có sẵn một backend — nhưng [Windows không có backend
+nào và Linux cần `bwrap` cùng `socat`](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
+Trên những máy chủ đó, rào chắn là lớp thực thi ngoài cùng chứ không phải một
+chính sách ngồi trên một cái sàn, điều đáng biết khi bạn quyết định nới rộng
+đến mức nào.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: một hệ phân loại đóng có chủ đích
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Mỗi công cụ gây thay đổi đều khai báo mình thuộc những **ActionClass** nào,
+trong một tập đóng gồm mười ba lớp hiệu ứng. Năm lớp trong số đó hỏi trước ngay
+từ đầu; số còn lại cho phép, và chỉ một quy tắc mới thay đổi được điều đó.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Lớp                        | Mặc định tích hợp | Nội dung bao phủ                                                 |
+| -------------------------- | ----------------- | ---------------------------------------------------------------- |
+| `fileDelete`               | **hỏi trước**     | Xóa một tệp (một thao tác ghi mang hình dạng xóa, `rm`)          |
+| `gitPush`                  | **hỏi trước**     | Push lên một remote git                                          |
+| `prCreate`                 | **hỏi trước**     | Tạo một pull request                                             |
+| `prPublish`                | **hỏi trước**     | Xuất bản một đánh giá, merge một PR                              |
+| `vendorSyncWrite`          | **hỏi trước**     | Ghi vào một trình theo dõi phiếu bên ngoài (Linear, Jira, GitHub sync) |
+| `fileWriteOutsideWorktree` | cho phép          | Ghi một tệp ra ngoài worktree cách ly                            |
+| `gitCommit`                | cho phép          | Tạo một commit git                                               |
+| `networkEgress`            | cho phép          | Lưu lượng mạng ra ngoài (tải trang web, HTTP tùy ý)              |
+| `secretAccess`             | cho phép          | Đọc một secret hoặc thông tin xác thực                           |
+| `packageInstall`           | cho phép          | Cài một gói (npm, pip, pub, brew)                                |
+| `processSpawn`             | cho phép          | Khởi tạo một tiến trình (shell và mọi thứ gọi ra shell)          |
+| `workspaceMutation`        | cho phép          | Thay đổi cấu trúc không gian làm việc (repo, space, agent)       |
+| `enclosureControl`         | cho phép          | Điều khiển một enclosure (rig): khởi động máy ảo, gửi đầu vào cho nó |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Tám lớp mặc định cho phép được chọn dựa trên giả định rằng sàn sandbox hiện
+diện bên dưới chúng. Điều đó đúng khi máy chủ có sẵn backend, và không đúng
+trên Windows hay trên một máy Linux thiếu `bwrap` và `socat` — nên nếu bạn
+muốn có cổng kiểm soát cho `fileWriteOutsideWorktree` hay `packageInstall` ở
+đó, bạn phải tự viết một quy tắc.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Tập hợp này được đóng lại có chủ đích. Một công cụ gây thay đổi mới không khai
+báo lớp nào sẽ trượt bài kiểm thử ratchet, nên hệ phân loại chỉ có thể lớn lên
+bằng một quyết định tường minh và có lập luận — "sự phình to của hệ phân loại
+chính là cái chết của tính năng này." Mười ba lớp là đủ để diễn đạt những chính
+sách mà người ta thực sự viết (không bao giờ push mà không hỏi, không bao giờ
+xóa ra ngoài worktree, luôn cho phép đọc) và đủ ít để giao diện cài đặt vẫn
+dễ hiểu.
 
-## Rules and scope resolution
+## Quy tắc và cách phân giải phạm vi
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Một quy tắc ánh xạ `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Các phạm vi lồng nhau từ cụ thể nhất đến ít cụ thể nhất:
 
-**space > agent > workspace > mode preset > built-in default**
+**space > agent > không gian làm việc > preset chế độ > mặc định tích hợp**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Việc phân giải theo nguyên tắc **cụ thể trước**: phạm vi đầu tiên có quy tắc
+khớp sẽ quyết định và quá trình phân giải dừng ngay tại đó. Mức hạn chế nhất
+chỉ dùng để phân định khi hòa — giữa hai quy tắc cùng độ cụ thể trong một phạm
+vi, và khi kết hợp nhiều lớp mà một hành động khai báo. Trong một phạm vi, quy
+tắc lệnh khớp theo tiền tố lệnh dài nhất. Cho phép không bao giờ thắng từ chối
+ở bất kỳ đâu.
 
-Two decisions carry hard guarantees:
+Hai quyết định mang bảo đảm cứng:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Phê duyệt theo hướng đóng khi lỗi.** Một quyết định `prompt` mà không có
+  người phê duyệt nào được kết nối sẽ được phân giải thành _từ chối_. Một câu
+  hỏi không được trả lời không bao giờ là một câu đồng ý.
+- **Kết hợp theo hướng hạn chế nhất.** Một hành động trải qua nhiều lớp sẽ
+  được kết hợp theo hướng hạn chế nhất; khi nhiều lớp cùng hỏi trước, một lần
+  xác nhận sẽ liệt kê tất cả.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Cố ý không có chốt ghi nhớ theo từng lượt. Mỗi lời gọi công cụ đều phân giải
+lại chính sách từ đầu, nên việc hỏi lặp lại cho cùng một hành động chỉ bị giới
+hạn bởi chính lựa chọn "ghi nhớ quyết định này" của người vận hành, chứ không
+bởi bất cứ thứ gì thuộc phạm vi theo lượt.
 
-## Argument-level rules
+## Quy tắc ở cấp đối số
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Một quy tắc có thể ràng buộc cả ĐỐI SỐ của một hành động, chứ không chỉ động từ
+của nó. "Được push" và "được push tới `feature/*`" là hai khẳng định khác nhau,
+và chỉ khẳng định thứ hai mới là một cơ chế kiểm soát — một cổng năng lực chỉ
+cho phép mỗi động từ chính là hình dạng đằng sau phần lớn các sự cố agent được
+công bố.
 
-A constraint may name:
+Một ràng buộc có thể nêu tên:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **đường dẫn** — các mẫu glob (`repos/**`, `!**/.env`)
+- **ref** — các git ref, với phép phủ định `!` (`['**', '!main']` đọc là "mọi
+  nhánh trừ main")
+- **host** — các đích mạng, với ký tự đại diện tên miền con (`*.internal`)
+- **lệnh** — các tiền tố lệnh, khớp trên ranh giới từ
+- **mức trần** — `maxCount` / `maxCents`, nhờ đó có thể diễn đạt "xóa tối đa 50
+  tệp"
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Ba tính chất nảy sinh từ việc giữ ngữ pháp đóng và không có vòng lặp, và cả ba
+chính là mục đích: mọi quy tắc đều hiển thị thành một câu bạn đọc lại được,
+mọi lần từ chối đều nêu được ràng buộc đã khớp, và toàn bộ chính sách có thể
+liệt kê được — bạn thấy được agent được phép làm gì *trước khi* nó chạy.
 
-Three rules that matter:
+Ba quy tắc đáng lưu tâm:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- Một **quy tắc có ràng buộc thì cụ thể hơn** một quy tắc không ràng buộc ở
+  cùng phạm vi, nên "từ chối push tới `main`" thắng "cho phép push" mà không ai
+  phải nghĩ về thứ tự.
+- Một quy tắc **hạn chế** (từ chối / hỏi trước) được áp dụng khi yêu cầu chạm
+  tới *bất kỳ* giá trị nào mà nó nêu tên; một quy tắc **nới lỏng** (cho phép)
+  chỉ được áp dụng khi yêu cầu nằm *hoàn toàn* bên trong nó. Đọc cả hai theo
+  cùng một cách sẽ cho phép agent "rửa" một đường dẫn bị cấm bằng cách xếp một
+  đường dẫn vô hại bên cạnh nó.
+- Một quy tắc nêu tên một khía cạnh mà yêu cầu không đề cập thì không được áp
+  dụng cũng không bị bỏ qua: nó **được đẩy lên thành một phê duyệt**. Bỏ qua
+  trong im lặng sẽ khiến mọi quy tắc bảo vệ nhánh trở nên vô hiệu trước một
+  công cụ không báo cáo ref của nó; từ chối trong im lặng sẽ chặn mọi lần push
+  mà bộ trích xuất không mô tả được. Khi không có người phê duyệt nào được kết
+  nối, quy tắc đóng-khi-lỗi hiện có biến việc đẩy lên đó thành một lần từ chối.
 
-## What a command rule can and cannot catch
+## Quy tắc lệnh bắt được và không bắt được gì
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Một quy tắc `commandPrefix` khớp trên ranh giới từ: `git push` bao trùm
+`git push origin main` và không bao gồm `git pushx`. Nó **không** chuẩn hóa
+shell. `git  push` (hai dấu cách), `cd sub && git push` và
+`GIT_DIR=… git push` đều là những chuỗi khác nhau và không chuỗi nào khớp một
+quy tắc về `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Đó là một giới hạn có thật và nó được nói thẳng ra thay vì che đậy: quy tắc
+lệnh là tiện ích cho người vận hành để định hình hành vi thông thường của
+agent, **chứ không phải** một ranh giới chống lại một agent đối kháng. Các ranh
+giới thật sự là các lớp hiệu ứng (thứ mà một công cụ khai báo và không thể viết
+lại theo cách khác), lưới lệnh của chế độ nằm dưới kho chính sách, và sandbox
+của hệ điều hành nằm dưới cả hai. Một quy tắc lệnh phân giải thành `allow`
+không bao giờ nới lỏng bất kỳ thứ nào trong hai thứ đó — lưới chế độ chạy sau
+đó và lệnh `deny` của nó là quyết định cuối cùng.
 
-## Standing approvals
+## Phê duyệt thường trực
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Trả lời một yêu cầu phê duyệt bằng "ghi nhớ điều này" sẽ ghi ra một quy tắc
+chính sách thật: có phạm vi (space / agent / không gian làm việc), **có ràng
+buộc đối số** (phê duyệt một lần push tới `feature/login` cấp quyền cho
+`feature/**`, không phải `main`) và **tự thu hồi** theo một TTL tường minh.
+Đồng ý trong vài giờ tới không giống với việc âm thầm viết lại chính sách vĩnh
+viễn của bạn, và những quy tắc nó ghi ra nằm trong cùng một kho với nguồn gốc
+`remembered` và một thời điểm hết hạn, nên chúng có thể bị thu hồi sớm.
 
-## Enforcement levels
+## Các mức thực thi
 
-Each rule carries one:
+Mỗi quy tắc mang một mức:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **tư vấn** — cho phép, nhưng ghi lại rằng quy tắc đã khớp. Đây là con đường
+  đưa vào sử dụng: triển khai một quy tắc nghiêm ngặt ở chế độ tư vấn, đọc dấu
+  vết kiểm toán trong một tuần để xem chính xác nó *sẽ* chặn những gì, rồi
+  nâng cấp nó. Không có tầng này, các chính sách nghiêm ngặt sẽ không bao giờ
+  được bật.
+- **mềm** — từ chối, có thể bị ghi đè bởi người nắm quyền ghi đè, kèm một lý do
+  được ghi lại. Bản thân việc ghi đè cũng là một sự kiện được kiểm toán.
+- **cứng** (mặc định) — từ chối. Không gì ghi đè được nó.
 
-## The managed tier
+## Tầng được quản lý
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Người vận hành bản cài đặt có thể ghim chính sách mà không quản trị viên không
+gian làm việc nào nới lỏng được. Các quy tắc được quản lý nằm phía máy chủ và
+được hợp nhất theo hướng **hạn chế nhất** với chuỗi quy tắc riêng của từng
+không gian làm việc — chúng không phải một phạm vi đứng đầu chuỗi, bởi vì một
+`allow` được quản lý đứng đầu chuỗi sẽ cho phép bản cài đặt ghi đè lên lệnh từ
+chối của không gian làm việc, ngược hẳn với mục đích của một cơ chế siết. Vì
+vậy một quy tắc được quản lý chỉ có thể siết chặt hơn mà thôi.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Đặt `CC_SERVER_MANAGED_POLICY` trỏ tới một tệp JSON sẽ có hiệu lực cao hơn hẳn
+các quy tắc đã lưu, nhờ đó người vận hành có thể ghim một cấu hình mà không
+giao diện quản trị nào đảo ngược được — câu trả lời cho "liệu tôi có thể ngăn
+các lập trình viên của mình vô hiệu hóa các kiểm soát an toàn không?".
 
-## The autonomy dial is a profile, not a parallel system
+## Núm tự chủ là một hồ sơ, không phải một hệ thống song song
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Núm tự chủ theo từng space là một hồ sơ có tên đặt trên chính kho chính sách
+này, chứ không phải một cơ chế thứ hai. Ba thiết lập của nó được lưu và truyền
+dưới dạng `proposeOnly`, `actWithApproval` và `actFreely` (các dạng có gạch nối
+chỉ là văn bản giao diện, và `autonomy.setForSpace` từ chối mọi giá trị khác).
+Để trống thì hành xử như `actWithApproval`.
 
-What each one does to a resolved decision:
+Mỗi thiết lập tác động thế nào tới một quyết định đã phân giải:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** từ chối thẳng mọi công cụ được kiểm soát bằng cổng. Agent
+  vẫn có thể suy luận và trả lời; nó chỉ không thể hành động và thông điệp của
+  nó nói rõ lý do.
+- **`actWithApproval`** (và trạng thái để trống) là cổng phê duyệt đóng-khi-lỗi
+  đã mô tả ở trên.
+- **`actFreely`** phê duyệt trước mọi thứ không phân giải thành một `deny` cứng.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Điều cuối cùng đó cần được nói thẳng thay vì làm nhẹ đi: dưới `actFreely`, một
+quyết định `prompt` **không** được đẩy lên cho người phê duyệt — nó được cho
+phép và không ai bị hỏi. Chỉ một quy tắc `deny` tường minh mới sống sót qua núm
+tự chủ. Vậy nên `actFreely` là một sự trao quyền tự chủ có chủ đích, không phải
+một thiết lập tiện lợi, và quy tắc đóng-khi-lỗi bảo vệ đúng trường hợp mà nó
+quan trọng (`actWithApproval`, mặc định).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Việc ủy thác giữa các agent được canh giữ tại cửa ngõ `delegate_task` bởi cả
+bốn rào cản: một mức trần độ sâu (mặc định 3), phát hiện chu trình, một **mức
+trần tự chủ** (bên được ủy thác không bao giờ được hành động với quyền tự chủ
+cao hơn người ủy thác nó — đặc quyền không thể bị rửa bằng cách giao việc cho
+một agent tự do hơn) và một **hạn mức ngân sách** (việc ủy thác tính vào ngân
+sách còn lại của người ủy thác và không thể tạo thêm). Mỗi trường hợp đều bị từ
+chối dứt khoát, kèm lý do của rào cản được trả lại nguyên văn cho agent.
 
-## The adapter honesty matrix
+## Ma trận trung thực của adapter
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Không phải runtime nào cũng cho phép Control Center chặn mọi hành động. Các CLI
+agent bên ngoài chạy một số công cụ theo cách gốc, trong tiến trình, nơi không
+cổng nào có thể chen vào. Thay vì giả vờ điều ngược lại, mỗi adapter mang một
+**ma trận trung thực**: theo từng adapter, liệu Control Center có lọc bề mặt
+công cụ, chặn các lời gọi công cụ, quan sát hợp đồng hoàn tất, có thấy được các
+công cụ gốc của runner hay không, và liệu các công cụ trong tiến trình có được
+một hồ sơ sandbox bao phủ hay không.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Có hai mục đáng đọc trước khi bạn tin vào một cấu hình. Harness tích hợp khai
+báo rằng các công cụ tệp trong tiến trình của nó **không** được chạy trong
+sandbox — bề mặt công cụ và cỗ máy chính sách này là ranh giới hệ thống tệp duy
+nhất mà nó có. Claude Code khai báo rằng các lời gọi công cụ của chính nó
+**không** chặn được, vì nó được khởi chạy với `--dangerously-skip-permissions`;
+Control Center chỉ thấy các lời gọi `mcp__*` của nó, còn các công cụ đọc, ghi,
+sửa và shell của chính nó chạy mà không bị nhìn thấy.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Màn hình cài đặt hiển thị ma trận này, bởi vì thất bại không thể tha thứ duy
+nhất của một hệ thống rào chắn là tuyên bố có một phạm vi bao phủ không hề tồn
+tại.
 
-## Probing policy before it bites
+## Thử chính sách trước khi nó cắn
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Rào chắn nằm tại **Cài đặt → Không gian làm việc → Quyền của agent**
+(`/workspaces/<id>/settings/workspace/permissions`). Màn hình này có ma trận
+chính sách nơi các quy tắc được viết, các mẫu chính sách, một phép thử "nếu
+như", dấu vết kiểm toán ủy quyền và ma trận trung thực của adapter.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Phép thử nhận một lớp hành động (hoặc một lệnh) và một phạm vi, rồi cho biết
+quy tắc nào đã quyết định và vì sao. Vì việc phân giải thuần túy và mang tính
+tất định — cùng hành động, cùng phạm vi, cùng quyết định — nên câu trả lời của
+phép thử chính là câu trả lời mà agent sẽ nhận được.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/): writing and testing rules in practice
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): điều gì thực sự ràng buộc một lần chạy agent và sàn hệ điều hành bên dưới cỗ máy này vươn tới đâu
+- [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): space, chủ thể và nơi núm tự chủ ngự trị
+- [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/): viết và kiểm thử quy tắc trong thực tế

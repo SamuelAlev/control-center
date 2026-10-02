@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Seni bina
+description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Gambaran keseluruhan
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center mengikut Clean Architecture berteraskan ciri dengan corak port dan penyesuai. Pangkalan kod disusun mengikut domain perniagaan (ciri), dengan peraturan kebergantungan yang ketat dikuatkuasakan oleh ujian seni bina automatik.
 
-## A thin client over a headless server
+## Klien nipis di atas pelayan tanpa kepala
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center ialah **seni bina klien nipis**. Tiada klien membuka pangkalan data — proses **`cc_server`** tanpa kepala memiliki data (satu `global.db` kecil serta satu fail SQLite bagi setiap ruang kerja, dibuka secara malas) dan menyajikannya melalui RPC WebSocket. Aplikasi desktop, binaan web dan aplikasi pendamping telefon semuanya merupakan pemapar di atas satu sambungan RPC itu.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Desktop memilih cara ia mencapai pelayannya pada pelancaran pertama: **setempat** (ia melancarkan `cc_server` pada mesin ini dan berkomunikasi melalui loopback — lalai) atau **jauh** (ia mendail `cc_server` di tempat lain melalui WebSocket yang selamat). Klien web sentiasa jauh. Penyelesai permulaan (`bootstrap/server_backend.dart`) memilih laluan sebelum Riverpod wujud, kemudian mengatasi `rpcClientProvider` dengan klien yang telah bersambung — jadi setiap ciri membaca dan menulis melalui pelayan dan bukan pangkalan data setempat.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Lapisan RPC itu sendiri **tanpa keadaan**: sesi disahkan, tetapi ia tidak terikat pada mana-mana ruang kerja. Setiap panggilan berskop ruang kerja membawa `workspace_id` sendiri dalam argumennya dan penghantar menolak panggilan sedemikian tanpanya. Itulah yang membolehkan dua klien pada satu pelayan memegang ruang kerja aktif yang berbeza tanpa "ruang kerja semasa" yang dipegang pelayan untuk diperselisihkan — dan ini bermakna pengasingan dikuatkuasakan bagi setiap panggilan, bukan setiap sambungan.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/) for the full client matrix and what runs where.
+Ini ialah **ruang kerja Dart** dengan satu fail kunci yang telah diselesaikan, terdiri daripada dua puluh satu ahli — lima belas pakej serta enam aplikasi — dengan aplikasi desktop+web (`control_center`) sebagai akar ruang kerja. Enam aplikasi itu ialah binari pelayan tanpa kepala (`cc_server`), pelaksana armada tanpa kepala (`cc_worker`), PWA telefon (`cc_remote`), broker geganti WebSocket (`cc_signaling_server`), galeri Widgetbook (`cc_gallery`) dan hos demo awam (`cc_demo_server`). Lima belas pakej itu ialah `cc_ui` (sistem reka bentuk), `cc_domain` (kernel dikongsi Dart tulen: entiti, objek nilai, port, acara dan lapisan domain setiap ciri), `cc_harness` (kernel ejen terbina: gelung ejen Dart tulen — mesej, port pembekal, alat, pemadatan, pemanduan, cangkuk, subejen — tanpa `dart:io` dan tanpa kebergantungan `cc_*` yang lain), `cc_harness_runtime` (penyesuai masa jalan harness terbina: pembekal penstriman VM sahaja, perantaraan kelayakan OAuth/PKCE, stor kelayakan dan set alat generik — menjalankan ejen tanpa sebarang CLI luaran dipasang), `cc_rpc` (pengangkutan klien), `cc_host` (kernel pelayan), `cc_data` (repositori jauh), `cc_persistence` (DB sebelah pelayan), `cc_server_core` (komposisi pelayan aplikasi + masa jalan identiti/kehadiran/armada/evals), `cc_infra` (penyesuai VM sahaja), `cc_mcp` (alat MCP), `cc_mcp_client` (klien untuk pelayan MCP luaran, menjambatkan alat mereka ke dalam daftar setempat), `cc_markdown` (enjin markdown dalam repo), `cc_natives` (daun FFI) dan `system_audio_capture`. Lihat [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) untuk matriks klien penuh dan apa yang berjalan di mana.
 
-## Dependency rule
+## Peraturan kebergantungan
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Lapisan domain**: entiti Dart tulen, objek nilai, antara muka repositori, port dan perkhidmatan domain. Sifar import infrastruktur (tiada dio, drift atau model rangkaian).
+- **Lapisan persembahan**: skrin, widget, pemberitahu. Tiada akses terus drift/DAO/lapisan data; semuanya melalui pembekal Riverpod → repositori.
+- **Lapisan infrastruktur**: pelaksanaan konkrit bagi port domain dan antara muka repositori. Bergantung pada domain, tidak pernah sebaliknya.
 
-## Feature structure
+## Struktur ciri
 
-The full feature shape is:
+Bentuk penuh sesuatu ciri ialah:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Sangat sedikit ciri bawah `lib/features/` yang benar-benar membawa keempat-empatnya dan jurang itu bersifat bermaklumat dan bukan kebetulan. Kernel dikongsi telah menyerap `domain/` setiap ciri ke dalam `cc_domain` dan klien nipis tidak memegang sebarang pelaksanaan repositori, jadi kebanyakan ciri bawah `lib/` hanyalah `presentation/` serta `providers/` dan tiada yang lain. Direktori `data/` atau `domain/` yang masih kekal dalam klien menandakan sesuatu yang benar-benar milik klien.
 
-Two named exceptions are worth knowing:
+Dua pengecualian yang dinamakan wajar diketahui:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** hanya mempunyai pembekal. UI tetapan dan statusnya terletak bawah `settings/` dan permukaan alat itu sendiri ialah pakej (`cc_mcp`), bukan folder ciri.
+- **`orchestration`** dan **`plan_studio`** hanya membawa `presentation/` dan `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/) for the model.
+Ciri **`guardrails`** meletakkan lapisan domainnya dalam `cc_domain/features/guardrails/` dan bukan dalam aplikasi akar, kerana pelayan yang menguatkuasakannya: sesuatu peraturan memetakan `ActionClass` (atau `commandPrefix` shell) kepada keputusan — `allow`, `prompt` atau `deny` — pada sesuatu skop, peraturan disimpan bagi setiap ruang kerja dan setiap tindakan ejen yang ditadbir diselesaikan melalui rantaian polisi sebelum ia dijalankan. Peleraian menelusuri `space > agent > workspace > mode preset > built-in default` dan **skop pertama yang mempunyai peraturan sepadan yang membuat keputusan**; yang paling ketat hanyalah penentu seri dalam satu skop dan semasa menggabungkan beberapa kelas yang diisytiharkan oleh satu tindakan. Permukaan yang berhadapan dengan pengendali ialah Tetapan → Ruang kerja → Kebenaran ejen, di `/workspaces/<id>/settings/workspace/permissions`. Lihat [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) untuk modelnya.
 
-## Shared kernel
+## Kernel dikongsi
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` memegang entiti dan repositori yang dikongsi merentas 3+ ciri. Ia Dart tulen dengan sifar kebergantungan infrastruktur, dan itulah yang membolehkan kedua-dua klien Flutter dan binari pelayan tanpa Flutter mengimport definisi yang sama:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Entiti teras: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identiti dan multipemain: `User`, `Principal` (tersegel `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Entiti memori: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Objek nilai dikongsi: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Port dikongsi: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Perkhidmatan domain: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + jenis acara (ruang kerja/ejen, PR/semakan, pemesejan, penetikan, pipeline, orkestrasi, memori, kalendar/mesyuarat, identiti dan keahlian, kebolehcerapan)
 
-## Identity & multiplayer
+## Identiti dan multipemain
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center ialah berbilang pengguna: manusia dan ejen merupakan pelaku sama taraf yang disatukan oleh `Principal`. Ahli ruang kerja ialah `User` yang terikat pada `Workspace` pada `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Keahlian ialah sempadan akses** — bukan kunci penggandingan — dan geran setiap repo menghalang keahlian ruang kerja daripada memberi keistimewaan melebihi hos kod. Pengguna pertama yang dicipta pada pelayan baharu memiliki pemasangan itu; yang lain menyertai melalui jemputan atau OIDC. Mencipta ruang kerja menandakan pengguna itu sebagai `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Kerjasama masa nyata ialah **pelayan berwibawa + penulis-terakhir-menang (LWW) bagi setiap medan**, bukan CRDT. Kehadiran (siapa berada di sini, di mana mereka, kursor, penulisan, status langsung dan kos berjalan seseorang ejen) ialah **lorong fana yang tidak pernah dikekalkan** secara berasingan; keadaan kekal menaiki tulang belakang mutasi optimistik + rebase pelayan + LWW. Manusia dan ejen berkongsi satu senarai nama. Dengan seorang sahaja pengendali manusia, lorong kehadiran melahu dan tiada krom antara muka senarai nama muncul — multipemain tidak membebankan pengguna tunggal.
 
-## Ports and adapters
+## Port dan penyesuai
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Port ialah antara muka abstrak dalam lapisan domain. Penyesuai ialah pelaksanaan konkrit dalam infrastruktur. Kerana pelayan tanpa kepala memiliki data dan mesti dibina tanpa Flutter, hampir setiap penyesuai adalah VM sahaja dan terletak dalam `packages/cc_infra/lib/src/`, disusun mengikut bidang:
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Lokasi penyesuai                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (sebelah klien: memaparkan acara pelayan secara setempat)                          |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp dan GitHub Issues ialah penyesuai penyegerakan tiket dalam `cc_infra/lib/src/tickets/sync/`; tiket setempat hidup dalam pangkalan data ruang kerja tanpa `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (perkhidmatan domain Dart tulen — ia tidak memerlukan infrastruktur) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Akar komposisi aplikasi (`di/providers.dart`) mengikat port sebelah klien kepada pelaksanaan melalui pembekal Riverpod; pelayan menyusun penyesuainya dalam `cc_server_core`.
 
-## State management
+## Pengurusan keadaan
 
-**Riverpod** for all client state:
+**Riverpod** untuk semua keadaan klien:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` dan `AsyncNotifier<T>` untuk keadaan boleh ubah
+- `FutureProvider<T>` untuk data tak segerak
+- Senarai dan baris langsung tiba melalui langganan RPC sebagai `AsyncValue<List<T>>` — pelayan menggunakan Drift `.watch()` secara dalaman; tiada klien membuka Drift
+- Alat MCP menerima kebergantungan sebagai parameter pembina bertip, tidak pernah `Ref`
 
-## Database
+## Pangkalan data
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), dipecahkan kepada dua pangkalan data, kedua-duanya dalam `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — senarai pendek jadual yang benar-benar merentas seluruh pelayan: daftar ruang kerja, pengguna/keutamaan/peranti berganding, sambungan SSO, tetapan pelayan seluruh pemasangan, polisi tindakan terurus (pengapit seluruh pemasangan yang hanya boleh mengetatkan guardrail ruang kerja), suapan berita setiap pengguna, baris gilir armada (pekerja/kerja/log penempatan), indeks `workspace_routes` pra-pengesahan dan metadata pemasangan. Permulaan hanya membuka fail ini, jadi kos permulaan kekal rata tidak kira berapa banyak sejarah yang dikumpulkan oleh ruang kerja. Menambah jadual di sini ialah keputusan pengasingan yang perlu anda pertahankan melalui ujian ratchet.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — satu _direktori_ bagi setiap ruang kerja, memegang satu fail SQLite serta segala yang lain yang hanya milik ruang kerja itu, jadi worktree sesuatu perbualan dan fail ejen duduk bersebelahan pangkalan data dan dipadam bersamanya. Hampir semuanya hidup di sini: ejen, ruang, tiket, memori, pipeline, mesyuarat, graf kod, semakan, repo. Fail dibuka secara malas pada sentuhan pertama melalui `WorkspaceDatabaseManager.of(workspaceId)` dan membayar `quick_check`, pemasangan FTS/pencetus dan `vector_init` sendiri pada masa itu.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Kedua-dua bahagian bermula daripada garis dasar v1 yang digabungkan — `onCreate` membina skema semasa — dengan langkah migrasi hanya ditambahkan apabila pangkalan data yang telah diterapkan perlu dibawa ke hadapan.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Kerana satu ruang kerja ialah satu fail, mengeksport ruang kerja ialah satu pernyataan `VACUUM INTO` (`workspace.export`), bukan lambakan jadual demi jadual; `workspace.import` menerima pakai fail sedemikian dan menggunakan `workspace_meta` terbenam untuk membezakan failnya sendiri yang diterima pakai semula daripada fail yang datang daripada pemasangan lain.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Kedua-dua pangkalan data dimiliki oleh `cc_persistence` dan dibuka hanya oleh `cc_server`; tiada klien membuka DB — setiap klien membaca/menulis melalui RPC. Jadual ditakrifkan dalam `packages/cc_persistence/lib/database/tables/`, DAO dalam `.../daos/`; entiti domain ialah Dart tulen, berasingan daripada kelas jadual Drift, dengan pemetaan dalam lapisan data. FTS5 mengendalikan carian teks penuh dan embed `sqlite_vector`, kedua-duanya hanya di pelayan; kedua-dua pangkalan data menjalankan `PRAGMA foreign_keys=ON` dalam mod jurnal WAL.
 
-## Routing
+## Penghalaan
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, dengan satu fakta yang mengawal selebihnya: **setiap destinasi dalam aplikasi berawalan ruang kerja** sebagai `/workspaces/:workspaceId/…`. Id ruang kerja dalam URL ialah satu-satunya sumber kebenaran bagi ruang kerja aktif — `activeWorkspaceIdProvider` dipandu daripada laluan, bukan sebaliknya — dan itulah sebabnya membaca data berskop ruang kerja di luar laluan berawalan tiada tempat untuk mendapatkan idnya.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- _Fungsi_ pembina laluan dalam `router/routes.dart`, setiap satu mengambil id ruang kerja sebagai argumen pertamanya, bukan pemalar rentetan
+- Empat laluan pra-konteks tidak berawalan: `/splash`, `/onboarding`, `/signed-out` dan `/workspaces` (pemilih)
+- `ShellRoute` membalut cangkerang aplikasi; keempat-empat permukaan itu dipaparkan skrin penuh di luarnya
+- Pengawal pengesahan: persediaan yang tidak lengkap pergi ke `/onboarding`; persediaan lengkap yang kelayakan hos kodnya telah hilang pergi ke `/signed-out`. Lengkap bermaksud sekurang-kurangnya satu hos kod disambungkan bagi pengguna yang telah daftar masuk dan sekurang-kurangnya satu ruang kerja wujud — bukan GitHub secara khusus, dan CLI `gh` bukan kaedah pengesahan
+- Gerbang onboarding dalam `features/auth/providers/`
 
-## Networking (server-side)
+## Rangkaian (sebelah pelayan)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Semua HTTP luaran hidup dalam pelayan. Klien tidak pernah mendail GitHub, Linear atau Google secara langsung — mereka memanggil operasi RPC pelayan malah media jauh diambil melalui titik akhir `/proxy/media` pelayan dan bukan daripada asal huluan.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Klien **dio** dalam `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` dan `GoogleCalendarApiClient`
+- Suntikan token pengesahan melalui pencegat, termasuk pencegat Google OAuth bagi setiap akaun dalam `cc_server_core` yang menyegarkan token pada 401
+- Semua ralat dipetakan melalui `packages/cc_infra/lib/src/network/error_mapper.dart` → subkelas `AppException` bertip yang ditakrifkan dalam `cc_domain`
 
-## Security
+## Keselamatan
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Pelayan memegang kelayakan yang penting: token GitHub dan penetikan untuk pelancaran ejen, kunci pembekal LLM dan token OAuth semuanya hidup di bawah dir data pelayan atau persekitarannya. Apa yang masih dipegang oleh rantai kunci klien ialah kelayakan perantinya sendiri dan kunci penggandingan untuk pelayan jauh.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Rahsia dalam `flutter_secure_storage` (rantai kunci macOS, pengurus kelayakan Windows, libsecret Linux) — kelayakan peranti klien dan kunci penggandingan jauh, bukan token pembekal
+- `shared_preferences` untuk keutamaan tidak sensitif sahaja (tema, fon, susun atur)
+- Rahsia pembekal yang tertinggal daripada pemasangan lama diserahkan kepada pelayan sekali oleh `features/auth/providers/credential_migration.dart`, kemudian dipadam daripada rantai kunci klien
 
-## Architecture enforcement
+## Penguatkuasaan seni bina
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Kekangan seni bina disahkan oleh `test/core/architecture_constraints_test.dart`, yang gagal jika peraturan kebergantungan dilanggar.
 
-## Related concepts
+## Konsep berkaitan
 
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/): how isolation is enforced
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): the dispatch flow
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/): cross-feature communication
-- [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/): the thin-client server model and the client matrix
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/): bagaimana pengasingan dikuatkuasakan
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): aliran penghantaran
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/): komunikasi merentas ciri
+- [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/): model pelayan klien nipis dan matriks klien

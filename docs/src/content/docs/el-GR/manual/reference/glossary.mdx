@@ -1,99 +1,100 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: Γλωσσάρι
+description: Ορισμοί βασικών όρων που χρησιμοποιούνται σε όλο το Control Center.
 slug: el-GR/εγχειρίδιο/αναφορά/γλωσσάρι
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
 
 export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 
-{/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
-pairs in sync with the prose definitions below (single page, rarely changes). */}
+{/* DefinedTermSet JSON-LD για μηχανές απαντήσεων AI. Κρατήστε αυτά τα ζεύγη
+[term, definition] σε συμφωνία με τους ορισμούς της πρόζας παρακάτω (μία σελίδα, αλλάζει σπάνια). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['Πράκτορας', 'Ένας εργάτης AI με ταυτότητα, ρόλο, δεξιότητες και δυνατότητες. Ανήκει σε ακριβώς έναν χώρο εργασίας. Ο κύριος δρων του συστήματος.'],
+['Προσαρμογέας', 'Ο εκτελεστής που εκτελεί τη στροφή ενός πράκτορα. Δύο αποστέλλονται: Control Center (ενσωματωμένο) — ο βρόχος εντός της διεργασίας που μιλά στους παρόχους μοντέλων — και Claude Code μέσω του CLI claude. Το Cursor, το Codex και οι άλλοι πάροχοι μοντέλων προσαρτώνται στον ενσωματωμένο προσαρμογέα, όχι ως ξεχωριστοί εκτελεστές.'],
+['Χώρος εργασίας', 'Ο κορυφαίος μισθωτής απομόνωσης. Ομαδοποιεί πράκτορες, αποθετήρια, χώρους, εισιτήρια, μνήμη και pipelines. Η απομόνωση είναι δομική, όχι συμβατική: κάθε χώρος εργασίας έχει το δικό του αρχείο SQLite, οπότε μια ανάγνωση από άλλον χώρο εργασίας δεν μεταγλωττίζεται. Κάθε διαδρομή εντός της εφαρμογής έχει πρόθεμα /workspaces/:workspaceId.'],
+['Κεντρικός υπολογιστής κώδικα', 'Ένας κεντρικός υπολογιστής κώδικα — GitHub, GitLab ή Bitbucket Cloud. Ιδιότητα κάθε αποθετηρίου, που διαβάζεται από το απομακρυσμένο origin κατά την καταχώριση. Ένας χώρος εργασίας μπορεί να έχει αποθετήρια και στους τρεις.'],
+['Αποθετήριο', 'Ένα αποθετήριο Git που έχει καταχωριστεί μέσα σε έναν χώρο εργασίας. Με εμβέλεια χώρου εργασίας: το ίδιο checkout καταχωρισμένο σε δύο χώρους εργασίας είναι δύο γραμμές με δύο αναγνωριστικά, και η ταυτότητα ενός αποθετηρίου μεταξύ χώρων εργασίας καθορίζεται από τη διαδρομή στο σύστημα αρχείων, ποτέ από το αναγνωριστικό. Η καταχώριση απαιτεί ένα δέντρο εργασίας Git του οποίου το απομακρυσμένο origin δείχνει σε υποστηριζόμενο κεντρικό υπολογιστή κώδικα (GitHub, GitLab ή Bitbucket Cloud).'],
+['Απομονωμένο αποθετήριο', 'Ένα worktree με εμβέλεια χώρου εργασίας ενός καταχωρισμένου αποθετηρίου. Copy-on-write μέσω rift όπου αποστέλλεται αυτό το native· git worktree στα Windows. Παρέχεται ανά χώρο, ώστε κάθε συνομιλία σε αυτόν τον χώρο να μοιράζεται ένα checkout· οι πράκτορες δεν μεταβάλλουν ποτέ την πηγή.'],
+['Χώρος', 'Ένας χώρος συνεργασίας με εμβέλεια χώρου εργασίας, με ανθρώπινους συμμετέχοντες και συμμετέχοντες πράκτορες, μια αποθηκευμένη Λειτουργία, κατάσταση παροχής και ένα SpaceKind (topic, agentPeer, system, pr ή slack) που καθορίζει πώς χωρίζεται σε ενότητες, πώς σιγεί, πώς σημαίνεται και πώς καθαρίζεται. Κατέχει τα απομονωμένα worktree που μοιράζονται οι συνομιλίες του (copy-on-write μέσω rift· git worktree στα Windows).'],
+['Συνομιλία', 'Μία ροή μηνυμάτων μέσα σε έναν Χώρο, με δικό της αναγνωριστικό, ιστορικό και πλαίσιο εκτέλεσης πράκτορα. Οι συνομιλίες σε έναν χώρο είναι ισότιμες χωρίς ιεραρχία — δεν υπάρχει κύρια ή κεντρική ροή. Κάθε μία ανοίγει ως καρτέλα επεξεργαστή· η κατάσταση μη αναγνωσμένων ενός χώρου συναθροίζει όλες τους.'],
+['Νήμα', 'Μια Συνομιλία της οποίας το anchorMessageId έχει οριστεί: αγκυρωμένη σε ένα μήνυμα μιας αδελφής συνομιλίας στον ίδιο Χώρο, με φρέσκο πλαίσιο πράκτορα που το τροφοδοτεί εκείνο το μήνυμα-άγκυρα. Ένα μόνο επίπεδο βάθος — τα νήματα δεν αγκυρώνονται ποτέ σε νήματα.'],
+['Εισιτήριο', 'Το συγκρότημα της μονάδας εργασίας. Ουδέτερο ως προς τον πάροχο: local από προεπιλογή, με προσαρμογείς συγχρονισμού για Linear, GitHub Issues, Jira Cloud και ClickUp, αν και καμία επιφάνεια εντός της εφαρμογής δεν δημιουργεί σύνδεση συγχρονισμού. Υποστηρίζει ιεραρχία, συνδέσμους και ανάθεση. Η ανάθεση σε έναν πράκτορα καταγράφει την κυριότητα και δεν στέλνει τίποτα· η ανάθεση σε μια ομάδα είναι η εξαίρεση (το TeamRoutingService στέλνει τον επικεφαλής).'],
+['Pipeline', 'Μια ροή εργασίας βασισμένη σε DAG που αλυσιδώνει βήματα (αποστολή πράκτορα, σενάρια, συνθήκες). Ορίζεται από πρότυπα· εκτελείται ως εκτελέσεις.'],
+['Σύσκεψη', 'Μια τοπικά καταγεγραμμένη, μεταγραμμένη σύσκεψη. Συλλαμβάνει μικρόφωνο και ήχο συστήματος, μεταγράφει στη συσκευή με επιλέξιμο μοντέλο ASR (Parakeet TDT v3 από προεπιλογή· τα Parakeet TDT v2, Whisper large-v3-turbo και Whisper base.en είναι εναλλακτικές), διαχωρίζει ομιλητές και συνοψίζει σε σημειώσεις, εκκρεμείς ενέργειες και αποφάσεις. Το επιλεγμένο μοντέλο ASR εγκαθίσταται υποχρεωτικά κατά την εκκίνηση και οι λειτουργίες εγγραφής ενεργοποιούνται μετά από μία επανεκκίνηση. Με εμβέλεια χώρου εργασίας.'],
+['CalendarEvent', 'Μια συγχρονισμένη καταχώριση Google Calendar με εμβέλεια χώρου εργασίας και συνδεδεμένου λογαριασμού. Διακριτή από μια Σύσκεψη: μια καταχώριση είναι προγραμματισμένη δέσμευση, μια Σύσκεψη είναι καταγεγραμμένη συνεδρία.'],
+['CalendarAccount', 'Ένας συνδεδεμένος λογαριασμός Google, ανά χώρο εργασίας και email. Τα OAuth refresh tokens αποθηκεύονται στην πλευρά του διακομιστή ως κλειδιά google_* στο αρχείο secrets.json κάτω από τον κατάλογο δεδομένων και δεν φτάνουν ποτέ σε πελάτη· μια σημαία authExpiredAt οδηγεί το πλαίσιο επανασύνδεσης.'],
+['AgentRole', 'Απαριθμημένος ρόλος (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Καθορίζει persona, πρόσβαση στη μνήμη και ιεραρχία.'],
+['AgentSkills', 'Σύνολο αναγνωριστικών δεξιοτήτων χωρίς διάκριση πεζών-κεφαλαίων που εισάγει σχετικό πλαίσιο στις προτροπές τη στιγμή της αποστολής.'],
+['Πηγή δεξιότητας', 'Ένα αποθετήριο GitHub που καταχωρίζεται ανά χώρο εργασίας ως κατάλογος δεξιοτήτων. Αναξιόπιστο εξ ορισμού: τα μεταδεδομένα του αποθετηρίου είναι μόνο για προβολή και κάθε εγκατάσταση περνά από την πύλη σάρωσης που κλείνει σε περίπτωση σφάλματος, προτού φτάσει οποιοδήποτε περιεχόμενο στον δίσκο ή σε μια προτροπή.'],
+['skills-lock.json', 'Το μανιφέστο ανά χώρο εργασίας των εγκατεστημένων δεξιοτήτων: για καθεμία, το αποθετήριο προέλευσης, η διαδρομή μέσα στο αποθετήριο, το commit στο οποίο είναι καρφιτσωμένη και ένα συγκεντρωτικό hash περιεχομένου. Οι εγκαταστάσεις, οι ενημερώσεις και οι απεγκαταστάσεις το κρατούν επίκαιρο· το verify_skills το ελέγχει έναντι του δίσκου.'],
+['AgentCapabilities', 'Τέσσερις σημαίες (push στο αποθετήριο, GitHub API, εισιτήρια, εξερχόμενη δικτυακή κίνηση) που επιλύονται ανά αποστολή: προεπιλογή πράκτορα, μετά προεπιλογή χρήστη, με παράκαμψη ανά συνομιλία. Επιβάλλονται μέσω απουσίας, αφού μια απενεργοποιημένη δυνατότητα σημαίνει ότι το token ή η έξοδος απλώς δεν εγχέεται ποτέ.'],
+['Λειτουργία', 'chat, plan, review ή orchestrate. Αποθηκεύεται ανά χώρο, ώστε ένας πράκτορας να μπορεί να βρίσκεται σε διαφορετικές λειτουργίες σε διαφορετικούς χώρους· κάθε συνομιλία σε έναν χώρο τη μοιράζεται. Περιορίζει την προτροπή συστήματος, τους κανόνες εγγραφής του sandbox και τη λίστα επιτρεπόμενων εργαλείων MCP.'],
+['SandboxBackend', 'microvm (μια κλειστή VM — το μόνο υποσύστημα με όριο πυρήνα, που εφαρμόζεται σε διαδραστικά τερματικά), native (Seatbelt στο macOS, bubblewrap σε Linux και WSL2) ή none. Ανιχνεύεται μία φορά κατά την εκκίνηση· το native περιβάλλει την αποστολή πράκτορα όταν είναι διαθέσιμο. Τα Windows δεν έχουν εγγενές υποσύστημα και το Linux χρειάζεται bwrap και socat, οπότε οι εκτελέσεις εκεί γίνονται χωρίς περιβολή· το --sandbox off εξαιρεί σκόπιμα.'],
+['Σταθμός', 'Μια αναλώσιμη μηχανή που οδηγεί ένας πράκτορας σε πραγματικό χρόνο: ένας κλειστός περιηγητής ή επιφάνεια εργασίας Linux, ένας διαχειριζόμενος από τον κεντρικό υπολογιστή εξομοιωτής Android ή Simulator iOS, ή ένα κλειστό τερματικό. Παρακολουθείται ζωντανά μέσω δικής του λωρίδας πλήρους ανάλυσης, με την ανάληψη να επιβάλλεται στην πλευρά του διακομιστή. Με εμβέλεια συνομιλίας, ώστε η καρτέλα του ανθρώπου και το εργαλείο του πράκτορα να απευθύνονται σε μία μηχανή.'],
+['Περίβλημα', 'Η ισχυρότερη ιδιότητα απομόνωσης που διαθέτουν οι σταθμοί με υποστήριξη VM: όριο πυρήνα, αναλώσιμος δίσκος επικάλυψης, πύλη δικτύου που αρνείται εξ ορισμού και μεσίτης διαπιστευτηρίων. Οι σταθμοί Android και iOS είναι αναλώσιμοι αλλά χρησιμοποιούν δίκτυο διαχειριζόμενο από τον κεντρικό υπολογιστή, οπότε δεν διεκδικούν αυτό το όριο. Η οδήγηση οποιουδήποτε σταθμού χρησιμοποιεί την κλάση περιορισμών enclosureControl.'],
+['RunCost', 'Καταγραφή tokens/κόστους (tokens εισόδου, tokens εξόδου, εκτιμώμενο κόστος σε λεπτά) για μία μεμονωμένη εκτέλεση πράκτορα.'],
+['WakeReason', 'Γιατί στάλθηκε ένας πράκτορας. Έξι τιμές: μήνυμα χρήστη, ανάθεση εισιτηρίου, εκ νέου αποστολή αποκατάστασης μετά από αποτυχία, ολοκληρωμένο θυγατρικό εισιτήριο, προγραμματισμένος παλμός συνέχειας και βήμα pipeline.'],
+['SandboxPort', 'Διαχειρίζεται τον κύκλο ζωής του sandbox (probe, launch, events, exec, destroy).'],
+['CredentialBrokerPort', 'Εκδίδει διαπιστευτήρια με εμβέλεια και έλεγχο δυνατοτήτων για την εκκίνηση του sandbox και τα ανακαλεί κατά τον τερματισμό.'],
+['GitRepoInspectorPort', 'Εξάγει μεταδεδομένα (ιδιοκτήτη, αποθετήριο, κλάδο) από μια τοπική διαδρομή αποθετηρίου Git.'],
+['EmbeddingPort', 'Παράγει διανύσματα ενσωμάτωσης κειμένου μοναδιαίου μέτρου για σημασιολογική αναζήτηση.'],
+['NotificationPort', 'Εμφανίζει εγγενείς ειδοποιήσεις επιφάνειας εργασίας σεβόμενο τη διάκριση κατηγορίας/διαδρομής.'],
+['TicketProviderPort', 'Ουδέτερο ως προς τον πάροχο όριο προς ένα σύστημα εισιτηρίων (create, get, list, update, transition, assign).'],
+['PipelineEnginePort', 'Ξεκινά μια εκτέλεση pipeline από ένα πρότυπο, αποσυνδέοντας τους καλούντες από τη συγκεκριμένη μηχανή.'],
+['AgentDispatchService', 'Ξεκινά εκτελέσεις πρακτόρων: παρέχει απομονωμένα αποθετήρια, χτίζει προτροπές, δημιουργεί αρχεία καταγραφής εκτέλεσης και επιστρέφει ζωντανές ροές γεγονότων.'],
+['TicketWorkflowService', 'Μηχανή κύκλου ζωής εισιτηρίων καθαρού τομέα, με μοναδικό σημείο διέλευσης μεταβολών υπό αισιόδοξη ταυτοχρονικότητα και επιβολή απομόνωσης χώρου εργασίας. Το γράφημα μεταβάσεων που επιβάλλει δεσμεύει μόνο πράκτορες και αυτοματισμούς· οι αλλαγές από το περιβάλλον χρήστη περνούν force true και το παρακάμπτουν.'],
+['PipelineEngine', 'Ενορχηστρώνει την εκτέλεση: ξεκινά εκτελέσεις, προγραμματίζει βήματα, αποθηκεύει κατάσταση, χειρίζεται routers/joins/continue-on-fail, επαναφέρει εκτελέσεις σε εξέλιξη μετά από επανεκκίνηση.'],
+['PipelineTriggerDispatcher', 'Εγγράφεται σε γεγονότα τομέα και ξεκινά αυτόματα εκτελέσεις pipeline που ταιριάζουν για ενεργοποιημένους ενεργοποιητές.'],
+['MemoryAccessPolicy', 'Επιλύει και επιβάλλει τα δικαιώματα μνήμης των ρόλων πράκτορα σε τομείς.'],
+['HarnessCostCalculator', 'Τιμολογεί τη χρήση tokens του ενσωματωμένου μηχανισμού σε ένα RunCost από τον κατάλογο του models.dev. Η αποστολή αποθηκεύει αυτή την καταγραφή στο αρχείο καταγραφής εκτέλεσης.'],
+['BudgetEnforcementService', 'Υπολογίζει τη μηνιαία δαπάνη ανά πράκτορα και έναν αποκλεισμό πριν από την αποστολή (checkInvocationBlock). Αυτός ο αποκλεισμός συμβουλεύεται μόνο από τους ανακτητές συμβιβασμού (OrphanRunReaper, StrandedTicketReconciler), ποτέ από τη συνήθη αποστολή.'],
+['BudgetGovernanceService', 'Αξιολογεί τη μηνιαία δαπάνη ανά πράκτορα μετά από κάθε εκτέλεση: ένα μαλακό κατώφλι καταγράφει περιστατικό προειδοποίησης· η εξάντληση καταγράφει σκληρό περιστατικό και γυρίζει τον κύκλο ζωής του πράκτορα σε paused.'],
+['DomainEventBus', 'Δίαυλος δημοσίευσης/εγγραφής μετάδοσης εντός της διεργασίας για επικοινωνία μεταξύ χαρακτηριστικών. Τα γεγονότα είναι τυποποιημένα· οι συνδρομητές καταναλώνουν ροές ανά τύπο.'],
+['DomainEvent', 'Βασική διεπαφή. Κάθε γεγονός έχει occurredAt. Βασικές κατηγορίες: χώρος εργασίας/πράκτορας, PR/έλεγχος, μηνύματα, εισιτήρια, pipeline, συσκέψεις/ημερολόγιο, ταυτότητα, σταθμοί, παρατηρησιμότητα.'],
+['Καθαρή Αρχιτεκτονική', 'Κανόνας εξαρτήσεων: Presentation προς Application/Providers προς Domain, με το Infrastructure να δείχνει προς τα μέσα. Ο τομέας δεν έχει καμία εισαγωγή υποδομής.'],
+['Θύρες και προσαρμογείς', 'Ο τομέας ορίζει αφηρημένες διεπαφές (θύρες)· η υποδομή παρέχει συγκεκριμένες υλοποιήσεις (προσαρμογείς). Η ρίζα σύνθεσης τα δένει.'],
+['Κοινός πυρήνας', 'Οντότητες, αντικείμενα τιμών, θύρες και υπηρεσίες στο core/domain/ που μοιράζονται 3+ χαρακτηριστικά.'],
+['Προτεραιότητα στα χαρακτηριστικά', 'Ο κώδικας οργανώνεται κατά επιχειρηματικό τομέα (πράκτορες, pipelines, μηνύματα) και όχι κατά τεχνικό επίπεδο.'],
+['Αρχιτεκτονική λεπτού πελάτη', 'Κανένας πελάτης δεν ανοίγει τη βάση δεδομένων· μια διεργασία cc_server χωρίς κεφαλή κατέχει τα δεδομένα και τα σερβίρει μέσω RPC over WebSocket. Κάθε πελάτης (επιφάνεια εργασίας, web, τηλέφωνο) είναι ένας αποδίδων πάνω σε αυτή τη μία σύνδεση RPC.'],
+['cc_server', 'Το δυαδικό του διακομιστή χωρίς κεφαλή (καθαρό Dart, χωρίς μηχανή Flutter). Κατέχει τη βάση δεδομένων Drift/SQLite, σερβίρει repo-RPC μέσω WebSocket και εκτελεί τις υπηρεσίες παρασκηνίου (pipelines, MCP, ανακτητές).'],
+['ServerConnectionMode', 'Πώς φτάνει η επιφάνεια εργασίας στον διακομιστή της: local (ξεκινά ένα cc_server σε αυτή τη μηχανή) ή remote (καλεί έναν αλλού). Ο web πελάτης είναι πάντα remote.'],
+['RemoteRpcClient', 'Ο πελάτης JSON-RPC ανεξάρτητος από το μεταφορικό μέσο που χρησιμοποιεί κάθε λεπτός πελάτης για να μιλήσει στον διακομιστή του, μέσω WSS, loopback ή του διαμεσολαβημένου relay.'],
+['Χώρος εργασίας ανά κλήση', 'Ο διακομιστής είναι χωρίς κατάσταση: δεν υπάρχει δέσμευση χώρου εργασίας ανά συνεδρία, οπότε πολλοί πελάτες σε έναν διακομιστή δεν μοιράζονται ποτέ έναν τρέχοντα χώρο εργασίας. Κάθε repo/call και sub/subscribe με εμβέλεια χώρου εργασίας πρέπει να φέρει workspace_id στα ορίσματά του· ένα αναγνωριστικό που λείπει ή δεν είναι καταχωρισμένο απορρίπτεται προτού ανοίξει οποιαδήποτε βάση δεδομένων. Η πρόσβαση στη συνέχεια ελέγχεται από την ιδιότητα μέλους και τον ρόλο στον χώρο εργασίας, όχι από τη συνεδρία.'],
+['cc_remote', 'Ο λεπτός πελάτης του τηλεφώνου — ένα PWA web σε Flutter που ελέγχει εξ αποστάσεως τον στόλο μέσω του διαμεσολαβημένου relay, με πολιτική εργαλείων που αρνείται εξ ορισμού.'],
+['cc_signaling_server', 'Ένας μεσίτης relay WebSocket χωρίς κατάσταση που φιλοξενεί δωμάτια με πρόσκληση. Ένα χαζό relay: προωθεί μόνο πλαίσια σφραγισμένα από άκρο σε άκρο, δεν κρατά δεδομένα εφαρμογής και δεν βλέπει ποτέ το PSK σύζευξης.'],
+['Εντολέας', 'Μια σφραγισμένη τιμή που ενοποιεί ανθρώπους και πράκτορες στην ενιαία αφαίρεση δρώντος. UserPrincipal(userId) ή AgentPrincipal(agentId). Κάθε μήνυμα, εισιτήριο, έλεγχος, σχέδιο και αρχείο καταγραφής εκτέλεσης αποδίδεται μέσω ενός Εντολέα.'],
+['Χρήστης', 'Μια ανθρώπινη ταυτότητα, αποθηκευμένη στο global.db και επομένως καθολική σε όλους τους χώρους εργασίας. Ο εντολέας που δημιουργεί έναν χώρο εργασίας γίνεται ιδιοκτήτης του, καταγεγραμμένος στο Workspace.ownerUserId με γραμμή ιδιότητας μέλους ρόλου ιδιοκτήτη· οι άλλοι συμμετέχουν με πρόσκληση ή SSO.'],
+['WorkspaceMember', 'Μια γραμμή ιδιότητας μέλους που δεσμεύει έναν Χρήστη σε έναν Χώρο εργασίας με κάποιον WorkspaceRole. Η ιδιότητα μέλους — όχι ένα κλειδί σύζευξης — είναι το όριο πρόσβασης.'],
+['WorkspaceRole', 'Βαθμωτός ρόλος ιδιότητας μέλους: owner, admin, member, viewer ή guest. Το μοναδικό σημείο διέλευσης των ενεργειών αποθετηρίου εξάγει ένα ελάχιστο κατώφλι ρόλου ανά είδος ενέργειας.'],
+['ParticipantPresence', 'Εφήμερη επίγνωση για έναν Εντολέα (κατάσταση, θέση, δρομέας, πληκτρολόγηση, ζωντανή κατάσταση πράκτορα και τρέχον κόστος). Δεν αποθηκεύεται ποτέ· συγκεντρώνεται στον διακομιστή· φιλτράρεται κατά την εκχώρηση αποθετηρίου πριν από τη διανομή.'],
+['Λειτουργία παρακολούθησης', 'Κάντε κλικ σε ένα avatar για να ακολουθήσετε το viewport του μέχρι να ενεργήσετε, και μετά αποσυνδεθείτε. Λειτουργεί για ανθρώπους και για πράκτορες («δείτε έναν πράκτορα να δουλεύει»).'],
+['Δείκτης αυτονομίας', 'Έλεγχος ανά χώρο και ανά πράκτορα — propose-only / act-with-approval / act-freely — υλοποιημένος ως επώνυμο προφίλ πάνω από τον χώρο αποθήκευσης περιορισμών ενεργειών.'],
+['cc_worker', 'Ένα δυαδικό εκτελεστή στόλου χωρίς κεφαλή, σε καθαρό Dart. Συνεργάζεται με έναν cc_server, δηλώνει τις δυνατότητές του, τραβά ενοικιασμένες εργασίες, τις εκτελεί και στέλνει γεγονότα πίσω. Δεν κρατά μόνιμη κατάσταση.'],
+['JobSpec', 'Η τυποποιημένη προδιαγραφή για καθετί εκτελέσιμο (εκτέλεση πράκτορα, βήμα pipeline, ευρετηρίαση κώδικα, golden-render, benchmark, παρτίδα αξιολόγησης): απαιτούμενες δυνατότητες, προτεραιότητα, προϋπολογισμός, χώρος εργασίας.'],
+['ActionClass', 'Ένα κλειστό σύνολο 13 κλάσεων επιρροής (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Κάθε εργαλείο που μεταβάλλει δηλώνει τις κλάσεις του· η μηχανή περιορισμών επιλύει allow / prompt / deny ανά εμβέλεια.'],
+['WriteLedger', 'Ένα καθολικό ιδιοδυναμικότητας με εμβέλεια χώρου εργασίας. Κάθε μεταβολή φέρει κλειδί ιδιοδυναμικότητας ανά λογική ενέργεια· μια επανάληψη επιστρέφει το byte-identical αρχικό αποτέλεσμα. Κάνει την επανασύνδεση και τη χρήση από πολλούς πελάτες ασφαλή εξ ορισμού.'],
+['Κλειδί ιδιοδυναμικότητας', 'Ένα UUIDv7 που παράγεται από τον πελάτη ανά λογική ενέργεια (όχι ανά προσπάθεια). Αφαιρεί διπλότυπα από επαναλήψεις μεταξύ επανασυνδέσεων και πελατών.'],
+['Εισερχόμενα που με χρειάζονται', 'Μια ουρά που διαπερνά όλους τους πυλώνες με αυστηρό κανόνα: ένα στοιχείο εμφανίζεται μόνο αν μπλοκάρει κάτι (έναν πράκτορα, ένα merge, έναν συγχρονισμό) ή ζητά ρητά τον χειριστή.'],
+['Plan Studio', 'Η διαδραστική επιφάνεια σχεδιασμού: μια πρόταση ενορχήστρωσης ή ένα σχέδιο ενός πράκτορα, αποδιδόμενο ως επεξεργάσιμο τυποποιημένο DAG, με εκτιμήσεις κόστους/χρόνου/κινδύνου ανά βήμα, έκδοση diff σχεδίου και μερική έγκριση.'],
+['Υπολογισμός ελέγχου', 'Υπολογισμός ελέγχου στην πλευρά του διακομιστή για ένα PR: κοόρτες αρχείων από το γράφημα, τυποποιημένα διαγράμματα περιήγησης, οπτικά diff διεπαφής, diff συμβολαίου OpenAPI, χάρτης ακτίνας επίπτωσης και πύλες ανά άξονα, που σερβίρονται μέσω review_studio.* και ενσωματώνονται στην ετυμηγορία της καρτέλας Ανασκόπηση.'],
+['Χώρος ελέγχου', "Ο ένας χώρος υποστήριξης ενός PR (λειτουργία review, είδος pr), που δημιουργείται ιδιοδυναμικά και συνδέεται με το PR μέσω μιας ReviewSpaceAssociation. Κάθε ελεγκτής καταχωρίζει τα ευρήματά του εκεί, και αυτό είναι που τα κάνει συγκρίσιμα· το απομονωμένο worktree του έχει το PR σε checkout στο head του."],
+['Κόμβος ελέγχου', 'Η δομημένη μονάδα ενός ευρήματος ελέγχου AI: είδος (bug, suggestion, recommendation, question, ticket), προτεραιότητα P0-P3, τριάδα διαλογής κατηγορίας/σοβαρότητας/κόπου, άγκυρα αρχείου και γραμμής, προαιρετική προτεινόμενη διόρθωση και βαθμολογία βεβαιότητας. Καταχωρίζεται με add_review_node· η ετυμηγορία υπολογίζεται από κόμβους, όχι από πρόζα.'],
+['Έτοιμο για συναίνεση', 'Η κατάσταση κόμβου ελέγχου που επιτυγχάνεται μόνο όταν ένας ομότιμος ελεγκτής επιβεβαιώσει ένα εύρημα — ένας πράκτορας δεν μπορεί να επιβεβαιώσει το δικό του. Το κουμπί Δημοσίευση της καρτέλας Ανασκόπηση στέλνει κάθε εναπομείναν εύρημα σε εκκρεμότητα· το εργαλείο MCP publish_review_to_github εξακολουθεί να προεπιλέγει μόνο ευρήματα που έχουν επιβεβαιωθεί από ομότιμο.'],
+['Επίπεδο ελέγχου', 'Πολιτική χώρου εργασίας (light, balanced, thorough) που ρυθμίζει ποιοι ελεγκτές εξαπλώνονται (μόνο engineer· +qa+architect· +security+perf) και πού εμφανίζονται τα ευρήματα κάτω από το κατώφλι. Δεν διαγράφει ποτέ ένα εύρημα.'],
+['Άξονας ελέγχου', 'Μία από πέντε λωρίδες βαθμολόγησης ανά έλεγχο: correctness, security και testGap από τα ευρήματα των ελεγκτών· visual και apiContract ντετερμινιστικές. Οι πυλωμένες λωρίδες ενσωματώνονται στην ετυμηγορία και μπορούν μόνο να την κάνουν πιο αυστηρή — μια πύλη partial ή unavailable κρατά την ετυμηγορία αντί να την αφήνει να περάσει.'],
+['Ετυμηγορία ελέγχου', 'ship, hold ή block. Κάθε εύρημα P0 με βεβαιότητα >= 0,7 μπλοκάρει· κάθε άλλο P0 ή οποιοδήποτε P1 κρατά· αλλιώς ship. Ένας πυλωμένος άξονας που αποτυγχάνει επιβάλλει block και δεν μπορεί να υπερψηφιστεί από ευρήματα.'],
+['SessionRecording', 'Μια ροή γεγονότων συν κασέτες HTTP/LLM και I/O εργαλείων που καταγράφονται για μία εκτέλεση, σε ζεύγος με ένα AgentConfigHash.'],
+['Χρυσή συνεδρία', 'Μια ευλογημένη SessionRecording καρφιτσωμένη ανά πράκτορα ή playbook.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "Γλωσσάρι του Control Center",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## Βασικές οντότητες
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Πράκτορας**: Ένας εργάτης AI με ταυτότητα, ρόλο, δεξιότητες και δυνατότητες. Ανήκει σε ακριβώς έναν χώρο εργασίας. Ο κύριος δρων του συστήματος.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
+**Προσαρμογέας**: Ο εκτελεστής που εκτελεί τη στροφή ενός πράκτορα. Δύο αποστέλλονται: το **Control Center (ενσωματωμένο)** — ο βρόχος εντός της διεργασίας που μιλά στους παρόχους μοντέλων — και το **Claude Code** μέσω `claude -p`. Το Cursor, το Codex, η Anthropic, η OpenAI και τα υπόλοιπα είναι πάροχοι πάνω στον ενσωματωμένο προσαρμογέα, όχι ξεχωριστά CLI. Δείτε [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/).
+**Χώρος εργασίας**: Ο κορυφαίος μισθωτής απομόνωσης. Ομαδοποιεί πράκτορες, αποθετήρια, χώρους, εισιτήρια, μνήμη και pipelines. Η απομόνωση είναι δομική, όχι συμβατική: κάθε χώρος εργασίας έχει το δικό του αρχείο SQLite (`<dataDir>/<workspaceId>/workspace.db`), οπότε μια ανάγνωση από άλλον χώρο εργασίας δεν μεταγλωττίζεται. Κάθε διαδρομή εντός της εφαρμογής έχει πρόθεμα `/workspaces/:workspaceId` — δείτε τον [χάρτη διαδρομών](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/).
+**Κεντρικός υπολογιστής κώδικα**: Ένας κεντρικός υπολογιστής κώδικα — **GitHub**, **GitLab** ή **Bitbucket Cloud**. Ο κεντρικός υπολογιστής κώδικα είναι ιδιότητα κάθε αποθετηρίου, που διαβάζεται από το απομακρυσμένο `origin` κατά την καταχώριση, και επιλέγει τον προσαρμογέα API και τα διαπιστευτήρια αυτού του αποθετηρίου. Ένας χώρος εργασίας μπορεί να έχει αποθετήρια και στους τρεις· οι συγκεντρωτικές επιφάνειες (τα εισερχόμενα, η ουρά PR) απλώνονται σε κάθε κεντρικό υπολογιστή κώδικα που εκπροσωπείται και συγχωνεύουν τα αποτελέσματα, απομονώνοντας τις αποτυχίες ώστε ένας μη προσβάσιμος κεντρικός υπολογιστής κώδικα να μην αδειάζει ποτέ τους άλλους. Οι κεντρικοί υπολογιστές κώδικα διαφέρουν σε αυτά που υποστηρίζουν — δείτε τον πίνακα δυνατοτήτων στο [Σύνδεση κεντρικού υπολογιστή κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/).
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**Αποθετήριο**: Ένα αποθετήριο Git καταχωρισμένο μέσα σε έναν χώρο εργασίας. **Με εμβέλεια χώρου εργασίας** — το ίδιο checkout καταχωρισμένο σε δύο χώρους εργασίας είναι δύο ανεξάρτητες γραμμές με δύο αναγνωριστικά· η ταυτότητα ενός αποθετηρίου μεταξύ χώρων εργασίας καθορίζεται από τη διαδρομή στο σύστημα αρχείων, ποτέ από το αναγνωριστικό. Η καταχώριση απαιτεί ένα δέντρο εργασίας Git του οποίου το απομακρυσμένο `origin` δείχνει σε υποστηριζόμενο κεντρικό υπολογιστή κώδικα. Κάθε αποθετήριο φέρει αυτόν τον **κεντρικό υπολογιστή κώδικα** (`github` / `gitlab` / `bitbucket`), που επιλέγει τον προσαρμογέα API και τα διαπιστευτήρια που χρησιμοποιούνται για αυτό.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**Απομονωμένο αποθετήριο**: Ένα worktree με εμβέλεια χώρου εργασίας ενός καταχωρισμένου αποθετηρίου. Copy-on-write μέσω `rift` όπου αποστέλλεται αυτό το native· `git worktree` στα Windows. Παρέχεται **ανά χώρο** — κάθε συνομιλία σε αυτόν τον χώρο μοιράζεται ένα checkout — ώστε οι πράκτορες να μην μεταβάλλουν ποτέ την πηγή.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**Χώρος**: Ένας χώρος συνεργασίας με εμβέλεια χώρου εργασίας, με ανθρώπινους συμμετέχοντες και συμμετέχοντες πράκτορες, μια αποθηκευμένη `Mode`, κατάσταση παροχής και ένα `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) που καθορίζει πώς χωρίζεται σε ενότητες, πώς σιγεί, πώς σημαίνεται και πώς καθαρίζεται. Κατέχει τα απομονωμένα worktree που μοιράζονται οι συνομιλίες του (copy-on-write μέσω `rift`· `git worktree` στα Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**Συνομιλία**: Μία ροή μηνυμάτων μέσα σε έναν Χώρο, με δικό της αναγνωριστικό, ιστορικό και πλαίσιο εκτέλεσης πράκτορα. Οι συνομιλίες σε έναν χώρο είναι ισότιμες χωρίς ιεραρχία — δεν υπάρχει κύρια ή «κεντρική» ροή. Κάθε μία ανοίγει ως καρτέλα επεξεργαστή· η κατάσταση μη αναγνωσμένων ενός χώρου συναθροίζει όλες τους.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**Νήμα**: Μια Συνομιλία της οποίας το `anchorMessageId` έχει οριστεί: αγκυρωμένη σε ένα μήνυμα μιας αδελφής συνομιλίας στον ίδιο Χώρο, με φρέσκο πλαίσιο πράκτορα που το τροφοδοτεί εκείνο το μήνυμα-άγκυρα. Ένα μόνο επίπεδο βάθος — τα νήματα δεν αγκυρώνονται ποτέ σε νήματα.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**Εισιτήριο**: Το συγκρότημα της μονάδας εργασίας. Ουδέτερο ως προς τον πάροχο: `local` από προεπιλογή, με προσαρμογείς συγχρονισμού για Linear, GitHub Issues, Jira Cloud και ClickUp — αν και καμία επιφάνεια εντός της εφαρμογής δεν δημιουργεί σύνδεση συγχρονισμού. Υποστηρίζει ιεραρχία, συνδέσμους και ανάθεση. Η ανάθεση σε έναν πράκτορα καταγράφει την κυριότητα και δεν στέλνει τίποτα· η ανάθεση σε μια ομάδα είναι η εξαίρεση (το `TeamRoutingService` στέλνει τον επικεφαλής).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**Pipeline**: Μια ροή εργασίας βασισμένη σε DAG που αλυσιδώνει βήματα (αποστολή πράκτορα, σενάρια, συνθήκες). Ορίζεται από πρότυπα· εκτελείται ως εκτελέσεις.
 
-## Value objects
+## Αντικείμενα τιμών
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: Απαριθμημένος ρόλος (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Καθορίζει persona, πρόσβαση στη μνήμη και ιεραρχία.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: Σύνολο αναγνωριστικών δεξιοτήτων χωρίς διάκριση πεζών-κεφαλαίων που εισάγει σχετικό πλαίσιο στις προτροπές τη στιγμή της αποστολής.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-δεξιοτήτων/).
+**Πηγή δεξιότητας**: Ένα αποθετήριο GitHub που καταχωρίζεται ανά χώρο εργασίας ως κατάλογος δεξιοτήτων. Αναξιόπιστο εξ ορισμού: τα μεταδεδομένα του αποθετηρίου είναι μόνο για προβολή και κάθε εγκατάσταση περνά από την πύλη σάρωσης που κλείνει σε περίπτωση σφάλματος, προτού φτάσει οποιοδήποτε περιεχόμενο στον δίσκο ή σε μια προτροπή. Δείτε [εγκατάσταση και διαχείριση δεξιοτήτων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-δεξιοτήτων/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: Το μανιφέστο ανά χώρο εργασίας των εγκατεστημένων δεξιοτήτων: για καθεμία, το αποθετήριο προέλευσης, η διαδρομή μέσα στο αποθετήριο, το commit στο οποίο είναι καρφιτσωμένη και ένα συγκεντρωτικό hash περιεχομένου. Οι εγκαταστάσεις, οι ενημερώσεις και οι απεγκαταστάσεις το κρατούν επίκαιρο· το `verify_skills` το ελέγχει έναντι του δίσκου.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: Τέσσερις σημαίες (push στο αποθετήριο, GitHub API, εισιτήρια, εξερχόμενη δικτυακή κίνηση) που επιλύονται ανά αποστολή — προεπιλογή πράκτορα → προεπιλογή χρήστη, με παράκαμψη ανά συνομιλία. Επιβάλλονται μέσω απουσίας: μια απενεργοποιημένη δυνατότητα σημαίνει ότι το token ή η έξοδος απλώς δεν εγχέεται ποτέ.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Λειτουργία**: `chat`, `plan`, `review` ή `orchestrate`. Αποθηκεύεται **ανά χώρο**, ώστε ένας πράκτορας να μπορεί να βρίσκεται σε διαφορετικές λειτουργίες σε διαφορετικούς χώρους· κάθε συνομιλία σε έναν χώρο τη μοιράζεται. Περιορίζει την προτροπή συστήματος, τους κανόνες εγγραφής του sandbox και τη λίστα επιτρεπόμενων εργαλείων MCP. Το πεδίο σύνταξης μηνύματος προσφέρει μόνο `chat`, `plan` και `orchestrate`· το `chat` φέρει την ετικέτα «Πράκτορας».
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (μια κλειστή VM — το μόνο υποσύστημα με όριο πυρήνα, που εφαρμόζεται σε διαδραστικά τερματικά), `native` (Seatbelt στο macOS, bubblewrap σε Linux και WSL2) ή `none`. Ανιχνεύεται μία φορά κατά την εκκίνηση· το `native` **εφαρμόζεται στην αποστολή πράκτορα** όταν είναι διαθέσιμο, περιβάλλοντας το CLI του Claude Code και το εργαλείο `bash` του μηχανισμού. Τα Windows δεν έχουν εγγενές υποσύστημα και το Linux χρειάζεται `bwrap` και `socat`, οπότε οι εκτελέσεις εκεί γίνονται χωρίς περιβολή· το `--sandbox off` εξαιρεί σκόπιμα.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/).
+**Σταθμός**: Μια αναλώσιμη μηχανή που οδηγεί ένας πράκτορας σε πραγματικό χρόνο — ένας κλειστός περιηγητής ή επιφάνεια εργασίας Linux, ένας διαχειριζόμενος από τον κεντρικό υπολογιστή εξομοιωτής Android ή Simulator iOS, ή ένα κλειστό τερματικό. Παρακολουθείται ζωντανά μέσω δικής του λωρίδας πλήρους ανάλυσης, με την ανάληψη να επιβάλλεται στην πλευρά του διακομιστή. Με εμβέλεια συνομιλίας, ώστε η καρτέλα του ανθρώπου και οι κλήσεις `browser_use` / `computer_use` / `mobile_use` / `ios_use` του πράκτορα να απευθύνονται σε μία προεπιλεγμένη μηχανή. Δείτε [Σταθμοί και περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**Περίβλημα**: Το ισχυρότερο όριο σταθμού με υποστήριξη VM — όριο πυρήνα, αναλώσιμος δίσκος επικάλυψης, πύλη δικτύου που αρνείται εξ ορισμού και μεσίτης διαπιστευτηρίων. Οι σταθμοί Android και iOS είναι αναλώσιμοι αλλά χρησιμοποιούν δίκτυο διαχειριζόμενο από τον κεντρικό υπολογιστή και δεν διεκδικούν αυτό το όριο. Η οδήγηση οποιουδήποτε σταθμού χρησιμοποιεί την κλάση περιορισμών `enclosureControl`.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: Καταγραφή tokens/κόστους (tokens εισόδου, tokens εξόδου, εκτιμώμενο κόστος σε λεπτά) για μία μεμονωμένη εκτέλεση πράκτορα.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Γιατί στάλθηκε ένας πράκτορας. Έξι τιμές: μήνυμα χρήστη, ανάθεση εισιτηρίου, εκ νέου αποστολή αποκατάστασης μετά από αποτυχία, ολοκληρωμένο θυγατρικό εισιτήριο, προγραμματισμένος παλμός συνέχειας και βήμα pipeline.
 
-## Ports
+## Θύρες
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: Διαχειρίζεται τον κύκλο ζωής του sandbox (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Εκδίδει διαπιστευτήρια με εμβέλεια και έλεγχο δυνατοτήτων για την εκκίνηση του sandbox και τα ανακαλεί κατά τον τερματισμό.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: Εξάγει μεταδεδομένα (ιδιοκτήτη, αποθετήριο, κλάδο) από μια τοπική διαδρομή αποθετηρίου Git.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: Παράγει διανύσματα ενσωμάτωσης κειμένου μοναδιαίου μέτρου για σημασιολογική αναζήτηση.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: Εμφανίζει εγγενείς ειδοποιήσεις επιφάνειας εργασίας σεβόμενο τη διάκριση κατηγορίας/διαδρομής.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: Ουδέτερο ως προς τον πάροχο όριο προς ένα σύστημα εισιτηρίων (create, get, list, update, transition, assign).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: Ξεκινά μια εκτέλεση pipeline από ένα πρότυπο, αποσυνδέοντας τους καλούντες από τη συγκεκριμένη μηχανή.
 
-## Domain services
+## Υπηρεσίες τομέα
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: Ξεκινά εκτελέσεις πρακτόρων: παρέχει απομονωμένα αποθετήρια, χτίζει προτροπές, δημιουργεί αρχεία καταγραφής εκτέλεσης και επιστρέφει ζωντανές ροές γεγονότων.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: Μηχανή κύκλου ζωής εισιτηρίων καθαρού τομέα, με μοναδικό σημείο διέλευσης μεταβολών υπό αισιόδοξη ταυτοχρονικότητα και επιβολή απομόνωσης χώρου εργασίας. Το γράφημα μεταβάσεων που επιβάλλει δεσμεύει μόνο πράκτορες και αυτοματισμούς· οι αλλαγές από το περιβάλλον χρήστη περνούν `force: true` και το παρακάμπτουν. Δεν υπάρχει αποστολέας εισιτηρίων για αναθέτη πράκτορα — το `AgentDispatchService` κατέχει την αποστολή, και η ανάθεση ενός εισιτηρίου σε έναν πράκτορα δεν ξεκινά καμία εκτέλεση. Η ανάθεση ενός εισιτηρίου σε μια ομάδα είναι η εξαίρεση (το `TeamRoutingService` στέλνει τον επικεφαλής).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: Ενορχηστρώνει την εκτέλεση: ξεκινά εκτελέσεις, προγραμματίζει βήματα, αποθηκεύει κατάσταση, χειρίζεται routers/joins/continue-on-fail, επαναφέρει εκτελέσεις σε εξέλιξη μετά από επανεκκίνηση.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: Εγγράφεται σε γεγονότα τομέα και ξεκινά αυτόματα εκτελέσεις pipeline που ταιριάζουν για ενεργοποιημένους ενεργοποιητές.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: Επιλύει και επιβάλλει τα δικαιώματα μνήμης των ρόλων πράκτορα σε τομείς.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: Τιμολογεί τη χρήση tokens του ενσωματωμένου μηχανισμού σε ένα `RunCost` από τον κατάλογο του models.dev. Η αποστολή αποθηκεύει αυτή την καταγραφή στο αρχείο καταγραφής εκτέλεσης.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: Υπολογίζει τη μηνιαία δαπάνη ανά πράκτορα και έναν αποκλεισμό πριν από την αποστολή (`checkInvocationBlock`). Αυτός ο αποκλεισμός συμβουλεύεται μόνο από τους ανακτητές συμβιβασμού (`OrphanRunReaper`, `StrandedTicketReconciler`), ποτέ από τη συνήθη αποστολή χρήστη ή πράκτορα.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: Αξιολογεί τη μηνιαία δαπάνη ανά πράκτορα μετά από κάθε εκτέλεση — ένα μαλακό κατώφλι καταγράφει περιστατικό προειδοποίησης· η εξάντληση καταγράφει σκληρό περιστατικό και γυρίζει τον κύκλο ζωής του πράκτορα σε `paused`.
 
-## Events
+## Γεγονότα
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: Δίαυλος δημοσίευσης/εγγραφής μετάδοσης εντός της διεργασίας για επικοινωνία μεταξύ χαρακτηριστικών. Τα γεγονότα είναι τυποποιημένα· οι συνδρομητές καταναλώνουν ροές `on<T>()`.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: Βασική διεπαφή. Κάθε γεγονός έχει `occurredAt`. Βασικές κατηγορίες: χώρος εργασίας/πράκτορας, PR/έλεγχος, μηνύματα, εισιτήρια, pipeline, συσκέψεις/ημερολόγιο, ταυτότητα, σταθμοί, παρατηρησιμότητα.
 
-## Meetings and calendar
+## Συσκέψεις και ημερολόγιο
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Σύσκεψη**: Μια τοπικά καταγεγραμμένη, μεταγραμμένη σύσκεψη. Συλλαμβάνει μικρόφωνο και ήχο συστήματος, μεταγράφει στη συσκευή με επιλέξιμο μοντέλο ASR (Parakeet TDT v3 από προεπιλογή· τα Parakeet TDT v2, Whisper large-v3-turbo και Whisper base.en είναι εναλλακτικές), διαχωρίζει ομιλητές και συνοψίζει σε σημειώσεις, εκκρεμείς ενέργειες και αποφάσεις. Το επιλεγμένο μοντέλο ASR εγκαθίσταται υποχρεωτικά κατά την εκκίνηση και οι λειτουργίες εγγραφής ενεργοποιούνται μετά από μία επανεκκίνηση. Με εμβέλεια χώρου εργασίας· μένει στη μηχανή.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: Ένα μεταγραμμένο παράθυρο ήχου, με ετικέτα ομιλητή (`me`/`them`), με ετικέτα διαχωρισμού ομιλητών και αποκλίσεις σε χιλιοστά του δευτερολέπτου.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: Δομημένες έξοδοι που εξάγονται από το pipeline σύνοψης και αποθηκεύονται ως διακριτές γραμμές. Οι εκκρεμείς ενέργειες μπορούν να συνδεθούν με ένα εισιτήριο.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: Μια συγχρονισμένη καταχώριση Google Calendar με εμβέλεια χώρου εργασίας και συνδεδεμένου λογαριασμού. Διακριτή από μια Σύσκεψη: μια καταχώριση είναι προγραμματισμένη δέσμευση· μια Σύσκεψη είναι καταγεγραμμένη συνεδρία. Συνδέονται ένα προς ένα μέσω ενός `MeetingCalendarLink`.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: Ένας συνδεδεμένος λογαριασμός Google, ανά χώρο εργασίας και email. Τα OAuth refresh tokens αποθηκεύονται στην πλευρά του διακομιστή ως κλειδιά `google_*` στο `<dataDir>/secrets.json` και δεν φτάνουν ποτέ σε πελάτη· η ροή κωδικού συσκευής ολοκληρώνεται στον διακομιστή. Μια σημαία `authExpiredAt` οδηγεί το πλαίσιο επανασύνδεσης.
 
-## Architecture terms
+## Όροι αρχιτεκτονικής
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Καθαρή Αρχιτεκτονική**: Κανόνας εξαρτήσεων: Presentation → Application/Providers → Domain ← Infrastructure. Ο τομέας δεν έχει καμία εισαγωγή υποδομής.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**Θύρες και προσαρμογείς**: Ο τομέας ορίζει αφηρημένες διεπαφές (θύρες)· η υποδομή παρέχει συγκεκριμένες υλοποιήσεις (προσαρμογείς). Η ρίζα σύνθεσης τα δένει.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**Κοινός πυρήνας**: Οντότητες, αντικείμενα τιμών, θύρες και υπηρεσίες στο `core/domain/` που μοιράζονται 3+ χαρακτηριστικά.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**Προτεραιότητα στα χαρακτηριστικά**: Ο κώδικας οργανώνεται κατά επιχειρηματικό τομέα (πράκτορες, pipelines, μηνύματα) και όχι κατά τεχνικό επίπεδο.
 
-## Multiplayer, identity and velocity
+## Συνεργασία, ταυτότητα και ταχύτητα
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Εντολέας**: Μια σφραγισμένη τιμή που ενοποιεί ανθρώπους και πράκτορες στην ενιαία αφαίρεση δρώντος — `UserPrincipal(userId)` ή `AgentPrincipal(agentId)`. Κάθε μήνυμα, εισιτήριο, έλεγχος, σχέδιο και αρχείο καταγραφής εκτέλεσης αποδίδεται μέσω ενός Εντολέα.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**Χρήστης**: Μια ανθρώπινη ταυτότητα, αποθηκευμένη στο `global.db` και επομένως καθολική σε όλους τους χώρους εργασίας. Ο εντολέας που δημιουργεί έναν χώρο εργασίας γίνεται **ιδιοκτήτης** του — καταγεγραμμένος στο `Workspace.ownerUserId` με γραμμή ιδιότητας μέλους ρόλου ιδιοκτήτη στην ίδια πράξη. Οι άλλοι συμμετέχουν με πρόσκληση ή SSO.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: Μια γραμμή ιδιότητας μέλους που δεσμεύει έναν Χρήστη σε έναν Χώρο εργασίας με κάποιον ρόλο (`owner` / `admin` / `member` / `viewer` / `guest`). **Η ιδιότητα μέλους — όχι ένα κλειδί σύζευξης — είναι το όριο πρόσβασης.** Οι εκχωρήσεις ανά αποθετήριο εμποδίζουν την ιδιότητα μέλους να υπερβεί σε προνόμια τον κεντρικό υπολογιστή κώδικα.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: Εφήμερη επίγνωση για έναν Εντολέα (κατάσταση, θέση, δρομέας, πληκτρολόγηση, ζωντανή κατάσταση και τρέχον κόστος ενός πράκτορα). Δεν αποθηκεύεται ποτέ· συγκεντρώνεται στον διακομιστή· φιλτράρεται κατά την εκχώρηση αποθετηρίου πριν από τη διανομή.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**Λειτουργία παρακολούθησης**: Κάντε κλικ σε ένα avatar για να ακολουθήσετε το viewport του μέχρι να ενεργήσετε, και μετά αποσυνδεθείτε. Λειτουργεί για ανθρώπους και για πράκτορες («δείτε έναν πράκτορα να δουλεύει»).
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**Δείκτης αυτονομίας**: Έλεγχος ανά χώρο και ανά πράκτορα — `propose-only` / `act-with-approval` / `act-freely` — υλοποιημένος ως επώνυμο προφίλ πάνω από τον χώρο αποθήκευσης περιορισμών ενεργειών.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Ένα κλειστό σύνολο 13 κλάσεων επιρροής (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Κάθε εργαλείο που μεταβάλλει δηλώνει τις κλάσεις του· η μηχανή περιορισμών επιλύει `allow` / `prompt` / `deny` ανά εμβέλεια (χώρος > πράκτορας > χώρος εργασίας > προεπιλογή λειτουργίας > ενσωματωμένη προεπιλογή).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **κλειδί ιδιοδυναμικότητας**: Κάθε μεταβολή φέρει ένα κλειδί ιδιοδυναμικότητας που παράγεται από τον πελάτη (UUIDv7, ανά λογική ενέργεια). Το καθολικό με εμβέλεια χώρου εργασίας αφαιρεί τα διπλότυπα προτού εκτελεστεί ο χειριστής· μια επανάληψη επιστρέφει το byte-identical αρχικό αποτέλεσμα. Κάνει την επανασύνδεση και τη χρήση από πολλούς πελάτες ασφαλή εξ ορισμού.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**Εισερχόμενα που με χρειάζονται**: Μια ουρά που διαπερνά όλους τους πυλώνες με αυστηρό κανόνα — ένα στοιχείο εμφανίζεται μόνο αν _μπλοκάρει_ κάτι (έναν πράκτορα, ένα merge, έναν συγχρονισμό) ή ζητά ρητά τον χειριστή.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: Η διαδραστική επιφάνεια σχεδιασμού — επεξεργάσιμα σχέδια τυποποιημένου DAG με κόστος, χρόνο και κίνδυνο ανά βήμα, και μερική έγκριση.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**Υπολογισμός ελέγχου**: Υπολογισμός ελέγχου PR στην πλευρά του διακομιστή (κοόρτες από το γράφημα, τυποποιημένα διαγράμματα, οπτικά diff, diff συμβολαίου API, πύλες πολλαπλών αξόνων) που σερβίρεται μέσω `review_studio.*` και ενσωματώνεται στην καρτέλα Ανασκόπηση.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**Χώρος ελέγχου**: Ο ένας χώρος υποστήριξης ενός PR (λειτουργία `review`, είδος `pr`), που δημιουργείται ιδιοδυναμικά και συνδέεται με το PR μέσω μιας `ReviewSpaceAssociation`. Κάθε ελεγκτής καταχωρίζει τα ευρήματά του εκεί, και αυτό είναι που τα κάνει συγκρίσιμα· το απομονωμένο worktree του έχει το PR σε checkout στο head του.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**Κόμβος ελέγχου**: Η δομημένη μονάδα ενός ευρήματος ελέγχου AI: είδος (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), προτεραιότητα P0–P3, τριάδα διαλογής κατηγορίας/σοβαρότητας/κόπου, άγκυρα αρχείου και γραμμής, προαιρετική προτεινόμενη διόρθωση και βαθμολογία βεβαιότητας. Καταχωρίζεται με `add_review_node`· η ετυμηγορία υπολογίζεται από κόμβους, όχι από πρόζα.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Έτοιμο για συναίνεση**: Η κατάσταση κόμβου ελέγχου που επιτυγχάνεται μόνο όταν ένας ομότιμος ελεγκτής επιβεβαιώσει ένα εύρημα — ένας πράκτορας δεν μπορεί να επιβεβαιώσει το δικό του. Το κουμπί **Δημοσίευση στο GitHub** της καρτέλας Ανασκόπηση στέλνει κάθε εναπομείναν εύρημα σε εκκρεμότητα (`selection: all_open`)· το εργαλείο MCP `publish_review_to_github` εξακολουθεί να προεπιλέγει μόνο ευρήματα που έχουν επιβεβαιωθεί από ομότιμο.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**Επίπεδο ελέγχου**: Πολιτική χώρου εργασίας (`light`, `balanced`, `thorough`) που ρυθμίζει ποιοι ελεγκτές εξαπλώνονται (μόνο engineer· +qa+architect· +security+perf) και πού εμφανίζονται τα ευρήματα κάτω από το κατώφλι. Δεν διαγράφει ποτέ ένα εύρημα.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**Άξονας ελέγχου**: Μία από πέντε λωρίδες βαθμολόγησης ανά έλεγχο: `correctness`, `security` και `testGap` από τα ευρήματα των ελεγκτών· `visual` και `apiContract` ντετερμινιστικές. Οι πυλωμένες λωρίδες ενσωματώνονται στην ετυμηγορία και μπορούν μόνο να την κάνουν πιο αυστηρή — μια πύλη `partial` ή `unavailable` κρατά την ετυμηγορία αντί να την αφήνει να περάσει.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**Ετυμηγορία ελέγχου**: `ship`, `hold` ή `block`. Κάθε εύρημα P0 με βεβαιότητα ≥ 0,7 μπλοκάρει· κάθε άλλο P0 ή οποιοδήποτε P1 κρατά· αλλιώς ship. Ένας πυλωμένος άξονας που αποτυγχάνει επιβάλλει block και δεν μπορεί να υπερψηφιστεί από ευρήματα.
 
-## Fleet and evals
+## Στόλος και αξιολογήσεις
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: Ένα δυαδικό εκτελεστή στόλου χωρίς κεφαλή, σε καθαρό Dart. Συνεργάζεται με έναν `cc_server`, δηλώνει τις δυνατότητες του κεντρικού υπολογιστή του, τραβά ενοικιασμένες εργασίες, τις εκτελεί και στέλνει γεγονότα διεργασίας πίσω. Δεν κρατά **καμία μόνιμη κατάσταση** — ένας έγκυρος διακομιστής, N χαζά άκρα.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: Η τυποποιημένη προδιαγραφή για καθετί εκτελέσιμο (εκτέλεση πράκτορα, βήμα pipeline, ευρετηρίαση κώδικα, golden-render, benchmark, παρτίδα αξιολόγησης).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**Σουίτα αξιολόγησης**: Ένας ορισμός αξιολόγησης με εμβέλεια χώρου εργασίας (προτροπή, πράκτορας-στόχος και λειτουργία, βαθμολογητές). Πέντε αρχικές τροφοδοτούνται κατά τη δημιουργία του χώρου εργασίας· η διαδρομή Παρατηρησιμότητα → Ποιότητα τις απαριθμεί.
 
-## Deployment and clients
+## Ανάπτυξη και πελάτες
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**Αρχιτεκτονική λεπτού πελάτη**: Κανένας πελάτης δεν ανοίγει τη βάση δεδομένων· μια διεργασία `cc_server` χωρίς κεφαλή κατέχει τα δεδομένα και τα σερβίρει μέσω RPC over WebSocket. Κάθε πελάτης (επιφάνεια εργασίας, web, τηλέφωνο) είναι ένας αποδίδων πάνω σε αυτή τη μία σύνδεση RPC.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: Το δυαδικό του διακομιστή χωρίς κεφαλή (καθαρό Dart, χωρίς μηχανή Flutter). Κατέχει τη βάση δεδομένων Drift/SQLite, σερβίρει repo-RPC μέσω WebSocket και εκτελεί τις υπηρεσίες παρασκηνίου (pipelines, MCP, ανακτητές).
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: Πώς φτάνει η επιφάνεια εργασίας στον διακομιστή της — `local` (ξεκινά ένα `cc_server` σε αυτή τη μηχανή, η προεπιλογή) ή `remote` (καλεί έναν αλλού). Ο web πελάτης είναι πάντα `remote`.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: Ο πελάτης JSON-RPC ανεξάρτητος από το μεταφορικό μέσο που χρησιμοποιεί κάθε λεπτός πελάτης για να μιλήσει στον διακομιστή του — μέσω WSS, loopback ή του διαμεσολαβημένου relay.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**Χώρος εργασίας ανά κλήση**: Ο διακομιστής είναι χωρίς κατάσταση — **δεν** υπάρχει δέσμευση χώρου εργασίας ανά συνεδρία, οπότε πολλοί πελάτες σε έναν διακομιστή δεν μοιράζονται ποτέ έναν «τρέχοντα χώρο εργασίας». Κάθε `repo/call` και `sub/subscribe` με εμβέλεια χώρου εργασίας πρέπει να φέρει `workspace_id` στα ορίσματά του· ένα αναγνωριστικό που λείπει ή δεν είναι καταχωρισμένο απορρίπτεται προτού ανοίξει οποιαδήποτε βάση δεδομένων. Η πρόσβαση στη συνέχεια ελέγχεται από την ιδιότητα μέλους και τον ρόλο στον χώρο εργασίας, όχι από τη συνεδρία.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: Ο λεπτός πελάτης του τηλεφώνου — ένα PWA web σε Flutter που ελέγχει εξ αποστάσεως τον στόλο μέσω του διαμεσολαβημένου relay, με πολιτική εργαλείων που αρνείται εξ ορισμού.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: Ένας μεσίτης relay WebSocket χωρίς κατάσταση που φιλοξενεί δωμάτια με πρόσκληση — ένα χαζό relay που προωθεί μόνο πλαίσια σφραγισμένα από άκρο σε άκρο, δεν κρατά δεδομένα εφαρμογής και δεν βλέπει ποτέ το PSK σύζευξης.
 
-## See also
+## Δείτε επίσης
 
-- [Route map](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/)
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)
-- [Workspaces](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
-- [Domain events](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)
+- [Χάρτης διαδρομών](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/)
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)

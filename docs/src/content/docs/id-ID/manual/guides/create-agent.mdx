@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Buat dan konfigurasi agen
+description: Tambahkan agen ke ruang kerja, berikan adapter, model, skill, dan izin kepadanya, lalu pastikan agen dapat berjalan.
 slug: id-ID/panduan-pengguna/panduan-praktis/buat-agen
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Panduan ini menunjukkan cara menambahkan agen ke ruang kerja dan mengonfigurasinya hingga benar-benar dapat berjalan.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Setiap ruang kerja menyemai lima agen — seorang CEO plus `qa`, `architect`, `engineer`, dan `librarian` — sehingga biasanya Anda sudah memiliki agen sebelum mengonfigurasi satu pun. Langkah-langkah di bawah ini berlaku sama untuk agen yang disemai maupun agen baru.
 
-## Before you start
+## Sebelum memulai
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Anda berada di dalam sebuah ruang kerja. Seluruh antarmukanya ada di **Pengaturan → Ruang kerja → Agen** (`/settings/workspace/agents`).
+- Agen akan memerlukan backend. Hubungkan penyedia untuk harness bawaan di **Pengaturan → Server → Penyedia model**, atau pasang CLI Claude Code di mesin yang menghosting `cc_server`.
+- Jika Anda ingin agen membawa skill, pasang dulu skill tersebut di **Pengaturan → Ruang kerja → Skill**. Formulir agen hanya memungkinkan Anda mengaktifkan skill yang sudah ada di ruang kerja.
 
-## Add the agent
+## Tambahkan agen
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Buka **Pengaturan → Ruang kerja → Agen**.
+2. Klik **Agen baru**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Tidak ada dialog dan tidak ada pemilih peran. Agen bernama "Agen tanpa nama" langsung dibuat dan dipilih di panel detail di sebelah kanan.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Anda sekarang akan melihat "Agen tanpa nama" di daftar agen di sebelah kiri, dengan tab **Pengaturan** pada panel detailnya terbuka dan kolom **Nama** yang berisi "Agen tanpa nama".
 
-## Name it
+## Beri nama
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Nama** — pengenal pendek yang dipakai dalam @-mention, misalnya `alice`. Penguraian mention mencocokkan `@` yang diikuti karakter kata, sehingga nama yang mengandung tanda hubung, titik, atau spasi tidak akan pernah dapat disebutkan.
+- **Judul** — label yang terbaca manusia, misalnya "Pengembang senior".
+- **Prompt sistem** — instruksi tambahan opsional, disuntikkan sebagai bagian "Agent instructions"; bagian ini tidak menggantikan sisa prompt yang dirakit.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Klik **Simpan perubahan** di bagian bawah formulir. Semua kolom di halaman ini disimpan oleh satu tombol itu.
 
-## Give it an adapter and a model
+## Berikan adapter dan model
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Dropdown **Adapter** mencantumkan runner yang benar-benar dimiliki host server. Adapter bawaan selalu ditemukan (dialah servernya). Claude Code hanya muncul bila CLI-nya terdeteksi di host tersebut:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| Adapter                   | Backend                                      |
+| ------------------------- | -------------------------------------------- |
+| Control Center (built-in) | Loop agen dalam proses — tanpa CLI eksternal |
+| Claude Code               | `claude -p --output-format stream-json`      |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Hanya adapter bawaan yang menegakkan mode, pengarahan, jeda dan lanjutkan, kontrak penyelesaian, serta subagen. Claude Code tidak memberi Anda satu pun dari itu. Cursor, Codex, dan penyedia model lainnya menempel pada adapter bawaan, bukan sebagai runner terpisah.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Adapter kosong berarti loop bawaan]
+Agen yang adapternya tidak disetel dikirim ke **Control Center (built-in)**, loop di dalam server, sehingga tidak ada yang perlu dipasang di host. Karena modelnya pun tidak disetel, ia meminta defaultnya kepada Anthropic, sehingga agen yang sama sekali tidak disetel hanya berjalan jika Anda telah menghubungkan akun Anthropic. Agen spesialis yang disemai hadir tanpa keduanya; setel keduanya pada setiap agen yang ingin Anda gunakan.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Dropdown **Model** dikendalikan oleh adapter yang Anda pilih. Untuk adapter bawaan, daftarnya diambil langsung dari penyedia yang Anda hubungkan di **Pengaturan → Server → Penyedia model**, sehingga penyedia tanpa kredensial tersimpan menyumbang nol model.
 
-## Add skills
+## Tambahkan skill
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Skill** adalah pemilih chip atas bundel skill yang terpasang di ruang kerja ini. Ketuk sebuah chip untuk mengaktifkan atau menonaktifkannya; glif centang menandai yang dipilih. Jika ruang kerja tidak memiliki skill, kolomnya berbunyi "No skills available. Create skills in Settings → Skills first."
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
+Anda tidak memilih skill milik repo sendiri di sini. Repo yang menyertakannya (di `.agents/skills/`, `.claude/skills/`, atau `.opencode/skills/`) menyumbangkannya secara otomatis ke agen mana pun yang bekerja di repo itu, dan skill tersebut berganti saat agen berpindah ke repo lain — lihat [Skill dengan cakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Tetapkan garis pelaporan dan persona
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Melapor ke** — pilih agen lain berdasarkan nama. Ini membangun pohon pelaporan yang ditampilkan oleh tombol **Bagan organisasi** di header halaman. Ini bukan daftar agen yang dipakai pemimpin tim saat mendelegasikan — daftar itu berasal dari anggota tim dan skill mereka.
+- **Persona** — teks bebas yang membentuk nada dan perilaku, misalnya: "Lebih menyukai solusi sederhana yang mudah dibaca. Menulis pengujian untuk semua kode baru."
 
-## Tune the run
+## Sesuaikan run
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Upaya penalaran** — opsinya berasal dari tingkat yang dipublikasikan model yang dipilih sendiri: Low / Medium / High, plus Extra High pada model bergaya OpenAI dan Extra High + Max pada model bergaya Claude. Kolom ini disembunyikan sepenuhnya ketika model yang dipilih tidak menyatakan tingkat pemikiran apa pun, dan nilainya default ke default model itu sendiri.
+- **Ukuran jendela konteks** — terisi otomatis dari jendela konteks model setiap kali Anda mengganti model, dengan chip satu ketuk untuk default model, 200k, 500k, dan 1M. Nilai yang Anda ketik setelah memilih model akan menang sampai pergantian model berikutnya.
+- **Batas waktu diam (menit)** — hentikan run setelah selama ini tanpa keluaran. Biarkan kosong untuk memakai default per mode.
 
-## Grant permissions
+## Berikan izin
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Izin sandbox** dimulai pada "Gunakan default ruang kerja". Nyalakan tombolnya untuk menyetel izin bagi agen ini, lalu aktifkan:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Izinkan git push** — menyuntikkan token GitHub yang dibutuhkan agen untuk push
+- **Izinkan panggilan API GitHub** — memungkinkan agen membaca PR, issue, dan metadata repo
+- **Izinkan panggilan API ticketing** — menyuntikkan kunci penyedia ticketing
+- **Izinkan akses jaringan umum** — juga mengaktifkan alat `web_fetch` dan `web_search` milik harness bawaan
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Setiap tombol diperiksa oleh broker kredensial saat run diluncurkan: kemampuan yang mati berarti token yang sesuai tidak akan pernah dibuat ke dalam lingkungan run.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Default ruang kerja berarti kumpulan konservatif server]
+Agen yang dibiarkan pada "Gunakan default ruang kerja" berjalan dengan git push, API GitHub, dan ticketing semuanya **mati** serta jaringan **aktif**. Default kemampuan yang ditampilkan di Pengaturan → Server → Diagnostik & privasi adalah preferensi sisi klien. Jika Anda ingin agen push atau membuka PR, nyalakan tombolnya dan berikan kemampuannya secara eksplisit.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) for the full set of boundaries.
+Kemampuan ini menjadi gerbang bagi kredensial dan alat harness, yang merupakan lapisan terpisah dari sandbox OS. `cc_server` membungkus run agen dalam sandbox host bila tersedia — Windows tidak memiliki backend native, sedangkan Linux dan WSL2 memerlukan `bwrap` dan `socat`. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk keseluruhan batasnya.
 :::
 
-## Verify it runs
+## Pastikan agen dapat berjalan
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Buka **Pengaturan → Server → Penyedia model** dan pastikan adapter yang Anda pilih melaporkan versi yang terpasang, bukan "Tidak ditemukan". Klik **Segarkan** untuk memeriksa ulang — pemeriksaan berjalan di mesin yang menghosting `cc_server`, bukan di mesin yang sedang Anda lihat.
+2. Buka space dengan agen tersebut dan kirim pesan kepadanya, atau @-mention agen itu di space yang sudah ada.
+3. Kembali ke **Pengaturan → Ruang kerja → Agen**, pilih agen tersebut dan buka tab **Log**. Sebuah run akan muncul dengan lencana status, durasi, waktu mulai, dan adapter yang dipakainya. **Lihat** membuka aliran peristiwa run tersebut.
 
-If no run appears at all, work through [Run agent diagnostics](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/).
+Jika tidak ada run yang muncul sama sekali, telusuri [Diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/).
 
-## Delete an agent
+## Hapus agen
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Pilih agen itu di daftar. Di tab **Pengaturan**, gulir ke **Zona berbahaya** di bagian bawah formulir lalu klik **Hapus**.
 
-## Related guides
+## Panduan terkait
 
-- [Run agents in parallel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
-- [Build an agent team](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/)
-- [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
-- [Run agent diagnostics](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/)
-- [Agent configuration reference](/id-ID/panduan-pengguna/referensi/konfigurasi-agen/)
+- [Jalankan agen secara paralel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
+- [Bangun tim agen](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/)
+- [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
+- [Diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/)
+- [Referensi konfigurasi agen](/id-ID/panduan-pengguna/referensi/konfigurasi-agen/)
 
-## Related concepts
+## Konsep terkait
 
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/)
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)

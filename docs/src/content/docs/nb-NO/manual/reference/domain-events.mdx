@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: Domenehendelser
+description: Fullstendig katalog over de 53 domenehendelsene, nyttelastene deres og abonnentene på serversiden som konsumerer dem.
 slug: nb-NO/handbok/referanse/domenehendelser
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## Hendelsesbuss
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` er en prosessintern buss for kringkastet publisering og abonnement. Utgivere kaller `publish(event)`; abonnenter konsumerer en typet `on<T>()`-strøm. Hver hendelse implementerer `DomainEvent` og bærer `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**Bussen kjører inne i `cc_server`.** Enhver utgiver og enhver levende abonnent holder til der. Ingen klient ser denne bussen — serveren videresender en kuratert delmengde som `notifications/*`-rammer over JSON-RPC, filtrert per abonnent etter arbeidsområdemedlemskap.
 
-| Measure                                                     | Count                                       |
+| Mål                                                         | Antall                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| Konkrete hendelsesklasser                                   | 53                                          |
+| Kildefiler (`packages/cc_domain/lib/core/domain/events/`)   | 14 (pluss `domain_event_bus.dart`)          |
+| Abstrakte basisklasser som aldri publiseres direkte         | 1 (`TaskLifecycleEvent`, et forseglet hierarki) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Hver hendelse i katalogen nedenfor ligger i denne ene mappen; det finnes ingen domenehendelser deklarert andre steder.
 
-## Workspace, agent and repo events
+## Hendelser for arbeidsområde, agent og repo
 
-| Event               | Payload                                                | Fired when                                              |
+| Hendelse            | Nyttelast                                              | Utløses når                                             |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | Arbeidsområdet opprettes                                |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | En agent fullfører en kjøring (vellykket eller mislykket) |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Et repo registreres; utløser kodeindeksering i bakgrunnen |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | En skill installeres eller oppdateres, og bærer verdikten fra leverandørkjedeskanneringen |
 
-## PR and review events
+## PR- og gjennomgangshendelser
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+Den første blokken er PR-ens egen livssyklus. Den andre er **overvåkingen av egne PR-er**: signaler om en PR *du* har åpnet, hver med `forUserId` slik at pollingen kan rute dem til personen de gjelder i stedet for å kringkaste dem.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| Hendelse                   | Nyttelast                                                                | Utløses når                                                                                                                         |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | En agent åpner en PR                                                                                                                |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR slått sammen/lukket/åpnet/gjenåpnet/godkjent                                                                                     |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR-en slås sammen — et smalt signal kun for sammenslåing, beholdt for analyse/varsler                                               |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub ber om gjennomgang fra serverbrukeren (varselspolling, `review_requested`)                                                   |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Serverbrukeren nevnes i en PR (varselspolling, `mention`)                                                                           |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | En eksternt sporet PR (ikke fra en agent) er slått sammen, oppdaget av GitHubs varselspolling; tilordnes varselkategorien `prMerged` |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | PR fra noe annet enn en agent funnet via polling — kun pipeline (driver `external_pr_welcome`), reiser ingen varsling                |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | PR-ens head-SHA har flyttet seg — forfatteren pushet                                                      |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | En fullført AI-gjennomgang beskriver ikke lenger PR-en den gjennomgikk. Utløses bare når det finnes en gjennomgang for commiten som ble erstattet, slik at den forblir et signal i stedet for en ping ved hver push |
 
-### The authored-PR watch
+### Overvåkingen av egne PR-er
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+Alle seks bærer `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` og en valgfri `forUserId`.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| Hendelse                  | Ekstra nyttelast                                                                     | Utløses når                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | En PR du har forfattet, ble klar til sammenslåing, eller sluttet å være det    |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | En reviewer godkjente, ba om endringer, eller fikk en godkjenning avvist       |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI ble rødt, eller kom seg igjen                                              |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Noen nevnte deg i en PR-kommentar eller gjennomgangskommentar          |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Noen svarte i en gjennomgangstråd du er med i                                 |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Noen løste en gjennomgangstråd du er med i                                    |
 
-## Messaging events
+## Meldingshendelser
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| Hendelse                   | Nyttelast                                                                                                                  | Utløses når                                                                                                                                                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | En ny melding kommer inn                                                                                                                                                     |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Et område opprettes                                                                                                                                                                         |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Et område slettes                                                                                                                                                                           |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | Arbeidsområdet til området går inn i klargjøring, når et steg (klone et repo, sjekke ut en PR, sette opp en agent), eller skifter til klar/mislykt — chatbroen forteller om det på oppgavekortet |
 
-## Ticketing events
+## Sakshendelser
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| Hendelse               | Nyttelast                                                                                                                    | Utløses når                             |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | En sak opprettes                        |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Saken tildeles en prinsipal eller et team |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | Arbeidet fullføres (endelig)            |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agenten mislykkes (endelig)             |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | Saken avbrytes (endelig)                |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Enhver statusendring                    |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Saken omtildeles                        |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Tittel, beskrivelse eller prioritet endres |
 
-## Task lifecycle events
+## Hendelser i oppgavelivssyklusen
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+Den samlede strømmen for oppgavelivssyklus — én utsendt agentkjøring, nøklet på kjøringslogg-ID-en sin. Hver hendelse bærer `taskId`, en monoton `seq` per oppgave, `workspaceId?`, `agentId?` og en `phase`; radene nedenfor viser bare de ekstra feltene.
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| Hendelse                    | Nyttelast                     | Utløses når                                                                                      |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | Oppgaven sendes til en backend for utførelse                                                     |
+| `TaskRunning`               | —                             | Oppgaven begynte å produsere utdata                                                              |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Oppgaven parkeres — en annen oppgave eier sti-låsen på disken som den trenger                    |
+| `TaskProgress`              | `note?`                       | Sjekkpunkt for fremdrift midt i kjøringen                                                        |
+| `TaskMessage`               | `messageType`, `content`      | Strømmet melding (text/thinking/tool_use/tool_result/error); rapporteres under fasen `progress`  |
+| `TaskCompleted`             | `summary?`                    | Oppgaven fullførtes                                                                              |
+| `TaskFailed`                | `errorMessage`                | Oppgaven avsluttet med en feil                                                                   |
+| `TaskCancelled`             | —                             | Oppgaven avbrutt før fullføring                                                                  |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+`TaskPhase`-enumen har også et `queued`-medlem, men ingenting publiserer en køet hendelse — det finnes ingen `TaskQueued`-klasse. Den første observerbare rammen for en oppgave er `TaskDispatched`.
 
-## Pipeline events
+## Pipeline-hendelser
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| Hendelse               | Nyttelast                                     | Utløses når                                                                 |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Kjøringen fullføres                                                         |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Kjøringen avbrytes (av brukeren eller systemet) — en bevisst stopp, ikke en feil |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Kjøringen mislykkes                                          |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+Bare endelige overganger publiseres. Det finnes ingen `PipelineRunStarted` og ingen hendelse per steg: fremdriften til et steg når klientene gjennom kjøringens egne rader og oppgavelivssyklus-strømmen til agenten den sendte ut, ikke gjennom bussen.
 
-## Observability events
+## Observerbarhetshendelser
 
-| Event                    | Payload                                                                                                  | Fired when                |
+| Hendelse                 | Nyttelast                                                                                                | Utløses når               |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Oppføring i revisjonssporet opprettes |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Forbruket overstiger terskelen |
 
-## Identity and membership events
+## Identitets- og medlemskapshendelser
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| Hendelse                     | Nyttelast                       | Utløses når                                                                                               |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | En bruker blir med i et arbeidsområde (innløsning av invitasjon eller administratortillegg)               |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | Et medlem fjernes — levende økter for den brukeren, avgrenset til arbeidsområdet, må sjekke tilgangen på nytt umiddelbart |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | Rollen til et medlem endres                                                                               |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+Medlemskap er hele identitetsflaten på bussen. Oppretting av brukere og tilbakekalling av enheter skjer, men publiseres ikke som domenehendelser — tilbakekalling håndheves direkte mot levende økter i stedet for å rutes gjennom bussen.
 
-## Calendar and meeting events
+## Kalender- og møtehendelser
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| Hendelse                  | Nyttelast                                                                              | Utløses når                                                                                                 |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | Oppdateringstokenet (OAuth) til en tilkoblet konto er permanent ugyldig (publiseres én gang per frakoblingsepisode) |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | En kalenderhendelse starter innenfor det konfigurerte forhåndsvinduet                                      |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | Et møteopptak fullføres og utløser den innebygde `meeting_summary`-pipelinen                               |
 
-## Rig events
+## Stasjonshendelser
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| Hendelse            | Nyttelast                                     | Utløses når                                                                                                                      |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | En stasjon forsvant, med lukkeårsaken sin; konsumenter handler bare på `backendFailure` — alle andre årsaker er bestilt eller ledsaget av en `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | Et menneske tok eksklusiv kontroll over en stasjon eller ga den tilbake (`controller` null ved frigivelse — hendelsen registrerer ikke hvem som slapp)  |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | Systemet gjenvant en maskin: inaktivitet, TTL eller utkastelse på grunn av minnepress (rapportert som `idleTimeout`), med den drivende agenten       |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+At en stasjon **åpnes**, er ikke en hendelse. Oppstarten fullføres og stasjonsraden skifter til klar; ingenting publiseres, så det finnes ingen `RigOpened` å abonnere på.
 
-## Subdomains with no events at all
+## Underdomener helt uten hendelser
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+Flere delsystemer som ser hendelsesdrevne ut fra utsiden, er det ikke. De er listet opp her fordi fraværet deres er en designbeslutning det er verdt å kjenne før du begynner å lete etter en krok:
 
-| Subdomain           | How state moves instead                                                                                 |
+| Underdomene         | Hvordan tilstanden flyttes i stedet                                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| Minne               | `record_memory_fact` og lignende skriver og returnerer; recall leser. Ingenting publiserer ved et faktum eller en konflikt |
+| Orkestrering        | Forslaget, godkjenningen av det og den genererte pipeline-kjøringen er rader og RPC-kall                 |
+| Plandokumenter      | `submit_plan` skriver en revisjon; godkjenning materialiserer en orkestrering. Ingen av dem kunngjøres   |
+| Artefakter          | `publish_artifact` / `revise_artifact` skriver revisjoner direkte                                        |
+| Godkjenninger       | Eskalering håndteres inne i godkjenningsarbeidsflyttjenesten                                             |
+| Sakssynkronisering  | Leverandørkoordinatoren abonnerer på sakshendelsene ovenfor; innkommende webhooks brukes direkte         |
+| Kalenderoppdatering | En synkronisering legger inn eller oppdaterer hendelser, og klienten leser på nytt; det finnes ingen kringkasting av oppdateringer |
+| Worktree-sammenslåinger | Registreres i `worktree_merge_log` og leses derfra                                                 |
 
-## Subscribers
+## Abonnenter
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+Alle abonnentene nedenfor konstrueres inne i `runCcServer` (eller en tjeneste den bygger). Det finnes ingen abonnent på klientsiden.
 
-| Subscriber                          | Events it consumes                                                                                   |
+| Abonnent                            | Hendelser den konsumerer                                                                            |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| Såing av startsettet med eval-suiter (innebygd) | `WorkspaceCreated`                                                                       |
+| Klargjøring av chatområde (innebygd) | `SpaceCreated`                                                                                      |
+| `PipelineTriggerDispatcher`         | Hver `DomainEvent`; hver aktiverte utløser filtrerer på sin egen type                                |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (bare `meeting_summary`-kjøringer) |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injiserer et varsel i klarspråk på styringskanalen til den drivende agenten |
+| `StaleReviewWatcher`                | `PrHeadChanged` — publiserer `ReviewBecameStale` bare når det finnes en fullført gjennomgang for den erstattede commiten |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted` — utgående svar i PR-samtaler                                                    |
+| `NotificationFeedRecorder`          | De tjueen varselklassehendelsene nedenfor                                                            |
+| `RemoteEventForwarder`              | De tjueen pluss `TicketReassigned` og hver `TaskLifecycleEvent`. De tre medlemskapshendelsene ugyldiggjør bare medlemskapsbufferen per arbeidsområde; de videresendes ikke som rammer |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — dropper den brukerens tilknyttede arbeidsområdeabonnementer; socketen forblir åpen |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned` er et revisjons- og varselsignal og en pipeline-utløser. Tildeling til en agent registrerer eierskap og starter ingen kjøring — det finnes ingen saksdispatcher. Tildeling til et team (`assignedTeamId` satt) er unntaket: `TeamRoutingService` sender ut teamlederen.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler` er deklarert, men konstrueres aldri i produksjonskode, så den abonnerer på ingenting i dag. `NotificationEventMapper` på klientsiden konstrueres bare i sin egen test — den er resten av den prosessinterne veien fra før klient/server-delingen. Levende toast kommer fra rammene nedenfor.
 
-## Notification mapping
+## Varseltilordning
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+På serveren gjør `NotificationFeedRecorder` og `RemoteEventForwarder` disse hendelsene om til `notifications/*`-rammer (`notification_wire.dart`). På klienten gjør `RpcNotificationMapper` → `mapNotificationFrame` en ramme om til en `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+Det finnes nøyaktig **seksten** varselkategorier. Flere hendelser tilordnes mer enn én rammemetode, fordi rammen bærer overgangen (mislykt kontra gjenopprettet) mens kategorien bærer spørsmålet («hva gjør CI?»).
 
-| Category               | Source event              | Wire method                                                            |
+| Kategori               | Kildehendelse             | Rammemetode                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,17 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+Rammen for stasjons-overtakelse leveres ikke tilbake til den som tok rattet, en
+frigivelse filtreres ikke (hendelsen registrerer ikke hvem som slapp), og bare en
+`backendFailure`-lukking produserer en `rig_closed`-ramme — de andre årsakene er
+enten bestilt eller allerede dekket av gjenvinningsrammen.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+De fem kategoriene for egne PR-er bærer `forUserId`, så de når forfatteren i stedet for alle i arbeidsområdet.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder` videresender i tillegg `TicketReassigned` som `notifications/ticket_reassigned` og hver `TaskLifecycleEvent` som `notifications/task_<phase>`. Ingen av dem tilordnes en varselkategori — de driver levende brukergrensesnitt, ikke varselsenteret. Medlemskapshendelser videresendes ikke som rammer: de ugyldiggjør cachen til videresenderen, og øktvertene dropper arbeidsområdeabonnementene til det fjernede medlemmet.
 
-## See also
+## Se også
 
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/)
-- [Pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
-- [Notifications](/nb-NO/handbok/slik-gjor-du/varsler/)
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/)
+- [Pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
+- [Varsler](/nb-NO/handbok/slik-gjor-du/varsler/)

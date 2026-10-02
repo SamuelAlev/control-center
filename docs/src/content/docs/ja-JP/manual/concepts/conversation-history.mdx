@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: 会話履歴
+description: 実行がコンテキストをどのように保持し、折りたたみ、分岐させ、再開するのか — 圧縮戦略、セッションツリー、そして「再開」が実際に意味するもの。
 slug: ja-JP/マニュアル/コンセプト/会話履歴
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+長い会話は、モデルのコンテキストウィンドウという堅い壁にぶつかります。このページにあるものはすべて、その壁が存在するからこそ成り立っています。そして興味深いのは、何が捨てられ、何が残り、何が取り戻せるのかという点です。
 
-## Four ways to reclaim context
+## コンテキストを取り戻す 4 つの方法
 
-They are not alternatives so much as a ladder, cheapest first.
+これらはどれか 1 つを選ぶ代替案というより、安いものから順に並んだはしごのようなものです。
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| 仕組み      | コスト        | 保持するもの                           | 失うもの                          |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **省略**    | なし        | 物語の一言一句          | 特筆すべきことのない古いツール結果     |
+| **画像の切り捨て** | なし        | それらの周囲のテキスト                 | 古いスクリーンショット                   |
+| **スナップショット**  | なし        | 一言一句をピクセルとして                | 非ビジョンモデルでの可読性  |
+| **要約**    | モデル呼び出し 1 回 | 物語                          | 拾わなかった詳細       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+省略と切り捨てが最初に実行されるのは、無料であり、重要な意味でロスレスだからです。どちらも、誰も読み返さないであろう大量のデータを落とします。
 
-### Why summarizing is the last resort
+### 要約が最後の手段である理由
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+要約は 4 つの中で唯一**モデル呼び出しを消費する**ものであり、唯一**何が重要だったかをあなたに代わって決める**ものです。どちらも実際のコストです。より興味深いのは呼び出しのほうで、それはいつ行われるかによります。
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+圧縮は通常、しきい値に基づいて壁の*手前*で実行されます。しかし**リアクティブに**、つまりプロバイダー自体がリクエストを大きすぎると拒否した後にも実行されます — ヒューリスティックな見積もりが、プロバイダーが実際に測定した量を少なく数えていたのです。この状況では、要約を行うコンパクターはコンテキストを縮めるためにリクエストを出さなければなりませんが、そのリクエストはたった今オーバーフローしたものと同じです。
 
-### Snapshots
+### スナップショット
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+スナップショット圧縮は、破棄された履歴をピクセルのグリフが密集したページに描画し、画像として返します。
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+前提にあるのは課金の癖です。ビジョンモデルは画像に対して、そこに何文字含まれるかとは無関係な、定額または面積比例のレートで課金します。破棄された会話の 12,000 文字は、12,000 文字分のテキストトークンを要します。同じ文字を 1 ページに描画すれば、コストは画像 1 枚分です。
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+これが単に巧妙というだけでなく採用する価値があるのは、**モデル呼び出しもキーもネットワークも**必要としないからです。オーバーフローからの復旧時に常に利用できる唯一の戦略です。
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+再構成の形は、先頭はそのまま、中間は画像化、末尾はそのまま、というものです。先頭はタスクと、後続のすべてが参照する制約です。末尾は現在作業が行われている場所です。中間は最も読み返されず、最もコストがかかる部分です。
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[正直に劣化する]
+ビジョンを持たないモデルはピクセルのページを読めません。誰も見ることのできないテキストを描画しても、それは劣化した圧縮ではなく、削除された会話です。したがって読み手の能力が判断基準となり、非ビジョンモデルには常に要約が渡されます。
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[ページの形はモデルの重みではなく API の価格に合わせる]
+Gemini は画像 1 枚あたり定額で課金するため、ページ上の余分な文字は無料であり、Gemini のページは最も幅が広くなります。OpenAI と Anthropic は面積で課金するため、ページを大きくしても何も得られません。プロセッサーによってはしきい値を超えるとダウンスケールし、5 ピクセルのグリフを黙って壊してしまうため、それらのページはしきい値未満に保たれます。ゲートウェイ経由で提供される Claude はゲートウェイが課金するため、ページの形はルートが示すモデル ID に従います。
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+スナップショットは毎回、**保持されたソーステキスト**から再描画され、前回のピクセルから描画されることはありません。画像を画像化すると、圧縮のたびに 1 世代ずつグリフが劣化し、最終的には誰も読めなくなります。
 
-## What a run actually resumes from
+## 実行が実際に何から再開するのか
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+これまで、ハーネスの実行はすべて空の履歴から始まり、プロンプト内の `<context>` ブロックから連続性を再構築していました — それは会話そのものではなく、会話の*要約*です。そこから 3 つのことが導かれました。
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **再開は再話でした。** モデルは以前の自身の推論や、ツールが返した実際のバイト列を見ることはなく、それらの説明だけを見ていました。
+- **巻き戻しはプロセスの終了とともに消えました。** `checkpoint` はライブのメッセージリストへのインデックスであるため、再起動するとモデルが設定したすべてのラベルが失われました。
+- **リトライは「リトライするものがない」と「何も読み込まれていない」を区別できませんでした。** 再起動後はどちらの場合も、失敗したターンはライブ状態から消えています。
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+この 3 つはいずれも、トランスクリプトを永続化することで解決します。トランスクリプトは毎回の**ターン境界**で保存され、ターンの途中で保存されることはありません。ツール呼び出しとその結果の間で取得された履歴は、どのプロバイダーも受け入れないものだからです。その瞬間にクラッシュしても、再生できない中途半端なターンではなく、*前の*ターンが復元されます。
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+再開された実行は最新のメッセージまでに切り詰められ、孤立したツール結果ではない境界で切られます — 呼び出しが切り詰められた結果は、プロバイダーが即座に拒否するリクエストであり、送信できないトランスクリプトは短いものより悪いからです。
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[保存場所]
+会話とエージェントの組み合わせごとに 1 つの JSON ファイルとして、ワークスペース自身のディレクトリ内、データベースの隣に置かれます。1 つの会話に 2 つのエージェントがいれば履歴も 2 つです。彼らは異なるツール結果を見て、異なるシステムプロンプトを与えられているため、統合すると互いの推論を自分のものとして渡してしまうことになります。
 :::
 
-## The session tree
+## セッションツリー
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+すべてのメッセージは、どのメッセージから続いているかを記録し、すべての会話は現在の**ブランチの先端**を指します。この 1 つの決定が機能のすべてです。
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**ブランチを切っても何も書き込まれません。** 移動するのはポインターだけです。離れたパスはそのまま残っているため、戻るのも復元ではなくもう一度ポインターを動かすだけです — また、プロンプトを編集して再実行しても、比較していた回答を失わなくなります。
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+これがなければ、あらゆる形の巻き戻しはメッセージを隠すか削除するしかなく、隠すことは次の読み手に見抜けない嘘になります。
 
-### Branch versus fork
+### ブランチとフォークの違い
 
-|                | Branch              | Fork                        |
+|                | ブランチ              | フォーク                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| 何が起きるか   | ポインターが移動する   | パスがコピーされる          |
+| どこへ向かうか  | 同じ会話   | 新しい会話          |
+| コスト           | なし             | ブランチのコピー 1 つ      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+フォークは行を共有するのではなく、**新しい id** でコピーします。2 つの会話が行を共有すると、互いの以降のメッセージが見えてしまい、これはフォークが決して行ってはならないことです。
 
-### Rewind rides the same pointer
+### 巻き戻しも同じポインターに乗る
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+実行中の `checkpoint` / `rewind` のペアは、きれいなターン境界をマークし、探索の後にそこへ戻り、ダイジェストを保持します。チェックポイントはトランスクリプトとともに永続化されるため、再起動前にモデルが設定したラベルも、設定された場所にそのまま着地します。切り詰めを生き延びられなかったターゲットを持つチェックポイントは、クランプされるのではなく**破棄**されます — 「ラベルへ」巻き戻したのに別の場所に着地するのは、まさにラベルが防ぐために存在する失敗です。
 
-## Related
+## 関連項目
 
-- [Branch a conversation](/ja-JP/マニュアル/ハウツーガイド/会話のブランチ/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/ja-JP/マニュアル/コンセプト/ツールコンテキスト/) — the other half of what fills a context window
-- [Slash commands](/ja-JP/マニュアル/リファレンス/スラッシュコマンド/) — `/compact`, `/shake`, `/context`, `/tree`
+- [会話をブランチ](/ja-JP/マニュアル/ハウツーガイド/会話のブランチ/) — ツリーナビゲーター、フォーク、エクスポート
+- [ツールコンテキストとプロンプトキャッシュ](/ja-JP/マニュアル/コンセプト/ツールコンテキスト/) — コンテキストウィンドウを埋めるもののもう半分
+- [スラッシュコマンド](/ja-JP/マニュアル/リファレンス/スラッシュコマンド/) — `/compact`、`/shake`、`/context`、`/tree`

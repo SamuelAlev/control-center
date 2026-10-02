@@ -1,185 +1,198 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Używaj trybu skupienia i pejzaży dźwiękowych
+description: Prowadź sesję skupienia o zadanym czasie, z pływającą pigułką odliczania i wyciszonymi powiadomieniami, oraz kształtuj adaptacyjny pejzaż dźwiękowy, który gra w jej tle.
 dateModified: 2026-08-17
 slug: pl-PL/podrecznik/poradniki/tryb-skupienia
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Ten poradnik pokazuje, jak prowadzić sesję skupienia: blok czasu, w którym
+Control Center wycisza niepilne powiadomienia i unosi pływającą pigułkę z
+odliczaniem nad Twoimi innymi oknami. Omawia też pejzaż dźwiękowy, który
+(domyślnie) gra w jej tle — nieskończony utwór ambientowy, syntezowany na żywo
+przez Twój serwer i kształtowany przez wybrany nastrój, pogodę za oknem oraz
+porę dnia.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Sesja skupienia to funkcja na poziomie powłoki. Nie jest powiązana z żadnym
+filarem — nie zmienia układu, nie ukrywa paska bocznego ani nie modyfikuje
+powierzchni recenzji PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Tylko na pulpicie]
+Pływająca pigułka i wypinany mini odtwarzacz pejzażu dźwiękowego to natywne okna
+siostrzane, montowane wyłącznie przez bootstrap wersji desktopowej. Wersja
+webowa pod `app.usectrl.dev` nie ma żadnego z nich ani potoku powiadomień
+systemowych, więc sesja skupienia nie ma tam czego pokazywać ani wyciszać.
+Panel pejzażu dźwiękowego i jego odtwarzanie działają wszędzie tam, gdzie
+połączysz się z serwerem.
 :::
 
-## Start a focus session
+## Rozpocznij sesję skupienia
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Kliknij ikonę skupienia po prawej stronie paska tytułu (podpowiedź
+   **Rozpocznij sesję skupienia**)
+2. W oknie dialogowym wpisz opcjonalny **Cel** — nad czym pracujesz
+3. Wybierz **Czas trwania**: 25m, 50m, 1h, 1h 30m lub 2h. Domyślnie jest to 50m,
+   a Twój ostatni wybór jest zapamiętywany
+4. Naciśnij **Rozpocznij**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Punkt kontrolny: przycisk na pasku tytułu zastępuje chip w kolorze akcentu z
+liczbą pozostałych minut, pływająca pigułka pojawia się nad Twoimi innymi oknami
+i — przy włączonej opcji **Startuj w trybie skupienia** — zaczyna grać pejzaż
+dźwiękowy.
 
-Two other entry points reach the same session:
+Do tej samej sesji prowadzą dwa inne punkty wejścia:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** otwiera to samo okno dialogowe.
+- **⌘⇧⌥F** natychmiast rozpoczyna sesję z zapamiętanym czasem trwania i bez celu
+  — pomija okno dialogowe. Ponowne naciśnięcie kończy sesję.
 
-## Read the floating pill
+## Odczytaj pływającą pigułkę
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Pigułka to małe okno bez ramki, które możesz przeciągnąć w dowolne miejsce.
+Pokazuje:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- aktywną kropkę obecności i pozostały czas w formacie `mm:ss`
+- Twój cel lub „Focus session”, gdy go nie ustawisz
+- cienki pasek postępu wzdłuż dolnej krawędzi
 
-Hover it to reveal two actions:
+Najedź na nią kursorem, aby odsłonić dwie akcje:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — zatrzymuje odliczanie. Pauza działa tylko lokalnie w
+  pigułce; sama sesja pozostaje aktywna.
+- **Complete** — kończy sesję.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Pigułka zawsze używa ciemnej palety, niezależnie od motywu, którego używa okno
+główne, ponieważ unosi się nad dowolną zawartością pulpitu.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Jeśli zamkniesz pigułkę z paska tytułu, sesja będzie działać dalej. Naciśnij
+przycisk obraz-w-obrazie obok chipu skupienia (podpowiedź **Zminimalizuj do
+paska**), aby ją przywrócić.
 
-## Know what gets suppressed
+## Wiedz, co jest wyciszane
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Gdy sesja jest aktywna, Control Center odrzuca każde powiadomienie z wyjątkiem
+dwóch kategorii, które są dostarczane zawsze:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Spotkanie wkrótce się rozpocznie** — alert o spotkaniu, który zobaczysz po
+  fakcie, jest bezwartościowy
+- **Opublikowano PR**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Wszystko inne jest po cichu wyciszane przez całą sesję — bez dźwięku, bez
+powiadomienia systemowego. Wyciszone powiadomienia nie są kolejkowane do
+późniejszego dostarczenia.
 
-## Play a soundscape
+## Odtwórz pejzaż dźwiękowy
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Kliknij ikonę głośnika po prawej stronie paska tytułu (podpowiedź **Pejzaże
+   dźwiękowe**), aby otworzyć panel
+2. Wybierz **Nastrój** — **Skupienie**, **Wzlot**, **Relaks** lub **Sen**
+3. Naciśnij **Odtwórz**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Punkt kontrolny: karta **Teraz odtwarzane** podaje nazwę bieżącej sceny — pogodę
+w lokalizacji Twojego obszaru roboczego, temperaturę w °C i etykietę
+lokalizacji. Dopóki widnieje na niej „Strojenie tła…”, scena jest jeszcze
+ustalana.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Utwór nie jest zapętlony. Twój serwer syntezuje go w sposób ciągły na podstawie
+nastroju, bieżącej pogody w lokalizacji obszaru roboczego i pory dnia. Deszcz
+brzmi jasno i ruchliwie, burza głośno i porywiście, a mgła jest stłumiona; noc
+jest ciemniejsza i bardziej pogłosowa niż południe. Nastrój wyznacza słownictwo:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Nastrój    | Dźwięk                                                                            |
+| ---------- | --------------------------------------------------------------------------------- |
+| Skupienie  | Delikatny, czujny ambient z niskim pulsem — do pracy w tle                        |
+| Wzlot      | Żwawa melodia z miękkim pulsem — na momenty, gdy praca wydaje się ciężka          |
+| Relaks     | Cieplejsze, bardziej konsonansowe pady, bez rytmu                                 |
+| Sen        | Niskie drony niemal pozbawione zdarzeń, głęboki pogłos                            |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Zmiana nastroju w trakcie odtwarzania przekazuje odtwarzanie nowemu nastrojowi
+bez zatrzymywania.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Panel jest też dostępny z ⌘K w kategorii **Focus**, obok samej sesji skupienia.
 
-## Shape the sound
+## Kształtuj dźwięk
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Strojenie** (Skupienie, Wzlot i Relaks) — kwadratowy pad z przeciąganym
+  krążkiem. Oś pozioma to od **Aksamitny** do **Energetyczny** (ile się dzieje),
+  oś pionowa — od **Kosmiczny** do **Jasny** (jak otwarte jest brzmienie).
+  Kliknij dwukrotnie pad, aby wrócić do neutralnego środka; klawisze strzałek
+  przesuwają krążek. Twoje strojenie jest zapamiętywane osobno dla każdego
+  nastroju, a zmiany płynnie wchodzą w grający miks — strumień nigdy nie
+  startuje od nowa. Nastrój Sen celowo nie poddaje się strojeniu.
+- **Głośność** — suwak od 0 do 100%, domyślnie 60%. Jest niezależna od głośności
+  systemowej i jest zapamiętywana.
+- **Lokalizacja** — wykrywana automatycznie na podstawie obszaru roboczego.
+  Naciśnij **Odśwież pogodę**, aby ponownie pobrać scenę.
 
-## Pop out the mini player
+## Wypnij mini odtwarzacz
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Gdy audio gra, na pasku tytułu pojawia się drugi przycisk (podpowiedź
+**Odtwarzacz w osobnym oknie**). Wyświetla mały HUD zawsze na wierzchu z
+odtwarzaniem i pauzą, symbolem pogody, nazwą sceny oraz przyciskiem **Wróć do
+aplikacji** — przydatny, gdy sesja skupienia przeniesie Cię całkowicie do innej
+aplikacji.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Wstrzymanie odtwarzania z mini odtwarzacza nie zamyka go; usuwa go dopiero jego
+przycisk zamknięcia (albo zakończenie aplikacji).
 
-## Run them together
+## Uruchamiaj je razem
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Obie funkcje spina jeden przełącznik w panelu pejzażu dźwiękowego: **Startuj w
+trybie skupienia**, domyślnie włączony.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Rozpoczęcie sesji skupienia uruchamia pejzaż dźwiękowy, jeśli nic jeszcze nie
+  gra.
+- Zakończenie sesji — niezależnie od tego, jak się kończy, również gdy upłynie
+  czas — zatrzymuje go, nawet jeśli pejzaż dźwiękowy uruchomiłeś ręcznie.
 
-Turn the switch off to keep the two independent.
+Wyłącz przełącznik, aby obie funkcje pozostały niezależne.
 
-## End a session
+## Zakończ sesję
 
-Any one of these ends it:
+Sesję kończy każda z tych czynności:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Kliknięcie chipu skupienia na pasku tytułu (podpowiedź **Tryb skupienia
+  aktywny — dotknij, aby zakończyć**)
+- Naciśnięcie **Complete** na pigułce
+- Naciśnięcie **⌘⇧⌥F**
+- Wybranie **Exit focus mode** w ⌘K
+- Pozwolenie, aby czas upłynął — przy zerze sesja kończy się automatycznie
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Pigułka się zamyka, powiadomienia natychmiast wracają, a pejzaż dźwiękowy się
+zatrzymuje.
 
-## Understand what does not persist
+## Zrozum, co nie jest zachowywane
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Sesja trwa dokładnie jedno uruchomienie aplikacji. Zamknij Control Center i
+otwórz je ponownie, a zaczniesz bez aktywnej sesji, ze zresetowanym licznikiem —
+nawet w połowie sesji. Nie ma odzyskiwania po awarii ani historii sesji.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Zachowują się tylko dwie rzeczy: preferowany czas trwania i znacznik blokowania
+powiadomień. Cel, czas, który upłynął, oraz stan otwarcia pigułki już nie.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Odtwarzanie jest równie ulotne — pejzaż dźwiękowy jest zawsze zatrzymywany przy
+starcie. Nastrój, głośność i strojenia dla poszczególnych nastrojów są
+zachowywane; sam strumień nigdy nie wznawia się sam.
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-### The tune pad is missing
+### Brakuje padu strojenia
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Masz wybrany nastrój Sen, który celowo nie poddaje się strojeniu. Przełącz na
+Skupienie lub Relaks, aby odzyskać pad.
 
-### Nothing plays after restarting the app
+### Po ponownym uruchomieniu aplikacji nic nie gra
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Takie jest zamierzenie — odtwarzanie jest zawsze zatrzymywane przy uruchomieniu
+aplikacji. Otwórz panel i naciśnij ponownie **Odtwórz**. Jeśli nadal jest cicho,
+sprawdź suwak głośności w panelu, który jest niezależny od głośności systemowej.
 
-### The weather or temperature looks wrong
+### Pogoda lub temperatura wyglądają na błędne
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Scena podąża za lokalizacją aktywnego obszaru roboczego. Naciśnij w panelu
+**Odśwież pogodę**, aby pobrać ją ponownie.
 
-## Related guides
+## Powiązane poradniki
 
-- [Configure notifications](/pl-PL/podrecznik/poradniki/powiadomienia/)
-- [Keyboard shortcuts](/pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe/)
+- [Skonfiguruj powiadomienia](/pl-PL/podrecznik/poradniki/powiadomienia/)
+- [Skróty klawiszowe](/pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe/)

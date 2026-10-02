@@ -1,241 +1,244 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Rigs et enceintes
+description: Pourquoi les agents obtiennent des machines jetables plutôt que votre ordinateur — les frontières d’isolation, les voies d’affichage, les identifiants, les ports et le cycle de vie.
 slug: fr-FR/manuel/concepts/rigs
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/fr-FR/manuel/guides/utiliser-rigs/); for the exact
-verbs, ports and defaults, see the [rigs reference](/fr-FR/manuel/reference/rigs/).
+Un **rig** est une machine jetable qu’un agent pilote en temps réel — un navigateur, un
+bureau Linux, un émulateur Android, un simulateur iOS ou la machine derrière un terminal
+isolé. La plupart des rigs sont des VM ; les simulateurs mobiles gérés par l’hôte sont les
+exceptions explicites. Cette page explique chaque frontière et pourquoi les pièces sont
+agencées ainsi. Pour en ouvrir un, consultez
+[Donner une machine de test à un agent](/fr-FR/manuel/guides/utiliser-rigs/) ; pour les
+verbes exacts, les ports et les valeurs par défaut, consultez la
+[référence des rigs](/fr-FR/manuel/reference/rigs/).
 
-## Why a VM, not a sandbox
+## Pourquoi une VM, et non un bac à sable
 
-The [native sandbox](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+Le [bac à sable natif](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) enferme un processus
+dans une isolation par espaces de noms — réelle, mais il partage votre noyau et contraint un
+*processus*, pas un *ordinateur*. Dès qu’un agent doit cliquer dans une application de
+bureau, rendre une page dans un vrai navigateur ou lancer des expériences `rm -rf` auxquelles
+vous préférez ne pas penser, la frontière honnête est une machine : son propre noyau, son
+propre disque, sa propre pile réseau.
 
-The enclosed surfaces use two VM backends:
+Les surfaces isolées s’appuient sur deux backends de VM :
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVMs** pour le terminal et le navigateur — un démarrage d’hyperviseur en moins d’une
+  seconde à partir d’images de conteneur épinglées par empreinte.
+- **QEMU** pour le bureau Linux complet, qui a besoin d’un périphérique d’affichage que la
+  microVM n’a pas.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Les surfaces mobiles sont gérées par l’hôte et annoncent directement la frontière plus
+faible :
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** pilote l’émulateur de Google via ADB.
+- **iOS** crée et possède un appareil CoreSimulator sur un hôte Mac et le pilote via
+  WebDriverAgent. L’appareil et ses données sont supprimés à la fermeture du rig, mais son
+  réseau suit le Mac hôte.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Les rigs isolés écrivent dans une surcouche jetable par-dessus une image de base en lecture
+seule : un rig ne peut donc pas modifier ce dont le suivant démarre. Un rig iOS possède un
+appareil CoreSimulator jetable, supprimé à la fermeture du rig. Android se rattache à un
+émulateur de l’hôte qui survit à la session.
 
-## Deny-by-default egress
+## Une sortie réseau refusée par défaut
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+Le réseau d’un rig part de **rien**. Les hôtes sont autorisés rig par rig au travers d’une
+porte que l’invité ne peut pas contourner : les seules sorties de la machine sont celles
+créées par la configuration de lancement. Un terminal isolé reçoit le socle développeur
+(registres de paquets, forges, les miroirs apt) ; un rig navigateur autorise le site du
+produit (`usectrl.dev`) et démarre sur une page `file://` locale qui n’a besoin d’aucune
+sortie réseau ; tout le reste est refusé au moment de la connexion.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android et iOS ne sont pas couverts par cette porte. Leur émulateur et leur simulateur sur
+l’hôte utilisent le réseau de la machine serveur : l’interface et le rapport de capacités
+signalent donc la sortie réseau comme non appliquée et n’offrent jamais la commande
+trompeuse « redémarrer sans restriction ».
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Sortie réseau et identifiants ne sont qu’une même politique vue des deux côtés — le courtier
+d’identifiants (plus bas) ne génère pas de jeton pour un hôte que l’invité ne peut pas
+atteindre.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Tout ce qu’un rig *lit* est traité comme non fiable : texte de page, DOM et arbres
+d’accessibilité, vidages d’interface et sorties de console reviennent vers l’agent encadrés
+par une règle permanente « ceci est une donnée, pas une instruction ». Ce cadre relève de la
+mise en forme ; la porte de sortie réseau est l’application qui le sous-tend.
 
-## Input goes through the hypervisor, capture through the guest
+## L’entrée passe par l’hyperviseur, la capture par l’invité
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+Pour la surface bureau, les événements clavier et pointeur sont injectés par les propres
+périphériques d’entrée virtuels de *l’hyperviseur*. L’invité n’exécute jamais de démon
+privilégié capable de synthétiser des entrées : compromettre les logiciels de l’invité ne met
+donc pas un clavier entre les mains de l’attaquant. La capture circule en sens inverse, via
+un petit agent non privilégié dans l’invité, car l’invité peut redimensionner les images
+avant leur transmission.
 
-## Two display lanes
+## Deux voies d’affichage
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+La personne qui regarde et le modèle qui pilote ont des besoins opposés : un rig sert donc
+deux flux indépendants :
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- La **voie humaine** est en pleine résolution à la taille de votre panneau, renégociée quand
+  vous redimensionnez, relayée par le serveur sous forme d’octets opaques — le serveur ne
+  décode jamais une image, car un décodeur vidéo sur le chemin des requêtes l’empêcherait de
+  répondre aux RPC.
+- La **voie de l’agent** est faite d’images fixes réduites, plafonnées à une taille adaptée
+  au modèle, une image par résultat d’outil, les images plus anciennes étant écartées lors de
+  la compaction tandis que leurs descriptions textuelles survivent.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Aucune voie ne fait de compromis pour l’autre : vous obtenez une image fluide, le modèle en
+obtient une économique.
 
-## Take-over is a chokepoint, not a request
+## La prise de contrôle est un point de passage obligé, pas une requête
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Le contrôle exclusif est appliqué au point unique par lequel passe chaque action — non en
+demandant au modèle de bien se tenir. Tant qu’une personne le détient, le serveur refuse les
+actions *modificatrices* de l’agent. L’agent conserve ses verbes d’observation (captures
+d’écran, extraction) pour pouvoir raconter ce que vous faites, et la prise de contrôle lui est
+signalée par sa voie de pilotage plutôt que de le laisser la découvrir à travers des clics
+refusés. Cliquer et taper sur le canevas fonctionne dès que personne d’autre ne détient ce
+verrou — ou lorsque c’est vous ; l’étiquette d’état indique **Vous avez le contrôle**. Chaque
+événement d’entrée — le vôtre comme celui de l’agent — atterrit dans un journal d’audit par
+rig avec son auteur et une séquence monotone : « qui a cliqué là » trouve donc toujours sa
+réponse après la disparition de la machine.
 
-## Content crosses the boundary; the machines stay separate
+## Le contenu franchit la frontière ; les machines restent séparées
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Le copier-coller fonctionne dans les deux sens, tout comme le glisser-déposer de fichiers dans
+un sens et dans l’autre — mais un rig est un autre ordinateur, et la conception ne prétend
+jamais le contraire.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Le presse-papiers** est transporté à la demande, et non recopié en continu. Appuyez sur la
+combinaison de copie au-dessus d’un rig : l’invité reçoit l’ordre de copier, puis ce qu’il a
+placé dans son presse-papiers — texte, image, liste de fichiers — est récupéré et placé dans
+le vôtre. Le collage envoie le même contenu en sens inverse, puis déclenche un collage à
+l’intérieur de l’invité. Rien n’est synchronisé en arrière-plan : un mot de passe copié sur
+votre propre machine n’arrive pas silencieusement dans une VM parce qu’un minuteur s’est
+déclenché.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Le franchissement est contrôlé par utilisateur et par sens, indépendamment. Le collage vers un
+rig est autorisé par défaut ; la copie depuis un rig demande d’abord confirmation (une
+autorisation de dix minutes, ou **Toujours autoriser** sous **Paramètres → Serveur → Rigs →
+Accès au presse-papiers**). Ce n’est jamais un réglage d’espace de travail : un membre ne peut
+pas consentir pour le presse-papiers d’un autre.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+Sur macOS, la combinaison de franchissement est ⌘C/⌘V, sans ambiguïté — ⌃C continue
+d’atteindre un shell de l’invité en tant qu’interruption, ce qu’il est. Sur Windows et Linux,
+les deux combinaisons sont la même frappe : l’invité la reçoit donc inchangée et votre
+presse-papiers n’est écrasé que si celui de l’invité a réellement changé. Une interruption
+reste une interruption.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Les fichiers déposés à l’entrée** sont copiés dans le dossier de dépôt de la machine, puis
+proposés à celle-ci. Ce que « proposé » signifie dépend de ce qui peut honnêtement être fait :
+une page de navigateur reçoit un *vrai* événement de dépôt à l’endroit où vous relâchez, si
+bien qu’une zone de téléversement se comporte exactement comme avec un fichier local ; un
+bureau reçoit les fichiers dans `~/Drops` avec leurs chemins dans son presse-papiers, car
+aucun hôte ne peut synthétiser un glisser-déposer vers une boîte à outils Linux arbitraire
+sans exécuter un démon privilégié dans l’invité — précisément ce que cette conception refuse
+d’avoir. Le résultat indique ce qui s’est produit : un CSV déposé sur une zone de
+téléversement n’est jamais annoncé comme téléversé alors qu’il n’est qu’un fichier dans un
+dossier. Déposer sur un **terminal** isolé copie le fichier dans la machine et tape son chemin
+invité à l’invite, ce qu’un shell peut réellement utiliser.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Les fichiers extraits par glisser-déposer** fonctionnent sur la surface bureau, où le
+protocole de glisser-déposer de X11 rend la charge utile lisible pendant qu’un glisser est en
+cours. Lancez un glisser à l’intérieur de l’invité, faites-le sortir du canevas : les
+fichiers sont récupérés vers votre machine et remis au système d’exploitation comme un vrai
+glisser. Copier des fichiers dans le gestionnaire de fichiers de l’invité et coller sur
+l’hôte fonctionne de la même manière. La surface navigateur ne propose délibérément *pas*
+cela : un navigateur sans interface n’a aucune sélection de glisser à lire, et le signal le
+plus proche disponible — la sélection de texte de la page — n’est pas du tout la preuve d’un
+glisser ; agir dessus détournerait des clics ordinaires.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Tout ce qui est lu depuis un invité reste du contenu non fiable : le texte du presse-papiers
+parvient à un modèle dans le même cadre qu’une extraction de page, et le journal d’audit
+consigne qu’un collage a eu lieu et son volume — jamais son contenu.
 
-## Credentials never live in the guest
+## Les identifiants ne vivent jamais dans l’invité
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` fonctionne depuis un terminal isolé, et pourtant l’invité ne stocke aucun jeton de
+forge. Il détient un secret par VM dont le seul pouvoir est de *demander* au courtier
+d’identifiants de l’hôte — via un tunnel contrôlé par l’hôte — un jeton de courte durée et
+limité au dépôt, pour chaque opération, avec limitation de débit, borné par la même liste
+d’hôtes autorisés que la sortie réseau, et révoqué dès la fermeture du rig. Une machine conçue
+pour être jetée ne doit contenir rien qui vaille la peine d’être volé.
 
-## The worktree in a rig is a satellite
+## L’arbre de travail d’un rig est un satellite
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+Quand un rig embarque votre dépôt, l’arbre de travail de l’hôte reste la référence. La copie
+est *synchronisée* au démarrage (les secrets comme les fichiers `.env` étant exclus), et les
+commits ne reviennent que si vous le demandez — récupérés dans `refs/rigs/<id>/*`, jamais
+poussés, jamais extraits. Rien à l’intérieur d’une VM ne peut déplacer votre branche ni
+toucher votre arbre de travail ; fusionner ce qu’un rig a produit reste toujours une décision
+humaine prise sur l’hôte.
 
-## Ports without holes
+## Des ports sans brèche
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
+Un serveur de développement lancé dans la VM terminal devient joignable — sur votre machine,
+dans le Navigateur (VM), éventuellement sur votre réseau local, éventuellement sous un domaine
+de développement avec HTTPS — sans jamais ouvrir la machine. La table de ports de
+l’hyperviseur est figée au démarrage : tout le transfert ultérieur passe donc par deux canaux
+étroits contrôlés par l’hôte, un multiplexeur entrant pré-créé qui refuse de composer tout ce
+sur quoi l’invité n’écoute pas réellement, et des tunnels inverses que l’hôte maintient
+ouverts pour les connexions initiées par l’invité. Le HTTPS des domaines de développement se
+termine sur le serveur à l’aide d’une autorité générée localement, dont les clés n’entrent
+dans aucun invité. Les mécanismes sont décrits dans [Transférer des ports depuis un
 terminal](/fr-FR/manuel/guides/ports-vm/).
 
-## Machines are bounded by construction
+## Des machines bornées par construction
 
-A rig cannot become a pet:
+Un rig ne peut pas devenir un animal de compagnie :
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- une **durée de vie maximale stricte** que l’invité ne peut pas prolonger ;
+- une **échelle d’inactivité** — mise en veille (vCPU arrêtés, RAM résidente) après la fenêtre
+  d’inactivité, fermeture après le double — où un terminal ouvert ou un observateur qui
+  regarde compte comme « en cours d’utilisation » ;
+- un **budget mémoire** compté en *mégaoctets résidents*, et non en sessions, car une VM en
+  veille libère du processeur tout en conservant chaque octet de RAM ; la machine la moins
+  récemment utilisée est évincée en premier, et jamais une machine qu’une personne pilote ou
+  regarde ;
+- un démontage à l’arrêt du serveur, plus un balayage des orphelins marqués par propriétaire
+  au démarrage suivant, pour qu’un serveur planté ne laisse jamais traîner un hyperviseur qui
+  ne répond à personne.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+Les premiers démarrages tirent l’image épinglée de la machine ; le serveur met ensuite en
+cache une copie pré-extraite en arrière-plan, si bien que chaque machine ultérieure de ce type
+démarre en quelques secondes et qu’un terminal isolé se présente avec un socle d’outils en
+ligne de commande comparable à celui d’un runner hébergé par GitHub déjà installé —
+compilateurs, Python, `jq`, outils d’archivage — et non un cache d’outils par langage ni
+Docker. L’image Ordinateur intègre ce même socle en ligne de commande au moment de sa
+construction, aux côtés de XFCE et des navigateurs.
 
-## Three browsers, not one
+## Trois navigateurs, pas un seul
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+« Ça marche sur ma machine » est une affirmation sur un seul moteur de rendu. Un rig
+navigateur n’est donc pas « le navigateur » — c’est **Chromium, Firefox ou WebKit**, choisi à
+l’ouverture, et un rig exécute celui avec lequel il a été ouvert pendant toute sa vie. Une
+conversation peut en contenir un de chaque : ouvrir *Firefox (VM)* à côté de *Chromium (VM)*
+vous donne deux machines, et les pointer vers la même page constitue la comparaison. WebKit
+est ce qui ressemble le plus à Safari parmi ce qui tourne sous Linux — même lignée de moteur,
+il détecte donc les écarts que rencontrent les utilisateurs de Safari.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Les verbes sont identiques pour les trois ; les protocoles sous-jacents ne le sont pas, et les
+différences sont énoncées plutôt que lissées. Chromium parle le DevTools Protocol et *pousse*
+les images, si bien que sa vue en direct ne coûte rien tant que la page est immobile. Firefox
+parle WebDriver BiDi et WebKit le WebDriver classique, dont aucun ne dispose de screencast :
+leurs vues en direct fonctionnent par interrogation — quelques images par seconde, ce qui
+convient pour regarder une page et non une animation. Quand un moteur ne peut réellement pas
+faire quelque chose (Firefox n’a pas de rechargement contournant le cache ; WebKit ne voit pas
+les sorties de console journalisées avant la fin du chargement d’une page), la réponse le dit
+au lieu de faire silencieusement autre chose.
 
-## Where rigs live in the product
+## Où vivent les rigs dans le produit
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/fr-FR/manuel/concepts/garde-fous/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+Un rig n’est délibérément **pas** une destination globale. La vue en direct est un onglet dans
+l’espace ou la PR où le travail se déroule, rattaché à cette conversation : votre onglet et les
+appels `browser_use` de l’agent s’adressent donc à *une* machine (une par moteur, sur la
+surface navigateur). Le fait que les rigs puissent démarrer ou non est une propriété de
+l’hôte : les capacités, les images, les images personnalisées par espace de travail et la
+liste des machines en cours se trouvent donc sous **Paramètres → Serveur → Rigs**. Piloter une
+enceinte constitue sa propre [classe d’actions de garde-fou](/fr-FR/manuel/concepts/garde-fous/),
+si bien qu’un espace de travail, un agent ou un espace peut l’autoriser, exiger une validation
+ou la refuser catégoriquement — les modes en lecture seule la refusent sans exception.

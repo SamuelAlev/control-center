@@ -1,153 +1,241 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Instalace
+description: Použij Control Center v prohlížeči nebo nainstaluj aplikaci pro počítač, nastav backend agenta a vyber, kde poběží jeho server.
 slug: cs-CZ/prirucka/instalace
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center běží dvěma způsoby: jako **webová aplikace** na
+[app.usectrl.dev](https://app.usectrl.dev), kde není co stahovat, nebo jako
+**aplikace pro počítač**, kterou si nainstaluješ. Je to tatáž aplikace se stejnými
+funkcemi. Rozdíl je jen v tom, kde běží server. Webová aplikace ho za tebe
+nespustí.
 
-## Use it in your browser
+## Použij ho v prohlížeči
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) je tahle aplikace sestavená pro
+prohlížeč. Není co instalovat ani aktualizovat. Otevři ji a připoj se.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Co karta prohlížeče neumí, je serverem _být_. Každý klient, ať jde o počítač,
+web nebo telefon, je tenký klient nad headless `cc_server`, který vlastní
+databázi a dělá práci, takže webová aplikace vždy mluví se serverem, který
+spouštíš ty. Dát jí ho jde dvěma způsoby:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Server na vlastním stroji.** Spusť `cc_server` lokálně a namiř webovou
+aplikaci na `ws://localhost:9030`. Prohlížeče berou `localhost` jako
+důvěryhodný, takže nepotřebuješ certifikát ani tunel. Je to nejrychlejší
+způsob, jak webovou aplikaci vyzkoušet, a data neopustí tvůj stroj.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Server na jiném stroji.** Protože `app.usectrl.dev` běží po HTTPS,
+server mimo tvůj počítač musí být dosažitelný přes `wss://` s certifikátem,
+kterému prohlížeč už důvěřuje. `cc_server` odmítne navázat adresu mimo loopback
+bez TLS, takže zvol jedno z tohoto:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- dej mu certifikát přímo, přes `--tls-cert` a `--tls-key`
+- postav ho za reverzní proxy, která ukončuje TLS, a spusť ho s `--insecure`
+- vystav ho tunelem nebo VPN, která dodá certifikát: Tailscale, cloudflared
+  nebo něco podobného. **Nastavení → Server → Připojení a stav** má vestavěné
+  zapnutí tunelu pod **Sdílet tento server**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Když server sedí za proxy, NAT nebo tunelem, nastav `--public-url` na adresu,
+na kterou se mají klienti opravdu připojit. Výchozí je místní vazba, takže bez
+ní zkouší špatného hostitele.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Hostuješ vlastní kopii webového klienta?]
+`cc_server` přijímá jen ty originy prohlížeče, které jsou na seznamu
+`--allowed-origins`. Výchozí je `https://app.usectrl.dev`. Když webové
+sestavení hostuješ sám, přidej tam vlastní origin. Loopback a nativní klienti
+jsou povolené vždy, na ten seznam se nehledí.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Pár věcí zůstává jen na počítači, protože potřebují nativní okno nebo zvuková
+zařízení toho stroje: plovoucí pilulka režimu soustředění, systémové toasty
+oznámení (centrum oznámení v aplikaci funguje všude), „Spustit nahrávání a
+propojit“ u události v kalendáři a nové spuštění shrnutí schůzky. Všechno
+ostatní, prostory, agenti, kontrola pull requestů, pipelines, tickety, paměť
+i samotné nahrávání schůzky, se chová stejně.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/). To host the server,
-follow [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
+Webovou aplikaci k serveru připojíš podle
+[Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/).
+Jak server hostovat, popisuje
+[Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
 
-## Desktop system requirements
+## Systémové požadavky na počítači
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Požadavek    | macOS                                                         | Windows      | Linux                                                              |
+| ------------ | ------------------------------------------------------------- | ------------ | ------------------------------------------------------------------ |
+| Verze systému | macOS 13+ (Ventura)                                          | Windows 10+  | Ubuntu 22.04+ nebo jiná distribuce s glibc 2.35+ a GTK 3           |
+| Architektura | Apple Silicon (arm64)                                         | x64          | x86_64                                                             |
+| Git          | Povinné                                                       | Povinné      | Povinné                                                            |
+| Místo na disku | ~200 MB pro aplikaci a k tomu datový adresář serveru        | ~200 MB      | ~200 MB                                                            |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Macy s procesorem Intel nemají předpřipravené stažení. Místo toho
+[sestav ze zdroje](#sestav-ze-zdroje).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Datový adresář serveru aplikaci přeroste. Při prvním startu `cc_server` vynutí
+instalaci modelů na zařízení: textové embeddingy (~90 MB), diarizaci řečníků
+(~35 MB) a zvolený model řeči (ve výchozím stavu Parakeet TDT v3, ~600 MB;
+varianty Whisper 198–626 MB). K tomu přibalené sestavení code-server a každá
+konverzace agenta dostane worktree s copy-on-write repozitářů, na kterých
+pracuje (na Windows obyčejný `git worktree`). Řeč není volitelná: bez modelu
+ASR se operace schůzek a diktování neobsluhují. První stažení modelu řeči
+pořád potřebuje jeden restart, než nahrávání naskočí.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Aplikace pro počítač ukládá data serveru do adresáře podpory aplikací daného
+uživatele. `cc_server` spuštěný ručně bez `--data-dir` má výchozí cestu
+`<application data>/control-center`: `~/Library/Application Support/control-center`
+na macOS, `%APPDATA%\control-center` na Windows a
+`$XDG_DATA_HOME/control-center` (nebo `~/.local/share/control-center`) na Linuxu.
 
-## Download
+## Stažení
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Všechny artefakty níže jsou z [vydání na GitHubu](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Stáhni `Control-Center-<version>-arm64.dmg`, otevři ho a přetáhni Control Center
+do Applications. Sestavení je podepsané Developer ID a notarizované Applem,
+takže se otevírá normálně.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: instalátor pro jednoho uživatele.
+- `Control-Center-<version>-windows-x64.zip`: přenosný zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows pro checkouty prostorů používá `git worktree` (bez copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage veze informace o aktualizaci, takže
+[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) nebo
+appimaged ho umí na místě posunout na nejnovější vydání a stáhne jen to, co se
+změnilo.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Obě jsou sestavená na Ubuntu 22.04 a běží na něm i na čemkoli novějším (Debian
+12, Fedora 36 a novější): linkují glibc 2.35 a libstdc++ z GCC 12 a GTK 3 berou
+ze systému. Pár knihoven, které běžné ploše můžou chybět, vezou uvnitř, takže
+nic dalšího instalovat nemusíš. Zvuk, tedy přehrávání schůzek, zvuková krajina,
+zvuk stanic a tóny oznámení, hraje přes systémové libmpv (`libmpv1` na Ubuntu
+22.04, `libmpv2` na novějším Ubuntu a Debianu, `mpv-libs` na Fedoře); bez něj
+se aplikace spustí s těmi ovládacími prvky schovanými.
 
-### Standalone server
+### Samostatný server
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
+Každé vydání veze i samotný headless server:
+`cc_server-<version>-macos-arm64.tar.gz`,
+`cc_server-<version>-linux-x64.tar.gz`,
+`cc_server-<version>-windows-x64.zip`, a vedle toho obrazy `cc-server`,
+`cc-webapp` a `cc-remote` na GHCR. Viz
+[Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linuxový archiv je sestavený na Ubuntu 22.04 a přibalené nativní knihovny
+linkují glibc 2.35 a libstdc++ z GCC 12, takže hostitel musí být aspoň tak
+nový (Ubuntu 22.04, Debian 12, Fedora 36 nebo novější). Na starší distribuci
+spusť raději obraz `cc-server`: kontejner si přinese vlastní userland, takže
+tvůj musí být jen kernel.
 
-## Agent backend
+## Backend agenta
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center odesílá agenty přes **adaptéry**. Jsou dva, seznam je pevný a
+detekují se samy. Třetího zaregistrovat nejde.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Adaptér **Control Center (built-in)** nepotřebuje externí CLI: smyčka agenta
+běží uvnitř serveru a s poskytovateli modelů mluví po HTTP, takže je pořád k
+dispozici. Poskytovatele připojíš v **Nastavení → Server → Poskytovatelé
+modelů**. OpenAI, Codex, Cursor a Kimi Code nabízejí přihlášení v prohlížeči;
+Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai a
+Moonshot berou API klíč. Codex a Cursor jsou na tomhle runneru poskytovatelé,
+ne samostatná CLI. z.ai je v seznamu dvakrát schválně: **z.ai** je otevřená
+platforma s platbou podle spotřeby, účtovaná proti zůstatku účtu, kdežto **z.ai
+GLM Coding Plan** je předplatné. Je to tentýž klíč k účtu, ale z.ai ten tarif obsluhuje
+z jiného hostitele. Když klíč tarifu GLM Coding Plan vložíš do obyčejné dlaždice
+z.ai, každý požadavek se vrátí jako `429 … "Insufficient balance or no resource package"`,
+protože tarif nemá zůstatek, ze kterého by se dalo čerpat. Předplatné Claude
+Pro/Max není přihlášení k API Anthropic; k tomu tarifu se dostaneš přes adaptér
+Claude Code. Co na té stránce _přidat jde_, je **vlastní poskytovatel**:
+libovolný endpoint kompatibilní s OpenAI nebo Anthropic (Ollama, LM Studio,
+vLLM, soukromé nasazení) pod **Vlastní poskytovatelé → Přidat poskytovatele**.
 
-The other adapter wraps an external CLI:
+Druhý adaptér obaluje externí CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Detekce se ptá `PATH` stroje, na kterém běží `cc_server`: téhož stroje, když si
+aplikace pro počítač spouští vlastní server, jinak vzdáleného hostitele. CLI
+Claude Code nainstaluj tam, ne na klienta. Tlačítko **Obnovit** na té stránce
+sondu spustí znovu.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/).
+Seznamy modelů posílá živě každý připojený poskytovatel;
+[models.dev](https://models.dev) dodává jen metadata o ceně a kontextovém okně.
+Viz [Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/).
 
-## GitHub authentication
+## Přihlášení na GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Přihlašovací údaj ke GitHubu je **tvůj a leží na serveru**, klíčovaný tvým id
+uživatele, ne v klíčence OS na klientovi. Každé zařízení, ze kterého se
+přihlásíš, používá tentýž, a žádný jiný člen ho nepřečte.
 
-If the server has a GitHub App registered ([Create the GitHub App](/cs-CZ/prirucka/navody/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Když má server zaregistrovanou GitHub App
+([Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)), **Nastavení →
+Pracovní prostor → Profil a identita → Hostování kódu** nabízí **Přihlásit se
+přes GitHub** (device flow, který běží na serveru). Jinak vlož osobní
+přístupový token:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Classic: `repo` a `read:org`
+- Fine-grained: **Contents** a **Pull requests** (čtení i zápis), **Checks** a **Actions** (čtení)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Vytvoř ho na [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+Server při ukládání tokenem ověří jméno účtu, takže řádek může říct „Přihlášeno
+jako …“. Neúspěšná sonda token stejně uloží a překlep nebo chybějící scope se
+ukáže až později, jako neúspěšný požadavek.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
+První krok onboardingu je tohle připojení. Pak na stejné kartě údaj vyměníš
+nebo smažeš. GitLab a Bitbucket používají tutéž kartu; viz
+[Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
-## Choose where the server runs
+## Vyber, kde server poběží
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/) explains what that split means for the desktop, web and phone.
+Control Center je tenký klient nad headless procesem `cc_server`, který vlastní
+databázi a dělá všechnu práci.
+[Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/) vysvětluje, co to
+rozdělení znamená pro počítač, web a telefon.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Při prvním spuštění se aplikace pro počítač ptá **„Jak má Control Center běžet?“**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/cs-CZ/prirucka/rychly-start/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Spustit v této aplikaci**: aplikace na tomhle stroji spustí `cc_server`,
+  dohlíží na něj a mluví s ním přes loopback. Nic dalšího nenastavuješ. S
+  tímhle nastavením počítá [rychlý start](/cs-CZ/prirucka/rychly-start/).
+- **Připojit ke vzdálené instanci**: namiř aplikaci pro počítač na `cc_server`,
+  který běží jinde, pomocí URL WebSocketu, ID zařízení a buď párovacího klíče,
+  nebo jednorázového kódu pozvánky. Data vlastní ten server; tahle aplikace je
+  jen vykresluje.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/).
+Server později přidáš nebo přepneš v **Nastavení → Server → Připojení a stav**.
+Přepnutí se připojí znovu na místě, bez restartu. Prohlížeč server spustit
+neumí, takže webový klient je vždy vzdálený; viz
+[Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/).
 
-To host a server yourself, follow [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Když chceš server hostovat sám, jdi na
+[Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
+Je tam sestavení binárky, vystavení párovacího klíče před prvním startem a
+příznaky `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Ověř nastavení
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Nastavení → Server → Poskytovatelé modelů** vypíše oba adaptéry. „Control Center (built-in)“ je nalezený s verzí `built-in`; Claude Code je nalezený, když je jeho CLI na `PATH` hostitele serveru. Když chybí, stiskni **Obnovit**.
+2. **Nastavení → Pracovní prostor → Repozitáře** vypíše repozitáře tohoto pracovního prostoru a **Přidat repozitář** prochází složky hostitele serveru.
+3. **Nastavení → Pracovní prostor → Agenti** vypíše pět agentů, které založil tvůj první pracovní prostor. Než kterýkoli poběží, potřebuje nastavený **Adaptér** a **Model**.
+4. **Nastavení → Server → Diagnostika a soukromí** hlásí backendy sandboxu, které tenhle hostitel nabízí, stav embeddingového modelu a logování.
 
-## Build from source
+## Sestav ze zdroje
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Nativní knihovny jsou povinné a degradovaný režim neexistuje: chybějící
+knihovna je tvrdý pád při startu, ne pomalejší cesta. Připrav je dřív než
+cokoli jiného. Každý příkaz Flutteru a Dartu jde přes `fvm`, protože verzi SDK
+drží repozitář.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +247,26 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Na macOS potřebuje zabezpečené úložiště (přihlášení ke GitHubu, Linear a
+Google) aplikaci podepsanou týmem Apple. Stačí bezplatné Apple ID a je to
+jednorázové nastavení popsané v
+[podepisování pro místní vývoj](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos).
+Bez něj se aplikace pořád spustí; nedostupné je jen zabezpečené úložiště.
+Windows a Linux podpis nepotřebují.
 
-To build the headless server binary, stage the natives the same way first, then:
+Binárku headless serveru sestavíš tak, že nativní knihovny nejdřív připravíš
+stejně a pak:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Háček sestavení zkopíruje do balíčku to, co už leží v `build/natives/`, takže
+sestavení před přípravou dá balíček bez nativních knihoven a server, který
+odmítne nastartovat.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Pro webového klienta použij `scripts/build_web.sh` (`--target remote` pro PWA
+na telefon). Přesně to spouští CI: holé `flutter build web` přeskočí razítko
+identity sestavení, přegenerování Web Workeru, manifest nasazení a kontrolu
+rozpočtu assetů.

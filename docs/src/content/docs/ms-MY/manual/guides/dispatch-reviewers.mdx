@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Hantar ejen penyemak
+description: Hantar ejen penyemak pakar ke sesuatu PR dari paparan PR, alat MCP atau langkah pipeline.
 slug: ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Panduan ini menunjukkan cara menghantar ejen penyemak untuk menyemak pull
+request.
 
-## From the PR view
+## Dari paparan PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Buka PR dan pergi ke tab **Gambaran keseluruhan**-nya
+2. Buka menu limpahan ⋯ dan pilih **Tanya AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Ini memulakan pipeline `pr_review` yang dibenihkan, yang membuka ruang semakan PR
+itu dan menghantar penyemak untuk tahap semakan ruang kerja — tiga secara lalai
+(ejen **qa**, **architect** dan **engineer** yang dibenihkan) — kemudian
+membiarkan ejen ketua mengkonsolidasikan. Anda tidak memilih peranan pada laluan
+ini. Untuk kawalan ke atas peranan mana yang berjalan dan fail mana yang dilihat
+oleh setiap satu, gunakan alat MCP atau langkah pipeline di bawah.
 
-## Via the `dispatch_reviewers` MCP tool
+## Melalui alat MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Panggilnya dari dalam ruang semakan yang sedia ada:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,116 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` dan `reviewers` semuanya diperlukan. Setiap
+spesifikasi penyemak mengambil `role` serta `scope` glob fail yang pilihan dan
+`prompt_override` yang menggantikan taklimat lalai. `concurrency` pilihan (1–8)
+mengehadkan penghantaran selari; apabila ditinggalkan, tetapan
+`review_concurrency` ruang kerja terpakai (lalai 3, ditetapkan di Tetapan →
+Ruang kerja → Umum).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Alat itu kembali serta-merta dengan senarai `dispatched` dan `unmatched`. Setiap
+penyemak yang dihantar ditambahkan ke ruang itu sebagai peserta, diumumkan dengan
+mesej sistem dan dihantar bersama taklimatnya. Penemuan masuk sebagai mesej
+`review_node` dalam ruang itu.
 
-## From a pipeline step
+## Dari langkah pipeline
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Buka **Tetapan → Ruang kerja → Templat pipeline**, buka satu templat, kemudian:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. Tambahkan nod **Reviewer (prompt)** dari palet
+2. Pilih ejen untuk dihantar dan tulis prompt penyemak, menggunakan pemegang
+   tempat `{{key}}` untuk output huluan (contohnya `{{repo_local_path}}`,
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. Tetapkan kunci output (lalai `reviewer_findings`) supaya langkah hiliran boleh
+   membaca penemuan itu
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Langkah itu menghantar ejen dan menggantung sehingga larian tersebut tamat. Enjin
+kemudian memungut muatan `submit_output` larian itu ke dalam keadaan pipeline
+bawah kunci output nod itu. (Penerangan palet masih menyatakan langkah itu
+menunggu panggilan `complete_task` — alat itu tidak wujud; abaikan rentetan itu.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Sebar keluar dengan menyambungkan beberapa nod penyemak ke langkah huluan yang
+sama, kemudian konsolidasikan output mereka dengan nod **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Editor menyambung semula terminal tersembunyi itu ke setiap sink yang boleh
+dicapai, jadi nod yang anda tambah selepas langkah yang dibenihkan itu masih
+berjalan. Nod sebaran keluar yang disambungkan ke langkah huluan yang sama
+berjalan secara selari.
 
-## Automatic dispatch on a new PR
+## Penghantaran automatik apabila PR baharu
 
-To have a review pipeline fire by itself:
+Untuk membolehkan pipeline semakan tercetus sendiri:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Buka templat di **Tetapan → Ruang kerja → Templat pipeline**
+2. Seret **PR diterbitkan** atau **PR luaran dibuka** dari bahagian Pencetus
+   dalam pustaka nod ke atas kanvas (atau pilihnya dari jubin hantu **Tambah
+   pencetus**)
+3. Pilih nod baharu itu dan hidupkan **Didayakan** dalam pemeriksanya, kemudian
+   dayakan templat itu
 
-Two events matter here and they are not interchangeable:
+Dua peristiwa penting di sini dan kedua-duanya tidak boleh saling menggantikan:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Peristiwa              | Tercetus apabila                                                                                             | Kunci muatan                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `PullRequestPublished` | Satu PR dibuka **melalui Control Center** — permukaan gubahan, atau ejen yang memanggil `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | Perkhidmatan pengundian PR menemui PR yang dibuka terus pada GitHub                                          | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PR yang dibuka pada github.com tidak pernah membangkitkan `PullRequestPublished`,
+jadi templat yang disambungkan hanya kepada peristiwa itu tidak akan
+melihatnya. Perhatikan juga bahawa `PullRequestPublished` tidak membawa
+`pr_number` — langkah yang skrip atau promptnya merujuk `{{pr_number}}` mesti
+diberi suapan oleh `ExternalPrDetected`, atau oleh larian manual yang
+membekalkannya.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Titik semak: selepas mendayakan, buka **Pipeline** dan sahkan satu larian muncul
+untuk PR sepadan yang seterusnya. Templat yang dibiarkan dilumpuhkan menjadikan
+pencetusnya tercetus ke dalam kekosongan — enjin menolak templat yang dilumpuhkan
+dan kembali tanpa memulakan larian.
 
-## How a role is matched to an agent
+## Bagaimana peranan dipadankan dengan ejen
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` menilai setiap ejen dalam ruang kerja terhadap setiap label
+peranan yang diminta, tanpa mengira huruf besar atau kecil:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Padanan                                  | Skor |
+| ---------------------------------------- | ---- |
+| Kemahiran yang mengandungi label peranan | +3   |
+| Tajuk yang mengandungi label peranan     | +2   |
+| Nama ejen yang mengandungi label peranan | +1   |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Skor terkumpul dan jumlah tertinggi menang (pada seri, calon pertama yang
+ditemui). Jika tiada calon memperoleh skor melebihi sifar, spesifikasi itu
+kembali dalam senarai `unmatched` alat itu dan bukan dihantar — jadi peranan
+yang tiada sesiapa memadankannya dilaporkan, dan tidak pernah dilangkau secara
+senyap.
 
-## The review space
+## Ruang semakan
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Sesuatu PR mempunyai tepat **satu** ruang semakan, bukan satu bagi setiap
+penyemak. Ia dicipta secara idempoten oleh `pr.ensureSpace`, dipautkan kepada PR
+itu melalui `ReviewSpaceAssociation` dan disediakan terhadap ref head PR itu.
+Setiap penyemak yang dihantar menyertai ruang itu dan menyiarkan penemuan
+`review_node`-nya di sana, dan itulah yang menjadikan penemuan itu boleh
+dibandingkan serta membolehkan ejen ketua mencapai kata sepakat merentasinya.
 
-## Monitor the dispatch
+## Pantau penghantaran
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Setiap penyemak yang dihantar mendapat `AgentRunLog` sendiri. Ikuti kemajuan di:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **Ruang semakan**, tempat penemuan mengalir masuk secara langsung
+- Tab **Semakan** PR itu, yang memaparkan bar status semakan dan keputusan
+- **Kebolehcerapan → Langsung** (`/workspaces/:id/observability`), senarai ejen
+  dengan status setiap larian, masa berlalu secara langsung, laci transkrip dan
+  kawalan henti paksa. Tiada pintasan papan kekunci untuknya — capai ia dari
+  pengaki bar sisi.
 
-## Related guides
+## Panduan berkaitan
 
-- [Use AI-powered review](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/)
-- [Review and merge a PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
-- [Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
+- [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/)
+- [Semak dan cantumkan PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
+- [Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [AI review](/ms-MY/manual-pengguna/konsep/semakan-ai/)
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Semakan AI](/ms-MY/manual-pengguna/konsep/semakan-ai/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)

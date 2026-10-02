@@ -1,134 +1,125 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: การสนทนาบน PR
+description: ความคิดเห็นบน PR ของ GitHub กลายเป็นการทำงานของเอเจนต์โดยไม่ต้องมี webhook ได้อย่างไร อะไรให้สิทธิ์ผู้เขียน และแต่ละฝ่ายของการสนทนาถูกระบุที่มาให้ใคร
 slug: th-TH/คู่มือ/แนวคิด/การสนทนาบน-pr
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+pull request เป็นที่ที่บทสนทนาเกี่ยวกับโค้ดเกิดขึ้นอยู่แล้ว การสนทนาบน PR ทำให้มัน
+กลายเป็นพื้นผิวหนึ่งบนเวิร์กสเปซของ Control Center เช่นเดียวกับที่
+[สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)ทำให้ Slack เป็นพื้นผิวแบบนั้น: @mention
+บอต GitHub App ของเซิร์ฟเวอร์บน PR ตอบกลับในเธรดรีวิวของมัน หรือเพิ่มป้ายกำกับ
+`ai-review` แล้วงานก็จะเกิดขึ้นในสเปซรีวิวของ PR — ภายใต้การระบุที่มาและกฎคุม
+ชุดเดียวกับทุกอย่างที่พิมพ์ในแอป ความคิดเห็นยังถูกกั้นด้วยสมาชิกภาพ ส่วนป้ายกำกับ
+ไม่ถูกกั้น เพราะมันไม่มีผู้เขียน คำตอบของบอตกลับไปบน GitHub ในช่องทางที่คำถามถูกถาม
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+การตัดสินใจสามข้อกำหนดรูปร่างของฟีเจอร์นี้ และแต่ละข้อก็คือการตัดสินใจเดียวกับที่
+สะพานแชททำไว้สำหรับแชท เพียงพูดซ้ำให้เข้ากับโฮสต์โค้ด: **การเชื่อมต่อวิ่งไป
+ทิศทางไหน** **อะไรให้สิทธิ์กับความคิดเห็นที่มาจากภายนอก** และ **แต่ละฝ่ายถูกระบุ
+ที่มาให้ใคร**
 
-## Polling is the transport
+## การโพลล์คือช่องทางขนส่ง
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+ช่องทางพุชเดียวของ GitHub สำหรับแอปคือ webhook และ webhook ต้องมี URL ขาเข้า —
+ซึ่งเป็นสิ่งเดียวที่พื้นผิวนี้จงใจไม่ต้องใช้เลย การค้นหาจึงเป็นการกวาด: ทุก ๆ
+ประมาณหนึ่งนาที การค้นหาแบบใช้ alias หนึ่งครั้งต่อการติดตั้งแอปแต่ละรายการจะถาม
+GitHub ขอ PR ที่กล่าวถึงบอต (หรือ slug ย่อของมัน) และขอ PR ที่เปิดอยู่ซึ่งมี
+ป้ายกำกับรีวิว ส่วน PR ที่มีสเปซรีวิวอยู่แล้วจะถูกอ่านเธรดความคิดเห็น และทุกอย่าง
+จะถูก diff ด้วย id ของความคิดเห็นเทียบกับสิ่งที่เห็นในการกวาดครั้งก่อน
 
-The design consequences are worth naming:
+ผลที่ตามมาของการออกแบบนี้ควรค่าแก่การระบุให้ชัด:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **ความหน่วงคือช่วงเวลาของการกวาด ไม่ใช่เหตุการณ์** การตอบรับด้วย 👀 จะมาถึง
+  ภายในประมาณหนึ่งนาที ไม่มีอะไรเร่งด่วนที่ต้องพึ่งมัน
+- **ครั้งเดียวเท่านั้น ต่อความคิดเห็น** id ของความคิดเห็นไม่ซ้ำกันทั่ว GitHub
+  แต่ละอันถูกบันทึกทันทีที่ถูกจัดว่าเข้าเกณฑ์ ก่อนที่สิ่งใดจะลงมือกับมัน
+  การแครชอาจทำให้การจัดการความคิดเห็นหนึ่งหายไป แต่จะไม่ยิงซ้ำสองครั้ง
+- **ช่วงที่ออฟไลน์ถูกตามเก็บให้ครบ ไม่ใช่เล่นซ้ำ** เซตของสิ่งที่เห็นแล้วถูกเก็บ
+  ถาวร การรีสตาร์ตจึงส่งสิ่งที่มาถึงระหว่างที่ระบบล่มได้ ข้อยกเว้นเดียวคือ
+  การกวาดครั้งแรกสุด: เมื่อไม่มีความจำให้ diff ทุกอย่างที่ค้างอยู่จะถูกบันทึก
+  อย่างเงียบ ๆ — ผู้ดูแลที่ติดป้ายกำกับให้ PR ยี่สิบรายการก่อนเซิร์ฟเวอร์นี้จะ
+  มีอยู่ ต้องไม่กลับมาเจอรีวิวยี่สิบรายการที่กำลังรันอยู่
+- **ป้ายกำกับคือเซต ไม่ใช่เหตุการณ์** การค้นหารายงานการ _มีอยู่_ ของป้ายกำกับ
+  PR ที่ติดป้ายจึงทริกเกอร์เพียงครั้งเดียวตลอดไป การเพิ่มป้ายกลับหลังลบออก
+  จะมองไม่เห็นจากการกวาด การกล่าวถึงคือเส้นทางรันซ้ำ
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+การค้นหาทำงานครั้งเดียวต่อบัญชีการติดตั้ง บนไคลเอนต์ของเจ้าของรายนั้น เพราะ
+โทเค็นการติดตั้งเห็นเฉพาะรีโพของการติดตั้งตัวเองเท่านั้น ข้อมูลรับรองชุดเดียวที่ใช้
+ทั่วทั้งเซิร์ฟเวอร์จะพลาด PR ทุกอันภายใต้การติดตั้งอื่น ๆ ของแอปอย่างเงียบ ๆ
 
-## Membership authorizes, not the comment
+## สมาชิกภาพเป็นตัวให้สิทธิ์ ไม่ใช่ความคิดเห็น
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+ความคิดเห็นบน PR มาถึงโดยพาแทบไม่มีอะไรมาเลยนอกจาก login ของผู้เขียน — ตัวตน
+ภายนอกที่ยังไม่ผ่านการยืนยันจนกว่าจะพิสูจน์ได้ บอตจะเทียบมันกับดัชนีย้อนกลับของ
+สมาชิกในเวิร์กสเปซและบัญชี GitHub ที่เชื่อมไว้ ซึ่งสร้างใหม่ตาม TTL เพราะมีคน
+ลงชื่อเข้าใช้และได้รับเชิญระหว่างที่เซิร์ฟเวอร์ทำงาน
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+การปฏิเสธไว้ก่อนเมื่อไม่แน่ใจมีหน้าตาเป็นบันได และทุกขั้นจะตอบกลับในเธรดที่มัน
+ปฏิเสธ:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **login ที่ไม่รู้จัก** — ยังไม่ได้เชื่อม หรือเชื่อมโดยคนที่ไม่ใช่สมาชิกของ
+  เวิร์กสเปซนี้ — จะได้รับคำบอกให้ลงชื่อเข้าใช้และตรวจสอบว่าตนเป็นสมาชิก
+- **สมาชิกแบบอ่านอย่างเดียว** (`viewer` หรือ `guest`) จะได้รับแจ้งว่าบทบาทของตน
+  เริ่มงานไม่ได้
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+กรณี login ที่ไม่รู้จักทั้งสองแบบใช้คำตอบเดียวกัน: ดัชนีย้อนกลับคืนมาเฉพาะสมาชิก
+ของเวิร์กสเปซ _นี้_ บัญชีที่ยังไม่เชื่อมกับบัญชีที่เชื่อมแล้วแต่ไม่ใช่สมาชิกจึง
+พลาดเหมือนกัน ทั้งสองกรณีไม่ดำเนินการต่อ ความคิดเห็นจะไม่ถูกระบุที่มาให้ใครที่
+ไม่ได้ส่งมัน และถ้อยคำของคนนอกจะไม่มีทางเข้าไปในเวิร์กสเปซที่พวกเขามองไม่เห็น
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+ป้ายกำกับ `ai-review` ไม่มีผู้เขียนให้เทียบตัวตน จึงไม่ต้องปีนบันไดนี้ การเพิ่มมัน
+จะเริ่มรีวิวในเวิร์กสเปซที่เชื่อมรีโพสิทอรีอยู่แล้ว
 
-## Two identities, on purpose
+## สองตัวตน โดยเจตนา
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+แต่ละฝ่ายของการสนทนาถือตัวตนที่ต่างกัน และความต่างนั้นคือตัวฟีเจอร์เอง:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **บน GitHub บอตคือเซิร์ฟเวอร์** ทุกความคิดเห็น ปฏิกิริยา และคำตอบที่สะพาน
+  โพสต์จะใช้โทเค็นการติดตั้งของแอป ไม่มีใครคลิกอะไรในไคลเอนต์ จึงไม่มีอะไรยืม
+  บัญชีของบุคคล — กฎเดียวกับที่ทำให้ webhook และการโพลล์ไม่ต้องใช้ข้อมูลรับรอง
+  ของมนุษย์
+- **ในสเปซ คำถามเป็นของคุณ** ข้อความถูกระบุที่มาให้สมาชิกที่ผู้เขียนเทียบได้ และ
+  การรันเอเจนต์ทำงานในนามของสมาชิกคนนั้น: คอมมิตระบุพวกเขาเป็นผู้เขียนร่วม และ
+  ปุ่มปรับความเป็นอิสระกับกฎคุมการกระทำของสเปซจะใช้เหมือนกับข้อความที่พิมพ์ในแอป
+  ทุกประการ การเขียนไปยังโฮสต์โค้ดจากการรันยังออกไปในนามของแอป — กฎเดียวกับ
+  หัวข้อด้านบน — ไม่ใช่โทเค็นส่วนตัวของสมาชิก
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+การเผยแพร่ข้อค้นพบจากรีวิวกลับไปยัง GitHub ยังเป็นการตัดสินใจของคน ซึ่งทำใน
+Control Center การกล่าวถึงสามารถ _เริ่ม_ รีวิวได้ มีเพียงมนุษย์เท่านั้นที่เผยแพร่มัน
 
-## The loop guard, and the short name
+## ตัวกันการวนซ้ำ และชื่อย่อ
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+ทุกอย่างที่เขียนโดยบัญชีบอตจะถูกทิ้งก่อนที่ประตูใด ๆ จะทำงาน — ทั้งของเราโดยเฉพาะ
+และทุกส่วนต่อท้าย `[bot]` บอตรีวิวของแอปอื่นจึงปลุกของเราไม่ได้เช่นกัน หากไม่มี
+สิ่งนี้ คำตอบของบอตเองจะมาถึงในฐานะความคิดเห็นใหม่และทริกเกอร์มันซ้ำไม่รู้จบ
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+ส่วนต่อท้าย `[bot]` ยังเป็นเหตุผลที่รูปแบบย่อมีอยู่ GitHub ตรึง login ของบัญชีแอป
+ไว้ที่ `<slug>[bot]` ไม่มี autocomplete ให้ และไม่เคยแปลง `@slug` เป็นแอป —
+การยอมรับ slug เปล่า ๆ จึงเป็นการตัดสินใจของตัวจับคู่*ของเรา* และการค้นพบมันต้องใช้
+ช่องทางค้นหา**ข้อความ**ความคิดเห็นแบบดิบ แทนที่จะใช้ดัชนีการกล่าวถึงของ GitHub
+ต้นทุนนี้ถูกบอกตรง ๆ มากกว่าเลี่ยงให้เนียน: ผู้ใช้ที่เป็นมนุษย์ซึ่งใช้ slug เดียวกับ
+แอป จะเรียกหาบอตทุกครั้งที่มีการกล่าวถึงตัวเองในรูปแบบย่อ ชื่อแอปที่โดดเด่นทำให้
+การชนกันนี้เป็นเพียงสมมติ
 
-## What is deliberately not offered
+## สิ่งที่จงใจไม่เสนอให้
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **ไม่มีการเผยแพร่อัตโนมัติ** ข้อค้นพบไปอยู่ในสเปซรีวิว การเผยแพร่ไปยัง GitHub
+  เป็นการกระทำของมนุษย์ที่แยกต่างหาก
+- **ไม่มีการเดาตัวตน** ผู้เขียนต้องเทียบได้กับสมาชิกหนึ่งคนเท่านั้น หรือไม่ก็ถูก
+  ปฏิเสธ — ไม่มีการระบุที่มาแบบคาดเดา
+- **ไม่มี webhook ของ GitHub App** พื้นผิวนี้ไม่เคยลงทะเบียนมัน จึงไม่มี URL ขาเข้า
+  ที่ต้องเปิดเผยสำหรับความคิดเห็นบน PR webhook อื่น ๆ ของผลิตภัณฑ์ (ไปป์ไลน์
+  การซิงค์ตั๋วงาน) เป็นการตั้งค่าแยกต่างหากและเป็นทางเลือก
 
-## See also
+## ดูเพิ่มเติม
 
-- [Talk to Control Center from a GitHub PR](/th-TH/คู่มือ/วิธีทำ/การสนทนาบน-github-pr/):
-  the how-to for all of this
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/):
-  the principals and roles a login resolves through
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/): the pipeline a mention
-  or label starts
+- [คุยกับ Control Center จาก GitHub PR](/th-TH/คู่มือ/วิธีทำ/การสนทนาบน-github-pr/):
+  คู่มือวิธีทำสำหรับทั้งหมดนี้
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/): การตัดสินใจสามข้อเดียวกัน ที่ทำไว้
+  สำหรับแชท
+- [สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/): ตัวตนของบอตมาจากไหน
+- [การทำงานร่วมกันแบบหลายคน — ตัวตน สมาชิกภาพ และการแสดงสถานะออนไลน์](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/):
+  ตัวตนหลักและบทบาทที่ login ต้องเทียบผ่าน
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): เอเจนต์ที่ตอบได้รับอนุญาตให้ทำอะไรได้บ้าง
+- [ใช้รีวิวด้วย AI](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/): ไปป์ไลน์ที่การกล่าวถึง
+  หรือป้ายกำกับเริ่มขึ้น

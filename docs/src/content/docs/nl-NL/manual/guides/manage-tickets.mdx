@@ -1,39 +1,41 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Tickets maken en beheren
+description: Maak tickets aan, laat ze door hun levenscyclus lopen, voorzie ze van labels en koppelingen en leg vast wie waarvan eigenaar is.
 slug: nl-NL/handleiding/gidsen/tickets-beheren
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Deze gids laat je zien hoe je tickets maakt en beheert.
 
-## Create a ticket
+## Een ticket aanmaken
 
-### From the UI
+### Vanuit de UI
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Klik op **Tickets** in de zijbalk van de werkruimte.
+2. Druk op **Nieuw ticket**.
+3. Vul in:
+   - **Titel** — korte samenvatting. Het is het enige verplichte veld.
+   - **Beschrijving** — markdown, met een opmaakwerkbalk.
+   - **Status** — **Te doen** (de standaard) of **Backlog**. Gestarte en
+     eindtoestanden bereik je via de levenscyclus, niet bij het aanmaken.
+   - **Prioriteit** — geen, urgent, hoog, gemiddeld of laag.
+   - **Toegewezen aan** — jezelf of een agent in de werkruimte.
+   - **Project** — optionele groepering.
+4. Druk op **Aanmaken**, of zet eerst **Meer aanmaken** aan om het
+   dialoogvenster open te houden voor snel achter elkaar invoeren.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Er is geen leverancierskeuzelijst in het dialoogvenster. Het ticket wordt
+aangemaakt bij de actieve ticketleverancier van de werkruimte.
 
-### From an agent
+### Vanuit een agent
 
-Ask an agent in a space:
+Vraag het aan een agent in een ruimte:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Maak een ticket om het time-outprobleem bij het inloggen op trage
+> verbindingen op te lossen.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Hij roept de MCP-tool `create_ticket` aan. Prioriteit is bij die tool een
+**geheel getal**, geen naam:
 
 ```
 create_ticket(
@@ -44,21 +46,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Waarde | Prioriteit |
+| ------ | ---------- |
+| `0`    | Geen       |
+| `1`    | Urgent     |
+| `2`    | Hoog       |
+| `3`    | Gemiddeld  |
+| `4`    | Laag       |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Alleen `workspace_id` en `title` zijn verplicht; `description`, `priority`,
+`assignee` (een agent-id) en `team_id` zijn optioneel. De tool is
+geclassificeerd als een schrijfactie voor leverancierssynchronisatie en vraagt
+je goedkeuring voordat hij wordt uitgevoerd.
 
-## Update ticket status
+## De status van een ticket bijwerken
 
-Tickets follow this lifecycle:
+Tickets volgen deze levenscyclus:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,135 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` en `cancelled` zijn eindtoestanden. `cancelled` is bereikbaar
+vanuit elke niet-eindtoestand. `done` en `failed` zijn bereikbaar vanuit
+`inProgress` of `inReview`; `open` kan ook rechtstreeks naar `blocked`. De
+statuskeuzelijst in de UI toont elke status behalve `failed` — agents zetten die
+met `fail_ticket`.
 
-To change it, use any of:
+Gebruik een van deze manieren om de status te wijzigen:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- de rij **Status** in het eigenschappenpaneel van het ticket,
+- het submenu **Status** in het rechtermuisknopmenu van een ticket in de lijst,
+- de chip **Status** op de zwevende balk nadat je meerdere tickets hebt
+  geselecteerd.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[De levenscyclusgraaf bindt agents, niet jou]
+Elke statuswijziging vanuit de UI wordt geforceerd doorgevoerd, met volledige
+omzeiling van de graaf — je kunt een ticket naar elke status verplaatsen die de
+keuzelijst toont, inclusief het heropenen van een `done`-, `failed`- of
+`cancelled`-ticket. De keuzelijst biedt `failed` niet aan als doel. Het diagram
+hierboven geldt voor agents en automatisering: een ongeldige transitie die een
+MCP-tool of een reconciler probeert, wordt gelogd en genegeerd, niet toegepast.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/).
+Statuswijzigingen zenden domeingebeurtenissen uit (`TicketStatusChanged`,
+`TicketCompleted` en andere) die pipelines kunnen starten. Zie
+[Pipeline-triggers instellen](/nl-NL/handleiding/gidsen/pipeline-triggers/).
 
-## Assign a ticket
+## Een ticket toewijzen
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Open het ticket.
+2. Stel in het eigenschappenpaneel **Toegewezen aan** in — jezelf, een ander
+   lid van de werkruimte of een agent.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)).
+:::caution[Toewijzen start geen enkel werk]
+Toewijzing legt eigenaarschap vast en niets anders. Ze maakt geen ruimte aan,
+wijzigt geen status en dispatcht geen agent — `TicketAssigned` is een puur
+auditsignaal zonder dispatcher erachter. Wil je een agent aan het werk krijgen,
+stuur hem dan een bericht in een ruimte
+(zie [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+De enige uitzondering: `TicketAssigned` is een gebeurtenistype waaraan je een
+pipelinetrigger kunt koppelen, zodat een eigen sjabloon op een toewijzing kan
+reageren.
 :::
 
-## Add labels
+## Labels toevoegen
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Labels worden in bulk toegepast vanuit de ticketlijst, niet vanuit één ticket —
+het eigenschappenpaneel heeft geen bediening voor labels.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Beweeg de muis over een rij in de ticketlijst en vink het selectievakje aan.
+   Vink er zoveel aan als je nodig hebt; zodra er iets is geselecteerd,
+   verschijnt er een zwevende balk.
+2. Open in die balk de chip **Labels**.
+3. Kies een label. Het wordt toegevoegd aan elk geselecteerd ticket dat het nog
+   niet heeft; bestaande labels worden nooit gewist. **Labels wissen** verwijdert
+   ze allemaal. De keuzelijst toont labels die al op een ticket in de werkruimte
+   staan. Agents kunnen een nieuwe naam toevoegen via `update_ticket` of
+   `tickets.patch`.
 
-## Link tickets
+## Tickets koppelen
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Relaties staan op de kaart **Relaties** van het ticket in het
+eigenschappenpaneel, of achter **Koppelen aan** in het rechtermuisknopmenu van
+de lijst.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Open het ticket en zoek de kaart **Relaties**.
+2. Druk op de toevoegknop en kies de relatie:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relatie             | Betekenis                                        |
+| ------------------- | ------------------------------------------------ |
+| **Subtaak van…**    | Het bovenliggende ticket van dit ticket is het andere |
+| **Bovenliggend van…** | Het andere ticket is een kindticket van dit ticket |
+| **Geblokkeerd door…** | Dit ticket wordt geblokkeerd door het andere     |
+| **Blokkeert…**      | Dit ticket blokkeert het andere                  |
+| **Gerelateerd aan…** | Symmetrisch, geen richting                       |
+| **Duplicaat van…**  | Dit ticket is een duplicaat van het andere       |
 
-3. Pick the target ticket.
+3. Kies het doelticket.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Gedupliceerd door** verschijnt op de kaart maar niet in de keuzelijst — het is
+het omgekeerde van **Duplicaat van** en wordt vanaf het andere ticket ingesteld.
+Elke vermelde relatie kun je aanklikken om het gekoppelde ticket te openen en
+bij hover verwijderen.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Ouder- en subtaakrelaties worden op het ticket zelf opgeslagen in plaats van als
+koppelrijen, dus het verwijderen van een ouder werkt door naar de kindtickets
+(zie hieronder), terwijl blokkeer- en gerelateerd-koppelingen dat niet doen.
 
-## Add collaborators
+## Medewerkers toevoegen
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Medewerkers vormen een lijst op het ticket — wie erbij betrokken is en in welke
+hoedanigheid.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Open het ticket.
+2. Druk op de persoon-plusknop op de kaart **Medewerker toevoegen**.
+3. Kies een agent.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+De drie rollen zijn **assignee**, **collaborator** (de standaard) en
+**reviewer**. De keuzelijst in de UI toont alleen agents van de werkruimte en
+schrijft altijd de standaardrol; mensen kunnen als rij voorkomen, maar worden
+niet in dat menu aangeboden. De MCP-tool `add_ticket_collaborator` accepteert
+een `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/nl-NL/handleiding/gidsen/ruimtes/).
+Een medewerker toevoegen schrijft een rij en publiceert geen domeingebeurtenis;
+het verleent geen toegang tot een ruimte. Wil je een agent in een gesprek
+zetten, voeg hem dan toe als deelnemer via de ruimtekop — zie
+[Ruimtes gebruiken](/nl-NL/handleiding/gidsen/ruimtes/).
 
-## Delete a ticket
+## Een ticket verwijderen
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Gebruik **Ticket verwijderen** onderaan het eigenschappenpaneel, in het
+rechtermuisknopmenu, of de verwijderactie op de zwevende balk nadat je meerdere
+tickets hebt geselecteerd.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Verwijderen is alleen lokaal]
+Een ticket dat uit een externe tracker komt, wordt daar niet verwijderd — geen
+enkele leverancier ondersteunt dat — dus het kan bij de volgende synchronisatie
+weer opduiken. Verwijderen werkt bovendien door: de medewerkers van het ticket
+en eventuele kindtickets verdwijnen mee.
 :::
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Delegate work to agents](/nl-NL/handleiding/gidsen/tickets-delegeren/)
-- [Organize work with projects](/nl-NL/handleiding/gidsen/projecten/)
-- [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
-- [Ticket lifecycle reference](/nl-NL/handleiding/referentie/ticketlevenscyclus/)
+- [Werk delegeren aan agenten](/nl-NL/handleiding/gidsen/tickets-delegeren/)
+- [Werk organiseren met projecten](/nl-NL/handleiding/gidsen/projecten/)
+- [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
+- [Ticketlevenscyclus](/nl-NL/handleiding/referentie/ticketlevenscyclus/)
 
-## Related concepts
+## Gerelateerde concepten
 
 - [Tickets](/nl-NL/handleiding/concepten/tickets/)
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/)
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/)

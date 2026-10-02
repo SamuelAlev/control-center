@@ -1,152 +1,99 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: AI سے چلنے والا ریویو استعمال کریں
+description: کسی PR پر pr_review پائپ لائن چلائیں، نتائج اور فیصلہ پڑھیں، پھر ریویو GitHub پر شائع کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+یہ گائیڈ دکھاتی ہے کہ ریویوور ایجنٹس سے کوئی pull request کیسے ریویو کرایا جائے اور نتیجہ GitHub پر کیسے شائع کیا جائے۔
 
-## Start an AI review
+## AI ریویو شروع کریں
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. PR کھولیں اور اس کا **جائزہ** ٹیب کھولیں
+2. ایکشن قطار میں ⋯ اوور فلو مینو کھولیں اور **AI سے پوچھیں** چنیں
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+یہ آئٹم صرف اسی وقت ظاہر ہوتا ہے جب PR کھلا ہو — یہ مرج سے پہلے کا ایکشن ہے۔ یہی بٹن، جب تک کوئی ریویو موجود نہ ہو، **ریویو** ٹیب کی خالی حالت پر بھی **AI سے پوچھیں** کے طور پر پیش کیا جاتا ہے۔
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center پہلے سے فراہم کردہ `pr_review` پائپ لائن شروع کرتا ہے اور PR کا **ریویو** ٹیب کھول دیتا ہے تاکہ آپ اسے دیکھ سکیں۔ پائپ لائن:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. PR کا اپنا ریویو اسپیس کھولتی ہے، جس کے الگ تھلگ ورک ٹری میں PR اس کے head پر چیک آؤٹ ہوتا ہے
+2. ورک اسپیس کی ریویو سطح کے مطابق ریویوورز پھیلا دیتی ہے — بطور ڈیفالٹ تین (پہلے سے فراہم کردہ **qa**، **architect** اور **engineer** ایجنٹس، متوازی طور پر)۔ کوئی زبان یا ڈومین کی شناخت نہیں ہوتی
+3. لیڈ (CEO) ایجنٹ سے ان کے نتائج کو ایک واک تھرو میں یکجا کراتی ہے
+4. فائنلائز کرتی ہے: نتائج کو اتفاقِ رائے کی بالٹیوں میں ترتیب دیتی ہے اور فیصلہ شمار کرتی ہے۔ جب ایسوسی ایشن `awaiting approval` تک پہنچ جاتی ہے تو ریویو ٹیب پر **GitHub پر شائع کریں** ظاہر ہوتا ہے
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+ریویو کتنا گہرا جائے، یہ ورک اسپیس کی **ریویو سطح** ہے — `light` (ایک ریویوور)، `balanced` (تین، ڈیفالٹ) یا `thorough` (پانچوں، بشمول سیکیورٹی اور پرفارمنس اسپیشلسٹ) — جو **ترتیبات → ورک اسپیس → عام** پر، **ورک اسپیس پالیسی** کارڈ میں سیٹ ہوتی ہے۔ ہلکی سطح بھی اتنے ہی نتائج درج کرتی ہے؛ وہ ان میں سے کم نتائج سامنے نمایاں کرتی ہے۔
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/) for how the pieces fit together.
+تمام ریویوورز PR کے ایک ہی ریویو اسپیس میں پوسٹ کرتے ہیں، اور یہی چیز ان کے نتائج کو موازنہ کے قابل بناتی ہے۔ یہ اجزاء کیسے ایک ساتھ فٹ ہوتے ہیں، [AI ریویو](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/) میں دیکھیں۔
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/).
+`pr_review` صرف دستی ٹریگر کے ساتھ آتی ہے۔ ہر شائع شدہ PR پر اس کے خودکار چلنے کے لیے، خود ایک ٹریگر شامل کریں — [ریویوور ایجنٹس بھیجیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/) دیکھیں۔ آپ اسے خود GitHub سے بھی شروع کر سکتے ہیں، کسی پائپ لائن ٹریگر کی ضرورت نہیں: PR پر سرور کے بوٹ کا ذکر کریں یا `ai-review` لیبل لگائیں — [GitHub PR سے Control Center سے بات کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/) دیکھیں۔
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+اگر کوئی ٹوسٹ بتائے کہ اس pull request کے لیے پہلے ہی ایک ریویو چل رہا ہے، تو ایک پہلے ہی جاری ہے؛ **ریویو** ٹیب پر رہیں یا اسے ڈھونڈنے کے لیے **پائپ لائنز** کھولیں۔
 
-## Read the findings
+## نتائج پڑھیں
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+ریویوورز ریویو اسپیس میں نتائج کو **ریویو نوڈز** کے طور پر درج کرتے ہیں۔ ہر نوڈ یہ رکھتا ہے:
 
-| Field          | Description                                                   |
+| فیلڈ          | تفصیل                                                   |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| قسم           | `bug`, `suggestion`, `recommendation`, `question` یا `ticket` |
+| ترجیح       | P0 (سنگین) → P3 (معمولی)                                      |
+| زمرہ           | `security`, `stability`, `data_integrity`, `correctness`, `performance` یا `maintainability` |
+| فائل اور لائن  | نتیجہ جہاں اینکر ہے                                 |
+| اصل کوڈ  | وہ کوڈ جس کے بارے میں نتیجہ ہے                                 |
+| تجویز کردہ کوڈ | تجویز کردہ فکس                                              |
+| اعتماد     | ریویوور کو کتنا اعتماد ہے                                 |
+| اسٹیٹس         | `open` → `consensus-ready` → `resolved` یا `dismissed`        |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+کوئی نتیجہ **consensus-ready** تک صرف اسی وقت پہنچتا ہے جب کوئی _ساتھی_ ریویوور اس کی تصدیق کرے۔ کوئی ایجنٹ اپنے ہی نتیجے کی تصدیق نہیں کر سکتا، چنانچہ ایک ہی ریویوور کی رائے کبھی اپنے طور پر ترقی نہیں پاتی۔
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/) for what the pass produces.
+**ریویو** ٹیب نتائج کی فہرست دکھاتا ہے، جو قسم اور اسٹیٹس کے لحاظ سے فلٹر کی جا سکتی ہے، برطرف شدہ نتائج کے لیے ایک ٹوگل کے ساتھ، ساتھ ہی وہ آرٹی فیکٹ جو یکجا کرنے والے ایجنٹ نے شائع کیا۔ ڈیٹرمنسٹک ویو — کوہارٹس، کثیر المحور ڈیش بورڈ، کنٹریکٹ اور بصری ڈفز — سرور کی جانب شمار کی جاتی ہے مگر ایپ میں اس کی کوئی سطح نہیں؛ یہ پاس کیا پیدا کرتا ہے، [ریویو کمپیوٹ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/) میں دیکھیں۔
 
-## Check the disagreements panel
+## اختلافات کا پینل دیکھیں
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+جب دو ریویوورز نتائج کو ایک ہی فائل اور لائن پر اینکر کریں مگر انہیں بہت مختلف انداز میں پرکھیں — ترجیحات دو یا زیادہ درجوں کے فاصلے پر ہوں، یا ایک اسے `bug` کہے جبکہ دوسرا اسے `suggestion` کہے — تو نتائج کی فہرست کے اوپر ایک اختلاف پینل ظاہر ہوتا ہے۔ پہلے وہی پڑھیں: یہی وہ جگہ ہے جہاں ریویوورز کی رائے الگ ہوتی ہے اور آپ کا فیصلہ سب سے زیادہ قیمتی ہوتا ہے۔
 
-## Read the verdict
+## فیصلہ پڑھیں
 
-When the lead agent finalizes, it computes a **verdict**:
+جب لیڈ ایجنٹ فائنلائز کرتا ہے، تو وہ ایک **فیصلہ** شمار کرتا ہے:
 
-| Verdict   | Meaning                                      |
+| فیصلہ   | مطلب                                      |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | کوئی رکاوٹ نہیں ملی                       |
+| **Hold**  | ایسے مسائل جنہیں مرج سے پہلے حل کرنا چاہیے |
+| **Block** | سنگین مسائل جنہیں لازماً ٹھیک کرنا ہے           |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+فیصلے میں ایک مجموعی اعتماد کا اسکور اور فی ترجیح نتائج کی گنتی شامل ہوتی ہے۔
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+پھر ریویو محور اس میں شامل ہو جاتے ہیں، اور وہ اسے صرف **زیادہ** سخت ہی بنا سکتے ہیں۔ ناکام ہونے والا گیٹڈ محور **Block** نافذ کرتا ہے؛ جو گیٹڈ محور مکمل نہ ہو سکا (`partial`) یا بالکل چل ہی نہ سکا (`unavailable`)، وہ کم از کم **Hold** نافذ کرتا ہے۔ ثبوت کی عدم موجودگی کبھی کوئی گیٹ پاس نہیں کراتی۔
 
-## Publish the review to GitHub
+## ریویو GitHub پر شائع کریں
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+اشاعت ایک الگ، جان بوجھ کر صارف کے گیٹ پر رکھا گیا قدم ہے۔ `pr_review` پائپ لائن ریویو کو Control Center میں رکھتی ہے؛ وہ GitHub پر پوسٹ نہیں کرتی۔
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. **ریویو** ٹیب پر اس وقت تک انتظار کریں جب تک **GitHub پر شائع کریں** ظاہر نہ ہو
+2. **GitHub پر شائع کریں** دبائیں
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center **ایک** GitHub ریویو بھیجتا ہے۔ جو نتائج پہلے ہی حل یا برطرف ہو چکے ہوں، وہ چھوڑ دیے جاتے ہیں۔ بٹن ہر باقی ماندہ کھلے نتیجے کو شامل کرتا ہے اور، **Ship** کی صورت میں، `APPROVE` جمع کرتا ہے۔ (MCP ٹول `publish_review_to_github` اب بھی بطور ڈیفالٹ صرف ساتھی کی تصدیق شدہ نتائج لیتا ہے اور اس وقت تک منظوری نہیں دیتا جب تک آپ `approve_on_ship` نہ بھیجیں۔) جو نتائج فائل اور لائن اینکر رکھتے ہیں وہ اِن لائن تبصرے بن جاتے ہیں؛ باقی سب کچھ سمری باڈی میں شامل ہو جاتا ہے، اور ہر ایک "— Control Center AI review" فوٹر رکھتا ہے تاکہ ماخذ واضح رہے۔ **Block** فیصلہ `REQUEST_CHANGES` کے طور پر جمع ہوتا ہے؛ **Hold** بطور `COMMENT`؛ **Ship** اس بٹن سے بطور `APPROVE`۔ اس کے بعد ایک ٹوسٹ **شائع شدہ** پڑھا جاتا ہے۔ ریویو سرور کی ایپ شناخت کے تحت پوسٹ کیا جاتا ہے۔
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+اگر GitHub کسی اِن لائن اینکر کو مسترد کر دے کیونکہ وہ لائن ڈف کا حصہ نہیں، تو پورا ریویو دوبارہ بھیجا جاتا ہے اور ہر نتیجہ باڈی میں شامل کر دیا جاتا ہے، تاکہ کچھ بھی خاموشی سے ضائع نہ ہو۔
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[اشاعت گارڈریل کے گیٹ میں ہے]
+`pr_review.publishReview`، `prPublish` ایکشن کلاس کا اعلان کرتا ہے اور گارڈریل چوک پوائنٹ سے گزر کر چلتا ہے۔ اگر حل شدہ فیصلہ `prompt` ہو اور کوئی منظور کنندہ منسلک نہ ہو، تو اشاعت مسترد کر دی جاتی ہے — گارڈریلز بند ہو کر ناکام ہوتے ہیں۔ اگر آپ اسے بغیر نگرانی چلانا چاہتے ہیں تو ترتیبات → ورک اسپیس → ایجنٹ اجازتیں پر ایک واضح قاعدہ سیٹ کریں۔
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+دوسری بلٹ اِن پائپ لائنیں براہ راست GitHub پر پوسٹ کرتی ہیں: `cross_review`، `pr_triage`، `ticket_to_pr` اور `pre_merge_gate` میں سے ہر ایک ایک تبصرہ قدم پر ختم ہوتی ہے۔ صرف `pr_review` ہی اپنا آؤٹ پٹ آپ کے لیے روکے رکھتی ہے۔
 
-## Dispatch reviewers yourself
+## خود ریویوورز بھیجیں
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/).
+یہ کنٹرول رکھنے کے لیے کہ کون سے رولز PR کا ریویو کریں اور ہر ایک کون سی فائلیں دیکھے، کسی موجودہ ریویو اسپیس کے اندر `dispatch_reviewers` MCP ٹول استعمال کریں، یا کسی پائپ لائن میں ریویوور نوڈز شامل کریں۔ ٹول کے عین دستخطوں سمیت دونوں راستے [ریویوور ایجنٹس بھیجیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/) میں دیے گئے ہیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Review and merge a PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
-- [Dispatch reviewer agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/)
-- [Review compute (cohorts and axes)](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/)
+- [PR ریویو اور مرج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
+- [ریویوور ایجنٹس بھیجیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/)
+- [ریویو کمپیوٹ (کوہارٹس اور محور)](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [AI review](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/)
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)
+- [AI ریویو](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/)
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)

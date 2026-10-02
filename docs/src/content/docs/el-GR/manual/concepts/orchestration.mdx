@@ -1,113 +1,129 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Ενορχήστρωση
+description: Πώς ένα «μεγάλο αίτημα» γίνεται σχέδιο για όλη την ομάδα που εγκρίνετε μία φορά και έπειτα μια παραγόμενη pipeline που το εκτελεί.
 slug: el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Ένας μεμονωμένος πράκτορας είναι καλός σε ένα πράγμα. Κάποια αιτήματα είναι
+μεγαλύτερα από αυτό: «ερεύνησε την αγορά για το X και γράψε ένα έγγραφο
+τοποθέτησης», «παράδωσε αυτή τη λειτουργία από άκρη σε άκρη», «έλεγξε αυτό το
+άρθρωμα και διόρθωσε ό,τι βρεις». Μια **ενορχήστρωση** είναι ο τρόπος με τον
+οποίο το Control Center χειρίζεται τέτοια αιτήματα: ένας ενορχηστρωτής (συνήθως
+ο πράκτοράς σας CEO) προτείνει ένα σχέδιο για όλη την ομάδα, το εγκρίνετε
+**μία φορά** και ένας ντετερμινιστικός υλοποιητής το μετατρέπει σε μια pipeline
+που κάνει τη δουλειά.
 
-It sits between the two existing ways of getting work done:
+Βρίσκεται ανάμεσα στους δύο υπάρχοντες τρόπους με τους οποίους γίνεται η δουλειά:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/) |
-| Encode a process you already know, by hand        | A [pipeline template](/el-GR/εγχειρίδιο/έννοιες/pipeline/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Όταν θέλετε να…                                          | Χρησιμοποιήστε                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------- |
+| Αναθέσετε μια εργασία σε έναν πράκτορα                   | Ένα [μήνυμα σε έναν χώρο](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/) |
+| Κωδικοποιήσετε χειροκίνητα μια διαδικασία που ήδη γνωρίζετε | Ένα [πρότυπο pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/)   |
+| Πείτε τον στόχο και αφήσετε την ομάδα να βρει το σχέδιο  | **Μια ενορχήστρωση**                                          |
 
-## The shape of a proposal
+## Η μορφή μιας πρότασης
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Όταν δίνετε στον ενορχηστρωτή έναν στόχο, σας επιστρέφει μια δομημένη
+**`OrchestrationProposal`**: ένα τυποποιημένο σχέδιο που η εφαρμογή μπορεί να
+επικυρώσει και να εκτελέσει, αντί για ελεύθερο κείμενο. Μια πρόταση περιλαμβάνει:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Στόχος**: το αίτημά σας σε υψηλό επίπεδο, διατυπωμένο εκ νέου.
+- **Ρόλοι**: ποιος κάνει τη δουλειά. Κάθε ρόλος είναι είτε ένας **υπάρχων
+  πράκτορας** που επιλέγετε, είτε μια **νέα πρόσληψη** που δημιουργεί η
+  ενορχήστρωση κατά την έγκριση.
+- **Υπο-εισιτήρια**: η εργασία, σπασμένη σε ένα DAG από [εισιτήρια](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/).
+- **Έρευνα** _(προαιρετικά)_: μια φάση έρευνας που εκτελείται πρώτη και τροφοδοτεί τα υπόλοιπα.
+- **Συζήτηση** _(προαιρετικά)_: ένας οριοθετημένος γύρος όπου κάθε ρόλος
+  δημοσιεύει μια δομημένη θέση πριν ξεκινήσει η εργασία.
+- **Σύνθεση**: το τελικό βήμα που παράγει το παραδοτέο.
+- **Προϋπολογισμός**: ένα δηλωμένο ανώτατο όριο κόστους.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Ο προϋπολογισμός είναι ενδεικτικός]
+Το ανώτατο όριο κόστους της πρότασης συγκρίνεται με το εκτιμώμενο σύνολο του
+σχεδίου και επισημαίνει ένα σχέδιο που υπερβαίνει τον προϋπολογισμό στη γραμμή
+έγκρισης _πριν_ εγκρίνετε. Τίποτα δεν το διαβάζει αφού ξεκινήσει η εκτέλεση,
+οπότε δεν σταματά ούτε αποτυγχάνει μια ενορχήστρωση που ξεπερνά τον
+προϋπολογισμό. Οι πολιτικές προϋπολογισμού ανά πράκτορα και ανά χώρο εργασίας
+είναι ξεχωριστός μηχανισμός και είναι αυτές που παγώνουν στην πραγματικότητα
+τις δαπάνες.
 :::
 
-## Where you review it
+## Πού την ελέγχετε
 
-Two surfaces show the same orchestration.
+Δύο επιφάνειες δείχνουν την ίδια ενορχήστρωση.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+Η **κάρτα πρότασης** βρίσκεται στη συνομιλία που παρήγαγε το σχέδιο. Είναι ένα
+μήνυμα που επανασχεδιάζεται σε ολόκληρο τον κύκλο ζωής — προτεινόμενη, σε
+εκτέλεση, ολοκληρωμένη — με τις ενέργειες έγκρισης και ακύρωσης πάνω του.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+Το **Plan Studio** είναι ο επεξεργαστής: ένας καμβάς DAG, ένας επιθεωρητής
+κόμβων, ένα συρτάρι αναθεώρησης και diff και η γραμμή έγκρισης που φέρει την
+εκτίμηση. Ανοίγει ως καρτέλα επεξεργαστή απευθείας από αυτή την κάρτα. Στην
+πλαϊνή στήλη δεν υπάρχει σκόπιμα στοιχείο «Σχέδια»· τα `/plans` και
+`/plans/:kind/:id` υπάρχουν ως απευθείας σύνδεσμοι για κοινοποίηση.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Η έγκριση είναι **μόνο για τον χειριστή**. Δεν υπάρχει εργαλείο MCP γι' αυτήν:
+ένας πράκτορας μπορεί να προτείνει (`propose_orchestration`), να υποβάλει ένα
+σχέδιο (`submit_plan`) ή να δημιουργήσει ένα playbook (`run_playbook`), αλλά
+μόνο ένας άνθρωπος εγκρίνει. Οι αναθεωρήσεις που ξεκινά πράκτορας
+περιορίζονται επιπλέον από περίοδο αναμονής δύο λεπτών, ώστε ένας βρόχος
+επανασχεδιασμού να συνενώνεται αντί να κατακλύζει τη ροή σας.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Αυτό που μπορείτε να αλλάξετε πριν από την έγκριση είναι ό,τι εκθέτει ο
+επιθεωρητής κόμβων: να αλλάξετε τον τίτλο ή να ξαναγράψετε ένα υπο-εισιτήριο,
+να αλλάξετε ποιος **ρόλος** το κατέχει, να επανασυνδέσετε τις εξαρτήσεις του,
+να επεξεργαστείτε το σχήμα εξόδου του ή να διαγράψετε τον κόμβο εντελώς. Οι
+δομικοί κόμβοι (έρευνα, συζήτηση, σύνθεση) και οι κόμβοι που έχουν ήδη
+εκτελεστεί είναι μόνο για ανάγνωση. Δεν μπορείτε να δεσμεύσετε έναν ρόλο σε έναν
+συγκεκριμένο επώνυμο πράκτορα και δεν μπορείτε να επεξεργαστείτε τον
+προϋπολογισμό, από τον επεξεργαστή.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Δύο επεξεργαστές σε ένα σχέδιο επιλύονται με αισιόδοξη ταυτοχρονικότητα, όχι με
+συγχώνευση. Κάθε επεξεργασία φέρει το `base_revision` στο οποίο βασίστηκε· μια
+επεξεργασία που βασίζεται σε παρωχημένη αναθεώρηση απορρίπτεται με «the plan
+moved on» αντί να πατήσει σιωπηλά πάνω σε κάποιου άλλου. Η επαναφορά δεν είναι
+διαγραφή — προσθέτει την παλαιότερη πρόταση ως νέα αναθεώρηση, οπότε το
+χρονολόγιο αναθεωρήσεων μόνο μεγαλώνει.
 
-## Honest estimates, or none
+## Ειλικρινείς εκτιμήσεις ή καμία
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Η εκτίμηση στη γραμμή έγκρισης χτίζεται από το πραγματικό ιστορικό
+ολοκληρωμένων εκτελέσεων κάθε ρόλου, ως εύρος ενδοτεταρτημορίου (p25–p75). Τα
+σύνολα κόστους **αθροίζουν** τους κόμβους που μπορούν να εκτιμηθούν· η διάρκεια
+είναι η **κρίσιμη διαδρομή** μέσα στο DAG και όχι το άθροισμα (οι παράλληλοι
+κλάδοι επικαλύπτονται).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Ένας κόμβος του οποίου ο ρόλος **δεν έχει ιστορικό ολοκληρωμένων εκτελέσεων**
+αναφέρει `sampleSize: 0` και εύρη null. Αυτό εμφανίζεται ακριβώς έτσι — άγνωστο
+— ποτέ ως κατασκευασμένη σημειακή τιμή, γιατί μια εκτίμηση που δεν μπορείτε να
+εμπιστευτείτε είναι χειρότερη από καμία εκτίμηση. Όταν κάποιοι κόμβοι έχουν
+ιστορικό και κάποιοι όχι, το σύνολο επισημαίνεται ως μερικό. Η ακτίνα επίδρασης
+εμφανίζεται μόνο όταν ένας κόμβος δηλώνει αναφορές προέλευσης `symbol` ή `file`·
+ένας κόμβος χωρίς αυτές παραμένει «άγνωστος» αντί να συναχθεί από το κείμενο.
 
-## One approval, then deterministic execution
+## Μία έγκριση και μετά ντετερμινιστική εκτέλεση
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Αυτή είναι η βασική ιδέα: **ο πράκτορας σχεδιάζει· μια ντετερμινιστική
+συνάρτηση εκτελεί.** Όταν εγκρίνετε, το `OrchestrationMaterializer`, μια καθαρή
+συνάρτηση χωρίς LLM και χωρίς I/O, μετατρέπει την πρόταση σε μια πραγματική
+[pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/). Με την ίδια πρόταση και τους
+ίδιους επιλυμένους ρόλους, παράγει πάντα το ίδιο DAG. Αυτό έχει σημασία επειδή
+η παραγόμενη pipeline κληρονομεί όλα όσα κάνει ήδη δωρεάν ο μηχανισμός:
+αναστολή και συνέχιση μετά από επανεκκινήσεις, ανάκαμψη από κατάρρευση,
+συγκεντρωτικά κόστους και token ανά εκτέλεση και τη διεπαφή λεπτομερειών
+εκτέλεσης.
 
-Approval also creates the scaffolding the work needs:
+Η έγκριση δημιουργεί επίσης τον σκελετό που χρειάζεται η εργασία:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **προσλαμβάνει** όποιους ρόλους έχουν σημειωθεί ως νέοι (και καταγράφει τα
+  αναγνωριστικά των πρακτόρων που προσλήφθηκαν, ώστε μια κατάρρευση στη μέση της
+  έγκρισης να συνεχίζεται χωρίς διπλές προσλήψεις)
+- μια **ομάδα** που ομαδοποιεί τους ρόλους
+- ένα **έργο** στο οποίο καταχωρίζεται το γονικό εισιτήριο
+- το **πρότυπο pipeline + εκτέλεση** που τα κινεί όλα
 
-## The lifecycle
+## Ο κύκλος ζωής
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +131,46 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Κατάσταση      | Σημασία                                                                          |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | Το σχέδιο είναι έτοιμο και περιμένει τη μία εκ των προτέρων έγκρισή σας          |
+| `approved`     | Το εγκρίνατε· η υλοποίηση βρίσκεται σε εξέλιξη (προσλήψεις, ομάδα, έργο, pipeline) |
+| `executing`    | Η παραγόμενη pipeline εκτελείται: υπο-εισιτήρια, συζήτηση, εργασία               |
+| `synthesizing` | Τα υπο-εισιτήρια ολοκληρώθηκαν· το βήμα σύνθεσης παράγει το παραδοτέο            |
+| `completed`    | Έτοιμο: το γονικό εισιτήριο επισημαίνεται ως ολοκληρωμένο και το παραδοτέο αναρτάται στον κοινόχρηστο χώρο |
+| `failed`       | Η υλοποίηση απέτυχε ή η εκτέλεση της παραγόμενης pipeline απέτυχε                |
+| `cancelled`    | Το ακυρώσατε                                                                     |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Ένας μονότονα αύξων αριθμός **αναθεώρησης** παρακολουθεί την πρόταση καθώς ο
+ενορχηστρωτής την αναθεωρεί όσο βρίσκεται ακόμη σε κατάσταση `proposed`· η
+εφαρμογή καταγράφει ποια αναθεώρηση εγκρίνατε. Το `propose_orchestration`
+απορρίπτει μια αναθεώρηση μόλις η κατάσταση δεν είναι πλέον `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Μια ενορχήστρωση ανοίγει πάντα πάνω σε ένα **γονικό εισιτήριο** και μοιράζεται
+έναν **χώρο** συζήτησης, ώστε όλη η προσπάθεια να ανιχνεύεται σε ένα μεμονωμένο
+στοιχείο εργασίας και η ομάδα να μιλά σε ένα δωμάτιο.
 
-## What happens when it finishes
+## Τι συμβαίνει όταν ολοκληρωθεί
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Ένας ακροατής που διατηρείται ενεργός παρακολουθεί την παραγόμενη pipeline και
+αντιστοιχίζει την τελική της κατάσταση πίσω στην ενορχήστρωση και στο γονικό
+εισιτήριο, ώστε η ολοκλήρωση και η αποτυχία να εμφανίζονται στα σημεία που
+παρακολουθείτε ήδη. Η λειτουργία ενορχήστρωσης δεν χρειάζεται δικό της μηχανισμό
+εκτέλεσης.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Μπορείτε να ακυρώσετε μια ενορχήστρωση οποιαδήποτε στιγμή· η ακύρωση τερματίζει
+την εργασία που βρίσκεται σε εξέλιξη.
 
 ::::note
-Orchestration builds on [pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/) and
-[tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Η ενορχήστρωση βασίζεται σε [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) και
+[εισιτήρια](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/). Είναι ένα στρώμα σχεδιασμού και
+έγκρισης πάνω από αυτά και όχι ένα ξεχωριστό περιβάλλον εκτέλεσης.
 ::::
 
-## See also
+## Δείτε επίσης
 
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): the parent ticket an orchestration is anchored on
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): the roles an orchestration fills or hires
-- [Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
-- [Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/): ο μηχανισμός στον οποίο εκτελείται μια υλοποιημένη ενορχήστρωση
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): το γονικό εισιτήριο στο οποίο αγκυρώνεται μια ενορχήστρωση
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): οι ρόλοι που μια ενορχήστρωση καλύπτει ή προσλαμβάνει
+- [Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
+- [Εργασία στο Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/)

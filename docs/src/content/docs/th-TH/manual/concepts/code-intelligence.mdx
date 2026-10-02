@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: ความฉลาดของโค้ด
+description: ทำไมเอเจนต์จึงต้องมีคอมไพเลอร์ ตัวจับคู่เชิงโครงสร้าง และดีบักเกอร์ — และแต่ละตัวตอบคำถามอะไรที่ตัวอื่นตอบไม่ได้
 slug: th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center มอบสี่วิธีให้เอเจนต์ใช้ทำความเข้าใจโค้ดนอกเหนือไปจากการอ่านโค้ด ทั้งสี่วิธีตอบคำถามที่แตกต่างกันจริง ๆ และเหตุผลที่มีสี่วิธีแทนที่จะมีวิธีเดียวคือ ไม่มีกลไกใดกลไกหนึ่งตอบได้ครบทุกคำถาม
 
-| Mechanism            | Answers                                          | Costs                                  |
+| กลไก                 | ตอบคำถาม                                          | ต้นทุน                                 |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **กราฟโค้ด**          | มีอะไรอยู่ตรงนี้ และมีอะไรบ้างที่พึ่งพามัน            | การจัดทำดัชนีหนึ่งรอบ ต้นทุนการค้นต่ำ      |
+| **เซิร์ฟเวอร์ภาษา**     | โค้ดนี้คอมไพล์ผ่านจริงหรือไม่ และไทป์นี้คืออะไร        | โปรเซสเซิร์ฟเวอร์หนึ่งตัวต่อโปรเจกต์          |
+| **การค้นหาเชิงโครงสร้าง**| รูปร่างนี้ปรากฏที่ไหน                              | การแยกวิเคราะห์หนึ่งครั้งต่อไฟล์             |
+| **ดีบักเกอร์**         | อะไรเป็นจริง ณ ขณะนั้น ในเฟรมนั้น                    | โปรเซสที่ถูกหยุดไว้                        |
 
-## The gap the language server closes
+## ช่องว่างที่เซิร์ฟเวอร์ภาษาอุด
 
-The [code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[กราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) สร้างขึ้นจาก tree-sitter: สัญลักษณ์ เส้นเชื่อมการเรียก และรัศมีผลกระทบ มันเร็ว ต้นทุนต่ำ และไม่รู้อะไรเลยเกี่ยวกับ**ไทป์** มันบอกคุณไม่ได้ว่าการเรียกที่คุณเพิ่งเขียนจะคอมไพล์ผ่านไหม ฟิลด์นั้นมีอยู่บนออบเจกต์จริงหรือไม่ หรือการเปลี่ยนชื่อของคุณพลาดจุดที่ส่งออกซ้ำไปหรือเปล่า
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+ถ้าไม่มีเซิร์ฟเวอร์ภาษา เอเจนต์จะรู้ก็ตอนรันเทสต์ — หรือไม่ก็ไม่รู้เลย มันเขียนอะไรที่ดูสมเหตุสมผลแล้วไปต่อ ความล้มเหลวจึงโผล่ขึ้นมาอีกสามเทิร์นให้หลัง โดยไปพัวพันอยู่กับการเปลี่ยนแปลงคนละเรื่อง
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+ดังนั้นผลตอบแทนที่ได้จริง ๆ ไม่ใช่ตัวเครื่องมือ `lsp` แต่คือการที่ `write`, `edit` และ `apply_patch` ถูกห่อไว้: ทุกครั้งหลังการเขียน ไฟล์จะถูกส่งผ่านเซิร์ฟเวอร์ภาษา และ**ผลวินิจฉัยที่เพิ่งเกิดขึ้นใหม่**จะถูกพับรวมเข้าไปในผลลัพธ์ของเครื่องมือ เอเจนต์จึงรู้ว่าตัวเองทำให้บิลด์พังในจังหวะที่มันพังเลย ไม่ว่าจะนึกถามหรือไม่ก็ตาม
 
-### Only new diagnostics
+### แจ้งเฉพาะผลวินิจฉัยใหม่
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+การพูดซ้ำสิ่งที่เอเจนต์รู้อยู่แล้วแย่กว่าไม่พูดอะไรเลย เพราะมันจะถมผลลัพธ์ด้วยสัญญาณรบกวนที่เอเจนต์เรียนรู้ที่จะกวาดตาข้ามไป พร้อมกันนั้นก็พาเอาข้อผิดพลาดใหม่เพียงข้อเดียวนั้นหลุดไปด้วย ทะเบียนต่อการรันหนึ่งชุดจะคอยติดตามว่าอะไรถูกแจ้งไปแล้ว โดยยึดความรุนแรง รหัส และข้อความเป็นคีย์ — **ไม่ใช่**ตำแหน่ง ดังนั้นผลวินิจฉัยที่แค่เลื่อนลงมาสี่บรรทัดจะไม่ถูกแจ้งซ้ำว่าเป็นของใหม่
 
-### Lazy, and honest about being absent
+### ทำงานแบบขี้เกียจ และซื่อตรงเมื่อไม่มีอยู่จริง
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+ไม่มีเซิร์ฟเวอร์ตัวใดเริ่มทำงานตอนบู้ต ตัวหนึ่งจะเริ่มเมื่อมีคำขอแรกที่ต้องใช้มัน ซึ่งเกือบทุกครั้งคือการแก้ไขไฟล์ที่มันดูแลเป็นครั้งแรก ส่วนตัวที่ว่างอยู่จะถูกกวาดคืน โฮสต์ที่ไม่เคยแตะ Dart เลยก็จะไม่เริ่มตัววิเคราะห์
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+การตรวจหาคือ**ส่วนตัดกัน**: ต้องมีมาร์กเกอร์ที่รากโปรเจกต์อยู่ในเช็กเอาต์ *และ*ต้องค้นหาไบนารีเจอ มาร์กเกอร์อย่างเดียวบอกได้แค่ "โปรเจกต์นี้เป็น Python" และไม่ได้บอกว่าเซิร์ฟเวอร์ติดตั้งอยู่หรือไม่ ส่วนไบนารีที่ค้นหาเจออย่างเดียวก็บอกได้แค่ว่าโฮสต์มีชุดเครื่องมือ แต่ไม่ได้บอกอะไรเกี่ยวกับเช็กเอาต์นี้ มีเพียงทั้งสองอย่างพร้อมกันเท่านั้นที่แปลว่าคำค้นจะสำเร็จได้ และเครื่องมือที่ถูกเสนอให้ใช้แต่ล้มเหลวทุกครั้งก็แย่กว่าเครื่องมือที่ไม่มีอยู่เสียอีก
 
-## Why structural search, when grep exists
+## ทำไมต้องมีการค้นหาเชิงโครงสร้าง ในเมื่อมี grep อยู่แล้ว
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` จับคู่ตัวอักษร ซึ่งเป็นเครื่องมือที่เหมาะกับการหาชื่อ แต่ผิดสำหรับการหารูปร่าง
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+แพตเทิร์นเชิงโครงสร้างถูกแยกวิเคราะห์ด้วย**ไวยากรณ์เดียวกับไฟล์** ดังนั้น `dispose($X)` จึงหาการเรียกเจอไม่ว่าจะเว้นวรรค ห่อ หรือตัดบรรทัดอย่างไร และจะไม่จับคู่ตัวอักษรชุดเดียวกันที่อยู่ในสตริงลิเทอรัลหรือคอมเมนต์เลย
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+คุณสมบัติที่ทำให้มันเป็นมากกว่ารีจิกซ์ที่เพิ่มขั้นตอนเข้ามาคือ เมทาวาริเอเบิลที่ซ้ำกันในแพตเทิร์นเดียวต้องจับข้อความเดียวกัน:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+จะจับคู่กับโค้ดป้องกันที่ dispose สิ่งที่มันเพิ่งตรวจสอบ และจะไม่จับคู่กับอันที่ dispose อย่างอื่น นั่นคือบั๊กประเภทที่คุณเขียนออกมาเป็นข้อความให้ค้นหาไม่ได้เลย
 
-### It runs on the tree-sitter already linked
+### มันทำงานบน tree-sitter ที่เชื่อมอยู่แล้ว
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+ไม่มีเอนจินตัวที่สอง `cc_natives` โหลด tree-sitter และไวยากรณ์ของมันไว้แล้วสำหรับกราฟโค้ด พร้อมแคชคำค้นที่คอมไพล์ไว้และตารางภาษา ตัวจับคู่เป็น Dart ล้วน ๆ ที่ทำงานบนทรีซึ่งถูกแยกวิเคราะห์อยู่แล้ว การมีเอนจินเชิงโครงสร้างตัวที่สองจะหมายถึงตัวแยกวิเคราะห์ตัวที่สอง ชุดไวยากรณ์อีกชุดที่ต้องบิลด์และติดตั้งบนทุกแพลตฟอร์ม และคำตอบสองแบบต่อคำถามว่า "อะไรคือนิพจน์การเรียก"
 
-### A fragment needs somewhere to live
+### เศษโค้ดต้องมีที่ให้อยู่
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+ไวยากรณ์นิยามแค่ว่า*ไฟล์*ทั้งไฟล์คืออะไร เมื่อแยกวิเคราะห์ `dispose(x)` เปล่า ๆ ที่ระดับบนสุดของ Dart มันคือ**ลายเซ็นฟังก์ชัน**ที่ถูกต้องสมบูรณ์ — การประกาศชื่อ `dispose` ที่รับพารามิเตอร์ `x` — โดยไม่มีข้อผิดพลาดตรงไหนบอกให้รู้เลย ตัวจับคู่ที่สร้างบนการแยกวิเคราะห์แบบนั้นจะมองหาการประกาศ ไม่เจอการเรียก แล้วรายงานว่า "ไม่พบรายการที่ตรงกัน" สำหรับแพตเทิร์นที่จริง ๆ แล้วไม่เคยถูกอ่านในแบบที่มันดูเหมือน
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+แพตเทิร์นจึงถูกไล่ลองในบันไดของโครงร่าง — คำสั่ง นิพจน์ สมาชิกคลาส ระดับบนสุด — และโครงร่างแรกที่ยอมรับมันได้จะเป็นผู้ชนะ เศษโค้ดที่ไม่มีบริบทใดยอมรับได้จะถูกรายงานว่าแยกวิเคราะห์ไม่ได้ แทนที่จะถูกค้นหาแล้วเงียบ ๆ ว่าไม่พบ
 
-## Why a rewrite stages instead of writing
+## ทำไมการเขียนใหม่จึงพักไว้ก่อนแทนที่จะเขียนลงไปเลย
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+การเขียนใหม่เชิงโครงสร้างคือการแก้ไขที่กว้างที่สุดที่เอเจนต์ทำได้: หนึ่งแพตเทิร์น สี่สิบไฟล์ และไม่มีใครอ่านผลลัพธ์ทีละบรรทัด — ไม่ทั้งโมเดล และไม่ทั้งคนที่สั่งให้ทำ การเขียนลงไปแล้วรายงานว่า "เสร็จแล้ว" หมายความว่าการดูการเปลี่ยนแปลงอย่างจริงจังครั้งแรกคือ `git diff` ที่รันตามมาทีหลัง
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+`ast_edit` จึงรายงานว่ามัน*จะ*ทำอะไร — จำนวน ไฟล์ และจุดที่จับคู่ได้ — และการเปลี่ยนแปลงจะลงจริงก็ต่อเมื่อ `resolve` คอมมิตมัน นี่เองที่ทำให้ดิฟพร้อมปุ่มยอมรับ/ทิ้งมาอยู่ตรงหน้ามนุษย์ก่อนที่อะไรจะถูกเขียนลงดิสก์
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+การคอมมิตเป็นแบบทั้งหมดหรือไม่เอาเลย และทุกไฟล์จะถูกตรวจเทียบกับเนื้อหาที่บันทึกไว้ตอนพักการเปลี่ยนแปลง ระหว่างพักไว้กับตอนคอมมิต เอเจนต์อาจแก้ไฟล์ใดไฟล์หนึ่งในนั้นด้วยมือ รอบวินิจฉัยอาจเขียนมันใหม่ หรือฟอร์แมตเตอร์อาจแตะมันไปแล้ว — ถ้าคอมมิตต่อไปก็เท่ากับทิ้งงานนั้น และดิฟก็จะดูเหมือนเจตนา ความไม่ตรงกันแม้แต่จุดเดียวจะปฏิเสธการเปลี่ยนแปลงทั้งชุด เพราะการเขียนใหม่เชิงโครงสร้างที่ลงไปเพียงบางส่วนจะทิ้งทรีที่คอมไพล์ไม่ผ่านทั้งรูปร่างเดิมและรูปร่างใหม่
 
-## What a debugger answers that a print statement cannot
+## สิ่งที่ดีบักเกอร์ตอบได้ แต่คำสั่ง print ตอบไม่ได้
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+วงจรของคำสั่ง print คือ: ใส่ print รันทั้งหมดใหม่อีกครั้ง อ่านผลลัพธ์ แล้วลบ print ทิ้ง มันกินการรันเทสต์เต็มรอบต่อหนึ่งคำถาม และตอบได้เฉพาะคำถามที่คุณนึกออก*ก่อน*จะรัน
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+เฟรมที่ถูกหยุดไว้ตอบทุกคำถามเกี่ยวกับช่วงเวลานั้นได้พร้อมกันในครั้งเดียว — ตัวแปรโลคอลทุกตัว ผู้เรียกทุกตัว และนิพจน์ที่ถูกประเมินในสโคปของเฟรมนั้นเอง สำหรับโปรเซสที่ค้างตายหรือความล้มเหลวที่เกิดซ้ำเพียงครั้งเดียวในสิบรอบ นั่นคือความต่างระหว่างหนึ่งบ่ายกับหนึ่งนาที
 
-### Bounded like an enclosure, and for the same reason
+### ถูกจำกัดขอบเขตเหมือนเอนโคลเจอร์ และด้วยเหตุผลเดียวกัน
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+อะแดปเตอร์ดีบักเป็นเจ้าของ**โปรเซสที่ถูกหยุดไว้**ซึ่งยึดอะไรก็ตามที่โปรเซสนั้นยึดอยู่ — พอร์ต ล็อก หรือการเชื่อมต่อฐานข้อมูล เซสชันที่ไม่มีใครขับเคลื่อนคือการรั่วไหลที่อยู่ยงกว่าเทิร์นที่เริ่มมัน ดังนั้นจึงมี TTL แบบตายตัว มีเซสชันเดียวต่อการสนทนาหนึ่งรายการ และการเรียก `launch` ครั้งที่สองจะถูกปฏิเสธแทนที่จะเงียบ ๆ แทนที่ตัวแรก: เอเจนต์ที่เริ่มตัวที่สองโดยไม่จบตัวแรกเกือบแน่นอนว่าตามตัวแรกไม่เจอแล้ว
 
-### One transport, two protocols
+### ทรานสปอร์ตเดียว สองโปรโตคอล
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol ใช้การแบ่งเฟรมด้วย `Content-Length` ร่วมกับ Language Server Protocol และไม่มีอะไรที่เหนือกว่านั้นเหมือนกัน — คีย์สำหรับจับคู่ต่างกัน รูปร่างความล้มเหลวต่างกัน และมีข้อความชนิดที่สาม (เหตุการณ์) ที่ไม่มีคู่เทียบใน LSP การแบ่งเฟรมอยู่ในที่เดียว ส่วนโปรโตคอลวางทับอยู่แยกกัน
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+การเขียนการแบ่งเฟรมซ้ำสองที่จะหมายถึงคำตอบสองชุดต่อ "ข้อความหนึ่งทอดข้ามสองชังก์" "ชังก์หนึ่งบรรจุสามข้อความ" และ "เซิร์ฟเวอร์เขียนข้อความแบนเนอร์ลง stdout ก่อนเฟรมแรก" และมีเพียงชุดเดียวเท่านั้นที่จะได้รับการแก้
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Search code with the code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) — the symbol and impact side
-- [Debug a failing test](/th-TH/คู่มือ/วิธีทำ/ดีบักการทดสอบที่ล้มเหลว/) — the debugger, end to end
-- [Refactor structurally](/th-TH/คู่มือ/วิธีทำ/รีแฟกเตอร์เชิงโครงสร้าง/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — every operation and argument
+- [ค้นหาโค้ดด้วยกราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) — ด้านสัญลักษณ์และผลกระทบ
+- [ดีบักการทดสอบที่ล้มเหลวด้วยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/ดีบักการทดสอบที่ล้มเหลว/) — ดีบักเกอร์แบบครบวงจร
+- [รีแฟกเตอร์โค้ดเชิงโครงสร้าง](/th-TH/คู่มือ/วิธีทำ/รีแฟกเตอร์เชิงโครงสร้าง/) — `ast_grep` และ `ast_edit`
+- [เครื่องมือเอเจนต์ในตัว](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — ทุกการทำงานและอาร์กิวเมนต์

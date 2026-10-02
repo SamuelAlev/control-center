@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Vytvářejte a spravujte tickety
+description: Založ ticket, posuň ho životním cyklem, přidej štítky a vazby a zapiš, kdo co vlastní.
 slug: cs-CZ/prirucka/navody/sprava-ticketu
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Tenhle návod ukáže, jak tickety zakládat a spravovat.
 
-## Create a ticket
+## Založ ticket
 
-### From the UI
+### Z rozhraní
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. V postranním panelu pracovního prostoru klikni na **Tickety**.
+2. Stiskni **Nový ticket**.
+3. Vyplň:
+   - **Název** — krátké shrnutí. Je to jediné povinné pole.
+   - **Popis** — markdown, s lištou formátování.
+   - **Stav** — **K udělání** (výchozí) nebo **Backlog**. Rozjeté a koncové
+     stavy přijdou až životním cyklem, ne při založení.
+   - **Priorita** — žádná, urgentní, vysoká, střední nebo nízká.
+   - **Přiřazený** — ty, nebo kterýkoli agent v pracovním prostoru.
+   - **Projekt** — volitelné seskupení.
+4. Stiskni **Vytvořit**, nebo nejdřív zapni **Vytvořit další**, ať dialog
+   zůstane otevřený pro rychlé zadávání.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+V dialogu není výběr poskytovatele. Ticket se založí u aktivního poskytovatele
+ticketingu pracovního prostoru.
 
-### From an agent
+### Od agenta
 
-Ask an agent in a space:
+Požádej agenta v prostoru:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Založ ticket na opravu timeoutu přihlášení při pomalém spojení.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Zavolá nástroj MCP `create_ticket`. Priorita na tom nástroji je **celé číslo**,
+ne název:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Hodnota | Priorita |
+| ------- | -------- |
+| `0`     | Žádná    |
+| `1`     | Urgentní |
+| `2`     | Vysoká   |
+| `3`     | Střední  |
+| `4`     | Nízká    |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Povinné jsou jen `workspace_id` a `title`. `description`, `priority`,
+`assignee` (id agenta) a `team_id` jsou volitelné. Nástroj je zařazený jako
+zápis synchronizace dodavatele a před spuštěním si vyžádá tvé schválení.
 
-## Update ticket status
+## Změň stav ticketu
 
-Tickets follow this lifecycle:
+Tickety jdou tímhle životním cyklem:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,123 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` a `cancelled` jsou koncové. `cancelled` je dostupné z každého
+nekoncového stavu. `done` a `failed` jsou dostupné z `inProgress` nebo
+`inReview`. `open` může přejít i přímo do `blocked`. Výběr stavu v rozhraní
+nabízí každý stav kromě `failed`. Ten nastavují agenti přes `fail_ticket`.
 
-To change it, use any of:
+Změnu uděláš kterýmkoli z těchto způsobů:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- řádek **Stav** v liště vlastností ticketu,
+- podnabídka **Stav** v nabídce pravého tlačítka u ticketu v seznamu,
+- čip **Stav** na plovoucí liště po hromadném výběru ticketů.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Graf životního cyklu váže agenty, ne tebe]
+Každá změna stavu z rozhraní projde natvrdo a graf úplně obejde. Ticket můžeš
+přesunout na jakýkoli stav, který výběr nabízí, včetně znovuotevření ticketu
+ve stavu `done`, `failed` nebo `cancelled`. Výběr `failed` jako cíl nenabízí.
+Diagram výše platí pro agenty a automatizaci: nepovolený přechod z nástroje
+MCP nebo rekoncileru se zapíše do logu a ignoruje, takže se neprovede.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/).
+Změny stavu publikují doménové události (`TicketStatusChanged`,
+`TicketCompleted` a další), které umí spustit pipeline. Viz
+[Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/).
 
-## Assign a ticket
+## Přiřaď ticket
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Otevři ticket.
+2. V liště vlastností nastav **Přiřazený** — sebe, jiného člena pracovního
+   prostoru, nebo agenta.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)).
+:::caution[Přiřazení nespustí žádnou práci]
+Přiřazení zapíše vlastnictví a nic víc. Nevznikne prostor, nezmění se stav
+a neodešle se agent. `TicketAssigned` je čistý auditní signál a žádný
+dispečer za ním nestojí. Aby agent začal pracovat, napiš mu v prostoru
+(viz [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Jediná výjimka: `TicketAssigned` je typ události, na který můžeš navázat
+spouštěč pipeline, takže vlastní šablona na přiřazení zareaguje.
 :::
 
-## Add labels
+## Přidej štítky
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Štítky se dávají hromadně ze seznamu ticketů, ne z jednoho ticketu. Lišta
+vlastností ovládání štítků nemá.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Najeď na řádek v seznamu ticketů a zaškrtni políčko. Zaškrtni jich tolik,
+   kolik potřebuješ. Jakmile je něco vybrané, objeví se plovoucí lišta.
+2. Na té liště otevři čip **Štítky**.
+3. Vyber štítek. Přidá se ke každému vybranému ticketu, který ho ještě nemá.
+   Stávající štítky se nikdy nesmažou. **Vymazat štítky** je sundá všechny.
+   Výběr nabízí štítky, které už v pracovním prostoru na nějakém ticketu
+   jsou. Agenti umí přidat nový název přes `update_ticket` nebo
+   `tickets.patch`.
 
-## Link tickets
+## Propoj tickety
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Vazby jsou na kartě **Vztahy** v liště vlastností ticketu, nebo pod
+**Propojit s** v nabídce pravého tlačítka v seznamu.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Otevři ticket a najdi kartu **Vztahy**.
+2. Stiskni její tlačítko přidání a zvol vazbu:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Vazba              | Význam                                  |
+| ------------------ | --------------------------------------- |
+| **Podúkol…**       | Rodič tohoto ticketu je ten druhý       |
+| **Nadřazený…**     | Druhý ticket je dítětem tohoto          |
+| **Blokováno…**     | Tento ticket je blokovaný tím druhým    |
+| **Blokuje…**       | Tento ticket blokuje ten druhý          |
+| **Související s…** | Symetrické, bez naznačeného směru       |
+| **Duplicita…**     | Tento ticket duplikuje ten druhý        |
 
-3. Pick the target ticket.
+3. Vyber cílový ticket.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Duplikováno** se ukáže na kartě, ve výběru ale ne. Je to inverze
+**Duplicita** a nastavuje se z druhého ticketu. Každá uvedená vazba se dá
+kliknutím otevřít a po najetí myší odebrat.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Rodič a podúkol se ukládají na ticketu samotném, ne jako řádky vazeb, takže
+smazání rodiče se kaskádově přenese na děti (viz níže). Blokující a
+související vazby se s ním nesmažou.
 
-## Add collaborators
+## Přidej spolupracovníky
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Spolupracovníci jsou seznam na ticketu: kdo se podílí a v jaké roli.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Otevři ticket.
+2. Na kartě **Přidat spolupracovníka** stiskni ovládání s osobou a plus.
+3. Vyber agenta.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Tři role jsou **assignee**, **collaborator** (výchozí) a **reviewer**. Výběr
+v rozhraní nabízí jen agenty pracovního prostoru a vždy zapíše výchozí roli.
+Lidé se můžou objevit jako řádky, v té nabídce ale nejsou. Nástroj MCP
+`add_ticket_collaborator` přijímá `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/cs-CZ/prirucka/navody/prostory/).
+Přidání spolupracovníka zapíše řádek a nepublikuje žádnou doménovou událost.
+Přístup do prostoru tím nezíská. Agenta do konverzace přidej jako účastníka
+ze záhlaví prostoru. Viz
+[Prostory](/cs-CZ/prirucka/navody/prostory/).
 
-## Delete a ticket
+## Smaž ticket
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+**Smazat ticket** je dole v liště vlastností, v nabídce pravého tlačítka,
+nebo jako akce smazání na plovoucí liště po hromadném výběru.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Smazání je jen místní]
+Ticket z externího trackeru se tam nesmaže. Žádný poskytovatel to neumí,
+takže se při další synchronizaci může objevit znovu. Mazání je kaskádové:
+spolupracovníci ticketu a všechny dětské tickety jdou s ním.
 :::
 
-## Related guides
+## Související návody
 
-- [Delegate work to agents](/cs-CZ/prirucka/navody/delegovani-ticketu/)
-- [Organize work with projects](/cs-CZ/prirucka/navody/projekty/)
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Ticket lifecycle reference](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/)
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Organizujte práci v projektech](/cs-CZ/prirucka/navody/projekty/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Životní cyklus ticketu](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/)
 
-## Related concepts
+## Související koncepty
 
-- [Tickets](/cs-CZ/prirucka/koncepty/tickety/)
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/)
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/)
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/)

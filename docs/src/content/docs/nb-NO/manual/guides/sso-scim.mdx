@@ -1,60 +1,65 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Provisioner brukere med SCIM
+description: La IdP-en opprette, oppdatere og deprovisjonere Control Center-kontoer automatisk.
 slug: nb-NO/handbok/slik-gjor-du/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Bruk denne veiledningen når du vil ha livssykluskontroll — avslutning av
+brukere må trekke tilbake tilgangen automatisk, ikke bare blokkere framtidige
+innlogginger. SCIM er push-protokollen IdP-er (Okta, Entra ID og andre) bruker
+nettopp til dette.
 
-## Prerequisites
+## Forutsetninger
 
-- SSO already working (the [SSO tutorial](/nb-NO/handbok/veiledninger/sso) or the
-  [OIDC guide](/nb-NO/handbok/slik-gjor-du/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO som allerede fungerer ([SSO-veiledningen](/nb-NO/handbok/veiledninger/sso) eller
+  [OIDC-veiledningen](/nb-NO/handbok/slik-gjor-du/sso-oidc)),
+- **en server IdP-en kan nå over HTTPS** — SCIM-kallene kommer fra IdP-en,
+  ikke fra brukerens nettleser. Bruk den innebygde tunnelen
+  (Innstillinger → Server → Tilkobling og status → Del denne serveren → Cloudflared/ngrok/Tailscale) eller en offentlig URL. En
+  server som bare er nåbar gjennom WebSocket-reléet, kan ikke ta imot
+  SCIM-push; JIT-provisjonering fungerer fortsatt der, men denne veiledningen
+  gjør det ikke.
 
-## Steps
+## Fremgangsmåte
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Åpne **Innstillinger → Server → Enkel pålogging** → kortet
+   **Brukerprovisjonering (SCIM)**. Kortet viser endepunktet, f.eks.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. Trykk **Generer token** (eller **Regenerer token** hvis det allerede
+   finnes ett) — bearer-tokenet vises én gang i en dialog og kopieres til
+   utklippstavlen. Oppbevar det i passordbehandleren din; serveren beholder
+   bare en kopi som kan verifiseres i konstant tid.
+3. Slå på SCIM i provisjoneringsinnstillingene til IdP-en din med:
+   - **Base URL**: endepunktet ovenfor
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (e-post) eller `externalId` — begge passer
+4. Test med én bruker: push vedkommende fra IdP-en og bekreft at de dukker
+   opp (en SCIM-oppretting fester leverandørens `externalId` til kontoen,
+   samme feste som den første SSO-innloggingen setter).
 
-## What deprovisioning does
+## Hva deprovisjonering gjør
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Når IdP-en sender `active: false` (eller `DELETE`), avviser SCIM først hvis
+kontoen er **eier** av et arbeidsområde (overfør eierskapet først). Ellers:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. tilbakekalles all enhetslegitimasjon først — aktive økter faller innen
+   sekunder,
+2. fjernes alle medlemskap i arbeidsområder,
+3. merkes kontoen som deaktivert (den kan aldri logge inn, uansett hva
+   IdP-en sier senere, før den uttrykkelig reaktiveres).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Selve brukerraden består — attribusjonen på saker, meldinger og commits er
+permanent. Reaktivering (SCIM `active: true`) gjenoppretter innloggingen, men
+**ikke** medlemskapene: de trenger en ny invitasjon eller retningslinjen for
+automatisk medlemskap ved innlogging.
 
-## Troubleshooting
+## Feilsøking
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 på hvert kall** — tokenet er endret; generer et nytt og oppdater IdP-en.
+- **Endepunktet er ikke nåbart** — tunnelen er nede, eller serveren er bare
+  tilgjengelig via reléet. SCIM trenger direkte HTTPS; JIT fortsetter å virke
+  uansett.
+- **Feil ved gruppe-push (501)** — med vilje: tilordningen gruppe→rolle skjer
+  ved innlogging fra gruppeattributtene i SAML/OIDC, ikke fra grupper som
+  pushes.

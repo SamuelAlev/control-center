@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: 코드 호스트 연결
+description: PR 화면, 저장소 등록, 에이전트 실행이 작동하도록 GitHub, GitLab 또는 Bitbucket을 연결합니다. 하나의 워크스페이스에서 세 곳을 모두 사용할 수 있습니다.
 slug: ko-KR/매뉴얼/사용-가이드/코드-호스트-연결
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center는 앱 전반에서 **forge**라고 부르는 세 가지 코드 호스트, 즉 **GitHub**, **GitLab**, **Bitbucket Cloud**와 함께 작동합니다. 이 중 기본값은 없습니다. 하나를 연결하면 모든 것이 작동하고, 여러 개를 연결하면 하나의 워크스페이스가 세 곳의 저장소를 동시에 담을 수 있습니다.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+forge는 등록할 때 `origin` 리모트에서 읽어 들이는, 각 **저장소**의 속성입니다. 직접 고르는 일이 없으며, 잘못 설정할 만한 워크스페이스별 설정도 없습니다.
 
-## Connect a forge
+## forge 연결
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. **설정 → 워크스페이스 → 프로필 및 신원**(`/settings/workspace/profile`)을 엽니다.
+2. **코드 호스팅** 카드를 찾습니다. 연결 여부와 상관없이 지원되는 모든 forge가 나열됩니다.
+3. 해당 행에 버튼이 있으면 **…로 로그인**을 누르고, 그렇지 않으면 **토큰 추가**를 눌러 토큰을 붙여넣습니다.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**로그인**은 서버에 앱이 등록된 forge에만 나타납니다. 현재로서는 GitHub이 기기 흐름으로 해당하며([GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/) 참고), 나머지는 모두 토큰 붙여넣기 방식입니다. 완료될 수 없는 버튼을 보여 주는 대신 정직하게 제공되는 선택지입니다.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+어느 방식이든 자격 증명은 **본인의 것이며 서버에 저장**되고 사용자 id를 키로 삼습니다. 토큰을 입력한 머신에는 아무것도 저장되지 않고, 로그인하는 모든 기기가 같은 자격 증명을 사용하며, 다른 멤버는 이를 읽을 수 없습니다. 효력은 **다음 요청**부터 발생합니다. 재시작할 것은 없고, 연결을 해제하면 즉시 전송이 중단됩니다.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+각 행은 해당 자격 증명이 어디에서 왔는지 알려 줍니다. "내 토큰이 작동하지 않는다"와 "다른 토큰이 응답하고 있다"를 가르는 차이가 바로 여기에 있습니다:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| 부제                                                  | 의미                                                          |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| `octocat(으)로 로그인했습니다.`                       | 본인의 자격 증명이 사용되고 있습니다                          |
+| `octocat(으)로 로그인했습니다. · 이 서버의 앱을 통해` | 서버의 앱 아이덴티티가 응답하고 있습니다 — 로그인하지 않은 상태입니다 |
+| `octocat(으)로 로그인했습니다. · 환경에서`            | 서버 환경 변수가 응답하고 있으며, 본인의 자격 증명이 아닙니다 |
+| `연결되지 않음`                                       | 이 forge에 대한 자격 증명이 없습니다                          |
 
-### What token each forge wants
+### 각 forge에 필요한 토큰
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| Forge         | 토큰                                                                                | 생성 위치                                              |
+| ------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **GitHub**    | 클래식: `repo`와 `read:org`. 세분화된 토큰: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | `api` 권한이 있는 개인 액세스 토큰                                                   | gitlab.com → User settings → Access tokens             |
+| **Bitbucket** | Atlassian API 토큰과 계정 이메일                                                    | id.atlassian.com → Security → API tokens               |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket은 **계정 이메일을 사용자 이름으로**, 토큰을 비밀번호로 사용해 인증합니다. 어떤 이메일을 토큰과 짝지을지 서버가 알 수 있도록 서버 환경에 `BITBUCKET_EMAIL`을 설정하십시오.
 
-### Or use the environment
+### 또는 환경 변수 사용
 
-For a headless or CI install, the server reads these:
+헤드리스 또는 CI 설치에서는 서버가 다음을 읽습니다:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, 그다음 `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, 그다음 `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, 그다음 `BITBUCKET_TOKEN` (`BITBUCKET_EMAIL`과 함께)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+이들은 **서버의** 자격 증명이며 본인의 것이 아닙니다. 이 구분은 핵심을 지탱합니다. 본인을 대신해 이루어지는 요청은 본인의 자격 증명만 사용하고 다른 것은 사용하지 않으므로, 환경 변수가 조용히 본인을 대신하는 일은 없습니다. 사람이 뒤에 없는 작업, 즉 웹훅, PR 폴링, 티켓 동기화는 서버의 앱 아이덴티티를 먼저 확인하고, 그다음 서버 소유자의 자격 증명, 마지막으로 환경 변수를 확인합니다. 이 순서는 고정되어 있어 "로그인했는데 아무것도 바뀌지 않았다"는 결과가 지원되는 경우는 없습니다.
 
-## You are a different person on each forge
+## forge마다 다른 사람입니다
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+같은 사람이 GitHub에서는 `octocat`이지만 GitLab에서는 전혀 다른 이름입니다. Control Center는 **forge별로** 아이덴티티를 해석해 저장소마다 올바른 것을 사용합니다. 덕분에 여러 forge가 섞인 워크스페이스에서도 "내 리뷰 필요", "내가 생성", "내가 승인"이 정확해집니다.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+어떤 forge의 아이덴티티가 해석되지 않으면 그 저장소는 모두와 일치하는 것으로 처리되는 대신 받은편지함에 아무것도 제공하지 않습니다. 받은편지함은 모든 것을 확인했다고 주장하는 대신 그 사실을 알려 줍니다.
 
-## One inbox, every forge
+## 받은편지함 하나, 모든 forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+받은편지함과 PR 큐는 워크스페이스에 존재하는 모든 forge로 뻗어 나가 결과를 하나의 흐름으로 병합합니다. GitHub 풀 리퀘스트와 Bitbucket 풀 리퀘스트가 공급업체별로 묶이지 않고 시간순으로 나란히 놓입니다.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+장애는 격리됩니다. 중단되었거나 속도 제한에 걸렸거나 연결되지 않은 forge는 아무것도 제공하지 않고 다른 forge에 영향을 주지 않습니다. 전체 받은편지함을 비우는 일은 없습니다. 해당 forge의 저장소는 복구될 때까지 마지막으로 알려진 상태를 계속 표시합니다.
 
-## What each forge can do
+## 각 forge가 할 수 있는 일
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+모든 forge는 핵심 흐름, 즉 풀 리퀘스트 조회와 열기, diff 읽기, 인라인 및 최상위 댓글 작성, 리뷰, 병합, 닫기를 지원합니다. 그 외에는 실제로 서로 다르며, Control Center는 조용히 실패하는 컨트롤을 보여 주는 대신 forge가 할 수 없는 것은 숨깁니다.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| 기능                              | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| 일괄(대기) 리뷰                   |   ✓    |   ✓    |     —     |
+| 변경 요청                         |   ✓    |   ✓    |     ✓     |
+| 파일별 "확인함" 상태 동기화       |   ✓    |   —    |     —     |
+| 이모지 반응                       |   ✓    |   ✓    |     —     |
+| 팀 / 그룹 리뷰어                  |   ✓    |   ✓    |     —     |
+| 리뷰어 제안                       |   ✓    |   —    |     ✓     |
+| PR의 CI 결과                      |   ✓    |   ✓    |     ✓     |
+| CI 작업의 단계/로그 자세히 보기   |   ✓    |   ✓    |     —     |
+| 스택형 풀 리퀘스트                |   ✓    |   —    |     —     |
+| PR 설명 템플릿                    |   ✓    |   ✓    |     —     |
+| 알림 폴링                         |   ✓    |   —    |     —     |
+| 풍부한 사용자 프로필              |   ✓    |   ✓    |     —     |
+| 서버 측 PR head ref               |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+기능이 빠진 곳에서는 해당 기능이 정직하게 축소됩니다:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **확인함 상태**는 여전히 작동하지만, 설정한 기기에서만 그렇습니다.
+- Bitbucket에서 **일괄 리뷰**는 댓글 하나씩 게시되므로, 리뷰어는 한꺼번에 도착하는 대신 개별적으로 도착하는 것을 봅니다.
+- Bitbucket에는 **PR head ref가 없으므로**, 풀 리퀘스트를 체크아웃하면 소스 브랜치를 이름으로 가져오며, 그 브랜치가 삭제되면 실패합니다.
 
-## Vocabulary
+## 용어
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab은 풀 리퀘스트를 **머지 리퀘스트**라고 부릅니다. Control Center는 자체 모델 전반에서 "풀 리퀘스트"라고 하며, 해당 forge를 이야기할 때는 그 forge의 명칭을 사용합니다.
 
-## Troubleshooting
+## 문제 해결
 
-### The PR list is empty and says a forge is not connected
+### PR 목록이 비어 있으면서 forge가 연결되지 않았다고 표시됩니다
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+그 forge에 대한 자격 증명이 없습니다. **설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅**에서 로그인하거나 토큰을 붙여넣습니다. 다른 forge의 저장소는 영향을 받지 않습니다.
 
-### I connected a forge but its repos still show nothing
+### forge를 연결했는데 저장소에 여전히 아무것도 표시되지 않습니다
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+행의 부제를 확인하십시오. "이 서버의 앱을 통해" 또는 "환경에서"라고 표시되면, 예상했던 것과 다른 자격 증명이 응답하고 있는 것입니다. 요청하는 모든 것에는 본인의 자격 증명이 우선하므로, 다르게 표시된다면 본인의 자격 증명이 저장되지 않은 것입니다.
 
-### A repo will not register
+### 저장소가 등록되지 않습니다
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/).
+등록에는 세 가지가 모두 필요합니다. 경로가 git 워크트리 안에 있고, `origin` 리모트가 있으며, 그 리모트가 github.com, gitlab.com 또는 bitbucket.org를 가리켜야 합니다. [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)를 참고하십시오.
 
-### Everything stops working for a while after heavy use
+### 많이 사용한 뒤 한동안 모든 것이 작동을 멈춥니다
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+속도 제한 서킷 브레이커입니다. 기본 한도에 도달했다고 알리는 forge가 있으면, 클라이언트는 시간 창이 지날 때까지 네트워크 호출 없이 이후 요청을 로컬에서 실패시킵니다. 따라서 재시도 폭주가 한도를 더 악화시킬 수 없습니다. 일시적 실패는 지수 백오프로 재시도합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-- [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
-- [Triage the inbox](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)
+- [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
+- [받은편지함 분류](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)

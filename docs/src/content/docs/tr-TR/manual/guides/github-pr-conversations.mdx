@@ -1,97 +1,102 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Bir GitHub PR'dan Control Center ile konuşma
+description: Sunucunuzun GitHub App botundan, webhook ya da genel URL olmadan, doğrudan PR konuşmasından bir inceleme veya yanıt isteyin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Bu kılavuz, GitHub'dan ayrılmadan Control Center ile nasıl çalışacağınızı
+gösterir: PR sayfasından bir YZ incelemesi isteyin, bir yorumda bota soru sorun
+ve konuşmayı botun inceleme konularında sürdürün.
 
-The bot is your server's own [GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Bot, sunucunuzun kendi [GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)
+uygulamasıdır — insanları zaten oturum açtıran ve arka plan işlerini yürüten
+aynı uygulama. Yeni hiçbir şey kaydedilmez ve hiçbir şeyin internetten
+erişilebilir olması gerekmez: sunucu, GitHub'da söylenenleri yoklayarak
+keşfeder; böylece NAT arkasındaki bir dizüstü bilgisayar, genel bir dağıtımla
+tamamen aynı davranır.
 
-## Prerequisites
+## Ön koşullar
 
-- The server has its GitHub App [registered and
-  installed](/tr-TR/kilavuz/nasil-yapilir/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Sunucunun GitHub App'i [kayıtlı ve
+  kurulu](/tr-TR/kilavuz/nasil-yapilir/github-app/) olmalı; **Pull requests: read and write**
+  (yorumlar, konular ve tepkiler için) ve **Issues: read** (yorum araması
+  için) izinleriyle. Her ikisi de o kılavuzun izin listesinde zaten var
+- Depo, Control Center'da bir çalışma alanına bağlı
+- Webhook URL'si yok, tünel yok, geri çağırma yok — ağ tarafında
+  yapılandırılacak hiçbir şey yok
 
-## Find your bot's name
+## Botunuzun adını bulun
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Botun giriş adı `<appslug>[bot]` biçimindedir; burada `appslug`, uygulamayı
+kaydederken verdiğiniz addır.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve
+   **Sağlayıcı uygulamaları** kartına kaydırın
+2. **GitHub** bloğunu açın ve **Test**'e tıklayın
+3. **Bot girişi** dolduğunda kopyalayın. Hâlâ boş ipucunu gösteriyorsa giriş
+   adı her zaman `<appslug>[bot]` biçimindedir — bunu yazın, ya da kısa
+   `@appslug` biçimini kullanın
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub, `@` otomatik tamamlamasında uygulama hesaplarını sunmaz; dolayısıyla
+giriş adının elle yazılması gerekir — ayarlar kartının kopyalamayı tek
+tıklamaya indirmesinin nedeni budur. `[bot]` soneki isteğe bağlıdır: `@myapp`
+ve `@myapp[bot]` ikisi de bota seslenir.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Kendine özgü bir uygulama adı seçin]
+Kısa biçim metin olarak eşleştirilir. Bir insan GitHub kullanıcısı uygulamanızın
+slug'ını paylaşıyorsa, o kullanıcıdan kısa biçimle söz etmek de bota ulaşır.
+Tam `@myapp[bot]` biçimi ise her zaman nettir.
 :::
 
-## Request a review from GitHub
+## GitHub'dan inceleme isteyin
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+İki yol var; ikisi de **AI'ya sor** düğmesinin başlattığı aynı hazır gelen
+`pr_review` pipeline'ını başlatır:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- PR'a **`ai-review` etiketini ekleyin**. Bu, GitHub'ın botu inceleyici olarak
+  atamaya sunduğu en yakın şeydir — uygulama hesapları, yerel olarak istenen
+  inceleyici yerini dolduramaz. Tepki verilecek bir yorum yoktur, dolayısıyla
+  GitHub'da hiçbir şey yayımlanmaz; inceleme Control Center'da başlar
+- PR konuşmasına **`@myapp review` yazın** (ya da yalnızca `@myapp`). Bot 👀
+  ile tepki verir, ardından inceleme başladığında (ya da zaten bir incelemenin
+  çalıştığını) yanıtlar
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+İnceleyiciler PR'ın inceleme alanında çalışır; bulguları
+[YZ destekli inceleme kullanma](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/)
+sayfasındaki gibi okuyun ve yayımlayın. GitHub'a geri yayımlamak, Control
+Center'da verdiğiniz bir karar olarak kalır — GitHub'dan bir inceleme başlatmak
+kendi başına GitHub'a hiçbir şey yayımlamaz.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+Etiket PR başına bir kez tetiklenir: onu eklemek isteğin kendisidir ve
+kaldırılıp yeniden eklendiğinde yeniden kurulmaz. Bir incelemeyi yeniden
+çalıştırmak için — sözgelimi bir push'un ardından — botu anın.
 
-## Ask a question
+## Soru sorun
 
-Comment on the PR conversation:
+PR konuşmasına yorum yapın:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Sırasıyla olanlar:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Bot 👀 ile tepki verir, böylece yorumun görüldüğünü anlarsınız
+2. Soru, PR'ın inceleme alanına **siz olarak** gönderilir — Control Center'da
+   kendiniz yazmışsınız gibi aynı atıfla
+3. Bir ajan alanda yanıtlar ve yanıt, PR'a sizden @ ile söz eden bir yorum
+   olarak geri gönderilir
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Henüz incelemesi olmayan bir PR'daki soru, çalışma alanının CEO ajanını
+uyandırır; bir inceleme çalıştıktan sonra ise son konuşan ajan yanıtlar,
+böylece takip soruları bağlama sahip olana ulaşır.
 
-## Follow up in a review thread
+## Bir inceleme konusunda takip edin
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Botun parçası olduğu satır içi bir inceleme konusunun içinde yanıtlayın —
+bıraktığı bir diff yorumu ya da o konuda gönderdiği bir yanıt. Anmaya gerek
+yoktur; **hitap** konunun kendisidir:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +104,77 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Çok turlu akış da aynı şekilde işler: her yanıt, inceleme alanını bağlam olarak
+kullanan aynı konuşmadaki bir başka sorudur ve yanıt konuda geri döner.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+PR konuşması zaman çizelgesindeki bir takip sorusu, üst düzey yeni bir
+yorumdur, dolayısıyla yine bir @ ile anma gerektirir.
 
-## Who the bot talks to
+## Bot kiminle konuşur
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Bir GitHub yorumu, bir giriş adından biraz fazlası olarak gelir; dolayısıyla
+bot, herhangi bir şey yapmadan önce yazarı çözümler:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **GitHub hesabınız, Control Center'da kimliğinize bağlı olmalıdır** —
+  **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** altından
+  [GitHub ile oturum açın](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+  ya da bir token yapıştırın
+- Depoyu bağlayan çalışma alanında **yazma rolüne sahip bir üye olmalısınız**
+  (`member`, `admin` veya `owner`)
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Başka herkes, neyin eksik olduğunu açıklayan tek bir kibar yanıt alır ve
+sözleri çalışma alanına asla girmez; bilinmeyen bir giriş adı (bağlı değil ya
+da bağlı ama burada üye değil) ile salt okunur bir rol, söz konusu iki
+durumdur. `ai-review` etiketi bu şekilde kısıtlanmaz: yazarı yoktur, dolayısıyla
+incelemeyi depoyu zaten bağlayan çalışma alanında başlatır.
 
-## What to expect
+## Neler beklemeli
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Şey                      | Davranış                                                                 |
+| ------------------------ | ------------------------------------------------------------------------ |
+| Alındı bildirimi         | Bir yorumda yaklaşık bir dakika içinde 👀 — tarama aralığı. `ai-review` etiketinin tepki verilecek bir yorumu yoktur |
+| Yanıtlar                 | Bot (uygulama) olarak, sorunun sorulduğu kanalda gönderilir               |
+| Alan içi atıf            | Soru size aittir; ajan, alanın özerklik ayarları altında sizin adınıza çalışır |
+| İncelemeler              | Bulgular inceleme alanına düşer; GitHub'a yayımlamak elle yapılır         |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Yaklaşık bir dakikalık gecikme, hiç gelen ağ erişimi gerektirmemenin
+bedelidir. Taramayla ilgili acil hiçbir şey yoktur ve sunucu çevrimdışıyken
+hiçbir şey kaybolmaz — kesinti sırasında gelen bir yorum, bir sonraki taramada
+yakalanır.
 
-## Troubleshooting
+## Sorun giderme
 
-**Nothing happens for a comment that mentions the bot.**
+**Botu anan bir yorumda hiçbir şey olmuyor.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- Uygulama, depoya sahip hesapta **kurulu** mu ve depo bir çalışma alanına
+  **bağlı** mı? Bağlı olmayan bir depo, hiçbir şey kaydedilmeden önce atlanır;
+  dolayısıyla sonradan bağlamak yine de teslim eder
+- GitHub hesabınız bağlı mı ve yazma rolüne sahip bir üye misiniz? PR'da botun
+  ret yanıtına bakın — hangisi olduğunu söyler
+- Hâlâ hiçbir şey yok mu? Bir şey başarısız olduğunda sunucu günlüğü taramayı
+  ve PR'ı adlandırır; `pr_conversation:` (yoklayıcı) ve
+  `github_pr_conversation:` (köprü) aramalarına bakın
 
-**The label does not start a review.**
+**Etiket bir inceleme başlatmıyor.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+PR başına bir kez tetiklenir. Bir inceleme zaten çalıştıysa ya da etiket,
+sunucu PR'ı hiç görmeden önce eklendiyse (ilk tarama, birikmiş işleri üzerine
+salmak yerine sessizce kaydeder), bunun yerine botu anın — bir inceleme zaten
+yürürlükte değilse `@myapp review` her zaman bir tane başlatır.
 
-**The bot's answer never arrived on GitHub.**
+**Botun yanıtı GitHub'a hiç ulaşmadı.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Yanıtın kendisi hiç kaybolmaz — Control Center'da PR'ın inceleme alanındadır.
+Gönderme hatası (GitHub çalışmıyor, izinler değişti) günlüğe kaydedilir ve
+yanıt yeniden denenmez; önemliyse konuda tekrar sorun.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/): the room all of this lands in
+- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/): botun
+  doğduğu kayıt
+- [YZ destekli inceleme kullanma](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/):
+  bir anmayla başlatılan incelemenin ürettiği bulguları okuma
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/):
+  botun sizi çözümlediği kendi GitHub hesabınızı bağlama
+- [Alanları kullanma](/tr-TR/kilavuz/nasil-yapilir/alanlar/): tüm bunların
+  düştüğü oda

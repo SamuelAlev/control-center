@@ -1,111 +1,113 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Configuração de agentes
+description: Todos os campos da entidade agente e as enumerações que utiliza.
 slug: pt-PT/manual/referencia/configuracao-de-agentes
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/pt-PT/manual/guias/criar-agente/).
+Esta referência enumera todos os campos da entidade agente, além das enumerações e dos indicadores que utiliza. Para um guia passo a passo sobre como criar ou editar um agente na aplicação, consulta [Criar e configurar um agente](/pt-PT/manual/guias/criar-agente/).
 
-## Agent entity fields
+## Campos da entidade agente
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Campo                   | Tipo                   | Obrigatório | Descrição                                                                                                                                                                                          |
+| ----------------------- | ---------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Sim         | Identificador único do agente                                                                                                                                                                      |
+| `name`                  | `String`               | Sim         | Identificador curto para @menções                                                                                                                                                                  |
+| `title`                 | `String`               | Sim         | Cargo legível por humanos                                                                                                                                                                          |
+| `agentMdPath`           | `String`               | Sim         | Caminho absoluto para o ficheiro de definição `.md` do agente                                                                                                                                      |
+| `workspaceId`           | `String`               | Sim         | Espaço de trabalho proprietário (não nulo)                                                                                                                                                         |
+| `reportsTo`             | `String?`              | Não         | Id do agente superior                                                                                                                                                                              |
+| `skills`                | `AgentSkills`          | Sim         | Conjunto de identificadores de skills                                                                                                                                                              |
+| `persona`               | `String?`              | Não         | Instruções de comportamento em texto livre                                                                                                                                                         |
+| `systemPrompt`          | `String?`              | Não         | Substitui o prompt de sistema predefinido                                                                                                                                                          |
+| `adapterId`             | `String?`              | Não         | Id do adaptador de inferência                                                                                                                                                                      |
+| `modelId`               | `String?`              | Não         | Id do modelo dentro do adaptador                                                                                                                                                                   |
+| `strictMode`            | `bool`                 | Não         | Predefinido `false`. Escrito na linha e no `AGENTS.md` do agente                                                                                                                                   |
+| `effort`                | `String?`              | Não         | Id do nível de raciocínio (por exemplo, `'low'`, `'xhigh'`), obtido a partir dos `thinkingLevels` do modelo selecionado                                                                            |
+| `contextSize`           | `int?`                 | Não         | Dimensão máxima da janela de contexto                                                                                                                                                              |
+| `role`                  | `AgentRole?`           | Não         | Função do agente                                                                                                                                                                                   |
+| `capabilities`          | `AgentCapabilities?`   | Não         | Valor predefinido das capacidades por agente; quando é nulo, aplica-se no despacho o predefinido ao nível do utilizador e uma conversa pode ainda substituí-lo                                      |
+| `monthlyBudgetCents`    | `int`                  | Não         | Limite de gastos mensal em cêntimos (predefinido `0`, ilimitado)                                                                                                                                   |
+| `silenceTimeoutMinutes` | `int?`                 | Não         | Substituição do tempo limite de silêncio em minutos; tem de ser nulo ou estar entre 1 e 240 (verificado no construtor)                                                                             |
+| `maxConcurrentTasks`    | `int`                  | Não         | Predefinido `1`. Número de capacidade que o modelo de presença reporta (as contagens de execuções em curso e em fila são comparadas com ele)                                                      |
+| `visibility`            | `AgentVisibility`      | Não         | Predefinido `workspace`                                                                                                                                                                            |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Não         | Estado de governação (predefinido `active`). Escrito pela paragem rígida do orçamento e apresentado no organigrama e na lista de presenças. O despacho continua a aceitar trabalho de um agente `paused` |
+| `budgetPolicyId`        | `String?`              | Não         | Id da política de orçamento partilhada; quando é nulo, aplica-se diretamente `monthlyBudgetCents`                                                                                                  |
+| `runtimeProfileId`      | `String?`              | Não         | Id do perfil de runtime personalizado                                                                                                                                                              |
+| `createdAt`             | `DateTime`             | Sim         | Data e hora de criação                                                                                                                                                                             |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` e `title` têm de ser ambos não vazios (verificado no construtor). Um
+`monthlyBudgetCents` predefinido de `0` significa ilimitado. Define um teto com
+`agents.upsert`.
 
-## AgentRole enum
+## Enumeração AgentRole
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| Função     | Etiqueta | Descrição                       |
+| ---------- | -------- | ------------------------------- |
+| `ceo`      | CEO      | Coordenação e delegação         |
+| `coder`    | Coder    | Implementação de código         |
+| `reviewer` | Reviewer | Revisão e análise de PR         |
+| `qa`       | QA       | Testes e garantia de qualidade  |
+| `designer` | Designer | Implementação de UI/UX          |
+| `security` | Security | Revisão e auditoria de segurança |
+| `devops`   | DevOps   | Infraestrutura e implementação  |
+| `pm`       | PM       | Gestão de produto               |
+| `general`  | General  | Flexível, polivalente           |
 
-## AgentVisibility enum
+## Enumeração AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Valor       | Descrição                                                          |
+| ----------- | ------------------------------------------------------------------ |
+| `workspace` | O predefinido; valores armazenados desconhecidos e nulos são interpretados como este |
+| `private`   | Privado para o utilizador que o criou                              |
 
-## AgentLifecycleStatus enum
+## Enumeração AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Valor      | Descrição                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| `active`   | O predefinido. `isDispatchable` é true apenas para este valor                            |
+| `paused`   | Definido pela paragem rígida do orçamento. Apresentado na lista de presenças; o despacho continua a aceitar trabalho |
+| `archived` | Retirado e oculto das listas de presenças ativas                                         |
 
-## AgentCapabilities flags
+## Indicadores de AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Resolvidos a cada despacho: o predefinido do agente, com recurso ao predefinido ao nível do utilizador quando é nulo, e por cima uma substituição por conversa. Aplicados pela ausência — o mediador de credenciais simplesmente não emite nem injeta aquilo que uma capacidade desativada abrange.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Indicador          | Tipo   | Predefinido | Descrição                                                                                     |
+| ------------------ | ------ | ----------- | --------------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false`     | Faz push de commits para o remoto; condiciona a injeção do token do GitHub em conjunto com `canCallGitHubApi` |
+| `canCallGitHubApi` | `bool` | `false`     | Chama api.github.com; condiciona a injeção de `GH_TOKEN` e os domínios de saída do GitHub      |
+| `canCallTicketing` | `bool` | `false`     | Chama a API do fornecedor de tickets; condiciona a injeção da chave de API do fornecedor e os respetivos domínios de saída |
+| `canAccessNetwork` | `bool` | `true`      | Saída de rede arbitrária. Condiciona também as ferramentas `web_fetch` e `web_search` do harness |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` corresponde aos quatro valores predefinidos do construtor. `legacyDefault` (os quatro a true) é usado apenas pela migração que preencheu retroativamente as conversas criadas antes de existirem capacidades. Um blob armazenado malformado ou vazio é interpretado como `safeDefault`; a chave legacy `canCallLinear` é lida como `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Um conjunto imutável e insensível a maiúsculas e minúsculas de identificadores de skills. No despacho, esses slugs são sincronizados como ligações de skills na sobreposição do agente; o harness carrega depois automaticamente o frontmatter das skills ligadas para o prompt.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (derivado)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Não é armazenado. Sete valores. A ordem de declaração é a ordem de prioridade (`sortPriority`, fixada por um teste), que é a ordem pela qual a lista ordena:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| Estado      | `sortPriority` | Condição                                                                                                             |
+| ----------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | Algum registo de execução tem o estado `running`                                                                     |
+| `blocked`   | 1              | A vivacidade da execução mais recente é `blocked`, `stalled` ou `looping`                                            |
+| `failed`    | 2              | O estado da execução mais recente é `error`, ou a sua vivacidade é `failed` ou `dead`                                |
+| `queued`    | 3              | Uma execução foi despachada mas não está a ser executada — em espera atrás de outra execução do mesmo agente, ou registada mas ainda não iniciada |
+| `succeeded` | 4              | A execução terminou com êxito                                                                                        |
+| `idle`      | 5              | O agente já correu antes e não tem nada em curso                                                                     |
+| `neverRun`  | 6              | Não existe nenhum registo de execução                                                                                |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` e `succeeded` são **apenas por execução**. `deriveAgentLiveState`, que calcula o estado da lista para um agente, nunca produz nenhum deles — devolve `neverRun`, `running`, `failed`, `blocked` ou `idle`.
 
-## See also
+## Ver também
 
-- [Create and configure an agent](/pt-PT/manual/guias/criar-agente/)
-- [The agent model](/pt-PT/manual/conceitos/modelo-de-agentes/)
-- [Agent dispatch lifecycle](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/)
+- [Criar e configurar um agente](/pt-PT/manual/guias/criar-agente/)
+- [O modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/)
+- [Ciclo de vida do despacho de agentes](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/)

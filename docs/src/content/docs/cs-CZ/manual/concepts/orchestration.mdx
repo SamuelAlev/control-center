@@ -1,113 +1,116 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orchestrace
+description: Jak se z jednoho velkého zadání stane plán pro celý tým, který schválíš jednou, a vygenerovaná pipeline, která ho provede.
 slug: cs-CZ/prirucka/koncepty/orchestrace
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Jeden agent umí jednu věc. Některá zadání jsou větší: „prozkoumej trh
+X a napiš dokument k pozicování“, „doveď tuhle funkci od začátku do konce“,
+„projdi tenhle modul a oprav, co najdeš“. **Orchestrace** je způsob, jakým to
+Control Center řeší. Orchestrátor (obvykle tvůj agent CEO) navrhne plán pro
+celý tým, ty ho schválíš **jednou** a deterministický materializátor z něj
+udělá pipeline, která práci provede.
 
-It sits between the two existing ways of getting work done:
+Leží mezi dvěma způsoby, kterými se práce zadává už teď:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/) |
-| Encode a process you already know, by hand        | A [pipeline template](/cs-CZ/prirucka/koncepty/pipelines/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Když chceš…                                | Použij                                                    |
+| ------------------------------------------ | --------------------------------------------------------- |
+| Předat jeden úkol jednomu agentovi         | [Zprávu v prostoru](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/) |
+| Ručně zapsat proces, který už znáš        | [Šablonu pipeline](/cs-CZ/prirucka/koncepty/pipelines/)   |
+| Říct cíl a nechat plán na týmu             | **Orchestraci**                                           |
 
-## The shape of a proposal
+## Podoba návrhu
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Když orchestrátorovi dáš cíl, vrátí strukturovaný
+**`OrchestrationProposal`**: typovaný plán, který aplikace umí ověřit a
+spustit. Volný text to není. Návrh má:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/cs-CZ/prirucka/koncepty/tickety/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Cíl**: tvoje zadání na vysoké úrovni, přeformulované.
+- **Role**: kdo práci dělá. Každá role je buď **existující agent**, kterého
+  vybereš, nebo **nový nábor**, kterého orchestrace při schválení založí.
+- **Podřízené tickety**: práce rozložená do DAGu [ticketů](/cs-CZ/prirucka/koncepty/tickety/).
+- **Průzkum** _(volitelné)_: fáze, která proběhne první a zbytek plánu z ní
+  čerpá.
+- **Diskuse** _(volitelné)_: omezené kolo, v němž každá role před začátkem
+  práce napíše strukturované stanovisko.
+- **Syntéza**: poslední krok, který vytvoří výstup.
+- **Rozpočet**: deklarovaný strop nákladů.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Rozpočet je poradní]
+Strop nákladů v návrhu se porovná s odhadovaným součtem plánu. Lišta
+schválení plán nad stropem označí jako „nad rozpočtem“, a to _ještě než_
+ho schválíš. Jakmile běh začne, strop už nikdo nečte, takže orchestraci,
+která ho překročí, nezastaví ani neukončí chybou. Výdaje doopravdy
+pozastaví až politiky rozpočtu na agenta a na pracovní prostor. To je
+jiný mechanismus.
 :::
 
-## Where you review it
+## Kde ho kontroluješ
 
-Two surfaces show the same orchestration.
+Stejnou orchestraci ukazují dvě plochy.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Karta návrhu** žije v konverzaci, která plán vytvořila. Je to jedna
+zpráva, která se po celý životní cyklus překresluje — navrženo, provádění,
+hotovo — a nese akce schválení a zrušení.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** je editor: plátno DAG, inspektor uzlu, zásuvka revizí a
+diffu a lišta schválení s odhadem. Z té karty se otevře rovnou jako karta
+editoru. V postranním panelu schválně není položka „Plány“. Cesty `/plans`
+a `/plans/:kind/:id` jsou přímé odkazy pro sdílení.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Schvalovat smí jen **operátor**. Nástroj MCP na to není: agent umí navrhnout
+(`propose_orchestration`), odeslat plán (`submit_plan`) nebo založit běh
+playbooku (`run_playbook`), schválit ale umí jen člověk. Revize, které
+spouští agent, navíc brzdí dvouminutová prodleva, takže smyčka přeplánování
+splyne do jedné aktualizace a kanál nezaplaví.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Než plán schválíš, změnit jde to, co ukáže inspektor uzlu: přejmenovat
+nebo přepsat podřízený ticket, změnit **roli**, která ho vlastní, přepojit
+jeho závislosti, upravit výstupní schéma, nebo uzel rovnou smazat.
+Strukturální uzly (průzkum, diskuse, syntéza) a uzly, které už proběhly,
+jsou jen ke čtení. Roli z editoru nepřipneš ke konkrétnímu pojmenovanému
+agentovi a rozpočet odtud neupravíš.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Dva editory jednoho plánu drží optimistická souběžnost, ne slučování.
+Každá úprava nese `base_revision`, ze které vyšla. Úprava ze zastaralé
+revize se odmítne hláškou „the plan moved on“ a cizí změnu potichu
+nepřepíše. Ani přetočení nic nemaže. Starší návrh se připojí jako nová
+revize, takže časová osa revizí jen roste.
 
-## Honest estimates, or none
+## Poctivý odhad, nebo žádný
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Odhad na liště schválení se staví ze skutečné historie dokončených běhů
+dané role, jako mezikvartilové pásmo (p25–p75). Součty nákladů **sčítají**
+uzly, které jdou odhadnout. Trvání je **kritická cesta** skrz DAG, ne
+součet, protože paralelní větve se překrývají.
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Uzel, jehož role **nemá historii dokončených běhů**, hlásí `sampleSize: 0`
+a rozsahy null. Vykreslí se to jako neznámé, ne jako vymyšlené číslo.
+Odhad, kterému nejde věřit, je horší než žádný. Když část uzlů historii má
+a část ne, součet se označí jako částečný. Dosah dopadu se ukáže jen u
+uzlu, který deklaroval odkazy na původ `symbol` nebo `file`. Uzel bez nich
+zůstane „neznámý“ a z textu se nic nedovozuje.
 
-## One approval, then deterministic execution
+## Jedno schválení, pak deterministické provedení
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/cs-CZ/prirucka/koncepty/pipelines/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Jádro je tohle: **plánuje agent, provádí deterministická funkce.** Když
+schválíš, `OrchestrationMaterializer`, čistá funkce bez LLM a bez I/O,
+převede návrh na skutečnou [pipeline](/cs-CZ/prirucka/koncepty/pipelines/).
+Ze stejného návrhu a stejných vyřešených rolí vyjde vždy stejný DAG. Na
+tom záleží, protože vygenerovaná pipeline zdarma zdědí, co engine už umí:
+pozastavení a obnovení přes restart, zotavení po pádu, souhrny nákladů a
+tokenů za běh a rozhraní detailu běhu.
 
-Approval also creates the scaffolding the work needs:
+Schválení taky postaví kostru, kterou práce potřebuje:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **najme** role označené jako nové (a zapíše id najatých agentů, aby se
+  pád uprostřed schválení dal obnovit bez duplicitních náborů)
+- **tým**, který role sdruží
+- **projekt**, do kterého se založí nadřazený ticket
+- **šablonu pipeline a běh**, které to celé pohánějí
 
-## The lifecycle
+## Životní cyklus
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +118,43 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| Stav           | Význam                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `proposed`     | Plán je připravený a čeká na tvoje jediné schválení předem                             |
+| `approved`     | Schválil jsi ho; probíhá materializace (nábory, tým, projekt, pipeline)               |
+| `executing`    | Vygenerovaná pipeline běží: podřízené tickety, diskuse, práce                          |
+| `synthesizing` | Podřízené tickety jsou hotové; krok syntézy tvoří výstup                               |
+| `completed`    | Hotovo: nadřazený ticket je dokončený a výstup je zveřejněný ve sdíleném prostoru     |
+| `failed`       | Materializace selhala, nebo selhal běh vygenerované pipeline                           |
+| `cancelled`    | Zrušil jsi ji                                                                          |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Monotónní číslo **revize** sleduje návrh, dokud ho orchestrátor upravuje a
+stav je pořád `proposed`. Aplikace si zapíše, kterou revizi jsi schválil.
+`propose_orchestration` revizi odmítne, jakmile stav už není `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Orchestrace se vždy otevře proti **nadřazenému ticketu** a sdílí jeden
+diskusní **prostor**. Celé úsilí tak vede k jedné položce práce a tým mluví
+v jedné místnosti.
 
-## What happens when it finishes
+## Co se stane, když skončí
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Posluchač, který se po startu neodpojí, sleduje vygenerovanou pipeline a
+její konečný stav promítne zpět na orchestraci i nadřazený ticket. Dokončení
+a selhání se tak ukážou na místech, která už sleduješ. Orchestrace proto
+nepotřebuje vlastní vykonávací engine.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Orchestraci můžeš kdykoli zrušit. Zrušení strhne práci, která právě běží.
 
 ::::note
-Orchestration builds on [pipelines](/cs-CZ/prirucka/koncepty/pipelines/) and
-[tickets](/cs-CZ/prirucka/koncepty/tickety/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orchestrace stojí na [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) a
+[ticketech](/cs-CZ/prirucka/koncepty/tickety/). Je to vrstva plánování a
+schválení nad nimi, ne samostatné běhové prostředí.
 ::::
 
-## See also
+## Viz také
 
-- [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/cs-CZ/prirucka/koncepty/tickety/): the parent ticket an orchestration is anchored on
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): the roles an orchestration fills or hires
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
-- [Work in Plan Studio](/cs-CZ/prirucka/navody/plan-studio/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/): engine, na kterém běží zmaterializovaná orchestrace
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/): nadřazený ticket, ke kterému je orchestrace ukotvená
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): role, které orchestrace obsadí nebo najme
+- [Spusťte orchestraci](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
+- [Pracujte v Plan Studio](/cs-CZ/prirucka/navody/plan-studio/)

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: إدارة التكاليف
+description: اطّلع على ما ينفقه وكلاؤك، وضع سقفًا لتشغيل مستقل، وخفّض استهلاك الرموز.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+يبيّن هذا الدليل كيف ترى ما تكلّفه تشغيلات الوكيل، وكيف تضع سقفًا لتشغيل مستقل.
 
-## How costs are recorded
+## كيف تُسجَّل التكاليف
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+كل تشغيل لوكيل يكتب سجل تشغيل يحمل رموز الإدخال، ورموز الإخراج، ورموز الاستدلال، ورموز القراءة من الذاكرة المؤقتة، ورموز الكتابة إليها، وتكلفة تقديرية بالسنت، وتكلفة الوكلاء الفرعيين الذين أنشأهم.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+تأتي الأسعار من فهرس models.dev، ولا يُستخدم إلا لإثراء قائمة النماذج بالسعر ونافذة السياق — ولا يُتَّخذ مصدرًا لمعرّفات النماذج. النموذج الذي يعجز الفهرس عن تسعيره تُسجَّل تكلفته **$0**، وتُستبعد التشغيلات ذات التكلفة الصفرية من ملخص **الاستخدام والتكلفة**. لذلك لا يظهر لنموذج Ollama المحلي أي إنفاق، مع أن أعداد رموزه تبقى مسجَّلة. وكذلك شأن خطة السعر المقطوع (kimi-code، أو اشتراك Claude)، ولكن فقط حين لا يملك الفهرس سعرًا للنموذج الذي خدم الطلب؛ فإن وُجد سعر، يُقدَّر التشغيل به على أي حال. وفي سلسلة الرجوع الاحتياطي يُسعَّر التشغيل مقابل النموذج الذي خدمه فعلًا، لا مقابل النموذج الذي طُلب.
 
-## See what you are spending
+## اطّلع على ما تنفقه
 
-### Observability → Insights
+### قابلية الملاحظة ← الرؤى
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+تصل إليه من تذييل الشريط الجانبي ← **قابلية الملاحظة**. تفتح علامة تبويب **الاستخدام** أولًا (مجاميع الرموز التراكمية)؛ بدّل إلى **الرؤى** — العلامة الثانية — لسطح التكلفة الرئيسي:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- منتقي للنطاق الزمني: آخر 24 ساعة، وآخر 7 أيام، وآخر 30 يومًا، أو كل الوقت
+- مرشّحات متعددة الأوجه على الوكيل والنموذج والحالة والدور، على هيئة شرائح يمكن إغلاقها
+- شريط مؤشرات: إجمالي التشغيلات، وإجمالي التكلفة، ومعدل الأخطاء، ومعدل الذاكرة المؤقتة، ورمز / ثانية، ومتوسط زمن الاستجابة، والوقت حتى أول رمز، ولكل منها تغيّر مقارنة بالفترة السابقة (يختفي عند «كل الوقت»)
+- مخطط النشاط ومخطط التكلفة عبر الزمن، مع تفصيل **التكلفة حسب الدور** الذي يقسم الإنفاق بين الرئيسي والوكلاء الفرعيين والمستشار
+- جدول كل وكيل مرتَّب حسب التكلفة، أعلى عشرة مع مفتاح لعرض جميع الوكلاء. الضغط على صف يرشّح كل السطوح الأخرى إلى ذلك الوكيل
+- سجل التشغيلات التفصيلي، ويرسو معه درج نص المحادثة للتشغيل الذي تختاره
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[«كل الوقت» ليس كل الوقت]
+تشترك تغذية التشغيلات في أحدث 2000 سجل تشغيل عبر كل مساحات العمل، ثم ترشّحها إلى مساحة العمل النشطة. على خادم مشغول بعدة مساحات عمل، يسقط السجل الأقدم لمساحة هادئة خارج تلك النافذة.
 :::
 
-### Settings → Server → Model providers
+### الإعدادات ← الخادم ← مزوّدو النماذج
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+تعرض بطاقة **الاستخدام والتكلفة** في هذه الصفحة إنفاق الأيام السبعة الماضية المرصود رقمًا واحدًا بالدولار، مع تفصيل لكل مزوّد، والوقت حتى يُعاد تعيين نافذة الحصة التالية حين ينشر المزوّد موعدًا.
 
-### A single agent's runs
+### تشغيلات وكيل واحد
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**الإعدادات ← مساحة العمل ← الوكلاء** ← اختر الوكيل ← **السجلات** يسرد تشغيلاته مع الحالة، والمدة، ووقتَي البدء والاكتمال، وPID، والمحوّل. علامة التبويب هذه **لا** تعرض التكلفة — للإنفاق استخدم جدول كل وكيل في قابلية الملاحظة ← الرؤى.
 
-## Cap an autonomous run
+## ضع سقفًا لتشغيل مستقل
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+أمران من أوامر الشرطة المائلة، تكتبهما في حقل كتابة المساحة، هما التشغيلان الوحيدان اللذان لهما سقف إنفاق:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- يتوقف كل مقطع من تشغيل `/goal` أو `/loop` حين يبلغ إنفاقه المسعَّر **500 سنت ($5.00)**. عند 80% من ذلك توجّه الحلقة النموذج أولًا ليختم العمل ويترك تسليمًا نظيفًا، فلا يموت في منتصف المهمة.
+- سقف الهدف الدائم كله **5000 سنت ($50.00)**، ما لم تمرّر `--budget <dollars>`. يمرّر المشرف ميزانية الهدف _المتبقية_ إلى كل مقطع، فلا يجاوز مقطع كامل ميزانية صريحة.
+- يضيف `--days N` أجلًا بوقت الحائط، و`--max N` سقفًا لعدد التشغيلات. لا يسري أي منهما إلا بطلب صريح؛ ومن دونهما لا يحدّ الهدف إلا التكلفة.
+- الهدف الذي يبلغ سقف ميزانيته يتوقف عند `budgetExhausted`، ولا يُستأنف إلا برفع الميزانية.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+لأن السقف مسعَّر، فالنموذج الذي يعجز الفهرس عن تسعيره لا يبلغه. ويحدّ مثل هذا التشغيل حارس تكرار الحلقة المفرغة، وكفّ المشرف عن المتابعة بعد ثلاثة إخفاقات متتالية، وأنت.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+رسالة في مساحة، أو إشارة بـ @، أو خطوة خط أنابيب، بلا سقف إنفاق. ينتهي التشغيل حين يتوقف النموذج، أو حين توقفه أنت، أو حين يوجّهه حارس الحلقة المفرغة.
 
-## Cut token use
+## خفّض استهلاك الرموز
 
-### Compact a long conversation
+### اضغط محادثة طويلة
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+اكتب `/compact` في حقل كتابة المساحة. يعترضه العميل ولا يبلغ نص المحادثة؛ ويطوي الخادم السجل الأقدم في ملخص مثبَّت، وتتابع المحادثة على السياق المضغوط.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+يُرفض الضغط ما دام الوكيل في منتصف جولة، وحين لا يوجد سجل قديم بما يكفي للطي. ويضغط الإطار المضمّن من تلقاء نفسه حين يقترب السجل من نافذة سياق النموذج.
 
-### Choose the effort level deliberately
+### اختر مستوى الجهد عن قصد
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+يعرض **جهد الاستدلال** للوكيل (الإعدادات ← مساحة العمل ← الوكلاء) المستويات التي ينشرها النموذج المختار. المستويات الأعلى تنفق رموز استدلال أكثر. أبقِ المستويات العليا للعمل الذي يحتاجها.
 
-### Choose the model per agent
+### اختر النموذج لكل وكيل
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+النموذج حقل لكل وكيل، فيعمل وكيل الصياغة أو الفرز على نموذج رخيص، ويعمل الوكيل المعماري على نموذج غالٍ. رشّح جدول كل وكيل في قابلية الملاحظة ← الرؤى حسب النموذج، لترى أي اقتران بين النموذج والوكيل يكلّفك فعلًا.
 
-### Look for runs with outsized token counts
+### ابحث عن تشغيلات بعدد رموز خارج المألوف
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+افتح سجل التشغيلات في الرؤى (أحدث 50 تشغيلًا بعد الترشيح) ودرج نص المحادثة لأي شيء غير معتاد. الأسباب الشائعة مطالبة نظام أو شخصية أطول مما ينبغي، وسياق كان ينبغي ضغطه، ومهمة كان ينبغي أن تكون عدة مهام أصغر.
 
-## What happens if a budget is set out of band
+## ماذا يحدث إذا ضُبطت ميزانية خارج المسار
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+للاكتمال، إذا كُتب `monthlyBudgetCents` أو سياسة ميزانية مباشرة في صف الوكيل:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- تُقيَّم الميزانيات **بعد** اكتمال التشغيل، لا قبل الإرسال. يقارن مستمع اكتمال التشغيل إنفاق الوكيل منذ مطلع الشهر بسقفه.
+- تجاوز العتبة اللينة (80% افتراضيًا) يسجّل حادثة تحذير، وينشر حدث `BudgetThresholdCrossed` تستطيع أن تربط به مشغّل خط أنابيب.
+- استنفاد الميزانية يسجّل حادثة صارمة، وينشر الحدث نفسه، ويقلب حالة دورة حياة الوكيل إلى `paused`.
+- حاجز ما قبل الإرسال موجود، ولا يرجع إليه إلا حاصد التشغيلات اليتيمة وموفّق التذاكر العالقة عند جدولة الاستعادة — والإرسال العادي لا يبلغه، ولا شيء في مسار الإرسال يفحص حالة `paused`. الإشارة الظاهرة الوحيدة هي شارة دورة الحياة في الهيكل التنظيمي.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
-- [Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
-- [Run agent diagnostics](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/)
-- [Agent configuration reference](/ar-SA/دليل-المستخدم/مرجع/تهيئة-الوكيل/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
+- [تشخيص وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/)
+- [تهيئة الوكيل](/ar-SA/دليل-المستخدم/مرجع/تهيئة-الوكيل/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)

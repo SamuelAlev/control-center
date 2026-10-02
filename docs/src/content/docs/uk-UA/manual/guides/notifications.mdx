@@ -1,149 +1,159 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Налаштувати сповіщення
+description: Увімкніть або вимкніть категорії, задайте тихі години та звук і дізнайтеся, які сповіщення доходять до вас і куди.
 slug: uk-UA/керівництво/практичні-посібники/сповіщення
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Цей посібник показує, як налаштувати сповіщення і що насправді контролює кожен
+параметр.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Сповіщення надходять на двох поверхнях. **Центр сповіщень** — дзвіночок на
+панелі заголовка — читає довготривалий потік на сервері, окремий для кожного
+робочого простору. **Системні тости** — це окремий шлях, доступний лише на
+десктопі, який живиться кадрами, що їх сервер передає наживо.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Вебзбірка не показує системних сповіщень]
+Конвеєр тостів будує лише десктопний завантажувач. На `app.usectrl.dev` немає ні
+системних тостів, ні звуків сповіщень, ні фонових банерів — дзвіночок та його
+історія все одно працюють, бо читають потік сервера. У мобільного клієнта немає
+жодної поверхні сповіщень.
 :::
 
-## Turn categories on or off
+## Увімкнути або вимкнути категорії
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Перейдіть до **Налаштування → Ви → Сповіщення**
+2. Залиште **Увімкнути сповіщення** увімкненим
+3. Перемкніть потрібні категорії. Їх рівно шістнадцять:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Категорія                  | Коли спрацьовує                                                            |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Агент завершив роботу      | Агент завершив запуск                                                      |
+| PR опубліковано            | Агент опублікував PR                                                       |
+| PR злито                   | PR злили                                                                   |
+| Нові повідомлення          | Повідомлення надійшло в простір, на який ви не дивитеся                    |
+| Згадка в pull request      | Опитування сповіщень GitHub побачило, що вас згадали в PR                  |
+| Запит на рев’ю             | Ваше рев’ю справді запитали для PR, який не є чернеткою                    |
+| Рев’ю застаріло            | У pull request, який ви вже рев’ювали, з’явилися нові коміти               |
+| Готово до злиття           | Написаний вами pull request став готовим до злиття або перестав ним бути   |
+| Рішення рев’ю              | Рецензент схвалив, запитав зміни або схвалення скасували                   |
+| Перевірки                  | CI не пройшов у написаному вами pull request або відновився                |
+| Обговорення рев’ю          | Хтось відповів в обговоренні, у якому ви є, або закрив його                |
+| Тікет призначено           | Тікет призначили                                                           |
+| Статус тікета змінено      | Тікет змінив статус                                                        |
+| Зустріч незабаром почнеться | Зустріч у календарі потрапляє у ваше вікно попередження                   |
+| Календар відключено        | Токен OAuth підключеного календаря прострочився                            |
+| Оновлення середовища       | Середовище перехопили, вилучили або воно зазнало збою                      |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Про все поза цим списком не можна ні сповістити, ні відфільтрувати — категорії
+«все інше» не існує.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Ці налаштування супроводжують вашого користувача на всіх пристроях, тож телефон
+і ноутбук залишаються синхронними. Гучність — навмисний виняток, вона
+залишається окремою для кожного пристрою.
 
-## Set quiet hours
+## Задати тихі години
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. На тій самій сторінці увімкніть **Quiet hours**
+2. Введіть час початку й завершення у форматі `HH:MM` (типове вікно — 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+У тихі години нетермінові сповіщення відкидаються — вони не стають у чергу й не
+відтворюються пізніше.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Дві категорії **термінові** й доставляються завжди, оминаючи тихі години _та_
+режим фокусу: **Зустріч незабаром почнеться** і **PR опубліковано**.
+Попередження про зустріч, яке ви побачите лише після факту, нічого не варте —
+саме в цьому причина.
 
-## Choose a sound
+## Виберіть звук
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Прокрутіть до **Звук сповіщень**
+2. Виберіть один із одинадцяти вбудованих звуків або **Немає**
+3. Натисніть кнопку тесту, щоб почути його, і задайте гучність повзунком
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Застосунок відтворює звук сам; системне сповіщення доставляється беззвучно, тож
+ви ніколи не почуєте його двічі.
 
-## Set the meeting lead time
+## Задати час попередження про зустріч
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Прокрутіть до **Час попередження**
+2. Виберіть **5**, **10**, **15** чи **30** хвилин
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Саме за стільки до події в календарі спрацьовує сповіщення **Зустріч незабаром
+почнеться**. Типово це 5 хвилин.
 
-## Know when a notification is suppressed
+## Дізнатися, коли сповіщення придушується
 
-A notification is dropped, silently, when any of these is true:
+Сповіщення відкидається мовчки, коли виконується будь-яка з цих умов:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Сповіщення вимкнені глобально або вимкнена його категорія
+- Ви вже на маршруті, куди воно мало вас привести — а для повідомлення — уже в
+  тому просторі
+- Режим фокусу активний, а категорія нетермінова
+- Тихі години активні, а категорія нетермінова
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Ці перевірки стосуються системних тостів. Довготривалий дзвіночок усе одно
+записує подію.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Ще два придушення діють далі вгорі за потоком — у тому, що сервер узагалі
+надсилає:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Повідомлення від іншої **людини** без згадки вас ніколи не стає сповіщенням
+- Простори агент-агент вимкнено на бічній панелі, тож вони ніколи не збільшують
+  бейдж непрочитаного в людей
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Усередині простору немає тихого куточка: кожна розмова сповіщає однаково,
+зокрема й гілки. Стан прочитання прив’язаний до простору, тож непрочитане
+збирається по всіх розмовах простору, а не відстежується окремо для кожної
+розмови.
 
-## Read and clear the notification centre
+## Читати й очищати центр сповіщень
 
-1. Click the bell in the title bar
+1. Натисніть дзвіночок на панелі заголовка
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Спливне вікно показує останню активність і веде кожен запис глибоким посиланням
+до того, чого він стосується. Його відкриття **не** позначає все прочитаним —
+скористайтеся **Позначити все як прочитане** в заголовку або позначте окремий
+рядок. Стан прочитання супроводжує вашого користувача на всіх пристроях.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Очистити все — це водяний знак, а не видалення]
+**Очистити все** ставить для користувача водяний знак, який ховає все старіше;
+рядки залишаються. Окремо кожен робочий простір зберігає лише останні **200**
+рядків потоку, які прибираються в міру надходження нових, а дзвіночок
+підписується на найновіші **50**, з яких спливне вікно показує до **15**.
+Історія за цією межею зникає незалежно від стану прочитання.
 :::
 
-## Troubleshooting
+## Розв’язання проблем
 
-### No OS notifications on macOS
+### Немає системних сповіщень у macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Дозвіл запитується нативно під час запуску застосунку. Якщо ви його відхилили,
+увімкніть Control Center знову в Системні параметри → Сповіщення; у застосунку
+немає запиту, який викликав би його повторно.
 
-### Nothing arrives on the web build
+### На вебзбірці нічого не надходить
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Це очікувано — у вебзбірки немає конвеєра системних сповіщень. Скористайтеся
+дзвіночком.
 
-### The bell badge shows zero but there is clearly new activity
+### Бейдж дзвіночка показує нуль, хоча нова активність явно є
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Доки після підключення не розв’яжеться потік позначок прочитання, записи
+відображаються як прочитані, щоб бейдж не блимав і потім не спорожнів. Усе
+стабілізується, коли позначку завантажено.
 
-### An agent's run finished but nothing pinged me
+### Запуск агента завершився, але мене ніхто не сповістив
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Перевірте, чи ви не були вже в просторі, де це сталося — активний маршрут
+придушує власний системний тост.
 
-## Related guides
+## Пов’язані посібники
 
-- [Use focus mode and soundscapes](/uk-UA/керівництво/практичні-посібники/режим-фокусу/)
-- [Triage your inbox](/uk-UA/керівництво/практичні-посібники/розібрати-вхідні/)
-- [Curate your newsfeed](/uk-UA/керівництво/практичні-посібники/стрічка-новин/)
+- [Використовувати режим фокусу та звукові пейзажі](/uk-UA/керівництво/практичні-посібники/режим-фокусу/)
+- [Розібрати вхідні](/uk-UA/керівництво/практичні-посібники/розібрати-вхідні/)
+- [Налаштувати стрічку новин](/uk-UA/керівництво/практичні-посібники/стрічка-новин/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Domain events](/uk-UA/керівництво/поняття/доменні-події/)
+- [Доменні події](/uk-UA/керівництво/поняття/доменні-події/)

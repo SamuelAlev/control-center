@@ -1,60 +1,65 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: SCIM ile kullanıcı sağlama
+description: IdP’nizin Control Center hesaplarını otomatik olarak oluşturmasını, güncellemesini ve sağlamayı kaldırmasını sağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Yaşam döngüsü denetimi istediğinizde bu kılavuzu kullanın — kullanıcı
+çıkışında erişim otomatik olarak iptal edilmeli, yalnızca ileride yapılacak
+oturum açmaları engellemekle kalınmamalıdır. SCIM, IdP’lerin (Okta, Entra ID
+ve diğerleri) tam da bunun için kullandığı push protokolüdür.
 
-## Prerequisites
+## Önkoşullar
 
-- SSO already working (the [SSO tutorial](/tr-TR/kilavuz/ogreticiler/sso) or the
-  [OIDC guide](/tr-TR/kilavuz/nasil-yapilir/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO zaten çalışıyor olmalı ([SSO öğreticisi](/tr-TR/kilavuz/ogreticiler/sso) veya
+  [OIDC kılavuzu](/tr-TR/kilavuz/nasil-yapilir/sso-oidc)),
+- **IdP’nin HTTPS üzerinden erişebildiği bir sunucu** — SCIM çağrıları
+  kullanıcının tarayıcısından değil, IdP’den gelir. Yerleşik tüneli
+  (Ayarlar → Sunucu → Bağlantı ve durum → Bu sunucuyu paylaş → Cloudflared/ngrok/Tailscale) veya herkese açık bir URL kullanın. Yalnızca
+  WebSocket rölesi üzerinden erişilebilen bir sunucu SCIM push’larını alamaz;
+  JIT sağlama orada hâlâ çalışır, bu kılavuz çalışmaz.
 
-## Steps
+## Adımlar
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. **Ayarlar → Sunucu → Tek oturum açma** → **Kullanıcı sağlama (SCIM)**
+   kartını açın. Kart, uç noktayı gösterir, örn.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. **Token oluştur**’a (zaten varsa **Tokeni yenile**’ye) basın — bearer token
+   bir iletişim kutusunda yalnızca bir kez görünür ve panoya kopyalanır. Bunu
+   parola yöneticinizde saklayın; sunucu yalnızca sabit zamanlı doğrulanabilen
+   bir kopya tutar.
+3. IdP’nizin sağlama ayarlarında SCIM’i şunlarla etkinleştirin:
+   - **Base URL**: yukarıdaki uç nokta
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (e-posta) veya `externalId` — ikisi de eşleşir
+4. Tek bir kullanıcıyla test edin: kullanıcıyı IdP’den gönderin ve göründüğünü
+   doğrulayın (SCIM create işlemi, sağlayıcının `externalId` değerini hesaba
+   sabitler; bu, ilk SSO oturum açmasının yaptığı sabitlemenin aynısıdır).
 
-## What deprovisioning does
+## Sağlamayı kaldırma ne yapar
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+IdP `active: false` (veya `DELETE`) gönderdiğinde, hesap bir çalışma alanının
+**Sahip**’i ise SCIM önce reddeder (önce sahipliği devredin). Aksi hâlde:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. önce her cihaz kimlik bilgisi iptal edilir — canlı oturumlar saniyeler
+   içinde düşer,
+2. her çalışma alanı üyeliği kaldırılır,
+3. hesap devre dışı olarak işaretlenir (sonradan IdP ne derse desin, açıkça
+   yeniden etkinleştirilene kadar bir daha oturum açamaz).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Kullanıcı satırının kendisi kalır — biletlerdeki, mesajlardaki ve
+commit’lerdeki atıf kalıcıdır. Yeniden etkinleştirme (SCIM `active: true`)
+oturum açmayı geri getirir ama üyelikleri geri **getirmez**: bunlar için yeni
+bir davet ya da giriş sırasındaki otomatik üye ekleme ilkesi gerekir.
 
-## Troubleshooting
+## Sorun giderme
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **Her çağrıda 401** — token değişmiş; yeniden oluşturun ve IdP’yi
+  güncelleyin.
+- **Uç noktaya erişilemiyor** — tünel çalışmıyor ya da sunucu yalnızca röle
+  üzerinden erişilebilir. SCIM doğrudan HTTPS gerektirir; JIT ne olursa olsun
+  çalışmaya devam eder.
+- **Grup push hataları (501)** — kasıtlıdır: grup→rol eşlemesi, push edilen
+  gruplardan değil, oturum açma sırasında SAML/OIDC grup özniteliklerinden
+  yapılır.

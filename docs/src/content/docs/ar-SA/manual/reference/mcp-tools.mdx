@@ -1,310 +1,302 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: أدوات MCP
+description: الفهرس الكامل لأدوات MCP التي يسجّلها cc_server، مرتّبة حسب العائلة.
 slug: ar-SA/دليل-المستخدم/مرجع/أدوات-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+يستضيف `cc_server` سجل أدوات MCP واحدًا (JSON-RPC 2.0)، يُقدَّم على منفذ الخادم الرئيسي (الافتراضي `9030`) عند `POST /mcp` و`GET /sse`، بإصدار البروتوكول `2024-11-05`. يصل كل عميل إلى السجل نفسه: تطبيق سطح المكتب، وبناء الويب، وعملاء MCP الخارجيون، وبيئة تشغيل الوكيل المضمّنة. يمكن جسر خوادم MCP الخارجية إلى السجل نفسه طبقةً ديناميكية.
 
-## Registry size
+## حجم السجل
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| المقياس | العدد |
+| --- | --- |
+| الأدوات التي يسجّلها `cc_server` | 110 |
+| من `packages/cc_mcp` | 108 |
+| من `packages/cc_mcp_client` (اكتشاف الأدوات) | 2 |
+| المسجَّلة في السجل الأساسي (`server_mcp_registry.dart`) | 63 |
+| المسجَّلة بعد الإقلاع حين تصعد خدماتها (`cc_server_runtime.dart`) | 47 |
+| من أدوات السجل الأساسي البالغ عددها 63، ما يُشترط له مستودع مخطط شفرة | 5 |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+لا تُسجَّل أدوات مخطط الشفرة الخمس إلا حين يمرّر المضيف مستودع مخطط شفرة إلى `buildServerMcpRegistry`. يمرّر `cc_server` واحدًا دائمًا، فتعمل الأدوات الـ110 كلها في الثنائي المُشحَن.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+يُعلَن السجل كاملًا في `tools/list` بلا بوابة اكتشاف. تعديلات التذاكر أدوات منمَّطة.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[العملاء الخارجيون يرون الفهرس كاملًا دائمًا]
+لا يُقتطع من `tools/list` شيء. يطابق عملاء MCP أسماء الأدوات مع نسختهم المخزَّنة من تلك القائمة، ويرفضون ما ليس فيها من غير أن يسألوا الخادم، فالأداة المخفية هناك بعيدة المنال لا صامتة فحسب.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات).
+يختلف **الإطار المضمّن**: يحمّل في كل طلب مجموعة مقيمة من التعريفات فقط، ويجلب الباقي عند أول استخدام. هذا سلوك من جهة الإطار، ولا يغيّر هذا السجل. انظر [سياق الأدوات وتخزين المطالبات مؤقتًا](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات/).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[كل صنف أداة مُسجَّل]
+كل ملف مصدر تحت `packages/cc_mcp/lib/src/tools/` أداة يستطيع الوكيل
+استدعاءها. يُفشل
+`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+البناء إن بُني صنف أداة جديد من غير أن يبنيه شيء.
 :::
 
-## Common parameters
+## المعاملات المشتركة
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**مطلوب** في كل أداة تلمس بيانات على نطاق مساحة العمل. غياب `workspace_id` أو عدم صلاحيته يعيد خطأً صريحًا، والقيمة التي لا تطابق مساحة عمل الكيان المستهدف تُرفض بدل أن تُتجاهل بصمت. احذفه في الأدوات العالمية فعلًا: `list_workspaces` وأدوات موجز الأخبار الست (`list_feeds` و`list_articles` و`get_article` و`set_article_read` و`set_article_saved` و`refresh_feeds`)، فهي تسير على قائمة موجزات مالك الخادم الخاصة بكل مستخدم. تأخذ أدوات الاكتشاف (`search_tool_bm25` و`list_my_tools`) المعامل اختياريًا حتى تصنّف قابلية الاستدعاء حسب وضع المحادثة. حين يُرسَل الوكيل من الخادم، تُفرَض مساحة العمل من جهة الخادم، فلا يبلغ مساحة عمل أخرى بتمرير معرّف غريب.
 
-## Tool discovery
+## اكتشاف الأدوات
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+تأتي كلتاهما من `cc_mcp_client` لا من `cc_mcp`، وتستشيران حارس الوضع حتى تُبلغا عما يُستدعى في وضع المحادثة _الحالي_.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| الأداة | الوصف |
+| --- | --- |
+| `search_tool_bm25` | ابحث في فهرس الأدوات بكلمة مفتاحية؛ يعيد الأدوات المطابقة ومخططات وسائطها وهل كل منها قابلة للاستدعاء الآن |
+| `list_my_tools` | اسرد الأدوات القابلة للاستدعاء الآن في هذه المحادثة، مرشَّحة بوضعها |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+أداة اكتشاف ثالثة، **`search_tools`**، موجودة داخل الإطار المضمّن وحده وليست جزءًا من سجل MCP هذا. ترتّب سطح أدوات التشغيل نفسه، وبخلاف `search_tool_bm25` **تحمّل** مخططات ما تجده حتى يستطيع الوكيل استدعاء مطابقة في جولته التالية. يجدر بالوكلاء على الإطار أن يفضّلوها، ولدى عملاء MCP الأداة `search_tool_bm25`.
 
-## Agent tools
+## أدوات الوكيل
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| الأداة | الوصف |
+| --- | --- |
+| `list_agents` | اسرد الوكلاء المسجَّلين في مساحة عمل |
 
-## Agent peer messaging and delegation
+## مراسلة الأقران بين الوكلاء والتفويض
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+يتحدث الوكلاء بعضهم إلى بعض عبر المساحات (دائمة، وظاهرة في الكشف). `ask_agent` طلب وردّ بمهلة إلزامية، و`delegate_task` محروس من جهة الخادم بسقف عمق وكشف دورات وغلاف ميزانية وسقف استقلالية.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| الأداة | الوصف |
+| --- | --- |
+| `send_to_agent` | أرسل رسالة في اتجاه واحد إلى وكيل آخر، تُوجَّه بـ `to_agent_id` أو بـ `to_agent_name` المطابق تمامًا |
+| `ask_agent` | اسأل وكيلًا آخر وانتظر ردّه، أو تنقضي المهلة |
+| `delegate_task` | فوّض مهمة إلى وكيل آخر تذكرةً ابنة متتبَّعة |
+| `consult_agent` | أضف الاختصاصي الأوفق مطابقةً بالمهارات إلى المساحة، وأرسِله بموجز مركّز |
+| `todo_read` | اقرأ قائمة المهام المحفوظة لهذه المحادثة |
 
-## Skill tools
+## أدوات المهارات
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+يمر كل تثبيت وتحديث ببوابة فحص مغلقة عند الفشل قبل أن يصل أي محتوى مهارة إلى القرص أو إلى مطالبة وكيل.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| الأداة | الوصف |
+| --- | --- |
+| `list_skills` | اسرد معرّفات المهارات المتاحة في مساحة عمل |
+| `create_skill` | أنشئ مهارة جديدة من محتوى markdown |
+| `install_skill` | ثبّت مجلد المهارة كاملًا من مستودع GitHub عند مرجع مثبَّت |
+| `update_skill` | حدّث مهارة GitHub مثبَّتة إلى مرجع جديد، مع إعادة الفحص وإعادة تثبيت المرجع |
+| `list_skill_updates` | اسرد المهارات التي يتوفر لها إصدار أحدث |
+| `verify_skills` | تحقق من المهارات المقفلة مقابل تجزئات محتواها على القرص |
+| `pin_skill` | اكتب تجزئة مهارة موجودة على القرص في `skills-lock.json` |
 
-## Plan, playbook and artifact tools
+## أدوات الخطة وكتيب التشغيل والمُخرَجات
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| الأداة | الوصف |
+| --- | --- |
+| `submit_plan` | عقد إخراج وضع التخطيط: أصدِر `PlanDocument` منمَّطًا يُفتح في Plan Studio |
+| `create_playbook` | احفظ خطة قالبًا مسمّى ذا إصدارات، فيه مواضع `{{param}}` ذات نوع |
+| `run_playbook` | أنشئ من كتيب تشغيل بقيم المعاملات خطةً يوافق عليها المشغّل |
+| `publish_artifact` | انشر قائمة مرتَّبة من كتل منمَّطة (markdown، وجدول، ومخطط، وmermaid، وشفرة، وJSON) تُعرَض في العميل عرضًا أصليًا |
+| `revise_artifact` | استبدل محتوى مُخرَج منشور |
+| `list_artifacts` | اسرد مُخرَجات مساحة العمل |
+| `get_artifact` | اقرأ مُخرَجًا واحدًا |
+| `complete_goal` | أعلن أن الهدف الدائم النشط لهذه المحادثة (المبدوء بـ `/goal` أو `/loop`) قد تحقّق |
 
-## Workspace tools
+## أدوات مساحة العمل
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| الأداة | الوصف |
+| --- | --- |
+| `list_workspaces` | اسرد كل مساحات العمل بمعرّفاتها وأسمائها (عالمية؛ بلا `workspace_id`) |
 
-## Repo tools
+## أدوات المستودع
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| الأداة | الوصف |
+| --- | --- |
+| `list_repos` | اسرد المستودعات المسجَّلة في مساحة عمل. يتلقّى مستدعو الوكيل مسارات شجرة العمل المعزولة بالنسخ عند الكتابة الخاصة بمحادثتهم، لا السحوبات الأصلية أبدًا |
 
-## Messaging tools
+## أدوات المراسلة
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| الأداة | الوصف |
+| --- | --- |
+| `list_spaces` | اسرد مساحات المراسلة في مساحة عمل |
+| `get_messages` | اجلب الرسائل من مساحة |
+| `send_message` | أرسل رسالة إلى مساحة باسم وكيل مُرسِل مسمّى |
+| `get_space_notes` | اقرأ وثيقة التسليم المشتركة لمساحة |
+| `update_space_notes` | استبدل وثيقة التسليم المشتركة لمساحة |
+| `todo_write` | استبدل قائمة مهام هذه المحادثة في استدعاء واحد (مرّر القائمة كاملة) |
 
-## Review tools
+## أدوات المراجعة
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| الأداة | الوصف |
+| --- | --- |
+| `start_ai_review` | ابدأ المراجعة بالذكاء الاصطناعي لطلب سحب: احسب مناطق المراجعة، ووزّع المراجعين الاختصاصيين في مساحة الطلب، واكتب الاستعراض الموجّه، ثم أنهِ |
+| `add_review_node` | أضف نتيجة مراجعة منظَّمة (ملف، وسطر، وأولوية P0–P3) إلى مساحة مراجعة |
+| `confirm_review_node` | أكّد نتيجة زميل؛ ولا يستطيع المؤلف تأكيد نتيجته بنفسه |
+| `resolve_review_node` | علّم نتيجة مُصلحة بعد إجراء التغيير فعلًا؛ وينشر أثرًا في مساحة المراجعة |
+| `dismiss_review_node` | أسقط نتيجة لا تنطبق؛ ويسجّل واقعة كتم حتى يكف المراجعون عن إعادة تعليمها |
+| `request_peer_review` | اطلب من وكيل مراجعة آخر نظرة ثانية على نتيجة |
+| `dispatch_reviewers` | أرسِل وكلاء المراجعة المطابقين إلى مساحة مراجعة، بالتوازي |
+| `submit_reviewer_verdict` | انشر حكم Ship أو Hold أو Block لكل مراجع، مع درجة الثقة وشرح |
+| `finalize_review` | احسب إجماع كل عقدة وحكم طلب السحب، وأغلق المراجعة |
+| `set_cohort_summary` | عيّن ملخص مجموعة مراجعة بلغة عادية |
+| `add_review_diagram` | أرفق بمجموعة مخططًا منظَّمًا متحقَّقًا على مخطط الشفرة (`sequence` أو `entityRelation` أو `stateMachine`) |
+| `publish_review_to_github` | انشر المراجعة المُنهية على GitHub تعليقاتٍ سطرية مع متن ملخص |
 
-## Memory tools
+## أدوات الذاكرة
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| الأداة | الوصف |
+| --- | --- |
+| `search_memory` | ابحث في الحقائق والسياسات (بالكلمات المفتاحية، أو دلاليًا، أو هجينًا — والهجين هو الافتراضي) |
+| `propose_fact` | خزّن حقيقة markdown قصيرة في نطاق |
+| `supersede_fact` | علّم حقيقة مستبدَلة بأخرى |
+| `propose_policy` | خزّن قاعدة معيارية في نطاق (يتطلب ذلك إذن كتابة عليه) |
+| `supersede_policy` | أوقف سياسة — يعلّمها غير نشطة مع الإبقاء عليها للتدقيق |
+| `list_policies` | اسرد السياسات النشطة، مع تصفية اختيارية بالنطاق |
+| `list_memory_domains` | اسرد نطاقات ذاكرة مساحة العمل مع عددي الحقائق والسياسات |
+| `record_observation` | سجّل ملاحظة خامًا في الذاكرة العاملة للوكيل |
+| `get_my_notes` | اقرأ مسودة الذاكرة العاملة للوكيل المستدعي |
+| `update_my_notes` | حدّث مسودة الذاكرة العاملة للوكيل المستدعي |
+| `remember` | أضف ملاحظة إلى الطبقة الساخنة للوكيل في هذه الجلسة (محصورة بمهلة انتهاء وبعدد) |
+| `consolidate_memory` | أجرِ تمرير دمج («نوم»): أخلِ العناصر الساخنة المنتهية، وأدرج الدائمة منها في حقائق طويلة الأمد |
+| `harmonize_memory` | وفّق المعتقدات بين الوكلاء (SHMR) وعلّم التناقضات |
+| `list_memory_conflicts` | اسرد التناقضات المكتشَفة وكيف حُلّ كل منها |
 
-## Governance tools
+## أدوات الحوكمة
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| الأداة | الوصف |
+| --- | --- |
+| `create_goal` | أنشئ هدفًا تنظيميًا (على مستوى الشركة أو الفريق أو الوكيل أو المهمة) |
+| `list_goals` | اسرد الأهداف مع المستوى والحالة والتقدّم المجمَّع |
+| `update_goal_progress` | عيّن تقدّم هدف |
+| `create_approval` | افتح موافقة مجلس لإجراء محكوم (الخروج من الخطة، أو الدمج، أو الإصدار، أو التوظيف، أو مخصّص) |
+| `list_approvals` | اسرد الموافقات، مع تصفية اختيارية بالحالة |
+| `decide_approval` | سجّل قرارًا: موافقة، أو رفض، أو طلب تنقيح، أو إعادة إرسال |
+| `comment_approval` | علّق على موافقة مجلس |
+| `exit_plan_mode` | افتح موافقة `plan_exit` (واستهلكها بعد الموافقة)، فاقلب المحادثة خارج وضع التخطيط |
+| `agent_heartbeat` | أبلغ عن الحياة (حي، أو خامل، أو عالق)؛ والصمت يقلب صحة التشغيل إلى مفقود حديثًا ثم إلى غير متصل |
+| `list_runtime_health` | اسرد صحة تشغيل كل وكيل |
+| `list_agent_presence` | اسرد حضور كل وكيل (الصحة، ودورة الحياة، وعدد الجاري والمنتظر، والسعة) |
+| `get_org_chart` | اقرأ شجرة التبعية، والرئيس التنفيذي في الجذر، متداخلة حسب `reports_to` |
+| `create_work_product` | أنشئ منتج عمل دائمًا مربوطًا بتذكرة |
+| `save_work_product_revision` | احفظ مراجعة جديدة؛ مرّر `base_revision_id` ليُرفض الطلب عند تحرير متزامن |
+| `list_work_products` | اسرد منتجات العمل، مع تصفية اختيارية على تذكرة واحدة |
+| `get_work_product` | اقرأ منتج عمل مع سجل مراجعاته |
+| `create_runtime_profile` | عرّف ملف تشغيل قابلًا لإعادة الاستخدام (عائلة البروتوكول، وأمر سطر الأوامر، ووسائط إطلاق ثابتة) |
+| `list_runtime_profiles` | اسرد ملفات التشغيل في مساحة العمل |
 
-## Code graph tools
+## أدوات مخطط الشفرة
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+تُسجَّل فقط حين يوفّر المضيف مستودع مخطط شفرة. يغطي الفهرس مجموعة القواعد النحوية المُشحَنة (Dart وJS/TS وPHP وPython وRust وZig وC/C++ وGo وJava وRuby وC# وSwift وKotlin وR وAssembly وMATLAB وAda)، ورموز أي لغة أخرى غير موجودة.
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| الأداة | الوصف |
+| --- | --- |
+| `search_code` | ابحث في الرموز المفهرسة بالاسم والتوقيع وتعليق التوثيق (هجين من BM25 والدلالي) |
+| `code_symbol` | ابحث عن الرموز بالاسم المطابق تمامًا؛ ويعيد `file:line` والتوقيع |
+| `code_callers` | اسرد الرموز التي تستدعي رمزًا أو تعتمد عليه (الحواف الواردة) |
+| `code_callees` | اسرد الرموز التي يستدعيها رمز أو يعتمد عليها (الحواف الصادرة) |
+| `code_impact` | احسب نصف قطر التأثير المتعدي لرمز، حتى عمق معيّن |
 
-## Ticketing tools
+## أدوات التذاكر
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| الأداة | الوصف |
+| --- | --- |
+| `create_ticket` | أنشئ تذكرة لدى المزوّد المُهيَّأ |
+| `get_ticket` | اجلب تذكرة واحدة بالمعرّف |
+| `list_tickets` | اسرد التذاكر، مع تصفية اختيارية بالحالة أو بالمُسنَد إليه |
+| `update_ticket` | حدّث الحالة أو العنوان أو الوصف أو الأولوية أو التسميات (تقبل الحالة أسماءً بديلة مثل `in_progress` / `completed`) |
+| `assign_ticket` | أسند تذكرة إلى وكيل و/أو فريق |
+| `reassign_ticket` | أعد إسناد تذكرة إلى وكيل آخر |
+| `add_ticket_collaborator` | ادعُ وكيلًا للتعاون على تذكرة (يُضاف إلى مساحتها) |
+| `comment_on_ticket` | علّق على تذكرة |
+| `close_ticket` | أغلق تذكرة (يعلّمها منجزة) مع مُخرَج اختياري |
+| `fail_ticket` | علّم تذكرة فاشلة مع رسالة خطأ |
+| `delegate_ticket` | فوّض تذكرة إلى وكيل، مع إنشاء تذكرة متتبَّعة |
+| `ticket_pr_link` | اربط تذكرة بطلب سحب أو فك الربط، بمعرّف عقدة طلب السحب (`action`: `link` \| `unlink`) |
+| `ticket_relation` | أضف علاقة بين تذكرتين أو أزلها — `blocked_by` و`blocking` و`related_to` و`duplicate_of` و`duplicated_by` و`sub_issue_of` و`parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations` | اسرد أصل التذكرة وتذاكرها الفرعية وروابط اعتمادها |
 
-## Team and pipeline tools
+## أدوات الفريق وخط الأنابيب
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| الأداة | الوصف |
+| --- | --- |
+| `record_team_activity` | سجّل بند نشاط لقائد فريق على تذكرة |
+| `preview_trigger` | جرّب تجريبيًا أي تشغيلات خط أنابيب سيبدأها حدث افتراضي، من غير أن يُثبِت شيئًا |
+| `submit_output` | سلّم حمولة المُخرَج المنظَّم لتشغيل خط الأنابيب الحالي للمستدعي؛ وتُتحقَّق مقابل مخطط المُخرَج المُعلَن للتشغيل |
 
-## Orchestration tools
+## أدوات التنسيق
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| الأداة | الوصف |
+| --- | --- |
+| `propose_orchestration` | أصدِر خطة تنسيق منظَّمة لعدة وكلاء لموافقة واحدة مقدَّمة؛ تتحقق وتعيد أي مخالفات |
 
-## Newsfeed tools
+## أدوات موجز الأخبار
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| الأداة | الوصف |
+| --- | --- |
+| `list_feeds` | اسرد موجزات RSS/Atom المسجَّلة |
+| `list_articles` | اسرد المقالات، مع تصفية اختيارية بالموجز أو غير المقروء أو المحفوظ |
+| `get_article` | اجلب مقالًا واحدًا |
+| `set_article_read` | علّم مقالًا مقروءًا أو غير مقروء |
+| `set_article_saved` | احفظ مقالًا أو ألغِ حفظه |
+| `refresh_feeds` | أعد جلب كل موجز مُفعَّل الآن |
 
-## Enclosure (rig) tools
+## أدوات الحاوية المعزولة (المنصة)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ar-SA/دليل-المستخدم/مرجع/منصات/#action-verbs).
+قُد آلات يمكن التخلص منها — متصفحًا محصورًا أو سطح مكتب Linux، أو محاكي Android، أو محاكي iOS — من داخل تشغيل. تُسجَّل بعد الإقلاع بلا شرط: هل تستطيع الآلة أن تُقلع فعلًا سؤال سبر تجيب عنه الأدوات في كل استدعاء. تعيد الاستدعاءات المتكررة في محادثة واحدة استخدام آلة واحدة، وتعود لقطات الشاشة محتوى صورة بميزانية صورة واحدة لكل نتيجة، ويُسيَّج محتوى الصفحة أو الواجهة المستخرَج بوصفه بيانات غير موثوقة. تعلن أدوات الاستخدام الأربع و`rig_close` [صنف الأثر](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) `enclosureControl` (وتعلن أدوات الاستخدام أيضًا `networkEgress` و`processSpawn`؛ ويعلن `mobile_use` و`ios_use` أيضًا `packageInstall`)، فترفضها أوضاع القراءة فقط. لا يعلن `rig_list` شيئًا — فهو يقرأ حالة مساحة العمل فقط. مفردات الأفعال الكاملة لكل سطح في [مرجع المنصات](/ar-SA/دليل-المستخدم/مرجع/منصات/#أفعال-الإجراء).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| الأداة | الوصف |
+| --- | --- |
+| `computer_use` | قُد سطح مكتب Linux في آلة افتراضية محصورة: تحريك، ونقر، وسحب، وتمرير، وكتابة، وتغيير حجم، وحافظة، ولقطة شاشة |
+| `browser_use` | قُد Chromium أو Firefox أو WebKit بلا واجهة (`engine`): تنقّل، ونقر، وملء، واستخراج (إمكانية الوصول/DOM/وحدة التحكم)، وحافظة، ولقطة شاشة |
+| `mobile_use` | قُد Android عبر ADB: فحص وإدخال، ولقطات شاشة، وتثبيت التطبيقات وبدؤها وإيقافها وإعادة ضبطها وإزالتها، وروابط عميقة وأوامر جهاز على شكل argv |
+| `ios_use` | قُد محاكي iOS عبر WebDriverAgent/CoreSimulator: فحص وإدخال، ولقطات شاشة، وتثبيت التطبيقات وبدؤها وإيقافها وإزالتها، وروابط عميقة وعمليات محاكٍ على شكل argv |
+| `rig_list` | اسرد منصات مساحة العمل مع السطح والحالة وحجم العرض والمتحكّم |
+| `rig_close` | دمّر المنصة وتخلَّ عن حالة الآلة التي تملكها |
 
-## Not exposed over MCP
+## غير المعروض عبر MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/), not as a tool an agent can call.
+لا أدوات MCP للتقويم ولا للاجتماعات. لا يستطيع الوكلاء قراءة تقويمك، ولا اجتماعاتك، ولا النسخ النصي، ولا بنود العمل، ولا القرارات. الخلاصة التي تنتج بنود العمل والقرارات تعمل خطَّ أنابيب [`meeting_summary`](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) المضمّن، لا أداةً يستطيع وكيل استدعاءها.
 
-## Tool gating by mode
+## تقييد الأدوات حسب الوضع
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+يُفرَض التقييد مرتين انطلاقًا من جدول واحد (`ModeToolPolicy`): مرة في موزّع MCP لمحوّل Claude Code، ومرة في سجل الإطار المضمّن. يعيد الاستدعاء المحجوب السبب.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| الوضع | سطح الأدوات |
+| --- | --- |
+| `chat` | كل أداة مسجَّلة؛ بلا قائمة سماح |
+| `plan` | قائمة سماح منتقاة. بلا كتابة في شجرة العمل وبلا أفعال تذاكر `create` / `assign` / `delegate`، لكن الذاكرة والمُخرَجات وقوائم المهام و`submit_plan` و`exit_plan_mode` وأفعال إكمال التذكرة على التذكرة المُرسَلة مسموحة |
+| `review` | قائمة سماح منتقاة: المشاركة في المراجعة، والتواصل، وجالبات السياق للقراءة فقط، ومجموعة أفعال التذاكر كاملة ومنها `create_ticket` و`assign_ticket` |
+| `orchestrate` | قائمة سماح منتقاة: أدوات البحث والقراءة إضافة إلى `propose_orchestration` و`create_playbook` و`run_playbook`. يقع التوظيف والتفكيك وإكمال التذكرة حتميًا بعد الموافقة، ولا يحدث شيء من ذلك في منتصف التشغيل |
 
-Permitted in every mode regardless of allow-list:
+مسموح في كل وضع بصرف النظر عن قائمة السماح:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| المجموعة | الأدوات |
+| --- | --- |
+| الذاكرة والمُخرَجات | `search_memory`، `propose_fact`، `propose_policy`، `supersede_fact`، `supersede_policy`، `record_observation`، `update_my_notes`، `get_my_notes`، `list_memory_domains`، `list_policies`، `publish_artifact`، `revise_artifact`، `list_artifacts`، `get_artifact` |
+| مخطط الشفرة | `search_code`، `code_symbol`، `code_callers`، `code_callees`، `code_impact` |
+| آليات التشغيل | `search_tool_bm25`، `list_my_tools`، `todo_write`، `todo_read` |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+وجود الأداة في قائمة السماح لا يجعلها قابلة للاستدعاء، والعكس قائم أيضًا: قدرة سؤال المشغّل أداة في **الإطار** (`ask_user`)، فلا تظهر في فهرس MCP هذا أصلًا.
 
-## Approval-gated tools
+## الأدوات المحكومة بالموافقة
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+قد تعلن أداة `requiresApproval`. يبني الموزّع عندئذ `ApprovalPayload` ويعرضه عبر `ConfirmationPort` قبل أن تعمل الأداة، ويوصل `cc_server` ذلك المنفذ، فالبوابة حيّة.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+الأدوات المسجَّلة التي تعلنه: `create_ticket`، `update_ticket`، `assign_ticket`، `reassign_ticket`، `close_ticket`، `ticket_relation`، `create_goal`، `update_goal_progress`، `create_approval`، `decide_approval`، `comment_approval`، `create_work_product`، `save_work_product_revision`، `create_runtime_profile`، `install_skill`، `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
+وعلى استقلال، تحكم ضوابط الإجراء الموحَّدة أي أداة تعلن مجموعة `ActionClass` غير فارغة. يُرفض قرار `prompt` إن لم يكن هناك معتمِد متصل. انظر [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
 
-## Capabilities with no tool behind them
+## قدرات بلا أداة خلفها
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+ليست كل قدرة في المنتج في متناول وكيل. هذه بلا أداة
+أصلًا، فالاسم الذي ربما رأيته مشارًا إليه في موضع آخر يعيد "unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| القدرة | أين تعيش بدل ذلك |
+| --- | --- |
+| توظيف وكيل أو فصله أو تحريره | واجهة الوكلاء. لا توجد أداة `hire_agent` / `fire_agent` / `update_agent` |
+| إنشاء مساحة عمل | `workspace.upsert` عبر RPC، وهو يبذر الملكية ويختمها |
+| المشاريع (إنشاء / سرد / تحديث / إيداع) | واجهة التذاكر. المشاريع سطح للمشغّل — انظر [المشاريع](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/) |
+| سؤال المشغّل سؤالًا حاجبًا | أداة **الإطار** `ask_user`، لا MCP. تعرض نموذجًا في المحادثة وتنتظر الجواب |
+| تشخيص كل وكيل | لا شيء. لا `doctor` — انظر [تشخيص وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشخيص-الوكيل/) |
+| التقويم والاجتماعات | RPC لعملاء البشر فقط (انظر أعلاه) |
 
-## See also
+## انظر أيضًا
 
-- [Use Control Center as an MCP server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/)
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)
+- [استخدم Control Center خادم MCP](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)

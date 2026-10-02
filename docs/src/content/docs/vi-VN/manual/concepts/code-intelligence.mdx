@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Trí tuệ mã nguồn
+description: Vì sao một agent cần trình biên dịch, bộ so khớp cấu trúc và trình gỡ lỗi — và mỗi thứ trả lời được điều gì mà những thứ còn lại không thể.
 slug: vi-VN/so-tay/khai-niem/tri-tue-ma-nguon
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center cho agent bốn cách để hiểu mã nguồn ngoài việc đọc nó. Chúng trả lời những câu hỏi thực sự khác nhau, và lý do có bốn cách chứ không phải một là vì không có cơ chế đơn lẻ nào trả lời được tất cả.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Cơ chế                | Trả lời                                          | Chi phí                                |
+| --------------------- | ------------------------------------------------ | -------------------------------------- |
+| **Đồ thị mã**         | Có gì ở đây, và cái gì phụ thuộc vào nó          | Một lượt lập chỉ mục; truy vấn thì rẻ   |
+| **Máy chủ ngôn ngữ**  | Đoạn này có thực sự biên dịch được không, và kiểu này là gì | Một tiến trình máy chủ cho mỗi dự án    |
+| **Tìm kiếm cấu trúc** | HÌNH DẠNG này xuất hiện ở đâu                    | Một lần phân tích cú pháp cho mỗi tệp   |
+| **Trình gỡ lỗi**      | Điều gì đúng vào thời điểm này, trong khung này  | Một tiến trình bị dừng                  |
 
-## The gap the language server closes
+## Khoảng trống mà máy chủ ngôn ngữ lấp đầy
 
-The [code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/) được dựng từ tree-sitter: ký hiệu, cạnh gọi, bán kính ảnh hưởng. Nó nhanh, nó rẻ, và nó không biết gì về **kiểu**. Nó không thể cho bạn biết lời gọi bạn vừa viết có biên dịch được không, trường đó có tồn tại trên đối tượng không, hay lần đổi tên của bạn có bỏ sót một lần tái xuất nào không.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Không có máy chủ ngôn ngữ, agent chỉ biết được điều đó khi chạy kiểm thử — hoặc không bao giờ. Nó viết ra một thứ trông có vẻ hợp lý, rồi đi tiếp, và lỗi chỉ nổi lên ba lượt sau, gắn với một thay đổi khác.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Vậy nên lợi ích thật sự không nằm ở công cụ `lsp`. Mà là ở chỗ `write`, `edit` và `apply_patch` được bọc lại: sau mỗi lần ghi, tệp đi qua máy chủ ngôn ngữ và những chẩn đoán **mới xuất hiện** được gộp vào kết quả công cụ. Agent biết mình vừa làm hỏng bản dựng ngay tại lúc nó làm hỏng, bất kể nó có nghĩ đến việc hỏi hay không.
 
-### Only new diagnostics
+### Chỉ chẩn đoán mới
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Nhắc lại điều agent đã được cho biết còn tệ hơn là không nói gì: nó lấp đầy kết quả bằng thứ nhiễu mà agent sẽ học cách lướt qua, và lỗi mới duy nhất cũng bị cuốn theo. Một sổ cái theo từng lần chạy ghi lại những gì đã được báo, khóa theo mức độ nghiêm trọng, mã và thông điệp — **không** theo vị trí, nên một chẩn đoán chỉ dịch xuống bốn dòng sẽ không bị báo lại như thể là mới.
 
-### Lazy, and honest about being absent
+### Khởi động muộn, và trung thực khi không hiện diện
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Không có máy chủ nào khởi động cùng lúc bật máy. Một máy chủ chỉ khởi động ở yêu cầu đầu tiên cần đến nó — gần như luôn là lần sửa đầu tiên vào một tệp mà nó nhận quản lý — và những máy chủ nhàn rỗi sẽ bị dọn đi. Một máy không bao giờ đụng tới Dart sẽ không bao giờ khởi động trình phân tích.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Việc phát hiện là một phép **giao**: dấu hiệu gốc phải tồn tại trong bản checkout *và* tệp nhị phân phải phân giải được. Chỉ riêng dấu hiệu thì nói rằng "dự án này là Python" và không nói gì về việc máy chủ đã được cài hay chưa; chỉ riêng tệp nhị phân phân giải được thì nói rằng máy này có bộ công cụ và không nói gì về bản checkout này. Chỉ khi cả hai cùng có thì một truy vấn mới có thể thành công, và một công cụ được đưa ra nhưng luôn thất bại thì tệ hơn một công cụ không hiện diện.
 
-## Why structural search, when grep exists
+## Vì sao cần tìm kiếm cấu trúc khi đã có grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` so khớp ký tự. Đó là công cụ đúng cho một cái tên và sai cho một hình dạng.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Một mẫu cấu trúc được phân tích cú pháp bằng **cùng ngữ pháp với tệp**, nên `dispose($X)` tìm thấy lời gọi bất kể nó được đặt cách, xuống dòng hay ngắt dòng thế nào, và không bao giờ khớp chỉ vì trùng ký tự bên trong một hằng chuỗi hay một chú thích.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Tính chất khiến nó không chỉ là một regex thêm vài bước là: một biến meta lặp lại trong cùng một mẫu phải bắt được cùng một đoạn văn bản:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+sẽ khớp với một điều kiện bảo vệ giải phóng đúng thứ nó vừa kiểm tra, và không khớp với một điều kiện giải phóng một thứ khác. Đó là một loại lỗi mà bạn hoàn toàn không thể diễn đạt bằng văn bản.
 
-### It runs on the tree-sitter already linked
+### Nó chạy trên tree-sitter vốn đã được liên kết
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Không có bộ máy thứ hai. `cc_natives` vốn đã nạp tree-sitter cùng các ngữ pháp của nó cho đồ thị mã, kèm bộ nhớ đệm truy vấn đã biên dịch và một bảng ngôn ngữ. Bộ so khớp thuần Dart, chạy trên những cây cú pháp vốn dĩ đã được phân tích sẵn. Một bộ máy cấu trúc thứ hai sẽ đồng nghĩa với một trình phân tích cú pháp thứ hai, một bộ ngữ pháp thứ hai phải xây dựng và triển khai trên mọi nền tảng, và hai câu trả lời khác nhau cho câu hỏi "thế nào là một biểu thức gọi".
 
-### A fragment needs somewhere to live
+### Một mảnh mã cần một chỗ để tồn tại
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Một ngữ pháp chỉ định nghĩa thế nào là một *tệp* hoàn chỉnh. Khi được phân tích trần trụi ở cấp cao nhất của Dart, `dispose(x)` là một **chữ ký hàm** hoàn toàn hợp lệ — một khai báo tên `dispose` nhận tham số `x` — và không có lỗi nào ở đâu để tiết lộ điều đó. Một bộ so khớp dựng trên cách phân tích đó sẽ đi tìm các khai báo, không thấy lời gọi nào, rồi báo "không khớp" cho một mẫu vốn chưa bao giờ được đọc theo đúng cách nó trông như vậy.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Vì vậy, một mẫu được thử lần lượt qua một thang các khung bao — câu lệnh, biểu thức, thành viên lớp, cấp cao nhất — và khung đầu tiên chấp nhận nó sẽ thắng. Một mảnh mã không có ngữ cảnh nào chấp nhận sẽ được báo là không thể phân tích cú pháp, thay vì bị đem đi tìm rồi âm thầm không thấy gì.
 
-## Why a rewrite stages instead of writing
+## Vì sao thao tác viết lại phải tạm giữ thay vì ghi thẳng
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Một thao tác viết lại theo cấu trúc là chỉnh sửa có độ phủ rộng nhất mà agent có thể thực hiện: một mẫu, bốn mươi tệp, và không ai đọc kết quả từng dòng một — cả mô hình lẫn người đã yêu cầu nó. Ghi thẳng rồi báo "xong" nghĩa là lần nhìn thẳng thắn đầu tiên vào thay đổi sẽ là một lệnh `git diff` sau đó.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Vì thế `ast_edit` báo cáo điều nó *sẽ* làm — số lượng, danh sách tệp, các vị trí khớp — và thay đổi chỉ được áp dụng khi `resolve` xác nhận. Đó cũng là điều cho phép một bản diff cùng lựa chọn Chấp nhận/Hủy nằm trước mặt con người trước khi bất cứ thứ gì chạm tới đĩa.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Việc xác nhận là tất cả hoặc không gì cả, và mỗi tệp đều được đối chiếu với nội dung đã ghi nhận tại thời điểm tạm giữ. Giữa lúc tạm giữ và lúc xác nhận, agent có thể đã sửa tay một trong các tệp đó, một lượt chẩn đoán có thể đã viết lại nó, hoặc một trình định dạng có thể đã đụng vào nó — cứ thế xác nhận sẽ hủy bỏ công sức đó và bản diff sẽ trông như thể là chủ ý. Mọi sai lệch đều khiến toàn bộ thay đổi bị từ chối, vì một thao tác viết lại theo cấu trúc được áp dụng dở dang sẽ để lại một cây mã không biên dịch được theo hình dạng nào cả.
 
-## What a debugger answers that a print statement cannot
+## Điều trình gỡ lỗi trả lời được mà câu lệnh in thì không
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Vòng lặp câu lệnh in là thế này: thêm một câu lệnh in, chạy lại toàn bộ, đọc kết quả, xóa câu lệnh in. Mỗi câu hỏi tốn một lần chạy kiểm thử trọn vẹn, mà nó chỉ trả lời được câu hỏi bạn đã nghĩ ra *trước* khi chạy.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Một khung đang dừng trả lời mọi câu hỏi về khoảnh khắc đó cùng lúc — mọi biến cục bộ, mọi nơi gọi, và một biểu thức được tính trong chính phạm vi của khung. Với một tiến trình bị kẹt hay một lỗi chỉ tái hiện một lần trong mười lần chạy, đó là khác biệt giữa cả một buổi chiều và một phút.
 
-### Bounded like an enclosure, and for the same reason
+### Bị giới hạn như một vòng bao kín, và vì cùng lý do
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Một bộ điều hợp gỡ lỗi sở hữu một **tiến trình bị dừng** đang giữ bất cứ thứ gì tiến trình đó giữ — một cổng, một khóa, một kết nối cơ sở dữ liệu. Một phiên không ai điều khiển là một rò rỉ tồn tại lâu hơn cả lượt đã khởi tạo nó. Vì vậy luôn có một TTL cứng, đúng một phiên cho mỗi cuộc hội thoại, và lệnh `launch` thứ hai sẽ bị từ chối thay vì âm thầm thay thế lệnh đầu tiên: một agent khởi tạo cái thứ hai mà không kết thúc cái thứ nhất gần như chắc chắn đã đánh mất dấu vết của cái thứ nhất.
 
-### One transport, two protocols
+### Một giao vận, hai giao thức
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol dùng chung cách đóng khung `Content-Length` với Language Server Protocol và không chia sẻ gì ở tầng trên — khóa tương quan khác, dạng lỗi khác, và một loại thông điệp thứ ba (sự kiện) không có tương đương trong LSP. Phần đóng khung nằm ở một chỗ; các giao thức nằm riêng phía trên nó.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Viết phần đóng khung hai lần sẽ đồng nghĩa với hai câu trả lời cho "một thông điệp trải dài qua hai khối", "một khối chứa ba thông điệp" và "máy chủ đã ghi một dòng biểu ngữ ra stdout trước khung đầu tiên", và chỉ một trong hai sẽ được sửa.
 
-## Related
+## Liên quan
 
-- [Search code with the code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/) — the symbol and impact side
-- [Debug a failing test](/vi-VN/so-tay/huong-dan-thuc-hanh/go-loi-kiem-thu-that-bai/) — the debugger, end to end
-- [Refactor structurally](/vi-VN/so-tay/huong-dan-thuc-hanh/tai-cau-truc-ma/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — every operation and argument
+- [Tìm mã bằng đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/) — phần ký hiệu và ảnh hưởng
+- [Gỡ lỗi bài kiểm thử thất bại](/vi-VN/so-tay/huong-dan-thuc-hanh/go-loi-kiem-thu-that-bai/) — trình gỡ lỗi, từ đầu đến cuối
+- [Tái cấu trúc mã theo cấu trúc](/vi-VN/so-tay/huong-dan-thuc-hanh/tai-cau-truc-ma/) — `ast_grep` và `ast_edit`
+- [Công cụ agent tích hợp](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — mọi thao tác và tham số

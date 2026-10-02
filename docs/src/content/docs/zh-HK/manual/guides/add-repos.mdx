@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: 將程式庫加入工作區
+description: 把 Git 檢出註冊到工作區，讓代理可以在上面工作。
 slug: zh-HK/手冊/操作指南/加入程式庫
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+本指南說明如何把 Git 檢出註冊到工作區、重新索引它，之後再將它移除。
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+程式庫是**以工作區為範圍**的。沒有全域註冊表，也沒有連結步驟：加入程式庫與把它放進工作區，是同一件事。同一個檢出註冊到兩個工作區，會變成兩筆各自獨立、帶有兩個不同 id 的資料列——跨工作區而言，程式庫的身分是它的檔案系統路徑，永遠不是它的 id。
 
-## Before you start
+## 開始之前
 
-A folder can only be registered if all three of these hold:
+資料夾只有在同時符合以下三項時才能註冊：
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. 它位於一個 **git 工作樹**內。
+2. 該工作樹設有一個 **`origin` 遠端**。
+3. 該 `origin` 遠端指向**受支援的程式碼託管平台**：github.com、gitlab.com 或 bitbucket.org。
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+其他情況一律會在註冊當下被拒絕，並附上明確訊息：「資料夾不在 git 工作樹內。」、「此程式庫未設定 `origin` 遠端。」或「`origin` 遠端未託管於受支援的程式碼託管平台（github.com、gitlab.com、bitbucket.org）。」。沒有僅限本機的模式。
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+程式碼託管平台是從遠端讀取並存放於程式庫上的——你永遠不需要挑選它。一個工作區可以同時容納來自這三者的程式庫，而每個都會透過各自的 API 與自己的憑證溝通。GitLab 的巢狀命名空間會被保留，因此 `gitlab.com/group/subgroup/project` 註冊後的所有者為 `group/subgroup`，名稱為 `project`。
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+該資料夾還必須位於承載 `cc_server` 的那部機器上，且在其中一個 `--repo-roots` 目錄之內。該允許清單預設為伺服器使用者的主目錄，而越過某個根目錄向上瀏覽會被拒絕。
 
-## Register a checkout
+## 註冊檢出
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. 開啟 **設定 → 工作區 → 程式庫**（`/workspaces/<id>/settings/workspace/repositories`）。
+2. 按一下 **新增程式庫**。
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+該對話框是一個可導覽的瀏覽器，瀏覽的是**伺服器**的檔案系統，而不是你自己的。桌面端、網頁端與手機端的流程完全相同，因為原生資料夾選取器會在錯誤的機器上選取資料夾。
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. 在伺服器已設定的根目錄範圍內導覽。屬於 git 檢出的資料夾會被標示出來。
+4. 勾選任意數量的資料夾。選取狀態會在你導覽期間一直保留，因此你可以從多個資料夾收集檢出。
+5. 以單一批次將它們註冊。
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+單一項目失敗絕不會拖垮批次中的其餘項目——你會取得已建立的 id，以及每個被拒絕項目各自的按路徑錯誤。重新註冊此工作區中已存在的路徑，會傳回現有的程式庫，而不會多建立一個重複項。
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+每個已註冊的程式庫都會出現在清單中，附有它的 `owner/name`、一個標明其程式碼託管平台的徽章，以及它在伺服器上的路徑。GitHub 程式庫亦會顯示所有者的頭像；其他程式碼託管平台沒有可推測的所有者頭像 URL，因此會退回顯示姓名首字母。
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+在混合了多個平台的工作區中，程式碼託管平台徽章很重要：兩個程式庫可以在不同平台上都叫 `acme/web`，而它們的行為並不相同——一次審查能做些什麼，以及連結會指向哪裏。
 
-## What happens next
+## 接下來會發生什麼
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+註冊會觸發一個範圍限定於此工作區的 `RepoAdded` 事件，它會為該檢出啟動 `index_code` 管線。正是它填充了程式碼圖，讓搜尋與影響分析有內容可回答。
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/zh-HK/手冊/操作指南/程式碼搜尋/).
+只有語言已有隨附文法的檔案才會被索引（Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB 與 Ada）。參見[以程式碼圖搜尋程式碼](/zh-HK/手冊/操作指南/程式碼搜尋/)。
 
-## Re-index a repo
+## 重新索引程式庫
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+每一列都帶有一個 **索引程式碼** 按鈕。按一下它，即可為該檢出重新執行索引器；執行期間，按鈕會變成顯示已完成檔案數對總數的進度讀數，並附有取消控制項。完成後，它會定格成一個帶有符號數量的勾號；若執行失敗，則顯示警告。
 
-## Reorder repos
+## 重新排列程式庫
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+拖曳某一列上的控點。你設定的順序，就是應用程式內每個程式庫清單讀回時所依循的順序。
 
-## Fix the GitHub link
+## 修正 GitHub 連結
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+某一列上的連結圖示會開啟一個編輯器，用來編輯該程式庫的 GitHub 所有者與程式庫名稱——當遠端被重新命名或轉移時很有用。
 
-## Remove a repo
+## 移除程式庫
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. 開啟 **設定 → 工作區 → 程式庫**。
+2. 按一下該列上的垃圾桶圖示。
+3. 確認「要從工作區移除程式庫嗎？」
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+對話框會說明它會做什麼：「_name_ 將從此工作區移除。磁碟上的本機檔案不會更動。」
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+移除會從此工作區刪除該程式庫資料列，並串聯清除它的程式碼圖資料列——符號、邊、檔案與索引檢查點——以及它上面按成員劃分的每一項程式庫授權、它與空間的連結，還有它的隔離檢出記錄。同一個檢出若註冊在另一個工作區，就是一筆獨立資料列，不受影響。那些記錄所指向的磁碟 worktree，不會因為這次刪除而被拆除。
 
-## Related guides
+## 相關指南
 
-- [Search code with the code graph](/zh-HK/手冊/操作指南/程式碼搜尋/)
-- [Run agents in parallel](/zh-HK/手冊/操作指南/並行代理/)
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-- [Your first workspace](/zh-HK/手冊/教學/第一個工作區/)
+- [以程式碼圖搜尋程式碼](/zh-HK/手冊/操作指南/程式碼搜尋/)
+- [並行執行代理](/zh-HK/手冊/操作指南/並行代理/)
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
+- [你的第一個工作區](/zh-HK/手冊/教學/第一個工作區/)
 
-## Related concepts
+## 相關概念
 
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/)
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/)

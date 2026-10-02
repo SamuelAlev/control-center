@@ -2,12 +2,13 @@
 title: Calendar and scheduling
 description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
 slug: en-GB/manual/concepts/calendar
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
 Control Center connects to Google Calendar so your day sits alongside your
 fleet. It syncs your events, shows them in month, week, day and agenda views,
 warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/en-GB/manual/concepts/meetings/).
+summarised [meeting](/en-GB/manual/concepts/meetings/).
 
 ## What it changes on Google
 
@@ -32,7 +33,7 @@ a personal one and their events are merged into the same views.
 ## Why sign-in is a device code
 
 The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
+not use one: it authorises with the **device-code grant** (RFC 8628). The server
 shows a short user code and a Google URL, you approve on any device that has a
 browser and the server polls until you do. A headless install can connect an
 account precisely because there is no redirect endpoint to host.
@@ -125,4 +126,4 @@ clients only.
 - [Workspaces and isolation](/en-GB/manual/concepts/workspaces/): why calendar accounts are per-workspace
 - [Domain events](/en-GB/manual/concepts/domain-events/): `MeetingStartingSoon` and `CalendarAuthExpired`
 - [Connect a Google Calendar](/en-GB/manual/guides/connect-calendar/)
-- [Record and summarize a meeting](/en-GB/manual/guides/record-meeting/)
+- [Record and summarise a meeting](/en-GB/manual/guides/record-meeting/)

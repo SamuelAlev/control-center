@@ -1,166 +1,167 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: GitHub インテグレーションを設定
+description: GitHub にサインインして、PR サーフェス、リポジトリ登録、エージェント実行を機能させます。
 slug: ja-JP/マニュアル/ハウツーガイド/github-インテグレーション
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+このガイドでは、セットアップのうち GitHub に固有の部分を扱います。GitHub は対応している 3 つの
+コードホストの 1 つです — GitLab や Bitbucket の接続方法と、ワークスペースでこれらを
+併用する方法については、[コードホストを接続](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
+を参照してください。
 
-## Prerequisites
+## 前提条件
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- 作業したいリポジトリにアクセスできる GitHub アカウント
+- サーバーに登録された GitHub App（
+  [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)を参照）で**サインイン**できるようにする、
+  **または** `repo` と `read:org` を持つ個人アクセストークンを貼り付ける
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[認証情報はサーバー上にあり、あなたに紐づきます]
+入力しているマシン上には何も保存されません。あなたの認証情報は
+`cc_server` が保持し、あなたのユーザー id をキーとして管理されます。サインインしたすべてのデバイスが
+同じものを使用します — デスクトップ、ウェブ、スマートフォンです。同じサーバーの別のメンバーはそれを
+読み取ることはできず、その人のサインインはその人自身が行います。
 :::
 
-## Sign in with GitHub
+## GitHub でサインイン
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**デバイスフロー**です。GitHub が短いコードを表示し、あなたが github.com で承認すると、
+サーバーが認証情報を受け取ります — コールバック URL もポートも不要で、公開するものは
+何もありません。サーバーにクライアント id があればいつでも利用でき、公式ビルドには
+すでに含まれています。
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. **設定 → ワークスペース → プロフィールと識別情報 → コードホスティング**を開きます（またはオンボーディングの
+   最初のステップ）
+2. **GitHub** の行で **GitHub でサインイン**をクリックします
+3. ダイアログに 8 文字のコードが表示され、ブラウザーで
+   [github.com/login/device](https://github.com/login/device) が開きます。
+   コードはすでにクリップボードにあります
+4. 貼り付けてアプリを承認し、戻ります。行は自動的に
+   「_your-username_ としてサインインしています」に変わります
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+ブラウザーでの作業を終える間はダイアログを閉じてもかまいません — サーバーはコードの有効期限が
+切れるまで（約 15 分）ポーリングを続けるため、サインインはそのまま完了します。
 
-## Or paste a token
+## またはトークンを貼り付ける
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+サーバーにアプリがない場合、必要なアカウントにアプリがインストールされていない場合、
+または単に PAT を使いたい場合のフォールバックです。
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. **設定 → ワークスペース → プロフィールと識別情報 → コードホスティング**を開きます
+2. **GitHub** の行で **トークンを追加**をクリックします
+3. `repo` と `read:org` を持つトークン（classic）を貼り付けて保存します。**きめ細かい**
+   トークンには、リポジトリの **Contents** と **Pull requests**（read and write）、
+   さらに **Checks** と **Actions**（read）が必要です。
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+トークンは保存された時点で検証されるため、行にはそれが属するアカウントの名前が表示されます。
+削除するには**切断**をクリックします。
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+確認ポイント: **GitHub** の行に「_your-username_ としてサインインしています」と表示されます。応答している
+認証情報が自分のものでない場合、末尾にそのソースが示されます — 「このサーバーの
+アプリ経由」または「環境変数から」です。
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[優先順位は固定です]
+あなたの代理で行われるリクエストは**あなたの**認証情報だけを使用し、それ以外は使いません —
+環境はサーバーの認証情報でありあなたのものではないため、あなたの代わりに
+なることは決してありません。人の介在しない処理（Webhook、PR のポーリング、チケット同期）は、
+サーバーのアプリのアイデンティティを、次にサーバー所有者の認証情報を、最後に
+環境を使用します。
 :::
 
-## What the integration gives you
+## インテグレーションでできること
 
-| Feature             | How                                                                                                            |
+| 機能             | 仕組み                                                                                                            |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| PR 一覧と詳細  | サーバーから、アプリのアイデンティティまたは自分の認証情報で GitHub REST API を利用                              |
+| チェック実行          | GitHub Checks API                                                                                          |
+| レビューの公開   | レビューを PR に投稿する、ユーザーの操作を必要とするステップ                                                             |
+| リポジトリの登録   | チェックアウトの `origin` リモートが github.com — または gitlab.com / bitbucket.org — を指していれば受け入れられます          |
+| エージェントの GitHub アクセス | 認証情報ブローカーが、エージェントのケイパビリティによって制御されたうえで、トークンを `GH_TOKEN` / `GITHUB_TOKEN` として注入します      |
+| 通知ピング  | サーバー側で GitHub の通知受信トレイをポーリングし、「プルリクエストでメンション」と「レビュー依頼」を発生させます |
+| ユーザープロフィール       | プロフィールのホバーカードと、作者ごとの PR フィルタリング                                                                |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+一部の経路では、よりコストが低い箇所で REST の代わりに GraphQL API を使用します — PR 作成
+ピッカーのブランチアクティビティと、レビュー依頼の通知がまだ保留中かどうかを判断する
+ライブのレビュー状態です。
 
-## Watch for GitHub outages
+## GitHub の障害を監視する
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+プロバイダーが機能低下しているとき、タイトルバーにステータスチップが表示されます。対象は GitHub、
+Claude、OpenAI、Kimi です。**すべてが正常な間は非表示になります** — 表示は障害の存在を
+伝えるものであり、その不在を伝えるものではありません。
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+チップをクリックすると、各プロバイダーの状態と更新ボタンを備えたフライアウトが開きます。
+ステータスは 2 分ごとに自動で更新されます。
 
-## Know how agents act on GitHub
+## エージェントが GitHub でどのように動作するか
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- エージェントが GitHub トークンを取得するのは、**GitHub API の呼び出しを許可**または
+  **git push を許可**を持っている場合だけです。
+  [サンドボックスポリシーを設定](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/)を参照してください
+- エージェントが作成するコミットは**エージェントとして**作成されます — 表示名に
+  ` (agent)` を加えたもの、エージェントの id をキーとする合成アドレスを使い、人間として作成されることは
+  ありません。依頼した人には `Co-Authored-By` トレーラーでクレジットが付きます
+- GitHub App が設定されている場合、ブローカーは広範なトークンを渡す代わりに、起動ごとに、
+  きめ細かくリポジトリ単位にスコープされた約 1 時間有効のインストールトークンを発行します。
+  インストールは実行対象リポジトリの**オーナー**から解決されるため、複数のアカウントに
+  インストールされた 1 つのアプリは、その実行が触れるアカウントに正しくスコープされます。アプリがない場合、
+  エージェントは環境のトークンを受け取ります
+- サインイン済みのメンバーが要求した実行は、**そのメンバーの**
+  GitHub アイデンティティで動作します — そのメンバーの認証情報はブローカーの環境の後に
+  マージされるため、エージェントがその人のために作成したコミットやコメントはその人に帰属します
 
-## Troubleshooting
+## トラブルシューティング
 
-### The PR list is empty and says GitHub is not connected
+### PR 一覧が空で、GitHub が接続されていないと表示される
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+このサーバーに GitHub の認証情報がありません。**コードホスティング**でサインインするか、トークンを
+貼り付けてください。他のコードホストのリポジトリは影響を受けません — GitHub のものだけが
+何も寄与しません。
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### 行に「トークンを追加」はあるが「GitHub でサインイン」がない
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+サーバーにクライアント id がありません — ソースからのビルドではこれが通常の状態で、
+認証情報は公式ビルドにのみ組み込まれるためです。
+[GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)を参照してください。所要時間は約 2 分で、
+サーバー所有者だけが 1 回行うだけです。
 
-### The sign-in dialog says the provider returned no device code
+### サインインダイアログに、プロバイダーがデバイスコードを返さなかったと表示される
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App は存在しますが、**Device flow** チェックボックスがオフになっています。アプリの
+設定（General → Device flow）でオンにして、もう一度試してください。
 
-### The row says "via this server's app" when I expected my own account
+### 自分のアカウントを期待したのに、行に「このサーバーのアプリ経由」と表示される
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+あなたはサインインしていません。表示されているのは、応答しているサーバーのアプリの
+アイデンティティです。その行の **GitHub でサインイン**をクリックしてください。
 
-### A fine-grained PAT shows no merge button or check status
+### きめ細かい PAT でマージボタンやチェックステータスが表示されない
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+トークンには **Contents** と **Pull requests**（read and write）、さらに
+**Checks** と **Actions**（read）が必要です。変更後は、コードホスティングで
+再度貼り付けてください。
 
-### Adding a repo is rejected
+### リポジトリの追加が拒否される
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/).
+登録には次の 3 つすべてが必要です。パスが git ワークツリーの内部にあること、`origin`
+リモートがあること、そしてそのリモートが対応しているコードホスト（github.com、
+gitlab.com、bitbucket.org）を指していることです。
+[ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)を参照してください。
 
-### Everything stops working for a while after heavy use
+### 集中的に使ったあと、しばらく何も動かなくなる
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+それはレート制限のサーキットブレーカーです。GitHub はプライマリ制限を、
+`x-ratelimit-remaining: 0` とリセット時刻を伴う `403` で通知します。クライアントはそれを見ると、
+ウィンドウが経過するまで、ネットワーク呼び出しを行わずに以降のリクエストをローカルで失敗させるため、
+リトライの嵐が制限を深刻化させることはありません。一時的な失敗は、
+指数バックオフで最大 3 回再試行され、`retry-after` が尊重されます。
 
-## Related guides
+## 関連ガイド
 
-- [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/)
-- [Connect a code host](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
-- [Manage API keys](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
-- [Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
-- [Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)
+- [コードホストを接続](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
+- [API キーを管理](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
+- [ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
+- [PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)

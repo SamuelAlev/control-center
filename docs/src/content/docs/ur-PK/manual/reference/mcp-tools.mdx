@@ -1,310 +1,313 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP ٹولز
+description: cc_server کی رجسٹر کردہ MCP ٹولز کی خاندان کے حساب سے مکمل فہرست۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/mcp-ٹولز
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` ایک ہی MCP (JSON-RPC 2.0) ٹول رجسٹری رکھتا ہے، جو مرکزی سرور پورٹ (ڈیفالٹ `9030`) پر `POST /mcp` اور `GET /sse` کے ذریعے پیش کی جاتی ہے، پروٹوکول ورژن `2024-11-05`۔ ہر کلائنٹ اِسی ایک رجسٹری تک پہنچتا ہے: ڈیسک ٹاپ، ویب بلڈ، بیرونی MCP کلائنٹس اور بلٹ اِن ایجنٹ رن ٹائم۔ بیرونی MCP سرورز کو ایک ڈائنامک تہہ کے طور پر اِسی رجسٹری میں پل بنایا جا سکتا ہے۔
 
-## Registry size
+## رجسٹری کا حجم
 
-| Measure                                                                   | Count |
+| پیمائش                                                                   | تعداد |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| `cc_server` کی رجسٹر کردہ ٹولز                                           | 110   |
+| `packages/cc_mcp` سے                                                     | 108   |
+| `packages/cc_mcp_client` سے (ٹول ڈسکوری)                                 | 2     |
+| بیس رجسٹری میں رجسٹر شدہ (`server_mcp_registry.dart`)                     | 63    |
+| بوٹ کے بعد، سروسز کے آنے پر رجسٹر شدہ (`cc_server_runtime.dart`)          | 47    |
+| بیس رجسٹری کے 63 میں سے، کوڈ گراف ریپوزٹری پر مشروط                        | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+پانچ کوڈ گراف ٹولز صرف اُس وقت رجسٹر ہوتے ہیں جب ہوسٹ `buildServerMcpRegistry` کو کوئی کوڈ گراف ریپوزٹری دے۔ `cc_server` ہمیشہ ایک دیتا ہے، اس لیے بھیجے گئے بائنری میں سب 110 زندہ ہوتے ہیں۔
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+پوری رجسٹری `tools/list` میں بغیر کسی ڈسکوری گیٹنگ کے ظاہر کی جاتی ہے۔ ٹکٹ میں ترمیم ٹائپ شدہ ٹولز سے ہوتی ہے۔
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[بیرونی کلائنٹس ہمیشہ پورا کیٹلاگ دیکھتے ہیں]
+`tools/list` کبھی تراشا نہیں جاتا۔ MCP کلائنٹس ٹول کے نام اُسی فہرست کی اپنی کیشڈ نقل کے خلاف جانچتے ہیں اور سرور سے پوچھے بغیر ہر غیر درج نام سے انکار کر دیتے ہیں، چنانچہ وہاں چھپایا گیا ٹول محض خاموش نہیں بلکہ ناقابلِ رسائی ہوتا ہے۔
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ).
+**بلٹ اِن ہارنس** مختلف ہے: یہ فی درخواست صرف تعریفوں کا ایک مقیم ذیلی مجموعہ لوڈ کرتا ہے اور باقی پہلی استعمال پر کھینچ لاتا ہے، جو ہارنس کی طرف کا رویہ ہے اور اِس رجسٹری کو نہیں بدلتا۔ دیکھیں [ٹول کانٹیکسٹ اور پرامپٹ کیشنگ](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ)۔
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[ہر ٹول کلاس رجسٹر ہوتی ہے]
+`packages/cc_mcp/lib/src/tools/` کے نیچے موجود سورس فائل وہ ٹول ہے جسے ایجنٹ
+کال کر سکتا ہے۔ `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+بلڈ کو ناکام کر دیتا ہے اگر کوئی نئی ٹول کلاس کسی چیز سے تعمیر نہ ہو رہی ہو۔
 :::
 
-## Common parameters
+## مشترک پیرامیٹرز
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**لازمی** ہر اُس ٹول پر جو ورک اسپیس اسکوپ والا ڈیٹا چھوتا ہے۔ `workspace_id` غائب ہو یا غلط ہو تو واضح خرابی واپس آتی ہے، اور ایسی قدر جو ہدف ہستی کے ورک اسپیس سے میل نہ کھائے، خاموشی سے نظر انداز ہونے کے بجائے مسترد کر دی جاتی ہے۔ حقیقی طور پر گلوبل ٹولز پر اِسے چھوڑ دیں: `list_workspaces` اور چھ نیوز فیڈ ٹولز (`list_feeds`، `list_articles`، `get_article`، `set_article_read`، `set_article_saved`، `refresh_feeds`)، جو سرور کے مالک کی فی صارف فیڈ فہرست پر سوار ہوتے ہیں۔ ڈسکوری ٹولز (`search_tool_bm25`، `list_my_tools`) اِسے اختیاری طور پر لیتے ہیں تاکہ وہ گفتگو کے موڈ کے لحاظ سے قابلِ کال ہونے کی درجہ بندی کر سکیں۔ جب سرور کسی ایجنٹ کو ڈسپیچ کرتا ہے تو ورک اسپیس سرور کی طرف سے مسلط کر دیا جاتا ہے، اس لیے ایجنٹ کوئی بیرونی id دے کر کسی دوسرے ورک اسپیس تک نہیں پہنچ سکتا۔
 
-## Tool discovery
+## ٹول ڈسکوری
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+دونوں `cc_mcp` سے نہیں بلکہ `cc_mcp_client` سے آتے ہیں اور دونوں موڈ گارڈ سے رجوع کرتے ہیں، اس لیے وہ بتاتے ہیں کہ _موجودہ_ گفتگو کے موڈ میں کیا کال کرنا ممکن ہے۔
 
-| Tool               | Description                                                                                                                 |
+| ٹول                | تفصیل                                                                                                                      |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | ٹول کیٹلاگ میں کلیدی لفظ سے تلاش کریں؛ مماثل ٹولز، اُن کے آرگومنٹ اسکیما اور یہ کہ ہر ایک اس وقت قابلِ کال ہے یا نہیں، واپس کرتا ہے |
+| `list_my_tools`    | اس گفتگو میں اس وقت قابلِ کال ٹولز کی فہرست دیں، جو اُس کے موڈ سے فلٹر شدہ ہو                                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+تیسرا ڈسکوری ٹول، **`search_tools`**، صرف بلٹ اِن ہارنس کے اندر موجود ہے اور اِس MCP رجسٹری کا حصہ نہیں۔ یہ رن کی اپنی ٹول سطح کی درجہ بندی کرتا ہے اور `search_tool_bm25` کے برعکس جو کچھ ملے اُس کے اسکیما **لوڈ** کر لیتا ہے تاکہ ایجنٹ اپنی اگلی باری میں کسی مماثل ٹول کو کال کر سکے۔ ہارنس پر چلنے والے ایجنٹس کو اِسی کو ترجیح دینی چاہیے؛ MCP کلائنٹس کے پاس `search_tool_bm25` ہے۔
 
-## Agent tools
+## ایجنٹ ٹولز
 
-| Tool          | Description                               |
+| ٹول           | تفصیل                                     |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | کسی ورک اسپیس میں رجسٹر شدہ ایجنٹس کی فہرست دیں |
 
-## Agent peer messaging and delegation
+## ایجنٹس کے درمیان پیغام رسانی اور تفویض
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+ایجنٹس اسپیسز کے ذریعے ایک دوسرے سے بات کرتے ہیں (پائیدار، روسٹر پر نظر آنے والے)۔ `ask_agent` درخواست/جواب ہے جس کی ٹائم آؤٹ لازمی ہے؛ `delegate_task` سرور کی طرف سے گہرائی کی حد، چکر کی شناخت، بجٹ لفافے اور خود مختاری کی چھت سے محفوظ کیا جاتا ہے۔
 
-| Tool            | Description                                                                                    |
+| ٹول             | تفصیل                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | کسی دوسرے ایجنٹ کو یک طرفہ پیغام بھیجیں، جسے `to_agent_id` یا بالکل درست `to_agent_name` سے مخاطب کیا گیا ہو |
+| `ask_agent`     | کسی دوسرے ایجنٹ سے سوال پوچھیں اور اس کا جواب یا ٹائم آؤٹ کا انتظار کریں                        |
+| `delegate_task` | کسی کام کو ٹریک ہونے والے ذیلی ٹکٹ کے طور پر دوسرے ایجنٹ کو تفویض کریں                          |
+| `consult_agent` | مہارتوں کے لحاظ سے بہترین مماثل ماہر کو اسپیس میں شامل کریں اور اسے ایک مرکوز بریف کے ساتھ ڈسپیچ کریں |
+| `todo_read`     | اس گفتگو کی محفوظ شدہ ٹاسک چیک لسٹ پڑھیں                                                        |
 
-## Skill tools
+## مہارت کے ٹولز
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+ہر انسٹال اور اپ ڈیٹ ایک ناکامی پر بند اسکین گیٹ سے گزرتا ہے، اس سے پہلے کہ مہارت کا کوئی مواد ڈسک یا ایجنٹ کے پرامپٹ تک پہنچے۔
 
-| Tool                 | Description                                                               |
+| ٹول                  | تفصیل                                                                      |
 | -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| `list_skills`        | کسی ورک اسپیس میں دستیاب مہارت کے سلگس کی فہرست دیں                        |
+| `create_skill`       | مارک ڈاؤن مواد سے ایک نئی مہارت بنائیں                                     |
+| `install_skill`      | کسی مہارت کی پوری ڈائریکٹری کسی GitHub ریپوزٹری سے پن شدہ ref پر انسٹال کریں |
+| `update_skill`       | انسٹال شدہ GitHub مہارت کو نئے ref پر اپ ڈیٹ کریں، دوبارہ اسکین اور دوبارہ پن کرتے ہوئے |
+| `list_skill_updates` | ایسی مہارتوں کی فہرست دیں جن کا نیا ورژن دستیاب ہو                          |
+| `verify_skills`      | لاک شدہ مہارتوں کو ڈسک پر موجود مواد کے ہیشز کے خلاف جانچیں                 |
+| `pin_skill`          | ڈسک پر موجود کسی مہارت کو ہیش کر کے `skills-lock.json` میں درج کریں        |
 
-## Plan, playbook and artifact tools
+## پلان، پلے بک اور آرٹی فیکٹ ٹولز
 
-| Tool               | Description                                                                                                           |
+| ٹول                | تفصیل                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | پلان موڈ کا آؤٹ پٹ معاہدہ: ایک ٹائپ شدہ `PlanDocument` جاری کریں جو Plan Studio میں کھلتا ہے                           |
+| `create_playbook`  | کسی پلان کو ٹائپ شدہ `{{param}}` پلیس ہولڈرز کے ساتھ ایک نامزد، ورژن شدہ ٹیمپلیٹ کے طور پر محفوظ کریں                  |
+| `run_playbook`     | کسی پلے بک کو پیرامیٹر قدروں کے ساتھ وجود میں لائیں، جس سے ایک پلان بنے جسے آپریٹر منظور کرتا ہے                       |
+| `publish_artifact` | ٹائپ شدہ بلاکس کی ایک ترتیب وار فہرست (مارک ڈاؤن، ٹیبل، چارٹ، mermaid، کوڈ، JSON) شائع کریں جو کلائنٹ میں نیٹو طور پر رینڈر ہو |
+| `revise_artifact`  | کسی شائع شدہ آرٹی فیکٹ کا مواد بدل دیں                                                                                |
+| `list_artifacts`   | ورک اسپیس کے آرٹی فیکٹس کی فہرست دیں                                                                                  |
+| `get_artifact`     | ایک آرٹی فیکٹ پڑھیں                                                                                                   |
+| `complete_goal`    | گفتگو کے فعال پائیدار ہدف (جو `/goal` یا `/loop` سے شروع ہوا) کو حاصل شدہ قرار دیں                                     |
 
-## Workspace tools
+## ورک اسپیس ٹولز
 
-| Tool              | Description                                                              |
+| ٹول               | تفصیل                                                                    |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | تمام ورک اسپیسز کو اُن کی ids اور ناموں کے ساتھ درج کریں (گلوبل؛ کوئی `workspace_id` نہیں) |
 
-## Repo tools
+## ریپو ٹولز
 
-| Tool         | Description                                                                                                                                              |
+| ٹول          | تفصیل                                                                                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | کسی ورک اسپیس میں رجسٹر شدہ ریپوز کی فہرست دیں۔ ایجنٹ کالرز کو اُن کی گفتگو کے الگ تھلگ کاپی آن رائٹ worktree پاتھز ملتے ہیں، اصل چیک آؤٹ کبھی نہیں |
 
-## Messaging tools
+## پیغام رسانی کے ٹولز
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| ٹول                  | تفصیل                                                                       |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_spaces`        | کسی ورک اسپیس میں پیغام رسانی کے اسپیسز کی فہرست دیں                        |
+| `get_messages`       | کسی اسپیس سے پیغامات حاصل کریں                                              |
+| `send_message`       | ایک اسپیس کو نامزد بھیجنے والے ایجنٹ کے طور پر پیغام بھیجیں                 |
+| `get_space_notes`    | کسی اسپیس کی مشترکہ حوالگی دستاویز پڑھیں                                    |
+| `update_space_notes` | کسی اسپیس کی مشترکہ حوالگی دستاویز بدل دیں                                  |
+| `todo_write`         | اس گفتگو کی ٹاسک چیک لسٹ ایک ہی کال میں بدل دیں (پوری فہرست پاس کریں)         |
 
-## Review tools
+## ریویو ٹولز
 
-| Tool                       | Description                                                                                            |
+| ٹول                        | تفصیل                                                                                                    |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| `start_ai_review`          | کسی PR کے لیے AI ریویو شروع کریں: ریویو کے شعبے شمار کریں، ماہر ریویوورز کو PR اسپیس میں پھیلائیں، واک تھرو تصنیف کریں اور حتمی شکل دیں |
+| `add_review_node`          | ریویو اسپیس میں ایک ساختی ریویو نتیجہ (فائل، لائن، P0–P3 ترجیح) شامل کریں                                |
+| `confirm_review_node`      | کسی ہم مرتبہ کا نتیجہ تصدیق کریں؛ مصنف خود تصدیق نہیں کر سکتا                                           |
+| `resolve_review_node`      | تبدیلی واقعی کرنے کے بعد کسی نتیجے کو حل شدہ قرار دیں؛ ریویو اسپیس میں ایک نشان پوسٹ کرتا ہے            |
+| `dismiss_review_node`      | ایسے نتیجے کو مسترد کریں جو لاگو نہ ہوتا ہو؛ ایک سرکشی کا فیکٹ ریکارڈ کرتا ہے تاکہ ریویوورز اسے دوبارہ نشان زد کرنا بند کر دیں |
+| `request_peer_review`      | کسی نتیجے پر دوسری نظر کے لیے کسی دوسرے ریویوور ایجنٹ سے کہیں                                          |
+| `dispatch_reviewers`       | مماثل ریویوور ایجنٹس کو بیک وقت ایک ریویو اسپیس میں ڈسپیچ کریں                                          |
+| `submit_reviewer_verdict`  | فی ریویوور ship/hold/block فیصلہ اعتماد اور وضاحت کے ساتھ پوسٹ کریں                                      |
+| `finalize_review`          | فی نوڈ اتفاقِ رائے اور فی PR فیصلہ شمار کریں اور ریویو بند کریں                                          |
+| `set_cohort_summary`       | کسی ریویو کوہارٹ کا آسان زبان والا خلاصہ سیٹ کریں                                                       |
+| `add_review_diagram`       | کسی کوہارٹ کے ساتھ ایک ساختی، گراف سے تصدیق شدہ خاکہ (`sequence`، `entityRelation`، `stateMachine`) منسلک کریں |
+| `publish_review_to_github` | حتمی ریویو GitHub پر ان لائن تبصروں کے ساتھ ایک خلاصہ باڈی کی صورت میں شائع کریں                       |
 
-## Memory tools
+## میموری ٹولز
 
-| Tool                    | Description                                                                                         |
+| ٹول                     | تفصیل                                                                                               |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| `search_memory`         | فیکٹس اور پالیسیوں میں تلاش کریں (کلیدی لفظ، سیمنٹک یا ہائبرڈ — ہائبرڈ ڈیفالٹ ہے)                     |
+| `propose_fact`          | کسی ڈومین میں ایک مختصر مارک ڈاؤن فیکٹ محفوظ کریں                                                    |
+| `supersede_fact`        | ایک فیکٹ کو کسی دوسرے سے منسوخ شدہ قرار دیں                                                          |
+| `propose_policy`        | کسی ڈومین میں ایک معیاری قاعدہ محفوظ کریں (اس پر لکھنے کی اجازت درکار ہے)                            |
+| `supersede_policy`      | ایک پالیسی کو ریٹائر کریں — اسے غیر فعال نشان زد کرتا ہے مگر آڈٹ کے لیے رکھتا ہے                     |
+| `list_policies`         | فعال پالیسیوں کی فہرست دیں، اختیاری طور پر ڈومین سے فلٹر شدہ                                         |
+| `list_memory_domains`   | ورک اسپیس کے میموری ڈومینز کو فیکٹ اور پالیسی کے شمار کے ساتھ درج کریں                              |
+| `record_observation`    | ایجنٹ کی ورکنگ میموری میں ایک خام مشاہدہ ریکارڈ کریں                                                 |
+| `get_my_notes`          | کال کرنے والے ایجنٹ کی ورکنگ میموری کا اسکریچ پیڈ پڑھیں                                              |
+| `update_my_notes`       | کال کرنے والے ایجنٹ کی ورکنگ میموری کا اسکریچ پیڈ اپ ڈیٹ کریں                                        |
+| `remember`              | اس سیشن کے لیے ایجنٹ کی ہاٹ ورکنگ میموری میں ایک نوٹ شامل کریں (TTL اور گنتی سے محدود)                |
+| `consolidate_memory`    | ایک استحکام (“نیند”) پاس چلائیں: میعاد ختم ہو چکے ہاٹ آئٹمز نکالیں اور پائیدار آئٹمز کو طویل مدتی فیکٹس میں ڈھالیں |
+| `harmonize_memory`      | ایجنٹس کے درمیان یقین کی تطبیق (SHMR) چلائیں اور تضادات نشان زد کریں                                 |
+| `list_memory_conflicts` | شناخت شدہ تضادات اور یہ کہ ہر ایک کیسے حل ہوا، کی فہرست دیں                                          |
 
-## Governance tools
+## گورننس ٹولز
 
-| Tool                         | Description                                                                                           |
+| ٹول                          | تفصیل                                                                                                 |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | ایک تنظیمی ہدف بنائیں (کمپنی، ٹیم، ایجنٹ یا ٹاسک کی سطح)                                              |
+| `list_goals`                 | اہداف کو سطح، حیثیت اور مجموعی پیش رفت کے ساتھ درج کریں                                               |
+| `update_goal_progress`       | کسی ہدف کی پیش رفت سیٹ کریں                                                                           |
+| `create_approval`            | کسی زیرِ انتظام ایکشن (پلان سے اخراج، مرج، ریلیز، بھرتی، حسب ضرورت) کے لیے بورڈ منظوری کھولیں         |
+| `list_approvals`             | منظوریوں کی فہرست دیں، اختیاری طور پر حیثیت سے فلٹر شدہ                                               |
+| `decide_approval`            | ایک فیصلہ ریکارڈ کریں: منظور کریں، مسترد کریں، نظرثانی طلب کریں، یا دوبارہ جمع کرائیں                 |
+| `comment_approval`           | کسی بورڈ منظوری پر تبصرہ کریں                                                                         |
+| `exit_plan_mode`             | ایک `plan_exit` منظوری کھولیں (اور منظوری ملنے پر استعمال کریں)، جو گفتگو کو پلان موڈ سے باہر منتقل کر دیتی ہے |
+| `agent_heartbeat`            | زندہ ہونے کی اطلاع دیں (فعال، بیکار، پھنسا ہوا)؛ خاموش ہو جانا رن ٹائم ہیلتھ کو پہلے حال ہی میں گم شدہ اور پھر آف لائن کر دیتا ہے |
+| `list_runtime_health`        | ہر ایجنٹ کی رن ٹائم ہیلتھ درج کریں                                                                     |
+| `list_agent_presence`        | ہر ایجنٹ کی موجودگی درج کریں (ہیلتھ، لائف سائیکل، چل رہے اور قطار میں شمار، گنجائش)                   |
+| `get_org_chart`              | رپورٹنگ درخت پڑھیں، جس کی جڑ پر CEO ہو اور جو `reports_to` سے نیسٹ ہو                                 |
+| `create_work_product`        | کسی ٹکٹ سے منسلک ایک پائیدار ڈیلیوریبل بنائیں                                                         |
+| `save_work_product_revision` | ایک نئی ریویژن محفوظ کریں؛ ہم وقتی ترمیم پر مسترد ہونے کے لیے `base_revision_id` پاس کریں              |
+| `list_work_products`         | ورک پراڈکٹس کی فہرست دیں، اختیاری طور پر ایک ٹکٹ تک فلٹر شدہ                                          |
+| `get_work_product`           | ایک ورک پراڈکٹ کو اس کی ریویژن تاریخ کے ساتھ پڑھیں                                                     |
+| `create_runtime_profile`     | ایک دوبارہ قابلِ استعمال رن ٹائم پروفائل بیان کریں (پروٹوکول خاندان، CLI کمانڈ، مقرر لانچ آرگومنٹس)    |
+| `list_runtime_profiles`      | ورک اسپیس کے رن ٹائم پروفائلز کی فہرست دیں                                                            |
 
-## Code graph tools
+## کوڈ گراف ٹولز
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+صرف اُس وقت رجسٹر ہوتے ہیں جب ہوسٹ کوئی کوڈ گراف ریپوزٹری فراہم کرے۔ انڈیکس بھیجے گئے گرامر سیٹ پر محیط ہے (Dart، JS/TS، PHP، Python، Rust، Zig، C/C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB، Ada)؛ کسی بھی دوسری زبان کے سمبل موجود نہیں ہوتے۔
 
-| Tool           | Description                                                                        |
+| ٹول            | تفصیل                                                                              |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | انڈیکس شدہ سمبلز کو نام، سگنیچر اور ڈاک تبصرے سے تلاش کریں (ہائبرڈ BM25 + سیمنٹک)   |
+| `code_symbol`  | سمبلز کو بالکل درست نام سے دیکھیں؛ `file:line` اور سگنیچر واپس کرتا ہے             |
+| `code_callers` | وہ سمبلز درج کریں جو کسی سمبل کو کال کرتے یا اُس پر منحصر ہیں (آنے والے کنارے)      |
+| `code_callees` | وہ سمبلز درج کریں جنہیں کوئی سمبل کال کرتا یا جن پر منحصر ہے (جانے والے کنارے)      |
+| `code_impact`  | کسی سمبل کے منتقلی اثر کا دائرہ ایک گہرائی تک شمار کریں                            |
 
-## Ticketing tools
+## ٹکٹنگ ٹولز
 
-| Tool                      | Description                                                                                                                  |
+| ٹول                       | تفصیل                                                                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | کنفیگر شدہ فراہم کنندہ پر ایک ٹکٹ بنائیں                                                                                      |
+| `get_ticket`              | ایک ٹکٹ id سے حاصل کریں                                                                                                      |
+| `list_tickets`            | ٹکٹس کی فہرست دیں، اختیاری طور پر حیثیت یا تفویض کنندہ سے فلٹر شدہ                                                            |
+| `update_ticket`           | حیثیت، عنوان، تفصیل، ترجیح یا لیبلز اپ ڈیٹ کریں (حیثیت `in_progress` / `completed` جیسے متبادل نام قبول کرتی ہے)             |
+| `assign_ticket`           | ایک ٹکٹ کسی ایجنٹ اور/یا ٹیم کو تفویض کریں                                                                                    |
+| `reassign_ticket`         | ایک ٹکٹ کسی دوسرے ایجنٹ کو دوبارہ تفویض کریں                                                                                  |
+| `add_ticket_collaborator` | کسی ایجنٹ کو ٹکٹ پر تعاون کے لیے مدعو کریں (اس کے اسپیس میں شامل کیا جاتا ہے)                                                 |
+| `comment_on_ticket`       | کسی ٹکٹ پر تبصرہ کریں                                                                                                        |
+| `close_ticket`            | ایک ٹکٹ بند کریں (اسے مکمل نشان زد کرتا ہے)، اختیاری آؤٹ پٹ کے ساتھ                                                            |
+| `fail_ticket`             | ایک ٹکٹ کو خرابی کے پیغام کے ساتھ ناکام نشان زد کریں                                                                          |
+| `delegate_ticket`         | ایک ٹکٹ کسی ایجنٹ کو تفویض کریں، جس سے ایک ٹریک ہونے والا ٹکٹ بنتا ہے                                                        |
+| `ticket_pr_link`          | PR نوڈ id سے کسی ٹکٹ اور pull request کو لنک یا اَن لنک کریں (`action`: `link` \| `unlink`)                                   |
+| `ticket_relation`         | دو ٹکٹوں کے درمیان تعلق شامل یا ہٹائیں — `blocked_by`، `blocking`، `related_to`، `duplicate_of`، `duplicated_by`، `sub_issue_of`، `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | کسی ٹکٹ کے پیرنٹ، ذیلی مسائل اور انحصار کے لنکس درج کریں                                                                     |
 
-## Team and pipeline tools
+## ٹیم اور پائپ لائن ٹولز
 
-| Tool                   | Description                                                                                                                    |
+| ٹول                    | تفصیل                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| `record_team_activity` | کسی ٹکٹ کے خلاف ٹیم لیڈر کی ایکٹیویٹی اندراج ریکارڈ کریں                                                                        |
+| `preview_trigger`      | ڈرائی رن کریں کہ کوئی فرضی ایونٹ کون سے پائپ لائن رنز شروع کرے گا، بغیر کچھ کمٹ کیے                                              |
+| `submit_output`        | کالر کے موجودہ پائپ لائن رن کے لیے ساختی آؤٹ پٹ پیلوڈ جمع کرائیں؛ رن کے اعلان کردہ آؤٹ پٹ اسکیما کے خلاف جانچا جاتا ہے             |
 
-## Orchestration tools
+## آرکیسٹریشن ٹولز
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| ٹول                     | تفصیل                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | ایک پیشگی منظوری کے لیے ایک ساختی کثیر ایجنٹ آرکیسٹریشن پلان جاری کریں؛ جانچ کرتا ہے اور کوئی خلاف ورزی ہو تو واپس کرتا ہے |
 
-## Newsfeed tools
+## نیوز فیڈ ٹولز
 
-| Tool                | Description                                                  |
+| ٹول                 | تفصیل                                                        |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | رجسٹر شدہ RSS/Atom فیڈز کی فہرست دیں                         |
+| `list_articles`     | مضامین کی فہرست دیں، اختیاری طور پر فیڈ، غیر پڑھے یا محفوظ سے فلٹر شدہ |
+| `get_article`       | ایک مضمون حاصل کریں                                          |
+| `set_article_read`  | کسی مضمون کو پڑھا یا غیر پڑھا نشان زد کریں                    |
+| `set_article_saved` | کسی مضمون کو محفوظ یا غیر محفوظ کریں                          |
+| `refresh_feeds`     | ہر فعال فیڈ ابھی دوبارہ حاصل کریں                             |
 
-## Enclosure (rig) tools
+## انکلوژر (رگ) ٹولز
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ur-PK/ہدایت-نامہ/حوالہ/رگز/#action-verbs).
+رن کے اندر سے ضائع ہونے والی مشینیں چلائیں — ایک انکلوژر براؤزر یا Linux
+ڈیسک ٹاپ، ایک Android ایمولیٹر یا ایک iOS سمیولیٹر۔ بوٹ کے بعد، بغیر کسی شرط
+کے رجسٹر ہوتے ہیں: کوئی مشین واقعی بوٹ ہو سکتی ہے یا نہیں، یہ ایک پروب سوال ہے
+جس کا جواب ٹولز فی کال دیتے ہیں۔ ایک گفتگو میں دہرائی گئی کالیں ایک ہی مشین
+دوبارہ استعمال کرتی ہیں؛ اسکرین شاٹس تصویری مواد کے طور پر واپس آتے ہیں جس میں
+فی نتیجہ ایک تصویر کا بجٹ ہوتا ہے، اور نکالا گیا صفحہ/UI مواد ناقابلِ اعتماد
+ڈیٹا کے طور پر باڑ میں بند کر دیا جاتا ہے۔ چار یوز ٹولز کے ساتھ `rig_close` بھی
+`enclosureControl` [ایکشن کلاس](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) کا اعلان کرتے
+ہیں (یوز ٹولز `networkEgress` اور `processSpawn` بھی بتاتے ہیں؛ `mobile_use` اور
+`ios_use` `packageInstall` بھی بتاتے ہیں)، اس لیے صرف پڑھنے والے موڈز اُن سے انکار
+کر دیتے ہیں۔ `rig_list` کوئی اعلان نہیں کرتا — وہ صرف ورک اسپیس کی حالت پڑھتا ہے۔
+فی سطح فعل کی مکمل ذخیرہ الفاظ
+[رگز حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/رگز/#action-verbs) میں ہے۔
 
-| Tool           | Description                                                                                     |
+| ٹول            | تفصیل                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| `computer_use` | انکلوژر VM میں Linux ڈیسک ٹاپ چلائیں: حرکت، کلک، ڈریگ، اسکرول، ٹائپ، ری سائز، کلپ بورڈ، اسکرین شاٹ |
+| `browser_use`  | ہیڈلیس Chromium، Firefox یا WebKit چلائیں (`engine`): نیویگیٹ، کلک، فل، ایکسٹریکٹ (a11y/DOM/console)، کلپ بورڈ، اسکرین شاٹ |
+| `mobile_use`   | ADB کے ذریعے Android چلائیں: معائنہ/اِن پٹ، اسکرین شاٹس، ایپس کی انسٹال/شروع/روکیں/ری سیٹ/اَن انسٹال، ڈیپ لنکس اور argv کی شکل والی ڈیوائس کمانڈز |
+| `ios_use`      | WebDriverAgent/CoreSimulator کے ذریعے iOS سمیولیٹر چلائیں: معائنہ/اِن پٹ، اسکرین شاٹس، ایپس کی انسٹال/شروع/روکیں/اَن انسٹال، ڈیپ لنکس اور argv کی شکل والے سمیولیٹر پراسیس |
+| `rig_list`     | کسی ورک اسپیس کے رگز سطح، حیثیت، ڈسپلے سائز اور کنٹرولر کے ساتھ درج کریں |
+| `rig_close`    | ایک رگ کو تباہ کریں اور اس کی ملکیت والی مشین کی حالت ضائع کر دیں |
 
-## Not exposed over MCP
+## جو MCP پر پیش نہیں کیے جاتے
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/), not as a tool an agent can call.
+کیلنڈر اور میٹنگز کے پاس کوئی MCP ٹول نہیں۔ ایجنٹس آپ کا کیلنڈر، میٹنگز، ٹرانسکرپٹس، ایکشن آئٹمز یا فیصلے نہیں پڑھ سکتے۔ وہ خلاصہ جو ایکشن آئٹمز اور فیصلے پیدا کرتا ہے، بلٹ اِن [`meeting_summary` پائپ لائن](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) کے طور پر چلتا ہے، نہ کہ کسی ایسے ٹول کے طور پر جسے ایجنٹ کال کر سکے۔
 
-## Tool gating by mode
+## موڈ کے لحاظ سے ٹول گیٹنگ
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+گیٹنگ ایک ہی ٹیبل (`ModeToolPolicy`) سے دو بار نافذ کی جاتی ہے: ایک بار Claude Code اڈاپٹر کے MCP ڈسپیچر میں اور ایک بار بلٹ اِن ہارنس رجسٹری میں۔ روکی گئی کال وجہ واپس کرتی ہے۔
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| موڈ           | ٹول سطح                                                                                                                                                                                                                             |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | ہر رجسٹر شدہ ٹول؛ کوئی اجازت فہرست نہیں                                                                                                                                                                                              |
+| `plan`        | ایک چنی ہوئی اجازت فہرست۔ worktree میں کوئی تحریر نہیں اور نہ `create` / `assign` / `delegate` ٹکٹ فعل، مگر میموری، آرٹی فیکٹس، ٹوڈوز، `submit_plan`، `exit_plan_mode` اور ڈسپیچ شدہ ٹکٹ پر ٹکٹ مکمل کرنے والے فعل کی اجازت ہے |
+| `review`      | ایک چنی ہوئی اجازت فہرست: ریویو میں شرکت، مواصلات، صرف پڑھنے والے کانٹیکسٹ حاصل کرنے والے اور ٹکٹ فعل کا پورا مجموعہ، بشمول `create_ticket` اور `assign_ticket`                                                                       |
+| `orchestrate` | ایک چنی ہوئی اجازت فہرست: تحقیق اور پڑھنے کے ٹولز نیز `propose_orchestration`، `create_playbook` اور `run_playbook`۔ بھرتیاں، تجزیہ اور ٹکٹ کی تکمیل منظوری کے بعد متعیّن انداز میں ہوتی ہیں، کبھی رن کے دوران نہیں                |
 
-Permitted in every mode regardless of allow-list:
+ہر موڈ میں اجازت یافتہ، اجازت فہرست سے قطع نظر:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| مجموعہ               | ٹولز                                                                                                                                                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| میموری اور آرٹی فیکٹس | `search_memory`، `propose_fact`، `propose_policy`، `supersede_fact`، `supersede_policy`، `record_observation`، `update_my_notes`، `get_my_notes`، `list_memory_domains`، `list_policies`، `publish_artifact`، `revise_artifact`، `list_artifacts`، `get_artifact` |
+| کوڈ گراف             | `search_code`، `code_symbol`، `code_callers`، `code_callees`، `code_impact`                                                                                                                                                                                       |
+| رن میکینکس           | `search_tool_bm25`، `list_my_tools`، `todo_write`، `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+کسی اجازت فہرست میں ہونا کسی ٹول کو قابلِ کال نہیں بنا دیتا، اور اُلٹا بھی سچ ہے: آپریٹر سے سوال کرنے کی صلاحیت ایک **ہارنس** ٹول (`ask_user`) ہے، اس لیے یہ اِس MCP کیٹلاگ میں سرے سے کبھی ظاہر نہیں ہوتی۔
 
-## Approval-gated tools
+## منظوری گیٹ والے ٹولز
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+کوئی ٹول `requiresApproval` کا اعلان کر سکتا ہے۔ پھر ڈسپیچر ٹول چلنے سے پہلے ایک `ApprovalPayload` بناتا ہے اور اسے `ConfirmationPort` کے ذریعے سامنے لاتا ہے؛ `cc_server` اُس پورٹ کو وائر کرتا ہے، اس لیے گیٹ فعال ہے۔
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+اِس کا اعلان کرنے والے رجسٹر شدہ ٹولز: `create_ticket`، `update_ticket`، `assign_ticket`، `reassign_ticket`، `close_ticket`، `ticket_relation`، `create_goal`، `update_goal_progress`، `create_approval`، `decide_approval`، `comment_approval`، `create_work_product`، `save_work_product_revision`، `create_runtime_profile`، `install_skill`، `update_skill`۔
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/).
+اِس سے الگ، متحد ایکشن گارڈریلز ہر اُس ٹول کو گیٹ کرتے ہیں جو خالی نہ ہونے والا `ActionClass` مجموعہ بتائے۔ کوئی `prompt` فیصلہ جس کے ساتھ کوئی منظور کنندہ جڑا نہ ہو، مسترد کر دیا جاتا ہے۔ دیکھیں [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)۔
 
-## Capabilities with no tool behind them
+## وہ صلاحیتیں جن کے پیچھے کوئی ٹول نہیں
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+پروڈکٹ کی ہر صلاحیت ایجنٹ کی پہنچ میں نہیں۔ اِن کے پیچھے سرے سے کوئی ٹول
+نہیں، اس لیے کوئی ایسا نام جس کا حوالہ آپ نے کہیں اور دیکھا ہو، "unknown tool" واپس کرتا ہے:
 
-| Capability                             | Where it lives instead                                                                       |
+| صلاحیت                                  | یہ بجائے اس کے کہاں رہتی ہے                                                                      |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| ایجنٹ کی بھرتی، برطرفی یا ترمیم          | ایجنٹس UI۔ کوئی `hire_agent` / `fire_agent` / `update_agent` ٹول نہیں ہے                      |
+| ورک اسپیس بنانا                          | RPC پر `workspace.upsert`، جو سیڈ کرتا اور ملکیت کی مہر لگاتا ہے                                 |
+| پروجیکٹس (بنانا / فہرست / اپ ڈیٹ / فائل کرنا) | ٹکٹس UI۔ پروجیکٹس ایک آپریٹر سطح ہیں — دیکھیں [پروجیکٹس](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)     |
+| آپریٹر سے کوئی رکاوٹ ڈالنے والا سوال پوچھنا | **ہارنس** کا `ask_user` ٹول، نہ کہ MCP۔ یہ گفتگو میں ایک فارم رینڈر کرتا ہے اور جواب پر رک جاتا ہے |
+| فی ایجنٹ تشخیص                          | کچھ نہیں۔ کوئی `doctor` نہیں ہے — دیکھیں [ایجنٹ کی تشخیص](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/) |
+| کیلنڈر اور میٹنگز                       | صرف انسانی کلائنٹس کے لیے RPC (اوپر دیکھیں)                                                      |
 
-## See also
+## مزید دیکھیں
 
-- [Use Control Center as an MCP server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/)
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)
+- [MCP سرور استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)

@@ -1,241 +1,100 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: リグとエンクロージャー
+description: エージェントがあなたのコンピュータではなく使い捨てのマシンを受け取る理由 — 分離の境界、表示レーン、認証情報、ポート、ライフサイクル。
 slug: ja-JP/マニュアル/コンセプト/リグ
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/ja-JP/マニュアル/ハウツーガイド/リグの利用/); for the exact
-verbs, ports and defaults, see the [rigs reference](/ja-JP/マニュアル/リファレンス/リグ/).
+**リグ**とは、エージェントがリアルタイムで操作する使い捨てのマシンのことです。ブラウザ、Linux デスクトップ、Android エミュレータ、iOS シミュレータ、あるいはエンクロージャーのターミナルの背後にあるマシンがこれにあたります。ほとんどのリグは VM ですが、ホスト側で管理されるモバイルシミュレータは明示的な例外です。このページでは各境界と、なぜ各部品がそのような形になっているのかを説明します。リグを開く方法は[エージェントにテスト用マシンを渡す](/ja-JP/マニュアル/ハウツーガイド/リグの利用/)を、正確な動詞・ポート・既定値は[リグのリファレンス](/ja-JP/マニュアル/リファレンス/リグ/)を参照してください。
 
-## Why a VM, not a sandbox
+## なぜサンドボックスではなく VM なのか
 
-The [native sandbox](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[ネイティブサンドボックス](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)はプロセスを名前空間の分離で包みます。これは本物ではありますが、あなたのカーネルを共有しており、制約するのは*プロセス*であって*コンピュータ*ではありません。エージェントがデスクトップアプリをあちこちクリックしたり、実際のブラウザでページをレンダリングしたり、考えたくもない `rm -rf` の実験を実行したりする必要が出た瞬間、正直な境界はマシンです。独自のカーネル、独自のディスク、独自のネットワークスタックを持ちます。
 
-The enclosed surfaces use two VM backends:
+エンクロージャー系のサーフェスは 2 つの VM バックエンドを使います。
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM** — ターミナルとブラウザ用。ダイジェストで固定されたコンテナイメージから 1 秒未満でハイパーバイザーが起動します。
+- **QEMU** — フル Linux デスクトップ用。microVM にはない表示デバイスが必要です。
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+モバイル系のサーフェスはホスト側で管理され、より弱い境界であることを明示します。
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** は ADB を通じて Google のエミュレータを操作します。
+- **iOS** は Mac ホスト上に CoreSimulator デバイスを作成して所有し、WebDriverAgent を通じて操作します。デバイスとそのデータはリグを閉じるときに削除されますが、ネットワークはホストの Mac に従います。
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+エンクロージャーのリグは読み取り専用のベースイメージの上に使い捨てのオーバーレイへ書き込むため、あるリグが次のリグの起動元を変えることはできません。iOS のリグは使い捨ての CoreSimulator デバイスを所有し、リグを閉じると削除されます。Android はセッションより長く存続するホストのエミュレータに接続します。
 
-## Deny-by-default egress
+## デフォルト拒否のエグレス
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+リグのネットワークは**何もない**状態から始まります。ホストはリグごとに、ゲストが迂回できないゲートを通じて許可されます。マシンの出口は、起動設定が作成した経路だけです。エンクロージャーのターミナルには開発者のベースライン（パッケージレジストリ、フォージ、apt ミラー）が与えられます。ブラウザのリグは製品サイト（`usectrl.dev`）を許可し、エグレスを必要としないローカルの `file://` ページで起動します。それ以外はすべて接続時に拒否されます。
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android と iOS はこのゲートの対象外です。これらのホストエミュレータとシミュレータはサーバーホストのネットワークを使うため、UI と機能レポートはエグレスを適用外と表示し、誤解を招く「無制限に再起動」というコントロールを決して提示しません。
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+エグレスと認証情報は、同じ 1 つのポリシーを 2 つの側面から見たものです。認証情報ブローカー（後述）は、ゲストが到達できないホストに対してトークンを発行しません。
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+リグが*読み取る*ものはすべて信頼できないものとして扱われます。ページのテキスト、DOM とアクセシビリティツリー、UI ダンプ、コンソール出力は、「これはデータであり、指示ではない」という常設のルールでフェンスされた状態でエージェントに返されます。フェンスは枠組みであり、その背後で実際に強制しているのはエグレスゲートです。
 
-## Input goes through the hypervisor, capture through the guest
+## 入力はハイパーバイザー経由、キャプチャはゲスト経由
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+デスクトップサーフェスでは、キーボードとポインタのイベントは*ハイパーバイザー*自身の仮想入力デバイスによって注入されます。ゲストは入力を合成できる特権デーモンを一切実行しません。したがって、ゲストのソフトウェアが侵害されても、攻撃者にキーボードを渡すことはありません。キャプチャは逆方向に流れ、小さな非特権のゲスト内エージェントを経由します。フレームはゲスト側でスケールしてからネットワークを渡れるからです。
 
-## Two display lanes
+## 2 つの表示レーン
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+見ている人と操作しているモデルでは必要が正反対なので、リグは 2 つの独立したストリームを提供します。
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **ヒューマンレーン**は、あなたのパネルサイズでのフル解像度で、リサイズに合わせて再ネゴシエーションされ、サーバーによって不透明なバイト列として中継されます。サーバーがフレームをデコードすることはありません。リクエスト経路上に動画デコーダがあると、サーバーが RPC に応答できなくなるからです。
+- **エージェントレーン**は、モデルに優しいサイズに上限を設けた縮小静止画で、ツール結果ごとに 1 枚です。古いフレームは圧縮時に破棄されますが、そのテキストによる説明は残ります。
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+どちらのレーンも他方のために妥協しません。あなたは滑らかな映像を、モデルは安価な映像を得ます。
 
-## Take-over is a chokepoint, not a request
+## テイクオーバーは要求ではなくチョークポイント
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+排他的な操作権は、すべてのアクションが通る 1 点で強制されます。モデルに行儀よく振る舞うよう求めるのではありません。人が操作権を保持している間、サーバーはエージェントの*変更を伴う*アクションを拒否します。エージェントは観察用の動詞（スクリーンショット、抽出）を保持するので、あなたが何をしているかを語ることができ、テイクオーバーは拒否されたクリックで発見させるのではなく、ステアリングレーンを通じて通知されます。キャンバス上でのクリックと入力は、他の誰もそのロックを保持していないとき、あるいはあなたが保持しているときに機能します。ステータスタグには**操作できます**と表示されます。あなたのものもエージェントのものも、すべての入力イベントは、主体と単調増加するシーケンスとともにリグごとの監査ログに記録されるので、「誰がそれをクリックしたのか」はマシンが消えた後も答えられます。
 
-## Content crosses the boundary; the machines stay separate
+## コンテンツは境界を越えるが、マシンは分離したまま
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+コピー＆ペーストは双方向に機能し、ファイルのドラッグ＆ドロップも同様です。しかしリグは別のコンピュータであり、設計は決してそうでないふりをしません。
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**クリップボード**はオンデマンドで運ばれ、継続的にミラーリングされることはありません。リグ上でコピーのショートカットを押すとゲストにコピーが指示され、そのクリップボードに入れたもの（テキスト、画像、ファイルのリスト）が取得されてあなたの側に置かれます。貼り付けは同じ内容を逆方向に送り、そのうえでゲスト内で貼り付けを押します。バックグラウンドで同期されるものは何もありません。あなたのマシンでコピーしたパスワードが、タイマーの発火によって VM の中に黙って届くことはありません。
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+越えるかどうかは、ユーザーごと、方向ごとに独立してゲートされます。リグへの貼り付けは既定で許可されます。リグからのコピーはまず確認を求めます（10 分間の許可、または**設定 → サーバー → リグ → クリップボードアクセス**にある**常に許可**）。これは決してワークスペース設定ではありません。あるメンバーが別のメンバーのクリップボードに同意することはできません。
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+macOS では越えるためのショートカットは ⌘C/⌘V で、これは曖昧さがありません。⌃C は割り込みとしてゲストのシェルにそのまま届きます。Windows と Linux では 2 つのショートカットは同じキー操作なので、ゲストはそれをそのまま受け取り、あなたのクリップボードが上書きされるのはゲストのクリップボードが実際に変わったときだけです。割り込みは割り込みのままです。
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**ドラッグして入れたファイル**は、マシンのドロップフォルダにコピーされ、その後でマシンに提示されます。「提示」の意味は、正直にできることによって変わります。ブラウザのページは、あなたが離した位置で*本物の*ドロップイベントを受け取るので、アップロードゾーンはローカルファイルに対する場合とまったく同じように動作します。デスクトップは `~/Drops` にあるファイルを、そのパスをクリップボードに入れた状態で受け取ります。任意の Linux ツールキットへのドラッグを合成するには、ゲスト内で特権デーモンを動かす必要があるからです。これはまさにこの設計が拒否するものです。結果はどちらが起きたかを示すので、アップロードゾーンにドロップした CSV が、単にフォルダ内のファイルにすぎないのにアップロード済みとして報告されることはありません。エンクロージャーの**ターミナル**にドロップすると、ファイルがコピーされ、プロンプトにそのゲスト側のパスが入力されます。シェルが実際に使えるのはこれです。
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**ドラッグして出したファイル**はデスクトップサーフェスで機能します。ここでは X11 のドラッグプロトコルにより、ドラッグの進行中にペイロードを読み取れます。ゲスト内でドラッグを開始し、それをキャンバスの外へ運ぶと、ファイルはあなたのマシンに取得され、本物のドラッグとして OS に渡されます。ゲストのファイルマネージャでファイルをコピーし、ホストで貼り付けても同じように機能します。ブラウザサーフェスはこれを意図的に提供*しません*。ヘッドレスブラウザには読み取れるドラッグ選択がなく、最も近い利用可能なシグナルであるページのテキスト選択はドラッグの証拠にはならないので、それに基づいて動作すると通常のクリックを乗っ取ってしまいます。
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+ゲストから読み出されたものはすべて、信頼できないコンテンツのままです。クリップボードのテキストは、ページの抽出と同じフェンスの内側でモデルに届き、監査ログは貼り付けが起きたこととその分量を記録しますが、その内容は決して記録しません。
 
-## Credentials never live in the guest
+## 認証情報はゲストに決して置かれない
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` はエンクロージャーのターミナルから機能しますが、ゲストはフォージのトークンを保存していません。ゲストが保持するのは VM ごとの 1 つのシークレットだけであり、その唯一の力は、短命でリポジトリ単位のトークンを、操作ごとに、レート制限付きで、エグレスと同じホスト許可リストに制限され、リグを閉じた瞬間に取り消される形で、ホストが管理するトンネル越しにホストの認証情報ブローカーへ*要求*することです。捨てるために作られたマシンには、盗む価値のあるものを何も含めてはなりません。
 
-## The worktree in a rig is a satellite
+## リグ内のワークツリーは衛星
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+リグがあなたのリポジトリを運ぶときも、ホスト側のワークツリーが権威であり続けます。コピーは起動時に*同期され*（`.env` ファイルのようなシークレットは除外されます）、コミットが戻ってくるのはあなたが求めたときだけです。`refs/rigs/<id>/*` へフェッチされ、プッシュもチェックアウトもされません。VM の中の何かがあなたのブランチを動かしたり、作業ツリーに触れたりすることはできません。リグが生み出したものをマージするかどうかは、常にホスト上で人が下す判断です。
 
-## Ports without holes
+## 穴のないポート
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/).
+ターミナル VM の中で起動した開発サーバーは、マシンを一切開放することなく到達可能になります。あなたのマシンから、ブラウザ（VM）から、任意で LAN から、任意で HTTPS 付きの開発ドメインの下から。ハイパーバイザーのポートマップは起動時に固定されるため、その後の転送はすべて 2 つの狭いホスト管理チャネルに乗ります。1 つは事前に作成された受信用マルチプレクサで、ゲストが実際にリッスンしていないものへの接続を拒否します。もう 1 つは、ゲスト起点の接続のためにホストが開いたままにするリバーストンネルです。開発ドメインの HTTPS はサーバーで終端され、ローカルで発行された認証局を使います。その鍵がゲストに入ることはありません。仕組みは[ターミナルからポートを転送](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/)にあります。
 
-## Machines are bounded by construction
+## マシンは構造的に有限
 
-A rig cannot become a pet:
+リグはペットにはなれません。
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- ゲストが延長できない**ハード TTL**。
+- **アイドルラダー** — アイドル期間の後にパークし（vCPU は停止、RAM は常駐）、その 2 倍の後に閉じる — 開いているターミナルや視聴中のビューアは「使用中」とみなされます。
+- **メモリ予算**はセッション数ではなく*常駐メガバイト*で数えます。パークした VM は CPU を解放しつつ RAM の 1 バイトも手放さないからです。最も長く使われていないマシンから順に退避され、人が操作または視聴しているマシンが退避されることはありません。
+- サーバー停止時の破棄と、次回起動時の所有権マーク付きオーファン掃引。クラッシュしたサーバーが、誰の指示も受けないハイパーバイザーを置き去りにすることはありません。
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+初回起動時はマシンの固定イメージを取得し、その後サーバーは展開済みのコピーをバックグラウンドでキャッシュするので、以降の同じ種類のマシンは数秒で起動し、エンクロージャーのターミナルは GitHub ホストのランナーが備えるような CLI ベースライン（コンパイラ、Python、`jq`、アーカイブツール）がすでにインストールされた状態で立ち上がります。言語のツールキャッシュや Docker ではありません。コンピュータイメージは、同じ CLI ベースラインをビルド時に XFCE やブラウザと並べて焼き込みます。
 
-## Three browsers, not one
+## 3 つのブラウザ、1 つではない
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+「自分のマシンでは動く」は、1 つのレンダリングエンジンについての主張です。したがってブラウザのリグは「ブラウザ」ではなく、**Chromium、Firefox、WebKit** のいずれかであり、開くときに選択し、リグはその生涯を通じて開いたときの 1 つを実行します。1 つの会話がそれぞれを 1 つずつ持てます。*Firefox (VM)* を *Chromium (VM)* の隣で開くと 2 つのマシンになり、両方を同じページに向けることが比較になります。WebKit は Linux で動くものとしては Safari に最も近いものです。エンジンの系統が同じなので、Safari ユーザーが遭遇するギャップを捉えます。
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+動詞は 3 つすべてで同一ですが、その下のプロトコルは同じではありません。違いは滑らかにされるのではなく、明示されます。Chromium は DevTools Protocol を話し、フレームを*プッシュ*するので、ページが静止している間はライブビューのコストがかかりません。Firefox は WebDriver BiDi を、WebKit は従来の WebDriver を話し、どちらにもスクリーンキャストがないため、ライブビューはポーリングします。毎秒数フレームというもので、ページを眺めるには適切ですが、アニメーションを眺めるには適していません。エンジンが本当に何かをできない場合（Firefox にはキャッシュを迂回するリロードがありません。WebKit はページの読み込みが完了する前に記録されたコンソール出力を見ることができません）、答えは黙って別のことをするのではなく、そう述べます。
 
-## Where rigs live in the product
+## 製品内でリグが置かれる場所
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/ja-JP/マニュアル/コンセプト/ガードレール/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+リグは意図的に**グローバルな行き先では**ありません。ライブビューは、作業が行われているスペースまたは PR のタブであり、その会話にスコープされます。したがってあなたのタブとエージェントの `browser_use` 呼び出しは、*1 つ*のマシン（ブラウザサーフェスではエンジンごとに 1 つ）を対象にします。リグがそもそも起動できるかどうかはホストの特性であるため、機能、イメージ、ワークスペースごとのカスタムイメージ、実行中マシンの一覧は**設定 → サーバー → リグ**にあります。エンクロージャーの操作はそれ自体が独立した[ガードレールのアクションクラス](/ja-JP/マニュアル/コンセプト/ガードレール/)なので、ワークスペース、エージェント、スペースごとに許可するか、承認を要求するか、完全に拒否するかを選べます。読み取り専用モードでは全面的に拒否されます。

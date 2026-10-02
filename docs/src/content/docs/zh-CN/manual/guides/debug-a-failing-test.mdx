@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: 用智能体调试失败的测试
+description: 让智能体设置断点、在调试器下启动程序并读取真实的栈帧，而不是添加打印语句。
 slug: zh-CN/手册/操作指南/调试失败测试
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+本指南介绍如何让智能体在打印语句解释不了的失败上使用调试器。
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` 工具驱动一次真正的 Debug Adapter Protocol 会话。一个被暂停的栈帧能一次回答关于那一刻的所有问题——每个局部变量、每个调用者，以及在该栈帧自身作用域里求值的表达式——而打印语句只能回答你在运行之前就想到要问的那个问题。
 
-## Before you start
+## 开始之前
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+该工具会一直留在工具面上，这样智能体可以询问为什么什么都不可用，而不是靠猜。只有当下面**两者**同时成立时，适配器才能真正启动：
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- 检出目录中存在项目标记，并且
+- 适配器的二进制文件可被解析到。
 
-Ask the agent to check:
+让智能体检查一下：
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+它会回答自己发现了什么，或者解释适配器需要同时满足这两半。
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| 语言            | 适配器                       | 标记                                            | 安装                               |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | 随 SDK 提供——无需额外操作          |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | 随 LLVM 提供                       |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python 会选用项目自己的解释器]
+查找 `debugpy` 时，会先看 `.venv/bin` 或 `venv/bin`，然后才轮到 `$PATH`。`$PATH` 里的 python 是另一个环境，从错误的环境附加时，失败的样子读起来像代码坏了，而不是像用错了解释器。
 :::
 
-## Set the breakpoint first, then launch
+## 先设置断点，再启动
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+顺序很重要，工具也会强制这个顺序：断点可以在会话存在**之前**设置，因为协议要求的就是这个次序。
 
-Ask the agent something like:
+这样对智能体说：
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart` 里的 `compute` 函数返回了错误的值。在给 `product` 赋值的那一行设置一个断点，在调试器下启动它，然后告诉我 `a` 和 `b` 实际上是什么。
 
-It will run roughly:
+它大致会执行：
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+启动会报告它停在了哪里：
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[如果它报告的却是程序已退出]
+断点没有绑定。空白行、注释行，或者没有被编译进构建的行都无法承载断点。对一次存活的会话调用 `breakpoints`，会报告你设置的断点里实际落位了多少个。
 :::
 
-## Read the frame
+## 读取栈帧
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+然后走进这个栈帧：
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+带有子项的对象会报告 `[expand: reference N]`——但仅当它背后确实有东西时才报告，因此智能体用不上的展开永远不会被提供。
 
-For anything not visible as a local:
+对于任何不是以局部变量形式可见的内容：
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## 单步执行
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| 你想要什么         | 操作        |
+| ------------------ | ----------- |
+| 运行到下一个停止点 | `continue`  |
+| 下一行，同一栈帧   | `step_over` |
+| 进入调用           | `step_in`   |
+| 返回到调用者       | `step_out`  |
+| 停止正在运行的程序 | `pause`     |
 
-## Attach to something already running
+## 附加到已在运行的进程
 
-For a wedged process rather than one you are starting:
+针对的是一次卡死的进程，而不是你正在启动的那个：
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## 结束
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+务必结束会话。调试适配器拥有一个**被暂停的进程**，它占着那个进程所占有的一切——一个端口、一把锁、一个数据库连接。
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[它无法脱离你的掌控]
+每个会话都有一个无法延长的硬性 TTL，每个对话恰好有一个会话，而服务器停止时一切都会被拆除。第二次 `launch` 会被拒绝，而不是替换掉第一个：一个没结束第一个就启动第二个的智能体，几乎可以肯定已经跟丢了第一个。
 :::
 
-## Bounded output
+## 有界输出
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+对深层对象图做一次 `variables` 展开，本质上就是无界的——一个 Flutter 组件就能触达整棵元素树。每个作用域的子项上限是 50，值的上限是 400 个字符，栈帧的上限是 30。一个塞满上下文窗口的工具结果，就是一个会终结它本来在帮忙的那次运行的工具。
 
-## Related
+## 相关内容
 
-- [Code intelligence](/zh-CN/手册/概念/代码智能/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/zh-CN/手册/参考/智能体工具/) — every `debug` op and argument
-- [Diagnose an agent](/zh-CN/手册/操作指南/诊断智能体/) — when the problem is the agent, not the code
+- [代码智能](/zh-CN/手册/概念/代码智能/) — 为什么调试器、编译器和匹配器回答的是不同的问题
+- [内置智能体工具](/zh-CN/手册/参考/智能体工具/) — 每一个 `debug` 操作及其参数
+- [诊断智能体](/zh-CN/手册/操作指南/诊断智能体/) — 当问题出在智能体而不是代码上时

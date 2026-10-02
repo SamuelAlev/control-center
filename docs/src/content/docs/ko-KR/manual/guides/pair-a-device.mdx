@@ -1,96 +1,97 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: 기기 페어링
+description: 휴대폰(또는 두 번째 브라우저나 데스크톱)을 Control Center 서버와 페어링해 원격에서 플릿을 따라갈 수 있습니다.
 slug: ko-KR/매뉴얼/사용-가이드/기기-페어링
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/) for how the link
-works and its security model.
+이 가이드에서는 휴대폰을 Control Center와 페어링해 어디서든 메시지와 티켓을
+읽고 답장하는 방법을 보여 줍니다. 같은 흐름으로 두 번째 브라우저나 데스크톱
+앱도 페어링할 수 있습니다. 링크가 작동하는 방식과 보안 모델은
+[원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/)을 참고하세요.
 
-## Prerequisites
+## 사전 요구 사항
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- 서버에 연결된 데스크톱 또는 웹 클라이언트와 설정된 워크스페이스. 페어링 작업에는 풀 클라이언트가 필요하므로, 페어링된 휴대폰은 다른 기기를 페어링하거나 해지할 수 없습니다.
+- 페어링하려는 기기에서 서버에 접근할 수 있어야 합니다. 같은 네트워크에서는 그냥 작동하고, 더 멀리 있으면 브로커를 거치는 릴레이가 트래픽을 나릅니다. 패널이 QR이나 자격 증명 대신 **접근 불가**로 응답하면 먼저 서버로 가는 경로를 공개하세요 — **설정 → 서버 → 연결 및 상태**의 터널 옵트인(**이 서버 공유**), 또는 서버의 `--public-url`입니다([헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/) 참고).
+- 휴대폰의 경우: 설치할 것이 없습니다. QR을 스캔하면 **Remote** 웹 앱(기본값은 [remote.usectrl.dev](https://remote.usectrl.dev/))이 열립니다.
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**자체 호스팅.** Remote와 릴레이 브로커는 이 저장소에서 오픈 소스입니다: 휴대폰
+앱(`apps/cc_remote`, `wrangler.jsonc`를 통해 Cloudflare Pages에, `docker/cc_remote`
+nginx 이미지에, 또는 HTTPS를 지원하는 아무 정적 호스트에나 배포할 수 있는
+Flutter 웹 PWA — 서비스 워커와 IndexedDB는 보안 컨텍스트에서만 사용할 수
+있습니다)과 릴레이(`apps/cc_signaling_server`, 앱 데이터를 보유하지 않고 페어링
+비밀을 결코 보지 않으며 종단 간 봉인된 프레임만 전달하는 무상태 Dart 바이너리
+하나)입니다. 빌드 및 실행 단계는 각 README를 참고하세요.
 
-## Step 1: Open the pairing panel
+## 1단계: 페어링 패널 열기
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+**설정 → 나 → 내 기기**를 엽니다. **내 기기** 섹션에는 이 서버에서 내 계정에
+페어링된 클라이언트가 나열됩니다. (서버 소유자는 서버의 모든 기기를 보고,
+그 외의 사용자는 자신의 기기만 봅니다.)
 
-## Step 2: Pair a new client
+## 2단계: 새 클라이언트 페어링
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+페이지 헤더에서 **새 클라이언트 페어링**을 클릭하고 이름을 지정한
+다음(예: "내 휴대폰"), 유형 — **웹 브라우저**, **데스크톱 앱**, **휴대폰** — 을
+고르고 **페어링**을 클릭합니다.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- **휴대폰**의 경우 QR 코드가 나타납니다. 휴대폰 카메라로 스캔하거나, 링크를 복사해 아무 브라우저에서나 여세요. 이 링크는 Remote 앱을 서버로 향하게 하고 자격 증명을 담고 있습니다.
+- **브라우저**나 **데스크톱**의 경우에는 표시된 링크(또는 기기 id와 페어링 키)를 새 클라이언트에 복사해 넣으세요. 원탭 링크는 웹 클라이언트에서 페어링할 때만 제공됩니다. 데스크톱 바이너리에는 링크를 만들 웹 오리진이 없기 때문입니다.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+휴대폰 QR과 CLI에서 `cc_server pair --client-url`이 출력하는 링크는 **서로 다른
+페이로드이며 호환되지 않습니다**: CLI 링크는 웹 클라이언트의 연결 양식을
+채우는 반면, 이 QR은 Remote PWA를 위해 서버의 전체 연결 디스크립터와 신원
+지문을 담고 있습니다.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+휴대폰 쪽에서 페어링 링크를 열어도 조용히 페어링되지 않습니다. Remote는 서버가
+알리는 이름을 보여 주고 무엇이든 저장하기 전에 확인을 요청하므로, 위조된
+링크로 앱을 다른 사람의 서버로 가로챌 수 없습니다.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[스캔한 QR은 즉시 접근 권한을 부여합니다]
+대기 후 승인하는 단계는 없습니다: 발급된 기기는 생성되는 순간부터 활성
+상태이고, 연결 게이트는 자격 증명이 활성이며 만료되지 않았는지만 확인합니다.
+QR과 페어링 키를 비밀번호처럼 취급하고, 넘겨줄 의도가 없었던 것은 무엇이든
+해지하세요.
 :::
 
-## Manage paired devices
+## 페어링된 기기 관리
 
-From **Settings → You → Your devices** you can:
+**설정 → 나 → 내 기기**에서 다음을 할 수 있습니다:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- 기기 **이름 바꾸기**
+- 더 이상 신뢰하지 않는 기기 **해지**. 해지하면 자격 증명이 파괴되고 열려 있는 세션이 몇 초 안에 끊기므로, 다시 연결할 때 닫힌 상태로 실패합니다
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+분실했거나 교체한 휴대폰에는 해지가 적절한 조치입니다. 기기 입장에서는 즉시,
+되돌릴 수 없이 적용됩니다.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+이 패널에서 발급한 자격 증명은 시간이 제한됩니다: 발급되고 30일 후에 만료되며,
+그 이후에는 연결 게이트가 이를 닫힌 상태로 실패 처리합니다. 명령줄에서
+`cc_server pair`로 발급한 자격 증명은 **만료가 전혀 없습니다** — 대상 머신을 더
+이상 쓰지 않게 되면 직접 해지하세요.
 
-## Switch workspaces from the phone
+## 휴대폰에서 워크스페이스 전환
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+페어링된 휴대폰은 데스크톱과 독립적으로 워크스페이스를 전환할 수 있습니다.
+휴대폰은 모든 호출에 워크스페이스를 함께 보내고, 서버는 호출마다 해당
+워크스페이스에서의 멤버십과 역할을 확인합니다 — 따라서 휴대폰은 자신이 멤버인
+워크스페이스에만 도달하며, 휴대폰에서 전환해도 데스크톱에 표시되는 내용은
+바뀌지 않습니다.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+휴대폰 세션은 추가로 읽기 위주의 도구로 이루어진 작은 허용 목록으로
+제한됩니다: 티켓, 에이전트, 스페이스, 메시지, 뉴스피드 글을 나열하고 읽을 수
+있으며, 티켓을 갱신하거나 할당하고, 스페이스에 메시지를 보내고, 글을 읽음
+또는 저장됨으로 표시할 수 있습니다. 이 집합 밖의 것은 서버의 디스패처에
+도달하기 전에 거부됩니다.
 
-## Related guides
+## 관련 가이드
 
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): make the server reachable in the first place
-- [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): point a full client at it
-- [Use spaces](/ko-KR/매뉴얼/사용-가이드/스페이스/): what you'll mostly do from the phone
-- [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/): triage from the road
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): 우선 서버에 접근할 수 있게 만들기
+- [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): 풀 클라이언트를 서버로 향하게 하기
+- [스페이스 사용](/ko-KR/매뉴얼/사용-가이드/스페이스/): 휴대폰에서 주로 하게 될 일
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/): 이동 중에도 분류하기
 
-## Related concepts
+## 관련 개념
 
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/)
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/)
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/)
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/)

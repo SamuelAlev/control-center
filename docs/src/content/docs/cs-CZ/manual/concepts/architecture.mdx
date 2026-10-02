@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Architektura
+description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Přehled
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center staví na Clean Architecture členěné podle domén, se vzorem portů a adaptérů. Kód je uspořádaný podle obchodních domén (v repozitáři `features`) a přísná pravidla závislostí vynucuje automatický test architektury.
 
-## A thin client over a headless server
+## Tenký klient nad bezhlavým serverem
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center je **architektura tenkého klienta**. Žádný klient databázi neotevírá. Bezhlavý proces **`cc_server`** vlastní data (malý `global.db` a jeden soubor SQLite na pracovní prostor, otevíraný líně) a podává je přes WebSocket RPC. Aplikace pro počítač, webové sestavení a telefonní společník jsou vykreslovače nad tím jedním RPC spojením.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Počítač si při prvním spuštění vybere, jak se k serveru dostane: **místně** (na tomto stroji spustí `cc_server` a mluví přes loopback, to je výchozí) nebo **vzdáleně** (připojí se k `cc_server` jinde přes zabezpečený WebSocket). Webový klient je vždy vzdálený. Resolver při startu (`bootstrap/server_backend.dart`) vybere cestu ještě předtím, než existuje Riverpod, a pak přepíše `rpcClientProvider` připojeným klientem. Každá doména proto čte a zapisuje přes server, ne do místní databáze.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Vrstva RPC je **bezstavová**: relace je ověřená, ale není vázaná na pracovní prostor. Každé volání vázané na pracovní prostor nese ve svých argumentech vlastní `workspace_id` a dispečer volání bez něj odmítne. Díky tomu můžou dva klienti na jednom serveru držet různé aktivní pracovní prostory a server nedrží „aktuální pracovní prostor“, o kterém by se neshodli. Izolace se vynucuje u každého volání, ne u spojení.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/) for the full client matrix and what runs where.
+Je to jedno **Dart workspace** s vyřešeným lockfilem a jednadvaceti členy, patnáct balíčků a šest aplikací, a kořenem je aplikace pro počítač a web (`control_center`). Šest aplikací tvoří bezhlavá serverová binárka (`cc_server`), bezhlavý vykonavatel flotily (`cc_worker`), telefonní PWA (`cc_remote`), zprostředkovatel WebSocket relay (`cc_signaling_server`), galerie Widgetbooku (`cc_gallery`) a hostitel veřejného dema (`cc_demo_server`). Patnáct balíčků je `cc_ui` (design systém), `cc_domain` (sdílené jádro v čistém Dartu: entity, hodnotové objekty, porty, události a doménová vrstva každé domény), `cc_harness` (vestavěné jádro agenta: smyčka agenta v čistém Dartu, tedy zprávy, port poskytovatele, nástroje, kompakce, řízení, hooky a subagenti, bez `dart:io` a bez jiné závislosti `cc_*`), `cc_harness_runtime` (vestavěný adaptér běhu harnessu: streamující poskytovatelé jen pro VM, zprostředkování přihlašovacích údajů OAuth/PKCE, úložiště přihlašovacích údajů a obecná sada nástrojů; agenti běží bez nainstalovaného cizího CLI), `cc_rpc` (klientské transporty), `cc_host` (jádro serveru), `cc_data` (vzdálené repozitáře), `cc_persistence` (databáze na straně serveru), `cc_server_core` (kompozice aplikačního serveru a běh identity, přítomnosti, flotily a evalů), `cc_infra` (adaptéry jen pro VM), `cc_mcp` (nástroje MCP), `cc_mcp_client` (klient externích MCP serverů, který jejich nástroje přemosťuje do místního registru), `cc_markdown` (markdownový engine v repozitáři), `cc_natives` (listový balíček FFI) a `system_audio_capture`. Celou matici klientů a to, co kde běží, najdeš v [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/).
 
-## Dependency rule
+## Pravidlo závislostí
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Doménová vrstva**: entity v čistém Dartu, hodnotové objekty, rozhraní repozitářů, porty a doménové služby. Žádné importy infrastruktury (žádné dio, drift ani síťové modely).
+- **Prezentační vrstva**: obrazovky, widgety, notifiery. Žádný přímý přístup k Driftu, DAO ani datové vrstvě; všechno jde přes providery Riverpodu → repozitáře.
+- **Infrastrukturní vrstva**: konkrétní implementace doménových portů a rozhraní repozitářů. Závisí na doméně, a jen tímto směrem.
 
-## Feature structure
+## Struktura domén
 
-The full feature shape is:
+Úplný tvar domény je:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Pod `lib/features/` má všechny čtyři části opravdu jen málo domén a chybějící části jsou výmluvné: vznikly záměrně. Sdílené jádro pohltilo `domain/` každé domény do `cc_domain` a tenký klient nedrží implementace repozitářů, takže většina domén pod `lib/` je `presentation/` a `providers/` a nic dalšího. Adresář `data/` nebo `domain/`, který v klientovi zůstane, označuje něco skutečně klientského.
 
-Two named exceptions are worth knowing:
+Dvě pojmenované výjimky:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** má jen providery. Nastavení a stavové rozhraní žije pod `settings/` a samotná plocha nástrojů je balíček (`cc_mcp`), ne složka domény.
+- **`orchestration`** a **`plan_studio`** mají jen `presentation/` a `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/) for the model.
+Doména **`guardrails`** má doménovou vrstvu v `cc_domain/features/guardrails/`, ne v kořenové aplikaci, protože ji vynucuje server: pravidlo mapuje `ActionClass` (nebo shellový `commandPrefix`) na rozhodnutí `allow`, `prompt` nebo `deny` v daném rozsahu. Pravidla se ukládají po pracovních prostorech a každá hlídaná akce agenta se před během vyřeší přes řetěz politik. Vyhodnocení jde po `space > agent > workspace > mode preset > built-in default` a **rozhodne první rozsah se shodným pravidlem**. Nejpřísnější pravidlo rozsekne jen remízu uvnitř jednoho rozsahu a slučování několika tříd, které jedna akce deklaruje. Plocha pro operátora je Nastavení → Pracovní prostor → Oprávnění agentů, na `/workspaces/<id>/settings/workspace/permissions`. Model popisují [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/).
 
-## Shared kernel
+## Sdílené jádro
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` drží entity a repozitáře sdílené napříč třemi a více doménami. Je to čistý Dart bez závislostí na infrastruktuře, takže stejné definice importuje Flutter klient i binárka serveru bez Flutteru:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Základní entity: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identita a multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Entity paměti: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Sdílené hodnotové objekty: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Sdílené porty: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Doménové služby: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` a typy událostí (pracovní prostor/agent, PR/revize, zprávy, tickety, pipeline, orchestrace, paměť, kalendář/schůzky, identita a členství, pozorovatelnost)
 
-## Identity & multiplayer
+## Identita a multiplayer
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center je pro víc uživatelů: lidé a agenti jsou rovnocenní aktéři sjednocení přes `Principal`. Člen pracovního prostoru je `User` vázaný na `Workspace` v roli `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Hranicí přístupu je členství.** Párovací klíč ji netvoří a oprávnění na úrovni repozitáře drží členství v pracovním prostoru v mezích práv forge. První uživatel vytvořený na čerstvém serveru vlastní instalaci; další se připojují pozvánkou nebo přes OIDC. Založení pracovního prostoru ho zapíše jako `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Spolupráce v reálném čase stojí na **autoritativním serveru a last-writer-wins (LWW) po polích**. CRDT to není. Přítomnost (kdo je tu a kde, kurzory, psaní, živý stav agenta a běžící náklady) je samostatný **efemérní pruh, který se nikdy neukládá**. Trvalý stav jede po páteři z optimistické mutace, rebase na serveru a LWW. Lidé a agenti sdílejí jeden seznam. Když je operátor jen jeden člověk, pruh přítomnosti stojí a rozhraní seznamu se neukáže. Multiplayer sólového uživatele nic nestojí.
 
-## Ports and adapters
+## Porty a adaptéry
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Porty jsou abstraktní rozhraní v doménové vrstvě. Adaptéry jsou konkrétní implementace v infrastruktuře. Bezhlavý server vlastní data a musí se sestavit bez Flutteru, takže skoro každý adaptér je jen pro VM a žije v `packages/cc_infra/lib/src/`, rozdělený podle oblasti:
 
-| Port                   | Adapter location                                                                                            |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
-| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
-| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
-| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
-| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| Port                   | Umístění adaptéru                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                          |
+| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)         |
+| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                     |
+| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                |
+| `NotificationPort`     | `lib/core/notifications/` (na straně klienta: vykresluje události serveru lokálně)                      |
+| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp a GitHub Issues jsou adaptéry synchronizace ticketů v `cc_infra/lib/src/tickets/sync/`; místní tickety žijí v databázi pracovního prostoru a `TicketProviderPort` nemají. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (doménová služba v čistém Dartu, infrastrukturu nepotřebuje) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Kořen kompozice aplikace (`di/providers.dart`) váže klientské porty na implementace přes providery Riverpodu; server skládá své adaptéry v `cc_server_core`.
 
-## State management
+## Správa stavu
 
-**Riverpod** for all client state:
+**Riverpod** pro veškerý stav klienta:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` a `AsyncNotifier<T>` pro měnitelný stav
+- `FutureProvider<T>` pro asynchronní data
+- Seznamy a živé řádky přicházejí přes odběry RPC jako `AsyncValue<List<T>>`. Server uvnitř používá Drift `.watch()`; Drift neotevírá žádný klient
+- Nástroje MCP dostávají závislosti jako typované parametry konstruktoru. `Ref` se jim nepředává
 
-## Database
+## Databáze
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), rozdělený do dvou databází, obě v `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) drží krátký seznam tabulek, které jsou opravdu celoserverové: registr pracovních prostorů, uživatelé, předvolby a spárovaná zařízení, připojení SSO, nastavení serveru pro celou instalaci, spravované politiky akcí (zámek na úrovni instalace, který smí guardraily pracovního prostoru jen zpřísnit), kanál novinek pro každého uživatele, fronta flotily (pracovníci, úlohy, záznam umístění), index `workspace_routes` před ověřením a metadata instalace. Start otevře jen tento soubor, takže cena startu zůstává stejná, ať mají pracovní prostory historie kolik chtějí. Tabulka přidaná sem je rozhodnutí o izolaci a západkový test tě nutí ho obhájit.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) je jeden _adresář_ na pracovní prostor. Drží jeden soubor SQLite a všechno ostatní, co patří jen tomu prostoru, takže worktree rozhovoru a soubory agenta leží vedle databáze a mažou se s ní. Tady žije skoro všechno: agenti, prostory, tickety, paměť, pipelines, schůzky, graf kódu, revize, repozitáře. Soubory se otevírají líně při prvním sáhnutí přes `WorkspaceDatabaseManager.of(workspaceId)` a teprve tehdy zaplatí vlastní `quick_check`, instalaci FTS a triggerů a `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Obě poloviny vyšly ze sloučeného základu v1. `onCreate` staví aktuální schéma a migrační kroky se připojují, jen když je nasazenou databázi potřeba dovést dál.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Pracovní prostor je jeden soubor, takže export je jeden příkaz `VACUUM INTO` (`workspace.export`). Tabulku po tabulce se nevypisuje. `workspace.import` takový soubor převezme a podle vloženého `workspace_meta` pozná vlastní soubor převzatý znovu od souboru, který přišel z jiné instalace.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Obě databáze vlastní `cc_persistence` a otevírá je jen `cc_server`. Žádný klient DB neotevírá a každý klient čte a zapisuje přes RPC. Tabulky jsou v `packages/cc_persistence/lib/database/tables/`, DAO v `.../daos/`. Doménové entity jsou čistý Dart, oddělené od tříd tabulek Driftu, a mapování je v datových vrstvách. FTS5 řeší fulltextové hledání a embeddingy `sqlite_vector`, obojí jen na serveru. Obě databáze jedou s `PRAGMA foreign_keys=ON` v žurnálovém režimu WAL.
 
-## Routing
+## Směrování
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router** a jedna skutečnost, která řídí zbytek: **každá destinace v aplikaci má prefix pracovního prostoru** ve tvaru `/workspaces/:workspaceId/…`. Id pracovního prostoru v URL je jediný zdroj pravdy pro aktivní pracovní prostor. `activeWorkspaceIdProvider` vychází z trasy, trasa z něj ne. Čtení dat vázaných na pracovní prostor mimo trasu s prefixem proto nemá odkud id vzít.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- _Funkce_ pro stavbu tras v `router/routes.dart`. Každá bere id pracovního prostoru jako první argument, ne řetězcové konstanty
+- Čtyři trasy před kontextem jsou bez prefixu: `/splash`, `/onboarding`, `/signed-out` a `/workspaces` (výběr)
+- `ShellRoute` obaluje shell aplikace; ty čtyři plochy se kreslí přes celou obrazovku mimo něj
+- Stráž autentizace: nedokončené nastavení jde na `/onboarding`; dokončené nastavení, kterému zmizel přihlašovací údaj forge, jde na `/signed-out`. Dokončené znamená, že přihlášený uživatel má připojenou aspoň jednu forge a že existuje aspoň jeden pracovní prostor. GitHub to být nemusí a CLI `gh` není způsob autentizace
+- Brána onboardingu v `features/auth/providers/`
 
-## Networking (server-side)
+## Síť (na straně serveru)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Veškeré vnější HTTP žije na serveru. Klienti se na GitHub, Linear ani Google neobracejí přímo. Volají RPC operace serveru a i vzdálená média se berou z koncového bodu serveru `/proxy/media`, ne z původního zdroje.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Klienti **dio** v `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` a `GoogleCalendarApiClient`
+- Auth token se vkládá přes interceptory, včetně Google OAuth interceptoru po účtech v `cc_server_core`, který při 401 tokeny obnoví
+- Všechny chyby se mapují přes `packages/cc_infra/lib/src/network/error_mapper.dart` → typované podtřídy `AppException` definované v `cc_domain`
 
-## Security
+## Zabezpečení
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Server drží přihlašovací údaje, na kterých záleží: tokeny GitHubu a ticketovacích služeb pro spouštění agentů, klíče poskytovatelů LLM a tokeny OAuth žijí v datovém adresáři serveru nebo v jeho prostředí. V klíčence klienta zůstává jeho vlastní přihlašovací údaj zařízení a párovací klíč ke vzdálenému serveru.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Tajemství ve `flutter_secure_storage` (klíčenka macOS, Správce pověření Windows, libsecret na Linuxu): přihlašovací údaj zařízení klienta a párovací klíče ke vzdálenému serveru, ne tokeny poskytovatelů
+- `shared_preferences` jen pro necitlivé předvolby (motiv, písmo, rozložení)
+- Zbytky tajemství poskytovatelů ze starších instalací jednou předá serveru `features/auth/providers/credential_migration.dart` a potom je z klíčenky klienta smaže
 
-## Architecture enforcement
+## Vynucení architektury
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Architektonická omezení ověřuje `test/core/architecture_constraints_test.dart`. Test selže, když se poruší pravidla závislostí.
 
-## Related concepts
+## Související koncepty
 
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): how isolation is enforced
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): the dispatch flow
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/): cross-feature communication
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/): the thin-client server model and the client matrix
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): jak se vynucuje izolace
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): tok odeslání
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): komunikace napříč doménami
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/): model tenkého klienta se serverem a matice klientů

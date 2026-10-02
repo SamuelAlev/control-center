@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Legg til repoer i et arbeidsområde
+description: Registrer Git-utsjekkinger i et arbeidsområde slik at agenter kan jobbe med dem.
 slug: nb-NO/handbok/slik-gjor-du/legg-til-repoer
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Denne veiledningen viser hvordan du registrerer en Git-utsjekking i et arbeidsområde, indekserer den på nytt og fjerner den igjen.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repoer er **knyttet til arbeidsområdet**. Det finnes ikke noe globalt register og ikke noe eget koblingstrinn: å legge til en repo og å plassere den i et arbeidsområde er samme handling. Den samme utsjekkingen registrert i to arbeidsområder blir to uavhengige rader med to forskjellige id-er — på tvers av arbeidsområder er identiteten til en repo filsystembanen, aldri id-en.
 
-## Before you start
+## Før du begynner
 
-A folder can only be registered if all three of these hold:
+En mappe kan bare registreres hvis alle disse tre kravene er oppfylt:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Den ligger inne i et **git-worktre**.
+2. Det worktreet har en **`origin`-remote**.
+3. `origin`-remoten peker på en **støttet forge**: github.com, gitlab.com eller bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Alt annet avvises ved registrering med en eksplisitt melding: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." eller "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Det finnes ingen modus kun for lokal bruk.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forgen leses fra remoten og lagres på repoen — du velger den aldri selv. Et arbeidsområde kan inneholde repoer fra alle tre samtidig, og hver av dem kontaktes gjennom sitt eget API med sin egen legitimasjon. GitLabs nestede navnerom bevares, så `gitlab.com/group/subgroup/project` registreres med eier `group/subgroup` og navn `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Mappen må også ligge på maskinen som kjører `cc_server`, inne i en av den serverens `--repo-roots`-kataloger. Denne tillatelseslisten er som standard hjemmekatalogen til serverbrukeren, og det avvises å bla over en rot.
 
-## Register a checkout
+## Registrer en utsjekking
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Åpne **Innstillinger → Arbeidsområde → Arkiv** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Klikk **Legg til arkiv**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Dialogen er en navigerbar filutforsker over filsystemet til **serveren**, ikke ditt eget. Flyten er den samme på skrivebord, nett og telefon, fordi en innebygd mappevelger ville velge en mappe på feil maskin.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Naviger innenfor serverens konfigurerte røtter. Mapper som er git-utsjekkinger, merkes.
+4. Merk av så mange du vil. Utvalget beholdes mens du navigerer, så du kan samle utsjekkinger fra flere mapper.
+5. Registrer dem i én omgang.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Ett mislykket valg slipper aldri resten av omgangen — du får id-ene som ble opprettet, pluss én feil per bane for hver som ble avvist. Registrerer du en bane som allerede finnes i dette arbeidsområdet, returneres den eksisterende repoen i stedet for at det opprettes en duplikat.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Hver registrerte repo vises i listen med `owner/name`, et merke som oppgir forgen, og banen dens på serveren. GitHub-repoer viser også eierens avatar; de andre forgene har ingen URL for eieravatar som kan gjettes, så de faller tilbake til initialer.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Forge-merket har noe å si i et blandet arbeidsområde: to repoer kan begge hete `acme/web` på forskjellige forger, og de oppfører seg ulikt — hva en gjennomgang kan gjøre, og hvor en lenke går.
 
-## What happens next
+## Hva som skjer videre
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Registreringen utløser en `RepoAdded`-hendelse avgrenset til dette arbeidsområdet, og starter `index_code`-pipelinen for den utsjekkingen. Det er denne som fyller kodegrafen, slik at søk og konsekvensanalyse har noe å svare med.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/nb-NO/handbok/slik-gjor-du/kodesok/).
+Bare filer der språket har en grammatikk som følger med, indekseres (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB og Ada). Se [Søk i kode med kodegrafen](/nb-NO/handbok/slik-gjor-du/kodesok/).
 
-## Re-index a repo
+## Indekser en repo på nytt
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Hver rad har en **Indekser kode**-knapp. Klikk på den for å kjøre indeksereren på nytt for den utsjekkingen; mens den kjører, blir knappen en fremdriftsvisning som viser fullførte filer av totalen, med en avbryt-kontroll. Når den er ferdig, går den over til en hake med antall symboler, eller en advarsel hvis kjøringen mislyktes.
 
-## Reorder repos
+## Endre rekkefølgen på repoer
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Dra i håndtaket på en rad. Rekkefølgen du angir, er rekkefølgen alle repolister i appen leser tilbake.
 
-## Fix the GitHub link
+## Rett opp GitHub-lenken
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Lenkeikonet på en rad åpner et redigeringsfelt for GitHub-eieren og arkivnavnet til repoen — nyttig når remoten har fått nytt navn eller er overført.
 
-## Remove a repo
+## Fjern en repo
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Åpne **Innstillinger → Arbeidsområde → Arkiv**.
+2. Klikk på søppelbøtteikonet på raden.
+3. Bekreft «Fjerne arkiv fra arbeidsområde?»
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Dialogen sier hva den gjør: «_name_ fjernes fra dette arbeidsområdet. De lokale filene på disk røres ikke.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Fjerningen sletter reporaden fra dette arbeidsområdet og kaskaderer bort kodegrafrommene — symboler, kanter, filer og indekssjekkpunkter — i tillegg til alle repo-tilganger per medlem, område-repo-koblingene dens og postene om isolerte utsjekkinger. Den samme utsjekkingen som er registrert i et annet arbeidsområde, er en uavhengig rad og påvirkes ikke. Worktreer på disk som disse postene pekte på, rives ikke ned av slettingen.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Search code with the code graph](/nb-NO/handbok/slik-gjor-du/kodesok/)
-- [Run agents in parallel](/nb-NO/handbok/slik-gjor-du/parallelle-agenter/)
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-- [Your first workspace](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/)
+- [Søk i kode med kodegrafen](/nb-NO/handbok/slik-gjor-du/kodesok/)
+- [Kjør agenter parallelt](/nb-NO/handbok/slik-gjor-du/parallelle-agenter/)
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Ditt første arbeidsområde](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/)
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/)

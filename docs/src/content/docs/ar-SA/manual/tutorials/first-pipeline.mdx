@@ -1,102 +1,102 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: ابنِ أول خط أنابيب
+description: أنشئ قالب خط أنابيب، وهيّئ خطوته، واسمح بالتشغيل اليدوي، ثم ابدأ تشغيلًا.
 slug: ar-SA/دليل-المستخدم/دروس/أول-خط-أنابيب
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## ما الذي ستبنيه
 
-By the end of this tutorial, you will have:
+في نهاية هذا الدرس يكون لديك:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- قالب خط أنابيب محفوظ يرسل وكيلًا بموجّه
+- التشغيل اليدوي مفعّل عليه، فيُبدأ باليد
+- تشغيل واحد مكتمل، ومدخل الخطوة ومخرجها ظاهران
 
-Prerequisites: [Dispatch your first agent](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) completed, so you have an agent with an adapter and a model.
+المتطلبات: إتمام [أرسل وكيلك الأول](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/)، ليكون لديك وكيل بمحوّل ونموذج.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/); for the full step vocabulary, [Pipeline step kinds](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
+خط الأنابيب مخطط DAG من خطوات. القوالب تعرّف المخطط، والتشغيلات هي التنفيذ. للنموذج الذي يقوم عليه، اقرأ [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)؛ ولمفردات الخطوات كاملة، [أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
 
-## Step 1: Create a template
+## الخطوة 1: إنشاء قالب
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. انتقل إلى **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب**
+2. انقر **قالب جديد**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+يفتح المحرّر على هيكل مبذور باسم **خط أنابيب جديد** (المعرّف `pipeline_N`).
+انقر العنوان في الترويسة وأعد تسميته — في هذا الدرس،
+`code_quality_check` اسم مناسب. لا حوار للمعرّف ولا حقل للوصف.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+اللوحة ليست فارغة. يأتي القالب الجديد موصولًا مسبقًا على الشكل **Trigger → Step →
+terminal**، حيث «Step» عقدة وكيل موجّه، وterminal حارس غير مرئي
+يعيد المحرّر توصيله إلى كل عقدة بلا مخرج يمكن بلوغها.
 
-You configure the Step that is already there.
+تهيّئ عقدة Step الموجودة أصلًا.
 
-## Step 2: Configure the step
+## الخطوة 2: تهيئة الخطوة
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. انقر عقدة **Step** على اللوحة
+2. في لوحة **إعدادات العقدة** على اليمين، اضبط:
+   - **الوكيل**: وكيلك من الدرس السابق
+   - **قالب الموجّه**: «راجع الشفرة على الفرع الحالي بحثًا عن مشكلات الجودة. اذكر ما تجده.»
+3. اترك **المشغّلات من** كما هي — العقدة موصولة أصلًا لتنطلق بعد Trigger
 
-## Step 3: Save
+## الخطوة 3: الحفظ
 
-Press **Save** in the editor header.
+اضغط **حفظ** في ترويسة المحرّر.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**نقطة التحقق.** تختفي عبارة «تغييرات غير محفوظة».
 
-## Step 4: Allow manual runs
+## الخطوة 4: السماح بالتشغيل اليدوي
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. انقر البلاطة المتقطعة **إضافة مشغّل** على اللوحة (أو اسحب **تشغيل يدوي**
+   من قسم **المشغّلات** في مكتبة العقد) واختر **تشغيل يدوي**.
+2. حدّد تلك العقدة. في لوحة الإعدادات على اليمين، فعّل **ممكّن** —
+   «الإظهار في صفحة التشغيل والبدء يدويًا.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+هذا إلزامي، ومن السهل أن يفوتك. يُنشأ القالب الجديد **بلا صف مشغّل أصلًا**، فإلى أن تفعّل هذا لن يظهر في صفحة التشغيل ولا شيء يُبدأ. يكتب المفتاح المشغّل فورًا، ولا ينتظر حفظًا آخر.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+المفتاح نفسه خلف **تشغيل يدوي** في ترويسة المحرّر، إلى جانب المدخلات المعلنة للقالب.
 
-## Step 5: Run it
+## الخطوة 5: شغّله
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. انقر **خطوط الأنابيب** في الشريط الجانبي
+2. انقر **تشغيل خط أنابيب** في الترويسة
+3. اختر `code_quality_check` في الشريط الأيسر
+4. انقر **تشغيل خط الأنابيب** في النموذج — قالبك لا يعلن مدخلات، فلا شيء تملأه
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**نقطة التحقق.** يؤكد إشعار منبثق أن التشغيل بدأ، ويفتح Control Center تفاصيل التشغيل.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+ينشئ المحرّك سجل التشغيل، ويُكمل المشغّل، ويجدول الخطوة، ويرسل الوكيل، ويُكمل التشغيل حين ينتهي الفرع الوارد إلى terminal.
 
-## Step 6: Inspect the result
+## الخطوة 6: فحص النتيجة
 
-Click the step in the run to open its detail panel:
+انقر الخطوة في التشغيل لفتح لوحة تفاصيلها:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- طابعا **بدأت** و**انتهت**، و**المدة**
+- **المدخل**: الحالة التي مُرِّرت إلى الخطوة
+- **المخرج**: ما أنتجته — هنا رد الوكيل
+- **نشاط الوكيل**، مع رابط إلى المحادثة التي قادتها الخطوة
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**نقطة التحقق.** تظهر الخطوة **مكتمل**، ويحمل مخرجها مراجعة الوكيل.
 
-## Adding more steps
+## إضافة مزيد من الخطوات
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+تُضاف العقد بسحب عنصر من مكتبة العقد على اليسار إلى
+اللوحة، أو بالضغط على **إضافة خطوة** (`+`) بعد العقدة مباشرة. اسحب من
+مقبض إخراج عقدة إلى عقدة أخرى لوصلها، أو حدّد العقدة الجديدة
+وضع علامة على خطوتها السابقة تحت **المشغّلات من**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+عقدة terminal غير مرسومة ولا يمكن تحديدها. يعيد المحرّر توصيلها
+إلى كل عقدة بلا مخرج يمكن بلوغها، فالعقدة التي تضيفها بعد Step المبذورة تبقى تعمل.
 
-## Recap
+## الخلاصة
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+أنشأت قالبًا، وهيّأت عقدة وكيل الموجّه التي بُذر بها، وحفظته، وجعلته قابلًا للتشغيل يدويًا، وبدأت تشغيلًا، وقرأت مدخل الخطوة ومخرجها.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+تكبر خطوط الأنابيب كثيرًا عن هذا — موجّهات شرطية، وفروع متوازية، وعقد دمج، وانتشار لكل عنصر، وبوابات بشرية — لكن الشكل لا يتغيّر: خطوات في مخطط DAG تمرّر الحالة.
 
-**Next:** [Bridge Slack to your workspace](/ar-SA/دليل-المستخدم/دروس/أول-جسر-دردشة/), the last tutorial in this sequence.
+**التالي:** [اربط Slack بمساحة عملك](/ar-SA/دليل-المستخدم/دروس/أول-جسر-دردشة/)، آخر درس في هذه السلسلة.
 
-- [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/) to start pipelines from events or a schedule
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) for the model underneath
-- [Pipeline step kinds](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/) for every step type
+- [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/) لبدء خطوط الأنابيب من أحداث أو من جدول
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) للنموذج الذي تقوم عليه
+- [أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/) لكل نوع خطوة

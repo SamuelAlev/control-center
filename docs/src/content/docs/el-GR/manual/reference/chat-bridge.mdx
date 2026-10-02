@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Γέφυρα συνομιλίας
+description: Πάροχοι, εντολές, διαπιστευτήρια, δυνατότητες, λειτουργίες RPC και αποθήκευση για τη γέφυρα συνομιλίας.
 slug: el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Πάροχοι
 
-| Provider | Wire value | Transport                  | Space kind |
+| Πάροχος | Τιμή wire  | Μεταφορά                   | Είδος χώρου |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode (εξερχόμενη WSS) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Το Slack είναι ο μόνος πάροχος.** Το `ChatProvider` είναι enum μίας τιμής και το `cc_server` καταχωρεί ένα plugin. Το σχήμα, κάθε αναζήτηση και κάθε μοναδικό ευρετήριο κλειδώνονται με το `provider`, οπότε τα ids δεν περνούν ποτέ από τον έναν πάροχο στον άλλο και η προσθήκη ενός είναι αλλαγή μόνο στον διακομιστή.
 
-One provider-side app per **workspace × provider**.
+Μία εφαρμογή στην πλευρά του παρόχου ανά **χώρο εργασίας × πάροχο**.
 
-## Chat commands
+## Εντολές συνομιλίας
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Το όνομα της εντολής είναι ανά εφαρμογή (`cc` από προεπιλογή, άρα `/cc`). Ένας διαχειριστής μπορεί να το μετονομάσει· η γέφυρα τότε χρησιμοποιεί ό,τι χρησιμοποιήθηκε την τελευταία φορά που κλήθηκε.
 
-| Command                               | Effect                                                        |
+| Εντολή                                | Αποτέλεσμα                                                    |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (ή `/cc` χωρίς ρήμα)       | Απαριθμεί τι μπορεί να κάνει το bot                           |
+| `/cc link <code>`                     | Εξαργυρώνει έναν κωδικό μίας χρήσης και συνδέει την ταυτότητα συνομιλίας του αποστολέα |
+| `/cc ticket <title>`                  | Καταχωρεί ένα τοπικό εισιτήριο που ανέφερε το συνδεδεμένο μέλος |
+| `/cc ticket <title> \| <description>` | Το ίδιο, με ό,τι ακολουθεί την πρώτη `\|` ως περιγραφή        |
+| Άγνωστο ρήμα                          | Αναφέρει το άγνωστο ρήμα μαζί με το κείμενο βοήθειας          |
 
-Ways to reach an agent:
+Τρόποι να φτάσετε σε έναν πράκτορα:
 
-| Gesture                    | Behavior                                                                                                               |
+| Κίνηση                     | Συμπεριφορά                                                                                                            |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` σε ένα κανάλι     | Ανοίγει ένα νήμα Slack και έναν αντίστοιχο χώρο του Control Center· ο πράκτορας απαντά στο νήμα του Slack              |
+| Απάντηση σε ένα γεφυρωμένο νήμα του Slack | Συνεχίζει τον ίδιο χώρο του Control Center — δεν χρειάζεται αναφορά                                    |
+| Απλό μήνυμα σε ένα κανάλι  | Αγνοείται (δεν απευθύνεται στο bot και δεν βρίσκεται σε γεφυρωμένο νήμα του Slack)                                    |
+| Άμεσο μήνυμα στο bot       | Ένας χώρος του Control Center ανά συνομιλία άμεσων μηνυμάτων· ορίζει τίτλο νήματος Slack και κατάσταση «is thinking…» όσο εργάζεται ο πράκτορας |
 
-## Credential fields (Slack)
+## Πεδία διαπιστευτηρίων (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Δηλώνονται από τον περιγραφέα του παρόχου, ο οποίος παράγει τον διάλογο σύνδεσης και επικυρώνει την υποβολή.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Αναγνωριστικό πεδίου | Ετικέτα                         | Απαιτείται | Πρόθεμα | Πού βρίσκεται                                                   |
+| -------------------- | ------------------------------- | ---------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Token OAuth χρήστη bot          | Ναι        | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Token επιπέδου εφαρμογής        | Ναι        | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | Token ανανέωσης ρύθμισης εφαρμογής | Όχι     | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+Το `configRefreshToken` είναι το διαπιστευτήριο διαχείρισης εφαρμογής: χωρίς αυτό η σύνδεση λειτουργεί, αλλά το bot δεν μπορεί να δημιουργηθεί ή να επεξεργαστεί από το Control Center. Περιστρέφεται σε κάθε χρήση και η περιστραμμένη τιμή αποθηκεύεται αμέσως.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Οι τιμές περικόπτονται, τα μη δηλωμένα κλειδιά απορρίπτονται και μια αναντιστοιχία προθέματος απορρίπτεται με την ίδια φράση στον πελάτη και στον διακομιστή. Τα υποχρεωτικά πεδία πρέπει να υπάρχουν σε κάθε σύνδεση· ένα προαιρετικό πεδίο που μένει κενό διατηρεί ό,τι είχε ήδη αποθηκευτεί.
 
-## Slack app requirements
+## Απαιτήσεις της εφαρμογής Slack
 
-Bot token scopes:
+Scopes του token bot:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Συνδρομές σε συμβάντα bot:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Δομικές ρυθμίσεις που επιβάλλει το Control Center όταν δημιουργεί ή επεξεργάζεται την εφαρμογή: Socket Mode ενεργό, κανένα request URL, καρτέλα Messages ενεργή και εγγράψιμη, bot `always_online`, τα απαιτούμενα scopes και συμβάντα συγχωνευμένα σε ό,τι έχει ήδη η εφαρμογή (ποτέ αφαιρούμενα) και μία εντολή slash που φέρει την περιγραφή `File a ticket or link your Control Center account` — τον δείκτη που αναγνωρίζει τη δική του εντολή του Control Center σε ένα εξαγόμενο manifest.
 
-## Connection states
+## Καταστάσεις σύνδεσης
 
-| State            | Wire           | Meaning                                                         |
+| Κατάσταση        | Wire           | Σημασία                                                          |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Δεν έχει συνδεθεί | `disconnected` | Δεν έχουν αποθηκευτεί διαπιστευτήρια για αυτόν τον χώρο εργασίας × πάροχο |
+| Σύνδεση…         | `connecting`   | Τα διαπιστευτήρια αποθηκεύτηκαν, η μεταφορά καλεί ή επανακαλεί    |
+| Ζωντανά          | `connected`    | Η μεταφορά είναι ενεργή και λαμβάνει συμβάντα                    |
+| Σφάλμα σύνδεσης  | `error`        | Αποθηκευμένα αλλά αποτυγχάνουν· το σφάλμα του ίδιου του παρόχου εμφανίζεται δίπλα |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Η επανασύνδεση γίνεται με εκθετική καθυστέρηση επανάληψης με τυχαία διακύμανση, με ανώτατο όριο τα 30 δευτερόλεπτα. Μια εναλλαγή socket που ξεκινά ο πάροχος επανασυνδέεται άμεσα χωρίς να κλιμακώσει την καθυστέρηση. Ένα απορριφθέν διαπιστευτήριο (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) ή ένα απόν scope είναι τελειωτικό: η γέφυρα σταματά να επαναλαμβάνει μέχρι να φτάσουν νέα διαπιστευτήρια.
 
-## Provider capabilities (Slack)
+## Δυνατότητες παρόχου (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Η γέφυρα είναι γραμμένη απέναντι στην πλουσιότερη επιφάνεια και υποβαθμίζεται ανά δυνατότητα.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Δυνατότητα                | Slack  | Αποτέλεσμα όταν λείπει                                                                         |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | ναι    | Ολόκληρη η απάντηση αναρτάται μία φορά, στο τέλος                                               |
+| `streamingRequiresThread` | ναι    | Ένας στόχος απάντησης χωρίς άγκυρα νήματος αναρτά ολόκληρες απαντήσεις                          |
+| `ephemeralMessages`       | ναι    | Μια απάντηση σε εντολή slash χωρίς χρησιμοποιήσιμη λαβή απάντησης απορρίπτεται (οι αρνήσεις αναρτώνται πάντα εντός νήματος) |
+| `threadStatus`            | ναι    | Καμία παροδική γραμμή «is thinking…»                                                            |
+| `threadTitle`             | ναι    | Το νήμα συνομιλίας κρατά τον προεπιλεγμένο τίτλο του                                            |
+| `slashCommands`           | ναι    | Καμία επιφάνεια `/cc`                                                                           |
+| `taskCards`               | ναι    | Μόνο κείμενο — καμία κάρτα πάνω από την απάντηση και κανένας σύνδεσμος «View in Control Center» |
+| `maxMessageLength`        | 39.000 | Οι μεγαλύτερες απαντήσεις περικόπτονται με υπόδειξη προς το Control Center                      |
+| `maxStreamChunkLength`    | 3.800  | Τα append χωρίζονται σε όριο παραγράφου, γραμμής ή κενού                                        |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Το να διαφημίζεται η ροή δεν είναι ροή που υποσχέθηκε: αυτή του Slack χρειάζεται τη λειτουργία Agents & AI Apps σε πλάνο επί πληρωμή. Μια άρνηση τη στιγμή της κλήσης (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) θυμάται για όλη τη ζωή της σύνδεσης και εκτίθεται ως `streamingAvailable: false`. Οι κάρτες εργασίας του Slack ταξιδεύουν στην ίδια κλήση, οπότε ένα Slack που αρνείται τη λειτουργία προβολής της κάρτας κρατά τη ροή του και χάνει μόνο την κάρτα, μία φορά, για όλη τη ζωή της σύνδεσης.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Μια ροή πρέπει επίσης να ονομάζει τον αναγνώστη για τον οποίο προορίζεται. Το Slack απαιτεί και έναν χρήστη παραλήπτη και την ομάδα του για να ανοίξει μια ροή σε ένα **κανάλι** (ένα άμεσο μήνυμα δεν αρκεί) και αρνείται με `missing_recipient_user_id` / `missing_recipient_team_id` σε αντίθετη περίπτωση — άρνηση ανά κλήση, οπότε η γέφυρα συνεχίζει να προσπαθεί και η στροφή φτάνει στο μεταξύ ως μία αναρτημένη απάντηση. Παραλήπτης είναι όποιος ρώτησε, παρμένος από το εισερχόμενο μήνυμα (η δική του ομάδα, όχι της εφαρμογής, ώστε ένα κανάλι Slack Connect να επιλύεται σωστά). Για μια στροφή που κανείς δεν ξεκίνησε από τη συνομιλία — εργασία που ξεκίνησε στο Control Center σε μια ήδη γεφυρωμένη συνομιλία — είναι το μέλος του οποίου η σύνδεση δημιούργησε τη γέφυρα· αν στο μεταξύ αποσύνδεσε τον λογαριασμό συνομιλίας του, αυτή η στροφή αναρτάται ολόκληρη αντί να μεταδίδεται σε ροή.
 
-## Task cards
+## Κάρτες εργασίας
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Μία ομαδοποιημένη κάρτα ανά στροφή πράκτορα (`task_display_mode: plan`), με μία γραμμή ανά βήμα. Κάθε γραμμή είναι ένα `task_update` με `id` + `title` + `status`, συν ένα `details` μίας φοράς όταν η σκέψη είναι έτοιμη. Τα `details` και το `output` με το ίδιο id συνενώνονται χωρίς διαχωριστικό, οπότε τα `details` στέλνονται μία φορά και το `output` δεν μεταδίδεται ποτέ σε ροή. Ο τίτλος του σχεδίου είναι το αίτημα· η απάντηση είναι ένα ξεχωριστό μεταγενέστερο append που φέρει ένα τμήμα `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Μέρος           | Περιεχόμενο                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Τίτλος σχεδίου  | Τι ζητήθηκε                                                                                                                                                   |
+| Γραμμή προετοιμασίας | `Working on it…`, μετά `Cloning …`, μετά `Starting the agent…` — μία γραμμή, ο τίτλος αντικαθίσταται                                                  |
+| Γραμμή σκέψης   | `Thinking…`, προστίθεται όταν ο πράκτορας αρχίζει να συλλογίζεται· η σκέψη είναι τα `details` αυτής της γραμμής, που στέλνονται μία φορά όταν ολοκληρωθεί η συλλογιστική |
+| Γραμμές εργαλείων | Μία ανά εργαλείο (`Bash which swift`), μοναδικό id ώστε να στέκονται δίπλα δίπλα                                                                |
+| Κατάσταση       | Σε εξέλιξη όσο εκτελείται αυτή η γραμμή· ολοκληρωμένη όταν ξεκινήσει η επόμενη γραμμή ή τελειώσει η στροφή· σφάλμα για αποτυχημένη, διακοπείσα και λόγω ορίου στροφών |
+| Πρόσκληση σε ενέργεια | `View in Control Center` ως τελευταία γραμμή όταν τελειώσει η στροφή — απούσα όσο η εργασία εκτελείται ακόμη και απούσα όταν ο διακομιστής δεν έχει προσβάσιμο δημόσιο URL |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Τι δεν μεταφέρει ποτέ μια κάρτα: έξοδο εργαλείου, όρισμα εκτός αυτής της λίστας επιτρεπομένων ή οτιδήποτε διαβάστηκε από τη βάση δεδομένων. Η συλλογιστική πρόζα είναι μόνο τα `details` της γραμμής `Thinking…` (με ανώτατο όριο 256 χαρακτήρες), όχι το σώμα του μηνύματος. Μια κάρτα που δεν θα έλεγε τίποτα νέο δεν αποστέλλεται ξανά. Μια αναφορά ανοίγει τη ροή αμέσως ώστε το νήμα του Slack να μη μείνει σιωπηλό· μια στροφή που μετά δεν παρήγαγε καθόλου κείμενο ολοκληρώνει αυτή την ίδια κάρτα με μια σύντομη σημείωση αντί να αναρτήσει δεύτερο μήνυμα. Μια στροφή χωρίς λέξεις σε έναν χώρο που δεν άνοιξε ποτέ ροή (χωρίς κάρτες ή με τη ροή ήδη απορριφθείσα) αναρτά ακόμη ένα μήνυμα που φέρει την ολοκληρωμένη κάρτα και τη σημείωση.
 
-Streamed and posted cards are different payloads:
+Οι κάρτες σε ροή και οι αναρτημένες κάρτες είναι διαφορετικά ωφέλιμα φορτία:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Μορφή             | Σχήμα                                                | Πρόζα                                            |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------ |
+| Σε ροή            | Τμήματα `plan_update` συν `task_update` κλειδωμένα με `id` | Απλή συμβολοσειρά, με ανώτατο όριο 256 χαρακτήρες ανά τμήμα |
+| Αναρτημένη        | Ένα block `plan` που περιβάλλει `task_card` κλειδωμένα με `task_id` | Εμπλουτισμένο κείμενο               |
 
-Failure handling:
+Χειρισμός αποτυχιών:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Κατάσταση                                    | Συμπεριφορά                                                                                                                 |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Ο πάροχος αρνείται την κάρτα σε ένα append   | Το append επαναλαμβάνεται αμέσως χωρίς αυτήν· η πρόζα φτάνει ακόμη ζωντανά και οι κάρτες απορρίπτονται για όλη τη ζωή της σύνδεσης |
+| Ο πάροχος αρνείται και την πρόζα             | Η ροή κλείνει και η απάντηση αναρτάται ολόκληρη                                                                             |
+| Η ροή διακόπτεται αφού έχει φτάσει μέρος της απάντησης | Η ροή κλείνει και τίποτα δεν αναρτάται ξανά                                                                      |
 
-See [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) for why the payload is split this way.
+Δείτε τις [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) για το γιατί το ωφέλιμο φορτίο χωρίζεται έτσι.
 
-### Setup, before there is a turn
+### Προετοιμασία, πριν υπάρξει στροφή
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Η κάρτα ανοίγει όταν γίνεται δεκτή μια αναφορά, πριν από την κλωνοποίηση και πριν από το πρώτο token· η στροφή που ακολουθεί υιοθετεί την ίδια κάρτα και ροή. Η αφήγηση μετά προέρχεται από το `SpaceProvisioningChanged` στον δίαυλο γεγονότων τομέα — την ίδια πρόοδο που διαβάζει το πανό προετοιμασίας της εφαρμογής υπολογιστή από τη γραμμή του χώρου.
 
-| Provisioning state          | Narration                                                      |
-| --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
-| `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
-| `failed`                    | `Workspace setup failed — details are in Control Center.`      |
-| `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
+| Κατάσταση προετοιμασίας      | Αφήγηση                                                        |
+| ---------------------------- | -------------------------------------------------------------- |
+| Η αναφορά έγινε δεκτή        | `Working on it…`                                               |
+| Βήμα `repo`                  | `Cloning <repo>…`                                              |
+| Βήμα `prCheckout`            | `Checking out the pull request in <repo>…`                     |
+| Βήμα `script`                | `Running the setup script for <repo>…`                         |
+| Βήμα `agent`                 | `Setting up <agent>…`                                          |
+| `provisioning`, κανένα βήμα ακόμη | `Preparing the workspace…`                                |
+| `ready`                      | `Starting the agent…`                                          |
+| Ο πράκτορας συλλογίζεται     | `Thinking…`                                                    |
+| `failed`                     | `Workspace setup failed — details are in Control Center.`      |
+| `cancelled`                  | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Η αφήγηση προετοιμασίας απαιτεί και τις τέσσερις συνθήκες:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Συνθήκη                                    |
+| ------------------------------------------ |
+| Ο πάροχος αποδίδει κάρτες                  |
+| Η ροή είναι διαθέσιμη σε αυτή τη σύνδεση   |
+| Ο χώρος έχει ένα αίτημα συνομιλίας σε εκκρεμότητα |
+| Καμία κάρτα δεν αναφέρει ήδη μια στροφή εκεί |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Το αίτημα παραμένει σε εκκρεμότητα μέχρι να ξεκινήσει μια στροφή ή να αποτύχει η προετοιμασία. Ένα γεγονός `ready` χωρίς ήδη ανοιχτή κάρτα είναι ένας θερμός χώρος και αφήνεται ήσυχος, και μια προετοιμασία που κανείς στη συνομιλία δεν περιμένει — μια συνομιλία που άνοιξε στην εφαρμογή, μια εγκαταλελειμμένη που συνεχίστηκε στην εκκίνηση — δεν παράγει καθόλου κάρτα.
 
-## The `/open` bounce page
+## Η σελίδα ανακατεύθυνσης `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Τα προϊόντα συνομιλίας δέχονται `http(s)` σε έναν σύνδεσμο και τίποτα άλλο, οπότε μια πρόσκληση σε ενέργεια δεν μπορεί να ονομάσει απευθείας το σχήμα της εφαρμογής υπολογιστή.
 
-| Property   | Value                                                                                                                                       |
+| Ιδιότητα   | Τιμή                                                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Διαδρομή   | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Προέλευση  | Παράγεται από το δημόσιο URL του διακομιστή (`ws` → `http`, `wss` → `https`)· το loopback διατηρείται                                    |
+| Απόκριση   | Μια μικρή σελίδα HTML με no-store που πλοηγείται στο `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` και δείχνει ένα χειροκίνητο κουμπί |
+| Επικύρωση  | Τα ids πρέπει να ταιριάζουν με `[A-Za-z0-9_.-]{1,128}`· οτιδήποτε άλλο είναι 404                                                            |
+| Πρόσβαση   | Δημόσια και αδρανής — δεν διαβάζει καμία βάση δεδομένων, οπότε δεν είναι μαντείο ύπαρξης· η εφαρμογή που ανοίγει κάνει την εξουσιοδότηση     |
 
-## Bot profile fields
+## Πεδία προφίλ bot
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| Πεδίο              | Όριο          | Σημειώσεις                                                                                          |
+| ------------------ | ------------- | --------------------------------------------------------------------------------------------------- |
+| `appName`          | 1–35 χαρακτήρες | Προεπιλογή: `Control Center · <workspace name>`                                                   |
+| `botDisplayName`   | 1–80 χαρακτήρες | Προεπιλογή: `control-center`                                                                      |
+| `description`      | ≤ 140 χαρακτήρες |                                                                                                  |
+| `agentDescription` | ≤ 300 χαρακτήρες | Εμφανίζεται πάνω από ένα άμεσο μήνυμα προς το bot                                                |
+| `command`          | ≤ 32 χαρακτήρες | Κανονικοποιείται: οι αρχικές κάθετοι αφαιρούνται, τα γράμματα γίνονται πεζά, το `[^a-z0-9_-]` διαγράφεται, ένα κενό αποτέλεσμα καταλήγει στο `cc` |
+| `agentEnabled`     | —             | Αν εκτίθεται η εμπειρία άμεσων μηνυμάτων/πράκτορα                                                  |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Ένα κενό πεδίο σημαίνει «άφησέ το ήσυχο», όχι «καθάρισέ το». Τα όρια είναι του Slack, που είναι τα στενότερα από τα προϊόντα που μοντελοποιούνται.
 
-## Link codes
+## Κωδικοί σύνδεσης
 
-| Property | Value                                                                                    |
+| Ιδιότητα | Τιμή                                                                                     |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Μήκος    | 6 χαρακτήρες                                                                             |
+| Αλφάβητο | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (χωρίς `0`/`O`, `1`/`I`, `U`)                          |
+| Διάρκεια ζωής | 15 λεπτά                                                                            |
+| Χρήσεις  | Μία                                                                                      |
+| Αποθήκευση | Στη μνήμη — μια επανεκκίνηση του διακομιστή ακυρώνει τους εκκρεμείς κωδικούς            |
+| Εμβέλεια | Ένας χώρος εργασίας και ένας πάροχος· η έκδοση νέου κωδικού ακυρώνει τον προηγούμενο του μέλους |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Η εξαργύρωση αντιστοιχίζεται χωρίς διάκριση πεζών-κεφαλαίων. Άγνωστοι, ληγμένοι, ξένου χώρου εργασίας και λάθος παρόχου κωδικοί αποτυγχάνουν όλοι πανομοιότυπα σκόπιμα.
 
-## Link methods
+## Μέθοδοι σύνδεσης
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Μέθοδος | Wire    | Πώς                                                                             |
+| ------- | ------- | ------------------------------------------------------------------------------- |
+| Κωδικός | `code`  | Το μέλος εξαργύρωσε το `/cc link <code>`                                        |
+| Email   | `email` | Το επαληθευμένο email του παρόχου αντιστοιχίστηκε με χρήστη που είναι ήδη μέλος του χώρου εργασίας |
 
-## RPC operations
+## Λειτουργίες RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Όλες έχουν εμβέλεια χώρου εργασίας. Ο διακομιστής είναι άνευ κατάστασης, οπότε κάθε κλήση φέρει το δικό της `workspace_id` στα args· ο dispatcher αρνείται μια λειτουργία εμβέλειας χώρου εργασίας που το παραλείπει, πριν ανοίξει οποιαδήποτε βάση δεδομένων. Τα διαπιστευτήρια ταξιδεύουν μόνο _προς τα μέσα_ — οι αναγνώσεις κατάστασης δεν τα επιστρέφουν ποτέ.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Λειτουργία              | Είδος       | Ελάχιστος ρόλος                                | Κλάσεις ενέργειας               |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| `chat.providers`        | ανάγνωση    | `guest`                                        | —                               |
+| `chat.status`           | ανάγνωση    | `guest`                                        | —                               |
+| `chat.connect`          | μεταβολή    | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | καταστροφική | `admin`                                       | `secretAccess`                  |
+| `chat.listUserLinks`    | ανάγνωση    | `guest`                                        | —                               |
+| `chat.beginUserLink`    | μεταβολή    | `member`                                       | —                               |
+| `chat.unlinkUser`       | μεταβολή    | `member` για τον εαυτό σας, `admin` για οποιονδήποτε άλλον | —                    |
+| `chat.createApp`        | μεταβολή    | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | ανάγνωση    | `admin`                                        | —                               |
+| `chat.botProfile`       | ανάγνωση    | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | μεταβολή    | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Οι λειτουργίες ανάγνωσης κληρονομούν το κατώτατο όριο `guest` από το είδος τους· οι μεταβολές χωρίς ρητό κατώτατο όριο απαιτούν `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+Το `chat.setupLink` συνθέτει ένα URL δημιουργίας εφαρμογής παρόχου από το προφίλ του bot. Δεν δηλώνει καμία κλάση ενέργειας επειδή δεν διαβάζει κανένα μυστικό και δεν καλεί τίποτα — ο περιηγητής του ίδιου του χρήστη κάνει τη μοναδική κλήση.
 
-One reactive query completes the surface:
+Ένα αντιδραστικό query ολοκληρώνει την επιφάνεια:
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| Query                 | Είδος        | Εκπέμπει                                                 |
+| --------------------- | ------------ | -------------------------------------------------------- |
+| `chat.watchUserLinks` | παρακολούθηση | Ο κατάλογος, που αποστέλλεται ξανά κάθε φορά που δημιουργείται ή αφαιρείται μια σύνδεση |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Υπάρχει επειδή η σύνδεση συμβαίνει στην _άλλη_ πλευρά: ένα μέλος πληκτρολογεί τον κωδικό μίας χρήσης στο bot, οπότε καμία απόκριση πελάτη δεν μπορεί να μεταφέρει την απάντηση πίσω. Ο κατάλογος των ρυθμίσεων και ο ανοιχτός διάλογος «σύνδεση του λογαριασμού μου» τον ακολουθούν και ο διάλογος μετατρέπεται σε επιβεβαίωση τη στιγμή που καταφτάνει η σύνδεση του ίδιου του μέλους.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+Το `chat.beginUserLink` εκδίδει πάντα έναν κωδικό για την ταυτότητα του ίδιου του καλούντος. Το `chat.updateBotProfile` επιστρέφει ένα `remaining_step` μόνο όταν απομένει κάποιο βήμα (τυπικά μια επανεγκατάσταση)· η απουσία του σημαίνει ότι η αλλαγή είναι ζωντανή.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+Το `chat.providers` επιστρέφει μία εγγραφή ανά προσφερόμενο πάροχο — τον περιγραφέα συν, όταν υπάρχει, την κατάσταση σύνδεσης. Ό,τι αποδίδει το UI των ρυθμίσεων προέρχεται από αυτό το ωφέλιμο φορτίο, γι' αυτό η προσθήκη ενός παρόχου είναι αλλαγή μόνο στον διακομιστή.
 
-## Storage
+## Αποθήκευση
 
-| What                       | Where                                                                                                        |
+| Τι                         | Πού                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Διαπιστευτήρια σύνδεσης    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Ημιτελής καθοδηγούμενη ρύθμιση | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                          |
+| Παλιά αρχεία Slack         | `<dataDir>/<workspaceId>/slack_credentials.json` και `slack_app_setup.json`, διαβάζονται μία φορά και μεταναστεύουν επί τόπου |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Τα διαπιστευτήρια ζουν δίπλα στη βάση δεδομένων του χώρου εργασίας, όχι μέσα της: η διαγραφή ενός χώρου εργασίας παίρνει μαζί της τα token συνομιλίας του και το `workspace.export` ή ένα αντίγραφο ασφαλείας αντιγράφει το `workspace.db` — οπότε ένας χώρος εργασίας που παραδίδεται σε κάποιον άλλο δεν κουβαλά ζωντανά token bot. Οι εγγραφές είναι ατομικές (προσωρινό αρχείο συν μετονομασία) και περιορίζονται σε δικαιώματα μόνο του ιδιοκτήτη.
 
-## Database tables
+## Πίνακες βάσης δεδομένων
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Και οι δύο ζουν στη βάση δεδομένων του χώρου εργασίας, η οποία φέρει μια συμπτυγμένη βάση αναφοράς v1 — οπότε μια ανάγνωση από άλλον χώρο εργασίας δεν μεταγλωττίζεται.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — μία εξωτερική συνομιλία ↔ ένας χώρος του Control Center:
 
-| Column                                                 | Notes                                                                      |
+| Στήλη                                                  | Σημειώσεις                                                                 |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Εμβέλεια χώρου εργασίας                                                    |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Ομάδα Slack `T…`, κενό για παρόχους χωρίς την έννοια                       |
+| `external_channel_id`                                  | Κανάλι Slack `C…`, ομάδα `G…`, άμεσο μήνυμα `D…`                          |
+| `external_thread_id`                                   | Άγκυρα νήματος Slack, ή null όταν ολόκληρη η συνομιλία είναι η άγκυρα (άμεσα μηνύματα bot) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Μοναδικό στα `(workspace_id, provider, external_channel_id, external_thread_id)`, με μερικό ευρετήριο που επιβάλλει το ίδιο για thread ids με null (το SQLite αντιμετωπίζει τα NULL ως διακριτά).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — ένα εξωτερικό μέλος ↔ ένας χρήστης του Control Center:
 
-| Column                                 | Notes                                           |
+| Στήλη                                  | Σημειώσεις                                      |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Εμβέλεια χώρου εργασίας                         |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Μέλος Slack `U…`                                |
+| `user_id`                              | Χρήστης του Control Center (καθολικός, γι' αυτό χωρίς ξένο κλειδί) |
+| `method`                               | `code` ή `email`                                |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Μοναδικό στα `(workspace_id, provider, external_team_id, external_user_id)` και στο `(workspace_id, provider, user_id)` — απόδοση μίας τιμής και προς τις δύο κατευθύνσεις, ενώ ένα άτομο μπορεί να είναι συνδεδεμένο σε πολλούς παρόχους.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Μια σύνδεση είναι επίλυση ταυτότητας, **όχι** παραχώρηση πρόσβασης: η ιδιότητα μέλους ελέγχεται ξανά σε κάθε εισερχόμενο συμβάν, οπότε μια σύνδεση με μέλος που έχει στο μεταξύ αφαιρεθεί καταλήγει σε άρνηση.
 
-## Space kind and message metadata
+## Είδος χώρου και μεταδεδομένα μηνυμάτων
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Ένας γεφυρωμένος χώρος δημιουργείται με το `SpaceKind` του παρόχου (`slack`). Συμπεριφέρεται σαν ένας συνηθισμένος χώρος για ανθρώπους — ειδοποιείται και κατατάσσεται σε ενότητες όπως το `topic` — και το `isExternalChat` είναι ο έλεγχος από τον οποίο περνά κάθε συμπεριφορά (καθρεφτισμός, σήμανση, διατήρηση).
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Κάθε μήνυμα που φέρνει μέσα η γέφυρα φέρει σφραγίδα `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Η σφραγίδα είναι επίσης η προστασία από την ηχώ: ο εξερχόμενος καθρέφτης παραλείπει κάθε μήνυμα που τη φέρει, και αυτό εμποδίζει ένα εισερχόμενο μήνυμα συνομιλίας να αναρτηθεί αμέσως πίσω.
 
-## Relay behavior
+## Συμπεριφορά αναμετάδοσης
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Συμπεριφορά                            | Λεπτομέρεια                                                                                                     |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Τι αναμεταδίδεται προς τα έξω          | Μόνο το **κείμενο** του πράκτορα, συν τη γραμμή κατάστασης της κάρτας εργασίας. Η συλλογιστική πρόζα και η έξοδος εργαλείων μένουν στο Control Center |
+| Ρυθμός ροής                            | Περιορίζεται σε μία εκκένωση ανά δευτερόλεπτο όσο εκτελείται μια στροφή· η κάρτα και το κείμενο που εξηγεί ταξιδεύουν στην ίδια κλήση |
+| Ανθρώπινα μηνύματα που πληκτρολογούνται στο Control Center | Καθρεφτίζονται στο συνδεδεμένο νήμα, με πρόθεμα το εμφανιζόμενο όνομα του συντάκτη                |
+| Κενές στροφές                          | Αναφέρονται με μια σύντομη σημείωση (η εκτέλεση απέτυχε, διακόπηκε ή σταμάτησε στο όριο στροφών της) αντί για σιωπή |
+| Αποδιπλασιασμός                        | Κλειδώνεται με το δικό του id συμβάντος του παρόχου· τα τελευταία 512 θυμούνται                                |
+| Πράκτορας υποδοχής                     | Μια νέα γεφυρωμένη συνομιλία ξυπνά τον πράκτορα CEO του χώρου εργασίας, αλλιώς τον πρώτο του πράκτορα, αλλιώς κανέναν |
+| Ονομασία χώρου                         | `#channel · <request>` για νήμα καναλιού Slack, `Slack DM · <request>` για άμεσο μήνυμα, τίτλοι με ανώτατο όριο 48 χαρακτήρες |
+| Απομόνωση αποτυχιών                    | Ένα προβληματικό συμβάν δεν ρίχνει ποτέ τη γέφυρα· η σύνδεση συνεχίζει να εξυπηρετεί κάθε άλλη συνομιλία         |
 
-## See also
+## Δείτε επίσης
 
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
-- [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
-- [Customize the chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) for the action classes the ops declare
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
+- [Προσαρμογή του chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) για τις κλάσεις ενέργειας που δηλώνουν οι λειτουργίες

@@ -1,60 +1,66 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Gebruikers provisioneren met SCIM
+description: Laat je IdP automatisch Control Center-accounts aanmaken, bijwerken en deprovisioneren.
 slug: nl-NL/handleiding/gidsen/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Gebruik deze gids als je de levenscyclus wilt beheersen — bij offboarding moet
+de toegang automatisch worden ingetrokken, niet alleen moeten toekomstige
+aanmeldingen worden geblokkeerd. SCIM is het pushprotocol dat IdP's (Okta,
+Entra ID en andere) precies daarvoor gebruiken.
 
-## Prerequisites
+## Vereisten
 
-- SSO already working (the [SSO tutorial](/nl-NL/handleiding/zelfstudies/sso) or the
-  [OIDC guide](/nl-NL/handleiding/gidsen/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO werkt al (de [SSO-zelfstudie](/nl-NL/handleiding/zelfstudies/sso) of de
+  [OIDC-gids](/nl-NL/handleiding/gidsen/sso-oidc)),
+- **een server die de IdP via HTTPS kan bereiken** — SCIM-aanroepen komen van de
+  IdP, niet uit de browser van de gebruiker. Gebruik de ingebouwde tunnel
+  (Instellingen → Server → Verbinding en status → Deze server delen → Cloudflared/ngrok/Tailscale) of een openbare URL. Een
+  server die alleen via de WebSocket-relay bereikbaar is, kan geen SCIM-pushes
+  ontvangen; JIT-provisionering werkt daar nog wel, deze gids niet.
 
-## Steps
+## Stappen
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Open **Instellingen → Server → Single sign-on** → de
+   kaart **Gebruikersvoorziening (SCIM)**. De kaart toont het endpoint, bijvoorbeeld
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Kies **Token genereren** (of **Token opnieuw genereren** als er al een
+   bestaat) — het bearer-token verschijnt één keer in een dialoogvenster en wordt
+   naar het klembord gekopieerd. Bewaar het in je wachtwoordmanager; de server
+   bewaart alleen een kopie die in constante tijd te controleren is.
+3. Zet SCIM aan in de provisioneringsinstellingen van je IdP met:
+   - **Basis-URL**: het endpoint hierboven
+   - **Authenticatie**: `Authorization: Bearer <token>`
+   - **Gebruikers-id**: `userName` (e-mail) of `externalId` — beide komen overeen
+4. Test met één gebruiker: push die vanuit de IdP en controleer of die
+   verschijnt (een SCIM-create zet de `externalId` van de provider vast op het
+   account, dezelfde vastzetting die een eerste SSO-aanmelding doet).
 
-## What deprovisioning does
+## Wat deprovisionering doet
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Als de IdP `active: false` (of `DELETE`) stuurt, weigert SCIM eerst wanneer het
+account **eigenaar** van een werkruimte is (draag eerst het eigenaarschap over).
+Anders:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. elk apparaatinloggegeven wordt eerst ingetrokken — lopende sessies vallen
+   binnen enkele seconden weg,
+2. elk werkruimtelidmaatschap wordt verwijderd,
+3. het account wordt als gedeactiveerd gestempeld (het kan niet meer inloggen,
+   wat de IdP later ook beweert, totdat het expliciet opnieuw wordt geactiveerd).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+De gebruikersrij zelf blijft bestaan — toeschrijving op tickets, berichten en
+commits is permanent. Reactivering (SCIM `active: true`) herstelt de aanmelding
+maar **niet** de lidmaatschappen: daarvoor is een nieuwe uitnodiging nodig of het
+auto-member-beleid bij het aanmelden.
 
-## Troubleshooting
+## Problemen oplossen
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 bij elke aanroep** — het token is gewijzigd; genereer een nieuw token en
+  werk de IdP bij.
+- **Het endpoint is niet bereikbaar** — de tunnel ligt eruit, of de server is
+  alleen via de relay bereikbaar. SCIM heeft direct HTTPS nodig; JIT blijft
+  hoe dan ook werken.
+- **Fouten bij het pushen van groepen (501)** — opzettelijk: de toewijzing
+  groep→rol gebeurt bij het aanmelden op basis van de SAML-/OIDC-groepsattributen,
+  niet vanuit gepushte groepen.

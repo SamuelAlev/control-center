@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Repos toevoegen aan een werkruimte
+description: Registreer Git-checkouts in een werkruimte zodat agenten eraan kunnen werken.
 slug: nl-NL/handleiding/gidsen/repos-toevoegen
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Deze gids laat zien hoe je een Git-checkout in een werkruimte registreert, opnieuw indexeert en weer verwijdert.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repo's zijn **werkruimtegebonden**. Er is geen globaal register en geen koppelstap: een repo toevoegen en hem in een werkruimte zetten zijn dezelfde handeling. Dezelfde checkout die in twee werkruimtes is geregistreerd, wordt twee onafhankelijke rijen met twee verschillende id's — over werkruimtes heen is de identiteit van een repo zijn bestandssysteempad, nooit zijn id.
 
-## Before you start
+## Voordat je begint
 
-A folder can only be registered if all three of these hold:
+Een map kan alleen worden geregistreerd als aan alle drie deze voorwaarden is voldaan:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Hij staat binnen een **git-worktree**.
+2. Die worktree heeft een **`origin`-remote**.
+3. De `origin`-remote wijst naar een **ondersteunde forge**: github.com, gitlab.com of bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Al het andere wordt op het moment van registratie geweigerd met een expliciete melding: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." of "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Er is geen modus die alleen lokaal werkt.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+De forge wordt uit de remote gelezen en op de repo opgeslagen — je kiest hem nooit zelf. Een werkruimte kan repo's van alle drie tegelijk bevatten, en met elk wordt via zijn eigen API en met zijn eigen referentie gecommuniceerd. Geneste namespaces van GitLab blijven behouden, dus `gitlab.com/group/subgroup/project` wordt geregistreerd met eigenaar `group/subgroup` en naam `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+De map moet ook op de machine staan die `cc_server` host, binnen een van de `--repo-roots`-mappen van die server. Die allowlist staat standaard op de homedirectory van de servergebruiker, en browsen boven een root wordt geweigerd.
 
-## Register a checkout
+## Een checkout registreren
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Open **Instellingen → Werkruimte → Repository's** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Klik op **Repository toevoegen**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Het dialoogvenster is een doorbladerbare browser over het bestandssysteem van de **server**, niet dat van jou. Het is dezelfde flow op desktop, web en telefoon, want een native mapkiezer zou een map op de verkeerde machine kiezen.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Navigeer binnen de geconfigureerde roots van de server. Mappen die git-checkouts zijn, worden gemarkeerd.
+4. Vink er zoveel aan als je maar wilt. De selectie blijft bewaard terwijl je navigeert, zodat je checkouts uit meerdere mappen kunt verzamelen.
+5. Registreer ze in één batch.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Eén mislukte keuze laat de rest van de batch nooit vallen — je krijgt de id's die zijn aangemaakt plus een fout per pad voor elk pad dat is geweigerd. Als je een pad opnieuw registreert dat al in deze werkruimte aanwezig is, krijg je de bestaande repo terug in plaats van dat er een duplicaat wordt aangemaakt.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Elke geregistreerde repo verschijnt in de lijst met zijn `owner/name`, een badge met de naam van zijn forge en zijn pad op de server. GitHub-repo's tonen ook de avatar van de eigenaar; de andere forges hebben geen raadbare URL voor de avatar van de eigenaar, dus vallen ze terug op initialen.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+De forgebadge is belangrijk in een gemengde werkruimte: twee repo's kunnen op verschillende forges beide `acme/web` heten, en ze gedragen zich anders — wat een review kan doen, en waar een link naartoe gaat.
 
-## What happens next
+## Wat er daarna gebeurt
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Registratie activeert een `RepoAdded`-gebeurtenis met deze werkruimte als scope, wat de pipeline `index_code` voor die checkout start. Dat is wat de codegraph vult, zodat zoeken en impactanalyse iets hebben om mee te antwoorden.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/).
+Alleen bestanden waarvan de taal een meegeleverde grammatica heeft, worden geïndexeerd (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB en Ada). Zie [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/).
 
-## Re-index a repo
+## Een repo opnieuw indexeren
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Elke rij heeft een knop **Code indexeren**. Klik erop om de indexeerder voor die checkout opnieuw te draaien; terwijl hij draait, wordt de knop een voortgangsweergave die gedane bestanden van het totaal toont, met een annuleerknop. Als hij klaar is, verandert hij in een vinkje met het aantal symbolen, of een waarschuwing als de run is mislukt.
 
-## Reorder repos
+## Repo's herordenen
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Sleep het handvat op een rij. De volgorde die je instelt, is de volgorde die elke repolijst in de app terugleest.
 
-## Fix the GitHub link
+## De GitHub-link herstellen
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Het linkpictogram op een rij opent een editor voor de GitHub-eigenaar en repositorynaam van de repo — handig wanneer de remote is hernoemd of overgedragen.
 
-## Remove a repo
+## Een repo verwijderen
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Open **Instellingen → Werkruimte → Repository's**.
+2. Klik op het prullenbakpictogram op de rij.
+3. Bevestig "Repository uit werkruimte verwijderen?"
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Het dialoogvenster zegt wat het doet: "_name_ wordt verwijderd uit deze werkruimte. De lokale bestanden op schijf worden niet aangeraakt."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Verwijderen schrapt de reporij uit deze werkruimte en verwijdert in cascade de codegraph-rijen ervan — symbolen, randen, bestanden en indexcontrolepunten — plus elke repotoekenning per lid, zijn ruimte-repo-koppelingen en de registraties van zijn geïsoleerde checkouts. Dezelfde checkout die in een andere werkruimte is geregistreerd, is een onafhankelijke rij en blijft onaangetast. Worktrees op schijf waar die registraties naar verwezen, worden door het verwijderen niet afgebroken.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/)
-- [Run agents in parallel](/nl-NL/handleiding/gidsen/parallelle-agenten/)
-- [Set up GitHub integration](/nl-NL/handleiding/gidsen/github-integratie/)
-- [Your first workspace](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/)
+- [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/)
+- [Agenten parallel uitvoeren](/nl-NL/handleiding/gidsen/parallelle-agenten/)
+- [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)
+- [Je eerste werkruimte](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/)
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/)

@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Masuk tunggal
+description: Bagaimana login SAML dan OIDC bekerja, apa yang diverifikasi, dan bagaimana akun tetap aman.
 slug: id-ID/panduan-pengguna/konsep/masuk-tunggal
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Masuk tunggal memungkinkan penyedia identitas (IdP) eksternal menentukan siapa
+yang boleh masuk ke server Control Center Anda. Dua protokol didukung — SAML 2.0
+dan OpenID Connect — dan keduanya berakhir di tempat yang sama: kredensial
+perangkat yang baru dibuat yang tidak dapat dibedakan dari undangan atau
+pemasangan QR di seluruh bagian hilir.
 
-## The shape of a login
+## Bentuk sebuah login
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Login SAML **dimediasi browser**. IdP tidak pernah membuka koneksi ke server
+Anda; browser pengguna membawa semuanya:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,82 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Karena browser adalah kurirnya, **server di balik NAT tetap berfungsi** untuk
+login: localhost, LAN, Tailscale, VPN, atau tunnel semuanya melayani — hanya
+browser pengguna yang harus menjangkau ACS URL. Relay WebSocket yang dipakai
+oleh kontrol jarak jauh ponsel tidak dapat membawa perjalanan bolak-balik HTTP,
+dan itulah sebabnya titik masuk SSO selalu menargetkan origin HTTP server.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect mengikuti bentuk yang sama dengan perjalanan bolak-balik kode
+otorisasi + PKCE; klaim dibaca dari endpoint token penerbit melalui TLS,
+sehingga browser sama sekali tidak memasok data identitas.
 
-## The adapters
+## Adapter
 
-Control Center splits the responsibility deliberately:
+Control Center membagi tanggung jawabnya dengan sengaja:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| Bagian                        | Lokasi                             | Tanggung jawab                                                                                                                             |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| `cc_saml` native              | `packages/cc_natives/native/saml/` | Verifikasi XML-DSig, kanonikalisasi, validasi profil SAML — didelegasikan ke crate `saml` Rust murni yang dipatok di balik C ABI yang stateless |
+| `SamlService` / `OidcService` | `cc_server_core`                   | status login (pelacak permintaan tertunda, deduplikasi replay), kenop kebijakan validasi, panggilan provisioning bersama                    |
+| `SsoProvisioner`              | `cc_server_core`                   | temukan-atau-buat pengguna, sematkan subjek penyedia, berikan keanggotaan di bawah kebijakan auto-member                                    |
+| `ScimService`                 | `cc_server_core`                   | permukaan push SCIM 2.0 (siklus hidup provision/deprovision)                                                                               |
+| `SsoSettingsService`          | `cc_server_core`                   | baris koneksi yang tersimpan, penerapan ulang langsung, token SCIM                                                                         |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Secara sengaja **tidak ada fallback kripto SAML Dart murni**: XML-DSig/
+kanonikalisasi buatan tangan justru tempat kerentanan pembungkusan tanda tangan
+berada, sehingga pustaka `cc_saml` yang hilang menolak baik login SAML maupun
+boot server. Native ini stateless secara desain — status lintas-permintaan
+berada di layanan Dart, sekali pakai dan berumur pendek.
 
-## What a login verifies
+## Apa yang diverifikasi oleh login
 
-Inside the verified native and the service, in order:
+Di dalam native yang terverifikasi dan layanannya, secara berurutan:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **tanda tangan** asertion (selalu wajib; tanda tangan amplop respons
+   opsional sesuai konfigurasi) — secara struktural tahan terhadap
+   pembungkusan tanda tangan karena payload yang divalidasi terikat pada
+   elemen yang terverifikasi,
+2. **penerbit** cocok dengan IdP yang dikonfigurasi,
+3. **audiens** menamai penyedia layanan ini,
+4. **tujuan** adalah ACS URL kami,
+5. `InResponseTo` cocok dengan AuthnRequest tertunda yang kami terbitkan
+   (respons yang tidak diminta dan diprakarsai IdP nonaktif secara default),
+6. jendela **masa berlaku** berada dalam toleransi pergeseran jam (default 90s) dan
+7. **id asertion** belum pernah terlihat sebelumnya (cache anti-replay).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Kegagalan dikembalikan sebagai kode bertipe — signature, expired, audience,
+destination, issuer, request-match — dan endpoint menjawab dengan error generik,
+sehingga penyerang tidak mempelajari apa pun tentang mengapa suatu pemalsuan
+gagal.
 
-## Accounts and subject pinning
+## Akun dan penyematan subjek
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Login SSO pertama menyematkan subjek penyedia yang tidak dapat diubah (`issuer`
+plus SAML NameID / OIDC `sub`, atau SCIM externalId) ke akun tersebut. Sejak saat
+itu, subjek — bukan email — yang mengidentifikasi login. Jika orang lain
+kemudian menyajikan email yang sama dari IdP yang sama atau IdP lain, akun yang
+disematkan akan menolaknya. Inilah yang menghentikan email yang didaur ulang di
+penyedia berubah menjadi pengambilalihan akun.
 
-## Provisioning and deprovisioning
+## Provisioning dan deprovisioning
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Provisioning JIT terjadi saat login (`SsoProvisioner`). SCIM adalah permukaan
+push terpisah (`ScimService`) yang menyematkan subjek yang sama pada baris
+pengguna; ia tidak memberikan keanggotaan ruang kerja. Deprovisioning — SCIM
+`active: false` atau `DELETE` — menolak jika akun tersebut adalah pemilik ruang
+kerja (alihkan dulu). Jika tidak, ia mencabut setiap kredensial perangkat
+terlebih dahulu (sesi berhenti dalam hitungan detik melalui pemantauan
+perangkat), menghapus setiap keanggotaan ruang kerja, dan menandai akun
+dinonaktifkan. Baris pengguna tetap ada: atribusi bersifat permanen. Aktivasi
+ulang memulihkan login tetapi tidak pernah memberikan kembali keanggotaan.
 
-## What stays out
+## Apa yang tidak termasuk
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Pemetaan grup→peran terjadi saat login** dari atribut SAML / klaim OIDC —
+  grup SCIM yang dikirim tidak disimpan.
+- **Peran pemilik tidak dapat dijangkau dari SSO** — baik sebagai peran default
+  maupun melalui pemetaan grup.
+- Relay WebSocket tidak pernah menjadi saluran SSO; ponsel yang hanya menjangkau
+  server melalui relay tidak dapat menyelesaikan perjalanan bolak-balik browser
+  terhadapnya.

@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Agentmodellen
+description: Vad en agent faktiskt är i Control Center, vilka av dess fält som förändrar beteendet och hur adaptern den körs på avgör vad som kan framtvingas.
 slug: sv-SE/handbok/koncept/agentmodell
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Vad är en agent?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+En agent är en namngiven aktör med en persona, en uppsättning skills, en adapter att köra på och en uppsättning förmågor. Agenter är principaler i samma mening som människor är det: de författar meddelanden, äger ärenden, lämnar granskningar och syns i samma personallista. De är sakerna som utför arbete.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Varje agent tillhör exakt en arbetsyta. Detta är en hård invariant — `agent.workspaceId` är icke-null, agentens egen arbetsyta är det som avgör vilken databasfil dess rader hamnar i och att skapa en agent utan arbetsyta avvisas.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+En agent är också en katalog. Dess definition ligger i `agents/<slug>/AGENTS.md` under arbetsytans datakatalog, med de skills den har symlänkade in i `agents/<slug>/.agents/skills`. Databasraden och filen skrivs tillsammans. Seeding är idempotent: om agentraden redan finns skrivs filerna på disk och skillänkarna fortfarande om. Anroparen i produktion är skapandet av arbetsytan, inte varje serverstart.
 
-## What an agent carries
+## Vad en agent innehåller
 
-| Attribute               | What it does                                                                          |
+| Attribut                | Vad det gör                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | Kort sluggliknande identifierare (`architect`, `qa`). Även det som `@mentions` matchas mot |
+| `title`                 | Människoläsbar jobbtitel                                                              |
+| `persona`               | Fritext med personlighet och beteendeinstruktioner, injicerad som ett promptavsnitt   |
+| `systemPrompt`          | Valfria extra instruktioner, injicerade som ett avsnitt "Agentinstruktioner" — de ersätter inte resten av den sammansatta prompten |
+| `skills`                | Skiftlägesokänslig uppsättning skillnamn, speglad som skillänkar på disk              |
+| `adapterId`             | Vilken körare agenten skickar till. **Null faller tillbaka på den inbyggda loopen**   |
+| `modelId`               | Vilken modell inom den adaptern                                                       |
+| `effort`                | Resonemangsnivå, hämtad från den valda modellens eget vokabulär                       |
+| `contextSize`           | Överstyrning av kontextfönstret                                                       |
+| `capabilities`          | Flaggor för inloggningsuppgifter och utgående trafik, kontrollerade vid start         |
+| `silenceTimeoutMinutes` | Per-agent-överstyrning (1–240) för tystnadsövervakningen                             |
+| `reportsTo`             | Förälderagentens id — rapporteringskedjan som organisationsschemat ritar              |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Du redigerar alla dessa under Inställningar → Arbetsyta → Agenter. **Ny agent** skapar en namnlös agent som du sedan fyller i.
 
 ## Skills
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Skills är skiftlägesokänsliga namn på agententiteten. Två separata saker händer med dem:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Namnen listas i den sammansatta prompten under en rubrik "Skills". Det är allt entitetens uppsättning gör i sig — det finns inget promptbibliotek per skill som styrs av den.
+- Varje namngiven skills katalog (`skills/<slug>/SKILL.md` i arbetsytan) länkas in i agentens egen mapp. På den inbyggda harnessen läses de länkade skillsens frontmatter automatiskt in i systemprompten och agenten läser en brödtext vid behov; att skriva `/skill:<name>` i ett samtal laddar den brödtexten som ett direktiv för turen.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/sv-SE/handbok/how-to-guider/hantera-skills/).
+Skills som hämtas utifrån passerar en fail-closed-scan av leveranskedjan mellan hämtning och skrivning — inget skillinnehåll når disken eller en prompt utan ett utfall. Det yttre är GitHub-repositorier som du själv registrerar som skillkällor: det finns ingen kurerad butik, så repositoriets egen metadata (dess beskrivning, dess stjärnor, skillens namn) är opålitlig visningsdata och scanresultatet är den enda säkerhetssignalen. En installation hämtar skillens hela katalog, fäster den vid den commit den kom från i `skills-lock.json`, och en senare uppdatering passerar grinden på nytt innan något ersätts. Guiden finns i [installera och hantera skills](/sv-SE/handbok/how-to-guider/hantera-skills/).
 
-### Repo-scoped skills
+### Reposcopade skills
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Ett repo kan leverera sina egna skills, på någon av de konventionella platserna (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). En yta checkar ut varje länkat repo sida vid sida under `repos/<name>/`, men en agent arbetar i ett repo i taget — så den bär **bara det repots** skills, och de byts ut när den flyttar.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Vilket repo som är aktivt härleds från filerna agenten rör: att skriva en fil under `repos/<name>/` gör det till det aktiva repot, medan ren läsning över repo-gränser inte gör det, så att följa en symbol in i en systertjänst byter aldrig ut uppsättningen mitt under en uppgift. På en yta med ett enda repo är svaret känt före första turen.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Avgränsningen är ett beslut om kontextbudget. Skillindexet ligger i prompten vid varje tur medan brödtexterna inte gör det, så att lista varje repos skills på en gång kostar tokens kontinuerligt — och en `testing`-skill från en tjänst vilseleder aktivt när arbetet är i en annan. Samma resonemang förklarar varför en agents index bär ett repo men skrivfältet inte är avgränsat på det sättet: att namnge en skill själv är en explicit handling, så `/skill:<repo>:<name>` når vilket repo som helst på ytan.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Repo-skills laddas för **varje** adapter, inte bara den inbyggda harnessen. Det aktiva repots skills materialiseras i agentens arbetskatalog, vilket är den sökväg Claude Code redan skannar; samma index komponeras in i den `AGENTS.md` som den inbyggda harnessen läser. Ett repos skills genomgår samma fail-closed-scan som en installerad skill innan något av detta sker — ett utcheckat repo är klonat innehåll, och dess frontmatter når en prompt.
 
-## Capabilities
+## Förmågor
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Förmågor styr vad en körning _tilldelas_, inte vad dess filsystem låter den röra. Mäklaren för inloggningsuppgifter kontrollerar dem vid start: om en förmåga är av injiceras helt enkelt inte motsvarande token.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Pusha till repo** — styr injiceringen av GitHub-token som används för `git push`.
+- **GitHub-API** — styr injiceringen av `GH_TOKEN` och utgående trafik till api.github.com.
+- **Ärenden** — styr ärendehanteringsleverantörens API-nyckel och utgående trafik till dess domäner.
+- **Utgående nätverkstrafik** — godtyckliga utgående förfrågningar.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+En körning läser dem från agentens egen rad. När agenten inte har några gäller en fast konservativ standard: de tre inloggningsuppgiftsflaggorna av, utgående nätverkstrafik på. Växlingsknappen "Sandlådebehörigheter" i agentformuläret väljer mellan den fallbacken och en anpassad uppsättning som lagras på agenten.
 
-See [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för den andra halvan, inklusive vad som framtvingas och inte framtvingas på filsystemsnivå.
 
-## The adapter decides what can be enforced
+## Adaptern avgör vad som kan framtvingas
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Det enskilt mest konsekvensrika fältet på en agent är dess adapter, eftersom adapterns transport avgör hur mycket av Control Centers policy som faktiskt kan framtvingas.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| Transport        | Adaptrar                  | Vad Control Center framtvingar                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Inbyggd harness  | Control Center (inbyggd)  | Allt. Verktygsytan _byggs_ från läget, så ett otillåtet verktyg är osynligt snarare än bara nekat; varje anrop passerar godkännandegrinden och åtgärdsräcken; slutförandekontraktet kan puffa och sedan underkänna en körning som avslutas utan sin leverans |
+| Claude CLI       | Claude Code               | Endast de `mcp__*`-verktyg den serveras. Claudes egna läs-, skriv-, redigerings- och skalkommando-verktyg lever i dess process och körs osedda — och den startas med `--dangerously-skip-permissions`, eftersom icke-interaktiv `claude -p` annars skulle blockera för evigt på sin egen prompt    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Konkret: **endast den inbyggda harnessen stöder subagenter, styrning under körning, pausa och återuppta (och därmed övertagande) samt strukturell lägestillämpning.** Claude Code får inget av detta.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[OS-sandlådan är ett golv, inte en lägestillämpare, och inte varje värd har en]
+Matrisen ovan handlar om vad Control Center kan _se och grinda_. Under den lindar `cc_server` in Claude Code-CLI:n i värdens OS-sandlåda där en sådan finns — Seatbelt på macOS, bubblewrap på Linux och WSL2 — så ett osynligt `rm` eller en osynlig skrivning begränsas fortfarande av OS:et. På **Windows finns ingen backend alls** och på Linux eller WSL2 utan `bwrap` och `socat` rapporterar sonden ingen, så där faller de körningarna tillbaka på miljösanering, förmedlade inloggningsuppgifter, räckena på de anrop Control Center kan se och samtalets egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
+Vad sandlådan inte är är en _grind_. Den begränsar var en process får läsa, skriva och ansluta — ett skrivskyddat läge når den verkligen, som skrivskyddade bind-monteringar — men den kan inte fånga upp ett anrop, resa ett godkännande eller i efterhand berätta vad CLI:n försökte göra. Det, plus de fyra förmågor som just nämndes, är fortfarande vad den inbyggda harnessen har och de andra inte. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+En agent **utan** adapter faller tillbaka på **Control Center (inbyggd)** — loopen inuti servern, så det finns ingen CLI att installera — och dess körningslogg registrerar `cc-harness`. Varje seedad agent skapas utan adapter och modell, så en ny arbetsytas fem agenter körs alla där, på Anthropics standardmodell, tills du anger en adapter och modell per agent. Onboardingens val av "standardadapter" är en klientinställning som servern aldrig läser och den tillämpas inte i efterhand på redan skapade agenter.
 
-## Where agents come from
+## Var agenter kommer ifrån
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Seeds med arbetsytan.** Varje arbetsyta — inte bara den första — får en VD plus fyra specialister (`qa`, `architect`, `engineer`, `librarian`) som rapporterar till den, skapade idempotent i bakgrunden när arbetsytan skapas. Se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
+- **Läggs till manuellt** under Inställningar → Arbetsyta → Agenter. Att be en agent anställa en kollega skapar ingen rad; använd den skärmen.
 
-## Live state
+## Live-tillstånd
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+En agent har ingen lagrad statuskolumn. Dess live-tillstånd härleds från dess senaste körningsloggar varje gång den läses:
 
-| State      | Meaning                                                              |
+| Tillstånd  | Betydelse                                                              |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | Ingen körningslogg finns                                                    |
+| `running`  | Minst en körning pågår för närvarande                            |
+| `failed`   | Den senaste körningen misslyckades, eller dess livskraft är misslyckad eller död            |
+| `blocked`  | Den senaste körningens livskraft är blockerad, stillastående eller loopande            |
+| `idle`     | Allt annat — agenten har kört tidigare och har inget i luften |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Ytterligare två tillstånd, `queued` och `succeeded`, finns för enskilda körningar i samtalets körningsträd; personallistan producerar dem aldrig, eftersom att en avslutad körning är grön är ett faktum om körningen, inte om agenten.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/sv-SE/handbok/koncept/multiplayer/).
+Närvarolistan visar en parallell, grövre bild som syntetiseras på serversidan från livedata om körningar — tänker, kör, blockerad på godkännande, klar — och det är vad som får agenter att synas bredvid människor. Se [Multiplayer och närvaro](/sv-SE/handbok/koncept/multiplayer/).
 
-## Related concepts
+## Relaterade koncept
 
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/): what happens when an agent is actually run
-- [Modes](/sv-SE/handbok/koncept/lagen/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/sv-SE/handbok/koncept/multiplayer/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): what constrains a run today
-- [Agent configuration reference](/sv-SE/handbok/referens/agentkonfiguration/): the full field list
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/): vad som händer när en agent faktiskt körs
+- [Lägen](/sv-SE/handbok/koncept/lagen/): inställningen per samtal som formar en agents verktygsyta
+- [Multiplayer och närvaro](/sv-SE/handbok/koncept/multiplayer/): agenter som principaler, närvaro och autonomireglaget
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): vad som begränsar en körning i dag
+- [Agentkonfiguration](/sv-SE/handbok/referens/agentkonfiguration/): den fullständiga fältlistan

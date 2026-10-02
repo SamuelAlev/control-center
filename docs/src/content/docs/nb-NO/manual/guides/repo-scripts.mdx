@@ -1,37 +1,38 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Reposkript
+description: Oppsetts- og arkiveringsskript per repo som kjøres mot worktreet til et område.
 slug: nb-NO/handbok/slik-gjor-du/repo-skript
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Reposkript er shellskript du konfigurerer per repo (Innstillinger → Arkiv →
+terminalikonet på raden til et repo) som Control Centers server kjører mot
+**worktreet til et område** for det repoet — den isolerte utsjekkingen under
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` der agentene jobber.
 
-There are two kinds:
+Det finnes to typer:
 
-| Script | When it runs | Use it for |
+| Skript | Når det kjøres | Bruk det til |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Oppsett** | Rett etter at et worktree er klargjort for et område | Installere avhengigheter, generere filer, kopiere `.env` |
+| **Arkivering** | Like før et worktree ødelegges eller søppelsamles (GC) | Rydde opp i ressurser utenfor worktreet (docker-nettverk, tunneler, ekstern tilstand) |
 
-## Where scripts run
+## Hvor skriptene kjører
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Begge skriptene kjører via `bash -lc` (et innloggingsskall, så verktøy
+installert med Homebrew/nvm ligger på `PATH`) med **worktreet som
+arbeidskatalog**, og med disse miljøvariablene satt:
 
-| Variable | Value |
+| Variabel | Verdi |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktreet (arbeidskatalogen til skriptet) |
+| `CC_ROOT_PATH` | Det registrerte kilde-repoet — din egen utsjekking |
+| `CC_SPACE_ID` | Området worktreet tilhører |
+| `CC_SPACE_NAME` | Visningsnavnet til området |
+| `CC_REPO_NAME` | Visningsnavnet til repoet |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+For eksempel et oppsettskript som installerer avhengigheter og henter inn
+repoets gitignorerte `.env`:
 
 ```bash
 pnpm install
@@ -39,28 +40,33 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Oppførsel ved feil
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Et **oppsettskript** som avsluttes med en annen returkode enn null (eller
+  overskrider tidsavbruddet på 5 minutter) gjør at klargjøringen av området
+  mislykkes: området viser den mislykkede tilstanden med et nytt forsøk, og
+  halen av kjøringens utdata registreres. Et nytt forsøk klargjør fra et rent
+  worktree og kjører skriptet på nytt — skriv oppsettskript slik at en ny
+  kjøring etter en delvis installasjon fungerer (pakkebehandlere oppfører seg
+  allerede slik).
+- Et **arkiveringsskript** gjør så godt det kan: en feil (eller tidsavbruddet
+  på 2 minutter) registreres, men **blokkerer aldri sletting**. Arkivering
+  kjører på GC-baner der det ikke finnes noen til å svare på en forespørsel
+  (område slettet, PR slått sammen, planlagt opprydding).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Oppsett kjører bare på et **ferskt** worktree: å sende agenter på nytt inn i et
+varmt område gjenbruker den eksisterende utsjekkingen og betaler ikke
+installasjonen på nytt.
 
-## Run history
+## Kjøringshistorikk
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Hver kjøring registreres med status, varighet, avslutningskode og en begrenset
+hale av utdataene, synlig i den samme innstillingsdialogen under «Nylige
+kjøringer» (`repos.watchScriptRuns`-abonnementet strømmer den direkte).
 
-## Permissions
+## Tillatelser
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Skript er shell som **serveren** kjører, så det å skrive dem er begrenset til
+arbeidsområdeadministratorer og beskyttet av handlingsklassen `processSpawn` —
+det samme tillatelsesnettet som regulerer alle andre operasjoner som starter
+prosesser.

@@ -1,121 +1,138 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-αναφορά πρακτόρων"
+description: Αναφέρετε πράκτορες σε έναν χώρο για να τους αποστείλετε και συνεργάτες για να τους ειδοποιήσετε.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναφορά-πρακτόρων
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Αυτός ο οδηγός δείχνει πώς να κάνετε @-αναφορά σε πράκτορες και συνεργάτες μέσα
+σε έναν χώρο.
 
-## Mention an agent
+## Κάντε @-αναφορά σε έναν πράκτορα
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Πληκτρολογήστε `@` στο πεδίο σύνταξης και επιλέξτε έναν πράκτορα από την
+αυτόματη συμπλήρωση, ή πληκτρολογήστε το όνομα μόνοι σας:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Ο πράκτορας που αναφέρατε προστίθεται στον χώρο ως συμμετέχων, αν δεν είναι ήδη,
+και αποστέλλεται με το πλαίσιο και τη λειτουργία του χώρου. Οι συμμετέχοντες που
+δεν αναφέρονται βλέπουν το μήνυμα αλλά δεν αποστέλλονται.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Αν στείλετε ένα μήνυμα χωρίς αναφορά σε πράκτορα, το Control Center επιλέγει μόνο
+του ποιος θα απαντήσει: τον πράκτορα που μίλησε τελευταίος στη συνομιλία, αλλιώς
+τον ιδιοκτήτη της συνομιλίας αν υπάρχει, αλλιώς τον πρώτο πράκτορα ανώτατου
+επιπέδου ανάμεσα στους συμμετέχοντες του χώρου. Σε έναν χώρο με έναν μόνο
+πράκτορα, αυτός είναι πάντα ο μοναδικός πράκτορας.
 
-## Know how a name is matched
+## Κατανοήστε πώς αντιστοιχίζεται ένα όνομα
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Ένα token αναφοράς αντιστοιχίζεται **χωρίς διάκριση πεζών-κεφαλαίων**, με
+**ακριβές όνομα ή πρόθεμα**. Έτσι, το `@arch` φτάνει σε έναν πράκτορα που
+ονομάζεται `architect` και το `@Alice` φτάνει στο `alice`.
 
-Two consequences worth planning around:
+Δύο συνέπειες που αξίζει να τις προβλέψετε:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Ένα σύντομο token δεν είναι σφάλμα.** Αν δύο πράκτορες μοιράζονται ένα
+  πρόθεμα, κερδίζει ο πρώτος που βρίσκεται και το ποιος είναι αυτός εξαρτάται
+  από τη σειρά — όχι από κάποιον κανόνα επίλυσης ισοπαλίας. Χρησιμοποιείτε το
+  πλήρες όνομα όποτε τα ονόματα επικαλύπτονται.
+- **Μόνο γράμματα, ψηφία και κάτω παύλες αποτελούν μέρος ενός token.** Ο
+  αναλυτής αντιστοιχίζει το `@(\w+)`, οπότε το `@code-reviewer` διαβάζεται ως το
+  token `code` και το `@my agent` ως `my`. Ένας πράκτορας του οποίου το όνομα
+  περιέχει παύλα, τελεία ή διάστημα δεν μπορεί να αναφερθεί αξιόπιστα — ούτε
+  μέσω της αυτόματης συμπλήρωσης, η οποία εισάγει το όνομα ως απλό κείμενο.
+  Ονομάζετε τους πράκτορες με μία λέξη ή με κάτω παύλες.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Οι αναφορές αφαιρούνται από το κείμενο προτού αυτό φτάσει στον πράκτορα. Ένα
+μήνυμα που αποτελείται _μόνο_ από αναφορές (`@alice`) δεν αποστέλλει επομένως
+τίποτα — δώστε του κάτι να κάνει.
 
-## Mention several agents at once
+## Κάντε αναφορά σε πολλούς πράκτορες ταυτόχρονα
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Και οι δύο πράκτορες αποστέλλονται παράλληλα στην ίδια συνομιλία και οι δύο
+λαμβάνουν ολόκληρο το μήνυμα.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+**Μοιράζονται επίσης τα worktree αυτού του χώρου.** Τα worktree των
+αποθετηρίων προμηθεύονται ανά χώρο, όχι ανά πράκτορα· κάθε πράκτορας παίρνει τον
+δικό του κατάλογο εργασίας επικάλυψης για το `AGENTS.md`, τις δεξιότητες και τη
+διαμόρφωσή του, με τα κοινόχρηστα αποθετήρια συνδεδεμένα με ανάγνωση-εγγραφή.
+Έτσι, δύο πράκτορες που αναφέρονται μαζί μπορούν να δουν — και να συγκρουστούν
+με — τις αλλαγές ο ένας του άλλου.
 
-## Mention a teammate
+## Κάντε αναφορά σε έναν συνεργάτη
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Κάθε `@token` που δεν αντιστοιχίζεται με πράκτορα δοκιμάζεται στα ανθρώπινα μέλη
+του χώρου εργασίας, με βάση το handle, με τον ίδιο κανόνα ακριβούς ονόματος ή
+προθέματος χωρίς διάκριση πεζών-κεφαλαίων.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Μια αναφορά ανθρώπου που επιλύεται **δεν αποστέλλει τίποτα**. Ταξιδεύει στα
+μεταδεδομένα του μηνύματος μόνο και μόνο για να μπορεί ο δρομολογητής
+ειδοποιήσεων να ειδοποιήσει αυτό το άτομο.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Τα ονόματα πρακτόρων δοκιμάζονται πάντα πρώτα και ένα token που το διεκδικεί ένας
+πράκτορας δεν προσφέρεται ποτέ στη λίστα μελών — ένα `@word` μπορεί να επιλυθεί
+μόνο σε ένα υποκείμενο.
 
-## What the agent receives
+## Τι λαμβάνει ο πράκτορας
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Ένας πράκτορας που αποστέλλεται λαμβάνει ένα μπλοκ «Summons» στην προτροπή του,
+το οποίο κατονομάζει ποιος τον κάλεσε και παραθέτει τον κατάλογο του χώρου — τους
+άλλους πράκτορες (με σήμανση ανώτατου επιπέδου ή υφιστάμενου) και τα ανθρώπινα
+μέλη — ώστε να ξέρει σε ποιον μπορεί να παραδώσει. Το μπλοκ τού λέει επίσης ότι
+η αναφορά ενός άλλου πράκτορα στην απάντησή του ξυπνά αυτόν τον πράκτορα και ότι
+η αναφορά του εαυτού του αγνοείται.
 
-## When an agent mentions an agent
+## Όταν ένας πράκτορας αναφέρει έναν πράκτορα
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Ένας πράκτορας μπορεί να παραδώσει στην απάντησή του. Όταν μια στροφή
+**ολοκληρώνεται καθαρά**, οι αναφορές στο κείμενό της επιλύονται, αυτοί οι
+πράκτορες προστίθενται στον χώρο και αποστέλλονται στην ίδια συνομιλία, με τη
+στροφή που τους αναφέρει ως προτροπή τους. Μια στροφή που απέτυχε ή διακόπηκε δεν
+ξυπνά κανέναν — σταμάτησε στη μέση της σκέψης.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Οι κανόνες είναι σκόπιμα αυστηρότεροι από εκείνους του πεδίου σύνταξης, γιατί
+κανείς δεν παρακολουθεί για να διορθώσει μια λανθασμένη εικασία:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Μόνο ακριβή ονόματα.** Χωρίς αντιστοίχιση προθέματος. Το `@arch` φτάνει στο
+  `architect` όταν το πληκτρολογεί άνθρωπος· από πράκτορα δεν φτάνει σε κανέναν.
+  Ένα όνομα που ταιριάζει με δύο πράκτορες επίσης δεν φτάνει σε κανέναν.
+- **Ο κώδικας δεν είναι πεζό κείμενο.** Οι αναφορές μέσα σε περιφραγμένα μπλοκ ή
+  σε `` `backticks` `` αγνοούνται, οπότε η παράθεση μιας σημείωσης `@Override` ή
+  ενός `pip install foo@1.2` είναι ασφαλής. Ένας φράκτης χωρίς τερματισμό
+  αδειάζει ό,τι ακολουθεί.
+- **Ένα `@` κολλημένο στο προηγούμενο token δεν είναι αναφορά** — τα
+  `sam@host.com`, `pkg/@scope` και `node@20` δεν επιλύονται σε κανέναν.
+- **Οι παύλες διατηρούνται**, οπότε το `@code-reviewer` επιλύεται ως εαυτός και
+  όχι ως το token `code`.
+- **Το πολύ τρεις πράκτορες ανά στροφή.** Ένας πράκτορας που απαριθμεί έξι
+  συνεργάτες σε μια σύνοψη τους απαριθμεί, δεν τους καλεί.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Μια αλυσίδα αφύπνισης περιορίζεται όπως ακριβώς και η ανάθεση: **βάθος 3**, και
+ένας πράκτορας που βρίσκεται ήδη στην αλυσίδα δεν μπορεί να ξυπνήσει ξανά από
+αυτήν (χωρίς `A → B → A`). Ένα διατεταγμένο ζεύγος υπόκειται επίσης σε όριο
+ρυθμού μεταξύ αλυσίδων. Μια αφύπνιση που απορρίπτεται δημοσιεύει ένα μήνυμα
+συστήματος στη συνομιλία που λέει ποια αναφορά δεν παραδόθηκε και γιατί — μια
+ανεπίλυτη ονομασία δεν το κάνει, γιατί αλλιώς κάθε `@` σε μια πρόταση θα
+αφηγούνταν τον εαυτό του.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Για μια παράδοση που δεν πρέπει να εξαρτάται από πεζό κείμενο — μια ανταλλαγή
+αιτήματος/απάντησης ή την προσέγγιση ενός πράκτορα έξω από τον χώρο —
+χρησιμοποιήστε αντ' αυτού τα εργαλεία `send_to_agent`, `ask_agent` και
+`delegate_task`.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
-- [Use spaces](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/)
-- [Run agents in parallel](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
+- [Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
+- [Χρήση χώρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/)
+- [Εκτέλεση πρακτόρων παράλληλα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)

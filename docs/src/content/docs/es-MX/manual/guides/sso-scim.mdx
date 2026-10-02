@@ -1,60 +1,66 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Aprovisionar usuarios con SCIM
+description: Deja que tu IdP cree, actualice y desaprovisione cuentas de Control Center automáticamente.
 slug: es-MX/manual/guias/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Usa esta guía cuando quieras control del ciclo de vida: la baja de un
+usuario debe revocar el acceso automáticamente, no solo bloquear sus
+futuros inicios de sesión. SCIM es el protocolo de envío que los IdP (Okta,
+Entra ID y otros) usan justo para eso.
 
-## Prerequisites
+## Requisitos previos
 
-- SSO already working (the [SSO tutorial](/es-MX/manual/tutoriales/sso) or the
-  [OIDC guide](/es-MX/manual/guias/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- Que el SSO ya funcione (el [tutorial de SSO](/es-MX/manual/tutoriales/sso) o la
+  [guía de OIDC](/es-MX/manual/guias/sso-oidc)),
+- **un servidor al que el IdP pueda llegar por HTTPS** — las llamadas SCIM
+  salen del IdP, no del navegador del usuario. Usa el túnel integrado
+  (Ajustes → Servidor → Conexión y estado → Compartir este servidor → Cloudflared/ngrok/Tailscale) o una URL
+  pública. Un servidor al que solo se llega a través del relevo WebSocket no
+  puede recibir envíos SCIM; el aprovisionamiento JIT sí sigue funcionando
+  ahí; esta guía, no.
 
-## Steps
+## Pasos
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+1. Abre **Ajustes → Servidor → Inicio de sesión único** → la tarjeta
+   **Aprovisionamiento de usuarios (SCIM)**. La tarjeta muestra el endpoint,
+   por ejemplo `https://<your-server>/scim/v2/Users`.
+2. Presiona **Generar token** (o **Regenerar token** si ya existe uno) — el
+   token de portador aparece una sola vez en un cuadro de diálogo y se copia
+   al portapapeles. Guárdalo en tu gestor de contraseñas; el servidor solo
+   conserva una copia verificable en tiempo constante.
+3. En la configuración de aprovisionamiento de tu IdP, habilita SCIM con:
+   - **URL base**: el endpoint anterior
+   - **Autenticación**: `Authorization: Bearer <token>`
+   - **Id de usuario**: `userName` (correo electrónico) o `externalId` — ambos coinciden
+4. Prueba con un usuario: envíalo desde el IdP y confirma que aparece (la
+   creación por SCIM fija el `externalId` del proveedor en la cuenta, la
+   misma fijación que establece el primer inicio de sesión SSO).
 
-## What deprovisioning does
+## Qué hace el desaprovisionamiento
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Cuando el IdP envía `active: false` (o `DELETE`), SCIM primero se niega si
+la cuenta es **propietaria** de un espacio de trabajo (transfiere la
+propiedad primero). De lo contrario:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. primero se revoca cada credencial de dispositivo — las sesiones activas
+   caen en cuestión de segundos,
+2. se elimina cada pertenencia a espacios de trabajo,
+3. la cuenta se marca como desactivada (nunca podrá iniciar sesión, diga lo
+   que diga el IdP después, hasta que se reactive de forma explícita).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+La fila del usuario sí sobrevive — la atribución en tickets, mensajes y
+commits es permanente. La reactivación (SCIM `active: true`) restaura el
+inicio de sesión, pero **no** las pertenencias: esas necesitan una
+invitación nueva o la política de miembro automático al iniciar sesión.
 
-## Troubleshooting
+## Solución de problemas
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 en cada llamada** — el token cambió; regenéralo y actualiza el IdP.
+- **No se puede llegar al endpoint** — el túnel está caído, o el servidor
+  solo funciona a través del relevo. SCIM necesita HTTPS directo; JIT sigue
+  funcionando de todos modos.
+- **Errores de envío de grupos (501)** — son intencionales: la asignación de
+  grupos→roles ocurre al iniciar sesión a partir de los atributos de grupo
+  de SAML/OIDC, no de los grupos enviados.

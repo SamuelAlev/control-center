@@ -1,115 +1,117 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: API 키 관리
+description: 각 자격 증명이 어디에 있는지 — 서버의 사용자 계정, 서버 자체, 또는 외부 CLI — 그리고 이를 설정하고 교체하고 제거하는 방법을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/api-키
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+이 가이드에서는 Control Center가 사용하는 각 자격 증명이 어디에 보관되는지와
+이를 변경하는 방법을 설명합니다.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**지금 입력하고 있는 머신에는 아무것도 저장되지 않습니다.** 모든 자격 증명은
+서버에 있으며, 주어진 요청에 어떤 자격 증명이 응답하는지는 그 뒤에 사람이
+있는지에 따라 달라집니다.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| 자격 증명                            | 보관 위치                                                  | 사용 주체                                                          |
+| ------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| 내 코드 호스트 / 티켓팅 자격 증명    | 서버의 0600 시크릿 파일, 사용자 id를 키로 사용            | 내가 요청하는 모든 것: PR 화면, 에이전트 실행, 이미지              |
+| 서버의 앱 아이덴티티                 | 같은 파일, 시크릿이 아닌 항목은 `server_settings`에 추가   | 사람이 요청하지 않은 작업: 웹훅, PR 폴링, 티켓 동기화               |
+| 모델 제공업체 키와 OAuth 토큰        | 서버 자체의 자격 증명 저장소                              | 설치의 모든 워크스페이스에 대해 내장 어댑터가 사용                  |
+| Slack 봇 토큰                        | 서버의 `<dataDir>/<workspaceId>/chat_credentials/`        | 해당 워크스페이스의 채팅 브리지                                     |
+| 외부 CLI 자격 증명                   | 해당 CLI가 사용하는 방식                                  | 서버 호스트의 Claude Code                                           |
 
-## Two GitHub credentials, and they answer different questions
+## 두 가지 GitHub 자격 증명, 그리고 각기 다른 질문에 대한 답
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **내 자격 증명**은 로그인(기기 흐름) 또는 토큰 붙여넣기로 만들어집니다. 이는
+  *내 대신* 수행되는 모든 요청에 사용되므로, 나를 대신해 게시된 댓글에는 내
+  이름이 남습니다. 다른 멤버는 이를 읽을 수 없고, 각자 자신의 자격 증명을
+  연결합니다
+- **서버의 자격 증명**은 운영자가 등록한 GitHub App에서 만들어집니다. 호출자가
+  없는 모든 요청에 응답하므로, 누군가 떠나거나 토큰을 교체해도 코드 호스트
+  접근 권한이 사라지지 않습니다
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-and [Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/).
+내 자격 증명은 **설정 → 워크스페이스 → 프로필 및 신원**의 **코드 호스팅**
+카드에서 설정하고, 서버의 자격 증명은 **설정 → 서버 → 싱글 사인온**의
+**프로바이더 앱**에서 설정합니다. [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+과 [GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)를 참고하세요.
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[URL로만 열리는 화면도 있습니다]
+`/workspaces/<workspaceId>/api-keys`는 온보딩의 첫 단계와 같은 두 카드를
+렌더링합니다. 이 화면에는 **UI 어디에도 탐색 항목이 없으며**, URL을 직접
+입력해야만 접근할 수 있습니다. 대신 설정 → 워크스페이스 → 프로필 및 신원을
+사용하세요.
 :::
 
-## Set model provider keys
+## 모델 제공업체 키 설정
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+내장 어댑터가 프로바이더를 직접 인증하며, 그 자격 증명은 서버에 있습니다.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. **설정 → 서버 → 모델 제공업체**로 이동합니다
+2. **프로바이더 및 모델**까지 스크롤합니다
+3. 프로바이더에 연결합니다 — OpenAI, Codex, Cursor, Kimi Code는 브라우저
+   OAuth를, Anthropic과 나머지는 API 키를 사용합니다
 
-See [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/) for the full list and
-for adding a custom endpoint.
+전체 목록과 사용자 지정 엔드포인트 추가 방법은
+[어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)를 참고하세요.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+이 자격 증명은 **호스트 전역**입니다. 키 하나로 설치의 모든 워크스페이스를
+지원합니다. OAuth 토큰은 만료되기 전에 갱신됩니다.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+외부 어댑터 CLI는 서버 호스트에서 자체 구성에 자체 자격 증명을 보관하며,
+Control Center는 이를 관리하지 않습니다. Claude Code는 `cc_server`가 실행되는
+머신에서 자체 문서에 나온 방식대로 인증하세요.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/).
+어댑터별 **환경 변수** 대화 상자는 그중 하나에 키를 넣는 곳처럼 보이지만
+그렇지 않습니다. 이 대화 상자는 내 기기에 기록하는 반면, 서버는 자체 복사본을
+읽고 둘을 연결하는 것은 아무것도 없습니다.
+[어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)를 참고하세요.
 
-## Connect a ticketing vendor
+## 티켓팅 공급업체 연결
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+**설정 → 워크스페이스 → 일반**의 **티켓팅** 카드에는 하나의 결정을 이루는 두
+부분, 즉 티켓이 어느 공급업체에 있는지와 그에 대한 자격 증명이 함께 있습니다.
+**로컬**을 선택하면 자격 증명 행이 숨겨집니다 — 로컬 티켓은 이 서버 자체
+데이터베이스에 있으므로 인증할 대상이 없습니다.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ko-KR/매뉴얼/사용-가이드/linear-통합/).
+내 키는 코드 호스트 키와 마찬가지로 사용자 id에 연결되어 서버에 저장됩니다.
+서버는 자체 Linear 키를 별도로(**프로바이더 앱**) 보관하며, 사람이 요청하지
+않았을 때 티켓 동기화가 실행되는 기반이 바로 이것입니다. 에이전트가 받는 키는
+에이전트에 **티켓팅 API 호출 허용** 권한이 있을 때만 주입됩니다.
+[Linear 통합 설정](/ko-KR/매뉴얼/사용-가이드/linear-통합/)을 참고하세요.
 
-## Rotate or revoke
+## 교체 또는 해지
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- **내 GitHub 자격 증명**: **연결 해제**를 누른 다음 다시 로그인하거나 새
+  토큰을 붙여넣습니다. GitHub에서 이전 토큰을 해지하세요
+- **서버의 앱**: 앱의 GitHub 페이지에서 새 개인 키 또는 클라이언트 시크릿을
+  생성하고, **프로바이더 앱**에 붙여넣은 다음 **테스트**를 누릅니다
+- **모델 제공업체**: 해당 행에서 로그아웃(OAuth)하거나 키를 제거한 다음 다시
+  연결합니다
+- **Slack**: 연결 대화 상자에서 토큰을 다시 붙여넣습니다.
+  [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)을 참고하세요.
 
-## Troubleshooting
+## 문제 해결
 
-### The PR list is empty but my token works in `curl`
+### PR 목록은 비어 있는데 `curl`에서는 내 토큰이 작동합니다
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+**코드 호스팅** 행의 부제를 확인하세요. 다른 소스("이 서버의 앱을 통해",
+"환경에서")를 언급한다면 테스트 중인 자격 증명이 응답하는 자격 증명이 아니며,
+내 자격 증명은 저장되지 않은 것입니다.
 
-### The token is accepted but later requests fail
+### 토큰은 허용되는데 이후 요청이 실패합니다
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+토큰은 저장된 상태 그대로 검사되므로, 행에는 그 뒤의 계정이 표시됩니다. 하지만
+계정만 표시되고 스코프는 표시되지 않습니다. 스코프가 너무 적은 토큰은 연결은
+되지만 개별 요청에서 실패합니다. 스코프와 만료를 확인하세요:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## 관련 가이드
 
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-- [Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/)
-- [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/)
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
-- [Set up Linear integration](/ko-KR/매뉴얼/사용-가이드/linear-통합/)
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)
+- [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- [Linear 통합 설정](/ko-KR/매뉴얼/사용-가이드/linear-통합/)

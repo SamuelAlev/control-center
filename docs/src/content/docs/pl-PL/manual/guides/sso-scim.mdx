@@ -1,60 +1,67 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Provisionuj użytkowników przez SCIM
+description: Pozwól dostawcy tożsamości (IdP) automatycznie tworzyć, aktualizować i cofać aprowizację kont Control Center.
 slug: pl-PL/podrecznik/poradniki/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Skorzystaj z tego poradnika, gdy chcesz kontrolować cykl życia kont —
+odejście użytkownika musi automatycznie unieważnić dostęp, a nie tylko
+zablokować przyszłe logowania. SCIM to protokół wypychania, którego
+dostawcy tożsamości (Okta, Entra ID i inni) używają dokładnie w tym celu.
 
-## Prerequisites
+## Wymagania wstępne
 
-- SSO already working (the [SSO tutorial](/pl-PL/podrecznik/samouczki/sso) or the
-  [OIDC guide](/pl-PL/podrecznik/poradniki/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- działające SSO ([samouczek SSO](/pl-PL/podrecznik/samouczki/sso) albo
+  [poradnik OIDC](/pl-PL/podrecznik/poradniki/sso-oidc)),
+- **serwer osiągalny dla IdP przez HTTPS** — wywołania SCIM wychodzą z IdP,
+  a nie z przeglądarki użytkownika. Wykorzystaj wbudowany tunel
+  (Ustawienia → Serwer → Połączenie i status → Udostępnij ten serwer → Cloudflared/ngrok/Tailscale) albo publiczny URL. Serwer
+  osiągalny wyłącznie przez przekaźnik WebSocket nie może odbierać wypychań
+  SCIM; aprowizacja JIT nadal tam działa, ten poradnik już nie.
 
-## Steps
+## Kroki
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Otwórz **Ustawienia → Serwer → Logowanie jednokrotne** → kartę
+   **Provisioning użytkowników (SCIM)**. Karta pokazuje punkt końcowy, np.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Naciśnij **Wygeneruj token** (albo **Wygeneruj token ponownie**, jeśli
+   już istnieje) — token bearer pojawia się jednorazowo w oknie dialogowym
+   i zostaje skopiowany do schowka. Zapisz go w menedżerze haseł; serwer
+   przechowuje wyłącznie kopię weryfikowaną w stałym czasie.
+3. W ustawieniach provisioningu swojego IdP włącz SCIM, podając:
+   - **Bazowy URL**: punkt końcowy powyżej
+   - **Uwierzytelnianie**: `Authorization: Bearer <token>`
+   - **Identyfikator użytkownika**: `userName` (adres e-mail) albo `externalId` — oba pasują
+4. Przetestuj na jednym użytkowniku: wypchnij go z IdP i potwierdź, że się
+   pojawił (utworzenie przez SCIM przypina do konta `externalId` dostawcy —
+   to samo przypięcie, które ustawia pierwsze logowanie SSO).
 
-## What deprovisioning does
+## Co robi cofanie aprowizacji
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Gdy IdP wyśle `active: false` (albo `DELETE`), SCIM najpierw odmawia, jeśli
+konto jest **właścicielem** obszaru roboczego (najpierw przenieś własność).
+W przeciwnym razie:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. najpierw unieważniane jest każde poświadczenie urządzenia — aktywne
+   sesje wygasają w ciągu kilku sekund,
+2. usuwane jest każde członkostwo w obszarze roboczym,
+3. konto zostaje oznaczone jako dezaktywowane (nie może się już zalogować,
+   niezależnie od tego, co później powie IdP, dopóki nie zostanie jawnie
+   reaktywowane).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Sam wiersz użytkownika przetrwa — atrybucja w zgłoszeniach, wiadomościach
+i commitach jest trwała. Reaktywacja (SCIM `active: true`) przywraca
+logowanie, ale **nie** członkostwa: te wymagają nowego zaproszenia albo
+polityki automatycznego członkostwa stosowanej przy logowaniu.
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 przy każdym wywołaniu** — token się zmienił; wygeneruj go ponownie
+  i zaktualizuj konfigurację IdP.
+- **Punkt końcowy jest nieosiągalny** — tunel nie działa albo serwer
+  obsługuje wyłącznie przekaźnik. SCIM wymaga bezpośredniego HTTPS; JIT
+  działa niezależnie od tego.
+- **Błędy wypychania grup (501)** — zamierzone: mapowanie grup na role
+  odbywa się przy logowaniu na podstawie atrybutów grup SAML/OIDC, a nie
+  na podstawie grup wypychanych.

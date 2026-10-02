@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: هدایت کارگران پس‌زمینه
+description: با حالت vibe دیگر خودتان کار را انجام ندهید و شروع کنید چند عامل را هدایت کنید که آن را موازی انجام می‌دهند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-کارگران-پسزمینه
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+این راهنما نشان می‌دهد چگونه یک گفتگو را نه در نقش کارگر، بلکه در نقش **هدایتگر** بگردانید: نشست می‌خواند و راستی‌آزمایی می‌کند و عامل‌های پس‌زمینه ویرایش را انجام می‌دهند.
 
-## What changes when you type `/vibe`
+## هنگام تایپ `/vibe` چه چیزی تغییر می‌کند
 
-Two things, and only the first is enforced by the machinery:
+دو چیز، و فقط اولی را سازوکار اعمال می‌کند:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+۱. **ابزارهای خودِ نشست به فقط‌خواندنی فرومی‌کاهند**، به‌علاوهٔ پنج فعل کارگر. تنها راهی که می‌تواند روی مخزن اثر بگذارد، از مسیر یک کارگر است و تنها راهی که می‌تواند بفهمد چه رخ داده، خواندن فایل‌هایی است که یک کارگر به آن‌ها دست زده است.
+۲. **به آن گفته می‌شود که با خواندن راستی‌آزمایی کند، نه با باورکردن.** گزارش یک کارگر ادعایی دربارهٔ کاری است که کرده، نه گواهی بر اینکه آن کار درست بوده است.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+مورد اول همان است که بار را بر دوش می‌کشد. هدایتگری که هنوز می‌تواند grep کند و ویرایش کند، زیر فشار خودش کار را انجام می‌دهد و این همان حالت شکستی است که این ویژگی برای جلوگیری از آن وجود دارد.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## کارگرها خالی شروع می‌کنند
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+یک کارگر هرگز گفتگوی شما را ندیده است و نخواهد دید. بریف تمام بافت اوست.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+همین است که این الگو را ارزان نگه می‌دارد — بیست کارگر که هرکدام تاریخچهٔ هدایتگر را نگه دارند، بیست برابر بافت هدایتگر هزینه می‌داشت — و همچنین همان چیزی است که نوشتن بریف را دشوار می‌کند. «حالا آن یکی را هم انجام بده» برای هدایتگر یک دستور کامل خوانده می‌شود و برای یک نشست تازه هیچ.
 
-A good brief names files, commands and the definition of done:
+یک بریف خوب فایل‌ها، فرمان‌ها و تعریف «تمام‌شده» را نام می‌برد:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> در `lib/features/auth/`، هر فراخوانی `SessionStore.read(key)` را با `SessionStore.get(key)` جایگزین کن. متد جدید `Future<String?>` برمی‌گرداند در حالی که متد قدیمی `String?` برمی‌گرداند، پس فراخوان‌ها به `await` نیاز دارند. وقتی کارت تمام شد `fvm flutter analyze lib/features/auth` را اجرا کن و هر خطایی را که نتوانستی رفع کنی گزارش بده.
 
-## The five verbs
+## پنج فعل
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| فعل         | کار آن                                                  |
+| ---------- | ------------------------------------------------------- |
+| `vibe_spawn` | یک کارگر را روی یک بریف راه‌اندازی می‌کند. **بی‌درنگ برمی‌گردد.** |
+| `vibe_list`  | رده، وضعیت، زمان سپری‌شده و آخرین نتیجه برای همه          |
+| `vibe_send`  | یک نوبت پیگیری برای کارگری که کارش تمام شده است           |
+| `vibe_wait`  | تا پایان یافتن یک کارگر مسدود می‌ماند                      |
+| `vibe_kill`  | یکی را متوقف می‌کند                                       |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+راه‌اندازی عمداً ناهمگام است. هدایتگری که روی هر راه‌اندازی مسدود شود، کارگرها را یکی‌یکی اجرا می‌کند، که شیوهٔ کندتری برای انجام همان کاری است که خودش از قبل می‌کرد. از `vibe_wait` فقط وقتی استفاده کنید که واقعاً بدون یک پاسخ مشخص نمی‌توانید پیش بروید.
 
-## Two tiers
+## دو رده
 
-| Tier   | For                                                              |
+| رده   | برای                                                              |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | کار مکانیکی با مشخصات روشن — ویرایش‌ها، تغییر نام‌ها، پیش‌نویس‌ها، اجرای فرمان‌ها |
+| `good` | طراحی، قضاوت، یا بازبینی چیزی که یک کارگر `fast` تولید کرده است     |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+شکل رایج این است که کارگرهای `fast` را روی فایل‌های مستقل پخش کنید و سپس یک کارگر `good` راه‌اندازی کنید تا کاری را که مجموعاً کرده‌اند بازبینی کند.
 
-## Verifying
+## راستی‌آزمایی
 
-This is the part that decides whether the pattern is worth anything.
+این همان بخشی است که تعیین می‌کند این الگو به چه کاری می‌آید یا نه.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+سپس **فایل‌هایی را که نام برده است بخوانید**. هدایتگر `read`، `search`، `lsp` و `ast_grep` را دارد؛ همین کل دلیل نگه‌داشتن آن‌هاست. هدایتگری که گزارش را بی‌چون‌وچرا بپذیرد، خلاصه‌کنندهٔ خوش‌بینی سایر عامل‌هاست.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` پس از یک دور کارگرها معمولاً سریع‌ترین بررسی تک‌گامی است.
 
-## When a worker loses the thread
+## وقتی کارگری رشتهٔ کار را از دست می‌دهد
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+بکشیدش و از نو بریف بدهید. یک بریف تازه و اصلاح‌شده از یک جدل ارزان‌تر است و `vibe_send` فقط روی کارگری کار می‌کند که نوبتش را تمام کرده باشد.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## محدودیت‌ها
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **هشت کارگر هم‌زمان.** سقفی بر هزینه، نه یک محدودیت فنی: هرکدام یک نشست کامل مدل است و هدایتگری که بیست کارگر پخش کند، دیگر رد کار همهٔ آن‌ها را دنبال نمی‌کند.
+- **هیچ کارگری از حالت بیشتر زنده نمی‌ماند.** وقتی اجرا تمام می‌شود، همهٔ آن‌ها متوقف می‌شوند و رونوشت می‌گوید چند تا بودند. عاملی پس‌زمینه‌ای که پس از گذشتن گفتگو هنوز در حال ویرایش فایل‌ها باشد، همان شکستی است که این ویژگی نمی‌تواند داشته باشد.
+- **کارگرها در زیر پوست، زیرعامل‌های معمولی‌اند.** همان سقف عمق، همان سیاست گاردریل، همان فرزندِ لاگ اجرا. Vibe عوض می‌کند چه کسی آن‌ها را می‌راند، نه اینکه مجاز به چه کاری‌اند — پس پرامپت‌های تأیید همچنان برای فراخوانی‌های نوشتن و اجرای یک کارگر ظاهر می‌شوند.
 
-## When not to use it
+## چه زمانی از آن استفاده نکنید
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/) or an [orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+حالت vibe برای کاری است که به بریف‌های مستقل تجزیه می‌شود. اگر گام بعدی به خروجی گام قبلی وابسته است، دارید یک [پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/) یا یک [ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/) را توصیف می‌کنید و هر دو وابستگی‌ها را درست بیان می‌کنند، به‌جای آنکه هدایتگر آن‌ها را با `vibe_wait` شبیه‌سازی کند.
 
-## Related
+## مرتبط
 
-- [Run agents in parallel](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/) — the other ways to fan out
-- [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) — when the work has a shape
-- [Built-in agent tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — the verbs and their arguments
+- [اجرای موازی عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/) — دیگر راه‌های پخش کردن
+- [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) — وقتی کار شکل دارد
+- [ابزارهای داخلی عامل(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — فعل‌ها و آرگومان‌هایشان

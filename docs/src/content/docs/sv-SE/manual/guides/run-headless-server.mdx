@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Kör en headless-server
+description: Kör headless-binären cc_server eller dess Docker-avbildning, parkoppla en klient mot den och konfigurera den med hela ytan av CLI-flaggor och miljövariabler.
 dateModified: 2026-09-10
 slug: sv-SE/handbok/how-to-guider/kor-headless-server
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Kör `cc_server` på en maskin som står på, och anslut sedan till den från
+skrivbordet, en webbläsare eller telefonen. Servern är en nativ binär i ren Dart
+– ingen Flutter-motor – så den kör headless på macOS, Linux och Windows. Den
+äger databasen, kör agenterna och gör varje externt API-anrop; klienterna
+renderar bara.
 
-## Run in Docker (prebuilt images)
+## Kör i Docker (färdigbyggda avbildningar)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Varje release publicerar en egenhostad stack med fyra GHCR-avbildningar –
+backend, de två statiska tunna klienterna och det valfria parkopplingsreläet –
+plus en separat `cc-server-demo`-avbildning för den publika demovärden. En
+egenhostad installation kräver ingen källkodsutcheckning. Lås en versionstagg
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) eller följ `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| Avbildning                                   | Vad den är                                   | Publicerar      |
+| -------------------------------------------- | -------------------------------------------- | --------------- |
+| `ghcr.io/samuelalev/cc-server`               | Backend: databas, agenter, MCP, webhooks     | `-p 9030:9030`  |
+| `ghcr.io/samuelalev/cc-webapp`               | Webbklienten (statisk nginx)                 | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`               | Telefonkompanjonen, en PWA (statisk nginx)   | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC-parkopplingsreläet (valfritt)         | `-p 8788:8788`  |
 
-The whole stack as a compose file:
+Hela stacken som en compose-fil:
 
 ```yaml
 services:
@@ -51,91 +53,93 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Saker som är värda att veta innan du exponerar något av detta utanför loopback:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server`-avbildningen levereras med `CC_SERVER_INSECURE=1`** (den måste
+  binda `0.0.0.0` för att ta emot trafik på publicerade portar), vilket bara är
+  säkert bakom en TLS-avslutande omvänd proxy – Caddy, Traefik, nginx eller en
+  Cloudflare-tunnel – i ett betrott nätverk. För att i stället avsluta TLS i
+  processen monterar du ett certifikat och sätter `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (och tar sedan bort `CC_SERVER_INSECURE`). Allt kan skrivas
+  över med `docker run -e …` eller compose-blockets `environment:`.
+- **`/data` är det enda tillståndet.** SQLite-databaserna, hemligheterna för
+  parkopplade enheter, nedladdade modeller och mötesljud ligger allt i volymen –
+  säkerhetskopiera den och containern kan slängas.
+- **Parkoppla en klient inifrån avbildningen** före den första anslutningen,
+  containerns motsvarighet till [steg 3](#steg-3-parkoppla-en-klient-före-första-starten):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **De två klientavbildningarna är statiska nginx-värdar** – inget att
+  konfigurera vid körning; varje klients anslutningsformulär tar serverns URL,
+  enhets-ID:t och parkopplingsnyckeln. Signaleringsreläet behöver på samma sätt
+  bara sin port (`SIGNALING_HOST` / `SIGNALING_PORT` kan skrivas över); det är
+  tillståndslöst, håller inga hemligheter och är en **reservväg** – en telefon
+  använder loopback, LAN, tailnet eller en direkt `wss://`-väg när en sådan är
+  nåbar, och faller bara tillbaka på reläet när ingen är det. Hoppa över det om
+  dina klienter alltid når servern direkt.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Resten av den här guiden bygger servern från källkod; flaggorna och beteendet
+den tar upp är desamma som avbildningens miljövariabler matar in i.
 
-## Prerequisites
+## Förutsättningar
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). Det här repot låser sin SDK med [fvm](https://fvm.app), så prefixa varje kommando med `fvm`.
+- Det här repot utcheckat.
+- Den nativa verktygskedja som förberedelseskriptet behöver – Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` och en C++-kompilator. Varje byggskript namnger det det inte hittar och hur du installerar det.
+- En nåbar värd: loopback för lokal användning, eller en LAN-/publik adress med TLS för fjärrklienter.
 
-## Step 1: Stage the native libraries
+## Steg 1: Förbered de nativa biblioteken
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Nativen är **obligatoriska** – det finns inget degraderat läge. Bygg dem från
+repots rot innan något annat:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Detta bygger `rift`, `fff`, tree-sitter plus dess grammatiker, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` och SAML-nativen till
+`build/natives/`. Bygg-hooken för `cc_server` skickar vidare allt som förbereds
+där till bundlen, så att hoppa över det här steget antingen får bygget att
+misslyckas direkt eller – med nödutgången nedan – ger en binär vars förkontroll
+vid start vägrar starta och namnger det saknade biblioteket.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Nödutgång endast för kompilering]
+Att skapa en tom fil `.cc_natives_allow_missing` i repots rot nedgraderar
+byggfelet för saknade nativen till en varning. Den är till för att
+syntaxkontrollera en färsk klon; en server som byggts så kan inte starta. Den
+måste vara en **fil** – körningen av bygg-hooken vidarebefordrar inte anroparens
+miljö, så en miljövariabel ignoreras.
 :::
 
-## Step 2: Build the binary
+## Steg 2: Bygg binären
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+Bundlen innehåller `libsqlite3` och de förberedda nativen tillsammans med
+binären – ingen system-SQLite och ingen Flutter-motor behövs. Den körbara filen
+hamnar i `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Steg 3: Parkoppla en klient före första starten
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+En ny datakatalog har ingen parkopplad enhet och ingen i förväg delad nyckel, så
+en klients uppmaning om parkopplingsnyckel kan ännu inte besvaras. Skapa en med
+underkommandot `pair`. Kommandot skriver `global.db` och `secrets.json` direkt;
+en server som redan betjänar den datakatalogen plockar upp den nya enheten utan
+omstart:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Det skriver ut tre värden att klistra in i en klients anslutningsformulär:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +148,46 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Användbara flaggor: `--device` (standard `web-client`; ID:t väljer också
+enhetsnivån – `desktop`, `ios`, `android`, allt annat är en webbklient),
+`--label` (standard är plattformsnamnet plus den här maskinens värdnamn),
+`--host` (värden som skrivs ut i URL:en, eftersom loopback inte är nåbar från en
+annan maskin) och `--client-url`. Att köra `pair` igen roterar den enhetens
+nyckel och släpper dess live-sessioner. Parkoppling skapar aldrig någon
+arbetsyta: den anslutande klientens onboarding namnger och skapar den första.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Med `--client-url` skriver det också ut en QR-kod som går att skanna i
+terminalen och som öppnar webbklienten redan ifylld:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/).
+:::caution[Den här QR-koden är inte telefonens QR-kod]
+`--client-url` bygger en länk för **webbklienten** – serverns URL, enhets-ID och
+nyckel i URL-fragmentet. **Remote**-telefonappen förväntar sig en annan nyttolast
+(serverns fullständiga anslutningsbeskrivning plus en utgång), skapad från
+**Inställningar → Du → Dina enheter** i en körande klient. De två går inte att
+byta mot varandra. Se [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+En autentiseringsuppgift som skapats av `cc_server pair` har **ingen utgång**; en
+som skapats i appen löper alltid ut efter 30 dagar. Återkalla en enhet som
+skapats i CLI:t från **Inställningar → Du → Dina enheter** när du är klar med
+den.
 
-## Step 4: Start the server
+## Steg 4: Starta servern
 
-On loopback — the default and all you need for a client on the same machine:
+På loopback – standardvärdet och allt du behöver för en klient på samma maskin:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+För att nå den från en annan maskin binder du alla gränssnitt. En bindning
+utanför loopback utan TLS **avvisas vid start** (`Refusing to bind non-loopback
+address … without TLS`), så ange ett certifikat:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +195,43 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Eller avsluta TLS i en omvänd proxy i ett betrott privat nätverk och välj en
+klartextbindning bakom den:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` ignoreras när både `--tls-cert` och `--tls-key` är satta – TLS
+vinner alltid. Servern annonserar klartexttillståndet som `insecure: true` i
+`GET /healthz`, och klienter märker en sådan anslutning som osäker.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Servern kör tills den får `SIGINT`/`SIGTERM` och stängs sedan av på ett rent
+sätt.
 
-## Step 5: Connect a client
+## Steg 5: Anslut en klient
 
-Point a client at the server URL and pairing key from step 3:
+Rikta en klient mot serverns URL och parkopplingsnyckeln från steg 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/).
+- **Skrivbordsappen**: på förstagångsskärmen (**Hur ska Control Center köras?**) fyller du i anslutningsfälten i stället för **Kör i den här appen**, eller lägger till servern senare under **Inställningar → Server → Anslutning och status**. Se [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/).
+- **Webbklient**: öppna [app.usectrl.dev](https://app.usectrl.dev) (eller din egen kopia av webbbygget) och ange serverns URL, enhets-ID och parkopplingsnyckeln.
+- **Telefon**: parkoppla **Remote**-appen från en körande klient – se [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server betjänar ingen webbundle]
+En fristående `cc_server` monterar aldrig någon webbrot, så `GET /` returnerar
+404. Webbklienten hostas separat – använd `app.usectrl.dev`, eller hosta
+webbbygget själv hos valfri statisk HTTPS-värd (`cc-webapp`-avbildningen ovan är
+precis det). En webbläsarorigin som inte är loopback måste finnas med i
+`--allowed-origins`, annars avvisas WebSocket-uppgraderingen till `/rpc`;
+standardlistan är `https://app.usectrl.dev` och `localhost` / `127.0.0.1` tillåts
+alltid.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Steg 6: Anslut en Google Calendar (valfritt)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+För att synkronisera en arbetsytas kalender utan något GUI använder du
+enhetskodsflödet:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +239,67 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/).
+Kommandot skriver ut en kod och en URL att godkänna på en annan enhet, lagrar
+refresh-token på serversidan och avslutar. Ett källkodsbygge levereras utan
+någon Google-klient, så miljövariablerna för ID och hemlighet krävs – det finns
+ingen flagga `--google-client-id`. Se
+[Anslut en Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/).
 
-## Configuration
+## Konfiguration
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/sv-SE/handbok/referens/cc-server-cli/).
+Flaggorna ovan är de som en första installation behöver. Hela ytan – 23 par av
+flaggor och miljövariabler, de fyra underkommandona och datakatalogens layout –
+finns i [`cc_server`-CLI-referensen](/sv-SE/handbok/referens/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Okända flaggor ignoreras tyst]
+Argumentparsern är handskriven och hoppar över allt den inte känner igen, så en
+felstavning (`--tls-key-file`, `--bindany`) ger inget fel – servern startar bara
+med standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna
+effekt.
 :::
 
-The four you are most likely to need:
+De fyra du med största sannolikhet behöver:
 
-| Flag           | Default                              | Meaning                                                                                          |
-| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| Flagga         | Standard                                           | Betydelse                                                                                                       |
+| -------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--data-dir`   | operativsystemets användarspecifika appdatakatalog | Databaser, hemligheter, modeller och cachelagrade media                                                         |
+| `--port`       | `9030`                                             | TCP-port (`0` = tillfällig)                                                                                     |
+| `--bind`       | `loopback`                                         | `loopback`, eller `any` för alla gränssnitt (kräver TLS eller `--insecure`)                                     |
+| `--public-url` | härleds från bindningen                            | RPC-URL:en som annonseras till parkopplade klienter. **Sätt den uttryckligen bakom en proxy, NAT eller tunnel** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Standarddatakatalogen är `~/Library/Application Support/control-center` på macOS,
+`%APPDATA%\control-center` på Windows och `$XDG_DATA_HOME/control-center` (annars
+`~/.local/share/control-center`) på andra plattformar. En `.cc_server` relativ
+till cwd används bara när ingen hem- eller appdatakatalog kan lösas upp.
 
-## What the server serves
+## Vad servern betjänar
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` är hela produktytan, inte en delmängd: repo-RPC-datavägen och
+prenumerationerna, MCP-verktygsändpunkten på `POST /mcp` och `GET /sse` på samma
+port, inkommande webhooks, proxyerna för media och teckensnitt, återanrop för
+enkel inloggning, fleet-lease-protokollet, RSS-hämtning på serversidan enligt
+ett 30-minutersschema samt vektorsökning (`sqlite_vector`-tillägget registreras
+som ett processglobalt automatiskt tillägg och degraderar till fulltextsökning
+bara där tillägget inte är tillgängligt).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Dispatchern är **tillståndslös**: det finns ingen arbetsytebindning per session.
+Varje arbetsytespecifikt anrop bär sitt eget `workspace_id`, och åtkomst avgörs
+av anroparens arbetsytemedlemskap och roll – inte av att ha en
+parkopplingsnyckel.
 
-Two things to know before you expose the port beyond loopback:
+Två saker att känna till innan du exponerar porten utanför loopback:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP faller stängt för anrop från andra värdar.** En MCP-yta utan token svarar bara på loopback. Att binda `any` vidgar den inte – en begäran från en annan värd avvisas med ”MCP requires a bearer token to answer non-loopback clients” tills du konfigurerar en token (`mcp.setToken`, eller **Inställningar → Server → MCP-servrar**).
+- **`GET /healthz` är oautentiserad avsiktligt**, med CORS för jokertecken, och publicerar serverns ID, namn, identitetsfingeravtryck och byggversion. Klienter behöver fingeravtrycket för att fästa servern, så det är avsiktligt – men det innebär att varje nåbar `cc_server` avslöjar så mycket för vem som helst som frågar.
 
-## Related guides
+## Relaterade guider
 
-- [Connect to a remote server](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/)
-- [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/)
-- [Run a fleet worker](/sv-SE/handbok/how-to-guider/kor-fleet-worker/)
-- [Connect a Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/)
+- [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/)
+- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/)
+- [Kör en fleet-worker](/sv-SE/handbok/how-to-guider/kor-fleet-worker/)
+- [Anslut en Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/)
-- [Remote control and mobile](/sv-SE/handbok/koncept/fjarrstyrning/)
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/)
+- [Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/)

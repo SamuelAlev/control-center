@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: แยกสาขาการสนทนา
+description: ลองแนวทางอื่นจากจุดก่อนหน้าโดยไม่ต้องเสียแนวทางที่มีอยู่ แล้วแยกเป็นการสนทนาใหม่หรือนำสิ่งที่ต้องการเก็บไว้ออกมา
 slug: th-TH/คู่มือ/วิธีทำ/แยกสาขาการสนทนา
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+คู่มือนี้แสดงวิธีกลับไปยังจุดก่อนหน้าในการสนทนาแล้วพาไปอีกทางหนึ่ง — โดยที่เส้นทางที่คุณจากมายังอยู่ครบ
 
-## The one thing worth knowing
+## เรื่องเดียวที่ควรรู้
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**การแยกสาขาไม่เขียนอะไรเลย** บทสนทนาคือต้นไม้ของข้อความที่มีตัวชี้อยู่ที่ปลาย การย้อนกลับจึงเป็นการเลื่อนตัวชี้ ไม่มีอะไรถูกลบ ไม่มีอะไรถูกซ่อน และการสลับกลับก็คือการเลื่อนตัวชี้อีกครั้ง
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+นั่นคือเหตุผลที่การแก้พรอมต์แล้วรันใหม่ปลอดภัยตรงนี้: คำตอบที่คุณกำลังเทียบอยู่ยังอยู่ตรงนั้น
 
-## See the branches
+## ดูสาขาทั้งหมด
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+ตัวนำทางจะแสดงข้อความทุกข้อความ โดยเยื้องในแต่ละจุดที่แยก และทำเครื่องหมายเส้นทางปัจจุบันว่า **อยู่บนสาขานี้** บทสนทนาที่ไม่เคยแยกจะแสดงเป็นรายการแบนอย่างที่มันเคยเป็น — ตัวนำทางไม่มีต้นทุนอะไรในการมอง จนกว่าจะมีอะไรให้สำรวจ
 
-Each row offers two actions.
+แต่ละแถวเสนอการกระทำสองอย่าง
 
-| Action                          | Effect                                                    |
+| การกระทำ                        | ผลลัพธ์                                                      |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **ทำต่อจากที่นี่**               | เลื่อนตัวชี้ ข้อความถัดไปของคุณจะทำต่อจากข้อความนั้น             |
+| **แยกเป็นการสนทนาใหม่**          | คัดลอกเส้นทางจนถึงข้อความนั้นไปยังบทสนทนาใหม่                   |
 
-## Branch: try a different approach
+## แยกสาขา: ลองแนวทางอื่น
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. หาข้อความที่คุณอยากเริ่มต้นใหม่อีกครั้งจากมัน — ปกติคือข้อความสุดท้ายที่คุณพอใจ
+3. **ทำต่อจากที่นี่**
+4. พิมพ์พรอมต์ใหม่
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+ส่วนต่อของเดิมยังอยู่ในต้นไม้ ตอนนี้ `/tree` จะแสดงสองเส้นทางจากจุดนั้น และคุณสลับไปมาระหว่างทั้งสองได้อย่างอิสระ
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[เส้นทางที่คุณจากมายังอยู่ตรงนั้น]
+การแยกสาขาไม่ได้ซ่อนหรือลบอะไรเลย `/tree` แสดงทุกเส้นทาง ทำเครื่องหมายเส้นทางปัจจุบันว่า **อยู่บนสาขานี้** และเป็นวิธีที่คุณใช้สลับ
 :::
 
-## Fork: take it somewhere else
+## แยก: พาไปที่อื่น
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+การแยกจะคัดลอกเส้นทางไปยัง **บทสนทนาใหม่** ในสเปซเดียวกัน ใช้เมื่อทิศทางทั้งสองจะแยกออกจากกันไปเรื่อย ๆ และคุณอยากให้มันอยู่เคียงข้างกันมากกว่าจะสลับไปมา
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+สำเนามี id ข้อความใหม่ บทสนทนาสองอันที่ใช้แถวร่วมกันจะแสดงข้อความถัด ๆ ไปของกันและกัน ซึ่งเป็นสิ่งที่การแยกมีขึ้นมาเพื่อป้องกันพอดี
 
-## Revert versus branch
+## การย้อนกลับกับการแยกสาขา
 
-They are different tools and the difference matters.
+มันเป็นเครื่องมือคนละอย่าง และความต่างนั้นสำคัญ
 
-|                     | Revert                                             | Branch                          |
+|                     | การย้อนกลับ                                        | การแยกสาขา                      |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| ข้อความหลังจากนั้น  | ถูกซ่อนจากทรานสคริปต์                                | ยังมองเห็นได้ใน `/tree`           |
+| **worktree**        | ย้อนกลับไปยังสแนปช็อตของเทิร์นนั้น                     | ไม่ถูกแตะต้อง                    |
+| เลิกทำ              | **เลิกย้อน** คืนชุดการเปลี่ยนแปลงนั้น                 | เลื่อนตัวชี้กลับ                  |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+การย้อนกลับคือสิ่งที่คุณต้องการเมื่อเอเจนต์แก้ *ไฟล์* ที่คุณอยากได้คืน การแยกสาขาคือสิ่งที่คุณต้องการเมื่อการสนทนาไปผิดทางแต่ไฟล์ยังดีอยู่
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+การย้อนกลับยังเลื่อนปลายสาขาด้วย ข้อความถัดไปของคุณจึงทำต่อจากจุดที่ถูกต้อง แทนที่จะทำต่อจากหางที่ไม่มีใครมองเห็นอีกแล้ว
 
-## Take it out of the app
+## นำออกจากแอป
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+เขียน **ไฟล์ HTML ที่ครบในตัวเอง**: บทสนทนาทั้งหมดพร้อมการ์ดเครื่องมือที่พับได้ ซึ่งแสดงว่าแต่ละการเรียกได้รับอะไรมาบ้างและคืนอะไรกลับไป ไม่มีสไตล์ชีต ไม่มีสคริปต์ ไม่มีโฮสต์รูปภาพ — มันใช้งานได้จากแฟลชไดรฟ์ USB และใช้ได้แม้อีกห้าปีข้างหน้า
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **เดสก์ท็อป:** `Documents/ControlCenter/exports/` ประทับเวลากำกับ การนำออกครั้งที่สองจึงไม่ทับครั้งแรก
+- **เว็บ:** ดาวน์โหลดผ่านเบราว์เซอร์
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+คัดลอกทรานสคริปต์ไปยังคลิปบอร์ดในรูปแบบมาร์กดาวน์ โดยการเรียกเครื่องมืออยู่ในบล็อกที่พับได้ อันนี้คืออันที่ควรเอาไปแปะใน issue
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+การให้เหตุผลถูกตัดออกโดยเจตนา: มันเป็นพื้นที่ทดของโมเดล และรายงานบั๊กมีไว้ให้คนอ่าน
 
-## Related
+## เรื่องที่เกี่ยวข้อง
 
-- [Conversation history](/th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/) — `/tree`, `/export`, `/dump`
+- [ประวัติการสนทนา](/th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา/) — ทำไมต้นไม้จึงเป็นการเลื่อนตัวชี้ และการทำต่อกู้คืนอะไรจริง ๆ
+- [คำสั่งสแลช](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/) — `/tree`, `/export`, `/dump`

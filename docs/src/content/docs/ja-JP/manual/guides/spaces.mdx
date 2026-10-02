@@ -1,156 +1,160 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: スペースを使う
+description: スペースを作成し、モードを設定し、参加者と自律性を管理し、会話とスレッドを開きます。
 slug: ja-JP/マニュアル/ハウツーガイド/スペース
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+このガイドでは、スペースの使い方を説明します。**スペース**とは Control Center の
+メッセージングサーフェスです。ワークスペース単位のルームで、1 人以上の参加者
+（あなたやエージェント、またはその両方）を持ち、作成対象となったリポジトリごとに
+コピーオンライトのワークツリーを所有します。
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+1 対 1 のルームも複数エージェントのルームも、どちらも単なるスペースであり、違いは
+参加者の数だけです。唯一の例外は、エージェント同士が会話するために開くスペースです
+— 後述の[エージェント間のスペース](#エージェント間のスペース)を参照してください。
 
-## Create a space
+## スペースを作成
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. **スペース**に移動します
+2. 「スペース」見出しの横にある **+** ボタンをクリックします
+3. **名前**を付けます — 必須です。空の名前は拒否され、ダイアログは開いたままに
+   なります
+4. 任意で、ワークスペースからエージェントを追加します
+5. ワークスペースにリポジトリが 1 つでもある場合は、このスペースがワークツリーを
+   プロビジョニングする対象を選びます。デフォルトではすべてが選択されています。
+   すべてのリポジトリの選択を外すと、何もチェックアウトされていないスペースが
+   作成されます
+6. 確定します
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+スペースはワークスペース単位です。表示されるのは現在のワークスペースのエージェント
+だけで、スペースが別のワークスペースのデータを表に出すことはありません。
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills).
+各リポジトリは、スペース内の `repos/<name>/` にチェックアウトされます。独自の
+エージェントスキルを同梱するリポジトリは、そこで作業しているエージェントにそれらを
+提供します — 同時に有効なのは 1 つのリポジトリのセットだけで、エージェントが移動
+するたびに入れ替わります。コンポーザーからは `/skill:<repo>:<name>` でそのいずれにも
+到達できます。
+[リポジトリ単位のスキル](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills)
+を参照してください。
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+このサーフェスは `/workspaces/<id>/spaces` にあり、単一のスペースは
+`/workspaces/<id>/spaces/<spaceId>` にあります。
 
-## Set the space's mode
+## スペースのモードを設定
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+新しいスペースはデフォルトモードで始まります。モードを変更するのは、コンポーザーの
+ツールバー左端にある**モードドロップダウン**です — 作成ダイアログ（そこにモード
+フィールドはありません）からでも、スペースヘッダーからでもありません。
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| モード          | 効果                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| **Agent**       | 完全なアクセス。デフォルトです。内部的には `chat` で、ドロップダウンでは「Agent」と表示されます           |
+| **Plan**        | 読み取りと調査のみ。成果物は型付きのプランです                                                            |
+| **Orchestrate** | 読み取りと調査に加えて、単一の `propose_orchestration` 動詞。プランはあなたが承認した後にのみ実行されます |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab は、ドロップダウンを開かずにプランモードとエージェントモードを切り替えます。
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+4 つ目のモードである **review** は存在しますが、ドロップダウンには表示されません —
+PR レビューのスペースに自動的に適用されます。
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+モードはスペースに保存されるため、同じエージェントが一方のスペースではプランモード、
+もう一方ではエージェントモードになることがあります。スペース内のすべての会話は、その
+スペースのモードを共有します。
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[強制バッジに注意]
+モードドロップダウンの横にバッジが表示されるのは、スペースのエージェントが、選択した
+モードを強制できないアダプター上で実行されている場合です。ツールサーフェスを
+フィルタリングし、すべての呼び出しをゲートするのは、組み込みの Control Center
+ハーネスだけです。Claude Code と ACP のアダプターはモードをリクエストとして受け取り、
+そのランナーがそれに従うかどうかは保証されません。バッジがないことは「何も主張して
+いない」という意味であり、「安全が検証済み」という意味ではありません。
 :::
 
-See [Modes](/ja-JP/マニュアル/コンセプト/モード/) for the full model.
+モデル全体については[モード](/ja-JP/マニュアル/コンセプト/モード/)を参照してください。
 
-## Manage participants and per-agent autonomy
+## 参加者とエージェントごとの自律性を管理
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+スペースヘッダーの人のアイコンをクリックすると、**参加者を管理**が開きます。すでに
+スペースにいるエージェントごとに、次のことを行えます:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- スペースから削除する
+- このスペースにおける**自律度**を設定する: **デフォルト**、**提案のみ**、
+  **承認後に実行**、**自由に実行**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+自律度のダイヤルは (スペース, エージェント) の組ごとに設定されるため、あるルームで
+信頼しているエージェントを、別のルームでは提案のみに留めることができます。
 
-## React to a message
+## メッセージにリアクションする
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+メッセージにマウスを重ねてスマイリーアイコンをクリックすると、リアクションのパレット
+が開きます。内容は 👍 👎 🎉 ❤️ 👀 ✅ の 6 つに固定されています。自由な絵文字ピッカー
+はありません — 1 つタップするとあなたの分が切り替わり、集計されたチップがメッセージ
+の下に表示されます。
 
-## Open a conversation
+## 会話を開く
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+スペースは複数の会話を同時に抱えることができ、それらは対等で、主要なものはありません。
+スペースには常に少なくとも 1 つの生きている会話が残ります。最後のアクティブな会話は
+アーカイブできず、まだ 1 つもないスペースを開くと、無題の常設会話が作成されます。
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+会話はエディターのタブとして表示され、2 つ以上になるとサイドバーのスペースの下に
+ネストされた行としても表示されます。**新しい会話**はエディターの新規タブメニューに
+あり、タイトルを尋ねずに無題の会話を作成します — タイトルモデルが最初のメッセージに
+基づいて名前を付けます。同じエージェントと同じワークツリーで並行作業を行うのに使え
+ます。
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+各会話は独自のメッセージ履歴とエージェントセッションを保持しつつ、スペースの
+ワークツリーとモードを共有します。タブを閉じるとその会話は隠れます。**会話を
+アーカイブ**（サイドバーの行、またはチャットタブのコンテキストメニュー）は、その
+会話だけをアーカイブします。
 
-## Start a thread
+## スレッドを開始
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+任意のメッセージにマウスを重ねて**スレッドを開始**を選びます。すると、そのメッセージに
+アンカーされた会話が開きます。アンカーは、1 行で新しい会話のエージェントコンテキスト
+を初期化し、親の履歴はコピー**されません**。
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+スレッドに返信が付くと、そのスレッドがぶら下がっているメッセージの下に行が 1 つ増え
+ます — 発言した人の顔、返信数、最後の返信が届いた時刻です。この行が戻るための入口です
+— クリックするとスレッドのタブが開く（またはフォーカスされる）からです。これが、分岐
+元のストリームにスレッドが残す唯一の痕跡であり、そもそもこれがあるのはそのためです。
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+スレッドのタブのタイトルは `Thread: <name>` で、ブランチのグリフが付くため、同じ
+スペース上の 2 つのタブが取り違えられることはありません。
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+スレッドはネストしません — すでにスレッド内にあるメッセージにアンカーすることは拒否
+されます。会話ヘッダーはアンカーメッセージへリンクで戻ります。アンカーメッセージを
+削除するとスレッドも削除され、親の会話をアーカイブしても既存のスレッドはブロック
+されません。
 
-## Read state
+## 既読状態
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+既読マークは会話ではなくスペース単位です。スペース内のどの会話を開いても、ルーム
+全体が既読になります。ただし未読は、スレッドを含むスペースのすべての会話にまたがって
+集計されます。会話がスペースの下に一覧表示されている場合、未読ドットは親の行ではなく、
+未見の作業がある会話に付きます。
 
-## Agent-to-agent spaces
+## エージェント間のスペース
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+エージェント同士が会話するために開くスペースは、サイドバーの**エージェント**の下に
+別立てでまとめられ、デフォルトでは折りたたまれ、淡色で表示されます。これらのスペース
+が未読バッジを増やすことはありません — エージェントのおしゃべりが静かなのは、あなた
+が見つけなければならない設定によるのではなく、構造上そうなっているからです。
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+スペースの種類は次の 5 つの値のいずれかです: `topic`（あなたが作成するものすべての
+デフォルト）、`agentPeer`、`system`（パイプラインで管理）、`pr`（PR サーフェスが
+ワークツリーのアンカーを必要としたときに作成され、メッセージが付くまでサイドバーから
+隠されます）、`slack`（Slack スレッドまたはボットへの DM のためにチャットブリッジが
+作成し、通常の人間の会話として扱われます）。
 
-## Related guides
+## 関連ガイド
 
-- [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
-- [@-mention agents](/ja-JP/マニュアル/ハウツーガイド/エージェントのメンション/)
-- [Use plan mode](/ja-JP/マニュアル/ハウツーガイド/プランモード/)
+- [エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+- [エージェントを @メンション](/ja-JP/マニュアル/ハウツーガイド/エージェントのメンション/)
+- [プランモードを使う](/ja-JP/マニュアル/ハウツーガイド/プランモード/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/): how a Slack thread becomes a space
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/): Slack スレッドがどのようにスペースになるか

@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Evals og kvalitet
+description: Eval-suiter, startsettet som legges inn i hvert arbeidsområde, og hvor de vises i Observabilitet.
 slug: nb-NO/handbok/konsepter/evals-og-kvalitet
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+En **eval-suite** er en arbeidsområdeavgrenset definisjon av en oppgave som skal
+kjøres mot en agent: en prompt, en målagent og en målmodus, valgfritt oppsett, en
+valgfri fixture med en låst SHA og en liste med bedømmere. Deterministiske
+bedømmere kommer først; en LLM-rubrikkdommer dekker det disse kontrollene ikke
+kan uttrykke.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Fem start-suiter legges inn når et arbeidsområde opprettes. De dekker
+orkestreringsforslag, en gjennomgang som finner en plantet feil, at planmodus
+holder seg skrivebeskyttet, at planmodus produserer en plan, og en tur-retur for
+en sak. Innleggingen lytter på `WorkspaceCreated` (`workspace.upsert` eller
+`workspace.create`), hopper over et navn som allerede finnes og etterfyller ikke
+eldre arbeidsområder.
 
-## Where they appear
+## Hvor de vises
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observabilitet → Kvalitet** (`/workspaces/<id>/observability`) lister opp hver
+suite i arbeidsområdet.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Opprett, list opp, rediger og slett suiter med `evals.upsertSuite`,
+`evals.deleteSuite` og `evals.watchSuites`. Kvalitet-fanen er listen; disse
+operasjonene er redigeringsverktøyet.
 
-## Related concepts
+## Relaterte konsepter
 
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): the configuration a suite
-  pins
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/): the autonomy dial
-- [Manage costs and budgets](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/): spend recorded
-  alongside a run
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): konfigurasjonen en
+  suite låser
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): autonomiinnstillingen
+- [Administrer kostnader og budsjetter](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/): forbruk som
+  registreres sammen med en kjøring

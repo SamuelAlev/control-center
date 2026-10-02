@@ -1,185 +1,190 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Dùng chế độ tập trung và soundscape
+description: Chạy một phiên tập trung có hẹn giờ với viên đếm ngược nổi và thông báo bị chặn, rồi định hình soundscape thích ứng phát bên dưới.
 dateModified: 2026-08-17
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/che-do-tap-trung
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Hướng dẫn này cho bạn biết cách chạy một phiên tập trung: một khoảng thời gian
+được hẹn giờ, trong đó Control Center chặn các thông báo không khẩn cấp và thả
+một viên đếm ngược nổi lên trên các cửa sổ khác của bạn. Trang này cũng nói về
+soundscape phát bên dưới (theo mặc định) — một bản nhạc nền không dứt do máy chủ
+của bạn tổng hợp trực tiếp, được định hình bởi tâm trạng bạn chọn, thời tiết bên
+ngoài và thời điểm trong ngày.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Một phiên tập trung là tính năng ở tầng vỏ ứng dụng. Nó không gắn với bất kỳ trụ
+cột nào — nó không thay đổi bố cục, không ẩn thanh bên, cũng không thay đổi bề
+mặt đánh giá PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Chỉ trên desktop]
+Viên nổi và trình phát mini tách rời của soundscape là những cửa sổ anh em gốc,
+chỉ được gắn bởi bộ khởi động desktop. Bản web tại `app.usectrl.dev` không có cả
+hai, và cũng không có luồng thông báo hệ điều hành, nên một phiên tập trung
+không có gì để hiển thị hay chặn ở đó. Bảng soundscape và việc phát nhạc của nó
+hoạt động ở mọi nơi bạn kết nối tới một máy chủ.
 :::
 
-## Start a focus session
+## Bắt đầu một phiên tập trung
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Nhấp biểu tượng tập trung ở bên phải thanh tiêu đề (chú thích **Bắt đầu phiên
+   tập trung**)
+2. Trong hộp thoại, nhập **Mục tiêu** (không bắt buộc) — việc bạn đang làm
+3. Chọn **Thời lượng**: 25m, 50m, 1h, 1h 30m hoặc 2h. Mặc định là 50m và lựa chọn
+   gần nhất của bạn được ghi nhớ
+4. Nhấn **Bắt đầu**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Điểm kiểm tra: nút trên thanh tiêu đề được thay bằng một chip màu nhấn hiển thị số
+phút còn lại, viên nổi xuất hiện trên các cửa sổ khác của bạn và — khi bật **Bắt
+đầu với chế độ tập trung** — soundscape bắt đầu phát.
 
-Two other entry points reach the same session:
+Hai điểm vào khác cũng dẫn tới cùng phiên đó:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** mở cùng hộp thoại đó.
+- **⌘⇧⌥F** bắt đầu phiên ngay lập tức với thời lượng đã ghi nhớ và không có mục
+  tiêu — nó bỏ qua hộp thoại. Nhấn tổ hợp này lần nữa sẽ kết thúc phiên.
 
-## Read the floating pill
+## Đọc viên nổi
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Viên nổi là một cửa sổ nhỏ không viền mà bạn có thể kéo đến bất kỳ đâu. Nó hiển
+thị:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Một chấm hiện diện trực tiếp và thời gian còn lại dưới dạng `mm:ss`
+- Mục tiêu của bạn, hoặc "Focus session" khi bạn không đặt mục tiêu
+- Một thanh tiến trình mảnh dọc theo cạnh dưới
 
-Hover it to reveal two actions:
+Đưa con trỏ lên viên nổi để hiện hai thao tác:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — dừng đồng hồ đếm ngược. Việc tạm dừng chỉ có tác dụng
+  với viên nổi; bản thân phiên vẫn đang hoạt động.
+- **Complete** — kết thúc phiên.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Viên nổi luôn dùng bảng màu tối bất kể giao diện chính đang dùng gì, vì nó nổi
+trên nội dung desktop tùy ý.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Nếu bạn đóng viên nổi từ thanh tiêu đề, phiên vẫn tiếp tục chạy. Nhấn nút
+hình-trong-hình bên cạnh chip tập trung (chú thích **Thu nhỏ xuống thanh**) để
+đưa nó trở lại.
 
-## Know what gets suppressed
+## Biết thứ gì bị chặn
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Trong khi một phiên đang hoạt động, Control Center bỏ mọi thông báo trừ hai nhóm
+luôn được gửi đi:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Cuộc họp sắp bắt đầu** — một cảnh báo cuộc họp mà bạn chỉ thấy sau khi sự
+  việc đã xong thì vô nghĩa
+- **PR đã được công bố**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Mọi thứ khác đều bị chặn âm thầm trong suốt phiên — không âm thanh, không toast
+của hệ điều hành. Những thông báo bị chặn không được xếp hàng để gửi sau.
 
-## Play a soundscape
+## Phát một soundscape
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Nhấp biểu tượng loa ở bên phải thanh tiêu đề (chú thích **Soundscapes**) để mở
+   bảng
+2. Chọn một **Tâm trạng** — **Tập trung**, **Vươn**, **Thư giãn** hoặc **Ngủ**
+3. Nhấn **Phát**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Điểm kiểm tra: thẻ **Đang phát** nêu tên khung cảnh hiện tại — thời tiết tại vị
+trí của không gian làm việc, nhiệt độ theo °C và nhãn vị trí. Khi thẻ còn hiển thị
+"Đang tinh chỉnh không khí…" thì khung cảnh vẫn đang được dựng.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Bản nhạc không phải một vòng lặp. Máy chủ của bạn tổng hợp nó liên tục từ tâm
+trạng, thời tiết trực tiếp tại vị trí của không gian làm việc và thời điểm trong
+ngày. Mưa nghe sáng và rộn ràng, bão to và giật từng cơn, sương mù bị làm mờ; ban
+đêm tối và vang hơn giữa trưa. Tâm trạng quyết định chất liệu âm thanh:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Tâm trạng  | Âm thanh                                                                               |
+| ---------- | -------------------------------------------------------------------------------------- |
+| Tập trung  | Không khí nhẹ nhàng, tỉnh táo với nhịp trầm — để nằm dưới công việc                    |
+| Vươn       | Giai điệu bay bổng với nhịp nhẹ — dành cho lúc công việc thấy nặng nề                   |
+| Thư giãn   | Pad ấm hơn, thuận tai hơn, không có nhịp                                                |
+| Ngủ        | Tiếng drone trầm gần như không có sự kiện, vang sâu                                     |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Đổi tâm trạng trong lúc phát sẽ chuyển việc phát sang tâm trạng mới mà không dừng
+lại.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Bảng này cũng mở được từ ⌘K trong nhóm **Focus**, ngay cạnh chính phiên tập trung.
 
-## Shape the sound
+## Định hình âm thanh
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Điều chỉnh** (Tập trung, Vươn và Thư giãn) — một bàn vuông với núm kéo được.
+  Trục ngang từ **Êm** đến **Năng lượng** (mức độ sự việc xảy ra), trục dọc từ
+  **Không gian** đến **Sáng** (độ mở của âm thanh). Nhấn đúp vào bàn để đưa về
+  giữa trung tính; các phím mũi tên dịch núm. Bản điều chỉnh của bạn được ghi nhớ
+  theo từng tâm trạng, và các thay đổi hòa dần vào bản mix đang chạy — luồng phát
+  không bao giờ khởi động lại. Tâm trạng Ngủ không thể điều chỉnh, đó là chủ ý.
+- **Âm lượng** — thanh trượt từ 0 đến 100%, mặc định 60%. Nó tách biệt với âm
+  lượng hệ thống và được ghi nhớ.
+- **Vị trí** — được phát hiện tự động từ không gian làm việc. Nhấn **Làm mới thời
+  tiết** để tải lại khung cảnh.
 
-## Pop out the mini player
+## Tách trình phát mini
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Trong khi âm thanh đang phát, thanh tiêu đề mọc thêm một nút thứ hai (chú thích
+**Tách trình phát**). Nút này thả nổi một HUD nhỏ luôn nằm trên cùng với nút
+phát/tạm dừng, biểu tượng thời tiết, tên khung cảnh và nút **Quay lại ứng dụng** —
+rất tiện khi một phiên tập trung đã đưa bạn sang hẳn một ứng dụng khác.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Tạm dừng từ trình phát mini không làm nó biến mất; chỉ nút đóng của nó (hoặc thoát
+ứng dụng) mới gỡ nó đi.
 
-## Run them together
+## Chạy cả hai cùng nhau
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Hai tính năng được nối với nhau bằng một công tắc trong bảng soundscape: **Bắt đầu
+với chế độ tập trung**, bật theo mặc định.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Bắt đầu một phiên tập trung sẽ khởi động soundscape nếu chưa có gì đang phát.
+- Kết thúc phiên — dù kết thúc theo cách nào, kể cả khi đồng hồ chạy hết — sẽ dừng
+  nó, ngay cả khi bạn tự tay bật soundscape.
 
-Turn the switch off to keep the two independent.
+Tắt công tắc đi để hai thứ độc lập với nhau.
 
-## End a session
+## Kết thúc một phiên
 
-Any one of these ends it:
+Bất kỳ thao tác nào sau đây đều kết thúc phiên:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Nhấp chip tập trung trên thanh tiêu đề (chú thích **Chế độ tập trung đang bật —
+  chạm để kết thúc**)
+- Nhấn **Complete** trên viên nổi
+- Nhấn **⌘⇧⌥F**
+- Chọn **Exit focus mode** trong ⌘K
+- Để đồng hồ chạy hết — phiên tự hoàn tất khi về không
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Viên nổi đóng lại, thông báo có trở lại ngay lập tức và soundscape dừng.
 
-## Understand what does not persist
+## Hiểu điều gì không được lưu lại
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Một phiên chỉ tồn tại trong đúng một lần chạy ứng dụng. Thoát rồi mở lại Control
+Center, bạn bắt đầu ở trạng thái không hoạt động với đồng hồ đã đặt lại, kể cả khi
+đang giữa phiên — không có khôi phục sau sự cố và không có lịch sử phiên.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Chỉ hai thứ được giữ lại: thời lượng ưa thích của bạn và cờ chặn thông báo. Mục
+tiêu, thời gian đã trôi qua và trạng thái mở của viên nổi thì không.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Việc phát nhạc cũng phù du như vậy — soundscape luôn dừng khi khởi động. Tâm
+trạng, âm lượng và bản điều chỉnh theo từng tâm trạng của bạn được giữ lại; còn
+luồng phát thì không bao giờ tự tiếp tục.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The tune pad is missing
+### Không thấy bàn điều chỉnh
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Bạn đang ở tâm trạng Ngủ, vốn được thiết kế để không thể điều chỉnh. Chuyển sang
+Tập trung hoặc Thư giãn để có lại bàn điều chỉnh.
 
-### Nothing plays after restarting the app
+### Không có gì phát sau khi khởi động lại ứng dụng
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Đó là chủ ý — việc phát luôn dừng khi ứng dụng khởi động. Mở bảng và nhấn **Phát**
+lần nữa. Nếu vẫn im lặng, kiểm tra thanh trượt âm lượng trong bảng, vì nó tách
+biệt với âm lượng hệ thống.
 
-### The weather or temperature looks wrong
+### Thời tiết hoặc nhiệt độ trông sai
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Khung cảnh đi theo vị trí của không gian làm việc đang hoạt động. Nhấn **Làm mới
+thời tiết** trong bảng để tải lại.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Configure notifications](/vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao/)
-- [Keyboard shortcuts](/vi-VN/so-tay/tham-chieu/phim-tat/)
+- [Cấu hình thông báo](/vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao/)
+- [Phím tắt](/vi-VN/so-tay/tham-chieu/phim-tat/)

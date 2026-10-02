@@ -1,109 +1,108 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: الاتصال بخادم بعيد
+description: وجّه تطبيق الحاسوب أو عميل الويب إلى cc_server في مكان آخر، وبدّل بين الخوادم من غير إعادة تشغيل.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+كل عميل عارض فوق `cc_server`، وهو الذي يملك البيانات. يستطيع الحاسوب أن يشغّل
+واحدًا داخله، أما تطبيق الويب على [app.usectrl.dev](https://app.usectrl.dev)
+فلا يستطيع، لأن لسان المتصفح لا يستضيف خادمًا. في الحالتين يوجّه هذا الدليل
+عميلًا إلى خادم يعمل في مكان آخر — جهاز صغير، أو آلة افتراضية سحابية، أو خادم
+بناء.
 
-## Prerequisites
+## المتطلبات
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- `cc_server` يعمل. إن لم يكن لديك واحد، انظر [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
+- إما قيم الاقتران الثلاث التي صكّها الخادم — **عنوان URL للخادم** (`ws://…/rpc` أو `wss://…/rpc`)، و**معرّف الجهاز**، و**مفتاح الاقتران** — **أو** **رمز الدعوة** لمرة واحدة من مسؤول مساحة العمل. صرف الدعوة يوفّر مستخدمك، ويسجّل عضويتك، ويصك بيانات اعتماد هذا العميل لك، فلا تتعامل مع معرّف جهاز أو مفتاح.
 
-### Make sure the server is reachable
+### تأكّد من بلوغ الخادم
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+الخادم المحلي لا يحتاج شيئًا: يعمل `ws://localhost:9030/rpc` من الحاسوب ومن
+المتصفح، لأن المتصفحات تعد loopback من الأصول الموثوقة.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+الخادم على جهاز آخر شأن مختلف. يُقدَّم `app.usectrl.dev` عبر HTTPS، فلن يفتح
+المتصفح مقبس `wss://` إلا بشهادة يثق بها أصلًا — ويرفض `cc_server` من الأساس
+ربط عنوان غير loopback من غير TLS. أعطه واحدًا من هذه:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- شهادة مباشرة، عبر `--tls-cert` و`--tls-key`
+- بروكسي عكسي ينهي TLS أمامه، مع تشغيل الخادم بـ `--insecure` (بلا تشفير خلف البروكسي، وعلى شبكة موثوقة فقط)
+- نفق أو VPN يوفّر الشهادة — Tailscale أو cloudflared أو ما شابه. في **الإعدادات ← الخادم ← الاتصال والحالة** خيار تفعيل النفق المضمّن، تحت **مشاركة هذا الخادم**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+إعدادان على الخادم يسهل تفويتهما. خلف بروكسي أو NAT أو نفق، اضبط
+`--public-url` على العنوان الذي ينبغي أن يتصل به العملاء فعلًا — افتراضه الربط
+المحلي، فمن دونه يحاول العملاء المضيف الخطأ. وإن استضفت نسختك من حزمة الويب،
+أضف أصلها إلى `--allowed-origins`، وافتراضها `https://app.usectrl.dev` وحده،
+ويُسمح دائمًا بـ loopback وبالعملاء الأصيلين.
 
-## Connect the desktop app
+## اتصال تطبيق الحاسوب
 
-On a fresh install:
+على تثبيت جديد:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. شغّل Control Center. تسأل شاشة أول تشغيل **كيف ينبغي أن يعمل Control Center؟**
+2. بدلًا من **التشغيل داخل هذا التطبيق**، املأ حقول الاتصال: عنوان URL للخادم، ومعه إما رمز الدعوة أو معرّف الجهاز ومفتاح الاقتران.
+3. انقر **اتصال**. يتصل Control Center بالخادم ويصل إلى وارد مساحة العمل.
 
-On a desktop that already runs its own server:
+على حاسوب يشغّل خادمه بنفسه أصلًا:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. افتح **الإعدادات ← الخادم ← الاتصال والحالة**.
+2. انقر **إضافة خادم**. أدخل عنوان URL للخادم (`wss://host:9030/rpc`) ومعه إما رمز الدعوة أو معرّف الجهاز ومفتاح الاقتران. يكتشف زر لاحقة حقل العنوان مثيلات `cc_server` على LAN أو tailnet لديك.
+3. انقر **اتصال**، ثم **تبديل** في صف الخادم الجديد.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+التبديل يجري في المكان: يعيد التطبيق بناء نفسه حول الجلسة الجديدة، من غير
+إعادة تشغيل. إن فشل الاتصال تبقى على الخادم الحالي وترى الخطأ. صف الخادم الذي
+أنت عليه ليس فيه إجراء **تبديل**، والخادم المحلي هو الصف الأول، واسمه
+**التشغيل داخل هذا التطبيق**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+بعد التبديل لا يملك الحاسوب قاعدة. كل شاشة تقرأ وتكتب عبر الخادم البعيد، على
+WebSocket.
 
-## Connect the web client
+## اتصال عميل الويب
 
-The web build is always remote.
+حزمة الويب بعيدة دائمًا.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. افتح [app.usectrl.dev](https://app.usectrl.dev)، أو نسختك من حزمة الويب.
+2. أدخل عنوان URL للخادم ومعه إما رمز الدعوة أو معرّف الجهاز ومفتاح الاقتران.
+3. يتصل العميل بالخادم ويرسم الواجهة نفسها التي يرسمها الحاسوب.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+إن حوى العنوان رابط اقتران عميق، تُملأ الحقول مسبقًا. يركب مفتاح الاقتران
+**جزء الرابط**، والمتصفح لا يرسله أبدًا إلى الخادم الذي يستضيف الصفحة، فلا يراه
+المضيف الثابت.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[الوسائط والأمان]
+تُمرَّر الوسائط (الصور الرمزية، وصور الموجز، ولقطات طلبات السحب) عبر الخادم
+المتصل، فلا يجلب المتصفح المضيف المصدر مباشرة. سياسة Content-Security Policy
+لكل طلب، مختومة من كوكي غير حسّاس، لا تسمح إلا بأصل الخادم المتصل.
 :::
 
-### What the browser does not do
+### ما لا يفعله المتصفح
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+يقرأ عميل الويب الخادم نفسه الذي يقرأه الحاسوب ويكتب إليه، لكن بعض الأسطح
+يحتاج نافذة أصيلة أو أجهزة المضيف نفسه:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- لا إشعارات نظام منبثقة، ولا أصوات للإشعارات، ولا شريط لافتات محيطي (يبقى مركز الإشعارات داخل التطبيق يعمل)
+- لا اكتشاف لخوادم LAN أو tailnet في حوار **إضافة خادم**
+- لا قارئ مقالات داخل التطبيق — مقالات موجز الأخبار تفتح في لسان جديد
+- لا إعادة تشغيل لملخص اجتماع، ولا إلغاء لملخص قيد المعالجة
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+اثنان يتصرفان على نحو مختلف. يعمل **تسجيل** الاجتماع في المتصفح، فيلتقط
+ميكروفونك ومشاركة شاشة تضم مسار صوت. يعمل **فتح في IDE** أيضًا، لكنه يطلب من
+الخادم إطلاق المحرر على شاشة _الخادم_، فيُخفي الزر نفسه إذا كان المضيف بلا
+واجهة ولم يُثبَّت عليه أي محرّر.
 
-## Troubleshooting
+## استكشاف الأخطاء
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
+- **تنتهي مهلة الاتصال**: لا بد أن يستطيع العميل بلوغ الخادم. تحقق من الربط (`--bind any`)، وأن المنفذ مفتوح، وأن `--public-url` يسمّي العنوان الذي يستطيع العميل الاتصال به فعلًا. على الإنترنت المفتوح يكون TLS إلزاميًا — يُرفض عند الإقلاع ربط غير loopback بلا تشفير، ما لم يُشغَّل الخادم بـ `--insecure` خلف بروكسي.
+- **يرفض المتصفح الاتصال ويظل عميل أصيل يعمل**: أصل المتصفح ليس في قائمة `--allowed-origins` على الخادم. الافتراض لا يسمح إلا بـ `https://app.usectrl.dev` (مع loopback).
+- **رُفض مفتاح الاقتران**: أعد تشغيل `cc_server pair` على الخادم لتدوير مفتاح ذلك الجهاز، ثم أدخل المفتاح الجديد. الجهاز المُبطَل يجد بيانات اعتماده قد زالت فيفشل مغلقًا، ويُسقط الإبطال الجلسة الحية خلال ثوانٍ.
+- **مساحة عمل خاطئة**: مساحة العمل جزء من العنوان (`/workspaces/:workspaceId/…`) وتُحمَل مع كل استدعاء، فتبديل مساحة العمل في عميل واحد لا يغيّر إلا عرضك أنت. لا تبلغ إلا مساحات العمل التي أنت عضو فيها — وما عداها يُرفض بـ«لست عضوًا في مساحة العمل هذه». انظر [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
-- [Pair a device](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): the phone relay path
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
+- [اقتران جهاز](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): مسار مرحّل الهاتف
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)
-- [Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/)
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)
+- [التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/)

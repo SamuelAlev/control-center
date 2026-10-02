@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Istoricul conversațiilor
+description: Cum își păstrează, pliază, ramifică și reia o rulare contextul — strategii de compactare, arborele de sesiuni și ce înseamnă de fapt „reluarea”.
 slug: ro-RO/manual/concepte/istoricul-conversatiilor
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+O conversație lungă se lovește de un zid dur: fereastra de context a modelului. Tot ce se află pe această pagină există din cauza acelui zid, iar partea interesantă este ce se aruncă, ce se păstrează și ce poate fi recuperat.
 
-## Four ways to reclaim context
+## Patru modalități de a recupera context
 
-They are not alternatives so much as a ladder, cheapest first.
+Nu sunt atât alternative, cât o scară, de la cea mai ieftină în sus.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| Mecanism      | Cost           | Păstrează                                | Pierde                             |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **Eliziune**    | Nimic        | Fiecare cuvânt din narațiune          | Rezultate de instrument mai vechi, lipsite de evenimente     |
+| **Eliminarea imaginilor** | Nimic        | Textul din jurul lor                 | Capturi de ecran vechi                   |
+| **Snapshoturi**  | Nimic        | Fiecare cuvânt, ca pixeli                | Lizibilitatea pentru un model fără viziune  |
+| **Rezumat**    | Un apel de model | O narațiune                          | Detaliile pe care nu le-a ales       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Eliziunea și eliminarea imaginilor rulează primele pentru că sunt gratuite și fără pierderi în sensul care contează: aruncă un volum pe care nimeni nu avea de gând să îl recitească.
 
-### Why summarizing is the last resort
+### De ce rezumarea este ultima soluție
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Un rezumat este singurul dintre cele patru care **consumă un apel de model** și singurul care **decide în locul tău** ce a contat. Ambele sunt costuri reale. Apelul este cel mai interesant, din cauza momentului în care are loc.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Compactarea rulează de obicei *înaintea* zidului, la un prag. Dar rulează și **reactiv**, după ce providerul însuși respinge o cerere ca fiind prea mare — estimarea euristică a subevaluat ce a măsurat efectiv providerul. În acea situație, un compactor care rezumă trebuie să facă o cerere pentru a micșora contextul, iar cererea pe care o face este exact cea care tocmai a depășit limita.
 
-### Snapshots
+### Snapshoturi
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Compactarea prin snapshoturi redă istoricul aruncat pe pagini dense de glife în pixeli și le înapoiază sub formă de imagini.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Premisa este o particularitate de facturare: un model de viziune taxează o imagine la un tarif fix sau proporțional cu suprafața, care nu are nicio legătură cu câte caractere conține. Douăsprezece mii de caractere dintr-o conversație aruncată costă echivalentul a douăsprezece mii de caractere în tokenuri de text. Aceleași caractere redate pe o singură pagină costă o imagine.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Ceea ce o face demnă de folosit, nu doar deșteaptă, este că nu are nevoie de **niciun apel de model, nicio cheie și nicio rețea**. Este singura strategie disponibilă întotdeauna în timpul recuperării după depășirea limitei.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Forma reconstrucției este: cap verbatim, mijloc redat ca imagine, coadă verbatim. Capul este sarcina și constrângerile la care se raportează tot ce urmează; coada este locul unde se află munca în acest moment. Mijlocul este partea recitită cel mai rar și care costă cel mai mult.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Se degradează cu onestitate]
+Un model fără vedere nu poate citi pagini de pixeli, iar redarea unui text pe care nimic nu-l poate privi nu este o compactare degradată — este o conversație ștearsă. Așadar, capacitatea cititorului decide, iar un model fără viziune primește întotdeauna rezumatul.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Forma paginii este tarifată pentru API, nu pentru ponderi]
+Gemini facturează un tarif fix per imagine, așa că fiecare caracter în plus de pe pagină este gratuit, iar paginile lui sunt cele mai late. OpenAI și Anthropic facturează după suprafață, așa că o pagină mai mare nu aduce nimic. Unii procesatori micșorează imaginea peste un anumit prag, ceea ce distruge în tăcere glifele de 5 pixeli, așa că paginile lor rămân sub acel prag. Un Claude servit printr-un gateway este facturat de gateway, așa că forma urmează id-ul modelului așa cum îl numește ruta.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Snapshoturile sunt redate din nou din **textul sursă păstrat** la fiecare trecere, niciodată din pixelii trecerii anterioare. A reda o imagine ca imagine degradează glifele cu o generație la fiecare compactare, până când nimic nu le mai poate citi.
 
-## What a run actually resumes from
+## De la ce reia de fapt o rulare
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Istoric, fiecare rulare a harness-ului pornea de la un istoric gol și reconstruia continuitatea dintr-un bloc `<context>` din prompt — un *rezumat* al conversației, nu conversația în sine. Din asta decurgeau trei lucruri:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Reluarea era o repovestire.** Modelul nu-și vedea niciodată propriul raționament anterior sau octeții efectivi pe care i-au returnat instrumentele, ci doar o descriere a lor.
+- **Rewind murea împreună cu procesul.** Un `checkpoint` este un index în lista de mesaje active, așa că o repornire pierdea fiecare etichetă pe care o stabilise modelul.
+- **Reîncercarea nu putea distinge „nimic de reîncercat” de „nimic încărcat”.** După o repornire, turul eșuat dispare din starea activă în ambele cazuri.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Toate trei sunt rezolvate prin persistarea transcriptului. Acesta este salvat la fiecare **limită de tur** și niciodată la mijlocul unui tur: un istoric capturat între un apel de instrument și rezultatul lui este unul pe care niciun provider nu îl acceptă, așa că un crash în acel moment restaurează turul *precedent*, nu un jumătate de tur care nu poate fi redat.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+O rulare reluată este redusă la cele mai noi mesaje ale sale, tăind la o limită care nu este un rezultat de instrument orfan — un rezultat al cărui apel a fost eliminat este o cerere pe care providerii o resping direct, iar un transcript care nu poate fi trimis este mai rău decât unul scurt.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Unde se află]
+Un fișier JSON pentru fiecare combinație conversație-agent, în directorul propriu al spațiului de lucru, lângă baza lui de date. Doi agenți dintr-o conversație dețin două istorice: au văzut rezultate de instrument diferite și au primit prompturi de sistem diferite, așa că fuzionarea lor i-ar face pe fiecare să primească raționamentul celuilalt ca fiind al său.
 :::
 
-## The session tree
+## Arborele de sesiuni
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Fiecare mesaj înregistrează mesajul din care continuă, iar fiecare conversație își numește **vârful ramurii** curente. Acea singură decizie este întreaga funcționalitate.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Ramificarea nu scrie nimic.** Mută pointerul. Calea pe care ai părăsit-o este încă acolo, așa că revenirea este o altă mutare de pointer, nu o restaurare — iar editarea unui prompt pentru a-l rula din nou nu te mai costă răspunsul cu care îl comparai.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Fără ea, orice formă de a te întoarce trebuie să ascundă sau să șteargă mesaje, iar ascunderea este o minciună pe care următorul cititor nu o poate vedea.
 
-### Branch versus fork
+### Ramură versus fork
 
-|                | Branch              | Fork                        |
+|                | Ramură              | Fork                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Ce se întâmplă   | Pointerul se mută   | Calea este copiată          |
+| Unde ajunge  | Aceeași conversație   | O conversație nouă          |
+| Cost           | Nimic             | O copie a ramurii      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Un fork copiază cu **id-uri noi**, în loc să partajeze rânduri. Două conversații care ar partaja rânduri ar arăta mesajele ulterioare ale celeilalte, iar asta este singurul lucru pe care un fork nu trebuie să îl facă.
 
-### Rewind rides the same pointer
+### Rewind folosește același pointer
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Perechea `checkpoint` / `rewind` din timpul rulării marchează o limită de tur curată și revine la ea după o explorare, păstrând un digest. Deoarece checkpointurile sunt persistate împreună cu transcriptul, o etichetă pe care modelul a stabilit-o înainte de o repornire ajunge tot acolo unde a fost stabilită. Un checkpoint al cărui țintă nu a supraviețuit unei tăieri este **eliminat**, nu ajustat la cea mai apropiată limită — un Rewind „la etichetă” care aterizează în altă parte este exact eșecul pe care o etichetă există ca să îl prevină.
 
-## Related
+## Vezi și
 
-- [Branch a conversation](/ro-RO/manual/ghiduri-practice/ramifica-conversatie/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/ro-RO/manual/concepte/contextul-instrumentelor/) — the other half of what fills a context window
-- [Slash commands](/ro-RO/manual/referinta/comenzi-slash/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Ramifică o conversație](/ro-RO/manual/ghiduri-practice/ramifica-conversatie/) — navigatorul de arbore, fork-urile și exportul
+- [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor/) — cealaltă jumătate din ce umple o fereastră de context
+- [Comenzi slash](/ro-RO/manual/referinta/comenzi-slash/) — `/compact`, `/shake`, `/context`, `/tree`

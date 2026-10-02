@@ -1,207 +1,214 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Điều khiển từ xa và di động
+description: Cách điện thoại tiếp cận máy chủ của bạn qua một relay được môi giới, niêm phong đầu-cuối thay vì một liên kết ngang hàng, và mô hình truy cập phân tầng giữ cho phạm vi tiếp cận đó luôn hẹp.
 slug: vi-VN/so-tay/khai-niem/dieu-khien-tu-xa
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center là một ứng dụng máy tính để bàn, nhưng công việc mà nó theo dõi
+không dừng lại khi bạn rời khỏi bàn. **Điều khiển từ xa** ghép nối điện thoại của
+bạn với `cc_server` của bạn, dùng **[Remote](https://remote.usectrl.dev/)**, ứng
+dụng đồng hành tại remote.usectrl.dev, để bạn theo dõi đội máy từ đó: đọc tin nhắn
+và phiếu, trả lời một agent, phân loại bảng tin của bạn, mà âm thanh, phiên âm, mã
+nguồn hay thông tin xác thực nằm trên máy chủ không bao giờ rời khỏi đó.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Hãy coi nó như một bạn đồng hành thiên về đọc của bàn làm việc. Nó không nhằm thay
+thế máy khách máy tính để bàn đầy đủ.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/) for how the two differ.
+:::note[Hai đường điều khiển từ xa khác nhau]
+Ứng dụng đồng hành trên điện thoại ghép nối với một `cc_server` qua một **relay
+WebSocket được môi giới** chở các khung JSON-RPC niêm phong đầu-cuối. **Bản dựng
+web** đầy đủ (và một máy tính để bàn trỏ tới máy chủ từ xa) là đường điều khiển
+từ xa còn lại; nó quay số tới `cc_server` qua WebSocket và dựng toàn bộ ứng dụng.
+Xem [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) để biết hai
+đường này khác nhau thế nào.
 :::
 
-## Transport
+## Vận chuyển
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Điện thoại tiếp cận `cc_server` qua một WebSocket: hoặc một kết nối trực tiếp
+(loopback, LAN, tailnet, hoặc `wss://`) hoặc một phòng được gác bằng lời mời trên
+một bộ môi giới tín hiệu chuyển tiếp các khung niêm phong. Không có kênh dữ liệu
+ngang hàng nào.
 
-## What the phone can do
+## Điện thoại làm được gì
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Chiếc điện thoại đã ghép nối chỉ với tới một lát cắt nhỏ, có chủ đích của bề mặt
+máy chủ:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Đọc** phiếu, agent, space cùng tin nhắn của chúng và bảng tin của bạn
+- **Trả lời**: gửi tin nhắn trong một space, cập nhật hoặc giao một phiếu, đánh
+  dấu một bài viết đã đọc hoặc đã lưu
+- **Chạy một playbook**: khởi tạo một mẫu kế hoạch đã lưu cùng các tham số của nó.
+  Việc này chỉ _đề xuất_ một kế hoạch; không có gì thực thi hay tiêu tốn cho tới
+  khi một người vận hành phê duyệt nó trong Plan Studio trên một máy khách đầy đủ
+- **Chuyển không gian làm việc**, từ chính bộ chọn trên điện thoại
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Đó gần như là toàn bộ. Một chiếc điện thoại là **chủ thể có đặc quyền thấp hơn**
+so với một máy khách đầy đủ. Nó không thể sinh tiến trình, tiêu ngân sách LLM, đẩy
+lên GitHub hay tạo không gian làm việc. Xem
+[mô hình truy cập](#mô-hình-truy-cập) để biết điều đó được thi hành chứ không chỉ
+là ý định như thế nào.
 
-## How the link is built
+## Liên kết được xây dựng như thế nào
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Kết nối đi trên một **relay được môi giới**: máy chủ tham gia một phòng được gác
+bằng lời mời trên một bộ môi giới `wss://` với tư cách chủ sở hữu, và mọi máy
+khách đã ghép nối — máy tính để bàn, web, điện thoại — cùng tham gia phòng đó
+bằng một token gia nhập có giới hạn thời gian. Ba thành phần kết hợp lại:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Thành phần                    | Vai trò                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (ứng dụng điện thoại)** | Ứng dụng web đồng hành, mặc định được lưu trữ tại `remote.usectrl.dev`, hoặc tự lưu trữ. Tải trong trình duyệt, giữ bản ghi ghép nối trong IndexedDB.                                                                                                                                                                                     |
+| **Bộ môi giới relay**         | Một relay `wss://` phi trạng thái (`cc_signaling_server`) chứa các phòng N chiều. Nó **chỉ chở các khung mờ đục**: mọi payload đều được niêm phong đầu-cuối giữa điện thoại và máy chủ, nên bộ môi giới không bao giờ thấy dữ liệu ứng dụng hay bí mật ghép nối và không bao giờ diễn giải những gì nó chuyển tiếp.                            |
+| **`cc_server`**               | Chủ sở hữu phòng. Nó trả lời các lời gọi của điện thoại qua chính bộ điều phối mà mọi máy khách khác dùng.                                                                                                                                                                                                                                   |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Một lời đề nghị ghép nối mang theo một **bản mô tả kết nối** liệt kê mọi đường tới
+máy chủ (LAN, tailnet, `wss://` công khai, relay) cùng dấu vân tay danh tính của
+nó. Bộ phân giải của điện thoại chọn đường với tới được tốt nhất và ghim dấu vân
+tay ở lần kết nối đầu tiên (TOFU); relay bảo đảm khả năng kết nối ngay cả khi
+không có đường trực tiếp nào, mà không bao giờ đọc được lưu lượng.
 
-## What the pairing payload is
+## Payload ghép nối là gì
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/) for the procedure. The anatomy is
-what matters here.
+Ghép nối được cấp từ ứng dụng và chuyển tới dưới dạng một liên kết sâu; xem
+[Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/) để biết
+quy trình. Điều đáng quan tâm ở đây là cấu trúc của nó.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Payload đi trong **URL fragment**, phần sau dấu `#` mà trình duyệt không bao giờ
+gửi tới máy chủ, nên host HTTPS của PWA không bao giờ thấy nó. Nó mang mọi thứ
+điện thoại cần để với tới máy chủ và chứng minh mình là ai: bản mô tả kết nối (mọi
+đường cộng dấu vân tay danh tính), một id thiết bị vừa được cấp, một khóa chia sẻ
+trước 32 byte và một dấu hết hạn. Điện thoại giải mã nó, lưu một bản ghi ghép nối
+cục bộ rồi gỡ bỏ fragment để bí mật rời khỏi URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Có hai dạng payload và chúng **không thể thay thế cho nhau**. Mã QR điện thoại
+được cấp từ bảng ghép nối trong ứng dụng chính là `PairingPayload` v2 ở trên, trỏ
+tới host PWA của Remote. `cc_server pair --client-url` phát ra một liên kết v1 cũ
+hơn, khác biệt (`{s, i, k}` — URL máy chủ, id thiết bị, khóa) chỉ dành cho máy
+khách **web**.
 
-They also differ in lifetime, which is easy to get wrong:
+Chúng cũng khác nhau về thời hạn, điều dễ bị hiểu nhầm:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Cấp bởi                               | Hạn của thông tin xác thực      |
+| ------------------------------------- | -------------------------------- |
+| Bảng ghép nối trong ứng dụng (`pairing.mint`) | 30 ngày, luôn luôn      |
+| `cc_server pair` trên dòng lệnh       | **Không** — thông tin xác thực không hết hạn |
 
-## The access model
+## Mô hình truy cập
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Một thiết bị đã ghép nối thì **đã xác thực nhưng không được tin cậy**. Nhiều cổng
+độc lập ngăn một lần ghép nối đã được duyệt (hoặc bị lộ) trở thành toàn quyền
+điều khiển máy chủ.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Tư cách thành viên, chứ không phải ghép nối, mới là ranh giới
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Một khóa ghép nối hợp lệ chứng minh bạn là _thiết bị nào_. Việc bạn được đọc hay
+thay đổi gì do **vai trò không gian làm việc** của bạn quyết định, được phân giải
+lại trong từng lời gọi, và do quyền cấp theo từng kho mã đối với bất cứ thứ gì để
+lộ nội dung kho mã. Một thiết bị giữ khóa hoàn toàn hợp lệ nhưng thuộc về người
+dùng không phải thành viên của không gian làm việc được nêu tên sẽ bị từ chối với
+"Not a member of this workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Ngưỡng vai trò được suy ra từ loại thao tác, trừ khi thao tác tự khai báo: thao
+tác đọc cần `guest`, thao tác thay đổi cần `member`, thao tác phá hủy cần `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Điện thoại là một bậc phiên thấp hơn
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Ngoài kiểm tra vai trò, một phiên điện thoại mang năng lực thấp hơn phiên máy tính
+để bàn hay phiên web. Các thao tác được khai báo chỉ dành cho máy khách đầy đủ sẽ
+bị từ chối với điện thoại trước khi trình xử lý chạy, bất kể người dùng đứng sau
+có đặc quyền cao đến đâu: cấp, liệt kê, đổi tên và thu hồi ghép nối thiết bị; đọc
+và đặt kết nối tunnel; sao lưu máy chủ và xuất/nhập không gian làm việc; phát hiện
+và kết thúc tiến trình; thăm dò adapter; cài đặt máy chủ; quản trị SSO; điều khiển
+đội máy; và tiếp quản hoặc trả lại một agent đang chạy.
 
-### 3. A default-deny tool allow-list
+### 3. Danh sách cho phép công cụ theo kiểu từ chối mặc định
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Riêng với bề mặt công cụ MCP (`tools/call`), một danh sách cho phép theo kiểu từ
+chối mặc định chi phối những công cụ mà điện thoại được phép gọi. Bất cứ thứ gì
+không có trong danh sách đều bị từ chối trước khi chạy. Danh sách này nặng về đọc
+và quan sát, cộng thêm một vài thao tác ghi **chỉ cục bộ** — một tin nhắn, một cập
+nhật phiếu, một đánh dấu bài viết — không tiêu ngân sách LLM, không sinh tiến trình
+và không chạm tới hệ thống bên ngoài.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Ví dụ những thứ bị từ chối: hỏi ý một agent, bắt đầu một lượt đánh giá AI, kết
+thúc một agent, xuất bản một lượt đánh giá lên GitHub, thuê hoặc sa thải agent,
+tạo một không gian làm việc.
 
-### 4. Per-call workspace scoping
+### 4. Phạm vi không gian làm việc theo từng lời gọi
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) invariant the rest of the
-product enforces.
+Máy chủ **không** giữ "không gian làm việc hiện tại" nào. Nó phi trạng thái theo
+thiết kế: mọi lời gọi thuộc phạm vi không gian làm việc đều phải nêu
+`workspace_id` mục tiêu trong tham số, và bộ điều phối từ chối thẳng lời gọi khi
+trường đó thiếu hoặc nêu một không gian làm việc mà máy chủ chưa đăng ký — trước
+khi bất cứ thứ gì mở cơ sở dữ liệu. Vì vậy điện thoại không bao giờ thừa hưởng
+hay trôi dạt sang phạm vi của máy khách khác, và nêu tên một không gian làm việc
+lạ cũng không ích gì, bởi kiểm tra tư cách thành viên ở cổng 1 vẫn được áp dụng.
+Đây chính là bất biến
+[cô lập không gian làm việc](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) mà phần
+còn lại của sản phẩm cũng thi hành.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Khung niêm phong đầu-cuối, khóa bằng khóa chia sẻ trước
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Mọi khung giữa điện thoại và máy chủ đều được niêm phong bằng khóa ghép nối;
+token gia nhập chỉ giúp máy khách vào được phòng, nó không giải mã gì cả. Bộ môi
+giới chỉ chuyển tiếp bản mã và không bao giờ thấy khóa. Một thiết bị đã bị thu hồi
+sẽ thấy thông tin xác thực của nó đã biến mất, nên nó **hỏng theo hướng đóng** khi
+kết nối lại.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Thông tin xác thực do ứng dụng cấp có thời hạn 30 ngày; quá hạn đó, cổng kết nối
+sẽ đánh trượt nó và điện thoại phải ghép nối lại. Việc thu hồi diễn ra trực tiếp:
+máy chủ theo dõi bảng thiết bị và cắt các phiên đang mở của thiết bị bị thu hồi
+trong vòng vài giây thay vì chờ lần kết nối tiếp theo.
 
-### 6. Rate limiting per principal
+### 6. Giới hạn tần suất theo từng chủ thể
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Một bộ giới hạn cửa sổ trượt khống chế lưu lượng công cụ từ xa ở 120 lời gọi mỗi
+phút, với mức trần phụ chặt hơn là 30 mỗi phút cho các thao tác thay đổi dữ liệu.
+Hạn mức thuộc về **chủ thể, chứ không phải phiên**: ba thiết bị của bạn cùng rút
+từ một hạn mức, nên một máy khách bị chiếm quyền không thể mua thêm dư địa bằng
+cách mở thêm phiên, và một thành viên ồn ào không thể bỏ đói những người khác.
 
-### 7. A broker that learns nothing
+### 7. Một bộ môi giới không biết gì
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Bộ môi giới relay cố tình đơn giản: nó chứa các phòng, chuyển tiếp khung niêm
+phong, và không giữ tài khoản, dữ liệu ứng dụng hay khóa nào. Các phòng được gác
+bằng lời mời và chỉ tồn tại tạm thời. Dữ liệu ứng dụng, âm thanh, phiên âm, mã
+nguồn và thông tin xác thực đều nằm lại trên máy chủ.
 
-## Live updates
+## Cập nhật trực tiếp
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Sau khi đã ghép nối, điện thoại nhận **cập nhật trực tiếp** dưới dạng khung thông
+báo — tin nhắn agent mới, phiếu được giao cho bạn, thay đổi trạng thái — phản chiếu
+chính thông báo của máy tính để bàn. Máy chủ phát những khung đó tới mọi phiên
+đang kết nối và bộ lọc không gian làm việc được áp dụng ở phía máy khách, nên
+những gì bạn thấy thuộc phạm vi không gian làm việc bạn đang xem.
 
-## Where it lives
+## Nằm ở đâu
 
-| Surface                                                                             | What it shows                                                                                               |
+| Bề mặt                                                                              | Hiển thị gì                                                                                                 |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **Cài đặt → Bạn → Thiết bị của bạn** (`/workspaces/:workspaceId/settings/you/devices`) | Các máy khách đã ghép nối kèm trạng thái trực tiếp, cộng nút **Ghép nối máy khách mới** (trình duyệt web, ứng dụng máy tính để bàn hoặc điện thoại) và thu hồi |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Bảng điều khiển này cũng cấp ghép nối cho trình duyệt hoặc ứng dụng máy tính để
+bàn thứ hai, không chỉ điện thoại — quy trình hoàn toàn giống nhau, chỉ khác liên
+kết sâu.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Điều khiển từ xa hoạt động phía máy chủ và **không** được phơi ra qua MCP. Điện
+thoại nói chuyện với bộ điều phối của chính máy chủ qua relay; nó không phải một
+máy khách MCP của một máy chủ bên ngoài.
 ::::
 
-## See also
+## Xem thêm
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): roles, membership and repo grants
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/): where remote control sits among the client tiers
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/): where remote control sits in the stack
-- [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): phạm vi theo từng lời gọi mà trang này dựa vào
+- [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): vai trò, tư cách thành viên và quyền cấp theo kho
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/): điều khiển từ xa nằm ở đâu trong các tầng máy khách
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/): điều khiển từ xa nằm ở đâu trong chồng lớp hệ thống
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)

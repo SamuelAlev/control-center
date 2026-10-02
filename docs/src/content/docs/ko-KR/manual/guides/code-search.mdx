@@ -1,120 +1,167 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: 코드 그래프로 코드 검색
+description: 저장소를 인덱싱하고 코드 그래프 도구로 심볼을 찾고, 변경이 무엇을 깨뜨릴지 확인합니다.
 slug: ko-KR/매뉴얼/사용-가이드/코드-검색
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+이 가이드에서는 저장소를 코드 그래프에 넣고, 리팩터 전에 실제로 품게 되는 질문 — 무엇이
+이것에 의존하는가 — 에 답하는 데 활용하는 방법을 보여 줍니다.
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+코드 그래프는 등록된 체크아웃을 tree-sitter로 파싱해 만든 심볼·엣지 데이터베이스입니다. 이
+도구들은 **에이전트를 대상으로** 하므로, 에이전트에게 요청하는 방식으로 사용합니다.
 
-## Before you start
+## 시작하기 전에
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+그래프는 Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby,
+C#, Swift, Kotlin, R, Assembly, MATLAB, Ada를 인덱싱합니다. 다른 언어의 파일은 파싱되지
+않으므로 `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`에
+나타나지 않습니다.
 
-Two more things shape what gets indexed:
+인덱싱 대상을 좌우하는 요인이 두 가지 더 있습니다:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- git 작업 트리에서는 파일 열거를 `git ls-files --cached --others --exclude-standard`에
+  맡기므로, 모든 `.gitignore`, 중첩 무시 파일, `.git/info/exclude`, 전역 제외 파일이
+  존중됩니다. `node_modules`와 빌드 산출물이 그래프에 들어오지 않는 이유가 여기에
+  있습니다.
+- 생성된 Dart는 이와 무관하게 제외됩니다. 생성 파일은 보통 커밋되므로 git만으로는 걸러지지
+  않고, 코드 생성이 실행될 때마다 계속 바뀝니다.
 
-## Get a repo indexed
+## 저장소 인덱싱하기
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/).
+체크아웃을 등록하면 `RepoAdded`가 발생하고, 해당 체크아웃의 `index_code` 파이프라인이
+자동으로 시작됩니다. [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)를
+참고하십시오.
 
-To re-index by hand:
+직접 다시 인덱싱하려면:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. **설정 → 워크스페이스 → 리포지토리**를 엽니다.
+2. 저장소 행에서 **코드 인덱싱** 버튼을 클릭합니다.
+3. 실행 중에는 버튼에 전체 대비 완료된 파일 수가 표시되고, 취소 컨트롤도 함께 나옵니다.
+   완료되면 심볼 개수와 함께 체크 표시로 바뀝니다.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+그래프는 워크스페이스, 저장소, 체크아웃별로 분할됩니다. 연결된 체크아웃이 하나의
+파티션이고, 각 스페이스 워크트리는 자체 파티션을 갖습니다(격리 저장소 id를 키로 사용).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+멈춘 것처럼 보이는 대기를 설명해 주는 두 가지 제한을 알아 둘 만합니다:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- 파일 워처는 호스트에서 한 번에 **하나의** 인덱스 실행만 허용하므로 두 번째 체크아웃은
+  기다립니다. `index_code` 파이프라인은 이와 별도로 워크스페이스당 실행 하나로
+  제한되므로, 같은 워크스페이스의 두 저장소는 대기열에 들어갑니다. 워크스페이스가 다르면
+  병렬로 인덱싱할 수 있습니다. 인덱서 자체는 **같은** 체크아웃에 대한 두 실행을
+  직렬화하여, 파이프라인 시작과 워처 스윕이 같은 대상을 두 번 파싱하지 못하게 합니다.
+- **휴면 스페이스**(지난 일주일 동안 메시지가 없는 스페이스)에 속한 워크트리는 감시하지도,
+  인덱싱하지도 않습니다. 연결된 체크아웃은 계속 감시합니다. 건너뛰기 결정은 5분 뒤 다시
+  확인되므로, 다시 활성화된 스페이스는 다시 포함됩니다.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[문법이 없으면 검색이 아니라 서버가 멈춥니다]
+tree-sitter와 그 문법들은 필수 네이티브입니다. 하나라도 누락되면 `cc_server`가 부팅을
+거부하면서 누락된 dylib 이름을 알려 줍니다. 증상은 서버가 시작되지 않는 것이며, 검색
+품질이 떨어지는 것이 결코 아닙니다. `scripts/natives/build_natives.sh`로 스테이징한 뒤
+서버 바이너리를 다시 빌드하십시오.
 :::
 
-## Find a symbol
+## 심볼 찾기
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+에이전트에게 검색을 요청하십시오. 도구는 `search_code`이고, 워크스페이스와 저장소가 모두
+필요합니다:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+저장소 id는 `list_repos`에서 가져옵니다. 선택적 `mode` 인수는 `keyword`, `semantic`,
+`hybrid` 중 하나이며 기본값은 hybrid입니다. 이름, 시그니처, 문서 주석에 대한 BM25와 벡터
+유사도를 융합한 방식입니다.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+각 결과에는 심볼의 id, 이름, 정규화된 이름, 종류, 파일 경로, 시작 줄과 끝 줄, 그리고
+시그니처가 있으면 그 시그니처가 담깁니다. **id**는 이 페이지의 다른 모든 도구에 넘겨 주는
+핸들입니다.
 
-When you know the exact name, look it up directly instead:
+정확한 이름을 알고 있다면 대신 직접 조회하십시오:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## 호출 추적하기
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+두 도구 모두 검색 결과의 `symbol_id`를 받고, 선택적 `limit`(기본값 50)을 추가로 받습니다:
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers`는 이 심볼로 들어오는 엣지가 있는 심볼을 반환하고, `code_callees`는 이
+심볼이 의존하는 심볼을 반환합니다.
 
-## Check what a change would break
+## 변경이 무엇을 깨뜨릴지 확인하기
 
-This is the tool the whole page exists for:
+이 페이지 전체가 존재하는 이유인 도구입니다:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+**역방향** 의존 반경을 계산합니다. 즉 `calls`, `extends`, `implements` 엣지를 따라 이
+심볼에 직접 또는 간접적으로 의존하는 모든 대상입니다(import, mix-in, 제네릭 참조는
+그래프에 저장되지만 여기서는 순회하지 않습니다). `depth`는 최대 홉 수이며 1에서 6
+사이이고 기본값은 2입니다.
 
-The result is three fields:
+결과는 세 개의 필드로 이루어집니다:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — 질의한 심볼
+- `impacted` — 도달 가능한 집합. 깊이 0의 루트를 포함하며, 각 항목은 루트로부터의
+  `depth`를 함께 지닙니다
+- `edgeCount` — 순회가 건넌 엣지 수. 엣지 자체가 아니라 개수입니다
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+이름을 바꾸거나 시그니처를 변경하기 전에 실행하고, 영향받는 목록을 범위로 삼아
+에이전트에게 주십시오.
 
-## Results are checked against the caller's own working copy
+## 결과는 호출자 자신의 작업 사본과 대조해 검증됩니다
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+에이전트가 호출자인 경우 스페이스 id가 자동으로 주입되고, 결과는 **그 스페이스의** 작업
+사본과 대조해 검증됩니다. 호출자의 트리에 파일이 더 이상 존재하지 않는 심볼은 생략되며,
+응답에는 `staleOmitted` 개수와 함께 해당 심볼의 인덱스가 오래되었다는 안내가 담깁니다.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+같은 질의에 대해 여러분과 에이전트가 다른 답을 얻을 수 있고, 한 스페이스의 에이전트가 다른
+스페이스의 에이전트와 다른 답을 얻을 수 있는 이유가 여기에 있습니다. 한 스페이스의 모든
+대화는 그 하나의 워크트리를 공유합니다. 검증은 실패 시 열린 방향으로 동작하여, 빈 답보다
+오래된 답을 선호합니다.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/).
+변경의 영향 범위를 알고 싶으면 에이전트에게 `code_impact`(또는
+`review_studio.blastRadius`)를 실행하라고 요청하십시오.
+[리뷰 컴퓨트](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)를 참고하십시오.
 
-## Semantic search needs the embedding model
+## 시맨틱 검색에는 임베딩 모델이 필요합니다
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+심볼과 팩트는 기록 시점에 임베딩되며, 이는 온디바이스 임베딩 모델이 설치되어 있을 때만
+이루어집니다. 그전까지는 `mode: "semantic"`과 하이브리드의 시맨틱 절반이 대조할 대상이
+없어 검색은 사실상 키워드 전용이 됩니다.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+인덱싱하기 전에 **설정 → 서버 → 진단 및 개인정보 보호 → 시맨틱 검색**에서 모델을
+설치하십시오. 심볼은 파일이 수집될 때 벡터를 얻습니다.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+또한 서버 바이너리를 다시 빌드하면 문법 dylib가 다시 스테이징되어 mtime이 바뀌고, 이로
+인해 모든 인덱스 체크포인트가 무효화되어 다음 실행에서 모든 체크아웃을 한 번 전부 다시
+순회합니다. 변경되지 않은 파일은 다시 해싱하지만 다시 추출하지는 않습니다.
 
-## What is in the graph
+## 그래프에 들어 있는 것
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**심볼 종류:** function, method, class, field, enum, constructor, getter, setter, typedef,
+extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**엣지 종류:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/ko-KR/매뉴얼/레퍼런스/mcp-도구/).
+이 도구들의 표준 시그니처는 [MCP 도구](/ko-KR/매뉴얼/레퍼런스/mcp-도구/)에 있습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
-- [Review compute (cohorts and axes)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
-- [Use the MCP server](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
+- [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
+- [리뷰 컴퓨트(코호트와 축)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
+- [MCP 서버 사용](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
 
-## Related concepts
+## 관련 개념
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/)
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)

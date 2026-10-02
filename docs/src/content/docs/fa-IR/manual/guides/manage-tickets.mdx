@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: ایجاد و مدیریت تیکت‌ها
+description: تیکت بسازید، آن را در چرخهٔ عمرش پیش ببرید، برچسب و پیوند بزنید و ثبت کنید که مالکیت هر کار با کیست.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+این راهنما نشان می‌دهد چگونه تیکت بسازید و مدیریت کنید.
 
-## Create a ticket
+## ساخت یک تیکت
 
-### From the UI
+### از رابط کاربری
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. در نوار کناری فضای کاری روی **تیکت‌ها** کلیک کنید.
+2. روی **تیکت جدید** بزنید.
+3. این موارد را پر کنید:
+   - **عنوان** — خلاصه‌ای کوتاه. تنها فیلد الزامی است.
+   - **شرح** — markdown، همراه با یک نوار ابزار قالب‌بندی.
+   - **وضعیت** — **برای انجام** (پیش‌فرض) یا **بک‌لاگ**. وضعیت‌های شروع‌شده و
+     پایانی از راه چرخهٔ عمر به دست می‌آیند، نه هنگام ساخت.
+   - **اولویت** — هیچ، فوری، بالا، متوسط یا پایین.
+   - **تخصیص‌یافته** — خودتان یا هر عاملی در فضای کاری.
+   - **پروژه** — گروه‌بندی اختیاری.
+4. روی **ایجاد** بزنید، یا نخست **ایجاد بیشتر** را روشن کنید تا پنجره برای
+   ورود سریع باز بماند.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+هیچ انتخابگر ارائه‌دهنده‌ای در پنجره نیست. تیکت در برابر ارائه‌دهندهٔ فعال تیکتِ
+فضای کاری ساخته می‌شود.
 
-### From an agent
+### از سوی یک عامل
 
-Ask an agent in a space:
+از یک عامل در یک فضا بخواهید:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> برای رفع مشکل مهلت ورود در اتصال‌های کند یک تیکت بساز.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+این درخواست ابزار MCP با نام `create_ticket` را فراخوانی می‌کند. اولویت در آن
+ابزار یک **عدد صحیح** است، نه یک نام:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| مقدار | اولویت |
+| ----- | ------ |
+| `0`   | هیچ    |
+| `1`   | فوری   |
+| `2`   | بالا   |
+| `3`   | متوسط  |
+| `4`   | پایین  |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+تنها `workspace_id` و `title` الزامی‌اند؛ `description`، `priority`، `assignee`
+(شناسهٔ یک عامل) و `team_id` اختیاری‌اند. این ابزار در دستهٔ «نوشتن در یک ردیاب
+خارجی» جای می‌گیرد و پیش از اجرا تأیید شما را می‌خواهد.
 
-## Update ticket status
+## تغییر وضعیت تیکت
 
-Tickets follow this lifecycle:
+تیکت‌ها این چرخهٔ عمر را دنبال می‌کنند:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,128 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`، `failed` و `cancelled` پایانی‌اند. `cancelled` از هر وضعیت ناپایانی قابل
+دسترسی است. `done` و `failed` از `inProgress` یا `inReview` قابل دسترسی‌اند؛
+`open` نیز می‌تواند مستقیم به `blocked` برود. انتخابگر وضعیت در رابط کاربری همهٔ
+وضعیت‌ها جز `failed` را فهرست می‌کند — عامل‌ها آن را با `fail_ticket` علامت
+می‌زنند.
 
-To change it, use any of:
+برای تغییر آن، از هر یک از این‌ها استفاده کنید:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- ردیف **وضعیت** در ستون ویژگی‌های تیکت،
+- زیرمنوی **وضعیت** در منوی راست‌کلیک یک تیکت در فهرست،
+- چیپ **وضعیت** روی نوار شناور پس از انتخاب چندگانهٔ تیکت‌ها.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[گراف چرخهٔ عمر، عامل‌ها را مقید می‌کند، نه شما را]
+هر تغییر وضعیتی که از رابط کاربری انجام شود با اجبار عبور می‌کند و گراف را
+کاملاً دور می‌زند — می‌توانید تیکت را به هر وضعیتی که انتخابگر فهرست می‌کند
+ببرید، از جمله بازگشایی یک تیکت `done`، `failed` یا `cancelled`. انتخابگر
+`failed` را به‌عنوان مقصد عرضه نمی‌کند. نمودار بالا بر عامل‌ها و خودکارسازی
+حاکم است: یک گذار غیرمجاز که ابزار MCP یا یک تطبیق‌دهنده بکوشد، ثبت و نادیده
+گرفته می‌شود، نه اعمال.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/).
+تغییرهای وضعیت رویدادهای دامنه منتشر می‌کنند (`TicketStatusChanged`،
+`TicketCompleted` و دیگران) که می‌توانند پایپ‌لاین‌ها را فعال کنند.
+[راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+را ببینید.
 
-## Assign a ticket
+## تخصیص یک تیکت
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. تیکت را باز کنید.
+2. در ستون ویژگی‌ها، **تخصیص‌یافته** را تنظیم کنید — خودتان، عضو دیگری از فضای
+   کاری، یا یک عامل.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)).
+:::caution[تخصیص هیچ کاری را شروع نمی‌کند]
+تخصیص مالکیت را ثبت می‌کند و بس. هیچ فضایی نمی‌سازد، هیچ وضعیتی را تغییر نمی‌دهد
+و هیچ عاملی را اعزام نمی‌کند — `TicketAssigned` یک سیگنال حسابرسی محض است که هیچ
+اعزام‌کننده‌ای پشتش نیست. برای اینکه عاملی دست به کار شود، در یک فضا به آن پیام
+بدهید (به [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+نگاه کنید).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+تنها استثنا: `TicketAssigned` یک نوع رویداد است که می‌توانید یک تریگر پایپ‌لاین
+به آن وصل کنید، تا قالب خودتان به یک تخصیص واکنش دهد.
 :::
 
-## Add labels
+## افزودن برچسب
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+برچسب‌ها به‌صورت دسته‌ای از فهرست تیکت‌ها اعمال می‌شوند، نه از یک تیکت تکی —
+ستون ویژگی‌ها هیچ کنترل برچسبی ندارد.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. نشانگر را روی یک ردیف در فهرست تیکت‌ها ببرید و چک‌باکس آن را تیک بزنید. هر
+   تعداد که لازم دارید تیک بزنید؛ به‌محض انتخاب شدن هر چیزی، یک نوار شناور
+   پدیدار می‌شود.
+2. در آن نوار، چیپ **برچسب‌ها** را باز کنید.
+3. یک برچسب انتخاب کنید. به هر تیکت انتخاب‌شده‌ای که آن را ندارد افزوده می‌شود؛
+   برچسب‌های موجود هرگز پاک نمی‌شوند. **پاک کردن برچسب‌ها** همهٔ آن‌ها را
+   برمی‌دارد. انتخابگر برچسب‌هایی را فهرست می‌کند که از قبل روی تیکتی در فضای
+   کاری هستند. عامل‌ها می‌توانند نامی تازه را از راه `update_ticket` یا
+   `tickets.patch` بیفزایند.
 
-## Link tickets
+## پیوند دادن تیکت‌ها
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+روابط روی کارت **روابط** در ستون ویژگی‌های تیکت قرار دارند، یا پشت **ربط دادن
+به** در منوی راست‌کلیک فهرست.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. تیکت را باز کنید و کارت **روابط** را بیابید.
+2. کنترل افزودن آن را بزنید و رابطه را انتخاب کنید:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| رابطه | معنا |
+| ----- | ---- |
+| **زیرمسئلهٔ…**          | والد این تیکت آن یکی است             |
+| **والدِ…**              | تیکت دیگر فرزند این یکی است          |
+| **مسدودشده توسط…**      | این تیکت توسط آن یکی مسدود شده است   |
+| **مسدودکنندهٔ…**        | این تیکت آن یکی را مسدود می‌کند      |
+| **مرتبط با…**           | متقارن، بدون جهت ضمنی                |
+| **تکراری از…**          | این تیکت تکرار آن یکی است            |
 
-3. Pick the target ticket.
+3. تیکت مقصد را انتخاب کنید.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**تکراری‌شده توسط** در کارت ظاهر می‌شود ولی در انتخابگر نیست — وارون **تکراری
+از** است و از تیکت دیگر تنظیم می‌شود. هر رابطهٔ فهرست‌شده با کلیک، تیکت
+پیوندشده را باز می‌کند و با بردن نشانگر روی آن برداشته می‌شود.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+رابطه‌های والد و زیرمسئله روی خود تیکت ذخیره می‌شوند، نه به‌صورت ردیف‌های پیوند؛
+بنابراین حذف یک والد به فرزندانش آبشار می‌شود (پایین را ببینید)، در حالی که
+پیوندهای مسدودکننده و مرتبط این‌گونه نیستند.
 
-## Add collaborators
+## افزودن همکاران
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+همکاران یک فهرست روی تیکت‌اند — چه کسی درگیر است و با چه نقشی.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. تیکت را باز کنید.
+2. کنترل شخص‌+ روی کارت **افزودن همکار** را بزنید.
+3. یک عامل انتخاب کنید.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+این سه نقش عبارت‌اند از **assignee**، **collaborator** (پیش‌فرض) و **reviewer**.
+انتخابگر رابط کاربری فقط عامل‌های فضای کاری را فهرست می‌کند و همیشه نقش پیش‌فرض
+را می‌نویسد؛ انسان‌ها می‌توانند به‌صورت ردیف ظاهر شوند، اما در آن منو عرضه
+نمی‌شوند. ابزار MCP با نام `add_ticket_collaborator` یک `role` می‌پذیرد.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/).
+افزودن همکار یک ردیف می‌نویسد و هیچ رویداد دامنه‌ای منتشر نمی‌کند؛ هیچ دسترسی‌ای
+به فضا نمی‌دهد. برای آوردن یک عامل به یک گفتگو، به‌جای آن آن را از سرصفحهٔ فضا
+به‌عنوان مشارکت‌کننده بیفزایید —
+[فضاها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/) را ببینید.
 
-## Delete a ticket
+## حذف یک تیکت
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+از **حذف تیکت** در پایین ستون ویژگی‌ها، منوی راست‌کلیک، یا کنش حذف نوار شناور
+پس از انتخاب چندگانه استفاده کنید.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[حذف فقط محلی است]
+تیکتی که از یک ردیاب خارجی آمده است، آنجا حذف نمی‌شود — هیچ ارائه‌دهنده‌ای
+پشتیبانی‌اش نمی‌کند — پس ممکن است در همگام‌سازی بعدی دوباره ظاهر شود. حذف
+همچنین آبشاری است: همکاران تیکت و هر تیکت فرزند با آن می‌روند.
 :::
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Delegate work to agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
-- [Organize work with projects](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/)
-- [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
-- [Ticket lifecycle reference](/fa-IR/راهنمای-کاربر/مرجع/چرخه-عمر-تیکت/)
+- [واگذاری کار به عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
+- [سازمان‌دهی کار با پروژه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/)
+- [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+- [مرجع چرخهٔ عمر تیکت(/fa-IR/راهنمای-کاربر/مرجع/چرخه-عمر-تیکت/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Tickets](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)
+- [تیکت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)

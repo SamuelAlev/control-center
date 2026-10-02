@@ -1,95 +1,105 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: OpenID Connect szolgáltató csatlakoztatása
+description: Kössön bármilyen OIDC-kibocsátót — Pocket ID, Keycloak, Auth0, Zitadel — a Control Center bejelentkezéséhez.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Ezt az útmutatót akkor használja, ha az identitásszolgáltatója **OpenID
+Connect** protokollt beszél SAML helyett. Bármilyen OIDC-tanúsított
+kibocsátó működik — a Pocket ID, a Keycloak, az Auth0, a Zitadel, a Google
+Workspace és társaik ugyanezeket a lépéseket követik; csak az a hely tér
+el, ahol a szolgáltató ezeket az értékeket megjeleníti.
 
-## Prerequisites
+## Előfeltételek
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- egy OIDC-szolgáltató, ahol klienst hozhat létre — jegyezze fel a
+  **kliens-ID**-ját és a **kibocsátó URL**-jét (az alap, amely alatt a
+  `.well-known/openid-configuration` dokumentum található), valamint a
+  **kliens titkát**, ha a kliens a bizalmas fajtába tartozik (a nyilvános
+  PKCE-klienseknek nincs ilyenük),
+- egy Control Center szerver, amelyet Ön igazgat (a **szervertulajdonos**).
 
-## Steps
+## Lépések
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt,
+   és váltson **OpenID Connect**-re.
+2. Adja meg a **Kibocsátó URL**-t és a **Kliens-ID**-t, valamint a
+   **Kliens titok (nem kötelező)** mezőt, ha a szolgáltató adott ki ilyet.
+   A Control Center a kibocsátó szabványos felfedezési dokumentumából
+   deríti fel a végpontokat — nincs szolgáltatónkénti konfiguráció.
+3. A szolgáltatónál regisztrálja a
+   `https://<your-server>/oidc/callback` átirányítást ehhez a klienshez.
+4. Ha a csoportjai a `groups`-tól eltérő claim alatt találhatók, állítsa
+   be a **Csoportok claim** nevét; képezze le a csoportokat szerepekre, ha
+   szeretné (az SSO soha nem adhatja meg a tulajdonos szerepkört).
+5. Válassza ki a tagsági szabályzatot (automatikus hozzáadás minden
+   munkaterülethez, vagy munkaterületenkénti meghívás megkövetelése),
+   kapcsolja be az **OpenID Connect használata a bejelentkezéshez**
+   lehetőséget, és nyomja meg a **Kapcsolat mentése** gombot.
+6. Nyomja meg a **Kapcsolat tesztelése** gombot — a szerver lekéri a
+   kibocsátó felfedezési dokumentumát, és ellenőrzi annak végpontjait, így
+   a zöld felugró értesítés azt jelenti, hogy a böngészős oda-vissza
+   útvonalon kívül minden működik. A kliensregisztráció ellenőrzéséhez
+   használja az [alábbi ellenőrzőt](#a-konfiguráció-ellenőrzése-erről-az-oldalról).
+7. Jelentkezzen be: a webes csatlakozási képernyő a **Bejelentkezés
+   ezzel: OpenID Connect** lehetőséget mutatja, vagy nyissa meg
+   közvetlenül a `https://<your-server>/oidc/login` címet.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+A claim-eket (e-mail, név, csoportok) a szerver az identitásszolgáltató
+tokenvégpontjáról olvassa TLS-en keresztül — a böngésző soha nem
+szolgáltatja őket, így helyi JWT-aláírás-ellenőrzés nem játszik szerepet.
+A kliensnek engedélyezni kell az `openid profile email` hatókör kérését,
+amely pontosan az, amit a Control Center kér.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Mivel a claim-eket kizárólag ez a TLS-csatorna hitelesíti, a kibocsátó
+URL-nek **https**-nek kell lennie — egy nyílt szövegű kibocsátó lehetővé
+tenné bármely a hálózaton elhelyezkedő támadó számára, hogy tömegesen
+hamisítson identitásokat. A `http` csak loopback-kibocsátók (`localhost`,
+`127.0.0.1`, `::1`) esetén elfogadott, helyi fejlesztéshez.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Nyilvános vagy bizalmas kliens?]
+Az alapértelmezett — és ajánlott — forma a **nyilvános kliens**
+engedélyezési kód folyamattal és **PKCE**-val (RFC 7636): a szerveren
+tárolt egyszer használatos code verifier helyettesíti a titkot, a
+tokencsere pedig ahhoz az engedélyezési kéréshez kötődik, amely elindította.
+Nincs kiszivárogtatható titok, és egy ellopott engedélyezési kód
+használhatatlan a verifier nélkül. Egyes szolgáltatók „SPA” vagy „native”
+kliens típusnak nevezik ezt a létrehozásnál.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Ha a szolgáltatója inkább **bizalmas** klienst adott ki, akkor vagy
+jelölje meg a klienst nyilvánosként a szolgáltatónál (a PKCE mindkét
+esetben bekapcsolva marad), vagy illessze be a kliens titkát a kapcsolat
+**Kliens titok (nem kötelező)** mezőjébe. A titok a szerver 0600
+jogosultságú titokfájljában tárolódik (soha nem az adatbázisban),
+`client_secret_post` formában kerül a tokenvégpontra, és soha nem kerül
+vissza RPC-n keresztül; ha mentéskor üresen hagyja a mezőt, a tárolt titok
+megmarad. Ha egy bejelentkezés a tokencserénél meghiúsul, a szervernapló
+megnevezi a szolgáltató saját hibáját (az `invalid_client` szinte mindig
+azt jelenti, hogy a titok hiányzik vagy hibás).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim).
+:::note[Elérhetőség]
+Maga a bejelentkezés böngészőn keresztül történik: a kibocsátó csak
+visszairányítja a felhasználó böngészőjét a `/oidc/callback` címre, a
+szerver pedig kimenő HTTPS-hívást indít a tokenvégpontra — a kibocsátó
+felől nem szükséges bejövő kapcsolat, így egy NAT mögötti szerver is
+működik, amíg a felhasználók böngészői elérik (LAN, VPN, Tailscale vagy
+alagút). **A SCIM-provisionálás kivétel**: az IdP közvetlenül hívja a
+szerverét, ami alagutat vagy nyilvános URL-t igényel — lásd
+[felhasználók provisionálása SCIM-mel](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim).
 :::
 
-## Check your configuration from this page
+## A konfiguráció ellenőrzése erről az oldalról
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Az alábbi ellenőrző a böngészőjében fut. Közvetlenül lekéri a kibocsátója
+felfedezési dokumentumát, így ez az oldal soha nem látja azt, és a szerver
+szabályait alkalmazza: a dokumentummal egyező https-kibocsátót, a kibocsátó
+saját originján található végpontokat, a PKCE S256-ot és a klienstípusához
+szükséges token-hitelesítési módot. Kliens-ID-vel és szervercímmel meg tud
+nyitni egy próbabejelentkezést, amely megmutatja, hogy a kliens és annak
+átirányítási URI-ja regisztrálva van-e. Soha nem kéri a kliens titkát.
 
 <SsoCheck kind="oidc" />

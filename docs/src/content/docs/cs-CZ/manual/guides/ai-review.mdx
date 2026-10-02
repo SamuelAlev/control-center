@@ -1,152 +1,157 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Používejte AI kontrolu
+description: Spusť na PR pipeline pr_review, přečti zjištění a verdikt a kontrolu zveřejni na GitHub.
 slug: cs-CZ/prirucka/navody/ai-kontrola
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Tenhle návod ukazuje, jak nechat recenzenty zkontrolovat pull request a jak
+výsledek zveřejnit na GitHub.
 
-## Start an AI review
+## Spusť AI kontrolu
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Otevři PR a přejdi na záložku **Přehled**
+2. V řádku akcí otevři nabídku ⋯ a zvol **Zeptat se AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Položka se ukáže jen u otevřeného PR. Je to akce před sloučením. Stejné
+tlačítko **Zeptat se AI** je i na prázdném stavu záložky **Kontrola**, dokud
+žádná kontrola není.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center spustí předpřipravenou pipeline `pr_review` a otevře záložku
+**Kontrola** daného PR, takže průběh jde sledovat. Pipeline:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Otevře vlastní prostor kontroly daného PR. Jeho izolovaný worktree má PR
+   checkoutnutý na head
+2. Rozešle recenzenty podle úrovně kontroly pracovního prostoru. Ve výchozím
+   stavu tři, předpřipravené agenty **qa**, **architect** a **engineer**,
+   paralelně. Jazyk ani doména se nedetekují
+3. Nechá vedoucího agenta (CEO), aby jejich zjištění složil do souvislého
+   průvodce
+4. Finalizuje: roztřídí zjištění podle shody a spočítá verdikt. Když asociace
+   dospěje do `awaiting approval`, na záložce Kontrola se objeví **Zveřejnit na
+   GitHub**
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Jak hluboko kontrola jde, určuje **úroveň kontroly** pracovního prostoru:
+`light` (jeden recenzent), `balanced` (tři, výchozí) nebo `thorough` (všech
+pět, navíc specialisté na zabezpečení a výkon). Nastavuje se v **Nastavení →
+Pracovní prostor → Obecné**, na kartě **Politika pracovního prostoru**. Lehčí
+úroveň zapíše stejně zjištění a hned na začátku jich nahlásí méně.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/cs-CZ/prirucka/koncepty/ai-kontrola/) for how the pieces fit together.
+Všichni recenzenti píší do jediného prostoru kontroly daného PR, a proto jdou
+jejich zjištění porovnat. Jak do sebe díly zapadají, je v
+[AI kontrola](/cs-CZ/prirucka/koncepty/ai-kontrola/).
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/cs-CZ/prirucka/navody/odeslani-review-agentu/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/).
+`pr_review` má jen ruční spouštěč. Aby se spouštěla na každý zveřejněný PR,
+přidej si spouštěč. Viz
+[Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/). Spustit
+ji jde i přímo z GitHubu, bez spouštěče pipeline: zmiň na PR bota serveru, nebo
+přidej štítek `ai-review`. Viz
+[Mluvte s Control Center z GitHub PR](/cs-CZ/prirucka/navody/konverzace-v-github-pr/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Když toast hlásí „Pro tento pull request už běží kontrola“, jedna už běží.
+Zůstaň na záložce **Kontrola**, nebo otevři **Pipelines** a najdi ji.
 
-## Read the findings
+## Přečti zjištění
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Recenzenti zapisují zjištění jako **uzly kontroly** v prostoru kontroly. Každý
+nese:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Pole           | Popis                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| Druh           | `bug`, `suggestion`, `recommendation`, `question` nebo `ticket`                            |
+| Priorita       | P0 (kritická) → P3 (drobnost)                                                              |
+| Kategorie      | `security`, `stability`, `data_integrity`, `correctness`, `performance` nebo `maintainability` |
+| Soubor a řádek | Kam je zjištění ukotvené                                                                   |
+| Původní kód    | Kód, kterého se zjištění týká                                                              |
+| Navržený kód   | Navrhovaná oprava                                                                          |
+| Jistota        | Jak jistý si je recenzent                                                                  |
+| Stav           | `open` → `consensus-ready` → `resolved` nebo `dismissed`                                   |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Do **consensus-ready** se zjištění dostane až tehdy, když ho potvrdí _jiný_
+recenzent. Agent vlastní zjištění potvrdit nemůže, takže názor jednoho
+recenzenta sám od sebe nepostoupí.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/cs-CZ/prirucka/navody/vypocet-kontroly/) for what the pass produces.
+Záložka **Kontrola** ukazuje seznam zjištění. Jde filtrovat podle druhu a
+stavu a má přepínač zamítnutých zjištění, vedle artefaktu, který zveřejnil
+agent skládající průvodce. Deterministický pohled — kohorty, víceosý přehled,
+smluvní a vizuální diffy — se počítá na serveru, ale v aplikaci nemá plochu.
+Co průchod vyrobí, popisuje
+[Výpočet kontroly](/cs-CZ/prirucka/navody/vypocet-kontroly/).
 
-## Check the disagreements panel
+## Podívej se na panel neshod
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Když dva recenzenti ukotví zjištění na stejný soubor a řádek, ale ohodnotí je
+hodně jinak — priority vzdálené o dvě a víc úrovní, nebo jeden to nazve `bug`
+a druhý `suggestion` — nad seznamem zjištění se objeví panel neshod. Čti je
+jako první. Tam se názory recenzentů rozcházejí a tvůj úsudek má největší cenu.
 
-## Read the verdict
+## Přečti verdikt
 
-When the lead agent finalizes, it computes a **verdict**:
+Když vedoucí agent finalizuje, spočítá **verdikt**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Verdikt   | Význam                                           |
+| --------- | ------------------------------------------------ |
+| **Ship**  | Nic, co by blokovalo                             |
+| **Hold**  | Problémy, které se mají vyřešit před sloučením  |
+| **Block** | Kritické problémy, které se musí opravit         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Verdikt nese souhrnné skóre jistoty a počty zjištění podle priority.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Osy kontroly se do něj pak složí a umějí ho jen **zpřísnit**. Osa s bránou,
+která selže, vynutí **Block**. Osa s bránou, která nedoběhla (`partial`) nebo
+se vůbec nespustila (`unavailable`), vynutí aspoň **Hold**. Chybějící důkaz
+bránu nikdy neotevře.
 
-## Publish the review to GitHub
+## Zveřejni kontrolu na GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Zveřejnění je samostatný krok a schválně ho pouští uživatel. Pipeline
+`pr_review` nechá kontrolu v Control Center a na GitHub nic neposílá.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Na záložce **Kontrola** počkej, až se objeví **Zveřejnit na GitHub**
+2. Stiskni **Zveřejnit na GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center odešle **jednu** revizi na GitHub. Zjištění už vyřešená nebo
+zamítnutá se přeskočí. Tlačítko zahrne každé zbývající otevřené zjištění a při
+**Ship** odešle `APPROVE`. (Nástroj MCP `publish_review_to_github` má pořád
+výchozí jen zjištění potvrzená kolegou a neschválí, dokud nepředáš
+`approve_on_ship`.) Zjištění s kotvou na soubor a řádek se stanou vloženými
+komentáři. Všechno ostatní splyne do těla shrnutí a každé nese patičku
+"— Control Center AI review", aby byl zdroj jednoznačný. Verdikt **Block** se
+odešle jako `REQUEST_CHANGES`, **Hold** jako `COMMENT` a **Ship** jako
+`APPROVE` z tohoto tlačítka. Toast pak hlásí **Zveřejněno**. Revize jde pod
+identitou aplikace serveru.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Když GitHub odmítne vloženou kotvu, protože řádek není součástí diffu, celá
+revize se pošle znovu a každé zjištění se složí do těla. Nic se potichu
+nezahodí.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Zveřejnění hlídají guardraily]
+`pr_review.publishReview` deklaruje třídu akce `prPublish` a prochází úzkým
+místem guardrailů. Když je vyřešené rozhodnutí `prompt` a není připojený žádný
+schvalovatel, zveřejnění se zamítne. Guardraily při nejistotě zavírají.
+Explicitní pravidlo nastav v Nastavení → Pracovní prostor → Oprávnění agentů,
+pokud má běžet bez dohledu.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Ostatní vestavěné pipeline na GitHub posílají rovnou: `cross_review`,
+`pr_triage`, `ticket_to_pr` a `pre_merge_gate` končí krokem komentáře. Jen
+`pr_review` výstup podrží pro tebe.
 
-## Dispatch reviewers yourself
+## Recenzenty odešli sám
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/cs-CZ/prirucka/navody/odeslani-review-agentu/).
+Když chceš určit, které role PR zkontrolují a na které soubory se každá podívá,
+použij v existujícím prostoru kontroly nástroj MCP `dispatch_reviewers`, nebo
+do pipeline přidej uzly recenzentů. Obě cesty, včetně přesného podpisu
+nástroje, jsou v
+[Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/).
 
-## Related guides
+## Související návody
 
-- [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Dispatch reviewer agents](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
-- [Review compute (cohorts and axes)](/cs-CZ/prirucka/navody/vypocet-kontroly/)
+- [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
+- [Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
+- [Výpočet kontroly (kohorty a osy)](/cs-CZ/prirucka/navody/vypocet-kontroly/)
 
-## Related concepts
+## Související koncepty
 
-- [AI review](/cs-CZ/prirucka/koncepty/ai-kontrola/)
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/)
+- [AI kontrola](/cs-CZ/prirucka/koncepty/ai-kontrola/)
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/)

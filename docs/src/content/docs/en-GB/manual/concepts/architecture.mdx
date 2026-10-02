@@ -3,11 +3,12 @@ title: Architecture
 description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
 dateModified: 2026-09-19
 slug: en-GB/manual/concepts/architecture
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
 ## Overview
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organised around business domains (features), with strict dependency rules enforced by an automated architecture test.
 
 ## A thin client over a headless server
 
@@ -70,7 +71,7 @@ Real-time collaboration is **authoritative-server + per-field last-writer-wins (
 
 ## Ports and adapters
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organised by concern:
 
 | Port                   | Adapter location                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |

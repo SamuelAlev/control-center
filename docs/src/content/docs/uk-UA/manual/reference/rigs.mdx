@@ -1,359 +1,372 @@
 ---
 title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+description: Кожна поверхня rig, бекенд, дієслово дії, стан життєвого циклу, порт, типове значення й контракт — повний фактичний каталог.
 slug: uk-UA/керівництво/довідка/rigs
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/uk-UA/керівництво/поняття/rigs/); to open a machine, follow [the
-guide](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/).
+Лише факти. Про модель, що за ними стоїть, читайте [Rigs та ізольовані
+середовища](/uk-UA/керівництво/поняття/rigs/); щоб відкрити машину, дотримуйтеся
+[посібника](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/).
 
-## Surfaces and backends
+## Поверхні та бекенди
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Поверхня | Керує | Бекенд | Значення | Обмежений вихід |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Термінал (exec) | Оболонка через канал exec ВМ | мікроВМ | `smolvm` | Так |
+| Браузер | Headless Chromium (CDP), Firefox (WebDriver BiDi) або WebKit (W3C WebDriver) | мікроВМ | `smolvm` | Так |
+| Комп'ютер | Робочий стіл X11: введення через гіпервізор, захоплення через агент гостя | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (неприскорений запасний варіант, ніколи не вибирається автоматично) | Так |
+| Android | Android через ADB | Емулятор Google | `android-emulator` | **Ні** — емулятор керує власною мережею |
+| iOS | Симулятор iOS через WebDriverAgent | CoreSimulator | `ios-simulator` | **Ні** — мережа йде за хостом Mac |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Термінал і поверхня `computer_use` поділяють значення поверхні `computer`;
+термінал розрізняють за маркером образу exec, і його ніколи не використовують
+повторно як керований робочий стіл (чи навпаки). Одна розмова повторно
+використовує одну термінальну машину.
 
-## Browser engines
+## Браузерні рушії
 
-| Engine | Value | Protocol | Live view | Stills |
+| Рушій | Значення | Протокол | Живий перегляд | Нерухомі знімки |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (типово) | Chrome DevTools Protocol | Скринкаст — браузер надсилає кадри, коли сторінка перемальовується | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Опитувані нерухомі знімки (у BiDi немає скринкасту), обмежено 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (класичний) | Опитувані нерухомі знімки, транскодовані ffmpeg хоста | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Rig виконує **один** рушій протягом усього свого життя. Одна розмова може
+містити один rig **на рушій** — саме це уможливлює порівняння пліч-о-пліч:
+відкрити «Firefox (VM)» поруч із «Chromium (VM)» — це дві машини, і закриття
+однієї лишає іншу працювати.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Передайте `engine` у `rig.open` або в інструмент `browser_use`. Невідому назву
+відхиляють, а не підставляють типову, — просити браузер і тихо отримувати
+інший означає відповідати на питання про сумісність неправильною відповіддю.
 
-Engine-specific limits, stated rather than worked around:
+Обмеження, властиві рушіям, названі прямо, а не обійдені:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** не має перезавантаження з обходом кешу (він відхиляє `ignoreCache`
+  у BiDi цілком), тож жорстке перезавантаження — це звичайне перезавантаження.
+- **WebKit** також не має перезавантаження з обходом кешу й не має потоку
+  консолі (вивід захоплюють, перехоплюючи `console.*` після кожного переходу,
+  тож усе, залоговане під час завантаження, пропускається — кожен видобуток
+  консолі про це каже), а для живого перегляду йому потрібен `ffmpeg` на хості.
+- **Жоден із них** не надає дерева доступності платформи через свій протокол,
+  тож `extract (a11y)` повертає наближення, похідне від DOM, і позначене як
+  таке.
+- **Жоден із них** не може прийняти справжнє перекидання файлу; поле вибору
+  файлу все одно можна спрямувати на шляхи всередині машини.
 
-## Machine images
+## Образи машин
 
-| Surface | Image | Fetched |
+| Поверхня | Образ | Звідки беруться |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Термінал | `ubuntu:24.04`, закріплений за дайджестом | Автоматично під час першого завантаження, через власну гейтовану мережу машини |
+| Браузер (Chromium, Firefox, WebKit) | `debian:trixie-slim`, закріплений за дайджестом, плюс власні пакети рушія | Автоматично під час першого завантаження, потім кешуються як прогрітий пак |
+| Комп'ютер | Образ робочого столу qcow2 з Chromium, Firefox, WebKit і тим самим базовим набором CLI, як у ранера, розміщеного на GitHub, який прогріває термінал | **Імпортувати** в Налаштування → Сервер → Rigs (завантаження, закріплені контрольною сумою, де вони опубліковані) |
+| Android | Системні образи Google | Через Android SDK |
+| iOS | Середовище виконання Xcode Simulator плюс закріплений за контрольною сумою WebDriverAgent | Середовище виконання через Xcode; місток автоматизації з Налаштування → Сервер → Rigs |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Після першого завантаження кожного різновиду мікроВМ сервер кешує попередньо
+розпаковану копію в каталозі даних і завантажує кожну наступну машину з неї —
+зокрема попередньо прогріті образи з уже встановленими пакетами. Термінал
+прогріває набір CLI-інструментів у стилі ранера, розміщеного на GitHub (`git`,
+`gcc`, `python3`, `jq`, `rsync`, архівні утиліти та решту базового набору apt;
+не Docker і не мовні toolcache). Образ qcow2 для Комп'ютера вбудовує ті самі
+назви CLI під час збірки образу, поруч із XFCE і трьома браузерами. Кожен
+браузер прогріває свій рушій. Усі три рушії поділяють основу Debian, але
+ніколи не поділяють пак: кеш має ключ з образу, рушія **і** ревізії аудіо
+(`audio-v1-<engine>`), бо машина, прогріта для одного рушія — або до того, як
+PulseAudio і ffmpeg увійшли до складу робочого навантаження, — не має в собі
+нічого з іншого. Пак термінала має ключ з ревізії набору інструментів
+(`tools-v1`) з тієї самої причини: пак, прогрітий до того, як компілятор
+увійшов до образу, не повинен обслуговувати машину, у якій він має бути.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Немає готового образу автоматизації, вартого того, щоб його брати, — Chromium із
+`chromedp/headless-shell` компілює і ALSA, і PulseAudio геть, тож він ніколи не
+може видати звук; єдиний підтримуваний образ Firefox у 33× більший за основу
+Debian і все одно не містить `socat`; підтримуваного образу WebKit немає
+взагалі. Тож кожен рушій встановлюється під час першого запуску (`chromium`,
+`firefox-esr` або `webkit2gtk-driver`) і під час цього звертається до архівів
+Debian (`deb.debian.org`, `security.debian.org`, `cloudfront.debian.net`).
+Chromium — це пакунковий бінарник, який запускають як `chromium --headless=new`.
 
-### Per-workspace custom images
+### Власні образи для робочого простору
 
-| Setting key | Overrides |
+| Ключ налаштування | Що перекриває |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Образ Terminal (VM) |
+| `rigs.smolvm.browserImage` | Образ Browser (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Записують через сховище налаштувань робочого простору, доступне лише адмінам
+(Налаштування → Сервер → Rigs → Власні образи (цей робочий простір)). Значення
+має бути посиланням на реєстр — локальні шляхи, архіви та рядки, схожі на
+прапорці, відхиляють і на полі, і знову під час завантаження. Недійсне збережене
+значення ігнорують гучно, і натомість завантажується типове. Власний реєстр
+образу (плюс відомі супутні blob-CDN для Docker Hub, GHCR, Quay, GitLab і GCR)
+допускають через шлюз виходу для витягування.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Контракт образу термінала** — наявний `bash`; `git`, `curl`, `socat`
+попередньо встановлені *або* основа apt Debian/Ubuntu (ізольоване середовище
+встановлює ці три плюс набір CLI-інструментів у стилі ранера, розміщеного на
+GitHub, під час першого запуску: компілятори, Python 3, `jq`, архівні утиліти,
+`rsync`. Мовні toolcache і Docker не встановлюються).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Контракт образу браузера** — основа apt Debian/Ubuntu (або вже встановлені
+пакети) з `bash` і `socat`, плюс бінарник `chromium`, який сервер запускає сам
+як `chromium --headless=new` з DevTools на гостьовому loopback `9223`,
+переспрямованому на гостьовий порт `9222`. PulseAudio і ffmpeg встановлюються
+під час першого запуску для аудіоканалу. Не збирайте
+`FROM chromedp/headless-shell`: `headless.gn` угорі компілює і ALSA, і
+PulseAudio геть, тож цей бінарник не може видавати звук. Перекриття
+застосовується **лише до rig Chromium** — команда робочого навантаження, яку він
+завантажує, належить Chromium, і передати її Firefox чи WebKit означало б
+запустити бінарник, якого там немає. Rig Firefox або WebKit ігнорує його гучно
+й завантажує свій закріплений образ.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Порти автоматизації** — кожна браузерна машина переадресовує рівно один порт
+loopback хоста на гостьовий `9222`. За ним: DevTools Chromium і віддалений агент
+Firefox сидять на гостьовому loopback `9223` із реле `socat` попереду (обидва
+безумовно прив'язуються до loopback); драйвер WebKit приймає `--host` і сам
+прив'язується до гостьового NIC. Firefox додатково перевіряє заголовок `Host`
+проти власного порту, тож клієнт надсилає авторитет гостьової сторони, а не
+той, до якого звертався.
 
-## Action verbs
+## Дієслова дій
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Кожну дію розбирають повністю: некоректне навантаження повертає повідомлення з
+назвою поля, а ніколи не виняток. Дієслова спостереження (позначені ○)
+лишаються дозволеними, поки керування утримує людина; дієслова, що змінюють
+стан, відхиляються.
 
 ### `computer_use`
 
 `screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
 `right_click`, `middle_click`, `double_click`, `triple_click`,
 `left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
+`hold_key` (0–60 с), `type`, `wait`○ (0–60 с), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Координати — це гостьові пікселі в поточному режимі гостя; кожен знімок екрана
+зазначає розмір дисплея. Сполучення клавіш використовують написання X11
+(`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` приймає `selection`: `clipboard` (те, що заповнює ctrl+C,
+типове), `primary` (виділення-копіювання в X11) або `xdnd` (перетягування
+в польоті). Порожній результат — нормальна відповідь для всіх трьох.
+`clipboard_write` приймає лише `text` — зображення й файли їдуть файловим
+каналом, бо аргументи дії зберігаються в журнал аудиту, і байтам зображень там
+не місце. Вміст буфера обміну повертається в огорожі як ненадійні дані.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (лише http/https), `reload` (`hard` необов'язковий), `stop_loading`,
+`click` (селектор або координата), `fill`, `type`, `key` (назви клавіш DOM),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+необов'язковий), `set_viewport` (мін. 320×240), `history`, `wait_for`○ (селектор,
+0.1–30 с), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Видобутий вміст сторінки повертається в огорожі як ненадійні дані.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+У браузера рівно один буфер обміну, тож `clipboard_read` не приймає
+`selection`. Обидва дієслова буфера обміну потребують **захищеного контексту**:
+сторінка, віддана звичайним `http://`, взагалі не має API буфера обміну, і
+дієслово каже про це, а не повідомляє порожній, — там використовуйте `type`,
+який вставляє в місці каретки, не проходячи через буфер обміну.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 мс), `type`, `key` (псевдоніми `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power` або будь-який `KEYCODE_*`),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(обмежено worktree rig і каталогом даних сервера), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` і `shell`.
+`shell` приймає список argv і виконується всередині Android, ніколи через
+оболонку хоста; він покриває діагностику для розробників, як-от `logcat`,
+`dumpsys` і `pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` не має дієслів буфера обміну. Від Android 10 читати буфер обміну
+може лише застосунок у фокусі.
 
 ### `ios_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`tap`, `swipe` (50–5000 мс), `type`, `key` (`enter`, `backspace`, `tab`,
+`escape`, клавіші зі стрілками або один друкований символ; необов'язкові
+модифікатори `command`, `control`, `option` і `shift`), `home`, `lock`,
+`unlock`, `screenshot`○, `ui_dump`○, `install_app` (каталог `.app` симулятора,
+обмежений worktree rig або каталогом даних сервера), `start_app`, `stop_app`,
+`uninstall_app`, `open_url` і `spawn`. `spawn` приймає argv і виконується
+всередині симулятора через `simctl`; він ніколи не викликає оболонку хоста.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Координати — це **точки** екрана iOS, а не пікселі знімка екрана. Живий потік
+тримає фіксований розмір симулятора й додає до нього рамку (letterbox), а не
+змінює розмір пристрою. Передавання тексту буфера обміну з хоста в симулятор і
+з симулятора в хост використовує ту саму політику дозволів для кожного
+користувача й кожного напрямку, що й інші rig; файли та зображення канал
+буфера обміну iOS не приймає.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Кожен rig створює власний пристрій CoreSimulator і сеанс WebDriverAgent. Його
+закриття зупиняє WebDriverAgent, вимикає й видаляє цей пристрій і прибирає його
+запис із реєстру. Rig iOS працюють лише на сервері macOS із Xcode, встановленим
+середовищем виконання iOS і закріпленим містком автоматизації. Вони не надають
+звуку, мікрофона, перекидання файлів, оболонки хоста чи гарантії ізольованої
+мережі.
 
-### Management tools
+### Інструменти керування
 
-| Tool | Description |
+| Інструмент | Опис |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Показати rig робочого простору з поверхнею, статусом, дисплеєм і контролером |
+| `rig_close` | Знищити rig і відкинути його диск |
 
-## Lifecycle
+## Життєвий цикл
 
-| Phase | Meaning |
+| Фаза | Значення |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Завантажується; деталь статусу дослівно передає поточний крок |
+| `ready` | Доступний і приймає дії |
+| `parked` | Припаркований за простоєм: vCPU зупинено, RAM усе ще резидентна; наступна дія його пробуджує |
+| `closing` | Завершує роботу |
+| `closed` | Зник; рядок лишається для журналу аудиту |
+| `failed` | Загинув або так і не піднявся; його можна відрізнити, щоб інтерфейс міг запропонувати повтор |
 
-| Close reason | Fired when |
+| Причина закриття | Спрацьовує, коли |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Попросила людина або агент |
+| `idleTimeout` | Простій понад 2× вікна простою або витіснення через пам'ять |
+| `ttlExpired` | Вичерпався жорсткий час життя |
+| `conversationEnded` | Розмова-власник завершилася |
+| `workspaceGone` | Робочий простір видалено або втрачено членство |
+| `serverShutdown` | Сервер зупиняється |
+| `backendFailure` | Гіпервізор під ним загинув |
 
-## Defaults and ceilings
+## Типові значення та межі
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Значення | Термінал | Браузер | Комп'ютер | Мобільні |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Пам'ять | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU | 2 | 2 | 4 | 4 |
+| Жорсткий TTL | 8 год | 2 год | 2 год | 2 год |
+| Вікно простою | 45 хв | 15 хв | 15 хв | 15 хв |
+| Екран під час завантаження | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Нерухомі знімки каналу агента обмежено **1280×800**; людський канал узгоджує
+  до **2560×1600**.
+- Типовий бюджет резидентної пам'яті хоста для всіх rig — **12 GB**, рахований
+  у резидентних мегабайтах (припаркована ВМ усе одно тримає свою RAM).
+  Витіснення — за найдавнішим використанням, і воно ніколи не забирає машину,
+  якою хтось керує, за якою спостерігає або в якій має відкритий термінал.
+- Відкритий термінал або канал спостереження закріплює rig проти паркування та
+  прибирання за простоєм; жорсткий TTL усе одно діє.
 
-## Ports and dev domains
+## Порти й dev-домени
 
-| Port | Where | Reserved for |
+| Порт | Де | Зарезервовано для |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Гостьовий термінал | Мультиплексор портів, яким їде кожна переадресація |
+| `9222`, `9223` | Гостьовий браузер | Реле й кінцева точка автоматизації (WebKit прив'язується до `9222` напряму й не використовує реле) |
+| `80`, `443` | Гостьовий loopback браузера | HTTP/HTTPS-канали dev-домену |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Виявлення опитує TCP-порти, які слухає гостьовий термінал, приблизно кожні
+  ~4 с, на боці сервера.
+- Щонайбільше **16** портів переадресовують автоматично на кожен rig; більше —
+  лише згадують у журналі, не переадресовують.
+- Переадресація на боці хоста прив'язується до loopback, віддаючи перевагу
+  власному номеру порту гостя; **Поділитися в локальній мережі** додає порт LAN,
+  призначений ОС.
+- Dev-домени мають відповідати `name.test` або `name.localhost` (нижній
+  регістр, мітка до 63 символів). Один домен відображається на один порт.
+- HTTPS для dev-домену використовує локальний для сервера CA (EC P-256, під
+  `<dataDir>/rigs/tls/`, ключі 0600 і ніколи не в гості) з одним кінцевим
+  wildcard-сертифікатом для `*.test` / `*.localhost`. Немає `openssl` на хості —
+  немає каналу HTTPS; звичайний HTTP усе одно маршрутизується.
 
-## Egress defaults
+## Типові значення виходу
 
-| Surface | Default allowlist |
+| Поверхня | Типовий список дозволених хостів |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Термінал | Базова лінія розробника пісочниці (хостинги коду, реєстри пакетів, провайдери моделей) + дзеркала apt Ubuntu + власний хост хостингу коду з worktree |
+| Браузер | `usectrl.dev` (сайт продукту) — плюс архіви Debian під час першого завантаження кожного рушія, поки він встановлює свої пакети. Домашня сторінка — це локальний документ `file://`, і виходу їй не потрібно |
+| Комп'ютер | Порожній — заборонено все — доки виклик не надасть хости |
+| Мобільні | Не застосовується (мережею керує емулятор) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Кожен мікроВМ додатково отримує хости реєстру свого образу — лише для
+витягування. Набір дозволених хостів брокера облікових даних виводять із того
+самого списку: для хоста, до якого гість не може дістатися, токен не випускають.
 
-## Clipboard and file transfer
+## Буфер обміну та передавання файлів
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Обидва напрямки копіювання й вставлення, а також перетягування файлів усередину
+й назовні. Доступно людині, яка керує rig; агент отримує буфер обміну через
+дієслова вище й жодного передавання файлів (у нього вже є оболонка всередині
+ізольованого середовища).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Перетинання буфера обміну — для кожного користувача й кожного напрямку.
+Вставлення з хоста в rig дозволене за замовчуванням; копіювання з rig у хост
+запитує підтвердження (дозвіл на десять хвилин або завжди дозволяти в
+Налаштування → Сервер → Rigs → Доступ до буфера обміну). Обидва вибори
+незалежні й ніколи не є налаштуванням робочого простору.
 
-| Lane | Route | Carries |
+| Канал | Маршрут | Переносить |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Буфер обміну | `GET`/`POST /rig/clipboard/<rigId>` | Текст, один PNG/JPEG (≤16 MB) і гостьові шляхи файлів у буфері обміну |
+| Файли | `POST /rig/files/<rigId>` | До 64 файлів, ≤256 MB кожен і ≤512 MB на перекидання, з необов'язковою точкою перекидання в гостьових пікселях |
+| Файли | `GET /rig/files/<rigId>?p=<base64url path>` | Байти одного файлу, назад назовні |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, не RPC.** RPC-сокет закриває з'єднання на вхідному фреймі понад
+  256 KB — це захист від DoS, який правильний для команд JSON і фатальний для
+  вставленого знімка екрана. Байти їдуть таким самим маршрутом, яким уже їдуть
+  кадри rig і аудіо зустрічей.
+- **Автентифікація** — це підписана ціль `rig-files:<workspaceId>/<rigId>` плюс
+  членство в робочому просторі — окрема ціль, тож URL, випущений, щоб
+  *спостерігати* машину, не може також записувати в неї файли.
+- **Перехоплення застосовується.** Запис у буфер обміну й перекидання файлів
+  змінюють стан, і їх відхиляють, поки керування утримує хтось інший; читання
+  буфера обміну й вичитування файлу назовні — це спостереження, і їх не
+  відхиляють.
+- **Куди потрапляють перекинуті файли:** `~/Drops` (робочий стіл), `~/drops`
+  (термінал — поряд із worktree, ніколи всередині нього, тож перекинутий файл
+  ніколи не з'являється як незафіксована зміна), `/tmp/cc-drops` (браузер).
+  Каталог вибирає сервер; той, хто викликає, не може його назвати. Наявні
+  файли ніколи не перезаписують — ім'я, що збігається, лягає як `2-name.ext`.
+- **Що кажуть гостю:** сторінка браузера отримує справжню подію перекидання в
+  запитаній точці (`Input.dispatchDragEvent`); робочий стіл отримує файли разом
+  з їхніми URI у своєму буфері обміну, бо жоден хост не може синтезувати
+  перетягування XDND у довільний інструментарій без привілейованого демона
+  всередині гостя. Відповідь каже, який із двох варіантів стався.
+- **Перетягування назовні** працює лише на робочому столі й читає
+  `XdndSelection` гостя, поки перетягування триває. Навантаження, ідентичне
+  тому, яке гість уже тримав на момент початку натискання, вважають застарілим
+  виділенням із завершеного перетягування, а не новим, — у X немає кроку
+  «перетягування завершено».
+- **Вимоги до образу:** образ робочого столу має бути протоколу 2 або новішого
+  (зібраний після появи підтримки буфера обміну). Старіший образ відповідає
+  404, і застосунок каже перезібрати його, а не повідомляє про зламану машину.
+- **Журнал аудиту записує форму, ніколи вміст**: рядки `clipboard_read`,
+  `clipboard_write`, `drop_files` і `read_file` містять кількості, розміри та
+  шляхи. Буфер обміну — це місце, де облікові дані живуть по кілька секунд за
+  раз, і ніщо з цього не записується.
 
-## Guardrails, events, storage
+## Обмеження, події, сховище
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/uk-UA/керівництво/довідка/доменні-події/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Інструменти rig оголошують клас дій **`enclosureControl`** (плюс
+  `networkEgress` і `processSpawn` в інструментах використання; `mobile_use` та
+  `ios_use` також оголошують `packageInstall`). `rig_close` оголошує
+  `enclosureControl`; `rig_list` не оголошує жодного. Дозволено за
+  замовчуванням; режими лише для читання забороняють його цілком; регулятор
+  автономності для кожного простору може знизити його до рівня «спершу
+  запитати».
+- Доменні події: `RigClosedEvent` (з її причиною закриття),
+  `RigControlChanged` (перехоплення / повернення керування), `RigReaped`
+  (простій, TTL або витіснення за пам'яттю, з агентом, який керував). Відкриття
+  rig не є подією. Див. [Доменні події](/uk-UA/керівництво/довідка/доменні-події/).
+- Сховище: `rig_sessions` і `rig_action_log` у базі даних кожного робочого
+  простору. Журнал дій записує кожну подію введення з її суб'єктом і монотонною
+  послідовністю для кожного rig; набраний текст редагують до довжини та хешу,
+  перш ніж записати.
+- Каталог даних: `rigs/images/` (імпортовані образи qcow2), `rigs/smolvm/`
+  (стан середовища виконання кожного rig), `rigs/smolvm-packs/` (попередньо
+  розпаковані пакети машин), `rigs/tls/` (CA dev-домену), `rigs/run/` (оверлеї
+  та сіди QEMU).
+- Маршрути: живий перегляд — це вкладка в просторі або на сторінці PR;
+  `/settings/server/rigs` — екран налаштувань Rigs.

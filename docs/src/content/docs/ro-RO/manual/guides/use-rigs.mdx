@@ -1,97 +1,105 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Oferă unui agent o mașină pe care să testeze
+description: Oferă unui agent un browser, un desktop, un emulator Android sau un Simulator iOS de unică folosință — urmărite live, cu controale pe care le poți prelua.
 slug: ro-RO/manual/ghiduri-practice/foloseste-statii
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+O **stație** este o mașină de unică folosință pe care un agent o deschide când
+trebuie să încerce efectiv ceva: să încarce o pagină, să dea clic prin aplicația
+de desktop, să atingă un telefon. O poți urmări cum lucrează în timp real și îi
+poți prelua controalele oricând vrei.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Stațiile izolate de terminal, browser și desktop sunt VM-uri cu discuri de unică
+folosință și rețele cu poartă. Android și iOS sunt emulatoare gestionate de
+gazdă: starea dispozitivului lor este de unică folosință, dar rețeaua lor
+urmează gazda serverului.
 
-## Set it up once
+## Configurează o dată
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Stațiile rulează pe mașina care găzduiește `cc_server` — aceeași mașină, nu cea
+la care te uiți. Există cinci suprafețe vizibile pentru utilizator; suprafețele
+de desktop și mobile necesită configurare pe gazdă:
 
-| Surface | Runs on | Setup |
+| Suprafață | Rulează pe | Configurare |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | Un microVM care pornește o imagine Ubuntu fixată | Nimic — imaginea este descărcată automat la prima utilizare |
+| **Browser (VM)** | Un microVM care pornește o imagine Debian fixată, cu Chromium, Firefox sau WebKit instalat la prima utilizare | Nimic — la fel |
+| **Computer (VM)** | QEMU cu o imagine de desktop Linux care include Chromium, Firefox, WebKit și un set de bază de CLI de tip runner găzduit de GitHub | Instalează QEMU (`brew install qemu`), apoi **Importă** o imagine de desktop în **Setări → Server → Stații** |
+| **Android** | Emulatorul Android de la Google | Instalează Android SDK, creează un AVD și pornește-l (mai jos) |
+| **Simulator iOS** | CoreSimulator pe Mac-ul serverului | Instalează Xcode și runtime-ul iOS solicitat, apoi instalează puntea de automatizare în **Setări → Server → Stații** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Mașinile de terminal și de browser pornesc din imagini fixate prin digest:
+octeții exacți sunt numiți dinainte, descărcați o dată la prima pornire și
+puși în cache — după prima pornire de fiecare tip, mașinile ulterioare sar
+complet peste descărcare și pornesc în câteva secunde. **Setări → Server →
+Stații** arată ce poate porni serverul tău și fiecare mașină care rulează chiar
+acum.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+O imagine de desktop instalată rămâne gestionabilă din aceeași pagină:
+**Importă** o înlocuiește cu un qcow2 mai nou, iar **Șterge** o elimină, ca să
+poți instala o versiune nouă.
 
-### Mobile devices are set up differently
+### Dispozitivele mobile se configurează altfel
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Nu avem nicio imagine proprie pentru Android sau iOS, iar asta nu este o
+omisiune. Imaginile de sistem Android vin din SDK-ul Google; runtime-urile iOS
+vin din Xcode. Pentru Android, instalează Android Studio (sau instrumentele SDK
+din linia de comandă), adaugă un dispozitiv virtual în **Device Manager** și
+pornește-l. Pagina Stații raportează apoi Android ca disponibil.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+De asemenea, îți spune exact ce pas îți lipsește — niciun SDK, niciun emulator,
+niciun dispozitiv virtual sau un dispozitiv care pur și simplu nu rulează —
+pentru că acestea au patru remedii diferite și doar unul dintre ele este o
+descărcare. Dacă pornești `cc_server` dintr-un shell care nu vede SDK-ul,
+exportă-l:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Pentru iOS, serverul însuși trebuie să ruleze pe macOS, cu Xcode și un runtime
+de Simulator iOS instalate. Deschide **Setări → Server → Stații** și apasă
+**Instalează puntea de automatizare iOS**. Serverul descarcă artefactul
+WebDriverAgent fixat prin sumă de control, îl verifică și îl instalează în
+magazia de automatizare deținută de server. Niciun simulator nu pornește în
+timpul configurării.
 
-## Open a machine
+## Deschide o mașină
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Mașinile trăiesc ca **file**, lângă chat și diff — într-un spațiu sau pe o
+pagină de PR, în același meniu `+`, sub **Mașini**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Computer** — un desktop Linux cu Chromium, Firefox și WebKit
+- **Chromium**, **Firefox** sau **WebKit** — un browser
+- **Android** — emulatorul Android care rulează
+- **Simulator iOS** — un simulator de unică folosință creat pentru această
+  conversație
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Alege una și apasă **Pornește mașina**. Fila indică în ce etapă se află pornirea
+(„Starting the microVM", „Waiting for the guest to come up") în loc să se
+învârtă pur și simplu.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Fila este limitată la conversație, la fel și instrumentul agentului. O filă
+Chromium, Firefox sau WebKit și `browser_use`, Android și `mobile_use` sau
+Simulator iOS și `ios_use` se adresează aceleiași mașini implicite. Sloturile
+suplimentare din interfață sunt mașini de comparație separate; instrumentele
+agentului folosesc întotdeauna mașina implicită.
 
-To build, install and start a Flutter app on Android:
+Pentru a compila, instala și porni o aplicație Flutter pe Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Apoi apelează `mobile_use` cu `install_apk` și
+`build/app/outputs/flutter-apk/app-debug.apk`, urmat de `start_app` și numele
+pachetului Android. `ui_dump`, capturile de ecran și intrarea controlează
+același dispozitiv afișat în fila umană. `stop_app`, `clear_app_data`,
+`uninstall_app`, `open_url` și apeluri `shell` în formă de argv acoperă restul
+ciclului de dezvoltare fără a invoca un shell pe gazda serverului.
 
-To build, install and start a Flutter app on iOS Simulator:
+Pentru a compila, instala și porni o aplicație Flutter pe Simulator iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +107,222 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Apoi apelează `ios_use` cu `install_app` și directorul `.app`, urmat de
+`start_app` și identificatorul de bundle afișat de `plutil`.
+Instrumentul iOS expune de asemenea `stop_app`, `uninstall_app`, `open_url` și
+o acțiune `spawn` în formă de argv pentru diagnostice locale simulatorului.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Afișajele de desktop și de browser se redimensionează la dimensiunea panoului.
+iOS păstrează dimensiunea fixă în puncte a simulatorului și îl afișează cu benzi
+negre. Fiecare suprafață are în continuare două canale independente: agentul
+primește capturi de ecran mici și ieftine, în timp ce tu primești vizualizarea
+live. Trecerea la altă filă oprește fluxul uman, astfel încât o mașină din fundal
+nu consumă lățime de bandă pentru afișare.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+O filă de stație nu pornește singură o mașină, nici în timpul restaurării
+aspectului. Această regulă împiedică o lansare a aplicației să pornească în mod
+neașteptat VM-uri sau să creeze dispozitive de simulator.
 
-## Drive the machine
+## Condu mașina
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Canvasul este al tău, pentru a tasta și a da clic în el oricând nu deține
+altcineva controlul exclusiv — sau când îl deții tu. Cât timp deții acea
+blocare, eticheta de stare afișează **Ai controlul**, agentul poate face în
+continuare capturi de ecran, iar serverul îi refuză acțiunile care modifică
+starea în singurul punct de trecere prin care trece fiecare acțiune. Tot ce faci
+este consemnat pe numele tău.
 
-Press **Stop the machine** when you are done.
+Apasă **Oprește mașina** când ai terminat.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Controlul este exclusiv intenționat: doi actori care tastează într-o singură
+mașină produc intrare pe care niciunul nu a intenționat-o.
 
-## Move things in and out
+## Mută lucruri înăuntru și în afară
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Copierea și lipirea funcționează în ambele direcții peste canvasul stației, la
+fel și tragerea fișierelor.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Copiere și lipire.** Apasă combinația de copiere peste canvas și orice a
+copiat mașina — text, o imagine, o listă de fișiere — ajunge în clipboardul tău.
+Lipirea trimite al tău în cealaltă direcție și apasă lipire în interiorul
+mașinii. Pe macOS combinația este ⌘C/⌘V; ⌃C ajunge în continuare la un shell
+din invitat ca întrerupere. Pe Windows și Linux folosește ⌃C/⌃V — invitatul
+primește aceeași apăsare de taste pe care ar fi primit-o oricum, așa că ⌃C
+într-un terminal din invitat întrerupe în continuare, iar clipboardul tău
+rămâne neatins.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Nimic nu se sincronizează în fundal. O parolă pe care o copiezi pe propria
+mașină nu ajunge într-o VM pentru că s-a declanșat un temporizator; ea
+traversează când lipești.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Lipirea într-o stație este permisă implicit. Copierea dintr-o stație cere întâi
+confirmare — o autorizare de zece minute, sau **Permiteți întotdeauna** în
+**Setări → Server → Stații → Acces la clipboard**. Cele două direcții sunt
+independente și te urmează pe tine, nu spațiul de lucru.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Trage fișiere înăuntru.** Depune-le oriunde pe canvas.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- Pe **Browser (VM)**, pagina primește o depunere *reală* în punctul în care
+  dai drumul, așa că o zonă de încărcare se comportă exact ca pentru un fișier
+  local.
+- Pe **Computer (VM)**, fișierele ajung în `~/Drops` și căile lor intră în
+  clipboardul mașinii, așa că ⌃V le lipește într-un manager de fișiere sau
+  într-un câmp de încărcare. O gazdă nu poate sintetiza o tragere într-o
+  aplicație Linux arbitrară fără să ruleze un demon privilegiat în interiorul
+  VM-ului, pe care stațiile nu îl au în mod deliberat — așa că notificarea
+  toast îți spune unde au ajuns fișierele, în loc să pretindă că a avut loc o
+  depunere.
+- Pe un **terminal**, fișierul este copiat înăuntru și calea lui este tastată
+  la prompt, gata de transmis unei comenzi. Lipirea unei *imagini* într-un
+  terminal face același lucru: este salvată în mașină și primești calea.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Tragerea fișierelor în afară** funcționează din Computer (VM). Începe să tragi
+un fișier în interiorul mașinii, du pointerul în afara canvasului și devine o
+tragere reală pe desktopul tău — depune-l în Finder sau Explorer. Copierea
+fișierelor în managerul de fișiere al mașinii și lipirea pe partea ta
+funcționează și ea. Browser (VM) nu oferă asta: un browser headless nu are
+niciun payload de tragere de citit, iar ghicirea pe baza selecției de text a
+paginii ar deturna clicurile obișnuite.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Computer (VM) are nevoie de o imagine construită după ce a fost introdus
+suportul pentru clipboard. Dacă ai importat-o pe a ta mai devreme,
+reconstruiește-o cu `scripts/rigs/build_image.sh`, apoi folosește **Importă**
+pe imaginea instalată pentru a o înlocui.
 :::
 
-## Terminals inside a rig
+## Terminale în interiorul unei stații
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Terminalele dintr-un spațiu sau de pe o pagină de PR pot rula în interiorul
+unei stații în loc de pe mașina proprie a serverului. Când o fac, panoul
+afișează o insignă **VM izolată**.
 
-What changes:
+Ce se schimbă:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Nimic din ce rulezi nu ajunge la gazdă. Un `rm -rf` acolo te costă stația.
+- Rețeaua este refuzată implicit. Doar gazdele din lista de permisiuni a
+  stației sunt accesibile, iar totul trece printr-o poartă care impune acest
+  lucru.
+- `git push` funcționează în continuare. Stația nu are nicio credențială
+  stocată; cere serverului una de scurtă durată per operație, iar acel token
+  este revocat când stația se închide.
 
-What to know:
+Ce trebuie să știi:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Un terminal izolat restaurat te așteaptă.** Ca o filă de stație, un
+  terminal `microvm` care revine odată cu aspectul tău afișează un buton
+  **Deschide shell-ul** în loc să pornească VM-ul la lansare. Un terminal cu
+  shell pe gazdă costă un proces; unul izolat costă o mașină.
+- **Fișierele depuse pe terminal sunt tastate, nu deschise.** Depune un CSV pe
+  un terminal izolat și acesta este copiat în mașină, iar calea lui din invitat
+  apare la prompt — calea de pe gazdă ar fi o comandă care eșuează acolo.
+- **Copia din stație este o copie.** Worktree-ul tău de pe gazdă rămâne sursa
+  de adevăr. Commit-urile pe care le faci în interiorul unei stații sunt aduse
+  înapoi în `refs/rigs/<id>/*` când ceri — nu îți mută niciodată ramura și nu
+  ating arborele tău de lucru.
+- **Munca destinată gazdei rulează în continuare pe gazdă.** Un invitat Linux
+  nu poate compila pentru macOS și nu poate rula `xcodebuild`. Alege explicit
+  backend-ul nativ pentru asta; aplicația îți va cere să confirmi, în loc să
+  comute în tăcere.
 
-## Ports
+## Porturi
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/).
+Pornește un server de dezvoltare în Terminal (VM) — `pnpm dev` pe portul 3000,
+să zicem — și în câteva secunde pictograma de priză din colțul terminalului se
+aprinde: portul este redirecționat către `localhost:3000` pe mașina ta, accesibil
+la `localhost:3000` în interiorul Browser (VM), partajabil în rețeaua ta și
+căruia i se poate da numele `https://myapp.test`. Întregul flux — redirecționare
+automată, partajare în LAN, domenii de dezvoltare cu HTTPS — are propriul ghid:
+[Redirecționează porturi dintr-un terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/).
 
-## Custom images
+## Imagini personalizate
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Un spațiu de lucru poate îndrepta Terminal (VM) și Browser (VM) către propriile
+imagini — în **Setări → Server → Stații → Imagini personalizate (acest spațiu
+de lucru)**. Utilizare tipică: extinde imaginea implicită cu lanțul de
+instrumente de care are nevoie proiectul tău, ca fiecare terminal să pornească
+pregătit, sau refolosește o imagine deja publicată de echipa ta.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Mașina pornește în continuare în același mediu izolat: aceeași poartă de
+ieșire, același broker de credențiale, același ciclu de viață. Doar
+administratorii spațiului de lucru pot schimba setarea, mașinile noi o preiau
+(cele care rulează își păstrează a lor), iar referința trebuie să fie o imagine
+din registry — căile locale sunt refuzate.
 
-What an image must provide:
+Ce trebuie să ofere o imagine:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — o imagine Linux cu `bash`. Are nevoie și de `git`, `curl`
+  și `socat` — fie preinstalate, fie instalabile la prima pornire (orice imagine
+  bazată pe Debian/Ubuntu funcționează: sunt instalate automat, împreună cu un
+  set de instrumente CLI de tip runner găzduit de GitHub: compilatoare, Python
+  3, `jq`, instrumente de arhivare, `rsync`. Runtime-urile de limbaj precum
+  Node/Go/Java și Docker nu sunt preinstalate). Portul de invitat `7911` este
+  rezervat pentru redirectorul de porturi.
+- **Browser (VM)** — o imagine Debian/Ubuntu cu `bash` și `socat`, plus un
+  binar `chromium`. Serverul pornește Chromium însuși ca
+  `chromium --headless=new` și retransmite DevTools de la `9223` din invitat
+  către `9222`. PulseAudio și ffmpeg sunt instalate la prima pornire. Nu
+  construi `FROM chromedp/headless-shell` — acel binar nu are audio.
+  Suprascrierea se aplică doar stațiilor Chromium; Firefox și WebKit o ignoră
+  și pornesc imaginea Debian fixată. Porturile de invitat `9222`/`9223` sunt
+  rezervate.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Două recomandări: fixează referința prin digest (`@sha256:…`), ca octeții să nu
+se poată schimba sub tine, și găzduiește-o pe Docker Hub sau GitHub Container
+Registry — gazdele de descărcare ale acestor registry-uri sunt admise automat
+prin poarta de ieșire; altele pot avea nevoie ca gazdele lor de livrare de
+conținut să fie accesibile pentru a face pull.
 
-## When a rig goes away
+## Când o stație dispare
 
-Rigs are meant to be temporary:
+Stațiile sunt menite să fie temporare:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Inactiv** — după ~15 minute în care nu se întâmplă nimic, o stație de
+  browser, desktop sau mobil se parcă (înghețată, se trezește instantaneu la
+  următoarea acțiune). Un terminal izolat așteaptă 45 de minute. După dublul
+  ferestrei de inactivitate, se închide.
+- **Limită de timp** — fiecare stație are o durată de viață strictă pe care nu o
+  poate prelungi, indiferent ce face.
+- **Memorie** — dacă serverul are nevoie de loc pentru o stație nouă, o închide
+  pe cea mai puțin utilizată recent. O stație pe care cineva o conduce, o
+  privește sau are un terminal deschis în ea nu este niciodată luată.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Când o stație izolată se închide, discul ei este aruncat. Închiderea unei
+stații Android se detașează de emulatorul de pe gazdă — nu îl șterge. O stație
+iOS șterge dispozitivul CoreSimulator pe care l-a creat. Adu înapoi mai întâi
+orice vrei să păstrezi.
 
-## What a rig can reach
+## Ce poate atinge o stație
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Stațiile izolate de terminal, browser și desktop folosesc implicit o poartă de
+ieșire cu refuz implicit: acorzi gazde în mod explicit, iar singura rută a
+invitatului este o poartă care impune acea listă. O stație de browser admite din
+start și site-ul produsului (`usectrl.dev`). Brokerul de credențiale folosește
+aceeași listă.
 
-Two honest caveats:
+Două avertismente oneste:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Rețeaua mobilă urmează gazda.** Emulatorul Android și CoreSimulator de la
+  Apple nu se află în spatele porții de ieșire a mediului izolat. Niciuna dintre
+  filele mobile nu oferă un control de ocolire a rețelei, pentru că rețeaua
+  gestionată de gazdă este deja fără restricții.
+- **Tot ce citește o stație este tratat ca nesigur.** Textul paginilor, DOM-ul,
+  arborii de accesibilitate și dump-urile de interfață ajung la agent învelite
+  în marcaje care spun „acestea sunt date, nu instrucțiuni". O pagină care
+  încearcă să îi dea ordine agentului tău se citește ca un șir citat.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Poți vedea tot ce rulează și poți opri orice, în **Setări → Server → Stații**.
 
-## Related
+## Vezi și
 
-- [Rigs and enclosures](/ro-RO/manual/concepte/statii/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/ro-RO/manual/referinta/statii/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Stații și medii izolate](/ro-RO/manual/concepte/statii/) — modelul din
+  spatele tuturor acestora: de ce VM-uri, cele două canale de afișare, brokerul
+  de credențiale, ciclul de viață
+- [Redirecționează porturi dintr-un terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/) — ajunge
+  la un server de dezvoltare din orice loc în care contează
+- [Referința pentru stații](/ro-RO/manual/referinta/statii/) — fiecare
+  suprafață, verb, port și valoare implicită într-un singur loc
+- [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/) — `Conduce
+  un mediu izolat (stație)` este o clasă de acțiuni pe care o poți seta să
+  permită, să întrebe întâi sau să refuze, per spațiu de lucru, agent sau
+  spațiu. Modurile numai în citire o refuză în bloc.

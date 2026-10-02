@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: 以結構方式重構程式碼
+description: 讓代理按形狀而非文字尋找並重寫程式碼，並在改動落地之前先行審閱。
 slug: zh-HK/手冊/操作指南/結構化重構
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+本指南說明如何讓代理進行大範圍的機械式改動——codemod、大量 API 遷移、你想清除的某種模式——做法是結構化搜尋與重寫，並在寫入任何內容之前先把改動暫存起來供你審閱。
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` 按**形狀**匹配程式碼。`ast_edit` 負責重寫。`resolve` 則提交或丟棄。
 
-## Before you start
+## 開始之前
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+結構化工具涵蓋程式碼圖所解析的語言：Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB 與 Ada。它們需要預先備妥 tree-sitter 語法，而在正式組建中一向如此——缺少語法會令伺服器停止，而不是令搜尋降級。
 
-## Find the shape first
+## 先找出形狀
 
-Never rewrite something you have not looked at. Ask the agent to search:
+絕不要重寫你沒親眼看過的東西。請代理搜尋：
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> 找出每一處我們對剛做過 null 檢查的可為 null 值呼叫 `dispose()` 的地方。
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+輸出是 `file:line`，以及每一處匹配到的原始碼。
 
-### What the pattern syntax buys you
+### 模式語法為你帶來什麼
 
-| Token      | Matches                                    |
+| 符記       | 匹配                                       |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | 任何單一節點，會被捕獲                     |
+| `$$$NAME`  | 任何一串同層節點——引數、陳述式             |
+| `$_`       | 任何東西，但不以任何名稱捕獲               |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+最關鍵的一點：**同一個模式中重複出現的 `$NAME` 必須捕獲相同的文字**。
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+它會找到處置自己所檢查對象的守衛。它**不會**找到 `if (a != null) b.dispose()`——而那通常正是你在找的那個 bug。純文字手段根本無法表達這一點。
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[它無法匹配字串或註解內部的內容]
+模式由與該檔案相同的語法解析，因此寫在文件註解或字串常值裡的 `dispose(x)` 並不是呼叫，也不會被匹配。這正是它勝過 `grep` 的全部理由。
 :::
 
-### When the pattern finds nothing
+### 當模式什麼都找不到時
 
-Two things to try, in order:
+依序試兩件事：
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **先縮小它。** 先試 `foo($X)`，再試 `if (a) { foo($X); }`。一個本身不是合法程式碼的模式，往往也不是你想找的結構。
+2. **指明語言。** 只有當 `path` 指向單一檔案時，`language:` 才會被推斷出來。
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+沒有任何解析上下文接受的模式，會被報告為無法解析——工具會如實以告，而不是對一個從未按它表面樣子被解讀的東西報告「沒有匹配」。
 
-## Rewrite, and look before it lands
+## 重寫，並在改動落地之前先看過
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+結果是一份**提案**：
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+此時磁碟上還沒有任何東西。讀一遍清單，抽查搜尋回報的其中幾處，然後：
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+或
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[提交是全有或全無]
+每個檔案都會與暫存這項改動時所擷取的內容核對。只要其中任何一個檔案變了——代理手動改過它、格式化工具跑過、一次診斷處理重寫過它——**整項**改動都會被拒絕並丟棄。只套用了一半的結構化重寫，會留下一棵在舊形狀與新形狀下都編譯不過的樹。
 
-Re-run the tool against the current files; do not retry the stale id.
+請對現行檔案重新執行該工具；不要重試已過期的 id。
 :::
 
-## Check your work with the compiler
+## 用編譯器檢查你的成果
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+用結構化方式來做的重點，正在於它的範圍很廣。而看似合理的重寫，正是在大範圍改動中最容易弄壞型別的地方。在 `resolve` 之後要求診斷：
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` 會執行項目自己的檢查器（`dart analyze`、`tsc --noEmit`、`cargo check`、`go build`），而不是逐檔查詢——這正是碰過四十個檔案的改動之後，該問的那種問題。
 
-## Worked example: migrating a call
+## 實作範例：遷移一個呼叫
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+假設 `log(msg, level)` 正要改成 `log(level: level, message: msg)`。
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+看看匹配到的結果。如果其中有些是*另一個*接受兩個引數的 `log`，就把 `path` 收窄到你真正想改的那一個所屬的目錄，而不是試圖在模式裡表達這個差異。
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+然後執行 `resolve`，再執行 `lsp(action: "diagnostics", file: "*")`。
 
-## When to use something else
+## 何時該改用其他工具
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/zh-HK/手冊/操作指南/程式碼搜尋/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| 情況                                       | 更合適的工具                         |
+| ------------------------------------------ | ------------------------------------ |
+| 重新命名符號                               | `lsp_rename`——它跟隨的是參照，而不是形狀 |
+| 尋找某個字串、註解或檔案名稱               | `search`（內容）／`search_files`（名稱） |
+| 「如果我改這個，會有什麼壞掉？」           | [程式碼圖](/zh-HK/手冊/操作指南/程式碼搜尋/) |
+| 語法未涵蓋的語言                           | `search` 加上 `edit`                 |
 
-## Related
+## 相關內容
 
-- [Code intelligence](/zh-HK/手冊/概念/程式碼智能/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/zh-HK/手冊/參考/代理工具/) — the full argument list
-- [Search code with the code graph](/zh-HK/手冊/操作指南/程式碼搜尋/) — the symbol and impact side
+- [程式碼智能](/zh-HK/手冊/概念/程式碼智能/) — 為何結構化匹配不是「多繞幾步的正則表達式」
+- [內建代理工具](/zh-HK/手冊/參考/代理工具/) — 完整的引數清單
+- [以程式碼圖搜尋程式碼](/zh-HK/手冊/操作指南/程式碼搜尋/) — 符號與影響面這一側

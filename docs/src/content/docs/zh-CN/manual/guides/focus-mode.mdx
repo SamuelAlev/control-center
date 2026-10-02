@@ -1,185 +1,136 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: 使用专注模式与声景
+description: 运行一个计时的专注时段，配有悬浮的倒计时胶囊和被屏蔽的通知，并塑造在其下播放的自适应声景。
 dateModified: 2026-08-17
 slug: zh-CN/手册/操作指南/专注模式
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+本指南将向你展示如何运行一个专注时段：在此期间，Control Center 会屏蔽非紧急通知，并在你的其他窗口上方悬浮一个倒计时胶囊。本指南还会介绍在其下（默认）播放的声景——一段由你的服务器实时合成的无尽氛围音轨，由你所选的氛围、室外的天气以及一天中的时段共同塑造。
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+专注时段是一项 shell 层面的功能。它不与任何支柱绑定——它不会改变布局、隐藏侧边栏，也不会改变 PR 审查界面。
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[仅限桌面版]
+悬浮胶囊和声景的弹出式迷你播放器都是原生同级窗口，仅由桌面端引导程序挂载。`app.usectrl.dev` 上的 Web 版两者都没有，也没有操作系统通知管道，因此专注时段在那里既无可显示的内容，也无可屏蔽的内容。声景面板及其播放功能在你连接到服务器的任何地方都能使用。
 :::
 
-## Start a focus session
+## 开始专注时段
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. 点击标题栏右侧的专注图标（工具提示 **开始专注时段**）
+2. 在对话框中输入一个可选的**目标**——你正在做什么
+3. 选择一个**时长**：25m、50m、1h、1h 30m 或 2h。默认是 50m，并且会记住你上次的选择
+4. 按下**开始**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+检查点：标题栏按钮会被一个显示剩余分钟数的强调色标签取代，悬浮胶囊会出现在你的其他窗口上方，并且在**随专注模式启动**开启时，声景开始播放。
 
-Two other entry points reach the same session:
+另外两种入口也能到达同一时段：
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → 开始专注时段**会打开同一个对话框。
+- **⌘⇧⌥F** 会以你记住的时长、不带目标立即开始一个时段——它会跳过对话框。再次按下则会结束该时段。
 
-## Read the floating pill
+## 查看悬浮胶囊
 
-The pill is a small frameless window you can drag anywhere. It shows:
+胶囊是一个无边框的小窗口，你可以把它拖到任何位置。它会显示：
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- 一个实时在线状态圆点，以及以 `mm:ss` 表示的剩余时间
+- 你的目标；未设置目标时显示“专注时段”
+- 沿底边的细进度条
 
-Hover it to reveal two actions:
+将鼠标悬停在上面会显示两个操作：
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **暂停** / **继续** — 停止倒计时。暂停只作用于胶囊本身；时段本身仍保持活动。
+- **完成** — 结束该时段。
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+无论主窗口使用什么主题，胶囊都固定采用深色配色，因为它悬浮在任意的桌面内容之上。
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+如果你从标题栏关闭胶囊，时段仍会继续运行。按下专注标签旁边的画中画按钮（工具提示 **最小化到栏**）即可让它回来。
 
-## Know what gets suppressed
+## 了解哪些内容会被屏蔽
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+当某个时段处于活动状态时，Control Center 会丢弃除两类以外的所有通知，而这两类始终会送达：
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **会议即将开始** — 事后才看到的会议提醒毫无价值
+- **PR 已发布**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+其余一切都会在整个时段内被静默屏蔽——没有声音，也没有操作系统提示条。被屏蔽的通知不会排队等待稍后送达。
 
-## Play a soundscape
+## 播放声景
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. 点击标题栏右侧的扬声器图标（工具提示 **声景**）以打开面板
+2. 选择一个**氛围**——**专注**、**上升**、**放松**或**睡眠**
+3. 按下**播放**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+检查点：**正在播放**卡片会显示当前场景的名称——你工作区所在地的天气、以 °C 表示的温度，以及位置标签。当它显示“正在调节氛围…”时，场景仍在解析中。
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+这段音轨不是循环。你的服务器会持续地根据氛围、工作区所在地的实时天气以及一天中的时段对它进行合成。雨听起来明亮而繁忙，暴风雨响亮而多阵风，雾则低沉发闷；夜晚比正午更暗、混响更强。氛围决定了它的语汇：
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| 氛围 | 声音                                                     |
+| ---- | -------------------------------------------------------- |
+| 专注 | 柔和而警觉的氛围音，带有低沉的脉冲——意在衬托工作         |
+| 上升 | 轻快的旋律，带有柔和的脉冲——适合工作让人感到沉重时       |
+| 放松 | 更温暖、更和谐的和声垫音，没有节拍                       |
+| 睡眠 | 几乎没有事件发生的低沉持续音，混响深沉                   |
 
-Switching mood while playing hands playback to the new mood without stopping.
+播放过程中切换氛围会把播放交给新的氛围，而不会停止。
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+也可以从 ⌘K 的**专注**类别下打开该面板，它就在专注时段旁边。
 
-## Shape the sound
+## 塑造声音
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **调音**（专注、上升和放松）— 一个带有可拖动圆点的方形调音板。水平方向从**柔和**到**活力**（变化有多丰富），垂直方向从**空灵**到**明亮**（声音有多开阔）。双击调音板可重置到中性中心；方向键可微调圆点。你的调音会按氛围分别记住，调整会平滑地融入正在播放的混音——音频流永不重新开始。睡眠氛围按设计不可调音。
+- **音量** — 一个从 0 到 100% 的滑块，默认 60%。它独立于系统音量，并且会被记住。
+- **位置** — 从工作区自动检测。按下**刷新天气**可重新获取场景。
 
-## Pop out the mini player
+## 弹出迷你播放器
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+音频播放时，标题栏会多出一个按钮（工具提示 **弹出播放器**）。它会悬浮出一个始终置于最顶层的 HUD，包含播放/暂停、天气图标、场景名称和一个**返回应用**按钮——当专注时段让你完全进入另一个应用时，这非常方便。
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+从迷你播放器暂停并不会关闭它；只有它的关闭按钮（或退出应用）才会让它消失。
 
-## Run them together
+## 同时运行二者
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+这两个功能由声景面板中的一个开关关联起来：**随专注模式启动**，默认开启。
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- 如果当前没有正在播放的内容，开始一个专注时段会同时启动声景。
+- 结束该时段——无论以何种方式结束，包括计时器耗尽——都会停止声景，即使你是手动启动的声景。
 
-Turn the switch off to keep the two independent.
+关闭该开关即可让二者保持独立。
 
-## End a session
+## 结束时段
 
-Any one of these ends it:
+以下任一操作都会结束它：
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- 点击标题栏中的专注标签（工具提示 **专注模式进行中 — 点按结束**）
+- 按下胶囊上的**完成**
+- 按下 **⌘⇧⌥F**
+- 在 ⌘K 中选择**退出专注模式**
+- 让计时器耗尽——时段会在归零时自动完成
 
-The pill closes, notifications resume immediately and the soundscape stops.
+胶囊会关闭，通知立即恢复，声景停止。
 
-## Understand what does not persist
+## 了解哪些内容不会持久保留
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+一个时段只在一次应用运行期间存在。退出并重新打开 Control Center 后，你会从未激活状态和一个已重置的计时器开始，即使是在时段中途也是如此——没有崩溃恢复，也没有时段历史。
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+只有两样东西会保留下来：你偏好的时长和屏蔽通知标志。目标、已经过的时间以及胶囊的打开状态都不会保留。
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+播放同样短暂——声景在启动时总是处于停止状态。你的氛围、音量和各氛围调音会持久保留；音频流本身永远不会自行恢复。
 
-## Troubleshooting
+## 故障排查
 
-### The tune pad is missing
+### 调音板不见了
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+你当前处于睡眠氛围，它按设计不可调音。切换到专注或放松即可找回调音板。
 
-### Nothing plays after restarting the app
+### 重启应用后没有任何声音播放
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+这是设计使然——播放总是在应用启动时停止。打开面板并再次按下**播放**。如果仍然没有声音，请检查面板的音量滑块，它独立于系统音量。
 
-### The weather or temperature looks wrong
+### 天气或温度看起来不对
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+场景会跟随当前活动工作区的位置。在面板中按下**刷新天气**即可重新获取。
 
-## Related guides
+## 相关指南
 
-- [Configure notifications](/zh-CN/手册/操作指南/通知/)
-- [Keyboard shortcuts](/zh-CN/手册/参考/键盘快捷键/)
+- [配置通知](/zh-CN/手册/操作指南/通知/)
+- [键盘快捷键](/zh-CN/手册/参考/键盘快捷键/)

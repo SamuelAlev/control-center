@@ -1,153 +1,160 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Domänhändelser
+description: Varför funktioner kommunicerar via en händelsebuss i samma process i stället för att importera varandra, vad bussen är – och inte är – källa till sanning för, och vilka händelser som faktiskt kan driva automatisering.
 slug: sv-SE/handbok/koncept/domanhandelser
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Vad en domänhändelse är
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Domänhändelser är den frikopplingsmekanism som låter funktioner kommunicera
+utan direkta beroenden. I stället för att funktion A anropar funktion B
+publicerar funktion A en händelse och funktion B prenumererar på den.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` är en broadcast-buss för publicering och prenumeration inom
+samma process. Publicister anropar `publish(event)`; prenumeranter konsumerar en
+typad `on<T>()`-ström. Varje händelse implementerar `DomainEvent` och bär
+`occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Bussen körs inuti `cc_server`.** Varje publicist och varje levande prenumerant
+finns där. Ingen klient ser den här bussen. Det en klient ser är ett kurerat
+urval som servern skickar vidare som `notifications/*`-ramar i JSON-RPC.
 
-## Why a bus at all
+## Varför en buss över huvud taget
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Utan händelser är varje reaktion mellan funktioner en import. Aviseringsvägen
+skulle behöva importera agentfunktionen, funktionen för pull requests,
+ärendehanteringen och möten bara för att veta när den ska visa en toast – och
+var och en av dem skulle då behöva känna till att aviseringar finns.
+Ärendehanteringen skulle importera pipelines så att ett slutfört ärende kunde
+föra en körning framåt. Beroendegrafen sluter sig till en knut och den delade
+kärnan slutar vara delad.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Att publicera en händelse bryter det. Aviseringsvägen prenumererar på tjugoen
+händelseklasser och importerar ingen av de funktioner som ger upphov till dem.
+Pipelinetrigger-dispatcharen prenumererar på hela bussen och vet ingenting om
+pull requests, ärenden eller möten. Observability aggregerar körningsutfall utan
+att nå in i dispatch.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Kostnaden är den vanliga: en publicist kan inte avgöra om någon lyssnar, och en
+lyssnare som aldrig konstrueras är tyst och overksam. `TicketRemoteSyncHandler`
+är det stående exemplet: den är deklarerad, täcks av tester och kopplas aldrig
+in i produktion.
 
-## What the bus is not
+## Vad bussen inte är
 
-It is worth being precise about one thing the bus does _not_ own.
+Det är värt att vara precis om en sak som bussen _inte_ äger.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Revisionsspåret är inte en projektion av händelseströmmen.** Varje muterande
+RPC-operation granskas som standard – `RepoOp.audited` har värdet true som
+standard och en operation avstår bara genom att deklarera `audited: false`, en
+avsiktlig handling som syns på själva operationen. Dispatcharen lägger till raden
+"vem gjorde vad, varifrån" direkt efter ett lyckat anrop. Det finns ingen
+`DomainEventAuditBridge`. `ActivityLogPersister` skriver `activity_log`-rader
+från `ActivityLogged`-händelser; det är ett separat flöde från RPC-granskningen.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Händelsebussen _är_ transporten för aviseringar och för automatisering. Den är
+inte det bokföringssystem som är den auktoritativa källan.
 
-## What the bus does drive
+## Vad bussen faktiskt driver
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Aviseringar.** Tjugoen händelseklasser omvandlas av servern till
+  `notifications/*`-ramar, spelas in i ett beständigt flöde per arbetsyta och
+  sänds till anslutna sessioner. En ram vars `workspace_id` anger en arbetsyta
+  som sessionsanvändaren inte är medlem i förkastas på servern; klienten
+  filtrerar sedan resten till den arbetsyta den tittar på.
+- **Händelsedriven automatisering.** Pipelinetriggers prenumererar på bussen och
+  startar automatiskt matchande pipelines (se nedan).
+- **Livscykelreaktioner.** Att skapa en arbetsyta seedar dess VD och
+  specialister, de inbyggda pipelinemallarna och start-evalsviterna. En slutförd
+  agentkörning återupptar ett pausat pipelinesteg, stänger en uppgift, matar
+  målövervakaren, kan väcka en namngiven kontrollant och kan trigga en ledare på
+  nytt. En sammanslagen PR eller en borttagen yta utlöser skräpsamling av
+  worktrees.
+- **Synk mellan leverantörer.** Lokala ärendeförändringar skickas ut till
+  konfigurerade leverantörer av en koordinator som lyssnar på fem
+  ärendehändelser.
 
-## Event categories
+## Händelsekategorier
 
-Events span the whole product surface. At a high level:
+Händelserna omfattar hela produkten. På en övergripande nivå:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Arbetsytor, agenter och repos** – skapande av arbetsyta, slutförd körning, registrering av repo, uppdateringar av skills
+- **Pull requests** – publicering, statusändringar, sammanslagningar, granskningsbegäranden, omnämnanden, bevakning av egna PR:er, PR:er som upptäckts externt
+- **Meddelanden** – meddelanden, ytor och förlopp för etablering av ytor
+- **Ärenden** – skapa, tilldela, omfördela, detaljer, status och de tre slutliga utfallen
+- **Uppgifter** – sekvenserade livscykelramar för en dispatchad körning, så att klienter kan sortera och avdubbla dem
+- **Pipelines** – endast avslutande körningshändelser (slutförd, avbruten, misslyckad)
+- **Observability** – poster i aktivitetsloggen och budgettrösklar
+- **Identitet och medlemskap** – medlem tillagd, borttagen, roll ändrad
+- **Kalender och möten** – autentisering som löper ut, möten som startar och inspelningar som avslutas
+- **Stationer** – övertagande, upprensning och oväntad stängning
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Minne, orkestrering, plandokument, artefakter, godkännanden, intag av
+ärendesynk, kalenderuppdatering, sammanslagning av worktrees, skapande av
+användare, inbjudningar och återkallning av enheter är inte domänhändelser; se
+referensen.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/sv-SE/handbok/referens/domanhandelser/). That page is the
-inventory; this one is the model.
+Den fullständiga katalogen – alla 53 konkreta händelseklasser, deras nyttolaster
+och de 24 prenumeranter som konsumerar dem – finns i
+[referensen för domänhändelser](/sv-SE/handbok/referens/domanhandelser/). Den
+sidan är inventariet; den här är modellen.
 
-## Live access control rides two different mechanisms
+## Behörighetskontroll i realtid vilar på två olika mekanismer
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Medlemskaps- och enhetshändelser ser symmetriska ut men är det inte, vilket
+spelar roll om du resonerar om hur snabbt en återkallning får effekt.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Att återkalla en enhet avslutar verkligen dess sessioner.** Servern bevakar
+tabellen över parkopplade enheter och avslutar alla aktiva sessioner vars enhet
+har lämnat den aktiva mängden, inom några sekunder.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Att ta bort en medlem stänger inte socketen.** `WorkspaceMemberRemoved`
+konsumeras: `LocalRpcServer` och `RemoteRelayHost` släpper användarens anslutna
+arbetsyteprenumerationer, och `RemoteEventForwarder` ogiltigförklarar sin
+medlemskapscache så att fler ramar för den arbetsytan inte skickas. Det som
+nekar nästa RPC är fortfarande rollgrinden, som löser upp medlemskapet på nytt
+vid **varje** anrop – så deras nästa begäran avvisas med "Not a member of this
+workspace". Effekten är omedelbar för allt de försöker göra; den uppnås bara
+inte genom att lägga på luren.
 
-## Pipeline triggers
+## Pipelinetriggers
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Pipelinetriggers prenumererar på domänhändelser och startar automatiskt
+matchande pipelines. `PipelineTriggerDispatcher` lyssnar på hela bussen och gör
+sedan följande:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Avbryter tidigt om inte händelsetypen är en som den vet hur den ska mappas till en nyttolast
+2. Slår upp aktiverade triggers som matchar den händelsetypen, i varje arbetsyta
+3. Filtrerar var och en till sin egen arbetsyta och tillämpar sitt matchningsfilter för nyttolasten
+4. Startar en körning för varje trigger som återstår
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Den viktiga begränsningen är steg 1. Bussen bär 53 händelsetyper; väljaren för
+att lägga till trigger startar en körning för dessa fjorton (grenar i
+`EventPayloadMapper` för nyttolast):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+och `SpaceDeleted`. Inget annat kan starta en pipeline.
 
-## How a client sees any of this
+## Hur en klient ser allt detta
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/sv-SE/handbok/koncept/arkitektur/).
+`RemoteEventForwarder` översätter händelserna i aviseringsklassen till ramar och
+skickar dem över RPC till anslutna sessioner, där en rammappare gör dem till
+aviseringar i appen. En tunn klient ser därför en projektion av serverns
+händelseström utan att äga någon körning – vilket är hela poängen med
+[uppdelningen med tunn klient](/sv-SE/handbok/koncept/arkitektur/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Men inte varje skickad ram är en avisering. Strömmen för uppgiftslivscykeln och
+omfördelning av ärenden vidarebefordras live för att driva gränssnittet, men de
+spelas inte in i aviseringsflödet och visar ingen toast.
 
-## See also
+## Se även
 
-- [Pipelines and automation](/sv-SE/handbok/koncept/pipelines/): what a trigger starts
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/): assignment to an agent vs a team
-- [Architecture](/sv-SE/handbok/koncept/arkitektur/): how events fit the dependency rule
-- [Domain events reference](/sv-SE/handbok/referens/domanhandelser/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
-- [Configure notifications](/sv-SE/handbok/how-to-guider/aviseringar/)
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/): vad en trigger startar
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/): tilldelning till en agent jämfört med ett team
+- [Arkitektur](/sv-SE/handbok/koncept/arkitektur/): hur händelser passar in i beroenderegeln
+- [Referens för domänhändelser](/sv-SE/handbok/referens/domanhandelser/): den fullständiga katalogen och dess prenumeranter
+- [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
+- [Konfigurera aviseringar](/sv-SE/handbok/how-to-guider/aviseringar/)

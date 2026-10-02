@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Atalhos de teclado
+description: O registo completo de atalhos de teclado, por âmbito, com as condições em que cada atalho é acionado.
 slug: pt-PT/manual/referencia/atalhos-de-teclado
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Os atalhos vêm de um único registo `const`, `KeybindingRegistry` em `lib/core/constants/keybindings.dart`. Contém **48 associações**. Definições → Você → Atalhos de teclado apresenta esse registo como uma **referência só de leitura**: não existe interface de reatribuição nem ficheiro de atalhos do utilizador.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` abaixo é o modificador de comando principal — ⌘ no macOS, Ctrl no Windows e no Linux. Uma associação só é acionada quando o respetivo comando tem um handler registado no ecrã atual e a sua cláusula `when` se verifica; `!textInputFocus` significa que a tecla é encaminhada para um campo de texto em foco.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Não existe nenhum atalho de navegação por teclas numéricas. A caixa de entrada, os tickets, as pull requests e o resto alcançam-se a partir da barra lateral ou com ⌘K. A Observabilidade também não tem atalho.
 
 ## Global (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Âmbito `global`, por isso estão ativos em qualquer ponto do shell.
 
-### System
+### Sistema
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| Atalho                                      | Ação                                             | Condição                                                   |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | Paleta de comandos                               | —                                                          |
+| `Shift + /` (`?`)                           | Folha de referência de atalhos de teclado        | Não está a escrever num campo                              |
+| `Cmd/Ctrl + Z`                              | Desfazer                                         | Não está a escrever num campo (um campo em foco mantém o seu próprio desfazer) |
+| `Cmd/Ctrl + Shift + Z`                      | Refazer                                          | Não está a escrever num campo                              |
+| `Cmd/Ctrl + Shift + T`                      | Alternar tema                                    | —                                                          |
+| `Cmd/Ctrl + ,`                              | Abrir definições (abre em `/settings/you/appearance`) | —                                                      |
+| `Cmd/Ctrl + Shift + Alt + F`                | Alternar o modo de concentração                  | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | Alternar o seletor de espaços de trabalho        | —                                                          |
+| `Cmd/Ctrl + ]`                              | Espaço de trabalho seguinte                      | —                                                          |
+| `Cmd/Ctrl + [`                              | Espaço de trabalho anterior                      | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Mudar para o espaço de trabalho 1–9              | —                                                          |
 
-## Pull request list (3)
+## Lista de pull requests (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Âmbito `/pull-requests`. Todos exigem `route == '/pull-requests'` e que nenhum campo de texto esteja em foco, por isso não são acionados enquanto a rota de detalhe da PR estiver aberta sobre a lista.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Atalho  | Ação                   |
+| ------- | ---------------------- |
+| `R`     | Atualizar              |
+| `Enter` | Abrir PR               |
+| `F`     | Abrir o menu de filtros |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) está declarado no registo e aparece na referência de atalhos de teclado, mas **o ecrã da lista não regista um handler para ele**, por isso atualmente não é acionado. `F` abre o menu de filtros (`pr.list-open-filter`), e não a pesquisa.
 
-## Pull request detail (2)
+## Detalhe da pull request (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Âmbito `/pull-requests/`. A atualização exige que nenhum campo de texto esteja em foco. Fechar o separador não tem guarda de entrada de texto (uma combinação modificada com ⌘ nunca é texto simples) e tem uma expressão regular de rota, para não ser acionado na lista.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| Atalho         | Ação           | Condição                              |
+| -------------- | -------------- | ------------------------------------- |
+| `R`            | Atualizar      | Não está a escrever num campo         |
+| `Cmd/Ctrl + W` | Fechar separador | Numa localização `/pull-requests/<…>` |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+A mudança de separador (`1`/`2`/`3`), o marcar um ficheiro como visto e o recolher (`V`/`C`), a lista de ficheiros (`T`) e a pesquisa no diff (`Cmd/Ctrl + F`) são geridos pelo handler próprio do visualizador de diffs — consulte [Teclas do visualizador de diffs fora do registo](#teclas-do-visualizador-de-diffs-fora-do-registo).
 
-## Inbox (1)
+## Caixa de entrada (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Atalho | Ação                   |
+| ------ | ---------------------- |
+| `F`    | Abrir o menu de filtros |
 
-Requires `route == '/inbox'` and no focused text field.
+Exige `route == '/inbox'` e que nenhum campo de texto esteja em foco.
 
-## GitHub user and team profiles (3)
+## Perfis de utilizador e de equipa do GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Âmbito `/users/`. A cláusula `when` é uma expressão regular aplicada a `/users/<login>` **ou** `/teams/<organization>/<slug>`, além de exigir que nenhum campo de texto esteja em foco.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Atalho         | Ação               |
+| -------------- | ------------------ |
+| `R`            | Atualizar          |
+| `/`            | Focar a pesquisa   |
+| `Cmd/Ctrl + F` | Focar a pesquisa   |
 
-## Spaces (8)
+## Espaços (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Âmbito `/spaces`. As cláusulas `when` usam uma expressão regular, por isso são acionadas tanto na lista de espaços (`/spaces`) como num espaço selecionado (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| Atalho                 | Ação                                    | Condição                   |
+| ---------------------- | --------------------------------------- | -------------------------- |
+| `Enter`                | Enviar mensagem                         | —                          |
+| `Cmd/Ctrl + N`         | Novo espaço                             | Numa rota `/spaces`        |
+| `J`                    | Espaço seguinte                         | Não está a escrever num campo |
+| `K`                    | Espaço anterior                         | Não está a escrever num campo |
+| `Cmd/Ctrl + Shift + D` | Ditado com premir para falar            | —                          |
+| `Cmd/Ctrl + T`         | Abrir separador do editor               | Numa rota `/spaces`        |
+| `Cmd/Ctrl + W`         | Fechar separador do editor              | Numa rota `/spaces`        |
+| `Cmd/Ctrl + B`         | Alternar a barra lateral do editor      | Numa rota `/spaces`        |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+O envio com Enter é gerido pelo campo de texto do compositor; o premir para falar é gerido pelo botão de microfone do compositor (o seu próprio handler de teclado físico). Ambos estão listados no registo para a referência de definições.
 
-## Workspace picker (2)
+## Seletor de espaços de trabalho (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Âmbito `/workspaces`, ativos apenas no próprio seletor.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Atalho         | Ação                            |
+| -------------- | ------------------------------- |
+| `Cmd/Ctrl + N` | Novo espaço de trabalho         |
+| `Enter`        | Abrir o espaço de trabalho selecionado |
 
-`Enter` requires no focused text field.
+`Enter` exige que nenhum campo de texto esteja em foco.
 
-## Settings (5)
+## Definições (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Atalho         | Ação                          | Ecrã                                        |
+| -------------- | ----------------------------- | ------------------------------------------- |
+| `J`            | Página de definições seguinte | Qualquer rota `/settings`, sem escrever     |
+| `K`            | Página de definições anterior | Qualquer rota `/settings`, sem escrever     |
+| `Cmd/Ctrl + N` | Novo agente                   | Definições → Espaço de trabalho → Agentes   |
+| `Cmd/Ctrl + N` | Adicionar repositório         | Definições → Espaço de trabalho → Repositórios |
+| `R`            | Reprocurar adaptadores        | Definições → Servidor → Fornecedores de modelos |
 
-## Newsfeed (5)
+## Notícias (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Âmbito `/newsfeed`. Todos exigem `route == '/newsfeed'` e que nenhum campo de texto esteja em foco.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Atalho  | Ação               |
+| ------- | ------------------ |
+| `J`     | Artigo seguinte    |
+| `K`     | Artigo anterior    |
+| `Enter` | Abrir artigo       |
+| `S`     | Alternar marcador  |
+| `R`     | Atualizar feeds    |
 
-## Diff viewer keys outside the registry
+## Teclas do visualizador de diffs fora do registo
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+O visualizador de diffs das PR trata destas teclas por si próprio (`PrDiffKeyboardHandler`). Pesquisar, visto e recolher estão listados nos comentários do registo apenas para a referência de definições — não está registado nenhum handler do distribuidor, por isso o distribuidor deixa-as à vista de diff. Não aparecem como linhas próprias na referência de atalhos de teclado.
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| Atalho          | Ação                                                                              |
+| --------------- | --------------------------------------------------------------------------------- |
+| `Cmd/Ctrl + F`  | Pesquisar no diff                                                                 |
+| `J` / `K`       | Ficheiro seguinte / anterior                                                      |
+| `V`             | Alternar «visto» no ficheiro em foco                                              |
+| `C`             | Alternar «recolhido» no ficheiro em foco                                          |
+| `T`             | Mostrar lista de ficheiros                                                        |
+| `Enter`         | Ocorrência seguinte da pesquisa (apenas com a pesquisa no diff aberta)           |
+| `Shift + Enter` | Ocorrência anterior da pesquisa                                                   |
+| `Escape`        | Fechar a pesquisa no diff ou limpar a seleção de texto do diff                     |
+| `Cmd/Ctrl + C`  | Copiar a seleção do diff                                                          |
 
-## Browser-reserved combinations
+## Combinações reservadas pelo navegador
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+Na versão web, o navegador consome alguns aceleradores antes de a página os ver, por isso as associações correspondentes nunca chegam a ser acionadas aí. Funcionam normalmente no computador. Ficam reservadas quando combinadas com o modificador de comando principal: `T`, `W`, `N` e os dígitos `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Isso abrange a mudança de espaço de trabalho com `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (novo espaço, novo espaço de trabalho, novo agente, adicionar repositório) e `Cmd/Ctrl + T` / `Cmd/Ctrl + W` nos espaços e no detalhe da PR.
 
-## See also
+## Ver também
 
-- [Route map](/pt-PT/manual/referencia/mapa-de-rotas/)
-- [Focus mode](/pt-PT/manual/guias/modo-de-concentracao/)
+- [Mapa de rotas](/pt-PT/manual/referencia/mapa-de-rotas/)
+- [Modo de concentração](/pt-PT/manual/guias/modo-de-concentracao/)

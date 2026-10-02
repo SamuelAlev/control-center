@@ -1,185 +1,188 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: استفاده از حالت تمرکز و منظرهای صوتی
+description: یک نشست تمرکز زمان‌دار را با قرص شمارش معکوس شناور و اعلان‌های مسدودشده اجرا کنید و منظر صوتی تطبیقی‌ای را که زیر آن پخش می‌شود شکل دهید.
 dateModified: 2026-08-17
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-تمرکز
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+این راهنما نشان می‌دهد چگونه یک نشست تمرکز اجرا کنید: بازه‌ای زمان‌دار که در آن
+Control Center اعلان‌های غیرفوری را مسدود می‌کند و یک قرص شمارش معکوس را روی
+دیگر پنجره‌های شما شناور نگه می‌دارد. همچنین منظر صوتی‌ای را پوشش می‌دهد که
+(به‌طور پیش‌فرض) زیر آن پخش می‌شود — قطعه‌ای محیطی و بی‌پایان که سرور شما آن را
+زنده می‌سازد و با حال‌وهوایی که برمی‌گزینید، آب‌وهوای بیرون و ساعت روز شکل
+می‌گیرد.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+نشست تمرکز یک ویژگی در سطح پوسته است. به هیچ رکنی از محصول گره نخورده است —
+چیدمان را تغییر نمی‌دهد، نوار کناری را پنهان نمی‌کند و سطح بازبینی PR را دگرگون
+نمی‌سازد.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[فقط دسکتاپ]
+قرص شناور و پخش‌کنندهٔ کوچکِ جداشدنیِ منظر صوتی، پنجره‌های خواهرِ بومی‌اند و فقط
+راه‌انداز دسکتاپ آن‌ها را می‌سازد. نسخهٔ وب روی `app.usectrl.dev` هیچ‌یک از این‌ها
+را ندارد و خط لولهٔ اعلان سیستم‌عامل هم در آن نیست، پس نشست تمرکز در آنجا چیزی
+برای نشان‌دادن یا مسدودکردن ندارد. پنل منظر صوتی و پخش آن هر جایی که به سرور
+وصل شوید کار می‌کند.
 :::
 
-## Start a focus session
+## شروع یک نشست تمرکز
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. روی نشان تمرکز در سمت راست نوار عنوان کلیک کنید (راهنمای ابزار **شروع نشست
+   تمرکز**)
+2. در دیالوگ، یک **هدف** اختیاری بنویسید — چیزی که روی آن کار می‌کنید
+3. یک **مدت** برگزینید: 25m، 50m، 1h، 1h 30m یا 2h. پیش‌فرض 50m است و آخرین
+   انتخاب شما به یاد می‌ماند
+4. **شروع** را بزنید
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+نقطهٔ بررسی: جای دکمهٔ نوار عنوان را یک تراشهٔ تأکیدی می‌گیرد که دقیقه‌های
+باقی‌مانده را نشان می‌دهد، قرص شناور روی دیگر پنجره‌های شما ظاهر می‌شود و — با
+روشن بودن **شروع با حالت تمرکز** — پخش منظر صوتی آغاز می‌شود.
 
-Two other entry points reach the same session:
+دو نقطهٔ ورود دیگر به همین نشست می‌رسند:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** همان دیالوگ را باز می‌کند.
+- **⌘⇧⌥F** بی‌درنگ نشستی با مدت به‌یادمانده و بدون هدف آغاز می‌کند — از دیالوگ
+  می‌گذرد. زدن دوبارهٔ آن نشست را پایان می‌دهد.
 
-## Read the floating pill
+## خواندن قرص شناور
 
-The pill is a small frameless window you can drag anywhere. It shows:
+قرص یک پنجرهٔ کوچک بی‌قاب است که می‌توانید هر جا بکشید. این‌ها را نشان می‌دهد:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- یک نقطهٔ حضور زنده و زمان باقی‌مانده به شکل `mm:ss`
+- هدف شما، یا «Focus session» وقتی هدفی تعیین نکرده‌اید
+- یک نوار پیشرفت باریک در لبهٔ پایین
 
-Hover it to reveal two actions:
+با نگه‌داشتن نشانگر روی آن دو کنش آشکار می‌شود:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — شمارش معکوس را متوقف می‌کند. مکث فقط در خود قرص
+  محلی است؛ خود نشست فعال می‌ماند.
+- **Complete** — نشست را پایان می‌دهد.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+قرص فارغ از پوستهٔ رنگی که پنجرهٔ اصلی دارد، به پالت تیره وفادار می‌ماند، چون
+روی محتوای دلخواه دسکتاپ شناور است.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+اگر قرص را از نوار عنوان ببندید، نشست به کار خود ادامه می‌دهد. برای بازگرداندن
+آن، دکمهٔ تصویر-در-تصویر کنار تراشهٔ تمرکز را بزنید (راهنمای ابزار **کوچک کردن
+به نوار**).
 
-## Know what gets suppressed
+## بدانید چه چیزهایی مسدود می‌شود
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+تا وقتی نشستی فعال است، Control Center هر اعلانی را جز دو دسته رها می‌کند، و
+این دو دسته همیشه تحویل داده می‌شوند:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **جلسه به‌زودی شروع می‌شود** — هشدار جلسه‌ای که پس از ماجرا ببینید بی‌ارزش است
+- **انتشار pull request**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+هر چیز دیگر در تمام نشست بی‌صدا مسدود می‌شود — نه صدا، نه اعلان شناوری از
+سیستم‌عامل. اعلان‌های مسدودشده برای تحویل بعدی صف نمی‌شوند.
 
-## Play a soundscape
+## پخش یک منظر صوتی
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. روی نشان بلندگو در سمت راست نوار عنوان کلیک کنید (راهنمای ابزار **منظرهای
+   صوتی**) تا پنل باز شود
+2. یک **حال‌وهوا** برگزینید — **تمرکز**، **خیز**، **آرامش** یا **خواب**
+3. **پخش** را بزنید
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+نقطهٔ بررسی: کارت **در حال پخش** صحنهٔ کنونی را نام می‌برد — آب‌وهوا در موقعیت
+فضای کاری شما، دما بر حسب °C و برچسب موقعیت. تا وقتی «در حال تنظیم فضا…»
+نوشته شده، صحنه هنوز در حال مشخص‌شدن است.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+قطعه حلقه‌ای نیست. سرور شما آن را پیوسته از حال‌وهوا، آب‌وهوای زندهٔ موقعیت فضای
+کاری و ساعت روز می‌سازد. باران روشن و پرجنب‌وجوش به گوش می‌رسد، توفان بلند و
+بادخیز، مه خفه؛ شب تاریک‌تر و پرپژواک‌تر از نیم‌روز است. حال‌وهوا واژگان را
+تعیین می‌کند:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| حال‌وهوا | صدا                                                        |
+| -------- | ---------------------------------------------------------- |
+| تمرکز    | فضای ملایم و هشیار با ضربانی بم — برای نشستن زیر کار        |
+| خیز      | ملودی سرزنده با ضربانی نرم — برای وقتی کار سنگین حس می‌شود  |
+| آرامش    | پدهای گرم‌تر و هم‌خوان‌تر، بدون ضرب                          |
+| خواب     | درون‌های بم با رویدادهای تقریباً هیچ، پژواک عمیق             |
 
-Switching mood while playing hands playback to the new mood without stopping.
+تغییر حال‌وهوا در حال پخش، پخش را بدون توقف به حال‌وهوای تازه می‌سپارد.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+پنل از ⌘K هم زیر دستهٔ **Focus**، کنار خود نشست تمرکز، قابل دسترسی است.
 
-## Shape the sound
+## شکل دادن به صدا
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **تنظیم** (تمرکز، خیز و آرامش) — یک پد مربعی با دکمهٔ گردی که می‌توان کشید.
+  محور افقی از **ملایم** تا **پرانرژی** است (میزان رخداد) و محور عمودی از
+  **فضایی** تا **درخشان** (میزان باز بودن صدا). دو ضربه روی پد آن را به مرکز
+  خنثی بازمی‌گرداند؛ کلیدهای جهت‌دار دکمهٔ گرد را کمی جابه‌جا می‌کنند. تنظیم شما
+  برای هر حال‌وهوا جداگانه به یاد می‌ماند و تغییرات به‌آرامی در میکسِ در حال
+  اجرا حل می‌شوند — جریان هرگز از نو آغاز نمی‌شود. حال‌وهوای خواب به‌دلیل طراحی
+  قابل تنظیم نیست.
+- **بلندی صدا** — لغزنده‌ای از ۰ تا ۱۰۰٪ که پیش‌فرضش ۶۰٪ است. از بلندی صدای
+  سیستم جدا است و به یاد می‌ماند.
+- **موقعیت** — به‌طور خودکار از فضای کاری تشخیص داده می‌شود. برای واکشی
+  دوبارهٔ صحنه، **تازه‌سازی هوا** را بزنید.
 
-## Pop out the mini player
+## جدا کردن پخش‌کنندهٔ کوچک
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+تا وقتی صدا در حال پخش است، نوار عنوان یک دکمهٔ دوم می‌گیرد (راهنمای ابزار
+**جدا کردن پخش‌کننده**). این دکمه یک HUD کوچک همیشه-رو-صفحه شناور می‌کند که
+پخش/مکث، نشانهٔ آب‌وهوا، نام صحنه و دکمه‌ای با عنوان **بازگشت به برنامه** دارد —
+وقتی نشست تمرکز شما را به‌کلی در برنامه‌ای دیگر مشغول کرده، به کار می‌آید.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+مکث از پخش‌کنندهٔ کوچک آن را نمی‌بندد؛ فقط دکمهٔ بستن آن (یا خروج از برنامه) آن
+را برمی‌دارد.
 
-## Run them together
+## اجرای همزمان این دو
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+این دو ویژگی با یک کلید در پنل منظر صوتی به هم گره خورده‌اند: **شروع با حالت
+تمرکز**، که به‌طور پیش‌فرض روشن است.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- شروع یک نشست تمرکز، اگر چیزی در حال پخش نباشد، منظر صوتی را آغاز می‌کند.
+- پایان نشست — به هر شکلی که پایان یابد، از جمله تمام‌شدن زمان‌سنج — آن را
+  متوقف می‌کند، حتی وقتی منظر صوتی را خودتان دستی شروع کرده باشید.
 
-Turn the switch off to keep the two independent.
+برای مستقل ماندن این دو، کلید را خاموش کنید.
 
-## End a session
+## پایان دادن به یک نشست
 
-Any one of these ends it:
+هر یک از این‌ها آن را پایان می‌دهد:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- کلیک روی تراشهٔ تمرکز در نوار عنوان (راهنمای ابزار **حالت تمرکز فعال — برای
+  پایان ضربه بزنید**)
+- زدن **Complete** روی قرص
+- زدن **⌘⇧⌥F**
+- انتخاب **Exit focus mode** در ⌘K
+- رها کردن زمان‌سنج تا تمام شود — نشست در صفر خودکار کامل می‌شود
 
-The pill closes, notifications resume immediately and the soundscape stops.
+قرص بسته می‌شود، اعلان‌ها بی‌درنگ از سر گرفته می‌شوند و منظر صوتی متوقف می‌شود.
 
-## Understand what does not persist
+## بدانید چه چیزهایی پایدار نمی‌ماند
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+یک نشست دقیقاً به اندازهٔ یک اجرای برنامه زنده می‌ماند. اگر Control Center را
+ببندید و دوباره باز کنید، غیرفعال و با زمان‌سنج صفرشده شروع می‌کنید، حتی اگر
+وسط نشست بوده باشید — نه بازیابی پس از فروپاشی وجود دارد و نه تاریخچهٔ نشست.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+فقط دو چیز منتقل می‌شود: مدت ترجیحی شما و پرچم مسدودسازی اعلان‌ها. هدف، زمان
+سپری‌شده و وضعیت باز بودن قرص منتقل نمی‌شوند.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+پخش هم به همان اندازه زودگذر است — منظر صوتی هنگام راه‌اندازی همیشه متوقف است.
+حال‌وهوا، بلندی صدا و تنظیم‌های هر حال‌وهوا باقی می‌مانند؛ خودِ جریان هرگز
+خودبه‌خود از سر گرفته نمی‌شود.
 
-## Troubleshooting
+## عیب‌یابی
 
-### The tune pad is missing
+### پد تنظیم وجود ندارد
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+شما روی حال‌وهوای خواب هستید که به‌دلیل طراحی قابل تنظیم نیست. برای بازگشت پد،
+به تمرکز یا آرامش بروید.
 
-### Nothing plays after restarting the app
+### پس از راه‌اندازی دوبارهٔ برنامه چیزی پخش نمی‌شود
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+به‌دلیل طراحی — پخش هنگام راه‌اندازی برنامه همیشه متوقف است. پنل را باز کنید و
+دوباره **پخش** را بزنید. اگر هنوز ساکت ماند، لغزندهٔ بلندی صدای پنل را بررسی
+کنید که از بلندی صدای سیستم جدا است.
 
-### The weather or temperature looks wrong
+### آب‌وهوا یا دما نادرست به نظر می‌رسد
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+صحنه از موقعیت فضای کاری فعال پیروی می‌کند. برای واکشی دوبارهٔ آن، **تازه‌سازی
+هوا** را در پنل بزنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Configure notifications](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
-- [Keyboard shortcuts](/fa-IR/راهنمای-کاربر/مرجع/میانبرهای-صفحه-کلید/)
+- [پیکربندی اعلان‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
+- [میانبرهای صفحه‌کلید(/fa-IR/راهنمای-کاربر/مرجع/میانبرهای-صفحه-کلید/)

@@ -1,239 +1,271 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Telepítés és kliensek
+description: Hogyan választja szét a Control Center vékonykliens-architektúrája a headless szervert az asztali, webes és mobil klienseitől.
 slug: hu-HU/kezikonyv/fogalmak/telepites
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+A Control Center nem egyetlen program. **Vékonykliens-architektúra**: egy
+headless szerver, amely az Ön adatait birtokolja, és kliensek egy csoportja,
+amelyek egyetlen, hozzá vezető RPC-kapcsolat fölött jelenítenek meg felületet.
+Ennek a kettéválasztásnak a megértése megmagyarázza, miért ott futnak a dolgok,
+ahol, és hogy az egyes kliensek mihez férnek hozzá és mihez nem.
 
-## The server owns the data
+## Az adatokat a szerver birtokolja
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/hu-HU/kezikonyv/fogalmak/munkateruletek/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+A **`cc_server`** nevű folyamat tartja az adatbázisokat — egy kicsi `global.db`-t
+a szerver szintű állapothoz, valamint [munkaterületenként](/hu-HU/kezikonyv/fogalmak/munkateruletek/)
+egy-egy SQLite-fájlt, amelyeket csak akkor nyit meg, amikor kell —, és a
+hosszú életű munkát végzi: pipeline-motorok, összehangolók, az
+MCP-eszközfelület és az orchestrációs figyelő. Minden, aminek túl kell élnie egy
+ablakot, vagy amit két kliensnek azonosan kell látnia, ott él.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Egyetlen kliens sem nyitja meg maga az adatbázisfájlt. Helyette minden kliens
+egyetlen **`RemoteRpcClient`**-et tart fenn, és azon keresztül indít
+repóműveleteket és feliratkozásokat. A szerver a kapcsolatot egy párosított
+eszközhöz tartozó, előre megosztott kulccsal hitelesíti — aztán többé nem
+törődik a kapcsolattal. **Egy munkamenet nincs munkaterülethez kötve.** A
+dispatcher állapotmentes: minden munkaterület-hatókörű hívás a saját
+`workspace_id`-jét hordozza az argumentumaiban, és az olyan hívás, amelyből ez
+hiányzik, elutasításra kerül.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Ez szándékos, és ez teszi lehetővé, hogy egy szerveren két kliens különböző
+munkaterületen üljön anélkül, hogy lenne egy szerveren tárolt „aktuális
+munkaterület”, amin összeveszhetnének. Az elszigetelést ehelyett hívásonként
+érvényesítjük, négy lépésben:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. A művelet deklarálja, hogy munkaterület-hatókörű-e; ha igen, és nem érkezett
+   `workspace_id`, a hívás elutasításra kerül.
+2. A megnevezett azonosítónak **regisztrált** munkaterületnek kell lennie, ezt
+   még az előtt ellenőrizzük, hogy bármi adatbázist nyitna — különben egy
+   ismeretlen azonosító minden kérésnél megtestesítene egy üres, kísértetjárta
+   `workspace.db`-t. Egy hiányzó találat nem található hibát ad.
+3. A hívó `WorkspaceRole` szerepének el kell érnie a művelet küszöbét, amely a
+   művelet fajtájából adódik: az olvasáshoz vendég, a módosításhoz tag, a
+   romboló művelethez admin szükséges.
+4. Az olyan művelet, amely repótartalmat tesz elérhetővé, emellett az általa
+   deklarált szinten repónkénti engedélyt is megkövetel — `none` / `read` /
+   `review` / `write` —, így a munkaterületi tagság soha nem előzi meg csendben
+   a kódhoszt jogosultságait.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+A lényeges mondat: **a párosítási kulcs birtoklása nem a hozzáférési határ; a
+tagság az.**
 
-## Why split it this way
+## Miért választottuk szét így
 
-Three pressures pushed toward a server:
+Három nyomás tolta a megoldást a szerver felé:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Egyetlen igazságforrás.** Az asztali gép és a telefon, illetve a laptop és
+   az asztali gép ugyanazt a flottaállapotot látja. Ha mindegyik a saját
+   adatbázisát birtokolná, eltávolodnának egymástól. Egyetlen szerverrel minden
+   kliens ugyanazt az élő adatot olvassa.
+2. **A web nem tudja magát kiszolgálni.** A böngésző nem indíthat alfolyamatot
+   és nem nyithat meg helyi fájlt, ezért egy webes build soha nem birtokolhatja
+   az adatbázist, és nem futtathat ügynököt. Olyan szerverrel kell beszélnie,
+   amely ezt megteszi. Ahelyett, hogy készült volna egy második, csak webes
+   adatút, az asztali alkalmazást is ugyanerre az útra állítottuk.
+3. **Headless működés.** Egy szerver, amelyet egy kicsi gépen futtathat —
+   elérhető a vonaton ülő telefonról vagy bárhonnan egy böngészőből —,
+   hasznosabb, mint egy grafikus felület, amelyet nyitva kell hagynia.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+A kompromisszum az, hogy a szerver mostantól függőség: ha nem fut, semmi sem
+működik. Az asztali alkalmazás alapértelmezett válasza erre, hogy **maga indít
+egyet**.
 
-## The clients
+## A kliensek
 
-Five clients reach the server, each with a different shape and trust profile.
+Öt kliens éri el a szervert, mindegyik más formával és bizalmi profillal.
 
-### Desktop app
+### Asztali alkalmazás
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+A Flutter asztali alkalmazás (macOS, Windows, Linux) a teljes kliens. Első
+indításkor megkérdezi, hogyan működjön, majd megjegyzi a választást:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Helyi**: egy `cc_server` indítása és felügyelete ezen a gépen — ez az
+  alapértelmezett, önmagában megálló, egyfelhasználós beállítás. Az asztali
+  alkalmazás elindítja a szervert, amely az alkalmazástámogatási könyvtár alatt
+  birtokolja az adatbázist, és loopbacken keresztül beszél vele.
+- **Távoli**: csatlakozás egy máshol futó `cc_server`-hez biztonságos
+  WebSocketen keresztül. Az adatok azon a szerveren élnek; ez az asztali
+  alkalmazás pusztán megjelenítő.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+Mindkét esetben az így létrejövő RPC-kliens felülírja az alkalmazás
+adatszolgáltatóját, így a teljes felület — minden képernyő, minden funkció — a
+szerveren keresztül olvas és ír. Az asztali alkalmazás soha nem nyúl
+közvetlenül az adatbázisfájlhoz.
 
-### Web client
+### Webes kliens
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+A webes build ugyanaz a Flutter-alkalmazás böngészőben futóra fordítva, az
+[app.usectrl.dev](https://app.usectrl.dev) címen üzemeltetve, így nincs mit
+telepíteni. A böngésző nem indíthat alfolyamatot, ezért a webes kliens **mindig**
+távoli: `wss://`-en tárcsáz egy `cc_server`-t, és a teljes asztali felületet
+rendereli. Csatlakozás után ugyanazokat a képernyőket mutatja ugyanazon flotta
+ellenében, mert ugyanaz a kód fut ugyanazon az RPC-n. A hiányosságok azok a
+néhány hely, ahol olyan natív képesség kell, amivel a böngésző nem rendelkezik
+— ezek közül a legfontosabb a lentebb tárgyalt megbeszélésrögzítési minőségi
+réteg, és ide tartoznak az operációs rendszer értesítései is.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Ezért nem ugyanaz az állítás, hogy „nincs letöltés”, és hogy „nincs szerver”. A
+webes kliens a telepítést szünteti meg; a szervert nem. Amit tárcsáz, lehet egy
+ugyanazon a laptopon futó `cc_server` — `ws://localhost:9030`, amelyhez nem
+kell tanúsítvány, mert a böngészők a loopbacket megbízhatónak tekintik —, vagy
+egy másik gépen futó, amelynek `wss://`-en keresztül elérhetőnek kell lennie, a
+böngésző által megbízhatónak tartott tanúsítvánnyal. A `cc_server` megtagadja,
+hogy TLS nélkül nem loopback címre kössön, ezért egy távoli szerver vagy a saját
+tanúsítványát jelenti, vagy egy TLS-t lezáró proxyt, vagy egy alagutat vagy
+VPN-t, amely biztosít egyet.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Maga a csomag külön van üzemeltetve attól a szervertől, amellyel beszél. Egy
+önálló `cc_server` kiszolgálja az RPC-végpontot, az MCP-felületet és annak
+proxyit, de **nem** szolgál ki webes csomagot — a statikusfájl-útvonal létezik a
+szerverben, de az önálló binárison nincs webes gyökér beállítva, így nincs mit
+kiszolgálnia a `/` alatt. A közzétett `cc-webapp` konténerkép az, amely a
+csomagot üzemelteti, és a `scripts/build_web.sh` az, ami felépíti. A szerver csak
+az `--allowed-origins` listáján szereplő böngésző-origineket fogadja el, amely
+alapértelmezésben `https://app.usectrl.dev`, így a csomag saját üzemeltetése
+azt jelenti, hogy hozzá kell adni annak originjét.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+A média (profilképek, hírfolyamképek, PR-képernyőképek) a szerver
+proxyvégpontján keresztül halad, ahelyett hogy közvetlenül a felsőbb hosztokat
+érné el, így a böngésző soha nem tölt le tetszőleges origint. A telepített
+kliens kérésenkénti Content-Security Policy-t üt rá egy nem érzékeny cookie-ból,
+így csak a csatlakozott szerver originje engedélyezett.
 
-### Phone companion (cc_remote)
+### Telefonos társalkalmazás (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+A **Remote** alkalmazás külön, könnyebb kliens — egy Flutter webes PWA a
+[remote.usectrl.dev](https://remote.usectrl.dev/) címen. Szándékosan **nem** a
+teljes alkalmazás. Egy brókeren keresztüli, végponttól végpontig lezárt
+WebSocket-relén párosít, és az eszközfelületnek egy túlnyomórészt olvasásra
+szolgáló szeletét beszéli: jegyek, üzenetek és a hírfolyam olvasása; válasz
+küldése vagy jegy frissítése.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) for the full
-security model.
+A telefon **alacsonyabb jogosultságú szereplő**, mint egy helyi ügynök. Az
+alapértelmezés szerint tiltó eszközszabályzat, a minden keretet lezáró előre
+megosztott kulcs, egy munkamenet-képesség, amely a kiemelt műveleteket (például
+a párosítást) kizárja a társügyfélből, a fenti hívásonkénti szerep- és
+repóengedély-ellenőrzések, valamint a sebességkorlátozás együtt
+megakadályozzák, hogy egy jóváhagyott (vagy kiszivárgott) párosítás teljes körű
+távoli vezérléssé váljon. A teljes biztonsági modellt lásd a
+[Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) oldalon.
 
-### MCP clients
+### MCP-kliensek
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/) and the
-[MCP tools reference](/hu-HU/kezikonyv/referencia/mcp-eszkozok/).
+A külső eszközök — szerkesztők, más ügynökök, CLI-k —, amelyek a Model Context
+Protocolt beszélik, a szerver MCP-felületéhez csatlakoznak, és a típusos
+eszközregisztert használják. Ez a programozott integráció útja; nem grafikus
+felület. Lásd az [Az MCP-szerver használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/)
+és az [MCP-eszközök](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) oldalt.
 
-### Fleet executors (cc_worker)
+### Flotta-végrehajtók (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+A **`cc_worker`** egy headless, tisztán Dart bináris, amely párosít egy
+`cc_server`-rel, deklarálja a gazdagép képességeit, és lízingelt feladatokat húz
+le végrehajtásra. Ugyanazon az RPC-n keresztül streameli vissza a
+folyamateseményeket, és **nem tart fenn tartós állapotot**: nincs adatbázis,
+nincs hitelesítés, nincsenek jóváhagyások, nincsenek költségkeretek — ezek soha
+nem hagyják el a `cc_server`-t. A worker egy végtag, nem második agy. Egy
+mérvadó szerver, N buta végtag; nincs konszenzus, nincs worker–worker közötti
+forgalom.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+A lízingelt végrehajtás még mindig csak lízing-infrastruktúra. Az `agentRun` az
+egyetlen fajta, amely valódi parancsot futtat (`CC_JOB_COMMAND`, vagy egy
+visszhangzott prompt, ha nem adtak meg egyet). A `pipelineStep`, a `codeIndex`,
+a `goldenRender`, a `benchmark` és az `evalBatch` jelenleg a `git --version` /
+`rev-parse HEAD` parancsokkal próbálkozik, hogy a streamelési útvonal
+működjön, anélkül hogy úgy tennénk, mintha azok a feladatok lefutottak volna.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Amit hirdet: az operációs rendszer, a CPU-architektúra, a magok száma, a RAM,
+hogy elérhető-e egy Flutter SDK, és hogy a gazdagép mely
+homokozó-háttérrendszerekkel rendelkezik (Windowson egyikkel sem). Egy dedikált
+worker emellett mindig hirdeti az `alwaysOn` és `acceptsParallel`
+tulajdonságokat is, amelyekhez a pin → prefer → spill ütemező helyez. Nincs
+GPU- vagy ML-próba.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Egy önálló asztali telepítés ebből semmit sem vesz észre, mert a szokásos
+feladatkiosztás egyáltalán nem a flottán keresztül megy. Van ugyan egy
+implicit, folyamaton belüli worker regisztrálva a szerver gazdagépéhez, de ez
+egy regisztrációs illesztési pont, amelybe nincsenek futtatók bekötve — a helyi
+workerre ténylegesen ráhelyezett feladat végrehajtás helyett meghiúsul. Ma csak
+egy valódi `cc_worker` hajt végre lízingelt feladatokat.
 
-## What runs where
+## Mi hol fut
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Terület                                               | Szerver (`cc_server`)            | Flotta-végrehajtó (`cc_worker`)  | Asztali kliens | Webes / telefonos kliens                       |
+| ----------------------------------------------------- | -------------------------------- | -------------------------------- | -------------- | ---------------------------------------------- |
+| Adatbázisok (Drift/SQLite)                            | ezeket birtokolja                | —                                | —              | —                                              |
+| Hitelesítés, jóváhagyások, költségkeretek, identitás  | ezt birtokolja                   | —                                | —              | —                                              |
+| Pipeline-ok, összehangolók, orchestrációs figyelő     | futtatja                         | —                                | —              | —                                              |
+| MCP-eszközfelület                                     | kiszolgálja                      | —                                | —              | —                                              |
+| Ügynökvégrehajtás                                     | végrehajtja (vagy lízingbe adja) | lízingelt feladatokat hajt végre | —              | —                                              |
+| Felület renderelése                                   | —                                | —                                | teljes         | teljes (web) / túlnyomórészt olvasás (telefon) |
+| Megbeszélés rögzítése (mikrofon + megbeszélés hangja) | —                                | —                                | natív rögzítés | csak weben, képmegosztás hangján keresztül     |
+| Naptár OAuth (Google)                                 | tokeneket tárol                  | —                                | —              | —                                              |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
-for what bounds a run in each case.
+A két szint homokozása nem egyforma. A `cc_server` az általa maga végrehajtott
+futásokat a gazdagép operációs rendszerének homokozójába csomagolja, ahol van
+ilyen háttérrendszer — Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n —, és
+Windowson vagy `bwrap` és `socat` hiányában a többi korlátra esik vissza. **A
+`cc_worker` egyáltalán nem homokozó.** Hirdet egy `sandbox` képességet, hogy a
+szerver platform szerint helyezhesse el a feladatokat, de a workerben semmi nem
+alkalmaz ilyet: egy lízingelt feladat közvetlenül indul, csak a lízing környezete
+és a kapott worktree szab határt neki. A munka lízingbe adása ezért akkor is a
+homokozón kívülre viszi a végrehajtást, ha a gazdagépen van homokozó. Hogy mi
+szab határt egy futásnak az egyes esetekben, azt lásd a
+[Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
+oldalon.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+A megbeszélés rögzítése egy kliensen történik, mert mikrofonra és a megbeszélés
+hangjára van szükség — egy szekrényben álló szerver nem tudja rögzíteni az Ön
+hívását. A felvételt ezután a szerver pipeline-ja összegzi, a jegyzeteket pedig
+ott tárolja, ahol minden kliens el tudja olvasni.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+A webes kliens is rögzít, amit a táblázat formája elfedhet: a böngészőben
+megfogja a mikrofont és egy képmegosztás hangpályát is, és 16 kHz-es PCM-et
+streamel a szervernek. Ez a hangpálya _kötelező_ számára, ezért ott, ahol a
+böngésző nem ad ilyet, explicit módon meghiúsul. Ami valóban csak asztali gépen
+érhető el, az a rögzítés körüli minőségi réteg — a natív processzoron keresztüli,
+jelszintű visszhangszűrés, a bemeneti szintmérő és a néma mikrofon
+figyelmeztetése, az összefoglaló újrafuttatása, a feldolgozás megszakítása és a
+naptár rögzítés és hivatkozás művelete.
 
-## Pairing and trust
+## Párosítás és bizalom
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Minden kliens egy **előre megosztott kulccsal** igazolja magát, amelyet egyszer
+kell kiadni:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Az asztali alkalmazás helyi módban minden indításkor friss kulcsot generál, és
+  környezeti változókon keresztül adja át az elindított szervernek, így az
+  asztali gépen nem tárolódik titok.
+- A távoli kliensek (távoli asztali, web, telefon) a szerver `pair` parancsa
+  által kibocsátott kulcsot használják, amelyet az operációs rendszer
+  kulcstárában (a telefonon pedig helyben) tárolnak.
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+A visszavonás **azonnali**, nem halasztott. A szerver figyeli a párosított
+eszközök tábláját, és másodperceken belül eldobja minden olyan nyitott
+munkamenetet, amelynek eszköze kikerült az aktív halmazból — a közvetlen
+WebSocket-úton és a reléúton egyaránt. Nem kell megvárnia, hogy az eszköz
+újracsatlakozzon ahhoz, hogy elvágja.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+A kulcs soha nem halad át olyan URL-en, amelyet egy statikus hoszt láthat.
+Amikor hivatkozással érkezik — a telefonon vagy egy böngészőben —, az
+**URL-töredékben** utazik, a `#` utáni részben, amelyet a böngésző soha nem
+küld el az oldalt üzemeltető szervernek. Ez az az invariancia, amit érdemes
+megjegyezni, és mindkettőre érvényes. A webes kliensnek két másik belépési
+pontja van: a csatlakozási űrlap, ahol közvetlenül beilleszti a szervert és a
+kulcsot, valamint egy meghívókód, amelyet egy kizárólag ahhoz a böngészőhöz
+kibocsátott hitelesítő adatra vált be.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/): the phone pairing and security model
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): miért hordozza minden RPC-hívás a saját munkaterület-azonosítóját, és hogyan teszi szerkezetivé az elszigetelést az adatbázis kettéválasztása
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/): hogyan épül a kódbázis a szerver és kliensei köré
+- [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/): a telefonos párosítás és a biztonsági modell
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): start `cc_server` and pair a client
-- [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/): point the desktop or web client at a server elsewhere
-- [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa/): add a `cc_worker` that pulls leased jobs
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): indítson el egy `cc_server`-t, és párosítson egy klienst
+- [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/): irányítsa az asztali vagy webes klienst egy máshol futó szerverre
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): adjon hozzá egy telefont, egy második böngészőt vagy egy másik asztali gépet
+- [Flotta-worker futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa/): adjon hozzá egy `cc_worker`-t, amely lízingelt feladatokat húz le

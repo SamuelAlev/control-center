@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: Slovník
+description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['Agent', 'AI pracovník s identitou, rolí, skilly a schopnostmi. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.'],
+['Adaptér', 'Runner, který provede tah agenta. Dodávají se dva: Control Center (built-in), harness v procesu, který mluví s poskytovateli modelů, a Claude Code přes CLI claude. Cursor, Codex a ostatní poskytovatelé modelů se připojují k vestavěnému adaptéru, ne jako samostatné runnery.'],
+['Pracovní prostor', 'Nejvyšší tenant izolace. Sdružuje agenty, repozitáře, prostory, tickety, paměť a pipeline. Izolace je strukturální, ne jen dohodou: každý pracovní prostor má vlastní soubor SQLite, takže čtení napříč pracovními prostory se nepřeloží. Každá trasa v aplikaci začíná /workspaces/:workspaceId.'],
+['Hostitel kódu', 'GitHub, GitLab nebo Bitbucket Cloud. Vlastnost každého repozitáře, přečtená z remote origin při registraci. Jeden pracovní prostor může držet repozitáře na všech třech.'],
+['Repozitář', 'Git repozitář registrovaný v jednom pracovním prostoru. V rozsahu pracovního prostoru: stejný checkout registrovaný ve dvou pracovních prostorech jsou dva řádky se dvěma id a identita repozitáře napříč pracovními prostory je cesta na souborovém systému, nikdy id. Registrace vyžaduje pracovní strom gitu, jehož remote origin míří na podporovaného hostitele kódu (GitHub, GitLab nebo Bitbucket Cloud).'],
+['Izolovaný repozitář', 'Worktree registrovaného repozitáře v rozsahu pracovního prostoru. Copy-on-write přes rift všude, kde se ta nativní knihovna dodává; git worktree na Windows. Připravuje se na prostor, takže všechny konverzace toho prostoru sdílejí jeden checkout; agenti zdroj nikdy nemění.'],
+['Prostor', 'Kontejner spolupráce v rozsahu pracovního prostoru, s lidskými i agentními účastníky, uloženým režimem Mode, stavem přípravy a SpaceKind (topic, agentPeer, system, pr nebo slack), který rozhoduje, jak se řadí do sekcí, ztlumuje, označuje odznakem a uklízí. Vlastní izolované worktree, které jeho konverzace sdílejí (copy-on-write přes rift; git worktree na Windows).'],
+['Konverzace', 'Jeden proud zpráv uvnitř prostoru, s vlastním id, historií a kontextem běhu agenta. Konverzace v prostoru jsou si rovné: žádný primární ani hlavní proud není. Každá se otevře jako záložka editoru; stav nepřečteného prostoru se sčítá přes všechny.'],
+['Vlákno', 'Konverzace, která má nastavené anchorMessageId: ukotvená k jedné zprávě sousední konverzace ve stejném prostoru, s čerstvým kontextem agenta nasazeným tou kotevní zprávou. Jen jedna úroveň: vlákno se nikdy neukotví k vláknu.'],
+['Ticket', 'Agregát jednotky práce. Nezávislý na dodavateli: ve výchozím stavu local, s adaptéry synchronizace pro Linear, GitHub Issues, Jira Cloud a ClickUp, třebaže žádná plocha v aplikaci spojení synchronizace nezaloží. Umí hierarchii, vazby a delegování. Přiřazení agentovi zapíše vlastnictví a nic neodešle; výjimkou je přiřazení týmu (TeamRoutingService odešle vedoucího).'],
+['Pipeline', 'Workflow na DAG, které řetězí kroky (odeslání agenta, skripty, podmínky). Definuje se šablonami a provádí se jako běhy.'],
+['Schůzka', 'Místně nahraná a přepsaná schůzka. Zachytí mikrofon i systémový zvuk, na zařízení ho přepíše volitelným modelem ASR (ve výchozím stavu Parakeet TDT v3; alternativy jsou Parakeet TDT v2, Whisper large-v3-turbo a Whisper base.en), diarizuje řečníky a shrne to do poznámek, akčních položek a rozhodnutí. Vybraný model ASR se při startu natvrdo doinstaluje a operace nahrávání se rozsvítí po jednom restartu. V rozsahu pracovního prostoru.'],
+['CalendarEvent', 'Synchronizovaná položka Google Calendar v rozsahu pracovního prostoru a připojeného účtu. Od schůzky se liší: událost je naplánovaný závazek, schůzka je nahraná relace.'],
+['CalendarAccount', 'Připojený účet Google, na pracovní prostor a e-mail. Obnovovací tokeny OAuth se ukládají na serveru jako klíče google_* v souboru secrets.json pod datovým adresářem a ke klientovi se nikdy nedostanou; příznak authExpiredAt řídí banner pro opětovné připojení.'],
+['AgentRole', 'Výčtová role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Určuje personu, přístup k paměti a hierarchii.'],
+['AgentSkills', 'Množina identifikátorů skillů bez rozlišení velikosti písmen, která při odeslání vloží do promptů příslušný kontext.'],
+['Zdroj skillů', 'Repozitář na GitHubu registrovaný v pracovním prostoru jako katalog skillů. Nedůvěryhodný už z konstrukce: metadata repozitáře jsou jen k zobrazení a každá instalace projde bránou skenu, která se při selhání uzavře, než se jakýkoli obsah dostane na disk nebo do promptu.'],
+['skills-lock.json', 'Manifest nainstalovaných skillů v pracovním prostoru: u každého zdrojový repozitář, cesta v repozitáři, commit, ke kterému je připnutý, a souhrnný hash obsahu. Instalace, aktualizace a odinstalace ho udržují aktuální; verify_skills ho porovná s diskem.'],
+['AgentCapabilities', 'Čtyři příznaky (push do repozitáře, GitHub API, ticketing, odchozí síť), které se rozliší při každém odeslání: nejdřív výchozí stav agenta, pak výchozí stav uživatele, s přepisem na konverzaci. Vynucují se nepřítomností, protože vypnutá schopnost znamená, že se token nebo odchozí provoz prostě nikdy nevloží.'],
+['Režim', 'chat, plan, review nebo orchestrate. Ukládá se na prostor, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP.'],
+['SandboxBackend', 'microvm (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), native (nativní Seatbelt operačního systému na macOS, bubblewrap na Linuxu a WSL2) nebo none. Při startu se osondá jednou; native obalí odeslání agenta, když je k dispozici. Windows nativní backend nemá a Linux potřebuje bwrap a socat, takže tam běhy jdou bez obalu; --sandbox off ho vypne schválně.'],
+['Stanice', 'Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka i nástroj agenta míří na jeden stroj.'],
+['Izolované prostředí', 'Silnější izolace, kterou mají stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel, takže tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu enclosureControl.'],
+['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.'],
+['WakeReason', 'Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.'],
+['SandboxPort', 'Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).'],
+['CredentialBrokerPort', 'Vystavuje vymezená pověření vázaná na schopnosti pro spuštění sandboxu a při úklidu je odvolá.'],
+['GitRepoInspectorPort', 'Z cesty k místnímu Git repozitáři vytáhne metadata (vlastník, repozitář, větev).'],
+['EmbeddingPort', 'Vyrábí textové vektory embeddingu s jednotkovou normou pro sémantické vyhledávání.'],
+['NotificationPort', 'Ukazuje nativní oznámení na ploše a respektuje bránu podle kategorie a trasy.'],
+['TicketProviderPort', 'Hranice k backendu ticketů nezávislá na dodavateli (create, get, list, update, transition, assign).'],
+['PipelineEnginePort', 'Spustí běh pipeline ze šablony a volající se tím odpoutají od konkrétního enginu.'],
+['AgentDispatchService', 'Spouští běhy agentů: připraví izolované repozitáře, složí prompty, založí záznamy běhů a vrátí živé streamy událostí.'],
+['TicketWorkflowService', 'Čistě doménový engine životního cyklu ticketu s úzkým místem mutací s optimistickou souběžností a vynucením izolace pracovního prostoru. Graf přechodů, který vynucuje, váže jen agenty a automatizaci; změny z rozhraní, které řídí uživatel, předají force true a obejdou ho.'],
+['PipelineEngine', 'Řídí provedení běhu: běhy spouští, kroky plánuje, stav ukládá, obstarává routery, joiny a continue-on-fail a po restartu obnoví běhy, které byly v pohybu.'],
+['PipelineTriggerDispatcher', 'Odebírá doménové události a u zapnutých spouštěčů sám spustí odpovídající běhy pipeline.'],
+['MemoryAccessPolicy', 'Vyřeší a vynutí oprávnění role agenta k doménám paměti.'],
+['HarnessCostCalculator', 'Ocení spotřebu tokenů vestavěného harnessu na RunCost podle katalogu models.dev. Odeslání ten součet zapíše do záznamu běhu.'],
+['BudgetEnforcementService', 'Spočítá měsíční útratu agenta a blok před odesláním (checkInvocationBlock). Na ten blok sahají jen rekoncilery obnovy (OrphanRunReaper, StrandedTicketReconciler), nikdy běžné odeslání.'],
+['BudgetGovernanceService', 'Po každém běhu vyhodnotí měsíční útratu agenta: měkký práh zapíše varovný incident; vyčerpání zapíše tvrdý incident a přepne životní cyklus agenta na paused.'],
+['DomainEventBus', 'Procesní broadcastová sběrnice publish/subscribe pro komunikaci napříč doménami. Události jsou typované; odběratelé čtou streamy podle typu.'],
+['DomainEvent', 'Základní rozhraní. Každá událost má occurredAt. Hlavní kategorie: pracovní prostor/agent, PR/kontrola, zprávy, tickety, pipeline, schůzky/kalendář, identita, stanice, observabilita.'],
+['Clean Architecture', 'Pravidlo závislostí: Presentation vede do Application/Providers a dál do Domain, Infrastructure míří dovnitř. Doména nemá žádné importy infrastruktury.'],
+['Porty a adaptéry', 'Doména definuje abstraktní rozhraní (porty); infrastruktura dodá konkrétní implementace (adaptéry). Sváže je kořen kompozice.'],
+['Sdílené jádro', 'Entity, hodnotové objekty, porty a služby v core/domain/ sdílené napříč třemi a více doménami.'],
+['Uspořádání podle domén', 'Kód je uspořádaný podle obchodní domény (agenti, pipeline, zprávy), ne podle technické vrstvy.'],
+['Architektura tenkého klienta', 'Žádný klient neotevírá databázi; bezhlavý proces cc_server vlastní data a podává je přes WebSocket RPC. Každý klient (počítač, web, telefon) je vykreslovač nad tím jedním spojením RPC.'],
+['cc_server', 'Bezhlavá serverová binárka (čistý Dart, bez enginu Flutter). Vlastní databázi Drift/SQLite, podává repo-RPC přes WebSocket a běží v ní služby na pozadí (pipeline, MCP, rekoncilery).'],
+['ServerConnectionMode', 'Jak se počítač dostane ke svému serveru: local (na tomhle stroji spustí cc_server) nebo remote (připojí se k serveru jinde). Webový klient je vždy remote.'],
+['RemoteRpcClient', 'Klient JSON-RPC nezávislý na transportu, kterým každý tenký klient mluví se svým serverem, přes WSS, loopback nebo zprostředkované relé.'],
+['Rozsah pracovního prostoru u každého volání', 'Server je bezstavový: žádná vazba pracovního prostoru na relaci není, takže víc klientů na jednom serveru nikdy nesdílí aktuální pracovní prostor. Každé repo/call a sub/subscribe v rozsahu pracovního prostoru musí v argumentech nést workspace_id; chybějící nebo neregistrované id se odmítne dřív, než se otevře jakákoli databáze. Přístup pak hlídá členství a role v pracovním prostoru, ne relace.'],
+['cc_remote', 'Telefonní tenký klient: Flutter webová PWA, která na dálku ovládá flotilu přes zprostředkované relé, s politikou nástrojů s výchozím zákazem.'],
+['cc_signaling_server', 'Bezstavový zprostředkovatel WebSocket relé, který hostuje místnosti otevřené jen na pozvánku. Hloupé relé: přeposílá jen rámce zapečetěné od konce ke konci, nedrží data aplikace a párovací PSK nikdy neuvidí.'],
+['Principál', 'Zapečetěná hodnota, která sjednocuje lidi a agenty do jediné abstrakce aktéra. UserPrincipal(userId) nebo AgentPrincipal(agentId). Každá zpráva, ticket, kontrola, plán a záznam běhu se připisuje přes principála.'],
+['Uživatel', 'Lidská identita, uložená v global.db, a proto globální napříč pracovními prostory. Principál, který pracovní prostor založí, se stane jeho vlastníkem, zapsaným do Workspace.ownerUserId s řádkem členství v roli vlastníka; ostatní se připojí pozvánkou nebo přes SSO.'],
+['WorkspaceMember', 'Řádek členství, který váže uživatele k pracovnímu prostoru v roli WorkspaceRole. Hranice přístupu je členství, ne párovací klíč.'],
+['WorkspaceRole', 'Odstupňovaná role členství: owner, admin, member, viewer nebo guest. Úzké místo operací nad repozitáři odvodí spodní hranici role podle druhu operace.'],
+['ParticipantPresence', 'Pomíjivé povědomí o principálovi (stav, lokus, kurzor, psaní, živý stav agenta a běžící náklad). Nikdy se neukládá; soustředí ho server; před rozesláním se filtruje podle oprávnění k repozitáři.'],
+['Režim sledování', 'Klikni na avatar a jeď po jeho zobrazení, dokud nezasáhneš, a pak se sledování odpojí. Funguje pro lidi i pro agenty („sledovat, jak agent pracuje“).'],
+['Volič autonomie', 'Ovládání na prostor a na agenta: propose-only / act-with-approval / act-freely. Je to pojmenovaný profil nad úložištěm guardrailů akcí.'],
+['cc_worker', 'Bezhlavá binárka vykonavatele flotily v čistém Dartu. Spáruje se s cc_server, ohlásí své schopnosti, stahuje zapůjčené úlohy, provede je a streamuje události zpátky. Nedrží žádný trvalý stav.'],
+['JobSpec', 'Typovaná specifikace všeho, co se dá spustit (běh agenta, krok pipeline, index kódu, golden-render, benchmark, dávka eval): požadované schopnosti, priorita, rozpočet, pracovní prostor.'],
+['ActionClass', 'Uzavřená sada 13 tříd účinku (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší allow / prompt / deny podle rozsahu.'],
+['WriteLedger', 'Kniha idempotence v rozsahu pracovního prostoru. Každá mutace nese klíč idempotence na logickou akci; opakování vrátí bajtově shodný původní výsledek. Znovupřipojení a víc klientů jsou tím bezpečné už z konstrukce.'],
+['Klíč idempotence', 'UUIDv7, který klient vygeneruje na logickou akci (ne na každý pokus). Odstraní duplicity opakování přes znovupřipojení i klienty.'],
+['Doručená pošta', 'Fronta napříč pilíři s přísným pravidlem: položka se objeví jen tehdy, když něco blokuje (agenta, sloučení, synchronizaci) nebo výslovně žádá operátora.'],
+['Plan Studio', 'Interaktivní plocha plánování: návrh orchestrace nebo plán jednoho agenta vykreslený jako upravitelný typovaný DAG, s odhadem nákladů, času a rizika na krok, verzováním podle rozdílu plánů a částečným schválením.'],
+['Výpočet kontroly', 'Výpočet kontroly PR na serveru: kohorty souborů odvozené z grafu, typované diagramy průchodu, vizuální diffy rozhraní, diffy kontraktu OpenAPI, mapa rozsahu dopadu a brány po osách, podávané přes review_studio.* a složené do verdiktu na záložce Kontrola.'],
+['Prostor kontroly', 'Jediný podkladový prostor PR (režim review, druh pr), založený idempotentně a s PR svázaný přes ReviewSpaceAssociation. Každý recenzent do něj zapisuje zjištění, a právě proto jsou srovnatelná; jeho izolovaný worktree má PR vycheckoutovaný na jeho head.'],
+['Uzel kontroly', 'Strukturovaná jednotka zjištění AI kontroly: druh (bug, suggestion, recommendation, question, ticket), priorita P0–P3, trojice třídění kategorie, závažnost a úsilí, kotva na soubor a řádek, volitelná navržená oprava a skóre jistoty. Zapisuje se přes add_review_node; verdikt se počítá z uzlů, ne z textu.'],
+['Consensus-ready', 'Stav uzlu kontroly, ke kterému se dojde jen tehdy, když zjištění potvrdí jiný recenzent. Agent vlastní zjištění potvrdit nemůže. Tlačítko Zveřejnit na záložce Kontrola odešle každé zbývající otevřené zjištění; nástroj MCP publish_review_to_github má pořád výchozí jen zjištění potvrzená kolegou.'],
+['Úroveň kontroly', 'Politika pracovního prostoru (light, balanced, thorough), která nastavuje, kteří recenzenti se rozešlou (jen engineer; +qa+architect; +security+perf) a kde se vykreslí zjištění pod prahem. Zjištění nikdy nesmaže.'],
+['Osa kontroly', 'Jedna z pěti hodnoticích drah jedné kontroly: correctness, security a testGap ze zjištění recenzentů; visual a apiContract deterministicky. Osy s bránou se složí do verdiktu a umějí ho jen zpřísnit. Brána partial nebo unavailable verdikt podrží a dál ho nepustí.'],
+['Verdikt kontroly', 'ship, hold nebo block. Jakékoli zjištění P0 s jistotou >= 0.7 dá block; jakékoli jiné P0 nebo jakékoli P1 dá hold; jinak ship. Selhání osy s bránou vynutí block a zjištění ho nepřehlasují.'],
+['SessionRecording', 'Stream událostí plus kazety HTTP/LLM a vstup a výstup nástrojů zachycené pro jeden běh, spárované s AgentConfigHash.'],
+['Zlatá relace', 'Posvěcený SessionRecording připnutý k agentovi nebo playbooku.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "Slovník Control Center",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## Základní entity
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Agent**: AI pracovník s identitou, rolí, skilly a schopnostmi. Patří právě jednomu pracovnímu prostoru. Hlavní aktér v systému.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/).
+**Adaptér**: Runner, který provede tah agenta. Dodávají se dva: **Control Center (built-in)**, harness v procesu, který mluví s poskytovateli modelů, a **Claude Code** přes `claude -p`. Cursor, Codex, Anthropic, OpenAI a ostatní jsou poskytovatelé na vestavěném adaptéru, ne samostatná CLI. Viz [Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/).
+**Pracovní prostor**: Nejvyšší tenant izolace. Sdružuje agenty, repozitáře, prostory, tickety, paměť a pipeline. Izolace je strukturální, ne jen dohodou: každý pracovní prostor má vlastní soubor SQLite (`<dataDir>/<workspaceId>/workspace.db`), takže čtení napříč pracovními prostory se nepřeloží. Každá trasa v aplikaci začíná `/workspaces/:workspaceId`. Viz [mapa tras](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
+**Hostitel kódu**: **GitHub**, **GitLab** nebo **Bitbucket Cloud**. Je to vlastnost každého repozitáře, přečtená z remote `origin` při registraci, a vybere adaptér API a pověření toho repozitáře. Jeden pracovní prostor může držet repozitáře na všech třech; agregační plochy (doručená pošta, fronta PR) se rozběhnou přes každou zastoupenou forge a výsledky složí, přičemž selhání izolují, takže nedosažitelná forge nevyprázdní ostatní. Hostitelé se liší v tom, co umějí. Tabulka schopností je v [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**Repozitář**: Git repozitář registrovaný v jednom pracovním prostoru. **V rozsahu pracovního prostoru**: stejný checkout registrovaný ve dvou pracovních prostorech jsou dva nezávislé řádky se dvěma id; identita repozitáře napříč pracovními prostory je cesta na souborovém systému, nikdy id. Registrace vyžaduje pracovní strom gitu, jehož remote `origin` míří na podporovaného hostitele kódu. Každý repozitář nese tu **forge** (`github` / `gitlab` / `bitbucket`), která vybere adaptér API a pověření použité pro něj.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**Izolovaný repozitář**: Worktree registrovaného repozitáře v rozsahu pracovního prostoru. Copy-on-write přes `rift` všude, kde se ta nativní knihovna dodává; `git worktree` na Windows. Připravuje se **na prostor**: všechny konverzace toho prostoru sdílejí jeden checkout, takže agenti zdroj nikdy nemění.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**Prostor**: Kontejner spolupráce v rozsahu pracovního prostoru, s lidskými i agentními účastníky, uloženým `Mode`, stavem přípravy a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`), který rozhoduje, jak se řadí do sekcí, ztlumuje, označuje odznakem a uklízí. Vlastní izolované worktree, které jeho konverzace sdílejí (copy-on-write přes `rift`; `git worktree` na Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**Konverzace**: Jeden proud zpráv uvnitř prostoru, s vlastním id, historií a kontextem běhu agenta. Konverzace v prostoru jsou si rovné: žádný primární ani „hlavní“ proud není. Každá se otevře jako záložka editoru; stav nepřečteného prostoru se sčítá přes všechny.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**Vlákno**: Konverzace, která má nastavené `anchorMessageId`: ukotvená k jedné zprávě sousední konverzace ve stejném prostoru, s čerstvým kontextem agenta nasazeným tou kotevní zprávou. Jen jedna úroveň: vlákno se nikdy neukotví k vláknu.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**Ticket**: Agregát jednotky práce. Nezávislý na dodavateli: ve výchozím stavu `local`, s adaptéry synchronizace pro Linear, GitHub Issues, Jira Cloud a ClickUp, třebaže žádná plocha v aplikaci spojení synchronizace nezaloží. Umí hierarchii, vazby a delegování. Přiřazení agentovi zapíše vlastnictví a nic neodešle; výjimkou je přiřazení týmu (`TeamRoutingService` odešle vedoucího).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**Pipeline**: Workflow na DAG, které řetězí kroky (odeslání agenta, skripty, podmínky). Definuje se šablonami a provádí se jako běhy.
 
-## Value objects
+## Hodnotové objekty
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: Výčtová role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Určuje personu, přístup k paměti a hierarchii.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: Množina identifikátorů skillů bez rozlišení velikosti písmen, která při odeslání vloží do promptů příslušný kontext.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/cs-CZ/prirucka/navody/sprava-skillu/).
+**Zdroj skillů**: Repozitář na GitHubu registrovaný v pracovním prostoru jako katalog skillů. Nedůvěryhodný už z konstrukce: metadata repozitáře jsou jen k zobrazení a každá instalace projde bránou skenu, která se při selhání uzavře, než se jakýkoli obsah dostane na disk nebo do promptu. Viz [Instalujte a spravujte skilly](/cs-CZ/prirucka/navody/sprava-skillu/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: Manifest nainstalovaných skillů v pracovním prostoru: u každého zdrojový repozitář, cesta v repozitáři, commit, ke kterému je připnutý, a souhrnný hash obsahu. Instalace, aktualizace a odinstalace ho udržují aktuální; `verify_skills` ho porovná s diskem.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: Čtyři příznaky (push do repozitáře, GitHub API, ticketing, odchozí síť), které se rozliší při každém odeslání: výchozí stav agenta, pak výchozí stav uživatele, s přepisem na konverzaci. Vynucují se nepřítomností: vypnutá schopnost znamená, že se token nebo odchozí provoz prostě nikdy nevloží.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Režim**: `chat`, `plan`, `review` nebo `orchestrate`. Ukládá se **na prostor**, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP. Composer nabízí jen `chat`, `plan` a `orchestrate`; `chat` má popisek „Agent“.
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), `native` (Seatbelt na macOS, bubblewrap na Linuxu a WSL2) nebo `none`. Při startu se osondá jednou; `native` se **nasadí na odeslání agenta**, když je k dispozici, a obalí CLI Claude Code i nástroj `bash` harnessu. Windows nativní backend nemá a Linux potřebuje `bwrap` a `socat`, takže tam běhy jdou bez obalu; `--sandbox off` ho vypne schválně.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/cs-CZ/prirucka/koncepty/stanice/).
+**Stanice**: Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka a volání `browser_use` / `computer_use` / `mobile_use` / `ios_use` míří na jeden výchozí stroj. Viz [Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**Izolované prostředí**: Silnější hranice stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel a tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu `enclosureControl`.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.
 
-## Ports
+## Porty
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Vystavuje vymezená pověření vázaná na schopnosti pro spuštění sandboxu a při úklidu je odvolá.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: Z cesty k místnímu Git repozitáři vytáhne metadata (vlastník, repozitář, větev).
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: Vyrábí textové vektory embeddingu s jednotkovou normou pro sémantické vyhledávání.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: Ukazuje nativní oznámení na ploše a respektuje bránu podle kategorie a trasy.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: Hranice k backendu ticketů nezávislá na dodavateli (create, get, list, update, transition, assign).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: Spustí běh pipeline ze šablony a volající se tím odpoutají od konkrétního enginu.
 
-## Domain services
+## Doménové služby
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: Spouští běhy agentů: připraví izolované repozitáře, složí prompty, založí záznamy běhů a vrátí živé streamy událostí.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: Čistě doménový engine životního cyklu ticketu s úzkým místem mutací s optimistickou souběžností a vynucením izolace pracovního prostoru. Jeho graf přechodů váže jen agenty a automatizaci; změny z rozhraní, které řídí uživatel, předají `force: true` a obejdou ho. Dispečer ticketů pro agenta jako příjemce není: odeslání vlastní `AgentDispatchService` a přiřazení ticketu agentovi žádný běh nespustí. Výjimkou je přiřazení ticketu týmu (`TeamRoutingService` odešle vedoucího).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: Řídí provedení běhu: běhy spouští, kroky plánuje, stav ukládá, obstarává routery, joiny a continue-on-fail a po restartu obnoví běhy, které byly v pohybu.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: Odebírá doménové události a u zapnutých spouštěčů sám spustí odpovídající běhy pipeline.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: Vyřeší a vynutí oprávnění role agenta k doménám paměti.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: Ocení spotřebu tokenů vestavěného harnessu na `RunCost` podle katalogu models.dev. Odeslání ten součet zapíše do záznamu běhu.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: Spočítá měsíční útratu agenta a blok před odesláním (`checkInvocationBlock`). Na ten blok sahají jen rekoncilery obnovy (`OrphanRunReaper`, `StrandedTicketReconciler`), nikdy běžné odeslání uživatelem nebo agentem.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: Po každém běhu vyhodnotí měsíční útratu agenta: měkký práh zapíše varovný incident; vyčerpání zapíše tvrdý incident a přepne životní cyklus agenta na `paused`.
 
-## Events
+## Události
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: Procesní broadcastová sběrnice publish/subscribe pro komunikaci napříč doménami. Události jsou typované; odběratelé čtou streamy `on<T>()`.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: Základní rozhraní. Každá událost má `occurredAt`. Hlavní kategorie: pracovní prostor/agent, PR/kontrola, zprávy, tickety, pipeline, schůzky/kalendář, identita, stanice, observabilita.
 
-## Meetings and calendar
+## Schůzky a kalendář
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Schůzka**: Místně nahraná a přepsaná schůzka. Zachytí mikrofon i systémový zvuk, na zařízení ho přepíše volitelným modelem ASR (ve výchozím stavu Parakeet TDT v3; alternativy jsou Parakeet TDT v2, Whisper large-v3-turbo a Whisper base.en), diarizuje řečníky a shrne to do poznámek, akčních položek a rozhodnutí. Vybraný model ASR se při startu natvrdo doinstaluje a operace nahrávání se rozsvítí po jednom restartu. V rozsahu pracovního prostoru; zůstane na stroji.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: Jedno přepsané okno zvuku, se značkou řečníka (`me`/`them`), štítkem diarizace a offsety v milisekundách.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: Strukturované výstupy, které vytáhne pipeline shrnutí a uloží je jako samostatné řádky. Akční položky se dají navázat na ticket.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: Synchronizovaná položka Google Calendar v rozsahu pracovního prostoru a připojeného účtu. Od schůzky se liší: událost je naplánovaný závazek, schůzka je nahraná relace. Propojené jedna ku jedné přes `MeetingCalendarLink`.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: Připojený účet Google, na pracovní prostor a e-mail. Obnovovací tokeny OAuth se ukládají na serveru jako klíče `google_*` v `<dataDir>/secrets.json` a ke klientovi se nikdy nedostanou; tok device code doběhne na serveru. Příznak `authExpiredAt` řídí banner **Znovu připojit**.
 
-## Architecture terms
+## Architektonické pojmy
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Clean Architecture**: Pravidlo závislostí: Presentation → Application/Providers → Domain ← Infrastructure. Doména nemá žádné importy infrastruktury.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**Porty a adaptéry**: Doména definuje abstraktní rozhraní (porty); infrastruktura dodá konkrétní implementace (adaptéry). Sváže je kořen kompozice.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**Sdílené jádro**: Entity, hodnotové objekty, porty a služby v `core/domain/` sdílené napříč třemi a více doménami.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**Uspořádání podle domén**: Kód je uspořádaný podle obchodní domény (agenti, pipeline, zprávy), ne podle technické vrstvy.
 
-## Multiplayer, identity and velocity
+## Multiplayer, identita a tempo
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Principál**: Zapečetěná hodnota, která sjednocuje lidi a agenty do jediné abstrakce aktéra: `UserPrincipal(userId)` nebo `AgentPrincipal(agentId)`. Každá zpráva, ticket, kontrola, plán a záznam běhu se připisuje přes principála.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**Uživatel**: Lidská identita, uložená v `global.db`, a proto globální napříč pracovními prostory. Principál, který pracovní prostor založí, se stane jeho **vlastníkem**, zapsaným do `Workspace.ownerUserId` s řádkem členství v roli vlastníka v téže operaci. Ostatní se připojí pozvánkou nebo přes SSO.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: Řádek členství, který váže uživatele k pracovnímu prostoru v roli (`owner` / `admin` / `member` / `viewer` / `guest`). **Hranice přístupu je členství, ne párovací klíč.** Oprávnění na repozitář drží členství v mezích forge.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: Pomíjivé povědomí o principálovi (stav, lokus, kurzor, psaní, živý stav agenta a běžící náklad). Nikdy se neukládá; soustředí ho server; před rozesláním se filtruje podle oprávnění k repozitáři.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**Režim sledování**: Klikni na avatar a jeď po jeho zobrazení, dokud nezasáhneš, a pak se sledování odpojí. Funguje pro lidi i pro agenty („sledovat, jak agent pracuje“).
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**Volič autonomie**: Ovládání na prostor a na agenta, `propose-only` / `act-with-approval` / `act-freely`, pojmenovaný profil nad úložištěm guardrailů akcí.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Uzavřená sada 13 tříd účinku (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší `allow` / `prompt` / `deny` podle rozsahu (prostor > agent > pracovní prostor > předvolba režimu > vestavěný výchozí).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **klíč idempotence**: Každá mutace nese klíč idempotence, který vygeneruje klient (UUIDv7, na logickou akci). Kniha v rozsahu pracovního prostoru odstraní duplicitu dřív, než doběhne handler; opakování vrátí bajtově shodný původní výsledek. Znovupřipojení a víc klientů jsou tím bezpečné už z konstrukce.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**Doručená pošta**: Fronta napříč pilíři s přísným pravidlem: položka se objeví jen tehdy, když něco _blokuje_ (agenta, sloučení, synchronizaci) nebo výslovně žádá operátora.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: Interaktivní plocha plánování: upravitelné plány jako typovaný DAG, s nákladem, časem a rizikem na krok a s částečným schválením.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**Výpočet kontroly**: Výpočet kontroly PR na serveru (kohorty odvozené z grafu, typované diagramy, vizuální diffy, diffy kontraktu API, brány po více osách), podávaný přes `review_studio.*` a složený do záložky Kontrola.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**Prostor kontroly**: Jediný podkladový prostor PR (režim `review`, druh `pr`), založený idempotentně a s PR svázaný přes `ReviewSpaceAssociation`. Každý recenzent do něj zapisuje zjištění, a právě proto jsou srovnatelná; jeho izolovaný worktree má PR vycheckoutovaný na jeho head.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**Uzel kontroly**: Strukturovaná jednotka zjištění AI kontroly: druh (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priorita P0–P3, trojice třídění kategorie, závažnost a úsilí, kotva na soubor a řádek, volitelná navržená oprava a skóre jistoty. Zapisuje se přes `add_review_node`; verdikt se počítá z uzlů, ne z textu.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Consensus-ready**: Stav uzlu kontroly, ke kterému se dojde jen tehdy, když zjištění potvrdí jiný recenzent. Agent vlastní zjištění potvrdit nemůže. Tlačítko **Zveřejnit na GitHub** na záložce Kontrola odešle každé zbývající otevřené zjištění (`selection: all_open`); nástroj MCP `publish_review_to_github` má pořád výchozí jen zjištění potvrzená kolegou.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**Úroveň kontroly**: Politika pracovního prostoru (`light`, `balanced`, `thorough`), která nastavuje, kteří recenzenti se rozešlou (jen engineer; +qa+architect; +security+perf) a kde se vykreslí zjištění pod prahem. Zjištění nikdy nesmaže.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**Osa kontroly**: Jedna z pěti hodnoticích drah jedné kontroly: `correctness`, `security` a `testGap` ze zjištění recenzentů; `visual` a `apiContract` deterministicky. Osy s bránou se složí do verdiktu a umějí ho jen zpřísnit. Brána `partial` nebo `unavailable` verdikt podrží a dál ho nepustí.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**Verdikt kontroly**: `ship`, `hold` nebo `block`. Jakékoli zjištění P0 s jistotou ≥ 0.7 znamená **Block**; jakékoli jiné P0 nebo jakékoli P1 znamená **Hold**; jinak **Ship**. Selhání osy s bránou vynutí **Block** a zjištění ho nepřehlasují.
 
-## Fleet and evals
+## Flotila a evaly
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: Bezhlavá binárka vykonavatele flotily v čistém Dartu. Spáruje se s `cc_server`, ohlásí schopnosti hostitele, stahuje zapůjčené úlohy, provede je a streamuje události procesu zpátky. **Nedrží žádný trvalý stav**: jeden autoritativní server, N hloupých končetin.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: Typovaná specifikace všeho, co se dá spustit (běh agenta, krok pipeline, index kódu, golden-render, benchmark, dávka eval).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**Sada eval**: Definice vyhodnocení v rozsahu pracovního prostoru (prompt, cílový agent a režim, hodnotitelé). Pět startovních sad se založí při vytvoření pracovního prostoru; vypíše je Observabilita → Kvalita.
 
-## Deployment and clients
+## Nasazení a klienti
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**Architektura tenkého klienta**: Žádný klient neotevírá databázi; bezhlavý proces `cc_server` vlastní data a podává je přes WebSocket RPC. Každý klient (počítač, web, telefon) je vykreslovač nad tím jedním spojením RPC.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: Bezhlavá serverová binárka (čistý Dart, bez enginu Flutter). Vlastní databázi Drift/SQLite, podává repo-RPC přes WebSocket a běží v ní služby na pozadí (pipeline, MCP, rekoncilery).
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: Jak se počítač dostane ke svému serveru: `local` (na tomhle stroji spustí `cc_server`, to je výchozí) nebo `remote` (připojí se k serveru jinde). Webový klient je vždy `remote`.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: Klient JSON-RPC nezávislý na transportu, kterým každý tenký klient mluví se svým serverem, přes WSS, loopback nebo zprostředkované relé.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**Rozsah pracovního prostoru u každého volání**: Server je bezstavový. **Žádná** vazba pracovního prostoru na relaci není, takže víc klientů na jednom serveru nikdy nesdílí „aktuální pracovní prostor“. Každé `repo/call` a `sub/subscribe` v rozsahu pracovního prostoru musí v argumentech nést `workspace_id`; chybějící nebo neregistrované id se odmítne dřív, než se otevře jakákoli databáze. Přístup pak hlídá členství a role v pracovním prostoru, ne relace.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: Telefonní tenký klient, Flutter webová PWA, která na dálku ovládá flotilu přes zprostředkované relé, s politikou nástrojů s výchozím zákazem.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: Bezstavový zprostředkovatel WebSocket relé, který hostuje místnosti otevřené jen na pozvánku. Hloupé relé, které přeposílá jen rámce zapečetěné od konce ke konci, nedrží data aplikace a párovací PSK nikdy neuvidí.
 
-## See also
+## Viz také
 
-- [Route map](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/)
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/)
-- [Workspaces](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
-- [Domain events](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/)
+- [Mapa tras](/cs-CZ/prirucka/referencni-prirucka/mapa-tras/)
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/)
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
+- [Doménové události](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/)

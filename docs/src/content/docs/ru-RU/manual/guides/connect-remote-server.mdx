@@ -1,109 +1,116 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Подключиться к удалённому серверу
+description: Направьте приложение для компьютера или веб-клиент на cc_server, работающий в другом месте, и переключайтесь между серверами без перезапуска.
 slug: ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Каждый клиент — это отрисовщик поверх `cc_server`, которому принадлежат данные.
+Приложение для компьютера может запустить сервер внутри себя; веб-приложение по
+адресу [app.usectrl.dev](https://app.usectrl.dev) не может, потому что вкладка
+браузера не способна обслуживать сервер. В любом случае это руководство
+направляет клиент на сервер, работающий в другом месте, — небольшую машину,
+облачную ВМ, сборочный сервер.
 
-## Prerequisites
+## Предварительные требования
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Работающий `cc_server`. Если его у вас нет, см. [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
+- Либо три значения для сопряжения, выданные сервером, — **URL сервера** (`ws://…/rpc` или `wss://…/rpc`), **ID устройства** и **ключ сопряжения**, — **либо** одноразовый **код приглашения** от администратора рабочего пространства. Активация приглашения создаёт вашего пользователя, записывает ваше членство и выдаёт учётные данные для этого клиента за вас, поэтому вам никогда не приходится иметь дело с ID устройства или ключом.
 
-### Make sure the server is reachable
+### Убедитесь, что сервер доступен
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Локальному серверу ничего не нужно: `ws://localhost:9030/rpc` работает и из
+приложения для компьютера, и из браузера, потому что браузеры считают локальный
+интерфейс доверенным источником.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Сервер на другой машине — другое дело. `app.usectrl.dev` отдаётся по HTTPS,
+поэтому браузер откроет сокет `wss://` только с сертификатом, которому он уже
+доверяет, — а `cc_server` в принципе отказывается привязываться к адресу, отличному
+от локального, без TLS. Дайте ему одно из:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- сертификат напрямую, с `--tls-cert` и `--tls-key`
+- обратный прокси, терминирующий TLS, перед ним, с сервером, запущенным с `--insecure` (открытый текст за прокси, только в доверенной сети)
+- туннель или VPN, который предоставляет сертификат, — Tailscale, cloudflared и подобные. В разделе **Настройки → Сервер → Подключение и состояние** есть встроенное включение туннеля в пункте **Открыть доступ к серверу**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Две настройки на стороне сервера легко упустить. За прокси, NAT или туннелем
+задайте `--public-url` как адрес, по которому клиенты должны фактически
+дозваниваться, — по умолчанию он равен локальной привязке, поэтому без него
+клиенты пытаются обратиться не к тому хосту. А если вы размещаете собственную
+копию веб-сборки, добавьте её источник в `--allowed-origins`, который по
+умолчанию содержит только `https://app.usectrl.dev`; локальный интерфейс и
+нативные клиенты разрешены всегда.
 
-## Connect the desktop app
+## Подключите приложение для компьютера
 
-On a fresh install:
+При чистой установке:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Запустите Control Center. Экран первого запуска спрашивает **Как запускать Control Center?**
+2. Вместо **Запустить в этом приложении** заполните поля подключения: URL сервера, а также либо код приглашения, либо ID устройства и ключ сопряжения.
+3. Нажмите **Подключить**. Control Center дозванивается до сервера и открывает входящие рабочего пространства.
 
-On a desktop that already runs its own server:
+На компьютере, который уже запускает собственный сервер:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Откройте **Настройки → Сервер → Подключение и состояние**.
+2. Нажмите **Добавить сервер**. Введите URL сервера (`wss://host:9030/rpc`) и либо код приглашения, либо ID устройства и ключ сопряжения. Кнопка-суффикс в поле URL находит экземпляры `cc_server` в вашей локальной сети или tailnet.
+3. Нажмите **Подключить**, затем **Переключить** в строке нового сервера.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Переключение происходит на лету: приложение перестраивается вокруг нового сеанса
+на месте, без перезапуска. Если подключиться не удаётся, вы остаётесь на текущем
+сервере и видите ошибку. В строке сервера, на котором вы находитесь, нет действия
+**Переключить**; локальный сервер — первая строка с меткой **Запускать в этом приложении**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+После переключения на компьютере нет собственной базы данных. Каждый экран
+читает и пишет через удалённый сервер по WebSocket.
 
-## Connect the web client
+## Подключите веб-клиент
 
-The web build is always remote.
+Веб-сборка всегда удалённая.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Откройте [app.usectrl.dev](https://app.usectrl.dev) или собственную копию веб-сборки.
+2. Введите URL сервера и либо код приглашения, либо ID устройства и ключ сопряжения.
+3. Клиент дозванивается до сервера и отрисовывает тот же интерфейс, что и приложение для компьютера.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Если в URL есть глубокая ссылка для сопряжения, поля уже заполнены. Ключ
+сопряжения едет во **фрагменте** URL, который браузеры никогда не отправляют
+серверу, отдающему страницу, поэтому статический хостинг его не видит.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Медиа и безопасность]
+Медиа (аватары, изображения из ленты, скриншоты PR) идёт через прокси
+подключённого сервера, поэтому браузер никогда не обращается к вышестоящему
+хосту напрямую. Политика Content-Security, проставляемая для каждого запроса на
+основе неконфиденциальной cookie, разрешает только источник подключённого
+сервера.
 :::
 
-### What the browser does not do
+### Что браузер не делает
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Веб-клиент читает и пишет на тот же сервер, что и приложение для компьютера, но
+нескольким поверхностям нужно нативное окно или собственные устройства машины:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- нет всплывающих уведомлений ОС, звуков уведомлений и постоянной полосы баннеров (центр уведомлений внутри приложения всё ещё работает)
+- нет поиска серверов в локальной сети или tailnet в диалоге **Добавить сервер**
+- нет встроенного средства чтения статей — статьи из ленты новостей открываются в новой вкладке
+- нет повторного запуска резюме встречи и отмены того, что уже обрабатывается
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Две вещи ведут себя иначе, а не отсутствуют. **Запись** встречи работает в
+браузере: захватываются ваш микрофон и демонстрация экрана с аудиодорожкой.
+**Открыть в IDE** тоже работает, но просит сервер запустить редактор на экране
+_сервера_, поэтому кнопка прячется на headless-хосте без установленных
+редакторов.
 
-## Troubleshooting
+## Устранение неполадок
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/).
+- **Время ожидания подключения истекло**: сервер должен быть доступен с клиента. Проверьте привязку (`--bind any`), что порт открыт и что `--public-url` указывает адрес, по которому клиент действительно может дозвониться. В открытом интернете TLS обязателен — привязка к нелокальному адресу открытым текстом отклоняется при запуске, если только сервер не был запущен с `--insecure` за прокси.
+- **Браузер отказывается подключаться, а нативный клиент работает**: источника браузера нет в списке `--allowed-origins` сервера. По умолчанию разрешён только `https://app.usectrl.dev` (плюс локальный интерфейс).
+- **Ключ сопряжения отклонён**: снова выполните `cc_server pair` на сервере, чтобы сменить ключ этого устройства, затем введите новый. Отозванное устройство обнаруживает, что его учётные данные исчезли, и отказывает безопасно; отзыв разрывает активный сеанс в течение секунд.
+- **Не то рабочее пространство**: рабочее пространство — часть URL (`/workspaces/:workspaceId/…`) и передаётся с каждым вызовом, поэтому переключение рабочего пространства в одном клиенте меняет только ваш собственный вид. Вы можете попасть только в те рабочие пространства, где вы состоите членом, — всё остальное отклоняется с "Not a member of this workspace". См. [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/).
 
-## Related guides
+## Связанные руководства
 
-- [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
-- [Pair a device](/ru-RU/руководство/практические-руководства/привязать-устройство/): the phone relay path
+- [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
+- [Привязать устройство](/ru-RU/руководство/практические-руководства/привязать-устройство/): путь через телефонное реле
 
-## Related concepts
+## Связанные понятия
 
-- [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/)
-- [Remote control and mobile](/ru-RU/руководство/понятия/удалённое-управление/)
+- [Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/)
+- [Удалённое управление и мобильный клиент](/ru-RU/руководство/понятия/удалённое-управление/)

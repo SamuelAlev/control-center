@@ -1,149 +1,152 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: اطلاعات کنفیگر کریں
+description: اقسام آن یا آف کریں، Quiet hours اور ایک آواز سیٹ کریں اور جانیں کہ کون سی اطلاعات آپ تک کہاں پہنچتی ہیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اطلاعات
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+یہ گائیڈ دکھاتی ہے کہ اطلاعات کیسے کنفیگر کی جائیں اور ہر ترتیب واقعی کیا
+کنٹرول کرتی ہے۔
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+اطلاعات دو سطحوں پر پہنچتی ہیں۔ **اطلاعات کا مرکز** — ٹائٹل بار میں موجود گھنٹی —
+سرور پر فی ورک اسپیس موجود ایک پائیدار فیڈ پڑھتا ہے۔ **OS ٹوسٹس** ایک الگ اور صرف
+ڈیسک ٹاپ کا راستہ ہیں جسے سرور سے بھیجے گئے لائیو فریم کھلاتے ہیں۔
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[ویب بلڈ کوئی OS اطلاع نہیں دکھاتا]
+ٹوسٹ پائپ لائن صرف ڈیسک ٹاپ بوٹ اسٹرپ بناتا ہے۔ `app.usectrl.dev` پر نہ کوئی OS
+ٹوسٹ ہے، نہ کوئی اطلاع کی آواز اور نہ کوئی محیطی بینر — گھنٹی اور اس کی تاریخچہ
+پھر بھی کام کرتے ہیں، کیونکہ وہ سرور کی فیڈ پڑھتے ہیں۔ فون کلائنٹ میں اطلاعات کی
+کوئی سطح ہی نہیں۔
 :::
 
-## Turn categories on or off
+## اقسام آن یا آف کریں
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. **ترتیبات → آپ → اطلاعات** پر جائیں
+2. **اطلاعات فعال کریں** کو آن رہنے دیں
+3. اپنی مطلوبہ اقسام ٹوگل کریں۔ بالکل سولہ اقسام ہیں:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| قسم                       | کب فعال ہوتی ہے                                                              |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| ایجنٹ ختم ہوا             | کسی ایجنٹ نے ایک رن مکمل کیا                                                  |
+| PR شائع ہوا               | کسی ایجنٹ نے ایک PR شائع کیا                                                  |
+| PR مرج ہو گیا             | کوئی PR مرج ہو گیا                                                            |
+| نئے پیغامات               | ایسی اسپیس میں پیغام آیا جسے آپ نہیں دیکھ رہے                                  |
+| pull request میں ذکر      | GitHub کی اطلاعاتی پولنگ نے دیکھا کہ آپ کا کسی PR میں ذکر ہوا                   |
+| ریویو کی درخواست          | کسی غیر ڈرافٹ PR پر واقعی آپ کا ریویو طلب کیا گیا                             |
+| ریویو پرانا               | آپ کے پہلے ریویو کردہ pull request پر نئے کمٹ آ گئے                            |
+| مرج کے لیے تیار           | آپ کا لکھا ہوا pull request مرج کے قابل ہو گیا، یا ہونا بند ہو گیا            |
+| ریویو فیصلے               | کسی ریویوور نے منظوری دی، تبدیلیاں طلب کیں، یا کوئی منظوری رد ہو گئی            |
+| چیکس                      | آپ کے لکھے pull request پر CI ناکام ہوا، یا بحال ہو گیا                       |
+| ریویو تھریڈز              | کسی نے ایسے تھریڈ میں جواب دیا یا اسے حل کیا جس میں آپ شامل ہیں                 |
+| ٹکٹ تفویض ہوا             | کوئی ٹکٹ تفویض ہوا                                                            |
+| ٹکٹ اسٹیٹس بدلا           | کسی ٹکٹ کا اسٹیٹس بدلا                                                        |
+| میٹنگ جلد شروع ہو رہی ہے  | کوئی کیلنڈر میٹنگ آپ کی لیڈ ونڈو کے اندر ہے                                   |
+| کیلنڈر منقطع ہو گیا       | کسی منسلک کیلنڈر کا OAuth ٹوکن میعاد ختم ہو گیا                               |
+| انکلوژر اپ ڈیٹس           | کوئی انکلوژر تصرف میں لیا گیا، واپس لیا گیا یا ناکام ہوا                       |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+اس فہرست سے باہر کی کسی چیز کی اطلاع نہیں دی جا سکتی اور نہ اسے فلٹر کیا جا سکتا —
+کوئی “ہر چیز دیگر” قسم موجود نہیں۔
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+یہ ترجیحات آپ کے صارف کے ساتھ ہر ڈیوائس پر جاتی ہیں، چنانچہ فون اور لیپ ٹاپ ہم قدم
+رہتے ہیں۔ والیوم جان بوجھ کر استثنا ہے اور ہر ڈیوائس پر الگ رہتا ہے۔
 
-## Set quiet hours
+## Quiet hours سیٹ کریں
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. اُسی صفحے پر **Quiet hours** آن کریں
+2. شروع اور اختتام کا وقت `HH:MM` میں لکھیں (ڈیفالٹ ونڈو 22:00–08:00 ہے)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Quiet hours کے دوران غیر فوری اطلاعات نظر انداز کر دی جاتی ہیں — نہ قطار میں لگائی
+جاتی ہیں اور نہ بعد میں دوبارہ چلائی جاتی ہیں۔
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+دو اقسام **فوری** ہیں اور ہمیشہ پہنچتی ہیں، Quiet hours _اور_ فوکس موڈ دونوں کو نظر
+انداز کرتے ہوئے: **میٹنگ جلد شروع ہو رہی ہے** اور **PR شائع ہوا**۔ میٹنگ کا وہ الرٹ
+جو آپ کو صرف بعد میں نظر آئے بے کار ہے، اور وجہ بھی یہی ہے۔
 
-## Choose a sound
+## آواز منتخب کریں
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. **اطلاع کی آواز** تک اسکرول کریں
+2. گیارہ شامل آوازوں میں سے کوئی ایک منتخب کریں، یا **کوئی نہیں**
+3. اسے سننے کے لیے **ٹیسٹ** بٹن دبائیں اور سلائیڈر سے والیوم مقرر کریں
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+آواز خود ایپ بجاتی ہے؛ OS اطلاع خاموشی سے دی جاتی ہے تاکہ آپ اسے کبھی دو بار نہ
+سنیں۔
 
-## Set the meeting lead time
+## میٹنگ کی لیڈ ٹائم سیٹ کریں
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. **الرٹ لیڈ ٹائم** تک اسکرول کریں
+2. **5**، **10**، **15** یا **30** منٹ منتخب کریں
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+یہ بتاتا ہے کہ کسی کیلنڈر ایونٹ سے کتنا پہلے **میٹنگ جلد شروع ہو رہی ہے** والی اطلاع
+آتی ہے۔ ڈیفالٹ 5 منٹ ہے۔
 
-## Know when a notification is suppressed
+## جانیں کہ کوئی اطلاع کب روک دی جاتی ہے
 
-A notification is dropped, silently, when any of these is true:
+کوئی اطلاع خاموشی سے نظر انداز کر دی جاتی ہے جب ان میں سے کوئی ایک بھی درست ہو:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- اطلاعات مجموعی طور پر آف ہوں، یا اس کی قسم آف ہو
+- آپ پہلے ہی اُس راستے پر ہوں جہاں وہ آپ کو لے جاتی — اور پیغام کی صورت میں، پہلے
+  ہی اُس اسپیس میں ہوں
+- فوکس موڈ فعال ہو اور قسم فوری نہ ہو
+- Quiet hours فعال ہوں اور قسم فوری نہ ہو
 
-Those checks apply to OS toasts. The durable bell still records the event.
+یہ جانچیں OS ٹوسٹس پر لاگو ہوتی ہیں۔ پائیدار گھنٹی پھر بھی ایونٹ ریکارڈ کرتی ہے۔
 
-Two more suppressions live further upstream, in what the server sends at all:
+مزید دو روکیں اور بھی اوپر، یعنی سرور جو کچھ بھیجتا ہی ہے اُس میں موجود ہیں:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- کسی دوسرے **انسان** کا وہ پیغام جس میں آپ کا ذکر نہ ہو، کبھی اطلاع نہیں بنتا
+- ایجنٹ سے ایجنٹ والی اسپیسز سائیڈ بار میں خاموش کر دی جاتی ہیں، چنانچہ وہ انسان
+  کے نہ پڑھے گئے بیج کو کبھی نہیں بڑھاتیں
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+کسی اسپیس کے اندر کوئی خاموش گوشہ نہیں: ہر گفتگو یکساں اطلاع دیتی ہے، تھریڈز سمیت۔
+پڑھے جانے کی حالت اسپیس کے دائرے میں ہوتی ہے، چنانچہ نہ پڑھا ہوا اسپیس کی تمام
+گفتگوؤں میں جمع ہوتا ہے، بجائے اس کے کہ فی گفتگو الگ رکھا جائے۔
 
-## Read and clear the notification centre
+## اطلاعات کا مرکز پڑھیں اور صاف کریں
 
-1. Click the bell in the title bar
+1. ٹائٹل بار میں گھنٹی پر کلک کریں
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+پاپ اوور حالیہ سرگرمی دکھاتا ہے اور ہر اندراج کو ڈیپ لنک کے ذریعے اُس چیز سے جوڑتا
+ہے جس کے بارے میں وہ ہے۔ اسے کھولنا ہر چیز کو پڑھا ہوا نشان زد **نہیں** کرتا — ہیڈر
+میں **سب پڑھا ہوا نشان زد کریں** استعمال کریں، یا کسی ایک قطار کو نشان زد کریں۔
+پڑھے جانے کی حالت آپ کے صارف کے ساتھ ہر ڈیوائس پر جاتی ہے۔
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[سب صاف کریں ایک واٹر مارک ہے، حذف نہیں]
+**سب صاف کریں** فی صارف ایک واٹر مارک لگاتا ہے جو اُس سے پرانی ہر چیز چھپا دیتا ہے؛
+قطاریں باقی رہتی ہیں۔ الگ بات یہ ہے کہ ہر ورک اسپیس صرف اپنی سب سے تازہ **200**
+فیڈ قطاریں رکھتی ہے، جو نئی آتے ہی چھانٹ دی جاتی ہیں، جبکہ گھنٹی تازہ ترین **50**
+کی سبسکرائب کرتی ہے اور پاپ اوور اُن میں سے زیادہ سے زیادہ **15** فہرست کرتا ہے۔ اس
+سے پرانی تاریخچہ پڑھے جانے کی حالت سے قطع نظر ختم ہو چکی ہوتی ہے۔
 :::
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### No OS notifications on macOS
+### macOS پر کوئی OS اطلاع نہیں
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+ایپ کے آغاز پر اجازت مقامی طور پر طلب کی جاتی ہے۔ اگر آپ نے انکار کیا تھا تو سسٹم
+سیٹنگز → اطلاعات میں Control Center کو دوبارہ فعال کریں؛ اسے دوبارہ چلانے کے لیے ایپ
+کے اندر کوئی پرامپٹ نہیں۔
 
-### Nothing arrives on the web build
+### ویب بلڈ پر کچھ نہیں آتا
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+متوقع ہے — ویب بلڈ میں OS اطلاعات کی پائپ لائن نہیں۔ گھنٹی استعمال کریں۔
 
-### The bell badge shows zero but there is clearly new activity
+### گھنٹی کے بیج پر صفر دکھتا ہے مگر صاف طور پر نئی سرگرمی موجود ہے
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+جوڑنے کے بعد پڑھے جانے کا نشان والا اسٹریم حل ہونے تک، اندراجات پڑھے ہوئے دکھائے
+جاتے ہیں تاکہ ایسا بیج بننے سے بچا جائے جو جھلملائے اور پھر خالی ہو جائے۔ نشان لوڈ
+ہوتے ہی یہ ٹھیک ہو جاتا ہے۔
 
-### An agent's run finished but nothing pinged me
+### ایجنٹ کا رن مکمل ہوا مگر مجھے کوئی پنگ نہیں آیا
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+دیکھیں کہ آپ پہلے ہی اُس اسپیس پر نہیں تھے جہاں یہ ہوا — ایک فعال راستہ اپنا OS ٹوسٹ
+خود روک دیتا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Use focus mode and soundscapes](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فوکس-موڈ/)
-- [Triage your inbox](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ان-باکس-ٹرائیج/)
-- [Curate your newsfeed](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/نیوز-فیڈ/)
+- [فوکس موڈ اور ساؤنڈ اسکیپس استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فوکس-موڈ/)
+- [اپنا ان باکس ٹرائیج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ان-باکس-ٹرائیج/)
+- [اپنی نیوز فیڈ ترتیب دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/نیوز-فیڈ/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/)
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/)

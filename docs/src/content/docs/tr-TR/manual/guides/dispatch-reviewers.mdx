@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: İnceleyici ajanları gönderme
+description: Uzman inceleyici ajanları PR görünümünden, bir MCP aracından veya bir pipeline adımından bir PR'a gönderin.
 slug: tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Bu kılavuz, pull request'leri incelemek üzere inceleyici ajanları nasıl
+göndereceğinizi gösterir.
 
-## From the PR view
+## PR görünümünden
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. PR'ı açın ve **Genel bakış** sekmesine gidin
+2. ⋯ taşma menüsünü açın ve **AI'ya sor** seçeneğini seçin
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Bu, yerleşik `pr_review` pipeline'ını başlatır; pipeline PR'ın inceleme alanını
+açar ve çalışma alanının inceleme düzeyine göre inceleyicileri gönderir —
+varsayılan olarak üç tanesini (yerleşik **qa**, **architect** ve **engineer**
+ajanları) — ardından lider ajana birleştirme yaptırır. Bu yolda rolleri siz
+seçmezsiniz. Hangi rollerin çalışacağı ve her birinin hangi dosyalara bakacağı
+üzerinde kontrol için aşağıdaki MCP aracını veya bir pipeline adımını kullanın.
 
-## Via the `dispatch_reviewers` MCP tool
+## `dispatch_reviewers` MCP aracıyla
 
-Call it from inside an existing review space:
+Mevcut bir inceleme alanının içinden çağırın:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,114 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` ve `reviewers` alanlarının tümü zorunludur. Her
+inceleyici tanımı bir `role` ile birlikte isteğe bağlı bir dosya glob'u `scope`
+ve varsayılan brifingi değiştiren bir `prompt_override` alır. İsteğe bağlı bir
+`concurrency` (1–8) paralel gönderimleri sınırlar; atlanırsa çalışma alanının
+`review_concurrency` ayarı geçerli olur (varsayılan 3, **Ayarlar → Çalışma alanı
+→ Genel** altında ayarlanır).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Araç, `dispatched` ve `unmatched` listeleriyle hemen döner. Gönderilen her
+inceleyici alana katılımcı olarak eklenir, bir sistem iletisiyle duyurulur ve
+brifingiyle gönderilir. Bulgular o alana `review_node` iletileri olarak düşer.
 
-## From a pipeline step
+## Bir pipeline adımından
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+**Ayarlar → Çalışma alanı → Pipeline şablonları** yolunu açın, bir şablon açın,
+ardından:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Paletten bir **Reviewer (prompt)** düğümü ekleyin
+2. Gönderilecek ajanı seçin ve inceleyici prompt'unu yazın; yukarı akış
+   çıktıları için `{{key}}` yer tutucularını kullanın (örneğin
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Aşağı akış adımları bulguları okuyabilsin diye çıktı anahtarını (varsayılan
+   `reviewer_findings`) ayarlayın
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Adım, ajanı gönderir ve o çalıştırma bitene kadar askıya alır. Ardından motor,
+çalıştırmanın `submit_output` yükünü düğümün çıktı anahtarı altında pipeline
+durumuna devşirir. (Palet açıklaması hâlâ adımın bir `complete_task` çağrısını
+beklediğini söylüyor — bu araç mevcut değil; bu dizeyi yok sayın.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Birkaç inceleyici düğümünü aynı yukarı akış adımına bağlayarak yelpaze şeklinde
+dağıtın, ardından çıktılarını bir **Consolidate (join)** düğümüyle birleştirin.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Düzenleyici, gizli terminali erişilebilir her çıkışa yeniden bağlar; böylece
+yerleşik adımdan sonra eklediğiniz bir düğüm yine çalışır. Aynı yukarı akış
+adımına bağlanan fan-out düğümleri paralel çalışır.
 
-## Automatic dispatch on a new PR
+## Yeni bir PR'da otomatik gönderme
 
-To have a review pipeline fire by itself:
+Bir inceleme pipeline'ının kendi kendine tetiklenmesini istiyorsanız:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Şablonu **Ayarlar → Çalışma alanı → Pipeline şablonları** yolunda açın
+2. Düğüm kütüphanesinin Tetikleyiciler bölümünden **PR yayınlandı** ya da
+   **Harici PR açıldı** öğesini tuvale sürükleyin (ya da **Tetikleyici ekle**
+   hayalet kutucuğundan seçin)
+3. Yeni düğümü seçin ve denetçisinde **Etkin** anahtarını açın, ardından
+   şablonu etkinleştirin
 
-Two events matter here and they are not interchangeable:
+Burada iki olay önemlidir ve birbirlerinin yerine kullanılamazlar:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Olay                   | Ne zaman tetiklenir                                                                                             | Yük anahtarları                                                     |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `PullRequestPublished` | Bir PR **Control Center üzerinden** açılır — oluşturma yüzeyi ya da `pr_lifecycle.publish` çağıran bir ajan     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                  |
+| `ExternalPrDetected`   | PR yoklama servisi doğrudan GitHub'da açılmış bir PR bulur                                                      | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`        |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+github.com üzerinde açılan bir PR `PullRequestPublished` olayını asla
+yayımlamaz; dolayısıyla yalnızca o olaya bağlanan bir şablon onu görmez. Ayrıca
+`PullRequestPublished` hiçbir `pr_number` taşımaz — betiği veya prompt'u
+`{{pr_number}}` değerine başvuran bir adımın `ExternalPrDetected` tarafından ya
+da bu değeri sağlayan elle bir çalıştırmayla beslenmesi gerekir.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Kontrol noktası: etkinleştirdikten sonra **Pipelines**'ı açın ve bir sonraki
+eşleşen PR için bir çalıştırmanın göründüğünü doğrulayın. Devre dışı bırakılan
+bir şablon, tetikleyicisinin boşluğa ateşlemesi demektir — motor devre dışı bir
+şablonu reddeder ve bir çalıştırma başlatmadan döner.
 
-## How a role is matched to an agent
+## Bir rolün bir ajanla nasıl eşleştirildiği
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers`, çalışma alanındaki her ajanı istenen her rol etiketiyle
+büyük/küçük harfe duyarsız olarak puanlar:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Eşleşme                                 | Puan |
+| --------------------------------------- | ---- |
+| Rol etiketini içeren bir beceri         | +3   |
+| Rol etiketini içeren bir başlık         | +2   |
+| Rol etiketini içeren bir ajan adı       | +1   |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Puanlar birikir ve en yüksek toplam kazanır (eşitlik durumunda, bulunan ilk
+aday). Hiçbir aday sıfırın üzerinde puan alamazsa tanım, gönderilmek yerine
+aracın `unmatched` listesinde geri döner — böylece kimsenin eşleşmediği bir rol
+bildirilir, asla sessizce atlanmaz.
 
-## The review space
+## İnceleme alanı
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Bir PR'ın tam olarak **bir** inceleme alanı vardır; inceleyici başına bir tane
+değil. `pr.ensureSpace` tarafından idempotent biçimde oluşturulur, PR'a bir
+`ReviewSpaceAssociation` ile bağlanır ve PR'ın head ref'ine göre hazırlanır.
+Gönderilen her inceleyici o alana katılır ve `review_node` bulgularını oraya
+gönderir; bulguları karşılaştırılabilir kılan ve lider ajanın bunlar arasında
+uzlaşmaya varmasını sağlayan da budur.
 
-## Monitor the dispatch
+## Gönderimi izleme
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Gönderilen her inceleyici kendi `AgentRunLog` kaydını alır. İlerlemeyi şuradan
+izleyin:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- Bulguların canlı olarak aktığı **inceleme alanı**
+- İnceleme durum çubuğunu ve kararı gösteren PR'ın **İncele** sekmesi
+- **Gözlemlenebilirlik → Canlı** (`/workspaces/:id/observability`), çalıştırma
+  başına durum, canlı geçen süre, transkript çekmecesi ve sonlandırma denetimi
+  içeren ajan kadrosu. Bunun için klavye kısayolu yoktur — kenar çubuğunun alt
+  kısmından ulaşın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Use AI-powered review](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/)
-- [Review and merge a PR](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
-- [Set up pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
+- [YZ destekli inceleme kullanma](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/)
+- [Bir PR'ı inceleme ve birleştirme](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
+- [Pipeline tetikleyicileri kurma](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [AI review](/tr-TR/kilavuz/kavramlar/yz-incelemesi/)
-- [Pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/)
+- [YZ incelemesi](/tr-TR/kilavuz/kavramlar/yz-incelemesi/)
+- [Pipeline'lar](/tr-TR/kilavuz/kavramlar/pipelinelar/)

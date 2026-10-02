@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: 헤드리스 서버 실행
+description: cc_server 헤드리스 바이너리나 Docker 이미지를 실행하고, 클라이언트를 페어링한 뒤, 전체 CLI 플래그와 환경 변수 범위로 구성합니다.
 dateModified: 2026-09-10
 slug: ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+계속 켜 두는 머신에서 `cc_server`를 실행한 다음, 데스크톱, 브라우저 또는 휴대폰에서
+연결합니다. 이 서버는 Flutter 엔진이 없는 순수 Dart 네이티브 바이너리이므로
+macOS, Linux, Windows에서 헤드리스로 실행됩니다. 서버가 데이터베이스를 소유하고,
+에이전트를 실행하며, 모든 외부 API 호출을 수행합니다. 클라이언트는 렌더링만
+합니다.
 
-## Run in Docker (prebuilt images)
+## Docker로 실행(미리 빌드된 이미지)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+모든 릴리스는 백엔드, 두 개의 정적 씬 클라이언트, 선택 사항인 페어링 릴레이 등
+네 개의 GHCR 이미지로 구성된 자체 호스팅 스택을 게시하며, 퍼블릭 데모 호스트용
+`cc-server-demo` 이미지도 별도로 게시합니다. 자체 호스팅 설치에는 소스 체크아웃이
+필요하지 않습니다. 버전 태그(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)를 고정하거나
+`latest`를 사용하세요.
 
-| Image                                             | What it is                                   | Publishes        |
+| 이미지                                             | 무엇인지                                   | 게시 포트        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | 백엔드: 데이터베이스, 에이전트, MCP, 웹훅 | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | 웹 클라이언트(정적 nginx)                | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | 휴대폰 컴패니언 PWA(정적 nginx)       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC 페어링 릴레이(선택 사항)          | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+전체 스택을 구성하는 compose 파일:
 
 ```yaml
 services:
@@ -51,91 +53,90 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+이 중 무엇이든 루프백 너머로 노출하기 전에 알아 두면 좋은 점:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server` 이미지는 `CC_SERVER_INSECURE=1`을 함께 제공합니다**(게시된 포트
+  트래픽을 받으려면 `0.0.0.0`에 바인딩해야 하므로). 이는 신뢰할 수 있는 네트워크에서
+  TLS를 종료하는 리버스 프록시 — Caddy, Traefik, nginx 또는 Cloudflare Tunnel —
+  뒤에서만 안전합니다. 대신 프로세스 내에서 TLS를 종료하려면 인증서를 마운트하고
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`를 설정하세요(그런 다음
+  `CC_SERVER_INSECURE`를 해제). 모든 설정은 `docker run -e …` 또는
+  compose `environment:` 블록으로 재정의할 수 있습니다.
+- **`/data`가 유일한 상태입니다.** SQLite 데이터베이스, 페어링된 기기 시크릿,
+  다운로드한 모델, 회의 오디오가 모두 볼륨에 저장됩니다. 이 볼륨을 백업하면
+  컨테이너는 언제든 버려도 됩니다.
+- **첫 연결 전에 이미지 내부에서 클라이언트를 페어링하세요.** 이는
+  [3단계](#3단계-첫-시작-전에-클라이언트-페어링)의 컨테이너 버전입니다:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **두 클라이언트 이미지는 정적 nginx 호스트입니다.** 런타임에 구성할 것이
+  없으며, 각 클라이언트의 연결 양식은 서버 URL, 기기 ID, 페어링 키를 입력받습니다.
+  시그널링 릴레이도 마찬가지로 포트만 필요합니다(`SIGNALING_HOST` /
+  `SIGNALING_PORT` 재정의 가능). 릴레이는 상태가 없고 시크릿을 보관하지 않으며
+  **폴백**입니다. 휴대폰은 루프백, LAN, 테일넷 또는 직접 `wss://` 경로에 연결할 수
+  있을 때 그것을 사용하고, 어느 것도 닿지 않을 때만 릴레이로 폴백합니다. 클라이언트가
+  항상 서버에 직접 닿는다면 릴레이는 건너뛰세요.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+이 가이드의 나머지 부분에서는 소스에서 서버를 빌드합니다. 여기서 다루는 플래그와
+동작은 이미지의 환경 변수가 공급하는 것과 동일합니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). 이 저장소는 [fvm](https://fvm.app)으로 SDK를 고정하므로 모든 명령 앞에 `fvm`을 붙입니다.
+- 이 저장소를 체크아웃한 상태.
+- 스테이징 스크립트에 필요한 네이티브 툴체인 — Rust/`cargo`, 그리고 `meson`, `ninja`, `pkg-config`, `git` 및 C++ 컴파일러. 각 빌드 스크립트는 찾지 못한 항목과 설치 방법을 알려 줍니다.
+- 접근 가능한 호스트: 로컬 사용이면 루프백, 원격 클라이언트면 TLS가 있는 LAN/공용 주소.
 
-## Step 1: Stage the native libraries
+## 1단계: 네이티브 라이브러리 스테이징
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+네이티브는 **필수**이며 성능 저하 모드가 없습니다. 다른 무엇보다 먼저 저장소
+루트에서 빌드하세요:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+그러면 `rift`, `fff`, tree-sitter와 그 문법, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` 및 SAML 네이티브가
+`build/natives/`에 빌드됩니다. `cc_server` 빌드
+훅은 거기에 스테이징된 항목을 번들로 다시 내보내므로, 이 단계를 건너뛰면 빌드가
+아예 실패하거나 — 아래의 탈출구를 사용하면 — 부팅 사전 검사가 시작을 거부하며
+누락된 라이브러리를 알려 주는 바이너리가 만들어집니다.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[컴파일 전용 탈출구]
+저장소 루트에 빈 `.cc_natives_allow_missing` 파일을 만들면 네이티브 누락으로 인한
+빌드 실패가 경고로 낮아집니다. 이는 새로 클론한 상태에서 구문 검사를 하기 위한
+것이며, 그렇게 빌드한 서버는 부팅할 수 없습니다. 반드시 **파일**이어야 합니다.
+빌드 훅 실행기는 호출자의 환경을 전달하지 않으므로 환경 변수는 무시됩니다.
 :::
 
-## Step 2: Build the binary
+## 2단계: 바이너리 빌드
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+번들은 바이너리와 함께 `libsqlite3`와 스테이징된 네이티브를 제공합니다. 시스템
+SQLite도, Flutter 엔진도 필요하지 않습니다. 실행 파일은
+`./build/cli/<os_arch>/bundle/bin/cc_server`에 생성됩니다.
 
-## Step 3: Pair a client before first start
+## 3단계: 첫 시작 전에 클라이언트 페어링
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+새 데이터 디렉터리에는 페어링된 기기도, 사전 공유 키도 없으므로 클라이언트의
+페어링 키 입력 프롬프트를 아직 충족할 수 없습니다. `pair` 하위 명령으로 키를
+발급하세요. 이 명령은 `global.db`와 `secrets.json`을 직접 기록하며, 이미 해당
+데이터 디렉터리를 서비스 중인 서버는 재시작 없이 새 기기를 인식합니다:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+클라이언트의 연결 양식에 붙여 넣을 세 가지 값을 출력합니다:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +145,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+유용한 플래그: `--device`(기본값 `web-client`, 이 ID로 기기 등급도 결정됩니다 —
+`desktop`, `ios`, `android`, 그 외는 웹 클라이언트), `--label`(기본값은 플랫폼
+이름과 이 머신의 호스트 이름), `--host`(URL에 출력할 호스트, 루프백은 다른
+머신에서 접근할 수 없으므로) 및 `--client-url`. `pair`를 다시 실행하면 해당
+기기의 키가 교체되고 활성 세션이 끊깁니다. 페어링은 워크스페이스를 만들지
+않습니다. 연결하는 클라이언트의 온보딩이 첫 워크스페이스의 이름을 정하고
+생성합니다.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+`--client-url`을 사용하면 웹 클라이언트를 미리 채운 상태로 여는, 터미널에서
+스캔 가능한 QR 코드도 출력합니다:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/).
+:::caution[이 QR은 휴대폰용 QR이 아닙니다]
+`--client-url`은 **웹 클라이언트**용 링크를 만듭니다 — 서버 URL, 기기 ID, 키가
+URL 프래그먼트에 들어갑니다. **Remote** 휴대폰 앱은 다른 페이로드(서버의 전체
+연결 설명자와 만료 시각)를 기대하며, 이는 실행 중인 클라이언트의
+**설정 → 나 → 내 기기**에서 발급합니다. 둘은 서로 바꿔 쓸 수 없습니다.
+[기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)을 참고하세요.
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+`cc_server pair`가 발급한 자격 증명에는 **만료가 없습니다.** 앱에서 발급한 자격
+증명은 항상 30일 후 만료됩니다. CLI로 발급한 기기는 사용이 끝나면
+**설정 → 나 → 내 기기**에서 폐기하세요.
 
-## Step 4: Start the server
+## 4단계: 서버 시작
 
-On loopback — the default and all you need for a client on the same machine:
+루프백에서 — 기본값이며 같은 머신의 클라이언트에 필요한 전부입니다:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+다른 머신에서 접근하려면 모든 인터페이스에 바인딩합니다. TLS 없는 비루프백
+바인딩은 **시작 시 거부되므로**(`Refusing to bind non-loopback address …
+without TLS`) 인증서를 제공하세요:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +191,40 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+또는 신뢰할 수 있는 사설 네트워크의 리버스 프록시에서 TLS를 종료하고 그 뒤에서
+평문 바인딩을 선택하세요:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--tls-cert`와 `--tls-key`가 모두 설정되면 `--insecure`는 무시됩니다. TLS가 항상
+우선합니다. 서버는 `GET /healthz`에서 평문 상태를 `insecure: true`로 알리고,
+클라이언트는 그러한 연결에 안전하지 않음 배지를 표시합니다.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+서버는 `SIGINT`/`SIGTERM`이 올 때까지 실행되다가 정상적으로 종료됩니다.
 
-## Step 5: Connect a client
+## 5단계: 클라이언트 연결
 
-Point a client at the server URL and pairing key from step 3:
+3단계의 서버 URL과 페어링 키를 사용해 클라이언트를 지정하세요:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/).
+- **데스크톱 앱**: 첫 실행 화면(**Control Center를 어떻게 실행할까요?**)에서 **이 앱에서 실행** 대신 연결 필드를 채우거나, 나중에 **설정 → 서버 → 연결 및 상태**에서 서버를 추가합니다. [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/)을 참고하세요.
+- **웹 클라이언트**: [app.usectrl.dev](https://app.usectrl.dev)(또는 직접 만든 웹 빌드 사본)를 열고 서버 URL, 기기 ID, 페어링 키를 입력합니다.
+- **휴대폰**: 실행 중인 클라이언트에서 **Remote** 앱을 페어링합니다 — [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)을 참고하세요.
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server는 웹 번들을 제공하지 않습니다]
+독립 실행형 `cc_server`는 웹 루트를 마운트하지 않으므로 `GET /`는 404를 반환합니다.
+웹 클라이언트는 별도로 호스팅합니다 — `app.usectrl.dev`를 사용하거나, 웹 빌드를
+원하는 정적 HTTPS 호스트에 직접 호스팅하세요(위의 `cc-webapp` 이미지가 바로
+그것입니다). 루프백이 아닌 브라우저 오리진은 `--allowed-origins`에 있어야 하며,
+그렇지 않으면 `/rpc`로의 WebSocket 업그레이드가 거부됩니다. 기본 목록은
+`https://app.usectrl.dev`이고 `localhost` / `127.0.0.1`은 항상 허용됩니다.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## 6단계: Google Calendar 연결(선택 사항)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+GUI 없이 워크스페이스의 캘린더를 동기화하려면 기기 코드 흐름을 사용하세요:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +232,62 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/ko-KR/매뉴얼/사용-가이드/캘린더-연결/).
+다른 기기에서 승인할 코드와 URL을 출력하고, 리프레시 토큰을 서버 측에 저장한 뒤
+종료합니다. 소스 빌드에는 Google 클라이언트가 포함되지 않으므로 id와 secret 환경
+변수가 필요합니다 — `--google-client-id` 플래그는 없습니다.
+[Google Calendar 연결](/ko-KR/매뉴얼/사용-가이드/캘린더-연결/)을 참고하세요.
 
-## Configuration
+## 구성
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/).
+위에서 사용한 플래그는 첫 설정에 필요한 것들입니다. 전체 범위 — 23개의 플래그 및
+환경 변수 쌍, 네 개의 하위 명령, 데이터 디렉터리 레이아웃 — 는
+[`cc_server` CLI 레퍼런스](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/)에 있습니다.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[알 수 없는 플래그는 조용히 무시됩니다]
+인수 파서는 직접 작성한 것으로 인식하지 못하는 항목은 건너뛰므로, 오타
+(`--tls-key-file`, `--bindany`)가 있어도 오류가 나지 않고 서버가 기본값으로 그냥
+시작합니다. 플래그가 효과가 없는 것 같으면 시작 로그 줄을 확인하세요.
 :::
 
-The four you are most likely to need:
+가장 필요할 가능성이 큰 네 가지:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| 플래그           | 기본값                              | 의미                                                                                          |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | OS의 사용자별 애플리케이션 데이터 디렉터리 | 데이터베이스, 시크릿, 모델, 캐시된 미디어                                                      |
+| `--port`       | `9030`                               | TCP 포트(`0` = 임시 포트)                                                                       |
+| `--bind`       | `loopback`                           | `loopback`, 또는 모든 인터페이스면 `any`(TLS 또는 `--insecure` 필요)                             |
+| `--public-url` | 바인딩에서 파생됨                | 페어링된 클라이언트에 알리는 RPC URL. **프록시, NAT 또는 터널 뒤에서는 이를 명시적으로 설정하세요** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+기본 데이터 디렉터리는 macOS에서 `~/Library/Application Support/control-center`,
+Windows에서 `%APPDATA%\control-center`, 그 외에서는 `$XDG_DATA_HOME/control-center`
+(없으면 `~/.local/share/control-center`)입니다. cwd 기준 `.cc_server`는 홈 또는
+앱 데이터 디렉터리를 확인할 수 없을 때만 사용됩니다.
 
-## What the server serves
+## 서버가 제공하는 것
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server`는 제품 표면의 일부가 아니라 전체입니다: repo-RPC 데이터 경로와 구독,
+같은 포트의 `POST /mcp` 및 `GET /sse` MCP 도구 엔드포인트, 인바운드 웹훅, 미디어
+및 폰트 프록시, 싱글 사인온 콜백, 플릿 리스 프로토콜, 30분 주기의 서버 측 RSS
+가져오기, 그리고 벡터 검색(`sqlite_vector` 확장은 프로세스 전역 자동 확장으로
+등록되며, 확장을 사용할 수 없는 곳에서만 전체 텍스트 검색으로 저하됩니다).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+디스패처는 **상태가 없습니다**: 세션별 워크스페이스 바인딩이 없습니다. 모든
+워크스페이스 범위 호출은 자체 `workspace_id`를 가지며, 접근 권한은 페어링 키를
+보유했는지가 아니라 호출자의 워크스페이스 멤버십과 역할로 결정됩니다.
 
-Two things to know before you expose the port beyond loopback:
+포트를 루프백 너머로 노출하기 전에 알아야 할 두 가지:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP는 호스트 외부에서 차단형으로 실패합니다.** 토큰이 없는 MCP 표면은 루프백에만 응답합니다. `any`로 바인딩해도 이 범위는 넓어지지 않습니다 — 토큰을 구성하기 전까지(`mcp.setToken`, 또는 **설정 → 서버 → MCP 서버**) 호스트 외부 요청은 "MCP requires a bearer token to answer non-loopback clients"와 함께 거부됩니다.
+- **`GET /healthz`는 의도적으로 인증이 없습니다.** 와일드카드 CORS를 사용하며 서버의 ID, 이름, 신원 지문과 빌드 버전을 게시합니다. 클라이언트는 서버를 고정(pin)하기 위해 지문이 필요하므로 이는 의도된 것이지만, 접근 가능한 모든 `cc_server`가 요청하는 누구에게나 그만큼의 정보를 공개한다는 뜻이기도 합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/)
-- [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)
-- [Run a fleet worker](/ko-KR/매뉴얼/사용-가이드/플릿-워커-실행/)
-- [Connect a Google Calendar](/ko-KR/매뉴얼/사용-가이드/캘린더-연결/)
+- [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/)
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/)
+- [플릿 워커 실행](/ko-KR/매뉴얼/사용-가이드/플릿-워커-실행/)
+- [Google Calendar 연결](/ko-KR/매뉴얼/사용-가이드/캘린더-연결/)
 
-## Related concepts
+## 관련 개념
 
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/)
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/)
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/)
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/)

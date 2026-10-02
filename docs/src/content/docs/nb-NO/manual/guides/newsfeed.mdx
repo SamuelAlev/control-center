@@ -1,130 +1,134 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Kurater nyhetsstrømmen din
+description: Legg til og administrer RSS-/Atom-strømmer, les artikler med innholdsblokkering, og vit at strømmene dine følger deg i alle arbeidsområder.
 dateModified: 2026-09-19
 slug: nb-NO/handbok/slik-gjor-du/nyhetsstrom
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Denne guiden viser deg hvordan du former nyhetsstrømmen: hvilke kilder den
+henter fra, hvordan artikler leses, og hva innholdsblokkering gjør.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Nyhetsstrømmen er per bruker, ikke per arbeidsområde]
+Strømmer og artikler tilhører den påloggede brukeren: strømlisten din,
+lesestatusen og bokmerkene følger deg inn i hvert arbeidsområde og til hver
+enhet du logger inn fra, og ingen andre brukere ser dem. Strømmene ligger i
+serverens globale database, så URL-en `/newsfeed` bærer en arbeidsområde-id
+bare fordi hver rute i appen gjør det.
 :::
 
-## Read articles
+## Les artikler
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Klikk på **Nyhetsstrøm** i sidepanelet
+2. Bytt mellom **Alle**, **Ulest** og **Lagret** med segmentene i verktøylinjen
+3. Begrens listen med søkefeltet eller kildevelgeren
+4. Veksle mellom magasinrutenettet og den kompakte listen med layoutknappene
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Å åpne en artikkel markerer den som lest. Bruk **Merk alle som lest** i
+sidehodet — den vises bare så lenge noe er ulest — for å tømme etterslepet i én
+sleng, og bokmerkekontrollen på et kort for å lagre en artikkel til senere.
 
-The layout choice persists across launches.
+Valget av layout beholdes mellom oppstarter.
 
-## Add a feed
+## Legg til en strøm
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Åpne **Innstillinger → Deg → Nyhetsstrøm** (innstillingsikonet i
+   nyhetsstrømhodet går rett dit)
+2. Trykk på **Legg til strøm**
+3. Fyll inn **Navn** og **Strøm-URL** (RSS eller Atom)
+4. Utvid eventuelt **Avansert** og angi en egendefinert **User-Agent** — enkelte
+   utgivere gir et annet svar til en standardklient
+5. Trykk på **Legg til strøm**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Kontrollpunkt: strømmen vises i listen **Strømmer**, og artiklene kommer inn
+etter den første hentingen. En URL som allerede er abonnert på, avvises med «En
+strøm med denne URL-en finnes allerede.»
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Fjorten strømmer legges inn for hver bruker ved første bruk: Control Center, The
+Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
+Pragmatic Engineer, Martin Fowler, Will Larsons Irrational Exuberance, The
+Engineering Manager, Lea Verou og CSS-Tricks.
 
-## Manage feeds
+## Administrer strømmer
 
-Each row in the **Feeds** list gives you three controls:
+Hver rad i listen **Strømmer** gir deg tre kontroller:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Kontroll      | Effekt                                                                  |
+| ------------- | ----------------------------------------------------------------------- |
+| Bryter        | Slår av strømmen. En avslått rad dempes og hentes ikke lenger           |
+| Oppdater-ikon | Henter denne ene strømmen nå                                            |
+| Papirkurvikon | Sletter strømmen, etter en bekreftelse                                  |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Oppdater alle** øverst i listen henter alle aktiverte strømmer.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Underteksten til en strøm viser beskrivelsen og hvor lenge siden den ble hentet;
+en strøm som mislyktes, viser feilen i stedet, i varselfarge.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Det finnes ingen redigeringsmulighet — for å endre navnet, URL-en eller
+brukeragenten til en strøm, sletter du den og legger den til på nytt.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Henting kjører helt på serveren: én gang per bruker ved oppstart (og ved første
+bruk for kontoer som opprettes senere), deretter hvert 30. minutt.
 
-## Block ads and trackers in the reader
+## Blokker annonser og sporere i leseren
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. I Innstillinger → Deg → Nyhetsstrøm, finn **Leserinnstillinger**
+2. La **Åpne artikler i appen** stå på for å bruke den innebygde leseren, eller
+   slå den av for å overlate artiklene til systemnettleseren
+3. La **Blokker annonser, sporere og infokapsler** stå på
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Blokkering er på som standard. Den innebygde leseren finnes bare på macOS og
+Windows: i nettbyggingen og på Linux _er_ systemnettleseren leseren, og en
+artikkel åpnes der (en ny fane på nett). På nett er blokkeringsbryteren, kortet
+**Filterlister** og kortet **Pålitelige nettsteder** skjult.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Leseren i appen formaterer ikke artikkelen på nytt. Den rendrer utgiverens side
+i en innebygd webvisning og undertrykker annonser, sporere og infokapsler ved
+hjelp av bufrede filterlister.
 
-### Check or update the filter lists
+### Se etter eller oppdater filterlistene
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Kortet **Filterlister** viser hvor mange regler for å skjule infokapsler, skjule
+annonser og blokkere nettverk som er lastet inn, i tillegg til hvilke
+sporingsparametere den fjerner, og når listene sist ble oppdatert. Trykk på **Se
+etter oppdateringer** for å oppdatere dem.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Kildene er EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, flere
+uBlock Origin-lister og uBOs liste over sporingsparametere. Inntil en nedlasting
+lykkes, merker kortet listene som innebygde standarder som aldri er oppdatert —
+antallet annonse-, infokapsel- og nettverksregler står på null; fjerning av
+sporingsparametere bruker fortsatt et innebygd standardsett.
 
-### Allowlist a site
+### Tillat et nettsted
 
-Some sites break under blocking.
+Enkelte nettsteder slutter å fungere når blokkeringen er på.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. I Innstillinger → Deg → Nyhetsstrøm, gå til **Pålitelige nettsteder**
+2. Trykk på **Legg til pålitelig nettsted** og skriv inn domenet
 
-Blocking is skipped there.
+Blokkeringen hoppes over der.
 
-## Troubleshooting
+## Feilsøking
 
-### A feed I added shows up in another workspace
+### En strøm jeg la til, dukker opp i et annet arbeidsområde
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Forventet. Nyhetsstrømmen er per bruker, ikke per arbeidsområde — strømmene
+følger deg overalt hvor du er pålogget. Se advarselen øverst.
 
-### A feed row shows an error instead of a description
+### En strømrad viser en feil i stedet for en beskrivelse
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Den siste hentingen mislyktes, og raden viser årsaken ordrett. Trykk på
+oppdater-ikonet for å prøve på nytt, og sjekk at URL-en fortsatt leverer RSS
+eller Atom. En utgiver som avviser ukjente klienter, kan trenge en egendefinert
+brukeragent, noe som innebærer å slette strømmen og legge den til på nytt.
 
-### An article page renders badly
+### En artikkelside vises dårlig
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Slå av **Blokker annonser, sporere og infokapsler** for det domenet via
+**Pålitelige nettsteder**, eller slå av **Åpne artikler i appen** og les den i
+nettleseren.
 
-## Related guides
+## Relaterte guider
 
-- [Configure notifications](/nb-NO/handbok/slik-gjor-du/varsler/)
-- [Triage your inbox](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)
+- [Konfigurer varsler](/nb-NO/handbok/slik-gjor-du/varsler/)
+- [Prioriter innboksen din](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)

@@ -1,60 +1,68 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Felhasználók provisionálása SCIM-mel
+description: Hagyja, hogy az IdP automatikusan létrehozza, frissítse és deprovisionálja a Control Center-fiókokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Akkor használja ezt az útmutatót, ha életciklus-vezérlést szeretne — a
+kiléptetésnek automatikusan vissza kell vonnia a hozzáférést, nem csak a
+jövőbeli bejelentkezéseket kell letiltania. A SCIM az a push-protokoll,
+amelyet az IdP-k (Okta, Entra ID és mások) pontosan erre használnak.
 
-## Prerequisites
+## Előfeltételek
 
-- SSO already working (the [SSO tutorial](/hu-HU/kezikonyv/oktatoanyagok/sso) or the
-  [OIDC guide](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- működő SSO (az [SSO-oktatóanyag](/hu-HU/kezikonyv/oktatoanyagok/sso) vagy az
+  [OIDC-útmutató](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc)),
+- **az IdP által HTTPS-en elérhető szerver** — a SCIM-hívások az IdP-től
+  érkeznek, nem a felhasználó böngészőjéből. Használja a beépített alagutat
+  (Beállítások → Szerver → Kapcsolat és állapot → Szerver megosztása → Cloudflared/ngrok/Tailscale), vagy egy
+  nyilvános URL-t. Az a szerver, amely csak a WebSocket-relayen keresztül
+  érhető el, nem tud SCIM-pushokat fogadni; a JIT-provisioning ott is
+  működik, ez az útmutató viszont nem.
 
-## Steps
+## Lépések
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt → a
+   **Felhasználó-provisioning (SCIM)** kártyát. A kártya mutatja a végpontot,
+   például: `https://<your-server>/scim/v2/Users`.
+2. Nyomja meg a **Token generálása** gombot (vagy a **Token újragenerálása**
+   gombot, ha már létezik token) — a bearer token egyszer jelenik meg egy
+   párbeszédablakban, és a vágólapra másolódik. Tárolja jelszókezelőben; a
+   szerver csak egy konstans időben ellenőrizhető másolatot őriz meg.
+3. Az IdP provisioningbeállításaiban engedélyezze a SCIM-et a következőkkel:
+   - **Alap URL**: a fenti végpont
+   - **Hitelesítés**: `Authorization: Bearer <token>`
+   - **Felhasználói azonosító**: `userName` (e-mail) vagy `externalId` — mindkettő megfelel
+4. Tesztelje egyetlen felhasználóval: küldje át a felhasználót az IdP-ből,
+   és ellenőrizze, hogy megjelenik (a SCIM-létrehozás rögzíti a szolgáltató
+   `externalId` értékét a fiókon, ugyanazt a rögzítést, amelyet az első
+   SSO-bejelentkezés is elvégez).
 
-## What deprovisioning does
+## Mit tesz a deprovisionálás
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Amikor az IdP `active: false` értéket (vagy `DELETE` műveletet) küld, a SCIM
+először megtagadja a műveletet, ha a fiók egy munkaterület **tulajdonosa**
+(előbb adja át a tulajdonjogot). Ellenkező esetben:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. először minden eszközhitelesítő adat visszavonásra kerül — az élő
+   munkamenetek másodperceken belül megszakadnak,
+2. minden munkaterület-tagság eltávolításra kerül,
+3. a fiók deaktiváltként jelölődik meg (soha nem tud bejelentkezni, bármit
+   mond is később az IdP, amíg kifejezetten újra nem aktiválják).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Maga a felhasználói sor megmarad — a jegyekhez, üzenetekhez és commitokhoz
+fűződő hozzárendelés végleges. Az újraaktiválás (SCIM `active: true`)
+helyreállítja a bejelentkezést, de a tagságokat **nem**: azokhoz új meghívóra
+vagy a bejelentkezéskori automatikus tagsági szabályzatra van szükség.
 
-## Troubleshooting
+## Hibaelhárítás
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **Minden hívásra 401** — a token megváltozott; generáljon újat, és
+  frissítse az IdP-t.
+- **A végpont nem érhető el** — az alagút nem működik, vagy a szerver csak
+  relayen keresztül érhető el. A SCIM-nek közvetlen HTTPS-re van szüksége; a
+  JIT ettől függetlenül tovább működik.
+- **Csoportpush-hibák (501)** — szándékos: a csoport→szerep leképezés
+  bejelentkezéskor történik a SAML/OIDC csoportattribútumaiból, nem a pusholt
+  csoportokból.

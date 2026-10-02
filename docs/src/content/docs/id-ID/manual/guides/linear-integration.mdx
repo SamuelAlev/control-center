@@ -1,34 +1,37 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Siapkan integrasi Linear
+description: Simpan kunci API Linear di server agar agen dapat memanggil Linear, dan pilih Linear sebagai penyedia ticketing untuk tiket baru.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/).
+Tempelkan kunci API Linear di server yang dikaitkan dengan pengguna Anda, sama
+seperti saat Anda menghubungkan host kode. Tiket, proyek, tautan, kolaborator,
+delegasi, dan penugasan semuanya bekerja pada basis data Control Center sendiri
+tanpa memerlukan layanan eksternal — lihat
+[Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/).
 
-## Store your Linear key
+## Simpan kunci Linear Anda
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Kunci API ticketing** berada di **Pengaturan → Ruang kerja → Umum**, pada
+kartu **Tiket**. Kunci ini disimpan di server dan dikaitkan dengan id pengguna
+Anda. Kunci milik server untuk pekerjaan tanpa pengawasan berasal dari
+`LINEAR_API_KEY` atau kartu **Aplikasi penyedia**, dan hanya disuntikkan sebagai
+`TICKETING_API_KEY` ketika agen tersebut memiliki kemampuan **Izinkan panggilan
+API ticketing**.
 
-## Stamp new tickets as Linear
+## Tandai tiket baru sebagai Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Penyedia ticketing** (langkah pertama onboarding, dan
+`/workspaces/<workspaceId>/api-keys`) menawarkan `local` dan `linear`. Memilih
+`linear` menandai tiket yang Anda buat sejak saat itu dengan `provider: linear`.
 
-## Related guides
+## Panduan terkait
 
-- [Create and manage tickets](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/)
-- [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-- [Manage API keys](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
+- [Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/)
+- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Kelola kunci API](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
 
-## Related concepts
+## Konsep terkait
 
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/)
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/)

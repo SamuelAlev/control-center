@@ -1,113 +1,120 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orkestrering
+description: Hvordan én «stor oppgave» blir en plan for hele teamet som du godkjenner én gang, og deretter en generert pipeline som kjører den.
 slug: nb-NO/handbok/konsepter/orkestrering
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+En enkelt agent er god til én ting. Noen oppgaver er større enn som så: «undersøk
+markedet for X og skriv et posisjoneringsdokument», «lever denne funksjonen fra
+ende til annen», «revider denne modulen og rett det du finner». En **orkestrering** er
+hvordan Control Center håndterer slike: en orkestrator (vanligvis CEO-agenten din)
+foreslår en plan for hele teamet, du godkjenner den **én gang**, og en deterministisk
+materialisator gjør den om til en pipeline som utfører arbeidet.
 
-It sits between the two existing ways of getting work done:
+Den ligger mellom de to eksisterende måtene å få arbeid utført på:
 
-| When you want to…                                 | Use                                                       |
+| Når du vil …                                      | Bruk                                                       |
 | ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/nb-NO/handbok/konsepter/livssyklus-agentutsending/) |
-| Encode a process you already know, by hand        | A [pipeline template](/nb-NO/handbok/konsepter/pipelines/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Gi én oppgave til én agent                        | En [melding i et område](/nb-NO/handbok/konsepter/livssyklus-agentutsending/) |
+| Kodifisere en prosess du allerede kjenner, for hånd | En [pipeline-mal](/nb-NO/handbok/konsepter/pipelines/)   |
+| Si målet og la teamet finne ut planen             | **En orkestrering**                                       |
 
-## The shape of a proposal
+## Formen på et forslag
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Når du gir orkestratoren et mål, returnerer den en strukturert
+**`OrchestrationProposal`**: en typet plan appen kan validere og kjøre, i stedet
+for fri prosa. Et forslag har:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/nb-NO/handbok/konsepter/saker/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Mål**: den overordnede oppgaven din, gjenfortalt.
+- **Roller**: hvem som gjør arbeidet. Hver rolle er enten en **eksisterende
+  agent** du velger, eller en **nyansatt** som orkestreringen oppretter ved
+  godkjenning.
+- **Undersaker**: arbeidet, brutt ned i en DAG av [saker](/nb-NO/handbok/konsepter/saker/).
+- **Forskning** _(valgfritt)_: en forskningsfase som kjører først og mater resten.
+- **Diskusjon** _(valgfritt)_: en avgrenset runde der hver rolle legger fram en
+  strukturert posisjon før arbeidet starter.
+- **Syntese**: det siste steget som produserer leveransen.
+- **Budsjett**: et oppgitt kostnadstak.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Budsjettet er veiledende]
+Forslagets kostnadstak sammenlignes med planens estimerte total og markerer en
+plan over budsjett i godkjenningslinjen _før_ du godkjenner. Ingenting leser det
+når kjøringen først har startet, så det stopper eller feiler ikke en orkestrering
+som overskrider. Budsjettpolicyer per agent og per arbeidsområde er en egen
+mekanisme og er det som faktisk setter forbruket på pause.
 :::
 
-## Where you review it
+## Hvor du gjennomgår den
 
-Two surfaces show the same orchestration.
+To flater viser den samme orkestreringen.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Forslagskortet** ligger i samtalen som produserte planen. Det er én melding som
+tegnes på nytt gjennom hele livssyklusen — foreslått, kjører, fullført — med
+handlingene for å godkjenne og avbryte på seg.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** er redigeringsverktøyet: et DAG-lerret, en nodeinspektør, en
+revisjons- og diffskuff og godkjenningslinjen som viser estimatet. Det åpnes som
+en redigeringsfane rett fra kortet. Det finnes med vilje ingen «Planer»-oppføring
+i sidepanelet; `/plans` og `/plans/:kind/:id` finnes bare som dypelenker for
+deling.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Godkjenning er **forbeholdt operatøren**. Det finnes ikke noe MCP-verktøy for det:
+en agent kan foreslå (`propose_orchestration`), sende inn en plan (`submit_plan`)
+eller instansiere en playbook (`run_playbook`), men bare et menneske godkjenner.
+Agent-initierte revisjoner er i tillegg begrenset av en nedkjøling på to minutter,
+slik at en omplanleggingssløyfe samles opp i stedet for å oversvømme
+nyhetsstrømmen din.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Det du kan endre før du godkjenner, er det nodeinspektøren viser: gi en undersak
+ny tittel eller skriv den om, endre hvilken **rolle** som eier den, legge om
+avhengighetene, redigere utdataskjemaet eller slette noden helt. Strukturelle
+noder (forskning, diskusjon, syntese) og noder som allerede er kjørt, er
+skrivebeskyttet. Du kan ikke feste en rolle til en bestemt navngitt agent, og du
+kan ikke redigere budsjettet, fra redigeringsverktøyet.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+To redaktører på én plan løses med optimistisk samtidighet, ikke sammenslåing.
+Hver redigering bærer `base_revision` den ble gjort mot; en redigering basert på en
+utdatert revisjon avvises med «planen har gått videre» i stedet for å overskrive
+noen andres i stillhet. Å spole tilbake er heller ikke en sletting — det legger til
+det eldre forslaget som en ny revisjon, så revisjonstidslinjen bare vokser.
 
-## Honest estimates, or none
+## Ærlige estimater, eller ingen
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Estimatet i godkjenningslinjen bygges fra reell historikk fra fullførte kjøringer
+for hver rolle, som et interkvartilbånd (p25–p75). Kostnadstotalene **summerer**
+de estimebare nodene; varigheten er den **kritiske stien** gjennom DAG-en i
+stedet for summen (parallelle grener overlapper).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+En node hvis rolle **ikke har historikk fra fullførte kjøringer**, rapporterer
+`sampleSize: 0` og nullområder. Det vises som nettopp det — ukjent — aldri som en
+oppdiktet punktverdi, fordi et estimat du ikke kan stole på, er verre enn ikke noe
+estimat. Når noen noder har historikk og andre ikke, merkes totalen som delvis.
+Sprengningsradius vises bare når en node oppgir `symbol`- eller
+`file`-opphavsreferanser; en node uten dem forblir «ukjent» i stedet for å utledes
+fra prosaen.
 
-## One approval, then deterministic execution
+## Én godkjenning, deretter deterministisk kjøring
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/nb-NO/handbok/konsepter/pipelines/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Dette er kjerneideen: **agenten planlegger; en deterministisk funksjon utfører.**
+Når du godkjenner, gjør `OrchestrationMaterializer`, en ren funksjon uten LLM og
+uten I/O, forslaget om til en ekte [pipeline](/nb-NO/handbok/konsepter/pipelines/).
+Gitt det samme forslaget og de samme oppløste rollene produserer den alltid den
+samme DAG-en. Det er viktig fordi den genererte pipelinen arver alt motoren
+allerede gjør gratis: suspensjon og gjenopptakelse på tvers av omstarter,
+krasjgjenoppretting, kostnads- og tokenoppsummeringer per kjøring og
+brukergrensesnittet for kjøringsdetaljer.
 
-Approval also creates the scaffolding the work needs:
+Godkjenningen oppretter også stillaset arbeidet trenger:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **ansetter** alle roller merket som nye (og registrerer id-ene til de ansatte
+  agentene, slik at et krasj midt i godkjenningen kan gjenopptas uten dupliserte
+  ansettelser)
+- et **team** som grupperer rollene
+- et **prosjekt** som den overordnede saken plasseres i
+- **pipeline-malen + kjøringen** som driver alt sammen
 
-## The lifecycle
+## Livssyklusen
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +122,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Status         | Betydning                                                                        |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | Planen er klar og venter på din ene godkjenning på forhånd                       |
+| `approved`     | Du godkjente den; materialiseringen pågår (ansettelser, team, prosjekt, pipeline) |
+| `executing`    | Den genererte pipelinen kjører: undersaker, diskusjon, arbeid                    |
+| `synthesizing` | Undersakene er ferdige; syntesesteget produserer leveransen                      |
+| `completed`    | Ferdig: den overordnede saken er merket som fullført, og leveransen er lagt ut i det delte området |
+| `failed`       | Materialiseringen mislyktes, eller kjøringen av den genererte pipelinen mislyktes |
+| `cancelled`    | Du avbrøt den                                                                    |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
+Et monotont **revisjonsnummer** sporer forslaget mens orkestratoren reviderer det
+så lenge det fortsatt er `proposed`; appen registrerer hvilken revisjon du
+godkjente. `propose_orchestration` avviser en revisjon når statusen ikke lenger er
 `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+En orkestrering åpnes alltid mot en **overordnet sak** og deler ett
+diskusjons**område**, slik at hele innsatsen kan spores til ett enkelt
+arbeidselement, og teamet snakker i ett rom.
 
-## What happens when it finishes
+## Hva som skjer når den er ferdig
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+En lytter som holdes i live, følger den genererte pipelinen og mapper
+sluttilstanden tilbake til orkestreringen og den overordnede saken, slik at
+fullføring og feil dukker opp der du allerede følger med. Orkestreringsfunksjonen
+trenger ikke sin egen kjøringsmotor.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Du kan avbryte en orkestrering når som helst; avbruddet river ned arbeidet som er
+i gang.
 
 ::::note
-Orchestration builds on [pipelines](/nb-NO/handbok/konsepter/pipelines/) and
-[tickets](/nb-NO/handbok/konsepter/saker/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orkestrering bygger på [pipelines](/nb-NO/handbok/konsepter/pipelines/) og
+[saker](/nb-NO/handbok/konsepter/saker/). Det er et planleggings- og
+godkjenningslag på toppen av dem, ikke en egen runtime.
 ::::
 
-## See also
+## Se også
 
-- [Pipelines and automation](/nb-NO/handbok/konsepter/pipelines/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/nb-NO/handbok/konsepter/saker/): the parent ticket an orchestration is anchored on
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): the roles an orchestration fills or hires
-- [Run an orchestration](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
-- [Work in Plan Studio](/nb-NO/handbok/slik-gjor-du/plan-studio/)
+- [Pipelines og automatisering](/nb-NO/handbok/konsepter/pipelines/): motoren en materialisert orkestrering kjører på
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/): den overordnede saken en orkestrering er forankret i
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): rollene en orkestrering fyller eller ansetter
+- [Kjør en orkestrering](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
+- [Jobb i Plan Studio](/nb-NO/handbok/slik-gjor-du/plan-studio/)

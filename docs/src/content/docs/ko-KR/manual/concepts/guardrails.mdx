@@ -1,248 +1,252 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: 가드레일 — 모든 변경 작업을 위한 단일 정책
+description: Control Center가 에이전트의 모든 부작용을 단일 허용/먼저 묻기/거부 엔진으로 처리하는 이유, ActionClass 분류 체계가 의도적으로 작게 유지되는 방식, 그리고 자율성 다이얼이 실제로 바꾸는 것.
 slug: ko-KR/매뉴얼/개념/가드레일
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center의 에이전트는 파일을 삭제하고, 브랜치를 푸시하고, 풀
+리퀘스트를 게시하고, 외부 API를 호출할 수 있습니다. 각각은 서로 다른
+_종류_의 위험이지만, 오랫동안 이 중 단 하나, 셸 명령에만 정책이
+있었습니다. 가드레일은 에이전트가 수행할 수 있는 모든 변경 작업에 대해,
+어떤 런타임이나 도구가 제안하든 관계없이, 한 가지 질문에 일관되게 답하기
+위해 존재합니다: **이 작업은 허용되는가, 승인이 필요한가, 아니면
+거부되는가?**
 
-## One engine, every chokepoint
+## 엔진은 하나, 관문은 전부
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+정책 엔진은 정확히 하나입니다. 이 엔진은 작업이 시스템 밖으로 나갈 수 있는
+모든 지점에서 조회됩니다: 내장 하네스의 도구 레지스트리, 서버 측 MCP
+디스패처 게이트, 그리고 저장소 작업 변경입니다. 따라서 한 번 작성한 규칙이
+내장 런타임과 외부 에이전트 CLI에 똑같이 적용됩니다 — 이를 우회하는 두
+번째, 더 조용한 경로는 없습니다. 예전의 bash 전용 명령 정책도 여전히
+작동합니다: 규칙이 작업 클래스 대신 명령 접두사와 일치할 수 있으며, 두
+형식은 같은 정책 저장소에 공존합니다.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/ko-KR/매뉴얼/개념/샌드박스와-보안/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+그러나 이 엔진은 OS 샌드박스를 대신하지 않으며, 샌드박스도 이 엔진을
+대신하지 않습니다. 둘은 서로 다른 질문에 답합니다: 가드레일은 Control
+Center가 볼 수 있는 호출이 애초에 일어나도 되는지를 결정하고, 샌드박스는 그
+결과로 생긴 프로세스가 어디까지 닿을 수 있는지를 제한합니다. `cc_server`는
+호스트가 백엔드를 제공하는 곳에서 샌드박스를 적용합니다 — 하지만
+[Windows에는 백엔드가 없고 Linux에는 `bwrap`과 `socat`이
+필요합니다](/ko-KR/매뉴얼/개념/샌드박스와-보안/). 그런 호스트에서는
+가드레일이 하한 위에 얹힌 정책이 아니라 최외곽 적용 계층이므로, 얼마나
+관대하게 설정할지 결정할 때 알아 둘 가치가 있습니다.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: 의도적으로 닫힌 분류 체계
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+모든 변경 도구는 자신이 속한 **ActionClass**를 선언하며, 이는 닫힌 열세
+개의 효과 클래스 집합에서 선택합니다. 그중 다섯 개는 기본적으로 먼저
+묻기이고, 나머지는 허용이며, 이를 바꾸는 것은 규칙입니다.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| 클래스                     | 내장 기본값  | 포함하는 내용                                                    |
+| -------------------------- | ------------ | ---------------------------------------------------------------- |
+| `fileDelete`               | **먼저 묻기** | 파일 삭제(삭제 형태의 쓰기, `rm`)                                |
+| `gitPush`                  | **먼저 묻기** | git 리모트로 푸시                                                |
+| `prCreate`                 | **먼저 묻기** | 풀 리퀘스트 생성                                                 |
+| `prPublish`                | **먼저 묻기** | 리뷰 게시, PR 병합                                               |
+| `vendorSyncWrite`          | **먼저 묻기** | 외부 티켓 벤더에 쓰기(Linear, Jira, GitHub 동기화)               |
+| `fileWriteOutsideWorktree` | 허용         | 격리된 워크트리 밖에 파일 쓰기                                   |
+| `gitCommit`                | 허용         | git 커밋 생성                                                    |
+| `networkEgress`            | 허용         | 네트워크 이그레스(웹 가져오기, 임의 HTTP)                        |
+| `secretAccess`             | 허용         | 시크릿이나 자격 증명 읽기                                        |
+| `packageInstall`           | 허용         | 패키지 설치(npm, pip, pub, brew)                                 |
+| `processSpawn`             | 허용         | 프로세스 생성(셸과 셸을 호출하는 모든 것)                        |
+| `workspaceMutation`        | 허용         | 워크스페이스 구조 변경(저장소, 스페이스, 에이전트)               |
+| `enclosureControl`         | 허용         | 인클로저(리그) 구동: VM 부팅, 입력 전송                          |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+기본적으로 허용되는 여덟 개 클래스는 그 아래에 샌드박스 하한이 적용된다는
+전제로 선택되었습니다. 호스트가 백엔드를 제공하는 곳에서는 그렇지만,
+Windows에서는 그렇지 않고 `bwrap`과 `socat`이 없는 Linux에서도 그렇지
+않습니다 — 따라서 그런 곳에서 `fileWriteOutsideWorktree`나
+`packageInstall`을 막고 싶다면 직접 규칙을 작성해야 합니다.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+집합이 닫혀 있는 것은 의도적입니다. 클래스를 선언하지 않은 새 변경 도구는
+래칫 테스트를 통과하지 못하므로, 이 분류 체계는 명시적이고 근거 있는
+결정으로만 확장될 수 있습니다 — "분류 체계의 무분별한 확장은 이 기능의
+죽음입니다." 열세 개 클래스는 사람들이 실제로 작성하는 정책(묻지 않고 절대
+푸시하지 않기, 워크트리 밖에서 절대 삭제하지 않기, 읽기는 항상 허용)을
+표현하기에 충분히 많고, 설정 UI가 이해 가능하게 유지될 만큼 충분히
+적습니다.
 
-## Rules and scope resolution
+## 규칙과 범위 해석
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+규칙은 `(scope, ActionClass | command prefix) → allow | prompt | deny`를
+매핑합니다. 범위는 가장 구체적인 것부터 가장 덜 구체적인 것까지
+중첩됩니다:
 
-**space > agent > workspace > mode preset > built-in default**
+**스페이스 > 에이전트 > 워크스페이스 > 모드 프리셋 > 내장 기본값**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+해석은 **구체성 우선**입니다: 일치하는 규칙이 있는 첫 번째 범위가 결정하고
+해석은 거기서 멈춥니다. 가장 제한적인 규칙은 동점일 때만 기준이 됩니다 — 한
+범위 안에서 똑같이 구체적인 두 규칙 사이에서, 그리고 한 작업이 선언한 여러
+클래스를 결합할 때입니다. 범위 안에서 명령 규칙은 가장 긴 명령 접두사와
+일치합니다. 어디에서도 허용이 거부를 이기지 않습니다.
 
-Two decisions carry hard guarantees:
+두 가지 결정에는 확실한 보장이 따릅니다:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **실패 시 거부.** 승인자가 연결되지 않은 `prompt`는 _거부_로 판정됩니다.
+  답이 없는 질문은 결코 '예'가 아닙니다.
+- **가장 제한적인 조합.** 여러 클래스를 아우르는 작업은 가장 제한적으로
+  결합됩니다. 여러 클래스가 먼저 묻기로 판정되면 확인 창 하나가 그 모두를
+  나열합니다.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+턴 단위 래치는 의도적으로 없습니다. 모든 도구 호출은 정책을 처음부터 다시
+해석하므로, 같은 작업에 대한 반복 질문은 턴 범위에 묶인 무엇이 아니라
+운영자 자신의 "이 결정 기억하기"로 제한됩니다.
 
-## Argument-level rules
+## 인자 수준 규칙
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+규칙은 작업의 동사만이 아니라 **인자**까지 제약할 수 있습니다. "푸시할 수
+있다"와 "`feature/*`로 푸시할 수 있다"는 서로 다른 주장이며, 통제가 되는
+것은 두 번째뿐입니다 — 동사만 승인하는 기능 게이트는 공개된 대부분의
+에이전트 사고가 가진 형태입니다.
 
-A constraint may name:
+제약은 다음을 지정할 수 있습니다:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **경로** — glob 패턴(`repos/**`, `!**/.env`)
+- **ref** — git ref, `!` 부정(`['**', '!main']`은 "main을 제외한 모든
+  브랜치"로 읽힘)
+- **호스트** — 네트워크 목적지, 하위 도메인 와일드카드 포함(`*.internal`)
+- **명령** — 명령 접두사, 단어 경계에서 일치
+- **상한** — `maxCount` / `maxCents`, 따라서 "최대 50개 파일 삭제"를
+  표현할 수 있습니다
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+문법을 닫히고 루프 없이 유지하면 세 가지 속성이 따라오며, 이 세 가지가 바로
+핵심입니다: 모든 규칙이 되읽을 수 있는 문장으로 표현되고, 모든 거부가
+일치한 제약을 지목할 수 있으며, 정책 전체를 열거할 수 있습니다 — 에이전트가
+실행되기 *전에* 무엇을 할 수 있는지 볼 수 있습니다.
 
-Three rules that matter:
+중요한 세 가지 규칙:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **제약된 규칙이 더 구체적입니다.** 같은 범위에서 제약 없는 규칙보다
+  구체적이므로, "`main`으로의 푸시 거부"가 순서를 고민하지 않고도 "푸시
+  허용"을 이깁니다.
+- **제한적** 규칙(거부 / 먼저 묻기)은 요청이 지정한 값 중 *하나라도*
+  건드리면 적용되고, **허용적** 규칙(허용)은 요청이 그 안에 *완전히* 들어갈
+  때만 적용됩니다. 둘을 같은 방식으로 읽으면 에이전트가 무해한 경로를 옆에
+  끼워 넣어 금지된 경로를 세탁할 수 있게 됩니다.
+- 요청이 언급하지 않은 측면을 지정한 규칙은 적용되지도, 건너뛰어지지도
+  않습니다: **승인으로 에스컬레이션**됩니다. 조용히 건너뛰면 ref를 보고하지
+  않는 도구에 대해 모든 보호 브랜치 규칙이 무력해지고, 조용히 거부하면
+  추출기가 설명할 수 없는 푸시를 모두 거절하게 됩니다. 승인자가 연결되어
+  있지 않으면 기존의 실패 시 거부 규칙이 그 에스컬레이션을 거부로
+  바꿉니다.
 
-## What a command rule can and cannot catch
+## 명령 규칙이 잡을 수 있는 것과 없는 것
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+`commandPrefix` 규칙은 단어 경계에서 일치합니다: `git push`는
+`git push origin main`을 포함하지만 `git pushx`는 포함하지 않습니다. 이
+규칙은 셸을 **정규화하지 않습니다**. `git  push`(공백 두 개),
+`cd sub && git push`, `GIT_DIR=… git push`는 모두 다른 문자열이며
+`git push`에 관한 규칙과 하나도 일치하지 않습니다.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+이는 실제 한계이며, 덮어 두지 않고 명시합니다: 명령 규칙은 평범한 에이전트
+행동을 조정하기 위한 운영자 편의 기능이지, 적대적인 에이전트에 대한 경계가
+**아닙니다**. 경계는 효과 클래스(도구가 선언하며 다르게 표기할 수 없음),
+정책 저장소 아래에 있는 모드 명령 그물, 그리고 그 둘 아래에 있는 OS
+샌드박스입니다. `allow`로 판정되는 명령 규칙은 이 둘 중 어느 것도 느슨하게
+만들지 않습니다 — 모드 그물이 그 뒤에 실행되고, 그 `deny`가 최종입니다.
 
-## Standing approvals
+## 상시 승인
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+먼저 묻기 프롬프트에 "이 결정 기억하기"로 답하면 실제 정책 규칙이
+기록됩니다: 범위가 지정되고(스페이스 / 에이전트 / 워크스페이스),
+**인자로 제약되며**(`feature/login`으로의 푸시를 승인하면 `main`이 아니라
+`feature/**`를 부여), 명시적 TTL로 **스스로 해제**됩니다. 앞으로 몇 시간
+동안만 '예'라고 답하는 것은 영구 정책을 조용히 다시 쓰는 것과 다르며, 이때
+기록된 규칙은 출처 `remembered`와 만료 시각을 함께 같은 정책 저장소에
+남으므로 일찍 취소할 수 있습니다.
 
-## Enforcement levels
+## 적용 수준
 
-Each rule carries one:
+각 규칙은 다음 중 하나를 가집니다:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — 허용하되, 규칙이 일치했음을 기록합니다. 이것이 도입
+  경로입니다: 엄격한 규칙을 advisory 모드로 배포하고, 일주일 동안 감사
+  기록을 읽어 그 규칙이 *막았을* 대상을 정확히 확인한 뒤 승격하세요. 이
+  단계가 없으면 엄격한 정책은 결코 켜지지 않습니다.
+- **soft** — 거부하되, 재정의 권한을 가진 사람이 근거를 기록하고 재정의할 수
+  있습니다. 재정의 자체도 감사 대상 사건입니다.
+- **hard**(기본값) — 거부합니다. 무엇도 이를 재정의하지 못합니다.
 
-## The managed tier
+## 관리형 계층
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+설치 운영자는 워크스페이스 관리자가 풀 수 없는 정책을 고정할 수 있습니다.
+관리형 규칙은 서버 측에 있으며, 각 워크스페이스의 자체 체인과 **가장
+제한적인 방식으로** 병합됩니다 — 체인 맨 앞의 범위가 아닙니다. 체인 맨 앞에
+있는 관리형 `allow`는 설치가 워크스페이스의 거부를 덮어쓰게 만들어,
+클램프의 목적과 정반대가 되기 때문입니다. 따라서 관리형 규칙은 언제나 더
+조일 수만 있습니다.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+`CC_SERVER_MANAGED_POLICY`를 JSON 파일로 설정하면 저장된 규칙을 완전히
+능가하며, 이 덕분에 운영자는 어떤 관리자 UI로도 뒤집을 수 없는 태세를 고정할
+수 있습니다 — "개발자가 안전 제어를 못 끄게 할 수 있나요?"에 대한 답입니다.
 
-## The autonomy dial is a profile, not a parallel system
+## 자율성 다이얼은 병렬 시스템이 아니라 프로필입니다
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+스페이스별 자율성 다이얼은 이와 같은 정책 저장소 위에 정의된 이름 있는
+프로필이지, 두 번째 메커니즘이 아닙니다. 세 가지 설정은 `proposeOnly`,
+`actWithApproval`, `actFreely`로 저장되고 전송됩니다(하이픈이 들어간 형식은
+UI 문구일 뿐이며, `autonomy.setForSpace`는 그 밖의 값은 거부합니다). 설정하지
+않으면 `actWithApproval`로 동작합니다.
 
-What each one does to a resolved decision:
+해석된 결정에 각 설정이 하는 일:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`**는 게이트가 걸린 모든 도구를 즉시 거부합니다. 에이전트는
+  여전히 추론하고 답할 수 있지만 행동할 수는 없으며, 그 이유를 메시지에
+  밝힙니다.
+- **`actWithApproval`**(및 미설정)은 위에서 설명한 실패 시 거부 방식의 승인
+  게이트입니다.
+- **`actFreely`**는 hard `deny`로 판정되지 않은 모든 것을 사전 승인합니다.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+마지막 설정은 완곡하게 넘기지 않고 분명히 말할 가치가 있습니다:
+`actFreely`에서는 `prompt` 결정이 승인자에게 **에스컬레이션되지 않습니다** —
+허용되며 아무도 묻지 않습니다. 다이얼을 살아남는 것은 명시적인 `deny`
+규칙뿐입니다. 따라서 `actFreely`는 편의 설정이 아니라 의도적인 자율성
+부여이며, 실패 시 거부 규칙은 그것이 꼭 필요한 경우(기본값인
+`actWithApproval`)를 정확히 보호합니다.
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+에이전트 간 위임은 `delegate_task` 관문에서 네 가지 가드 모두로 보호됩니다:
+깊이 상한(기본값 3), 순환 감지, **자율성 상한**(위임받은 에이전트는 위임한
+에이전트보다 더 큰 자율성으로 행동할 수 없습니다 — 더 자유로운 에이전트에게
+일을 넘겨 권한을 세탁할 수 없습니다) 그리고 **예산 한도**(위임은 위임자의
+남은 예산에 청구되고, 예산을 새로 찍어낼 수 없습니다). 각각은 가드의 사유를
+그대로 에이전트에 반환하며 시끄럽게 거부됩니다.
 
-## The adapter honesty matrix
+## 어댑터 정직성 매트릭스
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+모든 런타임이 Control Center의 모든 작업 가로채기를 허용하지는 않습니다.
+외부 에이전트 CLI는 일부 도구를 프로세스 안에서 네이티브로 실행하며, 거기에는
+어떤 게이트도 놓일 수 없습니다. 아닌 척하지 않고, 각 어댑터는 **정직성
+매트릭스**를 함께 제공합니다: 어댑터별로 Control Center가 도구 표면을
+필터링하는지, 도구 호출을 가로채는지, 완료 계약을 관찰하는지, 러너의 네이티브
+도구를 볼 수 있는지, 그리고 프로세스 내 도구가 샌드박스 프로필로 보호되는지를
+나타냅니다.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+구성을 신뢰하기 전에 읽어 볼 만한 두 항목이 있습니다. 내장 하네스는 프로세스
+내 파일 도구가 샌드박스되지 **않는다**고 선언합니다 — 도구 표면과 이 정책
+엔진이 그것이 가진 유일한 파일 시스템 경계입니다. Claude Code는 자체 도구
+호출을 가로챌 수 **없다**고 선언합니다. `--dangerously-skip-permissions`로
+실행되기 때문입니다. Control Center는 그 `mcp__*` 호출만 보며, 자체 읽기,
+쓰기, 편집, 셸 도구는 보이지 않게 실행됩니다.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+설정 화면이 이 매트릭스를 보여 주는 이유는, 가드레일 시스템에서 용서할 수
+없는 단 하나의 실패가 존재하지 않는 커버리지를 주장하는 것이기 때문입니다.
 
-## Probing policy before it bites
+## 정책에 당하기 전에 미리 확인하기
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+가드레일은 **설정 → 워크스페이스 → 에이전트 권한**
+(`/workspaces/<id>/settings/workspace/permissions`)에 있습니다. 이 화면에는
+규칙을 작성하는 정책 매트릭스, 정책 템플릿, 가정 시나리오 프로브, 권한 감사
+기록, 어댑터 정직성 매트릭스가 있습니다.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+프로브는 작업 클래스(또는 명령)와 범위를 받아 어떤 규칙이 결정했고 그 이유가
+무엇인지 보여 줍니다. 해석이 순수하고 결정적이기 때문에 — 같은 작업, 같은
+범위, 같은 결정 — 프로브의 답이 곧 에이전트가 받게 될 답입니다.
 
-## Related concepts
+## 관련 개념
 
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/ko-KR/매뉴얼/개념/멀티플레이어/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/): writing and testing rules in practice
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/): 에이전트 실행을 실제로 제약하는 것과, 이 엔진 아래의 OS 하한이 어디까지 닿는지
+- [멀티플레이어 — 신원, 멤버십, 프레즌스](/ko-KR/매뉴얼/개념/멀티플레이어/): 스페이스, 주체, 그리고 자율성 다이얼이 있는 위치
+- [가드레일 구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/): 실제로 규칙을 작성하고 테스트하기

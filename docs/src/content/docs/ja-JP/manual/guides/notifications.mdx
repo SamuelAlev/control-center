@@ -1,149 +1,154 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: 通知を設定
+description: カテゴリをオンまたはオフにし、Quiet hours と通知音を設定して、どの通知がどこに届くのかを把握します。
 slug: ja-JP/マニュアル/ハウツーガイド/通知
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+このガイドでは、通知を設定する方法と、各設定が実際に何を制御するのかを説明します。
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+通知は 2 つのサーフェスに届きます。**通知センター**（タイトルバーのベル）は、
+サーバー上のワークスペースごとの永続フィードを読み取ります。**OS トースト**は
+それとは別のデスクトップ専用のパスで、サーバーからプッシュされるライブフレーム
+によって供給されます。
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Web ビルドでは OS 通知が表示されません]
+トーストのパイプラインを構築するのはデスクトップのブートストラップだけです。
+`app.usectrl.dev` では OS トーストも通知音もアンビエントバナーもありません。
+ベルとその履歴は、サーバーのフィードを読み取るため引き続き機能します。
+スマートフォンクライアントには通知サーフェスがまったくありません。
 :::
 
-## Turn categories on or off
+## カテゴリをオンまたはオフにする
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. **設定 → 自分 → 通知**を開きます
+2. **通知を有効にする**をオンのままにします
+3. 必要なカテゴリを切り替えます。カテゴリはちょうど 16 個あります：
 
-| Category                  | Fires when                                                                 |
+| カテゴリ                  | 発火する条件                                                                |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| エージェント完了          | エージェントが実行を完了した                                                |
+| PR公開                    | エージェントが PR を公開した                                               |
+| PRマージ                  | PR がマージされた                                                          |
+| 新しいメッセージ          | 現在見ていないスペースにメッセージが届いた                                 |
+| プルリクエストでメンション | GitHub の通知ポーリングで、PR であなたがメンションされたことを検知した      |
+| レビュー依頼              | 下書き以外の PR で、あなたのレビューが実際に依頼された                      |
+| レビューが古くなっています | すでにレビューしたプルリクエストに新しいコミットが追加された               |
+| マージ可能                | あなたが作成したプルリクエストがマージ可能になった、またはマージ可能でなくなった |
+| レビュー判定              | レビュアーが承認した、変更を依頼した、または承認が取り消された              |
+| チェック                  | あなたが作成したプルリクエストで CI が失敗した、または復旧した             |
+| レビュースレッド          | あなたが参加しているスレッドに誰かが返信した、または解決した               |
+| チケット割り当て          | チケットが割り当てられた                                                    |
+| チケットのステータス変更  | チケットのステータスが変わった                                             |
+| まもなく会議開始          | カレンダーの会議が事前通知の時間内に入った                                 |
+| カレンダー切断            | 接続済みカレンダーの OAuth トークンが期限切れになった                      |
+| エンクロージャーの更新    | エンクロージャーが引き継がれ、回収され、または失敗した                     |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+このリストにないものは通知もフィルタリングもできません。「その他」というカテゴリは
+存在しません。
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+これらの設定はユーザーに紐づいてデバイス間で引き継がれるため、スマートフォンと
+ノート PC の設定は一致します。音量だけは意図的に例外で、デバイスごとに保持されます。
 
-## Set quiet hours
+## Quiet hours を設定する
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. 同じページで **Quiet hours** をオンにします
+2. 開始時刻と終了時刻を `HH:MM` 形式で入力します（既定の時間帯は 22:00–08:00）
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Quiet hours の間は、緊急でない通知は破棄されます。後で再送するためにキューに
+入れられることはありません。
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+2 つのカテゴリは**緊急**であり、常に配信され、Quiet hours とフォーカスモードの
+_両方_を迂回します。**まもなく会議開始**と **PR公開**です。会議の通知は後から
+見ても意味がないため、これがその理由です。
 
-## Choose a sound
+## 通知音を選ぶ
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. **通知音**までスクロールします
+2. 同梱の 11 種類のサウンドから 1 つを選ぶか、**なし**を選択します
+3. テストボタンを押して試聴し、スライダーで音量を設定します
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+サウンドはアプリ自体が再生します。OS 通知は無音で配信されるため、二重に
+聞こえることはありません。
 
-## Set the meeting lead time
+## 会議の事前通知時間を設定する
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. **事前通知時間**までスクロールします
+2. **5**、**10**、**15**、**30** 分から選択します
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+これは、カレンダーの予定の何分前に **まもなく会議開始** 通知が発火するかを
+示します。既定値は 5 分です。
 
-## Know when a notification is suppressed
+## 通知が抑制される条件を知る
 
-A notification is dropped, silently, when any of these is true:
+次のいずれかに当てはまる場合、通知は何も表示されずに破棄されます：
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- 通知が全体でオフになっている、またはそのカテゴリがオフになっている
+- すでにその通知が移動させる先のルートにいる（メッセージの場合は、すでにその
+  スペースにいる）
+- フォーカスモードが有効で、そのカテゴリが緊急ではない
+- Quiet hours が有効で、そのカテゴリが緊急ではない
 
-Those checks apply to OS toasts. The durable bell still records the event.
+これらのチェックが適用されるのは OS トーストです。永続的なベルには引き続き
+イベントが記録されます。
 
-Two more suppressions live further upstream, in what the server sends at all:
+さらに上流、サーバーがそもそも送信する内容の段階にも、2 つの抑制があります：
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- 別の**人間**からの、メンションのないメッセージは通知になりません
+- エージェント同士のスペースはサイドバーでミュートされているため、人間の
+  未読バッジが増えることはありません
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+スペース内に通知が届かない一角はありません。スレッドを含め、すべての会話が
+等しく通知します。既読状態はスペース単位なので、未読は会話ごとではなく、
+スペースの会話全体で集計されます。
 
-## Read and clear the notification centre
+## 通知センターを確認してクリアする
 
-1. Click the bell in the title bar
+1. タイトルバーのベルをクリックします
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+ポップオーバーには最近のアクティビティが表示され、各項目はその対象へ
+ディープリンクします。開いてもすべてが既読になるわけでは**ありません**。
+ヘッダーの**すべて既読にする**を使うか、個別の行を既読にします。既読状態は
+ユーザーに紐づいてデバイス間で引き継がれます。
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[すべてクリアは削除ではなくウォーターマーク]
+**すべてクリア**はユーザーごとのウォーターマークを刻み、それより古いものを
+すべて隠します。行自体は残ります。これとは別に、各ワークスペースは直近の
+**200** 件のフィード行だけを保持し、新しい行が届くたびに古い行が削除されます。
+ベルが購読するのは最新の **50** 件で、ポップオーバーにはそのうち最大 **15** 件が
+表示されます。それより古い履歴は、既読状態にかかわらず失われます。
 :::
 
-## Troubleshooting
+## トラブルシューティング
 
-### No OS notifications on macOS
+### macOS で OS 通知が届かない
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+認可はアプリの起動時にネイティブに要求されます。拒否した場合は、システム設定 →
+通知 で Control Center を再度有効にしてください。アプリ内から再要求する
+プロンプトはありません。
 
-### Nothing arrives on the web build
+### Web ビルドでは何も届かない
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+想定どおりの動作です。Web ビルドには OS 通知のパイプラインがありません。
+ベルを使用してください。
 
-### The bell badge shows zero but there is clearly new activity
+### ベルバッジが 0 なのに新しいアクティビティが明らかにある
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+接続後に既読マークのストリームが解決するまでは、バッジが一瞬表示されてから
+空になるのを避けるため、項目は既読として描画されます。マークが読み込まれると
+落ち着きます。
 
-### An agent's run finished but nothing pinged me
+### エージェントの実行が完了したのに通知が来ない
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+すでにその実行が行われたスペースにいなかったか確認してください。そのルートが
+アクティブな場合、そのルート自身の OS トーストは抑制されます。
 
-## Related guides
+## 関連ガイド
 
-- [Use focus mode and soundscapes](/ja-JP/マニュアル/ハウツーガイド/フォーカスモード/)
-- [Triage your inbox](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)
-- [Curate your newsfeed](/ja-JP/マニュアル/ハウツーガイド/ニュースフィード/)
+- [フォーカスモードとサウンドスケープを使う](/ja-JP/マニュアル/ハウツーガイド/フォーカスモード/)
+- [受信トレイをトリアージ](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)
+- [ニュースフィードをキュレート](/ja-JP/マニュアル/ハウツーガイド/ニュースフィード/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/)
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/)

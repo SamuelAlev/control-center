@@ -1,115 +1,80 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: จัดการคีย์ API
+description: ข้อมูลรับรองแต่ละรายการอยู่ที่ใด — บัญชีผู้ใช้ของคุณบนเซิร์ฟเวอร์ ตัวเซิร์ฟเวอร์เอง หรือ CLI ภายนอก — และวิธีตั้งค่า หมุนเวียน และลบข้อมูลนั้น
 slug: th-TH/คู่มือ/วิธีทำ/คีย์-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+คู่มือนี้แสดงตำแหน่งที่ข้อมูลรับรองแต่ละรายการที่ Control Center ใช้งานถูกจัดเก็บไว้ และวิธีเปลี่ยนข้อมูลเหล่านั้น
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**ไม่มีข้อมูลใดถูกจัดเก็บบนเครื่องที่คุณกำลังพิมพ์อยู่** ข้อมูลรับรองทุกๆ รายการอยู่บนเซิร์ฟเวอร์ และข้อมูลรับรองรายการใดจะตอบสนองคำขอหนึ่ง ๆ ขึ้นอยู่กับว่ามีมนุษย์อยู่เบื้องหลังหรือไม่
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| ข้อมูลรับรอง                            | จัดเก็บที่                                                   | ใครใช้งาน                                                          |
+| --------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| ข้อมูลรับรองโฮสต์โค้ด / ตั๋วงานของคุณ    | ไฟล์ข้อมูลลับ 0600 ของเซิร์ฟเวอร์ โดยใช้ user id ของคุณเป็นคีย์ | ทุกสิ่งที่คุณร้องขอ: ระบบ PR, การรันเอเจนต์ของคุณ, อิมเมจของคุณ      |
+| ตัวตนแอปของเซิร์ฟเวอร์                   | ไฟล์เดียวกัน บวก `server_settings` สำหรับส่วนที่ไม่ใช่ข้อมูลลับ | งานที่ไม่มีมนุษย์ร้องขอ: webhook, การโพลล์ PR, การซิงค์ตั๋วงาน       |
+| คีย์ผู้ให้บริการโมเดลและโทเค็น OAuth     | ที่เก็บข้อมูลรับรองของเซิร์ฟเวอร์เอง                          | อะแดปเตอร์ในตัว สำหรับทุกเวิร์กสเปซบนการติดตั้งนี้                   |
+| โทเค็นบอต Slack                          | `<dataDir>/<workspaceId>/chat_credentials/` บนเซิร์ฟเวอร์     | สะพานแชทสำหรับเวิร์กสเปซนั้น                                        |
+| ข้อมูลรับรองของ CLI ภายนอก               | แล้วแต่ CLI นั้นใช้งาน                                       | Claude Code บนโฮสต์เซิร์ฟเวอร์                                      |
 
-## Two GitHub credentials, and they answer different questions
+## ข้อมูลรับรอง GitHub สองรายการที่ตอบคำถามต่างกัน
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **ของคุณ** มาจากการลงชื่อเข้าใช้ (device flow) หรือการวางโทเค็น เป็นสิ่งที่ทุกคำขอที่ทำ *ในนามของคุณ* ใช้ ดังนั้นคอมเมนต์ที่โพสต์แทนคุณจึงมีชื่อของคุณ สมาชิกคนอื่นอ่านข้อมูลนี้ไม่ได้ และจะเชื่อมต่อข้อมูลของตนเอง
+- **ของเซิร์ฟเวอร์** มาจาก GitHub App ที่ผู้ดูแลระบบลงทะเบียนไว้ เป็นตัวตอบทุกอย่างที่ไม่มีผู้เรียก ดังนั้นการเข้าถึงโฮสต์โค้ดจึงไม่หายไปเมื่อมีคนลาออกหรือหมุนเวียนโทเค็น
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
-and [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/).
+ข้อมูลรับรองของคุณตั้งค่าในการ์ด **โฮสต์โค้ด** ที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน** ส่วนของเซิร์ฟเวอร์ตั้งค่าใน **แอปผู้ให้บริการ** ที่ **การตั้งค่า → เซิร์ฟเวอร์ → ลงชื่อเข้าใช้ครั้งเดียว** ดู[ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/) และ[สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[ยังมีหน้าจอที่เข้าถึงได้ด้วย URL เท่านั้น]
+`/workspaces/<workspaceId>/api-keys` แสดงการ์ดสองใบเดียวกันกับขั้นตอนแรกของการเริ่มต้นใช้งาน โดย**ไม่มีรายการนำทางอยู่ในส่วนใดของ UI เลย** เข้าถึงได้ด้วยการพิมพ์ URL เท่านั้น ให้ใช้ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน แทน
 :::
 
-## Set model provider keys
+## ตั้งค่าคีย์ผู้ให้บริการโมเดล
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+อะแดปเตอร์ในตัวตรวจสอบสิทธิ์กับผู้ให้บริการเอง และข้อมูลรับรองเหล่านั้นอยู่บนเซิร์ฟเวอร์
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. ไปที่ **การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล**
+2. เลื่อนไปที่ **ผู้ให้บริการและโมเดล**
+3. เชื่อมต่อผู้ให้บริการ — ใช้ OAuth ผ่านเบราว์เซอร์สำหรับ OpenAI, Codex, Cursor และ Kimi Code; ใช้คีย์ API สำหรับ Anthropic และรายอื่น ๆ
 
-See [Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/) for the full list and
-for adding a custom endpoint.
+ดู[จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/) สำหรับรายการทั้งหมด และสำหรับการเพิ่ม endpoint ที่กำหนดเอง
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+ข้อมูลรับรองเหล่านี้มีผล**ทั่วทั้งโฮสต์**: คีย์เดียวใช้ได้กับทุกเวิร์กสเปซบนการติดตั้งนี้ โทเค็น OAuth จะถูกต่ออายุใหม่ก่อนหมดอายุ
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLI ของอะแดปเตอร์ภายนอกเก็บข้อมูลรับรองของตนเองไว้ในการตั้งค่าของตนเอง บนโฮสต์เซิร์ฟเวอร์ — Control Center ไม่ได้จัดการข้อมูลเหล่านั้น ให้ตรวจสอบสิทธิ์ Claude Code ตามที่เอกสารของมันระบุไว้ บนเครื่องที่ `cc_server` ทำงานอยู่
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/).
+กล่องโต้ตอบ **ตัวแปรสภาพแวดล้อม** ของแต่ละอะแดปเตอร์ดูเหมือนเป็นที่สำหรับใส่คีย์ของหนึ่งในนั้น แต่ไม่ใช่: กล่องนี้เขียนลงบนอุปกรณ์ของคุณ ขณะที่เซิร์ฟเวอร์อ่านสำเนาของตนเอง และไม่มีอะไรเชื่อมสองฝั่งเข้าด้วยกัน ดู[จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
 
-## Connect a ticketing vendor
+## เชื่อมต่อผู้ขายระบบตั๋วงาน
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+การ์ด **ตั๋วงาน** บน **การตั้งค่า → เวิร์กสเปซ → ทั่วไป** เก็บทั้งสองส่วนของการตัดสินใจเดียว: ตั๋วงานของคุณอยู่กับผู้ขายรายใด และข้อมูลรับรองสำหรับผู้ขายนั้น การเลือก **ในเครื่อง** จะซ่อนแถวข้อมูลรับรอง — ตั๋วงานในเครื่องอยู่ในฐานข้อมูลของเซิร์ฟเวอร์นี้เอง และไม่มีอะไรต้องตรวจสอบสิทธิ์
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-linear/).
+คีย์ของคุณถูกจัดเก็บบนเซิร์ฟเวอร์โดยผูกกับ user id ของคุณ เช่นเดียวกับคีย์โฮสต์โค้ด เซิร์ฟเวอร์เก็บคีย์ Linear ของตนเองแยกต่างหาก (**แอปผู้ให้บริการ**) ซึ่งเป็นสิ่งที่การซิงค์ตั๋วงานใช้เมื่อไม่มีมนุษย์ร้องขอ คีย์ที่เอเจนต์ได้รับจะถูกใส่เข้าไปก็ต่อเมื่อเอเจนต์มีความสามารถ **อนุญาตการเรียก ticketing API** ดู[ตั้งค่าการผสาน Linear](/th-TH/คู่มือ/วิธีทำ/การผสาน-linear/)
 
-## Rotate or revoke
+## หมุนเวียนหรือเพิกถอน
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- **ข้อมูลรับรอง GitHub ของคุณ**: กด **ยกเลิกการเชื่อมต่อ** แล้วลงชื่อเข้าใช้อีกครั้งหรือวางโทเค็นใหม่ จากนั้นเพิกถอนโทเค็นเดิมบน GitHub
+- **แอปของเซิร์ฟเวอร์**: สร้าง private key หรือ client secret ใหม่บนหน้า GitHub ของแอป วางใน **แอปผู้ให้บริการ** แล้วกด **ทดสอบ**
+- **ผู้ให้บริการโมเดล**: ที่แถวของมัน ให้ลงชื่อออก (OAuth) หรือลบคีย์ แล้วเชื่อมต่ออีกครั้ง
+- **Slack**: วางโทเค็นอีกครั้งในกล่องโต้ตอบการเชื่อมต่อ ดู[ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### The PR list is empty but my token works in `curl`
+### รายการ PR ว่างเปล่า แต่โทเค็นของฉันใช้ได้ใน `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+ตรวจสอบคำบรรยายใต้แถว **โฮสต์โค้ด** หากระบุแหล่งอื่น ("ผ่านแอปของเซิร์ฟเวอร์นี้", "จากสภาพแวดล้อม") แสดงว่าข้อมูลรับรองที่คุณกำลังทดสอบไม่ใช่ตัวที่ตอบสนอง — ของคุณยังไม่ได้ถูกบันทึก
 
-### The token is accepted but later requests fail
+### โทเค็นได้รับการยอมรับ แต่คำขอภายหลังล้มเหลว
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+โทเค็นจะถูกตรวจสอบตามที่จัดเก็บไว้ แถวจึงระบุบัญชีที่อยู่เบื้องหลัง — แต่ระบุเพียงบัญชี ไม่ได้ระบุขอบเขตสิทธิ์ โทเค็นที่มีขอบเขตสิทธิ์น้อยเกินไปจะเชื่อมต่อได้ แต่จะล้มเหลวเมื่อมีคำขอแต่ละรายการ ตรวจสอบขอบเขตสิทธิ์และวันหมดอายุ:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
-- [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)
-- [Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
-- [Set up Linear integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-linear/)
+- [ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
+- [สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)
+- [จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- [ตั้งค่าการผสาน Linear](/th-TH/คู่มือ/วิธีทำ/การผสาน-linear/)

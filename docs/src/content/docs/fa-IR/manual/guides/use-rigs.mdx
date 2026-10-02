@@ -1,97 +1,99 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: به عامل ماشینی برای تست بدهید
+description: به یک عامل یک مرورگر، میزکار، شبیه‌ساز Android یا شبیه‌ساز iOS یک‌بارمصرف بدهید — زنده تماشا کنید و هر وقت خواستید کنترل را به دست بگیرید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**ریگ** ماشینی یک‌بارمصرف است که یک عامل وقتی می‌خواهد واقعاً چیزی را امتحان کند
+بازش می‌کند: یک صفحه را بار کند، در یک برنامهٔ رومیزی کلیک کند، روی یک گوشی
+این‌ور و آن‌ور بزند. می‌توانید در زمان واقعی کارش را تماشا کنید و هر وقت خواستید
+کنترل را به دست بگیرید.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+ریگ‌های ترمینال، مرورگر و میزکارِ محفظه‌ای VMهایی با دیسک‌های دورریختنی و
+شبکه‌های دروازه‌بانی‌شده هستند. Android و iOS شبیه‌سازهایی هستند که میزبان
+مدیریتشان می‌کند: وضعیت دستگاهشان دورریختنی است، اما شبکهٔ آن‌ها از میزبان سرور
+تبعیت می‌کند.
 
-## Set it up once
+## یک‌بار راه‌اندازی‌اش کنید
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+ریگ‌ها روی ماشینی اجرا می‌شوند که `cc_server` را میزبانی می‌کند — همان ماشین، نه
+ماشینی که به آن نگاه می‌کنید. پنج سطح کاربرمحور وجود دارد؛ سطوح رومیزی و موبایلی
+به راه‌اندازی روی میزبان نیاز دارند:
 
-| Surface | Runs on | Setup |
+| سطح | روی چه چیزی اجرا می‌شود | راه‌اندازی |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **ترمینال (VM)** | یک microVM که تصویر پین‌شدهٔ Ubuntu را بوت می‌کند | هیچ — تصویر در نخستین استفاده خودکار واکشی می‌شود |
+| **مرورگر (VM)** | یک microVM که تصویر پین‌شدهٔ Debian را بوت می‌کند و در نخستین استفاده Chromium، Firefox یا WebKit در آن نصب می‌شود | هیچ — همان |
+| **رایانه (VM)** | QEMU با یک تصویر میزکار Linux که Chromium، Firefox، WebKit و سطح پایهٔ CLI یک رانر میزبانی‌شدهٔ GitHub را همراه دارد | QEMU را نصب کنید (`brew install qemu`)، سپس زیر **تنظیمات → سرور → ریگ‌ها** یک تصویر میزکار را **وارد کنید** |
+| **Android** | شبیه‌ساز Android گوگل | Android SDK را نصب کنید، یک AVD بسازید و آن را شروع کنید (پایین‌تر) |
+| **شبیه‌ساز iOS** | CoreSimulator روی Mac سرور | Xcode و رانتایم iOS درخواستی را نصب کنید، سپس زیر **تنظیمات → سرور → ریگ‌ها** پل اتوماسیون را نصب کنید |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+ماشین‌های ترمینال و مرورگر از تصاویر پین‌شده با دایجست بوت می‌شوند: بایت‌های دقیق
+از پیش نام‌برده می‌شوند، یک بار در نخستین بوت واکشی و کش می‌شوند — پس از نخستین
+بوت هر نوع، ماشین‌های بعدی یکسره از دانلود صرف‌نظر می‌کنند و در چند ثانیه بالا
+می‌آیند. **تنظیمات → سرور → ریگ‌ها** نشان می‌دهد سرور شما چه چیزی می‌تواند بوت کند
+و همین حالا چه ماشین‌هایی در حال اجرا هستند.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+یک تصویر میزکارِ نصب‌شده از همان صفحه قابل مدیریت می‌ماند: **وارد کردن** آن را با
+یک qcow2 تازه‌تر جایگزین می‌کند، و **حذف** آن را برمی‌دارد تا بتوانید یک بیلد تازه
+نصب کنید.
 
-### Mobile devices are set up differently
+### دستگاه‌های موبایلی متفاوت راه‌اندازی می‌شوند
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+تصویری از ما برای Android یا iOS وجود ندارد، و این یک از قلم افتادگی نیست.
+تصاویر سیستمی Android از SDK گوگل می‌آیند؛ رانتایم‌های iOS از Xcode. برای Android،
+Android Studio (یا ابزارهای SDK خط فرمان) را نصب کنید، در **مدیر دستگاه** یک
+دستگاه مجازی اضافه کنید و آن را شروع کنید. صفحهٔ ریگ‌ها سپس Android را به‌عنوان
+در دسترس گزارش می‌کند.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+همچنین دقیقاً می‌گوید کدام گام را جا انداخته‌اید — نبودن SDK، نبودن شبیه‌ساز،
+نبودن دستگاه مجازی، یا دستگاهی که به‌سادگی اجرا نمی‌شود — چون این چهار مورد چهار
+راه‌حل متفاوت دارند و فقط یکی از آن‌ها یک دانلود است. اگر `cc_server` را از
+پوسته‌ای شروع می‌کنید که SDK را نمی‌بیند، آن را export کنید:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+برای iOS، خود سرور باید روی macOS با Xcode و یک رانتایم شبیه‌ساز iOS نصب‌شده
+اجرا شود. **تنظیمات → سرور → ریگ‌ها** را باز کنید و **نصب پل اتوماسیون iOS** را
+فشار دهید. سرور آرتیفکت WebDriverAgent پین‌شده با چک‌سام را واکشی می‌کند،
+تأییدش می‌کند و آن را در انبار اتوماسیون تحت مالکیت سرور نصب می‌کند. در جریان
+راه‌اندازی هیچ شبیه‌سازی بوت نمی‌شود.
 
-## Open a machine
+## یک ماشین باز کنید
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+ماشین‌ها به‌صورت **زبانه** زندگی می‌کنند، کنار گفتگو و diff — در یک فضا یا روی
+صفحهٔ PR، در همان منوی `+`، زیر **دستگاه‌ها**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **رایانه** — یک میزکار Linux با Chromium، Firefox و WebKit
+- **Chromium**، **Firefox** یا **WebKit** — یک مرورگر
+- **Android** — شبیه‌ساز Android در حال اجرا
+- **شبیه‌ساز iOS** — یک شبیه‌ساز یک‌بارمصرف که برای همین گفتگو ساخته می‌شود
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+یکی را انتخاب کنید و **شروع ماشین** را فشار دهید. زبانه می‌گوید بوت در کدام مرحله
+است («در حال شروع microVM»، «در انتظار بالا آمدن مهمان») و فقط نمی‌چرخد.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+زبانه محدود به گفتگوست، و ابزار عامل هم همین‌طور. زبانهٔ Chromium، Firefox یا WebKit
+و `browser_use`، Android و `mobile_use`، یا شبیه‌ساز iOS و `ios_use` به همان ماشین
+پیش‌فرض خطاب می‌شوند. شکاف‌های رابط کاربری اضافی ماشین‌های مقایسهٔ جدایند؛ ابزارهای
+عامل همیشه از پیش‌فرض استفاده می‌کنند.
 
-To build, install and start a Flutter app on Android:
+برای ساخت، نصب و شروع یک برنامهٔ Flutter روی Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+سپس `mobile_use` را با `install_apk` و
+`build/app/outputs/flutter-apk/app-debug.apk` صدا بزنید، و پس از آن `start_app` و
+نام بستهٔ Android. `ui_dump`، نماگرفت‌ها و ورودی همان دستگاهی را می‌رانند که در
+زبانهٔ انسان نشان داده می‌شود. `stop_app`، `clear_app_data`، `uninstall_app`،
+`open_url` و فراخوانی‌های `shell` با شکل argv بقیهٔ چرخهٔ توسعه را پوشش می‌دهند،
+بدون اینکه پوسته‌ای روی میزبان سرور فراخوانی شود.
 
-To build, install and start a Flutter app on iOS Simulator:
+برای ساخت، نصب و شروع یک برنامهٔ Flutter روی شبیه‌ساز iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +101,202 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+سپس `ios_use` را با `install_app` و پوشهٔ `.app` صدا بزنید، و پس از آن `start_app`
+و شناسهٔ بستهٔ چاپ‌شده توسط `plutil`. ابزار iOS همچنین `stop_app`، `uninstall_app`،
+`open_url` و یک کنش `spawn` با شکل argv را برای تشخیص‌های محلی شبیه‌ساز در اختیار
+می‌گذارد.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+نمایش‌های رومیزی و مرورگر با پنل تغییر اندازه می‌دهند. iOS اندازهٔ نقطه‌ای ثابت
+شبیه‌ساز را نگه می‌دارد و آن را با حاشیه در قاب می‌نشاند. هر سطح همچنان دو مسیر
+مستقل دارد: عامل نماگرفت‌های کوچک و ارزان می‌گیرد و شما نمای زنده را. جابه‌جایی
+بین زبانه‌ها جریان انسان را متوقف می‌کند، پس یک ماشین پس‌زمینه هیچ پهنای‌باند
+نمایشی هزینه نمی‌کند.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+یک زبانهٔ ریگ خودش ماشینی شروع نمی‌کند، حتی در جریان بازیابی چیدمان. این قاعده
+جلوی آن را می‌گیرد که اجرای برنامه به‌طور غیرمنتظره VM بوت کند یا دستگاه شبیه‌ساز
+بسازد.
 
-## Drive the machine
+## ماشین را برانید
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+هر زمان که فرد دیگری کنترل انحصاری را در دست ندارد — یا وقتی خودتان آن را دارید —
+بوم در اختیار شماست تا در آن تایپ و کلیک کنید. تا وقتی شما آن قفل را دارید،
+برچسب وضعیت **کنترل با شماست** را می‌خواند، عامل همچنان می‌تواند نماگرفت بگیرد، و
+سرور کنش‌های تغییردهندهٔ آن را در همان گلوگاه واحدی که هر کنشی از آن می‌گذرد رد
+می‌کند. هر کاری که می‌کنید به نام شما ثبت می‌شود.
 
-Press **Stop the machine** when you are done.
+وقتی کارتان تمام شد، **توقف ماشین** را فشار دهید.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+کنترل عمداً انحصاری است: دو کنشگر که در یک ماشین تایپ کنند ورودی‌ای تولید می‌کنند
+که هیچ‌یک از آن دو قصدش را نداشته است.
 
-## Move things in and out
+## چیزها را به داخل و بیرون ببرید
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+کپی و جای‌گذاری در هر دو جهت روی بوم ریگ کار می‌کند، و کشیدن فایل‌ها هم همین‌طور.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**کپی و جای‌گذاری.** میانبر کپی را روی بوم فشار دهید تا هر چیزی که ماشین کپی کرده
+است — متن، یک تصویر، فهرستی از فایل‌ها — روی بریده‌دان شما بنشیند. جای‌گذاری مال
+شما را در جهت دیگر می‌فرستد و درون ماشین جای‌گذاری را فشار می‌دهد. روی macOS
+میانبر ⌘C/⌘V است؛ ⌃C همچنان به‌عنوان یک وقفه به پوستهٔ مهمان می‌رسد. روی Windows
+و Linux از ⌃C/⌃V استفاده کنید — مهمان همان فشردن کلیدی را می‌گیرد که در هر حال
+می‌گرفت، پس ⌃C در ترمینال مهمان همچنان وقفه می‌اندازد و بریده‌دان خودتان
+دست‌نخورده می‌ماند.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+هیچ‌چیز در پس‌زمینه همگام‌سازی نمی‌شود. گذرواژه‌ای که روی ماشین خودتان کپی
+می‌کنید، به‌خاطر اجرای یک زمان‌سنج درون یک VM ظاهر نمی‌شود؛ وقتی جای‌گذاری کنید از
+مرز می‌گذرد.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+جای‌گذاری درون یک ریگ به‌صورت پیش‌فرض مجاز است. کپی از یک ریگ بیرون اول می‌پرسد —
+یک مجوز ده‌دقیقه‌ای، یا **همیشه اجازه بده** زیر **تنظیمات → سرور → ریگ‌ها →
+دسترسی به بریده‌دان**. این دو جهت مستقل‌اند و از شما تبعیت می‌کنند، نه از فضای
+کاری.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**کشیدن فایل‌ها به داخل.** آن‌ها را هر جای بوم رها کنید.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- روی **مرورگر (VM)**، صفحه در همان نقطه‌ای که رها می‌کنید یک رها کردن *واقعی*
+  می‌گیرد، پس یک ناحیهٔ بارگذاری دقیقاً مثل فایل محلی رفتار می‌کند.
+- روی **رایانه (VM)**، فایل‌ها در `~/Drops` می‌نشینند و مسیرهایشان روی بریده‌دان
+  ماشین می‌رود، پس ⌃V آن‌ها را در یک مدیر فایل یا یک فیلد بارگذاری جای‌گذاری
+  می‌کند. یک میزبان نمی‌تواند بدون اجرای یک سرویس‌دهندهٔ ممتاز درون VM — که
+  ریگ‌ها عمداً ندارد — کشیدنی را در یک برنامهٔ دلبخواه Linux بسازد؛ پس توست
+  می‌گوید فایل‌ها کجا رفتند، به‌جای اینکه تظاهر کند رها کردنی رخ داده است.
+- روی یک **ترمینال**، فایل به داخل کپی می‌شود و مسیرش در خط فرمان تایپ می‌شود،
+  آماده برای دادن به یک فرمان. جای‌گذاری یک *تصویر* در یک ترمینال هم همین کار را
+  می‌کند: در ماشین ذخیره می‌شود و مسیرش را می‌گیرید.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**کشیدن فایل‌ها به بیرون** از رایانه (VM) کار می‌کند. کشیدن یک فایل را درون ماشین
+شروع کنید، اشاره‌گر را از بوم بیرون ببرید، و به یک کشیدن واقعی روی میزکار شما
+تبدیل می‌شود — آن را در Finder یا Explorer رها کنید. کپی کردن فایل‌ها در مدیر فایل
+ماشین و جای‌گذاری در سمت خودتان هم کار می‌کند. مرورگر (VM) این را ارائه نمی‌کند:
+یک مرورگر بی‌سر هیچ بار کشیدنی‌ای برای خواندن ندارد، و حدس زدن از روی انتخاب متن
+صفحه کلیک‌های معمولی را می‌رباید.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+رایانه (VM) به تصویری نیاز دارد که پس از اضافه شدن پشتیبانی بریده‌دان ساخته شده
+باشد. اگر تصویر خود را زودتر وارد کرده‌اید، آن را با `scripts/rigs/build_image.sh`
+از نو بسازید، سپس روی تصویر نصب‌شده **وارد کردن** را بزنید تا جایگزین شود.
 :::
 
-## Terminals inside a rig
+## ترمینال‌هایی درون یک ریگ
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+ترمینال‌های یک فضا یا صفحهٔ PR می‌توانند به‌جای ماشین خود سرور، درون یک ریگ اجرا
+شوند. وقتی چنین کنند، پنل نشان **VM محفظه‌ای** را نمایش می‌دهد.
 
-What changes:
+چه چیزی تغییر می‌کند:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- هیچ‌چیز از آنچه اجرا می‌کنید به میزبان نمی‌رسد. یک `rm -rf` در آن‌جا به قیمت از
+  دست دادن ریگ تمام می‌شود.
+- شبکه با پیش‌فرضِ رد است. فقط میزبان‌های فهرست مجاز ریگ قابل‌دسترس‌اند، و همه‌چیز
+  از دروازه‌ای می‌گذرد که آن را اعمال می‌کند.
+- `git push` همچنان کار می‌کند. ریگ هیچ اعتبارنامهٔ ذخیره‌ای ندارد؛ برای هر عملیات
+  یک اعتبارنامهٔ کوتاه‌مدت از سرور می‌خواهد، و آن توکن با بسته شدن ریگ باطل
+  می‌شود.
 
-What to know:
+آنچه باید بدانید:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **یک ترمینال محفظه‌ایِ بازیابی‌شده منتظر شما می‌ماند.** مثل یک زبانهٔ ریگ، ترمینال
+  `microvm` که همراه چیدمان شما برمی‌گردد به‌جای بوت کردن VMاش هنگام اجرا، دکمهٔ
+  **باز کردن پوسته** را نشان می‌دهد. هزینهٔ یک ترمینال پوستهٔ میزبان یک فرایند
+  است؛ هزینهٔ یک ترمینال محفظه‌ای یک ماشین.
+- **فایل‌های رهاشده روی ترمینال تایپ می‌شوند، باز نمی‌شوند.** یک CSV را روی یک
+  ترمینال محفظه‌ای رها کنید: به داخل ماشین کپی می‌شود و مسیر مهمانش در خط فرمان
+  ظاهر می‌شود — مسیر میزبان فرمانی می‌شد که آن‌جا شکست می‌خورد.
+- **نسخهٔ درون ریگ یک نسخه است.** worktree شما روی میزبان مرجع می‌ماند. کامیت‌هایی
+  که درون یک ریگ می‌سازید وقتی بخواهید به `refs/rigs/<id>/*` برگردانده می‌شوند —
+  هرگز شاخهٔ شما را جابه‌جا نمی‌کنند و به درخت کاری شما دست نمی‌زنند.
+- **کارِ هدفِ میزبان همچنان روی میزبان اجرا می‌شود.** یک مهمان Linux نمی‌تواند برای
+  macOS بسازد یا `xcodebuild` را اجرا کند. برای آن صریحاً بک‌اند بومی را انتخاب
+  کنید؛ برنامه به‌جای جابه‌جایی بی‌صدا از شما تأیید می‌خواهد.
 
-## Ports
+## پورت‌ها
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-پورت/).
+یک سرور توسعه در ترمینال (VM) اجرا کنید — مثلاً `pnpm dev` روی پورت 3000 — و تا
+چند ثانیه آیکون دوشاخه در گوشهٔ ترمینال روشن می‌شود: پورت به `localhost:3000` روی
+ماشین شما فوروارد می‌شود، درون مرورگر (VM) روی `localhost:3000` قابل‌دسترس است،
+روی شبکهٔ شما قابل اشتراک‌گذاری است، و می‌توانید نام `https://myapp.test` را به آن
+بدهید. کل این جریان — فوروارد خودکار، اشتراک‌گذاری LAN، دامنه‌های dev با HTTPS —
+راهنمای خودش را دارد:
+[هدایت پورت از ترمینال(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-پورت/).
 
-## Custom images
+## تصاویر سفارشی
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+یک فضای کاری می‌تواند ترمینال (VM) و مرورگر (VM) را به تصاویر خودش اشاره دهد —
+زیر **تنظیمات → سرور → ریگ‌ها → تصاویر سفارشی (این فضای کاری)**. کاربرد معمول:
+تصویر پیش‌فرض را با زنجیرهٔ ابزاری که پروژه‌تان لازم دارد گسترش دهید تا هر ترمینال
+آماده شروع شود، یا تصویری را که تیم‌تان از قبل منتشر می‌کند دوباره به کار ببرید.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+ماشین همچنان درون همان محفظه بوت می‌شود: همان دروازهٔ خروج، همان کارگزار
+اعتبارنامه، همان چرخهٔ عمر. فقط مدیران فضای کاری می‌توانند این تنظیم را عوض کنند،
+ماشین‌های جدید آن را برمی‌دارند (ماشین‌های در حال اجرا مال خودشان را نگه می‌دارند)،
+و ارجاع باید یک تصویر رجیستری باشد — مسیرهای محلی رد می‌شوند.
 
-What an image must provide:
+یک تصویر باید چه چیزی فراهم کند:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **ترمینال (VM)** — یک تصویر Linux با `bash`. به `git`، `curl` و `socat` هم نیاز
+  دارد — یا از پیش نصب‌شده، یا در نخستین شروع نصب‌شدنی (هر تصویر مبتنی بر
+  Debian/Ubuntu کار می‌کند: خودکار نصب می‌شوند، به‌همراه مجموعه‌ای از ابزارهای CLI
+  به سبک رانر میزبانی‌شدهٔ GitHub: کامپایلرها، Python 3، `jq`، ابزارهای بایگانی،
+  `rsync`. رانتایم‌های زبانی مثل Node/Go/Java و Docker از پیش نصب نیستند). پورت
+  مهمان `7911` برای فورواردر پورت رزرو شده است.
+- **مرورگر (VM)** — یک تصویر Debian/Ubuntu با `bash` و `socat`، به‌علاوهٔ یک باینری
+  `chromium`. سرور خودش Chromium را به‌صورت `chromium --headless=new` شروع می‌کند و
+  DevTools را از مهمان `9223` به `9222` رله می‌کند. PulseAudio و ffmpeg در نخستین
+  شروع نصب می‌شوند. از ساخت `FROM chromedp/headless-shell` پرهیز کنید — آن باینری
+  صدا ندارد. این بازنویسی فقط به ریگ‌های Chromium اعمال می‌شود؛ Firefox و WebKit
+  نادیده‌اش می‌گیرند و تصویر پین‌شدهٔ Debian را بوت می‌کنند. پورت‌های مهمان
+  `9222`/`9223` رزرو شده‌اند.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+دو توصیه: ارجاع را با دایجست پین کنید (`@sha256:…`) تا بایت‌ها زیر دستتان تغییر
+نکنند، و آن را روی Docker Hub یا GitHub Container Registry میزبانی کنید —
+میزبان‌های دانلود آن رجیستری‌ها خودکار از دروازهٔ خروج پذیرفته می‌شوند؛ دیگران
+ممکن است برای pull کردن نیاز داشته باشند میزبان‌های تحویل محتوایشان قابل‌دسترس
+باشند.
 
-## When a rig goes away
+## وقتی یک ریگ از میان می‌رود
 
-Rigs are meant to be temporary:
+ریگ‌ها برای موقت‌بودن ساخته شده‌اند:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **بیکاری** — پس از حدود 15 دقیقه بی‌واقعه‌ای، یک ریگ مرورگر، میزکار یا موبایل
+  پارک می‌شود (منجمد می‌ماند و با کنش بعدی بی‌درنگ بیدار می‌شود). یک ترمینال
+  محفظه‌ای 45 دقیقه صبر می‌کند. پس از دو برابر پنجرهٔ بیکاری، بسته می‌شود.
+- **محدودیت زمانی** — هر ریگ عمر سختی دارد که نمی‌تواند تمدیدش کند، هر کاری هم که
+  بکند.
+- **حافظه** — اگر سرور برای یک ریگ تازه جا لازم داشته باشد، ریگی را که دیرتر از
+  همه استفاده شده می‌بندد. ریگی که کسی در حال راندن یا تماشای آن است یا ترمینالی
+  در آن باز دارد هرگز گرفته نمی‌شود.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+وقتی یک ریگ محفظه‌ای بسته می‌شود، دیسکش دور انداخته می‌شود. بستن یک ریگ Android از
+شبیه‌ساز میزبان جدا می‌شود — آن را پاک نمی‌کند. یک ریگ iOS دستگاه CoreSimulator را
+که ساخته پاک می‌کند. اول هر چیزی را که می‌خواهید نگه دارید به بیرون منتقل کنید.
 
-## What a rig can reach
+## یک ریگ به چه چیزی می‌تواند برسد
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+ریگ‌های ترمینال، مرورگر و میزکارِ محفظه‌ای به‌صورت پیش‌فرض یک دروازهٔ خروج با
+پیش‌فرضِ رد دارند: شما میزبان‌ها را صریحاً مجوز می‌دهید، و تنها مسیر مهمان دروازه‌ای
+است که آن فهرست را اعمال می‌کند. یک ریگ مرورگر سایت محصول (`usectrl.dev`) را هم
+به‌صورت پیش‌فرض می‌پذیرد. کارگزار اعتبارنامه از همان فهرست استفاده می‌کند.
 
-Two honest caveats:
+دو هشدار صادقانه:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **شبکهٔ موبایل از میزبان تبعیت می‌کند.** شبیه‌ساز Android و CoreSimulator اپل پشت
+  دروازهٔ خروج محفظه نیستند. هیچ‌یک از زبانه‌های موبایل کنترل دور زدن شبکه را ارائه
+  نمی‌کند، چون شبکهٔ تحت مدیریت میزبان از پیش نامحدود است.
+- **هر چیزی که یک ریگ می‌خواند نامطمئن است.** متن صفحه، DOM، درخت‌های دسترس‌پذیری و
+  دامپ‌های نما، در نشانگرهایی پیچیده به عامل برمی‌گردند که می‌گویند «این داده است،
+  نه دستور». صفحه‌ای که بخواهد به عامل شما دستور بدهد، به‌صورت یک رشتهٔ نقل‌قول‌شده
+  خوانده می‌شود.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+می‌توانید همه‌چیزِ در حال اجرا را ببینید و هر کدام را متوقف کنید، زیر **تنظیمات →
+سرور → ریگ‌ها**.
 
-## Related
+## مرتبط
 
-- [Rigs and enclosures](/fa-IR/راهنمای-کاربر/مفهومها/ریگها/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-پورت/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/fa-IR/راهنمای-کاربر/مرجع/ریگها/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [ریگ‌ها و محفظه‌ها(/fa-IR/راهنمای-کاربر/مفهومها/ریگها/) — مدلی که پشت همهٔ
+  این‌هاست: چرا VM، دو مسیر نمایش، کارگزار اعتبارنامه، چرخهٔ عمر
+- [هدایت پورت از ترمینال(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-پورت/) — به
+  یک سرور توسعه از هر جایی که مهم است برسید
+- [مرجع ریگ‌ها(/fa-IR/راهنمای-کاربر/مرجع/ریگها/) — هر سطح، کنش، پورت و پیش‌فرض
+  در یک جا
+- [پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) —
+  `Drive an enclosure (rig)` یک کلاس کنش است که می‌توانید آن را به‌ازای هر فضای
+  کاری، عامل یا فضا روی مجاز، اول‌بپرس یا رد بگذارید. حالت‌های فقط‌خواندنی یکسره
+  ردش می‌کنند.

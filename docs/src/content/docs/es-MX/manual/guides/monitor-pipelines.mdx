@@ -1,150 +1,163 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Monitorear ejecuciones de pipeline
+description: Trabaja con la cola de ejecuciones, lee la cascada de tiempos y el panel de pasos de una ejecución y recupera un paso que falló o que se quedó atascado.
 slug: es-MX/manual/guias/monitorear-pipelines
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/es-MX/manual/guias/ejecutar-pipeline/).
+Esta es la página para todo lo que ocurre después de que una ejecución haya
+arrancado: encontrarla, leer qué hizo cada paso y volver a poner en marcha una
+ejecución fallida. Para iniciar una, consulta
+[Ejecutar un pipeline manualmente](/es-MX/manual/guias/ejecutar-pipeline/).
 
-## Find a run
+## Localizar una ejecución
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Haz clic en **Pipelines** en la barra lateral del espacio de trabajo. La
+   pantalla es la cola de ejecuciones del espacio de trabajo: todas las
+   ejecuciones, de la más reciente a la más antigua.
+2. Usa la barra izquierda para filtrar. Hay exactamente tres filtros, cada uno
+   con un recuento en vivo: **Todos**, **Running** y **Failed**.
+3. Recorre la tabla con <kbd>↑</kbd>/<kbd>↓</kbd> (o <kbd>j</kbd>/<kbd>k</kbd>)
+   y presiona <kbd>Enter</kbd> para abrir la ejecución enfocada. Hacer clic en
+   una fila hace lo mismo.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Cada fila muestra un glifo de cómo se inició la ejecución (un play para las
+manuales; un glifo de archivo para una vigilancia del grafo de código; en los
+demás casos, el disparador automático). La información sobre herramientas nombra
+el disparador —**Manual**, **PR publicada**, **Cambio de archivo** y demás— y,
+en una ejecución de vigilancia, qué archivos cambiaron. Después vienen el nombre
+del pipeline, una insignia de estado, la duración activa (o la posición en la
+cola, en una ejecución `queued`) y cuánto tiempo hace que arrancó este intento.
+La duración activa excluye los huecos de parada y reinicio en reposo, así que no
+es el tiempo real transcurrido.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+No hay filtro para las ejecuciones completadas, suspendidas o canceladas, ni
+filtro por plantilla, ni ventana de tiempo, ni una vista del historial de
+ejecuciones por plantilla. Comparar las ejecuciones de una plantilla implica
+recorrer la cola buscando su nombre.
 
-## Read the run detail
+## Leer el detalle de la ejecución
 
-A run's page has three stacked parts.
+La página de una ejecución tiene tres partes apiladas.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**La franja de metadatos** lleva la hora de inicio, la duración activa, el
+progreso de pasos («3 de 7 pasos»), un resumen del fallo que nombra el paso que
+se rompió y por qué, y las acciones **Reintentar** y **Eliminar**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**La cascada de tiempos** da una barra por paso, con su duración y —en los pasos
+de agente— su costo en centavos. Un paso que se reintentó muestra un sufijo `×N`
+después de su duración; ese sufijo es el único lugar donde aparece el número de
+intentos.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**El lienzo del grafo** dibuja la plantilla con el estado en vivo de cada nodo.
+Seleccionar un nodo abre su panel de paso.
 
-### Run and step statuses
+### Estados de ejecución y de paso
 
-| Status        | Meaning                                           |
+| Estado        | Significado                                       |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **Pending**   | Creada, aún no iniciada                           |
+| **En cola**   | Admitida pero retenida: el tope de ejecuciones en paralelo de esta plantilla está lleno; todavía no hay filas de pasos |
+| **Running**   | En ejecución                                      |
+| **Suspended** | Esperando algo externo — normal, no está atascada |
+| **Completed** | Terminada correctamente                           |
+| **Failed**    | Terminada con un error                            |
+| **Cancelled** | Detenida por un usuario o por el sistema          |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Los pasos tienen esos estados menos **En cola**, más **Skipped**, para una rama
+que un enrutador no tomó (y sus descendientes, ya inalcanzables).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Suspended** es donde un paso de agente pasa la mayor parte de su vida: un
+agente despachado o una compuerta de aprobación retiene el paso hasta que llega
+su trabajo. Dos redes de seguridad del motor hacen fallar toda la ejecución en
+lugar de reanudarla: un paso suspendido más de 24 horas (`extras.awaitApproval`
+—el cuerpo `orchestration.awaitApproval`— queda exento; `human.gate` no) y un
+paso no idempotente que estaba en curso cuando se detuvo el servidor.
 
-## Inspect a step
+## Inspeccionar un paso
 
-Select a node on the canvas. The step panel shows, in order:
+Selecciona un nodo del lienzo. El panel de paso muestra, en este orden:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Un aviso **Error** cuando el paso falló, o un aviso **Omitido** con el motivo
+  cuando se omitió.
+- **Iniciado**, **Finalizado** y la duración.
+- **Rama** — el índice de rama, en las ramas paralelas.
+- **Ver conversación** — salta a la conversación en la que se ejecutó el paso.
+  Las conversaciones de pipeline están ocultas en la barra lateral, así que esta
+  es la única forma de entrar.
+- **Entrada** y **Salida**, como JSON plegable.
+- **Actividad del agente** — una tarjeta por cada ejecución de agente que
+  despachó el paso, con su estado, su resumen, su duración y su costo.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+En un paso de agente, la **Salida** es la carga útil estructurada que el agente
+envió con `submit_output`, no su texto. El rastro de razonamiento vive en
+**Actividad del agente** y en la conversación que hay detrás de **Ver
+conversación**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+En un paso bash, la **Salida** es el stdout recortado que el script escribió al
+salir con código 0. Una salida distinta de cero hace fallar el paso, con el
+final de stderr como mensaje de error.
 
-## Recover a failed run
+## Recuperar una ejecución fallida
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Lee el resumen del fallo en la franja de metadatos; nombra el paso que falló.
+   El aviso **Error** del panel de paso tiene el mensaje.
+2. Revisa la **Entrada** del paso: una clave de estado ausente o mal escrita es
+   la causa más común. Un paso de agente de prompt falla directamente y nombra
+   los marcadores sin resolver; un paso bash los sustituye por cadenas vacías y
+   se ejecuta de todos modos, lo que suele aflorar un paso después.
+3. En un paso de agente, abre **Ver conversación** y lee lo que el agente hizo
+   en realidad.
+4. Presiona **Reintentar** en la franja de metadatos. Los pasos completados y
+   omitidos conservan sus salidas; todo lo demás se elimina y se vuelve a
+   ejecutar, y la ejecución vuelve a Running. El reloj de duración se reinicia
+   para este intento.
 
-Common causes worth checking first:
+Causas comunes que conviene revisar primero:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Tiempo de espera agotado** — el paso superó su **Tiempo de espera (ms)**.
+  Recuerda que el campo está en milisegundos.
+- **Error del script** — el comando bash salió con un código distinto de cero, o
+  `bash` no está en el `PATH` del host del servidor.
+- **Validación del esquema** — la carga útil que el agente envió con
+  `submit_output` no satisfizo el esquema de salida del paso.
+- **Marcador sin resolver** — un `{{key}}` al que hacía referencia un paso de
+  agente de prompt nunca se escribió aguas arriba. El error nombra cada clave
+  sin resolver.
+- **Cuerpo no registrado** — un paso cuya clave de cuerpo no está registrada
+  avisa al cargar la plantilla y luego simplemente nunca se ejecuta.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Reintentar solo funciona en una ejecución fallida o cancelada]
+El botón **Reintentar** solo aparece cuando la ejecución está `failed` o
+`cancelled`. El motor devuelve de inmediato para cualquier otro estado.
 :::
 
-## Stop a step that is stuck
+## Detener un paso atascado
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Selecciona el paso en ejecución y presiona el botón **Detener en ejecución** en
+el encabezado del panel de paso. Esto mata el proceso del paso, marca el paso
+como fallido y, por lo tanto, hace fallar toda la ejecución: cada rama hermana
+abierta se cierra junto con él.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+En esta pantalla no hay ningún control para cancelar la ejecución.
+`pipeline.cancel` existe como operación RPC y el motor la implementa, pero nada
+de la interfaz de pipelines la llama; **Detener en ejecución** en un paso, o
+**Eliminar** en la ejecución, son los únicos gestos de parada disponibles.
 
-## Track cost
+## Seguir el costo
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+El costo se reporta por paso, en la columna derecha de la cascada y en cada
+tarjeta de **Actividad del agente**. En la página de detalle no hay un total de
+la ejecución ni una columna de costo en la cola de ejecuciones, así que comparar
+el costo de dos ejecuciones implica sumar sus pasos.
 
-## Related guides
+## Guías relacionadas
 
-- [Run a pipeline manually](/es-MX/manual/guias/ejecutar-pipeline/)
-- [Create a pipeline template](/es-MX/manual/guias/crear-pipeline/)
-- [Manage costs](/es-MX/manual/guias/administrar-costos/)
-- [Pipeline steps reference](/es-MX/manual/referencia/pasos-de-pipeline/)
+- [Ejecutar un pipeline manualmente](/es-MX/manual/guias/ejecutar-pipeline/)
+- [Crear una plantilla de pipeline](/es-MX/manual/guias/crear-pipeline/)
+- [Administrar costos](/es-MX/manual/guias/administrar-costos/)
+- [Tipos de pasos de pipeline](/es-MX/manual/referencia/pasos-de-pipeline/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Pipelines](/es-MX/manual/conceptos/pipelines/)
+- [Pipelines y automatización](/es-MX/manual/conceptos/pipelines/)

@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Řiďte workery na pozadí
+description: V režimu vibe přestaň dělat práci sám a začni řídit několik agentů, kteří ji dělají paralelně.
 slug: cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Tenhle návod ukáže, jak vést konverzaci jako **ředitel**, ne jako worker: relace čte a ověřuje, editaci dělají agenti na pozadí.
 
-## What changes when you type `/vibe`
+## Co se změní, když napíšeš `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Dvě věci, a jen tu první vynucuje mechanismus:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Vlastní nástroje relace klesnou na jen pro čtení**, plus pět sloves pro workery. Na repozitář sáhne jedině přes workera a co se stalo, zjistí jedině čtením souborů, kterých se worker dotkl.
+2. **Dostane za úkol ověřovat čtením, ne vírou.** Hlášení workera je tvrzení o tom, co udělal, ne důkaz, že to zabralo.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Nosná je ta první. Ředitel, který pořád umí grepnout a editovat, si práci pod tlakem udělá sám, a právě tomu má tenhle režim zabránit.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Workeři začínají s prázdnou
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Worker tvou konverzaci nikdy neviděl a ani neuvidí. Zadání je celý jeho kontext.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Právě proto ten způsob zůstává levný — dvacet workerů, z nichž každý drží historii ředitele, by stálo dvacetinásobek jeho kontextu — a zároveň se kvůli tomu zadání píše těžko. „Teď udělej i to druhé“ je pro ředitele hotový pokyn a pro čerstvou relaci vůbec nic.
 
-A good brief names files, commands and the definition of done:
+Dobré zadání pojmenuje soubory, příkazy a definici hotového:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> V `lib/features/auth/` nahraď každé volání `SessionStore.read(key)` voláním `SessionStore.get(key)`. Nová metoda vrací `Future<String?>` tam, kde stará vracela `String?`, takže volající potřebují `await`. Až budeš hotový, spusť `fvm flutter analyze lib/features/auth` a nahlás chyby, které se nepodařilo opravit.
 
-## The five verbs
+## Pět sloves
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| Sloveso      | Co dělá                                                  |
+| ------------ | -------------------------------------------------------- |
+| `vibe_spawn` | Spustí workera na zadání. **Vrátí se hned.**             |
+| `vibe_list`  | Úroveň, stav, uplynulý čas a poslední výsledek u všech   |
+| `vibe_send`  | Navazující tah pro workera, který už skončil             |
+| `vibe_wait`  | Blokuje, dokud jeden worker nedoběhne                    |
+| `vibe_kill`  | Zastaví jednoho                                          |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Spouštění je asynchronní schválně. Ředitel, který na každé spuštění čeká, pouští workery po jednom, a to je jen pomalejší způsob, jak dělat práci, kterou by si stejně udělal sám. `vibe_wait` použij jen tehdy, když bez konkrétní odpovědi opravdu nejde dál.
 
-## Two tiers
+## Dvě úrovně
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| Úroveň | K čemu                                                                                        |
+| ------ | --------------------------------------------------------------------------------------------- |
+| `fast` | Mechanická práce s jasnou specifikací — úpravy, přejmenování, návrhy, spouštění příkazů      |
+| `good` | Návrh, úsudek, nebo revize toho, co udělal worker `fast`                                      |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Běžná podoba je rozeslat workery `fast` po nezávislých souborech a pak spustit jednoho workera `good`, který zreviduje, co dohromady udělali.
 
-## Verifying
+## Ověřování
 
-This is the part that decides whether the pattern is worth anything.
+Tady se rozhoduje, jestli ten způsob vůbec stojí za to.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Pak **přečti soubory, které uvedl**. Ředitel má `read`, `search`, `lsp` a `ast_grep`; právě proto mu zůstávají. Ředitel, který hlášení přijme bez ověření, jen shrnuje optimismus ostatních agentů.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` po kole workerů bývá ta nejrychlejší jednotlivá kontrola.
 
-## When a worker loses the thread
+## Když worker ztratí nit
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Zabij ho a zadej práci znovu. Čerstvé, opravené zadání je levnější než hádka a `vibe_send` funguje jen u workera, který už svůj tah dokončil.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Limity
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Osm souběžných workerů.** Strop výdajů, technická mez to není: každý je plná relace modelu a ředitel, který jich rozešle dvacet, už přestal hlídat, co vlastně dělají.
+- **Žádný worker režim nepřežije.** Jakmile běh skončí, každý z nich se zastaví a přepis řekne, kolik jich bylo. Agent na pozadí, který pořád upravuje soubory, i když konverzace už šla dál, je to jediné selhání, které si tenhle režim nesmí dovolit.
+- **Workeři jsou vespod obyčejní subagenti.** Stejný strop hloubky, stejná politika guardrailů, stejný potomek v záznamu běhu. Režim vibe mění, kdo je řídí, ne to, co smějí — výzvy ke schválení u workerových volání write a exec pořád přijdou.
 
-## When not to use it
+## Kdy ho nepoužívat
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/) or an [orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Režim vibe je pro práci, která se rozloží do nezávislých zadání. Když další krok závisí na výstupu předchozího, popisuješ [pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/) nebo [orchestraci](/cs-CZ/prirucka/navody/spusteni-orchestrace/). Obě závislosti vyjádří pořádně, takže je ředitel nemusí simulovat přes `vibe_wait`.
 
-## Related
+## Související
 
-- [Run agents in parallel](/cs-CZ/prirucka/navody/paralelni-agenti/) — the other ways to fan out
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/) — when the work has a shape
-- [Built-in agent tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — the verbs and their arguments
+- [Spouštějte agenty paralelně](/cs-CZ/prirucka/navody/paralelni-agenti/) — další způsoby, jak práci rozeslat
+- [Orchestrace](/cs-CZ/prirucka/koncepty/orchestrace/) — když má práce tvar
+- [Vestavěné nástroje agentů](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — slovesa a jejich argumenty

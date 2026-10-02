@@ -2,6 +2,7 @@
 title: Code intelligence
 description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
 slug: en-GB/manual/concepts/code-intelligence
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
 Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
@@ -27,7 +28,7 @@ Repeating what the agent has already been told is worse than saying nothing: it 
 
 ### Lazy, and honest about being absent
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyser.
 
 Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
 

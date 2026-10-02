@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Útvonaltérkép
+description: Minden útvonal, amelyet a Control Center regisztrál, a hozzá tartozó képernyővel és lekérdezési paramétereivel.
 slug: hu-HU/kezikonyv/referencia/utvonalterkep
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Alkalmazáshéj
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+Az alkalmazáshéj (`ControlCenterLayout`) egy `ShellRoute` segítségével csomagolja az összes munkaterületen belüli útvonalat. **A héjon belüli célpontok mindegyike munkaterület-előtagot kap — `/workspaces/:workspaceId/…` —, és az URL-ben szereplő munkaterület-azonosító az aktív munkaterület egyetlen igazságforrása.** Előtag nélkül csak a kontextus előtti felületek vannak: `/splash`, `/onboarding`, `/signed-out` és a puszta `/workspaces` választó — mind teljes képernyős, a héjon kívül.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+A kapu akkor teljes, ha legalább egy kódhoszt csatlakoztatva van **a bejelentkezett felhasználó számára**, és létezik legalább egy munkaterület.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+A hiányzó hitelesítő adat és a hiányzó beállítás különböző képernyő, a megkülönböztető pedig a `users.onboarding_finished_at`, amelyet a hívó saját `identity.me` válaszából olvasunk ki — soha nem a „léteznek munkaterületek” feltétel, mert az abban a pillanatban téves, amikor valakit olyan munkaterületbe hívnak meg, amelyet ő soha nem hozott létre. Csatlakoztatott kódhoszt nélkül az a fiók, amely már átesett a bevezetésen, a `/signed-out` oldalra kerül, hogy újra hitelesítse magát; amelyik még nem, az a `/onboarding` oldalra. Amíg a jelző ismeretlen, az őr az indítási képernyőn tart, ahelyett hogy találgatna, mert soha nem irányít vissza a bevezetésből.
 
-## Unprefixed routes
+## Előtag nélküli útvonalak
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| Útvonal                    | Képernyő                                           |
+| -------------------------- | -------------------------------------------------- |
+| `/splash`                  | Indítási képernyő, amely feloldja a bevezetési kaput |
+| `/onboarding`              | Kódhoszt csatlakoztatása, munkaterület létrehozása vagy csatlakozás egy meglévőhöz, homokozó, alapértelmezett adapter, majd hang. A munkaterület lépés kimarad, ha a fiók már tartozik egyhez |
+| `/signed-out`              | Újrahitelesítés: ugyanaz a **Kódtárhely** kártya, amelyet a Beállítások megjelenít, lépéssáv és folytatás gomb nélkül — az útválasztó magától továbblép, amint egy kódhoszt jelentkezik |
+| `/workspaces`              | Munkaterület-lista és választó                     |
+| `/workspaces/:workspaceId` | Átirányít a `/workspaces/:workspaceId/inbox` címre |
 
-## Workspace routes
+## Munkaterület-útvonalak
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Az alábbi útvonalak elhagyják a `/workspaces/:workspaceId` előtagot.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| Útvonal                                 | Lekérdezési paraméterek                   | Képernyő                                                                                                                                                                 |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | Egységes Beérkezett: az átnézési életciklus szerint osztályozott PR-ek, valamint az üzemeltetőt blokkoló, nem PR-jellegű munka. Az őr utáni landolási útvonal; a puszta `/workspaces/:workspaceId` ide irányít |
+| `/spaces`                               | —                                         | Térfelület, nincs kiválasztott tér                                                                                                                                        |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | Egy tér; az `m` egy üzenetre mutató mélyhivatkozás, amely a megnyitáskor egyszer használódik fel                                                                            |
+| `/tickets`                              | —                                         | Jegytábla                                                                                                                                                                 |
+| `/tickets/:ticketId`                    | —                                         | Jegy mester–részlet nézet                                                                                                                                                 |
+| `/projects/:projectId`                  | —                                         | Projekt áttekintése                                                                                                                                                       |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | PR-lista; a `repo` a bal oldali sávban jelöli ki azt a repót                                                                                                              |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | Új pull request összeállítása; a `space` megnevezi azt a teret, amelynek elszigetelt worktree-je adja az ágat                                                              |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR részletei diffnézegetővel; a `comment` egy megjegyzés numerikus REST-azonosítója                                                                                       |
+| `/pipelines`                            | —                                         | Pipeline-futtatások listája                                                                                                                                                |
+| `/pipelines/run`                        | `?templateId=<id>`                        | Kézi futtatás indítója                                                                                                                                                    |
+| `/pipelines/:runId`                     | —                                         | Pipeline-futtatás részletei (lépések idővonala)                                                                                                                           |
+| `/plans`                                | —                                         | Plan Studio központ: aktív tervek, tervdokumentumok, playbookok                                                                                                           |
+| `/plans/:kind/:id`                      | —                                         | Plan Studio egy tervhez; a `kind` értéke `orchestration` vagy `document`                                                                                                  |
+| `/meetings`                             | —                                         | Megbeszélések listája                                                                                                                                                     |
+| `/meetings/record`                      | —                                         | Élő megbeszélésrögzítő képernyő                                                                                                                                           |
+| `/meetings/:meetingId`                  | —                                         | Megbeszélés részletei: jegyzetek, átirat, teendők, döntések                                                                                                               |
+| `/calendar`                             | —                                         | Naptár: havi, heti és napirend nézetek                                                                                                                                    |
+| `/calendar/:eventId`                    | —                                         | Naptáresemény részletei (testvér-útvonal; a naptároldal kulcsát osztja meg)                                                                                                |
+| `/newsfeed`                             | —                                         | Hírfolyam listája                                                                                                                                                         |
+| `/newsfeed/article/:articleId`          | —                                         | Cikkolvasó                                                                                                                                                                |
+| `/observability`                        | —                                         | Megfigyelhetőségi központ: Használat, Betekintések, Élő és Minőség lapok a munkaterület futtatásinapló-folyama fölött. Alapértelmezésben a Használat lap                    |
+| `/users/:login`                         | —                                         | GitHub-felhasználói profil                                                                                                                                                |
+| `/teams/:organization/:slug`            | —                                         | GitHub-szervezeti csapatprofil                                                                                                                                            |
+| `/api-keys`                             | —                                         | API-kulcsok kezelése. **Nincs navigációs belépési pont** — csak URL-lel érhető el                                                                                         |
+| `/settings/…`                           | —                                         | Beállítások képernyői (lentebb)                                                                                                                                           |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+A beszélgetéseknek és a szálaknak **nincs saját útvonaluk** — egy szál egy beszélgetés a `/spaces/:spaceId` felületen belül, amely szerkesztőfülként nyílik meg, nem pedig URL-lel címezhető.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**Nincs `/dashboard` útvonal** és nincs irányítópult-képernyő sem. Az elemzőfelület a `/observability`, amely az oldalsáv láblécéből érhető el.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+**Nincs „Tervek” bejegyzés az oldalsávban.** A Plan Studio szerkesztőfülként nyílik meg abból a beszélgetésből, amely létrehozta a tervet, annak sorából; a `/plans` és a `/plans/:kind/:id` mélyhivatkozás.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+A `/observability` és a `/pull-requests/compose` nem szerepel az útvonalcím- vagy morzsamenü-nyilvántartásban, ezért mindkettő a puszta alkalmazásnevet mutatja az ablak címében, és nincs morzsamenü-nyomvonaluk sem.
 
-## Settings routes
+## Beállítások útvonalai
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+A `/settings` a `/settings/you/appearance` címre irányít. Az oldalsáv beállítások gombja és a `Cmd/Ctrl + ,` is a `/settings/you/appearance` címre visz.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+A beállítások útvonalai **hatókör** szerint kapnak névteret — `you/`, `workspace/`, `server/` —, mert a szegmens megmondja, kire hat ki egy módosítás. Két útvonal régebbi a névtérhasználatnál, ezért az URL-ben nincs hatóköre: a `/settings/memory` és a `/settings/pipelines`.
 
-### You
+### Ön
 
-| Path                          | Screen                                                                     |
+| Útvonal                       | Képernyő                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | Téma, nyelv, tipográfia, szerkesztőtéma (a beállítások nyitóképernyője)    |
+| `/settings/you/notifications` | Eseményenkénti kapcsolók, csendes órák                                     |
+| `/settings/you/keybindings`   | Billentyűparancs-referencia (csak olvasható)                               |
+| `/settings/you/audio`         | Mikrofon, diktálás, megbeszélésészlelés és hangtáj-kimenet                 |
+| `/settings/you/devices`       | Párosított telefonok és távirányítás                                       |
+| `/settings/you/newsfeed`      | Hírfolyam kezelése: források, frissítés, olvasási állapot                  |
 
-### Workspace
+### Munkaterület
 
-| Path                               | Screen                                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| Útvonal                            | Képernyő                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/settings/workspace/profile`      | Profil és identitás ebben a munkaterületben: név, git-szerző, kódtárhely, naptár |
+| `/settings/workspace/general`      | Név, logó, titkos útvonalak kizárása, átnézési párhuzamosság, ágelnevezés, szinkronizálás állapota, csevegőhidak, veszélyzóna |
+| `/settings/workspace/meetings`     | Megbeszélésjegyzet-sablonok és mentett hangprofilok                                                   |
+| `/settings/workspace/members`      | Névsor, meghívók, auditnapló. Az auditnapló opcionális `?cursor=` paraméterrel lapozható              |
+| `/settings/workspace/repositories` | Az ebben a munkaterületben regisztrált repók                                                          |
+| `/settings/workspace/agents`       | Regisztrált ügynökidentitások                                                                         |
+| `/settings/workspace/skills`       | Készségkonfiguráció                                                                                   |
+| `/settings/memory`                 | Munkaterület-memória: tények, szabályzatok, tudásgráf                                                 |
+| `/settings/workspace/permissions`  | Ügynökjogosultságok: korlátmátrix és mi-lenne-ha próba                                                |
+| `/settings/pipelines`              | Pipeline-sablonok                                                                                     |
+| `/settings/pipelines/:templateId`  | Pipeline-sablon szerkesztője (húzd és ejtsd vászon)                                                   |
 
-### Server
+### Szerver
 
-| Path                           | Screen                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| Útvonal                        | Képernyő                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `/settings/server/connection`  | Kapcsolat és állapot                                                                     |
+| `/settings/server/sso`         | Egyszeri bejelentkezés (SAML, OIDC, SCIM-provisionálás)                                 |
+| `/settings/server/providers`   | Modellszolgáltatók és adapterek                                                          |
+| `/settings/server/mcp`         | Beépített és külső MCP-szerverek                                                         |
+| `/settings/server/voice`       | Hang- és megbeszélésmodellek (ASR, beszélőszétválasztás)                                 |
+| `/settings/server/rigs`        | Állomások: mit tud elindítani ez a gazdagép, alap image-ek, egyéni image-ek, futó gépek   |
+| `/settings/server/sandbox`     | Homokozó exec-engedélyek: programok, amelyeket az ügynökök a repóik munkapéldányából futtathatnak |
+| `/settings/server/diagnostics` | Diagnosztika és adatvédelem: homokozás, beágyazás, szinkronizációs motor, naplózás, összeomlásjelentés |
+| `/settings/server/backup`      | Biztonsági mentés és visszaállítás: telepítési pillanatképek, munkaterületenkénti export, importálás és törlés |
+| `/settings/server/about`       | Névjegy és frissítések                                                                   |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+A `lib/features/settings/settings_nav.dart` fájlban lévő `kSettingsNav` az egyetlen igazságforrás ehhez a listához. A `settings_nav_test.dart` rögzíti az egyedi azonosítókat, az egyedi útvonalakat, a lapított J/K sorrendet és a három hatókört. Nem járja be az összes regisztrált `GoRoute`-ot.
 
-## Route configuration
+## Útvonalkonfiguráció
 
-| Concern             | File                                                    |
-| ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Vonatkozás             | Fájl                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| Útválasztó             | `lib/router/app_router.dart`                            |
+| Útvonalépítők          | `lib/router/routes.dart`                                |
+| Hitelesítési őrök      | `lib/router/guards.dart`                                |
+| Bevezetési kapu        | `lib/features/auth/providers/onboarding_providers.dart` |
+| Beállítások navigációja | `lib/features/settings/settings_nav.dart`              |
 
-## See also
+## Lásd még
 
-- [Workspaces](/hu-HU/kezikonyv/fogalmak/munkateruletek/)
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/)
-- [Keyboard shortcuts](/hu-HU/kezikonyv/referencia/billentyuparancsok/)
+- [Munkaterületek](/hu-HU/kezikonyv/fogalmak/munkateruletek/)
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/)
+- [Billentyűparancsok](/hu-HU/kezikonyv/referencia/billentyuparancsok/)

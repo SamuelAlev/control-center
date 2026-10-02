@@ -1,213 +1,226 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Встречи и транскрипция
+description: Как Control Center записывает звонок, транскрибирует и разделяет его по спикерам на сервере и где находится единственный шаг, покидающий хост.
 slug: ru-RU/руководство/понятия/встречи
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center может записать звонок и вернуть вам аккуратный итог — сводку,
+пункты действий и решения, — при этом распознавание речи и разделение спикеров
+работают на вашем собственном оборудовании. Вспомните Granola, только
+размещённую у себя и подключённую к тому же рабочему пространству, где живут
+ваши агенты.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Для записи нужна голосовая модель и перезапуск сервера]
+Запись и диктовка запускаются после того, как речевая модель (ASR) окажется на
+диске **и** сервер будет перезапущен. При обычной загрузке выбранная модель
+(по умолчанию Parakeet TDT 0.6B v3) принудительно устанавливается в фоне, но
+сервер определяет пути к голосовым моделям ровно один раз в начале загрузки —
+за минуты до того, как эта загрузка успеет завершиться. Когда модель сообщит об
+установке, перезапустите `cc_server`. Чтобы выбрать другую сборку, откройте
+Настройки → Сервер → Модели голоса и встреч — это тоже требует перезапуска.
 :::
 
-## What a meeting is
+## Что такое встреча
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ru-RU/руководство/понятия/календарь/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**Встреча** — это записанный и транскрибированный сеанс. Это _не_ то же самое,
+что [событие календаря](/ru-RU/руководство/понятия/календарь/): событие — это
+запланированное обязательство, синхронизированное из Google, а встреча — то,
+что вы действительно записали. Их можно связать, поскольку запись можно начать
+из события, но это остаются разные записи.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Каждая встреча привязана к рабочему пространству, как и всё остальное в Control
+Center. Встречи, записанные в одном рабочем пространстве, никогда не появятся в
+другом.
 
-## Where the work happens
+## Где происходит работа
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+«На устройстве» — правильная интуиция, но неверное существительное. Клиент
+захватывает звук и передаёт кадры 16 кГц PCM16 на **машину, где работает
+`cc_server`**. Этот хост делает всё остальное: пишет WAV-файлы по каналам в
+`<dataDir>/meetings/<meetingId>/`, транскрибирует в воркер-изоляте,
+отфильтровывает эхо и выполняет диаризацию после факта. На автономном настольном
+компьютере этот хост — та же машина. При подключении к удалённому серверу — уже
+нет, поэтому «ничего не покидает мой ноутбук» верно только тогда, когда сервер и
+есть ваш ноутбук.
 
-There is one further exception and it is the important one.
+Есть ещё одно исключение, и оно самое важное.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Сводка покидает хост]
+Транскрипт и ваши заметки отправляются тому провайдеру моделей, с которым
+настроен суммирующий агент. Для любого облачного провайдера это означает, что
+полный транскрипт уходит в его API. Если транскрипт не должен покидать хост,
+настройте суммирующего агента на локальную конечную точку (Ollama, LM Studio или
+другой локальный сервер).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Всё до сводки — захват, транскрипция, подавление эха, диаризация, сопоставление
+голосовых отпечатков — выполняется на сервере без сетевых вызовов.
 
-## Which models ship
+## Какие модели поставляются
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Модели **эмбеддингов, диаризации и распознавания речи (ASR)** принудительно
+устанавливаются при первой загрузке (в деморежиме пропускаются), поэтому
+разделение спикеров и запись доступны без захода в настройки. ASR по-прежнему
+**можно выбирать** — она занимает несколько сотен мегабайт, и в списке доступны
+четыре сборки. Речи всё ещё нужен один перезапуск после первой загрузки, потому
+что модуль транскрипции определяет свою модель раньше, чем успевает завершиться
+скачивание.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Четыре варианта в списке, различающиеся размером, охватом языков и точностью:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — многоязычная, рекомендуемая по умолчанию (~600 МБ)
+- Parakeet TDT 0.6B v2 — английская (~480 МБ)
+- Whisper large-v3-turbo — многоязычная (~626 МБ)
+- Whisper base.en — только английский, небольшая историческая модель по умолчанию (~198 МБ)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Модели — единственные артефакты, которые сервер скачивает во время работы;
+каждая нативная библиотека поставляется в составе сборки.
 
-## How capture works
+## Как устроен захват
 
-A meeting records **two audio channels at once**:
+Встреча записывает **два звуковых канала одновременно**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Вы («я»)**: ваш микрофон.
+- **Они («другие»)**: звук встречи, захватываемый через loopback без драйверов —
+  перехваты процессов и устройств Core Audio в macOS, loopback WASAPI в Windows,
+  монитор PipeWire / PulseAudio в Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Поскольку два канала захватываются раздельно, транскрипт с самого начала размечен
+по спикерам: ваши слова помечаются `me`, все остальные на звонке — `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Ваш собственный голос просачивается из системного вывода обратно в микрофон и
+иначе был бы транскрибирован дважды. Это останавливают два фильтра. Сигнальный
+**AEC3 работает при каждой записи в удалённом режиме и обязателен** — если
+нативная библиотека AEC не может загрузиться, запись отказывается запускаться,
+вместо того чтобы молча передавать поток с микрофона, загрязнённый эхом. (В
+режиме личного присутствия нет опорного сигнала дальнего конца, который можно
+вычесть, поэтому AEC там работает как сквозная передача без изменений.) Поверх
+него на каждой платформе работает текстовый фильтр эха на стороне хоста.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Вся обработка микрофона на уровне ОС намеренно отключена. Включение собственного
+подавления эха или автоматического усиления в macOS переводит микрофон в режим
+Voice Processing I/O, что в этой сборке убивало и микрофон, _и_ перехват
+системного звука.
 
-## Transcription and diarization
+## Транскрипция и диаризация
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Пока вы записываете, звук декодируется **скользящими окнами** — обрезаемыми по
+короткой концевой тишине или по максимальной длине окна — вне потока UI. Каждое
+окно становится сегментом транскрипта с меткой спикера и смещениями в
+миллисекундах.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Окна, которые так и не поднялись выше порога RMS, пропускаются **вообще без
+декодирования**, потому что речевая модель отображает тишину как галлюцинированные
+неречевые токены, а декодирование впустую тратит процессор.
+Практическое следствие: постоянно очень тихий спикер не даёт транскрипта. Если
+чей-то фрагмент получается пустым, проверьте уровень его входа, прежде чем винить
+модель.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+После остановки **диаризация** выполняется офлайн по всей записи и разделяет
+удалённый канал на отдельных спикеров (`Person 1`, `Person 2`, …), которых можно
+переименовать. Число спикеров выводится из порога кластеризации, а не из
+заданного вами количества, — поэтому это артефакт порога, и тихий или
+перекрывающийся спикер может быть объединён с соседним. Транскрипт отображается
+строками вида `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Голосовые профили
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Переименование спикера делает больше, чем просто помечает один транскрипт.
+Control Center может сохранить голосовой отпечаток спикера как **голосовой
+профиль**, чтобы автоматически узнавать его на будущих встречах. Когда вы
+называете спикера после диаризации, вас спрашивают, сохранить ли голосовой
+отпечаток; если сохранить, он примешивается к текущему центроиду для этого имени
+и сопоставляется с новыми спикерами по косинусной близости, поэтому тот же
+человек в следующий раз появится со своим именем без повторной разметки.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Голосовые профили привязаны к рабочему пространству и никогда не выходят за его
+границы. Управляйте ими в **Настройки → Рабочее пространство → Встречи**.
+Переименование ранее сохранённого спикера снимает привязку старого имени и
+предлагает привязать новое; удаление профиля убирает сохранённый голосовой
+отпечаток, но оставляет неизменными имена, уже применённые к прошлым встречам.
 
-## The summary pipeline
+## Конвейер сводки
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ru-RU/руководство/понятия/доменные-события/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Когда запись останавливается, сервер публикует [доменное
+событие](/ru-RU/руководство/понятия/доменные-события/) `MeetingRecordingStopped`.
+По этому событию запускается встроенный шаблон конвейера **`meeting_summary`**.
+Компонент записи его не ждёт; встреча просто проходит через свой жизненный цикл
+статусов:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Суммирующий агент получает название, ваши черновые заметки по ходу встречи и
+транскрипт и возвращает **структурированный JSON**. То, какие разделы он пишет,
+определяется **активным шаблоном заметок о встречах** рабочего пространства
+(Настройки → Рабочее пространство → Встречи); активный шаблон применяется к
+новым сводкам и при повторном запуске. Затем шаги сохранения конвейера записывают
+этот JSON в отдельные строки:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` и `summary` → заметки встречи
+- каждый пункт действий → строка `MeetingActionItem` (содержание, ответственный, необязательная привязка к тикету)
+- каждое решение → строка `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Пункты действий и решения **никогда** не извлекаются из свободного markdown,
+только из структурированных массивов агента. Если запуск не даёт
+структурированного вывода, шаги сохранения пропускаются, а исходный транскрипт
+сохраняется как запасной вариант, так что вы никогда не теряете запись. Ничто в
+конвейере не помечает встречу как `done` — это делает единственный согласующий
+компонент по терминальному событию запуска, поэтому сбой соседнего шага не может
+оставить встречу недописанной, хотя она уже выглядит завершённой.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ru-RU/руководство/практические-руководства/mcp-сервер/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Агенты не могут читать ваши встречи]
+Инструментов MCP для встреч и календаря нет. Агент, подключённый по
+[MCP](/ru-RU/руководство/практические-руководства/mcp-сервер/), не может
+перечислить встречи, прочитать транскрипт или увидеть пункты действий и
+решения — эти данные попадают к человеческим клиентам только по RPC. Решения
+доходят до агентов косвенно, как факты памяти в домене `decisions`.
 :::
 
-## Where meetings show up
+## Где появляются встречи
 
-| Surface                | What it shows                                                                         |
+| Поверхность            | Что показывает                                                                        |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | Список встреч со счётчиками пунктов действий и решений                                |
+| `/meetings/record`     | HUD записи в реальном времени: заметки с одной стороны, потоковый транскрипт с другой |
+| `/meetings/:meetingId` | Детали встречи: вкладки «Заметки», «Транскрипт», «Пункты действий» и «Решения»        |
+| Настройки → Рабочее пространство → Встречи | Шаблоны заметок и сохранённые голосовые профили этого рабочего пространства           |
 
-## Platform support
+## Поддержка платформ
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Захват работает без драйверов на всех трёх настольных платформах (перехваты
+Core Audio в macOS, WASAPI в Windows, PipeWire в Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Веб-клиент тоже записывает**, что остальная часть этой страницы с её настольной
+оптикой может скрыть: браузер получает ваш микрофон через `getUserMedia`, а звук
+встречи — через `getDisplayMedia` (демонстрация экрана), понижает частоту до
+16 кГц PCM16 и передаёт поток на тот же хост. Здесь действуют три оговорки:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- У демонстрируемой поверхности **обязательно** должна быть звуковая дорожка.
+  Демонстрация экрана в Safari, Firefox и в полноэкранном режиме macOS её не
+  даёт, и запись отказывается запускаться.
+- Нативного AEC3 нет. У микрофона запрашивается собственное подавление эха
+  браузера; текстовый фильтр эха на стороне хоста по-прежнему работает. HUD
+  показывает индикатор уровня входа, управляемый PCM микрофона.
+- Пересоздать сводку и отменить обработку можно только в настольном клиенте.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Действие **Начать запись и привязать** в календаре доступно только в настольном
+клиенте и честно сообщает об этом в веб-версии, хотя собственный сценарий записи
+на экране встреч там работает.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Удаление встречи оставляет её звук]
+Удаление встречи удаляет только её строки в базе данных. Сохранённый каталог
+звука по каналам `<dataDir>/meetings/<meetingId>/` никогда не очищается — для
+него нет ни политики хранения, ни ограничения размера, ни прохода сборки мусора.
+Освободить это место можно только вручную на хосте сервера.
 :::
 
-## See also
+## См. также
 
-- [Calendar and scheduling](/ru-RU/руководство/понятия/календарь/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ru-RU/руководство/понятия/конвейеры/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ru-RU/руководство/понятия/тикеты/): link a meeting's action items to tickets
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ru-RU/руководство/практические-руководства/записать-встречу/)
+- [Календарь и планирование](/ru-RU/руководство/понятия/календарь/): записать встречу прямо из события календаря
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/): движок, стоящий за `meeting_summary`
+- [Тикеты и делегирование](/ru-RU/руководство/понятия/тикеты/): связать пункты действий встречи с тикетами
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/): `MeetingRecordingStopped` и `MeetingStartingSoon`
+- [Записать и резюмировать встречу](/ru-RU/руководство/практические-руководства/записать-встречу/)

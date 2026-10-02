@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Sikertelen teszt hibakeresése ügynökkel
+description: Állíttasson töréspontot egy ügynökkel, indítson hibakereső alatt, és olvasson ki egy valódi veremkeretet a print utasítások beszúrása helyett.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/sikertelen-teszt-hibakeresese
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Ez az útmutató megmutatja, hogyan vegye rá az ügynököt, hogy hibakeresőt használjon egy olyan hiba esetén, amelyet a print utasítások nem magyaráznak meg.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+A `debug` eszköz valódi Debug Adapter Protocol-munkamenetet vezet. Egy megállított keret egyszerre válaszol meg minden kérdést arról a pillanatról — minden lokális változót, minden hívót, és egy kifejezést a keret saját hatókörében kiértékelve —, míg egy print utasítás csak arra a kérdésre válaszol, amelyet futtatás előtt gondolt feltenni.
 
-## Before you start
+## Mielőtt elkezdené
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Az eszköz a felszínen marad, hogy az ügynök megkérdezhesse, miért nem használható semmi, ahelyett hogy találgatna. Egy adapter valójában csak akkor tud elindulni, ha **mindkettő** teljesül az alábbiak közül:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- van egy projektjelölő a checkoutban, és
+- feloldható az adapter binárisa.
 
-Ask the agent to check:
+Kérje meg az ügynököt, hogy ellenőrizze:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Azt válaszolja, amit talált, vagy elmagyarázza, hogy egy adapterhez mindkét félre szükség van.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Nyelv          | Adapter                      | Jelölő                                          | Telepítés                          |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | Az SDK-val érkezik — nincs teendő  |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Az LLVM-mel érkezik                |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[A Python a projekt saját interpreterét választja]
+A `debugpy` előbb a `.venv/bin`, illetve a `venv/bin` könyvtárban keresendő, és csak utána a `$PATH`-ban. A `$PATH`-ból induló python egy másik környezet, és ha a rossz környezetből csatlakozik, az úgy hibázik, hogy inkább hibás kódnak látszik, mintsem rossz interpreternek.
 :::
 
-## Set the breakpoint first, then launch
+## Először állítsa be a töréspontot, majd indítson
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+A sorrend számít, és az eszköz kikényszeríti: a töréspontok **egy munkamenet létrejötte előtt** is beállíthatók, mert a protokoll ezt a sorrendet írja elő.
 
-Ask the agent something like:
+Kérjen az ügynöktől valami ilyesmit:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> A `compute` függvény a `bin/main.dart`-ban rossz értéket ad vissza. Állítson töréspontot arra a sorra, amely a `product` értékét adja, indítsa el hibakereső alatt, és mondja meg, mennyi valójában `a` és `b`.
 
-It will run roughly:
+Nagyjából ezt fogja futtatni:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Az indítás jelenti, hol állt meg:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Ha inkább azt jelenti, hogy a program kilépett]
+A töréspont nem kötődött be. Egy üres sor, egy megjegyzés vagy egy olyan sor, amely nem kerül bele a buildbe, nem tud töréspontot hordozni. Ha egy élő munkameneten hívja a `breakpoints` műveletet, az jelenti, hogy a beállítottak közül hány került ténylegesen elhelyezésre.
 :::
 
-## Read the frame
+## A keret olvasása
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Aztán lépkedjen bele:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Egy gyermekekkel rendelkező objektum `[expand: reference N]`-t jelent — de csak akkor, ha valóban van mögötte valami, így az ügynök soha nem kap olyan kibontást, amelyet nem tud használni.
 
-For anything not visible as a local:
+Bármihez, ami lokálisként nem látható:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Léptetés
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Amit szeretne            | Művelet     |
+| ------------------------ | ----------- |
+| Futtatás a következő megállásig | `continue`  |
+| Következő sor, ugyanabban a keretben | `step_over` |
+| Belépés a hívásba        | `step_in`   |
+| Kilépés a hívóhoz        | `step_out`  |
+| Egy futó program megállítása | `pause`     |
 
-## Attach to something already running
+## Csatlakozás egy már futó folyamathoz
 
-For a wedged process rather than one you are starting:
+Egy beragadt folyamathoz, nem egy éppen indítotthoz:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Befejezés
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Mindig fejezze be a munkamenetet. Egy hibakereső adapter birtokol egy **megállított folyamatot**, amely mindent fog, amit az a folyamat fog — egy portot, egy zárat, egy adatbázis-kapcsolatot.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Nem tud kicsúszni az Ön kezei közül]
+Minden munkamenetnek kemény TTL-je van, amelyet nem tud meghosszabbítani, beszélgetésenként pontosan egy létezik, és minden lebontásra kerül, amikor a szerver leáll. Egy második `launch` visszautasításra kerül ahelyett, hogy lecserélné az elsőt: az az ügynök, amely úgy indít egyet, hogy nem fejezte be a másikat, szinte biztosan elveszítette az elsőt.
 :::
 
-## Bounded output
+## Korlátozott kimenet
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Egy `variables`-kibontás egy mély objektumgráfon természeténél fogva korlátlan — egyetlen Flutter widget eléri a teljes elemfát. A hatókörönkénti gyermekek száma legfeljebb 50, az értékek legfeljebb 400 karakter, a veremkeretek pedig legfeljebb 30. Az olyan eszközeredmény, amely megtölti a kontextusablakot, az az eszköz, amely véget vet annak a futásnak, amelyet segített.
 
-## Related
+## Kapcsolódó
 
-- [Code intelligence](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — every `debug` op and argument
-- [Diagnose an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/) — when the problem is the agent, not the code
+- [Kódintelligencia](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — miért válaszol mást egy hibakereső, egy fordító és egy illesztő
+- [Beépített ügynökeszközök](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — minden `debug` művelet és argumentum
+- [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/) — amikor a probléma az ügynök, nem a kód

@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: راجع أول طلب سحب
+description: افتح طلب سحب في المنضدة، واقرأ الفروق، وعلّق، ووافق، وادمج.
 slug: ar-SA/دليل-المستخدم/دروس/أول-طلب-سحب
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## ما الذي ستبنيه
 
-By the end of this tutorial, you will have:
+بنهاية هذا الدرس ستكون قد:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- فتحت طلب سحب في منضدة طلبات السحب في Control Center
+- قرأت فروقه وتركت تعليقًا مضمّنًا
+- أرسلت حكم مراجعة
+- دمجت طلب السحب
 
-Prerequisites: [Dispatch your first agent](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+المتطلبات السابقة: إتمام [أرسل وكيلك الأول](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) ووجود طلب سحب مفتوح على مستودع مسجّل في مساحة العمل هذه. لخطوات المراجعة، اختر طلب سحب لم تفتحه أنت — يُخفى زر **مراجعة** على طلبات السحب التي ألفتها. الدمج يظل متاحًا على طلب سحب ألّفته.
 
-## Step 1: Open the pull request
+## الخطوة 1: افتح طلب السحب
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. انقر **طلبات السحب** في الشريط الجانبي
+2. اعثر على طلب السحب وانقره
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**نقطة التحقّق.** يُفتح طلب السحب منضدةً ذات ألسنة — **نظرة عامة** و**الفروق** و**إدارة المصادر** و**الدردشة** و**إجراءات** — مع التركيز على **نظرة عامة**: العنوان والإجراءات، والوصف والخط الزمني للنشاط، وشريط جانبي فيه الحالة والمراجعون والمُسنَد إليهم والفحوصات والملفات المتغيّرة. النقر على ملف هناك ينقلك إليه في لسان **الفروق**. لا يُفتح لسان **مراجعة PR** حتى يطلب أحد مراجعة بالذكاء الاصطناعي.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[قائمة فارغة مع مطالبة «اربط GitHub»]
+هذه الحالة تعني أن _الخادم_ لا يحمل رمز GitHub — عميلك لا يحمل واحدًا أبدًا. عيّنه من **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود**، ثم حدّث القائمة.
 :::
 
-## Step 2: Read the diff
+## الخطوة 2: اقرأ الفروق
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+افتح لسان **الفروق**. شجرة ملفات قابلة للطي على اليسار، والشريط فوق الفروق يحمل منتقي نطاق الإيداعات — لتضييق الفروق إلى إيداع واحد أو مدى منها — مع عدد الملفات والإضافات والحذف الجارية.
 
-The settings button in the diff toolbar controls how it renders:
+زر الإعدادات في شريط أدوات الفروق يتحكّم في طريقة العرض:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- عرض **مقسّم** أو **موحّد**
+- **التفاف الأسطر** أو تمرير الأسطر الطويلة
+- **حروف الربط في خط التعليمات البرمجية**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/ar-SA/دليل-المستخدم/مرجع/اختصارات-لوحة-المفاتيح/).
+علّم ملفًا بأنه شُوهد لتتبّع تقدّمك في فرق كبير. التنقّل بلوحة المفاتيح في [اختصارات لوحة المفاتيح](/ar-SA/دليل-المستخدم/مرجع/اختصارات-لوحة-المفاتيح/).
 
-## Step 3: Leave an inline comment
+## الخطوة 3: اترك تعليقًا مضمّنًا
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. مرّر المؤشر فوق سطر في الفروق — تظهر حبة `+` صغيرة في الهامش
+2. انقرها للتعليق على ذلك السطر، أو اسحبها رأسيًا أولًا لتحديد مدى
+3. اكتب ملاحظاتك. يقدّم مربّع الكتابة إرسالين:
+   - **بدء مراجعة** (أو **إضافة إلى المراجعة** إن كانت مراجعة قيد التنفيذ) يُدرج التعليق في الطابور. تُظهر السلسلة **مراجعة معلّقة** إلى أن ترسل حكمًا في الخطوة 4.
+   - **إضافة تعليق واحد** ينشره على GitHub فورًا. تُظهر السلسلة **جارٍ النشر…** ثم **متزامن**، وتعرض **إعادة المحاولة** إن فشل النشر.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+في هذا الدرس، استخدم **بدء مراجعة** حتى يخرج التعليق مع الحكم.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[التعليق المؤجّل ليس على GitHub بعد]
+**بدء مراجعة** / **إضافة إلى المراجعة** يُبقيان التعليق محليًا إلى أن ترسل حكمًا. **إضافة تعليق واحد** وحده ينشر فورًا. _متن_ المراجعة الذي تكتبه في الخطوة 4 مسودة منفصلة.
 :::
 
-## Step 4: Submit a review
+## الخطوة 4: أرسل مراجعة
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. انقر **مراجعة** في صف إجراءات **نظرة عامة** — الزر نفسه موجود أيضًا في شريط أدوات لسان **الفروق**. يُخفى على طلبات السحب التي ألفتها وعلى طلب سحب مغلق أو مدموج.
+2. اكتب ملخصًا في مربّع الكتابة. يُحفظ تلقائيًا مسودة، فتستطيع إغلاق الطبقة العلوية والعودة.
+3. اختر حكمًا:
+   - **طلب تغييرات**
+   - **تعليق**
+   - **موافقة**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+الحكم هو الزر. بعد **موافقة** أو **طلب تغييرات** يُعاد تسمية الزر إلى **تمت الموافقة** أو **طُلبت تغييرات**. حكم **تعليق** يُبقي التسمية **مراجعة**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**نقطة التحقّق.** يقرأ الزر «تمت الموافقة» أو «طُلبت تغييرات» إن اخترت أحدهما.
 
-## Step 5: Merge
+## الخطوة 5: ادمج
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+يظهر زر **دمج** كلما أبلغ GitHub أن طلب السحب قابل للدمج — لا يُشترط موافقتك أنت. لونه يبلّغ عن الجاهزية لا عن الصلاحية: أساسي حين تكون الموافقات المطلوبة والفحوصات خضراء، وثانوي ما دام فحص قيد التشغيل، وتدميري حين لم يوافق مراجع مطلوب أو كان فحص يفشل.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. انقر **دمج**
+2. اختر طريقة: **سحق ودمج** أو **إنشاء إيداع دمج** أو **إعادة تأسيس ودمج**
+3. للطريقة الأولى والثانية، عدّل عنوان الإيداع ورسالته المعبّأين مسبقًا
+4. أكّد
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+أي مشكلات معلّقة — «فحوصات فاشلة» و«بعض المراجعات معلّقة» — تُدرَج في اللوحة المنبثقة قبل التأكيد.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[الدمج لا رجعة فيه]
+الدمج يدفع الإيداعات إلى GitHub. لا يدخل مكدس التراجع في Control Center، ولا يمكن التراجع عنه من هنا.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/) for what else listens.
+بعد الدمج يُطلَق حدث النطاق `PrMerged`؛ تستهلكه التحليلات والإشعارات. انظر [أحداث النطاق](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/) لتعرف ما الذي يستمع أيضًا.
 
-## Reviewing with AI
+## المراجعة بالذكاء الاصطناعي
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+يستطيع Control Center وضع خط أنابيب مراجعة على طلب سحب مفتوح، لكن حين تطلب ذلك فقط: قالب `pr_review` له مشغّل يدوي ولا شيء سواه.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. افتح قائمة ⋯ (**مزيد من الإجراءات**) في صف إجراءات **نظرة عامة** واختر **اسأل الذكاء الاصطناعي**. يبدأ Control Center التشغيل ويفتح لسان **مراجعة PR**، فتستطيع مشاهدة المتخصصين يعملون.
+2. يسجّل وكلاء المراجعة نتائجهم عُقد مراجعة في مساحة طلب السحب؛ وخطوة أخيرة تجمّعها في تقرير واحد.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/).
+خط الأنابيب لا ينشر على GitHub عمدًا — ينتهي بعد التجميع. النشر خطوة منفصلة تقوم بها أنت، بزر **النشر على GitHub** في لسان **مراجعة PR**. انظر [استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/).
 
-## Recap
+## الخلاصة
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+فتحت طلب سحب في المنضدة، وقرأت الفروق مع تمييز الصياغة، وتركت تعليقًا مضمّنًا، وأرسلت حكمًا ودمجت — من غير مغادرة التطبيق.
 
-**Next:** [Build your first pipeline](/ar-SA/دليل-المستخدم/دروس/أول-خط-أنابيب/) to automate multi-step workflows.
+**التالي:** [ابنِ أول خط أنابيب](/ar-SA/دليل-المستخدم/دروس/أول-خط-أنابيب/) لأتمتة مسارات العمل متعددة الخطوات.

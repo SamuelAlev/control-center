@@ -1,31 +1,35 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Εκτέλεση headless διακομιστή
+description: Εκτελέστε το headless δυαδικό cc_server ή την εικόνα Docker του, συζεύξτε έναν πελάτη μαζί του και διαμορφώστε τον με το πλήρες σύνολο σημαιών CLI και μεταβλητών περιβάλλοντος.
 dateModified: 2026-09-10
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Εκτελέστε το `cc_server` σε ένα μηχάνημα που μένει ανοιχτό και μετά συνδεθείτε σε
+αυτόν από την εφαρμογή υπολογιστή, ένα πρόγραμμα περιήγησης ή το τηλέφωνό σας. Ο
+διακομιστής είναι ένα εγγενές δυαδικό αποκλειστικά Dart — χωρίς μηχανή Flutter —
+οπότε εκτελείται headless σε macOS, Linux ή Windows. Κατέχει τη βάση δεδομένων,
+εκτελεί τους πράκτορες και κάνει κάθε εξωτερική κλήση API· οι πελάτες απλώς
+αποδίδουν.
 
-## Run in Docker (prebuilt images)
+## Εκτέλεση σε Docker (έτοιμες εικόνες)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Κάθε έκδοση δημοσιεύει μια στοίβα αυτοφιλοξενίας τεσσάρων εικόνων GHCR — το
+backend, τους δύο στατικούς λεπτούς πελάτες και τον προαιρετικό αναμεταδότη
+σύζευξης — συν μια ξεχωριστή εικόνα `cc-server-demo` για τον δημόσιο κεντρικό
+υπολογιστή επίδειξης. Μια εγκατάσταση αυτοφιλοξενίας δεν απαιτεί απόσπασμα
+πηγαίου κώδικα. Κλειδώστε μια ετικέτα έκδοσης
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ή ακολουθήστε το `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| Εικόνα                                        | Τι είναι                                              | Δημοσιεύει      |
+| --------------------------------------------- | ----------------------------------------------------- | --------------- |
+| `ghcr.io/samuelalev/cc-server`                | Το backend: βάση δεδομένων, πράκτορες, MCP, webhooks  | `-p 9030:9030`  |
+| `ghcr.io/samuelalev/cc-webapp`                | Ο πελάτης web (στατικό nginx)                         | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`                | Η συνοδευτική PWA για τηλέφωνο (στατικό nginx)        | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`      | Ο αναμεταδότης σύζευξης WebRTC (προαιρετικός)         | `-p 8788:8788`  |
 
-The whole stack as a compose file:
+Ολόκληρη η στοίβα ως αρχείο compose:
 
 ```yaml
 services:
@@ -51,91 +55,99 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Πράγματα που αξίζει να γνωρίζετε πριν εκθέσετε οτιδήποτε από αυτά πέρα από το
+loopback:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Η εικόνα `cc-server` περιλαμβάνει `CC_SERVER_INSECURE=1`** (πρέπει να δεσμεύσει
+  τη `0.0.0.0` για να δέχεται κίνηση στη δημοσιευμένη θύρα), κάτι που είναι ασφαλές
+  μόνο πίσω από αντίστροφο διαμεσολαβητή που τερματίζει το TLS — Caddy, Traefik,
+  nginx ή Cloudflare Tunnel — σε έμπιστο δίκτυο. Για να τερματίσετε το TLS εντός
+  της διεργασίας αντ' αυτού, προσαρτήστε ένα πιστοποιητικό και ορίστε τα
+  `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (και μετά αφαιρέστε το
+  `CC_SERVER_INSECURE`). Όλα μπορούν να παρακαμφθούν με `docker run -e …` ή το
+  μπλοκ `environment:` του compose.
+- **Το `/data` είναι η μόνη κατάσταση.** Οι βάσεις δεδομένων SQLite, τα μυστικά των
+  συζευγμένων συσκευών, τα ληφθέντα μοντέλα και ο ήχος των συσκέψεων ζουν όλα στον
+  τόμο — δημιουργήστε αντίγραφο ασφαλείας του και το κοντέινερ γίνεται αναλώσιμο.
+- **Συζεύξτε έναν πελάτη από μέσα από την εικόνα** πριν από την πρώτη σύνδεση, το
+  αντίστοιχο σε κοντέινερ του [βήματος 3](#βήμα-3-συζεύξτε-έναν-πελάτη-πριν-από-την-πρώτη-εκκίνηση):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Οι δύο εικόνες πελατών είναι στατικοί κεντρικοί υπολογιστές nginx** — τίποτα να
+  διαμορφώσετε κατά την εκτέλεση· η φόρμα σύνδεσης κάθε πελάτη δέχεται το URL του
+  διακομιστή σας, το αναγνωριστικό συσκευής και το κλειδί σύζευξης. Ο αναμεταδότης
+  σηματοδότησης χρειάζεται επίσης μόνο τη θύρα του (τα `SIGNALING_HOST` /
+  `SIGNALING_PORT` μπορούν να παρακαμφθούν)· είναι χωρίς κατάσταση, δεν κρατά
+  μυστικά και αποτελεί **εφεδρεία** — ένα τηλέφωνο χρησιμοποιεί loopback, LAN,
+  tailnet ή απευθείας διαδρομή `wss://` όταν κάποια είναι προσβάσιμη, και
+  καταφεύγει στον αναμεταδότη μόνο όταν καμία δεν είναι. Παραλείψτε τον αν οι
+  πελάτες σας φτάνουν πάντα απευθείας στον διακομιστή.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Το υπόλοιπο αυτού του οδηγού δημιουργεί τον διακομιστή από τον πηγαίο κώδικα· οι
+σημαίες και η συμπεριφορά που καλύπτει είναι οι ίδιες που τροφοδοτούν οι
+μεταβλητές περιβάλλοντος της εικόνας.
 
-## Prerequisites
+## Προαπαιτούμενα
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- Το [Dart SDK](https://dart.dev/get-dart). Αυτό το αποθετήριο κλειδώνει το SDK του με το [fvm](https://fvm.app), οπότε βάλτε πρόθεμα `fvm` σε κάθε εντολή.
+- Αυτό το αποθετήριο αποσπασμένο τοπικά.
+- Την εγγενή εργαλειοθήκη που χρειάζεται το σενάριο προετοιμασίας — Rust/`cargo`, καθώς και `meson`, `ninja`, `pkg-config`, `git` και μεταγλωττιστή C++. Κάθε σενάριο δημιουργίας ονομάζει τι δεν βρίσκει και πώς να το εγκαταστήσετε.
+- Έναν προσβάσιμο κεντρικό υπολογιστή: loopback για τοπική χρήση, ή διεύθυνση LAN/δημόσια με TLS για απομακρυσμένους πελάτες.
 
-## Step 1: Stage the native libraries
+## Βήμα 1: Προετοιμάστε τις εγγενείς βιβλιοθήκες
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Οι εγγενείς βιβλιοθήκες είναι **υποχρεωτικές** — δεν υπάρχει υποβαθμισμένη
+λειτουργία. Δημιουργήστε τις από τη ρίζα του αποθετηρίου πριν από οτιδήποτε άλλο:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Αυτό δημιουργεί τα `rift`, `fff`, το tree-sitter μαζί με τις γραμματικές του, τα
+`aec`, `lame`, `ccpty`, `cc_watcher`, `cc_inference` και το εγγενές SAML στον
+κατάλογο `build/natives/`. Το hook δημιουργίας του `cc_server` επανεκπέμπει ό,τι
+έχει προετοιμαστεί εκεί μέσα στο πακέτο, οπότε η παράλειψη αυτού του βήματος είτε
+αποτυγχάνει τη δημιουργία εντελώς είτε — με τη δίοδο διαφυγής παρακάτω — παράγει
+ένα δυαδικό του οποίου ο προέλεγχος εκκίνησης αρνείται να ξεκινήσει και ονομάζει
+τη βιβλιοθήκη που λείπει.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Δίοδος διαφυγής μόνο για μεταγλώττιση]
+Η δημιουργία ενός κενού αρχείου `.cc_natives_allow_missing` στη ρίζα του
+αποθετηρίου υποβαθμίζει την αποτυχία δημιουργίας για ελλείπουσες εγγενείς
+βιβλιοθήκες σε προειδοποίηση. Είναι για τον συντακτικό έλεγχο ενός φρέσκου κλώνου·
+ένας διακομιστής που δημιουργήθηκε έτσι δεν μπορεί να εκκινήσει. Πρέπει να είναι
+**αρχείο** — ο εκτελεστής του hook δημιουργίας δεν προωθεί το περιβάλλον του
+καλούντος, οπότε μια μεταβλητή περιβάλλοντος αγνοείται.
 :::
 
-## Step 2: Build the binary
+## Βήμα 2: Δημιουργήστε το δυαδικό
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+Το πακέτο συνοδεύει το δυαδικό με τη `libsqlite3` και τις προετοιμασμένες εγγενείς
+βιβλιοθήκες — δεν χρειάζεται SQLite του συστήματος ούτε μηχανή Flutter. Το
+εκτελέσιμο καταλήγει στο `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Βήμα 3: Συζεύξτε έναν πελάτη πριν από την πρώτη εκκίνηση
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Ένας φρέσκος κατάλογος δεδομένων δεν έχει συζευγμένη συσκευή ούτε προκοινόχρηστο
+κλειδί, οπότε το αίτημα κλειδιού σύζευξης ενός πελάτη δεν μπορεί ακόμη να
+ικανοποιηθεί. Εκδώστε ένα με την υποεντολή `pair`. Γράφει απευθείας τα `global.db`
+και `secrets.json`· ένας διακομιστής που σερβίρει ήδη αυτόν τον κατάλογο δεδομένων
+αναλαμβάνει τη νέα συσκευή χωρίς επανεκκίνηση:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Εκτυπώνει τρεις τιμές για επικόλληση στη φόρμα σύνδεσης ενός πελάτη:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +156,50 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Χρήσιμες σημαίες: `--device` (προεπιλογή `web-client`· το αναγνωριστικό επιλέγει
+και το επίπεδο της συσκευής — `desktop`, `ios`, `android`, οτιδήποτε άλλο είναι
+πελάτης web), `--label` (προεπιλέγεται το όνομα της πλατφόρμας συν το όνομα
+κεντρικού υπολογιστή αυτού του μηχανήματος), `--host` (ο κεντρικός υπολογιστής που
+εκτυπώνεται στο URL, αφού το loopback δεν είναι προσβάσιμο από άλλο μηχάνημα) και
+`--client-url`. Η εκ νέου εκτέλεση του `pair` εναλλάσσει το κλειδί αυτής της
+συσκευής και ρίχνει τις ζωντανές συνεδρίες της. Η σύζευξη δεν δημιουργεί ποτέ χώρο
+εργασίας: η ροή αρχικής ρύθμισης του πελάτη που συνδέεται ονομάζει και δημιουργεί
+τον πρώτο.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Με το `--client-url` εκτυπώνει επίσης έναν κωδικό QR σαρώσιμο από τερματικό που
+ανοίγει τον πελάτη web ήδη συμπληρωμένο:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
+:::caution[Αυτός ο κωδικός QR δεν είναι ο κωδικός QR του τηλεφώνου]
+Το `--client-url` δημιουργεί έναν σύνδεσμο για τον **πελάτη web** — URL
+διακομιστή, αναγνωριστικό συσκευής και κλειδί στο τμήμα του URL. Η εφαρμογή
+τηλεφώνου **Remote** περιμένει διαφορετικό ωφέλιμο φορτίο (τον πλήρη περιγραφέα
+σύνδεσης του διακομιστή συν μια λήξη), που εκδίδεται από τις
+**Ρυθμίσεις → Εσείς → Οι συσκευές σας** σε έναν πελάτη που εκτελείται. Τα δύο δεν
+είναι εναλλάξιμα. Δείτε [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+Ένα διαπιστευτήριο που εκδόθηκε από το `cc_server pair` δεν φέρει **καμία λήξη**·
+ένα που εκδόθηκε στην εφαρμογή λήγει πάντα μετά από 30 ημέρες. Ανακαλέστε μια
+συσκευή που εκδόθηκε από το CLI από τις **Ρυθμίσεις → Εσείς → Οι συσκευές σας**
+όταν τελειώσετε μαζί της.
 
-## Step 4: Start the server
+## Βήμα 4: Εκκινήστε τον διακομιστή
 
-On loopback — the default and all you need for a client on the same machine:
+Στο loopback — η προεπιλογή, και το μόνο που χρειάζεστε για πελάτη στο ίδιο
+μηχάνημα:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Για να τον προσεγγίσετε από άλλο μηχάνημα, δεσμεύστε κάθε διεπαφή. Μια δέσμευση
+εκτός loopback χωρίς TLS **απορρίπτεται κατά την εκκίνηση** (`Refusing to bind
+non-loopback address … without TLS`), οπότε δώστε ένα πιστοποιητικό:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +207,44 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Ή τερματίστε το TLS σε έναν αντίστροφο διαμεσολαβητή σε έμπιστο ιδιωτικό δίκτυο
+και επιλέξτε δέσμευση απλού κειμένου πίσω από αυτόν:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+Το `--insecure` αγνοείται όταν έχουν οριστεί και το `--tls-cert` και το
+`--tls-key` — το TLS υπερισχύει πάντα. Ο διακομιστής ανακοινώνει την κατάσταση
+απλού κειμένου ως `insecure: true` στο `GET /healthz` και οι πελάτες επισημαίνουν
+μια τέτοια σύνδεση ως μη ασφαλή.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Ο διακομιστής εκτελείται μέχρι τα `SIGINT`/`SIGTERM` και μετά τερματίζεται καθαρά.
 
-## Step 5: Connect a client
+## Βήμα 5: Συνδέστε έναν πελάτη
 
-Point a client at the server URL and pairing key from step 3:
+Στρέψτε έναν πελάτη στο URL του διακομιστή και στο κλειδί σύζευξης του βήματος 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
+- **Εφαρμογή υπολογιστή**: στην οθόνη πρώτης εκτέλεσης (**Πώς να εκτελείται το Control Center;**) συμπληρώστε τα πεδία σύνδεσης αντί για **Εκτέλεση σε αυτή την εφαρμογή**, ή προσθέστε τον διακομιστή αργότερα στις **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση**. Δείτε [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/).
+- **Πελάτης web**: ανοίξτε το [app.usectrl.dev](https://app.usectrl.dev) (ή το δικό σας αντίγραφο του build web) και εισαγάγετε το URL του διακομιστή, το αναγνωριστικό συσκευής και το κλειδί σύζευξης.
+- **Τηλέφωνο**: συζεύξτε την εφαρμογή **Remote** από έναν πελάτη που εκτελείται — δείτε [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[Το cc_server δεν σερβίρει πακέτο web]
+Ένα αυτόνομο `cc_server` δεν προσαρτά ποτέ ρίζα web, οπότε το `GET /` επιστρέφει
+404. Ο πελάτης web φιλοξενείται ξεχωριστά — χρησιμοποιήστε το `app.usectrl.dev`, ή
+φιλοξενήστε μόνοι σας το build web σε οποιονδήποτε στατικό κεντρικό υπολογιστή
+HTTPS (η εικόνα `cc-webapp` παραπάνω είναι ακριβώς αυτό). Μια προέλευση
+προγράμματος περιήγησης εκτός loopback πρέπει να βρίσκεται στο `--allowed-origins`,
+αλλιώς η αναβάθμιση WebSocket προς το `/rpc` απορρίπτεται· η προεπιλεγμένη λίστα
+είναι το `https://app.usectrl.dev` και τα `localhost` / `127.0.0.1` επιτρέπονται
+πάντα.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Βήμα 6: Συνδέστε ένα Google Calendar (προαιρετικό)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Για να συγχρονίσετε το ημερολόγιο ενός χώρου εργασίας χωρίς συνδεδεμένο γραφικό
+περιβάλλον, χρησιμοποιήστε τη ροή κωδικού συσκευής:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +252,72 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/).
+Εκτυπώνει έναν κωδικό και ένα URL για έγκριση σε άλλη συσκευή, αποθηκεύει το
+refresh token στην πλευρά του διακομιστή και τερματίζεται. Ένα build από πηγαίο
+κώδικα δεν περιλαμβάνει πελάτη Google, οπότε οι μεταβλητές περιβάλλοντος id και
+secret είναι υποχρεωτικές — δεν υπάρχει σημαία `--google-client-id`. Δείτε
+[Σύνδεση Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/).
 
-## Configuration
+## Ρύθμιση
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/).
+Οι σημαίες που χρησιμοποιήθηκαν παραπάνω είναι αυτές που χρειάζεται μια πρώτη
+εγκατάσταση. Η πλήρης επιφάνεια — 23 ζεύγη σημαιών και μεταβλητών περιβάλλοντος,
+οι τέσσερις υποεντολές και η διάταξη του καταλόγου δεδομένων — βρίσκεται στην
+[αναφορά CLI του `cc_server`](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Οι άγνωστες σημαίες αγνοούνται σιωπηλά]
+Ο αναλυτής ορισμάτων είναι χειροποίητος και παραλείπει ό,τι δεν αναγνωρίζει, οπότε
+ένα τυπογραφικό λάθος (`--tls-key-file`, `--bindany`) δεν παράγει σφάλμα — ο
+διακομιστής απλώς ξεκινά με την προεπιλογή. Ελέγξτε τις γραμμές του αρχείου
+καταγραφής εκκίνησης όταν μια σημαία φαίνεται να μην έχει αποτέλεσμα.
 :::
 
-The four you are most likely to need:
+Οι τέσσερις που είναι πιθανότερο να χρειαστείτε:
 
-| Flag           | Default                              | Meaning                                                                                          |
-| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| Σημαία         | Προεπιλογή                                       | Έννοια                                                                                         |
+| -------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `--data-dir`   | ο κατάλογος δεδομένων εφαρμογών του χρήστη του συστήματος | Βάσεις δεδομένων, μυστικά, μοντέλα και προσωρινά αποθηκευμένα πολυμέσα                  |
+| `--port`       | `9030`                                           | Θύρα TCP (`0` = εφήμερη)                                                                       |
+| `--bind`       | `loopback`                                       | `loopback`, ή `any` για κάθε διεπαφή (απαιτεί TLS ή `--insecure`)                              |
+| `--public-url` | προκύπτει από τη δέσμευση                        | Το URL RPC που ανακοινώνεται στους συζευγμένους πελάτες. **Ορίστε το ρητά πίσω από διαμεσολαβητή, NAT ή σήραγγα** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Ο προεπιλεγμένος κατάλογος δεδομένων είναι ο
+`~/Library/Application Support/control-center` σε macOS, ο `%APPDATA%\control-center`
+σε Windows και ο `$XDG_DATA_HOME/control-center` (αλλιώς
+`~/.local/share/control-center`) αλλού. Ένα `.cc_server` σχετικό με τον τρέχοντα
+κατάλογο εργασίας χρησιμοποιείται μόνο όταν δεν επιλύεται κατάλογος home ή
+δεδομένων εφαρμογών.
 
-## What the server serves
+## Τι σερβίρει ο διακομιστής
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+Ο `cc_server` είναι ολόκληρη η επιφάνεια του προϊόντος, όχι υποσύνολό της: το
+μονοπάτι δεδομένων repo-RPC και οι συνδρομές, το τελικό σημείο εργαλείων MCP στο
+`POST /mcp` και στο `GET /sse` στην ίδια θύρα, τα εισερχόμενα webhooks, οι
+διαμεσολαβητές πολυμέσων και γραμματοσειρών, οι επιστροφές κλήσεων ενιαίας
+σύνδεσης, το πρωτόκολλο μίσθωσης του στόλου, η ανάκτηση RSS στην πλευρά του
+διακομιστή σε πρόγραμμα 30 λεπτών και η αναζήτηση διανυσμάτων (η επέκταση
+`sqlite_vector` καταχωρίζεται ως αυτόματη επέκταση καθολικής εμβέλειας της
+διεργασίας, υποβαθμιζόμενη σε αναζήτηση πλήρους κειμένου μόνο όπου η επέκταση δεν
+είναι διαθέσιμη).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Ο dispatcher είναι **χωρίς κατάσταση**: δεν υπάρχει δέσμευση χώρου εργασίας ανά
+συνεδρία. Κάθε κλήση με εμβέλεια χώρου εργασίας μεταφέρει το δικό της
+`workspace_id` και η πρόσβαση κρίνεται από τη συμμετοχή και τον ρόλο του καλούντος
+στον χώρο εργασίας — όχι από την κατοχή κλειδιού σύζευξης.
 
-Two things to know before you expose the port beyond loopback:
+Δύο πράγματα που πρέπει να γνωρίζετε πριν εκθέσετε τη θύρα πέρα από το loopback:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **Το MCP αποτυγχάνει κλειστά εκτός κεντρικού υπολογιστή.** Μια επιφάνεια MCP χωρίς token απαντά μόνο στο loopback. Η δέσμευση `any` δεν τη διευρύνει — ένα αίτημα εκτός κεντρικού υπολογιστή απορρίπτεται με «MCP requires a bearer token to answer non-loopback clients» μέχρι να διαμορφώσετε ένα (`mcp.setToken`, ή **Ρυθμίσεις → Διακομιστής → Διακομιστές MCP**).
+- **Το `GET /healthz` είναι χωρίς ταυτοποίηση εκ σχεδιασμού**, με CORS μπαλαντέρ, και δημοσιεύει το αναγνωριστικό, το όνομα, το αποτύπωμα ταυτότητας και την έκδοση build του διακομιστή. Οι πελάτες χρειάζονται το αποτύπωμα για να καρφιτσώσουν τον διακομιστή, οπότε αυτό είναι σκόπιμο — σημαίνει όμως ότι οποιοσδήποτε προσβάσιμος `cc_server` αποκαλύπτει τόσα σε όποιον ρωτήσει.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/)
-- [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/)
-- [Run a fleet worker](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/)
-- [Connect a Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
+- [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/)
+- [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/)
+- [Εκτέλεση εργάτη στόλου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/)
+- [Σύνδεση Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)

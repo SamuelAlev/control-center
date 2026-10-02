@@ -1,138 +1,137 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: GitHub App 만들기
+description: 서버용 GitHub App을 등록해 구성원이 로그인할 수 있게 하고, 백그라운드 작업이 개인이 아니라 앱으로 실행되게 합니다.
 slug: ko-KR/매뉴얼/사용-가이드/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+이 가이드에서는 서버에 자체 GitHub 아이덴티티를 부여하는 방법을 설명합니다.
+2분 정도면 되고, 서버 소유자만 수행하며, 서버마다 한 번만 하면 됩니다.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ko-KR/매뉴얼/사용-가이드/github-통합/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[필요하지 않을 수도 있습니다]
+공식 빌드에는 GitHub **클라이언트 ID**가 이미 포함되어 있으므로, 아무것도
+등록하지 않아도 [GitHub로 로그인](/ko-KR/매뉴얼/사용-가이드/github-통합/)이 바로
+작동합니다. 기기 흐름은 클라이언트 ID만으로 인증하므로 빌드에 포함해도
+안전합니다. 서버가 자체 자격 증명으로 동작하게 하려면(웹훅, PR 폴링, 티켓
+동기화가 개인의 자격 증명이 아니라 앱 설치에서 실행되도록), 또는 소스에서
+직접 빌드하는 경우에는 자체 앱을 등록하십시오.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/).
+이후에 자신의 계정을 연결하는 방법은
+[GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)을 참고하십시오.
 
-## Why your server needs its own app
+## 서버에 자체 앱이 필요한 이유
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+하나의 등록으로 서로 다른 두 가지 작업이 해결되며, 두 가지 모두를 정직하게
+만드는 것이 바로 앱입니다:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
+| 작업                   | 응답하는 주체                                   | 중요한 이유                                                                                          |
 | ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| **사용자 로그인**      | 기기 흐름을 통한 앱의 클라이언트 ID             | 서버에 저장된 본인 소유의 자격 증명을 모든 기기에서 사용하며, 붙여넣거나 교체할 토큰이 없습니다       |
+| **서버의 동작**        | 앱 ID + 비공개 키 → 설치 토큰                   | 웹훅, PR 폴링, 티켓 동기화가 더 이상 한 사람의 토큰이 유효한지에 의존하지 않습니다                     |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+이 표에 **없는** 항목을 눈여겨보십시오. 바로 클라이언트 시크릿입니다. GitHub의
+기기 흐름은 기기 코드 요청과 토큰 폴링 모두 클라이언트 ID만으로 인증하므로,
+로그인을 위해 보관할 시크릿이 없습니다.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+자체 앱이 없어도 첫 번째 작업은 빌드에 포함된 클라이언트 ID로 여전히
+작동합니다. 두 번째 작업은 서버 소유자의 자격 증명으로 대체되므로, 백그라운드
+작업은 가장 먼저 온보딩한 사람에게 달려 있게 됩니다.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note["Control Center의 GitHub App 설치" 버튼은 없습니다]
+배포형 GitHub App은 모든 사람의 서버가 하나의 클라이언트 시크릿과 하나의
+설치를 공유한다는 뜻이며, 그러면 모든 워크스페이스의 저장소 접근이 그
+워크스페이스의 누구도 통제하지 못하는 자격 증명을 거치게 됩니다. 그래서 각
+서버가 자체 앱을 소유합니다. 이 가이드는 그 비용이 얼마나 적은지를 다룹니다.
 :::
 
-## Prerequisites
+## 시작하기 전에
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- 본인이 **서버 소유자**입니다. `providerApps.*` 작업은 서버 소유자에게만
+  허용되며, 이 카드는 다른 사람에게 보이지 않습니다
+- GitHub 계정, 또는 앱을 만들 수 있는 조직
+- 공개적으로 접근 가능한 것이 없어도 됩니다. 로그인은 **기기 흐름**이므로
+  서버에 인바운드 포트, 터널, 콜백 URL, 도메인이 필요하지 않습니다
 
-## Register the app
+## 앱 등록
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. [github.com/settings/apps/new](https://github.com/settings/apps/new)로
+   이동합니다(조직의 경우 **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — 아무 값이나 괜찮습니다. `Control Center (yourname)`도
+   됩니다. 이 이름은 서버가 만드는 커밋과 댓글에 표시됩니다
+3. **Homepage URL** — 아무 값이나 괜찮습니다. 예: `https://github.com/your-name`
+4. **Callback URL** — 비워 둡니다. 기기 흐름에는 필요하지 않습니다
+5. **Enable Device Flow**를 체크합니다. 이 설정이 없으면 로그인이 작동할 수
+   없습니다
+6. 웹훅을 따로 연결하지 않는다면 **Webhook → Active**를 해제합니다
+7. **Repository permissions**에서 최소한 다음을 부여합니다:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (필수)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write — 티켓에 GitHub Issues를 사용하는 경우, 그리고
+     봇이 PR 대화의 댓글을 검색하는 경우
+     ([GitHub PR에서 Control Center와 대화](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/) 참고)
+   - **Checks**: Read-only — PR 페이지의 CI 상태 표시용
+8. **Where can this GitHub App be installed?** 에서 알맞은 것을 고릅니다.
+   개인 서버라면 "Only on this account"가 맞습니다
+9. **Create GitHub App**을 클릭합니다
 
-## Collect the three values
+## 세 가지 값 수집
 
-On the app's page, immediately after creation:
+앱 페이지에서 생성 직후에 확인합니다:
 
-| Value           | Where                                             |
+| 값              | 위치                                              |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | **General** 탭의 위쪽                            |
+| **Client ID**   | **General** 탭의 "Client secrets" 아래            |
+| **Private key** | **Generate a private key** — `.pem`이 다운로드됩니다 |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+비공개 키 파일은 한 번만 다운로드되며 GitHub은 다시 보여 주지 않습니다.
+붙여넣을 때까지 보관하십시오. 언제든 새로 생성할 수 있습니다.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**클라이언트 시크릿**은 선택 사항이며 정확히 한 가지를 위한 것입니다. "Expire
+user authorization tokens"를 켜 두면, 8시간마다 다시 로그인하라고 요구하는 대신
+사용자의 토큰을 조용히 갱신하는 데 사용됩니다. 로그인 자체에는 절대 사용되지
+않습니다.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+더 간단한 설정은 그 만료를 끄는 것이며, 그러면 어디에도 시크릿이 필요하지
+않습니다. 켜 두려면 시크릿을 생성해 **설정 → 서버 → 싱글 사인온**(**프로바이더
+앱** 카드)에 붙여넣으십시오. 이 값에는 환경 변수가 없고 빌드에 포함되지도
+않으므로 서버에 그대로 남습니다.
 
-## Install it on your account
+## 계정에 설치
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+등록만 되고 설치되지 않은 앱은 사용자를 인증할 수는 있어도 아무것도 읽을 수
+없습니다.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. 앱 페이지에서 **Install App**을 엽니다
+2. 본인 계정이나 조직에 설치합니다
+3. **All repositories**를 고르거나, 이 서버가 봐야 할 저장소를 선택합니다
 
-## Paste it into Control Center
+## Control Center에 붙여넣기
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. **설정 → 서버 → 싱글 사인온**으로 이동해 **프로바이더 앱** 카드까지
+   스크롤합니다
+2. **GitHub** 블록에서 각 필드를 설정합니다:
+   - **앱 ID** — 숫자로 된 App ID
+   - **비공개 키** — `BEGIN`과 `END` 줄을 포함해 `.pem` 전체를 붙여넣습니다
+   - **클라이언트 ID** — 같은 페이지에서 확인합니다
+   - **클라이언트 시크릿** — 시크릿을 생성한 경우에만(토큰 갱신용)
+3. **테스트**를 클릭합니다
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+키는 저장되는 시점에 파싱되므로, 잘렸거나 형식이 잘못된 값은 몇 시간 뒤
+백그라운드 요청에서 실패하는 대신 그 자리에서 거부됩니다. **테스트**는 한 걸음
+더 나아가 앱이 어느 계정에 설치되어 있는지 GitHub에 묻습니다. "저장됨"과
+"작동함"은 다른 주장이며, 실제로 무언가가 실행된다는 뜻은 두 번째에만 있습니다.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+확인 지점: GitHub 블록에 "서버가 자체 자격 증명으로 동작하며, 사용자가 로그인할
+수 있습니다."라고 표시되고, **설정 → 워크스페이스 → 프로필 및 신원 → 코드
+호스팅**의 **GitHub** 행에 이제 **GitHub로 로그인**이 나타납니다.
 
-## Configure it with environment variables instead
+## 대신 환경 변수로 구성
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+헤드리스 또는 스크립트 기반 설치에서는 저장된 값이 없는 최초 한 번, 서버가
+환경에서 각 필드를 채웁니다:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +139,64 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+이 값들에는 명령줄 플래그가 없습니다. 명령줄에 있는 시크릿은 호스트의 모든
+프로세스가 `ps`로 읽을 수 있기 때문입니다. 이 값들을 구성할 수 있는 곳은 환경
+변수뿐이며, 환경 변수는 빌드에 포함된 값보다 우선합니다. 전체 목록은
+`.env.template`에 있습니다.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+로컬 개발에서는 저장소 루트의 `.env`에 같은 값을 두면 데스크톱이 자신이
+실행하는 서버에 이를 전달합니다. 이때 키는 **한 줄**로 두십시오. `.env` 값은 한
+줄이며, 큰따옴표 안의 `\n`은 줄바꿈으로 해석됩니다.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID`와 `GITHUB_APP_PRIVATE_KEY`는 샌드박스 토큰 브로커가 이미 읽는
+것과 같은 이름이므로, 세분화된 에이전트 토큰을 구성해 둔 호스트는 로그인
+경로를 자동으로 얻게 됩니다. 값 채우기는 **필드마다 한 번**만 일어나며, 그
+뒤에는 저장된 값이 우선하므로 설정에서 편집한 내용이 다음 재시작으로
+되돌아가지 않습니다.
 
-## Do the same for Linear
+## Linear에도 동일하게 적용
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear에는 기기 흐름이 없으므로 로그인이 브라우저 왕복 방식이며, 콜백 URL이
+필요합니다. 등록해야 할 정확한 URL은 **프로바이더 앱** 카드에 표시됩니다.
 
-1. Create an OAuth application at
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)에서
+   OAuth 애플리케이션을 만듭니다
+2. **Callback URL**을 카드에 표시된 URL로 그대로 설정합니다
+3. **클라이언트 ID**와 **클라이언트 시크릿**을 Linear 블록에 붙여넣습니다
+4. 선택 사항으로 워크스페이스 **API 키**를 추가합니다. 사람이 요청하지 않았을
+   때 서버가 티켓을 동기화하는 데 사용하는 자격 증명입니다
 
-## Troubleshooting
+## 문제 해결
 
-### The sign-in dialog says the provider returned no device code
+### 로그인 대화 상자에서 공급자가 기기 코드를 반환하지 않았다고 합니다
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+앱에서 **Enable Device Flow**가 꺼져 있습니다. **General**에서 켜고 다시
+시도하십시오.
 
-### Test says the credentials work but the app is not installed anywhere
+### 테스트에서 자격 증명은 정상이지만 앱이 어디에도 설치되지 않았다고 합니다
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+등록과 설치는 별개의 단계입니다. 앱 페이지에서 **Install App**을 열고
+설치하십시오.
 
-### Test says the private key could not be read
+### 테스트에서 비공개 키를 읽을 수 없다고 합니다
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+`-----BEGIN`과 `-----END` 줄을 포함해 `.pem` 파일 전체를 붙여넣으십시오.
+`ed25519` 또는 EC 키는 사용할 수 없습니다. GitHub App은 RSA로 서명합니다.
 
-### A member signed in but sees no repositories
+### 구성원이 로그인했는데 저장소가 보이지 않습니다
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+그 저장소를 소유한 계정에 앱이 설치되어 있지 않거나, 앱 설치가 다른 저장소를
+선택하고 있습니다. 구성원 자신의 로그인은 앱이 볼 수 있도록 허용된 범위까지만
+권한을 부여합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-- [Talk to Control Center from a GitHub PR](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/)
-- [Connect a code host](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
-- [Manage API keys](/ko-KR/매뉴얼/사용-가이드/api-키/)
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [GitHub PR에서 Control Center와 대화](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/)
+- [코드 호스트 연결](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
+- [API 키 관리](/ko-KR/매뉴얼/사용-가이드/api-키/)
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)

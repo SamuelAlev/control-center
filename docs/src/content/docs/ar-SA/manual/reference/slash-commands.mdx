@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: أوامر الشرطة المائلة
+description: كل أمر تستطيع كتابته في حقل الكتابة، وما يفعله وأين يجري.
 slug: ar-SA/دليل-المستخدم/مرجع/أوامر-الشرطة-المائلة
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+أوامر تُكتَب في حقل كتابة المساحة. تقع في ثلاث مجموعات بحسب موضع سريانها، والفرق يهم: الأمر **المحلي** لا يسافر رسالة أبدًا، فلا يظهر في نص المحادثة ولا يصل إلى وكيل.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| أين يجري | ماذا يعني ذلك |
+| -------- | ------------- |
+| **محلي** | يُعالَج في العميل (أو بعملية على الخادم يبدأها العميل). لا يسافر الأمر رسالة أبدًا، فلا يراه أي وكيل. |
+| **جانبي** | استدعاء نموذج واحد على الخادم عن المحادثة. المحادثة لا تتغيّر. |
+| **إرسال** | يضبط وضعًا أو توجيهًا للتشغيل الذي تبدأه الرسالة. |
 
 ---
 
-## Directing a run
+## توجيه تشغيل
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**محلي ← إرسال.** يجهّز وضع التخطيط على المحادثة: شجرة عمل للقراءة فقط بالكامل، وسطح أدوات سقفه `read`. تسليم الوكيل خطة لا تعديل. `/plan` العاري يقلب الوضع فقط ولا يسافر رسالة أبدًا؛ ومع مطالبة، يكون باقي السطر هو ما يبدأ التشغيل.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**إرسال.** يبدأ هدفًا مستقلًا يعيد مشرف الهدف إرساله عبر المقاطع ويعيد تشغيله.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+كتابة `/goal` مع نص تفتح أولًا **مقابلة صقل الهدف** — جولة قصيرة ترفض قبول المسودة حتى تجتمع فيها الخمسة كلها: معايير نجاح يستطيع مقيّم أن يحسمها من غير تقدير، وأمر تحقق بعينه، وسقف محاولات، وحدود النطاق، وشروط التوقف. كل خطوة تعرض *تخطٍّ وتشغيل كما هو مكتوب*: المقابلة افتراض، لا بوابة.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause` و`/goal resume` و`/goal drop` ليست أوامر شرطة مائلة. الإيقاف المؤقت والاستئناف والإيقاف في قائمة **الأهداف** للمحادثة في الشريط الجانبي. أعلام البدء على الهدف نفسه هي `--budget <dollars>` و`--max <N>` (ميزانية التشغيل) و`--days <N>` (الموعد النهائي). الهدف الذي بلغ سقف الكلفة لا يُستأنَف إلا برفع ذلك السقف، من عنصر التحكم نفسه في الشريط الجانبي.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[لماذا يقاطع أصلًا]
+الهدف المستقل هو الموضع الوحيد الذي يكلّف فيه الموجز المبهم حقًا. يعمل التشغيل ساعات على هدف لم يعرّف أحد «إنجازه»، ثم يبلّغ النجاح بشروطه هو. خمسة أسئلة أرخص من تشغيل ليلي واحد انتهى متى أحسّ أنه انتهى.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**إرسال.** يعمل تكرارًا حتى يكتمل. يقبل حدًا: `/loop 10` و`/loop 30m` و`/loop 1h30m` و`/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+الرمز الذي *يبدو* حدًا (يبدأ برقم أو بإشارة) ويفشل تحليله خطأ قاطع. النثر نثر، فـ `/loop keep going until the tests pass` حلقة بلا حد مع مطالبة في السطر نفسه، لا قراءة خاطئة.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/توجيه-عمال-الخلفية/).
+**إرسال.** يحوّل الجلسة إلى **موجّه**: تنحصر أدواته في `read` مع أفعال العمال الخمسة، ويتولّى عمال الخلفية التعديل. انظر [توجيه عمال الخلفية](/ar-SA/دليل-المستخدم/أدلة-إرشادية/توجيه-عمال-الخلفية/).
 
-Workers never outlive the mode — exiting kills every one of them.
+لا يعيش عامل بعد الوضع — الخروج يقتلهم كلهم.
 
 ---
 
-## Managing context
+## إدارة السياق
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**محلي ← خادم.** يطوي السجل الأقدم في ملخص مثبَّت ويواصل على السياق المضغوط. لا وسيطة تواجه النموذج: الأمر لا يسافر رسالة أبدًا، وجولة الضغط لا تأخذ تلميح تركيز.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**محلي ← خادم.** يسقط المحتوى الثقيل **من غير** تلخيص: بلا استدعاء نموذج، وتُحفَظ كل كلمة، ولا يُفرَّغ إلا الحجم الذي لن يعيد أحد قراءته.
 
-| Target        | Drops                             |
-| ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| المستهدف | ما يُسقَط |
+| -------- | --------- |
+| `tool_output` | نتائج الأدوات الأقدم التي لم يحدث فيها شيء (الافتراضي) |
+| `images` | لقطات الشاشة القديمة، مع الإبقاء على نصها |
+| `all` | الاثنان معًا |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+هذا المخرج لحال «سياقي متخم لكني لا أريد ملخصًا».
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**محلي.** يفتح مستكشف السياق لوكيل هذه المحادثة في لسان مستقل: كل مقطع وكل جزء من نافذة سياقه — موجّه النظام، والمهارات، وملفات السياق، ومخططات الأدوات، والسجل، والصور — مع كلفة كل منها والمحتوى الحرفي وراءه.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+مفتاح اللسان هو زوج (المساحة، الوكيل)، فتشغيله مرتين يعيد التركيز إلى لسان واحد بدل تكديس نسخ من التفصيل نفسه.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+في مساحة فيها **أكثر من وكيل**، يفتح `/context` العاري النافذة التي يقرأها مؤشر استخدام السياق في الترويسة — أي وكيل عمل هنا آخر مرة، وهو صاحب الرسالة في أسفل الأثر — ويُوسَم اللسان بـ `Context · <name>` ليقول لمن هو. سمِّ غيره للتبديل: `/context qa` (و`@` اختيارية). الاسم المكتوب يُحَل مطابقًا تمامًا، لا بالتقريب: وكيلان يحملان نافذتين مختلفتين، فالاسم القريب الذي يفتح الأخرى سيكون جوابًا يبدو معقولًا عن سؤال لم تطرحه.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+المستكشف نفسه وراء شريحة مؤشر استخدام السياق في ترويسة المساحة، وهي تتبع ذلك الوكيل نفسه — فلا يمكن أن يختلفا، الأمر والشريحة، في ما يعنيه «السياق» هنا.
 
 ---
 
-## Asking about the conversation
+## السؤال عن المحادثة
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+تنفق هذه استدعاء نموذج واحد و**لا تغيّر المحادثة أبدًا**. ترى جولة الوكيل الحقيقية التالية ما كانت ستراه على أي حال، وذلك كل قيمة السؤال.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**جانبي.** يكتب وثيقة تسليم لمن يلتقط العمل من غير سياق سابق: ما المهمة، وما الذي عُرف، وما الذي بقي.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**جانبي.** يجيب عن سؤال حول العمل حتى الآن من غير أن يضيف السؤال أو الجواب إلى نص المحادثة.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[أمران، تنفيذ واحد]
+كلاهما الشكل نفسه — خذ المحادثة كما هي، واسأل سؤالًا واحدًا عنها، ولا تحفظ أي الطرفين. نُفِّذا مرة واحدة حتى لا ينجرفا إلى تصوّرين مختلفين لـ«السياق حتى الآن».
 :::
 
 ---
 
-## Navigating and exporting
+## التنقّل والتصدير
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشعيب-محادثة/).
+**محلي.** يفتح شجرة المحادثة: أين تشعّبت المحادثة، وعلى أي مسار هي الآن، وكيف تعود إلى مسار تركته. انظر [تشعيب محادثة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشعيب-محادثة/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**محلي.** يكتب المحادثة في ملف HTML مكتفٍ بذاته — بطاقات أدوات قابلة للطي، بلا ورقة أنماط، وبلا سكربت، وبلا مستضيف صور. يستقر في `Documents/ControlCenter/exports/` على سطح المكتب، ويُنزَّل على الويب.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**محلي.** ينسخ نص المحادثة إلى الحافظة بصيغة Markdown، مع استدعاءات الأدوات في كتل قابلة للطي. يُستبعَد الاستدلال عمدًا: نص محادثة يُلصَق في بلاغ عطل يقرأه إنسان.
 
 ---
 
-## Everything else
+## ما عدا ذلك
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**محلي.** يعرض قائمة التحقق المحفوظة للمحادثة ويحرّرها. `/todo` العاري يفتح المحرّر. الأوامر الفرعية: `append` و`start` و`done` و`drop` (والاسم البديل `rm`) و`edit` و`copy` و`export` و`import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**إرسال.** يطبّق مهارة مثبّتة. تعيش المهارات تحت بادئتها `skill:` حتى لا تشارك الأوامر المضمّنة فضاء الأسماء — من غير ذلك تبقى مهارة اسمها `plan` بعيدة المنال إلى الأبد.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**إرسال.** أي ملف Markdown تحت `.agents/commands` أو `.agent/commands` أو `.claude/commands` أو `.codex/commands` أو `.opencode/commands` في المستودع. الملف المتداخل `foo/bar.md` يُبلَغ أيضًا بـ `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+القولبة: `$1` و`$@` و`$@[start:length]` و`$ARGUMENTS`. قد تضبط مقدمة الملف `description` (الإكمال التلقائي في حقل الكتابة). يُقرأ `allowed-tools` و`model` من الملف، لكن استدعاء أمر المستخدم يستبدل الوسيطات في المتن حاليًا فقط — ولا يغيّران نموذج التشغيل ولا سطح أدواته.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+الأمر الذي ألّفه المستخدم يغلب مهارة بالاسم نفسه — هو اختصار استدعاه إنسان عمدًا، ومعه وسيطات.
 
 ---
 
-## Magic keywords
+## كلمات سحرية
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+ليست أوامر. كلمة مستقلة بحروف صغيرة في أي موضع من المطالبة تُرفق تعليمات خفية بتلك الجولة.
 
-| Word          | Effect                                                             |
-| ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| الكلمة | الأثر |
+| ------ | ----- |
+| `ultrathink` | أقصى جهد استدلال للجولة |
+| `orchestrate` | تفويض العمل المستقل بالتوازي، والتحقق من كل مرحلة |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+المطابِق صارم في الحدود عمدًا. `orchestrate,` تطابق؛ و`orchestrated` و`orchestrate.ts` و`foo::orchestrate` و`orchestrate()` لا تطابق، وتُحجَب كتل الشفرة المسيّجة والمقاطع السطرية وأقسام XML أولًا. من غير ذلك يغيّر لصق تتبّع مكدس طريقة سلوك الوكيل.
 
 ---

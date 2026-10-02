@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: إضافة مستودعات إلى مساحة عمل
+description: سجّل نسخ عمل Git في مساحة عمل حتى يعمل عليها الوكلاء.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+يبيّن هذا الدليل كيف تسجّل نسخة عمل Git في مساحة عمل، وتعيد فهرستها، ثم تزيلها.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+المستودعات **على نطاق مساحة العمل**. لا سجل عام ولا خطوة ربط: إضافة المستودع ووضعه في مساحة العمل فعل واحد. نسخة العمل الواحدة، إذا سُجّلت في مساحتي عمل، تصير صفين مستقلين بمعرّفين مختلفين. بين مساحات العمل تُعرَف هوية المستودع بمسار نظام ملفاته، لا بمعرّفه.
 
-## Before you start
+## قبل أن تبدأ
 
-A folder can only be registered if all three of these hold:
+لا يُسجَّل مجلد إلا إذا تحققت الشروط الثلاثة:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. أن يكون داخل **شجرة عمل Git**.
+2. أن يكون لتلك الشجرة **مستودع بعيد `origin`**.
+3. أن يشير المستودع البعيد `origin` إلى **مضيف شفرة مدعوم**: github.com أو gitlab.com أو bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+ما عدا ذلك يُرفض عند التسجيل برسالة صريحة: «المجلد ليس داخل شجرة عمل Git.» أو «لا يوجد مستودع بعيد `origin` مُعدّ لهذا المستودع.» أو «المستودع البعيد `origin` غير مستضاف على مضيف شفرة مدعوم (github.com، gitlab.com، bitbucket.org).». لا يوجد وضع للمستودعات المحلية فقط.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+يُقرأ مضيف الشفرة من المستودع البعيد ويُخزَّن على المستودع، ولا تختاره أنت. يمكن لمساحة عمل واحدة أن تضم مستودعات من المضيفين الثلاثة معًا، ويُخاطَب كل منها عبر واجهته البرمجية وبيانات اعتماده. تبقى مساحات الأسماء المتداخلة في GitLab كما هي، فيُسجَّل `gitlab.com/group/subgroup/project` بمالك `group/subgroup` واسم `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+يجب أن يقع المجلد أيضًا على الجهاز الذي يستضيف `cc_server`، داخل أحد مجلدات `--repo-roots` لذلك الخادم. تقتصر قائمة السماح افتراضيًا على المجلد الرئيسي لمستخدم الخادم، ويُرفض تصفح ما فوق أي جذر.
 
-## Register a checkout
+## تسجيل نسخة عمل
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. افتح **الإعدادات ← مساحة العمل ← المستودعات** (`/workspaces/<id>/settings/workspace/repositories`).
+2. انقر **إضافة مستودع**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+الحوار مستعرض ملفات يمكن التنقل فيه داخل نظام ملفات **الخادم**، لا نظام ملفاتك. الخطوات نفسها على الحاسوب والويب والهاتف، لأن منتقي مجلدات النظام يختار مجلدًا على الجهاز الخطأ.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. تنقّل ضمن الجذور التي ضبطها الخادم. تُميَّز المجلدات التي هي نسخ عمل Git.
+4. ضع علامة على أي عدد منها. يبقى التحديد وأنت تتنقّل، فتجمع نسخ العمل من عدة مجلدات.
+5. سجّلها في دفعة واحدة.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+اختيار واحد فاشل لا يُسقط بقية الدفعة: تحصل على المعرّفات التي أُنشئت، وعلى خطأ لكل مسار رُفض. إعادة تسجيل مسار موجود أصلًا في مساحة العمل هذه تُعيد المستودع القائم، ولا تنشئ مكررًا.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+يظهر كل مستودع مسجّل في القائمة مع `owner/name`، وشارة تسمّي مضيف شفرته، ومساره على الخادم. تعرض مستودعات GitHub الصورة الرمزية للمالك أيضًا. أما المضيفون الآخرون فلا عنوان يمكن تخمينه للصورة الرمزية للمالك، فتُعرض الأحرف الأولى.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+شارة مضيف الشفرة مهمة في مساحة العمل المختلطة: قد يُسمّى مستودعان `acme/web` على مضيفين مختلفين، ويتصرفان على نحو مختلف، فيما تستطيع المراجعة فعله وفي وجهة الرابط.
 
-## What happens next
+## ماذا يحدث بعد ذلك
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+يُطلق التسجيل حدث `RepoAdded` على نطاق مساحة العمل هذه، فيبدأ خط أنابيب `index_code` لنسخة العمل تلك. هذا ما يملأ مخطط الشفرة، فيجد البحث وتحليل التأثير ما يجيبان به.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/).
+لا تُفهرَس إلا الملفات التي لِلغتها قواعد تحليل مُضمَّنة (Dart، JavaScript، TypeScript، TSX، PHP، Python، Rust، Zig، C، C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB وAda). انظر [البحث في الشفرة عبر مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/).
 
-## Re-index a repo
+## إعادة فهرسة مستودع
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+يحمل كل صف زر **فهرسة التعليمات البرمجية**. انقره لإعادة تشغيل المفهرس على نسخة العمل تلك. أثناء التشغيل يصير الزر عرض تقدّم يبيّن الملفات المنجزة من الإجمالي، ومعه عنصر إلغاء. عند الانتهاء يستقر على علامة صح مع عدد الرموز، أو على تحذير إذا فشل التشغيل.
 
-## Reorder repos
+## إعادة ترتيب المستودعات
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+اسحب المقبض في الصف. الترتيب الذي تضبطه هو الترتيب الذي تقرأه قوائم المستودعات كلها في التطبيق.
 
-## Fix the GitHub link
+## تصحيح رابط GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+أيقونة الرابط في الصف تفتح محرّرًا لمالك المستودع واسمه على GitHub. يفيد ذلك إذا أُعيدت تسمية المستودع البعيد أو نُقل.
 
-## Remove a repo
+## إزالة مستودع
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. افتح **الإعدادات ← مساحة العمل ← المستودعات**.
+2. انقر أيقونة سلة المهملات في الصف.
+3. أكّد «هل تريد إزالة المستودع من مساحة العمل؟».
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+يقول الحوار ما يفعله: «ستتم إزالة _name_ من مساحة العمل هذه. لن تُمسّ الملفات المحلية على القرص.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+يزيل الحذف صف المستودع من مساحة العمل هذه، ويمتد إلى صفوف مخطط الشفرة: الرموز والحواف والملفات ونقاط تفتيش الفهرس، وإلى كل منحة مستودع لكل عضو، وروابط المساحة بالمستودع، وسجلات النسخ المعزولة. نسخة العمل نفسها المسجّلة في مساحة عمل أخرى صف مستقل، ولا تتأثر. ولا تُفكَّك أشجار العمل على القرص التي كانت تلك السجلات تشير إليها.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Search code with the code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/)
-- [Run agents in parallel](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/)
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-- [Your first workspace](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/)
+- [البحث في الشفرة عبر مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/)
+- [تشغيل الوكلاء بالتوازي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/)
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [مساحة عملك الأولى](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/)
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/)

@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Organizuj pracę w projektach
+description: Grupuj zgłoszenia w projekty z paska bocznego, śledź postępy i archiwizuj projekt, gdy zostanie ukończony.
 slug: pl-PL/podrecznik/poradniki/projekty
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Projekt to zgrupowanie zgłoszeń w obrębie obszaru roboczego, prowadzące do
+wspólnego celu. Projekty istnieją wyłącznie w Control Center — nigdy nie
+synchronizują się z zewnętrznym dostawcą, takim jak Linear.
 
-## Create a project
+## Utwórz projekt
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Rozwiń grupę **Zgłoszenia** na pasku bocznym obszaru roboczego. Zawiera ona
+   **Wszystkie zgłoszenia**, po jednym wierszu na każdy niezarchiwizowany
+   projekt, a na końcu **Nowy projekt**.
+2. Kliknij **Nowy projekt**.
+3. Wypełnij **Nazwa projektu**, opcjonalny **Opis** i wybierz **Kolor**.
+4. Naciśnij **Utwórz projekt**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Otwiera się przegląd nowego projektu, a projekt pojawia się jako wiersz na pasku
+bocznym pod **Zgłoszenia**.
 
-## Add tickets to a project
+## Dodaj zgłoszenia do projektu
 
-Project is a single-ticket field, set in either of two places:
+Projekt to pole pojedynczego zgłoszenia, ustawiane w jednym z dwóch miejsc:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Otwórz zgłoszenie i ustaw **Projekt** w jego panelu właściwości.
+- Kliknij zgłoszenie prawym przyciskiem myszy na liście i użyj podmenu
+  **Projekt**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Selektor w panelu właściwości oferuje także **Nowy projekt**, więc zgłoszenie
+można od razu przypisać do projektu utworzonego w tym miejscu. **Brak projektu**
+czyści to pole.
 
-A ticket belongs to at most one project.
+Zgłoszenie należy do co najwyżej jednego projektu.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Projekt to nie operacja zbiorcza]
+Pasek unoszący się po zaznaczeniu kilku zgłoszeń obejmuje status, priorytet,
+osobę przypisaną, etykiety i usuwanie. Nie ma na nim chipa projektu, więc
+przypisanie wielu zgłoszeń oznacza robienie tego pojedynczo.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Można też zacząć od projektu: **Nowe zgłoszenie** w przeglądzie projektu tworzy
+zgłoszenie i od razu je tam umieszcza.
 
-## Read project progress
+## Sprawdź postępy projektu
 
-Open a project from its sidebar row, or go to
+Otwórz projekt z jego wiersza na pasku bocznym albo przejdź do
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Przegląd pokazuje glif i nazwę projektu, plakietkę statusu, opis oraz pasek
+postępu ukończonych z wszystkich zadań. Poniżej zgłoszenia projektu są grupowane
+według statusu.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Nie agreguje on niczego więcej — nie ma podziału według osób przypisanych ani
+rozkładu priorytetów. Aby je uzyskać, przefiltruj główną listę zgłoszeń.
 
-## Change project status
+## Zmień status projektu
 
-Projects have three states:
+Projekty mają trzy stany:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Status        | Znaczenie              |
+| ------------- | ---------------------- |
+| **Aktywny**   | Praca trwa             |
+| **Ukończony** | Cała praca jest gotowa |
+| **Zarchiwizowany** | Odniesienie historyczne |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Użyj menu **⋯** w nagłówku projektu. Oferuje ono **Edytuj projekt**,
+**Oznacz jako ukończony** / **Oznacz jako aktywny**, **Archiwizuj** /
+**Przywróć** oraz **Usuń projekt**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Archiwizacja ukrywa projekt na liście na pasku bocznym oraz w selektorach
+zgłoszeń. Jest odwracalna — **Przywróć** przywraca projekt do stanu aktywnego —
+ale zarchiwizowany projekt jest osiągalny wyłącznie przez URL.
 
-## Projects created for you
+## Projekty tworzone za Ciebie
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/).
+Zatwierdzenie orkiestracji tworzy projekt i umieszcza w nim zgłoszenie
+nadrzędne, obok wszystkiego, co umieszczono ręcznie. Wygenerowane elementy pracy
+to kroki potoku, a nie wiersze zgłoszeń, więc nie pojawiają się na tablicy
+projektu. To jedyna zautomatyzowana ścieżka: żaden węzeł potoku nie tworzy
+zgłoszeń, więc potok nie może zapełnić projektu. Zobacz
+[Uruchom orkiestrację](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Projekty to powierzchnia dla operatora]
+Twórz, wyświetlaj, aktualizuj i usuwaj projekty w aplikacji. Agenci nie mają
+narzędzi projektów.
 
-## Related guides
+## Powiązane poradniki
 
-- [Create and manage tickets](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/)
-- [Delegate work to agents](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)
-- [Run an orchestration](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/)
+- [Twórz i zarządzaj zgłoszeniami](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/)
+- [Deleguj pracę agentom](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)
+- [Uruchom orkiestrację](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Tickets](/pl-PL/podrecznik/koncepcje/zgloszenia/)
+- [Zgłoszenia](/pl-PL/podrecznik/koncepcje/zgloszenia/)

@@ -1,138 +1,131 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: إنشاء تطبيق GitHub
+description: سجّل تطبيق GitHub لخادمك حتى يسجّل الأعضاء دخولهم، وحتى يجري العمل في الخلفية باسم التطبيق لا باسم شخص.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+يبيّن هذا الدليل كيف تعطي خادمك هوية GitHub تخصّه. يستغرق الأمر نحو
+دقيقتين، ولا يفعله إلا مالك الخادم، ويحدث مرة واحدة لكل خادم.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[قد لا تحتاج إليه]
+يشحن البناء الرسمي **معرّف عميل** لـ GitHub، فيعمل
+[تسجيل الدخول عبر GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/) مباشرة
+من غير أي تسجيل — يصادق تدفق الجهاز بمعرّف العميل وحده، فشحن هذا
+المعرّف آمن. سجّل تطبيقك حين تريد أن يتصرّف **الخادم** باسم نفسه
+(فتجري خطافات الويب واستطلاع طلبات السحب ومزامنة التذاكر على تثبيت
+التطبيق لا على اعتماد شخص)، أو حين تبني من المصدر.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/).
+لربط حسابك بعد ذلك، انظر
+[إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/).
 
-## Why your server needs its own app
+## لماذا يحتاج خادمك إلى تطبيقه
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+يخرج من التسجيل الواحد عملان مختلفان، والتطبيق هو ما يجعل الاثنين صادقين:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| العمل | ما يجيب عنه | لماذا يهم |
+| --- | --- | --- |
+| **شخص يسجّل الدخول** | معرّف عميل التطبيق، عبر تدفق الجهاز | تحصل على اعتماد يخصّك، على الخادم وعلى كل جهاز، بلا رمز تلصقه أو تدوره |
+| **الخادم يتصرّف** | معرّف التطبيق + المفتاح الخاص ← رمز التثبيت | تكفّ خطافات الويب واستطلاع طلبات السحب ومزامنة التذاكر عن الاعتماد على بقاء رمز إنسان واحد صالحًا |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+لاحظ ما **ليس** في الجدول: سر العميل. يصادق تدفق الجهاز في GitHub بمعرّف
+العميل وحده — طلب رمز الجهاز واستطلاع الرمز معًا — فلا سرّ يُحفظ من أجل
+تسجيل الدخول.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+من غير تطبيق يخصّك يبقى الأول يعمل بمعرّف العميل الذي يشحنه البناء، ويرجع
+الثاني إلى اعتماد مالك الخادم، فيمضي العمل في الخلفية باعتماد من أتمّ
+الإعداد أولًا.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[لا يوجد زر «تثبيت تطبيق GitHub التابع لـ Control Center»]
+تطبيق GitHub موزَّع يعني سر عميل واحد مشترك وتثبيت واحد مشترك على
+خوادم الجميع، فيمر وصول كل مساحة عمل إلى مستودعاتها عبر بيانات اعتماد لا
+يسيطر عليها أحد في تلك المساحة. لذلك يملك كل خادم تطبيقه، وهذا الدليل عن
+ضآلة كلفة ذلك.
 :::
 
-## Prerequisites
+## المتطلبات
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- أنت **مالك الخادم** — عمليات `providerApps.*` مقصورة عليه، والبطاقة مخفية عن سواه
+- حساب على GitHub، أو مؤسسة لديك صلاحية إنشاء التطبيقات فيها
+- لا شيء يلزم أن يبلغه العموم: تسجيل الدخول **تدفق جهاز**، فلا يحتاج الخادم إلى منفذ وارد ولا نفق ولا عنوان URL لرد اتصال ولا نطاق
 
-## Register the app
+## سجّل التطبيق
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
-   - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
-   - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+1. افتح [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (لمؤسسة: **الإعدادات ← إعدادات المطوّر ← تطبيقات GitHub ← تطبيق GitHub جديد**)
+2. **اسم تطبيق GitHub** — أي اسم، و`Control Center (yourname)` مناسب. يظهر
+   على الإيداعات والتعليقات التي ينشرها الخادم
+3. **عنوان URL للصفحة الرئيسية** — أي عنوان، مثل `https://github.com/your-name`
+4. **عنوان URL لرد الاتصال** — اتركه فارغًا. تدفق الجهاز بلا عنوان
+5. حدّد **تفعيل تدفق الجهاز**. هذا الإعداد الوحيد الذي لا يعمل تسجيل الدخول من غيره
+6. ألغِ تحديد **خطاف الويب ← نشط** إلا إذا كنت توصّل خطافات الويب على حدة
+7. تحت **أذونات المستودع**، امنح على الأقل:
+   - **المحتويات**: قراءة وكتابة
+   - **البيانات الوصفية**: للقراءة فقط (إلزامي)
+   - **طلبات السحب**: قراءة وكتابة
+   - **المشكلات**: قراءة وكتابة، إن كنت تستخدم GitHub Issues للتذاكر، وللبحث
+     في تعليقات محادثة طلب السحب التي يجريها البوت
+     (انظر [التحدث إلى Control Center من طلب سحب على GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/))
+   - **الفحوصات**: للقراءة فقط، لحالة CI في صفحة طلب السحب
+8. تحت **أين يمكن تثبيت تطبيق GitHub هذا؟**، اختر ما يناسب —
+   «على هذا الحساب فقط» هو المناسب لخادم شخصي
+9. انقر **إنشاء تطبيق GitHub**
 
-## Collect the three values
+## اجمع القيم الثلاث
 
-On the app's page, immediately after creation:
+في صفحة التطبيق، فور إنشائه:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| القيمة | أين |
+| --- | --- |
+| **معرّف التطبيق** | لسان **عام**، قرب الأعلى |
+| **معرّف العميل** | لسان **عام**، تحت «أسرار العميل» |
+| **المفتاح الخاص** | **توليد مفتاح خاص** — يُنزَّل ملف `.pem` |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+يُنزَّل ملف المفتاح الخاص مرة واحدة، ولا يعرضه GitHub بعدها. أبقِه حتى
+تلصقه، وتستطيع دائمًا توليد مفتاح آخر.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**سر العميل** اختياري، ولا يفيد إلا في أمر واحد: إن تركت «انتهاء صلاحية
+رموز تفويض المستخدم» مفعّلًا، فهو ما يجدّد رمز الشخص في صمت بدل مطالبته
+بتسجيل الدخول من جديد كل ثماني ساعات. تسجيل الدخول نفسه لا يستخدمه.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+الإعداد الأبسط أن تعطّل انتهاء الصلاحية هذا، فلا يُحتاج إلى سر في أي موضع.
+إن أبقيته مفعّلًا، ولّد سرًا والصقه في
+**الإعدادات ← الخادم ← تسجيل الدخول الموحّد** (بطاقة **تطبيقات الموفّرين**) — لا متغير بيئة له،
+ولا يُضمَّن سر في البناء، فيبقى على خادمك.
 
-## Install it on your account
+## ثبّته على حسابك
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+التطبيق المسجَّل غير المثبَّت يستطيع مصادقة الأشخاص، ولا يقرأ شيئًا.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. في صفحة التطبيق، افتح **تثبيت التطبيق**
+2. ثبّته على حسابك أو مؤسستك
+3. اختر **كل المستودعات**، أو حدّد المستودعات التي يجب أن يراها هذا الخادم
 
-## Paste it into Control Center
+## الصقه في Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. انتقل إلى **الإعدادات ← الخادم ← تسجيل الدخول الموحّد** وانزل إلى بطاقة
+   **تطبيقات الموفّرين**
+2. في كتلة **GitHub**، اضبط كل حقل:
+   - **معرّف التطبيق** — المعرّف الرقمي
+   - **المفتاح الخاص** — الصق ملف `.pem` كاملًا، بما فيه سطرَا `BEGIN` و`END`
+   - **معرّف العميل** — من الصفحة نفسها
+   - **سر العميل** — فقط إن ولّدت واحدًا (لتجديد الرمز)
+3. انقر **اختبار**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+يُحلَّل المفتاح عند حفظه، فيُرفض اللصق الناقص أو ذو الصيغة الخاطئة فورًا،
+قبل أن يفشل طلب في الخلفية بعد ساعات.
+يمضي **اختبار** أبعد ويسأل GitHub عن الحسابات التي ثُبّت التطبيق عليها —
+«محفوظ» و«يعمل» ادّعاءان مختلفان، والثاني وحده يعني أن شيئًا سيعمل.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+نقطة التحقق: يظهر في كتلة GitHub «يمكن للخادم التصرف باسم نفسه، ويمكن للأشخاص تسجيل الدخول.»،
+ويعرض صف **GitHub** تحت **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ←
+استضافة الكود** الآن **تسجيل الدخول عبر GitHub**.
 
-## Configure it with environment variables instead
+## اضبطه بمتغيرات البيئة بدل ذلك
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+في التثبيت بلا واجهة أو بالسكربت، يبذر الخادم كل حقل من البيئة في أول مرة
+لا يجد فيها قيمة مخزَّنة:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +133,60 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+لا أعلام سطر أوامر لهذه القيم — سر على سطر الأوامر يقرأه كل عملية على
+المضيف عبر `ps`. البيئة هي الموضع الوحيد لضبطها، وهي تغلب ما يشحنه البناء.
+`.env.template` القائمة الكاملة.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+في التطوير المحلي يحمل `.env` في جذر المستودع القيم نفسها، ويمرّرها تطبيق
+الحاسوب إلى الخادم الذي يطلقه. ضع المفتاح في **سطر واحد** هناك:
+قيمة `.env` سطر واحد، و`\n` داخل علامتي تنصيص مزدوجتين يُفك إلى سطر جديد.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` و`GITHUB_APP_PRIVATE_KEY` هما الاسمان اللذان يقرأهما أصلًا
+وسيط بيانات اعتماد البيئة المعزولة، فالمضيف الذي ضبط رموز الوكيل الدقيقة
+النطاق يحصل على مسار تسجيل الدخول من غير ضبط إضافي. يحدث البذر **مرة واحدة لكل حقل** —
+بعد ذلك تفوز القيمة المخزَّنة، فتعديل الإعدادات لا يُلغى عند إعادة التشغيل
+التالية.
 
-## Do the same for Linear
+## افعل الأمر نفسه مع Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+لا تدفق جهاز في Linear، فتسجيل الدخول فيه جولة عبر المتصفح ويحتاج عنوان URL لرد الاتصال.
+تعرض بطاقة **تطبيقات الموفّرين** العنوان الذي تسجّله، حرفيًا.
 
-1. Create an OAuth application at
+1. أنشئ تطبيق OAuth على
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. اضبط **عنوان URL لرد الاتصال** على العنوان الذي تعرضه البطاقة، حرفيًا
+3. الصق **معرّف العميل** و**سر العميل** في كتلة Linear
+4. ويمكنك إضافة **مفتاح API** لمساحة العمل — هو الاعتماد الذي يستخدمه الخادم
+   لمزامنة التذاكر حين لا يطلب إنسان
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The sign-in dialog says the provider returned no device code
+### يقول حوار تسجيل الدخول إن الموفّر لم يُرجع رمز جهاز
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**تفعيل تدفق الجهاز** مطفأ على التطبيق. شغّله تحت **عام** وأعد المحاولة.
 
-### Test says the credentials work but the app is not installed anywhere
+### يقول اختبار إن بيانات الاعتماد تعمل لكن التطبيق غير مثبّت في أي موضع
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+التسجيل والتثبيت خطوتان منفصلتان. افتح **تثبيت التطبيق** في صفحة التطبيق وثبّته.
 
-### Test says the private key could not be read
+### يقول اختبار إن المفتاح الخاص تعذّرت قراءته
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+الصق ملف `.pem` كاملًا، بما فيه سطرَا `-----BEGIN` و`-----END`. لا يُستخدم
+مفتاح `ed25519` أو EC — تطبيقات GitHub توقّع بـ RSA.
 
-### A member signed in but sees no repositories
+### عضو سجّل دخوله ولا يرى مستودعات
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+التطبيق غير مثبَّت على الحساب الذي يملكها، أو يختار تثبيته مستودعات أخرى.
+تسجيل دخوله لا يمنح إلا ما يُسمح للتطبيق برؤيته.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-- [Talk to Control Center from a GitHub PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/)
-- [Connect a code host](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
-- [Manage API keys](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [التحدث إلى Control Center من طلب سحب على GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/)
+- [ربط مضيف شفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
+- [إدارة مفاتيح API](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)

@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: 連結你的 Slack 帳戶
+description: 證明某個 Slack 身分屬於你，代理才會就你的訊息採取行動，你的工作也會歸屬於你。
 slug: zh-HK/手冊/操作指南/連結聊天帳戶
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+本指南說明如何把你的聊天身分連結到你的 Control Center 使用者，以及如何取消連結。
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+每位成員都要為每個聊天提供方做一次。這件事與連接應用程式是分開的：連接讓整個工作區都能觸達機械人，連結則讓_你_在當中可被辨識。
 
-## Why linking is required
+## 為何必須連結
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+對於無法解析到工作區成員的聊天帳戶，橋接會拒絕代它行事。這是刻意的——沒有連結的話，每一則來自 Slack 的訊息都只能歸到安裝應用程式的那個人，稽核紀錄、按主體計算的速率限制和工單報告人都會指向錯誤的人。
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+未連結的成員提及機械人時，會在該 Slack 討論串中收到一則回覆，說明如何連結。不會派發任何工作。
 
-## Link with a code
+## 以代碼連結
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. 前往 **設定 → 工作區 → 個人資料與身分**，捲到**已連結的聊天帳戶**卡片
+2. 在 Slack 區塊上，按一下**連結我的 Slack 帳戶**
+3. 複製它顯示的指令，例如：
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. 在 Slack 中，把該指令傳送給機械人——私訊是最方便的地方
+5. 機械人會確認你現時連結到的 Control Center 使用者，而你一直開着的對話框會在同一刻更新說明此事——你不必把它關掉再自行查看
 
-The code:
+該代碼：
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- 只能使用一次，並在產生後 **15 分鐘**過期
+- 永遠是為_你_產生，不會為隊友產生
+- 會取代你已持有的任何代碼，因此再按一次按鈕會令先前那個失效
+- 只存在於記憶體中，因此伺服器重新啟動會令尚未使用的代碼失效——請再按一次按鈕
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+未知、已過期，或為其他工作區產生的代碼，都會以同樣無法分辨的方式失敗：「該代碼無效（或已過期）」。
 
-## Automatic linking by email
+## 以電郵自動連結
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+如果你的 Slack 個人資料帶有已驗證的電郵，而該電郵對應到一位**已是本工作區成員**的 Control Center 使用者，橋接會在你第一次與它對話時把你連結起來。無需代碼。
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+兩邊都重要：電郵匹配證明身分，但只有成員身分才授予存取權，所以一個地址恰好在伺服器上存在的陌生人，什麼也連結不到。名冊會顯示每個連結是如何建立的（「以電郵匹配」或「以代碼連結」）。
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+自動連結需要 `users:read.email` 權限範圍。沒有它，Slack 不會披露該地址，代碼流程就是唯一途徑。
 
-## See who is linked
+## 查看誰已連結
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+名冊屬於工作區管理，所以位於介面的另一半：**設定 → 工作區 → 一般 → 聊天橋接 → 已連結帳戶**。它會列出工作區中每位已連結的成員、各自對應的 Slack 帳戶，以及連結是如何建立的。
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+你自己的狀態則在你的個人資料頁面：**連結我的 Slack 帳戶**那一列在你已連結後會顯示「已連結至 _your-slack-id_」，未連結時則提示你去連結。
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+名冊是即時訂閱，因為變更發生在另一邊——你是在 Slack 中輸入代碼，所以從應用程式發出的任何請求都無法把結果帶回來。
 
-## Unlink
+## 取消連結
 
-Click **Unlink** on a row in the workspace roster.
+在工作區名冊的其中一列上按一下**取消連結**。
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- 任何人都可以取消連結自己
+- 只有管理員可以取消連結其他成員
+- 取消連結也會撤銷該成員任何尚未使用的連結代碼
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+取消連結後，該 Slack 帳戶在重新連結之前都無法再驅動代理。現有的空間、轉錄和工單會保留原本的歸屬——取消連結並不是撤回過去的工作。
 
-## Troubleshooting
+## 疑難排解
 
-### The bot says I am not a member of this workspace
+### 機械人說我不是本工作區的成員
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/zh-HK/手冊/概念/多人協作/).
+你的 Slack 帳戶已連結到某位 Control Center 使用者，但該使用者並未持有本工作區的成員身分。請管理員邀請你；參見[多人協作與線上狀態](/zh-HK/手冊/概念/多人協作/)。
 
-### The bot says my role is read-only
+### 機械人說我的角色是唯讀
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+`viewer` 和 `guest` 角色無法開始工作。管理員必須把你的角色提升到 `member` 或以上。
 
-### The slash command is not recognized
+### 無法辨識斜線指令
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+檢查該斜線指令在 Slack 中存在，而且你傳送的是設定對話框顯示給你的指令——管理員可能把它改過名，屆時對話框會顯示目前的名稱。
 
-## Related guides
+## 相關指南
 
-- [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/)
-- [Customize the chat bot](/zh-HK/手冊/操作指南/自訂聊天機械人/)
-- [Chat bridge](/zh-HK/手冊/參考/聊天橋接/)
+- [設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)
+- [自訂聊天機械人](/zh-HK/手冊/操作指南/自訂聊天機械人/)
+- [聊天橋接](/zh-HK/手冊/參考/聊天橋接/)
 
-## Related concepts
+## 相關概念
 
-- [Chat bridges](/zh-HK/手冊/概念/聊天橋接/)
-- [Multiplayer — identity, membership and presence](/zh-HK/手冊/概念/多人協作/)
+- [聊天橋接](/zh-HK/手冊/概念/聊天橋接/)
+- [多人協作與線上狀態](/zh-HK/手冊/概念/多人協作/)

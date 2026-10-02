@@ -1,153 +1,156 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Installera
+description: Använd Control Center i webbläsaren eller installera skrivbordsappen, ställ in en agentbackend och välj var servern körs.
 slug: sv-SE/handbok/installera
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center kan köras på två sätt: som en **webbapp** på
+[app.usectrl.dev](https://app.usectrl.dev), utan något att hämta, eller som en
+**skrivbordsapp** som du installerar. Det är samma program med samma funktioner. Den
+enda skillnaden är var servern körs — och webbappen kan inte köra en åt dig.
 
-## Use it in your browser
+## Använd den i webbläsaren
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) är det här programmet kompilerat för
+webbläsaren. Inget att installera, inget att uppdatera. Öppna den och anslut.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Det en webbläsarflik inte kan göra är att _vara_ servern. Varje klient — skrivbord, webb,
+telefon — är en tunn renderare ovanpå en headless `cc_server` som äger databasen och
+utför arbetet, så webbappen pratar alltid med en server som du kör. Det finns två sätt
+att ge den en:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**En server på din egen maskin.** Starta `cc_server` lokalt och peka webbappen mot
+`ws://localhost:9030`. Webbläsare betraktar `localhost` som betrott, så det här kräver
+inget certifikat och ingen tunnel. Det är det snabbaste sättet att prova webbappen, och
+din data lämnar aldrig din maskin.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**En server på en annan maskin.** Eftersom `app.usectrl.dev` serveras över HTTPS måste en
+icke-lokal server vara nåbar över `wss://` med ett certifikat som webbläsaren redan litar
+på. `cc_server` vägrar binda en icke-loopback-adress utan TLS, så välj ett av följande:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- ge den ett certifikat direkt, med `--tls-cert` och `--tls-key`
+- sätt den bakom en TLS-avslutande omvänd proxy och starta den med `--insecure`
+- exponera den via en tunnel eller VPN som tillhandahåller certifikatet — Tailscale,
+  cloudflared eller liknande. **Inställningar → Server → Anslutning och status** har den
+  inbyggda tunnelaktiveringen under **Dela den här servern**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+När servern sitter bakom en proxy, NAT eller tunnel ställer du in `--public-url` på den
+adress som klienterna faktiskt ska ringa. Den har den lokala bindningen som standard, så
+utan den försöker klienterna med fel värd.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Hostar du en egen kopia av webbklienten?]
+`cc_server` accepterar bara webbläsarorigins i sin `--allowed-origins`-lista, som standard
+`https://app.usectrl.dev`. Lägg till din egen origin där om du hostar webbbygget själv.
+Loopback- och native-klienter tillåts alltid, oavsett den listan.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Några saker förblir endast i skrivbordsappen, eftersom de behöver ett inbyggt fönster
+eller maskinens egna ljudenheter: det flytande fokuslägespillret, operativsystemets
+aviseringsbubblor (appens egen aviseringscentral fungerar överallt), "starta inspelning
+och länka" från en kalenderhändelse samt att köra om en mötessammanfattning. Allt annat —
+ytor, agenter, pull request-granskning, pipelines, ärenden, minne och själva
+mötesinspelningen — beter sig likadant.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/). To host the server,
-follow [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
+För att ansluta webbappen till en server följer du
+[Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/). För att hosta servern,
+följer du [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
 
-## Desktop system requirements
+## Systemkrav för skrivbordsappen
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Krav        | macOS                                                 | Windows     | Linux                                                      |
+| ----------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| OS-version  | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ eller en annan distribution med glibc 2.35+ och GTK 3 |
+| Arkitektur  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git         | Krävs                                                 | Krävs       | Krävs                                                      |
+| Diskutrymme | ~200 MB för appen, plus serverns datakatalog          | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Intel-Macar har ingen färdigbyggd nedladdning. [Bygg från källkod](#bygg-från-källkod) i stället.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Serverns datakatalog växer sig större än appen. Vid första starten tvångsinstallerar `cc_server` de lokala modellerna — textinbäddningar (~90 MB), talardiarisering (~35 MB) och den valda talmodellen (Parakeet TDT v3 som standard, ~600 MB; Whisper-varianterna 198–626 MB) — plus ett inbäddat code-server-bygge, och varje agentsamtal får en copy-on-write-worktree av de repos den arbetar mot (vanlig `git worktree` i Windows). Tal är inte valfritt: utan ASR-modellen betjänas inte mötes- och dikteringsåtgärder. Den första nedladdningen av talmodellen kräver fortfarande en omstart innan inspelningen tänds.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Skrivbordsappen pekar sin server mot operativsystemets användarspecifika katalog för programstöd. En `cc_server` som startas för hand utan `--data-dir` använder `<application data>/control-center` som standard — `~/Library/Application Support/control-center` på macOS, `%APPDATA%\control-center` i Windows, `$XDG_DATA_HOME/control-center` (eller `~/.local/share/control-center`) i Linux.
 
-## Download
+## Hämta
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Varje artefakt nedan kommer från [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Hämta `Control-Center-<version>-arm64.dmg`, öppna den och dra Control Center till Program. Bygget är signerat med ett Developer ID och notariserat av Apple, så det öppnas normalt.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: en installerare per användare.
+- `Control-Center-<version>-windows-x64.zip`: en portabel zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows använder `git worktree` för ytcheckouts (ingen copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage-filen bär uppdateringsinformation, så [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) eller appimaged kan uppdatera den till senaste versionen på plats och bara hämta det som ändrats.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Båda byggs på Ubuntu 22.04 och körs på den eller något nyare (Debian 12, Fedora 36 och senare): de länkar glibc 2.35 och libstdc++ från GCC 12 och hämtar GTK 3 från systemet. De få bibliotek som en vanlig skrivbordsinstallation kan sakna följer med inuti dem, så inget annat behöver installeras. Ljud — mötesuppspelning, ljudlandskapet, riggljud och aviseringsklockor — spelas upp via systemets libmpv (`libmpv1` på Ubuntu 22.04, `libmpv2` på nyare Ubuntu och Debian, `mpv-libs` på Fedora); utan det startar appen med de kontrollerna dolda.
 
-### Standalone server
+### Fristående server
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
+Varje version innehåller också headless-servern separat — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — vid sidan av avbildningarna `cc-server`, `cc-webapp` och `cc-remote` på GHCR. Se [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linux-arkivet byggs på Ubuntu 22.04 och dess medföljande native-bibliotek länkar glibc 2.35 och libstdc++ från GCC 12, så det kräver en värd som är minst lika ny (Ubuntu 22.04, Debian 12, Fedora 36 eller senare). På en äldre distribution kör du `cc-server`-avbildningen i stället — en container tar med sin egen userland, så bara kärnan behöver vara din.
 
-## Agent backend
+## Agentbackend
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center skickar ut agenter via **adapters**. Det finns två, listan är fast och de upptäcks automatiskt — det finns inget sätt att registrera ytterligare en.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Adaptern **Control Center (built-in)** behöver ingen extern CLI: agentloopen körs inuti servern och pratar med modellleverantörer över HTTP, så den är alltid tillgänglig. Anslut en leverantör under **Inställningar → Server → Modellleverantörer**. OpenAI, Codex, Cursor och Kimi Code erbjuder inloggning i webbläsaren; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai och Moonshot tar en API-nyckel. Codex och Cursor är leverantörer på den här köraren, inte separata CLI:n. z.ai listas två gånger med avsikt: **z.ai** är den öppna plattformen med betalning per användning, som faktureras mot ditt kontosaldo, medan **z.ai GLM Coding Plan** är abonnemanget. Det är samma kontonyckel, men z.ai betjänar planen från en annan värd — klistrar du in en nyckel för kodningsplanen i den vanliga z.ai-rutan kommer varje begäran tillbaka som `429 … "Insufficient balance or no resource package"`, eftersom planen inte har något saldo att spendera. Ett Claude Pro/Max-abonnemang är inte en Anthropic API-inloggning; använd det abonnemanget via Claude Code-adaptern i stället. Det du _kan_ lägga till på den sidan är en **egen leverantör** — vilken OpenAI- eller Anthropic-kompatibel endpoint som helst (Ollama, LM Studio, vLLM, en privat driftsättning) under **Egna leverantörer → Lägg till leverantör**.
 
-The other adapter wraps an external CLI:
+Den andra adaptern omsluter en extern CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Detekteringen söker av `PATH` på maskinen som kör `cc_server` — samma maskin när skrivbordsappen kör sin egen server, annars fjärrvärden. Installera Claude Code-CLI:n där, inte på klienten. Knappen **Uppdatera** på den sidan kör om sökningen.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/sv-SE/handbok/how-to-guider/adapters/).
+Modellistor serveras live av varje ansluten leverantör; [models.dev](https://models.dev) bidrar bara med metadata om pris och kontextfönster. Se [Hantera adapters och modeller](/sv-SE/handbok/how-to-guider/adapters/).
 
-## GitHub authentication
+## GitHub-autentisering
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+En GitHub-inloggningsuppgift är **din och ligger på servern**, knuten till ditt användar-id — inte i klientens operativsystems nyckelring. Varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den.
 
-If the server has a GitHub App registered ([Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Om servern har en registrerad GitHub-app ([Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) erbjuder **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** **Logga in med GitHub** (ett device flow som servern kör). Annars klistrar du in en personlig åtkomsttoken:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Klassisk: `repo` och `read:org`
+- Finkornig: **Contents** och **Pull requests** (läs och skriv), **Checks** och **Actions** (läs)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Skapa en på [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Servern avsöker token för kontonamnet när den sparas, så raden kan visa "inloggad som …"; en misslyckad avsökning sparar fortfarande token, och ett stavfel eller en saknad behörighet visar sig som en misslyckad begäran senare.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
+Onboardingens första steg är den här anslutningen. Därefter är samma kort platsen där du byter ut eller rensar den. GitLab och Bitbucket använder samma kort; se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
 
-## Choose where the server runs
+## Välj var servern körs
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/) explains what that split means for the desktop, web and phone.
+Control Center är en tunn klient ovanpå en headless `cc_server`-process som äger databasen och utför allt arbete; [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) förklarar vad den uppdelningen betyder för skrivbord, webb och telefon.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Vid första starten frågar skrivbordsappen **"Hur ska Control Center köras?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/sv-SE/handbok/snabbstart/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Kör i den här appen**: skrivbordsappen startar och övervakar en `cc_server` på den här maskinen och pratar med den över loopback. Inget annat att konfigurera. Det är den konfiguration som [Snabbstart](/sv-SE/handbok/snabbstart/) utgår från.
+- **Anslut till en fjärrinstans**: peka skrivbordsappen mot en `cc_server` som körs någon annanstans med dess WebSocket-URL, ett enhets-id och antingen en parkopplingsnyckel eller en engångsinbjudningskod. Den servern äger datan; den här skrivbordsappen visar den bara.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/).
+Lägg till eller byt server senare under **Inställningar → Server → Anslutning och status**. Att byta återansluter på plats — ingen omstart. En webbläsare kan inte köra en server, så webbklienten är alltid fjärransluten; se [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/).
 
-To host a server yourself, follow [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+För att hosta en server själv följer du [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/). Den täcker hur du bygger binärfilen, skapar en parkopplingsnyckel före första starten och flaggorna `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Verifiera din konfiguration
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Inställningar → Server → Modellleverantörer** listar båda adaptrarna. "Control Center (built-in)" visas som hittad med versionen `built-in`; Claude Code visas som hittad om dess CLI finns i `PATH` på servervärden. Tryck på **Uppdatera** om den saknas.
+2. **Inställningar → Arbetsyta → Arkiv** listar den här arbetsytans repos, och **Lägg till arkiv** bläddrar i servervärdens mappar.
+3. **Inställningar → Arbetsyta → Agenter** listar de fem agenter som din första arbetsyta seedade. Var och en behöver en **Adapter** och en **Modell** angivna innan den kan köra.
+4. **Inställningar → Server → Diagnostik och integritet** rapporterar vilka sandlådebackends den här värden erbjuder, inbäddningsmodellens status och loggning.
 
-## Build from source
+## Bygg från källkod
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Native-bibliotek krävs och det finns inget degraderat läge: ett saknat bibliotek är ett hårt startfel, inte en långsammare väg. Lägg dem på plats före allt annat. Varje Flutter- och Dart-kommando går via `fvm`, eftersom SDK-versionen är låst av repot.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +162,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+På macOS kräver säker lagring (inloggning med GitHub, Linear och Google) att appen signeras av ett Apple-team — ett kostnadsfritt Apple-ID räcker, och det är en engångsinställning som beskrivs under [signering för lokal utveckling](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Utan den startar appen fortfarande; bara säker lagring är otillgänglig. Windows och Linux kräver ingen signering.
 
-To build the headless server binary, stage the natives the same way first, then:
+För att bygga headless-serverns binärfil lägger du först native-biblioteken på plats på samma sätt och kör sedan:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Byggkroken kopierar allt som redan finns i `build/natives/` in i paketet, så att bygga innan biblioteken lagts på plats ger ett paket utan native-bibliotek och en server som vägrar starta.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+För webbklienten använder du `scripts/build_web.sh` (`--target remote` för telefonens PWA). Det är vad CI kör: ett vanligt `flutter build web` hoppar över byggidentitetsstämpeln, regenereringen av Web Worker, driftsättningsmanifestet och kontrollen av tillgångsbudgeten.

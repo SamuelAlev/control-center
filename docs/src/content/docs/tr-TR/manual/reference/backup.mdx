@@ -1,29 +1,31 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Yedekleme, dışa ve içe aktarma
+description: Anlık görüntü düzeni, manifest, her yedekleme işlemi ve aktarım rotası ile bir yedeğin hangi dosyaları içerdiği ve içermediği.
 slug: tr-TR/kilavuz/referans/yedekleme
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/); for why persistence is
-split this way, see [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
+Control Center'ın kopyalayabileceği, devredebileceği ya da devralabileceği her şey ve
+her yapıtın tam biçimi. Gerçekten bir yedek almak için
+[Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/) sayfasına bakın;
+kalıcılığın neden bu şekilde bölündüğünü görmek için de
+[Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
 
-## Artifacts
+## Yapıtlar
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Farklı kapsamlara ve silme politikalarına sahip üç veritabanı kopyası yapıtı vardır.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Yapıt                       | Yazan                        | Biçim                                 | Kapsadığı                     |
+| --------------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
+| **Kurulum anlık görüntüsü** | `server.backupNow`           | Zaman damgalı bir **dizin**           | Kurulumdaki her veritabanı    |
+| **Çalışma alanı yedeği**    | `Workspace backup` pipeline'ı | Tek `.db` içeren zaman damgalı dizin | Bir çalışma alanının veritabanı |
+| **Çalışma alanı dışa aktarımı** | `workspace.export`       | Tek bir `.db` **dosyası**             | Bir çalışma alanının veritabanı |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Hepsi SQLite `VACUUM INTO` ile yazılır; bu, canlı bir WAL veritabanına karşı güvenlidir:
+bir okuma işlemi alır, parçalanması giderilmiş ve işlemsel olarak tutarlı bir kopya
+üretir ve sunucunun durdurulmasını hiçbir zaman gerektirmez.
 
-## Snapshot layout
+## Anlık görüntü düzeni
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +34,122 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Düzen, canlı veri dizinini tam olarak yansıtır; bir kurulumu geri yüklemeyi bir çeviriye
+değil, geri kopyalamaya dönüştüren de budur. Dizin adı, `:` ve `.` karakterleri `-` ile
+değiştirilmiş UTC zaman damgasıdır; böylece Windows'ta dosya sistemi açısından güvenlidir
+ve düz bir dize olarak kronolojik sıralanır.
 
-Scheduled workspace backups live separately at
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Zamanlanmış çalışma alanı yedekleri ayrı bir yerde,
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` yolunda
+yaşar. Bir manifest ya da `global.db` içermezler ve kurulum anlık görüntüsü değildirler.
+Haftalık pipeline'ın saklama adımı, yalnızca kendi çalışma alanının yapılandırılmış
+yaşından (varsayılan olarak 30 gün) eski yedeklerini kaldırır; elle oluşturulan kurulum
+anlık görüntüleri o adım tarafından hiçbir zaman rotasyona tabi tutulmaz.
+`server.listBackups` yalnızca kurulum anlık görüntülerini listeler, eksik olanlar dahil.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| Alan                       | Tür             | Anlamı                                                              |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | Manifest biçim sürümü. Şu anda `1`                                  |
+| `created_at`               | ISO-8601 UTC    | Anlık görüntünün alındığı zaman                                     |
+| `global.file`              | string          | Her zaman `global.db`                                               |
+| `global.schema_version`    | int             | Yakalama anındaki `GlobalDatabase` şema sürümü                      |
+| `global.bytes`             | int             | Yazılan `global.db` dosyasının boyutu                               |
+| `workspace_schema_version` | int             | Her çalışma alanı dosyasında ortak olan `WorkspaceDatabase` şema sürümü |
+| `workspaces[]`             | array           | Yakalanan her çalışma alanı için bir girdi                          |
+| `workspaces[].workspace_id`| string          | Bu dosyanın tuttuğu çalışma alanı                                   |
+| `workspaces[].file`        | string          | Anlık görüntü köküne göre yol, `<workspaceId>/workspace.db`         |
+| `workspaces[].bytes`       | int             | O dosyanın boyutu                                                   |
+| `skipped_workspaces[]`     | array of string | Yedeğin **yakalayamadığı** çalışma alanları                         |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Bir çalışma alanı, kayıtlı olduğu hâlde hiç yazılmamışsa (yani henüz bir dosya yoksa) ya
+da `VACUUM INTO` işlemi başarısız olduysa atlanır. Her iki durumda da anlık görüntü yine
+tamamlanır ve manifest neyin eksik olduğunu adlandırır.
 
-### Completeness
+### Tamlık
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` her anlık görüntü için bir `complete` bayrağı bildirir. Bu bayrak,
+manifest yoksa ya da ayrıştırılamıyorsa, `global.db` eksikse veya manifest diskte olmayan
+bir çalışma alanı dosyasını adlandırıyorsa false olur.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Eksik bir anlık görüntü yine de listelenir; çünkü bir operatörün göremediği bir anlık
+görüntü, sahip olduğuna inandığı anlık görüntüdür. Manifest okunamadığında liste, düzenin
+kendisine geri düşer ve bulduğu `<workspaceId>/workspace.db` dosyalarını bildirir —
+anlık görüntü bir bütün olarak bir kurulumu geri yükleyemese de bunlar `workspace.import`
+üzerinden tek tek sahiplenilebilir.
 
-## What a backup does not contain
+## Bir yedeğin içermedikleri
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Her iki yapıt da **yalnızca veritabanlarıdır**. Bir çalışma alanı dizini veritabanından
+fazlasını tutar ve geri kalanın hiçbiri taşınmaz:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Yol                                 | Anlık görüntüde? | Çalışma alanı dışa aktarımında? |
+| ----------------------------------- | ---------------- | ------------------------------- |
+| `global.db`                         | Evet             | Hayır                           |
+| `<workspaceId>/workspace.db`        | Evet             | Evet (dosyanın *kendisi* odur)  |
+| `<workspaceId>/blobs/`              | Hayır            | Hayır                           |
+| `<workspaceId>/skills/`             | Hayır            | Hayır                           |
+| `<workspaceId>/agents/`             | Hayır            | Hayır                           |
+| `<workspaceId>/chat_credentials/`   | Hayır            | Hayır                           |
+| `<workspaceId>/spaces/<spaceId>/`   | Hayır            | Hayır                           |
+| `<workspaceId>/pr_clones/`          | Hayır            | Hayır                           |
+| `secrets.json`                      | Hayır            | Hayır                           |
+| `models/`                           | Hayır            | Hayır                           |
+| `meetings/<meetingId>/`             | Hayır            | Hayır                           |
+| `rigs/`                             | Hayır            | Hayır                           |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/tr-TR/kilavuz/referans/sohbet-koprusu/).
+Bunun bir kısmı gözden çıkarılabilir — `spaces/` depolar üzerinden yeniden sağlanan
+kopyala-üzerine-yaz çalışma ağaçlarını tutar, `pr_clones/` bir önbellektir, `models/`
+yeniden indirilir, `rigs/` makine durumudur. Bir kısmı ise değildir: `blobs/`
+veritabanındaki satırların işaret ettiği yapıştırılmış görselleri tutar, `skills/` ve
+`agents/` bir ajanın çalıştığı dosyaları tutar ve `secrets.json` kurulumdaki her eşleme
+anahtarını, sağlayıcı kimlik bilgisini ve SSO ayarını tutar. Geri kalanı kapsamak için
+[Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#copy-backups-off-the-machine)
+sayfasına bakın.
+:::note[Sohbet token'ları bilinçli olarak geride kalır]
+`chat_credentials/` dizininin veritabanının içinde değil de yanında durması, başkasına
+devredilen bir çalışma alanının canlı bot token'ı taşımamasının nedenidir.
+[Sohbet köprüsü referansına](/tr-TR/kilavuz/referans/sohbet-koprusu/) bakın.
 :::
 
-## Operations
+## İşlemler
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+Kurulum yedekleme RPC'leri ile çalışma alanı dışa/içe aktarma yalnızca `fullClient`
+içindir: eşlenmiş bir telefon bunları tetikleyemez. Demo sunucu gibi yedekleme portu
+bağlanmamış bir sunucuda ise bunların tümü tamamen yoktur — reddedilmezler, yapısal
+olarak eksiktirler.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| İşlem                 | Tür    | Kapsam         | Asgari rol             | Argümanlar    | Döndürdüğü                    |
+| --------------------- | ------ | -------------- | ---------------------- | ------------- | ----------------------------- |
+| `server.backupNow`    | mutate | Kurulum        | kurulum **sahibi**     | yok           | `{ok, path}`                  |
+| `server.listBackups`  | read   | Kurulum        | kurulum **sahibi**     | yok           | `{backups: [...]}`            |
+| `server.deleteBackup` | mutate | Kurulum        | kurulum **sahibi**     | `name`        | `{ok}`                        |
+| `workspace.export`    | read   | Çalışma alanı  | `admin`                | yok           | `{ok, path}`                  |
+| `workspace.import`    | mutate | Çalışma alanı  | `owner`                | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`    | mutate | Kurulum*       | `owner`                | `id`          | kayıt defteri satırı silinmiş olarak işaretlenir |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` kapsamsızdır; çünkü işaretlediği satır genel kayıt defterinde yaşar.
+İşleyicisi, çağıranın adı geçen çalışma alanındaki üyeliğini denetler ve `owner`
+gerektirir.
 
-`path` in every response is a path on the **server host**.
+Her yanıttaki `path`, **sunucu makinesindeki** bir yoldur.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Tüm kurulumun anlık görüntüsü her iki hatta da sahip kapısından geçer]
+`server.backupNow`, `server.listBackups` ve `server.deleteBackup`, `GET /backup/snapshot`
+ile aynı kapıdan, yani kurulum **sahibi** (`ServerAuthority.serverOwner`) koşulundan
+geçer. Bir anlık görüntü her çalışma alanının veritabanını yakalar; dolayısıyla bir
+çalışma alanının yöneticisi olmak diğerlerini yönetmeye yetmez. Silme, rastgele bir
+sunucu yolunu değil, yalnızca listede görünen zaman damgalı dizin adını kabul eder ve
+anlık görüntünün tamamını (eksik olanlar dahil) kaldırır. Çalışma alanı başına
+dışa/içe aktarma, kurulum sahibinde değil, çalışma alanı yöneticisi/sahibinde kalır.
 :::
 
-### `server.listBackups` response
+### `server.listBackups` yanıtı
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+En yeniden en eskiye doğru, dizin adına göre sıralanır (bu da zaman damgası olduğundan,
+sıralama manifesti okunamayan bir anlık görüntü için bile geçerli kalır).
 
 ```json
 {
@@ -169,99 +173,102 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+Manifest okunamadığında `created_at` atlanır. En üst düzeydeki `bytes`, manifestin kendi
+toplamı değil, dizinin tamamının diskteki gerçek boyutudur — anlık görüntüleri budayan bir
+operatörün sorduğu soru, dizinin ne kadar yer kapladığıdır; yedeğin ne yazmayı amaçladığı
+değil.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Her `workspaces[].path`, `workspace.import` işleminin `source_path` olarak aldığı şeyin
+tam kendisidir. Bu bilinçlidir: "bu çalışma alanını bu anlık görüntüden geri yükle" *içe
+aktarma* işleminin ta kendisidir; böylece ikisi aynı dosyaya yönelik farklı davranışlara
+sapamaz.
 
-### `workspace.import` validation
+### `workspace.import` doğrulaması
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Herhangi bir şeyin yerine yenisi konmadan önce, aday dosya kısa ömürlü ham bir SQLite
+bağlantısıyla salt okunur olarak açılır ve `workspace_meta` satırı okunur.
 
-| Condition                                        | Result                                                          |
+| Koşul                                            | Sonuç                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Okunabilir bir SQLite veritabanı değil ya da `workspace_meta` yok | Reddedilir. Hiçbir şeye dokunulmaz            |
+| Kayıtlı çalışma alanı kimliği ≠ hedef            | **İzin verilir**, günlüğe yazılır. Bir çalışma alanı yeni bir kimlik altında böyle çoğaltılır ya da geri yüklenir |
+| Kayıtlı kurulum kimliği ≠ bu kurulum             | **İzin verilir**, günlüğe yazılır. Eşlenmiş cihazları ve kullanıcı kimlikleri o kuruluma aittir ve burada çözümlenmez |
+| Geçersiz çalışma alanı kimliği ya da dosya yok   | Reddedilir                                                      |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Kabul edildiğinde, hedef çalışma alanının veritabanı kapatılır ve dosya üzerine
+kopyalanmadan önce yöneticiden düşürülür (açık bir drift bağlantısı dosyayı ve `-wal`
+dosyasını tutar); ardından `beforeOpen` FTS ve senkronizasyon tetikleyicilerini yeniden
+kursun diye yeniden açılır ve FTS dizinleri yeniden oluşturulur — içe aktarılan bir
+dosyanın içerik tabloları doludur ama dizini eskimiş olabilir.
 
-## Transfer routes
+## Aktarım rotaları
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Yukarıdaki her işlem sunucu tarafındaki yollarla konuşur; bu da yalnızca sunucu kendi
+makinenizse eksiksiz bir yanıttır. Aşağıdaki üç rota, medya proxy'sinin ve blob
+deposunun zaten kullandığı aynı PSK imzalı hat üzerinden baytları taşır. Çağıran, hedef
+dizeyi cihazının ön paylaşımlı anahtarıyla imzalar ve imzayı `s` olarak geçirir.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| Rota                | Yöntem | Sorgu         | İmzalanan hedef                | Gerektirdiği              |
+| ------------------- | ------ | ------------- | ------------------------------ | ------------------------- |
+| `/backup/workspace` | GET    | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Çalışma alanı **yöneticisi** |
+| `/backup/snapshot`  | GET    | `n`, `d`, `s` | `backup-snapshot:<name>`         | Kurulum **sahibi**        |
+| `/backup/restore`   | POST   | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Çalışma alanı **sahibi**  |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` bir çalışma alanı kimliği, `n` bir anlık görüntü dizini adı, `d` çağıran cihazın
+kimliği, `s` ise imzadır. `n`, yedekleme köküne eklenmek yerine yedekleme listesine karşı
+çözümlenir; böylece rota, listenin göstermeyeceği bir dizine yöneltilemez.
 
-| Status | Cause                                                                              |
-| ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| Durum | Neden                                                                              |
+| ----- | ----------------------------------------------------------------------------------- |
+| `400` | Gerekli bir sorgu parametresi eksik ya da bir yükleme gövdesi boş                   |
+| `403` | Bilinmeyen ya da iptal edilmiş cihaz, hatalı imza veya çağıranda gerekli rolün olmaması |
+| `404` | Bu makinede yedekleme portu yok ya da adı geçen anlık görüntü/çalışma alanı dosyası mevcut değil |
+| `405` | `/backup/restore` rotasının `POST` dışında bir yöntemle çağrılması                   |
+| `413` | Yükleme gövdesinin, bildirilen content-length'e göre ya da gerçekte okunan baytlara göre 8 GiB'ı aşması |
+| `500` | Dışa aktarma ya da arşivleme sunucu tarafında başarısız oldu                        |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Her iki indirme de `Cache-Control: no-store` ve `Accept-Ranges: none` ile yanıt verir.
+Her istek **yeni** bir kopya üretir ve akıtıldıktan sonra onu siler; dolayısıyla
+önbelleğe alınmış ya da kaldığı yerden devam eden bir yanıt, iki farklı dışa aktarımın
+baytlarını geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot`, `<name>.zip` döndürür; girdiler anlık görüntü köküne göre göreli
+olduğundan arşivi açmak `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db` yapısını yeniden üretir. Girdiler sıralı olarak yazılır;
+böylece aynı anlık görüntünün iki arşivi aynı arşivdir.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore`, gövdeyi arabelleğe almak yerine doğrudan bir hazırlama dosyasına
+akıtır, okuma öncesinde ve sırasında boyutunu sınırlar ve hazırlanan dosyayı bir ret
+dahil **her** çıkış yolunda siler.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Aktarılan bir bağlantının HTTP kaynağı yoktur]
+Aracılı aktarım hattı dosya transferlerini değil, RPC çerçevelerini taşır. Sunucu tarafı
+yollarla konuşan her şey onun üzerinden çalışmaya devam eder; üç aktarım rotası doğrudan
+bir bağlantı gerektirir ve arayüz, indirmenin ortasında başarısız olmak yerine onları
+nedenini söyleyen bir notla devre dışı bırakır.
 :::
 
-## Paths and limits
+## Yollar ve sınırlar
 
-| Thing                          | Value                                                        |
-| ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Öğe                        | Değer                                                        |
+| -------------------------- | ------------------------------------------------------------ |
+| Anlık görüntüler           | `<dataDir>/backups/<timestamp>/`                             |
+| Zamanlanmış çalışma alanı yedekleri | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Çalışma alanı dışa aktarımları | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db` |
+| Aktarım hazırlama          | `<dataDir>/backups/transfer/` — bir çalışma tezgâhı; onu yazan rota tarafından süpürülür |
+| Anlık görüntü arşiv adı    | `<snapshot directory name>.zip`                              |
+| Yükleme üst sınırı         | `POST /backup/restore` başına 8 GiB                          |
+| Saklama                    | Kurulum anlık görüntüleri: elle silme. Çalışma alanı yedekleri: haftalık pipeline, varsayılan 30 gün |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+`exports/`, `transfer/` ve `workspace-backups/` dizinleri kurulum anlık görüntüsü
+değildir ve `server.listBackups` dışında tutulur. Zamanlanmış saklama yalnızca son
+dizin için geçerlidir; bir kurulum anlık görüntüsünü silmek, kurulum sahibinin açık
+eylemini gerektirir.
 
-## See also
+## Ayrıca bakınız
 
-- [Back up and restore](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/) — the recipes these operations belong to
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) — why one workspace is one file
-- [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/tr-TR/kilavuz/referans/rota-haritasi/) — where the UI lives
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/) — the client/server split the paths follow
+- [Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/) — bu işlemlerin ait olduğu tarifler
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) — bir çalışma alanı neden tek bir dosyadır
+- [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli/) — bu yolların içinde bulunduğu veri dizini
+- [Rota haritası](/tr-TR/kilavuz/referans/rota-haritasi/) — arayüzün yaşadığı yer
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/) — yolların izlediği istemci/sunucu bölünmesi

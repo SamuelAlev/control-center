@@ -1,172 +1,185 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Discută cu un agent
+description: Creează un spațiu cu un agent, trimite-i muncă, direcționează-l în timpul rulării și oprește-l.
 slug: ro-RO/manual/ghiduri-practice/discuta-cu-agent
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Acest ghid îți arată cum să lucrezi cu un agent într-un spațiu.
 
-## Create a space
+## Creează un spațiu
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Navighează la **Spații** în bara laterală
+2. Dă clic pe butonul **+** de lângă titlul Spații
+3. Scrie un **nume** — acesta este obligatoriu. Un nume gol este refuzat;
+   dialogul rămâne deschis
+4. Opțional, adaugă agenți din spațiul de lucru
+5. Dacă spațiul de lucru are vreun repo, apare un selector de repo-uri. El pornește
+   cu toate repo-urile selectate; restrânge-l (inclusiv deselectând un singur repo)
+   la repo-urile pentru care acest spațiu ar trebui să provisioneze worktree-uri
+6. Confirmă
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center deschide spațiul și începe să provisioneze în fundal un worktree
+copy-on-write pentru fiecare repo selectat.
 
-## Send the first message
+## Trimite primul mesaj
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Scrie mesajul în composer și apasă Enter. Agentul este trimis și începe să
+transmită în flux răspunsul său.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Dacă spațiul încă se provisionează, mesajul tău este pus în așteptare în loc să fie
+pierdut — composerul îl păstrează și îl trimite automat odată ce worktree-urile
+sunt gata.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+Pe măsură ce agentul lucrează, vezi turul lui venind în flux: segmente de
+raționament, apeluri de instrumente (citiri de fișiere, scrieri, comenzi shell) și
+textul răspunsului, toate în interiorul unui singur mesaj de tur de agent.
 
-## Steer a running agent
+## Direcționează un agent aflat în rulare
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+În timp ce un agent lucrează, textul conversațional simplu **nu** pune în coadă un
+tur nou. El devine un card de direcționare pus în coadă, în banda de deasupra
+composerului, și este injectat în rularea activă la următoarea limită de tur. Nu
+există nicio notificare tip toast — cardul este feedback-ul.
 
-Three things change that behaviour:
+Trei lucruri schimbă acest comportament:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Un mesaj care conține o **mențiune @** este mereu trimis ca mesaj, niciodată ca
+  direcționare
+- Un mesaj care începe cu o **comandă slash** este mereu tratat ca acea comandă
+- Un mesaj cu un **atașament** este mereu trimis ca mesaj — coada de
+  direcționare acceptă doar text
+- Dacă fiecare rulare activă s-a terminat deja, textul trece mai departe și este
+  trimis ca un mesaj normal
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Direcționarea are nevoie de harnessul încorporat]
+Doar harnessul încorporat al Control Center injectează la mijlocul rulării. Pe
+adaptorul Claude Code, textul este totuși pus în coadă ca un card de direcționare;
+când rularea se termină, orice a rămas în coadă este convertit într-un mesaj
+normal.
 :::
 
-## Approve a blocked action
+## Aprobă o acțiune blocată
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+Când un agent ajunge la o acțiune filtrată de guardrail-urile sale — o comandă
+distructivă, un instrument privilegiat —, serverul **blochează rularea** și
+publică o cerere de aprobare către fiecare client conectat. Dacă ai acea
+conversație deschisă, cererea apare **în chat**, deasupra composerului, ca același
+card cu opțiuni numerotate folosit pentru `ask_user` (refuză, aprobă și, opțional,
+aprobă pentru opt ore). Nu există nicio variantă de a sări peste: un agent blocat
+așteaptă o decizie.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Dacă ești în altă parte a aplicației, un panou mereu deasupra celorlalte, din
+shell, listează totuși ce așteaptă, așa că poți debloca agentul fără să vânezi
+spațiul. Suprapunerea ascunde o cerere în momentul în care conversația acelui
+spațiu este pe ecran, așa că nu răspunzi niciodată de două ori la aceeași
+solicitare.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Nu există niciun timeout: un agent blocat așteaptă până când cineva decide.
+Aceeași cerere apare și în banda de atenție a inbox-ului, și pe clientul de pe
+telefon.
 
-## Answer an agent's question
+## Răspunde la întrebarea unui agent
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+Un agent care are nevoie de o preferință, de o cerință lipsă sau de o bifurcație
+reală **trebuie** să apeleze `ask_user`. Scrierea întrebării ca mesaj de chat
+încheie turul și trebuie să reiei promptul. Instrumentul redă un card numerotat în
+conversație — opțiuni, text liber opțional sau ambele —, iar rularea așteaptă
+răspunsul tău.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Atinge o singură opțiune pentru a o trimite (numărul din coadă devine o săgeată la
+hover). Răspunsurile cu selecție multiplă și cele tastate folosesc **Continuă**
+(`⌘↵` / `Ctrl↵`). **Omite** îi spune agentului să aleagă o valoare implicită
+rezonabilă și să nu mai întrebe.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+Este un mecanism separat de cardul de aprobare de mai sus: o aprobare înseamnă „pot
+să fac asta?”, o întrebare înseamnă „pe care dintre acestea ai vrut să spui?”.
+Întrebarea este disponibilă pe harnessul încorporat în orice mod, inclusiv în cele
+doar în citire (nu modifică nimic), și, în mod deliberat, nu este învelită într-un
+prompt de aprobare — un dialog în fața unui dialog ar eșua închis fără niciun
+aprobator conectat. O rulare fără nicio conversație în care să redea pur și simplu
+nu primește instrumentul.
 
-## Stop an agent
+## Oprește un agent
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Cât timp rulările sunt active, butonul de trimitere al composerului devine un buton
+de **oprire**. Golește composerul și apasă-l — asta oprește fiecare agent care
+rulează în acea conversație.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+Nu există niciun control de oprire în antetul spațiului și nicio scurtătură de
+tastatură pentru el. Pentru a opri doar o singură rulare când mai multe sunt
+active, deschide fila de activitate a acelei rulări — antetul ei are o
+pauză/reluare și o oprire la nivel de rulare (oprirea îți cere confirmarea).
+**Observabilitate → Live** listează fiecare agent aflat în rulare din spațiul de
+lucru, cu același control.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+O rulare oprită este marcată ca oprită. Trimite un mesaj nou pentru a declanșa din
+nou o trimitere.
 
-## Use slash commands
+## Folosește comenzile slash
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Scrie `/` în composer pentru a vedea lista de comenzi. Cele care schimbă
+comportamentul conversației:
 
-| Command        | What it does                                                                                                                         |
+| Comandă        | Ce face                                                                                                                              |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | Comută spațiul în modul plan. Un `/plan` simplu doar armează modul; `/plan <cerere>` îl armează și trimite restul ca mesajul tău       |
+| `/goal <text>` | Înregistrează obiectivul de lucru al conversației                                                                                    |
+| `/loop <text>` | Iterează asupra unei sarcini până când aceasta este finalizată                                                                        |
+| `/compact`     | Pliază istoricul mai vechi într-un rezumat ancorat și continuă pe contextul compactat                                                |
+| `/todo …`      | Vizualizează și editează lista de todo persistată a acestei conversații                                                              |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+Skill-urile apar în aceeași listă, sub propriul lor spațiu de nume `skill:`, așa că
+nu se ciocnesc niciodată cu comenzile de mai sus — un skill numit `plan` sau
+`compact` rămâne accesibil:
 
-| Command                     | What it runs                                                       |
+| Comandă                     | Ce rulează                                                        |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | Un skill instalat în spațiul de lucru sau atașat agentului         |
+| `/skill:<repo>:<name>`      | Un skill livrat de unul dintre repo-urile cu checkout în acest spațiu |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+Skill-urile de repo sunt marcate cu repo-ul din care provin, pentru că un nume
+singur nu spune convențiile cărui serviciu le codifică și două repo-uri pot livra
+fiecare câte un `testing`. Nu trebuie să tastezi prefixul ca să găsești unul:
+tastarea numelui simplu al skill-ului potrivește și intrările cu spațiu de nume.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+Un agent poartă mereu doar skill-urile repo-ului în care lucrează în acel moment —
+vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
+Composerul nu este limitat astfel: poți invoca skill-ul oricărui repo numindu-l.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` și `/todo` sunt interceptate de client și niciodată persistate ca
+mesaje — o linie `/compact` în transcriere ar împinge tăietura următoarei
+compactări cu un tur înapoi. `/plan` comută modul stocat al spațiului în loc să
+circule ca text. Deci niciuna dintre cele trei nu este „un mesaj pe care îl
+trimiți agentului”; nu te aștepta să le vezi în istoric.
 
-## Ask for a plan first
+## Cere mai întâi un plan
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/ro-RO/manual/ghiduri-practice/modul-plan/).
+Înainte de o schimbare complexă, comută spațiul în modul plan cu `/plan`, meniul
+derulant de mod de pe bara de instrumente a composerului sau Shift+Tab. Agentul
+cercetează apoi doar în citire și livrează un plan tipizat pe care îl aprobi
+înainte să înceapă orice muncă. Vezi
+[Folosește modul plan](/ro-RO/manual/ghiduri-practice/modul-plan/).
 
-## Reach an agent without a dedicated space
+## Ajunge la un agent fără un spațiu dedicat
 
-You do not need a space per agent. In any space:
+Nu ai nevoie de un spațiu pentru fiecare agent. În orice spațiu:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/) for how names are
-matched.
+Agentul menționat este adăugat în spațiu și trimis cu contextul acelui spațiu.
+Vezi [Menționează agenți cu @](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/)
+pentru cum sunt potrivite numele.
 
-## Related guides
+## Ghiduri conexe
 
-- [Use spaces](/ro-RO/manual/ghiduri-practice/spatii/)
-- [@-mention agents](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/)
-- [Use plan mode](/ro-RO/manual/ghiduri-practice/modul-plan/)
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/) to do the same from Slack
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/)
+- [Menționează agenți cu @](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/)
+- [Folosește modul plan](/ro-RO/manual/ghiduri-practice/modul-plan/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/) pentru a face același lucru din Slack
 
-## Related concepts
+## Concepte conexe
 
-- [Modes](/ro-RO/manual/concepte/moduri/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)

@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Cari kode dengan graf kode
+description: Indekskan repo dan gunakan alat graf kode untuk menemukan simbol serta melihat apa yang akan rusak akibat suatu perubahan.
 slug: id-ID/panduan-pengguna/panduan-praktis/cari-kode
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Panduan ini menunjukkan cara memasukkan repo ke dalam graf kode, lalu memakainya untuk menjawab pertanyaan yang sebenarnya Anda hadapi sebelum refaktor: apa yang bergantung pada ini?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Graf kode adalah basis data simbol dan tepi yang dibangun dengan menguraikan checkout terdaftar Anda memakai tree-sitter. Alat-alatnya **berorientasi agen** — Anda mengaksesnya dengan meminta agen.
 
-## Before you start
+## Sebelum memulai
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Graf mengindeks Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, dan Ada. File dalam bahasa lain tidak diuraikan, sehingga tidak muncul di `search_code`, `code_symbol`, `code_callers`, `code_callees`, atau `code_impact`.
 
-Two more things shape what gets indexed:
+Ada dua hal lain yang menentukan apa yang diindeks:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Di dalam work tree git, enumerasi diserahkan kepada `git ls-files --cached --others --exclude-standard`, sehingga setiap `.gitignore`, file pengabaian bertingkat, `.git/info/exclude`, dan file pengecualian global dipatuhi. Itulah yang menjaga `node_modules` dan hasil build tetap di luar graf.
+- Dart hasil generasi tetap dibuang. File hasil generasi biasanya di-commit, sehingga git saja tidak akan mengecualikannya dan file-file itu terus berubah pada setiap kali pembuatan kode berjalan.
 
-## Get a repo indexed
+## Indekskan repo
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+Mendaftarkan checkout memicu `RepoAdded`, yang secara otomatis menjalankan pipeline `index_code` untuknya. Lihat [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
 
-To re-index by hand:
+Untuk mengindeks ulang secara manual:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Buka **Pengaturan → Ruang kerja → Repositori**.
+2. Klik tombol **Indekskan kode** pada baris repo tersebut.
+3. Selama proses berjalan, tombol itu menampilkan jumlah file yang selesai dari totalnya, beserta kontrol pembatalan. Setelah selesai, tombol itu berubah menjadi tanda centang dengan jumlah simbol.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Graf dipartisi berdasarkan ruang kerja, repo, dan checkout: checkout yang ditautkan menjadi satu partisi, dan setiap worktree space memiliki partisinya sendiri (dikunci berdasarkan id repo terisolasi miliknya).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Ada dua pembatas yang perlu Anda ketahui, karena keduanya menjelaskan penantian yang tampak seperti hang:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Pemantau file hanya mengizinkan **satu** proses indeks pada satu waktu di host — checkout kedua harus menunggu. Pipeline `index_code` juga dibatasi secara terpisah pada satu eksekusi per ruang kerja, sehingga dua repo di ruang kerja yang sama akan mengantre; ruang kerja yang berbeda dapat mengindeks secara paralel. Pengindeks itu sendiri menyerialkan dua eksekusi pada checkout yang **sama**, agar permulaan pipeline dan sapuan pemantau tidak dapat menguraikannya dua kali.
+- Worktree milik **space dorman** (tidak ada pesan selama sepekan terakhir) tidak dipantau maupun diindeks. Checkout yang ditautkan tetap dipantau. Keputusan untuk melewatinya diperiksa ulang setelah lima menit, sehingga space yang kembali aktif akan ditangani lagi.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Grammar yang hilang menghentikan server, bukan pencarian]
+Tree-sitter dan grammar-nya adalah komponen native yang wajib ada. Jika salah satunya hilang, `cc_server` menolak untuk boot dan menyebutkan dylib yang hilang — gejalanya adalah server yang tidak mau menyala, bukan pencarian yang menurun. Siapkan keduanya dengan `scripts/natives/build_natives.sh` dan bangun ulang biner server.
 :::
 
-## Find a symbol
+## Temukan simbol
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Minta agen untuk mencari. Alatnya adalah `search_code` dan alat itu memerlukan ruang kerja sekaligus repo:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Id repo berasal dari `list_repos`. Argumen opsional `mode` bernilai `keyword`, `semantic`, atau `hybrid` dan bawaannya adalah hybrid — BM25 atas nama, signature, dan komentar dokumentasi, yang digabungkan dengan kemiripan vektor.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Setiap hasil membawa id simbol, nama, nama kualifikasi, jenis, path file, baris awal dan akhir, serta signature-nya bila ada. **id** itulah pegangan yang Anda berikan ke setiap alat lain di halaman ini.
 
-When you know the exact name, look it up directly instead:
+Jika Anda sudah tahu nama persisnya, cari langsung dengan cara ini:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Lacak pemanggilan
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Keduanya menerima `symbol_id` dari hasil pencarian, ditambah `limit` opsional (bawaan 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` mengembalikan simbol yang memiliki tepi masuk ke simbol ini; `code_callees` mengembalikan simbol yang menjadi dependensinya.
 
-## Check what a change would break
+## Periksa apa yang akan rusak akibat perubahan
 
-This is the tool the whole page exists for:
+Inilah alat yang menjadi alasan seluruh halaman ini ada:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Alat ini menghitung radius dependensi **terbalik**: semua hal yang secara langsung maupun transitif bergantung pada simbol itu melalui tepi `calls`, `extends`, dan `implements` (impor, mix-in, dan referensi generik disimpan di graf tetapi tidak ditelusuri di sini). `depth` adalah jumlah lompatan maksimum, antara 1 dan 6, dengan bawaan 2.
 
-The result is three fields:
+Hasilnya terdiri atas tiga field:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — simbol yang Anda tanyakan
+- `impacted` — himpunan yang dapat dijangkau, termasuk root pada kedalaman 0, masing-masing membawa `depth`-nya dari root
+- `edgeCount` — berapa banyak tepi yang dilintasi penelusuran, sebagai hitungan dan bukan tepinya sendiri
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Jalankan alat ini sebelum Anda mengganti nama atau mengubah signature, dan berikan daftar impacted kepada agen sebagai cakupan kerjanya.
 
-## Results are checked against the caller's own working copy
+## Hasil diperiksa terhadap salinan kerja milik pemanggil
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Untuk pemanggil berupa agen, id space disuntikkan secara otomatis dan hasilnya diverifikasi terhadap salinan kerja milik **space tersebut**. Simbol yang filenya sudah tidak ada lagi di pohon pemanggil akan dihilangkan, dan responsnya membawa hitungan `staleOmitted` beserta catatan bahwa indeks sudah usang untuk simbol-simbol itu.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Inilah sebabnya Anda dan agen bisa mendapat jawaban berbeda untuk kueri yang sama, dan sebabnya agen di satu space bisa mendapat jawaban berbeda dari agen di space lain. Setiap percakapan dalam satu space berbagi worktree yang sama itu. Verifikasi bersifat fail-open: jawaban yang usang lebih dipilih daripada jawaban kosong.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/).
+Minta agen menjalankan `code_impact` (atau `review_studio.blastRadius`) saat Anda ingin mengetahui radius dampak suatu perubahan. Lihat [Komputasi tinjauan](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/).
 
-## Semantic search needs the embedding model
+## Pencarian semantik memerlukan model embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Simbol dan fakta di-embed pada saat penulisan, dan hanya jika model embedding di perangkat sudah terpasang. Sebelum itu, `mode: "semantic"` dan bagian semantik dari hybrid tidak punya apa pun untuk dicocokkan, sehingga pencarian praktis hanya berbasis kata kunci.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Pasang modelnya di **Pengaturan → Server → Diagnostik & privasi → Pencarian semantik** sebelum Anda mengindeks. Simbol memperoleh vektor saat filenya dicerna.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Perhatikan juga bahwa pembangunan ulang biner server akan menyiapkan ulang dylib grammar dan mengubah mtime-nya, yang membatalkan setiap checkpoint indeks dan memaksa satu penelusuran ulang penuh atas setiap checkout pada eksekusi berikutnya. File akan di-hash ulang, tetapi file yang tidak berubah tidak diekstrak ulang.
 
-## What is in the graph
+## Apa yang ada di graf
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Jenis simbol:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Jenis tepi:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/id-ID/panduan-pengguna/referensi/alat-mcp/).
+Signature kanonis untuk alat-alat ini ada di [Alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/).
 
-## Related guides
+## Panduan terkait
 
-- [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
-- [Review compute (cohorts and axes)](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/)
-- [Use the MCP server](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/)
+- [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
+- [Komputasi tinjauan (kohort dan sumbu)](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/)
+- [Gunakan server MCP](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/)
 
-## Related concepts
+## Konsep terkait
 
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/)
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/)

@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Conceitos
+description: Como funciona o Control Center e por que motivo é construído desta forma — a leitura de enquadramento por trás dos guias.
 slug: pt-PT/manual/conceitos
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/pt-PT/manual/guias/); when you want to look
-something up, go to the [reference](/pt-PT/manual/referencia/).
+Estas páginas explicam **como o Control Center funciona e porquê**. Servem para
+compreender, não para fazer: nenhuma página aqui é um procedimento a seguir. Quando
+quiser realizar uma tarefa específica, consulte os [guias práticos](/pt-PT/manual/guias/);
+quando quiser procurar uma informação, consulte a [referência](/pt-PT/manual/referencia/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Leia-as por qualquer ordem. Se está a começar, o modelo principal é o ponto de partida.
 
-## Core model
+## Modelo principal
 
-The four ideas everything else is built on.
+As quatro ideias em que tudo o resto se baseia.
 
-- [Workspaces and isolation](/pt-PT/manual/conceitos/espacos-de-trabalho/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/pt-PT/manual/conceitos/modelo-de-agentes/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/) — what happens between your message and the agent's first token
-- [Modes](/pt-PT/manual/conceitos/modos/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/pt-PT/manual/conceitos/contexto-de-ferramentas/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/pt-PT/manual/conceitos/inteligencia-de-codigo/) — the code graph, language server, structural search and debugger
-- [Conversation history](/pt-PT/manual/conceitos/historico-de-conversa/) — persistence, compaction and forking a transcript
+- [Espaços de trabalho e isolamento](/pt-PT/manual/conceitos/espacos-de-trabalho/) — a fronteira entre inquilinos e por que motivo é imposta pela estrutura da base de dados e não pela disciplina das consultas
+- [O modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/) — aquilo que compõe um agente: identidade, papel, skills, capacidades, adaptador e modelo
+- [Ciclo de vida do despacho de agentes](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/) — o que acontece entre a sua mensagem e o primeiro token do agente
+- [Modos](/pt-PT/manual/conceitos/modos/) — como `chat`, `plan`, `review` e `orchestrate` alteram o que um agente pode fazer
+- [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas/) — por que motivo um agente vê apenas um subconjunto das suas ferramentas, como chega às restantes e o que mantém a cache do fornecedor quente
+- [Inteligência de código](/pt-PT/manual/conceitos/inteligencia-de-codigo/) — o grafo de código, o servidor de linguagem, a pesquisa estrutural e o depurador
+- [Histórico de conversa](/pt-PT/manual/conceitos/historico-de-conversa/) — persistência, compactação e ramificação de um transcript
 
-## Safety and control
+## Segurança e controlo
 
-What an agent is allowed to touch and who decides.
+Aquilo que um agente pode tocar e quem decide.
 
-- [Sandbox and security](/pt-PT/manual/conceitos/sandbox-e-seguranca/) — what actually constrains an agent run today
-- [Guardrails](/pt-PT/manual/conceitos/barreiras/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/pt-PT/manual/conceitos/autorizacao/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/pt-PT/manual/conceitos/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/) — o que realmente limita uma execução de agente atualmente
+- [Barreiras](/pt-PT/manual/conceitos/barreiras/) — um único motor de políticas para todas as ações que modificam o estado e como é resolvida uma regra
+- [Autorização](/pt-PT/manual/conceitos/autorizacao/) — papéis, o catálogo de permissões e o registo de auditoria
+- [Rigs e recintos](/pt-PT/manual/conceitos/rigs/) — por que motivo os agentes recebem VMs descartáveis em vez da sua máquina, e qual é afinal a fronteira
 
-## Directing the work
+## Dirigir o trabalho
 
-Turning intent into work that gets done.
+Transformar a intenção em trabalho concretizado.
 
-- [Tickets and delegation](/pt-PT/manual/conceitos/tickets/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/pt-PT/manual/conceitos/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/pt-PT/manual/conceitos/orquestracao/) — one goal, one approval, a generated pipeline
-- [AI review](/pt-PT/manual/conceitos/revisao-com-ia/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/pt-PT/manual/conceitos/conversas-de-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/pt-PT/manual/conceitos/memoria-e-conhecimento/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/pt-PT/manual/conceitos/avaliacoes-e-qualidade/) — eval suites and the Quality tab
+- [Tickets e delegação](/pt-PT/manual/conceitos/tickets/) — a unidade de trabalho neutra em relação ao fornecedor que toda a frota partilha
+- [Pipelines e automatização](/pt-PT/manual/conceitos/pipelines/) — fluxos de trabalho em DAG, disparadores e execuções retomáveis
+- [Orquestração](/pt-PT/manual/conceitos/orquestracao/) — um objetivo, uma aprovação, um pipeline gerado
+- [Revisão com IA](/pt-PT/manual/conceitos/revisao-com-ia/) — como uma PR passa a ser uma PR revista: espaços de revisão, consenso entre pares, eixos e o veredicto Ship/Hold/Block
+- [Conversas de PR](/pt-PT/manual/conceitos/conversas-de-pr/) — responder a uma menção do GitHub ou à etiqueta `ai-review` a partir do próprio host de código
+- [Memória e conhecimento](/pt-PT/manual/conceitos/memoria-e-conhecimento/) — factos, políticas e aquilo que um agente pode saber
+- [Avaliações e qualidade](/pt-PT/manual/conceitos/avaliacoes-e-qualidade/) — suites de avaliações e o separador Qualidade
 
-## People and reach
+## Pessoas e alcance
 
-Working with other humans and reaching the fleet from elsewhere.
+Trabalhar com outras pessoas e alcançar a frota a partir de qualquer lugar.
 
-- [Multiplayer and presence](/pt-PT/manual/conceitos/multijogador/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/pt-PT/manual/conceitos/sso/) — SAML and OIDC logins
-- [Chat bridges](/pt-PT/manual/conceitos/pontes-de-chat/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/pt-PT/manual/conceitos/controlo-remoto/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/pt-PT/manual/conceitos/reunioes/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/pt-PT/manual/conceitos/calendario/) — Google Calendar sync and meeting alerts
+- [Multijogador e presença](/pt-PT/manual/conceitos/multijogador/) — pessoas e agentes como participantes em pé de igualdade e o que condiciona o acesso
+- [Início de sessão único](/pt-PT/manual/conceitos/sso/) — inícios de sessão SAML e OIDC
+- [Pontes de chat](/pt-PT/manual/conceitos/pontes-de-chat/) — por que motivo a ponte do Slack estabelece a ligação para fora e o que autoriza uma mensagem proveniente do chat
+- [Controlo remoto e telemóvel](/pt-PT/manual/conceitos/controlo-remoto/) — como um telemóvel alcança o seu servidor e o modelo de segurança que o envolve
+- [Reuniões e transcrição](/pt-PT/manual/conceitos/reunioes/) — gravação, transcrição e resumo no próprio dispositivo
+- [Calendário e agendamento](/pt-PT/manual/conceitos/calendario/) — sincronização com o Google Calendar e alertas de reuniões
 
-## Under the hood
+## Por baixo do capô
 
-The shape of the system itself.
+A forma do próprio sistema.
 
-- [Architecture](/pt-PT/manual/conceitos/arquitetura/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/pt-PT/manual/conceitos/implementacao/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/pt-PT/manual/conceitos/eventos-de-dominio/) — the in-process bus features talk over
+- [Arquitetura](/pt-PT/manual/conceitos/arquitetura/) — camadas, o kernel partilhado, portas e adaptadores
+- [Implementação e clientes](/pt-PT/manual/conceitos/implementacao/) — como os clientes de computador, de navegador e de telemóvel se relacionam com um servidor
+- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/) — o bus em processo pelo qual as funcionalidades comunicam

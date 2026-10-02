@@ -1,152 +1,133 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: 配置护栏
+description: 为智能体的操作设置允许、先询问和拒绝规则，用预演探针测试这些规则，并按空间调整自主程度。
 slug: zh-CN/手册/操作指南/配置护栏
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+本指南介绍如何配置护栏：这些规则决定智能体的某项操作是直接运行、先请求批准，还是被拒绝。
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+护栏覆盖每个会改变状态的工具所声明的十三种效果类别。它们在工具被调用的位置于服务器端强制执行，
+绝不依赖提示词里的某条指令。
 
-## Set a decision for an action class
+## 为某个操作类别设置决策
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. 前往 **设置 → 工作区 → 智能体权限**
+2. 用分段控件选择范围：**工作区**、**智能体**（然后选择智能体），或**空间**（然后选择空间）
+3. 在操作类别所在的行上，选择**允许**、**先询问**或**拒绝**
+4. 要删除你设置过的规则，请按该行末尾出现的重置按钮（**恢复为继承值**）——决策会回退到更宽的范围
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+每一行都会以状态标签显示生效的决策，并用徽章标明它的来源：**此范围**、**继承**或**内置默认值**。
+该矩阵在智能体（`chat`）模式下解析，因此**模式预设**在这里从不会出现——要查看这一层，请选择
+某个只读模式后再使用预演探针。
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+写入规则需要 `admin` 角色。读取该矩阵则不需要。
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+检查点：在工作区范围把**推送到远程仓库**设为**拒绝**，然后对 `git push origin main` 运行下面的
+预演探针。结果会显示 `deny`，来源为 `workspace`。
 
-## Understand how a decision is resolved
+## 了解决策如何解析
 
-Resolution is **specificity first, then restrictiveness**:
+解析的顺序是**先看具体程度，再看限制程度**：
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. 先看**空间**规则，再看**智能体**规则，最后看**工作区**规则。第一个存在匹配规则的范围做出决策，
+   解析就此停止
+2. 如果没有规则匹配，就应用**模式预设**——只读模式（plan、review、orchestrate）会拒绝十三种类别中
+   的十一种
+3. 如果模式没有规定，就应用**内置默认值**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+在同一个范围内，命令规则按最长匹配前缀解析，而具体程度相同的冲突则按**限制最强**解析——拒绝优先于
+先询问，先询问优先于允许。一个操作如果声明了多个类别，会分别独立解析每个类别，然后以限制最强的
+方式把它们合并起来。
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[允许不能胜过拒绝]
+更窄的规则因具体程度更高而获胜，出现平局时由限制程度打破——因此工作区范围的**允许**无法覆盖
+任何地方的**拒绝**。
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+**先询问**决策只会弹出一个批准提示，覆盖所有解析为 `prompt` 的类别。**在未连接审批人的情况下，它
+会被拒绝**，无论是 shell 命令还是内置运行器的工具调用都是如此。这是有意为之：一次没有把关的运行
+比一次被拒绝的运行更糟。
 
-### Action classes and built-in defaults
+### 操作类别与内置默认值
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| 操作类别                     | 内置默认值 |
+| ---------------------------- | ---------- |
+| 删除文件                     | 先询问     |
+| 写入工作树之外               | 允许       |
+| 创建提交                     | 允许       |
+| 推送到远程仓库               | 先询问     |
+| 打开 pull request            | 先询问     |
+| 发布评审或合并               | 先询问     |
+| 写入外部跟踪器               | 先询问     |
+| 访问网络                     | 允许       |
+| 读取密钥                     | 允许       |
+| 安装软件包                   | 允许       |
+| 运行进程                     | 允许       |
+| 更改工作区结构               | 允许       |
+| 操控隔离舱（机台）           | 允许       |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+这套分类法是封闭的。新工具如果发布时没有声明自己的类别，就通不过在 CI 中运行的棘轮测试，因此不会
+有工具带着一个悄悄为空的效果集合上线。
 
-## Test a rule with the what-if probe
+## 用预演探针测试规则
 
-Before changing a rule, check how the current policy already resolves it.
+在更改规则之前，先检查当前策略已经如何解析它。
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. 在同一页面上，滚动到**预演**
+2. 选择一个**操作**（十三种类别之一）
+3. 可选地填写**命令**（例如 `git push origin main`）、**智能体**、**空间**和**模式**
+4. 读取结果：决策、原因，以及**来源：**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+探针会针对你的实时规则运行与强制执行路径相同的解析器，因此答案是精确的。如果结果出乎你的意料，
+就在上面的矩阵中更改规则，然后再次探测。
 
-## Set a space's autonomy dial
+## 设置空间的自主程度调节器
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+该调节器按每个空间中的每个智能体单独生效，它与规则叠加，而不是取代规则。
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. 打开该空间
+2. 从空间头部打开**管理参与者**
+3. 在智能体所在行的**自主程度**下，选择一个级别：
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| 级别             | 效果                                                                              |
+| ---------------- | --------------------------------------------------------------------------------- |
+| **默认**         | 没有空间设置——行为等同于**批准后行动**                                             |
+| **仅提议**       | 每个受把关的工具都被直接拒绝，并给出一条消息，告诉智能体改为提议该操作             |
+| **批准后行动**   | 有风险的操作会进入默认拒绝的批准闸门                                              |
+| **自由行动**     | 预先批准任何未解析为硬性拒绝的操作                                                |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[自由行动会吞掉所有询问]
+在**自由行动**下，**先询问**决策会在不询问你的情况下被批准。只有 `deny`——来自规则、来自模式预设，
+或来自内置默认值——仍然会阻止操作。要盯着这个空间时才用它，不要把它当作默认设置。
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+该调节器只作用于内置运行器。Claude Code 适配器会在这一闸门之外运行它自己的工具。
 
-## Know where guardrails do not reach
+## 了解护栏覆盖不到的地方
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+同一页面底部的**规则的执行位置**表就是这一内容的应用内版本：对于每个效果类别，它会说明每个运行器
+是在策略闸门处拦截它、把它交给沙盒，还是根本无法拦截它。
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/zh-CN/手册/操作指南/沙盒策略/).
+- **Claude Code 适配器**自身的工具调用不受把关。Claude Code 以
+  `--dangerously-skip-permissions` 启动，因此它的 read、write、edit 和 bash 调用从不经过这道
+  护栏。该适配器受把关的是它回调的 MCP 工具集，以及 Control Center 为启动它而派生的 shell 命令。
+- **模式自身的输出动词**（`submit_plan`、`propose_orchestration`）是被钉住的，永远无法被拒绝——
+  否则模式在结构上将无法产出它唯一的交付物。
+- **沙盒是否为这些规则兜底取决于宿主。** 当 `cc_server` 找到可用后端时，它会包裹 Claude Code CLI
+  和内置运行器的 `bash` 工具，因此即使是你没有写过的规则，其下也仍有操作系统这一层兜底。在
+  **Windows 上没有任何兜底**，而在缺少 `bwrap` 和 `socat` 的 Linux 或 WSL2 上同样没有——在那里，
+  护栏加上模式的工具集就是全部的执行手段，而不是它的第二道防线。用
+  [配置沙盒策略](/zh-CN/手册/操作指南/沙盒策略/)确认你属于哪种情况。
 
-## Related guides
+## 相关指南
 
-- [Configure sandbox policies](/zh-CN/手册/操作指南/沙盒策略/)
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Manage adapters and models](/zh-CN/手册/操作指南/适配器/)
+- [配置沙盒策略](/zh-CN/手册/操作指南/沙盒策略/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [管理适配器与模型](/zh-CN/手册/操作指南/适配器/)
 
-## Related concepts
+## 相关概念
 
-- [Guardrails — one policy for every mutating action](/zh-CN/手册/概念/护栏/)
-- [Modes](/zh-CN/手册/概念/模式/)
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/)
+- [护栏 — 为每个会改变状态的操作统一使用一套策略](/zh-CN/手册/概念/护栏/)
+- [模式](/zh-CN/手册/概念/模式/)
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)

@@ -1,92 +1,92 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: 快速开始
+description: 安装 Control Center，配置一个智能体，然后看它在你的仓库上工作。
 slug: zh-CN/手册/快速开始
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+这是从零开始、直到智能体在你自己的代码上运行起来的最短完整路径。请按顺序操作；每一步都依赖前一步。
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+你需要 Git、一个 GitHub 账号，以及一个模型提供商账号（Anthropic、OpenAI、Codex、Cursor、Kimi Code，或任何提供 API 密钥的提供商），或者已经安装好的 Claude Code CLI。其余一切都会在过程中配置完成。
 
-## Step 1: Install and launch
+## 第 1 步：安装并启动
 
-Install Control Center as described in [Install](/zh-CN/手册/安装/), then open it.
+按[安装](/zh-CN/手册/安装/)中的说明安装 Control Center，然后打开它。
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+首次启动时，桌面端会询问 **“Control Center 应如何运行？”**。选择 **在此应用中运行**。Control Center 会在这台机器上启动一个无界面的 `cc_server`，它掌管你的数据并完成所有工作。你从来不会看到它；取而代之打开的是引导流程界面。
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/zh-CN/手册/安装/#use-it-in-your-browser) for the browser route.
+:::note[不想安装任何东西？]
+同一个应用在浏览器中运行于 [app.usectrl.dev](https://app.usectrl.dev)，功能完全相同。不过，
+浏览器标签页无法托管服务器，所以你得自己提供一个——在本地运行 `cc_server` 并连接到
+`ws://localhost:9030`，或者把它指向另一台机器上的服务器。本快速开始走的是桌面端路线，因为它
+不需要配置服务器；浏览器路线见[安装](/zh-CN/手册/安装/#use-it-in-your-browser)。
 :::
 
-## Step 2: Work through onboarding
+## 第 2 步：走完引导流程
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+引导流程有五个步骤，并且按顺序进行——无法跳过其中任何一步。
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **连接**：用 GitHub 登录，或粘贴一个带有 `repo` 和 `read:org` 权限的个人访问令牌。凭据存储在服务器上，并挂到你的账号上。
+2. **工作区**：为你的第一个工作区命名，并可选地挑一个标志。创建它会预置五个智能体——一位 CEO 加上 `qa`、`architect`、`engineer` 和 `librarian`——以及内置流水线模板。
+3. **沙箱**：记录沙盒偏好。两种选择都可以让你继续。
+4. **适配器**：选择智能体默认使用的适配器和模型。选择 **Control Center (built-in)**，然后用随后出现的提供商选择器登录某个模型提供商——在连接提供商之前，模型列表会一直为空。完成这一步还会把适配器和模型写入工作区的 CEO 智能体。
+5. **语音（可选）**：安装用于听写的设备端语音模型，或跳过它。
 
-Control Center then opens your workspace inbox.
+随后 Control Center 会打开你的工作区收件箱。
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/).
+:::note[一次智能体运行受什么约束]
+在可用的情况下，智能体的命令会被包进宿主机操作系统的原生沙盒——macOS 上是 Seatbelt，Linux 上是 bubblewrap。Windows 没有后端，因此那里的运行只受其他几层约束：对话自己的工作树（Windows 上使用 `git worktree`；在提供 `rift` 的地方使用写时复制）、按每次启动中介并在运行结束时吊销的凭据，以及操作护栏。见[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 :::
 
-## Step 3: Add a repository
+## 第 3 步：添加仓库
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+前往 **设置 → 工作区 → 仓库**，然后点击 **添加仓库**。
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+该对话框浏览的是运行服务器那台机器上的文件夹，而不是你的客户端，并且它始终停留在服务器配置为对外暴露的根目录之内（默认是该用户的主目录）。只有 git 检出项才会拿到复选框。勾选你自己的那个并把它注册进来。
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+只有当检出位于 git 工作树内、带有 `origin` 远程、且该远程指向受支持的代码托管——github.com、gitlab.com 或 bitbucket.org——时，它才会被接受。其他任何情况都会被拒绝，并给出原因。
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+仓库以工作区为作用域：在这里注册一个检出，就把它放进了_这个_工作区。没有单独的关联步骤。
 
-## Step 4: Give an agent an adapter and a model
+## 第 4 步：为智能体设置适配器和模型
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+前往 **设置 → 工作区 → 智能体**。在名册中选择 `engineer` 智能体。
 
-On the **Settings** tab, set:
+在 **设置** 选项卡上设置：
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **适配器**：`Control Center (built-in)`
+- **模型**：从你在引导流程中连接的提供商里挑一个
 
-Press **Save changes**.
+点击 **保存更改**。
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+实际上这一步并非可选。只有 CEO 智能体会继承引导流程中选定的适配器；四个专业智能体创建时都没有适配器。它们会回退到 **Control Center (built-in)** 并使用 Anthropic 的默认模型，因此只有在你连接了 Anthropic 账号时它们才能运行——而且如果你连接了，跑的会是一个你没有挑选的模型。
 
-## Step 5: Send the agent a task
+## 第 5 步：给智能体派发任务
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. 在侧边栏中找到 **空间** 分区，然后点击 **+** 按钮。
+2. 为空间命名，在 **添加智能体** 下添加 `engineer` 智能体，然后创建它。
+3. 针对你注册的仓库输入一个具体的小任务，然后按 Enter。
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center 会为这段对话预配工作区各仓库的写时复制工作树，根据智能体的角色、人设、技能以及空间的上下文组装提示词，然后派发这次运行。你的源代码检出永远不会被改动。
 
-## Step 6: Watch it work
+## 第 6 步：看它工作
 
-You should see, in order:
+你应该会依次看到：
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- 输入框的发送按钮变成停止按钮，因为这段对话里有智能体正在工作
+- 智能体的推理、工具调用和文本流式写入转录
+- 运行结束时发送按钮恢复
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+然后打开 **设置 → 工作区 → 智能体**，选择该智能体并查看 **日志** 选项卡：一行运行记录，包含它的状态、时长、开始与结束时间，以及它运行时所用的适配器。
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+这就是那个循环。Control Center 中其他的一切——Pull request 审查、流水线、工单、会议、Slack——都挂在这上面。
 
-## Next steps
+## 后续步骤
 
-- [Your first workspace](/zh-CN/手册/教程/第一个工作区/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/zh-CN/手册/教程/第一个-pr/): take an agent's branch through review and merge
-- [The agent model](/zh-CN/手册/概念/智能体模型/): what an agent is made of
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/): the rest of the agent form
-- [Run an orchestration](/zh-CN/手册/操作指南/运行编排/): one goal, one approval, a generated pipeline
-- [Pair your phone](/zh-CN/手册/操作指南/配对设备/): follow the fleet from anywhere
-- [Deployment and clients](/zh-CN/手册/概念/部署/): how the desktop, web and phone clients relate to the server
+- [你的第一个工作区](/zh-CN/手册/教程/第一个工作区/)：同样的内容，但节奏更慢，并解释了隔离模型
+- [审查你的第一个 Pull request](/zh-CN/手册/教程/第一个-pr/)：把一个智能体的分支走完审查与合并
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：智能体由哪些东西构成
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)：智能体表单的其余部分
+- [运行编排](/zh-CN/手册/操作指南/运行编排/)：一个目标、一次批准、一条生成的流水线
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)：随时随地跟进机群
+- [部署与客户端](/zh-CN/手册/概念/部署/)：桌面端、Web 端和手机端客户端与服务器之间的关系

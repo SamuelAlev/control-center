@@ -1,98 +1,90 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: تخصيص بوت الدردشة
+description: أعد تسمية البوت، أو أعد صياغة ما يقوله عن نفسه، أو غيّر أمر الشرطة المائلة من داخل Control Center.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+يبيّن هذا الدليل كيف تعيد تشكيل تطبيق البوت لدى المزوّد من غير أن تغادر Control Center.
 
-## Prerequisites
+## المتطلبات
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- دور `owner` أو `admin` في مساحة العمل
+- مزوّد **متصل**. لا يظهر صف **تخصيص البوت** إلا بعد اتصال مساحة العمل
+- تطبيق يستطيع Control Center إدارته. في Slack يعني ذلك أن يحمل الاتصال رمز وصول تكوين التطبيق (`xoxe-…`)؛ وإن لم يحمله، يبيّن الصف ذلك ويبقى معطّلًا
 
-## What you can change
+## ما الذي يمكنك تغييره
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| الحقل | المعنى | الحد |
+| --- | --- | --- |
+| **اسم التطبيق** | الاسم الذي يظهر به التطبيق لدى المزوّد | 1–35 حرفًا |
+| **اسم عرض البوت** | ما يكتبه الأعضاء بعد `@` | 1–80 حرفًا |
+| **الوصف** | سطر واحد يعرضه المزوّد | 140 حرفًا أو أقل |
+| **وصف الوكيل** | يُعرَض فوق المحادثة المباشرة مع البوت | 300 حرفًا أو أقل |
+| **أمر الشرطة المائلة** | الأمر الذي يستدعيه الأعضاء، من غير الشرطة المائلة | بأحرف صغيرة، ولا يقبل إلا `a–z 0–9 _ -`، ويُقتطع عند 32 حرفًا |
+| **الرسائل المباشرة** | هل يتيح البوت تجربة الرسائل المباشرة والوكيل | تشغيل أو إيقاف |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+يتحقق Control Center من حقول النص الأربعة قبل استدعاء المزوّد، فتصل إليك «يجب أن يكون اسم التطبيق بين 1 و35 حرفًا» بدل `invalid_manifest` المبهم من خادم لا تراه. الأمر لا يُرفض بل يُطبَّع: تُنزَع الشرطة المائلة في أوله، ويُحوَّل الباقي إلى أحرف صغيرة، ويُسقَط كل ما خرج عن `a–z 0–9 _ -`، والنتيجة الفارغة تعود إلى `cc`.
 
-## Edit the bot
+## تعديل البوت
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. انتقل إلى **الإعدادات ← مساحة العمل ← عام** ومرّر إلى بطاقة **جسور الدردشة**
+2. في كتلة المزوّد، انقر **تخصيص البوت**
+3. يفتح الحوار على القيم _الحيّة_ للتطبيق، مقروءة من المزوّد، فالتغيير الذي أجراه أحدهم في واجهة Slack نفسها هو ما تبدأ منه
+4. عدّل ما تحتاج واحفظ
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+قراءة هذه القيم الحيّة تدير الرمز لدى Slack، ولهذا لا تجلبها الصفحة عند التحميل، بل تنتظر نقرة مقصودة.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+تُركّب الكتابة تغييراتك فوق تعريف التطبيق الحالي. أي شيء لا يمثّله Control Center — أمر شرطة مائلة ثانٍ أضفته في Slack، أو خطوة سير عمل، أو إعداد لا صلة له — يبقى كما هو. تُدمَج النطاقات والأحداث ولا تُطرح أبدًا.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+بعد الحفظ يعيد Control Center قراءة هوية البوت، حتى يتطابق الاسم في الإعدادات مع الاسم في تطبيق الدردشة.
 
-## Reinstall when permissions change
+## إعادة التثبيت عند تغيّر الأذونات
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[إعادة التثبيت بعد تغيير الأذونات]
+يطبّق Slack تعريف التطبيق الجديد فورًا، ويبقي المنحة المثبّتة كما كانت. أعد
+تثبيت التطبيق حتى يسري تغيير الأذونات. يبقى الجسر يعمل على المنحة السابقة إلى
+أن تفعل ذلك.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+حين يغيّر الحفظ الأذونات، يبقى الحوار مفتوحًا ويقول «غيّر Slack أذونات التطبيق. أعد تثبيت التطبيق لتسري التغييرات.»، مع زر **إعادة تثبيت التطبيق** يفتح صفحة تثبيت هذا التطبيق على الفريق في Slack. في Slack يكون ذلك **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## إعادة تسمية أمر الشرطة المائلة
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+غيّر **أمر الشرطة المائلة** واحفظ. يكتب الجسر بعدها التعليمات بالأمر الذي استُدعي به آخر مرة، فتتبع نصوص المساعدة وتعليمات الربط الاسم الجديد بدل أن تسمّي أمرًا لم يعد موجودًا.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+إعادة التسمية لا تكسر الخيوط المربوطة بالجسر: الخيوط تُعرَّف بالمحادثة لا بالأمر.
 
-## What Control Center will not change
+## ما لن يغيّره Control Center
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **إعدادات بنية التطبيق.** النقل (Socket Mode) والنطاقات المطلوبة واشتراكات الأحداث تُفرَض ولا تُعرَض. تطبيق يمكن إسكاته من شاشة إعدادات تذكرة دعم، لا ميزة
+- **أيقونة البوت.** لا يمكن تغييرها إلا من إعدادات التطبيق في المزوّد نفسه، والحوار يقول ذلك
+- **ترحيلات الميزات لدى المزوّد.** التطبيق الذي ما زال على شكل المساعد القديم لدى Slack يحتفظ به. هذا الحوار يحرّر وصفًا ولا يرحّل التطبيق
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### There is no Customize bot row at all
+### لا يوجد صف «تخصيص البوت» أصلًا
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/).
+مساحة العمل غير متصلة بعد. لا يظهر الصف إلا حين تعرض كتلة المزوّد اتصالًا حيًا. انظر [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/).
 
-### The Customize bot row is disabled
+### صف «تخصيص البوت» معطّل
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+الاتصال بلا بيانات اعتماد لإدارة التطبيق — يقول العنوان الفرعي للصف «يحتاج Control Center إلى رمز وصول تكوين التطبيق لتعديل البوت. أعد الاتصال وضمِّن واحدًا.» لـ Slack، ولّد زوج رموز تكوين التطبيق من [api.slack.com/apps](https://api.slack.com/apps) وأعد الاتصال بعد إدخال رمز التحديث. هذا متوقَّع لتطبيق بُني يدويًا أو أُنشئ عبر **إنشاء في Slack**، لأن Slack لا يُبلغ أبدًا عن التطبيق الذي أنشأه.
 
-### "Control Center does not know which app to edit"
+### «لا يعرف Control Center أي تطبيق يعدّله»
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+لا يحمل الاتصال المخزَّن معرّف تطبيق، وهذا يقع عادةً مع تطبيق وُصل يدويًا قبل تسجيل المعرّف. أعد الاتصال بمساحة العمل، أو أنشئ التطبيق من Control Center.
 
-### The bot's new name has not appeared in chat
+### اسم البوت الجديد لم يظهر في الدردشة
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+يخزّن المزوّدون بيانات التطبيق الوصفية مؤقتًا لبرهة. إن بقي الاسم قديمًا بعد دقيقة، فتحقق هل طلب منك الحفظ إعادة تثبيت التطبيق.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
-- [Link your Slack account](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
-- [Chat bridge](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- [ربط حساب Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
+- [جسر الدردشة](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)
+- [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)

@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Інтелект коду
+description: Чому агенту потрібні компілятор, механізм структурного зіставлення й налагоджувач — і на що кожен із них відповідає так, як не можуть інші.
 slug: uk-UA/керівництво/поняття/інтелект-коду
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center дає агенту чотири способи зрозуміти код, окрім простого читання. Вони відповідають на справді різні питання, і чотири з них, а не один, існують тому, що жоден окремий механізм не відповідає на всі.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Механізм              | Відповідає на                                        | Витрати                                   |
+| --------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| **Граф коду**         | Що тут є і що від цього залежить                     | Прохід індексування; дешево запитувати    |
+| **Мовний сервер**     | Чи це справді компілюється і що це за тип           | Процес сервера на кожен проєкт            |
+| **Структурний пошук** | Де з'являється ця ФОРМА                              | Розбір на кожен файл                      |
+| **Налагоджувач**      | Що було істинним у цю мить, у цьому кадрі           | Зупинений процес                          |
 
-## The gap the language server closes
+## Прогалина, яку закриває мовний сервер
 
-The [code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/) побудований на tree-sitter: символи, ребра викликів, радіус впливу. Він швидкий, він дешевий і не знає нічого про **типи**. Він не скаже, чи компілюється виклик, який ви щойно написали, чи існує те поле в об'єкті й чи не пропустило ваше перейменування якийсь реекспорт.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Без мовного сервера агент дізнається про це під час тестів — або ніколи. Він пише щось правдоподібне, іде далі, а збій виринає три ходи потому, причеплений до іншої зміни.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Тож виграш насправді не в інструменті `lsp`. Він у тому, що `write`, `edit` і `apply_patch` обгорнуто: після кожного запису файл проходить крізь мовний сервер, і **нові** діагностичні повідомлення долучаються до результату інструмента. Агент дізнається, що зламав збірку, тієї ж миті, коли її зламав, незалежно від того, чи думав він питати.
 
-### Only new diagnostics
+### Лише нова діагностика
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Повторювати те, що агенту вже сказали, гірше, ніж мовчати: це наповнює результат шумом, який агент навчається пропускати, і разом із ним губиться та одна нова помилка. Журнал на кожен запуск відстежує, що вже повідомлено, за рівнем серйозності, кодом і повідомленням — **не** за позицією, тож діагностика, яка лише з'їхала на чотири рядки вниз, не позначається знову як нова.
 
-### Lazy, and honest about being absent
+### Ліниво — і чесно, коли його немає
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Жоден сервер не запускається під час старту. Він запускається на перший запит, який його потребує, а це майже завжди перше редагування файлу, який він обслуговує, а простоювальні сервери прибираються. Хост, який ніколи не торкається Dart, ніколи не запускає аналізатор.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Виявлення — це **перетин**: у чекауті має існувати кореневий маркер *і* має резолвитися бінарник. Сам маркер каже «цей проєкт на Python» і нічого не каже про те, чи встановлено сервер; сам резолвний бінарник каже, що на хості є тулчейн, і нічого — про цей чекаут. Лише обидва разом означають, що запит може вдатися, а інструмент, який пропонують і який завжди падає, гірший за відсутній.
 
-## Why structural search, when grep exists
+## Навіщо структурний пошук, коли є grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` зіставляє символи. Це правильний інструмент для імені й неправильний для форми.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Структурний шаблон розбирається **тією ж граматикою, що й файл**, тож `dispose($X)` знаходить виклик, як би його не розставляли пробілами, не переносили чи не розбивали на рядки, і ніколи не зіставляє ті самі символи всередині рядкового літерала чи коментаря.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Властивість, яка робить його більшим, ніж regex із зайвими кроками, — це те, що метазмінна, повторена в одному шаблоні, має захопити той самий текст:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+зіставляє захисну умову, яка звільняє саме те, що перевірила, і не зіставляє ту, яка звільняє щось інше. Це клас помилок, який текстом не виразити взагалі.
 
-### It runs on the tree-sitter already linked
+### Він працює на вже підключеному tree-sitter
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Другого рушія немає. `cc_natives` уже завантажує tree-sitter і його граматики для графа коду, разом із кешем скомпільованих запитів і таблицею мов. Механізм зіставлення — це чистий Dart над деревами, які й так розбиралися. Другий структурний рушій означав би другий парсер, другий набір граматик, який треба збирати й готувати на кожній платформі, і дві відповіді на питання «що таке вираз виклику».
 
-### A fragment needs somewhere to live
+### Фрагменту потрібно десь жити
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Граматика визначає лише те, чим є цілий *файл*. Розібраний голим на верхньому рівні Dart, `dispose(x)` — цілком коректна **сигнатура функції** — оголошення з назвою `dispose`, що приймає параметр `x` — і жодної помилки, яка б це викрила. Механізм зіставлення, побудований на такому розборі, шукає оголошення, не знаходить жодного виклику й повідомляє «збігів немає» для шаблону, який ніколи не читався так, як виглядає.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Тож шаблон пробують на драбині каркасів — інструкція, вираз, член класу, верхній рівень — і перемагає перший, який його приймає. Фрагмент, який не приймає жоден контекст, позначають як непридатний до розбору, а не шукають і тихо не знаходять.
 
-## Why a rewrite stages instead of writing
+## Чому структурний перезапис спершу готується, а не записується
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Структурний перезапис — найширша зміна, яку може зробити агент: один шаблон, сорок файлів, і ніхто не читає результат рядок за рядком — ні модель, ні людина, яка його попросила. Записати його й доповісти «готово» означає, що перший чесний погляд на зміну — це `git diff` після факту.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Тож `ast_edit` повідомляє, що він *зробив би* — кількість, файли, знайдені місця — а зміна лягає на диск лише тоді, коли `resolve` її зафіксує. Це також те, що дозволяє показати диф і кнопки **Прийняти**/**Відкинути** людині, перш ніж щось дійде до диска.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Фіксація відбувається за принципом «усе або нічого», і кожен файл звіряють із вмістом, зафіксованим у момент підготовки. Між підготовкою й фіксацією агент міг відредагувати один із цих файлів вручну, прохід діагностики міг його переписати, а форматувальник — торкнутися його; якби фіксація все одно відбулася, цю роботу було б відкинуто, а диф виглядав би навмисним. Будь-яка розбіжність відхиляє всю зміну, бо частково застосований структурний перезапис лишає дерево, яке не компілюється в жодній з форм.
 
-## What a debugger answers that a print statement cannot
+## Що налагоджувач відповідає такого, чого не може оператор друку
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Цикл з оператором друку такий: додати друк, знову запустити все, прочитати вивід, прибрати друк. Він коштує повного прогону тестів на кожне питання й відповідає лише на те питання, яке ви здогадалися поставити *до* запуску.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Зупинений кадр відповідає одразу на всі питання про цю мить — кожну локальну змінну, кожен виклик і вираз, обчислений у власній області видимості кадру. Для завислого процесу чи збою, який відтворюється раз на десять запусків, це різниця між цілим днем і хвилиною.
 
-### Bounded like an enclosure, and for the same reason
+### Обмежена, як вольєр, і з тієї ж причини
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Налагоджувальний адаптер володіє **зупиненим процесом**, який тримає все, що тримає цей процес — порт, блокування, з'єднання з базою даних. Сесія, яку ніхто не веде, — це витік, який переживає хід, що її запустив. Тож є жорсткий TTL, рівно одна сесія на розмову, а другий `launch` відхиляється, а не тихо замінює перший: агент, який запускає другий, не завершивши перший, майже напевно загубив перший із виду.
 
-### One transport, two protocols
+### Один транспорт, два протоколи
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol поділяє з Language Server Protocol кадрування `Content-Length` і нічого понад нього — інші ключі кореляції, інша форма збою і третій тип повідомлень (події), який не має відповідника в LSP. Кадрування живе в одному місці; протоколи сидять на ньому окремо.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Якби кадрування писали двічі, було б дві відповіді на питання «повідомлення розтягнуте на два блоки», «в одному блоці три повідомлення» і «сервер написав банер у stdout перед своїм першим кадром», і лише одна з них отримала б виправлення.
 
-## Related
+## Пов'язане
 
-- [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/) — the symbol and impact side
-- [Debug a failing test](/uk-UA/керівництво/практичні-посібники/налагодити-тест-що-падає/) — the debugger, end to end
-- [Refactor structurally](/uk-UA/керівництво/практичні-посібники/структурний-рефакторинг/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/uk-UA/керівництво/довідка/інструменти-агента/) — every operation and argument
+- [Шукати код через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/) — символи та вплив
+- [Налагодити тест, що падає, з агентом](/uk-UA/керівництво/практичні-посібники/налагодити-тест-що-падає/) — налагоджувач від початку до кінця
+- [Рефакторити код структурно](/uk-UA/керівництво/практичні-посібники/структурний-рефакторинг/) — `ast_grep` і `ast_edit`
+- [Вбудовані інструменти агента](/uk-UA/керівництво/довідка/інструменти-агента/) — кожна операція та аргумент

@@ -1,137 +1,78 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Redirecționează porturi dintr-un terminal
+description: Ajunge la un server de dezvoltare pornit într-un Terminal (VM) sau într-un shell gazdă — de pe mașina ta, din Browser (VM), de pe Android, în rețeaua ta sau sub un domeniu de dezvoltare cu HTTPS.
 slug: ro-RO/manual/ghiduri-practice/redirectionare-porturi
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Un server pe care îl pornești în terminalul unei conversații este publicat doar pentru **acel spațiu**. Panoul de porturi detectează procesele care ascultă, pornite de această aplicație acolo, le mapează și îți oferă o adresă pentru fiecare loc de unde ai putea vrea să le accesezi. Două spații pot asculta amândouă pe `5173`; hărțile lor nu se amestecă niciodată.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Nimic de aici nu deschide mașina: fiecare cale este creată de server, la cerere, și moare odată cu terminalul sau stația.
 
-## See what is listening
+## Vezi ce ascultă
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Deschide **Terminal (VM)** al conversației sau shell-ul gazdă (într-un spațiu sau pe pagina unui PR).
+2. Pornește-ți serverul — `pnpm dev`, `python -m http.server 8000`, orice.
+3. În câteva secunde, **pictograma de priză** din colțul din dreapta sus al terminalului primește un punct. Dă clic pe ea.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panoul listează fiecare port care ascultă, împreună cu procesul care îl deține, în forma `3000 → 3000`: în stânga portul la care s-a legat procesul, în dreapta portul la care răspunde local (același număr ori de câte ori era liber pe mașina ta). Fiecare rând spune și dacă `localhost` de pe desktop, Browser (VM) și Android îl pot accesa.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Descoperirea este limitată: un Terminal (VM) este interogat în interiorul acelui invitat; un shell gazdă este interogat din arborele de procese PTY al acelei sesiuni. Alte spații și alte procese de pe Mac-ul tău nu sunt listate.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Porturile noi din **acest** terminal sunt redirecționate automat. Dezactivează **Redirecționează porturile automat** din același panou dacă vrei doar pe cele pe care le adaugi tu.
 
-## Reach it from this computer
+## Accesează-l de pe acest computer
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Folosește **Copiază URL-ul local** de pe rând — `http://localhost:3000`. Redirecționarea ascultă doar pe loopback, așa că nimic altceva din rețeaua ta nu o poate vedea.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Dacă două spații expun amândouă portul `5173` al invitatului, iar mașina ta ocupă deja `127.0.0.1:5173`, al doilea spațiu păstrează `5173` al invitatului și primește un port local efemer. Copiază URL folosește numărul din dreapta.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Pe un shell gazdă, procesul este deja pe mașina ta. Maparea aceluiași port local nu are niciun efect; alegerea unui port local **diferit** leagă un proxy loopback la cel pe care l-ai ales.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (sau legarea la `0.0.0.0`) **nu** face ca un Browser (VM) izolat să poată accesa un server de pe Mac. Invitatul are propriul loopback; serverul plantează un tunel în acel invitat când fila Browser se află în **același spațiu**.
 
-## Reach it from the Browser (VM)
+## Accesează-l din Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Deschide browserul izolat în **aceeași conversație**. Tastează `localhost:<left-hand port>` — numărul la care s-a legat procesul. O remapare (`5173 → 3000`) răspunde și la numărul din dreapta în acel browser, așa că și acolo funcționează Copiază URL. `browser_use` al unui agent poate naviga la oricare dintre ele. Un server din spațiul A nu apare niciodată ca `localhost:5173` în browserul spațiului B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Folosește `localhost`, nu un IP de LAN și nu `--host`. Invitatul are propriul loopback; tunelul ascultă acolo atât pe IPv4, cât și pe IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Paginile care deschid multe conexiuni deodată (zeci de resurse, un socket de reîncărcare live) partajează același tunel. Browser (VM) le multiplexează pe un singur exec persistent, așa că un val de cereri nu înseamnă un proces pornit pentru fiecare conexiune și nu se soldează cu un timeout și o pagină albă.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+În interiorul unui spațiu, o redirecționare din Terminal (VM) are prioritate față de un shell gazdă pe același număr. Între spații nu există prioritate — sunt hărți separate.
 
-## Reach it from Android
+## Accesează-l de pe Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Deschide fila **Android** a acelui spațiu. `localhost:<port>` al emulatorului este apoi inversat către portul publicat al acestui spațiu (`adb reverse`). Un emulator este global la nivel de dispozitiv: atașarea spațiului B reorientează `:5173` către B și o elimină pe cea a lui A. Închide fila și inversările plantate de această stație sunt eliminate.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS Simulator este deja Mac-ul — fără inversare. Un iPhone fizic are totuși nevoie de o partajare în LAN.
 
-## Share it on your network
+## Partajează-l în rețeaua ta
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Partajează în rețeaua locală** publică portul la `<server-ip>:<random port>` — util pentru a deschide pagina pe telefon sau când serverul rulează pe altă mașină.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Portul LAN este întotdeauna atribuit de sistemul de operare, niciodată numărul invitatului, așa că expunerea este o adresă deliberată și vizibilă, nu una care poate fi ghicită.
+- Rămâne privat (doar loopback) până când îl activezi, iar **⋯ → Doar local** îl scoate din nou din rețea.
 
-## Give it a name — with HTTPS
+## Dă-i un nume — cu HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Setează un domeniu de browser (.test)** atribuie portului un domeniu de dezvoltare precum `myapp.test`. În Browser (VM), `https://myapp.test` îți încarcă apoi serverul cu un lacăt valid — util pentru orice se comportă diferit pe un origin denumit sau într-un context securizat (cookie-uri, service workers, callback-uri OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domeniile trebuie să se termine cu `.test` sau `.localhost` — cele două TLD-uri rezervate pentru dezvoltare, așa că un nume de dezvoltare nu poate umbri niciodată un site real.
+- **Numele** de domeniu sunt unice pe server; **numerele** de port nu sunt. Două spații pot folosi amândouă `5173`, dar nu pot revendica amândouă `myapp.test`.
+- Certificatul provine de la o autoritate locală emisă pe serverul tău prima dată când este nevoie de el. Cheile ei stau în directorul de date al serverului și nu intră niciodată într-un invitat; browserul izolat are încredere exact în acea cheie, așa că TLS către internetul real se validează în continuare normal.
+- Domeniul se rezolvă **doar în interiorul Browser (VM)**. Browserul tău de pe gazdă folosește în schimb `localhost:<port>`.
+- Și `http://myapp.test` simplu funcționează.
 
-## Forward a port by hand
+## Redirecționează un port manual
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Adaugă port** din partea de jos a panoului mapează un port înainte ca ceva să asculte pe el (sau indiferent dacă ascultă). O redirecționare manuală își păstrează adresa în timp ce serverul tău repornește — rândul afișează *nu ascultă* până când revine — în timp ce redirecționările automate dispar când dispare portul lor. Pe un shell gazdă poți seta și un port local diferit.
 
-## How it stays contained
+## Cum rămâne izolat
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/ro-RO/manual/concepte/statii/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/ro-RO/manual/referinta/statii/#ports-and-dev-domains).
+Porturile sunt indexate după spațiu de lucru și spațiu. Harta de porturi proprie a hipervizorului este fixată la pornirea unei mașini, așa că un Terminal (VM) călătorește pe două canale înguste controlate de server: o cale de intrare precreată către invitat, care refuză să se conecteze la orice port pe care invitatul nu ascultă de fapt, și tuneluri inverse pe care serverul le ține deschise pentru Browser (VM) și Android. Un shell gazdă nu scanează niciodată toată mașina. Nu se creează niciodată un ascultător în interiorul unui invitat pe care serverul nu l-a pus acolo, iar totul este demolat odată cu terminalul sau stația. Designul este explicat în [Stații și medii izolate](/ro-RO/manual/concepte/statii/#ports-without-holes); porturile rezervate exacte și regulile de domenii se află în [referința pentru stații](/ro-RO/manual/referinta/statii/#ports-and-dev-domains).
 
-## Related
+## Vezi și
 
-- [Give an agent a machine to test on](/ro-RO/manual/ghiduri-practice/foloseste-statii/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/ro-RO/manual/referinta/statii/) — reserved ports, dev TLDs,
-  defaults
+- [Oferă unui agent o mașină pe care să testeze](/ro-RO/manual/ghiduri-practice/foloseste-statii/) — deschiderea, urmărirea și preluarea stațiilor
+- [Referința pentru stații](/ro-RO/manual/referinta/statii/) — porturi rezervate, TLD-uri de dezvoltare, valori implicite

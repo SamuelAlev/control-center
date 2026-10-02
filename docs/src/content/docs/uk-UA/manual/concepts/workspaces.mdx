@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Робочі простори та ізоляція
+description: Чому робочий простір — це жорстка межа тенанта, як розділення баз даних робить цю межу структурною і що навмисно її перетинає.
 slug: uk-UA/керівництво/поняття/робочі-простори
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Що таке робочий простір?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Робочий простір — це тенант ізоляції верхнього рівня в Control Center. Він об’єднує агентів, репозиторії, простори, тікети, пам’ять, конвеєри й учасників в один обмежений контекст. Усе, що відбувається всередині робочого простору, залишається в ньому.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Типовий робочий простір відповідає одному проєкту або одній кодовій базі. У вас можуть бути окремі робочі простори для «api-service», «frontend-v2» та «infrastructure».
 
-## Workspace-scoped data
+## Дані в межах робочого простору
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Рядки робочого простору живуть у власному файлі SQLite цього робочого простору, за шляхом `<dataDir>/<workspaceId>/workspace.db`. Кожен робочий простір отримує каталог, а не голий файл, бо робочий простір накопичує більше, ніж базу даних — worktree для кожної розмови, файли агентів і навичок, облікові дані чат-бота, — і надання йому теки означає, що все це живе й видаляється разом.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Сутність                                                | Область                                          |
+| ------------------------------------------------------- | ------------------------------------------------ |
+| Агенти                                                  | Належать рівно одному робочому простору          |
+| Репозиторії                                             | Реєструються в одному робочому просторі (див. нижче) |
+| Простори, розмови та повідомлення                       | У межах робочого простору                        |
+| Тікети, проєкти, плани, оркестрації                     | У межах робочого простору                        |
+| Факти пам’яті, політики, домени, дозволи доступу        | У межах робочого простору                        |
+| Запуски конвеєрів, шаблони, тригери                     | У межах робочого простору                        |
+| Стан pull request, простори перевірки, когорти перевірки | У межах робочого простору                       |
+| Журнали запусків агентів і робоча пам’ять               | У межах робочого простору                        |
+| Учасники, запрошення, дозволи на окремі репозиторії     | У межах робочого простору                        |
+| Символи та ребра графа коду                             | Обмежено `repoId` у межах файлу робочого простору |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Більшість із цих рядків мають стовпець `workspaceId`; окремі файли баз даних забезпечують ізоляцію. Див. інваріант ізоляції нижче.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Репозиторії належать робочому простору; ідентичність між робочими просторами — за шляхом
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Рядок репозиторію живе у власному файлі бази даних свого робочого простору — файл _і є_ областю, тож таблиця не має стовпця `workspaceId` і не має таблиці зв’язування.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Ви додаєте репозиторій у робочий простір у розділі Налаштування → Робочий простір → Репозиторії. Реєстрація тієї самої робочої копії у двох робочих просторах створює два незалежні рядки з двома ідентифікаторами; ідентичність репозиторію _між_ робочими просторами визначається шляхом у файловій системі (або GitHub owner/name), ніколи не ідентифікатором.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Реєстрація сувора: шлях має бути всередині робочого дерева git, він має мати віддалене сховище `origin`, і це віддалене сховище має вказувати на підтримуваний хостинг коду (github.com, gitlab.com або bitbucket.org). Хостинг коду зчитується з віддаленого сховища й зберігається на репозиторії, тож один робочий простір може містити репозиторії з усіх трьох. Усе інше відхиляється. Переглядач тек, з якого ви обираєте, показує файлову систему **хоста сервера**, обмежену списком дозволених шляхів сервера `--repo-roots` (який за замовчуванням указує на домашній каталог користувача сервера).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Видалення репозиторію з робочого простору остаточно видаляє рядок і каскадно прибирає його символи коду, ребра, файли, контрольні точки індексу та дозволи для окремих учасників. Робоча копія на диску залишається недоторканою.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Граф коду живе в тому самому файлі з ключем `repoId`, бо різні робочі простори можуть мати той самий репозиторій на різних гілках із різним кодом.
 
-## The isolation invariant
+## Інваріант ізоляції
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Витоки даних між робочими просторами вважаються помилками. Ізоляція **структурна** й забезпечується на кількох рівнях:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Рівень бази даних.** Кожен робочий простір має власний файл SQLite, який видає `WorkspaceDatabaseManager.of(workspaceId)`. База даних робочого простору не оголошує `users`, `workspaces` чи таблиці будь-якого іншого робочого простору, тож читання з чужого робочого простору — це не помилка, яку можна написати: воно не компілюється. Репозиторії розв’язують свій DAO під час кожного виклику, а не кешують його, і оскільки кожен метод репозиторію приймає обов’язковий `workspaceId`, робочий простір ніколи не можна вивести чи взяти за замовчуванням.
+- **Ідентифікатор робочого простору — це сегмент шляху.** Оскільки ідентифікатор стає назвою каталогу, він має відповідати безпечному шаблону одного сегмента (починається з літери чи цифри, далі літери, цифри, крапки, підкреслення, дефіси; без `..`). В усьому продукті ідентифікатори — це UUID. Будь-що інше викидає помилку, а не санітизується — це захист від обходу шляху, і він падає гучно, а не записує дані робочого простору за шляхом, який обрав хтось інший.
+- **Багаторівневий захист.** Стовпці `workspaceId` усе ще на місці й усе ще записуються. Надлишкові в межах одного файлу, вони залишають тригери стрічки синхронізації, індекси FTS і наявні форми рядків без змін і роблять файл самодостатнім для опису, коли його оглядають окремо — саме на це покладаються експорт та імпорт.
+- **Доменний рівень.** Сервіси, що змінюють сутності за ідентифікатором, перевіряють `entity.workspaceId == workspaceId` в єдиній точці контролю, перш ніж продовжити, і викидають `WorkspaceMismatchException` за невідповідності — гучна відмова для ідентифікатора, що надійшов із хибного контексту. Гучно відмовляти важливо: мовчазна відсутність дії приховує помилку, а продовження призводить до витоку.
+- **Рівень RPC.** Диспетчер repo-RPC — це точка контролю. Кожна операція в межах робочого простору має нести `workspace_id` у власних аргументах — немає «поточного робочого простору» на сеанс, який міг би протекти, а невідомий ідентифікатор відхиляється як «не знайдено» _перш ніж_ щось відкриє базу даних, тож поганий ідентифікатор не може матеріалізувати фантомний `workspace.db`. Справді глобальні операції (стрічка новин, черга флоту) оголошують себе без прив’язки до робочого простору як явне, переглянуте рішення. Інструменти MCP дотримуються того самого правила: будь-який інструмент, що торкається даних у межах робочого простору, вимагає `workspace_id`.
+- **Міжпросторове розгалуження піддається переліченню.** Відповідь на питання про кілька робочих просторів означає відкриття кількох баз даних. Це розгалуження обмежене одним помічником, `CrossWorkspaceQueries`, тож повний перелік того, що законно перетинає межу, живе в місцях виклику одного файлу, а не розчиняється за коментарями до коду. Ці місця виклику: агрегація в межах усього сервера, реконсилятори під час запуску, очищення за строком зберігання та GC, резервне копіювання, маршрутизатори подій — і пошук членства нижче.
+- **Доступу лише за ідентифікатором недостатньо.** Пошук сутності за її UUID не доводить, що вона належить робочому простору того, хто звертається. Розділення файлів робить хибний файл недосяжним; перевірка на доменному рівні ловить неправильний ідентифікатор, що надійшов через легітимний файл.
 
-## Membership, not the pairing key, is what grants access
+## Членство — межа доступу, а не ключ прив’язки
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Володіння обліковими даними пристрою автентифікує _пристрій_. Воно ні до чого не уповноважує всередині робочого простору. Кожна операція в межах робочого простору визначає роль членства того, хто звертається, і застосовує нижню межу, виведену з виду операції — читання потребує `guest`, зміна потребує `member`, руйнівна операція потребує `admin` — а операції, що показують вміст репозиторію, додатково перевіряють дозвіл того, хто звертається, на цей репозиторій. Дійсний ключ прив’язки без членства отримує `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Наслідок для ізоляції витончений: рядки членства живуть у _власному файлі робочого простору_, тож «хто є в цьому робочому просторі?» — це звичайне читання в межах області. Обернене питання — «у яких робочих просторах я перебуваю?» — за визначенням розкидане по файлах, тож це одне з небагатьох санкціонованих розгалужень `CrossWorkspaceQueries`, і саме його виконує засіб вибору робочого простору, перш ніж жоден робочий простір ще вибрано.
 
-See [Multiplayer](/uk-UA/керівництво/поняття/спільна-робота/) for the role ladder and repo grants.
+Драбину ролей і дозволи на репозиторії описано в [Спільній роботі](/uk-UA/керівництво/поняття/спільна-робота/).
 
-## The global registry
+## Глобальний реєстр
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Не все належить робочому простору. Друга база даних, `<dataDir>/global.db`, містить те, що справді спільне для всього сервера:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **реєстр робочих просторів**, щоб перемикач міг перелічити кожен робочий простір, не відкриваючи жодного файлу робочого простору, — і щоб назва робочого простору, логотип, власник, ручний порядок і позначка м’якого видалення жили поза файлом, який вони описують;
+- **ідентичність**: користувачі, налаштування користувачів і прив’язані пристрої, бо одна людина — це один користувач у кожному робочому просторі, а прив’язаний пристрій переживає видалення робочого простору;
+- **черга флоту** (воркери, завдання, журнал розміщення), чий планувальник на кожному такті зіставляє всю чергу з кожним воркером;
+- **стрічка новин**, яка є для кожного користувача (а не для кожного робочого простору) — додана стрічка супроводжує вас у кожен робочий простір;
+- **`workspace_routes`**, індекс до автентифікації, який відповідає на питання «якому робочому простору належить цей ключ?» для точок входу, що надходять лише з секретом чи непрозорим ідентифікатором (хеш запрошення, токен вебхука, глибоке посилання) і без робочого простору. Промах там — це «не знайдено»; резервного сканування навмисно немає;
+- **налаштування та ідентичність усієї інсталяції**: ідентифікатор інсталяції, налаштування рівня хоста, підключення SSO і керовані політики дій (затискач на рівні інсталяції, який може лише посилювати обмеження робочих просторів).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Під час завантаження відкривається лише цей файл. Файли робочих просторів відкриваються ліниво при першому зверненні, тож витрати на запуск залишаються незмінними, скільки б історії не накопичили робочі простори, а `quick_check` для кожного файлу виконується під час першого використання, а не на шляху до банера готовності.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Файл робочого простору містить лише однорядковий `workspace_meta` для самоідентифікації (його ідентифікатор, інсталяцію, що його створила, версію схеми, з якою його створили, коли). Усе описове про робочий простір — у реєстрі.
 
-## Creating a workspace
+## Створення робочого простору
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Створення робочого простору робить більше, ніж вставлення рядка в реєстр. За одну операцію сервер позначає користувача, що створює, як `ownerUserId`, записує членство цього користувача з роллю власника й публікує доменну подію `WorkspaceCreated`. Слухачі цієї події потім ідемпотентно й у фоні засівають:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **агента CEO** і чотирьох фахівців — `qa`, `architect`, `engineer`, `librarian`, — які підпорядковуються CEO;
+- **вбудовані шаблони конвеєрів** та їхні тригери (тригери подій і ручні увімкнено одразу; заплановані — за бажанням, крім щоденного прибирання worktree через GC);
+- **стартові набори eval**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/uk-UA/керівництво/поняття/модель-агента/).
+Це відбувається для _кожного_ робочого простору, а не лише для першого. Засіяні агенти створюються без адаптера, тож вони працюють на **Control Center (built-in)** із типовою моделлю Anthropic (`claude-opus-4-8`, якщо ви не закріпите іншу), доки ви не задасте адаптер і модель для кожного агента в розділі Налаштування → Робочий простір → Агенти. Див. [Модель агента](/uk-UA/керівництво/поняття/модель-агента/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Запис про членство власника важить більше, ніж здається: без нього щойно створений робочий простір не мав би жодного учасника, і кожен наступний виклик творця в межах робочого простору було б відхилено.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Агенти не можуть створити робочий простір]
+Немає інструмента MCP `create_workspace`. Люди створюють робочий простір через `workspace.create` (точка контролю лише за назвою) або `workspace.upsert` (повний запис, який також використовують для оновлень). Обидва позначають користувача, що створює, як `owner` і публікують `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Видалення, експорт, імпорт
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Видалення робочого простору **позначає рядок у реєстрі та відв’язує каталог**. Робочий простір зникає з усіх списків і пошуків. Рядок реєстру залишається (м’яко видалений), тож ідентифікатор усе ще відомий резервному копіюванню й обслуговуванню, але `workspace.delete` негайно відкидає каталог цього робочого простору — базу даних, worktree, файли агентів та решту — через `WorkspaceDatabaseManager.dropAndClose`. Видалити його може лише **власник** робочого простору.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Оскільки один робочий простір — це один файл, передати робочий простір — це файлова операція, а не дамп таблиця за таблицею:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` — це один вираз `VACUUM INTO`: узгоджений, дефрагментований знімок, зроблений у транзакції читання, поки сервер продовжує обслуговувати.
+- `workspace.import` приймає такий файл, замінюючи все, що цільовий робочий простір містить наразі. Вбудований `workspace_meta` дає змогу імпорту відрізнити «мій власний файл, прийнятий повторно» від «файла з іншої інсталяції» (останній дозволено, але записується в журнал, а не лишається невидимим).
+- `server.backupNow` робить знімок усієї інсталяції в каталог із часовою міткою, що повторює живий каталог даних — `manifest.json`, `global.db` і один `<workspaceId>/workspace.db` на кожен робочий простір, — тож відновлення — це копіювання його назад.
+- `server.listBackups` читає цей каталог назад, від найновішого, із розміром і списком робочих просторів кожного знімка. Знімок, чий маніфест відсутній або вказує на файли, яких немає, усе одно показується з позначкою «неповний» — приховування його — це те, як оператор починає вірити, що має резервну копію, якої не має.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Операції резервного копіювання живуть у розділі **Налаштування → Сервер → Резервні копії та відновлення**: **Зробити знімок зараз** створює знімок інсталяції, список показує, які знімки повні, і дає власнику інсталяції видалити знімок після підтвердження, а кожен робочий простір пропонує експорт та імпорт. Вбудований конвеєр **Workspace backup** бере лише базу даних цього робочого простору за тижневим розкладом і видаляє власні резервні копії, старші за налаштований строк зберігання. Відновлення робочого простору зі знімка інсталяції — це `workspace.import`, націлений на `<workspaceId>/workspace.db` цього знімка; відновлення всієї інсталяції залишається копіюванням назад каталогу знімка за зупиненого сервера.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/uk-UA/керівництво/довідка/резервне-копіювання/#what-a-backup-does-not-contain) has the full table.
+Чого жодна з них не переносить — це решта каталогу робочого простору. Робочий простір накопичує більше, ніж базу даних — вставлені зображення, файли навичок і агентів, облікові дані чату, worktree, — а експорт та імпорт переносять **файл**, тож усе поруч із ним залишається на місці. Це навмисно для облікових даних і припустимо, що worktree можна відкинути; для решти це обмеження, про яке варто знати, а не можливість. У [довідці про резервне копіювання](/uk-UA/керівництво/довідка/резервне-копіювання/#what-a-backup-does-not-contain) є повна таблиця.
 
-## Moving a backup between the server and your device
+## Перенесення резервної копії між сервером і вашим пристроєм
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/uk-UA/керівництво/довідка/резервне-копіювання/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Кожна з наведених вище операцій говорить шляхами на **сервері**, що є повною відповіддю лише тоді, коли сервер — це ваша власна машина. Три підписані HTTP-маршрути — [`/backup/workspace`, `/backup/snapshot` і `/backup/restore`](/uk-UA/керівництво/довідка/резервне-копіювання/#transfer-routes) — переносять байти для будь-якої іншої топології тим самим автентифікованим каналом, який уже використовують медіапроксі та сховище зображень. На сторінці це кнопка **Завантажити** поряд із кожним експортом і кожним знімком (ви обираєте, куди він потрапить), і **Вибрати файл і вивантажити**, щоб відновити з файла, що лежить на машині, якою ви користуєтеся. Вивантаження — це те, що працює, коли сервер не ваша машина: `workspace.import` вимагає, щоб файл уже був на хості, і саме так він там опиняється.
 
-Three properties are worth knowing:
+Варто знати три властивості:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Завантаження створює свіжу копію, і сервер не зберігає з неї нічого.** Завантаження — це не «забрати файл, який створила кнопка експорту»: воно експортує знову, потоково передає його й видаляє. Відповідь має `no-store` і `Accept-Ranges: none` з тієї ж причини: відновлений діапазон зшив би два різні експорти в один файл, який виглядає дійсним, але таким не є.
+- **Вивантаження потоково пишеться на диск, ніколи не буферизується**, на обох кінцях, і проміжна копія видаляється на кожному шляху виходу — включно з відмовою. База даних робочого простору — це не знімок екрана.
+- **Ретрансльоване з’єднання не має походження HTTP**, тож елементи керування передаванням там вимкнено із заувагою про причину. Усе, що говорить серверними шляхами, продовжує працювати через ретранслятор; прямого з’єднання потребують лише канали передавання байтів.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Чиї це шляхи]
+Шляхи, які сторінка *показує* — каталог знімка, файл, який записав експорт, джерело, яке читає імпорт, — на машині, де працює `cc_server`. Шлях, який повідомляє **завантаження**, на машині, за якою ви сидите. Саме тому існують обидва: перший потрібен скрипту обслуговування або сеансу ssh, другий — людині, яка збирає резервну копію.
 :::
 
-## Multiple workspaces
+## Кілька робочих просторів
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Ви можете запускати кілька робочих просторів пліч-о-пліч. Кожен працює незалежно: агенти одного робочого простору не можуть писати агентам іншого, не можуть читати пам’ять іншого робочого простору й не бачать його тікетів. Визначення одержувача для обміну повідомленнями між агентами точне й ніколи не перетинає робочий простір.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Панелі між робочими просторами немає. Аналітична поверхня за адресою `/workspaces/:workspaceId/observability` підписується на обмежений глобальний потік останніх запусків і негайно звужує його до активного робочого простору, тож там ви бачите по одному робочому простору за раз. Єдині справді міжпросторові поверхні, яких торкається людина, — це засіб вибору робочого простору та перемикач.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Одне практичне обмеження, яке варто знати: робочий простір, який хтось використовує, залишається відкритим — LRU немає. Після 32 таких сервер попереджає, а не відмовляє, бо кожен відкритий файл тримає фоновий ізолят і кеш сторінок. Міжпросторове розгалуження відкриває файли на короткий час і закриває їх потому, якщо їх не заявив ніхто інший.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Multiplayer](/uk-UA/керівництво/поняття/спільна-робота/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): agents belong to exactly one workspace
-- [Memory and knowledge](/uk-UA/керівництво/поняття/памʼять-і-знання/): memory is workspace-scoped
-- [Architecture](/uk-UA/керівництво/поняття/архітектура/): where the databases sit in the client/server split
-- [Back up and restore](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/uk-UA/керівництво/довідка/резервне-копіювання/): every operation, route, manifest field and limit
-- [Add repositories](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/): registering a checkout into a workspace
+- [Спільна робота](/uk-UA/керівництво/поняття/спільна-робота/): членство, ролі та дозволи на репозиторії — половина ізоляції, що стосується доступу
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): агенти належать рівно одному робочому простору
+- [Пам’ять і знання](/uk-UA/керівництво/поняття/памʼять-і-знання/): пам’ять обмежена робочим простором
+- [Архітектура](/uk-UA/керівництво/поняття/архітектура/): де бази даних лежать у розподілі клієнт/сервер
+- [Резервне копіювання та відновлення](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/): зробити знімок, перенести робочий простір, тримати копії деінде
+- [Резервне копіювання, експорт і імпорт](/uk-UA/керівництво/довідка/резервне-копіювання/): кожна операція, маршрут, поле маніфесту й обмеження
+- [Додати репозиторії](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/): реєстрація робочої копії в робочому просторі

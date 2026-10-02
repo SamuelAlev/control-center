@@ -2,6 +2,7 @@
 title: Ticket lifecycle
 description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
 slug: en-GB/manual/reference/ticket-lifecycle
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
 ## Ticket statuses
@@ -109,7 +110,7 @@ The aggregate spans two concerns on one row. The **mirror** (provider, keys, tit
 | `description`            | `String?`                  | Longer Markdown body                                                                       |
 | `priority`               | `TicketPriority`           | Default `none`                                                                             |
 | `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
+| `status`                 | `TicketStatus`             | Canonical normalised status                                                                |
 | `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
 | `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
 | `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |

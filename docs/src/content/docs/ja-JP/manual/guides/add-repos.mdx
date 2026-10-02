@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: ワークスペースにリポジトリを追加
+description: Git チェックアウトをワークスペースに登録し、エージェントがそこで作業できるようにします。
 slug: ja-JP/マニュアル/ハウツーガイド/リポジトリ追加
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+このガイドでは、Git チェックアウトをワークスペースに登録し、再インデックスし、再び削除する方法を説明します。
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+リポジトリは**ワークスペース単位**です。グローバルなレジストリもリンク手順もありません。リポジトリを追加することと、それをワークスペースに置くことは同じ行為です。同じチェックアウトを2つのワークスペースに登録すると、2つの異なる id を持つ2つの独立した行になります。ワークスペースをまたぐ場合、リポジトリの同一性はそのファイルシステム上のパスであり、id では決してありません。
 
-## Before you start
+## 始める前に
 
-A folder can only be registered if all three of these hold:
+フォルダーを登録できるのは、次の3つすべてに当てはまる場合だけです。
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. **git ワークツリー**の内部にある。
+2. そのワークツリーに **`origin` リモート**がある。
+3. `origin` リモートが**対応しているコードホスト**（github.com、gitlab.com、bitbucket.org）を指している。
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+それ以外は登録時に明示的なメッセージとともに拒否されます。「Folder is not inside a git work tree.」「No `origin` remote configured for this repository.」「The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).」のいずれかです。ローカルのみのモードはありません。
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+コードホストはリモートから読み取られてリポジトリに保存されます。自分で選ぶことはありません。1つのワークスペースに3つのコードホストのリポジトリを同時に置くことができ、それぞれは独自の認証情報を持つ独自の API を通じてやり取りされます。GitLab のネストされた名前空間は保持されるため、`gitlab.com/group/subgroup/project` はオーナー `group/subgroup`、名前 `project` として登録されます。
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+フォルダーは、`cc_server` をホストしているマシン上で、そのサーバーの `--repo-roots` ディレクトリのいずれかの内側にある必要もあります。この許可リストの既定値はサーバーユーザーのホームディレクトリで、ルートより上を参照することは拒否されます。
 
-## Register a checkout
+## チェックアウトを登録する
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. **設定 → ワークスペース → リポジトリ**を開きます（`/workspaces/<id>/settings/workspace/repositories`）。
+2. **リポジトリを追加**をクリックします。
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+このダイアログは、自分のものではなく**サーバーの**ファイルシステムを参照する、ナビゲート可能なブラウザーです。デスクトップ、ウェブ、スマートフォンで同じ流れになります。ネイティブのフォルダピッカーでは、誤ったマシン上のフォルダーを選んでしまうからです。
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. サーバーに設定されたルート内を移動します。git チェックアウトであるフォルダーには印が付きます。
+4. 任意の数のフォルダーにチェックを入れます。選択内容は移動しても保持されるため、複数のフォルダーからチェックアウトを集められます。
+5. それらを一括で登録します。
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+1つの選択が失敗しても、バッチの残りが取り消されることはありません。作成された id に加えて、拒否されたパスごとのエラーが返ります。このワークスペースにすでに存在するパスを再登録すると、重複を作らずに既存のリポジトリが返されます。
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+登録された各リポジトリは、リストに `owner/name`、コードホスト名を示すバッジ、サーバー上のパスとともに表示されます。GitHub のリポジトリはオーナーのアバターも表示します。ほかのコードホストには推測できるオーナーアバターの URL がないため、イニシャルにフォールバックします。
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+コードホストのバッジは混在したワークスペースで重要になります。2つのリポジトリが別々のコードホスト上で同じ `acme/web` を名乗ることがあり、レビューでできることやリンクの飛び先が異なります。
 
-## What happens next
+## 次に起こること
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+登録すると、このワークスペースにスコープされた `RepoAdded` イベントが発火し、そのチェックアウトの `index_code` パイプラインが開始されます。これがコードグラフを埋めるので、検索と影響分析が答えるべき対象を持てます。
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/).
+同梱の文法がある言語のファイルだけがインデックスされます（Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada）。[コードグラフでコードを検索](/ja-JP/マニュアル/ハウツーガイド/コード検索/)を参照してください。
 
-## Re-index a repo
+## リポジトリを再インデックスする
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+各行には**コードをインデックス**ボタンがあります。クリックすると、そのチェックアウトのインデクサーが再実行されます。実行中はボタンが、完了ファイル数と合計を示す進行状況の表示に変わり、キャンセル操作が付きます。完了すると、シンボル数が付いたチェックに落ち着き、実行が失敗した場合は警告になります。
 
-## Reorder repos
+## リポジトリを並べ替える
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+行のハンドルをドラッグします。設定した順序は、アプリ内のすべてのリポジトリリストが読み出す順序になります。
 
-## Fix the GitHub link
+## GitHub リンクを修正する
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+行のリンクアイコンをクリックすると、そのリポジトリの GitHub オーナーとリポジトリ名のエディターが開きます。リモートの名前が変わったり移転したりしたときに便利です。
 
-## Remove a repo
+## リポジトリを削除する
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. **設定 → ワークスペース → リポジトリ**を開きます。
+2. 行のゴミ箱アイコンをクリックします。
+3. 「ワークスペースからリポジトリを削除しますか？」を確認します。
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+ダイアログにはその動作が書かれています。「_name_ はこのワークスペースから削除されます。ディスク上のローカルファイルは変更しません。」
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+削除すると、このワークスペースからリポジトリの行が消え、そのコードグラフの行（シンボル、エッジ、ファイル、インデックスのチェックポイント）が連鎖的に削除されます。さらに、そのリポジトリに対するメンバーごとの許可、スペースとリポジトリのリンク、分離チェックアウトの記録も削除されます。別のワークスペースに登録された同じチェックアウトは独立した行であり、影響を受けません。それらの記録が指していたディスク上のワークツリーは、この削除によって破棄されません。
 
-## Related guides
+## 関連するガイド
 
-- [Search code with the code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/)
-- [Run agents in parallel](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/)
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
-- [Your first workspace](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/)
+- [コードグラフでコードを検索](/ja-JP/マニュアル/ハウツーガイド/コード検索/)
+- [エージェントを並列実行](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/)
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
+- [初めてのワークスペース](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/)
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)

@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: วงจรชีวิตการสั่งงานเอเจนต์
+description: สิ่งที่เกิดขึ้นระหว่างที่ข้อความมาถึงจนถึงตอนที่บันทึกการรันปิดลง — การประกอบพรอมต์, worktree, ตัวตน, สิ่งที่จำกัดขอบเขตของการรัน และวิธีบันทึกผลลัพธ์อย่างตรงไปตรงมา
 slug: th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## การสั่งงานคืออะไร
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+การสั่งงานคือการรันหนึ่งครั้งของเอเจนต์หนึ่งตัว ในบทสนทนาหนึ่งบท บนอะแดปเตอร์หนึ่งตัว ทุกอย่างที่เกี่ยวกับมันเกิดขึ้นบน `cc_server`: ไคลเอนต์ส่งข้อความแล้วเฝ้าดูเหตุการณ์ที่สตรีมกลับมา ไม่มีเส้นทางการสั่งงานอยู่ในไคลเอนต์ใดเลย
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+เอเจนต์ถูกปลุกด้วยเหตุผลหกประการ ซึ่งการรันจะพกติดไปเป็น **บริบทการปลุก** เพื่อให้เอเจนต์รู้ว่า_ทำไม_มันจึงถูกปลุกขึ้นมา:
 
-| Wake reason      | Trigger                                                      |
+| เหตุผลการปลุก   | ตัวกระตุ้น                                                   |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | มีคนส่งข้อความในสเปซ หรือกล่าวถึงเอเจนต์                     |
+| `assignment`     | มีตั๋วงานถูกมอบหมายให้เอเจนต์                                 |
+| `pipelineStep`   | ขั้นตอนไปป์ไลน์สั่งงานมัน                                     |
+| `childCompleted` | ตั๋วงานลูกทำงานเสร็จ                                          |
+| `followUp`       | ฮาร์ตบีตติดตามผลตามกำหนดเวลา                                 |
+| `recovery`       | เส้นทางการกู้คืนสั่งงานซ้ำหลังจากเกิดความล้มเหลว              |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+บริบทการปลุกพา id ต่าง ๆ ที่มาพร้อมเหตุผลนั้นไปด้วย — ตั๋วงาน, สเปซ, ข้อความ, รันไปป์ไลน์ — และ id เหล่านั้นถูกฉีดเข้าไปในสภาพแวดล้อมและพรอมต์ของเอเจนต์
 
-## Prompt assembly
+## การประกอบพรอมต์
 
-The prompt is built in layers, each one a labelled section:
+พรอมต์ถูกสร้างขึ้นเป็นชั้น ๆ โดยแต่ละชั้นเป็นส่วนที่มีป้ายกำกับ:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **ตัวตน** — id, ชื่อ และ id ของเวิร์กสเปซของเอเจนต์เอง พร้อมคำสั่งชัดเจนให้ส่ง UUID เหล่านั้นแบบตรงตัวไปยังเครื่องมือที่จำกัดขอบเขตตามเวิร์กสเปซ เวิร์กสเปซเป็นส่วนที่ฝังอยู่ในตัวเอเจนต์เอง จึงมีอยู่เสมอ
+- **แค็ตตาล็อกเครื่องมือและโปรโตคอลทรัพยากร** จากนั้นเป็น **โครงร่างของเวิร์กสเปซ**
+- **พรอมต์ระบบที่เขียนทับ** หากเอเจนต์มี จากนั้นเป็น **เพอร์โซนา** (กำหนดพารามิเตอร์ตามบทบาท) และ **บรีฟของทีม**
+- **สกิล** — ชื่อต่าง ๆ ที่ผูกอยู่กับเอเจนต์
+- **สัญญาการดำเนินงานและขั้นตอนปฏิบัติ** สำหรับโหมดปัจจุบัน
+- **บริบทการปลุก** และ **บริบทการกล่าวถึง**: ใครเป็นผู้เรียกเอเจนต์ และรายชื่อผู้เข้าร่วมที่อยู่รอบตัวมัน
+- **บล็อกโหมด** — สร้างขึ้นจากโปรไฟล์ขีดความสามารถของโหมด _และรายการเครื่องมือที่ถูกทำให้เกิดขึ้นจริง_ ดังนั้นพรอมต์จึงไม่มีทางระบุชื่อเครื่องมือที่การรันไม่มีอยู่จริงได้
+- **บริบทหน่วยความจำ** — ข้อเท็จจริงที่ถูกดึงมาสำหรับงานนั้น
+- **บริบทการสนทนา** — ประวัติสเปซล่าสุด จำกัดไว้ที่หน้าต่างข้อความแบบคำต่อคำ 50,000 ตัวอักษร โดยไม่สนใจขนาดบริบทที่กำหนดค่าไว้ของเอเจนต์ ประวัติที่เก่ากว่าจะไม่ถูกตัดทิ้ง: เอเจนต์ดึงมันมาเมื่อต้องการด้วย `get_messages` และข้อความเก่าที่เกี่ยวข้องเชิงความหมายก็ยังปรากฏขึ้นได้
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[คำสั่งสแลชถูกแยกวิเคราะห์จากข้อความดิบของผู้ใช้]
+พรอมต์แบบชั้นเริ่มต้นด้วยบล็อกบริบท จึงไม่ได้ขึ้นต้นด้วยเครื่องหมายสแลช คำสั่งถูกแยกจากข้อความของผู้ใช้แบบคำต่อคำ แล้วถูกตัดออกจากส่วนท้ายของพรอมต์แบบชั้น เพื่อให้ทุกชั้นบริบทคงอยู่
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+คำสั่งถูกแยกจัดการในสองที่ `/todo` และ `/compact` ถูกดักจับในช่องเขียนข้อความ และจงใจไม่ถูกบันทึกเป็นข้อความหรือส่งไปยังเอเจนต์เลย — การบันทึก `/compact` จะทำให้จุดตัดของการย่อประวัติถอยกลับไปหนึ่งรอบและปนเปื้อนทรานสคริปต์ `/plan` ถูกจัดการทั้งสองที่: ช่องเขียนข้อความสลับโหมดของสเปซ ซึ่งเป็นสิ่งที่ทำให้ชุดเครื่องมือ, พรีเซ็ตของกฎคุม และพรอมต์สอดคล้องกันสำหรับรอบนี้และทุกรอบถัดไป `/goal`, `/loop` และ `/skill:<name>` ถูกจัดการภายในตัวการรันเอง และเฉพาะบนฮาร์เนสในตัวเท่านั้น — `/goal` และ `/loop` เริ่มงานอัตโนมัติด้วยงบประมาณต้นทุน และชื่อที่ขึ้นต้นด้วย `skill:` จะถูกค้นหาเป็นสกิลที่เนื้อหา `SKILL.md` กลายเป็นคำสั่งกำกับของรอบนั้น เนมสเปซคือสิ่งที่แยกคำศัพท์สองชุดนี้ออกจากกัน: การแก้ชื่อเปล่าเทียบกับสกิลหมายความว่าสกิลชื่อ `plan` หรือ `compact` ถูกบดบังโดยคำสั่งในตัวอย่างถาวร ชื่อเปล่าที่ไม่ใช่คำสั่งในตัวยังคงถูกแก้ได้ สำหรับข้อความที่เขียนไว้ก่อนมีเนมสเปซ ชื่อที่ไม่รู้จักก็จะถูกส่งผ่านไปเป็นข้อความธรรมดา
 
-## Worktree provisioning
+## การจัดเตรียม worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+ก่อนที่อะไรจะเริ่มรัน บทสนทนาจะได้รูทการทำงานของตัวเอง พร้อม worktree แบบคัดลอกเมื่อเขียนที่แยกออกจากกันหนึ่งชุดต่อหนึ่งรีโปภายใต้รูทนั้น โดยค่าเริ่มต้นคือทุกรีโปที่เชื่อมกับเวิร์กสเปซ สเปซของ PR — หรือสเปซที่สร้างขึ้นพร้อมการเลือกอย่างชัดเจน — จะจัดเตรียมเฉพาะรีโปที่อยู่ในรายการที่อนุญาต และบทสนทนารีวิว PR จะตรึงรีโปของตนเพียงหนึ่งเดียวไว้ที่ head ref ของ pull request ขณะที่รีโปอื่น ๆ อยู่บนสาขาเริ่มต้นของตน เช็กเอาต์ต้นทางไม่ถูกแก้ไขเลย และไดเรกทอรีบทสนทนาทั้งหมดจะถูกเรียกคืนเมื่อสเปซถูกลบ
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+การคัดลอกเมื่อเขียนเป็นวิธีใช้งาน**เดียว**ในทุกที่ที่มี `rift` มาด้วย โดยหนุนด้วยเนทีฟที่บันเดิลมา ระบบไฟล์ที่ไม่สามารถ reflink ได้ — หรือไดเรกทอรีข้อมูลที่อยู่คนละวอลุ่มกับรีโป — จะทำให้การจัดเตรียมล้มเหลวแทนที่จะถอยไปใช้วิธีสำรอง `git worktree` เป็นแบ็กเอนด์บน Windows ซึ่งไม่มีแบ็กเอนด์การคัดลอกเมื่อเขียนให้สร้าง และมันไม่ใช่การลดระดับแบบเงียบ ๆ บนโฮสต์อื่น การที่ `rift` หายไปบนแพลตฟอร์มที่มีมันมาด้วยถือเป็นการติดตั้งที่พัง — เซิร์ฟเวอร์จะปฏิเสธการบูตแทนที่จะถอยกลับอย่างเงียบ ๆ เพราะการถอยกลับแบบเงียบจะซ่อนความเสียหายไว้เบื้องหลังเส้นทางที่ช้ากว่าตลอดไป
 
-## Identity and credentials
+## ตัวตนและข้อมูลรับรอง
 
-Two identities are resolved per run, before any process launches.
+ตัวตนสองแบบถูกกำหนดต่อการรันหนึ่งครั้ง ก่อนที่โปรเซสใดจะเริ่มรัน
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**ความเป็นผู้เขียนของ Git** คอมมิตที่เอเจนต์สร้างจะถูกระบุผู้เขียน _เป็นตัวเอเจนต์เอง_ — `<Name> (agent) <agentId@agents.control-center.local>` ทั้งใน `GIT_AUTHOR_*` และ `GIT_COMMITTER_*` — ไม่ปลอมตัวเป็นมนุษย์เลย ส่วนหน้าเครื่องหมาย @ คือ UUID ของเอเจนต์ ไม่ใช่ slug ของชื่อมัน มนุษย์ผู้ร้องขอจะได้รับเครดิตผ่านบรรทัดท้าย `Co-Authored-By:` ซึ่งพกไปในสภาพแวดล้อมและสั่งกำกับไว้ในพรอมต์ระบบ ตัวตนที่ผู้เรียกระบุไว้อย่างชัดเจนจะชนะทั้งสองแบบเสมอ
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**ตัวตนบนโฮสต์โค้ด** ข้อมูลรับรอง GitHub ของการรันเป็นของโบรกเกอร์เท่านั้นเสมอ — โทเคนการติดตั้งของ App ที่จำกัดขอบเขตตามรีโป หรือ PAT สำรองจากสภาพแวดล้อมของมัน — ไม่ใช่โทเคนที่จัดเก็บไว้ของสมาชิกผู้ร้องขอเอง `actingUserId` จำกัดขอบเขตของ PAT สำรอง เพื่อให้สมาชิกที่ไม่ได้เป็นเจ้าของเซิร์ฟเวอร์ไม่ได้รับช่วงการเข้าถึงของเซิร์ฟเวอร์ไปด้วย มันไม่ได้ซ้อนทับโทเคนส่วนตัวลงบนสภาพแวดล้อมของเอเจนต์
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**ข้อมูลรับรองของผู้ให้บริการโมเดล** ถูกกำหนดตามลำดับที่แน่นอน และลำดับนั้นสำคัญ:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. การเขียนทับสภาพแวดล้อมรายอะแดปเตอร์
+2. สภาพแวดล้อมของผู้เรียก
+3. ที่เก็บข้อมูลรับรองของเซิร์ฟเวอร์ (รีเฟรชโทเคน OAuth หากใกล้หมดอายุ)
+4. สภาพแวดล้อมของโปรเซส
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+เนื่องจากการเขียนทับรายอะแดปเตอร์มาเป็นอันดับแรก มันจึงชนะบัญชีผู้ให้บริการที่เชื่อมต่อไว้ในแอปอย่างเงียบ ๆ หากการรันเรียกเก็บเงินผิดบัญชี การเขียนทับนั้นคือที่แรกที่ควรตรวจดู ข้อมูลรับรองของผู้ให้บริการเป็นระดับโฮสต์ทั้งโฮสต์ — ใช้ร่วมกันในทุกเวิร์กสเปซของระบบที่ติดตั้งนี้
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/).
+โทเคนที่จำกัดตามขีดความสามารถ (GitHub, ระบบตั๋วงาน) มาจากโบรกเกอร์ข้อมูลรับรอง ซึ่งจะฉีดเข้าไปเฉพาะสิ่งที่ขีดความสามารถของการรันอนุญาตเท่านั้น ดู[โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
 
-## Launch
+## การเริ่มรัน
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+การรันถูกเปิดขึ้นโดยมี worktree ของมันเป็นไดเรกทอรีทำงาน และ — สำหรับ Claude Code — มีคอนฟิก MCP ที่สร้างขึ้น เพื่อให้เอเจนต์เข้าถึงชุดเครื่องมือของ Control Center ได้ ACP และ `bash` ของฮาร์เนสจะได้สภาพแวดล้อมที่ถูกทำให้สะอาด ส่วน Claude Code ผ่าน `NoSandboxAdapter` จะสืบทอดสภาพแวดล้อมของโฮสต์
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[แซนด์บ็อกซ์ของระบบปฏิบัติการห่อหุ้มการรันเฉพาะเมื่อโฮสต์มีแบ็กเอนด์]
+`cc_server` ตรวจสอบโฮสต์หนึ่งครั้งตอนบูต และเมื่อมีแบ็กเอนด์พร้อมใช้ ก็จะห่อหุ้มโปรเซสของเอเจนต์ไว้ในนั้น — Seatbelt บน macOS, bubblewrap บน Linux และ WSL2 จุดเชื่อมต่อการสั่งงานทั้งสองจุดถูกห่อหุ้ม เพราะมันไม่ได้ใช้ตัวร่วมกัน: Claude Code CLI ผ่านพอร์ตแซนด์บ็อกซ์ ส่วนอะแดปเตอร์ ACP และเครื่องมือ `bash` ของฮาร์เนสในตัวผ่านตัวจัดการแซนด์บ็อกซ์ มันยังเป็นสิ่งที่บังคับใช้เส้นทางที่ได้รับการป้องกันของการรันด้วย: เช็กเอาต์รีโปที่คุณลงทะเบียนไว้จะถูกห้ามเขียนภายในแซนด์บ็อกซ์ในทุกโหมด
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+ในที่ที่ไม่มีแบ็กเอนด์ การรันจะ**ไม่**ถูกแซนด์บ็อกซ์ และไม่มีอะไรอื่นเปลี่ยนแปลงเพื่อชดเชย นั่นหมายถึง Windows เสมอ (ไม่มีการห่อหุ้มแบบเนทีฟ — `microvm` เป็นเส้นทางแยกต่างหากที่ผ่านการตรวจสอบก่อนเปิดใช้ สำหรับเทอร์มินัลและริก) และ Linux หรือ WSL2 ที่ไม่มี `bwrap` และ `socat` อยู่ใน `PATH` เซิร์ฟเวอร์ระบุว่าอยู่ในสถานะใดไว้ในบรรทัดบันทึกตอนเริ่มทำงาน และ `--sandbox off` เป็นการเลือกไม่ใช้อย่างจงใจ
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+ยังมีช่องโหว่สองจุดที่รอดพ้นแซนด์บ็อกซ์แม้ในที่ที่เปิดใช้อยู่ เครื่องมือจัดการไฟล์ในโปรเซสของฮาร์เนส (read, write, edit, apply patch, search, find, search_files) ทำงานภายในโปรเซสของเซิร์ฟเวอร์ จึงไม่มีโปรไฟล์ใดกำกับมัน — ขอบเขตของมันคือการจำกัดเส้นทางของเครื่องมือเองบวกกับกฎคุม และ Claude Code ถูกเปิดด้วย `--dangerously-skip-permissions` ดังนั้นการเรียกไฟล์และเชลล์ของมันเองจึงไม่ถูกควบคุมโดย Control Center; แซนด์บ็อกซ์ของระบบปฏิบัติการคือขอบเขตที่ล้อมมันไว้
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+ข้อจำกัดที่เหลือมีผลบนทุกโฮสต์ ไม่ว่าจะมีแซนด์บ็อกซ์หรือไม่: worktree ของการรันเอง (คัดลอกเมื่อเขียนในที่ที่มี `rift` มาด้วย; `git worktree` บน Windows), ข้อมูลรับรองที่จำกัดตามขีดความสามารถซึ่งโบรกเกอร์จัดการต่อการเริ่มรันแต่ละครั้งและถูกเพิกถอนเมื่อรื้อถอน, กฎคุมการกระทำแบบรวมเป็นหนึ่ง (ปิดกั้นเมื่อผิดพลาด — การตัดสินใจแบบ `prompt` ที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะถูกปฏิเสธ) และชุดเครื่องมือที่โหมดของบทสนทนาอนุญาต อะแดปเตอร์ ACP และ `bash` ของฮาร์เนสยังคงทำให้สภาพแวดล้อมสะอาด ส่วน Claude Code ผ่าน `NoSandboxAdapter` จะสืบทอดสภาพแวดล้อมของโฮสต์
 :::
 
-## Streaming
+## การสตรีม
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+การรันสตรีมลำดับเหตุการณ์ที่มีชนิดข้อมูลกลับมา ซึ่งตัวประมวลผลสตรีมจะบันทึกเป็นเดลตาของข้อความ พับรวมเป็นเซกเมนต์ของทรานสคริปต์ และแปลงเป็นเหตุการณ์การส่งข้อความ:
 
-| Event              | What it carries                                                                                                  |
+| เหตุการณ์          | สิ่งที่มันนำมาด้วย                                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | เอาต์พุตการให้เหตุผล แสดงแบบอินไลน์                                                                              |
+| `text`             | เอาต์พุตที่มองเห็นได้                                                                                             |
+| `toolCall`         | การเรียกใช้เครื่องมือ พร้อม id และอาร์กิวเมนต์เชิงโครงสร้าง                                                        |
+| `toolResult`       | ผลลัพธ์ที่ตรงกัน พร้อมแฟล็กเมื่อเกิดข้อผิดพลาดหรือเป็นสตรีมบางส่วน                                                 |
+| `usage`            | จำนวนโทเคนและต้นทุนสำหรับช่วงการวัด                                                                               |
+| `error`            | ข้อผิดพลาด พร้อมรหัสเชิงโครงสร้างของอะแดปเตอร์เมื่อมีการรายงาน                                                     |
+| `sandboxViolation` | ระบบปฏิบัติการปฏิเสธการเรียกใช้ระบบ จะถูกส่งออกเฉพาะเมื่อมีแซนด์บ็อกซ์ห่อหุ้มโปรเซสอยู่จริงเท่านั้น — ดูหมายเหตุด้านบน |
+| `debug`            | การวินิจฉัยขณะรัน (เครื่องหมายการเริ่มรัน การตัดสินใจของกฎคุม การกระตุ้นตามสัญญา)                                  |
+| `done`             | การรันเสร็จสิ้น                                                                                                   |
 
-## What bounds a run
+## สิ่งที่จำกัดขอบเขตของการรัน
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+จงใจให้**ไม่มีเพดานจำนวนรอบในที่ใดเลย** การนับจำนวนรอบแบบตายตัวจะฆ่างานยาวที่ชอบธรรม (การไมเกรต, การเก็บกวาดงานแบบกระจาย) และไม่ได้จับอะไรที่ตัวป้องกันด้านล่างจับได้เร็วกว่าเลย การรันสิ้นสุดลงเมื่อ:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **โมเดลหยุดเอง**
+- **มนุษย์หยุดมัน** หรือเข้าควบคุมบทสนทนา (ซึ่งจะหยุดฮาร์เนสในตัวชั่วคราว ณ ขอบเขตรอบที่สะอาดรอบถัดไปของมัน — ส่วนการรันของ Claude Code ซึ่งไม่มีขอบเขตที่ปลอดภัย จะถูกหยุดแทน)
+- **ตัวเฝ้าระวังความเงียบทำงาน** หากไม่มีเอาต์พุตเกินเกณฑ์ที่กำหนด เซสชันจะถูกยุติด้วยความล้มเหลว `silentRun` ค่าเริ่มต้นคือ 15 นาที ลดลงเหลือ 10 นาทีในโหมดที่อ่านเป็นหลัก (รีวิวและแผน) เอเจนต์อาจเขียนทับค่านี้ได้ระหว่าง 1 ถึง 240 นาที ตัวเฝ้าระวังจะถูกติดตั้งเมื่อโปรเซสลูกรายงาน PID ของมัน ดังนั้นมันจึงครอบคลุม Claude Code CLI — **ไม่ใช่**ฮาร์เนสในตัว ซึ่งไม่ได้เปิดโปรเซสใดเลย
+- **เพดานค่าใช้จ่ายเข้าขบ** — แต่เฉพาะกับคำสั่งแบบอัตโนมัติเท่านั้น
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+ตัวป้องกันการวนซ้ำซากไม่ใช่ตัวสั่งยุติ: การเรียกเครื่องมือที่เหมือนกันสามครั้งติดต่อกัน แล้วลูปจะ_บังคับทิศทาง_ให้เอเจนต์เปลี่ยนแนวทาง
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[รอบปกติไม่มีเพดานค่าใช้จ่าย]
+ตัวป้องกันต้นทุนภายในเซสชันถูกต่อสายไว้เฉพาะสำหรับ `/goal` และ `/loop` เท่านั้น การรันอื่นทุกแบบไม่ส่งงบประมาณใด ๆ เลย สำหรับคำสั่งเหล่านั้น หนึ่งช่วงที่ไม่มีคนเฝ้าอาจเผาไป 500 เซนต์ ($5.00) ตามค่าเริ่มต้น โดยมีการบังคับทิศแบบนุ่มนวลที่ 80% เพื่อขอให้เอเจนต์ปิดงานให้เรียบร้อยก่อนการหยุดแบบเด็ดขาด และมีงบประมาณเป้าหมายแบบถาวร 5000 เซนต์ ($50.00) ครอบคลุมหลายช่วง การใช้ `/goal --budget` อย่างชัดเจนจะไม่ถูกใช้เกินไปทั้งช่วงเลย
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+เมื่อนำมารวมกัน รอบแบบอินเทอร์แอกทีฟธรรมดาบนฮาร์เนสในตัวจะไม่มีเพดานจำนวนรอบ ไม่มีเพดานค่าใช้จ่าย และไม่มีตัวเฝ้าระวังความเงียบ มันจบลงเมื่อโมเดลหยุดหรือเมื่อคุณสั่งให้หยุด นั่นเป็นการแลกเปลี่ยนที่จงใจ — ทางเลือกอื่นล้วนฆ่างานยาวที่ชอบธรรม — แต่มันก็หมายความว่าการรันแบบอินเทอร์แอกทีฟที่ไม่มีคนเฝ้าจะมีเพียงวิจารณญาณของโมเดลเองเป็นขอบเขต
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+ระหว่างการรัน ข้อความที่ส่งไปยังเอเจนต์ที่กำลังทำงานจะถูกจัดคิวเป็น**การบังคับทิศทาง** และถูกดึงออกไปที่ขอบเขตรอบถัดไป คุณจึงสามารถกระตุ้นการรันโดยไม่ต้องฆ่ามันได้ การบังคับทิศทาง การหยุดชั่วคราว เอเจนต์ย่อย และสัญญาการทำงานให้เสร็จเป็นคุณสมบัติของฮาร์เนสในตัว; Claude Code ไม่มีสิ่งเหล่านี้เลย
 
-## How a run is recorded
+## การรันถูกบันทึกอย่างไร
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+การสั่งงานทุกครั้งเขียน `AgentRunLog`: เวลาเริ่มและสิ้นสุด, สรุป, จำนวนโทเคนและต้นทุนโดยประมาณ (รวมถึงต้นทุนที่รวบรวมมาจากเอเจนต์ย่อย), อะแดปเตอร์และโมเดล, process id และเส้นทางบันทึก, บทสนทนา และตั๋วงานหรือรันไปป์ไลน์ใด ๆ ที่มันสังกัดอยู่ พร้อมด้วยฟิลด์การจำแนกสองฟิลด์ที่บอกความจริงส่วนใหญ่ไว้
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **สถานะ** เป็นแบบหยาบ: `pending`, `running`, `completed`, `error`
+- **ความมีชีวิต** เป็นการอ่านที่ละเอียดกว่า: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`
+- **ตระกูลข้อผิดพลาด** จัดกลุ่มความล้มเหลวได้อย่างมีประโยชน์: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` ไม่ได้หมายถึง "ส่งมอบแล้ว"]
+เมื่อการรันสิ้นสุดลงโดยไม่มีสิ่งที่ต้องส่งมอบตามที่โหมดของมันกำหนด — การรันในโหมดแผนที่ไม่เคยเรียก `submit_plan` เลย, การรันแบบประสานงานที่ไม่เคยเสนอแผน — สถานะจะคงเป็น `completed` เพราะโปรเซสออกไปอย่างสะอาดจริง สัญญาณที่ตรงไปตรงมาจะอยู่บนความมีชีวิต (`empty`), ตระกูลข้อผิดพลาด (`silentRun`) และสรุปที่บอกชัดเจนว่าอะไรไม่ได้ถูกผลิตออกมา สรุปนั้นได้รับการปกป้อง: ขั้นตอนการสรุปผลจะไม่เขียนทับมันด้วยคำพูดพล่อย ๆ ครั้งสุดท้ายของโมเดล
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+นี่เป็นความตั้งใจ การพลิกสถานะจะไปขยับเครื่องสถานะของตั๋วงานและไปป์ไลน์ซึ่งไม่เกี่ยวข้องกับอาร์ติแฟกต์ที่ขาดหายเลย มันยังหมายความว่าการดูแค่ "status: completed" ไม่พอจะสรุปได้ว่าการรันสำเร็จ — จงอ่านสรุป
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+การปิดการรันจะเผยแพร่ `AgentRunCompleted` และมีอะไรอีกมากที่ขึ้นอยู่กับมัน: เฟรมการแจ้งเตือนและรายการในฟีดแบบถาวรของมัน, ตัวส่งต่อแบบเรียลไทม์ที่ผลักมันไปยังไคลเอนต์ที่เชื่อมต่ออยู่, การรวบรวมต้นทุนของไปป์ไลน์, การทำงานต่อของขั้นตอนไปป์ไลน์ที่รอการรันนี้อยู่, การปิดตั๋วงานที่รองรับ, การแมปการประสานงานไปยังสถานะสิ้นสุด, การตัดสินใจว่าจะทำงานต่อหรือหยุดของผู้กำกับเป้าหมาย, บทบาทผู้ตรวจสอบ และการประเมินงบประมาณหลังการรัน ทำเนียบสถานะออนไลน์จะตามมาภายหลังแยกต่างหาก โดยเฝ้าดูบันทึกการรันล่าสุดแทนที่จะดูเหตุการณ์
 
-## Budgets, after the fact
+## งบประมาณในภายหลัง
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+การบังคับใช้งบประมาณเป็น_ปฏิกิริยา_ ไม่ใช่ประตูด่าน เมื่อการรันเสร็จสิ้น ตัวประเมินจะเทียบค่าใช้จ่ายตั้งแต่ต้นเดือนถึงปัจจุบันของเอเจนต์กับเพดานที่มีผลบังคับใช้ของมัน (นโยบายงบประมาณที่เชื่อมไว้ หากมี มิฉะนั้นคือตัวเลขรายเดือนของเอเจนต์เอง; ศูนย์หมายถึงไม่จำกัด) การข้ามเกณฑ์อ่อนจะบันทึกอุบัติการณ์ระดับคำเตือน; การใช้งบประมาณจนหมดจะบันทึกอุบัติการณ์ระดับรุนแรง และพลิกสถานะวงจรชีวิตของเอเจนต์เป็น `paused` บนผังองค์กร การสั่งงานยังคงรับงานจากเอเจนต์นั้นอยู่ ทริกเกอร์ไปป์ไลน์ `BudgetThresholdCrossed` สามารถเริ่มงานติดตามผลจากเหตุการณ์เดียวกันได้
 
-## Retry lineage
+## สายการลองใหม่
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+บันทึกการรันทุกอันสามารถพกสายการลองใหม่ได้ — run id ของตัวแม่, ตัวนับจำนวนครั้งที่ลอง และสรุปการทำงานต่อ แผนภูมิต้นไม้การรันของการสนทนาจะแสดงหมายเลขครั้งที่ลองเมื่อมันไม่ใช่ศูนย์ การกด "ลองใหม่" จากแชทถือเป็นการสั่งงานใหม่ที่มีบันทึกการรันใหม่
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): what the adapter can and cannot enforce
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/): where the tool surface and the completion contract come from
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): the effect-class policy every gated call passes
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): the isolation story in full
-- [Multiplayer](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): steering, take-over and the autonomy dial
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): what `AgentRunCompleted` sets off
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): สิ่งที่อะแดปเตอร์บังคับใช้ได้และไม่ได้
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/): ชุดเครื่องมือและสัญญาการทำงานให้เสร็จมาจากที่ใด
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): นโยบายตามคลาสผลลัพธ์ที่การเรียกที่มีประตูทุกครั้งต้องผ่าน
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): เรื่องราวการแยกส่วนแบบเต็ม
+- [การทำงานร่วมกันแบบหลายคน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): การบังคับทิศทาง การเข้าควบคุม และปุ่มปรับระดับความเป็นอิสระ
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): สิ่งที่ `AgentRunCompleted` ไปจุดชนวน

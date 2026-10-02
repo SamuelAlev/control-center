@@ -1,123 +1,132 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Koble til en Google Calendar
+description: Koble Google Calendar til et arbeidsområde, administrer flere kontoer og koble til på nytt når et token utløper.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kalender
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/nb-NO/handbok/konsepter/kalender/) for the full picture.
+Denne veiledningen viser hvordan du kobler Google Calendar til et
+arbeidsområde. Tilkoblingen gjelder per arbeidsområde: den synkroniserer
+hendelsene i det arbeidsområdet inn i Control Center, kun for lesing. Se
+[Kalender og planlegging](/nb-NO/handbok/konsepter/kalender/) for hele bildet.
 
-## Connect an account
+## Koble til en konto
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Åpne **Kalender** i sidepanelet.
+2. Klikk på **Legg til kalenderkonto** i kalenderens sidepanel. (Den samme delen finnes under **Innstillinger → Arbeidsområde → Profil og identitet**, under **Google Calendar**.)
+3. Velg hvordan du vil autorisere:
+   - **Bruk Control Centers Google-app** — ingenting å sette opp. Dette er standardvalget når bygget ditt leveres med en slik app.
+   - **Bruk min egen Google Cloud-klient** — lim inn en klient-ID og en klienthemmelighet fra ditt eget prosjekt (se [Ta med din egen Google-klient](#ta-med-din-egen-google-klient-forks-og-selvhosting)).
+4. Klikk på **Koble til Google Calendar**. Dialogen viser en kort kode og en lenke til Googles enhetsside.
+5. Åpne den siden på en hvilken som helst enhet, skriv inn koden og godkjenn tilgangen det bes om. Dialogen lukker seg selv, og hendelsene dine begynner å synkroniseres.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Det er serveren, ikke enheten din, som utfører denne utvekslingen og beholder
+refresh-tokenet som kommer ut av den — derfor godkjennes koden på «en hvilken
+som helst enhet» og ikke spesielt i denne appen.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Kontoen kobles **kun til det aktive arbeidsområdet**. Bytter du arbeidsområde,
+ser du kalenderne til det arbeidsområdet i stedet.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Tilkoblingsflyten ber om `calendar.readonly` i tillegg til e-postadressen din —
+de samme scope-ene for den innebygde appen og for en klient du limer inn.
+Control Center leser hendelser; det oppretter, redigerer, sletter eller svarer
+ikke på invitasjoner hos Google.
 
-## How syncing works
+## Slik fungerer synkroniseringen
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**Serveren** eier tidsplanen: annethvert minutt går den gjennom de tilkoblede
+kontoene i alle arbeidsområder og skriver hendelsene inn i arbeidsområdets
+database. Klientene snakker aldri direkte med Google — de leser det serveren har
+skrevet.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Gjennomgangen er inkrementell. Den første runden per kalender henter et
+rullerende vindu (60 dager tilbake, 90 dager framover) og fanger opp Googles
+synkroniseringstoken; senere runder legger fram dette tokenet og mottar bare det
+som er endret, og det er dette som gjør et intervall på to minutter
+overkommelig. Vinduet forankres på nytt med en full synkronisering hvert 24.
+time og hver gang Google gjør tokenet ugyldig.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Refresh-tokens ligger på serversiden i `secrets.json` under serverens
+datakatalog, skrevet med tilgang bare for eieren (`0600`) — ikke i
+operativsystemets nøkkelring og aldri på en klientenhet.
 
-## Connect multiple accounts
+## Koble til flere kontoer
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Et arbeidsområde kan kobles til flere Google-kontoer (for eksempel jobb og
+privat). Gjenta tilkoblingstrinnet for hver av dem; hendelsene deres flettes
+sammen i de samme visningene for måned, uke og agenda. Hver konto synkroniserer
+og fornyer uavhengig av de andre, og hver av dem kan kobles fra hver for seg.
 
-## Reconnect an expired account
+## Koble til en utløpt konto på nytt
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Hvis Google gjør tokenet til en konto permanent ugyldig (en tilbakekalt eller
+lenge utløpt økt), stopper synkroniseringen, og Control Center viser et banner
+med **Koble til på nytt** i kalenderen, i tillegg til et skrivebordsvarsel.
+Klikk på **Koble til på nytt** og godkjenn en ny kode; banneret forsvinner ved
+neste vellykkede synkronisering.
 
-## Disconnect an account
+## Koble fra en konto
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+I kalenderens sidepanel (eller **Innstillinger → Arbeidsområde → Profil og
+identitet**) klikker du på **Koble fra** for kontoen. Dette sletter de
+synkroniserte hendelsene og fjerner de lagrede tokenene på serveren.
 
-## Connect from a headless server
+## Koble til fra en headless server
 
-A server with no GUI attached connects the same account from its own terminal:
+En server uten tilkoblet grafisk grensesnitt kobler til den samme kontoen fra
+sin egen terminal:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Den skriver ut en kode og en URL, venter på godkjenning, lagrer deretter
+tokenene og synkroniserer ved neste gjennomgang.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Et bygg fra kildekoden leveres **uten** Google-klient, så ID-en og
+hemmeligheten er påkrevd — sett `GOOGLE_OAUTH_CLIENT_ID` og
+`GOOGLE_OAUTH_CLIENT_SECRET`. Det finnes ingen `--google-client-id`-flagg
+(ukjente flagg ignoreres). Uten miljøvariabelparet avsluttes kommandoen med en
+feil om manglende klient.
 
-## Bring your own Google client (forks and self-hosting)
+## Ta med din egen Google-klient (forks og selvhosting)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Utgitte bygg leveres med en Google-klient, så de fleste kommer aldri borti
+dette. Ta med din egen hvis du bygger fra kildekoden, kjører din egen server,
+eller vil at samtykkeskjermen skal navngi ditt eget prosjekt.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktiver **Google Calendar API** og konfigurer **OAuth-samtykkeskjermen**, og legg til scope-ene `calendar.readonly`, `openid` og `email`. Mens appen er uverifisert, legger du til deg selv som **testbruker**. Å legge til `calendar.events` på samtykkeskjermen aktiverer ikke RSVP — Control Center ber aldri om dette scope-et.
+2. Opprett en **OAuth-klient-ID** av applikasjonstypen **TVs and limited input devices**, og kopier både klient-ID-en og klienthemmeligheten.
+3. Oppgi dem enten per tilkobling (velg **Bruk min egen Google Cloud-klient** i dialogen) eller for hele serveren med `GOOGLE_OAUTH_CLIENT_ID` og `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Et serveromfattende par erstatter det innebygde overalt, også bak alternativet
+«bruk Control Centers Google-app» — så på din egen server er det alternativet
+din app.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Klienthemmeligheten forlater aldri serveren: ingen RPC-respons inneholder den,
+og en konto som er koblet til via serverens egen klient, lagrer en markør i
+stedet for en kopi av paret. Å rotere den er derfor bare et spørsmål om å
+starte på nytt med en ny verdi.
 
-### Troubleshooting
+### Feilsøking
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Symptom                                                     | Sannsynlig årsak                                                                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dialogen tilbyr ikke noe innebygd alternativ                | Dette bygget leveres uten Google-klient (et kildekodebygg), eller serveren ble startet med bare den ene halvdelen av paret. Både ID-en og hemmeligheten er påkrevd |
+| `invalid_scope` ved start av flyten                         | Kalender er ikke tillatt for en enhetskodeklient i det Cloud-prosjektet. Bruk et loopback- eller webklientprosjekt i stedet                              |
+| `invalid_client` fra Google                                 | Klienten er ikke en **TVs and limited input devices**-klient, eller ID-en og hemmeligheten tilhører forskjellige klienter                               |
+| Godkjenningen lykkes, men synkroniseringen er tom           | Kontoen din er ikke en **testbruker** på samtykkeskjermen, eller `calendar.readonly` ble ikke innvilget                                                 |
+| Koden utløper før du godkjenner den                         | Enhetskoder lever kort. Start tilkoblingen på nytt for å få en ny kode                                                                                  |
+| «Kunne ikke oppdatere svaret ditt» ved RSVP                 | Forventet: tilkoblingsflyten ber aldri om `calendar.events`                                                                                             |
+| Synkroniseringen stopper med en fornyingsadvarsel i serverloggen | Kontoen ble koblet til med en klient som ikke lenger er konfigurert. Koble kontoen til på nytt, eller gjenopprett denne klient-ID-en og hemmeligheten |
 
-## Related guides
+## Relaterte veiledninger
 
-- [Record and summarize a meeting](/nb-NO/handbok/slik-gjor-du/ta-opp-mote/): turn an event into a recording
-- [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Ta opp og oppsummer et møte](/nb-NO/handbok/slik-gjor-du/ta-opp-mote/): gjør en hendelse om til et opptak
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): hvor tokenene og synkroniseringsplanen ligger
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Calendar and scheduling](/nb-NO/handbok/konsepter/kalender/)
+- [Kalender og planlegging](/nb-NO/handbok/konsepter/kalender/)

@@ -1,123 +1,144 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Εξουσιοδότηση — ποιος μπορεί να κάνει τι και πώς το αποδεικνύετε
+description: Ο κατάλογος δικαιωμάτων πίσω από τους ρόλους του Control Center, το ίχνος ελέγχου με ανίχνευση παραποίησης στο οποίο καταλήγει κάθε απόφαση εξουσιοδότησης και οι έλεγχοι σε επίπεδο εγκατάστασης που μπορεί να ορίσει ένας χειριστής.
 slug: el-GR/εγχειρίδιο/έννοιες/εξουσιοδότηση
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/).
+Το Control Center απαντά σε δύο ερωτήματα εξουσιοδότησης, και είναι πραγματικά
+διαφορετικά μεταξύ τους. Το **«Μπορεί αυτό το άτομο να καλέσει αυτή τη
+λειτουργία;»** αφορά ανθρώπους, ρόλους και αποθετήρια. Το **«Μπορεί αυτός ο
+πράκτορας να προκαλέσει αυτό το αποτέλεσμα;»** αφορά ενέργειες, ορίσματα και
+έκταση επιπτώσεων — αυτό το ερώτημα το καλύπτουν οι
+[Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/).
 
-This page is the first question, plus the record both of them leave behind.
+Αυτή η σελίδα καλύπτει το πρώτο ερώτημα, καθώς και το αρχείο που αφήνουν πίσω
+τους και τα δύο.
 
-## One decision point
+## Ένα σημείο απόφασης
 
-Every human-side authorization decision resolves through a single function:
+Κάθε απόφαση εξουσιοδότησης στην πλευρά του ανθρώπου επιλύεται μέσω μίας και
+μοναδικής συνάρτησης:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Ένα **δικαίωμα** έχει τη μορφή `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Ο κατάλογος είναι **παράγωγος**, δεν έχει
+γραφτεί στο χέρι: υπολογίζεται από την ίδια την επιφάνεια λειτουργιών (το
+πρόθεμα του ονόματος της λειτουργίας δίνει τον τομέα, το κατώφλι ρόλου που
+ήδη επιβάλλει δίνει τη βαθμίδα), οπότε και οι ~550 λειτουργίες φέρουν
+δικαίωμα χωρίς να το έχει πληκτρολογήσει κανείς.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Αυτή η παραγωγή είναι η ιδιότητα που αξίζει να προστατευτεί. Σημαίνει ότι μια
+ΝΕΑ λειτουργία ελέγχεται εξ ορισμού — ο τρόπος αποτυχίας ενός χειροκίνητα
+σχολιασμένου μοντέλου είναι ότι κάποιος ξεχνά, και αυτό που ξεχνά είναι η
+πύλη ελέγχου. Ένα τεστ-καστάνια καθηλώνει το σύνολο των τομέων που προκύπτει,
+ώστε η προσθήκη μιας λειτουργίας κάτω από ένα νέο πρόθεμα να είναι απόφαση
+ονοματοδοσίας που παίρνει ο άνθρωπος και όχι ατύχημα.
 
-The four tiers map exactly onto the built-in roles:
+Οι τέσσερις βαθμίδες αντιστοιχούν ακριβώς στους ενσωματωμένους ρόλους:
 
-| Tier | Role floor | Example |
+| Βαθμίδα | Κατώφλι ρόλου | Παράδειγμα |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Επισκέπτης | `tickets:read` |
+| `write` | Μέλος | `tickets:write` |
+| `administer` | Διαχειριστής | `members:administer` |
+| `own` | Ιδιοκτήτης | `workspace:own` |
 
-## Roles
+## Ρόλοι
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Πέντε ενσωματωμένοι ρόλοι — **Ιδιοκτήτης, Διαχειριστής, Μέλος, Θεατής,
+Επισκέπτης** — είναι προκαθορισμένα σύνολα πάνω σε αυτόν τον κατάλογο. Η
+ιδιοκτησία είναι μία και μόνη θέση ανά χώρο εργασίας και μεταβιβάζεται ρητά με
+τη **Μεταβίβαση ιδιοκτησίας** (ένας ιδιοκτήτης που αποχωρεί είναι κατά τα
+άλλα μη αφαιρέσιμος: η αφαίρεση χρηστών μέσω SCIM αρνείται οποιονδήποτε
+ιδιοκτήτη χώρου εργασίας — πρώτα μεταβιβάστε την ιδιοκτησία).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Οι προσαρμοσμένοι ρόλοι είναι αφαιρετικοί.** Ένας προσαρμοσμένος ρόλος
+ορίζει ένα βασικό προκαθορισμένο σύνολο (`admin`, `member`, `viewer` ή `guest`
+— ποτέ `owner`) και ένα σύνολο δικαιωμάτων που ΑΦΑΙΡΟΥΝΤΑΙ από αυτό —
+«Διαχειριστής, αλλά χωρίς διαχείριση μελών». Δεν μπορεί ποτέ να παραχωρήσει
+περισσότερα από τη βάση του, κι αυτό ακριβώς τους κάνει ασφαλείς για εισαγωγή
+σε μια υπάρχουσα εγκατάσταση: κάθε υπάρχων έλεγχος παραμένει έγκυρο άνω όριο.
+Τα μέλη τους κατέχουν ως `custom:<id>`, και ένας πελάτης πολύ παλιός για να
+καταλάβει αυτή την τιμή υποβαθμίζεται στον ρόλο Επισκέπτη αντί να μαντέψει.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Κάτω από τους ρόλους βρίσκονται οι **χορηγήσεις ανά αποθετήριο** (`none` /
+`read` / `review` / `write`): η ιδιότητα μέλους ενός χώρου εργασίας δεν
+ξεπερνά ποτέ σιωπηλά τα προνόμια του κεντρικού υπολογιστή κώδικα. Κάθε
+επιφάνεια που εκθέτει κώδικα τις ελέγχει — μαζί και όσες φτάνουν στον κώδικα
+πλαγίως, όπως ένα τερματικό ή μια συνεδρία επεξεργαστή που ανοίγει στο worktree
+ενός χώρου.
 
-## Server authority
+## Δικαιοδοσία διακομιστή
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Ορισμένες λειτουργίες δεν αφορούν καθόλου έναν χώρο εργασίας: ρυθμίσεις σε
+επίπεδο εγκατάστασης, διαμόρφωση SSO, διαπιστευτήρια παρόχων, διαχείριση
+μοντέλων, αντίγραφα ασφαλείας ολόκληρης της εγκατάστασης. Αυτές δηλώνουν
+**δικαιοδοσία διακομιστή** και απορρίπτονται για όλους εκτός από τον χειριστή
+της εγκατάστασης (τον καταγεγραμμένο ιδιοκτήτη του διακομιστή). Υπάρχει
+σκόπιμα μία ταυτότητα χειριστή και ένας μόνο ορισμός της.
 
-## The audit trail
+## Το ίχνος ελέγχου
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Κάθε απόφαση εξουσιοδότησης — **χορήγηση και άρνηση** — προσαρτάται σε ένα
+ίχνος ελέγχου ανά χώρο εργασίας, με αλυσίδα κατακερματισμού.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Ένα αρχείο μόνο αρνήσεων απαντά στο «τι μπλοκάραμε;» αλλά όχι στο «τι έκανε
+στην πραγματικότητα αυτός ο πράκτορας και ποιος το εξουσιοδότησε;», που είναι
+το ερώτημα από το οποίο ξεκινά η ανασκόπηση ενός περιστατικού. Έτσι, κάθε
+καταχώριση καταγράφει ολόκληρη την αλυσίδα απόδοσης: το υποκείμενο που
+ενεργεί, τον άνθρωπο για λογαριασμό του οποίου ενήργησε, την ανάθεση μέσω της
+οποίας έφτασε, την ενέργεια και τα ορίσματά της (ως σύνοψη), την απόφαση και
+**τον κανόνα που αποφάσισε**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Οι καταχωρίσεις είναι αλυσιδωμένες: ο κατακερματισμός της καθεμιάς καλύπτει
+τον προηγούμενο, οπότε η επεξεργασία, η διαγραφή ή η αναδιάταξη οποιασδήποτε
+γραμμής σπάει κάθε κατακερματισμό μετά από αυτήν. Η **Επαλήθευση αλυσίδας**
+επανυπολογίζει τα πάντα από την αρχή και ονομάζει τον πρώτο κρίκο που δεν
+στέκει. Ένα αρχείο καταγραφής ελέγχου που δεν μπορείτε να ελέγξετε είναι απλώς
+ένα αρχείο· ένα που μπορείτε να επανυπολογίσετε είναι αποδεικτικό στοιχείο.
 
-Two consequences worth knowing:
+Δύο συνέπειες που αξίζει να γνωρίζετε:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Ο πίνακας ελέγχου **εξαιρείται από τον καθαρισμό βάσει ηλικίας**. Μια
+  αλυσίδα κατακερματισμού δεν μπορεί να κοπεί από τη μέση. Η διατήρηση γίνεται
+  με εξαγωγή και κατόπιν περικοπή, και η περικοπή αφήνει ένα σημείο ελέγχου
+  που φέρει τον τελικό κατακερματισμό του τμήματος που αφαιρέθηκε, ώστε ό,τι
+  επιβιώνει να επαληθεύεται ακόμη από την αρχή.
+- Βρίσκεται **δίπλα** στο χρονολόγιο δραστηριότητας, όχι πάνω από αυτό. Το
+  χρονολόγιο δείχνει τι έκαναν οι άνθρωποι· αυτό δείχνει τι εγκρίθηκε και τι
+  απορρίφθηκε. Ένα κοινό αναγνωριστικό συσχέτισης διαβάζει μία κλήση και στα
+  δύο.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Εξάγεται ως JSON οριοθετημένο με αλλαγές γραμμής και μπορεί να μεταδοθεί σε
+ένα SIEM (Splunk, Elastic, Sentinel — ένα τελικό σημείο HTTP με bearer token).
+Η μετάδοση είναι εκ προθέσεως βέλτιστης προσπάθειας: ένα SIEM που βρίσκεται
+εκτός λειτουργίας δεν πρέπει ποτέ να μπλοκάρει την κλήση εργαλείου ενός
+πράκτορα, και το ανθεκτικό, επαληθεύσιμο αντίγραφο βρίσκεται ούτως ή άλλως
+στον δίσκο.
 
-## Sessions
+## Συνεδρίες
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Μια εγκατάσταση μπορεί να ορίσει **μέγιστη διάρκεια συνεδρίας** και **χρονικό
+όριο αδράνειας**. Και τα δύο επιβάλλονται στον έλεγχο διαπιστευτηρίων συσκευής
+από τον οποίο περνούν όλες οι πιστοποιημένες διαδρομές — μια συνεδρία που ένας
+πελάτης θα μπορούσε να αγνοήσει απαντά σε ένα ερωτηματολόγιο, όχι σε έναν
+επιτιθέμενο. Μια εγκατάσταση μπορεί επίσης να απαιτεί SSO, το οποίο
+απενεργοποιεί τη χειροκίνητη σύζευξη για νέες συσκευές (με δικλίδα κατά του
+εγκλωβισμού: αρνείται όσο δεν υπάρχει λειτουργική σύνδεση SSO).
 
-## What this is not
+## Τι δεν είναι αυτό
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Όχι ACL ανά αντικείμενο.** Δεν υπάρχει δικαίωμα ανά εισιτήριο ή ανά
+  μήνυμα, σκόπιμα. Ο διαχωρισμός σε επίπεδο αποθετηρίου είναι αυτό που ζητούν
+  στην πραγματικότητα οι ομάδες και υπάρχει· η κοινή χρήση ανά αντικείμενο
+  είναι μια συνδυαστική επιφάνεια χωρίς αποδεδειγμένη ζήτηση εδώ.
+- **Όχι μηχανή πολιτικών που τη ρυθμίζετε σε DSL.** Το λεξιλόγιο είναι κλειστό
+  επίτηδες, ώστε ολόκληρη η πολιτική να μπορεί να αναπαρασταθεί, να εξηγηθεί
+  και να απαριθμηθεί.
+- **Δεν επιβάλλεται πουθενά αλλού παρά μόνο στον διακομιστή.** Οι έλεγχοι
+  στην πλευρά του πελάτη υπάρχουν μόνο για να μην προσφέρεται ένα στοιχείο
+  ελέγχου που θα απορριφθεί. Η δεσμευτική απόφαση είναι πάντα του διακομιστή.

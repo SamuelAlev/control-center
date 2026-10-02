@@ -1,149 +1,160 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Értesítések konfigurálása
+description: Kapcsolja be vagy ki a kategóriákat, állítson be csendes órákat és hangot, és tudja meg, mely értesítések érkeznek meg Önhöz és hol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Ez az útmutató bemutatja, hogyan konfigurálhatja az értesítéseket, és mit
+vezérel valójában az egyes beállítások.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Az értesítések két felületen érkeznek. Az **értesítési központ** — a címsorban
+lévő harang — a szerveren lévő, munkaterületenkénti tartós hírfolyamot olvassa.
+Az **OS-toastok** külön, csak asztali gépen létező útvonalat jelentenek, amelyet
+a szerverről továbbított élő keretek táplálnak.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[A webes build nem jelenít meg OS-értesítéseket]
+A toast-folyamatot kizárólag az asztali bootstrap építi fel. Az `app.usectrl.dev`
+címen nincsenek OS-toastok, értesítési hangok és háttér-bannerek — a harang és az
+előzményei viszont továbbra is működnek, mert a szerver hírfolyamát olvassák. A
+telefonos kliensnek egyáltalán nincs értesítési felülete.
 :::
 
-## Turn categories on or off
+## A kategóriák be- és kikapcsolása
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Nyissa meg a **Beállítások → Ön → Értesítések** pontot
+2. Hagyja bekapcsolva az **Értesítések engedélyezése** lehetőséget
+3. Kapcsolja be a kívánt kategóriákat. Pontosan tizenhat van belőlük:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Kategória                     | Mikor jelez                                                                |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| Ügynök befejezte          | Egy ügynök befejezte a futását                                             |
+| PR közzétéve              | Egy ügynök közzétett egy PR-t                                              |
+| PR összefésülve           | Egy PR-t összefésültek                                                     |
+| Új üzenetek               | Üzenet érkezett egy olyan térbe, amelyet éppen nem néz                     |
+| Említve egy pull requestben | A GitHub értesítésfigyelője szerint említették egy PR-ben                |
+| Átnézést kértek           | Ténylegesen átnézést kértek Öntől egy nem piszkozat PR-en                  |
+| Elavult átnézés           | Új commitok érkeztek egy már átnézett pull requestre                       |
+| Összefésülésre kész       | Egy Ön által írt pull request összefésülhetővé vált, vagy már nem az       |
+| Átnézési döntések         | Egy átnéző jóváhagyott, módosítást kért, vagy a jóváhagyását elutasították |
+| Ellenőrzések              | A CI meghiúsult egy Ön által írt pull requesten, vagy helyreállt           |
+| Átnézési szálak           | Valaki válaszolt egy szálban, amelyben benne van, vagy lezárta azt         |
+| Jegy hozzárendelve        | Egy jegyet hozzárendeltek                                                  |
+| Jegy állapota változott   | Egy jegy állapota megváltozott                                             |
+| Hamarosan kezdődő megbeszélés | Egy naptármegbeszélés az előzetes értesítési ablakán belülre kerül     |
+| Naptár leválasztva        | Egy csatlakoztatott naptár OAuth-tokenje lejárt                            |
+| Elszigetelt környezet frissítései | Egy elszigetelt környezetet átvettek, visszaszereztek vagy meghiúsult |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Az ezen a listán kívül eső eseményekről nem lehet értesítést kapni vagy azokat
+szűrni — nincs „minden más” kategória.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Ezek a beállítások a felhasználóval együtt vándorolnak az eszközök között, így a
+telefon és a laptop szinkronban marad. A hangerő szándékos kivétel, és
+eszközönként külön marad.
 
-## Set quiet hours
+## Csendes órák beállítása
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Ugyanezen az oldalon kapcsolja be a **Quiet hours** lehetőséget
+2. Adjon meg egy kezdő és egy záró időpontot `HH:MM` formátumban (az
+   alapértelmezett időszak 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+A csendes órák idején a nem sürgős értesítéseket eldobja a rendszer — nem állnak
+sorba, és nem jelennek meg később.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Két kategória **sürgős**, és mindig megérkezik, megkerülve a csendes órákat _és_
+a fókuszmódot: a **Hamarosan kezdődő megbeszélés** és a **PR közzétéve**. Egy
+megbeszélésriasztás, amelyet csak utólag lát meg, értéktelen — ez az oka.
 
-## Choose a sound
+## Hang kiválasztása
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Görgessen az **Értesítési hang** beállításhoz
+2. Válassza a tizenegy beépített hang egyikét, vagy a **Nincs** lehetőséget
+3. Nyomja meg a Teszt gombot, hogy meghallgassa, és állítsa be a hangerőt a
+   csúszkával
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+A hangot maga az alkalmazás játssza le; az operációs rendszer értesítése némán
+érkezik, így soha nem hallja kétszer.
 
-## Set the meeting lead time
+## A megbeszélések riasztási előidejének beállítása
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Görgessen a **Riasztás előideje** beállításhoz
+2. Válasszon **5**, **10**, **15** vagy **30** percet
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Ez határozza meg, hogy egy naptáresemény előtt mennyivel korábban jelez a
+**Hamarosan kezdődő megbeszélés** értesítés. Az alapértelmezett érték 5 perc.
 
-## Know when a notification is suppressed
+## Mikor marad el egy értesítés
 
-A notification is dropped, silently, when any of these is true:
+Egy értesítés csendben elmarad, ha az alábbiak bármelyike igaz:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Az értesítések globálisan ki vannak kapcsolva, vagy a kategóriája ki van
+  kapcsolva
+- Ön már azon az útvonalon van, amelyre az értesítés vinne — üzenet esetén pedig
+  már abban a térben van
+- A fókuszmód aktív, és a kategória nem sürgős
+- A csendes órák aktívak, és a kategória nem sürgős
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Ezek az ellenőrzések az OS-toastokra vonatkoznak. A tartós harang ettől
+függetlenül rögzíti az eseményt.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Két további kihagyás történik feljebb, abban, amit a szerver egyáltalán elküld:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Egy nem említett üzenet egy másik **embertől** soha nem válik értesítéssé
+- Az ügynök–ügynök terek némítva vannak az oldalsávban, így soha nem növelik az
+  emberi olvasatlan-jelvényt
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Egy téren belül nincs csendes zug: minden beszélgetés egyformán jelez, a szálakkal
+együtt. Az olvasottsági állapot a tér szintjén értelmezett, így az olvasatlan egy
+tér beszélgetésein át összesítve jelenik meg, nem beszélgetésenként követve.
 
-## Read and clear the notification centre
+## Az értesítési központ olvasása és törlése
 
-1. Click the bell in the title bar
+1. Kattintson a címsorban lévő harangra
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+A felugró ablak a legutóbbi tevékenységet mutatja, és minden bejegyzést
+mélyhivatkozással arra mutat, amiről szól. A megnyitása **nem** jelöl meg mindent
+olvasottként — használja a fejlécben a **Mind olvasottnak jelölése** lehetőséget,
+vagy jelöljön meg egyetlen sort. Az olvasottsági állapot a felhasználói fiókot
+követve minden eszközön ugyanaz.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[A Mind törlése vízjel, nem törlés]
+A **Mind törlése** felhasználónkénti vízjelet bélyegez, amely minden régebbit
+elrejt; a sorok megmaradnak. Ezen kívül minden munkaterület csak a legutóbbi
+**200** hírfolyam-sorát őrzi meg, amelyeket az új sorok érkezésekor levág, míg a
+harang a legfrissebb **50**-re iratkozik fel, és a felugró ablak ezek közül
+legfeljebb **15**-öt sorol fel. Az ezen túli előzmények az olvasottsági állapottól
+függetlenül elvesznek.
 :::
 
-## Troubleshooting
+## Hibaelhárítás
 
-### No OS notifications on macOS
+### Nincs OS-értesítés macOS-en
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Az engedélyezést az alkalmazás natívan kéri, amikor elindul. Ha elutasította,
+engedélyezze újra a Control Centert a Rendszerbeállítások → Értesítések alatt;
+nincs alkalmazáson belüli felszólítás, amellyel újra kiváltaná.
 
-### Nothing arrives on the web build
+### Semmi sem érkezik meg a webes buildben
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Ez várható — a webes buildben nincs OS-értesítési folyamat. Használja a harangot.
 
-### The bell badge shows zero but there is clearly new activity
+### A harang jelvénye nullát mutat, pedig egyértelműen új tevékenység van
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Amíg az olvasottként jelölési adatfolyam a csatlakozás után fel nem oldódik, a
+bejegyzések olvasottként jelennek meg, hogy ne villanjon fel és ürüljön ki a
+jelvény. Amint a jelölés betöltődik, a helyére kerül.
 
-### An agent's run finished but nothing pinged me
+### Egy ügynök futása befejeződött, de semmi nem jelzett
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Ellenőrizze, hogy nem tartózkodott-e már abban a térben, ahol ez történt — egy
+aktív útvonal elnyomja a saját OS-toastját.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use focus mode and soundscapes](/hu-HU/kezikonyv/gyakorlati-utmutatok/fokuszmod/)
-- [Triage your inbox](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)
-- [Curate your newsfeed](/hu-HU/kezikonyv/gyakorlati-utmutatok/hirfolyam/)
+- [Fókuszmód és hangtájak használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/fokuszmod/)
+- [Beérkezett üzenetek triázsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)
+- [Hírfolyam gondozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/hirfolyam/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)

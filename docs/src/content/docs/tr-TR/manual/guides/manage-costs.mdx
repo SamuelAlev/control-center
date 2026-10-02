@@ -1,96 +1,166 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Maliyetleri yönetme
+description: Ajanlarınızın ne kadar harcadığını görün, özerk bir çalıştırmaya üst sınır koyun ve token kullanımını azaltın.
 slug: tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Bu kılavuz, ajan çalıştırmalarının ne kadara mal olduğunu nasıl göreceğinizi ve
+özerk bir çalıştırmaya nasıl üst sınır koyacağınızı gösterir.
 
-## How costs are recorded
+## Maliyetler nasıl kaydedilir
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Her ajan çalıştırması; girdi token'larını, çıktı token'larını, akıl yürütme
+token'larını, önbellek okuma ve önbellek yazma token'larını, sent cinsinden
+tahmini maliyeti ve başlattığı alt ajanların maliyetini taşıyan bir çalıştırma
+günlüğü yazar.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Fiyatlandırma models.dev kataloğundan gelir; bu katalog yalnızca model listesini
+fiyat ve bağlam penceresiyle zenginleştirmek için kullanılır, asla model
+kimliklerinin kaynağı olarak değil. Kataloğun fiyatlandıramadığı bir model
+**$0** kaydeder ve sıfır maliyetli çalıştırmalar **Kullanım ve maliyet**
+özetine dahil edilmez. Bu nedenle yerel bir Ollama modeli hiç harcama göstermez,
+ancak token sayıları yine de kaydedilir. Sabit ücretli bir plan (kimi-code, bir
+Claude aboneliği) yalnızca katalogda sunulan modelin fiyatı yoksa aynıdır;
+varsa çalıştırma yine de o fiyatlar üzerinden tahmin edilir. Bir yedek
+zincirinde çalıştırma, istenen model üzerinden değil onu gerçekte sunan model
+üzerinden fiyatlandırılır.
 
-## See what you are spending
+## Neye harcadığınızı görün
 
-### Observability → Insights
+### Gözlemlenebilirlik → İçgörüler
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Kenar çubuğunun alt kısmından → **Gözlemlenebilirlik** üzerinden ulaşın. Önce
+**Kullanım** sekmesi açılır (başlangıçtan bu yana token toplamları); asıl
+maliyet yüzeyi için ikinci sekme olan **İçgörüler**'e geçin:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- Bir zaman aralığı seçici: son 24 saat, son 7 gün, son 30 gün veya tüm
+  zamanlar
+- Ajan, model, durum ve rol üzerinde, kapatılabilir çipler hâlinde çok yönlü
+  filtreler
+- Bir KPI şeridi: toplam çalıştırma, toplam maliyet, hata oranı, önbellek
+  oranı, saniye başına token, ortalama gecikme ve ilk token süresi; her biri
+  önceki döneme göre bir değişimle birlikte ("Tüm zamanlar"da gizlenir)
+- Etkinlik ve maliyet grafikleri, ayrıca harcamayı ana ajan, alt ajanları ve
+  Advisor'ı arasında bölen bir **Role göre maliyet** dökümü
+- Maliyete göre sıralanmış, tümünü göster düğmesiyle ilk onu gösteren ajan
+  başına bir tablo. Bir satıra dokunmak diğer tüm yüzeyleri o ajana göre
+  filtreler
+- Seçili bir çalıştırma için transkript çekmecesini açan ayrıntılı çalıştırma
+  günlüğü
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note["Tüm zamanlar" tüm zamanlar değildir]
+Çalıştırma akışı tüm çalışma alanlarındaki en yeni 2000 çalıştırma günlüğüne
+abone olur, ardından etkin olana göre filtreler. Yoğun, çok çalışma alanlı bir
+sunucuda sakin bir çalışma alanının daha eski geçmişi bu pencerenin dışında
+kalır.
 :::
 
-### Settings → Server → Model providers
+### Ayarlar → Sunucu → Model sağlayıcıları
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+Bu sayfadaki **Kullanım ve maliyet** kartı, son yedi günün gözlemlenen
+harcamasını tek bir dolar rakamı olarak gösterir; sağlayıcı başına bir döküm ve
+bir sağlayıcı yayımladığında bir sonraki kota penceresinin sıfırlanmasına kalan
+süreyi de içerir.
 
-### A single agent's runs
+### Tek bir ajanın çalıştırmaları
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Ayarlar → Çalışma alanı → Ajanlar** → bir ajan seçin → **Loglar**,
+çalıştırmalarını durum, süre, başlangıç ve tamamlanma zamanları, PID ve adaptör
+ile listeler. Bu sekme maliyet **göstermez** — bunun için Gözlemlenebilirlik →
+İçgörüler içindeki ajan başına tabloyu kullanın.
 
-## Cap an autonomous run
+## Özerk bir çalıştırmaya üst sınır koyun
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Bir alanın yazı alanına yazılan iki slash komutu, harcama üst sınırı olan tek
+çalıştırmalardır:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Bir `/goal` veya `/loop` çalıştırmasının her segmenti, fiyatlandırılmış
+  harcaması **500 sent ($5.00)** değerine ulaştığında durur. Bunun %80'inde
+  döngü önce modeli işi toparlamaya ve temiz bir devir bırakmaya yönlendirir;
+  böylece görev ortasında ölmez.
+- Kalıcı bir hedefin tamamı, `--budget <dollars>` vermediğiniz sürece **5000
+  sent ($50.00)** ile sınırlıdır. Gözetmen, hedefin _kalan_ bütçesini her
+  segmente aktarır; böylece açıkça verilen bir bütçe asla bir segmentin tamamı
+  kadar aşılmaz.
+- `--days N` bir duvar saati son tarihi, `--max N` ise bir çalıştırma sayısı
+  üst sınırı ekler. İkisi de isteğe bağlıdır; bunlar olmadan hedef yalnızca
+  maliyetle sınırlanır.
+- Sınırına dayanan bir hedef `budgetExhausted` durumunda durur ve yalnızca
+  bütçe yükseltilerek sürdürülebilir.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Üst sınır fiyatlandırılmış olduğundan, kataloğun fiyatlandıramadığı bir model
+ona asla ulaşamaz. Böyle bir çalıştırma bunun yerine kısır döngü yineleme
+korumasıyla, gözetmenin arka arkaya üç başarısızlıktan sonra pes etmesiyle ve
+sizinle sınırlanır.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Bir alandaki mesajın, bir @ anmasının veya bir pipeline adımının harcama üst
+sınırı yoktur. Çalıştırma, model durduğunda, siz onu durdurduğunuzda ya da
+kısır döngü koruması onu yönlendirdiğinde biter.
 
-## Cut token use
+## Token kullanımını azaltın
 
-### Compact a long conversation
+### Uzun bir konuşmayı sıkıştırın
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Alanın yazı alanına `/compact` yazın. Komut istemci tarafında yakalanır ve asla
+transkripte düşmez; sunucu daha eski geçmişi bağlanmış bir özete katlar ve
+konuşma sıkıştırılmış bağlam üzerinde devam eder.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+Bir ajan turunun ortasındayken ve katlanacak kadar eski bir şey yokken
+sıkıştırma reddedilir. Yerleşik harness ayrıca geçmiş modelin bağlam penceresine
+yaklaştıkça kendi kendine sıkıştırır.
 
-### Choose the effort level deliberately
+### Efor düzeyini bilinçli seçin
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+Bir ajanın **Akıl yürütme eforu** (Ayarlar → Çalışma alanı → Ajanlar) seçili
+modelin yayımladığı düzeyleri sunar. Daha yüksek düzeyler daha fazla akıl
+yürütme token'ı harcar. En üst düzeyleri onlara ihtiyaç duyan işlere ayırın.
 
-### Choose the model per agent
+### Modeli ajan başına seçin
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+Model ajan başına bir alandır; böylece bir biçimlendirme veya triyaj ajanı ucuz
+bir modelde çalışırken bir mimari ajanı pahalı bir modelde çalışabilir. Hangi
+eşleşmenin size gerçekte ne kadara mal olduğunu görmek için Gözlemlenebilirlik →
+İçgörüler içindeki ajan başına tabloyu modele göre filtreleyin.
 
-### Look for runs with outsized token counts
+### Aşırı token sayısına sahip çalıştırmaları arayın
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+İçgörüler çalıştırma günlüğünü (filtrelenmiş en yeni 50 çalıştırma) ve sıra
+dışı olan her şeyde transkript çekmecesini açın. Yaygın nedenler; aşırı uzun bir
+sistem istemi veya persona, sıkıştırılmış olması gereken bağlam ve birkaç daha
+küçük göreve bölünmesi gereken bir görevdir.
 
-## What happens if a budget is set out of band
+## Bütçe bant dışı ayarlanırsa ne olur
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+Bütünlük adına, `monthlyBudgetCents` veya bir bütçe politikası doğrudan bir ajan
+satırına yazılırsa:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Bütçeler gönderimden önce değil, bir çalıştırma tamamlandıktan **sonra**
+  değerlendirilir. Çalıştırma tamamlanmasına bağlı bir dinleyici, ajanın ay
+  başından bugüne harcamasını üst sınırıyla karşılaştırır.
+- Yumuşak eşiğin (varsayılan olarak %80) aşılması bir uyarı olayı kaydeder ve
+  bir pipeline tetikleyicisi bağlayabileceğiniz bir `BudgetThresholdCrossed`
+  olayını tetikler.
+- Bütçenin tükenmesi katı bir olay kaydeder, aynı olayı tetikler ve ajanın yaşam
+  döngüsü durumunu `paused` olarak değiştirir.
+- Gönderim öncesi engel mevcuttur ancak yalnızca yetim çalıştırma toplayıcısı ve
+  kurtarma planlarken takılı kalmış bilet uzlaştırıcısı tarafından okunur —
+  normal bir gönderim ona asla ulaşmaz ve gönderim yolundaki hiçbir şey `paused`
+  durumunu denetlemez. Görünen tek sinyal organizasyon şemasındaki yaşam
+  döngüsü rozetidir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
-- [Run agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
-- [Agent configuration reference](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
+- [Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
+- [Ajan yapılandırması](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)

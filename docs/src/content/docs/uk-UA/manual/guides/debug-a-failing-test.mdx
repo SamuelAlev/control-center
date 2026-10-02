@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Налагодити тест, що падає, з агентом
+description: Запросіть агента поставити точку зупину, запустити програму під налагоджувачем і прочитати справжній кадр стека, а не додавати оператори друку.
 slug: uk-UA/керівництво/практичні-посібники/налагодити-тест-що-падає
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Цей посібник показує, як змусити агента скористатися налагоджувачем для збою, який оператори друку не пояснюють.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Інструмент `debug` керує справжньою сесією Debug Adapter Protocol. Зупинений кадр відповідає одразу на всі питання про цю мить — кожну локальну змінну, кожен виклик і вираз, обчислений у власній області видимості кадру, — тоді як оператор друку відповідає лише на те питання, яке ви здогадалися поставити до запуску.
 
-## Before you start
+## Перш ніж почати
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Інструмент лишається на поверхні, щоб агент міг спитати, чому нічого не працює, а не здогадуватися. Адаптер насправді може запуститися лише тоді, коли виконуються **обидві** умови:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- маркер проєкту в чекауті, і
+- бінарник адаптера резолвиться.
 
-Ask the agent to check:
+Попросіть агента перевірити:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Він відповість тим, що знайшов, або пояснить, що адаптеру потрібні обидві половини.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Мова           | Адаптер                      | Маркер                                          | Встановлення                         |
+| -------------- | ---------------------------- | ----------------------------------------------- | ------------------------------------ |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                  | Постачається із SDK — нічого не треба |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`                |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Постачається з LLVM                  |
+| Go             | `dlv dap`                    | `go.mod`                                        | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python обирає інтерпретатор проєкту]
+`debugpy` шукають у `.venv/bin` або `venv/bin` раніше за `$PATH`. Python із `$PATH` — це інше середовище, і під’єднання не з того середовища падає так, що це читається як зламаний код, а не як неправильний інтерпретатор.
 :::
 
-## Set the breakpoint first, then launch
+## Спершу поставте точку зупину, потім запускайте
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Порядок важливий, і інструмент його дотримується: точки зупину можна ставити **до** появи сесії, бо саме такої послідовності вимагає протокол.
 
-Ask the agent something like:
+Попросіть агента приблизно так:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Функція `compute` у `bin/main.dart` повертає неправильне значення. Постав точку зупину на рядку, який присвоює `product`, запусти його під налагоджувачем і скажи, чому насправді дорівнюють `a` і `b`.
 
-It will run roughly:
+Він виконає приблизно таке:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Запуск повідомляє, де він зупинився:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Якщо натомість він повідомляє про вихід програми]
+Точка зупину не прив’язалася. Рядок, який порожній, є коментарем або не потрапляє в збірку, не може її тримати. Виклик `breakpoints` для живої сесії повідомляє, скільки з поставлених точок насправді розміщено.
 :::
 
-## Read the frame
+## Прочитайте кадр
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Потім загляньте всередину:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Об’єкт із дочірніми елементами повідомляє `[expand: reference N]` — але лише коли за ним справді щось є, тож розгортання, яким агент не зможе скористатися, ніколи не пропонують.
 
-For anything not visible as a local:
+Для всього, що не видно як локальну змінну:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Покрокове виконання
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Чого ви хочете                    | Операція    |
+| --------------------------------- | ----------- |
+| Виконати до наступної зупинки     | `continue`  |
+| Наступний рядок, той самий кадр   | `step_over` |
+| Усередину виклику                 | `step_in`   |
+| Назовні, до викликача             | `step_out`  |
+| Зупинити програму, що виконується | `pause`     |
 
-## Attach to something already running
+## Під’єднатися до вже запущеного
 
-For a wedged process rather than one you are starting:
+Для завислого процесу, а не того, який ви запускаєте:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Завершення
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Завжди завершуйте сесію. Налагоджувальний адаптер володіє **зупиненим процесом**, який тримає все, що тримає цей процес — порт, блокування, з’єднання з базою даних.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Сесія не втече від вас]
+Кожна сесія має жорсткий TTL, який вона не може продовжити, на розмову припадає рівно одна, і все згортається, коли зупиняється сервер. Другий `launch` відхиляють, а не замінюють ним перший: агент, який запускає один, не завершивши інший, майже напевно загубив перший із виду.
 :::
 
-## Bounded output
+## Обмежений вивід
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Розгортання `variables` на глибокому графі об’єктів за своєю природою необмежене — один віджет Flutter дістає до всього дерева елементів. Кількість дочірніх елементів на область видимості обмежено 50, значень — 400 символами, а кадрів стека — 30. Результат інструмента, який заповнює контекстне вікно, — це інструмент, який обриває запуск, якому допомагав.
 
-## Related
+## Пов’язане
 
-- [Code intelligence](/uk-UA/керівництво/поняття/інтелект-коду/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/uk-UA/керівництво/довідка/інструменти-агента/) — every `debug` op and argument
-- [Diagnose an agent](/uk-UA/керівництво/практичні-посібники/діагностика-агента/) — when the problem is the agent, not the code
+- [Інтелект коду](/uk-UA/керівництво/поняття/інтелект-коду/) — чому налагоджувач, компілятор і механізм зіставлення відповідають на різні питання
+- [Вбудовані інструменти агента](/uk-UA/керівництво/довідка/інструменти-агента/) — кожна операція `debug` та її аргументи
+- [Діагностувати агента](/uk-UA/керівництво/практичні-посібники/діагностика-агента/) — коли проблема в агенті, а не в коді

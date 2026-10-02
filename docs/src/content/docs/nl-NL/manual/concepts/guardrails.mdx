@@ -1,248 +1,270 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Beveiligingen — één beleid voor elke actie die iets wijzigt
+description: Waarom Control Center elk neveneffect van een agent door één engine voor toestaan/eerst vragen/weigeren leidt, waarom de ActionClass-taxonomie bewust klein blijft en wat de autonomieschakelaar werkelijk verandert.
 slug: nl-NL/handleiding/concepten/beveiligingen
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agents in Control Center kunnen bestanden verwijderen, branches pushen, pull
+requests publiceren en externe API's aanroepen. Elk daarvan is een ander _soort_
+risico, en lange tijd had slechts één ervan — shellopdrachten — een beleid. De
+beveiligingen bestaan om één vraag uniform te beantwoorden, voor elke actie die
+een agent kan uitvoeren en die iets wijzigt, ongeacht welke runtime of welk
+hulpmiddel die voorstelt: **is dit toegestaan, is er goedkeuring nodig, of wordt
+het geweigerd?**
 
-## One engine, every chokepoint
+## Eén engine, elk controlepunt
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Er is precies één beleidsengine. Die wordt geraadpleegd op elk punt waarop een
+actie het systeem kan verlaten: het toolregister van de ingebouwde harness, de
+poort van de server-side MCP-dispatcher en repo-opmutaties. Een regel die je één
+keer schrijft, geldt dus zowel voor de ingebouwde runtime als voor externe
+agent-CLI's — er is geen tweede, stillere route eromheen. Het oudere
+opdrachtbeleid dat alleen op bash werkt, functioneert nog steeds: een regel kan
+op een opdrachtprefix matchen in plaats van op een actieklasse, en beide vormen
+bestaan naast elkaar in dezelfde opslag.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+De engine is echter geen vervanging van de OS-sandbox, en de sandbox is geen
+vervanging van de engine. Ze beantwoorden verschillende vragen: de beveiligingen
+bepalen of een aanroep die Control Center kan zien wel mag plaatsvinden, terwijl
+de sandbox begrenst waar het resulterende proces mag komen. `cc_server` past de
+sandbox toe waar de host een backend biedt — maar [Windows biedt er geen en Linux
+heeft `bwrap` en `socat` nodig](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/). Op zulke hosts
+vormen de beveiligingen de buitenste handhavingslaag in plaats van een beleid
+boven op een ondergrens, wat je moet weten wanneer je bepaalt hoe ruimhartig je
+ze instelt.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: een bewust gesloten taxonomie
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Elk hulpmiddel dat iets wijzigt, geeft aan tot welke **ActionClasses** het
+behoort, uit een gesloten set van dertien effectklassen. Vijf ervan vragen
+standaard om goedkeuring; de overige staan toe, en alleen een regel brengt daar
+verandering in.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Klasse                     | Ingebouwde standaardwaarde | Wat eronder valt                                                  |
+| -------------------------- | -------------------------- | ----------------------------------------------------------------- |
+| `fileDelete`               | **Eerst vragen**           | Een bestand verwijderen (een verwijderingsachtige schrijfactie, `rm`) |
+| `gitPush`                  | **Eerst vragen**           | Naar een git-remote pushen                                        |
+| `prCreate`                 | **Eerst vragen**           | Een pull request aanmaken                                         |
+| `prPublish`                | **Eerst vragen**           | Een review publiceren, een PR mergen                              |
+| `vendorSyncWrite`          | **Eerst vragen**           | Schrijven naar een externe ticketservice (Linear, Jira, GitHub-synchronisatie) |
+| `fileWriteOutsideWorktree` | Toestaan                   | Een bestand schrijven buiten de geïsoleerde worktree              |
+| `gitCommit`                | Toestaan                   | Een git-commit aanmaken                                           |
+| `networkEgress`            | Toestaan                   | Netwerkuitgaand verkeer (web fetch, willekeurige HTTP)            |
+| `secretAccess`             | Toestaan                   | Een secret of referentie lezen                                    |
+| `packageInstall`           | Toestaan                   | Een pakket installeren (npm, pip, pub, brew)                      |
+| `processSpawn`             | Toestaan                   | Een proces starten (shell en alles wat een shell aanroept)        |
+| `workspaceMutation`        | Toestaan                   | De werkruimtestructuur wijzigen (repos, ruimtes, agents)          |
+| `enclosureControl`         | Toestaan                   | Een omhulling (rig) aansturen: een VM opstarten, er invoer naartoe sturen |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+De acht klassen die standaard toestaan, zijn gekozen in de veronderstelling dat
+de sandboxondergrens eronder geldt. Dat is het geval waar de host een backend
+biedt, en niet op Windows of op een Linux-machine zonder `bwrap` en `socat` —
+dus als je wilt dat `fileWriteOutsideWorktree` of `packageInstall` daar wordt
+afgevangen, moet je die regel zelf schrijven.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+De set is bewust gesloten. Een nieuw hulpmiddel dat iets wijzigt en geen klasse
+opgeeft, zakt voor de ratchet-test, dus de taxonomie kan alleen groeien door een
+expliciet, beargumenteerd besluit — "taxonomievervuiling is de dood van deze
+functie." Dertien klassen zijn genoeg om de beleidsregels uit te drukken die
+mensen daadwerkelijk schrijven (nooit pushen zonder te vragen, nooit buiten een
+worktree verwijderen, leesacties altijd toestaan) en weinig genoeg om de
+instellingen-UI begrijpelijk te houden.
 
-## Rules and scope resolution
+## Regels en bereikresolutie
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Een regel koppelt `(bereik, ActionClass | opdrachtprefix) → toestaan | eerst vragen | weigeren`.
+Bereiken nestelen van meest naar minst specifiek:
 
-**space > agent > workspace > mode preset > built-in default**
+**ruimte > agent > werkruimte > modusvoorinstelling > ingebouwde standaardwaarde**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Resolutie gaat **eerst op specificiteit**: het eerste bereik met een passende
+regel beslist en daar stopt de resolutie. Meest beperkend is alleen een
+tiebreak — tussen twee even specifieke regels binnen één bereik en bij het
+combineren van de klassen die één actie opgeeft. Binnen een bereik matcht een
+opdrachtregel op het langste opdrachtprefix. Toestaan wint nergens van weigeren.
 
-Two decisions carry hard guarantees:
+Twee beslissingen komen met harde garanties:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Fail-closed vragen.** Een `prompt` zonder verbonden goedkeurder wordt
+  _geweigerd_. Een onbeantwoorde vraag is nooit een ja.
+- **Meest beperkende combinatie.** Een actie die meerdere klassen omvat,
+  combineert ze op de meest beperkende manier; wanneer meerdere klassen om
+  goedkeuring vragen, somt één bevestiging ze allemaal op.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Er is bewust geen vergrendeling per beurt. Elke toolaanroep lost het beleid
+opnieuw vanaf nul op, dus herhaald vragen om goedkeuring voor dezelfde actie
+wordt begrensd door de "deze beslissing onthouden" van de operator zelf, niet
+door iets dat aan een beurt gebonden is.
 
-## Argument-level rules
+## Regels op argumentniveau
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Een regel kan de ARGUMENTEN van een actie beperken, niet alleen het werkwoord.
+"Mag pushen" en "mag naar `feature/*` pushen" zijn verschillende beweringen, en
+alleen de tweede is een beheersmaatregel — een capaciteitspoort die alleen het
+werkwoord autoriseert, ligt ten grondslag aan de meeste gepubliceerde
+agentincidenten.
 
-A constraint may name:
+Een beperking kan het volgende benoemen:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **paden** — globpatronen (`repos/**`, `!**/.env`)
+- **refs** — git-refs, met `!`-negatie (`['**', '!main']` leest als "elke
+  branch behalve main")
+- **hosts** — netwerkbestemmingen, met subdomeinwildcards (`*.internal`)
+- **opdrachten** — opdrachtprefixen, gematcht op een woordgrens
+- **plafonds** — `maxCount` / `maxCents`, zodat "maximaal 50 bestanden
+  verwijderen" uitdrukbaar is
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Drie eigenschappen volgen uit het gesloten en lusvrij houden van de grammatica,
+en die drie zijn precies de bedoeling: elke regel is weer te geven als een zin
+die je kunt teruglezen, elke weigering kan de beperking benoemen die matchte, en
+het hele beleid is op te sommen — je kunt zien wat een agent mag doen *voordat*
+die draait.
 
-Three rules that matter:
+Drie regels die ertoe doen:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- Een **beperkte regel is specifieker** dan een onbeperkte regel in hetzelfde
+  bereik, dus "push naar `main` weigeren" wint van "push toestaan" zonder dat
+  iemand over de volgorde hoeft na te denken.
+- Een **beperkende** regel (weigeren / eerst vragen) geldt wanneer de aanvraag
+  *een willekeurige* waarde aanraakt die de regel benoemt; een **permissieve**
+  regel (toestaan) geldt alleen wanneer de aanvraag er *volledig* binnen valt.
+  Als je beide op dezelfde manier zou lezen, kon een agent een verboden pad
+  witwassen door er een onschuldig pad naast te zetten.
+- Een regel die een aspect benoemt waarover de aanvraag niets zegt, wordt niet
+  toegepast en ook niet overgeslagen: die **escaleert naar een goedkeuring**.
+  Stil overslaan zou elke regel voor beschermde branches inactief maken tegenover
+  een hulpmiddel dat zijn ref niet rapporteert; stil weigeren zou elke push
+  afwijzen die de extractor niet kan beschrijven. Zonder verbonden goedkeurder
+  verandert de bestaande fail-closed regel die escalatie in een weigering.
 
-## What a command rule can and cannot catch
+## Wat een opdrachtregel wel en niet kan afvangen
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Een `commandPrefix`-regel matcht op een woordgrens: `git push` dekt
+`git push origin main` en niet `git pushx`. De regel **normaliseert** de shell
+**niet**. `git  push` (twee spaties), `cd sub && git push` en
+`GIT_DIR=… git push` zijn allemaal verschillende strings, en geen ervan matcht
+een regel over `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Dat is een echte beperking, en die wordt benoemd in plaats van verdoezeld:
+opdrachtregels zijn een gemak voor de operator om gewoon agentgedrag te sturen,
+**geen** grens tegen een kwaadwillende. De grenzen zijn de effectklassen (die een
+hulpmiddel opgeeft en niet anders kan formuleren), het opdrachtnet van de modus
+onder de beleidsopslag, en de OS-sandbox onder beide. Een opdrachtregel die op
+`allow` uitkomt, verruimt geen van beide — het modusnet draait daarna en zijn
+`deny` is definitief.
 
-## Standing approvals
+## Blijvende goedkeuringen
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Als je een goedkeuringsvraag beantwoordt met "dit onthouden", wordt er een echte
+beleidsregel geschreven: met een bereik (ruimte / agent / werkruimte),
+**beperkt op argumenten** (het goedkeuren van een push naar `feature/login`
+verleent `feature/**`, niet `main`) en **zelfintrekkend** na een expliciete TTL.
+Ja zeggen voor de komende uren is iets anders dan stilletjes je permanente
+beleid herschrijven, en de regels die het schrijft, belanden in dezelfde opslag
+met herkomst `remembered` en een vervaldatum, zodat ze vroegtijdig kunnen worden
+ingetrokken.
 
-## Enforcement levels
+## Handhavingsniveaus
 
-Each rule carries one:
+Elke regel heeft er één:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **adviserend** — toestaan, maar vastleggen dat de regel matchte. Dit is het
+  invoerpad: zet een strikte regel uit in adviserende modus, lees een week lang
+  het auditspoor om precies te zien wat die *zou* hebben geblokkeerd, en
+  promoveer hem daarna. Zonder dit niveau worden strikte beleidsregels nooit
+  ingeschakeld.
+- **soft** — weigeren, te overschrijven door iemand met de
+  overschrijvingsmachtiging, met een vastgelegde rechtvaardiging. De
+  overschrijving komt zelf ook in de audit terecht.
+- **hard** (de standaard) — weigeren. Niets overschrijft dit.
 
-## The managed tier
+## De beheerde laag
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Een installatie-operator kan beleid vastzetten dat geen enkele
+werkruimtebeheerder kan versoepelen. Beheerde regels staan aan de serverkant en
+worden **meest beperkend** samengevoegd met de eigen keten van elke werkruimte —
+ze zijn geen bereik aan het hoofd ervan, want een beheerde `allow` aan het hoofd
+van de keten zou de installatie een deny van een werkruimte laten overschrijven,
+het tegenovergestelde van waar een klem voor dient. Een beheerde regel kan dus
+alleen maar strenger maken.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Als je `CC_SERVER_MANAGED_POLICY` op een JSON-bestand zet, gaat dat volledig
+boven de opgeslagen regels, en daardoor kan een operator een houding vastzetten
+die geen enkele beheerders-UI kan omzetten — het antwoord op "kan ik voorkomen
+dat mijn ontwikkelaars de veiligheidscontroles uitschakelen?".
 
-## The autonomy dial is a profile, not a parallel system
+## De autonomieschakelaar is een profiel, geen parallel systeem
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+De autonomieschakelaar per ruimte is een benoemd profiel boven op dezelfde
+beleidsopslag, geen tweede mechanisme. De drie standen worden opgeslagen en
+verzonden als `proposeOnly`, `actWithApproval` en `actFreely` (de vormen met
+koppelstreepjes zijn alleen UI-tekst, en `autonomy.setForSpace` weigert al het
+andere). Laat je hem oningesteld, dan gedraagt hij zich als `actWithApproval`.
 
-What each one does to a resolved decision:
+Wat elk van de standen doet met een opgeloste beslissing:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** weigert elk afgeschermd hulpmiddel onmiddellijk. De agent
+  kan nog steeds redeneren en antwoorden; hij kan alleen niet handelen, en zijn
+  bericht zegt waarom.
+- **`actWithApproval`** (en oningesteld) is de fail-closed goedkeuringspoort die
+  hierboven is beschreven.
+- **`actFreely`** keurt alles vooraf goed wat niet op een harde `deny` is
+  uitgekomen.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Die laatste verdient een onomwonden formulering in plaats van een verzachting:
+onder `actFreely` wordt een `prompt`-beslissing **niet** naar een goedkeurder
+geëscaleerd — ze wordt toegestaan en er wordt niemand gevraagd. Alleen een
+expliciete `deny`-regel overleeft de schakelaar. `actFreely` is dus een bewuste
+toekenning van autonomie, geen gemaksinstelling, en de fail-closed regel
+beschermt precies het geval waarin dat ertoe doet (`actWithApproval`, de
+standaard).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Delegatie tussen agents wordt op het controlepunt `delegate_task` bewaakt door
+alle vier de bewakers: een dieptelimiet (standaard 3), cyclusdetectie, een
+**autonomieplafond** (een gedelegeerde kan nooit met meer autonomie handelen dan
+zijn delegator — privileges kunnen niet worden witgewassen door werk aan een
+vrijere agent te geven) en een **budgetenvelop** (delegatie schrijft af op het
+resterende budget van de delegator en kan geen nieuw budget aanmaken). Elk wordt
+luidruchtig geweigerd, met de reden van de bewaker woordelijk aan de agent
+teruggegeven.
 
-## The adapter honesty matrix
+## De eerlijkheidsmatrix van de adapters
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Niet elke runtime laat Control Center elke actie onderscheppen. Externe
+agent-CLI's voeren sommige hulpmiddelen native uit, in-process, waar geen poort
+kan zitten. In plaats van iets anders voor te wenden, draagt elke adapter een
+**eerlijkheidsmatrix**: per adapter of Control Center het toolaanbod filtert,
+toolaanroepen onderschept, het voltooiingscontract waarneemt, de native
+hulpmiddelen van de runner kan zien, en of hulpmiddelen in-process door een
+sandboxprofiel worden gedekt.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Twee vermeldingen zijn het lezen waard voordat je een configuratie vertrouwt. De
+ingebouwde harness verklaart dat zijn bestandshulpmiddelen in-process **niet** in
+een sandbox draaien — het toolaanbod en deze beleidsengine zijn de enige
+bestandssysteemgrens die hij heeft. Claude Code verklaart dat zijn eigen
+toolaanroepen **niet** te onderscheppen zijn, omdat het wordt gestart met
+`--dangerously-skip-permissions`; Control Center ziet alleen zijn `mcp__*`-aanroepen,
+en zijn eigen lees-, schrijf-, bewerkings- en shellhulpmiddelen draaien ongezien.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Het instellingenscherm toont deze matrix, want de enige onvergeeflijke fout voor
+een beveiligingssysteem is dekking claimen die niet bestaat.
 
-## Probing policy before it bites
+## Beleid uitproberen voordat het toeslaat
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+De beveiligingen vind je onder **Instellingen → Werkruimte → Agentmachtigingen**
+(`/workspaces/<id>/settings/workspace/permissions`). Het scherm bevat de
+beleidsmatrix waarin regels worden geschreven, beleidssjablonen, een
+Wat als?-test, het auditspoor van autorisaties en de eerlijkheidsmatrix van de
+adapters.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+De test neemt een actieklasse (of een opdracht) en een bereik, en toont welke
+regel heeft beslist en waarom. Omdat resolutie puur en deterministisch is —
+dezelfde actie, hetzelfde bereik, dezelfde beslissing — is het antwoord van de
+test het antwoord dat de agent krijgt.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/nl-NL/handleiding/gidsen/beveiligingen-configureren/): writing and testing rules in practice
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): wat een agentuitvoering werkelijk begrenst en hoever de OS-ondergrens onder deze engine reikt
+- [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/): ruimtes, principalen en waar de autonomieschakelaar zich bevindt
+- [Beveiligingen configureren](/nl-NL/handleiding/gidsen/beveiligingen-configureren/): regels schrijven en testen in de praktijk

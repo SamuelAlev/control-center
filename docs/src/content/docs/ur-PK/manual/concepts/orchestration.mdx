@@ -1,113 +1,118 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: آرکیسٹریشن
+description: ایک «بڑی درخواست» کیسے پوری ٹیم کے پلان میں بدلتی ہے جسے آپ ایک بار منظور کرتے ہیں، اور پھر ایک تیار شدہ پائپ لائن اس پر عمل کرتی ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+ایک واحد ایجنٹ صرف ایک ہی کام میں اچھا ہوتا ہے۔ کچھ درخواستیں اس سے بڑی ہوتی
+ہیں: «X کی مارکیٹ کی تحقیق کریں اور پوزیشننگ دستاویز لکھیں»، «یہ فیچر شروع سے آخر
+تک شپ کریں»، «اس ماڈیول کا آڈٹ کریں اور جو کچھ ملے اسے ٹھیک کریں»۔ **آرکیسٹریشن**
+سے مراد یہ ہے کہ Control Center انہیں کیسے سنبھالتا ہے: ایک آرکیسٹریٹر (عام طور پر
+آپ کا CEO ایجنٹ) پوری ٹیم کا پلان تجویز کرتا ہے، آپ اسے **ایک بار** منظور کرتے ہیں
+اور ایک متعیّن میٹیریئلائزر اسے ایک پائپ لائن میں بدل دیتا ہے جو کام کر جاتی ہے۔
 
-It sits between the two existing ways of getting work done:
+یہ کام کرانے کے دو موجودہ طریقوں کے درمیان آتا ہے:
 
-| When you want to…                                 | Use                                                       |
+| جب آپ چاہیں کہ…                                  | استعمال کریں                                              |
 | ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| ایک کام ایک ایجنٹ کو سونپیں                       | [اسپیس میں ایک پیغام](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) |
+| جو عمل آپ پہلے سے جانتے ہیں اسے دستی طور پر انکوڈ کریں | [پائپ لائن ٹیمپلیٹ](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)        |
+| مقصد بتائیں اور پلان ٹیم کو خود نکالنے دیں       | **ایک آرکیسٹریشن**                                        |
 
-## The shape of a proposal
+## تجویز کی ساخت
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+جب آپ آرکیسٹریٹر کو کوئی مقصد دیتے ہیں تو یہ ایک منظم
+**`OrchestrationProposal`** واپس کرتا ہے: ایک ٹائپ شدہ پلان جسے ایپ جانچ اور اجرا
+کر سکتی ہے، نہ کہ آزاد نثر۔ ایک تجویز میں یہ ہوتا ہے:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **مقصد**: آپ کی اعلیٰ سطحی درخواست، نئے الفاظ میں۔
+- **کردار**: کام کون کرتا ہے۔ ہر کردار یا تو آپ کا منتخب کردہ **موجودہ ایجنٹ**
+  ہوتا ہے، یا وہ **نئی بھرتی** جسے آرکیسٹریشن منظوری پر بناتی ہے۔
+- **ذیلی ٹکٹس**: وہ کام، جو [ٹکٹس](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/) کے ایک DAG میں تقسیم ہوتا ہے۔
+- **تحقیق** _(اختیاری)_: ایک تحقیقی مرحلہ جو سب سے پہلے چلتا ہے اور باقی مراحل کو
+  مواد فراہم کرتا ہے۔
+- **گفتگو** _(اختیاری)_: ایک محدود دور جس میں کام شروع ہونے سے پہلے ہر کردار ایک
+  منظم موقف پیش کرتا ہے۔
+- **ترکیب**: آخری مرحلہ جو حتمی نتیجہ تیار کرتا ہے۔
+- **بجٹ**: اعلان شدہ لاگت کی حد۔
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[بجٹ مشاورتی ہے]
+تجویز کی لاگت کی حد کا موازنہ پلان کے تخمینی میزان سے کیا جاتا ہے اور منظوری سے
+_پہلے_ منظوری بار میں بجٹ سے تجاوز کرنے والے پلان کی نشاندہی کرتی ہے۔ رن شروع ہونے
+کے بعد اسے کوئی نہیں پڑھتا، اس لیے یہ کسی ایسی آرکیسٹریشن کو نہ روکتی ہے نہ ناکام
+بناتی ہے جو حد سے بڑھ جائے۔ فی ایجنٹ اور فی ورک اسپیس بجٹ پالیسیاں ایک الگ نظام
+ہیں اور اصل میں اخراجات روکنے کا کام وہی کرتی ہیں۔
 :::
 
-## Where you review it
+## آپ اس کا جائزہ کہاں لیتے ہیں
 
-Two surfaces show the same orchestration.
+دو سطحیں ایک ہی آرکیسٹریشن دکھاتی ہیں۔
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**تجویز کارڈ** اسی گفتگو میں رہتا ہے جس نے پلان بنایا۔ یہ ایک ہی پیغام ہے جو پورے
+لائف سائیکل — تجویز کردہ، عمل درآمد، مکمل — کے دوران دوبارہ رینڈر ہوتا ہے، اور
+اسی پر منظوری اور منسوخی کے ایکشن ہوتے ہیں۔
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** ایڈیٹر ہے: ایک DAG کینوس، نوڈ انسپکٹر، ریویژن اور ڈف کا دراز اور
+تخمینہ اٹھائے ہوئے منظوری بار۔ یہ اسی کارڈ سے براہِ راست ایڈیٹر ٹیب کے طور پر کھلتا
+ہے۔ سائیڈبار میں جان بوجھ کر "پلانز" کا کوئی آئٹم نہیں ہے؛ `/plans` اور
+`/plans/:kind/:id` صرف شیئرنگ کے لیے ڈیپ لنکس کے طور پر موجود ہیں۔
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+منظوری دینا **صرف آپریٹر کا کام** ہے۔ اس کے لیے کوئی MCP ٹول نہیں ہے: کوئی ایجنٹ
+تجویز دے سکتا ہے (`propose_orchestration`)، پلان جمع کر سکتا ہے (`submit_plan`)، یا
+پلے بک بناسکتا ہے (`run_playbook`)، مگر منظوری صرف انسان دیتا ہے۔ ایجنٹ کی شروع
+کردہ ریویژنز پر مزید دو منٹ کی کول ڈاؤن کے ذریعے شرح محدود کی جاتی ہے، تاکہ دوبارہ
+پلاننگ کرنے والا لوپ آپ کی فیڈ میں سیلاب لانے کے بجائے یکجا ہو جائے۔
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+منظوری دینے سے پہلے آپ صرف وہی بدل سکتے ہیں جو نوڈ انسپکٹر ظاہر کرتا ہے: کسی ذیلی
+ٹکٹ کا عنوان یا متن بدلیں، اس کا **کردار** تبدیل کریں جو اس کا مالک ہے، اس کے
+انحصارات نئے سرے سے جوڑیں، اس کا آؤٹ پٹ اسکیما تبدیل کریں، یا نوڈ کو مکمل طور پر
+حذف کر دیں۔ ساختی نوڈز (تحقیق، گفتگو، ترکیب) اور وہ نوڈز جو پہلے ہی چل چکے ہیں،
+صرف پڑھنے کے لیے ہوتے ہیں۔ ایڈیٹر سے آپ کسی کردار کو کسی مخصوص نامزد ایجنٹ سے نہیں
+جوڑ سکتے اور نہ ہی بجٹ میں ترمیم کر سکتے ہیں۔
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+ایک ہی پلان پر دو ایڈیٹرز کا معاملہ مرجنگ سے نہیں بلکہ آپٹمِسٹک کنکرنسی سے حل ہوتا
+ہے۔ ہر ترمیم اپنے ساتھ وہ `base_revision` لے کر آتی ہے جس کے خلاف کی گئی ہو؛ پرانی
+ریویژن پر مبنی ترمیم کو خاموشی سے کسی دوسرے کی ترمیم پر سبقت لینے کے بجائے «پلان
+آگے بڑھ چکا ہے» کہہ کر رد کر دیا جاتا ہے۔ ریوائنڈنگ بھی حذف نہیں ہے — یہ پرانی
+تجویز کو ایک نئی ریویژن کے طور پر شامل کر دیتی ہے، اس لیے ریویژن ٹائم لائن صرف
+بڑھتی ہی رہتی ہے۔
 
-## Honest estimates, or none
+## ایماندار تخمینے، ورنہ کوئی نہیں
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+منظوری بار پر دیا گیا تخمینہ ہر کردار کے حقیقی مکمل شدہ رن کی تاریخ سے بنایا جاتا
+ہے، بطور ایک بین چوتھائی (p25–p75) بینڈ۔ لاگت کے میزان قابلِ تخمینہ نوڈز کو **جمع**
+کر کے بنتے ہیں؛ دورانیہ DAG میں سے گزرنے والا **کریٹیکل پاتھ** ہوتا ہے، میزان نہیں
+(متوازی شاخیں ایک ساتھ چلتی ہیں)۔
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+جس نوڈ کے کردار کی **کوئی مکمل شدہ رن تاریخ** نہ ہو، وہ `sampleSize: 0` اور null
+حدود بتاتا ہے۔ یہ بالکل ویسے ہی ظاہر ہوتا ہے — نامعلوم — کبھی کسی من گھڑت عددی قدر
+کے طور پر نہیں، کیونکہ جس تخمینے پر آپ بھروسا نہ کر سکیں وہ کسی تخمینے سے بھی بدتر
+ہے۔ جب کچھ نوڈز کی تاریخ ہو اور کچھ کی نہ ہو تو میزان کو جزوی قرار دیا جاتا ہے۔
+اثر کا دائرہ صرف اسی وقت ظاہر ہوتا ہے جب کسی نوڈ نے `symbol` یا `file` ماخذ حوالہ
+جات کا اعلان کیا ہو؛ ان کے بغیر کوئی نوڈ نثر سے اندازہ لگانے کے بجائے "نامعلوم" ہی
+رہتا ہے۔
 
-## One approval, then deterministic execution
+## ایک منظوری، پھر متعیّن عمل درآمد
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+یہی بنیادی خیال ہے: **ایجنٹ پلان بناتا ہے؛ ایک متعیّن فنکشن اس پر عمل کرتا ہے۔**
+جب آپ منظوری دیتے ہیں تو `OrchestrationMaterializer`، جو بغیر کسی LLM اور بغیر I/O
+کے ایک خالص فنکشن ہے، تجویز کو ایک حقیقی
+[پائپ لائن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) میں بدل دیتا ہے۔ ایک ہی تجویز اور
+ایک ہی طے شدہ کرداروں کے ساتھ یہ ہمیشہ ایک ہی DAG بناتا ہے۔ یہ اہم ہے کیونکہ تیار
+شدہ پائپ لائن وہ سب مفت ورثے میں پا لیتی ہے جو انجن پہلے ہی کرتا ہے: ری اسٹارٹس کے
+دوران معطلی اور دوبارہ آغاز، کریش ریکوری، فی رن لاگت اور ٹوکن رول اپس اور رن کی
+تفصیل کا UI۔
 
-Approval also creates the scaffolding the work needs:
+منظوری کام کے لیے درکار بنیادی ڈھانچہ بھی بنا دیتی ہے:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **بھرتیاں** نئے قرار دیے گئے تمام کرداروں کی (اور بھرتی شدہ ایجنٹ آئی ڈیز ریکارڈ
+  کرتی ہے تاکہ منظوری کے دوران کریش ہونے پر دہری بھرتیوں کے بغیر دوبارہ آغاز ہو سکے)
+- ایک **ٹیم** جو ان کرداروں کو یکجا کرتی ہے
+- ایک **پروجیکٹ** جو پیرنٹ ٹکٹ کو درج کرتا ہے
+- **پائپ لائن ٹیمپلیٹ + رن** جو یہ سب چلاتا ہے
 
-## The lifecycle
+## لائف سائیکل
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +120,44 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| حالت           | مطلب                                                                             |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | پلان تیار ہے اور آپ کی ایک پیشگی منظوری کا منتظر ہے                              |
+| `approved`     | آپ نے منظوری دی؛ میٹیریلیزیشن جاری ہے (بھرتیاں، ٹیم، پروجیکٹ، پائپ لائن)          |
+| `executing`    | تیار شدہ پائپ لائن چل رہی ہے: ذیلی ٹکٹس، گفتگو، کام                               |
+| `synthesizing` | ذیلی ٹکٹس مکمل ہو چکے؛ ترکیب کا مرحلہ حتمی نتیجہ تیار کر رہا ہے                  |
+| `completed`    | مکمل: پیرنٹ ٹکٹ مکمل قرار دیا گیا اور حتمی نتیجہ مشترکہ اسپیس میں پوسٹ کر دیا گیا |
+| `failed`       | میٹیریلیزیشن ناکام ہوئی، یا تیار شدہ پائپ لائن رن ناکام ہوا                      |
+| `cancelled`    | آپ نے اسے منسوخ کیا                                                              |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+ایک مسلسل بڑھتا ہوا **ریویژن** نمبر تجویز کا سراغ رکھتا ہے جب کہ آرکیسٹریٹر اسے
+دوراں `proposed` حالت میں نظرثانی کرتا رہتا ہے؛ ایپ ریکارڈ کرتی ہے کہ آپ نے کون سی
+ریویژن منظور کی۔ `propose_orchestration` کسی ریویژن کو رد کر دیتا ہے جب حالت مزید
+`proposed` نہ رہے۔
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+آرکیسٹریشن ہمیشہ کسی **پیرنٹ ٹکٹ** کے خلاف کھلتی ہے اور ایک ہی گفتگوئی **اسپیس**
+شیئر کرتی ہے، اس لیے پوری کوشش ایک ہی ورک آئٹم تک قابلِ سراغ رہتی ہے اور ٹیم ایک ہی
+کمرے میں بات کرتی ہے۔
 
-## What happens when it finishes
+## جب یہ مکمل ہو جائے تو کیا ہوتا ہے
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+ایک مسلسل فعال لسنر تیار شدہ پائپ لائن پر نظر رکھتا ہے اور اس کی حتمی حالت کو واپس
+آرکیسٹریشن اور پیرنٹ ٹکٹ پر منتقل کرتا ہے، تاکہ تکمیل اور ناکامی انہی جگہوں پر نظر
+آئیں جہاں آپ پہلے ہی دیکھتے ہیں۔ آرکیسٹریشن فیچر کو اپنے الگ ایگزیکیوشن انجن کی
+ضرورت نہیں۔
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+آپ کسی بھی وقت آرکیسٹریشن منسوخ کر سکتے ہیں؛ منسوخی جاری کام کو ختم کر دیتی ہے۔
 
 ::::note
-Orchestration builds on [pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) and
-[tickets](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+آرکیسٹریشن [پائپ لائنز](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) اور
+[ٹکٹس](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/) پر استوار ہے۔ یہ ان کے اوپر ایک پلاننگ اور
+منظوری کی تہہ ہے، الگ رن ٹائم نہیں۔
 ::::
 
-## See also
+## مزید دیکھیں
 
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): the parent ticket an orchestration is anchored on
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): the roles an orchestration fills or hires
-- [Run an orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
-- [Work in Plan Studio](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/)
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): وہ انجن جس پر میٹیریلیزڈ آرکیسٹریشن چلتی ہے
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): وہ پیرنٹ ٹکٹ جس پر آرکیسٹریشن لنگر انداز ہوتی ہے
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): وہ کردار جو آرکیسٹریشن پُر کرتی ہے یا بھرتی کرتی ہے
+- [آرکیسٹریشن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
+- [Plan Studio میں کام کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/)

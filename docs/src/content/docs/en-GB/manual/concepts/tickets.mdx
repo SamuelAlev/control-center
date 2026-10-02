@@ -2,6 +2,7 @@
 title: Tickets and delegation
 description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
 slug: en-GB/manual/concepts/tickets
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
 A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
@@ -32,7 +33,7 @@ A ticket can be purely local or backed by an external tracker and it carries
 both on one row.
 
 The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
+labels, raw and normalised status, timestamps — is a cache when the ticket is
 remote. The remote is the source of truth there and a refresh rewrites the
 mirror wholesale.
 
@@ -114,7 +115,7 @@ reading a ticket's relations has to merge both sources.
 | `relatesTo`   | The two tickets are related (symmetric) |
 | `duplicateOf` | The source is a duplicate of the target |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
+A **project** is a workspace-scoped grouping of tickets towards a shared goal.
 Projects are Control Center-only and never sync to an external provider.
 
 ## Collaborators
@@ -152,4 +153,4 @@ the ticket; pipeline coupling lives on the agent run log.
 - [Ticket lifecycle](/en-GB/manual/reference/ticket-lifecycle/): statuses, fields, transitions, relations
 - [Create and manage tickets](/en-GB/manual/guides/manage-tickets/)
 - [Delegate work to agents](/en-GB/manual/guides/delegate-tickets/)
-- [Organize work with projects](/en-GB/manual/guides/projects/)
+- [Organise work with projects](/en-GB/manual/guides/projects/)

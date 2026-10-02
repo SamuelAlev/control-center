@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Criar e configurar um agente
+description: Adicione um agente a um espaço de trabalho, atribua-lhe um adaptador, um modelo, skills e permissões e confirme que ele é executado.
 slug: pt-PT/manual/guias/criar-agente
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Este guia mostra como adicionar um agente a um espaço de trabalho e configurá-lo até que consiga realmente ser executado.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Todos os espaços de trabalho são criados com cinco agentes — um CEO e ainda `qa`, `architect`, `engineer` e `librarian` —, pelo que normalmente já tem agentes antes de ter configurado algum. Os passos abaixo aplicam-se tanto a um agente criado de origem como a um novo.
 
-## Before you start
+## Antes de começar
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Está dentro de um espaço de trabalho. Toda a superfície está em **Definições → Espaço de trabalho → Agentes** (`/settings/workspace/agents`).
+- O agente vai precisar de um backend. Ou liga um fornecedor para o harness integrado em **Definições → Servidor → Fornecedores de modelos**, ou instala a CLI do Claude Code na máquina que aloja o `cc_server`.
+- Se quiser que o agente tenha skills, instale-as primeiro em **Definições → Espaço de trabalho → Habilidades**. O formulário do agente só permite ativar skills que já existam no espaço de trabalho.
 
-## Add the agent
+## Adicionar o agente
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Abra **Definições → Espaço de trabalho → Agentes**.
+2. Clique em **Novo agente**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Não existe nenhuma caixa de diálogo nem seletor de funções. É criado imediatamente um agente com o nome “Agente sem nome”, que fica selecionado no painel de detalhe à direita.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Deve agora ver “Agente sem nome” na lista à esquerda, com o separador **Definições** do painel de detalhe aberto e um campo **Nome** que contém “Agente sem nome”.
 
-## Name it
+## Dar-lhe um nome
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Nome** — o identificador curto usado nas menções com @, por exemplo `alice`. A análise das menções corresponde a `@` seguido de caracteres de palavra, pelo que um nome com um hífen, um ponto ou um espaço nunca poderá ser mencionado.
+- **Título** — a etiqueta legível por humanos, por exemplo “Programador sénior”.
+- **Prompt do sistema** — instruções adicionais opcionais, injetadas como uma secção de instruções do agente; não substituem o resto do prompt montado.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Clique em **Guardar alterações**, na parte inferior do formulário. Todos os campos desta página são guardados por esse único botão.
 
-## Give it an adapter and a model
+## Atribuir um adaptador e um modelo
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+A lista pendente **Adaptador** apresenta os executores que o host do servidor tem realmente. O adaptador integrado aparece sempre (é o próprio servidor). O Claude Code só aparece quando a respetiva CLI foi detetada nesse host:
 
-| Adapter                   | Backend                                     |
+| Adaptador                 | Backend                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | O ciclo de agente em processo — sem CLI externa |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Só o adaptador integrado aplica modos, direção, pausa/retoma, contratos de conclusão e subagentes. O Claude Code não oferece nada disso. O Cursor, o Codex e os restantes fornecedores de modelos ligam-se ao adaptador integrado, e não como executores separados.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Um adaptador vazio significa o ciclo integrado]
+Um agente sem adaptador definido é despachado para o **Control Center (built-in)**, o ciclo que corre dentro do servidor, pelo que não é preciso instalar nada no host. Se também não tiver modelo definido, pede à Anthropic o modelo predefinido, de modo que um agente totalmente por configurar só é executado se tiver uma conta da Anthropic ligada. Os especialistas criados de origem são fornecidos sem nenhum dos dois; defina ambos em qualquer agente que tencione usar.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+A lista pendente **Modelo** é determinada pelo adaptador que escolheu. No caso do adaptador integrado, a lista vem em tempo real dos fornecedores que ligou em **Definições → Servidor → Fornecedores de modelos**, pelo que um fornecedor sem credencial guardada contribui com zero modelos.
 
-## Add skills
+## Adicionar skills
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Habilidades** é um seletor de chips sobre os pacotes de skills instalados neste espaço de trabalho. Toque num chip para o ativar ou desativar; o símbolo de verificação marca os selecionados. Se o espaço de trabalho não tiver skills, o campo indica “No skills available. Create skills in Settings → Skills first.”
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/pt-PT/manual/conceitos/modelo-de-agentes/#repo-scoped-skills).
+Aqui não escolhe as skills próprias de um repo. Um repo que as inclua (em `.agents/skills/`, `.claude/skills/` ou `.opencode/skills/`) contribui com elas automaticamente para o agente que estiver a trabalhar nesse repo, e são trocadas quando este passa para outro — consulte [Skills com âmbito de repositório](/pt-PT/manual/conceitos/modelo-de-agentes/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Definir a linha de reporte e a persona
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Reporta-se a** — escolha outro agente pelo nome. Isto constrói a árvore de reporte apresentada pelo botão **Organograma**, no cabeçalho da página. Não é a lista que um líder de equipa usa quando delega — essa vem dos membros da equipa e das respetivas skills.
+- **Persona** — texto livre que molda o tom e o comportamento, por exemplo: “Prefere soluções simples e legíveis. Escreve testes para todo o código novo.”
 
-## Tune the run
+## Ajustar a execução
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Esforço de raciocínio** — as opções vêm dos níveis publicados pelo próprio modelo selecionado: Low / Medium / High, mais Extra High nos modelos ao estilo OpenAI e Extra High + Max nos ao estilo Claude. O campo fica completamente oculto quando o modelo selecionado não declara níveis de pensamento e assume a predefinição do próprio modelo.
+- **Tamanho da janela de contexto** — preenchido a partir da janela de contexto do modelo sempre que muda de modelo, com chips de um toque para a predefinição do modelo, 200k, 500k e 1M. Um valor que escreva depois de escolher o modelo prevalece até à próxima mudança de modelo.
+- **Tempo de silêncio (minutos)** — termina uma execução após este tempo sem qualquer saída. Deixe-o vazio para usar a predefinição de cada modo.
 
-## Grant permissions
+## Conceder permissões
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Permissões do sandbox** começa em “Usar predefinição do espaço de trabalho”. Ative o interruptor para as definir para este agente e, em seguida, ative ou desative cada opção:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Permitir git push** — injeta o token do GitHub de que o agente precisa para fazer push
+- **Permitir chamadas à API do GitHub** — permite ao agente ler PRs, issues e metadados de repos
+- **Permitir chamadas à API de tickets** — injeta a chave do fornecedor de tickets
+- **Permitir acesso geral à rede** — ativa também as ferramentas `web_fetch` e `web_search` do harness integrado
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Cada opção é verificada pelo broker de credenciais quando a execução arranca: uma capacidade desativada significa simplesmente que o token correspondente nunca é gerado no ambiente da execução.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[A predefinição do espaço de trabalho é o conjunto conservador do servidor]
+Um agente deixado em “Usar predefinição do espaço de trabalho” é executado com o git push, a API do GitHub e os tickets **desativados** e a rede **ativada**. As predefinições de capacidades apresentadas em Definições → Servidor → Diagnóstico e privacidade são uma preferência do lado do cliente. Se quiser que um agente faça push ou abra PRs, ative o interruptor e conceda as capacidades explicitamente.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/pt-PT/manual/conceitos/sandbox-e-seguranca/) for the full set of boundaries.
+Estas capacidades controlam o acesso a credenciais e às ferramentas do harness, que é uma camada separada do sandbox do sistema operativo. O `cc_server` envolve as execuções dos agentes no sandbox do host quando este existe — o Windows não tem backend nativo, e o Linux e o WSL2 precisam de `bwrap` e `socat`. Consulte [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/) para ver o conjunto completo de fronteiras.
 :::
 
-## Verify it runs
+## Verificar que é executado
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Abra **Definições → Servidor → Fornecedores de modelos** e confirme que o adaptador que escolheu indica uma versão instalada e não “Não encontrado”. Clique em **Atualizar** para voltar a sondar — a sondagem é executada na máquina que aloja o `cc_server`, não na máquina que está a usar.
+2. Abra um espaço com o agente e envie-lhe uma mensagem, ou mencione-o com @ num espaço existente.
+3. Volte a **Definições → Espaço de trabalho → Agentes**, selecione o agente e abra o separador **Registos**. Deverá aparecer uma execução com um distintivo de estado, uma duração, a hora de início e o adaptador que utilizou. **Visualizar** abre o fluxo de eventos dessa execução.
 
-If no run appears at all, work through [Run agent diagnostics](/pt-PT/manual/guias/diagnosticar-agente/).
+Se não aparecer nenhuma execução, siga [Diagnosticar um agente](/pt-PT/manual/guias/diagnosticar-agente/).
 
-## Delete an agent
+## Eliminar um agente
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Selecione-o na lista. No separador **Definições**, desça até à **Zona de perigo**, na parte inferior do formulário, e clique em **Eliminar**.
 
-## Related guides
+## Guias relacionados
 
-- [Run agents in parallel](/pt-PT/manual/guias/agentes-em-paralelo/)
-- [Build an agent team](/pt-PT/manual/guias/formar-equipa/)
-- [Manage adapters and models](/pt-PT/manual/guias/adaptadores/)
-- [Run agent diagnostics](/pt-PT/manual/guias/diagnosticar-agente/)
-- [Agent configuration reference](/pt-PT/manual/referencia/configuracao-de-agentes/)
+- [Executar agentes em paralelo](/pt-PT/manual/guias/agentes-em-paralelo/)
+- [Formar uma equipa de agentes](/pt-PT/manual/guias/formar-equipa/)
+- [Gerir adaptadores e modelos](/pt-PT/manual/guias/adaptadores/)
+- [Diagnosticar um agente](/pt-PT/manual/guias/diagnosticar-agente/)
+- [Configuração de agentes](/pt-PT/manual/referencia/configuracao-de-agentes/)
 
-## Related concepts
+## Conceitos relacionados
 
-- [The agent model](/pt-PT/manual/conceitos/modelo-de-agentes/)
-- [Modes](/pt-PT/manual/conceitos/modos/)
-- [Sandbox and security](/pt-PT/manual/conceitos/sandbox-e-seguranca/)
+- [O modelo de agentes](/pt-PT/manual/conceitos/modelo-de-agentes/)
+- [Modos](/pt-PT/manual/conceitos/modos/)
+- [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/)

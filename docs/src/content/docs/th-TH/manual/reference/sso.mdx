@@ -1,104 +1,105 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: ข้อมูลอ้างอิงการตั้งค่า SSO
+description: ทุกปุ่มปรับ เอนด์พอยต์ โอเปอเรชัน และรหัสข้อผิดพลาดของการลงชื่อเข้าใช้ครั้งเดียว
 slug: th-TH/คู่มือ/อ้างอิง/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+ทุกสิ่งที่กำหนดค่าได้เกี่ยวกับการลงชื่อเข้าใช้ครั้งเดียว รวมไว้ที่เดียว ค่าต่าง ๆ อยู่ใน
+แถว `sso_connections` ของ `global.db` (ระดับเซิร์ฟเวอร์โดยการออกแบบ) แก้ไข
+ผ่าน **การตั้งค่า → เซิร์ฟเวอร์ → ลงชื่อเข้าใช้ครั้งเดียว** หรือโอเปอเรชัน RPC `sso.*`
+แถวที่บันทึกไว้เป็นแหล่งความจริงเพียงหนึ่งเดียว — ไม่มีเส้นทางผ่านตัวแปร
+สภาพแวดล้อม `CC_SAML_*` / `CC_OIDC_*` (การเชื่อมต่อที่อาจมาจากสองที่ได้
+คือการเชื่อมต่อที่หน้าจอการตั้งค่าอาจไม่ตรงด้วย)
 
-## Connection fields
+## ฟิลด์การเชื่อมต่อ
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| ฟิลด์                  | ใช้กับ | ค่าเริ่มต้น     | ความหมาย                                                                                                                                             |
+| ---------------------- | ------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | ทั้งสอง | ปิด             | การลงชื่อเข้าใช้ใช้การเชื่อมต่อนี้ได้                                                                                                                 |
+| `idpMetadataXml`       | SAML   | —               | XML `EntityDescriptor` ของ IdP (จำเป็นสำหรับการเปิดใช้)                                                                                              |
+| `spEntityId`           | SAML   | `<origin>/saml` | entity ID ของเรา ตรึงไว้เมื่อ origin เปลี่ยน                                                                                                          |
+| `emailAttribute`       | SAML   | `email`         | แอตทริบิวต์ที่ถืออีเมล; NameID ที่มีรูปแบบเป็นอีเมลคือตัวสำรอง                                                                                          |
+| `displayNameAttribute` | SAML   | `displayName`   | แอตทริบิวต์ชื่อที่แสดง                                                                                                                                 |
+| `groupsAttribute`      | SAML   | `groups`        | แอตทริบิวต์ชื่อกลุ่ม                                                                                                                                   |
+| `clockSkewSeconds`     | SAML   | 90              | ค่าเผื่อความคลาดเคลื่อนในการตรวจสอบอายุ                                                                                                               |
+| `allowIdpInitiated`    | SAML   | ปิด             | รับ Response ที่ไม่ได้ขอ (ไม่มี `InResponseTo`)                                                                                                       |
+| `wantResponseSigned`   | SAML   | ปิด             | ต้องมีลายเซ็นที่รากของ Response (ลายเซ็น assertion จำเป็นเสมอ)                                                                                         |
+| `issuer`               | OIDC   | —               | URL ฐานของผู้ออก (จำเป็นสำหรับการเปิดใช้)                                                                                                             |
+| `clientId`             | OIDC   | —               | ID ไคลเอนต์สาธารณะ (จำเป็นสำหรับการเปิดใช้)                                                                                                           |
+| `clientSecret`         | OIDC   | —               | เฉพาะไคลเอนต์แบบ confidential; เก็บในไฟล์ความลับโหมด 0600 ไม่ใช่ฐานข้อมูล — เขียนได้อย่างเดียวผ่าน RPC (`sso.getConfig` รายงาน `clientSecretPresent`) |
+| `groupsClaim`          | OIDC   | `groups`        | เคลมที่ถือชื่อกลุ่ม                                                                                                                                     |
+| `defaultRole`          | ทั้งสอง | `member`        | บทบาทเมื่อไม่มีกลุ่มจับคู่ — ไม่มีทางเป็น `owner`                                                                                                      |
+| `groupRoleMap`         | ทั้งสอง | `{}`            | กลุ่ม → บทบาท; การจับคู่เจ้าของถูกปฏิเสธตอนบันทึก                                                                                                      |
+| `autoMember`           | ทั้งสอง | เปิด            | เพิ่มผู้ใช้เข้าทุกเวิร์กสเปซอัตโนมัติเมื่อลงชื่อเข้าใช้ครั้งแรก                                                                                          |
+| `allowJit`             | ทั้งสอง | เปิด            | จัดหาผู้ใช้ที่ไม่รู้จักตอนลงชื่อเข้าใช้                                                                                                                |
 
-## Process configuration
+## การกำหนดค่าโปรเซส
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+การเชื่อมต่อ SSO ไม่ได้ตั้งต้นจากสภาพแวดล้อม แฟล็กโปรเซสที่เหลืออยู่หนึ่งตัว
+เกี่ยวกับ **การส่งต่อผ่านเบราว์เซอร์** ไม่ใช่แถวการเชื่อมต่อ:
 
-| Variable / flag                          | Meaning                                                                                                              |
+| ตัวแปร / แฟล็ก                          | ความหมาย                                                                                                             |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin ที่ callback ของ SSO เด้งเบราว์เซอร์กลับไป (ข้อมูลรับรองเดินทางไปกับ fragment ของ URL) ถ้าไม่ตั้งไว้ การส่งต่อจะอยู่ origin เดียวกัน |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+URL ของผู้ออกเองต้องเป็น `https` (`http` ยอมรับเฉพาะผู้ออกแบบ loopback
+`localhost`, `127.0.0.1` และ `::1` เท่านั้น)
 
-## HTTP endpoints
+## เอนด์พอยต์ HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| เอนด์พอยต์                                       | การยืนยันตัวตน       | วัตถุประสงค์                                                                                                                                                                                                    |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | ไม่มี (เปลี่ยนเส้นทาง) | เริ่มการลงชื่อเข้าใช้ที่ SP เป็นผู้เริ่ม; `relay=desktop` ส่งต่อไปยังแอป, `relay=web-popup` ส่ง postMessage ไปยังแท็บเชื่อมต่อที่รออยู่ (ซึ่งประกาศ `client_origin` ของตน ยอมรับเฉพาะเมื่อรายการ origin ที่อนุญาตเชื่อถือ) |
+| `POST /saml/acs`                                 | ไม่มี (IdP POST)     | ตัวรับ assertion — ตรวจสอบ จัดหา และออกข้อมูลรับรอง                                                                                                                                                            |
+| `GET /saml/metadata`                             | ไม่มี                | `EntityDescriptor` ของ SP เรา                                                                                                                                                                                   |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | ไม่มี                | การไปกลับของ OIDC; `relay=desktop` ส่งต่อไปยังแอป, `relay=web-popup` ไปยังแท็บเชื่อมต่อที่รออยู่ (ธรรมเนียม `client_origin` เดียวกัน)                                                                             |
+| `GET /auth/providers`                            | ไม่มี, CORS `*`      | การตรวจสอบของหน้าจอเชื่อมต่อ: การเชื่อมต่อ SSO ที่เสนอ (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                  |
+| `/scim/v2/Users…`                                | Bearer (โทเค็น SCIM) | Users สร้าง/อ่าน/รายการ+กรอง/PUT/PATCH/DELETE                                                                                                                                                                   |
+| `/scim/v2/Groups`                                | Bearer               | อ่านอย่างเดียว; การพุชกลุ่มตอบ 501 โดยการออกแบบ                                                                                                                                                                  |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer               | เอกสารความสามารถ                                                                                                                                                                                                |
 
-## RPC ops
+## โอเปอเรชัน RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+โอเปอเรชัน `sso.*` ทั้งหมดมีขอบเขตระดับเซิร์ฟเวอร์และจำกัดไว้ที่ **เจ้าของ
+เซิร์ฟเวอร์** (ผู้ดูแลการติดตั้ง, `ServerAuthority.serverOwner`) การเป็นเจ้าของ
+เวิร์กสเปซไม่เพียงพอ; การจับคู่เพียงอย่างเดียวไม่เคยให้สิทธิ์เหล่านี้
 
-| Op                        | Purpose                                                                                                                                                       |
+| โอเปอเรชัน                | วัตถุประสงค์                                                                                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | การเชื่อมต่อที่บันทึกไว้ของชนิดหนึ่ง                                                                                                                           |
+| `sso.saveConfig`          | ตรวจสอบ บันทึก และใช้ทันที                                                                                                                                     |
+| `sso.status`              | แฟล็กเปิดใช้/กำหนดค่าแล้ว การมีอยู่ของโทเค็น SCIM origin ตามแบบฉบับ                                                                                             |
+| `sso.testConnection`      | ทดสอบการเชื่อมต่อโดยไม่ต้องไปกลับผ่านเบราว์เซอร์ (SAML: แยกวิเคราะห์ metadata + สร้าง AuthnRequest; OIDC: ค้นหาผู้ออก) พร้อมค่าบนหน้าจอที่ยังไม่บันทึกได้ตามต้องการ |
+| `sso.spMetadata`          | ส่งออก `EntityDescriptor` ของ SP สำหรับ origin หนึ่ง                                                                                                           |
+| `sso.setPairingEnabled`   | อนุญาต/ห้ามการจับคู่ด้วยมือ (รหัสเชิญ คีย์จับคู่); การปฏิเสธที่จะปิดใช้งานขณะยังไม่มีการเชื่อมต่อ SSO ที่ทำงานได้ช่วยป้องกันการล็อกตัวเองออก                 |
+| `sso.sessionPolicy`       | อ่านอายุสูงสุดของข้อมูลรับรองอุปกรณ์และเวลาหมดอายุเมื่อไม่ใช้งานของการติดตั้ง (นาที; `0` = ไม่ตั้ง)                                                            |
+| `sso.setSessionPolicy`    | ตั้งขอบเขตเหล่านั้น; บังคับใช้ตอนตรวจสอบอุปกรณ์ ไม่ได้ประกาศให้ไคลเอนต์ทราบ                                                                                    |
+| `sso.scimRegenerateToken` | สร้าง + คืนโทเค็น bearer ของ SCIM (ครั้งเดียว)                                                                                                                 |
 
-## Validation error codes
+## รหัสข้อผิดพลาดของการตรวจสอบความถูกต้อง
 
-`cc_saml_verify_response` failures carry a stable code:
+ความล้มเหลวของ `cc_saml_verify_response` มีรหัสที่แน่นอน:
 
-| Code                   | Meaning                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| รหัส                   | ความหมาย                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `signature`            | ลายเซ็นหายไป/ไม่น่าเชื่อถือ/ถูกแก้ไข หรืออัลกอริทึม/การแปลงที่ไม่ได้รับอนุญาต          |
+| `expired`              | อยู่นอก `NotBefore`/`NotOnOrAfter` (เกินความคลาดเคลื่อน)                                |
+| `audience`             | ข้อจำกัด audience ไม่ได้ระบุชื่อเรา                                                     |
+| `destination`          | ปลายทางของ response ไม่ใช่ ACS ของเรา                                                  |
+| `request_match`        | `InResponseTo` ไม่ตรงกับคำขอที่ค้างอยู่ หรือไม่ได้ขอในขณะที่ห้ามไว้                     |
+| `issuer`               | ผู้ออกไม่ใช่ IdP ที่กำหนดค่าไว้                                                          |
+| `recipient`            | ผู้รับของ subject confirmation ไม่ใช่ ACS ของเรา                                        |
+| `malformed`            | ความล้มเหลวระดับ XML/สคีมา                                                              |
+| `status`               | สถานะที่ IdP รายงานไม่ใช่ Success                                                        |
+| `invalid` / `internal` | อย่างอื่น / ความล้มเหลวที่รอยต่อ                                                        |
 
-## Database surfaces
+## พื้นผิวฐานข้อมูล
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — หนึ่งแถวต่อชนิด ข้ามเวิร์กสเปซโดย
+  การออกแบบ
+- `users.sso_subject` + `users.sso_issuer` — การตรึง subject ของผู้ให้บริการ
+  ไม่ซ้ำต่อ `(issuer, subject)` ผ่านดัชนีบางส่วน
+- `users.deactivated_at` — ตราประทับการปิดใช้งานของ SCIM
+- โทเค็น bearer ของ SCIM และ client secret ของ OIDC อยู่ในไฟล์ความลับ
+  โหมด 0600 ไม่ใช่ฐานข้อมูล

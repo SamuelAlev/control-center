@@ -1,152 +1,159 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Använd AI-driven granskning
+description: Kör pipelinen pr_review på en PR, läs fynden och utfallet och publicera sedan granskningen till GitHub.
 slug: sv-SE/handbok/how-to-guider/ai-granskning
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Den här guiden visar hur du låter granskaragenter granska en pull request och hur
+du publicerar resultatet till GitHub.
 
-## Start an AI review
+## Starta en AI-granskning
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Öppna PR:en och gå till fliken **Översikt**
+2. Öppna överflödesmenyn ⋯ på åtgärdsraden och välj **Fråga AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Posten visas bara medan PR:en är öppen – det är en åtgärd före sammanslagning.
+Samma knapp erbjuds som **Fråga AI** i det tomma tillståndet på fliken
+**Granskning**, innan någon granskning finns.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center startar den medföljande `pr_review`-pipelinen och öppnar PR:ens
+flik **Granskning** så att du kan följa den. Pipelinen:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Öppnar PR:ens egen granskningsyta, vars isolerade worktree har PR:en utcheckad
+   på sin head
+2. Skickar ut granskarna för arbetsytans granskningsnivå – tre som standard
+   (de medföljande agenterna **qa**, **arkitekt** och **ingenjör**, parallellt).
+   Det finns ingen språk- eller domänigenkänning
+3. Låter huvudagenten (CEO) sammanställa deras fynd till en genomgång
+4. Finaliserar: sorterar fynden i konsensusgrupper och räknar fram utfallet.
+   När kopplingen når `awaiting approval` visas **Publicera till GitHub** på
+   fliken Granskning
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Hur djupt granskningen går styrs av arbetsytans **granskningsnivå** – `light` (en
+granskare), `balanced` (tre, standard) eller `thorough` (alla fem, med
+säkerhets- och prestandaspecialisterna) – som ställs in under
+**Inställningar → Arbetsyta → Allmänt**, på kortet **Arbetsytepolicy**. En
+lättare nivå registrerar precis lika många fynd; den rapporterar bara färre av
+dem i förgrunden.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/sv-SE/handbok/koncept/ai-granskning/) for how the pieces fit together.
+Alla granskare postar i PR:ens enda granskningsyta, och det är vad som gör deras
+fynd jämförbara. Se
+[AI-granskning](/sv-SE/handbok/koncept/ai-granskning/) för hur delarna hänger ihop.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/sv-SE/handbok/how-to-guider/github-pr-samtal/).
+`pr_review` levereras bara med en manuell trigger. Om du vill att den ska köras på
+varje publicerad PR lägger du till en trigger själv – se
+[Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/). Du kan också
+starta en från GitHub själv, utan pipelinetrigger: nämn serverns bot i PR:en
+eller lägg till etiketten `ai-review` – se
+[Prata med Control Center från en GitHub-PR](/sv-SE/handbok/how-to-guider/github-pr-samtal/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Om en toast säger att en granskning redan körs för den här pull requesten är en
+redan i gång; stanna på fliken **Granskning** eller öppna **Pipelines** för att
+hitta den.
 
-## Read the findings
+## Läs fynden
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Granskare registrerar fynd som **granskningsnoder** i granskningsytan. Var och en
+innehåller:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Fält           | Beskrivning                                                    |
+| -------------- | -------------------------------------------------------------- |
+| Typ            | `bug`, `suggestion`, `recommendation`, `question` eller `ticket` |
+| Prioritet      | P0 (kritisk) → P3 (petitess)                                   |
+| Kategori       | `security`, `stability`, `data_integrity`, `correctness`, `performance` eller `maintainability` |
+| Fil och rad    | Var fyndet är ankrat                                            |
+| Ursprunglig kod | Koden som fyndet handlar om                                    |
+| Föreslagen kod | Den föreslagna åtgärden                                         |
+| Konfidens      | Hur säker granskaren är                                         |
+| Status         | `open` → `consensus-ready` → `resolved` eller `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Ett fynd når bara **consensus-ready** när en _kollega_granskare bekräftar det. En
+agent kan inte bekräfta sitt eget fynd, så en enskild granskares åsikt avancerar
+aldrig på egen hand.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/sv-SE/handbok/how-to-guider/granskningsberakning/) for what the pass produces.
+Fliken **Granskning** visar fyndlistan, filtrerbar på typ och status, med en
+växel för avvisade fynd, bredvid artefakten som den sammanställande agenten
+publicerade. Den deterministiska vyn – kohorter, instrumentpanelen med flera
+axlar, kontrakts- och visuella diffar – beräknas på serversidan men har ingen yta
+i appen; se
+[Granskningsberäkning](/sv-SE/handbok/how-to-guider/granskningsberakning/) för vad körningen producerar.
 
-## Check the disagreements panel
+## Kontrollera oenighetspanelen
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+När två granskare ankrar fynd till samma fil och rad men bedömer dem väldigt
+olika – prioriteringar två eller fler nivåer isär, eller att en kallar det en
+`bug` medan den andra kallar det en `suggestion` – visas en oenighetspanel
+ovanför fyndlistan. Läs dem först: det är där granskarnas åsikter går isär och
+ditt omdöme är värt som mest.
 
-## Read the verdict
+## Läs utfallet
 
-When the lead agent finalizes, it computes a **verdict**:
+När huvudagenten finaliserar räknar den fram ett **utfall**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Utfall    | Betydelse                                     |
+| --------- | --------------------------------------------- |
+| **Ship**  | Inget blockerande hittades                    |
+| **Hold**  | Problem som bör åtgärdas före sammanslagning  |
+| **Block** | Kritiska problem som måste åtgärdas           |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Utfallet bär ett sammanvägt konfidensvärde och antal fynd per prioritet.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Granskningsaxlarna vävs sedan in i det och kan bara göra det **mer** allvarligt.
+En grindad axel som fallerar tvingar fram **Block**; en grindad axel som inte
+kunde slutföras (`partial`) eller inte kunde köras alls (`unavailable`) tvingar
+fram minst **Hold**. Frånvaro av bevis blir aldrig en grön grind.
 
-## Publish the review to GitHub
+## Publicera granskningen till GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publiceringen är ett separat steg som medvetet grindas av användaren. Pipelinen
+`pr_review` behåller granskningen i Control Center; den lägger inte upp något på
+GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Vänta på fliken **Granskning** tills **Publicera till GitHub** visas
+2. Tryck på **Publicera till GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center skickar **en** GitHub-granskning. Fynd som redan är åtgärdade eller
+avvisade hoppas över. Knappen inkluderar varje återstående öppet fynd och skickar
+`APPROVE` vid **Ship**. (MCP-verktyget `publish_review_to_github` använder
+fortfarande som standard bara kollegabekräftade fynd och godkänner inte om du inte
+skickar med `approve_on_ship`.) De som bär ett ankare till fil och rad blir
+inline-kommentarer; allt annat vävs in i sammanfattningstexten, och var och en bär
+en "— Control Center AI review"-fotnot så att källan är entydig. Ett **Block**-utfall
+skickas in som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som
+`APPROVE` från den här knappen. En toast visar sedan **Publicerad**. Granskningen
+publiceras under serverns appidentitet.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Om GitHub avvisar ett inline-ankare för att raden inte ingår i diffen skickas hela
+granskningen om med varje fynd invävt i texten, så att inget tyst tappas bort.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publiceringen är grindad av räcken]
+`pr_review.publishReview` deklarerar åtgärdsklassen `prPublish` och går genom
+räckesflaskhalsen. Om det beslut som löses upp är `prompt` och ingen godkännare är
+ansluten nekas publiceringen – räcken faller stängt. Sätt en uttrycklig regel under
+Inställningar → Arbetsyta → Agentbehörigheter om du vill att den ska köras
+obevakad.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Andra inbyggda pipelines lägger faktiskt upp på GitHub direkt: `cross_review`,
+`pr_triage`, `ticket_to_pr` och `pre_merge_gate` slutar alla i ett
+kommentarssteg. Bara `pr_review` håller tillbaka sin utdata åt dig.
 
-## Dispatch reviewers yourself
+## Starta granskningsagenter själv
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/).
+För kontroll över vilka roller som granskar PR:en och vilka filer var och en
+tittar på använder du MCP-verktyget `dispatch_reviewers` inuti en befintlig
+granskningsyta, eller lägger till granskarnoder i en pipeline. Båda vägarna, med
+verktygets exakta signatur, finns i
+[Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/).
 
-## Related guides
+## Relaterade guider
 
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Dispatch reviewer agents](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
-- [Review compute (cohorts and axes)](/sv-SE/handbok/how-to-guider/granskningsberakning/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
+- [Granskningsberäkning (kohorter och axlar)](/sv-SE/handbok/how-to-guider/granskningsberakning/)
 
-## Related concepts
+## Relaterade koncept
 
-- [AI review](/sv-SE/handbok/koncept/ai-granskning/)
-- [Guardrails](/sv-SE/handbok/koncept/racken/)
+- [AI-granskning](/sv-SE/handbok/koncept/ai-granskning/)
+- [Räcken](/sv-SE/handbok/koncept/racken/)

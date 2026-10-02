@@ -1,137 +1,137 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: リグ
+description: すべてのリグのサーフェス、バックエンド、アクション動詞、ライフサイクル状態、ポート、既定値、契約 — 完全な事実カタログ。
 slug: ja-JP/マニュアル/リファレンス/リグ
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/ja-JP/マニュアル/コンセプト/リグ/); to open a machine, follow [the
-guide](/ja-JP/マニュアル/ハウツーガイド/リグの利用/).
+ここには事実だけを記します。その背後にあるモデルについては[リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/)を、マシンを開く方法については[ガイド](/ja-JP/マニュアル/ハウツーガイド/リグの利用/)を参照してください。
 
-## Surfaces and backends
+## サーフェスとバックエンド
 
-| Surface | Drives | Backend | Value | Contained egress |
+| サーフェス | 駆動対象 | バックエンド | 値 | エグレスの隔離 |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| ターミナル（exec） | VM の exec チャネル越しのシェル | microVM | `smolvm` | はい |
+| ブラウザ | ヘッドレス Chromium（CDP）、Firefox（WebDriver BiDi）、または WebKit（W3C WebDriver） | microVM | `smolvm` | はい |
+| コンピュータ | X11 デスクトップ: 入力はハイパーバイザー経由、キャプチャはゲストエージェント経由 | QEMU | `qemu-hvf`（macOS）、`qemu-kvm`（Linux）、`qemu-tcg`（アクセラレーションなしのフォールバック。自動で選ばれることはない） | はい |
+| Android | ADB 経由の Android | Google のエミュレータ | `android-emulator` | **いいえ** — エミュレータが自身のネットワークを管理する |
+| iOS | WebDriverAgent 経由の iOS Simulator | CoreSimulator | `ios-simulator` | **いいえ** — ネットワークはホストの Mac に従う |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+ターミナルと `computer_use` サーフェスは同じ `computer` サーフェス値を共有します。
+ターミナルは exec イメージマーカーで区別され、操作可能なデスクトップとして再利用される
+ことはありません（その逆も同様です）。1 つの会話は 1 台のターミナルマシンを再利用します。
 
-## Browser engines
+## ブラウザエンジン
 
-| Engine | Value | Protocol | Live view | Stills |
+| エンジン | 値 | プロトコル | ライブビュー | 静止画 |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium`（既定） | Chrome DevTools Protocol | スクリーンキャスト — ページが再描画されるとブラウザがフレームをプッシュする | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | ポーリングによる静止画（BiDi にスクリーンキャストはない）、上限 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver（クラシック） | ポーリングによる静止画。ホストの ffmpeg でトランスコードされる | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+リグは生涯を通じて **1 つ** のエンジンだけを実行します。1 つの会話は**エンジンごとに**
+1 つのリグを保持でき、これが並べて比較できる理由です。「Firefox (VM)」を
+「Chromium (VM)」の隣で開くと 2 台のマシンになり、一方を閉じてももう一方は実行された
+ままです。
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+`engine` は `rig.open` または `browser_use` ツールに渡します。不明な名前は既定値に
+フォールバックされるのではなく拒否されます — ブラウザを要求して黙って別のものを
+受け取ることは、互換性の問いに誤った答えを返すことだからです。
 
-Engine-specific limits, stated rather than worked around:
+エンジン固有の制限は、回避するのではなく明示します:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** にはキャッシュを迂回するリロードがありません（BiDi の `ignoreCache`
+  を明確に拒否します）。そのためハードリロードは通常のリロードと同じです。
+- **WebKit** にもキャッシュを迂回するリロードがなく、コンソールフィードもありません
+  （出力は各ナビゲーションの後に `console.*` をフックして取得するため、読み込み中に
+  記録されたものは失われます — コンソールの抽出はどれもそう述べます）。ライブビューには
+  ホスト上の `ffmpeg` が必要です。
+- **どちらも**、そのプロトコル越しにプラットフォームのアクセシビリティツリーを公開しません。
+  そのため `extract (a11y)` は DOM から導出した近似を返し、近似であると明示されます。
+- **どちらも**実際のファイルドロップを受け取れません。ファイル入力には、それでも
+  マシン内のパスを指定できます。
 
-## Machine images
+## マシンイメージ
 
-| Surface | Image | Fetched |
+| サーフェス | イメージ | 取得方法 |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| ターミナル | `ubuntu:24.04`、ダイジェスト固定 | 初回起動時に、マシン自身のゲートされたネットワーク経由で自動的に |
+| ブラウザ（Chromium、Firefox、WebKit） | `debian:trixie-slim`、ダイジェスト固定、およびエンジン自身のパッケージ | 初回起動時に自動的に。その後はウォーム済みパックとしてキャッシュされる |
+| コンピュータ | Chromium、Firefox、WebKit と、ターミナルがウォームするのと同じ GitHub ホストのランナー相当の CLI ベースラインを備えた qcow2 デスクトップイメージ | **設定 → サーバー → リグ**の**インポート**（公開されているものはチェックサム固定でダウンロード） |
+| Android | Google のシステムイメージ | Android SDK 経由 |
+| iOS | Xcode の Simulator ランタイムと、チェックサム固定の WebDriverAgent | ランタイムは Xcode 経由。自動化ブリッジは**設定 → サーバー → リグ**から |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+各 microVM 種別の初回起動後、サーバーは展開済みのコピーをデータディレクトリ配下に
+キャッシュし、以降のマシンはすべてそこから起動します — パッケージがインストール済みの
+ウォーム済みイメージも含みます。ターミナルは GitHub ホストのランナー相当の CLI
+ツールセット（`git`、`gcc`、`python3`、`jq`、`rsync`、アーカイブツール、および apt
+ベースラインの残り。Docker や言語のツールキャッシュは含みません）をウォームします。
+コンピュータの qcow2 は、イメージビルド時に同じ CLI 群を、XFCE と 3 つのブラウザと
+並べて焼き込みます。各ブラウザは自身のエンジンをウォームします。3 つのエンジンは
+Debian ベースを共有しますが、パックを共有することは決してありません。キャッシュの
+キーはイメージ、エンジン、**および**音声リビジョン（`audio-v1-<engine>`）です。
+1 つのエンジンのためにウォームしたマシン — あるいは PulseAudio と ffmpeg が
+ワークロードの一部になる前にウォームしたマシン — には、他のエンジンのものが何も
+入っていないからです。ターミナルのパックも同じ理由でツールセットのリビジョン
+（`tools-v1`）をキーにします。コンパイラがイメージの一部になる前にウォームした
+パックが、コンパイラを持つはずのマシンに提供されてはなりません。
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+採用する価値のある焼き込み済みの自動化イメージはありません — Chromium の
+`chromedp/headless-shell` は ALSA と PulseAudio の両方をビルドから外しているため、
+音を出すことができません。唯一メンテナンスされている Firefox 用のものは Debian
+ベースの 33 倍のサイズで、しかも `socat` を同梱していません。WebKit 用には
+メンテナンスされたものが一切ありません。そのため各エンジンは初回起動時に
+インストールされ（`chromium`、`firefox-esr`、または `webkit2gtk-driver`）、その処理の
+間に Debian のアーカイブ（`deb.debian.org`、`security.debian.org`、
+`cloudfront.debian.net`）に到達します。Chromium はディストリビューションのバイナリで
+あり、`chromium --headless=new` として起動されます。
 
-### Per-workspace custom images
+### ワークスペースごとのカスタムイメージ
 
-| Setting key | Overrides |
+| 設定キー | 上書きする対象 |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | ターミナル（VM）のイメージ |
+| `rigs.smolvm.browserImage` | Chromium ブラウザ（VM）のイメージ |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+管理者権限で保護されたワークスペース設定ストア（**設定 → サーバー → リグ →
+カスタムイメージ（このワークスペース）**）を通じて書き込まれます。値はレジストリ参照で
+なければなりません — ローカルパス、アーカイブ、フラグのような文字列は、入力フィールドで
+も起動時にも拒否されます。保存された値が無効な場合は明示的に警告されたうえで無視され、
+代わりに既定のイメージが起動します。そのイメージ自身のレジストリ（および Docker Hub、
+GHCR、Quay、GitLab、GCR の既知の blob CDN の随伴ホスト）が、プルのためにエグレス
+ゲートを通じて許可されます。
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**ターミナルイメージの契約** — `bash` が存在すること。`git`、`curl`、`socat` が
+プリインストールされている*または* Debian/Ubuntu の apt ベースであること
+（エンクロージャーは初回起動時にこの 3 つに加え、GitHub ホストのランナー相当の CLI
+ツールセットをインストールします: コンパイラ、Python 3、`jq`、アーカイブツール、
+`rsync`。言語のツールキャッシュと Docker はインストールされません）。
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**ブラウザイメージの契約** — `bash` と `socat` を備えた Debian/Ubuntu の apt ベース
+（またはすでにインストール済みのパッケージ）。加えて、サーバー自身が
+`chromium --headless=new` として起動する `chromium` バイナリがあり、DevTools は
+ゲストのループバック `9223` で待ち受け、ゲストのポート `9222` に中継されます。
+音声レーン用に、初回起動時に PulseAudio と ffmpeg がインストールされます。
+`FROM chromedp/headless-shell` でビルドしないでください。上流の `headless.gn` は
+ALSA と PulseAudio の両方をビルドから外しているため、そのバイナリは音を出せません。
+この上書きが適用されるのは **Chromium のリグだけ**です — 起動するワークロードコマンドは
+Chromium のものであり、それを Firefox や WebKit に渡すと存在しないバイナリを起動する
+ことになります。Firefox や WebKit のリグでは、この設定は明示的に警告されたうえで
+無視され、固定されたイメージで起動します。
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**自動化ポート** — すべてのブラウザマシンは、ホストのループバックポートをちょうど 1 つ、
+ゲストの `9222` に転送します。その背後では、Chromium の DevTools と Firefox の
+リモートエージェントがゲストのループバック `9223` にあり、その手前に `socat` リレーが
+置かれます（どちらも無条件にループバックへバインドします）。WebKit のドライバーは
+`--host` を受け取り、ゲストの NIC に自身でバインドします。さらに Firefox は `Host`
+ヘッダーを自身のポートと照合して検証するため、クライアントは接続先に指定した authority
+ではなく、ゲスト側の authority を送ります。
 
-## Action verbs
+## アクション動詞
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+すべてのアクションは網羅的に解析されます。不正な形式のペイロードは、例外ではなく、
+問題のフィールド名を示すメッセージを返します。観察系の動詞（○ 印）は、人が操作権を
+保持している間も許可されたままです。変更を伴う動詞は拒否されます。
 
 ### `computer_use`
 
@@ -141,219 +141,221 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+座標は、ゲストの現在のモードにおけるゲストのピクセルです。スクリーンショットはどれも
+表示サイズを明示します。キーの組み合わせは X11 の表記（`ctrl+s`、`alt+Tab`、
+`Return`）を使います。
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` は `selection` を受け取ります: `clipboard`（ctrl+C が埋めるもの。
+既定）、`primary`（X11 の選択によるコピー）、`xdnd`（進行中のドラッグ）。空の結果は
+3 つすべてにとって正常な答えです。`clipboard_write` は `text` だけを受け取ります —
+画像とファイルはファイルレーンを通ります。アクションの引数は監査ログに保存されるため、
+画像のバイト列がそこにあるべきではないからです。クリップボードの内容は、信頼できない
+データとしてフェンスされた状態で返ります。
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate`（http/https のみ）, `reload`（`hard` は任意）, `stop_loading`,
+`click`（セレクターまたは座標）, `fill`, `type`, `key`（DOM のキー名）,
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
-`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`extract`○（`a11y` | `dom` | `console`）, `screenshot`○（`full_page` は
+任意）, `set_viewport`（最小 320×240）, `history`, `wait_for`○（セレクター、
+0.1–30 s）, `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+抽出されたページの内容は、信頼できないデータとしてフェンスされて返ります。
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+ブラウザのクリップボードは 1 つだけなので、`clipboard_read` は `selection` を
+取りません。クリップボード関連の 2 つの動詞には**セキュアコンテキスト**が必要です —
+平文の `http://` で配信されたページにはクリップボード API がまったくなく、動詞は空の
+クリップボードを報告するのではなく、その旨を述べます — その場合は `type` を使って
+ください。クリップボードを経由せず、キャレット位置に挿入します。
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe`（50–5000 ms）, `type`, `key`（別名 `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`menu`, `volume_up`, `volume_down`, `power`、または任意の `KEYCODE_*`）,
+`screenshot`○, `ui_dump`○, `install_apk`（リグのワークツリーとサーバーの
+データディレクトリに限定）, `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`、および `shell`.
+`shell` は argv のリストを受け取り、Android の中で実行されます。ホストのシェルを
+通ることは決してありません。`logcat`、`dumpsys`、`pm grant` のような開発者向けの
+診断を担います。
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` にクリップボード系の動詞はありません。Android 10 以降、クリップボードを
+読み取れるのはフォーカス中のアプリだけです。
 
 ### `ios_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`tap`, `swipe`（50–5000 ms）, `type`, `key`（`enter`, `backspace`, `tab`,
+`escape`、矢印キー、または印刷可能な 1 文字。任意で `command`, `control`,
+`option`, `shift` 修飾子）, `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app`（リグのワークツリーまたはサーバーの
+データディレクトリに限定されたシミュレータの `.app` ディレクトリ）,
+`start_app`, `stop_app`,
+`uninstall_app`, `open_url`、および `spawn`. `spawn` は argv を受け取り、`simctl` を
+通じてシミュレータの中で実行します。ホストのシェルを呼び出すことは決してありません。
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+座標は、スクリーンショットのピクセルではなく iOS 画面の**ポイント**です。
+ライブストリームはシミュレータの固定サイズを保ち、デバイスをリサイズするのではなく
+レターボックス表示します。ホストからシミュレータへ、およびシミュレータからホストへの
+テキストのクリップボード転送は、他のリグと同じユーザーごと・方向ごとの権限ポリシーに
+従います。iOS のペーストボードレーンはファイルと画像を受け付けません。
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+各リグは、所有する CoreSimulator デバイスと WebDriverAgent セッションを作成します。
+リグを閉じると WebDriverAgent が停止し、そのデバイスがシャットダウンされて削除され、
+レジストリのエントリも削除されます。iOS のリグは、Xcode、インストール済みの iOS
+ランタイム、固定された自動化ブリッジを備えた macOS サーバーでのみ実行されます。
+音声、マイク、ファイルドロップ、ホストシェル、エンクロージャーによるネットワーク保証の
+いずれも提供しません。
 
-### Management tools
+### 管理ツール
 
-| Tool | Description |
+| ツール | 説明 |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | ワークスペースのリグを、サーフェス、ステータス、ディスプレイ、操作者とともに一覧する |
+| `rig_close` | リグを破棄し、そのディスクを捨てる |
 
-## Lifecycle
+## ライフサイクル
 
-| Phase | Meaning |
+| フェーズ | 意味 |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | 起動中。ステータスの詳細に現在のステップがそのまま表示される |
+| `ready` | 到達可能で、アクションを受け付ける |
+| `parked` | アイドルによるパーク: vCPU は停止しているが RAM は常駐したまま。次のアクションで復帰する |
+| `closing` | シャットダウン中 |
+| `closed` | 消滅済み。監査証跡のために行は残る |
+| `failed` | 停止したか、起動しなかった。UI が再試行を提示できるよう区別されている |
 
-| Close reason | Fired when |
+| クローズ理由 | 発生する条件 |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | 人またはエージェントが要求した |
+| `idleTimeout` | アイドル期間の 2 倍を超えてアイドルだった、またはメモリのために退避された |
+| `ttlExpired` | ハードな寿命が尽きた |
+| `conversationEnded` | 所有元の会話が終了した |
+| `workspaceGone` | ワークスペースが削除された、またはメンバーシップを失った |
+| `serverShutdown` | サーバーが停止している |
+| `backendFailure` | その下のハイパーバイザーが落ちた |
 
-## Defaults and ceilings
+## 既定値と上限
 
-| Value | Terminal | Browser | Computer | Mobile |
+| 項目 | ターミナル | ブラウザ | コンピュータ | モバイル |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| メモリ | 512 MB | 2048 MB（Chromium）。2560 MB（Firefox、WebKit） | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| ハード TTL | 8 時間 | 2 時間 | 2 時間 | 2 時間 |
+| アイドル期間 | 45 分 | 15 分 | 15 分 | 15 分 |
+| 起動時のディスプレイ | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- エージェントレーンの静止画は **1280×800** に制限されます。ヒューマンレーンは
+  **2560×1600** までネゴシエートします。
+- すべてのリグに対するホストの常駐メモリ予算は既定で **12 GB** で、常駐メガバイト単位で
+  数えます（パークした VM も RAM を保持したままです）。退避は最も長く使われていない
+  ものから順に行われ、誰かが操作している、視聴している、またはターミナルを開いている
+  マシンが退避されることは決してありません。
+- 開いているターミナルまたは視聴レーンは、そのリグをパークとアイドル回収の対象から
+  外します。ハード TTL は引き続き適用されます。
 
-## Ports and dev domains
+## ポートと開発ドメイン
 
-| Port | Where | Reserved for |
+| ポート | 場所 | 用途 |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | ターミナルのゲスト | すべての転送が乗るポートマルチプレクサ |
+| `9222`, `9223` | ブラウザのゲスト | 自動化のリレーとエンドポイント（WebKit は `9222` に直接バインドし、リレーを使わない） |
+| `80`, `443` | ブラウザのゲストループバック | 開発ドメインの HTTP/HTTPS レーン |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- 検出は、サーバー側で約 4 秒ごとにターミナルゲストのリッスン中 TCP ポートを
+  ポーリングします。
+- リグごとに自動転送されるポートは最大 **16** 個です。それを超えるものはログに
+  表示され、転送はされません。
+- ホスト側の転送はループバックにバインドし、ゲスト自身のポート番号を優先します。
+  **ローカルネットワークで共有**は、OS が割り当てる LAN ポートを追加します。
+- 開発ドメインは `name.test` または `name.localhost`（小文字、ラベルは最大 63 文字）に
+  一致しなければなりません。1 つのドメインは 1 つのポートに対応します。
+- 開発ドメインの HTTPS はサーバーローカルの CA（EC P-256、`<dataDir>/rigs/tls/` 配下、
+  鍵は 0600 でゲストには決して置かれません）を使い、`*.test` / `*.localhost` 用の
+  ワイルドカードリーフを 1 つ持ちます。ホストに `openssl` がなければ HTTPS レーンは
+  ありません。平文の HTTP は引き続きルーティングされます。
 
-## Egress defaults
+## エグレスの既定
 
-| Surface | Default allowlist |
+| サーフェス | 既定の許可リスト |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| ターミナル | サンドボックスの開発者ベースライン（フォージ、パッケージレジストリ、モデルプロバイダー）＋ Ubuntu の apt ミラー ＋ ワークツリー自身のフォージホスト |
+| ブラウザ | `usectrl.dev`（製品サイト） — 加えて、各エンジンの初回起動時に、パッケージをインストールしている間の Debian のアーカイブ。ホームページはローカルの `file://` ドキュメントで、エグレスを必要としない |
+| コンピュータ | 空 — すべて拒否 — 呼び出し元がホストを許可するまで |
+| モバイル | 適用されない（エミュレータが管理するネットワーク） |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+さらにすべての microVM は、プルのためだけに、自身のイメージのレジストリホストを
+取得します。認証情報ブローカーの許可ホスト集合は同じ許可リストから導出されます。
+ゲストが到達できないホストに対してトークンが発行されることはありません。
 
-## Clipboard and file transfer
+## クリップボードとファイル転送
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+コピー＆ペーストの両方向、およびファイルのドラッグイン・ドラッグアウトです。リグを
+操作する人に利用できます。エージェントは上記の動詞を通じてクリップボードを利用でき、
+ファイル転送はまったく利用できません（すでにエンクロージャー内にシェルを持っている
+ためです）。
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+クリップボードの越境はユーザーごと、方向ごとです。リグへの貼り付けは既定で許可されます。
+リグからのコピーは確認を求めます（10 分間の許可、または**設定 → サーバー → リグ →
+クリップボードアクセス**の**常に許可**）。この 2 つの選択肢は独立しており、ワークスペース
+設定になることは決してありません。
 
-| Lane | Route | Carries |
+| レーン | ルート | 運ぶもの |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| クリップボード | `GET`/`POST /rig/clipboard/<rigId>` | テキスト、PNG/JPEG を 1 つ（≤16 MB）、およびクリップボード上のファイルのゲスト側パス |
+| ファイル | `POST /rig/files/<rigId>` | 最大 64 ファイル、1 つあたり ≤256 MB、1 回のドロップあたり ≤512 MB。任意でゲストのピクセル座標のドロップ位置を指定 |
+| ファイル | `GET /rig/files/<rigId>?p=<base64url path>` | 1 つのファイルのバイト列を外へ取り出す |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **RPC ではなく HTTP。** RPC ソケットは 256 KB を超える受信フレームで接続を閉じます —
+  JSON コマンドには正しく、貼り付けられたスクリーンショットには致命的な DoS ガードです。
+  バイト列は、リグのフレームやミーティングの音声がすでに使っているのと同じ種類のルートを
+  通ります。
+- **認証**は、署名されたターゲット `rig-files:<workspaceId>/<rigId>` とワークスペースの
+  メンバーシップです — 独立したターゲットなので、マシンを*視聴*するために発行された
+  URL で、そのマシンにファイルを書き込むことはできません。
+- **テイクオーバーが適用されます。** クリップボードへの書き込みとファイルのドロップは
+  変更を伴うため、他の誰かが操作権を保持している間は拒否されます。クリップボードの
+  読み取りとファイルの読み出しは観察であり、拒否されません。
+- **ドロップの着地点:** `~/Drops`（デスクトップ）、`~/drops`（ターミナル — ワークツリーの
+  隣であり、決してその中ではないため、ドロップが未追跡の変更として現れることは
+  ありません）、`/tmp/cc-drops`（ブラウザ）。ディレクトリを選ぶのはサーバーであり、
+  呼び出し元が名前を指定することはできません。既存のファイルが上書きされることは
+  ありません — 名前が衝突したものは `2-name.ext` として配置されます。
+- **ゲストに伝えられる内容:** ブラウザのページは、要求された位置で本物のドロップ
+  イベントを受け取ります（`Input.dispatchDragEvent`）。デスクトップは、ファイルとその
+  URI を自身のクリップボードに受け取ります。特権を持つゲスト内デーモンなしに、任意の
+  ツールキットへの XDND ドラッグをホストが合成することはできないからです。どちらが
+  起きたかは応答が明示します。
+- **ドラッグアウト**はデスクトップ専用で、ドラッグが進行している間にゲストの
+  `XdndSelection` を読み取ります。押下が始まった時点でゲストがすでに保持していたものと
+  同一のペイロードは、新しい選択ではなく、終了したドラッグの古い選択として扱われます —
+  X には「ドラッグが終わった」というステップがないからです。
+- **イメージの要件:** デスクトップイメージはプロトコル 2 以降（クリップボード対応が
+  入った後にビルドされたもの）でなければなりません。古いイメージは 404 を返し、アプリは
+  マシンが壊れていると報告するのではなく、イメージを再ビルドするよう伝えます。
+- **監査ログは形を記録し、内容は決して記録しません**: `clipboard_read`、
+  `clipboard_write`、`drop_files`、`read_file` の行が持つのは件数、サイズ、パスです。
+  クリップボードは資格情報が数秒単位で居座る場所であり、そのどれも書き留められません。
 
-## Guardrails, events, storage
+## ガードレール、イベント、ストレージ
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/ja-JP/マニュアル/リファレンス/ドメインイベント/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- リグのツールは **`enclosureControl`** アクションクラスを宣言します（use 系ツールでは
+  `networkEgress` と `processSpawn` も宣言します。`mobile_use` と `ios_use` は
+  `packageInstall` も宣言します）。`rig_close` は `enclosureControl` を宣言し、
+  `rig_list` は何も宣言しません。既定では許可されます。読み取り専用モードはこれを
+  全面的に拒否します。スペースごとの自律性ダイヤルで、承認を先に求める形へ格下げ
+  できます。
+- ドメインイベント: `RigClosedEvent`（クローズ理由を伴う）、`RigControlChanged`
+  （テイクオーバー / 返却）、`RigReaped`（アイドル、TTL、メモリ退避のいずれか。
+  操作中のエージェントを伴う）。リグを開くことはイベントではありません。
+  [ドメインイベント](/ja-JP/マニュアル/リファレンス/ドメインイベント/)を参照してください。
+- ストレージ: 各ワークスペースデータベースの `rig_sessions` と `rig_action_log`。
+  アクションログはすべての入力イベントを、その主体とリグごとの単調増加するシーケンスと
+  ともに記録します。入力されたテキストは、書き込まれる前に長さとハッシュに伏せられます。
+- データディレクトリ: `rigs/images/`（インポートされた qcow2 イメージ）、
+  `rigs/smolvm/`（リグごとのランタイム状態）、`rigs/smolvm-packs/`（展開済みの
+  マシンパック）、`rigs/tls/`（開発ドメインの CA）、`rigs/run/`（QEMU のオーバーレイと
+  シード）。
+- ルート: ライブビューはスペースまたは PR ページのタブです。`/settings/server/rigs` は
+  リグの設定画面です。

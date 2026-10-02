@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: ดีบักการทดสอบที่ล้มเหลวด้วยเอเจนต์
+description: ให้เอเจนต์ตั้งเบรกพอยต์ เปิดโปรแกรมภายใต้ดีบักเกอร์ และอ่านเฟรมสแตกจริง แทนการเพิ่มคำสั่งพิมพ์
 slug: th-TH/คู่มือ/วิธีทำ/ดีบักการทดสอบที่ล้มเหลว
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+คู่มือนี้แสดงวิธีทำให้เอเจนต์ใช้ดีบักเกอร์กับความล้มเหลวที่คำสั่งพิมพ์อธิบายไม่ได้
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+เครื่องมือ `debug` ขับเคลื่อนเซสชัน Debug Adapter Protocol จริง เฟรมที่ถูกหยุดไว้จะตอบทุกคำถามเกี่ยวกับขณะนั้นพร้อมกันในครั้งเดียว — ตัวแปรโลคอลทุกตัว ผู้เรียกทุกชั้น และนิพจน์ที่ประเมินในสโคปของเฟรมเอง — ในขณะที่คำสั่งพิมพ์ตอบได้แค่คำถามที่คุณคิดจะถามก่อนรัน
 
-## Before you start
+## ก่อนเริ่ม
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+เครื่องมือนี้ยังคงอยู่บนพื้นผิว เพื่อให้เอเจนต์ถามได้ว่าทำไมจึงใช้งานอะไรไม่ได้ แทนที่จะเดา อะแดปเตอร์จะเริ่มทำงานได้จริงก็ต่อเมื่อเข้าเงื่อนไข **ทั้งสอง** ข้อนี้:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- มีมาร์กเกอร์โปรเจกต์อยู่ในเช็กเอาต์ และ
+- ค้นหาไบนารีของอะแดปเตอร์เจอ
 
-Ask the agent to check:
+ลองให้เอเจนต์ตรวจสอบ:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+มันจะตอบด้วยสิ่งที่พบ หรืออธิบายว่าอะแดปเตอร์ต้องมีครบทั้งสองส่วน
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| ภาษา           | อะแดปเตอร์                   | มาร์กเกอร์                                      | การติดตั้ง                        |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | มาพร้อม SDK — ไม่ต้องทำอะไร        |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | มาพร้อม LLVM                       |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python เลือกอินเทอร์พรีเตอร์ของโปรเจกต์]
+`debugpy` จะถูกค้นหาใน `.venv/bin` หรือ `venv/bin` ก่อน `$PATH` Python ที่มาจาก `$PATH` เป็นคนละสภาพแวดล้อม และการแอตแทชจากตัวที่ผิดจะล้มเหลวในลักษณะที่อ่านดูเหมือนโค้ดพัง มากกว่าเหมือนการใช้อินเทอร์พรีเตอร์ผิดตัว
 :::
 
-## Set the breakpoint first, then launch
+## ตั้งเบรกพอยต์ก่อน แล้วค่อยเปิดโปรแกรม
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+ลำดับสำคัญ และเครื่องมือนี้บังคับใช้มัน: ตั้งเบรกพอยต์ได้**ก่อน**ที่เซสชันจะเกิดขึ้น เพราะนั่นคือลำดับที่โปรโตคอลกำหนดไว้
 
-Ask the agent something like:
+ลองสั่งเอเจนต์ประมาณนี้:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> ฟังก์ชัน `compute` ใน `bin/main.dart` คืนค่าผิด ตั้งเบรกพอยต์ที่บรรทัดที่กำหนดค่าให้ `product` เปิดมันภายใต้ดีบักเกอร์ แล้วบอกฉันว่าจริง ๆ แล้ว `a` กับ `b` เป็นเท่าไร
 
-It will run roughly:
+มันจะรันประมาณนี้:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+การเปิดโปรแกรมจะรายงานว่าหยุดที่ไหน:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[ถ้ามันรายงานว่าโปรแกรมจบการทำงานแทน]
+เบรกพอยต์ไม่ได้ผูกติด บรรทัดที่เป็นบรรทัดว่าง เป็นคอมเมนต์ หรือไม่ได้ถูกคอมไพล์เข้าไปในบิลด์จะรับเบรกพอยต์ไม่ได้ การเรียก `breakpoints` กับเซสชันที่กำลังทำงานอยู่จะรายงานว่าตั้งไปได้จริงกี่รายการจากที่คุณตั้งไว้
 :::
 
-## Read the frame
+## อ่านเฟรม
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+จากนั้นไล่เข้าไปข้างใน:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+ออบเจกต์ที่มีสมาชิกลูกจะรายงาน `[expand: reference N]` — แต่เฉพาะเมื่อมีอะไรอยู่ข้างหลังจริง ๆ เท่านั้น การขยายที่เอเจนต์ใช้งานไม่ได้จึงไม่ถูกเสนอให้เลย
 
-For anything not visible as a local:
+สำหรับอะไรก็ตามที่มองไม่เห็นในฐานะตัวแปรโลคอล:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## เดินทีละขั้น
 
-| What you want          | Op          |
+| สิ่งที่ต้องการ              | อ็อป        |
 | ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| รันไปจนถึงจุดหยุดถัดไป   | `continue`  |
+| บรรทัดถัดไป เฟรมเดิม    | `step_over` |
+| เข้าไปในการเรียก         | `step_in`   |
+| ออกไปยังผู้เรียก         | `step_out`  |
+| หยุดโปรแกรมที่กำลังรัน    | `pause`     |
 
-## Attach to something already running
+## แอตแทชกับสิ่งที่รันอยู่แล้ว
 
-For a wedged process rather than one you are starting:
+สำหรับโปรเซสที่ค้างอยู่ แทนที่จะเป็นโปรเซสที่คุณกำลังเริ่ม:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## จบเซสชัน
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+ปิดเซสชันเสมอ อะแดปเตอร์ดีบักเป็นเจ้าของ**โปรเซสที่ถูกหยุดไว้**ซึ่งยึดอะไรก็ตามที่โปรเซสนั้นยึดอยู่ — พอร์ต ล็อก หรือการเชื่อมต่อฐานข้อมูล
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[มันหนีจากคุณไปไม่ได้]
+ทุกเซสชันมี TTL แบบตายตัวที่ต่ออายุไม่ได้ มีเซสชันเดียวเท่านั้นต่อการสนทนาหนึ่งครั้ง และทุกอย่างจะถูกฉีกทิ้งเมื่อเซิร์ฟเวอร์หยุด `launch` ครั้งที่สองจะถูกปฏิเสธแทนที่จะไปแทนที่ครั้งแรก: เอเจนต์ที่เริ่มครั้งหนึ่งโดยไม่จบอีกครั้งเกือบแน่นอนว่าตามครั้งแรกไม่เจอแล้ว
 :::
 
-## Bounded output
+## เอาต์พุตที่มีขอบเขต
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+การขยาย `variables` บนกราฟออบเจกต์ที่ลึกนั้นไร้ขอบเขตโดยธรรมชาติ — วิดเจ็ต Flutter ตัวเดียวแตะถึงทรีอิลิเมนต์ทั้งต้น จำนวนสมาชิกลูกต่อสโคปถูกจำกัดไว้ที่ 50 ค่าต่าง ๆ ที่ 400 ตัวอักษร และเฟรมสแตกที่ 30 ผลลัพธ์ของเครื่องมือที่ถมเต็มหน้าต่างบริบทคือเครื่องมือที่ทำให้การรันที่มันกำลังช่วยอยู่ต้องจบลง
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Code intelligence](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — every `debug` op and argument
-- [Diagnose an agent](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/) — when the problem is the agent, not the code
+- [ความฉลาดของโค้ด](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — ทำไมดีบักเกอร์ คอมไพเลอร์ และตัวจับคู่จึงตอบคำถามต่างกัน
+- [เครื่องมือเอเจนต์ในตัว](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — ทุกอ็อปและอาร์กิวเมนต์ของ `debug`
+- [วินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/) — เมื่อปัญหาอยู่ที่เอเจนต์ ไม่ใช่โค้ด

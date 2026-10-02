@@ -1,199 +1,208 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Память и знания
+description: Как Control Center хранит знания агентов, что на самом деле попадает в промпт агента и почему чтение памяти при сбое разрешается.
 slug: ru-RU/руководство/понятия/память-и-знания
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Для чего нужна память
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Без памяти каждый разговор с агентом начинается с нуля: одно и то же соглашение
+приходится объяснять заново, одно и то же решение — пересматривать, один и тот
+же тупик — исследовать вновь. Память — это хранилище уровня рабочего
+пространства, которое переживает запуски; оно существует, чтобы знание,
+созданное одним агентом, позже могли найти другие.
 
-It has three layers and they answer different questions:
+В ней три уровня, и они отвечают на разные вопросы:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Факты** — то, что верно (соглашение, результат, решение).
+2. **Политики** — что агенты должны с этим делать (нормативное правило).
+3. **Рабочая память** — то, чем занимался конкретный агент.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Различие важно, потому что до агента они доходят разными путями. Факты ищутся.
+Политики передаются принудительно. Рабочая память приватна.
 
-## Facts
+## Факты
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` — единица знания, привязанная к рабочему пространству и домену.
 
-| Attribute                                   | What it is                                                                |
+| Атрибут                                     | Что это                                                                   |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | Домен знаний ("conventions", "decisions", "codebase")                     |
+| `topic`                                     | Короткая метка темы                                                       |
+| `content`                                   | Текст знания                                                              |
+| `confidence`                                | 0.0–1.0; задаётся по происхождению и повышается при повторном упоминании   |
+| `memoryType`                                | Вид факта — определяет кривую его временного затухания                    |
+| `veracity`                                  | Как знание было получено — задаёт уверенность и размер каждого прироста за повторное упоминание |
+| `sourceObservationIds`                      | Какие наблюдения привели к нему                                           |
+| `supersededBy`                              | Более новый факт, который его заменил, если он есть                       |
+| `validUntil`, `recallCount`, `mentionCount` | Сигналы истечения срока и использования, учитываемые при извлечении        |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Последние две строки обычно упускают, а именно они решают, _какой_ факт
+всплывёт. `memoryType` несёт параметры затухания по Вейбуллу для своего типа,
+поэтому обязательство с ограниченным сроком быстро угасает, а устойчивый факт
+профиля — нет. `veracity` фиксирует происхождение — сообщено человеком (вес
+1.0), выведено агентом (0.7), получено инструментом (0.5), импортировано
+(0.6) — и этот вес задаёт начальную уверенность факта.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Когда факту противоречат, его никогда не правят на месте. Запись факта
+запускает обнаружение конфликтов с фактами того же домена и темы и заменяет
+проигравшего, создавая строку конфликта. Смысл именно в журнале аудита: всегда
+видно, что считалось верным раньше и что это заменило.
 
-## Policies
+## Политики
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` — нормативное правило, выведенное из фактов, привязанное к
+рабочему пространству и домену, с флагом активности и необязательным
+`requiredRole`.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Каждая **активная** политика рабочего пространства подставляется в **каждый**
+запуск без фильтрации — без отбора по домену, роли, задаче или пространству.
+Это стоит знать, прежде чем писать двадцатую политику: политики конкурируют за
+то же контекстное окно, что и задача. Поэтому же `requiredRole` у политики
+носит рекомендательный характер: он описывает, на кого нацелено правило, но не
+мешает правилу дойти до всех остальных.
 
-## Domains
+## Домены
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` группирует факты и политики внутри рабочего пространства. Домены
+придают знаниям организационную структуру, и именно к ним привязываются
+разрешения доступа, — но прежде чем считать домен границей конфиденциальности,
+прочитайте предостережение ниже.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Домен либо охватывает всё рабочее пространство (`architecture`), либо привязан
+к одному репозиторию (`repo:<slug>/architecture`). Одно и то же имя в обеих
+областях — это два независимых хранилища: факт, верный для одной кодовой базы,
+не перезаписывает факт уровня рабочего пространства. `search_memory` и преамбула
+запуска ставят память, привязанную к репозиторию, на первое место, когда агент
+работает в этом репозитории; остальную они не отсеивают. Передайте `repo` в
+`propose_fact` / `propose_policy` / `search_memory`, чтобы писать в эту область
+или усиливать её.
 
-## Access control is fail-open for reads
+## Контроль доступа разрешает чтение при сбое
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` сопоставляет роль агента и домен одному из трёх уровней
+разрешений:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Разрешение | Значение                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| `none`     | Нет доступа                                                                                        |
+| `read`     | Может искать и извлекать факты                                                                     |
+| `write`    | Требуется для `propose_policy`. Запись фактов (`propose_fact`, `supersede_fact`) идёт без разрешения |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Отсутствие разрешения означает чтение, а не запрет]
+Когда для пары `(role, domain)` нет строки разрешения, действующее разрешение —
+**`read`**. Чтение по умолчанию разрешается при сбое — так и задумано.
+Единственная запись, которая выдаёт ошибку, — `propose_policy` без разрешения
+`write` (`InsufficientMemoryPermission`). Если поместить конфиденциальные данные
+в домен памяти, это не ограничит круг читающих, пока вы явно не создадите
+разрешение `none` для каждой роли, которая не должна их видеть.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+К тому же сегодня в продукте нигде нет интерфейса для разрешений. На экране
+памяти есть только вкладки «Факты», «Политики» и «Граф знаний»; добраться до
+разрешений можно только через RPC-операции `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Асимметрия — мягкость к чтению, строгость к записи политик — это осознанный
+компромисс. Память приносит больше пользы, когда циркулирует, а запрет на чтение
+порождает агента, который молча знает меньше, вместо агента, который сообщает о
+проблеме. Отказ в записи политики, напротив, заметен и исправим, поэтому именно
+там и стоит принуждение. Новому домену сразу задаётся `write` для всех ролей;
+ужесточить его потом можно только правкой через RPC, потому что интерфейса
+разрешений нет.
 
-## Working memory
+## Рабочая память
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+У каждого агента есть `AgentWorkingMemory` — черновик в свободной форме,
+привязанный к рабочему пространству и агенту. Он переживает запуски, приватён
+для этого агента и подставляется в его промпт при каждом запуске. Именно там
+живёт «я остановился на середине рефакторинга auth» — состояние, которое стоит
+перенести в следующий запуск, но не стоит повышать до долговечного факта.
 
-## What actually reaches an agent's prompt
+## Что на самом деле попадает в промпт агента
 
-At dispatch, the memory preamble is assembled from exactly three things:
+При запуске преамбула памяти собирается ровно из трёх вещей:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Каждая активная политика рабочего пространства** — строками `- [domain] rule`.
+- **Собственная рабочая память агента** — дословно.
+- **Отобранный по ключевым словам короткий список фактов** для этой задачи — не
+  более пяти, в пределах бюджета ~1,200 символов и только если описание задачи
+  не короче 20 символов. Более короткие задачи не получают фактов вовсе.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Список основан только на FTS и ключевых словах, и ограничение сделано намеренно.
+Вычисление эмбеддинга запроса медленное, а путь запуска — единственное место,
+где задержка видна сразу, поэтому медленный семантический путь намеренно с него
+убран. В конце преамбула предлагает агенту проверять ключевые пункты через
+`search_memory` — там живёт полная модель извлечения.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+На этом пути разрешения доступа не проверяются. Что нашёл короткий список, то
+агент и видит.
 
-## Recall: one query, four voices
+## Извлечение: один запрос, четыре голоса
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Доступный агентам инструмент `search_memory` имеет три режима, и это
+действительно разные виды поиска:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — только FTS5.
+- **`semantic`** — результаты BM25 и векторного поиска, объединённые взаимным
+  ранговым слиянием.
+- **`hybrid`** (по умолчанию) — многоголосое извлечение: четыре ранжированных
+  голоса сливаются, затем диверсифицируются.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Четыре голоса — лексический (FTS), семантический (векторный KNN), временной
+(недавние активные факты) и графовый — двухшаговый обход эпизодических рёбер от
+сильнейших лексических и семантических затравок. Графовый голос — причина, по
+которой эпизодические рёбра вообще существуют: он выводит на поверхность факт,
+_связанный_ с вашим ответом, хотя ни одно ваше слово с ним не совпадает. Голоса
+взвешиваются по классифицированному намерению запроса (семантический по
+умолчанию весит больше всего, затем графовый и лексический, затем свежесть),
+оценка каждого кандидата масштабируется его затуханием по Вейбуллу, а набор
+результатов диверсифицируется по MMR, чтобы пять пересказов одного факта не
+вытеснили четыре разных.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Семантическое извлечение молчит, пока не установлена модель]
+Векторный голос участвует только после того, как скачана модель эмбеддингов,
+работающая на устройстве. До этого гибридное извлечение работает с тремя
+голосами, и ретроспективного заполнения нет: факты, записанные до установки
+модели, векторов не получают. Векторный путь деградирует ещё сильнее — до
+сканирования упакованных эмбеддингов на Dart, — если само расширение SQLite для
+векторов не загружается; извлечение всё равно отвечает, только медленнее.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Поиск по памяти в десктопном и веб-клиенте — отдельный, более простой путь:
+RPC-операция `memory_fact.search` работает **только по FTS5**, потому что тонкий
+клиент не может передать эмбеддинг запроса, а гибридный путь остаётся внутри
+хоста. Поэтому ранжирование, которое вы видите в браузере памяти, — не то, что
+агент получает от `search_memory`. Это ожидаемо, а не ошибка, но это значит, что
+«я искал и не нашёл» в интерфейсе не доказывает, что агент не найдёт.
 
-## Where memory lives and who writes it
+## Где живёт память и кто её пишет
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Браузер памяти находится в разделе **Настройки → Рабочее пространство → Память**
+(`/workspaces/<id>/settings/memory`), с вкладками «Факты», «Политики» и «Граф
+знаний».
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Там есть асимметрия, которая удивляет людей: **память можно редактировать и
+удалять, но нельзя создавать.** Ни на вкладке «Факты», ни на вкладке «Политики»
+нет кнопки добавления. Создание выполняется на стороне агента — через
+`propose_fact` и `propose_policy` (для замены — `supersede_fact` /
+`supersede_policy`). `remember` записывает элемент горячего уровня, привязанный к
+сессии, который `consolidate_memory` позже может повысить до факта;
+`record_observation` и `update_my_notes` пишут приватный черновик, подставляемый
+при запуске. Браузер — это интерфейс для просмотра и исправления, а не для
+создания, поэтому если вы хотите, чтобы факт попал в память, проще всего сказать
+об этом агенту.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Две операции обслуживания тоже запускает агент, а не расписание:
+`consolidate_memory` объединяет и прореживает накопленные факты, а
+`harmonize_memory` согласует представления, разошедшиеся между агентами.
+`list_memory_conflicts` показывает, что уже зафиксировало обнаружение
+конфликтов. Ничто не запускает их за вас по таймеру. Решения со встреч попадают
+в домен `decisions`, когда шаг сохранения встречи их записывает; это не таймер
+по завершённым запускам агентов.
 
-## Related concepts
+## Связанные понятия
 
-- [The agent model](/ru-RU/руководство/понятия/модель-агента/): roles are what grants are written against
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ru-RU/руководство/практические-руководства/управлять-памятью/): working with memory in practice
+- [Модель агента](/ru-RU/руководство/понятия/модель-агента/): разрешения привязываются к ролям
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/): память имеет область рабочего пространства и живёт в собственном файле базы данных этого рабочего пространства
+- [Управлять памятью рабочего пространства](/ru-RU/руководство/практические-руководства/управлять-памятью/): как работать с памятью на практике

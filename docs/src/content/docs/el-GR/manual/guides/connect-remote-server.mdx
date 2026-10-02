@@ -1,109 +1,122 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Σύνδεση σε απομακρυσμένο διακομιστή
+description: Στρέψτε την εφαρμογή υπολογιστή ή τον πελάτη web σε ένα cc_server που εκτελείται αλλού και εναλλάξτε διακομιστές χωρίς επανεκκίνηση.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Κάθε πελάτης λειτουργεί ως μηχανή απόδοσης πάνω από έναν `cc_server` που κατέχει
+τα δεδομένα. Η εφαρμογή υπολογιστή μπορεί να εκτελεί έναν μέσα της· η εφαρμογή
+web στο [app.usectrl.dev](https://app.usectrl.dev) δεν μπορεί, γιατί μια καρτέλα
+προγράμματος περιήγησης δεν μπορεί να φιλοξενήσει διακομιστή. Σε κάθε περίπτωση,
+αυτός ο οδηγός στρέφει έναν πελάτη σε έναν διακομιστή που εκτελείται αλλού — ένα
+μικρό μηχάνημα, ένα VM στο cloud, έναν διακομιστή build.
 
-## Prerequisites
+## Προαπαιτούμενα
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Έναν ενεργό `cc_server`. Αν δεν έχετε, δείτε [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
+- Είτε τις τρεις τιμές σύζευξης που εξέδωσε ο διακομιστής — το **URL του διακομιστή** (`ws://…/rpc` ή `wss://…/rpc`), ένα **αναγνωριστικό συσκευής** και ένα **κλειδί σύζευξης** — **είτε** έναν μοναδικό **κωδικό πρόσκλησης** από έναν διαχειριστή χώρου εργασίας. Η εξαργύρωση μιας πρόσκλησης δημιουργεί τον χρήστη σας, καταγράφει τη συμμετοχή σας και εκδίδει για λογαριασμό σας το διαπιστευτήριο αυτού του πελάτη, οπότε δεν χειρίζεστε ποτέ αναγνωριστικό συσκευής ή κλειδί.
 
-### Make sure the server is reachable
+### Βεβαιωθείτε ότι ο διακομιστής είναι προσβάσιμος
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Ένας τοπικός διακομιστής δεν χρειάζεται τίποτα: το `ws://localhost:9030/rpc`
+λειτουργεί και από την εφαρμογή υπολογιστή και από το πρόγραμμα περιήγησης,
+επειδή τα προγράμματα περιήγησης θεωρούν το loopback αξιόπιστη προέλευση.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Ένας διακομιστής σε άλλο μηχάνημα είναι διαφορετική περίπτωση. Το
+`app.usectrl.dev` σερβίρεται μέσω HTTPS, οπότε το πρόγραμμα περιήγησης θα ανοίξει
+υποδοχή `wss://` μόνο με πιστοποιητικό που εμπιστεύεται ήδη — και ο `cc_server`
+αρνείται εξαρχής να δεσμεύσει διεύθυνση εκτός loopback χωρίς TLS. Δώστε του ένα
+από τα εξής:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- ένα πιστοποιητικό απευθείας, με `--tls-cert` και `--tls-key`
+- έναν αντίστροφο διαμεσολαβητή που τερματίζει το TLS, με τον διακομιστή να ξεκινά με `--insecure` (απλό κείμενο πίσω από τον διαμεσολαβητή, μόνο σε δίκτυο που εμπιστεύεστε)
+- μια σήραγγα ή VPN που παρέχει το πιστοποιητικό — Tailscale, cloudflared ή παρόμοιο. Η διαδρομή **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση** περιλαμβάνει τη συμμετοχή στην ενσωματωμένη σήραγγα στην ενότητα **Κοινή χρήση αυτού του διακομιστή**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Δύο ρυθμίσεις στην πλευρά του διακομιστή περνούν εύκολα απαρατήρητες. Πίσω από
+διαμεσολαβητή, NAT ή σήραγγα, ορίστε το `--public-url` στη διεύθυνση που πρέπει
+να καλέσουν πραγματικά οι πελάτες — προεπιλέγεται η τοπική δέσμευση, οπότε χωρίς
+αυτό οι πελάτες δοκιμάζουν λάθος κεντρικό υπολογιστή. Και αν φιλοξενείτε το δικό
+σας αντίγραφο του build web, προσθέστε την προέλευσή του στο `--allowed-origins`,
+το οποίο προεπιλεγμένα επιτρέπει μόνο το `https://app.usectrl.dev`· το loopback
+και οι εγγενείς πελάτες επιτρέπονται πάντα.
 
-## Connect the desktop app
+## Σύνδεση της εφαρμογής υπολογιστή
 
-On a fresh install:
+Σε νέα εγκατάσταση:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Εκκινήστε το Control Center. Η οθόνη πρώτης εκτέλεσης ρωτά **Πώς να εκτελείται το Control Center;**
+2. Αντί για **Εκτέλεση σε αυτή την εφαρμογή**, συμπληρώστε τα πεδία σύνδεσης: το URL του διακομιστή, και είτε έναν κωδικό πρόσκλησης είτε ένα αναγνωριστικό συσκευής και κλειδί σύζευξης.
+3. Κάντε κλικ στο **Σύνδεση**. Το Control Center καλεί τον διακομιστή και προσγειώνεται στα εισερχόμενα του χώρου εργασίας.
 
-On a desktop that already runs its own server:
+Σε έναν υπολογιστή που εκτελεί ήδη δικό του διακομιστή:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Ανοίξτε **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση**.
+2. Κάντε κλικ στο **Προσθήκη διακομιστή**. Εισαγάγετε το URL του διακομιστή (`wss://host:9030/rpc`) και είτε έναν κωδικό πρόσκλησης είτε ένα αναγνωριστικό συσκευής και κλειδί σύζευξης. Το κουμπί στο τέλος του πεδίου URL ανακαλύπτει παρουσίες `cc_server` στο LAN ή στο tailnet σας.
+3. Κάντε κλικ στο **Σύνδεση** και μετά στην **Εναλλαγή** στη γραμμή του νέου διακομιστή.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Η εναλλαγή γίνεται ζωντανά: η εφαρμογή αναδομείται γύρω από τη νέα συνεδρία
+επιτόπου, χωρίς επανεκκίνηση. Αν η σύνδεση αποτύχει, παραμένετε στον τρέχοντα
+διακομιστή και βλέπετε το σφάλμα. Η γραμμή του διακομιστή στον οποίο βρίσκεστε δεν
+έχει ενέργεια **Εναλλαγή**· ο τοπικός διακομιστής είναι η πρώτη γραμμή, με ετικέτα
+**Εκτέλεση σε αυτή την εφαρμογή**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Μόλις γίνει η εναλλαγή, η εφαρμογή υπολογιστή δεν κατέχει καμία βάση δεδομένων.
+Κάθε οθόνη διαβάζει και γράφει μέσω του απομακρυσμένου διακομιστή πάνω από
+WebSocket.
 
-## Connect the web client
+## Σύνδεση του πελάτη web
 
-The web build is always remote.
+Το build web είναι πάντα απομακρυσμένο.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Ανοίξτε το [app.usectrl.dev](https://app.usectrl.dev), ή το δικό σας αντίγραφο του build web.
+2. Εισαγάγετε το URL του διακομιστή και είτε έναν κωδικό πρόσκλησης είτε ένα αναγνωριστικό συσκευής και κλειδί σύζευξης.
+3. Ο πελάτης καλεί τον διακομιστή και αποδίδει το ίδιο περιβάλλον που αποδίδει και η εφαρμογή υπολογιστή.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Αν στο URL υπάρχει σύνδεσμος σύζευξης, τα πεδία είναι προσυμπληρωμένα. Το κλειδί
+σύζευξης ταξιδεύει στο **τμήμα** του URL, το οποίο τα προγράμματα περιήγησης δεν
+στέλνουν ποτέ στον διακομιστή που φιλοξενεί τη σελίδα, οπότε ο στατικός κεντρικός
+υπολογιστής δεν το βλέπει ποτέ.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Πολυμέσα και ασφάλεια]
+Τα πολυμέσα (avatar, εικόνες ροής, στιγμιότυπα PR) διοχετεύονται μέσω
+διαμεσολαβητή από τον συνδεδεμένο διακομιστή, ώστε το πρόγραμμα περιήγησης να μην
+ανακτά ποτέ απευθείας από ανάντη κεντρικό υπολογιστή. Μια πολιτική ασφάλειας
+περιεχομένου ανά αίτημα, σφραγισμένη από cookie μη ευαίσθητων δεδομένων,
+επιτρέπει μόνο την προέλευση του συνδεδεμένου διακομιστή.
 :::
 
-### What the browser does not do
+### Τι δεν κάνει το πρόγραμμα περιήγησης
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Ο πελάτης web διαβάζει και γράφει στον ίδιο διακομιστή με την εφαρμογή
+υπολογιστή, αλλά μερικές επιφάνειες χρειάζονται εγγενές παράθυρο ή τις ίδιες τις
+συσκευές του μηχανήματος:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- χωρίς αναδυόμενες ειδοποιήσεις του λειτουργικού συστήματος, ήχους ειδοποιήσεων ή λωρίδα banner περιβάλλοντος (το κέντρο ειδοποιήσεων εντός της εφαρμογής λειτουργεί ακόμη)
+- χωρίς ανακάλυψη διακομιστών στο LAN ή στο tailnet στο παράθυρο **Προσθήκη διακομιστή**
+- χωρίς ενσωματωμένο πρόγραμμα ανάγνωσης άρθρων — τα άρθρα της ροής ειδήσεων ανοίγουν σε νέα καρτέλα
+- χωρίς επανεκτέλεση σύνοψης σύσκεψης και χωρίς ακύρωση μιας σύνοψης που εκτελείται
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Δύο λειτουργίες συμπεριφέρονται διαφορετικά αντί να απουσιάζουν. Η **εγγραφή**
+σύσκεψης λειτουργεί στο πρόγραμμα περιήγησης, καταγράφοντας το μικρόφωνό σας μαζί
+με κοινή χρήση οθόνης που περιλαμβάνει κομμάτι ήχου. Το **Άνοιγμα στο IDE**
+λειτουργεί επίσης, αλλά ζητά από τον διακομιστή να εκκινήσει τον επεξεργαστή στην
+οθόνη _του διακομιστή_, οπότε το κουμπί κρύβεται απέναντι σε έναν headless
+κεντρικό υπολογιστή χωρίς εγκατεστημένους επεξεργαστές.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
+- **Η σύνδεση λήγει σε χρονικό όριο**: ο διακομιστής πρέπει να είναι προσβάσιμος από τον πελάτη. Ελέγξτε τη δέσμευση (`--bind any`), ότι η θύρα είναι ανοιχτή και ότι το `--public-url` δηλώνει τη διεύθυνση που μπορεί πραγματικά να καλέσει ο πελάτης. Πάνω από το ανοιχτό internet, το TLS είναι υποχρεωτικό — μια δέσμευση εκτός loopback σε απλό κείμενο απορρίπτεται κατά την εκκίνηση, εκτός αν ο διακομιστής ξεκίνησε με `--insecure` πίσω από διαμεσολαβητή.
+- **Το πρόγραμμα περιήγησης αρνείται να συνδεθεί, αλλά ένας εγγενής πελάτης λειτουργεί**: η προέλευση του προγράμματος περιήγησης δεν βρίσκεται στη λίστα `--allowed-origins` του διακομιστή. Η προεπιλογή επιτρέπει μόνο το `https://app.usectrl.dev` (συν το loopback).
+- **Το κλειδί σύζευξης απορρίφθηκε**: εκτελέστε ξανά το `cc_server pair` στον διακομιστή για να εναλλάξετε το κλειδί αυτής της συσκευής και μετά εισαγάγετε το νέο. Μια συσκευή που έχει ανακληθεί βρίσκει το διαπιστευτήριό της να λείπει και αποτυγχάνει κλειστά· η ανάκληση ρίχνει μια ζωντανή συνεδρία μέσα σε δευτερόλεπτα.
+- **Λάθος χώρος εργασίας**: ο χώρος εργασίας είναι μέρος του URL (`/workspaces/:workspaceId/…`) και ταξιδεύει με κάθε κλήση, οπότε η εναλλαγή χώρων εργασίας σε έναν πελάτη αλλάζει μόνο τη δική σας προβολή. Μπορείτε να φτάσετε μόνο σε χώρους εργασίας των οποίων είστε μέλος — οτιδήποτε άλλο απορρίπτεται με «Not a member of this workspace». Δείτε [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
-- [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/): the phone relay path
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
+- [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/): η διαδρομή αναμετάδοσης για τηλέφωνα
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)

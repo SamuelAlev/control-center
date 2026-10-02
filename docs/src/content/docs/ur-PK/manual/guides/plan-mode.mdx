@@ -1,135 +1,140 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: پلان موڈ استعمال کریں
+description: کسی اسپیس کو پلان موڈ میں بدلیں، ایک ٹائپ شدہ پلان حاصل کریں اور اسے منظور کر کے چلتا کام بنائیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+یہ گائیڈ دکھاتی ہے کہ کوئی کوڈ لکھنے سے پہلے ایجنٹ سے ایک منظم پلان کیسے حاصل
+کیا جائے۔
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+پلان موڈ میں ایجنٹ صرف پڑھتے ہوئے تحقیق کرتا ہے اور اس کا واحد ڈیلیوریبل ایک
+**ٹائپ شدہ پلان** ہوتا ہے: مراحل کا ایک انحصار گراف جسے آپ منظور کرتے ہیں اور
+Control Center پھر اسے حقیقی کام میں کمپائل کرتا ہے۔ اسے اُس وقت استعمال کریں جب
+آپ کسی تبدیلی کا دائرہ دیکھنا، مراحل کی تقسیم حاصل کرنا، یا کچھ بھی چھونے سے پہلے
+خطرات اور انحصاروں کے نام جاننا چاہیں۔
 
-## Switch a space into plan mode
+## اسپیس کو پلان موڈ میں بدلیں
 
-Any of these flips the space's mode and the change is persisted:
+اِن میں سے کوئی بھی اسپیس کا موڈ پلٹ دیتا ہے اور تبدیلی محفوظ ہو جاتی ہے:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- کمپوزر ٹول بار کے بالکل بائیں جانب موڈ ڈراپ ڈاؤن سے **پلان** منتخب کریں
+- **Shift+Tab** دبائیں
+- `/plan` بھیجیں۔ اکیلا `/plan` صرف موڈ تیار کرتا ہے؛ `/plan <request>` اسے تیار
+  کر کے باقی حصہ آپ کے پیغام کے طور پر بھیج دیتا ہے
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` کبھی متن کے طور پر سفر نہیں کرتا — یہ محفوظ موڈ سیٹ کرتا ہے، اور وہی وہ
+اختیار ہے جسے ٹول سطح، گارڈ پریسیٹ اور پرامپٹ سب پڑھتے ہیں۔ چنانچہ موڈ اس باری
+اور اس کے بعد کی ہر باری کے لیے قائم رہتا ہے، جب تک آپ اسے واپس نہ بدلیں۔
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+موڈ اسپیس پر محفوظ ہوتا ہے، اس لیے ایک ہی ایجنٹ یہاں پلان موڈ میں اور کہیں اور
+ایجنٹ موڈ میں ہو سکتا ہے۔
 
-## What the agent produces
+## ایجنٹ کیا تیار کرتا ہے
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. یہ صرف پڑھتے ہوئے تحقیق کرتا ہے — میموری، کوڈ انڈیکس، فائلیں
+2. یہ `submit_plan` **ایک بار** کال کرتا ہے، ایک `goal` کے ساتھ `nodes` بھی، جن میں
+   سے ہر ایک کے پاس ایک مستحکم `key`، ایک `title`، ایک `description` اور وہ نوڈ
+   کلیدیں ہوتی ہیں جن پر وہ `dependsOn` کرتا ہے (اور یہی چیز آزاد کام کو متوازی
+   چلنے دیتی ہے)
+3. یہ رک جاتا ہے
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+ٹول گراف کی توثیق کرتا ہے — دہری کلیدیں، لٹکتی انحصاریں، سائیکل — اور ٹوٹا ہوا پلان
+قبول کرنے کے بجائے ایجنٹ کے ٹھیک کرنے کے لیے خلاف ورزیاں واپس کرتا ہے۔
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+پلان **گفتگو میں** ایک مختصر قطار کی صورت میں ظاہر ہوتا ہے جو ہدف، اس کی حالت اور
+مراحل کی تعداد دکھاتی ہے۔ **Plan Studio** — انحصار گراف، فی نوڈ انسپکٹر اور لاگت کا
+تخمینہ — گفتگو کے ساتھ ہی ایک ٹیب کے طور پر کھلتا ہے: قطار پر **کھولیں** دبائیں،
+یا بس انتظار کریں، کیونکہ جو پلان آپ کے گفتگو دیکھتے ہوئے 30 سیکنڈ کے اندر آ جائے
+وہ اپنا ٹیب خود کھول لیتا ہے۔
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[ریڈ اونلی کی ضمانت ساختی ہے، مگر صرف بلٹ اِن ہارنس پر]
+Control Center کا اپنا ہارنس ایجنٹ کی ٹول رجسٹری پلان موڈ کی سطح کی تفصیل سے بناتا
+ہے، چنانچہ سرے سے کوئی لکھنے، ترمیم کرنے یا کمانڈ چلانے والا ٹول موجود ہی نہیں جسے
+کال کیا جا سکے — یہ پابندی کوئی ایسی پرامپٹ ہدایت نہیں ہے جس سے ماڈل خود کو قائل
+کر کے نکل سکے۔
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code اڈاپٹر کو ایسی کوئی چھانٹی نہیں ملتی: وہاں موڈ ایک درخواست کی صورت میں
+پہنچتا ہے جسے اس کا اپنا رنر مانے یا نہ مانے، اور Control Center کو صرف اس کی
+`mcp__*` کالز نظر آتی ہیں۔ موڈ ڈراپ ڈاؤن کے ساتھ والا نفاذ کا بیج ٹھیک اُسی صورت
+میں ظاہر ہوتا ہے۔
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[ایجنٹ آپ سے وضاحتی سوالات پوچھ سکتا ہے]
+جب درخواست مبہم ہو تو ایک پلان والا ایجنٹ رک کر `ask_user` ٹول سے آپ سے تین بلاکنگ
+سوالات تک پوچھ سکتا ہے۔ یہ گفتگو میں ایک فارم رینڈر کرتا ہے — آپشنز، یا آزاد متن —
+اور رن آپ کے جواب تک بلاک رہتا ہے۔ یہ ٹول ریڈ ٹیئر کا ہے، چنانچہ پلان موڈ کی ریڈ
+اونلی سطح پر بھی باقی رہتا ہے، اور یہ منظوری ریپر سے مستثنیٰ ہے (ایک پرامپٹ کے
+سامنے دوسرا پرامپٹ، جب کوئی منظوری دینے والا منسلک نہ ہو، بند حالت میں ناکام ہو
+جائے گا، اور ایجنٹ پوچھنے کے عمل سے محروم رہ جائے گا)۔
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+اسے رینڈر ہونے کے لیے ایک اسپیس درکار ہے، چنانچہ بغیر کسی گفتگو والے ون شاٹ ڈسپیچ
+کو یہ نہیں ملتا۔ پھر بھی دائرہ، ہدف ریپو اور قبولیت کے معیار پہلے ہی اپنے پہلے پیغام
+میں شامل کر دینا ایک چکر لگانے سے تیز ہے۔
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+یہاں نثر کوئی ڈیلیوریبل نہیں ہے۔ وہ رن جو `submit_plan` کال کیے بغیر ختم ہو، گفتگو
+میں ایک نظر آنے والی سطر "Ended without submitting a plan (no `submit_plan` call)."
+لکھتا ہے اور رن کو اپنے ڈیلیوریبل سے محروم کے طور پر نشان زد کرتا ہے۔ رن کی حالت
+دانستہ طور پر _completed_ رہتی ہے — اس سے پائپ لائن اور ٹکٹ کی اسٹیٹ مشینیں اچھوتی
+رہتی ہیں — چنانچہ سطر پڑھیں، اسٹیٹس بیج نہیں۔
 
-## Approve the plan
+## پلان منظور کریں
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+گفتگو میں پلان والی قطار سے **منظور کریں اور چلائیں** دبائیں۔ Plan Studio کی منظوری
+بار سے **پلان منظور کریں** دبائیں (یا اس کے ساتھ والا **مسترد کریں**؛ جب تک گراف میں
+کوئی توثیقی خرابی ہو منظوری غیر فعال رہتی ہے)۔
 
-Then:
+پھر:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center پلان کو ایک آرکیسٹریشن میں کمپائل اور میٹیریلائز کرتا ہے — ٹکٹس
+   اور رن۔ اِس مرحلے میں کوئی ماڈل شامل نہیں ہے؛ یہ ڈٹرمینسٹک ہے
+2. پلان اُسی ایجنٹ کے طور پر چلتا ہے جس نے اسے لکھا۔ کسی اور کو شامل کرنا ہے یا
+   نہیں، یہ رن کے وقت اُسی ایجنٹ کا فیصلہ ہے — وہ کسی مرحلے کو `delegate_task` کے
+   ذریعے کسی زیادہ موزوں ساتھی کو تفویض کر سکتا ہے، ورک اسپیس کی تفویض کی گہرائی
+   کی حد کے اندر
+3. پلان کا ہدف **گفتگو کا ہدف** بن جاتا ہے اور کام **اُسی گفتگو میں** چلتا ہے: ہر
+   مرحلہ لکھتا ہے کہ ایجنٹ سے کیا مانگا گیا اور اپنی باری واپس اسٹریم کرتا ہے،
+   چنانچہ آپ وہیں رہ کر اس کا پیچھا کرتے ہیں (اور کوئی باری روک بھی سکتے ہیں) جہاں
+   آپ پہلے سے ہیں
+4. گفتگو کے **عام** سائیڈ پینل میں (Todos کے نیچے) ہدف والی قطار رن کی پیش رفت
+   `settled/total` کی صورت میں اور اس کا اسٹاپ بٹن رکھتی ہے؛ Plan Studio گراف پر فی
+   نوڈ حالت دکھاتا ہے اور وہیں سے منسوخ بھی کرتا ہے
 
-## Keep working without approving
+## منظوری کے بغیر کام جاری رکھیں
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+اگر آپ پلان منظور کرنے کے بجائے اِسی گفتگو میں رہنا پسند کریں تو ایجنٹ
+`exit_plan_mode` کال کر سکتا ہے۔ یہی واحد جائز راستہ ہے: یہ گفتگو سے منسلک منظوری
+کی ایک پائیدار درخواست کھولتا ہے اور `pending` واپس کرتا ہے — اسپیس پلان موڈ ہی میں
+رہتی ہے اور ایجنٹ کو کوئی اقدام نہیں کرنا چاہیے۔ درخواست منظور ہونے کے بعد ایجنٹ کی
+اگلی `exit_plan_mode` کال اسپیس کو پلان سے ایجنٹ موڈ میں منتقل کرتی ہے اور اس کے
+تبدیلی کرنے والے ٹولز کھول دیتی ہے۔ مسترد ہونے پر ایجنٹ ترمیم شدہ پلان کے خلاف ایک
+نئی درخواست کھول سکتا ہے۔
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+پلان موڈ سے نکلنے کے لیے کمپوزر کا ڈراپ ڈاؤن بدلیں (یا Shift+Tab)، یا جمع کرایا گیا
+پلان منظور کریں۔ `exit_plan_mode` ایک پائیدار منظوری کھولتا ہے جس کا فیصلہ
+`decide_approval` MCP ٹول سے ہوتا ہے۔ بلاک شدہ ٹول کالز کے لیے گارڈریل اوورلے ایک
+الگ، اِن-میموری قطار ہے اور پلان سے نکلنے کی درخواستیں نہیں لے جاتا۔
 
-## Plan mode in a pipeline step
+## پائپ لائن قدم میں پلان موڈ
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+`messaging.createSpace` پائپ لائن نوڈ گفتگو کا موڈ نوڈ کنفیگ کے `mode` **extra** سے
+پڑھتا ہے — `extras['mode']: 'plan'`۔ یہ کلید عین مطابق ہونی چاہیے: کوئی بھی دوسری
+ہجے، بشمول `conversationMode` یا `dispatchMode`، خاموشی سے نظر انداز ہو جاتی ہے اور
+کمرے کو باڈی کا ڈیفالٹ ملتا ہے، جو **ریویو** موڈ ہے، چیٹ نہیں۔ `promptAgent` مرحلہ
+ایسے کمرے میں شامل ہوتا ہے جو اُس نے نہیں بنایا اور اُس کی اجازتیں دوبارہ مقرر نہیں
+کرتا۔ نوڈ کنفیگ ایڈیٹر کا **ڈسپیچ موڈ** سلیکٹ (`allParallel` / `manager`) ٹیم
+ڈسپیچ نوڈز کے لیے ہے۔ گفتگو کا موڈ `extras['mode']` سے اُس ٹیمپلیٹ پر سیٹ کریں جو
+اسپیس کھولتا ہو، یا API کے ذریعے اُس نوڈ کی کنفیگ پر۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [Use spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
-- [Work in Plan Studio](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/)
-- [Run an orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
+- [Plan Studio میں کام کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/)
+- [آرکیسٹریشن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)

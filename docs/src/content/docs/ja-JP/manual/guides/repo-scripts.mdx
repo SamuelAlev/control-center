@@ -1,37 +1,32 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: リポジトリスクリプト
+description: スペースのワークツリーに対して実行される、リポジトリごとのセットアップスクリプトとアーカイブスクリプト。
 slug: ja-JP/マニュアル/ハウツーガイド/リポジトリスクリプト
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+リポジトリスクリプトは、リポジトリごとに設定するシェルスクリプトです（**設定 → リポジトリ** → リポジトリの行のターミナルアイコン）。Control Center のサーバーが、そのリポジトリの**スペースのワークツリー**に対して実行します。これは `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` 以下にある、エージェントが作業する隔離されたチェックアウトです。
 
-There are two kinds:
+2 種類あります:
 
-| Script | When it runs | Use it for |
+| スクリプト | 実行タイミング | 用途 |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **セットアップ** | スペース用のワークツリーがプロビジョニングされた直後 | 依存関係のインストール、ファイルの生成、`.env` のコピー |
+| **アーカイブ** | ワークツリーが破棄される、またはガベージコレクションされる直前 | ワークツリー外のリソースのクリーンアップ（Docker ネットワーク、トンネル、外部状態） |
 
-## Where scripts run
+## スクリプトの実行場所
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+どちらのスクリプトも `bash -lc` で実行され（ログインシェルなので、Homebrew や nvm でインストールしたツールが `PATH` に入っています）、**ワークツリーを作業ディレクトリとして**、次の環境変数を設定した状態で動きます:
 
-| Variable | Value |
+| 変数 | 値 |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | ワークツリー（スクリプトの cwd） |
+| `CC_ROOT_PATH` | 登録済みのソースリポジトリ — あなた自身のチェックアウト |
+| `CC_SPACE_ID` | ワークツリーが属するスペース |
+| `CC_SPACE_NAME` | スペースの表示名 |
+| `CC_REPO_NAME` | リポジトリの表示名 |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+たとえば、依存関係をインストールし、リポジトリの gitignore された `.env` を取り込むセットアップスクリプトは次のとおりです:
 
 ```bash
 pnpm install
@@ -39,28 +34,17 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## 失敗時の動作
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- **セットアップ**スクリプトが非ゼロで終了する（または 5 分のタイムアウトを超える）と、スペースのプロビジョニングが失敗します。スペースは再試行付きの失敗状態を表示し、その実行の出力末尾が記録されます。再試行ではクリーンなワークツリーからプロビジョニングしてスクリプトを再実行します — 不完全なインストールの後の再実行が機能するようにセットアップスクリプトを書いてください（パッケージマネージャーはすでにそう振る舞います）。
+- **アーカイブ**スクリプトはベストエフォートです。失敗（または 2 分のタイムアウト）は記録されますが、**削除をブロックすることは決してありません**。アーカイブは、プロンプトに答える人がいない GC の経路で実行されます（スペースの削除、PR のマージ、スケジュールされたクリーンアップ）。
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+セットアップは**新しい**ワークツリーでのみ実行されます。ウォームなスペースにエージェントを再ディスパッチすると既存のチェックアウトが再利用され、インストールを二重に支払うことはありません。
 
-## Run history
+## 実行履歴
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+すべての実行は、ステータス、所要時間、終了コード、および上限付きの出力末尾とともに記録され、同じ設定ダイアログの「最近の実行」に表示されます（`repos.watchScriptRuns` サブスクリプションがそれをライブで配信します）。
 
-## Permissions
+## 権限
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+スクリプトは**サーバー**が実行するシェルであるため、その書き込みはワークスペース管理者に制限され、`processSpawn` アクションクラスによって保護されます — プロセスを起動する他のあらゆる操作をゲートするのと同じガードレール網です。

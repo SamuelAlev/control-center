@@ -1,166 +1,171 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Chạy một worker đội máy
+description: Dựng, ghép nối và chạy bộ thực thi không giao diện cc_worker để nó đăng ký với một cc_server và xuất hiện trong bảng đội máy.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-worker-doi-may
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Chạy `cc_worker` trên một chiếc máy dự phòng để bổ sung năng lực thực thi cho đội
+máy của bạn. Đây là một tệp nhị phân Dart thuần — không có engine Flutter — ghép
+nối với một `cc_server`, khai báo các năng lực của máy chủ nhà, gửi heartbeat, kéo
+về những công việc được thuê, thực thi chúng rồi truyền sự kiện tiến trình về. Nó
+không giữ trạng thái bền vững nào: một trình giám sát khởi động lại nó và nó tự
+đăng ký lại.
 
-You need a running `cc_server` first — see [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
+Trước tiên bạn cần một `cc_server` đang chạy — xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+Một worker đã ghép nối sẽ đăng ký, gửi heartbeat và chờ những công việc được thuê.
+Hãy gửi công việc bằng `fleet.submitJob`. Việc điều phối agent trên máy chủ này
+không đi qua đội máy; dấu hiệu thành công của hướng dẫn này là worker xuất hiện
+trong bảng đội máy với một heartbeat mới. Worker chạy trong cùng tiến trình, được
+đăng ký lúc khởi động, có một map runner rỗng, nên một công việc được đặt lên nó
+sẽ trả về `No local runner for job kind …`.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). Kho mã này ghim phiên bản SDK của mình bằng [fvm](https://fvm.app), nên hãy thêm tiền tố `fvm` vào các lệnh.
+- Kho mã này đã được checkout trên máy chạy worker.
+- Một `cc_server` với tới được (loopback khi phát triển, LAN hoặc từ xa khi chạy thật).
+- `git` trên `PATH` — worker hiện thực hóa các kho mã và chạy những phép dò `git`.
 
-## Step 1: Build the binary
+## Bước 1: Dựng tệp nhị phân
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Lệnh này tạo ra một gói khép kín tại `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## Bước 2: Phát hành thông tin xác thực cho worker
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+Một `cc_server` chỉ chấp nhận worker xuất trình id thiết bị đã ghép nối và khóa
+chia sẻ trước — kể cả máy chủ loopback. Hãy phát hành chúng ngay trên **máy chủ**
+(`pair` có thể chạy trong khi máy chủ đang hoạt động; thiết bị mới được nhận mà
+không cần khởi động lại):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Nó in ra một `Device id` và một `Pairing key` — đó chính là những gì `--device-id`
+và `--psk` / `--psk-file` / `CC_WORKER_PSK` nhận.
 
-## Step 3: Start the worker
+## Bước 3: Khởi động worker
 
-Against a paired server:
+Chạy với một máy chủ đã ghép nối:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Chạy với một máy chủ loopback (vẫn phải ghép nối — `cc_server` luôn chạy bắt tay
+PSK):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| Cờ                  | Mô tả                                                                                                            | Mặc định   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------- |
+| `--server <url>`     | URL của cc_server (`ws://`/`wss://`; `http(s)` và đường dẫn `/rpc` bị thiếu đều được tự động chuyển đổi). **Bắt buộc.** | —          |
+| `--name <name>`      | Tên worker hiển thị cho người vận hành.                                                                          | tên máy    |
+| `--device-id <id>`   | Id thiết bị đã ghép nối, ổn định, cũng được dùng làm id worker.                                                   | `cc-worker` |
+| `--psk-file <path>`  | Tệp có dòng không trống đầu tiên là khóa ghép nối. Được ưu tiên hơn `--psk`.                                      | —          |
+| `--psk <key>`        | Khóa ghép nối ngay trên dòng lệnh. Hiện ra trong `ps` và lịch sử shell — tệp nhị phân sẽ cảnh báo.                | —          |
+| `--max-jobs <n>`     | Mức trần cứng cho số công việc mà tiến trình này thực thi đồng thời (số nguyên dương).                            | `4`        |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+Thứ tự phân giải khóa là `--psk-file` → `CC_WORKER_PSK` → `--psk`. Bỏ qua mọi
+nguồn sẽ khiến worker không thực hiện bắt tay xác thực; một `cc_server` thật khi
+đó sẽ từ chối phiên (`auth_denied`) thay vì chấp nhận một worker chưa xác thực. Cờ
+không xác định là lỗi dùng sai (`exit 64`) — khác với `cc_server`, tệp nhị phân
+này dùng `package:args` và không bỏ qua lỗi gõ sai.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` ghi đè thư mục đệm hiện thực hóa worktree (mặc định: một thư mục
+`cc_worker_cache` dưới thư mục tạm của hệ thống).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+Worker đăng ký bằng `fleet.registerWorker`, sau đó gửi heartbeat 20 giây một lần và
+thăm dò hợp đồng thuê 2 giây một lần. Nó chạy cho tới khi nhận `SIGINT`/`SIGTERM`;
+hãy đặt nó dưới systemd hoặc launchd để nó khởi động lại và đăng ký lại sau khi gặp
+sự cố hoặc khởi động lại máy.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[Không có giai đoạn tương thích giao thức]
+Worker có phiên bản giao thức đội máy khác với máy chủ sẽ được đăng ký là **không
+tương thích**, không bao giờ được cấp hợp đồng thuê, và chính `cc_worker` sẽ dừng
+với thông báo `Incompatible fleet protocol: worker speaks v… server speaks v…
+Upgrade cc_worker to match the server release`. Hãy dựng worker từ cùng bản phát
+hành với máy chủ.
 :::
 
-## Step 4: Verify it in the fleet panel
+## Bước 4: Xác minh trong bảng đội máy
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+Mở **Quan sát** trong ứng dụng máy tính hoặc web, chuyển sang tab **Trực tiếp** rồi
+cuộn xuống cuối. **Worker** liệt kê mọi worker đã đăng ký cùng nền tảng, số nhân,
+các khóa năng lực và heartbeat gần nhất; **Công việc** liệt kê những công việc được
+phân bổ cho chúng.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+Việc worker của bạn xuất hiện ở đó với một heartbeat gần đây chính là xác nhận rằng
+ghép nối và đăng ký đã thành công.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+Từ ô của một worker, bạn có thể **ngừng nhận** nó (hoàn thành các công việc hiện
+tại, không nhận hợp đồng thuê mới), **tiếp tục** một worker đang ngừng nhận, **thu
+hồi** thông tin xác thực của nó, hoặc **xóa** hàng đó.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+Các hàng worker và công việc nằm trong `global.db` của máy chủ — bản thân worker
+không ghi gì xuống đĩa ngoài thư mục đệm hiện thực hóa.
 
-## What the worker advertises
+## Những gì worker quảng bá
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+Khi đăng ký, worker tự dò các năng lực của mình và bộ lập lịch đối chiếu công việc
+với chúng. Bạn không cấu hình những thứ này bằng tay:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **Hệ điều hành và kiến trúc** (`macos`/`linux`/`windows`, `arm64`/`x64`) — các phép dò chính xác, có phương án dự phòng là `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **Số nhân và RAM** — số nhân chính xác; RAM giảm về `0` khi không dò được
+- **`flutter`** — được đặt khi với tới được một Flutter SDK (`flutter` trần, rồi `fvm flutter`); các công việc golden-render cần nó
+- **`sandbox`** — `native-macos` trên macOS, `native-linux` trên Linux. Đây là một gợi ý xếp chỗ, không phải một lời hứa: worker quảng bá backend mà nền tảng của nó _có_, nhưng nó không bọc những công việc mình chạy trong backend đó. Khác với `cc_server`, `cc_worker` sinh thẳng một công việc được thuê
+- **`always-on` và `parallel`** — một `cc_worker` chuyên dụng luôn quảng bá cả hai, nên nó đủ điều kiện cho các lô đánh giá và những năng lực song song dùng một lần khác
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+Việc dò là nỗ lực tối đa: bất cứ thứ gì nó không dò được đều lùi về một giá trị mặc
+định an toàn thay vì làm khởi động thất bại.
 
-## What the worker would execute
+## Những gì worker sẽ thực thi
 
-The lease protocol carries six job kinds:
+Giao thức hợp đồng thuê mang sáu loại công việc:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| Loại           | Nội dung                                                    |
+| -------------- | ----------------------------------------------------------- |
+| `agentRun`     | Một lượt chạy agent đơn lẻ (điều phối)                      |
+| `pipelineStep` | Việc thực thi một bước quy trình                            |
+| `codeIndex`    | Việc dựng chỉ mục mã của một kho mã                         |
+| `goldenRender` | Một lượt render golden trực quan giao diện (cần `flutter`)  |
+| `benchmark`    | Một lượt chạy benchmark hiệu năng                           |
+| `evalBatch`    | Một lô đánh giá (ưu tiên năng lực `parallel`)               |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+Việc thực thi là một triển khai truyền phát tiến trình con thật sự, không phải một
+runtime agent nhúng đầy đủ. Khi một hợp đồng thuê mang `repoRemote`, worker chạy
+`git clone --depth 1` vào một thư mục đệm được đặt khóa theo remote và SHA, rồi
+`git fetch` và `git checkout`. Với `agentRun`, nó chạy lệnh trong `CC_JOB_COMMAND`
+của môi trường hợp đồng thuê, ngay tại thư mục làm việc, truyền phát stdout và
+stderr về dưới dạng sự kiện; nếu không có `CC_JOB_COMMAND`, nó lặp lại prompt để
+đường truyền vẫn được chạy thử từ đầu đến cuối. Các loại khác chạy những lệnh thật
+nhỏ (`git rev-parse HEAD`, `git --version`) như những phép dò trung thực. Thông tin
+xác thực theo phạm vi công việc trong môi trường hợp đồng thuê được tiêm vào mọi
+tiến trình con và không bao giờ được ghi vào log.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Các sự kiện được gom lô và xả mỗi 250ms hoặc mỗi 32 sự kiện; mỗi công việc kết
+thúc bằng một sự kiện done và một báo cáo hoàn thành. Mô hình là heartbeat cộng với
+những hợp đồng thuê có TTL ngắn: nếu một worker mất liên lạc, hợp đồng thuê của nó
+hết hạn và máy chủ thu hồi công việc để thử lại. Không có trạng thái bền vững trên
+worker và không có đồng thuận hay giành việc giữa các worker.
 
-## Related guides
+## Các hướng dẫn liên quan
 
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
-- [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/)
-- [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
+- [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/)
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
 
-## Related concepts
+## Các khái niệm liên quan
 
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/)
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/)

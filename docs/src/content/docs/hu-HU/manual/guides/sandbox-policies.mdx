@@ -1,193 +1,214 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Homokozószabályzatok konfigurálása
+description: Mi korlátozza az ügynökfutást, hogyan állapíthatja meg, hogy az operációs rendszer homokozója becsomagolja-e, és mely képességbeállításokat olvassa valójában a szerver.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Hogy egy ügynökfutás homokozóba kerül-e, a szerver dönti el, indításkor
+(`--sandbox`). A **Homokozó engedélyezése** kapcsoló, a **Háttér** választó és az
+**Alapértelmezett képességek · új terek** kapcsolók a **Beállítások → Szerver →
+Diagnosztika és adatvédelem** alatt az eszközén tárolt beállítások. A
+**Homokozó** kártya hosztészlelése azt jelenti, mit tud becsomagolni a szerver
+hosztja.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Két vezérlő ér el egy futást, és ez az útmutató mindkettőt tárgyalja: az alábbi,
+ügynökönkénti **Homokozó-jogosultságok** és a szerver saját `--sandbox`
+kapcsolója.
 
-## What constrains an agent run
+## Mi korlátozza az ügynökfutást
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Az ügynököt hat dolog köti meg. Az első az operációs rendszer homokozója, és ez
+az, amelyik feltételes — a másik öt minden hoszton tart.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Határ                            | Mit tesz                                                                                                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Az operációs rendszer homokozója | Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n. Becsomagolja a Claude Code CLI-t, az ACP-adaptereket és a harness `bash` eszközét. **Windowson és `bwrap` és `socat` nélküli Linuxon nincs** |
+| A saját worktree-je              | Minden beszélgetés kap egy copy-on-write checkoutot. Az eredeti checkout írásmegtagadási útvonalként kerül a futásba, és a homokozó az, ami érvényesíti                                            |
+| Közvetített hitelesítő adatok    | A hitelesítőadat-közvetítő az ügynök képességeiből futásonkénti környezetet állít ki, és a lebontáskor visszavonja. Nincs képesség, nincs token a környezetben                                  |
+| Műveleti korlátok                | Minden állapotmódosító eszköz deklarálja a hatásosztályait, és a korlátmotor a hívás lefutása előtt feloldja őket. Egy `prompt`, amelyhez nincs csatlakoztatott jóváhagyó, elutasításra kerül   |
+| A környezet megtisztítása        | Az ACP és a harness `bash` eszköze szűrt környezetet kap. A Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli                                                                |
+| A mód eszközfelülete             | Egy csak olvasható mód teljesen eltávolítja a worktree-t módosító eszközöket, és rögzíti a mód saját kimeneti igéjét, hogy így is le tudjon szállítani                                              |
 
-Three things stay weaker than they look:
+Három dolog gyengébb marad, mint amilyennek látszik:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Csak a **beépített harness** érvényesíti az eszközkaput, a teljesítési
+  szerződéseket és a szerkezeti módszabályokat. A Claude Code adapter nem. A
+  Claude Code különösen `--dangerously-skip-permissions` kapcsolóval indul,
+  mert egy nem interaktív `claude -p` egyébként örökre blokkolna a saját
+  kérdésénél — így a Claude saját olvasó, író, szerkesztő és bash hívásait a
+  Control Center sem nem látja, sem nem kapuzza. Ahol a homokozó be van
+  kapcsolva, az a határ körülöttük.
+- A harness folyamaton belüli fájleszközei (read, write, edit, apply patch,
+  search, find, search_files) a szerverfolyamaton belül futnak, így egyetlen
+  homokozóprofil sem korlátozza őket. Csak a `bash` eszköz megy át a homokozott
+  parancsfuttatón. Ezeket az eszközöket a saját útvonal-elkülönítésük és a
+  műveleti korlátok szorítják határok közé.
+- Egy háttérrendszer nélküli hoszton az első sor egyáltalán nem érvényes. Az ACP
+  és a harness `bash` eszköze a környezet megtisztítására és a
+  parancsszabályzatra esik vissza; a Claude Code a `NoSandboxAdapter`-en
+  keresztül a hoszt környezetét örökli. A szerver erről az indítási naplójában
+  számol be. Az alábbiakban ellenőrizze a sajátját.
 
-## Set an agent's capabilities
+## Ügynök képességeinek beállítása
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Ez az egyetlen képességvezérlő, amelyet a szerver olvas. Ügynökönként értendő, és
+eldönti, mit tesz a hitelesítőadat-közvetítő az adott ügynök környezetébe.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Lépjen a **Beállítások → Munkaterület → Ügynökök** oldalra
+2. Válassza ki az ügynököt a listában
+3. A **Beállítások** lapon görgessen a **Homokozó-jogosultságok** részhez
+4. Kapcsolja be a kapcsolót — a sor felirata **Munkaterület alapértelmezettje**
+   értékről változik meg
+5. Állítsa be a négy kapcsolót:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| Kapcsoló                                      | Mit kapuz                                                                                                                                                                                                                                          |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **git push engedélyezése**                     | Ha ez ki van kapcsolva, a futás `GIT_ASKPASS=/usr/bin/false` és `GIT_TERMINAL_PROMPT=0` értéket kap, így egy push nem tud hitelesítő adatot kérni                                                                                                    |
+| **GitHub API-hívások engedélyezése**           | A **git push engedélyezése** kapcsolóval együtt azt kapuzza, hogy a közvetítő injektálja-e a GitHub-tokent `GH_TOKEN` / `GITHUB_TOKEN` néven                                                                                                       |
+| **Jegykezelő API-hívások engedélyezése**       | Azt kapuzza, hogy a közvetítő injektálja-e a `TICKETING_API_KEY` értéket                                                                                                                                                                           |
+| **Általános hálózati hozzáférés engedélyezése** | Ahol a homokozó be van kapcsolva, ez valódi kimenőforgalom-kapu: kikapcsolva a futás engedélylistája üres, és minden kimenő kérést elutasít a proxy. Ahol nincs háttérrendszer, ott rögzítésre kerül a futáson, de nem blokkol semmit, amit egy elindított folyamat tesz |
 
-6. Save
+6. Mentés
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Ellenőrzőpont: nyissa meg újra az ügynököt, és a kapcsoló továbbra is bekapcsolt
+állapotban van az Ön beállításaival — egy mentett képességkészlet körbejárja a
+szervert, és a készlettel nem rendelkező ügynök az óvatos alapértelmezésre esik
+vissza (push kikapcsolva, GitHub API kikapcsolva, jegykezelés kikapcsolva,
+hálózat bekapcsolva).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Két buktató]
+A felirat **Munkaterület alapértelmezettje**, de nincs olyan munkaterületszintű
+képességbeállítás, amelyet a szerver olvasna. A kikapcsolt kapcsolóval
+rendelkező ügynök a beépített óvatos alapértelmezést kapja.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Külön említve: a futás GitHub-hitelesítő adata soha nem más, mint a
+közvetítőé — egy repóra korlátozott GitHub App telepítési token vagy a
+környezeti PAT tartalék —, soha nem a kérő tag saját tárolt tokenje. Az
+`actingUserId` átadása csak azt teszi lehetővé, hogy a közvetítő *visszatartsa*
+a szerver PAT-jét attól a tagtól, aki nem a tulajdonos, és nem csatlakoztatta a
+GitHubot; nem olvaszt össze egy személyes tokent egy kikapcsolt képesség fölé.
+Ne tekintse a **GitHub API-hívások engedélyezése** kapcsolót kemény
+kimenőforgalom-határnak egy operációs rendszer szintű homokozó nélküli hoszton:
+egy elindított folyamat továbbra is elérheti a hálózatot.
 :::
 
-## Check whether your agent runs are sandboxed
+## Ellenőrizze, hogy az ügynökfutásai homokozóba vannak-e zárva
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Két dolog dönti el, mindkettő a szerveren: hogy a hoszt kínál-e háttérrendszert,
+és hogy a `--sandbox` be van-e kapcsolva. Ebben a sorrendben ellenőrizze őket.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Lépjen a **Beállítások → Szerver → Diagnosztika és adatvédelem** oldalra
+2. Olvassa el a **Homokozó** kártyát. A **Hoszt** adat az a gép, amelyen a
+   `cc_server` fut, nem az, amelyet éppen néz. A **Háttér** mező a **Natív
+   homokozó** (macOS-en Seatbelt, Linuxon és WSL2-n bubblewrap) vagy a **Nincs
+   elszigetelés** értéket sorolja fel. Az **Érvényben** adat ennek az eszköznek
+   a beállítása, nem az a becsomagolás, amelyet a szerver ténylegesen használ.
+3. Olvassa el a szerver indítási naplóját. Pontosan az alábbi három sor egyikét
+   írja ki:
+   - `agent sandbox ON` a háttérrendszer-megjegyzéssel — a futások be vannak
+     csomagolva
+   - `no OS-native agent sandbox on this host` egy telepítési tippel, ahol van
+     ilyen — a futások nincsenek becsomagolva
+   - `agent sandbox DISABLED by --sandbox off` — szándékos kikapcsolás
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+A `GET /healthz` nem számol be a homokozó állapotáról, így az ellenőrzés az
+indítási napló.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+A homokozó szándékos kikapcsolásához — egy hoszt, ahol a profil rosszul
+viselkedik, épp ezért létezik a lehetőség — indítsa a szervert `--sandbox off`
+kapcsolóval, vagy állítsa be a `CC_SERVER_SANDBOX=off` értéket. Az alapértelmezés
+az `on`, és az `on` azt jelenti: „használj háttérrendszert, ha van a hoszton",
+soha nem azt, hogy „követelj meg egyet".
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Két helyzet soha nem kap natív homokozóbecsomagolást. **Windowson** a natív
+felmérés mindig elérhetetlent jelent, és nincs mit telepíteni — az
+ügynök-kiosztás a `none` értéket használja. A `microvm` háttérrendszer
+különálló (interaktív terminálok és állomások), és a saját futtatókörnyezetén a
+felmérés kapuzza. **Linuxon és WSL2-n** a `bwrap` és a `socat` egyaránt kell a
+`PATH`-ban; nélkülük a felmérés elérhetetlent jelent, és megnevezi a hiányzó
+csomagokat.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Linuxon/WSL2-n bubblewrap telepítése esetén a standard szabályzat
+titkosfájl-globjai nem érvényesíthetők azokra a fájlokra, amelyeket az ügynök
+később hoz létre. Egy ilyen natív futás most inkább megbukik, ahelyett hogy
+csendben figyelmen kívül hagyná a szabályokat. Egy pozitív indítási felmérés
+ezért nem garantálja, hogy egy Linuxon történő kiosztás el tud indulni. A
+`--sandbox off` szándékos, korlátlan kikapcsolás, nem biztonsági határ
+helyettesítője.
 
-## Know what a mode already forbids
+## Tudja, mit tilt már eleve egy mód
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+A mód térenként tárolódik, és **módkészlet** rétegként táplálja a
+korlátfeloldót. A négy mód közül három csak olvasható, és egy csak olvasható mód
+tizenegy hatásosztályt utasít el eleve:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Mód                | Worktree  | A készlet által elutasítva                                                                                                                                                                                                                        |
+| ------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ügynök** (`chat`) | Írható    | Semmi — a beépített alapértelmezések érvényesek                                                                                                                                                                                                     |
+| **Terv**           | Csak olvasható | Fájl törlése, írás a worktree-n kívül, commit, push, PR megnyitása, közzététel vagy összefésülés, írás külső követőbe, csomag telepítése, folyamat futtatása, a munkaterület szerkezetének módosítása, elszigetelt környezet (állomás) indítása vagy irányítása |
+| **Átnézés**        | Csak olvasható | Ugyanaz a tizenegy. Nem választható ki a felhasználó által — az üzenetszerkesztő csak az Ügynök, a Terv és az Orchestrálás lehetőséget kínálja                                                                                                     |
+| **Orchestrálás**   | Csak olvasható | Ugyanaz a tizenegy                                                                                                                                                                                                                                  |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+A hálózati hozzáférést és a titkok elérését egy csak olvasható mód szándékosan
+_nem_ utasítja el: épp a kutatás a lényege.
 
-## Require approval before an action runs
+## Jóváhagyás kérése, mielőtt egy művelet lefut
 
-Approval is a guardrail decision, not a sandbox setting.
+A jóváhagyás korlátdöntés, nem homokozóbeállítás.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Lépjen a **Beállítások → Munkaterület → Ügynökjogosultságok** oldalra
+2. Állítsa a műveletosztályt **Előbb kérdezzen** értékre a munkaterület, az
+   ügynök vagy a tér hatókörében
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/) for the full
-resolution order.
+Egy **Előbb kérdezzen** döntés megszakítja a futást, és megkérdezi Önt.
+Csatlakoztatott jóváhagyó nélkül zárt hibamódban megbukik, és a művelet
+elutasításra kerül. A teljes feloldási sorrendet lásd:
+[Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
 
-## Troubleshooting
+## Hibaelhárítás
 
-### An agent cannot push and I never denied it
+### Az ügynök nem tud pusholni, és soha nem tiltottam meg
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Ellenőrizze az ügynök **Homokozó-jogosultságok** beállítását. Az egyéni
+képességkészlet nélküli ügynök az óvatos alapértelmezést kapja, amelyben a **git
+push engedélyezése** ki van kapcsolva — így a közvetítő nem injektál
+GitHub-tokent, és a gitnek nincs módja hitelesíteni.
 
-### The Sandboxing card reports no native sandbox
+### A Homokozó kártya nem jelez natív homokozót
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
+Akkor azon a hoszton az ügynökfutások nincsenek Seatbeltbe vagy bubblewrapbe
+csomagolva, és a fennmaradó határok azok, amije van. Linuxon és WSL2-n
+telepítse mindkét hiányzó eszközt — `sudo apt-get install bubblewrap socat` —,
+és indítsa újra a szervert; az indítási napló ekkor azt írja majd, hogy a
+homokozó be van kapcsolva. Windowson nincs telepíthető natív háttérrendszer,
+ezért inkább szigorítsa a korlátokat: lásd
+[Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
 
-### An agent reached a file outside its worktree
+### Az ügynök elért egy fájlt a worktree-jén kívül
 
-Which tool reached it decides whether this is expected.
+Hogy melyik eszköz érte el, az dönti el, hogy ez várható-e.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+A harness folyamaton belüli fájleszközei (read, write, edit, apply patch,
+search, find, search_files) a szerverfolyamaton belül futnak, így rájuk egyetlen
+homokozóprofil sem érvényes — a határukat a saját útvonal-elkülönítésük és a
+korlátok jelentik. Egy `bash` parancs vagy a Claude Code CLI viszont _be van_
+csomagolva ott, ahol van háttérrendszer, és a regisztrált checkoutjai minden
+módban írásmegtagadás alá esnek a becsomagoláson belül, a symlink-feloldott
+írásmódjukkal együtt (macOS-en a `/tmp` vagy a `/var/folders` felé vezető
+útvonal a `/private` alá oldódik fel, és most már mindkét írásmód tiltva van).
+Egy háttérrendszer nélküli hoszton ebből semmi nem érvényes. Bármelyik esetben a
+korlátok eleve elutasíthatják az **Írás a worktree-n kívül** műveletet.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/)
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
-- [Diagnose an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)
-- [Sandbox backends](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/)
-- [cc_server CLI](/hu-HU/kezikonyv/referencia/cc-server-cli/): the `--sandbox` flag
+- [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)
+- [Homokozó-háttérrendszerek](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/)
+- [cc_server CLI](/hu-HU/kezikonyv/referencia/cc-server-cli/): a `--sandbox` kapcsoló
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)

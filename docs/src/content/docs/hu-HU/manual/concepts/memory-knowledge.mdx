@@ -1,199 +1,217 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Memória és tudás
+description: Hogyan tárolja a Control Center az ügynöktudást, mi jut el valójában egy ügynök promptjába, és miért fail-open a memóriaolvasás.
 slug: hu-HU/kezikonyv/fogalmak/memoria-es-tudas
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Mire való a memória
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Memória nélkül minden ügynökbeszélgetés nulláról indul: ugyanazt a konvenciót
+kell újra elmagyarázni, ugyanazt a döntést újra megtárgyalni, ugyanazt a
+zsákutcát újra felfedezni. A memória a munkaterület szintű tároló, amely
+túléli a futásokat, és azért létezik, hogy az egyik ügynök által megtermelt
+tudás később egy másik számára megtalálható legyen.
 
-It has three layers and they answer different questions:
+Három rétege van, és ezek különböző kérdésekre válaszolnak:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Tények** — mi igaz (egy konvenció, egy eredmény, egy döntés).
+2. **Szabályzatok** — mit kell tenniük velük az ügynököknek (egy normatív szabály).
+3. **Munkamemória** — mi van éppen folyamatban egy ügynöknél.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+A megkülönböztetés azért számít, mert különböző útvonalakon jutnak el az
+ügynökhöz. A tényeket kereséssel találjuk meg, a szabályzatokat a rendszer
+tolja az ügynök elé, a munkamemória pedig privát.
 
-## Facts
+## Tények
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+A `MemoryFact` egy munkaterülethez és egy domainhez rendelt tudásegység.
 
-| Attribute                                   | What it is                                                                |
+| Attribútum                                  | Mit jelent                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | A tudás domainje („conventions”, „decisions”, „codebase”)                 |
+| `topic`                                     | Rövid témacímke                                                           |
+| `content`                                   | A tudásszöveg                                                             |
+| `confidence`                                | 0.0–1.0, a származásból indul, és az ismételt említés növeli              |
+| `memoryType`                                | A tény fajtája — ez vezérli az időbeli lecsengési görbéjét                |
+| `veracity`                                  | Hogyan vált ismertté — ez adja a kezdő bizalmi szintet, és ez szabja meg az egyes ismételt említések növelésének mértékét |
+| `sourceObservationIds`                      | Mely megfigyelések vezettek hozzá                                          |
+| `supersededBy`                              | Az őt felváltó újabb tény, ha van ilyen                                   |
+| `validUntil`, `recallCount`, `mentionCount` | Lejárati és használati jelzések, amelyeket az előhívás használ            |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Az utolsó két sort szokták figyelmen kívül hagyni, pedig ezek döntik el,
+_melyik_ tény kerül a felszínre. A `memoryType` típusonkénti
+Weibull-lecsengési paramétereket hordoz, így egy időhöz kötött vállalás gyorsan
+elhalványul, egy stabil profiltény viszont nem. A `veracity` a származást
+rögzíti — ember állította (1.0 súly), ügynök következtetett rá (0.7), eszköz
+állította elő (0.5), importálták (0.6) —, és ez a súly adja a tény kezdő
+bizalmi szintjét.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+A tényeket soha nem szerkesztjük a helyükön, amikor ellentmondásba kerülnek.
+Egy tény írása konfliktusészlelést futtat az azonos domainű, azonos témájú
+tényekkel szemben, és felváltja a vesztest, közben rögzít egy konfliktussort.
+Az auditnapló a lényeg: mindig látod, mit tartottak igaznak korábban, és mi
+váltotta fel.
 
-## Policies
+## Szabályzatok
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+A `MemoryPolicy` a tényekből levezetett normatív szabály, amely egy
+munkaterülethez és egy domainhez kötődik, aktív jelzővel és opcionális
+`requiredRole` mezővel.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+A munkaterület minden **aktív** szabályzata bekerül **minden** indításba,
+szűrés nélkül — nincs szűrés domain, szerep, feladat vagy tér szerint. Ezt
+érdemes tudni, mielőtt megírod a huszadik szabályzatodat, mert a szabályzatok
+ugyanazért a kontextusablakért versenyeznek, mint a feladat. Ez az oka annak
+is, hogy a szabályzaton a `requiredRole` csak tanácsadó jellegű: azt írja le,
+kinek szól a szabály, de nem akadályozza meg, hogy a szabály mindenki máshoz
+is eljusson.
 
-## Domains
+## Domainek
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+A `MemoryDomain` egy munkaterületen belül tényeket és szabályzatokat
+csoportosít. A domainek szervezeti szerkezetet adnak a tudásnak, és ezek az
+egységek, amelyekre a hozzáférési engedélyek íródnak — de mielőtt bizalmassági
+határként kezelnéd a domaint, olvasd el az alábbi figyelmeztetést.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Egy domain vagy munkaterület-szintű (`architecture`), vagy egyetlen tárolóra
+korlátozódik (`repo:<slug>/architecture`). Ugyanaz a név a két hatókörben két
+független tároló: egy tény, amely az egyik kódbázisra igaz, nem írja felül a
+munkaterület szintűt. A `search_memory` és az indítási preambulum a tárolóra
+korlátozott memóriát sorolja előre, amikor az ügynök abban a tárolóban
+dolgozik; a többit nem szűrik ki. Add meg a `repo` paramétert a `propose_fact`
+/ `propose_policy` / `search_memory` hívásnál, hogy abba a hatókörbe írj, vagy
+növeld annak súlyát.
 
-## Access control is fail-open for reads
+## A hozzáférés-vezérlés olvasásnál fail-open
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+A `MemoryAccessGrant` egy ügynökszerepet és egy domaint képez le a három
+engedélyszint valamelyikére:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Engedély | Jelentés                                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------------------- |
+| `none`   | Nincs hozzáférés                                                                                            |
+| `read`   | Kereshet és lekérdezhet tényeket                                                                            |
+| `write`  | A `propose_policy` megköveteli. A tényírásokat (`propose_fact`, `supersede_fact`) nem kapuzza engedély       |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[A hiányzó engedély olvasást jelent, nem elutasítást]
+Ha egy `(role, domain)` párhoz nincs engedélysor, a tényleges engedély a
+**`read`**. Az olvasás tervezésileg fail-open. Az egyetlen írás, amely kivételt
+dob, a `propose_policy` `write` engedély nélkül
+(`InsufficientMemoryPermission`). Ha érzékeny tartalmat teszel egy
+memóriadomainbe, az nem korlátozza, ki olvashatja, hacsak nem írtál
+kifejezetten `none` engedélyt minden olyan szerephez, amelynek nem szabad
+látnia.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+A termékben ma egyébként sincs felület az engedélyekhez. A memóriaképernyőn a
+Tények, a Szabályzatok és a Tudásgráf fülek vannak, semmi más; az engedélyek
+csak a `memory_access_grant.*` RPC-műveleteken keresztül érhetők el.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Az aszimmetria — lágy az olvasásnál, kemény a szabályzatírásnál — szándékos
+kompromisszum. A memória akkor a leghasznosabb, ha kering, és egy olvasási
+elutasítás inkább egy csendben kevesebbet tudó ügynököt eredményez, mint egyet,
+amelyik problémát jelez. A szabályzatírás elutasítása ezzel szemben hangos és
+korrigálható, ezért az érvényesítés ott van. Az újonnan létrehozott domain
+minden szerephez `write` engedélyt vetít előre; ezt utólag szigorítani csak
+RPC-vel lehet, mert nincs engedélykezelő felület.
 
-## Working memory
+## Munkamemória
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Minden ügynöknek van egy `AgentWorkingMemory`-ja: egy munkaterület és az
+ügynök szerint kulcsolt szabad szöveges jegyzetfüzet. Futásokon át megmarad,
+az adott ügynök számára privát, és minden indításnál bekerül a promptjába. Itt
+él az „épp félúton voltam az auth refaktorálásában” típusú állapot — az, amit
+érdemes átvinni a következő futásba, de nem érdemes tartós ténnyé előléptetni.
 
-## What actually reaches an agent's prompt
+## Mi jut el valójában egy ügynök promptjába
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Indításkor a memóriapreambulum pontosan három dologból áll össze:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **A munkaterület minden aktív szabályzata**, `- [domain] rule` sorokként.
+- **Az ügynök saját munkamemóriája**, szó szerint.
+- **A feladathoz kulcsszóra illeszkedő tények rövid listája** — legfeljebb öt,
+  körülbelül 1,200 karakteres kereten belül, és csak akkor, ha a feladat
+  leírása legalább 20 karakter hosszú. A rövidebb feladatok egyáltalán nem
+  kapnak tényeket.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+A rövid lista csak FTS/kulcsszó alapú, és szándékosan van korlátozva. Egy
+lekérdezés beágyazása lassú, az indítási útvonal pedig az az egyetlen hely, ahol
+a késleltetés azonnal látható, ezért a lassú szemantikus útvonal szándékosan
+kimarad belőle. A preambulum azzal zárul, hogy az ügynök a `search_memory`
+segítségével ellenőrizze a lényeges elemeket, mert ott él a teljes előhívási
+modell.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Ezen az útvonalon a rendszer egyetlen hozzáférési engedélyt sem néz meg. Az
+ügynök azt látja, amit a rövid lista megtalál.
 
-## Recall: one query, four voices
+## Előhívás: egy lekérdezés, négy hang
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Az ügynökök felé nyitott `search_memory` eszköznek három módja van, és ezek
+valóban különböző keresések:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — csak FTS5.
+- **`semantic`** — BM25- és vektortalálatok, amelyeket a reciprok rangfúzió
+  módszerével vonunk össze.
+- **`hybrid`** (az alapértelmezett) — polifonikus előhívás: négy rangsorolt
+  hang összevonva, majd diverzifikálva.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+A négy hang: lexikális (FTS), szemantikus (vektoros KNN), időbeli (nemrég aktív
+tények) és gráf — két lépéses bejárás az epizodikus éleken a legerősebb
+lexikális és szemantikus kiindulópontoktól. A gráf hang az oka annak, hogy
+egyáltalán léteznek epizodikus élek: felszínre hozza azt a tényt, amely
+_kapcsolódik_ a válaszodhoz, anélkül hogy bármelyik szavadra illeszkedne. A
+hangokat egy osztályozott lekérdezési szándék súlyozza (alapértelmezésben a
+szemantikus viszi a legnagyobb súlyt, aztán a gráf és a lexikális, végül a
+frissesség), minden jelölt pontszámát a saját Weibull-lecsengése skálázza, az
+eredményhalmazt pedig MMR-rel diverzifikáljuk, hogy egy tény öt ismétlése ne
+szorítson ki négy különbözőt.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[A szemantikus előhívás csendben marad, amíg a modell nincs telepítve]
+A vektoros hang csak akkor járul hozzá, ha az eszközön futó beágyazási modell
+már le van töltve. Addig a hibrid előhívás három hanggal fut, és nincs
+visszamenőleges feltöltés — a modell telepítése előtt írt tények soha nem
+kapnak vektorokat. A vektoros útvonal tovább romlik, egy Dartban futó
+beolvasásra a csomagolt beágyazások fölött, ha maga az SQLite vektorkiterjesztés
+sem töltődik be; az előhívás továbbra is válaszol, csak lassabban.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Az asztali és webes memóriakeresés külön, egyszerűbb útvonal: a
+`memory_fact.search` RPC-művelet **csak FTS5-öt** használ, mert egy vékony
+kliens nem tud lekérdezési beágyazást küldeni, a hibrid útvonal pedig a hoszton
+belül marad. Ezért a memóriaböngészőben látott rangsor nem azonos azzal,
+amelyet egy ügynök a `search_memory`-tól kap. Ez várható, nem hiba, de azt
+jelenti, hogy a felületen „kerestem és nem találtam meg” nem bizonyíték arra,
+hogy az ügynök sem fogja megtalálni.
 
-## Where memory lives and who writes it
+## Hol él a memória, és ki írja
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+A memóriaböngésző a **Beállítások → Munkaterület → Memória** helyen van
+(`/workspaces/<id>/settings/memory`), Tények, Szabályzatok és Tudásgráf
+fülekkel.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Van ott egy aszimmetria, amely meglepi az embereket: **a memóriát
+szerkesztheted és törölheted, de nem hozhatod létre.** Sem a Tények, sem a
+Szabályzatok fülön nincs hozzáadás lehetőség. A létrehozás ügynökoldali, a
+`propose_fact` és a `propose_policy` útján (`supersede_fact` /
+`supersede_policy` a lecserélésükhöz). A `remember` egy munkamenethez kötött,
+forró szintű elemet ír, amelyet a `consolidate_memory` később ténnyé léptethet
+elő; a `record_observation` és az `update_my_notes` az indításkor beinjektált
+privát jegyzetfüzetet írja. A böngésző átnézési és javítási felület, nem
+szerkesztői — tehát ha tényt szeretnél a memóriában, úgy tehetsz rá szert,
+hogy szólsz egy ügynöknek.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Két karbantartási művelet szintén ügynök hívja meg, nem ütemezett: a
+`consolidate_memory` összevonja és ritkítja a felhalmozódott tényeket, a
+`harmonize_memory` pedig összeegyezteti az ügynökök között széttartó
+meggyőződéseket. A `list_memory_conflicts` megmutatja, mit rögzített már a
+konfliktusészlelés. Ezeket semmi nem futtatja helyetted időzítővel. A
+megbeszélések döntései a `decisions` domainbe gyűlnek, amikor egy
+megbeszélés-mentési lépés rögzíti őket; ez nem egy időzítő a befejezett
+ügynökfutásokon.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): roles are what grants are written against
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/hu-HU/kezikonyv/gyakorlati-utmutatok/memoria-kezelese/): working with memory in practice
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): a szerepek azok, amelyekre az engedélyek íródnak
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): a memória munkaterület szintű, és az adott munkaterület saját adatbázisfájljában él
+- [Munkaterület-memória kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/memoria-kezelese/): a memóriával való munka a gyakorlatban

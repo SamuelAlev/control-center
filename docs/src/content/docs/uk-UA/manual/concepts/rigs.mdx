@@ -1,241 +1,254 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Rigs та ізольовані середовища
+description: Чому агенти отримують одноразові машини, а не ваш комп’ютер — межі ізоляції, канали відображення, облікові дані, порти та життєвий цикл.
 slug: uk-UA/керівництво/поняття/rigs
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/); for the exact
-verbs, ports and defaults, see the [rigs reference](/uk-UA/керівництво/довідка/rigs/).
+**Rig** — це одноразова машина, якою агент керує в реальному часі: браузер,
+робочий стіл Linux, емулятор Android, симулятор iOS або машина за ізольованим
+терміналом. Більшість rig — це ВМ; керовані хостом мобільні симулятори —
+явний виняток. Ця сторінка пояснює кожну межу і те, чому все влаштовано саме
+так. Щоб відкрити середовище, див.
+[Дати агенту машину для тестів](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/); точні
+дії, порти та типові значення — у [довідці з rigs](/uk-UA/керівництво/довідка/rigs/).
 
-## Why a VM, not a sandbox
+## Чому ВМ, а не пісочниця
 
-The [native sandbox](/uk-UA/керівництво/поняття/пісочниця-та-безпека/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[Нативна пісочниця](/uk-UA/керівництво/поняття/пісочниця-та-безпека/) загортає процес в
+ізоляцію просторів імен — справжню, але вона ділить із вами ядро й обмежує
+*процес*, а не *комп’ютер*. Щойно агенту треба поклацати в застосунку для
+робочого столу, відрендерити сторінку в справжньому браузері або провести
+експерименти з `rm -rf`, про які ви воліли б не думати, чесна межа — це
+машина: власне ядро, власний диск, власний мережевий стек.
 
-The enclosed surfaces use two VM backends:
+Ізольовані поверхні використовують два бекенди ВМ:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **мікроВМ** для термінала й браузера — запуск гіпервізора менш ніж за
+  секунду з контейнерних образів, закріплених за дайджестом.
+- **QEMU** для повноцінного робочого столу Linux, якому потрібен пристрій
+  відображення, якого мікроВМ не має.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Мобільні поверхні керуються хостом і прямо заявляють про слабшу межу:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** керує емулятором Google через ADB.
+- **iOS** створює й володіє пристроєм CoreSimulator на хості Mac і керує ним
+  через WebDriverAgent. Пристрій та його дані видаляються, коли rig
+  закривається, але його мережа використовує мережу хоста Mac.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Ізольовані rig пишуть в одноразовий оверлей поверх базового образу лише для
+читання, тож один rig не може змінити те, з чого стартує наступний. Rig iOS
+володіє одноразовим пристроєм CoreSimulator, який видаляється, коли rig
+закривається. Android приєднується до емулятора на хості, що переживає сесію.
 
-## Deny-by-default egress
+## Вихід: за замовчуванням заборонено
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+Мережа rig починається з **нічого**. Хости допускаються для кожного rig
+окремо через шлюз, який гість не може обійти: єдині шляхи назовні — ті, що
+створила конфігурація запуску. Ізольований термінал отримує базовий набір
+розробника (реєстри пакетів, хостинги коду, дзеркала apt); браузерний rig
+допускає сайт продукту (`usectrl.dev`) і стартує з локальної сторінки
+`file://`, якій не потрібен вихід; усе інше відхиляється під час з’єднання.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android та iOS цим шлюзом не охоплені. Їхній емулятор і симулятор на хості
+використовують мережу хост-сервера, тож інтерфейс і звіт про можливості
+зазначають, що вихід тут не обмежується, і ніколи не пропонують оманливого
+елемента керування «перезапустити без обмежень».
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Вихід і облікові дані — це одна політика, побачена з двох боків: брокер
+облікових даних (нижче) не випустить токен для хоста, до якого гість не може
+дістатися.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Усе, що rig *читає*, вважається ненадійним: текст сторінки, DOM і дерева
+доступності, дампи інтерфейсу та вивід консолі повертаються агенту в межах
+постійного правила «це дані, а не інструкції». Ця огорожа — лише обрамлення;
+примус за нею — шлюз виходу.
 
-## Input goes through the hypervisor, capture through the guest
+## Введення йде через гіпервізор, захоплення — через гостя
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+На поверхні робочого столу події клавіатури й вказівника вводяться *власними*
+віртуальними пристроями введення гіпервізора. Гість ніколи не запускає
+привілейований демон, який міг би синтезувати введення, — тож компрометація
+програмного забезпечення гостя не дає зловмиснику клавіатуру. Захоплення
+тече в інший бік, через невеликий непривілейований агент усередині гостя, бо
+гість може масштабувати кадри, перш ніж вони підуть мережею.
 
-## Two display lanes
+## Два канали відображення
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+У людини, яка спостерігає, і в моделі, яка керує, потреби протилежні, тож
+rig обслуговує два незалежні потоки:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **Людський канал** — повна роздільність під розмір вашої панелі, яка
+  переузгоджується під час зміни розміру; сервер передає її як непрозорі
+  байти. Сервер ніколи не декодує кадр, бо відеодекодер на шляху запиту —
+  саме те, що заважає йому відповідати на RPC.
+- **Канал агента** — це зменшені нерухомі знімки, обмежені зручним для моделі
+  розміром, по одному зображенню на результат інструмента; старіші кадри
+  відкидаються під час компакції, а їхні текстові описи залишаються.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Жоден канал не поступається заради іншого: ви отримуєте плинну картинку,
+модель — дешеву.
 
-## Take-over is a chokepoint, not a request
+## Перехоплення керування — це вузьке місце, а не прохання
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Ексклюзивне керування забезпечується примусово в єдиній точці, через яку
+проходить кожна дія, — а не проханням до моделі поводитися як слід. Поки його
+утримує людина, сервер відхиляє *змінювальні* дії агента. Агент зберігає свої
+дії спостереження (знімки екрана, видобування), щоб описувати те, що ви
+робите, і про перехоплення йому повідомляють через канал коригування, а не
+лишають виявляти його через відхилені клацання. Клацання й уведення тексту на
+полотні працюють, коли цей замок не тримає ніхто інший — або коли його
+тримаєте ви; статусний ярлик показує **Керування у вас**. Кожна подія
+введення — ваша й агента — потрапляє до журналу аудиту цього rig із
+зазначенням суб’єкта й монотонної послідовності, тож питання «хто це клацнув»
+залишається з’ясовним і після зникнення машини.
 
-## Content crosses the boundary; the machines stay separate
+## Вміст перетинає межу; машини залишаються окремими
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Копіювання й вставлення працюють в обидва боки, як і перетягування файлів
+усередину й назовні, — але rig — це інший комп’ютер, і задум цього не
+приховує.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Буфер обміну** переноситься на вимогу, а не дзеркалиться безперервно.
+Натисніть сполучення для копіювання над rig — гостеві кажуть скопіювати, а
+тоді те, що він поклав у свій буфер обміну (текст, зображення, список
+файлів), зчитується й розміщується у вашому. Вставлення надсилає той самий
+вміст у зворотному напрямку, а потім натискає «вставити» всередині гостя.
+Нічого не синхронізується у фоні: пароль, скопійований на вашій машині, не
+потрапляє тихо до ВМ через те, що спрацював таймер.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Перетинання контролюється окремо для кожного користувача й кожного напрямку,
+незалежно. Вставлення в rig дозволене за замовчуванням; копіювання з rig
+спершу запитує підтвердження (дозвіл на десять хвилин або **Завжди
+дозволяти** в **Налаштування → Сервер → Rigs → Доступ до буфера обміну**). Це
+ніколи не налаштування робочого простору: один учасник не може дати згоду за
+буфер обміну іншого учасника.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+У macOS сполучення для перетинання — ⌘C/⌘V, і воно однозначне: ⌃C і далі
+доходить до оболонки гостя як переривання, яким воно й є. У Windows і Linux
+обидва сполучення — це те саме натискання, тож гість отримує його незміненим,
+а ваш буфер обміну перезаписується лише тоді, коли вміст гостя справді
+змінився. Переривання залишається перериванням.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Перетягнуті всередину файли** копіюються в теку машини для перекинутих
+файлів, а потім пропонуються їй. Що саме означає «пропонуються», залежить від
+того, що можна зробити чесно: сторінка браузера отримує *справжню* подію
+перетягування в тій точці, де ви відпускаєте файл, тож зона завантаження
+поводиться точно так, як поводилася б із локальним файлом; робочий стіл
+отримує файли в `~/Drops`, а їхні шляхи — у своєму буфері обміну, бо жоден
+хост не може синтезувати перетягування в довільний інструментарій Linux, не
+запустивши привілейований демон усередині гостя, — а саме цього цей задум не
+допускає. Результат каже, що саме сталося, тож CSV, перекинутий на зону
+завантаження, ніколи не повідомляється як завантажений, коли він лише файл у
+теці. Перекидання на ізольований **термінал** копіює файл усередину й набирає
+його шлях у гості біля запрошення — те, що оболонка справді може
+використати.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Перетягування назовні** працює на поверхні робочого столу, де протокол
+перетягування X11 робить вміст читабельним, поки перетягування триває.
+Почніть перетягування всередині гостя, виведіть його за межі полотна — і
+файли зчитуються на вашу машину й передаються ОС як справжнє перетягування.
+Копіювання файлів у файловому менеджері гостя й вставлення на хості працює
+так само. Поверхня браузера свідомо *не* пропонує цього: у headless-браузера
+немає виділення перетягування, яке можна прочитати, а найближчий доступний
+сигнал — виділення тексту на сторінці — взагалі не є доказом перетягування,
+тож реакція на нього перехоплювала б звичайні клацання.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Усе, прочитане з гостя, залишається ненадійним вмістом: текст із буфера обміну
+доходить до моделі в межах тієї самої огорожі, що й видобування зі сторінки, а
+журнал аудиту фіксує, що вставлення сталося і який був його обсяг, — ніколи
+те, що в ньому було сказано.
 
-## Credentials never live in the guest
+## Облікові дані ніколи не живуть у гості
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` працює з ізольованого термінала, але гість не зберігає жодного
+токена хостингу коду. Він тримає один секрет на кожну ВМ, чия єдина сила —
+*попросити* в брокера облікових даних хоста (через тунель, який контролює
+хост) короткоживучий токен з областю дії репозиторію: на кожну операцію, з
+обмеженням частоти, обмежений тим самим списком дозволених хостів, що й вихід,
+і відкликаний тієї ж миті, коли rig закривається. Машина, створена на викид,
+не повинна містити нічого вартого крадіжки.
 
-## The worktree in a rig is a satellite
+## Worktree в rig — це супутник
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+Коли rig несе ваш репозиторій, авторитетним залишається worktree на хості.
+Копія *синхронізується всередину* під час завантаження (секрети на кшталт
+файлів `.env` виключено), а коміти повертаються лише коли ви просите — вони
+зчитуються в `refs/rigs/<id>/*`, ніколи не надсилаються й ніколи не
+витягуються у робочу копію. Ніщо всередині ВМ не може пересунути вашу гілку чи
+торкнутися вашого робочого дерева; злиття того, що створив rig, — завжди
+рішення людини, ухвалене на хості.
 
-## Ports without holes
+## Порти без дір у захисті
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/uk-UA/керівництво/практичні-посібники/проброс-портів/).
+Dev-сервер, запущений усередині термінальної ВМ, стає доступним — на вашій
+машині, у Browser (VM), за бажанням у вашій локальній мережі, за бажанням під
+dev-доменом із HTTPS — і при цьому машина ніколи не відкривається назовні.
+Карта портів гіпервізора фіксується під час завантаження, тож усе подальше
+переадресування йде двома вузькими каналами, які контролює хост: одним
+заздалегідь створеним вхідним мультиплексором, який відмовляється
+з’єднуватися з чимось, що гість насправді не слухає, і зворотними тунелями,
+які хост тримає відкритими для з’єднань, ініційованих гостем. HTTPS для
+dev-домену завершується на сервері з використанням локально випущеного центру
+сертифікації, чиї ключі ніколи не потрапляють до жодного гостя. Механіку
+описано в [Пробросити порти з
+термінала](/uk-UA/керівництво/практичні-посібники/проброс-портів/).
 
-## Machines are bounded by construction
+## Машини обмежені за своєю будовою
 
-A rig cannot become a pet:
+Rig не може стати улюбленцем:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- **жорсткий TTL**, який гість не може продовжити;
+- **драбина простою** — припаркувати (vCPU зупинено, RAM залишається
+  резидентною) після вікна простою й закрити після подвійного вікна; відкритий
+  термінал або глядач, що спостерігає, вважаються «використанням»;
+- **бюджет пам’яті**, який рахують у *резидентних мегабайтах*, а не в сесіях,
+  бо припаркована ВМ звільняє CPU, але тримає кожен байт RAM; першою
+  витісняється машина, яку використовували найдавніше, і ніколи — та, якою
+  керує або за якою спостерігає людина;
+- знищення під час завершення роботи сервера, а також прибирання осиротілих
+  машин із міткою власника при наступному запуску, тож сервер, що впав, ніколи
+  не лишає по собі гіпервізора, який нікому не підкоряється.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+Перші завантаження підтягують закріплений образ машини; потім сервер у фоні
+кешує вже розпаковану копію, тож кожна наступна машина такого типу
+завантажується за секунди, а ізольований термінал стартує з уже встановленим
+базовим набором CLI, як у ранера, розміщеного на GitHub, — компілятори,
+Python, `jq`, архівні утиліти, — а не з мовним toolcache чи Docker. Образ
+«Комп’ютер» вбудовує той самий базовий набір CLI під час збірки, поруч із
+XFCE і браузерами.
 
-## Three browsers, not one
+## Три браузери, а не один
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+«У мене працює» — це твердження про один рушій відображення. Тож браузерний
+rig — не «браузер», а **Chromium, Firefox або WebKit**, вибраний тоді, коли ви
+його відкриваєте, і rig виконує той, з яким його відкрили, протягом усього
+свого життя. Одна розмова може містити по одному з кожного: відкривши *Firefox
+(VM)* поруч із *Chromium (VM)*, ви отримаєте дві машини, і навести обидві на ту
+саму сторінку — це і є порівняння. WebKit — найближче до Safari з усього, що
+працює на Linux: та сама лінія рушіїв, тож він виявляє прогалини, на які
+натрапляють користувачі Safari.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Дії однакові для всіх трьох; протоколи під ними — ні, і про відмінності
+говорять прямо, а не згладжують їх. Chromium розмовляє DevTools Protocol і
+*надсилає* кадри, тож його живий перегляд нічого не коштує, поки сторінка
+нерухома. Firefox розмовляє WebDriver BiDi, а WebKit — класичним WebDriver, і
+жоден із них не має скринкасту, тож їхні живі перегляди опитують — кілька
+кадрів за секунду, що годиться для спостереження за сторінкою, але не за
+анімацією. Там, де рушій справді чогось не може (Firefox не має
+перезавантаження з обходом кешу; WebKit не бачить виводу консолі,
+залогованого до завершення завантаження сторінки), відповідь каже про це, а не
+робить тихо щось інше.
 
-## Where rigs live in the product
+## Де rig живуть у продукті
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/uk-UA/керівництво/поняття/обмеження/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+Rig навмисно **не** є глобальним пунктом призначення. Живий перегляд — це
+вкладка в просторі або PR, де відбувається робота, прив’язана до тієї розмови,
+тож ваша вкладка й виклики `browser_use` агента адресують *одну* машину (по
+одній на рушій на браузерній поверхні). Те, чи rig можуть узагалі
+завантажуватися, — властивість хоста, тож можливості, образи, власні образи
+для робочого простору та список працюючих машин живуть у **Налаштування →
+Сервер → Rigs**. Керування ізольованим середовищем — це окремий
+[клас дій обмежень](/uk-UA/керівництво/поняття/обмеження/), тож робочий простір,
+агент або простір можуть його дозволити, вимагати схвалення або заборонити
+зовсім; режими лише для читання забороняють його цілком.

@@ -1,159 +1,167 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Configurar gatilhos de pipeline
+description: Conecte um modelo para iniciar com um evento de domínio, um agendamento ou um webhook de entrada — pela biblioteca de nós e pelo inspetor do gatilho selecionado.
 slug: pt-BR/manual/guias/gatilhos-de-pipeline
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Um gatilho é o que inicia um pipeline. Cada um é um nó no canvas, arrastado da
+seção **Gatilhos** da biblioteca de nós. Selecionar esse nó abre o inspetor dele
+à direita — não existe uma lista de gatilhos sempre visível, nem uma aba de
+gatilhos, nem uma tela de gatilhos.
 
-## Open a trigger inspector
+## Abrir o inspetor de um gatilho
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Acesse **Configurações → Espaço de trabalho → Modelos de pipeline**.
+2. Clique no lápis na linha do modelo para abrir o editor.
+3. Selecione um nó de gatilho no canvas. O painel direito aparece com as
+   configurações desse gatilho. Com nada selecionado, o painel fica oculto.
 
-## Add a trigger
+## Adicionar um gatilho
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+A seção **Gatilhos** da biblioteca de nós lista cada tipo de início como um nó
+próprio: manual, agendamento, webhook e um cartão por evento de domínio.
+Pesquise por `merged`, `ticket` ou o nome do tipo (`PrMerged`) e arraste o
+cartão para o canvas. Um modelo novo também mostra um bloco fantasma
+**Adicionar um gatilho** na âncora de entrada — escolha na mesma lista
+pesquisável.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+O gatilho é inserido imediatamente. Gatilhos automáticos novos começam
+desabilitados, para que soltar um não dispare uma execução antes de você
+configurá-lo. Use o interruptor **Ativado** do inspetor para ligá-lo, ou o ícone
+de lixeira para excluí-lo.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Um gatilho por tipo de evento]
+`pipeline_triggers` é único em espaço de trabalho, tipo de evento e modelo. Um
+tipo de evento que você já conectou some do seletor. Todo gatilho de webhook
+compartilha o tipo de evento sintético `webhook`, então um modelo pode ter no
+máximo um webhook.
 :::
 
-## Allow manual runs
+## Permitir execuções manuais
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Arraste **Execução manual** (ou escolha-o no bloco fantasma) e ligue **Ativado**
+no inspetor dele. É isso que faz o modelo aparecer no seletor de execuções. Não
+é um caso especial — o interruptor grava uma linha de gatilho comum cujo tipo de
+evento é `manual`. Ele persiste imediatamente; não há nada para salvar.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+O mesmo interruptor está por trás de **Execução manual** no cabeçalho do editor,
+onde fica ao lado das entradas declaradas do modelo.
 
-## On an event
+## Em um evento
 
-These events start a run:
+Estes eventos iniciam uma execução:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Rótulo no seletor                 | Evento                     |
+| --------------------------------- | -------------------------- |
+| PR externa aberta                 | `ExternalPrDetected`       |
+| PR publicada                      | `PullRequestPublished`     |
+| Status da PR alterado             | `PullRequestStatusChanged` |
+| PR mesclada                       | `PrMerged`                 |
+| Mensagem recebida                 | `MessageReceived`          |
+| Ticket criado                     | `TicketCreated`            |
+| Status do ticket alterado         | `TicketStatusChanged`      |
+| Ticket atribuído                  | `TicketAssigned`           |
+| Tarefa concluída                  | `TicketCompleted`          |
+| Tarefa falhou                     | `TicketFailed`             |
+| Tarefa cancelada                  | `TicketCancelled`          |
+| Limite de orçamento ultrapassado  | `BudgetThresholdCrossed`   |
+| Repositório adicionado            | `RepoAdded`                |
+| Gravação da reunião interrompida  | `MeetingRecordingStopped`  |
+| Habilidade atualizada             | `SkillUpdated`             |
+| Espaço excluído                   | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` é o evento que o pipeline integrado de limpeza de worktrees
+escuta: ele carrega o id do espaço excluído, então a execução recupera
+exatamente os worktrees daquele espaço em vez de varrer todo o espaço de
+trabalho.
 
-For the payload keys each event carries, see the
-[domain events reference](/pt-BR/manual/referencia/eventos-de-dominio/).
+Para conhecer as chaves de payload que cada evento carrega, consulte a
+[referência de eventos de domínio](/pt-BR/manual/referencia/eventos-de-dominio/).
 
-### Filter an event trigger
+### Filtrar um gatilho de evento
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Selecione o nó **Status da PR alterado**. Os chips de status do inspetor são o
+único filtro que a interface consegue criar. Toque em qualquer um de `merged`,
+`closed`, `approved`, `opened`, `reopened`; o gatilho então dispara apenas quando
+o `status` do evento corresponde a um deles. Deixar todos os chips sem seleção
+significa nenhum filtro.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Não existe um campo de filtro JSON de formato livre. Uma chave de filtro que o
+payload do evento não carrega nunca corresponde, então não crie uma à mão com
+base em uma chave que você não confirmou na referência de eventos de domínio.
 
-## On a schedule
+## Em um agendamento
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Selecione o nó **Programação** para editar quando ele dispara. Os campos do
+inspetor são salvos conforme você os deixa:
 
-| Field                                | Description                                                                                                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| Campo                                | Descrição                                                                                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agendamento (cron ou every:segundos)** | Uma expressão cron de cinco campos como `0 9 * * 1`, ou um intervalo como `every:86400`. Um número sem mais nada é convertido para `every:<n>`.                                |
+| **Fuso horário (opcional)**          | Uma zona IANA como `Europe/Paris`. O padrão é UTC.                                                                                                                                |
+| **Em execuções perdidas**            | O que fazer com os disparos perdidos enquanto o servidor estava fora do ar: **Executar uma vez** agrupa todos os horários perdidos em um único disparo na reinicialização (o padrão), **Ignorar** retoma no próximo horário futuro. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+A linha de resumo do cartão no canvas só detalha o intervalo para a forma
+`every:<seconds>`; uma expressão cron aparece apenas como "Programação".
 
-## Via a webhook
+## Por meio de um webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Arrastar **Webhook** gera um token aleatório. Selecione o nó para copiar o
+caminho `POST /webhooks/<token>` do inspetor.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+O token também é o segredo HMAC: a requisição deve carregar
+`X-Hub-Signature-256: sha256=<hex>`, em que o hex é `HMAC-SHA256(body, token)`.
+Uma entrega que falha na verificação é rejeitada e registrada, e não pode ser
+reenviada. As duplicatas são ignoradas pela chave de deduplicação delas.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[O token está no banco de dados]
+O inspetor mostra o caminho. O token em si é o segmento do caminho; ele também
+fica armazenado na linha de `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Cada início é um nó próprio do grafo. Puxar uma conexão a partir de
+**Programação** conecta apenas a Programação; **Execução manual** pode seguir um
+caminho diferente (por exemplo, um nó de condição) antes de se juntar ao mesmo
+trabalho. Uma execução entra pelo início que corresponde ao seu tipo de evento e
+ignora os subgrafos que pertencem aos outros inícios.
 
-## How a trigger reaches a run
+## Como um gatilho chega a uma execução
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Um gatilho habilitado cujo tipo de evento e filtro correspondem inicia uma
+execução com o payload do evento como o payload de gatilho da execução — é contra
+isso que `{{key}}` no prompt ou no script de uma etapa é resolvido. Eventos que
+carregam uma chave natural são deduplicados, então o mesmo evento disparado duas
+vezes não inicia duas execuções.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Um _modelo_ desabilitado é recusado mesmo quando o gatilho dele corresponde.
+Oito dos treze modelos integrados vêm desabilitados, então os gatilhos semeados
+deles disparam no vazio até você ativar o modelo.
 
-## Useful patterns
+## Padrões úteis
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Restrinja apenas o caminho manual** — conecte **Execução manual** a um nó de
+  condição e **Programação** direto ao trabalho. Cada início tem as suas próprias
+  conexões.
+- **Revise toda PR nova** — evento **PR publicada** no modelo `pr_review`.
+- **Limpe depois de um merge** — evento **Status da PR alterado**, filtrado para
+  `merged` / `closed` / `approved`. O modelo integrado `pr_merged_cleanup` já
+  escuta assim, além de tarefa concluída/cancelada, `SpaceDeleted` e um
+  agendamento diário que é habilitado à força a cada nova semeadura porque se
+  trata de coleta de lixo.
+- **Varredura noturna** — agendamento `0 2 * * *` com um fuso horário, em um
+  modelo cujo primeiro nó é um script bash.
+- **Reaja a um sistema externo** — um gatilho de webhook, com o sistema que
+  chama assinando o corpo da requisição como acima.
 
-## Related guides
+## Guias relacionados
 
-- [Create a pipeline template](/pt-BR/manual/guias/criar-pipeline/)
-- [Run a pipeline manually](/pt-BR/manual/guias/executar-pipeline/)
-- [Monitor pipeline runs](/pt-BR/manual/guias/monitorar-pipelines/)
-- [Domain events reference](/pt-BR/manual/referencia/eventos-de-dominio/)
+- [Criar um modelo de pipeline](/pt-BR/manual/guias/criar-pipeline/)
+- [Executar um pipeline manualmente](/pt-BR/manual/guias/executar-pipeline/)
+- [Monitorar execuções de pipeline](/pt-BR/manual/guias/monitorar-pipelines/)
+- [Referência de eventos de domínio](/pt-BR/manual/referencia/eventos-de-dominio/)
 
-## Related concepts
+## Conceitos relacionados
 
 - [Pipelines](/pt-BR/manual/conceitos/pipelines/)
-- [Domain events](/pt-BR/manual/conceitos/eventos-de-dominio/)
+- [Eventos de domínio](/pt-BR/manual/conceitos/eventos-de-dominio/)

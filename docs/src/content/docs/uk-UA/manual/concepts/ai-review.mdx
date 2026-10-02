@@ -1,225 +1,239 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: ШІ-перевірка
+description: Як pull request стає перевіреним — простори перевірки, вузли перевірки та консенсус рецензентів, когорти й осі, вердикт Ship/Hold/Block і те, чому публікація залишається кроком, який робите ви.
 slug: uk-UA/керівництво/поняття/ші-перевірка
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Як влаштована перевірка
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+ШІ-перевірка — це один запуск вбудованого конвеєра `pr_review` для одного
+відкритого pull request. Конвеєр відкриває простір перевірки цього PR,
+розгортає агентів-рецензентів читати diff в ізольованому checkout цього
+простору, кожен оформлює свої зауваження як структуровані **вузли перевірки**,
+провідний агент зводить їх у покроковий огляд, а фіналізатор обчислює один
+вердикт: **Ship**, **Hold** або **Block**. Чого конвеєр не робить ніколи — не
+публікує: публікація на GitHub це окремий, свідомий крок, який робить людина.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Решта цієї сторінки пояснює ці складові та те, чому вони мають саме таку
+форму.
 
-## One review space per PR
+## Один простір перевірки на кожен PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Контекст перевірки PR — це простір обміну повідомленнями (режим `review`,
+тип `pr`), пов’язаний із pull request через **зв’язок простору перевірки**. Він
+створюється ідемпотентно: сторінка PR, конвеєр перевірки та поверхні чату
+визначають _один-єдиний_ опорний простір PR тим самим шляхом коду, тож шаблон,
+який перевіряє PR, і людина, яка його відкриває, ніколи не опиняться у двох
+різних кімнатах із двома різними checkout.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Ізольований worktree простору містить PR, вибраний за його head ref. Одна
+кімната означає також один checkout: кожен рецензент працює в тому самому
+просторі, а не отримує власну копію робочого простору.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Кожен рецензент пише у власний іменований потік усередині цього єдиного
+простору, а зауваження — це повідомлення `review_node`, а не звичайний текст.
+Збір з усього простору наприкінці — навмисний: вердикт, обчислений із
+зауважень однієї гілки, нишком був би вердиктом про одного рецензента.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Зв’язок має драбину статусів — `requested` → `in progress` →
+`awaiting approval` → `completed` — яка й слугує гейтом для кнопки
+**Опублікувати на GitHub** на вкладці **Рев’ю** PR.
 
-## Review levels
+## Рівні перевірки
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Глибину перевірки визначає політика робочого простору з трьома рівнями, яку
+задають у **Налаштування → Робочий простір → Загальні**, на картці **Політика
+робочого простору**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Рівень     | Рецензенти, які розгортаються                      | Звітність                        |
+| ---------- | -------------------------------------------------- | -------------------------------- |
+| `light`    | Лише інженер                                       | Лише те, що справді має значення |
+| `balanced` | Інженер, QA, архітектор (типово)                   | Звичайний прохід                 |
+| `thorough` | Усі п’ятеро, включно з безпекою та продуктивністю  | Нічого не знижується             |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Рівень повертає одразу дві ручки: яких рецензентів розгортають — це
+забезпечують гейти стану `runWhen` у шаблоні конвеєра, а не формулювання в
+промпті (формулювання в промпті можна проігнорувати, гейт — ні) — і де
+відображаються зауваження, нижчі за поріг. Жодна з ручок ніколи не видаляє
+зауваження: рівень, який звітує менше, все одно фіксує рівно стільки ж і
+просто групує решту.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Проходи з безпеки та продуктивності використовують ті самі вбудовані агенти
+архітектора й інженера, а не заводять нові. Спеціалізація — це завдання, з
+яким запускають рецензента, а не окремий агент на кожну вісь: агент на кожну
+вісь означав би п’ять додаткових рядків у кожному робочому просторі без жодної
+додаткової спроможності. Вибір рецензентів ніколи не переглядає diff на мову
+чи домен.
 
-## Review nodes: findings as data, not prose
+## Вузли перевірки: зауваження як дані, а не текст
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Зауваження, зафіксоване через `add_review_node`, стає **вузлом перевірки** на
+PR — саме його показує вкладка **Рев’ю**, саме з нього обчислюють вердикт, і
+саме його «Опублікувати на GitHub» перетворює на вбудований коментар.
+Рецензент, який повертає лише текст, дає запуск конвеєра, що виглядає
+успішним, і порожню поверхню перевірки; саме фіксація несе все навантаження.
 
-Each node carries:
+Кожен вузол містить:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Поле                 | Значення                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| Вид                  | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                           |
+| Пріоритет            | P0 (критичний) → P3 (дрібниця)                                                        |
+| Тріаж-трійка         | категорія (`security`, `stability`, …), серйозність, трудозатрати                    |
+| Якір                 | Шлях до файлу, початок і кінець рядка                                                 |
+| Передача виправлення | Запропоновані рядки заміни, необов’язковий diff, необов’язковий промпт виправлення     |
+| Впевненість          | Оцінка в [0, 1]                                                                       |
+| Обґрунтування        | Аналіз, написаний до зауваження                                                       |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Дві деталі тут навмисні. Пропозицію GitHub в один клік показано лише тоді,
+коли рецензент надав точні рядки заміни: виводити їх з уніфікованого diff —
+означає тихо помилятися, а коміт у один клік із хибного висновку гірший за
+відсутність кнопки взагалі. І схема `add_review_node` подає `reasoning` перед
+зауваженням, тож модель, яка заповнює об’єкт у порядку схеми, спершу пише
+аналіз. Поле необов’язкове: якщо його пропустити, вузол не відхиляється.
+Вузол із пошкодженим вмістом зникає, а не забруднює перевірку.
 
-## Peer consensus
+## Консенсус рецензентів
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Вузол проходить через `open` → `consensus-ready` → `resolved` або `dismissed`.
+Середній крок — серце цієї моделі: **зауваження переходить далі лише тоді,
+коли його підтверджує рецензент-колега, а агент ніколи не може підтвердити
+власне зауваження.** Інструмент MCP `publish_review_to_github` і типове
+значення RPC усе ще публікують лише зауваження, підтверджені колегами. А
+кнопка **Опублікувати на GitHub** на вкладці **Рев’ю** натомість надсилає
+кожне зауваження, що лишилося відкритим.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Це правило забезпечують у трьох незалежних місцях — інструменті
+підтвердження, фіналізаторі та публікаторі — тож воно витримує помилку в
+будь-якому одному з них. Усі зміни статусу проходять через одну службу, і саме
+це надає статусу сенсу: до того дві часткові реалізації могли розходитися в
+тому, чи те саме зауваження вважається вирішеним.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Коли рецензенти розходяться — той самий файл і рядок, пріоритети, що різняться
+на два щаблі або більше, або один називає це `bug`, а інший — `suggestion` —
+розбіжність виносять над списком зауважень. Саме там думки рецензентів
+розходяться, і людське судження важить найбільше.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Відхилення зауваження також записує м’який факт придушення в домен пам’яті, з
+низькою впевненістю: одне відхилення — це вподобання, а не правило.
 
-## Cohorts: what the review is grouped around
+## Когорти: навколо чого групують перевірку
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Прохід обчислення перевірки групує змінені файли PR у **когорти**, виведені з
+графа коду: змінені файли зіставляються із символами, яких вони торкаються,
+символи — зі зв’язаними компонентами, а когорти впорядковують за радіусом
+впливу. Когорта несе в собі скерований порядок читання, діаграми та інсайти,
+а не є пласким списком файлів.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Цю картину формують два правила чесності. Ключі когорт виводяться зі вмісту й
+лишаються стабільними під час push, тож зауваження та поступ перевірки
+переживають rebase або force-push, а не осиротіють. А коли в репозиторії немає
+індексу коду, групування відкочується до звичайних шляхів і прямо про це
+повідомляє: запасний варіант ніколи не вдає семантичну впевненість.
 
-## Review axes and gates
+## Осі та гейти перевірки
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Поряд із зауваженнями рецензентів перевірка накопичує **результати осей**:
+шість осей двох видів.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Вісь                      | Вид           | Звідки береться                                  |
+| ------------------------- | ------------- | ------------------------------------------------ |
+| `correctness`, `security` | На токенах    | Власні зауваження рецензентів                    |
+| `testGap`                 | На токенах    | Зауваження рецензентів                           |
+| `visual`, `apiContract`   | Детерміновано | Обчислюється без витрат токенів                  |
+| `performance`             | Детерміновано | Лише enum — ніщо в продукті не обчислює результат |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Вердикт осі — `pass`, `warn`, `fail`, `partial` або `unavailable`, і лише
+`pass` чи `warn` проходять гейт. Розрізнення між `fail`, `partial` та
+`unavailable` несе навантаження: вісь під гейтом, яка не змогла завершитися
+або взагалі не запустилася, утримує загальний вердикт, а не пропускає його.
+**Відсутність доказів ніколи не перетворюється на зелений гейт.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Деякі осі навмисно дорадчі. Вісь тестових прогалин, виведена з когорт, не
+бачить покриття dependency injection чи фабрик: неіндексований репозиторій із
+ґрунтовним набором тестів і репозиторій без тестів узагалі виглядають звідти
+однаково, тож стверджувати будь-що з цього було б брехнею; вона показується на
+панелі, але не керує гейтом. Осі на токенах дорадчі, бо пріоритети зауважень
+уже визначають вердикт, і повторне застосування до них гейта дало б подвійний
+облік.
 
-## The verdict
+## Вердикт
 
-The finalizer computes the verdict over the findings with status `open` or
+Фіналізатор обчислює вердикт за зауваженнями зі статусом `open` або
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- будь-яке зауваження P0 із упевненістю ≥ 0.7 → **Block**
+- інакше, будь-яке P0 (із низькою впевненістю) або будь-яке P1 → **Hold**
+- інакше → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Вердикт несе сукупну впевненість, виведену з розкиду впевненостей, що його
+склали: згода її підвищує, розходження — знижує.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Узагальнення провідного (CEO) агента — це редакторський прохід, а не повторний
+перелік: написана від руки друга копія зауважень — саме те, що розходиться зі
+справжньою. Дублікати зауважень знижують, а не повторюють: кількох рецензентів
+навмисно наводять на один diff із навмисно перекривними зонами
+відповідальності, тож той самий дефект, що доходить до фіналізатора тричі, —
+це система, яка працює; а публікація його тричі — це система, яка просочує
+власну архітектуру у вхідні читача. Під час повторної перевірки зауваження
+знімають відбитки й порівнюють із попереднім раундом, тож на поверхню виходить
+саме дельта.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Зрештою долучаються осі, і вони можуть лише зробити вердикт **суворішим**: вісь
+під гейтом, яка зазнала невдачі, примусово дає Block — зауваження не можуть її
+переважити — а вісь під гейтом, яка не змогла завершитися, примусово дає
+щонайменше Hold.
 
-## Publishing stays with you
+## Публікація залишається за вами
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Конвеєр навмисно не публікує на GitHub; публікація проходить через гейт
+користувача, тож перевірка ніколи не опублікується двічі. Коли ви натискаєте
+**Опублікувати на GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Надсилається одна перевірка GitHub. Зауваження, уже вирішені або відхилені,
+  пропускаються. Кнопка публікує кожне зауваження, що лишилося відкритим
+  (`selection: all_open`). Інструмент MCP `publish_review_to_github` усе ще
+  типово публікує лише зауваження, підтверджені колегами (`consensus`).
+- Зауваження, прив’язані до файлу й рядка, стають вбудованими коментарями; усе
+  інше згортається в тіло підсумку, і кожен несе приписку «— Control Center AI
+  review», щоб джерело було однозначним.
+- Якорі повторно звіряють із _поточним_ diff PR під час публікації. Коментар до
+  коду, який уже переписали, найдужче руйнує довіру з усього, що може залишити
+  рецензент; якщо GitHub усе ж відхиляє вбудований якір, усю перевірку
+  надсилають заново, згорнувши кожне зауваження в тіло, щоб нічого не зникло
+  нишком.
+- Вердикт **Block** надсилається як `REQUEST_CHANGES`; **Hold** — як `COMMENT`;
+  **Ship** — як `APPROVE` з кнопки (`approve_on_ship: true`). Інструмент MCP
+  лишає Ship як `COMMENT`, доки ви не передасте `approve_on_ship`.
+- Перевірку публікують під ідентичністю застосунку сервера. Хто натиснув
+  «Опублікувати на GitHub», записують для рольового гейта й журналу аудиту; це
+  не автор на GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/uk-UA/керівництво/поняття/обмеження/).
+Публікація оголошує клас дії `prPublish`, тож контрольна точка обмежень
+пропускає її через гейт, як і будь-яку змінювальну дію: типово вона запитує
+підтвердження, а коли жодного затверджувача не під’єднано — безпечно
+відмовляє. Див. [Обмеження](/uk-UA/керівництво/поняття/обмеження/).
 
-## What a reviewer may do
+## Що може робити рецензент
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Агенти-рецензенти працюють у режимі `review`: пісочниця лише для читання та
+дібраний список дозволених інструментів, що охоплює зауваження, коментарі,
+тікети й взаємне рецензування, — але жодних змін. Рецензент не може виправити
+код, який критикує; він може долучити запропоноване виправлення, яке застосує
+людина. Повідомлення про відмову цього режиму підказує агенту, який усе ж
+намагається діяти, завершити перевірку й дати користувачеві діяти за
+опублікованим підсумком.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/) — the policy engine that gates publishing
-- [Modes](/uk-UA/керівництво/поняття/режими/) — what `review` mode changes for an agent
-- [Pipelines and automation](/uk-UA/керівництво/поняття/конвеєри/) — the engine the review runs on
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/) — where the isolated worktree comes from
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/) — рушій політик, що керує гейтом публікації
+- [Режими](/uk-UA/керівництво/поняття/режими/) — що режим `review` змінює для агента
+- [Конвеєри та автоматизація](/uk-UA/керівництво/поняття/конвеєри/) — рушій, на якому працює перевірка
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/) — звідки береться ізольований worktree
 
-## Related guides
+## Пов’язані практичні посібники
 
-- [Use AI-powered review](/uk-UA/керівництво/практичні-посібники/ші-перевірка/) — run a review and publish it
-- [Dispatch reviewer agents](/uk-UA/керівництво/практичні-посібники/запускати-рецензентів/) — choose the reviewers yourself
-- [Review compute](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/) — cohorts, axes and diffs
+- [Використовувати ШІ-перевірку](/uk-UA/керівництво/практичні-посібники/ші-перевірка/) — запустіть перевірку та опублікуйте її
+- [Запускати агентів-рецензентів](/uk-UA/керівництво/практичні-посібники/запускати-рецензентів/) — виберіть рецензентів самі
+- [Обчислення перевірки](/uk-UA/керівництво/практичні-посібники/обчислення-перевірки/) — когорти, осі та diff

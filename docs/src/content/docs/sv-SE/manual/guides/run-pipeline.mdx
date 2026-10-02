@@ -1,68 +1,71 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Kör en pipeline manuellt
+description: Starta en pipelinekörning från körningsväljaren, fyll i dess indata och landa i körningsdetaljerna.
 slug: sv-SE/handbok/how-to-guider/kor-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/).
+Den här guiden handlar om att starta en körning för hand. För att följa en,
+läsa stegutdata och återhämta dig från ett fel, se
+[Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/).
 
-## Start a run
+## Starta en körning
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Klicka på **Pipelines** i arbetsytans sidofält.
+2. Tryck på **Kör pipeline** i sidhuvudet. Du hamnar i körningsväljaren
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Välj en mall i vänsterlisten. Varje kort visar mallens namn, dess beskrivning
+   och om den tar indata.
+4. Fyll i indataformuläret till höger. Obligatoriska fält blockerar knappen tills
+   de har ett värde; en mall utan indata säger det.
+5. Tryck på **Kör pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Du hamnar på körningens detaljsida, med tidslinjen och grafduken i realtid.
 
-## If the rail is empty
+## Om listen är tom
 
-The launcher shows a template only when **both** are true:
+Körningsväljaren visar bara en mall när **båda** stämmer:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Mallens strömbrytare är på under **Inställningar → Arbetsyta → Pipelinemallar**.
+- **Tillåt manuell körning** är på i mallredigerarens dialog **Manuell körning** –
+  det är den strömbrytaren som skapar `manual`-triggern som körningsväljaren
+  läser.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Åtta av de tretton inbyggda mallarna levereras inaktiverade:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` och `pr_digest`. Motorn vägrar
+starta en inaktiverad mall, så slå på dess strömbrytare innan du letar efter den
+här.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Det finns ingen **Kör**-åtgärd per mall i mallistan och ingen körningsknapp i
+redigeraren – körningsväljaren är den enda manuella ingången.
 
-## Fill in a repository input
+## Fyll i indata av typen arkiv
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Ett indatafält av typen **Arkiv** visar en väljare över arbetsytans registrerade
+repos. När du väljer ett fylls `repo_id`, `repo_local_path`, `repo_full_name` och –
+när repot har en GitHub-fjärr – `repo_owner` och `repo_name` i körningens
+nyttolast, så att nedströms steg kan läsa det de behöver.
 
-## Watch it run
+## Följ körningen
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Körningens detaljsida har tre delar: en metarad (starttid, aktiv varaktighet,
+stegförlopp, en felbanner, **Försök igen** och **Ta bort**), en hopfällbar
+tidslinje med varaktighet och kostnad per steg samt grafduken. Att välja en nod
+öppnar det stegets detaljpanel.
 
-[Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
+tar upp allt detta, inklusive hur du läser ett pausat steg och vad du gör när ett
+misslyckas.
 
-Every run you start from the app is a real one.
+Varje körning du startar från appen är en riktig körning.
 
-## Related guides
+## Relaterade guider
 
-- [Create a pipeline template](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
-- [Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
-- [Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
+- [Skapa en pipelinemall](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
+- [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
+- [Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Pipelines](/sv-SE/handbok/koncept/pipelines/)
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/)

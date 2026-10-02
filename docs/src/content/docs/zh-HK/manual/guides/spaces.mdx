@@ -1,156 +1,99 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: 使用空間
+description: 建立空間、設定其模式、管理參與者與自主程度，並開啟對話與討論串。
 slug: zh-HK/手冊/操作指南/空間
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+本指南說明如何使用空間。**空間**是 Control Center 中的訊息介面：一個以工作區為範圍的房間，有一名或多名參與者（你及／或代理），並為每個建立時所對應的程式庫擁有一份寫入時複製 worktree。
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+一對一和多名代理的房間都只是空間，差別僅在於參與者的多寡。唯一的例外是代理彼此對話時所開啟的空間——見下文[代理對代理的空間](#代理對代理的空間)。
 
-## Create a space
+## 建立空間
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. 前往**空間**
+2. 點擊「空間」標題旁的 **+** 按鈕
+3. 為它取一個**名稱**——必填。名稱留空會被拒絕；對話框會保持開啟
+4. 可選擇從工作區加入代理
+5. 當工作區有任何程式庫時，選擇這個空間要為哪些程式庫佈建 worktree。預設會全部選取；取消選取每一個程式庫會建立一個甚麼都沒有檢出的空間
+6. 確認
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+空間以工作區為範圍：你只會看到目前工作區的代理，而空間永遠不會呈現另一個工作區的資料。
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/zh-HK/手冊/概念/代理模型/#repo-scoped-skills).
+每個程式庫都會檢出至該空間內的 `repos/<name>/`。隨附自身代理技能的程式庫，會把這些技能提供給在其中工作的代理——同一時間只會有一套程式庫的技能，代理轉到別處時便會替換。在輸入框中，你可以用 `/skill:<repo>:<name>` 觸達其中任何一項。參見[以程式庫為界的技能](/zh-HK/手冊/概念/代理模型/#repo-scoped-skills)。
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+這個介面位於 `/workspaces/<id>/spaces`，而單一空間位於 `/workspaces/<id>/spaces/<spaceId>`。
 
-## Set the space's mode
+## 設定空間的模式
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+新空間會以預設模式開始。請從輸入框工具列最左側的**模式下拉選單**更改——不是從建立對話框（它沒有模式欄位），也不是從空間標頭。
 
-| Mode            | Effect                                                                                                |
+| 模式            | 效果                                                                                                |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **代理**       | 完整存取權。預設值；內部為 `chat`，在下拉選單中標示為「代理」                         |
+| **計劃**        | 只讀與研究；交付物是一份具型別的計劃                                               |
+| **編排** | 只讀與研究，外加一個 `propose_orchestration` 動詞；計劃只在你核准後才執行 |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab 可在計劃與代理模式之間切換，而毋須開啟下拉選單。
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+第四種模式 **審查** 確實存在，但下拉選單並不提供——它會自動套用至 PR 審查空間。
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+模式儲存在空間上，因此同一個代理可以在一個空間處於計劃模式，而在另一個空間處於代理模式。空間內的每則對話都共用該空間的模式。
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[留意強制執行徽章]
+當空間的代理在無法強制執行你所選模式的配接器上執行時，模式下拉選單旁會出現一個徽章。只有 Control Center 的內建運行器會篩選工具介面並為每次呼叫把關；Claude Code 和 ACP 配接器只會把模式當作一項請求收到，它們的運行器可能遵循，也可能不遵循。沒有徽章的意思是「未作出任何聲稱」，而不是「已驗證安全」。
 :::
 
-See [Modes](/zh-HK/手冊/概念/模式/) for the full model.
+完整模型參見[模式](/zh-HK/手冊/概念/模式/)。
 
-## Manage participants and per-agent autonomy
+## 管理參與者與個別代理的自主程度
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+點擊空間標頭中的人物圖示，開啟**管理參與者**。對於空間中已有的每個代理，你可以：
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- 將它移出空間
+- 為它設定在此空間的**自主程度**：**預設**、**僅提出建議**、**經核准後行動**或**自由行動**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+自主程度旋鈕按每個（空間、代理）分別設定，因此你在某個房間信任的代理，可以在另一個房間被限制為僅提出建議。
 
-## React to a message
+## 對訊息表達反應
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+將游標移到訊息上，然後點擊微笑圖示，即可開啟表情反應面板。它是一組固定的六款：👍 👎 🎉 ❤️ 👀 ✅。沒有自由的表情符號選擇器——點按其中一款就會為你切換它，而彙總後的晶片會出現在訊息下方。
 
-## Open a conversation
+## 開啟對話
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+一個空間可以同時承載多則對話，而它們是平級對等的——沒有主要的一則。空間永遠會保留至少一則進行中的對話：你不能封存最後一則作用中的對話，而開啟一個尚未有任何對話的空間，會建立一則未命名的常設對話。
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+對話會顯示為編輯器分頁，而當超過一則時，也會在側邊欄中顯示為空間底下的巢狀列。**新對話**位於編輯器的新增分頁選單中，會建立一則未命名的對話，且不會提示輸入標題——標題模型會依第一則訊息為它命名。用它來以同一個代理和 worktree 執行並行工作。
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+每則對話都保有自己的訊息記錄與代理工作階段，同時共用該空間的 worktree 及其模式。關閉分頁會將它隱藏；**封存對話**（側邊欄列或聊天分頁的右鍵選單）只會封存該則對話。
 
-## Start a thread
+## 開始討論串
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+將游標移到任何訊息上，然後選擇**開始討論串**。這會開啟一則錨定於該訊息的對話：錨點會以一行內容播下新對話代理上下文的種子，而上層對話的歷史**不會**被複製。
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+討論串一旦有回覆，它所依附的訊息下方就會長出一列——發言者的頭像、回覆數，以及最後一則回覆的時間。那一列就是回去的路：點擊它會開啟（或聚焦）該討論串的分頁。這是討論串在其分支出來的訊息流中留下的唯一痕跡，這也是它存在的原因。
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+討論串的分頁標題為 `Thread: <name>`，並帶有分支圖示，因此同一個空間上的兩個分頁永遠不會彼此混淆。
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+討論串永遠不會巢狀——錨定到已經位於某個討論串內的訊息會被拒絕。對話標頭會連結回錨點訊息。刪除錨點訊息會刪除該討論串，而封存上層對話不會阻擋它既有的討論串。
 
-## Read state
+## 讀取狀態
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+已讀標記以空間為範圍，而不是以對話為範圍：開啟空間中任何一則對話都會清空整個房間。未讀仍會彙總空間的所有對話，包括討論串。當對話列在空間底下時，未讀圓點會落在有未見工作的那則對話上，而不是上層列上。
 
-## Agent-to-agent spaces
+## 代理對代理的空間
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+代理為了彼此對話而開啟的空間，會在側邊欄中獨立歸於**代理**之下，預設收合並以淡化方式呈現。它們永遠不會增加你的未讀徽章——代理之間的閒聊在設計上就是安靜的，而不是靠一個你得自己去找的設定。
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+空間的種類是五個值之一：`topic`（你建立的任何空間的預設值）、`agentPeer`、`system`（由管線管理）、`pr`（當 PR 介面需要 worktree 錨點時建立，並在它有訊息之前從側邊欄隱藏），以及 `slack`（由聊天橋接為 Slack 討論串或機械人私訊建立，並視作一般的人類對話）。
 
-## Related guides
+## 相關指南
 
-- [Chat with an agent](/zh-HK/手冊/操作指南/與代理聊天/)
-- [@-mention agents](/zh-HK/手冊/操作指南/提及代理/)
-- [Use plan mode](/zh-HK/手冊/操作指南/計劃模式/)
+- [與代理聊天](/zh-HK/手冊/操作指南/與代理聊天/)
+- [@ 提及代理](/zh-HK/手冊/操作指南/提及代理/)
+- [使用計劃模式](/zh-HK/手冊/操作指南/計劃模式/)
 
-## Related concepts
+## 相關概念
 
-- [Modes](/zh-HK/手冊/概念/模式/)
-- [Chat bridges](/zh-HK/手冊/概念/聊天橋接/): how a Slack thread becomes a space
+- [模式](/zh-HK/手冊/概念/模式/)
+- [聊天橋接](/zh-HK/手冊/概念/聊天橋接/)：Slack 討論串如何變成空間

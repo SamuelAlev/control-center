@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: ایجنٹ ماڈل
+description: Control Center میں ایجنٹ دراصل کیا ہے، اس کے کون سے فیلڈ رویہ بدلتے ہیں، اور جس اڈاپٹر پر وہ چلتا ہے وہ کیسے طے کرتا ہے کہ کیا نافذ کیا جا سکتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## ایجنٹ کیا ہے؟
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+ایجنٹ ایک نامزد فریق ہوتا ہے جس کی ایک شخصیت، مہارتوں کا ایک مجموعہ، چلانے کے لیے ایک اڈاپٹر اور قابلیتوں کا ایک مجموعہ ہوتا ہے۔ ایجنٹ اُسی معنی میں پرنسپل ہیں جس معنی میں انسان ہیں: وہ پیغامات لکھتے ہیں، ٹکٹوں کے مالک ہوتے ہیں، جائزے چھوڑتے ہیں اور اُسی روسٹر پر نظر آتے ہیں۔ کام دراصل وہی کرتے ہیں۔
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+ہر ایجنٹ کا تعلق ٹھیک ایک ورک اسپیس سے ہوتا ہے۔ یہ ایک سخت ناقابلِ تغیر اصول ہے — `agent.workspaceId` غیر null ہے، ایجنٹ کی اپنی ورک اسپیس ہی طے کرتی ہے کہ اس کے ریکارڈ کس ڈیٹا بیس فائل میں جائیں گے، اور ورک اسپیس کے بغیر ایجنٹ بنانے کی درخواست مسترد کر دی جاتی ہے۔
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+ایجنٹ ایک ڈائریکٹری بھی ہوتا ہے۔ اس کی تعریف ورک اسپیس کی ڈیٹا ڈائریکٹری کے اندر `agents/<slug>/AGENTS.md` پر رہتی ہے، اور اس کی مہارتیں `agents/<slug>/.agents/skills` میں سم لنک ہوتی ہیں۔ ڈیٹا بیس کا ریکارڈ اور فائل ایک ساتھ لکھے جاتے ہیں۔ سیڈنگ ایڈمپوٹنٹ ہے: اگر ایجنٹ کا ریکارڈ پہلے سے موجود ہو تو بھی ڈسک پر موجود فائلیں اور مہارت کے لنک دوبارہ لکھے جاتے ہیں۔ پروڈکشن میں اس کا بلانے والا ورک اسپیس کی تخلیق ہے، ہر سرور لانچ نہیں۔
 
-## What an agent carries
+## ایجنٹ کے پاس کیا ہوتا ہے
 
-| Attribute               | What it does                                                                          |
+| خصوصیت | یہ کیا کرتی ہے |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | مختصر slug جیسا شناخت کنندہ (`architect`, `qa`)۔ ساتھ ہی وہ چیز جس کے خلاف `@mentions` حل ہوتے ہیں |
+| `title`                 | انسان کے پڑھنے کے قابل عہدے کا عنوان |
+| `persona`               | آزاد متن میں شخصیت اور رویے کی ہدایات، جو پرامپٹ کے ایک حصے کے طور پر شامل کی جاتی ہیں |
+| `systemPrompt`          | اختیاری اضافی ہدایات، جو "ایجنٹ ہدایات" کے حصے کے طور پر شامل کی جاتی ہیں — یہ جوڑے گئے پرامپٹ کے باقی حصے کی جگہ نہیں لیتیں |
+| `skills`                | مہارتوں کے ناموں کا غیر حساسِ حروف مجموعہ، جو ڈسک پر مہارت کے لنکوں کی صورت میں جھلکتا ہے |
+| `adapterId`             | ایجنٹ کس رنر کو بھیجتا ہے۔ **null ہونے پر بلٹ اِن لوپ پر واپس آ جاتا ہے** |
+| `modelId`               | اُس اڈاپٹر کے اندر کون سا ماڈل |
+| `effort`                | استدلال کی سطح، جو منتخب ماڈل کی اپنی اصطلاحات سے لی جاتی ہے |
+| `contextSize`           | کانٹیکسٹ ونڈو کی اوور رائیڈ |
+| `capabilities`          | اسناد اور اخراج کے فلیگ، جو لانچ کے وقت چیک ہوتے ہیں |
+| `silenceTimeoutMinutes` | خاموشی واچ ڈاگ کے لیے فی ایجنٹ اوور رائیڈ (1–240) |
+| `reportsTo`             | والد ایجنٹ کی id — وہ رپورٹنگ زنجیر جو آرگ چارٹ بناتا ہے |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+یہ سب آپ ترتیبات → ورک اسپیس → ایجنٹس پر ترمیم کرتے ہیں۔ **نیا ایجنٹ** ایک بے نام ایجنٹ بناتا ہے جسے پھر آپ بھرتے ہیں۔
 
-## Skills
+## مہارتیں
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+مہارتیں ایجنٹ ہستی پر غیر حساسِ حروف نام ہوتی ہیں۔ اُن کے ساتھ دو الگ الگ چیزیں ہوتی ہیں:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- نام جوڑے گئے پرامپٹ میں "مہارتیں" کے عنوان کے نیچے درج ہوتے ہیں۔ ہستی کا مجموعہ خود سے بس یہی کرتا ہے — اس پر مبنی کوئی فی مہارت پرامپٹ لائبریری نہیں ہوتی۔
+- ہر نامزد مہارت کی ڈائریکٹری (ورک اسپیس میں `skills/<slug>/SKILL.md`) ایجنٹ کے اپنے فولڈر میں لنک کی جاتی ہے۔ بلٹ اِن ہارنس پر، لنک شدہ مہارتوں کا frontmatter خودکار طور پر سسٹم پرامپٹ میں لوڈ ہو جاتا ہے اور ایجنٹ ضرورت پر کوئی باڈی پڑھتا ہے؛ گفتگو میں `/skill:<name>` ٹائپ کرنے سے وہ باڈی اُس باری کے لیے ایک ہدایت کے طور پر لوڈ ہو جاتی ہے۔
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/مہارتیں-منظم-کریں/).
+باہر سے لائی گئی مہارتیں لانے اور لکھنے کے درمیان ایک ناکامی پر بند ہو جانے والا سپلائی چین اسکین سے گزرتی ہیں — کسی فیصلے کے بغیر کوئی مہارت کا مواد نہ ڈسک تک پہنچتا ہے نہ پرامپٹ تک۔ "باہر" سے مراد وہ GitHub ریپوزٹریز ہیں جنہیں آپ خود مہارت کے ماخذ کے طور پر رجسٹر کرتے ہیں: کوئی منتخب اسٹور نہیں ہے، اس لیے ریپوزٹری کا اپنا میٹا ڈیٹا (اس کی تفصیل، اس کے اسٹارز، مہارت کا نام) ناقابلِ اعتماد ڈسپلے ڈیٹا ہے اور اسکین کا فیصلہ ہی واحد حفاظتی اشارہ ہے۔ کوئی بھی انسٹال مہارت کی پوری ڈائریکٹری لے آتا ہے، اسے `skills-lock.json` میں اُس کمیٹ پر پن کرتا ہے جہاں سے وہ آیا، اور بعد میں کوئی اپ ڈیٹ کچھ بھی بدلنے سے پہلے اُسی گیٹ سے دوبارہ گزرتا ہے۔ طریقہ کار [مہارتیں انسٹال اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/مہارتیں-منظم-کریں/) میں موجود ہے۔
 
-### Repo-scoped skills
+### ریپو کے دائرہ کار کی مہارتیں
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+کوئی ریپو اپنی مہارتیں روایتی مقامات میں سے کسی میں بھی بھیج سکتا ہے (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`)۔ ایک اسپیس ہر لنک شدہ ریپو کو `repos/<name>/` کے نیچے ساتھ ساتھ چیک آؤٹ کرتی ہے، مگر ایجنٹ ایک وقت میں ایک ریپو میں کام کرتا ہے — اس لیے وہ **صرف اُسی ریپو** کی مہارتیں ساتھ رکھتا ہے، اور منتقل ہونے پر وہ بدل جاتی ہیں۔
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+کون سا ریپو فعال ہے یہ ایجنٹ کے چھونے والی فائلوں سے اخذ کیا جاتا ہے: `repos/<name>/` کے نیچے فائل لکھنے سے وہی فعال ریپو بن جاتا ہے، جبکہ محض ریپوز کے پار پڑھنے سے ایسا نہیں ہوتا، اس لیے کسی ہم مرتبہ سروس میں کسی سمبل کا پیچھا کرنا کسی کام کے نیچے سے مجموعہ نہیں بدلتا۔ ایک ہی ریپو والی اسپیس پر یہ جواب پہلی باری سے پہلے ہی معلوم ہوتا ہے۔
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+یہ دائرہ بندی کانٹیکسٹ بجٹ کا فیصلہ ہے۔ مہارت کا انڈیکس ہر باری پر پرامپٹ میں رہتا ہے جبکہ باڈیز نہیں، اس لیے ہر ریپو کی مہارتیں ایک ساتھ درج کرنا مسلسل ٹوکن خرچ کرتا ہے — اور ایک سروس کی `testing` مہارت فعال طور پر گمراہ کرتی ہے جب کام کسی دوسری جگہ ہو۔ یہی استدلال بتاتا ہے کہ ایجنٹ کے انڈیکس میں ایک ریپو کیوں ہوتا ہے مگر کمپوزر کا دائرہ اُس طرح بند نہیں: مہارت کا نام خود دینا ایک واضح عمل ہے، اس لیے `/skill:<repo>:<name>` اسپیس کے کسی بھی ریپو تک پہنچ جاتا ہے۔
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+ریپو کی مہارتیں **ہر** اڈاپٹر کے لیے لوڈ ہوتی ہیں، صرف بلٹ اِن ہارنس کے لیے نہیں۔ فعال ریپو کی مہارتیں ایجنٹ کی ورکنگ ڈائریکٹری میں تیار کر دی جاتی ہیں، جو وہی راستہ ہے جسے Claude Code پہلے ہی اسکین کرتا ہے؛ وہی انڈیکس `AGENTS.md` میں تشکیل دیا جاتا ہے جسے بلٹ اِن ہارنس پڑھتا ہے۔ ریپو کی مہارتیں یہ سب ہونے سے پہلے وہی ناکامی پر بند ہو جانے والا اسکین پاس کرتی ہیں جو ایک انسٹال شدہ مہارت کرتی ہے — چیک آؤٹ کیا گیا ریپو کلون شدہ مواد ہے، اور اس کا frontmatter ایک پرامپٹ تک پہنچتا ہے۔
 
-## Capabilities
+## قابلیتیں
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+قابلیتیں یہ طے کرتی ہیں کہ کسی رن کو _دیا کیا جاتا ہے_، نہ کہ اس کا فائل سسٹم اُسے کیا چھونے دیتا ہے۔ اسناد کا بروکر لانچ کے وقت انہیں چیک کرتا ہے: اگر کوئی قابلیت بند ہو تو متعلقہ ٹوکن بالکل انجیکٹ ہی نہیں ہوتا۔
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **ریپو میں پش** — `git push` کے لیے استعمال ہونے والے GitHub ٹوکن کے انجیکشن کو کنٹرول کرتی ہے۔
+- **GitHub API** — `GH_TOKEN` کے انجیکشن اور api.github.com تک اخراج کو کنٹرول کرتی ہے۔
+- **ٹکٹنگ** — ٹکٹنگ فراہم کنندہ کی API کلید اور اس کے ڈومینز تک اخراج کو کنٹرول کرتی ہے۔
+- **نیٹ ورک اخراج** — من مانی آؤٹ باؤنڈ درخواستیں۔
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+ایک رن انہیں ایجنٹ کے اپنے ریکارڈ سے حل کرتا ہے۔ جب ایجنٹ کے پاس کوئی نہ ہو تو ایک مقررہ قدامت پسند ڈیفالٹ لاگو ہوتا ہے: تینوں اسناد والے فلیگ بند، نیٹ ورک اخراج کھلا۔ ایجنٹ کے فارم کا "سینڈ باکس اجازتیں" ٹوگل اُس فال بیک اور ایجنٹ پر محفوظ ایک حسبِ ضرورت مجموعے کے درمیان انتخاب کرتا ہے۔
 
-See [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) for the other half of the story, including what is and is not enforced at the filesystem level.
+کہانی کا دوسرا نصف، بشمول یہ کہ فائل سسٹم کی سطح پر کیا نافذ ہوتا ہے اور کیا نہیں، [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) میں دیکھیں۔
 
-## The adapter decides what can be enforced
+## اڈاپٹر طے کرتا ہے کہ کیا نافذ ہو سکتا ہے
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+ایجنٹ پر سب سے زیادہ اثر رکھنے والا واحد فیلڈ اس کا اڈاپٹر ہے، کیونکہ اڈاپٹر کا ٹرانسپورٹ طے کرتا ہے کہ Control Center کی پالیسی کا کتنا حصہ واقعی نافذ ہو سکتا ہے۔
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| ٹرانسپورٹ | اڈاپٹرز | Control Center کیا نافذ کرتا ہے |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| بلٹ اِن ہارنس | Control Center (built-in) | سب کچھ۔ ٹول کی سطح موڈ سے _بنائی_ جاتی ہے، اس لیے نامنظور ٹول صرف مسترد نہیں ہوتا بلکہ نظر ہی نہیں آتا؛ ہر کال منظوری کے گیٹ اور ایکشن گارڈریلز سے گزرتی ہے؛ مکمل ہونے کا معاہدہ ایسے رن کو جو اپنی مطلوبہ تیاری کے بغیر ختم ہو، پہلے اکسا کر پھر ناکام کر سکتا ہے |
+| Claude CLI | Claude Code | صرف وہی `mcp__*` ٹولز جو اسے دیے جاتے ہیں۔ Claude کے اپنے read، write، edit اور shell ٹولز اس کے پراسیس میں رہتے ہیں اور نظر آئے بغیر چلتے ہیں — اور اسے `--dangerously-skip-permissions` کے ساتھ لانچ کیا جاتا ہے، کیونکہ غیر متعامل `claude -p` ورنہ اپنے ہی پرامپٹ پر ہمیشہ کے لیے رکا رہے گا |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+حقیقتاً، **صرف بلٹ اِن ہارنس سب ایجنٹس، رن کے دوران اسٹیرنگ، توقف اور دوبارہ آغاز (اور اسی لیے ٹیک اوور) اور ساختی موڈ نفاذ کی حمایت کرتا ہے۔** Claude Code کو ان میں سے کچھ بھی نہیں ملتا۔
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[OS سینڈ باکس ایک فلور ہے، موڈ نافذ کرنے والا نہیں، اور ہر ہوسٹ پر موجود نہیں]
+اوپر کا میٹرکس اسی بارے میں ہے کہ Control Center کیا _دیکھ اور گیٹ کر_ سکتا ہے۔ اس کے نیچے، `cc_server` جہاں موجود ہو وہاں Claude Code CLI کو ہوسٹ کے OS سینڈ باکس میں لپیٹ دیتا ہے — macOS پر Seatbelt، Linux اور WSL2 پر bubblewrap — چنانچہ کوئی نظر نہ آنے والا `rm` یا نظر نہ آنے والی write بھی OS کی طرف سے محدود رہتی ہے۔ **Windows پر کوئی بیک اینڈ بالکل نہیں** اور Linux یا WSL2 پر `bwrap` اور `socat` کے بغیر جانچ کچھ نہیں بتاتی، اس لیے وہاں ایسے رنز ماحول کی صفائی، بروکر شدہ اسناد، اُن کالوں پر گارڈریلز جنہیں Control Center دیکھ سکتا ہے، اور گفتگو کے اپنے worktree (جہاں `rift` موجود ہو وہاں copy-on-write؛ Windows پر `git worktree`) پر واپس چلے جاتے ہیں۔
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/).
+سینڈ باکس جو چیز نہیں ہے وہ ایک _گیٹ_ ہے۔ یہ محدود کرتا ہے کہ کوئی پراسیس کہاں پڑھ، لکھ اور جڑ سکتا ہے — صرف پڑھنے کا موڈ اس تک پہنچتا ہے، بطور صرف پڑھنے کے بائنڈ ماؤنٹس — مگر یہ کسی کال کو روک نہیں سکتا، منظوری نہیں مانگ سکتا، اور بعد میں نہیں بتا سکتا کہ CLI نے کیا کرنے کی کوشش کی۔ یہی چیز، اور اوپر بتائی گئی چار قابلیتیں، وہ ہیں جو بلٹ اِن ہارنس کے پاس ہیں اور باقیوں کے پاس نہیں۔ [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) دیکھیں۔
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+جس ایجنٹ کے پاس **کوئی** اڈاپٹر نہ ہو وہ **Control Center (بلٹ اِن)** پر واپس چلا جاتا ہے — سرور کے اندر کا لوپ، اس لیے انسٹال کرنے کے لیے کوئی CLI نہیں — اور اس کا رن لاگ `cc-harness` درج کرتا ہے۔ ہر سیڈ کیا گیا ایجنٹ بغیر اڈاپٹر اور بغیر ماڈل بنایا جاتا ہے، اس لیے ایک نئی ورک اسپیس کے پانچ ایجنٹ سب وہیں چلتے ہیں، Anthropic کے ڈیفالٹ ماڈل پر، جب تک آپ فی ایجنٹ اڈاپٹر اور ماڈل مقرر نہیں کرتے۔ آن بورڈنگ میں "ڈیفالٹ اڈاپٹر" کا انتخاب ایک کلائنٹ طرفہ ترجیح ہے جسے سرور کبھی نہیں پڑھتا اور یہ پہلے سے بنے ایجنٹس پر بعد ازاں لاگو نہیں ہوتی۔
 
-## Where agents come from
+## ایجنٹ کہاں سے آتے ہیں
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **ورک اسپیس کے ساتھ سیڈ ہوتے ہیں۔** ہر ورک اسپیس — صرف پہلی ہی نہیں — کو ایک CEO اور اس کے تحت چار ماہرین (`qa`, `architect`, `engineer`, `librarian`) ملتے ہیں، جو ورک اسپیس بنتے وقت پس منظر میں ایڈمپوٹنٹ طور پر بنائے جاتے ہیں۔ [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) دیکھیں۔
+- **ہاتھ سے شامل کیے جاتے ہیں** ترتیبات → ورک اسپیس → ایجنٹس پر۔ کسی ایجنٹ سے ساتھی بھرتی کرنے کو کہنے سے کوئی ریکارڈ نہیں بنتا؛ وہی اسکرین استعمال کریں۔
 
-## Live state
+## لائیو حالت
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+ایجنٹ کا کوئی محفوظ اسٹیٹس کالم نہیں ہوتا۔ اس کی لائیو حالت ہر بار پڑھے جانے پر اس کے تازہ ترین رن لاگز سے اخذ کی جاتی ہے:
 
-| State      | Meaning                                                              |
+| حالت | مطلب |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | کوئی رن لاگ موجود نہیں |
+| `running`  | کم از کم ایک رن اس وقت جاری ہے |
+| `failed`   | تازہ ترین رن میں خرابی آئی، یا اس کی فعالیت ناکام یا مردہ ہے |
+| `blocked`  | تازہ ترین رن کی فعالیت بلاک، رکی ہوئی یا لوپ میں ہے |
+| `idle`     | باقی سب کچھ — ایجنٹ پہلے چل چکا ہے اور اس وقت کچھ بھی پرواز میں نہیں |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+دو مزید حالتیں، `queued` اور `succeeded`، گفتگو کے رن ٹری میں انفرادی رنز کے لیے موجود ہیں؛ روسٹر انہیں کبھی پیدا نہیں کرتا، کیونکہ مکمل شدہ رن کا سبز ہونا رن کے بارے میں ایک حقیقت ہے، ایجنٹ کے بارے میں نہیں۔
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/).
+موجودگی کا روسٹر سرور کی طرف سے لائیو رن ایونٹس — سوچ رہا ہے، چل رہا ہے، منظوری پر بلاک، مکمل — سے ترکیب کردہ ایک متوازی، موٹی تصویر دکھاتا ہے، اور اسی وجہ سے ایجنٹ انسانوں کے ساتھ نظر آتے ہیں۔ [ملٹی پلیئر](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/) دیکھیں۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): what happens when an agent is actually run
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): what constrains a run today
-- [Agent configuration reference](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/): the full field list
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): جب ایجنٹ واقعی چلایا جاتا ہے تو کیا ہوتا ہے
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/): فی گفتگو وہ ترتیب جو ایجنٹ کے ٹول کی سطح کو تشکیل دیتی ہے
+- [ملٹی پلیئر](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): ایجنٹ بحیثیت پرنسپل، موجودگی اور خود مختاری کا ڈائل
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): آج کسی رن کو کیا محدود کرتا ہے
+- [ایجنٹ کنفیگریشن حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/): مکمل فیلڈ فہرست

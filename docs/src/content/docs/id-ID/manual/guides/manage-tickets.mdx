@@ -1,39 +1,41 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Buat dan kelola tiket
+description: Buat tiket, gerakkan melalui siklus hidupnya, beri label dan tautkan, serta catat siapa pemilik pekerjaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-tiket
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Panduan ini menunjukkan cara membuat dan mengelola tiket.
 
-## Create a ticket
+## Buat tiket
 
-### From the UI
+### Dari UI
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Klik **Tiket** di bilah sisi ruang kerja.
+2. Tekan **Tiket baru**.
+3. Isi:
+   - **Judul** — ringkasan singkat. Hanya kolom ini yang wajib diisi.
+   - **Deskripsi** — markdown, dengan bilah alat pemformatan.
+   - **Status** — **To do** (default) atau **Backlog**. Status yang sudah
+     dimulai dan status terminal dicapai melalui siklus hidup, bukan saat
+     pembuatan.
+   - **Prioritas** — tidak ada, mendesak, tinggi, sedang, atau rendah.
+   - **Penerima tugas** — diri Anda sendiri atau agen mana pun di ruang kerja.
+   - **Proyek** — pengelompokan opsional.
+4. Tekan **Buat**, atau aktifkan **Buat lagi** lebih dulu agar dialog tetap
+   terbuka untuk entri cepat.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Tidak ada pemilih penyedia di dialog ini. Tiket dibuat pada penyedia tiket aktif
+ruang kerja.
 
-### From an agent
+### Dari agen
 
-Ask an agent in a space:
+Minta agen di sebuah space:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Buat tiket untuk memperbaiki masalah timeout login pada koneksi lambat.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Agen itu memanggil alat MCP `create_ticket`. Prioritas pada alat tersebut berupa
+**bilangan bulat**, bukan nama:
 
 ```
 create_ticket(
@@ -44,21 +46,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Nilai | Prioritas |
+| ----- | --------- |
+| `0`   | Tidak ada |
+| `1`   | Mendesak  |
+| `2`   | Tinggi    |
+| `3`   | Sedang    |
+| `4`   | Rendah    |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Hanya `workspace_id` dan `title` yang wajib; `description`, `priority`,
+`assignee` (id agen) dan `team_id` bersifat opsional. Alat ini digolongkan
+sebagai penulisan sinkronisasi vendor dan meminta persetujuan Anda sebelum
+dijalankan.
 
-## Update ticket status
+## Perbarui status tiket
 
-Tickets follow this lifecycle:
+Tiket mengikuti siklus hidup berikut:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,130 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` dan `cancelled` bersifat terminal. `cancelled` dapat dicapai
+dari status non-terminal mana pun. `done` dan `failed` dapat dicapai dari
+`inProgress` atau `inReview`; `open` juga dapat berpindah langsung ke `blocked`.
+Pemilih status di UI mencantumkan setiap status kecuali `failed` — agen
+menandainya dengan `fail_ticket`.
 
-To change it, use any of:
+Untuk mengubahnya, gunakan salah satu dari:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- baris **Status** di bilah properti tiket,
+- submenu **Status** pada menu klik kanan tiket di daftar,
+- chip **Status** di bilah mengambang setelah memilih beberapa tiket.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Graf siklus hidup mengikat agen, bukan Anda]
+Setiap perubahan status yang dilakukan dari UI dipaksakan, sepenuhnya melewati
+graf — Anda dapat memindahkan tiket ke status apa pun yang tercantum di pemilih,
+termasuk membuka kembali tiket yang `done`, `failed` atau `cancelled`. Pemilih
+tidak menawarkan `failed` sebagai target. Diagram di atas mengatur agen dan
+otomatisasi: transisi tidak sah yang dicoba oleh alat MCP atau reconciler akan
+dicatat dan diabaikan, bukan diterapkan.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/).
+Perubahan status memancarkan peristiwa domain (`TicketStatusChanged`,
+`TicketCompleted` dan lainnya) yang dapat memicu pipeline. Lihat
+[Siapkan pemicu pipeline](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/).
 
-## Assign a ticket
+## Tetapkan tiket
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Buka tiket.
+2. Di bilah properti, tetapkan **Penerima tugas** — diri Anda sendiri, anggota
+   ruang kerja lain, atau agen.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)).
+:::caution[Menetapkan tidak memulai pekerjaan apa pun]
+Penetapan mencatat kepemilikan dan tidak melakukan hal lain. Penetapan tidak
+membuat space, tidak mengubah status dan tidak mengirim agen mana pun —
+`TicketAssigned` adalah sinyal audit murni tanpa pengirim di baliknya. Agar agen
+mulai bekerja, kirim pesan kepadanya di sebuah space (lihat
+[Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Satu pengecualian: `TicketAssigned` adalah jenis peristiwa yang dapat Anda
+sambungkan ke pemicu pipeline, sehingga templat buatan Anda sendiri dapat
+bereaksi terhadap penugasan.
 :::
 
-## Add labels
+## Tambahkan label
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Label diterapkan secara massal dari daftar tiket, bukan dari satu tiket — bilah
+properti tidak memiliki kontrol label.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Arahkan kursor ke baris di daftar tiket lalu centang kotaknya. Centang
+   sebanyak yang Anda perlukan; bilah mengambang muncul begitu ada yang dipilih.
+2. Di bilah itu, buka chip **Label**.
+3. Pilih sebuah label. Label ditambahkan ke setiap tiket terpilih yang belum
+   memilikinya; label yang sudah ada tidak pernah dihapus. **Hapus label**
+   menghapus semuanya. Pemilih mencantumkan label yang sudah ada di tiket mana
+   pun dalam ruang kerja. Agen dapat menambahkan nama baru melalui
+   `update_ticket` atau `tickets.patch`.
 
-## Link tickets
+## Tautkan tiket
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Relasi berada di kartu **Relasi** tiket pada bilah properti, atau di balik
+**Hubungkan ke** pada menu klik kanan daftar.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Buka tiket dan temukan kartu **Relasi**.
+2. Tekan kontrol tambah di kartu itu dan pilih relasinya:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relasi              | Arti                                        |
+| ------------------- | ------------------------------------------- |
+| **Sub-isu dari…**   | Tiket lainnya adalah induk tiket ini        |
+| **Induk dari…**     | Tiket lainnya adalah anak dari tiket ini    |
+| **Diblokir oleh…**  | Tiket ini diblokir oleh tiket lainnya       |
+| **Memblokir…**      | Tiket ini memblokir tiket lainnya           |
+| **Terkait dengan…** | Simetris, tidak menyiratkan arah            |
+| **Duplikat dari…**  | Tiket ini menduplikasi tiket lainnya        |
 
-3. Pick the target ticket.
+3. Pilih tiket target.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Diduplikasi oleh** muncul di kartu tetapi tidak di pemilih — ini kebalikan dari
+**Duplikat dari** dan ditetapkan dari tiket lainnya. Setiap relasi yang
+tercantum dapat diklik untuk membuka tiket yang ditautkan dan dapat dihapus saat
+kursor diarahkan ke atasnya.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Relasi induk dan sub-isu disimpan pada tiket itu sendiri, bukan sebagai baris
+tautan, sehingga menghapus induk ikut menghapus anak-anaknya (lihat di bawah),
+sedangkan tautan pemblokiran dan keterkaitan tidak.
 
-## Add collaborators
+## Tambahkan kolaborator
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Kolaborator adalah daftar nama pada tiket — siapa yang terlibat dan dalam
+kapasitas apa.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Buka tiket.
+2. Tekan kontrol tambah orang di kartu **Tambah kolaborator**.
+3. Pilih agen.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Ada tiga peran: **assignee**, **collaborator** (default) dan **reviewer**.
+Pemilih di UI hanya mencantumkan agen ruang kerja dan selalu menuliskan peran
+default; manusia dapat muncul sebagai baris tetapi tidak ditawarkan di menu itu.
+Alat MCP `add_ticket_collaborator` menerima `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/id-ID/panduan-pengguna/panduan-praktis/space/).
+Menambahkan kolaborator menulis satu baris dan tidak menerbitkan peristiwa domain
+apa pun; tindakan ini tidak memberikan akses space. Untuk memasukkan agen ke
+dalam percakapan, tambahkan sebagai peserta dari header space — lihat
+[Space](/id-ID/panduan-pengguna/panduan-praktis/space/).
 
-## Delete a ticket
+## Hapus tiket
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Gunakan **Hapus tiket** di bagian bawah bilah properti, di menu klik kanan, atau
+pada aksi hapus di bilah mengambang setelah memilih beberapa tiket.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Penghapusan hanya bersifat lokal]
+Tiket yang berasal dari pelacak eksternal tidak dihapus di sana — tidak ada
+penyedia yang mendukungnya — sehingga tiket itu dapat muncul kembali pada
+sinkronisasi berikutnya. Penghapusan juga berantai: kolaborator tiket dan tiket
+anak mana pun ikut terhapus.
 :::
 
-## Related guides
+## Panduan terkait
 
-- [Delegate work to agents](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
-- [Organize work with projects](/id-ID/panduan-pengguna/panduan-praktis/proyek/)
-- [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
-- [Ticket lifecycle reference](/id-ID/panduan-pengguna/referensi/siklus-hidup-tiket/)
+- [Delegasikan pekerjaan ke agen](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
+- [Atur pekerjaan dengan proyek](/id-ID/panduan-pengguna/panduan-praktis/proyek/)
+- [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
+- [Referensi siklus hidup tiket](/id-ID/panduan-pengguna/referensi/siklus-hidup-tiket/)
 
-## Related concepts
+## Konsep terkait
 
-- [Tickets](/id-ID/panduan-pengguna/konsep/tiket/)
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)
+- [Tiket](/id-ID/panduan-pengguna/konsep/tiket/)
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)

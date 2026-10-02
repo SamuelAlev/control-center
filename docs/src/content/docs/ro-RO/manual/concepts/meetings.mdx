@@ -1,213 +1,232 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Întâlniri și transcriere
+description: Cum înregistrează Control Center un apel, cum îl transcrie și îl diarizează pe server și unde se află singurul pas care părăsește gazda.
 slug: ro-RO/manual/concepte/intalniri
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center poate înregistra un apel și îți poate returna o sinteză curată —
+un rezumat, elemente de acțiune și decizii — cu recunoașterea vorbirii și
+separarea vorbitorilor rulând pe propriul tău hardware. Gândește-te la Granola,
+dar auto-găzduit și legat la același spațiu de lucru în care trăiesc agenții tăi.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Înregistrarea are nevoie de un model vocal și de o repornire a serverului]
+Înregistrarea și dictarea pornesc după ce un model de recunoaștere a vorbirii
+(ASR) se află pe disc **și** serverul a fost repornit. O pornire normală
+instalează forțat modelul selectat (Parakeet TDT 0.6B v3 implicit) în fundal,
+dar serverul rezolvă căile modelelor vocale exact o dată, aproape de începutul
+pornirii — cu minute bune înainte ca descărcarea să se poată termina. După ce
+modelul raportează că este instalat, repornește `cc_server`. Ca să alegi o altă
+variantă, folosește Setări → Server → Modele vocale și de întâlniri — și aceasta
+necesită o repornire.
 :::
 
-## What a meeting is
+## Ce este o întâlnire
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ro-RO/manual/concepte/calendar/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+O **întâlnire** este o sesiune înregistrată și transcrisă. Nu este _același
+lucru_ ca un [eveniment de calendar](/ro-RO/manual/concepte/calendar/): un
+eveniment este un angajament programat, sincronizat din Google, în timp ce o
+întâlnire este ceva ce ai înregistrat efectiv. Cele două pot fi legate, pentru
+că poți porni o înregistrare dintr-un eveniment, dar rămân înregistrări
+distincte.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Fiecare întâlnire este delimitată de spațiul de lucru, ca tot restul din Control
+Center. Întâlnirile înregistrate într-un spațiu de lucru nu apar niciodată în
+altul.
 
-## Where the work happens
+## Unde se desfășoară munca
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+„Pe dispozitiv” este instinctul corect, dar substantivul greșit. Clientul
+captează audio și transmite cadre PCM16 la 16 kHz către **mașina care rulează
+`cc_server`**. Acea gazdă face tot restul: scrie fișierele WAV pe canal în
+`<dataDir>/meetings/<meetingId>/`, transcrie într-un izolat de worker, filtrează
+ecoul și diarizează ulterior. Pe un desktop autonom, acea gazdă este aceeași
+mașină. Îndreptat către un server remote, nu mai este — așa că „nimic nu
+părăsește laptopul meu” este adevărat doar când serverul este laptopul tău.
 
-There is one further exception and it is the important one.
+Există o excepție suplimentară și este cea importantă.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Rezumatul părăsește gazda]
+Transcrierea și notele tale sunt trimise către orice furnizor de modele către
+care este configurat agentul de rezumare. Pentru orice furnizor cloud, asta
+înseamnă că transcrierea completă ajunge la API-ul acelui furnizor. Dacă o
+transcriere nu trebuie să părăsească gazda, îndreaptă agentul de rezumare către
+un endpoint local (Ollama, LM Studio sau alt server local).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Tot ce se întâmplă înainte de rezumat — captare, transcriere, anulare a ecoului,
+diarizare, potrivirea amprentelor vocale — rulează pe server fără niciun apel de
+rețea.
 
-## Which models ship
+## Ce modele sunt incluse
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Modelele de **embedding, diarizare și vorbire (ASR)** sunt instalate forțat la
+prima pornire (omise într-o demonstrație), așa că separarea vorbitorilor și
+înregistrarea există fără să treci pe la setări. ASR rămâne totuși
+**selectabil** — are câteva sute de megabaiți, iar în selector sunt incluse
+patru variante. Vorbirea are nevoie totuși de o repornire după acea primă
+descărcare, pentru că transcriitorul își rezolvă modelul înainte ca descărcarea
+să se poată termina.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Cele patru intrări din selector, care diferă prin dimensiune, acoperire
+lingvistică și precizie:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — multilingv, implicitul recomandat (~600 MB)
+- Parakeet TDT 0.6B v2 — engleză (~480 MB)
+- Whisper large-v3-turbo — multilingv (~626 MB)
+- Whisper base.en — doar engleză, micul implicit istoric (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Modelele sunt singurele artefacte pe care serverul le descarcă la rulare; fiecare
+bibliotecă nativă este inclusă în pachet.
 
-## How capture works
+## Cum funcționează captarea
 
-A meeting records **two audio channels at once**:
+O întâlnire înregistrează **două canale audio simultan**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Tu („eu”)**: microfonul tău.
+- **Ceilalți („ei”)**: ieșirea audio a întâlnirii, captată printr-un loopback
+  fără driver — capturi de proces/dispozitiv Core Audio pe macOS, loopback
+  WASAPI pe Windows, un monitor PipeWire / PulseAudio pe Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Pentru că cele două canale sunt captate separat, transcrierea este atribuită
+vorbitorilor de la început: cuvintele tale sunt etichetate `me`, iar toți cei
+din apel sunt etichetați `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Vocea ta se scurge din ieșirea sistemului înapoi în microfon și, altfel, ar fi
+transcrisă de două ori. Două filtre împiedică asta. **AEC3 la nivel de semnal
+rulează la fiecare înregistrare în mod remote și este obligatoriu** — dacă
+biblioteca AEC nativă nu se poate încărca, înregistrarea refuză să pornească în
+loc să transmită în silență un microfon poluat de ecou. (Modul în persoană nu
+are o referință de capăt îndepărtat față de care să anuleze, așa că AEC este
+acolo o trecere identică.) Deasupra acestuia, un filtru text de ecou, pe partea
+gazdei, rulează pe fiecare platformă.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Toată procesarea microfonului la nivel de sistem de operare este dezactivată
+deliberat. Activarea anulării de ecou sau a câștigului automat proprii platformei
+pe macOS comută microfonul la Voice Processing I/O, ceea ce, în această versiune,
+a scos din funcțiune atât microfonul, _cât și_ captura audio a sistemului.
 
-## Transcription and diarization
+## Transcriere și diarizare
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+În timp ce înregistrezi, audio-ul este decodat în **ferestre glisante** — tăiate
+pe o scurtă tăcere finală sau la o lungime maximă de fereastră — în afara firului
+de execuție al interfeței. Fiecare fereastră devine un segment de transcriere
+etichetat cu vorbitor, cu decalaje în milisecunde.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Ferestrele care nu au trecut niciodată de un prag RMS sunt omise **fără să fie
+decodate deloc**, pentru că un model de vorbire redă tăcerea ca tokenuri
+non-vorbire halucinate, iar decodarea consumă CPU degeaba. Consecința practică:
+un vorbitor constant foarte tăcut nu produce nicio transcriere. Dacă cineva
+revine fără transcriere, verifică-i nivelul de intrare înainte să dai vina pe
+model.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+După ce oprești, **diarizarea** rulează offline pe înregistrare și împarte
+canalul remote în vorbitori individuali (`Person 1`, `Person 2`, …) pe care îi
+poți redenumi. Numărul de vorbitori este dedus dintr-un prag de grupare, nu
+dintr-o cifră pe care o stabilești tu — așa că este un artefact al pragului, iar
+un vorbitor tăcut sau care se suprapune poate fi fuzionat cu un vecin.
+Transcrierea este redată ca linii `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Profiluri vocale
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Redenumirea unui vorbitor face mai mult decât să eticheteze o transcriere.
+Control Center poate salva amprenta vocală a vorbitorului ca **profil vocal**,
+ca să îl recunoască automat în întâlnirile viitoare. Când numești un vorbitor
+diarizat, ești întrebat dacă vrei să salvezi amprenta vocală; dacă o faci, aceasta
+este combinată într-un centroid curent pentru acel nume și comparată cu
+vorbitorii noi prin similaritate cosinus, așa că aceeași persoană apare cu
+numele ei data viitoare fără să o reetichetezi.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Profilurile vocale sunt delimitate de spațiul de lucru și nu trec niciodată
+granița. Gestionează-le în **Setări → Spațiu de lucru → Întâlniri**. Redenumirea
+unui vorbitor care fusese deja salvat dezînscrie numele vechi și oferă să îl
+înscrie pe cel nou; ștergerea unui profil elimină amprenta vocală stocată, dar
+lasă intacte numele deja aplicate întâlnirilor trecute.
 
-## The summary pipeline
+## Pipeline-ul de rezumare
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ro-RO/manual/concepte/evenimente-de-domeniu/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Când o înregistrare se oprește, serverul publică un `MeetingRecordingStopped`
+[eveniment de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/). Șablonul
+de pipeline încorporat **`meeting_summary`** este declanșat de acel eveniment.
+Înregistratorul nu îl așteaptă; întâlnirea își parcurge pur și simplu ciclul de
+viață al stării:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Agentul de rezumare primește titlul, notele tale brute luate în direct și
+transcrierea și returnează **JSON structurat**. Ce secțiuni scrie este modelat de
+**șablonul activ de note pentru întâlniri** al spațiului de lucru (Setări →
+Spațiu de lucru → Întâlniri); șablonul activ se aplică rezumatelor noi și celor
+reluate. Pașii de persistare din pipeline scriu apoi acel JSON în rânduri
+distincte:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` și `summary` → notele întâlnirii
+- fiecare element de acțiune → un rând `MeetingActionItem` (conținut, proprietar, link opțional către un tichet)
+- fiecare decizie → un rând `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Elementele de acțiune și deciziile **nu** sunt niciodată extrase din markdown
+liber, ci doar din tablourile structurate ale agentului. Dacă o rulare nu
+produce nicio ieșire structurată, pașii de persistare sunt omiși, iar
+transcrierea brută este păstrată ca soluție de rezervă, așa că nu pierzi
+niciodată înregistrarea. Nimic din pipeline nu marchează întâlnirea ca `done` —
+un singur reconcilizator face asta pe baza evenimentului terminal al rulării,
+așa că un pas frate care eșuează nu poate lăsa în urmă o întâlnire pe jumătate
+scrisă care pare deja terminată.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ro-RO/manual/ghiduri-practice/server-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agenții nu pot citi întâlnirile tale]
+Nu există instrumente MCP pentru întâlniri sau calendar. Un agent conectat prin
+[MCP](/ro-RO/manual/ghiduri-practice/server-mcp/) nu poate lista întâlniri, nu
+poate citi o transcriere și nu poate vedea elemente de acțiune sau decizii —
+aceste date ajung la clienții umani doar prin RPC. Deciziile ajung totuși la
+agenți indirect, ca fapte de memorie în domeniul `decisions`.
 :::
 
-## Where meetings show up
+## Unde apar întâlnirile
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Suprafață              | Ce afișează                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `/meetings`            | Lista întâlnirilor, cu numărul de elemente de acțiune și de decizii                      |
+| `/meetings/record`     | Interfața de înregistrare live: notele tale pe o parte, transcrierea în flux pe cealaltă |
+| `/meetings/:meetingId` | Detaliile unei întâlniri: filele Note, Transcriere, Elemente de acțiune și Decizii      |
+| Setări → Spațiu de lucru → Întâlniri | Șabloane de note și profiluri vocale salvate pentru acest spațiu de lucru |
 
-## Platform support
+## Suport pentru platforme
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Captarea este fără driver pe toate cele trei platforme desktop (capturi Core
+Audio pe macOS, WASAPI pe Windows, PipeWire pe Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Și clientul web înregistrează**, ceea ce restul acestei pagini, centrate pe
+desktop, poate ascunde: browserul preia microfonul prin `getUserMedia` și
+audio-ul întâlnirii prin `getDisplayMedia` (partajare de ecran), reduce la
+16 kHz PCM16 și transmite către aceeași gazdă. Aici se aplică trei rezerve:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Suprafața partajată **trebuie** să conțină o pistă audio. Partajarea pe ecran
+  complet din Safari, Firefox și macOS nu oferă niciuna, iar înregistrarea
+  refuză să pornească.
+- Nu există AEC3 nativ. Anularea de ecou proprie browserului este cerută pe
+  microfon; filtrul text de ecou de pe partea gazdei rulează în continuare.
+  Interfața de înregistrare afișează un indicator al nivelului de intrare
+  alimentat din PCM-ul microfonului.
+- Reluarea rezumatului și anularea procesării sunt disponibile doar pe desktop.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Acțiunea **Pornește înregistrarea și leagă** din calendar este disponibilă doar
+pe desktop și o spune clar pe web, chiar dacă fluxul de înregistrare propriu
+ecranului de întâlniri funcționează acolo.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Ștergerea unei întâlniri lasă audio-ul în urmă]
+Ștergerea unei întâlniri elimină doar rândurile ei din baza de date. Directorul
+audio pe canal păstrat `<dataDir>/meetings/<meetingId>/` nu este niciodată
+curățat — nu există politică de retenție, plafon de dimensiune sau baleiere GC
+pentru el. Recuperarea acelui spațiu pe disc este o sarcină manuală pe gazda
+serverului.
 :::
 
-## See also
+## Vezi și
 
-- [Calendar and scheduling](/ro-RO/manual/concepte/calendar/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/): link a meeting's action items to tickets
-- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/)
+- [Calendar și programare](/ro-RO/manual/concepte/calendar/): înregistrează o întâlnire direct dintr-un eveniment de calendar
+- [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/): motorul din spatele `meeting_summary`
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/): leagă elementele de acțiune ale unei întâlniri de tichete
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): `MeetingRecordingStopped` și `MeetingStartingSoon`
+- [Înregistrează și rezumă o întâlnire](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/)

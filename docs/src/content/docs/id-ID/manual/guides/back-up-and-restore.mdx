@@ -1,162 +1,168 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Cadangkan dan pulihkan
+description: Ambil snapshot instalasi, pindahkan ruang kerja antar mesin, pulihkan satu ruang kerja atau semuanya, dan simpan salinannya di tempat lain.
 slug: id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/id-ID/panduan-pengguna/referensi/cadangan/).
+Panduan ini membahas lima hal yang sebenarnya dilakukan orang dengan cadangan: membuatnya,
+mengumpulkannya, memindahkan ruang kerja, memulihkannya, dan menyimpan salinannya di luar
+mesin. Untuk bentuk persis setiap artefak dan operasinya, lihat
+[referensi cadangan](/id-ID/panduan-pengguna/referensi/cadangan/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Semua yang ada di sini berada di **Pengaturan → Server → Cadangan & pemulihan**.
 
-## Prerequisites
+## Prasyarat
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **Klien penuh** — aplikasi desktop atau web. Ponsel yang dipasangkan tidak bisa memicu satu pun dari tindakan ini, memang begitu desainnya.
+- Untuk membuat, menampilkan daftar, mengunduh, atau menghapus **snapshot instalasi**: **pemilik** instalasi.
+- Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspor, **pemilik** untuk mengimpor atau menghapusnya.
+- Untuk pengunduhan dan pengunggahan: koneksi **langsung** ke server. Relay dengan perantara membawa frame RPC, bukan transfer file, dan kontrol transfer menonaktifkan dirinya sendiri dengan catatan saat Anda melewatinya.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Snapshot instalasi bersifat manual]
+**Cadangkan sekarang** tetap hanya membuat snapshot seluruh instalasi saat diminta. Pipeline bawaan
+**Workspace backup** sebagai gantinya bisa membuat cadangan basis data ruang kerja sekali seminggu
+dan menghapus cadangan ruang kerja itu yang lebih tua dari 30 hari. Pipeline ini tidak menyalin `global.db`,
+ruang kerja lain, atau file di samping basis data. Simpan salinan di luar mesin secara terpisah.
 :::
 
-## What a backup covers
+## Apa yang dicakup cadangan
 
-Both artifacts are **databases only**:
+Kedua artefak itu **hanya basis data**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **Snapshot instalasi** adalah direktori bertanda waktu: `manifest.json`, `global.db`, dan satu `<workspaceId>/workspace.db` per ruang kerja.
+- **Ekspor ruang kerja** adalah satu file `workspace.db` itu.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Keduanya tidak membawa sisa direktori data: `secrets.json` (kunci pemasangan, kredensial
+penyedia, SSO), `blobs/` milik ruang kerja (gambar yang ditempelkan ke pesan), `skills/`,
+`agents/`, `chat_credentials/`, audio rapat yang direkam, atau gambar rig. Sebagiannya bisa
+dibuang dan sebagiannya tidak — 
+[tabel lengkapnya ada di referensi](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain),
+dan menutupinya adalah tujuan [bagian di luar mesin](#menyalin-cadangan-ke-luar-mesin).
 
-## Take a snapshot of the whole install
+## Membuat snapshot seluruh instalasi
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Buka **Pengaturan → Server → Cadangan & pemulihan**.
+2. Di bawah **Snapshot instalasi**, tekan **Cadangkan sekarang**.
+3. Notifikasi menampilkan nama direktori yang ditulis, di host server. Snapshot baru muncul di bagian atas daftar.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Server tetap berjalan sepanjang proses. Setiap file ditulis dengan `VACUUM INTO`, yang
+konsisten terhadap basis data aktif, jadi tidak ada jendela pemeliharaan dan tidak perlu
+menghentikan agen.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Setiap baris dalam daftar menampilkan stempel waktu, ukuran di disk, berapa banyak ruang
+kerja yang terekam, dan apakah snapshot itu **Lengkap** atau **Tidak lengkap**. Tidak lengkap berarti
+manifest-nya hilang atau menyebut file yang tidak ada — cadangan yang terputus karena crash
+atau disk penuh. Baris seperti itu tetap didaftarkan dengan sengaja: snapshot yang tidak Anda
+lihat adalah snapshot yang Anda kira Anda miliki. Snapshot yang tidak lengkap tidak bisa
+memulihkan seluruh instalasi, tetapi file ruang kerja yang dimilikinya masih bisa diadopsi
+satu per satu.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Sebuah baris juga bisa menyatakan **_n_ ruang kerja tidak terekam**. Itu adalah ruang kerja
+yang terdaftar tetapi belum pernah ditulisi (filenya belum ada), atau ruang kerja yang
+penyalinannya gagal — periksa log server.
 
-## Schedule workspace backups and retention
+## Menjadwalkan cadangan ruang kerja dan retensinya
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Buka **Pengaturan → Pipeline → Template pipeline** untuk ruang kerja tersebut dan cari
+**Workspace backup**. Jadwalnya yang aktif berjalan setiap Minggu pukul 03:00 UTC:
+**Back up workspace**, diikuti **Delete backups older than** (bawaan 30 hari). Node
+kedua berjalan hanya setelah cadangan berhasil. Anda bisa mengubah jumlah hari retensi
+pada node atau menonaktifkan jadwalnya. Jika server offline pada waktu yang dijadwalkan,
+jadwal itu menyusul sekali saat server kembali, bukan memutar ulang setiap minggu yang
+terlewat.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Cadangan ruang kerja berada di server di bawah
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Node retensi
+hanya menghapus cadangan lama untuk ruang kerja ini; node itu tidak pernah menghapus
+snapshot instalasi atau cadangan ruang kerja lain. File-file ini hanya berisi basis
+data. Untuk retensi di luar mesin, salinlah secara terpisah.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Cadangan ini terpisah dari daftar **Snapshot instalasi**. Untuk memulihkannya,
+gunakan **Data ruang kerja → Impor** dengan path `workspace.db` cadangan di sisi
+server. Impor menggantikan basis data ruang kerja tersebut saat ini, jadi ekspor dulu
+jika Anda mungkin perlu membatalkan pemulihan.
 
-## Delete an install snapshot
+## Menghapus snapshot instalasi
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Di bawah **Snapshot instalasi**, bentangkan snapshot, termasuk yang tidak lengkap,
+dan gunakan **Hapus snapshot** di bagian bahaya. Konfirmasi namanya. Seluruh
+direktori snapshot dihapus secara permanen dari server; unduh dulu jika
+Anda memerlukan salinannya. Pipeline cadangan ruang kerja tidak pernah menghapus
+snapshot ini.
 
-## Collect a copy on your own machine
+## Mengumpulkan salinan di mesin Anda sendiri
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Path yang ditampilkan halaman ini berada di mesin yang menjalankan `cc_server`. Jika mesin
+itu bukan mesin yang Anda gunakan, gunakan tombol **Unduh**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Di samping setiap **ruang kerja** di bawah **Data ruang kerja** → **Unduh**, untuk satu file `.db`.
+- Di samping setiap **snapshot** di bawah **Snapshot instalasi** → **Unduh**, untuk seluruh snapshot sebagai `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Di desktop Anda memilih lokasi file disimpan dan notifikasi menyebutkannya; di web file
+masuk ke unduhan browser. Dengan cara apa pun, keduanya melaporkan kemajuan dalam satuan
+byte, karena inilah dua muatan yang bisa mencapai gigabyte.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Keduanya membuat salinan baru pada saat Anda menekan tombol, mengalirkannya, lalu
+menghapus salinan di server setelahnya — unduhan bukan "mengambil file yang tadi dibuat
+tombol ekspor".
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Mengekstrak arsip snapshot mereproduksi tata letak snapshot dengan persis, itulah yang
+membuat pemulihannya sekadar menyalin kembali.
 
-## Move a workspace to another install
+## Memindahkan ruang kerja ke instalasi lain
 
-One workspace is one database file, so handing it over is a file operation.
+Satu ruang kerja adalah satu file basis data, jadi menyerahkannya adalah operasi file.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Di server **sumber**, **Pengaturan → Server → Cadangan & pemulihan → Data ruang kerja**, bentangkan ruang kerja dan tekan **Unduh**.
+2. Di server **tujuan**, buat (atau pilih) ruang kerja yang akan menerimanya.
+3. Bentangkan ruang kerja itu, dan di bawah **Pulihkan dari perangkat ini** tekan **Pilih file lalu unggah**. Pilih `.db` yang Anda unduh.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Jika kedua server adalah mesin yang sama tempat Anda bekerja, **Simpan di server** plus
+**Impor** → **Pilih file** melakukan hal yang sama tanpa perjalanan bolak-balik; path
+di dialog impor diselesaikan di host server.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Impor menggantikan semuanya]
+Mengimpor menimpa semua yang saat ini dimiliki ruang kerja tujuan, dan tindakan ini tidak
+bisa dibatalkan. Ekspor dulu ruang kerja tujuan jika ada isinya yang mungkin ingin Anda
+kembalikan.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Ada dua hal yang diizinkan dan dicatat alih-alih ditolak: mengimpor file yang id ruang
+kerja tercatatnya berbeda dari tujuan (inilah cara Anda menduplikasi ruang kerja atau
+memulihkannya dengan id baru), dan mengimpor file dari **instalasi lain**. Pada kasus
+kedua, perangkat yang dipasangkan dan id pengguna milik file itu berasal dari instalasi
+asalnya dan tidak akan dikenali di instalasi ini — data ruang kerja itu sendiri tetap
+utuh, tetapi periksa ulang keanggotaannya setelah mengadopsinya.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Token bot chat berada di samping basis data, bukan di dalamnya, jadi ruang kerja yang Anda
+serahkan kepada orang lain tidak membawa kredensial aktif. Instalasi penerima
+menghubungkan kembali tokennya sendiri.
 
-## Restore one workspace from a snapshot
+## Memulihkan satu ruang kerja dari snapshot
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Di bawah **Snapshot instalasi**, bentangkan snapshot yang Anda inginkan.
+2. Temukan baris ruang kerja itu dan tekan **Pulihkan**.
+3. Konfirmasi. Semua yang telah dilakukan ruang kerja itu sejak snapshot diambil akan hilang.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Ini operasi yang sama dengan impor, diarahkan ke salinan file ruang kerja itu di dalam
+snapshot — memang sengaja, agar tidak ada mekanisme kedua yang bisa memperlakukan file
+yang sama secara berbeda.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Sebuah baris bisa menyatakan **Sudah tidak ada di server ini**, dengan tombol **Pulihkan**
+nonaktif: snapshot memuat ruang kerja yang sudah tidak dimiliki instalasi ini. Pulihkan
+secara manual — buat ruang kerja, lalu di bawah **Data ruang kerja** impor ke dalamnya dari
+`<snapshot path>/<old workspace id>/workspace.db`. Snapshot yang dibentangkan menampilkan
+**Path di server**-nya sendiri di kolom salin, dan judul barisnya adalah id ruang kerja
+lama, jadi kedua bagian path itu ada di depan Anda.
 
-## Restore a whole install
+## Memulihkan seluruh instalasi
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Tidak ada tombol untuk ini, dan memang seharusnya tidak ada: operasi ini menggantikan
+basis data yang sedang dibuka oleh server yang berjalan.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Hentikan `cc_server`.** Jika Anda menjalankan aplikasi desktop dengan server tersematnya, keluar dari aplikasi itu.
+2. Salin isi snapshot ke direktori data. Tata letak snapshot mencerminkan yang aktif, jadi ini salinan biasa:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +177,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Hapus file `-wal` dan `-shm` yang berada di samping basis data yang Anda gantikan. File itu milik file lama, dan file usang di samping basis data yang dipulihkan adalah risiko korupsi.
+4. Jalankan server lagi.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Snapshot tidak memuat `secrets.json`, jadi instalasi yang dipulihkan ke host **baru**
+mempertahankan datanya tetapi tidak kredensialnya: perangkat yang dipasangkan, token
+penyedia, dan pengaturan SSO harus disiapkan ulang, atau dipulihkan dari tempat Anda
+menyimpan file itu. Memulihkan ke host yang sama, tempat `secrets.json` tidak pernah
+hilang, mempertahankan semuanya.
 
-## Copy backups off the machine
+## Menyalin cadangan ke luar mesin
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Snapshot yang berada di disk yang sama dengan basis data yang disalinnya melindungi Anda
+dari impor yang salah, bukan dari kerusakan disk. Tidak ada apa pun di Control Center yang
+mengirim salinan ke mana pun, jadi bagian ini tanggung jawab Anda.
 
-### Sync the snapshots
+### Sinkronkan snapshot
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Snapshot tidak berubah setelah ditulis dan dinamai menurut stempel waktu, jadi alat
+sinkronisasi apa pun menanganinya dengan baik. Kecualikan `transfer/`, yaitu ruang kerja
+untuk pengunduhan dan pengunggahan yang sedang berlangsung:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +213,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` mencerminkan pemangkasan lokal Anda ke remote. Hilangkan opsi itu jika Anda
+ingin remote menyimpan snapshot lebih lama daripada host.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Jangan pernah menyinkronkan basis data aktif secara langsung]
+Jangan arahkan rsync, `aws s3 sync`, atau agen cadangan tingkat file ke `global.db` atau
+`<workspaceId>/workspace.db` saat server berjalan. Basis data SQLite yang aktif memiliki
+sidecar `-wal`, dan salinan file demi file menangkap keduanya pada saat yang berbeda —
+hasilnya adalah file yang sering kali bisa dibuka tetapi diam-diam kehilangan penulisan
+terbaru, atau tidak bisa dibuka sama sekali. Salin **snapshot**, yang ditulis dalam
+transaksi baca, atau buat snapshot dengan `VACUUM INTO` seperti di bawah.
 :::
 
-### Include what a snapshot leaves out
+### Sertakan yang dilewatkan snapshot
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Agar bisa membangun ulang instalasi dan bukan hanya datanya, salin juga file-file ini. Ini
+file biasa, aman disalin saat server berjalan:
 
 ```bash
 rsync -a \
@@ -234,20 +243,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` bermode `0600` dan memuat setiap kunci pemasangan, kredensial penyedia, dan
+pengaturan SSO di instalasi. Ke mana pun file itu disalin, perlindungannya harus setidaknya
+sekuat host server — terenkripsi saat disimpan, dan bukan bucket yang bisa dibaca orang lain.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Lewati `spaces/` (worktree copy-on-write, disiapkan ulang dari repo Anda), `pr_clones/`
+(cache), `models/` (diunduh ulang), `media_cache/` dan `rigs/` (status mesin, dan
+berukuran besar). Audio rapat yang direkam di bawah `meetings/` layak disertakan jika Anda
+menyimpan rapat.
 
-### Schedule a whole-install snapshot outside the app
+### Jadwalkan snapshot seluruh instalasi di luar aplikasi
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Pipeline bawaan hanya mencadangkan satu ruang kerja. Untuk snapshot **seluruh instalasi**
+tanpa pengawasan, tidak ada subperintah CLI, dan snapshot RPC memerlukan klien penuh yang
+dipasangkan yang merupakan pemilik instalasi. Timer di sisi host bisa memakai `VACUUM INTO`
+terhadap basis data aktif:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +276,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Jalankan sebagai pengguna yang sama yang memiliki direktori data, dari cron atau timer
+systemd, lalu sinkronkan `DEST` ke luar host setelahnya. `VACUUM INTO` memerlukan SQLite
+3.27 atau yang lebih baru.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Tulis di **luar** `<dataDir>/backups/`. Direktori buatan tangan di sana tidak memiliki
+`manifest.json`, jadi aplikasi akan mendaftarkannya sebagai snapshot yang tidak lengkap dan
+daftar itu berhenti menjadi catatan jujur tentang apa yang dihasilkan server sendiri.
 
-### Prune old whole-install snapshots
+### Pangkas snapshot seluruh instalasi yang lama
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Anda bisa menghapus snapshot instalasi satu per satu di aplikasi. Untuk kebijakan retensi
+di sisi host, pisahkan direktori cadangan ruang kerja dari snapshot instalasi:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +295,50 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Periksa keluaran dari sekali jalan `-print` sebelum menambahkan `-exec`. Simpan lebih dari
+satu: kegagalan yang Anda lindungi sering kali adalah "cadangan terakhir juga bermasalah".
 
-## Check that a backup is good
+## Memeriksa bahwa cadangan itu baik
 
-A backup nobody has restored is a hypothesis.
+Cadangan yang belum pernah dipulihkan hanyalah dugaan.
 
-Cheap check — the file opens and its pages are intact:
+Pemeriksaan murah — file bisa dibuka dan halamannya utuh:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Pemeriksaan sungguhan — adopsi file itu. Buat ruang kerja sementara di instalasi
+non-produksi, impor file ruang kerja ke dalamnya, dan lihat apakah space, tiket, serta
+pesan yang Anda harapkan ada di sana. Itu menjalankan jalur yang sama dengan pemulihan
+sungguhan, termasuk pembangunan ulang FTS, dan hanya pemeriksaan itulah yang memberi tahu
+Anda bahwa cadangan itu bisa dipulihkan dan bukan sekadar bisa dibaca.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Lakukan sekali saat Anda menyiapkan cadangan, dan lagi setiap kali Anda mengubah lokasi
+penyimpanannya.
 
-## Troubleshooting
+## Pemecahan masalah
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| Gejala                                                                  | Penyebab dan perbaikan                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Kontrol unduh dan unggah dinonaktifkan dengan catatan tentang relay      | Anda terhubung melalui relay dengan perantara, yang tidak membawa transfer file. Hubungkan secara langsung                          |
+| "Server menolak"                                                     | Peran. Membuat atau menampilkan daftar snapshot instalasi memerlukan operator instalasi. Mengunduh ruang kerja memerlukan admin, memulihkannya memerlukan pemilik, zip seluruh snapshot memerlukan operator instalasi |
+| "Server ini tidak punya permukaan cadangan"                                      | Host tidak memiliki port cadangan yang terpasang — server demo. Operasinya tidak ada alih-alih ditolak                          |
+| "File lebih besar dari yang diterima server"                             | Unggahan dibatasi 8 GiB. Letakkan file di host server dan gunakan **Impor** → **Pilih file** sebagai gantinya                 |
+| Impor ditolak: bukan basis data ruang kerja Control Center                  | File tidak memiliki baris `workspace_meta` — itu bukan ekspor ruang kerja, atau terpotong. Tidak ada yang digantikan             |
+| Snapshot terdaftar sebagai **Tidak lengkap**                                      | Manifest-nya hilang atau menyebut file yang tidak ada. Buat snapshot baru; sementara itu adopsi file ruang kerja satu per satu darinya |
+| Snapshot menyatakan ada ruang kerja yang tidak terekam                             | Ruang kerja itu belum pernah ditulisi, atau penyalinannya gagal. Periksa log server                                  |
+| Instalasi yang dipulihkan tidak memiliki kredensial forge atau SSO                       | `secrets.json` tidak ada di dalam snapshot. Pulihkan dari tempat Anda menyimpannya, atau hubungkan kembali penyedianya                     |
+| Ruang kerja yang dipulihkan kehilangan gambar yang ditempelkan                            | Blob berada di samping basis data, bukan di dalamnya. Salin juga `<workspaceId>/blobs/`                                     |
 
-## Related guides
+## Panduan terkait
 
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): where the data directory comes from
-- [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/): direct versus relayed connections
-- [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): the credential the transfer routes sign with
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): dari mana direktori data berasal
+- [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/): koneksi langsung versus melalui relay
+- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): kredensial yang dipakai rute transfer untuk menandatangani
 
-## Related concepts and reference
+## Konsep dan referensi terkait
 
-- [Backup, export and import](/id-ID/panduan-pengguna/referensi/cadangan/): every operation, route, field and limit
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/): why one workspace is one file
-- [`cc_server` CLI](/id-ID/panduan-pengguna/referensi/cli-cc-server/): the data directory layout
+- [Cadangan, ekspor, dan impor](/id-ID/panduan-pengguna/referensi/cadangan/): setiap operasi, rute, bidang, dan batas
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/): mengapa satu ruang kerja adalah satu file
+- [`cc_server` CLI](/id-ID/panduan-pengguna/referensi/cli-cc-server/): tata letak direktori data

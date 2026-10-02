@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: مدل عامل
+description: اینکه یک عامل در Control Center واقعاً چیست، کدام یک از فیلدهایش رفتار را تغییر می‌دهند و آداپتوری که روی آن اجرا می‌شود چگونه تعیین می‌کند چه چیزی قابل اعمال است.
 slug: fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## عامل چیست؟
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+عامل یک کنشگر نام‌دار با یک پرسونا، مجموعه‌ای از مهارت‌ها، یک آداپتور برای اجرا و مجموعه‌ای از قابلیت‌هاست. عامل‌ها به همان معنایی که انسان‌ها کنشگر مستقل‌اند، کنشگر مستقل محسوب می‌شوند: پیام می‌نویسند، مالک تیکت هستند، بازبینی می‌گذارند و در همان فهرست حضور ظاهر می‌شوند. کار واقعی را همین‌ها انجام می‌دهند.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+هر عامل دقیقاً به یک فضای کاری تعلق دارد. این یک نامتغیر سخت است — `agent.workspaceId` تهی نیست، فضای کاری خودِ عامل است که تعیین می‌کند سطرهایش در کدام فایل پایگاه داده بنشینند و ساخت عامل بدون فضای کاری رد می‌شود.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+عامل همچنین یک پوشه است. تعریفش در `agents/<slug>/AGENTS.md` زیر پوشهٔ دادهٔ فضای کاری زندگی می‌کند و مهارت‌هایی که دارد به‌صورت پیوند نمادین در `agents/<slug>/.agents/skills` قرار می‌گیرند. سطر پایگاه داده و فایل با هم نوشته می‌شوند. بذرکاری خودتوان است: اگر سطر عامل از قبل وجود داشته باشد، فایل‌های روی دیسک و پیوندهای مهارت باز هم بازنویسی می‌شوند. فراخوان‌کنندهٔ تولیدی، ساخت فضای کاری است، نه هر بار راه‌اندازی سرور.
 
-## What an agent carries
+## یک عامل چه چیزهایی حمل می‌کند
 
-| Attribute               | What it does                                                                          |
+| ویژگی                   | کارکرد                                                                                |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | شناسهٔ کوتاه شبیه اسلاگ (`architect`، `qa`). همچنین چیزی که `@mentions` بر پایهٔ آن حل می‌شوند |
+| `title`                 | عنوان شغلی خوانا برای انسان                                                           |
+| `persona`               | متن آزاد شخصیت و دستورالعمل‌های رفتاری که به‌صورت یک بخش پرامپت تزریق می‌شود           |
+| `systemPrompt`          | دستورالعمل‌های اضافی اختیاری که به‌صورت بخشی با عنوان «دستورالعمل‌های عامل» تزریق می‌شوند — جای بقیهٔ پرامپت سرهم‌شده را نمی‌گیرند |
+| `skills`                | مجموعه‌ای از نام مهارت‌ها بدون حساسیت به بزرگی و کوچکی حروف که به‌صورت پیوندهای مهارت روی دیسک بازتاب می‌یابد |
+| `adapterId`             | اینکه عامل به کدام اجراکننده اعزام می‌شود. **مقدار تهی به حلقهٔ داخلی برمی‌گردد**      |
+| `modelId`               | اینکه کدام مدل در آن آداپتور                                                          |
+| `effort`                | سطح استدلال، برگرفته از واژگان خودِ مدل انتخاب‌شده                                     |
+| `contextSize`           | مقدار جایگزین برای پنجرهٔ زمینه                                                       |
+| `capabilities`          | پرچم‌های اعتبارنامه و خروج که هنگام راه‌اندازی بررسی می‌شوند                           |
+| `silenceTimeoutMinutes` | مقدار جایگزین هر عامل (1–240) برای نگهبان سکوت                                       |
+| `reportsTo`             | شناسهٔ عامل والد — زنجیرهٔ گزارش‌دهی که چارت سازمانی ترسیم می‌کند                      |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+همهٔ این‌ها را در تنظیمات → فضای کاری → عامل‌ها ویرایش می‌کنید. **عامل جدید** یک عامل بی‌نام می‌سازد که سپس آن را پر می‌کنید.
 
-## Skills
+## مهارت‌ها
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+مهارت‌ها نام‌هایی روی موجودیت عامل هستند که به بزرگی و کوچکی حروف حساس نیستند. دو چیز جداگانه با آن‌ها رخ می‌دهد:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- نام‌ها زیر عنوانی به نام «مهارت‌ها» در پرامپت سرهم‌شده فهرست می‌شوند. همین تمام کاری است که مجموعهٔ موجودیت به‌تنهایی انجام می‌دهد — کتابخانهٔ پرامپتی برای تک‌تک مهارت‌ها که بر پایهٔ آن کلید بخورد وجود ندارد.
+- پوشهٔ هر مهارت نام‌دار (`skills/<slug>/SKILL.md` در فضای کاری) به پوشهٔ خودِ عامل پیوند می‌شود. روی هارنس داخلی، فرانت‌مترِ مهارت‌های پیوندشده به‌طور خودکار در پرامپت سیستمی بارگذاری می‌شود و عامل متن اصلی را در صورت نیاز می‌خواند؛ تایپ `/skill:<name>` در یک گفتگو آن متن را به‌عنوان دستوری برای همان نوبت بارگذاری می‌کند.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-مهارتها/).
+مهارت‌هایی که از بیرون واکشی می‌شوند، میان واکشی و نوشتن از یک اسکن زنجیرهٔ تأمین که در برابر خطا بسته است می‌گذرند — هیچ محتوای مهارتی بدون حکم به دیسک یا پرامپت نمی‌رسد. «بیرون» مخزن‌های GitHub هستند که خودتان آن‌ها را به‌عنوان منبع مهارت ثبت می‌کنید: فروشگاه گزینش‌شده‌ای وجود ندارد، پس فرادادهٔ خود مخزن (توصیفش، ستاره‌هایش، نام مهارت) دادهٔ نمایشی نامعتمد است و حکم اسکن تنها سیگنال امنیتی است. نصب، تمام پوشهٔ مهارت را واکشی می‌کند، آن را در `skills-lock.json` به همان کامیتی که از آن آمده سنجاق می‌کند و به‌روزرسانی بعدی پیش از جایگزینی هر چیزی دوباره از این دروازه می‌گذرد. روش کار در [نصب و مدیریت مهارت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-مهارتها/) آمده است.
 
-### Repo-scoped skills
+### مهارت‌های محدود به مخزن
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+یک مخزن می‌تواند مهارت‌های خودش را در هر یک از جاهای مرسوم (`.agents/skills/`، `.claude/skills/`، `.opencode/skills/`) ارائه کند. فضا هر مخزن پیوندشده را جداگانه زیر `repos/<name>/` چک‌اوت می‌کند، اما عامل هر بار در یک مخزن کار می‌کند — پس **فقط مهارت‌های همان مخزن** را با خود دارد و با جابه‌جایی، آن‌ها عوض می‌شوند.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+اینکه کدام مخزن فعال است از فایل‌هایی که عامل لمس می‌کند استنتاج می‌شود: نوشتن یک فایل زیر `repos/<name>/` آن را مخزن فعال می‌کند، در حالی که فقط خواندن در چند مخزن این کار را نمی‌کند؛ بنابراین دنبال‌کردن یک نماد در سرویسِ همسایه هرگز مجموعه را از زیر کار بیرون نمی‌کشد. در فضایی که فقط یک مخزن دارد، پاسخ پیش از نخستین نوبت روشن است.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+این محدودسازی تصمیمی دربارهٔ بودجهٔ زمینه است. فهرست مهارت‌ها در هر نوبت در پرامپت می‌نشیند ولی متن اصلی نه، پس فهرست‌کردن مهارت‌های همهٔ مخزن‌ها به‌طور پیوسته توکن می‌سوزاند — و یک مهارت `testing` از یک سرویس، وقتی کار در سرویس دیگری است، فعالانه گمراه می‌کند. همین استدلال توضیح می‌دهد چرا فهرست یک عامل یک مخزن را حمل می‌کند اما ویرایشگر این‌طور محدود نشده است: نام‌بردن خودتان از یک مهارت یک کنش صریح است، پس `/skill:<repo>:<name>` به هر مخزنی در فضا می‌رسد.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+مهارت‌های مخزن برای **هر** آداپتوری بارگذاری می‌شوند، نه فقط هارنس داخلی. مهارت‌های مخزن فعال در پوشهٔ کاری عامل ایجاد می‌شوند، همان مسیری که Claude Code از قبل اسکن می‌کند؛ همان فهرست نیز در `AGENTS.md` که هارنس داخلی می‌خواند ترکیب می‌شود. مهارت‌های یک مخزن پیش از همهٔ این‌ها از همان اسکن بسته در برابر خطا می‌گذرند که یک مهارت نصب‌شده می‌گذرد — مخزن چک‌اوت‌شده محتوای کلون‌شده است و فرانت‌متر آن به پرامپت می‌رسد.
 
-## Capabilities
+## قابلیت‌ها
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+قابلیت‌ها تعیین می‌کنند چه چیزی به یک اجرا _داده می‌شود_، نه اینکه فایل‌سیستمش اجازهٔ لمس چه چیزی را می‌دهد. کارگزار اعتبارنامه آن‌ها را هنگام راه‌اندازی بررسی می‌کند: اگر قابلیتی خاموش باشد، توکن مربوط به‌سادگی تزریق نمی‌شود.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **پوش به مخزن** — تزریق توکن GitHub که در `git push` استفاده می‌شود را کنترل می‌کند.
+- **GitHub API** — تزریق `GH_TOKEN` و خروج به api.github.com را کنترل می‌کند.
+- **تیکتینگ** — کلید API ارائه‌دهندهٔ تیکتینگ و خروج به دامنه‌های آن را کنترل می‌کند.
+- **خروج شبکه** — درخواست‌های بیرونیِ دلخواه.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+هر اجرا این‌ها را از سطر خودِ عامل استخراج می‌کند. وقتی عامل هیچ‌کدام را ندارد، یک پیش‌فرض ثابت و محافظه‌کارانه اعمال می‌شود: سه پرچم اعتبارنامه خاموش، خروج شبکه روشن. کلید «مجوزهای سندباکس» در فرم عامل، بین آن حالت جایگزین و مجموعهٔ سفارشیِ ذخیره‌شده روی عامل یکی را انتخاب می‌کند.
 
-See [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) for the other half of the story, including what is and is not enforced at the filesystem level.
+برای نیمهٔ دیگر ماجرا، از جمله اینکه در سطح فایل‌سیستم چه چیزی اعمال می‌شود و چه چیزی نه، [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) را ببینید.
 
-## The adapter decides what can be enforced
+## آداپتور تعیین می‌کند چه چیزی قابل اعمال است
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+تنها فیلد تعیین‌کننده‌ترین روی یک عامل، آداپتور آن است، چون شیوهٔ انتقال آداپتور مشخص می‌کند چه مقدار از سیاست Control Center واقعاً قابل اعمال است.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| شیوهٔ انتقال     | آداپتورها                 | آنچه Control Center اعمال می‌کند                                                                                                                                                                                                                                           |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| هارنس داخلی | Control Center (داخلی) | همه‌چیز. سطح ابزار از حالت _ساخته می‌شود_، پس ابزار غیرمجاز به‌جای اینکه فقط رد شود، نامرئی است؛ هر فراخوانی از دروازهٔ تأیید و گاردریل‌های کنش می‌گذرد؛ قرارداد تکمیل می‌تواند تلنگر بزند و سپس اجرایی را که بدون تحویل‌دادنی‌اش تمام شود ناموفق اعلام کند |
+| Claude CLI       | Claude Code               | فقط ابزارهای `mcp__*` که در اختیارش گذاشته می‌شود. ابزارهای خواندن، نوشتن، ویرایش و پوستهٔ خود Claude در فرایند آن زندگی می‌کنند و دیده‌نشده اجرا می‌شوند — و با `--dangerously-skip-permissions` راه‌اندازی می‌شود، چون در غیر این صورت `claude -p` غیرتعاملی برای همیشه روی پرامپت خودش قفل می‌شود |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+به‌طور مشخص، **تنها هارنس داخلی از زیرعامل‌ها، هدایت میان‌اجرا، توقف و ازسرگیری (و در نتیجه تصاحب) و اعمال ساختاری حالت پشتیبانی می‌کند.** Claude Code هیچ‌کدام از این‌ها را ندارد.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[سندباکس سیستم‌عامل یک کف است، نه اعمال‌کنندهٔ حالت، و هر میزبانی یکی ندارد]
+ماتریس بالا دربارهٔ چیزهایی است که Control Center می‌تواند _ببیند و کنترل کند_. زیر آن، `cc_server` رابط خط فرمان Claude Code را در جایی که وجود داشته باشد در سندباکس سیستم‌عامل میزبان می‌پیچد — Seatbelt روی macOS، bubblewrap روی Linux و WSL2 — بنابراین یک `rm` دیده‌نشده یا یک نوشتن دیده‌نشده باز هم در محدودهٔ سیستم‌عامل می‌ماند. روی **Windows هیچ بک‌اندی وجود ندارد** و روی Linux یا WSL2 بدون `bwrap` و `socat` بررسی هیچ‌کدام را گزارش نمی‌کند؛ پس آن اجراها به پاک‌سازی محیط، اعتبارنامه‌های کارگزاری‌شده، گاردریل‌های فراخوانی‌هایی که Control Center می‌بیند و worktree خودِ گفتگو بازمی‌گردند (کپی هنگام نوشتن در جایی که `rift` عرضه می‌شود؛ `git worktree` روی Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/).
+آنچه سندباکس نیست، یک _دروازه_ است. محدودهٔ خواندن، نوشتن و اتصال یک فرایند را تعیین می‌کند — یک حالت فقط‌خواندنی به آن می‌رسد، به‌صورت مانت‌های bind فقط‌خواندنی — اما نمی‌تواند یک فراخوانی را رهگیری کند، تأییدی بالا بیاورد، یا بعداً بگوید CLI چه چیزی را امتحان کرده است. این، به‌علاوهٔ چهار قابلیت نام‌برده درست بالاتر، همان چیزی است که هارنس داخلی دارد و بقیه ندارند. [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) را ببینید.
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+عاملی که **هیچ** آداپتوری ندارد به **Control Center (داخلی)** برمی‌گردد — همان حلقهٔ درون سرور، پس CLI‌ای برای نصب وجود ندارد — و گزارش اجرای آن `cc-harness` را ثبت می‌کند. هر عامل بذرکاری‌شده بدون آداپتور یا مدل ساخته می‌شود، پس پنج عامل یک فضای کاری تازه همگی تا زمانی که برای هر عامل آداپتور و مدل تعیین کنید، همان‌جا روی مدل پیش‌فرض Anthropic اجرا می‌شوند. انتخاب «آداپتور پیش‌فرض» در راه‌اندازی اولیه یک ترجیح سمت کلاینت است که سرور هرگز آن را نمی‌خواند و به‌صورت گذشته‌نگر روی عامل‌های از قبل ساخته‌شده اعمال نمی‌شود.
 
-## Where agents come from
+## عامل‌ها از کجا می‌آیند
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **همراه با فضای کاری بذرکاری می‌شوند.** هر فضای کاری — نه فقط اولی — یک CEO به‌علاوهٔ چهار متخصص (`qa`، `architect`، `engineer`، `librarian`) می‌گیرد که به آن گزارش می‌دهند و هنگام ساخت فضای کاری، خودتوان در پس‌زمینه ساخته می‌شوند. [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) را ببینید.
+- **دستی افزوده می‌شوند** در تنظیمات → فضای کاری → عامل‌ها. درخواست از یک عامل برای استخدام همکار، سطری نمی‌سازد؛ از همان صفحه استفاده کنید.
 
-## Live state
+## وضعیت زنده
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+عامل ستون وضعیت ذخیره‌شده‌ای ندارد. وضعیت زندهٔ آن هر بار که خوانده می‌شود، از جدیدترین گزارش‌های اجرایش استخراج می‌شود:
 
-| State      | Meaning                                                              |
+| وضعیت      | معنا                                                                 |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | هیچ گزارش اجرایی وجود ندارد                                          |
+| `running`  | دست‌کم یک اجرا هم‌اکنون در جریان است                                  |
+| `failed`   | آخرین اجرا خطا داده است، یا زنده‌بودنش ناموفق یا مرده است           |
+| `blocked`  | زنده‌بودن آخرین اجرا مسدود، متوقف یا در حلقه است                     |
+| `idle`     | هر چیز دیگر — عامل قبلاً اجرا شده و کاری در پرواز ندارد              |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+دو وضعیت دیگر، `queued` و `succeeded`، برای اجراهای تک‌تک در درخت اجرای گفتگو وجود دارند؛ فهرست حضور هرگز آن‌ها را تولید نمی‌کند، چون سبز بودن یک اجرای تمام‌شده واقعیتی دربارهٔ اجراست، نه دربارهٔ عامل.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/).
+فهرست حضور تصویری موازی و درشت‌تر را نشان می‌دهد که سمت سرور از رویدادهای زندهٔ اجرا ترکیب می‌شود — در حال فکر کردن، در حال اجرا، مسدود در انتظار تأیید، تمام‌شده — و همین است که عامل‌ها را کنار انسان‌ها ظاهر می‌کند. [چندنفره(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) را ببینید.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): what happens when an agent is actually run
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): what constrains a run today
-- [Agent configuration reference](/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/): the full field list
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): وقتی یک عامل واقعاً اجرا می‌شود چه اتفاقی می‌افتد
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/): تنظیم هر گفتگو که سطح ابزار عامل را شکل می‌دهد
+- [چندنفره(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): عامل‌ها به‌عنوان کنشگرهای مستقل، حضور و چرخ تنظیم خودمختاری
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): امروز چه چیزی یک اجرا را محدود می‌کند
+- [مرجع پیکربندی عامل(/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/): فهرست کامل فیلدها

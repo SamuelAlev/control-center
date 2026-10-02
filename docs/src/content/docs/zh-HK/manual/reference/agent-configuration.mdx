@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: 代理設定
+description: 代理實體上的每個欄位，以及它所用的列舉。
 slug: zh-HK/手冊/參考/代理設定
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/).
+本參考列出代理實體上的每個欄位，以及它所用的列舉與旗標。若要在應用程式中逐步了解如何建立或編輯代理，請參見[建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)。
 
-## Agent entity fields
+## 代理實體欄位
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| 欄位                    | 類型                   | 必填 | 說明                                                                                                                                                                                                |
+| ----------------------- | ---------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | 是   | 唯一的代理識別碼                                                                                                                                                                                    |
+| `name`                  | `String`               | 是   | 用於 @ 提及的簡短識別碼                                                                                                                                                                             |
+| `title`                 | `String`               | 是   | 人類可讀的職位名稱                                                                                                                                                                                  |
+| `agentMdPath`           | `String`               | 是   | 代理 `.md` 定義檔案的絕對路徑                                                                                                                                                                       |
+| `workspaceId`           | `String`               | 是   | 所屬工作區（不可為 null）                                                                                                                                                                           |
+| `reportsTo`             | `String?`              | 否   | 上級代理 id                                                                                                                                                                                         |
+| `skills`                | `AgentSkills`          | 是   | 技能識別碼的集合                                                                                                                                                                                    |
+| `persona`               | `String?`              | 否   | 自由文字的行為指示                                                                                                                                                                                  |
+| `systemPrompt`          | `String?`              | 否   | 覆寫預設的系統提示                                                                                                                                                                                  |
+| `adapterId`             | `String?`              | 否   | 推理配接器 id                                                                                                                                                                                       |
+| `modelId`               | `String?`              | 否   | 該配接器內的模型 id                                                                                                                                                                                 |
+| `strictMode`            | `bool`                 | 否   | 預設 `false`。會寫入該資料列，以及代理的 `AGENTS.md`                                                                                                                                                |
+| `effort`                | `String?`              | 否   | 推理等級 id（例如 `'low'`、`'xhigh'`），取自所選模型的 `thinkingLevels`                                                                                                                             |
+| `contextSize`           | `int?`                 | 否   | 上下文窗口的大小上限                                                                                                                                                                                |
+| `role`                  | `AgentRole?`           | 否   | 代理的角色                                                                                                                                                                                          |
+| `capabilities`          | `AgentCapabilities?`   | 否   | 逐代理的能力預設值；為 null 時，派發時會套用用戶層級的預設值，而對話仍然可以覆寫                                                                                                                    |
+| `monthlyBudgetCents`    | `int`                  | 否   | 以分為單位的每月支出上限（預設 `0`，即不限）                                                                                                                                                        |
+| `silenceTimeoutMinutes` | `int?`                 | 否   | 靜默逾時的覆寫值，以分鐘計；必須為 null 或落於 1–240 之間（由建構函式斷言）                                                                                                                         |
+| `maxConcurrentTasks`    | `int`                  | 否   | 預設 `1`。線上狀態模型所報告的容量數值（執行中與已排隊的計數都會與它比較）                                                                                                                          |
+| `visibility`            | `AgentVisibility`      | 否   | 預設 `workspace`                                                                                                                                                                                    |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | 否   | 治理狀態（預設 `active`）。由預算硬性停止寫入，並渲染在組織圖與線上狀態名冊上。派發仍會接受來自 `paused` 代理的工作                                                                                 |
+| `budgetPolicyId`        | `String?`              | 否   | 共享預算政策 id；為 null 時直接套用 `monthlyBudgetCents`                                                                                                                                            |
+| `runtimeProfileId`      | `String?`              | 否   | 自訂執行階段設定檔 id                                                                                                                                                                               |
+| `createdAt`             | `DateTime`             | 是   | 建立時間戳                                                                                                                                                                                          |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` 與 `title` 都必須非空（由建構函式斷言）。`monthlyBudgetCents` 的預設值
+`0` 代表不限。要寫入上限，請使用 `agents.upsert`。
 
-## AgentRole enum
+## AgentRole 列舉
 
-| Role       | Label    | Description                      |
+| 角色       | 標籤     | 說明                             |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | 協調與委派                       |
+| `coder`    | Coder    | 程式碼實作                       |
+| `reviewer` | Reviewer | PR 審查與分析                    |
+| `qa`       | QA       | 測試與質素保證                   |
+| `designer` | Designer | UI/UX 實作                       |
+| `security` | Security | 保安審查與稽核                   |
+| `devops`   | DevOps   | 基礎設施與部署                   |
+| `pm`       | PM       | 產品管理                         |
+| `general`  | General  | 靈活、多用途                     |
 
-## AgentVisibility enum
+## AgentVisibility 列舉
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| 值          | 說明                                         |
+| ----------- | -------------------------------------------- |
+| `workspace` | 預設值；未知以及為 null 的已儲存值都解析為它 |
+| `private`   | 僅對建立它的用戶可見                         |
 
-## AgentLifecycleStatus enum
+## AgentLifecycleStatus 列舉
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| 值         | 說明                                                                       |
+| ---------- | -------------------------------------------------------------------------- |
+| `active`   | 預設值。`isDispatchable` 只有在此值下才為 true                             |
+| `paused`   | 由預算硬性停止設定。會顯示在線上狀態名冊上；派發仍會接受工作               |
+| `archived` | 已退役，並從活動名冊中隱藏                                                 |
 
-## AgentCapabilities flags
+## AgentCapabilities 旗標
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+每次派發時解析：先取代理的預設值，為 null 時回退至用戶層級預設值，再在最上層疊加逐對話的覆寫值。執行方式就是「不存在」——被停用的能力所涵蓋的東西，憑證仲介根本不會簽發，也不會注入。
 
-| Flag               | Type   | Default | Description                                                                              |
+| 旗標               | 類型   | 預設值  | 說明                                                                                     |
 | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| `canPushToRepo`    | `bool` | `false` | 把提交推送到遠端；與 `canCallGitHubApi` 一起把關 GitHub 權杖的注入                        |
+| `canCallGitHubApi` | `bool` | `false` | 呼叫 api.github.com；把關 `GH_TOKEN` 的注入以及 GitHub 的出站網域                         |
+| `canCallTicketing` | `bool` | `false` | 呼叫工單提供方的 API；把關提供方 API 金鑰的注入及其出站網域                               |
+| `canAccessNetwork` | `bool` | `true`  | 任意的對外連線。亦會把關執行框架的 `web_fetch` 與 `web_search` 工具                       |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` 就是這四項的建構函式預設值。`legacyDefault`（四項全為 true）只由那次遷移使用——它回填了在能力存在之前建立的對話。格式錯誤或為空的已儲存資料塊會解析為 `safeDefault`；舊有鍵 `canCallLinear` 會讀作 `canCallTicketing`。
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+一個不可變、不區分大小寫的技能識別碼集合。派發時，這些 slug 會同步為代理覆蓋層中的技能連結；隨後執行框架會把已連結技能的前置資料自動載入提示中。
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState（衍生）
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+不會儲存。共七個值。宣告順序即優先順序（`sortPriority`，由測試固定），也就是名冊排序所依據的順序：
 
-| State       | `sortPriority` | Condition                                                                                                           |
+| 狀態        | `sortPriority` | 條件                                                                                                                |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| `running`   | 0              | 任何執行日誌的狀態為 `running`                                                                                      |
+| `blocked`   | 1              | 最近一次執行的存活狀態為 `blocked`、`stalled` 或 `looping`                                                         |
+| `failed`    | 2              | 最近一次執行的狀態為 `error`，或其存活狀態為 `failed` 或 `dead`                                                    |
+| `queued`    | 3              | 一次執行已被派發但尚未執行——停在同一代理的另一次執行之後，或已寫入但尚未開始                                       |
+| `succeeded` | 4              | 該次執行成功完成                                                                                                     |
+| `idle`      | 5              | 該代理曾經執行過，且目前沒有進行中的工作                                                                             |
+| `neverRun`  | 6              | 不存在任何執行日誌                                                                                                   |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` 與 `succeeded` **僅存在於單次執行上**。為代理計算名冊狀態的 `deriveAgentLiveState` 永遠不會產生這兩者——它只會傳回 `neverRun`、`running`、`failed`、`blocked` 或 `idle`。
 
-## See also
+## 另請參閱
 
-- [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/)
-- [The agent model](/zh-HK/手冊/概念/代理模型/)
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/)
+- [建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)
+- [代理模型](/zh-HK/手冊/概念/代理模型/)
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)

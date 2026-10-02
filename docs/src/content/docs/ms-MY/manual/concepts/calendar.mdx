@@ -1,128 +1,141 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Kalendar dan penjadualan
+description: Bagaimana Control Center menyegerakkan Google Calendar pada pelayan, mengapa daftar masuk ialah pemberian kod peranti dan apa yang diliputi oleh skop baca sahaja.
 slug: ms-MY/manual-pengguna/konsep/kalendar
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ms-MY/manual-pengguna/konsep/mesyuarat/).
+Control Center bersambung ke Google Calendar supaya hari anda berada
+bersebelahan armada anda. Ia menyegerakkan acara anda, memaparkannya dalam
+paparan bulan, minggu, hari dan agenda, memberi amaran kepada anda sebelum
+mesyuarat bermula dan menukar mana-mana acara menjadi
+[mesyuarat](/ms-MY/manual-pengguna/konsep/mesyuarat/) yang dirakam dan
+diringkaskan.
 
-## What it changes on Google
+## Apa yang diubahnya pada Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Hampir tiada apa-apa. Integrasi ini menarik masuk acara dan memaparkannya. Ia
+tidak mencipta, menyunting, memadam atau menjawab jemputan. Setiap sambungan
+kod peranti, sama ada terbina dalam atau bawa sendiri, meminta
+`calendar.readonly` serta `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Acara disegerakkan ke dalam pangkalan data ruang kerja itu sendiri **pada
+pelayan** (`<dataDir>/<workspaceId>/workspace.db`) dan dipaparkan oleh setiap
+klien melalui RPC. Tiada klien memegang kelayakan Google.
 
-## Per-workspace accounts
+## Akaun bagi setiap ruang kerja
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ms-MY/manual-pengguna/konsep/ruang-kerja/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Akaun kalendar berlingkup ruang kerja, seperti semua yang lain dalam Control
+Center. Setiap [ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/)
+menyambungkan akaun Google sendiri (atau beberapa) dan acara serta token satu
+ruang kerja tidak pernah kelihatan daripada ruang kerja lain. Menukar ruang
+kerja menukar kalendar yang anda lihat.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Satu ruang kerja boleh menyambungkan **beberapa** akaun Google, seperti akaun
+kerja dan akaun peribadi, dan acaranya digabungkan ke dalam paparan yang sama.
 
-## Why sign-in is a device code
+## Mengapa daftar masuk menggunakan kod peranti
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` tanpa kepala tiada pelayar untuk menangkap ubah hala OAuth. Jadi ia
+tidak menggunakannya: ia memberi kebenaran dengan **pemberian kod peranti**
+(RFC 8628). Pelayan menunjukkan kod pengguna yang pendek dan URL Google, anda
+meluluskannya pada mana-mana peranti yang mempunyai pelayar dan pelayan
+meninjau secara berkala sehingga anda berbuat demikian. Pemasangan tanpa kepala
+boleh menyambungkan akaun justeru kerana tiada titik akhir ubah hala yang perlu
+dihoskan.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Kesannya yang perlu anda tahu sebelum membawa kelayakan sendiri: jenis klien
+mestilah "TV and Limited Input devices" milik Google. Google hanya memberikan
+set skop yang dibenarkan kepada jenis klien itu dan projek yang tidak
+membenarkan Calendar untuknya akan gagal dengan `invalid_scope` — anda perlu
+menggunakan klien loopback atau klien web sebaliknya.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Token tidak pernah meninggalkan pelayan. Ia ditulis ke `secrets.json` pelayan
+dalam direktori datanya, dengan kunci `google_google:<workspaceId>:<email>`,
+bersebelahan pangkalan data dan di bawah sempadan kepercayaan sistem fail hos
+yang sama. Pelayan menyegarkan akses secara automatik dan, apabila Google
+membatalkan sesuatu akaun secara kekal (sesi yang ditarik balik atau lama
+luput), menerbitkan `CalendarAuthExpired` dan memaparkan banner **Sambung
+semula** dan bukannya gagal secara senyap.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Binaan daripada sumber tidak menyertakan **sebarang** kelayakan Google — anda
+membekalkan id klien dan rahsia anda sendiri. Binaan keluaran rasmi menanam
+klien kod peranti yang tidak sulit supaya aliran sambungan berfungsi terus;
+pelayan hanya menyimpan penanda yang merujuknya, tidak pernah salinannya.
+`GOOGLE_OAUTH_CLIENT_ID` (dan rahsianya) dalam persekitaran sentiasa diutamakan
+berbanding pasangan yang ditanam. Secara sengaja tiada bendera
+`--google-client-id`: bendera yang tidak dikenali diabaikan, dan rahsia pada
+baris arahan boleh dibaca melalui `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/).
+Untuk menjalankan projek Google anda sendiri, lihat
+[Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/).
 
-## Sync
+## Penyegerakan
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Pelayan menarik tetingkap bergolek bagi acara setiap akaun yang disambungkan —
+setiap kalendar pada akaun itu, bukan hanya kalendar utama — **setiap dua
+minit**, serta atas permintaan (mula, sambung, muat semula manual). Kekerapan
+pendek ini berpatutan kerana sapuan itu bersifat inkremental: setiap kalendar
+membawa token segeraknya sendiri, jadi kalendar yang tidak berubah hanya
+memerlukan satu respons yang hampir kosong daripada mengambil semula tetingkap
+lima bulan.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Acara berulang dikembangkan di sisi pelayan, jadi tiada klien perlu menghuraikan
+peraturan pengulangan. Melayari bulan di luar tetingkap semasa memuatkan julat
+itu secara malas. Acara yang dipadamkan atau berpindah keluar julat diselaraskan
+keluar pada penyegerakan berikutnya.
 
-## Views
+## Paparan
 
-| View       | What it shows                                         |
+| Paparan    | Apa yang dipaparkannya                                |
 | ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| **Bulan**  | Grid sebulan penuh (dikuasakan oleh pakej `kalender`) |
+| **Minggu** | Acara bermasa selama seminggu dalam grid masa         |
+| **Hari**   | Acara bermasa sehari dalam grid masa                  |
+| **Agenda** | Senarai boleh tatal bagi acara akan datang            |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Buka kalendar pada `/calendar`; memilih acara membuka butirannya pada
+`/calendar/:eventId`. Paparan yang anda pilih disimpan dalam keutamaan klien
+tersebut, jadi ia tidak mengikut anda ke peranti lain.
 
-## Meeting alerts
+## Amaran mesyuarat
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ms-MY/manual-pengguna/konsep/acara-domain/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Penjadual setiap minit mengimbas acara yang bermula dalam tetingkap masa awal
+yang boleh dikonfigurasikan dan mencetuskan pemberitahuan **"Mesyuarat akan
+bermula tidak lama lagi"** (satu
+[acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/) `MeetingStartingSoon`).
+Pemberitahuan itu membawa URL sertai apabila ada dan mengkliknya membuka butiran
+acara. Amaran dinyahduplikasi terhadap `alertedAt` acara, jadi mesyuarat yang
+sama tidak pernah memberi amaran dua kali, malah merentas permulaan semula dan
+acara yang masa mulanya berlalu semasa aplikasi ditutup tidak pernah diulang.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Dua had mudah terlepas pandang. Penjadual berjalan **di sisi klien pada
+desktop** dan hanya untuk ruang kerja yang sedang anda buka — ruang kerja yang
+anda tidak berada di dalamnya tidak menimbulkan sebarang amaran. Dan binaan web
+langsung tiada saluran pemberitahuan OS, jadi ia juga tidak menimbulkan amaran.
 
-## Record and link
+## Rakam dan pautkan
 
-From a calendar event you can start a [meeting recording](/ms-MY/manual-pengguna/konsep/mesyuarat/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Daripada acara kalendar anda boleh memulakan
+[rakaman mesyuarat](/ms-MY/manual-pengguna/konsep/mesyuarat/) yang dimulakan
+dengan tajuk acara. Control Center menyimpan pautan satu-ke-satu antara rakaman
+dan acara, jadi nota mesyuarat dan catatan kalendar kekal bersambung tanpa
+mana-mana ciri bergantung pada yang lain.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Mula rakaman & pautkan** hanya untuk desktop. Pada klien web, tindakan itu
+melaporkan bahawa rakaman tidak tersedia — walaupun aliran rakaman pada skrin
+mesyuarat itu sendiri sememangnya berfungsi dalam pelayar.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Ejen tidak boleh membaca kalendar anda]
+Tiada alat MCP kalendar. Ejen tidak boleh menyenaraikan acara, membaca butiran
+acara atau menjawab jemputan bagi pihak anda; permukaan `calendar.*` ialah RPC
+untuk klien manusia sahaja.
 :::
 
-## See also
+## Lihat juga
 
-- [Meetings and transcription](/ms-MY/manual-pengguna/konsep/mesyuarat/): what happens after you start a recording
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/): why calendar accounts are per-workspace
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/)
-- [Record and summarize a meeting](/ms-MY/manual-pengguna/panduan-cara/rakam-mesyuarat/)
+- [Mesyuarat dan transkripsi](/ms-MY/manual-pengguna/konsep/mesyuarat/): apa yang berlaku selepas anda memulakan rakaman
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/): mengapa akaun kalendar adalah bagi setiap ruang kerja
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/): `MeetingStartingSoon` dan `CalendarAuthExpired`
+- [Sambungkan Google Calendar](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/)
+- [Rakam dan ringkaskan mesyuarat](/ms-MY/manual-pengguna/panduan-cara/rakam-mesyuarat/)

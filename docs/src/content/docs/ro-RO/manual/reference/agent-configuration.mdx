@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Configurarea agenților
+description: Fiecare câmp al entității de agent și enumerările pe care le folosește.
 slug: ro-RO/manual/referinta/configurarea-agentilor
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/).
+Această referință listează fiecare câmp al entității de agent, plus enumerările și flag-urile pe care le folosește. Pentru un parcurs pas cu pas de creare sau editare a unui agent în aplicație, vezi [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/).
 
-## Agent entity fields
+## Câmpurile entității de agent
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Câmp                    | Tip                    | Obligatoriu | Descriere                                                                                                                                                                                           |
+| ----------------------- | ---------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Da          | Identificator unic al agentului                                                                                                                                                                      |
+| `name`                  | `String`               | Da          | Identificator scurt pentru @-mențiuni                                                                                                                                                                |
+| `title`                 | `String`               | Da          | Titlu de rol lizibil pentru oameni                                                                                                                                                                   |
+| `agentMdPath`           | `String`               | Da          | Cale absolută către fișierul de definiție `.md` al agentului                                                                                                                                         |
+| `workspaceId`           | `String`               | Da          | Spațiul de lucru proprietar (non-null)                                                                                                                                                               |
+| `reportsTo`             | `String?`              | Nu          | Id-ul agentului părinte                                                                                                                                                                              |
+| `skills`                | `AgentSkills`          | Da          | Set de identificatori de skill-uri                                                                                                                                                                   |
+| `persona`               | `String?`              | Nu          | Instrucțiuni de comportament în text liber                                                                                                                                                           |
+| `systemPrompt`          | `String?`              | Nu          | Suprascrie promptul de sistem implicit                                                                                                                                                               |
+| `adapterId`             | `String?`              | Nu          | Id-ul adaptorului de inferență                                                                                                                                                                       |
+| `modelId`               | `String?`              | Nu          | Id-ul modelului în cadrul adaptorului                                                                                                                                                                |
+| `strictMode`            | `bool`                 | Nu          | Implicit `false`. Se scrie în rând și în `AGENTS.md`-ul agentului                                                                                                                                     |
+| `effort`                | `String?`              | Nu          | Id-ul nivelului de raționament (de ex. `'low'`, `'xhigh'`), preluat din `thinkingLevels` ale modelului selectat                                                                                      |
+| `contextSize`           | `int?`                 | Nu          | Dimensiunea maximă a ferestrei de context                                                                                                                                                            |
+| `role`                  | `AgentRole?`           | Nu          | Rolul agentului                                                                                                                                                                                      |
+| `capabilities`          | `AgentCapabilities?`   | Nu          | Valoarea implicită de capabilități per agent; când este null, la trimitere se aplică valoarea implicită la nivel de utilizator, iar o conversație o mai poate suprascrie                             |
+| `monthlyBudgetCents`    | `int`                  | Nu          | Plafon lunar de cheltuieli, în cenți (implicit `0`, nelimitat)                                                                                                                                       |
+| `silenceTimeoutMinutes` | `int?`                 | Nu          | Suprascriere a timeout-ului de tăcere, în minute; trebuie să fie null sau între 1–240 (verificat în constructor)                                                                                     |
+| `maxConcurrentTasks`    | `int`                  | Nu          | Implicit `1`. Cifra de capacitate pe care o raportează modelul de prezență (numărătorile de rulări în execuție și în coadă sunt comparate cu ea)                                                     |
+| `visibility`            | `AgentVisibility`      | Nu          | Implicit `workspace`                                                                                                                                                                                 |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Nu          | Starea de guvernanță (implicit `active`). Scrisă de oprirea dură a bugetului și afișată în organigramă și în lista de prezență. Trimiterea acceptă în continuare muncă de la un agent `paused`       |
+| `budgetPolicyId`        | `String?`              | Nu          | Id-ul politicii de buget partajate; când este null, se aplică direct `monthlyBudgetCents`                                                                                                            |
+| `runtimeProfileId`      | `String?`              | Nu          | Id-ul profilului de runtime personalizat                                                                                                                                                             |
+| `createdAt`             | `DateTime`             | Da          | Marca temporală a creării                                                                                                                                                                            |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` și `title` trebuie să fie ambele ne-goale (verificat în constructor). Valoarea
+implicită `0` a `monthlyBudgetCents` înseamnă nelimitat. Scrie un plafon cu `agents.upsert`.
 
-## AgentRole enum
+## Enumerarea AgentRole
 
-| Role       | Label    | Description                      |
+| Rol        | Etichetă | Descriere                        |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | Coordonare și delegare           |
+| `coder`    | Coder    | Implementare de cod              |
+| `reviewer` | Reviewer | Revizuire și analiză de PR       |
+| `qa`       | QA       | Testare și asigurarea calității  |
+| `designer` | Designer | Implementare UI/UX               |
+| `security` | Security | Revizuire și audit de securitate |
+| `devops`   | DevOps   | Infrastructură și implementare   |
+| `pm`       | PM       | Management de produs             |
+| `general`  | General  | Flexibil, cu mai multe scopuri   |
 
-## AgentVisibility enum
+## Enumerarea AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Valoare     | Descriere                                                    |
+| ----------- | ------------------------------------------------------------ |
+| `workspace` | Implicită; valorile stocate necunoscute și null se interpretează ca aceasta |
+| `private`   | Privată pentru utilizatorul care a creat-o                    |
 
-## AgentLifecycleStatus enum
+## Enumerarea AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Valoare    | Descriere                                                                                                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| `active`   | Implicită. `isDispatchable` este true doar pentru această valoare                                                |
+| `paused`   | Setată de oprirea dură a bugetului. Afișată în lista de prezență; trimiterea acceptă în continuare muncă         |
+| `archived` | Retrasă și ascunsă din listele de prezență active                                                                |
 
-## AgentCapabilities flags
+## Flag-urile AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Se rezolvă la fiecare trimitere: valoarea implicită a agentului, cu revenire la valoarea implicită la nivel de utilizator când este null, plus o suprascriere per conversație deasupra. Se impun prin absență — brokerul de acreditări pur și simplu nu emite și nu injectează ceea ce acoperă o capabilitate dezactivată.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Flag               | Tip    | Implicit | Descriere                                                                                |
+| ------------------ | ------ | -------- | ---------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false`  | Trimite commit-uri către remote; condiționează injectarea tokenului GitHub alături de `canCallGitHubApi` |
+| `canCallGitHubApi` | `bool` | `false`  | Apelează api.github.com; condiționează injectarea `GH_TOKEN` și domeniile de egress GitHub |
+| `canCallTicketing` | `bool` | `false`  | Apelează API-ul providerului de tichete; condiționează injectarea cheii API a providerului și domeniile lui de egress |
+| `canAccessNetwork` | `bool` | `true`   | Egress arbitrar spre exterior. Condiționează și instrumentele `web_fetch` și `web_search` ale harness-ului |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` reprezintă toate cele patru valori implicite ale constructorului. `legacyDefault` (toate patru true) este folosit doar de migrarea care a completat retroactiv conversațiile create înainte să existe capabilitățile. Un blob stocat malformat sau gol se interpretează ca `safeDefault`; cheia veche `canCallLinear` este citită ca `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Un set imuabil, insensibil la majuscule, de identificatori de skill-uri. La trimitere, aceste slug-uri sunt sincronizate ca legături de skill-uri în overlay-ul agentului; harness-ul încarcă apoi automat frontmatter-ul skill-urilor legate în prompt.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (derivat)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Nu este stocat. Șapte valori. Ordinea declarării este ordinea de prioritate (`sortPriority`, fixată de un test), care este ordinea după care sortează lista de prezență:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| Stare       | `sortPriority` | Condiție                                                                                                              |
+| ----------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | Orice jurnal de rulare are starea `running`                                                                           |
+| `blocked`   | 1              | Vitalitatea ultimei rulări este `blocked`, `stalled` sau `looping`                                                    |
+| `failed`    | 2              | Starea ultimei rulări este `error`, sau vitalitatea ei este `failed` sau `dead`                                       |
+| `queued`    | 3              | O rulare este trimisă, dar nu se execută — parcată în spatele altei rulări a aceluiași agent, sau scrisă, dar încă nepornită |
+| `succeeded` | 4              | Rularea s-a încheiat cu succes                                                                                        |
+| `idle`      | 5              | Agentul a rulat deja și nu are nimic în curs                                                                          |
+| `neverRun`  | 6              | Nu există niciun jurnal de rulare                                                                                     |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` și `succeeded` sunt **doar per rulare**. `deriveAgentLiveState`, care calculează starea din lista de prezență pentru un agent, nu produce niciuna dintre ele — returnează `neverRun`, `running`, `failed`, `blocked` sau `idle`.
 
-## See also
+## Vezi și
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/)
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)

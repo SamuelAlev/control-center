@@ -1,216 +1,228 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Спільна робота — ідентичність, членство та присутність
+description: Як Control Center моделює людей і агентів як рівноправних учасників, що насправді визначає доступ до робочого простору та чому жива обізнаність і спільні записи рухаються двома різними каналами.
 slug: uk-UA/керівництво/поняття/спільна-робота
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center працює і для одного оператора, але модель під ним багатоакторна
+від самого початку. Люди й агенти пишуть повідомлення в тих самих просторах,
+редагують ті самі тікети й з’являються в тому самому списку учасників. Щоб це
+було безпечним і зрозумілим, потрібні три рішення: **хто вважається актором**,
+**що визначає доступ** і **який стан зберігається надійно, а який лише
+транслюється наживо**.
 
-## Principals: users and agents are co-equal actors
+## Принципали: користувачі й агенти — рівноправні актори
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Усе, що фіксує «хто це зробив» — повідомлення, тікети, перевірки, плани,
+журнали запусків, записи аудиту, — визначається через **принципал**, замкнене
+об’єднання `UserPrincipal` та `AgentPrincipal` з компактним дротовим форматом
+(`user:<id>` / `agent:<id>`). Атрибуція ніколи не зводить N людей (чи N
+агентів) до одного сторожового облікового запису, тож перевірку, залишену
+агентом, і перевірку, залишену людиною, можна розрізнити всюди, де вони
+з’являються.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Оскільки принципал — це одиниця ідентичності, він також одиниця стримування:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Обмеження швидкості — на принципал, а не на сеанс.** Захист від флуду для
+  віддалених викликів інструментів розподіляє бюджет за користувачем, а не за
+  з’єднанням: усі пристрої учасника черпають з одного спільного ковзного вікна
+  (120 викликів за хвилину, з яких щонайбільше 30 можуть змінювати стан), тож
+  відкриття трьох пристроїв не потроює квоту нікому, і один гамірний учасник
+  не заморить голодом решту.
+- **Скасування — на принципал.** Журнал дій кожного клієнта фіксує лише ті
+  зміни, які виконав _його_ принципал. Ви можете скасувати ⌘Z власну правку
+  тікета, але не правку колеги — на момент, коли ви її бачите, надійний канал
+  уже її розв’язав (див. нижче).
 
-## Membership is the access boundary — not the pairing key
+## Членство — межа доступу, а не ключ прив’язки
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/uk-UA/керівництво/поняття/віддалене-керування/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Два різні облікові дані відповідають на два різні питання. **Ключ прив’язки**
+(див. [Віддалене керування та мобільний клієнт](/uk-UA/керівництво/поняття/віддалене-керування/))
+автентифікує _пристрій_ на сервері. **Членство** дає користувачу цього пристрою
+право діяти в _робочому просторі_. Прив’язаний пристрій, користувач якого не
+має членства в робочому просторі, не може ні читати його, ні змінювати.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Членство — це один рядок на пару (робочий простір, користувач), збережений у
+**власному файлі бази даних цього робочого простору** — тож питання «хто є в
+цьому робочому просторі?» — це звичайне читання в межах однієї області, а
+обернене питання «у яких робочих просторах я перебуваю?» неминуче охоплює
+кілька файлів і є одним із небагатьох санкціонованих розгалужень між робочими
+просторами. Саме його виконує вибір робочого простору, перш ніж жоден робочий
+простір ще вибрано.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Кожен рядок несе роль із п’ятирівневої драбини, упорядкованої за рангом:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Роль     | Що може                                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| `owner`  | Повний контроль, включно з видаленням робочого простору; рівно один на робочий простір                       |
+| `admin`  | Керування учасниками, запрошеннями, налаштуваннями, руйнівними операціями                                   |
+| `member` | Повсякденне читання й запис: повідомлення, тікети, запуски агентів                                           |
+| `viewer` | Лише читання в усьому робочому просторі; глоби виключення секретів ховають відповідні шляхи на поверхнях із кодом |
+| `guest`  | Така сама межа лише читання, як у переглядача, на найнижчому рангі драбини                                   |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Кожне рішення про доступ зводиться до «чи роль того, хто звертається,
+щонайменше X». Мінімальна межа виводиться з виду операції, якщо вона не
+оголошує її явно: читання потребує `guest`, зміна — `member`, руйнівна
+операція — `admin`. ACL на окремі об’єкти, крім дозволів на репозиторій,
+описаних нижче, навмисно поза межами.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Запрошення** — це те, як надають членство, з розділу Налаштування → Робочий
+простір → Учасники. Адмін створює одноразовий код (як посилання або QR), який
+за замовчуванням спливає через сім днів; сервер зберігає лише SHA-256-хеш
+коду, а сам код показується рівно один раз. Погашення коду JIT-провізіює
+користувача, записує членство з роллю із запрошення (ніколи `owner` —
+володіння передають явно, його ніколи не надають запрошенням) і передає
+керування прив’язуванню пристрою. Облікові дані пристрою, створені після
+прив’язування, самі обмежені 30 днями, тож прив’язування не є вічним ключем.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Дозволи на репозиторій** лежать під членством. Оскільки сервер має повні
+робочі копії, саме лише членство в робочому просторі ніколи не повинно давати
+більше прав, ніж forge: кожна поверхня, що працює з кодом, — файли, діфи,
+перевірка PR, пошук коду — перевіряє дозвіл учасника саме на _цей
+репозиторій_. Дозволи задаються на комбінацію (робочий простір, користувач,
+репозиторій) і мають ранги `none` → `read` → `review` → `write`, де `write`
+означає запуск агентів, які пишуть у репозиторій. Відсутність рядка означає
+`none`; власники й адміни неявно мають `write` на кожен пов’язаний репозиторій
+і не мають жодних рядків.
 
-## Two lanes of collaboration state
+## Два канали стану спільної роботи
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center розділяє спільний стан на два канали з протилежними правилами
+надійності, бо ці два види стану відмовляють по-різному.
 
-### The ephemeral presence lane
+### Ефемерний канал присутності
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Присутність — хто в мережі, де він, що набирає, чим саме зараз займається
+агент — нічого не варта тієї ж миті, коли застаріває. Якби її зберігали, кожне
+повторне з’єднання мусило б узгоджувати «база даних каже, що Сем редагує цей
+тікет» із реальністю. Тож присутність **ніколи не записується в базу даних**.
+Вона живе в **хабі присутності** в пам’яті на сервері: клієнти публікують
+через `presence.update`, інші клієнти підписуються через `presence.watch`, а
+записи автоматично спливають після трьох пропущених сигналів (сигнали
+надходять кожні 10 секунд; хаб прибирає їх кожні 5). Узгоджувати тут нічого —
+лише дати йому згаснути.
 
-Two properties keep the lane trustworthy:
+Дві властивості роблять цей канал надійним:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Ідентичність береться із сеансу, ніколи з аргументів клієнта.** Сервер
+  зіставляє автентифікований пристрій з’єднання з ідентифікатором користувача;
+  клієнт може оновлювати лише власну присутність, тож ніхто не може підробити
+  статус чи локус іншого учасника. Явне оновлення `offline` (від’єднання або
+  перемикач невидимості) негайно видаляє запис.
+- **Список учасників формує сервер.** Учасники ніколи не обмінюються
+  присутністю напряму, тож кожен бачить той самий список незалежно від
+  топології. Агенти не мають клієнта, тож сервер _синтезує_ їхні записи з
+  живого стану запусків — думає, працює, заблокований на шлюзі підтвердження,
+  завершив — причому стан і локус агента визначає один репрезентативний
+  запуск, щоб паралельні запуски не змушували список учасників блимати.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Розгалуження поділяється на рівні за споживачем: десктоп і веб користуються
+повним рівнем (щонайбільше одне надсилання списку учасників на 100 мс),
+телефон — зведеним (раз на 500 мс), тож оновлення з частотою руху курсора не
+розтоплять PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+**Локус** учасника — де він зараз перебуває, аж до артефакту — це замкнене
+об’єднання: `Space`, `File` (репозиторій + шлях + необов’язковий рядок), `Pr`,
+`Ticket`, `PlanNode`. Не кожен локус має куди перейти: маршруту для переглядача
+файлів немає, тож локус `File` відображається як напис, а не як пункт
+призначення. Канал також несе **м’які заявки** («Сем редагує цей тікет»,
+«агент займає цей worktree»): _видимість_ конфліктів, а не блокування.
+Невідомі види локусів розбираються як null, тож старий клієнт просто не
+відображає того, чого не розуміє.
 
-### The durable shared lane
+### Надійний спільний канал
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Записи, які мусять пережити все — тікети, спільний документ «Нотатки»
+простору, повідомлення — ідуть протилежним шляхом: авторитетні, впорядковані
+та збережені. Паралельні правки розв’язуються за принципом **перемагає
+останній запис у порядку надходження на сервер**, ніколи за годинниками
+клієнтів. Розв’язання навмисно дрібнозернисте: правки тікетів — _поколонкові_,
+тож двоє людей, які редагують різні поля одного тікета, обидва зберігаються, і
+ніхто не затирає іншого (переходи робочого процесу натомість зберігають
+оптимістичне блокування); документ «Нотатки» простору — це один стовпець, тож
+увесь документ підпадає під LWW, а м’які заявки в каналі присутності роблять
+паралельне редагування видимим, а не заблокованим. Це навмисно не CRDT — тягар
+доведення лежить на CRDT, а LWW за порядком надходження разом із видимими
+заявками покриває реальні моделі спільної роботи.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+«Останній запис» означає **порядок надходження на сервер**, ніколи не годинник
+клієнта — ноутбук із перекошеним годинником не може виграти правку, яку
+програв. За надійним каналом стоїть **стрічка синхронізації**: тригери SQLite
+дописують кожну зміну до журналу змін робочого простору _всередині транзакції
+запису_, виділяючи монотонний порядковий номер робочого простору в тій самій
+транзакції, що й саму зміну. Сервіс на сервері читає цей журнал і перетворює
+його на версіоновані кадри дельт у порядку номерів. Клієнти переходять від
+повних знімків до дельт; розрив у послідовності повертає це сховище до режиму
+знімків, а не застосовує кадри неправильно.
 
-## Follow, steer, take over, hand back
+## Стеження, коригування, перехоплення, повернення
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Канал присутності — це не просто список учасників: він приводить у дію дієслова
+спільної роботи:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Режим стеження.** Натисніть на учасника — і ваш клієнт рухається за його
+  локусом, переходячи туди, куди переходить він. Стеження триває «до вашої
+  першої дії»: щойно ви переходите кудись самі, стеження відчіплюється. Банер,
+  який можна закрити, повідомляє, коли інший учасник презентує простір, у якому
+  ви перебуваєте.
+- **Коригування.** Повідомлення агенту, що працює, стає в чергу як коригування;
+  агент перечитує його, перш ніж продовжити наступний хід, тож ви можете
+  підштовхнути запуск на ходу, не вбиваючи його.
+- **Перехоплення.** Перебирання контролю над розмовою зупиняє кожен активний
+  запуск на його наступній чистій межі ходу (запуск Claude Code, який не має
+  безпечної межі, зупиняється) із знімком git на кожен хід, тож перехоплення
+  можна відкотити. Надійна позначка блокує нові запуски в простір і переживає
+  перезапуск сервера — сервер ніколи не відновлює роботу автоматично посеред
+  незавершеної правки людини. Один живий редактор на worktree — це м’яка
+  заявка: друге перехоплення видно, і йому відмовляють, а не зливають його
+  мовчки.
+- **Повернення.** Повертаючи контроль, ви публікуєте в просторі структурований
+  підсумок diff для worktree, він стає в чергу як коригування для призупинених
+  запусків, вони відновлюються, а позначка знімається.
 
-## The autonomy dial
+## Перемикач автономності
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Коригування й перехоплення — це втручання постфактум. **Перемикач
+автономності** — це постійне налаштування: окремо для кожного простору й
+кожного агента, задається в заголовку простору й визначає, що станеться, коли
+агент доходить до дії під шлюзом.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Рівень               | Дротове значення  | Вплив на виклик інструмента під шлюзом                                                                        |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Лише пропонувати     | `proposeOnly`     | Відхиляється одразу, з причиною, яку агент має передати далі — він може описати дію, але не виконати її        |
+| Діяти з підтвердженням | `actWithApproval` | Шлюз підтвердження, що відмовляє за замовчуванням: одне підтвердження надходить під’єднаному оператору, а якщо того, хто підтверджує, немає — відмова |
+| Діяти вільно         | `actFreely`       | Попередньо схвалено, крім випадків, коли діє жорстке правило `deny` з обмежень — правило заборони завжди перемагає |
+| (не задано)          | `null`            | Те саме, що «діяти з підтвердженням»: типове значення сервера                                                  |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Дві речі стоять поза перемикачем в обидва боки. Власне вихідне дієслово режиму
+закріплене, і йому ніколи не можна відмовити, хоч би що казав перемикач —
+колись режим оркестрації структурно не міг видати свій єдиний результат, бо
+пресет заборонив клас ефектів, який оголошує це дієслово. А жорстке `deny` від
+обмежень дій не можна перекрити через `actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/uk-UA/керівництво/поняття/модель-агента/).
+:::note[Перемикач керує лише вбудованим harness]
+До нього звертається цикл harness у зворотному виклику підтвердження. Агент, що
+працює через адаптер Claude Code, робить власні виклики інструментів у власному
+процесі, де Control Center нема чого перекривати шлюзом — див.
+[Модель агента](/uk-UA/керівництво/поняття/модель-агента/).
 :::
 
-## Solo zero-regression
+## Робота наодинці без регресій
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Усе це — надбудова. Робочий процес оператора-одинака не змінюється: коли є
+одна людина й жодного агента, хабу присутності нічого транслювати, тож канал
+надсилає початковий знімок і далі простоює без трафіку; механізми LWW і
+синхронізації — це той самий шлях з єдиним записувачем, яким він завжди був; а
+ключ прив’язки залишається обліковими даними пристрою, якими він завжди був.
+Членство вже є межею доступу — з однією людиною є єдиний рядок власника і
+жодного інтерфейсного оздоблення для списку учасників.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/): the boundary membership enforces
-- [Remote control and mobile](/uk-UA/керівництво/поняття/віддалене-керування/): the pairing key and device credential side of identity
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): the agent half of the principal union
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): the runs that steering and take-over pause and resume
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/): the effect-class policy the autonomy dial composes with
-- [Domain events](/uk-UA/керівництво/поняття/доменні-події/): the bus that live updates ride
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/): межа, яку забезпечує членство
+- [Віддалене керування та мобільний клієнт](/uk-UA/керівництво/поняття/віддалене-керування/): ключ прив’язки й облікові дані пристрою як бік ідентичності
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): агентська половина об’єднання принципалів
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): запуски, які зупиняють і відновлюють коригування та перехоплення
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/): політика класів ефектів, з якою поєднується перемикач автономності
+- [Доменні події](/uk-UA/керівництво/поняття/доменні-події/): шина, якою рухаються живі оновлення

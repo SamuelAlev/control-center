@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Koncept
+description: Hur Control Center fungerar och varför det är byggt så här – bakgrundsläsningen bakom guiderna.
 slug: sv-SE/handbok/koncept
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/sv-SE/handbok/how-to-guider/); when you want to look
-something up, go to the [reference](/sv-SE/handbok/referens/).
+De här sidorna förklarar **hur Control Center fungerar och varför**. De är till för att
+förstå, inte för att göra: ingen sida här är en procedur att följa. När du vill utföra en
+bestämd uppgift går du till [how-to-guiderna](/sv-SE/handbok/how-to-guider/); när du vill slå
+upp något går du till [referensen](/sv-SE/handbok/referens/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Läs dem i valfri ordning. Är du ny är kärnmodellen rätt ställe att börja på.
 
-## Core model
+## Kärnmodell
 
-The four ideas everything else is built on.
+De fyra idéerna som allt annat bygger på.
 
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/) — what happens between your message and the agent's first token
-- [Modes](/sv-SE/handbok/koncept/lagen/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/sv-SE/handbok/koncept/verktygskontext/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/sv-SE/handbok/koncept/kodintelligens/) — the code graph, language server, structural search and debugger
-- [Conversation history](/sv-SE/handbok/koncept/samtalshistorik/) — persistence, compaction and forking a transcript
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/) — tenant-gränsen och varför den upprätthålls av databasens layout i stället för av disciplin i frågorna
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/) — vad en agent består av: identitet, roll, skills, förmågor, adapter och modell
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/) — vad som händer mellan ditt meddelande och agentens första token
+- [Lägen](/sv-SE/handbok/koncept/lagen/) — hur `chat`, `plan`, `review` och `orchestrate` förändrar vad en agent får göra
+- [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/) — varför en agent bara ser en delmängd av sina verktyg, hur den når resten och vad som håller leverantörens cache varm
+- [Kodintelligens](/sv-SE/handbok/koncept/kodintelligens/) — kodgrafen, språkservern, den strukturella sökningen och felsökaren
+- [Samtalshistorik](/sv-SE/handbok/koncept/samtalshistorik/) — persistens, komprimering och förgrening av en avskrift
 
-## Safety and control
+## Säkerhet och kontroll
 
-What an agent is allowed to touch and who decides.
+Vad en agent får röra och vem som bestämmer.
 
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) — what actually constrains an agent run today
-- [Guardrails](/sv-SE/handbok/koncept/racken/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/sv-SE/handbok/koncept/auktorisering/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/sv-SE/handbok/koncept/stationer/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) — vad som faktiskt begränsar en agentkörning i dag
+- [Räcken](/sv-SE/handbok/koncept/racken/) — en gemensam policymotor för varje muterande åtgärd och hur en regel avgörs
+- [Auktorisering](/sv-SE/handbok/koncept/auktorisering/) — roller, behörighetskatalogen och granskningskedjan
+- [Stationer och avskilda miljöer](/sv-SE/handbok/koncept/stationer/) — varför agenter får engångs-VM:er i stället för din maskin, och vad gränsen faktiskt är
 
-## Directing the work
+## Styra arbetet
 
-Turning intent into work that gets done.
+Att omvandla avsikt till arbete som blir gjort.
 
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/sv-SE/handbok/koncept/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/sv-SE/handbok/koncept/orkestrering/) — one goal, one approval, a generated pipeline
-- [AI review](/sv-SE/handbok/koncept/ai-granskning/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/sv-SE/handbok/koncept/pr-samtal/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/sv-SE/handbok/koncept/minne-och-kunskap/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/sv-SE/handbok/koncept/utvarderingar-och-kvalitet/) — eval suites and the Quality tab
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/) — den leverantörsneutrala arbetsenhet som hela flottan delar
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/) — DAG-arbetsflöden, triggers och körningar som kan återupptas
+- [Orkestrering](/sv-SE/handbok/koncept/orkestrering/) — ett mål, ett godkännande, en genererad pipeline
+- [AI-granskning](/sv-SE/handbok/koncept/ai-granskning/) — hur en PR blir granskad: granskningsytor, kollegornas samsyn, axlar och utlåtandet Ship/Hold/Block
+- [PR-samtal](/sv-SE/handbok/koncept/pr-samtal/) — att svara på en GitHub-omnämning eller etiketten `ai-review` direkt från forgen
+- [Minne och kunskap](/sv-SE/handbok/koncept/minne-och-kunskap/) — fakta, policyer och vad en agent får känna till
+- [Utvärderingar och kvalitet](/sv-SE/handbok/koncept/utvarderingar-och-kvalitet/) — utvärderingssviter och fliken Kvalitet
 
-## People and reach
+## Människor och räckvidd
 
-Working with other humans and reaching the fleet from elsewhere.
+Att arbeta med andra människor och nå flottan från andra håll.
 
-- [Multiplayer and presence](/sv-SE/handbok/koncept/multiplayer/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/sv-SE/handbok/koncept/sso/) — SAML and OIDC logins
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/sv-SE/handbok/koncept/fjarrstyrning/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/sv-SE/handbok/koncept/moten/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/sv-SE/handbok/koncept/kalender/) — Google Calendar sync and meeting alerts
+- [Multiplayer och närvaro](/sv-SE/handbok/koncept/multiplayer/) — människor och agenter som jämbördiga deltagare och vad som styr åtkomsten
+- [Enkel inloggning](/sv-SE/handbok/koncept/sso/) — inloggning med SAML och OIDC
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/) — varför Slack-bryggan kopplar upp utåt och vad som auktoriserar ett meddelande från chatten
+- [Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/) — hur en telefon når din server och säkerhetsmodellen runt den
+- [Möten och transkription](/sv-SE/handbok/koncept/moten/) — inspelning, transkription och sammanfattning på enheten
+- [Kalender och schemaläggning](/sv-SE/handbok/koncept/kalender/) — synk med Google Calendar och mötesaviseringar
 
-## Under the hood
+## Under huven
 
-The shape of the system itself.
+Hur systemet självt är uppbyggt.
 
-- [Architecture](/sv-SE/handbok/koncept/arkitektur/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/) — the in-process bus features talk over
+- [Arkitektur](/sv-SE/handbok/koncept/arkitektur/) — lagerindelning, den delade kärnan, portar och adaptrar
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) — hur klienterna för dator, webb och telefon förhåller sig till en server
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/) — den processinterna buss som funktioner kommunicerar över

@@ -1,152 +1,143 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: שימוש בסקירה מבוססת AI
+description: הפעילו את הפייפליין pr_review על בקשת משיכה, קראו את הממצאים וההכרעה, ואז פרסמו את הסקירה ב-GitHub.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+המדריך הזה מראה לכם איך לתת לסוכני סקירה לסקור בקשת משיכה ואיך לפרסם את התוצאה
+ב-GitHub.
 
-## Start an AI review
+## התחלת סקירת AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. פתחו את ה-PR ועברו ללשונית **סקירה כללית**
+2. פתחו את תפריט ⋯ בשורת הפעולות ובחרו **שאל את ה־AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+הפריט מופיע רק כשבקשת המשיכה פתוחה — זו פעולה שלפני המיזוג. אותו כפתור מוצע
+כ**שאל את ה־AI** במצב הריק של לשונית **סקירה**, לפני שקיימת סקירה כלשהי.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center מפעיל את הפייפליין המובנה מראש `pr_review` ופותח את לשונית
+**סקירה** של ה-PR כדי שתוכלו לצפות בו. הפייפליין:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. פותח את מרחב הסקירה של ה-PR עצמו, שעץ העבודה המבודד שלו מחזיק את ה-PR
+   בצ׳קאאוט ב-head שלו
+2. מפזר את הסוקרים לפי רמת הסקירה של סביבת העבודה — שלושה כברירת מחדל
+   (הסוכנים המובנים מראש **qa**, **architect** ו-**engineer**, במקביל).
+   אין זיהוי שפה או תחום
+3. נותן לסוכן המוביל (CEO) לאחד את הממצאים שלהם לסיור מודרך
+4. מסיים: ממיין את הממצאים לדליי קונצנזוס ומחשב את ההכרעה. כשהשיוך מגיע
+   ל-`awaiting approval`, מופיע **פרסם ב־GitHub** בלשונית הסקירה
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+עומק הסקירה הוא **רמת הסקירה** של סביבת העבודה — `light` (סוקר אחד), `balanced`
+(שלושה, ברירת המחדל) או `thorough` (כל החמישה, בתוספת מומחי האבטחה והביצועים) —
+והיא נקבעת ב**הגדרות ← סביבת עבודה ← כללי**, בכרטיס **מדיניות סביבת העבודה**.
+רמה קלה יותר רושמת בדיוק אותו מספר ממצאים; היא רק מדווחת על פחות מהם בחזית.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/) for how the pieces fit together.
+כל הסוקרים מפרסמים למרחב הסקירה היחיד של ה-PR, וזה מה שהופך את הממצאים שלהם
+לברי־השוואה. ראו [סקירת AI](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/) לאיך החלקים
+מתחברים יחד.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/).
+`pr_review` מגיע עם טריגר ידני בלבד. כדי שהוא יופעל בכל בקשת משיכה שמפורסמת,
+הוסיפו טריגר בעצמכם — ראו
+[שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/). אפשר גם
+להתחיל סקירה מ-GitHub עצמו, בלי טריגר לפייפליין: אזכרו את הבוט של השרת בבקשת
+המשיכה או הוסיפו את התווית `ai-review` — ראו
+[דיבור עם Control Center מבקשת משיכה ב־GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+אם הודעת טוסט אומרת שסקירה כבר רצה עבור בקשת המשיכה הזו, סימן שאחת כבר בדרך;
+הישארו בלשונית **סקירה** או פתחו את **פייפליינים** כדי למצוא אותה.
 
-## Read the findings
+## קריאת הממצאים
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+הסוקרים רושמים ממצאים כ**צמתי סקירה** במרחב הסקירה. כל אחד מהם נושא:
 
-| Field          | Description                                                   |
+| שדה            | תיאור                                                         |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| סוג            | `bug`, `suggestion`, `recommendation`, `question` או `ticket` |
+| עדיפות         | P0 (קריטי) ← P3 (זוטר)                                        |
+| קטגוריה        | `security`, `stability`, `data_integrity`, `correctness`, `performance` או `maintainability` |
+| קובץ ושורה     | היכן שהממצא מעוגן                                             |
+| קוד מקורי      | הקוד שהממצא עוסק בו                                           |
+| קוד מוצע       | התיקון המוצע                                                  |
+| ביטחון         | עד כמה הסוקר בטוח                                             |
+| סטטוס          | `open` ← `consensus-ready` ← `resolved` או `dismissed`        |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+ממצא מגיע ל**consensus-ready** רק כשסוקר _עמית_ מאשר אותו. סוכן לא יכול לאשר
+ממצא משלו, כך שהדעה של סוקר בודד לעולם לא מתקדמת בכוחות עצמה.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/) for what the pass produces.
+לשונית **סקירה** מציגה את רשימת הממצאים, שאפשר לסנן לפי סוג וסטטוס, עם מתג
+לממצאים שנדחו, לצד הארטיפקט שהסוכן המאחד פרסם. התצוגה הדטרמיניסטית — קבוצות,
+לוח המחוונים הרב־צירי, ו-diffs של חוזה ומראה — מחושבת בצד השרת אבל אין לה משטח
+באפליקציה; ראו [חישוב סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/) כדי
+לדעת מה מעבר החישוב מפיק.
 
-## Check the disagreements panel
+## בדיקת פאנל אי־ההסכמות
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+כששני סוקרים מעגנים ממצאים לאותו קובץ ולאותה שורה אבל מדרגים אותם אחרת לגמרי —
+עדיפויות במרחק של שתי רמות או יותר, או שאחד קורא לזה `bug` והאחר קורא לזה
+`suggestion` — פאנל אי־הסכמות מופיע מעל רשימת הממצאים. קראו אותם קודם: שם דעות
+הסוקרים נפרדות ושם שיקול הדעת שלכם שווה ביותר.
 
-## Read the verdict
+## קריאת ההכרעה
 
-When the lead agent finalizes, it computes a **verdict**:
+כשהסוכן המוביל מסיים, הוא מחשב **הכרעה**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| הכרעה    | משמעות                                      |
+| -------- | ------------------------------------------- |
+| **Ship** | לא נמצא דבר שחוסם                            |
+| **Hold** | בעיות שכדאי לטפל בהן לפני המיזוג             |
+| **Block** | בעיות קריטיות שחייבות להיות מתוקנות         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+ההכרעה נושאת ציון ביטחון מצטבר וספירת ממצאים לפי עדיפות.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+צירי הסקירה מתמזגים לתוכה לאחר מכן, והם יכולים רק להפוך אותה ל**חמורה יותר**. ציר
+משעור שנכשל כופה **Block**; ציר משעור שלא הצליח להשלים (`partial`) או שלא הצליח
+לרוץ בכלל (`unavailable`) כופה לפחות **Hold**. היעדר ראיה לעולם לא פותח שער.
 
-## Publish the review to GitHub
+## פרסום הסקירה ל-GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+הפרסום הוא צעד נפרד, שתלוי במכוון באישור מצד המשתמש. הפייפליין `pr_review` משאיר
+את הסקירה ב-Control Center; הוא לא מפרסם אותה ב-GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. בלשונית **סקירה**, המתינו עד שיופיע **פרסם ב־GitHub**
+2. לחצו על **פרסם ב־GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center שולח סקירת GitHub **אחת**. ממצאים שכבר נפתרו או נדחו מדולגים.
+הכפתור כולל כל ממצא פתוח שנותר, וב-**Ship** הוא שולח `APPROVE`. (כלי ה-MCP
+`publish_review_to_github` עדיין מגיע כברירת מחדל לממצאים שאושרו על ידי עמיתים
+בלבד, ולא מאשר אלא אם תעבירו `approve_on_ship`.) ממצאים שנושאים עוגן של קובץ
+ושורה הופכים להערות מוטבעות; כל השאר נכנס לגוף הסיכום, כל אחד עם כותרת תחתונה
+"— Control Center AI review" כך שהמקור חד־משמעי. הכרעת **Block** נשלחת
+כ-`REQUEST_CHANGES`; **Hold** כ-`COMMENT`; **Ship** כ-`APPROVE` מהכפתור הזה.
+הודעת טוסט לאחר מכן מציגה **פורסם**. הסקירה מתפרסמת תחת זהות האפליקציה של השרת.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+אם GitHub דוחה עוגן מוטבע מפני שהשורה אינה חלק מה-diff, הסקירה כולה נשלחת מחדש
+כשכל ממצא מקופל לגוף, כך ששום דבר לא נשמט בשקט.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[הפרסום כפוף למעקות בטיחות]
+`pr_review.publishReview` מצהיר על מחלקת הפעולה `prPublish` ועובר דרך נקודת החנק
+של מעקות הבטיחות. אם ההחלטה שנקבעה היא `prompt` ואין מאשר מחובר, הפרסום נדחה —
+מעקות הבטיחות נכשלים באופן סגור. הגדירו כלל מפורש בהגדרות ← סביבת עבודה ← הרשאות
+סוכנים אם אתם רוצים שהוא ירוץ ללא השגחה.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+פייפליינים מובנים אחרים כן מפרסמים ישירות ל-GitHub: `cross_review`, `pr_triage`,
+`ticket_to_pr` ו-`pre_merge_gate` מסתיימים כל אחד בשלב תגובה. רק `pr_review` משאיר
+את הפלט שלו ממתין לכם.
 
-## Dispatch reviewers yourself
+## שליחת הסוקרים בעצמכם
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/).
+לשליטה על אילו תפקידים סוקרים את ה-PR ובאילו קבצים כל אחד מהם מסתכל, השתמשו בכלי
+ה-MCP `dispatch_reviewers` בתוך מרחב סקירה קיים, או הוסיפו צמתי סוקר לפייפליין.
+שני המסלולים, עם החתימה המדויקת של הכלי, מתועדים ב[שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
-- [Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
-- [Review compute (cohorts and axes)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
+- [סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
+- [שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
+- [חישוב סקירה (קבוצות וצירים)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
 
-## Related concepts
+## מושגים קשורים
 
-- [AI review](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/)
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
+- [סקירת AI](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/)
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)

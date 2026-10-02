@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Moduser
+description: Hvorfor det er et område, og ikke en agent, som bærer en modus; hva hver av de fire modusene garanterer; og hvor den garantien er strukturell snarere enn bare en instruks i prompten.
 slug: nb-NO/handbok/konsepter/moduser
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Hva en modus er
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+En modus er en egenskap ved et **område**, lagret som én kolonne på områderaden. Hver samtale i et område deler den, inkludert tråder – en tråd arver modusen til området sitt på samme måte som enhver annen samtale. Den samme agenten kan derfor være i forskjellige moduser i forskjellige områder samtidig, og å bytte modusen til et område endrer det som skjer på neste tur, uten å røre agenten.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Det finnes nøyaktig fire: `chat`, `review`, `plan`, `orchestrate`. Selve enumet inneholder ingen policy. Alt en modus garanterer, erklæres én gang, i en **kapabilitetsprofil**, som hvert håndhevingslag projiserer fra:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Verktøyflate** – hvilke verktøy som i det hele tatt finnes i den modusen, uttrykt som et maksimalt godkjenningsnivå, en tillatelsesliste, en nektliste og et sett med effektklasser som avvises.
+2. **Påkrevd resultatverb** – hva kjøringen må kalle for å ha levert noe.
+3. **Effektklasser som nektes** – hva handlingsvakten avviser blankt.
+4. **Worktree-holdning** – om det er tillatt å skrive til worktreet. Dette håndheves ved å fjerne de muterende verktøyene fra flaten, og det er det som gjør at det holder på alle verter. Der verten har en OS-sandkasse, skjærer den samme holdningen også ut reglene for skriving til filsystemet – en skrivebeskyttet modus monterer worktreet skrivebeskyttet – men det er en andre kopi av garantien, ikke den som gjør jobben.
+5. **Systemprompt-blokk** – en _generert_ kapabilitetsinnledning utledet fra den faktiske, materialiserte verktøylisten, pluss håndskrevet veiledning.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Hvert håndhevingslag projiserer fra den ene profilen, så verktøyflaten, vakten, worktree-holdningen og prompten kan ikke være uenige.
 
-## The four modes
+## De fire modusene
 
-### Chat — displayed as "Agent"
+### Chat – vises som «Agent»
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Standardmodusen og den eneste modusen uten ekstra begrensninger: hele verktøyflaten opp til utførelsesnivået, et skrivbart worktree, ingen nektede effektklasser og ingen fullføringskontrakt. Bruk den til implementering, feilretting, spørsmål om kodebasen og alt ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Legg merke til etiketten: i skrivefeltet vises modusen som **«Agent»**, ikke «Chat».
 
-### Plan — read-only, one deliverable
+### Plan – skrivebeskyttet, én leveranse
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Planmodus gjør worktreet skrivebeskyttet og fjerner skriveverktøyene fullstendig fra flaten, så begrensningen er strukturell snarere enn instruert. Agenten leser, søker og undersøker og leverer nøyaktig én ting: et `submit_plan`-kall som bærer en typet avhengighetsgraf – et mål pluss noder med nøkler, titler, beskrivelser og node-nøklene hver av dem avhenger av.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Planen vises som en kompakt rad i samtalen og åpner Plan Studio i en fane ved siden av. Godkjenner du den, kompileres grafen til en orkestrering, det genererte arbeidet kjøres, og området planen ble laget i, settes tilbake til agentmodus.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Hvis en kjøring i planmodus avsluttes uten å noen gang kalle `submit_plan`, injiserer løkken først et dytt som sier at planen ikke finnes før det kallet lykkes. Dyttet gir uttrykkelig tillatelse til en ærlig utgang av typen «ingen plan er nødvendig her», fordi planmodus er en innstilling på området, og et enkelt spørsmål stilt i den bør ikke tvinge frem en falsk plan.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).
+:::note[En kontrakt som ikke oppfylles, er ikke en mislykket kjøring]
+En kjøring som avsluttes uten planen sin, registreres likevel med statusen `completed` – prosessen avsluttet på en ryddig måte. Sannheten hviler på kjøringens livstegn (`empty`), feilfamilie (`silentRun`) og et sammendrag som navngir det som ikke ble produsert. Se [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Det finnes en andre, separat vei ut: `exit_plan_mode`. Den er en hard godkjenningsport, ikke et resultatverb – en agent som kaller den i stedet for `submit_plan`, har ikke levert noe. Det første kallet åpner en varig `plan_exit`-godkjenning og returnerer `pending`, og området forblir skrivebeskyttet; gjentatte kall forblir `pending` i stedet for å åpne en andre port. Først når godkjenningen er gitt, setter et påfølgende kall området til chat. En avvisning lar agenten åpne en ny forespørsel om en revidert plan.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+For å forlate planmodus selv bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab). `exit_plan_mode` avgjøres med MCP-verktøyet `decide_approval`. Radene for «agentgodkjenning» i innboksen er noe annet: bekreftelsesmeldinger per tur fra en agent som kjører.
 
-### Review — read-only, no contract
+### Gjennomgang – skrivebeskyttet, ingen kontrakt
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Gjennomgangsmodus er for PR-gjennomgang. Den gjør worktreet skrivebeskyttet, begrenser verktøyflaten til under utførelsesnivået og bruker en kuratert tillatelsesliste med verktøy for gjennomgang, saker og kommunikasjon. Et område som åpnes for en pull request, opprettes automatisk i gjennomgangsmodus.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Agentens utdata er strukturerte funn – **gjennomgangsnoder** – og, når en gjennomgang fullføres, en **dom**. En node bærer en type (`bug`, `suggestion`, `recommendation`, `question` eller `ticket`), en prioritet fra P0 (blokkerer utgivelse) til P3 (kjekt å ha), en selvvurdert konfidens, et valgfritt anker (fil pluss et linjeintervall; notater som gjelder hele repoet, har ingen) og en livssyklusstatus som går fra `open` til `consensusReady` når en kollega – aldri forfatteren – bekrefter den. Et funn der prioriteten eller konfidensen mangler eller er utenfor gyldig område, forkastes ved lesegrensen i stedet for å forurense dommen.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Dommen er ship, hold eller block, og den gjøres aldri annet enn _strengere_ av resultatene per akse som flettes inn i den: en akse bak en port som mislyktes, tvinger frem `block`, og en akse bak en port som ikke kunne kjøres, tvinger frem minst `hold`. Fravær av bevis gjør aldri en port grønn.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+I motsetning til plan og orkestrering har gjennomgang **ingen fullføringskontrakt**. Funn samles opp gjennom `add_review_node` og publiseres av `finalize_review`, og begge kan med rette kalles null ganger – en pipeline-agent som kjører i gjennomgangsmodus, kan være der for å fullføre en sak i stedet.
 
-### Orchestrate — read-only, proposes a team
+### Orkestrering – skrivebeskyttet, foreslår et team
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Orkestreringsmodus gjør ett mål om til en plan for et helt team. Som planmodus er den skrivebeskyttet og kan ikke skrive filer; oppå undersøkelsesflaten har den ett enkelt privilegert verb, `propose_orchestration`, som avgir et strukturert forslag: roller, et tre av undersaker, et syntesesteg og et budsjett. Prompten navngir bare verktøyene som finnes på flaten, så modellen bruker ikke turer på å fortelle om ansettelser eller sakearbeid den ikke kan kalle.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/nb-NO/handbok/konsepter/orkestrering/).
+Ingenting i forslaget utføres før du godkjenner det. Ved godkjenning ansetter en deterministisk materialisator agentene, oppretter sakene og et prosjekt og kjører en generert pipeline. Godkjenning er kun for operatøren: det finnes ikke noe MCP-verktøy for det, så en agent kan foreslå, men aldri godkjenne sin egen plan. Nye forslag som settes i gang av en agent, begrenses av en nedkjølingstid på to minutter, så påfølgende omplanlegginger avvises og bes om å slås sammen. Se [Orkestrering](/nb-NO/handbok/konsepter/orkestrering/).
 
-## Two rules worth knowing
+## To regler det er verdt å kjenne
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Resultatverbet til en modus kan aldri nektes.** `submit_plan` og `propose_orchestration` er festet i verktøyflaten og forhåndsgodkjent forbi både verktøyfilteret, godkjenningsporten og handlingsvakten, så autonomiknotten per område ikke kan stilne leveransen til en modus. Harnessets `ask_user` er festet av samme grunn: det _er_ måten en kjøring når operatøren på, så å portvokte det ville låse fast en kjøring som trenger å spørre om noe. Det ligger på lesenivå, så alle skrivebeskyttede moduser beholder det, og det er unntatt fra godkjenningsinnpakningen – en prompt foran en prompt feiler lukket når ingen godkjenner er tilkoblet, noe som ville nekte en agent selve handlingen å spørre.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Skrivebeskyttede moduser nekter ikke nettverkstilgang eller hemmeligheter.** Effektklassene som gjennomgang, plan og orkestrering nekter, er de som endrer verden: sletting av filer, skriving utenfor worktreet, commits, pushes, oppretting og publisering av PR-er, synkroniseringsskrivinger mot leverandører, pakkeinstallasjoner, oppstart av prosesser, mutasjon av arbeidsområdet og kontroll av isolerte miljøer (stasjoner). Utgående nettverkstrafikk og tilgang til hemmeligheter forblir bevisst på standardverdiene sine – undersøkelse er hele poenget med en skrivebeskyttet modus.
 
-## Choosing and changing a mode
+## Å velge og bytte modus
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Modusnedtrekksmenyen i skrivefeltet tilbyr **tre** alternativer: Agent (chat), Plan og Orkestrer. `review` kan **ikke velges av brukeren** – den settes av systemet når et PR-gjennomgangsområde opprettes, og av pipeline-steg.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+En pipeline-node som **åpner et område**, kan låse modusen til det rommet med en `extras['mode']`-nøkkel (`chat`, `review` eller `plan`). Nøkkelen krever eksakt samsvar: enhver annen stavemåte – inkludert `orchestrate` – ignoreres i stillhet, og rommet får standardverdien fra kallet (`review` i create-space-kallet). Et agentsteg blir med i et rom det ikke opprettet selv, og gir det ikke nye tillatelser.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Oppslaget i seg selv er enkelt. Utsenderen leser `mode`-kolonnen til området; en utsending uten område – en enkeltkjøring, et CLI-kall eller en område-id fra et annet arbeidsområde, som rett og slett ikke finnes i dette arbeidsområdets databasefil – løses opp til `chat`. Å bytte modus trer i kraft fra neste tur.
 
-## Where the guarantee actually holds
+## Hvor garantien faktisk holder
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Verktøyflaten til en modus bygges og håndheves av det **innebygde harnesset**. Det er den eneste transporten som kan gjøre et verktøy usynlig i stedet for bare nektet, portvokte hvert kall før det kjøres og observere en fullføringskontrakt.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/nb-NO/handbok/konsepter/agentmodell/).
+På Claude Code-transporten sendes en modus som ikke er chat, som `--permission-mode plan`. Claude respekterer det av konvensjon; dets egne verktøy for lesing, skriving, redigering og shell kjører usett. For den transporten er modusen en veiledning, ikke en grense i Control Center – se [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Tillatelseslistene begrenser verktøy på skrivenivå og høyere. Lesenivået i det innebygde harnesset når fortsatt verktøy som ingen liste navngir; på Claude Code nektes et verktøy som tillatelseslisten utelater, uansett om serveren har det.
 
-## Related concepts
+## Beslektede konsepter
 
-- [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/): where the mode is resolved and projected
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): which transports can enforce a mode
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/nb-NO/handbok/konsepter/orkestrering/): what an approved orchestrate proposal does
-- [Use plan mode](/nb-NO/handbok/slik-gjor-du/planmodus/): the practical walkthrough
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/): hvor modusen løses opp og projiseres
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): hvilke transporter som kan håndheve en modus
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): effektklassepolicyen som forhåndsinnstillingen til en modus mater inn i
+- [Orkestrering](/nb-NO/handbok/konsepter/orkestrering/): hva et godkjent orkestreringsforslag gjør
+- [Bruk planmodus](/nb-NO/handbok/slik-gjor-du/planmodus/): den praktiske gjennomgangen

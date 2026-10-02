@@ -1,150 +1,162 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Monitorizează rulările de pipeline
+description: Lucrează cu coada de rulări, citește cascada și panoul de pași al unei rulări și recuperează un pas eșuat sau blocat.
 slug: ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/).
+Aceasta este pagina pentru tot ce se întâmplă după pornirea unei rulări: găsirea
+ei, citirea a ceea ce a făcut fiecare pas și repornirea unei rulări eșuate.
+Pentru a porni una, vezi
+[Rulează un pipeline manual](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/).
 
-## Find a run
+## Găsește o rulare
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Dă clic pe **Pipeline-uri** în bara laterală a spațiului de lucru. Ecranul
+   este coada de rulări a spațiului de lucru — fiecare rulare, cea mai recentă
+   prima.
+2. Folosește șina din stânga pentru a filtra. Există exact trei filtre, fiecare
+   cu un contor în timp real: **Toate**, **În rulare**, **Eșuat**.
+3. Parcurge tabelul cu <kbd>↑</kbd>/<kbd>↓</kbd> (sau <kbd>j</kbd>/<kbd>k</kbd>)
+   și apasă <kbd>Enter</kbd> pentru a deschide rularea focalizată. Darea clic pe
+   un rând face același lucru.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Fiecare rând afișează un simbol pentru modul în care a pornit rularea (play
+pentru manual; un simbol de fișier pentru o urmărire din graful de cod; altfel
+declanșatorul automat). Tooltipul numește declanșatorul — **Manual**,
+**PR publicat**, **modificare de fișier** și așa mai departe — și, pentru o
+rulare de urmărire, ce fișiere s-au modificat. Apoi numele pipeline-ului, o
+insignă de stare, durata activă (sau poziția în coadă pentru o rulare `queued`)
+și de cât timp a pornit această încercare. Durata activă exclude intervalele
+de inactivitate de oprire și repornire, deci nu este durata reală scursă.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Nu există filtru pentru rulările finalizate, suspendate sau anulate, nici
+filtru pe șablon, nici interval de timp și nici o vizualizare a istoricului de
+rulări pe șablon. Compararea rulărilor unui șablon înseamnă să scanezi coada
+după numele lui.
 
-## Read the run detail
+## Citește detaliile rulării
 
-A run's page has three stacked parts.
+Pagina unei rulări are trei părți suprapuse.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Banda de metadate** conține ora de pornire, durata activă, progresul pașilor
+("3 din 7 pași"), un rezumat al erorii care numește pasul care s-a stricat și de
+ce, plus acțiunile **Reîncearcă** și **Șterge**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Cascada de durate** oferă o bară pentru fiecare pas, cu durata sa și — pentru
+pașii de agent — costul său în cenți. Un pas care a fost reîncercat afișează un
+sufix `×N` după durata sa; acel sufix este singurul loc unde apar numărul de
+încercări.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Pânza grafului** desenează șablonul cu starea live a fiecărui nod.
+Selectarea unui nod deschide panoul său de pași.
 
-### Run and step statuses
+### Stările rulărilor și ale pașilor
 
-| Status        | Meaning                                           |
+| Stare         | Semnificație                                      |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **În așteptare** | Creat, încă nepornit                            |
+| **În coadă**  | Admis, dar reținut: plafonul max-parallel al acestui șablon este atins; încă nu există rânduri de pași |
+| **În rulare** | Se execută                                        |
+| **Suspendat** | Așteaptă ceva extern — normal, nu blocat          |
+| **Finalizat** | Terminat cu succes                                |
+| **Eșuat**     | S-a încheiat cu o eroare                          |
+| **Anulat**    | Oprit de un utilizator sau de sistem              |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Pașii au acele stări minus **În coadă**, plus **Sărit**, pentru o ramură pe care
+un router nu a luat-o (și descendenții ei acum inaccesibili).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Suspendat** este starea în care un pas de agent își petrece cea mai mare parte
+a vieții: un agent trimis sau o poartă de aprobare ține pasul până când munca sa
+se încheie. Două mecanisme de siguranță ale motorului fac să eșueze întreaga
+rulare în loc să o reia: un pas suspendat mai mult de 24 de ore
+(`extras.awaitApproval` — corpul `orchestration.awaitApproval` — este exceptat;
+`human.gate` nu este) și un pas neidempotent care era în curs de execuție când
+serverul s-a oprit.
 
-## Inspect a step
+## Inspectează un pas
 
-Select a node on the canvas. The step panel shows, in order:
+Selectează un nod pe pânză. Panoul de pași afișează, în ordine:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Un mesaj evidențiat **Eroare** când pasul a eșuat, sau un mesaj evidențiat
+  **Sărit** cu motivul când a fost sărit.
+- **Pornit**, **Terminat** și durata.
+- **Ramură** — indexul ramurii, pentru ramurile paralele.
+- **Vezi conversația** — sare la conversația în care a rulat pasul.
+  Conversațiile pipeline-urilor sunt ascunse din bara laterală, deci aceasta
+  este singura cale de a ajunge la ele.
+- **Intrare** și **Ieșire**, ca JSON pliabil.
+- **Activitate agent** — o placă pentru fiecare rulare de agent pe care a
+  trimis-o pasul, cu starea, rezumatul, durata și costul ei.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Pentru un pas de agent, **Ieșire** este payload-ul structurat pe care agentul
+l-a trimis prin `submit_output`, nu textul său. Traseul de raționament se află
+în **Activitate agent** și în conversația din spatele **Vezi conversația**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Pentru un pas bash, **Ieșire** este stdout-ul decupat pe care scriptul l-a scris
+la ieșirea cu codul 0. O ieșire cu cod diferit de zero eșuează pasul, cu coada
+stderr ca mesaj de eroare.
 
-## Recover a failed run
+## Recuperează o rulare eșuată
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Citește rezumatul erorii din banda de metadate; acesta numește pasul care a
+   eșuat. Mesajul evidențiat **Eroare** din panoul de pași conține mesajul.
+2. Verifică **Intrare** pasului — o cheie de stare lipsă sau scrisă greșit este
+   cea mai frecventă cauză. Un pas prompt-agent eșuează direct și numește
+   substituenții nerezolvați; un pas bash îi randează ca șiruri goale și rulează
+   oricum, ceea ce de obicei se vede abia la pasul următor.
+3. Pentru un pas de agent, deschide **Vezi conversația** și citește ce a făcut
+   de fapt agentul.
+4. Apasă **Reîncearcă** în banda de metadate. Pașii finalizați și cei săriți își
+   păstrează ieșirile; tot restul este șters și reexecutat, iar rularea revine la
+   starea de rulare. Cronometrul de durată repornește pentru această încercare.
 
-Common causes worth checking first:
+Cauze frecvente care merită verificate mai întâi:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Timeout** — pasul a depășit câmpul **Timeout (ms)**. Reține că acest câmp
+  este în milisecunde.
+- **Eroare de script** — comanda bash s-a încheiat cu cod diferit de zero, sau
+  `bash` nu se află în `PATH` al gazdei serverului.
+- **Validare de schemă** — payload-ul `submit_output` al agentului nu a
+  satisfăcut schema de ieșire a pasului.
+- **Substituent nerezolvat** — un `{{key}}` la care a făcut referire un pas
+  prompt-agent nu a fost scris niciodată în amonte. Eroarea numește fiecare
+  cheie nerezolvată.
+- **Corp neînregistrat** — un pas a cărui cheie de corp nu este înregistrată
+  avertizează la încărcarea șablonului și apoi pur și simplu nu se execută
+  niciodată.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Reîncearcă funcționează doar pentru o rulare eșuată sau anulată]
+Butonul **Reîncearcă** este afișat doar când rularea este `failed` sau
+`cancelled`. Motorul revine imediat pentru orice altă stare.
 :::
 
-## Stop a step that is stuck
+## Oprește un pas blocat
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Selectează pasul care rulează și apasă butonul **Oprește forțat ce rulează** din
+antetul panoului de pași. Aceasta omoară procesul pasului, marchează pasul ca
+eșuat și, prin urmare, eșuează întreaga rulare — fiecare ramură soră deschisă
+este închisă odată cu el.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Nu există niciun control de anulare a rulării pe acest ecran. `pipeline.cancel`
+există ca operație RPC și motorul o implementează, dar nimic din interfața
+pipeline-urilor nu o apelează; **Oprește forțat ce rulează** pe un pas sau
+**Șterge** pe rulare sunt singurele gesturi de oprire disponibile.
 
-## Track cost
+## Urmărește costul
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Costul este raportat pe pas, în coloana din dreapta a cascadei și pe fiecare
+placă de sub **Activitate agent**. Nu există un total al rulării pe pagina de
+detalii și nicio coloană de cost în coada de rulări, deci compararea costului a
+două rulări înseamnă să aduni pașii lor.
 
-## Related guides
+## Ghiduri conexe
 
-- [Run a pipeline manually](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)
-- [Create a pipeline template](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
-- [Manage costs](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
-- [Pipeline steps reference](/ro-RO/manual/referinta/pasi-pipeline/)
+- [Rulează un pipeline manual](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)
+- [Creează un șablon de pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
+- [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
+- [Tipuri de pași din pipeline](/ro-RO/manual/referinta/pasi-pipeline/)
 
-## Related concepts
+## Concepte conexe
 
-- [Pipelines](/ro-RO/manual/concepte/pipeline-uri/)
+- [Pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/)

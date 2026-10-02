@@ -1,96 +1,64 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: デバイスをペアリング
+description: スマートフォン（または 2 台目のブラウザーやデスクトップ）を Control Center サーバーとペアリングし、外出先からフリートを追跡できるようにします。
 slug: ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/) for how the link
-works and its security model.
+このガイドでは、スマートフォンを Control Center とペアリングし、どこからでもメッセージやチケットを読み、返信できるようにする方法を説明します。同じ手順で 2 台目のブラウザーやデスクトップアプリもペアリングできます。リンクの仕組みとそのセキュリティモデルについては、[リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)を参照してください。
 
-## Prerequisites
+## 前提条件
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- サーバーに接続されたデスクトップまたは Web クライアントがあり、ワークスペースがセットアップ済みであること。ペアリング操作にはフルクライアントが必要なため、ペアリング済みのスマートフォンが別のデバイスをペアリングしたり、取り消したりすることはできません。
+- ペアリングするデバイスからサーバーに到達できること。同じネットワーク上ならそのまま動作し、離れた場所からはブローカー経由のリレーがトラフィックを運びます。パネルが QR や資格情報ではなく**到達できません**と応答する場合は、まず経路を公開してください — **設定 → サーバー → 接続とステータス**（**このサーバーを共有**）のトンネルのオプトイン、またはサーバーの `--public-url` を使用します（[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)を参照）。
+- スマートフォンの場合: インストールは不要です。QR を読み取ると **Remote** の Web アプリ（既定では [remote.usectrl.dev](https://remote.usectrl.dev/)）が開きます。
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**セルフホスティング。** Remote とリレーブローカーはこのリポジトリでオープンソースです。スマートフォンアプリ（`apps/cc_remote` — Cloudflare Pages へ `wrangler.jsonc` 経由で、`docker/cc_remote` の nginx イメージへ、あるいは HTTPS を備えた任意の静的ホストへデプロイできる Flutter Web の PWA です。サービスワーカーと IndexedDB はセキュアコンテキストが必須です）と、リレー（`apps/cc_signaling_server` — アプリのデータを一切保持せず、ペアリングの秘密を目にすることもない、エンドツーエンドで密封されたフレームだけを転送する単一のステートレスな Dart バイナリです）の 2 つです。ビルドと実行の手順は、それぞれの README を参照してください。
 
-## Step 1: Open the pairing panel
+## ステップ 1: ペアリングパネルを開く
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+**設定 → 自分 → 自分のデバイス**を開きます。**自分のデバイス**セクションには、このサーバー上で自分のアカウントにペアリングされたクライアントが一覧表示されます。（サーバーのオーナーにはサーバー上のすべてのデバイスが表示され、それ以外のユーザーには自分のデバイスだけが表示されます。）
 
-## Step 2: Pair a new client
+## ステップ 2: 新しいクライアントをペアリングする
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+ページヘッダーで**新しいクライアントをペアリング**をクリックし、ラベル（例:「私のスマホ」）を付けて、種類（**Webブラウザー**、**デスクトップアプリ**、**スマホ**）を選び、**ペアリング**をクリックします。
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- **スマホ**の場合、QR コードが表示されます。スマートフォンのカメラで読み取るか、リンクをコピーして任意のブラウザーで開きます。この QR は Remote アプリを自分のサーバーに向け、資格情報を運びます。
+- **ブラウザー**または**デスクトップ**の場合は、代わりに表示されたリンク（またはデバイス id とペアリングキー）を新しいクライアントにコピーします。ワンタップのリンクが提供されるのは、Web クライアントからペアリングする場合だけです。デスクトップのバイナリには、リンクを組み立てるための Web オリジンが存在しないためです。
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+スマートフォン用の QR と、CLI で `cc_server pair --client-url` が出力するリンクは、**異なるペイロードであり、互換性がありません**。CLI のリンクは Web クライアントの接続フォームを埋めるためのもので、この QR は Remote PWA 向けにサーバーの完全な接続記述子と識別フィンガープリントを運びます。
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+スマートフォン側では、ペアリングリンクを開いても自動的にペアリングされるわけではありません。Remote はサーバーが通知する名前を表示し、何かを保存する前に確認を求めます。そのため、偽造されたリンクによってアプリを他人のサーバーに誘導することはできません。
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[読み取った QR は即座にアクセスを許可します]
+保留にして後で承認する、という手順はありません。発行されたデバイスは作成された瞬間から有効で、接続ゲートが確認するのは、資格情報が有効かつ未失効であることだけです。QR とペアリングキーはパスワードと同様に扱い、意図せず渡してしまったものは取り消してください。
 :::
 
-## Manage paired devices
+## ペアリング済みデバイスの管理
 
-From **Settings → You → Your devices** you can:
+**設定 → 自分 → 自分のデバイス**では、次のことができます:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- デバイスの**名前を変更**
+- 信頼しなくなったデバイスの**取り消し**。取り消すとその資格情報は破棄され、実行中のセッションも数秒以内に切断されるため、再接続時にはフェイルクローズします
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+紛失したスマートフォンや買い替えたスマートフォンには、取り消しが適切な対処です。デバイスから見れば、取り消しは即時かつ不可逆です。
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+このパネルから発行された資格情報には期限があります。発行から 30 日で失効し、それ以降は接続ゲートがフェイルクローズします。コマンドラインで `cc_server pair` により発行された資格情報には**有効期限がまったくありません** — 対象のマシンを廃棄するときに手動で取り消してください。
 
-## Switch workspaces from the phone
+## スマートフォンからワークスペースを切り替える
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+ペアリング済みのスマートフォンは、デスクトップとは独立にワークスペースを切り替えられます。スマートフォンは呼び出しのたびにワークスペースを送信し、サーバーはそのたびに、そのワークスペースにおける自分のメンバーシップとロールを確認します — したがってスマートフォンが到達できるのは自分がメンバーであるワークスペースだけで、そこで切り替えてもデスクトップの表示は変わりません。
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+さらにスマートフォンのセッションは、読み取り中心の少数のツールの許可リストに制限されます。チケット、エージェント、スペース、メッセージ、フィードの記事を一覧表示・読み取りでき、チケットの更新または割り当て、スペースへのメッセージ送信、記事の既読化または保存ができます。この集合に含まれないものは、サーバーのディスパッチャーに届く前に拒否されます。
 
-## Related guides
+## 関連ガイド
 
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): make the server reachable in the first place
-- [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): point a full client at it
-- [Use spaces](/ja-JP/マニュアル/ハウツーガイド/スペース/): what you'll mostly do from the phone
-- [Create and manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/): triage from the road
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): そもそもサーバーを到達可能にする
+- [リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): フルクライアントをそのサーバーに向ける
+- [スペースを使う](/ja-JP/マニュアル/ハウツーガイド/スペース/): スマートフォンから主に行うこと
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/): 外出先からのトリアージ
 
-## Related concepts
+## 関連コンセプト
 
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/)
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/)
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)

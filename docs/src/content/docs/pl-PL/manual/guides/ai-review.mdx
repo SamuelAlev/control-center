@@ -1,152 +1,165 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Używaj recenzji opartej na AI
+description: Uruchom potok pr_review na PR, przeczytaj ustalenia i werdykt, a następnie opublikuj recenzję w GitHubie.
 slug: pl-PL/podrecznik/poradniki/recenzja-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Ten poradnik pokazuje, jak zlecić agentom-recenzentom recenzję pull requesta i
+jak opublikować jej wynik w GitHubie.
 
-## Start an AI review
+## Rozpocznij recenzję AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Otwórz PR i przejdź do jego karty **Przegląd**
+2. Otwórz menu przepełnienia ⋯ w wierszu akcji i wybierz **Zapytaj AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Ta pozycja pojawia się tylko wtedy, gdy PR jest otwarty — to akcja przed
+scaleniem. Ten sam przycisk jest oferowany jako **Zapytaj AI** w pustym stanie
+karty **Recenzja**, zanim powstanie jakakolwiek recenzja.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center uruchamia wbudowany potok `pr_review` i otwiera kartę **Recenzja**
+PR-a, żebyś mógł go obserwować. Potok:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Otwiera własną przestrzeń recenzji PR-a, której izolowany worktree ma PR
+   wyewidencjonowany na jego head
+2. Rozgałęzia recenzentów zgodnie z poziomem recenzji obszaru roboczego —
+   domyślnie trzech (wbudowani agenci **qa**, **architect** i **engineer**,
+   równolegle). Nie ma wykrywania języka ani domeny
+3. Zleca agentowi prowadzącemu (CEO) skonsolidowanie ich ustaleń w przewodnik
+4. Finalizuje: porządkuje ustalenia w koszyki konsensusu i oblicza werdykt. Gdy
+   skojarzenie osiągnie stan `awaiting approval`, na karcie Recenzja pojawia się
+   **Opublikuj na GitHubie**
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+O tym, jak głęboka jest recenzja, decyduje **poziom recenzji** obszaru
+roboczego — `light` (jeden recenzent), `balanced` (trzech, domyślnie) lub
+`thorough` (wszyscy pięciu, z dodatkowymi specjalistami od bezpieczeństwa i
+wydajności) — ustawiany w **Ustawienia → Obszar roboczy → Ogólne**, na karcie
+**Zasady obszaru roboczego**. Lżejszy poziom zapisuje dokładnie tyle samo
+ustaleń, ale mniej z nich wysuwa na pierwszy plan.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/pl-PL/podrecznik/koncepcje/recenzja-ai/) for how the pieces fit together.
+Wszyscy recenzenci piszą do jednej przestrzeni recenzji PR-a i właśnie to
+sprawia, że ich ustalenia można porównywać. Zobacz
+[Recenzja AI](/pl-PL/podrecznik/koncepcje/recenzja-ai/), aby dowiedzieć się, jak
+to wszystko się łączy.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/pl-PL/podrecznik/poradniki/rozmowy-w-pr-github/).
+`pr_review` jest dostarczany wyłącznie z ręcznym wyzwalaczem. Aby uruchamiał się
+przy każdym opublikowanym PR-ze, dodaj wyzwalacz samodzielnie — zobacz
+[Wyślij agentów-recenzentów](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/).
+Możesz też rozpocząć recenzję z samego GitHuba, bez wyzwalacza potoku: wspomnij
+bota serwera w PR-ze albo dodaj etykietę `ai-review` — zobacz
+[Rozmawiaj z Control Center z PR w GitHub](/pl-PL/podrecznik/poradniki/rozmowy-w-pr-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Jeśli powiadomienie typu toast mówi, że recenzja tego pull requesta już trwa, to
+znaczy, że jedna jest w toku; zostań na karcie **Recenzja** albo otwórz
+**Potoki**, aby ją znaleźć.
 
-## Read the findings
+## Przeczytaj ustalenia
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Recenzenci zapisują ustalenia jako **węzły recenzji** w przestrzeni recenzji.
+Każdy z nich zawiera:
 
-| Field          | Description                                                   |
+| Pole           | Opis                                                          |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Rodzaj         | `bug`, `suggestion`, `recommendation`, `question` lub `ticket` |
+| Priorytet      | P0 (krytyczny) → P3 (drobiazg)                                |
+| Kategoria      | `security`, `stability`, `data_integrity`, `correctness`, `performance` lub `maintainability` |
+| Plik i wiersz  | Gdzie jest zakotwiczone ustalenie                             |
+| Kod oryginalny | Kod, którego dotyczy ustalenie                                |
+| Kod sugerowany | Proponowana poprawka                                          |
+| Pewność        | Jak pewny jest recenzent                                      |
+| Status         | `open` → `consensus-ready` → `resolved` lub `dismissed`       |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Ustalenie osiąga status **consensus-ready** dopiero wtedy, gdy potwierdzi je
+recenzent inny niż jego autor. Agent nie może potwierdzić własnego ustalenia,
+więc opinia pojedynczego recenzenta nigdy nie awansuje samodzielnie.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/) for what the pass produces.
+Karta **Recenzja** pokazuje listę ustaleń, z możliwością filtrowania według
+rodzaju i statusu oraz przełącznikiem odrzuconych ustaleń, obok artefaktu
+opublikowanego przez agenta konsolidującego. Deterministyczny widok — kohorty,
+wieloosiowy panel, różnice kontraktów i różnice wizualne — jest obliczany po
+stronie serwera, ale nie ma powierzchni w aplikacji; zobacz
+[Obliczenia recenzji](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/), aby
+dowiedzieć się, co daje ten przebieg.
 
-## Check the disagreements panel
+## Sprawdź panel rozbieżności
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Gdy dwóch recenzentów zakotwiczy ustalenia w tym samym pliku i wierszu, ale
+oceni je bardzo różnie — priorytety różniące się o dwa poziomy lub więcej albo
+jeden nazywa coś `bug`, a drugi `suggestion` — nad listą ustaleń pojawia się
+panel rozbieżności. Przeczytaj je najpierw: to tam opinie recenzentów się
+rozchodzą, a Twoja ocena jest najcenniejsza.
 
-## Read the verdict
+## Przeczytaj werdykt
 
-When the lead agent finalizes, it computes a **verdict**:
+Gdy agent prowadzący finalizuje, oblicza **werdykt**:
 
-| Verdict   | Meaning                                      |
+| Werdykt   | Znaczenie                                    |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Nie znaleziono niczego blokującego           |
+| **Hold**  | Problemy do rozwiązania przed scaleniem      |
+| **Block** | Krytyczne problemy, które trzeba naprawić    |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Werdykt niesie ze sobą zagregowany wskaźnik pewności oraz liczbę ustaleń według
+priorytetu.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Osie recenzji następnie wchodzą do niego i mogą go tylko **zaostrzyć**. Oś
+objęta bramką, która nie przejdzie, wymusza **Block**; oś objęta bramką, której
+nie udało się ukończyć (`partial`) lub której nie udało się w ogóle uruchomić
+(`unavailable`), wymusza co najmniej **Hold**. Brak dowodów nigdy nie zalicza
+bramki.
 
-## Publish the review to GitHub
+## Opublikuj recenzję w GitHubie
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publikowanie to osobny krok, celowo uzależniony od decyzji użytkownika. Potok
+`pr_review` trzyma recenzję w Control Center; nie wysyła jej do GitHuba.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Na karcie **Recenzja** poczekaj, aż pojawi się **Opublikuj na GitHubie**
+2. Naciśnij **Opublikuj na GitHubie**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center wysyła **jedną** recenzję w GitHubie. Ustalenia już rozwiązane lub
+odrzucone są pomijane. Przycisk obejmuje każde pozostałe otwarte ustalenie i w
+przypadku werdyktu **Ship** wysyła `APPROVE`. (Narzędzie MCP
+`publish_review_to_github` nadal domyślnie obejmuje tylko ustalenia potwierdzone
+przez innego recenzenta i nie zatwierdza, chyba że przekażesz `approve_on_ship`.)
+Te, które mają kotwicę pliku i wiersza, stają się komentarzami w treści;
+wszystko pozostałe trafia do treści podsumowania, każde ze stopką
+„— Control Center AI review”, żeby źródło było jednoznaczne. Werdykt **Block**
+jest wysyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako
+`APPROVE` z tego przycisku. Potem pojawia się powiadomienie **Opublikowano**.
+Recenzja jest publikowana pod tożsamością aplikacji serwera.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Jeśli GitHub odrzuci kotwicę w treści, bo dany wiersz nie należy do diffu, cała
+recenzja jest wysyłana ponownie, a każde ustalenie trafia do treści podsumowania,
+żeby nic nie zostało po cichu pominięte.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publikowanie podlega bramce guardraili]
+`pr_review.publishReview` deklaruje klasę akcji `prPublish` i przechodzi przez
+punkt kontrolny guardraili. Jeśli rozstrzygnięta decyzja to `prompt`, a żaden
+zatwierdzający nie jest podłączony, publikowanie zostaje zablokowane —
+guardraile w razie wątpliwości odmawiają. Ustaw jawną regułę w
+Ustawienia → Obszar roboczy → Uprawnienia agentów, jeśli chcesz, aby przebiegało
+bez nadzoru.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Inne wbudowane potoki publikują w GitHubie bezpośrednio: `cross_review`,
+`pr_triage`, `ticket_to_pr` i `pre_merge_gate` kończą się krokiem komentarza.
+Tylko `pr_review` wstrzymuje swoje wyniki dla Ciebie.
 
-## Dispatch reviewers yourself
+## Wyślij recenzentów samodzielnie
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/).
+Aby przejąć kontrolę nad tym, które role recenzują PR i które pliki sprawdza
+każda z nich, użyj narzędzia MCP `dispatch_reviewers` w istniejącej przestrzeni
+recenzji albo dodaj węzły recenzentów do potoku. Obie ścieżki, wraz z dokładną
+sygnaturą narzędzia, opisano w
+[Wyślij agentów-recenzentów](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/).
 
-## Related guides
+## Powiązane poradniki
 
-- [Review and merge a PR](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/)
-- [Dispatch reviewer agents](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/)
-- [Review compute (cohorts and axes)](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/)
+- [Zrecenzuj i scal PR](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/)
+- [Wyślij agentów-recenzentów](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/)
+- [Obliczenia recenzji (kohorty i osie)](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [AI review](/pl-PL/podrecznik/koncepcje/recenzja-ai/)
-- [Guardrails](/pl-PL/podrecznik/koncepcje/guardraile/)
+- [Recenzja AI](/pl-PL/podrecznik/koncepcje/recenzja-ai/)
+- [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/)

@@ -1,54 +1,57 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Εισαγωγή
+description: Το Control Center είναι το πιλοτήριο για ανάπτυξη λογισμικού με πολλούς πράκτορες.
 slug: el-GR/εγχειρίδιο
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Το Control Center σάς δίνει τον έλεγχο ενός στόλου πρακτόρων προγραμματισμού με AI. Δημιουργήστε πράκτορες, παρακολουθήστε τους να εργάζονται σε πραγματικό χρόνο, ελέγξτε τα PR τους και διαχειριστείτε αποθετήρια, χώρους εργασίας και ενσωματώσεις — από μια εγγενή εφαρμογή για υπολογιστή, ένα πρόγραμμα περιήγησης ή το τηλέφωνό σας.
 
 <div className="docs-start not-content">
-  <LinkButton href="/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/el-GR/εγχειρίδιο/εγκατάσταση/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/" icon="right-arrow">Γρήγορη εκκίνηση</LinkButton>
+  <LinkButton href="/el-GR/εγχειρίδιο/εγκατάσταση/" variant="minimal" icon="download">Εγκατάσταση του Control Center</LinkButton>
 </div>
 
-## What you can do
+## Τι μπορείτε να κάνετε
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Στείλτε μηνύματα σε πράκτορες**: οι χώροι είναι ο κύριος τρόπος για να οδηγήσετε τον στόλο. Κάντε @-αναφορά σε έναν πράκτορα και αυτός αποστέλλεται στο δικό του worktree copy-on-write, ώστε αρκετοί να μπορούν να γράφουν κώδικα και να ελέγχουν παράλληλα χωρίς να αγγίξουν το checkout σας
+- **Οργανώστε τα μεγάλα αιτήματα**: δώστε στον ενορχηστρωτή έναν στόχο, εγκρίνετε μία φορά το σχέδιο όλης της ομάδας που προτείνει και ένα παραγόμενο [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) το εκτελεί
+- **Ελέγξτε και συγχωνεύστε PR** με ενσωματωμένο προβολέα diff, σχόλια εντός γραμμής και έλεγχο με AI
+- **Δώστε στους πράκτορες αναλώσιμες μηχανές**: ένας [σταθμός](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) είναι ένα αναλώσιμο VM — ένα πρόγραμμα περιήγησης, ένας υπολογιστής, ένα τηλέφωνο ή ένα περίκλειστο τερματικό — τον οποίο ο πράκτορας οδηγεί ενώ εσείς παρακολουθείτε ζωντανά και μπορείτε να πάρετε τον έλεγχο· οι διακομιστές ανάπτυξης μέσα σε αυτόν προωθούνται στο `localhost`, στο πρόγραμμα περιήγησης του πράκτορα και στο `https://myapp.test`
+- **Αυτοματοποιήστε ροές εργασίας** με pipelines βασισμένα σε DAG που ενεργοποιούνται από γεγονότα ή χρονοδιαγράμματα
+- **Διαχειριστείτε τη γνώση** με μνήμη, γεγονότα και πολιτικές με εμβέλεια χώρου εργασίας
+- **Παρακολουθήστε την εργασία** με εισιτήρια, έργα και ανάθεση ανεξάρτητα από προμηθευτή
+- **Καταγράψτε συσκέψεις** με καταγραφή στη συσκευή, μεταγραφή και διαχωρισμό ομιλητών, που έπειτα συνοψίζονται σε σημειώσεις, στοιχεία ενέργειας και αποφάσεις
+- **Δείτε την ημέρα σας** με συγχρονισμό Google Calendar, RSVP, ειδοποιήσεις σύσκεψης και εγγραφή και σύνδεση
+- **Παρακολουθήστε τον στόλο από το τηλέφωνό σας**: συζεύξτε μια συσκευή με τον διακομιστή σας και διαβάστε μηνύματα, απαντήστε και ταξινομήστε εισιτήρια. Το τηλέφωνο παίρνει το καλύτερο μονοπάτι που μπορεί να φτάσει — loopback, LAN, tailnet ή TLS — και καταφεύγει σε έναν αναμεταδότη σφραγισμένο από άκρο σε άκρο που προωθεί πλαίσια τα οποία δεν μπορεί να διαβάσει
+- **Οδηγήστε πράκτορες από το Slack**: γεφυρώστε έναν χώρο εργασίας με μια εφαρμογή συνομιλίας και κάντε @-αναφορά στο bot, απαντήστε σε ένα νήμα του Slack ή καταχωρίστε ένα εισιτήριο με εντολή slash — μέσα από εξερχόμενη σύνδεση, ώστε να μην απαιτείται δημόσιο τελικό σημείο
+- **Ενσωματώστε** με GitHub, Linear, Slack, Google Calendar και πάνω από 100 εργαλεία MCP
 
-## You do not have to install it
+## Δεν χρειάζεται να το εγκαταστήσετε
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Η ίδια εφαρμογή τρέχει στο πρόγραμμα περιήγησής σας στο
+[app.usectrl.dev](https://app.usectrl.dev), με τις ίδιες λειτουργίες.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Κάθε πελάτης — υπολογιστής, web και τηλέφωνο — είναι ένας λεπτός αποδότης πάνω από
+έναν headless διακομιστή που κατέχει τα δεδομένα σας και κάνει τη δουλειά. Ο
+υπολογιστής μπορεί να εκκινήσει αυτόν τον διακομιστή για εσάς· μια καρτέλα
+προγράμματος περιήγησης δεν μπορεί, οπότε η εφαρμογή web συνδέεται σε έναν που
+τρέχετε εσείς. Αυτός ο διακομιστής μπορεί να βρίσκεται στο δικό σας
+μηχάνημα (`ws://localhost:9030`, χωρίς ανάγκη πιστοποιητικού) ή σε έναν
+απομακρυσμένο ξενιστή προσβάσιμο μέσω TLS, VPN ή σήραγγας.
 
-See [Install](/el-GR/εγχειρίδιο/εγκατάσταση/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) for how the three clients relate.
+Δείτε την [Εγκατάσταση](/el-GR/εγχειρίδιο/εγκατάσταση/#use-it-in-your-browser) για τη διαδρομή μέσω προγράμματος περιήγησης και
+την [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) για το πώς σχετίζονται οι τρεις πελάτες.
 
-## Next steps
+## Επόμενα βήματα
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/el-GR/εγχειρίδιο/εγκατάσταση/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/el-GR/εγχειρίδιο/οδηγοί/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/el-GR/εγχειρίδιο/έννοιες/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/el-GR/εγχειρίδιο/αναφορά/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Εγκατάσταση" href="/el-GR/εγχειρίδιο/εγκατάσταση/" description="Λήψεις, απαιτήσεις συστήματος και πού τρέχει ο διακομιστής." />
+  <LinkCard title="Γρήγορη εκκίνηση" href="/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/" description="Η συντομότερη πλήρης διαδρομή ώστε ένας πράκτορας να δουλέψει στο αποθετήριό σας." />
+  <LinkCard title="Οδηγοί" href="/el-GR/εγχειρίδιο/οδηγοί/" description="Μεγαλύτερα μαθήματα, σε σειρά, ξεκινώντας από τον πρώτο σας χώρο εργασίας." />
+  <LinkCard title="Οδηγοί πρακτικής" href="/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/" description="Συνταγές για μία εργασία τη φορά: προσθέστε αποθετήρια, ρυθμίστε περιορισμούς ή συζεύξτε το τηλέφωνό σας." />
+  <LinkCard title="Έννοιες" href="/el-GR/εγχειρίδιο/έννοιες/" description="Γιατί το προϊόν λειτουργεί όπως λειτουργεί, ξεκινώντας από την ανάπτυξη και τους πελάτες." />
+  <LinkCard title="Αναφορά" href="/el-GR/εγχειρίδιο/αναφορά/" description="Πλήρεις πίνακες για διαδρομές, εργαλεία MCP, συντομεύσεις πληκτρολογίου και γεγονότα τομέα." />
 </div>

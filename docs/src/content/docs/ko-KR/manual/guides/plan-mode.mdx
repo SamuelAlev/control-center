@@ -1,135 +1,134 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: 플랜 모드 사용
+description: 스페이스를 플랜 모드로 전환하고, 타입이 지정된 플랜을 받은 뒤 승인해 실행되는 작업으로 만드는 방법을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/플랜-모드
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+이 가이드에서는 에이전트가 코드를 한 줄도 쓰기 전에 구조화된 플랜을 받아 내는
+방법을 설명합니다.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+플랜 모드에서 에이전트는 읽기 전용으로 조사하며, 유일한 산출물은 **타입이 지정된
+플랜**입니다. 이것은 직접 승인하는 단계들의 의존성 그래프이고, Control Center가
+이를 실제 작업으로 컴파일합니다. 변경의 범위를 확인하고, 단계를 잘게 나눠 받고,
+무엇이든 건드리기 전에 위험과 의존 관계를 이름 붙여 확인하고 싶을 때 사용합니다.
 
-## Switch a space into plan mode
+## 스페이스를 플랜 모드로 전환하기
 
-Any of these flips the space's mode and the change is persisted:
+다음 중 하나를 하면 스페이스의 모드가 전환되고, 그 변경은 영속됩니다:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- 작성기 도구 모음 맨 왼쪽의 모드 드롭다운에서 **Plan**을 선택합니다
+- **Shift+Tab**을 누릅니다
+- `/plan`을 보냅니다. `/plan`만 보내면 모드를 켜기만 하고,
+  `/plan <request>`는 모드를 켠 뒤 나머지를 메시지로 보냅니다
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan`은 결코 텍스트로 전달되지 않습니다 — 대신 저장된 모드를 설정하며, 도구
+표면과 가드 프리셋, 프롬프트가 모두 이 값을 권위로 삼아 읽습니다. 따라서 이번
+턴과 그 이후의 모든 턴에서, 다시 바꿀 때까지 모드가 유지됩니다.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+모드는 스페이스에 저장되므로, 같은 에이전트가 여기서는 플랜 모드이고 다른
+곳에서는 에이전트 모드일 수 있습니다.
 
-## What the agent produces
+## 에이전트가 만들어 내는 것
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. 읽기 전용으로 조사합니다 — 메모리, 코드 인덱스, 파일
+2. `submit_plan`을 **한 번** 호출합니다. 여기에는 `goal`과 `nodes`가 들어가고, 각
+   노드는 안정적인 `key`, `title`, `description`, 그리고 자신이 `dependsOn`하는
+   노드 키를 담습니다(독립적인 작업을 병렬로 실행할 수 있게 해 주는 것이 바로 이
+   키입니다)
+3. 멈춥니다
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+이 도구는 그래프를 검증합니다 — 중복 키, 끊어진 의존성, 순환 — 그리고 망가진
+플랜을 받아들이는 대신 에이전트가 고쳐야 할 위반 사항을 돌려줍니다.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+플랜은 대화 **안에** 목표와 상태, 단계 수를 보여 주는 간결한 행으로 나타납니다.
+**Plan Studio** — 의존성 그래프, 노드별 인스펙터, 비용 추정 — 는 대화 옆의 탭으로
+열립니다: 행에서 **열기**를 누르거나, 그냥 기다리면 됩니다. 대화를 보고 있는 동안
+30초 안에 도착한 플랜은 탭을 스스로 엽니다.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[읽기 전용 보장은 구조적이지만, 내장 하네스에서만 그렇습니다]
+Control Center 자체 하네스는 플랜 모드의 표면 사양에서 에이전트의 도구
+레지스트리를 구성하므로, 호출할 수 있는 쓰기·편집·명령 도구가 아예 없습니다 — 이
+제한은 모델이 말로 빠져나갈 수 있는 프롬프트 지침이 아닙니다.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code 어댑터에는 이런 필터링이 적용되지 않습니다. 모드는 자체 러너가 따를
+수도 있고 따르지 않을 수도 있는 요청으로 그 어댑터에 전달되며, Control Center는
+그 어댑터의 `mcp__*` 호출만 봅니다. 모드 드롭다운 옆의 강제 적용 배지는 바로 그런
+경우에 나타납니다.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[에이전트가 명확히 하기 위한 질문을 할 수 있습니다]
+요청이 모호하면 플랜 에이전트는 잠시 멈추고 `ask_user` 도구로 최대 세 개의
+차단성 질문을 할 수 있습니다. 이 도구는 대화에 폼(선택지 또는 자유 입력)을
+렌더링하고, 답할 때까지 실행이 차단됩니다. 읽기 단계에 속하는 도구이므로 플랜
+모드의 읽기 전용 표면에서도 살아남고, 승인 래퍼에서도 예외입니다(프롬프트 앞에 또
+프롬프트를 두면 승인자가 연결되지 않은 상태에서 닫힌 채 실패해, 에이전트가 질문하는
+행위 자체가 거부됩니다).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+이 도구는 렌더링할 스페이스가 필요하므로, 대화가 없는 일회성 디스패치에는 제공되지
+않습니다. 첫 메시지에 범위와 대상 저장소, 수용 기준을 미리 담아 보내는 편이 왕복
+한 번보다 여전히 빠릅니다.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+여기서 산문은 산출물이 아닙니다. `submit_plan`을 호출하지 않고 끝난 실행은 대화에
+"Ended without submitting a plan (no `submit_plan` call)."라는 줄을 눈에 보이게
+게시하고, 그 실행을 산출물을 놓친 것으로 표시합니다. 실행의 상태는 의도적으로
+_completed_로 남습니다 — 그래야 파이프라인과 티켓의 상태 머신이 그대로 유지됩니다
+— 따라서 상태 배지가 아니라 그 줄을 읽으세요.
 
-## Approve the plan
+## 플랜 승인하기
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+대화에 있는 플랜 행에서 **승인 후 실행**을 누릅니다. Plan Studio의 승인 바에서는
+**플랜 승인**을 누릅니다(옆의 **거부**를 눌러도 됩니다. 그래프에 검증 오류가 있는
+동안에는 승인이 비활성화됩니다).
 
-Then:
+그러면:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center가 플랜을 오케스트레이션으로 컴파일하고 이를 머티리얼라이즈합니다
+   — 티켓과 실행입니다. 이 단계에는 모델이 관여하지 않으며, 결정적입니다
+2. 플랜은 그것을 작성한 에이전트로서 실행됩니다. 다른 누군가를 끌어들일지는 실행
+   시점에 그 에이전트가 판단합니다 — 워크스페이스의 위임 깊이 상한 안에서, 더
+   적합한 팀원에게 단계를 `delegate_task`할 수 있습니다
+3. 플랜의 목표는 **그 대화의 목표**가 되고, 작업은 **바로 그 대화에서**
+   실행됩니다: 각 단계는 에이전트가 요청받은 내용을 게시하고 자신의 턴을
+   스트리밍하므로, 이미 보고 있는 곳에서 작업을 따라가고 턴을 중지할 수 있습니다
+4. 대화의 **일반** 사이드 패널(할 일 아래)에 있는 목표 행이 `settled/total`
+   형태의 실행 진행률과 중지 버튼을 담고 있습니다. Plan Studio는 그래프에 노드별
+   상태를 표시하며, 거기서도 취소할 수 있습니다
 
-## Keep working without approving
+## 승인하지 않고 계속 작업하기
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+플랜을 승인하는 대신 이 대화에 그대로 머무르고 싶다면, 에이전트가
+`exit_plan_mode`를 호출할 수 있습니다. 이것이 허용된 유일한 종료 경로입니다:
+대화에 연결된 영속적 승인 요청을 열고 `pending`을 반환하며, 스페이스는 플랜 모드에
+남고 에이전트는 행동해서는 안 됩니다. 요청이 승인되면, 에이전트의 다음
+`exit_plan_mode` 호출이 스페이스를 플랜 모드에서 에이전트 모드로 전환하고 변경
+도구의 잠금을 해제합니다. 거부되면 수정된 플랜에 대해 새 요청을 열 수 있습니다.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+플랜 모드에서 나가려면 작성기 드롭다운(또는 Shift+Tab)을 전환하거나, 제출된
+플랜을 승인합니다. `exit_plan_mode`는 `decide_approval` MCP 도구로 결정하는
+영속적 승인을 엽니다. 차단된 도구 호출을 위한 가드레일 오버레이는 별개의
+인메모리 큐이며, 플랜 종료 요청을 전달하지 않습니다.
 
-## Plan mode in a pipeline step
+## 파이프라인 단계에서의 플랜 모드
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+`messaging.createSpace` 파이프라인 노드는 노드 구성의 `mode` **extra**에서 대화
+모드를 읽습니다 — `extras['mode']: 'plan'`. 이 키는 정확히 일치해야 합니다:
+`conversationMode`나 `dispatchMode`를 포함해 다른 철자는 조용히 무시되고, 방은
+본문의 기본값으로 되돌아갑니다. 그 기본값은 채팅이 아니라 **리뷰** 모드입니다.
+`promptAgent` 단계는 자신이 만들지 않은 방에 참여하며, 그 방의 권한을 다시 설정하지
+않습니다. 노드 구성 편집기의 **디스패치 모드** 선택(`allParallel` / `manager`)은 팀
+디스패치 노드를 위한 것입니다. 대화 모드는 스페이스를 여는 템플릿에서, 또는 API를
+통해 그 노드의 구성에서 `extras['mode']`로 설정합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [Use spaces](/ko-KR/매뉴얼/사용-가이드/스페이스/)
-- [Work in Plan Studio](/ko-KR/매뉴얼/사용-가이드/plan-studio/)
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [스페이스 사용](/ko-KR/매뉴얼/사용-가이드/스페이스/)
+- [Plan Studio에서 작업](/ko-KR/매뉴얼/사용-가이드/plan-studio/)
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
 
-## Related concepts
+## 관련 개념
 
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
-- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)
+- [오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/)

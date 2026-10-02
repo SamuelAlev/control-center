@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Lier votre compte Slack
+description: Prouvez qu’une identité Slack est la vôtre afin que les agents agissent sur vos messages et que votre travail vous soit attribué.
 slug: fr-CA/manuel/guides/lier-compte-clavardage
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Ce guide vous montre comment lier votre identité de clavardage à votre utilisateur Control Center et comment délier cette liaison.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Chaque membre effectue cette opération une fois par fournisseur de clavardage. Elle est distincte de la connexion de l’application : la connexion rend le robot joignable pour tout l’espace de travail, tandis que la liaison vous rend _vous_ reconnaissable à l’intérieur de celui-ci.
 
-## Why linking is required
+## Pourquoi la liaison est requise
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+La passerelle refuse d’agir pour un compte de clavardage qu’elle ne peut pas résoudre à un membre de l’espace de travail. C’est délibéré : sans liaison, chaque message venu de Slack devrait être attribué à la personne qui a installé l’application, et la piste de vérification, les limites de débit par principal et les déclarants des tickets nommeraient tous la mauvaise personne.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Un membre non lié qui mentionne le robot reçoit une réponse dans ce fil Slack expliquant comment se lier. Rien n’est lancé.
 
-## Link with a code
+## Lier avec un code
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Allez à **Paramètres → Espace de travail → Profil et identité** et faites défiler jusqu’à la carte **Comptes de messagerie liés**
+2. Dans le bloc Slack, cliquez sur **Lier mon compte Slack**
+3. Copiez la commande qu’il affiche, par exemple :
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Dans Slack, envoyez cette commande au robot — un message privé est l’endroit le plus simple
+5. Le robot confirme en indiquant l’utilisateur Control Center auquel vous êtes maintenant lié, et la boîte de dialogue que vous avez laissée ouverte se met à jour pour le dire au même moment — vous n’avez pas à la fermer pour aller voir
 
-The code:
+Le code :
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Est à usage unique et expire **15 minutes** après sa création
+- Est toujours créé pour _vous_, jamais pour un coéquipier
+- Remplace tout code que vous détenez déjà, donc appuyer de nouveau sur le bouton invalide le précédent
+- Ne vit qu’en mémoire, donc un redémarrage du serveur invalide les codes en circulation — appuyez de nouveau sur le bouton
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Un code inconnu, expiré ou créé pour un autre espace de travail échoue de la même façon indiscernable : « ce code n’est pas valide (ou il a expiré) ».
 
-## Automatic linking by email
+## Liaison automatique par courriel
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Si votre profil Slack porte un courriel vérifié qui correspond à un utilisateur Control Center qui est **déjà membre de cet espace de travail**, la passerelle vous lie la première fois que vous lui parlez. Aucun code n’est nécessaire.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Les deux moitiés comptent : la correspondance de courriel prouve l’identité, mais seule l’appartenance accorde l’accès, donc un inconnu dont le courriel se trouve par hasard sur le serveur ne se lie à rien. La liste des comptes liés indique comment chaque liaison a été établie (« associé par courriel » ou « lié avec un code »).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+La liaison automatique exige la portée `users:read.email`. Sans elle, Slack ne divulguera pas l’adresse et le parcours par code est la seule voie.
 
-## See who is linked
+## Voir qui est lié
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+La liste des comptes liés relève de l’administration de l’espace de travail, donc elle vit de l’autre côté de la surface : **Paramètres → Espace de travail → Général → Ponts de messagerie → Comptes liés**. Elle répertorie chaque membre lié de l’espace de travail, avec le compte Slack auquel chacun correspond et la façon dont la liaison a été établie.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Votre propre état se trouve sur votre page de profil : la ligne **Lier mon compte Slack** affiche « Lié à _votre-identifiant-slack_ » une fois que vous êtes lié, et vous invite à établir la liaison lorsque vous ne l’êtes pas.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+La liste est un abonnement en direct, parce que le changement se produit de l’autre côté — vous tapez le code dans Slack, donc aucune requête de l’application ne peut rapporter la réponse.
 
-## Unlink
+## Délier
 
-Click **Unlink** on a row in the workspace roster.
+Cliquez sur **Délier** dans une ligne de la liste des comptes liés de l’espace de travail.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Chacun peut se délier lui-même
+- Seul un administrateur peut délier un autre membre
+- Délier révoque aussi tout code de liaison en circulation pour ce membre
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Après la dissociation, ce compte Slack ne peut plus diriger d’agents tant qu’il ne se lie pas de nouveau. Les espaces, les transcriptions et les tickets existants conservent leur attribution d’origine — délier n’est pas une rétractation du travail passé.
 
-## Troubleshooting
+## Dépannage
 
-### The bot says I am not a member of this workspace
+### Le robot dit que je ne suis pas membre de cet espace de travail
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/fr-CA/manuel/concepts/multijoueur/).
+Votre compte Slack est lié à un utilisateur Control Center, mais cet utilisateur ne détient aucune appartenance dans cet espace de travail. Demandez à un administrateur de vous inviter ; consultez [Multijoueur — identité, appartenance et présence](/fr-CA/manuel/concepts/multijoueur/).
 
-### The bot says my role is read-only
+### Le robot dit que mon rôle est en lecture seule
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Les rôles `viewer` et `guest` ne peuvent pas lancer de travail. Un administrateur doit élever votre rôle à `member` ou plus.
 
-### The slash command is not recognized
+### La commande slash n’est pas reconnue
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Vérifiez que la commande slash existe dans Slack et que vous envoyez bien la commande que la boîte de dialogue des paramètres vous a montrée — un administrateur l’a peut-être renommée, auquel cas la boîte de dialogue affiche le nom actuel.
 
-## Related guides
+## Guides connexes
 
-- [Set up Slack integration](/fr-CA/manuel/guides/integration-slack/)
-- [Customize the chat bot](/fr-CA/manuel/guides/personnaliser-robot-de-clavardage/)
-- [Chat bridge](/fr-CA/manuel/reference/passerelle-de-clavardage/)
+- [Configurer l’intégration Slack](/fr-CA/manuel/guides/integration-slack/)
+- [Personnaliser le robot de clavardage](/fr-CA/manuel/guides/personnaliser-robot-de-clavardage/)
+- [Passerelle de clavardage](/fr-CA/manuel/reference/passerelle-de-clavardage/)
 
-## Related concepts
+## Concepts connexes
 
-- [Chat bridges](/fr-CA/manuel/concepts/passerelles-de-clavardage/)
-- [Multiplayer — identity, membership and presence](/fr-CA/manuel/concepts/multijoueur/)
+- [Passerelles de clavardage](/fr-CA/manuel/concepts/passerelles-de-clavardage/)
+- [Multijoueur — identité, appartenance et présence](/fr-CA/manuel/concepts/multijoueur/)

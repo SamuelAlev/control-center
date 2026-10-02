@@ -1,113 +1,125 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orkestratie
+description: Hoe één "grote vraag" een plan voor het hele team wordt dat je één keer goedkeurt, en daarna een gegenereerde pipeline die het uitvoert.
 slug: nl-NL/handleiding/concepten/orkestratie
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Eén agent is goed in één ding. Sommige vragen zijn groter dan dat: "onderzoek de
+markt voor X en schrijf een positioneringsdocument", "lever deze feature end to
+end op", "audit deze module en los op wat je vindt". Een **orkestratie** is hoe
+Control Center daarmee omgaat: een orchestrator (meestal je CEO-agent) stelt een
+plan voor het hele team voor, jij keurt het **één keer** goed en een
+deterministische materializer zet het om in een pipeline die het werk doet.
 
-It sits between the two existing ways of getting work done:
+Het staat tussen de twee bestaande manieren om werk gedaan te krijgen:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) |
-| Encode a process you already know, by hand        | A [pipeline template](/nl-NL/handleiding/concepten/pipelines/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Als je wilt…                                       | Gebruik                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------- |
+| Eén taak aan één agent geven                       | Een [bericht in een ruimte](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) |
+| Een proces dat je al kent, handmatig vastleggen    | Een [pipeline-sjabloon](/nl-NL/handleiding/concepten/pipelines/)          |
+| Het doel noemen en het team het plan laten bepalen | **Een orkestratie**                                                       |
 
-## The shape of a proposal
+## De vorm van een voorstel
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Wanneer je de orchestrator een doel geeft, levert die een gestructureerd
+**`OrchestrationProposal`** op: een getypeerd plan dat de app kan valideren en
+uitvoeren, in plaats van vrije tekst. Een voorstel heeft:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/nl-NL/handleiding/concepten/tickets/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Doel**: je vraag op hoofdlijnen, opnieuw geformuleerd.
+- **Rollen**: wie het werk doet. Elke rol is ofwel een **bestaande agent** die je
+  kiest, ofwel een **nieuwe aanstelling** die de orkestratie bij goedkeuring
+  aanmaakt.
+- **Subtickets**: het werk, opgesplitst in een DAG van [tickets](/nl-NL/handleiding/concepten/tickets/).
+- **Onderzoek** _(optioneel)_: een onderzoeksfase die eerst draait en de rest
+  voedt.
+- **Discussie** _(optioneel)_: een afgebakende ronde waarin elke rol een
+  gestructureerd standpunt plaatst voordat het werk begint.
+- **Synthese**: de laatste stap die het eindresultaat oplevert.
+- **Budget**: een opgegeven kostengrens.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Het budget is indicatief]
+De kostengrens van het voorstel wordt vergeleken met het geschatte totaal van het
+plan en markeert een plan dat over het budget gaat in de goedkeuringsbalk _vóór_
+je goedkeurt. Zodra de run is gestart, leest niets het nog, dus het stopt een
+orkestratie die het budget overschrijdt niet en laat die ook niet mislukken.
+Budgetbeleid per agent en per werkruimte is een apart mechanisme en is wat de
+uitgaven daadwerkelijk pauzeert.
 :::
 
-## Where you review it
+## Waar je het beoordeelt
 
-Two surfaces show the same orchestration.
+Twee oppervlakken tonen dezelfde orkestratie.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+De **voorstelkaart** staat in het gesprek dat het plan heeft opgeleverd. Het is
+één bericht dat gedurende de hele levenscyclus opnieuw wordt weergegeven —
+voorgesteld, in uitvoering, voltooid — met daarop de acties voor goedkeuren en
+annuleren.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** is de editor: een DAG-canvas, een knooppuntinspecteur, een lade
+met revisies en diffs en de goedkeuringsbalk met de schatting. Het opent als een
+editortab rechtstreeks vanuit die kaart. Er staat bewust geen "Plannen"-item in
+de zijbalk; `/plans` en `/plans/:kind/:id` bestaan als deeplinks om te delen.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Goedkeuren is **alleen voor operators**. Er is geen MCP-tool voor: een agent kan
+een voorstel doen (`propose_orchestration`), een plan indienen (`submit_plan`) of
+een playbook instantiëren (`run_playbook`), maar alleen een mens keurt goed. Door
+een agent gestarte revisies krijgen daarnaast een snelheidslimiet met een
+afkoelperiode van twee minuten, zodat een herplanningslus wordt gebundeld in
+plaats van je feed te overspoelen.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Wat je vóór het goedkeuren kunt wijzigen, is wat de knooppuntinspecteur toont:
+een subticket een andere titel geven of herschrijven, wijzigen welke **rol**
+eigenaar is, de afhankelijkheden opnieuw bedraden, het uitvoerschema bewerken of
+het knooppunt helemaal verwijderen. Structurele knooppunten (onderzoek,
+discussie, synthese) en knooppunten die al zijn uitgevoerd, zijn alleen-lezen. Je
+kunt een rol niet vastpinnen op een specifieke, met naam genoemde agent en je
+kunt het budget niet bewerken, vanuit de editor.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Twee editors op één plan worden opgelost met optimistische concurrency, niet door
+samen te voegen. Elke bewerking draagt de `base_revision` waartegen hij is
+gemaakt; een bewerking op basis van een verouderde revisie wordt geweigerd met
+"the plan moved on" in plaats van die van iemand anders stilzwijgend te
+overschrijven. Terugspoelen is ook geen verwijderen — het voegt het oudere
+voorstel toe als een nieuwe revisie, dus de tijdlijn met revisies groeit alleen
+maar.
 
-## Honest estimates, or none
+## Eerlijke schattingen, of geen
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+De schatting op de goedkeuringsbalk is opgebouwd uit de echte geschiedenis van
+voltooide runs per rol, als een interkwartielband (p25–p75). Kostentotalen
+**tellen** de schatbare knooppunten op; de duur is het **kritieke pad** door de
+DAG in plaats van de som (parallelle takken overlappen elkaar).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Een knooppunt waarvan de rol **geen geschiedenis van voltooide runs** heeft,
+rapporteert `sampleSize: 0` en null-bereiken. Dat wordt precies zo weergegeven —
+onbekend — en nooit als een verzonnen puntwaarde, want een schatting die je niet
+kunt vertrouwen is erger dan geen schatting. Wanneer sommige knooppunten wel
+geschiedenis hebben en andere niet, wordt het totaal als gedeeltelijk gemarkeerd.
+De impactstraal verschijnt alleen wanneer een knooppunt `symbol`- of
+`file`-provenancerefs heeft opgegeven; een knooppunt zonder die refs blijft
+"onbekend" in plaats van iets af te leiden uit lopende tekst.
 
-## One approval, then deterministic execution
+## Eén goedkeuring, dan deterministische uitvoering
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/nl-NL/handleiding/concepten/pipelines/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Dit is het kernidee: **de agent plant; een deterministische functie voert uit.**
+Wanneer je goedkeurt, zet de `OrchestrationMaterializer`, een pure functie zonder
+LLM en zonder I/O, het voorstel om in een echte [pipeline](/nl-NL/handleiding/concepten/pipelines/).
+Met hetzelfde voorstel en dezelfde vastgestelde rollen levert hij altijd dezelfde
+DAG op. Dat is belangrijk omdat de gegenereerde pipeline alles erft wat de engine
+al gratis doet: opschorten en hervatten over herstarts heen, herstel na crashes,
+kosten- en tokentotalen per run en de interface met run-details.
 
-Approval also creates the scaffolding the work needs:
+Goedkeuring maakt ook de structuur aan die het werk nodig heeft:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **nieuwe aanstellingen** voor alle rollen die als nieuw zijn gemarkeerd (en het
+  vastleggen van de id's van de aangenomen agents, zodat een crash halverwege de
+  goedkeuring kan hervatten zonder dubbele aanstellingen)
+- een **team** dat de rollen groepeert
+- een **project** waarin het bovenliggende ticket wordt ondergebracht
+- het **pipeline-sjabloon + de run** die alles aansturen
 
-## The lifecycle
+## De levenscyclus
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +127,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| Status         | Betekenis                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| `proposed`     | Het plan is klaar en wacht op je enige goedkeuring vooraf                                     |
+| `approved`     | Je hebt het goedgekeurd; de materialisatie is bezig (aanstellingen, team, project, pipeline)  |
+| `executing`    | De gegenereerde pipeline draait: subtickets, discussie, werk                                  |
+| `synthesizing` | De subtickets zijn klaar; de synthesestap levert het eindresultaat op                         |
+| `completed`    | Klaar: het bovenliggende ticket is als voltooid gemarkeerd en het eindresultaat staat in de gedeelde ruimte |
+| `failed`       | De materialisatie is mislukt, of de run van de gegenereerde pipeline is mislukt               |
+| `cancelled`    | Je hebt de orkestratie geannuleerd                                                            |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Een monotoon **revisienummer** volgt het voorstel terwijl de orchestrator het
+herziet zolang de status nog `proposed` is; de app legt vast welke revisie je
+hebt goedgekeurd. `propose_orchestration` weigert een revisie zodra de status
+niet meer `proposed` is.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Een orkestratie opent altijd tegen een **bovenliggend ticket** en deelt één
+**ruimte** voor de discussie, zodat de hele inspanning herleidbaar is tot één
+werkitem en het team in één ruimte praat.
 
-## What happens when it finishes
+## Wat er gebeurt als het klaar is
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Een permanent actieve listener houdt de gegenereerde pipeline in de gaten en
+vertaalt de eindtoestand terug naar de orkestratie en het bovenliggende ticket,
+zodat voltooiing en mislukking opduiken op de plekken die je al volgt. De
+orkestratiefunctie heeft geen eigen uitvoeringsengine nodig.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Je kunt een orkestratie op elk moment annuleren; het annuleren breekt het werk af
+dat nog loopt.
 
 ::::note
-Orchestration builds on [pipelines](/nl-NL/handleiding/concepten/pipelines/) and
-[tickets](/nl-NL/handleiding/concepten/tickets/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orkestratie bouwt voort op [pipelines](/nl-NL/handleiding/concepten/pipelines/) en
+[tickets](/nl-NL/handleiding/concepten/tickets/). Het is een plannings- en
+goedkeuringslaag bovenop die twee, geen aparte runtime.
 ::::
 
-## See also
+## Zie ook
 
-- [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/nl-NL/handleiding/concepten/tickets/): the parent ticket an orchestration is anchored on
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): the roles an orchestration fills or hires
-- [Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
-- [Work in Plan Studio](/nl-NL/handleiding/gidsen/plan-studio/)
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/): de engine waarop een gematerialiseerde orkestratie draait
+- [Tickets en delegatie](/nl-NL/handleiding/concepten/tickets/): het bovenliggende ticket waarop een orkestratie is verankerd
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): de rollen die een orkestratie invult of aanwerft
+- [Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
+- [Werken in Plan Studio](/nl-NL/handleiding/gidsen/plan-studio/)

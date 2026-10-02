@@ -1,118 +1,118 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: میٹنگ ریکارڈ اور خلاصہ کریں
+description: کال ریکارڈ کریں، ٹرانسکرپٹ حاصل کریں اور اُسے نوٹس، ایکشن آئٹمز اور فیصلوں میں بدلیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) for how it works.
+یہ گائیڈ بتاتی ہے کہ میٹنگ کیسے ریکارڈ کریں اور AI سے تیار شدہ تحریر کیسے حاصل کریں۔
+یہ کیسے کام کرتا ہے، اِس کے لیے [میٹنگز اور ٹرانسکرپشن](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) دیکھیں۔
 
-## Before you start
+## شروع کرنے سے پہلے
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **اسپیچ ماڈل کا انتظار کریں، پھر سرور ری اسٹارٹ کریں۔** ایک عام بوٹ پس منظر میں
+  منتخب ASR ماڈل (Parakeet TDT 0.6B v3، کثیراللسانی ڈیفالٹ، تقریباً 600 MB) زبردستی
+  انسٹال کرتا ہے۔ سرور ماڈل کو **بوٹ پر صرف ایک بار** حل کرتا ہے، اس لیے ری اسٹارٹ تک
+  پہلے رن میں اب بھی کوئی ریکارڈنگ آپریشن نہیں ہوتا۔ ڈسک پر کوئی ماڈل نہ ہونے پر
+  ریکارڈنگ `Could not start recording on the host: …` کے ساتھ ناکام ہو جاتی ہے۔ کوئی
+  مختلف بلڈ چننے کے لیے **ترتیبات → سرور → آواز اور میٹنگ ماڈلز** پر جائیں — اُس کے
+  لیے بھی ری اسٹارٹ درکار ہے۔
+- پہلی ریکارڈنگ پر جب آپ کا OS پوچھے تو **مائیکروفون** کی اجازت دیں۔
+- **macOS 14.4+** پر سسٹم آڈیو Core Audio process taps کے ذریعے کیپچر ہوتی ہے — کوئی ڈرائیور انسٹال کرنے کی ضرورت نہیں، مگر OS دوسری بار _آڈیو کیپچر_ کی اجازت مانگتا ہے۔ یہ Screen Recording نہیں ہے اور یہ کبھی اسکرین ریکارڈنگ انڈیکیٹر روشن نہیں کرتا۔ اِس سے انکار کرنے پر آغاز `System-audio capture permission denied.` کے ساتھ ناکام ہو جاتا ہے۔ macOS 14.4 سے نیچے سسٹم آڈیو کیپچر نہیں ہوتی۔
+- **Linux** پر `parecord` (pulseaudio-utils) یا `pw-record` (pipewire) کا `PATH` پر ہونا لازمی ہے — کیپچر اِن میں سے ایک کو PipeWire/PulseAudio مانیٹر سورس کے خلاف چلاتی ہے۔ اِن میں سے کوئی ایک نہ ہونے پر آغاز `No system-audio capture tool found` کے ساتھ ناکام ہو جاتا ہے۔
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[آپ کی میٹنگ کی آڈیو کہاں جاتی ہے]
+کیپچر، ٹرانسکرپشن، ایکو کی منسوخی اور اسپیکر ڈائرائزیشن سب کچھ آن ڈیوائس چلتا ہے،
+بغیر کسی کلاؤڈ کال کے — مگر ”ڈیوائس“ سے مراد **cc_server میزبان** ہے، جو سرور ریموٹ
+چلانے پر ایک مختلف مشین ہوتا ہے۔ اور حتمی تحریر ایک عام ایجنٹ رن ہے: `meeting_summary`
+پائپ لائن پوری ٹرانسکرپٹ اور آپ کے موٹے نوٹس اُس ماڈل فراہم کنندہ کو بھیجتی ہے جو وہ
+ایجنٹ استعمال کرتا ہے۔ اگر ٹرانسکرپٹ کو مشین سے باہر نہیں جانا چاہیے تو اُس ایجنٹ کو
+کسی مقامی فراہم کنندہ کی طرف اشارہ کریں۔
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+ریکارڈنگ اسکرین آپ کے ریکارڈ کرتے وقت یہ بتاتی رہتی ہے، اس لیے بھیجنے کے لیے کوئی
+ٹرانسکرپٹ بننے سے پہلے ہی فیصلہ آپ کے سامنے ہوتا ہے۔
 :::
 
-## Start a recording
+## ریکارڈنگ شروع کریں
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. سائیڈبار میں **میٹنگز** کھولیں۔
+2. **میٹنگ ریکارڈ کریں** پر کلک کریں۔ لائیو ریکارڈنگ HUD `/meetings/record` پر کھلتا ہے۔
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+ریکارڈنگ فوراً شروع ہو جاتی ہے اور آپ کا مائیکروفون نیز سسٹم آؤٹ پٹ آڈیو — یعنی باقی
+شرکاء — کیپچر کرتی ہے۔ کوئی موڈ پرامپٹ اور کوئی آڈیو سورس پکر نہیں ہے: اِن پرسن
+سنگل مائیک موڈ API میں موجود ہے مگر آج اُس کا کوئی UI نہیں۔
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+براؤزر میں یہی فلو کام کرتا ہے، البتہ ایک فرق کے ساتھ: ”سسٹم آڈیو“ ایک اسکرین شیئر ہے
+جس میں آڈیو ٹریک شامل ہونا لازمی ہے۔ کوئی براؤزر ٹیب (یا پوری اسکرین) شیئر کریں اور
+پکر میں ”ٹیب کی آڈیو شیئر کریں“ / ”سسٹم آڈیو شیئر کریں“ فعال کریں۔ Safari اور Firefox
+نیز macOS پر فل اسکرین شیئرنگ اکثر ایسا ٹریک فراہم نہیں کر سکتے۔
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD ایک لیول میٹر، گزرا ہوا وقت اور ایک طرف بنتی ہوئی لائیو ٹرانسکرپٹ دکھاتا ہے۔
 
-## During the meeting
+## میٹنگ کے دوران
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- نوٹس پین میں **موٹے نوٹس لیں**۔ یہ ٹائپ کرتے ہی محفوظ ہوتے جاتے ہیں اور بعد میں خلاصے والے ایجنٹ کو دیے جاتے ہیں، اس لیے جو کچھ ٹرانسکرپٹ سے رہ جائے وہ لکھ لیا کریں۔
+- **فعال ٹیمپلیٹ** والی قطار میں **نوٹ ٹیمپلیٹ منتخب کریں**۔ یہ اِس میٹنگ کے خلاصے کی تشکیل کرتا ہے اور ریکارڈنگ کے ساتھ محفوظ ہو جاتا ہے، اس لیے بعد میں دوبارہ چلانے پر وہی ٹیمپلیٹ دوبارہ استعمال ہوتا ہے جو آپ نے یہاں چنا تھا۔
+- توقف کنٹرول سے **توقف اور جاری رکھیں**۔ توقف کے دوران ٹرانسکرپشن رک جاتی ہے اور ٹائمر جم جاتا ہے۔
+- ٹرانسکرپٹ اسپیکر کے ٹیگ کے ساتھ اسٹریم ہوتی ہے: آپ کے الفاظ **آپ** کے طور پر، کال میں موجود ہر شخص **دیگر** کے طور پر — یہاں تک کہ ڈائرائزیشن دیگر کو `Person 1`، `Person 2`، … میں تقسیم کر دیتی ہے، جنہیں آپ دوبارہ نام دے سکتے ہیں۔
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[بہت مدھم بولنے والا اسپیکر شاید ٹرانسکرائب نہ ہو]
+ٹرانسکرپشن ہر اُس آڈیو ونڈو کو چھوڑ دیتی ہے جو کبھی خاموشی کی حد سے اوپر نہ اٹھی ہو،
+اور اُسے بالکل بھی ڈی کوڈ نہیں کرتی۔ یہ کسی خاموش چینل کو من گھڑت غیر اسپیچ ٹوکنز پر
+CPU جلانے سے روکتا ہے، مگر اِس کا یہ مطلب بھی ہے کہ کوئی مدھم یا دور کا اسپیکر کوئی
+ٹرانسکرپٹ نہ دے سکے۔ لیول میٹر آخر میں دیکھنے کے بجائے شروع میں ہی چیک کریں۔
 :::
 
-## Stop and summarize
+## روکیں اور خلاصہ کریں
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. **روکیں اور خلاصہ** پر کلک کریں۔
+2. Control Center آپ کو سیدھا میٹنگ کے تفصیلی ویو پر لے جاتا ہے، جو **پروسیس ہو رہا ہے** کے طور پر نشان زد ہوتا ہے: ڈائرائزیشن ریموٹ چینل کو الگ الگ اسپیکرز میں تقسیم کرتی ہے اور `meeting_summary` پائپ لائن تحریر تیار کرتی ہے۔
+3. وہ پائپ لائن مکمل ہوتے ہی میٹنگ **مکمل** پر پلٹ جاتی ہے۔ آپ کو اُس کا انتظار کرنے کی ضرورت نہیں — تفصیلی ویو خود کو اپ ڈیٹ کرتا رہتا ہے۔
 
-## Review the writeup
+## تحریر کا جائزہ لیں
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+میٹنگ کی تفصیل (`/meetings/:meetingId`) میں چار ٹیبز ہوتے ہیں:
 
-| Tab              | What's there                                                                    |
+| ٹیب             | وہاں کیا ہے                                                                      |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **نوٹس**         | AI خلاصہ اور بہتر شدہ نوٹس، جو آپ کے موٹے نوٹس + ٹرانسکرپٹ سے بنائے جاتے ہیں    |
+| **ٹرانسکرپٹ**    | ٹائم اسٹیمپ کے ساتھ مکمل اسپیکر ٹیگ والی ٹرانسکرپٹ                              |
+| **ایکشن آئٹمز**  | نکالے گئے کام، ہر ایک کے ساتھ اختیاری ذمہ دار                                   |
+| **فیصلے**        | کال کے دوران درج کیے گئے فیصلے                                                  |
 
-From here you can:
+یہاں سے آپ یہ کر سکتے ہیں:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **اسپیکرز کے نام بدلیں**: `Person 1` کو کسی اصل نام سے بدلیں؛ یہ پوری ٹرانسکرپٹ پر لاگو ہوتا ہے۔
+- جیسے جیسے ایکشن آئٹمز مکمل ہوں، **اُن پر نشان لگائیں**۔
+- کسی ایکشن آئٹم سے **ٹکٹ بنائیں**: یہ ایک نیا، غیر تفویض شدہ ٹکٹ بناتا ہے جس کا عنوان ایکشن آئٹم ہوتا ہے اور اُسے واپس اُس قطار سے لنک کرتا ہے۔ اسے خود ٹکٹ سے کسی ایجنٹ کو تفویض کریں (دیکھیں [ایجنٹس کو کام تفویض کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/))۔
+- ایک نئی گزر کے لیے **خلاصہ دوبارہ چلائیں** (مثلاً اسپیکرز کے نام بدلنے کے بعد)۔ یہ میٹنگ ریکارڈ ہوتے وقت محفوظ ہوا ٹیمپلیٹ دوبارہ استعمال کرتا ہے۔ فعال ٹیمپلیٹ **ترتیبات → ورک اسپیس → میٹنگز** پر منتخب کریں۔
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+نوٹس، عنوان، ایکشن آئٹمز اور فیصلوں کی ترمیم ہر جگہ کام کرتی ہے۔
+**خلاصہ دوبارہ چلائیں** اور پروسیس ہو رہی میٹنگ منسوخ کرنا **صرف ڈیسک ٹاپ** پر ہے — براؤزر
+میں دونوں بٹن کچھ نہیں کرتے۔
 
-## Record straight from a calendar event
+## سیدھا کیلنڈر ایونٹ سے ریکارڈ کریں
 
-If you've [connected a calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+اگر آپ نے [کیلنڈر جوڑ رکھا ہے](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)، تو آپ
+دستی آغاز چھوڑ سکتے ہیں۔ یہ **صرف ڈیسک ٹاپ** پر ہے؛ ویب کلائنٹ اِس سے انکار کر دیتا ہے۔
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. ایونٹ کو **کیلنڈر** سے کھولیں۔
+2. **ریکارڈنگ شروع کریں اور لنک کریں** پر کلک کریں۔
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+ریکارڈنگ ایونٹ کے عنوان کے ساتھ شروع کی جاتی ہے اور واپس اُس سے لنک ہو جاتی ہے، تاکہ
+نوٹس اور کیلنڈر اندراج جڑے رہیں۔
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[میٹنگ حذف کرنے سے اُس کی آڈیو حذف نہیں ہوتی]
+میٹنگ حذف کرنا اُس کی قطاریں ہٹاتا ہے، مگر `<dataDir>/meetings/<meetingId>/` کے تحت
+محفوظ WAV فائلیں ڈسک پر رہ جاتی ہیں — کوئی برقراری پالیسی، حجم کی حد یا صفائی نہیں
+ہوتی۔ اگر آڈیو اہم ہے تو وہ ڈائریکٹری خود ہٹائیں۔
 :::
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Connect a Google Calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
-- [Delegate work to agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
+- [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
+- [ایجنٹس کو کام تفویض کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Meetings and transcription](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/)
+- [میٹنگز اور ٹرانسکرپشن](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/)

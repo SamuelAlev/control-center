@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Slack アカウントをリンク
+description: Slack のアイデンティティがあなた自身のものであることを証明し、エージェントがあなたのメッセージに動き、あなたの作業があなたに帰属されるようにします。
 slug: ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+このガイドでは、自分のチャットアイデンティティを自分の Control Center ユーザーにリンクする方法と、そのリンクを解除する方法を説明します。
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+メンバーは誰でも、チャットプロバイダーごとに 1 回だけこれを行います。これはアプリの接続とは別の操作です。接続はボットをワークスペース全体から到達可能にし、リンクはワークスペース内で*あなた*を識別可能にします。
 
-## Why linking is required
+## なぜリンクが必要か
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+ブリッジは、ワークスペースのメンバーに解決できないチャットアカウントのために動作することを拒否します。これは意図的です — リンクがなければ、Slack からのすべてのメッセージは、アプリをインストールした人物に帰属せざるを得なくなり、監査証跡、プリンシパル単位のレート制限、チケットの報告者がすべて誤った人物を指すことになります。
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+リンクしていないメンバーがボットにメンションすると、その Slack スレッドでリンク方法を説明する返信が届きます。何もディスパッチされません。
 
-## Link with a code
+## コードでリンクする
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. **設定 → ワークスペース → プロフィールと識別情報**に移動し、**連携済みチャットアカウント**カードまでスクロールします
+2. Slack のブロックで、**自分のSlackアカウントを連携**をクリックします
+3. 表示されるコマンドをコピーします。たとえば次のとおりです。
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Slack で、そのコマンドをボットに送信します — DM がもっとも手軽な場所です
+5. ボットは、リンク先となった Control Center ユーザーとともに確認を返し、開いたままにしていたダイアログも同じタイミングでその旨に更新されます — 一度閉じて確認し直す必要はありません
 
-The code:
+コードは次のとおりです。
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- 単回使用で、発行から **15 分**後に失効します
+- 常に*あなた*のために発行され、チームメイトのために発行されることはありません
+- すでに保持しているコードを置き換えるため、ボタンをもう一度押すと前のコードは無効になります
+- メモリ上にのみ存在するため、サーバーが再起動すると未使用のコードは無効になります — ボタンをもう一度押してください
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+未知のコード、期限切れのコード、別のワークスペース向けに発行されたコードは、いずれも見分けのつかない同じ形で失敗します: 「that code is not valid (or has expired)」。
 
-## Automatic linking by email
+## メールアドレスによる自動リンク
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Slack プロフィールに検証済みのメールアドレスがあり、それが**すでにこのワークスペースのメンバーである** Control Center ユーザーと一致する場合、ブリッジは初めて話しかけた時点で自動的にリンクします。コードは必要ありません。
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+どちらの条件も欠かせません。メールアドレスの一致はアイデンティティを証明しますが、アクセスを付与するのはメンバーシップだけです。そのため、たまたまサーバー上にアドレスが存在するだけの部外者は何にもリンクされません。名簿には、各リンクがどのように作られたか（「メールアドレスで照合」または「コードで連携」）が表示されます。
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+自動リンクには `users:read.email` スコープが必要です。これがないと Slack はアドレスを開示しないため、コードによる経路だけが唯一の手段になります。
 
-## See who is linked
+## 誰がリンクされているかを確認する
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+名簿はワークスペースの管理操作であるため、サーフェスの別の側にあります: **設定 → ワークスペース → 全般 → チャットブリッジ → 連携済みアカウント**。ここにはワークスペース内のリンク済みメンバーが全員一覧表示され、それぞれが対応する Slack アカウントと、リンクがどのように作られたかが示されます。
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+自分の状態は自分のプロフィールページにあります。**自分のSlackアカウントを連携**の行は、リンク済みであれば「_your-slack-id_に連携済み」と表示され、リンクしていなければリンクするよう促します。
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+名簿はライブ購読です。変更が反対側で起こるからです — コードを入力するのは Slack 側であり、アプリからのどのリクエストもその結果を持ち帰ることができません。
 
-## Unlink
+## リンクを解除する
 
-Click **Unlink** on a row in the workspace roster.
+ワークスペースの名簿の行で**連携解除**をクリックします。
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- 誰でも自分自身のリンクを解除できます
+- 他のメンバーのリンクを解除できるのは管理者だけです
+- リンクを解除すると、そのメンバーの未使用のリンクコードもすべて失効します
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+リンクを解除すると、その Slack アカウントは再びリンクするまでエージェントを動かせなくなります。既存のスペース、トランスクリプト、チケットは元の帰属を保ちます — リンクの解除は過去の作業の撤回ではありません。
 
-## Troubleshooting
+## トラブルシューティング
 
-### The bot says I am not a member of this workspace
+### ボットから、このワークスペースのメンバーではないと言われる
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/).
+Slack アカウントは Control Center ユーザーにリンクされていますが、そのユーザーはこのワークスペースのメンバーシップを持っていません。管理者に招待を依頼してください。[マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)を参照してください。
 
-### The bot says my role is read-only
+### ボットから、自分のロールが読み取り専用だと言われる
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+`viewer` と `guest` のロールでは作業を開始できません。管理者があなたのロールを `member` 以上に引き上げる必要があります。
 
-### The slash command is not recognized
+### スラッシュコマンドが認識されない
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+そのスラッシュコマンドが Slack に存在することと、設定ダイアログに表示されたコマンドを送信していることを確認してください — 管理者が名前を変更している可能性があり、その場合ダイアログには現在の名前が表示されます。
 
-## Related guides
+## 関連するガイド
 
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
-- [Customize the chat bot](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
-- [Chat bridge](/ja-JP/マニュアル/リファレンス/チャットブリッジ/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [チャットボットをカスタマイズ](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
+- [チャットブリッジ](/ja-JP/マニュアル/リファレンス/チャットブリッジ/)
 
-## Related concepts
+## 関連する概念
 
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)
-- [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)
+- [マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)

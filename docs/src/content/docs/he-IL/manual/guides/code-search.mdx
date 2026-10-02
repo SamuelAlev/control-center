@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: חיפוש קוד עם גרף הקוד
+description: בצעו אינדוקס למאגר והיעזרו בכלי גרף הקוד כדי לאתר סמלים ולראות מה שינוי היה שובר.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+מדריך זה מראה כיצד להכניס מאגר אל גרף הקוד, ואחר כך להיעזר בו כדי לענות על השאלה שבאמת עומדת בפניכם לפני רפקטורינג: מה תלוי בזה?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+גרף הקוד הוא מסד נתונים של סמלים וקצוות, שנבנה מניתוח ה-checkout-ים הרשומים שלכם עם tree-sitter. הכלים שלו **מיועדים לסוכן** — מגיעים אליהם בבקשה מסוכן.
 
-## Before you start
+## לפני שמתחילים
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+הגרף מבצע אינדוקס לשפות Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ו-Ada. קבצים בכל שפה אחרת אינם מנותחים, ולכן אינם מופיעים ב-`search_code`, `code_symbol`, `code_callers`, `code_callees` או `code_impact`.
 
-Two more things shape what gets indexed:
+שני דברים נוספים מעצבים את מה שנכנס לאינדוקס:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- ב-work tree של git, ספירת הקבצים נשענת על `git ls-files --cached --others --exclude-standard`, כך שכל `.gitignore`, קובץ ignore מקונן, `.git/info/exclude` וקובץ ה-excludes הגלובלי מכובדים. זה מה שמשאיר את `node_modules` ואת תוצרי הבנייה מחוץ לגרף.
+- קוד Dart מיוצר נזרק בכל מקרה. קבצים מיוצרים בדרך כלל נשמרים ב-commit, ולכן git לבדו לא היה מחריג אותם, והם משתנים בכל הרצת codegen.
 
-## Get a repo indexed
+## אינדוקס של מאגר
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
+רישום checkout מפעיל `RepoAdded`, שמתחיל עבורו אוטומטית את הפייפליין `index_code`. ראו [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
 
-To re-index by hand:
+לביצוע אינדוקס מחדש ידנית:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. פתחו **הגדרות → סביבת עבודה → מאגרים**.
+2. לחצו על הכפתור **אינדוקס קוד** בשורה של המאגר.
+3. בזמן שהפעולה רצה מציג הכפתור את מספר הקבצים שהושלמו מתוך הסך הכול, עם פקד ביטול. כשהיא מסתיימת, הוא מתחלף בסימן ביקורת עם מספר הסמלים.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+הגרף מחולק למחיצות לפי סביבת עבודה, מאגר ו-checkout: ה-checkout המקושר הוא מחיצה אחת, וכל worktree של מרחב מקבל מחיצה משלו (במפתח לפי המזהה של המאגר המבודד שלו).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+שני מגבילי קצב שווה להכיר, כי הם מסבירים המתנה שנראית כמו תקיעה:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- מאזין הקבצים מתיר **הרצת אינדוקס אחת** בלבד בכל רגע במארח — checkout שני ממתין. הפייפליין `index_code` מוגבל בנפרד להרצה אחת לכל סביבת עבודה, ולכן שני מאגרים באותה סביבת עבודה נכנסים לתור; סביבות עבודה שונות יכולות לבצע אינדוקס במקביל. המאנדקס עצמו מסדר בסדרה שתי הרצות של **אותו** checkout, כך שתחילת פייפליין וסבב של המאזין לא יגרמו לניתוח כפול שלו.
+- worktree-ים של **מרחבים רדומים** (ללא הודעה בשבוע האחרון) אינם נצפים ואינם נכנסים לאינדוקס. checkouts מקושרים ממשיכים להיצפות. החלטת דילוג נבדקת מחדש לאחר חמש דקות, כך שמרחב ששב לפעילות ייקלט.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[דקדוק חסר עוצר את השרת, לא את החיפוש]
+Tree-sitter והדקדוקים שלו הם natives נדרשים. אם אחד מהם חסר, `cc_server` מסרב לעלות ומציין את ה-dylib החסר — הסימפטום הוא שרת שלא עולה, ולעולם לא חיפוש מדורדר. הכינו אותם עם `scripts/natives/build_natives.sh` ובנו מחדש את קובץ השרת.
 :::
 
-## Find a symbol
+## איתור סמל
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+בקשו מסוכן לחפש. הכלי הוא `search_code` והוא זקוק גם לסביבת עבודה וגם למאגר:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+מזהי מאגר מגיעים מ-`list_repos`. הארגומנט האופציונלי `mode` הוא `keyword`, `semantic` או `hybrid`, וברירת המחדל שלו היא hybrid — BM25 על שמות, חתימות והערות תיעוד, מאוחד עם דמיון וקטורי.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+כל תוצאה נושאת את ה-id של הסמל, את שמו, את שמו המסווג, את הסוג, את נתיב הקובץ, את שורת ההתחלה והסיום, ואת החתימה שלו כשיש לו כזו. ה-**id** הוא המזהה שתעבירו לכל כלי אחר בעמוד זה.
 
-When you know the exact name, look it up directly instead:
+כשאתם יודעים את השם המדויק, חפשו אותו ישירות במקום זאת:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## מעקב אחר קריאות
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+שניהם מקבלים `symbol_id` מתוצאת חיפוש, ובנוסף `limit` אופציונלי (ברירת מחדל 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` מחזיר את הסמלים שיש מהם קצה נכנס לסמל הזה; `code_callees` מחזיר את אלה שהוא תלוי בהם.
 
-## Check what a change would break
+## בדיקה מה שינוי היה שובר
 
-This is the tool the whole page exists for:
+זהו הכלי שלשמו נכתב כל העמוד:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+הוא מחשב את רדיוס התלות ה**הפוכה**: כל מה שתלוי בסמל, באופן ישיר או עקיף, לאורך קצוות `calls`, `extends` ו-`implements` (imports, mixes-in והפניות גנריות נשמרים בגרף אך אינם נסרקים כאן). `depth` הוא מספר הקפיצות המרבי, בין 1 ל-6, וברירת המחדל היא 2.
 
-The result is three fields:
+התוצאה היא שלושה שדות:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — הסמל ששאלתם עליו
+- `impacted` — הקבוצה הניתנת להשגה, כולל השורש בעומק 0, כאשר כל אחד מהם נושא את ה-`depth` שלו מהשורש
+- `edgeCount` — כמה קצוות חצה המעבר, כמניין ולא כקצוות עצמם
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+הריצו אותו לפני שינוי שם או שינוי חתימה, ומסרו לסוכן את רשימת המושפעים כהיקף העבודה.
 
-## Results are checked against the caller's own working copy
+## התוצאות נבדקות מול עותק העבודה של הקורא עצמו
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+עבור קורא שהוא סוכן, מזהה המרחב מוזרק אוטומטית, והתוצאות נבדקות מול עותק העבודה של **אותו מרחב**. סמל שהקובץ שלו כבר אינו קיים בעץ של הקורא מושמט, והתשובה נושאת מניין `staleOmitted` וכן הערה שהאינדקס מיושן עבור אותם סמלים.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+זו הסיבה לכך שאתם וסוכן עשויים לקבל תשובות שונות לאותה שאילתה, ולכך שסוכן במרחב אחד עשוי לקבל תשובה שונה מסוכן במרחב אחר. כל שיחה במרחב חולקת את אותו worktree יחיד. האימות נכשל באופן פתוח: תשובה מיושנת עדיפה על תשובה ריקה.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/).
+בקשו מסוכן להריץ את `code_impact` (או `review_studio.blastRadius`) כשאתם רוצים את רדיוס ההשפעה של שינוי. ראו [חישוב סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/).
 
-## Semantic search needs the embedding model
+## חיפוש סמנטי מחייב את מודל ההטמעות
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+סמלים ועובדות מוטמעים בזמן הכתיבה, ורק כשמודל ההטמעות שעל המכשיר מותקן. עד אז, ל-`mode: "semantic"` ולחצי הסמנטי של hybrid אין מול מה להתאים, והחיפוש הוא למעשה מבוסס מילות מפתח בלבד.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+התקינו את המודל ב**הגדרות → שרת → אבחון ופרטיות → חיפוש סמנטי** לפני האינדוקס. סמלים מקבלים וקטור כשהקובץ שלהם נקלט.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+שימו לב גם שכל בנייה מחדש של קובץ השרת מכינה מחדש את קובצי ה-dylib של הדקדוקים ומשנה את ה-mtimes שלהם, מה שמבטל כל נקודת ביקורת של האינדקס ומאלץ סריקה מלאה אחת של כל checkout בהרצה הבאה. הוא מחשב מחדש את ה-hash, אך אינו מחלץ מחדש קבצים שלא השתנו.
 
-## What is in the graph
+## מה יש בגרף
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**סוגי סמלים:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**סוגי קצוות:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/he-IL/מדריך-למשתמש/עזר/כלי-mcp/).
+החתימות הקנוניות של כלים אלה נמצאות ב[כלי MCP](/he-IL/מדריך-למשתמש/עזר/כלי-mcp/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
-- [Review compute (cohorts and axes)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
-- [Use the MCP server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
+- [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
+- [חישוב סקירה (קבוצות וצירים)](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/)
+- [שימוש בשרת MCP](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)

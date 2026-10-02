@@ -1,185 +1,136 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: フォーカスモードとサウンドスケープを使う
+description: フローティングのカウントダウンピルと通知の抑制を備えた時間制のフォーカスセッションを実行し、その下で再生される適応型サウンドスケープを形作ります。
 dateModified: 2026-08-17
 slug: ja-JP/マニュアル/ハウツーガイド/フォーカスモード
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+このガイドでは、フォーカスセッションの実行方法を説明します。フォーカスセッションとは、その間 Control Center が緊急でない通知を抑制し、ほかのウィンドウの上にカウントダウンピルを浮かべる、時間制の区切りです。あわせて、その下で（既定で）再生されるサウンドスケープも扱います — サーバーがライブで合成する、終わりのない環境音のトラックで、選んだムード、外の天気、時刻によって形作られます。
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+フォーカスセッションはシェルレベルの機能です。どのピラーにも結び付いておらず、レイアウトを変更したり、サイドバーを隠したり、PR レビュー画面を変えたりしません。
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[デスクトップ版のみ]
+フローティングのピルとサウンドスケープのポップアウトミニプレーヤーはネイティブの兄弟ウィンドウで、デスクトップのブートストラップだけがマウントします。`app.usectrl.dev` の Web ビルドにはどちらもなく、OS 通知のパイプラインもないため、そこではフォーカスセッションに表示するものも抑制するものもありません。サウンドスケープのパネルとその再生は、サーバーに接続できる場所ならどこでも動作します。
 :::
 
-## Start a focus session
+## フォーカスセッションを開始する
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. タイトルバーの右側にあるフォーカスアイコンをクリックします（ツールチップ **フォーカスセッションを開始**）
+2. ダイアログで任意の **目標** を入力します — 何に取り組んでいるか
+3. **時間** を選びます: 25m、50m、1h、1h 30m、2h のいずれか。既定は 50m で、前回の選択が記憶されます
+4. **開始** を押します
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+チェックポイント: タイトルバーのボタンは残り時間を示すアクセントカラーのチップに置き換わり、ほかのウィンドウの上にフローティングのピルが表示され、**集中モードと一緒に開始** がオンの場合はサウンドスケープの再生が始まります。
 
-Two other entry points reach the same session:
+同じセッションに到達できる入口は、ほかにも 2 つあります:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** で同じダイアログが開きます。
+- **⌘⇧⌥F** は、記憶された時間と目標なしでセッションを即座に開始します — ダイアログをスキップします。もう一度押すとセッションが終了します。
 
-## Read the floating pill
+## フローティングのピルを読む
 
-The pill is a small frameless window you can drag anywhere. It shows:
+ピルは、どこにでもドラッグできる小さな枠なしのウィンドウです。次のものを表示します:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- ライブのプレゼンスドットと、`mm:ss` 形式の残り時間
+- 設定した目標。設定していない場合は「Focus session」
+- 下端に沿った細いプログレスバー
 
-Hover it to reveal two actions:
+ポインタを合わせると、2 つのアクションが表示されます:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — カウントダウンを停止します。一時停止はピルにだけ作用し、セッション自体はアクティブのままです。
+- **Complete** — セッションを終了します。
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+ピルは、メインウィンドウがどのテーマを使っていてもダークパレットのままです。任意のデスクトップコンテンツの上に浮かぶためです。
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+タイトルバーからピルを閉じても、セッションは動き続けます。元に戻すには、フォーカスチップの隣にあるピクチャーインピクチャーボタン（ツールチップ **バーに最小化**）を押します。
 
-## Know what gets suppressed
+## 抑制される通知を知る
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+セッションがアクティブな間、Control Center は 2 つのカテゴリを除くすべての通知を破棄します。その 2 つは常に配信されます:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **まもなく会議開始** — 後から気付く会議アラートには価値がありません
+- **PR公開**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+それ以外はすべて、セッションの間ずっと静かに抑制されます — 音も、OS のトーストもありません。抑制された通知は、後で配信するためにキューに入れられることはありません。
 
-## Play a soundscape
+## サウンドスケープを再生する
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. タイトルバーの右側にあるスピーカーアイコンをクリックして（ツールチップ **サウンドスケープ**）パネルを開きます
+2. **ムード** を選びます — **集中**、**上昇**、**リラックス**、**睡眠**
+3. **再生** を押します
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+チェックポイント: **再生中** カードに現在のシーンが示されます — ワークスペースの場所の天気、°C 単位の気温、場所のラベルです。「環境音を調整中…」と表示されている間は、シーンはまだ解決中です。
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+トラックはループではありません。サーバーが、ムード、ワークスペースの場所のライブの天気、時刻から継続的に合成します。雨は明るく忙しく、嵐は大きく突風が吹き、霧はこもった響きになります。夜は日中より暗く、残響が多くなります。ムードが語彙を決めます:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| ムード | サウンド |
+| ------ | -------- |
+| 集中 | 低いパルスを伴う穏やかで覚醒的な環境音 — 作業の下に流すためのもの |
+| 上昇 | 柔らかなパルスを伴う軽快なメロディー — 作業が重く感じるときに |
+| リラックス | より温かく協和したパッド、ビートなし |
+| 睡眠 | ほとんどイベントのない低いドローン、深いリバーブ |
 
-Switching mood while playing hands playback to the new mood without stopping.
+再生中にムードを切り替えると、再生を止めることなく新しいムードに引き継がれます。
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+パネルは ⌘K の **Focus** カテゴリからも、フォーカスセッションのすぐ隣で開けます。
 
-## Shape the sound
+## サウンドを形作る
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **音色**（集中、上昇、リラックス）— ドラッグできるパックを備えた正方形のパッドです。横軸は **まろやか** から **エネルギッシュ**（どれだけ出来事が起きるか）、縦軸は **スペーシー** から **明るい**（どれだけ開いて聞こえるか）です。パッドをダブルタップすると中立の中央に戻り、矢印キーでパックを少し動かせます。音色はムードごとに記憶され、調整は再生中のミックスに滑らかに溶け込みます — ストリームが再起動することはありません。睡眠ムードは設計上、調整できません。
+- **音量** — 0 から 100% のスライダーで、既定は 60% です。システムの音量とは別で、記憶されます。
+- **場所** — ワークスペースから自動的に検出されます。シーンを再取得するには **天気を更新** を押します。
 
-## Pop out the mini player
+## ミニプレーヤーをポップアウトする
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+音声を再生している間、タイトルバーに 2 つ目のボタンが現れます（ツールチップ **プレーヤーをポップアウト**）。これは再生/一時停止、天気のグリフ、シーン名、**アプリに戻る** ボタンを備えた、常に最前面の小さな HUD を浮かべます — フォーカスセッションでまったく別のアプリを使っているときに便利です。
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+ミニプレーヤーから一時停止しても、ミニプレーヤーは閉じません。閉じるボタン（またはアプリの終了）だけがミニプレーヤーを消します。
 
-## Run them together
+## 一緒に使う
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+この 2 つの機能は、サウンドスケープパネルの 1 つのスイッチで連動します: **集中モードと一緒に開始**（既定でオン）。
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- フォーカスセッションを開始すると、まだ何も再生されていなければサウンドスケープが始まります。
+- セッションを終了すると — タイマー切れも含め、どのように終わっても — 手動でサウンドスケープを開始した場合でも停止します。
 
-Turn the switch off to keep the two independent.
+スイッチをオフにすると、2 つは独立したままになります。
 
-## End a session
+## セッションを終了する
 
-Any one of these ends it:
+次のいずれかで終了します:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- タイトルバーのフォーカスチップをクリックする（ツールチップ **フォーカスモードが有効です — タップして終了**）
+- ピルで **Complete** を押す
+- **⌘⇧⌥F** を押す
+- ⌘K で **Exit focus mode** を選ぶ
+- タイマーを切らす — セッションはゼロで自動完了します
 
-The pill closes, notifications resume immediately and the soundscape stops.
+ピルが閉じ、通知がすぐに再開し、サウンドスケープが停止します。
 
-## Understand what does not persist
+## 永続しないものを理解する
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+セッションは、ちょうど 1 回のアプリ実行の間だけ存在します。Control Center を終了して開き直すと、セッションの途中であっても、タイマーがリセットされた非アクティブの状態で始まります — クラッシュ復旧もセッション履歴もありません。
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+引き継がれるのは次の 2 つだけです: 優先する時間と、通知をブロックするフラグです。目標、経過時間、ピルの開閉状態は引き継がれません。
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+再生も同じように一時的です — サウンドスケープは起動時に必ず停止しています。ムード、音量、ムードごとの音色は保持されますが、ストリーム自体が勝手に再開することはありません。
 
-## Troubleshooting
+## トラブルシューティング
 
-### The tune pad is missing
+### 音色パッドが表示されない
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+睡眠ムードでは、意図的に調整できません。パッドを元に戻すには、集中またはリラックスに切り替えます。
 
-### Nothing plays after restarting the app
+### アプリを再起動すると何も再生されない
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+仕様です — 再生はアプリの起動時に必ず停止します。パネルを開いて **再生** を押し直します。それでも無音の場合は、システムの音量とは別の、パネルの音量スライダーを確認します。
 
-### The weather or temperature looks wrong
+### 天気や気温が正しくない
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+シーンはアクティブなワークスペースの場所に従います。再取得するには、パネルの **天気を更新** を押します。
 
-## Related guides
+## 関連ガイド
 
-- [Configure notifications](/ja-JP/マニュアル/ハウツーガイド/通知/)
-- [Keyboard shortcuts](/ja-JP/マニュアル/リファレンス/キーボードショートカット/)
+- [通知を設定する](/ja-JP/マニュアル/ハウツーガイド/通知/)
+- [キーボードショートカット](/ja-JP/マニュアル/リファレンス/キーボードショートカット/)

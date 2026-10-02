@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Skripty repozitáře
+description: Setup a archive skripty pro každý repozitář, které běží ve worktree prostoru.
 slug: cs-CZ/prirucka/navody/skripty-repozitare
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Skripty repozitáře jsou shell skripty, které nastavíš u každého repozitáře
+(Nastavení → Repozitáře → ikona terminálu na řádku repozitáře) a které server
+Control Center spouští ve **worktree prostoru** toho repozitáře — izolovaném
+checkoutu v `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`, kde
+pracují agenti.
 
-There are two kinds:
+Jsou dva druhy:
 
-| Script | When it runs | Use it for |
+| Skript | Kdy běží | K čemu |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Setup** | Hned po přípravě worktree pro prostor | Instalace závislostí, generování souborů, kopírování `.env` |
+| **Archive** | Těsně před smazáním worktree nebo jeho úklidem přes GC | Úklid zdrojů mimo worktree (docker sítě, tunely, externí stav) |
 
-## Where scripts run
+## Kde skripty běží
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Oba skripty běží přes `bash -lc` (přihlašovací shell, takže nástroje
+nainstalované přes Homebrew nebo nvm jsou na `PATH`) s **worktree jako
+pracovním adresářem** a s těmito proměnnými prostředí:
 
-| Variable | Value |
+| Proměnná | Hodnota |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktree (cwd skriptu) |
+| `CC_ROOT_PATH` | Zaregistrovaný zdrojový repozitář — tvůj vlastní checkout |
+| `CC_SPACE_ID` | Prostor, ke kterému worktree patří |
+| `CC_SPACE_NAME` | Zobrazovaný název prostoru |
+| `CC_REPO_NAME` | Zobrazovaný název repozitáře |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Třeba setup skript, který nainstaluje závislosti a přinese `.env`, které git
+ignoruje:
 
 ```bash
 pnpm install
@@ -39,28 +41,29 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Chování při selhání
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Skript **Setup**, který skončí nenulově (nebo překročí pětiminutový limit),
+  shodí přípravu prostoru: prostor ukáže stav selhání s opakováním a zapíše se
+  konec výstupu běhu. Opakování připraví prostor z čistého worktree a skript
+  spustí znovu — setup skripty piš tak, aby opakování po částečné instalaci
+  prošlo (správci balíčků se tak chovají sami).
+- U skriptu **Archive** se selhání toleruje: selhání (nebo jeho dvouminutový
+  limit) se zapíše, ale **smazání nikdy neblokuje**. Archive běží na cestách
+  GC, kde není komu odpovědět na výzvu (prostor smazaný, PR sloučený, plánovaný
+  úklid).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Setup běží jen na **novém** worktree: znovu odeslat agenty do prostoru, který
+už checkout má, znovu použije existující checkout a instalaci neopakuje.
 
-## Run history
+## Historie běhů
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Každé spuštění se zapíše se stavem, dobou trvání, exit kódem a omezeným koncem
+výstupu. Uvidíš ho ve stejném dialogu nastavení pod „Nedávné běhy“ (odběr
+`repos.watchScriptRuns` ho streamuje živě).
 
-## Permissions
+## Oprávnění
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Skripty jsou shell, který spouští **server**, takže je smějí psát jen správci
+pracovního prostoru a hlídá je třída akce `processSpawn` — stejná síť
+guardrailů, která pouští každou další operaci spouštějící proces.

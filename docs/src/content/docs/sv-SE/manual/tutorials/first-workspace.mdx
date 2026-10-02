@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Din första arbetsyta
+description: Skapa en arbetsyta, registrera ett repo i den och se isoleringsgränsen med egna ögon.
 slug: sv-SE/handbok/guider/forsta-arbetsyta
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Det här bygger du
 
-By the end of this tutorial, you will have:
+När du är klar med den här guiden har du:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- En arbetsyta namngiven efter ditt projekt
+- Ett Git-repo registrerat i den
+- Fem seedade agenter, varav en du har konfigurerat tillräckligt för att kunna köra
+- En andra, tom arbetsyta som bevisar isoleringsgränsen
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Onboardingen har redan skapat en arbetsyta åt dig. Den här guiden skapar en ny medvetet, så att du ser varje del av processen.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Innan du börjar, välj en git-utcheckning som uppfyller alla tre villkoren – registreringssteget avvisar allt annat:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- den ligger i ett git-arbetsträd
+- den har en `origin`-remote
+- den remoten pekar på github.com, gitlab.com eller bitbucket.org
 
-## Step 1: Create a workspace
+## Steg 1: Skapa en arbetsyta
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Klicka på arbetsytechipen i titelraden
+2. Välj **Lägg till arbetsyta…**
+3. Ange ett namn som identifierar projektet, som ”api-service” eller ”frontend-v2”
+4. Välj eventuellt en logotyp
+5. Klicka på **Lägg till arbetsyta**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center byter till den nya arbetsytan och landar i dess inkorg (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Bakom kulisserna publicerar servern en `WorkspaceCreated`-händelse och seedar arbetsytan med:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- en **CEO-agent** vars persona är samordning och delegering
+- fyra specialister – `qa`, `architect`, `engineer` och `librarian` – var och en med egna instruktioner och skills
+- de inbyggda pipelinemallarna och deras triggerrader
 
-Every workspace you create gets all of this, not just the first one.
+Varje arbetsyta du skapar får allt detta, inte bara den första.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+**Kontrollpunkt.** Öppna **Inställningar → Arbetsyta → Agenter**. Fem agenter finns i personallistan, var och en med en ihålig statusring.
 
-## Step 2: Register a repository
+## Steg 2: Registrera ett repo
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Gå till **Inställningar → Arbetsyta → Arkiv**
+2. Klicka på **Lägg till arkiv**
+3. Bläddra till din utcheckning. Dialogen går igenom mapparna på maskinen som kör `cc_server` – inte din klient – och håller sig inom de rötter som servern exponerar (som standard serverns användares hemkatalog). En git-utcheckning får en egen mappikon och en kryssruta; en vanlig mapp får ingendera, så bara utcheckningar kan väljas.
+4. Markera en eller flera utcheckningar och registrera omgången. Markeringarna finns kvar när du navigerar, så du kan samla flera i en omgång och ett dåligt val tappar aldrig resten.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center läser varje utchecknings `origin`-remote, slår upp ägare och repo och skapar reporaden **inuti den här arbetsytan**. Det finns inget andra steg för att länka den: registreringen är det som ger den sin omfattning.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Att registrera samma utcheckning i en annan arbetsyta senare skapar en andra, oberoende reporad med sitt eget id. Mellan arbetsytor identifieras en utcheckning av sin filsökväg, aldrig av ett id.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+**Kontrollpunkt.** Repot visas i listan med sitt `owner/repo` och sin aktuella gren.
 
-## Step 3: Make one agent runnable
+## Steg 3: Gör en agent körbar
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+De fem agenter som den här arbetsytan nyss seedade har ingen adapter och ingen modell. Dispatchningen kör dem på **Control Center (built-in)** och frågar, när ingen modell är angiven, Anthropic efter dennes standardmodell – så de fungerar bara om du har anslutit ett Anthropic-konto, och i så fall på en modell du inte valde. Onboardingen vid första körningen skriver sitt val på varje agent i den första arbetsytan, en gång; en arbetsyta du skapar efteråt startar med alla fem oinställda. Ange en nu.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Öppna **Inställningar → Arbetsyta → Agenter**
+2. Välj `engineer` i personallistan
+3. På fliken **Inställningar**, ställ in **Adapter** på `Control Center (built-in)` och välj en **Modell** från en leverantör du har anslutit under Inställningar → Server → Modellleverantörer
+4. Tryck på **Spara ändringar**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+**Kontrollpunkt.** Öppna agenten igen och de två fälten behåller dina val.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/) covers the rest of the form.
+Varje agent har sin egen adapter och modell, så upprepa detta för varje annan agent du tänker använda. [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/) täcker resten av formuläret.
 
-## Step 4: See the isolation boundary
+## Steg 4: Se isoleringsgränsen
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Skapa en andra arbetsyta från chipen i titelraden, precis som i steg 1. Titta sedan på den:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Inställningar → Arbetsyta → Arkiv** är tom. Repot du registrerade för en minut sedan finns inte där.
+- **Inställningar → Arbetsyta → Agenter** innehåller fem agenter, men de är andra rader – adaptern du ställde in i steg 3 är borta.
+- Listan över ytor, ärenden och minnet är alla tomma.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Inget läckte, för det finns inget att läcka från: varje arbetsytas rader ligger i arbetsytans egen databasfil. En läsning mellan arbetsytor är inte en fråga som filtreras, det är en fråga som inte har någonstans att köra. Att ta bort en arbetsyta är att avlänka en fil.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Byt tillbaka med chipen i titelraden, eller öppna **Hantera arbetsytor** för att se dem sida vid sida.
 
-For the full model, read [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/).
+Läs [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/) för hela modellen.
 
-## Recap
+## Sammanfattning
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Du skapade en arbetsyta, såg den seeda en CEO och fyra specialister, registrerade ett repo i den, gav en agent en adapter och en modell och bekräftade att en andra arbetsyta inte delar något av det.
 
-**Next:** [Dispatch your first agent](/sv-SE/handbok/guider/forsta-agent/) to put the workspace to work.
+**Nästa:** [Starta din första agent](/sv-SE/handbok/guider/forsta-agent/) för att sätta arbetsytan i arbete.

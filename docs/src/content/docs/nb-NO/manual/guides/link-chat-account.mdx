@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Koble til Slack-kontoen din
+description: Bevis at en Slack-identitet er din, slik at agenter handler på meldingene dine og arbeidet ditt tilskrives deg.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-chatkonto
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Denne veiledningen viser hvordan du kobler chat-identiteten din til Control Center-brukeren din, og hvordan du fjerner en kobling.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Hvert medlem gjør dette én gang per chatleverandør. Det er atskilt fra å koble appen til: tilkoblingen gjør boten tilgjengelig for hele arbeidsområdet, mens koblingen gjør _deg_ gjenkjennelig inni det.
 
-## Why linking is required
+## Hvorfor kobling er nødvendig
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Broen nekter å handle for en chatkonto den ikke kan knytte til et medlem av arbeidsområdet. Det er med vilje — uten en kobling måtte hver melding fra Slack tilskrives den som installerte appen, og revisjonssporet, rate-grensene per principal og saksinnmelderne ville alle oppgi feil person.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Et medlem uten kobling som nevner boten, får et svar i den Slack-tråden som forklarer hvordan man kobler til. Ingenting sendes ut.
 
-## Link with a code
+## Koble til med en kode
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet** og rull ned til kortet **Knyttede chat-kontoer**
+2. I Slack-blokken klikker du på **Knytt Slack-kontoen min**
+3. Kopier kommandoen den viser, for eksempel:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. I Slack sender du den kommandoen til boten — en DM er det enkleste stedet
+5. Boten bekrefter med Control Center-brukeren du nå er koblet til, og dialogen du lot stå åpen, oppdateres til å si det samme i samme øyeblikk — du trenger ikke lukke den og se etter
 
-The code:
+Koden:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Er til engangsbruk og utløper **15 minutter** etter at den er generert
+- Genereres alltid for _deg_, aldri for et teammedlem
+- Erstatter enhver kode du allerede har, så hvis du trykker på knappen igjen, blir den forrige ugyldig
+- Ligger bare i minnet, så en omstart av serveren gjør utestående koder ugyldige — trykk på knappen igjen
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+En kode som er ukjent, utløpt eller generert for et annet arbeidsområde, feiler på samme uskiljelige måte: «that code is not valid (or has expired)».
 
-## Automatic linking by email
+## Automatisk kobling via e-post
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Hvis Slack-profilen din har en bekreftet e-postadresse som stemmer med en Control Center-bruker som **allerede er medlem av dette arbeidsområdet**, kobler broen deg til første gang du snakker med den. Ingen kode trengs.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Begge delene må stemme: e-posttreffet beviser identiteten, men bare medlemskap gir tilgang, så en fremmed hvis e-postadresse tilfeldigvis finnes på serveren, blir ikke koblet til noe. Oversikten viser hvordan hver kobling ble opprettet («matchet på e-post» eller «knyttet med en kode»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Automatisk kobling krever scope-et `users:read.email`. Uten det oppgir ikke Slack adressen, og kodeflyten er den eneste veien.
 
-## See who is linked
+## Se hvem som er koblet til
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Oversikten hører til administrasjonen av arbeidsområdet og ligger derfor på den andre halvdelen av flaten: **Innstillinger → Arbeidsområde → Generelt → Chat-broer → Knyttede kontoer**. Den lister opp hvert koblet medlem i arbeidsområdet, med Slack-kontoen hver av dem er knyttet til, og hvordan koblingen ble opprettet.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Din egen status står på profilsiden din: raden **Knytt Slack-kontoen min** viser «Knyttet til _your-slack-id_» når du er koblet til, og ber deg koble til når du ikke er det.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Oversikten er et levende abonnement, fordi endringen skjer på den andre siden — du skriver inn koden i Slack, så ingen forespørsel fra appen kan bære svaret tilbake.
 
-## Unlink
+## Fjern koblingen
 
-Click **Unlink** on a row in the workspace roster.
+Klikk på **Fjern tilknytning** på en rad i arbeidsområdets oversikt.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Alle kan fjerne koblingen sin
+- Bare en admin kan fjerne koblingen til et annet medlem
+- Å fjerne koblingen opphever også en eventuell utestående koblingskode for det medlemmet
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Etter at koblingen er fjernet, kan ikke den Slack-kontoen lenger styre agenter før den kobles til igjen. Eksisterende områder, transkripsjoner og saker beholder sin opprinnelige tilskrivning — å fjerne koblingen er ikke en tilbaketrekking av tidligere arbeid.
 
-## Troubleshooting
+## Feilsøking
 
-### The bot says I am not a member of this workspace
+### Boten sier at jeg ikke er medlem av dette arbeidsområdet
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/nb-NO/handbok/konsepter/flerbruker/).
+Slack-kontoen din er koblet til en Control Center-bruker, men den brukeren har ikke medlemskap i dette arbeidsområdet. Be en admin invitere deg; se [Flerbruker — identitet, medlemskap og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/).
 
-### The bot says my role is read-only
+### Boten sier at rollen min er skrivebeskyttet
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Rollene `viewer` og `guest` kan ikke starte arbeid. En admin må heve rollen din til `member` eller høyere.
 
-### The slash command is not recognized
+### Skråstrekkommandoen gjenkjennes ikke
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Sjekk at skråstrekkommandoen finnes i Slack, og at du sender kommandoen som innstillingsdialogen viste deg — en admin kan ha gitt den nytt navn, og i så fall viser dialogen det gjeldende navnet.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Set up Slack integration](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
-- [Customize the chat bot](/nb-NO/handbok/slik-gjor-du/tilpass-chatbot/)
-- [Chat bridge](/nb-NO/handbok/referanse/chatbro/)
+- [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
+- [Tilpass chatboten](/nb-NO/handbok/slik-gjor-du/tilpass-chatbot/)
+- [Chatbro](/nb-NO/handbok/referanse/chatbro/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Chat bridges](/nb-NO/handbok/konsepter/chatbroer/)
-- [Multiplayer — identity, membership and presence](/nb-NO/handbok/konsepter/flerbruker/)
+- [Chatbroer](/nb-NO/handbok/konsepter/chatbroer/)
+- [Flerbruker — identitet, medlemskap og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/)

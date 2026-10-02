@@ -1,239 +1,271 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Penerapan dan klien
+description: Bagaimana seni bina klien nipis Control Center memisahkan pelayan tanpa kepala daripada klien desktop, web dan mudah alihnya.
 slug: ms-MY/manual-pengguna/konsep/penerapan
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center bukan satu program tunggal. Ia ialah **seni bina klien nipis**:
+sebuah pelayan tanpa kepala yang memiliki data anda dan sekumpulan klien yang
+memaparkan antara muka melalui satu sambungan RPC kepadanya. Memahami
+pemisahan ini menjelaskan mengapa sesetengah perkara berjalan di tempatnya dan
+apa yang boleh dan tidak boleh dicapai oleh setiap klien.
 
-## The server owns the data
+## Pelayan memiliki data
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/ms-MY/manual-pengguna/konsep/ruang-kerja/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+Satu proses yang dipanggil **`cc_server`** memegang pangkalan data — `global.db`
+yang kecil untuk keadaan seluruh pelayan serta satu fail SQLite bagi setiap
+[ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/), dibuka secara malas —
+dan menjalankan kerja jangka panjang: enjin pipeline, reconciler, permukaan
+alat MCP dan pendengar orkestrasi. Segala yang perlu hidup lebih lama daripada
+tetingkap, atau yang patut dilihat secara serupa oleh dua klien, tinggal di situ.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Tiada klien membuka sendiri fail pangkalan data. Sebaliknya, setiap klien
+memegang satu **`RemoteRpcClient`** dan mengeluarkan operasi repo serta
+langganan melaluinya. Pelayan mengesahkan sambungan itu terhadap kunci
+pra-kongsi peranti berpasangan — dan selepas itu tidak lagi mengambil berat
+tentang sambungan tersebut. **Sesi tidak terikat pada ruang kerja.** Penghantar
+itu tanpa keadaan: setiap panggilan berlingkup ruang kerja membawa
+`workspace_id` sendiri dalam argumennya, dan panggilan yang terlepas satu akan
+ditolak.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Itu memang disengajakan, dan itulah yang membolehkan dua klien pada satu pelayan
+berada dalam ruang kerja yang berbeza tanpa "ruang kerja semasa" yang dipegang
+pelayan untuk mereka perselisihkan. Sebaliknya, pengasingan dikuatkuasakan bagi
+setiap panggilan, dalam empat langkah:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. Operasi mengisytiharkan sama ada ia berlingkup ruang kerja; jika ya dan tiada
+   `workspace_id` diterima, panggilan itu ditolak.
+2. Id yang dinamakan mesti ruang kerja yang **berdaftar**, diperiksa sebelum
+   apa-apa membuka pangkalan data — jika tidak, id yang tidak dikenali akan
+   mewujudkan `workspace.db` hantu yang kosong pada setiap permintaan. Kegagalan
+   padan bermakna tidak dijumpai.
+3. `WorkspaceRole` pemanggil mesti memenuhi paras minimum operasi, yang
+   diterbitkan daripada jenisnya: baca memerlukan guest, mutasi memerlukan
+   member, pemusnahan memerlukan admin.
+4. Operasi yang mendedahkan kandungan repo turut memerlukan kebenaran per repo
+   pada tahap yang diisytiharkannya — `none` / `read` / `review` / `write` —
+   supaya keahlian ruang kerja tidak pernah secara senyap memberi keistimewaan
+   melebihi hos kod.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Ayat yang penting: **memegang kunci pasangan bukanlah sempadan akses; keahlianlah
+sempadan itu.**
 
-## Why split it this way
+## Mengapa dipecahkan begini
 
-Three pressures pushed toward a server:
+Tiga tekanan mendorong ke arah pelayan:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Satu sumber kebenaran.** Desktop dan telefon, atau komputer riba dan
+   desktop, sepatutnya melihat keadaan armada yang sama. Jika setiap satu
+   memiliki pangkalan datanya sendiri, kedua-duanya akan terpesong. Satu pelayan
+   tunggal bermakna setiap klien membaca data langsung yang sama.
+2. **Web tidak boleh melayan dirinya sendiri.** Penyemak imbas tidak boleh
+   melahirkan subproses atau membuka fail setempat, jadi binaan web tidak akan
+   sekali-kali dapat memiliki pangkalan data atau menjalankan ejen. Ia mesti
+   bercakap dengan pelayan yang boleh berbuat demikian. Daripada membina laluan
+   data kedua yang khusus untuk web, desktop dibawa ke laluan yang sama.
+3. **Operasi tanpa kepala.** Pelayan yang boleh anda jalankan pada kotak kecil —
+   dapat dicapai daripada telefon dalam kereta api atau penyemak imbas di
+   mana-mana — lebih berguna daripada GUI yang mesti anda biarkan terbuka.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Kos timbal baliknya ialah pelayan kini menjadi kebergantungan: jika ia tidak
+berjalan, tiada apa yang berfungsi. Jawapan lalai desktop untuk itu ialah
+**melahirkan satu sendiri**.
 
-## The clients
+## Klien
 
-Five clients reach the server, each with a different shape and trust profile.
+Lima klien mencapai pelayan, masing-masing dengan bentuk dan profil kepercayaan
+yang berbeza.
 
-### Desktop app
+### Apl desktop
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Aplikasi desktop Flutter (macOS, Windows, Linux) ialah klien penuh. Pada
+pelancaran pertama ia bertanya bagaimana ia patut berjalan, kemudian mengingati
+pilihan itu:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Setempat**: lahirkan dan awasi `cc_server` pada mesin ini — penyiapan lalai,
+  serba lengkap dan pengguna tunggal. Desktop melancarkan pelayan itu, yang
+  memiliki pangkalan data di bawah akar sokongan apl dan bercakap dengannya
+  melalui loopback.
+- **Jauh**: sambung ke `cc_server` yang berjalan di tempat lain melalui
+  WebSocket yang selamat. Data tinggal pada pelayan itu; desktop ini semata-mata
+  pemapar.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+Dalam kedua-dua kes, klien RPC yang terhasil menggantikan pembekal data apl,
+jadi keseluruhan UI — setiap skrin, setiap ciri — membaca dan menulis melalui
+pelayan. Desktop tidak pernah menyentuh fail pangkalan data secara langsung.
 
-### Web client
+### Klien web
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Binaan web ialah apl Flutter yang sama, dikompil untuk berjalan dalam penyemak
+imbas dan dihoskan di [app.usectrl.dev](https://app.usectrl.dev), jadi tiada apa
+yang perlu dipasang. Penyemak imbas tidak boleh melahirkan subproses, jadi klien
+web **sentiasa** jauh: ia mendail `cc_server` melalui `wss://` dan memaparkan
+antara muka desktop yang penuh. Sebaik sahaja bersambung, ia menunjukkan skrin
+yang sama terhadap armada yang sama, kerana ia kod yang sama melalui RPC yang
+sama. Jurangnya ialah segelintir tempat yang memerlukan keupayaan natif yang
+tiada pada penyemak imbas — lapisan kualiti rakaman mesyuarat di bawah ialah
+yang utama, dan pemberitahuan OS ialah satu lagi.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Inilah sebabnya "tiada muat turun" dan "tiada pelayan" ialah dua dakwaan yang
+berbeza. Klien web menghapuskan pemasangan; ia tidak menghapuskan pelayan. Apa
+yang didailnya boleh jadi `cc_server` pada komputer riba yang sama —
+`ws://localhost:9030`, yang tidak memerlukan sijil kerana penyemak imbas
+menganggap loopback sebagai boleh dipercayai — atau satu pada mesin lain, yang
+mesti dapat dicapai melalui `wss://` dengan sijil yang dipercayai oleh penyemak
+imbas. `cc_server` enggan mengikat alamat bukan loopback tanpa TLS, jadi pelayan
+jauh bermakna sama ada sijilnya sendiri, proksi penamat TLS, atau terowong atau
+VPN yang membekalkannya.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Bundel itu sendiri dihoskan secara berasingan daripada pelayan yang
+dihubunginya. `cc_server` berdiri sendiri menyajikan titik akhir RPC, permukaan
+MCP dan proksinya, tetapi **bukan** bundel web — laluan fail statik wujud dalam
+pelayan itu, tetapi tiada akar web dikonfigurasikan pada binari berdiri sendiri,
+jadi ia tiada apa-apa untuk disajikan pada `/`. Imej kontena `cc-webapp` yang
+diterbitkan ialah yang menghoskan bundel itu, dan `scripts/build_web.sh` ialah
+yang membinanya. Pelayan hanya menerima asalan penyemak imbas yang tersenarai
+dalam `--allowed-origins`, yang lalai kepada `https://app.usectrl.dev`, jadi
+menghoskan bundel itu sendiri bermakna menambah asalannya.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Media (avatar, imej suapan, tangkapan skrin PR) melalui titik akhir proksi
+pelayan dan bukan menghubungi hos huluan secara langsung, jadi penyemak imbas
+tidak pernah mengambil asalan sewenang-wenangnya. Klien yang diterapkan mengecop
+Content-Security Policy bagi setiap permintaan daripada kuki tidak sensitif,
+supaya hanya asalan pelayan yang bersambung dibenarkan.
 
-### Phone companion (cc_remote)
+### Pendamping telefon (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+Aplikasi **Remote** ialah klien berasingan yang lebih ringan — PWA web Flutter di
+[remote.usectrl.dev](https://remote.usectrl.dev/). Ia sengaja **bukan** apl
+penuh. Ia mengganding melalui geganti WebSocket yang diuruskan oleh broker dan
+dimeterai hujung ke hujung, serta menuturkan hirisan permukaan alat yang
+sebahagian besarnya baca: baca tiket, mesej dan suapan berita; hantar balasan
+atau kemas kini tiket.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/) for the full
-security model.
+Telefon ialah **prinsipal berkeistimewaan lebih rendah** daripada ejen setempat.
+Dasar alat yang menolak secara lalai, kunci pra-kongsi yang memeterai setiap
+rangka, keupayaan sesi yang mengunci operasi berkeistimewaan (penggandingan,
+misalnya) keluar daripada klien pendamping, pemeriksaan peranan dan kebenaran
+repo bagi setiap panggilan di atas, serta pengehadan kadar menghalang
+penggandingan yang diluluskan (atau bocor) daripada menjadi kawalan jauh penuh.
+Lihat [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
+untuk model keselamatan yang penuh.
 
-### MCP clients
+### Klien MCP
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/) and the
-[MCP tools reference](/ms-MY/manual-pengguna/rujukan/alat-mcp/).
+Alat luaran — editor, ejen lain, CLI — yang menuturkan Model Context Protocol
+menyambung ke permukaan MCP pelayan dan menggunakan daftar alat bertaip. Ini
+ialah laluan integrasi berprogram; ia bukan GUI. Lihat
+[Gunakan pelayan MCP](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/) dan
+[Rujukan alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/).
 
-### Fleet executors (cc_worker)
+### Pelaksana armada (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** ialah binari Dart tulen tanpa kepala yang mengganding dengan
+`cc_server`, mengisytiharkan keupayaan hosnya dan menarik tugas pajakan untuk
+dilaksanakan. Ia menstrim acara proses kembali melalui RPC yang sama dan tidak
+memegang **sebarang keadaan berkekalan**: tiada pangkalan data, tiada
+pengesahan, tiada kelulusan, tiada bajet — semuanya tidak pernah meninggalkan
+`cc_server`. Pekerja ialah anggota badan, bukan otak kedua. Satu pelayan
+berwibawa, N anggota badan yang bodoh; tiada konsensus, tiada trafik pekerja ke
+pekerja.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Pelaksanaan berpajak masih hanyalah saluran paip pajakan. `agentRun` ialah
+satu-satunya jenis yang menjalankan arahan sebenar (`CC_JOB_COMMAND`, atau gesaan
+yang digaungkan jika tiada yang dibekalkan). `pipelineStep`, `codeIndex`,
+`goldenRender`, `benchmark` dan `evalBatch` kini menyiasat dengan
+`git --version` / `rev-parse HEAD` supaya laluan penstriman dapat diuji tanpa
+berpura-pura tugas itu benar-benar berjalan.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Yang dihebahkannya ialah sistem pengendalian, seni bina CPU, bilangan teras,
+RAM, sama ada SDK Flutter dapat dicapai dan bahagian belakang kotak pasir yang
+ada pada hos (tiada pada Windows). Pekerja khusus juga sentiasa menghebahkan
+`alwaysOn` dan `acceptsParallel`, dan itulah asas penempatan oleh penjadual
+pin → prefer → spill. Tiada penyiasatan GPU atau ML.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Desktop tunggal tidak menyedari semua ini, kerana penghantaran biasa tidak
+melalui armada sama sekali. _Wujud_ pekerja tersirat dalam proses yang
+didaftarkan untuk hos pelayan, tetapi ia hanyalah titik sambungan pendaftaran
+tanpa pelaksana yang dipasang padanya — tugas yang benar-benar diletakkan pada
+pekerja setempat akan gagal dan bukannya dilaksanakan. Hari ini, hanya
+`cc_worker` sebenar yang melaksanakan tugas pajakan.
 
-## What runs where
+## Apa yang berjalan di mana
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Perkara                                        | Pelayan (`cc_server`)      | Pelaksana armada (`cc_worker`) | Klien desktop  | Klien web / telefon              |
+| ---------------------------------------------- | -------------------------- | ------------------------------ | -------------- | -------------------------------- |
+| Pangkalan data (Drift/SQLite)                  | memilikinya                | —                              | —              | —                                |
+| Pengesahan, kelulusan, bajet, identiti         | memilikinya                | —                              | —              | —                                |
+| Pipeline, reconciler, pendengar orkestrasi     | menjalankannya             | —                              | —              | —                                |
+| Permukaan alat MCP                             | menyajikannya              | —                              | —              | —                                |
+| Pelaksanaan ejen                               | menjalankannya (atau memajakkannya keluar) | melaksanakan tugas pajakan | —     | —                                |
+| Pemaparan UI                                   | —                          | —                              | penuh          | penuh (web) / banyak membaca (telefon) |
+| Rakaman mesyuarat (mik + audio mesyuarat)      | —                          | —                              | rakaman natif  | web sahaja, melalui audio kongsi skrin |
+| OAuth kalendar (Google)                        | menyimpan token            | —                              | —              | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
-for what bounds a run in each case.
+Kedua-dua lapisan tidak mengasingkan dengan cara yang sama. `cc_server` membalut
+larian yang dilaksanakannya sendiri dalam kotak pasir OS hos di mana ada bahagian
+belakangnya — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2 — dan kembali
+kepada sempadan lain pada Windows atau tanpa `bwrap` dan `socat`. **`cc_worker`
+tidak mengasingkan sama sekali.** Ia menghebahkan keupayaan `sandbox` supaya
+pelayan boleh menempatkan tugas mengikut platform, tetapi tiada apa-apa dalam
+pekerja itu yang menerapkannya: tugas pajakan dilahirkan secara langsung,
+terbatas pada persekitaran pajakan dan worktree yang diberikan kepadanya. Oleh
+itu, memajakkan kerja keluar memindahkan pelaksanaan ke luar kotak pasir
+walaupun pada hos yang memilikinya. Lihat
+[Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
+untuk apa yang mengehadkan sesuatu larian dalam setiap kes.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Rakaman mesyuarat berlaku pada klien kerana ia memerlukan mikrofon dan audio
+mesyuarat itu — pelayan di dalam almari tidak boleh merakam panggilan anda.
+Rakaman itu kemudiannya diringkaskan oleh pipeline pelayan, dan nota disimpan di
+tempat yang boleh dibaca oleh setiap klien.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Klien web juga merakam, sesuatu yang bentuk jadual itu boleh mengaburkan: ia
+menangkap mikrofon serta trek audio kongsi skrin dalam penyemak imbas dan
+menstrim PCM 16 kHz ke pelayan. Ia _memerlukan_ trek audio itu, jadi ia gagal
+secara nyata di tempat penyemak imbas tidak membekalkannya. Yang benar-benar
+khusus desktop ialah lapisan kualiti di sekeliling rakaman — pembatalan gema
+pada peringkat isyarat melalui pemproses natif, meter aras input dan amaran
+mikrofon mati, menjalankan semula ringkasan, membatalkan pemprosesan dan
+tindakan rakam-dan-paut kalendar.
 
-## Pairing and trust
+## Penggandingan dan kepercayaan
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Setiap klien membuktikan identitinya dengan **kunci pra-kongsi** yang
+diperuntukkan sekali:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Desktop dalam modus setempat menjana kunci baharu pada setiap but dan
+  menyerahkannya kepada pelayan yang dilahirkan melalui persekitaran, jadi tiada
+  apa-apa yang rahsia disimpan secara kekal pada desktop.
+- Klien jauh (desktop jauh, web, telefon) menggunakan kunci yang ditempa oleh
+  perintah `pair` pelayan dan disimpan dalam rantai kunci OS (atau, pada telefon,
+  secara setempat).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+Penarikan balik adalah **langsung**, bukan malas. Pelayan memantau jadual peranti
+berpasangannya dan menggugurkan mana-mana sesi terbuka yang perantinya telah
+keluar daripada set aktif, dalam beberapa saat — pada laluan WebSocket langsung
+dan laluan geganti sama-sama. Anda tidak perlu menunggu peranti itu menyambung
+semula untuk memutuskan aksesnya.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Kunci itu tidak pernah melalui URL yang boleh dilihat oleh hos statik. Apabila ia
+tiba melalui pautan — pada telefon atau dalam penyemak imbas — ia menunggang
+dalam **serpihan URL**, bahagian selepas `#`, yang tidak pernah dihantar oleh
+penyemak imbas kepada pelayan yang menghoskan halaman itu. Itulah invarian yang
+wajar diingati, dan ia terpakai pada kedua-duanya. Klien web mempunyai dua lagi
+titik masuk: borang sambungan, tempat anda menampal pelayan dan kunci secara
+langsung, dan kod jemputan, yang ditebusnya untuk kelayakan yang ditempa khusus
+untuk penyemak imbas itu sahaja.
 
-## Related concepts
+## Konsep berkaitan
 
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/): the phone pairing and security model
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/): mengapa setiap panggilan RPC membawa id ruang kerjanya sendiri dan bagaimana pemisahan pangkalan data menjadikan pengasingan bersifat struktur
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/): bagaimana pangkalan kod distrukturkan di sekeliling pelayan dan kliennya
+- [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/): model penggandingan telefon dan keselamatan
 
-## Related guides
+## Panduan berkaitan
 
-- [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): start `cc_server` and pair a client
-- [Connect to a remote server](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/): point the desktop or web client at a server elsewhere
-- [Pair a device](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/ms-MY/manual-pengguna/panduan-cara/jalankan-pekerja-armada/): add a `cc_worker` that pulls leased jobs
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): mulakan `cc_server` dan gandingkan klien
+- [Sambung ke pelayan jauh](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/): halakan klien desktop atau web ke pelayan di tempat lain
+- [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): tambah telefon, penyemak imbas kedua, atau desktop lain
+- [Jalankan pekerja armada](/ms-MY/manual-pengguna/panduan-cara/jalankan-pekerja-armada/): tambah `cc_worker` yang menarik tugas pajakan

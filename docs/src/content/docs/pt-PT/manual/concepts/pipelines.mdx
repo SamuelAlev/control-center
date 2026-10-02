@@ -1,171 +1,181 @@
 ---
-title: Pipelines and automation
-description: Why pipelines separate scheduling from work, what actually starts one and which of the built-in templates are live out of the box.
+title: Pipelines e automatização
+description: Por que motivo os pipelines separam o agendamento do trabalho, o que inicia realmente uma execução e quais dos modelos incorporados funcionam logo de origem.
 slug: pt-PT/manual/conceitos/pipelines
+sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
 ---
 
-Pipelines are the deterministic half of Control Center. An agent decides what to
-say; a pipeline decides what happens next, the same way every time. A pipeline
-is a DAG of steps that can dispatch agents, run scripts, branch on a condition,
-fan out over a collection and pass data between steps — persisted, resumable,
-and costed.
+Os pipelines são a metade determinística do Control Center. Um agente decide o
+que dizer; um pipeline decide o que acontece a seguir, sempre da mesma forma. Um
+pipeline é um DAG de passos que podem despachar agentes, executar scripts,
+ramificar com base numa condição, distribuir-se em leque sobre uma coleção e
+passar dados entre passos — persistido, retomável e com custos calculados.
 
-They exist for three reasons: to chain a repetitive multi-step process, to
-coordinate several agents in sequence or in parallel and to react to something
-that happened without a human being there.
+Existem por três razões: encadear um processo repetitivo de vários passos,
+coordenar vários agentes em sequência ou em paralelo e reagir a algo que
+aconteceu sem que estivesse presente uma pessoa.
 
-## Templates and runs
+## Modelos e execuções
 
-A **template** (`PipelineDefinition`) is the declarative DAG: steps, declared
-inputs and configuration. It lives in the workspace's own database. A **run**
-(`PipelineRun`) is one execution of that template, carrying a mutable state bag,
-cost and token totals and per-step status.
+Um **modelo** (`PipelineDefinition`) é o DAG declarativo: passos, entradas
+declaradas e configuração. Vive na base de dados do próprio espaço de trabalho.
+Uma **execução** (`PipelineRun`) é uma execução desse modelo, que transporta um
+saco de estado mutável, totais de custo e de tokens e o estado de cada passo.
 
-One template has many runs. Runs survive a restart: the engine reloads
-in-flight runs and picks them up where they stopped.
+Um modelo tem muitas execuções. As execuções sobrevivem a um reinício: o motor
+volta a carregar as execuções em curso e retoma-as onde pararam.
 
-Two backstops deliberately fail the whole run rather than resume a step, because
-resuming would be worse than stopping:
+Duas redes de segurança fazem falhar deliberadamente toda a execução em vez de
+retomar um passo, porque retomar seria pior do que parar:
 
-- A step that has been `suspended` longer than `suspendedStepTimeout` (24 hours
-  by default) is waiting on tickets that will never reach a terminal state, so
-  it is failed to free the run. The exemption is `extras['awaitApproval'] ==
-  true` — that is the `orchestration.awaitApproval` partial-approval gate.
-  `human.gate` is not exempt.
-- A step declared `extras: {'idempotent': false}` that was mid-flight when the
-  server stopped may already have applied its side effect (a squash merge, a
-  worktree cleanup). Re-running it could double-apply, so the engine fails it
-  and leaves the retry to you.
+- Um passo que está `suspended` há mais tempo do que `suspendedStepTimeout` (24
+  horas por predefinição) está à espera de tickets que nunca chegarão a um estado
+  terminal, pelo que é marcado como falhado para libertar a execução. A exceção é
+  `extras['awaitApproval'] == true` — esse é o portão de aprovação parcial de
+  `orchestration.awaitApproval`. `human.gate` não está isento.
+- Um passo declarado `extras: {'idempotent': false}` que estava em curso quando o
+  servidor parou pode já ter aplicado o seu efeito secundário (um squash merge,
+  uma limpeza de worktree). Voltar a executá-lo poderia aplicá-lo em duplicado,
+  pelo que o motor marca-o como falhado e deixa-lhe a nova tentativa.
 
-## Kind schedules, body works
+## O tipo agenda, o corpo trabalha
 
-A step has two orthogonal parts and keeping them apart is what lets the engine
-stay small.
+Um passo tem duas partes ortogonais e mantê-las separadas é o que permite que o
+motor se mantenha pequeno.
 
-The **kind** (`StepKind`) tells the engine _when_ a step becomes runnable
-relative to its upstream steps — that is the only thing the scheduler needs to
-know. There are six: `trigger`, `listen`, `join`, `router`, `forEach` and
-`terminal`. The **body** (`bodyKey`) is the _work_ the step performs once it is
-scheduled. Bodies are closures registered by key at server startup, so many
-steps of different kinds can share one body: several `listen` steps all running
-`conversation.promptAgent`, for instance.
+O **tipo** (`StepKind`) indica ao motor _quando_ um passo passa a ser executável
+em relação aos seus passos a montante — é a única coisa que o agendador precisa
+de saber. Existem seis: `trigger`, `listen`, `join`, `router`, `forEach` e
+`terminal`. O **corpo** (`bodyKey`) é o _trabalho_ que o passo realiza depois de
+agendado. Os corpos são closures registadas por chave no arranque do servidor,
+pelo que muitos passos de tipos diferentes podem partilhar um corpo: por exemplo,
+vários passos `listen` a executar todos `conversation.promptAgent`.
 
-Because scheduling semantics live in six kinds, the catalog of behaviours can
-grow without anyone touching the scheduler. See
-[Pipeline steps](/pt-PT/manual/referencia/passos-de-pipeline/) for the complete catalog of
-kinds, bodies and their configuration.
+Uma vez que a semântica de agendamento assenta em seis tipos, o catálogo de
+comportamentos pode crescer sem que ninguém toque no agendador. Consulte
+[Tipos de passo de pipeline](/pt-PT/manual/referencia/passos-de-pipeline/) para o
+catálogo completo de tipos, corpos e respetiva configuração.
 
-Two consequences of the registry design are worth knowing before you author a
-template by hand:
+Vale a pena conhecer duas consequências do desenho do registo antes de criar um
+modelo à mão:
 
-- A step whose `bodyKey` is not registered produces a **warning at template
-  load** and then never executes. Nothing fails loudly at runtime. `trigger`
-  and `terminal` steps are exempt from that warning: the trigger still runs the
-  no-op `pipeline.trigger` body so downstream listeners fire; a `terminal` step
-  has no body and is a scheduler sentinel.
-- Keys in a node's `extras` map are **exact-match and silently ignored
-  otherwise**. Only `extras['spaceId']` puts an agent step's work in an existing
-  conversation. `extras['mode']` (`chat` / `plan` / `review`) is read on the
-  node that *opens* the room (`messaging.createSpace`, default `review`) — a
-  later agent step cannot re-permission a conversation it joined. Any other
-  spelling of either key is ignored.
+- Um passo cujo `bodyKey` não está registado produz um **aviso na carga do
+  modelo** e depois nunca é executado. Em tempo de execução, nada falha de forma
+  ruidosa. Os passos `trigger` e `terminal` estão isentos desse aviso: o disparador
+  continua a executar o corpo no-op `pipeline.trigger` para que os listeners a
+  jusante sejam acionados; um passo `terminal` não tem corpo e é um sentinela do
+  agendador.
+- As chaves do mapa `extras` de um nó **têm de corresponder exatamente; caso
+  contrário, são ignoradas em silêncio**. Só `extras['spaceId']` coloca o trabalho
+  de um passo de agente numa conversa existente. `extras['mode']` (`chat` / `plan`
+  / `review`) é lido no nó que *abre* a sala (`messaging.createSpace`,
+  predefinição `review`) — um passo de agente posterior não pode redefinir as
+  permissões de uma conversa a que se juntou. Qualquer outra grafia de qualquer
+  das chaves é ignorada.
 
-## State and data flow
+## Estado e fluxo de dados
 
-Steps do not call each other. They read from and write to a shared state bag on
-the run: a step reads its inputs by key, executes and writes its output back
-under its own `outputKey`. A `StateReducer` merges concurrent writes when
-parallel branches target the same key and a `TemplateRenderer` substitutes
-`{{...}}` placeholders in prompts and scripts from that same state.
+Os passos não se chamam uns aos outros. Leem e escrevem num saco de estado
+partilhado da execução: um passo lê as suas entradas por chave, executa e volta a
+escrever a sua saída sob o seu próprio `outputKey`. Um `StateReducer` funde as
+escritas simultâneas quando ramos paralelos visam a mesma chave, e um
+`TemplateRenderer` substitui os marcadores `{{...}}` de prompts e scripts a
+partir desse mesmo estado.
 
-This is why a pipeline is inspectable after the fact — the state bag is the
-whole story of the run.
+É por isso que um pipeline é inspecionável a posteriori — o saco de estado é toda
+a história da execução.
 
-## What starts a run
+## O que inicia uma execução
 
-`PipelineTrigger` rows declare when a template auto-starts. There are four
-kinds:
+As linhas de `PipelineTrigger` declaram quando um modelo arranca automaticamente.
+Existem quatro tipos:
 
-| Trigger          | Starts a run when                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Domain event** | A matching [domain event](/pt-PT/manual/conceitos/eventos-de-dominio/) fires — for example `PullRequestPublished` or `TicketAssigned` |
-| **Schedule**     | A cron/interval expression comes due                                                                                      |
-| **Manual**       | You run it by hand; the presence of an enabled manual trigger is what puts the template in the run picker                 |
-| **Webhook**      | An external system POSTs to `/webhooks/<token>` on the server's HTTP port                                                 |
+| Disparador            | Inicia uma execução quando                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Evento de domínio** | Dispara um [evento de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/) correspondente — por exemplo `PullRequestPublished` ou `TicketAssigned` |
+| **Agendamento**       | Vence uma expressão cron/de intervalo                                                                                      |
+| **Manual**            | Executa-o à mão; a presença de um disparador manual ativo é o que coloca o modelo no seletor de execuções                  |
+| **Webhook**           | Um sistema externo faz um POST para `/webhooks/<token>` na porta HTTP do servidor                                          |
 
-Event triggers are a closed set: 16 event types are known to the dispatcher and
-offered in the picker (`EventPayloadMapper.knownEventTypes`) and nothing else
-can start a pipeline. Fourteen of those 16 have a payload mapping. Two —
-`TicketCreated` and `TicketStatusChanged` — have none, so a trigger on either
-sits enabled and never fires. See
-[Domain events](/pt-PT/manual/conceitos/eventos-de-dominio/) for the full list.
+Os disparadores de eventos são um conjunto fechado: o despachante conhece 16
+tipos de evento e oferece-os no seletor (`EventPayloadMapper.knownEventTypes`), e
+nada mais pode iniciar um pipeline. Catorze desses 16 têm um mapeamento de
+payload. Dois — `TicketCreated` e `TicketStatusChanged` — não têm nenhum, pelo
+que um disparador sobre qualquer um deles fica ativo e nunca dispara. Consulte
+[Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/) para a lista
+completa.
 
-The webhook token doubles as the HMAC secret: the request's
-`X-Hub-Signature-256: sha256=<hex>` header is verified against
-`HMAC-SHA256(body, token)`, unverified deliveries are rejected and not
-replayable and duplicates are dropped by `dedupe_key`. Because trigger rows are
-unique on (workspace, event type, template), a template can hold at most one
-webhook trigger and one trigger per domain event type.
+O token do webhook funciona também como segredo HMAC: o cabeçalho
+`X-Hub-Signature-256: sha256=<hex>` do pedido é verificado em relação a
+`HMAC-SHA256(body, token)`, as entregas não verificadas são rejeitadas e não
+podem ser reproduzidas, e os duplicados são descartados por `dedupe_key`. Uma vez
+que as linhas de disparador são únicas por (espaço de trabalho, tipo de evento,
+modelo), um modelo pode ter no máximo um disparador de webhook e um disparador
+por cada tipo de evento de domínio.
 
-The built-in templates seed their **manual and event triggers enabled**;
-**scheduled triggers seed disabled**, so a recurring sweep is always opt-in.
+Os modelos incorporados são criados com os seus **disparadores manuais e de
+eventos ativados**; os **disparadores agendados são criados desativados**, pelo
+que uma varredura recorrente é sempre opcional.
 
-## The templates that ship disabled
+## Os modelos que vêm desativados
 
-Thirteen pipeline templates are seeded into every workspace and **eight of them
-ship disabled**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
-`pr_triage`, `pre_merge_gate`, `release_notes`, `dep_audit` and `pr_digest`.
+São criados treze modelos de pipeline em cada espaço de trabalho e **oito deles
+vêm desativados**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate`, `release_notes`, `dep_audit` e `pr_digest`.
 
-This is the part that surprises people. Their triggers are seeded _enabled_, but
-`PipelineEngine.start` refuses a disabled template and returns null — so the
-trigger fires into nothing and no run appears. **The template, not the trigger,
-is the switch.** Enable it at Settings → Workspace → Pipeline templates before expecting
-any of those eight to do anything.
+Esta é a parte que surpreende as pessoas. Os seus disparadores são criados
+_ativados_, mas `PipelineEngine.start` recusa um modelo desativado e devolve
+null — pelo que o disparador dispara para o vazio e não aparece nenhuma execução.
+**O interruptor é o modelo, e não o disparador.** Ative-o em Definições → Espaço
+de trabalho → Modelos de pipeline antes de esperar que qualquer desses oito faça
+seja o que for.
 
-Re-seeding a workspace preserves whatever you chose: your `isEnabled` setting
-and your existing trigger rows survive. There is exactly one deliberate
-exception — `pr_merged_cleanup`'s daily schedule is force-enabled even if it was
-previously off, because it is garbage collection. Worktree rows, code-graph
-partitions and copy-on-write copies accumulate without it and that was never
-meant to be a user choice.
+Voltar a criar os dados iniciais de um espaço de trabalho preserva o que
+escolheu: a sua definição `isEnabled` e as suas linhas de disparador existentes
+sobrevivem. Há exatamente uma exceção deliberada — o agendamento diário de
+`pr_merged_cleanup` é ativado à força mesmo que anteriormente estivesse
+desligado, porque se trata de recolha de lixo. Sem ele acumulam-se linhas de
+worktree, partições do grafo de código e cópias copy-on-write, e isso nunca
+pretendeu ser uma decisão do utilizador.
 
-One more asymmetry worth knowing: the `pr_review` built-in deliberately no
-longer posts to GitHub. Publishing a review is a separate, user-gated step and
-a pipeline that posted directly would double-publish. `cross_review`,
-`ticket_to_pr` and `pr_triage` do still post a comment straight to GitHub when
-they run.
+Vale a pena conhecer mais uma assimetria: o modelo incorporado `pr_review` já não
+publica deliberadamente no GitHub. Publicar uma revisão é um passo à parte,
+controlado pelo utilizador, e um pipeline que publicasse diretamente estaria a
+publicar em duplicado. Já `cross_review`, `ticket_to_pr` e `pr_triage` continuam
+a publicar um comentário diretamente no GitHub quando são executados.
 
-## What the engine knows
+## O que o motor sabe
 
-`PipelineEngine` creates the run record, schedules the start node that matches
-the run's event type, and then walks the DAG: as steps complete it evaluates
-downstream triggers, resolves router branches, waits on joins, applies retry
-policies and continue-on-fail, and persists state, cost and errors at every
-step. Edges that leave another start are ignored for that run, so a schedule
-fire does not wait on a manual-only condition.
+O `PipelineEngine` cria o registo da execução, agenda o nó de início que
+corresponde ao tipo de evento da execução e depois percorre o DAG: à medida que
+os passos terminam, avalia os disparadores a jusante, resolve os ramos do router,
+aguarda os joins, aplica políticas de nova tentativa e continue-on-fail, e
+persiste o estado, o custo e os erros em cada passo. As arestas que partem de
+outro nó de início são ignoradas nessa execução, pelo que um disparo por
+agendamento não espera por uma condição exclusiva da execução manual.
 
-What it does _not_ know is anything about ticketing, dispatch, GitHub, or
-messaging. Its only extension seam is the `PipelineBodyRegistry`. The bodies
-registered there are what hold `AgentDispatchPort`, `MessagingPort` and their
-siblings — which is why adding a capability to pipelines never means changing
-the scheduler.
+Aquilo que _não_ sabe é tudo o que diga respeito a tickets, despacho, GitHub ou
+mensagens. O seu único ponto de extensão é o `PipelineBodyRegistry`. Os corpos
+aí registados são os que contêm `AgentDispatchPort`, `MessagingPort` e
+congéneres — e é por isso que acrescentar uma capacidade aos pipelines nunca
+implica alterar o agendador.
 
-## Error handling
+## Tratamento de erros
 
-A failing step records its error message and moves to `failed`. If the step
-declares `continueOnFail`, downstream steps proceed and the error is stashed in
-the run state; otherwise the run fails. A step with a `StepRetryPolicy` is
-retried first, with linear or exponential backoff, before either of those
-applies.
+Um passo que falha regista a sua mensagem de erro e passa a `failed`. Se o passo
+declarar `continueOnFail`, os passos a jusante prosseguem e o erro é guardado no
+estado da execução; caso contrário, a execução falha. Um passo com uma
+`StepRetryPolicy` é tentado novamente primeiro, com recuo linear ou exponencial,
+antes de se aplicar qualquer uma dessas situações.
 
-## See also
+## Ver também
 
-- [Domain events](/pt-PT/manual/conceitos/eventos-de-dominio/): what an event trigger listens to
-- [Orchestration](/pt-PT/manual/conceitos/orquestracao/): a plan you approve, compiled into one of these pipelines
-- [Tickets and delegation](/pt-PT/manual/conceitos/tickets/): what pipeline steps create and complete
-- [Pipeline steps](/pt-PT/manual/referencia/passos-de-pipeline/): the complete catalog of kinds, bodies and config
-- [Build your first pipeline](/pt-PT/manual/tutoriais/primeiro-pipeline/)
-- [Create a pipeline template](/pt-PT/manual/guias/criar-pipeline/)
-- [Run a pipeline manually](/pt-PT/manual/guias/executar-pipeline/)
-- [Monitor pipeline runs](/pt-PT/manual/guias/monitorizar-pipelines/)
-- [Set up pipeline triggers](/pt-PT/manual/guias/disparadores-de-pipeline/)
+- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/): o que um disparador de eventos escuta
+- [Orquestração](/pt-PT/manual/conceitos/orquestracao/): um plano que aprova, compilado num destes pipelines
+- [Tickets e delegação](/pt-PT/manual/conceitos/tickets/): o que os passos de pipeline criam e concluem
+- [Tipos de passo de pipeline](/pt-PT/manual/referencia/passos-de-pipeline/): o catálogo completo de tipos, corpos e configuração
+- [Crie o seu primeiro pipeline](/pt-PT/manual/tutoriais/primeiro-pipeline/)
+- [Criar um modelo de pipeline](/pt-PT/manual/guias/criar-pipeline/)
+- [Executar um pipeline manualmente](/pt-PT/manual/guias/executar-pipeline/)
+- [Monitorizar execuções de pipeline](/pt-PT/manual/guias/monitorizar-pipelines/)
+- [Configurar disparadores de pipeline](/pt-PT/manual/guias/disparadores-de-pipeline/)

@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: ایجنٹس متوازی چلائیں
+description: ایک ہی وقت میں کئی ایجنٹس ڈسپیچ کریں اور اُن کا کام آپس میں ٹکرانے سے بچائیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+یہ گائیڈ دکھاتی ہے کہ کئی ایجنٹس کو ایک ہی وقت میں کیسے چلایا جائے تاکہ وہ ایک دوسرے کا مواد اوور رائٹ نہ کریں۔
 
-## The unit of isolation is the space, not the agent
+## تنہائی کی اکائی ایجنٹ نہیں، اسپیس ہے
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+جب کسی اسپیس میں کام شروع ہوتا ہے تو Control Center اُس اسپیس کے اپنے روٹ کے نیچے ہر رجسٹر شدہ ریپو کے لیے ایک copy-on-write چیک آؤٹ تیار کرتا ہے، ایسی برانچ پر جو ورک اسپیس کے برانچ ٹیمپلیٹ سے اخذ ہوتی ہے۔ پھر اسپیس کا ہر ایجنٹ اپنی الگ اوورلے ورکنگ ڈائریکٹری پاتا ہے — مگر اوورلے اُس اسپیس کی `repos/` ڈائریکٹری **شیئر** کرتے ہیں۔
 
-So:
+چنانچہ:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- **مختلف اسپیسز** کے دو ایجنٹس مختلف چیک آؤٹس میں، مختلف برانچوں پر کام کرتے ہیں۔ یہ اصل تنہائی ہے۔
+- **ایک ہی اسپیس** کے دو ایجنٹس ایک ہی چیک آؤٹ میں، ایک ہی برانچ پر کام کرتے ہیں۔ اُن کے اوورلے پاتھ مختلف ہوتے ہیں، چنانچہ ڈسپیچ پاتھ لاک (جو رنز کو صرف اُس وقت سلسلے وار کرتا ہے جب وہ بالکل ایک ہی ورکنگ ڈائریکٹری طلب کریں) بھی اُنہیں سلسلے وار نہیں کرتا۔ وہ ایک ہی وقت میں ایک ہی فائلیں لکھ سکتے ہیں۔
 
-The rule that follows: **one space per parallel task.**
+اس سے یہ قاعدہ نکلتا ہے: **ہر متوازی کام کے لیے ایک اسپیس۔**
 
-## Run tasks in parallel — separate spaces
+## کام متوازی چلائیں — الگ الگ اسپیسز
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. ایجنٹ A کے ساتھ ایک اسپیس کھولیں اور اسے ایک کام بھیجیں۔
+2. ایجنٹ B کے ساتھ دوسری اسپیس کھولیں اور اسے کوئی مختلف کام بھیجیں۔
+3. دونوں فوراً ڈسپیچ ہو جاتے ہیں، ہر ایک اپنی اسپیس کے چیک آؤٹ میں، اپنی برانچ پر۔
 
-This is the recipe to use whenever the agents will be editing files.
+جب بھی ایجنٹس فائلیں ترمیم کرنے والے ہوں، یہی ترکیب استعمال کریں۔
 
-## Work together in one space — several mentions
+## ایک ہی اسپیس میں مل کر کام کریں — کئی ذکر
 
-In a single space, @-mention more than one agent:
+ایک ہی اسپیس میں ایک سے زیادہ ایجنٹس کا @-ذکر کریں:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+دونوں ایجنٹس متوازی ڈسپیچ ہوتے ہیں اور بھیجنے والے کے ٹیگ کے ساتھ اسی اسپیس میں اسٹریم کرتے ہیں۔ چونکہ وہ اسپیس کا چیک آؤٹ شیئر کرتے ہیں، اسے تعاون کے لیے استعمال کریں — ایک لکھے، دوسرا پڑھے، یا دو ایجنٹس ایک ہی درخت پر غور کریں — نہ کہ دو آزاد ترمیموں کے لیے۔
 
-## Fan out from a pipeline
+## پائپ لائن سے فین آؤٹ کریں
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+بلٹ اِن `pr_review` ٹیمپلیٹ فین آؤٹ کی بھیجی گئی مثال ہے: کئی ریویوور نوڈ ایک ہی ٹرگر سے بیک وقت چلتے ہیں اور ایک **Consolidate (join)** نوڈ اُن کے نتائج کو ایک رپورٹ میں سمیٹ دیتا ہے۔ اسے پائپ لائنز اسکرین سے چلائیں اور ہر ریویوور متوازی ڈسپیچ ہوتا ہے۔
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+جب آپ کوئی قدم شامل یا جوڑتے ہیں تو پائپ لائن ایڈیٹر ٹرمینل سینٹینل چھپا دیتا ہے اور اسے ہر فعال سِنک کا انتظار کرنے کے لیے دوبارہ وائر کر دیتا ہے، چنانچہ آپ کی خود کھینچی ہوئی شاخیں واقعی چلتی ہیں۔
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[ٹکٹ تفویض کرنے سے کچھ ڈسپیچ نہیں ہوتا]
+کسی ایجنٹ کو ٹکٹ تفویض کرنا ملکیت ریکارڈ کرتا ہے۔ کوئی ٹکٹ ڈسپیچر نہیں ہے — `TicketAssigned` ایک آڈٹ سگنل ہے اور اس سے کوئی کام شروع نہیں ہوتا۔ صرف ایک استثنا _ٹیم_ کو تفویض کردہ ٹکٹ ہے، جو اُس ٹیم کے لیڈر کو جگاتا ہے۔
 :::
 
-## Watch them run
+## اُنہیں چلتے ہوئے دیکھیں
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**آبزرویبلٹی → لائیو** (سائیڈ بار فوٹر → آبزرویبلٹی، پھر لائیو ٹیب) اِس ورک اسپیس کا ایجنٹ روسٹر دکھاتا ہے، جو ہر سیکنڈ دوبارہ تازہ ہوتا ہے: اسٹیٹس (چل رہا ہے / بیکار / پارک شدہ / منسوخ)، ہر ایک کیا کر رہا ہے، اس کے تازہ ترین رن کے ٹوکن اور لاگت، اور چلتے پراسیس کو ختم کرنے کا کنٹرول۔ کسی قطار کو منتخب کرنے سے لائیو ٹرانسکرپٹ کا ایک ڈراور لگ جاتا ہے۔
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**ترتیبات → ورک اسپیس → ایجنٹس** وہی روسٹر دکھاتا ہے، مگر ایک مختلف، توجہ کو مقدم رکھنے والی اسٹیٹس کی اصطلاحات کے ساتھ جو ہر ایجنٹ کی رن ہسٹری سے اخذ ہوتی ہیں — چل رہا ہے، بلاک، ناکام، بیکار، کبھی نہیں چلا — اور اس طرح ترتیب دی جاتی ہیں کہ جو چیز بھی توجہ مانگے وہ اوپر آ جائے۔ ہر ایجنٹ کا **لاگز** ٹیب اپنی رن ہسٹری رکھتا ہے۔
 
-Both surfaces are scoped to the active workspace.
+دونوں سطحیں فعال ورک اسپیس تک محدود ہیں۔
 
-## Handle conflicts
+## ٹکراؤ سنبھالیں
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+الگ الگ اسپیسز میں ہر اسپیس اپنی برانچ پر ہوتی ہے، چنانچہ جب آپ دوسرا pull request مرج کرتے ہیں تو ٹکراؤ ایک عام Git merge conflict کی صورت میں سامنے آتا ہے۔ اسے اُسی طرح حل کریں جیسے آپ کوئی بھی merge conflict حل کرتے ہیں۔
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+ایک ہی اسپیس کے اندر نہ کوئی برانچ کی حد ہے نہ کوئی لاک: ایجنٹس ایک ہی فائلیں براہِ راست لکھ رہے ہوتے ہیں اور ہارنے والے کا مواد محض اوور رائٹ ہو جاتا ہے۔ اگر آپ کو ایک ہی اسپیس میں دو ایجنٹس سے ترمیم کرانے کا خیال آئے تو اس کے بجائے کام کو دو اسپیسز میں تقسیم کر دیں۔
 
-To reduce collisions either way:
+کسی بھی صورت میں ٹکراؤ کم کرنے کے لیے:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/).
-- Review and merge each agent's pull request promptly.
+- ہر ایجنٹ کو ایک الگ دائرہ دیں — الگ فائلیں، الگ ماڈیول۔
+- ڈسپیچ کرنے سے پہلے کوڈ گراف سے دیکھیں کہ کوئی تبدیلی کس چیز کو چھوتی ہے۔ دیکھیں [کوڈ گراف سے کوڈ تلاش کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/)۔
+- ہر ایجنٹ کا pull request فوری طور پر ریویو اور مرج کریں۔
 
-## Resource considerations
+## ریسورس کے پہلو
 
-Each running agent costs:
+ہر چلتے ایجنٹ کی لاگت یہ ہے:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- ایک اسپیس چیک آؤٹ — جب تک copy-on-write دستیاب ہو، ڈسک پر نہ ہونے کے برابر؛ Windows پر ایک `git worktree`۔ جو فائل سسٹم reflink نہ کر سکے وہ کاپی کرنے کے بجائے تیاری ناکام کر دیتا ہے۔
+- سرور ہوسٹ پر ایک پراسیس
+- ماڈل ٹوکن، جو فی ایجنٹ جمع ہوتے رہتے ہیں
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/) for the two commands that do have one.
+لاگتیں **آبزرویبلٹی → بصیرتیں** میں نظر آتی ہیں۔ یاد رکھیں کہ ایک عام انٹرایکٹو ٹرن پر خرچ کی کوئی حد نہیں ہوتی؛ اُن دو کمانڈز کے لیے جو حد رکھتی ہیں، دیکھیں [اخراجات منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Build an agent team](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/)
-- [Manage costs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
-- [Add repos to a workspace](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [ایجنٹ ٹیم بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/)
+- [اخراجات منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
+- [ورک اسپیس میں ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)

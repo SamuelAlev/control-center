@@ -1,138 +1,143 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Tạo GitHub App
+description: Đăng ký một GitHub App cho máy chủ của bạn để thành viên có thể đăng nhập, và để công việc nền chạy với tư cách ứng dụng thay vì một con người.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Hướng dẫn này cho bạn biết cách cấp cho máy chủ của mình một danh tính GitHub
+riêng. Việc này mất khoảng hai phút, chỉ chủ sở hữu máy chủ thực hiện, và chỉ
+phải làm một lần cho mỗi máy chủ.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Bạn có thể không cần đến nó]
+Một bản dựng chính thức đã kèm sẵn **id client** GitHub, nên
+[Đăng nhập với GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/) hoạt
+động ngay mà không cần đăng ký gì — luồng thiết bị chỉ xác thực bằng id client,
+nên việc phát hành nó là an toàn. Hãy đăng ký ứng dụng riêng khi bạn muốn MÁY
+CHỦ hành động với tư cách của chính nó (webhook, thăm dò PR và đồng bộ phiếu
+chạy trên một bản cài ứng dụng thay vì trên thông tin xác thực của một người),
+hoặc khi bạn xây dựng từ mã nguồn.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
+Để kết nối tài khoản của chính bạn sau đó, xem
+[Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
 
-## Why your server needs its own app
+## Vì sao máy chủ của bạn cần ứng dụng riêng
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Một lần đăng ký tạo ra hai công việc khác nhau, và chính ứng dụng là thứ khiến cả
+hai trung thực:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Công việc | Thứ trả lời nó | Vì sao quan trọng |
+| --- | --- | --- |
+| **Một người đăng nhập** | Id client của ứng dụng, qua luồng thiết bị | Bạn có thông tin xác thực thuộc về mình, trên máy chủ, trên mọi thiết bị — không có mã thông báo nào phải dán hay xoay vòng |
+| **Máy chủ hành động** | Id ứng dụng + khóa riêng → mã thông báo cài đặt | Webhook, thăm dò PR và đồng bộ phiếu không còn phụ thuộc vào việc mã thông báo của một con người vẫn còn hiệu lực |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Lưu ý thứ **không** có trong bảng đó: bí mật client. Luồng thiết bị của GitHub
+chỉ xác thực bằng id client — cả yêu cầu mã thiết bị lẫn thăm dò mã thông báo —
+nên không có bí mật nào phải giữ để đăng nhập.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Không có ứng dụng riêng, việc thứ nhất vẫn hoạt động nhờ id client mà bản dựng
+kèm sẵn; việc thứ hai chuyển sang dùng thông tin xác thực của chủ sở hữu máy
+chủ, nên công việc nền dựa vào người thiết lập đầu tiên.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Không có nút "cài đặt GitHub App của Control Center"]
+Một GitHub App phân phối sẽ đồng nghĩa với một bí mật client dùng chung và một
+bản cài dùng chung trên máy chủ của mọi người, khiến quyền truy cập kho mã của
+mọi không gian làm việc đều đi qua những thông tin xác thực mà không ai trong
+không gian đó kiểm soát. Vì vậy mỗi máy chủ sở hữu ứng dụng riêng — hướng dẫn
+này cho thấy điều đó tốn ít đến mức nào.
 :::
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Bạn là **chủ sở hữu máy chủ** — các thao tác `providerApps.*` chỉ dành cho vai
+  trò đó, và những người khác không nhìn thấy thẻ này
+- Một tài khoản GitHub, hoặc một tổ chức mà bạn có thể tạo ứng dụng trong đó
+- Không cần gì truy cập được từ công khai: đăng nhập dùng **luồng thiết bị**, nên
+  máy chủ không cần cổng vào, tunnel, URL callback hay tên miền nào
 
-## Register the app
+## Đăng ký ứng dụng
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Mở [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (với tổ chức: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — gì cũng được; `Control Center (yourname)` là ổn. Tên này
+   hiện trên các commit và bình luận mà máy chủ tạo
+3. **Homepage URL** — gì cũng được, ví dụ `https://github.com/your-name`
+4. **Callback URL** — để trống. Luồng thiết bị không dùng nó
+5. Tích **Enable Device Flow**. Đây là thiết lập duy nhất mà đăng nhập không thể
+   hoạt động nếu thiếu
+6. Bỏ tích **Webhook → Active** trừ khi bạn nối webhook riêng
+7. Trong **Repository permissions**, cấp ít nhất:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (bắt buộc)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, nếu bạn dùng GitHub Issues cho phiếu, và cho
+     việc bot tìm bình luận trong hội thoại PR
+     (xem [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/))
+   - **Checks**: Read-only, để hiển thị trạng thái CI trên trang PR
+8. Trong **Where can this GitHub App be installed?**, chọn cái nào phù hợp —
+   "Only on this account" là đúng cho máy chủ cá nhân
+9. Nhấn **Create GitHub App**
 
-## Collect the three values
+## Thu thập ba giá trị
 
-On the app's page, immediately after creation:
+Trên trang của ứng dụng, ngay sau khi tạo:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Giá trị | Ở đâu |
+| --- | --- |
+| **App ID** | Tab **General**, gần phía trên |
+| **Client ID** | Tab **General**, dưới "Client secrets" |
+| **Private key** | **Generate a private key** — một tệp `.pem` được tải xuống |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Tệp khóa riêng chỉ tải xuống một lần và GitHub không bao giờ hiển thị lại. Hãy
+giữ nó cho đến khi bạn đã dán; bạn luôn có thể tạo một cái khác.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**Bí mật client** là tùy chọn và chỉ mang lại đúng một thứ: nếu bạn để "Expire
+user authorization tokens" BẬT, nó là thứ âm thầm gia hạn mã thông báo của một
+người thay vì yêu cầu họ đăng nhập lại sau mỗi tám giờ. Bản thân việc đăng nhập
+không bao giờ dùng nó.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Thiết lập đơn giản hơn là TẮT thời hạn đó, và khi đó không cần bí mật nào ở đâu
+cả. Nếu bạn giữ nó bật, hãy tạo một bí mật và dán vào
+**Cài đặt → Máy chủ → Đăng nhập một lần** (thẻ **Ứng dụng nhà cung cấp**) — không có biến môi trường nào cho
+nó, và cũng không có biến nào được nhúng vào bản dựng, nên nó ở lại trên máy chủ
+của bạn.
 
-## Install it on your account
+## Cài đặt nó trên tài khoản của bạn
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Một ứng dụng đã đăng ký nhưng chưa cài đặt có thể xác thực người dùng và không
+đọc được gì.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Trên trang của ứng dụng, mở **Install App**
+2. Cài đặt nó trên tài khoản hoặc tổ chức của bạn
+3. Chọn **All repositories**, hoặc chọn những kho mã mà máy chủ này nên thấy
 
-## Paste it into Control Center
+## Dán nó vào Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
+   **Ứng dụng nhà cung cấp**
+2. Trên khối **GitHub**, đặt từng trường:
+   - **Id ứng dụng** — App ID dạng số
+   - **Khóa riêng** — dán toàn bộ tệp `.pem`, kể cả các dòng `BEGIN` và `END`
+   - **Id client** — từ cùng trang đó
+   - **Bí mật client** — chỉ khi bạn đã tạo một cái (để gia hạn mã thông báo)
+3. Nhấn **Kiểm thử**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Khóa được phân tích ngay khi lưu, nên một lần dán bị cắt cụt hay sai định dạng
+sẽ bị từ chối ngay tại đó thay vì thất bại trên một yêu cầu nền hàng giờ sau.
+**Kiểm thử** đi xa hơn và hỏi GitHub xem ứng dụng đã được cài trên những tài
+khoản nào — "đã lưu" và "hoạt động" là hai khẳng định khác nhau, và chỉ khẳng
+định thứ hai mới có nghĩa là sẽ có gì đó chạy.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Điểm kiểm tra: khối GitHub hiển thị "Máy chủ có thể hành động với tư cách của
+chính nó, và mọi người có thể đăng nhập.", và hàng **GitHub** trong
+**Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** giờ đây có
+**Đăng nhập với GitHub**.
 
-## Configure it with environment variables instead
+## Cấu hình bằng biến môi trường thay thế
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Với bản cài không giao diện hoặc chạy bằng script, máy chủ nạp mỗi trường từ môi
+trường trong lần đầu nó không có giá trị nào được lưu:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +145,66 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Không có cờ dòng lệnh nào cho những giá trị này — một bí mật trên dòng lệnh thì
+mọi tiến trình trên máy chủ đều đọc được qua `ps`. Môi trường là nơi duy nhất để
+cấu hình chúng, và nó thắng bất kể thứ gì bản dựng kèm theo.
+`.env.template` là danh sách đầy đủ.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Khi phát triển cục bộ, tệp `.env` ở gốc kho mã mang cùng các giá trị đó và ứng
+dụng desktop truyền chúng cho máy chủ mà nó khởi chạy. Hãy đặt khóa trên **một
+dòng** ở đó: một giá trị `.env` là một dòng, và `\n` bên trong dấu ngoặc kép được
+giải mã thành ký tự xuống dòng.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` và `GITHUB_APP_PRIVATE_KEY` là cùng những tên mà trình môi giới
+mã thông báo của sandbox vốn đã đọc, nên một máy chủ đã cấu hình mã thông báo
+agent chi tiết sẽ có sẵn làn đăng nhập. Việc nạp diễn ra **một lần cho mỗi
+trường** — sau đó giá trị đã lưu thắng, nên chỉnh sửa trong Cài đặt không bị lần
+khởi động lại kế tiếp hoàn tác.
 
-## Do the same for Linear
+## Làm điều tương tự với Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear không có luồng thiết bị, nên đăng nhập của nó là một vòng qua trình duyệt
+và nó thực sự cần URL callback — thẻ **Ứng dụng nhà cung cấp** cho bạn thấy chính
+xác URL cần đăng ký.
 
-1. Create an OAuth application at
+1. Tạo một ứng dụng OAuth tại
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Đặt **Callback URL** bằng URL mà thẻ hiển thị, nguyên văn
+3. Dán **Client ID** và **Client secret** vào khối Linear
+4. Tùy chọn thêm một **khóa API** của không gian làm việc — đó là thông tin xác
+   thực mà máy chủ dùng để đồng bộ phiếu khi không có con người yêu cầu
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The sign-in dialog says the provider returned no device code
+### Hộp thoại đăng nhập báo nhà cung cấp không trả về mã thiết bị
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** đang tắt trên ứng dụng. Hãy bật nó trong **General** rồi
+thử lại.
 
-### Test says the credentials work but the app is not installed anywhere
+### Kiểm thử báo thông tin xác thực hoạt động nhưng ứng dụng không được cài ở đâu cả
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Đăng ký và cài đặt là hai bước riêng biệt. Mở **Install App** trên trang của ứng
+dụng rồi cài đặt nó.
 
-### Test says the private key could not be read
+### Kiểm thử báo không đọc được khóa riêng
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Hãy dán toàn bộ tệp `.pem`, kể cả các dòng `-----BEGIN` và `-----END`. Không thể
+dùng khóa `ed25519` hay EC — GitHub App ký bằng RSA.
 
-### A member signed in but sees no repositories
+### Một thành viên đã đăng nhập nhưng không thấy kho mã nào
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Ứng dụng chưa được cài trên tài khoản sở hữu chúng, hoặc bản cài của nó chọn
+những kho mã khác. Việc đăng nhập của chính họ chỉ cấp những gì ứng dụng được
+phép thấy.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-- [Talk to Control Center from a GitHub PR](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/)
-- [Connect a code host](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
-- [Manage API keys](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/)
+- [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
+- [Quản lý khóa API](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)

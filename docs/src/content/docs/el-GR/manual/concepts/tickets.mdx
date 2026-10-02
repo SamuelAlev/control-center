@@ -1,155 +1,182 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Εισιτήρια και ανάθεση
+description: Γιατί ένα εισιτήριο παρακολουθεί την εργασία χωρίς να την αποστέλλει, πώς προστατεύεται η ανάθεση και τι κατέχει και τι δεν κατέχει το κατοπτρικό αντίγραφο του προμηθευτή.
 slug: el-GR/εγχειρίδιο/έννοιες/εισιτήρια
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Ένα εισιτήριο είναι η μονάδα εργασίας που παρακολουθεί το Control Center. Είναι
+σκόπιμα ένα _ανόητο_ τεχνούργημα: ένας τίτλος, ένα σώμα, μια κατάσταση, ένας
+κάτοχος και μια θέση σε ένα δέντρο. Δεν είναι το πράγμα πάνω στο οποίο εκτελούν
+οι πράκτορες — η εργασία των πρακτόρων ζει σε συνομιλίες και η δομημένη έξοδος
+μιας εκτέλεσης ζει στο ημερολόγιο εκτέλεσης.
 
-## Assignment records ownership; it dispatches nothing
+## Η εκχώρηση καταγράφει την κυριότητα· δεν αποστέλλει τίποτα
 
-This is the single most important thing to get right about tickets.
+Αυτό είναι το πιο σημαντικό σημείο που πρέπει να έχετε σωστά όσον αφορά τα
+εισιτήρια.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Η ρύθμιση του `assignedAgentId` γράφει ένα πεδίο και δημοσιεύει ένα
+`TicketAssigned` [γεγονός τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/). Αυτό
+το γεγονός είναι σήμα ελέγχου και ειδοποίησης και ενεργοποιητής pipeline.
+**Η εκχώρηση σε έναν πράκτορα δεν ξεκινά καμία εκτέλεση.** Δεν υπάρχει
+αποστολέας εισιτηρίων που να παρακολουθεί το `assignedAgentId` και να ξυπνά
+αυτόν τον πράκτορα.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Η εξαίρεση είναι μια ομάδα: όταν οριστεί το `assignedTeamId`, το
+`TeamRoutingService` αποστέλλει τον αρχηγό της ομάδας με το πρωτόκολλο
+λειτουργίας και τον κατάλογο μελών.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Αν θέλετε ένας συγκεκριμένος πράκτορας να εργαστεί σε ένα εισιτήριο, του το
+ζητάτε σε μια συνομιλία, ή ένα βήμα pipeline τον αποστέλλει, ή ένας άλλος
+πράκτορας του αναθέτει την εργασία. Το να εκχωρήσετε ένα εισιτήριο σε έναν
+πράκτορα και να περιμένετε είναι το μόνο πράγμα που δεν θα παραγάγει ποτέ
+εργασία.
 
-## Mirror and overlay
+## Κατοπτρικό αντίγραφο και επικάλυψη
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Ένα εισιτήριο μπορεί να είναι αμιγώς τοπικό ή να υποστηρίζεται από ένα εξωτερικό
+σύστημα παρακολούθησης και μεταφέρει και τα δύο σε μία γραμμή.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+Το **κατοπτρικό αντίγραφο** — πάροχος, εξωτερικό κλειδί, URL, τίτλος, περιγραφή,
+προτεραιότητα, ετικέτες, ακατέργαστη και κανονικοποιημένη κατάσταση, χρονικές
+σημάνσεις — είναι μια προσωρινή μνήμη όταν το εισιτήριο είναι απομακρυσμένο. Εκεί
+η πηγή της αλήθειας είναι το απομακρυσμένο σύστημα και μια ανανέωση ξαναγράφει
+το κατοπτρικό αντίγραφο εξ ολοκλήρου.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+Η **επικάλυψη** — εκχώρηση, ανάθεση, σύνδεσμος χώρου, γονέας, έργο, συνδεδεμένα
+PR — υπάρχει μόνο στο Control Center. Το σύστημα παρακολούθησης δεν γνωρίζει
+τίποτα γι' αυτήν και μια ανανέωση δεν την αγγίζει ποτέ.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Αυτός ο διαχωρισμός είναι που κάνει ασφαλή τον συγχρονισμό: μια λήψη από τον
+προμηθευτή μπορεί να είναι καταστρεπτική για το κατοπτρικό αντίγραφο χωρίς να
+χάνονται ποτέ τα μεταδεδομένα ενορχήστρωσης που είναι στρωμένα από πάνω.
 
-## The lifecycle graph binds agents, not you
+## Ο γράφος κύκλου ζωής δεσμεύει τους πράκτορες, όχι εσάς
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Οι καταστάσεις ακολουθούν τη ροή `backlog → open → inProgress → inReview → done`,
+με το `blocked` ως πλευρικό βρόχο και τα `failed` / `cancelled` ως τις άλλες
+τελικές καταστάσεις.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Ο γράφος μεταβάσεων επιβάλλεται **μόνο στη διαδρομή πράκτορα και αυτοματισμού** —
+εργαλεία MCP και reconcilers. Μια μη έγκυρη μετάβαση εκεί καταγράφεται και
+αγνοείται, ώστε ένας μπερδεμένος πράκτορας να μην μπορεί να πάει ένα εισιτήριο
+προς τα πίσω, έξω από μια τελική κατάσταση.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Κάθε αλλαγή που προέρχεται από τον χρήστη στο UI περνά `force: true` και
+παρακάμπτει τον γράφο εντελώς. Ένας άνθρωπος μπορεί να μετακινήσει ένα εισιτήριο
+σε οποιαδήποτε κατάσταση εμφανίζει ο επιλογέας — ακόμη και να ανοίξει ξανά μια
+τελική κατάσταση. Ο επιλογέας δεν προσφέρει το `failed`· οι πράκτορες το ορίζουν
+μέσω του `fail_ticket`. Ο γράφος είναι δικλίδα ασφαλείας για τον αυτοματισμό, όχι
+κανόνας για το πώς επιτρέπεται να εξελιχθεί η εργασία.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+Το `TicketWorkflowService` κατέχει κάθε τροποποίηση μέσω ενός μοναδικού σημείου
+συμφόρησης που φορτώνει τη γραμμή, επιβεβαιώνει ότι ανήκει στον χώρο εργασίας
+του καλούντος και γράφει με αναμενόμενο `version`, ώστε δύο ταυτόχρονες
+επεξεργασίες να μην μπορούν να αντικαταστήσουν σιωπηλά η μία την άλλη.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/).
+Για τον πλήρη πίνακα καταστάσεων, τις μεταβάσεις, τη λίστα πεδίων και τα είδη
+σχέσεων, δείτε [Κύκλος ζωής εισιτηρίου](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/).
 
-## Provenance: how a ticket came to exist
+## Προέλευση: πώς δημιουργήθηκε ένα εισιτήριο
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Κάθε εισιτήριο έχει ένα `originKind`. Η απαρίθμηση έχει πέντε τιμές — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — αλλά σήμερα
+καταγράφονται μόνο δύο: το `manual` (η προεπιλογή στο `createTicket`,
+συμπεριλαμβανομένων των θυγατρικών που ανατίθενται) και το `externalSync` (η
+μηχανή συγχρονισμού, σε μια λήψη από τον προμηθευτή). Το
+`TicketWorkflowService.createTicket` δεν δέχεται όρισμα προέλευσης, οπότε τα
+`pipelineStep`, `agentDelegation` και `recovery` δεν καταλήγουν ποτέ σε μια
+γραμμή.
 
-## Guarded delegation
+## Προστατευμένη ανάθεση
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Η ανάθεση είναι το σημείο όπου ένας πράκτορας δημιουργεί εργασία για έναν άλλον
+πράκτορα και το σημείο όπου θα μπορούσαν να διαρρεύσουν προνόμια, γι' αυτό οι
+προστατευτικοί έλεγχοι βρίσκονται στην πλευρά του διακομιστή, σε ένα σημείο
+συμφόρησης, και όχι μέσα σε οδηγίες προτροπής.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+Το `delegate_task` δρομολογείται μέσω του `TicketWorkflowService.delegateGuarded`,
+το οποίο υπολογίζει το βάθος και τη ρίζα του παιδιού από την αλυσίδα γονέων και
+στη συνέχεια εκτελεί και τους τέσσερις ελέγχους `DelegationGuards`: ένα άλμα που
+θα υπερέβαινε το **όριο βάθους 3**, ένα άλμα πίσω σε έναν πράκτορα που βρίσκεται
+ήδη στην αλυσίδα (**ανίχνευση κύκλου**), ένα **ανώτατο όριο αυτονομίας** (το
+πραγματικό επίπεδο του αναλαμβάνοντος στον χώρο δεν πρέπει να υπερβαίνει εκείνο
+αυτού που αναθέτει) και ένα **πλαίσιο προϋπολογισμού** (η ανάθεση χρεώνει τον
+εναπομείναντα προϋπολογισμό hard-stop αυτού που αναθέτει και δεν μπορεί να
+δημιουργήσει περισσότερο). Η καλωδίωση παραγωγής παρέχει και τις δύο θύρες
+επίλυσης. Η αυτονομία και ο προϋπολογισμός παραλείπονται όταν το `from_agent_id`
+λείπει (ο απεριόριστος προϋπολογισμός ή ο προϋπολογισμός χωρίς πολιτική επίσης
+περνά). Μια άρνηση εκπέμπεται ως `DelegationRefusedException`, της οποίας το
+μήνυμα φτάνει αυτολεξεί στον πράκτορα που αναθέτει — μια ηχηρή άρνηση, ποτέ μια
+σιωπηλή αδράνεια.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+Το `delegate_ticket` είναι το παλαιότερο, **αφύλακτο** αδελφό: καλεί το
+`createTicket` απευθείας και παραλείπει κάθε έλεγχο. Προτιμήστε το
+`delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Μην συγχέετε το όριο βάθους ανάθεσης (3, στις αλυσίδες `delegate_task`) με το
+όριο ένθεσης υποπρακτόρων του ενσωματωμένου harness (2). Είναι διαφορετικά όρια
+σε διαφορετικούς μηχανισμούς.
 
-## Hierarchy, links and projects
+## Ιεραρχία, σύνδεσμοι και έργα
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Οι σχέσεις γονέα και υποζητήματος βρίσκονται στο `tickets.parent_ticket_id` και
+ανήκουν στα `setParent` / `clearParent`. Δεν είναι γραμμές του `ticket_links`,
+οπότε ό,τι διαβάζει τις σχέσεις ενός εισιτηρίου πρέπει να συγχωνεύει και τις δύο
+πηγές.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+Το `ticket_links` κρατά τις κατευθυντικές ακμές μεταξύ κατά τα άλλα άσχετων
+εισιτηρίων:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Τύπος συνδέσμου | Σημασία                                    |
+| --------------- | ------------------------------------------ |
+| `blocks`        | Η πηγή μπλοκάρει τον στόχο                 |
+| `relatesTo`     | Τα δύο εισιτήρια σχετίζονται (συμμετρικά)  |
+| `duplicateOf`   | Η πηγή είναι αντίγραφο του στόχου          |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+Ένα **έργο** είναι μια ομαδοποίηση εισιτηρίων με εμβέλεια χώρου εργασίας προς
+έναν κοινό στόχο. Τα έργα υπάρχουν μόνο στο Control Center και δεν
+συγχρονίζονται ποτέ με εξωτερικό πάροχο.
 
-## Collaborators
+## Συνεργάτες
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Οι γραμμές `TicketCollaborator` είναι ο τρόπος με τον οποίο συνδέονται
+περισσότερα από ένα υποκείμενα σε ένα εισιτήριο, με ρόλο `assignee`,
+`collaborator` ή `reviewer`. Οι άνθρωποι και οι πράκτορες είναι ισότιμες γραμμές
+— ένα `principalId` συν ένα `collaboratorType` — χωρίς τιμή-φρουρό για τον
+«χρήστη» και χωρίς ξένο κλειδί προς κανέναν από τους δύο πίνακες.
 
-## External sync
+## Εξωτερικός συγχρονισμός
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Το εισιτήριο του Control Center είναι το κύριο. Η διαγραφή ενός εισιτηρίου είναι
+**μόνο τοπική**, οπότε ένα εισιτήριο που υποστηρίζεται από προμηθευτή και το
+διαγράφετε δεν διαγράφεται στο σύστημα παρακολούθησης και μπορεί να
+επανεμφανιστεί στον επόμενο συγχρονισμό. Οι συνεργάτες και τα θυγατρικά
+εισιτήρια διαγράφονται αλυσιδωτά.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Τα διαπιστευτήρια του προσαρμογέα επιλύονται από τις αποθήκες διαπιστευτηρίων του
+διακομιστή (ένα κλειδί Linear ή ένα διακριτικό GitHub που έχει επικολληθεί στις
+Ρυθμίσεις λαμβάνεται στο επόμενο αίτημα· το περιβάλλον απλώς τροφοδοτεί αρχικά
+αυτές τις αποθήκες).
 
-## Tickets and pipelines
+## Εισιτήρια και pipeline
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Κανένας κόμβος pipeline δεν δημιουργεί, ολοκληρώνει ή ακυρώνει εισιτήρια — η
+παλέτα δεν έχει τέτοιο βήμα και η μηχανή δεν καλεί το `TicketWorkflowService`.
+Ωστόσο, ένας ενεργοποιητής pipeline μπορεί να ενεργοποιηθεί από τα
+`TicketAssigned`, `TicketCompleted`, `TicketFailed` ή `TicketCancelled` (αυτά τα
+τέσσερα είναι τα γεγονότα εισιτηρίου που αντιστοιχίζει πραγματικά το
+`EventPayloadMapper`). Δεν υπάρχει στήλη `pipelineRunId` στο εισιτήριο· η σύζευξη
+με pipeline βρίσκεται στο ημερολόγιο εκτέλεσης του πράκτορα.
 
-## See also
+## Δείτε επίσης
 
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/): ticket events can trigger a pipeline
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/): where a DAG of sub-tickets comes from
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): who a ticket is assigned to
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): the ticket lifecycle events
-- [Ticket lifecycle](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/): statuses, fields, transitions, relations
-- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
-- [Delegate work to agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
-- [Organize work with projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/): τα γεγονότα εισιτηρίου μπορούν να ενεργοποιήσουν ένα pipeline
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/): από πού προέρχεται ένα DAG θυγατρικών εισιτηρίων
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): σε ποιον έχει εκχωρηθεί ένα εισιτήριο
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): τα γεγονότα κύκλου ζωής του εισιτηρίου
+- [Κύκλος ζωής εισιτηρίου](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/): καταστάσεις, πεδία, μεταβάσεις, σχέσεις
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
+- [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
+- [Οργάνωση εργασίας με έργα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)

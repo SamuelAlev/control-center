@@ -1,54 +1,49 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: تعارف
+description: Control Center کثیر ایجنٹ سافٹ ویئر ڈیولپمنٹ کے لیے کاک پٹ ہے۔
 slug: ur-PK/ہدایت-نامہ
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center آپ کو AI کوڈنگ ایجنٹس کے ایک فلیٹ پر کنٹرول دیتا ہے۔ ایجنٹس بھیجیں، انہیں حقیقی وقت میں کام کرتے دیکھیں، ان کے PRs کا ریویو کریں اور ریپوز، ورک اسپیسز اور انضمام کا انتظام کریں — نیٹو ڈیسک ٹاپ ایپ، براؤزر یا اپنے فون سے۔
 
 <div className="docs-start not-content">
-  <LinkButton href="/ur-PK/ہدایت-نامہ/فوری-آغاز/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/ur-PK/ہدایت-نامہ/انسٹال/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/ur-PK/ہدایت-نامہ/فوری-آغاز/" icon="right-arrow">فوری آغاز</LinkButton>
+  <LinkButton href="/ur-PK/ہدایت-نامہ/انسٹال/" variant="minimal" icon="download">Control Center انسٹال کریں</LinkButton>
 </div>
 
-## What you can do
+## آپ کیا کر سکتے ہیں
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **ایجنٹس کو پیغام بھیجیں**: اسپیسز فلیٹ چلانے کا بنیادی طریقہ ہیں۔ کسی ایجنٹ کا @-ذکر کریں اور وہ اپنے copy-on-write worktree میں بھیج دیا جاتا ہے، چنانچہ کئی ایجنٹ آپ کے چیک آؤٹ کو چھوئے بغیر متوازی طور پر کوڈ اور ریویو کر سکتے ہیں
+- **بڑے کاموں کی آرکیسٹریشن کریں**: آرکیسٹریٹر کو کوئی مقصد دیں، وہ جو پوری ٹیم کا پلان تجویز کرے اسے ایک بار منظور کریں اور تیار شدہ [پائپ لائن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) اسے چلا دیتی ہے
+- **PRs کا ریویو اور مرج کریں** — بلٹ اِن diff ویوئر، ان لائن کمنٹس اور AI سے چلنے والے ریویو کے ساتھ
+- **ایجنٹس کو ضائع ہونے والی مشینیں دیں**: [رگ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) ایک عارضی VM ہے — ایک براؤزر، ایک ڈیسک ٹاپ، ایک فون یا ایک انکلوژر ٹرمنل — جسے ایجنٹ چلاتا ہے جبکہ آپ براہِ راست دیکھتے ہیں اور کنٹرول سنبھال سکتے ہیں؛ اندر چلنے والے dev سرورز `localhost`، ایجنٹ کے براؤزر اور `https://myapp.test` پر فارورڈ ہوتے ہیں
+- **ورک فلو آٹومیٹ کریں** — ایونٹس یا شیڈولز سے شروع ہونے والی DAG پر مبنی پائپ لائنز کے ساتھ
+- **علم کا انتظام کریں** — ورک اسپیس کے دائرے میں میموری، فیکٹس اور پالیسیاں کے ساتھ
+- **کام ٹریک کریں** — وینڈر سے آزاد ٹکٹس، پروجیکٹس اور تفویض کے ساتھ
+- **میٹنگز ریکارڈ کریں** — ڈیوائس پر کیپچر، ٹرانسکرپشن اور ڈائریائزیشن کے ساتھ، پھر اُن کا خلاصہ نوٹس، ایکشن آئٹمز اور فیصلوں میں
+- **اپنا دن دیکھیں** — Google Calendar سنک، RSVP، میٹنگ الرٹس اور ریکارڈ-اور-لنک کے ساتھ
+- **اپنے فون سے فلیٹ کی پیروی کریں**: اپنے سرور کے ساتھ کوئی ڈیوائس پیئر کریں اور پیغامات پڑھیں، جواب دیں اور ٹکٹس ٹرائیج کریں۔ فون وہ بہترین راستہ لیتا ہے جو اسے مل سکے — لوپ بیک، LAN، ٹیل نیٹ یا TLS — اور آخر میں ایسے اینڈ ٹو اینڈ سیل شدہ ریلے پر چلا جاتا ہے جو ایسے فریم آگے بھیجتا ہے جو وہ خود پڑھ نہیں سکتا
+- **Slack سے ایجنٹس چلائیں**: کسی ورک اسپیس کو چیٹ ایپ سے جوڑیں اور بوٹ کا ذکر کریں، Slack تھریڈ میں جواب دیں، یا سلیش کمانڈ سے ٹکٹ بنائیں — یہ سب آؤٹ باؤنڈ کنکشن پر، اس لیے کسی عوامی اینڈ پوائنٹ کی ضرورت نہیں
+- **انضمام کریں** — GitHub، Linear، Slack، Google Calendar اور 100 سے زائد MCP ٹولز کے ساتھ
 
-## You do not have to install it
+## آپ کو اسے انسٹال کرنے کی ضرورت نہیں
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+وہی ایپلیکیشن اپنے براؤزر میں [app.usectrl.dev](https://app.usectrl.dev) پر اُنہی سہولیات کے ساتھ چلتی ہے۔
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+ہر کلائنٹ — ڈیسک ٹاپ، ویب اور فون — ایک ہیڈلیس سرور کے اوپر ایک پتلا رینڈرر ہے جو آپ کا ڈیٹا رکھتا ہے اور کام کرتا ہے۔ ڈیسک ٹاپ وہ سرور آپ کے لیے شروع کر سکتا ہے؛ براؤزر ٹیب نہیں کر سکتا، اس لیے ویب ایپ اُس سرور سے جڑتی ہے جو آپ خود چلاتے ہیں۔ وہ سرور آپ کی اپنی مشین پر (`ws://localhost:9030`، کوئی سرٹیفکیٹ درکار نہیں) یا کسی ریموٹ ہوسٹ پر ہو سکتا ہے جو TLS، کسی VPN یا کسی ٹنل سے قابلِ رسائی ہو۔
 
-See [Install](/ur-PK/ہدایت-نامہ/انسٹال/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) for how the three clients relate.
+براؤزر والے راستے کے لیے [انسٹال](/ur-PK/ہدایت-نامہ/انسٹال/#use-it-in-your-browser) دیکھیں اور یہ کہ تینوں کلائنٹس کا آپس میں کیا تعلق ہے، [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) دیکھیں۔
 
-## Next steps
+## آگے کے مراحل
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/ur-PK/ہدایت-نامہ/انسٹال/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/ur-PK/ہدایت-نامہ/فوری-آغاز/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/ur-PK/ہدایت-نامہ/تصورات/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/ur-PK/ہدایت-نامہ/حوالہ/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="انسٹال" href="/ur-PK/ہدایت-نامہ/انسٹال/" description="ڈاؤن لوڈز، سسٹم کے تقاضے اور یہ کہ سرور کہاں چلتا ہے۔" />
+  <LinkCard title="فوری آغاز" href="/ur-PK/ہدایت-نامہ/فوری-آغاز/" description="ایک ایجنٹ کے آپ کے ریپو پر کام کرنے تک کا سب سے مختصر مکمل راستہ۔" />
+  <LinkCard title="ٹیوٹوریلز" href="/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/" description="طویل اسباق، ترتیب سے، آپ کے پہلے ورک اسپیس سے شروع۔" />
+  <LinkCard title="طریقہ کار گائیڈز" href="/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/" description="ایک وقت میں ایک کام کی ترکیبیں: ریپوز شامل کریں، گارڈریلز کنفیگر کریں یا اپنا فون پیئر کریں۔" />
+  <LinkCard title="تصورات" href="/ur-PK/ہدایت-نامہ/تصورات/" description="پروڈکٹ ایسا کیوں کام کرتا ہے جیسا کرتا ہے، ڈیپلائمنٹ اور کلائنٹس سے شروع۔" />
+  <LinkCard title="حوالہ" href="/ur-PK/ہدایت-نامہ/حوالہ/" description="روٹس، MCP ٹولز، کی بورڈ شارٹ کٹس اور ڈومین ایونٹس کے مکمل جدول۔" />
 </div>

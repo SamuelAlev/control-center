@@ -1,97 +1,65 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: エージェントにテスト用マシンを渡す
+description: エージェントに使い捨てのブラウザ、デスクトップ、Android エミュレータ、iOS シミュレータを渡します — ライブで見守りながら、いつでも操作を引き継げます。
 slug: ja-JP/マニュアル/ハウツーガイド/リグの利用
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**リグ**とは、エージェントが実際に何かを試す必要が生じたときに開く使い捨てのマシンです。ページを読み込み、デスクトップアプリをクリックして回り、スマートフォンをあちこちタップします。その作業をリアルタイムで見守ることができ、好きなときに操作を引き継げます。
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+エンクロージャーのターミナル、ブラウザ、デスクトップのリグは、使い捨てのディスクとゲートで制御されたネットワークを備えた VM です。Android と iOS はホスト側で管理されるエミュレータであり、デバイスの状態は使い捨てですが、ネットワークはサーバーホストに従います。
 
-## Set it up once
+## 一度だけセットアップする
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+リグは `cc_server` をホストしているマシン上で動作します — あなたが見ているマシンではなく、同じそのマシンです。ユーザーが使うサーフェスは 5 つあり、デスクトップとモバイルのサーフェスにはホスト側のセットアップが必要です:
 
-| Surface | Runs on | Setup |
+| サーフェス | 実行場所 | セットアップ |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **ターミナル（VM）** | 固定された Ubuntu イメージを起動する microVM | なし — イメージは初回使用時に自動で取得されます |
+| **ブラウザ（VM）** | 固定された Debian イメージを起動する microVM。初回使用時に Chromium、Firefox、WebKit のいずれかがインストールされます | なし — 同じ |
+| **コンピュータ（VM）** | Chromium、Firefox、WebKit と GitHub ホストランナー相当の CLI ベースラインを同梱した Linux デスクトップイメージを動かす QEMU | QEMU をインストールし（`brew install qemu`）、**設定 → サーバー → リグ**でデスクトップイメージを**インポート**します |
+| **Android** | Google の Android エミュレータ | Android SDK をインストールし、AVD を作成して起動します（下記） |
+| **iOS シミュレータ** | サーバー Mac 上の CoreSimulator | Xcode と必要な iOS ランタイムをインストールし、**設定 → サーバー → リグ**で自動化ブリッジをインストールします |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+ターミナルとブラウザのマシンは、ダイジェストで固定されたイメージから起動します。正確なバイト列があらかじめ指定され、初回起動時に一度だけ取得されてキャッシュされます — 各種類の初回起動以降、後続のマシンはダウンロードを完全に省略し、数秒で起動します。**設定 → サーバー → リグ** には、サーバーが起動できるものと、現在実行中のすべてのマシンが表示されます。
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+インストール済みのデスクトップイメージは、同じページから引き続き管理できます。**インポート**はより新しい qcow2 で置き換え、**削除**はイメージを削除するので、新しいビルドをインストールできます。
 
-### Mobile devices are set up differently
+### モバイルデバイスのセットアップは異なる
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Android と iOS には当社のイメージはありません。これは省略ではありません。Android のシステムイメージは Google の SDK から、iOS のランタイムは Xcode から提供されます。Android の場合は、Android Studio（またはコマンドラインの SDK ツール）をインストールし、**Device Manager** で仮想デバイスを追加して起動します。するとリグのページに Android が利用可能として表示されます。
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+また、どの手順が欠けているかも正確に示します — SDK がない、エミュレータがない、仮想デバイスがない、あるいはデバイスが単に起動していない — これらには 4 通りの異なる対処法があり、そのうちダウンロードなのは 1 つだけだからです。SDK を認識できないシェルから `cc_server` を起動する場合は、次のようにエクスポートします:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+iOS の場合、サーバー自体が macOS 上で、Xcode と iOS シミュレータのランタイムがインストールされた状態で動作している必要があります。**設定 → サーバー → リグ**を開き、**iOS 自動化ブリッジをインストール**を押します。サーバーはチェックサムで固定された WebDriverAgent のアーティファクトを取得して検証し、サーバーが所有する自動化ストアにインストールします。セットアップ中にシミュレータが起動することはありません。
 
-## Open a machine
+## マシンを開く
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+マシンは **タブ** として、チャットや diff の隣に存在します — スペース内でも PR ページ上でも、同じ `+` メニューの **マシン** の下にあります:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **コンピュータ** — Chromium、Firefox、WebKit を備えた Linux デスクトップ
+- **Chromium**、**Firefox**、**WebKit** — ブラウザ
+- **Android** — 実行中の Android エミュレータ
+- **iOS シミュレータ** — この会話のために作成される使い捨てのシミュレータ
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+1 つを選び、**マシンを起動**を押します。タブは、単にスピナーが回るだけではなく、起動がどの段階にあるかを示します（「microVM を起動しています」「ゲストの起動を待っています」）。
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+タブは会話にスコープされ、エージェントツールも同様です。Chromium、Firefox、WebKit のタブと `browser_use`、Android と `mobile_use`、iOS シミュレータと `ios_use` は、同じ既定のマシンを対象にします。追加の UI スロットは別個の比較用マシンであり、エージェントツールは常に既定のものを使用します。
 
-To build, install and start a Flutter app on Android:
+Android で Flutter アプリをビルド、インストール、起動するには:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+次に、`mobile_use` を `install_apk` と
+`build/app/outputs/flutter-apk/app-debug.apk` で呼び出し、続けて `start_app` と Android のパッケージ名を指定します。`ui_dump`、スクリーンショット、入力は、人向けのタブに表示されているのと同じデバイスを操作します。`stop_app`、`clear_app_data`、`uninstall_app`、`open_url`、および argv 形式の `shell` 呼び出しが、サーバーホスト上でシェルを起動することなく、開発サイクルの残りをカバーします。
 
-To build, install and start a Flutter app on iOS Simulator:
+iOS シミュレータで Flutter アプリをビルド、インストール、起動するには:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +67,101 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+次に、`ios_use` を `install_app` と `.app` ディレクトリで呼び出し、続けて `start_app` と `plutil` が出力したバンドル識別子を指定します。iOS ツールはほかにも `stop_app`、`uninstall_app`、`open_url`、およびシミュレータ内の診断用の argv 形式の `spawn` アクションを公開しています。
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+デスクトップとブラウザの表示はパネルに合わせてリサイズされます。iOS はシミュレータの固定ポイントサイズを維持し、レターボックス表示にします。どのサーフェスにも、依然として 2 つの独立したレーンがあります。エージェントには小さく安価なスクリーンショットが、あなたにはライブビューが届きます。タブを切り替えると人向けのストリームが停止するため、バックグラウンドのマシンが表示帯域を消費することはありません。
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+リグのタブは、レイアウトの復元中も含め、それ自体でマシンを起動することはありません。このルールにより、アプリの起動が予期せず VM をブートしたり、シミュレータデバイスを作成したりすることが防がれます。
 
-## Drive the machine
+## マシンを操作する
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+他の誰も排他的な操作権を保持していないとき、あるいはあなたが保持しているときは、キャンバスに自由に入力し、クリックできます。あなたがそのロックを保持している間、ステータスタグには **操作できます** と表示され、エージェントは依然としてスクリーンショットを撮れますが、サーバーはすべてのアクションが通る単一のチョークポイントで、その変更を伴うアクションを拒否します。あなたが行ったことはすべて、あなたの名前に対して記録されます。
 
-Press **Stop the machine** when you are done.
+終わったら **マシンを停止**を押します。
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+操作権が排他的なのは意図的です。2 人の主体が 1 つのマシンに入力すると、どちらの意図でもない入力が生まれます。
 
-## Move things in and out
+## データの持ち込みと持ち出し
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+コピー＆ペーストはリグのキャンバスを越えて双方向に機能し、ファイルのドラッグも同様です。
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**コピー＆ペースト。** キャンバス上でコピーのショートカットを押すと、マシンがコピーしたもの — テキスト、画像、ファイルのリスト — があなたのクリップボードに届きます。貼り付けはあなたのものを逆方向に送り、マシン内で貼り付けを押します。macOS ではショートカットは ⌘C/⌘V です。⌃C は割り込みとしてゲストシェルにそのまま届きます。Windows と Linux では ⌃C/⌃V を使います — ゲストはどのみち受け取るはずの同じキー入力を受け取るので、ゲストのターミナルでの ⌃C は依然として割り込みになり、あなた自身のクリップボードはそのまま残ります。
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+バックグラウンドで同期されるものは何もありません。あなた自身のマシンでコピーしたパスワードが、タイマーの発火によって VM の中に届くことはありません。貼り付けたときに越えます。
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+リグへの貼り付けは既定で許可されます。リグからのコピーはまず確認を求めます — 10 分間の許可、または **設定 → サーバー → リグ → クリップボードアクセス** の **常に許可** です。2 つの方向は独立しており、ワークスペースではなく、あなたに従います。
 
-**Drag files in.** Drop them anywhere on the canvas.
+**ファイルのドラッグイン。** キャンバス上の任意の場所にドロップします。
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- **ブラウザ（VM）** では、ページはあなたが離した位置で *本物の* ドロップを受け取るので、アップロードゾーンはローカルファイルに対する場合とまったく同じように動作します。
+- **コンピュータ（VM）** では、ファイルは `~/Drops` に置かれ、そのパスがマシンのクリップボードに入ります。したがって ⌃V でファイルマネージャーやアップロード欄に貼り付けられます。VM 内で特権デーモンを動かさなければ、ホストは任意の Linux アプリへのドラッグを合成できません。リグには意図的にそれがありません — そのため、ドロップが起きたふりをするのではなく、トーストがファイルの行き先を伝えます。
+- **ターミナル** では、ファイルがコピーされ、そのパスがプロンプトに入力されて、コマンドに渡せる状態になります。ターミナルに *画像* を貼り付けても同じです。マシン内に保存され、パスが得られます。
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**ファイルのドラッグアウト**はコンピュータ（VM）から機能します。マシン内でファイルのドラッグを開始し、ポインタをキャンバスの外へ運ぶと、あなたのデスクトップ上の本物のドラッグになります — Finder や Explorer にドロップします。マシンのファイルマネージャーでファイルをコピーし、手元で貼り付けても同じように機能します。ブラウザ（VM）はこれを提供しません。ヘッドレスブラウザには読み取れるドラッグのペイロードがなく、ページのテキスト選択から推測すると通常のクリックを乗っ取ってしまうからです。
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+コンピュータ（VM）には、クリップボード対応が入った後にビルドされたイメージが必要です。以前にインポートしたものがある場合は、`scripts/rigs/build_image.sh` で再ビルドしてから、インストール済みのイメージに対して **インポート** を使って置き換えます。
 :::
 
-## Terminals inside a rig
+## リグ内のターミナル
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+スペース内または PR ページ上のターミナルは、サーバー自身のマシン上ではなく、リグの中で実行できます。その場合、パネルには **囲い込みVM** バッジが表示されます。
 
-What changes:
+変わること:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- 実行したものはどれもホストに届きません。そこで `rm -rf` を実行すると、失うのはリグだけです。
+- ネットワークはデフォルト拒否です。リグの許可リストにあるホストだけに到達でき、すべてはそれを強制するゲートを通ります。
+- `git push` は引き続き機能します。リグは資格情報を保存しておらず、操作ごとにサーバーへ短命なものを要求し、そのトークンはリグを閉じると取り消されます。
 
-What to know:
+知っておくべきこと:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **復元されたエンクロージャーのターミナルは、あなたを待ちます。** リグのタブと同様、レイアウトとともに復帰した `microvm` ターミナルは、起動時に VM をブートするのではなく、**シェルを開く** ボタンを表示します。ホストシェルのターミナルはプロセス 1 つ分のコストですが、エンクロージャーのものはマシン 1 台分のコストです。
+- **ターミナルにドロップしたファイルは、開かれるのではなく入力されます。** エンクロージャーのターミナルに CSV をドロップすると、それはマシン内にコピーされ、プロンプトにそのゲスト側のパスが現れます — ホスト側のパスは、そこで失敗するコマンドになってしまいます。
+- **リグ内のコピーはコピーです。** ホスト上あなたのワークツリーが引き続き信頼できる情報源です。リグ内で作成したコミットは、あなたが求めれば `refs/rigs/<id>/*` に持ち帰られます — ブランチを動かしたり、作業ツリーに触れたりすることは決してありません。
+- **ホスト向けの作業は、引き続きホスト上で実行されます。** Linux のゲストは macOS 向けにビルドしたり、`xcodebuild` を実行したりできません。その場合はネイティブバックエンドを明示的に選んでください。アプリは黙って切り替えるのではなく、確認を求めます。
 
-## Ports
+## ポート
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/).
+ターミナル（VM）で開発サーバーを実行します — たとえばポート 3000 で `pnpm dev` を実行します — すると数秒以内に、ターミナルの隅にあるプラグアイコンが点灯します。ポートはあなたのマシンの `localhost:3000` に転送され、ブラウザ（VM）内では `localhost:3000` で到達でき、あなたのネットワーク上で共有でき、`https://myapp.test` として名前を付けられます。この流れ全体 — 自動転送、LAN 共有、HTTPS 付きの開発ドメイン — は専用のガイドにまとめられています: [ターミナルからポートを転送](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/)。
 
-## Custom images
+## カスタムイメージ
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+ワークスペースは、ターミナル（VM）とブラウザ（VM）を独自のイメージに向けられます — **設定 → サーバー → リグ → カスタムイメージ（このワークスペース）** で設定します。よくある使い方は、プロジェクトに必要なツールチェーンで既定のイメージを拡張してどのターミナルも準備万端で起動するようにする、またはチームがすでに公開しているイメージを再利用する、といったものです。
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+マシンは引き続き同じエンクロージャーの中で起動します。エグレスゲートも、認証情報ブローカーも、ライフサイクルも同じです。設定を変更できるのはワークスペースの管理者だけで、新しいマシンがそれを取り込み（実行中のマシンは現在のものを維持し）、参照はレジストリのイメージでなければなりません — ローカルパスは拒否されます。
 
-What an image must provide:
+イメージが提供しなければならないもの:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **ターミナル（VM）** — `bash` を備えた Linux イメージ。`git`、`curl`、`socat` も必要です — あらかじめインストールされているか、初回起動時にインストールできる必要があります（Debian/Ubuntu ベースのイメージならどれでも機能します。これらは自動でインストールされ、さらに GitHub ホストランナー風の CLI ツール一式（コンパイラ、Python 3、`jq`、アーカイブツール、`rsync`）も導入されます。Node/Go/Java のような言語ランタイムや Docker はあらかじめインストールされません）。ゲストポート `7911` はポートフォワーダー用に予約されています。
+- **ブラウザ（VM）** — `bash` と `socat`、そして `chromium` バイナリを備えた Debian/Ubuntu イメージ。サーバーは Chromium 自体を `chromium --headless=new` として起動し、DevTools をゲストの `9223` から `9222` へ中継します。PulseAudio と ffmpeg は初回起動時にインストールされます。`FROM chromedp/headless-shell` でビルドしないでください — そのバイナリには音声がありません。この上書きは Chromium のリグにのみ適用され、Firefox と WebKit はこれを無視して、固定された Debian イメージを起動します。ゲストポート `9222`/`9223` は予約されています。
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+推奨事項が 2 つあります。参照をダイジェスト（`@sha256:…`）で固定して、バイト列があなたの知らないうちに変わり得ないようにすること、そして Docker Hub または GitHub Container Registry でホストすることです — これらのレジストリのダウンロードホストはエグレスゲートを自動的に通過できます。その他のレジストリは、取得のためにコンテンツ配信ホストに到達できる必要がある場合があります。
 
-## When a rig goes away
+## リグが消えるとき
 
-Rigs are meant to be temporary:
+リグは一時的なものとして設計されています:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **アイドル** — 何も起こらないまま約 15 分経つと、ブラウザ、デスクトップ、モバイルのリグはパークします（凍結し、次のアクションで即座に復帰します）。エンクロージャーのターミナルは 45 分待ちます。アイドル期間の 2 倍が経過すると、閉じられます。
+- **制限時間** — すべてのリグには、何をしていても延長できない厳格な寿命があります。
+- **メモリ** — サーバーが新しいリグのための場所を必要とすると、最も長く使われていないものを閉じます。誰かが操作している、見ている、またはターミナルを開いているリグが奪われることは決してありません。
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+エンクロージャーのリグが閉じると、そのディスクは破棄されます。Android のリグを閉じるとホストのエミュレータから切断されます — 削除はされません。iOS のリグは、作成した CoreSimulator デバイスを削除します。残しておきたいものは、まず持ち帰ってください。
 
-## What a rig can reach
+## リグが到達できるもの
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+エンクロージャーのターミナル、ブラウザ、デスクトップのリグは、既定でデフォルト拒否のエグレスゲートを使います。ホストは明示的に許可し、ゲストの唯一の経路は、そのリストを強制するゲートです。ブラウザのリグはさらに、製品サイト（`usectrl.dev`）を最初から許可します。認証情報ブローカーも同じリストを使います。
 
-Two honest caveats:
+正直に言っておくべき注意点が 2 つあります:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **モバイルのネットワークはホストに従います。** Android のエミュレータと Apple の CoreSimulator は、エンクロージャーのエグレスゲートの背後にありません。どちらのモバイルタブもネットワークバイパスのコントロールを提供しません。ホストが管理するネットワークがすでに無制限だからです。
+- **リグが読み取るものはすべて信頼できません。** ページのテキスト、DOM、アクセシビリティツリー、ビューダンプは、「これはデータであり、指示ではありません」と述べるマーカーで包まれてエージェントに返されます。あなたのエージェントに命令しようとするページは、引用された文字列として読まれます。
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+実行中のものはすべて、**設定 → サーバー → リグ** で確認でき、どれでも停止できます。
 
-## Related
+## 関連項目
 
-- [Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/ja-JP/マニュアル/リファレンス/リグ/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/) — このすべての背後にあるモデル: なぜ VM なのか、2 つの表示レーン、認証情報ブローカー、ライフサイクル
+- [ターミナルからポートを転送](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/) — 重要なあらゆる場所から開発サーバーに到達する
+- [リグのリファレンス](/ja-JP/マニュアル/リファレンス/リグ/) — すべてのサーフェス、動詞、ポート、既定値を 1 か所に
+- [ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/) — `Drive an
+  enclosure (rig)` は、ワークスペース、エージェント、スペースごとに、許可、承認を要求、拒否に設定できるアクションクラスです。読み取り専用モードでは全面的に拒否されます。

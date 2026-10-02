@@ -2,6 +2,7 @@
 title: Repo scripts
 description: Per-repository setup and archive scripts that run against a space's worktree.
 slug: en-GB/manual/guides/repo-scripts
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
 Repo scripts are shell scripts you configure per repository (Settings →
@@ -14,7 +15,7 @@ There are two kinds:
 | Script | When it runs | Use it for |
 | --- | --- | --- |
 | **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (Docker networks, tunnels, external state) |
 
 ## Where scripts run
 
@@ -39,7 +40,7 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Failure behaviour
 
 - A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
   fails the space's provisioning: the space shows the failed state with a

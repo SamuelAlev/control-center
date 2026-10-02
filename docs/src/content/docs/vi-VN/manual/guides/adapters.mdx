@@ -1,172 +1,185 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Quản lý adapter và mô hình
+description: Kết nối nhà cung cấp mô hình, chọn mô hình mà agent chạy trên đó và kiểm tra máy chủ có những CLI runner agent nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/adapter
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Hướng dẫn này chỉ cách kết nối nhà cung cấp mô hình và chọn thứ mà agent chạy
+trên đó.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Mọi thứ ở đây nằm trên một trang: **Cài đặt → Máy chủ → Nhà cung cấp mô hình**.
+Mục trong thanh điều hướng phụ ghi “Nhà cung cấp mô hình”; tiêu đề trang ghi
+“Bộ điều hợp”.
 
-## What an adapter is
+## Adapter là gì
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Adapter là _runner_ thực thi một lượt agent. Có hai adapter và danh sách này cố
+định — bạn không thể thêm cái thứ ba.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Adapter                     | CLI      | Truyền tải                                                     |
+| --------------------------- | -------- | -------------------------------------------------------------- |
+| Control Center (tích hợp sẵn) | không có | Vòng lặp agent trong tiến trình, nói chuyện với nhà cung cấp qua HTTP |
+| Claude Code                 | `claude` | `claude -p --output-format stream-json`                        |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI và những cái còn lại là **nhà cung cấp** trên
+adapter tích hợp sẵn, không phải CLI riêng. Thứ bạn _có thể_ thêm là một nhà
+cung cấp khác — bất kỳ endpoint tương thích OpenAI hoặc Anthropic nào. Đó là
+phần tiếp theo.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Việc phát hiện thăm dò máy chủ, không phải máy của bạn]
+Thẻ **Runner đã phát hiện** liệt kê những gì `cc_server` tìm thấy trên `PATH`
+của _máy chủ_. Trên máy khách mỏng hoặc máy khách web, đó là một máy khác với
+máy bạn đang nhìn. Hãy cài CLI trên máy chạy `cc_server`.
 :::
 
-## Connect a model provider
+## Kết nối nhà cung cấp mô hình
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Adapter tích hợp sẵn cần ít nhất một nhà cung cấp đã kết nối trước khi có thể
+chạy. Có mười bốn nhà cung cấp có sẵn trong danh mục.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Mở **Cài đặt → Máy chủ → Nhà cung cấp mô hình**
+2. Cuộn xuống **Nhà cung cấp & mô hình**
+3. Tìm nhà cung cấp của bạn và kết nối:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Nhà cung cấp                                                                                             | Cách kết nối                                                                                                                  |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | Khóa API. Gói đăng ký Claude Pro/Max không phải là đăng nhập API Anthropic — hãy dùng adapter Claude Code cho gói đó          |
+| OpenAI, Codex, Cursor                                                                                    | Đăng nhập OAuth qua trình duyệt, hoặc dùng khóa API. Codex là ChatGPT Plus/Pro thông qua backend Codex Responses, không phải một CLI được khởi chạy |
+| Kimi Code                                                                                                | Chỉ OAuth qua trình duyệt — luồng mã thiết bị. Đây là gói cước trọn gói nên không có giá theo token                           |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | Khóa API                                                                                                                      |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Điểm kiểm tra: nhãn của hàng chuyển thành Đã kết nối và khi mở rộng, hàng đó
+liệt kê các mô hình mà nhà cung cấp phục vụ, kèm giá trên mỗi triệu token và
+cửa sổ ngữ cảnh của từng mô hình.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+Token OAuth được lưu vào kho thông tin xác thực của chính máy chủ và được làm
+mới trước khi hết hạn. Thông tin xác thực của nhà cung cấp có phạm vi **toàn máy
+chủ** — mọi không gian làm việc trên bản cài đều dùng chung, chứ không riêng cho
+một không gian làm việc.
 
-### Add a custom provider
+### Thêm nhà cung cấp tùy chỉnh
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Dùng mục này cho Ollama, LM Studio, vLLM hoặc một triển khai riêng.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. Trong **Nhà cung cấp & mô hình**, ở mục **Nhà cung cấp tùy chỉnh**, nhấn
+   **Thêm nhà cung cấp**
+2. Điền **tên**, chọn **loại API** (tương thích OpenAI hoặc tương thích
+   Anthropic) và nhập **URL gốc** (ví dụ `http://localhost:11434/v1`)
+3. Thêm **khóa API** nếu endpoint cần, rồi nhấn **Thêm nhà cung cấp**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Nhà cung cấp tùy chỉnh xuất hiện trong cùng danh sách, kèm nút xóa mà những nhà
+cung cấp tích hợp sẵn không có.
 
-## Pick a model for an agent
+## Chọn mô hình cho agent
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Mở **Cài đặt → Không gian làm việc → Agent** và chọn agent
+2. Trên tab **Cài đặt**, chọn **adapter**
+3. Chọn **mô hình** từ danh sách thả xuống bên cạnh
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Với adapter tích hợp sẵn, danh sách thả xuống được tổng hợp trực tiếp từ danh
+mục riêng của từng nhà cung cấp đã kết nối. Nhà cung cấp không có thông tin xác
+thực nào được lưu sẽ đóng góp 0 mô hình, vì vậy một danh sách trống gần như luôn
+có nghĩa là “chưa kết nối gì” chứ không phải “không có gì khả dụng”.
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev chỉ bổ sung thông tin, không bao giờ là nguồn id]
+Danh mục [models.dev](https://models.dev) đi kèm cung cấp giá và cửa sổ ngữ cảnh
+cho một mô hình đã có trong danh sách trực tiếp. Nó không bao giờ thêm id mô
+hình. Nếu một mô hình bạn mong đợi bị thiếu, endpoint của nhà cung cấp đang
+không trả về mô hình đó.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Id mô hình cho adapter tích hợp sẵn có dạng đủ điều kiện `provider/model` và có
+thể mang chuỗi dự phòng phân tách bằng `|`. Khi dùng dự phòng, chi phí được tính
+theo mô hình thực sự phục vụ lượt chạy, không phải mô hình bạn yêu cầu.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Agent không có adapter sẽ chạy trên vòng lặp tích hợp sẵn]
+Mỗi không gian làm việc tạo sẵn năm agent — một CEO cùng `qa`, `architect`,
+`engineer` và `librarian` — không có adapter và không có mô hình. Việc điều phối
+sẽ quay về **Control Center (tích hợp sẵn)**, chứ không dùng cài đặt **Runner
+mặc định** trên trang này, vốn là tùy chọn của máy khách mà luồng điều phối
+không bao giờ đọc. Nhật ký chạy ghi `cc-harness` cho những lần chạy đó, nên bản
+ghi nêu rõ thứ thực sự đã chạy.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Khi cũng không có mô hình, vòng lặp tích hợp sẵn sẽ hỏi Anthropic mô hình mặc
+định của nó. Vì vậy một agent để trống hoàn toàn sẽ chạy nếu bạn đã kết nối tài
+khoản Anthropic, còn nếu không thì thất bại với `No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Khi hoàn tất bước adapter trong quá trình thiết lập ban đầu, hệ thống sẽ gán bù
+cặp bạn đã chọn cho **mọi** agent vẫn còn thiếu adapter hoặc mô hình — cả CEO
+lẫn các agent chuyên môn, trong mọi không gian làm việc tồn tại tại thời điểm
+đó. Những không gian làm việc tạo sau vẫn tạo sẵn cả năm agent ở trạng thái chưa
+đặt. Hãy đặt adapter và mô hình một cách rõ ràng cho mọi agent bạn định dùng.
 :::
 
-## Install a runner CLI
+## Cài đặt CLI runner
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Adapter tích hợp sẵn không cần cài đặt gì. Với Claude Code, hãy cài CLI của nó
+**trên máy chủ** bằng trình quản lý gói của chính công cụ đó, ví dụ:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Sau đó nhấn **Làm mới** ở đầu trang. Mỗi hàng được phát hiện hiển thị phiên bản
+và đường dẫn đã phân giải, cùng các chip cho biết nó có hỗ trợ chế độ JSON và
+chọn mô hình hay không.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+CLI bên ngoài giữ thông tin xác thực riêng, trong cấu hình riêng của nó, trên
+máy chủ. Control Center không quản lý chúng.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Tham số thêm và Biến môi trường của adapter chỉ nằm trên thiết bị này]
+Mỗi hàng adapter có trường **Tham số thêm** và hộp thoại **Biến môi trường**.
+Những giá trị đó được lưu trên thiết bị của bạn. Máy chủ đọc argv và biến môi
+trường khi khởi chạy từ kho cài đặt của chính nó. Hãy đặt khóa nhà cung cấp trên
+máy chủ (OAuth hoặc trường khóa trên trang Nhà cung cấp mô hình), không đặt
+trong hai trường đó.
 :::
 
-## Restrict which providers a workspace may use
+## Hạn chế nhà cung cấp mà không gian làm việc được dùng
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Việc quản trị nhà cung cấp được thực hiện theo từng không gian làm việc và được
+đánh giá theo kiểu kết quả khớp cuối cùng thắng.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. Trong **Nhà cung cấp & mô hình**, tắt công tắc **Cho phép** trên hàng của một
+   nhà cung cấp
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Thao tác đó ghi một câu lệnh `deny` cho nhà cung cấp đó trong không gian làm
+việc đang hoạt động và các mô hình của nó bị loại khỏi danh mục cho không gian
+làm việc đó. Bật lại công tắc sẽ xóa câu lệnh đó.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### A runner shows as not found
+### Runner hiển thị là không tìm thấy
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Kiểm tra xem CLI có nằm trên `PATH` của **máy chủ** hay không, chứ không chỉ
+  trên `PATH` của bạn
+- Ứng dụng desktop khởi chạy từ GUI sinh tiến trình máy chủ với `PATH` tối
+  thiểu; một CLI chỉ được cài trong đường dẫn dành riêng cho shell có thể không
+  hiển thị với nó
+- Nhấn **Làm mới** sau khi cài
 
-### The model dropdown is empty
+### Danh sách thả xuống mô hình trống
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Adapter đang là loại tích hợp sẵn và chưa có nhà cung cấp nào được kết nối —
+  hãy kết nối một nhà cung cấp trong **Nhà cung cấp & mô hình**
+- Hoặc nhà cung cấp đã được kết nối nhưng bị công tắc quản trị của không gian
+  làm việc này từ chối
 
-### A model runs but the price shows as unknown
+### Mô hình chạy được nhưng giá hiển thị là không xác định
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Danh sách mô hình trực tiếp mang id; giá và ngữ cảnh đến từ models.dev. Một mô
+hình hoàn toàn mới, hoặc đến từ nhà cung cấp tùy chỉnh, chưa có mục trong danh
+mục.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Manage API keys](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
-- [Diagnose an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
-- [Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Quản lý khóa API](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
+- [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
+- [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)

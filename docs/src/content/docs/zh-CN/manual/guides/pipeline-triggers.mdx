@@ -1,159 +1,113 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: 设置流水线触发器
+description: 把模板接到领域事件、计划或传入的 webhook 上来启动运行——全部在节点库和所选触发器的检查器中完成。
 slug: zh-CN/手册/操作指南/流水线触发器
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+触发器是启动流水线的源头。每个触发器都是画布上的一个节点，从节点库的 **触发器** 分区拖出。选中该节点会在右侧打开它的检查器——不存在常驻的触发器列表、触发器标签页或触发器页面。
 
-## Open a trigger inspector
+## 打开触发器检查器
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. 前往 **设置 → 工作区 → 流水线模板**。
+2. 点击模板所在行上的铅笔图标，打开编辑器。
+3. 在画布上选中一个触发器节点。右侧面板会随之出现，显示该触发器的设置。未选中任何内容时，面板保持隐藏。
 
-## Add a trigger
+## 添加触发器
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+节点库的 **触发器** 分区把每种启动方式都列为独立节点：手动、计划、webhook，以及每种领域事件各一张卡片。搜索 `merged`、`ticket` 或类型名（`PrMerged`），把卡片拖到画布上。新建的模板还会在入口锚点处显示一张 **添加触发器** 占位卡片——从同一个可搜索列表中选择即可。
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+触发器会立即插入。新建的自动触发器默认处于禁用状态，这样在你配置好之前，一次拖放不会触发运行。使用检查器中的 **已启用** 开关将其打开，或用垃圾桶图标将其删除。
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[每种事件类型只能有一个触发器]
+`pipeline_triggers` 在工作区、事件类型和模板上具有唯一约束。你已经接好线的事件类型会从选择器中消失。所有 webhook 触发器共用合成事件类型 `webhook`，因此一个模板最多只能容纳一个 webhook。
 :::
 
-## Allow manual runs
+## 允许手动运行
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+拖入 **手动运行**（或从占位卡片中选择它），并在其检查器中打开 **已启用**。正是这一步让模板出现在运行启动器中。这并非特例——该开关会写入一行普通的触发器记录，其事件类型为 `manual`。它会立即持久化；没有任何需要保存的内容。
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+编辑器标题栏中的 **手动运行** 用的也是同一个开关，它紧挨着模板所声明的输入项。
 
-## On an event
+## 按事件
 
-These events start a run:
+以下事件会启动一次运行：
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| 选择器标签             | 事件                       |
+| ---------------------- | -------------------------- |
+| 外部 PR 已打开         | `ExternalPrDetected`       |
+| PR 已发布              | `PullRequestPublished`     |
+| PR 状态已更改          | `PullRequestStatusChanged` |
+| PR 已合并              | `PrMerged`                 |
+| 收到消息               | `MessageReceived`          |
+| 工单已创建             | `TicketCreated`            |
+| 工单状态已更改         | `TicketStatusChanged`      |
+| 工单已分配             | `TicketAssigned`           |
+| 工单已完成             | `TicketCompleted`          |
+| 工单失败               | `TicketFailed`             |
+| 工单已取消             | `TicketCancelled`          |
+| 已超过预算阈值         | `BudgetThresholdCrossed`   |
+| 仓库已添加             | `RepoAdded`                |
+| 会议录制已停止         | `MeetingRecordingStopped`  |
+| 技能已更新             | `SkillUpdated`             |
+| 空间已删除             | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` 正是内置的工作树清理流水线所监听的事件：它携带被删除空间的 id，因此该次运行只会回收那个空间的工作树，而不会清扫整个工作区。
 
-For the payload keys each event carries, see the
-[domain events reference](/zh-CN/手册/参考/领域事件/).
+关于每个事件携带的载荷键，请参阅[领域事件参考](/zh-CN/手册/参考/领域事件/)。
 
-### Filter an event trigger
+### 筛选事件触发器
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+选中 **PR 状态已更改** 节点。检查器中的状态标签是 UI 唯一能编写的筛选条件。点选 `merged`、`closed`、`approved`、`opened`、`reopened` 中的任意一个；此后触发器只在事件的 `status` 与其中之一匹配时才触发。所有标签都不选就意味着没有筛选。
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+没有自由形式的 JSON 筛选字段。如果某个筛选键不在该事件的载荷中，它就永远不会匹配，因此不要凭空对某个键手写筛选，除非你已在领域事件参考中确认过它。
 
-## On a schedule
+## 按计划
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+选中 **定时** 节点即可编辑它的触发时机。检查器中的字段会按你离开时的状态保留：
 
-| Field                                | Description                                                                                                                                                                         |
+| 字段                                 | 说明                                                                                                                                                                                |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| **计划（cron 或 every:seconds）**    | 五段式 cron 表达式，例如 `0 9 * * 1`；或时间间隔，例如 `every:86400`。纯数字会被强制转换为 `every:<n>`。                                                                          |
+| **时区（可选）**                     | IANA 时区，例如 `Europe/Paris`。默认为 UTC。                                                                                                                                        |
+| **错过运行时**                       | 服务器停机期间错过的触发该如何处理：**运行一次** 会把每个错过的时段折叠为重启后的一次触发（默认值），**跳过** 则从下一个未来的时段继续。                                          |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+画布卡片的摘要行只会为 `every:<seconds>` 形式写明时间间隔；cron 表达式则只显示为“定时”。
 
-## Via a webhook
+## 通过 Webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+拖入 **Webhook** 会生成一个随机令牌。选中该节点，即可从检查器中复制路径 `POST /webhooks/<token>`。
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+令牌同时也是 HMAC 密钥：请求必须携带 `X-Hub-Signature-256: sha256=<hex>`，其中的 hex 为 `HMAC-SHA256(body, token)`。校验失败的投递会被拒绝并记录日志，且无法重放。重复投递会按其去重键被忽略。
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[令牌存放在数据库中]
+检查器显示的是路径。令牌本身就是路径片段；它也存储在 `pipeline_triggers` 行上。
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+每个启动方式都是自己的图节点。从 **定时** 拉出一根连线只会接上“定时”；**手动运行** 可以先走另一条路径（例如一个条件节点），再汇入同一份工作。一次运行会进入与其事件类型匹配的那个启动节点，并跳过属于其他启动节点的子图。
 
-## How a trigger reaches a run
+## 触发器如何启动一次运行
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+事件类型和筛选条件都匹配的已启用触发器会启动一次运行，并把事件的载荷作为该次运行的触发器载荷——步骤的提示词或脚本中的 `{{key}}` 正是据此解析的。携带自然键的事件会去重，因此同一事件触发两次不会启动两次运行。
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+即使触发器匹配，处于禁用状态的_模板_也会被拒绝。十三个内置模板中有八个默认禁用，因此在你打开模板之前，它们预置的触发器不会触发任何东西。
 
-## Useful patterns
+## 实用模式
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **只对手动路径设卡** —— 让 **手动运行** 经过一个条件节点，而 **定时** 直接接到工作上。每个启动节点拥有自己的连线。
+- **审查每个新 PR** —— 在 `pr_review` 模板上使用事件 **PR 已发布**。
+- **合并后清理** —— 使用事件 **PR 状态已更改**，筛选为 `merged` / `closed` / `approved`。内置的 `pr_merged_cleanup` 模板已经这样监听，另外还监听工单完成/取消、`SpaceDeleted`，以及一个每天执行、且每次重新预置时都会强制启用的计划，因为它是垃圾回收。
+- **每夜清扫** —— 在首个节点为 bash 脚本的模板上，使用带时区的计划 `0 2 * * *`。
+- **对外部系统做出反应** —— 使用 webhook 触发器，由调用方系统按上述方式对其请求体签名。
 
-## Related guides
+## 相关指南
 
-- [Create a pipeline template](/zh-CN/手册/操作指南/创建流水线/)
-- [Run a pipeline manually](/zh-CN/手册/操作指南/运行流水线/)
-- [Monitor pipeline runs](/zh-CN/手册/操作指南/监控流水线/)
-- [Domain events reference](/zh-CN/手册/参考/领域事件/)
+- [创建流水线模板](/zh-CN/手册/操作指南/创建流水线/)
+- [手动运行流水线](/zh-CN/手册/操作指南/运行流水线/)
+- [监控流水线运行](/zh-CN/手册/操作指南/监控流水线/)
+- [领域事件参考](/zh-CN/手册/参考/领域事件/)
 
-## Related concepts
+## 相关概念
 
-- [Pipelines](/zh-CN/手册/概念/流水线/)
-- [Domain events](/zh-CN/手册/概念/领域事件/)
+- [流水线](/zh-CN/手册/概念/流水线/)
+- [领域事件](/zh-CN/手册/概念/领域事件/)

@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: بداية سريعة
+description: ثبّت Control Center، وهيّئ وكيلًا واحدًا، وشاهده يعمل على مستودعك.
 slug: ar-SA/دليل-المستخدم/بداية-سريعة
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+هذا أقصر مسار كامل من الصفر إلى وكيل يعمل على شفرتك. اتبعه بالترتيب؛ فكل خطوة تعتمد على التي قبلها.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+تحتاج إلى Git وحساب GitHub، وإما حساب لدى مزوّد نماذج (Anthropic أو OpenAI أو Codex أو Cursor أو Kimi Code، أو أي مزوّد لديه مفتاح API) أو أن يكون سطر أوامر Claude Code مثبّتًا أصلًا. وكل ما عدا ذلك يُجهَّز في أثناء المسار.
 
-## Step 1: Install and launch
+## الخطوة 1: التثبيت والتشغيل
 
-Install Control Center as described in [Install](/ar-SA/دليل-المستخدم/تثبيت/), then open it.
+ثبّت Control Center كما هو موضّح في [التثبيت](/ar-SA/دليل-المستخدم/تثبيت/)، ثم افتحه.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+في أول تشغيل يسأل تطبيق الحاسوب **«كيف ينبغي أن يعمل Control Center؟»**. اختر **التشغيل داخل هذا التطبيق**. يشغّل Control Center على هذا الجهاز خادم `cc_server` بلا واجهة يملك بياناتك وينجز العمل كله. لا تراه أبدًا؛ وتفتح شاشة الإعداد الأولي بدلًا منه.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/ar-SA/دليل-المستخدم/تثبيت/#use-it-in-your-browser) for the browser route.
+:::note[تفضّل ألا تثبّت شيئًا؟]
+التطبيق نفسه يعمل في المتصفح على [app.usectrl.dev](https://app.usectrl.dev) بالميزات
+نفسها. لكن تبويب المتصفح لا يستطيع استضافة الخادم، فعليك أن توفّر واحدًا — شغّل
+`cc_server` محليًا واتصل بـ `ws://localhost:9030`، أو وجّهه إلى خادم على
+جهاز آخر. تأخذ هذه البداية السريعة مسار الحاسوب لأنها لا تحتاج إلى إعداد خادم؛
+انظر [التثبيت](/ar-SA/دليل-المستخدم/تثبيت/#استخدمه-في-المتصفح) لمسار المتصفح.
 :::
 
-## Step 2: Work through onboarding
+## الخطوة 2: إتمام الإعداد الأولي
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+للإعداد الأولي خمس خطوات، وتجري بالترتيب — لا تخطّي إلى الأمام.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **الاتصال**: سجّل الدخول عبر GitHub، أو الصق رمز وصول شخصي بصلاحيتَي `repo` و`read:org`. يُخزَّن الاعتماد على الخادم، مرتبطًا بحسابك.
+2. **مساحة العمل**: سمِّ مساحة عملك الأولى، واختر شعارًا إن شئت. إنشاؤها يبذر خمسة وكلاء — وكيل CEO إضافة إلى `qa` و`architect` و`engineer` و`librarian` — وقوالب خطوط الأنابيب المضمّنة.
+3. **البيئة المعزولة**: تسجّل تفضيلًا للعزل. أي الخيارين يتيح لك المتابعة.
+4. **المحوّل**: اختر المحوّل والنموذج اللذين يفترض أن يستخدمهما الوكلاء افتراضيًا. اختر **Control Center (built-in)**، ثم استخدم منتقي المزوّد الذي يظهر لتسجيل الدخول إلى مزوّد نماذج — تبقى قائمة النماذج فارغة إلى أن يُربَط واحد. إتمام هذه الخطوة يختم أيضًا المحوّل والنموذج على وكيل CEO في مساحة العمل.
+5. **الصوت (اختياري)**: ثبّت نموذجًا صوتيًا على الجهاز للإملاء، أو تخطَّه.
 
-Control Center then opens your workspace inbox.
+ثم يفتح Control Center وارد مساحة عملك.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/).
+:::note[ما الذي يحدّ تشغيل الوكيل]
+تُغلَّف أوامر الوكيل ببيئة نظام التشغيل المعزولة الأصلية على المضيف حين تتوفر — Seatbelt على macOS، وbubblewrap على Linux. لا خلفية على Windows، فالتشغيلات هناك تحدّها الطبقات الأخرى وحدها: شجرة العمل الخاصة بالمحادثة (`git worktree` على Windows؛ والنسخ عند الكتابة حيث يُشحَن `rift`)، وبيانات الاعتماد التي تُصدَر عند كل إطلاق وتُسحَب عند تفكيك التشغيل، وضوابط الإجراء. انظر [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/).
 :::
 
-## Step 3: Add a repository
+## الخطوة 3: إضافة مستودع
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+انتقل إلى **الإعدادات ← مساحة العمل ← المستودعات** وانقر **إضافة مستودع**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+يستعرض الحوار المجلدات على الجهاز الذي يشغّل الخادم، لا على عميلك، ويبقى داخل الجذور التي ضُبط الخادم ليعرضها (المجلد الرئيسي لمستخدمه افتراضيًا). لا يظهر مربع اختيار إلا لنسخ عمل Git. ضع علامة على نسختك وسجّلها.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+لا تُقبل نسخة العمل إلا إذا كانت داخل شجرة عمل Git، ولها مستودع بعيد `origin`، وكان ذلك المستودع البعيد يشير إلى مضيف شفرة مدعوم — github.com أو gitlab.com أو bitbucket.org. ما عدا ذلك يُرفض مع ذكر السبب.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+المستودعات على نطاق مساحة العمل: تسجيل نسخة العمل هنا يضعها في _هذه_ المساحة. لا توجد خطوة ربط منفصلة.
 
-## Step 4: Give an agent an adapter and a model
+## الخطوة 4: تعيين محوّل ونموذج لوكيل
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+انتقل إلى **الإعدادات ← مساحة العمل ← الوكلاء**. اختر وكيل `engineer` في الكشف.
 
-On the **Settings** tab, set:
+في علامة تبويب **الإعدادات**، اضبط:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **المحوّل**: `Control Center (built-in)`
+- **النموذج**: اختر واحدًا من المزوّد الذي ربطته في الإعداد الأولي
 
-Press **Save changes**.
+انقر **حفظ التغييرات**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+هذه الخطوة ليست اختيارية عمليًا. وكيل CEO وحده يرث المحوّل الذي اخترته في الإعداد الأولي، ويُنشأ المتخصصون الأربعة بلا محوّل. يعودون إلى **Control Center (built-in)** مع النموذج الافتراضي لدى Anthropic، فلا يعملون إلا إذا ربطت حساب Anthropic — وإن ربطته، فعلى نموذج لم تختره.
 
-## Step 5: Send the agent a task
+## الخطوة 5: إرسال مهمة إلى الوكيل
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. في الشريط الجانبي، اعثر على قسم **المساحات** وانقر زر **+**.
+2. سمِّ المساحة، وأضف وكيل `engineer` تحت **إضافة وكلاء**، ثم أنشئها.
+3. اكتب مهمة صغيرة ومحددة على المستودع الذي سجّلته، واضغط Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+يجهّز Control Center شجرة عمل بالنسخ عند الكتابة لمستودعات مساحة العمل لهذه المحادثة، ويجمّع مطالبة من دور الوكيل وشخصيته ومهاراته وسياق المساحة، ثم يُرسِل التشغيل. لا تُمسّ نسخة عملك الأصلية.
 
-## Step 6: Watch it work
+## الخطوة 6: شاهد العمل
 
-You should see, in order:
+يفترض أن ترى، بالترتيب:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- يتحوّل زر الإرسال في حقل الكتابة إلى زر **إيقاف**، لأن وكيلًا يعمل في هذه المحادثة
+- يتدفق استدلال الوكيل واستدعاءات أدواته ونصّه إلى المحادثة
+- يعود زر الإرسال حين ينتهي التشغيل
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+ثم افتح **الإعدادات ← مساحة العمل ← الوكلاء**، واختر الوكيل، وتحقّق من علامة تبويب **السجلات**: صف تشغيل واحد، فيه الحالة والمدة ووقتَي البدء والانتهاء والمحوّل الذي اشتغل عليه.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+تلك هي الحلقة. كل ما عداها في Control Center — مراجعة طلبات السحب، وخطوط الأنابيب، والتذاكر، والاجتماعات، وSlack — يقوم عليها.
 
-## Next steps
+## الخطوات التالية
 
-- [Your first workspace](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/ar-SA/دليل-المستخدم/دروس/أول-طلب-سحب/): take an agent's branch through review and merge
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): what an agent is made of
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/): the rest of the agent form
-- [Run an orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/): one goal, one approval, a generated pipeline
-- [Pair your phone](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): follow the fleet from anywhere
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/): how the desktop, web and phone clients relate to the server
+- [مساحة عملك الأولى](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/): المسار نفسه بوتيرة أبطأ، مع شرح نموذج العزل
+- [راجع أول طلب سحب](/ar-SA/دليل-المستخدم/دروس/أول-طلب-سحب/): خذ فرع وكيل عبر المراجعة والدمج
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): ممَّ يتكوّن الوكيل
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/): بقية حقول إعداد الوكيل
+- [تشغيل تنسيق](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/): هدف واحد، وموافقة واحدة، وخط أنابيب مُولَّد
+- [اقرن هاتفك](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): تابع الأسطول من أي مكان
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/): كيف يرتبط عملاء الحاسوب والويب والهاتف بالخادم

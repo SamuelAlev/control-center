@@ -1,155 +1,165 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Biletler ve devretme
+description: Bir biletin işi göndermeden nasıl izlediği, devretmenin nasıl korunduğu ve satıcı aynasının neye sahip olup neye sahip olmadığı.
 slug: tr-TR/kilavuz/kavramlar/biletler
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Bilet, Control Center’ın izlediği iş birimidir. Bilinçli olarak _aptal_ bir
+yapıdır: bir başlık, bir gövde, bir durum, bir sahip ve bir ağaçtaki konum.
+Ajanların üzerinde yürüttüğü şey değildir — ajan işi konuşmalarda yaşar ve bir
+çalıştırmanın yapılandırılmış çıktısı çalıştırma günlüğünde bulunur.
 
-## Assignment records ownership; it dispatches nothing
+## Atama sahipliği kaydeder; hiçbir şey göndermez
 
-This is the single most important thing to get right about tickets.
+Bu, biletlerle ilgili doğru anlaşılması gereken en önemli şeydir.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/tr-TR/kilavuz/kavramlar/alan-olaylari/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+`assignedAgentId` ayarlamak bir alan yazar ve bir `TicketAssigned`
+[alan olayı](/tr-TR/kilavuz/kavramlar/alan-olaylari/) yayımlar. Bu olay bir
+denetim ve bildirim sinyali ile bir pipeline tetikleyicisidir. **Bir ajana atama
+hiçbir çalıştırma başlatmaz.** `assignedAgentId`’yi izleyip o ajanı uyandıran
+bir bilet göndericisi yoktur.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+İstisna bir ekiptir: `assignedTeamId` ayarlandığında `TeamRoutingService`,
+çalışma protokolü ve kadroyla birlikte ekip liderini gönderir.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Belirli bir ajanın bir bilet üzerinde çalışmasını istiyorsanız, bunu bir
+konuşmada istersiniz; ya bir pipeline adımı onu gönderir ya da başka bir ajan
+ona devreder. Bir bileti bir ajana atayıp beklemek, asla iş üretmeyecek tek
+şeydir.
 
-## Mirror and overlay
+## Ayna ve üst katman
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Bir bilet tamamen yerel olabilir ya da harici bir takip sistemi tarafından
+desteklenebilir ve ikisini de tek bir satırda taşır.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Ayna** — sağlayıcı, harici anahtar, URL, başlık, açıklama, öncelik, etiketler,
+ham ve normalleştirilmiş durum, zaman damgaları — bilet uzaktayken bir
+önbellektir. Orada doğruluk kaynağı uzak taraftır ve bir yenileme aynayı tümüyle
+yeniden yazar.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Üst katman** — atama, devretme, alan bağlantısı, üst bilet, proje, bağlı
+PR’lar — yalnızca Control Center’a özgüdür. Takip sistemi bunun hakkında hiçbir
+şey bilmez ve bir yenileme ona asla dokunmaz.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Bu ayrım, eşitlemeyi baştan güvenli kılan şeydir: bir satıcı çekmesi, üzerine
+katmanlanan orkestrasyon meta verisini hiç kaybetmeden aynayı yıkıcı biçimde
+etkileyebilir.
 
-## The lifecycle graph binds agents, not you
+## Yaşam döngüsü grafiği sizi değil, ajanları bağlar
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Durumlar `backlog → open → inProgress → inReview → done` şeklinde ilerler;
+`blocked` bir yan döngü, `failed` / `cancelled` ise diğer terminal durumlardır.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Geçiş grafiği **yalnızca ajan ve otomasyon yolunda** uygulanır — MCP araçları ve
+uzlaştırıcılar. Orada geçersiz bir geçiş günlüğe yazılır ve yok sayılır; böylece
+kafası karışan bir ajan bir bileti bir terminal durumundan geriye doğru
+çıkaramaz.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Arayüzdeki kullanıcı kaynaklı her değişiklik `force: true` geçirir ve grafiği
+tümüyle atlar. Bir insan bir bileti seçicinin listelediği her duruma taşıyabilir
+— terminal bir durumu yeniden açmak dahil. Seçici `failed` sunmaz; bunu ajanlar
+`fail_ticket` ile ayarlar. Grafik, otomasyon için bir güvenlik korkuluğudur;
+işin nasıl ilerleyebileceğine dair bir kural değil.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService`, her değişikliğe tek bir darboğaz üzerinden sahiptir:
+satırı yükler, çağıranın çalışma alanına ait olduğunu doğrular ve beklenen bir
+`version` ile yazar; böylece iki eşzamanlı düzenleme birbirinin üzerine sessizce
+yazamaz.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/).
+Tam durum tablosu, geçişler, alan listesi ve ilişki türleri için
+[Bilet yaşam döngüsü](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/) sayfasına
+bakın.
 
-## Provenance: how a ticket came to exist
+## Köken: bir bilet nasıl oluştu
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Her biletin bir `originKind` değeri vardır. Numaralandırmanın beş değeri vardır
+— `manual`, `pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — ama
+bugün yalnızca ikisi yazılır: `manual` (`createTicket` üzerindeki varsayılan,
+devredilen alt biletler dahil) ve `externalSync` (eşitleme motoru, bir satıcı
+çekmesinde). `TicketWorkflowService.createTicket` bir köken argümanı almaz; bu
+yüzden `pipelineStep`, `agentDelegation` ve `recovery` hiçbir zaman bir satıra
+yazılmaz.
 
-## Guarded delegation
+## Korumalı devretme
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Devretme, bir ajanın başka bir ajan için iş oluşturduğu yerdir ve ayrıcalığın
+sızabileceği nokta burasıdır; bu yüzden korumalar istem talimatlarında değil,
+sunucu tarafında bir darboğazda yaşar.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task`, `TicketWorkflowService.delegateGuarded` üzerinden yönlenir; bu
+metot alt biletin derinliğini ve kökünü üst zincirden hesaplar ve ardından dört
+`DelegationGuards` denetiminin tümünü çalıştırır: **3 derinlik sınırını** aşacak
+bir atlama, zincirde zaten bulunan bir ajana geri atlama (**döngü algılama**),
+bir **özerklik tavanı** (devredilenin alandaki etkin düzeyi, devredenin düzeyini
+aşmamalıdır) ve bir **bütçe zarfı** (devretme, devredenin kalan sert durdurma
+bütçesinden faturalandırır ve daha fazlasını üretemez). Üretim bağlantısı her
+iki çözümleyici portunu da sağlar. `from_agent_id` atlandığında özerklik ve
+bütçe atlanır (sınırsız / ilkesiz bütçe de geçer). Bir ret, iletisi devreden
+ajana birebir ulaşan bir `DelegationRefusedException` olarak fırlatılır — yüksek
+sesli bir ret, asla sessiz bir boş işlem değil.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` daha eski, **korumasız** kardeştir: doğrudan `createTicket`
+çağırır ve tüm korumaları atlar. `delegate_task` tercih edin.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Devretme derinlik sınırını (3, `delegate_task` zincirlerinde) yerleşik harness’ın
+alt ajan iç içe geçme sınırıyla (2) karıştırmayın. Bunlar farklı mekanizmalar
+üzerindeki farklı sınırlardır.
 
-## Hierarchy, links and projects
+## Hiyerarşi, bağlantılar ve projeler
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Üst ve alt issue ilişkileri, `setParent` / `clearParent` tarafından yönetilen
+`tickets.parent_ticket_id` üzerinde yaşar. Bunlar `ticket_links` satırları
+**değildir**; bu yüzden bir biletin ilişkilerini okuyan her şeyin iki kaynağı da
+birleştirmesi gerekir.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links`, başka türlü ilgisiz olan biletler arasındaki yönlü kenarları
+tutar:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Bağlantı türü | Anlamı                                   |
+| ------------- | ---------------------------------------- |
+| `blocks`      | Kaynak, hedefi engeller                  |
+| `relatesTo`   | İki bilet ilişkilidir (simetrik)         |
+| `duplicateOf` | Kaynak, hedefin kopyasıdır               |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+Bir **proje**, ortak bir hedefe yönelik çalışma alanı kapsamlı bir bilet
+gruplamasıdır. Projeler yalnızca Control Center’a özgüdür ve hiçbir zaman harici
+bir sağlayıcıya eşitlenmez.
 
-## Collaborators
+## İşbirlikçiler
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+`TicketCollaborator` satırları, bir bilete birden fazla katılımcının `assignee`,
+`collaborator` ya da `reviewer` rolüyle bağlanma yoludur. İnsanlar ve ajanlar
+eşit satırlardır — bir `principalId` artı bir `collaboratorType` — "kullanıcı"
+için bir nöbetçi değer ve iki tablonun hiçbirine yabancı anahtar olmadan.
 
-## External sync
+## Harici eşitleme
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Center’ın bileti birincildir. Bir bileti silmek **yalnızca yereldir**;
+bu yüzden sildiğiniz satıcı destekli bir bilet takip sisteminde silinmez ve bir
+sonraki eşitlemede yeniden görünebilir. İşbirlikçiler ve alt biletler zincirleme
+silinir.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Adaptör kimlik bilgileri sunucunun kimlik bilgisi depolarından çözülür (Ayarlar’a
+yapıştırılan bir Linear anahtarı ya da GitHub token’ı bir sonraki istekte alınır;
+ortam yalnızca bu depoları tohumlar).
 
-## Tickets and pipelines
+## Biletler ve pipeline’lar
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Hiçbir pipeline düğümü bilet oluşturmaz, tamamlamaz ya da iptal etmez — paletin
+böyle bir adımı yoktur ve motor `TicketWorkflowService` çağırmaz. Bir pipeline
+tetikleyicisi yine de `TicketAssigned`, `TicketCompleted`, `TicketFailed` ya da
+`TicketCancelled` üzerinde tetiklenebilir (bu dördü, `EventPayloadMapper`’ın
+gerçekte eşlediği bilet olaylarıdır). Bilette bir `pipelineRunId` sütunu yoktur;
+pipeline bağlantısı ajan çalıştırma günlüğünde yaşar.
 
-## See also
+## Ayrıca bakınız
 
-- [Pipelines and automation](/tr-TR/kilavuz/kavramlar/pipelinelar/): ticket events can trigger a pipeline
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/): where a DAG of sub-tickets comes from
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): who a ticket is assigned to
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): the ticket lifecycle events
-- [Ticket lifecycle](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/): statuses, fields, transitions, relations
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
-- [Delegate work to agents](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
-- [Organize work with projects](/tr-TR/kilavuz/nasil-yapilir/projeler/)
+- [Pipeline’lar ve otomasyon](/tr-TR/kilavuz/kavramlar/pipelinelar/): bilet olayları bir pipeline’ı tetikleyebilir
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/): alt biletlerden oluşan bir DAG nereden gelir
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir biletin kime atandığı
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): bilet yaşam döngüsü olayları
+- [Bilet yaşam döngüsü](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/): durumlar, alanlar, geçişler, ilişkiler
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [İşleri projelerle düzenleme](/tr-TR/kilavuz/nasil-yapilir/projeler/)

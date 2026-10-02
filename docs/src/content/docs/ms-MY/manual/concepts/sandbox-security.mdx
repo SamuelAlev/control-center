@@ -1,267 +1,282 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Kotak pasir dan keselamatan
+description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
+`cc_server` menyiasat hos semasa permulaan dan membalut pelaksanaan perintah ejen
+dalam kotak pasir natif OS apabila satu tersedia — Seatbelt pada macOS, bubblewrap
+pada Linux dan WSL2 (yang memerlukan `bwrap` dan `socat` pada `PATH`). Jika tiada
+bahagian belakang wujud — Windows, atau mesin Linux yang kekurangan alat tersebut
+— larian berpatah balik kepada sempadan lain di bawah dan pelayan menyatakannya
+dalam log permulaannya. `--sandbox off` mematikannya secara sengaja.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Dua jurang terus wujud melepasi kotak pasir dan wajar diingati:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- **Alat fail dalam proses** harness terbina (`read`, `write`, `edit`,
+  `apply_patch`, `search`, `find`, `search_files`) berjalan di dalam proses
+  pelayan, jadi hanya `bash` dibalut. Yang membataskannya ialah kekangan laluan
+  dalam alat itu sendiri serta guardrail tindakan.
+- **Claude Code dilancarkan dengan `--dangerously-skip-permissions`**, kerana
+  `claude -p` bukan interaktif akan tersekat selama-lamanya pada gesaan
+  kelulusannya sendiri. Oleh itu panggilan fail dan shell-nya tidak dipagari
+  oleh guardrail Control Center — kotak pasir OS ialah sempadan di sekelilingnya.
   :::
 
-## Why isolation matters here
+## Mengapa pengasingan penting di sini
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Ejen membaca fail, menjalankan perintah shell dan memanggil API luaran bagi pihak
+anda. Kegagalan yang anda risaukan jarang berpunca daripada niat jahat — ia
+ialah ejen yang tersalah baca laluan dan menulis semula checkout kerja anda, atau
+ejen yang push cawangan yang belum anda selesai semak. Jadi persoalan yang perlu
+dijawab oleh produk ini bukan "bolehkah ejen dipercayai" tetapi "apakah jejari
+letupan apabila ia tersilap".
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center menjawabnya secara berlapis dan lapisan-lapisan itu memang sengaja
+berdikari. Jika satu hilang, yang lain masih bertahan. Itu penting, kerana lapisan
+paling luar — kotak pasir OS — ialah satu-satunya yang bersyarat: ia bergantung
+pada hos yang menawarkan bahagian belakang dan pada Windows tiada hos yang
+berbuat demikian.
 
-## What actually constrains an agent
+## Apa yang sebenarnya membataskan ejen
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Lima perkara membataskan larian ejen pada setiap hos, dengan atau tanpa kotak
+pasir. Tiada satu pun daripadanya sempadan kernel; semuanya nyata. Apabila hos
+menawarkan bahagian belakang, kotak pasir OS duduk di atasnya dan "Apa yang
+ditambah oleh kotak pasir dan di mana ia berhenti" di bawah merangkumi apa yang
+berubah.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Worktree copy-on-write tersendiri.** Setiap perbualan menyediakan checkout
+sendiri bagi setiap repo yang dipautkan, diklon secara copy-on-write melalui
+natif `rift` yang disertakan dan bukan disalin bait demi bait, jadi pengasingan
+cukup murah untuk dijadikan lalai. Repositori berdaftar yang anda tambahkan pada
+ruang kerja bukanlah direktori tempat ejen bekerja — dua perbualan yang menyentuh
+repo yang sama tidak dapat melihat suntingan satu sama lain dan kedua-duanya tidak
+menyunting checkout anda.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Butirannya wajar diperjelas: **worktree adalah bagi setiap perbualan, bukan setiap
+ejen.** Dua ejen dalam perbualan yang sama mendapat direktori kerja overlay yang
+berbeza yang _berkongsi_ `repos/` perbualan itu — itulah maksudnya, kerana mereka
+bekerjasama pada satu perubahan — sementara direktori ejen peribadi mereka kekal
+berasingan. Copy-on-write ialah satu-satunya bahagian belakang di mana sahaja
+`rift` disertakan: sistem fail yang tidak boleh reflink, atau dir data pada volum
+berbeza daripada repo, menggagalkan penyediaan dan bukannya berpatah balik.
+Windows ialah pengecualian — tiada bahagian belakang copy-on-write di sana, jadi
+`git worktree` ialah bahagian belakangnya, bukan kemerosotan senyap.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Kekangan laluan dalam alat fail harness terbina.** Alat `read`, `write`, `edit`,
+`apply_patch`, `search`, `find` dan `search_files` harness menyelesaikan setiap
+laluan terhadap direktori kerja larian serta akar kongsi — direktori `repos/`
+perbualan, tempat worktree berada, dan dir lampiran ruang apabila wujud — dan
+menolak apa-apa yang terletak di luar. Laluan mutlak hanya diterima jika ia sudah
+berada di dalam. Symlink di dalam worktree yang menunjuk ke luar juga diselesaikan
+dan ditolak. Inilah sebabnya ejen tidak boleh `write` ke `~/.ssh` walaupun tanpa
+kotak pasir.
 
-**The mode's tool surface.** A conversation's [mode](/ms-MY/manual-pengguna/konsep/modus/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Permukaan alat modus.** [Modus](/ms-MY/manual-pengguna/konsep/modus/) sesuatu
+perbualan menentukan alat mana yang dizahirkan untuk larian itu sama sekali. Dalam
+modus baca sahaja (`plan`, `review`, `orchestrate`), alat yang mengubah keadaan
+langsung tidak ada dalam daftar dan polisi perintah shell bagi modus tersebut
+menolak setiap perintah yang mengubah keadaan secara terus — `git commit`,
+`git push`, `npm install`, `docker` dan seumpamanya — dan bukannya meminta
+pengesahan untuknya. Alat yang tidak hadir tidak boleh dipanggil, dan itu jaminan
+yang lebih kukuh daripada alat yang hadir tetapi dipagari.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/) for the resolution model.
+**Guardrail tindakan bersatu.** Setiap alat yang mengubah keadaan mengisytiharkan
+kelas kesan yang boleh dihasilkannya dan enjin polisi menyelesaikan setiap satu
+kepada benarkan, tanya dahulu, atau tolak sebelum panggilan itu dijalankan. Satu
+`prompt` tanpa pelulus yang bersambung diselesaikan kepada _ditolak_ — soalan
+yang tiada siapa dapat jawab tidak pernah menjadi ya. Lihat
+[Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) untuk model penyelesaiannya.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Kelayakan berpagar keupayaan dan persekitaran yang disanitasi.** Kelayakan
+ditempa setiap pelancaran daripada bendera keupayaan perbualan dan ditarik balik
+apabila larian tamat. ACP, `bash` harness dan Claude Code di bawah balutan natif
+mendapat persekitaran yang dilucutkan vektor suntikan pemaut dinamik dan
+penterjemah (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`,
+`GIT_SSH_COMMAND` dan seumpamanya) sebelum proses bermula. Claude Code melalui
+`NoSandboxAdapter` mewarisi persekitaran hos.
 
-### Where those bounds thin out
+### Di mana sempadan itu menipis
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Alat fail harness berjalan _dalam proses pelayan_, bukan dalam proses anak, jadi
+tiada profil kotak pasir dapat membataskannya walaupun satu dilekatkan — hanya
+`bash` melalui pelari perintah berkotak pasir. Kekangan mereka ialah semakan
+laluan yang dihuraikan di atas, dan oleh itu semakan itu menanggung beban utama
+dan bukan sekadar barisan pertahanan kedua.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+Alat `bash` ialah tempat lain yang perlu diperjelas. Perintahnya dinilai terhadap
+polisi perintah modus dan kemudian dilancarkan dengan persekitaran yang
+disanitasi serta worktree sebagai direktori kerjanya. Apabila bahagian belakang
+wujud, pelancaran itu dibalut, jadi kotak pasirlah yang menghalang perintah shell
+daripada menulis di luar worktree; apabila tiada — Windows, atau Linux tanpa
+`bwrap` dan `socat` — polisi perintah ialah satu-satunya perkara antara perintah
+itu dan seluruh cakera yang lain. Dalam modus `chat`, polisi itu menolak secara
+mutlak senarai tetap (peningkatan keistimewaan, pemusnahan sistem dan cakera,
+pelarian kontena dan namespace) dan meminta pengesahan bagi mutasi keadaan jauh
+(`git push`, `gh pr create`, penerbitan dan pemasangan pakej). Apa-apa yang tiada
+dalam kedua-dua senarai akan berjalan. Saluran paip, rantaian dan subshell
+dihuraikan dan setiap sub-perintah dinilai secara berasingan, dengan keputusan
+paling ketat yang menang.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/ms-MY/manual-pengguna/konsep/guardrail/#the-adapter-honesty-matrix).
+Claude Code, apabila digunakan sebagai penyesuai, ialah kes yang kotak pasir
+memikul beban paling berat. Control Center melancarkannya dengan
+`--dangerously-skip-permissions`, kerana `claude -p` bukan interaktif akan
+tersekat selama-lamanya pada gesaan kelulusannya sendiri. Panggilan baca, tulis,
+edit dan shell-nya berlaku di dalam prosesnya sendiri dan Control Center tidak
+pernah melihatnya; satu-satunya panggilan yang sampai ke pintu pagar ialah alat
+`mcp__*` yang Control Center sendiri sediakan. Apabila bahagian belakang wujud,
+panggilan yang tidak kelihatan itu masih berlaku di dalam balutan kotak pasir,
+jadi OS ialah sempadan di sekelilingnya. Apabila tiada, tiada apa-apa. Setiap
+penyesuai menyatakan hal ini dalam matriks penguatkuasaannya — lihat [matriks
+kejujuran penyesuai](/ms-MY/manual-pengguna/konsep/guardrail/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Pempagaran keupayaan ialah penguatkuasaan melalui ketiadaan
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Sesuatu perbualan membawa empat bendera keupayaan: push ke repo, panggil API
+GitHub, panggil penyedia tiket dan akses rangkaian. Ia tidak diperiksa apabila
+ejen bertindak. Ia diperiksa sekali, semasa pelancaran, oleh broker kelayakan —
+dan keupayaan yang dimatikan bermakna token yang sepadan langsung tidak
+dimasukkan ke dalam persekitaran.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Itulah keseluruhan mekanismenya dan ia wajar dinyatakan secara terus kerana mod
+kegagalannya bukan seperti yang dijangka orang. Mematikan "GitHub API" tidak
+menghasilkan mesej "keupayaan ditolak". Ia menghasilkan `401` biasa di dalam
+ejen, kerana tiada `GH_TOKEN` untuk dihantar. Ejen mungkin menceritakannya
+sebagai masalah kelayakan. Penguatkuasaan melalui ketiadaan memang teguh — tiada
+semakan untuk dipintas — tetapi ia senyap dan ejen tidak tahu mengapa ia gagal.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Bendera rangkaian berkelakuan sama. Apabila dimatikan, alat `web_fetch` dan
+`web_search` harness menolak setiap panggilan dan senarai benarkan proksi
+pelancaran berkotak pasir menjadi kosong, jadi setiap sambungan keluar ditolak.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Kelayakan ditarik balik apabila larian dimusnahkan, jadi sesuatu pemegang tidak
+hidup lebih lama daripada larian yang menempaannya.
 
-## What the sandbox adds and where it stops
+## Apa yang ditambah oleh kotak pasir dan di mana ia berhenti
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+Enum `SandboxBackend` mempunyai tiga nilai — `native` (Seatbelt pada macOS,
+bubblewrap pada Linux dan WSL2), `none`, dan `microvm`. Pembalutan perintah ejen
+hanya menggunakan dua yang pertama: `microvm` ialah bahagian belakang VM terasing
+untuk terminal interaktif dan stesen, bukan peningkatan senyap bagi balutan
+`bash`. Memahami bentuk natif menjelaskan apa yang anda peroleh apabila satu
+dilekatkan dan apa yang ia tidak akan pernah berikan.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` menyiasat hos sekali semasa permulaan dan apabila bahagian belakang
+menjawab, ia menyuap kedua-dua sambungan yang ada pada laluan penghantaran,
+kerana pengangkutan itu tidak berkongsi satu. Yang pertama (`SandboxPort`)
+membalut CLI Claude Code. Yang kedua (`SandboxManager`) membalut penyesuai ACP
+dan alat `bash` harness terbina. Menyuap hanya satu akan menyebabkan yang lain
+dilancarkan tanpa balutan, yang memang pernah berlaku. Pada hos tanpa bahagian
+belakang, atau di bawah `--sandbox off`, semuanya dilancarkan tanpa balutan dan
+pelayan menyatakan kes mana yang anda alami pada baris permulaannya. ACP dan
+`bash` harness masih menyanitasi persekitaran; Claude Code melalui
+`NoSandboxAdapter` mewarisi persekitaran hos.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Satu permukaan sengaja mengecualikan diri: terminal yang dihoskan pelayan
+menerima argumen bahagian belakang bagi setiap sesi dan `cc_server` membinanya
+dengan lalai kepada shell hos, jadi terminal yang anda buka dari aplikasi berjalan
+tanpa kotak pasir melainkan klien menamakan `native` secara eksplisit. Itu shell
+sebenar pada hos pelayan, bukan larian ejen.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Pada Linux, `bubblewrap` membina namespace mount, jadi ejen benar-benar melihat
+hanya apa yang diikat masuk ke dalamnya. Pada macOS, `sandbox-exec` mengenakan
+profil Seatbelt yang **permisif secara lalai** — profil yang menolak secara lalai
+sepenuhnya menjadikan shell interaktif tidak boleh digunakan, kerana bilangan
+panggilan dyld, XPC dan Mach untuk disenaraikan tidak praktikal. Oleh itu profil
+macOS bermula daripada `(allow default)` dan mengukir penolakan: bacaan laluan
+rahsia, polisi tulis yang ditetapkan semula kepada tolak dengan benarkan eksplisit
+di atasnya, penyekatan unlink pada setiap laluan yang ditolak dan nenek moyangnya
+supaya penamaan semula tidak dapat memintas penolakan tulis, penolakan exec untuk
+binari yang sentiasa berbahaya dan untuk apa-apa yang disalin ke direktori boleh
+tulis, serta rangkaian yang dihadkan kepada port proksi loopback dan DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Akibat praktikalnya: pada Linux, pandangan ejen terhadap sistem fail disempitkan;
+pada macOS, ejen masih boleh _membaca_ sebahagian besar hos dan checkout berdaftar
+anda dilindungi oleh penolakan tulis dan penamaan semula yang eksplisit dan
+bukannya oleh ketaknampakan. Kedua-duanya ialah pengasingan peringkat namespace,
+bukan sempadan keselamatan kernel — bahagian belakang sendiri menyatakannya dalam
+nota keupayaan masing-masing.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Set bind-mount ialah tempat sempadan antara ejen dilukis. Penghantaran overlay
+(Claude Code dan ACP) melekatkan sehingga empat laluan, diselesaikan bagi setiap
+larian: direktori kerja overlay ejen sebagai baca-tulis, direktori konfigurasi
+ejen sebagai baca sahaja, direktori `repos/` kongsi perbualan sebagai baca-tulis
+apabila wujud, dan direktori lampiran ruang sebagai baca sahaja apabila wujud.
+Direktori ejen rakan sebaya tidak pernah dilekatkan. Balutan `bash` harness lebih
+sempit: ia hanya melekatkan direktori kerja larian. Ini bentuk yang sama yang
+dikuatkuasakan oleh semakan laluan dalam proses harness melalui perisian, jadi
+kedua-duanya sependapat — tetapi hanya semakan laluan yang meliputi alat fail
+harness sendiri, yang langsung tidak sampai ke namespace mount.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Checkout berdaftar anda menyertai set tolak-tulis di atas itu, dalam setiap modus
+dan pada ketiga-tiga laluan yang dibalut (Claude Code, ACP, `bash` harness), dan
+setiap peraturan dikeluarkan dalam ejaan literal serta ejaan yang diselesaikan
+symlink. Ejaan kedua bukan sekadar hal kecil: kernel memadankan peraturan
+penolakan terhadap laluan yang diselesaikan dan macOS menjadikan penyelesaian itu
+kes biasa dan bukan kes eksotik — `/tmp` sebenarnya `/private/tmp`,
+`/var/folders/…` sebenarnya `/private/var/folders/…` — jadi checkout yang dicapai
+melalui mana-mana satu pun akan boleh ditulis sedangkan profil itu kelihatan
+melarangnya.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Rangkaian, di bawah kotak pasir, ialah senarai benarkan **domain** bagi setiap
+sesi yang dikuatkuasakan oleh proksi loopback dalam proses. Keluar adalah tolak
+secara lalai: apabila keupayaan rangkaian dimatikan, proksi tetap bermula tetapi
+senarai benarkannya kosong, jadi setiap sambungan keluar ditolak. Apabila ia
+dihidupkan, penyelesai membina senarai benarkan daripada dasar yang dikurasi —
+penyedia API LLM, hos git, daftar pakej, katalog model — serta domain GitHub yang
+diperoleh ejen daripada keupayaan GitHub atau push-nya, dan memadankan hos
+sasaran setiap sambungan dengannya. Kad liar berfungsi (`*.example.com` memadankan
+subdomain, bukan puncak domain). Senarai yang sentiasa ditolak secara berasingan
+menang ke atas senarai benarkan dan meliputi titik akhir metadata awan serta
+pengumpul telemetri. Apa yang _tidak_ boleh dikonfigurasi ialah senarai itu
+sendiri: spesifikasi membawa medan `egressAllowlist` untuk domain tambahan dan
+cangkuk domain tiket, tetapi tiada apa-apa dalam laluan penghantaran mengisi
+mana-mana satu pun, jadi dalam praktiknya setiap larian mendapat dasar itu serta
+domain terbitan keupayaannya dan tiada lagi.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+Penolakan, pada macOS, boleh diperhatikan: pemantau menyadap log sistem untuk
+penolakan Sandbox, menapis bunyi yang diketahui, menyahduplikasi badai cubaan
+semula dan memunculkan setiap satu sebagai `SandboxViolation` yang menamakan apa
+yang dicuba dan keupayaan mana yang akan membuka sekatan itu. Pada Linux, laluan
+balutan menghurai stderr untuk `EPERM`, `Operation not permitted` dan
+`Permission denied` dan mengeluarkan jenis peristiwa yang sama — tiada penyadapan
+log sistem. Semuanya tiba pada aliran peristiwa larian itu sendiri, jadi panggilan
+sistem yang ditolak muncul dalam transkrip dan bukan hanya dalam log. Telemetri
+itu hanya wujud semasa kotak pasir natif benar-benar membalut proses itu — pada
+hos tanpa bahagian belakang tiada apa-apa untuk diperhatikan. Ia juga tidak
+berkaitan dengan pempagaran keupayaan: pelanggaran datang daripada panggilan
+sistem yang ditolak, tidak pernah daripada carian keupayaan.
 
-## Confirmations come from the guardrails, not the sandbox
+## Pengesahan datang daripada guardrail, bukan kotak pasir
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Kotak pasir tiada laluan kelulusan. Ia melancarkan, melaksanakan, mengeluarkan
+peristiwa dan memusnahkan; tiada tempat di dalamnya untuk manusia menjawab
+soalan. Apabila anda melihat pengesahan dalam sesuatu ruang — luluskan push ini,
+luluskan pemadaman ini — ia dibangkitkan oleh enjin guardrail (atau polisi
+perintah harness) _sebelum_ tindakan itu sampai ke masa jalan sama sekali.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Susunan ini memang disengajakan. Kelulusan yang berlaku selepas panggilan sistem
+hanyalah rekod audit, bukan pintu pagar. Itulah juga sebab peraturan
+gagal-tertutup terletak dalam guardrail: tanpa pelulus yang bersambung, keputusan
+dibuat sebelum apa-apa berjalan dan keputusan itu ialah penolakan.
 
-## Diagnostics
+## Diagnostik
 
-[Run agent diagnostics](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/) is the single place
-that states what can be checked by hand.
+[Jalankan diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)
+ialah satu-satunya tempat yang menyatakan apa yang boleh diperiksa secara manual.
 
-## Related concepts
+## Konsep berkaitan
 
-- [Rigs and enclosures](/ms-MY/manual-pengguna/konsep/stesen/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): where isolation fits in the dispatch flow
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/): the backends and their configuration
+- [Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/): langkah di atas kotak pasir — apabila kerja memerlukan mesin pakai buang sepenuhnya dengan sempadan kernel, bukan proses yang dibalut
+- [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): lapisan polisi di atas lantai OS dan tempat kelulusan sebenarnya datang
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): di mana pengasingan berada dalam aliran penghantaran
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/): bagaimana sesuatu modus menyempitkan permukaan alat dan polisi perintah
+- [Rujukan bahagian belakang kotak pasir](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/): bahagian belakang dan konfigurasinya
 
-## Related guides
+## Panduan berkaitan
 
-- [Configure sandbox policies](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/): capability flags and filesystem posture
-- [Run agent diagnostics](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/): what the diagnostic checks cover
+- [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/): bendera keupayaan dan postur sistem fail
+- [Jalankan diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/): apa yang diliputi oleh pemeriksaan diagnostik

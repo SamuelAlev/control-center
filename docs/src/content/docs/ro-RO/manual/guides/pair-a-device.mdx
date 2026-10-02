@@ -1,96 +1,103 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Asociază un dispozitiv
+description: Asociază-ți telefonul (sau un al doilea browser ori desktop) cu serverul tău Control Center ca să poți urmări flota de la distanță.
 slug: ro-RO/manual/ghiduri-practice/asociaza-dispozitiv
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ro-RO/manual/concepte/control-remote/) for how the link
-works and its security model.
+Acest ghid îți arată cum să asociezi un telefon cu Control Center, ca să poți citi
+mesaje și tichete și să răspunzi de oriunde. Același flux asociază și un al doilea
+browser sau o aplicație desktop. Vezi
+[Control remote și mobil](/ro-RO/manual/concepte/control-remote/) pentru cum funcționează
+legătura și modelul ei de securitate.
 
-## Prerequisites
+## Cerințe prealabile
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Un client desktop sau web conectat la serverul tău și un spațiu de lucru configurat. Operațiunile de asociere necesită un client complet, așa că un telefon asociat nu poate asocia — și nici nu poate revoca — un alt dispozitiv.
+- Serverul accesibil de pe dispozitivul pe care îl asociezi. În aceeași rețea funcționează direct; de mai departe, traficul trece prin releul intermediat. Dacă panoul răspunde **Inaccesibil** în loc de un cod QR sau de credențiale, publică mai întâi o cale — activarea tunelului din **Setări → Server → Conexiune și stare** (**Partajează acest server**), sau `--public-url` al serverului (vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)).
+- Pentru un telefon: nimic de instalat. Codul QR deschide aplicația web **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) implicit).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Auto-găzduire.** Remote și brokerul de releu sunt open source în acest repo:
+aplicația de telefon (`apps/cc_remote`, o PWA web Flutter pe care o poți
+implementa pe Cloudflare Pages prin `wrangler.jsonc`, pe imaginea nginx
+`docker/cc_remote` sau pe orice gazdă statică cu HTTPS — service worker-ele și
+IndexedDB sunt condiționate de un context securizat) și releul
+(`apps/cc_signaling_server`, un singur binar Dart fără stare, care nu deține date
+ale aplicației și nu vede niciodată secretul de asociere — retransmite doar cadre
+sigilate cap la cap). Vezi README-urile lor pentru pașii de compilare și rulare.
 
-## Step 1: Open the pairing panel
+## Pasul 1: Deschide panoul de asociere
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Deschide **Setări → Tu → Dispozitivele tale**. Secțiunea **Dispozitivele tale**
+listează clienții asociați contului tău pe acest server. (Proprietarul serverului
+vede fiecare dispozitiv de pe server; toți ceilalți își văd doar propriile
+dispozitive.)
 
-## Step 2: Pair a new client
+## Pasul 2: Asociază un client nou
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Apasă **Asociază un client nou** în antetul paginii, dă-i o etichetă (de ex.
+„Telefonul meu”), alege tipul — **Browser web**, **Aplicație desktop** sau
+**Telefon** — și apasă **Asociază**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Pentru un **telefon**, apare un cod QR. Scanează-l cu camera telefonului sau copiază linkul și deschide-l în orice browser. Acesta îndreaptă aplicația Remote spre serverul tău și transportă credențialul.
+- Pentru un **browser** sau un **desktop**, copiază în noul client linkul afișat (sau id-ul dispozitivului și cheia de asociere). Linkul cu un singur clic este oferit doar când asociezi din clientul web, deoarece un binar desktop nu are origine web din care să-l construiască.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Codul QR pentru telefon și linkul pe care `cc_server pair --client-url` îl afișează
+în CLI sunt **payload-uri diferite și nu sunt interschimbabile**: linkul din CLI
+completează formularul de conectare al clientului web, în timp ce acest cod QR
+transportă descriptorul complet de conexiune al serverului și amprenta de
+identitate pentru PWA-ul Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Pe partea de telefon, deschiderea unui link de asociere nu asociază în silențiu.
+Remote afișează numele anunțat al serverului și îți cere confirmarea înainte de a
+stoca ceva, așa că un link falsificat nu poate deturna aplicația către serverul
+altcuiva.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Un cod QR scanat acordă acces imediat]
+Nu există un pas de tip în așteptare-apoi-aprobare: un dispozitiv emis este activ
+din momentul creării, iar poarta de conectare verifică doar că credențialul este
+activ și neexpirat. Tratează codul QR și cheia de asociere ca pe o parolă și
+revocă tot ce nu ai vrut să oferi.
 :::
 
-## Manage paired devices
+## Gestionează dispozitivele asociate
 
-From **Settings → You → Your devices** you can:
+Din **Setări → Tu → Dispozitivele tale** poți:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Redenumește** un dispozitiv
+- **Revocă** un dispozitiv în care nu mai ai încredere. Revocarea îi distruge credențialul și îi închide sesiunea activă în câteva secunde, așa că eșuează închis la reconectare
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Revocarea este alegerea corectă pentru un telefon pierdut sau înlocuit. Este
+imediată și ireversibilă din perspectiva dispozitivului.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Credențialele emise din acest panou sunt limitate în timp: expiră 30 de zile după
+emitere, iar după aceea poarta de conectare le respinge închis. Un credențial emis
+cu `cc_server pair` în linia de comandă **nu expiră deloc** — revocă-l manual când
+mașina pentru care a fost emis este scoasă din uz.
 
-## Switch workspaces from the phone
+## Schimbă spațiile de lucru de pe telefon
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Un telefon asociat poate schimba spațiile de lucru independent de desktop.
+Telefonul trimite spațiul de lucru la fiecare apel, iar serverul îți verifică
+apartenența și rolul în acel spațiu la fiecare apel — astfel, telefonul ajunge
+doar la spațiile de lucru din care faci parte, iar schimbarea de acolo nu
+modifică niciodată ce afișează desktopul.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+O sesiune de telefon este restricționată suplimentar la o listă mică de
+permisiuni, cu instrumente orientate spre citire: poate lista și citi tichete,
+agenți, spații, mesaje și articole din flux și poate actualiza sau asigna un
+tichet, trimite un mesaj într-un spațiu și marca un articol ca citit sau salvat.
+Orice iese din acest set este refuzat înainte de a ajunge la dispatcherul
+serverului.
 
-## Related guides
+## Ghiduri conexe
 
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): make the server reachable in the first place
-- [Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/): point a full client at it
-- [Use spaces](/ro-RO/manual/ghiduri-practice/spatii/): what you'll mostly do from the phone
-- [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/): triage from the road
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): fă mai întâi serverul accesibil
+- [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/): îndreaptă un client complet spre el
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/): ce vei face în mare parte de pe telefon
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/): triază din deplasare
 
-## Related concepts
+## Concepte conexe
 
-- [Remote control and mobile](/ro-RO/manual/concepte/control-remote/)
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/)
+- [Control remote și mobil](/ro-RO/manual/concepte/control-remote/)
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/)

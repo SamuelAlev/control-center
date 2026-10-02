@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Вступ
+description: Control Center — це командний пункт для мультиагентної розробки програмного забезпечення.
 slug: uk-UA/керівництво
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center дає вам керування флотом агентів ШІ для написання коду. Запускайте агентів, спостерігайте за їхньою роботою в реальному часі, перевіряйте їхні PR і керуйте репозиторіями, робочими просторами та інтеграціями — з настільного застосунку, браузера чи телефона.
 
 <div className="docs-start not-content">
-  <LinkButton href="/uk-UA/керівництво/швидкий-старт/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/uk-UA/керівництво/встановлення/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/uk-UA/керівництво/швидкий-старт/" icon="right-arrow">Швидкий старт</LinkButton>
+  <LinkButton href="/uk-UA/керівництво/встановлення/" variant="minimal" icon="download">Встановити Control Center</LinkButton>
 </div>
 
-## What you can do
+## Що ви можете робити
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/uk-UA/керівництво/поняття/конвеєри/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Пишіть агентам**: простори — основний спосіб керувати флотом. @-згадайте агента, і він запуститься у власному worktree з copy-on-write, тож кілька агентів можуть писати код і перевіряти паралельно, не торкаючись вашої робочої копії
+- **Керуйте великими запитами**: дайте оркестратору мету, один раз схвальте запропонований ним план для всієї команди — і згенерований [конвеєр](/uk-UA/керівництво/поняття/конвеєри/) його виконає
+- **Перевіряйте й змерджуйте PR** за допомогою вбудованого переглядача diff-ів, вбудованих коментарів і ШІ-перевірки
+- **Видавайте агентам одноразові машини**: [rig](/uk-UA/керівництво/практичні-посібники/використовувати-rigs/) — це одноразова ВМ: браузер, робочий стіл, телефон або ізольований термінал, — якою агент керує, поки ви спостерігаєте наживо й можете перебрати керування; dev-сервери всередині проброшуються на `localhost`, у браузер агента та на `https://myapp.test`
+- **Автоматизуйте робочі процеси** за допомогою конвеєрів на основі DAG, які запускаються подіями або за розкладом
+- **Керуйте знаннями** за допомогою пам’яті, фактів і політик у межах робочого простору
+- **Відстежуйте роботу** за допомогою незалежних від вендора тікетів, проєктів і делегування
+- **Записуйте зустрічі** із захопленням на пристрої, транскрипцією та діаризацією, а потім із підсумком у нотатки, пункти дій та рішення
+- **Бачте свій день** із синхронізацією з Google Calendar, відповідями RSVP, сповіщеннями про зустрічі та записом із прив’язкою
+- **Стежте за флотом із телефона**: прив’яжіть пристрій до свого сервера й читайте повідомлення, відповідайте та розбирайте тікети. Телефон обирає найкращий доступний шлях — loopback, локальна мережа, tailnet або TLS — і за потреби переходить на реле з наскрізним запечатуванням, яке пересилає кадри, які не може прочитати
+- **Керуйте агентами зі Slack**: з’єднайте робочий простір із чат-застосунком і згадайте бота, дайте відповідь у гілці Slack або створіть тікет через slash-команду — через вихідне з’єднання, тож публічна кінцева точка не потрібна
+- **Інтегруйтеся** з GitHub, Linear, Slack, Google Calendar і понад 100 інструментами MCP
 
-## You do not have to install it
+## Його не обов’язково встановлювати
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Той самий застосунок працює у вашому браузері на
+[app.usectrl.dev](https://app.usectrl.dev) з тими самими можливостями.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Кожен клієнт — настільний, веб- і телефонний — це тонкий рендерер поверх headless-сервера, який
+володіє вашими даними й виконує роботу. Настільний застосунок може запустити цей сервер за вас;
+вкладка браузера — ні, тож веб-застосунок підключається до того, який запускаєте ви. Цей сервер
+може бути на вашій машині (`ws://localhost:9030`, сертифікат не потрібен) або на віддаленому хості,
+доступному через TLS, VPN чи тунель.
 
-See [Install](/uk-UA/керівництво/встановлення/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/uk-UA/керівництво/поняття/розгортання/) for how the three clients relate.
+Дивіться [Встановлення](/uk-UA/керівництво/встановлення/#use-it-in-your-browser) про шлях через браузер і
+[Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/) про те, як співвідносяться три клієнти.
 
-## Next steps
+## Наступні кроки
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/uk-UA/керівництво/встановлення/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/uk-UA/керівництво/швидкий-старт/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/uk-UA/керівництво/посібники/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/uk-UA/керівництво/практичні-посібники/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/uk-UA/керівництво/поняття/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/uk-UA/керівництво/довідка/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Встановлення" href="/uk-UA/керівництво/встановлення/" description="Завантаження, системні вимоги та де працює сервер." />
+  <LinkCard title="Швидкий старт" href="/uk-UA/керівництво/швидкий-старт/" description="Найкоротший повний шлях до агента, що працює над вашим репозиторієм." />
+  <LinkCard title="Посібники" href="/uk-UA/керівництво/посібники/" description="Довші уроки, за порядком, починаючи з вашого першого робочого простору." />
+  <LinkCard title="Практичні посібники" href="/uk-UA/керівництво/практичні-посібники/" description="Рецепти для одного завдання за раз: додати репозиторії, налаштувати обмеження чи прив’язати телефон." />
+  <LinkCard title="Поняття" href="/uk-UA/керівництво/поняття/" description="Чому продукт працює саме так, починаючи з розгортання та клієнтів." />
+  <LinkCard title="Довідка" href="/uk-UA/керівництво/довідка/" description="Повні таблиці маршрутів, інструментів MCP, гарячих клавіш і доменних подій." />
 </div>

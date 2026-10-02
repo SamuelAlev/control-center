@@ -1,199 +1,213 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Bellek ve bilgi
+description: Control Center'ın ajan bilgisini nasıl sakladığı, bir ajanın istemine gerçekte ne ulaştığı ve bellek okumalarının neden hata durumunda izin verdiği.
 slug: tr-TR/kilavuz/kavramlar/bellek-ve-bilgi
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Bellek ne işe yarar
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Bellek olmadan her ajan konuşması sıfırdan başlar: aynı yerleşik kural yeniden
+anlatılır, aynı karar yeniden tartışılır, aynı çıkmaz sokak yeniden keşfedilir.
+Bellek, çalıştırmalar arasında varlığını sürdüren çalışma alanı kapsamlı depodur
+ve bir ajanın ürettiği bilginin daha sonra başka bir ajan tarafından
+bulunabilmesi için vardır.
 
-It has three layers and they answer different questions:
+Üç katmanı vardır ve bunlar farklı soruları yanıtlar:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Olgular** — neyin doğru olduğu (yerleşik bir kural, bir sonuç, bir karar).
+2. **Politikalar** — ajanların bu konuda ne yapması gerektiği (normatif bir kural).
+3. **Çalışma belleği** — bir ajanın o anda neyin ortasında olduğu.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Bu ayrım önemlidir çünkü ajanın istemine farklı yollardan ulaşırlar. Olgular
+aranır. Politikalar itilir. Çalışma belleği gizlidir.
 
-## Facts
+## Olgular
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Bir `MemoryFact`, bir çalışma alanına ve bir bilgi alanına kapsamlanmış bilgi
+birimidir.
 
-| Attribute                                   | What it is                                                                |
+| Öznitelik                                  | Nedir                                                                     |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | Bilgi alanı ("conventions", "decisions", "codebase")                      |
+| `topic`                                     | Kısa bir konu etiketi                                                     |
+| `content`                                   | Bilgi metni                                                               |
+| `confidence`                                | 0.0–1.0, kökenden tohumlanır ve yeniden anılmayla yükselir                |
+| `memoryType`                                | Olgunun türü — zamansal bozunma eğrisini belirler                         |
+| `veracity`                                  | Nasıl öğrenildiği — güveni tohumlar ve her yeniden anılma artışının boyutunu belirler |
+| `sourceObservationIds`                      | Hangi gözlemlerin ona yol açtığı                                          |
+| `supersededBy`                              | Varsa, onun yerine geçen daha yeni olgu                                   |
+| `validUntil`, `recallCount`, `mentionCount` | Geri çağırmada kullanılan son kullanma ve kullanım sinyalleri             |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Son iki satır insanların gözden kaçırdığı satırlardır ve _hangi_ olgunun yüzeye
+çıkacağını belirleyen de onlardır. `memoryType`, tür başına Weibull bozunma
+parametreleri taşır; bu yüzden süreyle sınırlı bir taahhüt hızla solar, istikrarlı
+bir profil olgusu ise solmaz. `veracity` kökeni kaydeder — bir insan tarafından
+belirtilmiş (ağırlık 1.0), bir ajan tarafından çıkarılmış (0.7), bir araç
+tarafından üretilmiş (0.5), içe aktarılmış (0.6) — ve bu ağırlık olgunun
+başlangıç güvenini tohumlar.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Olgular çeliştiğinde asla yerinde düzenlenmez. Bir olgu yazmak, aynı bilgi
+alanındaki ve aynı konudaki olgulara karşı çakışma algılamasını çalıştırır ve
+kaybedenin yerine geçer, bir çakışma kaydı bırakır. Asıl mesele denetim izidir:
+daha önce neye inanıldığını ve yerine neyin geçtiğini her zaman görebilirsiniz.
 
-## Policies
+## Politikalar
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+Bir `MemoryPolicy`, olgulardan türetilen, bir çalışma alanına ve bilgi alanına
+kapsamlanmış, etkin bir bayrağı ve isteğe bağlı bir `requiredRole` alanı olan
+normatif bir kuraldır.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Çalışma alanındaki **etkin** her politika, filtrelenmeden **her** gönderime
+enjekte edilir — bilgi alanına, role, göreve veya alana göre filtreleme
+yapılmaz. Yirminci politikanızı yazmadan önce bunu bilmekte fayda var, çünkü
+politikalar görevle aynı bağlam penceresi için yarışır. Bir politikadaki
+`requiredRole` alanının uyarı niteliğinde olmasının nedeni de budur: kuralın
+kime yöneldiğini tanımlar, ancak kuralın diğer herkese ulaşmasını engellemez.
 
-## Domains
+## Bilgi alanları
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Bir `MemoryDomain`, bir çalışma alanı içinde olguları ve politikaları gruplar.
+Bilgi alanları bilgiye kurumsal bir yapı kazandırır ve erişim yetkilerinin
+üzerine yazıldığı birimdir — ancak bir bilgi alanını gizlilik sınırı olarak ele
+almadan önce aşağıdaki uyarıya bakın.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Bir bilgi alanı ya çalışma alanı genelindedir (`architecture`) ya da tek bir
+depoya kapsamlanmıştır (`repo:<slug>/architecture`). İki kapsamdaki aynı ad iki
+bağımsız depodur: bir kod tabanı için doğru olan bir olgu, çalışma alanı
+genelindekinin üzerine yazmaz. `search_memory` ve gönderim önsözü, ajan o depoda
+çalışırken depo kapsamlı belleği öne alır; geri kalanı dışlamaz. Bu kapsamı
+yazmak veya güçlendirmek için `propose_fact` / `propose_policy` / `search_memory`
+üzerinde `repo` parametresini geçin.
 
-## Access control is fail-open for reads
+## Erişim denetimi okumalarda hata durumunda izin verir
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant`, bir ajan rolünü ve bir bilgi alanını üç izin düzeyinden
+birine eşler:
 
-| Permission | Meaning                                                                                          |
+| İzin       | Anlamı                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| `none`     | Erişim yok                                                                                       |
+| `read`     | Olguları arayabilir ve getirebilir                                                               |
+| `write`    | `propose_policy` tarafından gerekli kılınır. Olgu yazmaları (`propose_fact`, `supersede_fact`) yetkiye bağlı değildir |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Yetki kaydı yoksa okuma izni verilir, ret değil]
+Bir `(role, domain)` çifti için yetki satırı yoksa geçerli izin **`read`**
+olur. Okumalar tasarım gereği hata durumunda izin verir. Hata fırlatan tek
+yazma, `write` izni olmadan yapılan `propose_policy` işlemidir
+(`InsufficientMemoryPermission`). Hassas içeriği bir bilgi alanına koymak,
+görmemesi gereken her rol için açıkça bir `none` yetkisi yazmadığınız sürece
+onu kimin okuyabileceğini kısıtlamaz.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Ayrıca üründe bugün itibarıyla yetkiler için hiçbir arayüz yok. Bellek
+ekranında Olgular, Politikalar ve Bilgi grafiği sekmeleri vardır, başka bir
+şey yok; yetkilere yalnızca `memory_access_grant.*` RPC işlemleri üzerinden
+ulaşılır.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Bu asimetri — okumalarda yumuşak, politika yazmalarında katı — bilinçli bir
+tercihtir. Bellek, dolaşımda olduğunda en faydalıdır ve bir okuma reddi, sorun
+bildiren bir ajan yerine sessizce daha az bilen bir ajan üretir. Buna karşılık
+bir politika yazma reddi ses getirir ve düzeltilebilir; bu yüzden zorlama orada
+durur. Yeni oluşturulan bir bilgi alanı her rol için `write` iznini tohumlar;
+sonradan sıkılaştırmak RPC ile yapılan bir düzenlemedir, çünkü yetkiler için bir
+arayüz yok.
 
-## Working memory
+## Çalışma belleği
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Her ajanın bir `AgentWorkingMemory` alanı vardır: çalışma alanına ve ajana göre
+anahtarlanmış serbest metinli bir karalama defteri. Çalıştırmalar boyunca kalır,
+o ajana özeldir ve her gönderimde istemine enjekte edilir. "Kimlik doğrulamayı
+yeniden düzenlemenin yarısındaydım" bilgisinin yaşadığı yerdir — bir sonraki
+çalıştırmaya taşınmaya değer ama kalıcı bir olguya terfi ettirilmeye değmez
+durum.
 
-## What actually reaches an agent's prompt
+## Bir ajanın istemine gerçekte ne ulaşır
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Gönderim sırasında bellek önsözü tam olarak üç şeyden oluşturulur:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- `- [domain] rule` satırları olarak **çalışma alanındaki etkin her politika**.
+- **Ajanın kendi çalışma belleği**, birebir.
+- Bu görev için **anahtar sözcükle eşleşen kısa bir olgu listesi** — en fazla
+  beş olgu, yaklaşık 1.200 karakterlik bir bütçe içinde ve yalnızca görev
+  açıklaması en az 20 karakter uzunluğundaysa. Daha kısa görevler hiç olgu
+  almaz.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Kısa liste yalnızca FTS/anahtar sözcük tabanlıdır ve kasıtlı olarak
+sınırlandırılmıştır. Bir sorguyu gömmek yavaştır ve gönderim yolu, gecikmenin
+anında görünür olduğu tek yerdir; bu yüzden yavaş anlamsal yol oradan bilinçli
+olarak uzak tutulur. Önsöz, ajanın yük taşıyan öğeleri `search_memory` ile
+doğrulamasını söyleyerek kapanır; tam geri çağırma modelinin yaşadığı yer
+orasıdır.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Bu yolda hiçbir erişim yetkisine bakılmaz. Kısa listenin bulduğu şey, ajanın
+gördüğü şeydir.
 
-## Recall: one query, four voices
+## Geri çağırma: tek sorgu, dört ses
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Ajana sunulan `search_memory` aracının üç modu vardır ve bunlar gerçekten farklı
+aramalardır:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — yalnızca FTS5.
+- **`semantic`** — BM25 ve vektör sonuçları karşılıklı sıra birleştirmesiyle
+  kaynaştırılır.
+- **`hybrid`** (varsayılan) — çok sesli geri çağırma: dört sıralı ses
+  birleştirilir, ardından çeşitlendirilir.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Dört ses sözlüksel (FTS), anlamsal (vektör KNN), zamansal (yakın tarihli etkin
+olgular) ve grafiktir — en güçlü sözlüksel ve anlamsal tohumlardan başlayan iki
+adımlık bir gezinme. Epizodik kenarların var olmasının tek nedeni grafik sesidir:
+sözcüklerinizin hiçbiriyle eşleşmeden yanıtınıza _bağlı olan_ olguyu yüzeye
+çıkarır. Sesler sınıflandırılmış bir sorgu niyetine göre ağırlıklandırılır
+(varsayılan olarak en fazla ağırlığı anlamsal taşır, sonra grafik ve sözlüksel,
+sonra yenilik), her adayın puanı Weibull bozunmasıyla ölçeklenir ve sonuç kümesi
+MMR ile çeşitlendirilir; böylece bir olgunun beş tekrarı dört farklı olgunun
+önünü kesmez.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Model kurulana kadar anlamsal geri çağırma sessizdir]
+Vektör sesi ancak cihaz üzerindeki gömme modeli indirildikten sonra katkıda
+bulunur. O zamana kadar karma geri çağırma üç sesle çalışır ve geriye dönük bir
+doldurma yoktur — model kurulmadan önce yazılan olgular hiçbir zaman vektör
+kazanmaz. SQLite vektör eklentisinin kendisi yüklenemezse vektör yolu daha da
+bozulur ve paketlenmiş gömmeler üzerinde Dart içi bir taramaya düşer; geri
+çağırma yine yanıt verir, yalnızca daha yavaş.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Masaüstü ve web bellek araması ayrı ve daha basit bir yoldur: `memory_fact.search`
+RPC işlemi **yalnızca FTS5** kullanır, çünkü ince bir istemci sorgu gömmesi
+gönderemez ve karma yol ana makinede kalır. Dolayısıyla bellek tarayıcısında
+gördüğünüz sıralama, bir ajanın `search_memory` üzerinden aldığı sıralama
+değildir. Bu beklenen bir durumdur, hata değil; ancak arayüzdeki "aradım ve
+bulamadım" ifadesinin, ajanın da bulamayacağının kanıtı olmadığı anlamına
+gelir.
 
-## Where memory lives and who writes it
+## Bellek nerede durur ve onu kim yazar
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Bellek tarayıcısı **Ayarlar → Çalışma alanı → Bellek**
+(`/workspaces/<id>/settings/memory`) yolundadır; Olgular, Politikalar ve Bilgi
+grafiği sekmelerine sahiptir.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Orada insanları şaşırtan bir asimetri vardır: **belleği düzenleyebilir ve
+silebilirsiniz, ancak oluşturamazsınız.** Ne Olgular sekmesinde ne de
+Politikalar sekmesinde ekleme imkânı vardır. Yazma işi ajan tarafındadır;
+`propose_fact` ve `propose_policy` ile yapılır (değiştirmek için
+`supersede_fact` / `supersede_policy`). `remember`, oturumla sınırlı bir sıcak
+katman öğesi yazar ve `consolidate_memory` bunu daha sonra bir olguya terfi
+ettirebilir; `record_observation` ve `update_my_notes` ise gönderimde enjekte
+edilen özel karalama defterini yazar. Tarayıcı bir inceleme ve düzeltme
+yüzeyidir, yazma yüzeyi değil — yani bellekte bir olgu istiyorsanız, onu oraya
+koymanın yolu bir ajana söylemektir.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+İki bakım işlemi de zamanlanmış değil, ajan tarafından çağrılır:
+`consolidate_memory` birikmiş olguları birleştirir ve ayıklar, `harmonize_memory`
+ise ajanlar arasında ayrışan inançları uzlaştırır. `list_memory_conflicts`
+çakışma algılamasının şimdiye kadar kaydettiklerini gösterir. Bunları sizin için
+zamanlayıcıyla çalıştıran bir şey yoktur. Toplantı kararları, bir toplantı
+kalıcılaştırma adımı bunları kaydettiğinde `decisions` bilgi alanına toplanır;
+bu, tamamlanmış ajan çalıştırmaları üzerinde çalışan bir zamanlayıcı değildir.
 
-## Related concepts
+## İlgili kavramlar
 
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): roles are what grants are written against
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/tr-TR/kilavuz/nasil-yapilir/bellegi-yonetme/): working with memory in practice
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): yetkilerin üzerine yazıldığı şey rollerdir
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): bellek çalışma alanı kapsamlıdır ve o çalışma alanının kendi veritabanı dosyasında yaşar
+- [Çalışma alanı belleğini yönetme](/tr-TR/kilavuz/nasil-yapilir/bellegi-yonetme/): bellekle pratikte çalışmak

@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Добавить репозитории в рабочее пространство
+description: Регистрируйте рабочие копии Git в рабочем пространстве, чтобы агенты могли с ними работать.
 slug: ru-RU/руководство/практические-руководства/добавить-репозитории
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+В этом руководстве показано, как зарегистрировать рабочую копию Git в рабочем пространстве, переиндексировать её и снова удалить.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Репозитории **привязаны к рабочему пространству**. Глобального реестра нет, и отдельного шага привязки тоже: добавить репозиторий и поместить его в рабочее пространство — одно и то же действие. Одна и та же рабочая копия, зарегистрированная в двух рабочих пространствах, становится двумя независимыми строками с разными идентификаторами: за пределами одного рабочего пространства идентичность репозитория определяется путём в файловой системе и никогда — идентификатором.
 
-## Before you start
+## Прежде чем начать
 
-A folder can only be registered if all three of these hold:
+Папку можно зарегистрировать, только если выполняются все три условия:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Она находится внутри **рабочего дерева git**.
+2. В этом рабочем дереве настроен удалённый репозиторий **`origin`**.
+3. Удалённый репозиторий `origin` указывает на **поддерживаемую платформу**: github.com, gitlab.com или bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Во всех остальных случаях регистрация отклоняется с явным сообщением: «Folder is not inside a git work tree.», «No `origin` remote configured for this repository.» или «The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).». Режима «только локально» не существует.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Платформа определяется по удалённому репозиторию и сохраняется в репозитории — вы её никогда не выбираете. В одном рабочем пространстве могут одновременно находиться репозитории со всех трёх платформ, и с каждой взаимодействие идёт через её собственный API с её собственными учётными данными. Вложенные пространства имён GitLab сохраняются, поэтому `gitlab.com/group/subgroup/project` регистрируется с владельцем `group/subgroup` и именем `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Кроме того, папка должна находиться на машине, где работает `cc_server`, внутри одного из каталогов из его `--repo-roots`. По умолчанию этот список разрешённых каталогов — домашний каталог пользователя сервера, а переход выше корневого каталога отклоняется.
 
-## Register a checkout
+## Зарегистрировать рабочую копию
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Откройте **Настройки → Рабочее пространство → Репозитории** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Нажмите **Добавить репозиторий**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+В диалоге открывается браузер по файловой системе **сервера**, а не вашей. На компьютере, в веб-версии и на телефоне это один и тот же сценарий: системный выбор папки указал бы папку не на той машине.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Перейдите в нужное место среди настроенных корневых каталогов сервера. Папки, которые являются рабочими копиями git, помечаются.
+4. Отметьте любое количество папок. Выбор сохраняется при переходах, поэтому можно собрать рабочие копии из нескольких папок.
+5. Зарегистрируйте их одним пакетом.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Одна неудачная отметка никогда не отменяет остальной пакет: вы получаете идентификаторы созданных репозиториев и отдельную ошибку по каждому отклонённому пути. Повторная регистрация пути, который уже есть в этом рабочем пространстве, возвращает существующий репозиторий, а не создаёт дубликат.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Каждый зарегистрированный репозиторий появляется в списке со своим `owner/name`, значком с названием платформы и путём на сервере. У репозиториев GitHub также показывается аватар владельца; у остальных платформ URL аватара владельца не выводится из данных, поэтому вместо него показываются инициалы.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Значок платформы важен в смешанном рабочем пространстве: два репозитория на разных платформах могут называться одинаково — `acme/web`, — а ведут себя по-разному: и в том, что может сделать ревью, и в том, куда ведёт ссылка.
 
-## What happens next
+## Что происходит дальше
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+При регистрации возникает событие `RepoAdded` в рамках этого рабочего пространства, которое запускает конвейер `index_code` для этой рабочей копии. Именно он наполняет граф кода, чтобы поиску и анализу влияния было с чем работать.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ru-RU/руководство/практические-руководства/поиск-кода/).
+Индексируются только файлы, для языка которых есть поставляемая грамматика (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB и Ada). См. [Искать код через граф кода](/ru-RU/руководство/практические-руководства/поиск-кода/).
 
-## Re-index a repo
+## Переиндексировать репозиторий
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+В каждой строке есть кнопка **Индексировать код**. Нажмите её, чтобы заново запустить индексатор для этой рабочей копии; пока он работает, кнопка превращается в индикатор хода выполнения, показывающий число обработанных файлов из общего, с элементом отмены. По завершении он сменяется отметкой с количеством символов или предупреждением, если запуск не удался.
 
-## Reorder repos
+## Изменить порядок репозиториев
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Перетащите маркер в строке. Заданный порядок — это порядок, в котором читаются все списки репозиториев в приложении.
 
-## Fix the GitHub link
+## Исправить ссылку на GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Значок ссылки в строке открывает редактор владельца GitHub и имени репозитория — пригодится, если удалённый репозиторий переименовали или перенесли.
 
-## Remove a repo
+## Удалить репозиторий
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Откройте **Настройки → Рабочее пространство → Репозитории**.
+2. Нажмите значок корзины в строке.
+3. Подтвердите «Удалить репозиторий из рабочего пространства?»
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+В диалоге сказано, что именно произойдёт: «_name_ будет удалён из этого рабочего пространства. Локальные файлы на диске не затрагиваются».
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Удаление убирает строку репозитория из этого рабочего пространства и каскадно удаляет его строки в графе кода — символы, рёбра, файлы и контрольные точки индексации, — а также все права на репозиторий, выданные отдельным участникам, его связи с пространствами и записи об изолированных рабочих копиях. Та же рабочая копия, зарегистрированная в другом рабочем пространстве, — независимая строка, и удаление её не затрагивает. Рабочие деревья на диске, на которые указывали эти записи, при удалении не сносятся.
 
-## Related guides
+## Связанные руководства
 
-- [Search code with the code graph](/ru-RU/руководство/практические-руководства/поиск-кода/)
-- [Run agents in parallel](/ru-RU/руководство/практические-руководства/параллельные-агенты/)
-- [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
-- [Your first workspace](/ru-RU/руководство/учебники/первое-рабочее-пространство/)
+- [Искать код через граф кода](/ru-RU/руководство/практические-руководства/поиск-кода/)
+- [Запускать агентов параллельно](/ru-RU/руководство/практические-руководства/параллельные-агенты/)
+- [Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/)
+- [Ваше первое рабочее пространство](/ru-RU/руководство/учебники/первое-рабочее-пространство/)
 
-## Related concepts
+## Связанные понятия
 
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/)
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/)

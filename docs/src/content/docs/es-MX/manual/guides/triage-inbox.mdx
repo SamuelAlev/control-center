@@ -1,164 +1,182 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: "Clasificar tu bandeja de entrada"
+description: "Trabaja con la bandeja de entrada unificada: despeja lo que te bloquea, revisa lo que te espera y sigue tus propias PR."
 slug: es-MX/manual/guias/clasificar-bandeja-de-entrada
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Esta guía te muestra cómo trabajar con la bandeja de entrada: la superficie que
+reúne en un solo lugar todo lo que te bloquea o te pide explícitamente a ti —
+aprobaciones de agentes pendientes, sincronizaciones de tickets fallidas y cada
+pull request en la que participas como revisor o autor.
 
-## Open the inbox
+## Abre la bandeja de entrada
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Haz clic en **Bandeja de entrada** en la barra lateral. Su insignia cuenta
+   las aprobaciones de agentes pendientes, las sincronizaciones fallidas y las
+   PR abiertas que esperan tu revisión.
+2. O presiona <kbd>⌘K</kbd> y ejecuta el comando de navegación **Bandeja de
+   entrada**.
+3. O abre directamente un enlace profundo a
+   `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+La entrada de la barra lateral siempre muestra el conteo en vivo, así que puedes
+ver cómo se acumula el trabajo de clasificación sin abrir la página.
 
-## Read severity at a glance
+## Lee la severidad de un vistazo
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Recorre de arriba a abajo; la bandeja de entrada ya está ordenada por urgencia:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. La franja fijada **Requiere tu atención** está encima de las secciones de PR.
+   Cada tarjeta lleva un chip de severidad. Las fuentes registradas (un agente
+   atascado en una solicitud de confirmación, una sincronización de tickets cuyo
+   espejo del proveedor está desactualizado) emiten **Bloqueado**.
+2. Dentro de la franja, la severidad más urgente va primero; en caso de empate,
+   gana el elemento que lleva más tiempo esperando.
+3. Debajo de la franja, las PR se agrupan en secciones fijas del ciclo de vida
+   de revisión — **Esperan tu revisión**, **Devueltas a ti**, **Aprobadas**,
+   **Borradores**, **Esperando revisores**, **Fusionándose y fusionadas
+   recientemente**, **Esperando al autor**. Las secciones de arriba son lo que
+   te necesita _a ti_; el resto es donde están _tus_ PR. **Esperan tu revisión**
+   incluye las PR que aún solicitan un equipo al que perteneces en los hosts que
+   los tienen (GitHub quita el equipo en cuanto algún compañero revisa).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Un elemento solo llega a la bandeja de entrada cuando bloquea algo o te solicita
+explícitamente. Una franja vacía más una lista de secciones vacía muestra
+**Estás al día** solo cuando ese vacío es confiable.
 
-## One inbox across every forge
+## Una sola bandeja de entrada en todos los hosts de código
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Si el espacio de trabajo tiene repos en más de un host de código, la bandeja de
+entrada los fusiona en un solo flujo: una pull request de GitHub y una de
+Bitbucket quedan en la misma sección, ordenadas por hora en lugar de agruparse
+por proveedor. El metadato `repo #number` de la fila es lo que permite
+distinguirlas.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+«Tuyo» se resuelve **por host**, porque eres una cuenta distinta en cada uno. Una
+pull request solo cuenta como tuya, o como que solicita tu revisión, cuando
+coincide con tu identidad en el host donde realmente vive ese repo.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Un host caído o no conectado no aporta nada y deja intacto el resto de la
+bandeja de entrada: una conexión rota nunca vacía toda la lista. El estado vacío
+nombra una salvedad en lugar de **Estás al día** cuando todavía no se resuelve el
+inicio de sesión en ningún host (**No se pudo confirmar tu cuenta de GitHub** —
+el texto sigue nombrando a GitHub), cuando githubstatus.com reporta un incidente,
+o cuando está suspendida una instalación de GitHub App que cubre repos
+vinculados.
 
-## Clear the attention strip
+## Despeja la franja de atención
 
-Each strip card has one next action:
+Cada tarjeta de la franja tiene una sola acción siguiente:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/es-MX/manual/guias/chatear-con-agente/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Si una tarjeta es una confirmación pendiente de un agente, haz clic en
+   **Revisar**: llegas al espacio de ese agente con su confirmación pendiente.
+   Aprueba o rechaza ahí (consulta
+   [Chatear con un agente](/es-MX/manual/guias/chatear-con-agente/)).
+2. Si una tarjeta dice **Error de sincronización** de un proveedor, haz clic en
+   **Abrir**: llegas a **Ajustes → Espacio de trabajo → General**, cuya tarjeta
+   **Estado de sincronización** muestra la última sincronización de cada
+   conexión, su racha de fallas consecutivas y su resultado más reciente. En la
+   bandeja de entrada solo aparece la última falla de cada proveedor, así que una
+   sincronización recuperada limpia la tarjeta.
+3. Las tarjetas desaparecen solas una vez que se resuelve el estado subyacente
+   (se responde al agente, se recupera la sincronización): no hay nada que
+   descartar manualmente.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Estas son confirmaciones por turno, no aprobaciones de gobernanza]
+Una tarjeta de «aprobación de agente» es un agente en ejecución que se detiene a
+pedir permiso para una acción, en su propia conversación. Es algo distinto del
+registro `Approval` de gobernanza que los agentes crean con las herramientas MCP
+de aprobación: esos no tienen ninguna pantalla humana en la app y nunca aparecen
+aquí.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[El estado de sincronización es de solo lectura]
+La tarjeta informa sobre las conexiones de sincronización de tickets; aparte de
+un botón **Sincronizar**, no puede crear, editar ni reconectar ninguna, y no hay
+otra pantalla que pueda hacerlo tampoco. Sin ninguna conexión configurada,
+simplemente dice «Aún no hay conexiones de sincronización», que es lo que muestra
+un espacio de trabajo recién creado.
 :::
 
-## Filter to what is blocking
+## Filtra hasta lo que te bloquea
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Presiona <kbd>f</kbd> (sin ningún campo de texto enfocado) para abrir el menú
+   de filtros, o haz clic en el botón de filtro de la barra de herramientas.
+2. Elige cualquier combinación de estado, autor, revisores, contenido,
+   propietario/nombre del repo, ventanas de fechas o que sea rápida de revisar.
+   Los conteos de facetas del menú muestran cuántos elementos de la bandeja
+   coinciden con cada opción.
+3. Los filtros activos aparecen como chips en la barra sobre la lista; haz clic
+   en la ✕ de un chip para quitar ese criterio.
+4. Usa el riel izquierdo para saltar entre secciones: cada entrada muestra su
+   conteo en vivo y el resaltado sigue tu posición de desplazamiento. Haz clic en
+   el encabezado de una sección para contraer las secciones que no clasificas
+   (por ejemplo, **Borradores** mientras despejas revisiones).
+5. Haz clic en el encabezado de una columna (título, cambios o actualizado) para
+   ordenar todas las secciones; haz clic otra vez en la columna activa para
+   invertir la dirección. El botón de opciones de visualización controla la
+   visibilidad de borradores, la ventana de fusionadas recientemente, las
+   propiedades de fila, el orden y la agrupación (solo agrupar por autor cambia
+   el diseño de la bandeja de entrada).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Los filtros de aquí son independientes de la cola de PR: acotar la bandeja de
+entrada nunca cambia los filtros de la cola, y viceversa.
 
-## Act on a PR item
+## Actúa sobre un elemento de PR
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/es-MX/manual/guias/revisar-y-fusionar-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/es-MX/manual/guias/despachar-revisores/) and
-   [the dispatch lifecycle](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/).
+1. Haz clic en cualquier fila para abrir la página de detalle de la PR.
+2. Si la PR está en **Esperan tu revisión**, revísala y envía tu decisión;
+   consulta [Revisar y fusionar una PR](/es-MX/manual/guias/revisar-y-fusionar-pr/).
+3. Si la PR está en **Devueltas a ti** (se solicitaron cambios o falló la CI),
+   sube las correcciones desde tu checkout o delega el seguimiento a un agente.
+4. Si la PR está en **Aprobadas**, fusíonala desde la página de detalle.
+5. Si prefieres delegar una revisión en lugar de hacerla tú, consulta
+   [Despachar revisores](/es-MX/manual/guias/despachar-revisores/) y
+   [el ciclo de vida del despacho](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Cuando cambia el estado subyacente (tu revisión llega, la PR se fusiona), el
+clasificador vuelve a colocar la PR en su nueva sección automáticamente.
 
-## Undo a mistaken action
+## Deshaz una acción equivocada
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Presiona <kbd>⌘Z</kbd> para deshacer la última acción y <kbd>⌘⇧Z</kbd> para
+   rehacerla.
+2. Si hay un campo de texto enfocado, ⌘Z edita el texto del campo en su lugar:
+   haz clic fuera del campo primero para deshacer una acción de la app.
 
-## Look up shortcuts in place
+## Consulta los atajos sin salir de la página
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/es-MX/manual/referencia/atajos-de-teclado/).
+Presiona <kbd>?</kbd> (sin ningún campo de texto enfocado) para abrir la hoja de
+referencia de atajos de teclado. Enlista todos los atajos activos en la ruta
+actual, incluido el atajo de filtro <kbd>f</kbd> de la bandeja de entrada. El
+mapa completo está en la
+[referencia de atajos de teclado](/es-MX/manual/referencia/atajos-de-teclado/).
 
-## Drive it from the command palette
+## Contrólala desde la paleta de comandos
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Presiona <kbd>⌘K</kbd> en cualquier lugar para abrir la paleta de comandos.
+2. Escribe **Bandeja de entrada** para saltar a la página, o escribe el título
+   de una PR: la paleta lista las pull requests que coinciden y abre la que
+   elijas.
+3. Mientras la bandeja de entrada está abierta, ejecuta **Copiar enlace de esta
+   página** para copiar esa URL y compartirla. El comando copia la ruta actual,
+   así que es la URL de la bandeja de entrada solo cuando estás en esta página.
 
-## Refresh on demand
+## Actualiza a petición
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+La bandeja de entrada se actualiza en vivo, pero si sospechas que los datos están
+desactualizados, haz clic en el control de actualización de la barra de
+herramientas: fuerza un barrido inmediato en el servidor de cada host conectado y
+vuelve a obtener las capas de fusionadas/revisadas. El icono gira hasta que se
+completa cada solicitud.
 
-## Related guides
+## Guías relacionadas
 
-- [Review and merge a PR](/es-MX/manual/guias/revisar-y-fusionar-pr/)
-- [Chat with an agent](/es-MX/manual/guias/chatear-con-agente/)
-- [Dispatch reviewers](/es-MX/manual/guias/despachar-revisores/)
+- [Revisar y fusionar una PR](/es-MX/manual/guias/revisar-y-fusionar-pr/)
+- [Chatear con un agente](/es-MX/manual/guias/chatear-con-agente/)
+- [Despachar revisores](/es-MX/manual/guias/despachar-revisores/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Dispatch lifecycle](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/)
+- [Ciclo de vida del despacho](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/)

@@ -1,34 +1,34 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Linear 통합 설정
+description: 에이전트가 Linear를 호출할 수 있도록 서버에 Linear API 키를 저장하고, 새 티켓의 티켓팅 공급업체로 Linear를 선택합니다.
 slug: ko-KR/매뉴얼/사용-가이드/linear-통합
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/).
+forge를 연결할 때와 같은 방식으로, 내 사용자 id에 연결되도록 서버에 Linear API
+키를 붙여 넣습니다. 티켓, 프로젝트, 링크, 협업자, 위임, 배정은 모두 외부 서비스
+없이 Control Center 자체 데이터베이스에서 작동합니다 —
+[티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)를 참고하세요.
 
-## Store your Linear key
+## Linear 키 저장
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**티켓팅 API 키**는 **설정 → 워크스페이스 → 일반**의 티켓팅 카드에 있습니다. 이
+키는 내 사용자 id에 연결되어 서버에 저장됩니다. 무인 작업을 위한 서버 자체 키는
+`LINEAR_API_KEY` 또는 **프로바이더 앱** 카드에서 오며, 해당 에이전트에 **티켓팅 API
+호출 허용** 권한이 있을 때만 `TICKETING_API_KEY`로 주입됩니다.
 
-## Stamp new tickets as Linear
+## 새 티켓을 Linear로 표시
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**티켓팅 제공자**(온보딩의 첫 단계 및 `/workspaces/<workspaceId>/api-keys`)는
+`local`과 `linear`를 제공합니다. `linear`를 선택하면 이후 생성하는 티켓에
+`provider: linear`가 표시됩니다.
 
-## Related guides
+## 관련 가이드
 
-- [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-- [Manage API keys](/ko-KR/매뉴얼/사용-가이드/api-키/)
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [API 키 관리](/ko-KR/매뉴얼/사용-가이드/api-키/)
 
-## Related concepts
+## 관련 개념
 
-- [Tickets and delegation](/ko-KR/매뉴얼/개념/티켓/)
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/)

@@ -1,45 +1,45 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Dùng máy chủ MCP
+description: Trỏ một máy khách MCP bên ngoài vào máy chủ công cụ của Control Center, đặt bearer token và hiểu bề mặt này phơi ra những gì.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Hướng dẫn này chỉ bạn cách kết nối một máy khách MCP bên ngoài — Claude Code, một
+trình soạn thảo, MCP Inspector — với máy chủ công cụ của chính Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center đăng ký **110** công cụ và phục vụ chúng qua Model Context Protocol
+ở phiên bản giao thức `2024-11-05`. Có những họ công cụ bạn có thể mong đợi nhưng
+lại vắng mặt: không có công cụ họp hay lịch, và không có công cụ dự án.
 
-## Find the endpoint
+## Tìm điểm cuối
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Bề mặt MCP dùng chung trình lắng nghe `cc_server` chính. Không có cổng MCP riêng.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| Điểm cuối | Phương thức | Mục đích                                                 |
+| --------- | ----------- | -------------------------------------------------------- |
+| `/mcp`    | `POST`      | Transport Streamable HTTP — đây là thứ mà máy khách nói  |
+| `/mcp`    | `DELETE`    | Kết thúc một phiên                                        |
+| `/sse`    | `GET`       | Luồng thông báo server-sent                               |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Vậy một bản cài đặt cục bộ mặc định nằm tại `http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Vào **Cài đặt → Máy chủ → Máy chủ MCP**
+2. Đọc thẻ **Máy chủ MCP** — thẻ này cho biết đang chạy hay đã dừng và cổng mà nó
+   đang lắng nghe
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Bề mặt này mặc định bật trên một bản cài đặt mới, nên một máy khách loopback hoạt
+động mà không phải chỉnh gì trong cài đặt. **Khởi động khi mở ứng dụng** quyết định
+liệu nó có trở lại sau khi khởi động lại hay không; **Bắt đầu** / **Dừng** là các
+điều khiển theo phiên, không làm thay đổi tùy chọn đó.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Máy chủ mặc định bind loopback, nên điểm cuối chỉ với tới được từ máy đang chạy
+`cc_server`, trừ khi bạn khởi động nó với `--bind any`.
 
-## Connect a client
+## Kết nối một máy khách
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Trỏ máy khách của bạn vào điểm cuối Streamable HTTP. Hình dạng cấu hình cụ thể là
+việc của máy khách; URL thì giống nhau trong cả hai cách.
 
 ```json
 {
@@ -54,41 +54,43 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code sẽ không nhận cấu hình này từ tệp `.mcp.json` của dự án — nó chặn các
+máy chủ MCP theo phạm vi dự án sau một lời nhắc phê duyệt mà lệnh `claude -p` phi
+tương tác không bao giờ trả lời. Hãy truyền cấu hình một cách tường minh:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` khiến Claude chỉ dùng tệp đó, nên cùng một máy chủ không bị
+phát hiện thêm từ dự án rồi đăng ký hai lần.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Điểm kiểm tra: yêu cầu máy khách liệt kê các công cụ của nó. Bạn sẽ thấy các mục
+`mcp__*` bao gồm phiếu, space, bộ nhớ, đồ thị mã và đánh giá.
 
-## Serve MCP beyond the host
+## Phục vụ MCP ngoài máy chủ nhà
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. Trong **Cài đặt → Máy chủ → Máy chủ MCP**, ở hàng **Token xác thực**, nhấn
+   **Đặt** rồi dán một token
+2. Gửi token dưới dạng `Authorization: Bearer <token>` trong mọi yêu cầu `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Một bề mặt không token sẽ từ chối mọi lời gọi không phải loopback bằng mã 403. Đó
+là thiết kế fail-closed: token chính là thứ khiến việc phục vụ ngoài máy chủ nhà trở
+nên khả thi ngay từ đầu.
 
-Token changes apply to the live surface immediately — no restart.
+Thay đổi token áp dụng tức thì cho bề mặt đang chạy — không cần khởi động lại.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` nhận token trong chuỗi truy vấn]
+Luồng thông báo cũng được kiểm tra token như mọi tuyến khác, nhưng `EventSource`
+của trình duyệt không thể gửi header `Authorization` — nên `/sse` cũng chấp nhận
+token dưới dạng `?token=<token>`. Không có token thì nó trả lời 401.
 :::
 
-## Scope every call to a workspace
+## Giới hạn mọi lời gọi trong một không gian làm việc
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Mọi công cụ chạm đến dữ liệu theo phạm vi không gian làm việc đều yêu cầu
+`workspace_id`, và một lời gọi thiếu nó sẽ bị từ chối thay vì được phân giải dựa
+vào một không gian làm việc "hiện tại" nào đó:
 
 ```json
 {
@@ -98,56 +100,58 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Id chính là id trong URL trình duyệt hoặc ứng dụng của bạn:
+`/workspaces/<workspace_id>/…`. Ngoại lệ duy nhất là những công cụ thực sự trải
+khắp các không gian làm việc, chẳng hạn `list_workspaces` và các công cụ bảng tin
+— bảng tin là theo từng người dùng và một agent không có người dùng riêng, nên
+những công cụ đó thao tác trên bảng tin của chủ máy chủ.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Các công cụ theo phạm vi kho mã còn kiểm tra thêm rằng kho đó được liên kết với
+không gian làm việc ấy.
 
-## Know what the surface will refuse
+## Biết bề mặt sẽ từ chối những gì
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Chặn theo chế độ.** Một lời gọi được phân giải theo chế độ của space chứa agent
+  đang gọi, ở phía máy chủ. Một agent trong chế độ chỉ đọc không thể với tới công
+  cụ ghi bằng cách bỏ `space_id` — thay vào đó, chế độ được tra từ lượt chạy đang
+  hoạt động của nó.
+- **Rào chắn hành động.** Các công cụ biến đổi khai báo lớp hiệu ứng của mình và đi
+  qua đúng chính sách mà phần còn lại của sản phẩm dùng. Xem
+  [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/).
+- **Xác nhận.** Một số công cụ phá hủy tạo ra một payload xác nhận phải được phê
+  duyệt trước khi lời gọi tiếp tục.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Toàn bộ danh mục được quảng bá trong `tools/list` mà không có chặn khám phá — một
+máy khách MCP bên ngoài từ chối gọi công cụ không nằm trong danh sách đã lưu của
+nó, nên việc ẩn công cụ làm chúng hỏng chứ không phải dọn dẹp chúng.
 
-## Troubleshooting
+## Khắc phục sự cố
 
-### The client sees no tools
+### Máy khách không thấy công cụ nào
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Kiểm tra thẻ **Máy chủ MCP** báo đang chạy
+- Kiểm tra cổng khớp với cổng `cc_server` của bạn
+- Trên Claude Code, kiểm tra bạn đã truyền `--mcp-config` và `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### Lỗi 403 từ một máy không phải máy chủ
 
-No bearer token is configured. Set one and send it.
+Chưa cấu hình bearer token. Hãy đặt một token và gửi nó.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Một lời gọi công cụ thất bại với "Missing or invalid argument: workspace_id"
 
-Add `workspace_id`. There is no implicit workspace.
+Thêm `workspace_id`. Không có không gian làm việc ngầm định.
 
-### A tool call is refused as unknown
+### Một lời gọi công cụ bị từ chối là không rõ
 
-[MCP tools](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[Công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/) liệt kê danh mục. Hãy gọi tên
+đúng chính xác như nó xuất hiện ở đó.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [MCP tools](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/)
-- [Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/)
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
+- [Công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/)
+- [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/)
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/)
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/)

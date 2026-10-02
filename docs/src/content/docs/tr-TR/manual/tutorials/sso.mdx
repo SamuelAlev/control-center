@@ -1,125 +1,131 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Ekibinizi SSO ile oturum açtırın
+description: Okta'yı (SAML) Control Center sunucunuza bağlayın ve baştan sona bir oturum açma gerçekleştirin.
 slug: tr-TR/kilavuz/ogreticiler/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Neler oluşturacaksınız
 
-By the end of this tutorial, you will have:
+Bu öğreticinin sonunda şunlara sahip olacaksınız:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- Control Center sunucunuz ile bir kimlik sağlayıcı arasında bir SAML
+  bağlantısı (örnek olarak Okta'yı kullanıyoruz),
+- ilk girişinde otomatik olarak sağlanan bir kullanıcı ve
+- bilinçli olarak seçtiğiniz bir çalışma alanı üyelik ilkesi.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Yönettiğiniz bir sunucuya (**sunucu sahibi** — kurulumun işletmecisi) ve
+yapılandırabileceğiniz bir IdP uygulamasına ihtiyacınız olacak. 20 dakika
+ayırın.
 
-## 1. Open the single sign-on settings
+## 1. Tek oturum açma ayarlarını açın
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Control Center'a giriş yapın, ardından
+**Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin. Ekran **SAML** ile
+**OpenID Connect** arasında geçiş yapar ve ayrıca bir **Kullanıcı sağlama
+(SCIM)** kartı içerir. SAML'de kalın.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Bu ekrandaki her şey sunucu genelindedir: tek bir IdP her çalışma alanındaki
+kişilerin kimliğini doğrular, dolayısıyla bunu yalnızca sunucu sahibi
+düzenleyebilir.
 
-## 2. Paste the IdP metadata
+## 2. IdP metadata'sını yapıştırın
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Okta'da uygulamanızın **Sign On** sekmesini açın ve metadata XML'ini kopyalayın
+(ya da indirip dosyanın içeriğini yapıştırın). Control Center'a dönün, bunu
+**IdP metadata XML** alanına yapıştırın ve **Bağlantıyı dene**'ye basın.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Bildirim, IdP'nin oturum açma uç noktasını bildirir — bu, metadata'nın
+ayrıştırıldığının, sertifikanın okunduğunun ve sunucunun buna karşı bir oturum
+açma isteği oluşturabildiğinin kanıtıdır (test, tarayıcı gidiş-dönüşü dışındaki
+her şeyi çalıştırır). Başarısız olursa, XML tam bir `EntityDescriptor` değildi
+(Okta'daki SAML sekmesi buna "Metadata URL" der; URL'yi açın ve sunduğu içeriği
+kopyalayın). **OpenID Connect** üzerindeki aynı düğme ise bunun yerine
+sağlayıcınızın discovery belgesini denetler. Süresi dolmak üzere olan bir
+sertifikayı da yakalamak ve IdP'nin Control Center'ı tanıyıp tanımadığını
+görmek için
+[6. adımdaki denetleyiciyi](#6-bu-sayfadan-denetleyin) kullanın.
 
-## 3. Register Control Center at the IdP
+## 3. Control Center'ı IdP'ye kaydedin
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+**SP metadata'sını kopyala**'ya basın ve Okta tarafını yapılandıran kişiye verin
+(ya da isteyecekleri iki değeri okuyun):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+URL'ler, kullanıcılarınızın tarayıcılarının ulaştığı origin'den türetilir.
+Sunucu bir tünel veya ters proxy arkasında çalışıyorsa origin'in sabit olduğundan
+emin olun (Ayarlar → Sunucu → Bağlantı ve durum → Bu sunucuyu paylaş herkese açık
+URL'yi gösterir) — ya da varlık kimliğini **SP entity ID** alanında açıkça
+sabitleyin.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[NAT arkasında mı?]
+SAML oturum açma **herkese açık bir IP veya alan adı gerektirmez**: IdP
+sunucunuza asla bağlanmaz — gidiş-dönüşü kullanıcının tarayıcısı taşır, bu
+yüzden localhost, LAN, VPN, Tailscale veya bir tünel, hepsi çalışır. Akılda
+tutulacak iki şey:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/tr-TR/kilavuz/nasil-yapilir/sso-scim)).
+- tarayıcının kullandığı origin, IdP'de kayıtlı ACS URL / varlık kimliğiyle
+  **eşleşmelidir** (kullanıcılar sunucuya birden fazla origin üzerinden
+  ulaşıyorsa varlık kimliğini sabitleyin),
+- **SCIM sağlama istisnadır** — IdP doğrudan sunucunuzu çağırır, bu yüzden bir
+  tünele veya herkese açık bir URL'ye ihtiyaç duyar
+  ([SCIM ile kullanıcı sağlama](/tr-TR/kilavuz/nasil-yapilir/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Bir oturum açmanın ne verdiğini seçin
 
-Two policies decide what a first login does:
+İlk oturum açmanın ne yapacağına iki ilke karar verir:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Kullanıcıları ilk girişte her çalışma alanına ekle** — SSO'nun güven
+  anlamına geldiği tek ekipli kurulumlar için açık bırakın. Sunucuyu birkaç
+  ekip veya müşteri paylaşıyorsa kapatın: o zaman her yeni gelen açık bir
+  çalışma alanı daveti gerektirir ve bu daha güvenli varsayılandır.
+- **Bilinmeyen kullanıcıları ilk girişte sağla** — varsayılan olarak açıktır;
+  hesabı zaten var olmayan herkesi reddetmek için kapatın.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+İsteğe bağlı olarak grup adlarını taşıyan bir özniteliği eşleyin (Okta'da bu
+genellikle `groups` olur) ve grupları bu eşlemeyle rollere dönüştürün — örneğin
+`{"platform-leads": "admin"}`. SSO sahip rolünü asla veremez.
 
-## 5. Enable and take a login
+## 5. Etkinleştirin ve bir oturum açma gerçekleştirin
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+**Oturum açmak için SAML kullan** seçeneğini açın, **Bağlantıyı kaydet**'e
+basın, ardından `https://<your-server>/saml/login` adresinde gizli bir tarayıcı
+penceresi açın. Okta'da oturum açın ve web istemcisine geri dönersiniz — oturum
+açmış olarak, hesabınız oluşturulmuş ve üyeliği seçtiğiniz ilkeye göre verilmiş
+şekilde.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Sunucu adresini yazdığınız anda web bağlanma ekranında da aynı giriş noktası
+belirir (**SAML ile oturum aç**) — form, sunucunun sunduğuna uyum sağlar
+(OpenID Connect, **OpenID Connect ile oturum aç** gösterir). Düğme, oturum
+açmayı **yeni bir sekmede** açar; gidiş-dönüş tamamlandığında bekleyen sekme
+oturumu otomatik olarak devralır. Masaüstü sunucu kurulum ekranı da aynısını
+yapar: sunucu URL'sini yazın, tarayıcınızı açan bir **SAML ile oturum aç**
+düğmesi belirir ve gidiş-dönüş tamamlandığında uygulama oturum açar.
 
-## 6. Check it from this page
+## 6. Bu sayfadan denetleyin
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+SSO'yu devreye almadan önce ya da bir oturum açma başarısız olduğunda parçaları
+buradan denetleyin. Denetleyici tamamen tarayıcınızda çalışır: bu sekmede
+yapıştırdığınız metadata'yı okur ve sunucuyla aynı kuralları uygular. Sunucu
+adresinizi verdiğinizde, o sunucuya SAML oturum açmanın açık olup olmadığını da
+sorar.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Uygulamadaki **Bağlantıyı dene**'nin göremediğini yakalar: süresi dolmak üzere
+olan bir imzalama sertifikası, imzalı isteklerde ısrar eden bir IdP ve test
+oturum açmasıyla birlikte IdP'nin Control Center'ı tanıyıp tanımadığını.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Bundan sonra nereye gidilir
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/tr-TR/kilavuz/nasil-yapilir/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/tr-TR/kilavuz/nasil-yapilir/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/tr-TR/kilavuz/kavramlar/tek-oturum-acma).
+- IdP'nize yaşam döngüsü denetimi de verin:
+  [SCIM ile kullanıcıları sağlayın ve sağlamayı kaldırın](/tr-TR/kilavuz/nasil-yapilir/sso-scim).
+- IdP'niz SAML yerine OpenID Connect mi konuşuyor?
+  [Bir OpenID Connect sağlayıcısı bağlayın](/tr-TR/kilavuz/nasil-yapilir/sso-oidc).
+- Tarayıcı gidiş-dönüşünün gerçekte neyi doğruladığını mı merak ediyorsunuz?
+  [Tek oturum açma nasıl çalışır](/tr-TR/kilavuz/kavramlar/tek-oturum-acma).

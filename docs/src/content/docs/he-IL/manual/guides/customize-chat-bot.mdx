@@ -1,98 +1,91 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: התאמת בוט הצ'אט
+description: שנו את שם הבוט, את מה שהוא מספר על עצמו, או את פקודת הסלאש שלו — מתוך Control Center.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+המדריך הזה מראה איך לעצב מחדש את אפליקציית הבוט בצד הספק בלי לצאת מ-Control Center.
 
-## Prerequisites
+## דרישות מקדימות
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- התפקיד `owner` או `admin` בסביבת העבודה
+- ספק **מחובר**. שורת **התאמת הבוט** מופיעה רק אחרי שסביבת העבודה מחוברת
+- אפליקציה ש-Control Center יכול לנהל. ב-Slack זה אומר שהחיבור מחזיק אסימון רענון של תצורת האפליקציה (`xoxe-…`); אם אין כזה, השורה אומרת זאת ונשארת מושבתת
 
-## What you can change
+## מה אפשר לשנות
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| שדה              | משמעות                                        | מגבלה                                       |
+| ---------------- | --------------------------------------------- | ------------------------------------------- |
+| **שם האפליקציה** | איך הספק מציג את האפליקציה ברשימה             | 1–35 תווים                                   |
+| **שם הבוט (מה שחברים מקלידים אחרי @)** | מה שחברים מקלידים אחרי `@`   | 1–80 תווים                                   |
+| **תיאור קצר**    | שורה אחת שהספק מציג                           | עד 140 תווים                                 |
+| **מה הבוט אומר שהוא יודע לעשות** | מוצג מעל הודעה ישירה עם הבוט    | עד 300 תווים                                 |
+| **פקודת סלאש**   | הפקודה שחברים מפעילים, בלי הלוכסן              | אותיות קטנות, רק `a–z 0–9 _ -`, נחתך ב-32 תווים |
+| **הודעות ישירות** | האם הבוט חושף את חוויית ההודעות הישירות והסוכן | דלוק או כבוי                                |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center מאמת את ארבעת שדות הטקסט לפני שהוא קורא לספק, כך שאתם מקבלים "the app name must be between 1 and 35 characters" במקום `invalid_manifest` אטום משרת שאינכם רואים. הפקודה אינה נדחית אלא מנורמלת: לוכסן מוביל מוסר, השאר הופך לאותיות קטנות, כל מה שמחוץ ל-`a–z 0–9 _ -` נזרק, ותוצאה ריקה נופלת חזרה ל-`cc`.
 
-## Edit the bot
+## עריכת הבוט
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. עברו אל **הגדרות ← סביבת עבודה ← כללי** וגללו לכרטיס **גשרי צ'אט**
+2. בחסימת הספק, לחצו על **התאמת הבוט**
+3. תיבת הדו־שיח נפתחת על הערכים _החיים_ של האפליקציה, שנקראו חזרה מהספק — כך שאתם מתחילים משינוי שמישהו עשה בממשק של Slack עצמו
+4. ערכו את מה שצריך ושמרו
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+קריאת הערכים החיים האלה כרוכה בסבב אסימון בצד של Slack, ולכן השורה דורשת לחיצה מכוונת ולא משהו שהדף עושה בטעינה.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+הכתיבה מלבישה את השינויים שלכם על ההגדרה הנוכחית של האפליקציה. כל מה ש-Control Center אינו ממדל — פקודת סלאש שנייה שהוספתם ב-Slack, שלב בתהליך עבודה, הגדרה לא קשורה — נשאר ללא שינוי. ההיקפים והאירועים ממוזגים פנימה, ולעולם אינם נגרעים.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+אחרי השמירה, Control Center קורא מחדש את זהות הבוט כדי שהשם בהגדרות יתאים לשם באפליקציית הצ'אט.
 
-## Reinstall when permissions change
+## התקנה מחדש כשההרשאות משתנות
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[התקנה מחדש אחרי שינוי הרשאות]
+Slack מחיל את הגדרת האפליקציה החדשה מיד אבל משאיר את ההענקה כפי שהייתה
+בהתקנה. התקינו את האפליקציה מחדש כדי ששינוי הרשאות ייכנס לתוקף. הגשר ממשיך
+לרוץ על ההענקה הקודמת עד שתעשו זאת.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+כששמירה משנה הרשאות, תיבת הדו־שיח נשארת פתוחה ואומרת "Slack שינה את הרשאות האפליקציה. התקינו אותה מחדש כדי שההרשאות ייכנסו לתוקף", עם כפתור **התקנת האפליקציה מחדש** שפותח את עמוד ההתקנה של האפליקציה הזו בצוות ב-Slack. ב-Slack זה **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## שינוי שם פקודת הסלאש
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+שנו את **פקודת סלאש** ושמרו. הגשר מכאן ואילך כותב הוראות עם הפקודה שאיתה הופעל לאחרונה, כך שטקסט העזרה והוראות הקישור עוקבים אחרי שינוי השם במקום לנקוב בשם של פקודה שכבר אינה קיימת.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+שינוי השם אינו שובר שרשורים מגושרים קיימים: שרשורים ממופתחים לפי שיחה, ולא לפי פקודה.
 
-## What Control Center will not change
+## מה Control Center לא ישנה
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **הגדרות מבניות.** התעבורה (Socket Mode), ההיקפים הנדרשים ומינויי האירועים נכפים ולא מוצעים. אפליקציה שאפשר להגדיר משמסך הגדרות עד כדי דממה היא פנייה לתמיכה, לא יכולת
+- **הסמל של הבוט.** אפשר לשנות אותו רק בהגדרות האפליקציה של הספק עצמו, ותיבת הדו־שיח אומרת זאת
+- **הגירות התכונות של הספק עצמו.** אפליקציה שכבר נמצאת בצורת ה-assistant הישנה של Slack ממשיכה בה; תיבת הדו־שיח הזו עורכת תיאור, היא אינה מבצעת הגירה של אפליקציה
 
-## Troubleshooting
+## פתרון תקלות
 
-### There is no Customize bot row at all
+### שורת התאמת הבוט אינה מופיעה כלל
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/).
+סביבת העבודה עדיין אינה מחוברת. השורה מופיעה רק אחרי שחסימת הספק מציגה חיבור
+חי. ראו [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/).
 
-### The Customize bot row is disabled
+### שורת התאמת הבוט מושבתת
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+לחיבור אין פרטי גישה לניהול האפליקציה — כתובית המשנה של השורה אומרת "Control Center זקוק לאסימון גישה לתצורת האפליקציה כדי לערוך את הבוט. התחברו מחדש וצרפו אחד." ב-Slack, הפיקו זוג אסימוני תצורת אפליקציה ב-[api.slack.com/apps](https://api.slack.com/apps) והתחברו מחדש כשאסימון הרענון מלא. זה מצופה מאפליקציה שנבנתה ביד או שנוצרה דרך **יצירה ב-Slack**, כי Slack לעולם אינו מדווח איזו אפליקציה הוא יצר.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+לחיבור השמור אין מזהה אפליקציה — בדרך כלל אפליקציה שחוברה ביד לפני שמזהה נרשם. חברו את סביבת העבודה מחדש, או צרו את האפליקציה מתוך Control Center.
 
-### The bot's new name has not appeared in chat
+### השם החדש של הבוט לא הופיע בצ'אט
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+ספקים שומרים במטמון מטא-נתונים של אפליקציה לזמן קצר. אם השם עדיין לא מעודכן אחרי דקה, בדקו אם השמירה ביקשה מכם להתקין את האפליקציה מחדש.
 
-## Related guides
+## מדריכים קשורים
 
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
-- [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
-- [Chat bridge](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
+- [גשר צ'אט](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)

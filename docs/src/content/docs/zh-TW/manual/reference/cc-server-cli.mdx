@@ -1,193 +1,187 @@
 ---
 title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+description: 無介面伺服器的每一個旗標、環境變數、子指令與資料目錄路徑。
 slug: zh-TW/手冊/參考/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+每個行程旗標都接受一個命令列旗標或一個環境變數；旗標優先，其次是環境變數，
+最後才是預設值。第三方憑證是例外——見下文。
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[未知的旗標會被無聲忽略]
+引數剖析器是手寫的，會略過任何它不認得的內容，因此打錯字
+（`--tls-key-file`、`--bindany`）不會產生錯誤——伺服器只會以預設值啟動。
+當某個旗標看似沒有作用時，請檢查啟動日誌的內容。
 :::
 
-## Core
+## 核心
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| 旗標            | 環境變數               | 預設值                                           | 意義                                                                                                           |
 | --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | 作業系統的每位使用者應用程式資料目錄（見下文）   | 資料庫、密鑰、模型與快取媒體                                                                                   |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP 連接埠（`0` = 臨時）                                                                                       |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`，或 `any`/`all`/`0.0.0.0` 表示所有介面（需要 TLS 或 `--insecure`）                                  |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | 伺服器使用者的家目錄                             | 用戶端註冊儲存庫時可瀏覽的基準目錄，以逗號分隔。瀏覽某個根目錄之上的路徑會被拒絕                               |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`、`info`、`warning` 或 `error`。啟動與就緒的日誌行一律會印出                                             |
+| `--server-name` | `CC_SERVER_NAME`       | 本機主機名                                       | 顯示在選擇器、探索與配對介面上的名稱                                                                           |
 
-## Reachability and TLS
+## 可觸達性與 TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
-| ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| 旗標                | 環境變數                    | 預設值                        | 意義                                                                                                                                                     |
+| ------------------- | --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | 未設定                        | PEM 憑證鏈。與金鑰一起設定時，會在行程內提供 `wss://`                                                                                                    |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | 未設定                        | 與憑證相符的 PEM 私密金鑰                                                                                                                                |
+| `--insecure`        | `CC_SERVER_INSECURE`        | 關閉                          | 允許非回送的明文繫結。僅限在可信任網路上、位於負責終止 TLS 的代理後方使用；設定 TLS 時會被忽略                                                           |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | 由繫結推導                    | 本伺服器向已配對用戶端公告的 RPC URL。**在代理、NAT 或通道後方請明確設定這個值**——預設值只是對本機繫結的猜測                                            |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | 允許跨來源撥接 `/rpc` 的瀏覽器來源，以逗號分隔。回送與原生用戶端一律允許                                                                                 |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | 未設定                        | 託管網頁用戶端的來源，單一登入回呼會跳轉回該位址                                                                                                         |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | 本伺服器加入的中繼代理，讓手機在沒有直接路徑時也能觸達它                                                                                                 |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | 區域網路公告：`auto`（僅在繫結至回送以外的位址時）、`on`、`off`。探索只公告伺服器的存在——加入仍需要配對                                                   |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | 受管理的通道供應商：`off`、`cloudflared`、`ngrok`、`tailscale`。對外公開需要主動開啟                                                                     |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | 從 `PATH` 解析                | 明確指定通道二進位檔的路徑                                                                                                                               |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | 未設定                        | 該二進位檔的預期 SHA-256，每次啟動前都會驗證                                                                                                             |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | 空                            | 通道呼叫的額外引數，以逗號分隔                                                                                                                           |
 
-## Indexing and third-party credentials
+## 索引與第三方憑證
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
-| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| 旗標                     | 環境變數                        | 預設值                                | 意義                                                                                                          |
+| ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | 當主機提供作業系統原生沙箱時，是否用它包裹代理執行。這是供你選擇退出的機制，而不是用來啟用的——見下文            |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | 背景程式碼圖索引的現場終止開關。`off` 能在不需重新建置的情況下乾淨啟動                                        |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | 在就緒橫幅出現後延後首次索引掃描的秒數（限制在 0–300 之間）                                                   |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | 執行環境的執行是否只送出一小組常駐工具加上一份名稱索引，其餘工具在首次使用時才載入。見下文                     |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | 執行擱置等待真人修復無法服務它的憑證的秒數（限制在 0–3600 之間）。見下文                                       |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+憑證取空值會被視為未設定，因此內建的回退值仍然適用。從原始碼建置的版本完全不含
+任何內建憑證。
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar 與 Klipy GIF 選擇器**只能透過環境變數設定**——沒有
+`--google-client-id` / `--klipy-app-key` 旗標（未知的旗標會被忽略）。請在環境中
+（或伺服器旁的 `.env` 檔案裡）設定 `GOOGLE_OAUTH_CLIENT_ID` +
+`GOOGLE_OAUTH_CLIENT_SECRET`，以及 `KLIPY_APP_KEY`。留空會停用該功能，而不會
+導致啟動失敗。
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+伺服器在啟動時會探測主機一次，只要有可用的後端，就會用作業系統原生沙箱包裹代理
+的命令執行：macOS 上是 `sandbox-exec`（Seatbelt），Linux 與 WSL2 上則是 `bwrap`
+加 `socat`。在沒有後端的地方——Windows，或缺少這些工具的 Linux 主機——執行會
+回退到環境清理、命令政策與動作護欄，而啟動日誌會說明適用的是哪一種狀態。
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` 是針對探測無法察覺的情況所提供的現場終止開關：主機上的沙箱設定檔
+本身行為異常。它不需要重新建置，而且伺服器會在整個行程存續期間記錄一則警告，
+因此這個狀態絕不會無聲無息。
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/zh-TW/手冊/概念/工具情境).
+內建執行環境的執行會送出一小組常駐的工具定義，加上其餘工具的僅含名稱索引，這些
+工具會在首次使用時載入各自的結構描述。這能把工具區塊縮減約 78%，並讓永遠可見的
+集合落在模型能可靠選擇工具的區間內。隨需載入的工具自始至終都可以按名稱呼叫，而
+`search_tools` 也能依意圖找到它們。參閱[工具情境與提示快取](/zh-TW/手冊/概念/工具情境)。
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` 會讓每一個被准入的工具重新常駐，重現隨需載入出現之前伺服器
+所發出的請求。它是針對無法好好應付兩層式工具介面的模型所提供的終止開關——只要
+一個旗標，而不必重新建置。它只影響內建執行環境；外部用戶端看到的 MCP
+`tools/list` 永遠是完整目錄。
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+當某次執行所使用的供應商憑證缺少或已耗盡時，該次執行會被**擱置等待**，而不是
+直接失敗：操作人員會收到提示去修復，修好後執行便會繼續。預設期限是 900 秒
+（15 分鐘），限制在 0–3600 之間。
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+這個期限刻意比核准提示長得多：核准是某個人在幾秒內做出的決定，而修復憑證則意味著
+打開終端機、登入再回來。正是這個上限讓無人看管的執行——管線步驟、cron 觸發器、
+webhook——不必一直等待一個正在睡覺的人。期限一到，該次執行就會帶著它本來就會
+出現的訊息失敗。
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` 是終止開關：任何東西都不會被擱置等待，憑證有問題時會像這個
+閘門出現之前那樣結束該回合。
 
-## Subcommands
+## 子指令
 
-| Command                                       | What it does                                                                                        |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| 指令                                          | 作用                                                                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `cc_server`                                   | 執行伺服器，直到收到 `SIGINT`/`SIGTERM`                                                                     |
+| `cc_server pair`                              | 佈建一台裝置，並印出它的 id 與配對金鑰。即使伺服器正在提供某個資料目錄的服務也能安全執行——執行中的伺服器無需重新啟動就會接收該裝置 |
+| `cc_server calendar connect --workspace <id>` | 透過裝置代碼流程把 Google 帳號連接到工作區，然後結束                                                        |
+| `cc_server update`                            | 檢查、下載並驗證較新的獨立發行版本                                                                          |
+| `cc_server --version`                         | 印出建置版本與 git SHA——與 `/healthz` 及 RPC 交握所公告的身分相同                                           |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| 旗標           | 預設值                                                    | 意義                                                                                                                                                                 |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | 裝置 id。平台會從它推斷，因此 `--device desktop` 會產生一列桌面裝置，而 `--device ios`/`android` 會產生一列手機裝置；其他任何值都是網頁用戶端                        |
+| `--label`      | 平台名稱加上這台機器的主機名                              | 裝置清單中的顯示名稱                                                                                                                                                 |
+| `--host`       | `localhost`，或繫結至所有介面時的 `<this-host>`           | 要嵌入所印出 URL 的主機。請將它設為用戶端實際會撥接的區域網路 IP 或通道主機                                                                                          |
+| `--client-url` | 未設定                                                    | 託管**網頁**用戶端的來源。會額外加上可掃描的深層連結與終端機 QR 碼                                                                                                    |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` 也接受核心的 `--data-dir`、`--port` 與 `--bind` 旗標：它們決定要寫入的資料
+目錄，並形塑所印出的伺服器 URL（回送時為 `ws`，`--bind any` 時為 `wss`）。對同一個
+`--device` 重新執行 `pair` 會輪替它的金鑰，並終止該裝置使用中的工作階段。在這裡
+簽發的憑證**不會過期**，不像應用程式內配對會設定 30 天。
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/zh-TW/手冊/操作指南/配對裝置/).
+:::caution[`--client-url` 的 QR 碼不是手機用的 QR 碼]
+`pair --client-url` 會填寫**網頁**用戶端的連線表單（伺服器 URL、
+裝置 id 與金鑰都放在 URL 片段中）。手機配對用的是從應用程式內配對面板
+簽發的另一種酬載——伺服器完整的連線描述元加上到期時間。兩者不能互換——參閱[配對裝置](/zh-TW/手冊/操作指南/配對裝置/)。
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` 會取代目前的安裝；只要設定的連接埠上仍有伺服器在回應，該操作就會遭拒，
+除非你傳入 `--force`。`--allow-downgrade` 允許降級至較舊的發行版本。
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+對於它並不擁有的安裝，這個指令會直接拒絕，並給出說明而不是錯誤：
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| 環境                          | 偵測方式                                    | 顯示的說明                                                   |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| 桌面版內嵌的伺服器            | `CC_EMBEDDED=1` 或 `CC_BOOTSTRAP_DEVICE_ID` | 請改為更新應用程式——安裝程式會替換整棵目錄樹                 |
+| 以 `dart run` 執行的原始碼簽出 | 指令碼路徑以 `.dart` 結尾                   | 請用 git 更新                                                |
+| Docker                        | 容器標記                                    | 拉取較新的映像                                               |
 
-## Process lifecycle
+## 行程生命週期
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` 會一直執行，直到收到 `SIGINT` / `SIGTERM`。有一個額外的環境變數控制
+這件事，而且它是由桌面版設定，而不是由你設定：
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| 變數                     | 作用                                                                                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1`  | 當父行程結束時，伺服器也會結束；判斷方式是父行程關閉了它 stdin 管道的寫入端。桌面版會設定它，這樣應用程式當掉時，絕不會留下一個仍佔用資料目錄的孤兒伺服器                    |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+只有在你把 `cc_server` 當作子行程監管，並想要獲得同樣保證時，才需要自行設定它。
 
-## Data directory layout
+## 資料目錄配置
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+預設資料目錄在 macOS 上是 `~/Library/Application Support/control-center`，
+在 Windows 上是 `%APPDATA%\control-center`，在其他平台上則是
+`$XDG_DATA_HOME/control-center`（否則為 `~/.local/share/control-center`）。只有
+在無法解析出家目錄或應用程式資料目錄時，才會使用相對於目前工作目錄的
+`.cc_server`。
 
-| Path                              | Contents                                                                        |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| 路徑                              | 內容                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `global.db`                       | 工作區註冊表、使用者、已配對裝置、新聞動態與機群佇列                      |
+| `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶、程式碼圖                    |
+| `<workspaceId>/chat_credentials/` | 聊天機器人權杖，以純文字 JSON 保存，因此會隨工作區一起移動                |
+| `secrets.json`                    | 配對金鑰、供應商應用程式身分、每位使用者的權杖與 Google 權杖、SSO（`0600`） |
+| `backups/<timestamp>/`            | 一份安裝快照——`manifest.json`、`global.db` 以及每個工作區的副本          |
+| `backups/exports/`                | 單一工作區的匯出，`<workspaceId>-<timestamp>.db`                         |
+| `backups/transfer/`               | 備份下載與上傳的暫存區；由寫入它的路由負責清理                           |
+| `models/`                         | 裝置端的嵌入、語者分離與語音模型                                          |
+| `meetings/<meetingId>/`           | 保留的會議音訊                                                           |
+| `rigs/images/`                    | 匯入的機台磁碟映像（QEMU 桌面介面）                                       |
+| `rigs/smolvm/<rigId>/`            | 每台機台的 microVM 執行階段狀態（仲介程式的密鑰，`0600`）                  |
+| `rigs/smolvm-packs/`              | 預先解壓縮的機器套件——讓機台重複啟動變快的快取                           |
+| `rigs/tls/`                       | 機台 HTTPS 用的開發網域憑證授權單位（金鑰為 `0600`）                       |
+| `rigs/run/<rigId>/`               | QEMU 疊層、種子映像與每台 VM 的金鑰（`0600`）                              |
 
-## See also
+## 另請參閱
 
-- [Run a headless server](/zh-TW/手冊/操作指南/執行無介面伺服器/) — the setup recipe these flags belong to
-- [Run a fleet worker](/zh-TW/手冊/操作指南/執行機群工作程序/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/zh-TW/手冊/操作指南/備份與還原/) — copying this directory somewhere safe
-- [Backup, export and import](/zh-TW/手冊/參考/備份/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/zh-TW/手冊/操作指南/連線至遠端伺服器/) — pointing a client at one
-- [Deployment and clients](/zh-TW/手冊/概念/部署/) — why the server owns everything
+- [執行無介面伺服器](/zh-TW/手冊/操作指南/執行無介面伺服器/)——這些旗標所屬的設定流程
+- [執行機群工作程序](/zh-TW/手冊/操作指南/執行機群工作程序/)——向本伺服器註冊的獨立 `cc_worker` 二進位檔
+- [備份與還原](/zh-TW/手冊/操作指南/備份與還原/)——把這個目錄複製到安全的地方
+- [備份、匯出與匯入](/zh-TW/手冊/參考/備份/)——快照配置與每一種備份操作
+- [連線至遠端伺服器](/zh-TW/手冊/操作指南/連線至遠端伺服器/)——讓用戶端指向某台遠端伺服器
+- [部署與用戶端](/zh-TW/手冊/概念/部署/)——為什麼一切都歸伺服器所有

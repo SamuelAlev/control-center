@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Kitaran hayat tiket
+description: Medan tiket, status, peralihan, hubungan dan titik kawalan mutasi.
 slug: ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Status tiket
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Status       | Rentetan storan | Perihalan                                       |
+| ------------ | --------------- | ----------------------------------------------- |
+| `backlog`    | `backlog`       | Direkodkan, belum melalui triage ke dalam baris gilir aktif |
+| `open`       | `open`          | Telah melalui triage dan sedia dikerjakan, belum bermula |
+| `inProgress` | `inProgress`    | Sedang dikerjakan secara aktif                  |
+| `blocked`    | `blocked`       | Sudah bermula tetapi terhalang oleh sesuatu yang luaran |
+| `inReview`   | `inReview`      | Kerja selesai, menunggu semakan                 |
+| `done`       | `done`          | Selesai dengan jayanya (terminal)               |
+| `failed`     | `failed`        | Selesai dengan ralat (terminal)                 |
+| `cancelled`  | `cancelled`     | Ditinggalkan (terminal)                         |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Nilai status disimpan dalam bentuk camelCase (`inProgress`, `inReview`), tidak pernah `in_progress`. Nilai tersimpan yang null dihuraikan sebagai `open`; nilai yang tidak dikenali melontar ralat dan tidak dipaksakan.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` menerima alias yang dibekalkan ejen, mengabaikan kepekaan huruf besar/kecil dan aksara `-` / `_` / ruang:
 
-| Status       | Accepted aliases                              |
+| Status       | Alias yang diterima                           |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Peralihan status
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,11 +43,11 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Graf ini mengikat ejen dan automasi sahaja.** `TicketWorkflowService.transitionStatus` menyemaknya apabila `force` ialah false — alat MCP dan penyelaras. Peralihan haram di situ dilog dan diabaikan. Setiap perubahan status yang dipacu pengguna dalam UI menghantar `force: true` dan melangkau graf itu sepenuhnya, jadi manusia boleh memindahkan tiket ke mana-mana status yang disenaraikan oleh pemilih (setiap status kecuali `failed`), termasuk membuka semula tiket yang berada dalam keadaan terminal. Ejen menandakan `failed` dengan `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Status boleh sentiasa beralih kepada dirinya sendiri. Keadaan terminal tiada tepi keluar.
 
-| From         | Allowed targets                                      |
+| Daripada    | Sasaran yang dibenarkan                              |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
@@ -57,144 +58,144 @@ A status may always transition to itself. Terminal states have no outgoing edges
 | `failed`     | — (terminal)                                         |
 | `cancelled`  | — (terminal)                                         |
 
-## Ticket priorities
+## Keutamaan tiket
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Disimpan sebagai integer pada skala asli Linear 0–4. Nilai yang tidak dikenali dihuraikan sebagai `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Keutamaan | Disimpan sebagai |
+| --------- | ---------------- |
+| `none`    | `0`              |
+| `urgent`  | `1`              |
+| `high`    | `2`              |
+| `medium`  | `3`              |
+| `low`     | `4`              |
 
-## Ticket providers
+## Penyedia tiket
 
-An unknown or null stored value parses to `local`.
+Nilai tersimpan yang tidak dikenali atau null dihuraikan sebagai `local`.
 
-| Provider | Status                                                 |
+| Penyedia | Status                                                 |
 | -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| `local`  | Disimpan sepenuhnya dalam pangkalan data ruang kerja; lalai |
+| `linear` | Dimiliki jauh, dicerminkan secara tempatan             |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Penyesuai penyegerakan terletak di bawah `packages/cc_infra/lib/src/tickets/sync/` untuk
+Linear, GitHub Issues, Jira Cloud dan ClickUp. GitHub Issues hanyalah vendor
+penyesuai penyegerakan (`vendorId: github`) — ia bukan nilai `TicketProvider`,
+jadi isu GitHub yang ditarik disimpan dengan `originKind: externalSync` dan
+`provider: local` lalai. Pemetaan vendor terletak pada `ticket_sync_links`.
 
-## Ticket origin
+## Asal usul tiket
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` menulis `manual`. Tarikan vendor menulis `externalSync`. Anak yang
+diwakilkan kekal `manual`.
 
-| Value          | Meaning                                                      |
+| Nilai          | Maksud                                                       |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | Lalai pada `createTicket` (baris manusia, ejen dan yang diwakilkan) |
+| `externalSync` | Ditetapkan oleh `TicketSyncEngine` pada tarikan vendor       |
 
-## Ticket fields
+## Medan tiket
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Agregat ini merangkumi dua kebimbangan pada satu baris. **Cermin** (penyedia, kunci, tajuk, perihalan, keutamaan, label, status, cap masa) ialah cache untuk penyedia jauh dan ditulis semula sepenuhnya oleh penyegaran. **Tindanan** (penugasan, perwakilan, ruang, induk, projek, PR berpaut) hanya milik Control Center dan penyegaran tidak pernah menyentuhnya.
 
-| Field                    | Type                       | Description                                                                                |
+| Medan                    | Jenis                      | Perihalan                                                                                |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Ruang kerja pemilik                                                                        |
+| `provider`               | `TicketProvider`           | Bahagian belakang yang memiliki data kanonik (lalai `local`)                               |
+| `externalKey`            | `String?`                  | Kunci asli penyedia (cth. `LIN-123`). `createTicket` tempatan menulis UUID *berasingan* di sini, bukan `id` baris |
+| `url`                    | `String?`                  | URL web pada penyedia jauh                                                                 |
+| `title`                  | `String`                   | Ringkasan pendek; tidak boleh kosong                                                       |
+| `description`            | `String?`                  | Badan Markdown yang lebih panjang                                                          |
+| `priority`               | `TicketPriority`           | Lalai `none`                                                                               |
+| `labels`                 | `List<String>`             | Label bentuk bebas                                                                         |
+| `status`                 | `TicketStatus`             | Status ternormal yang kanonik                                                              |
+| `rawStatus`              | `String?`                  | Nama keadaan asli penyedia jauh, disimpan untuk paparan tanpa kehilangan                   |
+| `externalSyncedAt`       | `DateTime?`                | Penyegerakan berbilang vendor terakhir; null sehingga yang pertama. Pemetaan setiap vendor terletak dalam `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Induk dalam pokok perwakilan / pecahan                                                     |
+| `projectId`              | `String?`                  | Projek pemilik; tidak pernah ditolak ke jauh                                               |
+| `assignedAgentId`        | `String?`                  | Id prinsipal yang ditugaskan (metadata sahaja — menugaskan tidak menghantar apa-apa)        |
+| `assigneeType`           | `PrincipalType`            | Jenis prinsipal yang dinamakan oleh `assignedAgentId` — `user` atau `agent` (lalai `agent`) |
+| `createdByType`          | `PrincipalType?`           | Jenis prinsipal yang mencipta tiket (`user` atau `agent`); null untuk baris legasi/sistem  |
+| `createdById`            | `String?`                  | Id prinsipal pencipta                                                                      |
+| `assignedTeamId`         | `String?`                  | Pasukan yang ditugaskan (metadata sahaja)                                                  |
+| `delegatedByAgentId`     | `String?`                  | Ejen yang mewakilkan tiket ini                                                             |
+| `delegationDepth`        | `int`                      | Kedalaman dalam rantaian perwakilan; akar ialah `0`, disemak terhadap siling kedalaman maksimum |
+| `delegationRootTicketId` | `String?`                  | Akar rantaian perwakilan; null untuk tiket akar                                            |
+| `spaceId`                | `String?`                  | Perbualan tempat tiket ini dipecahkan, atau ruang ejen yang mewakilkan                      |
+| `errorMessage`           | `String?`                  | Ditetapkan apabila `status` ialah `failed`                                                 |
+| `linkedPrIds`            | `List<String>`             | Id nod PR yang dipautkan pada tiket ini                                                    |
+| `metadata`               | `Map<String, dynamic>`     | Beg bentuk bebas                                                                           |
+| `createdAt`              | `DateTime`                 | Masa penciptaan                                                                            |
+| `startedAt`              | `DateTime?`                | Apabila kerja bermula                                                                      |
+| `blockedAt`              | `DateTime?`                | Apabila tiket terhalang                                                                    |
+| `cancelledAt`            | `DateTime?`                | Apabila tiket dibatalkan                                                                   |
+| `completedAt`            | `DateTime?`                | Apabila tiket selesai dengan jayanya                                                       |
+| `finishedAt`             | `DateTime?`                | Apabila tiket mencapai mana-mana keadaan terminal                                          |
+| `updatedAt`              | `DateTime`                 | Mutasi terakhir (penyegaran cermin atau perubahan tindanan)                                |
+| `version`                | `int`                      | Pembilang konkurensi optimistik, dinaikkan pada setiap mutasi                              |
+| `originKind`             | `TicketOriginKind`         | Bagaimana tiket dicipta (lalai `manual`)                                                   |
+| `collaborators`          | `List<TicketCollaborator>` | Dihidratkan oleh repositori atas permintaan                                                |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Terbitan: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` dan `displayKey` (`externalKey ?? id` — maka tiket tempatan memaparkan UUID berasingan yang dicipta pada masa penciptaan, bukan `id` baris).
 
-## Ticket relations
+## Hubungan tiket
 
-Stored edges are directional rows in `ticket_links`:
+Tepi yang disimpan ialah baris berarah dalam `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| Jenis         | Rentetan storan | Maksud                          |
+| ------------- | --------------- | ------------------------------- |
+| `blocks`      | `blocks`        | Sumber menyekat sasaran         |
+| `relatesTo`   | `relates_to`    | Hubungan simetri                |
+| `duplicateOf` | `duplicate_of`  | Sumber ialah pendua kepada sasaran |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Perbendaharaan kata yang digunakan oleh UI dan `ticket_relation` ialah `TicketRelationKind`, diterbitkan daripada tepi yang disimpan serta hujung mana subjek itu berada:
 
-| Kind           | Derived from                                         |
+| Jenis          | Diterbitkan daripada                                  |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Baris `blocks` yang subjeknya ialah sasaran          |
+| `blocking`     | Baris `blocks` yang subjeknya ialah sumber           |
+| `relatedTo`    | Baris `relates_to` (simetri)                         |
+| `duplicateOf`  | Baris `duplicate_of` yang subjeknya ialah sumber     |
+| `duplicatedBy` | Baris `duplicate_of` yang subjeknya ialah sasaran    |
+| `subIssueOf`   | `tickets.parent_ticket_id` pada subjek               |
+| `parentOf`     | `tickets.parent_ticket_id` pada tiket yang satu lagi |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Pautan induk dan sub-isu **bukan** baris `ticket_links` — ia terletak pada `tickets.parent_ticket_id`.
 
-## Domain events
+## Acara domain
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Lapan kelas ini terletak dalam `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Tiada `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, atau `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
+| Acara                     | Dicetuskan apabila                                 |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | Tiket dicipta                                      |
+| `TicketAssigned`          | Tiket ditugaskan kepada prinsipal atau pasukan     |
+| `TicketCompleted`         | Kerja selesai dengan jayanya                       |
+| `TicketFailed`            | Kerja gagal                                        |
+| `TicketCancelled`         | Tiket dibatalkan                                   |
+| `TicketStatusChanged`     | Sebarang perubahan status                          |
+| `TicketReassigned`        | Tiket ditugaskan semula                            |
+| `TicketDetailsUpdated`    | Tajuk, perihalan, keutamaan atau label berubah     |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` ialah isyarat audit dan pemberitahuan serta pencetus pipeline. Penugasan kepada ejen tidak memulakan sebarang larian — tiada penghantar tiket yang memantau `assignedAgentId`. Penugasan kepada pasukan ialah pengecualian: `TeamRoutingService` menghantar ketua pasukan. Menambah kolaborator menulis satu baris dan tidak menerbitkan apa-apa. Webhook vendor digunakan melalui `TicketSyncEngine` tanpa acara domain.
 
-## Mutation chokepoint
+## Titik kawalan mutasi
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` memiliki setiap mutasi.
 
-| Mechanism              | Detail                                                                                                                                            |
+| Mekanisme              | Butiran                                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Titik kawalan tunggal  | Semua mutasi dihalakan melalui `_mutate`, yang memuatkan baris itu dan memanggil `_assertWorkspace` sebelum menerapkannya                                  |
+| Pengasingan ruang kerja | `_assertWorkspace` melontar `WorkspaceMismatchException` apabila `workspaceId` baris yang dimuatkan tidak sepadan dengan pemanggil                |
+| Konkurensi optimistik  | `_mutate` menulis dengan `expectedVersion` ditetapkan kepada `version` yang baru dibacanya dan mencuba semula pada `ConcurrencyConflictException` dengan membaca semula keadaan terkini |
+| Tuntutan eksklusif     | `tryCheckout` / `releaseCheckout`; ejen kedua yang menuntut tiket yang sudah di-checkout mendapat `CheckoutConflictException`                     |
+| Pengawal peralihan     | `canTransitionTo`, digunakan hanya apabila `force` ialah false                                                                                    |
 
-## See also
+## Lihat juga
 
-- [Tickets](/ms-MY/manual-pengguna/konsep/tiket/)
-- [Manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
-- [Delegate tickets](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
-- [Domain events](/ms-MY/manual-pengguna/rujukan/acara-domain/)
+- [Tiket](/ms-MY/manual-pengguna/konsep/tiket/)
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
+- [Wakilkan kerja kepada ejen](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
+- [Acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/)

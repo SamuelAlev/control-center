@@ -1,267 +1,211 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: 沙盒与安全
+description: 在当前版本中，究竟是什么在约束 Control Center 里的智能体，操作系统沙盒能延伸到多远，以及在没有后端的主机上哪些边界依然成立。
 slug: zh-CN/手册/概念/沙盒与安全
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[操作系统沙盒覆盖到哪里，又覆盖不到哪里]
+`cc_server` 在启动时探测主机，只要存在可用的后端，就会用操作系统原生的沙盒包裹智能体的命令执行——macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap（需要 `bwrap` 和 `socat` 位于 `PATH` 中）。在没有后端的地方——Windows，或缺少这些工具的 Linux 机器——运行会回退到下文列出的其他边界，服务器会在启动日志中说明这一点。`--sandbox off` 会刻意关闭它。
 
-Two gaps survive the sandbox and are worth holding in mind:
+有两处缺口在沙盒下依然存在，值得记在心里：
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- 内置运行器的**进程内文件工具**（`read`、`write`、`edit`、
+  `apply_patch`、`search`、`find`、`search_files`）运行在服务器进程内部，
+  因此只有 `bash` 被包裹。约束它们的是这些工具自身的路径限制，
+  外加操作护栏。
+- **Claude Code 启动时带有 `--dangerously-skip-permissions`**，因为非交互式的
+  `claude -p` 否则会永远阻塞在它自己的提示上。因此它的文件和 shell 调用
+  并不受 Control Center 护栏的门控——操作系统沙盒才是它们周围的边界。
   :::
 
-## Why isolation matters here
+## 为什么这里需要隔离
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+智能体会代你读取文件、运行 shell 命令并调用外部 API。你真正担心的故障很少
+出自恶意——更常见的是一个智能体看错了路径，从而改写你正在使用的检出，或者
+推送了一个你还没审查完的分支。所以产品必须回答的问题不是“这个智能体是否
+值得信任”，而是“它出错时的爆炸半径有多大”。
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center 用分层来回答这个问题，而且这些层刻意彼此独立。即便缺了一层，
+其余各层仍然成立。这一点很重要，因为最外层——操作系统沙盒——是唯一有条件的
+一层：它取决于主机是否提供后端，而在 Windows 上没有任何主机会提供。
 
-## What actually constrains an agent
+## 究竟是什么在约束智能体
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+无论有没有沙盒，每一次智能体运行都受五样东西约束。它们都不是内核边界，
+但每一样都真实有效。当主机提供后端时，操作系统沙盒位于它们之上，
+它对整体有什么改变，见下文的“沙盒增加了什么，又在哪里停下”。
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**它自己的写时复制工作树。** 每次对话都会为每个已链接的仓库准备自己的检出，
+通过内置的 `rift` 原生实现以写时复制的方式克隆，而不是逐字节复制，因此隔离
+足够廉价，可以成为默认做法。你添加到工作区的已注册仓库并不是智能体工作的
+目录——两个接触同一仓库的对话看不到彼此的修改，而且两者都不是在编辑你的检出。
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+这个粒度值得说清楚：**工作树是按对话划分的，而不是按智能体划分的。** 同一
+对话中的两个智能体会得到各自不同的覆盖层工作目录，它们_共享_该对话的
+`repos/`——这正是重点所在，因为它们是在协作完成同一处改动——而它们各自的
+私有智能体目录保持分离。凡是随附 `rift` 的地方，写时复制都是唯一后端：无法
+reflink 的文件系统，或者与仓库不在同一卷上的数据目录，会让这次准备直接失败，
+而不是回退。Windows 是例外——那里没有写时复制后端，因此 `git worktree` 就是
+后端，而不是静默降级。
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**内置运行器的文件工具中的路径限制。** 运行器的 `read`、`write`、`edit`、
+`apply_patch`、`search`、`find` 和 `search_files` 工具会基于本次运行的工作目录
+加上共享根目录——即对话的 `repos/` 目录（工作树所在之处），以及空间存在时的
+附件目录——来解析每一个路径，并拒绝任何落在其外的路径。绝对路径只有在原本就
+位于其中时才会被接受。工作树内部指向外部的符号链接也会被解析并拒绝。这就是
+为什么即使完全没有沙盒，智能体也无法 `write` 到 `~/.ssh`。
 
-**The mode's tool surface.** A conversation's [mode](/zh-CN/手册/概念/模式/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**模式的工具面。** 对话的[模式](/zh-CN/手册/概念/模式/)决定这次运行究竟会
+具体化哪些工具。在只读模式（`plan`、`review`、`orchestrate`）下，变更类工具
+根本不在注册表中，而且这些模式的 shell 命令策略会直接拒绝所有变更命令——
+`git commit`、`git push`、`npm install`、`docker` 以及其他——而不是弹出询问。
+不存在的工具无法被调用，这比一个存在但受门控的工具是更强的保证。
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/zh-CN/手册/概念/护栏/) for the resolution model.
+**统一的动作护栏。** 每个变更类工具都会声明它可能产生的影响类别，策略引擎会在
+调用真正运行之前把每一个类别解析为允许、询问或拒绝。在没有连接任何审批者时，
+`prompt` 会解析为_拒绝_——一个没人能回答的问题永远不算同意。解析模型见
+[护栏](/zh-CN/手册/概念/护栏/)。
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**按能力门控的凭据与净化过的环境。** 凭据在每次启动时根据对话的能力标志签发，
+并在运行结束时撤销。ACP、运行器的 `bash` 以及处于原生包裹下的 Claude Code，
+会在进程启动前获得一个已剥除动态链接器和解释器注入途径（`LD_PRELOAD`、
+`DYLD_INSERT_LIBRARIES`、`NODE_OPTIONS`、`GIT_SSH_COMMAND` 及其同类）的环境。
+经由 `NoSandboxAdapter` 的 Claude Code 则继承主机环境。
 
-### Where those bounds thin out
+### 这些边界在哪里变薄
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+运行器的文件工具运行_在服务器进程内_，而不是子进程中，因此即使挂载了沙盒配置，
+也没有任何配置能约束它们——只有 `bash` 会经过沙盒化的命令运行器。对它们的限制
+就是上文描述的路径检查，因此这项检查是承重的，而不是第二道防线。
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+`bash` 工具是另一处需要说清楚的地方。它的命令会先对照模式的命令策略进行评估，
+然后用净化过的环境和作为工作目录的工作树启动。存在后端时，这次启动会被包裹，
+因此沙盒才是阻止 shell 命令写到工作树之外的东西；不存在后端时——Windows，
+或没有 `bwrap` 和 `socat` 的 Linux——命令策略就是命令与磁盘其余部分之间唯一的
+东西。在 `chat` 模式下，该策略会硬拒绝一份固定清单（提权、破坏系统与磁盘、
+逃逸容器与命名空间），并对改变远程状态的变更（`git push`、`gh pr create`、
+软件包发布与安装）弹出询问。两份清单都没有命中的命令会照常运行。管道、命令链
+和子 shell 都会被解析，每个子命令单独评估，并以限制最严的一项裁决为准。
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/zh-CN/手册/概念/护栏/#the-adapter-honesty-matrix).
+Claude Code 作为适配器使用时，正是沙盒分量最重的场景。Control Center 启动它时
+带有 `--dangerously-skip-permissions`，因为非交互式的 `claude -p` 否则会永远
+阻塞在它自己的审批提示上。它的读取、写入、编辑和 shell 调用都发生在它自己的
+进程内部，Control Center 从来看不到；它发起的调用中，只有 Control Center 自己
+提供的 `mcp__*` 工具会到达某个门控。存在后端时，那些看不见的调用仍发生在沙盒
+包裹之内，因此操作系统就是它们周围的边界。不存在后端时，就什么都没有。每个
+适配器都在自己的执行矩阵中说明这一点——见[适配器的诚实度
+矩阵](/zh-CN/手册/概念/护栏/#the-adapter-honesty-matrix)。
 
-## Capability gating is enforcement by absence
+## 能力门控是靠“缺席”来执行的
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+一个对话带有四个能力标志：推送到仓库、调用 GitHub API、调用工单提供方以及
+访问网络。智能体行动时并不会检查它们。它们只在启动时由凭据代理检查一次——
+而某个能力关闭，就意味着对应的令牌根本不会被放进环境中。
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+这就是全部机制，值得直白地说出来，因为它的失败方式与人们的预期不同。关闭
+“调用 GitHub API”并不会产生一条“能力被拒绝”的消息。它会在智能体内部产生
+一个普通的 `401`，因为根本没有 `GH_TOKEN` 可以发送。智能体很可能会把它说成
+凭据问题。靠缺席来执行是稳健的——没有检查点可供绕过——但它是静默的，智能体
+并不知道自己为什么失败。
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+网络标志的表现相同。关闭它时，运行器的 `web_fetch` 和 `web_search` 工具会拒绝
+每一次调用，而且沙盒化启动的代理允许列表是空的，因此所有出站连接都会被拒绝。
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+凭据会在运行拆除时被撤销，因此句柄不会比签发它的那次运行活得更久。
 
-## What the sandbox adds and where it stops
+## 沙盒增加了什么，又在哪里停下
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+`SandboxBackend` 枚举有三个取值——`native`（macOS 上是 Seatbelt，Linux 和 WSL2
+上是 bubblewrap）、`none` 和 `microvm`。智能体命令包裹只使用前两个：`microvm`
+是用于交互式终端和机台的封闭虚拟机后端，而不是对 `bash` 包裹的静默升级。
+理解原生形态，有助于说明挂载后端时你得到了什么，以及它本来就不会给你的东西。
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` 在启动时探测主机一次，只要后端有响应，它就会同时接入派发路径上的
+两个接缝，因为各传输层并不共用同一个。第一个（`SandboxPort`）包裹 Claude Code
+CLI。第二个（`SandboxManager`）包裹 ACP 适配器和内置运行器的 `bash` 工具。
+只接入其中一个，会让其余调用在未包裹的情况下启动——而这正是过去的情形。在
+没有后端的主机上，或者在 `--sandbox off` 下，它们全都在未包裹的情况下启动，
+服务器会在启动行中说明你属于哪种情况。ACP 和运行器的 `bash` 仍会净化环境；
+经由 `NoSandboxAdapter` 的 Claude Code 则继承主机环境。
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+有一个界面刻意不参与：服务器托管的终端按会话接受一个后端参数，而 `cc_server`
+构造它时默认使用主机 shell，因此你从应用打开的终端会以无沙盒方式运行，除非
+客户端显式指名 `native`。那是服务器主机上一个真正的 shell，不是一次智能体运行。
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+在 Linux 上，`bubblewrap` 会构建一个挂载命名空间，因此智能体确实只能看到被
+绑定进去的内容。在 macOS 上，`sandbox-exec` 会应用一份 **默认宽松** 的 Seatbelt
+配置——一份完全默认拒绝的配置会让交互式 shell 无法使用，因为需要枚举的 dyld、
+XPC 和 Mach 调用数量多得离谱。因此 macOS 配置从 `(allow default)` 出发，
+再划出一系列拒绝：对机密路径的读取；把写策略重置为拒绝，再在其上叠加显式允许；
+对每条被拒绝路径及其祖先路径阻止 unlink，这样重命名就无法绕过写入拒绝；对
+始终危险的二进制文件以及任何被复制进可写目录的东西执行 exec 拒绝；并把网络
+限制在回环代理端口加 DNS。
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+实际后果是：在 Linux 上，智能体看到的文件系统被收窄了；在 macOS 上，智能体仍然
+可以_读取_主机的大部分内容，你已注册的检出靠的是显式的写入和重命名拒绝来保护，
+而不是靠不可见。两者都是命名空间级的隔离，而不是内核安全边界——各后端在自己的
+能力说明中也是这样讲的。
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+跨智能体边界正画在绑定挂载集合上。覆盖层派发（Claude Code 和 ACP）最多挂载
+四个路径，按运行解析：智能体的覆盖层工作目录以读写方式挂载，智能体的配置目录
+以只读方式挂载，对话共享的 `repos/` 目录在存在时以读写方式挂载，空间的附件
+目录在存在时以只读方式挂载。同级智能体的目录永远不会被挂载。运行器的 `bash`
+包裹更窄：它只绑定挂载本次运行的工作目录。这与运行器的进程内路径检查在软件中
+强制的形态一致，所以两者相符——但只有路径检查覆盖运行器自己的文件工具，这些
+工具根本不会到达任何挂载命名空间。
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+在此之上，你已注册的检出会加入拒绝写入集合，涉及所有模式以及全部三条被包裹的
+路径（Claude Code、ACP、运行器 `bash`），而且每条规则都会以字面形式和符号链接
+解析后的形式各输出一遍。第二种形式不是锦上添花：
+内核是按解析后的路径来匹配拒绝规则的，
+而 macOS 让解析成为常态而非特例——`/tmp` 实际上是 `/private/tmp`，
+`/var/folders/…` 实际上是 `/private/var/folders/…`——所以经由其中任一路径到达
+的检出，本会在配置看似禁止写入的情况下仍然可写。
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+在沙盒下，网络是一份按会话生效的 **域名** 允许列表，由进程内的回环代理强制
+执行。出站默认拒绝：网络能力关闭时，代理仍会启动，但其允许列表为空，因此所有
+出站连接都会被拒绝。开启时，解析器会从一份经过筛选的基线——LLM API 提供方、
+git 托管、软件包注册表、模型目录——再加上智能体的 GitHub 或推送能力为它赢得的
+GitHub 域名，构建出允许列表，并把每个连接的目标主机与之比对。通配符有效
+（`*.example.com` 匹配子域名，不匹配裸域）。一份单独的始终拒绝列表优先于允许
+列表，涵盖云元数据端点和遥测接收端。_不可_配置的是列表本身：规范带有一个用于
+额外域名的 `egressAllowlist` 字段和一个工单域名钩子，但派发路径中没有任何东西
+会填充它们，所以实际上每次运行得到的都是基线加上由能力推导出的域名，别无其他。
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+在 macOS 上，拒绝是可观测的：一个监视器会接入系统日志抓取 Sandbox 拒绝记录，
+过滤已知噪声，对重试风暴去重，并把每一条作为 `SandboxViolation` 呈现出来，
+说明尝试了什么，以及哪项能力可以解除它。在 Linux 上，包裹路径会解析 stderr 中的
+`EPERM`、`Operation not permitted` 和 `Permission denied`，并发出同一事件类型
+——那里没有系统日志挂钩。这些事件会进入本次运行自己的事件流，因此被拒绝的系统
+调用会出现在转录中，而不只是出现在日志里。遥测只在原生沙盒确实包裹着进程时才
+存在——在没有后端的主机上没有什么可观测的。它也与能力门控无关：违规来自被拒绝
+的系统调用，而从不来自能力查询。
 
-## Confirmations come from the guardrails, not the sandbox
+## 确认来自护栏，而不是沙盒
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+沙盒没有审批路径。它启动、执行、发出事件然后拆除；其中没有任何地方可供人回答
+问题。当你在空间里看到一条确认——批准这次推送、批准这次删除——它是由护栏引擎
+（或运行器的命令策略）在动作真正到达运行时_之前_就抛出的。
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+这个顺序是刻意的。发生在系统调用之后的批准只会是一条审计记录，而不是一道闸门。
+这也是“失败即关闭”规则存在于护栏中的原因：在没有连接任何审批者时，裁决在任何
+东西运行之前就已作出，而且是拒绝。
 
-## Diagnostics
+## 诊断
 
-[Run agent diagnostics](/zh-CN/手册/操作指南/诊断智能体/) is the single place
-that states what can be checked by hand.
+[运行智能体诊断](/zh-CN/手册/操作指南/诊断智能体/) 是唯一说明哪些内容可以
+手动检查的地方。
 
-## Related concepts
+## 相关概念
 
-- [Rigs and enclosures](/zh-CN/手册/概念/机台/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/zh-CN/手册/概念/护栏/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/): where isolation fits in the dispatch flow
-- [Modes](/zh-CN/手册/概念/模式/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/zh-CN/手册/参考/沙盒后端/): the backends and their configuration
+- [机台与隔离舱](/zh-CN/手册/概念/机台/)：沙盒之上的一步——当工作需要的是一台带内核边界的一次性整机，而不是一个被包裹的进程时
+- [护栏](/zh-CN/手册/概念/护栏/)：操作系统底线之上的策略层，以及批准实际上来自哪里
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)：隔离在派发流程中的位置
+- [模式](/zh-CN/手册/概念/模式/)：模式如何收窄工具面与命令策略
+- [沙盒后端参考](/zh-CN/手册/参考/沙盒后端/)：各后端及其配置
 
-## Related guides
+## 相关指南
 
-- [Configure sandbox policies](/zh-CN/手册/操作指南/沙盒策略/): capability flags and filesystem posture
-- [Run agent diagnostics](/zh-CN/手册/操作指南/诊断智能体/): what the diagnostic checks cover
+- [配置沙盒策略](/zh-CN/手册/操作指南/沙盒策略/)：能力标志与文件系统姿态
+- [运行智能体诊断](/zh-CN/手册/操作指南/诊断智能体/)：诊断检查覆盖的内容

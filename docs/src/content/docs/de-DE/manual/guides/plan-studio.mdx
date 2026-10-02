@@ -1,180 +1,200 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: In Plan Studio arbeiten
+description: Prüfe, bearbeite, schätze, vergleiche und gib einen Plan im Editor von Plan Studio frei und führe parametrisierte Playbooks aus.
 slug: de-DE/handbuch/anleitungen/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/de-DE/handbuch/konzepte/orchestrierung/) and
-[Use plan mode](/de-DE/handbuch/anleitungen/planmodus/).
+Diese Anleitung zeigt dir, wie du mit Plänen in Plan Studio arbeitest. Was
+Orchestrierungen und Plandokumente sind, steht unter
+[Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/) und
+[Planmodus nutzen](/de-DE/handbuch/anleitungen/planmodus/).
 
-## Open a plan
+## Einen Plan öffnen
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Ein Plan gehört zu dem Gespräch, das ihn erzeugt hat, und dort erreichst du
+ihn normalerweise: Die Planzeile im Gespräch hat die Aktion **Öffnen**, und
+Plan Studio öffnet sich als Editor-Tab neben dem Gespräch.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Es gibt keinen Seitenleisteneintrag „Pläne“]
+Das ist Absicht. Die Seite unter
+`/workspaces/<workspace-id>/plans` ist nur ein aufrufbarer Direktlink. Setze
+ein Lesezeichen, wenn du eine feste Liste willst.
 :::
 
-The hub lists three sections:
+Die Seite listet drei Abschnitte:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/de-DE/handbuch/anleitungen/planmodus/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Aktive Pläne** — Orchestrierungen, vorgeschlagene zuerst, mit Status,
+  Schrittzahl und Revisionsnummer.
+- **Plandokumente** — Pläne, die ein einzelner Agent mit `submit_plan` im
+  [Planmodus](/de-DE/handbuch/anleitungen/planmodus/) eingereicht hat, solange
+  sie vorgeschlagen oder freigegeben sind.
+- **Playbooks** — gespeicherte, parametrisierte Planvorlagen.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Klicke eine Karte, um sie in Plan Studio zu öffnen. Die Route ist
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, wobei `kind`
+`orchestration` oder `document` ist. So verlinkst du auch einen einzelnen Plan
+direkt.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Hast du eine **Orchestrierung** geöffnet, siehst du die bearbeitbare Leinwand,
+die Versionszeitleiste und die Freigabeleiste. Hast du ein **Plandokument**
+geöffnet, erscheint derselbe Graph nur lesend. Plandokumente schreibt der
+Agent; du prüfst sie, schätzt sie und gibst sie frei oder lehnst sie ab. Ein
+freigegebenes Dokument zeigt den aktuellen Laufstatus je Knoten aus der
+Orchestrierung, in die es kompiliert wurde.
 
-## Edit the DAG
+## Den DAG bearbeiten
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Bearbeitungen sind an einer **Orchestrierung** möglich, solange sie
+`proposed` ist. Alles auf der Leinwand steuerst du über die Tastatur:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Klicke die Leinwand an und bewege die Auswahl mit den **Pfeiltasten**.
+2. Drücke **n**, um einen Schritt hinzuzufügen. Er erscheint ausgewählt als
+   „Neuer Schritt“; benenne ihn im Knoteninspektor rechts um.
+3. Drücke **e** auf dem Schritt, der zuerst laufen muss, und klicke dann den
+   abhängigen Schritt (oder wähle ihn und drücke **Enter**), um eine
+   Abhängigkeit zu verbinden. **Esc** verwirft eine offene Verbindung.
+4. Drücke **x**, um die neueste Abhängigkeit des gewählten Schritts zu
+   durchtrennen, oder schalte die exakten Abhängigkeiten im
+   Abhängigkeitseditor des Knoteninspektors um.
+5. Drücke **Delete**, um den gewählten Schritt zu entfernen. Verweise auf ihn
+   verschwinden aus den Abhängigkeiten der übrigen Schritte.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Im Knoteninspektor bearbeitest du außerdem Beschreibung, Rolle und
+Ausgabeschema des Schritts. Nach einer kurzen Pause speichert sich die
+Bearbeitung automatisch als neue Revision. Ein Validierungsfehler in der
+Freigabeleiste blockiert das Speichern, bis du ihn behebst.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Nur Arbeitsschritte sind bearbeitbar. Strukturknoten — Recherche, Diskussion
+und Synthese — sind schreibgeschützt, und ebenso jeder Schritt, dessen Arbeit
+schon gelaufen ist. Er ist mit „Bereits ausgeführt“ markiert, weil eine
+Bearbeitung den Plan ab hier verzweigen würde.
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Das Speichern ist optimistisch nebenläufig und gebunden an die Revision, von
+der du ausgegangen bist. Plant der Orchestrator unter dir neu, wird dein
+Speichern mit „the plan moved on“ abgelehnt, statt zusammengeführt oder still
+überschrieben zu werden. Lies die aktuelle Revision neu und wiederhole die
+Bearbeitung. Von Agenten angestoßene Neuplanungen sind selbst auf eine alle
+zwei Minuten begrenzt, deshalb bleibt das selten.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Die Leinwand kennt kein Ziehen zum Verschieben: Das Layout entsteht aus der
+Abhängigkeitsstruktur. Einen Schritt verschieben heißt, seine Abhängigkeiten
+neu zu verdrahten.
 :::
 
-## Read cost, time and risk estimates
+## Kosten, Zeit und Risiko schätzen
 
-Press **Estimate** in the approval bar.
+Drücke **Schätzen** in der Freigabeleiste.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Jeder Schritt auf der Leinwand bekommt ein Badge mit einem Kostenbereich und
+  der Stichprobengröße dahinter, oder „Noch kein Verlauf“, wenn die Rolle des
+  Schritts noch nie gelaufen ist. Wähle einen Schritt für das volle Detail im
+  Knoteninspektor: Kostenbereich mit Stichprobengröße, ein Dauerbereich und ein
+  Wirkungsradius (Dateien und Symbole) aus der Herkunft des Schritts — oder
+  „unbekannt“, wenn der Schritt keine Herkunft trägt.
+- Die Freigabeleiste zeigt die Plansumme: einen Gesamtkostenbereich, einen
+  Dauerbereich für den kritischen Pfad (parallele Zweige überlappen sich, das
+  ist also nicht die Summe) und den Kostendeckel, sofern der Plan einen setzt.
+- Haben nur manche Schritte Historie, ist die Summe mit **teilweise** markiert
+  und umfasst nur die schätzbaren Schritte. Liegt das obere Ende der Schätzung
+  über dem Kostendeckel, wird die Summe rot und zeigt die Warnung „über
+  Budget“.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Schätzungen sind ehrlich, oder sie fehlen. Ein Schritt, dessen Rolle keine
+Historie abgeschlossener Läufe hat, meldet eine Stichprobengröße von null und
+gar keine Bereiche. Er erscheint als unbekannt, statt geschätzt zu werden.
+Behandle „Noch kein Verlauf“ als „weiß niemand“, nicht als „günstig“.
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/de-DE/handbuch/anleitungen/kosten-verwalten/) for controls that actually stop
-spending.
+Der Kostendeckel ist ein Vergleich nur in der Anzeige, gegen diese Schätzung.
+Sobald der Plan läuft, erzwingt ihn nichts — siehe
+[Kosten verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/) für die
+Steuerungen, die Ausgaben wirklich stoppen.
 
-## Diff a revision against an earlier proposal
+## Eine Revision mit einem früheren Vorschlag vergleichen
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Jede Bearbeitung und jede Neuplanung durch den Orchestrator hängt an eine
+Revisionszeitleiste an, die nur wächst. Sie steht im Panel **Versionen** links
+an einem Orchestrierungsplan.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Klicke eine Revision, um sie mit dem aktuellen Vorschlag zu vergleichen.
+   Ohne Auswahl vergleicht das Panel die vorherige Revision mit der aktuellen.
+2. Lies den Diff in der unteren Hälfte des Panels: Schritte, die zwischen den
+   beiden Revisionen hinzugefügt, entfernt oder geändert wurden.
+3. Ist der Plan noch `proposed`, klicke das Zurückspulen-Symbol an einer
+   Revision, um dorthin zurückzugehen. Zurückspulen speichert diesen Vorschlag
+   als **neue** Revision — verloren geht nichts.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` und der Editor lehnen Änderungen ab, sobald der Plan
+nicht mehr `proposed` ist. Ein laufender Lauf übernimmt deshalb keine
+Neuplanung mitten in der Ausführung.
 
-## Approve, reject, or widen a plan
+## Einen Plan genehmigen, ablehnen oder erweitern
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+In der App ist ein vorgeschlagener Plan eine einzige Entscheidung, und sie
+gilt für den ganzen Plan: **Plan genehmigen** oder **Ablehnen** in der
+Freigabeleiste. **Plan genehmigen** genehmigt immer jeden Schritt. Eine
+Teilmenge lässt sich vorher nicht wählen. Die Freigabe bleibt gesperrt, solange
+der Vorschlag Validierungsfehler hat. Sie stehen neben den Schaltflächen.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Freigeben ist dem Menschen vorbehalten. Ein MCP-Tool dafür gibt es nicht. Ein
+Agent kann einen Plan vorschlagen und überarbeiten, freigeben kann er ihn
+nicht.
 
-Once an orchestration is executing, the bar changes:
+Sobald eine Orchestrierung läuft, ändert sich die Leiste:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Hat ein Schritt mitten im Lauf angehalten, um nachzufragen, wähle ihn und
+  drücke **Knoten fortsetzen**, um ihn wieder aufzunehmen.
+- Drücke **Auswahl genehmigen**, um eine _Teilfreigabe_ auf den gewählten
+  Schritt und alles zu erweitern, wovon er transitiv abhängt (ein Schritt
+  lässt sich nie ohne seine Abhängigkeiten freigeben). Die Steuerung sitzt bei
+  jeder Orchestrierung auf der Ausführungsleiste. War der Plan als Ganzes
+  freigegeben, tut sie nichts.
+- Drücke **Lauf abbrechen**, um die ganze Orchestrierung zu stoppen.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Schritte außerhalb einer teilweise freigegebenen Menge erscheinen als
+zurückgestellt und laufen erst, wenn du die Menge erweiterst.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Teilfreigaben entstehen nicht in der App]
+Eine Teilfreigabe gibt es nur, wenn etwas `orchestration.approve` über RPC mit
+einer ausdrücklichen Liste `approved_node_keys` aufgerufen hat. **Plan
+genehmigen** in der App genehmigt immer jeden Schritt. Plandokumente werden in
+jedem Fall als Ganzes freigegeben, ein laufendes Dokument bietet deshalb nur
+**Lauf abbrechen**.
 :::
 
-## Run a playbook with parameters
+## Ein Playbook mit Parametern ausführen
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/de-DE/handbuch/anleitungen/pipeline-erstellen/) instead.
+Ein Playbook ist eine gespeicherte Planvorlage mit typisierten Platzhaltern
+`{{param}}` im Ziel, in den Schritttiteln, in den Beschreibungen und in den
+Prompts. Die Ersetzung ist wörtlich, eine Ausdruckssprache gibt es nicht.
+Brauchst du Logik, nimm eine
+[Pipeline](/de-DE/handbuch/anleitungen/pipeline-erstellen/).
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Drücke im Abschnitt **Playbooks** der Seite **Ausführen** am Playbook (oder
+   öffne die ⌘K-Befehlspalette und wähle das Playbook dort).
+2. Fülle die Parameter aus. Aufzählungsparameter erscheinen als Dropdowns;
+   Repo- und Agentenparameter nehmen eine Repo- oder Agentenreferenz;
+   optionale Parameter fallen auf ihren Standard zurück.
+3. Wähle das **Anker-Ticket**, gegen das der Plan vorgeschlagen wird, und
+   bestätige dann.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Ein Playbook auszuführen **schlägt** nur einen Plan **vor**. Die instanziierte
+Orchestrierung öffnet sich in Plan Studio als `proposed`, und ausgeführt wird
+nichts, bis du sie dort freigibst. Um ein Playbook zu entfernen, drücke das
+Papierkorb-Symbol auf seiner Karte.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/de-DE/handbuch/referenz/mcp-tools/).
+Agenten legen Playbooks mit den MCP-Tools `create_playbook` und `run_playbook`
+an und führen sie damit aus; siehe
+[MCP-Tools](/de-DE/handbuch/referenz/mcp-tools/).
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Use plan mode](/de-DE/handbuch/anleitungen/planmodus/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/de-DE/handbuch/anleitungen/pipeline-erstellen/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/): the engine view of an approved plan
+- [Planmodus nutzen](/de-DE/handbuch/anleitungen/planmodus/): wie ein Agent mit `submit_plan` ein Plandokument erzeugt
+- [Eine Orchestrierung ausführen](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/): der Lebenszyklus mit einmaliger Freigabe, von der Gesprächsseite
+- [Eine Pipeline-Vorlage erstellen](/de-DE/handbuch/anleitungen/pipeline-erstellen/): wenn du Logik brauchst, die ein Playbook nicht ausdrücken kann
+- [Pipeline-Läufe überwachen](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/): die Engine-Ansicht eines freigegebenen Plans
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Orchestration](/de-DE/handbuch/konzepte/orchestrierung/)
+- [Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/)

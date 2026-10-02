@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: 에이전트 디스패치 수명주기
+description: 메시지가 도착한 시점부터 실행 로그가 닫히는 시점까지 벌어지는 일 — 프롬프트 조립, 워크트리, 아이덴티티, 실행을 제한하는 요소, 그리고 실행 결과를 정직하게 기록하는 방식.
 slug: ko-KR/매뉴얼/개념/디스패치-수명주기
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## 디스패치란 무엇인가
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+디스패치는 하나의 대화에서 하나의 어댑터를 통해 이루어지는, 한 에이전트의 한 번의 실행입니다. 디스패치에 관한 모든 일은 `cc_server`에서 일어납니다. 클라이언트는 메시지를 보낸 뒤 이벤트가 다시 스트리밍되는 것을 지켜봅니다. 어떤 클라이언트에도 디스패치 경로는 없습니다.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+에이전트는 여섯 가지 사유로 깨어나며, 실행은 그 사유를 **웨이크 컨텍스트**로 함께 전달하므로 에이전트는 자신이 _왜_ 깨어 있는지 압니다.
 
-| Wake reason      | Trigger                                                      |
+| 웨이크 사유      | 트리거                                                      |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | 누군가 스페이스에서 메시지를 보냈거나 에이전트를 멘션함 |
+| `assignment`     | 티켓이 에이전트에 할당됨                           |
+| `pipelineStep`   | 파이프라인 단계가 디스패치함                                |
+| `childCompleted` | 하위 티켓이 완료됨                                      |
+| `followUp`       | 예약된 팔로업 하트비트                              |
+| `recovery`       | 실패 후 복구 경로가 다시 디스패치함              |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+웨이크 컨텍스트는 그 사유에 딸린 id들 — 티켓, 스페이스, 메시지, 파이프라인 실행 — 을 함께 담으며, 이것들은 에이전트의 환경과 프롬프트에 주입됩니다.
 
-## Prompt assembly
+## 프롬프트 조립
 
-The prompt is built in layers, each one a labelled section:
+프롬프트는 계층으로 구성되며, 각 계층은 레이블이 붙은 섹션입니다.
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **아이덴티티** — 에이전트 자신의 id, 이름, 워크스페이스 id이며, 이 UUID들을 워크스페이스 범위 도구에 그대로 전달하라는 명시적 지시가 함께 들어갑니다. 워크스페이스는 에이전트에 내재된 것이므로 항상 포함됩니다.
+- **도구 카탈로그와 리소스 프로토콜**, 그다음 **워크스페이스 레이아웃**.
+- 에이전트에 설정된 경우 **시스템 프롬프트 재정의**, 그다음 **페르소나**(역할로 매개변수화됨)와 **팀 브리프**.
+- **스킬** — 에이전트에 지정된 이름들.
+- 현재 모드의 **실행 계약과 절차**.
+- **웨이크 컨텍스트**와 **멘션 컨텍스트**: 누가 에이전트를 호출했는지, 그리고 그 주변의 로스터.
+- **모드 블록** — 모드의 기능 프로필 _과 실제로 구성된 도구 목록_ 에서 생성되므로, 프롬프트가 실행에 실제로 없는 도구의 이름을 언급하는 일은 결코 없습니다.
+- **메모리 컨텍스트** — 작업을 위해 검색된 사실들.
+- **대화 컨텍스트** — 최근 스페이스 기록이며, 에이전트에 설정된 컨텍스트 크기와 무관하게 그대로 담기는 창은 50,000자로 제한됩니다. 오래된 기록이 잘려 사라지는 것은 아닙니다. 에이전트는 `get_messages`로 필요할 때 가져오며, 의미상 관련 있는 오래된 메시지는 여전히 드러납니다.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[슬래시 명령은 원본 사용자 텍스트에서 파싱됩니다]
+계층형 프롬프트는 컨텍스트 블록으로 시작하므로 슬래시로 시작하지 않습니다. 명령은 사용자 메시지에서 그대로 파싱된 뒤 계층형 프롬프트의 꼬리에서 잘려 나가므로, 모든 컨텍스트 계층이 살아남습니다.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+명령은 두 곳에 나뉘어 처리됩니다. `/todo`와 `/compact`는 컴포저에서 가로채며, 메시지로 저장하거나 에이전트에 보내지 않습니다. `/compact`를 저장하면 압축 기준점이 한 턴 뒤로 밀려 트랜스크립트가 오염되기 때문입니다. `/plan`은 양쪽에서 처리됩니다. 컴포저가 스페이스의 모드를 전환하며, 이것이 이번 턴과 그 이후 모든 턴에서 도구 표면, 가드 프리셋, 프롬프트를 서로 맞춰 줍니다. `/goal`, `/loop`, `/skill:<name>`은 실행 내부에서, 그것도 내장 하네스에서만 처리됩니다. `/goal`과 `/loop`는 비용 예산과 함께 자율 작업을 시작하고, `skill:` 접두사가 붙은 이름은 스킬로 조회되어 그 `SKILL.md` 본문이 해당 턴의 지시가 됩니다. 네임스페이스가 두 어휘를 분리해 줍니다. 이름을 스킬로 그대로 해석하던 때에는 `plan`이나 `compact`라는 스킬이 내장 명령에 영구히 가려졌습니다. 네임스페이스가 생기기 전에 작성된 메시지를 위해, 내장이 아닌 이름은 접두사 없이도 여전히 해석됩니다. 인식되지 않는 이름은 그냥 일반 텍스트로 처리됩니다.
 
-## Worktree provisioning
+## 워크트리 프로비저닝
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+무엇이든 실행되기 전에 대화는 자신만의 작업 루트를 확보하며, 그 아래에 저장소마다 격리된 쓰기 시 복사 워크트리가 놓입니다. 기본값은 워크스페이스에 연결된 모든 저장소입니다. PR 스페이스나 명시적 선택으로 만든 스페이스는 허용 목록에 있는 저장소만 프로비저닝하며, PR 리뷰 대화는 자신의 저장소 하나를 풀 리퀘스트의 head ref에 고정하고 나머지는 각자의 기본 브랜치에 둡니다. 원본 체크아웃은 결코 변경되지 않으며, 스페이스를 삭제하면 대화 디렉터리 전체가 회수됩니다.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+쓰기 시 복사는 `rift`가 제공되는 모든 곳에서 **유일한** 구현이며, 번들로 포함된 네이티브가 이를 뒷받침합니다. reflink를 할 수 없는 파일 시스템이나, 저장소와 다른 볼륨에 있는 데이터 디렉터리는 폴백으로 넘어가지 않고 프로비저닝을 실패시킵니다. `git worktree`는 쓰기 시 복사 백엔드를 만들 수 없는 Windows의 백엔드이며, 다른 호스트에서의 조용한 성능 저하가 아닙니다. `rift`를 제공하는 플랫폼에서 `rift`가 없다면 설치는 망가진 것입니다. 서버는 조용히 폴백하지 않고 부팅을 거부합니다. 조용한 폴백은 그 고장을 영원히 더 느린 경로 뒤에 숨기기 때문입니다.
 
-## Identity and credentials
+## 아이덴티티와 자격 증명
 
-Two identities are resolved per run, before any process launches.
+프로세스가 시작되기 전에, 실행마다 두 가지 아이덴티티가 결정됩니다.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git 작성자 표기.** 에이전트가 만든 커밋은 _에이전트로서_ 작성됩니다 — `GIT_AUTHOR_*`와 `GIT_COMMITTER_*` 모두에서 `<Name> (agent) <agentId@agents.control-center.local>` 형태이며, 사람을 사칭하지 않습니다. 로컬 파트는 에이전트의 이름 슬러그가 아니라 에이전트의 UUID입니다. 요청한 사람은 `Co-Authored-By:` 트레일러로 크레딧을 받으며, 이는 환경에 실려 전달되고 시스템 프롬프트에서 지시됩니다. 호출자가 명시적으로 지정한 아이덴티티는 항상 이 둘보다 우선합니다.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**코드 호스트 아이덴티티.** 실행의 GitHub 자격 증명은 언제나 브로커의 것입니다 — 저장소 범위 App 설치 토큰 또는 그 환경 PAT 폴백 — 요청한 멤버가 저장해 둔 자신의 토큰은 결코 아닙니다. `actingUserId`는 PAT 폴백의 범위를 제한하므로 서버 소유자가 아닌 멤버가 서버의 영향력을 물려받지 않습니다. 개인 토큰을 에이전트 환경 위에 덧씌우는 것이 아닙니다.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**모델 공급자 자격 증명**은 정해진 순서로 결정되며 그 순서가 중요합니다.
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. 어댑터별 환경 재정의,
+2. 호출자의 환경,
+3. 서버의 자격 증명 저장소(만료가 임박한 OAuth 토큰은 갱신),
+4. 프로세스 환경.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+어댑터별 재정의가 가장 먼저이므로, 앱에서 연결한 공급자 계정을 조용히 앞지릅니다. 실행이 엉뚱한 계정으로 과금된다면, 그 재정의가 가장 먼저 살펴볼 곳입니다. 공급자 자격 증명은 호스트 전역이며, 설치된 모든 워크스페이스가 공유합니다.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/).
+기능으로 제한된 토큰(GitHub, 티켓팅)은 자격 증명 브로커에서 나오며, 브로커는 실행의 기능이 허용하는 것만 주입합니다. [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)을 참고하세요.
 
-## Launch
+## 시작
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+실행은 자신의 워크트리를 작업 디렉터리로 삼아 생성되며, Claude Code의 경우 에이전트가 Control Center의 도구 표면에 닿을 수 있도록 생성된 MCP 구성도 함께 받습니다. ACP와 하네스 `bash`에는 정리된 환경이 주어지고, `NoSandboxAdapter`를 거치는 Claude Code는 호스트 환경을 물려받습니다.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[OS 샌드박스는 호스트에 백엔드가 있는 곳에서만 실행을 감쌉니다]
+`cc_server`는 부팅할 때 호스트를 한 번 탐지하고, 백엔드를 쓸 수 있으면 에이전트 프로세스를 그 안에 감쌉니다 — macOS에서는 Seatbelt, Linux와 WSL2에서는 bubblewrap입니다. 디스패치 접점 두 곳을 모두 감싸는데, 두 곳이 같은 것을 공유하지 않기 때문입니다. Claude Code CLI는 샌드박스 포트를 지나고, ACP 어댑터와 내장 하네스의 `bash` 도구는 샌드박스 매니저를 지납니다. 이 샌드박스는 실행의 보호 경로를 적용하는 주체이기도 합니다. 등록된 저장소 체크아웃은 모든 모드에서 샌드박스 안에서 쓰기가 금지됩니다.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+백엔드가 없으면 실행은 **샌드박스에 들어가지 않으며**, 이를 보상하는 다른 변화도 없습니다. Windows에서는 항상 그렇고(네이티브 래핑이 없습니다 — `microvm`은 터미널과 리그를 위한 별도의, 탐지로 제한된 경로입니다), `PATH`에 `bwrap`과 `socat`이 없는 Linux나 WSL2에서도 그렇습니다. 서버는 시작 로그 줄에서 자신이 어느 상태인지 밝히며, `--sandbox off`로 의도적으로 벗어날 수 있습니다.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+샌드박스가 켜져 있어도 두 가지 빈틈은 남습니다. 하네스의 프로세스 내부 파일 도구(read, write, edit, apply patch, search, find, search_files)는 서버 프로세스 안에서 돌기 때문에 어떤 프로필도 이들을 제약하지 않습니다 — 이들의 경계는 도구 자체의 경로 제한과 가드레일입니다. 그리고 Claude Code는 `--dangerously-skip-permissions`로 시작되므로 자체적인 파일·셸 호출이 Control Center의 게이트를 거치지 않습니다. OS 샌드박스가 그 주위의 경계입니다.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+나머지 경계는 샌드박스 여부와 상관없이 모든 호스트에서 유지됩니다. 실행 자신의 워크트리(`rift`가 제공되는 곳에서는 쓰기 시 복사, Windows에서는 `git worktree`), 실행마다 브로커를 거쳐 발급되고 정리 시 회수되는 기능 제한 자격 증명, 통합된 작업 가드레일(실패 시 차단 방식이며 — 승인자가 연결되지 않은 `prompt` 결정은 거부됩니다), 그리고 대화의 모드가 허용하는 도구 표면입니다. ACP와 하네스 `bash`는 여전히 환경을 정리하며, `NoSandboxAdapter`를 거치는 Claude Code는 호스트 환경을 물려받습니다.
 :::
 
-## Streaming
+## 스트리밍
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+실행은 타입이 지정된 이벤트 시퀀스를 다시 스트리밍하며, 스트림 프로세서는 이를 메시지 델타로 저장하고, 트랜스크립트 세그먼트로 접어 넣고, 메시징 이벤트로 바꿉니다.
 
-| Event              | What it carries                                                                                                  |
+| 이벤트              | 담기는 내용                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | 추론 출력, 인라인으로 렌더링됨                                                                                |
+| `text`             | 표시되는 출력                                                                                                   |
+| `toolCall`         | 도구 호출, 그 id와 구조화된 인수 포함                                                          |
+| `toolResult`       | 대응하는 결과, 오류가 발생했거나 부분 스트림인 경우 표시됨                                              |
+| `usage`            | 측정 구간의 토큰 수와 비용                                                                   |
+| `error`            | 오류, 어댑터가 보고한 경우 그 구조화된 코드 포함                                                |
+| `sandboxViolation` | OS가 시스템 호출을 거부함. 샌드박스가 실제로 프로세스를 감싸는 곳에서만 발생합니다 — 위의 참고를 보세요 |
+| `debug`            | 런타임 진단(시작 표시자, 가드 결정, 계약 넛지)                                           |
+| `done`             | 실행 종료                                                                                                 |
 
-## What bounds a run
+## 실행을 제한하는 요소
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+**어디에도 턴 상한이 없다는 것은** 의도된 설계입니다. 하드 반복 횟수는 정당한 장기 작업(마이그레이션, 팬아웃 정리)을 죽이면서, 아래 가드들이 더 일찍 잡아내는 것은 아무것도 잡지 못합니다. 실행은 다음 경우에 끝납니다.
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **모델이 스스로 멈출 때**;
+- **사람이 멈출 때**, 또는 대화를 넘겨받을 때(내장 하네스는 다음의 깨끗한 턴 경계에서 일시 중지됩니다. 안전한 경계가 없는 Claude Code 실행은 대신 중지됩니다);
+- **무응답 감시 타이머가 발동할 때.** 임계 시간 동안 출력이 없으면 `silentRun` 실패와 함께 세션이 종료됩니다. 기본값은 15분이며, 읽기 위주 모드(리뷰와 플랜)에서는 10분으로 줄어듭니다. 에이전트는 1분에서 240분 사이에서 이 값을 재정의할 수 있습니다. 감시 타이머는 자식 프로세스가 PID를 보고할 때 무장되므로 Claude Code CLI를 포괄합니다 — 아무것도 생성하지 않는 내장 하네스는 **포괄하지 않습니다**;
+- **비용 상한이 걸릴 때** — 다만 자율 명령에서만 그렇습니다.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+둠 루프 가드는 종료 장치가 아닙니다. 동일한 도구 호출이 세 번 연속 이어지면, 루프는 에이전트가 접근 방식을 바꾸도록 _스티어링_합니다.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[일반적인 턴에는 비용 상한이 없습니다]
+세션 내 비용 가드는 `/goal`과 `/loop`에만 연결되어 있으며, 다른 모든 실행은 예산을 아예 전달하지 않습니다. 그 명령들의 경우 무인 구간 하나가 기본적으로 500센트($5.00)까지 소모될 수 있고, 80%에서 소프트 스티어가 이루어져 강제 중지 전에 에이전트가 깔끔하게 마무리하도록 요청하며, 구간을 가로지르는 지속 목표 예산은 5000센트($50.00)입니다. 명시적인 `/goal --budget`은 한 구간만큼 초과되는 일이 결코 없습니다.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+종합하면, 내장 하네스에서 평범한 대화형 턴은 턴 상한도, 비용 상한도, 무응답 감시 타이머도 없습니다. 모델이 멈추거나 사용자가 멈출 때 끝납니다. 이는 의도된 절충입니다 — 대안들은 모두 정당한 장기 작업을 죽입니다 — 다만 무인 대화형 실행은 모델 자신의 판단 외에는 아무것도 그것을 제한하지 않는다는 뜻이기도 합니다.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+실행 중에, 실행 중인 에이전트에게 보낸 메시지는 **스티어링**으로 대기열에 들어가 다음 턴 경계에서 소진되므로, 실행을 죽이지 않고도 방향을 조정할 수 있습니다. 스티어링, 일시 중지, 서브에이전트, 완료 계약은 내장 하네스의 기능이며, Claude Code에는 이 중 어느 것도 없습니다.
 
-## How a run is recorded
+## 실행이 기록되는 방식
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+모든 디스패치는 `AgentRunLog`를 기록합니다. 시작과 종료 시각, 요약, 토큰 수와 추정 비용(서브에이전트에서 합산된 비용 포함), 어댑터와 모델, 프로세스 id와 로그 경로, 대화 및 소속된 티켓이나 파이프라인 실행, 그리고 진실의 대부분을 담는 두 가지 분류 필드입니다.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **상태**는 거칩니다: `pending`, `running`, `completed`, `error`.
+- **활성 상태**는 더 세밀한 판독입니다: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **오류 계열**은 실패를 유용하게 묶습니다: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed`는 "전달됨"을 뜻하지 않습니다]
+실행이 자신의 모드가 요구한 산출물 없이 끝나면 — `submit_plan`을 결코 호출하지 않은 플랜 모드 실행, 아무것도 제안하지 않은 오케스트레이트 실행 — 프로세스가 깨끗하게 종료되었으므로 상태는 `completed`로 남습니다. 정직한 신호는 활성 상태(`empty`), 오류 계열(`silentRun`), 그리고 무엇이 만들어지지 않았는지 정확히 말하는 요약에 실립니다. 그 요약은 보호됩니다. 마무리 처리가 모델의 마지막 잡담으로 그 요약을 덮어쓰지 않습니다.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+이는 의도된 것입니다. 상태를 뒤집으면 빠진 산출물과 아무 상관 없는 티켓과 파이프라인 상태 머신이 움직입니다. 또한 "상태: completed"만으로는 실행이 성공했다고 결론 내리기에 결코 충분하지 않다는 뜻이기도 합니다 — 요약을 읽으세요.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+실행을 닫으면 `AgentRunCompleted`가 발행되며, 여기에 많은 것이 매달려 있습니다. 알림 프레임과 그 영속 피드 항목, 연결된 클라이언트로 밀어 넣는 라이브 포워더, 파이프라인 비용 합산, 실행을 기다리던 파이프라인 단계 재개, 배후 티켓 완료, 오케스트레이션을 종료 상태로 매핑, 목표 감독자의 계속·중지 결정, 체커 역할, 그리고 실행 후 예산 평가입니다. 프레즌스 로스터는 이벤트가 아니라 최근 실행 로그를 지켜보는 별도의 경로로 따라옵니다.
 
-## Budgets, after the fact
+## 예산, 사후 반영
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+예산 집행은 게이트가 아니라 _반응_ 입니다. 실행이 완료되면 평가자가 에이전트의 월 누적 지출을 유효 상한(연결된 예산 정책이 있으면 그것, 없으면 에이전트 자체의 월 한도이며 0은 무제한을 뜻합니다)과 비교합니다. 소프트 임계값을 넘으면 경고 인시던트가 기록되고, 예산을 모두 소진하면 심각 인시던트가 기록되며, 조직도에서 에이전트의 수명주기 상태가 `paused`로 바뀝니다. 디스패치는 그 에이전트의 작업을 여전히 받아들입니다. `BudgetThresholdCrossed` 파이프라인 트리거는 같은 이벤트에서 후속 작업을 시작할 수 있습니다.
 
-## Retry lineage
+## 재시도 계보
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+모든 실행 로그는 재시도 계보를 담을 수 있습니다 — 부모 실행 id, 시도 횟수 카운터, 이어받기 요약입니다. 대화 실행 트리는 시도 횟수가 0이 아닐 때 그 번호를 렌더링합니다. 채팅에서의 "다시 시도"는 새 실행 로그를 가진 새로운 디스패치입니다.
 
-## Related concepts
+## 관련 개념
 
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): what the adapter can and cannot enforce
-- [Modes](/ko-KR/매뉴얼/개념/모드/): where the tool surface and the completion contract come from
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/): the effect-class policy every gated call passes
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/): the isolation story in full
-- [Multiplayer](/ko-KR/매뉴얼/개념/멀티플레이어/): steering, take-over and the autonomy dial
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/): what `AgentRunCompleted` sets off
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 어댑터가 강제할 수 있는 것과 없는 것
+- [모드](/ko-KR/매뉴얼/개념/모드/): 도구 표면과 완료 계약이 나오는 곳
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/): 게이트를 거치는 모든 호출이 통과하는 효과 등급 정책
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/): 격리 이야기의 전모
+- [멀티플레이어](/ko-KR/매뉴얼/개념/멀티플레이어/): 스티어링, 넘겨받기, 자율성 다이얼
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/): `AgentRunCompleted`가 촉발하는 것

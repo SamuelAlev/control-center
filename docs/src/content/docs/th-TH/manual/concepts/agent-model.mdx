@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: โมเดลเอเจนต์
+description: เอเจนต์ใน Control Center จริง ๆ คืออะไร ฟิลด์ใดของมันที่เปลี่ยนพฤติกรรม และอะแดปเตอร์ที่มันรันอยู่เป็นตัวกำหนดว่าอะไรบังคับใช้ได้
 slug: th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## เอเจนต์คืออะไร?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+เอเจนต์คือตัวแสดงที่มีชื่อ มีเพอร์โซนา มีชุดสกิล มีอะแดปเตอร์ให้รัน และมีความสามารถหนึ่งชุด เอเจนต์เป็นตัวตนหลักในความหมายเดียวกับที่มนุษย์เป็น คือเขียนข้อความ เป็นเจ้าของตั๋วงาน ทิ้งรีวิว และปรากฏอยู่ในรายชื่อเดียวกัน เอเจนต์คือสิ่งที่ลงมือทำงาน
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+เอเจนต์แต่ละตัวสังกัดเวิร์กสเปซเพียงหนึ่งเดียวเท่านั้น นี่คือค่าคงที่ตายตัว — `agent.workspaceId` ไม่เป็นค่าว่าง เวิร์กสเปซของเอเจนต์เองเป็นตัวเลือกไฟล์ฐานข้อมูลที่แถวข้อมูลของมันไปลง และการสร้างเอเจนต์ที่ไม่มีเวิร์กสเปซจะถูกปฏิเสธ
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+เอเจนต์ยังเป็นไดเรกทอรีด้วย คำนิยามของมันอยู่ที่ `agents/<slug>/AGENTS.md` ใต้ไดเรกทอรีข้อมูลของเวิร์กสเปซ โดยสกิลที่มันถืออยู่ถูกลิงก์แบบซิมลิงก์เข้าไปใน `agents/<slug>/.agents/skills` แถวในฐานข้อมูลและไฟล์ถูกเขียนพร้อมกัน การซีดเป็นแบบทำซ้ำได้: ถ้าแถวของเอเจนต์มีอยู่แล้ว ไฟล์บนดิสก์และลิงก์สกิลก็ยังถูกเขียนใหม่ทับ ผู้เรียกใช้ในโปรดักชันคือการสร้างเวิร์กสเปซ ไม่ใช่การเปิดเซิร์ฟเวอร์ทุกครั้ง
 
-## What an agent carries
+## เอเจนต์มีอะไรบ้าง
 
-| Attribute               | What it does                                                                          |
+| แอตทริบิวต์             | สิ่งที่มันทำ                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | ตัวระบุสั้นคล้าย slug (`architect`, `qa`) และเป็นสิ่งที่ `@mentions` ใช้อ้างถึง        |
+| `title`                 | ตำแหน่งงานที่มนุษย์อ่านได้                                                            |
+| `persona`               | ข้อความอิสระว่าด้วยบุคลิกและคำแนะนำด้านพฤติกรรม ถูกฉีดเป็นส่วนหนึ่งของพรอมต์            |
+| `systemPrompt`          | คำแนะนำเพิ่มเติมแบบไม่บังคับ ถูกฉีดเป็นส่วน "Agent instructions" — ไม่ได้แทนที่ส่วนที่เหลือของพรอมต์ที่ประกอบขึ้น |
+| `skills`                | ชุดชื่อสกิลที่ไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่ สะท้อนเป็นลิงก์สกิลบนดิสก์                    |
+| `adapterId`             | ตัวรันที่เอเจนต์ส่งงานไปให้ **ค่า null จะถอยกลับไปใช้ลูปในตัว**                        |
+| `modelId`               | โมเดลใดภายในอะแดปเตอร์นั้น                                                            |
+| `effort`                | ระดับการใช้เหตุผล ซึ่งดึงมาจากคำศัพท์ของโมเดลที่เลือกเอง                              |
+| `contextSize`           | การแทนที่ขนาดหน้าต่างบริบท                                                            |
+| `capabilities`          | แฟล็กด้านข้อมูลรับรองและการส่งออก ถูกตรวจตอนเริ่มรัน                                  |
+| `silenceTimeoutMinutes` | การแทนที่ต่อเอเจนต์ (1–240) สำหรับตัวเฝ้าระวังความเงียบ                                |
+| `reportsTo`             | รหัสเอเจนต์แม่ — สายการรายงานที่ผังองค์กรวาดขึ้น                                        |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+คุณแก้ไขทั้งหมดนี้ได้ที่ การตั้งค่า → เวิร์กสเปซ → เอเจนต์ **เอเจนต์ใหม่** จะสร้างเอเจนต์ที่ยังไม่มีชื่อ ซึ่งคุณค่อยเติมข้อมูลทีหลัง
 
-## Skills
+## สกิล
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+สกิลคือชื่อที่ไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่บนเอนทิตีเอเจนต์ มีสองสิ่งเกิดขึ้นแยกกันกับมัน:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- การที่ชื่อเหล่านี้ถูกระบุไว้ในพรอมต์ที่ประกอบขึ้นภายใต้หัวข้อ "Skills" คือทั้งหมดที่ชุดของเอนทิตีทำได้ด้วยตัวเอง — ไม่มีคลังพรอมต์แยกตามสกิลที่ผูกอยู่กับมัน
+- ไดเรกทอรีของสกิลที่ถูกเอ่ยชื่อแต่ละตัว (`skills/<slug>/SKILL.md` ในเวิร์กสเปซ) ถูกลิงก์เข้าไปในโฟลเดอร์ของเอเจนต์เอง บนฮาร์เนสในตัว ฟรอนต์แมตเทอร์ของสกิลที่ลิงก์ไว้จะถูกโหลดอัตโนมัติเข้าสู่พรอมต์ระบบ และเอเจนต์จะอ่านเนื้อหาเต็มเมื่อต้องการ การพิมพ์ `/skill:<name>` ในบทสนทนาจะโหลดเนื้อหานั้นเป็นคำสั่งสำหรับเทิร์นนั้น
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/th-TH/คู่มือ/วิธีทำ/จัดการสกิล/).
+สกิลที่ดึงมาจากภายนอกต้องผ่านการสแกนซัพพลายเชนแบบปิดไว้ก่อนระหว่างการดึงกับการเขียน — ไม่มีเนื้อหาสกิลใดถึงดิสก์หรือพรอมต์ได้หากไม่มีคำตัดสิน ภายนอกหมายถึงรีโพสิทอรี GitHub ที่คุณลงทะเบียนเองเป็นแหล่งสกิล ไม่มีที่เก็บที่คัดสรรไว้แล้ว ดังนั้นเมตาดาต้าของรีโพสิทอรีเอง (คำอธิบาย ดาว ชื่อสกิล) จึงเป็นข้อมูลสำหรับแสดงที่ไม่น่าเชื่อถือ และคำตัดสินจากการสแกนคือสัญญาณความปลอดภัยเดียว การติดตั้งจะดึงไดเรกทอรีทั้งหมดของสกิล ปักหมุดไว้ที่คอมมิตต้นทางใน `skills-lock.json` และการอัปเดตครั้งต่อไปจะผ่านด่านตรวจอีกครั้งก่อนจะแทนที่สิ่งใด วิธีทำอยู่ใน [ติดตั้งและจัดการสกิล](/th-TH/คู่มือ/วิธีทำ/จัดการสกิล/)
 
-### Repo-scoped skills
+### สกิลที่จำกัดขอบเขตตามรีโป
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+รีโปหนึ่งสามารถมีสกิลของตัวเองได้ ในตำแหน่งมาตรฐานใดก็ได้ (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`) สเปซจะเช็กเอาต์รีโปที่ลิงก์ไว้ทุกตัววางเคียงกันไว้ใต้ `repos/<name>/` แต่เอเจนต์ทำงานในรีโปทีละตัวเท่านั้น — มันจึงถือสกิลของ **เฉพาะรีโปนั้น** และสกิลจะสลับไปเมื่อมันย้ายรีโป
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+รีโปใดเป็นรีโปที่ใช้งานอยู่จะอนุมานจากไฟล์ที่เอเจนต์แตะ: การเขียนไฟล์ใต้ `repos/<name>/` ทำให้รีโปนั้นเป็นรีโปที่ใช้งานอยู่ ขณะที่การอ่านข้ามรีโปเฉย ๆ ไม่ทำให้ ดังนั้นการไล่ตามสัญลักษณ์เข้าไปในเซอร์วิสพี่น้องจึงไม่สลับชุดสกิลไปจากใต้โจทย์ที่กำลังทำ บนสเปซที่มีรีโปเดียว คำตอบเป็นที่รู้กันก่อนเทิร์นแรก
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+การจำกัดขอบเขตนี้เป็นการตัดสินใจเรื่องงบประมาณบริบท ดัชนีสกิลอยู่ในพรอมต์ทุกเทิร์น ขณะที่เนื้อหาไม่ได้อยู่ด้วย ดังนั้นการแสดงสกิลของทุกรีโปพร้อมกันจึงกินโทเคนอย่างต่อเนื่อง — และสกิล `testing` จากเซอร์วิสหนึ่งจะชักนำไปผิดเมื่องานอยู่ที่อีกเซอร์วิส เหตุผลเดียวกันนี้อธิบายว่าทำไมดัชนีของเอเจนต์จึงมีรีโปเดียว แต่ช่องเขียนข้อความกลับไม่ได้จำกัดขอบเขตแบบนั้น เพราะการเอ่ยชื่อสกิลเองเป็นการกระทำที่ชัดเจนครั้งหนึ่ง ดังนั้น `/skill:<repo>:<name>` ไปถึงรีโปใดก็ได้ในสเปซ
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+สกิลของรีโปถูกโหลดให้ **ทุก** อะแดปเตอร์ ไม่ใช่แค่ฮาร์เนสในตัว สกิลของรีโปที่ใช้งานอยู่จะถูกทำให้ปรากฏเป็นไฟล์จริงในไดเรกทอรีทำงานของเอเจนต์ ซึ่งเป็นพาธที่ Claude Code สแกนอยู่แล้ว และดัชนีเดียวกันนี้ถูกประกอบเข้าไปใน `AGENTS.md` ที่ฮาร์เนสในตัวอ่าน สกิลของรีโปผ่านการสแกนแบบปิดไว้ก่อนเช่นเดียวกับสกิลที่ติดตั้ง ก่อนที่สิ่งใดจะเกิดขึ้น — รีโปที่เช็กเอาต์มาเป็นเนื้อหาที่โคลนมา และฟรอนต์แมตเทอร์ของมันไปถึงพรอมต์ได้
 
-## Capabilities
+## ความสามารถ
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+ความสามารถเป็นตัวควบคุมสิ่งที่การรันได้รับ _มอบให้_ ไม่ใช่สิ่งที่ไฟล์ซิสเต็มของมันอนุญาตให้แตะ ตัวกลางจัดการข้อมูลรับรองจะตรวจความสามารถเหล่านี้ตอนเริ่มรัน: ถ้าความสามารถใดปิดอยู่ โทเคนที่ตรงกันก็จะไม่ถูกฉีดเข้าไปเลย
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **พุชไปยังรีโป** — ควบคุมการฉีดโทเคน GitHub ที่ใช้สำหรับ `git push`
+- **GitHub API** — ควบคุมการฉีด `GH_TOKEN` และการส่งออกไปยัง api.github.com
+- **ตั๋วงาน** — ควบคุมคีย์ API ของผู้ให้บริการตั๋วงานและการส่งออกไปยังโดเมนของผู้ให้บริการ
+- **การส่งออกเครือข่าย** — คำขอขาออกใดก็ได้
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+การรันจะตัดสินความสามารถเหล่านี้จากแถวของเอเจนต์เอง เมื่อเอเจนต์ไม่ได้ตั้งค่าใดไว้ จะใช้ค่าเริ่มต้นแบบอนุรักษนิยมคงที่ คือ แฟล็กข้อมูลรับรองทั้งสามปิด การส่งออกเครือข่ายเปิด สวิตช์ "สิทธิ์แซนด์บ็อกซ์" ในฟอร์มเอเจนต์เป็นตัวเลือกระหว่างค่าเริ่มต้นสำรองนั้นกับชุดที่กำหนดเองซึ่งเก็บไว้บนเอเจนต์
 
-See [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) for the other half of the story, including what is and is not enforced at the filesystem level.
+ดู [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) สำหรับอีกครึ่งของเรื่อง รวมถึงสิ่งที่บังคับใช้และไม่บังคับใช้ในระดับไฟล์ซิสเต็ม
 
-## The adapter decides what can be enforced
+## อะแดปเตอร์เป็นตัวกำหนดว่าอะไรบังคับใช้ได้
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+ฟิลด์ที่มีผลตามมามากที่สุดเพียงหนึ่งเดียวบนเอเจนต์คืออะแดปเตอร์ เพราะทรานสปอร์ตของอะแดปเตอร์เป็นตัวกำหนดว่านโยบายของ Control Center ส่วนใดบังคับใช้ได้จริง
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| ช่องทางขนส่ง    | อะแดปเตอร์                | สิ่งที่ Control Center บังคับใช้                                                                                                                                                                                                                                           |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| ฮาร์เนสในตัว     | Control Center (built-in) | ทุกอย่าง ชุดเครื่องมือถูก _สร้าง_ ขึ้นจากโหมด เครื่องมือที่ไม่อนุญาตจึงมองไม่เห็น แทนที่จะแค่ถูกปฏิเสธ ทุกการเรียกผ่านด่านอนุมัติและกฎคุมการกระทำ และข้อกำหนดการเสร็จงานสามารถกระตุ้นเตือนแล้วทำให้การรันที่จบลงโดยไม่มีผลงานส่งมอบล้มเหลวได้ |
+| Claude CLI       | Claude Code               | เฉพาะเครื่องมือ `mcp__*` ที่ถูกป้อนให้เท่านั้น เครื่องมืออ่าน เขียน แก้ไข และเชลล์ของ Claude เองอยู่ในโปรเซสของมันและทำงานโดยไม่ถูกมองเห็น — และมันถูกเรียกด้วย `--dangerously-skip-permissions` เพราะไม่เช่นนั้น `claude -p` แบบไม่โต้ตอบจะค้างตลอดไปกับพรอมต์ของตัวเอง    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+พูดให้ชัดคือ **มีเพียงฮาร์เนสในตัวเท่านั้นที่รองรับเอเจนต์ย่อย การกำกับระหว่างการรัน การหยุดชั่วคราวและรันต่อ (และด้วยเหตุนั้นจึงรับช่วงงานได้) และการบังคับใช้โหมดเชิงโครงสร้าง** Claude Code ไม่ได้สิ่งเหล่านี้เลย
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[แซนด์บ็อกซ์ของระบบปฏิบัติการเป็นเพียงพื้นขั้นต่ำ ไม่ใช่ตัวบังคับใช้โหมด และไม่ใช่ทุกโฮสต์ที่มี]
+เมทริกซ์ข้างต้นว่าด้วยสิ่งที่ Control Center _มองเห็นและควบคุมได้_ ใต้ชั้นนั้น `cc_server` ห่อ CLI ของ Claude Code ไว้ในแซนด์บ็อกซ์ของระบบปฏิบัติการของโฮสต์เมื่อมี — Seatbelt บน macOS, bubblewrap บน Linux และ WSL2 — ดังนั้น `rm` ที่มองไม่เห็นหรือการเขียนที่มองไม่เห็นก็ยังถูกจำกัดด้วยระบบปฏิบัติการ บน **Windows ไม่มีแบ็กเอนด์เลย** และบน Linux หรือ WSL2 ที่ไม่มี `bwrap` และ `socat` ตัวตรวจสอบจะรายงานว่าไม่มี ดังนั้นการรันที่นั่นจึงถอยกลับไปใช้การทำให้สภาพแวดล้อมสะอาด ข้อมูลรับรองที่ส่งผ่านตัวกลาง กฎคุมบนการเรียกที่ Control Center มองเห็น และ worktree ของการสนทนาเอง (สำเนาเมื่อเขียนในที่ที่ `rift` มีให้ใช้; `git worktree` บน Windows)
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/).
+สิ่งที่แซนด์บ็อกซ์ไม่ใช่คือ _ด่านตรวจ_ มันจำกัดว่ากระบวนการอ่าน เขียน และเชื่อมต่อได้ที่ใด โหมดอ่านอย่างเดียวเข้าถึงมันได้จริงในรูปการเมานต์แบบผูกที่อ่านอย่างเดียว แต่แซนด์บ็อกซ์สกัดกั้นการเรียก ยกระดับเป็นการขออนุมัติ หรือบอกคุณทีหลังว่า CLI พยายามทำอะไรไม่ได้ สิ่งนั้น บวกกับความสามารถทั้งสี่ที่กล่าวถึงข้างต้น ยังคงเป็นสิ่งที่ฮาร์เนสในตัวมีและตัวอื่นไม่มี ดู [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+เอเจนต์ที่ **ไม่มี** อะแดปเตอร์จะถอยกลับไปใช้ **Control Center (built-in)** — ลูปที่อยู่ภายในเซิร์ฟเวอร์ จึงไม่มี CLI ให้ติดตั้ง — และบันทึกการรันของมันจะระบุ `cc-harness` เอเจนต์ที่ถูกซีดทุกตัวถูกสร้างขึ้นโดยไม่มีอะแดปเตอร์หรือโมเดล ดังนั้นเอเจนต์ทั้งห้าตัวของเวิร์กสเปซใหม่จะรันที่นั่น บนโมเดลเริ่มต้นของ Anthropic จนกว่าคุณจะตั้งอะแดปเตอร์และโมเดลให้แต่ละเอเจนต์ ตัวเลือก "อะแดปเตอร์เริ่มต้น" ในขั้นตอนเริ่มต้นใช้งานเป็นค่ากำหนดฝั่งไคลเอนต์ที่เซิร์ฟเวอร์ไม่เคยอ่าน และไม่ย้อนไปมีผลกับเอเจนต์ที่สร้างไว้แล้ว
 
-## Where agents come from
+## เอเจนต์มาจากไหน
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **ถูกซีดมาพร้อมกับเวิร์กสเปซ** ทุกเวิร์กสเปซ — ไม่ใช่แค่แห่งแรก — จะได้ CEO หนึ่งคนพร้อมผู้เชี่ยวชาญอีกสี่คน (`qa`, `architect`, `engineer`, `librarian`) ที่รายงานต่อ CEO สร้างขึ้นแบบทำซ้ำได้เบื้องหลังเมื่อเวิร์กสเปซถูกสร้าง ดู [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
+- **เพิ่มด้วยมือ** ที่ การตั้งค่า → เวิร์กสเปซ → เอเจนต์ การขอให้เอเจนต์จ้างเพื่อนร่วมงานจะไม่สร้างแถวข้อมูล ต้องใช้หน้าจอนั้น
 
-## Live state
+## สถานะสด
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+เอเจนต์ไม่มีคอลัมน์สถานะที่จัดเก็บไว้ สถานะสดของมันถูกอนุมานจากบันทึกการรันล่าสุดทุกครั้งที่ถูกอ่าน
 
-| State      | Meaning                                                              |
+| สถานะ      | ความหมาย                                                             |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | ยังไม่มีบันทึกการรัน                                                  |
+| `running`  | มีการรันอย่างน้อยหนึ่งรายการกำลังดำเนินอยู่                            |
+| `failed`   | การรันล่าสุดเกิดข้อผิดพลาด หรือสถานะความมีชีวิตของมันคือล้มเหลวหรือตายแล้ว |
+| `blocked`  | สถานะความมีชีวิตของการรันล่าสุดคือถูกบล็อก หยุดชะงัก หรือวนซ้ำ          |
+| `idle`     | กรณีอื่นทั้งหมด — เอเจนต์เคยรันมาก่อนและไม่มีอะไรกำลังดำเนินอยู่        |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+มีสถานะอีกสองอย่างคือ `queued` และ `succeeded` สำหรับการรันแต่ละรายการในแผนผังการรันของการสนทนา รายชื่อเอเจนต์ไม่เคยสร้างสถานะเหล่านี้ เพราะการที่การรันที่จบแล้วเป็นสีเขียวเป็นข้อเท็จจริงเกี่ยวกับการรัน ไม่ใช่เกี่ยวกับเอเจนต์
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/).
+รายชื่อสถานะออนไลน์แสดงภาพคู่ขนานที่หยาบกว่า ซึ่งสังเคราะห์ขึ้นฝั่งเซิร์ฟเวอร์จากเหตุการณ์การรันสด — กำลังคิด กำลังรัน ถูกบล็อกเพื่อรออนุมัติ เสร็จแล้ว — และนี่คือสิ่งที่ทำให้เอเจนต์ปรากฏเคียงข้างมนุษย์ ดู [การทำงานร่วมกันแบบหลายคน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): what happens when an agent is actually run
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): what constrains a run today
-- [Agent configuration reference](/th-TH/คู่มือ/อ้างอิง/การตั้งค่าเอเจนต์/): the full field list
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): เกิดอะไรขึ้นเมื่อเอเจนต์ถูกรันจริง
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/): การตั้งค่าต่อบทสนทนาที่กำหนดชุดเครื่องมือของเอเจนต์
+- [การทำงานร่วมกันแบบหลายคน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): เอเจนต์ในฐานะตัวตนหลัก สถานะออนไลน์ และปุ่มปรับความเป็นอิสระ
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): สิ่งที่จำกัดการรันในปัจจุบัน
+- [การตั้งค่าเอเจนต์](/th-TH/คู่มือ/อ้างอิง/การตั้งค่าเอเจนต์/): รายการฟิลด์ทั้งหมด

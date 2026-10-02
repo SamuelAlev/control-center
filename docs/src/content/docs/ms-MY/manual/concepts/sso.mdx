@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Daftar masuk tunggal
+description: Cara log masuk SAML dan OIDC berfungsi, apa yang disahkan dan cara akaun kekal selamat.
 slug: ms-MY/manual-pengguna/konsep/daftar-masuk-tunggal
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Daftar masuk tunggal membolehkan pembekal identiti (IdP) luaran menentukan siapa
+yang boleh log masuk ke pelayan Control Center anda. Dua protokol disokong —
+SAML 2.0 dan OpenID Connect — dan kedua-duanya berakhir di tempat yang sama:
+kelayakan peranti yang baru dijana yang tidak dapat dibezakan daripada jemputan
+atau pasangan kod QR di semua bahagian hiliran.
 
-## The shape of a login
+## Bentuk satu log masuk
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Log masuk SAML **diperantarakan penyemak imbas**. IdP tidak pernah membuka
+sambungan ke pelayan anda; penyemak imbas pengguna membawa segala-galanya:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,83 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Oleh sebab penyemak imbas ialah penghantar, **pelayan di belakang NAT berfungsi
+dengan baik** untuk log masuk: localhost, LAN, Tailscale, VPN atau terowong
+semuanya berfungsi — hanya penyemak imbas pengguna perlu mencapai URL ACS.
+Geganti WebSocket yang digunakan oleh kawalan jauh telefon tidak dapat membawa
+perjalanan pergi-balik HTTP, itulah sebabnya titik masuk SSO sentiasa
+menyasarkan asalan HTTP pelayan.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect mengikut bentuk yang sama dengan perjalanan pergi-balik kod
+kebenaran + PKCE; tuntutan dibaca daripada titik akhir token penerbit melalui
+TLS, jadi penyemak imbas tidak pernah membekalkan data identiti sama sekali.
 
-## The adapters
+## Penyesuai
 
-Control Center splits the responsibility deliberately:
+Control Center membahagikan tanggungjawab itu dengan sengaja:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| Komponen                      | Di mana                            | Memiliki                                                                                                                                   |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| `cc_saml` natif               | `packages/cc_natives/native/saml/` | Pengesahan XML-DSig, kanonikalisasi, pengesahan profil SAML — diwakilkan kepada crate `saml` Rust tulen yang dipin di sebalik C ABI tanpa keadaan |
+| `SamlService` / `OidcService` | `cc_server_core`                   | keadaan log masuk (penjejak permintaan yang belum selesai, deduplikasi main semula), tombol polisi pengesahan, panggilan peruntukan yang dikongsi |
+| `SsoProvisioner`              | `cc_server_core`                   | cari-atau-cipta pengguna, sematkan subjek penyedia, berikan keahlian di bawah polisi ahli automatik                                        |
+| `ScimService`                 | `cc_server_core`                   | permukaan tolak SCIM 2.0 (kitaran hayat peruntukan/nyahperuntukan)                                                                          |
+| `SsoSettingsService`          | `cc_server_core`                   | baris sambungan yang disimpan, penggunaan semula secara langsung, token SCIM                                                                |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Sengaja **tiada sandaran kripto SAML Dart tulen**: XML-DSig/kanonikalisasi yang
+ditulis sendiri ialah tepat tempat tinggal kerentanan pembalutan tandatangan,
+jadi ketiadaan pustaka `cc_saml` menolak kedua-dua log masuk SAML dan but
+pelayan. Natif itu tanpa keadaan mengikut reka bentuk — keadaan merentas
+permintaan hidup dalam perkhidmatan Dart, sekali guna dan berjangka pendek.
 
-## What a login verifies
+## Apa yang disahkan oleh log masuk
 
-Inside the verified native and the service, in order:
+Di dalam natif yang disahkan dan perkhidmatan itu, mengikut urutan:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **tandatangan** penegasan itu (sentiasa diperlukan; tandatangan sampul jawapan
+   adalah pilihan mengikut konfigurasi) — tahan secara struktur terhadap
+   pembalutan tandatangan kerana muatan yang disahkan terikat pada elemen yang
+   disahkan,
+2. **penerbit** sepadan dengan IdP yang dikonfigurasikan,
+3. **audiens** menamakan penyedia perkhidmatan ini,
+4. **destinasi** ialah URL ACS kami,
+5. `InResponseTo` sepadan dengan AuthnRequest belum selesai yang kami keluarkan
+   (jawapan tidak diminta yang dimulakan IdP dimatikan secara lalai),
+6. tetingkap **jangka hayat** bertahan dalam sisihan jam (lalai 90s), dan
+7. **id penegasan** tidak pernah dilihat sebelum ini (cache main semula).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Kegagalan dikembalikan sebagai kod bertaip — tandatangan, luput, audiens,
+destinasi, penerbit, padanan permintaan — dan titik akhir menjawab dengan ralat
+generik, jadi penyerang tidak mempelajari apa-apa tentang sebab satu pemalsuan
+gagal.
 
-## Accounts and subject pinning
+## Akaun dan penyematan subjek
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Log masuk SSO yang pertama menyematkan subjek tak boleh ubah penyedia (`issuer`
+serta SAML NameID / `sub` OIDC, atau SCIM externalId) pada akaun itu. Selepas
+itu, subjek — bukan e-mel — mengenal pasti log masuk. Jika orang lain kemudiannya
+mengemukakan e-mel yang sama daripada IdP yang sama atau yang lain, akaun yang
+disematkan itu menolak mereka. Inilah yang menghalang e-mel yang dikitar semula
+di penyedia daripada menjadi pengambilalihan akaun.
 
-## Provisioning and deprovisioning
+## Peruntukan dan nyahperuntukan
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Peruntukan JIT berlaku semasa log masuk (`SsoProvisioner`). SCIM ialah permukaan
+tolak yang berasingan (`ScimService`) yang menyematkan subjek yang sama pada
+baris pengguna; ia tidak memberikan keahlian ruang kerja. Nyahperuntukan — SCIM
+`active: false` atau `DELETE` — menolak jika akaun itu ialah pemilik ruang kerja
+(pindahkan dahulu). Jika tidak, ia menarik balik setiap kelayakan peranti
+terlebih dahulu (sesi digugurkan dalam beberapa saat melalui pemantauan
+peranti), membuang setiap keahlian ruang kerja dan menetapkan akaun sebagai
+dinyahaktifkan. Baris pengguna kekal: atribusi adalah kekal. Pengaktifan semula
+memulihkan log masuk tetapi tidak pernah memberikan semula keahlian.
 
-## What stays out
+## Apa yang kekal di luar
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Pemetaan kumpulan→peranan berlaku semasa log masuk** daripada atribut SAML /
+  tuntutan OIDC — kumpulan SCIM yang ditolak tidak disimpan.
+- **Peranan pemilik tidak boleh dicapai daripada SSO** — sama ada sebagai
+  peranan lalai mahupun melalui pemetaan kumpulan.
+- Geganti WebSocket tidak pernah menjadi saluran SSO; telefon yang hanya
+  mencapai pelayan melalui geganti itu tidak dapat melengkapkan perjalanan
+  pergi-balik penyemak imbas terhadapnya.

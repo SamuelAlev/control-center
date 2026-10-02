@@ -1,104 +1,108 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: Αναφορά διαμόρφωσης SSO
+description: Κάθε ρύθμιση, endpoint, λειτουργία και κωδικός σφάλματος της ενιαίας σύνδεσης.
 slug: el-GR/εγχειρίδιο/αναφορά/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Ό,τι μπορεί να διαμορφωθεί για την ενιαία σύνδεση, σε ένα σημείο. Οι τιμές
+ζουν στις γραμμές `sso_connections` του `global.db` (σκόπιμα σε εμβέλεια
+διακομιστή) και τις επεξεργάζεστε μέσω **Ρυθμίσεις → Διακομιστής → Ενιαία
+σύνδεση** ή των λειτουργιών RPC `sso.*`. Η αποθηκευμένη γραμμή είναι η μόνη
+πηγή αλήθειας — δεν υπάρχει διαδρομή μεταβλητών περιβάλλοντος `CC_SAML_*` /
+`CC_OIDC_*` (μια σύνδεση που θα μπορούσε να φτάσει από δύο μέρη είναι μια
+σύνδεση με την οποία μπορεί να διαφωνήσει η οθόνη ρυθμίσεων).
 
-## Connection fields
+## Πεδία σύνδεσης
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Πεδίο                  | Ισχύει για  | Προεπιλογή      | Σημασία                                                                                                                                                              |
+| ---------------------- | ----------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | και τα δύο  | ανενεργό        | οι χρήστες μπορούν να συνδεθούν μέσω αυτής της σύνδεσης                                                                                                              |
+| `idpMetadataXml`       | SAML        | —               | το XML `EntityDescriptor` του IdP (απαιτείται για ενεργοποίηση)                                                                                                       |
+| `spEntityId`           | SAML        | `<origin>/saml` | το αναγνωριστικό οντότητάς μας, καρφιτσωμένο όταν η προέλευση μεταβάλλεται                                                                                           |
+| `emailAttribute`       | SAML        | `email`         | χαρακτηριστικό που φέρει το email· ένα NameID σε μορφή email είναι η εφεδρική επιλογή                                                                                 |
+| `displayNameAttribute` | SAML        | `displayName`   | χαρακτηριστικό εμφανιζόμενου ονόματος                                                                                                                                |
+| `groupsAttribute`      | SAML        | `groups`        | χαρακτηριστικό ονομάτων ομάδων                                                                                                                                       |
+| `clockSkewSeconds`     | SAML        | 90              | περιθώριο απόκλισης κατά την επικύρωση διάρκειας ζωής                                                                                                                 |
+| `allowIdpInitiated`    | SAML        | ανενεργό        | αποδοχή μη ζητηθέντων Responses (χωρίς `InResponseTo`)                                                                                                                |
+| `wantResponseSigned`   | SAML        | ανενεργό        | απαίτηση υπογραφής στη ρίζα του Response (οι υπογραφές assertion απαιτούνται πάντα)                                                                                   |
+| `issuer`               | OIDC        | —               | βασικό URL εκδότη (απαιτείται για ενεργοποίηση)                                                                                                                       |
+| `clientId`             | OIDC        | —               | Client ID δημόσιου πελάτη (απαιτείται για ενεργοποίηση)                                                                                                              |
+| `clientSecret`         | OIDC        | —               | μόνο για εμπιστευτικούς πελάτες· αποθηκεύεται στο αρχείο μυστικών 0600, ποτέ στη βάση δεδομένων — μόνο εγγραφής μέσω RPC (το `sso.getConfig` αναφέρει το `clientSecretPresent`) |
+| `groupsClaim`          | OIDC        | `groups`        | διεκδίκηση που φέρει ονόματα ομάδων                                                                                                                                   |
+| `defaultRole`          | και τα δύο  | `member`        | ρόλος όταν δεν αντιστοιχίζεται καμία ομάδα — ποτέ `owner`                                                                                                             |
+| `groupRoleMap`         | και τα δύο  | `{}`            | ομάδα → ρόλος· οι αντιστοιχίσεις ιδιοκτήτη απορρίπτονται κατά την αποθήκευση                                                                                          |
+| `autoMember`           | και τα δύο  | ενεργό          | αυτόματη προσθήκη χρηστών σε κάθε χώρο εργασίας στην πρώτη σύνδεση                                                                                                    |
+| `allowJit`             | και τα δύο  | ενεργό          | παροχή άγνωστων χρηστών κατά τη σύνδεση                                                                                                                               |
 
-## Process configuration
+## Διαμόρφωση διεργασίας
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+Οι συνδέσεις SSO δεν αρχικοποιούνται από το περιβάλλον. Ένα εναπομείναν flag
+διεργασίας αφορά τη **μεταβίβαση στο πρόγραμμα περιήγησης**, όχι τη γραμμή
+σύνδεσης:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Μεταβλητή / flag                                 | Σημασία                                                                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | η προέλευση στην οποία τα callbacks SSO αναπηδούν το πρόγραμμα περιήγησης (το διαπιστευτήριο ταξιδεύει στο fragment του URL). Αν δεν οριστεί, η μεταβίβαση παραμένει στην ίδια προέλευση. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+Το ίδιο το URL του εκδότη πρέπει να είναι `https` (το `http` γίνεται δεκτό
+μόνο για εκδότες loopback `localhost`, `127.0.0.1` και `::1`).
 
-## HTTP endpoints
+## Endpoints HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| Endpoint                                         | Αυθεντικοποίηση     | Σκοπός                                                                                                                                                                                                          |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | καμία (ανακατεύθυνση) | έναρξη σύνδεσης με πρωτοβουλία του SP· το `relay=desktop` μεταβιβάζει στην εφαρμογή, το `relay=web-popup` στέλνει postMessage στην καρτέλα σύνδεσης που περιμένει (η οποία δηλώνει το `client_origin` της — γίνεται σεβαστό μόνο όταν το εμπιστεύεται η λίστα επιτρεπόμενων προελεύσεων) |
+| `POST /saml/acs`                                 | καμία (IdP POST)    | ο καταναλωτής assertion — επαληθεύει, παρέχει και εκδίδει                                                                                                                                                        |
+| `GET /saml/metadata`                             | καμία               | το `EntityDescriptor` SP μας                                                                                                                                                                                     |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | καμία               | ο κύκλος ανταλλαγής OIDC· το `relay=desktop` μεταβιβάζει στην εφαρμογή και το `relay=web-popup` στην καρτέλα σύνδεσης που περιμένει (ίδια σύμβαση `client_origin`)                                               |
+| `GET /auth/providers`                            | καμία, CORS `*`     | ο έλεγχος της οθόνης σύνδεσης: οι προσφερόμενες συνδέσεις SSO (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                            |
+| `/scim/v2/Users…`                                | Bearer (token SCIM) | Δημιουργία/ανάκτηση/λίστα+φίλτρο/PUT/PATCH/DELETE χρηστών                                                                                                                                                         |
+| `/scim/v2/Groups`                                | Bearer              | μόνο ανάγνωση· η ώθηση ομάδων απαντά 501 εκ σχεδιασμού                                                                                                                                                            |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | έγγραφο δυνατοτήτων                                                                                                                                                                                              |
 
-## RPC ops
+## Λειτουργίες RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Όλες οι λειτουργίες `sso.*` έχουν εμβέλεια διακομιστή και είναι διαθέσιμες
+μόνο στον **ιδιοκτήτη του διακομιστή** (τον χειριστή της εγκατάστασης,
+`ServerAuthority.serverOwner`). Η κυριότητα ενός χώρου εργασίας δεν αρκεί· η
+σύζευξη από μόνη της δεν τις εκχωρεί ποτέ.
 
-| Op                        | Purpose                                                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| Λειτουργία                | Σκοπός                                                                                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sso.getConfig`           | η αποθηκευμένη σύνδεση για ένα είδος                                                                                                                             |
+| `sso.saveConfig`          | επικύρωση, μόνιμη αποθήκευση και ζωντανή εφαρμογή                                                                                                                |
+| `sso.status`              | flags ενεργοποίησης/διαμόρφωσης, παρουσία token SCIM, κανονική προέλευση                                                                                         |
+| `sso.testConnection`      | δοκιμή μιας σύνδεσης χωρίς τον κύκλο ανταλλαγής μέσω προγράμματος περιήγησης (SAML: ανάλυση μεταδεδομένων + δημιουργία AuthnRequest· OIDC: ανακάλυψη εκδότη), με προαιρετικές μη αποθηκευμένες τιμές της οθόνης |
+| `sso.spMetadata`          | παραγωγή του `EntityDescriptor` SP για μια προέλευση                                                                                                             |
+| `sso.setPairingEnabled`   | επιτρέπει/απαγορεύει τη χειροκίνητη σύζευξη (κωδικοί πρόσκλησης, κλειδιά σύζευξης)· η άρνηση απενεργοποίησής της όσο δεν υπάρχει λειτουργική σύνδεση SSO προστατεύει από κλείδωμα |
+| `sso.sessionPolicy`       | ανάγνωση της μέγιστης ηλικίας του διαπιστευτηρίου συσκευής και του χρόνου αδράνειας της εγκατάστασης (σε λεπτά· `0` = μη ορισμένο)                              |
+| `sso.setSessionPolicy`    | ορισμός αυτών των ορίων· επιβάλλονται στον έλεγχο της συσκευής, δεν ανακοινώνονται στους πελάτες                                                                 |
+| `sso.scimRegenerateToken` | δημιουργία + επιστροφή του bearer token SCIM (μία φορά)                                                                                                          |
 
-## Validation error codes
+## Κωδικοί σφάλματος επικύρωσης
 
-`cc_saml_verify_response` failures carry a stable code:
+Οι αποτυχίες του `cc_saml_verify_response` φέρουν σταθερό κωδικό:
 
-| Code                   | Meaning                                                                          |
+| Κωδικός                | Σημασία                                                                          |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | υπογραφή που λείπει/δεν είναι αξιόπιστη/έχει παραποιηθεί, ή μη επιτρεπόμενος αλγόριθμος/μετασχηματισμός |
+| `expired`              | εκτός `NotBefore`/`NotOnOrAfter` (πέρα από την απόκλιση)                         |
+| `audience`             | ο περιορισμός audience δεν κατονομάζει εμάς                                      |
+| `destination`          | ο προορισμός της απάντησης δεν είναι το ACS μας                                   |
+| `request_match`        | το `InResponseTo` δεν ταιριάζει με κάποιο εκκρεμές αίτημα, ή είναι μη ζητηθέν ενώ αυτό απαγορεύεται |
+| `issuer`               | ο εκδότης δεν είναι ο διαμορφωμένος IdP                                          |
+| `recipient`            | ο παραλήπτης επιβεβαίωσης υποκειμένου δεν είναι το ACS μας                        |
+| `malformed`            | αποτυχία σε επίπεδο XML/schema                                                   |
+| `status`               | η κατάσταση που ανέφερε ο IdP δεν ήταν Success                                   |
+| `invalid` / `internal` | οτιδήποτε άλλο / αποτυχία ραφής                                                  |
 
-## Database surfaces
+## Επιφάνειες βάσης δεδομένων
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — μία γραμμή ανά είδος, ΣΕ ΟΛΟΥΣ ΤΟΥΣ ΧΩΡΟΥΣ
+  ΕΡΓΑΣΙΑΣ ΕΚ ΣΧΕΔΙΑΣΜΟΥ.
+- `users.sso_subject` + `users.sso_issuer` — το καρφίτσωμα υποκειμένου
+  παρόχου, μοναδικό ανά `(issuer, subject)` μέσω μερικού ευρετηρίου.
+- `users.deactivated_at` — η σφραγίδα απενεργοποίησης SCIM.
+- Το bearer token SCIM και το μυστικό πελάτη OIDC ζουν στο αρχείο μυστικών
+  0600, ποτέ στη βάση δεδομένων.

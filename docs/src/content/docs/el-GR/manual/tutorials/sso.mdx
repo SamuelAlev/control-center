@@ -1,125 +1,138 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Συνδεθείτε με την ομάδα μέσω SSO
+description: Συνδέστε το Okta (SAML) στον διακομιστή σας Control Center και ακολουθήστε μια σύνδεση από την αρχή ως το τέλος.
 slug: el-GR/εγχειρίδιο/οδηγοί/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Τι θα φτιάξετε
 
-By the end of this tutorial, you will have:
+Μέχρι το τέλος αυτού του οδηγού θα έχετε:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- μια σύνδεση SAML ανάμεσα στον διακομιστή σας Control Center και έναν πάροχο
+  ταυτότητας (χρησιμοποιούμε το Okta ως παράδειγμα),
+- έναν χρήστη που παρασχέθηκε αυτόματα στην πρώτη του σύνδεση και
+- μια πολιτική συμμετοχής σε χώρο εργασίας που επιλέξατε συνειδητά.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Θα χρειαστείτε έναν διακομιστή που διαχειρίζεστε εσείς (ο **ιδιοκτήτης του
+διακομιστή** — ο χειριστής της εγκατάστασης) και μια εφαρμογή IdP που μπορείτε
+να διαμορφώσετε. Υπολογίστε 20 λεπτά.
 
-## 1. Open the single sign-on settings
+## 1. Ανοίξτε τις ρυθμίσεις ενιαίας σύνδεσης
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Συνδεθείτε στο Control Center και μετά μεταβείτε στις
+**Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση**. Η οθόνη εναλλάσσεται ανάμεσα σε
+**SAML** και **OpenID Connect**, με επιπλέον μια κάρτα **Παροχή χρηστών (SCIM)**.
+Μείνετε στο SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Ό,τι βρίσκεται σε αυτή την οθόνη αφορά ολόκληρο τον διακομιστή: ένας IdP
+αυθεντικοποιεί τους ανθρώπους κάθε χώρου εργασίας, οπότε μόνο ο ιδιοκτήτης του
+διακομιστή μπορεί να το επεξεργαστεί.
 
-## 2. Paste the IdP metadata
+## 2. Επικολλήστε τα μεταδεδομένα του IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Στο Okta, ανοίξτε την καρτέλα **Sign On** της εφαρμογής σας και αντιγράψτε το XML
+των μεταδεδομένων (ή κατεβάστε το και επικολλήστε το περιεχόμενο του αρχείου).
+Πίσω στο Control Center, επικολλήστε το στο **XML μεταδεδομένων IdP** και πατήστε
+**Δοκιμή σύνδεσης**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Το αναδυόμενο μήνυμα αναφέρει το endpoint σύνδεσης του IdP — απόδειξη ότι τα
+μεταδεδομένα αναλύθηκαν, το πιστοποιητικό διαβάστηκε και ο διακομιστής μπορεί να
+συντάξει ένα αίτημα σύνδεσης προς αυτό (η δοκιμή ασκεί τα πάντα εκτός από τον
+κύκλο ανταλλαγής μέσω του προγράμματος περιήγησης). Αν αποτύχει, το XML δεν ήταν
+ένα πλήρες `EntityDescriptor` (η καρτέλα SAML στο Okta το ονομάζει «Metadata
+URL»· ανοίξτε το URL και αντιγράψτε ό,τι σερβίρει). Το ίδιο κουμπί στο
+**OpenID Connect** ελέγχει αντ' αυτού το έγγραφο ανακάλυψης του εκδότη σας. Για να
+εντοπίσετε και ένα πιστοποιητικό που πλησιάζει στη λήξη του και να δείτε αν ο IdP
+αναγνωρίζει το Control Center, χρησιμοποιήστε τον
+[έλεγχο στο βήμα 6](#6-ελέγξτε-το-από-αυτή-τη-σελίδα).
 
-## 3. Register Control Center at the IdP
+## 3. Καταχωρίστε το Control Center στον IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Πατήστε **Αντιγραφή μεταδεδομένων SP** και δώστε τα σε όποιον διαμορφώνει την
+πλευρά του Okta (ή διαβάστε τις δύο τιμές που ζητούν):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+Τα URL προκύπτουν από την προέλευση που φτάνουν τα προγράμματα περιήγησης των
+χρηστών σας. Αν ο διακομιστής εκτελείται πίσω από σήραγγα ή αντίστροφο
+διαμεσολαβητή, βεβαιωθείτε ότι η προέλευση είναι σταθερή
+(Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση → Κοινή χρήση αυτού του διακομιστή εμφανίζει το δημόσιο URL) — ή καρφιτσώστε το entity ID
+ρητά στο πεδίο **SP entity ID**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[Πίσω από NAT;]
+Η σύνδεση SAML **δεν** χρειάζεται δημόσια IP ή domain: ο IdP δεν συνδέεται ποτέ
+με τον διακομιστή σας — το πρόγραμμα περιήγησης του χρήστη μεταφέρει τον κύκλο
+ανταλλαγής, οπότε τα localhost, LAN, VPN, Tailscale ή μια σήραγγα λειτουργούν
+όλα. Δύο πράγματα που πρέπει να έχετε ξεκάθαρα:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim)).
+- η προέλευση που χρησιμοποιεί το πρόγραμμα περιήγησης πρέπει να **ταιριάζει** με
+  το ACS URL / entity ID που έχει καταχωριστεί στον IdP (καρφιτσώστε το entity ID
+  αν οι χρήστες φτάνουν στον διακομιστή από περισσότερες από μία προελεύσεις),
+- **η παροχή μέσω SCIM είναι η εξαίρεση** — ο IdP καλεί απευθείας τον διακομιστή
+  σας, οπότε χρειάζεται σήραγγα ή δημόσιο URL
+  ([παροχή χρηστών με SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Επιλέξτε τι εκχωρεί μια σύνδεση
 
-Two policies decide what a first login does:
+Δύο πολιτικές καθορίζουν τι κάνει μια πρώτη σύνδεση:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Προσθήκη χρηστών σε κάθε χώρο εργασίας στην πρώτη σύνδεση** — αφήστε το
+  ενεργό για ανάπτυξη μίας μόνο ομάδας, όπου το SSO ισοδυναμεί με εμπιστοσύνη.
+  Απενεργοποιήστε το όταν πολλές ομάδες ή πελάτες μοιράζονται τον διακομιστή:
+  τότε κάθε νεοεισερχόμενος χρειάζεται ρητή πρόσκληση σε χώρο εργασίας, που είναι
+  η ασφαλέστερη προεπιλογή.
+- **Παροχή άγνωστων χρηστών στην πρώτη σύνδεση** — ενεργό από προεπιλογή·
+  απενεργοποιήστε το για να απορρίπτετε όποιον δεν έχει ήδη λογαριασμό.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Προαιρετικά, αντιστοιχίστε ένα χαρακτηριστικό που μεταφέρει ονόματα ομάδων (στο
+Okta είναι συνήθως `groups`) και μετατρέψτε τις ομάδες σε ρόλους με τον χάρτη —
+για παράδειγμα `{"platform-leads": "admin"}`. Το SSO δεν μπορεί ποτέ να
+εκχωρήσει τον ρόλο του ιδιοκτήτη.
 
-## 5. Enable and take a login
+## 5. Ενεργοποιήστε και πραγματοποιήστε μια σύνδεση
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Ενεργοποιήστε το **Χρήση SAML για σύνδεση**, πατήστε **Αποθήκευση σύνδεσης** και
+μετά ανοίξτε ένα παράθυρο ιδιωτικής περιήγησης στο
+`https://<your-server>/saml/login`. Συνδεθείτε στο Okta και επιστρέφετε στον
+πελάτη web — συνδεδεμένοι, με τον λογαριασμό σας να έχει δημιουργηθεί και τη
+συμμετοχή του να έχει εκχωρηθεί σύμφωνα με την πολιτική που επιλέξατε.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Το ίδιο σημείο εισόδου εμφανίζεται στην οθόνη σύνδεσης web (**Σύνδεση με SAML**)
+τη στιγμή που πληκτρολογείτε τη διεύθυνση του διακομιστή — η φόρμα προσαρμόζεται
+σε ό,τι προσφέρει ο διακομιστής (το OpenID Connect εμφανίζει **Σύνδεση με OpenID
+Connect**). Το κουμπί ανοίγει τη σύνδεση σε **νέα καρτέλα**· όταν ολοκληρωθεί ο
+κύκλος ανταλλαγής, η καρτέλα που περιμένει παραλαμβάνει αυτόματα τη συνεδρία. Το
+ίδιο κάνει και η οθόνη ρύθμισης διακομιστή στην εφαρμογή υπολογιστή:
+πληκτρολογήστε το URL του διακομιστή, εμφανίζεται ένα κουμπί **Σύνδεση με SAML**
+που ανοίγει το πρόγραμμα περιήγησής σας και η εφαρμογή συνδέεται όταν ολοκληρωθεί
+ο κύκλος ανταλλαγής.
 
-## 6. Check it from this page
+## 6. Ελέγξτε το από αυτή τη σελίδα
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Πριν διαθέσετε το SSO, ή όταν αποτύχει κάποια σύνδεση, ελέγξτε τα επιμέρους
+στοιχεία εδώ. Ο έλεγχος εκτελείται εξ ολοκλήρου στο πρόγραμμα περιήγησής σας:
+διαβάζει τα μεταδεδομένα που επικολλάτε σε αυτή την καρτέλα και εφαρμόζει τους
+ίδιους κανόνες με τον διακομιστή. Αν του δώσετε τη διεύθυνση του διακομιστή σας,
+ρωτά και τον ίδιο τον διακομιστή αν η σύνδεση SAML είναι ενεργή.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Εντοπίζει όσα δεν μπορεί να δει η **Δοκιμή σύνδεσης** στην εφαρμογή: ένα
+πιστοποιητικό υπογραφής κοντά στη λήξη του, έναν IdP που επιμένει σε
+υπογεγραμμένα αιτήματα και, με τη δοκιμαστική σύνδεση, αν ο IdP αναγνωρίζει
+καθόλου το Control Center.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Επόμενα βήματα
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/el-GR/εγχειρίδιο/έννοιες/ενιαία-σύνδεση).
+- Δώστε στον IdP σας και τον έλεγχο του κύκλου ζωής:
+  [παροχή και αποπαροχή χρηστών με SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim).
+- Ο IdP σας μιλάει OpenID Connect αντί για SAML;
+  [Σύνδεση παρόχου OpenID Connect](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-oidc).
+- Αναρωτιέστε τι επαληθεύει στην πραγματικότητα ο κύκλος ανταλλαγής μέσω του
+  προγράμματος περιήγησης;
+  [Πώς λειτουργεί η ενιαία σύνδεση](/el-GR/εγχειρίδιο/έννοιες/ενιαία-σύνδεση).

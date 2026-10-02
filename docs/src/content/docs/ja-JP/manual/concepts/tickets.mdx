@@ -1,155 +1,160 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: チケットと委任
+description: チケットがディスパッチを行わずに作業を追跡する理由、委任がどのようにガードされるのか、そしてベンダーミラーが所有するものと所有しないものを説明します。
 slug: ja-JP/マニュアル/コンセプト/チケット
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+チケットは、Control Center が追跡する作業の単位です。意図的に_単純な_成果物であり、タイトル、本文、ステータス、担当者、そしてツリー内の位置を持ちます。エージェントが実際に処理する対象ではありません — エージェントの作業は会話の中にあり、実行の構造化出力は実行ログに残ります。
 
-## Assignment records ownership; it dispatches nothing
+## 割り当ては所有権を記録するだけで、何もディスパッチしません
 
-This is the single most important thing to get right about tickets.
+これは、チケットについて何よりも正しく理解しておくべき点です。
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ja-JP/マニュアル/コンセプト/ドメインイベント/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+`assignedAgentId` を設定すると、1 つのフィールドが書き込まれ、`TicketAssigned`
+[ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/)が発行されます。このイベントは監査と
+通知のシグナルであり、パイプラインのトリガーでもあります。**エージェントへの
+割り当ては実行を開始しません。** `assignedAgentId` を監視してそのエージェントを
+起こすチケットディスパッチャーは存在しません。
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+例外はチームです。`assignedTeamId` が設定されている場合、`TeamRoutingService`
+がオペレーティングプロトコルと名簿を渡してチームリーダーをディスパッチします。
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+特定のエージェントにチケットへ取り組んでほしい場合は、会話の中で依頼するか、
+パイプラインのステップでディスパッチするか、別のエージェントがそのエージェントに
+委任します。チケットをエージェントに割り当てて待つことだけは、決して作業を
+生み出しません。
 
-## Mirror and overlay
+## ミラーとオーバーレイ
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+チケットは完全にローカルなものでも、外部トラッカーに裏付けられたものでもよく、
+どちらも 1 つの行にまとめて持ちます。
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**ミラー** — プロバイダー、外部キー、URL、タイトル、説明、優先度、ラベル、生の
+ステータスと正規化されたステータス、タイムスタンプ — は、チケットがリモートの
+場合のキャッシュです。そこではリモートが正であり、リフレッシュはミラーを丸ごと
+書き換えます。
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**オーバーレイ** — 割り当て、委任、スペースのリンク、親、プロジェクト、リンク
+された PR — は Control Center だけのものです。トラッカーはそれを一切知らず、
+リフレッシュがそれに触れることもありません。
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+この分離があるからこそ、そもそも同期が安全になります。ベンダーからのプルは
+ミラーを破壊し得ますが、その上に重ねられたオーケストレーションのメタデータが
+失われることは決してありません。
 
-## The lifecycle graph binds agents, not you
+## ライフサイクルグラフが縛るのはエージェントであり、あなたではありません
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+ステータスは `backlog → open → inProgress → inReview → done` と進み、`blocked`
+は横にそれるループ、`failed` と `cancelled` はもう一方の終端状態です。
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+遷移グラフが強制されるのは**エージェントと自動化の経路だけ**です — MCP ツール
+とリコンサイラーです。そこでの不正な遷移はログに記録されて無視されるため、
+混乱したエージェントがチケットを終端状態から逆走させることはできません。
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+UI でのユーザー操作による変更は、すべて `force: true` を渡してグラフを完全に
+迂回します。人間は、ピッカーに並ぶ任意のステータスへチケットを移動できます —
+終端状態を再び開くことも含みます。ピッカーが `failed` を提示することはなく、
+エージェントは `fail_ticket` を通じて設定します。グラフは自動化のための
+ガードレールであり、作業の進め方に関するルールではありません。
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` は、すべての変更を単一のチョークポイント経由で所有
+します。このチョークポイントは行を読み込み、呼び出し元のワークスペースに
+属することを検証し、期待する `version` を付けて書き込むため、2 つの並行編集が
+互いを黙って上書きすることはありません。
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/).
+ステータスの一覧、遷移、フィールド、リレーションの種類については、
+[チケットのライフサイクル](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/)を参照してください。
 
-## Provenance: how a ticket came to exist
+## 出所：チケットがどう存在するに至ったか
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+すべてのチケットは `originKind` を持ちます。この列挙型には 5 つの値 — `manual`、
+`pipelineStep`、`agentDelegation`、`externalSync`、`recovery` — がありますが、
+現在書き込まれるのは 2 つだけです。`manual`（`createTicket` の既定値で、委任
+された子チケットも含みます）と `externalSync`（ベンダーからのプル時に同期
+エンジンが設定します）です。`TicketWorkflowService.createTicket` は origin 引数を
+取らないため、`pipelineStep`、`agentDelegation`、`recovery` が行に書き込まれる
+ことはありません。
 
-## Guarded delegation
+## ガードされた委任
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+委任は、あるエージェントが別のエージェントのために作業を作る場面であり、権限が
+漏れうる場所でもあるため、ガードはプロンプトの指示ではなく、サーバー側の
+チョークポイントに置かれています。
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` は `TicketWorkflowService.delegateGuarded` を通ります。これは親の
+連鎖から子の深さとルートを計算し、続いて 4 つの `DelegationGuards` チェックを
+すべて実行します。**深さの上限 3** を超えるホップ、すでに連鎖にいるエージェント
+へ戻るホップ（**循環検出**）、**自律性の上限**（スペース内での委任先の実効
+レベルが委任元を超えてはなりません）、そして**予算のエンベロープ**（委任は
+委任元の残りのハードストップ予算から引かれ、新たに生み出すことはできません）
+です。プロダクションの配線は両方のリゾルバーポートを供給します。`from_agent_id`
+を省略した場合、自律性と予算はスキップされます（無制限の予算、またはポリシー
+なしの予算も通過します）。拒否は `DelegationRefusedException` としてスローされ、
+そのメッセージは委任元のエージェントにそのまま届きます — 声高な拒否であり、
+決して無言の no-op ではありません。
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` は古いほうの**ガードなしの**兄弟です。`createTicket` を直接
+呼び出し、すべてのガードをスキップします。`delegate_task` を優先してください。
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+委任の深さの上限（`delegate_task` の連鎖で 3）と、内蔵ハーネスのサブエージェント
+のネスト上限（2）を混同しないでください。これらは異なるメカニズムに対する、
+異なる制限です。
 
-## Hierarchy, links and projects
+## 階層、リンク、プロジェクト
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+親子とサブイシューの関係は `tickets.parent_ticket_id` にあり、`setParent` /
+`clearParent` が所有します。これらは `ticket_links` の行では**ありません**。
+そのため、チケットのリレーションを読むものはどちらも両方のソースをマージする
+必要があります。
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` は、それ以外に関係のないチケット同士の方向性のあるエッジを
+保持します。
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| リンク種別    | 意味                                   |
+| ------------- | -------------------------------------- |
+| `blocks`      | ソースがターゲットをブロックする       |
+| `relatesTo`   | 2 つのチケットは関連している（対称）   |
+| `duplicateOf` | ソースはターゲットの重複である         |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**プロジェクト**は、共通の目標に向けたチケットのワークスペース単位のまとまり
+です。プロジェクトは Control Center だけのものであり、外部プロバイダーに
+同期されることはありません。
 
-## Collaborators
+## コラボレーター
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+`TicketCollaborator` の行は、複数のプリンシパルを 1 つのチケットに紐づける仕組み
+であり、ロールは `assignee`、`collaborator`、`reviewer` のいずれかです。人間と
+エージェントは対等な行です — `principalId` と `collaboratorType` を持ち、
+「ユーザー」を表すセンチネル値も、どちらのテーブルへの外部キーもありません。
 
-## External sync
+## 外部同期
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Center のチケットが主体です。チケットの削除は**ローカルのみ**なので、
+削除したベンダー連携のチケットはトラッカー上では削除されず、次の同期で再び
+現れることがあります。コラボレーターと子チケットはカスケードします。
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+アダプターの資格情報は、サーバーの資格情報ストアから解決されます（設定で
+貼り付けた Linear キーや GitHub トークンは次のリクエストで拾われます。環境は
+それらのストアをシードするだけです）。
 
-## Tickets and pipelines
+## チケットとパイプライン
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+チケットを作成、完了、キャンセルするパイプラインのノードはありません —
+パレットにそのようなステップはなく、エンジンが `TicketWorkflowService` を
+呼び出すこともありません。それでもパイプラインのトリガーは `TicketAssigned`、
+`TicketCompleted`、`TicketFailed`、`TicketCancelled` で発火できます
+（`EventPayloadMapper` が実際にマップするチケットイベントはこの 4 つです）。
+チケットに `pipelineRunId` 列はなく、パイプラインとの結合はエージェントの
+実行ログにあります。
 
-## See also
+## 関連項目
 
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/): ticket events can trigger a pipeline
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/): where a DAG of sub-tickets comes from
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): who a ticket is assigned to
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/): the ticket lifecycle events
-- [Ticket lifecycle](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
-- [Delegate work to agents](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
-- [Organize work with projects](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/): チケットイベントでパイプラインをトリガーできる
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/): サブチケットの DAG はどこから来るのか
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): チケットは誰に割り当てられるのか
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/): チケットのライフサイクルイベント
+- [チケットのライフサイクル](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/): ステータス、フィールド、遷移、リレーション
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
+- [エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
+- [プロジェクトで作業を整理](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)

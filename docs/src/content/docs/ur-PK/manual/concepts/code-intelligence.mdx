@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: کوڈ انٹیلیجنس
+description: ایجنٹ کو کمپائلر، ساختی میچر اور ڈی بگر کی ضرورت کیوں پڑتی ہے — اور ہر ایک ایسا کیا جواب دیتا ہے جو باقی نہیں دے سکتے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center ایجنٹ کو کوڈ کو محض پڑھنے سے آگے بڑھ کر سمجھنے کے چار طریقے دیتا ہے۔ یہ چاروں واقعی الگ الگ سوالوں کے جواب دیتے ہیں، اور ایک کے بجائے چار ہونے کی وجہ یہ ہے کہ کوئی اکیلا طریقہ ان سب کا جواب نہیں دیتا۔
 
-| Mechanism            | Answers                                          | Costs                                  |
+| طریقہ کار            | جواب دیتا ہے                                     | لاگت                                   |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **کوڈ گراف**         | یہاں کیا ہے، اور کس چیز کا انحصار اس پر ہے        | ایک انڈیکس پاس؛ کوئری کرنا سستا         |
+| **لینگویج سرور**     | کیا یہ واقعی کمپائل ہوتا ہے، اور یہ ٹائپ کیا ہے   | ہر پروجیکٹ کے لیے ایک سرور پروسیس       |
+| **ساختی تلاش**       | یہ شکل کہاں آتی ہے                               | فی فائل ایک پارس                        |
+| **ڈی بگر**           | اُس لمحے اُس فریم میں کیا سچ تھا                  | ایک رکا ہوا پروسیس                      |
 
-## The gap the language server closes
+## لینگویج سرور جو خلا پُر کرتا ہے
 
-The [code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[کوڈ گراف](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) tree-sitter سے بنتا ہے: علامات، کال ایجز، اور اثر کا دائرہ۔ یہ تیز ہے، سستا ہے، اور **ٹائپوں** کے بارے میں کچھ نہیں جانتا۔ نہ یہ بتا سکتا ہے کہ ابھی آپ نے جو کال لکھی وہ کمپائل ہوتی ہے یا نہیں، نہ یہ کہ وہ فیلڈ آبجیکٹ پر موجود ہے، اور نہ یہ کہ آپ کے ری نیم سے کوئی ری ایکسپورٹ رہ گیا۔
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+لینگویج سرور کے بغیر ایجنٹ کو پتہ ٹیسٹ کے وقت چلتا ہے — یا کبھی نہیں۔ وہ کوئی معقول سا کوڈ لکھ کر آگے بڑھ جاتا ہے، اور ناکامی تین باریں بعد کسی اور تبدیلی سے منسلک ہو کر سامنے آتی ہے۔
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+تو اصل فائدہ درحقیقت `lsp` ٹول نہیں ہے۔ اصل بات یہ ہے کہ `write`، `edit` اور `apply_patch` لپیٹ دیے گئے ہیں: ہر تحریر کے بعد فائل لینگویج سرور سے گزرتی ہے اور **نئی سامنے آنے والی** تشخیصات ٹول کے نتیجے میں شامل کر دی جاتی ہیں۔ ایجنٹ کو اُسی لمحے پتہ چل جاتا ہے جب اس نے بلڈ توڑا، چاہے اس نے پوچھنے کے بارے میں سوچا ہو یا نہ۔
 
-### Only new diagnostics
+### صرف نئی تشخیصات
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+جو بات ایجنٹ کو پہلے ہی بتائی جا چکی ہو، اسے دہرانا خاموش رہنے سے بدتر ہے: یہ نتیجے کو ایسے شور سے بھر دیتا ہے جسے نظر انداز کرنا ایجنٹ سیکھ لیتا ہے، اور ساتھ ہی وہ ایک نیا ایرر بھی اسی شور میں گم ہو جاتا ہے۔ ہر رَن کے لیے ایک لیجر رکھا جاتا ہے جو پہلے بتائی گئی چیزوں کا حساب رکھتا ہے — شدت، کوڈ اور پیغام کی بنیاد پر، اور پوزیشن کی بنیاد پر **نہیں** — تاکہ جو تشخیص صرف چار لائن نیچے سرک گئی ہو، اُسے نئی کہہ کر دوبارہ نہ بتایا جائے۔
 
-### Lazy, and honest about being absent
+### سست، اور اپنی غیر موجودگی پر سچا
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+بوٹ پر کوئی سرور شروع نہیں ہوتا۔ سرور پہلی ایسی درخواست پر شروع ہوتا ہے جسے اُس کی ضرورت ہو — جو تقریباً ہمیشہ اُس فائل کی پہلی ترمیم ہوتی ہے جس پر وہ دعویٰ کرتا ہے — اور بیکار پڑے سرورز صاف کر دیے جاتے ہیں۔ جو ہوسٹ کبھی Dart کو چھوتا ہی نہیں، وہ کبھی اینالائزر شروع نہیں کرتا۔
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+پہچان ایک **تقاطع** پر ہوتی ہے: چیک آؤٹ میں روٹ مارکر کا موجود ہونا چاہیے *اور* بائنری کا حل ہونا چاہیے۔ صرف مارکر یہ بتاتا ہے کہ "یہ پروجیکٹ Python ہے" اور یہ نہیں کہ سرور انسٹال ہے یا نہیں؛ اور صرف حل ہونے والی بائنری یہ بتاتی ہے کہ ہوسٹ پر ٹول چین موجود ہے، مگر اس چیک آؤٹ کے بارے میں کچھ نہیں۔ صرف دونوں کے اکٹھے ہونے کا مطلب یہ ہے کہ کوئری کامیاب ہو سکتی ہے، اور ایسا ٹول جو پیش کیا جائے مگر ہمیشہ ناکام ہو، غیر موجود ٹول سے بدتر ہے۔
 
-## Why structural search, when grep exists
+## جب grep موجود ہے تو ساختی تلاش کیوں
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` حروف سے میل کھاتا ہے۔ یہ کسی نام کے لیے صحیح ٹول ہے اور کسی شکل کے لیے غلط۔
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+ساختی پیٹرن کو **فائل ہی کے گرامر** سے پارس کیا جاتا ہے، اس لیے `dispose($X)` کال کو اُس کی ہر شکل میں ڈھونڈ لیتا ہے — خواہ وہ کس طرح پھیلی، لپٹی یا لائنوں میں ٹوٹی ہو — اور کسی سٹرنگ لٹرل یا تبصرے کے اندر انہی حروف سے کبھی میل نہیں کھاتا۔
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+جس خاصیت کی وجہ سے یہ محض چند اضافی قدموں والا ریجیکس نہیں رہتا، وہ یہ ہے کہ ایک ہی پیٹرن میں دہرایا گیا میٹا متغیر لازماً وہی متن پکڑتا ہے:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+یہ ایسی گارڈ سے میل کھاتا ہے جو اُسی چیز کو ڈسپوز کرتی ہے جس کی اس نے جانچ کی تھی، اور ایسی گارڈ سے میل نہیں کھاتا جو کسی اور چیز کو ڈسپوز کرے۔ یہ بگ کی ایسی قسم ہے جسے متنی طور پر بیان ہی نہیں کیا جا سکتا۔
 
-### It runs on the tree-sitter already linked
+### یہ اُسی tree-sitter پر چلتی ہے جو پہلے سے منسلک ہے
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+یہاں کوئی دوسرا انجن نہیں۔ `cc_natives` کوڈ گراف کے لیے پہلے ہی tree-sitter اور اس کے گرامر لوڈ کرتا ہے، ساتھ میں کمپائل شدہ کوئری کیش اور زبانوں کی ٹیبل۔ میچر خالص Dart ہے اور اُن ہی درختوں پر چلتا ہے جو بہرحال پارس ہو رہے تھے۔ دوسرا ساختی انجن بنانے کا مطلب ہوگا دوسرا پارسر، گرامر کا دوسرا مجموعہ جو ہر پلیٹ فارم پر بنایا اور اسٹیج کیا جائے، اور "کال ایکسپریشن کیا ہے" کے دو جواب۔
 
-### A fragment needs somewhere to live
+### ٹکڑے کو رہنے کے لیے جگہ چاہیے
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+گرامر صرف یہ بتاتا ہے کہ پوری *فائل* کیا ہوتی ہے۔ Dart کے ٹاپ لیول پر ننگا پارس کرنے پر `dispose(x)` بالکل درست **فنکشن سگنیچر** بنتا ہے — `dispose` نام کا اعلان جو `x` پیرامیٹر لیتا ہے — اور کوئی ایرر ایسا نہیں جو اس کی حقیقت کھول دے۔ ایسے پارس پر بنایا گیا میچر اعلانات ڈھونڈتا ہے، کوئی کال نہیں پاتا، اور ایسے پیٹرن کے لیے "کوئی میچ نہیں" بتا دیتا ہے جسے پڑھا ہی اُس نظر سے نہیں جا رہا تھا جیسا وہ دکھتا ہے۔
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+اس لیے پیٹرن کو سکیفولڈز کی ایک سیڑھی میں آزمایا جاتا ہے — سٹیٹمنٹ، ایکسپریشن، کلاس ممبر، ٹاپ لیول — اور جو پہلا اسے قبول کر لے، وہی جیت جاتا ہے۔ جس ٹکڑے کو کوئی سیاق قبول نہ کرے، اُسے خاموشی سے نہ پائے جانے کے بجائے ناقابلِ پارس بتا دیا جاتا ہے۔
 
-## Why a rewrite stages instead of writing
+## ری رائٹ لکھنے کے بجائے اسٹیج کیوں کرتا ہے
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+ساختی ری رائٹ ایجنٹ کی سب سے وسیع ترمیم ہوتی ہے: ایک پیٹرن، چالیس فائلیں، اور نتیجہ کوئی لائن بہ لائن نہیں پڑھتا — نہ ماڈل، اور نہ وہ شخص جس نے یہ کام مانگا۔ اسے لکھ کر "ہو گیا" بتا دینے کا مطلب یہ ہے کہ تبدیلی پر پہلی ایماندار نظر بعد میں `git diff` کے ذریعے ڈالی جائے گی۔
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+چنانچہ `ast_edit` بتاتا ہے کہ وہ *کیا کرے گا* — گنتی، فائلیں، ملنے والی جگہیں — اور تبدیلی صرف اُس وقت پڑتی ہے جب `resolve` اسے کمٹ کرتا ہے۔ یہی بات کسی چیز کے ڈسک تک پہنچنے سے پہلے ایک Diff اور قبول/مسترد کا فیصلہ انسان کے سامنے رکھنے دیتی ہے۔
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+کمٹ سب یا کچھ نہیں ہوتا اور ہر فائل کو اسٹیجنگ کے وقت محفوظ کیے گئے مواد سے جانچا جاتا ہے۔ اسٹیجنگ اور کمٹ کے درمیان ممکن ہے ایجنٹ نے ان میں سے کوئی فائل ہاتھ سے ایڈٹ کر دی ہو، کسی تشخیصی پاس نے اسے دوبارہ لکھا ہو، یا فارمیٹر نے اسے چھو لیا ہو — ایسی صورت میں کمٹ کرنا وہ کام ضائع کر دیتا اور Diff دیکھنے میں جان بوجھ کر کیا گیا لگتا۔ کوئی بھی عدم مطابقت پوری تبدیلی کو مسترد کر دیتی ہے، کیونکہ ادھورا لاگو ہوا ساختی ری رائٹ ایسا درخت چھوڑتا ہے جو کسی بھی شکل میں کمپائل نہیں ہوتا۔
 
-## What a debugger answers that a print statement cannot
+## ڈی بگر ایسا کیا جواب دیتا ہے جو پرنٹ سٹیٹمنٹ نہیں دے سکتا
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+پرنٹ سٹیٹمنٹ کا چکر یہ ہے: ایک پرنٹ ڈالیں، پوری چیز دوبارہ چلائیں، آؤٹ پٹ پڑھیں، پرنٹ ہٹا دیں۔ اس میں ہر سوال پر پورا ٹیسٹ رَن خرچ ہوتا ہے، اور یہ صرف اُسی سوال کا جواب دیتا ہے جو چلانے سے *پہلے* آپ کو سوچنے میں آیا تھا۔
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+رکا ہوا فریم اُس لمحے کے ہر سوال کا جواب ایک ہی بار میں دے دیتا ہے — ہر لوکل، ہر کالر، اور فریم کے اپنے اسکوپ میں جانچا گیا ایکسپریشن۔ پھنسے ہوئے پروسیس یا ایسی ناکامی کے لیے جو دس رَن میں ایک بار دہرائی جائے، یہی فرق ایک پوری سہ پہر اور ایک منٹ کا ہے۔
 
-### Bounded like an enclosure, and for the same reason
+### انکلوژر کی طرح محدود، اور اسی وجہ سے
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+ڈی بگ اڈاپٹر ایک **رکے ہوئے پروسیس** کا مالک ہوتا ہے، اور وہ سب تھامے ہوتا ہے جو وہ پروسیس تھامے ہوتا ہے — کوئی پورٹ، کوئی لاک، کوئی ڈیٹا بیس کنکشن۔ جس سیشن کو کوئی چلا نہ رہا ہو، وہ ایسا رساؤ ہے جو اُس باری سے بھی آگے چلتا ہے جس نے اسے شروع کیا تھا۔ اس لیے ایک سخت TTL ہے، ہر گفتگو میں بالکل ایک سیشن، اور دوسری `launch` کو خاموشی سے پہلی کی جگہ لینے کے بجائے مسترد کر دیا جاتا ہے: جو ایجنٹ پہلا ختم کیے بغیر دوسرا شروع کرتا ہے، وہ تقریباً یقینی طور پر پہلے کا سراغ کھو چکا ہوتا ہے۔
 
-### One transport, two protocols
+### ایک ٹرانسپورٹ، دو پروٹوکول
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol، Language Server Protocol کی `Content-Length` فریمنگ استعمال کرتا ہے اور اس کے اوپر کچھ مشترک نہیں — الگ کوریلیشن کیز، ناکامی کی الگ شکل، اور پیغام کی ایک تیسری قسم (ایونٹس) جس کا LSP میں کوئی متبادل نہیں۔ فریمنگ ایک ہی جگہ رہتی ہے؛ پروٹوکول اس کے اوپر الگ الگ بیٹھتے ہیں۔
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+فریمنگ دو بار لکھنے کا مطلب ہوگا "ایک پیغام دو چنکس پر پھیلا ہے"، "ایک چنک میں تین پیغام ہیں" اور "سرور نے اپنے پہلے فریم سے پہلے stdout پر بینر لکھا" کے دو دو جواب، اور درستی صرف ایک کو ملتی۔
 
-## Related
+## متعلقہ
 
-- [Search code with the code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) — the symbol and impact side
-- [Debug a failing test](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ناکام-ٹیسٹ-ڈی-بگ-کریں/) — the debugger, end to end
-- [Refactor structurally](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ساختی-ری-فیکٹر/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — every operation and argument
+- [کوڈ گراف سے کوڈ تلاش کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) — علامات اور اثر کا پہلو
+- [ناکام ٹیسٹ ڈی بگ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ناکام-ٹیسٹ-ڈی-بگ-کریں/) — ڈی بگر، شروع سے آخر تک
+- [ساختی طور پر ری فیکٹر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ساختی-ری-فیکٹر/) — `ast_grep` اور `ast_edit`
+- [بلٹ اِن ایجنٹ ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — ہر آپریشن اور آرگیومنٹ

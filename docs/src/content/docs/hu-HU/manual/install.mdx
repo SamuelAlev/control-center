@@ -1,153 +1,264 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Telepítés
+description: Használja a Control Centert böngészőben, vagy telepítse az asztali alkalmazást, állítson be egy ügynök-háttérrendszert, és válassza ki, hol fusson a szervere.
 slug: hu-HU/kezikonyv/telepites
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+A Control Center kétféleképpen fut: **webalkalmazásként** a
+[app.usectrl.dev](https://app.usectrl.dev) címen, letöltés nélkül, vagy **asztali
+alkalmazásként**, amelyet Ön telepít. Ugyanaz az alkalmazás, ugyanazokkal a
+funkciókkal. Az egyetlen különbség, hogy hol fut a szerver — a webalkalmazás pedig
+nem tud szervert futtatni Önnek.
 
-## Use it in your browser
+## Használat a böngészőben
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+A [app.usectrl.dev](https://app.usectrl.dev) ennek az alkalmazásnak a böngészőre
+fordított változata. Nincs mit telepíteni, nincs mit frissíteni. Nyissa meg, és
+csatlakozzon.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Amit egy böngészőfül nem tud megtenni, az az, hogy _maga legyen_ a szerver. Minden
+kliens — asztali, webes, telefonos — egy vékony megjelenítő egy headless `cc_server`
+fölött, amely birtokolja az adatbázist és végzi a munkát, így a webalkalmazás mindig
+egy Ön által futtatott szerverrel beszél. Két módja van, hogy kapjon egyet:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Szerver a saját gépén.** Indítsa el a `cc_server`-t helyben, és irányítsa a
+webalkalmazást a `ws://localhost:9030` címre. A böngészők a `localhost`-ot
+megbízhatónak tekintik, így ehhez nem kell tanúsítvány és alagút sem. Ez a
+leggyorsabb módja a webalkalmazás kipróbálásának, és az adatai soha nem hagyják el a
+gépét.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Szerver egy másik gépen.** Mivel az `app.usectrl.dev` HTTPS-en keresztül érhető el,
+egy nem helyi szervernek `wss://`-en keresztül elérhetőnek kell lennie, olyan
+tanúsítvánnyal, amelyet a böngésző már megbízhatónak tart. A `cc_server` nem hajlandó
+nem loopback-címre kötni TLS nélkül, ezért válasszon az alábbiak közül:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- adjon neki tanúsítványt közvetlenül, a `--tls-cert` és a `--tls-key` kapcsolóval
+- tegye egy TLS-t lezáró fordított proxy mögé, és indítsa el a `--insecure` kapcsolóval
+- tegye elérhetővé egy alagúton vagy VPN-en keresztül, amely biztosítja a tanúsítványt
+  — Tailscale, cloudflared vagy hasonló. A **Beállítások → Szerver → Kapcsolat és
+  állapot** alatt, a **Szerver megosztása** részen található a beépített
+  alagútbeállítás.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Amikor a szerver proxy, NAT vagy alagút mögött van, állítsa a `--public-url` értékét
+arra a címre, amelyet a klienseknek ténylegesen hívniuk kell. Alapértelmezésben a
+helyi bind, így nélküle a kliensek a rossz gazdagépet próbálják.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Üzemeltetne saját példányt a webes kliensből?]
+A `cc_server` csak az `--allowed-origins` listáján szereplő böngésző-origineket fogadja
+el, amelynek alapértéke a `https://app.usectrl.dev`. Adja hozzá a saját originjét, ha
+maga üzemelteti a webes buildet. A loopback- és a natív klienseket a lista
+függetlenül, mindig engedélyezi.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Néhány dolog csak asztali gépen marad, mert natív ablakra vagy a gép saját
+hangeszközeire van szükségük: a lebegő fókuszmód-pirula, az operációs rendszer
+értesítési toastjai (az alkalmazáson belüli értesítési központ mindenhol működik), a
+naptáreseményből indított „Felvétel indítása és összekapcsolás”, valamint egy
+megbeszélés-összefoglaló újrafuttatása. Minden más — terek, ügynökök, pull requestek
+átnézése, pipeline-ok, jegyek, memória és maga a megbeszélésrögzítés — ugyanúgy
+viselkedik.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/). To host the server,
-follow [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
+A webalkalmazás szerverhez csatlakoztatásához kövesse a
+[Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/)
+oldalt. A szerver üzemeltetéséhez kövesse a
+[Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
+oldalt.
 
-## Desktop system requirements
+## Asztali rendszerkövetelmények
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Követelmény    | macOS                                                 | Windows     | Linux                                                      |
+| -------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| Operációs rendszer | macOS 13+ (Ventura)                               | Windows 10+ | Ubuntu 22.04+ vagy más disztribúció glibc 2.35+ és GTK 3 verzióval |
+| Architektúra   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git            | Szükséges                                             | Szükséges   | Szükséges                                                  |
+| Lemezterület   | ~200 MB az alkalmazásnak, plusz a szerver adatkönyvtára | ~200 MB   | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Az Intel Mac gépekhez nincs előre összeállított letöltés. Ehelyett
+[építsen forrásból](#építés-forrásból).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+A szerver adatkönyvtára nagyobbra nő, mint maga az alkalmazás. Első indításakor a
+`cc_server` kényszerűen telepíti az eszközön futó modelleket — szövegbeágyazások
+(~90 MB), beszélőszétválasztás (~35 MB) és a kiválasztott beszédmodell
+(alapértelmezésben Parakeet TDT v3, ~600 MB; Whisper-változatok 198–626 MB) —, továbbá
+egy beágyazott code-server buildet, és minden ügynökbeszélgetés kap egy copy-on-write
+worktree-t azokból a repókból, amelyeken dolgozik (Windows esetén egyszerű
+`git worktree`). A beszéd nem választható: az ASR-modell nélkül a megbeszélés- és
+diktálási műveletek nem kerülnek kiszolgálásra. A beszédmodell első letöltése után még
+egy újraindítás kell, hogy a felvétel bekapcsoljon.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Az asztali alkalmazás a szerverét az operációs rendszer felhasználónkénti
+alkalmazástámogatási könyvtárára irányítja. A kézzel, `--data-dir` nélkül indított
+`cc_server` alapértéke `<application data>/control-center` — macOS esetén
+`~/Library/Application Support/control-center`, Windows esetén
+`%APPDATA%\control-center`, Linux esetén `$XDG_DATA_HOME/control-center` (vagy
+`~/.local/share/control-center`).
 
-## Download
+## Letöltés
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Az alábbi artefaktok mindegyike a
+[GitHub Releases](https://github.com/SamuelAlev/control-center/releases) oldalról
+származik.
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Töltse le a `Control-Center-<version>-arm64.dmg` fájlt, nyissa meg, és húzza a Control
+Centert az Applications mappába. A build Developer ID-val van aláírva, és az Apple
+notarizálta, így normálisan megnyílik.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: felhasználónkénti telepítő.
+- `Control-Center-<version>-windows-x64.zip`: hordozható zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+A Windows `git worktree`-t használ a terek checkoutjaihoz (nincs copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+Az AppImage frissítési információkat hordoz, így az
+[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) vagy az
+appimaged a helyén tudja a legújabb kiadásra frissíteni, csak a megváltozott részeket
+letöltve.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Mindkettő Ubuntu 22.04-en készült, és azon vagy újabb rendszereken fut (Debian 12,
+Fedora 36 és újabb): a glibc 2.35-höz és a GCC 12 libstdc++-ához linkelnek, a GTK 3-at
+pedig a rendszertől veszik. Az a néhány könyvtár, amely egy szokásos asztali
+rendszerből hiányozhat, bennük utazik, így semmi mást nem kell telepíteni. A hang — a
+megbeszélések lejátszása, a hangtáj, az állomások hangja és az értesítési hangok — a
+rendszer libmpv-jén keresztül szól (`libmpv1` Ubuntu 22.04-en, `libmpv2` az újabb
+Ubuntu és Debian rendszereken, `mpv-libs` a Fedora rendszereken); nélküle az
+alkalmazás úgy indul el, hogy ezek a vezérlők rejtve vannak.
 
-### Standalone server
+### Önálló szerver
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
+Minden kiadás külön is tartalmazza a headless szervert —
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
+`cc_server-<version>-windows-x64.zip` —, a GHCR-en lévő `cc-server`, `cc-webapp` és
+`cc-remote` image-ek mellett. Lásd:
+[Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+A Linux-archívum Ubuntu 22.04-en készült, és a mellékelt natív könyvtárai a glibc
+2.35-höz és a GCC 12 libstdc++-ához linkelnek, ezért legalább ilyen új gazdagépre van
+szüksége (Ubuntu 22.04, Debian 12, Fedora 36 vagy újabb). Régebbi disztribúción inkább
+a `cc-server` image-et futtassa — egy konténer a saját userlandjét hozza magával, így
+csak a kernelnek kell az Önének lennie.
 
-## Agent backend
+## Ügynök-háttérrendszer
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+A Control Center **adaptereken** keresztül indítja az ügynököket. Kettő van belőlük, a
+lista rögzített, és felismerésük automatikus — nincs mód újabb regisztrálására.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+A **Control Center (built-in)** adapterhez nem kell külső CLI: az ügynökciklus a
+szerveren belül fut, és HTTP-n keresztül beszél a modellszolgáltatókkal, így mindig
+elérhető. Szolgáltatót a **Beállítások → Szerver → Modellszolgáltatók** alatt
+csatlakoztathat. Az OpenAI, a Codex, a Cursor és a Kimi Code böngészős bejelentkezést
+kínál; az Anthropic, az OpenRouter, a Groq, a Google Gemini, a DeepSeek, a Mistral, az
+xAI, a z.ai és a Moonshot API-kulcsot vár. A Codex és a Cursor ezen a futtatón
+szolgáltatók, nem külön CLI-k. A z.ai szándékosan kétszer szerepel a listán: a
+**z.ai** a használat alapján fizetendő nyílt platform, amely az egyenlegéről
+számlázódik, a **z.ai GLM Coding Plan** pedig az előfizetés. Ugyanaz a fiókkulcs, de a
+z.ai a csomagot másik gazdagépről szolgálja ki — ha egy coding plan kulcsát illeszti a
+sima z.ai csempébe, minden kérés erre tér vissza:
+`429 … "Insufficient balance or no resource package"`, mert a csomagnak nincs
+elkölthető egyenlege. A Claude Pro/Max előfizetés nem Anthropic API-bejelentkezés; azt
+a csomagot a Claude Code adapteren keresztül érheti el. Amit viszont _hozzáadhat_
+ezen az oldalon, az egy **egyéni szolgáltató** — bármely OpenAI- vagy
+Anthropic-kompatibilis végpont (Ollama, LM Studio, vLLM, privát telepítés) az
+**Egyéni szolgáltatók → Szolgáltató hozzáadása** alatt.
 
-The other adapter wraps an external CLI:
+A másik adapter egy külső CLI-t csomagol:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+A felismerés a `cc_server`-t futtató gép `PATH`-ját vizsgálja — ugyanazt a gépet, ha
+az asztali alkalmazás a saját szerverét futtatja, egyébként a távoli gazdagépet. A
+Claude Code CLI-t oda telepítse, ne a kliensre. Az oldalon lévő **Frissítés** gomb
+futtatja újra a vizsgálatot.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/).
+A modellistákat minden csatlakoztatott szolgáltató élőben szolgálja ki; a
+[models.dev](https://models.dev) csak az ár- és kontextusablak-metaadatokat adja.
+Lásd:
+[Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/).
 
-## GitHub authentication
+## GitHub-hitelesítés
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+A GitHub-hitelesítő adat **az Öné, és a szerveren él**, a felhasználói azonosítójához
+kötve — nem a kliens operációs rendszerének kulcstartójában. Minden eszköz, ahonnan
+bejelentkezik, ugyanazt használja, és más tag nem olvashatja.
 
-If the server has a GitHub App registered ([Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Ha a szerveren van regisztrált GitHub App
+([GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)), a
+**Beállítások → Munkaterület → Profil és identitás → Kódtárhely** felajánlja a
+**Bejelentkezés ezzel: GitHub** lehetőséget (a szerver által futtatott
+eszközfolyamat).
+Egyébként illesszen be egy személyes hozzáférési tokent:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Klasszikus: `repo` és `read:org`
+- Finomhangolt: **Contents** és **Pull requests** (read and write), **Checks** és **Actions** (read)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Hozzon létre egyet a
+[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+oldalon. A szerver a tokent a tárolt állapotában vizsgálja meg a fióknévre, így a sor
+azt írhatja: „bejelentkezve mint …”; egy sikertelen vizsgálat is elmenti a tokent, és
+egy elírás vagy hiányzó hatókör később sikertelen kérésként jelenik meg.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/).
+A bevezetési folyamat első lépése ez a kapcsolat. Utána ugyanazon a kártyán cserélheti
+le vagy törölheti. A GitLab és a Bitbucket ugyanezt a kártyát használja; lásd:
+[Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/).
 
-## Choose where the server runs
+## Válassza ki, hol fusson a szerver
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) explains what that split means for the desktop, web and phone.
+A Control Center egy vékony kliens egy headless `cc_server` folyamat fölött, amely
+birtokolja az adatbázist és minden munkát elvégez;
+[Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/) elmagyarázza, mit jelent
+ez a kettéválasztás az asztali, webes és telefonos kliensnél.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Első indításkor az asztali alkalmazás ezt kérdezi:
+**„Hogyan fusson a Control Center?”**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/hu-HU/kezikonyv/gyors-kezdes/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Futtatás ebben az alkalmazásban**: az asztali alkalmazás elindít és felügyel egy
+  `cc_server`-t ezen a gépen, és loopbacken keresztül beszél vele. Semmi mást nem kell
+  beállítani. Ezt a beállítást feltételezi a
+  [gyors kezdés](/hu-HU/kezikonyv/gyors-kezdes/).
+- **Csatlakozás távoli példányhoz**: irányítsa az asztali alkalmazást egy máshol futó
+  `cc_server`-re annak WebSocket URL-jével, egy eszköz-ID-val, valamint egy párosítási
+  kulccsal vagy egyszer használatos meghívókóddal. Az adatokat az a szerver birtokolja;
+  ez az asztali alkalmazás csak megjeleníti azokat.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
+Szervereket később a **Beállítások → Szerver → Kapcsolat és állapot** alatt adhat
+hozzá vagy válthat. A váltás a helyén újracsatlakozik — újraindítás nélkül. A böngésző
+nem tud szervert futtatni, így a webes kliens mindig távoli; lásd:
+[Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
 
-To host a server yourself, follow [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Ha saját maga szeretne szervert üzemeltetni, kövesse a
+[Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
+oldalt. Az a bináris felépítését, az első indítás előtti párosításikulcs-kibocsátást és
+a `--data-dir` / `--port` / `--bind` kapcsolókat tárgyalja.
 
-## Verify your setup
+## Ellenőrizze a beállítást
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. A **Beállítások → Szerver → Modellszolgáltatók** mindkét adaptert listázza. A
+   „Control Center (built-in)” a `built-in` verzióval **megtalálva** állapotot
+   mutatja; a Claude Code akkor mutat megtalálva állapotot, ha a CLI-je a
+   szervergazdagép `PATH`-jában van. Ha hiányzik, nyomja meg a **Frissítés** gombot.
+2. A **Beállítások → Munkaterület → Tárolók** listázza ennek a munkaterületnek a
+   repóit, a **Tároló hozzáadása** pedig a szervergazdagép mappáit böngészi.
+3. A **Beállítások → Munkaterület → Ügynökök** listázza azt az öt ügynököt, amelyet az
+   első munkaterülete létrehozott. Mindegyikhez be kell állítani egy **Adaptert** és
+   egy **Modellt**, mielőtt futhat.
+4. A **Beállítások → Szerver → Diagnosztika és adatvédelem** jelenti azokat a
+   homokozó-háttérrendszereket, amelyeket ez a gazdagép kínál, a beágyazómodell
+   állapotát és a naplózást.
 
-## Build from source
+## Építés forrásból
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+A natív könyvtárak kötelezőek, és nincs csökkentett mód: ha valamelyik hiányzik, az
+kemény indítási hiba, nem lassabb útvonal. Ezeket minden más előtt készítse elő.
+Minden Flutter- és Dart-parancs az `fvm`-en keresztül megy, mert az SDK verzióját a
+repó rögzíti.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +270,26 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+macOS-en a biztonságos tároláshoz (GitHub-, Linear- és Google-bejelentkezés) az kell,
+hogy az alkalmazást egy Apple-csapat írja alá — egy ingyenes Apple ID is elég, és ez
+egyszeri beállítás, amelyet a
+[helyi fejlesztési aláírás](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos)
+alatt ismertetünk. Enélkül az alkalmazás így is elindul; csak a biztonságos tároló nem
+érhető el. A Windows és a Linux nem igényel aláírást.
 
-To build the headless server binary, stage the natives the same way first, then:
+A headless szerver binárisának felépítéséhez először ugyanígy készítse elő a
+natívokat, majd:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+A build hook mindazt a bundle-be másolja, ami már benne van a `build/natives/`
+könyvtárban, így ha az előkészítés előtt épít, olyan bundle-t kap, amelyben nincsenek
+natívok, és egy szervert, amely megtagadja az indulást.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+A webes klienshez használja a `scripts/build_web.sh` szkriptet (`--target remote` a
+telefonos PWA-hoz). A CI is ezt futtatja: egy sima `flutter build web` kihagyja a
+build-identitás pecsétjét, a Web Worker újragenerálását, a telepítési jegyzéket és az
+eszközköltségvetés-ellenőrzést.

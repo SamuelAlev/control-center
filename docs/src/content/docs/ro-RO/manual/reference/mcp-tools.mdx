@@ -1,310 +1,313 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: Instrumente MCP
+description: Catalog complet al instrumentelor MCP pe care le înregistrează cc_server, pe familii.
 slug: ro-RO/manual/referinta/instrumente-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe pot fi conectate în același registru ca un strat dinamic.
 
-## Registry size
+## Dimensiunea registrului
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Măsură                                                                              | Număr |
+| ----------------------------------------------------------------------------------- | ----- |
+| Instrumente înregistrate de `cc_server`                                             | 110   |
+| Din `packages/cc_mcp`                                                               | 108   |
+| Din `packages/cc_mcp_client` (descoperirea instrumentelor)                          | 2     |
+| Înregistrate în registrul de bază (`server_mcp_registry.dart`)                      | 63    |
+| Înregistrate după pornire, pe măsură ce serviciile lor devin disponibile (`cc_server_runtime.dart`) | 47    |
+| Dintre cele 63 ale registrului de bază, condiționate de un repo cu graf de cod        | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Cele cinci instrumente de graf de cod sunt înregistrate doar când gazda transmite un repo cu graf de cod către `buildServerMcpRegistry`. `cc_server` transmite mereu unul, așa că toate cele 110 sunt active în binarul livrat.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Registrul complet este anunțat în `tools/list`, fără restricționare la descoperire. Editările de tichete sunt instrumente tipizate.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Clienții externi văd mereu catalogul întreg]
+`tools/list` nu este niciodată trunchiat. Clienții MCP validează numele instrumentelor față de propria copie din cache a acelei liste și refuză orice nu apare acolo fără să întrebe serverul, așa că un instrument ascuns este inaccesibil, nu doar tăcut.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ro-RO/manual/concepte/contextul-instrumentelor).
+**Harness-ul încorporat** este diferit: încarcă per cerere doar un subset rezident de definiții și aduce restul la prima utilizare, ceea ce este un comportament de partea harness-ului și nu schimbă acest registru. Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Fiecare clasă de instrumente este înregistrată]
+Un fișier sursă din `packages/cc_mcp/lib/src/tools/` este un instrument pe care un
+agent îl poate apela. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+face build-ul să eșueze dacă o clasă de instrumente nouă nu este construită de nimic.
 :::
 
-## Common parameters
+## Parametri comuni
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Obligatoriu** la fiecare instrument care atinge date limitate la spațiul de lucru. Un `workspace_id` lipsă sau nevalid returnează o eroare explicită, iar o valoare care nu corespunde spațiului de lucru al entității țintă este refuzată, nu ignorată în tăcere. Omite-l la instrumentele cu adevărat globale: `list_workspaces` și cele șase instrumente de flux de știri (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), care se folosesc de lista de fluxuri per utilizator a proprietarului serverului. Instrumentele de descoperire (`search_tool_bm25`, `list_my_tools`) îl primesc opțional, ca să poată clasifica apelabilitatea după modul conversației. Când serverul trimite un agent, spațiul de lucru este impus pe server, așa că agentul nu poate ajunge în alt spațiu de lucru transmitând un id străin.
 
-## Tool discovery
+## Descoperirea instrumentelor
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Ambele vin din `cc_mcp_client`, nu din `cc_mcp`, și ambele consultă garda de mod, ca să raporteze ce este apelabil în modul _curent_ al conversației.
 
-| Tool               | Description                                                                                                                 |
+| Instrument         | Descriere                                                                                                                   |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | Caută în catalogul de instrumente după cuvânt cheie; returnează instrumentele potrivite, schemele lor de argumente și dacă fiecare este apelabil chiar acum |
+| `list_my_tools`    | Listează instrumentele apelabile chiar acum în această conversație, filtrate după modul ei                                   |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Un al treilea instrument de descoperire, **`search_tools`**, există doar în interiorul harness-ului încorporat și nu face parte din acest registru MCP. El clasează suprafața proprie de instrumente a rulării și, spre deosebire de `search_tool_bm25`, **încarcă** schemele a ceea ce găsește, ca agentul să poată apela o potrivire la următorul tur. Agenții de pe harness ar trebui să îl prefere; clienții MCP au `search_tool_bm25`.
 
-## Agent tools
+## Instrumente pentru agenți
 
-| Tool          | Description                               |
+| Instrument    | Descriere                                 |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | Listează agenții înregistrați într-un spațiu de lucru |
 
-## Agent peer messaging and delegation
+## Mesagerie între agenți și delegare
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Agenții vorbesc între ei prin spații (durabile, vizibile în listă). `ask_agent` este cerere/răspuns cu un timeout obligatoriu; `delegate_task` este protejat pe server de un plafon de adâncime, detectarea ciclurilor, o anvelopă bugetară și un plafon de autonomie.
 
-| Tool            | Description                                                                                    |
+| Instrument      | Descriere                                                                                      |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | Trimite un mesaj unidirecțional altui agent, adresat prin `to_agent_id` sau prin `to_agent_name` exact |
+| `ask_agent`     | Pune o întrebare altui agent și așteaptă răspunsul lui sau expiră                               |
+| `delegate_task` | Deleagă o sarcină altui agent ca tichet copil urmărit                                          |
+| `consult_agent` | Adaugă în spațiu specialistul cel mai potrivit după skill-uri și îl trimite cu un brief concentrat |
+| `todo_read`     | Citește lista de sarcini persistată a acestei conversații                                      |
 
-## Skill tools
+## Instrumente pentru skill-uri
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Fiecare instalare și actualizare trece printr-o poartă de scanare cu eșec închis înainte ca vreun conținut de skill să ajungă pe disc sau într-un prompt de agent.
 
-| Tool                 | Description                                                               |
+| Instrument           | Descriere                                                                  |
 | -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| `list_skills`        | Listează slug-urile de skill disponibile într-un spațiu de lucru          |
+| `create_skill`       | Creează un skill nou din conținut markdown                                 |
+| `install_skill`      | Instalează întregul director al unui skill dintr-un depozit GitHub, la un ref fixat |
+| `update_skill`       | Actualizează un skill GitHub instalat la un ref nou, rescanând și refixând |
+| `list_skill_updates` | Listează skill-urile pentru care există o versiune mai nouă                |
+| `verify_skills`      | Verifică skill-urile blocate față de hash-urile de conținut de pe disc     |
+| `pin_skill`          | Calculează hash-ul unui skill existent de pe disc în `skills-lock.json`    |
 
-## Plan, playbook and artifact tools
+## Instrumente pentru planuri, playbook-uri și artefacte
 
-| Tool               | Description                                                                                                           |
+| Instrument         | Descriere                                                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | Contractul de ieșire al modului plan: emite un `PlanDocument` tipizat care se deschide în Plan Studio                  |
+| `create_playbook`  | Salvează un plan ca șablon numit și versionat, cu substituenți tipizați `{{param}}`                                    |
+| `run_playbook`     | Instanțiază un playbook cu valori de parametri, producând un plan pe care operatorul îl aprobă                         |
+| `publish_artifact` | Publică o listă ordonată de blocuri tipizate (markdown, tabel, grafic, mermaid, cod, JSON) randate nativ în client    |
+| `revise_artifact`  | Înlocuiește conținutul unui artefact publicat                                                                          |
+| `list_artifacts`   | Listează artefactele spațiului de lucru                                                                                |
+| `get_artifact`     | Citește un artefact                                                                                                    |
+| `complete_goal`    | Declară atins obiectivul durabil activ al conversației (pornit cu `/goal` sau `/loop`)                                 |
 
-## Workspace tools
+## Instrumente pentru spațiile de lucru
 
-| Tool              | Description                                                              |
+| Instrument        | Descriere                                                                |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | Listează toate spațiile de lucru cu id-urile și numele lor (global; fără `workspace_id`) |
 
-## Repo tools
+## Instrumente pentru depozite
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Instrument   | Descriere                                                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | Listează depozitele înregistrate într-un spațiu de lucru. Apelanții agenți primesc căile worktree-urilor izolate copy-on-write ale conversației lor, niciodată checkout-urile originale |
 
-## Messaging tools
+## Instrumente de mesagerie
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Instrument           | Descriere                                                                     |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `list_spaces`        | Listează spațiile de mesagerie dintr-un spațiu de lucru                        |
+| `get_messages`       | Preia mesajele dintr-un spațiu                                                 |
+| `send_message`       | Trimite un mesaj într-un spațiu ca agent expeditor numit                       |
+| `get_space_notes`    | Citește documentul de predare partajat al unui spațiu                          |
+| `update_space_notes` | Înlocuiește documentul de predare partajat al unui spațiu                      |
+| `todo_write`         | Înlocuiește lista de sarcini a acestei conversații într-un singur apel (transmite lista completă) |
 
-## Review tools
+## Instrumente de revizuire
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Instrument                 | Descriere                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | Pornește revizuirea IA pentru un PR: calculează zonele de revizuire, distribuie recenzenți specialiști în spațiul PR-ului, redactează prezentarea ghidată și finalizează |
+| `add_review_node`          | Adaugă o constatare de revizuire structurată (fișier, linie, prioritate P0–P3) într-un spațiu de revizuire |
+| `confirm_review_node`      | Confirmă constatarea unui coleg; autorul nu se poate autoconfirma                                        |
+| `resolve_review_node`      | Marchează o constatare ca reparată după ce ai făcut efectiv modificarea; postează o urmă în spațiul de revizuire |
+| `dismiss_review_node`      | Respinge o constatare care nu se aplică; înregistrează un fapt de suprimare, ca recenzenții să nu o mai semnaleze |
+| `request_peer_review`      | Cere unui alt agent recenzent o a doua părere asupra unei constatări                                     |
+| `dispatch_reviewers`       | Trimite în paralel agenții recenzenți potriviți într-un spațiu de revizuire                              |
+| `submit_reviewer_verdict`  | Postează un verdict ship/hold/block per recenzent, cu încredere și o explicație                          |
+| `finalize_review`          | Calculează consensul per nod și verdictul per PR și închide revizuirea                                   |
+| `set_cohort_summary`       | Setează rezumatul în limbaj simplu al unei cohorte de revizuire                                          |
+| `add_review_diagram`       | Atașează unei cohorte o diagramă structurată, verificată de graf (`sequence`, `entityRelation`, `stateMachine`) |
+| `publish_review_to_github` | Publică pe GitHub revizuirea finalizată, ca comentarii inline plus un corp de rezumat                    |
 
-## Memory tools
+## Instrumente de memorie
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Instrument              | Descriere                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `search_memory`         | Caută fapte și politici (cuvânt cheie, semantic sau hibrid — hibrid este implicit)                    |
+| `propose_fact`          | Stochează un fapt markdown scurt într-un domeniu                                                       |
+| `supersede_fact`        | Marchează un fapt ca înlocuit de altul                                                                 |
+| `propose_policy`        | Stochează o regulă normativă într-un domeniu (necesită permisiune de scriere pe el)                    |
+| `supersede_policy`      | Retrage o politică — o marchează ca inactivă, păstrând-o pentru audit                                 |
+| `list_policies`         | Listează politicile active, opțional filtrate după domeniu                                            |
+| `list_memory_domains`   | Listează domeniile de memorie ale spațiului de lucru, cu numărul de fapte și de politici              |
+| `record_observation`    | Înregistrează o observație brută în memoria de lucru a agentului                                      |
+| `get_my_notes`          | Citește caietul de notițe din memoria de lucru a agentului apelant                                     |
+| `update_my_notes`       | Actualizează caietul de notițe din memoria de lucru a agentului apelant                                |
+| `remember`              | Adaugă o notă în memoria de lucru fierbinte a agentului pentru această sesiune (limitată ca TTL și ca număr) |
+| `consolidate_memory`    | Rulează o trecere de consolidare („somn"): elimină elementele fierbinți expirate, transformă cele durabile în fapte pe termen lung |
+| `harmonize_memory`      | Rulează armonizarea convingerilor între agenți (SHMR) și semnalează contradicțiile                     |
+| `list_memory_conflicts` | Listează contradicțiile detectate și modul în care a fost rezolvată fiecare                            |
 
-## Governance tools
+## Instrumente de guvernanță
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Instrument                   | Descriere                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `create_goal`                | Creează un obiectiv organizațional (la nivel de companie, echipă, agent sau sarcină)                    |
+| `list_goals`                 | Listează obiectivele cu nivel, stare și progres agregat                                                 |
+| `update_goal_progress`       | Setează progresul unui obiectiv                                                                          |
+| `create_approval`            | Deschide o aprobare a consiliului pentru o acțiune guvernată (ieșire din plan, îmbinare, lansare, angajare, personalizată) |
+| `list_approvals`             | Listează aprobările, opțional filtrate după stare                                                       |
+| `decide_approval`            | Înregistrează o decizie: aprobă, respinge, cere revizuire sau retrimite                                  |
+| `comment_approval`           | Comentează o aprobare a consiliului                                                                     |
+| `exit_plan_mode`             | Deschide (și, odată aprobată, consumă) o aprobare `plan_exit`, scotând conversația din modul plan        |
+| `agent_heartbeat`            | Raportează vitalitatea (activ, inactiv, blocat); tăcerea trece starea de funcționare a runtime-ului în pierdut recent, apoi în offline |
+| `list_runtime_health`        | Listează starea de funcționare a runtime-ului fiecărui agent                                            |
+| `list_agent_presence`        | Listează prezența fiecărui agent (starea de funcționare, ciclul de viață, numărul de rulări și de sarcini în coadă, capacitatea) |
+| `get_org_chart`              | Citește arborele de raportare, cu CEO-ul la rădăcină, imbricat după `reports_to`                        |
+| `create_work_product`        | Creează un livrabil durabil atașat unui tichet                                                          |
+| `save_work_product_revision` | Salvează o revizie nouă; transmite `base_revision_id` pentru a fi respins la o editare concurentă       |
+| `list_work_products`         | Listează produsele de lucru, opțional filtrate la un singur tichet                                       |
+| `get_work_product`           | Citește un produs de lucru împreună cu istoricul reviziilor lui                                         |
+| `create_runtime_profile`     | Definește un profil de runtime reutilizabil (familie de protocoale, comandă CLI, argumente de lansare fixe) |
+| `list_runtime_profiles`      | Listează profilele de runtime ale spațiului de lucru                                                     |
 
-## Code graph tools
+## Instrumente pentru graful de cod
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Înregistrate doar când gazda furnizează un repo cu graf de cod. Indexul acoperă setul de gramatici livrat (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); simbolurile din orice alt limbaj nu sunt prezente.
 
-| Tool           | Description                                                                        |
+| Instrument     | Descriere                                                                          |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Caută simbolurile indexate după nume, semnătură și comentariu de documentație (hibrid BM25 + semantic) |
+| `code_symbol`  | Caută simboluri după nume exact; returnează `file:line` și semnătura                |
+| `code_callers` | Listează simbolurile care apelează sau depind de un simbol (muchii de intrare)       |
+| `code_callees` | Listează simbolurile pe care le apelează sau de care depinde un simbol (muchii de ieșire) |
+| `code_impact`  | Calculează raza de impact tranzitivă a unui simbol, până la o adâncime               |
 
-## Ticketing tools
+## Instrumente de ticketing
 
-| Tool                      | Description                                                                                                                  |
+| Instrument                | Descriere                                                                                                                    |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | Creează un tichet la providerul configurat                                                                                    |
+| `get_ticket`              | Preia un tichet după id                                                                                                       |
+| `list_tickets`            | Listează tichetele, opțional filtrate după stare sau responsabil                                                               |
+| `update_ticket`           | Actualizează starea, titlul, descrierea, prioritatea sau etichetele (starea acceptă aliasuri precum `in_progress` / `completed`) |
+| `assign_ticket`           | Atribuie un tichet unui agent și/sau unei echipe                                                                               |
+| `reassign_ticket`         | Reatribuie un tichet unui alt agent                                                                                            |
+| `add_ticket_collaborator` | Invită un agent să colaboreze la un tichet (adăugat în spațiul lui)                                                            |
+| `comment_on_ticket`       | Comentează un tichet                                                                                                           |
+| `close_ticket`            | Închide un tichet (îl marchează ca finalizat), cu un rezultat opțional                                                          |
+| `fail_ticket`             | Marchează un tichet ca eșuat, cu un mesaj de eroare                                                                            |
+| `delegate_ticket`         | Deleagă un tichet unui agent, creând un tichet urmărit                                                                         |
+| `ticket_pr_link`          | Leagă sau dezasociază un tichet și un pull request după id-ul nodului PR (`action`: `link` \| `unlink`)                        |
+| `ticket_relation`         | Adaugă sau elimină o relație între două tichete — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Listează părintele unui tichet, subproblemele și legăturile de dependență                                                      |
 
-## Team and pipeline tools
+## Instrumente pentru echipe și pipeline-uri
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Instrument             | Descriere                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | Înregistrează o intrare de activitate a unui lider de echipă pe un tichet                                                        |
+| `preview_trigger`      | Rulează în probă ce rulări de pipeline ar porni un eveniment ipotetic, fără să angajeze nimic                                    |
+| `submit_output`        | Trimite payload-ul de ieșire structurat pentru rularea curentă de pipeline a apelantului; validat față de schema de ieșire declarată a rulării |
 
-## Orchestration tools
+## Instrumente de orchestrare
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Instrument              | Descriere                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | Emite un plan structurat de orchestrare multi-agent pentru o singură aprobare prealabilă; validează și returnează eventualele încălcări |
 
-## Newsfeed tools
+## Instrumente de flux de știri
 
-| Tool                | Description                                                  |
+| Instrument          | Descriere                                                    |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | Listează fluxurile RSS/Atom înregistrate                     |
+| `list_articles`     | Listează articolele, opțional filtrate după flux, necitite sau salvate |
+| `get_article`       | Preia un articol                                             |
+| `set_article_read`  | Marchează un articol ca citit sau necitit                    |
+| `set_article_saved` | Salvează sau anulează salvarea unui articol                  |
+| `refresh_feeds`     | Repreia acum fiecare flux activat                            |
 
-## Enclosure (rig) tools
+## Instrumente pentru medii izolate (stații)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ro-RO/manual/concepte/guardrail-uri/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ro-RO/manual/referinta/statii/#action-verbs).
+Conduc mașini de unică folosință — un browser sau un desktop Linux într-un mediu
+izolat, un emulator Android sau un simulator iOS — din interiorul unei rulări.
+Înregistrate după pornire, necondiționat: dacă o mașină poate porni efectiv este o
+întrebare de sondare la care instrumentele răspund la fiecare apel. Apelurile
+repetate dintr-o conversație refolosesc o singură mașină; capturile de ecran se
+întorc ca conținut imagine, cu un buget de o imagine per rezultat, iar conținutul
+de pagină/UI extras este delimitat ca date neîncrezute. Cele patru instrumente de
+utilizare plus `rig_close` declară [clasa de acțiuni](/ro-RO/manual/concepte/guardrail-uri/)
+`enclosureControl` (instrumentele de utilizare declară și `networkEgress` și
+`processSpawn`; `mobile_use` și `ios_use` declară și `packageInstall`), așa că
+modurile doar-citire le refuză. `rig_list` nu declară niciuna — citește doar starea
+spațiului de lucru. Vocabularul complet de verbe pentru fiecare suprafață se află în
+[referința stațiilor](/ro-RO/manual/referinta/statii/#action-verbs).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Instrument     | Descriere                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `computer_use` | Conduce un desktop Linux într-o VM izolată: mișcă, dă clic, trage, derulează, tastează, redimensionează, clipboard, captură de ecran |
+| `browser_use`  | Conduce un Chromium, Firefox sau WebKit headless (`engine`): navighează, dă clic, completează, extrage (a11y/DOM/consolă), clipboard, captură de ecran |
+| `mobile_use`   | Conduce Android prin ADB: inspectare/intrare, capturi de ecran, instalare/pornire/oprire/resetare/dezinstalare de aplicații, link-uri profunde și comenzi de dispozitiv în forma argv |
+| `ios_use`      | Conduce simulatorul iOS prin WebDriverAgent/CoreSimulator: inspectare/intrare, capturi de ecran, instalare/pornire/oprire/dezinstalare de aplicații, link-uri profunde și procese de simulator în forma argv |
+| `rig_list`     | Listează stațiile unui spațiu de lucru cu suprafața, starea, dimensiunea afișajului și controlerul |
+| `rig_close`    | Distruge o stație și aruncă starea mașinii pe care o deține                                        |
 
-## Not exposed over MCP
+## Nu sunt expuse prin MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ro-RO/manual/concepte/intalniri/), not as a tool an agent can call.
+Calendarul și întâlnirile nu au instrumente MCP. Agenții nu pot citi calendarul, întâlnirile, transcrierile, acțiunile de urmat sau deciziile tale. Rezumatul care produce acțiunile de urmat și deciziile rulează ca pipeline-ul încorporat [`meeting_summary`](/ro-RO/manual/concepte/intalniri/), nu ca un instrument pe care un agent îl poate apela.
 
-## Tool gating by mode
+## Restricționarea instrumentelor după mod
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Restricționarea este aplicată de două ori, pornind de la un singur tabel (`ModeToolPolicy`): o dată în dispecerul MCP pentru adaptorul Claude Code și o dată în registrul harness-ului încorporat. Un apel blocat returnează motivul.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| Mod           | Suprafața de instrumente                                                                                                                                                                                                            |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | Toate instrumentele înregistrate; fără listă de permisiuni                                                                                                                                                                          |
+| `plan`        | O listă de permisiuni atent selectată. Fără scrieri în worktree și fără verbele de tichet `create` / `assign` / `delegate`, dar memoria, artefactele, todo-urile, `submit_plan`, `exit_plan_mode` și verbele de finalizare a tichetului pe tichetul trimis sunt permise |
+| `review`      | O listă de permisiuni atent selectată: participare la revizuire, comunicare, preluări de context doar-citire și setul complet de verbe de tichet, inclusiv `create_ticket` și `assign_ticket`                                        |
+| `orchestrate` | O listă de permisiuni atent selectată: instrumente de cercetare și de citire, plus `propose_orchestration`, `create_playbook` și `run_playbook`. Angajarea, descompunerea și finalizarea tichetelor se produc determinist după aprobare, niciodată în timpul rulării |
 
-Permitted in every mode regardless of allow-list:
+Permise în orice mod, indiferent de lista de permisiuni:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| Set                  | Instrumente                                                                                                                                                                                                                                                       |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Memorie și artefacte | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Graf de cod          | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Mecanica rulării     | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Faptul de a fi pe o listă de permisiuni nu face un instrument apelabil, și nici invers: capabilitatea de a pune întrebări operatorului este un instrument de **harness** (`ask_user`), așa că nu apare niciodată în acest catalog MCP.
 
-## Approval-gated tools
+## Instrumente cu poartă de aprobare
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Un instrument poate declara `requiresApproval`. Dispecerul construiește atunci un `ApprovalPayload` și îl expune prin `ConfirmationPort` înainte ca instrumentul să ruleze; `cc_server` conectează acel port, așa că poarta este activă.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Instrumentele înregistrate care îl declară: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ro-RO/manual/concepte/guardrail-uri/).
+Independent, guardrail-urile unificate de acțiuni aplică o poartă oricărui instrument care declară un set nevid de `ActionClass`. O decizie `prompt` fără niciun aprobator conectat este refuzată. Vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/).
 
-## Capabilities with no tool behind them
+## Capabilități fără niciun instrument în spate
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Nu orice capabilitate din produs este accesibilă unui agent. Acestea nu au niciun
+instrument, așa că un nume pe care poate l-ai văzut menționat altundeva returnează „unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ro-RO/manual/ghiduri-practice/proiecte/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Capabilitate                                            | Unde se află în schimb                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Angajarea, concedierea sau editarea unui agent           | Interfața de agenți. Nu există niciun instrument `hire_agent` / `fire_agent` / `update_agent`        |
+| Crearea unui spațiu de lucru                             | `workspace.upsert` prin RPC, care inițializează și aplică proprietatea                                |
+| Proiecte (creare / listare / actualizare / încadrare)    | Interfața de tichete. Proiectele sunt o suprafață de operator — vezi [Organizează munca cu proiecte](/ro-RO/manual/ghiduri-practice/proiecte/) |
+| Adresarea unei întrebări blocante operatorului           | Instrumentul de **harness** `ask_user`, nu MCP. Randează un formular în conversație și așteaptă blocat răspunsul |
+| Diagnosticarea per agent                                 | Nimic. Nu există `doctor` — vezi [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) |
+| Calendar și întâlniri                                    | RPC doar pentru clienții umani (vezi mai sus)                                                         |
 
-## See also
+## Vezi și
 
-- [Use Control Center as an MCP server](/ro-RO/manual/ghiduri-practice/server-mcp/)
-- [Modes](/ro-RO/manual/concepte/moduri/)
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/)
+- [Folosește serverul MCP](/ro-RO/manual/ghiduri-practice/server-mcp/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/)

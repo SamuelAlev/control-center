@@ -1,166 +1,162 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: GitHub انضمام سیٹ کریں
+description: GitHub میں سائن اِن کریں تاکہ PR سطح، ریپو رجسٹریشن اور ایجنٹ رنز کام کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+یہ گائیڈ سیٹ اپ کے GitHub سے متعلق حصوں کا احاطہ کرتی ہے۔ GitHub تین معاون
+کوڈ ہوسٹس میں سے ایک ہے — GitLab یا Bitbucket جوڑنے، اور یہ کہ ایک ورک اسپیس انہیں کیسے
+ملاتی ہے، کے لیے [کوڈ ہوسٹ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
+دیکھیں۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- ایسا GitHub اکاؤنٹ جس کے پاس اُن ریپوز تک رسائی ہو جن پر آپ کام کرنا چاہتے ہیں
+- یا تو آپ کے سرور کے لیے رجسٹر شدہ ایک GitHub App (دیکھیں
+  [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)) تاکہ آپ **سائن اِن** کر سکیں،
+  **یا** `repo` اور `read:org` والا ذاتی رسائی ٹوکن پیسٹ کرنے کے لیے
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[اسناد سرور پر رہتی ہیں، آپ سے منسلک]
+جو مشین آپ پر ٹائپ کر رہے ہیں اس پر کچھ محفوظ نہیں ہوتا۔ آپ کی اسناد آپ کے
+`cc_server` کے پاس، آپ کے صارف id کے تحت رکھی جاتی ہیں، اور آپ جس بھی ڈیوائس سے سائن اِن
+کرتے ہیں وہی استعمال کرتی ہے — ڈیسک ٹاپ، ویب اور فون۔ اُسی سرور کا کوئی دوسرا رکن اسے
+پڑھ نہیں سکتا، اور کسی کو سائن اِن کرانا وہ خود کرتا ہے۔
 :::
 
-## Sign in with GitHub
+## GitHub سے سائن اِن کریں
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+ایک **ڈیوائس فلو**: GitHub آپ کو ایک مختصر کوڈ دکھاتا ہے، آپ github.com پر اس کی منظوری
+دیتے ہیں، اور سرور کو اسناد مل جاتی ہیں — نہ کوئی callback URL، نہ پورٹ، نہ ظاہر کرنے کو
+کچھ۔ یہ تب دستیاب ہے جب سرور کے پاس کلائنٹ id ہو، جو کوئی سرکاری بلڈ پہلے سے لے کر آتا ہے۔
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** پر جائیں (یا آن بورڈنگ کا پہلا
+   قدم)
+2. **GitHub** قطار پر **GitHub سے سائن اِن** پر کلک کریں
+3. ایک ڈائیلاگ آٹھ حروف کا کوڈ دکھاتا ہے اور آپ کے براؤزر میں
+   [github.com/login/device](https://github.com/login/device) کھولتا ہے۔
+   کوڈ پہلے ہی آپ کے کلپ بورڈ پر ہے
+4. اسے پیسٹ کریں، ایپ کی منظوری دیں اور واپس آ جائیں۔ قطار خود ہی
+   "_your-username_ کے طور پر سائن اِن" پر بدل جاتی ہے
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+براؤزر میں کام مکمل کرتے وقت ڈائیلاگ بند کیا جا سکتا ہے — سرور کوڈ کی میعاد ختم ہونے
+(تقریباً 15 منٹ) تک پولنگ کرتا رہتا ہے، چنانچہ سائن اِن پھر بھی مکمل ہو جاتا ہے۔
 
-## Or paste a token
+## یا ٹوکن پیسٹ کریں
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+یہ اُس وقت کا متبادل ہے جب سرور کے پاس کوئی App نہ ہو، جب App کسی ایسے اکاؤنٹ پر انسٹال
+نہ ہو جس کی آپ کو ضرورت ہو، یا جب آپ بس PAT استعمال کرنا ترجیح دیں۔
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** پر جائیں
+2. **GitHub** قطار پر **ٹوکن شامل کریں** پر کلک کریں
+3. `repo` اور `read:org` والا ٹوکن پیسٹ کریں (کلاسک) اور محفوظ کریں۔ **fine-grained**
+   ٹوکن کو ریپوزٹری **Contents** اور **Pull requests** (پڑھنا اور لکھنا)، نیز
+   **Checks** اور **Actions** (پڑھنا) درکار ہوتے ہیں۔
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+ٹوکن کو محفوظ ہوتے ہی جانچ لیا جاتا ہے، اس لیے قطار اس اکاؤنٹ کا نام بتا سکتی ہے جس سے
+یہ تعلق رکھتا ہے۔ اسے ہٹانے کے لیے **منقطع کریں** پر کلک کریں۔
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+چیک پوائنٹ: **GitHub** قطار "_your-username_ کے طور پر سائن اِن" پڑھتی ہے۔ جب جواب
+دینے والی اسناد آپ کی نہ ہو تو ایک لاحقہ ذریعہ بتاتا ہے — "اس سرور کی ایپ کے ذریعے" یا
+"ماحول سے"۔
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[ترجیح مقرر ہے]
+آپ کی طرف سے کی گئی درخواست **آپ کی** اسناد استعمال کرتی ہے، اور بس — ماحول سرور کی
+اسناد ہے، آپ کی نہیں، اس لیے وہ کبھی آپ کی جگہ نہیں لیتا۔ جس کام کے پیچھے کوئی انسان نہ
+ہو (ویب ہکس، PR پولنگ، ٹکٹ ہم آہنگی) وہ پہلے سرور کی ایپ شناخت، پھر سرور مالک کی اسناد،
+پھر ماحول استعمال کرتا ہے۔
 :::
 
-## What the integration gives you
+## انضمام آپ کو کیا دیتا ہے
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| خصوصیت                 | کیسے                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| PR فہرست اور تفصیل      | GitHub REST API، سرور سے، ایپ شناخت یا آپ کی اپنی اسناد پر                                                     |
+| چیک رنز                 | GitHub Checks API                                                                                              |
+| ریویو کی اشاعت          | ایک صارف گیٹ شدہ قدم جو آپ کا ریویو PR پر پوسٹ کرتا ہے                                                          |
+| ریپو رجسٹریشن           | کوئی چیک آؤٹ قبول ہوتا ہے اگر اس کا `origin` ریموٹ github.com — یا gitlab.com / bitbucket.org — کی طرف اشارہ کرے |
+| ایجنٹ کی GitHub رسائی   | اسناد بروکر ٹوکن کو `GH_TOKEN` / `GITHUB_TOKEN` کے طور پر داخل کرتا ہے، جو ایجنٹ کی قابلیتوں سے گیٹ ہوتا ہے    |
+| اطلاعاتی پنگز           | آپ کے GitHub اطلاعاتی ان باکس کی سرور کی طرف سے پولنگ "pull request میں ذکر" اور "ریویو کی درخواست" اٹھاتی ہے   |
+| صارف پروفائلز           | پروفائل ہوور کارڈز اور فی مصنف PR فلٹرنگ                                                                        |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+کچھ راستے سستا پڑنے پر REST کے بجائے GraphQL API استعمال کرتے ہیں — compose-PR چنندہ کے
+لیے برانچ کی سرگرمی، اور وہ لائیو ریویو حالت جو فیصلہ کرتی ہے کہ ریویو کی درخواست والی
+اطلاع ابھی زیر التوا ہے یا نہیں۔
 
-## Watch for GitHub outages
+## GitHub کے تعطل پر نظر رکھیں
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+جب کوئی فراہم کنندہ متاثر ہو تو ٹائٹل بار ایک اسٹیٹس چپ دکھاتا ہے، جو GitHub، Claude،
+OpenAI اور Kimi کا احاطہ کرتی ہے۔ **سب کچھ ٹھیک ہونے پر یہ چھپی رہتی ہے** — اس کا موجود
+ہونا مسئلہ بتاتا ہے، اس کا غائب ہونا نہیں۔
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+اسٹیٹس چپ پر کلک کر کے ایک فل آؤٹ کھولیں جس میں ہر فراہم کنندہ کی حالت اور ایک ریفریش بٹن
+ہوتا ہے۔ حالتیں ہر دو منٹ میں خود بخود تازہ ہو جاتی ہیں۔
 
-## Know how agents act on GitHub
+## جانیں کہ ایجنٹس GitHub پر کیسے عمل کرتے ہیں
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/سینڈ-باکس-پالیسیاں/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- ایجنٹ کو GitHub ٹوکن صرف اُس وقت ملتا ہے جب اس کے پاس **GitHub API کالز کی اجازت دیں** یا
+  **git push کی اجازت دیں** ہو۔ دیکھیں
+  [سینڈ باکس پالیسیاں کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/سینڈ-باکس-پالیسیاں/)
+- ایجنٹ جو کمیٹ بناتا ہے وہ **بطور ایجنٹ** تصنیف ہوتے ہیں — ڈسپلے نام کے ساتھ
+  ` (agent)`، ایجنٹ کے id پر بنے ایک مصنوعی ایڈریس پر — کبھی کسی انسان کے طور پر نہیں۔
+  جس نے مانگا اُسے ایک `Co-Authored-By` trailer کے ساتھ کریڈٹ ملتا ہے
+- GitHub App کنفیگر ہونے پر، بروکر ہر لانچ پر وسیع ٹوکن دینے کے بجائے باریک دائرے والے،
+  ریپو تک محدود، تقریباً ایک گھنٹے کے انسٹالیشن ٹوکن بناتا ہے۔ انسٹالیشن رن کے ریپو کے
+  **مالک** سے طے ہوتی ہے، چنانچہ کئی اکاؤنٹس پر انسٹال ایک ہی App صحیح طور پر اُس اکاؤنٹ
+  تک محدود رہتا ہے جسے رن چھوتا ہے۔ App کے بغیر، ایجنٹس کو ماحول والا ٹوکن ملتا ہے
+- کسی سائن اِن شدہ رکن کی مانگی گئی رن **اُسی رکن کی** GitHub شناخت کے تحت عمل کرتی ہے —
+  اس کی اسناد بروکر کے ماحول کے بعد ضم ہوتی ہیں، چنانچہ ایجنٹ جو کمیٹ یا تبصرہ ان کی طرف
+  سے کرتا ہے وہ انہی سے منسوب ہوتا ہے
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The PR list is empty and says GitHub is not connected
+### PR فہرست خالی ہے اور کہتی ہے کہ GitHub منسلک نہیں
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+اِس سرور پر آپ کی کوئی GitHub اسناد نہیں۔ **کوڈ ہوسٹنگ** میں سائن اِن کریں یا ٹوکن پیسٹ
+کریں۔ دوسرے کوڈ ہوسٹس کے ریپوز متاثر نہیں ہوتے — صرف GitHub والے کچھ نہیں ڈالتے۔
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### قطار "ٹوکن شامل کریں" دکھاتی ہے مگر "GitHub سے سائن اِن" نہیں
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+سرور کے پاس کوئی کلائنٹ id نہیں — جو کہ سورس سے بنائے گئے بلڈ کی معمول کی حالت ہے، کیونکہ
+اسناد صرف سرکاری بلڈز میں شامل کی جاتی ہیں۔ دیکھیں
+[GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/): اس میں تقریباً دو منٹ
+لگتے ہیں اور یہ صرف سرور مالک کو، ایک بار کرنا ہوتا ہے۔
 
-### The sign-in dialog says the provider returned no device code
+### سائن اِن ڈائیلاگ کہتا ہے کہ فراہم کنندہ نے کوئی ڈیوائس کوڈ واپس نہیں کیا
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App موجود ہے مگر اس کا **Device flow** چیک باکس بند ہے۔ ایپ کی ترتیبات
+(General → Device flow) میں اسے آن کریں اور دوبارہ کوشش کریں۔
 
-### The row says "via this server's app" when I expected my own account
+### جب مجھے اپنے اکاؤنٹ کی توقع تھی تو قطار "اس سرور کی ایپ کے ذریعے" کہتی ہے
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+آپ نے سائن اِن نہیں کیا؛ جو آپ دیکھ رہے ہیں وہ سرور کی ایپ شناخت کا جواب ہے۔ اُس قطار پر
+**GitHub سے سائن اِن** پر کلک کریں۔
 
-### A fine-grained PAT shows no merge button or check status
+### fine-grained PAT مرج بٹن یا چیک اسٹیٹس نہیں دکھاتا
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+ٹوکن کو **Contents** اور **Pull requests** (پڑھنا اور لکھنا)، نیز **Checks** اور
+**Actions** (پڑھنا) درکار ہیں۔ اسے تبدیل کرنے کے بعد، کوڈ ہوسٹنگ میں دوبارہ پیسٹ کریں۔
 
-### Adding a repo is rejected
+### ریپو شامل کرنا مسترد ہو جاتا ہے
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/).
+رجسٹریشن کے لیے تینوں لازم ہیں: پاتھ کسی git ورک ٹری کے اندر ہو، اس میں ایک `origin`
+ریموٹ ہو، اور وہ ریموٹ کسی معاون کوڈ ہوسٹ (github.com، gitlab.com یا bitbucket.org) کی
+طرف اشارہ کرے۔ دیکھیں
+[ورک اسپیس میں ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)۔
 
-### Everything stops working for a while after heavy use
+### زیادہ استعمال کے بعد سب کچھ کچھ دیر کے لیے رک جاتا ہے
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+یہ ریٹ لمٹ سرکٹ بریکر ہے۔ GitHub اپنی بنیادی حد کا اشارہ `403` کے ساتھ
+`x-ratelimit-remaining: 0` اور ایک ری سیٹ وقت سے دیتا ہے؛ ایک دیکھتے ہی، کلائنٹ ونڈو
+گزرنے تک مزید درخواستیں نیٹ ورک کال کے بغیر مقامی طور پر ناکام کر دیتا ہے، چنانچہ دوبارہ
+کوششوں کا طوفان حد کو مزید گہرا نہیں کر سکتا۔ عارضی ناکامیاں exponential backoff کے ساتھ
+تین بار تک دوبارہ کی جاتی ہیں، `retry-after` کا لحاظ رکھتے ہوئے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)
-- [Connect a code host](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
-- [Manage API keys](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
-- [Add repos to a workspace](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
-- [Review and merge a PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)
+- [کوڈ ہوسٹ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
+- [API کلیدیں منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
+- [ورک اسپیس میں ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/)
+- [PR ریویو اور مرج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)

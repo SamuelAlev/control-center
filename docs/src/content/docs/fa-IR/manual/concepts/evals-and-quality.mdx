@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: ارزیابی‌ها و کیفیت
+description: مجموعه‌های ارزیابی، مجموعهٔ آغازینی که در هر فضای کاری کاشته می‌شود و جایی که در مشاهده‌پذیری ظاهر می‌شوند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/ارزیابی-و-کیفیت
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**مجموعهٔ ارزیابی** تعریفی محدود به فضای کاری از یک وظیفه است که باید در برابر یک
+عامل اجرا شود: یک پرامپت، یک عامل و حالت هدف، راه‌اندازی اختیاری، یک فیکسچر اختیاری
+با یک SHA پین‌شده و فهرستی از نمره‌دهنده‌ها. اولویت با نمره‌دهنده‌های قطعی است؛
+یک داورِ LLM که بر پایهٔ معیارهای نمره‌دهی کار می‌کند، آنچه را این بررسی‌ها
+نمی‌توانند بیان کنند پوشش می‌دهد.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+پنج مجموعهٔ آغازین هنگام ساخت یک فضای کاری کاشته می‌شوند. این‌ها پیشنهادهای
+ارکستراسیون، بازبینی‌ای که یک باگ کاشته‌شده را پیدا می‌کند، فقط‌خواندنی ماندن
+حالت برنامه، تولید یک برنامه توسط حالت برنامه و رفت‌وبرگشت یک تیکت را پوشش
+می‌دهند. فرایند کاشت به رویداد `WorkspaceCreated` (`workspace.upsert` یا
+`workspace.create`) گوش می‌دهد، نامی را که از قبل وجود دارد رد می‌کند و فضاهای
+کاری قدیمی‌تر را به‌صورت گذشته‌نگر پر نمی‌کند.
 
-## Where they appear
+## کجا ظاهر می‌شوند
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**مشاهده‌پذیری → کیفیت** (`/workspaces/<id>/observability`) هر مجموعه را در فضای
+کاری فهرست می‌کند.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+مجموعه‌ها را با `evals.upsertSuite`، `evals.deleteSuite` و `evals.watchSuites`
+ایجاد، فهرست، ویرایش و حذف کنید. زبانهٔ کیفیت همان فهرست است؛ این عملیات نقش
+ویرایشگر را دارند.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): the configuration a suite
-  pins
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): the autonomy dial
-- [Manage costs and budgets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/): spend recorded
-  alongside a run
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): پیکربندی‌ای که یک مجموعه
+  آن را پین می‌کند
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): درجهٔ خودمختاری
+- [مدیریت هزینه‌ها و بودجه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/):
+  هزینهٔ ثبت‌شده در کنار یک اجرا

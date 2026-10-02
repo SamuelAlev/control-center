@@ -1,132 +1,118 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: 审查计算（队列、轴与确定性 diff）
+description: 审查计算这一遍在服务器端产出什么 —— 队列、API 契约与视觉 diff、按轴划分的门禁 —— 以及它如何汇入评审标签页。
 slug: zh-CN/手册/操作指南/审查计算
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+PR 的**评审**标签页展示的是审查流水线运行期间的实时进度，随后是它发布出来的工件，
+以及工件上的各种操作。一个标签页、两种状态，因为它们是同一件事在两个时刻的样子。
+它不是默认标签页：除非有人主动请求，PR 就没有审查，因此打开它的是**询问 AI**。
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+在这个标签页背后，`cc_server` 构建文件队列、运行确定性轴，并通过 `review_studio.*`
+RPC 操作把它们对外提供（`cohorts`、`blastRadius`、`cohortImpact`、`ciSignals`、
+`dependencyDiffs`、`setContractDecision`、`approveVisual`、`compute`，以及它们各自的
+`watch*` 孪生操作）。一个仍然写着 `pr.reviewStudio` 的持久化布局，打开的也是这个
+评审标签页。
 
-On the Review tab:
+在评审标签页上：
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- 汇总智能体用 `publish_artifact` 发布一个普通的会话工件，因此标签页会通过与聊天
+  气泡相同的工件查看器来渲染它 —— 工件系统并没有一个专为审查定制的副本。
+- 发现项放在它旁边的侧栏中，判定则位于工件上方的一条细窄横栏里，而不是仪表板的页眉。
+- 当 PR 的 head 已经越过这次审查时，会出现一条过期横幅。
 
-See [Use AI-powered review](/zh-CN/手册/操作指南/ai-审查/) for the flow and
-[Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/) for acting on it.
+流程见[使用 AI 审查](/zh-CN/手册/操作指南/ai-审查/)，如何据此采取行动见
+[审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)。
 
-## Cohorts
+## 队列
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+队列把 PR 中变更的文件按内容归入若干文件桶，让含义上属于一组的文件聚在一起，并按影响
+排序，使风险最高的一组最先被读到。每次 head-SHA 变化时它们都会被重新计算并整体替换；
+每个队列都有一个跨 push 稳定的键，因此摘要和审查进度能挺过一次 rebase。
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+如果仓库尚未建立代码索引，队列会退回到按路径分组。要给仓库建立索引，请使用
+**设置 → 工作区 → 仓库** —— 每一行仓库都带有一个**索引代码**操作，它会运行
+`index_code` 流水线，并就地报告进度。
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+代码图只解析有内置语法的语言（Dart、JS/TS、PHP、Python、Rust、Zig、C/C++、Go、Java、
+Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada）。任何其他语言的仓库都永远无法
+产生语义队列，无论你索引它多少次。
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+智能体可以用 `set_cohort_summary` 为队列记录一份 markdown 摘要，并用
+`add_review_diagram` 附加一张结构化的走查图 —— 一个带类型的序列、实体关系或状态机
+对象，绝不是 mermaid 文本。每条边都会与真实代码图交叉核对，代码图无法证实的边会被
+标记为未经验证，而不是被当作事实画出来。
 
-## The API-contract axis
+## API 契约轴
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+契约轴只对**显式**的规范文件做 diff。它匹配六个默认文件名 —— `openapi.yaml`、
+`openapi.yml`、`openapi.json`、`swagger.yaml`、`swagger.yml`、`swagger.json` ——
+以及任何文件名包含 `openapi` 或 `swagger`、且以 `.yaml`、`.yml` 或 `.json` 结尾的
+变更文件。从处理程序代码推断出的契约不在范围内，GraphQL schema 也不做 diff。
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+每个变更都会被分类 —— endpoint、parameter、schema 和 response 的新增、删除与修改 ——
+并带有一个严重程度：**breaking**（删除 endpoint 或 param、收紧类型、新增必填 param）、
+non-breaking（追加式）、或 informational。被拒绝的变更会让契约门禁失败，未作出决定的
+breaking 变更同样如此；breaking 但已批准的会给出警告；没有 breaking 变更则通过。
+标记为 **派生（仅供参考）** 的 diff 永不参与门禁。
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+批准或拒绝一个变更用的是 `review_studio.setContractDecision`。
 
-## The visual axis
+## 视觉轴
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+如果 PR 在一个带有 Widgetbook 应用的 Flutter 仓库中改动了 UI 组件，计算这一遍会在
+该 PR 的 base 与 head 工作树中，通过一次无头的 `flutter test` golden 运行渲染出这些
+改动组件的前后状态，然后对像素做 diff。
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[这需要在服务器主机上安装 Flutter SDK]
+纯 Dart 服务器无法在进程内渲染 Flutter widget，因此它会调用外部命令 `flutter test`。
+SDK 必须安装在运行 `cc_server` 的那台机器上 —— 而不是你的客户端上。没有它，这个轴会
+报告 **unavailable**，原因是 “no Flutter SDK on host”。它绝不会报告一个它并未挣得的
+通过。
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+标记为 **changed** 或 **removed** 的快照会扣住视觉门禁，直到被批准；**unchanged**、
+**added** 和 **approved** 的快照则会放行。不可用有四种可能原因：主机上没有 Flutter
+SDK、仓库中没有 Widgetbook 应用、没有可用于 golden 测试的用例，或 golden 装置出错。
 
-Approving an intended change is `review_studio.approveVisual`.
+批准一个有意为之的变更用的是 `review_studio.approveVisual`。
 
-## The axes and the verdict
+## 各轴与判定
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| 轴       | 由什么驱动            |
+| -------- | --------------------- |
+| 正确性   | 审查智能体（token）   |
+| 安全性   | 审查智能体（token）   |
+| 测试缺口 | 审查智能体（token）   |
+| 视觉     | 确定性（golden 装置） |
+| API 契约 | 确定性（规范 diff）   |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+三个 token 轴在主导智能体调用 `finalize_review` 时记录；两个确定性轴由计算这一遍记录。
 
-Each axis reports one of:
+每个轴会报告以下状态之一：
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| 状态            | 含义                                     |
+| --------------- | ---------------------------------------- |
+| **Pass**        | 已运行，未发现任何阻塞性问题             |
+| **Warn**        | 已运行，存在非阻塞性的顾虑               |
+| **Fail**        | 已运行，发现了阻塞性问题                 |
+| **Partial**     | 已运行但未能完成；结果不完整             |
+| **Unavailable** | 根本无法运行                             |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+只有 **pass** 和 **warn** 能放行受门禁约束的轴。**Partial** 和 **unavailable** 与
+**fail** 有意区分开来，两者都不会放行门禁。
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+各轴会汇总成 **Ship**、**Hold** 或 **Block**，而且它们只会让判定变得_更_严重 ——
+判定绝不会被降级。一个受门禁约束的轴如果**失败**，会强制给出 **Block**；一个
+**partial** 或 **unavailable** 的轴至少会强制给出 **Hold**。因此，一个无法运行的
+阻塞性轴会_扣住_判定：证据缺失绝不会让门禁变绿。
 
-The verdict on the Review tab is the one `finalize_review` posted.
+评审标签页上的判定，就是 `finalize_review` 提交的那一个。
 
-## Related guides
+## 相关指南
 
-- [Use AI-powered review](/zh-CN/手册/操作指南/ai-审查/)
-- [Dispatch reviewer agents](/zh-CN/手册/操作指南/派发审查智能体/)
-- [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/)
-- [Search code with the code graph](/zh-CN/手册/操作指南/代码搜索/)
+- [使用 AI 审查](/zh-CN/手册/操作指南/ai-审查/)
+- [派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)
+- [审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)
+- [用代码图搜索代码](/zh-CN/手册/操作指南/代码搜索/)

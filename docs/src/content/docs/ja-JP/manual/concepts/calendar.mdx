@@ -1,128 +1,73 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: カレンダーとスケジュール
+description: Control Center がサーバー上で Google Calendar をどのように同期するのか、サインインがデバイスコードグラントである理由、読み取り専用スコープが何をカバーするのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/カレンダー
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ja-JP/マニュアル/コンセプト/ミーティング/).
+Control Center は Google Calendar に接続し、あなたの一日の予定がフリートの隣に並ぶようにします。予定を同期し、月・週・日・アジェンダの各ビューに表示し、ミーティングの開始前に通知し、任意の予定を録音・要約された[ミーティング](/ja-JP/マニュアル/コンセプト/ミーティング/)に変えます。
 
-## What it changes on Google
+## Google 側で変更するもの
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+ほとんど何も変更しません。このインテグレーションは予定を取り込んで表示するだけです。予定の作成、編集、削除、招待への返信は行いません。組み込みであれ持ち込みであれ、すべてのデバイスコード接続は `calendar.readonly` と `openid email` を要求します。
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+予定は**サーバー上の**ワークスペース自身のデータベース（`<dataDir>/<workspaceId>/workspace.db`）に同期され、すべてのクライアントが RPC 経由で描画します。Google の資格情報を保持するクライアントはありません。
 
-## Per-workspace accounts
+## ワークスペースごとのアカウント
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ja-JP/マニュアル/コンセプト/ワークスペース/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+カレンダーアカウントは、Control Center の他のすべてと同様にワークスペース単位です。各[ワークスペース](/ja-JP/マニュアル/コンセプト/ワークスペース/)は独自の Google アカウント（複数でも可）を接続し、あるワークスペースの予定やトークンが別のワークスペースから見えることはありません。ワークスペースを切り替えると、表示されるカレンダーも切り替わります。
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+1 つのワークスペースは、仕事用と個人用など、**複数**の Google アカウントを接続でき、それらの予定は同じビューにマージされます。
 
-## Why sign-in is a device code
+## サインインがデバイスコードである理由
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+ヘッドレスの `cc_server` には OAuth リダイレクトを受け取るブラウザーがありません。そのためリダイレクトは使わず、**デバイスコードグラント**（RFC 8628）で認可します。サーバーは短いユーザーコードと Google の URL を表示し、ブラウザーがある任意のデバイスで承認すると、サーバーは承認されるまでポーリングします。ヘッドレスインストールでアカウントを接続できるのは、ホストすべきリダイレクトエンドポイントが存在しないからです。
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+自分の資格情報を持ち込む前に知っておくべき帰結は次のとおりです。クライアントタイプは Google の「TV and Limited Input devices」でなければなりません。Google はそのクライアントタイプに許可リストのスコープしか付与せず、Calendar が許可されていないプロジェクトでは `invalid_scope` で失敗します。その場合は代わりにループバックまたは Web クライアントが必要です。
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+トークンがサーバーから出ることはありません。サーバーのデータディレクトリにある `secrets.json` に、`google_google:<workspaceId>:<email>` というキーで、データベースと同じ場所に、同じホストファイルシステムの信頼境界の下で書き込まれます。サーバーはアクセスを自動的に更新し、Google がアカウントを恒久的に無効化した場合（セッションが取り消されたか長期間失効した場合）は、`CalendarAuthExpired` を発行し、黙って失敗する代わりに**再接続**バナーを表示します。
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+ソースからのビルドには Google の資格情報が一切含まれません。クライアント ID とシークレットは自分で用意します。公式リリースビルドには機密性のないデバイスコードクライアントが組み込まれており、接続フローがすぐに機能します。サーバーが保存するのはそれを参照するマーカーだけで、コピーは保存しません。環境変数の `GOOGLE_OAUTH_CLIENT_ID`（およびそのシークレット）は、組み込みのペアより常に優先されます。`--google-client-id` フラグは意図的に存在しません。不明なフラグは無視され、コマンドライン上のシークレットは `ps` から読めてしまうためです。
 
-For running your own Google project, see
-[Connect a Google Calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/).
+独自の Google プロジェクトを実行する方法については、[Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)を参照してください。
 
-## Sync
+## 同期
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+サーバーは、接続された各アカウントの予定のローリングウィンドウ（プライマリだけでなく、そのアカウントのすべてのカレンダー）を **2 分ごと**に取得し、さらにオンデマンド（起動時、接続時、手動更新時）でも取得します。この短い間隔を許容できるのは、スキャンが増分式だからです。各カレンダーは独自の同期トークンを持つため、変更のないカレンダーのコストは 5 か月分のウィンドウを再取得するのではなく、ほぼ空のレスポンス 1 回で済みます。
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+繰り返し予定はサーバー側で展開されるため、クライアントが繰り返しルールを解析することはありません。現在のウィンドウ外の月に移動すると、その範囲が遅延読み込みされます。削除された予定や範囲外に移動した予定は、次の同期で整合が取られて消えます。
 
-## Views
+## ビュー
 
-| View       | What it shows                                         |
+| ビュー       | 表示内容                                              |
 | ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| **月**     | 1 か月分のグリッド（`kalender` パッケージを使用）        |
+| **週**     | 1 週間の時間指定の予定をタイムグリッドに表示             |
+| **日**     | 1 日の時間指定の予定をタイムグリッドに表示               |
+| **アジェンダ** | 今後の予定のスクロール可能なリスト                    |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+カレンダーは `/calendar` で開きます。予定を選択すると、その詳細が `/calendar/:eventId` で開きます。選択したビューはそのクライアント自身の設定に保存されるため、別のデバイスには引き継がれません。
 
-## Meeting alerts
+## ミーティングのアラート
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ja-JP/マニュアル/コンセプト/ドメインイベント/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+1 分ごとに実行されるスケジューラーが、設定可能なリード時間内に始まる予定をスキャンし、**「まもなく会議開始」**通知（`MeetingStartingSoon` [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/)）を発火します。通知には参加 URL がある場合はそれが含まれ、クリックすると予定の詳細が開きます。アラートは予定の `alertedAt` に対して重複排除されるため、再起動をまたいでも同じミーティングが二重にアラートされることはなく、アプリが終了している間に開始時刻を過ぎた予定が後から再生されることもありません。
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+つまずきやすい制限が 2 つあります。スケジューラーは**デスクトップのクライアント側**で、現在開いているワークスペースに対してのみ実行されます。開いていないワークスペースではアラートは発生しません。また、Web ビルドには OS 通知のパイプラインがまったくないため、こちらもアラートは発生しません。
 
-## Record and link
+## 録音とリンク
 
-From a calendar event you can start a [meeting recording](/ja-JP/マニュアル/コンセプト/ミーティング/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+カレンダーの予定から、その予定のタイトルを引き継いだ[ミーティングの録音](/ja-JP/マニュアル/コンセプト/ミーティング/)を開始できます。Control Center は録音と予定の間に 1 対 1 のリンクを保存するため、ミーティングのノートとカレンダーの項目は、どちらの機能が他方に依存することなく結び付いたままになります。
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**録音を開始してリンク**はデスクトップ専用です。Web クライアントでは、この操作は録音を利用できないと報告します。ただし、ミーティング画面自体の録音フローはブラウザーでも機能します。
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[エージェントはカレンダーを読めません]
+カレンダーの MCP ツールはありません。エージェントは予定を一覧したり、予定の詳細を読んだり、あなたの代わりに出欠を回答したりできません。`calendar.*` のサーフェスは人間のクライアント専用の RPC です。
 :::
 
-## See also
+## 関連項目
 
-- [Meetings and transcription](/ja-JP/マニュアル/コンセプト/ミーティング/): what happens after you start a recording
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): why calendar accounts are per-workspace
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
-- [Record and summarize a meeting](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/)
+- [ミーティングと文字起こし](/ja-JP/マニュアル/コンセプト/ミーティング/): 録音を開始した後に何が起こるか
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): カレンダーアカウントがワークスペース単位である理由
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/): `MeetingStartingSoon` と `CalendarAuthExpired`
+- [Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
+- [ミーティングを録画して要約](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/)

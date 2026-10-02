@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Ваш перший робочий простір
+description: Створіть робочий простір, зареєструйте в ньому репозиторій і побачте межу ізоляції на власні очі.
 slug: uk-UA/керівництво/посібники/перший-робочий-простір
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Що ви створите
 
-By the end of this tutorial, you will have:
+Після завершення цього посібника у вас буде:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Робочий простір, названий за вашим проєктом
+- Зареєстрований у ньому репозиторій Git
+- П'ять початково створених агентів, одного з яких ви налаштуєте достатньо добре, щоб його запускати
+- Другий, порожній робочий простір, який доводить існування межі ізоляції
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Початкове налаштування вже створило для вас робочий простір. Цей посібник навмисно створює новий, щоб ви побачили кожну частину процесу.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Перш ніж почати, виберіть копію Git, яка відповідає всім трьом умовам, — крок реєстрації відхиляє все інше:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- вона лежить усередині робочого дерева git
+- у неї є віддалене сховище `origin`
+- це віддалене сховище вказує на github.com, gitlab.com або bitbucket.org
 
-## Step 1: Create a workspace
+## Крок 1: Створіть робочий простір
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Натисніть чип робочого простору на панелі заголовка
+2. Виберіть **Додати робочий простір…**
+3. Введіть назву, яка ідентифікує проєкт, як-от «api-service» або «frontend-v2»
+4. За бажанням виберіть логотип
+5. Натисніть **Додати робочий простір**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center перемикається на новий робочий простір і відкриває його вхідні (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+За цим сервер публікує подію `WorkspaceCreated` і наповнює робочий простір:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **агентом-CEO**, чия персона — координація та делегування
+- чотирма спеціалістами — `qa`, `architect`, `engineer` і `librarian` — кожен зі своїми інструкціями та навичками
+- вбудованими шаблонами конвеєрів та їхніми рядками тригерів
 
-Every workspace you create gets all of this, not just the first one.
+Кожен створений вами робочий простір отримує все це, а не лише перший.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Переконайтеся: відкрийте **Налаштування → Робочий простір → Агенти**. У списку — п'ять агентів, кожен із порожнім кільцем статусу.
 
-## Step 2: Register a repository
+## Крок 2: Зареєструйте репозиторій
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Перейдіть до **Налаштування → Робочий простір → Репозиторії**
+2. Натисніть **Додати репозиторій**
+3. Перейдіть до своєї копії. Діалог переглядає папки на машині, де запущено `cc_server`, — не на вашому клієнті — і не виходить за межі коренів, які надає цей сервер (типово — домашній каталог його користувача). Копія git отримує окрему іконку папки та прапорець; звичайна папка не отримує ні того, ні того, тож вибрати можна лише копії.
+4. Позначте одну або кілька копій і зареєструйте їх одним пакетом. Вибір зберігається під час навігації, тож ви можете зібрати кілька за один прохід, і один невдалий вибір ніколи не відкидає решту.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center читає віддалене сховище `origin` кожної копії, визначає власника й репозиторій і створює рядок репозиторію **усередині цього робочого простору**. Другого кроку для зв'язування немає: саме реєстрація визначає його область.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Якщо пізніше зареєструвати ту саму копію в іншому робочому просторі, з'явиться другий, незалежний рядок репозиторію з власним ідентифікатором. Між робочими просторами копія визначається шляхом у файловій системі, а не ідентифікатором.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Переконайтеся: репозиторій з'являється у списку зі своїм `owner/repo` і поточною гілкою.
 
-## Step 3: Make one agent runnable
+## Крок 3: Зробіть одного агента готовим до запуску
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+П'ять агентів, яких щойно створив цей робочий простір, не мають ні адаптера, ні моделі. Запуск виконує їх на **Control Center (built-in)** і, коли модель не задано, запитує в Anthropic її типову — тож вони працюють, лише якщо ви підключили обліковий запис Anthropic, і на моделі, яку ви не обирали, якщо підключили. Початкове налаштування під час першого запуску одноразово проставляє свій вибір кожному агентові в першому робочому просторі; робочий простір, який ви створюєте пізніше, починає з усіма п'ятьма незаданими. Налаштуйте одного зараз.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Відкрийте **Налаштування → Робочий простір → Агенти**
+2. Виберіть `engineer` у списку
+3. На вкладці **Налаштування** задайте **Адаптер** як `Control Center (built-in)` і виберіть **Модель** у постачальника, якого ви підключили в розділі Налаштування → Сервер → Постачальники моделей
+4. Натисніть **Зберегти зміни**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Переконайтеся: відкрийте агента знову — обидва поля зберігають ваш вибір.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/) covers the rest of the form.
+Кожен агент має власні адаптер і модель, тож повторіть це для будь-якого іншого агента, якого плануєте використовувати. [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/) охоплює решту полів форми.
 
-## Step 4: See the isolation boundary
+## Крок 4: Побачте межу ізоляції
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Створіть другий робочий простір через чип на панелі заголовка, точно як у кроці 1. Потім подивіться на нього:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Налаштування → Робочий простір → Репозиторії** порожні. Репозиторію, який ви зареєстрували хвилину тому, там немає.
+- **Налаштування → Робочий простір → Агенти** містять п'ять агентів, але це інші рядки — адаптер, який ви задали в кроці 3, зник.
+- Список просторів, тікети та пам'ять порожні.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Нічого не протекло, бо й протікати нічому: рядки кожного робочого простору живуть у власному файлі бази даних цього робочого простору. Читання з іншого робочого простору — це не запит, який фільтрують, а запит, якому ніде виконуватися. Видалення робочого простору — це від'єднання файлу.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Поверніться назад через чип на панелі заголовка або відкрийте **Керувати робочими просторами**, щоб побачити їх поруч.
 
-For the full model, read [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/).
+Повну модель читайте в [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/).
 
-## Recap
+## Підсумок
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Ви створили робочий простір, побачили, як він створив CEO і чотирьох спеціалістів, зареєстрували в ньому репозиторій, дали одному агентові адаптер і модель та переконалися, що другий робочий простір не поділяє нічого з цього.
 
-**Next:** [Dispatch your first agent](/uk-UA/керівництво/посібники/перший-агент/) to put the workspace to work.
+**Далі:** [Запустіть першого агента](/uk-UA/керівництво/посібники/перший-агент/), щоб робочий простір запрацював.

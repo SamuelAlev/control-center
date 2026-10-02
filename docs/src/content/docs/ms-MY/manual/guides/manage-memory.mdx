@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Urus memori ruang kerja
+description: Semak, betulkan dan pangkas fakta serta polisi yang telah ditulis oleh ejen ke dalam ruang kerja.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-memori
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Panduan ini menunjukkan cara bekerja dengan stor pengetahuan sesuatu ruang kerja.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Perkara penting yang perlu diketahui sebelum anda bermula: **antara muka memori ialah permukaan semakan, bukan permukaan pengarangan.** Fakta dan polisi ditulis oleh ejen — melalui `propose_fact` dan `propose_policy`, dengan `supersede_fact` dan `supersede_policy` untuk menggantikannya. `remember` menulis item peringkat panas yang terikat sesi yang mungkin kemudiannya dinaikkan taraf oleh `consolidate_memory` menjadi fakta. Keputusan mesyuarat yang dirakam dituai ke dalam domain `decisions`; tiada penuaian pada larian ejen yang telah selesai. Apa yang anda lakukan di sini ialah membaca apa yang ditulis oleh mereka, membetulkannya, menyahaktifkannya atau memadamkannya.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Memori terletak di **Tetapan → Ruang kerja → Memori** (`/workspaces/<id>/settings/memory`). Ia bukan destinasi bar sisi peringkat atas.
 
-## The three tabs
+## Tiga tab
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Halaman ini mempunyai tepat tiga tab. Fakta dan Polisi menunjukkan kiraan langsung; graf tidak:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fakta** — setiap fakta dalam ruang kerja, dengan kiraan fakta yang belum diganti
+- **Polisi** — peraturan normatif yang dikelompokkan mengikut domain, dengan kiraan peraturan yang aktif
+- **Graf pengetahuan** — kanvas interaktif domain, topik, fakta dan polisi
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domain bukan sesuatu yang anda cipta. Sesuatu domain wujud apabila ejen menulis fakta atau polisi pertama ke dalamnya; tiada kawalan penciptaan domain di mana-mana dalam antara muka.
 
-## Review and correct a fact
+## Semak dan betulkan fakta
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Buka tab **Fakta**.
+2. Gunakan kotak carian untuk mengecilkan senarai. Ia ialah penapis subrentetan biasa terhadap domain, topik dan kandungan setiap fakta — tiada indeks kata kunci, tiada kedudukan.
+3. Gunakan penapis skop untuk menunjukkan semua skop, fakta seluruh ruang kerja sahaja, atau fakta satu repositori.
+4. Gunakan togol isihan untuk menyusun mengikut kebaharuan atau keyakinan.
+5. Klik kawalan sunting sesuatu fakta.
 
-The edit dialog lets you change:
+Dialog sunting membolehkan anda menukar:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domain** — memindahkan fakta antara domain
+- **Topik** — label pendeknya
+- **Kandungan** — teks pengetahuan itu
+- **Keyakinan** — penggelongsor dalam langkah 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Simpan untuk menulisnya semula. Tiada butang **Tambah fakta**; dialog itu hanya terbuka pada baris yang sudah ada.
 
-## See superseded facts
+## Lihat fakta yang diganti
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Tab Fakta mempunyai suis **Tunjuk yang diganti**. Fakta yang diganti tersembunyi secara lalai dan didedahkan oleh suis itu, di situlah jejak audit berada — penggantian tidak pernah memadam.
 
-## Delete a fact
+## Padam fakta
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Gunakan kawalan padam sesuatu fakta dan sahkan. Ini pemadaman sebenar, bukan penggantian: gunakannya untuk fakta yang memang salah untuk direkodkan dan biarkan ejen menggantikan fakta yang _kandungannya_ sudah berubah.
 
-## Manage policies
+## Urus polisi
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Tab **Polisi** mengelompokkan polisi aktif mengikut domain dan menurunkan yang tidak aktif ke bahagian di hujung. Bagi setiap polisi anda boleh:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Sunting** polisi itu
+- **Padam** polisi itu
+- **Nyahaktifkan** / **Aktifkan** polisi itu — pilihan yang boleh dipulihkan dan biasanya yang betul. Hanya polisi aktif sampai ke prompt ejen.
 
-As with facts, there is no create control.
+Seperti fakta, tiada kawalan penciptaan.
 
-## Explore the knowledge graph
+## Teroka graf pengetahuan
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Tab **Graf pengetahuan** membentangkan domain, topik, fakta dan polisi sebagai kanvas nod yang boleh dinavigasi — geser, zum, seret nod. Mengetuk nod membuka helaian butirannya, yang daripadanya dialog sunting yang sama boleh dicapai. Ia ialah cara terpantas untuk melihat domain mana yang benar-benar berisi.
 
-## Edit an agent's working memory
+## Sunting memori kerja ejen
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Memori kerja ialah pad conteng peribadi bagi setiap ejen, yang disuntik ke dalam promptnya pada masa penghantaran. Ejen menulisnya sendiri dengan `record_observation` dan `update_my_notes`, tetapi anda boleh membacanya dan menyuntingnya secara terus:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Tetapan → Ruang kerja → Ejen** → pilih ejen itu → tab **Memori**.
 
-## Access grants
+## Geran akses
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Geran akses memori memetakan peranan ejen kepada kebenaran (`none`, `read`, `write`) bagi setiap domain. Tulisnya dengan operasi `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Dua perkara yang perlu difahami tentang cara ia diselesaikan:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Bacaan gagal terbuka.** Tanpa baris geran untuk pasangan (peranan, domain), kebenaran berkesannya ialah `read`. Satu-satunya penulisan yang melontar tanpa `write` ialah `propose_policy`. Penulisan fakta tidak dikawal geran.
+- **Geran berkunci pada peranan ejen.** Alat yang mencadangkan menganggap `agent_role` yang tiada sebagai `general` secara lalai. Geran yang ditulis untuk peranan lain tidak mengikat ejen tersebut; geran `general` pula mengikat.
 
-## Search is not the same everywhere
+## Carian tidak sama di semua tempat
 
-Three different things are called "memory search" and they do not agree:
+Tiga perkara berbeza dipanggil "carian memori" dan ketiga-tiganya tidak selaras:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Di mana                             | Apa yang dilakukannya                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Kotak carian tab Fakta              | Penapis subrentetan terhadap fakta yang sudah dimuatkan dalam klien                                       |
+| Operasi RPC `memory_fact.search`    | Carian kata kunci FTS5 sahaja — klien nipis tidak boleh menghantar embedding pertanyaan, jadi carian hibrid kekal dalaman hos |
+| Alat `search_memory` di sisi ejen   | `keyword`, `semantic` atau `hybrid` (nilai lalai). Hibrid menggabungkan empat suara: leksikal, semantik, temporal dan graf |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Jadi ejen dan halaman Memori tidak akan menyusun pertanyaan yang sama dengan cara yang sama. Apabila anda menyemak apa yang sebenarnya boleh diingati oleh ejen, tanyalah ejen itu.
 
 ## Embeddings
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Fakta di-embed **pada masa penulisan** dan hanya apabila model embedding pada peranti dipasang. Semak statusnya di bawah **Tetapan → Pelayan → Diagnostik & privasi → Carian semantik**. Pasang model itu sebelum ejen mula menulis memori jika anda mahukan pengingatan semantik.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [Use the MCP server](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Gunakan pelayan MCP](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Memory and knowledge](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/)
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/)
+- [Memori dan pengetahuan](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/)
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/)

@@ -1,152 +1,145 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: הגדרת מעקות בטיחות
+description: קבעו כללי אפשר, שאל קודם וחסום לפעולות של סוכנים, בדקו אותם עם בדיקת מה אם? וכווננו את האוטונומיה בכל מרחב.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+המדריך הזה מלמד אתכם כיצד להגדיר מעקות בטיחות: הכללים שמכריעים אם פעולה של סוכן
+רצה, מבקשת אישור קודם, או נדחית.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+מעקות הבטיחות מכסים את שלושה־עשר מחלקות ההשפעה שכל כלי משנה־מצב מצהיר עליהן.
+הם נאכפים בצד השרת, בנקודה שבה הכלי נקרא, ולעולם לא באמצעות הוראה בהנחיה.
 
-## Set a decision for an action class
+## קביעת החלטה למחלקת פעולה
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. עברו אל **הגדרות → סביבת עבודה → הרשאות סוכנים**
+2. בחרו טווח עם בקרת הפילוח: **סביבת עבודה**, **סוכן** (ואז בחרו את הסוכן), או
+   **מרחב** (ואז בחרו את המרחב)
+3. בשורה של מחלקת הפעולה, בחרו **אפשר**, **שאל קודם** או **חסום**
+4. כדי להסיר כלל שקבעתם, לחצו על כפתור האיפוס שמופיע בסוף השורה הזו (**נקה
+   לערך שבירושה**) — ההחלטה חוזרת אל הטווח הרחב יותר
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+כל שורה מציגה את ההחלטה התקפה כתג סטטוס ותג נוסף שמראה מהיכן היא באה: **טווח
+זה**, **בירושה** או **ברירת מחדל מובנית**. המטריצה נפתרת במצב סוכן (`chat`),
+ולכן **ערכת מצב** לעולם אינה מופיעה כאן — השתמשו בבדיקת מה אם? עם מצב לקריאה
+בלבד נבחר כדי לראות את השכבה הזו.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+כתיבת כלל דורשת את התפקיד `admin`. קריאת המטריצה לא.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+נקודת ביקורת: קבעו את **דחיפה למאגר מרוחק** ל**חסום** בטווח סביבת העבודה, ואז
+הריצו את בדיקת מה אם? שלהלן על `git push origin main`. התוצאה תראה `deny` עם
+מקור `workspace`.
 
-## Understand how a decision is resolved
+## כיצד מוכרעת החלטה
 
-Resolution is **specificity first, then restrictiveness**:
+ההכרעה היא **ספציפיות תחילה, ואחר כך מידת ההחמרה**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. כללי **מרחב**, אחר כך **סוכן**, ואחר כך **סביבת עבודה**. הטווח הראשון שיש בו
+   כלל מתאים מכריע, ושם ההכרעה נעצרת
+2. אם אין כלל מתאים, חלה **ערכת המצב** — מצב לקריאה בלבד (תכנון, סקירה, תזמור)
+   חוסם אחד עשר מתוך שלושה־עשר המחלקות
+3. אם למצב אין מה לומר, חלה **ברירת המחדל המובנית**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+בתוך טווח בודד, כלל פקודה מוכרע לפי קידומת תואמת הארוכה ביותר, וקונפליקט ספציפי
+באותה מידה מוכרע **באופן המחמיר ביותר** — חסום גובר על שאל קודם, ושאל קודם גובר
+על אפשר. פעולה שמצהירה על כמה מחלקות מכריעה כל אחת מהן בנפרד, ואחר כך משלבת
+אותן באופן המחמיר ביותר.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[אפשר אינו גובר על חסום]
+כלל צר יותר מנצח בספציפיות, ותיקו נשבר לפי מידת ההחמרה — ולכן **אפשר** בטווח
+סביבת העבודה אינו עוקף **חסום** בשום מקום.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+החלטת **שאל קודם** מציפה בקשת אישור אחת שמכסה כל מחלקה שהוכרעה כ-`prompt`.
+**כשאין מאשר מחובר היא נדחית**, הן לפקודות מעטפת והן לקריאות כלים של מנגנון
+ההרצה. זה מכוון: הרצה בלי שער גרועה מהרצה שנדחתה.
 
-### Action classes and built-in defaults
+### מחלקות פעולה וברירות מחדל מובנות
 
-| Action class                 | Built-in default |
+| מחלקת פעולה                 | ברירת מחדל מובנית |
 | ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| מחיקת קובץ                   | שאל קודם         |
+| כתיבה מחוץ לעץ העבודה        | אפשר             |
+| יצירת קומיט                  | אפשר             |
+| דחיפה למאגר מרוחק            | שאל קודם         |
+| פתיחת בקשת משיכה             | שאל קודם         |
+| פרסום סקירה או מיזוג         | שאל קודם         |
+| כתיבה למערכת מעקב חיצונית    | שאל קודם         |
+| גישה לרשת                    | אפשר             |
+| קריאת סוד                    | אפשר             |
+| התקנת חבילה                  | אפשר             |
+| הרצת תהליך                   | אפשר             |
+| שינוי מבנה סביבת העבודה       | אפשר             |
+| שליטה במתחם מבודד (תחנה)     | אפשר             |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+הטקסונומיה סגורה. כלי חדש שיוצא בלי להצהיר על המחלקות שלו נכשל בבדיקת הראצ'ט
+ב-CI, כך ששום דבר לא מגיע עם מכלול השפעות ריק בשקט.
 
-## Test a rule with the what-if probe
+## בדיקת כלל עם בדיקת מה אם?
 
-Before changing a rule, check how the current policy already resolves it.
+לפני שינוי כלל, בדקו כיצד המדיניות הנוכחית כבר מכריעה אותו.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. באותו דף, גללו אל **מה אם?**
+2. בחרו **פעולה** (אחת משלושה־עשר המחלקות)
+3. אפשר למלא **פקודה** (למשל `git push origin main`), **סוכן**, **מרחב** ו**מצב**
+4. קראו את התוצאה: ההחלטה, הסיבה ו**מקור:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+הבדיקה מריצה את אותו מנגנון הכרעה שנתיב האכיפה משתמש בו, מול הכללים החיים שלכם,
+כך שהתשובה מדויקת. אם היא מפתיעה אתכם, שנו כלל במטריצה שלמעלה ובדקו שוב.
 
-## Set a space's autonomy dial
+## קביעת חוגת האוטונומיה של מרחב
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+החוגה היא לכל סוכן בכל מרחב, והיא משתלבת עם הכללים במקום להחליף אותם.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. פתחו את המרחב
+2. פתחו את **ניהול משתתפים** מכותרת המרחב
+3. תחת **אוטונומיה** בשורה של הסוכן, בחרו רמה:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| רמה                 | השפעה                                                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| **ברירת מחדל**       | אין הגדרה במרחב — מתנהג כמו **פעולה באישור**                                                         |
+| **הצעות בלבד**       | כל כלי שעובר דרך שער נחסם לחלוטין, עם הודעה שאומרת לסוכן להציע את הפעולה במקום                          |
+| **פעולה באישור**     | פעולות מסוכנות נתקלות בשער האישור שנכשל לחסימה                                                       |
+| **פעולה חופשית**     | מאשר מראש כל דבר שלא הוכרע כ-`deny` קשיח                                                            |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[פעולה חופשית בולעת כל בקשת אישור]
+תחת **פעולה חופשית**, החלטת **שאל קודם** מאושרת בלי לשאול אתכם. רק `deny` — מכלל,
+מערכת המצב או מברירת מחדל מובנית — עדיין חוסם. היעזרו בה כשאתם צופים במרחב, לא
+כברירת מחדל.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+החוגה מגיעה רק אל מנגנון ההרצה המובנה. מתאם Claude Code מריץ את הכלים שלו מחוץ
+לשער הזה.
 
-## Know where guardrails do not reach
+## לדעת לאן מעקות הבטיחות אינם מגיעים
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+הטבלה **היכן הכללים נאכפים** בתחתית אותו דף היא הגרסה שבתוך היישום של זה: לכל
+מחלקת השפעה היא אומרת אם מריץ כלשהו תופס אותה בשער המדיניות, מפקיד אותה בידי
+ארגז החול, או שאינו יכול ליירט אותה כלל.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/).
+- **מתאם Claude Code** אינו מגדר את קריאות הכלים של עצמו. Claude Code מופעל עם
+  `--dangerously-skip-permissions`, ולכן קריאות הקריאה, הכתיבה, העריכה וה-bash
+  שלו לעולם אינן עוברות בשער. מה שכן מגדר עבור המתאם הזה הוא משטח כלי ה-MCP
+  שהוא קורא חזרה לתוכו, ופקודת המעטפת ש-Control Center מפעיל כדי להריץ אותו.
+- **פועל הפלט של המצב עצמו** (`submit_plan`, `propose_orchestration`) מוצמד
+  ולעולם אינו ניתן לחסימה — אחרת מצב לא יוכל מבחינה מבנית להפיק את התוצר היחיד
+  שלו.
+- **האם ארגז החול מגבה את הכללים האלה תלוי במארח.** במקום שבו `cc_server` מוצא
+  מנוע הוא עוטף את ה-CLI של Claude Code ואת כלי ה-`bash` של מנגנון ההרצה, כך
+  שלכלל שלא כתבתם יש בכל זאת רצפת מערכת הפעלה מתחתיו. **ב-Windows אין כזו**,
+  וב-Linux או ב-WSL2 בלי `bwrap` ו-`socat` גם אין — שם מעקות הבטיחות יחד עם משטח
+  הכלים של המצב הם כל האכיפה, ולא קו שני שלה. בדקו באיזה מקרה אתם נמצאים עם
+  [הגדרת מדיניות ארגז חול](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Configure sandbox policies](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
+- [הגדרת מדיניות ארגז חול](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Guardrails — one policy for every mutating action](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [מעקות בטיחות — מדיניות אחת לכל פעולה משנה־מצב](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)

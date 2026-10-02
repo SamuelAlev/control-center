@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: สร้างและจัดการตั๋วงาน
+description: สร้างตั๋วงาน เคลื่อนตั๋วงานผ่านวงจรชีวิต ติดป้ายกำกับและเชื่อมโยงตั๋วงาน และบันทึกว่าใครเป็นเจ้าของอะไร
 slug: th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+คู่มือนี้แสดงวิธีสร้างและจัดการตั๋วงาน
 
-## Create a ticket
+## สร้างตั๋วงาน
 
-### From the UI
+### จากส่วนติดต่อผู้ใช้
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. คลิก **ตั๋วงาน** ในแถบข้างของเวิร์กสเปซ
+2. กด **ตั๋วงานใหม่**
+3. กรอกข้อมูลต่อไปนี้:
+   - **ชื่อ** — สรุปสั้น ๆ เป็นฟิลด์เดียวที่จำเป็นต้องกรอก
+   - **คำอธิบาย** — Markdown พร้อมแถบเครื่องมือจัดรูปแบบ
+   - **สถานะ** — **สิ่งที่ต้องทำ** (ค่าเริ่มต้น) หรือ **งานค้าง** สถานะที่เริ่มแล้ว
+     และสถานะสิ้นสุดจะเข้าถึงได้ผ่านวงจรชีวิต ไม่ใช่ตอนสร้าง
+   - **ลำดับความสำคัญ** — ไม่มี เร่งด่วน สูง ปานกลาง หรือต่ำ
+   - **ผู้รับมอบหมาย** — ตัวคุณเองหรือเอเจนต์ใด ๆ ในเวิร์กสเปซ
+   - **โปรเจกต์** — การจัดกลุ่มแบบไม่บังคับ
+4. กด **สร้าง** หรือเปิด **สร้างเพิ่ม** ก่อน เพื่อให้กล่องโต้ตอบเปิดค้างไว้
+   สำหรับกรอกต่อเนื่องอย่างรวดเร็ว
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+กล่องโต้ตอบนี้ไม่มีตัวเลือกผู้ให้บริการ ตั๋วงานจะถูกสร้างโดยอิงกับผู้ให้บริการ
+ตั๋วงานที่ใช้งานอยู่ของเวิร์กสเปซ
 
-### From an agent
+### จากเอเจนต์
 
-Ask an agent in a space:
+ขอให้เอเจนต์ตัวหนึ่งในสเปซ:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> สร้างตั๋วงานสำหรับแก้ปัญหา login หมดเวลาเมื่อการเชื่อมต่อช้า
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+มันจะเรียกเครื่องมือ MCP `create_ticket` ลำดับความสำคัญในเครื่องมือนั้นเป็น
+**จำนวนเต็ม** ไม่ใช่ชื่อ:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| ค่า   | ลำดับความสำคัญ |
+| ----- | -------------- |
+| `0`   | ไม่มี          |
+| `1`   | เร่งด่วน       |
+| `2`   | สูง            |
+| `3`   | ปานกลาง        |
+| `4`   | ต่ำ            |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+มีเพียง `workspace_id` และ `title` ที่จำเป็น ส่วน `description`, `priority`,
+`assignee` (id ของเอเจนต์) และ `team_id` เป็นทางเลือก เครื่องมือนี้ถูกจัดอยู่
+ในประเภทการเขียนซิงค์ไปยังตัวติดตามภายนอก และจะขออนุมัติจากคุณก่อนรัน
 
-## Update ticket status
+## อัปเดตสถานะตั๋วงาน
 
-Tickets follow this lifecycle:
+ตั๋วงานดำเนินตามวงจรชีวิตนี้:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,124 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` และ `cancelled` เป็นสถานะสิ้นสุด `cancelled` เข้าถึงได้จาก
+สถานะที่ไม่ใช่สถานะสิ้นสุดใด ๆ `done` และ `failed` เข้าถึงได้จาก `inProgress`
+หรือ `inReview` ส่วน `open` ย้ายไปที่ `blocked` ได้โดยตรงด้วย ตัวเลือกสถานะ
+ใน UI จะแสดงทุกสถานะยกเว้น `failed` — เอเจนต์จะทำเครื่องหมายสถานะนั้น
+ด้วย `fail_ticket`
 
-To change it, use any of:
+หากต้องการเปลี่ยนสถานะ ให้ใช้วิธีใดวิธีหนึ่งต่อไปนี้:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- แถว **สถานะ** ในแถบคุณสมบัติของตั๋วงาน
+- เมนูย่อย **สถานะ** ในเมนูคลิกขวาของตั๋วงานในรายการ
+- ชิป **สถานะ** บนแถบลอยหลังจากเลือกตั๋วงานหลายรายการ
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[กราฟวงจรชีวิตผูกมัดเอเจนต์ ไม่ใช่คุณ]
+ทุกการเปลี่ยนสถานะที่ทำจาก UI จะถูกบังคับให้ผ่าน โดยข้ามกราฟไปทั้งหมด — คุณ
+ย้ายตั๋วงานไปยังสถานะใดก็ได้ที่ตัวเลือกแสดงไว้ รวมถึงการเปิดตั๋วงานที่ `done`,
+`failed` หรือ `cancelled` กลับมาอีกครั้ง ตัวเลือกไม่ได้เสนอ `failed` เป็น
+ปลายทาง แผนภาพด้านบนใช้บังคับกับเอเจนต์และระบบอัตโนมัติ: การเปลี่ยนสถานะที่
+ผิดกฎซึ่งเครื่องมือ MCP หรือตัวกระทบยอดพยายามทำ จะถูกบันทึกและเพิกเฉย ไม่ถูก
+นำไปใช้
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/).
+การเปลี่ยนสถานะจะส่งเหตุการณ์โดเมน (`TicketStatusChanged`, `TicketCompleted`
+และอื่น ๆ) ซึ่งสามารถทริกเกอร์ไปป์ไลน์ได้ ดู
+[ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
 
-## Assign a ticket
+## มอบหมายตั๋วงาน
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. เปิดตั๋วงาน
+2. ในแถบคุณสมบัติ ตั้งค่า **ผู้รับมอบหมาย** — ตัวคุณเอง สมาชิกคนอื่นใน
+   เวิร์กสเปซ หรือเอเจนต์
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)).
+:::caution[การมอบหมายไม่ได้เริ่มงานใด ๆ]
+การมอบหมายบันทึกความเป็นเจ้าของเท่านั้น ไม่ได้สร้างสเปซ ไม่เปลี่ยนสถานะ
+และไม่จัดส่งเอเจนต์ — `TicketAssigned` เป็นสัญญาณสำหรับการตรวจสอบล้วน ๆ
+ที่ไม่มีตัวจัดส่งอยู่เบื้องหลัง หากต้องการให้เอเจนต์ลงมือทำงาน ให้ส่งข้อความ
+ถึงมันในสเปซ (ดู[แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/))
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+ข้อยกเว้นมีเพียงข้อเดียว: `TicketAssigned` เป็นชนิดเหตุการณ์ที่คุณต่อทริกเกอร์
+ไปป์ไลน์ได้ ดังนั้นเทมเพลตของคุณเองจึงตอบสนองต่อการมอบหมายได้
 :::
 
-## Add labels
+## เพิ่มป้ายกำกับ
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+ป้ายกำกับถูกนำไปใช้แบบกลุ่มจากรายการตั๋วงาน ไม่ใช่จากตั๋วงานทีละใบ —
+แถบคุณสมบัติไม่มีตัวควบคุมป้ายกำกับ
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. วางเมาส์บนแถวในรายการตั๋วงานแล้วทำเครื่องหมายในช่องทำเครื่องหมายของมัน
+   ทำเครื่องหมายได้มากเท่าที่ต้องการ แถบลอยจะปรากฏขึ้นเมื่อมีการเลือกสิ่งใด
+   ก็ตาม
+2. ในแถบนั้น เปิดชิป **ป้ายกำกับ**
+3. เลือกป้ายกำกับหนึ่งรายการ ป้ายนั้นจะถูกเพิ่มให้กับทุกตั๋วงานที่เลือกซึ่งยัง
+   ไม่มีป้ายนั้น ป้ายกำกับที่มีอยู่จะไม่ถูกลบออกเลย **ล้างป้ายกำกับ** จะลบป้าย
+   ทั้งหมดออก ตัวเลือกจะแสดงป้ายกำกับที่มีอยู่แล้วบนตั๋วงานในเวิร์กสเปซ เอเจนต์
+   สามารถเพิ่มชื่อใหม่ได้ผ่าน `update_ticket` หรือ `tickets.patch`
 
-## Link tickets
+## ลิงก์ตั๋วงาน
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+ความสัมพันธ์อยู่บนการ์ด **ความสัมพันธ์** ของตั๋วงานในแถบคุณสมบัติ หรืออยู่
+หลัง **เชื่อมโยงกับ** ในเมนูคลิกขวาของรายการ
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. เปิดตั๋วงานและหาการ์ด **ความสัมพันธ์**
+2. กดปุ่มเพิ่มของการ์ดนั้น แล้วเลือกความสัมพันธ์:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| ความสัมพันธ์      | ความหมาย                                  |
+| ----------------- | ----------------------------------------- |
+| **ประเด็นย่อยของ…** | ตั๋วแม่ของตั๋วงานนี้คือตั๋วงานอีกใบ          |
+| **แม่ของ…**        | ตั๋วงานอีกใบเป็นตั๋วย่อยของตั๋วงานนี้          |
+| **ถูกบล็อกโดย…**   | ตั๋วงานนี้ถูกบล็อกโดยตั๋วงานอีกใบ             |
+| **กำลังบล็อก…**    | ตั๋วงานนี้บล็อกตั๋วงานอีกใบ                  |
+| **เกี่ยวข้องกับ…** | สมมาตร ไม่ได้สื่อทิศทาง                     |
+| **ซ้ำกับ…**        | ตั๋วงานนี้เป็นสำเนาซ้ำของตั๋วงานอีกใบ          |
 
-3. Pick the target ticket.
+3. เลือกตั๋วงานปลายทาง
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**ถูกทำซ้ำโดย** ปรากฏในการ์ดแต่ไม่อยู่ในตัวเลือก — มันเป็นภาพผกผันของ
+**ซ้ำกับ…** และถูกตั้งค่าจากตั๋วงานอีกใบ ความสัมพันธ์แต่ละรายการที่แสดง
+สามารถคลิกเพื่อเปิดตั๋วงานที่ลิงก์ไว้ และลบออกได้เมื่อวางเมาส์
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+ความสัมพันธ์แบบตั๋วแม่และตั๋วย่อยถูกเก็บไว้บนตั๋วงานเอง ไม่ใช่เป็นแถวลิงก์
+ดังนั้นการลบตั๋วแม่จะส่งผลต่อเนื่องไปยังตั๋วย่อย (ดูด้านล่าง) ขณะที่ลิงก์
+แบบบล็อกและแบบเกี่ยวข้องไม่เป็นเช่นนั้น
 
-## Add collaborators
+## เพิ่มผู้ร่วมงาน
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+ผู้ร่วมงานคือรายชื่อบนตั๋วงาน — ใครเกี่ยวข้อง และในบทบาทใด
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. เปิดตั๋วงาน
+2. กดปุ่มเพิ่มบุคคลบนการ์ด **เพิ่มผู้ร่วมงาน**
+3. เลือกเอเจนต์
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+บทบาทมีสามแบบคือ **assignee**, **collaborator** (ค่าเริ่มต้น) และ
+**reviewer** ตัวเลือกใน UI แสดงเฉพาะเอเจนต์ในเวิร์กสเปซ และเขียนบทบาท
+เริ่มต้นเสมอ มนุษย์สามารถปรากฏเป็นแถวได้แต่ไม่ถูกเสนอในเมนูนั้น
+เครื่องมือ MCP `add_ticket_collaborator` รับพารามิเตอร์ `role`
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/).
+การเพิ่มผู้ร่วมงานจะเขียนหนึ่งแถวและไม่เผยแพร่เหตุการณ์โดเมนใด ๆ ทั้งไม่ให้
+สิทธิ์เข้าถึงสเปซใด ๆ หากต้องการนำเอเจนต์เข้าสู่บทสนทนา ให้เพิ่มมันเป็น
+ผู้เข้าร่วมจากส่วนหัวของสเปซแทน — ดู[ใช้สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
 
-## Delete a ticket
+## ลบตั๋วงาน
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+ใช้ **ลบตั๋วงาน** ที่ด้านล่างของแถบคุณสมบัติ เมนูคลิกขวา หรือการทำงานลบ
+ของแถบลอยหลังจากเลือกหลายรายการ
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[การลบมีผลเฉพาะภายในเครื่อง]
+ตั๋วงานที่มาจากตัวติดตามภายนอกจะไม่ถูกลบบนตัวติดตามนั้น — ไม่มีผู้ให้บริการ
+รายใดรองรับ — จึงอาจปรากฏกลับมาอีกครั้งในการซิงค์ครั้งถัดไป การลบยังส่งผล
+ต่อเนื่องด้วย: ผู้ร่วมงานของตั๋วงานและตั๋วย่อยทั้งหมดจะถูกลบไปพร้อมกัน
 :::
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Delegate work to agents](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
-- [Organize work with projects](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Ticket lifecycle reference](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/)
+- [มอบงานให้เอเจนต์](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
+- [จัดงานด้วยโปรเจกต์](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [เอกสารอ้างอิงวงจรชีวิตตั๋วงาน](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Tickets](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)
+- [ตั๋วงาน](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)

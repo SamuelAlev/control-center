@@ -1,97 +1,105 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Dar a um agente uma máquina para testar
+description: Dê a um agente um navegador descartável, um desktop, um emulador Android ou um Simulador de iOS — assistido ao vivo, com controles que você pode assumir.
 slug: pt-BR/manual/guias/usar-rigs
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+Um **rig** é uma máquina descartável que um agente abre quando precisa mesmo
+testar alguma coisa: carregar uma página, clicar por um app de desktop, tocar
+em um celular. Você pode assistir ao trabalho dele em tempo real e assumir o
+controle sempre que quiser.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Rigs isolados de terminal, navegador e desktop são VMs com discos descartáveis
+e redes com portão de saída. Android e iOS são emuladores gerenciados pelo
+host: o estado dos dispositivos é descartável, mas a rede deles segue o host do
+servidor.
 
-## Set it up once
+## Configure uma vez
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Os rigs rodam na máquina que hospeda o `cc_server` — a mesma máquina, não
+aquela que você está olhando. Existem cinco superfícies voltadas ao usuário; as
+superfícies de desktop e móveis precisam de configuração no host:
 
-| Surface | Runs on | Setup |
+| Superfície | Roda em | Configuração |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | Uma microVM que inicializa uma imagem Ubuntu fixada | Nenhuma — a imagem é baixada automaticamente no primeiro uso |
+| **Navegador (VM)** | Uma microVM que inicializa uma imagem Debian fixada, com Chromium, Firefox ou WebKit instalados no primeiro uso | Nenhuma — o mesmo |
+| **Computador (VM)** | QEMU com uma imagem de desktop Linux que já inclui Chromium, Firefox, WebKit e uma base de CLI no estilo de um runner hospedado no GitHub | Instale o QEMU (`brew install qemu`) e depois **Importar** uma imagem de desktop em **Configurações → Servidor → Rigs** |
+| **Android** | O emulador Android do Google | Instale o SDK do Android, crie um AVD e inicie-o (abaixo) |
+| **Simulador de iOS** | CoreSimulator no Mac do servidor | Instale o Xcode e o runtime de iOS solicitado e depois instale a ponte de automatização em **Configurações → Servidor → Rigs** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+As máquinas de terminal e de navegador inicializam a partir de imagens fixadas
+por digest: os bytes exatos são definidos de antemão, baixados uma vez na
+primeira inicialização e guardados em cache — depois da primeira inicialização
+de cada tipo, as máquinas seguintes pulam o download por completo e sobem em
+segundos. **Configurações → Servidor → Rigs** mostra o que o seu servidor
+consegue inicializar e todas as máquinas em execução neste momento.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Uma imagem de desktop instalada continua gerenciável na mesma página:
+**Importar** a substitui por um qcow2 mais recente, e **Excluir** a remove para
+que você instale uma build nova.
 
-### Mobile devices are set up differently
+### Dispositivos móveis são configurados de outra forma
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Não existe uma imagem nossa para Android ou iOS, e isso não é uma omissão. As
+imagens de sistema do Android vêm do SDK do Google; os runtimes de iOS vêm do
+Xcode. Para o Android, instale o Android Studio (ou as ferramentas de SDK de
+linha de comando), adicione um dispositivo virtual no **Gerenciador de
+dispositivos** e inicie-o. A página Rigs passa então a informar o Android como
+disponível.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Ela também informa exatamente qual etapa está faltando — sem SDK, sem emulador,
+sem dispositivo virtual, ou um dispositivo que simplesmente não está em
+execução —, porque esses casos têm quatro correções diferentes e só uma delas é
+um download. Se você iniciar o `cc_server` de um shell que não enxerga o SDK,
+exporte-o:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Para o iOS, o próprio servidor precisa rodar no macOS com o Xcode e um runtime
+de Simulador de iOS instalados. Abra **Configurações → Servidor → Rigs** e
+pressione **Instalar a ponte de automatização do iOS**. O servidor baixa o
+artefato do WebDriverAgent fixado por checksum, verifica-o e o instala no
+armazenamento de automação do próprio servidor. Nenhum simulador inicializa
+durante a configuração.
 
-## Open a machine
+## Abra uma máquina
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+As máquinas vivem como **abas**, ao lado do chat e do diff — em um espaço ou em
+uma página de PR, no mesmo menu `+`, em **Máquinas**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Computador** — um desktop Linux com Chromium, Firefox e WebKit
+- **Chromium**, **Firefox** ou **WebKit** — um navegador
+- **Android** — o emulador Android em execução
+- **Simulador de iOS** — um simulador descartável criado para esta conversa
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Escolha uma e pressione **Iniciar a máquina**. A aba informa em qual etapa da
+inicialização ela está (“Starting the microVM”, “Waiting for the guest to come
+up”) em vez de apenas girar.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+A aba tem escopo na conversa, e a ferramenta do agente também. Uma aba do
+Chromium, do Firefox ou do WebKit e a `browser_use`, o Android e a `mobile_use`,
+ou o Simulador de iOS e a `ios_use` endereçam a mesma máquina padrão. Slots
+adicionais de UI são máquinas de comparação separadas; as ferramentas do agente
+sempre usam a padrão.
 
-To build, install and start a Flutter app on Android:
+Para compilar, instalar e iniciar um app Flutter no Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Depois chame `mobile_use` com `install_apk` e
+`build/app/outputs/flutter-apk/app-debug.apk`, seguido de `start_app` e do nome
+do pacote Android. `ui_dump`, capturas de tela e entrada operam o mesmo
+dispositivo mostrado na aba humana. `stop_app`, `clear_app_data`,
+`uninstall_app`, `open_url` e chamadas `shell` em formato argv cobrem o resto
+do ciclo de desenvolvimento sem invocar um shell no host do servidor.
 
-To build, install and start a Flutter app on iOS Simulator:
+Para compilar, instalar e iniciar um app Flutter no Simulador de iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +107,226 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Depois chame `ios_use` com `install_app` e o diretório `.app`, seguido de
+`start_app` e do identificador de bundle impresso pelo `plutil`.
+A ferramenta de iOS também expõe `stop_app`, `uninstall_app`, `open_url` e uma
+ação `spawn` em formato argv para diagnósticos locais do simulador.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+As telas de desktop e de navegador se redimensionam para o painel. O iOS mantém
+o tamanho fixo em pontos do simulador e o exibe com barras. Toda superfície
+ainda tem duas faixas independentes: o agente recebe capturas de tela pequenas
+e baratas, enquanto você recebe a visualização ao vivo. Trocar de aba
+interrompe o stream humano, então uma máquina em segundo plano não custa
+largura de banda de exibição.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Uma aba de rig não inicia uma máquina sozinha, inclusive durante a restauração
+do layout. Essa regra evita que abrir o app inicialize VMs ou crie dispositivos
+de simulador sem que você espere por isso.
 
-## Drive the machine
+## Opere a máquina
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+O canvas é seu para digitar e clicar sempre que ninguém mais detiver o controle
+exclusivo — ou quando for você que o detém. Enquanto você mantém esse bloqueio,
+a etiqueta de status exibe **Você tem o controlo**, o agente ainda pode tirar
+capturas de tela, e o servidor recusa as ações de mutação dele no único ponto
+de estrangulamento por onde toda ação passa. Tudo o que você faz é registrado em
+seu nome.
 
-Press **Stop the machine** when you are done.
+Pressione **Parar a máquina** quando terminar.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+O controle é exclusivo de propósito: dois atores digitando na mesma máquina
+produzem entrada que nenhum dos dois pretendia.
 
-## Move things in and out
+## Mova coisas para dentro e para fora
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Copiar e colar funcionam nos dois sentidos no canvas do rig, e arrastar arquivos
+também.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Copiar e colar.** Pressione o atalho de cópia sobre o canvas e o que quer que
+a máquina tenha copiado — texto, uma imagem, uma lista de arquivos — vai para a
+sua área de transferência. Colar envia a sua no sentido oposto e pressiona
+colar dentro da máquina. No macOS o atalho é ⌘C/⌘V; ⌃C continua chegando a um
+shell do convidado como interrupção. No Windows e no Linux use ⌃C/⌃V — o
+convidado recebe a mesma tecla que receberia de qualquer forma, então ⌃C em um
+terminal do convidado continua interrompendo e a sua própria área de
+transferência fica intacta.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Nada é sincronizado em segundo plano. Uma senha que você copia na sua própria
+máquina não chega para dentro de uma VM porque um temporizador disparou; ela
+atravessa quando você cola.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Colar em um rig é permitido por padrão. Copiar de um rig pergunta primeiro —
+uma concessão de dez minutos, ou **Permitir sempre** em **Configurações →
+Servidor → Rigs → Acesso à área de transferência**. As duas direções são
+independentes e acompanham você, não o espaço de trabalho.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Arrastar arquivos para dentro.** Solte-os em qualquer lugar do canvas.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- No **Navegador (VM)**, a página recebe um drop *real* no ponto em que você
+  solta, então uma zona de upload se comporta exatamente como se comportaria
+  com um arquivo local.
+- No **Computador (VM)**, os arquivos vão para `~/Drops` e os caminhos deles vão
+  para a área de transferência da máquina, então ⌃V os cola em um gerenciador de
+  arquivos ou em um campo de upload. Um host não consegue sintetizar um arrasto
+  em um app Linux arbitrário sem rodar um daemon privilegiado dentro da VM, que
+  os rigs deliberadamente não têm — então o toast informa onde os arquivos foram
+  parar em vez de fingir que um drop aconteceu.
+- Em um **terminal**, o arquivo é copiado para dentro e o caminho dele é
+  digitado no prompt, pronto para ser passado a um comando. Colar uma *imagem*
+  em um terminal faz a mesma coisa: ela é salva na máquina e você recebe o
+  caminho.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Arrastar arquivos para fora** funciona a partir do Computador (VM). Comece a
+arrastar um arquivo dentro da máquina, leve o ponteiro para fora do canvas, e
+ele se torna um arrasto real no seu desktop — solte-o no Finder ou no Explorer.
+Copiar arquivos no gerenciador de arquivos da máquina e colar do seu lado
+também funciona. O Navegador (VM) não oferece isso: um navegador headless não
+tem payload de arrasto para ler, e adivinhar a partir da seleção de texto da
+página sequestraria cliques comuns.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+O Computador (VM) precisa de uma imagem criada depois que o suporte a área de
+transferência chegou. Se você importou a sua antes disso, recrie-a com
+`scripts/rigs/build_image.sh` e depois use **Importar** na imagem instalada para
+substituí-la.
 :::
 
-## Terminals inside a rig
+## Terminais dentro de um rig
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Os terminais em um espaço ou em uma página de PR podem rodar dentro de um rig
+em vez de na própria máquina do servidor. Quando isso acontece, o painel mostra
+o selo **VM isolada**.
 
-What changes:
+O que muda:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Nada do que você executa chega ao host. Um `rm -rf` lá dentro custa o rig.
+- A rede nega por padrão. Somente os hosts da lista de permissões do rig são
+  alcançáveis, e tudo passa por um portão que aplica essa lista.
+- `git push` continua funcionando. O rig não armazena nenhuma credencial; ele
+  pede ao servidor uma de curta duração por operação, e esse token é revogado
+  quando o rig fecha.
 
-What to know:
+O que saber:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Um terminal isolado restaurado espera por você.** Como uma aba de rig, um
+  terminal `microvm` que volta com o seu layout mostra um botão **Abrir o
+  shell** em vez de inicializar a VM dele na abertura. Um terminal com shell do
+  host custa um processo; um isolado custa uma máquina.
+- **Arquivos soltos no terminal são digitados, não abertos.** Solte um CSV em um
+  terminal isolado e ele é copiado para dentro da máquina e o caminho dele no
+  convidado aparece no prompt — o caminho do host seria um comando que falha
+  lá.
+- **A cópia no rig é uma cópia.** Sua worktree no host continua sendo a fonte da
+  verdade. Os commits que você faz dentro de um rig são trazidos de volta para
+  `refs/rigs/<id>/*` quando você pede — eles nunca movem o seu branch nem tocam
+  na sua árvore de trabalho.
+- **O trabalho destinado ao host continua rodando no host.** Um convidado Linux
+  não consegue compilar para macOS nem rodar `xcodebuild`. Escolha o backend
+  nativo explicitamente para isso; o app pedirá que você confirme em vez de
+  trocar em silêncio.
 
-## Ports
+## Portas
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/pt-BR/manual/guias/portas-vm/).
+Rode um servidor de desenvolvimento no Terminal (VM) — `pnpm dev` na porta 3000,
+digamos — e em poucos segundos o ícone de plugue no canto do terminal acende: a
+porta é encaminhada para `localhost:3000` na sua máquina, alcançável em
+`localhost:3000` dentro do Navegador (VM), compartilhável na sua rede e
+nomeável como `https://myapp.test`. Todo o fluxo — encaminhamento automático,
+compartilhamento na LAN, domínios de desenvolvimento com HTTPS — tem seu
+próprio guia:
+[Encaminhar portas a partir de um terminal](/pt-BR/manual/guias/portas-vm/).
 
-## Custom images
+## Imagens personalizadas
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Um espaço de trabalho pode apontar o Terminal (VM) e o Navegador (VM) para
+imagens próprias — em **Configurações → Servidor → Rigs → Imagens
+personalizadas (este espaço de trabalho)**. Uso típico: ampliar a imagem padrão
+com o conjunto de ferramentas de que o seu projeto precisa, para que todo
+terminal já inicie pronto, ou reutilizar uma imagem que a sua equipe já
+publica.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+A máquina continua inicializando dentro do mesmo recinto: mesmo portão de
+saída, mesmo broker de credenciais, mesmo ciclo de vida. Somente
+administradores do espaço de trabalho podem alterar a configuração, as máquinas
+novas passam a usá-la (as em execução mantêm a delas), e a referência precisa
+ser uma imagem de um registro — caminhos locais são recusados.
 
-What an image must provide:
+O que uma imagem precisa fornecer:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — uma imagem Linux com `bash`. Ela também precisa de `git`,
+  `curl` e `socat` — já instalados ou instaláveis na primeira inicialização
+  (qualquer imagem baseada em Debian/Ubuntu funciona: eles são instalados
+  automaticamente, junto com um conjunto de ferramentas de CLI no estilo de um
+  runner hospedado no GitHub: compiladores, Python 3, `jq`, ferramentas de
+  arquivamento, `rsync`. Runtimes de linguagem como Node/Go/Java e Docker não
+  vêm pré-instalados). A porta `7911` do convidado é reservada para o
+  encaminhador de portas.
+- **Navegador (VM)** — uma imagem Debian/Ubuntu com `bash` e `socat`, além de um
+  binário `chromium`. O servidor inicia o próprio Chromium como
+  `chromium --headless=new` e retransmite o DevTools da porta `9223` do
+  convidado para a `9222`. PulseAudio e ffmpeg são instalados na primeira
+  inicialização. Não faça build `FROM chromedp/headless-shell` — esse binário
+  não tem áudio. A substituição se aplica apenas a rigs do Chromium; Firefox e
+  WebKit a ignoram e inicializam a imagem Debian fixada. As portas `9222`/`9223`
+  do convidado são reservadas.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Duas recomendações: fixe a referência por digest (`@sha256:…`) para que os
+bytes não mudem debaixo de você, e hospede-a no Docker Hub ou no GitHub
+Container Registry — os hosts de download desses registros são admitidos
+automaticamente pelo portão de saída; outros podem precisar que os hosts de
+entrega de conteúdo deles estejam alcançáveis para o pull.
 
-## When a rig goes away
+## Quando um rig desaparece
 
-Rigs are meant to be temporary:
+Os rigs existem para ser temporários:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Ociosidade** — depois de ~15 minutos sem nada acontecendo, um rig de
+  navegador, desktop ou móvel estaciona (congelado, acorda na hora na próxima
+  ação). Um terminal isolado espera 45 minutos. Depois do dobro da janela de
+  ociosidade, ele fecha.
+- **Limite de tempo** — todo rig tem um tempo de vida rígido que ele não
+  consegue estender, faça o que fizer.
+- **Memória** — se o servidor precisar de espaço para um rig novo, ele fecha o
+  menos usado recentemente. Um rig que alguém esteja operando, assistindo ou
+  com um terminal aberto nunca é tomado.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Quando um rig isolado fecha, o disco dele é descartado. Fechar um rig do
+Android se desconecta do emulador do host — não o exclui. Um rig do iOS exclui
+o dispositivo CoreSimulator que criou. Traga de volta primeiro qualquer coisa
+que você queira manter.
 
-## What a rig can reach
+## O que um rig consegue alcançar
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Rigs isolados de terminal, navegador e desktop usam por padrão um portão de
+saída que nega tudo: você concede hosts explicitamente, e a única rota do
+convidado é um portão que aplica essa lista. Um rig de navegador também admite
+o site do produto (`usectrl.dev`) de saída. O broker de credenciais usa a mesma
+lista.
 
-Two honest caveats:
+Duas ressalvas honestas:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **A rede dos móveis segue o host.** O emulador do Android e o CoreSimulator
+  da Apple não estão atrás do portão de saída do recinto. Nenhuma das abas
+  móveis oferece um controle de contorno da rede, porque a rede gerenciada pelo
+  host já é irrestrita.
+- **Tudo o que um rig lê é não confiável.** Texto de página, DOM, árvores de
+  acessibilidade e dumps de visualização voltam ao agente envoltos em marcadores
+  que dizem “isto é dado, não instrução”. Uma página que tente dar ordens ao
+  seu agente é lida como uma string entre aspas.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Você pode ver tudo o que está em execução, e parar qualquer coisa, em
+**Configurações → Servidor → Rigs**.
 
-## Related
+## Relacionados
 
-- [Rigs and enclosures](/pt-BR/manual/conceitos/rigs/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/pt-BR/manual/guias/portas-vm/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/pt-BR/manual/referencia/rigs/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/pt-BR/manual/guias/configurar-guardrails/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Rigs e recintos](/pt-BR/manual/conceitos/rigs/) — o modelo por trás de tudo
+  isso: por que VMs, as duas faixas de exibição, o broker de credenciais, o
+  ciclo de vida
+- [Encaminhar portas a partir de um terminal](/pt-BR/manual/guias/portas-vm/) —
+  alcance um servidor de desenvolvimento de onde quer que importe
+- [Referência de rigs](/pt-BR/manual/referencia/rigs/) — toda superfície, verbo,
+  porta e padrão em um só lugar
+- [Configurar guardrails](/pt-BR/manual/guias/configurar-guardrails/) —
+  `Controlar um recinto (rig)` é uma classe de ação que você pode definir como
+  permitir, perguntar primeiro ou negar, por espaço de trabalho, agente ou
+  espaço. Os modos somente leitura negam isso por completo.

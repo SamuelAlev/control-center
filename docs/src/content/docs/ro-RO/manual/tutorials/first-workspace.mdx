@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Primul tău spațiu de lucru
+description: Creează un spațiu de lucru, înregistrează un repo în el și vezi singur granița de izolare.
 slug: ro-RO/manual/tutoriale/primul-spatiu-de-lucru
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Ce vei construi
 
-By the end of this tutorial, you will have:
+La finalul acestui tutorial vei avea:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Un spațiu de lucru numit după proiectul tău
+- Un depozit Git înregistrat în el
+- Cinci agenți populați, dintre care unul configurat suficient de bine încât să ruleze
+- Un al doilea spațiu de lucru, gol, care demonstrează granița de izolare
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Onboarding-ul ți-a creat deja un spațiu de lucru. Acest tutorial creează deliberat unul nou, ca să vezi fiecare parte a procesului.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Înainte de a începe, alege un checkout Git care îndeplinește toate aceste trei condiții — pasul de înregistrare refuză orice altceva:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- se află în interiorul unui worktree git
+- are un remote `origin`
+- acel remote indică spre github.com, gitlab.com sau bitbucket.org
 
-## Step 1: Create a workspace
+## Pasul 1: Creează un spațiu de lucru
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Apasă cipul de spațiu de lucru din bara de titlu
+2. Alege **Adaugă spațiu de lucru…**
+3. Introdu un nume care identifică proiectul, cum ar fi „api-service” sau „frontend-v2”
+4. Opțional, alege o siglă
+5. Apasă **Adaugă spațiu de lucru**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center trece la noul spațiu de lucru și ajunge în inbox-ul acestuia (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+În spate, serverul publică un eveniment `WorkspaceCreated` și populează spațiul de lucru cu:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- un **agent CEO**, a cărui personă este coordonarea și delegarea
+- patru specialiști — `qa`, `architect`, `engineer` și `librarian` — fiecare cu propriile instrucțiuni și skill-uri
+- șabloanele de pipeline încorporate și rândurile lor de trigger
 
-Every workspace you create gets all of this, not just the first one.
+Fiecare spațiu de lucru pe care îl creezi primește toate acestea, nu doar primul.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Confirmă: deschide **Setări → Spațiu de lucru → Agenți**. Cinci agenți sunt în listă, fiecare cu un inel de stare gol.
 
-## Step 2: Register a repository
+## Pasul 2: Înregistrează un depozit
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Mergi la **Setări → Spațiu de lucru → Depozite**
+2. Apasă **Adaugă depozit**
+3. Navighează la checkout-ul tău. Dialogul parcurge folderele de pe mașina care rulează `cc_server` — nu de pe clientul tău — și rămâne în interiorul rădăcinilor expuse de acel server (implicit directorul home al utilizatorului său). Un checkout git primește o pictogramă distinctă de folder și o casetă de selectare; un folder obișnuit nu primește niciuna, așa că pot fi selectate doar checkout-urile.
+4. Bifează unul sau mai multe checkout-uri și înregistrează lotul. Selecțiile se păstrează în timp ce navighezi, așa că poți aduna mai multe într-o singură trecere, iar o alegere greșită nu le elimină niciodată pe celelalte.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center citește remote-ul `origin` al fiecărui checkout, rezolvă proprietarul și depozitul și creează rândul de depozit **în interiorul acestui spațiu de lucru**. Nu există un al doilea pas de legare: înregistrarea este cea care îi stabilește domeniul de aplicare.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Înregistrarea aceluiași checkout într-un alt spațiu de lucru mai târziu creează un al doilea rând de depozit independent, cu id-ul lui propriu. Între spații de lucru, un checkout este identificat prin calea lui din sistemul de fișiere, niciodată prin id.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Confirmă: depozitul apare în listă cu `owner/repo` al lui și ramura curentă.
 
-## Step 3: Make one agent runnable
+## Pasul 3: Fă un agent să poată rula
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+Cei cinci agenți pe care tocmai i-a populat acest spațiu de lucru nu au nici adaptor, nici model. Trimiterea îi rulează pe **Control Center (built-in)** și, fără niciun model setat, cere Anthropic modelul său implicit — așa că funcționează doar dacă ai conectat un cont Anthropic și, dacă ai, rulează pe un model pe care nu l-ai ales. Onboarding-ul de la prima rulare scrie alegerea sa pe fiecare agent din primul spațiu de lucru, o singură dată; un spațiu de lucru pe care îl creezi după aceea pornește cu toți cinci nesetați. Setează unul acum.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Deschide **Setări → Spațiu de lucru → Agenți**
+2. Selectează `engineer` în listă
+3. În tabul **Setări**, setează **Adaptor** la `Control Center (built-in)` și alege un **Model** dintr-un provider pe care l-ai conectat la Setări → Server → Provideri de modele
+4. Apasă **Salvează modificările**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Confirmă: redeschide agentul și cele două câmpuri păstrează alegerile tale.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/) covers the rest of the form.
+Fiecare agent își poartă propriul adaptor și model, așa că repetă acest lucru pentru orice alt agent pe care intenționezi să îl folosești. [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/) acoperă restul formularului.
 
-## Step 4: See the isolation boundary
+## Pasul 4: Vezi granița de izolare
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Creează un al doilea spațiu de lucru din cipul din bara de titlu, exact ca la pasul 1. Apoi privește-l:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Setări → Spațiu de lucru → Depozite** este gol. Depozitul pe care l-ai înregistrat acum un minut nu este acolo.
+- **Setări → Spațiu de lucru → Agenți** conține cinci agenți, dar sunt rânduri diferite — adaptorul pe care l-ai setat la pasul 3 a dispărut.
+- Lista de spații, tichetele și memoria sunt toate goale.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Nu s-a scurs nimic, pentru că nu există de unde să se scurgă: rândurile fiecărui spațiu de lucru trăiesc în fișierul de bază de date propriu acelui spațiu. O citire între spații de lucru nu este o interogare care este filtrată, ci o interogare care nu are unde să ruleze. Ștergerea unui spațiu de lucru înseamnă ruperea legăturii cu un fișier.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Comută înapoi cu cipul din bara de titlu sau deschide **Gestionează spațiile de lucru** ca să le vezi alături.
 
-For the full model, read [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/).
+Pentru modelul complet, citește [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
 
-## Recap
+## Recapitulare
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Ai creat un spațiu de lucru, l-ai văzut cum populează un CEO și patru specialiști, ai înregistrat un depozit în el, ai dat unui agent un adaptor și un model și ai confirmat că un al doilea spațiu de lucru nu împarte nimic din toate acestea.
 
-**Next:** [Dispatch your first agent](/ro-RO/manual/tutoriale/primul-agent/) to put the workspace to work.
+**În continuare:** [Trimite primul agent](/ro-RO/manual/tutoriale/primul-agent/) ca să pui spațiul de lucru la treabă.

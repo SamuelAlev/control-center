@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Điều phối agent đánh giá
+description: Gửi các agent đánh giá chuyên biệt đến một PR từ chế độ xem PR, một công cụ MCP hoặc một bước quy trình.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Hướng dẫn này chỉ cho bạn cách điều phối các agent đánh giá để xem xét pull
+request.
 
-## From the PR view
+## Từ chế độ xem PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Mở PR và chuyển đến tab **Tổng quan** của nó
+2. Mở menu tràn ⋯ và chọn **Hỏi AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Thao tác này khởi động quy trình `pr_review` có sẵn, quy trình này mở space đánh
+giá của PR và điều phối những người đánh giá theo mức đánh giá của không gian
+làm việc — mặc định là ba (các agent **qa**, **architect** và **engineer** được
+tạo sẵn) — rồi cho agent chủ trì hợp nhất. Trên đường này bạn không tự chọn vai
+trò. Muốn kiểm soát vai trò nào chạy và mỗi vai trò xem những tệp nào, hãy dùng
+công cụ MCP hoặc một bước quy trình bên dưới.
 
-## Via the `dispatch_reviewers` MCP tool
+## Qua công cụ MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Gọi nó từ bên trong một space đánh giá sẵn có:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,111 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` và `reviewers` đều bắt buộc. Mỗi đặc tả người đánh
+giá nhận một `role`, cùng một `scope` glob tệp tùy chọn và một
+`prompt_override` thay thế đề bài mặc định. Một `concurrency` tùy chọn (1–8)
+giới hạn số lượt điều phối song song; khi bỏ qua, thiết lập
+`review_concurrency` của không gian làm việc sẽ được áp dụng (mặc định 3, đặt
+tại **Cài đặt → Không gian làm việc → Chung**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Công cụ trả về ngay với hai danh sách `dispatched` và `unmatched`. Mỗi người
+đánh giá được điều phối sẽ được thêm vào space với tư cách người tham gia, được
+thông báo bằng một tin nhắn hệ thống và được điều phối kèm đề bài của nó. Các
+phát hiện xuất hiện dưới dạng tin nhắn `review_node` trong space đó.
 
-## From a pipeline step
+## Từ một bước quy trình
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Mở **Cài đặt → Không gian làm việc → Mẫu quy trình**, mở một mẫu, rồi:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. Thêm một node **Reviewer (prompt)** từ bảng chọn
+2. Chọn agent cần điều phối và viết prompt cho người đánh giá, dùng các
+   placeholder `{{key}}` cho đầu ra thượng nguồn (ví dụ `{{repo_local_path}}`,
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. Đặt khóa đầu ra (mặc định `reviewer_findings`) để các bước hạ nguồn đọc được
+   các phát hiện
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Bước này điều phối agent và tạm dừng cho đến khi lượt chạy đó kết thúc. Sau đó
+engine thu hoạch payload `submit_output` của lượt chạy vào trạng thái quy trình
+dưới khóa đầu ra của node. (Phần mô tả trong bảng chọn vẫn nói bước này chờ một
+lời gọi `complete_task` — công cụ đó không tồn tại; hãy bỏ qua chuỗi đó.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Tỏa nhánh bằng cách nối nhiều node đánh giá vào cùng một bước thượng nguồn, rồi
+hợp nhất đầu ra của chúng bằng một node **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Trình chỉnh sửa nối lại terminal ẩn tới mọi nút đích tiếp cận được, nên một node
+bạn thêm sau **Step** được tạo sẵn vẫn chạy. Các node tỏa nhánh được nối vào
+cùng một bước thượng nguồn sẽ chạy song song.
 
-## Automatic dispatch on a new PR
+## Tự động điều phối khi có PR mới
 
-To have a review pipeline fire by itself:
+Để một quy trình đánh giá tự khởi chạy:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Mở mẫu tại **Cài đặt → Không gian làm việc → Mẫu quy trình**
+2. Kéo **PR được xuất bản** hoặc **PR bên ngoài được mở** từ mục **Bộ kích hoạt**
+   của thư viện nút vào canvas (hoặc chọn nó từ ô giữ chỗ mờ **Thêm bộ kích
+   hoạt**)
+3. Chọn node mới và bật **Đã bật** trong trình kiểm tra của nó, rồi bật mẫu
 
-Two events matter here and they are not interchangeable:
+Có hai sự kiện quan trọng ở đây và chúng không thể thay thế cho nhau:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Sự kiện                | Kích hoạt khi                                                                                                 | Khóa payload                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | Một PR được mở **qua Control Center** — bề mặt soạn thảo, hoặc một agent gọi `pr_lifecycle.publish`            | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | Dịch vụ thăm dò PR phát hiện một PR được mở trực tiếp trên GitHub                                              | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+Một PR được mở trên github.com không bao giờ phát `PullRequestPublished`, nên
+một mẫu chỉ được nối với sự kiện đó sẽ không thấy nó. Cũng lưu ý rằng
+`PullRequestPublished` không mang theo `pr_number` — một bước có script hoặc
+prompt tham chiếu `{{pr_number}}` phải được cấp dữ liệu từ `ExternalPrDetected`,
+hoặc từ một lần chạy thủ công có cung cấp giá trị đó.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Điểm kiểm tra: sau khi bật, hãy mở **Pipelines** và xác nhận một lần chạy xuất
+hiện cho PR khớp tiếp theo. Một mẫu bị bỏ tắt khiến trình kích hoạt của nó kích
+hoạt vào khoảng không — engine từ chối một mẫu bị tắt và trả về mà không khởi
+chạy lần chạy nào.
 
-## How a role is matched to an agent
+## Cách một vai trò được khớp với agent
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` chấm điểm mọi agent trong không gian làm việc dựa trên từng
+nhãn vai trò được yêu cầu, không phân biệt chữ hoa chữ thường:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Khớp                                    | Điểm |
+| --------------------------------------- | ---- |
+| Một skill chứa nhãn vai trò             | +3   |
+| Một tiêu đề chứa nhãn vai trò           | +2   |
+| Một tên agent chứa nhãn vai trò         | +1   |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Điểm số cộng dồn và tổng cao nhất sẽ thắng (nếu hòa, ứng viên được tìm thấy đầu
+tiên thắng). Nếu không ứng viên nào đạt điểm lớn hơn không, đặc tả đó sẽ quay
+lại trong danh sách `unmatched` của công cụ thay vì được điều phối — nên một vai
+trò không ai khớp sẽ được báo cáo, chứ không bao giờ bị âm thầm bỏ qua.
 
-## The review space
+## Space đánh giá
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Một PR có đúng **một** space đánh giá, chứ không phải một space cho mỗi người
+đánh giá. Space này được `pr.ensureSpace` tạo theo cách idempotent, được liên kết
+với PR qua một `ReviewSpaceAssociation` và được cấp phát dựa trên head ref của
+PR. Mọi người đánh giá được điều phối đều tham gia space đó và đăng các phát
+hiện `review_node` của mình ở đó, chính điều này khiến các phát hiện có thể so
+sánh được và cho phép agent chủ trì đạt được đồng thuận giữa chúng.
 
-## Monitor the dispatch
+## Theo dõi lượt điều phối
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Mỗi người đánh giá được điều phối có `AgentRunLog` riêng. Theo dõi tiến độ trong:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **Space đánh giá**, nơi các phát hiện truyền về trực tiếp
+- Tab **Đánh giá** của PR, nơi hiển thị thanh trạng thái đánh giá và kết luận
+- **Quan sát → Trực tiếp** (`/workspaces/:id/observability`), danh sách agent với
+  trạng thái từng lượt chạy, thời gian trôi qua trực tiếp, ngăn kéo bản ghi hội
+  thoại và nút dừng. Không có phím tắt cho mục này — hãy vào từ chân thanh bên.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/)
-- [Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Set up pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
+- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/)
+- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [AI review](/vi-VN/so-tay/khai-niem/danh-gia-ai/)
-- [Pipelines](/vi-VN/so-tay/khai-niem/quy-trinh/)
+- [Đánh giá bằng AI](/vi-VN/so-tay/khai-niem/danh-gia-ai/)
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/)

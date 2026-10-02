@@ -1,166 +1,174 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Configurează integrarea GitHub
+description: Autentifică-te pe GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
 slug: ro-RO/manual/ghiduri-practice/integrare-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Acest ghid acoperă părțile specifice GitHub ale configurării. GitHub este unul
+dintre cele trei hosturi de cod acceptate — vezi
+[Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
+pentru conectarea GitLab sau Bitbucket și pentru modul în care un spațiu de lucru
+le combină.
 
-## Prerequisites
+## Cerințe preliminare
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Un cont GitHub cu acces la repo-urile pe care vrei să lucrezi
+- Fie un GitHub App înregistrat pentru serverul tău (vezi
+  [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) ca să te poți **autentifica**,
+  **fie** un token de acces personal cu `repo` și `read:org` de lipit
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Credențialele stau pe server, legate de tine]
+Nimic nu este stocat pe mașina pe care tastezi. Credențialul tău este păstrat de
+`cc_server`, indexat după id-ul tău de utilizator, și îl folosește fiecare dispozitiv
+de pe care te autentifici — desktop, web și telefon. Un alt membru al aceluiași
+server nu îl poate citi, iar autentificarea lui este ceva ce face singur.
 :::
 
-## Sign in with GitHub
+## Autentifică-te cu GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Un **flux de dispozitiv**: GitHub îți arată un cod scurt, îl aprobi pe github.com,
+iar serverul primește credențialul — fără URL de callback, fără port, nimic de
+expus. Disponibil oricând serverul are un client id, pe care o versiune oficială
+îl include deja.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Mergi la **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** (sau la primul
+   pas al onboardingului)
+2. Pe rândul **GitHub**, apasă **Autentifică-te cu GitHub**
+3. Un dialog afișează un cod de opt caractere și deschide
+   [github.com/login/device](https://github.com/login/device) în browser.
+   Codul este deja în clipboard
+4. Lipește-l, aprobă aplicația și revino. Rândul trece singur la
+   „Autentificat ca _numele-tău-de-utilizator_"
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Dialogul poate fi închis cât timp termini în browser — serverul continuă să
+interogheze până când codul expiră (aproximativ 15 minute), așa că autentificarea
+se finalizează oricum.
 
-## Or paste a token
+## Sau lipește un token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Soluția de rezervă pentru când serverul nu are nicio aplicație, când aplicația nu
+este instalată pe un cont de care ai nevoie sau când preferi pur și simplu să
+folosești un PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Mergi la **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**
+2. Pe rândul **GitHub**, apasă **Adaugă token**
+3. Lipește un token cu `repo` și `read:org` (clasic) și salvează. Un token
+   **fine-grained** are nevoie de **Contents** și **Pull requests** la nivel de
+   repository (citire și scriere), plus **Checks** și **Actions** (citire).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Tokenul este verificat pe măsură ce este stocat, așa că rândul poate indica
+contul căruia îi aparține. Apasă **Deconectează** pentru a-l elimina.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Punct de control: rândul **GitHub** afișează „Autentificat ca _numele-tău-de-utilizator_".
+Un sufix indică sursa atunci când credențialul care răspunde nu este al tău —
+„prin aplicația acestui server" sau „din mediu".
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Ordinea de prioritate este fixă]
+O cerere făcută în numele tău folosește credențialul **tău** și nimic altceva —
+mediul este credențialul serverului, nu al tău, așa că nu te substituie niciodată.
+Munca fără un om în spate (webhook-uri, interogarea PR-urilor, sincronizarea
+tichetelor) folosește identitatea de aplicație a serverului, apoi credențialul
+proprietarului serverului, apoi mediul.
 :::
 
-## What the integration gives you
+## Ce îți oferă integrarea
 
-| Feature             | How                                                                                                            |
+| Funcție                 | Cum                                                                                                            |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Lista și detaliile PR-urilor | API-ul GitHub REST, de pe server, cu identitatea aplicației sau cu propriul tău credențial                              |
+| Rulările de verificare          | API-ul GitHub Checks                                                                                          |
+| Publicarea revizuirilor   | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR                                                             |
+| Înregistrarea repo-urilor   | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com — sau spre gitlab.com / bitbucket.org          |
+| Accesul agenților la GitHub | Brokerul de credențiale injectează tokenul ca `GH_TOKEN` / `GITHUB_TOKEN`, condiționat de capabilitățile agentului      |
+| Notificări  | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request" și „revizuire solicitată" |
+| Profilurile utilizatorilor       | Carduri de profil la hover și filtrarea PR-urilor după autor                                                                |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Unele căi folosesc API-ul GraphQL în loc de REST acolo unde este mai ieftin —
+activitatea de ramuri pentru selectorul de compunere a PR-urilor și starea de
+revizuire în timp real care decide dacă o notificare de revizuire solicitată mai
+este în așteptare.
 
-## Watch for GitHub outages
+## Urmărește întreruperile GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Bara de titlu afișează un indicator de stare când un furnizor este degradat,
+acoperind GitHub, Claude, OpenAI și Kimi. **Este ascuns cât timp totul este
+în regulă** — prezența semnalează o problemă, nu absența ei.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Apasă pe indicator pentru a deschide o fereastră glisantă cu starea fiecărui
+furnizor și un buton de reîmprospătare. Stările se reîmprospătează singure la
+fiecare două minute.
 
-## Know how agents act on GitHub
+## Află cum acționează agenții pe GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Un agent primește un token GitHub doar dacă are **Permite apeluri GitHub API** sau
+  **Permite git push**. Vezi
+  [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
+- Commit-urile făcute de un agent sunt atribuite **agentului** — numele afișat plus
+  ` (agent)`, la o adresă sintetică indexată după id-ul agentului — niciodată unui om.
+  Persoana care a cerut este creditată printr-un trailer `Co-Authored-By`
+- Cu un GitHub App configurat, brokerul emite la fiecare lansare tokenuri de instalare
+  fine-grained, limitate la repo și valabile aproximativ o oră, în loc să predea un
+  token larg. Instalarea este rezolvată pornind de la **proprietarul** repo-ului
+  rulării, așa că o singură aplicație instalată pe mai multe conturi se limitează
+  corect la contul pe care îl atinge rularea. Fără o aplicație, agenții primesc
+  tokenul din mediu
+- O rulare cerută de un membru autentificat acționează sub identitatea GitHub **a
+  acelui membru** — credențialul lui este inclus după mediul brokerului, așa că un
+  commit sau un comentariu făcut de un agent pentru el îi este atribuibil lui
 
-## Troubleshooting
+## Depanare
 
-### The PR list is empty and says GitHub is not connected
+### Lista de PR-uri este goală și spune că GitHub nu este conectat
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Nu ai niciun credențial GitHub pe acest server. Autentifică-te sau lipește un token
+la **Găzduire de cod**. Repo-urile de pe alte forge-uri nu sunt afectate — doar cele
+de pe GitHub nu contribuie cu nimic.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Rândul oferă „Adaugă token", dar nu și „Autentifică-te cu GitHub"
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Serverul nu are un client id — ceea ce este starea normală pentru o compilare din
+sursă, întrucât credențialele sunt incluse doar în versiunile oficiale. Vezi
+[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/): durează aproximativ două minute
+și doar proprietarul serverului trebuie să o facă, o singură dată.
 
-### The sign-in dialog says the provider returned no device code
+### Dialogul de autentificare spune că furnizorul nu a returnat niciun cod de dispozitiv
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App există, dar caseta de selectare **Device flow** este dezactivată.
+Activeaz-o în setările aplicației (General → Device flow) și încearcă din nou.
 
-### The row says "via this server's app" when I expected my own account
+### Rândul spune „prin aplicația acestui server" când mă așteptam la propriul cont
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Nu te-ai autentificat; ceea ce vezi este identitatea de aplicație a serverului care
+răspunde. Apasă **Autentifică-te cu GitHub** pe acel rând.
 
-### A fine-grained PAT shows no merge button or check status
+### Un PAT fine-grained nu afișează buton de îmbinare sau starea verificărilor
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Tokenul are nevoie de **Contents** și **Pull requests** (citire și scriere), plus
+**Checks** și **Actions** (citire). După ce îl modifici, lipește-l din nou la
+Găzduire de cod.
 
-### Adding a repo is rejected
+### Adăugarea unui repo este respinsă
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+Înregistrarea le necesită pe toate trei: calea este în interiorul unui arbore de
+lucru git, are un remote `origin`, iar acel remote indică spre un forge acceptat
+(github.com, gitlab.com sau bitbucket.org). Vezi
+[Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
 
-### Everything stops working for a while after heavy use
+### Totul se oprește pentru o vreme după utilizare intensă
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Acesta este întrerupătorul de circuit pentru limita de rată. GitHub își semnalează
+limita principală printr-un `403` care poartă `x-ratelimit-remaining: 0` și un timp
+de resetare; când vede unul, clientul respinge local cererile ulterioare fără un
+apel de rețea până când fereastra se scurge, așa că o furtună de reîncercări nu
+poate adânci limita. Eșecurile tranzitorii sunt reîncercate de până la trei ori cu
+backoff exponențial, respectând `retry-after`.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)
-- [Connect a code host](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
-- [Manage API keys](/ro-RO/manual/ghiduri-practice/chei-api/)
-- [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
-- [Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)
+- [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
+- [Gestionează cheile API](/ro-RO/manual/ghiduri-practice/chei-api/)
+- [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
+- [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)

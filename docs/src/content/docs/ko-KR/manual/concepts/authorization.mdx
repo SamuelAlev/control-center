@@ -1,123 +1,125 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: 권한 부여 — 누가 무엇을 할 수 있는지, 그리고 그것을 어떻게 증명하는지
+description: Control Center의 역할을 뒷받침하는 권한 카탈로그, 모든 권한 부여 결정이 기록되는 변조를 감지할 수 있는 감사 기록, 그리고 운영자가 고정할 수 있는 설치 전역 제어.
 slug: ko-KR/매뉴얼/개념/권한-부여
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/ko-KR/매뉴얼/개념/가드레일/).
+Control Center는 두 가지 권한 부여 질문에 답하며, 이 둘은 실제로 다릅니다.
+**"이 사람이 이 작업을 호출해도 되는가?"**는 사람, 역할, 저장소에 관한
+질문입니다. **"이 에이전트가 이 효과를 일으켜도 되는가?"**는 동작, 인자,
+영향 범위에 관한 질문이며, 이 질문은 [가드레일](/ko-KR/매뉴얼/개념/가드레일/)에서
+다룹니다.
 
-This page is the first question, plus the record both of them leave behind.
+이 페이지는 첫 번째 질문과, 두 질문이 모두 남기는 기록을 다룹니다.
 
-## One decision point
+## 하나의 결정 지점
 
-Every human-side authorization decision resolves through a single function:
+사람 쪽 권한 부여 결정은 모두 하나의 함수를 거쳐 판정됩니다:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**권한(permission)**은 `<domain>:<tier>` 형식입니다. `tickets:write`,
+`members:administer`, `repos:read`가 그 예입니다. 카탈로그는 손으로 작성하는
+것이 아니라 **파생**됩니다. 즉 작업 표면 자체에서 계산됩니다(작업 이름
+접두사가 도메인을, 작업이 이미 강제하는 최소 역할이 등급을 제공합니다).
+따라서 약 550개 작업이 누구도 직접 입력하지 않은 채 권한을 갖습니다.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+지켜야 할 가치는 바로 이 파생 방식입니다. 새 작업은 기본적으로 게이트가
+걸린다는 뜻이기 때문입니다. 손으로 주석을 다는 방식의 실패 양상은 누군가가
+깜빡하는 것이고, 그 깜빡하는 대상이 바로 게이트입니다. 래칫 테스트가 만들어
+지는 도메인 집합을 고정하므로, 새 접두사 아래에 작업을 추가하는 일은 사고가
+아니라 사람이 내리는 이름 짓기 결정이 됩니다.
 
-The four tiers map exactly onto the built-in roles:
+네 가지 등급은 기본 제공 역할에 정확히 대응합니다:
 
-| Tier | Role floor | Example |
+| 등급 | 최소 역할 | 예시 |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | 게스트 | `tickets:read` |
+| `write` | 멤버 | `tickets:write` |
+| `administer` | 관리자 | `members:administer` |
+| `own` | 소유자 | `workspace:own` |
 
-## Roles
+## 역할
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+다섯 가지 기본 제공 역할(**소유자, 관리자, 멤버, 뷰어, 게스트**)은 이 카탈로그
+위의 프리셋입니다. 소유권은 워크스페이스마다 한 자리뿐이며, **소유권 이전**으로
+명시적으로 넘깁니다(그러지 않으면 떠난 소유자는 제거할 수 없습니다. SCIM
+디프로비저닝은 워크스페이스 소유자를 거부하므로 먼저 이전해야 합니다).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**사용자 지정 역할은 권한을 빼는 방식입니다.** 사용자 지정 역할은 기준
+프리셋(`admin`, `member`, `viewer` 또는 `guest` — `owner`는 안 됨)과 그
+프리셋에서 제거할 권한 집합을 지정합니다. "관리자지만 멤버는 관리할 수 없음"
+같은 식입니다. 사용자 지정 역할은 기준 프리셋보다 많은 권한을 부여할 수
+없으며, 그래서 기존 설치에 안전하게 도입할 수 있습니다. 기존의 모든 검사가
+여전히 타당한 상한으로 남기 때문입니다. 멤버는 이를 `custom:<id>`로 보유하며,
+이 값을 이해하지 못할 만큼 오래된 클라이언트는 추측하지 않고 게스트로
+폴백합니다.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+역할 아래에는 **저장소별 부여**(`none` / `read` / `review` / `write`)가
+있습니다. 워크스페이스 멤버십이 forge보다 조용히 더 큰 권한을 갖는 일은
+없습니다. 코드를 노출하는 모든 표면이 이를 검사합니다. 스페이스의
+워크트리에서 연 터미널이나 에디터 세션처럼 코드에 우회적으로 접근하는
+표면도 포함됩니다.
 
-## Server authority
+## 서버 권한
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+일부 작업은 워크스페이스와 아예 무관합니다. 설치 전역 설정, SSO 구성,
+제공업체 자격 증명, 모델 관리, 설치 전체 백업이 그렇습니다. 이런 작업은
+**서버 권한**을 선언하며, 설치의 운영자(기록된 서버 소유자)를 제외한 모든
+사람에게 거부됩니다. 운영자 신원과 그 정의는 의도적으로 하나만 둡니다.
 
-## The audit trail
+## 감사 기록
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+모든 권한 부여 결정, 즉 **허용과 거절**은 워크스페이스별로 해시 체인으로
+연결된 감사 기록에 추가됩니다.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+거절만 기록하는 로그는 "무엇을 차단했는가?"에는 답하지만 "이 에이전트가
+실제로 무엇을 했고, 누가 이를 승인했는가?"에는 답하지 못합니다. 후자는
+사고 리뷰가 시작하는 질문입니다. 그래서 각 항목은 전체 귀속 체인을
+기록합니다. 행위 주체, 그 주체가 대신 행동한 사람, 그 행동이 거쳐 온 위임,
+동작과 그 인자(다이제스트 형태), 결정, 그리고 **결정한 규칙**입니다.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+항목은 체인으로 연결됩니다. 각 항목의 해시가 이전 항목을 포함하므로, 어떤
+행을 수정하거나 삭제하거나 순서를 바꾸면 그 뒤의 모든 해시가 깨집니다.
+**체인 검증**은 전체를 다시 계산하고, 맞지 않는 첫 연결 지점을 알려 줍니다.
+확인할 수 없는 감사 로그는 그냥 로그이고, 다시 계산할 수 있는 로그는
+증거입니다.
 
-Two consequences worth knowing:
+알아 둘 만한 두 가지 결과가 있습니다:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- 감사 테이블은 **기간 기반 정리에서 제외됩니다**. 해시 체인은 중간을 잘라낼
+  수 없습니다. 보존 방식은 내보낸 뒤 잘라내기이며, 잘라낼 때 제거된 구간의
+  마지막 해시를 담은 체크포인트를 남기므로, 남은 기록도 처음까지 거슬러
+  검증됩니다.
+- 감사 기록은 활동 타임라인 위가 아니라 **옆에** 있습니다. 타임라인은 사람이
+  한 일이고, 감사 기록은 승인되고 거절된 일입니다. 공유 상관 관계 ID로 하나의
+  호출을 양쪽에서 읽습니다.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+감사 기록은 줄바꿈으로 구분된 JSON으로 내보낼 수 있고, SIEM(Splunk, Elastic,
+Sentinel — bearer 토큰을 쓰는 HTTP 엔드포인트)으로 스트리밍할 수 있습니다.
+스트리밍은 의도적으로 최선 노력 방식입니다. SIEM이 중단되었다고 에이전트의
+도구 호출이 막혀서는 안 되며, 어느 경우든 영속적이고 검증 가능한 사본은
+디스크에 있습니다.
 
-## Sessions
+## 세션
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+설치에서는 **최대 세션 수명**과 **유휴 시간 초과**를 설정할 수 있습니다. 둘 다
+모든 인증 경로가 거쳐 가는 기기 자격 증명 검사에서 강제됩니다. 클라이언트가
+무시할 수 있는 세션 제한은 공격자가 아니라 설문지에 답하는 셈입니다. 설치에서
+SSO를 요구할 수도 있으며, 그러면 새 기기의 수동 페어링이 비활성화됩니다(잠금
+방지 장치가 함께 있습니다. 작동하는 SSO 연결이 없으면 SSO 요구를
+거부합니다).
 
-## What this is not
+## 이것이 아닌 것
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **객체별 ACL이 아닙니다.** 티켓별·메시지별 권한은 의도적으로 없습니다.
+  팀이 실제로 요청하는 것은 저장소 단위 분리이고 이는 이미 존재합니다.
+  객체별 공유는 조합이 폭발하는 표면이며, 여기서 수요가 입증된 바 없습니다.
+- **DSL로 구성하는 정책 엔진이 아닙니다.** 어휘를 의도적으로 닫아 두었으므로,
+  전체 정책을 렌더링하고 설명하고 열거할 수 있습니다.
+- **서버 외의 어디에서도 강제되지 않습니다.** 클라이언트 쪽 검사는 거부될
+  컨트롤을 아예 제시하지 않기 위해서만 존재합니다. 권위 있는 결정은 항상
+  서버가 내립니다.

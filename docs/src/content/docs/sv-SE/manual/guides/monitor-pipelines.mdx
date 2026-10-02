@@ -1,150 +1,155 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Övervaka pipelinekörningar
+description: Arbeta i körningskön, läs en körnings tidslinje och stegpanel och rädda ett misslyckat eller fastnat steg.
 slug: sv-SE/handbok/how-to-guider/overvaka-pipelines
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/sv-SE/handbok/how-to-guider/kor-pipeline/).
+Den här sidan handlar om allt som händer efter att en körning har startat: att
+hitta den, läsa vad varje steg gjorde och få en misslyckad körning att rulla
+igen. Se [Kör en pipeline manuellt](/sv-SE/handbok/how-to-guider/kor-pipeline/)
+om du vill starta en.
 
-## Find a run
+## Hitta en körning
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Klicka på **Pipelines** i arbetsytans sidopanel. Skärmen är arbetsytans
+   körningskö – varje körning, nyaste först.
+2. Använd den vänstra listen för att filtrera. Det finns exakt tre filter, var
+   och ett med en aktuell räknare: **Alla**, **Körs**, **Misslyckades**.
+3. Gå igenom tabellen med <kbd>↑</kbd>/<kbd>↓</kbd> (eller <kbd>j</kbd>/<kbd>k</kbd>)
+   och tryck på <kbd>Enter</kbd> för att öppna den fokuserade körningen. Att
+   klicka på en rad gör samma sak.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Varje rad visar en symbol för hur körningen startade (uppspelningssymbol för
+manuell; en filsymbol för en kodgrafsbevakning; annars den automatiska
+triggern). Verktygstipset anger triggern – **Manuell**, **PR publicerad**,
+**Filändring** och så vidare – och, för en bevakningskörning, vilka filer som
+ändrades. Sedan pipelinenamnet, ett statusmärke, den aktiva varaktigheten (eller
+köpositionen för en `queued`-körning) och hur länge sedan det här försöket
+startade. Aktiv varaktighet utesluter overksamma luckor för stopp och omstart, så
+det är inte hela klocktiden.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Det finns inget filter för slutförda, pausade eller avbrutna körningar, inget
+filter per mall, inget tidsfönster och ingen körningshistorik per mall. Att
+jämföra körningar av en mall innebär att skanna kön efter dess namn.
 
-## Read the run detail
+## Läs körningsdetaljerna
 
-A run's page has three stacked parts.
+En körnings sida har tre staplade delar.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Metaraden** innehåller starttiden, aktiv varaktighet, stegförloppet
+("3 av 7 steg"), en felsammanfattning som namnger steget som gick sönder och
+varför, samt åtgärderna **Försök igen** och **Ta bort**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Tidslinjen** ger en stapel per steg, med dess varaktighet och – för agentsteg –
+dess kostnad i cent. Ett steg som gjordes om visar suffixet `×N` efter sin
+varaktighet; det suffixet är det enda stället där antalet försök syns.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Grafduken** ritar mallen med varje nods aktuella status. Att välja en nod
+öppnar dess stegpanel.
 
-### Run and step statuses
+### Statusar för körningar och steg
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Status        | Betydelse                                           |
+| ------------- | --------------------------------------------------- |
+| **Väntar**   | Skapad, inte startad ännu                          |
+| **I kö**    | Antagen men hållen: mallens tak för max parallella körningar är nått; inga stegrader ännu |
+| **Körs**   | Körs                                         |
+| **Pausad** | Väntar på något externt – normalt, inte fastnat |
+| **Slutförd** | Slutfördes utan fel                             |
+| **Misslyckades**    | Avslutades med ett fel                               |
+| **Avbruten** | Stoppad av en användare eller av systemet                |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Steg har samma statusar utom **I kö**, plus **Hoppad över**, för en gren som en
+router inte tog (och dess nu oåtkomliga ättlingar).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Pausad** är där ett agentsteg tillbringar större delen av sitt liv: en
+utskickad agent eller en godkännandegrind håller steget tills dess arbete landar.
+Två skyddsnät i motorn låter hela körningen misslyckas i stället för att
+återuppta: ett steg som varit pausat längre än 24 timmar
+(`extras.awaitApproval` – kroppen `orchestration.awaitApproval` – är undantaget;
+`human.gate` är det inte) och ett icke-idempotent steg som var mitt i körningen
+när servern stoppades.
 
-## Inspect a step
+## Inspektera ett steg
 
-Select a node on the canvas. The step panel shows, in order:
+Välj en nod på duken. Stegpanelen visar, i ordning:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- En **Fel**-ruta när steget misslyckades, eller en **Hoppad över**-ruta med
+  orsaken när det hoppades över.
+- **Startad**, **Avslutad** och varaktighet.
+- **Gren** – grenindexet, för parallella grenar.
+- **Visa samtal** – hoppar till samtalet som steget körde i. Pipelinesamtal är
+  dolda i sidopanelen, så det här är den enda vägen in.
+- **Indata** och **Utdata**, som ihopfällbar JSON.
+- **Agentaktivitet** – en ruta per agentkörning som steget skickade ut, med dess
+  status, sammanfattning, varaktighet och kostnad.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+För ett agentsteg är **Utdata** den strukturerade nyttolast som agenten skickade
+in med `submit_output`, inte dess prosa. Resonemangsspåret finns i
+**Agentaktivitet** och i samtalet bakom **Visa samtal**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+För ett bash-steg är **Utdata** den trimmade stdout som skriptet skrev vid exit 0.
+En icke-noll-exit gör att steget misslyckas, med slutet av stderr som
+felmeddelande.
 
-## Recover a failed run
+## Återställ en misslyckad körning
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Läs felsammanfattningen i metaraden; den namnger steget som misslyckades.
+   Stegpanelens **Fel**-ruta har meddelandet.
+2. Kontrollera stegets **Indata** – en saknad eller felstavad tillståndsnyckel är
+   den vanligaste orsaken. Ett prompt-agent-steg misslyckas direkt och namnger de
+   olösta platshållarna; ett bash-steg renderar dem som tomma strängar och kör
+   ändå, vilket oftast visar sig ett steg senare.
+3. För ett agentsteg, öppna **Visa samtal** och läs vad agenten faktiskt gjorde.
+4. Tryck på **Försök igen** i metaraden. Slutförda och överhoppade steg behåller
+   sina utdata; allt annat tas bort och körs igen, och körningen växlar tillbaka
+   till Körs. Varaktighetsklockan startar om för det här försöket.
 
-Common causes worth checking first:
+Vanliga orsaker som är värda att kontrollera först:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Timeout** – steget överskred sin **Timeout (ms)**. Kom ihåg att fältet är i
+  millisekunder.
+- **Skriptfel** – bash-kommandot avslutades med icke-noll, eller så finns inte
+  `bash` i `PATH` på servervärden.
+- **Schemavalidering** – agentens `submit_output`-nyttolast uppfyllde inte
+  stegets utdataschema.
+- **Olöst platshållare** – en `{{key}}` som ett prompt-agent-steg refererade till
+  skrevs aldrig uppströms. Felet namnger varje olöst nyckel.
+- **Oregistrerad kropp** – ett steg vars kroppsnyckel inte är registrerad varnar
+  vid inläsning av mallen och körs sedan helt enkelt aldrig.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Försök igen fungerar bara på en misslyckad eller avbruten körning]
+Knappen **Försök igen** visas bara när körningen är `failed` eller `cancelled`.
+Motorn återvänder omedelbart för alla andra statusar.
 :::
 
-## Stop a step that is stuck
+## Stoppa ett steg som har fastnat
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Välj det körande steget och tryck på knappen **Avsluta körning** i stegpanelens
+sidhuvud. Detta dödar stegets process, markerar steget som misslyckat och låter
+därför hela körningen misslyckas – varje öppen syskongren avslutas tillsammans
+med den.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Det finns ingen kontroll för att avbryta körningen på den här skärmen.
+`pipeline.cancel` finns som en RPC-operation och motorn implementerar den, men
+inget i pipelines-gränssnittet anropar den; **Avsluta körning** på ett steg,
+eller **Ta bort** på körningen, är de enda stoppgester som finns.
 
-## Track cost
+## Följ kostnaden
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Kostnaden rapporteras per steg, i tidslinjens högerspalte och på varje ruta under
+**Agentaktivitet**. Det finns ingen körningstotal på detaljsidan och ingen
+kostnadskolumn i körningskön, så att jämföra kostnaden för två körningar innebär
+att summera deras steg.
 
-## Related guides
+## Relaterade guider
 
-- [Run a pipeline manually](/sv-SE/handbok/how-to-guider/kor-pipeline/)
-- [Create a pipeline template](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
-- [Manage costs](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
-- [Pipeline steps reference](/sv-SE/handbok/referens/pipeline-steg/)
+- [Kör en pipeline manuellt](/sv-SE/handbok/how-to-guider/kor-pipeline/)
+- [Skapa en pipelinemall](/sv-SE/handbok/how-to-guider/skapa-pipeline/)
+- [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
+- [Pipeline-stegtyper](/sv-SE/handbok/referens/pipeline-steg/)
 
-## Related concepts
+## Relaterade koncept
 
 - [Pipelines](/sv-SE/handbok/koncept/pipelines/)

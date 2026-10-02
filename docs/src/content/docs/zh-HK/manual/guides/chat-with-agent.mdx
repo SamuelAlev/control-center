@@ -1,172 +1,156 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: 與代理聊天
+description: 建立一個有代理的空間，派發工作給它，在執行途中引導它，並停止它。
 slug: zh-HK/手冊/操作指南/與代理聊天
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+本指南說明如何在空間中與代理協作。
 
-## Create a space
+## 建立空間
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. 在側邊欄中前往**空間**
+2. 點擊「空間」標題旁的 **+** 按鈕
+3. 輸入一個**名稱**——此為必填。名稱留空會被拒絕；
+   對話框會保持開啟
+4. 可選擇從工作區加入代理
+5. 如果工作區有任何程式庫，會出現程式庫選擇器。它一開始會選取所有
+   程式庫；請把它收窄到該空間應為其佈建 worktree 的程式庫（也可以
+   只取消選取單一程式庫）
+6. 確認
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center 會開啟該空間，並在背景為每個選中的程式庫開始佈建一份
+寫入時複製 worktree。
 
-## Send the first message
+## 傳送第一則訊息
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+在輸入框中輸入你的訊息，然後按 Enter。代理隨即派發，並開始串流它的回覆。
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+如果空間仍在佈建中，你的訊息會被暫存而不是遺失——輸入框會保留它，並在
+worktree 就緒後自動送出。
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+隨着代理工作，你會看到它的回合以串流方式呈現：推理片段、工具呼叫
+（檔案讀取、寫入、shell 指令）與回答文字，全都位於同一則代理回合訊息之中。
 
-## Steer a running agent
+## 引導運行中的代理
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+當代理正在工作時，普通的對話文字**不會**排隊成為新的回合。它會變成輸入框
+上方橫列中的一張排隊引導卡，並在下一個回合邊界注入正在進行的執行。不會
+彈出提示——卡片本身就是回饋。
 
-Three things change that behaviour:
+有三件事會改變這種行為：
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- 包含 **@提及**的訊息一律作為訊息送出，永遠不會作為引導
+- 以**斜線指令**開頭的訊息一律按該指令處理
+- 附有**附件**的訊息一律作為訊息送出——引導佇列只支援文字
+- 如果所有進行中的執行都已結束，該文字會落回常規路徑，作為一般訊息送出
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[引導需要內建運行器]
+只有 Control Center 的內建運行器會在執行途中注入。在 Claude Code 配接器上，
+文字仍會作為引導卡排隊；當執行結束時，任何仍在排隊中的內容都會轉換為一般
+訊息。
 :::
 
-## Approve a blocked action
+## 核准被阻止的操作
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+當代理遇上一個由其護欄把關的操作——破壞性指令、特權工具——伺服器會**阻止
+該執行**，並向每個已連接的用戶端發佈一則核准請求。如果你開啟着該對話，請求會
+**在對話中**、輸入框上方出現，形式與 `ask_user` 所用的編號選項卡相同（拒絕、
+核准，還可選擇核准八小時）。沒有跳過這回事：被阻止的代理正等待一個決定。
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+如果你身處應用程式的其他位置，外殼中一個永遠置頂的面板仍會列出有哪些事項
+正在等待，因此你不必到處尋找該空間也能解除代理的阻塞。當該空間的對話出現在
+畫面上時，浮層會立即隱藏對應的請求，因此你永遠不會對同一個提示回答兩次。
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+沒有逾時：被阻止的代理會一直等待，直到有人作出決定。同一則請求也會出現在
+收件箱的關注列和手機用戶端上。
 
-## Answer an agent's question
+## 回答代理的提問
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+當代理需要一項偏好設定、一個缺失的需求，或遇到一個真正的分岔時，它**必須**
+呼叫 `ask_user`。把問題寫成聊天訊息會結束該回合，你必須重新提示。該工具會在
+對話中渲染一張編號卡片——選項、可選的自由文字，或兩者兼具——而執行會等待
+你的回答。
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+點按單一選項即可送出（末尾的數字在游標移上時會變成箭頭）。多選和自行輸入的
+回答使用**繼續**（`⌘↵` / `Ctrl↵`）。**跳過**會告訴代理選取一個合理的預設值，
+並且不再提問。
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+它與上文的核准卡是兩套不同的機制：核准問的是「我可以這樣做嗎？」，提問問的是
+「你說的是其中哪一個？」。在每一種模式下（包括唯讀模式），內建運行器都支援
+提問（它不會改動任何東西），而且刻意不把它包裝在核准提示之中——在沒有連接
+核准者的情況下，一個對話框前面再放一個對話框會失效即拒絕。沒有對話可供渲染
+的執行，根本不會取得這個工具。
 
-## Stop an agent
+## 停止代理
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+當有執行正在進行時，輸入框的傳送按鈕會變成一個**停止**按鈕。清空輸入框並按
+下它——這會停止該對話中所有正在運行的代理。
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+空間標題欄中沒有停止控制項，也沒有對應的鍵盤快捷鍵。當有多次執行同時進行、
+而你只想停止其中一次時，開啟該次執行的活動分頁——它的標題欄帶有針對該次
+執行的暫停／繼續與停止（停止會要求你確認）。**可觀測性 → 即時**會列出工作區
+中每個正在運行的代理，並提供相同的控制項。
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+已停止的執行會標記為已停止。傳送一則新訊息即可再次派發。
 
-## Use slash commands
+## 使用斜線指令
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+在輸入框中輸入 `/` 即可看到指令清單。以下指令會改變對話的行為：
 
-| Command        | What it does                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| 指令           | 作用                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/plan`        | 將空間切換至計劃模式。單獨一個 `/plan` 只會啟用該模式；`/plan <request>` 會啟用該模式，並把其餘內容當作你的訊息送出 |
+| `/goal <text>` | 記錄該對話的工作目標                                                                                              |
+| `/loop <text>` | 反覆迭代某項任務，直至完成                                                                                        |
+| `/compact`     | 把較舊的歷史收摺成一份附有錨點的摘要，並在壓縮後的上下文上繼續                                                    |
+| `/todo …`      | 查看並編輯此對話持久化的待辦清單                                                                                  |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+技能會以各自的 `skill:` 命名空間出現在同一份清單中，因此永遠不會與上述指令
+衝突——名為 `plan` 或 `compact` 的技能仍然可以觸達：
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| 指令                        | 它會執行甚麼                                                     |
+| --------------------------- | ---------------------------------------------------------------- |
+| `/skill:<name>`             | 安裝在工作區中的技能，或附加到該代理的技能                       |
+| `/skill:<repo>:<name>`      | 本空間中已檢出的其中一個程式庫所隨附的技能                       |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+程式庫技能會標上其來源程式庫的標記，因為單憑名稱無法說明它編碼的是哪個服務的
+慣例，而且兩個程式庫可能各自都隨附一個 `testing`。你不必輸入前綴也能找到它：
+直接輸入技能名稱同樣會匹配帶命名空間的項目。
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/zh-HK/手冊/概念/代理模型/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+代理永遠只會攜帶它目前所在程式庫的技能——參見
+[程式庫範圍技能](/zh-HK/手冊/概念/代理模型/#repo-scoped-skills)。輸入框並不這樣
+劃分範圍：你可以指名呼叫任何程式庫的技能。
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` 與 `/todo` 由用戶端攔截，永遠不會持久化為訊息——轉錄中出現一行
+`/compact` 會把下一次壓縮的切點往回推一個回合。`/plan` 會切換空間所儲存的
+模式，而不是以文字傳遞。所以這三者都不是「你發送給代理的訊息」；不要指望在
+歷史記錄中看到它們。
 
-## Ask for a plan first
+## 先索取計劃
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/zh-HK/手冊/操作指南/計劃模式/).
+在進行複雜變更之前，用 `/plan`、輸入框工具列上的模式下拉選單，或 Shift+Tab
+把空間切換至計劃模式。接着代理會以唯讀方式研究，並交出一份具型別的計劃，由你
+在任何工作開始之前核准。參見[使用計劃模式](/zh-HK/手冊/操作指南/計劃模式/)。
 
-## Reach an agent without a dedicated space
+## 無需專用空間也能觸達代理
 
-You do not need a space per agent. In any space:
+你不必為每個代理都建立一個空間。在任意空間中：
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/zh-HK/手冊/操作指南/提及代理/) for how names are
-matched.
+被提及的代理會被加入該空間，並帶着該空間的上下文派發。參見
+[@提及代理](/zh-HK/手冊/操作指南/提及代理/)，了解名稱如何匹配。
 
-## Related guides
+## 相關指南
 
-- [Use spaces](/zh-HK/手冊/操作指南/空間/)
-- [@-mention agents](/zh-HK/手冊/操作指南/提及代理/)
-- [Use plan mode](/zh-HK/手冊/操作指南/計劃模式/)
-- [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/) to do the same from Slack
+- [使用空間](/zh-HK/手冊/操作指南/空間/)
+- [@提及代理](/zh-HK/手冊/操作指南/提及代理/)
+- [使用計劃模式](/zh-HK/手冊/操作指南/計劃模式/)
+- [設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)，以便從 Slack 完成同樣的操作
 
-## Related concepts
+## 相關概念
 
-- [Modes](/zh-HK/手冊/概念/模式/)
+- [模式](/zh-HK/手冊/概念/模式/)

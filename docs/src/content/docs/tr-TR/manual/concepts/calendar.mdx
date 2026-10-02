@@ -1,128 +1,139 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Takvim ve zamanlama
+description: Control Center’ın Google Calendar’ı sunucuda nasıl eşitlediği, oturum açmanın neden bir cihaz kodu izni olduğu ve salt okunur kapsamın neleri içerdiği.
 slug: tr-TR/kilavuz/kavramlar/takvim
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/tr-TR/kilavuz/kavramlar/toplantilar/).
+Control Center, günün filonun yanında yer alsın diye Google Calendar’a bağlanır.
+Etkinliklerini eşitler, onları ay, hafta, gün ve ajanda görünümlerinde gösterir,
+bir toplantı başlamadan önce seni uyarır ve her etkinliği kaydedilmiş,
+özetlenmiş bir [toplantıya](/tr-TR/kilavuz/kavramlar/toplantilar/) dönüştürür.
 
-## What it changes on Google
+## Google’da neleri değiştirir
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Neredeyse hiçbir şeyi. Entegrasyon etkinlikleri çeker ve gösterir. Etkinlik
+oluşturmaz, düzenlemez, silmez veya davetlere yanıt vermez. Yerleşik ya da kendi
+getirdiğin her cihaz kodu bağlantısı, `calendar.readonly` ve `openid email`
+kapsamlarını ister.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Etkinlikler **sunucuda**, çalışma alanının kendi veritabanına
+(`<dataDir>/<workspaceId>/workspace.db`) eşitlenir ve her istemci tarafından RPC
+üzerinden görüntülenir. Hiçbir istemci bir Google kimlik bilgisi tutmaz.
 
-## Per-workspace accounts
+## Çalışma alanı başına hesaplar
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Takvim hesapları, Control Center’daki her şey gibi çalışma alanı kapsamındadır.
+Her [çalışma alanı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) kendi Google
+hesabını (ya da birkaçını) bağlar ve bir çalışma alanının etkinlikleri ile
+token’ları başka bir çalışma alanından asla görünmez. Çalışma alanı değiştirmek,
+gördüğün takvimleri de değiştirir.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Bir çalışma alanı **birden çok** Google hesabı bağlayabilir; örneğin bir iş
+hesabı ile bir kişisel hesap ve bunların etkinlikleri aynı görünümlerde
+birleştirilir.
 
-## Why sign-in is a device code
+## Oturum açma neden bir cihaz kodu
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+Headless `cc_server`’ın bir OAuth yönlendirmesini yakalayacak tarayıcısı yoktur.
+Bu yüzden tarayıcı kullanmaz: **cihaz kodu izniyle** (RFC 8628) yetkilendirir.
+Sunucu kısa bir kullanıcı kodu ile bir Google URL’si gösterir, sen tarayıcısı
+olan herhangi bir cihazda onaylarsın ve sunucu sen onaylayana kadar yoklar.
+Headless bir kurulumun bir hesabı bağlayabilmesinin nedeni tam olarak,
+barındırılacak bir yönlendirme uç noktasının olmamasıdır.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Kendi kimlik bilgilerini getirmeden önce bilmen gereken sonuç şudur: istemci
+türü Google’ın "TV'ler ve Sınırlı Girdi cihazları" türü olmalıdır. Google bu
+istemci türüne yalnızca izin listesine alınmış bir kapsam kümesi verir ve
+Calendar’ın bu tür için izinli olmadığı bir proje `invalid_scope` ile başarısız
+olur — bunun yerine bir loopback ya da web istemcisine ihtiyacın olur.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Token’lar sunucudan asla ayrılmaz. Sunucunun veri dizinindeki `secrets.json`
+dosyasına, `google_google:<workspaceId>:<email>` anahtarıyla, veritabanlarının
+yanına ve aynı ana makine dosya sistemi güven sınırının altına yazılır. Sunucu
+erişimi otomatik olarak yeniler ve Google bir hesabı kalıcı olarak geçersiz
+kıldığında (iptal edilmiş ya da süresi çoktan dolmuş bir oturum) sessizce
+başarısız olmak yerine `CalendarAuthExpired` yayımlar ve bir **yeniden bağlan**
+banner’ı gösterir.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Kaynaktan bir derleme **hiç** Google kimlik bilgisi içermez — kendi istemci
+kimliğini ve gizli anahtarını sen sağlarsın. Resmî sürüm derlemeleri, bağlantı
+akışının kutudan çıktığı gibi çalışması için gizli olmayan bir cihaz kodu
+istemcisi gömer; sunucu yalnızca ona atıfta bulunan bir işaretçi saklar, asla
+bir kopyasını değil. Ortamdaki `GOOGLE_OAUTH_CLIENT_ID` (ve gizli anahtarı) her
+zaman gömülü çiftin önüne geçer. `--google-client-id` diye bir bayrak bilinçli
+olarak yoktur: bilinmeyen bayraklar yok sayılır ve komut satırındaki bir gizli
+anahtar `ps` üzerinden okunabilir.
 
-For running your own Google project, see
-[Connect a Google Calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/).
+Kendi Google projenle çalışmak için
+[Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+sayfasına bak.
 
-## Sync
+## Eşitleme
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Sunucu, bağlı her hesabın etkinliklerinden oluşan kayan bir pencereyi çeker —
+hesaptaki yalnızca birincil takvim değil, her takvim — **her iki dakikada bir**,
+ayrıca istendiğinde (başlatma, bağlama, elle yenileme). Kısa sıklık karşılanabilir
+bir maliyettir, çünkü tarama artımlıdır: her takvim kendi eşitleme token’ını
+taşır, böylece değişmemiş bir takvim beş aylık bir pencereyi yeniden çekmek
+yerine neredeyse boş tek bir yanıta mal olur.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Yinelenen etkinlikler sunucu tarafında açılır, böylece hiçbir istemci bir
+yineleme kuralını ayrıştırmaz. Geçerli pencerenin dışındaki bir aya gidildiğinde
+o aralık tembelce yüklenir. Silinen ya da aralık dışına taşınan etkinlikler bir
+sonraki eşitlemede uzlaştırılarak kaldırılır.
 
-## Views
+## Görünümler
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Görünüm    | Neyi gösterir                                                |
+| ---------- | ------------------------------------------------------------ |
+| **Ay**     | Tam bir ay ızgarası (`kalender` paketiyle desteklenir)       |
+| **Hafta**  | Bir haftanın zamanlanmış etkinlikleri, bir zaman ızgarasında |
+| **Gün**    | Tek bir günün zamanlanmış etkinlikleri, bir zaman ızgarasında |
+| **Ajanda** | Yaklaşan etkinliklerin kaydırılabilir listesi                |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Takvimi `/calendar` adresinde aç; bir etkinliği seçmek, ayrıntısını
+`/calendar/:eventId` adresinde açar. Seçtiğin görünüm o istemcinin kendi
+tercihlerinde saklanır, dolayısıyla başka bir cihazda peşinden gelmez.
 
-## Meeting alerts
+## Toplantı uyarıları
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/tr-TR/kilavuz/kavramlar/alan-olaylari/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Dakikada bir çalışan bir zamanlayıcı, yapılandırılabilir bir önceden uyarı
+penceresi içinde başlayan etkinlikleri tarar ve bir **"Toplantı yakında
+başlıyor"** bildirimi gönderir (bir `MeetingStartingSoon`
+[alan olayı](/tr-TR/kilavuz/kavramlar/alan-olaylari/)). Bildirim, varsa katılım
+URL’sini taşır ve tıklandığında etkinlik ayrıntısını açar. Uyarılar etkinliğin
+`alertedAt` değerine göre yinelenmez, böylece aynı toplantı asla iki kez uyarı
+vermez; yeniden başlatmalar arasında da, uygulama kapalıyken başlama anı geçmiş
+bir etkinlik de asla yeniden oynatılmaz.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Kolayca takılabileceğin iki sınır var. Zamanlayıcı **masaüstünde, istemci
+tarafında** ve yalnızca o an açık olan çalışma alanı için çalışır — içinde
+olmadığın bir çalışma alanı hiçbir uyarı vermez. Web yapımında ise hiçbir
+işletim sistemi bildirim mekanizması yoktur, dolayısıyla o da hiç uyarı vermez.
 
-## Record and link
+## Kaydet ve bağla
 
-From a calendar event you can start a [meeting recording](/tr-TR/kilavuz/kavramlar/toplantilar/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Bir takvim etkinliğinden, etkinliğin başlığıyla başlatılan bir
+[toplantı kaydı](/tr-TR/kilavuz/kavramlar/toplantilar/) başlatabilirsin. Control
+Center, kayıt ile etkinlik arasında bire bir bir bağ saklar, böylece toplantının
+notları ile takvim kaydı, iki özellikten hiçbiri diğerine bağımlı olmadan
+bağlantılı kalır.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Kaydı başlat ve bağla** yalnızca masaüstünde bulunur. Web istemcisinde bu
+eylem, kaydın kullanılamadığını bildirir — oysa toplantılar ekranının kendi
+kayıt akışı tarayıcıda çalışır.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Ajanlar takvimini okuyamaz]
+Takvim MCP araçları yoktur. Bir ajan etkinlikleri listeleyemez, bir etkinliğin
+ayrıntılarını okuyamaz veya senin adına yanıt veremez; `calendar.*` yüzeyi
+yalnızca insan istemcileri için RPC’dir.
 :::
 
-## See also
+## Ayrıca bakınız
 
-- [Meetings and transcription](/tr-TR/kilavuz/kavramlar/toplantilar/): what happens after you start a recording
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): why calendar accounts are per-workspace
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
-- [Record and summarize a meeting](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/)
+- [Toplantılar ve transkripsiyon](/tr-TR/kilavuz/kavramlar/toplantilar/): bir kaydı başlattıktan sonra ne olur
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): takvim hesapları neden çalışma alanı başına
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `MeetingStartingSoon` ve `CalendarAuthExpired`
+- [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+- [Bir toplantıyı kaydetme ve özetleme](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/)

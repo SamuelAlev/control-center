@@ -1,125 +1,132 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Je team aanmelden met SSO
+description: Verbind Okta (SAML) met je Control Center-server en doorloop een aanmelding van begin tot eind.
 slug: nl-NL/handleiding/zelfstudies/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Wat je gaat bouwen
 
-By the end of this tutorial, you will have:
+Aan het einde van deze zelfstudie heb je:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- een SAML-verbinding tussen je Control Center-server en een
+  identiteitsprovider (we gebruiken Okta als voorbeeld),
+- één gebruiker die bij de eerste aanmelding automatisch wordt
+  geprovisioneerd en
+- een lidmaatschapsbeleid voor werkruimtes dat je bewust hebt gekozen.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Je hebt een server nodig die je beheert (de **servereigenaar** — de beheerder
+van de installatie) en een IdP-applicatie die je kunt configureren. Reken op
+20 minuten.
 
-## 1. Open the single sign-on settings
+## 1. De single sign-on-instellingen openen
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Meld je aan bij Control Center en ga naar
+**Instellingen → Server → Single sign-on**. Het scherm wisselt tussen
+**SAML** en **OpenID Connect**, plus een kaart **Gebruikersvoorziening
+(SCIM)**. Blijf op SAML staan.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Alles op dit scherm geldt serverbreed: één IdP authenticeert de mensen van
+elke werkruimte, dus alleen de servereigenaar kan het bewerken.
 
-## 2. Paste the IdP metadata
+## 2. De IdP-metadata plakken
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Open in Okta het tabblad **Sign On** van je app en kopieer de metadata-XML (of
+download die en plak de inhoud van het bestand). Plak die terug in Control
+Center in **IdP-metadata-XML** en klik op **Verbinding testen**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+De melding toont het aanmeld-endpoint van de IdP — bewijs dat de metadata is
+geparst, het certificaat is gelezen en de server er een aanmeldverzoek mee kan
+opbouwen (de test doorloopt alles behalve de roundtrip in de browser). Mislukt
+het, dan was de XML geen volledige `EntityDescriptor` (het SAML-tabblad in Okta
+noemt dit "Metadata URL"; open de URL en kopieer wat die teruggeeft). Dezelfde
+knop onder **OpenID Connect** controleert in plaats daarvan het
+discovery-document van je issuer. Wil je ook een aflopend certificaat opvangen
+en zien of de IdP Control Center herkent, gebruik dan de
+[controle in stap 6](#6-controleer-het-vanaf-deze-pagina).
 
-## 3. Register Control Center at the IdP
+## 3. Control Center registreren bij de IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Klik op **SP-metadata kopiëren** en geef die aan wie de Okta-kant configureert
+(of lees de twee waarden voor waar ze om vragen):
 
-- **ACS URL**: `https://<your-server>/saml/acs`
-- **Entity ID**: `https://<your-server>/saml`
+- **ACS-URL**: `https://<your-server>/saml/acs`
+- **Entiteits-id**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+De URL's zijn afgeleid van de origin die de browsers van je gebruikers
+bereiken. Draait de server achter een tunnel of reverse proxy, zorg dan dat de
+origin stabiel is
+(Instellingen → Server → Verbinding en status → Deze server delen toont de openbare URL) — of zet de entiteits-id
+expliciet vast in het veld **SP-entiteits-id**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[Achter NAT?]
+SAML-aanmelding heeft **geen** openbaar IP-adres of domein nodig: de IdP maakt
+nooit verbinding met je server — de browser van de gebruiker draagt de
+roundtrip, dus localhost, LAN, VPN, Tailscale of een tunnel werken allemaal.
+Twee dingen om scherp te houden:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/nl-NL/handleiding/gidsen/sso-scim)).
+- de origin die de browser gebruikt moet **overeenkomen** met de ACS-URL en de
+  entiteits-id die bij de IdP zijn geregistreerd (zet de entiteits-id vast als
+  gebruikers de server onder meer dan één origin bereiken),
+- **SCIM-provisionering is de uitzondering** — de IdP roept je server
+  rechtstreeks aan, dus die heeft een tunnel of een openbare URL nodig
+  ([gebruikers provisioneren met SCIM](/nl-NL/handleiding/gidsen/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Bepalen wat een aanmelding verleent
 
-Two policies decide what a first login does:
+Twee beleidsregels bepalen wat een eerste aanmelding doet:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Gebruikers bij eerste login aan elke workspace toevoegen** — laat dit
+  aanstaan voor een deployment met één team waarin SSO gelijkstaat aan
+  vertrouwen. Zet het uit wanneer meerdere teams of klanten de server delen:
+  elke nieuwkomer heeft dan een expliciete uitnodiging voor de werkruimte
+  nodig, wat de veiligere standaard is.
+- **Onbekende gebruikers voorzien bij eerste login** — staat standaard aan; zet
+  het uit om iedereen te weigeren wiens account nog niet bestaat.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Optioneel koppel je een attribuut met groepsnamen (bij Okta is dat gewoonlijk
+`groups`) en vertaal je groepen naar rollen met de map — bijvoorbeeld
+`{"platform-leads": "admin"}`. SSO kan de rol eigenaar nooit verlenen.
 
-## 5. Enable and take a login
+## 5. Inschakelen en een aanmelding doorlopen
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Zet **SAML gebruiken om aan te melden** aan, klik op **Verbinding opslaan** en
+open dan een privévenster in de browser op
+`https://<your-server>/saml/login`. Meld je aan bij Okta en je komt terug in de
+webclient — aangemeld, met je account aangemaakt en het lidmaatschap verleend
+volgens het beleid dat je hebt gekozen.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Hetzelfde toegangspunt verschijnt op het verbindingsscherm van de webclient
+(**Inloggen met SAML**) zodra je het serveradres typt — het formulier past zich
+aan wat de server biedt (bij OpenID Connect staat **Inloggen met OpenID
+Connect**). De knop opent het aanmelden in een **nieuw tabblad**; is de
+roundtrip voltooid, dan pikt het wachtende tabblad de sessie automatisch op.
+Het instelscherm van de desktopserver doet hetzelfde: typ de server-URL, er
+verschijnt een knop **Inloggen met SAML** die je browser opent, en de app meldt
+je aan zodra de roundtrip is voltooid.
 
-## 6. Check it from this page
+## 6. Controleer het vanaf deze pagina
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Controleer de onderdelen hier voordat je SSO uitrolt, of wanneer een aanmelding
+mislukt. De controle draait volledig in je browser: hij leest de metadata die
+je in dit tabblad plakt en past dezelfde regels toe als de server. Met je
+serveradres vraagt hij die server bovendien of SAML-aanmelding aanstaat.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Hij vangt wat **Verbinding testen** in de app niet kan zien: een
+ondertekeningscertificaat dat bijna verloopt, een IdP die erop staat dat
+verzoeken ondertekend zijn, en, met de testaanmelding, of de IdP Control Center
+überhaupt herkent.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Volgende stappen
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/nl-NL/handleiding/gidsen/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/nl-NL/handleiding/gidsen/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/nl-NL/handleiding/concepten/sso).
+- Geef je IdP ook de controle over de levenscyclus:
+  [gebruikers provisioneren en deprovisioneren met SCIM](/nl-NL/handleiding/gidsen/sso-scim).
+- Spreekt je IdP OpenID Connect in plaats van SAML?
+  [Een OpenID Connect-provider verbinden](/nl-NL/handleiding/gidsen/sso-oidc).
+- Benieuwd wat de roundtrip in de browser eigenlijk verifieert?
+  [Hoe eenmalige aanmelding werkt](/nl-NL/handleiding/concepten/sso).

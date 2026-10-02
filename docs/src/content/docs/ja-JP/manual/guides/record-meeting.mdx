@@ -1,118 +1,117 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: ミーティングを録画して要約
+description: 通話を録音し、文字起こしを取得して、それをメモ、アクションアイテム、決定事項に変える方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/ミーティング録画
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/ja-JP/マニュアル/コンセプト/ミーティング/) for how it works.
+このガイドでは、ミーティングを録画して AI が生成した記録を取得する方法を説明します。
+仕組みについては[ミーティングと文字起こし](/ja-JP/マニュアル/コンセプト/ミーティング/)を参照してください。
 
-## Before you start
+## 始める前に
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **音声モデルを待ってから、サーバーを再起動します。** 通常の起動では、選択された ASR
+  モデル（多言語対応の既定である Parakeet TDT 0.6B v3、約 600 MB）がバックグラウンドで
+  強制インストールされます。サーバーがモデルを解決するのは**起動時の 1 回だけ**なので、
+  再起動するまで初回の実行には録音操作がありません。ディスク上にモデルがない場合、録音は
+  `Could not start recording on the host: …` で失敗します。別のビルドを選ぶには、
+  **設定 → サーバー → 音声と会議のモデル**を使用します。これにも再起動が必要です。
+- 初回の録音時に OS から求められたら、**マイク**の権限を付与します。
+- **macOS 14.4 以降**では、システムオーディオは Core Audio のプロセスタップでキャプチャされます。インストールするドライバーはありませんが、OS は 2 回目の権限として _オーディオキャプチャ_ の権限を求めます。これは画面収録ではなく、画面収録のインジケータが点灯することもありません。これを拒否すると、開始が `System-audio capture permission denied.` で失敗します。macOS 14.4 より前ではシステムオーディオのキャプチャはありません。
+- **Linux** では、`parecord`（pulseaudio-utils）または `pw-record`（pipewire）が `PATH` 上になければなりません。キャプチャは PipeWire/PulseAudio のモニターソースに対してこれらのいずれかを起動します。どちらもない場合、開始は `No system-audio capture tool found` で失敗します。
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[ミーティングの音声がどこへ行くのか]
+キャプチャ、文字起こし、エコーキャンセル、話者分離はすべてオンデバイスで実行され、クラウド
+呼び出しはありません。ただしここでの「デバイス」は **cc_server ホスト**を意味し、サーバーを
+リモートで実行している場合は別のマシンになります。そして最終的な記録は通常のエージェント
+実行です。`meeting_summary` パイプラインは、文字起こし全体とあなたの大まかなメモを、その
+エージェントが使用するモデルプロバイダーに送信します。文字起こしをマシンの外に出しては
+ならない場合は、そのエージェントをローカルプロバイダーに向けてください。
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+録音画面には録音中にこのことが表示されるため、送信する文字起こしができる前に判断材料が
+目の前に示されます。
 :::
 
-## Start a recording
+## 録音を開始する
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. サイドバーで**ミーティング**を開きます。
+2. **会議を録音**をクリックします。ライブ録音 HUD が `/meetings/record` で開きます。
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+録音はすぐに開始され、マイクとシステム出力オーディオ（他の参加者）をキャプチャします。
+モードの確認も、オーディオソースの選択もありません。対面のシングルマイクモードは API には
+存在しますが、現時点で UI はありません。
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+ブラウザーでも同じフローが機能しますが、1 点だけ異なります。ここでの「システムオーディオ」
+は、オーディオトラックを含まなければならない画面共有です。ブラウザーのタブ（または画面
+全体）を共有し、ピッカーで「タブの音声を共有」/「システム音声を共有」を有効にします。
+Safari と Firefox、および macOS での全画面共有は、しばしばオーディオトラックを提供できません。
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD にはレベルメーター、経過時間、そして片側に構築されていくライブ文字起こしが表示されます。
 
-## During the meeting
+## ミーティング中
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **大まかなメモを取る**: メモペインに記入します。入力に応じて保存され、後で要約エージェントに渡されるため、文字起こしが見落とすかもしれない事柄を書き留めておきましょう。
+- **会議メモのテンプレートを選ぶ**: **有効なテンプレート**行で選択します。これはこのミーティングの要約を形作り、録音とともに取り込まれるため、後で再実行するとここで選んだテンプレートが再現されます。
+- **一時停止と再開**: 一時停止コントロールで操作します。一時停止中は文字起こしが停止し、タイマーも止まります。
+- 文字起こしは話者タグ付きでストリーミングされます。あなたの発言は**自分**、通話の全員は**その他**として表示され、話者分離がその他を `Person 1`、`Person 2`、… に分割した後は、名前を変更できます。
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[非常に小さな声の話者は文字起こしされないことがあります]
+文字起こしは、無音しきい値を一度も超えなかったオーディオウィンドウを、まったくデコード
+せずにスキップします。これにより、静かなチャンネルが幻覚的な非音声トークンで CPU を消費
+するのを防ぎますが、その一方で、かすかな声や遠くの話者は文字起こしが一切生成されない
+可能性があります。レベルメーターは最後ではなく、早い段階で確認してください。
 :::
 
-## Stop and summarize
+## 停止して要約する
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. **停止して要約**をクリックします。
+2. Control Center はミーティングの詳細ビューに直接移動し、**処理中**と表示されます。話者分離がリモートチャンネルを個々の話者に分割し、`meeting_summary` パイプラインが記録を生成します。
+3. そのパイプラインが完了すると、ミーティングは**完了**に切り替わります。待つ必要はありません。詳細ビューは自動的に更新されます。
 
-## Review the writeup
+## 記録を確認する
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+ミーティングの詳細（`/meetings/:meetingId`）には 4 つのタブがあります:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| タブ             | 内容                                                                       |
+| ---------------- | -------------------------------------------------------------------------- |
+| **メモ**         | あなたの大まかなメモ + 文字起こしから構築された、AI の要約と拡張メモ      |
+| **文字起こし**   | タイムスタンプ付きの、話者タグ付き文字起こし全体                          |
+| **アクションアイテム** | 抽出された ToDo。それぞれに任意の担当者が付きます                   |
+| **決定事項**     | 通話中に記録された決定事項                                                 |
 
-From here you can:
+ここから次のことができます:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **話者の名前を変更**: `Person 1` を実際の名前に変えます。文字起こし全体に適用されます。
+- **アクションアイテムをチェックオフ**: 完了したものにチェックを入れます。
+- **チケットを作成**: アクションアイテムから作成します。アクションアイテムをタイトルにした、担当者のいない新しいチケットが起票され、その行にリンクされます。エージェントへの割り当てはチケット自体から行います（[エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)を参照）。
+- **要約を再実行**: 新たなパスを実行します（たとえば話者の名前を変更した後）。録音時に取り込まれたテンプレートを再利用します。有効なテンプレートは**設定 → ワークスペース → ミーティング**で選択します。
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+メモ、タイトル、アクションアイテム、決定事項の編集はどこでも機能します。
+**要約を再実行**と処理中のミーティングのキャンセルは**デスクトップ専用**です。ブラウザーでは
+どちらのボタンも何もしません。
 
-## Record straight from a calendar event
+## カレンダーの予定から直接録音する
 
-If you've [connected a calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+[カレンダーを接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)していれば、手動での
+開始を省略できます。これは**デスクトップ専用**です。Web クライアントはこれを拒否します。
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. **カレンダー**から予定を開きます。
+2. **録音を開始してリンク**をクリックします。
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+録音にはその予定のタイトルが初期値として設定され、予定にリンクして戻されるため、メモと
+カレンダーの予定はつながったままになります。
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[ミーティングを削除しても音声は削除されません]
+ミーティングを削除するとその行は削除されますが、`<dataDir>/meetings/<meetingId>/` 配下の
+録音済み WAV ファイルはディスク上に残ります。保持ポリシー、サイズ上限、クリーンアップ
+スイープのいずれもありません。音声が重要なら、そのディレクトリは自分で削除してください。
 :::
 
-## Related guides
+## 関連するガイド
 
-- [Connect a Google Calendar](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
-- [Delegate work to agents](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
+- [Google Calendar を接続](/ja-JP/マニュアル/ハウツーガイド/カレンダー接続/)
+- [エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Meetings and transcription](/ja-JP/マニュアル/コンセプト/ミーティング/)
+- [ミーティングと文字起こし](/ja-JP/マニュアル/コンセプト/ミーティング/)

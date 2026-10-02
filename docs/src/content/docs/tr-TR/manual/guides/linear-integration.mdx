@@ -1,34 +1,38 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Linear entegrasyonunu kurma
+description: Ajanlar Linear’ı çağırabilsin diye sunucuda bir Linear API anahtarı saklayın ve yeni biletler için bilet sağlayıcısı olarak Linear’ı seçin.
 slug: tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/).
+Bir Linear API anahtarını, tıpkı bir forge bağlarken yaptığınız gibi, sunucuya
+kullanıcı kimliğinize bağlı olarak yapıştırın. Biletler, projeler, bağlantılar,
+ortak çalışanlar, devretme ve atama, harici bir hizmete gerek kalmadan Control
+Center’ın kendi veritabanı üzerinde çalışır — bkz. [Bilet oluşturma ve
+yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/).
 
-## Store your Linear key
+## Linear anahtarınızı saklama
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Bilet API anahtarı**, **Ayarlar → Çalışma alanı → Genel** altındaki Biletler
+kartında bulunur. Anahtarı sunucuda kullanıcı kimliğinize bağlı olarak saklar.
+Sunucunun gözetimsiz işler için kullandığı kendi anahtarı, `LINEAR_API_KEY` ya
+da **Sağlayıcı uygulamaları** kartından gelir ve yalnızca o ajan **Bilet API
+çağrılarına izin ver** yeteneğine sahipse `TICKETING_API_KEY` olarak enjekte
+edilir.
 
-## Stamp new tickets as Linear
+## Yeni biletleri Linear olarak işaretleme
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Bilet sağlayıcısı** (ilk kurulumun ilk adımı ve
+`/workspaces/<workspaceId>/api-keys`) `local` ve `linear` seçeneklerini sunar.
+`linear` seçildiğinde, o andan itibaren oluşturduğunuz biletlere
+`provider: linear` işaretlenir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-- [Manage API keys](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Tickets and delegation](/tr-TR/kilavuz/kavramlar/biletler/)
+- [Biletler ve devretme](/tr-TR/kilavuz/kavramlar/biletler/)

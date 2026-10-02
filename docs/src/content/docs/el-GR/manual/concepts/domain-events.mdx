@@ -1,153 +1,97 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Γεγονότα τομέα
+description: Γιατί οι λειτουργικές ενότητες επικοινωνούν μέσω ενός δίαυλου γεγονότων εντός διεργασίας αντί να εισάγουν η μία την άλλη, για τι είναι και για τι δεν είναι ο δίαυλος η πηγή αλήθειας και ποια γεγονότα μπορούν πραγματικά να καθοδηγήσουν αυτοματισμό.
 slug: el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Τι είναι ένα γεγονός τομέα
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Τα γεγονότα τομέα είναι ο μηχανισμός αποσύνδεσης που επιτρέπει στις λειτουργικές ενότητες να επικοινωνούν χωρίς άμεσες εξαρτήσεις. Αντί η ενότητα A να καλεί την ενότητα B, η ενότητα A δημοσιεύει ένα γεγονός και η ενότητα B εγγράφεται σε αυτό.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+Ο `DomainEventBus` είναι ένας ενδοδιεργασιακός δίαυλος δημοσίευσης/συνδρομής με εκπομπή. Οι εκδότες καλούν `publish(event)`· οι συνδρομητές καταναλώνουν μια ροή `on<T>()` με τύπο. Κάθε γεγονός υλοποιεί το `DomainEvent` και φέρει `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Ο δίαυλος εκτελείται μέσα στο `cc_server`.** Κάθε εκδότης και κάθε ενεργός συνδρομητής βρίσκεται εκεί. Κανένας πελάτης δεν βλέπει αυτόν τον δίαυλο. Αυτό που βλέπει ένας πελάτης είναι ένα επιμελημένο υποσύνολο που ο διακομιστής επανεκπέμπει ως πλαίσια JSON-RPC `notifications/*`.
 
-## Why a bus at all
+## Γιατί να υπάρχει δίαυλος
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Χωρίς γεγονότα, κάθε αντίδραση ανάμεσα σε λειτουργικές ενότητες είναι μια εισαγωγή. Η διαδρομή των ειδοποιήσεων θα έπρεπε να εισάγει την ενότητα των πρακτόρων, την ενότητα των pull request, τα εισιτήρια και τις συσκέψεις μόνο και μόνο για να ξέρει πότε να εμφανίσει ένα αναδυόμενο μήνυμα — και καθεμία από αυτές θα έπρεπε τότε να γνωρίζει ότι υπάρχουν οι ειδοποιήσεις. Τα εισιτήρια θα εισήγαγαν τα pipeline, ώστε ένα ολοκληρωμένο εισιτήριο να μπορεί να προωθήσει μια εκτέλεση. Το γράφημα εξαρτήσεων κλείνει σε κόμπο και ο κοινόχρηστος πυρήνας παύει να είναι κοινόχρηστος.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Η δημοσίευση ενός γεγονότος το σπάει αυτό. Η διαδρομή των ειδοποιήσεων εγγράφεται σε είκοσι μία κλάσεις γεγονότων και δεν εισάγει καμία από τις ενότητες που τις προκαλούν. Ο αποστολέας ενεργοποιητών pipeline εγγράφεται σε ολόκληρο τον δίαυλο και δεν γνωρίζει τίποτα για pull requests, εισιτήρια ή συσκέψεις. Οι συγκεντρώσεις παρατηρησιμότητας συνοψίζουν τα αποτελέσματα εκτελέσεων χωρίς να επεμβαίνουν στην αποστολή.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Το κόστος είναι το συνηθισμένο: ένας εκδότης δεν μπορεί να ξέρει αν κάποιος ακούει, και ένας ακροατής που δεν κατασκευάζεται ποτέ μένει σιωπηλά αδρανής. Ο `TicketRemoteSyncHandler` είναι το πάγιο παράδειγμα: έχει δηλωθεί, καλύπτεται από τεστ και δεν συνδέεται ποτέ στην παραγωγή.
 
-## What the bus is not
+## Τι δεν είναι ο δίαυλος
 
-It is worth being precise about one thing the bus does _not_ own.
+Αξίζει να είμαστε ακριβείς σε ένα πράγμα που ο δίαυλος _δεν_ κατέχει.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Το ίχνος ελέγχου δεν είναι προβολή της ροής γεγονότων.** Κάθε λειτουργία RPC που μεταβάλλει δεδομένα καταγράφεται στο ίχνος ελέγχου εξ ορισμού — το `RepoOp.audited` έχει προεπιλογή true και μια λειτουργία εξαιρείται μόνο δηλώνοντας `audited: false`, μια σκόπιμη πράξη ορατή στην ίδια τη λειτουργία. Ο αποστολέας προσθέτει τη γραμμή «ποιος έκανε τι, από πού» αμέσως μετά από μια επιτυχημένη κλήση. Δεν υπάρχει `DomainEventAuditBridge`. Το `ActivityLogPersister` γράφει γραμμές `activity_log` από γεγονότα `ActivityLogged`· αυτή είναι ξεχωριστή ροή από το ίχνος ελέγχου του RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Ο δίαυλος γεγονότων _είναι_ το μέσο μεταφοράς για τις ειδοποιήσεις και για τον αυτοματισμό. Δεν είναι το λογιστικό σύστημα αναφοράς.
 
-## What the bus does drive
+## Τι κινεί ο δίαυλος
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Ειδοποιήσεις.** Είκοσι μία κλάσεις γεγονότων μετατρέπονται από τον διακομιστή σε πλαίσια δικτύου `notifications/*`, καταγράφονται σε μια μόνιμη ροή ανά χώρο εργασίας και εκπέμπονται σε όλες τις συνδεδεμένες συνεδρίες. Ένα πλαίσιο του οποίου το `workspace_id` ονομάζει χώρο εργασίας στον οποίο ο χρήστης της συνεδρίας δεν είναι μέλος απορρίπτεται στον διακομιστή· στη συνέχεια ο πελάτης φιλτράρει τα υπόλοιπα στον χώρο εργασίας που κοιτάζει.
+- **Αυτοματισμός που καθοδηγείται από γεγονότα.** Οι ενεργοποιητές pipeline εγγράφονται στον δίαυλο και ξεκινούν αυτόματα τα pipeline που ταιριάζουν (δείτε παρακάτω).
+- **Αντιδράσεις κύκλου ζωής.** Η δημιουργία ενός χώρου εργασίας εφοδιάζει τον CEO και τους εξειδικευμένους πράκτορές του, τα ενσωματωμένα πρότυπα pipeline και τις αρχικές σουίτες αξιολόγησης. Μια ολοκληρωμένη εκτέλεση πράκτορα συνεχίζει ένα βήμα pipeline που βρίσκεται σε αναστολή, κλείνει μια εργασία, τροφοδοτεί τον επόπτη στόχων, μπορεί να αφυπνίσει έναν επώνυμο ελεγκτή και μπορεί να ενεργοποιήσει ξανά έναν ηγέτη ομάδας. Ένα συγχωνευμένο PR ή ένας διαγραμμένος χώρος προκαλεί τη συλλογή απορριμμάτων των worktree.
+- **Συγχρονισμός μεταξύ προμηθευτών.** Οι τοπικές αλλαγές εισιτηρίων αποστέλλονται στους διαμορφωμένους προμηθευτές από έναν συντονιστή που ακούει πέντε γεγονότα εισιτηρίων.
 
-## Event categories
+## Κατηγορίες γεγονότων
 
-Events span the whole product surface. At a high level:
+Τα γεγονότα καλύπτουν ολόκληρη την επιφάνεια του προϊόντος. Σε γενικές γραμμές:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Χώροι εργασίας, πράκτορες και αποθετήρια** — δημιουργία χώρου εργασίας, ολοκλήρωση εκτέλεσης, καταχώριση αποθετηρίου, ενημερώσεις δεξιοτήτων
+- **Pull requests** — δημοσίευση, αλλαγές κατάστασης, συγχωνεύσεις, αιτήματα ανασκόπησης, αναφορές, παρακολούθηση PR που συντάξατε, PR που εντοπίστηκαν εξωτερικά
+- **Μηνύματα** — μηνύματα, χώροι και πρόοδος παροχής χώρων
+- **Εισιτήρια** — δημιουργία, ανάθεση, εκ νέου ανάθεση, λεπτομέρειες, κατάσταση και τα τρία τελικά αποτελέσματα
+- **Εργασίες** — αλληλουχημένα πλαίσια κύκλου ζωής για μία αποστολή, ώστε οι πελάτες να μπορούν να τα ταξινομούν και να αφαιρούν διπλότυπα
+- **Pipeline** — μόνο τελικά γεγονότα εκτέλεσης (ολοκληρώθηκε, ακυρώθηκε, απέτυχε)
+- **Παρατηρησιμότητα** — καταχωρίσεις αρχείου καταγραφής δραστηριότητας και όρια προϋπολογισμού
+- **Ταυτότητα και ιδιότητα μέλους** — προσθήκη μέλους, αφαίρεση, αλλαγή ρόλου
+- **Ημερολόγιο και συσκέψεις** — λήξη ταυτοποίησης, έναρξη συσκέψεων και ολοκλήρωση καταγραφών
+- **Σταθμοί** — ανάληψη, περισυλλογή και απροσδόκητο κλείσιμο
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Η μνήμη, η ενορχήστρωση, τα έγγραφα σχεδίων, τα τεχνουργήματα, οι εγκρίσεις, η είσοδος συγχρονισμού εισιτηρίων, η ανανέωση ημερολογίου, οι συγχωνεύσεις worktree, η δημιουργία χρηστών, οι προσκλήσεις και η ανάκληση συσκευών δεν είναι γεγονότα τομέα· δείτε την αναφορά.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/). That page is the
-inventory; this one is the model.
+Για τον πλήρη κατάλογο — και τις 53 συγκεκριμένες κλάσεις γεγονότων, τα φορτία τους και τους 24 συνδρομητές που τις καταναλώνουν — δείτε την
+[Αναφορά γεγονότων τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/). Εκείνη η σελίδα είναι το
+ευρετήριο· αυτή εδώ είναι το μοντέλο.
 
-## Live access control rides two different mechanisms
+## Ο ζωντανός έλεγχος πρόσβασης βασίζεται σε δύο διαφορετικούς μηχανισμούς
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Τα γεγονότα ιδιότητας μέλους και τα γεγονότα συσκευών φαίνονται συμμετρικά αλλά δεν είναι, κάτι που έχει σημασία αν συλλογίζεστε πόσο γρήγορα τίθεται σε ισχύ μια ανάκληση.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Η ανάκληση μιας συσκευής τερματίζει όντως τις συνεδρίες της.** Ο διακομιστής παρακολουθεί τον πίνακα συζευγμένων συσκευών και απορρίπτει κάθε ζωντανή συνεδρία της οποίας η συσκευή έφυγε από το ενεργό σύνολο, μέσα σε δευτερόλεπτα.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Η αφαίρεση ενός μέλους δεν κλείνει την υποδοχή.** Το `WorkspaceMemberRemoved` καταναλώνεται: τα `LocalRpcServer` και `RemoteRelayHost` απορρίπτουν τις συνδεδεμένες συνδρομές χώρου εργασίας αυτού του χρήστη και το `RemoteEventForwarder` ακυρώνει την προσωρινή μνήμη ιδιότητας μέλους, ώστε να μην αποστέλλονται άλλα πλαίσια για αυτόν τον χώρο εργασίας. Αυτό που αρνείται το επόμενο RPC είναι ακόμη ο έλεγχος ρόλου, ο οποίος επιλύει ξανά την ιδιότητα μέλους σε **κάθε** κλήση — οπότε το επόμενο αίτημά τους απορρίπτεται με «Not a member of this workspace». Το αποτέλεσμα είναι άμεσο για οτιδήποτε προσπαθήσουν να κάνουν· απλώς δεν επιτυγχάνεται κλείνοντάς τους τη σύνδεση.
 
-## Pipeline triggers
+## Ενεργοποιητές pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Οι ενεργοποιητές pipeline εγγράφονται σε γεγονότα τομέα και ξεκινούν αυτόματα τα pipeline που ταιριάζουν. Ο `PipelineTriggerDispatcher` ακούει ολόκληρο τον δίαυλο και στη συνέχεια:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Συντομεύει τη διαδικασία, εκτός αν ο τύπος γεγονότος είναι ένας από αυτούς που ξέρει να αντιστοιχίζει σε φορτίο
+2. Αναζητά ενεργοποιημένους ενεργοποιητές που ταιριάζουν με αυτόν τον τύπο γεγονότος, σε κάθε χώρο εργασίας
+3. Φιλτράρει τον καθένα στον δικό του χώρο εργασίας και εφαρμόζει το φίλτρο αντιστοίχισης φορτίου του
+4. Ξεκινά μια εκτέλεση για κάθε ενεργοποιητή που επιβιώνει
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Ο σημαντικός περιορισμός είναι το βήμα 1. Ο δίαυλος μεταφέρει 53 τύπους γεγονότων· ο επιλογέας προσθήκης ενεργοποιητή ξεκινά εκτέλεση για τους εξής δεκατέσσερις (διακλαδώσεις φορτίου του `EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+και `SpaceDeleted`. Τίποτα άλλο δεν μπορεί να ξεκινήσει ένα pipeline.
 
-## How a client sees any of this
+## Πώς τα βλέπει όλα αυτά ένας πελάτης
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/).
+Ο `RemoteEventForwarder` μεταφράζει τα γεγονότα κλάσης ειδοποιήσεων σε πλαίσια δικτύου και τα αποστέλλει μέσω RPC στις συνδεδεμένες συνεδρίες, όπου ένας αντιστοιχιστής πλαισίων τα μετατρέπει σε ειδοποιήσεις εντός εφαρμογής. Ένας λεπτός πελάτης βλέπει επομένως μια προβολή της ροής γεγονότων του διακομιστή χωρίς να κατέχει καμία εκτέλεση — που είναι όλο το νόημα του [διαχωρισμού λεπτού πελάτη](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Δεν είναι όμως κάθε πλαίσιο που αποστέλλεται και μια ειδοποίηση. Η ροή κύκλου ζωής εργασιών και η εκ νέου ανάθεση εισιτηρίων προωθούνται ζωντανά για να τροφοδοτήσουν τη διεπαφή χρήστη, αλλά δεν καταγράφονται στη ροή ειδοποιήσεων και δεν εμφανίζουν αναδυόμενο μήνυμα.
 
-## See also
+## Δείτε επίσης
 
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/): what a trigger starts
-- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): assignment to an agent vs a team
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): how events fit the dependency rule
-- [Domain events reference](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
-- [Configure notifications](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/): τι ξεκινά ένας ενεργοποιητής
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): ανάθεση σε πράκτορα ή σε ομάδα
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): πώς τα γεγονότα συμβαδίζουν με τον κανόνα εξαρτήσεων
+- [Αναφορά γεγονότων τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/): ο πλήρης κατάλογος και οι συνδρομητές του
+- [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
+- [Ρύθμιση ειδοποιήσεων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)

@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: تصورات
+description: Control Center کیسے کام کرتا ہے اور اسے اس طرح کیوں بنایا گیا — گائیڈز کے پیچھے کا پس منظر۔
 slug: ur-PK/ہدایت-نامہ/تصورات
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/); when you want to look
-something up, go to the [reference](/ur-PK/ہدایت-نامہ/حوالہ/).
+یہ صفحات بتاتے ہیں کہ **Control Center کیسے کام کرتا ہے اور کیوں**۔ یہ سمجھنے کے لیے
+ہیں، کرنے کے لیے نہیں: یہاں کوئی صفحہ ایسا طریقہ نہیں جس پر عمل کیا جائے۔ جب آپ کوئی
+مخصوص کام سرانجام دینا چاہیں تو [طریقہ کار گائیڈز](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/) پر جائیں؛ اور جب آپ کوئی
+چیز دیکھنا چاہیں تو [حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/) پر جائیں۔
 
-Read them in any order. If you are new, the core model is the place to start.
+انہیں کسی بھی ترتیب سے پڑھیں۔ اگر آپ نئے ہیں تو بنیادی ماڈل سے آغاز کریں۔
 
-## Core model
+## بنیادی ماڈل
 
-The four ideas everything else is built on.
+وہ چار تصورات جن پر باقی سب کچھ استوار ہے۔
 
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) — what happens between your message and the agent's first token
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ur-PK/ہدایت-نامہ/تصورات/گفتگو-کی-تاریخ/) — persistence, compaction and forking a transcript
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) — ٹیننٹ کی حد اور یہ کہ اسے کوئری ڈسپلن کے بجائے ڈیٹا بیس کی ساخت سے کیوں نافذ کیا جاتا ہے
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/) — ایجنٹ کس چیز سے بنتا ہے: شناخت، کردار، مہارتیں، صلاحیتیں، اڈاپٹر اور ماڈل
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) — آپ کے پیغام اور ایجنٹ کے پہلے ٹوکن کے درمیان کیا ہوتا ہے
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) — `chat`، `plan`، `review` اور `orchestrate` یہ کیسے بدلتے ہیں کہ ایجنٹ کیا کر سکتا ہے
+- [ٹول کانٹیکسٹ اور پرامپٹ کیشنگ](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ/) — ایجنٹ اپنے ٹولز کا صرف ایک ذیلی مجموعہ کیوں دیکھتا ہے، باقی تک کیسے پہنچتا ہے اور پرووائیڈر کیش کو گرم کیا رکھتا ہے
+- [کوڈ انٹیلیجنس](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — کوڈ گراف، لینگویج سرور، ساختی تلاش اور ڈیبگر
+- [گفتگو کی تاریخ](/ur-PK/ہدایت-نامہ/تصورات/گفتگو-کی-تاریخ/) — ٹرانسکرپٹ کو محفوظ رکھنا، کمپیکٹ کرنا اور اس کی شاخ بنانا
 
-## Safety and control
+## حفاظت اور کنٹرول
 
-What an agent is allowed to touch and who decides.
+ایجنٹ کس چیز کو چھو سکتا ہے اور فیصلہ کون کرتا ہے۔
 
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) — what actually constrains an agent run today
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ur-PK/ہدایت-نامہ/تصورات/اجازت/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ur-PK/ہدایت-نامہ/تصورات/رگز/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) — آج کل ایجنٹ کے رن کو حقیقت میں کیا محدود کرتا ہے
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) — ہر تبدیلی کرنے والے عمل کے لیے ایک ہی پالیسی انجن اور کوئی قاعدہ کیسے طے ہوتا ہے
+- [اجازت](/ur-PK/ہدایت-نامہ/تصورات/اجازت/) — کردار، اجازتوں کی فہرست اور آڈٹ ٹریل
+- [رگز اور انکلوژرز](/ur-PK/ہدایت-نامہ/تصورات/رگز/) — ایجنٹس کو آپ کی مشین کے بجائے ضائع ہونے والی VMs کیوں ملتی ہیں، اور حد درحقیقت کیا ہے
 
-## Directing the work
+## کام کی ہدایت
 
-Turning intent into work that gets done.
+ارادے کو ایسے کام میں بدلنا جو واقعی ہو جائے۔
 
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/) — one goal, one approval, a generated pipeline
-- [AI review](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ur-PK/ہدایت-نامہ/تصورات/pr-گفتگوئیں/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ur-PK/ہدایت-نامہ/تصورات/ایوالز-اور-معیار/) — eval suites and the Quality tab
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/) — کام کی وہ اکائی جو کسی وینڈر سے وابستہ نہیں اور پوری فلیٹ مشترکہ طور پر استعمال کرتی ہے
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) — DAG ورک فلو، ٹریگرز اور دوبارہ شروع ہونے والے رنز
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/) — ایک ہدف، ایک منظوری، ایک تیار شدہ پائپ لائن
+- [AI ریویو](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/) — ایک PR ریویو شدہ کیسے بنتا ہے: ریویو اسپیسز، ساتھیوں کا اتفاقِ رائے، محور اور Ship/Hold/Block کا فیصلہ
+- [PR گفتگوئیں](/ur-PK/ہدایت-نامہ/تصورات/pr-گفتگوئیں/) — خود forge سے GitHub کے ذکر یا `ai-review` لیبل کا جواب دینا
+- [میموری اور علم](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/) — حقائق، پالیسیاں اور وہ چیزیں جنہیں جاننے کی ایجنٹ کو اجازت ہے
+- [ایوالز اور معیار](/ur-PK/ہدایت-نامہ/تصورات/ایوالز-اور-معیار/) — ایوال سویٹس اور معیار ٹیب
 
-## People and reach
+## لوگ اور رسائی
 
-Working with other humans and reaching the fleet from elsewhere.
+دوسرے انسانوں کے ساتھ کام کرنا اور کہیں اور سے فلیٹ تک پہنچنا۔
 
-- [Multiplayer and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ur-PK/ہدایت-نامہ/تصورات/سنگل-سائن-ان/) — SAML and OIDC logins
-- [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/) — Google Calendar sync and meeting alerts
+- [ملٹی پلیئر اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/) — انسان اور ایجنٹ بطور ہم مرتبہ شرکاء اور رسائی کس چیز پر منحصر ہے
+- [سنگل سائن اَن](/ur-PK/ہدایت-نامہ/تصورات/سنگل-سائن-ان/) — SAML اور OIDC لاگ اِنز
+- [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/) — Slack برج آؤٹ ڈائل کیوں کرتا ہے اور چیٹ سے آنے والے پیغام کو کیا اجازت دیتا ہے
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) — فون آپ کے سرور تک کیسے پہنچتا ہے اور اس کے گرد سیکیورٹی ماڈل
+- [میٹنگز اور ٹرانسکرپشن](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) — ڈیوائس پر ریکارڈنگ، ٹرانسکرپشن اور خلاصہ سازی
+- [کیلنڈر اور شیڈولنگ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/) — Google Calendar سنک اور میٹنگ الرٹس
 
-## Under the hood
+## اندرونی تفصیلات
 
-The shape of the system itself.
+خود سسٹم کی ساخت۔
 
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/) — the in-process bus features talk over
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/) — تہہ بندی، مشترکہ کرنل، پورٹس اور اڈاپٹرز
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) — ڈیسک ٹاپ، ویب اور فون کلائنٹس کا ایک سرور سے تعلق کیسے ہوتا ہے
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/) — وہ اِن-پروسس بس جس پر فیچرز آپس میں بات کرتے ہیں

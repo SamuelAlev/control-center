@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Không gian làm việc và cô lập
+description: Vì sao không gian làm việc là một ranh giới tenant cứng, cách việc tách cơ sở dữ liệu biến ranh giới đó thành cấu trúc và điều gì chủ đích vượt qua nó.
 slug: vi-VN/so-tay/khai-niem/khong-gian-lam-viec
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Không gian làm việc là gì?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Không gian làm việc là tenant cô lập cấp cao nhất trong Control Center. Nó nhóm agent, kho lưu trữ, space, phiếu, bộ nhớ, quy trình và thành viên vào một ngữ cảnh có ranh giới. Mọi thứ xảy ra bên trong một không gian làm việc đều ở lại trong đó.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Một không gian làm việc thường tương ứng với một dự án hoặc một cơ sở mã. Bạn có thể có các không gian làm việc riêng cho "api-service", "frontend-v2" và "infrastructure".
 
-## Workspace-scoped data
+## Dữ liệu theo phạm vi không gian làm việc
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Các hàng của một không gian làm việc nằm trong tệp SQLite riêng của không gian làm việc đó, tại `<dataDir>/<workspaceId>/workspace.db`. Mỗi không gian làm việc nhận một thư mục thay vì một tệp trần, bởi vì một không gian làm việc tích lũy nhiều hơn một cơ sở dữ liệu — worktree theo từng hội thoại, các tệp agent và skill, thông tin xác thực chatbot — và trao cho nó một thư mục nghĩa là tất cả những thứ đó cùng sống và cùng bị xóa.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Thực thể                                            | Phạm vi                                            |
+| --------------------------------------------------- | -------------------------------------------------- |
+| Agent                                               | Thuộc đúng một không gian làm việc                  |
+| Kho lưu trữ                                         | Được đăng ký vào một không gian làm việc (xem bên dưới) |
+| Space, hội thoại và tin nhắn                        | Thuộc phạm vi không gian làm việc                   |
+| Phiếu, dự án, kế hoạch, điều phối                   | Thuộc phạm vi không gian làm việc                   |
+| Dữ kiện bộ nhớ, chính sách, lĩnh vực, quyền truy cập được cấp | Thuộc phạm vi không gian làm việc         |
+| Lần chạy quy trình, mẫu, trình kích hoạt            | Thuộc phạm vi không gian làm việc                   |
+| Trạng thái pull request, không gian đánh giá, cohort đánh giá | Thuộc phạm vi không gian làm việc          |
+| Nhật ký lần chạy agent và bộ nhớ làm việc           | Thuộc phạm vi không gian làm việc                   |
+| Thành viên, lời mời, quyền cấp theo từng repo       | Thuộc phạm vi không gian làm việc                   |
+| Ký hiệu và cạnh của đồ thị mã                       | Được giới hạn theo `repoId` trong tệp không gian làm việc |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Hầu hết các hàng này đều mang cột `workspaceId`; các tệp cơ sở dữ liệu riêng biệt thực thi cô lập. Xem bất biến cô lập bên dưới.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repo thuộc phạm vi không gian làm việc; danh tính giữa các không gian làm việc là theo đường dẫn
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Một hàng repo nằm trong tệp cơ sở dữ liệu riêng của không gian làm việc của nó — chính tệp _là_ phạm vi, nên bảng không có cột `workspaceId` và không có bảng join.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Bạn thêm một repo vào không gian làm việc tại Cài đặt → Không gian làm việc → Kho lưu trữ. Đăng ký cùng một bản checkout trong hai không gian làm việc sẽ tạo ra hai hàng độc lập với hai id; danh tính repo _giữa_ các không gian làm việc là theo đường dẫn hệ thống tệp (hoặc owner/tên trên GitHub), không bao giờ theo id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Việc đăng ký rất nghiêm ngặt: đường dẫn phải nằm trong một cây làm việc git, phải có một remote `origin` và remote đó phải trỏ tới một forge được hỗ trợ (github.com, gitlab.com hoặc bitbucket.org). Forge được đọc từ remote và lưu trên repo, nên một không gian làm việc có thể chứa repo từ cả ba. Mọi thứ khác đều bị từ chối. Trình duyệt thư mục mà bạn chọn liệt kê hệ thống tệp của **máy chủ**, giới hạn trong danh sách cho phép `--repo-roots` của máy chủ (mặc định là thư mục home của người dùng máy chủ).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Gỡ một kho lưu trữ khỏi không gian làm việc sẽ xóa hàng đó hoàn toàn và xóa theo các ký hiệu mã, cạnh, tệp, checkpoint chỉ mục và quyền cấp theo từng thành viên của nó. Bản checkout trên đĩa không bị ảnh hưởng.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Đồ thị mã nằm trong cùng tệp đó, được khóa theo `repoId`, vì các không gian làm việc khác nhau có thể có cùng một kho lưu trữ trên các nhánh khác nhau với mã khác nhau.
 
-## The isolation invariant
+## Bất biến cô lập
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Rò rỉ dữ liệu giữa các không gian làm việc bị coi là lỗi. Cô lập mang tính **cấu trúc**, được thực thi ở nhiều tầng:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Tầng cơ sở dữ liệu.** Mỗi không gian làm việc có tệp SQLite riêng, được cấp phát bởi `WorkspaceDatabaseManager.of(workspaceId)`. Một cơ sở dữ liệu không gian làm việc không khai báo `users`, `workspaces` hay bảng của bất kỳ không gian làm việc nào khác, nên một phép đọc xuyên không gian làm việc không phải là lỗi bạn có thể viết ra — nó không biên dịch được. Các repository phân giải DAO của mình theo từng lời gọi thay vì cache một cái, và vì mọi phương thức repository đều nhận một `workspaceId` bắt buộc, không gian làm việc không bao giờ có thể bị suy diễn hay nhận giá trị mặc định.
+- **Id không gian làm việc là một đoạn đường dẫn.** Vì id trở thành tên thư mục, nó phải khớp một mẫu một đoạn an toàn (bắt đầu bằng ký tự chữ-số, sau đó là chữ-số, dấu chấm, dấu gạch dưới, dấu gạch nối; không có `..`). Id là UUID ở mọi nơi trong sản phẩm. Bất cứ thứ gì khác đều ném lỗi thay vì được làm sạch — đó là hàng rào chống duyệt đường dẫn và nó thất bại ồn ào thay vì ghi dữ liệu của một không gian làm việc vào một đường dẫn do người khác chọn.
+- **Phòng thủ nhiều lớp.** Các cột `workspaceId` vẫn còn đó và vẫn được ghi. Dù dư thừa trong một tệp, chúng giữ nguyên các trigger đồng bộ feed, chỉ mục FTS và hình dạng hàng hiện có, đồng thời khiến một tệp tự mô tả chính nó khi được kiểm tra riêng — đó là thứ mà xuất và nhập dựa vào.
+- **Tầng miền.** Các dịch vụ thay đổi thực thể theo id sẽ kiểm tra `entity.workspaceId == workspaceId` tại một điểm chặn duy nhất trước khi tiếp tục và ném `WorkspaceMismatchException` khi không khớp — sự thất bại ồn ào dành cho một id đến từ ngữ cảnh sai. Từ chối ồn ào rất quan trọng: một no-op im lặng sẽ che giấu lỗi còn việc tiếp tục sẽ làm rò rỉ.
+- **Tầng RPC.** Bộ điều phối repo-RPC là điểm chặn. Mọi thao tác thuộc phạm vi không gian làm việc đều phải mang `workspace_id` trong đối số của chính nó — không có "không gian làm việc hiện tại" theo phiên để rò rỉ, và một id không xác định bị từ chối như không tìm thấy _trước khi_ bất cứ thứ gì mở cơ sở dữ liệu, nên một id sai không thể tạo ra một `workspace.db` ma. Những thao tác thực sự toàn cục (bảng tin, hàng đợi đội máy) tự khai báo là không thuộc phạm vi như một quyết định rõ ràng đã được duyệt. Các công cụ MCP tuân theo cùng quy tắc: bất kỳ công cụ nào chạm vào dữ liệu thuộc phạm vi không gian làm việc đều yêu cầu `workspace_id`.
+- **Fan-out xuyên không gian làm việc có thể liệt kê được.** Trả lời một câu hỏi về nhiều không gian làm việc nghĩa là mở nhiều cơ sở dữ liệu. Fan-out đó được giới hạn trong một helper duy nhất, `CrossWorkspaceQueries`, nên danh sách đầy đủ những thứ hợp pháp vượt qua ranh giới nằm trong các điểm gọi của một tệp thay vì phân tán sau các chú thích tài liệu. Những điểm gọi đó là: tổng hợp toàn máy chủ, bộ điều hòa lúc khởi động, quét lưu trữ và GC, sao lưu, bộ định tuyến sự kiện — và tra cứu thành viên bên dưới.
+- **Truy cập chỉ bằng ID là không đủ.** Tra cứu một thực thể theo UUID của nó không chứng minh nó thuộc không gian làm việc của bên gọi. Việc tách tệp khiến tệp sai không thể tiếp cận; việc kiểm tra ở tầng miền bắt được một id sai đến qua một tệp hợp lệ.
 
-## Membership, not the pairing key, is what grants access
+## Thành viên, không phải khóa ghép nối, mới là thứ cấp quyền truy cập
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Việc giữ một thông tin xác thực thiết bị xác thực một _thiết bị_. Nó không cấp quyền cho bất cứ thứ gì bên trong một không gian làm việc. Mọi thao tác thuộc phạm vi không gian làm việc đều phân giải vai trò thành viên của bên gọi và thực thi một mức sàn rút ra từ loại thao tác — đọc cần `guest`, thay đổi cần `member`, thao tác phá hủy cần `admin` — và các thao tác để lộ nội dung repo còn kiểm tra thêm quyền cấp theo từng repo của bên gọi. Một khóa ghép nối hợp lệ nhưng không có tư cách thành viên sẽ nhận `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Hệ quả đối với cô lập thật gọn gàng: các hàng thành viên nằm trong tệp _của chính không gian làm việc_, nên "ai đang ở trong không gian làm việc này?" là một phép đọc có phạm vi thông thường. Câu hỏi ngược lại — "tôi đang ở trong những không gian làm việc nào?" — theo định nghĩa trải khắp nhiều tệp, nên nó là một trong số ít fan-out `CrossWorkspaceQueries` được phép và đó là thứ mà bộ chọn không gian làm việc chạy trước khi bất kỳ không gian làm việc nào được chọn.
 
-See [Multiplayer](/vi-VN/so-tay/khai-niem/da-nguoi-dung/) for the role ladder and repo grants.
+Xem [Đa người dùng và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/) để biết thang vai trò và quyền cấp repo.
 
-## The global registry
+## Sổ đăng ký toàn cục
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Không phải mọi thứ đều thuộc phạm vi không gian làm việc. Một cơ sở dữ liệu thứ hai, `<dataDir>/global.db`, chứa những gì thực sự thuộc toàn máy chủ:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **sổ đăng ký không gian làm việc**, để bộ chuyển có thể liệt kê mọi không gian làm việc mà không cần mở một tệp không gian làm việc nào — và để tên, logo, chủ sở hữu, thứ tự thủ công và dấu xóa mềm của một không gian làm việc nằm ngoài tệp mà chúng mô tả;
+- **danh tính**: người dùng, tùy chọn người dùng và thiết bị đã ghép nối, bởi vì một con người là một người dùng xuyên mọi không gian làm việc và một thiết bị đã ghép nối vẫn tồn tại khi một không gian làm việc bị xóa;
+- **hàng đợi đội máy** (worker, job, nhật ký phân bổ), với bộ lập lịch khớp toàn bộ hàng đợi với mọi worker ở mỗi nhịp;
+- **bảng tin**, vốn theo từng người dùng (không theo từng không gian làm việc) — thêm một nguồn cấp sẽ đi theo bạn vào mọi không gian làm việc;
+- **`workspace_routes`**, chỉ mục trước xác thực trả lời câu hỏi "không gian làm việc nào sở hữu khóa này?" cho những điểm vào chỉ mang theo một bí mật hoặc một id mờ (một hash lời mời, một token webhook, một deep link) và không có không gian làm việc. Trượt ở đó là không tìm thấy; cố ý không có phương án quét dự phòng;
+- **cài đặt và danh tính toàn bản cài đặt**: id bản cài đặt, cài đặt cấp host, kết nối SSO và chính sách hành động được quản lý (một mức kẹp toàn bản cài đặt chỉ có thể siết chặt rào chắn của không gian làm việc).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Quá trình khởi động chỉ mở tệp này. Các tệp không gian làm việc mở lười ở lần chạm đầu tiên, nên chi phí khởi động giữ nguyên phẳng bất kể các không gian làm việc tích lũy bao nhiêu lịch sử, và `quick_check` theo từng tệp được trả ở lần dùng đầu tiên thay vì trên đường tới banner sẵn sàng.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Một tệp không gian làm việc chỉ mang một `workspace_meta` một hàng để tự nhận diện (id của nó, bản cài đặt đã tạo nó, phiên bản lược đồ mà nó được tạo ra, thời điểm). Mọi thứ mô tả về một không gian làm việc đều nằm trong sổ đăng ký.
 
-## Creating a workspace
+## Tạo một không gian làm việc
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Tạo một không gian làm việc làm nhiều hơn việc chèn một hàng vào sổ đăng ký. Trong một thao tác, máy chủ đóng dấu người dùng tạo là `ownerUserId`, ghi lại tư cách thành viên vai trò chủ sở hữu của người dùng đó và phát một sự kiện miền `WorkspaceCreated`. Các bên lắng nghe sự kiện đó sau đó gieo mầm, một cách idempotent và trong nền:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- một **agent CEO** cùng bốn chuyên gia — `qa`, `architect`, `engineer`, `librarian` — với các chuyên gia báo cáo cho CEO;
+- các **mẫu quy trình tích hợp** và trình kích hoạt của chúng (trình kích hoạt sự kiện và thủ công được bật sẵn; các trình kích hoạt theo lịch là tùy chọn, ngoại trừ tác vụ quét GC worktree hằng ngày);
+- các **bộ đánh giá khởi đầu**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+Điều này xảy ra với _mọi_ không gian làm việc, không chỉ cái đầu tiên. Các agent được gieo mầm được tạo không có adapter, nên chúng chạy trên **Control Center (built-in)** với mô hình mặc định của Anthropic (`claude-opus-4-8` trừ khi bạn ghim một mô hình khác) cho đến khi bạn đặt adapter và mô hình cho từng agent tại Cài đặt → Không gian làm việc → Agent. Xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Việc ghi tư cách thành viên chủ sở hữu quan trọng hơn vẻ ngoài của nó: nếu không có nó, không gian làm việc vừa tạo sẽ không có thành viên nào và mọi lời gọi thuộc phạm vi không gian làm việc mà người tạo thực hiện tiếp theo đều bị từ chối.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agent không thể tạo không gian làm việc]
+Không có công cụ MCP `create_workspace`. Con người tạo không gian làm việc qua `workspace.create` (điểm chặn chỉ có tên) hoặc `workspace.upsert` (bản ghi đầy đủ, cũng dùng cho cập nhật). Cả hai đều đóng dấu người dùng tạo là `owner` và phát `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Xóa, xuất, nhập
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Xóa một không gian làm việc **đánh dấu hàng trong sổ đăng ký và hủy liên kết thư mục**. Không gian làm việc biến mất khỏi mọi danh sách và tra cứu. Hàng trong sổ đăng ký vẫn còn (đã xóa mềm) để id vẫn được sao lưu và bảo trì biết đến, nhưng `workspace.delete` lập tức bỏ thư mục của không gian làm việc đó — cơ sở dữ liệu, worktree, tệp agent và phần còn lại — thông qua `WorkspaceDatabaseManager.dropAndClose`. Chỉ **chủ sở hữu** không gian làm việc mới có thể xóa nó.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Bởi vì một không gian làm việc là một tệp, việc chuyển giao một không gian làm việc là một thao tác tệp chứ không phải một bản kết xuất từng bảng một:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` là một `VACUUM INTO` duy nhất — một ảnh chụp nhất quán, đã chống phân mảnh, được thực hiện trong một giao dịch đọc trong khi máy chủ vẫn tiếp tục phục vụ.
+- `workspace.import` nhận một tệp như vậy, thay thế mọi thứ mà không gian làm việc đích đang giữ. `workspace_meta` nhúng cho phép một lần nhập phân biệt "tệp của chính mình, được nhận lại" với "một tệp từ bản cài đặt khác" (trường hợp sau được phép, nhưng được ghi nhật ký thay vì vô hình).
+- `server.backupNow` chụp ảnh toàn bộ bản cài đặt vào một thư mục có dấu thời gian phản chiếu thư mục dữ liệu đang chạy — `manifest.json`, `global.db` và một `<workspaceId>/workspace.db` cho mỗi không gian làm việc — nên khôi phục chính là sao chép nó trở lại.
+- `server.listBackups` đọc lại thư mục đó, mới nhất trước, kèm kích thước và danh sách không gian làm việc của mỗi ảnh chụp. Một ảnh chụp thiếu manifest hoặc liệt kê những tệp không tồn tại vẫn được báo cáo, với cờ chưa hoàn tất — che giấu nó là cách một người vận hành đi đến chỗ tin rằng họ có một bản sao lưu mà thực ra không có.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Các thao tác sao lưu nằm dưới **Cài đặt → Máy chủ → Sao lưu và khôi phục**: **Sao lưu ngay** chụp một ảnh của bản cài đặt, danh sách hiển thị những ảnh chụp nào hoàn tất và cho phép chủ bản cài đặt xóa một ảnh sau khi xác nhận, và mỗi không gian làm việc cung cấp xuất và nhập. Quy trình tích hợp **Workspace backup** chỉ lấy cơ sở dữ liệu của không gian làm việc đó theo lịch hằng tuần và xóa các bản sao lưu của chính nó cũ hơn tuổi lưu trữ đã cấu hình. Khôi phục một không gian làm việc từ ảnh chụp bản cài đặt là `workspace.import` trỏ tới `<workspaceId>/workspace.db` của ảnh chụp; khôi phục toàn bộ bản cài đặt vẫn là sao chép ngược thư mục ảnh chụp khi máy chủ đã dừng.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain) has the full table.
+Điều mà không thao tác nào mang theo là phần còn lại của thư mục không gian làm việc. Một không gian làm việc tích lũy nhiều hơn một cơ sở dữ liệu — ảnh được dán, tệp skill và agent, thông tin xác thực chat, worktree — và xuất với nhập chỉ di chuyển **tệp**, nên mọi thứ bên cạnh nó vẫn ở nguyên chỗ cũ. Điều đó là chủ đích đối với thông tin xác thực và có thể bỏ đi đối với worktree; với phần còn lại thì đó là một giới hạn cần biết chứ không phải một tính năng. [Tham chiếu sao lưu](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain) có bảng đầy đủ.
 
-## Moving a backup between the server and your device
+## Di chuyển bản sao lưu giữa máy chủ và thiết bị của bạn
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/vi-VN/so-tay/tham-chieu/sao-luu/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Mọi thao tác ở trên đều nói bằng đường dẫn trên **máy chủ**, và đó là câu trả lời đầy đủ chỉ khi máy chủ chính là máy của bạn. Ba tuyến HTTP có chữ ký — [`/backup/workspace`, `/backup/snapshot` và `/backup/restore`](/vi-VN/so-tay/tham-chieu/sao-luu/#transfer-routes) — mang các byte cho mọi mô hình triển khai khác, trên cùng làn đã xác thực mà proxy phương tiện và kho ảnh đang dùng. Trên trang, đây là nút **Tải xuống** bên cạnh mỗi lần xuất và mỗi ảnh chụp (bạn chọn nơi nó hạ cánh), và **Chọn tệp và tải lên** để khôi phục từ một tệp nằm trên máy bạn đang dùng. Thao tác tải lên chính là cái hoạt động khi máy chủ không phải máy của bạn: `workspace.import` cần tệp đã nằm trên host, và đây là cách nó đến được đó.
 
-Three properties are worth knowing:
+Ba đặc tính đáng để biết:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Một lần tải xuống tạo ra một bản sao mới và máy chủ không giữ lại gì.** Tải xuống không phải là "lấy tệp mà nút xuất đã tạo" — nó xuất lại lần nữa, truyền phát bản đó rồi xóa nó. Phản hồi là `no-store` với `Accept-Ranges: none` vì cùng lý do: một dải được tiếp tục sẽ nối hai lần xuất khác nhau thành một tệp trông có vẻ hợp lệ mà lại không hợp lệ.
+- **Một lần tải lên được truyền phát thẳng xuống đĩa, không bao giờ được đệm**, ở cả hai đầu, và bản sao tạm được xóa trên mọi lối ra — kể cả khi bị từ chối. Cơ sở dữ liệu của một không gian làm việc không phải là một ảnh chụp màn hình.
+- **Một kết nối qua relay không có origin HTTP**, nên các điều khiển truyền tải bị vô hiệu ở đó kèm ghi chú giải thích lý do. Mọi thứ nói bằng đường dẫn phía máy chủ vẫn hoạt động qua relay; chỉ các làn byte mới cần kết nối trực tiếp.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Đường dẫn nào thuộc về ai]
+Những đường dẫn mà trang *hiển thị* — thư mục ảnh chụp, tệp mà một lần xuất đã ghi, nguồn mà một lần nhập đọc — nằm trên máy đang chạy `cc_server`. Đường dẫn mà một lần **tải xuống** báo cáo nằm trên máy bạn đang ngồi. Sự phân biệt đó là lý do cả hai cùng tồn tại: cái thứ nhất là thứ mà một script bảo trì hay một phiên ssh cần, cái thứ hai là thứ mà một người đang thu thập bản sao lưu cần.
 :::
 
-## Multiple workspaces
+## Nhiều không gian làm việc
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Bạn có thể chạy nhiều không gian làm việc song song. Mỗi cái hoạt động độc lập: agent trong một không gian làm việc không thể nhắn cho agent ở không gian làm việc khác, không thể đọc bộ nhớ của không gian làm việc khác và không thể thấy phiếu của nó. Việc phân giải người nhận cho tin nhắn giữa các agent là chính xác và không bao giờ vượt qua ranh giới một không gian làm việc.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Không có bảng điều khiển xuyên không gian làm việc. Bề mặt phân tích tại `/workspaces/:workspaceId/observability` đăng ký một feed toàn cục có giới hạn gồm các lần chạy gần đây và ngay lập tức thu hẹp nó về không gian làm việc đang hoạt động, nên những gì bạn thấy ở đó là một không gian làm việc tại một thời điểm. Những bề mặt thực sự đa không gian làm việc duy nhất mà con người chạm tới là bộ chọn không gian làm việc và bộ chuyển.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Một giới hạn thực tế đáng biết: một không gian làm việc mà ai đó đang dùng sẽ giữ nguyên mở — không có LRU. Vượt quá 32 cái như vậy, máy chủ cảnh báo thay vì từ chối, bởi vì mỗi tệp đang mở giữ một isolate nền và một bộ nhớ đệm trang. Fan-out xuyên không gian làm việc mở các tệp tạm thời và đóng chúng sau đó nếu không có gì khác nhận chúng.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Multiplayer](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): agents belong to exactly one workspace
-- [Memory and knowledge](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/): memory is workspace-scoped
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/): where the databases sit in the client/server split
-- [Back up and restore](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/vi-VN/so-tay/tham-chieu/sao-luu/): every operation, route, manifest field and limit
-- [Add repositories](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/): registering a checkout into a workspace
+- [Đa người dùng và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): tư cách thành viên, vai trò và quyền cấp repo — nửa truy cập của cô lập
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): agent thuộc đúng một không gian làm việc
+- [Bộ nhớ và tri thức](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/): bộ nhớ thuộc phạm vi không gian làm việc
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/): các cơ sở dữ liệu nằm ở đâu trong phân tách máy khách/máy chủ
+- [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/): tạo ảnh chụp, di chuyển một không gian làm việc, giữ các bản sao ở nơi khác
+- [Sao lưu, xuất và nhập](/vi-VN/so-tay/tham-chieu/sao-luu/): mọi thao tác, tuyến, trường manifest và giới hạn
+- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/): đăng ký một bản checkout vào một không gian làm việc

@@ -1,115 +1,122 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Administrer API-nøkler
+description: Hvor hver påloggingsinformasjon ligger — brukerkontoen din på serveren, serveren selv eller en ekstern CLI — og hvordan du setter, roterer og fjerner den.
 slug: nb-NO/handbok/slik-gjor-du/api-nokler
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Denne veiledningen viser hvor hver påloggingsinformasjon Control Center bruker,
+er lagret, og hvordan du endrer den.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Ingenting lagres på maskinen du skriver på.** All påloggingsinformasjon ligger
+på serveren; hvilken av dem som besvarer en gitt forespørsel, avhenger av om det
+står et menneske bak den.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Påloggingsinformasjon                  | Lagret på                                                   | Hvem bruker den                                                    |
+| -------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------ |
+| Påloggingsinformasjonen din for kodevert/saker | Serverens hemmelighetsfil med modus 0600, knyttet til bruker-id-en din | Alt du ber om: PR-flaten, agentkjøringene dine, bildene dine |
+| Serverens app-identitet                | Samme fil, pluss `server_settings` for det som ikke er hemmeligheter | Arbeid ingen har bedt om: webhooker, PR-polling, sakssynkronisering |
+| Nøkler til modellleverandører og OAuth-tokens | Serverens eget lager for påloggingsinformasjon       | Den innebygde adapteren, for alle arbeidsområder i installasjonen  |
+| Slack-bot-tokens                       | `<dataDir>/<workspaceId>/chat_credentials/` på serveren    | Chatbroen for det arbeidsområdet                                   |
+| Påloggingsinformasjon for eksterne CLI-er | Det den CLI-en selv bruker                              | Claude Code, på serververten                                       |
 
-## Two GitHub credentials, and they answer different questions
+## To sett med GitHub-påloggingsinformasjon, og de svarer på forskjellige spørsmål
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Din**, fra innlogging (enhetsflyt) eller ved å lime inn et token. Den brukes
+  av enhver forespørsel som gjøres *på dine vegne*, så en kommentar som postes
+  for deg, bærer navnet ditt. Andre medlemmer kan ikke lese den, og kobler til
+  sin egen
+- **Serverens**, fra GitHub App-en operatøren registrerte. Den svarer på alt
+  uten noen oppringer — så tilgangen til kodeverten forsvinner ikke når én
+  person slutter eller roterer et token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-and [Create the GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/).
+Din settes i kortet **Kodehosting** under **Innstillinger → Arbeidsområde →
+Profil og identitet**; serverens i **Leverandørapper** under **Innstillinger →
+Server → Enkel pålogging**. Se
+[Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+og [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Det finnes også en skjerm som bare nås via URL-en]
+`/workspaces/<workspaceId>/api-keys` viser de samme to kortene som første steg i
+onboarding. Den har **ingen navigasjonsoppføring noe sted i grensesnittet**; den
+nås bare ved å skrive inn URL-en. Bruk Innstillinger → Arbeidsområde → Profil og
+identitet i stedet.
 :::
 
-## Set model provider keys
+## Sett nøkler for modellleverandører
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Den innebygde adapteren autentiserer leverandørene selv, og denne
+påloggingsinformasjonen ligger på serveren.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Gå til **Innstillinger → Server → Modellleverandører**
+2. Rull ned til **Leverandører og modeller**
+3. Koble til leverandøren — OAuth i nettleseren for OpenAI, Codex, Cursor og Kimi
+   Code; en API-nøkkel for Anthropic og resten
 
-See [Manage adapters and models](/nb-NO/handbok/slik-gjor-du/adaptere/) for the full list and
-for adding a custom endpoint.
+Se [Administrer adaptere og modeller](/nb-NO/handbok/slik-gjor-du/adaptere/) for
+hele listen og for å legge til et egendefinert endepunkt.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Denne påloggingsinformasjonen er **vertsglobal**: én nøkkel betjener alle
+arbeidsområder i installasjonen. OAuth-tokens fornyes før de utløper.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Eksterne adapter-CLI-er beholder sin egen påloggingsinformasjon, i sin egen
+konfigurasjon, på serververten — Control Center administrerer dem ikke.
+Autentiser Claude Code slik dens egen dokumentasjon beskriver, på maskinen der
+`cc_server` kjører.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/nb-NO/handbok/slik-gjor-du/adaptere/).
+Dialogen **Miljøvariabler** per adapter ser ut som et sted å legge inn en nøkkel
+for en av dem, men det er den ikke: den skriver til enheten din, mens serveren
+leser sin egen kopi, og ingenting bygger bro mellom de to. Se
+[Administrer adaptere og modeller](/nb-NO/handbok/slik-gjor-du/adaptere/).
 
-## Connect a ticketing vendor
+## Koble til en saksleverandør
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Kortet **Saker** under **Innstillinger → Arbeidsområde → Generelt** rommer begge
+halvdelene av én beslutning: hvilken leverandør sakene dine ligger hos, og
+påloggingsinformasjonen for den. Velger du **Lokal**, skjules raden med
+påloggingsinformasjon — lokale saker ligger i serverens egen database og har
+ingenting å autentisere seg mot.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/).
+Nøkkelen din lagres på serveren knyttet til bruker-id-en din, som
+kodevertnøkkelen. Serveren holder sin egen Linear-nøkkel separat
+(**Leverandørapper**), og det er den sakssynkroniseringen kjører på når ingen
+har bedt om det. En nøkkel en agent mottar, injiseres bare når agenten har
+kapasiteten **Tillat API-kall for saker**. Se
+[Sett opp Linear-integrasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/).
 
-## Rotate or revoke
+## Roter eller tilbakekall
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
+- **Din GitHub-påloggingsinformasjon**: trykk **Koble fra**, og logg deretter inn
+  på nytt eller lim inn det nye tokenet. Tilbakekall det gamle på GitHub
+- **Serverens app**: generer en ny privat nøkkel eller klienthemmelighet på
+  appens GitHub-side, lim den inn under **Leverandørapper** og trykk **Test**
+- **En modellleverandør**: i raden dens, logg ut (OAuth) eller fjern nøkkelen, og
+  koble til på nytt
+- **Slack**: lim inn tokenene på nytt i tilkoblingsdialogen. Se
+  [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
 
-## Troubleshooting
+## Feilsøking
 
-### The PR list is empty but my token works in `curl`
+### PR-listen er tom, men tokenet mitt virker i `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Sjekk undertittelen til raden **Kodehosting**. Hvis den navngir en annen kilde
+(«via denne serverens app», «fra miljøet»), er det ikke
+påloggingsinformasjonen du tester som svarer — din ble ikke lagret.
 
-### The token is accepted but later requests fail
+### Tokenet godtas, men senere forespørsler mislykkes
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Tokenet sondères slik det er lagret, så raden navngir kontoen bak det — men bare
+kontoen, ikke skopene. Et token med for få skop kobler til og mislykkes
+deretter på enkelte forespørsler. Sjekk skopene og utløpsdatoen:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Relaterte veiledninger
 
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-- [Create the GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)
-- [Manage adapters and models](/nb-NO/handbok/slik-gjor-du/adaptere/)
-- [Set up Slack integration](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
-- [Set up Linear integration](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/)
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)
+- [Administrer adaptere og modeller](/nb-NO/handbok/slik-gjor-du/adaptere/)
+- [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
+- [Sett opp Linear-integrasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/)

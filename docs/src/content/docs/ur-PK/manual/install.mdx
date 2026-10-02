@@ -1,153 +1,157 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: انسٹال
+description: Control Center کو براؤزر میں استعمال کریں یا ڈیسک ٹاپ ایپ انسٹال کریں، ایجنٹ بیک اینڈ سیٹ اپ کریں اور منتخب کریں کہ اس کا سرور کہاں چلے۔
 slug: ur-PK/ہدایت-نامہ/انسٹال
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center دو طرح سے چلتا ہے: [app.usectrl.dev](https://app.usectrl.dev) پر ایک **ویب
+ایپ** کے طور پر، جس میں ڈاؤن لوڈ کرنے کو کچھ نہیں، یا ایک **ڈیسک ٹاپ ایپ** کے طور پر
+جسے آپ انسٹال کرتے ہیں۔ یہ ایک ہی ایپلیکیشن ہیں، ایک ہی خصوصیات کے ساتھ۔ واحد فرق
+یہ ہے کہ سرور کہاں چلتا ہے — اور ویب ایپ آپ کے لیے سرور نہیں چلا سکتی۔
 
-## Use it in your browser
+## براؤزر میں استعمال کریں
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) یہی ایپلیکیشن ہے جو براؤزر کے لیے کمپائل کی گئی ہے۔
+انسٹال کرنے کو کچھ نہیں، اپ ڈیٹ کرنے کو کچھ نہیں۔ اسے کھولیں اور جڑ جائیں۔
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+براؤزر ٹیب جو کام نہیں کر سکتا وہ یہ کہ خود سرور _بن_ جائے۔ ہر کلائنٹ — ڈیسک ٹاپ، ویب،
+فون — ایک ہیڈلیس `cc_server` کے اوپر ایک پتلا رینڈرر ہے، جو ڈیٹابیس کا مالک ہے اور کام
+کرتا ہے، اس لیے ویب ایپ ہمیشہ آپ کے چلائے ہوئے سرور سے بات کرتی ہے۔ اسے سرور دینے کے
+دو طریقے:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**اپنی ہی مشین پر ایک سرور۔** `cc_server` کو مقامی طور پر شروع کریں اور ویب ایپ کو
+`ws://localhost:9030` کی طرف اشارہ کریں۔ براؤزر `localhost` کو قابلِ اعتماد
+مانتے ہیں، اس لیے اس میں نہ کوئی سرٹیفکیٹ درکار ہے نہ ٹنل۔ یہ ویب ایپ آزمانے کا تیز ترین
+طریقہ ہے اور آپ کا ڈیٹا کبھی آپ کی مشین سے باہر نہیں جاتا۔
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**کسی دوسری مشین پر ایک سرور۔** چونکہ `app.usectrl.dev` HTTPS پر پیش کی جاتی ہے، کسی
+غیر مقامی سرور تک `wss://` پر ایسے سرٹیفکیٹ کے ساتھ پہنچنا ضروری ہے جس پر براؤزر کو
+پہلے سے اعتماد ہو۔ `cc_server` TLS کے بغیر غیر loopback ایڈریس بائنڈ کرنے سے انکار کرتا ہے،
+اس لیے ان میں سے کوئی ایک چنیں:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- اسے براہِ راست `--tls-cert` اور `--tls-key` کے ساتھ ایک سرٹیفکیٹ دیں
+- اسے TLS ختم کرنے والی ریورس پراکسی کے پیچھے رکھیں اور `--insecure` کے ساتھ شروع کریں
+- اسے کسی ٹنل یا VPN کے ذریعے کھولیں جو سرٹیفکیٹ فراہم کرتی ہو — Tailscale،
+  cloudflared، یا ایسا ہی کوئی۔ **ترتیبات → سرور → کنکشن اور اسٹیٹس** میں
+  **یہ سرور شیئر کریں** کے تحت بلٹ اِن ٹنل آپٹ اِن موجود ہے۔
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+جب بھی سرور کسی پراکسی، NAT یا ٹنل کے پیچھے ہو، `--public-url` کو اُس ایڈریس پر سیٹ
+کریں جس پر کلائنٹس کو واقعی ڈائل کرنا چاہیے۔ یہ ڈیفالٹ میں مقامی بائنڈ پر رہتا ہے، اس لیے
+اس کے بغیر کلائنٹس غلط ہوسٹ آزمانے لگتے ہیں۔
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[ویب کلائنٹ کی اپنی کاپی ہوسٹ کر رہے ہیں؟]
+`cc_server` براؤزر اوریجن صرف اپنی `--allowed-origins` فہرست میں موجود ہونے پر قبول
+کرتا ہے، جو ڈیفالٹ میں `https://app.usectrl.dev` ہے۔ اگر آپ ویب بلڈ خود ہوسٹ کرتے ہیں تو
+اپنا اوریجن وہاں شامل کریں۔ loopback اور نیٹو کلائنٹس اُس فہرست سے قطع نظر ہمیشہ
+اجازت یافتہ ہوتے ہیں۔
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+کچھ چیزیں صرف ڈیسک ٹاپ تک محدود رہتی ہیں، کیونکہ انہیں ایک نیٹو ونڈو یا مشین کے اپنے
+آڈیو آلات درکار ہوتے ہیں: فلوٹنگ فوکس موڈ پِل، OS نوٹیفکیشن ٹوسٹس (ایپ کے اندر
+اطلاعات کا مرکز ہر جگہ کام کرتا ہے)، کسی کیلنڈر ایونٹ سے "ریکارڈنگ شروع کریں اور لنک
+کریں"، اور میٹنگ کا خلاصہ دوبارہ چلانا۔ باقی سب کچھ — اسپیسز، ایجنٹس، pull request
+ریویو، پائپ لائنز، ٹکٹس، میموری اور خود میٹنگ ریکارڈنگ — ایک جیسا برتاؤ رکھتا ہے۔
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/). To host the server,
-follow [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/).
+ویب ایپ کو کسی سرور سے جوڑنے کے لیے
+[ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/) پر عمل کریں۔ سرور ہوسٹ کرنے کے لیے
+[ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/) پر عمل کریں۔
 
-## Desktop system requirements
+## ڈیسک ٹاپ کے سسٹم تقاضے
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| تقاضا        | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| OS ورژن      | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ یا glibc 2.35+ اور GTK 3 والی کوئی اور ڈسٹرو |
+| آرکیٹیکچر    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | درکار                                                 | درکار       | درکار                                                      |
+| ڈسک اسپیس    | ایپ کے لیے ~200 MB، اس کے علاوہ سرور کی ڈیٹا ڈائریکٹری | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Intel Macs کے لیے کوئی تیار ڈاؤن لوڈ موجود نہیں۔ اس کے بجائے [سورس سے بنائیں](#سورس-سے-بنائیں)۔
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+سرور کی ڈیٹا ڈائریکٹری ایپ سے کہیں بڑی ہو جاتی ہے۔ اپنی پہلی اسٹارٹ پر `cc_server` ڈیوائس پر موجود ماڈلز زبردستی انسٹال کرتا ہے — ٹیکسٹ ایمبیڈنگز (~90 MB)، اسپیکر ڈائرائزیشن (~35 MB) اور منتخب کردہ اسپیچ ماڈل (ڈیفالٹ میں Parakeet TDT v3، ~600 MB؛ Whisper اقسام 198–626 MB) — نیز ایک بلٹ اِن code-server بلڈ، اور ہر ایجنٹ گفتگو کو اُن ریپوز کا copy-on-write worktree ملتا ہے جن پر وہ کام کرتی ہے (Windows پر سادہ `git worktree`)۔ آواز اختیاری نہیں: ASR ماڈل کے بغیر میٹنگ اور ڈکٹیشن کے آپریشن فراہم نہیں ہوتے۔ اسپیچ ماڈل کے پہلے ڈاؤن لوڈ کے بعد ریکارڈنگ روشن ہونے سے پہلے ایک ری اسٹارٹ پھر بھی درکار ہوتا ہے۔
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+ڈیسک ٹاپ اپنے سرور کی طرف OS کی فی صارف ایپلیکیشن سپورٹ ڈائریکٹری کی طرف اشارہ کرتا ہے۔ بغیر `--data-dir` کے ہاتھ سے شروع کیا گیا `cc_server` ڈیفالٹ میں `<application data>/control-center` استعمال کرتا ہے — macOS پر `~/Library/Application Support/control-center`، Windows پر `%APPDATA%\control-center`، Linux پر `$XDG_DATA_HOME/control-center` (یا `~/.local/share/control-center`)۔
 
-## Download
+## ڈاؤن لوڈ
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+نیچے دی گئی ہر آرٹیفیکٹ [GitHub Releases](https://github.com/SamuelAlev/control-center/releases) سے آتی ہے۔
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+`Control-Center-<version>-arm64.dmg` ڈاؤن لوڈ کریں، اسے کھولیں اور Control Center کو Applications میں گھسیٹیں۔ یہ بلڈ Developer ID سے سائن اور Apple سے نوٹرائز شدہ ہے، اس لیے یہ عام طور پر کھل جاتا ہے۔
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: فی صارف انسٹالر۔
+- `Control-Center-<version>-windows-x64.zip`: پورٹیبل zip۔
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows اسپیس چیک آؤٹس کے لیے `git worktree` استعمال کرتا ہے (copy-on-write نہیں)۔
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage اپ ڈیٹ کی معلومات ساتھ رکھتا ہے، اس لیے [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) یا appimaged اسے اُسی جگہ تازہ ترین ریلیز تک لا سکتے ہیں، صرف تبدیل شدہ حصہ ڈاؤن لوڈ کرتے ہوئے۔
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+یہ دونوں Ubuntu 22.04 پر بنائے گئے ہیں اور اسی یا کسی بھی نئے ورژن (Debian 12، Fedora 36 اور بعد کے ورژنز) پر چلتے ہیں: یہ glibc 2.35 اور GCC 12 کی libstdc++ سے لنک ہوتے ہیں اور GTK 3 سسٹم سے لیتے ہیں۔ جو چند لائبریریاں ایک عام ڈیسک ٹاپ میں نہ ہوں، وہ ان کے اندر ساتھ آتی ہیں، اس لیے اور کچھ انسٹال کرنے کی ضرورت نہیں۔ آواز — میٹنگ پلے بیک، ساؤنڈ اسکیپ، رگ آڈیو اور اطلاعات کی آوازیں — سسٹم کے libmpv کے ذریعے چلتی ہے (Ubuntu 22.04 پر `libmpv1`، نئے Ubuntu اور Debian پر `libmpv2`، Fedora پر `mpv-libs`)؛ اس کے بغیر ایپ وہ کنٹرولز چھپا کر شروع ہوتا ہے۔
 
-### Standalone server
+### علیحدہ سرور
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/).
+ہر ریلیز میں ہیڈلیس سرور الگ سے بھی ہوتا ہے — `cc_server-<version>-macos-arm64.tar.gz`، `cc_server-<version>-linux-x64.tar.gz`، `cc_server-<version>-windows-x64.zip` — اور GHCR پر `cc-server`، `cc-webapp` اور `cc-remote` امیجز بھی۔ دیکھیں [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)۔
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linux آرکائیو Ubuntu 22.04 پر بنا ہے اور اس کی ساتھ شامل نیٹو لائبریریاں glibc 2.35 اور GCC 12 کی libstdc++ سے لنک ہوتی ہیں، اس لیے اسے کم از کم اُتنے ہی نئے ہوسٹ کی ضرورت ہے (Ubuntu 22.04، Debian 12، Fedora 36 یا بعد کا)۔ پرانے ڈسٹری بیوشن پر اس کے بجائے `cc-server` امیج چلائیں — کنٹینر اپنا یوزرلینڈ ساتھ لاتا ہے، اس لیے صرف کرنل آپ کا ہونا چاہیے۔
 
-## Agent backend
+## ایجنٹ بیک اینڈ
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center ایجنٹس کو **اڈاپٹرز** کے ذریعے بھیجتا ہے۔ یہ دو ہیں، فہرست مقرر ہے، اور یہ خود بخود دریافت ہو جاتے ہیں — کوئی اور رجسٹر کرنے کا کوئی طریقہ نہیں۔
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+**Control Center (built-in)** اڈاپٹر کو کسی بیرونی CLI کی ضرورت نہیں: ایجنٹ لوپ سرور کے اندر چلتا ہے اور HTTP کے ذریعے ماڈل فراہم کنندگان سے بات کرتا ہے، اس لیے یہ ہمیشہ دستیاب رہتا ہے۔ کوئی فراہم کنندہ **ترتیبات → سرور → ماڈل فراہم کنندگان** کے تحت جوڑیں۔ OpenAI، Codex، Cursor اور Kimi Code براؤزر سائن اِن پیش کرتے ہیں؛ Anthropic، OpenRouter، Groq، Google Gemini، DeepSeek، Mistral، xAI، z.ai اور Moonshot API کلید لیتے ہیں۔ Codex اور Cursor اِس رنر پر فراہم کنندگان ہیں، الگ CLIs نہیں۔ z.ai جان بوجھ کر دو بار درج ہے: **z.ai** پے-ایز-یو-گو اوپن پلیٹ فارم ہے، جس کا بل آپ کے اکاؤنٹ بیلنس سے لگتا ہے، جبکہ **z.ai GLM Coding Plan** سبسکرپشن ہے۔ اکاؤنٹ کلید وہی ہوتی ہے، مگر z.ai یہ پلان کسی مختلف ہوسٹ سے پیش کرتا ہے — coding-plan کلید سادہ z.ai ٹائل میں پیسٹ کریں تو ہر درخواست `429 … "Insufficient balance or no resource package"` واپس آتی ہے، کیونکہ پلان میں خرچ کرنے کے لیے کوئی بیلنس نہیں۔ Claude Pro/Max سبسکرپشن Anthropic API لاگ اِن نہیں ہے؛ اُس پلان تک اس کے بجائے Claude Code اڈاپٹر کے ذریعے پہنچیں۔ اُس صفحے پر آپ جو _شامل_ کر سکتے ہیں وہ ایک **حسبِ ضرورت فراہم کنندہ** ہے — کوئی بھی OpenAI- یا Anthropic-کے مطابق اینڈ پوائنٹ (Ollama، LM Studio، vLLM، کوئی نجی ڈیپلائمنٹ) **حسبِ ضرورت فراہم کنندگان → فراہم کنندہ شامل کریں** کے تحت۔
 
-The other adapter wraps an external CLI:
+دوسرا اڈاپٹر کسی بیرونی CLI کو لپیٹتا ہے:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+دریافت اُس مشین کے `PATH` کی جانچ کرتی ہے جہاں `cc_server` چل رہا ہو — جب ڈیسک ٹاپ اپنا سرور چلاتا ہے تو وہی مشین، ورنہ ریموٹ ہوسٹ۔ Claude Code CLI وہیں انسٹال کریں، کلائنٹ پر نہیں۔ اُس صفحے کا **تازہ کریں** بٹن جانچ دوبارہ چلاتا ہے۔
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/).
+ماڈل فہرستیں ہر منسلک فراہم کنندہ لائیو پیش کرتا ہے؛ [models.dev](https://models.dev) صرف قیمت اور کانٹیکسٹ ونڈو کا میٹاڈیٹا فراہم کرتا ہے۔ دیکھیں [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)۔
 
-## GitHub authentication
+## GitHub کی تصدیق
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+GitHub کریڈینشل **آپ ہی کا ہے اور سرور پر رہتا ہے**، جو آپ کی یوزر آئی ڈی سے منسلک ہوتا ہے — کلائنٹ کے OS کی چین میں نہیں۔ آپ جس بھی ڈیوائس سے سائن اِن ہوں وہی ایک استعمال ہوتا ہے، اور کوئی دوسرا رکن اسے پڑھ نہیں سکتا۔
 
-If the server has a GitHub App registered ([Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+اگر سرور پر کوئی GitHub App رجسٹرڈ ہو ([GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/))، تو **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** میں **GitHub سے سائن اِن** پیش کیا جاتا ہے (ایک ڈیوائس فلو جو سرور چلاتا ہے)۔ ورنہ ایک ذاتی رسائی ٹوکن پیسٹ کریں:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- کلاسک: `repo` اور `read:org`
+- فائن گرینڈ: **Contents** اور **Pull requests** (پڑھنا اور لکھنا)، **Checks** اور **Actions** (پڑھنا)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+ایک یہاں بنائیں: [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)۔ سرور ٹوکن محفوظ ہوتے وقت ہی اکاؤنٹ نام کے لیے اس کی جانچ کرتا ہے، اس لیے قطار "… کے طور پر سائن اِن" کہہ سکتی ہے؛ ناکام جانچ پھر بھی ٹوکن محفوظ کر دیتی ہے، اور کوئی ٹائپو یا غائب اسکوپ بعد میں ناکام درخواست کی صورت میں سامنے آتا ہے۔
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/).
+آن بورڈنگ کا پہلا قدم یہی کنکشن ہے۔ اس کے بعد یہی کارڈ وہ جگہ ہے جہاں آپ اسے بدلتے یا ہٹاتے ہیں۔ GitLab اور Bitbucket بھی یہی کارڈ استعمال کرتے ہیں؛ دیکھیں [کوڈ ہوسٹ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)۔
 
-## Choose where the server runs
+## منتخب کریں کہ سرور کہاں چلے
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) explains what that split means for the desktop, web and phone.
+Control Center ایک تھن کلائنٹ ہے جو ایک ہیڈلیس `cc_server` پراسیس کے اوپر کام کرتا ہے، جو ڈیٹابیس کا مالک ہے اور سارا کام کرتا ہے؛ [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) بتاتا ہے کہ یہ تقسیم ڈیسک ٹاپ، ویب اور فون کے لیے کیا مطلب رکھتی ہے۔
 
-On first launch the desktop asks **"How should Control Center run?"**:
+پہلی لانچ پر ڈیسک ٹاپ پوچھتا ہے **"Control Center کیسے چلے؟"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ur-PK/ہدایت-نامہ/فوری-آغاز/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **اس ایپ میں چلائیں**: ڈیسک ٹاپ اِس مشین پر ایک `cc_server` شروع کرتا ہے اور اس کی نگرانی کرتا ہے اور loopback پر اس سے بات کرتا ہے۔ اور کچھ کنفیگر کرنے کی ضرورت نہیں۔ [فوری آغاز](/ur-PK/ہدایت-نامہ/فوری-آغاز/) اسی سیٹ اپ کو فرض کرتا ہے۔
+- **ریموٹ انسٹینس سے منسلک ہوں**: ڈیسک ٹاپ کو کہیں اور چلنے والے `cc_server` کی طرف اس کے WebSocket URL، ایک ڈیوائس id، اور یا تو پیئرنگ کلید یا ایک بار استعمال ہونے والے دعوتی کوڈ کے ساتھ اشارہ کریں۔ ڈیٹا کا مالک وہی سرور ہوتا ہے؛ یہ ڈیسک ٹاپ صرف اسے رینڈر کرتا ہے۔
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/).
+سرور بعد میں **ترتیبات → سرور → کنکشن اور اسٹیٹس** کے تحت شامل کریں یا تبدیل کریں۔ تبدیل کرنا وہیں دوبارہ جڑ جاتا ہے — کوئی ری اسٹارٹ نہیں۔ براؤزر سرور نہیں چلا سکتا، اس لیے ویب کلائنٹ ہمیشہ ریموٹ ہوتا ہے؛ دیکھیں [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)۔
 
-To host a server yourself, follow [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+خود سرور ہوسٹ کرنے کے لیے [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/) پر عمل کریں۔ یہ بائنری بنانا، پہلی اسٹارٹ سے پہلے پیئرنگ کلید بنانا، اور `--data-dir` / `--port` / `--bind` فلیگز کا احاطہ کرتا ہے۔
 
-## Verify your setup
+## اپنا سیٹ اپ جانچیں
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **ترتیبات → سرور → ماڈل فراہم کنندگان** دونوں اڈاپٹرز کی فہرست دکھاتا ہے۔ "Control Center (built-in)" ورژن `built-in` کے ساتھ ملا ہوا پڑھا جاتا ہے؛ Claude Code تب ملا ہوا پڑھا جاتا ہے جب اس کی CLI سرور ہوسٹ کے `PATH` پر ہو۔ اگر غائب ہو تو **تازہ کریں** دبائیں۔
+2. **ترتیبات → ورک اسپیس → ریپوزٹریز** اِس ورک اسپیس کے ریپوز کی فہرست دکھاتا ہے، اور **ریپوزٹری شامل کریں** سرور ہوسٹ کے فولڈرز براؤز کرتا ہے۔
+3. **ترتیبات → ورک اسپیس → ایجنٹس** اُن پانچ ایجنٹس کی فہرست دکھاتا ہے جو آپ کی پہلی ورک اسپیس نے بنائے۔ چلنے سے پہلے ہر ایک کا **اڈاپٹر** اور **ماڈل** سیٹ ہونا ضروری ہے۔
+4. **ترتیبات → سرور → تشخیص اور پرائیویسی** یہ ہوسٹ کون سے سینڈ باکس بیک اینڈز پیش کرتا ہے، ایمبیڈنگ ماڈل کی اسٹیٹ اور لاگنگ کی رپورٹ دیتا ہے۔
 
-## Build from source
+## سورس سے بنائیں
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+نیٹو لائبریریاں لازمی ہیں اور کوئی کم تر موڈ موجود نہیں: کوئی غائب لائبریری بوٹ کی مکمل ناکامی ہے، سست راستہ نہیں۔ انہیں سب سے پہلے تیار کریں۔ ہر Flutter اور Dart کمانڈ `fvm` کے ذریعے جاتی ہے، کیونکہ SDK ورژن ریپو نے پن کیا ہوا ہے۔
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +163,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+macOS پر، محفوظ اسٹوریج (GitHub، Linear اور Google سائن اِن) کے لیے ایپ کا کسی Apple ٹیم سے سائن ہونا ضروری ہے — ایک مفت Apple ID کافی ہے، اور یہ ایک بار کا سیٹ اپ ہے جو [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos) کے تحت بیان کیا گیا ہے۔ اس کے بغیر بھی ایپ چل تو جاتا ہے؛ صرف محفوظ اسٹوریج دستیاب نہیں ہوتا۔ Windows اور Linux کو کسی سائننگ کی ضرورت نہیں۔
 
-To build the headless server binary, stage the natives the same way first, then:
+ہیڈلیس سرور بائنری بنانے کے لیے پہلے اُسی طرح نیٹوز تیار کریں، پھر:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+بلڈ ہک `build/natives/` میں پہلے سے موجود ہر چیز بنڈل میں کاپی کر دیتا ہے، اس لیے تیاری سے پہلے بلڈ کرنے سے ایسا بنڈل ملتا ہے جس میں کوئی نیٹو نہیں ہوتا اور سرور شروع ہونے سے انکار کر دیتا ہے۔
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+ویب کلائنٹ کے لیے `scripts/build_web.sh` استعمال کریں (فون PWA کے لیے `--target remote`)۔ CI یہی چلاتی ہے: سادہ `flutter build web` بلڈ آئیڈینٹٹی اسٹیمپ، Web Worker کی دوبارہ تیاری، ڈیپلائے مینی فیسٹ اور اثاثہ بجٹ کی جانچ چھوڑ دیتا ہے۔

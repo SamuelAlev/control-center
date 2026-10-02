@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: 关联你的 Slack 账号
+description: 证明某个 Slack 身份属于你，智能体才会响应你的消息，你的工作也才会归属到你名下。
 slug: zh-CN/手册/操作指南/关联聊天账号
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+本指南介绍如何把你的聊天身份关联到你的 Control Center 用户，以及如何取消关联。
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+每位成员都要针对每个聊天产品做一次。它与连接应用是两回事：连接让整个工作区都能触达机器人，关联则让机器人能认出_你_。
 
-## Why linking is required
+## 为什么必须关联
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+对于无法解析到某个工作区成员的聊天账户，桥接会拒绝代为操作。这是有意为之——如果没有关联，来自 Slack 的每条消息都只能归到安装应用的那个人名下，审计记录、按主体计算的速率限制以及工单发起人都会指向错误的人。
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+未关联的成员提及机器人时，会在该 Slack 话题中收到一条说明如何关联的回复。不会有任何任务被派发。
 
-## Link with a code
+## 使用代码关联
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. 前往 **设置 → 工作区 → 个人资料与身份**，滚动到 **已关联的聊天账户** 卡片
+2. 在 Slack 区块上，点击 **关联我的 Slack 账户**
+3. 复制它显示的命令，例如：
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. 在 Slack 中把该命令发送给机器人——私信是最省事的地方
+5. 机器人会确认你现在关联到的 Control Center 用户，而你留在那里未关闭的对话框也会在同一时刻更新并显示这一结果——不必关掉它再去看
 
-The code:
+该代码：
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- 只能使用一次，生成 **15 分钟** 后过期
+- 始终是为_你_生成的，绝不会为队友生成
+- 会替换你已持有的任何代码，因此再次点击该按钮会让上一个代码失效
+- 只保存在内存中，因此服务器重启会让尚未使用的代码失效——请再次点击该按钮
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+未知、已过期或为其他工作区生成的代码，失败后的表现完全一样、无从区分：“该代码无效（或已过期）”。
 
-## Automatic linking by email
+## 通过邮箱自动关联
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+如果你的 Slack 个人资料带有已验证的邮箱，且该邮箱对应某个**已经是此工作区成员**的 Control Center 用户，那么你第一次与桥接对话时它就会自动关联你。无需代码。
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+两半都不可少：邮箱匹配证明身份，但只有成员身份才授予访问权，因此即便某个陌生人的邮箱恰好存在于服务器上，也关联不到任何东西。名册会显示每个关联是如何建立的（“按邮箱匹配”或“通过代码关联”）。
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+自动关联需要 `users:read.email` 权限范围。没有它，Slack 不会提供该邮箱地址，就只能走代码流程。
 
-## See who is linked
+## 查看谁已关联
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+名册属于工作区管理，因此它位于界面的另一半：**设置 → 工作区 → 通用 → 聊天桥接 → 已关联账户**。它列出工作区中每一位已关联的成员，以及每人对应的 Slack 账户和关联方式。
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+你自己的状态在个人资料页上：一旦完成关联，**关联我的 Slack 账户** 这一行会显示“已关联到 _your-slack-id_”；尚未关联时，它会提示你去关联。
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+名册是一份实时订阅，因为变更发生在另一端——代码是你输入到 Slack 里的，因此应用发出的任何请求都无法把结果带回来。
 
-## Unlink
+## 取消关联
 
-Click **Unlink** on a row in the workspace roster.
+在工作区名册中点击某一行的 **取消关联**。
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- 任何人都可以取消自己的关联
+- 只有管理员可以取消其他成员的关联
+- 取消关联还会吊销该成员尚未使用的关联代码
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+取消关联后，该 Slack 账户在重新关联之前无法再驱动智能体。已有的空间、转录和工单会保留原有的归属——取消关联并不等于撤回过去的工作。
 
-## Troubleshooting
+## 故障排查
 
-### The bot says I am not a member of this workspace
+### 机器人说我不是此工作区的成员
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/zh-CN/手册/概念/多人协作/).
+你的 Slack 账户已关联到某个 Control Center 用户，但该用户在此工作区中不持有成员身份。请让管理员邀请你；参见[多人协作——身份、成员身份与在线状态](/zh-CN/手册/概念/多人协作/)。
 
-### The bot says my role is read-only
+### 机器人说我的角色是只读的
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+`viewer` 和 `guest` 角色无法启动工作。需要管理员把你的角色提升到 `member` 或更高。
 
-### The slash command is not recognized
+### 无法识别该斜杠命令
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+请确认 Slack 中存在该斜杠命令，并且你发送的正是设置对话框向你显示的那条命令——管理员可能重命名过它，此时对话框会显示当前名称。
 
-## Related guides
+## 相关指南
 
-- [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/)
-- [Customize the chat bot](/zh-CN/手册/操作指南/自定义聊天机器人/)
-- [Chat bridge](/zh-CN/手册/参考/聊天桥接/)
+- [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)
+- [自定义聊天机器人](/zh-CN/手册/操作指南/自定义聊天机器人/)
+- [聊天桥接](/zh-CN/手册/参考/聊天桥接/)
 
-## Related concepts
+## 相关概念
 
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/)
-- [Multiplayer — identity, membership and presence](/zh-CN/手册/概念/多人协作/)
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/)
+- [多人协作——身份、成员身份与在线状态](/zh-CN/手册/概念/多人协作/)

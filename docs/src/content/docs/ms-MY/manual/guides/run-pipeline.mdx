@@ -1,68 +1,74 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Jalankan pipeline secara manual
+description: Mulakan larian pipeline dari pelancar, isi inputnya dan tiba di butiran larian.
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/).
+Panduan ini merangkumi cara memulakan larian secara manual. Untuk memantau satu
+larian, membaca output langkah dan memulihkan daripada kegagalan, lihat
+[Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/).
 
-## Start a run
+## Mulakan satu larian
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Klik **Pipeline** pada bar sisi ruang kerja.
+2. Tekan **Jalankan pipeline** pada pengepala. Anda tiba di pelancar
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Pilih satu templat daripada rel kiri. Setiap kad memaparkan nama templat,
+   penerangannya dan sama ada ia menerima input.
+4. Isi borang input di sebelah kanan. Medan wajib menyekat butang sehingga ia
+   mempunyai nilai; templat tanpa input menyatakan sedemikian.
+5. Tekan **Jalankan pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Anda tiba di halaman butiran larian, dengan waterfall pemasaan dan kanvas graf
+yang dipaparkan secara langsung.
 
-## If the rail is empty
+## Jika rel kosong
 
-The launcher shows a template only when **both** are true:
+Pelancar memaparkan sesuatu templat hanya apabila **kedua-duanya** benar:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Togol templat dihidupkan dalam **Tetapan → Ruang kerja → Templat pipeline**.
+- **Benarkan larian manual** dihidupkan dalam dialog **Larian manual** editor
+  templat — togol itulah yang mencipta pencetus `manual` yang dibaca oleh
+  pelancar.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Lapan daripada tiga belas templat terbina dalam dihantar dilumpuhkan:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` dan `pr_digest`. Enjin enggan
+memulakan templat yang dilumpuhkan, jadi hidupkan togolnya sebelum mencarinya
+di sini.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Tiada tindakan **Jalankan** bagi setiap templat pada senarai templat dan tiada
+butang larian di dalam editor — pelancar ialah satu-satunya titik kemasukan
+manual.
 
-## Fill in a repository input
+## Isi input repositori
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Input jenis **Repositori** memaparkan pemilih ke atas repositori berdaftar
+ruang kerja. Memilih satu mengisi `repo_id`, `repo_local_path`, `repo_full_name`
+dan — apabila repo itu mempunyai remote GitHub — `repo_owner` dan `repo_name`
+ke dalam muatan larian, supaya langkah hiliran boleh membaca mana-mana yang
+diperlukannya.
 
-## Watch it run
+## Perhatikannya berjalan
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Halaman butiran larian mempunyai tiga bahagian: jalur meta (masa mula, tempoh
+aktif, kemajuan langkah, sepanduk kegagalan, **Cuba semula** dan **Padam**),
+waterfall pemasaan yang boleh dikuncupkan dengan tempoh dan kos setiap langkah
+serta kanvas graf. Memilih satu nod membuka panel butiran langkah itu.
 
-[Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
+merangkumi semuanya, termasuk cara membaca langkah yang digantung dan apa yang
+perlu dilakukan apabila satu langkah gagal.
 
-Every run you start from the app is a real one.
+Setiap larian yang anda mulakan daripada aplikasi ialah larian sebenar.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create a pipeline template](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
-- [Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
-- [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
+- [Cipta templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
+- [Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
+- [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)

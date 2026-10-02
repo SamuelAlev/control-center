@@ -1,137 +1,78 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: ٹرمنل سے پورٹس فارورڈ کریں
+description: Terminal (VM) یا ہوسٹ شیل میں شروع کیے گئے ڈیو سرور تک پہنچیں — اپنی مشین سے، Browser (VM) سے، Android سے، اپنے نیٹ ورک پر، یا HTTPS والے ڈیو ڈومین کے تحت۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پورٹس-فارورڈ-کریں
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+گفتگو کے ٹرمنل میں آپ جو سرور شروع کرتے ہیں وہ صرف **اسی اسپیس** کے لیے شائع ہوتا ہے۔ پورٹس پینل اُس جگہ اس ایپ کے شروع کیے ہوئے لسنرز کو نوٹ کرتا ہے، ان کا نقشہ بناتا ہے، اور آپ کو ہر اُس جگہ کے لیے ایک پتہ دیتا ہے جہاں سے آپ ان تک پہنچنا چاہیں۔ دو اسپیسز دونوں `5173` پر سن سکتی ہیں؛ ان کے نقشے کبھی ملتے نہیں۔
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+یہاں کوئی چیز مشین کو کھولتی نہیں: ہر راستہ سرور طلب پر بناتا ہے اور وہ ٹرمنل یا رگ کے ساتھ ہی ختم ہو جاتا ہے۔
 
-## See what is listening
+## دیکھیں کیا سن رہا ہے
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. گفتگو کا **Terminal (VM)** یا ہوسٹ شیل کھولیں (کسی اسپیس میں یا کسی PR صفحے پر)۔
+2. اپنا سرور شروع کریں — `pnpm dev`، `python -m http.server 8000`، کچھ بھی۔
+3. چند سیکنڈوں میں ٹرمنل کے اوپر دائیں کونے میں **پلگ آئیکن** پر ایک نکتہ آ جاتا ہے۔ اس پر کلک کریں۔
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+پینل ہر سننے والے پورٹ کو اُس کے مالک پروسیس کے ساتھ `3000 → 3000` کی صورت میں فہرست کرتا ہے: بائیں طرف وہ پورٹ جس پر پروسیس نے بائنڈ کیا، دائیں طرف وہ پورٹ جس پر وہ مقامی طور پر جواب دیتا ہے (جب بھی آپ کی مشین پر وہ خالی ہو تو وہی عدد)۔ ہر قطار یہ بھی بتاتی ہے کہ ڈیسک ٹاپ `localhost`، Browser (VM)، اور Android اس تک پہنچ سکتے ہیں یا نہیں۔
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+دریافت محدود رکھی جاتی ہے: Terminal (VM) کی پولنگ اُسی گیسٹ کے اندر ہوتی ہے؛ ہوسٹ شیل کی پولنگ اُس سیشن کے PTY پروسیس ٹری سے ہوتی ہے۔ دیگر اسپیسز، اور آپ کے Mac پر چلنے والے دیگر پروسیس، فہرست میں نہیں آتے۔
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+**اس** ٹرمنل میں نئے پورٹس خودکار طور پر فارورڈ ہوتے ہیں۔ اگر آپ صرف وہی چاہتے ہیں جو آپ خود شامل کریں تو اُسی پینل میں **پورٹس خود فارورڈ کریں** بند کر دیں۔
 
-## Reach it from this computer
+## اس کمپیوٹر سے پہنچیں
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+قطار پر **مقامی URL کاپی کریں** استعمال کریں — `http://localhost:3000`۔ یہ فارورڈ صرف لوپ بیک پر سنتا ہے، اس لیے آپ کے نیٹ ورک پر کوئی اور اسے نہیں دیکھ سکتا۔
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+اگر دو اسپیسز دونوں گیسٹ `5173` ظاہر کریں اور آپ کی مشین پر پہلے ہی `127.0.0.1:5173` موجود ہو، تو دوسری اسپیس گیسٹ `5173` رکھتی ہے اور ایک عارضی مقامی پورٹ لے لیتی ہے۔ کاپی URL دائیں طرف والا عدد استعمال کرتا ہے۔
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+ہوسٹ شیل پر پروسیس پہلے ہی آپ کی مشین پر ہوتا ہے۔ وہی مقامی پورٹ میپ کرنا بے اثر ہے؛ کوئی **مختلف** مقامی پورٹ چننے سے آپ کے چنے ہوئے پورٹ پر ایک لوپ بیک پراکسی بائنڈ ہو جاتی ہے۔
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (یا `0.0.0.0` پر بائنڈ کرنا) بند Browser (VM) کو Mac پر کسی سرور تک پہنچنے کے قابل **نہیں** بناتا۔ گیسٹ کا اپنا لوپ بیک ہوتا ہے؛ جب Browser ٹیب **اسی اسپیس** میں ہو تو سرور اُس گیسٹ میں ایک ٹنل لگا دیتا ہے۔
 
-## Reach it from the Browser (VM)
+## Browser (VM) سے پہنچیں
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+بند براؤزر **اسی گفتگو** میں کھولیں۔ `localhost:<left-hand port>` ٹائپ کریں — وہی عدد جس پر پروسیس نے بائنڈ کیا۔ کوئی ری میپ (`5173 → 3000`) اُس براؤزر میں دائیں طرف والے عدد پر بھی جواب دیتا ہے، اس لیے کاپی URL وہاں بھی کام کرتا ہے۔ ایجنٹ کی `browser_use` دونوں میں سے کسی پر بھی جا سکتی ہے۔ اسپیس A میں موجود سرور اسپیس B کے براؤزر میں کبھی `localhost:5173` کے طور پر ظاہر نہیں ہوتا۔
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+`localhost` استعمال کریں، نہ کوئی LAN IP اور نہ `--host`۔ گیسٹ کا اپنا لوپ بیک ہوتا ہے؛ ٹنل وہاں IPv4 اور IPv6 دونوں پر سنتا ہے۔
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+وہ صفحات جو بیک وقت بہت سی کنکشنز کھولتے ہیں (درجنوں اثاثے، ایک لائیو ری لوڈ ساکٹ) اُسی ٹنل کو شیئر کرتے ہیں۔ Browser (VM) انہیں ایک مستقل exec پر ملٹی پلیکس کرتا ہے، اس لیے فیچز کا جھکڑ فی کنکشن ایک پروسیس اسپان نہیں بنتا اور سفید صفحے کی صورت میں ٹائم آؤٹ نہیں ہوتا۔
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+ایک ہی اسپیس کے اندر، اسی عدد پر Terminal (VM) کا فارورڈ ہوسٹ شیل پر بھاری پڑتا ہے۔ اسپیسز کے درمیان کوئی ترجیح نہیں — وہ الگ الگ نقشے ہیں۔
 
-## Reach it from Android
+## Android سے پہنچیں
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+اُس اسپیس کا **Android** ٹیب کھولیں۔ پھر ایمولیٹر کا `localhost:<port>` اِس اسپیس کے شائع شدہ پورٹ پر ریورس کر دیا جاتا ہے (`adb reverse`)۔ ایک ایمولیٹر آلے کے لحاظ سے عالمی ہوتا ہے: اسپیس B کو منسلک کرنے سے `:5173` B کی طرف منتقل ہو جاتا ہے اور A والا ہٹ جاتا ہے۔ ٹیب بند کریں تو اِس رگ کے لگائے ہوئے تمام ریورس ہٹا دیے جاتے ہیں۔
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS سمیولیٹر تو خود ہی Mac ہے — کوئی ریورس نہیں۔ ایک حقیقی iPhone کو پھر بھی LAN شیئر کی ضرورت ہوتی ہے۔
 
-## Share it on your network
+## اسے اپنے نیٹ ورک پر شیئر کریں
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → مقامی نیٹ ورک پر شیئر کریں** پورٹ کو `<server-ip>:<random port>` پر شائع کرتا ہے — یہ آپ کے فون پر صفحہ کھولنے کے لیے مفید ہے، یا جب سرور کسی دوسری مشین پر چل رہا ہو۔
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- LAN پورٹ ہمیشہ OS تفویض کردہ ہوتا ہے، کبھی گیسٹ کا عدد نہیں، اس لیے نمائش ایک سوچے سمجھے، نظر آنے والے پتے کی صورت میں ہوتی ہے، نہ کہ اندازہ لگانے والے کی۔
+- جب تک آپ اسے نہ بدلیں یہ نجی (صرف لوپ بیک) رہتا ہے، اور **⋯ → صرف مقامی** اسے دوبارہ نیٹ ورک سے ہٹا دیتا ہے۔
 
-## Give it a name — with HTTPS
+## اسے ایک نام دیں — HTTPS کے ساتھ
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → براؤزر ڈومین سیٹ کریں (.test)** پورٹ کو ایک ڈیو ڈومین تفویض کرتا ہے، جیسے `myapp.test`۔ پھر Browser (VM) کے اندر `https://myapp.test` آپ کے سرور کو ایک درست تالے کے ساتھ لوڈ کرتا ہے — یہ ہر اُس چیز کے لیے مفید ہے جو کسی نامزد اوریجن یا محفوظ کانٹیکسٹ پر مختلف برتاؤ کرتی ہو (کوکیز، سروس ورکرز، OAuth کال بیکس)۔
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- ڈومینز کا اختتام `.test` یا `.localhost` پر ہونا ضروری ہے — ترقی کے لیے مخصوص یہ دو TLDs، اس لیے کوئی ڈیو نام کبھی کسی حقیقی سائٹ پر سایہ نہیں ڈال سکتا۔
+- سرور پر ڈومین **نام** منفرد ہوتے ہیں؛ پورٹ **اعداد** نہیں۔ دو اسپیسز دونوں `5173` استعمال کر سکتی ہیں، مگر دونوں `myapp.test` پر دعویٰ نہیں کر سکتیں۔
+- سرٹیفکیٹ ایک مقامی اتھارٹی سے آتا ہے جو پہلی ضرورت پر آپ کے سرور پر جاری کی جاتی ہے۔ اس کی کلیدیں سرور کی ڈیٹا ڈائریکٹری کے نیچے رہتی ہیں اور کبھی کسی گیسٹ میں داخل نہیں ہوتیں؛ بند براؤزر صرف اُسی ایک کلید پر بھروسا کرتا ہے، اس لیے حقیقی انٹرنیٹ کے ساتھ TLS پھر بھی معمول کے مطابق توثیق ہوتا ہے۔
+- یہ ڈومین **صرف Browser (VM) کے اندر** حل ہوتا ہے۔ میزبان پر آپ کا اپنا براؤزر اس کے بجائے `localhost:<port>` استعمال کرتا ہے۔
+- سادہ `http://myapp.test` بھی کام کرتا ہے۔
 
-## Forward a port by hand
+## پورٹ دستی طور پر فارورڈ کریں
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+پینل کے نچلے حصے میں **پورٹ شامل کریں** کسی پورٹ کو اِس سے پہلے بھی میپ کر دیتا ہے کہ اُس پر کوئی سن رہا ہو (یا خواہ کوئی سن رہا ہو یا نہ ہو)۔ دستی فارورڈ آپ کے سرور کے دوبارہ شروع ہونے کے دوران بھی اپنا پتہ رکھتا ہے — جب تک سرور واپس نہ آئے قطار *سن نہیں رہا* دکھاتی ہے — جبکہ خودکار فارورڈ اپنے پورٹ کے ساتھ ہی غائب ہو جاتے ہیں۔ ہوسٹ شیل پر آپ کوئی مختلف مقامی پورٹ بھی سیٹ کر سکتے ہیں۔
 
-## How it stays contained
+## یہ محدود کیسے رہتا ہے
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/ur-PK/ہدایت-نامہ/تصورات/رگز/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/ur-PK/ہدایت-نامہ/حوالہ/رگز/#ports-and-dev-domains).
+پورٹس کی شناخت ورک اسپیس اور اسپیس سے ہوتی ہے۔ ہائپر وائزر کا اپنا پورٹ نقشہ مشین بوٹ ہونے پر مقرر ہو جاتا ہے، اس لیے Terminal (VM) دو تنگ چینلز پر سوار ہوتا ہے جو سرور کنٹرول کرتا ہے: ایک پیشگی بنایا گیا اِن باؤنڈ لین جو گیسٹ میں جاتا ہے اور ایسے کسی پورٹ سے جڑنے سے انکار کرتا ہے جس پر گیسٹ واقعی سن نہ رہا ہو، اور ریورس ٹنلز جو سرور Browser (VM) اور Android کے لیے کھلی رکھتا ہے۔ ہوسٹ شیل کبھی پوری مشین اسکین نہیں کرتا۔ کسی گیسٹ کے اندر ایسا کوئی لسنر کبھی نہیں بنایا جاتا جو سرور نے وہاں نہ رکھا ہو، اور سب کچھ ٹرمنل یا رگ کے ساتھ ہی ختم ہو جاتا ہے۔ یہ ڈیزائن [رگز اور انکلوژرز](/ur-PK/ہدایت-نامہ/تصورات/رگز/#ports-without-holes) میں بیان کیا گیا ہے؛ درست مخصوص پورٹس اور ڈومین قواعد [رگز حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/رگز/#ports-and-dev-domains) میں ہیں۔
 
-## Related
+## متعلقہ
 
-- [Give an agent a machine to test on](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/ur-PK/ہدایت-نامہ/حوالہ/رگز/) — reserved ports, dev TLDs,
-  defaults
+- [ایجنٹ کو ٹیسٹ کے لیے مشین دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) — رگز کھولنا، دیکھنا اور سنبھالنا
+- [رگز حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/رگز/) — مخصوص پورٹس، ڈیو TLDs، ڈیفالٹس

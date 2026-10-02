@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Chatový most
+description: Poskytovatelé, příkazy, přihlašovací údaje, schopnosti, operace RPC a úložiště chatového mostu.
 slug: cs-CZ/prirucka/referencni-prirucka/chatovy-most
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Poskytovatelé
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Poskytovatel | Wire hodnota | Přenos                     | Druh prostoru |
+| ------------ | ------------ | -------------------------- | ------------- |
+| Slack        | `slack`      | Socket Mode (odchozí WSS)  | `slack`       |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Jediný poskytovatel je Slack.** `ChatProvider` je výčet s jedinou hodnotou a `cc_server` registruje jeden plugin. Schéma, každé vyhledání i každý unikátní index jsou klíčované podle `provider`, takže identifikátory se mezi poskytovateli nekříží a přidání dalšího je změna jen na serveru.
 
-One provider-side app per **workspace × provider**.
+Jedna aplikace na straně poskytovatele na každý **pracovní prostor × poskytovatel**.
 
-## Chat commands
+## Příkazy chatu
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Jméno příkazu patří aplikaci (výchozí je `cc`, tedy `/cc`). Admin ho může přejmenovat; most pak používá to jméno, pod kterým byl naposledy zavolán.
 
-| Command                               | Effect                                                        |
+| Příkaz                                | Účinek                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (nebo `/cc` bez slovesa)   | Vypíše, co bot umí                                            |
+| `/cc link <code>`                     | Uplatní jednorázový kód a propojí chatovou identitu odesílatele |
+| `/cc ticket <title>`                  | Založí lokální ticket, který nahlásí propojený člen           |
+| `/cc ticket <title> \| <description>` | Totéž a všechno za prvním `\|` je popis                       |
+| Neznámé sloveso                       | Nahlásí neznámé sloveso a připojí text nápovědy               |
 
-Ways to reach an agent:
+Jak se dostat k agentovi:
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| Gesto                           | Chování                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@bot …` v kanálu               | Otevře vlákno Slacku a odpovídající prostor Control Center; agent odpoví ve vláknu Slacku                              |
+| Odpověď v propojeném vláknu Slacku | Pokračuje ve stejném prostoru Control Center — zmínka není potřeba                                                 |
+| Obyčejná zpráva v kanálu        | Ignoruje se (není adresovaná botovi a není v propojeném vláknu Slacku)                                                 |
+| Přímá zpráva botovi             | Jeden prostor Control Center na každou konverzaci v přímé zprávě; nastaví nadpis vlákna Slacku a stav „is thinking…“, dokud agent pracuje |
 
-## Credential fields (Slack)
+## Pole přihlašovacích údajů (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Deklaruje je deskriptor poskytovatele. Z něj se generuje dialog připojení a podle něj se kontroluje odeslání.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Id pole              | Popisek                         | Povinné | Prefix  | Kde leží                                                        |
+| -------------------- | ------------------------------- | ------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Bot user OAuth token            | Ano     | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | App-level token                 | Ano     | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | App configuration refresh token | Ne      | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` je přihlašovací údaj pro správu aplikace: bez něj připojení funguje, ale bota z Control Center nejde vytvořit ani upravit. Při každém použití se otočí a otočená hodnota se uloží hned.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Hodnoty se oříznou, nedeklarované klíče se zahodí a nesoulad prefixu se odmítne stejnou větou na klientovi i na serveru. Povinná pole musí být při každém připojení vyplněná; prázdné volitelné pole nechá uloženou hodnotu, jak byla.
 
-## Slack app requirements
+## Požadavky na aplikaci Slack
 
-Bot token scopes:
+Scopes tokenu bota:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Odběry událostí bota:
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Strukturální nastavení, které Control Center vynutí, když aplikaci vytváří nebo upravuje: zapnutý Socket Mode, žádná request URL, Messages tab zapnutá a zapisovatelná, bot `always_online`, požadované scopes a události sloučené do toho, co aplikace už má (nikdy se neodečítají), a jeden příkaz s lomítkem s popisem `File a ticket or link your Control Center account` — značka, podle které se v exportovaném manifestu pozná vlastní příkaz Control Center.
 
-## Connection states
+## Stavy připojení
 
-| State            | Wire           | Meaning                                                         |
+| Stav             | Wire           | Význam                                                          |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Nepřipojeno      | `disconnected` | Pro tenhle pracovní prostor × poskytovatel nejsou uložené žádné přihlašovací údaje |
+| Připojování…     | `connecting`   | Přihlašovací údaje jsou uložené, přenos se navazuje nebo navazuje znovu |
+| Živě             | `connected`    | Přenos běží a přijímá události                                  |
+| Chyba připojení  | `error`        | Uložené, ale selhává; vedle se ukáže vlastní chyba poskytovatele |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Opětovné připojení je exponenciální backoff s jitterem, nanejvýš 30 sekund. Když socket otočí sám poskytovatel, most se připojí znovu hned a backoff přitom nezvyšuje. Odmítnuté přihlašovací údaje (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) nebo chybějící scope jsou konečné: most přestane zkoušet znovu, dokud nepřijdou nové přihlašovací údaje.
 
-## Provider capabilities (Slack)
+## Schopnosti poskytovatele (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Most je napsaný proti nejbohatší ploše a podle chybějící schopnosti ubírá.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Schopnost                 | Slack  | Účinek, když chybí                                                                             |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | ano    | Celá odpověď se odešle jednou, na konci                                                        |
+| `streamingRequiresThread` | ano    | Cíl odpovědi bez kotvy vlákna posílá celé odpovědi                                             |
+| `ephemeralMessages`       | ano    | Odpověď na příkaz s lomítkem bez použitelného úchytu odpovědi se zahodí (odmítnutí se vždy odešlou do vlákna) |
+| `threadStatus`            | ano    | Žádný pomíjivý řádek „is thinking…“                                                            |
+| `threadTitle`             | ano    | Chatové vlákno si nechá výchozí nadpis                                                         |
+| `slashCommands`           | ano    | Žádná plocha `/cc`                                                                             |
+| `taskCards`               | ano    | Jen text — nad odpovědí není karta a chybí odkaz „View in Control Center“                      |
+| `maxMessageLength`        | 39 000 | Delší odpovědi se zkrátí a odkážou do Control Center                                           |
+| `maxStreamChunkLength`    | 3 800  | Přírůstky se dělí na hranici odstavce, řádku nebo mezery                                        |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Ohlášené streamování ještě není slíbené: to Slacku potřebuje funkci Agents & AI Apps na placeném plánu. Odmítnutí v okamžiku volání (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) se pamatuje po celou dobu života spojení a navenek je `streamingAvailable: false`. Karty úkolů Slacku jedou stejným voláním, takže Slack, který odmítne režim zobrazení karty, si stream nechá a o kartu přijde jen jednou, po celou dobu života spojení.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Stream musí taky pojmenovat čtenáře, pro kterého je. Slack v **kanálu** (v přímé zprávě ne) vyžaduje jak příjemce, tak jeho tým, jinak otevření odmítne s `missing_recipient_user_id` / `missing_recipient_team_id`. To je odmítnutí jednoho volání, takže most to zkouší dál a tah mezitím dorazí jako jedna odeslaná odpověď. Příjemce je ten, kdo se ptal, vzatý z příchozí zprávy (jeho tým, ne tým aplikace, takže se kanál Slack Connect rozřeší správně). U tahu, který z chatu nikdo nespustil — práce spuštěná v Control Center na už propojené konverzaci — je to člen, jehož propojení ten most vytvořilo; když si mezitím chatový účet odpojil, ten tah se odešle celý, bez streamování.
 
-## Task cards
+## Karty úkolů
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Jedna seskupená karta na tah agenta (`task_display_mode: plan`), s řádkem na každý krok. Každý řádek je `task_update` z `id` + `title` + `status`, plus jednorázové `details`, až je myšlenka hotová. `details` a `output` se stejným id se spojí bez oddělovače, takže `details` se pošlou jednou a `output` se nikdy nestreamuje. Nadpis plánu je požadavek; odpověď je pozdější samostatný přírůstek s kusem `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
+| Část           | Obsah                                                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Nadpis plánu   | Na co se ptalo                                                                                                                                                |
+| Řádek přípravy | `Working on it…`, pak `Cloning …`, pak `Starting the agent…` — jeden řádek, nadpis se nahrazuje                                                               |
+| Řádek uvažování | `Thinking…`, přidá se, když agent začne uvažovat; myšlenka jsou `details` tohoto řádku, odeslané jednou, když uvažování skončí                                 |
+| Řádky nástrojů | Jeden na nástroj (`Bash which swift`), jedinečné id, takže stojí vedle sebe                                                                                   |
+| Stav           | Probíhá, dokud řádek běží; hotovo, když začne další řádek nebo tah skončí; chyba u selhání, přerušení a limitu tahů                                            |
+| Výzva k akci   | `View in Control Center` jako koncový řádek, když tah skončí — chybí, dokud práce ještě běží, a chybí, když server nemá dosažitelnou veřejnou URL             |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Co karta nikdy nenese: výstup nástroje, argument mimo ten seznam povolených, ani nic přečteného z databáze. Uvažování v próze jsou jen podrobnosti řádku `Thinking…` (strop 256 znaků), ne tělo zprávy. Karta, která by neřekla nic nového, se neposílá znovu. Zmínka otevře stream hned, aby vlákno Slacku nemlčelo; tah, který pak nevyprodukoval vůbec žádný text, tu samou kartu uzavře krátkou poznámkou, místo aby poslal druhou zprávu. Tah bez textu v prostoru, který stream nikdy neotevřel (žádné karty, nebo streamování už odmítnuté), pořád odešle jednu zprávu s hotovou kartou a poznámkou.
 
-Streamed and posted cards are different payloads:
+Streamované a odeslané karty jsou jiné payloady:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Podoba       | Tvar                                                 | Próza                                            |
+| ------------ | ---------------------------------------------------- | ------------------------------------------------ |
+| Streamovaná  | `plan_update` plus kusy `task_update` klíčované `id` | Obyčejný řetězec, strop 256 znaků na kus         |
+| Odeslaná     | Blok `plan`, který obaluje `task_card` klíčované `task_id` | Rich text                                   |
 
-Failure handling:
+Zacházení se selháním:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Situace                                      | Chování                                                                                                                     |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Poskytovatel odmítne kartu při přírůstku     | Přírůstek se hned zopakuje bez ní; próza pořád přichází živě a karty se na dobu života spojení zahodí                        |
+| Poskytovatel odmítne i prózu                 | Stream se zavře a odpověď se odešle celá                                                                                    |
+| Stream se přeruší poté, co část odpovědi dorazila | Stream se zavře a nic se neposílá znovu                                                                                 |
 
-See [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/) for why the payload is split this way.
+Viz [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/), proč se payload dělí právě takhle.
 
-### Setup, before there is a turn
+### Příprava, než existuje tah
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Karta se otevře, když je zmínka přijata, před klonováním a před prvním tokenem; tah, který následuje, převezme stejnou kartu a stejný stream. Další hlášení přichází z `SpaceProvisioningChanged` na sběrnici doménových událostí — stejný postup, který čte banner přípravy na desktopu z řádku prostoru.
 
-| Provisioning state          | Narration                                                      |
+| Stav přípravy               | Hlášení                                                        |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Zmínka přijata              | `Working on it…`                                               |
+| Krok `repo`                 | `Cloning <repo>…`                                              |
+| Krok `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| Krok `script`               | `Running the setup script for <repo>…`                         |
+| Krok `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, ještě bez kroku | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Agent uvažuje               | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Hlášení přípravy potřebuje všechny čtyři podmínky:
 
-| Condition                                 |
+| Podmínka                                  |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Poskytovatel vykresluje karty             |
+| Na tomhle spojení je streamování dostupné |
+| V prostoru běží chatový požadavek         |
+| Žádná karta tam už tah nehlásí            |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Požadavek zůstane rozpracovaný, dokud nezačne tah nebo příprava neselže. Událost `ready` bez už otevřené karty znamená prostor, který už připravený je, a zůstane zticha. Příprava, na kterou v chatu nikdo nečeká — konverzace otevřená v aplikaci, nebo přerušená a obnovená při startu — kartu nevyrobí vůbec.
 
-## The `/open` bounce page
+## Odrazová stránka `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Chatové produkty v odkazu přijmou `http(s)` a nic jiného, takže výzva k akci nemůže pojmenovat schéma desktopu přímo.
 
-| Property   | Value                                                                                                                                       |
+| Vlastnost  | Hodnota                                                                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Trasa      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Původ      | Odvozený z veřejné URL serveru (`ws` → `http`, `wss` → `https`); loopback se zachová                                                        |
+| Odpověď    | Malá HTML stránka no-store, která přejde na `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` a ukáže ruční tlačítko |
+| Kontrola   | Identifikátory musí odpovídat `[A-Za-z0-9_.-]{1,128}`; cokoli jiného je 404                                                                 |
+| Přístup    | Veřejná a netečná — nečte žádnou databázi, takže neprozradí, jestli záznam existuje; autorizaci udělá aplikace, kterou otevře               |
 
-## Bot profile fields
+## Pole profilu bota
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| Pole               | Limit        | Poznámky                                                                                          |
+| ------------------ | ------------ | ------------------------------------------------------------------------------------------------- |
+| `appName`          | 1–35 znaků   | Výchozí `Control Center · <workspace name>`                                                       |
+| `botDisplayName`   | 1–80 znaků   | Výchozí `control-center`                                                                          |
+| `description`      | ≤ 140 znaků  |                                                                                                   |
+| `agentDescription` | ≤ 300 znaků  | Zobrazí se nad přímou zprávou s botem                                                             |
+| `command`          | ≤ 32 znaků   | Normalizace: úvodní lomítka pryč, malá písmena, `[^a-z0-9_-]` se odstraní, prázdný výsledek spadne na `cc` |
+| `agentEnabled`     | —            | Jestli se vystavuje rozhraní přímých zpráv a agenta                                               |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Prázdné pole znamená „nech to být“: uložená hodnota zůstane. Limity jsou limity Slacku, nejpřísnější z produktů, které se modelují.
 
-## Link codes
+## Kódy propojení
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Vlastnost | Hodnota                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------- |
+| Délka     | 6 znaků                                                                                  |
+| Abeceda   | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (bez `0`/`O`, `1`/`I`, `U`)                            |
+| Platnost  | 15 minut                                                                                 |
+| Použití   | Jedno                                                                                    |
+| Úložiště  | V paměti — restart serveru zneplatní ještě neuplatněné kódy                              |
+| Rozsah    | Jeden pracovní prostor a jeden poskytovatel; vystavení nového kódu zneplatní předchozí kód člena |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Uplatnění se páruje bez ohledu na velikost písmen. Neznámý kód, prošlý kód, kód z cizího pracovního prostoru a kód pro špatného poskytovatele selžou schválně stejně.
 
-## Link methods
+## Způsoby propojení
 
-| Method | Wire    | How                                                                            |
+| Způsob | Wire    | Jak                                                                            |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Kód    | `code`  | Člen uplatnil `/cc link <code>`                                                 |
+| E-mail | `email` | Ověřený e-mail poskytovatele se shodoval s uživatelem, který už je členem pracovního prostoru |
 
-## RPC operations
+## Operace RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Všechny jsou v rozsahu pracovního prostoru. Server je bezstavový, takže každé volání nese vlastní `workspace_id` v argumentech; dispatcher odmítne operaci v rozsahu pracovního prostoru, která ho vynechá, ještě než se otevře jakákoli databáze. Přihlašovací údaje putují jen _dovnitř_ — čtení stavu je nikdy nevrátí.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Operace                 | Druh        | Minimální role                                 | Třídy akcí                      |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | `member` pro sebe, `admin` pro kohokoli jiného | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Čtecí operace dědí podlahu `guest` ze svého druhu; mutace bez výslovné podlahy vyžadují `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` složí URL pro vytvoření aplikace u poskytovatele z profilu bota. Nedeklaruje třídu akce, protože nečte žádné tajemství a nikam nevolá — jediné volání udělá prohlížeč uživatele.
 
-One reactive query completes the surface:
+Plochu doplňuje jeden reaktivní dotaz:
 
-| Query                 | Kind  | Emits                                                    |
+| Dotaz                 | Druh  | Vysílá                                                   |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | Seznam, znovu odeslaný, kdykoli se propojení přidá nebo odebere |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Existuje proto, že propojení se děje na _druhé_ straně: člen napíše jednorázový kód botovi, takže žádná odpověď klientovi tu zprávu nést nemůže. Seznam v nastavení i otevřený dialog „Propojit účet `{provider}`“ ho oba sledují a dialog se přepne na potvrzení v okamžiku, kdy dorazí vlastní propojení člena.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` vždy vystaví kód pro identitu volajícího. `chat.updateBotProfile` vrátí `remaining_step` jen tehdy, když nějaký krok zbývá (typicky nová instalace); když pole chybí, úprava už platí.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` vrátí jednu položku na nabízeného poskytovatele — deskriptor a, když existuje, stav připojení. Všechno, co vykreslí nastavení, pochází z toho payloadu, a proto je přidání poskytovatele změna jen na serveru.
 
-## Storage
+## Úložiště
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Co                             | Kde                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Přihlašovací údaje spojení     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Nedokončené vedené nastavení   | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| Starší soubory Slacku          | `<dataDir>/<workspaceId>/slack_credentials.json` a `slack_app_setup.json`, přečtou se jednou a migrují na místě |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Přihlašovací údaje leží vedle databáze pracovního prostoru, ne v ní: smazání pracovního prostoru vezme chatové tokeny s sebou a `workspace.export` nebo záloha kopíruje `workspace.db` — takže pracovní prostor předaný někomu jinému v sobě nenese živé tokeny bota. Zápisy jsou atomické (dočasný soubor a přejmenování) a práva se stáhnou jen na vlastníka.
 
-## Database tables
+## Tabulky databáze
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Obě žijí v databázi pracovního prostoru, která nese sjednocený baseline v1 — čtení napříč pracovními prostory se proto nezkompiluje.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — jedna externí konverzace ↔ jeden prostor Control Center:
 
-| Column                                                 | Notes                                                                      |
+| Sloupec                                                | Poznámky                                                                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Rozsah pracovního prostoru                                                 |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Tým Slacku `T…`, prázdné u poskytovatelů, kteří ten pojem nemají           |
+| `external_channel_id`                                  | Kanál Slacku `C…`, skupina `G…`, přímá zpráva `D…`                         |
+| `external_thread_id`                                   | Kotva vlákna Slacku, nebo null, když je kotvou celá konverzace (přímé zprávy bota) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Unikátní na `(workspace_id, provider, external_channel_id, external_thread_id)`, s částečným indexem, který totéž vynutí pro prázdná id vlákna (SQLite bere hodnoty NULL jako různé).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — jeden externí člen ↔ jeden uživatel Control Center:
 
-| Column                                 | Notes                                           |
+| Sloupec                                | Poznámky                                        |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Rozsah pracovního prostoru                      |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Člen Slacku `U…`                                |
+| `user_id`                              | Uživatel Control Center (globální, proto bez cizího klíče) |
+| `method`                               | `code` nebo `email`                             |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Unikátní na `(workspace_id, provider, external_team_id, external_user_id)` a na `(workspace_id, provider, user_id)` — přiřazení je v obou směrech jednoznačné, přičemž jeden člověk může být propojený u několika poskytovatelů.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Propojení je určení identity, **ne** udělení přístupu: členství se kontroluje znovu při každé příchozí události, takže propojení člena, který byl mezitím odebrán, skončí odmítnutím.
 
-## Space kind and message metadata
+## Druh prostoru a metadata zprávy
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Propojený prostor vznikne s `SpaceKind` poskytovatele (`slack`). Chová se jako obyčejný prostor pro člověka — oznamovaný a řazený do sekcí jako `topic` — a `isExternalChat` je kontrola, kterou projde každé chování (zrcadlení, odznaky, uchovávání).
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Každá zpráva, kterou most přinese, nese razítko `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Razítko je taky ochrana proti ozvěně: odchozí zrcadlo přeskočí každou zprávu, která ho nese, a právě to zabrání tomu, aby se příchozí chatová zpráva poslala rovnou zpátky.
 
-## Relay behavior
+## Chování předávání
 
-| Behavior                               | Detail                                                                                                         |
+| Chování                                | Detail                                                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Co jde ven                             | Jen **text** agenta a stavový řádek karty úkolu. Próza uvažování a výstup nástroje zůstanou v Control Center   |
+| Kadence streamování                    | Při běhu tahu nejvýš jedno odeslání za sekundu; karta a text, který vysvětluje, jedou stejným voláním          |
+| Lidské zprávy napsané v Control Center | Zrcadlí se do propojeného vlákna s předponou zobrazovaného jména autora                                        |
+| Prázdné tahy                           | Nahlásí se krátkou poznámkou (běh selhal, byl přerušen, nebo zastavil na limitu tahů), ne tichem               |
+| Deduplikace                            | Klíčem je vlastní id události poskytovatele; pamatuje se posledních 512                                        |
+| Vstupní agent                          | Nová propojená konverzace probudí agenta CEO pracovního prostoru, jinak jeho prvního agenta, jinak nikoho      |
+| Pojmenování prostoru                   | `#channel · <request>` pro vlákno kanálu Slacku, `Slack DM · <request>` pro přímou zprávu, nadpisy se stropem 48 znaků |
+| Izolace selhání                        | Jedna špatná událost most neshodí; spojení dál obsluhuje každou další konverzaci                               |
 
-## See also
+## Viz také
 
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
-- [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
-- [Customize the chat bot](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
-- [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/)
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/) for the action classes the ops declare
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
+- [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
+- [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/)
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/) pro třídy akcí, které operace deklarují

@@ -1,248 +1,276 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Barandillas — una política para cada acción mutadora
+description: Por qué Control Center canaliza cada efecto secundario de un agente a través de un único motor de permitir, preguntar o denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia de verdad el dial de autonomía.
 slug: es-ES/manual/conceptos/barandillas
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Los agentes de Control Center pueden eliminar archivos, enviar ramas, publicar
+pull requests y llamar a API externas. Cada una de esas cosas es un _tipo_
+distinto de riesgo y, durante mucho tiempo, solo una de ellas —los comandos de
+shell— tenía política. Las barandillas existen para responder de forma uniforme
+a una única pregunta, para cada acción mutadora que pueda emprender un agente,
+sea cual sea el entorno de ejecución o la herramienta que la proponga: **¿se
+permite, requiere una aprobación o se deniega?**
 
-## One engine, every chokepoint
+## Un solo motor, todos los puntos de control
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Hay exactamente un motor de políticas. Se consulta en todos los puntos por los
+que una acción puede salir del sistema: el registro de herramientas del arnés
+integrado, la puerta del despachador MCP del lado del servidor y las mutaciones
+de operaciones de repositorio. Una regla escrita una vez se aplica, por tanto,
+tanto al entorno de ejecución integrado como a los CLIs de agentes externos: no
+hay una segunda vía, más silenciosa, que la eluda. La antigua política de
+comandos, limitada a bash, sigue funcionando: una regla puede coincidir con un
+prefijo de comando en lugar de con una clase de acción, y ambas formas conviven
+en el mismo almacén.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+El motor no sustituye, sin embargo, al entorno aislado del sistema operativo,
+ni el entorno aislado lo sustituye a él. Responden a preguntas distintas: las
+barandillas deciden si una llamada que Control Center puede ver llega a
+producirse, mientras que el entorno aislado acota hasta dónde puede llegar el
+proceso resultante. `cc_server` aplica el entorno aislado allí donde el host
+ofrece un backend, pero [Windows no ofrece ninguno y Linux
+necesita `bwrap` y `socat`](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/). En esos hosts, las
+barandillas son la capa de aplicación más externa en lugar de una política
+sentada sobre un suelo, algo que conviene saber cuando decides cuán permisivo
+ser.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: una taxonomía deliberadamente cerrada
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Cada herramienta mutadora declara a qué **ActionClasses** pertenece, dentro de
+un conjunto cerrado de trece clases de efecto. Cinco de ellas preguntan de
+serie; el resto permiten, y es una regla lo que cambia eso.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Clase                      | Valor predeterminado | Qué cubre                                                       |
+| -------------------------- | -------------------- | --------------------------------------------------------------- |
+| `fileDelete`               | **prompt**           | Eliminar un archivo (una escritura con forma de borrado, `rm`)   |
+| `gitPush`                  | **prompt**           | Enviar a un remoto de git                                        |
+| `prCreate`                 | **prompt**           | Crear una pull request                                           |
+| `prPublish`                | **prompt**           | Publicar una revisión, fusionar una PR                           |
+| `vendorSyncWrite`          | **prompt**           | Escribir en un proveedor externo de tickets (Linear, Jira, sincronización con GitHub) |
+| `fileWriteOutsideWorktree` | allow                | Escribir un archivo fuera del worktree aislado                   |
+| `gitCommit`                | allow                | Crear un commit de git                                           |
+| `networkEgress`            | allow                | Salida a la red (obtención web, HTTP arbitrario)                 |
+| `secretAccess`             | allow                | Leer un secreto o una credencial                                 |
+| `packageInstall`           | allow                | Instalar un paquete (npm, pip, pub, brew)                        |
+| `processSpawn`             | allow                | Lanzar un proceso (shell y cualquier cosa que invoque un shell)  |
+| `workspaceMutation`        | allow                | Modificar la estructura del espacio de trabajo (repos, espacios, agentes) |
+| `enclosureControl`         | allow                | Controlar un recinto (rig): arrancar una VM, enviarle entrada    |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Las ocho clases permitidas de forma predeterminada se eligieron partiendo de la
+premisa de que bajo ellas actúa el suelo del entorno aislado. Así ocurre allí
+donde el host ofrece un backend, y no ocurre en Windows ni en una máquina Linux
+a la que le falten `bwrap` y `socat`; por eso, si quieres que
+`fileWriteOutsideWorktree` o `packageInstall` queden restringidas ahí, esa es
+una regla que tienes que escribir.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+El conjunto es cerrado a propósito. Una nueva herramienta mutadora que no
+declare ninguna clase no supera el test de trinquete, de modo que la taxonomía
+solo puede crecer mediante una decisión explícita y argumentada: «la dispersión
+de la taxonomía es la muerte de esta función». Trece clases bastan para
+expresar las políticas que la gente escribe de verdad (no enviar nunca sin
+preguntar, no eliminar nunca fuera de un worktree, permitir siempre las
+lecturas) y son lo bastante pocas para que la interfaz de ajustes siga siendo
+comprensible.
 
-## Rules and scope resolution
+## Reglas y resolución de ámbitos
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Una regla asigna `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Los ámbitos se anidan de más específico a menos:
 
-**space > agent > workspace > mode preset > built-in default**
+**espacio > agente > espacio de trabajo > preajuste del modo > valor predeterminado del sistema**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+La resolución va **primero por especificidad**: decide el primer ámbito con una
+regla coincidente y la resolución se detiene ahí. Lo más restrictivo solo sirve
+de desempate —entre dos reglas igual de específicas dentro de un mismo ámbito y
+al combinar las diversas clases que declara una misma acción—. Dentro de un
+ámbito, una regla de comando coincide según el prefijo de comando más largo.
+Permitir no gana a denegar en ningún sitio.
 
-Two decisions carry hard guarantees:
+Dos decisiones conllevan garantías firmes:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Los avisos deniegan por defecto.** Un `prompt` sin ningún aprobador
+  conectado se resuelve como _denegado_. Una pregunta sin respuesta nunca es un
+  sí.
+- **Combinación más restrictiva.** Una acción que abarca varias clases las
+  combina del modo más restrictivo; cuando varias clases preguntan, una sola
+  confirmación las enumera todas.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Deliberadamente no hay ningún enclavamiento por turno. Cada llamada a una
+herramienta vuelve a resolver la política desde cero, de modo que la repetición
+de avisos para una misma acción está acotada por el propio «recuerda esta
+decisión» del operador, y no por nada ligado al turno.
 
-## Argument-level rules
+## Reglas a nivel de argumentos
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Una regla puede restringir los ARGUMENTOS de una acción, no solo su verbo.
+«Puede enviar» y «puede enviar a `feature/*`» son afirmaciones distintas, y
+solo la segunda es un control: una puerta de capacidad que autoriza únicamente
+el verbo es la forma que hay detrás de la mayoría de los incidentes publicados
+con agentes.
 
-A constraint may name:
+Una restricción puede nombrar:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **rutas** — patrones glob (`repos/**`, `!**/.env`)
+- **refs** — referencias de git, con negación `!` (`['**', '!main']` se lee como
+  «cualquier rama excepto main»)
+- **hosts** — destinos de red, con comodines de subdominio (`*.internal`)
+- **comandos** — prefijos de comando, que coinciden en un límite de palabra
+- **topes** — `maxCount` / `maxCents`, de modo que «eliminar hasta 50 archivos»
+  es expresable
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Tres propiedades se derivan de mantener la gramática cerrada y sin bucles, y
+las tres son el objetivo: toda regla se representa como una frase que puedes
+leer tal cual, toda denegación puede nombrar la restricción que coincidió y el
+conjunto de la política se puede enumerar: puedes ver qué puede hacer un agente
+*antes* de que se ejecute.
 
-Three rules that matter:
+Tres reglas que importan:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- Una **regla restringida es más específica** que una sin restricciones en el
+  mismo ámbito, así que «denegar el envío a `main`» gana a «permitir el envío»
+  sin que nadie tenga que pensar en el orden.
+- Una regla **restrictiva** (denegar / preguntar) se aplica cuando la solicitud
+  toca *cualquier* valor que nombre; una **permisiva** (permitir) solo se aplica
+  cuando la solicitud está *enteramente* dentro de ella. Leer ambas del mismo
+  modo permitiría a un agente blanquear una ruta prohibida colocando otra
+  inocente a su lado.
+- Una regla que nombra una faceta de la que la solicitud no dice nada ni se
+  aplica ni se omite: **escala a una aprobación**. Omitirla en silencio dejaría
+  inerte cualquier regla de rama protegida frente a una herramienta que no
+  informa de su ref; denegarla en silencio rechazaría todos los envíos que el
+  extractor no sabe describir. Sin ningún aprobador conectado, la regla
+  existente de denegación por defecto convierte esa escalada en una denegación.
 
-## What a command rule can and cannot catch
+## Qué puede detectar una regla de comando y qué no
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Una regla `commandPrefix` coincide en un límite de palabra: `git push` cubre
+`git push origin main` y no `git pushx`. **No** normaliza el shell.
+`git  push` (dos espacios), `cd sub && git push` y
+`GIT_DIR=… git push` son cadenas distintas y ninguna coincide con una regla
+sobre `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Ese es un límite real y se expone en lugar de disimularse: las reglas de comando
+son una comodidad para el operador a la hora de modelar el comportamiento
+habitual de un agente, **no** una frontera frente a un agente adversario. Las
+fronteras son las clases de efecto (que una herramienta declara y no puede
+reescribir), la red de comandos del modo que hay bajo el almacén de políticas y
+el entorno aislado del sistema operativo bajo ambos. Una regla de comando que
+se resuelve como `allow` nunca relaja ninguna de esas dos capas: la red del modo
+se ejecuta después y su `deny` es definitivo.
 
-## Standing approvals
+## Aprobaciones permanentes
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Responder a un aviso con «recuerda esto» escribe una regla de política real: con
+ámbito (espacio / agente / espacio de trabajo), **restringida por argumentos**
+(aprobar un envío a `feature/login` concede `feature/**`, no `main`) y
+**autorrevocable** según un TTL explícito. Decir sí durante las próximas horas
+no es lo mismo que reescribir en silencio tu política permanente, y las reglas
+que escribe acaban en el mismo almacén con procedencia `remembered` y una
+caducidad, de modo que se pueden revocar antes de tiempo.
 
-## Enforcement levels
+## Niveles de aplicación
 
-Each rule carries one:
+Cada regla lleva uno:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — se permite, pero se registra que la regla coincidió. Esta es la
+  vía de adopción: despliega una regla estricta en modo advisory, consulta el
+  registro de auditoría durante una semana para ver exactamente qué *habría*
+  bloqueado y luego asciéndela. Sin este nivel, las políticas estrictas nunca
+  llegan a activarse.
+- **soft** — se deniega, con posibilidad de anulación por quien tenga el permiso
+  de anulación y una justificación registrada. La anulación es en sí misma un
+  evento auditado.
+- **hard** (el valor predeterminado) — se deniega. Nada lo anula.
 
-## The managed tier
+## El nivel gestionado
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+El operador de una instalación puede fijar políticas que ningún administrador de
+espacio de trabajo pueda relajar. Las reglas gestionadas viven en el servidor y
+se combinan **del modo más restrictivo** con la cadena propia de cada espacio de
+trabajo; no son un ámbito a la cabeza de esa cadena, porque un `allow` gestionado
+a la cabeza de la cadena permitiría que la instalación anulara una denegación de
+un espacio de trabajo, lo contrario de para lo que sirve un tope. Una regla
+gestionada solo puede, por tanto, apretar.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Definir `CC_SERVER_MANAGED_POLICY` con un archivo JSON prevalece por completo
+sobre las reglas almacenadas, y eso es lo que permite a un operador fijar una
+postura que ninguna interfaz de administración puede cambiar: la respuesta a
+«¿puedo impedir que mis desarrolladores desactiven los controles de seguridad?».
 
-## The autonomy dial is a profile, not a parallel system
+## El dial de autonomía es un perfil, no un sistema paralelo
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+El dial de autonomía por espacio es un perfil con nombre sobre este mismo
+almacén de políticas, no un segundo mecanismo. Sus tres ajustes se almacenan y
+se envían como `proposeOnly`, `actWithApproval` y `actFreely` (las formas con
+guion son solo texto de la interfaz y `autonomy.setForSpace` rechaza cualquier
+otra cosa). Dejarlo sin definir se comporta como `actWithApproval`.
 
-What each one does to a resolved decision:
+Qué hace cada uno a una decisión ya resuelta:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** deniega sin más toda herramienta sometida al control. El
+  agente aún puede razonar y responder; simplemente no puede actuar, y su
+  mensaje dice por qué.
+- **`actWithApproval`** (y sin definir) es la puerta de aprobación que deniega
+  por defecto descrita más arriba.
+- **`actFreely`** preaprueba todo lo que no se haya resuelto como un `deny`
+  firme.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Esa última merece decirse con claridad en lugar de suavizarse: bajo `actFreely`,
+una decisión `prompt` **no** escala a un aprobador: se permite y no se pregunta a
+nadie. Solo una regla `deny` explícita sobrevive al dial. Así que `actFreely` es
+una concesión deliberada de autonomía, no un ajuste de comodidad, y la regla de
+denegación por defecto protege exactamente el caso en el que importa
+(`actWithApproval`, el valor predeterminado).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+La delegación entre agentes está protegida en el punto de control de
+`delegate_task` por los cuatro controles: un tope de profundidad (3 de forma
+predeterminada), la detección de ciclos, un **techo de autonomía** (un delegado
+nunca puede actuar con más autonomía que su delegador: el privilegio no se puede
+blanquear pasando trabajo a un agente más libre) y una **envolvente de
+presupuesto** (la delegación se carga al presupuesto restante del delegador y no
+puede acuñar más). Cada rechazo es explícito, con el motivo del control devuelto
+al agente tal cual.
 
-## The adapter honesty matrix
+## La matriz de honestidad de los adaptadores
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+No todos los entornos de ejecución permiten que Control Center intercepte todas
+las acciones. Los CLIs de agentes externos ejecutan algunas herramientas de forma
+nativa, dentro de su propio proceso, donde no cabe ninguna puerta. En lugar de
+fingir lo contrario, cada adaptador lleva una **matriz de honestidad**: por
+adaptador, si Control Center filtra la superficie de herramientas, intercepta las
+llamadas a herramientas, observa el contrato de finalización, puede ver las
+herramientas nativas del ejecutor y si las herramientas en proceso están
+cubiertas por un perfil de entorno aislado.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Merece la pena leer dos entradas antes de fiarte de una configuración. El arnés
+integrado declara que sus herramientas de archivo en proceso **no** están
+aisladas: la superficie de herramientas y este motor de políticas son su único
+límite del sistema de archivos. Claude Code declara que sus propias llamadas a
+herramientas **no** se pueden interceptar, porque se lanza con
+`--dangerously-skip-permissions`; Control Center solo ve sus llamadas `mcp__*`, y
+sus propias herramientas de lectura, escritura, edición y shell se ejecutan sin
+ser vistas.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+La pantalla de ajustes muestra esta matriz, porque el único fallo imperdonable de
+un sistema de barandillas es reclamar una cobertura que no existe.
 
-## Probing policy before it bites
+## Sondear la política antes de que muerda
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Las barandillas están en **Ajustes → Espacio de trabajo → Permisos de agentes**
+(`/workspaces/<id>/settings/workspace/permissions`). La pantalla contiene la
+matriz de políticas donde se escriben las reglas, plantillas de políticas, una
+sonda de tipo «¿Qué pasaría si?», el registro de auditoría de autorización y la
+matriz de honestidad de los adaptadores.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+La sonda recibe una clase de acción (o un comando) y un ámbito, y muestra qué
+regla decidió y por qué. Como la resolución es pura y determinista —la misma
+acción, el mismo ámbito, la misma decisión—, la respuesta de la sonda es la
+respuesta que recibirá el agente.
 
-## Related concepts
+## Conceptos relacionados
 
-- [Sandbox and security](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/es-ES/manual/conceptos/multijugador/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/es-ES/manual/guias/configurar-barandillas/): writing and testing rules in practice
+- [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): qué limita realmente la ejecución de un agente y hasta dónde llega el suelo del sistema operativo bajo este motor
+- [Multijugador — identidad, pertenencia y presencia](/es-ES/manual/conceptos/multijugador/): espacios, principales y dónde vive el dial de autonomía
+- [Configurar barandillas](/es-ES/manual/guias/configurar-barandillas/): escribir y probar reglas en la práctica

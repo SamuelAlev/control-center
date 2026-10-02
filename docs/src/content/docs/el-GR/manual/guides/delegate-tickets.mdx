@@ -1,131 +1,143 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Ανάθεση εργασίας σε πράκτορες
+description: Δώστε ένα εισιτήριο σε έναν πράκτορα μέσα σε μια συνομιλία και αφήστε τους πράκτορες να αναθέτουν υποεργασίες ο ένας στον άλλον υπό τους ελέγχους βάθους και κύκλου.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Αυτός ο οδηγός καλύπτει πώς βγάζετε εργασία από τη λίστα σας και τη βάζετε σε
+έναν πράκτορα, και τι συμβαίνει όταν οι πράκτορες περνούν εργασία μεταξύ τους.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Η εκχώρηση εισιτηρίου σε πράκτορα δεν αποστέλλει]
+Δεν υπάρχει αποστολέας εισιτηρίων όταν ο ανατεθειμένος είναι πράκτορας. Η
+εκχώρηση καταγράφει την κυριότητα και τίποτα άλλο — δεν δημιουργείται χώρος, δεν
+αλλάζει καμία κατάσταση, δεν ξεκινά κανένας πράκτορας. Η εξαίρεση είναι ένα
+εισιτήριο που έχει εκχωρηθεί σε **ομάδα**, το οποίο ξυπνά τον αρχηγό αυτής της
+ομάδας. Η εργασία πράκτορα για έναν συγκεκριμένο ανατεθειμένο ζει σε συνομιλίες,
+οπότε από εκεί την ξεκινάτε.
 :::
 
-## Hand a ticket to an agent
+## Δώστε ένα εισιτήριο σε έναν πράκτορα
 
-1. [Create the ticket](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Δημιουργήστε το εισιτήριο](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/) με έναν τίτλο και μια
+   περιγραφή αρκετά ακριβή ώστε να δουλέψει κανείς από αυτήν.
+2. Ορίστε τον **Ανατεθειμένο** του στον πράκτορα, ώστε η κυριότητα να είναι
+   καταγεγραμμένη.
+3. Ανοίξτε (ή δημιουργήστε) έναν χώρο και κάντε @-αναφορά σε αυτόν τον πράκτορα.
+4. Αναφέρετε το εισιτήριο με μια αναφορά `#` στο μήνυμά σας — το πεδίο σύνταξης
+   συμπληρώνει αυτόματα τα εισιτήρια του χώρου εργασίας — και πείτε τι θέλετε να
+   γίνει.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Ο πράκτορας αναλαμβάνει την εργασία από τη συνομιλία. Η πρόοδός του μεταδίδεται σε
+ροή μέσα σε αυτόν τον χώρο.
 
-## What the agent receives
+## Τι λαμβάνει ο πράκτορας
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Το μήνυμά σας, μαζί με την αναφορά εισιτηρίου που επισημάνατε.
+- Τον χώρο όπου θα εργαστεί και θα αναφέρει.
+- Ένα απομονωμένο worktree από τα συνδεδεμένα αποθετήρια του χώρου εργασίας.
+- Τη **λειτουργία** του χώρου, που είναι αυτό που καθορίζει την επιφάνεια
+  εργαλείων της εκτέλεσης.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/).
+Η λειτουργία είναι ιδιότητα του χώρου, όχι του εισιτηρίου — ένα εισιτήριο δεν έχει
+λειτουργία. Έτσι, ένας πράκτορας μπορεί να βρίσκεται σε `chat` σε έναν χώρο και σε
+`plan` σε έναν άλλον. Επιλέξτε τη από το αναπτυσσόμενο μενού λειτουργίας του
+πεδίου σύνταξης (**Πράκτορας**, **Σχέδιο** ή **Ενορχήστρωση**)· το `review` το
+ορίζουν οι χώροι ελέγχου PR και δεν είναι επιλέξιμο. Δείτε τις
+[Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/).
 
-## Require a structured result
+## Απαιτήστε δομημένο αποτέλεσμα
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Μια σύμβαση εξόδου δηλώνεται στην αποστολή, όχι στο εισιτήριο:
+`expected_output_schema` συν `output_contract_mode` (αυστηρή από προεπιλογή). Ο
+πράκτορας την ικανοποιεί καλώντας το `submit_output`, το οποίο επικυρώνει το
+φορτίο έναντι του σχήματος και απορρίπτει ένα μη συμμορφούμενο.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Και η αποδεκτή έξοδος και τυχόν απορρίψεις καταλήγουν στο **ημερολόγιο εκτέλεσης
+του πράκτορα**. Η κατάσταση του ίδιου του εισιτηρίου δεν θίγεται από αυτό — μια
+αποτυχημένη σύμβαση δεν αποτυγχάνει το εισιτήριο.
 
-## Monitor progress
+## Παρακολούθηση της προόδου
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Ο χώρος** — ζωντανή δραστηριότητα πρακτόρων, η κύρια προβολή.
+- **Το εισιτήριο** — η κατάστασή του, όπως την ορίζει όποιος το μετακινεί.
+- **Παρατηρησιμότητα → Ζωντανά** (`/workspaces/<workspace-id>/observability`) — ο
+  ζωντανός κατάλογος πρακτόρων.
+- **Παρατηρησιμότητα → Στοιχεία** — το ημερολόγιο εκτέλεσης, με κόστος και
+  διάρκεια.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Δεν υπάρχει οθόνη πίνακα ελέγχου· μια σκέτη διεύθυνση URL χώρου εργασίας
+ανακατευθύνεται στα εισερχόμενα.
 
-## Let agents delegate to each other
+## Αφήστε τους πράκτορες να αναθέτουν ο ένας στον άλλον
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Ένας πράκτορας που συναντά ένα υποπρόβλημα αναθέτει με το εργαλείο MCP
+`delegate_task`. Δημιουργεί ένα θυγατρικό εισιτήριο που έχει εκχωρηθεί σε άλλον
+πράκτορα και — όταν περάσετε `parent_ticket_id` — καταγράφει την αλυσίδα ώστε να
+τη βλέπουν οι έλεγχοι.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Δύο δομικοί έλεγχοι εκτελούνται πάντα στο σημείο συμφόρησης των εισιτηρίων, ποτέ
+μέσω οδηγίας προτροπής:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Όριο βάθους** — μια αλυσίδα βαθύτερη από 3 άλματα απορρίπτεται.
+- **Ανίχνευση κύκλου** — ένα άλμα πίσω σε πράκτορα που βρίσκεται ήδη στην αλυσίδα
+  απορρίπτεται.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Όταν περάσετε `from_agent_id`, εκτελούνται δύο ακόμη έλεγχοι (η παραγωγή παρέχει
+πάντα τις θύρες επίλυσης):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Ανώτατο όριο αυτονομίας** — το πραγματικό επίπεδο του αναλαμβάνοντος στον χώρο
+  δεν πρέπει να υπερβαίνει εκείνο αυτού που αναθέτει.
+- **Πλαίσιο προϋπολογισμού** — η ανάθεση χρεώνει τον εναπομείναντα προϋπολογισμό
+  hard-stop αυτού που αναθέτει και δεν μπορεί να δημιουργήσει περισσότερο. Ο
+  προϋπολογισμός χωρίς πολιτική ή ο απεριόριστος περνά.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Μια άρνηση είναι ηχηρή: το εργαλείο επιστρέφει τον λόγο του ελέγχου αυτολεξεί,
+ώστε ο πράκτορας που αναθέτει να βλέπει ακριβώς το γιατί. Το πεδίο
+`delegatedByAgentId` καταγράφει ποιος ανέθεσε, σχηματίζοντας ένα δέντρο ανάθεσης.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[Το `delegate_ticket` παρακάμπτει κάθε έλεγχο]
+Το παλαιότερο εργαλείο `delegate_ticket` είναι ακόμη καταχωρισμένο και καλεί
+απευθείας το `createTicket` — χωρίς όριο βάθους, χωρίς έλεγχο κύκλου, χωρίς
+ανώτατο όριο αυτονομίας, χωρίς πλαίσιο προϋπολογισμού. Προτιμήστε το
+`delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Αυτό το όριο βάθους ανάθεσης (3) είναι διαφορετικό όριο από το όριο ένθεσης
+υποπρακτόρων του ενσωματωμένου harness (2) — το ένα οριοθετεί εισιτήρια μεταξύ
+πρακτόρων, το άλλο οριοθετεί υποπράκτορες μέσα σε μία μόνο εκτέλεση.
 
-## Put several agents on one ticket
+## Βάλτε αρκετούς πράκτορες σε ένα εισιτήριο
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Προσθέστε τους ως **συνεργάτες** στο εισιτήριο (ρόλοι: assignee, collaborator,
+reviewer). Αυτό είναι ένας κατάλογος — μια καταγραφή του ποιος εμπλέκεται — και
+δεν παρέχει τίποτα από μόνο του.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/).
+Για να βάλετε πραγματικά πράκτορες στην ίδια συνομιλία, προσθέστε τους ως
+συμμετέχοντες από την κεφαλίδα του χώρου. Μπορούν τότε να κάνουν @-αναφορά ο ένας
+στον άλλον εκεί. Δείτε [Χώροι](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/).
 
-## Automated ticket creation
+## Αυτοματοποιημένη δημιουργία εισιτηρίων
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Κανένας κόμβος στην παλέτα pipeline δεν δημιουργεί εισιτήρια, οπότε ένα pipeline
+δεν μπορεί να απλώσει εργασία ως εκχωρημένα εισιτήρια.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/).
+Η διαδρομή που υπάρχει πραγματικά είναι η ενορχήστρωση: η έγκριση μιας πρότασης
+δημιουργεί ένα έργο και μια ομάδα, μεταγλωττίζει το DAG υποεισιτηρίων της
+πρότασης σε ένα **πρότυπο pipeline** (ένα βήμα `promptAgent` ανά υποεισιτήριο, όχι
+μια γραμμή `Ticket` το καθένα) και ξεκινά αυτή την εκτέλεση. Δείτε την
+[Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
-- [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
-- [Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
-- [Organize work with projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)
-- [Ticket lifecycle reference](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/)
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
+- [Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
+- [Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
+- [Οργάνωση εργασίας με έργα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)
+- [Κύκλος ζωής εισιτηρίου](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
-- [Dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Εισιτήρια](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
+- [Κύκλος ζωής αποστολής](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)

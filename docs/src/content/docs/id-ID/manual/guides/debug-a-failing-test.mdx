@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Debug pengujian yang gagal dengan agen
+description: Minta agen menetapkan breakpoint, menjalankan program di bawah debugger, dan membaca stack frame sungguhan alih-alih menambahkan pernyataan print.
 slug: id-ID/panduan-pengguna/panduan-praktis/debug-pengujian-gagal
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Panduan ini menunjukkan cara membuat agen memakai debugger pada kegagalan yang tidak dapat dijelaskan oleh pernyataan print.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Alat `debug` menjalankan sesi Debug Adapter Protocol yang sesungguhnya. Frame yang berhenti menjawab semua pertanyaan tentang momen itu sekaligus — setiap variabel lokal, setiap pemanggil, dan ekspresi yang dievaluasi dalam scope milik frame itu sendiri — sedangkan pernyataan print hanya menjawab pertanyaan yang sempat Anda pikirkan sebelum menjalankannya.
 
-## Before you start
+## Sebelum memulai
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Alat ini tetap ada di permukaan agar agen dapat menanyakan mengapa tidak ada yang bisa dipakai, alih-alih menebak. Adapter baru benar-benar dapat dimulai jika **kedua** hal berikut terpenuhi:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- ada penanda proyek di checkout, dan
+- biner adapter dapat di-resolve.
 
-Ask the agent to check:
+Minta agen memeriksanya:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Alat itu menjawab dengan apa yang ditemukannya, atau menjelaskan bahwa sebuah adapter memerlukan kedua bagian tersebut.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Bahasa          | Adapter                      | Penanda                                         | Instalasi                            |
+| --------------- | ---------------------------- | ----------------------------------------------- | ------------------------------------ |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Sudah termasuk dalam SDK — tidak ada yang perlu dilakukan |
+| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`                |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Sudah termasuk dalam LLVM            |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python memilih interpreter milik proyek]
+`debugpy` dicari di `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python dari `$PATH` adalah lingkungan yang berbeda, dan attach dari lingkungan yang salah gagal dengan cara yang terbaca seperti kode yang rusak, bukan seperti interpreter yang salah.
 :::
 
-## Set the breakpoint first, then launch
+## Tetapkan breakpoint dulu, baru jalankan
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Urutannya penting dan alat ini menegakkannya: breakpoint dapat ditetapkan **sebelum** sesi ada, karena itulah urutan yang diwajibkan protokol.
 
-Ask the agent something like:
+Minta agen melakukan sesuatu seperti:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Fungsi `compute` di `bin/main.dart` mengembalikan nilai yang salah. Tetapkan breakpoint pada baris yang menetapkan `product`, jalankan di bawah debugger, dan beri tahu saya berapa nilai `a` dan `b` sebenarnya.
 
-It will run roughly:
+Agen akan menjalankan kira-kira:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Peluncuran melaporkan di mana program berhenti:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Jika yang dilaporkannya justru program yang keluar]
+Breakpoint tidak terpasang. Baris yang kosong, berupa komentar, atau tidak dikompilasi ke dalam build tidak dapat menampung breakpoint. Memanggil `breakpoints` terhadap sesi yang aktif melaporkan berapa banyak breakpoint yang Anda tetapkan yang benar-benar dipasang.
 :::
 
-## Read the frame
+## Baca frame
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Lalu telusuri masuk ke dalamnya:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Objek yang memiliki anak melaporkan `[expand: reference N]` — tetapi hanya jika memang benar-benar ada sesuatu di baliknya, sehingga ekspansi yang tidak dapat dipakai agen tidak pernah ditawarkan.
 
-For anything not visible as a local:
+Untuk apa pun yang tidak terlihat sebagai variabel lokal:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Telusuri langkah demi langkah
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Yang Anda inginkan              | Op          |
+| ------------------------------- | ----------- |
+| Jalankan sampai perhentian berikutnya | `continue`  |
+| Baris berikutnya, frame yang sama | `step_over` |
+| Masuk ke dalam pemanggilan      | `step_in`   |
+| Keluar ke pemanggil             | `step_out`  |
+| Hentikan program yang sedang berjalan | `pause`     |
 
-## Attach to something already running
+## Attach ke proses yang sudah berjalan
 
-For a wedged process rather than one you are starting:
+Untuk proses yang macet, bukan proses yang Anda jalankan sendiri:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Selesaikan
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Selalu akhiri sesi. Adapter debug memiliki **proses yang berhenti** yang memegang apa pun yang dipegang proses itu — port, lock, koneksi basis data.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Ia tidak dapat lepas dari kendali Anda]
+Setiap sesi memiliki TTL tegas yang tidak dapat diperpanjangnya, jumlahnya tepat satu per percakapan, dan semuanya dibongkar saat server berhenti. `launch` kedua ditolak alih-alih menggantikan yang pertama: agen yang memulai sesi kedua tanpa mengakhiri yang pertama hampir pasti telah kehilangan jejak sesi pertama.
 :::
 
-## Bounded output
+## Output yang dibatasi
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Ekspansi `variables` pada graf objek yang dalam memang tidak terbatas secara alami — satu widget Flutter menjangkau seluruh pohon elemen. Anak per scope dibatasi 50, nilai dibatasi 400 karakter, dan stack frame dibatasi 30. Hasil alat yang memenuhi jendela konteks adalah alat yang mengakhiri run yang sedang dibantunya.
 
-## Related
+## Terkait
 
-- [Code intelligence](/id-ID/panduan-pengguna/konsep/kecerdasan-kode/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/id-ID/panduan-pengguna/referensi/alat-agen/) — every `debug` op and argument
-- [Diagnose an agent](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/) — when the problem is the agent, not the code
+- [Kecerdasan kode](/id-ID/panduan-pengguna/konsep/kecerdasan-kode/) — mengapa debugger, compiler, dan pencari menjawab pertanyaan yang berbeda
+- [Alat agen bawaan](/id-ID/panduan-pengguna/referensi/alat-agen/) — setiap op dan argumen `debug`
+- [Diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/) — saat masalahnya adalah agennya, bukan kodenya

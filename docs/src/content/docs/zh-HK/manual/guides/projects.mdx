@@ -1,94 +1,87 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: 以項目組織工作
+description: 從側邊欄把工單分組為項目、追蹤進度，並在項目完成後將其歸檔。
 slug: zh-HK/手冊/操作指南/項目
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+項目是以工作區為範圍的工單分組，用來朝著共同目標邁進。項目只存在於
+Control Center——永遠不會同步到 Linear 之類的外部供應商。
 
-## Create a project
+## 建立項目
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. 展開工作區側邊欄中的**工單**群組。它會依序列出**所有工單**、每個未歸檔項目
+   各佔一列，然後是**新增項目**。
+2. 點擊**新增項目**。
+3. 填寫**項目名稱**、可選的**描述**，並選擇一種**顏色**。
+4. 按下**建立項目**。
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+你會進到新項目的概覽，而該項目會以側邊欄資料列的形式出現在**工單**之下。
 
-## Add tickets to a project
+## 將工單加入項目
 
-Project is a single-ticket field, set in either of two places:
+項目是單張工單上的欄位，可在以下兩個位置之一設定：
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- 開啟工單，並在其屬性欄中設定**項目**。
+- 在清單中以右鍵點擊該工單，然後使用**項目**子選單。
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+屬性欄的選擇器也提供**新增項目**，讓你即時建立項目並把工單歸入其中。
+**無項目**會清除此欄位。
 
-A ticket belongs to at most one project.
+一張工單最多只屬於一個項目。
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[項目不是批次操作]
+選取多張工單時出現的浮動列，涵蓋狀態、優先級、負責人、標籤與刪除。它沒有
+項目晶片，因此要歸入大量工單時，只能逐一處理。
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+你也可以從項目著手：項目概覽上的**新增工單**會建立一張工單並歸入該項目。
 
-## Read project progress
+## 查看項目進度
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+從側邊欄資料列開啟項目，或前往
+`/workspaces/<workspace-id>/projects/<project-id>`。
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+概覽會顯示項目的圖示與名稱、狀態徽章、描述，以及「已完成／總數」的進度條。
+其下方會按狀態把項目的工單分組。
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+它不會彙總其他內容——沒有負責人分佈，也沒有優先級分佈。如要查看這些，請改為
+篩選主工單清單。
 
-## Change project status
+## 變更項目狀態
 
-Projects have three states:
+項目有三種狀態：
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| 狀態       | 含義         |
+| ---------- | ------------ |
+| **進行中** | 工作仍在進行 |
+| **已完成** | 所有工作均已完成 |
+| **已歸檔** | 僅作歷史參考 |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+使用項目頁首上的 **⋯** 選單。它提供**編輯項目**、
+**標示為已完成**／**標示為進行中**、**歸檔**／**還原**，以及
+**刪除項目**。
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+歸檔會把項目從側邊欄清單與工單選擇器中隱藏。此操作可以還原——**還原**會把項目
+回復為進行中——但在已歸檔期間，項目只能透過網址存取。
 
-## Projects created for you
+## 為你建立的項目
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/zh-HK/手冊/操作指南/執行編排/).
+核准一次編排會建立一個項目，並把父工單歸入其中，與你手動歸入的內容並列。
+產出的工作項目是管線步驟，而不是工單資料列，因此不會出現在項目板上。
+這是唯一的自動路徑：沒有任何管線節點會建立工單，所以管線無法為項目填入內容。參見
+[執行編排](/zh-HK/手冊/操作指南/執行編排/)。
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[項目是操作者專用的介面]
+請在應用程式中建立、列出、更新與刪除項目。代理沒有
+項目工具。
 
-## Related guides
+## 相關指南
 
-- [Create and manage tickets](/zh-HK/手冊/操作指南/管理工單/)
-- [Delegate work to agents](/zh-HK/手冊/操作指南/委派工單/)
-- [Run an orchestration](/zh-HK/手冊/操作指南/執行編排/)
+- [建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)
+- [將工作委派給代理](/zh-HK/手冊/操作指南/委派工單/)
+- [執行編排](/zh-HK/手冊/操作指南/執行編排/)
 
-## Related concepts
+## 相關概念
 
-- [Tickets](/zh-HK/手冊/概念/工單/)
+- [工單](/zh-HK/手冊/概念/工單/)

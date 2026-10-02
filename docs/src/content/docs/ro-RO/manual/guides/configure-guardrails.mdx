@@ -1,152 +1,166 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Configurează guardrail-urile
+description: Setează reguli de tip permite, întreabă întâi și refuză pentru acțiunile agenților, testează-le cu sonda „ce-ar fi dacă” și reglează autonomia fiecărui spațiu.
 slug: ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Acest ghid arată cum să configurezi guardrail-urile: regulile care decid dacă
+acțiunea unui agent rulează, cere mai întâi o aprobare sau este refuzată.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Guardrail-urile acoperă cele treisprezece clase de efect pe care le declară
+fiecare instrument care modifică starea. Ele se aplică pe server, în momentul în
+care instrumentul este apelat, niciodată printr-o instrucțiune dintr-un prompt.
 
-## Set a decision for an action class
+## Setează o decizie pentru o clasă de acțiune
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Mergi la **Setări → Spațiu de lucru → Permisiuni agent**
+2. Alege un domeniu de aplicare cu controlul segmentat: **Spațiu de lucru**,
+   **Agent** (apoi alege agentul) sau **Spațiu** (apoi alege spațiul)
+3. Pe rândul clasei de acțiune, alege **Permite**, **Întreabă întâi** sau
+   **Refuză**
+4. Pentru a elimina o regulă pe care ai setat-o, apasă butonul de resetare care
+   apare la sfârșitul acelui rând (**Revino la moștenit**) — decizia revine la
+   domeniul mai larg
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Fiecare rând arată decizia efectivă ca etichetă de stare și un badge pentru de
+unde provine: **Acest domeniu**, **Moștenit** sau **Implicit încorporat**.
+Matricea se rezolvă în modul Agent (`chat`), așa că **Presetare de mod** nu
+apare niciodată aici — folosește sonda „ce-ar fi dacă” cu un mod doar pentru
+citire selectat ca să vezi acel strat.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Scrierea unei reguli necesită rolul `admin`. Citirea matricei, nu.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Punct de control: setează **Push către un remote** pe **Refuză** la domeniul
+spațiului de lucru, apoi rulează sonda „ce-ar fi dacă” de mai jos pe
+`git push origin main`. Rezultatul arată `deny` cu sursa `workspace`.
 
-## Understand how a decision is resolved
+## Înțelege cum se rezolvă o decizie
 
-Resolution is **specificity first, then restrictiveness**:
+Rezolvarea este **întâi după specificitate, apoi după restrictivitate**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Regulile de **spațiu**, apoi cele de **agent**, apoi cele de **spațiu de
+   lucru**. Primul domeniu cu o regulă potrivită decide, iar rezolvarea se
+   oprește
+2. Dacă nicio regulă nu se potrivește, se aplică **presetarea de mod** — un mod
+   doar pentru citire (Plan, Revizuire, Orchestrează) refuză unsprezece dintre
+   cele treisprezece clase
+3. Dacă modul nu are nimic de spus, se aplică **implicitul încorporat**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+În interiorul unui singur domeniu, o regulă de comandă se rezolvă după cel mai
+lung prefix care se potrivește, iar un conflict la fel de specific se rezolvă
+**cât mai restrictiv** — refuzul învinge întrebarea întâi, care învinge
+permiterea. O acțiune care declară mai multe clase le rezolvă pe fiecare
+independent, apoi le combină cât mai restrictiv.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Permiterea nu învinge refuzul]
+O regulă mai îngustă câștigă la specificitate, iar un egal se departajează după
+restrictivitate — așa că un **Permite** la domeniul spațiului de lucru nu
+suprascrie un **Refuză** nicăieri.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+O decizie **Întreabă întâi** afișează o singură cerere de aprobare care acoperă
+toate clasele rezolvate în `prompt`. **Fără un aprobator conectat, este
+refuzată**, atât pentru comenzile shell, cât și pentru apelurile de instrumente
+ale harness-ului. Acest lucru este deliberat: o rulare necontrolată este mai rea
+decât una refuzată.
 
-### Action classes and built-in defaults
+### Clase de acțiune și implicituri încorporate
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Clasă de acțiune                    | Implicit încorporat |
+| ----------------------------------- | ------------------- |
+| Șterge un fișier                    | Întreabă întâi      |
+| Scrie în afara worktree-ului        | Permite             |
+| Creează un commit                   | Permite             |
+| Push către un remote                | Întreabă întâi      |
+| Deschide un pull request            | Întreabă întâi      |
+| Publică o revizuire sau o fuziune   | Întreabă întâi      |
+| Scrie într-un tracker extern        | Întreabă întâi      |
+| Accesează rețeaua                   | Permite             |
+| Citește un secret                   | Permite             |
+| Instalează un pachet                | Permite             |
+| Rulează un proces                   | Permite             |
+| Modifică structura spațiului de lucru | Permite           |
+| Conduce un mediu izolat (stație)    | Permite             |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Taxonomia este închisă. Un instrument nou care ajunge în producție fără să-și
+declare clasele pică un test cu clichet în CI, așa că nimic nu sosește cu un set
+de efecte gol în silențiu.
 
-## Test a rule with the what-if probe
+## Testează o regulă cu sonda „ce-ar fi dacă”
 
-Before changing a rule, check how the current policy already resolves it.
+Înainte de a schimba o regulă, verifică modul în care politica actuală o
+rezolvă deja.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Pe aceeași pagină, derulează până la **Ce-ar fi dacă?**
+2. Alege o **Acțiune** (una dintre cele treisprezece clase)
+3. Completează opțional **Comandă** (de exemplu `git push origin main`),
+   **Agent**, **Spațiu** și **Mod**
+4. Citește rezultatul: decizia, motivul și **Sursă:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+Sonda rulează același rezolvitor pe care îl folosește calea de aplicare,
+împotriva regulilor tale active, așa că răspunsul este exact. Dacă te
+surprinde, schimbă o regulă în matricea de mai sus și sondează din nou.
 
-## Set a space's autonomy dial
+## Setează cadranul de autonomie al unui spațiu
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Cadranul este per agent per spațiu și se compune cu regulile, în loc să le
+înlocuiască.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Deschide spațiul
+2. Deschide **Gestionează participanții** din antetul spațiului
+3. La **Autonomie**, pe rândul agentului, alege un nivel:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Nivel                     | Efect                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Implicit**              | Nicio setare de spațiu — se comportă ca **Acționează cu aprobare**                                             |
+| **Doar propune**          | Fiecare instrument controlat este refuzat direct, cu un mesaj care îi spune agentului să propună acțiunea în schimb |
+| **Acționează cu aprobare** | Acțiunile riscante ajung la poarta de aprobare cu închidere la eșec                                           |
+| **Acționează liber**      | Pre-aprobă orice nu s-a rezolvat într-un refuz strict                                                          |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Acționează liber înghite fiecare întrebare]
+Sub **Acționează liber**, o decizie **Întreabă întâi** este acordată fără să te
+întrebe. Doar un `deny` — dintr-o regulă, din presetarea de mod sau dintr-un
+implicit încorporat — mai blochează. Recurge la el când supraveghezi spațiul, nu
+ca setare implicită.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Cadranul ajunge doar la harness-ul încorporat. Adaptorul Claude Code își rulează
+propriile instrumente în afara acestei porți.
 
-## Know where guardrails do not reach
+## Află unde nu ajung guardrail-urile
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Tabelul **Unde sunt aplicate regulile** din partea de jos a aceleiași pagini
+este versiunea din aplicație a acestui lucru: pentru fiecare clasă de efect,
+spune dacă fiecare runner o prinde la poarta de politică, o lasă în seama
+sandbox-ului sau nu o poate intercepta deloc.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/ro-RO/manual/ghiduri-practice/politici-sandbox/).
+- **Adaptorul Claude Code** nu este controlat pentru propriile apeluri de
+  instrumente. Claude Code este lansat cu `--dangerously-skip-permissions`, așa
+  că apelurile lui de citire, scriere, editare și bash nu trec niciodată prin
+  gardă. Ceea ce este controlat pentru acel adaptor este suprafața de
+  instrumente MCP în care apelează înapoi și comanda shell pe care Control
+  Center o pornește ca să îl lanseze.
+- **Verbul de ieșire propriu al unui mod** (`submit_plan`, `propose_orchestration`)
+  este fixat și nu poate fi niciodată refuzat — altfel un mod ar fi structural
+  incapabil să își producă singurul livrabil.
+- **Dacă sandbox-ul susține aceste reguli depinde de gazdă.** Acolo unde
+  `cc_server` găsește un backend, el învelește CLI-ul Claude Code și
+  instrumentul `bash` al harness-ului, așa că o regulă pe care nu ai scris-o are
+  totuși un prag de sistem de operare sub ea. Pe **Windows nu există niciunul**,
+  iar pe Linux sau WSL2 fără `bwrap` și `socat` nu există niciunul — acolo,
+  guardrail-urile plus suprafața de instrumente a modului sunt întreaga
+  aplicare, nu o a doua linie a ei. Verifică în ce situație te afli cu
+  [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Configure sandbox policies](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/)
+- [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/)
 
-## Related concepts
+## Concepte conexe
 
-- [Guardrails — one policy for every mutating action](/ro-RO/manual/concepte/guardrail-uri/)
-- [Modes](/ro-RO/manual/concepte/moduri/)
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/)
+- [Guardrail-uri — o politică pentru fiecare acțiune care modifică starea](/ro-RO/manual/concepte/guardrail-uri/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/)

@@ -1,130 +1,130 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: จัดฟีดข่าวของคุณ
+description: เพิ่มและจัดการฟีด RSS/Atom อ่านบทความพร้อมการบล็อกเนื้อหา และรู้ว่าฟีดของคุณติดตามคุณไปทุกเวิร์กสเปซ
 dateModified: 2026-09-19
 slug: th-TH/คู่มือ/วิธีทำ/ฟีดข่าว
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+คู่มือนี้แสดงวิธีจัดรูปฟีดข่าว: ดึงข้อมูลจากแหล่งใด อ่านบทความอย่างไร และการ
+บล็อกเนื้อหาทำอะไรบ้าง
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[ฟีดข่าวเป็นระดับผู้ใช้ ไม่ได้ผูกกับเวิร์กสเปซ]
+ฟีดและบทความเป็นของผู้ใช้ที่ลงชื่อเข้าใช้: รายการฟีด สถานะการอ่าน และบุ๊กมาร์ก
+ของคุณติดตามคุณไปทุกเวิร์กสเปซและทุกอุปกรณ์ที่คุณลงชื่อเข้าใช้ และไม่มีผู้ใช้อื่น
+เห็นข้อมูลเหล่านี้ ฟีดถูกเก็บในฐานข้อมูลส่วนกลางของเซิร์ฟเวอร์ URL `/newsfeed`
+จึงมี id ของเวิร์กสเปซเพียงเพราะทุกเส้นทางในแอปมีเหมือนกัน
 :::
 
-## Read articles
+## อ่านบทความ
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. คลิก **ฟีดข่าว** ในแถบด้านข้าง
+2. สลับระหว่าง **ทั้งหมด** **ยังไม่อ่าน** และ **ที่บันทึก** ด้วยปุ่มแบ่งส่วนบนแถบเครื่องมือ
+3. กรองรายการให้แคบลงด้วยช่องค้นหาหรือตัวเลือกแหล่งข่าว
+4. สลับระหว่างตารางแบบนิตยสารและรายการแบบกะทัดรัดด้วยปุ่มเลย์เอาต์
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+การเปิดบทความจะทำเครื่องหมายว่าอ่านแล้ว ใช้ **ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว**
+ในส่วนหัวของหน้า — ซึ่งจะปรากฏเฉพาะเมื่อยังมีรายการที่ยังไม่อ่าน — เพื่อเคลียร์
+รายการค้างทั้งหมดในคราวเดียว และใช้ปุ่มบุ๊กมาร์กบนการ์ดเพื่อบันทึกบทความไว้ดู
+ภายหลัง
 
-The layout choice persists across launches.
+การเลือกเลย์เอาต์จะคงอยู่ข้ามการเปิดโปรแกรมแต่ละครั้ง
 
-## Add a feed
+## เพิ่มฟีด
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. เปิด **การตั้งค่า → คุณ → ฟีดข่าว** (ไอคอนการตั้งค่าในส่วนหัวของฟีดข่าว
+   จะพาไปที่นั่นโดยตรง)
+2. กด **เพิ่มฟีด**
+3. กรอก **ชื่อ** และ **URL ของฟีด** (RSS หรือ Atom)
+4. หากต้องการ ขยาย **ขั้นสูง** แล้วกำหนด **User-Agent** แบบกำหนดเอง — ผู้เผยแพร่
+   บางรายส่งคำตอบที่ต่างออกไปให้ไคลเอนต์เริ่มต้น
+5. กด **เพิ่มฟีด**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+จุดตรวจสอบ: ฟีดจะปรากฏในรายการ **ฟีด** และบทความจะเข้ามาหลังการดึงครั้งแรก
+URL ที่ติดตามอยู่แล้วจะถูกปฏิเสธด้วยข้อความ “มีฟีดที่ใช้ URL นี้อยู่แล้ว”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+ระบบจะติดตั้งฟีดเริ่มต้น 14 รายการให้ผู้ใช้ทุกคนเมื่อใช้งานครั้งแรก: Control Center,
+The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI,
+The Pragmatic Engineer, Martin Fowler, Irrational Exuberance ของ Will Larson,
+The Engineering Manager, Lea Verou และ CSS-Tricks
 
-## Manage feeds
+## จัดการฟีด
 
-Each row in the **Feeds** list gives you three controls:
+แต่ละแถวในรายการ **ฟีด** มีปุ่มควบคุมสามปุ่ม:
 
-| Control      | Effect                                                              |
+| ตัวควบคุม    | ผลลัพธ์                                                             |
 | ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| สวิตช์       | ปิดใช้งานฟีด แถวที่ถูกปิดใช้งานจะถูกหรี่สีและไม่ถูกดึงข้อมูลอีก      |
+| ไอคอนรีเฟรช  | ดึงฟีดนี้ทันที                                                       |
+| ไอคอนถังขยะ  | ลบฟีด หลังการยืนยัน                                                  |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**รีเฟรชทั้งหมด** ที่ด้านบนของรายการจะดึงฟีดที่เปิดใช้งานทุกรายการ
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+คำบรรยายใต้ชื่อฟีดจะแสดงคำอธิบายและเวลาที่ผ่านมาหลังการดึงล่าสุด ฟีดที่ล้มเหลว
+จะแสดงข้อผิดพลาดแทนคำอธิบายนั้น โดยใช้สีเตือน
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+ไม่มีปุ่มแก้ไข — หากต้องการเปลี่ยนชื่อ URL หรือ user agent ของฟีด ให้ลบแล้ว
+เพิ่มใหม่
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+การดึงข้อมูลทำงานบนเซิร์ฟเวอร์ทั้งหมด: หนึ่งครั้งต่อผู้ใช้เมื่อเริ่มระบบ (และเมื่อ
+ใช้งานครั้งแรกสำหรับบัญชีที่สร้างขึ้นภายหลัง) จากนั้นทุก 30 นาที
 
-## Block ads and trackers in the reader
+## บล็อกโฆษณาและตัวติดตามในตัวอ่าน
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. ใน การตั้งค่า → คุณ → ฟีดข่าว ให้หา **ค่ากำหนดตัวอ่าน**
+2. เปิด **เปิดบทความในแอป** ไว้เพื่อใช้ตัวอ่านในตัว หรือปิดเพื่อส่งบทความให้
+   เบราว์เซอร์ของระบบ
+3. เปิด **บล็อกโฆษณา ตัวติดตาม และแบนเนอร์คุกกี้** ไว้
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+การบล็อกเปิดอยู่โดยค่าเริ่มต้น ตัวอ่านแบบฝังมีเฉพาะ macOS และ Windows: บนบิลด์
+เว็บและบน Linux เบราว์เซอร์ของระบบ _คือ_ ตัวอ่าน และบทความจะเปิดที่นั่น (เป็น
+แท็บใหม่บนเว็บ) บนเว็บ สวิตช์บล็อก การ์ด **รายการตัวกรอง** และการ์ด
+**ไซต์ที่เชื่อถือ** จะถูกซ่อนไว้
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+ตัวอ่านในแอปไม่ได้จัดรูปแบบบทความใหม่ แต่แสดงหน้าของผู้เผยแพร่ในเว็บวิวแบบฝัง
+และระงับโฆษณา ตัวติดตาม และแบนเนอร์คุกกี้โดยใช้รายการตัวกรองที่แคชไว้
 
-### Check or update the filter lists
+### ตรวจสอบหรืออัปเดตรายการตัวกรอง
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+การ์ด **รายการตัวกรอง** แสดงจำนวนกฎซ่อนคุกกี้ ซ่อนโฆษณา และบล็อกเครือข่ายที่
+โหลดอยู่ รวมทั้งพารามิเตอร์ติดตามที่ถูกตัดออก และเวลาที่อัปเดตรายการล่าสุด
+กด **ตรวจหาอัปเดต** เพื่อรีเฟรชรายการเหล่านี้
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+แหล่งที่มาได้แก่ EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster,
+รายการ uBlock Origin หลายรายการ และรายการพารามิเตอร์ติดตามของ uBO จนกว่าการ
+ดาวน์โหลดจะสำเร็จ การ์ดจะระบุว่ารายการเหล่านี้เป็นค่าเริ่มต้นที่มาพร้อมแอปและ
+ยังไม่เคยอัปเดต — จำนวนกฎโฆษณา คุกกี้ และเครือข่ายจะยังเป็นศูนย์ ส่วนการตัด
+พารามิเตอร์ติดตามยังคงใช้ชุดค่าเริ่มต้นในตัว
 
-### Allowlist a site
+### อนุญาตไซต์
 
-Some sites break under blocking.
+บางไซต์ทำงานผิดพลาดเมื่อเปิดการบล็อก
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. ใน การตั้งค่า → คุณ → ฟีดข่าว ไปที่ **ไซต์ที่เชื่อถือ**
+2. กด **เพิ่มไซต์ที่เชื่อถือ** แล้วกรอกโดเมน
 
-Blocking is skipped there.
+ไซต์นั้นจะถูกข้ามการบล็อก
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### A feed I added shows up in another workspace
+### ฟีดที่ฉันเพิ่มไปปรากฏในเวิร์กสเปซอื่น
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+เป็นพฤติกรรมที่คาดไว้ ฟีดข่าวเป็นระดับผู้ใช้ ไม่ได้แยกระดับเวิร์กสเปซ — ฟีดของ
+คุณติดตามคุณไปทุกที่ที่คุณลงชื่อเข้าใช้ ดูคำเตือนที่ด้านบน
 
-### A feed row shows an error instead of a description
+### แถวของฟีดแสดงข้อผิดพลาดแทนคำอธิบาย
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+การดึงข้อมูลครั้งล่าสุดล้มเหลว และแถวนั้นแสดงสาเหตุตามจริง กดไอคอนรีเฟรชเพื่อ
+ลองใหม่ และตรวจสอบว่า URL ยังให้บริการ RSS หรือ Atom อยู่ ผู้เผยแพร่ที่ปฏิเสธ
+ไคลเอนต์ที่ไม่รู้จักอาจต้องใช้ user agent แบบกำหนดเอง ซึ่งหมายถึงต้องลบฟีดแล้ว
+เพิ่มใหม่
 
-### An article page renders badly
+### หน้าบทความแสดงผลผิดปกติ
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+ปิด **บล็อกโฆษณา ตัวติดตาม และแบนเนอร์คุกกี้** สำหรับโดเมนนั้นผ่าน
+**ไซต์ที่เชื่อถือ** หรือปิด **เปิดบทความในแอป** แล้วอ่านในเบราว์เซอร์ของคุณ
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Configure notifications](/th-TH/คู่มือ/วิธีทำ/การแจ้งเตือน/)
-- [Triage your inbox](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)
+- [ตั้งค่าการแจ้งเตือน](/th-TH/คู่มือ/วิธีทำ/การแจ้งเตือน/)
+- [คัดแยกกล่องขาเข้า](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)

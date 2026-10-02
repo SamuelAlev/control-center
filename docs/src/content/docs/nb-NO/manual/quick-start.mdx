@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Hurtigstart
+description: Installer Control Center, konfigurer én agent og se den jobbe mot repoet ditt.
 slug: nb-NO/handbok/hurtigstart
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Dette er den korteste komplette veien fra ingenting til en agent som kjører mot din egen kode. Følg den i rekkefølge; hvert steg bygger på det forrige.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Du trenger Git, en GitHub-konto og enten en konto hos en modellleverandør (Anthropic, OpenAI, Codex, Cursor, Kimi Code eller en hvilken som helst leverandør med en API-nøkkel) eller Claude Code-CLI-en ferdig installert. Alt annet settes opp underveis.
 
-## Step 1: Install and launch
+## Steg 1: Installer og start
 
-Install Control Center as described in [Install](/nb-NO/handbok/installer/), then open it.
+Installer Control Center som beskrevet i [Installer](/nb-NO/handbok/installer/), og åpne det.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Ved første oppstart spør skrivebordsappen **«Hvordan skal Control Center kjøre?»**. Velg **Kjør i denne appen**. Control Center starter en headless `cc_server` på denne maskinen, som eier dataene dine og gjør alt arbeidet. Du ser den aldri; i stedet åpnes onboarding-skjermen.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/nb-NO/handbok/installer/#use-it-in-your-browser) for the browser route.
+:::note[Vil du helst ikke installere noe?]
+Den samme appen kjører i nettleseren på [app.usectrl.dev](https://app.usectrl.dev) med de
+samme funksjonene. En nettleserfane kan imidlertid ikke være vert for serveren, så du må
+stille med en selv – kjør `cc_server` lokalt og koble til `ws://localhost:9030`, eller pek
+den mot en server på en annen maskin. Denne hurtigstarten tar skrivebordsveien fordi den
+ikke krever noe serveroppsett; se [Installer](/nb-NO/handbok/installer/#use-it-in-your-browser) for nettleseralternativet.
 :::
 
-## Step 2: Work through onboarding
+## Steg 2: Gå gjennom onboarding
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Onboarding består av fem steg som kjøres i rekkefølge – du kan ikke hoppe over noe.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Koble til**: logg inn med GitHub eller lim inn et personlig tilgangstoken med `repo` og `read:org`. Påloggingsinformasjonen lagres på serveren, knyttet til kontoen din.
+2. **Arbeidsområde**: gi det første arbeidsområdet ditt et navn og velg eventuelt en logo. Når du oppretter det, seedes fem agenter – en CEO pluss `qa`, `architect`, `engineer` og `librarian` – sammen med de innebygde pipeline-malene.
+3. **Sandkasse**: registrerer et sandkassevalg. Uansett hva du velger, kan du fortsette.
+4. **Adapter**: velg hvilken adapter og modell agentene skal bruke som standard. Velg **Control Center (built-in)**, og bruk deretter leverandørvelgeren som dukker opp, til å logge inn hos en modellleverandør – modellisten forblir tom til en leverandør er koblet til. Når du fullfører dette steget, festes også adapteren og modellen til arbeidsområdets CEO-agent.
+5. **Stemme (valgfritt)**: installer en talemodell på enheten for diktering, eller hopp over det.
 
-Control Center then opens your workspace inbox.
+Deretter åpner Control Center innboksen for arbeidsområdet.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
+:::note[Hva som avgrenser en agentkjøring]
+Agentkommandoer pakkes inn i vertens OS-egne sandkasse når en slik finnes – Seatbelt på macOS, bubblewrap på Linux. Windows har ingen backend, så kjøringer der avgrenses bare av de andre lagene: samtalens eget worktre (`git worktree` på Windows; copy-on-write der `rift` er tilgjengelig), påloggingsinformasjon som formidles per kjøring og trekkes tilbake ved nedriving, og tillatelsesreglene for handlinger. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 :::
 
-## Step 3: Add a repository
+## Steg 3: Legg til en repo
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Gå til **Innstillinger → Arbeidsområde → Arkiv** og klikk **Legg til arkiv**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+I dialogen blar du gjennom mappene på maskinen som kjører serveren, ikke på klienten din, og den holder seg innenfor røttene serveren er konfigurert til å eksponere (hjemmekatalogen til brukeren dens som standard). Bare git-utsjekkinger får en avmerkingsboks. Merk av din og registrer den.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+En utsjekking godtas bare hvis den ligger inne i et git-worktre, har en `origin`-remote og den remoten peker på en støttet forge – github.com, gitlab.com eller bitbucket.org. Alt annet avvises med begrunnelsen.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repoer er knyttet til arbeidsområdet: å registrere en utsjekking her plasserer den i _dette_ arbeidsområdet. Det finnes ikke noe eget koblingstrinn.
 
-## Step 4: Give an agent an adapter and a model
+## Steg 4: Gi en agent en adapter og en modell
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Gå til **Innstillinger → Arbeidsområde → Agenter**. Velg `engineer`-agenten i agentlisten.
 
-On the **Settings** tab, set:
+På fanen **Innstillinger** angir du:
 
 - **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Modell**: velg en fra leverandøren du koblet til under onboarding
 
-Press **Save changes**.
+Trykk **Lagre endringer**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Dette steget er i praksis ikke valgfritt. Bare CEO-agenten arver adapteren du valgte under onboarding; de fire spesialistene opprettes uten noen. De faller tilbake til **Control Center (built-in)** med Anthropics standardmodell, og kjører derfor bare hvis du har koblet til en Anthropic-konto – og på en modell du ikke har valgt, hvis du har det.
 
-## Step 5: Send the agent a task
+## Steg 5: Send en oppgave til agenten
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. I sidepanelet finner du **Områder**-delen og klikker **+**-knappen.
+2. Gi området et navn, legg til `engineer`-agenten under **Legg til agenter**, og opprett det.
+3. Skriv en konkret, liten oppgave mot repoet du registrerte, og trykk Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center oppretter et copy-on-write-worktre av arbeidsområdets repoer for denne samtalen, setter sammen en prompt fra agentens rolle, persona, skills og områdets kontekst, og sender ut kjøringen. Kildeutsjekkingen din blir aldri rørt.
 
-## Step 6: Watch it work
+## Steg 6: Se den jobbe
 
-You should see, in order:
+Du skal se følgende, i denne rekkefølgen:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Send-knappen i skrivefeltet blir til en stopp-knapp, fordi en agent jobber i denne samtalen
+- Agentens resonnering, verktøykall og tekst strømmer inn i transkripsjonen
+- Send-knappen kommer tilbake når kjøringen er ferdig
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Åpne deretter **Innstillinger → Arbeidsområde → Agenter**, velg agenten og sjekk fanen **Logger**: én kjøringsrad, med status, varighet, start- og sluttidspunkt og adapteren den kjørte på.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Det er løkken. Alt annet i Control Center – pull request-gjennomgang, pipelines, saker, møter, Slack – henger på den.
 
-## Next steps
+## Neste steg
 
-- [Your first workspace](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/nb-NO/handbok/veiledninger/forste-pr/): take an agent's branch through review and merge
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): what an agent is made of
-- [Create and configure an agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/): the rest of the agent form
-- [Run an orchestration](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/): one goal, one approval, a generated pipeline
-- [Pair your phone](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): follow the fleet from anywhere
-- [Deployment and clients](/nb-NO/handbok/konsepter/drift/): how the desktop, web and phone clients relate to the server
+- [Ditt første arbeidsområde](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/): samme stoff, i roligere tempo, med isolasjonsmodellen forklart
+- [Gjennomgå din første pull request](/nb-NO/handbok/veiledninger/forste-pr/): ta en agents gren gjennom gjennomgang og sammenslåing
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): hva en agent består av
+- [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/): resten av agentskjemaet
+- [Kjør en orkestrering](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/): ett mål, én godkjenning, en generert pipeline
+- [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): følg flåten hvor du enn er
+- [Drift og klienter](/nb-NO/handbok/konsepter/drift/): hvordan skrivebords-, nett- og telefonklientene forholder seg til serveren

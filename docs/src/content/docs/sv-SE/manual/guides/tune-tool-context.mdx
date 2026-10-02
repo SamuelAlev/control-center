@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Justera en agents verktygskontext
+description: Granska vad en körning faktiskt skickar, ändra vilka verktyg som laddas i förväg och avgör om ett dåligt verktygsval var en hämtningsmiss eller ett promptproblem.
 slug: sv-SE/handbok/how-to-guider/justera-verktygskontext
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/sv-SE/handbok/koncept/verktygskontext).
+Den här guiden tar upp det praktiska arbetet kring verktygsytan i två nivåer: att se vad en körning skickar, att ändra det och att diagnostisera en agent som grep efter fel verktyg. Läs [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext) om du vill veta varför det fungerar så här.
 
-## Look at what a run actually sends
+## Se vad en körning faktiskt skickar
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Öppna ett samtal och tryck på indikatorn för kontextanvändning i samtalets rubrik. Den bygger upp den exakta yta som nästa dispatch skulle skicka, utan att köra något. **Visa mer** (eller kommandot `/context`) öppnar den fullständiga kontextutforskaren, där du kan granska varje verktyg.
 
-Two segments matter here:
+Två segment spelar roll här:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Verktygsdefinitioner** och **MCP och dynamiska verktyg** — den residenta uppsättningen, med varje verktygs verkliga tokenkostnad.
+- **Verktyg som läses in vid behov** — det uppskjutna indexet. Varje post kostar bara sitt namn, eftersom ett namn är allt förfrågan bär med sig; att öppna en post visar fortfarande hela beskrivningen och schemat, så du ser vad den *skulle* kosta om körningen läste in den.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli).
+Om det uppskjutna segmentet är tomt är uppskjutning avstängd för den här servern. Kontrollera `--tool-deferral` i [CLI-referensen för `cc_server`](/sv-SE/handbok/referens/cc-server-cli).
 
-## Change which tools load up front
+## Ändra vilka verktyg som laddas i förväg
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Den residenta uppsättningen är policy, inte konfiguration — den finns i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) och gäller för varje körning:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/sv-SE/handbok/koncept/lagen) uses on nearly every turn.
+- `residentBuiltins` — ordförrådet för filer och skal.
+- `residentDiscovery` — `search_tools` och `list_my_tools`. Ta inte bort dem; det är så en agent når allt annat.
+- `residentMcpTools` — den handfull Control Center-verktyg som är värda sitt schema vid varje förfrågan.
+- Ett block per läge, för de verktyg som ett givet [läge](/sv-SE/handbok/koncept/lagen) använder nästan varje tur.
 
-Two rules when editing it:
+Två regler när du redigerar den:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Lägg bara till ett verktyg om de flesta körningar använder det.** Varje namn kostar sitt schema vid varje förfrågan i varje körning, för alltid. Ett verktyg som är viktigt när det används men sällsynt i stort hör hemma i den uppskjutna halvan — agenten hittar det ändå.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Använd verktygets verkliga namn.** Ett resident namn som inte matchar något verktyg är inert: inget fel, ingen varning, verktyget skjuts helt enkelt upp. `test/tooling/resident_tool_names_test.dart` fångar detta och håller dessutom varje läge under 40 residenta verktyg, vilket är hela poängen med övningen — bortom det intervallet försämras verktygsvalet mätbart.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Ett läges obligatoriska och fästa verb läggs till automatiskt, så du behöver aldrig lista ett läges eget utdataverb.
 
-## Diagnose a bad tool choice
+## Diagnostisera ett dåligt verktygsval
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+När en agent använde fel verktyg eller påstod att den inte kunde göra något, ta reda på vilket av tre saker som hände.
 
-### 1. Did it look?
+### 1. Tittade den?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Varje körning registrerar vilka uppskjutna verktyg den läste in och vad som utlöste det — ett direkt anrop med namn, eller en `search_tools`-fråga. Öppna körningens händelseström (**Inställningar → Arbetsyta → Agenter** → agenten → **Loggar** → **Visa**) och leta efter `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Inget loggat, och agenten sade att förmågan saknades** — den tittade aldrig. Det är ett promptproblem, inte ett hämtningsproblem: det uppskjutna indexet finns i dess systemprompt med en instruktion att inte förklara en förmåga saknad förrän en sökning har kommit tillbaka tom.
+- **En sökning loggad, men inget inläst** — en äkta hämtningsmiss. Gå till steg 2.
+- **Verktyg inlästa, men fel användes** — verktygen den hittade är för lika. Gå till steg 3.
 
-### 2. Fix a retrieval miss
+### 2. Åtgärda en hämtningsmiss
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` matchar namn, beskrivningar och argumentnamn. En miss betyder nästan alltid att beskrivningen inte innehåller orden som agenten använde.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Lägg till dem. Beskrivningar är hämtningsindexet, så **förläng dem i stället för att trimma** — skriv det ordförråd en operatör faktiskt skulle skriva (”assign”, ”hand off”, ”give to”), inte bara det interna substantivet. Att trimma en beskrivning för att spara tokens kostar dig både sökträffen och träffsäkerheten i valet, och sparar nästan ingenting jämfört med schemat.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Om rätt verktyg finns men rangordnas lågt är det vad argumentet `limit` är till för; verktygets egen beskrivning uppmanar agenten att bredda en sökning som verkar nära men missar.
 
-### 3. Fix look-alike tools
+### 3. Åtgärda snarlika verktyg
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Om två verktyg har beskrivningar som skulle läsas likadant av någon som inte redan känner till skillnaden gissar modellen. Slå ihop dem till ett verktyg med ett särskiljande argument.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` och `ticket_pr_link` följer det här mönstret: båda hanterar länkning och avlänkning genom ett särskiljande argument. Ett val som görs *inuti* ett anrop, med förfrågans fulla kontext, är mer tillförlitligt än ett val mellan två snarlika beskrivningar.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Håll verktyg åtskilda när de behöver olika godkännandegrindar, olika granskning eller olika rendering — det är skäl till att en sammanslagning skulle kosta dig något verkligt.
 
-## Check the prompt cache is working
+## Kontrollera att promptcachen fungerar
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Cacheträffrekvensen visas i **Observability → Insikter** som **Cachefrekvens**. Ett friskt långkörande samtal ligger högt; om det är ihållande lågt skriver något om prefixet varje tur.
 
-Common causes, in order of likelihood:
+Vanliga orsaker, i sannolikhetsordning:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Vad som helst icke-deterministiskt tidigt i prompten.** En tidsstämpel, ett request-id eller en mängd som itereras i varierande ordning räcker.
+- **Ett byte av modell eller effort under samtalet.** Båda ändrar prefixet. Subagenter är särskilt lätta att få fel här: att köra barn på lägre effort för att spara pengar kan kosta mer i förlorad cache-delning än det sparar.
+- **Tät komprimering.** Komprimering skriver om historiken av design, så dess kostnad är verklig; lösningen är att komprimera sällan och djupt i stället för ofta och grunt.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Att stänga av uppskjutningen med `--tool-deferral=off` är ett giltigt A/B-test för att isolera om en beteendeändring kom från ytan i två nivåer. Det återskapar förfrågan exakt som före uppskjutningen, så om beteendet kvarstår med den avstängd är ytan inte orsaken.

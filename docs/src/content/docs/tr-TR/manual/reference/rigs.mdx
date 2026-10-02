@@ -1,359 +1,374 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: Rig’ler
+description: Her rig yüzeyi, arka ucu, eylem fiili, yaşam döngüsü durumu, portu, varsayılanı ve sözleşmesi — eksiksiz olgusal katalog.
 slug: tr-TR/kilavuz/referans/rigler
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/tr-TR/kilavuz/kavramlar/rigler/); to open a machine, follow [the
-guide](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/).
+Yalnızca olgular. Bunların arkasındaki model için [Rig’ler ve yalıtılmış
+ortamlar](/tr-TR/kilavuz/kavramlar/rigler/) sayfasını okuyun; bir makine açmak
+için [rehberi](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) izleyin.
 
-## Surfaces and backends
+## Yüzeyler ve arka uçlar
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Yüzey | Yönettiği | Arka uç | Değer | Kapsüllenmiş çıkış |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminal (exec) | VM’in exec kanalı üzerinden bir kabuk | microVM | `smolvm` | Evet |
+| Tarayıcı | Başsız Chromium (CDP), Firefox (WebDriver BiDi) veya WebKit (W3C WebDriver) | microVM | `smolvm` | Evet |
+| Bilgisayar | X11 masaüstü: girdi hipervizör üzerinden, yakalama misafir ajanı üzerinden | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (hızlandırmasız yedek, asla otomatik seçilmez) | Evet |
+| Android | ADB üzerinden Android | Google’ın emülatörü | `android-emulator` | **Hayır** — emülatör kendi ağını kendisi yönetir |
+| iOS | WebDriverAgent üzerinden iOS Simülatörü | CoreSimulator | `ios-simulator` | **Hayır** — ağ ana Mac’i izler |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Terminal ile `computer_use` yüzeyi `computer` yüzey değerini paylaşır; terminal,
+kendi exec imaj işaretiyle ayırt edilir ve asla sürülebilir bir masaüstü olarak
+yeniden kullanılmaz (ya da tersi). Bir konuşma tek bir terminal makinesini
+yeniden kullanır.
 
-## Browser engines
+## Tarayıcı motorları
 
-| Engine | Value | Protocol | Live view | Stills |
+| Motor | Değer | Protokol | Canlı görünüm | Durağan görüntüler |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (varsayılan) | Chrome DevTools Protokolü | Ekran yayını — sayfa yeniden çizilirken tarayıcı kareleri iter | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Yoklanan durağan görüntüler (BiDi’de ekran yayını yoktur), 6 fps ile sınırlı | JPEG |
+| WebKit | `webkit` | W3C WebDriver (klasik) | Ana makinenin ffmpeg’iyle dönüştürülen yoklanan durağan görüntüler | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Bir rig, tüm ömrü boyunca **tek** bir motor çalıştırır. Bir konuşma **motor
+başına** bir rig tutabilir; yan yana karşılaştırmayı mümkün kılan da budur:
+"Firefox (VM)"’i "Chromium (VM)"’in yanında açmak iki makine demektir ve birini
+kapatmak diğerini çalışır bırakır.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+`engine` değerini `rig.open` çağrısına ya da `browser_use` aracına geçirin.
+Bilinmeyen bir ad varsayılana düşürülmek yerine reddedilir — bir tarayıcı
+isteyip sessizce başkasını almak, uyumluluk sorusunu yanlış yanıtla
+yanıtlamaktır.
 
-Engine-specific limits, stated rather than worked around:
+Motora özgü sınırlar, etrafından dolaşılmak yerine açıkça belirtilir:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox**’ta önbelleği atlayan yeniden yükleme yoktur (BiDi’nin `ignoreCache`
+  seçeneğini doğrudan reddeder), bu yüzden sert yeniden yükleme normal bir
+  yeniden yüklemedir.
+- **WebKit**’te de önbelleği atlayan yeniden yükleme yoktur; konsol akışı da
+  yoktur (çıktı, her gezinmeden sonra `console.*` kancalanarak yakalanır, bu
+  yüzden yükleme sırasında günlüğe yazılan her şey kaçırılır — her konsol
+  çıkarımı bunu söyler) ve canlı görünümü için ana makinede `ffmpeg` gerekir.
+- **İkisi de** protokolü üzerinden platformun erişilebilirlik ağacını sunmaz;
+  bu yüzden `extract (a11y)`, DOM’dan türetilmiş bir yaklaşık değer döndürür ve
+  bunu böyle etiketler.
+- **İkisi de** gerçek bir dosya bırakma işlemini kabul edemez; yine de bir
+  dosya girişi makinenin içindeki yollara yöneltilebilir.
 
-## Machine images
+## Makine imajları
 
-| Surface | Image | Fetched |
+| Yüzey | İmaj | Getirilme biçimi |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminal | `ubuntu:24.04`, digest ile sabitlenmiş | İlk önyüklemede otomatik olarak, makinenin kendi kapılanmış ağı üzerinden |
+| Tarayıcı (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest ile sabitlenmiş, artı motorun kendi paketleri | İlk önyüklemede otomatik olarak, ardından ısıtılmış bir paket olarak önbelleğe alınır |
+| Bilgisayar | Chromium, Firefox, WebKit içeren ve terminalin ısıttığı aynı GitHub tarafından barındırılan runner CLI temelini taşıyan bir qcow2 masaüstü imajı | **Ayarlar → Sunucu → Rigs** altında **İçe aktar** (yayımlandığı yerlerde sağlama toplamıyla sabitlenmiş indirmeler) |
+| Android | Google’ın sistem imajları | Android SDK üzerinden |
+| iOS | Bir Xcode Simülatör çalışma zamanı artı sağlama toplamıyla sabitlenmiş WebDriverAgent | Çalışma zamanı Xcode üzerinden; otomasyon köprüsü **Ayarlar → Sunucu → Rigs** üzerinden |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Her microVM türünün ilk önyüklemesinden sonra sunucu, veri dizini altında
+önceden çıkarılmış bir kopyayı önbelleğe alır ve sonraki her makineyi oradan
+önyükler — paketleri zaten kurulu, önceden ısıtılmış imajlar dahil. Terminal,
+GitHub tarafından barındırılan runner tarzı bir CLI araç setini ısıtır (`git`,
+`gcc`, `python3`, `jq`, `rsync`, arşiv araçları ve apt temelinin geri kalanı;
+Docker ya da dil araç önbellekleri değil). Bilgisayar qcow2’si aynı CLI adlarını
+imaj derlemesinde, XFCE ile üç tarayıcının yanına gömer. Her tarayıcı kendi
+motorunu ısıtır. Üç motor da bir Debian temelini paylaşır ama asla bir paketi
+paylaşmaz: önbellek, imaj, motor **ve** bir ses revizyonu
+(`audio-v1-<engine>`) üzerinden anahtarlanır; çünkü bir motora — ya da PulseAudio
+ile ffmpeg iş yükünün parçası olmadan önce — ısıtılmış bir makinede diğeri
+yoktur. Terminal paketi de aynı nedenle bir araç seti revizyonu (`tools-v1`)
+üzerinden anahtarlanır: derleyici imajın parçası olmadan önce ısıtılmış bir
+paket, derleyicisi olması gereken bir makineye hizmet etmemelidir.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Alınmaya değer, hazır gömülü bir otomasyon imajı yoktur — Chromium’un
+`chromedp/headless-shell` imajı hem ALSA’yı hem PulseAudio’yu dışarıda bırakacak
+şekilde derlenir, bu yüzden asla ses üretemez; bakımı yapılan tek Firefox imajı
+Debian temelinin 33 katı boyutundadır ve yine de `socat` içermez; bakımı yapılan
+bir WebKit imajı ise hiç yoktur. Bu yüzden her motor ilk başlatmada kurulur
+(`chromium`, `firefox-esr` ya da `webkit2gtk-driver`) ve bunu yaparken Debian
+arşivlerine (`deb.debian.org`, `security.debian.org`, `cloudfront.debian.net`)
+erişir. Chromium, `chromium --headless=new` olarak başlatılan dağıtım ikilisidir.
 
-### Per-workspace custom images
+### Çalışma alanı başına özel imajlar
 
-| Setting key | Overrides |
+| Ayar anahtarı | Geçersiz kıldığı ayar |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Terminal (VM) imajı |
+| `rigs.smolvm.browserImage` | Chromium Tarayıcı (VM) imajı |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Yönetici kapısından geçen çalışma alanı ayarları deposu üzerinden yazılır
+(**Ayarlar → Sunucu → Rigs → Özel imajlar (bu çalışma alanı)**). Değer bir
+registry referansı olmalıdır — yerel yollar, arşivler ve bayrak benzeri dizeler
+hem alanda hem de önyüklemede yeniden reddedilir. Geçersiz bir saklanan değer
+gürültülü biçimde yok sayılır ve yerine varsayılan önyüklenir. İmajın kendi
+registry’si (artı Docker Hub, GHCR, Quay, GitLab ve GCR için bilinen blob CDN
+eşlikçileri) çekme işlemi için çıkış kapısından kabul edilir.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Terminal imaj sözleşmesi** — `bash` mevcut; `git`, `curl`, `socat` önceden
+kurulu *ya da* bir Debian/Ubuntu apt temeli (yalıtılmış ortam ilk başlatmada bu
+üçünü artı GitHub tarafından barındırılan runner tarzı bir CLI araç setini
+kurar: derleyiciler, Python 3, `jq`, arşiv araçları, `rsync`. Dil araç
+önbellekleri ve Docker kurulmaz).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Tarayıcı imaj sözleşmesi** — `bash` ve `socat` içeren bir Debian/Ubuntu apt
+temeli (ya da paketler zaten kurulu), artı sunucunun kendisinin
+`chromium --headless=new` olarak başlattığı, DevTools misafir loopback’inde
+`9223`’te olup misafir `9222` portuna aktarılan bir `chromium` ikilisi.
+PulseAudio ve ffmpeg, ses kanalı için ilk başlatmada kurulur.
+`FROM chromedp/headless-shell` ile derlemeyin: upstream `headless.gn` hem
+ALSA’yı hem PulseAudio’yu dışarıda bırakacak şekilde derler, bu yüzden o ikili
+ses üretemez. Bu geçersiz kılma yalnızca **Chromium rig’leri** için geçerlidir —
+önyüklediği iş yükü komutu Chromium’a aittir ve bunu Firefox ya da WebKit’e
+vermek, orada olmayan bir ikiliyi başlatmak olur. Bir Firefox ya da WebKit
+rig’i bunu gürültülü biçimde yok sayar ve kendi sabitlenmiş imajını önyükler.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Otomasyon portları** — her tarayıcı makinesi, ana makinede tam olarak bir
+loopback portunu misafir `9222` portuna yönlendirir. Arkasında: Chromium’un
+DevTools’u ve Firefox’un uzak ajanı, önlerinde bir `socat` aktarımıyla misafir
+loopback’inde `9223` üzerinde oturur (ikisi de koşulsuz olarak loopback’e
+bağlanır); WebKit’in sürücüsü bir `--host` alır ve misafir NIC’ine kendisi
+bağlanır. Firefox ayrıca `Host` başlığını kendi portuna göre doğrular; bu yüzden
+istemci, aradığı yetki yerine misafir tarafındaki yetkiyi gönderir.
 
-## Action verbs
+## Eylem fiilleri
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Her eylem eksiksiz ayrıştırılır: bozuk bir yük, alanı adlandıran bir ileti
+döndürür, asla bir istisna değil. Gözlem eylemleri (○ ile işaretli) bir insan
+kontrolü elinde tutarken izinli kalır; değiştirici eylemler reddedilir.
 
 ### `computer_use`
 
 `screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
 `right_click`, `middle_click`, `double_click`, `triple_click`,
 `left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
+`hold_key` (0–60 sn), `type`, `wait`○ (0–60 sn), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Koordinatlar, misafirin geçerli modundaki misafir pikselleridir; her ekran
+görüntüsü ekran boyutunu belirtir. Tuş kombinasyonları X11 yazımlarını kullanır
+(`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` bir `selection` alır: `clipboard` (ctrl+C’nin doldurduğu şey,
+varsayılan), `primary` (X11 seçip kopyalama) ya da `xdnd` (süren bir sürükleme).
+Boş bir sonuç, üçü için de normal bir yanıttır. `clipboard_write` yalnızca
+`text` alır — görüntüler ve dosyalar dosya kanalından gider, çünkü bir eylemin
+bağımsız değişkenleri denetim kaydına yazılır ve görüntü baytlarının orada işi
+yoktur. Pano içeriği, güvenilmez veri olarak çevrelenerek döner.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
-`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
-`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`navigate` (yalnızca http/https), `reload` (`hard` isteğe bağlı),
+`stop_loading`, `click` (seçici ya da koordinat), `fill`, `type`, `key` (DOM
+tuş adları), `scroll`, `mouse_move`, `drag`, `left_mouse_down`,
+`left_mouse_up`, `extract`○ (`a11y` | `dom` | `console`), `screenshot`○
+(`full_page` isteğe bağlı), `set_viewport` (en az 320×240), `history`,
+`wait_for`○ (seçici, 0,1–30 sn), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Çıkarılan sayfa içeriği, güvenilmez veri olarak çevrelenerek döner.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Tarayıcının tam olarak bir panosu vardır, bu yüzden `clipboard_read` bir
+`selection` almaz. Her iki pano fiili de bir **güvenli bağlam** gerektirir: düz
+`http://` üzerinden sunulan bir sayfada pano API’si hiç yoktur ve fiil, boş bir
+pano bildirmek yerine bunu söyler — orada `type` kullanın; bu, panodan geçmeden
+imlecin bulunduğu yere ekler.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (takma adlar `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power` ya da herhangi bir `KEYCODE_*`),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(rig’in worktree’si ve sunucu veri diziniyle sınırlı), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` ve `shell`.
+`shell` bir argv listesi alır ve Android’in içinde çalışır, asla bir ana makine
+kabuğu üzerinden değil; `logcat`, `dumpsys` ve `pm grant` gibi geliştirici
+tanılamalarını kapsar.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use`’ın pano fiilleri yoktur. Android 10’dan beri panoyu yalnızca
+odaktaki uygulama okuyabilir.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, ok tuşları ya da tek bir yazdırılabilir karakter; isteğe bağlı
+`command`, `control`, `option` ve `shift` değiştiricileri), `home`, `lock`,
+`unlock`, `screenshot`○, `ui_dump`○, `install_app` (rig worktree’si ya da
+sunucu veri diziniyle sınırlı bir simülatör `.app` dizini), `start_app`,
+`stop_app`, `uninstall_app`, `open_url` ve `spawn`. `spawn` argv alır ve
+`simctl` üzerinden simülatörün içinde yürütür; asla bir ana makine kabuğunu
+çağırmaz.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Koordinatlar ekran görüntüsü pikselleri değil, iOS ekran **noktalarıdır**. Canlı
+akış, simülatörün sabit boyutunu korur ve aygıtı yeniden boyutlandırmak yerine
+ona letterbox uygular. Ana makineden simülatöre ve simülatörden ana makineye
+metin panosu aktarımı, diğer rig’lerle aynı kullanıcı başına, yön başına izin
+politikasını kullanır; dosyalar ve görüntüler iOS pano kanalı tarafından kabul
+edilmez.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Her rig, kendine ait bir CoreSimulator aygıtı ve WebDriverAgent oturumu
+oluşturur. Kapatmak, WebDriverAgent’ı durdurur, o aygıtı kapatıp siler ve kayıt
+girdisini kaldırır. iOS rig’leri yalnızca Xcode, kurulu bir iOS çalışma zamanı ve
+sabitlenmiş otomasyon köprüsü bulunan bir macOS sunucusunda çalışır. Ses,
+mikrofon, dosya bırakma, ana makine kabuğu ya da kapalı ağ garantisi sunmazlar.
 
-### Management tools
+### Yönetim araçları
 
-| Tool | Description |
+| Araç | Açıklama |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Bir çalışma alanının rig’lerini yüzey, durum, ekran ve denetleyici ile listeler |
+| `rig_close` | Bir rig’i yok eder ve diskini atar |
 
-## Lifecycle
+## Yaşam döngüsü
 
-| Phase | Meaning |
+| Aşama | Anlamı |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Önyükleniyor; durum ayrıntısı geçerli adımı olduğu gibi taşır |
+| `ready` | Erişilebilir ve eylemleri kabul ediyor |
+| `parked` | Boşta park edilmiş: vCPU’lar durmuş, RAM hâlâ yerinde; sonraki eylem onu uyandırır |
+| `closing` | Kapatılıyor |
+| `closed` | Gitmiş; satır denetim izi için kalır |
+| `failed` | Öldü ya da hiç açılamadı; arayüzün yeniden deneme sunabilmesi için ayırt edilebilir |
 
-| Close reason | Fired when |
+| Kapanma nedeni | Ne zaman tetiklenir |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Bir kişi ya da ajan istedi |
+| `idleTimeout` | Boşta kalma penceresinin 2 katını aştı ya da bellek için tahliye edildi |
+| `ttlExpired` | Katı ömür doldu |
+| `conversationEnded` | Sahibi olan konuşma sona erdi |
+| `workspaceGone` | Çalışma alanı silindi ya da üyelik kaybedildi |
+| `serverShutdown` | Sunucu duruyor |
+| `backendFailure` | Altındaki hipervizör öldü |
 
-## Defaults and ceilings
+## Varsayılanlar ve üst sınırlar
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Değer | Terminal | Tarayıcı | Bilgisayar | Mobil |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Bellek | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU | 2 | 2 | 4 | 4 |
+| Katı TTL | 8 sa | 2 sa | 2 sa | 2 sa |
+| Boşta kalma penceresi | 45 dk | 15 dk | 15 dk | 15 dk |
+| Önyükleme ekranı | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Ajan kanalındaki durağan görüntüler **1280×800** ile sınırlıdır; insan kanalı
+  **2560×1600**’e kadar pazarlık eder.
+- Ana makinenin tüm rig’ler için yerleşik bellek bütçesi varsayılan olarak
+  **12 GB**’tır ve yerleşik megabayt cinsinden sayılır (park edilmiş bir VM,
+  RAM’ini hâlâ tutar). Tahliye, en uzun süredir kullanılmayandan başlar ve
+  birinin yönettiği, izlediği ya da terminalini açık tuttuğu bir makineyi asla
+  almaz.
+- Açık bir terminal ya da izleme kanalı, rig’i park etmeye ve boşta toplamaya
+  karşı sabitler; katı TTL yine de geçerlidir.
 
-## Ports and dev domains
+## Portlar ve geliştirme etki alanları
 
-| Port | Where | Reserved for |
+| Port | Yer | Neye ayrılmış |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Terminal misafiri | Her yönlendirmenin üzerinden geçtiği port çoğullayıcısı |
+| `9222`, `9223` | Tarayıcı misafiri | Otomasyon aktarımı ve uç noktası (WebKit doğrudan `9222`’ye bağlanır ve aktarım kullanmaz) |
+| `80`, `443` | Tarayıcı misafiri loopback’i | Geliştirme etki alanı HTTP/HTTPS kanalları |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Keşif, sunucu tarafında terminal misafirinin dinleyen TCP portlarını yaklaşık
+  4 sn’de bir yoklar.
+- Rig başına en fazla **16** port otomatik yönlendirilir; fazlası günlükte
+  listelenir, yönlendirilmez.
+- Ana makine tarafındaki yönlendirme loopback’e bağlanır ve misafirin kendi port
+  numarasını tercih eder; **Yerel ağda paylaş**, işletim sisteminin atadığı bir
+  LAN portu ekler.
+- Geliştirme etki alanları `name.test` ya da `name.localhost` ile eşleşmelidir
+  (küçük harf, en fazla 63 karakterlik etiket). Bir etki alanı bir porta
+  eşlenir.
+- Geliştirme etki alanı HTTPS’i, `*.test` / `*.localhost` için tek bir joker
+  yaprak sertifikayla birlikte sunucuya yerel bir CA kullanır (EC P-256,
+  `<dataDir>/rigs/tls/` altında, anahtarlar 0600 ve asla bir misafirde değil).
+  Ana makinede `openssl` yoksa HTTPS kanalı da yoktur; düz HTTP yine
+  yönlendirilir.
 
-## Egress defaults
+## Çıkış varsayılanları
 
-| Surface | Default allowlist |
+| Yüzey | Varsayılan izin listesi |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminal | Sandbox geliştirici temeli (forge’lar, paket kayıtları, model sağlayıcıları) + Ubuntu apt yansıları + worktree’nin kendi forge ana makinesi |
+| Tarayıcı | `usectrl.dev` (ürün sitesi) — artı her motorun ilk önyüklemesinde, paketlerini kurarken eriştiği Debian arşivleri. Ana sayfa yerel bir `file://` belgesidir ve çıkış gerektirmez |
+| Bilgisayar | Boş — bir çağıran ana makine izni verene kadar her şeyi reddet |
+| Mobil | Uygulanmaz (emülatör tarafından yönetilen ağ) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Her microVM ayrıca, yalnızca çekme işlemi için imajının registry ana
+makinelerini alır. Kimlik bilgisi broker’ının izin verilen ana makineler kümesi
+aynı izin listesinden türetilir: misafirin erişemediği bir ana makine için token
+üretilmez.
 
-## Clipboard and file transfer
+## Pano ve dosya aktarımı
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Kopyalama/yapıştırmanın iki yönü ve dosyaları içeri ve dışarı sürükleme. Bir
+rig’i yöneten kişi için kullanılabilir; bir ajan panoyu yukarıdaki fiiller
+üzerinden alır ve dosya aktarımına hiç erişemez (yalıtılmış ortamın içinde zaten
+bir kabuğu vardır).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Pano geçişi kullanıcı başına ve yön başına ayrıdır. Ana makineden rig’e
+yapıştırmaya varsayılan olarak izin verilir; rig’den ana makineye kopyalama sorar
+(on dakikalık bir izin ya da **Ayarlar → Sunucu → Rigs → Pano erişimi** altında
+her zaman izin ver). İki seçim birbirinden bağımsızdır ve asla bir çalışma alanı
+ayarı değildir.
 
-| Lane | Route | Carries |
+| Kanal | Yol | Taşıdığı |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Pano | `GET`/`POST /rig/clipboard/<rigId>` | Metin, bir PNG/JPEG (≤16 MB) ve panodaki dosyaların misafir yolları |
+| Dosyalar | `POST /rig/files/<rigId>` | En fazla 64 dosya, her biri ≤256 MB ve bırakma başına ≤512 MB, isteğe bağlı bir misafir pikseli bırakma noktasıyla |
+| Dosyalar | `GET /rig/files/<rigId>?p=<base64url path>` | Bir dosyanın baytları, geri dışarı |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **RPC değil, HTTP.** RPC soketi, gelen bir çerçeve 256 KB’ı aştığında
+  bağlantıyı kapatır — JSON komutları için doğru, yapıştırılmış bir ekran
+  görüntüsü için ölümcül olan bir DoS koruması. Baytlar, rig karelerinin ve
+  toplantı sesinin zaten kullandığı türden bir yolu kullanır.
+- **Kimlik doğrulama**, imzalı `rig-files:<workspaceId>/<rigId>` hedefi artı
+  çalışma alanı üyeliğidir — kendine ait bir hedef, böylece bir makineyi
+  *izlemek* için üretilen bir URL onun içine dosya da yazamaz.
+- **Devralma geçerlidir.** Panoya yazmak ve dosya bırakmak değiştiricidir ve
+  başka biri kontrolü elinde tutarken reddedilir; panoyu okumak ve bir dosyayı
+  dışarı okumak gözlemdir ve reddedilmez.
+- **Bırakılanların indiği yer:** `~/Drops` (masaüstü), `~/drops` (terminal —
+  worktree’nin yanında, asla içinde değil, böylece bir bırakma hiçbir zaman
+  izlenmeyen bir değişiklik olarak görünmez), `/tmp/cc-drops` (tarayıcı). Dizini
+  sunucu seçer; bir çağıran onu adlandıramaz. Var olan dosyaların üzerine asla
+  yazılmaz — çakışan bir ad `2-name.ext` olarak iner.
+- **Misafire ne söylenir:** bir tarayıcı sayfası, istenen noktada gerçek bir
+  bırakma olayı alır (`Input.dispatchDragEvent`); bir masaüstü, dosyaları ve
+  URI’lerini panosuna alır; çünkü hiçbir ana makine, misafirin içinde
+  ayrıcalıklı bir daemon olmadan rastgele bir araç setine XDND sürüklemesi
+  üretemez. Yanıt, ikisinden hangisinin olduğunu belirtir.
+- **Dışarı sürükleme** yalnızca masaüstünde çalışır ve bir sürükleme sürerken
+  misafirin `XdndSelection` değerini okur. Basma başladığında misafirin zaten
+  tuttuğuyla aynı olan bir yük, yeni değil, bitmiş bir sürüklemeden kalan bayat
+  bir seçim sayılır — X’te "sürükleme bitti" diye bir adım yoktur.
+- **İmaj gereksinimleri:** masaüstü imajı protokol 2 ya da üzeri olmalıdır (pano
+  desteği eklendikten sonra derlenmiş). Daha eski bir imaj 404 yanıtı verir ve
+  uygulama, bozuk bir makine bildirmek yerine imajın yeniden derlenmesini
+  söyler.
+- **Denetim kaydı biçimi kaydeder, içeriği asla**: `clipboard_read`,
+  `clipboard_write`, `drop_files` ve `read_file` satırları sayıları, boyutları
+  ve yolları taşır. Pano, kimlik bilgilerinin birkaç saniyeliğine yaşadığı
+  yerdir ve bunların hiçbiri yazıya dökülmez.
 
-## Guardrails, events, storage
+## Korumalar, olaylar, depolama
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/tr-TR/kilavuz/referans/alan-olaylari/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Rig araçları **`enclosureControl`** eylem sınıfını bildirir (artı use
+  araçlarında `networkEgress` ve `processSpawn`; `mobile_use` ve `ios_use` ayrıca
+  `packageInstall` bildirir). `rig_close` `enclosureControl` bildirir;
+  `rig_list` hiçbirini bildirmez. Varsayılan olarak izin verilir; salt okunur
+  modlar bunu tümden reddeder; alan başına özerklik kadranı onu önce sor’a
+  indirebilir.
+- Alan olayları: `RigClosedEvent` (kapanma nedeniyle birlikte),
+  `RigControlChanged` (devralma / geri verme), `RigReaped` (boşta kalma, TTL ya
+  da bellek tahliyesi, yöneten ajanla birlikte). Bir rig açmak olay değildir.
+  Bkz. [alan olayları](/tr-TR/kilavuz/referans/alan-olaylari/).
+- Depolama: her çalışma alanı veritabanında `rig_sessions` ve `rig_action_log`.
+  Eylem günlüğü, her girdi olayını öznesi ve rig başına monotonik bir sırayla
+  kaydeder; yazılan metin, yazılmadan önce bir uzunluğa ve hash’e indirgenir.
+- Veri dizini: `rigs/images/` (içe aktarılan qcow2 imajları), `rigs/smolvm/`
+  (rig başına çalışma zamanı durumu), `rigs/smolvm-packs/` (önceden çıkarılmış
+  makine paketleri), `rigs/tls/` (geliştirme etki alanı CA’sı), `rigs/run/`
+  (QEMU overlay’leri ve seed’leri).
+- Rotalar: canlı görünüm, bir alandaki ya da PR sayfasındaki bir sekmedir;
+  `/settings/server/rigs` Rigs ayarlar ekranıdır.

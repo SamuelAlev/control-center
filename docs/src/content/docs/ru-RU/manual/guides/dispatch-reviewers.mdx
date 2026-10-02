@@ -1,26 +1,27 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Запускать агентов-ревьюеров
+description: Запускайте специализированных агентов-ревьюеров на PR со страницы PR, через инструмент MCP или из шага конвейера.
 slug: ru-RU/руководство/практические-руководства/запускать-ревьюеров
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+В этом руководстве показано, как запускать агентов-ревьюеров для проверки pull request.
 
-## From the PR view
+## Со страницы PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Откройте PR и перейдите на вкладку **Обзор**
+2. Откройте меню переполнения ⋯ и выберите **Спросить AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Так запускается предустановленный конвейер `pr_review`: он открывает пространство
+проверки этого PR и запускает ревьюеров в соответствии с уровнем ревью рабочего
+пространства — по умолчанию троих (предустановленные агенты **qa**, **architect** и
+**engineer**) — а затем поручает ведущему агенту свести их замечания. На этом пути
+роли выбираете не вы. Чтобы управлять тем, какие роли запускаются и какие файлы
+просматривает каждая из них, используйте инструмент MCP или шаг конвейера ниже.
 
-## Via the `dispatch_reviewers` MCP tool
+## Через инструмент MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Вызовите его из существующего пространства проверки:
 
 ```
 dispatch_reviewers(
@@ -33,109 +34,115 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` и `reviewers` обязательны. Каждая спецификация ревьюера
+принимает `role`, а также необязательный `scope` — glob-шаблон файлов — и
+`prompt_override`, который заменяет инструкцию по умолчанию. Необязательный
+`concurrency` (1–8) ограничивает число параллельных запусков; если он не указан,
+применяется настройка `review_concurrency` рабочего пространства (по умолчанию 3,
+задаётся в разделе **Настройки → Рабочее пространство → Основные**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Инструмент возвращает управление сразу, со списками `dispatched` и `unmatched`.
+Каждый запущенный ревьюер добавляется в пространство как участник, объявляется
+системным сообщением и запускается со своей инструкцией. Замечания попадают в это
+пространство как сообщения `review_node`.
 
-## From a pipeline step
+## Из шага конвейера
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Откройте **Настройки → Рабочее пространство → Шаблоны конвейеров**, откройте
+шаблон и затем:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Добавьте узел **Reviewer (prompt)** из палитры
+2. Выберите агента для запуска и напишите промпт ревьюера, используя плейсхолдеры
+   `{{key}}` для выходных данных вышестоящих шагов (например,
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Задайте ключ вывода (по умолчанию `reviewer_findings`), чтобы нижестоящие шаги
+   могли прочитать замечания
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Шаг запускает агента и приостанавливается до завершения этого запуска. Затем
+движок забирает полезную нагрузку `submit_output` запуска в состояние конвейера
+под ключом вывода узла. (Описание в палитре по-прежнему говорит, что шаг ждёт
+вызова `complete_task`, — такого инструмента не существует; игнорируйте эту
+строку.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Разветвите процесс, подключив несколько узлов-ревьюеров к одному вышестоящему
+шагу, а затем сведите их выходные данные узлом **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Редактор перенаправляет скрытый терминал к каждому достижимому приёмнику, поэтому
+узел, добавленный после предустановленного шага Step, всё равно выполняется. Узлы
+разветвления, подключённые к одному вышестоящему шагу, выполняются параллельно.
 
-## Automatic dispatch on a new PR
+## Автоматический запуск при новом PR
 
-To have a review pipeline fire by itself:
+Чтобы конвейер проверки срабатывал сам:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Откройте шаблон в разделе **Настройки → Рабочее пространство → Шаблоны конвейеров**
+2. Перетащите **PR опубликован** или **Открыт внешний PR** из раздела «Триггеры»
+   библиотеки узлов на холст (или выберите его на плитке-призраке **Добавить
+   триггер**)
+3. Выберите новый узел и включите переключатель **Включено** в его инспекторе,
+   затем включите шаблон
 
-Two events matter here and they are not interchangeable:
+Здесь важны два события, и они не взаимозаменяемы:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Событие                | Срабатывает, когда                                                                                             | Ключи полезной нагрузки                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `PullRequestPublished` | PR открыт **через Control Center** — на поверхности создания PR или агентом, вызывающим `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
+| `ExternalPrDetected`   | Служба опроса PR обнаруживает PR, открытый напрямую на GitHub                                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PR, открытый на github.com, никогда не вызывает `PullRequestPublished`, поэтому
+шаблон, подключённый только к этому событию, его не увидит. Учтите также, что
+`PullRequestPublished` не несёт `pr_number`, — шаг, чей скрипт или промпт ссылается
+на `{{pr_number}}`, должен получать данные от `ExternalPrDetected` или от запуска
+вручную, который их передаёт.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Проверка: включив шаблон, откройте **Конвейеры** и убедитесь, что для следующего
+подходящего PR появился запуск. Отключённый шаблон заставляет свой триггер
+срабатывать в пустоту — движок отклоняет отключённый шаблон и возвращает
+управление, не начиная запуск.
 
-## How a role is matched to an agent
+## Как роль сопоставляется с агентом
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` оценивает каждого агента в рабочем пространстве по каждой
+запрошенной метке роли без учёта регистра:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Совпадение                        | Баллы |
+| --------------------------------- | ----- |
+| Навык, содержащий метку роли      | +3    |
+| Должность, содержащая метку роли  | +2    |
+| Имя агента, содержащее метку роли | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Баллы суммируются, и побеждает наибольшая сумма (при равенстве — первый найденный
+кандидат). Если ни один кандидат не набирает больше нуля, спецификация возвращается
+в списке `unmatched` инструмента, а не запускается, — так роль, которой никто не
+соответствует, попадает в отчёт и никогда не пропускается молча.
 
-## The review space
+## Пространство проверки
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+У PR ровно **одно** пространство проверки, а не по одному на каждого ревьюера. Оно
+создаётся идемпотентно через `pr.ensureSpace`, связывается с PR через
+`ReviewSpaceAssociation` и подготавливается по head ref этого PR. Каждый запущенный
+ревьюер присоединяется к этому пространству и публикует там свои замечания
+`review_node` — именно это делает замечания сопоставимыми и позволяет ведущему
+агенту достичь консенсуса по ним.
 
-## Monitor the dispatch
+## Следите за запуском
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+У каждого запущенного ревьюера свой `AgentRunLog`. Следите за ходом работы в:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **Пространстве проверки**, куда замечания поступают в реальном времени
+- На вкладке **Ревью** PR, где показаны строка состояния проверки и вердикт
+- В разделе **Наблюдаемость → Онлайн** (`/workspaces/:id/observability`) — список
+  агентов со статусом каждого запуска, прошедшим временем в реальном времени,
+  панелью транскрипта и кнопкой остановки. Горячей клавиши для неё нет — открыть её
+  можно из нижней части боковой панели.
 
-## Related guides
+## Связанные руководства
 
-- [Use AI-powered review](/ru-RU/руководство/практические-руководства/ии-проверка/)
-- [Review and merge a PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
-- [Set up pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
+- [Использовать ИИ-проверку](/ru-RU/руководство/практические-руководства/ии-проверка/)
+- [Проверить и смержить PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
+- [Настроить триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
 
-## Related concepts
+## Связанные понятия
 
-- [AI review](/ru-RU/руководство/понятия/ии-проверка/)
-- [Pipelines](/ru-RU/руководство/понятия/конвейеры/)
+- [ИИ-проверка](/ru-RU/руководство/понятия/ии-проверка/)
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/)

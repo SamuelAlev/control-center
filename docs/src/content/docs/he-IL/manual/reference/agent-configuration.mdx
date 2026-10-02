@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: הגדרת סוכן
+description: כל שדה בישות הסוכן, וכן ה-enums והדגלים שהיא משתמשת בהם.
 slug: he-IL/מדריך-למשתמש/עזר/הגדרת-סוכן
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/).
+עמוד עזר זה מפרט כל שדה בישות הסוכן, בתוספת ה-enums והדגלים שהיא משתמשת בהם. להליך צעד-אחר-צעד של יצירה או עריכה של סוכן ביישום, ראו [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/).
 
-## Agent entity fields
+## שדות ישות הסוכן
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| שדה                     | טיפוס                  | נדרש | תיאור                                                                                                                                                                                                |
+| ----------------------- | ---------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | כן   | מזהה ייחודי של הסוכן                                                                                                                                                                                 |
+| `name`                  | `String`               | כן   | מזהה קצר לאזכורים ב-@                                                                                                                                                                                |
+| `title`                 | `String`               | כן   | תואר תפקיד בשפה אנושית                                                                                                                                                                               |
+| `agentMdPath`           | `String`               | כן   | נתיב מוחלט לקובץ ההגדרה `.md` של הסוכן                                                                                                                                                                |
+| `workspaceId`           | `String`               | כן   | סביבת העבודה הבעלים (אינה null)                                                                                                                                                                       |
+| `reportsTo`             | `String?`              | לא   | המזהה של סוכן האב                                                                                                                                                                                    |
+| `skills`                | `AgentSkills`          | כן   | סט של מזהי מיומנויות                                                                                                                                                                                 |
+| `persona`               | `String?`              | לא   | הוראות התנהגות בטקסט חופשי                                                                                                                                                                            |
+| `systemPrompt`          | `String?`              | לא   | עקיפת הנחיית המערכת המוגדרת כברירת מחדל                                                                                                                                                               |
+| `adapterId`             | `String?`              | לא   | המזהה של מתאם ההסקה                                                                                                                                                                                   |
+| `modelId`               | `String?`              | לא   | מזהה המודל בתוך המתאם                                                                                                                                                                                |
+| `strictMode`            | `bool`                 | לא   | ברירת מחדל `false`. נכתב לשורה ולקובץ `AGENTS.md` של הסוכן                                                                                                                                          |
+| `effort`                | `String?`              | לא   | מזהה רמת החשיבה (למשל `'low'`, `'xhigh'`), שמקורו ב-`thinkingLevels` של המודל הנבחר                                                                                                                    |
+| `contextSize`           | `int?`                 | לא   | גודל חלון ההקשר המרבי                                                                                                                                                                                |
+| `role`                  | `AgentRole?`           | לא   | תפקיד הסוכן                                                                                                                                                                                          |
+| `capabilities`          | `AgentCapabilities?`   | לא   | ברירת המחדל של היכולות לפי סוכן; כשהיא null חלה ברירת המחדל ברמת המשתמש בעת השליחה, ושיחה עדיין יכולה לעקוף                                                                                            |
+| `monthlyBudgetCents`    | `int`                  | לא   | תקרת הוצאה חודשית בסנטים (ברירת מחדל `0`, ללא הגבלה)                                                                                                                                                 |
+| `silenceTimeoutMinutes` | `int?`                 | לא   | עקיפה של מנגנון ניטור השקט בדקות; חייבת להיות null או בטווח 1–240 (נאכף בבנאי)                                                                                                                        |
+| `maxConcurrentTasks`    | `int`                  | לא   | ברירת מחדל `1`. נתון הקיבולת שמודל הנוכחות מדווח (ספירות ההרצות והתורים מושוות אליו)                                                                                                                  |
+| `visibility`            | `AgentVisibility`      | לא   | ברירת מחדל `workspace`                                                                                                                                                                               |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | לא   | סטטוס ממשל (ברירת מחדל `active`). נכתב בעצירה הקשה של התקציב ומוצג בתרשים הארגון ובסגל הנוכחות. השליחה עדיין מקבלת עבודה מסוכן `paused`                                                              |
+| `budgetPolicyId`        | `String?`              | לא   | המזהה של מדיניות תקציב משותפת; כשהוא null חל `monthlyBudgetCents` ישירות                                                                                                                             |
+| `runtimeProfileId`      | `String?`              | לא   | המזהה של פרופיל הרצה מותאם                                                                                                                                                                            |
+| `createdAt`             | `DateTime`             | כן   | חתימת זמן היצירה                                                                                                                                                                                      |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` ו-`title` חייבים שניהם להיות לא ריקים (נאכף בבנאי). ברירת המחדל `0` של
+`monthlyBudgetCents` פירושה ללא הגבלה. כתבו תקרה באמצעות `agents.upsert`.
 
-## AgentRole enum
+## ה-enum‏ AgentRole
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| תפקיד     | תווית    | תיאור                            |
+| --------- | -------- | -------------------------------- |
+| `ceo`     | CEO      | תיאום והאצלה                     |
+| `coder`   | Coder    | מימוש קוד                        |
+| `reviewer`| Reviewer | סקירת PR וניתוח                  |
+| `qa`      | QA       | בדיקות והבטחת איכות               |
+| `designer`| Designer | מימוש UI/UX                      |
+| `security`| Security | סקירת אבטחה וביקורת              |
+| `devops`  | DevOps   | תשתיות ופריסה                    |
+| `pm`      | PM       | ניהול מוצר                       |
+| `general` | General  | גמיש, רב-שימושי                  |
 
-## AgentVisibility enum
+## ה-enum‏ AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| ערך        | תיאור                                                   |
+| ---------- | ------------------------------------------------------- |
+| `workspace`| ברירת המחדל; ערכים שמורים לא מוכרים ו-null מפוענחים אליה |
+| `private`  | פרטי למשתמש שיצר את הסוכן                               |
 
-## AgentLifecycleStatus enum
+## ה-enum‏ AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| ערך        | תיאור                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------- |
+| `active`   | ברירת המחדל. `isDispatchable` הוא true רק עבור הערך הזה                                 |
+| `paused`   | נקבע בעצירה הקשה של התקציב. מוצג בסגל הנוכחות; השליחה עדיין מקבלת עבודה                    |
+| `archived` | הוצא משימוש ומוסתר מהסגלים הפעילים                                                      |
 
-## AgentCapabilities flags
+## דגלי AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+נקבעים מחדש בכל שליחה: ברירת המחדל של הסוכן, עם נפילה חזרה לברירת המחדל ברמת המשתמש כשהיא null, ומעליהן עקיפה לפי שיחה. הם נאכפים בדרך השלילה — מתווך פרטי הגישה פשוט אינו מנפיק ואינו מזריק את מה שיכולת כבויה מכסה.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| דגל                 | טיפוס  | ברירת מחדל | תיאור                                                                                       |
+| ------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------- |
+| `canPushToRepo`     | `bool` | `false`    | דחיפת קומיטים למאגר המרוחק; משמש שער להזרקת אסימון GitHub לצד `canCallGitHubApi`            |
+| `canCallGitHubApi`  | `bool` | `false`    | קריאה אל api.github.com; משמש שער להזרקת `GH_TOKEN` ולדומייני היציאה של GitHub               |
+| `canCallTicketing`  | `bool` | `false`    | קריאה ל-API של ספק הכרטוס; משמש שער להזרקת מפתח ה-API של הספק ולדומייני היציאה שלו           |
+| `canAccessNetwork`  | `bool` | `true`     | יציאה יוצאת שרירותית. משמש שער גם לכלים `web_fetch` ו-`web_search` של מנגנון ההרצה            |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` הוא ארבע ברירות המחדל של הבנאי. `legacyDefault` (ארבעתן true) משמש רק את המיגרציה שמילאה בדיעבד שיחות שנוצרו לפני שהיכולות היו קיימות. blob שמור פגום או ריק מפוענח ל-`safeDefault`; המפתח הישן `canCallLinear` נקרא בתור `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+סט בלתי ניתן לשינוי ושאינו תלוי רישיות של מזהי מיומנויות. בעת השליחה ה-slugs האלה מסונכרנים כקישורי מיומנויות בשכבת-העל של הסוכן; מנגנון ההרצה טוען אז אוטומטית את ה-frontmatter של המיומנויות המקושרות אל ההנחיה.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (נגזר)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+אינו נשמר. שבעה ערכים. סדר ההצהרה הוא סדר העדיפויות (`sortPriority`, מוצמד בבדיקה), והוא הסדר שלפיו ממיין הסגל:
 
-| State       | `sortPriority` | Condition                                                                                                           |
+| מצב         | `sortPriority` | תנאי                                                                                                                |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| `running`   | 0              | ליומן הרצה כלשהו יש סטטוס `running`                                                                                 |
+| `blocked`   | 1              | מצב החיות של ההרצה האחרונה הוא `blocked`, `stalled` או `looping`                                                     |
+| `failed`    | 2              | הסטטוס של ההרצה האחרונה הוא `error`, או שמצב החיות שלה הוא `failed` או `dead`                                       |
+| `queued`    | 3              | הרצה נשלחה אך אינה מתבצעת — היא חונה מאחורי הרצה אחרת של אותו סוכן, או שנכתבה אך טרם החלה                             |
+| `succeeded` | 4              | ההרצה הסתיימה בהצלחה                                                                                                |
+| `idle`      | 5              | הסוכן כבר רץ בעבר ואין לו דבר באוויר                                                                                 |
+| `neverRun`  | 6              | לא קיימים יומני הרצה                                                                                                |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` ו-`succeeded` הם **להרצה בודדת בלבד**. `deriveAgentLiveState`, שמחשב את מצב הסגל של סוכן, לעולם אינו מפיק אף אחד מהם — הוא מחזיר `neverRun`, `running`, `failed`, `blocked` או `idle`.
 
-## See also
+## ראו גם
 
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/)
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)

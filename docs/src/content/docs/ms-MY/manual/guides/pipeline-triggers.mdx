@@ -1,159 +1,170 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Sediakan pencetus pipeline
+description: Sambungkan templat supaya bermula pada acara domain, jadual, atau webhook masuk — daripada pustaka nod dan pemeriksa pencetus yang dipilih.
 slug: ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Pencetus ialah apa yang memulakan sesuatu pipeline. Setiap satu ialah nod pada
+kanvas, yang dijatuhkan daripada bahagian **Pencetus** dalam pustaka nod.
+Memilih nod itu membuka pemeriksanya di sebelah kanan — tiada senarai pencetus
+yang sentiasa wujud, tiada tab pencetus, dan tiada skrin pencetus.
 
-## Open a trigger inspector
+## Buka pemeriksa pencetus
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Pergi ke **Tetapan → Ruang kerja → Templat pipeline**.
+2. Tekan ikon pensel pada baris templat itu untuk membuka editor.
+3. Pilih nod pencetus pada kanvas. Panel kanan muncul dengan tetapan pencetus
+   itu. Apabila tiada apa yang dipilih, panel itu tersembunyi.
 
-## Add a trigger
+## Tambah pencetus
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+Bahagian **Pencetus** dalam pustaka nod menyenaraikan setiap jenis permulaan
+sebagai nod tersendiri: manual, jadual, webhook, dan satu kad bagi setiap acara
+domain. Cari `merged`, `ticket`, atau nama jenisnya (`PrMerged`) dan seret kad
+itu ke atas kanvas. Templat baharu juga menunjukkan jubin hantu **Tambah
+pencetus** pada sauh kemasukan — pilih daripada senarai boleh cari yang sama.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+Pencetus itu dimasukkan serta-merta. Pencetus automatik baharu bermula dalam
+keadaan dilumpuhkan supaya perbuatan menjatuhkan kad itu tidak memicu sesuatu
+larian sebelum anda mengkonfigurasinya. Gunakan suis **Didayakan** dalam
+pemeriksa untuk menghidupkannya, atau ikon tong sampah untuk memadamkannya.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Satu pencetus bagi setiap jenis peristiwa]
+`pipeline_triggers` adalah unik pada ruang kerja, jenis peristiwa dan templat.
+Jenis peristiwa yang sudah anda sambungkan akan hilang daripada pemilih. Setiap
+pencetus webhook berkongsi jenis peristiwa sintetik `webhook`, jadi sesuatu
+templat boleh memegang paling banyak satu webhook.
 :::
 
-## Allow manual runs
+## Benarkan larian manual
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Jatuhkan **Larian manual** (atau pilihnya daripada jubin hantu) dan hidupkan
+**Didayakan** dalam pemeriksanya. Itulah yang menjadikan templat itu muncul
+dalam pelancar larian. Ia bukan kes khas — suis itu menulis baris pencetus
+biasa yang jenis peristiwanya ialah `manual`. Ia kekal serta-merta; tiada apa
+yang perlu disimpan.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+Suis yang sama berada di sebalik **Larian manual** dalam pengepala editor,
+tempat ia duduk bersebelahan input yang diisytiharkan oleh templat.
 
-## On an event
+## Pada peristiwa
 
-These events start a run:
+Peristiwa ini memulakan satu larian:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Label pemilih                | Peristiwa                  |
+| ---------------------------- | -------------------------- |
+| PR luaran dibuka             | `ExternalPrDetected`       |
+| PR diterbitkan               | `PullRequestPublished`     |
+| Status PR berubah            | `PullRequestStatusChanged` |
+| PR dicantum                  | `PrMerged`                 |
+| Mesej diterima               | `MessageReceived`          |
+| Tiket dicipta                | `TicketCreated`            |
+| Status tiket berubah         | `TicketStatusChanged`      |
+| Tiket ditugaskan             | `TicketAssigned`           |
+| Tiket selesai                | `TicketCompleted`          |
+| Tiket gagal                  | `TicketFailed`             |
+| Tiket dibatalkan             | `TicketCancelled`          |
+| Ambang bajet dilampaui       | `BudgetThresholdCrossed`   |
+| Repositori ditambah          | `RepoAdded`                |
+| Rakaman mesyuarat dihentikan | `MeetingRecordingStopped`  |
+| Kemahiran dikemas kini       | `SkillUpdated`             |
+| Ruang dipadam                | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` ialah peristiwa yang didengari oleh pipeline pembersihan worktree
+terbina dalam: ia membawa id ruang yang dipadam itu, jadi larian tersebut
+menuntut semula worktree ruang itu sahaja dan bukan menyapu seluruh ruang kerja.
 
-For the payload keys each event carries, see the
-[domain events reference](/ms-MY/manual-pengguna/rujukan/acara-domain/).
+Untuk kunci muatan yang dibawa oleh setiap peristiwa, lihat
+[rujukan acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/).
 
-### Filter an event trigger
+### Tapis pencetus peristiwa
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Pilih nod **Status PR berubah**. Cip status dalam pemeriksa ialah satu-satunya
+penapis yang boleh dihasilkan oleh UI. Ketik mana-mana antara `merged`,
+`closed`, `approved`, `opened`, `reopened`; pencetus itu kemudian terpicu hanya
+apabila `status` peristiwa sepadan dengan salah satu daripadanya. Membiarkan
+setiap cip tidak dipilih bermakna tiada penapis.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Tiada medan penapis JSON bebas. Kunci penapis yang tidak dibawa oleh muatan
+peristiwa itu tidak akan pernah sepadan, jadi jangan tulis sendiri satu terhadap
+kunci yang belum anda sahkan dalam rujukan acara domain.
 
-## On a schedule
+## Pada jadual
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Pilih nod **Jadual** untuk menyunting bila ia terpicu. Medan pemeriksa kekal
+seperti yang anda tinggalkan:
 
-| Field                                | Description                                                                                                                                                                         |
+| Medan                                | Keterangan                                                                                                                                                                          |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| **Jadual (cron atau every:seconds)** | Ungkapan cron lima medan seperti `0 9 * * 1`, atau selang seperti `every:86400`. Nombor kosong dipaksa menjadi `every:<n>`.                                                        |
+| **Zon waktu (pilihan)**              | Zon IANA seperti `Europe/Paris`. Lalai kepada UTC.                                                                                                                                  |
+| **Pada larian terlepas**             | Apa yang perlu dilakukan dengan picuan yang terlepas semasa pelayan tidak berjalan: **Jalankan sekali** menggabungkan setiap slot yang terlepas menjadi satu picuan semasa mula semula (lalai), **Langkau** menyambung semula pada slot masa hadapan yang berikutnya. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+Baris ringkasan jubin kanvas hanya menyatakan selang bagi bentuk
+`every:<seconds>`; ungkapan cron dipaparkan sebagai "Jadual" sahaja.
 
-## Via a webhook
+## Melalui webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Menjatuhkan **Webhook** menghasilkan token rawak. Pilih nod itu untuk menyalin
+laluan `POST /webhooks/<token>` daripada pemeriksa.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+Token itu juga ialah rahsia HMAC: permintaan mesti membawa
+`X-Hub-Signature-256: sha256=<hex>`, dengan hex itu ialah
+`HMAC-SHA256(body, token)`. Penghantaran yang gagal pengesahan akan ditolak dan
+direkodkan serta tidak boleh dimainkan semula. Pendua diabaikan melalui kunci
+nyahpenduanya.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[Token itu berada dalam pangkalan data]
+Pemeriksa menunjukkan laluan itu. Token itu sendiri ialah segmen laluan; ia juga
+disimpan pada baris `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Setiap permulaan ialah nod graf tersendiri. Menarik wayar daripada **Jadual**
+hanya menyambungkan Jadual; **Larian manual** boleh melalui laluan berbeza
+(contohnya nod syarat) sebelum ia menyertai kerja yang sama. Sesuatu larian
+memasuki permulaan yang sepadan dengan jenis peristiwanya dan melangkau subgraf
+yang dimiliki oleh permulaan lain.
 
-## How a trigger reaches a run
+## Bagaimana pencetus sampai kepada satu larian
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Pencetus yang didayakan dan yang jenis peristiwa serta penapisnya kedua-duanya
+sepadan akan memulakan satu larian dengan muatan peristiwa itu sebagai muatan
+pencetus larian tersebut — itulah yang diselesaikan oleh `{{key}}` dalam prompt
+atau skrip sesuatu langkah. Peristiwa yang membawa kunci semula jadi
+dinyahpendua, jadi peristiwa yang sama terpicu dua kali tidak memulakan dua
+larian.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Sesuatu _templat_ yang dilumpuhkan akan ditolak walaupun pencetusnya sepadan.
+Lapan daripada tiga belas templat terbina dalam disertakan dalam keadaan
+dilumpuhkan, jadi pencetus yang disemai bagi templat itu tidak memicu apa-apa
+sehingga anda menghidupkan templat tersebut.
 
-## Useful patterns
+## Corak yang berguna
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Pintukan laluan manual sahaja** — salurkan **Larian manual** melalui nod
+  syarat, dan **Jadual** terus ke kerja itu. Setiap permulaan memiliki wayarnya
+  sendiri.
+- **Semak setiap PR baharu** — peristiwa **PR diterbitkan** pada templat
+  `pr_review`.
+- **Bersihkan selepas cantuman** — peristiwa **Status PR berubah**, ditapis
+  kepada `merged` / `closed` / `approved`. Templat terbina dalam
+  `pr_merged_cleanup` sudah mendengar dengan cara ini, tambah tiket
+  selesai/dibatalkan, `SpaceDeleted`, dan jadual harian yang dipaksa didayakan
+  pada setiap penyemaian semula kerana ia ialah pengumpulan sampah.
+- **Sapuan malam** — jadual `0 2 * * *` dengan zon waktu, pada templat yang nod
+  pertamanya ialah skrip bash.
+- **Bertindak balas terhadap sistem luar** — pencetus webhook, dengan sistem
+  pemanggil menandatangani badan permintaannya seperti di atas.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create a pipeline template](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
-- [Run a pipeline manually](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
-- [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
-- [Domain events reference](/ms-MY/manual-pengguna/rujukan/acara-domain/)
+- [Cipta templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
+- [Jalankan pipeline secara manual](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
+- [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
+- [Rujukan acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/)

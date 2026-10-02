@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Billentyűparancsok
+description: A billentyűparancsok teljes nyilvántartása hatókör szerint, azzal a feltétellel együtt, amely mellett az egyes parancsok aktiválódnak.
 slug: hu-HU/kezikonyv/referencia/billentyuparancsok
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+A billentyűparancsok egyetlen `const` nyilvántartásból származnak: a `KeybindingRegistry`-ből a `lib/core/constants/keybindings.dart` fájlban. Ez **48 kötést** tartalmaz. A Beállítások → Ön → Gyorsbillentyűk ezt a nyilvántartást **írásvédett referenciaként** jeleníti meg: nincs átkötési felület, és nincs felhasználói gyorsbillentyű-fájl sem.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+Az alábbiakban a `Cmd` az elsődleges parancsmódosító — ⌘ macOS-en, Ctrl Windowson és Linuxon. Egy kötés csak akkor aktiválódik, ha a parancsához az aktuális képernyőn regisztrált kezelő tartozik, és teljesül a `when` feltétele; a `!textInputFocus` azt jelenti, hogy a lenyomás inkább egy fókuszált szövegmezőbe jut tovább.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Nincs számjegyekkel működő navigációs billentyűparancs. A Beérkezett, a jegyek, a pull requestek és a többi rész az oldalsávból vagy a ⌘K használatával érhető el. A megfigyelhetőségnek sincs billentyűparancsa.
 
-## Global (19)
+## Globális (19)
 
-Scope `global`, so they are live anywhere in the shell.
+`global` hatókör, így a shell bármely pontján aktívak.
 
-### System
+### Rendszer
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| Billentyűparancs                            | Művelet                                            | Feltétel                                                      |
+| ------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | Parancspaletta                                     | —                                                              |
+| `Shift + /` (`?`)                           | Billentyűparancsok gyorsáttekintése                | Nem gépel egy mezőbe                                           |
+| `Cmd/Ctrl + Z`                              | Visszavonás                                        | Nem gépel egy mezőbe (a fókuszált mező a saját visszavonását tartja meg) |
+| `Cmd/Ctrl + Shift + Z`                      | Mégis                                              | Nem gépel egy mezőbe                                           |
+| `Cmd/Ctrl + Shift + T`                      | Téma váltása                                       | —                                                              |
+| `Cmd/Ctrl + ,`                              | Beállítások megnyitása (a `/settings/you/appearance` oldalon köt ki) | —                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | Fókuszmód váltása                                  | —                                                              |
+| `Cmd/Ctrl + Shift + W`                      | Munkaterület-váltó váltása                         | —                                                              |
+| `Cmd/Ctrl + ]`                              | Következő munkaterület                             | —                                                              |
+| `Cmd/Ctrl + [`                              | Előző munkaterület                                 | —                                                              |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Váltás az 1–9. munkaterületre                      | —                                                              |
 
-## Pull request list (3)
+## Pull requestek listája (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+`/pull-requests` hatókör. Mindegyikhez `route == '/pull-requests'` és fókusz nélküli szövegmező kell, ezért nem aktiválódnak, amikor a PR részleteinek útvonala nyitva van a lista fölött.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Billentyűparancs | Művelet              |
+| ---------------- | -------------------- |
+| `R`              | Frissítés            |
+| `Enter`          | PR megnyitása        |
+| `F`              | Szűrőmenü megnyitása |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+Az `Enter` (`pr.list-open`) szerepel a nyilvántartásban, és megjelenik a gyorsbillentyűk referenciáján, de **a listaképernyő nem regisztrál hozzá kezelőt**, ezért jelenleg nem aktiválódik. Az `F` a szűrőmenüt nyitja meg (`pr.list-open-filter`), nem a keresést.
 
-## Pull request detail (2)
+## Pull request részletei (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+`/pull-requests/` hatókör. A frissítéshez nem lehet fókuszált szövegmező. A lap bezárásának nincs szövegbeviteli őre (a ⌘-vel módosított leütés soha nem sima szöveg), viszont van útvonal-regexe, így nem aktiválódik a listán.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| Billentyűparancs | Művelet       | Feltétel                           |
+| ---------------- | ------------- | ---------------------------------- |
+| `R`              | Frissítés     | Nem gépel egy mezőbe               |
+| `Cmd/Ctrl + W`   | Lap bezárása  | `/pull-requests/<…>` helyen        |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+A lapváltást (`1`/`2`/`3`), a fájl megtekintettként jelölését és összecsukását (`V`/`C`), a fájllistát (`T`) és a diffben keresést (`Cmd/Ctrl + F`) a diff-megjelenítő saját kezelője birtokolja — lásd [A nyilvántartáson kívüli diff-megjelenítő-billentyűk](#a-nyilvántartáson-kívüli-diff-megjelenítő-billentyűk).
 
-## Inbox (1)
+## Beérkezett (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Billentyűparancs | Művelet              |
+| ---------------- | -------------------- |
+| `F`              | Szűrőmenü megnyitása |
 
-Requires `route == '/inbox'` and no focused text field.
+`route == '/inbox'` és fókusz nélküli szövegmező szükséges.
 
-## GitHub user and team profiles (3)
+## GitHub felhasználói és csapatprofilok (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+`/users/` hatókör. A `when` feltétel regexszel illeszkedik a `/users/<login>` **vagy** a `/teams/<organization>/<slug>` útvonalra, emellett nem lehet fókuszált szövegmező.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Billentyűparancs | Művelet        |
+| ---------------- | -------------- |
+| `R`              | Frissítés      |
+| `/`              | Keresés fókusza |
+| `Cmd/Ctrl + F`   | Keresés fókusza |
 
-## Spaces (8)
+## Terek (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+`/spaces` hatókör. A `when` feltételek regexet használnak, így a térlistán (`/spaces`) és egy kijelölt téren (`/spaces/<id>`) is aktiválódnak.
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| Billentyűparancs       | Művelet                        | Feltétel              |
+| ---------------------- | ------------------------------ | --------------------- |
+| `Enter`                | Üzenet küldése                 | —                     |
+| `Cmd/Ctrl + N`         | Új tér                         | `/spaces` útvonalon   |
+| `J`                    | Következő tér                  | Nem gépel egy mezőbe  |
+| `K`                    | Előző tér                      | Nem gépel egy mezőbe  |
+| `Cmd/Ctrl + Shift + D` | Nyomva beszélhet diktálás      | —                     |
+| `Cmd/Ctrl + T`         | Szerkesztőlap megnyitása       | `/spaces` útvonalon   |
+| `Cmd/Ctrl + W`         | Szerkesztőlap bezárása         | `/spaces` útvonalon   |
+| `Cmd/Ctrl + B`         | Szerkesztő oldalsávjának váltása | `/spaces` útvonalon |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Az Enterrel küldést a szerkesztő szövegmezője birtokolja; a nyomva beszélhet módot a szerkesztő mikrofon gombja (a saját hardveres billentyűzetkezelője). Mindkettő a beállítások referenciája kedvéért szerepel a nyilvántartásban.
 
-## Workspace picker (2)
+## Munkaterület-választó (2)
 
-Scope `/workspaces`, live only on the picker itself.
+`/workspaces` hatókör, kizárólag magán a választón aktív.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Billentyűparancs | Művelet                          |
+| ---------------- | -------------------------------- |
+| `Cmd/Ctrl + N`   | Új munkaterület                  |
+| `Enter`          | A kijelölt munkaterület megnyitása |
 
-`Enter` requires no focused text field.
+Az `Enter` fókusz nélküli szövegmezőt igényel.
 
-## Settings (5)
+## Beállítások (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Billentyűparancs | Művelet                | Képernyő                            |
+| ---------------- | ---------------------- | ----------------------------------- |
+| `J`              | Következő beállítási oldal | Bármely `/settings` útvonalon, gépelés nélkül |
+| `K`              | Előző beállítási oldal | Bármely `/settings` útvonalon, gépelés nélkül |
+| `Cmd/Ctrl + N`   | Új ügynök              | Beállítások → Munkaterület → Ügynökök |
+| `Cmd/Ctrl + N`   | Tároló hozzáadása      | Beállítások → Munkaterület → Tárolók |
+| `R`              | Adapterek újrakeresése | Beállítások → Szerver → Modellszolgáltatók |
 
-## Newsfeed (5)
+## Hírfolyam (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+`/newsfeed` hatókör. Mindegyikhez `route == '/newsfeed'` és fókusz nélküli szövegmező szükséges.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Billentyűparancs | Művelet               |
+| ---------------- | --------------------- |
+| `J`              | Következő cikk        |
+| `K`              | Előző cikk            |
+| `Enter`          | Cikk megnyitása       |
+| `S`              | Könyvjelző váltása    |
+| `R`              | Hírfolyamok frissítése |
 
-## Diff viewer keys outside the registry
+## A nyilvántartáson kívüli diff-megjelenítő-billentyűk
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+A PR diff-megjelenítő ezeket maga kezeli (`PrDiffKeyboardHandler`). A keresés/megtekintett/összecsukás csak a beállítások referenciája kedvéért szerepel a nyilvántartás megjegyzéseiben — nincs regisztrált diszpécserkezelő, ezért a diszpécser a diff-nézetre hagyja őket. A gyorsbillentyűk referenciáján nem jelennek meg saját sorokként.
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| Billentyűparancs | Művelet                                               |
+| ---------------- | ----------------------------------------------------- |
+| `Cmd/Ctrl + F`   | Keresés a diffben                                     |
+| `J` / `K`        | Következő / előző fájl                                |
+| `V`              | A fókuszált fájl megtekintett jelölésének váltása     |
+| `C`              | A fókuszált fájl összecsukásának váltása              |
+| `T`              | Fájllista megjelenítése                               |
+| `Enter`          | Következő találat (csak amíg a diffben keresés nyitva van) |
+| `Shift + Enter`  | Előző találat                                         |
+| `Escape`         | A diffben keresés bezárása vagy a diff szövegkijelölésének törlése |
+| `Cmd/Ctrl + C`   | A diff kijelölésének másolása                         |
 
-## Browser-reserved combinations
+## A böngésző által lefoglalt kombinációk
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+A webes buildben a böngésző néhány gyorsítóbillentyűt még azelőtt elfogyaszt, hogy az oldal észlelné őket, így a megfelelő kötések ott soha nem aktiválódhatnak. Asztali környezetben normálisan működnek. Az elsődleges parancsmódosítóval kombinálva ezek vannak lefoglalva: `T`, `W`, `N` és az `1`–`9` számjegyek.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Ez érinti a `Cmd/Ctrl + Alt + 1`–`9` munkaterület-váltást, a `Cmd/Ctrl + N` kombinációt (új tér, új munkaterület, új ügynök, tároló hozzáadása), valamint a `Cmd/Ctrl + T` / `Cmd/Ctrl + W` kombinációt a terekben és a PR részleteinél.
 
-## See also
+## Kapcsolódó
 
-- [Route map](/hu-HU/kezikonyv/referencia/utvonalterkep/)
-- [Focus mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/fokuszmod/)
+- [Útvonaltérkép](/hu-HU/kezikonyv/referencia/utvonalterkep/)
+- [Fókuszmód](/hu-HU/kezikonyv/gyakorlati-utmutatok/fokuszmod/)

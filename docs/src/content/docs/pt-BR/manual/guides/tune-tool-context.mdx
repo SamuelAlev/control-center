@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Ajustar o contexto de ferramentas de um agente
+description: Inspecione o que uma execução realmente envia, altere quais ferramentas são carregadas de antemão e descubra se uma escolha ruim de ferramenta foi uma falha de recuperação ou um problema de prompt.
 slug: pt-BR/manual/guias/ajustar-contexto-de-ferramentas
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/pt-BR/manual/conceitos/contexto-de-ferramentas).
+Este guia aborda o trabalho prático em torno da superfície de ferramentas de dois níveis: ver o que uma execução envia, alterar isso e diagnosticar um agente que recorreu à ferramenta errada. Para entender por que funciona assim, leia [Contexto de ferramentas e cache de prompts](/pt-BR/manual/conceitos/contexto-de-ferramentas).
 
-## Look at what a run actually sends
+## Veja o que uma execução realmente envia
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Abra uma conversa e toque no indicador de utilização do contexto no cabeçalho da conversa. Ele reconstrói exatamente a superfície que o próximo despacho enviaria, sem executar nada. **Ver mais** (ou o comando `/context`) abre o explorador de contexto completo, onde você pode inspecionar cada ferramenta.
 
-Two segments matter here:
+Dois segmentos importam aqui:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Definições de ferramentas** e **MCP e ferramentas dinâmicas** — o conjunto residente, com o custo real em tokens de cada ferramenta.
+- **Ferramentas carregadas sob demanda** — o índice diferido. Cada entrada é cobrada apenas pelo seu nome, porque um nome é tudo o que a requisição carrega; abrir uma delas ainda mostra a descrição e o esquema completos, para você ver quanto ela *custaria* se a execução a carregasse.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/pt-BR/manual/referencia/cc-server-cli).
+Se o segmento diferido estiver vazio, o diferimento está desativado para este servidor. Verifique `--tool-deferral` na [CLI do `cc_server`](/pt-BR/manual/referencia/cc-server-cli).
 
-## Change which tools load up front
+## Altere quais ferramentas são carregadas de antemão
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+O conjunto residente é política, não configuração — ele vive em `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) e se aplica a todas as execuções:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/pt-BR/manual/conceitos/modos) uses on nearly every turn.
+- `residentBuiltins` — o vocabulário de arquivos e shell.
+- `residentDiscovery` — `search_tools` e `list_my_tools`. Não remova estas; é por meio delas que um agente alcança todo o resto.
+- `residentMcpTools` — o punhado de ferramentas do Control Center que valem o próprio esquema a cada requisição.
+- Um bloco por modo, para as ferramentas que um determinado [modo](/pt-BR/manual/conceitos/modos) usa quase a cada turno.
 
-Two rules when editing it:
+Duas regras ao editá-lo:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Adicione uma ferramenta apenas se a maioria das execuções a usar.** Todo nome custa o próprio esquema em cada requisição de cada execução, para sempre. Uma ferramenta importante quando usada, mas rara no geral, pertence à metade diferida — o agente ainda vai encontrá-la.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Use o nome real da ferramenta.** Um nome residente que não corresponde a nenhuma ferramenta é inerte: nenhum erro, nenhum aviso, a ferramenta simplesmente fica diferida. `test/tooling/resident_tool_names_test.dart` detecta isso e também mantém cada modo com menos de 40 ferramentas residentes, que é o objetivo do exercício — além dessa faixa, a seleção de ferramentas se degrada de forma mensurável.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Os verbos obrigatórios e fixados de um modo são adicionados automaticamente, então você nunca precisa listar o próprio verbo de saída de um modo.
 
-## Diagnose a bad tool choice
+## Diagnostique uma escolha ruim de ferramenta
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Quando um agente usou a ferramenta errada ou afirmou que não conseguia fazer algo, descubra qual destas três coisas aconteceu.
 
-### 1. Did it look?
+### 1. Ele procurou?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Cada execução registra as ferramentas diferidas que carregou e o que disparou isso — uma chamada direta pelo nome ou uma consulta a `search_tools`. Abra o fluxo de eventos da execução (**Configurações → Espaço de trabalho → Agentes** → o agente → **Registros** → **Visualizar**) e procure por `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Nada registrado, e o agente afirmou que a capacidade não existia** — ele nunca procurou. Isso é um problema de prompt, não de recuperação: o índice diferido está no prompt de sistema dele, com a instrução de não declarar uma capacidade ausente antes de uma busca voltar vazia.
+- **Uma busca registrada, mas nada carregado** — uma falha de recuperação genuína. Vá para o passo 2.
+- **Ferramentas carregadas, mas a errada foi usada** — as ferramentas que ele encontrou são parecidas demais. Vá para o passo 3.
 
-### 2. Fix a retrieval miss
+### 2. Corrija uma falha de recuperação
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` faz correspondência por nomes, descrições e nomes de argumentos. Uma falha quase sempre significa que a descrição não contém as palavras que o agente usou.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Adicione-as. As descrições são o índice de recuperação, então **aumente-as em vez de encurtá-las** — escreva o vocabulário que um operador realmente digitaria ("atribuir", "repassar", "entregar para"), não apenas o substantivo interno. Encurtar uma descrição para economizar tokens custa tanto o acerto de busca quanto a precisão da seleção, e economiza quase nada perto do esquema.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Se a ferramenta certa existe mas tem classificação baixa, é para isso que serve o argumento `limit`; a própria descrição da ferramenta orienta o agente a ampliar uma busca que parece próxima, mas não encontra.
 
-### 3. Fix look-alike tools
+### 3. Corrija ferramentas parecidas
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Se duas ferramentas têm descrições que soariam iguais para quem já não sabe a diferença, o modelo está adivinhando. Una as duas em uma só ferramenta com um argumento discriminante.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` e `ticket_pr_link` seguem esse padrão: cada um cuida de vincular e desvincular por meio de um argumento discriminante. Uma escolha feita *dentro* de uma chamada, com o contexto completo da requisição, é mais confiável do que uma escolha feita entre duas descrições parecidas.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Mantenha as ferramentas separadas quando elas precisarem de requisitos de aprovação, auditoria ou renderização diferentes — esses são motivos pelos quais uma fusão custaria algo real.
 
-## Check the prompt cache is working
+## Verifique se o cache de prompts está funcionando
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+A taxa de acertos de cache aparece em **Observabilidade → Resumo** como **Taxa de cache**. Uma conversa longa e saudável fica alta; se estiver persistentemente baixa, algo está reescrevendo o prefixo a cada turno.
 
-Common causes, in order of likelihood:
+Causas comuns, em ordem de probabilidade:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Qualquer coisa não determinística no início do prompt.** Um carimbo de data e hora, um id de requisição ou um conjunto iterado em ordem variável já bastam.
+- **Uma mudança de modelo ou de esforço no meio da conversa.** Ambas alteram o prefixo. Subagentes são especialmente fáceis de errar aqui: executar os filhos com um esforço menor para economizar dinheiro pode custar mais em compartilhamento de cache perdido do que economiza.
+- **Compactação frequente.** A compactação reescreve o histórico por projeto, então seu custo é real; a solução é compactar raramente e em profundidade, em vez de com frequência e superficialmente.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Desativar o diferimento com `--tool-deferral=off` é um A/B válido para isolar se uma mudança de comportamento veio da superfície de dois níveis. Ele reproduz exatamente a requisição anterior ao diferimento, então, se o comportamento persistir com ele desativado, a superfície não é a causa.

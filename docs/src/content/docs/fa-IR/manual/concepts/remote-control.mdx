@@ -1,207 +1,204 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: کنترل از راه دور و موبایل
+description: چگونه تلفن به‌جای پیوند همتا-به-همتا، از راه یک رلهٔ کارگزاری‌شده و مهروموم‌شدهٔ سرتاسری به سرور شما می‌رسد و مدل دسترسی لایه‌ای که این دسترسی را باریک نگه می‌دارد.
 slug: fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center یک برنامهٔ رومیزی است، اما کاری که دنبال می‌کند با دور شدن شما از
+میز متوقف نمی‌شود. **کنترل از راه دور** تلفن شما را با `cc_server`تان جفت
+می‌کند؛ با استفاده از **[Remote](https://remote.usectrl.dev/)**، برنامهٔ همراهی
+که در remote.usectrl.dev قرار دارد، تا از همان‌جا ناوگان را دنبال کنید: پیام‌ها
+و تیکت‌ها را بخوانید، به یک عامل پاسخ دهید، خوراک خبری‌تان را تریاژ کنید — بدون
+آن‌که صدا، رونوشت، کد منبع یا اعتبارنامه‌هایی که روی سرور هستند، هرگز از آن بیرون
+بروند.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+آن را همراهی عمدتاً خواندنی برای تختهٔ فرمان در نظر بگیرید. قرار نیست جایگزین
+کلاینت کامل رومیزی شود.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) for how the two differ.
+:::note[دو مسیر متفاوت راه دور]
+برنامهٔ همراه تلفن از راه یک **رلهٔ WebSocket کارگزاری‌شده** که فریم‌های
+JSON-RPC مهروموم‌شدهٔ سرتاسری را حمل می‌کند، با یک `cc_server` جفت می‌شود.
+**ساخت وب** کامل (و یک رومیزی که به سروری راه دور نشانه رفته) مسیر راه دور دیگر
+است؛ با WebSocket به `cc_server` وصل می‌شود و برنامهٔ کامل را رندر می‌کند. برای
+این‌که این دو چگونه تفاوت دارند، [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) را ببینید.
 :::
 
-## Transport
+## انتقال
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+تلفن از راه یک WebSocket به `cc_server` می‌رسد: یا اتصالی مستقیم (loopback، LAN،
+tailnet یا `wss://`) یا اتاقی دعوت‌محور روی یک کارگزار سیگنالینگ که فریم‌های
+مهروموم‌شده را رله می‌کند. هیچ کانال دادهٔ همتا-به-همتا وجود ندارد.
 
-## What the phone can do
+## تلفن چه کارهایی می‌تواند انجام دهد
 
-The paired phone reaches a small, intentional slice of the server's surface:
+تلفن جفت‌شده به برش کوچک و تعمدی از سطح سرور دسترسی دارد:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **خواندن** تیکت‌ها، عامل‌ها، فضاها و پیام‌هایشان و خوراک خبری شما
+- **پاسخ‌دادن**: فرستادن پیام در یک فضا، به‌روزرسانی یا واگذاری یک تیکت،
+  علامت‌زدن یک مقاله به‌عنوان خوانده‌شده یا ذخیره‌شده
+- **اجرای یک کتابچه**: نمونه‌سازی یک قالب برنامهٔ ذخیره‌شده با پارامترهایش.
+  این کار فقط یک برنامه را _پیشنهاد_ می‌دهد؛ هیچ چیزی اجرا نمی‌شود و هزینه‌ای صرف
+  نمی‌شود تا آن‌که یک اپراتور آن را در Plan Studio روی یک کلاینت کامل تأیید کند
+- **جابه‌جایی میان فضاهای کاری**، از انتخابگر خود تلفن
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+تقریباً همین تمام ماجراست. تلفن یک **موجودیتِ کم‌اولویت** نسبت به یک کلاینت کامل
+است. نمی‌تواند فرایند بسازد، بودجهٔ LLM هزینه کند، به GitHub push کند یا فضای
+کاری بسازد. برای این‌که این محدودیت چگونه اعمال می‌شود و نه فقط قصد شده،
+[مدل دسترسی](#مدل-دسترسی) را ببینید.
 
-## How the link is built
+## پیوند چگونه ساخته می‌شود
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+اتصال سوار بر یک **رلهٔ کارگزاری‌شده** است: سرور به‌عنوان مالک به یک اتاق
+دعوت‌محور روی کارگزاری `wss://` می‌پیوندد و هر کلاینت جفت‌شده — رومیزی، وب،
+تلفن — با یک توکن پذیرش زمان‌دار به همان اتاق می‌پیوندد. سه قطعه در هم می‌آیند:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| قطعه                   | نقش                                                                                                                                                                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (برنامهٔ تلفن)** | برنامهٔ وب همراه، که به‌طور پیش‌فرض در `remote.usectrl.dev` میزبانی می‌شود یا خودمیزبان است. در مرورگر بار می‌شود و رکورد جفت‌سازی را در IndexedDB نگه می‌دارد.                                                                                                                     |
+| **کارگزار رله**        | یک رلهٔ بی‌وضعیت `wss://` (`cc_signaling_server`) که اتاق‌های Nطرفه را میزبانی می‌کند. **فقط فریم‌های مات** را حمل می‌کند: هر payload میان تلفن و سرور به‌صورت سرتاسری مهروموم می‌شود، پس کارگزار هرگز دادهٔ برنامه یا راز جفت‌سازی را نمی‌بیند و هرگز تفسیر نمی‌کند که چه چیزی را جلو می‌فرستد. |
+| **`cc_server`**        | مالک اتاق. تماس‌های تلفن را از همان dispatcherی پاسخ می‌دهد که هر کلاینت دیگر استفاده می‌کند.                                                                                                                     |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+یک پیشنهاد جفت‌سازی حامل یک **توصیفگر اتصال** است که همهٔ مسیرها به سرور (LAN،
+tailnet، `wss://` عمومی، رله) به‌همراه اثر انگشت هویتش را فهرست می‌کند. resolver
+تلفن بهترین مسیر قابل‌دسترس را برمی‌گزیند و اثر انگشت را در نخستین اتصال پین
+می‌کند (TOFU)؛ رله حتی وقتی هیچ مسیر مستقیمی وجود ندارد اتصال را تضمین می‌کند،
+بی‌آن‌که هرگز بتواند ترافیک را بخواند.
 
-## What the pairing payload is
+## payload جفت‌سازی چیست
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/) for the procedure. The anatomy is
-what matters here.
+جفت‌سازی از خود برنامه صادر می‌شود و به‌شکل یک پیوند عمیق تحویل داده می‌شود؛ برای
+رویهٔ کار [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/) را ببینید. آنچه این‌جا مهم
+است، کالبد آن است.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+payload در **قطعهٔ** URL سوار می‌شود؛ همان بخش پس از `#` که مرورگرها هرگز آن را
+به سرور نمی‌فرستند، پس میزبان HTTPS برنامهٔ PWA هرگز آن را نمی‌بیند. این payload
+همهٔ چیزهایی را حمل می‌کند که تلفن برای رسیدن به سرور و اثبات هویتش لازم دارد:
+توصیفگر اتصال (همهٔ مسیرها به‌همراه اثر انگشت هویت)، یک شناسهٔ دستگاه تازه‌صادرشده،
+یک کلید از پیش به‌اشتراک‌گذاشته‌شدهٔ 32بایتی و یک مُهر انقضا. تلفن آن را
+رمزگشایی می‌کند، یک رکورد جفت‌سازی را به‌صورت محلی ذخیره می‌کند و قطعه را حذف
+می‌کند تا راز از URL بیرون برود.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+دو شکل payload وجود دارد و این دو **قابل تعویض نیستند**. QR مخصوص تلفن که از پنل
+جفت‌سازی درون‌برنامه‌ای صادر می‌شود، همان `PairingPayload` نسخهٔ v2 بالا است که به
+میزبان PWA مربوط به Remote اشاره می‌کند. `cc_server pair --client-url` پیوند
+متفاوت و قدیمی‌تری از نسخهٔ v1 منتشر می‌کند (`{s, i, k}` — نشانی سرور، شناسهٔ
+دستگاه، کلید) که فقط برای کلاینت **وب** در نظر گرفته شده است.
 
-They also differ in lifetime, which is easy to get wrong:
+این دو در طول عمر هم تفاوت دارند، نکته‌ای که به‌راحتی اشتباه گرفته می‌شود:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| صادرشده توسط                          | انقضای اعتبارنامه                          |
+| ------------------------------------- | ------------------------------------------ |
+| پنل جفت‌سازی درون‌برنامه‌ای (`pairing.mint`) | 30 روز، همیشه                              |
+| `cc_server pair` روی خط فرمان         | **هیچ** — اعتبارنامه منقضی نمی‌شود          |
 
-## The access model
+## مدل دسترسی
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+یک دستگاه جفت‌شده **احراز هویت شده است، اما مورد اعتماد نیست**. چندین دروازهٔ
+مستقل نمی‌گذارند یک جفت‌سازی تأییدشده (یا لو رفته) به کنترل کامل سرور تبدیل شود.
 
-### 1. Membership, not pairing, is the boundary
+### 1. مرز، عضویت است، نه جفت‌سازی
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+یک کلید جفت‌سازی معتبر ثابت می‌کند _کدام دستگاه_ هستید. این‌که چه چیزی را
+می‌توانید بخوانید یا تغییر دهید، با **نقش فضای کاری** شما تعیین می‌شود که در هر
+فراخوانی از نو حل می‌شود، و برای هر چیزی که محتوای مخزن را آشکار می‌کند، با
+اعطای دسترسی به‌ازای هر مخزن. دستگاهی که کلیدی کاملاً معتبر دارد اما به کاربری
+تعلق دارد که عضو فضای کاری نام‌برده نیست، با پیام
+«Not a member of this workspace» رد می‌شود.
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+کفِ نقش از نوع خود عملیات گرفته می‌شود، مگر آن‌که عملیات نقشی برای خودش اعلام
+کند: خواندن‌ها `guest` می‌خواهند، جهش‌ها `member` و عملیات مخرب `admin`.
 
-### 2. A phone is a lower session tier
+### 2. تلفن یک ردهٔ نشستِ پایین‌تر است
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+فراتر از بررسی نقش، یک نشست تلفن توانمندی کمتری از یک نشست رومیزی یا وب دارد.
+عملیاتی که فقط برای کلاینت کامل مجاز اعلام شده‌اند، پیش از اجرای handler برای
+تلفن رد می‌شوند، هر قدر هم کاربرِ پشت آن دارای امتیاز باشد: صدور، فهرست‌کردن،
+تغییر نام و لغو جفت‌سازی دستگاه‌ها؛ خواندن و تنظیم اتصال تونل؛ پشتیبان‌گیری سرور
+و برون‌بری/درون‌بری فضای کاری؛ تشخیص و کشتن فرایند؛ کاوش آداپتورها؛ تنظیمات
+سرور؛ مدیریت SSO؛ کنترل ناوگان؛ و در دست گرفتن یا بازگرداندن یک عامل در حال
+اجرا.
 
-### 3. A default-deny tool allow-list
+### 3. فهرست مجازِ ابزار با پیش‌فرضِ رد
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+به‌طور خاص برای سطح ابزار MCP (`tools/call`)، یک فهرست مجاز با پیش‌فرضِ رد تعیین
+می‌کند تلفن چه ابزارهایی را می‌تواند فراخوانی کند. هر چیزی که در فهرست نباشد، پیش
+از اجرا رد می‌شود. این فهرست بیشتر خواندن و مشاهده است، به‌همراه چند نوشتنِ
+**فقط‌محلی** — یک پیام، یک به‌روزرسانی تیکت، یک نشانه روی یک مقاله — که بودجهٔ
+LLM خرج نمی‌کنند، فرایندی نمی‌سازند و به هیچ سامانهٔ بیرونی دست نمی‌زنند.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+برای نمونه رد می‌شوند: مشاوره گرفتن از یک عامل، شروع یک بازبینی هوش مصنوعی،
+کشتن یک عامل، انتشار یک بازبینی در GitHub، استخدام یا اخراج عامل‌ها و ساختن یک
+فضای کاری.
 
-### 4. Per-call workspace scoping
+### 4. محدوده‌بندی فضای کاری به‌ازای هر فراخوانی
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) invariant the rest of the
-product enforces.
+سرور **هیچ** «فضای کاری جاری»ای نگه نمی‌دارد. طبق طراحی بی‌وضعیت است: هر
+فراخوانیِ محدود به فضای کاری باید `workspace_id` هدفش را در آرگومان‌هایش نام
+ببرد و dispatcher وقتی این شناسه غایب باشد یا فضای کاری‌ای را نام ببرد که سرور
+ثبتش نکرده، فراخوانی را یکسره رد می‌کند — پیش از آن‌که چیزی پایگاه‌داده‌ای باز
+کند. پس تلفن هرگز نمی‌تواند به محدودهٔ کلاینت دیگری ارث برسد یا به آن لغزش کند،
+و نام‌بردن از یک فضای کاری بیگانه هم کمکی نمی‌کند، چون بررسی عضویت در دروازهٔ 1
+همچنان اعمال می‌شود. این همان [ایزوله‌سازی فضای کاری(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
+ثابتی است که بقیهٔ محصول اعمال می‌کند.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. فریم‌های مهروموم‌شدهٔ سرتاسری با کلید از پیش به‌اشتراک‌گذاشته‌شده
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+هر فریم میان تلفن و سرور با کلید جفت‌سازی مهروموم می‌شود؛ توکن پذیرش فقط یک
+کلاینت را به اتاق می‌آورد و هیچ چیزی را رمزگشایی نمی‌کند. کارگزار فقط متن
+رمزشده را رله می‌کند و هرگز کلید را نمی‌بیند. دستگاهی که لغو شده، می‌بیند که
+اعتبارنامه‌اش از قبل رفته است، پس در اتصال دوباره **به‌صورت ایمن شکست می‌خورد**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+اعتبارنامه‌ای که برنامه صادر می‌کند تا 30 روز زمان‌دار است؛ پس از آن، دروازهٔ
+اتصال آن را رد می‌کند و تلفن باید دوباره جفت شود. لغو شدن زنده است: سرور جدول
+دستگاه‌ها را می‌پاید و نشست‌های باز یک دستگاه لغوشده را در چند ثانیه می‌بندد، نه
+این‌که منتظر اتصال بعدی‌اش بماند.
 
-### 6. Rate limiting per principal
+### 6. محدودسازی نرخ به‌ازای هر موجودیت
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+یک محدودکنندهٔ پنجرهٔ لغزان ترافیک ابزار از راه دور را روی 120 فراخوانی در دقیقه
+سقف می‌گذارد، با یک سقف فرعی سخت‌گیرانه‌تر 30 در دقیقه برای افعال تغییردهنده.
+این سهمیه به **موجودیت تعلق دارد، نه به نشست**: سه دستگاه شما از یک اعتبار
+برداشت می‌کنند، پس یک کلاینت ربوده‌شده نمی‌تواند با باز کردن نشست‌های بیشتر فضای
+اضافی بخرد و یک عضو پرصدا نمی‌تواند بقیه را از سهمیه محروم کند.
 
-### 7. A broker that learns nothing
+### 7. کارگزاری که چیزی یاد نمی‌گیرد
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+کارگزار رله عمداً ساده نگه داشته شده است: اتاق‌ها را میزبانی می‌کند، فریم‌های
+مهروموم‌شده را جلو می‌فرستد و هیچ حساب، هیچ دادهٔ برنامه‌ای و هیچ کلیدی نگه
+نمی‌دارد. اتاق‌ها دعوت‌محور و گذرا هستند. دادهٔ برنامه، صدا، رونوشت، منبع و
+اعتبارنامه‌ها همگی روی سرور می‌مانند.
 
-## Live updates
+## به‌روزرسانی‌های زنده
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+پس از جفت شدن، تلفن **به‌روزرسانی‌های زنده** را به‌شکل فریم‌های اعلان دریافت
+می‌کند — پیام‌های تازهٔ عامل‌ها، تیکت‌های واگذارشده به شما، تغییرهای وضعیت — درست
+مانند اعلان‌های خودِ رومیزی. سرور این فریم‌ها را برای هر نشست متصل پخش می‌کند و
+فیلتر فضای کاری در سمت کلاینت اعمال می‌شود، پس آنچه می‌بینید محدود به فضای
+کاری‌ای است که به آن نگاه می‌کنید.
 
-## Where it lives
+## کجا پیدایش می‌کنید
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| نما                                                                                 | چه چیزی نشان می‌دهد                                                                                          |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **تنظیمات ← شما ← دستگاه‌های شما** (`/workspaces/:workspaceId/settings/you/devices`) | کلاینت‌های جفت‌شده با وضعیت زنده، به‌همراه **جفت‌سازی کلاینت جدید** (مرورگر وب، برنامهٔ رومیزی یا تلفن) و لغو |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+همین پنل برای مرورگر یا برنامهٔ رومیزی دومی هم جفت‌سازی صادر می‌کند، نه فقط برای
+تلفن‌ها — جریان کار یکسان است و تنها پیوند عمیق تفاوت دارد.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+کنترل از راه دور سمت سرور است و از راه MCP **در معرض دسترس نیست**. تلفن از
+طریق رله با dispatcher خود سرور گفتگو می‌کند؛ کلاینت MCP یک سرور بیرونی نیست.
 ::::
 
-## See also
+## همچنین ببینید
 
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): roles, membership and repo grants
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/): where remote control sits among the client tiers
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/): where remote control sits in the stack
-- [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): محدوده‌بندی به‌ازای هر فراخوانی که این کنترل بر آن تکیه دارد
+- [چندنفره — هویت، عضویت و حضور(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): نقش‌ها، عضویت و اعطای دسترسی مخزن
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/): جایگاه کنترل از راه دور میان رده‌های کلاینت
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/): جایگاه کنترل از راه دور در پشته
+- [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)

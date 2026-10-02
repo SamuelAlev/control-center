@@ -1,123 +1,125 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Google Calendar جوڑیں
+description: Google Calendar کو کسی ورک اسپیس سے جوڑیں، متعدد اکاؤنٹس منظم کریں اور ٹوکن کی میعاد ختم ہونے پر دوبارہ منسلک کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/) for the full picture.
+یہ گائیڈ بتاتی ہے کہ Google Calendar کو کسی ورک اسپیس سے کیسے جوڑیں۔ یہ فی ورک اسپیس
+ہے: وہ اُس ورک اسپیس کے ایونٹس صرف پڑھنے کے انداز میں Control Center میں سنک کرتی ہے۔
+مکمل تصویر کے لیے [کیلنڈر اور شیڈولنگ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/) دیکھیں۔
 
-## Connect an account
+## اکاؤنٹ جوڑیں
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. سائیڈبار میں **کیلنڈر** کھولیں۔
+2. کیلنڈر سائیڈبار میں **کیلنڈر اکاؤنٹ شامل کریں** پر کلک کریں۔ (یہی سیکشن **ترتیبات → ورک اسپیس → پروفائل اور شناخت** میں **Google Calendar** کے تحت بھی موجود ہے۔)
+3. منتخب کریں کہ اجازت کیسے دی جائے:
+   - **Control Center کی Google ایپ استعمال کریں** — سیٹ اپ کرنے کے لیے کچھ نہیں۔ جب آپ کے بلڈ کے ساتھ کوئی ایپ شامل ہو تو یہی ڈیفالٹ ہے۔
+   - **میرا اپنا Google Cloud کلائنٹ استعمال کریں** — اپنے پروجیکٹ سے کلائنٹ id اور secret پیسٹ کریں (دیکھیں [اپنا Google کلائنٹ لائیں](#اپنا-google-کلائنٹ-لائیں-فورکس-اور-سیلف-ہوسٹنگ))۔
+4. **Google Calendar منسلک کریں** پر کلک کریں۔ ڈائیلاگ ایک مختصر کوڈ اور Google کے ڈیوائس صفحے کا لنک دکھاتا ہے۔
+5. وہ صفحہ کسی بھی ڈیوائس پر کھولیں، کوڈ درج کریں اور مطلوبہ رسائی کی منظوری دیں۔ ڈائیلاگ خود بند ہو جاتا ہے اور آپ کے ایونٹس سنک ہونے لگتے ہیں۔
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+یہ تبادلہ آپ کی ڈیوائس نہیں بلکہ سرور چلاتا ہے اور نتیجے میں ملنے والا ریفریش ٹوکن
+اپنے پاس رکھتا ہے — اسی لیے کوڈ ”کسی بھی ڈیوائس“ پر منظور ہوتا ہے، اِس ایپ میں
+خاص طور پر نہیں۔
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+اکاؤنٹ **صرف فعال ورک اسپیس سے** جڑتا ہے۔ ورک اسپیس بدلیں تو آپ کو اُس ورک اسپیس کے
+کیلنڈر نظر آئیں گے۔
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+کنیکٹ فلو `calendar.readonly` کے ساتھ ساتھ آپ کا ای میل طلب کرتا ہے — بلٹ اِن ایپ اور
+آپ کے پیسٹ کردہ کلائنٹ، دونوں کے لیے ایک ہی اسکوپس۔ Control Center ایونٹس پڑھتا ہے؛
+یہ Google پر دعوت نامے نہ بناتا ہے، نہ اُن میں ترمیم یا حذف کرتا ہے اور نہ اُن کا
+جواب دیتا ہے۔
 
-## How syncing works
+## سنک کیسے کام کرتا ہے
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**سرور** شیڈول کا مالک ہے: یہ ہر دو منٹ بعد ہر ورک اسپیس کے منسلک اکاؤنٹس کی اسکین
+کرتا ہے اور ایونٹس کو اُس ورک اسپیس کے ڈیٹا بیس میں لکھتا ہے۔ کلائنٹس Google سے کبھی
+بات نہیں کرتے — جو سرور نے لکھا ہوتا ہے، وہی پڑھتے ہیں۔
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+اسکین صرف بدلاؤ پر مشتمل ہوتی ہے۔ ہر کیلنڈر پر پہلی گزر ایک گھومتی ونڈو (60 دن پیچھے،
+90 دن آگے) لاتی ہے اور Google کا سنک ٹوکن محفوظ کرتی ہے؛ بعد کی گزریں وہی ٹوکن پیش
+کرتی ہیں اور صرف بدلا ہوا حصہ وصول کرتی ہیں، اور یہی چیز دو منٹ کی رفتار کو قابلِ
+برداشت بناتی ہے۔ ونڈو ہر 24 گھنٹے بعد اور جب بھی Google ٹوکن باطل کرے، مکمل سنک کے
+ساتھ دوبارہ اینکر ہوتی ہے۔
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+ریفریش ٹوکن سرور کی طرف رہتے ہیں: سرور کی ڈیٹا ڈائریکٹری کے اندر `secrets.json` میں،
+صرف مالک کی رسائی کے ساتھ (`0600`) لکھے جاتے ہیں — نہ OS کی چین میں اور نہ کبھی کسی
+کلائنٹ ڈیوائس پر۔
 
-## Connect multiple accounts
+## متعدد اکاؤنٹس جوڑیں
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+ایک ورک اسپیس کئی Google اکاؤنٹس جوڑ سکتی ہے (مثلاً کام کا اور ذاتی)۔ ہر ایک کے لیے
+کنیکٹ کا مرحلہ دہرائیں؛ اُن کے ایونٹس ایک ہی مہینہ / ہفتہ / ایجنڈا ویوز میں ضم ہو
+جاتے ہیں۔ ہر اکاؤنٹ الگ الگ سنک اور ریفریش ہوتا ہے اور ہر ایک کو علیحدہ طور پر منقطع
+کیا جا سکتا ہے۔
 
-## Reconnect an expired account
+## میعاد ختم شدہ اکاؤنٹ دوبارہ منسلک کریں
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+اگر Google کسی اکاؤنٹ کا ٹوکن مستقل طور پر باطل کر دے (منسوخ یا بہت عرصے سے میعاد
+ختم شدہ سیشن)، تو سنک رک جاتا ہے اور Control Center کیلنڈر پر **دوبارہ منسلک کریں**
+کا بینر، ساتھ ہی ایک ڈیسک ٹاپ اطلاع دکھاتا ہے۔ **دوبارہ منسلک کریں** پر کلک کریں اور
+نیا کوڈ منظور کریں؛ اگلے کامیاب سنک پر بینر غائب ہو جاتا ہے۔
 
-## Disconnect an account
+## اکاؤنٹ منقطع کریں
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+کیلنڈر سائیڈبار سے (یا **ترتیبات → ورک اسپیس → پروفائل اور شناخت** سے) اکاؤنٹ پر
+**منقطع کریں** پر کلک کریں۔ یہ اُس کے سنک شدہ ایونٹس حذف کرتا ہے اور سرور پر اُس کے
+محفوظ ٹوکن صاف کر دیتا ہے۔
 
-## Connect from a headless server
+## ہیڈلیس سرور سے جوڑیں
 
-A server with no GUI attached connects the same account from its own terminal:
+بغیر GUI والا سرور وہی اکاؤنٹ اپنے ٹرمنل سے جوڑتا ہے:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+یہ ایک کوڈ اور URL دکھاتا ہے، منظوری کا انتظار کرتا ہے، پھر ٹوکن محفوظ کرتا ہے اور
+اگلی اسکین پر سنک کرتا ہے۔
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+سورس سے بنایا گیا بلڈ **کوئی** Google کلائنٹ ساتھ نہیں لاتا، اس لیے id اور secret
+لازمی ہیں — `GOOGLE_OAUTH_CLIENT_ID` اور `GOOGLE_OAUTH_CLIENT_SECRET` سیٹ کریں۔ کوئی
+`--google-client-id` فلیگ نہیں ہے (نامعلوم فلیگز نظر انداز ہو جاتے ہیں)۔ ماحول کی یہ
+جوڑی نہ ہونے پر کمانڈ missing-client کی خرابی کے ساتھ ختم ہو جاتی ہے۔
 
-## Bring your own Google client (forks and self-hosting)
+## اپنا Google کلائنٹ لائیں (فورکس اور سیلف ہوسٹنگ)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+جاری شدہ بلڈز کے ساتھ Google کلائنٹ آتا ہے، اس لیے زیادہ تر لوگ اِسے چھوتے بھی نہیں۔
+اپنا کلائنٹ اُس وقت لیں جب آپ سورس سے بلڈ کرتے ہوں، اپنا سرور چلاتے ہوں، یا چاہتے ہوں
+کہ رضامندی کی اسکرین آپ کے اپنے پروجیکٹ کا نام لے۔
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) میں **Google Calendar API** فعال کریں اور **OAuth consent screen** کنفیگر کریں، اور `calendar.readonly`، `openid` اور `email` اسکوپس شامل کریں۔ جب تک ایپ غیر تصدیق شدہ ہے، خود کو ایک **test user** کے طور پر شامل کریں۔ رضامندی کی اسکرین پر `calendar.events` شامل کرنا RSVP فعال نہیں کرتا — Control Center وہ اسکوپ کبھی طلب نہیں کرتا۔
+2. ایپلیکیشن کی قسم **TVs and limited input devices** کا **OAuth client ID** بنائیں اور کلائنٹ id اور کلائنٹ secret دونوں کاپی کریں۔
+3. اِنہیں یا تو ہر کنیکٹ پر دیں (ڈائیلاگ میں **میرا اپنا Google Cloud کلائنٹ استعمال کریں** منتخب کریں) یا سرور بھر کے لیے `GOOGLE_OAUTH_CLIENT_ID` اور `GOOGLE_OAUTH_CLIENT_SECRET` کے ساتھ دیں۔
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+سرور بھر کی یہ جوڑی ہر جگہ بلٹ اِن جوڑی کی جگہ لے لیتی ہے، بشمول ”Control Center کی
+Google ایپ استعمال کریں“ والے آپشن کے پیچھے — چنانچہ آپ کے اپنے سرور پر وہ آپشن آپ کی
+ہی ایپ ہے۔
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+کلائنٹ secret کبھی سرور سے باہر نہیں جاتا: کوئی RPC جواب اُسے ساتھ نہیں لے جاتا اور
+سرور کے اپنے کلائنٹ سے جڑا اکاؤنٹ اُس جوڑی کی کاپی کے بجائے ایک مارکر محفوظ کرتا ہے،
+اس لیے اُسے بدلنا نئی قدر کے ساتھ ری اسٹارٹ کرنے کا معاملہ بھر ہے۔
 
-### Troubleshooting
+### مسائل کا حل
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| علامت                                                    | ممکنہ وجہ                                                                                                                                              |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ڈائیلاگ میں کوئی بلٹ اِن آپشن نہیں ہوتا                   | اِس بلڈ کے ساتھ کوئی Google کلائنٹ نہیں آتا (سورس بلڈ)، یا سرور جوڑی کے صرف ایک حصے کے ساتھ شروع کیا گیا تھا۔ id اور secret دونوں لازمی ہیں                    |
+| فلو شروع کرتے وقت `invalid_scope`                        | اُس Cloud پروجیکٹ میں ڈیوائس کوڈ کلائنٹ کے لیے Calendar کی اجازت نہیں ہے۔ اِس کے بجائے loopback یا web کلائنٹ پروجیکٹ استعمال کریں                             |
+| Google سے `invalid_client`                               | کلائنٹ **TVs and limited input devices** قسم کا نہیں ہے، یا id اور secret مختلف کلائنٹس کے ہیں                                                              |
+| منظوری کامیاب ہو جاتی ہے مگر سنک خالی رہتا ہے             | رضامندی کی اسکرین پر آپ کا اکاؤنٹ **test user** نہیں ہے، یا `calendar.readonly` عطا نہیں کیا گیا                                                              |
+| منظوری دینے سے پہلے کوڈ کی میعاد ختم ہو جاتی ہے           | ڈیوائس کوڈ مختصر مدت کے ہوتے ہیں۔ نیا کوڈ لینے کے لیے کنیکٹ دوبارہ شروع کریں                                                                                 |
+| RSVP پر ”آپ کا جواب اپ ڈیٹ نہیں ہو سکا“                   | متوقع: کنیکٹ فلو `calendar.events` کبھی طلب نہیں کرتا                                                                                                        |
+| سرور لاگ میں ریفریش وارننگ کے ساتھ سنک رک جاتا ہے         | اکاؤنٹ ایسے کلائنٹ سے جڑا تھا جو اب کنفیگر نہیں ہے۔ اکاؤنٹ دوبارہ منسلک کریں، یا وہ کلائنٹ id اور secret بحال کریں                                             |
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Record and summarize a meeting](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/): turn an event into a recording
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [میٹنگ ریکارڈ اور خلاصہ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/): کسی ایونٹ کو ریکارڈنگ میں بدلیں
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): ٹوکن اور سنک شیڈول کہاں رہتے ہیں
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Calendar and scheduling](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/)
+- [کیلنڈر اور شیڈولنگ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/)

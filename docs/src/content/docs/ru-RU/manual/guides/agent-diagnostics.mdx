@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Диагностировать агента
+description: Пройдите по журналу запусков, пробе адаптера, состоянию сервера и диагностике хоста, когда агент перестаёт выдавать запуски.
 slug: ru-RU/руководство/практические-руководства/диагностика-агента
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+В этом руководстве показано, как выяснить, почему агент не выдаёт запуски.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Двигайтесь сверху вниз: сначала собственные запуски агента, затем его бэкенд, затем сервер, затем хост.
 
-## 1. Check the agent's run history
+## 1. Проверьте историю запусков агента
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Настройки → Рабочее пространство → Агенты** → выберите агента → **Журнал**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Для каждого запуска показаны бейдж состояния, длительность («Running…», пока запуск выполняется), время начала и завершения, его PID и использованный адаптер. **Просмотр** открывает необработанный поток событий этого запуска. **Остановить** завершает выполняющийся процесс и помечает запуск как «Killed by user»; **Прервать выполнение** в заголовке делает то же для всех выполняющихся запусков этого агента.
 
-Read it like this:
+Читайте это так:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Запусков нет вообще** — диспетчеризация так и не произошла. Упоминания в композере — это `@` плюс символы слова (буквы, цифры, подчёркивание). Сопоставление идёт по точному совпадению с именем агента или по префиксу, поэтому `@code-reviewer` разбирается как `code` и всё равно может разбудить агента с именем `code-reviewer`. Имя с пробелом нельзя упомянуть одним токеном. Тогда переходите к шагу 2.
+- **Запуск, сразу завершившийся с ошибкой** — откройте **Просмотр**. Сбой запуска бэкенда виден здесь как ошибка процесса.
+- **Запуск, застрявший на «Running…»** — остановите его, затем проверьте **Таймаут тишины** у агента на вкладке **Настройки**. Если таймаут не задан, используется значение по умолчанию для режима.
+- **Завершённый запуск без полезного результата** — статус в журнале запуска остаётся `completed` и у запуска, завершившегося без объявленного результата; честный сигнал — текст сводки, а не бейдж.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+На вкладке «Журнал» стоимость не отображается. Чтобы увидеть расходы, воспользуйтесь таблицей по каждому агенту в разделе **Наблюдаемость → Инсайты**.
 
-## 2. Check the agent's backend
+## 2. Проверьте бэкенд агента
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Настройки → Сервер → Провайдеры моделей** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Список **Обнаруженные раннеры** показывает каждый адаптер с результатом пробы — установленную версию, «Проверка…» или «Не найдено» — а также найденный путь и метки возможностей для обнаруженного CLI. Нажмите **Обновить** в заголовке страницы, чтобы запустить пробу заново.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Проба выполняется на машине, где размещён `cc_server`, а не на той, которую вы видите перед собой. Если вы работаете в веб-клиенте или на привязанном устройстве, «Не найдено» означает, что CLI отсутствует на хосте сервера.
 
-Two things to confirm:
+Два момента, которые стоит проверить:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Задан ли у агента адаптер вообще.** Агент с пустым адаптером направляется в **Control Center (built-in)**, и журнал запуска записывает `cc-harness`, поэтому в транскрипте указано, что именно выполнялось. Если и модели нет, он запрашивает у Anthropic модель по умолчанию — и это завершается ошибкой `No credential for provider "anthropic"`, если вы не подключили аккаунт Anthropic. Поставляемые специалисты идут без адаптера.
+- **Есть ли модель у встроенного адаптера.** Его список моделей собирается на лету из провайдеров, подключённых ниже на этой же странице, поэтому провайдер без сохранённых учётных данных не даёт ни одной модели.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Сам каталог адаптеров фиксирован — зарегистрировать новый адаптер нельзя. Что здесь можно менять для каждого адаптера, так это его аргументы запуска и переменные окружения. Учтите, что переопределение переменных окружения на уровне адаптера молча перекрывает подключённый аккаунт провайдера, когда разрешаются учётные данные.
 
-## 3. Check the server
+## 3. Проверьте сервер
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Настройки → Сервер → Подключение и состояние** (`/settings/server/connection`) показывает, с каким сервером общается этот клиент и что он сообщает.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Для headless-сервера те же сведения даёт `GET /healthz` без клиента. Он не требует аутентификации и по замыслу открыт для CORS:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Он возвращает статус сервера, время работы в секундах, число активных подключений, порт привязки, версию сборки и git SHA, версию схемы рабочего пространства, версию каталога RPC, идентификатор сервера, его имя и отпечаток идентичности, признак небезопасной привязки и блок `codeGraph` со счётчиками `watching` / `indexing` / `pending`. Когда к кэшу были обращения, он также включает блок `caches`; демонстрационный сервер добавляет `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Два момента, о которых стоит знать, когда изменение «работает в тестах, но не в приложении»:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Настольное приложение запускает **собранный заранее** бинарник `cc_server`, предпочитая его сборке из исходников. Новая операция RPC или инструмент MCP не появятся, пока бинарник не пересобран, а при запуске в журнал пишется предупреждение, если git SHA дочернего процесса отличается от SHA приложения.
+- Настольное приложение завершает порождённый сервер, который не вывел баннер готовности в течение 20 секунд, и переходит на экран ошибки.
 
-## 4. Check the host
+## 4. Проверьте хост
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Настройки → Сервер → Диагностика и конфиденциальность** (`/settings/server/diagnostics`) — это страница уровня хоста. На ней есть:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Песочница** — главный переключатель, обнаруженный бэкенд, подсказка об установке и переключатели возможностей по умолчанию. От сервера приходит только обнаруженный бэкенд; см. предупреждение ниже. Элемента сброса нет.
+- **Семантический поиск** — жизненный цикл локальной модели эмбеддингов: установлена, скачивается с указанием процента, не установлена или ошибка установки. Пока она не установлена, поиск по памяти и по коду остаётся только по ключевым словам.
+- **Поведение системы** — не давать компьютеру засыпать, пока работают агенты.
+- **Движок синхронизации** — отдельные аварийные выключатели для хранилищ тикетов, сообщений и заметок. Это аварийные люки для возврата к подпискам на полный снимок; изменение влияет только на новые подписки, поэтому полностью вступает в силу после перезагрузки.
+- **Уровень журнала** — повысьте его перед воспроизведением сбоя.
+- **Конфиденциальность** — можно ли передавать необработанное содержимое diff модели агента и отправляются ли отчёты о сбоях.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Этот раздел сообщает о хосте, а его элементы управления — на стороне клиента]
+Обнаружение и принудительное применение теперь согласованы: там, где детектор сообщает о нативном бэкенде, запуски агентов на этом хосте действительно оборачиваются в него. Но детектор — единственное живое в этом разделе. Главный переключатель, выбор бэкенда и переключатели возможностей по умолчанию — это предпочтения, хранящиеся на вашем устройстве, и сервер не читает ни одно из них: собственный переключатель сервера — `--sandbox` (`on` по умолчанию, `off` для отказа), а для любого агента, оставленного на «По умолчанию рабочего пространства», сервер откатывается к своему консервативному значению по умолчанию: без git push, без GitHub API, без ключа тикетов, сеть включена.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Так что предупреждению здесь стоит уделить внимание, но обычно не оно причина сбоя агента. Чтобы убедиться, в каком состоянии находится сервер, прочитайте журнал его запуска: он выводит `agent sandbox ON` с пометкой о бэкенде, `no OS-native agent sandbox on this host` с подсказкой об установке или `agent sandbox DISABLED by --sandbox off`. `GET /healthz` не содержит поля о песочнице.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Там, где бэкенда нет — в Windows всегда, в Linux или WSL2 без `bwrap` и `socat` — запуски **не** изолированы песочницей, и их ограничивают собственная рабочая копия разговора, возможности, определяющие, какие учётные данные в неё выпускаются, ограничения действий, очистка окружения и поверхность инструментов, которую допускает режим.
 :::
 
-## Common failures
+## Типичные сбои
 
-### The run never starts and the adapter shows "Not found"
+### Запуск так и не начинается, а адаптер отображается как «Не найдено»
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Установите CLI **на хосте сервера**, затем нажмите **Обновить** на странице «Провайдеры моделей». Или переключите агента на встроенный адаптер — ему CLI не нужен — и подключите провайдера на той же странице.
 
-### The agent cannot push or open a pull request
+### Агент не может отправить изменения или открыть pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Шлюзом служат его возможности. Откройте **Настройки → Рабочее пространство → Агенты** → агента → **Права песочницы**, включите переключатель и включите **Разрешить git push** и **Разрешить вызовы GitHub API**. Если оставить переключатель на «По умолчанию рабочего пространства», агент не получит ни одной из них.
 
-### Semantic search returns nothing useful
+### Семантический поиск не даёт ничего полезного
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Проверьте **Настройки → Сервер → Диагностика и конфиденциальность → Семантический поиск**. Пока модель эмбеддингов не установлена, поиск идёт только по ключевым словам. Строки, записанные до установки модели, никогда не дозаполняются, поэтому и после неё остаются только по ключевым словам.
 
-### The server will not boot at all
+### Сервер вообще не запускается
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Нативные библиотеки обязательны, и режима с ограниченной функциональностью нет. Из-за отсутствующей dylib `cc_server` отказывается запускаться и называет виновника в ошибке. Подготовьте нативные библиотеки с помощью `scripts/natives/build_natives.sh` и пересоберите бинарник сервера.
 
-### An action is silently denied
+### Действие молча отклоняется
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Решение ограничения `prompt` при отсутствии подключённого одобряющего отклоняется — так и задумано. Проверьте правила рабочего пространства в разделе **Настройки → Рабочее пространство → Разрешения агента**.
 
-## Related guides
+## Связанные руководства
 
-- [Create and configure an agent](/ru-RU/руководство/практические-руководства/создать-агента/)
-- [Manage adapters and models](/ru-RU/руководство/практические-руководства/адаптеры/)
-- [Configure guardrails](/ru-RU/руководство/практические-руководства/настроить-ограничения/)
-- [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
+- [Создать и настроить агента](/ru-RU/руководство/практические-руководства/создать-агента/)
+- [Управлять адаптерами и моделями](/ru-RU/руководство/практические-руководства/адаптеры/)
+- [Настроить ограничения](/ru-RU/руководство/практические-руководства/настроить-ограничения/)
+- [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
 
-## Related concepts
+## Связанные понятия
 
-- [Sandbox and security](/ru-RU/руководство/понятия/песочница-и-безопасность/)
-- [Agent dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)
+- [Песочница и безопасность](/ru-RU/руководство/понятия/песочница-и-безопасность/)
+- [Жизненный цикл запуска агента](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)

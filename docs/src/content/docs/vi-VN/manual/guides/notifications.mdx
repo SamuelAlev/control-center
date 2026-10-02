@@ -1,149 +1,160 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Cấu hình thông báo
+description: Bật hoặc tắt các danh mục, đặt giờ yên tĩnh cùng âm thanh và biết thông báo nào đến với bạn ở đâu.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Hướng dẫn này chỉ cho bạn cách cấu hình thông báo và mỗi tùy chọn thực sự kiểm
+soát điều gì.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Thông báo đến qua hai bề mặt. **Trung tâm thông báo** — chiếc chuông trên thanh
+tiêu đề — đọc một dòng thông báo bền vững theo từng không gian làm việc trên máy
+chủ. **Toast của hệ điều hành** là một đường riêng, chỉ có trên desktop, được
+nuôi bằng các khung trực tiếp do máy chủ đẩy xuống.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Bản web không hiển thị thông báo hệ điều hành]
+Đường ống toast chỉ được dựng bởi quá trình khởi động của bản desktop. Trên
+`app.usectrl.dev` không có toast hệ điều hành, không có âm thanh thông báo và
+không có banner nền — chuông và lịch sử của nó vẫn hoạt động, vì chúng đọc dòng
+thông báo từ máy chủ. Máy khách điện thoại không có bề mặt thông báo nào cả.
 :::
 
-## Turn categories on or off
+## Bật hoặc tắt các danh mục
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Mở **Cài đặt → Bạn → Thông báo**
+2. Giữ **Bật thông báo** ở trạng thái bật
+3. Bật tắt các danh mục bạn muốn. Có đúng mười sáu danh mục:
 
-| Category                  | Fires when                                                                 |
+| Danh mục                  | Kích hoạt khi                                                              |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Agent đã hoàn tất         | Một agent hoàn tất một lần chạy                                            |
+| PR đã được công bố        | Một agent công bố một PR                                                   |
+| PR đã được merge          | Một PR đã được merge                                                       |
+| Tin nhắn mới              | Một tin nhắn đến trong một space bạn không xem                             |
+| Được nhắc trong pull request | Lượt thăm dò thông báo của GitHub phát hiện bạn được nhắc trên một PR   |
+| Yêu cầu review            | Bạn thực sự được yêu cầu review trên một PR không phải bản nháp            |
+| Review đã lỗi thời        | Có commit mới trên một pull request bạn đã review                          |
+| Sẵn sàng merge            | Một pull request bạn là tác giả trở nên merge được, hoặc không còn merge được nữa |
+| Quyết định review         | Một người review đã phê duyệt, yêu cầu thay đổi, hoặc bị hủy phê duyệt     |
+| Kiểm tra                  | CI thất bại trên một pull request bạn là tác giả, hoặc đã phục hồi         |
+| Luồng review              | Ai đó đã trả lời hoặc giải quyết một luồng mà bạn tham gia                  |
+| Phiếu được gán            | Một phiếu được gán                                                         |
+| Trạng thái phiếu đã đổi   | Một phiếu đổi trạng thái                                                   |
+| Cuộc họp sắp bắt đầu      | Một cuộc họp trên lịch nằm trong cửa sổ báo trước của bạn                  |
+| Lịch đã ngắt kết nối      | Token OAuth của một lịch đã kết nối hết hạn                                |
+| Cập nhật khoang máy       | Một khoang máy bị chiếm quyền, được thu hồi hoặc gặp sự cố                 |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Bất cứ thứ gì nằm ngoài danh sách này đều không thể được thông báo hay lọc —
+không có danh mục "mọi thứ còn lại".
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Các tùy chọn này đi theo người dùng của bạn trên mọi thiết bị, nên điện thoại và
+laptop luôn đồng bộ. Âm lượng là ngoại lệ có chủ đích và giữ riêng theo từng
+thiết bị.
 
-## Set quiet hours
+## Đặt giờ yên tĩnh
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Trên cùng trang đó, bật **Quiet hours**
+2. Nhập giờ bắt đầu và giờ kết thúc theo định dạng `HH:MM` (khung mặc định là
+   22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Trong giờ yên tĩnh, các thông báo không khẩn cấp bị loại bỏ — không xếp hàng chờ
+và phát lại sau.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Hai danh mục là **khẩn cấp** và luôn được gửi đi, bỏ qua giờ yên tĩnh _và_ chế độ
+tập trung: **Cuộc họp sắp bắt đầu** và **PR đã được công bố**. Một cảnh báo cuộc
+họp mà bạn chỉ thấy sau khi nó kết thúc thì vô nghĩa, và đó chính là lý do.
 
-## Choose a sound
+## Chọn âm thanh
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Cuộn xuống **Âm thanh thông báo**
+2. Chọn một trong mười một âm thanh đi kèm, hoặc **Không**
+3. Nhấn nút thử để nghe và đặt âm lượng bằng thanh trượt
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Ứng dụng tự phát âm thanh; thông báo của hệ điều hành được gửi đi trong im lặng
+để bạn không bao giờ nghe thấy hai lần.
 
-## Set the meeting lead time
+## Đặt thời gian báo trước cho cuộc họp
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Cuộn xuống **Thời gian báo trước**
+2. Chọn **5**, **10**, **15** hoặc **30** phút
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Đó là khoảng thời gian trước một sự kiện trên lịch mà thông báo **Cuộc họp sắp
+bắt đầu** kích hoạt. Mặc định là 5 phút.
 
-## Know when a notification is suppressed
+## Biết khi nào một thông báo bị chặn
 
-A notification is dropped, silently, when any of these is true:
+Một thông báo bị loại bỏ, trong im lặng, khi bất kỳ điều nào sau đây đúng:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Thông báo bị tắt trên toàn cục, hoặc danh mục của nó bị tắt
+- Bạn đã ở sẵn trên tuyến mà nó sẽ dẫn bạn tới — và với một tin nhắn, bạn đã ở
+  trong space đó
+- Chế độ tập trung đang bật và danh mục không khẩn cấp
+- Giờ yên tĩnh đang bật và danh mục không khẩn cấp
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Những kiểm tra đó áp dụng cho toast của hệ điều hành. Chiếc chuông bền vững vẫn
+ghi lại sự kiện.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Hai trường hợp chặn nữa nằm xa hơn về phía thượng nguồn, ở chính những gì máy
+chủ gửi đi:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Một tin nhắn không nhắc đến bạn từ một **con người** khác không bao giờ trở
+  thành thông báo
+- Các space giữa các agent bị tắt tiếng trên thanh bên, nên chúng không bao giờ
+  làm tăng huy hiệu chưa đọc của con người
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Trong một space không có góc nào yên tĩnh: mọi cuộc hội thoại đều thông báo như
+nhau, kể cả các luồng. Trạng thái đã đọc được giới hạn theo space, nên số chưa
+đọc tổng hợp trên toàn bộ các cuộc hội thoại của một space thay vì được theo dõi
+riêng theo từng cuộc hội thoại.
 
-## Read and clear the notification centre
+## Đọc và xóa trung tâm thông báo
 
-1. Click the bell in the title bar
+1. Nhấn vào chiếc chuông trên thanh tiêu đề
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Cửa sổ bật lên hiển thị hoạt động gần đây, liên kết sâu từng mục đến đối tượng mà
+nó nói về. Mở nó **không** đánh dấu mọi thứ là đã đọc — hãy dùng **Đánh dấu tất
+cả đã đọc** ở phần đầu, hoặc đánh dấu một dòng. Trạng thái đã đọc đi theo người
+dùng của bạn trên mọi thiết bị.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Xóa tất cả chỉ là một watermark, không phải xóa]
+**Xóa tất cả** đóng một watermark theo từng người dùng để ẩn mọi thứ cũ hơn; các
+dòng vẫn còn nguyên. Riêng từng không gian làm việc chỉ giữ lại **200** dòng
+thông báo mới nhất, bị cắt tỉa khi có dòng mới đến, trong khi chuông đăng ký
+**50** dòng mới nhất và cửa sổ bật lên liệt kê tối đa **15** trong số đó. Lịch sử
+vượt quá giới hạn đó biến mất bất kể trạng thái đã đọc.
 :::
 
-## Troubleshooting
+## Xử lý sự cố
 
-### No OS notifications on macOS
+### Không có thông báo hệ điều hành trên macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Quyền được yêu cầu theo cách gốc khi ứng dụng khởi chạy. Nếu bạn đã từ chối, hãy
+bật lại Control Center trong Cài đặt hệ thống → Thông báo; không có lời nhắc nào
+trong ứng dụng để yêu cầu lại.
 
-### Nothing arrives on the web build
+### Không có gì đến trên bản web
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Đúng như dự kiến — bản web không có đường ống thông báo hệ điều hành. Hãy dùng
+chuông.
 
-### The bell badge shows zero but there is clearly new activity
+### Huy hiệu chuông hiển thị số 0 nhưng rõ ràng có hoạt động mới
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Cho đến khi dòng đánh dấu đã đọc được giải quyết sau khi kết nối, các mục được
+hiển thị là đã đọc để tránh một huy hiệu nhấp nháy rồi trống rỗng. Mọi thứ ổn
+định ngay khi dấu đã đọc được tải xong.
 
-### An agent's run finished but nothing pinged me
+### Một lần chạy của agent đã kết thúc nhưng không có gì báo cho tôi
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Hãy kiểm tra xem bạn có đang ở sẵn trong space nơi sự việc xảy ra không — một
+tuyến đang mở sẽ chặn toast hệ điều hành của chính nó.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Use focus mode and soundscapes](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-tap-trung/)
-- [Triage your inbox](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)
-- [Curate your newsfeed](/vi-VN/so-tay/huong-dan-thuc-hanh/bang-tin/)
+- [Dùng chế độ tập trung và soundscape](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-tap-trung/)
+- [Phân loại hộp thư](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)
+- [Quản lý bảng tin của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/bang-tin/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/)
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/)

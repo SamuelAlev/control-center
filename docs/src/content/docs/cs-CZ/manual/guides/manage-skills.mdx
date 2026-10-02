@@ -1,129 +1,136 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Instalujte a spravujte skilly
+description: Přidej repozitáře z GitHubu jako zdroje skillů, procházej jejich katalogy a skilly instaluj, aktualizuj nebo odinstaluj přes bránu antivirového skenu.
 slug: cs-CZ/prirucka/navody/sprava-skillu
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Tenhle návod ukazuje, jak do pracovního prostoru dostat skilly z GitHubu:
+přidat repozitář jako zdroj, nainstalovat z něj skilly, které chceš, a držet
+je aktuální.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/cs-CZ/prirucka/koncepty/model-agentu/); this page stays
-on the doing.
+Než začneš, jedno je třeba vědět: **zdrojový repozitář je nedůvěryhodný.**
+Jeho název, popis i počet hvězdiček píše ten, kdo ho vlastní. Jediný
+bezpečnostní signál, kterému Control Center věří, je verdikt antivirového
+skenu. Každá instalace jím projde, než se cokoli dostane na disk nebo do
+promptu agenta. Chceš-li zdůvodnění, přečti si
+[sekci Skilly v modelu agentů](/cs-CZ/prirucka/koncepty/model-agentu/); tahle
+stránka zůstává u postupu.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Skilly jsou v **Nastavení → Pracovní prostor → Dovednosti**
+(`/workspaces/<id>/settings/workspace/skills`). Patří k pracovnímu prostoru:
+co tu nainstaluješ, patří jen tomuhle pracovnímu prostoru. Stránka má dvě
+karty, **Nainstalované** (lokální skilly, včetně editoru **Nová dovednost**)
+a **Zdroje** (katalogy z GitHubu). Oba zápisy procházejí stejnou branou skenu.
 
-## Add a skill repository
+## Přidej repozitář se skilly
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Otevři **Nastavení → Pracovní prostor → Dovednosti** a přepni na kartu
+   **Zdroje**.
+2. Klepni na **Přidat repozitář**.
+3. Vlož URL repozitáře na GitHubu, třeba
+   `https://github.com/anthropics/skills`, a potvrď.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Server ověří, že repozitář existuje a je s jeho přihlašovacími údaji
+viditelný, a přidá ho do lišty vlevo. Spravovaný katalog tu není: funguje
+libovolný repozitář na GitHubu, takže pověst si posuzuješ sám. Počet
+hvězdiček je doklad, nikdy záruka.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Skilly repozitáře jsou adresáře se souborem `SKILL.md` (až tři úrovně
+hluboko, plus rozložení Claude plugin-marketplace
+`plugins/<plugin>/skills/<skill>`; stromy závislostí a vendor se
+přeskakují). Když mřížka později hlásí, že repozitář žádné skilly nemá,
+znamená to právě tohle: žádný adresář v něm konvenci skillu neodpovídá.
 
-## Inspect a skill before installing
+## Prohlédni si skill před instalací
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Vyber repozitář v liště. Jeho skilly se vpravo objeví jako mřížka a nad ní
+je filtr, který katalog zužuje podle názvu, popisu nebo slugu. Klikni na
+kartu v mřížce a otevře se detail. Ukazuje tři věci:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**, vykreslené jako markdown. Je to `README.md` z adresáře skillu,
+  nebo tělo `SKILL.md`, když README není.
+- **Náhled skenu.** Verdikt (`pass`, `warn` nebo `quarantine`), schopnosti,
+  které obsah skillu deklaruje (spouští shell, zapisuje soubory, přístup k
+  síti…), a každé zjištění, které skener zaznamenal.
+- **Počet souborů.** Instalace zapíše celý adresář skillu, nejen jeho
+  `SKILL.md`.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Náhled skenuje přesně ty bajty, které by zapsala instalace, takže verdikt,
+který vidíš, je verdikt, který instalace dostane. Podruhé se to už
+neposuzuje.
 
-## Install a skill
+## Nainstaluj skill
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Otevři detail skillu.
+2. Přečti verdikt skenu. U verdiktu `warn` nebo `pass` klepni na
+   **Nainstalovat**.
+3. U verdiktu `quarantine` zůstane **Nainstalovat** vypnuté, dokud
+   nezaškrtneš **Rozumím riziku — přesto nainstalovat**. Přebití se zapíše.
+   Nepředpokládá se.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+Instalace zapíše adresář skillu do pracovního prostoru, do `skills-lock.json`
+uloží pin (zdrojový repozitář, cestu, commit, ze kterého přišel, a hash
+obsahu) a skill je k dispozici agentům v pracovním prostoru. Karta s
+označením **Název se používá** znamená, že ten název už lokálně vlastní jiný
+skill. Ten nejdřív odinstaluj.
 
-## Update skills over time
+## Aktualizuj skilly v čase
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Karty nainstalovaných skillů nesou odznaky: **Nainstalováno**, nebo
+**Dostupná aktualizace**, když se repozitář posunul za commit, ke kterému jsi
+skill připnul. Otevři detail a klepni na **Aktualizovat**. Skill se znovu
+stáhne na novém commitu. Aktualizace prochází stejnou branou skenu jako
+instalace. Skill, jehož nová verze skončí v karanténě, se odmítne a verze,
+kterou jsi měl, zůstane. Hash staré verze zůstane v zámku jako odkaz
+pro návrat.
 
-## Uninstall a skill, remove a repository
+## Odinstaluj skill, odeber repozitář
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Odinstalovat** (v detailu nainstalovaného skillu, nebo **Smazat** na kartě
+**Nainstalované**) odebere adresář skillu i jeho pin v zámku najednou.
+Odinstalovaný skill po sobě nic nenechá.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Odebrání repozitáře** z lišty odebere jen katalog. Skilly, které jsi z něj
+nainstaloval, zůstanou nainstalované a pořád se aktualizují, protože pin si
+repozitář pamatuje jménem, ne odkazem na položku zdroje. Chceš-li ho znovu
+procházet, přidej repozitář zpátky.
 
-## Invoke a skill
+## Vyvolej skill
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Skilly se vyvolávají ve vlastním jmenném prostoru, takže se nikdy nestřetnou
+s vestavěnými slash příkazy (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — skill nainstalovaný v tomhle pracovním prostoru, nebo
+  připojený k agentovi
+- `/skill:<repo>:<name>` — skill, který si veze repozitář vycheckoutovaný
+  v tomhle prostoru
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Holé jméno, které není vestavěný příkaz, se pořád vyřeší. Jde o zprávy
+napsané předtím, než jmenný prostor existoval. `/skill:plan` je to, co se
+dostane ke skillu jménem `plan`; `/plan` je vždycky vestavěný příkaz.
 
-## Repo-scoped skills
+## Skilly vázané na repozitář
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Vycheckoutovaný repozitář si může vézt vlastní skilly, v `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` nebo `skills/`. Přes
+tuhle stránku se **neinstalují**. Agent nese jen skilly repozitáře, ve kterém
+právě pracuje, a při přesunu se vymění. Composer takhle omezený není:
+`/skill:<repo>:<name>` dosáhne na libovolný repozitář v prostoru.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Skilly repozitáře projdou stejným skenem, který bez verdiktu nic nepropustí
+(`pass` / `warn` / `quarantine`), než se jejich frontmatter dostane do
+promptu. `warn` se připustí, `quarantine` se zadrží a na téhle cestě operátor
+přebití nemá.
 
-See [Repo-scoped skills](/cs-CZ/prirucka/koncepty/model-agentu/#repo-scoped-skills) and
-[Slash commands](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/).
+Viz [Skilly vázané na repozitář](/cs-CZ/prirucka/koncepty/model-agentu/#skilly-vázané-na-repozitář)
+a [Slash příkazy](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/).
 
-## Related guides
+## Související návody
 
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/)
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/)

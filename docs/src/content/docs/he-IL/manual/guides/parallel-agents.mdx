@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: הפעלת סוכנים במקביל
+description: שגרו כמה סוכנים בבת אחת ודאגו שהעבודה שלהם לא תתנגש.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+המדריך הזה מראה כיצד להריץ כמה סוכנים בו־זמנית בלי שהם ידרסו זה את זה.
 
-## The unit of isolation is the space, not the agent
+## יחידת הבידוד היא המרחב, לא הסוכן
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+כשעבודה מתחילה במרחב, Control Center מקצה צ׳קאאוט אחד בהעתקה בעת כתיבה לכל מאגר רשום, תחת השורש של אותו מרחב, על ענף שנגזר מתבנית הענפים של סביבת העבודה. כל סוכן במרחב מקבל אז ספריית עבודה משלו בשכבת-על — אבל שכבות-העל **חולקות** את ספריית ה-`repos/` של אותו מרחב.
 
-So:
+לכן:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- שני סוכנים ב**מרחבים שונים** עובדים בצ׳קאאוטים שונים, על ענפים שונים. זהו בידוד אמיתי.
+- שני סוכנים ב**אותו מרחב** עובדים באותו צ׳קאאוט, על אותו ענף. נתיבי שכבת-העל שלהם שונים, ולכן גם מנעול נתיב השיגור (שמסדר בסדרה הרצות רק כשהן מבקשות את אותה ספריית עבודה בדיוק) אינו מסדר אותם בסדרה. הם יכולים לכתוב באותם קבצים בו־זמנית.
 
-The rule that follows: **one space per parallel task.**
+הכלל שנגזר מכך: **מרחב אחד לכל משימה מקבילה.**
 
-## Run tasks in parallel — separate spaces
+## הרצת משימות במקביל — מרחבים נפרדים
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. פתחו מרחב עם סוכן A ושלחו לו משימה.
+2. פתחו מרחב שני עם סוכן B ושלחו לו משימה אחרת.
+3. שניהם משוגרים מיד, כל אחד בצ׳קאאוט של המרחב שלו ועל הענף שלו.
 
-This is the recipe to use whenever the agents will be editing files.
+זה המתכון שיש להשתמש בו בכל פעם שהסוכנים עומדים לערוך קבצים.
 
-## Work together in one space — several mentions
+## עבודה משותפת במרחב אחד — כמה אזכורים
 
-In a single space, @-mention more than one agent:
+במרחב בודד, אזכרו יותר מסוכן אחד עם @:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+שני הסוכנים משוגרים במקביל וזורמים לאותו מרחב, מתויגים לפי השולח. מכיוון שהם חולקים את הצ׳קאאוט של המרחב, השתמשו בזה לשיתוף פעולה — אחד כותב, אחד קורא, או שני סוכנים שחושבים על אותו עץ — ולא לשתי עריכות בלתי תלויות.
 
-## Fan out from a pipeline
+## פיזור מתוך פייפליין
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+התבנית המובנית `pr_review` היא הדוגמה המסופקת לפיזור: כמה צומתי סוקרים רצים במקביל מטריגר אחד, וצומת **Consolidate (join)** מאחד את הממצאים שלהם לדוח אחד. הריצו אותה ממסך **פייפליינים** וכל סוקר משוגר במקביל.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+עורך הפייפליין מסתיר את הזקיף הסופי ומחווט אותו מחדש כך שימתין לכל כיור חי כשאתם מוסיפים שלב או מחברים אותו, ולכן ענפים שאתם משרטטים בעצמכם אכן רצים.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[הקצאת כרטיס אינה משגרת דבר]
+הקצאת כרטיס לסוכן רושמת בעלות. אין משגר כרטיסים — `TicketAssigned` הוא אות ביקורת, וממנו לא מתחילה שום עבודה. היוצא מן הכלל היחיד הוא כרטיס שמוקצה ל_צוות_, שמעיר את המוביל של אותו צוות.
 :::
 
-## Watch them run
+## צפייה בהם בזמן ריצה
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**ניטור ← בזמן אמת** (בתחתית סרגל הצד ← ניטור, ואז הלשונית **בזמן אמת**) מציג את סגל הסוכנים של סביבת העבודה הזו, ומתעדכן בכל שנייה: סטטוס (פועל / לא פעיל / חונה / הופסק), מה כל אחד מהם עושה, אסימונים ועלות של ההרצה האחרונה שלו, ופקד עצירה לתהליך שרץ. בחירת שורה מעגנת מגירת תמלול חיה.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**הגדרות ← סביבת עבודה ← סוכנים** מציג את אותו סגל עם אוצר מילים אחר לסטטוסים, שממוקד קודם כול בתשומת לב ונגזר מהיסטוריית ההרצות של כל סוכן — פועל, חסום, נכשל, לא פעיל, לא הורץ מעולם — כשהמיון מציף למעלה כל דבר שדורש תשומת לב. הלשונית **יומנים** של כל סוכן מחזיקה את היסטוריית ההרצות שלו.
 
-Both surfaces are scoped to the active workspace.
+שני המשטחים מוגבלים לסביבת העבודה הפעילה.
 
-## Handle conflicts
+## טיפול בהתנגשויות
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+בין מרחבים, כל מרחב נמצא על הענף שלו, ולכן התנגשות מתגלה כהתנגשות מיזוג רגילה של Git כשאתם ממזגים את בקשת המשיכה השנייה. פתרו אותה כפי שהייתם פותרים כל התנגשות מיזוג.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+בתוך מרחב אחד אין גבול של ענף ואין מנעול: הסוכנים כותבים לאותם קבצים בזמן אמת, והמפסיד פשוט נדרס. אם אתם מוצאים את עצמכם רוצים ששני סוכנים יערכו במרחב אחד, פצלו את העבודה לשני מרחבים במקום זאת.
 
-To reduce collisions either way:
+כדי לצמצם התנגשויות בכל אחת מהדרכים:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/).
-- Review and merge each agent's pull request promptly.
+- העניקו לכל סוכן היקף מובחן — קבצים שונים, מודולים שונים.
+- השתמשו בגרף הקוד כדי לבדוק במה שינוי נוגע לפני השיגור. ראו [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/).
+- סקרו ומזגו את בקשת המשיכה של כל סוכן בזמן.
 
-## Resource considerations
+## שיקולי משאבים
 
-Each running agent costs:
+כל סוכן שרץ עולה:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- צ׳קאאוט של מרחב — זניח מבחינת דיסק כל עוד העתקה בעת כתיבה זמינה; ב-Windows, `git worktree`. מערכת קבצים שאינה יכולה לבצע reflink מכשילה את ההקצאה במקום להעתיק.
+- תהליך במארח השרת
+- אסימוני מודל, שמצטברים לפי סוכן
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/) for the two commands that do have one.
+העלויות נוחתות ב**ניטור ← תובנות**. שימו לב שלתור אינטראקטיבי רגיל אין תקרת הוצאה; ראו [ניהול עלויות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/) לשתי הפקודות שכן יש להן תקרה.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [Build an agent team](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/)
-- [Manage costs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/)
-- [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [בניית צוות סוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/בניית-צוות/)
+- [ניהול עלויות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/)
+- [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)

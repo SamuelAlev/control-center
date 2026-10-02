@@ -1,123 +1,131 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Bir Google Calendar bağlama
+description: Google Calendar’ı bir çalışma alanına bağlayın, birden çok hesabı yönetin ve bir token’ın süresi dolduğunda yeniden bağlanın.
 slug: tr-TR/kilavuz/nasil-yapilir/takvim-baglama
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/tr-TR/kilavuz/kavramlar/takvim/) for the full picture.
+Bu kılavuz, Google Calendar’ı bir çalışma alanına nasıl bağlayacağınızı gösterir.
+Bağlantı çalışma alanı başına kurulur: o çalışma alanının etkinliklerini Control
+Center’a salt okunur olarak eşitler. Tam resim için
+[Takvim ve zamanlama](/tr-TR/kilavuz/kavramlar/takvim/) sayfasına bakın.
 
-## Connect an account
+## Hesap bağlama
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Kenar çubuğunda **Takvim**’i açın.
+2. Takvim kenar çubuğunda **Takvim hesabı ekle**’ye tıklayın. (Aynı bölüm **Ayarlar → Çalışma alanı → Profil ve kimlik** yolunda, **Google Calendar** altında da yer alır.)
+3. Nasıl yetkilendireceğinizi seçin:
+   - **Control Center'ın Google uygulamasını kullan** — kurulacak bir şey yok. Yapınız bir tane içeriyorsa varsayılan budur.
+   - **Kendi Google Cloud istemcimi kullan** — kendi projenizden bir istemci kimliği ve gizli anahtar yapıştırın (bkz. [Kendi Google istemcinizi getirme](#kendi-google-istemcinizi-getirme-çatallar-ve-kendi-barındırma)).
+4. **Google Calendar’ı bağla**’ya tıklayın. İletişim kutusu kısa bir kod ve Google’ın cihaz sayfasına bir bağlantı gösterir.
+5. O sayfayı herhangi bir cihazda açın, kodu girin ve istenen erişimi onaylayın. İletişim kutusu kendiliğinden kapanır ve etkinlikleriniz eşitlenmeye başlar.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Bu alışverişi cihazınız değil sunucu yürütür ve ortaya çıkan yenileme token’ını
+saklar — kodun özellikle bu uygulamada değil de “herhangi bir cihazda”
+onaylanmasının nedeni budur.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Hesap **yalnızca etkin çalışma alanına** bağlanır. Çalışma alanını değiştirin,
+onun yerine o çalışma alanının takvimlerini görürsünüz.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Bağlantı akışı `calendar.readonly` ile birlikte e-posta adresinizi ister —
+yerleşik uygulama ve yapıştırdığınız istemci için aynı kapsamlar. Control Center
+etkinlikleri okur; Google’da etkinlik oluşturmaz, düzenlemez, silmez veya
+davetlere yanıt vermez.
 
-## How syncing works
+## Eşitleme nasıl çalışır
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+Zamanlamanın sahibi **sunucudur**: her iki dakikada bir tüm çalışma alanlarının
+bağlı hesaplarını tarar ve etkinlikleri çalışma alanının veritabanına yazar.
+İstemciler Google’la hiç konuşmaz — sunucunun yazdıklarını okurlar.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Tarama artımlıdır. Takvim başına ilk geçiş kayan bir pencere çeker (60 gün
+geriye, 90 gün ileriye) ve Google’ın eşitleme token’ını yakalar; sonraki geçişler
+bu token’ı sunar ve yalnızca değişenleri alır — iki dakikalık bir tempoyu
+karşılanabilir kılan da budur. Pencere, her 24 saatte bir ve Google token’ı
+geçersiz kıldığında tam bir eşitlemeyle yeniden sabitlenir.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Yenileme token’ları sunucu tarafında, sunucunun veri dizinindeki `secrets.json`
+dosyasında yaşar ve yalnızca sahibinin erişebildiği biçimde (`0600`) yazılır —
+işletim sistemi anahtar zincirinde değil ve hiçbir zaman bir istemci cihazında
+değil.
 
-## Connect multiple accounts
+## Birden çok hesap bağlama
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Bir çalışma alanı birkaç Google hesabı bağlayabilir (örneğin iş ve kişisel).
+Her biri için bağlama adımını yineleyin; etkinlikleri aynı ay / hafta / ajanda
+görünümlerinde birleşir. Her hesap bağımsız olarak eşitlenir ve yenilenir ve her
+birinin bağlantısı kendi başına kesilebilir.
 
-## Reconnect an expired account
+## Süresi dolmuş bir hesabı yeniden bağlama
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Google bir hesabın token’ını kalıcı olarak geçersiz kılarsa (iptal edilmiş veya
+süresi çoktan dolmuş bir oturum), eşitleme durur ve Control Center takvimde bir
+**Yeniden bağlan** banner’ı ile birlikte bir masaüstü bildirimi gösterir.
+**Yeniden bağlan**’a tıklayıp yeni bir kodu onaylayın; banner bir sonraki başarılı
+eşitlemede kaybolur.
 
-## Disconnect an account
+## Bir hesabın bağlantısını kesme
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Takvim kenar çubuğundan (veya **Ayarlar → Çalışma alanı → Profil ve kimlik**
+yolundan) hesaptaki **Bağlantıyı kes**’e tıklayın. Bu işlem, eşitlenmiş
+etkinliklerini siler ve sunucudaki saklı token’larını temizler.
 
-## Connect from a headless server
+## Headless bir sunucudan bağlanma
 
-A server with no GUI attached connects the same account from its own terminal:
+Grafik arayüzü olmayan bir sunucu, aynı hesabı kendi terminalinden bağlar:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Bir kod ve bir URL yazdırır, onay bekler, ardından token’ları saklar ve bir
+sonraki taramada eşitler.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Kaynaktan bir derleme **hiç** Google istemcisi içermez, bu yüzden kimlik ve gizli
+anahtar zorunludur — `GOOGLE_OAUTH_CLIENT_ID` ve `GOOGLE_OAUTH_CLIENT_SECRET`
+değerlerini ayarlayın. `--google-client-id` diye bir bayrak yoktur (bilinmeyen
+bayraklar yok sayılır). Ortam değişkeni çifti olmadan komut, eksik istemci
+hatasıyla çıkar.
 
-## Bring your own Google client (forks and self-hosting)
+## Kendi Google istemcinizi getirme (çatallar ve kendi barındırma)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Yayımlanan derlemeler bir Google istemcisiyle gelir, bu yüzden çoğu kişi buna hiç
+dokunmaz. Kaynaktan derliyorsanız, kendi sunucunuzu çalıştırıyorsanız veya onay
+ekranının kendi projenizin adını taşımasını istiyorsanız kendi istemcinizi
+getirin.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) üzerinde **Google Calendar API**’yi etkinleştirin ve `calendar.readonly`, `openid` ile `email` kapsamlarını ekleyerek **OAuth onay ekranını** yapılandırın. Uygulama doğrulanmamışken kendinizi bir **test kullanıcısı** olarak ekleyin. Onay ekranında `calendar.events` eklemek davetlere yanıt vermeyi etkinleştirmez — Control Center bu kapsamı hiç istemez.
+2. Uygulama türü **TV’ler ve sınırlı girdi cihazları** olan bir **OAuth istemci kimliği** oluşturun ve hem istemci kimliğini hem de istemci gizli anahtarını kopyalayın.
+3. Bunları ya her bağlantıda (iletişim kutusunda **Kendi Google Cloud istemcimi kullan**’ı seçin) ya da `GOOGLE_OAUTH_CLIENT_ID` ve `GOOGLE_OAUTH_CLIENT_SECRET` ile sunucu genelinde sağlayın.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Sunucu genelinde tanımlı bir çift, yerleşik olanın yerini her yerde alır —
+“Control Center'ın Google uygulamasını kullan” seçeneğinin arkasında bile — yani
+kendi sunucunuzda o seçenek sizin uygulamanızdır.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+İstemci gizli anahtarı sunucudan asla ayrılmaz: hiçbir RPC yanıtı onu taşımaz ve
+sunucunun kendi istemcisi üzerinden bağlanan bir hesap, çiftin bir kopyası yerine
+bir işaretçi saklar; dolayısıyla onu döndürmek, yeni bir değerle yeniden
+başlatmaktan ibarettir.
 
-### Troubleshooting
+### Sorun giderme
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Belirti                                                     | Olası neden                                                                                                                                                      |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| İletişim kutusu yerleşik bir seçenek sunmuyor               | Bu yapım hiçbir Google istemcisi içermiyor (kaynaktan derleme) ya da sunucu çiftin yalnızca bir yarısıyla başlatıldı. Hem kimlik hem de gizli anahtar gereklidir |
+| Akış başlatılırken `invalid_scope`                          | Calendar, o Cloud projesinde bir cihaz kodu istemcisi için izinli değildir. Bunun yerine loopback ya da web istemcisi olan bir proje kullanın                    |
+| Google’dan `invalid_client`                                 | İstemci, **TV’ler ve sınırlı girdi cihazları** türünde bir istemci değil ya da kimlik ile gizli anahtar farklı istemcilere ait                                   |
+| Onay başarılı ama eşitleme boş                              | Hesabınız onay ekranında bir **test kullanıcısı** değil ya da `calendar.readonly` verilmedi                                                                      |
+| Kod, siz onaylamadan önce süresi doluyor                    | Cihaz kodları kısa ömürlüdür. Yeni bir kod için bağlantıyı yeniden başlatın                                                                                      |
+| Bir davete yanıt verirken “Yanıtınız güncellenemedi”        | Beklenen bir durumdur: bağlantı akışı `calendar.events` kapsamını hiç istemez                                                                                    |
+| Eşitleme, sunucu günlüğünde bir yenileme uyarısıyla duruyor | Hesap, artık yapılandırılmamış bir istemciyle bağlanmıştı. Hesabı yeniden bağlayın ya da o istemci kimliğini ve gizli anahtarını geri yükleyin                   |
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Record and summarize a meeting](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/): turn an event into a recording
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [Bir toplantıyı kaydetme ve özetleme](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/): bir etkinliği kayda dönüştürün
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): token’ların ve eşitleme zamanlamasının yaşadığı yer
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Calendar and scheduling](/tr-TR/kilavuz/kavramlar/takvim/)
+- [Takvim ve zamanlama](/tr-TR/kilavuz/kavramlar/takvim/)

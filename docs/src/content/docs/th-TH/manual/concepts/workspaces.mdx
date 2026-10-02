@@ -1,148 +1,148 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: เวิร์กสเปซและการแยกโดเมน
+description: เหตุใดเวิร์กสเปซจึงเป็นขอบเขตผู้เช่าที่เข้มงวด การแยกฐานข้อมูลทำให้ขอบเขตนั้นเป็นเชิงโครงสร้างได้อย่างไร และอะไรที่จงใจข้ามขอบเขตนั้น
 slug: th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## เวิร์กสเปซคืออะไร
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+เวิร์กสเปซคือผู้เช่าที่ใช้แยกโดเมนในระดับสูงสุดของ Control Center มันจัดกลุ่มเอเจนต์ รีโพสิทอรี สเปซ ตั๋วงาน หน่วยความจำ ไปป์ไลน์ และสมาชิกให้เป็นบริบทที่มีขอบเขต ทุกสิ่งที่เกิดขึ้นภายในเวิร์กสเปซจะอยู่ในเวิร์กสเปซนั้น
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+เวิร์กสเปซทั่วไปสอดคล้องกับหนึ่งโปรเจกต์หรือหนึ่งโค้ดเบส คุณอาจมีเวิร์กสเปซแยกกันสำหรับ "api-service", "frontend-v2" และ "infrastructure"
 
-## Workspace-scoped data
+## ข้อมูลที่ผูกกับเวิร์กสเปซ
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+แถวข้อมูลของเวิร์กสเปซอยู่ในไฟล์ SQLite ของเวิร์กสเปซนั้นเอง ที่ `<dataDir>/<workspaceId>/workspace.db` แต่ละเวิร์กสเปซได้ไดเรกทอรีหนึ่งไดเรกทอรีแทนที่จะเป็นไฟล์เปล่า ๆ เพราะเวิร์กสเปซสะสมมากกว่าฐานข้อมูล — worktree ประจำการสนทนา ไฟล์เอเจนต์และสกิล ข้อมูลรับรองของแชทบอต — และการให้โฟลเดอร์กับมันหมายความว่าทั้งหมดนั้นอยู่ร่วมกันและถูกลบไปพร้อมกัน
 
-| Entity                                              | Scope                                        |
+| เอนทิตี                                            | ขอบเขต                                       |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| เอเจนต์                                             | สังกัดเวิร์กสเปซเดียวเท่านั้น                 |
+| รีโพสิทอรี                                          | ลงทะเบียนเข้าเวิร์กสเปซเดียว (ดูด้านล่าง)      |
+| สเปซ การสนทนา และข้อความ                            | ผูกกับเวิร์กสเปซ                              |
+| ตั๋วงาน โปรเจกต์ แผน และการประสานงาน                | ผูกกับเวิร์กสเปซ                              |
+| ข้อเท็จจริงในหน่วยความจำ นโยบาย โดเมน และสิทธิ์การเข้าถึง | ผูกกับเวิร์กสเปซ                         |
+| รันไปป์ไลน์ เทมเพลต และทริกเกอร์                    | ผูกกับเวิร์กสเปซ                              |
+| สถานะ pull request สเปซรีวิว และ cohort รีวิว        | ผูกกับเวิร์กสเปซ                              |
+| ล็อกรันของเอเจนต์และหน่วยความจำใช้งาน               | ผูกกับเวิร์กสเปซ                              |
+| สมาชิก คำเชิญ และสิทธิ์รายรีโป                       | ผูกกับเวิร์กสเปซ                              |
+| สัญลักษณ์และเส้นเชื่อมของกราฟโค้ด                   | ผูกด้วย `repoId` ภายในไฟล์เวิร์กสเปซ          |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+แถวข้อมูลเหล่านี้ส่วนใหญ่มีคอลัมน์ `workspaceId` ส่วนไฟล์ฐานข้อมูลที่แยกจากกันเป็นตัวบังคับใช้การแยกโดเมน ดูค่าคงที่ของการแยกโดเมนด้านล่าง
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## รีโปผูกกับเวิร์กสเปซ ส่วนตัวตนข้ามเวิร์กสเปซยึดตามเส้นทาง
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+แถวข้อมูลของรีโปอยู่ในไฟล์ฐานข้อมูลของเวิร์กสเปซเอง — ไฟล์_คือ_ขอบเขต ดังนั้นตารางจึงไม่มีคอลัมน์ `workspaceId` และไม่มีตารางเชื่อม
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+คุณเพิ่มรีโปเข้าเวิร์กสเปซได้ที่ การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี การลงทะเบียนเช็คเอาต์เดียวกันในสองเวิร์กสเปซจะสร้างสองแถวที่เป็นอิสระต่อกันพร้อมสองไอดี ส่วนตัวตนของรีโป_ข้าม_เวิร์กสเปซยึดตามเส้นทางในระบบไฟล์ (หรือ owner/name บน GitHub) ไม่ใช่ไอดีเด็ดขาด
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+การลงทะเบียนเข้มงวด: เส้นทางต้องอยู่ภายใน work tree ของ git ต้องมี remote ชื่อ `origin` และ remote นั้นต้องชี้ไปที่ forge ที่รองรับ (github.com, gitlab.com หรือ bitbucket.org) ระบบอ่าน forge จาก remote และเก็บไว้บนรีโป ดังนั้นเวิร์กสเปซเดียวจึงเก็บรีโปจากทั้งสามแห่งได้ สิ่งอื่นใดจะถูกปฏิเสธ ตัวเรียกดูโฟลเดอร์ที่คุณใช้เลือกจะแสดงระบบไฟล์ของ**โฮสต์เซิร์ฟเวอร์** โดยจำกัดอยู่ที่ allow-list `--repo-roots` ของเซิร์ฟเวอร์ (ซึ่งค่าเริ่มต้นคือโฮมไดเรกทอรีของผู้ใช้ที่รันเซิร์ฟเวอร์)
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+การลบรีโพสิทอรีออกจากเวิร์กสเปซจะลบแถวนั้นทิ้งไปเลย และลบต่อเนื่องไปยังสัญลักษณ์โค้ด เส้นเชื่อม ไฟล์ จุดตรวจของดัชนี และสิทธิ์รายสมาชิกของมัน ส่วนเช็คเอาต์บนดิสก์ไม่ถูกแตะต้อง
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+กราฟโค้ดอยู่ในไฟล์เดียวกัน โดยมีคีย์เป็น `repoId` เพราะเวิร์กสเปซต่าง ๆ อาจมีรีโพสิทอรีเดียวกันบนสาขาต่างกันซึ่งมีโค้ดต่างกัน
 
-## The isolation invariant
+## ค่าคงที่ของการแยกโดเมน
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+การรั่วไหลของข้อมูลข้ามเวิร์กสเปซถือเป็นบั๊ก การแยกโดเมนเป็นเรื่อง**เชิงโครงสร้าง** ซึ่งบังคับใช้ในหลายระดับ:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **ชั้นฐานข้อมูล** แต่ละเวิร์กสเปซมีไฟล์ SQLite ของตัวเอง ซึ่งส่งมอบโดย `WorkspaceDatabaseManager.of(workspaceId)` ฐานข้อมูลของเวิร์กสเปซไม่ได้ประกาศตาราง `users`, `workspaces` หรือตารางของเวิร์กสเปซอื่น ดังนั้นการอ่านข้ามเวิร์กสเปซจึงไม่ใช่บั๊กที่คุณเขียนขึ้นได้ — มันคอมไพล์ไม่ผ่าน รีโพสิทอรีรีโซลฟ์ DAO ของตัวเองในแต่ละครั้งแทนที่จะแคชไว้หนึ่งตัว และเนื่องจากทุกเมธอดของรีโพสิทอรีรับ `workspaceId` แบบบังคับ เวิร์กสเปซจึงถูกอนุมานหรือใช้ค่าเริ่มต้นไม่ได้เลย
+- **ไอดีของเวิร์กสเปซเป็นส่วนหนึ่งของเส้นทาง** เพราะไอดีกลายเป็นชื่อไดเรกทอรี มันจึงต้องตรงกับรูปแบบ single-segment ที่ปลอดภัย (เริ่มด้วยตัวอักษรหรือตัวเลข ตามด้วยตัวอักษรหรือตัวเลข จุด ขีดล่าง ขีดกลาง; ห้ามมี `..`) ไอดีเป็น UUID ทุกที่ในผลิตภัณฑ์ สิ่งอื่นใดจะ throw แทนที่จะถูกทำให้ปลอดภัย — นั่นคือด่านกัน path traversal และมันล้มเหลวอย่างเสียงดังแทนที่จะเขียนข้อมูลของเวิร์กสเปซไปยังเส้นทางที่คนอื่นเลือก
+- **การป้องกันหลายชั้น** คอลัมน์ `workspaceId` ยังอยู่ตรงนั้นและยังถูกเขียนอยู่ แม้จะซ้ำซ้อนภายในไฟล์เดียว แต่มันทำให้ทริกเกอร์ของ sync-feed ดัชนี FTS และรูปทรงของแถวที่มีอยู่ไม่เปลี่ยนแปลง และทำให้ไฟล์อธิบายตัวเองได้เมื่อถูกตรวจดูเดี่ยว ๆ — ซึ่งเป็นสิ่งที่การส่งออกและการนำเข้าพึ่งพา
+- **ชั้นโดเมน** บริการที่กลายพันธุ์เอนทิตีตามไอดีจะตรวจสอบ `entity.workspaceId == workspaceId` ที่จุดควบคุมจุดเดียวเดียวก่อนดำเนินการ และ throw `WorkspaceMismatchException` เมื่อไม่ตรงกัน — ความล้มเหลวแบบเสียงดังสำหรับไอดีที่มาจากบริบทผิด การปฏิเสธอย่างเสียงดังสำคัญ เพราะการเงียบไม่ทำอะไรเลยซ่อนบั๊กไว้ ส่วนการดำเนินการต่อไปคือการรั่วไหล
+- **ชั้น RPC** ตัวจัดส่ง repo-RPC คือจุดควบคุม ทุก op ที่ผูกกับเวิร์กสเปซต้องพก `workspace_id` ไว้ใน args ของตัวเอง — ไม่มี "เวิร์กสเปซปัจจุบัน" ระดับเซสชันให้รั่วไหล และไอดีที่ไม่รู้จักจะถูกปฏิเสธว่าไม่พบ _ก่อน_ ที่อะไรจะเปิดฐานข้อมูล ดังนั้นไอดีที่ไม่ดีจึงก่อร่าง `workspace.db` ผีขึ้นมาไม่ได้ ops ที่เป็นระดับส่วนกลางจริง ๆ (ฟีดข่าว คิวของฟลีต) ประกาศตัวเองว่าไม่ผูกกับเวิร์กสเปซ ซึ่งเป็นการตัดสินใจที่ชัดเจนและผ่านการทบทวนแล้ว เครื่องมือ MCP ก็ใช้กฎเดียวกัน: เครื่องมือใดที่แตะข้อมูลซึ่งผูกกับเวิร์กสเปซต้องมี `workspace_id`
+- **การกระจายข้ามเวิร์กสเปซนับแจกแจงได้** การตอบคำถามเกี่ยวกับเวิร์กสเปซหลายตัวหมายถึงการเปิดฐานข้อมูลหลายตัว การกระจายนั้นถูกจำกัดให้อยู่ที่ตัวช่วยตัวเดียว `CrossWorkspaceQueries` รายการทั้งหมดของสิ่งที่ข้ามขอบเขตอย่างชอบธรรมจึงอยู่ในจุดเรียกใช้ของไฟล์เดียว แทนที่จะกระจายไปอยู่หลังคอมเมนต์อธิบาย จุดเรียกใช้เหล่านั้นได้แก่: การรวบรวมข้อมูลระดับทั้งเซิร์ฟเวอร์ ตัวกระทบยอดตอนเริ่มระบบ การกวาดตามอายุการเก็บและ GC การสำรองข้อมูล ตัวจัดเส้นทางเหตุการณ์ — และการค้นหาสมาชิกภาพด้านล่าง
+- **การเข้าถึงด้วยไอดีอย่างเดียวไม่เพียงพอ** การค้นหาเอนทิตีด้วย UUID ไม่ได้พิสูจน์ว่ามันเป็นของเวิร์กสเปซของผู้เรียก การแยกไฟล์ทำให้ไฟล์ที่ผิดเข้าถึงไม่ได้ ส่วนการตรวจสอบในชั้นโดเมนจับไอดีที่ผิดซึ่งมาทางไฟล์ที่ชอบด้วยกฎหมาย
 
-## Membership, not the pairing key, is what grants access
+## สมาชิกภาพต่างหากที่ให้สิทธิ์ ไม่ใช่คีย์จับคู่
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+การถือข้อมูลรับรองของอุปกรณ์เป็นการยืนยันตัวตนของ_อุปกรณ์_เท่านั้น ไม่ได้ให้อำนาจใด ๆ ภายในเวิร์กสเปซ ทุก op ที่ผูกกับเวิร์กสเปซจะรีโซลฟ์บทบาทสมาชิกภาพของผู้เรียกและบังคับใช้ขั้นต่ำที่ได้มาจากชนิดของ op — การอ่านต้องใช้ `guest` การกลายพันธุ์ต้องใช้ `member` การดำเนินการที่ทำลายได้ต้องใช้ `admin` — และ op ที่เปิดเผยเนื้อหารีโปจะตรวจสิทธิ์รายรีโปของผู้เรียกเพิ่มเติม คีย์จับคู่ที่ถูกต้องแต่ไม่มีสมาชิกภาพจะได้ `Not a member of this workspace`
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+ผลที่ตามมาต่อการแยกโดเมนนั้นเรียบง่าย: แถวสมาชิกภาพอยู่ในไฟล์_ของเวิร์กสเปซเอง_ ดังนั้น "ใครอยู่ในเวิร์กสเปซนี้?" จึงเป็นการอ่านแบบมีขอบเขตตามปกติ ส่วนคำถามกลับกัน — "ฉันอยู่ในเวิร์กสเปซใดบ้าง?" — ตามนิยามแล้วกระจายอยู่ตามไฟล์ต่าง ๆ จึงเป็นหนึ่งในการกระจายผ่าน `CrossWorkspaceQueries` ไม่กี่อย่างที่ได้รับอนุญาต และเป็นสิ่งที่ตัวเลือกเวิร์กสเปซรันก่อนจะมีการเลือกเวิร์กสเปซใด ๆ
 
-See [Multiplayer](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/) for the role ladder and repo grants.
+ดู[การทำงานร่วมกันแบบหลายคน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/) สำหรับลำดับขั้นของบทบาทและสิทธิ์รายรีโป
 
-## The global registry
+## ทะเบียนส่วนกลาง
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+ไม่ใช่ทุกอย่างจะผูกกับเวิร์กสเปซ ฐานข้อมูลตัวที่สอง `<dataDir>/global.db` เก็บสิ่งที่ระดับทั้งเซิร์ฟเวอร์จริง ๆ:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **ทะเบียนเวิร์กสเปซ** เพื่อให้ตัวสลับแสดงรายการเวิร์กสเปซทุกตัวได้โดยไม่ต้องเปิดไฟล์เวิร์กสเปซแม้แต่ไฟล์เดียว — และเพื่อให้ชื่อ โลโก้ เจ้าของ ลำดับในคู่มือ และเครื่องหมายลบแบบซอฟต์ของเวิร์กสเปซอยู่ภายนอกไฟล์ที่มันบรรยาย;
+- **ตัวตน**: ผู้ใช้ ค่ากำหนดของผู้ใช้ และอุปกรณ์ที่จับคู่ เพราะมนุษย์หนึ่งคนคือผู้ใช้หนึ่งคนในทุกเวิร์กสเปซ และอุปกรณ์ที่จับคู่แล้วจะอยู่รอดแม้เวิร์กสเปซถูกลบ;
+- **คิวของฟลีต** (วอร์กเกอร์ งาน ล็อกการจัดวาง) ซึ่งตัวจัดกำหนดการจะจับคู่ทั้งคิวกับวอร์กเกอร์ทุกตัวในแต่ละรอบ;
+- **ฟีดข่าว** ซึ่งเป็นรายผู้ใช้ (ไม่ใช่รายเวิร์กสเปซ) — การเพิ่มฟีดจะติดตามคุณไปทุกเวิร์กสเปซ;
+- **`workspace_routes`** ดัชนีก่อนการยืนยันตัวตนที่ตอบคำถาม "คีย์นี้เป็นของเวิร์กสเปซใด?" สำหรับจุดเข้าที่มาพร้อมเพียงความลับหรือไอดีทึบแสง (แฮชคำเชิญ โทเค็น webhook หรือลิงก์ตรง) และไม่มีเวิร์กสเปซเลย การไม่พบที่นั่นคือคำตอบแบบไม่พบ โดยเจตนาไม่มีทางถอยไปสแกนหา;
+- **การตั้งค่าและตัวตนระดับทั้งการติดตั้ง**: ไอดีการติดตั้ง การตั้งค่าระดับโฮสต์ การเชื่อมต่อ SSO และนโยบายการกระทำแบบมีการจัดการ (กลไกจำกัดระดับทั้งการติดตั้งที่ทำได้เพียงรัดกุมขึ้นเท่านั้น)
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+การบูตเปิดเฉพาะไฟล์นี้ ไฟล์เวิร์กสเปซเปิดแบบ lazy เมื่อถูกแตะครั้งแรก ต้นทุนการเริ่มระบบจึงคงที่ ไม่ว่าเวิร์กสเปซจะสะสมประวัติไว้มากเพียงใด และ `quick_check` ต่อไฟล์จะถูกจ่ายตอนใช้งานครั้งแรก ไม่ใช่บนเส้นทางไปสู่แบนเนอร์พร้อมใช้งาน
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+ไฟล์เวิร์กสเปซมีเพียง `workspace_meta` แถวเดียวสำหรับระบุตัวเอง (ไอดีของมัน การติดตั้งที่สร้างมัน เวอร์ชันสคีมาที่ใช้ตอนสร้าง และเวลาที่สร้าง) ทุกอย่างที่บรรยายเกี่ยวกับเวิร์กสเปซอยู่ในทะเบียน
 
-## Creating a workspace
+## การสร้างเวิร์กสเปซ
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+การสร้างเวิร์กสเปซทำมากกว่าแค่แทรกแถวในทะเบียน ในปฏิบัติการเดียว เซิร์ฟเวอร์จะประทับผู้ใช้ที่สร้างเป็น `ownerUserId` บันทึกสมาชิกภาพบทบาทเจ้าของของผู้ใช้รายนั้น และเผยแพร่เหตุการณ์โดเมน `WorkspaceCreated` จากนั้นตัวรับฟังของเหตุการณ์นั้นจะ seed ต่อแบบ idempotent และในเบื้องหลัง:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **เอเจนต์ CEO** หนึ่งตัวพร้อมผู้เชี่ยวชาญอีกสี่ตัว — `qa`, `architect`, `engineer`, `librarian` — โดยผู้เชี่ยวชาญรายงานต่อ CEO;
+- **เทมเพลตไปป์ไลน์ที่มีมาให้ในตัว** และทริกเกอร์ของมัน (ทริกเกอร์แบบเหตุการณ์และแบบทำมือติดตั้งมาโดยเปิดใช้งานแล้ว ส่วนแบบตามกำหนดเวลาต้องเลือกเปิดเอง ยกเว้นการกวาด worktree-GC ประจำวัน);
+- **ชุดการประเมินเริ่มต้น**
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/).
+สิ่งนี้เกิดขึ้นกับ_ทุก_เวิร์กสเปซ ไม่ใช่แค่เวิร์กสเปซแรก เอเจนต์ที่ถูก seed ถูกสร้างขึ้นโดยไม่มีอะแดปเตอร์ ดังนั้นจึงรันบน **Control Center (built-in)** ด้วยโมเดลเริ่มต้นของ Anthropic (`claude-opus-4-8` เว้นแต่คุณจะปักหมุดโมเดลอื่น) จนกว่าคุณจะตั้งค่าอะแดปเตอร์และโมเดลต่อเอเจนต์ที่ การตั้งค่า → เวิร์กสเปซ → เอเจนต์ ดู[โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+การเขียนสมาชิกภาพของเจ้าของสำคัญกว่าที่เห็น: หากไม่มีมัน เวิร์กสเปซที่เพิ่งสร้างจะไม่มีสมาชิกเลย และทุกการเรียกที่ผูกกับเวิร์กสเปซที่ผู้สร้างทำต่อไปจะถูกปฏิเสธ
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[เอเจนต์สร้างเวิร์กสเปซไม่ได้]
+ไม่มีเครื่องมือ MCP ชื่อ `create_workspace` มนุษย์สร้างเวิร์กสเปซผ่าน `workspace.create` (จุดควบคุมที่รับเฉพาะชื่อ) หรือ `workspace.upsert` (ระเบียนเต็ม ใช้สำหรับการอัปเดตด้วย) ทั้งสองอย่างประทับผู้ใช้ที่สร้างเป็น `owner` และเผยแพร่ `WorkspaceCreated`
 :::
 
-## Deleting, exporting, importing
+## การลบ การส่งออก และการนำเข้า
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+การลบเวิร์กสเปซ **ทำเครื่องหมายที่แถวในทะเบียนและยกเลิกการเชื่อมไดเรกทอรี** เวิร์กสเปซหายไปจากทุกรายการและการค้นหา แถวในทะเบียนยังอยู่ (ถูกลบแบบซอฟต์) ดังนั้นไอดีจึงยังเป็นที่รู้จักของระบบสำรองข้อมูลและงานบำรุงรักษา แต่ `workspace.delete` จะทิ้งไดเรกทอรีของเวิร์กสเปซนั้นทันที — ฐานข้อมูล worktree ไฟล์เอเจนต์ และอื่น ๆ — ผ่าน `WorkspaceDatabaseManager.dropAndClose` มีเพียง**เจ้าของ**เวิร์กสเปซเท่านั้นที่ลบได้
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+เพราะหนึ่งเวิร์กสเปซคือหนึ่งไฟล์ การส่งต่อเวิร์กสเปซจึงเป็นปฏิบัติการไฟล์ ไม่ใช่การดัมป์ทีละตาราง:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` คือ `VACUUM INTO` ครั้งเดียว — สแนปช็อตที่สอดคล้องและจัดเรียงข้อมูลใหม่ ซึ่งถ่ายภายใต้ทรานแซกชันแบบอ่าน ขณะที่เซิร์ฟเวอร์ยังให้บริการอยู่
+- `workspace.import` รับไฟล์แบบนั้นเข้ามาแทนที่ทุกสิ่งที่เวิร์กสเปซปลายทางถืออยู่ `workspace_meta` ที่ฝังอยู่ทำให้การนำเข้าแยกได้ว่า "ไฟล์ของฉันเองที่รับกลับมา" กับ "ไฟล์จากการติดตั้งอื่น" (อย่างหลังอนุญาต แต่จะถูกบันทึกไว้แทนที่จะมองไม่เห็น)
+- `server.backupNow` ถ่ายสแนปช็อตทั้งการติดตั้งลงไดเรกทอรีที่ประทับเวลา ซึ่งสะท้อนไดเรกทอรีข้อมูลจริง — `manifest.json`, `global.db` และ `<workspaceId>/workspace.db` หนึ่งไฟล์ต่อเวิร์กสเปซ — ดังนั้นการกู้คืนคือการคัดลอกกลับมา
+- `server.listBackups` อ่านไดเรกทอรีนั้นกลับมา โดยเรียงใหม่สุดก่อน พร้อมขนาดและรายการเวิร์กสเปซของแต่ละสแนปช็อต สแนปช็อตที่แมนิเฟสต์หายไปหรือระบุชื่อไฟล์ที่ไม่มีอยู่จริงจะยังถูกรายงานโดยทำเครื่องหมายว่าไม่สมบูรณ์ — การซ่อนมันไว้คือหนทางที่ผู้ดำเนินการจะเชื่อว่าตนมีข้อมูลสำรองทั้งที่ไม่มี
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+การดำเนินการสำรองข้อมูลอยู่ภายใต้ **การตั้งค่า → เซิร์ฟเวอร์ → สำรองและกู้คืน**:
+**สำรองตอนนี้** ถ่ายสแนปช็อตของการติดตั้ง รายการจะแสดงว่าสแนปช็อตใด
+สมบูรณ์และให้เจ้าของการติดตั้งลบสแนปช็อตได้หลังยืนยัน และแต่ละเวิร์กสเปซมี
+การส่งออกและการนำเข้าให้ใช้ ไปป์ไลน์ **Workspace backup** ที่มีมาให้ในตัวจะถ่ายเฉพาะ
+ฐานข้อมูลของเวิร์กสเปซนั้นตามกำหนดรายสัปดาห์ และลบข้อมูลสำรองของตัวเองที่เก่ากว่า
+อายุการเก็บที่กำหนด การกู้คืนเวิร์กสเปซจากสแนปช็อตของการติดตั้งคือ `workspace.import`
+ที่ชี้ไปยัง `<workspaceId>/workspace.db` ของสแนปช็อตนั้น ส่วนการกู้คืนทั้งการติดตั้งยังคง
+เป็นการคัดลอกไดเรกทอรีสแนปช็อตกลับในขณะที่เซิร์ฟเวอร์หยุดทำงาน
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/#what-a-backup-does-not-contain) has the full table.
+สิ่งที่ไม่มีตัวใดพกไปด้วยคือส่วนที่เหลือของไดเรกทอรีเวิร์กสเปซ เวิร์กสเปซสะสมมากกว่าฐานข้อมูล — ภาพที่วางไว้ ไฟล์สกิลและเอเจนต์ ข้อมูลรับรองของแชท worktree — และการส่งออกกับการนำเข้าย้ายแค่**ไฟล์** ทุกอย่างที่อยู่ข้าง ๆ จึงอยู่ที่เดิม การทำเช่นนี้เป็นเจตนาสำหรับข้อมูลรับรอง และเป็นเรื่องทิ้งได้สำหรับ worktree ส่วนที่เหลือนั้นเป็นขีดจำกัดที่ควรรู้ ไม่ใช่ฟีเจอร์ [ข้อมูลอ้างอิงการสำรองข้อมูล](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/#what-a-backup-does-not-contain) มีตารางแบบเต็ม
 
-## Moving a backup between the server and your device
+## การย้ายข้อมูลสำรองระหว่างเซิร์ฟเวอร์กับอุปกรณ์ของคุณ
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+ทุก op ข้างต้นพูดถึงเส้นทางบน**เซิร์ฟเวอร์** ซึ่งเป็นคำตอบที่ครบถ้วนเฉพาะเมื่อเซิร์ฟเวอร์คือเครื่องของคุณเอง เส้นทาง HTTP ที่ลงนามแล้วสามเส้นทาง — [`/backup/workspace`, `/backup/snapshot` และ `/backup/restore`](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/#transfer-routes) — ขนย้ายไบต์ให้กับทุกโทโพโลยีอื่น บนเลนที่ผ่านการยืนยันตัวตนแบบเดียวกับที่พร็อกซีสื่อและที่เก็บภาพใช้อยู่แล้ว บนหน้าเว็บ นี่คือปุ่ม **ดาวน์โหลด** ข้าง ๆ การส่งออกแต่ละรายการและสแนปช็อตแต่ละรายการ (คุณเลือกได้ว่าจะให้ไปลงที่ไหน) และ **เลือกไฟล์แล้วอัปโหลด** เพื่อกู้คืนจากไฟล์ที่อยู่ในเครื่องที่คุณกำลังใช้อยู่ การอัปโหลดคือวิธีที่ใช้ได้เมื่อเซิร์ฟเวอร์ไม่ใช่เครื่องของคุณ: `workspace.import` ต้องการให้ไฟล์อยู่บนโฮสต์แล้ว และนี่คือวิธีที่มันไปถึงที่นั่น
 
-Three properties are worth knowing:
+มีคุณสมบัติสามข้อที่ควรรู้:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **การดาวน์โหลดสร้างสำเนาใหม่และเซิร์ฟเวอร์ไม่เก็บมันไว้เลย** การดาวน์โหลดไม่ใช่ "ดึงไฟล์ที่ปุ่มส่งออกสร้างไว้" — มันส่งออกใหม่อีกครั้ง สตรีมสำเนานั้น แล้วลบทิ้ง คำตอบกลับเป็น `no-store` พร้อม `Accept-Ranges: none` ด้วยเหตุผลเดียวกัน: การสตรีมต่อช่วงที่ค้างไว้จะเชื่อมการส่งออกสองครั้งที่ต่างกันเข้าเป็นไฟล์เดียวที่ดูเหมือนถูกต้องแต่ไม่ใช่
+- **การอัปโหลดถูกสตรีมลงดิสก์ ไม่ถูกบัฟเฟอร์เลย** ทั้งสองฝั่ง และสำเนาที่พักไว้จะถูกลบในทุกเส้นทางที่ออกไป — รวมถึงกรณีถูกปฏิเสธ ฐานข้อมูลของเวิร์กสเปซไม่ใช่ภาพหน้าจอ
+- **การเชื่อมต่อผ่านรีเลย์ไม่มี origin ของ HTTP** ตัวควบคุมการถ่ายโอนจึงถูกปิดใช้งานที่นั่น พร้อมข้อความอธิบายเหตุผล ทุกสิ่งที่พูดถึงเส้นทางฝั่งเซิร์ฟเวอร์ยังทำงานผ่านรีเลย์ต่อไป มีเพียงเลนไบต์เท่านั้นที่ต้องเชื่อมต่อตรง
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[เส้นทางไหนเป็นของใคร]
+เส้นทางที่หน้าเว็บ*แสดง* — ไดเรกทอรีสแนปช็อต ไฟล์ที่การส่งออกเขียนไว้ ต้นทางที่การนำเข้าอ่าน — อยู่บนเครื่องที่รัน `cc_server` ส่วนเส้นทางที่**การดาวน์โหลด**รายงานนั้นอยู่บนเครื่องที่คุณนั่งอยู่ ความต่างข้อนี้คือเหตุผลที่ทั้งสองอย่างมีอยู่: อย่างแรกคือสิ่งที่สคริปต์บำรุงรักษาหรือเซสชัน ssh ต้องการ อย่างที่สองคือสิ่งที่คนที่เก็บข้อมูลสำรองต้องการ
 :::
 
-## Multiple workspaces
+## เวิร์กสเปซหลายตัว
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+คุณสามารถรันเวิร์กสเปซหลายตัวเคียงข้างกันได้ แต่ละตัวทำงานอย่างอิสระ: เอเจนต์ในเวิร์กสเปซหนึ่งส่งข้อความถึงเอเจนต์ในอีกเวิร์กสเปซไม่ได้ อ่านหน่วยความจำของเวิร์กสเปซอื่นไม่ได้ และมองไม่เห็นตั๋วงานของมัน การหาผู้รับสำหรับการส่งข้อความระหว่างเอเจนต์เป็นแบบตรงตัวและไม่ข้ามเวิร์กสเปซเด็ดขาด
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+ไม่มีแดชบอร์ดข้ามเวิร์กสเปซ พื้นผิวการวิเคราะห์ที่ `/workspaces/:workspaceId/observability` สมัครรับฟีดส่วนกลางที่มีขอบเขตของรันล่าสุด แล้วจำกัดวงลงทันทีเหลือเฉพาะเวิร์กสเปซที่ใช้งานอยู่ สิ่งที่คุณเห็นที่นั่นจึงเป็นเวิร์กสเปซทีละตัว พื้นผิวที่มีหลายเวิร์กสเปซจริง ๆ เท่าที่คนทั่วไปแตะมีเพียงตัวเลือกเวิร์กสเปซกับตัวสลับ
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+มีขีดจำกัดในทางปฏิบัติข้อหนึ่งที่ควรรู้: เวิร์กสเปซที่มีคนใช้งานอยู่จะเปิดค้างไว้ — ไม่มี LRU เมื่อเกิน 32 ตัว เซิร์ฟเวอร์จะเตือนแทนที่จะปฏิเสธ เพราะไฟล์ที่เปิดอยู่แต่ละไฟล์ถือไอโซเลตเบื้องหลังและเพจแคชไว้ การกระจายข้ามเวิร์กสเปซเปิดไฟล์ชั่วคราวแล้วปิดในภายหลังหากไม่มีอย่างอื่นอ้างสิทธิ์มันไว้
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Multiplayer](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): agents belong to exactly one workspace
-- [Memory and knowledge](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/): memory is workspace-scoped
-- [Architecture](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/): where the databases sit in the client/server split
-- [Back up and restore](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/): every operation, route, manifest field and limit
-- [Add repositories](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/): registering a checkout into a workspace
+- [การทำงานร่วมกันแบบหลายคน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): สมาชิกภาพ บทบาท และสิทธิ์รายรีโป — ด้านการเข้าถึงของการแยกโดเมน
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): เอเจนต์สังกัดเวิร์กสเปซเดียวเท่านั้น
+- [หน่วยความจำและความรู้](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/): หน่วยความจำผูกกับเวิร์กสเปซ
+- [สถาปัตยกรรม](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/): ฐานข้อมูลต่าง ๆ อยู่ตรงไหนในการแยกไคลเอนต์/เซิร์ฟเวอร์
+- [สำรองและกู้คืน](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/): การถ่ายสแนปช็อต การย้ายเวิร์กสเปซ และการเก็บสำเนาไว้ที่อื่น
+- [สำรอง นำออก และนำเข้า](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/): ทุกปฏิบัติการ เส้นทาง ฟิลด์ในแมนิเฟสต์ และขีดจำกัด
+- [เพิ่มรีโป](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/): การลงทะเบียนเช็คเอาต์เข้าเวิร์กสเปซ

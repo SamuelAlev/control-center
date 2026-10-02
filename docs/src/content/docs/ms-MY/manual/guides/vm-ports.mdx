@@ -1,137 +1,152 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Majukan port dari terminal
+description: Capai pelayan dev yang dimulakan dalam Terminal (VM) atau shell hos — dari mesin anda, dari Penyemak imbas (VM), dari Android, pada rangkaian anda, atau di bawah domain dev dengan HTTPS.
 slug: ms-MY/manual-pengguna/panduan-cara/port-vm
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Pelayan yang anda mulakan dalam terminal sesuatu perbualan hanya diterbitkan
+untuk **ruang itu**. Panel port mengesan pendengar yang dimulakan oleh aplikasi
+ini di sana, memetakannya, dan memberi anda alamat bagi setiap tempat yang anda
+mungkin mahu mencapainya. Dua ruang boleh kedua-duanya mendengar pada `5173`;
+peta mereka tidak pernah bercampur.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Tiada apa-apa di sini membuka mesin itu: setiap laluan dicipta oleh pelayan,
+atas permintaan, dan mati bersama terminal atau stesen.
 
-## See what is listening
+## Lihat apa yang sedang mendengar
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Buka **Terminal (VM)** perbualan itu atau shell hos (dalam ruang atau pada halaman PR).
+2. Mulakan pelayan anda — `pnpm dev`, `python -m http.server 8000`, apa-apa sahaja.
+3. Dalam beberapa saat, **ikon plag** di penjuru kanan atas terminal akan
+   mendapat satu titik. Kliknya.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panel itu menyenaraikan setiap port yang mendengar berserta proses yang
+memilikinya, sebagai `3000 → 3000`: port yang diikat oleh proses di sebelah
+kiri, port yang dijawabnya secara setempat di sebelah kanan (nombor yang sama
+apabila ia bebas pada mesin anda). Setiap baris juga menyatakan sama ada
+`localhost` desktop, Penyemak imbas (VM), dan Android boleh mencapainya.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Penemuan adalah terbatas: Terminal (VM) ditinjau di dalam tetamu itu; shell hos
+ditinjau daripada pepohon proses PTY sesi itu. Ruang lain, dan proses lain pada
+Mac anda, tidak disenaraikan.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Port baharu dalam terminal **ini** dimajukan secara automatik. Matikan
+**Hantar port secara automatik** dalam panel yang sama jika anda hanya mahu
+port yang anda tambah sendiri.
 
-## Reach it from this computer
+## Capainya dari komputer ini
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Gunakan **Salin URL setempat** pada baris itu — `http://localhost:3000`.
+Pemajuan itu mendengar pada loopback sahaja, jadi tiada apa-apa lagi pada
+rangkaian anda boleh melihatnya.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Jika dua ruang kedua-duanya mendedahkan `5173` tetamu dan mesin anda sudah
+memegang `127.0.0.1:5173`, ruang kedua mengekalkan `5173` tetamu dan mendapat
+port setempat efemeral. Salin URL menggunakan nombor di sebelah kanan.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Pada shell hos, proses itu sudah berada pada mesin anda. Memetakan port
+setempat yang sama tidak memberi sebarang kesan; memilih port setempat yang
+**berbeza** mengikat proksi loopback kepada port yang anda pilih.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (atau mengikat `0.0.0.0`) **tidak** menjadikan Penyemak imbas (VM)
+terasing mampu mencapai pelayan pada Mac. Tetamu mempunyai loopback sendiri;
+pelayan menanam terowong ke dalam tetamu itu apabila tab Penyemak imbas berada
+dalam **ruang yang sama**.
 
-## Reach it from the Browser (VM)
+## Capainya dari Penyemak imbas (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Buka penyemak imbas terasing dalam **perbualan yang sama**. Taip
+`localhost:<port sebelah kiri>` — nombor yang diikat oleh proses. Pemetaan
+semula (`5173 → 3000`) juga menjawab pada nombor sebelah kanan dalam penyemak
+imbas itu, jadi Salin URL berfungsi di sana juga. `browser_use` ejen boleh
+menavigasi ke mana-mana satu daripadanya. Pelayan dalam Ruang A tidak pernah
+muncul sebagai `localhost:5173` dalam penyemak imbas Ruang B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Gunakan `localhost`, bukan IP LAN dan bukan `--host`. Tetamu mempunyai loopback
+sendiri; terowong itu mendengar di sana pada kedua-dua IPv4 dan IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Halaman yang membuka banyak sambungan serentak (berpuluh-puluh aset, soket muat
+semula langsung) berkongsi terowong yang sama itu. Penyemak imbas (VM)
+memultiplekskannya ke satu exec berterusan, jadi lonjakan pengambilan bukan
+satu proses baharu bagi setiap sambungan dan tidak tamat masa menjadi halaman
+putih.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Dalam satu ruang, pemajuan Terminal (VM) mengalahkan shell hos pada nombor yang
+sama. Merentas ruang tiada keutamaan — ia peta yang berasingan.
 
-## Reach it from Android
+## Capainya dari Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Buka tab **Android** ruang itu. `localhost:<port>` emulator itu kemudian
+dibalikkan kepada port yang diterbitkan oleh ruang ini (`adb reverse`). Satu
+emulator adalah global bagi peranti: melampirkan Ruang B menyasarkan semula
+`:5173` kepada B dan menggugurkan milik A. Tutup tab itu dan pembalikan yang
+ditanam oleh stesen ini akan dibuang.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Simulator iOS sememangnya Mac itu sendiri — tiada pembalikan. iPhone fizikal
+masih memerlukan perkongsian LAN.
 
-## Share it on your network
+## Kongsinya pada rangkaian anda
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Kongsi pada rangkaian setempat** menerbitkan port itu pada
+`<server-ip>:<port rawak>` — berguna untuk membuka halaman itu pada telefon
+anda, atau apabila pelayan berjalan pada mesin lain.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Port LAN sentiasa diberikan oleh OS, tidak pernah nombor tetamu, jadi
+  pendedahan ialah alamat yang sengaja dan jelas dan bukan alamat yang boleh
+  diteka.
+- Ia kekal peribadi (loopback sahaja) sehingga anda menukarnya, dan
+  **⋯ → Setempat sahaja** mengeluarkannya semula daripada rangkaian.
 
-## Give it a name — with HTTPS
+## Berikannya nama — dengan HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Tetapkan domain penyemak imbas (.test)** memberikan port itu domain dev
+seperti `myapp.test`. Di dalam Penyemak imbas (VM), `https://myapp.test`
+kemudian memuatkan pelayan anda dengan ikon kunci yang sah — berguna untuk
+apa-apa sahaja yang berkelakuan berbeza pada asalan bernama atau konteks
+selamat (kuki, service worker, panggil balik OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domain mesti berakhir dengan `.test` atau `.localhost` — dua TLD yang
+  dikhaskan untuk pembangunan, jadi nama dev tidak pernah boleh menutupi tapak
+  sebenar.
+- **Nama** domain adalah unik pada pelayan; **nombor** port tidak. Dua ruang
+  boleh kedua-duanya menggunakan `5173`, tetapi kedua-duanya tidak boleh
+  menuntut `myapp.test`.
+- Sijil itu datang daripada autoriti setempat yang ditempa pada pelayan anda
+  kali pertama ia diperlukan. Kuncinya tersimpan di bawah direktori data
+  pelayan dan tidak pernah masuk ke mana-mana tetamu; penyemak imbas terasing
+  mempercayai kunci itu sahaja, jadi TLS ke internet sebenar masih disahkan
+  seperti biasa.
+- Domain itu diselesaikan **di dalam Penyemak imbas (VM) sahaja**. Penyemak
+  imbas anda sendiri pada hos menggunakan `localhost:<port>` sebaliknya.
+- `http://myapp.test` biasa juga berfungsi.
 
-## Forward a port by hand
+## Majukan port secara manual
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Tambah port** di bahagian bawah panel memetakan port sebelum (atau tidak kira
+sama ada) apa-apa mendengarnya. Pemajuan manual mengekalkan alamatnya semasa
+pelayan anda dimulakan semula — baris itu memaparkan *tidak mendengar* sehingga
+ia kembali — manakala pemajuan automatik hilang apabila portnya hilang. Pada
+shell hos anda juga boleh menetapkan port setempat yang berbeza.
 
-## How it stays contained
+## Bagaimana ia kekal terbatas
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/ms-MY/manual-pengguna/konsep/stesen/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/ms-MY/manual-pengguna/rujukan/stesen/#ports-and-dev-domains).
+Port dikunci mengikut ruang kerja dan ruang. Peta port hipervisor sendiri
+ditetapkan apabila mesin but, jadi Terminal (VM) menaiki dua saluran sempit
+yang dikawal oleh pelayan: satu lorong masuk yang telah dicipta lebih awal ke
+dalam tetamu yang enggan menyambung ke mana-mana port yang tetamu tidak
+benar-benar mendengar, dan terowong terbalik yang dibiarkan terbuka oleh
+pelayan untuk Penyemak imbas (VM) dan Android. Shell hos tidak pernah mengimbas
+seluruh mesin. Tiada pendengar yang pernah dicipta di dalam tetamu yang tidak
+diletakkan oleh pelayan di sana, dan semuanya diruntuhkan bersama terminal atau
+stesen. Reka bentuk ini diterangkan dalam
+[Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/#ports-without-holes);
+port terkhas yang tepat dan peraturan domain ada dalam
+[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#ports-and-dev-domains).
 
-## Related
+## Berkaitan
 
-- [Give an agent a machine to test on](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/ms-MY/manual-pengguna/rujukan/stesen/) — reserved ports, dev TLDs,
-  defaults
+- [Berikan ejen mesin untuk diuji](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/) — membuka,
+  menonton dan mengambil alih stesen
+- [Rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/) — port terkhas, TLD dev,
+  lalai

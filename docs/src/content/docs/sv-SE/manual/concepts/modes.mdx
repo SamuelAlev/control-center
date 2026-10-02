@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Lägen
+description: Varför en yta, inte en agent, bär ett läge; vad vart och ett av de fyra lägena garanterar; och var den garantin är strukturell i stället för att bara stå i prompten.
 slug: sv-SE/handbok/koncept/lagen
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Vad ett läge är
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Ett läge är en egenskap hos en **yta** och lagras som en kolumn på ytans rad. Varje samtal inuti en yta delar det, trådar inräknade – en tråd ärver sin ytas läge precis som alla andra samtal. Samma agent kan därför vara i olika lägen i olika ytor samtidigt, och att växla en ytas läge ändrar vad som händer på nästa tur utan att röra agenten.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Det finns exakt fyra: `chat`, `review`, `plan`, `orchestrate`. Själva enumen bär ingen policy. Allt ett läge garanterar deklareras en gång, i en **kapacitetsprofil**, som varje upprätthållandelager projicerar från:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Verktygsyta** – vilka verktyg som alls finns i det läget, uttryckt som en högsta godkännandenivå, en tillåtelselista, en neklista och en uppsättning avvisade effektklasser.
+2. **Obligatoriskt utdataverb** – vad körningen måste anropa för att ha levererat något.
+3. **Nekade effektklasser** – vad åtgärdsräckena avvisar rakt av.
+4. **Worktree-läge** – om worktreen får skrivas i. Det upprätthålls genom att de muterande verktygen tas bort från ytan, och det är det som gör att det håller på varje värd. Där värden har en OS-sandlåda formar samma läge dessutom filsystemets skrivregler – ett skrivskyddat läge monterar worktreen skrivskyddad – men det är en andra kopia av garantin, inte den som gör jobbet.
+5. **Systempromptblock** – en _genererad_ kapacitetsinledning härledd från den faktiskt materialiserade verktygslistan, plus handskriven vägledning.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Varje upprätthållandelager projicerar från den enda profilen, så verktygsytan, räckena, worktree-läget och prompten kan inte gå isär.
 
-## The four modes
+## De fyra lägena
 
-### Chat — displayed as "Agent"
+### Chatt – visas som "Agent"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Standardläget och det enda läget utan extra begränsningar: hela verktygsytan upp till utförandenivån, en skrivbar worktree, inga nekade effektklasser och inget slutförandekontrakt. Använd det för implementation, buggfixar, frågor om kodbasen och allt ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Notera etiketten: i composern visas läget som **"Agent"**, inte "Chatt".
 
-### Plan — read-only, one deliverable
+### Plan – skrivskyddat, en leverans
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Planläget gör worktreen skrivskyddad och tar bort skrivverktygen från ytan helt och hållet, så begränsningen är strukturell i stället för påbjuden. Agenten läser, söker och researchar och levererar exakt en sak: ett `submit_plan`-anrop som bär en typad beroendegraf – ett mål plus noder med nycklar, titlar, beskrivningar och de nodnycklar som var och en är beroende av.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Planen visas som en kompakt rad i samtalet och öppnar Plan Studio i en flik bredvid. Att godkänna den kompilerar grafen till en orkestrering, kör det genererade arbetet och ställer tillbaka ytan där planen skapades till agentläge.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Om en körning i planläge avslutas utan att någonsin anropa `submit_plan`, injicerar loopen först en puff som säger att planen inte finns förrän det anropet lyckas. Puffen tillåter uttryckligen en ärlig utgång av typen "här behövs ingen plan", eftersom planläget är en inställning på ytan och en enkel fråga som ställs i det inte bör tvinga fram en falsk plan.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/).
+:::note[Ett ouppfyllt kontrakt är inte en misslyckad körning]
+En körning som slutar utan sin plan registreras fortfarande med statusen `completed` – processen avslutades rent. Sanningen ligger i körningens livsstatus (`empty`), felfamilj (`silentRun`) och en sammanfattning som namnger det som inte producerades. Se [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Det finns en andra, separat väg ut: `exit_plan_mode`. Det är en hård godkännandegrind, inte ett utdataverb – en agent som anropar det i stället för `submit_plan` har inte levererat något. Det första anropet öppnar ett varaktigt `plan_exit`-godkännande och returnerar `pending`, och ytan förblir skrivskyddad; upprepade anrop stannar i `pending` i stället för att öppna en andra grind. Först när godkännandet har beviljats växlar ett efterföljande anrop ytan till chatt. En avvisning låter agenten öppna en ny begäran om en reviderad plan.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+För att själv lämna planläget växlar du dropdown-menyn i composern (eller Shift+Tab). `exit_plan_mode` avgörs med MCP-verktyget `decide_approval`. Rader för "agentgodkännande" i inkorgen är något annat: bekräftelseprompter per tur från en körande agent.
 
-### Review — read-only, no contract
+### Granskning – skrivskyddat, inget kontrakt
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Granskningsläget är till för PR-granskning. Det gör worktreen skrivskyddad, kapar verktygsytan nedanför utförandenivån och tillämpar en kurerad tillåtelselista med gransknings-, ärende- och kommunikationsverktyg. En yta som öppnas för en pull request skapas automatiskt i granskningsläge.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Agentens utdata är strukturerade fynd – **granskningsnoder** – och, när en granskning finaliseras, ett **utfall**. En nod bär en typ (`bug`, `suggestion`, `recommendation`, `question` eller `ticket`), en prioritet från P0 (blockerar release) till P3 (trevligt att ha), en självskattad konfidens, ett valfritt ankare (fil plus ett radintervall; anteckningar som gäller hela repot har inget) och en livscykelstatus som går från `open` till `consensusReady` när en kollega – aldrig författaren – bekräftar den. Ett fynd vars prioritet eller konfidens saknas eller ligger utanför intervallet släpps vid läggränsen i stället för att förorena utfallet.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Utfallet är Ship, Hold eller Block, och det görs bara _mer_ allvarligt av axelresultaten som vävs in i det: en grindad axel som misslyckades tvingar fram `block` och en grindad axel som inte kunde köras tvingar fram minst `hold`. Frånvaro av bevis gör aldrig en grind grön.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Till skillnad från plan- och orkestreringslägena har granskning **inget slutförandekontrakt**. Fynd samlas genom `add_review_node` och publiceras av `finalize_review`, och båda får med rätta anropas noll gånger – en pipelineagent som kör i granskningsläge kan vara där för att slutföra ett ärende i stället.
 
-### Orchestrate — read-only, proposes a team
+### Orkestrering – skrivskyddat, föreslår ett team
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Orkestreringsläget förvandlar ett mål till en plan för hela teamet. Precis som planläget är det skrivskyddat och kan inte skriva filer; ovanpå forskningsytan har det ett enda privilegierat verb, `propose_orchestration`, som avger ett strukturerat förslag: roller, ett träd av underärenden, ett syntessteg och en budget. Prompten namnger bara verktygen på ytan, så modellen slösar inte turer på att berätta om anställningar eller ärendearbete som den inte kan anropa.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/sv-SE/handbok/koncept/orkestrering/).
+Inget i förslaget körs förrän du godkänner det. Vid godkännande anställer en deterministisk materialiserare agenterna, skapar ärendena och ett projekt och kör en genererad pipeline. Godkännande är förbehållet operatören: det finns inget MCP-verktyg för det, så en agent kan föreslå men aldrig godkänna sin egen plan. Agentinitierade omförslag begränsas av en nedkylningsperiod på två minuter, så på varandra följande omplaneringar avvisas och uppmanas att slås samman. Se [Orkestrering](/sv-SE/handbok/koncept/orkestrering/).
 
-## Two rules worth knowing
+## Två regler värda att känna till
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Ett läges eget utdataverb kan aldrig nekas.** `submit_plan` och `propose_orchestration` är låsta i verktygsytan och förhandsgodkända förbi både verktygsfiltret, godkännandegrinden och åtgärdsräckena, så autonomivredet per yta kan inte tysta ett läges leverans. Harnessens `ask_user` är låst av samma skäl: det _är_ sättet en körning når operatören, så att grinda det skulle låsa en körning som behöver fråga något. Det ligger på läsnivå, så varje skrivskyddat läge behåller det, och det är undantaget från godkännandeomslaget – en prompt framför en prompt misslyckas stängt när ingen godkännare är ansluten, vilket skulle neka en agent själva akten att fråga.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Skrivskyddade lägen nekar inte nätverksåtkomst eller hemligheter.** Effektklasserna som granskning, plan och orkestrering avvisar är de som förändrar världen: filradering, skrivningar utanför worktreen, commits, pushar, skapande och publicering av PR:er, skrivningar vid leverantörssynkronisering, paketinstallationer, processstart, mutation av arbetsytan och styrning av stationer. Utgående nätverkstrafik och åtkomst till hemligheter ligger kvar på sina standardvärden med avsikt – research är hela poängen med ett skrivskyddat läge.
 
-## Choosing and changing a mode
+## Att välja och byta läge
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Lägesmenyn i composern erbjuder **tre** alternativ: Agent (chatt), Plan och Orkestrera. `review` är **inte valbart av användaren** – det sätts av systemet när en PR-granskningsyta skapas och av pipelinesteg.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+En pipelinenod som **öppnar en yta** kan låsa ytans läge med nyckeln `extras['mode']` (`chat`, `review` eller `plan`). Nyckeln kräver exakt matchning: varje annan stavning – inklusive `orchestrate` – ignoreras tyst och ytan får bodyns standardvärde (`review` i bodyn som skapar ytan). Ett agentsteg ansluter till en yta som det inte skapade och ändrar inte dess behörigheter.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Själva upplösningen är enkel. Dispatcharen läser ytans `mode`-kolumn; en dispatch utan yta – en engångskörning, ett CLI-anrop eller ett yt-id från en annan arbetsyta, som helt enkelt inte finns i den här arbetsytans databasfil – löses upp till `chat`. Ett lägesbyte gäller från nästa tur.
 
-## Where the guarantee actually holds
+## Var garantin faktiskt håller
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Ett läges verktygsyta byggs och upprätthålls av den **inbyggda harnessen**. Det är den enda transporten som kan göra ett verktyg osynligt i stället för bara nekat, grinda varje anrop innan det körs och observera ett slutförandekontrakt.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/sv-SE/handbok/koncept/agentmodell/).
+På transporten Claude Code skickas ett läge som inte är chatt vidare som `--permission-mode plan`. Claude följer det av konvention; dess egna läs-, skriv-, redigerings- och shellverktyg körs osedda. För den transporten är läget vägledning, inte en gräns från Control Center – se [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Tillåtelselistorna begränsar verktyg på skrivnivå och uppåt. Den inbyggda harnessens läsnivå når fortfarande verktyg som ingen lista namnger; på Claude Code nekas ett verktyg som tillåtelselistan utelämnar, oavsett om servern har det eller inte.
 
-## Related concepts
+## Relaterade koncept
 
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/): where the mode is resolved and projected
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): which transports can enforce a mode
-- [Guardrails](/sv-SE/handbok/koncept/racken/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/sv-SE/handbok/koncept/orkestrering/): what an approved orchestrate proposal does
-- [Use plan mode](/sv-SE/handbok/how-to-guider/planlage/): the practical walkthrough
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/): var läget löses upp och projiceras
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vilka transporter som kan upprätthålla ett läge
+- [Räcken](/sv-SE/handbok/koncept/racken/): effektklasspolicyn som ett läges förinställning matar in i
+- [Orkestrering](/sv-SE/handbok/koncept/orkestrering/): vad ett godkänt orkestreringsförslag gör
+- [Använd planläge](/sv-SE/handbok/how-to-guider/planlage/): den praktiska genomgången

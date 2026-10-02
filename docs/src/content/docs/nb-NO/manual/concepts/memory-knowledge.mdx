@@ -1,199 +1,207 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Minne og kunnskap
+description: Hvordan Control Center lagrer agentkunnskap, hva som faktisk når fram til en agents prompt, og hvorfor minneleseoperasjoner er fail-open.
 slug: nb-NO/handbok/konsepter/minne-og-kunnskap
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Hva minnet er til for
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Uten minne starter hver agent samtale fra null: den samme konvensjonen må
+forklares på nytt, den samme beslutningen må diskuteres igjen, og den samme
+blindveien må utforskes på nytt. Minnet er lageret som er knyttet til
+arbeidsområdet, som overlever kjøringer, og det finnes for at kunnskap som én
+agent har produsert, skal kunne finnes av en annen senere.
 
-It has three layers and they answer different questions:
+Det har tre lag, og de svarer på forskjellige spørsmål:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Fakta** – hva som er sant (en konvensjon, et utfall, en beslutning).
+2. **Policyer** – hva agenter må gjøre med det (en normativ regel).
+3. **Arbeidsminne** – hva én agent var midt oppi.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Forskjellen betyr noe, fordi de når agenten via ulike veier. Fakta søkes opp.
+Policyer dyttes inn. Arbeidsminne er privat.
 
-## Facts
+## Fakta
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Et `MemoryFact` er en kunnskapsenhet knyttet til et arbeidsområde og et domene.
 
-| Attribute                                   | What it is                                                                |
+| Attributt                                   | Hva det er                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | Kunnskapsdomenet ("conventions", "decisions", "codebase")                 |
+| `topic`                                     | En kort emneetikett                                                       |
+| `content`                                   | Selve kunnskapsteksten                                                    |
+| `confidence`                                | 0,0–1,0, sådd fra opphav og hevet ved ny omtale                           |
+| `memoryType`                                | Faktumets type – styrer forfallskurven over tid                           |
+| `veracity`                                  | Hvordan det ble kjent – danner grunnlag for konfidensen og bestemmer størrelsen på hvert løft ved ny omtale |
+| `sourceObservationIds`                      | Hvilke observasjoner som førte til det                                    |
+| `supersededBy`                              | Det nyere faktumet som erstattet det, hvis noe                            |
+| `validUntil`, `recallCount`, `mentionCount` | Utløp og brukssignaler som brukes ved gjenkalling                         |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+De to siste radene er dem folk overser, og de er det som avgjør _hvilket_
+faktum som kommer til overflaten. `memoryType` bærer Weibull-forfallsparametere
+per type, så en tidsavgrenset forpliktelse falmer raskt, mens et stabilt
+profilfaktum ikke gjør det. `veracity` registrerer opphav – oppgitt av et
+menneske (vekt 1,0), utledet av en agent (0,7), produsert av et verktøy (0,5),
+importert (0,6) – og den vekten danner grunnlaget for faktumets startkonfidens.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Fakta redigeres aldri på stedet når de motsies. Å skrive et faktum kjører
+konfliktdeteksjon mot fakta i samme domene og med samme emne, og erstatter
+taperen samtidig som det registreres en konfliktrad. Revisjonssporet er hele
+poenget: du kan alltid se hva som ble trodd før, og hva som erstattet det.
 
-## Policies
+## Policyer
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+En `MemoryPolicy` er en normativ regel utledet fra fakta, knyttet til et
+arbeidsområde og et domene, med et aktiv-flagg og en valgfri `requiredRole`.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Hver **aktive** policy i arbeidsområdet injiseres i **hver** utsending,
+ufiltrert – ingen filtrering etter domene, rolle, oppgave eller område. Dette
+er verdt å vite før du skriver din tjuende policy, fordi policyer konkurrerer om
+det samme kontekstvinduet som oppgaven. Det er også derfor `requiredRole` på en
+policy er veiledende: det beskriver hvem regelen er rettet mot, men det er ikke
+til hinder for at regelen også når alle andre.
 
-## Domains
+## Domener
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Et `MemoryDomain` grupperer fakta og policyer innenfor et arbeidsområde.
+Domener gir kunnskap organisatorisk struktur, og de er enheten
+tilgangstildelinger skrives mot – men se advarselen nedenfor før du behandler et
+domene som en konfidensialitetsgrense.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Et domene er enten arbeidsområdeomfattende (`architecture`) eller avgrenset til
+ett repo (`repo:<slug>/architecture`). Det samme navnet i begge omfang er to
+uavhengige lagre: et faktum som gjelder én kodebase, overskriver ikke det
+arbeidsområdeomfattende. `search_memory` og utsendingspreambelen rangerer
+repoomfattet minne først når agenten jobber i det repoet; de filtrerer ikke bort
+resten. Send `repo` til `propose_fact` / `propose_policy` / `search_memory` for
+å skrive til eller løfte fram det omfanget.
 
-## Access control is fail-open for reads
+## Tilgangskontroll er fail-open for lesing
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` kobler en agentrolle og et domene til ett av tre
+tillatelsesnivåer:
 
-| Permission | Meaning                                                                                          |
+| Tillatelse | Betydning                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| `none`     | Ingen tilgang                                                                                    |
+| `read`     | Kan søke i og hente fram fakta                                                                   |
+| `write`    | Kreves av `propose_policy`. Skriving av fakta (`propose_fact`, `supersede_fact`) styres ikke av tilgangstildelinger |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Manglende tilgangstildeling betyr lesing, ikke avslag]
+Når det ikke finnes noen tilgangstildelingsrad for et `(role, domain)`-par, er
+den effektive tillatelsen **`read`**. Lesing er fail-open med vilje. Den ene
+skrivingen som kaster unntak, er `propose_policy` uten `write`-tillatelse
+(`InsufficientMemoryPermission`). Å legge sensitivt innhold i et minnedomene
+begrenser ikke hvem som kan lese det, med mindre du eksplisitt har skrevet en
+`none`-tildeling for hver rolle som ikke skal se det.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Det finnes heller ikke noe brukergrensesnitt for tilgangstildelinger noe sted i
+produktet i dag. Minneskjermen har fanene Fakta, Policyer og Kunnskapsgraf og
+ingenting annet; tilgangstildelinger er bare tilgjengelige via
+RPC-operasjonene `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Asymmetrien – myk på lesing, hard på skriving av policyer – er et bevisst bytte.
+Minne er mest nyttig når det sirkulerer, og et avslag på lesing gir en agent som
+i stillhet vet mindre, i stedet for en som melder fra om et problem. Et avslag
+på å skrive policyer er derimot høylytt og kan rettes opp, så det er der
+håndhevingen ligger. Et nyopprettet domene initialiserer `write` for hver rolle;
+å stramme det inn i etterkant er en endring som bare kan gjøres over RPC, fordi
+det ikke finnes noe UI for tilgangstildelinger.
 
-## Working memory
+## Arbeidsminne
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Hver agent har en `AgentWorkingMemory`: et fritekstkladdeark med nøkkel på
+arbeidsområde og agent. Det varer på tvers av kjøringer, er privat for den
+agenten og injiseres i prompten ved hver utsending. Det er der «jeg var halvveis
+i refaktoreringen av auth» bor – tilstanden som er verdt å ta med til neste
+kjøring, men ikke verdt å forfremme til et varig faktum.
 
-## What actually reaches an agent's prompt
+## Hva som faktisk når fram til en agents prompt
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Ved utsending settes minnepreambelen sammen av nøyaktig tre ting:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Hver aktive arbeidsområdepolicy**, som linjer av typen `- [domain] rule`.
+- **Agentens eget arbeidsminne**, ordrett.
+- **En nøkkelordbasert kortliste over fakta** for denne oppgaven – høyst fem,
+  innenfor et budsjett på ~1200 tegn, og bare når oppgavebeskrivelsen er minst
+  20 tegn lang. Kortere oppgaver får ingen fakta i det hele tatt.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Kortlisten er kun FTS/nøkkelord, og taket er der med vilje. Å beregne en
+embedding for et søk er tregt, og utsendingsveien er det ene stedet hvor
+latenstid er umiddelbart synlig, så den trege semantiske veien holdes bevisst
+utenfor. Preambelen avsluttes med å be agenten verifisere bærende elementer med
+`search_memory`, som er der den fulle gjenkallingsmodellen bor.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Ingen tilgangstildelinger konsulteres på denne veien. Det kortlisten finner, er
+det agenten ser.
 
-## Recall: one query, four voices
+## Gjenkalling: ett søk, fire stemmer
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Verktøyet `search_memory`, som er rettet mot agenter, har tre moduser, og de er
+reelt sett forskjellige søk:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** – kun FTS5.
+- **`semantic`** – BM25- og vektorresultater slått sammen med gjensidig
+  rangfusjon.
+- **`hybrid`** (standard) – polyfonisk gjenkalling: fire rangerte stemmer slås
+  sammen og diversifiseres deretter.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+De fire stemmene er leksikalsk (FTS), semantisk (vektor-KNN), temporal (nylige
+aktive fakta) og graf – en tostegs vandring over episodiske kanter fra de
+sterkeste leksikalske og semantiske frøene. Grafstemmen er grunnen til at
+episodiske kanter i det hele tatt finnes: den bringer fram faktumet som er
+_koblet til_ svaret ditt, uten å matche noen av ordene dine. Stemmene vektes
+etter en klassifisert søkeintensjon (semantisk veier mest som standard, deretter
+graf og leksikalsk, og til slutt hvor nylig noe er), hver kandidats poengsum
+skaleres med Weibull-forfallet, og resultatsettet MMR-diversifiseres, slik at
+fem omformuleringer av ett faktum ikke fortrenger fire forskjellige.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Semantisk gjenkalling er taus inntil modellen er installert]
+Vektorstemmen bidrar først når embedding-modellen på enheten er lastet ned. Fram
+til da kjører hybrid gjenkalling med tre stemmer, og det finnes ingen retroaktiv
+etterfylling – fakta som ble skrevet før modellen ble installert, får aldri
+vektorer. Vektorveien degraderes ytterligere, til en skanning i Dart over de
+pakkede embeddingene, hvis selve SQLite-vektorutvidelsen ikke lar seg laste;
+gjenkallingen svarer fortsatt, bare langsommere.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Minnesøket på skrivebordet og i nettversjonen er en separat, enklere vei:
+RPC-operasjonen `memory_fact.search` er **kun FTS5**, fordi en tynnklient ikke kan
+sende med en søkeembedding, og hybridveien holder seg internt på verten.
+Rangeringen du ser i minneutforskeren, er altså ikke den samme som agenten får
+fra `search_memory`. Det er forventet, ikke en feil, men det betyr at «jeg søkte
+og fant det ikke» i brukergrensesnittet ikke er bevis for at agenten ikke vil
+finne det.
 
-## Where memory lives and who writes it
+## Hvor minnet ligger, og hvem som skriver det
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Minneutforskeren ligger under **Innstillinger → Arbeidsområde → Minne**
+(`/workspaces/<id>/settings/memory`), med fanene Fakta, Policyer og
+Kunnskapsgraf.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Det er en asymmetri der som overrasker folk: **du kan redigere og slette minne,
+men du kan ikke opprette det.** Verken fanen Fakta eller fanen Policyer har noe
+element for å legge til. Forfatterskap skjer på agentsiden, gjennom
+`propose_fact` og `propose_policy` (`supersede_fact` / `supersede_policy` for å
+erstatte dem). `remember` skriver et element i hot-laget som er avgrenset til
+økten, og som `consolidate_memory` senere kan forfremme til et faktum;
+`record_observation` og `update_my_notes` skriver det private kladdearket som
+injiseres ved utsending. Utforskeren er en flate for gjennomgang og korreksjon,
+ikke for forfatterskap – så hvis du vil ha et faktum inn i minnet, er måten å få
+det dit å si det til en agent.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+To vedlikeholdsoperasjoner kalles på samme måte av agenter i stedet for etter en
+plan: `consolidate_memory` slår sammen og rydder i oppsamlede fakta, og
+`harmonize_memory` forener oppfatninger som har sprikt fra hverandre på tvers av
+agenter. `list_memory_conflicts` viser hva konfliktdeteksjonen allerede har
+registrert. Ingenting kjører dem for deg på en tidsplan. Møtebeslutninger høstes
+inn i domenet `decisions` når et møte-persistenssteg registrerer dem; det er
+ikke en tidsstyrt jobb for fullførte agentkjøringer.
 
-## Related concepts
+## Relaterte konsepter
 
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): roles are what grants are written against
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/nb-NO/handbok/slik-gjor-du/administrer-minne/): working with memory in practice
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): det er rollene tilgangstildelingene skrives mot
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/): minnet er knyttet til arbeidsområdet og ligger i arbeidsområdets egen databasefil
+- [Administrer minne for arbeidsområdet](/nb-NO/handbok/slik-gjor-du/administrer-minne/): å jobbe med minne i praksis

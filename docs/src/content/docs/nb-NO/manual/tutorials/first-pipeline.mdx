@@ -1,102 +1,104 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Bygg din første pipeline
+description: Opprett en pipeline-mal, konfigurer steget i den, tillat manuelle kjøringer og start en.
 slug: nb-NO/handbok/veiledninger/forste-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Dette skal du bygge
 
-By the end of this tutorial, you will have:
+Når du er ferdig med denne veiledningen, har du:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- En lagret pipeline-mal som sender ut en agent med en prompt
+- Manuelle kjøringer slått på for den, slik at den kan startes for hånd
+- Én fullført kjøring, der stegets inndata og utdata er synlige
 
-Prerequisites: [Dispatch your first agent](/nb-NO/handbok/veiledninger/forste-agent/) completed, so you have an agent with an adapter and a model.
+Forutsetninger: [Send ut din første agent](/nb-NO/handbok/veiledninger/forste-agent/) er fullført, slik at du har en agent med en adapter og en modell.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/nb-NO/handbok/konsepter/pipelines/); for the full step vocabulary, [Pipeline step kinds](/nb-NO/handbok/referanse/pipeline-steg/).
+En pipeline er en DAG av steg. Maler definerer grafen; kjøringer er utførelser. For modellen bak, les [Pipelines og automatisering](/nb-NO/handbok/konsepter/pipelines/); for hele stegvokabularet, [Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/).
 
-## Step 1: Create a template
+## Steg 1: Opprett en mal
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Gå til **Innstillinger → Arbeidsområde → Pipeline-maler**
+2. Trykk **Ny mal**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Editoren åpnes på et forhåndsutfylt skjelett som heter **Ny pipeline** (id `pipeline_N`).
+Klikk på tittelen i toppteksten og gi den nytt navn — i denne veiledningen
+er `code_quality_check` et godt navn. Det finnes ingen id-dialog og ingen
+beskrivelsesfelt.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Lerretet er ikke tomt. En ny mal kommer ferdig koblet som **Trigger → Step →
+terminal**, der «Step» er en promptagentnode og terminalen er en usynlig
+vaktpost som editoren kobler på nytt til hver nåbar mottaker.
 
-You configure the Step that is already there.
+Du konfigurerer Step-noden som allerede ligger der.
 
-## Step 2: Configure the step
+## Steg 2: Konfigurer steget
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Klikk på **Step**-noden på lerretet
+2. I panelet **Nodekonfig** til høyre angir du:
+   - **Agent**: agenten din fra forrige veiledning
+   - **Promptmal**: «Se gjennom koden på gjeldende gren for kvalitetsproblemer. List opp det du finner.»
+3. La **Triggers from** stå urørt — noden er allerede koblet til å fyre etter Trigger
 
-## Step 3: Save
+## Steg 3: Lagre
 
-Press **Save** in the editor header.
+Trykk **Lagre** i toppteksten til editoren.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Sjekkpunkt.** Teksten «Ulagrede endringer» forsvinner.
 
-## Step 4: Allow manual runs
+## Steg 4: Tillat manuelle kjøringer
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Klikk på den stiplede flisen **Legg til en utløser** på lerretet (eller dra
+   **Manuell kjøring** fra Utløsere-delen av nodebiblioteket) og velg **Manuell kjøring**.
+2. Velg den noden. I panelet til høyre slår du på **På** —
+   «Vis på kjøringssiden og start for hånd.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Dette er ikke valgfritt, og det er lett å overse. En ny mal opprettes **uten noen utløserrad i det hele tatt**, så før du slår dette på, vil ikke kjøringssiden vise den, og det finnes ingenting å starte. Bryteren skriver utløseren umiddelbart; den venter ikke på nok en lagring.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Den samme bryteren ligger bak **Manuell kjøring** i toppteksten til editoren, der den står sammen med malens erklærte inndata.
 
-## Step 5: Run it
+## Steg 5: Kjør den
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Klikk **Pipelines** i sidepanelet
+2. Klikk **Kjør pipeline** i toppteksten
+3. Velg `code_quality_check` i listen til venstre
+4. Klikk **Kjør pipeline** på skjemaet — malen din erklærer ingen inndata, så det er ingenting å fylle ut
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Sjekkpunkt.** Et varsel bekrefter at kjøringen er startet, og Control Center åpner kjøringsdetaljene.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Motoren oppretter kjøringsoppføringen, fullfører utløseren, planlegger steget, sender ut agenten og fullfører kjøringen når den innkommende grenen til terminalnoden er ferdig.
 
-## Step 6: Inspect the result
+## Steg 6: Undersøk resultatet
 
-Click the step in the run to open its detail panel:
+Klikk på steget i kjøringen for å åpne detaljpanelet:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Tidsstemplene **Startet** og **Ferdig** og **Varighet**
+- **Inndata**: tilstanden som sendes inn i steget
+- **Utdata**: det steget produserte — her agentens svar
+- **Agentaktivitet**, med en lenke videre til samtalen steget drev
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Sjekkpunkt.** Steget står som fullført, og utdataene inneholder agentens gjennomgang.
 
-## Adding more steps
+## Legge til flere steg
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Noder legges til ved å dra en oppføring fra nodebiblioteket til venstre ut på
+lerretet, eller ved å trykke **Legg til steg** (`+`) rett etter en node. Dra fra
+en nodes utgangsport til en annen node for å koble dem sammen, eller velg den
+nye noden og huk av for oppstrømssteget under **Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Terminalnoden tegnes ikke og kan ikke velges. Editoren kobler den på nytt til
+hver nåbar mottaker, slik at en node du legger til etter den forhåndsplasserte
+Step-noden, fortsatt kjører.
 
-## Recap
+## Oppsummering
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Du opprettet en mal, konfigurerte promptagentnoden den ble opprettet med, lagret den, gjorde den kjørbar manuelt, startet en kjøring og leste stegets inndata og utdata.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipelines blir mye større enn dette — betingede rutere, parallelle grener, join-noder, for-each-fan-out, menneskelige porter — men formen endres aldri: steg i en DAG som fører tilstand videre.
 
-**Next:** [Bridge Slack to your workspace](/nb-NO/handbok/veiledninger/forste-chatbro/), the last tutorial in this sequence.
+**Neste:** [Koble Slack til arbeidsområdet ditt](/nb-NO/handbok/veiledninger/forste-chatbro/), den siste veiledningen i denne serien.
 
-- [Set up pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/) to start pipelines from events or a schedule
-- [Pipelines and automation](/nb-NO/handbok/konsepter/pipelines/) for the model underneath
-- [Pipeline step kinds](/nb-NO/handbok/referanse/pipeline-steg/) for every step type
+- [Sett opp pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/) for å starte pipelines fra hendelser eller en tidsplan
+- [Pipelines og automatisering](/nb-NO/handbok/konsepter/pipelines/) for modellen som ligger bak
+- [Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/) for hver stegtype

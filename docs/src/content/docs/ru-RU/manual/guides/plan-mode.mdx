@@ -1,135 +1,148 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Использовать режим плана
+description: Переключите пространство в режим плана, получите типизированный план и утвердите его в выполняющуюся работу.
 slug: ru-RU/руководство/практические-руководства/режим-плана
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Это руководство показывает, как получить от агента структурированный план, прежде
+чем он напишет хоть строку кода.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+В режиме плана агент исследует только для чтения, и его единственный результат —
+**типизированный план**: граф зависимостей из шагов, который вы утверждаете, после
+чего Control Center компилирует его в настоящую работу. Используйте его, когда
+хотите увидеть объём изменения, разбить его на шаги или получить названные риски и
+зависимости до того, как что-либо будет затронуто.
 
-## Switch a space into plan mode
+## Переключить пространство в режим плана
 
-Any of these flips the space's mode and the change is persisted:
+Любое из этих действий переключает режим пространства, и изменение сохраняется:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Выберите **План** в выпадающем списке режимов у самого левого края панели
+  инструментов композера
+- Нажмите **Shift+Tab**
+- Отправьте `/plan`. Просто `/plan` только взводит режим; `/plan <request>`
+  взводит его и отправляет остаток как ваше сообщение
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` никогда не передаётся как текст — он задаёт сохранённый режим, а это
+источник истины, который читают поверхность инструментов, предустановка
+ограничений и промпт. Поэтому режим действует для этого хода и всех последующих,
+пока вы не переключите его обратно.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Режим хранится в пространстве, поэтому один и тот же агент может быть в режиме
+плана здесь и в режиме агента в другом месте.
 
-## What the agent produces
+## Что выдаёт агент
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Он исследует только для чтения — память, индекс кода, файлы
+2. Он вызывает `submit_plan` **один раз**, с `goal` и `nodes`, где каждый узел
+   несёт стабильный `key`, `title`, `description` и ключи узлов, от которых он
+   `dependsOn` (именно это позволяет независимой работе выполняться параллельно)
+3. Он останавливается
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Инструмент проверяет граф — дублирующиеся ключи, висячие зависимости, циклы — и
+возвращает нарушения, чтобы агент их исправил, вместо того чтобы принять сломанный
+план.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+План появляется **в разговоре** компактной строкой, показывающей цель, её статус и
+число шагов. **Plan Studio** — граф зависимостей, инспектор по каждому узлу и
+оценка стоимости — открывается вкладкой рядом с разговором: нажмите **Открыть** у
+строки или просто подождите, потому что план, появившийся в течение 30 секунд,
+пока вы смотрите на разговор, открывает свою вкладку сам.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Гарантия «только для чтения» структурна, но только на встроенном харнессе]
+Собственный харнесс Control Center строит реестр инструментов агента из
+спецификации поверхности режима плана, поэтому инструмента записи, редактирования
+или команды там просто нет — это ограничение не инструкция в промпте, от которой
+модель могла бы отговориться.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Адаптер Claude Code не получает такой фильтрации: режим доходит до него как
+запрос, который его собственный раннер может соблюсти, а может и нет, и Control
+Center видит только его вызовы `mcp__*`. Значок принудительного применения рядом с
+выпадающим списком режимов появляется ровно тогда, когда это так.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Агент может задавать вам уточняющие вопросы]
+Когда запрос неоднозначен, агент в режиме плана может приостановиться и задать вам
+до трёх блокирующих вопросов с помощью инструмента `ask_user`. Он показывает форму
+в разговоре — варианты или свободный текст — и запуск блокируется, пока вы не
+ответите. Инструмент относится к уровню чтения, поэтому он сохраняется на
+поверхности «только для чтения» режима плана, и он исключён из обёртки
+подтверждения (подсказка перед подсказкой при отсутствии подключённого
+подтверждающего срабатывает в сторону отказа, а это лишило бы агента самого
+действия — задать вопрос).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Ему нужно пространство, куда отрисовываться, поэтому разовый запуск без разговора
+его не получает. Быстрее сразу указать в первом сообщении объём работ, целевой
+репозиторий и критерии приёмки, чем обмениваться сообщениями в обе стороны.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Текст здесь не считается результатом. Запуск, завершившийся без вызова
+`submit_plan`, публикует в разговоре видимую строку «Ended without submitting a plan
+(no `submit_plan` call).» и помечает запуск как не создавший свой результат. Статус
+запуска намеренно остаётся _completed_ — так конвейер и машины состояний тикетов
+остаются нетронутыми, — поэтому читайте строку, а не значок статуса.
 
-## Approve the plan
+## Утвердить план
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+У строки плана в разговоре нажмите **Одобрить и запустить**. На панели утверждения
+Plan Studio нажмите **Утвердить план** (или **Отклонить** рядом; утверждение
+заблокировано, пока в графе есть ошибка валидации).
 
-Then:
+Затем:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center компилирует план в оркестрацию и материализует её — тикеты и
+   запуск. На этом шаге модель не участвует; он детерминированный
+2. План выполняется тем агентом, который его написал. Привлекать ли кого-то ещё —
+   решает этот агент во время выполнения: он может `delegate_task` шаг более
+   подходящему коллеге, в пределах предела глубины делегирования рабочего
+   пространства
+3. Цель плана становится **целью разговора**, и работа идёт **в том же разговоре**:
+   каждый шаг публикует то, о чём попросили агента, и передаёт свой ход обратно
+   потоком, так что вы следите за ним (и можете остановить ход) там, где уже
+   находитесь
+4. Строка цели на боковой панели **Общие** разговора (в разделе **Задачи**) несёт
+   прогресс запуска в виде `settled/total` и свою кнопку остановки; Plan Studio
+   показывает состояние каждого узла на графе и тоже отменяет оттуда
 
-## Keep working without approving
+## Продолжить работу без утверждения
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Если вы предпочитаете остаться в этом разговоре, а не утверждать план, агент может
+вызвать `exit_plan_mode`. Это единственный разрешённый выход: он открывает
+долговечный запрос на подтверждение, привязанный к разговору, и возвращает
+`pending` — пространство остаётся в режиме плана, и агент не должен действовать.
+Как только запрос подтверждён, следующий вызов `exit_plan_mode` со стороны агента
+переключает пространство из режима плана в режим агента и разблокирует его
+изменяющие инструменты. Отказ позволяет агенту открыть новый запрос на
+переработанный план.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Чтобы выйти из режима плана, переключите выпадающий список в композере (или
+Shift+Tab) либо утвердите отправленный план. `exit_plan_mode` открывает долговечное
+подтверждение, решение по которому принимается инструментом MCP `decide_approval`.
+Оверлей ограничений для заблокированных вызовов инструментов — это другая очередь в
+памяти, и он не несёт запросы на выход из режима плана.
 
-## Plan mode in a pipeline step
+## Режим плана в шаге конвейера
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Узел конвейера `messaging.createSpace` читает режим разговора из
+**дополнительного поля** `mode` в конфигурации узла — `extras['mode']: 'plan'`.
+Ключ требует точного совпадения: любое другое написание, включая
+`conversationMode` или `dispatchMode`, молча игнорируется, и комната получает
+значение по умолчанию из `body`, а именно **режим ревью**, а не чат. Шаг
+`promptAgent` присоединяется к комнате, которую не создавал, и не перенастраивает
+её права. Селектор **Режим диспетчеризации** в редакторе конфигурации узла
+(`allParallel` / `manager`) предназначен для узлов командной диспетчеризации.
+Задавайте режим разговора с помощью `extras['mode']` в шаблоне, который открывает
+пространство, или в конфигурации этого узла через API.
 
-## Related guides
+## Связанные руководства
 
-- [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
-- [Use spaces](/ru-RU/руководство/практические-руководства/пространства/)
-- [Work in Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/)
-- [Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
+- [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
+- [Использовать пространства](/ru-RU/руководство/практические-руководства/пространства/)
+- [Работать в Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/)
+- [Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
 
-## Related concepts
+## Связанные понятия
 
-- [Modes](/ru-RU/руководство/понятия/режимы/)
-- [Orchestration](/ru-RU/руководство/понятия/оркестрация/)
+- [Режимы](/ru-RU/руководство/понятия/режимы/)
+- [Оркестрация](/ru-RU/руководство/понятия/оркестрация/)

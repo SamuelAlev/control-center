@@ -1,159 +1,168 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Configurar disparadores de pipeline
+description: Ligue um modelo para arrancar com um evento de domínio, uma programação ou um webhook de entrada — a partir da biblioteca de nós e do inspetor do disparador selecionado.
 slug: pt-PT/manual/guias/disparadores-de-pipeline
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Um disparador é o que inicia um pipeline. Cada um é um nó no canvas, largado a
+partir da secção **Gatilhos** da biblioteca de nós. Selecionar esse nó abre o
+respetivo inspetor à direita — não existe uma lista de disparadores sempre
+visível, nem um separador de disparadores, nem um ecrã de disparadores.
 
-## Open a trigger inspector
+## Abrir um inspetor de disparador
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Aceda a **Definições → Espaço de trabalho → Modelos de pipeline**.
+2. Clique no lápis na linha do modelo para abrir o editor.
+3. Selecione um nó de disparador no canvas. O painel direito aparece com as
+   definições desse disparador. Sem nada selecionado, o painel fica oculto.
 
-## Add a trigger
+## Adicionar um disparador
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+A secção **Gatilhos** da biblioteca de nós lista cada tipo de início como um nó
+próprio: manual, programação, webhook e um cartão por cada evento de domínio.
+Pesquise por `merged`, `ticket` ou pelo nome do tipo (`PrMerged`) e arraste o
+cartão para o canvas. Um modelo novo também mostra um mosaico fantasma
+**Adicionar um gatilho** na âncora de entrada — escolha a partir da mesma lista
+pesquisável.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+O disparador é inserido de imediato. Os novos disparadores automáticos ficam
+desativados para que um largar não dispare uma execução antes de o ter
+configurado. Use o interruptor **Ativado** do inspetor para o ativar, ou o ícone
+do caixote para o eliminar.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Um disparador por tipo de evento]
+`pipeline_triggers` é único por espaço de trabalho, tipo de evento e modelo. Um
+tipo de evento que já tenha ligado desaparece do seletor. Todos os disparadores
+de webhook partilham o tipo de evento sintético `webhook`, pelo que um modelo
+pode ter no máximo um webhook.
 :::
 
-## Allow manual runs
+## Permitir execuções manuais
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Largue **Execução manual** (ou escolha-o a partir do mosaico fantasma) e ative
+**Ativado** no respetivo inspetor. É isso que faz o modelo aparecer no seletor
+de execuções. Não é um caso especial — o interruptor escreve uma linha de
+disparador comum cujo tipo de evento é `manual`. Persiste de imediato; não há
+nada para guardar.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+O mesmo interruptor está por trás de **Execução manual** no cabeçalho do editor,
+onde fica ao lado das entradas declaradas do modelo.
 
-## On an event
+## Num evento
 
-These events start a run:
+Estes eventos iniciam uma execução:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Etiqueta no seletor              | Evento                     |
+| -------------------------------- | -------------------------- |
+| PR externa aberta                | `ExternalPrDetected`       |
+| PR publicada                     | `PullRequestPublished`     |
+| Status da PR alterado            | `PullRequestStatusChanged` |
+| PR fundida                       | `PrMerged`                 |
+| Mensagem recebida                | `MessageReceived`          |
+| Ticket criado                    | `TicketCreated`            |
+| Status do ticket alterado        | `TicketStatusChanged`      |
+| Ticket atribuído                 | `TicketAssigned`           |
+| Tarefa concluída                 | `TicketCompleted`          |
+| Tarefa falhou                    | `TicketFailed`             |
+| Tarefa cancelada                 | `TicketCancelled`          |
+| Limite de orçamento ultrapassado | `BudgetThresholdCrossed`   |
+| Repositório adicionado           | `RepoAdded`                |
+| Gravação da reunião interrompida | `MeetingRecordingStopped`  |
+| Habilidade atualizada            | `SkillUpdated`             |
+| Espaço excluído                  | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` é o evento que o pipeline incorporado de limpeza de worktrees
+escuta: transporta o id do espaço eliminado, pelo que a execução recupera
+exatamente os worktrees desse espaço em vez de varrer todo o espaço de trabalho.
 
-For the payload keys each event carries, see the
-[domain events reference](/pt-PT/manual/referencia/eventos-de-dominio/).
+Para conhecer as chaves de payload que cada evento transporta, consulte a
+[referência de eventos de domínio](/pt-PT/manual/referencia/eventos-de-dominio/).
 
-### Filter an event trigger
+### Filtrar um disparador de evento
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Selecione o nó **Status da PR alterado**. As etiquetas de estado do inspetor são
+o único filtro que a interface consegue criar. Clique em qualquer uma de
+`merged`, `closed`, `approved`, `opened`, `reopened`; o disparador só dispara
+quando o `status` do evento corresponde a uma delas. Deixar todas as etiquetas
+por selecionar significa que não há filtro.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Não existe um campo de filtro JSON de forma livre. Uma chave de filtro que o
+payload do evento não transporta nunca corresponde, pelo que não crie um à mão
+com base numa chave que não confirmou na referência de eventos de domínio.
 
-## On a schedule
+## Numa programação
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Selecione o nó **Programação** para editar quando é que ele dispara. Os campos
+do inspetor persistem tal como os deixa:
 
-| Field                                | Description                                                                                                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| Campo                                | Descrição                                                                                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Agendamento (cron ou every:segundos)** | Uma expressão cron de cinco campos, como `0 9 * * 1`, ou um intervalo, como `every:86400`. Um número simples é convertido para `every:<n>`.                                     |
+| **Fuso horário (opcional)**          | Uma zona IANA, como `Europe/Paris`. Predefinição: UTC.                                                                                                                               |
+| **Em execuções perdidas**            | O que fazer com os disparos perdidos enquanto o servidor esteve em baixo: **Executar uma vez** agrega todas as ocorrências perdidas num único disparo ao reiniciar (a predefinição); **Ignorar** retoma na próxima ocorrência futura. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+A linha de resumo do mosaico do canvas só explicita o intervalo para o formato
+`every:<seconds>`; uma expressão cron aparece apenas como «Programação».
 
-## Via a webhook
+## Através de um webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Largar **Webhook** gera um token aleatório. Selecione o nó para copiar o caminho
+`POST /webhooks/<token>` a partir do inspetor.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+O token é também o segredo HMAC: o pedido tem de transportar
+`X-Hub-Signature-256: sha256=<hex>`, em que o hex é
+`HMAC-SHA256(body, token)`. Uma entrega que falhe a verificação é rejeitada e
+registada e não pode ser reproduzida. Os duplicados são ignorados pela respetiva
+chave de deduplicação.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[O token está na base de dados]
+O inspetor mostra o caminho. O token propriamente dito é o segmento do caminho;
+também está guardado na linha `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Cada início é o seu próprio nó do grafo. Puxar uma ligação a partir de
+**Programação** liga apenas a Programação; **Execução manual** pode seguir um
+caminho diferente (por exemplo, um nó de condição) antes de se juntar ao mesmo
+trabalho. Uma execução entra no início que corresponde ao seu tipo de evento e
+ignora os subgrafos que pertencem aos outros inícios.
 
-## How a trigger reaches a run
+## Como um disparador chega a uma execução
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Um disparador ativado cujo tipo de evento e filtro correspondam ambos inicia uma
+execução com o payload do evento como payload de disparo da execução — é contra
+isso que `{{key}}` num prompt ou script de um passo é resolvido. Os eventos que
+transportam uma chave natural são deduplicados, pelo que o mesmo evento disparar
+duas vezes não inicia duas execuções.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Um _modelo_ desativado é recusado mesmo que o respetivo disparador corresponda.
+Oito dos treze modelos incorporados vêm desativados, pelo que os respetivos
+disparadores iniciais disparam para o vazio até ativar o modelo.
 
-## Useful patterns
+## Padrões úteis
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Condicionar apenas o caminho manual** — encaminhe **Execução manual** através
+  de um nó de condição e ligue **Programação** diretamente ao trabalho. Cada
+  início é dono das suas próprias ligações.
+- **Rever cada nova PR** — evento **PR publicada** no modelo `pr_review`.
+- **Limpar após um merge** — evento **Status da PR alterado**, filtrado por
+  `merged` / `closed` / `approved`. O modelo incorporado `pr_merged_cleanup` já
+  escuta desta forma, além de ticket concluído/cancelado, `SpaceDeleted` e uma
+  programação diária que é ativada à força em cada recriação dos dados iniciais,
+  por se tratar de recolha de lixo.
+- **Varredura noturna** — programação `0 2 * * *` com um fuso horário, num modelo
+  cujo primeiro nó é um script bash.
+- **Reagir a um sistema externo** — um disparador de webhook, em que o sistema
+  que chama assina o corpo do pedido conforme acima.
 
-## Related guides
+## Guias relacionados
 
-- [Create a pipeline template](/pt-PT/manual/guias/criar-pipeline/)
-- [Run a pipeline manually](/pt-PT/manual/guias/executar-pipeline/)
-- [Monitor pipeline runs](/pt-PT/manual/guias/monitorizar-pipelines/)
-- [Domain events reference](/pt-PT/manual/referencia/eventos-de-dominio/)
+- [Criar um modelo de pipeline](/pt-PT/manual/guias/criar-pipeline/)
+- [Executar um pipeline manualmente](/pt-PT/manual/guias/executar-pipeline/)
+- [Monitorizar execuções de pipeline](/pt-PT/manual/guias/monitorizar-pipelines/)
+- [Referência de eventos de domínio](/pt-PT/manual/referencia/eventos-de-dominio/)
 
-## Related concepts
+## Conceitos relacionados
 
-- [Pipelines](/pt-PT/manual/conceitos/pipelines/)
-- [Domain events](/pt-PT/manual/conceitos/eventos-de-dominio/)
+- [Pipelines e automatização](/pt-PT/manual/conceitos/pipelines/)
+- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/)

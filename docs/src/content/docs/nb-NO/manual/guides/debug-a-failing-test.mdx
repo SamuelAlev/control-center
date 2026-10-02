@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Feilsøk en mislykket test med en agent
+description: La en agent sette et bruddpunkt, starte under en feilsøker og lese en ekte stakkramme i stedet for å legge til print-setninger.
 slug: nb-NO/handbok/slik-gjor-du/feilsok-mislykket-test
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Denne veiledningen viser deg hvordan du får en agent til å bruke en feilsøker på en feil som print-setninger ikke forklarer.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Verktøyet `debug` driver en ekte Debug Adapter Protocol-økt. En stoppet ramme svarer på alle spørsmål om det øyeblikket på én gang — hver lokal variabel, hver kallende ramme, og et uttrykk evaluert i rammens eget omfang — mens en print-setning bare svarer på spørsmålet du kom på å stille før du kjørte.
 
-## Before you start
+## Før du begynner
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Verktøyet holder seg på overflaten slik at agenten kan spørre hvorfor ingenting er brukbart, i stedet for å gjette. En adapter kan faktisk bare starte når **begge** disse er oppfylt:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- en prosjektmarkør i utsjekkingen, og
+- at adapterens binærfila løses opp.
 
-Ask the agent to check:
+Be agenten sjekke:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Den svarer med det den fant, eller forklarer at en adapter trenger begge halvdeler.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| Språk           | Adapter                      | Markør                                          | Installasjon                       |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Følger med SDK-en — ingenting å gjøre |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Følger med LLVM                    |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python velger prosjektets tolk]
+`debugpy` slås opp i `.venv/bin` eller `venv/bin` før `$PATH`. En python fra `$PATH` er et annet miljø, og å koble til fra det gale feiler på en måte som leses som ødelagt kode i stedet for som feil tolk.
 :::
 
-## Set the breakpoint first, then launch
+## Sett bruddpunktet først, og start deretter
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Rekkefølgen er viktig, og verktøyet håndhever den: bruddpunkter kan settes **før** en økt finnes, fordi det er sekvensen protokollen krever.
 
-Ask the agent something like:
+Be agenten om noe slikt:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Funksjonen `compute` i `bin/main.dart` returnerer feil verdi. Sett et bruddpunkt på linjen som tilordner `product`, start den under feilsøkeren og fortell meg hva `a` og `b` faktisk er.
 
-It will run roughly:
+Den vil kjøre omtrent:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Oppstarten rapporterer hvor den stoppet:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Hvis den i stedet rapporterer at programmet avsluttes]
+Bruddpunktet festet seg ikke. En linje som er tom, en kommentar, eller en linje som ikke er kompilert inn i bygget, kan ikke holde på ett. Å kalle `breakpoints` mot en levende økt rapporterer hvor mange av dem du satte som faktisk ble plassert.
 :::
 
-## Read the frame
+## Les rammen
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Gå deretter inn i den:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Et objekt med barn rapporterer `[expand: reference N]` — men bare når det virkelig er noe bak det, slik at en utvidelse agenten ikke kan bruke, aldri tilbys.
 
-For anything not visible as a local:
+For noe som ikke er synlig som en lokal variabel:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Gå steg for steg
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Det du vil              | Operasjon   |
+| ----------------------- | ----------- |
+| Kjør til neste stopp    | `continue`  |
+| Neste linje, samme ramme | `step_over` |
+| Inn i kallet            | `step_in`   |
+| Ut til den kallende     | `step_out`  |
+| Stopp et kjørende program | `pause`   |
 
-## Attach to something already running
+## Koble til noe som allerede kjører
 
-For a wedged process rather than one you are starting:
+For en prosess som har låst seg, i stedet for en du starter selv:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Avslutt
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Avslutt alltid økten. En feilsøkingsadapter eier en **stoppet prosess** som holder på hva nå enn den prosessen holder — en port, en lås, en databasetilkobling.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Den kan ikke løpe fra deg]
+Hver økt har en hard TTL den ikke kan forlenge, det finnes nøyaktig én per samtale, og alt rives ned når serveren stopper. En andre `launch` nektes i stedet for å erstatte den første: en agent som starter en uten å avslutte den andre, har nesten helt sikkert mistet oversikten over den første.
 :::
 
-## Bounded output
+## Avgrenset utdata
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+En `variables`-utvidelse på en dyp objektgraf er ubegrenset av natur — én Flutter-widget når hele elementtreet. Barn per omfang er begrenset til 50, verdier til 400 tegn og stakkrammer til 30. Et verktøyresultat som fyller kontekstvinduet, er et verktøy som avslutter kjøringen det hjalp.
 
-## Related
+## Relatert
 
-- [Code intelligence](/nb-NO/handbok/konsepter/kodeintelligens/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/nb-NO/handbok/referanse/agentverktoy/) — every `debug` op and argument
-- [Diagnose an agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/) — when the problem is the agent, not the code
+- [Kodeintelligens](/nb-NO/handbok/konsepter/kodeintelligens/) — hvorfor en feilsøker, en kompilator og en matcher svarer på forskjellige spørsmål
+- [Innebygde agentverktøy](/nb-NO/handbok/referanse/agentverktoy/) — hver `debug`-operasjon og hvert argument
+- [Diagnostiser en agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/) — når problemet er agenten, ikke koden

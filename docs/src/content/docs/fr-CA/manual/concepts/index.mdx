@@ -1,64 +1,66 @@
 ---
 title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+description: Comment Control Center fonctionne et pourquoi il est conçu ainsi — les lectures de contexte qui sous-tendent les guides.
 slug: fr-CA/manuel/concepts
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/fr-CA/manuel/guides/); when you want to look
-something up, go to the [reference](/fr-CA/manuel/reference/).
+Ces pages expliquent **comment Control Center fonctionne et pourquoi**. Elles servent à
+comprendre, non à faire : aucune page ici n’est une procédure à suivre. Lorsque vous
+voulez accomplir une tâche précise, consultez les [guides pratiques](/fr-CA/manuel/guides/);
+lorsque vous voulez vérifier un détail, consultez la [référence](/fr-CA/manuel/reference/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Lisez-les dans n’importe quel ordre. Si vous débutez, le modèle central est le point de
+départ.
 
-## Core model
+## Modèle central
 
-The four ideas everything else is built on.
+Les quatre idées sur lesquelles tout le reste repose.
 
-- [Workspaces and isolation](/fr-CA/manuel/concepts/espaces-de-travail/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/fr-CA/manuel/concepts/modele-agent/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/fr-CA/manuel/concepts/cycle-de-vie-du-lancement/) — what happens between your message and the agent's first token
-- [Modes](/fr-CA/manuel/concepts/modes/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/fr-CA/manuel/concepts/contexte-des-outils/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/fr-CA/manuel/concepts/intelligence-du-code/) — the code graph, language server, structural search and debugger
-- [Conversation history](/fr-CA/manuel/concepts/historique-des-conversations/) — persistence, compaction and forking a transcript
+- [Espaces de travail et isolation](/fr-CA/manuel/concepts/espaces-de-travail/) — la frontière de locataire et pourquoi elle est imposée par la disposition de la base de données plutôt que par la discipline des requêtes
+- [Le modèle d’agent](/fr-CA/manuel/concepts/modele-agent/) — de quoi un agent est fait : identité, rôle, skills, capacités, adaptateur et modèle
+- [Cycle de vie du lancement d’un agent](/fr-CA/manuel/concepts/cycle-de-vie-du-lancement/) — ce qui se passe entre votre message et le premier jeton de l’agent
+- [Modes](/fr-CA/manuel/concepts/modes/) — comment `chat`, `plan`, `review` et `orchestrate` modifient ce qu’un agent peut faire
+- [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils/) — pourquoi un agent ne voit qu’un sous-ensemble de ses outils, comment il accède au reste et ce qui garde le cache du fournisseur au chaud
+- [Intelligence du code](/fr-CA/manuel/concepts/intelligence-du-code/) — le graphe de code, le serveur de langage, la recherche structurelle et le débogueur
+- [Historique des conversations](/fr-CA/manuel/concepts/historique-des-conversations/) — la persistance, la compaction et le branchement d’une transcription
 
-## Safety and control
+## Sécurité et contrôle
 
-What an agent is allowed to touch and who decides.
+Ce qu’un agent est autorisé à toucher et qui en décide.
 
-- [Sandbox and security](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) — what actually constrains an agent run today
-- [Guardrails](/fr-CA/manuel/concepts/garde-fous/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/fr-CA/manuel/concepts/autorisation/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/fr-CA/manuel/concepts/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) — ce qui limite réellement une exécution d’agent aujourd’hui
+- [Garde-fous](/fr-CA/manuel/concepts/garde-fous/) — un seul moteur de politiques pour chaque action qui modifie l’état, et comment une règle est résolue
+- [Autorisation](/fr-CA/manuel/concepts/autorisation/) — les rôles, le catalogue de permissions et la piste de vérification
+- [Rigs et enceintes](/fr-CA/manuel/concepts/rigs/) — pourquoi les agents obtiennent des VM jetables plutôt que votre machine, et ce qu’est réellement la frontière
 
-## Directing the work
+## Diriger le travail
 
-Turning intent into work that gets done.
+Transformer une intention en travail qui se réalise.
 
-- [Tickets and delegation](/fr-CA/manuel/concepts/tickets/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/fr-CA/manuel/concepts/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/fr-CA/manuel/concepts/orchestration/) — one goal, one approval, a generated pipeline
-- [AI review](/fr-CA/manuel/concepts/revision-par-ia/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/fr-CA/manuel/concepts/conversations-de-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/fr-CA/manuel/concepts/memoire-et-connaissances/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/fr-CA/manuel/concepts/evaluations-et-qualite/) — eval suites and the Quality tab
+- [Tickets et délégation](/fr-CA/manuel/concepts/tickets/) — l’unité de travail neutre à l’égard du fournisseur que partage toute la flotte
+- [Pipelines et automatisation](/fr-CA/manuel/concepts/pipelines/) — les flux de travail en DAG, les déclencheurs et les exécutions reprenables
+- [Orchestration](/fr-CA/manuel/concepts/orchestration/) — un objectif, une approbation, un pipeline généré
+- [Révision par IA](/fr-CA/manuel/concepts/revision-par-ia/) — comment une PR devient une PR révisée : espaces de révision, consensus des pairs, axes et le verdict Ship/Hold/Block
+- [Conversations de PR](/fr-CA/manuel/concepts/conversations-de-pr/) — répondre à une mention GitHub ou à l’étiquette `ai-review` depuis la forge elle-même
+- [Mémoire et connaissances](/fr-CA/manuel/concepts/memoire-et-connaissances/) — les faits, les politiques et ce qu’un agent est autorisé à savoir
+- [Évaluations et qualité](/fr-CA/manuel/concepts/evaluations-et-qualite/) — les suites d’évaluation et l’onglet Qualité
 
-## People and reach
+## Personnes et portée
 
-Working with other humans and reaching the fleet from elsewhere.
+Travailler avec d’autres personnes et joindre la flotte d’ailleurs.
 
-- [Multiplayer and presence](/fr-CA/manuel/concepts/multijoueur/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/fr-CA/manuel/concepts/sso/) — SAML and OIDC logins
-- [Chat bridges](/fr-CA/manuel/concepts/passerelles-de-clavardage/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/fr-CA/manuel/concepts/controle-a-distance/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/fr-CA/manuel/concepts/reunions/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/fr-CA/manuel/concepts/calendrier/) — Google Calendar sync and meeting alerts
+- [Multijoueur et présence](/fr-CA/manuel/concepts/multijoueur/) — les humains et les agents comme participants à parts égales, et ce qui contrôle l’accès
+- [Ouverture de session unique](/fr-CA/manuel/concepts/sso/) — les connexions SAML et OIDC
+- [Passerelles de clavardage](/fr-CA/manuel/concepts/passerelles-de-clavardage/) — pourquoi la passerelle Slack établit la connexion vers l’extérieur, et ce qui autorise un message provenant du clavardage
+- [Contrôle à distance et mobile](/fr-CA/manuel/concepts/controle-a-distance/) — comment un téléphone joint votre serveur et le modèle de sécurité qui l’entoure
+- [Réunions et transcription](/fr-CA/manuel/concepts/reunions/) — l’enregistrement sur l’appareil, la transcription et le résumé
+- [Calendrier et planification](/fr-CA/manuel/concepts/calendrier/) — la synchronisation Google Calendar et les alertes de réunion
 
-## Under the hood
+## Dans les coulisses
 
-The shape of the system itself.
+La structure du système lui-même.
 
-- [Architecture](/fr-CA/manuel/concepts/architecture/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/fr-CA/manuel/concepts/deploiement/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/fr-CA/manuel/concepts/evenements-de-domaine/) — the in-process bus features talk over
+- [Architecture](/fr-CA/manuel/concepts/architecture/) — la stratification, le noyau partagé, les ports et les adaptateurs
+- [Déploiement et clients](/fr-CA/manuel/concepts/deploiement/) — comment les clients de bureau, Web et mobile se rapportent à un seul serveur
+- [Événements de domaine](/fr-CA/manuel/concepts/evenements-de-domaine/) — le bus interne sur lequel les fonctionnalités communiquent

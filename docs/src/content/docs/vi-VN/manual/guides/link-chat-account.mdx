@@ -1,95 +1,123 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Liên kết tài khoản Slack của bạn
+description: Chứng minh một danh tính Slack là của bạn để agent hành động dựa trên tin nhắn của bạn và công việc của bạn được ghi nhận cho bạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Hướng dẫn này chỉ cho bạn cách liên kết danh tính chat của mình với người dùng
+Control Center và cách hủy một liên kết.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Mỗi thành viên thực hiện việc này một lần cho mỗi nhà cung cấp chat. Việc này tách
+biệt với kết nối ứng dụng: kết nối giúp bot tiếp cận được với toàn bộ không gian
+làm việc, còn liên kết giúp _bạn_ được nhận diện bên trong đó.
 
-## Why linking is required
+## Vì sao cần liên kết
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Cầu nối từ chối hành động cho một tài khoản chat mà nó không thể quy về một thành
+viên của không gian làm việc. Đó là chủ ý — nếu không có liên kết, mọi tin nhắn từ
+Slack sẽ phải được gán cho bất kỳ ai đã cài đặt ứng dụng, và nhật ký kiểm tra, giới
+hạn tốc độ theo từng chủ thể cùng người báo cáo phiếu đều sẽ ghi sai người.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Một thành viên chưa liên kết mà nhắc đến bot sẽ nhận được câu trả lời ngay trong
+luồng Slack đó, giải thích cách liên kết. Không có gì được điều phối.
 
-## Link with a code
+## Liên kết bằng mã
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** và cuộn đến thẻ
+   **Tài khoản chat đã liên kết**
+2. Trong mục Slack, nhấn **Liên kết tài khoản Slack của tôi**
+3. Sao chép lệnh mà nó hiển thị, ví dụ:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Trong Slack, gửi lệnh đó cho bot — tin nhắn trực tiếp (DM) là nơi dễ nhất
+5. Bot xác nhận người dùng Control Center mà bạn giờ đã liên kết, và hộp thoại bạn
+   để mở cũng cập nhật để báo điều đó cùng lúc — bạn không phải đóng nó rồi mở lại
+   để xem
 
-The code:
+Mã này:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Chỉ dùng được một lần và hết hạn **15 phút** sau khi được tạo
+- Luôn được tạo cho _bạn_, không bao giờ cho đồng đội
+- Thay thế mọi mã bạn đang giữ, nên nhấn nút lần nữa sẽ vô hiệu hóa mã trước đó
+- Chỉ tồn tại trong bộ nhớ, nên việc khởi động lại máy chủ sẽ vô hiệu hóa mọi mã
+  còn hiệu lực — hãy nhấn nút lần nữa
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Một mã không xác định, đã hết hạn hoặc được tạo cho một không gian làm việc khác
+đều thất bại theo cùng một cách không thể phân biệt: "mã đó không hợp lệ (hoặc đã
+hết hạn)".
 
-## Automatic linking by email
+## Liên kết tự động qua email
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Nếu hồ sơ Slack của bạn mang một email đã xác minh khớp với một người dùng Control
+Center **đã là thành viên của không gian làm việc này**, cầu nối sẽ liên kết bạn
+ngay lần đầu bạn trò chuyện với nó. Không cần mã.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Cả hai nửa đều quan trọng: việc khớp email chứng minh danh tính, nhưng chỉ tư cách
+thành viên mới cấp quyền truy cập, nên một người lạ có email tình cờ tồn tại trên
+máy chủ sẽ không liên kết được gì. Danh sách thành viên cho thấy mỗi liên kết được
+tạo ra như thế nào ("khớp theo email" hoặc "liên kết bằng mã").
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Liên kết tự động cần phạm vi `users:read.email`. Nếu không có nó, Slack sẽ không
+tiết lộ địa chỉ và luồng dùng mã là con đường duy nhất.
 
-## See who is linked
+## Xem ai đã liên kết
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Danh sách thành viên thuộc phần quản trị không gian làm việc, nên nó nằm ở nửa còn
+lại của bề mặt giao diện: **Cài đặt → Không gian làm việc → Chung → Cầu nối chat →
+Tài khoản đã liên kết**. Nó liệt kê mọi thành viên đã liên kết trong không gian
+làm việc, cùng tài khoản Slack mà mỗi người ánh xạ tới và cách liên kết được tạo.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Trạng thái của riêng bạn nằm trên trang hồ sơ của bạn: dòng **Liên kết tài khoản
+Slack của tôi** hiển thị "Đã liên kết với _your-slack-id_" sau khi bạn đã liên kết
+và nhắc bạn liên kết khi bạn chưa liên kết.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Danh sách thành viên là một đăng ký trực tiếp, vì thay đổi xảy ra ở phía bên kia —
+bạn gõ mã trong Slack, nên không yêu cầu nào từ ứng dụng có thể mang câu trả lời
+trở lại.
 
-## Unlink
+## Hủy liên kết
 
-Click **Unlink** on a row in the workspace roster.
+Nhấn **Hủy liên kết** trên một hàng trong danh sách thành viên của không gian làm
+việc.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Ai cũng có thể tự hủy liên kết của mình
+- Chỉ quản trị viên mới có thể hủy liên kết của thành viên khác
+- Hủy liên kết cũng thu hồi mọi mã liên kết còn hiệu lực của thành viên đó
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Sau khi hủy liên kết, tài khoản Slack đó không thể điều khiển agent nữa cho đến khi
+liên kết lại. Các không gian, bản ghi và phiếu hiện có vẫn giữ nguyên nguồn gốc ban
+đầu — hủy liên kết không phải là việc rút lại công việc đã làm.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The bot says I am not a member of this workspace
+### Bot báo tôi không phải thành viên của không gian làm việc này
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/).
+Tài khoản Slack của bạn đã được liên kết với một người dùng Control Center, nhưng
+người dùng đó không có tư cách thành viên trong không gian làm việc này. Hãy nhờ
+quản trị viên mời bạn; xem [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/).
 
-### The bot says my role is read-only
+### Bot báo vai trò của tôi là chỉ đọc
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Các vai trò `viewer` và `guest` không thể bắt đầu công việc. Quản trị viên phải nâng
+vai trò của bạn lên `member` hoặc cao hơn.
 
-### The slash command is not recognized
+### Lệnh slash không được nhận diện
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Kiểm tra rằng lệnh slash tồn tại trong Slack và rằng bạn đang gửi đúng lệnh mà hộp
+thoại cài đặt đã hiển thị cho bạn — quản trị viên có thể đã đổi tên lệnh, khi đó
+hộp thoại sẽ hiển thị tên hiện tại.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
-- [Customize the chat bot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
-- [Chat bridge](/vi-VN/so-tay/tham-chieu/cau-chat/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
+- [Cầu chat](/vi-VN/so-tay/tham-chieu/cau-chat/)
 
-## Related concepts
+## Các khái niệm liên quan
 
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/)
-- [Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/)
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/)
+- [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/)

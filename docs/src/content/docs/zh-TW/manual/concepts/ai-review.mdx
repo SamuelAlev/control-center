@@ -1,225 +1,128 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: AI 審查
+description: 一個 pull request 如何變成已審查的 PR — 審查空間、審查節點與同儕共識、群組與軸、Ship/Hold/Block 判定，以及為什麼發佈始終是由你親自採取的步驟。
 slug: zh-TW/手冊/概念/ai-審查
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## 審查的樣貌
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+一次 AI 審查，就是對一個開啟中的 pull request 執行一次內建的 `pr_review` 管線。管線會開啟該 PR 的審查空間，展開多位審查代理，在該空間的隔離檢出中閱讀差異；每個代理把自己的發現以結構化的**審查節點**提交，接著由主導代理彙整成一份導覽，最後由收尾程式算出一個判定：**Ship**、**Hold** 或 **Block**。管線絕對不會做的事就是發佈 — 貼到 GitHub 是人類另行刻意採取的步驟。
 
-The rest of this page explains the pieces and why they are shaped this way.
+本頁其餘部分會說明各個組成部分，以及它們為什麼是這樣的形狀。
 
-## One review space per PR
+## 每個 PR 一個審查空間
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+PR 的審查情境就是一個訊息空間 — 模式 `review`、種類 `pr` — 透過**審查空間關聯**連結到該 pull request。它的建立具備冪等性：PR 頁面、審查管線與聊天介面都經由同一段程式碼路徑解析該 PR 唯一的那個底層空間，因此負責審查某個 PR 的範本，與開啟該 PR 的人，絕不會落在兩個不同的房間、看著兩份不同的檢出。
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+該空間的隔離工作樹會在 PR 的 head ref 上檢出該 PR。一個房間也代表一份檢出：每位審查者都在同一個空間中工作，而不是各自取得自己的工作區複本。
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+每位審查者都在那個空間裡、自己的具名串流中發文，而發現是 `review_node` 訊息，不是單純的散文。最後進行全空間彙集是刻意的設計 — 只從單一討論串的發現算出的判定，會悄悄變成只針對某一位審查者的判定。
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+這個關聯帶有一條狀態階梯 — `requested` → `in progress` → `awaiting approval` → `completed` — 正是它為 PR 檢閱分頁上的**發佈到 GitHub**把關。
 
-## Review levels
+## 審查層級
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+審查要深入多少，取決於工作區政策的三個層級，設定位置在**設定 → 工作區 → 一般**的**工作區政策**卡片：
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| 層級       | 展開的審查者                        | 回報內容                                     |
+| ---------- | ----------------------------------- | -------------------------------------------- |
+| `light`    | 僅工程師                            | 只回報真正重要的事                           |
+| `balanced` | 工程師、QA、架構師（預設）          | 標準的一輪檢查                               |
+| `thorough` | 全部五種，包括安全性與效能          | 沒有任何項目會被降級                         |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+層級會同時轉動兩個旋鈕：哪些審查者會展開（由管線範本的 `runWhen` 狀態閘門強制執行，而不是靠提示文字 — 提示文字可以被忽略，閘門不行），以及未達門檻的發現要在哪裡呈現。兩個旋鈕都絕不會刪掉任何發現：回報較少的層級，提交的發現仍然一樣多，只是把其餘的歸類分組。
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+安全性與效能的檢查會沿用內建的架構師與工程師代理，而不是另立新的代理。專業分工體現在派送審查者時所附的任務簡報，而不是每個軸各自一個代理 — 每個軸一個代理，只會讓每個工作區多出五列，能力卻沒有增加。審查者的選擇從不檢查差異屬於哪種語言或領域。
 
-## Review nodes: findings as data, not prose
+## 審查節點：發現是資料，不是散文
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+以 `add_review_node` 提交的發現，會成為 PR 上的一個**審查節點** — 檢閱分頁所呈現的、判定所依據的，以及「發佈到 GitHub」會轉成行內留言的，都是它。只回傳散文的審查者，會產生一次看起來成功的管線執行，以及一個空蕩蕩的審查介面；真正撐起整個機制的，是提交這個動作。
 
-Each node carries:
+每個節點帶有下列欄位：
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| 欄位       | 值                                                                         |
+| ---------- | -------------------------------------------------------------------------- |
+| 種類       | `bug`、`suggestion`、`recommendation`、`question`、`ticket`                 |
+| 優先順序   | P0（重大）→ P3（吹毛求疵）                                                   |
+| 分流三要素 | 類別（`security`、`stability`、…）、嚴重性、工作量                            |
+| 錨點       | 檔案路徑、起始與結束行號                                                     |
+| 修正乘載   | 建議的替換行、選用的差異、選用的修正提示                                     |
+| 信心       | 一個 [0, 1] 分數                                                             |
+| 推理       | 在發現之前寫下的分析                                                         |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+有兩個細節是刻意的。只有在審查者提供了確切的替換行時，才會提供一鍵 GitHub 建議 — 從整合差異推斷替換行會悄悄出錯，而把錯誤的推斷一鍵提交出去，比根本沒有按鈕更糟。此外，`add_review_node` 的結構描述把 `reasoning` 排在發現之前，因此依結構描述順序填寫物件的模型，會先寫下分析。這個欄位是選用的：省略它並不會讓節點遭到拒絕。承載內容格式錯誤的節點會直接消失，而不是汙染整份審查。
 
-## Peer consensus
+## 同儕共識
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+節點會經過 `open` → `consensus-ready` → `resolved` 或 `dismissed`。中間這一步是整個模型的核心：**發現唯有在同儕審查者確認後才能晉級，而代理永遠不能確認自己的發現。** MCP 工具 `publish_review_to_github` 與 RPC 的預設行為，仍然只發佈經同儕確認的發現。檢閱分頁的**發佈到 GitHub**按鈕則會送出所有仍未解決的發現。
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+這條規則在三個彼此獨立的地方強制執行 — 確認工具、收尾程式與發佈程式 — 因此即使其中任一個的呼叫端有錯，規則依然成立。狀態變更全都經過同一個服務，這正是狀態之所以有意義的原因：在這之前，兩條半調子的路徑可能對同一個發現是否已解決各說各話。
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+當審查者意見分歧時 — 同一檔案同一行、優先順序相差兩級以上，或一方稱之為 `bug`、另一方稱之為 `suggestion` — 這項分歧會顯示在發現清單上方。那裡正是審查者意見分歧、而人類判斷最有價值的地方。
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+略過某個發現時，也會以低信心在記憶網域寫入一則軟性抑制事實 — 一次略過只是一種偏好，不是規則。
 
-## Cohorts: what the review is grouped around
+## 群組：審查是圍繞什麼分組的
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+審查運算流程會把 PR 變更的檔案，依程式碼圖衍生出的**群組**分組：變更的檔案對應到它們所觸及的符號，符號再對應到相連的元件，而群組會依影響範圍排序。一個群組帶有引導式閱讀順序、圖表與洞見，而不只是一份扁平化的檔案清單。
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+有兩條誠實原則塑造了這個設計。群組鍵由內容衍生，且跨推送保持穩定，因此發現與審查進度能挺過 rebase 或 force-push，而不會變成孤兒。而當儲存庫沒有程式碼索引時，分組會退回單純的路徑分組，並且會明白表示這件事 — 退回模式絕不會假裝自己具備語意信心。
 
-## Review axes and gates
+## 審查軸與閘門
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+除了審查者的發現之外，一次審查還會累積**軸結果**：六個軸，分屬兩種。
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| 軸                          | 種類       | 來源                                        |
+| --------------------------- | ---------- | ------------------------------------------- |
+| `correctness`、`security` | Token 驅動  | 審查者自己的發現                            |
+| `testGap`                 | Token 驅動  | 審查者的發現                                |
+| `visual`、`apiContract`   | 確定性     | 不花費 token 計算得出                       |
+| `performance`             | 確定性     | 僅有列舉值 — 產品中沒有任何東西會算出結果   |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+軸的判定是 `pass`、`warn`、`fail`、`partial` 或 `unavailable` — 而且只有 `pass` 或 `warn` 能通過閘門。`fail`、`partial` 與 `unavailable` 之間的區別至關重要：受閘門控管的軸若無法完成或根本無法執行，會擋住整體判定，而不是讓它通過。**沒有證據，永遠不會被轉換成綠燈閘門。**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+有些軸刻意只具建議性質。由群組衍生的測試缺口軸看不到依賴注入或工廠的涵蓋範圍 — 從那裡看，一個未建立索引但測試套件完整的儲存庫，和一個完全沒有測試的儲存庫長得一模一樣，因此聲稱任何一種都會是謊言；它會顯示在儀表板上，但不設閘門。Token 軸之所以只具建議性質，是因為發現的優先順序已經在驅動判定，若再以它們設閘門就會重複計算。
 
-## The verdict
+## 判定
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+收尾程式會針對狀態為 `open` 或 `consensus-ready` 的發現計算判定：
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- 任何信心 ≥ 0.7 的 P0 發現 → **Block**
+- 否則，任何 P0（低信心）或任何 P1 → **Hold**
+- 否則 → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+判定會帶有一個整體信心，由各貢獻信心的分散程度衍生而來 — 意見一致會提高它，分歧則會降低它。
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+主導（CEO）代理的彙整是一道編輯處理，而不是重新條列：手寫的第二份發現副本，正是會偏離真實版本的那種東西。重複的發現會被降級，而不是重複列出 — 多位審查者被派去看同一份差異，且職責刻意重疊，因此同一個缺陷三次送達收尾程式，代表系統運作正常；把它發佈三次，則是系統把自己的架構洩漏到讀者的收件匣裡。重新審查時，發現會被取指紋並與前一輪比對差異，因此浮上檯面的是變化量。
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+最後，各軸會納入計算，而它們只可能讓判定**更**嚴厲：受閘門控管的軸若失敗，就強制 Block — 它無法被發現以票數壓過 — 而受閘門控管的軸若無法完成，則至少強制 Hold。
 
-## Publishing stays with you
+## 發佈永遠由你決定
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+管線刻意不貼到 GitHub；發佈由使用者把關，因此一次審查永遠不可能重複發佈。當你按下**發佈到 GitHub**時：
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- 會提交一筆 GitHub 審查。已解決或已略過的發現會被跳過。按鈕會發佈所有仍未解決的發現（`selection: all_open`）。MCP 工具 `publish_review_to_github` 則仍然預設只發佈經同儕確認的發現（`consensus`）。
+- 錨定到檔案與行號的發現會變成行內留言；其餘一切都收進摘要內文，每一項都帶有「— Control Center AI review」頁尾，讓來源一目了然。
+- 發佈時會重新驗證錨點是否對得上 PR 的*目前*差異。對已被改寫的程式碼留下留言，是審查者最會摧毀信任的行為；如果 GitHub 無論如何都拒絕某個行內錨點，整筆審查會重新送出，並把所有發現收進內文，確保沒有任何東西被悄悄丟掉。
+- **Block** 判定會以 `REQUEST_CHANGES` 提交；**Hold** 為 `COMMENT`；按鈕送出的 **Ship** 則為 `APPROVE`（`approve_on_ship: true`）。除非你傳入 `approve_on_ship`，否則 MCP 工具會讓 Ship 維持為 `COMMENT`。
+- 審查會以伺服器的應用程式身分張貼。按下發佈的人是誰，會記錄在角色閘門與稽核日誌中；那個人不會成為 GitHub 作者。
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/zh-TW/手冊/概念/護欄/).
+發佈會宣告 `prPublish` 動作類別，因此護欄檢查點會像對待任何變更型動作一樣設下閘門 — 它預設會提示，且在沒有連接任何核准者時一律拒絕。另請參閱[護欄](/zh-TW/手冊/概念/護欄/)。
 
-## What a reviewer may do
+## 審查者可以做什麼
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+審查代理以 `review` 模式執行：一個唯讀沙箱，加上一份精心挑選的工具允許清單，涵蓋發現、評論、工單與同儕審查 — 但不能進行任何變更。審查者無法修正它所評論的程式碼；它可以附上建議的修正，由人類套用。該模式的拒絕訊息會告訴仍試圖採取行動的代理：請完成審查，並讓使用者依已發佈的摘要採取行動。
 
-## Related concepts
+## 相關概念
 
-- [Guardrails](/zh-TW/手冊/概念/護欄/) — the policy engine that gates publishing
-- [Modes](/zh-TW/手冊/概念/模式/) — what `review` mode changes for an agent
-- [Pipelines and automation](/zh-TW/手冊/概念/管線/) — the engine the review runs on
-- [Agent dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/) — where the isolated worktree comes from
+- [護欄](/zh-TW/手冊/概念/護欄/) — 為發佈把關的政策引擎
+- [模式](/zh-TW/手冊/概念/模式/) — `review` 模式為代理帶來的改變
+- [管線與自動化](/zh-TW/手冊/概念/管線/) — 審查所運行的引擎
+- [代理派送生命週期](/zh-TW/手冊/概念/派送生命週期/) — 隔離工作樹的來源
 
-## Related guides
+## 相關指南
 
-- [Use AI-powered review](/zh-TW/手冊/操作指南/ai-審查/) — run a review and publish it
-- [Dispatch reviewer agents](/zh-TW/手冊/操作指南/派送審查代理/) — choose the reviewers yourself
-- [Review compute](/zh-TW/手冊/操作指南/審查運算/) — cohorts, axes and diffs
+- [使用 AI 審查](/zh-TW/手冊/操作指南/ai-審查/) — 執行一次審查並發佈
+- [派送審查代理](/zh-TW/手冊/操作指南/派送審查代理/) — 自己挑選審查者
+- [審查運算](/zh-TW/手冊/操作指南/審查運算/) — 群組、軸與差異

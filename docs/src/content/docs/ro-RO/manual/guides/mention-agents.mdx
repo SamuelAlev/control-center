@@ -1,121 +1,129 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: Menționează agenți cu @
+description: Menționează agenți într-un spațiu pentru a-i trimite și colegi pentru a-i notifica.
 slug: ro-RO/manual/ghiduri-practice/mentioneaza-agenti
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Acest ghid îți arată cum să menționezi agenți și colegi cu @ într-un spațiu.
 
-## Mention an agent
+## Menționează un agent
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Scrie `@` în composer și alege un agent din autocomplete, sau scrie singur numele:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Agentul menționat este adăugat în spațiu ca participant dacă nu este deja unul și
+este trimis cu contextul și modul spațiului. Participanții nementionați văd mesajul,
+dar nu sunt trimiși.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Dacă trimiți un mesaj fără nicio mențiune de agent, Control Center alege singur un
+respondent: agentul care a vorbit ultima dată în conversație, altfel proprietarul
+conversației când aceasta are unul, altfel primul agent de nivel superior dintre
+participanții spațiului. Într-un spațiu cu un singur agent, acesta este mereu
+singurul agent.
 
-## Know how a name is matched
+## Află cum se potrivește un nume
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Un token de mențiune este potrivit **insensibil la majuscule și minuscule**, după
+**numele exact sau prefix**. Astfel, `@arch` ajunge la un agent numit `architect`,
+iar `@Alice` ajunge la `alice`.
 
-Two consequences worth planning around:
+Două consecințe de care merită să ții cont:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Un token scurt nu este o eroare.** Dacă doi agenți împart un prefix, câștigă
+  primul găsit, iar care anume este atârnă de ordonare — nu de vreo regulă de
+  departajare. Folosește numele complet ori de câte ori numele se suprapun.
+- **Doar literele, cifrele și liniile de subliniere fac parte dintr-un token.**
+  Parserul potrivește `@(\w+)`, așa că `@code-reviewer` este citit ca tokenul `code`,
+  iar `@my agent` ca `my`. Un agent al cărui nume conține o cratimă, un punct sau un
+  spațiu nu poate fi menționat în mod fiabil — nici măcar prin autocomplete, care
+  inserează numele ca text simplu. Denumește agenții într-un singur cuvânt sau cu
+  linii de subliniere.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Mențiunile sunt eliminate din text înainte ca acesta să ajungă la agent. Prin
+urmare, un mesaj care este _doar_ mențiuni (`@alice`) nu trimite nimic — dă-i ceva
+de făcut.
 
-## Mention several agents at once
+## Menționează mai mulți agenți deodată
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Ambii agenți sunt trimiși în paralel în aceeași conversație și amândoi primesc
+mesajul complet.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+De asemenea, ei **împart worktree-urile acelui spațiu**. Worktree-urile de repo sunt
+provisionate per spațiu, nu per agent; fiecare agent primește propriul director de
+lucru de tip overlay pentru `AGENTS.md`, skill-urile și configurația lui, cu
+repo-urile partajate legate în citire-scriere. Așa că doi agenți menționați împreună
+pot vedea — și se pot ciocni cu — modificările celuilalt.
 
-## Mention a teammate
+## Menționează un coleg
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Orice `@token` care nu se potrivește cu un agent este încercat împotriva membrilor
+umani ai spațiului de lucru, după handle, cu aceeași regulă insensibilă la majuscule
+și minuscule de potrivire exactă sau pe prefix.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+O mențiune de om rezolvată **nu trimite nimic**. Ea se află doar în metadatele
+mesajului, strict pentru ca routerul de notificări să poată notifica acea persoană.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Numele de agent sunt mereu încercate primele, iar un token revendicat de un agent nu
+este niciodată oferit listei de membri — un `@word` nu se poate rezolva niciodată
+decât la un singur principal.
 
-## What the agent receives
+## Ce primește agentul
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Un agent trimis primește în promptul lui un bloc „Summons” care numește cine l-a
+convocat și listează participanții spațiului — ceilalți agenți (marcați ca de nivel
+superior sau subordonați) și membrii umani — astfel încât să știe cui poate preda.
+Blocul îi mai spune că menționarea unui alt agent în răspunsul lui trezește acel
+agent și că menționarea proprie este ignorată.
 
-## When an agent mentions an agent
+## Când un agent menționează un agent
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Un agent poate preda în propriul răspuns. Când un tur **se încheie curat**,
+mențiunile din textul lui sunt rezolvate, iar acei agenți sunt adăugați în spațiu și
+trimiși în aceeași conversație, cu turul care i-a menționat ca prompt. Un tur care a
+eșuat sau a fost întrerupt nu trezește pe nimeni — s-a oprit la mijlocul gândului.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Regulile sunt în mod deliberat mai stricte decât cele ale composerului, pentru că
+nimeni nu urmărește să corecteze o presupunere greșită:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Doar nume exacte.** Fără potrivire pe prefix. `@arch` ajunge la `architect` când
+  îl tastează un om; de la un agent nu ajunge la nimeni. Un nume care se potrivește
+  cu doi agenți, de asemenea, nu ajunge la nimeni.
+- **Codul nu este proză.** Mențiunile din interiorul blocurilor delimitate sau dintre
+  `` `backticks` `` sunt ignorate, așa că citarea unei adnotări `@Override` sau a unei
+  comenzi `pip install foo@1.2` este sigură. O delimitare neterminată golește tot ce
+  urmează după ea.
+- **Un `@` lipit de tokenul anterior nu este o mențiune** — `sam@host.com`,
+  `pkg/@scope` și `node@20` nu se rezolvă la nimeni.
+- **Cratimele sunt păstrate**, așa că `@code-reviewer` se rezolvă ca el însuși, nu ca
+  tokenul `code`.
+- **Cel mult trei agenți per tur.** Un agent care enumeră șase colegi într-un rezumat
+  îi enumeră, nu îi convoacă.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Un lanț de trezire este plafonat la fel cum este delegarea: **adâncime 3**, iar un
+agent aflat deja pe lanț nu mai poate fi trezit din nou de el (fără `A → B → A`). O
+pereche ordonată este, de asemenea, supusă unei limite de rată între lanțuri. O
+trezire refuzată publică un mesaj de sistem în conversație, care spune ce mențiune nu
+a fost livrată și de ce — un nume nerezolvat nu face asta, căci altfel orice `@`
+dintr-o propoziție s-ar povesti singur.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Pentru o predare care nu trebuie să depindă de proză — o cerere/răspuns sau atingerea
+unui agent din afara spațiului — folosește în schimb instrumentele `send_to_agent`,
+`ask_agent` și `delegate_task`.
 
-## Related guides
+## Ghiduri conexe
 
-- [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
-- [Use spaces](/ro-RO/manual/ghiduri-practice/spatii/)
-- [Run agents in parallel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
+- [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/)
+- [Rulează agenți în paralel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
 
-## Related concepts
+## Concepte conexe
 
-- [Dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Ciclul de viață al trimiterii](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)

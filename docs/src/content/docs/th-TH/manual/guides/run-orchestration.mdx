@@ -1,126 +1,123 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: รันการประสานงาน
+description: ขอแผนจากตัวประสานงาน ตรวจทานและแก้ไขใน Plan Studio อนุมัติเพียงครั้งเดียว แล้วให้ไปป์ไลน์ที่สร้างขึ้นลงมือทำงาน
 slug: th-TH/คู่มือ/วิธีทำ/รันการประสานงาน
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) for how it works.
+คู่มือนี้แสดงวิธีเปลี่ยนเป้าหมายใหญ่ข้อเดียวให้เป็นแผนของทั้งทีมที่รันตัวเองได้
+ดู[การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)สำหรับหลักการทำงาน
 
-## When to use an orchestration
+## เมื่อใดควรใช้การประสานงาน
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/); for a process you can spell out by
-hand, build a [pipeline template](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/).
+ใช้การประสานงานเมื่อคำขอใหญ่เกินกว่าเอเจนต์ตัวเดียวจะรับไหว และคุณยังไม่รู้
+ขั้นตอนที่แน่นอน สำหรับงานชิ้นเดียว ให้ส่งข้อความถึงเอเจนต์ใน
+[สเปซ](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/) ส่วนกระบวนการที่คุณเขียนลำดับเองได้
+ให้สร้าง[เทมเพลตไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)
 
-## Step 1: Ask for the plan
+## ขั้นตอนที่ 1: ขอแผน
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. เปิด (หรือสร้าง) สเปซและ**ตั๋วงานหลัก** ทุกข้อเสนอต้องมีตั๋วงานหนึ่งใบ
+   (`propose_orchestration` รับ `ticket_id`) และสเปซที่แชร์กันมาจากตั๋วงานนั้น
+2. เลือกได้ว่าจะสลับเมนูโหมดแบบเลื่อนลงของคอมโพเซอร์เป็น **ประสานงาน** โหมดนี้
+   จำกัดเอเจนต์ไว้ที่การอ่านและการเสนอ — หน่วยความจำ กราฟโค้ด การอ่านรีโปและ
+   ตั๋วงาน `propose_orchestration` และเครื่องมือเพลย์บุ๊ก — จึงเริ่มเขียนโค้ด
+   แทนที่จะวางแผนไม่ได้
+3. @-mention ตัวประสานงานของคุณ (โดยปกติคือเอเจนต์ CEO) แล้วระบุเป้าหมายเป็น
+   ภาษาธรรมชาติ:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo ค้นคว้าภาพรวมการแข่งขันของเครื่องบันทึกการประชุมแบบออฟไลน์ก่อน แล้วเขียน
+> เอกสารวางตำแหน่งผลิตภัณฑ์ความยาวหนึ่งหน้า
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+ตัวประสานงานจะตอบกลับด้วยการ์ด**ข้อเสนอ**แบบมีโครงสร้างในสเปซ ประกอบด้วย
+บทบาทที่ต้องการ งานที่แบ่งเป็นตั๋วงานย่อย เฟสการวิจัยและการอภิปรายซึ่งเลือกได้
+ขั้นตอนการสังเคราะห์ที่ผลิตสิ่งที่ส่งมอบ และงบประมาณ
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+เนื่องจากข้อเสนอเป็นออบเจ็กต์แบบมีชนิด แอปจึงตรวจสอบความถูกต้อง (บทบาทที่ครบถ้วน
+สคีมาเอาต์พุตที่ประกาศไว้ DAG ที่ไม่มีวัฏจักร) ก่อนที่สิ่งใดจะรัน ข้อเสนอที่ไม่ผ่าน
+การตรวจสอบจะอนุมัติไม่ได้
 
-## Step 2: Review and edit the proposal
+## ขั้นตอนที่ 2: ตรวจทานและแก้ไขข้อเสนอ
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+การ์ดในแชทมีสามการดำเนินการ: **อนุมัติแผน** **ปฏิเสธ** และ **เปิด** — ซึ่งเปิด
+แผนใน Plan Studio เป็นแท็บตัวแก้ไข ตัวการ์ดเองแก้ไขไม่ได้
 
-To change anything, press **Open** and work in the right-hand inspector:
+หากต้องการเปลี่ยนสิ่งใด ให้กด **เปิด** แล้วทำงานในตัวตรวจสอบทางด้านขวา:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **ชื่อเรื่อง** **คำอธิบาย** **บทบาท** **การพึ่งพา** และ**สคีมาเอาต์พุต**ของ
+  ขั้นตอนงานใด ๆ บทบาทในที่นี้หมายถึงคีย์บทบาทที่มีอยู่แล้วของแผนซึ่งเป็นเจ้าของ
+  ขั้นตอนนั้น — คุณปักหมุดบทบาทให้กับเอเจนต์ที่มีชื่อเจาะจงไม่ได้ แก้ไขรายการจ้าง
+  จากตัวตรวจสอบไม่ได้ และแก้ไขงบประมาณไม่ได้
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+มีสองสิ่งที่เป็นแบบอ่านอย่างเดียว: โหนดเชิงโครงสร้าง (การวิจัย การอภิปราย
+การสังเคราะห์) และโหนดใด ๆ ที่งานรันไปแล้ว การแก้ไขทำได้เฉพาะขณะที่การประสานงาน
+ยังเป็น `proposed` เท่านั้น
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/) for the full editor.
+กด **ประมาณการ** ในแถบอนุมัติเพื่อดูช่วงค่าใช้จ่าย ระยะเวลา และรัศมีผลกระทบ
+ก่อนตัดสินใจ ดู[ทำงานใน Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/)สำหรับ
+ตัวแก้ไขฉบับเต็ม
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/).
+:::note[งบประมาณไม่ใช่เพดานการใช้จ่าย]
+งบประมาณของข้อเสนอจะถูกนำไปเทียบกับ_ค่าประมาณการ_ในแถบอนุมัติ เมื่อปลายบนของ
+ค่าประมาณการสูงกว่างบประมาณ ยอดรวมจะเปลี่ยนเป็นสีแดงพร้อมคำเตือนเกินงบ ไม่มีอะไร
+ตรวจสอบการใช้จ่ายขณะแผนรัน จึงไม่หยุดหรือทำให้การรันล้มเหลว หากต้องการหยุดการใช้
+จ่ายจริง ๆ ให้ใช้นโยบายงบประมาณรายเอเจนต์ — ดู
+[จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
 :::
 
-## Step 3: Approve
+## ขั้นตอนที่ 3: อนุมัติ
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+อนุมัติแผนได้จากทั้งการ์ดในแชทหรือแถบอนุมัติของ Plan Studio
+**นี่คือการตัดสินใจเพียงครั้งเดียวที่คุณต้องทำ** การอนุมัติเป็นหน้าที่ของ
+โอเปอเรเตอร์เท่านั้น — ไม่มีเครื่องมือ MCP สำหรับการนี้ เอเจนต์จึงเสนอและแก้ไขได้
+แต่ไม่มีทางอนุมัติแผนของตัวเองได้เลย
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) and creates the
-scaffolding:
+จากจุดนี้ ตัวจัดทำแบบดีเทอร์มินิสติก (ฟังก์ชันบริสุทธิ์ ไม่ใช้ LLM) จะแปลงข้อเสนอ
+เป็น[ไปป์ไลน์](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)จริง และสร้างโครงรองรับ:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- จ้างบทบาทใหม่ (และบันทึก id ของเอเจนต์ที่จ้างไว้ เพื่อให้แครชกลางคันระหว่าง
+  อนุมัติกลับมาทำต่อได้โดยไม่จ้างซ้ำ)
+- จัดกลุ่มบทบาทเหล่านั้นเป็น **ทีม**
+- สร้าง**โปรเจกต์**และจัดเก็บตั๋วงานหลักไว้ใต้โปรเจกต์นั้น
+- เริ่ม**การรันไปป์ไลน์**ที่ขับเคลื่อนทุกอย่าง
 
-The status moves to `approved`, then `executing`.
+สถานะจะเปลี่ยนเป็น `approved` แล้วจึงเป็น `executing`
 
-## Step 4: Watch it run
+## ขั้นตอนที่ 4: เฝ้าดูการรัน
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+ตั๋วงานย่อยจะรันเป็นขั้นตอนของไปป์ไลน์ หากคุณเปิดรอบการอภิปราย แต่ละบทบาทจะ
+โพสต์จุดยืนก่อน ความคืบหน้าจะปรากฏในที่ที่คุณดูอยู่แล้ว:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/)
-- the **project** the parent ticket was filed under
+- **ตั๋วงานหลัก**ที่การประสานงานยึดเกาะไว้
+- **สเปซ**ที่แชร์กันซึ่งทีมสนทนากัน โดยแถวของแผนติดตามสถานะของแต่ละโหนด
+- รายละเอียดของ**การรันไปป์ไลน์** พร้อมแผนภาพน้ำตกเวลาและค่าใช้จ่ายต่อขั้นตอน
+  ตามปกติ — ดู[ติดตามรันไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/)
+- **โปรเจกต์**ที่ตั๋วงานหลักถูกจัดเก็บไว้
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+เมื่อตั๋วงานย่อยทั้งหมดเสร็จ สถานะจะเปลี่ยนเป็น `synthesizing` และขั้นตอนการ
+สังเคราะห์จะผลิตสิ่งที่ส่งมอบ ข้อความนั้นจะถูกโพสต์ในสเปซที่แชร์กัน และตั๋วงานหลัก
+จะถูกทำเครื่องหมายว่าเสร็จ จากนั้นสถานะจึงเป็น `completed`
 
-## Stop it early
+## หยุดก่อนกำหนด
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+กด **ยกเลิกการประสานงาน** บนการ์ดในแชท หรือ **ยกเลิกรัน** ในแถบอนุมัติของ
+Plan Studio การยกเลิกจะรื้องานที่กำลังดำเนินอยู่ทิ้ง
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+การประสานงานจะล้มเหลวเมื่อการจัดทำล้มเหลว หรือเมื่อการรันไปป์ไลน์ที่สร้างขึ้น
+ล้มเหลว (การวิจัย การอภิปราย การสังเคราะห์ หรือการบันทึก — ขั้นตอนเหล่านี้จะไม่
+ดำเนินต่อเมื่อล้มเหลว) ขั้นตอน**งาน**ที่สร้างขึ้นจะดำเนินต่อเมื่อล้มเหลวเสมอ
+ตั๋วงานย่อยที่ล้มเหลวหนึ่งใบจึงไม่ทำให้การรันล้มเหลว ไม่มีเส้นทางความล้มเหลวจาก
+การใช้งบเกิน และไม่มีเกณฑ์ “ตั๋วงานย่อยล้มเหลวทั้งหมด”
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Work in Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/): where the parent ticket is filed
-- [Monitor pipeline runs](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/th-TH/คู่มือ/วิธีทำ/สร้างทีมเอเจนต์/): the roles an orchestration fills or hires
+- [ทำงานใน Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/): แก้ไข ประมาณการ เทียบความต่าง และอนุมัติแผน
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/): ตั๋วงานหลักที่การประสานงานยึดเกาะ
+- [จัดงานด้วยโปรเจกต์](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/): ที่จัดเก็บตั๋วงานหลัก
+- [ติดตามรันไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/): การประสานงานที่จัดทำแล้วมีหน้าตาอย่างไรในเอนจิน
+- [สร้างทีมเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างทีมเอเจนต์/): บทบาทที่การประสานงานเติมให้หรือจ้างมา
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)

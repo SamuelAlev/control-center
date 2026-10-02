@@ -1,115 +1,124 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Gestionează cheile API
+description: Unde se află fiecare credențial — contul tău de utilizator de pe server, serverul însuși sau un CLI extern — și cum să îl setezi, să îl rotești și să îl elimini.
 slug: ro-RO/manual/ghiduri-practice/chei-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Acest ghid îți arată unde este stocat fiecare credențial folosit de Control Center
+și cum să îl schimbi.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Nimic nu este stocat pe mașina pe care tastezi.** Fiecare credențial se află pe
+server; care dintre ele răspunde la o anumită cerere depinde de existența unui om
+în spatele ei.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Credențial                     | Unde este stocat                                          | Cine îl folosește                                                 |
+| ------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| Credențialul tău de host de cod / tichete | Fișierul de secrete 0600 al serverului, indexat după id-ul tău de utilizator | Orice ceri tu: zona de PR-uri, rulările agenților tăi, imaginile tale |
+| Identitatea de aplicație a serverului | Același fișier, plus `server_settings` pentru cele care nu sunt secrete | Munca pe care nu a cerut-o niciun om: webhook-uri, interogarea periodică a PR-urilor, sincronizarea tichetelor |
+| Chei de provideri de modele și tokenuri OAuth | Depozitul de credențiale al serverului                    | Adaptorul încorporat, pentru fiecare spațiu de lucru din instalare |
+| Tokenuri de bot Slack          | `<dataDir>/<workspaceId>/chat_credentials/` pe server      | Puntea de chat pentru spațiul de lucru respectiv                  |
+| Credențiale de CLI extern      | Orice folosește CLI-ul respectiv                           | Claude Code, pe hostul serverului                                 |
 
-## Two GitHub credentials, and they answer different questions
+## Două credențiale GitHub, care răspund la întrebări diferite
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Al tău**, rezultat din autentificare (flux de dispozitiv) sau din lipirea unui
+  token. Este cel pe care îl folosește fiecare cerere făcută *în numele tău*, așa
+  că un comentariu publicat pentru tine îți poartă numele. Un alt membru nu îl
+  poate citi și își conectează propriul credențial
+- **Al serverului**, provenit din GitHub App pe care a înregistrat-o operatorul.
+  Răspunde la tot ce nu are un apelant — astfel încât accesul la hostul de cod nu
+  dispare când o persoană pleacă sau rotește un token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-and [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
+Al tău se setează în cardul **Găzduire de cod** din **Setări → Spațiu de lucru →
+Profil și identitate**; al serverului, în **Aplicații provider** din **Setări →
+Server → Autentificare unică**. Vezi
+[Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+și [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Există și un ecran accesibil doar prin URL]
+`/workspaces/<workspaceId>/api-keys` afișează aceleași două carduri ca primul pas
+al onboarding-ului. Nu are **nicio intrare de navigare nicăieri în interfață**;
+este accesibil doar tastând URL-ul. Folosește în schimb Setări → Spațiu de lucru →
+Profil și identitate.
 :::
 
-## Set model provider keys
+## Setează cheile providerilor de modele
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Adaptorul încorporat autentifică singur providerii, iar acele credențiale se află
+pe server.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Mergi la **Setări → Server → Provideri de modele**
+2. Derulează până la **Provideri și modele**
+3. Conectează providerul — OAuth în browser pentru OpenAI, Codex, Cursor și Kimi
+   Code; o cheie API pentru Anthropic și restul
 
-See [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/) for the full list and
-for adding a custom endpoint.
+Vezi [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/)
+pentru lista completă și pentru adăugarea unui endpoint personalizat.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Aceste credențiale sunt **globale la nivel de host**: o singură cheie deservește
+fiecare spațiu de lucru din instalare. Tokenurile OAuth sunt reîmprospătate
+înainte de a expira.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLI-urile adaptoarelor externe își păstrează propriile credențiale, în propria
+configurație, pe hostul serverului — Control Center nu le gestionează. Autentifică
+Claude Code așa cum prevede propria sa documentație, pe mașina pe care rulează
+`cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/).
+Dialogul **Variabile de mediu** al fiecărui adaptor pare un loc potrivit pentru a
+pune o cheie pentru unul dintre ele, dar nu este: scrie pe dispozitivul tău, în
+timp ce serverul citește propria copie și nimic nu le face legătura. Vezi
+[Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/).
 
-## Connect a ticketing vendor
+## Conectează un furnizor de tichete
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Cardul **Ticketing** din **Setări → Spațiu de lucru → General** conține ambele
+jumătăți ale unei singure decizii: la ce furnizor îți stau tichetele și
+credențialul pentru acesta. Alegerea **Local** ascunde rândul credențialului —
+tichetele locale se află în baza de date proprie a acestui server și nu au la ce
+să se autentifice.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ro-RO/manual/ghiduri-practice/integrare-linear/).
+Cheia ta este stocată pe server, asociată id-ului tău de utilizator, la fel ca cea
+de host de cod. Serverul își păstrează separat propria cheie Linear (**Aplicații
+provider**), pe care rulează sincronizarea tichetelor când nu a cerut niciun om. O
+cheie pe care o primește un agent este injectată doar când agentul are capacitatea
+**Permite apeluri ticketing API**. Vezi
+[Configurează integrarea Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/).
 
-## Rotate or revoke
+## Rotește sau revocă
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- **Credențialul tău GitHub**: apasă **Deconectează**, apoi autentifică-te din nou
+  sau lipește noul token. Revocă-l pe cel vechi pe GitHub
+- **Aplicația serverului**: generează o cheie privată sau un client secret nou în
+  pagina GitHub a aplicației, lipește-l în **Aplicații provider** și apasă **Test**
+- **Un provider de modele**: pe rândul său, deconectează-te (OAuth) sau elimină
+  cheia, apoi conectează-te din nou
+- **Slack**: lipește din nou tokenurile în dialogul de conectare. Vezi
+  [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
 
-## Troubleshooting
+## Depanare
 
-### The PR list is empty but my token works in `curl`
+### Lista de PR-uri este goală, dar tokenul meu funcționează în `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Verifică subtitlul rândului **Găzduire de cod**. Dacă indică o altă sursă („prin
+aplicația acestui server”, „din mediu”), credențialul pe care îl testezi nu este
+cel care răspunde — al tău nu a fost salvat.
 
-### The token is accepted but later requests fail
+### Tokenul este acceptat, dar cererile ulterioare eșuează
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Tokenul este verificat așa cum este stocat, așa că rândul indică contul din
+spatele lui — dar numai contul, nu și scope-urile. Un token cu prea puține
+scope-uri se conectează, apoi eșuează la cereri individuale. Verifică scope-urile
+și expirarea:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Ghiduri conexe
 
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-- [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)
-- [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/)
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
-- [Set up Linear integration](/ro-RO/manual/ghiduri-practice/integrare-linear/)
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)
+- [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Configurează integrarea Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/)

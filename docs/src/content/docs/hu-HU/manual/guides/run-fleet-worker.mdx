@@ -1,166 +1,176 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Flotta-worker futtatása
+description: Építse fel, párosítsa és futtassa a cc_worker headless végrehajtót, hogy regisztráljon egy cc_server szerveren, és megjelenjen a flotta panelen.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Futtassa a `cc_worker`-t egy tartalék gépen, hogy végrehajtási kapacitást adjon a
+flottájához. Ez egy tisztán Dart bináris — Flutter-motor nélkül —, amely párosít
+egy `cc_server`-rel, deklarálja a gazdagép képességeit, szívveréseket küld,
+lízingelt feladatokat húz le, hajt végre, és visszastreameli a
+folyamateseményeket. Nem tart fenn tartós állapotot: egy felügyelő újraindítja,
+és az újra regisztrál.
 
-You need a running `cc_server` first — see [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
+Először egy futó `cc_server`-re lesz szüksége — lásd a
+[Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/) oldalt.
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+Egy párosított worker regisztrál, szívveréseket küld, és lízingelt feladatokra
+vár. A munkát a `fleet.submitJob` hívással adhatja be. Az ügynökök kiosztása ezen
+a szerveren nem a flottán keresztül történik; az útmutató sikerjelzése az, hogy a
+worker friss szívveréssel megjelenik a flotta panelen. Az indításkor regisztrált,
+folyamaton belüli worker futtatótérképe üres, ezért a rá helyezett feladat a
+`No local runner for job kind …` választ adja.
 
-## Prerequisites
+## Előfeltételek
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- A [Dart SDK](https://dart.dev/get-dart). Ez a repó az [fvm](https://fvm.app) eszközzel rögzíti az SDK-verzióját, ezért a parancsok elé írja oda az `fvm` előtagot.
+- Ez a repó klónozva a worker gépén.
+- Egy elérhető `cc_server` (fejlesztéshez loopback, éles környezetben LAN vagy távoli).
+- `git` a `PATH`-ban — a worker materializálja a repókat, és `git` próbákat futtat.
 
-## Step 1: Build the binary
+## 1. lépés: A bináris felépítése
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Ez egy önálló csomagot hoz létre a `./build/cli/<os_arch>/bundle/bin/cc_worker` helyen.
 
-## Step 2: Mint the worker's credential
+## 2. lépés: A worker hitelesítő adatának kiállítása
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+A `cc_server` csak olyan workert fogad el, amely párosítotteszköz-azonosítót és
+előre megosztott kulcsot mutat be — a loopback szerver esetében is. Ezeket a
+**szerver** gépén állítsa ki (`pair` parancs a szerver futása közben is kiadható;
+az új eszközt újraindítás nélkül felveszi):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Kiír egy `Device id` és egy `Pairing key` értéket — ezeket várja a `--device-id`,
+valamint a `--psk` / `--psk-file` / `CC_WORKER_PSK`.
 
-## Step 3: Start the worker
+## 3. lépés: A worker elindítása
 
-Against a paired server:
+Párosított szerver esetén:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Loopback szerver esetén (szintén párosítva — a `cc_server` mindig lefuttatja a
+PSK-kézfogást):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| Kapcsoló             | Leírás                                                                                                         | Alapértelmezés |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- | -------------- |
+| `--server <url>`     | cc_server URL (`ws://`/`wss://`; a `http(s)` és a hiányzó `/rpc` útvonal automatikusan átalakításra kerül). **Kötelező.** | —              |
+| `--name <name>`      | A kezelő felé megjelenő worker-név.                                                                            | gazdagép neve  |
+| `--device-id <id>`   | Állandó párosítotteszköz-azonosító, amelyet a worker azonosítójaként is használ.                               | `cc-worker`    |
+| `--psk-file <path>`  | Fájl, amelynek első nem üres sora a párosítási kulcs. Előnyben részesül a `--psk` helyett.                     | —              |
+| `--psk <key>`        | Párosítási kulcs a parancssorban. Látható a `ps` kimenetében és a shell előzményeiben — a bináris figyelmeztet rá. | —              |
+| `--max-jobs <n>`     | Kemény felső korlát arra, hogy ez a folyamat hány feladatot hajt végre egyidejűleg (pozitív egész szám).       | `4`            |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+A kulcs feloldási sorrendje: `--psk-file` → `CC_WORKER_PSK` → `--psk`. Ha minden
+forrást elhagy, a worker kihagyja a hitelesítési kézfogást; egy valódi `cc_server`
+ekkor megtagadja a munkamenetet (`auth_denied`), ahelyett hogy elfogadna egy
+hitelesítés nélküli workert. Az ismeretlen kapcsolók használati hibát okoznak
+(`exit 64`) — a `cc_server`-rel ellentétben ez a bináris a `package:args`
+csomagot használja, és nem hagyja figyelmen kívül az elgépeléseket.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+A `CC_WORKER_CACHE` felülírja a worktree-k materializálási gyorsítótárának
+könyvtárát (alapértelmezés: egy `cc_worker_cache` könyvtár a rendszer ideiglenes
+könyvtára alatt).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+A worker a `fleet.registerWorker` hívással regisztrál, majd 20 másodpercenként
+szívverést küld, és 2 másodpercenként lízingeket kérdez le. `SIGINT`/`SIGTERM`
+hatására áll le; tegye systemd vagy launchd alá, hogy összeomlás vagy
+újraindítás után magától újrainduljon és újra regisztráljon.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[Nincs protokoll-kompatibilitási ablak]
+Az a worker, amelynek flottaprotokoll-verziója eltér a szerverétől, **nem
+kompatibilis** minősítéssel regisztrál, soha nem kap lízinget, és maga a
+`cc_worker` is leáll a következővel: `Incompatible fleet protocol: worker speaks
+v… server speaks v… Upgrade cc_worker to match the server release`. A workert
+ugyanabból a kiadásból építse, mint a szervert.
 :::
 
-## Step 4: Verify it in the fleet panel
+## 4. lépés: Ellenőrzés a flotta panelen
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+Nyissa meg a **Megfigyelhetőség** nézetet az asztali vagy a webes alkalmazásban,
+váltson az **Élő** fülecskére, és görgessen a legaljára. A **Workerek** felsorolja
+az összes regisztrált workert a platformjával, magjaival, képességkulcsaival és
+az utolsó szívverésével; a **Feladatok** pedig a köztük szétosztott feladatokat.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+Az, hogy a worker friss szívveréssel megjelenik ott, visszaigazolja, hogy a
+párosítás és a regisztráció sikerült.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+Egy worker csempéjén **kiürítheti** a workert (befejezi az aktuális feladatokat,
+és nem vesz fel új lízinget), **folytathatja** a kiürítés alatt álló workert,
+**visszavonhatja** a hitelesítő adatait, vagy **eltávolíthatja** a sort.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+A worker- és feladatsorok a szerver `global.db` adatbázisában élnek — maga a
+worker a materializálási gyorsítótáron kívül semmit nem ír a lemezre.
 
-## What the worker advertises
+## Mit hirdet a worker
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+Regisztrációkor a worker automatikusan felderíti a képességeit, és az ütemező
+ezekhez illeszti a feladatokat. Ezeket nem kell kézzel beállítania:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **Operációs rendszer és architektúra** (`macos`/`linux`/`windows`, `arm64`/`x64`) — pontos próbák, visszaeséssel a `uname -m` / `PROCESSOR_ARCHITECTURE` értékre
+- **Magok és RAM** — pontos magszám; a RAM `0`-ra esik vissza, ha nem kérdezhető le
+- **`flutter`** — akkor van beállítva, ha egy Flutter SDK elérhető (először sima `flutter`, majd `fvm flutter`); a golden renderelési feladatok megkövetelik
+- **`sandbox`** — `native-macos` macOS-en, `native-linux` Linuxon. Ez elhelyezési támpont, nem ígéret: a worker azt a háttérrendszert hirdeti, amivel a platformja _rendelkezik_, de a futtatott feladatokat nem csomagolja bele egybe sem. A `cc_server`-rel ellentétben a `cc_worker` közvetlenül indítja a lízingelt feladatot
+- **`always-on` és `parallel`** — egy dedikált `cc_worker` mindig mindkettőt hirdeti, így alkalmas kiértékelési kötegekre és más, eldobható párhuzamos kapacitásra
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+A felderítés a lehetőségekhez mérten történik: ami nem kérdezhető le, az
+biztonságos alapértelmezésre esik vissza, ahelyett hogy megbuktatná az indulást.
 
-## What the worker would execute
+## Mit hajtana végre a worker
 
-The lease protocol carries six job kinds:
+A lízingprotokoll hat feladatfajtát hordoz:
 
-| Kind           | What it is                                     |
+| Fajta          | Mi ez                                          |
 | -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| `agentRun`     | Egyetlen ügynökfuttatás (kiosztás)             |
+| `pipelineStep` | Egy pipeline-lépés végrehajtása                |
+| `codeIndex`    | Egy repó kódindexének felépítése               |
+| `goldenRender` | UI vizuális golden renderelés (`flutter` szükséges) |
+| `benchmark`    | Teljesítményteszt futtatása                    |
+| `evalBatch`    | Egy kiértékelési köteg (a `parallel` kapacitást részesíti előnyben) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+A végrehajtás valódi, alfolyamatokat streamelő implementáció, nem egy teljes
+beágyazott ügynökfuttató. Amikor egy lízing `repoRemote` értéket hordoz, a worker
+`git clone --depth 1` parancsot futtat egy távoli elérési úttal és SHA-val
+kulcsolt gyorsítótár-könyvtárba, majd `git fetch` és `git checkout` parancsot
+hajt végre. `agentRun` esetén a lízing környezetében lévő `CC_JOB_COMMAND`
+parancsot futtatja a munkakönyvtárban, és eseményként streameli vissza a stdout és
+stderr kimenetet; `CC_JOB_COMMAND` nélkül visszhangozza a promptot, hogy a
+szállítás így is végig legyen gyakorolva. A többi fajta kis, valódi parancsokat
+futtat (`git rev-parse HEAD`, `git --version`) őszinte próbaként. A lízing
+környezetében lévő, feladathoz kötött hitelesítő adatokat minden alfolyamatba
+beinjektálja, és soha nem írja naplóba.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Az események kötegekben gyűlnek, és 250 ms-onként vagy 32 eseményenként íródnak
+ki; minden feladat egy kész eseménnyel és egy befejezési jelentéssel zárul. A
+modell a szívverésekből és rövid élettartamú lízingekből áll: ha egy worker
+elveszíti a kapcsolatot, a lízingje lejár, és a szerver begyűjti a feladatot
+újrapróbálkozásra. A workeren nincs tartós állapot, és a workerek között nincs
+konszenzus és nincs feladatlopás sem.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
-- [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/)
-- [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
+- [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/)
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/)
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/)

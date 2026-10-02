@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Espacios de trabajo y aislamiento
+description: Por qué un espacio de trabajo es una frontera de inquilino infranqueable, cómo la separación de bases de datos hace que esa frontera sea estructural y qué la cruza de forma deliberada.
 slug: es-MX/manual/conceptos/espacios-de-trabajo
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## ¿Qué es un espacio de trabajo?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Un espacio de trabajo es el inquilino de aislamiento de nivel superior de Control Center. Agrupa agentes, repositorios, espacios, tickets, memoria, pipelines y miembros en un contexto acotado. Todo lo que ocurre dentro de un espacio de trabajo se queda dentro de él.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Un espacio de trabajo típico corresponde a un proyecto o a una base de código. Es posible que tengas espacios de trabajo separados para «api-service», «frontend-v2» e «infrastructure».
 
-## Workspace-scoped data
+## Datos con ámbito de espacio de trabajo
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Las filas de un espacio de trabajo viven en el propio archivo SQLite de ese espacio de trabajo, en `<dataDir>/<workspaceId>/workspace.db`. Cada espacio de trabajo recibe un directorio en lugar de un archivo suelto, porque un espacio de trabajo acumula más que una base de datos —worktrees por conversación, los archivos de agentes y skills, credenciales de bots de chat— y darle una carpeta hace que todo eso viva y se elimine junto.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entidad                                              | Ámbito                                        |
+| ---------------------------------------------------- | --------------------------------------------- |
+| Agentes                                              | Pertenecen a exactamente un espacio de trabajo |
+| Repositorios                                         | Se registran en un espacio de trabajo (ver más abajo) |
+| Espacios, conversaciones y mensajes                  | Con ámbito de espacio de trabajo              |
+| Tickets, proyectos, planes, orquestaciones           | Con ámbito de espacio de trabajo              |
+| Hechos de memoria, políticas, dominios, permisos de acceso | Con ámbito de espacio de trabajo       |
+| Ejecuciones de pipeline, plantillas, disparadores    | Con ámbito de espacio de trabajo              |
+| Estado de las pull requests, espacios de revisión, cohortes de revisión | Con ámbito de espacio de trabajo |
+| Registros de ejecución de agentes y memoria de trabajo | Con ámbito de espacio de trabajo            |
+| Miembros, invitaciones, permisos por repositorio     | Con ámbito de espacio de trabajo              |
+| Símbolos y aristas del grafo de código               | Con ámbito de `repoId` dentro del archivo del espacio de trabajo |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+La mayoría de estas filas llevan una columna `workspaceId`; los archivos de base de datos independientes imponen el aislamiento. Consulta la invariante de aislamiento que viene más abajo.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Los repos tienen ámbito de espacio de trabajo; la identidad entre espacios de trabajo es por ruta
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+La fila de un repo vive en el propio archivo de base de datos de su espacio de trabajo —el archivo _es_ el ámbito, así que la tabla no tiene columna `workspaceId` ni tabla de unión.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Agregas un repo a un espacio de trabajo en Ajustes → Espacio de trabajo → Repositorios. Registrar el mismo checkout en dos espacios de trabajo crea dos filas independientes con dos identificadores; la identidad de un repo _entre_ espacios de trabajo es por ruta del sistema de archivos (o por propietario/nombre de GitHub), nunca por identificador.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+El registro es estricto: la ruta debe estar dentro de un árbol de trabajo de git, debe tener un remoto `origin` y ese remoto debe apuntar a un host de código compatible (github.com, gitlab.com o bitbucket.org). El host de código se lee del remoto y se guarda en el repo, así que un espacio de trabajo puede contener repos de los tres. Cualquier otra cosa se rechaza. El explorador de carpetas en el que eliges lista el sistema de archivos del **host del servidor**, limitado a la lista de rutas permitidas de `--repo-roots` del servidor (que de forma predeterminada es el directorio personal del usuario del servidor).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Quitar un repositorio de un espacio de trabajo elimina la fila de inmediato y propaga el borrado a sus símbolos de código, aristas, archivos, puntos de control del índice y permisos por miembro. El checkout en disco queda intacto.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+El grafo de código vive en el mismo archivo, indexado por `repoId`, porque distintos espacios de trabajo pueden tener el mismo repositorio en ramas diferentes con código distinto.
 
-## The isolation invariant
+## La invariante de aislamiento
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Las filtraciones de datos entre espacios de trabajo se tratan como errores. El aislamiento es **estructural** y se aplica en varios niveles:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Capa de base de datos.** Cada espacio de trabajo tiene su propio archivo SQLite, entregado por `WorkspaceDatabaseManager.of(workspaceId)`. Una base de datos de espacio de trabajo no declara `users`, `workspaces` ni las tablas de ningún otro espacio de trabajo, así que una lectura entre espacios de trabajo no es un error que puedas llegar a escribir: no compila. Los repositorios resuelven su DAO en cada llamada en lugar de cachear uno y, como todo método de repositorio recibe un `workspaceId` obligatorio, el espacio de trabajo nunca se puede inferir ni dejar de forma predeterminada.
+- **El identificador del espacio de trabajo es un segmento de ruta.** Como el identificador se convierte en un nombre de directorio, debe coincidir con un patrón seguro de un solo segmento (empieza con un alfanumérico y sigue con alfanuméricos, puntos, guiones bajos y guiones; sin `..`). En todo el producto los identificadores son UUID. Cualquier otra cosa lanza una excepción en lugar de sanearse: esa es la protección contra el salto de ruta, y falla de forma ruidosa en vez de escribir los datos de un espacio de trabajo en una ruta que eligió alguien más.
+- **Defensa en profundidad.** Las columnas `workspaceId` siguen ahí y se siguen escribiendo. Redundantes dentro de un archivo, mantienen sin cambios los disparadores del feed de sincronización, los índices FTS y las formas de fila existentes, y hacen que un archivo se describa a sí mismo cuando se inspecciona por separado, que es en lo que se apoyan la exportación y la importación.
+- **Capa de dominio.** Los servicios que modifican entidades por identificador validan `entity.workspaceId == workspaceId` en un único punto de control antes de continuar y lanzan `WorkspaceMismatchException` cuando no coinciden: el fallo ruidoso para un identificador que llegó desde el contexto equivocado. Denegar de forma ruidosa importa: un no-op silencioso oculta el error, y continuar filtra.
+- **Capa RPC.** El despachador de RPC de repos es el punto de control. Toda operación con ámbito de espacio de trabajo debe llevar `workspace_id` en sus propios argumentos: no hay ningún «espacio de trabajo actual» por sesión que se pueda filtrar, y un identificador desconocido se rechaza como no encontrado _antes_ de que nada abra una base de datos, así que un identificador incorrecto no puede materializar un `workspace.db` fantasma. Las operaciones genuinamente globales (el feed de noticias, la cola de la flota) se declaran sin ámbito como una decisión explícita y revisada. Las herramientas MCP siguen la misma regla: cualquier herramienta que toque datos con ámbito de espacio de trabajo requiere `workspace_id`.
+- **La expansión entre espacios de trabajo es enumerable.** Responder una pregunta sobre varios espacios de trabajo implica abrir varias bases de datos. Esa expansión queda confinada a un único auxiliar, `CrossWorkspaceQueries`, de modo que la lista completa de lo que cruza legítimamente la frontera vive en los puntos de llamada de un solo archivo en lugar de difuminarse detrás de comentarios de documentación. Esos puntos de llamada son: la agregación de todo el servidor, los reconciliadores del arranque, los barridos de retención y de recolección de basura, el respaldo, los enrutadores de eventos — y la consulta de pertenencia que viene más abajo.
+- **El acceso solo por identificador no basta.** Buscar una entidad por su UUID no demuestra que pertenezca al espacio de trabajo de quien llama. La separación de archivos hace inalcanzable el archivo equivocado; la validación de la capa de dominio atrapa un identificador equivocado que llegue a través de un archivo legítimo.
 
-## Membership, not the pairing key, is what grants access
+## La pertenencia, y no la clave de emparejamiento, es lo que concede el acceso
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Tener una credencial de dispositivo autentica a un _dispositivo_. No autoriza nada dentro de un espacio de trabajo. Toda operación con ámbito de espacio de trabajo resuelve el rol de pertenencia de quien llama y aplica un mínimo derivado del tipo de operación —una lectura necesita `guest`, una mutación necesita `member` y una operación destructiva necesita `admin`—, y las operaciones que exponen contenido de repos comprueban además el permiso por repositorio de quien llama. Una clave de emparejamiento válida sin pertenencia recibe `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+La consecuencia para el aislamiento es elegante: las filas de pertenencia viven en el archivo _del propio espacio de trabajo_, así que «¿quién está en este espacio de trabajo?» es una lectura con ámbito corriente. La pregunta inversa —«¿en qué espacios de trabajo estoy?»— está repartida entre archivos por definición, así que es una de las pocas expansiones autorizadas de `CrossWorkspaceQueries` y es lo que ejecuta el selector de espacios de trabajo antes de que se haya elegido ninguno.
 
-See [Multiplayer](/es-MX/manual/conceptos/multijugador/) for the role ladder and repo grants.
+Consulta [Multijugador](/es-MX/manual/conceptos/multijugador/) para la escala de roles y los permisos por repositorio.
 
-## The global registry
+## El registro global
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+No todo tiene ámbito de espacio de trabajo. Una segunda base de datos, `<dataDir>/global.db`, contiene lo que es genuinamente de todo el servidor:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- el **registro de espacios de trabajo**, para que el conmutador pueda listar todos los espacios de trabajo sin abrir un solo archivo de espacio de trabajo, y para que el nombre, el logotipo, el propietario, el orden manual y el marcador de borrado lógico de un espacio de trabajo vivan fuera del archivo que describen;
+- la **identidad**: usuarios, preferencias de usuario y dispositivos emparejados, porque una persona es un único usuario en todos los espacios de trabajo y un dispositivo emparejado sobrevive al borrado de un espacio de trabajo;
+- la **cola de la flota** (workers, trabajos, registro de colocación), cuyo planificador contrasta toda la cola con cada worker en cada ciclo;
+- el **feed de noticias**, que es por usuario (no por espacio de trabajo): agregar una fuente te sigue a todos los espacios de trabajo;
+- **`workspace_routes`**, el índice previo a la autenticación que responde «¿qué espacio de trabajo es dueño de esta clave?» para los puntos de entrada que llegan solo con un secreto o un identificador opaco (un hash de invitación, un token de webhook, un enlace directo) y sin espacio de trabajo. Un fallo ahí es un no encontrado; deliberadamente no hay ningún recorrido de reserva;
+- **ajustes e identidad de toda la instalación**: el identificador de la instalación, los ajustes de nivel de host, las conexiones SSO y las políticas de acciones administradas (un tope de toda la instalación que solo puede endurecer las barandillas de los espacios de trabajo).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+El arranque abre únicamente este archivo. Los archivos de los espacios de trabajo se abren de forma perezosa en el primer acceso, así que el costo de inicio se mantiene constante por mucha historia que acumulen los espacios de trabajo, y el `quick_check` de cada archivo se paga en el primer uso y no en el camino hasta el aviso de preparado.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Un archivo de espacio de trabajo solo contiene una `workspace_meta` de una sola fila para identificarse a sí mismo (su identificador, la instalación que lo creó, la versión del esquema con la que se creó y cuándo). Todo lo descriptivo de un espacio de trabajo está en el registro.
 
-## Creating a workspace
+## Crear un espacio de trabajo
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Crear un espacio de trabajo hace más que insertar una fila en el registro. En una sola operación, el servidor marca al usuario que lo crea como `ownerUserId`, registra la pertenencia de ese usuario con el rol de propietario y publica un evento de dominio `WorkspaceCreated`. Los escuchadores de ese evento siembran entonces, de forma idempotente y en segundo plano:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- un **agente CEO** y cuatro especialistas —`qa`, `architect`, `engineer`, `librarian`—, y los especialistas reportan al CEO;
+- las **plantillas de pipeline integradas** y sus disparadores (los disparadores por evento y manuales vienen habilitados; los programados son opcionales, salvo el barrido diario de recolección de basura de worktrees);
+- las **suites de evaluación iniciales**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/es-MX/manual/conceptos/modelo-de-agentes/).
+Esto ocurre en _todos_ los espacios de trabajo, no solo en el primero. Los agentes sembrados se crean sin adaptador, así que se ejecutan en **Control Center (built-in)** con el modelo predeterminado de Anthropic (`claude-opus-4-8` salvo que fijes otro) hasta que establezcas un adaptador y un modelo para cada agente en Ajustes → Espacio de trabajo → Agentes. Consulta [El modelo de agentes](/es-MX/manual/conceptos/modelo-de-agentes/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+La escritura de la pertenencia del propietario importa más de lo que parece: sin ella, el espacio de trabajo recién creado no tendría miembros y se denegaría toda llamada con ámbito de espacio de trabajo que hiciera después quien lo creó.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Los agentes no pueden crear un espacio de trabajo]
+No existe ninguna herramienta MCP `create_workspace`. Las personas crean un espacio de trabajo mediante `workspace.create` (punto de control que solo admite el nombre) o `workspace.upsert` (registro completo, que también se usa para las actualizaciones). Ambos marcan al usuario que lo crea como `owner` y publican `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Eliminar, exportar e importar
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Eliminar un espacio de trabajo **marca la fila del registro y desvincula el directorio**. El espacio de trabajo desaparece de todas las listas y búsquedas. La fila del registro permanece (con borrado lógico), de modo que el identificador sigue siendo conocido para el respaldo y el mantenimiento, pero `workspace.delete` elimina de inmediato el directorio de ese espacio de trabajo —base de datos, worktrees, archivos de agentes y lo demás— mediante `WorkspaceDatabaseManager.dropAndClose`. Solo el **propietario** del espacio de trabajo puede eliminarlo.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Como un espacio de trabajo es un archivo, pasar un espacio de trabajo de un lugar a otro es una operación de archivo en lugar de un volcado tabla por tabla:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` es un único `VACUUM INTO`: una instantánea coherente y desfragmentada tomada dentro de una transacción de lectura mientras el servidor sigue atendiendo.
+- `workspace.import` adopta un archivo así y reemplaza lo que el espacio de trabajo de destino contenga en ese momento. La `workspace_meta` incrustada permite que una importación distinga «mi propio archivo, readoptado» de «un archivo de otra instalación» (esto último está permitido, pero se registra en lugar de pasar inadvertido).
+- `server.backupNow` hace una instantánea de toda la instalación en un directorio con marca de tiempo que replica el directorio de datos activo —`manifest.json`, `global.db` y un `<workspaceId>/workspace.db` por espacio de trabajo—, así que restaurar es copiarlo de vuelta.
+- `server.listBackups` vuelve a leer ese directorio, de la instantánea más reciente a la más antigua, con el tamaño y la lista de espacios de trabajo de cada instantánea. Una instantánea cuyo manifiesto falte o que nombre archivos que no están se sigue reportando, marcada como incompleta: ocultarla es como un operador llega a creer que tiene un respaldo que en realidad no tiene.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Las operaciones de respaldo están en **Ajustes → Servidor → Copia de seguridad y restauración**:
+**Crear copia ahora** toma una instantánea de la instalación, la lista muestra qué instantáneas están
+completas y permite al propietario de la instalación eliminar una tras confirmarlo, y cada
+espacio de trabajo ofrece exportación e importación. El pipeline integrado **Workspace backup**
+toma únicamente la base de datos de ese espacio de trabajo con una programación semanal y elimina sus propios
+respaldos más antiguos que la antigüedad de retención configurada. Restaurar un espacio de trabajo desde una
+instantánea de la instalación es `workspace.import` apuntando al
+`<workspaceId>/workspace.db` de la instantánea; restaurar una instalación completa sigue siendo una
+recopia del directorio de la instantánea con el servidor detenido.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/es-MX/manual/referencia/respaldo/#what-a-backup-does-not-contain) has the full table.
+Lo que ninguno de ellos transporta es el resto del directorio del espacio de trabajo. Un espacio de trabajo acumula más que una base de datos —imágenes pegadas, archivos de skills y de agentes, credenciales de chat, worktrees— y la exportación y la importación mueven el **archivo**, así que todo lo que está junto a él se queda donde está. Eso es deliberado en el caso de las credenciales y prescindible en el de los worktrees; para el resto es un límite que conviene conocer y no una función. La [referencia de respaldo](/es-MX/manual/referencia/respaldo/#what-a-backup-does-not-contain) tiene la tabla completa.
 
-## Moving a backup between the server and your device
+## Mover un respaldo entre el servidor y tu dispositivo
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/es-MX/manual/referencia/respaldo/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Todas las operaciones anteriores hablan en rutas del **servidor**, lo cual es una respuesta completa solo cuando el servidor es tu propia computadora. Tres rutas HTTP firmadas —[`/backup/workspace`, `/backup/snapshot` y `/backup/restore`](/es-MX/manual/referencia/respaldo/#transfer-routes)— transportan los bytes para cualquier otra topología, por el mismo carril autenticado que ya usan el proxy de medios y el almacén de imágenes. En la página esto es un botón **Descargar** junto a cada exportación y cada instantánea (tú eliges dónde acaba) y **Elegir un archivo y subirlo** para restaurar desde un archivo que esté en la computadora que estás usando. La subida es la que funciona cuando el servidor no es tu computadora: `workspace.import` necesita que el archivo ya esté en el host, y así es como llega ahí.
 
-Three properties are worth knowing:
+Vale la pena conocer tres propiedades:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Una descarga genera una copia nueva y el servidor no conserva nada de ella.** Descargar no es «traer el archivo que creó el botón de exportación»: exporta de nuevo, transmite eso y lo elimina. La respuesta es `no-store` con `Accept-Ranges: none` por la misma razón: reanudar un rango empalmaría dos exportaciones distintas en un solo archivo que parece válido y no lo es.
+- **Una subida se transmite a disco en streaming, nunca se almacena en búfer**, en ambos extremos, y la copia preparada se elimina en todas las salidas posibles, incluido un rechazo. La base de datos de un espacio de trabajo no es una captura de pantalla.
+- **Una conexión retransmitida no tiene origen HTTP**, así que ahí los controles de transferencia están deshabilitados con una nota que explica por qué. Todo lo que habla en rutas del lado del servidor sigue funcionando a través del relé; solo los carriles de bytes necesitan una conexión directa.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Qué rutas son de quién]
+Las rutas que la página *muestra* —el directorio de la instantánea, el archivo que escribió una exportación, el origen que lee una importación— están en la computadora que ejecuta `cc_server`. La ruta que reporta una **descarga** está en la computadora donde estás sentado. Esa distinción es la razón de que existan ambas: la primera es lo que necesita un script de mantenimiento o una sesión de ssh, y la segunda es lo que necesita una persona que reúne un respaldo.
 :::
 
-## Multiple workspaces
+## Varios espacios de trabajo
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Puedes ejecutar varios espacios de trabajo en paralelo. Cada uno opera de forma independiente: los agentes de un espacio de trabajo no pueden enviar mensajes a los agentes de otro, no pueden leer la memoria de otro espacio de trabajo ni ver sus tickets. La resolución de destinatarios para la mensajería entre agentes es exacta y nunca cruza un espacio de trabajo.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+No hay ningún panel entre espacios de trabajo. La superficie de analíticas en `/workspaces/:workspaceId/observability` se suscribe a un feed global acotado de ejecuciones recientes y lo reduce de inmediato al espacio de trabajo activo, así que lo que ves ahí es un espacio de trabajo a la vez. Las únicas superficies genuinamente multi-espacio de trabajo que una persona toca son el selector de espacios de trabajo y el conmutador.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Un límite práctico que conviene conocer: un espacio de trabajo que alguien está usando se queda abierto, no hay LRU. Pasados 32 de esos, el servidor advierte en lugar de rechazar, porque cada archivo abierto mantiene un isolate en segundo plano y una caché de páginas. La expansión entre espacios de trabajo abre archivos de forma transitoria y los cierra después si nada más los ha reclamado.
 
-## Related concepts
+## Conceptos relacionados
 
-- [Multiplayer](/es-MX/manual/conceptos/multijugador/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/es-MX/manual/conceptos/modelo-de-agentes/): agents belong to exactly one workspace
-- [Memory and knowledge](/es-MX/manual/conceptos/memoria-y-conocimiento/): memory is workspace-scoped
-- [Architecture](/es-MX/manual/conceptos/arquitectura/): where the databases sit in the client/server split
-- [Back up and restore](/es-MX/manual/guias/respaldar-y-restaurar/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/es-MX/manual/referencia/respaldo/): every operation, route, manifest field and limit
-- [Add repositories](/es-MX/manual/guias/agregar-repos/): registering a checkout into a workspace
+- [Multijugador](/es-MX/manual/conceptos/multijugador/): la pertenencia, los roles y los permisos por repositorio — la mitad de acceso del aislamiento
+- [El modelo de agentes](/es-MX/manual/conceptos/modelo-de-agentes/): los agentes pertenecen a exactamente un espacio de trabajo
+- [Memoria y conocimiento](/es-MX/manual/conceptos/memoria-y-conocimiento/): la memoria tiene ámbito de espacio de trabajo
+- [Arquitectura](/es-MX/manual/conceptos/arquitectura/): dónde se ubican las bases de datos en la separación cliente/servidor
+- [Respaldar y restaurar](/es-MX/manual/guias/respaldar-y-restaurar/): tomar una instantánea, mover un espacio de trabajo, conservar copias en otro lugar
+- [Respaldo, exportación e importación](/es-MX/manual/referencia/respaldo/): cada operación, ruta, campo del manifiesto y límite
+- [Agregar repos](/es-MX/manual/guias/agregar-repos/): registrar un checkout en un espacio de trabajo

@@ -1,132 +1,135 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: محاسبهٔ بازبینی (گروه‌ها، محورها و دیف‌های قطعی)
+description: آنچه گذرِ محاسبهٔ بازبینی سمت سرور تولید می‌کند — گروه‌ها، دیف‌های قرارداد API و بصری، دروازه‌های هر محور — و اینکه چگونه در زبانهٔ بازبینی جمع می‌شود.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+زبانهٔ **بازبینی** یک PR، نخست پیشرفت زندهٔ پایپ‌لاین بازبینی است هنگامی که کار
+می‌کند، و سپس آرتیفکتی که منتشر کرده، همراه با کنش‌های روی آن. یک زبانه با دو
+حالت، چون این دو در دو زمان یک چیزند. زبانهٔ پیش‌فرض نیست: هیچ PRی بازبینی ندارد
+تا وقتی کسی درخواستش کند، پس **پرسش از AI** همان چیزی است که آن را باز می‌کند.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+پشت آن زبانه، `cc_server` گروه‌های فایل را می‌سازد، محورهای قطعی را اجرا می‌کند
+و آن‌ها را از طریق عملیات‌های RPC در `review_studio.*` ارائه می‌دهد (`cohorts`،
+`blastRadius`، `cohortImpact`، `ciSignals`، `dependencyDiffs`،
+`setContractDecision`، `approveVisual`، `compute` و جفت‌های `watch*`شان).
+یک چیدمان ماندگار که هنوز نام `pr.reviewStudio` را دارد، همین
+زبانهٔ بازبینی را باز می‌کند.
 
-On the Review tab:
+در زبانهٔ بازبینی:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- عامل یکپارچه‌ساز یک آرتیفکت گفتگوی معمولی را با `publish_artifact` منتشر
+  می‌کند، پس زبانه آن را از همان نمایشگر آرتیفکتی رندر می‌کند که یک حباب گفتگو
+  باز می‌کند — هیچ نسخهٔ بازبینی‌شکلی از سیستم آرتیفکت وجود ندارد.
+- یافته‌ها در نواری کنار آن می‌نشینند و حکم، به‌جای ترویس‌های داشبورد، روی نواری
+  باریک بالای آرتیفکت سوار می‌شود.
+- وقتی head مربوط به PR از بازبینی جلو بزند، بنری از کهنه‌بودن بازبینی ظاهر
+  می‌شود.
 
-See [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) for the flow and
-[Review and merge a PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/) for acting on it.
+برای دیدن روند، [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) را ببینید
+و برای اقدام بر مبنای آن، [بازبینی و ادغام یک PR(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/).
 
-## Cohorts
+## گروه‌ها
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+گروه‌ها فایل‌های تغییرکردهٔ PR را به سبدهای محتوامحور از فایل‌هایی دسته‌بندی
+می‌کنند که از نظر معنا به هم تعلق دارند، و بر اساس اثر مرتب می‌شوند تا پرخطرترین
+گروه اول خوانده شود. آن‌ها با هر تغییر head-SHA دوباره محاسبه و یک‌جا جایگزین
+می‌شوند؛ هر گروه یک کلید پایدار نسبت به push دارد، پس یک خلاصه و پیشرفت بازبینی
+از rebase جان سالم به در می‌برند.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+اگر مخزن ایندکس کد نشده باشد، گروه‌ها به گروه‌بندی مسیری عقب‌گرد می‌کنند. برای
+ایندکس‌کردن یک مخزن، از **تنظیمات → فضای کاری → مخزن‌ها** استفاده کنید — هر ردیف
+مخزن یک کنش **ایندکس کد** دارد که پایپ‌لاین `index_code` را اجرا می‌کند و پیشرفت
+را در همان‌جا گزارش می‌دهد.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+گراف کد تنها زبان‌هایی را تجزیه می‌کند که گرامر عرضه‌شده‌ای دارند (Dart، JS/TS، PHP،
+Python، Rust، Zig، C/C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly،
+MATLAB، Ada). یک مخزن به هر زبان دیگری هرگز نمی‌تواند گروه‌های معنایی تولید کند،
+هر چند بار هم که ایندکسش کنید.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+یک عامل می‌تواند برای یک گروه خلاصه‌ای markdown با `set_cohort_summary` ثبت کند
+و یک دیاگرام گام‌به‌گام ساخت‌یافته با `add_review_diagram` ضمیمه کند — یک شیء
+نوع‌دارِ تسلسل، رابطهٔ موجودیت یا ماشین حالت، نه متن mermaid. هر یال با گراف کد
+واقعی بررسی متقابل می‌شود، و یالی که گراف نمی‌تواند تأییدش کند، به‌جای اینکه
+به‌عنوان واقعیت رسم شود، تأییدنشده علامت می‌خورد.
 
-## The API-contract axis
+## محور قرارداد API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+محور قرارداد تنها فایل‌های مشخصات **صریح** را دیف می‌کند. با شش نام پیش‌فرض تطبیق
+می‌دهد — `openapi.yaml`، `openapi.yml`، `openapi.json`، `swagger.yaml`،
+`swagger.yml`، `swagger.json` — به‌علاوهٔ هر فایل تغییرکرده‌ای که نامش `openapi`
+یا `swagger` دارد و به `.yaml`، `.yml` یا `.json` ختم می‌شود. قراردادی که از کد
+هندلر استنتاج شود خارج از دامنه است و شِماهای GraphQL دیف نمی‌شوند.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+هر تغییر طبقه‌بندی می‌شود — افزودن، حذف و اصلاح endpoint، پارامتر، شِما و پاسخ —
+و یک شدت حمل می‌کند: **شکننده** (endpoint یا پارامتر حذف‌شده، نوع تنگ‌ترشده،
+پارامتر اجباری جدید)، غیرشکننده (افزودنی)، یا اطلاعاتی. یک تغییر ردشده دروازهٔ
+قرارداد را رد می‌کند، و همچنین یک تغییر شکننده که بی‌تصمیم رها شده باشد؛ تغییر
+شکننده اما تأییدشده هشدار می‌دهد؛ و اگر هیچ تغییر شکننده‌ای نباشد، قبول می‌شود.
+دیفی که **مشتق (مشورتی)** علامت خورده باشد هرگز دروازه نمی‌گذارد.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+تأیید یا رد یک تغییر همان `review_studio.setContractDecision` است.
 
-## The visual axis
+## محور بصری
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+اگر PR کامپوننت‌های رابط کاربری را در یک مخزن Flutter با یک اپ Widgetbook عوض کند،
+گذرِ محاسبه کامپوننت‌های تغییرکرده را پیش و پس از تغییر، از طریق یک گذر گلدنِ
+بدون رابط با `flutter test` در worktreeهای base و head آن PR رندر می‌کند، و سپس
+پیکسل‌ها را دیف می‌کند.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[به یک Flutter SDK روی میزبان سرور نیاز دارد]
+سرورِ Dart خالص نمی‌تواند ودجت‌های Flutter را درون‌فرایندی رندر کند، پس `flutter test`
+را به‌صورت فرایند بیرونی صدا می‌زند. SDK باید روی ماشینی نصب باشد که `cc_server`
+را اجرا می‌کند — نه روی کلاینت شما. بدون آن، محور **unavailable** را با دلیل
+"no Flutter SDK on host" گزارش می‌دهد. هرگز گذری را که به دست نیاورده گزارش نمی‌کند.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+عکس‌های فوری که **changed** یا **removed** علامت خورده‌اند، دروازهٔ بصری را تا
+تأیید نگه می‌دارند؛ عکس‌های فوری **unchanged**، **added** و **approved** آن را
+باز می‌کنند. عدم دسترسی یکی از چهار دلیل را دارد: Flutter SDK روی میزبان نیست،
+اپ Widgetbook در مخزن نیست، مورد استفاده‌ای قابل‌تست گلدن وجود ندارد، یا خطای
+هارنس گلدن.
 
-Approving an intended change is `review_studio.approveVisual`.
+تأیید یک تغییر مقصود همان `review_studio.approveVisual` است.
 
-## The axes and the verdict
+## محورها و حکم
 
-| Axis         | Driven by                      |
+| محور         | مبتنی بر                       |
 | ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| درستی        | عامل‌های بازبین (توکن‌ها)      |
+| امنیت        | عامل‌های بازبین (توکن‌ها)      |
+| شکاف تست     | عامل‌های بازبین (توکن‌ها)      |
+| بصری         | قطعی (هارنس گلدن)              |
+| قرارداد API  | قطعی (دیف مشخصات)              |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+سه محور توکنی وقتی ثبت می‌شوند که یک عامل راهبر `finalize_review` را صدا بزند؛ دو
+محور قطعی را گذر محاسبه ثبت می‌کند.
 
-Each axis reports one of:
+هر محور یکی از این‌ها را گزارش می‌کند:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| وضعیت          | معنا                                |
+| -------------- | ----------------------------------- |
+| **Pass**        | اجرا شد، چیز بازدارنده‌ای یافت نشد    |
+| **Warn**        | اجرا شد، دغدغه‌های غیربازدارنده        |
+| **Fail**        | اجرا شد، یک مشکل بازدارنده یافت       |
+| **Partial**     | اجرا شد اما کامل نشد؛ نتایج ناقص‌اند  |
+| **Unavailable** | اصلاً نتوانست اجرا شود                |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+تنها **pass** و **warn** یک محور دروازه‌بانی‌شده را باز می‌کنند. **Partial** و
+**unavailable** عمداً از **fail** متمایزند و هیچ‌یک دروازه‌ای را باز نمی‌کند.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+محورها در **Ship**، **Hold** یا **Block** جمع می‌شوند و تنها می‌توانند حکم را
+_سخت‌تر_ کنند — هرگز تخفیف نمی‌خورد. یک محور دروازه‌بانی‌شده که **fail** شود
+**Block** را تحمیل می‌کند؛ محوری که **partial** یا **unavailable** باشد حداقل
+**Hold** را تحمیل می‌کند. پس محور بازدارنده‌ای که نتوانسته اجرا شود حکم را
+_نگه می‌دارد_: نبود شواهد هرگز دروازه‌ای را سبز نمی‌کند.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+حکم در زبانهٔ بازبینی همان است که `finalize_review` ثبت کرده.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/)
-- [Dispatch reviewer agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/)
-- [Review and merge a PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
-- [Search code with the code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/)
+- [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/)
+- [اعزام عامل‌های بازبین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/)
+- [بازبینی و ادغام یک PR(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
+- [جستجوی کد با گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/)

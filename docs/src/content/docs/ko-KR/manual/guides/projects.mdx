@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: 프로젝트로 작업 정리
+description: 사이드바에서 티켓을 프로젝트로 묶고, 진행 상황을 추적하고, 끝난 프로젝트를 보관하세요.
 slug: ko-KR/매뉴얼/사용-가이드/프로젝트
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+프로젝트는 공동 목표를 향한 티켓을 워크스페이스 범위로 묶은 그룹입니다.
+프로젝트는 Control Center에만 있으며 Linear 같은 외부 공급자와는 절대
+동기화되지 않습니다.
 
-## Create a project
+## 프로젝트 만들기
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. 워크스페이스 사이드바에서 **티켓** 그룹을 펼칩니다. 여기에는
+   **모든 티켓**, 보관되지 않은 프로젝트마다 한 개씩의 행, 그다음
+   **새 프로젝트**가 나열됩니다.
+2. **새 프로젝트**를 클릭합니다.
+3. **프로젝트 이름**과 선택 사항인 **설명**을 입력하고 **색상**을 고릅니다.
+4. **프로젝트 만들기**를 누릅니다.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+새 프로젝트의 개요 화면으로 이동하며, 프로젝트가 **티켓** 아래의 사이드바
+행으로 나타납니다.
 
-## Add tickets to a project
+## 프로젝트에 티켓 추가
 
-Project is a single-ticket field, set in either of two places:
+프로젝트는 단일 티켓 필드이며, 다음 두 곳 중 하나에서 설정합니다.
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- 티켓을 열고 속성 레일에서 **프로젝트**를 설정합니다.
+- 목록에서 티켓을 마우스 오른쪽 버튼으로 클릭하고 **프로젝트** 하위 메뉴를
+  사용합니다.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+속성 레일의 선택기에서도 **새 프로젝트**를 제공하므로, 그 자리에서 만든
+프로젝트에 티켓을 넣을 수 있습니다. **프로젝트 없음**은 필드를 비웁니다.
 
-A ticket belongs to at most one project.
+티켓은 최대 하나의 프로젝트에 속합니다.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[프로젝트는 일괄 작업이 아닙니다]
+티켓을 여러 개 선택할 때 나타나는 플로팅 바에서는 상태, 우선순위, 담당자,
+레이블, 삭제를 다룹니다. 여기에는 프로젝트 칩이 없으므로, 여러 티켓을
+분류하려면 하나씩 처리해야 합니다.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+프로젝트에서 시작할 수도 있습니다. 프로젝트 개요의 **새 티켓**은 티켓을
+만들고 그 프로젝트에 넣습니다.
 
-## Read project progress
+## 프로젝트 진행 상황 확인
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+사이드바 행에서 프로젝트를 열거나
+`/workspaces/<workspace-id>/projects/<project-id>`로 이동합니다.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+개요에는 프로젝트의 글리프와 이름, 상태 배지, 설명, 그리고 전체 대비 완료
+진행률 표시줄이 표시됩니다. 그 아래에는 프로젝트의 티켓이 상태별로
+그룹화되어 있습니다.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+그 밖의 항목은 집계하지 않습니다. 담당자별 분석도, 우선순위 분포도 없습니다.
+그러한 정보가 필요하면 대신 기본 티켓 목록을 필터링하세요.
 
-## Change project status
+## 프로젝트 상태 변경
 
-Projects have three states:
+프로젝트에는 세 가지 상태가 있습니다.
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| 상태        | 의미                 |
+| ----------- | -------------------- |
+| **진행 중** | 작업이 진행 중입니다 |
+| **완료됨**  | 모든 작업이 끝났습니다 |
+| **보관됨**  | 기록용 참조          |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+프로젝트 헤더의 **⋯** 메뉴를 사용합니다. 여기에서 **프로젝트 편집**,
+**완료로 표시** / **진행 중으로 표시**, **보관** / **복원**, **프로젝트
+삭제**를 제공합니다.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+보관하면 사이드바 목록과 티켓 선택기에서 프로젝트가 숨겨집니다. 되돌릴 수
+있으며 — **복원**은 프로젝트를 다시 진행 중으로 되돌립니다 — 다만 보관된
+동안에는 URL로만 프로젝트에 접근할 수 있습니다.
 
-## Projects created for you
+## 자동으로 만들어지는 프로젝트
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/).
+오케스트레이션을 승인하면 프로젝트가 만들어지고, 직접 넣은 모든 항목과 함께
+상위 티켓이 그 프로젝트 아래에 들어갑니다. 생성된 작업 항목은 티켓 행이
+아니라 파이프라인 단계이므로 프로젝트 보드에 나타나지 않습니다. 이것이
+유일한 자동 경로입니다. 어떤 파이프라인 노드도 티켓을 만들지 않으므로
+파이프라인이 프로젝트를 채울 수 없습니다.
+[오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)을
+참고하세요.
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[프로젝트는 운영자 표면입니다]
+앱에서 프로젝트를 만들고, 나열하고, 업데이트하고, 삭제합니다. 에이전트에게는
+프로젝트 도구가 없습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
-- [Delegate work to agents](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
+- [에이전트에 작업 위임](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
 
-## Related concepts
+## 관련 개념
 
-- [Tickets](/ko-KR/매뉴얼/개념/티켓/)
+- [티켓](/ko-KR/매뉴얼/개념/티켓/)

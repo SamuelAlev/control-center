@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: 领域事件
+description: 全部 53 个领域事件的完整目录、它们的载荷，以及消费这些事件的服务端订阅方。
 slug: zh-CN/手册/参考/领域事件
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## 事件总线
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` 是一个进程内的广播式发布/订阅总线。发布方调用 `publish(event)`；订阅方消费带类型的 `on<T>()` 流。每个事件都实现 `DomainEvent`，并携带 `occurredAt`。
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**总线运行在 `cc_server` 内部。** 每个发布方和每个存活的订阅方都在其中。没有任何客户端能看到这条总线——服务器会把一个经过筛选的子集作为 `notifications/*` JSON-RPC 帧转发出去，并按订阅方所属的工作区成员关系逐帧过滤。
 
-| Measure                                                     | Count                                       |
+| 指标                                              | 数量                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| 具体事件类                                      | 53                                          |
+| 源文件（`packages/cc_domain/lib/core/domain/events/`） | 14（外加 `domain_event_bus.dart`）           |
+| 从不直接发布的抽象基类            | 1（`TaskLifecycleEvent`，一个密封层级） |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+下文目录中的每个事件都位于那一个目录里；其他任何地方都没有声明领域事件。
 
-## Workspace, agent and repo events
+## 工作区、智能体与仓库事件
 
-| Event               | Payload                                                | Fired when                                              |
+| 事件               | 载荷                                                | 触发时机                                              |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | 创建工作区                                    |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 智能体完成一次运行（无论成功还是失败）               |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 注册了一个仓库；会触发后台代码索引 |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安装或更新了一个技能，并携带其供应链扫描结论 |
 
-## PR and review events
+## PR 与审查事件
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+第一块是 PR 自身的生命周期。第二块是**自己创作的 PR 的跟踪**：关于*你*打开的 PR 的信号，每条都携带 `forUserId`，好让轮询把它们路由给相关的人，而不是广播出去。
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| 事件                      | 载荷                                                                  | 触发时机                                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | 智能体打开一个 PR                                                                                                                    |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR 被合并/关闭/打开/重新打开/批准                                                                                           |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR 被合并——一个仅针对合并的窄信号，保留用于分析/通知                                                          |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub 请求服务器用户进行审查（通知轮询，`review_requested`）                                                   |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | 服务器用户在某个 PR 上被提及（通知轮询，`mention`）                                                                    |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | GitHub 通知轮询检测到外部跟踪的（非智能体）PR 被合并；映射到 `prMerged` 通知类别 |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | 轮询发现非智能体 PR——仅用于流水线（驱动 `external_pr_welcome`），不会产生通知                               |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | PR 的 head SHA 发生变化——作者进行了推送                                                       |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | 已完成的 AI 审查不再描述它所审查的那个 PR。仅当被替换的提交上存在审查时才会触发，因此它始终是一个信号，而不是每次推送都来一次提醒 |
 
-### The authored-PR watch
+### 自己创作的 PR 的跟踪
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+这六个事件都携带 `workspaceId`、`repoOwner`、`repoName`、`prNumber`、`prTitle`，以及可选的 `forUserId`。
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| 事件                     | 附加载荷                                                                  | 触发时机                                                                    |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | 你创作的 PR 变为可合并，或不再可合并                          |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | 审查者批准、请求修改，或某次批准被撤销          |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI 变红，或恢复                                                     |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | 有人在 PR 评论或审查评论中提到了你          |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | 有人在你参与的审查线程中回复                                 |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | 有人解决了你参与的审查线程                                   |
 
-## Messaging events
+## 消息事件
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| 事件                      | 载荷                                                                                                                    | 触发时机                                                                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | 收到新消息                                                                                                                                                          |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | 创建了空间                                                                                                                                                                            |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | 删除了空间                                                                                                                                                                            |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | 空间的工作区进入预配、到达某个步骤（克隆仓库、检出 PR、设置智能体），或转为就绪/失败——聊天桥接会在其任务卡上描述这一过程 |
 
-## Ticketing events
+## 工单事件
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| 事件                  | 载荷                                                                                                                      | 触发时机                              |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | 创建了工单                       |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | 工单分配给某个主体或团队   |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | 工作完成（终态）                |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | 智能体失败（终态）                  |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | 工单被取消（终态）             |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | 任何状态变更                       |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | 工单被改派                       |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | 标题、描述或优先级发生变化 |
 
-## Task lifecycle events
+## 任务生命周期事件
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+统一的任务生命周期流——一次派发的智能体运行，以其运行日志 id 为键。每个事件都携带 `taskId`、按任务单调递增的 `seq`、`workspaceId?`、`agentId?` 和一个 `phase`；下表只列出附加字段。
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| 事件                       | 载荷                       | 触发时机                                                                                       |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | 任务被交给某个后端执行                                                           |
+| `TaskRunning`               | —                             | 任务开始产生输出                                                                    |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | 任务被停驻——它需要的磁盘路径锁由另一个任务持有                                   |
+| `TaskProgress`              | `note?`                       | 运行中途的进度检查点                                                                      |
+| `TaskMessage`               | `messageType`, `content`      | 流式消息（text/thinking/tool_use/tool_result/error）；在 `progress` 阶段下报告 |
+| `TaskCompleted`             | `summary?`                    | 任务成功完成                                                                       |
+| `TaskFailed`                | `errorMessage`                | 任务以错误结束                                                                      |
+| `TaskCancelled`             | —                             | 任务在完成前被取消                                                                 |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+`TaskPhase` 枚举还有一个 `queued` 成员，但没有任何东西发布排队事件——不存在 `TaskQueued` 类。一个任务首个可观察到的帧是 `TaskDispatched`。
 
-## Pipeline events
+## 流水线事件
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| 事件                  | 载荷                                       | 触发时机                                                                  |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | 运行完成                                                                |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | 运行被取消（由用户或系统）——一次刻意的停止，而不是错误 |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | 运行失败                                                    |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+只有终态转换会被发布。不存在 `PipelineRunStarted`，也没有按步骤的事件：某个步骤的进度通过该次运行自己的记录行，以及它派发的那个智能体的任务生命周期流到达客户端，而不是经由总线。
 
-## Observability events
+## 可观测性事件
 
-| Event                    | Payload                                                                                                  | Fired when                |
+| 事件                    | 载荷                                                                                                  | 触发时机                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 创建了审计跟踪条目 |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 支出超过阈值   |
 
-## Identity and membership events
+## 身份与成员关系事件
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| 事件                        | 载荷                         | 触发时机                                                                                                |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | 用户加入工作区（兑换邀请或由管理员添加）                                                 |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | 成员被移除——该用户以该工作区为作用域的存活会话必须立即重新检查访问权限 |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | 成员的角色发生变化                                                                                   |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+成员关系是总线上身份相关的全部内容。用户创建和设备吊销确实会发生，但它们不作为领域事件发布——吊销是直接针对存活会话强制执行的，而不是经由总线。
 
-## Calendar and meeting events
+## 日历与会议事件
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| 事件                     | 载荷                                                                                | 触发时机                                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | 已连接账号的 OAuth 刷新令牌永久失效（每次断开过程只发布一次） |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | 某个日历事件将在配置的提前量窗口内开始                                              |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | 会议录制结束并触发内置的 `meeting_summary` 流水线                           |
 
-## Rig events
+## 机台事件
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| 事件               | 载荷                                       | 触发时机                                                                                                                       |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | 机台消失，并带上其关闭原因；消费方只对 `backendFailure` 采取动作——其他任何原因要么是被请求的，要么伴随一次 `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | 人类取得机台的独占控制权，或把控制权交还（释放时 `controller` 为 null——事件不记录是谁放手的）  |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | 系统回收了一台机器：空闲、TTL 或内存压力淘汰（报告为 `idleTimeout`），并带上驱动它的智能体       |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+机台的**打开**不是事件。启动完成后，机台所在的记录行翻转为就绪；没有任何东西被发布，因此没有 `RigOpened` 可供订阅。
 
-## Subdomains with no events at all
+## 完全没有事件的子域
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+有几个子系统从外部看像是事件驱动的，其实并不是。这里把它们列出来，是因为在你去寻找某个钩子之前，值得先知道它们的缺席本身就是一个设计决策：
 
-| Subdomain           | How state moves instead                                                                                 |
+| 子域           | 状态改由什么方式推进                                                                                 |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| 记忆              | `record_memory_fact` 及同类调用写入并返回；召回则读取。事实或冲突产生时不会发布任何事件 |
+| 编排       | 提案、其批准以及生成的流水线运行都是记录行和 RPC 调用                        |
+| 计划文档      | `submit_plan` 写入一个修订；批准会实体化一次编排。两者都不会被宣告           |
+| 工件           | `publish_artifact` / `revise_artifact` 直接写入修订版本                                          |
+| 审批           | 升级处理发生在审批工作流服务内部                                              |
+| 工单同步         | 厂商协调器订阅上文的工单事件；传入的 webhook 被直接应用     |
+| 日历刷新    | 同步会 upsert 事件，客户端再重新读取；不存在刷新广播                            |
+| 工作树合并     | 记录在 `worktree_merge_log` 中，并从那里读取                                                    |
 
-## Subscribers
+## 订阅方
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+下文的每个订阅方都在 `runCcServer`（或它构建的某个服务）内部构造。不存在客户端侧的订阅方。
 
-| Subscriber                          | Events it consumes                                                                                   |
+| 订阅方                          | 它消费的事件                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| 入门评测套件初始化（内联） | `WorkspaceCreated`                                                                                   |
+| 聊天空间预配（内联）    | `SpaceCreated`                                                                                       |
+| `PipelineTriggerDispatcher`         | 每个 `DomainEvent`；每个启用的触发器会按自己的类型过滤                                   |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`（仅 `meeting_summary` 运行）    |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent`——向驱动中的智能体的引导通道注入一条通俗的提示 |
+| `StaleReviewWatcher`                | `PrHeadChanged`——仅当被替换的提交上存在已完成的审查时才发布 `ReviewBecameStale` |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted`——外发的 PR 对话回复                                               |
+| `NotificationFeedRecorder`          | 下文二十一个通知类事件                                                        |
+| `RemoteEventForwarder`              | 那二十一个，外加 `TicketReassigned` 和每个 `TaskLifecycleEvent`。三个成员关系事件只会使其按工作区划分的成员关系缓存失效；它们不会作为帧被转发 |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`——丢弃该用户已挂载的工作区订阅；套接字保持打开 |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned` 既是审计与通知信号，也是流水线触发器。分配给智能体会记录归属，但不会启动任何运行——不存在工单派发器。分配给团队（设置了 `assignedTeamId`）是例外：`TeamRoutingService` 会派发团队负责人。
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler` 已在生产代码中声明，却从未被构造，因此它如今不订阅任何东西。客户端侧的 `NotificationEventMapper` 只在它自己的测试中被构造——它是客户端/服务器分离之前那条进程内路径的残留。实时提示来自下文的传输帧。
 
-## Notification mapping
+## 通知映射
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+在服务器上，`NotificationFeedRecorder` 和 `RemoteEventForwarder` 把这些事件转成 `notifications/*` 传输帧（`notification_wire.dart`）。在客户端，`RpcNotificationMapper` → `mapNotificationFrame` 把帧转成 `AppNotification`。
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+通知类别恰好有 **十六** 个。若干事件会映射到多个传输方法，因为帧承载的是边沿（失败还是恢复），而类别承载的是问题（“CI 正在做什么？”）。
 
-| Category               | Source event              | Wire method                                                            |
+| 类别               | 源事件              | 传输方法                                                            |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,14 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+机台接管帧不会回送给接过操控权的那个人，释放则不加过滤（事件不记录是谁放手的），而且只有 `backendFailure` 关闭会产生 `rig_closed` 帧——其他原因要么是被请求的，要么已由回收帧涵盖。
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+五个自己创作的 PR 类别携带 `forUserId`，因此它们到达作者本人，而不是工作区里的所有人。
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder` 还会把 `TicketReassigned` 作为 `notifications/ticket_reassigned` 转发，并把每个 `TaskLifecycleEvent` 作为 `notifications/task_<phase>` 转发。两者都不映射到通知类别——它们驱动实时界面，而不是通知中心。成员关系事件不会作为帧被转发：它们使转发器的缓存失效，而会话宿主机则丢弃被移除成员的工作区订阅。
 
-## See also
+## 另请参阅
 
-- [Domain events](/zh-CN/手册/概念/领域事件/)
-- [Pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/)
-- [Notifications](/zh-CN/手册/操作指南/通知/)
+- [领域事件](/zh-CN/手册/概念/领域事件/)
+- [流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)
+- [通知](/zh-CN/手册/操作指南/通知/)

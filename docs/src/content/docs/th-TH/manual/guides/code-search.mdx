@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: ค้นหาโค้ดด้วยกราฟโค้ด
+description: จัดทำดัชนีรีโป แล้วใช้เครื่องมือกราฟโค้ดเพื่อค้นหาสัญลักษณ์และดูว่าการเปลี่ยนแปลงหนึ่งจะกระทบอะไรบ้าง
 slug: th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+คู่มือนี้แสดงวิธีนำรีโปเข้าสู่กราฟโค้ด แล้วใช้มันตอบคำถามที่คุณมีอยู่จริงก่อนรีแฟกเตอร์: อะไรบ้างที่พึ่งพาสิ่งนี้
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+กราฟโค้ดคือฐานข้อมูลของสัญลักษณ์และเส้นเชื่อม ที่สร้างจากการแยกวิเคราะห์เช็กเอาต์ที่คุณลงทะเบียนไว้ด้วย tree-sitter เครื่องมือของมันถูกออกแบบ**สำหรับเอเจนต์** — คุณเข้าถึงได้โดยการขอให้เอเจนต์ทำ
 
-## Before you start
+## ก่อนเริ่ม
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+กราฟจัดทำดัชนีภาษา Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB และ Ada ไฟล์ในภาษาอื่นจะไม่ถูกแยกวิเคราะห์ จึงไม่ปรากฏใน `search_code`, `code_symbol`, `code_callers`, `code_callees` หรือ `code_impact`
 
-Two more things shape what gets indexed:
+ยังมีอีกสองอย่างที่กำหนดว่าอะไรจะถูกจัดทำดัชนี:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- ใน git work tree การแจกแจงไฟล์จะยึดตาม `git ls-files --cached --others --exclude-standard` ดังนั้น `.gitignore` ทุกไฟล์ ไฟล์ ignore ที่ซ้อนอยู่ `.git/info/exclude` และไฟล์ excludes ส่วนกลางจึงมีผลทั้งหมด นั่นคือสิ่งที่กัน `node_modules` และผลลัพธ์จากการบิลด์ออกจากกราฟ
+- Dart ที่ถูกสร้างขึ้นจะถูกตัดทิ้งไม่ว่าจะกรณีใด ไฟล์ที่ถูกสร้างขึ้นมักถูกคอมมิตไว้ ดังนั้น git เพียงอย่างเดียวจะไม่ตัดมันออก และมันจะถูกแตะใหม่ทุกครั้งที่รัน codegen
 
-## Get a repo indexed
+## จัดทำดัชนีรีโป
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/).
+การลงทะเบียนเช็กเอาต์จะยิงเหตุการณ์ `RepoAdded` ซึ่งเริ่มไปป์ไลน์ `index_code` ให้มันโดยอัตโนมัติ ดู [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
 
-To re-index by hand:
+หากต้องการจัดทำดัชนีใหม่ด้วยตัวเอง:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี**
+2. คลิกปุ่ม **จัดทำดัชนีโค้ด** ในแถวของรีโป
+3. ระหว่างที่มันทำงาน ปุ่มจะแสดงจำนวนไฟล์ที่ทำเสร็จเทียบกับทั้งหมด พร้อมตัวควบคุมยกเลิก เมื่อเสร็จแล้วมันจะกลายเป็นเครื่องหมายถูกพร้อมจำนวนสัญลักษณ์
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+กราฟถูกแบ่งพาร์ทิชันตามเวิร์กสเปซ รีโป และเช็กเอาต์: เช็กเอาต์ที่ลิงก์ไว้เป็นหนึ่งพาร์ทิชัน และ worktree ของแต่ละสเปซได้พาร์ทิชันของตัวเอง (คีย์ด้วย id ของรีโปแบบแยกโดด)
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+มีตัวจำกัดสองตัวที่ควรรู้ไว้ เพราะมันอธิบายการรอที่ดูเหมือนค้างได้:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- ตัวเฝ้าดูไฟล์รับ**เพียงหนึ่ง**รอบการจัดทำดัชนีต่อครั้งบนโฮสต์ — เช็กเอาต์ที่สองต้องรอ ไปป์ไลน์ `index_code` ถูกจำกัดแยกไว้ที่หนึ่งรอบต่อเวิร์กสเปซ ดังนั้นสองรีโปในเวิร์กสเปซเดียวกันจึงเข้าคิว ส่วนต่างเวิร์กสเปซจัดทำดัชนีขนานกันได้ ตัวจัดทำดัชนีเองจะจัดสองรอบของเช็กเอาต์**เดียวกัน**ให้เป็นลำดับ เพื่อให้การเริ่มไปป์ไลน์กับการกวาดของตัวเฝ้าดูแยกวิเคราะห์มันซ้ำไม่ได้
+- worktree ที่เป็นของ**สเปซที่ไม่ได้ใช้งาน** (ไม่มีข้อความในสัปดาห์ล่าสุด) จะไม่ถูกเฝ้าดูและไม่ถูกจัดทำดัชนี ส่วนเช็กเอาต์ที่ลิงก์ไว้ยังถูกเฝ้าดูอยู่ การตัดสินใจข้ามจะถูกตรวจซ้ำหลังจากห้านาที สเปซที่กลับมาใช้งานอีกครั้งจึงถูกเก็บเข้ามา
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[ไวยากรณ์ที่หายไปทำให้เซิร์ฟเวอร์หยุด ไม่ใช่การค้นหา]
+tree-sitter และไวยากรณ์ของมันเป็นเนทีฟที่จำเป็น หากตัวใดหายไป `cc_server` จะปฏิเสธการบูตและระบุชื่อ dylib ที่หายไป — อาการคือเซิร์ฟเวอร์ที่ไม่ยอมเริ่ม ไม่ใช่การค้นหาที่ด้อยลง เตรียมไวยากรณ์เหล่านั้นด้วย `scripts/natives/build_natives.sh` แล้วบิลด์ไบนารีเซิร์ฟเวอร์ใหม่
 :::
 
-## Find a symbol
+## ค้นหาสัญลักษณ์
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+ขอให้เอเจนต์ค้นหา เครื่องมือคือ `search_code` และมันต้องใช้ทั้งเวิร์กสเปซและรีโป:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+id ของรีโปได้มาจาก `list_repos` อาร์กิวเมนต์ `mode` เป็นทางเลือก โดยรับค่า `keyword`, `semantic` หรือ `hybrid` และมีค่าเริ่มต้นเป็น hybrid — BM25 บนชื่อ ลายเซ็น และคอมเมนต์เอกสาร หลอมรวมกับความคล้ายเชิงเวกเตอร์
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+ผลลัพธ์แต่ละรายการบรรจุ id ชื่อ ชื่อแบบเต็ม ชนิด พาธไฟล์ บรรทัดเริ่มและสิ้นสุด และลายเซ็นของมันเมื่อมี **id** คือตัวจับที่คุณป้อนให้เครื่องมืออื่นทุกตัวในหน้านี้
 
-When you know the exact name, look it up directly instead:
+เมื่อคุณรู้ชื่อที่แน่นอน ให้ค้นหามันโดยตรงแทน:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## ตามรอยการเรียก
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+ทั้งคู่รับ `symbol_id` จากผลการค้นหา บวก `limit` แบบไม่บังคับ (ค่าเริ่มต้น 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` คืนสัญลักษณ์ที่มีเส้นเชื่อมเข้ามาหาตัวนี้ ส่วน `code_callees` คืนสัญลักษณ์ที่มันพึ่งพา
 
-## Check what a change would break
+## ตรวจว่าการเปลี่ยนแปลงหนึ่งจะกระทบอะไร
 
-This is the tool the whole page exists for:
+นี่คือเครื่องมือที่ทั้งหน้านี้มีอยู่เพื่อมัน:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+มันคำนวณรัศมีการพึ่งพาแบบ**ย้อนกลับ**: ทุกอย่างที่พึ่งพาสัญลักษณ์นี้โดยตรงหรือโดยอ้อมผ่านเส้นเชื่อม `calls`, `extends` และ `implements` (import, mixes-in และการอ้างอิงแบบเจเนอริกถูกเก็บไว้ในกราฟแต่ไม่ถูกไล่ที่นี่) `depth` คือจำนวนฮอปสูงสุด อยู่ระหว่าง 1 ถึง 6 ค่าเริ่มต้นคือ 2
 
-The result is three fields:
+ผลลัพธ์มีสามฟิลด์:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — สัญลักษณ์ที่คุณถามถึง
+- `impacted` — ชุดที่เข้าถึงได้ รวมรากที่ depth 0 โดยแต่ละรายการพา `depth` ของตัวเองจากรากมาด้วย
+- `edgeCount` — จำนวนเส้นเชื่อมที่การไล่ข้ามผ่านไป เป็นจำนวนนับ ไม่ใช่ตัวเส้นเชื่อมเอง
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+รันมันก่อนที่คุณจะเปลี่ยนชื่อหรือแก้ลายเซ็น แล้วให้รายการที่ได้รับผลกระทบแก่เอเจนต์เป็นขอบเขตงาน
 
-## Results are checked against the caller's own working copy
+## ผลลัพธ์ถูกตรวจเทียบกับสำเนาทำงานของผู้เรียกเอง
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+สำหรับผู้เรียกที่เป็นเอเจนต์ id ของสเปซจะถูกใส่ให้อัตโนมัติ และผลลัพธ์จะถูกตรวจสอบเทียบกับสำเนาทำงานของ**สเปซนั้น** สัญลักษณ์ที่ไฟล์ของมันไม่มีอยู่ในทรีของผู้เรียกอีกต่อไปจะถูกตัดออก และคำตอบจะพาจำนวน `staleOmitted` มาด้วย พร้อมหมายเหตุว่าดัชนีล้าสมัยสำหรับสัญลักษณ์เหล่านั้น
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+นี่คือเหตุผลที่คุณกับเอเจนต์อาจได้คำตอบต่างกันสำหรับคำค้นเดียวกัน และเหตุผลที่เอเจนต์ในสเปซหนึ่งอาจได้คำตอบต่างจากเอเจนต์ในอีกสเปซ ทุกการสนทนาในสเปซใช้ worktree เดียวกันนั้นร่วมกัน การตรวจสอบเป็นแบบ fail-open: คำตอบที่ล้าสมัยถูกเลือกไว้เหนือคำตอบที่ว่างเปล่า
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/).
+ขอให้เอเจนต์รัน `code_impact` (หรือ `review_studio.blastRadius`) เมื่อคุณต้องการรัศมีผลกระทบของการเปลี่ยนแปลงหนึ่ง ดู [การคำนวณรีวิว](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/)
 
-## Semantic search needs the embedding model
+## การค้นหาเชิงความหมายต้องมีโมเดล embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+สัญลักษณ์และข้อเท็จจริงจะถูกสร้าง embedding ตอนเขียน และเฉพาะเมื่อโมเดล embedding บนอุปกรณ์ถูกติดตั้งไว้แล้วเท่านั้น จนถึงตอนนั้น `mode: "semantic"` และครึ่งเชิงความหมายของ hybrid จะไม่มีอะไรให้จับคู่ และการค้นหาก็เป็นแบบคีย์เวิร์ดล้วนในทางปฏิบัติ
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+ติดตั้งโมเดลที่ **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว → ค้นหาเชิงความหมาย** ก่อนจัดทำดัชนี สัญลักษณ์จะได้เวกเตอร์ตอนที่ไฟล์ของมันถูกนำเข้า
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+โปรดทราบด้วยว่าการบิลด์ไบนารีเซิร์ฟเวอร์ใหม่ทุกครั้งจะเตรียมไวยากรณ์ dylib ใหม่และเปลี่ยน mtime ของมัน ซึ่งทำให้จุดตรวจสอบของดัชนีทุกจุดใช้ไม่ได้ และบังคับให้ไล่เช็กเอาต์ทุกตัวใหม่เต็มรอบในการรันครั้งถัดไป มันจะแฮชใหม่ แต่จะไม่แยกไฟล์ที่ไม่เปลี่ยนแปลงใหม่
 
-## What is in the graph
+## อะไรอยู่ในกราฟ
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**ชนิดของสัญลักษณ์:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**ชนิดของเส้นเชื่อม:** calls, imports, extends, implements, mixes in, references
 
-The canonical signatures for these tools live in [MCP tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/).
+ลายเซ็นมาตรฐานของเครื่องมือเหล่านี้อยู่ที่ [เครื่องมือ MCP](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
-- [Review compute (cohorts and axes)](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/)
-- [Use the MCP server](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
+- [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
+- [การคำนวณรีวิว (cohort และแกน)](/th-TH/คู่มือ/วิธีทำ/การคำนวณรีวิว/)
+- [ใช้เซิร์ฟเวอร์ MCP](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)

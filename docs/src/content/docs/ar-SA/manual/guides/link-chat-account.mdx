@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: ربط حساب Slack
+description: أثبت أن هوية Slack تخصك حتى يتصرف الوكلاء بناءً على رسائلك ويُنسب عملك إليك.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+يبيّن هذا الدليل كيف تربط هوية دردشتك بمستخدمك في Control Center، وكيف تلغي الربط.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+يفعل كل عضو ذلك مرة واحدة لكل مزوّد دردشة. وهو منفصل عن توصيل التطبيق: التوصيل يجعل البوت في متناول مساحة العمل كلها، والربط يجعلك _أنت_ معروفًا داخله.
 
-## Why linking is required
+## لماذا يلزم الربط
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+يرفض الجسر أن يتصرف لحساب دردشة لا يستطيع حلّه إلى عضو في مساحة العمل. وهذا مقصود. بلا ربط، تُنسب كل رسالة من Slack إلى من ثبّت التطبيق، فيقع اسم الشخص الخطأ على سجل التدقيق، وعلى حدود المعدّل لكل Principal، وعلى مُبلّغي التذاكر.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+يتلقى العضو غير المربوط الذي يذكر البوت ردًا في خيط Slack ذاك يشرح كيف يربط نفسه. ولا يُرسَل شيء.
 
-## Link with a code
+## الربط برمز
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. انتقل إلى **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية** ومرّر إلى بطاقة **حسابات الدردشة المرتبطة**.
+2. في قسم Slack، انقر **ربط حسابي في Slack**.
+3. انسخ الأمر الذي يعرضه، مثل:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. في Slack، أرسل هذا الأمر إلى البوت، والرسالة المباشرة أسهل موضع.
+5. يؤكد البوت مستخدم Control Center الذي أصبحت مرتبطًا به، ويُحدَّث الحوار الذي تركته مفتوحًا في اللحظة نفسها — لا حاجة إلى إغلاقه ثم العودة للتأكد.
 
-The code:
+الرمز:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- يُستخدم مرة واحدة، وتنتهي صلاحيته بعد **15 دقيقة** من توليده
+- يُولَّد دائمًا لك _أنت_، لا لزميل
+- يستبدل أي رمز تحمله أصلًا، فالنقر على الزر مرة أخرى يُبطل الرمز السابق
+- لا يعيش إلا في الذاكرة، فإعادة تشغيل الخادم تُبطل الرموز القائمة — انقر الزر مرة أخرى
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+رمز مجهول، أو منتهٍ، أو مولَّد لمساحة عمل أخرى، يفشل بالرسالة نفسها التي لا تُميِّز السبب: «هذا الرمز غير صالح (أو انتهت صلاحيته)».
 
-## Automatic linking by email
+## الربط التلقائي بالبريد الإلكتروني
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+إن حمل ملفك في Slack بريدًا موثَّقًا يطابق مستخدم Control Center **عضوًا أصلًا في مساحة العمل هذه**، يربطك الجسر في أول مرة تخاطبه. لا حاجة إلى رمز.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+كلا الشقين مهم: مطابقة البريد تثبت الهوية، لكن العضوية وحدها تمنح الوصول، فغريب يتصادف وجود بريده على الخادم لا يُربَط بشيء. يبيّن كشف الحسابات المرتبطة كيف أُنشئ كل ربط («مطابقة عبر البريد الإلكتروني» أو «رُبط برمز»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+يحتاج الربط التلقائي إلى نطاق `users:read.email`. من دونه لا يفصح Slack عن العنوان، ولا يبقى غير مسار الرمز.
 
-## See who is linked
+## معرفة من رُبط
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+الكشف من إدارة مساحة العمل، لذلك يعيش على النصف الآخر من السطح: **الإعدادات ← مساحة العمل ← عام ← جسور الدردشة ← الحسابات المرتبطة**. يسرد كل عضو مربوط في مساحة العمل، وحساب Slack الذي يقابله، وكيف أُنشئ الربط.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+حالتك أنت في صفحة ملفك الشخصي: يعرض صف **ربط حسابي في Slack** النص «مرتبط بـ _your-slack-id_» بعد الربط، ويطلب منك الربط إن لم تكن مربوطًا.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+الكشف اشتراك حي، لأن التغيير يحدث في الطرف الآخر — تكتب الرمز في Slack، فلا طلب من التطبيق يستطيع أن يعيد الإجابة إليه.
 
-## Unlink
+## إلغاء الربط
 
-Click **Unlink** on a row in the workspace roster.
+انقر **إلغاء الربط** في صف من كشف مساحة العمل.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- يستطيع أي شخص إلغاء ربط نفسه
+- لا يلغي ربط عضو آخر إلا مسؤول
+- يُبطل إلغاء الربط أيضًا أي رمز ربط قائم لذلك العضو
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+بعد إلغاء الربط، لا يستطيع حساب Slack هذا تشغيل الوكلاء حتى يُربَط من جديد. تحتفظ المساحات والنسخ النصية والتذاكر القائمة بإسنادها الأصلي — وإلغاء الربط ليس رجوعًا عن عمل سابق.
 
-## Troubleshooting
+## استكشاف الأخطاء
 
-### The bot says I am not a member of this workspace
+### يقول البوت إنني لست عضوًا في مساحة العمل هذه
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/).
+حساب Slack مربوط بمستخدم في Control Center، لكن لا عضوية لذلك المستخدم في مساحة العمل هذه. اطلب من مسؤول أن يدعوك. انظر [تعدد اللاعبين — الهوية والعضوية والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/).
 
-### The bot says my role is read-only
+### يقول البوت إن دوري للقراءة فقط
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+دور `viewer` ودور `guest` لا يستطيعان بدء العمل. على المسؤول أن يرفع دورك إلى `member` أو أعلى.
 
-### The slash command is not recognized
+### أمر الشرطة المائلة غير معروف
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+تحقق من أن أمر الشرطة المائلة موجود في Slack، وأنك ترسل الأمر الذي أظهره حوار الإعدادات — فقد يعيد مسؤول تسميته، ويعرض الحوار حينها الاسم الحالي.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
-- [Customize the chat bot](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/)
-- [Chat bridge](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- [تخصيص بوت الدردشة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/)
+- [جسر الدردشة](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)
-- [Multiplayer — identity, membership and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/)
+- [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)
+- [تعدد اللاعبين — الهوية والعضوية والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/)

@@ -1,207 +1,206 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Vzdálené ovládání a mobil
+description: Jak telefon dosáhne na tvůj server přes zprostředkované relé zapečetěné od konce ke konci, ne přes spojení peer-to-peer, a vrstvený model přístupu, který ten dosah drží úzký.
 slug: cs-CZ/prirucka/koncepty/vzdalene-ovladani
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center je aplikace pro počítač, ale práce, kterou sleduje, neskončí, když
+odejdeš od stolu. **Vzdálené ovládání** spáruje telefon s `cc_server` přes
+**[Remote](https://remote.usectrl.dev/)**, doprovodnou aplikaci na
+remote.usectrl.dev, takže odtamtud sleduješ flotilu: čteš zprávy a tickety,
+odpovíš agentovi, vytřídíš kanál novinek, a zvuk, přepis, zdrojový kód ani
+přihlašovací údaje, které žijí na serveru, ho nikdy neopustí.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Ber ho jako společníka stolu, který skoro jen čte. Plného klienta na počítači
+nahradit nemá.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/) for how the two differ.
+:::note[Dvě různé vzdálené cesty]
+Telefonní společník se s `cc_server` páruje přes **zprostředkované WebSocket
+relé**, které vozí rámce JSON-RPC zapečetěné od konce ke konci. Plné **webové
+sestavení** (a desktop namířený na vzdálený server) je druhá vzdálená cesta:
+volá `cc_server` přes WebSocket a vykreslí celou aplikaci. Jak se liší, popisuje
+[Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/).
 :::
 
-## Transport
+## Přenos
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Telefon dosáhne na `cc_server` přes WebSocket: buď přímým spojením (loopback,
+LAN, tailnet nebo `wss://`), nebo místností za pozvánkou na signalizačním
+zprostředkovateli, který přepojuje zapečetěné rámce. Datový kanál peer-to-peer
+tu není.
 
-## What the phone can do
+## Co telefon umí
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Spárovaný telefon dosáhne na malý, záměrný výřez plochy serveru:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Čtení** ticketů, agentů, prostorů a jejich zpráv a tvého kanálu novinek
+- **Odpověď**: pošleš zprávu v prostoru, aktualizuješ nebo přidělíš ticket,
+  označíš článek jako přečtený nebo uložený
+- **Spuštění playbooku**: založíš instanci uložené šablony plánu s jejími
+  parametry. Jen _navrhne_ plán; nic se nespustí a nic se neutratí, dokud ho
+  operátor neschválí v Plan Studio na plném klientovi
+- **Přepnutí pracovního prostoru** z vlastního výběru na telefonu
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Víc toho skoro není. Telefon je **principál s nižšími oprávněními** než plný
+klient. Nesmí spouštět procesy, utrácet rozpočet LLM, poslat push na GitHub
+ani zakládat pracovní prostory. Jak se to vynucuje, a ne jen zamýšlí, popisuje
+[model přístupu](#model-přístupu).
 
-## How the link is built
+## Jak spojení vzniká
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Spojení jede po **zprostředkovaném relé**: server vstoupí do jedné místnosti
+za pozvánkou na zprostředkovateli `wss://` jako její vlastník a každý spárovaný
+klient — desktop, web, telefon — vstoupí do stejné místnosti s časově omezeným
+vstupním tokenem. Sejdou se tři díly:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Díl | Úloha |
+| --- | --- |
+| **Remote (telefonní aplikace)** | Doprovodná webová aplikace, ve výchozím stavu hostovaná na `remote.usectrl.dev`, nebo u tebe. Načte se v prohlížeči a záznam párování drží v IndexedDB. |
+| **Zprostředkovatel relé** | Bezstavové relé `wss://` (`cc_signaling_server`), které hostuje místnosti pro N stran. Vozí **jen neprůhledné rámce**: každý payload je zapečetěný od konce ke konci mezi telefonem a serverem, takže zprostředkovatel nikdy neuvidí data aplikace ani tajemství párování a nikdy nevykládá, co přeposílá. |
+| **`cc_server`** | Vlastník místnosti. Na volání telefonu odpovídá stejným dispečerem, kterého používá každý jiný klient. |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Nabídka párování nese **deskriptor spojení**, který vypisuje každou cestu
+k serveru (LAN, tailnet, veřejné `wss://`, relé) a otisk identity. Resolver
+telefonu vybere nejlepší dosažitelnou cestu a při prvním spojení připne otisk
+(TOFU); relé zaručí spojení i tam, kde přímá cesta není, a provoz nikdy
+nepřečte.
 
-## What the pairing payload is
+## Co je párovací payload
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/) for the procedure. The anatomy is
-what matters here.
+Párování se vydává z aplikace a doručí se jako přímý odkaz; postup je na
+stránce [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/). Tady
+záleží na tom, z čeho se skládá.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Payload jede ve **fragmentu** URL, v části za `#`, kterou prohlížeč nikdy
+nepošle serveru, takže HTTPS hostitel PWA ho neuvidí. Veze všechno, co telefon
+potřebuje, aby na server dosáhl a prokázal, kdo je: deskriptor spojení (každá
+cesta plus otisk identity), čerstvě vydané id zařízení, 32bajtový předem
+sdílený klíč a razítko platnosti. Telefon ho dekóduje, záznam párování uloží
+místně a fragment odebere, takže tajemství z URL zmizí.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Jsou dva tvary payloadu a **nejdou zaměnit**. QR telefonu vydaný z panelu
+párování v aplikaci je v2 `PairingPayload` výše a míří na hostitele PWA
+Remote. `cc_server pair --client-url` vydá jiný, starší odkaz v1 (`{s, i, k}`
+— URL serveru, id zařízení, klíč) jen pro **webového** klienta.
 
-They also differ in lifetime, which is easy to get wrong:
+Liší se i životností, a to se snadno splete:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Vydal | Platnost pověření |
+| --- | --- |
+| Panel párování v aplikaci (`pairing.mint`) | vždy 30 dní |
+| `cc_server pair` na příkazovém řádku | **Žádná** — pověření nevyprší |
 
-## The access model
+## Model přístupu
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Spárované zařízení je **ověřené, ale nedůvěryhodné**. Několik nezávislých bran
+brání tomu, aby se schválené (nebo uniklé) párování stalo plným ovládáním
+serveru.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Hranicí je členství, ne párování
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Platný párovací klíč dokazuje, _které zařízení_ jsi. Co smíš číst nebo měnit,
+rozhoduje **role v pracovním prostoru**, znovu vyhodnocená při každém
+jednotlivém volání, a u všeho, co odhaluje obsah repozitáře, i oprávnění
+k tomu repozitáři. Zařízení s úplně platným klíčem, které patří uživateli,
+jenž není členem uvedeného pracovního prostoru, se odmítne textem "Not a member of this workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Minimální role se odvodí z druhu operace, pokud si operace nestanoví vlastní:
+čtení potřebuje `guest`, změna `member`, destruktivní operace `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Telefon je nižší úroveň relace
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Nad kontrolou role nese relace telefonu nižší schopnost než relace desktopu
+nebo webu. Operace deklarované jen pro plného klienta se telefonu odmítnou
+ještě předtím, než se spustí handler, ať je uživatel za ním jakkoli
+privilegovaný: vydávání, výpis, přejmenování a odvolání párování zařízení;
+čtení a nastavení konektivity tunelu; záloha serveru a export či import
+pracovního prostoru; detekce a ukončení procesů; sondy adaptérů; nastavení
+serveru; správa SSO; řízení flotily; převzetí běžícího agenta nebo vrácení
+řízení.
 
-### 3. A default-deny tool allow-list
+### 3. Seznam povolených nástrojů s výchozím zákazem
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Konkrétně pro plochu nástrojů MCP (`tools/call`) platí seznam povolených
+s výchozím zákazem: určuje, které nástroje telefon smí zavolat. Co na seznamu
+není, se odmítne ještě před během. Seznam je převážně čtení a pozorování plus
+hrstka **zápisů jen místních** — zpráva, aktualizace ticketu, příznak článku —
+které neutrácí rozpočet LLM, nespouští proces a nesahají na vnější systém.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Odmítne se třeba: zeptat se agenta, spustit AI kontrolu, ukončit agenta,
+publikovat revizi na GitHub, najmout nebo propustit agenty, založit pracovní
+prostor.
 
-### 4. Per-call workspace scoping
+### 4. Rozsah pracovního prostoru u každého volání
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/) invariant the rest of the
-product enforces.
+Server nedrží **žádný** „aktuální pracovní prostor“. Je schválně bezstavový:
+každé volání vázané na pracovní prostor musí ve svých argumentech uvést cílové
+`workspace_id` a dispečer volání rovnou odmítne, když chybí nebo jmenuje
+pracovní prostor, který server nemá zaregistrovaný — dřív, než cokoli otevře
+databázi. Telefon proto nikdy nezdědí rozsah jiného klienta ani do něj
+nesklouzne a pojmenovat cizí pracovní prostor taky nepomůže, protože kontrola
+členství z brány 1 pořád platí. Je to stejný invariant
+[izolace pracovních prostorů](/cs-CZ/prirucka/koncepty/pracovni-prostory/),
+který vynucuje zbytek produktu.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Rámce zapečetěné od konce ke konci předem sdíleným klíčem
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Každý rámec mezi telefonem a serverem je zapečetěný párovacím klíčem; vstupní
+token klienta jen pustí do místnosti a nic neodšifruje. Zprostředkovatel
+přeposílá šifrový text a klíč nikdy neuvidí. Odvolané zařízení najde své
+pověření už pryč, takže se při opětovném připojení **uzavře**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Pověření vydané aplikací je časově omezené na 30 dní; po nich ho brána
+připojení odmítne a telefon se musí spárovat znovu. Odvolání je živé: server
+sleduje tabulku zařízení a do několika sekund shodí otevřené relace
+odvolaného zařízení, místo aby čekal na další připojení.
 
-### 6. Rate limiting per principal
+### 6. Omezování četnosti podle principála
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Omezovač s posuvným oknem stropuje vzdálený provoz nástrojů na 120 volání za
+minutu a na slovesa, která mění stav, má přísnější dílčí strop 30 za minutu.
+Rozpočet patří **principálovi, ne relaci**: tři tvá zařízení čerpají z jednoho
+přídělu, takže unesený klient nezíská víc prostoru tím, že otevře další
+relace, a jeden hlučný člen nemůže ostatním kapacitu sebrat.
 
-### 7. A broker that learns nothing
+### 7. Zprostředkovatel, který se nic nedozví
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Zprostředkovatel relé je schválně hloupý: hostuje místnosti, přeposílá
+zapečetěné rámce a nedrží účty, data aplikace ani klíče. Místnosti jsou za
+pozvánkou a dočasné. Data aplikace, zvuk, přepis, zdrojový kód i přihlašovací
+údaje zůstávají na serveru.
 
-## Live updates
+## Živé aktualizace
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Po spárování dostává telefon **živé aktualizace** jako oznamovací rámce — nové
+zprávy agentů, tickety přidělené tobě, změny stavu — ve stejném duchu jako
+oznámení na desktopu. Server ty rámce rozešle každé připojené relaci a filtr
+pracovního prostoru se použije na klientovi, takže vidíš to, co patří
+k pracovnímu prostoru, na který se díváš.
 
-## Where it lives
+## Kde to najdeš
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Plocha | Co ukazuje |
+| --- | --- |
+| **Nastavení → Vy → Vaše zařízení** (`/workspaces/:workspaceId/settings/you/devices`) | Spárovaní klienti s živým stavem, plus **Spárovat nového klienta** (webový prohlížeč, desktopová aplikace nebo telefon) a odvolat |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Stejný panel vydává párování i pro druhý prohlížeč nebo desktopovou aplikaci,
+ne jen pro telefony — postup je stejný, liší se jen přímý odkaz.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Vzdálené ovládání je na straně serveru a přes MCP **se nevystavuje**. Telefon
+mluví s vlastním dispečerem serveru přes relé; není to MCP klient vnějšího
+serveru.
 ::::
 
-## See also
+## Viz také
 
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/): roles, membership and repo grants
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/): where remote control sits among the client tiers
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/): where remote control sits in the stack
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/)
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): rozsah po voláních, o který se to opírá
+- [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): role, členství a oprávnění k repozitářům
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/): kam vzdálené ovládání patří mezi úrovněmi klientů
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/): kam vzdálené ovládání patří ve vrstvách
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/)

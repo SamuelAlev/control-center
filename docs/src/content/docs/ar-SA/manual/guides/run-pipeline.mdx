@@ -1,68 +1,69 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: تشغيل خط أنابيب يدويًا
+description: ابدأ تشغيل خط أنابيب من صفحة التشغيل، واملأ مدخلاته، ثم تصل إلى صفحة تفاصيل التشغيل.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/).
+يتناول هذا الدليل كيف تبدأ تشغيلًا بيدك. لمتابعة تشغيل، وقراءة مخرجات
+الخطوات، والتعافي من فشل، انظر
+[مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/).
 
-## Start a run
+## بدء تشغيل
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. انقر **خطوط الأنابيب** في الشريط الجانبي لمساحة العمل.
+2. اضغط **تشغيل خط أنابيب** في الترويسة. تصل إلى صفحة التشغيل
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. اختر قالبًا من الشريط الأيسر. تعرض كل بطاقة اسم القالب، ووصفه،
+   وهل يأخذ مدخلات.
+4. املأ نموذج المدخلات على اليمين. الحقول المطلوبة تُبقي الزر معطّلًا
+   حتى يكون لها قيمة؛ والقالب الذي بلا مدخلات يبيّن ذلك.
+5. اضغط **تشغيل خط الأنابيب**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+تصل إلى صفحة تفاصيل التشغيل، والخط الزمني ولوحة المخطط يعملان مباشرة.
 
-## If the rail is empty
+## إذا كان الشريط الأيسر فارغًا
 
-The launcher shows a template only when **both** are true:
+لا تعرض صفحة التشغيل قالبًا إلا إذا تحقق **الشرطان معًا**:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- مفتاح القالب مفعّل في **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب**.
+- **السماح بالتشغيل اليدوي** مفعّل في حوار **تشغيل يدوي** بمحرّر القالب،
+  وهذا المفتاح هو ما ينشئ مشغّل `manual` الذي تقرأه صفحة التشغيل.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+ثمانية من القوالب المضمّنة الثلاثة عشر تأتي معطّلة: `external_pr_welcome`
+و`cross_review` و`ticket_to_pr` و`pr_triage` و`pre_merge_gate`
+و`release_notes` و`dep_audit` و`pr_digest`. يرفض المحرّك بدء قالب
+معطّل، ففعّل مفتاحه قبل أن تبحث عنه هنا.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+لا إجراء **تشغيل** لكل قالب في قائمة القوالب، ولا زر تشغيل داخل المحرّر.
+صفحة التشغيل هي الموضع الوحيد لبدء تشغيل يدوي.
 
-## Fill in a repository input
+## ملء مدخل مستودع
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+يعرض مدخل من النوع **مستودع** منتقيًا لمستودعات مساحة العمل المسجّلة.
+اختيار مستودع يملأ `repo_id` و`repo_local_path` و`repo_full_name`، وإن
+كان للمستودع بعيد على GitHub يملأ أيضًا `repo_owner` و`repo_name` في
+حمولة التشغيل، فتقرأ الخطوات اللاحقة ما تحتاج إليه منها.
 
-## Watch it run
+## متابعة التشغيل
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+لصفحة تفاصيل التشغيل ثلاثة أجزاء: شريط بيانات (وقت البدء، والمدة
+النشطة، وتقدّم الخطوات، ولافتة الفشل، و**إعادة المحاولة** و**حذف**)،
+وخط زمني قابل للطي يعرض مدة كل خطوة وتكلفتها، ولوحة المخطط. تحديد
+عقدة يفتح لوحة تفاصيل تلك الخطوة.
 
-[Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+تتناول
+[مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
+ذلك كله، بما في ذلك كيف تقرأ خطوة معلّقة وما تفعل حين تفشل خطوة.
 
-Every run you start from the app is a real one.
+كل تشغيل تبدأه من التطبيق تشغيل حقيقي.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create a pipeline template](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/)
-- [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
-- [Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
+- [إنشاء قالب خط أنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/)
+- [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
+- [مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Pipelines](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)

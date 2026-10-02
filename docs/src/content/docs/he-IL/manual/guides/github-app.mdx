@@ -1,138 +1,133 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: יצירת GitHub App
+description: רשמו GitHub App עבור השרת שלכם כדי שחברים יוכלו להיכנס, וכדי שעבודת רקע תרוץ בתור האפליקציה ולא בתור אדם.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+מדריך זה מראה כיצד להעניק לשרת שלכם זהות GitHub משלו. זה לוקח כשתי דקות, רק
+בעל השרת עושה זאת, וזה צריך לקרות פעם אחת בלבד לכל שרת.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[ייתכן שאינכם זקוקים לזה]
+בנייה רשמית כבר מגיעה עם **מזהה לקוח** של GitHub, כך
+ש[כניסה עם GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/) עובדת מיד
+בלי לרשום דבר — זרימת התקן מזדהה באמצעות מזהה הלקוח בלבד, ולכן זה בטוח להפצה.
+רשמו אפליקציה משלכם כאשר אתם רוצים שהשרת יפעל בשם עצמו (webhooks, סריקת בקשות
+משיכה וסנכרון כרטיסים שרצים על התקנת אפליקציה ולא על פרטי הגישה של אדם), או
+כאשר אתם בונים מהמקור.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/).
+לחיבור החשבון שלכם לאחר מכן, ראו
+[הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/).
 
-## Why your server needs its own app
+## מדוע השרת שלכם זקוק לאפליקציה משלו
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+שני תפקידים שונים נולדים מרישום אחד, והאפליקציה היא מה שהופך את שניהם לאמינים:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| תפקיד | מה עונה לו | מדוע זה חשוב |
+| --- | --- | --- |
+| **אדם נכנס** | מזהה הלקוח של האפליקציה, דרך זרימת התקן | אתם מקבלים פרטי גישה שהם שלכם, על השרת, בכל מכשיר — בלי אסימון להדביק או להחליף |
+| **השרת פועל** | המזהה של האפליקציה + מפתח פרטי ← אסימון התקנה | webhooks, סריקת בקשות משיכה וסנכרון כרטיסים מפסיקים להיות תלויים בכך שהאסימון של אדם אחד עוד בתוקף |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+שימו לב למה ש**אינו** מופיע בטבלה הזו: סוד לקוח. זרימת התקן של GitHub מזדהה
+באמצעות מזהה הלקוח בלבד — גם בקשת קוד התקן וגם בקשת האסימון החוזרת — כך שאין סוד
+שצריך לשמור לשם הכניסה.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+בלי אפליקציה משלכם, הראשון עדיין עובד דרך מזהה הלקוח שהבנייה מספקת; השני נופל
+חזרה לפרטי הגישה של בעל השרת, כך שעבודת רקע נשענת על מי שהשלים את תהליך ההיכרות
+ראשון.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[אין כפתור "התקינו את ה-GitHub App של Control Center"]
+GitHub App מבוזר היה משמעו סוד לקוח משותף אחד והתקנה משותפת אחת על פני השרתים של
+כולם, כך שהגישה של כל סביבת עבודה למאגרים הייתה עוברת דרך פרטי גישה שאיש באותה
+סביבת עבודה אינו שולט בהם. לכן כל שרת מחזיק אפליקציה משלו — המדריך הזה עוסק בכמה
+מועט זה עולה.
 :::
 
-## Prerequisites
+## דרישות מקדימות
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- אתם **בעל השרת** — פעולות `providerApps.*` מותרות רק לו, והכרטיס אינו נראה
+  לכל השאר
+- חשבון GitHub, או ארגון שאתם יכולים ליצור בו אפליקציות
+- שום דבר שנגיש לציבור: הכניסה היא **זרימת התקן**, כך שהשרת אינו זקוק לפורט נכנס,
+  מנהרה, כתובת URL ל-callback או דומיין
 
-## Register the app
+## רישום האפליקציה
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. עברו אל [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (עבור ארגון: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — כל דבר; `Control Center (yourname)` מתאים. השם יופיע
+   בקומיטים ובהערות שהשרת יוצר
+3. **Homepage URL** — כל דבר, למשל `https://github.com/your-name`
+4. **Callback URL** — השאירו ריק. לזרימת התקן אין כזו
+5. סמנו **Enable Device Flow**. זו ההגדרה היחידה שבלעדיה הכניסה אינה יכולה לעבוד
+6. הסירו את הסימון מ-**Webhook → Active**, אלא אם אתם מחברים webhooks בנפרד
+7. תחת **Repository permissions**, העניקו לפחות:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (חובה)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, אם אתם משתמשים ב-GitHub Issues לכרטיסים,
+     ולחיפוש ההערות של הבוט בשיחות בקשות משיכה
+     (ראו [דיבור עם Control Center מבקשת משיכה ב־GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/))
+   - **Checks**: Read-only, עבור מצב ה-CI בעמוד בקשת המשיכה
+8. תחת **Where can this GitHub App be installed?**, בחרו מה שמתאים —
+   "Only on this account" נכון לשרת אישי
+9. לחצו על **Create GitHub App**
 
-## Collect the three values
+## איסוף שלושת הערכים
 
-On the app's page, immediately after creation:
+בעמוד האפליקציה, מיד לאחר היצירה:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| ערך | היכן |
+| --- | --- |
+| **App ID** | לשונית **General**, סמוך לראש |
+| **Client ID** | לשונית **General**, תחת "Client secrets" |
+| **Private key** | **Generate a private key** — קובץ `.pem` יורד |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+קובץ המפתח הפרטי יורד פעם אחת, ו-GitHub לא יציג אותו שוב לעולם. שמרו אותו עד
+שהדבקתם אותו; תמיד אפשר ליצור אחר.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**סוד לקוח** הוא אופציונלי וקונה בדיוק דבר אחד: אם תשאירו את "Expire user
+authorization tokens" דלוק, הוא מה שמחדש בשקט את האסימון של האדם במקום לבקש ממנו
+להיכנס מחדש כל שמונה שעות. הכניסה עצמה לעולם אינה משתמשת בו.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+ההגדרה הפשוטה יותר היא לכבות את התפוגה, ואז אין צורך בסוד בשום מקום. אם תשאירו
+אותה דלוקה, צרו סוד והדביקו אותו ב**הגדרות ← שרת ← כניסה מאוחדת** (הכרטיס
+**אפליקציות ספק**) — אין משתנה סביבה עבורו, ואף אחד אינו מוטמע בבנייה, כך שהוא
+נשאר על השרת שלכם.
 
-## Install it on your account
+## התקנת האפליקציה בחשבון שלכם
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+אפליקציה שנרשמה אך אינה מותקנת יכולה לאמת אנשים, אך לא לקרוא דבר.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. בעמוד האפליקציה, פתחו את **Install App**
+2. התקינו אותה בחשבון או בארגון שלכם
+3. בחרו **All repositories**, או בחרו את המאגרים שהשרת הזה אמור לראות
 
-## Paste it into Control Center
+## הדבקה ב-Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. עברו אל **הגדרות ← שרת ← כניסה מאוחדת** וגללו אל הכרטיס
+   **אפליקציות ספק**
+2. בבלוק **GitHub**, הגדירו כל שדה:
+   - **מזהה אפליקציה** — ה-App ID המספרי
+   - **מפתח פרטי** — הדביקו את כל קובץ ה-`.pem`, כולל שורות ה-`BEGIN` וה-`END`
+   - **מזהה לקוח** — מאותו עמוד
+   - **סוד לקוח** — רק אם יצרתם אחד (לחידוש האסימון)
+3. לחצו על **בדוק**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+המפתח מנותח בזמן השמירה, כך שהדבקה קטועה או בפורמט שגוי נדחית מיד ולא נכשלת
+בבקשת רקע שעות מאוחר יותר. **בדוק** מרחיק לכת ושואל את GitHub על אילו חשבונות
+האפליקציה מותקנת — "נשמר" ו"עובד" הן שתי טענות שונות, ורק השנייה אומרת שמשהו
+ירוץ.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+נקודת ביקורת: בלוק GitHub מציג "השרת יכול לפעול בשם עצמו, ואנשים יכולים להיכנס",
+והשורה **GitHub** תחת **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד** מציעה
+כעת **כניסה עם GitHub**.
 
-## Configure it with environment variables instead
+## הגדרה באמצעות משתני סביבה במקום זאת
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+להתקנה ללא ממשק או מתוסרטת, השרת מזריע כל שדה מהסביבה בפעם הראשונה שאין לו ערך
+שמור:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +135,60 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+אין דגלי שורת פקודה עבור אלה — סוד בשורת פקודה קריא לכל תהליך במארח דרך `ps`.
+הסביבה היא המקום היחיד להגדיר אותם, והיא גוברת על כל מה שהבנייה מספקת.
+`.env.template` הוא הרשימה המלאה.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+לפיתוח מקומי, ה-`.env` בשורש המאגר נושא את אותם ערכים, ושולחן העבודה מעביר אותם
+לשרת שהוא מפעיל. שימו את המפתח על **שורה אחת** שם: ערך ב-`.env` הוא שורה אחת,
+ו-`\n` בתוך מרכאות כפולות מפוענח לשורה חדשה.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` ו-`GITHUB_APP_PRIVATE_KEY` הם אותם שמות שמתווך האסימונים של ארגז
+החול כבר קורא, כך שמארח שהגדיר אסימוני סוכן מפורטים מקבל את מסלול הכניסה בחינם.
+ההזרעה מתרחשת **פעם אחת לכל שדה** — לאחר מכן הערך השמור גובר, כך שעריכה בהגדרות
+אינה מתבטלת בהפעלה מחדש הבאה.
 
-## Do the same for Linear
+## עשו את אותו הדבר עבור Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+ל-Linear אין זרימת התקן, ולכן הכניסה שלו היא סבב בדפדפן והוא כן זקוק לכתובת URL
+ל-callback — הכרטיס **אפליקציות ספק** מציג לכם את הכתובת המדויקת לרישום.
 
-1. Create an OAuth application at
+1. צרו אפליקציית OAuth ב-
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. הגדירו את **כתובת URL ל-callback** לכתובת שהכרטיס מציג, כלשונה
+3. הדביקו את **מזהה הלקוח** ואת **סוד הלקוח** בבלוק Linear
+4. אפשר להוסיף **מפתח API** של סביבת עבודה — זהו פרט הגישה שהשרת משתמש בו
+   לסנכרון כרטיסים כשאף אדם לא ביקש
 
-## Troubleshooting
+## פתרון תקלות
 
-### The sign-in dialog says the provider returned no device code
+### תיבת הדו-שיח של הכניסה אומרת שהספק לא החזיר קוד התקן
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** כבוי באפליקציה. הפעילו אותו תחת **General** ונסו שוב.
 
-### Test says the credentials work but the app is not installed anywhere
+### הבדיקה אומרת שפרטי הגישה עובדים, אבל האפליקציה אינה מותקנת בשום מקום
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+רישום והתקנה הם שני שלבים נפרדים. פתחו את **Install App** בעמוד האפליקציה
+והתקינו אותה.
 
-### Test says the private key could not be read
+### הבדיקה אומרת שלא ניתן היה לקרוא את המפתח הפרטי
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+הדביקו את כל קובץ ה-`.pem`, כולל השורות `-----BEGIN` ו-`-----END`. לא ניתן
+להשתמש במפתח `ed25519` או EC — GitHub Apps חותמות עם RSA.
 
-### A member signed in but sees no repositories
+### חבר נכנס אבל אינו רואה מאגרים
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+האפליקציה אינה מותקנת בחשבון שמחזיק בהם, או שההתקנה שלה בוחרת מאגרים אחרים.
+הכניסה האישית שלהם מעניקה רק את מה שהאפליקציה מורשית לראות.
 
-## Related guides
+## מדריכים קשורים
 
-- [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
-- [Talk to Control Center from a GitHub PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/)
-- [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
-- [Manage API keys](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מפתחות-api/)
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
+- [דיבור עם Control Center מבקשת משיכה ב־GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/)
+- [חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
+- [ניהול מפתחות API](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מפתחות-api/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)

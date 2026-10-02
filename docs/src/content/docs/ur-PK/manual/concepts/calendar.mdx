@@ -1,128 +1,130 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: کیلنڈر اور شیڈولنگ
+description: Control Center سرور پر Google Calendar کو کیسے سنک کرتا ہے، سائن اِن کیوں ڈیوائس کوڈ گرانٹ ہے اور صرف پڑھنے والا اسکوپ کیا کچھ محیط ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/کیلنڈر
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/).
+Control Center Google Calendar سے جڑتا ہے تاکہ آپ کا دن آپ کے فلیٹ کے ساتھ ساتھ رہے۔ یہ
+آپ کے ایونٹس سنک کرتا ہے، اُنہیں مہینے، ہفتے، دن اور ایجنڈا ویوز میں دکھاتا ہے، میٹنگ
+شروع ہونے سے پہلے آپ کو خبردار کرتا ہے اور کسی بھی ایونٹ کو ریکارڈ شدہ اور خلاصہ شدہ
+[میٹنگ](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) میں بدل دیتا ہے۔
 
-## What it changes on Google
+## Google پر یہ کیا تبدیل کرتا ہے
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+تقریباً کچھ بھی نہیں۔ یہ انضمام ایونٹس کھینچ کر لاتا ہے اور اُنہیں پیش کر دیتا ہے۔ یہ
+دعوت نامے نہ بناتا ہے، نہ اُن میں ترمیم یا حذف کرتا ہے اور نہ اُن کا جواب دیتا ہے۔ ہر
+ڈیوائس کوڈ کنیکٹ، بلٹ اِن ہو یا اپنا لایا ہوا، `calendar.readonly` کے ساتھ
+`openid email` طلب کرتا ہے۔
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+ایونٹس **سرور پر** ورک اسپیس کے اپنے ڈیٹا بیس میں سنک ہوتے ہیں
+(`<dataDir>/<workspaceId>/workspace.db`) اور ہر کلائنٹ اُنہیں RPC کے ذریعے پیش کرتا ہے۔
+کسی کلائنٹ کے پاس Google کی کوئی کریڈنشل نہیں ہوتی۔
 
-## Per-workspace accounts
+## فی ورک اسپیس اکاؤنٹس
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+کیلنڈر اکاؤنٹس ورک اسپیس تک محدود ہوتے ہیں، بالکل Control Center کی باقی ہر چیز کی طرح۔
+ہر [ورک اسپیس](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) اپنا Google اکاؤنٹ (یا کئی
+اکاؤنٹس) جوڑتی ہے اور ایک ورک اسپیس کے ایونٹس اور ٹوکن کبھی دوسری سے نظر نہیں آتے۔
+ورک اسپیس بدلنے پر وہی کیلنڈر بدلتے ہیں جو آپ دیکھتے ہیں۔
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+ایک ورک اسپیس **کئی** Google اکاؤنٹس جوڑ سکتی ہے، مثلاً کوئی کام کا اکاؤنٹ اور کوئی
+ذاتی، اور اُن کے ایونٹس ایک ہی ویوز میں ضم ہو جاتے ہیں۔
 
-## Why sign-in is a device code
+## سائن اِن ڈیوائس کوڈ کیوں ہے
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+ہیڈلیس `cc_server` کے پاس کوئی براؤزر نہیں جو OAuth ری ڈائریکٹ لے سکے۔ اس لیے یہ اُسے
+استعمال نہیں کرتا: یہ **ڈیوائس کوڈ گرانٹ** (RFC 8628) سے اجازت لیتا ہے۔ سرور ایک
+مختصر یوزر کوڈ اور ایک Google URL دکھاتا ہے، آپ کسی بھی ایسے ڈیوائس پر منظوری دیتے
+ہیں جس میں براؤزر ہو اور سرور اُس وقت تک پول کرتا رہتا ہے۔ ہیڈلیس انسٹال اسی لیے
+اکاؤنٹ جوڑ سکتا ہے کہ میزبانی کے لیے کوئی ری ڈائریکٹ اینڈ پوائنٹ نہیں ہوتا۔
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+اپنی کریڈنشلز لانے سے پہلے جو نتیجہ جاننا ضروری ہے: کلائنٹ کی قسم Google کی
+"TV and Limited Input devices" ہونی چاہیے۔ Google اُس کلائنٹ قسم کو صرف پہلے سے منظور
+شدہ مخصوص اسکوپس عطا کرتا ہے اور جس پروجیکٹ میں Calendar اُس کے لیے اجازت یافتہ نہ ہو
+وہ `invalid_scope` کے ساتھ ناکام ہوتا ہے — اُس صورت میں آپ کو loopback یا web کلائنٹ
+درکار ہوگا۔
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+ٹوکن کبھی سرور سے باہر نہیں جاتے۔ یہ سرور کی ڈیٹا ڈائریکٹری میں `secrets.json` میں
+لکھے جاتے ہیں، `google_google:<workspaceId>:<email>` کلید کے ساتھ، ڈیٹا بیسز کے ساتھ
+ہی اور اُسی ہوسٹ فائل سسٹم اعتماد کی حد کے اندر۔ سرور رسائی خودکار طور پر ری فریش
+کرتا ہے اور جب Google کسی اکاؤنٹ کو مستقل طور پر باطل کر دیتا ہے (منسوخ یا بہت عرصے
+سے میعاد ختم شدہ سیشن)، تو `CalendarAuthExpired` شائع کرتا ہے اور خاموشی سے ناکام
+ہونے کے بجائے **دوبارہ منسلک کریں** بینر دکھاتا ہے۔
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+سورس سے بنایا گیا بلڈ **کوئی** Google کریڈنشل ساتھ نہیں لاتا — کلائنٹ id اور secret
+آپ خود دیتے ہیں۔ سرکاری ریلیز بلڈز میں ایک غیر رازدارانہ ڈیوائس کوڈ کلائنٹ شامل ہوتا
+ہے تاکہ کنیکٹ فلو فوراً کام کرے؛ سرور صرف اُس کی طرف اشارہ کرنے والا مارکر محفوظ
+کرتا ہے، اُس کی کاپی کبھی نہیں۔ ماحول میں `GOOGLE_OAUTH_CLIENT_ID` (اور اُس کا
+secret) ہمیشہ اندر شامل جوڑی پر فوقیت رکھتا ہے۔ جان بوجھ کر کوئی `--google-client-id`
+فلیگ نہیں ہے: نامعلوم فلیگز نظر انداز ہو جاتے ہیں، اور کمانڈ لائن پر موجود secret
+`ps` کے ذریعے پڑھا جا سکتا ہے۔
 
-For running your own Google project, see
-[Connect a Google Calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/).
+اپنا Google پروجیکٹ چلانے کے لیے
+[Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/) دیکھیں۔
 
-## Sync
+## سنک
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+سرور ہر منسلک اکاؤنٹ کے ایونٹس کی ایک گھومتی ہوئی ونڈو کھینچتا ہے — اکاؤنٹ کے ہر
+کیلنڈر کی، صرف بنیادی کی نہیں — **ہر دو منٹ بعد**، اور ساتھ ہی طلب پر (آغاز، کنیکٹ،
+دستی ری فریش)۔ یہ مختصر وقفہ اِس لیے قابلِ برداشت ہے کہ یہ اسکین صرف بدلاؤ پر مشتمل
+ہوتا ہے: ہر کیلنڈر اپنا سنک ٹوکن رکھتا ہے، چنانچہ جو کیلنڈر نہ بدلا ہو اُس کی قیمت
+پانچ ماہ کی ونڈو دوبارہ لانے کے بجائے ایک تقریباً خالی جواب بنتی ہے۔
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+بار بار ہونے والے ایونٹس سرور کی طرف سے پھیلا دیے جاتے ہیں، اس لیے کوئی کلائنٹ کبھی
+recurrence rule پارس نہیں کرتا۔ موجودہ ونڈو سے باہر کے کسی مہینے پر جانے پر وہ رینج
+ضرورت پڑنے پر لوڈ ہوتی ہے۔ حذف شدہ یا رینج سے باہر منتقل ہو گئے ایونٹس اگلے سنک پر
+ہٹا دیے جاتے ہیں۔
 
-## Views
+## ویوز
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| ویو         | یہ کیا دکھاتا ہے                                       |
+| ----------- | ------------------------------------------------------ |
+| **مہینہ**   | پورے مہینے کا گرڈ (`kalender` پیکیج سے چلتا ہے)         |
+| **ہفتہ**    | ہفتے کے وقت والے ایونٹس ایک ٹائم گرڈ میں                |
+| **دن**      | ایک دن کے وقت والے ایونٹس ایک ٹائم گرڈ میں              |
+| **ایجنڈا**  | آنے والے ایونٹس کی اسکرول ہونے والی فہرست                |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+کیلنڈر `/calendar` پر کھولیں؛ کسی ایونٹ کو منتخب کرنے سے اُس کی تفصیل
+`/calendar/:eventId` پر کھلتی ہے۔ آپ جو ویو چنتے ہیں وہ اُسی کلائنٹ کی اپنی ترجیحات
+میں محفوظ ہوتا ہے، لہٰذا وہ آپ کے ساتھ کسی دوسرے ڈیوائس پر نہیں جاتا۔
 
-## Meeting alerts
+## میٹنگ الرٹس
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+ہر منٹ چلنے والا شیڈیولر ایسے ایونٹس کو تلاش کرتا ہے جو قابلِ ترتیب لیڈ ونڈو کے اندر
+شروع ہونے والے ہوں اور **"میٹنگ جلد شروع ہو رہی ہے"** کی اطلاع بھیجتا ہے (ایک
+`MeetingStartingSoon` [ڈومین ایونٹ](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/))۔ اطلاع
+کے ساتھ جوائن URL بھی جاتا ہے جب وہ موجود ہو اور اُس پر کلک کرنے سے ایونٹ کی تفصیل
+کھلتی ہے۔ الرٹس ایونٹ کے `alertedAt` کے حساب سے ایک ہی بار بھیجے جاتے ہیں، اس لیے
+ایک ہی میٹنگ کبھی دو بار الرٹ نہیں کرتی، حتیٰ کہ ری اسٹارٹس کے دوران بھی، اور جس
+ایونٹ کا آغاز ایپ بند ہونے کے دوران گزر گیا ہو وہ کبھی دوبارہ نہیں چلتا۔
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+دو حدیں ایسی ہیں جن سے ٹکرانا آسان ہے۔ شیڈیولر **ڈیسک ٹاپ پر کلائنٹ کی طرف** چلتا ہے
+اور صرف اُس ورک اسپیس کے لیے جو اس وقت آپ کے پاس کھلی ہو — جس ورک اسپیس میں آپ نہیں
+ہیں وہ کوئی الرٹ نہیں دیتی۔ اور ویب بلڈ میں OS اطلاعات کی پائپ لائن بالکل نہیں ہوتی،
+اس لیے وہ بھی کوئی الرٹ نہیں دیتی۔
 
-## Record and link
+## ریکارڈنگ اور لنک
 
-From a calendar event you can start a [meeting recording](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+کیلنڈر ایونٹ سے آپ ایونٹ کے عنوان سے شروع ہونے والی
+[میٹنگ ریکارڈنگ](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) آغاز کر سکتے ہیں۔ Control Center
+ریکارڈنگ اور ایونٹ کے درمیان ایک کے ایک لنک محفوظ کرتا ہے، اس لیے میٹنگ کے نوٹس اور
+کیلنڈر اندراج جڑے رہتے ہیں، بغیر اِس کے کہ کوئی فیچر دوسرے پر منحصر ہو۔
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**ریکارڈنگ شروع کریں اور لنک کریں** صرف ڈیسک ٹاپ پر ہے۔ ویب کلائنٹ پر یہ عمل بتاتا ہے
+کہ ریکارڈنگ دستیاب نہیں — حالانکہ میٹنگز اسکرین کا اپنا ریکارڈ فلو براؤزر میں کام
+کرتا ہے۔
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[ایجنٹس آپ کا کیلنڈر نہیں پڑھ سکتے]
+کیلنڈر کے لیے کوئی MCP ٹولز نہیں ہیں۔ کوئی ایجنٹ ایونٹس کی فہرست نہیں بنا سکتا، کسی
+ایونٹ کی تفصیل نہیں پڑھ سکتا اور نہ آپ کی طرف سے RSVP کر سکتا ہے؛ `calendar.*` سطح
+صرف انسانی کلائنٹس کے لیے RPC ہے۔
 :::
 
-## See also
+## مزید دیکھیں
 
-- [Meetings and transcription](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/): what happens after you start a recording
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): why calendar accounts are per-workspace
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
-- [Record and summarize a meeting](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/)
+- [میٹنگز اور ٹرانسکرپشن](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/): ریکارڈنگ شروع کرنے کے بعد کیا ہوتا ہے
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): کیلنڈر اکاؤنٹس فی ورک اسپیس کیوں ہوتے ہیں
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): `MeetingStartingSoon` اور `CalendarAuthExpired`
+- [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
+- [میٹنگ ریکارڈ اور خلاصہ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/)

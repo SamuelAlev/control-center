@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: מחזור חיי כרטיס
+description: שדות הכרטיס, הסטטוסים, המעברים, הקשרים ונקודת החנק של השינויים.
 slug: he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## סטטוסי כרטיסים
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| סטטוס        | מחרוזת אחסון   | תיאור                                          |
+| ------------ | -------------- | ---------------------------------------------- |
+| `backlog`    | `backlog`      | נלכד, אך טרם עבר טריאז' אל התור הפעיל           |
+| `open`       | `open`         | עבר טריאז' ומוכן לעבודה, אך טרם התחיל           |
+| `inProgress` | `inProgress`   | בעבודה פעילה                                   |
+| `blocked`    | `blocked`      | התחיל אך חסום בגלל משהו חיצוני                  |
+| `inReview`   | `inReview`     | העבודה הושלמה, ממתין לסקירה                     |
+| `done`       | `done`         | הסתיים בהצלחה (מצב סיום)                       |
+| `failed`     | `failed`       | הסתיים בשגיאה (מצב סיום)                       |
+| `cancelled`  | `cancelled`    | נזנח (מצב סיום)                                |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+ערכי סטטוס נשמרים ב-camelCase (`inProgress`, `inReview`), ולעולם לא `in_progress`. ערך null שמור מפוענח כ-`open`; ערך לא מוכר זורק שגיאה במקום לכפות המרה.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` מקבל כינויים שמספקים סוכנים, תוך התעלמות מאותיות רישיות ומהתווים `-` / `_` / רווח:
 
-| Status       | Accepted aliases                              |
+| סטטוס        | כינויים מקובלים                               |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## מעברי סטטוס
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,159 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**הגרף הזה מחייב סוכנים ואוטומציה בלבד.** `TicketWorkflowService.transitionStatus` בודק אותו כאשר `force` הוא false — כלי MCP ומנגנוני היישור. מעבר לא חוקי שם נרשם ביומן ומתעלמים ממנו. כל שינוי סטטוס שנעשה בידי משתמש בממשק עובר עם `force: true` ועוקף את הגרף לחלוטין, כך שאדם רשאי להעביר כרטיס לכל סטטוס שהבורר מציג (כל סטטוס מלבד `failed`), כולל פתיחה מחדש של כרטיס במצב סיום. סוכנים מסמנים `failed` עם `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+סטטוס רשאי תמיד לעבור לעצמו. למצבי סיום אין קצוות יוצאים.
 
-| From         | Allowed targets                                      |
+| מ-           | יעדים מותרים                                         |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (מצב סיום)                                         |
+| `failed`     | — (מצב סיום)                                         |
+| `cancelled`  | — (מצב סיום)                                         |
 
-## Ticket priorities
+## עדיפויות כרטיסים
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+נשמרת כמספר שלם לפי הסקאלה המקורית של Linear, 0–4. ערך לא מוכר מפוענח כ-`none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| עדיפות   | נשמר כ- |
+| -------- | ------- |
+| `none`   | `0`     |
+| `urgent` | `1`     |
+| `high`   | `2`     |
+| `medium` | `3`     |
+| `low`    | `4`     |
 
-## Ticket providers
+## ספקי כרטיסים
 
-An unknown or null stored value parses to `local`.
+ערך שמור לא מוכר או null מפוענח כ-`local`.
 
-| Provider | Status                                                 |
+| ספק      | סטטוס                                                  |
 | -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| `local`  | נשמר כולו במסד הנתונים של סביבת העבודה; ברירת המחדל      |
+| `linear` | בבעלות מרוחקת, משוקף מקומית                            |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+מתאמי סנכרון יושבים תחת `packages/cc_infra/lib/src/tickets/sync/` עבור Linear,
+GitHub Issues, Jira Cloud ו-ClickUp. GitHub Issues הוא ספק של מתאם סנכרון
+(`vendorId: github`) בלבד — הוא אינו ערך של `TicketProvider`, ולכן סוגיה שנמשכה
+מ-GitHub נשמרת עם `originKind: externalSync` וברירת המחדל
+`provider: local`. מיפוי הספקים יושב ב-`ticket_sync_links`.
 
-## Ticket origin
+## מקור הכרטיס
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` כותב `manual`. משיכה מספק כותבת `externalSync`. ילדים מואצלים
+נשארים `manual`.
 
-| Value          | Meaning                                                      |
+| ערך            | משמעות                                                       |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | ברירת המחדל ב-`createTicket` (שורות של אדם, סוכן וילדים מואצלים) |
+| `externalSync` | נקבע בידי `TicketSyncEngine` במשיכה מספק                     |
 
-## Ticket fields
+## שדות הכרטיס
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+האגרגט משתרע על שני תחומים בשורה אחת. ה**שיקוף** (ספק, מפתחות, כותרת, תיאור, עדיפות, תוויות, סטטוסים, חותמות זמן) הוא מטמון לספק מרוחק ונכתב מחדש כולו ברענון. ה**שכבת־על** (הקצאה, האצלה, מרחב, הורה, פרויקט, בקשות משיכה מקושרות) קיימת רק ב-Control Center, ורענון לעולם אינו נוגע בה.
 
-| Field                    | Type                       | Description                                                                                |
+| שדה                      | סוג                        | תיאור                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | סביבת העבודה שאליה הכרטיס שייך                                                              |
+| `provider`               | `TicketProvider`           | הבקאנד שמחזיק בנתונים הקנוניים (ברירת מחדל `local`)                                        |
+| `externalKey`            | `String?`                  | מפתח מקורי של הספק (למשל `LIN-123`). `createTicket` מקומי כותב כאן UUID *נפרד*, ולא את ה-`id` של השורה |
+| `url`                    | `String?`                  | כתובת URL באינטרנט אצל הספק המרוחק                                                          |
+| `title`                  | `String`                   | תקציר קצר; אסור שיהיה ריק                                                                   |
+| `description`            | `String?`                  | גוף Markdown ארוך יותר                                                                     |
+| `priority`               | `TicketPriority`           | ברירת מחדל `none`                                                                          |
+| `labels`                 | `List<String>`             | תוויות חופשיות                                                                             |
+| `status`                 | `TicketStatus`             | סטטוס קנוני ומנורמל                                                                        |
+| `rawStatus`              | `String?`                  | שם המצב המקורי של הספק המרוחק, נשמר לתצוגה ללא אובדן                                        |
+| `externalSyncedAt`       | `DateTime?`                | הסנכרון הרב-ספקי האחרון; null עד לסנכרון הראשון. מיפוי לפי ספק יושב ב-`ticket_sync_links`   |
+| `parentTicketId`         | `String?`                  | ההורה בעץ ההאצלה / הפירוק                                                                  |
+| `projectId`              | `String?`                  | הפרויקט שאליו הכרטיס שייך; לעולם אינו נדחף למרוחק                                          |
+| `assignedAgentId`        | `String?`                  | ה-id של הישות הראשית שהוקצתה (מטא-נתונים בלבד — הקצאה אינה משגרת דבר)                      |
+| `assigneeType`           | `PrincipalType`            | איזה סוג של ישות ראשית `assignedAgentId` מציין — `user` או `agent` (ברירת מחדל `agent`)     |
+| `createdByType`          | `PrincipalType?`           | סוג הישות הראשית שיצרה את הכרטיס (`user` או `agent`); null בשורות מדור קודם או מערכת        |
+| `createdById`            | `String?`                  | ה-id של הישות הראשית שיצרה אותו                                                             |
+| `assignedTeamId`         | `String?`                  | הצוות שהוקצה (מטא-נתונים בלבד)                                                             |
+| `delegatedByAgentId`     | `String?`                  | הסוכן שהאציל את הכרטיס הזה                                                                 |
+| `delegationDepth`        | `int`                      | העומק בשרשרת ההאצלה; השורש הוא `0`, ונבדק מול תקרת העומק המרבית                             |
+| `delegationRootTicketId` | `String?`                  | השורש של שרשרת ההאצלה; null בכרטיס שורש                                                     |
+| `spaceId`                | `String?`                  | השיחה שהכרטיס נוצר ממנה, או המרחב של הסוכן המאציל                                            |
+| `errorMessage`           | `String?`                  | נקבע כאשר `status` הוא `failed`                                                             |
+| `linkedPrIds`            | `List<String>`             | מזהי הצמתים של בקשות המשיכה שאליהן הכרטיס מקושר                                            |
+| `metadata`               | `Map<String, dynamic>`     | שק חופשי                                                                                   |
+| `createdAt`              | `DateTime`                 | זמן היצירה                                                                                 |
+| `startedAt`              | `DateTime?`                | מתי העבודה התחילה                                                                            |
+| `blockedAt`              | `DateTime?`                | מתי הכרטיס נחסם                                                                             |
+| `cancelledAt`            | `DateTime?`                | מתי הכרטיס בוטל                                                                             |
+| `completedAt`            | `DateTime?`                | מתי הכרטיס הושלם בהצלחה                                                                     |
+| `finishedAt`             | `DateTime?`                | מתי הכרטיס הגיע למצב סיום כלשהו                                                             |
+| `updatedAt`              | `DateTime`                 | השינוי האחרון (רענון שיקוף או שינוי בשכבת־על)                                               |
+| `version`                | `int`                      | מונה מקביליות אופטימיסטית, שמתקדם בכל שינוי                                                 |
+| `originKind`             | `TicketOriginKind`         | איך הכרטיס נוצר (ברירת מחדל `manual`)                                                       |
+| `collaborators`          | `List<TicketCollaborator>` | נטען בידי המאגר לפי דרישה                                                                  |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+נגזרים: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` ו-`displayKey` (`externalKey ?? id` — כרטיסים מקומיים מציגים אפוא את ה-UUID הנפרד מזמן היצירה, ולא את ה-`id` של השורה).
 
-## Ticket relations
+## קשרי כרטיסים
 
-Stored edges are directional rows in `ticket_links`:
+הקצוות השמורים הם שורות כיווניות ב-`ticket_links`:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| סוג           | מחרוזת אחסון   | משמעות                            |
+| ------------- | -------------- | --------------------------------- |
+| `blocks`      | `blocks`       | המקור חוסם את היעד                |
+| `relatesTo`   | `relates_to`   | קשר סימטרי                        |
+| `duplicateOf` | `duplicate_of` | המקור הוא כפיל של היעד            |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+אוצר המילים שבהם מדברים הממשק והכלי `ticket_relation` הוא `TicketRelationKind`, שנגזר מקצה שמור ומהצד שבו יושב הכרטיס הנדון:
 
-| Kind           | Derived from                                         |
+| סוג            | נגזר מ-                                              |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | שורת `blocks` שבה הכרטיס הנדון הוא היעד              |
+| `blocking`     | שורת `blocks` שבה הכרטיס הנדון הוא המקור             |
+| `relatedTo`    | שורת `relates_to` (סימטרי)                           |
+| `duplicateOf`  | שורת `duplicate_of` שבה הכרטיס הנדון הוא המקור       |
+| `duplicatedBy` | שורת `duplicate_of` שבה הכרטיס הנדון הוא היעד        |
+| `subIssueOf`   | `tickets.parent_ticket_id` של הכרטיס הנדון           |
+| `parentOf`     | `tickets.parent_ticket_id` של הכרטיס האחר            |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+קשרי הורה ותת־סוגיה **אינם** שורות ב-`ticket_links` — הם יושבים על `tickets.parent_ticket_id`.
 
-## Domain events
+## אירועי תחום
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+שמונת המחלקות האלה יושבות ב-`packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. אין `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` או `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
+| אירוע                     | נפלט כאשר                                          |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | כרטיס נוצר                                          |
+| `TicketAssigned`          | כרטיס מוקצה לישות ראשית או לצוות                    |
+| `TicketCompleted`         | העבודה מסתיימת בהצלחה                               |
+| `TicketFailed`            | העבודה נכשלת                                        |
+| `TicketCancelled`         | כרטיס מבוטל                                         |
+| `TicketStatusChanged`     | כל שינוי סטטוס                                      |
+| `TicketReassigned`        | כרטיס מוקצה מחדש                                    |
+| `TicketDetailsUpdated`    | כותרת, תיאור, עדיפות או תוויות משתנים               |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` הוא אות ביקורת והתראה וגם טריגר לפייפליין. הקצאה לסוכן אינה מפעילה שום ריצה — אין משגר כרטיסים שצופה ב-`assignedAgentId`. הקצאה לצוות היא החריג: `TeamRoutingService` משגר את מוביל הצוות. הוספת משתף פעולה כותבת שורה ואינה מפרסמת דבר. webhook מספק מיושם דרך `TicketSyncEngine` בלי אירוע תחום.
 
-## Mutation chokepoint
+## נקודת החנק של השינויים
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` מחזיק בכל שינוי.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| מנגנון                 | פירוט                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| נקודת חנק אחת          | כל השינויים עוברים דרך `_mutate`, שטוען את השורה וקורא ל-`_assertWorkspace` לפני היישום                                                          |
+| בידוד סביבות עבודה     | `_assertWorkspace` זורק `WorkspaceMismatchException` כאשר ה-`workspaceId` של השורה שנטענה אינו תואם לזה של הקורא                                  |
+| מקביליות אופטימיסטית   | `_mutate` כותב עם `expectedVersion` שמוגדר ל-`version` שהוא קרא זה עתה, ומנסה שוב בעת `ConcurrencyConflictException` על ידי קריאה מחדש של מצב עדכני |
+| תפיסה בלעדית           | `tryCheckout` / `releaseCheckout`; סוכן שני שתופס כרטיס תפוס מקבל `CheckoutConflictException`                                                     |
+| שומר מעברים            | `canTransitionTo`, מיושם רק כאשר `force` הוא false                                                                                              |
 
-## See also
+## ראו גם
 
-- [Tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
-- [Manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
-- [Delegate tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
-- [Domain events](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/)
+- [כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
+- [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
+- [אירועי תחום](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/)

@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Styr bakgrundsworkers
+description: Använd vibe-läget för att sluta göra jobbet själv och i stället styra flera agenter som gör det parallellt.
 slug: sv-SE/handbok/how-to-guider/styr-bakgrundsworkers
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Den här guiden visar hur du kör ett samtal som **regissör** i stället för som worker: sessionen läser och verifierar, och bakgrundsagenter gör redigeringarna.
 
-## What changes when you type `/vibe`
+## Vad som ändras när du skriver `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Två saker, och bara den första framtvingas av maskineriet:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Sessionens egna verktyg degraderas till skrivskyddat**, plus fem verb för att styra workers. Det enda sättet den kan påverka repot på är genom en worker, och det enda sättet den kan veta vad som hände är att läsa filerna som en worker rörde.
+2. **Den får instruktionen att verifiera genom att läsa, inte genom att tro.** En workers rapport är ett påstående om vad den gjorde, inte bevis för att det fungerade.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Det första är det som bär. En regissör som fortfarande kan söka och redigera kommer att göra jobbet själv under press, och det är precis det felläget som det här finns för att förhindra.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Workers börjar tomma
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+En worker har aldrig sett ditt samtal och kommer aldrig att göra det. Briefen är hela dess kontext.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Det är det som håller mönstret billigt – tjugo workers som var och en bär regissörens historik skulle kosta tjugo gånger regissörens kontext – och det är också det som gör briefar svåra att skriva. ”Gör den andra också nu” är en komplett instruktion för regissören och ingenting alls för en färsk session.
 
-A good brief names files, commands and the definition of done:
+En bra brief namnger filer, kommandon och definitionen av klart:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> I `lib/features/auth/`, ersätt varje anrop till `SessionStore.read(key)` med `SessionStore.get(key)`. Den nya metoden returnerar `Future<String?>` där den gamla returnerade `String?`, så anropare behöver `await`. Kör `fvm flutter analyze lib/features/auth` när du är klar och rapportera alla fel du inte kunde åtgärda.
 
-## The five verbs
+## De fem verben
 
-| Verb         | What it does                                            |
+| Verb         | Vad det gör                                             |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Startar en worker på en brief. **Återvänder omedelbart.** |
+| `vibe_list`  | Nivå, status, förfluten tid och senaste resultat för alla |
+| `vibe_send`  | En uppföljande tur för en worker som har avslutat         |
+| `vibe_wait`  | Blockerar tills en worker blir klar                       |
+| `vibe_kill`  | Stoppar en                                                |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Spawnandet är asynkront, och det är meningen. En regissör som blockerar vid varje spawn kör workers en i taget, vilket är ett långsammare sätt att göra det den redan gjorde själv. Använd `vibe_wait` bara när du verkligen inte kan gå vidare utan ett specifikt svar.
 
-## Two tiers
+## Två nivåer
 
-| Tier   | For                                                              |
+| Nivå   | För                                                              |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Mekaniskt arbete med en tydlig specifikation – redigeringar, namnbyten, utkast, köra kommandon |
+| `good` | Design, omdöme eller granskning av det en `fast`-worker har producerat |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Ett vanligt upplägg är att sprida ut `fast`-workers över oberoende filer och sedan spawna en `good`-worker som granskar vad de gjorde tillsammans.
 
-## Verifying
+## Verifiering
 
-This is the part that decides whether the pattern is worth anything.
+Det här är delen som avgör om mönstret är värt något.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Läs sedan **filerna den namngav**. Regissören har `read`, `search`, `lsp` och `ast_grep`; det är hela poängen med att behålla dem. En regissör som tar rapporten för vad den säger är en sammanfattare av andra agenters optimism.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` efter en omgång workers är oftast den snabbaste enskilda kontrollen.
 
-## When a worker loses the thread
+## När en worker tappar tråden
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Döda den och brieffa om. En färsk, korrigerad brief är billigare än en diskussion, och `vibe_send` fungerar bara på en worker som redan har avslutat sin tur.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Gränser
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Åtta samtidiga workers.** Ett tak för kostnaden, inte en teknisk gräns: var och en är en full modelsession, och en regissör som sprider ut tjugo har slutat hålla koll på vad de alla gör.
+- **Ingen worker överlever läget.** När körningen tar slut stoppas var och en av dem, och transkriptet anger hur många. En bakgrundsagent som fortfarande redigerar filer efter att samtalet har gått vidare är det enda felet som inte får inträffa här.
+- **Under huven är workers vanliga subagenter.** Samma djupgräns, samma policy för räcken, samma underordnade körningslogg. Vibe ändrar vem som driver dem, inte vad de får göra – så godkännandeförfrågningar visas fortfarande för en workers skriv- och exec-anrop.
 
-## When not to use it
+## När du inte ska använda det
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/sv-SE/handbok/how-to-guider/skapa-pipeline/) or an [orchestration](/sv-SE/handbok/how-to-guider/kor-orkestrering/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Vibe-läget är för arbete som delas upp i oberoende briefar. Om nästa steg beror på föregående stegs utdata beskriver du en [pipeline](/sv-SE/handbok/how-to-guider/skapa-pipeline/) eller en [orkestrering](/sv-SE/handbok/how-to-guider/kor-orkestrering/), och båda uttrycker beroenden ordentligt i stället för att låta regissören simulera dem med `vibe_wait`.
 
-## Related
+## Relaterat
 
-- [Run agents in parallel](/sv-SE/handbok/how-to-guider/parallella-agenter/) — the other ways to fan out
-- [Orchestration](/sv-SE/handbok/koncept/orkestrering/) — when the work has a shape
-- [Built-in agent tools](/sv-SE/handbok/referens/agentverktyg/) — the verbs and their arguments
+- [Kör agenter parallellt](/sv-SE/handbok/how-to-guider/parallella-agenter/) — de andra sätten att sprida ut arbetet
+- [Orkestrering](/sv-SE/handbok/koncept/orkestrering/) — när arbetet har en form
+- [Inbyggda agentverktyg](/sv-SE/handbok/referens/agentverktyg/) — verben och deras argument

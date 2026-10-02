@@ -1,104 +1,106 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: Referință pentru configurarea SSO
+description: Fiecare opțiune, endpoint, operație și cod de eroare al autentificării unice.
 slug: ro-RO/manual/referinta/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Tot ce este configurabil la autentificarea unică, într-un singur loc. Valorile stau
+în rândurile `sso_connections` din `global.db` (la nivel de server prin proiectare),
+editate prin **Setări → Server → Autentificare unică** sau prin operațiile RPC
+`sso.*`. Rândul salvat este singura sursă de adevăr — nu există o cale de mediu
+`CC_SAML_*` / `CC_OIDC_*` (o conexiune care ar putea veni din două locuri este una
+cu care ecranul de setări poate intra în contradicție).
 
-## Connection fields
+## Câmpurile conexiunii
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Câmp                   | Se aplică la | Implicit        | Semnificație                                                                                                                                              |
+| ---------------------- | ------------ | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | ambele       | oprit           | autentificările pot folosi această conexiune                                                                                                              |
+| `idpMetadataXml`       | SAML         | —               | XML-ul `EntityDescriptor` al IdP-ului (obligatoriu pentru activare)                                                                                       |
+| `spEntityId`           | SAML         | `<origin>/saml` | id-ul nostru de entitate, fixat atunci când originea variază                                                                                              |
+| `emailAttribute`       | SAML         | `email`         | atributul care poartă e-mailul; un NameID în formă de e-mail este soluția de rezervă                                                                       |
+| `displayNameAttribute` | SAML         | `displayName`   | atributul numelui afișat                                                                                                                                  |
+| `groupsAttribute`      | SAML         | `groups`        | atributul numelor de grup                                                                                                                                 |
+| `clockSkewSeconds`     | SAML         | 90              | marja permisă pentru decalajul de ceas la validarea duratei de viață                                                                                      |
+| `allowIdpInitiated`    | SAML         | oprit           | acceptă răspunsuri nesolicitate (fără `InResponseTo`)                                                                                                     |
+| `wantResponseSigned`   | SAML         | oprit           | cere o semnătură la rădăcina răspunsului (semnăturile aserțiunilor sunt mereu obligatorii)                                                                |
+| `issuer`               | OIDC         | —               | URL-ul de bază al emitentului (obligatoriu pentru activare)                                                                                               |
+| `clientId`             | OIDC         | —               | id-ul de client public (obligatoriu pentru activare)                                                                                                      |
+| `clientSecret`         | OIDC         | —               | doar pentru clienții confidențiali; stocat în fișierul de secrete 0600, niciodată în baza de date — doar în scriere prin RPC (`sso.getConfig` raportează `clientSecretPresent`) |
+| `groupsClaim`          | OIDC         | `groups`        | revendicarea care poartă numele de grup                                                                                                                   |
+| `defaultRole`          | ambele       | `member`        | rolul atunci când niciun grup nu se mapează — niciodată `owner`                                                                                           |
+| `groupRoleMap`         | ambele       | `{}`            | grup → rol; mapările către proprietar sunt refuzate la salvare                                                                                            |
+| `autoMember`           | ambele       | pornit          | adaugă automat utilizatorii în fiecare spațiu de lucru la prima autentificare                                                                             |
+| `allowJit`             | ambele       | pornit          | provisionează utilizatorii necunoscuți la autentificare                                                                                                   |
 
-## Process configuration
+## Configurarea procesului
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+Conexiunile SSO nu se inițializează din mediu. Un singur steag de proces rămas se
+referă la **predarea către browser**, nu la rândul conexiunii:
 
-| Variable / flag                          | Meaning                                                                                                              |
+| Variabilă / steag                        | Semnificație                                                                                                         |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | originea către care redirecționează browserul callback-urile SSO (credențialul călătorește în fragmentul URL-ului). Nesetată, predarea rămâne pe aceeași origine. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+URL-ul emitentului în sine trebuie să fie `https` (`http` este acceptat doar pentru
+emitenți pe loopback: `localhost`, `127.0.0.1` și `::1`).
 
-## HTTP endpoints
+## Endpoint-uri HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| Endpoint                                         | Autentificare       | Scop                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | fără (redirecționare) | pornește autentificarea inițiată de SP; `relay=desktop` predă aplicației, `relay=web-popup` trimite prin postMessage către tab-ul de conectare în așteptare (care își declară `client_origin`, onorat doar când lista de permisiuni a originilor îl consideră de încredere) |
+| `POST /saml/acs`                                 | fără (POST de la IdP) | consumatorul de aserțiuni — verifică, provisionează, emite                                                                                                                                                     |
+| `GET /saml/metadata`                             | fără                | `EntityDescriptor`-ul nostru de SP                                                                                                                                                                               |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | fără                | ciclul dus-întors OIDC; `relay=desktop` predă aplicației, `relay=web-popup` tab-ului de conectare în așteptare (aceeași convenție `client_origin`)                                                               |
+| `GET /auth/providers`                            | fără, CORS `*`      | sonda ecranului de conectare: conexiunile SSO oferite (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                    |
+| `/scim/v2/Users…`                                | Bearer (token SCIM) | Users: creare/obținere/listare+filtrare/PUT/PATCH/DELETE                                                                                                                                                         |
+| `/scim/v2/Groups`                                | Bearer              | doar citire; push-ul de grupuri răspunde 501 prin proiectare                                                                                                                                                     |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | documentul de capabilități                                                                                                                                                                                       |
 
-## RPC ops
+## Operații RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Toate operațiile `sso.*` sunt la nivel de server și sunt restricționate la
+**proprietarul serverului** (operatorul instalării,
+`ServerAuthority.serverOwner`). Deținerea unui spațiu de lucru nu este suficientă;
+nici asocierea singură nu le acordă vreodată.
 
-| Op                        | Purpose                                                                                                                                                       |
+| Operație                  | Scop                                                                                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | conexiunea salvată pentru un tip                                                                                                                              |
+| `sso.saveConfig`          | validează, persistă și aplică în direct                                                                                                                       |
+| `sso.status`              | steaguri de activare/configurare, prezența tokenului SCIM, originea canonică                                                                                  |
+| `sso.testConnection`      | testează o conexiune fără ciclul dus-întors din browser (SAML: parsarea metadatelor + construirea AuthnRequest; OIDC: descoperirea emitentului), cu valori opționale nesalvate de pe ecran |
+| `sso.spMetadata`          | emite `EntityDescriptor`-ul de SP pentru o origine                                                                                                            |
+| `sso.setPairingEnabled`   | permite/interzice asocierea manuală (coduri de invitație, chei de asociere); refuzul de a o dezactiva cât timp nu există nicio conexiune SSO funcțională protejează împotriva blocării accesului |
+| `sso.sessionPolicy`       | citește durata maximă de viață și timeout-ul de inactivitate ale credențialului de dispozitiv al instalării (minute; `0` = nesetat)                          |
+| `sso.setSessionPolicy`    | setează acele limite; aplicate la verificarea dispozitivului, nu anunțate clienților                                                                          |
+| `sso.scimRegenerateToken` | generează + returnează bearer tokenul SCIM (o singură dată)                                                                                                   |
 
-## Validation error codes
+## Coduri de eroare la validare
 
-`cc_saml_verify_response` failures carry a stable code:
+Eșecurile `cc_saml_verify_response` poartă un cod stabil:
 
-| Code                   | Meaning                                                                          |
+| Cod                    | Semnificație                                                                     |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | semnătură lipsă/neacceptată/manipulată sau un algoritm/transformare nepermis(ă)  |
+| `expired`              | în afara `NotBefore`/`NotOnOrAfter` (dincolo de marja de decalaj)                |
+| `audience`             | restricția de audiență nu ne numește                                             |
+| `destination`          | destinația răspunsului nu este ACS-ul nostru                                     |
+| `request_match`        | `InResponseTo` nu corespunde unei cereri în așteptare sau este nesolicitat cât timp acest lucru este interzis |
+| `issuer`               | emitentul nu este IdP-ul configurat                                              |
+| `recipient`            | destinatarul confirmării subiectului nu este ACS-ul nostru                       |
+| `malformed`            | eșec la nivel de XML/schemă                                                      |
+| `status`               | starea raportată de IdP nu a fost Success                                        |
+| `invalid` / `internal` | orice altceva / eșec al cusăturii                                                |
 
-## Database surfaces
+## Suprafețe de bază de date
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — un rând pentru fiecare tip, ÎNTRE SPAȚII DE
+  LUCRU PRIN PROIECTARE.
+- `users.sso_subject` + `users.sso_issuer` — fixarea subiectului furnizorului,
+  unică per `(issuer, subject)` printr-un index parțial.
+- `users.deactivated_at` — marcajul de dezactivare SCIM.
+- Bearer tokenul SCIM și client secretul OIDC stau în fișierul de secrete 0600,
+  niciodată în baza de date.

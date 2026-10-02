@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: ルートマップ
+description: Control Center が登録するすべてのルートと、対応する画面およびクエリパラメーター。
 slug: ja-JP/マニュアル/リファレンス/ルートマップ
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## アプリシェル
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+アプリシェル（`ControlCenterLayout`）は、`ShellRoute` を介してワークスペース内のすべてのルートをラップします。**シェル内のすべての遷移先にはワークスペースのプレフィックスが付き — `/workspaces/:workspaceId/…` — URL 内のワークスペース id が、アクティブなワークスペースの唯一の信頼できる情報源です。** プレフィックスが付かないのは、コンテキスト確立前のサーフェスだけです。すなわち `/splash`、`/onboarding`、`/signed-out`、および素の `/workspaces` ピッカーで、いずれも全画面表示でシェルの外側にあります。
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+ゲートが完了するのは、**サインイン中のユーザーに対して**少なくとも 1 つのコードホストが接続され、かつ少なくとも 1 つのワークスペースが存在するときです。
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+資格情報の欠如とセットアップの欠如は別の画面であり、その判別基準は、呼び出し元自身の `identity.me` から読み取る `users.onboarding_finished_at` です — 「ワークスペースが存在するかどうか」では決してありません。これは、自分が作成していないワークスペースに招待されたその瞬間に誤りになります。コードホストが 1 つも接続されていない場合、オンボーディングを完了済みのアカウントは再認証のために `/signed-out` へ進み、未完了のアカウントは `/onboarding` へ進みます。フラグがまだ不明な間は、ガードは推測せずにスプラッシュを保持します。オンボーディングから外へ戻すリダイレクトを決して行わないためです。
 
-## Unprefixed routes
+## プレフィックスのないルート
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| パス | 画面 |
+| --- | --- |
+| `/splash`                 | オンボーディングゲートを解決する起動スプラッシュ |
+| `/onboarding`             | コードホストへの接続、ワークスペースの作成または参加、サンドボックス、既定のアダプター、続いて音声。アカウントがすでにワークスペースに所属している場合、ワークスペースのステップは省略されます |
+| `/signed-out`             | 再認証: 設定画面が描画するのと同じコードホスト接続カードを、ステップバーも続行ボタンもなしで表示します。コードホストが応答を返すと、ルーターが自ら画面を離れます |
+| `/workspaces`             | ワークスペースの一覧とピッカー                  |
+| `/workspaces/:workspaceId` | `/workspaces/:workspaceId/inbox` へリダイレクトします |
 
-## Workspace routes
+## ワークスペースのルート
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+以下のパスでは `/workspaces/:workspaceId` プレフィックスを省略しています。
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| パス | クエリパラメーター | 画面 |
+| --- | --- | --- |
+| `/inbox`                                | —                                         | 統合受信トレイ: レビューライフサイクルで分類された PR と、オペレーターをブロックしている PR 以外の作業。ガード通過後のランディングルートで、素の `/workspaces/:workspaceId` はここへリダイレクトします |
+| `/spaces`                               | —                                         | スペースサーフェス。スペースは未選択                                                                                                                                      |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | 1 つのスペース。`m` はメッセージへのディープリンクで、開いたときに一度だけ消費されます                                                                                     |
+| `/tickets`                              | —                                         | チケットボード                                                                                                                                                            |
+| `/tickets/:ticketId`                    | —                                         | チケットのマスター/詳細                                                                                                                                                    |
+| `/projects/:projectId`                  | —                                         | プロジェクトの概要                                                                                                                                                        |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | PR 一覧。`repo` は左レールでそのリポジトリを選択します                                                                                                                      |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | 新しいプルリクエストの作成。`space` は、分離されたワークツリーがブランチを提供するスペースを指定します                                                                        |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | diff ビューアー付きの PR 詳細。`comment` は 1 件のコメントの数値 REST id です                                                                                               |
+| `/pipelines`                            | —                                         | パイプライン実行の一覧                                                                                                                                                     |
+| `/pipelines/run`                        | `?templateId=<id>`                        | 手動実行ランチャー                                                                                                                                                        |
+| `/pipelines/:runId`                     | —                                         | パイプライン実行の詳細（ステップタイムライン）                                                                                                                              |
+| `/plans`                                | —                                         | Plan Studio ハブ: アクティブなプラン、プランドキュメント、プレイブック                                                                                                        |
+| `/plans/:kind/:id`                      | —                                         | 1 つのプランの Plan Studio。`kind` は `orchestration` または `document`                                                                                                     |
+| `/meetings`                             | —                                         | ミーティングの一覧                                                                                                                                                        |
+| `/meetings/record`                      | —                                         | ライブミーティングの録画画面                                                                                                                                                |
+| `/meetings/:meetingId`                  | —                                         | ミーティングの詳細: ノート、文字起こし、アクションアイテム、決定事項                                                                                                          |
+| `/calendar`                             | —                                         | カレンダー: 月、週、アジェンダの各ビュー                                                                                                                                     |
+| `/calendar/:eventId`                    | —                                         | カレンダーイベントの詳細（兄弟ルート。カレンダーページのキーを共有）                                                                                                           |
+| `/newsfeed`                             | —                                         | ニュースフィードの一覧                                                                                                                                                     |
+| `/newsfeed/article/:articleId`          | —                                         | 記事リーダー                                                                                                                                                              |
+| `/observability`                        | —                                         | オブザーバビリティハブ: ワークスペースの実行ログフィード上に使用量、インサイト、ライブ、品質のタブ。既定では使用量タブ                                                              |
+| `/users/:login`                         | —                                         | GitHub ユーザープロフィール                                                                                                                                                 |
+| `/teams/:organization/:slug`            | —                                         | GitHub 組織のチームプロフィール                                                                                                                                             |
+| `/api-keys`                             | —                                         | API キー管理。**ナビゲーションの入口はありません** — URL からのみ到達できます                                                                                                  |
+| `/settings/…`                           | —                                         | 設定画面（以下）                                                                                                                                                           |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+会話とスレッドには**専用のルートがありません** — スレッドは `/spaces/:spaceId` 内の会話であり、URL で指定するのではなくエディタータブとして開かれます。
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**`/dashboard` ルートは存在せず**、ダッシュボード画面もありません。分析サーフェスは `/observability` で、サイドバーのフッターから到達します。
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+**サイドバーに「プラン」の項目はありません。** Plan Studio は、そのプランを生み出した会話内のプランの行からエディタータブとして開きます。`/plans` と `/plans/:kind/:id` はディープリンクです。
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` と `/pull-requests/compose` は、ルートタイトルやパンくずのレジストリにエントリがないため、どちらもウィンドウタイトルにはアプリ名だけを表示し、パンくずの階層も表示しません。
 
-## Settings routes
+## 設定のルート
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` は `/settings/you/appearance` へリダイレクトします。サイドバーの設定ボタンと `Cmd/Ctrl + ,` は、どちらも `/settings/you/appearance` へ移動します。
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+設定のパスは**スコープ** — `you/`、`workspace/`、`server/` — で名前空間が分かれています。これは、そのセグメントが変更の影響範囲を表すためです。2 つのパスはこの名前空間化より前からあり、URL 内でスコープ化されていません: `/settings/memory` と `/settings/pipelines` です。
 
-### You
+### 自分
 
-| Path                          | Screen                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| パス | 画面 |
+| --- | --- |
+| `/settings/you/appearance`    | テーマ、言語、タイポグラフィ、エディターテーマ（設定のランディング）        |
+| `/settings/you/notifications` | イベントごとのトグル、Quiet hours                                          |
+| `/settings/you/keybindings`   | キーボードショートカットのリファレンス（読み取り専用）                      |
+| `/settings/you/audio`         | マイク、ディクテーション、ミーティング検出、サウンドスケープ出力            |
+| `/settings/you/devices`       | ペアリング済みのスマートフォンとリモートコントロール                        |
+| `/settings/you/newsfeed`      | フィード管理: ソース、更新、既読状態                                        |
 
-### Workspace
+### ワークスペース
 
-| Path                               | Screen                                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| パス | 画面 |
+| --- | --- |
+| `/settings/workspace/profile`      | このワークスペースにおけるプロフィールとアイデンティティ: 名前、git 作者、コードホスティング、カレンダー |
+| `/settings/workspace/general`      | 名前、ロゴ、シークレットの glob、レビュー同時実行数、ブランチ命名、同期ヘルス、チャットブリッジ、危険ゾーン |
+| `/settings/workspace/meetings`     | ミーティングノートのテンプレートと保存済みの音声プロフィール                                          |
+| `/settings/workspace/members`      | メンバー名簿、招待、監査証跡。監査証跡は省略可能な `?cursor=` でページネーションします                  |
+| `/settings/workspace/repositories` | このワークスペースに登録されたリポジトリ                                                              |
+| `/settings/workspace/agents`       | 登録済みのエージェントアイデンティティ                                                                |
+| `/settings/workspace/skills`       | スキルの設定                                                                                          |
+| `/settings/memory`                 | ワークスペースメモリ: ファクト、ポリシー、ナレッジグラフ                                                |
+| `/settings/workspace/permissions`  | エージェントの権限: ガードレールマトリクスと what-if プローブ                                           |
+| `/settings/pipelines`              | パイプラインテンプレート                                                                              |
+| `/settings/pipelines/:templateId`  | パイプラインテンプレートエディター（ドラッグ＆ドロップキャンバス）                                      |
 
-### Server
+### サーバー
 
-| Path                           | Screen                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| パス | 画面 |
+| --- | --- |
+| `/settings/server/connection`  | 接続とステータス                                                                      |
+| `/settings/server/sso`         | シングルサインオン（SAML、OIDC、SCIM プロビジョニング）                                |
+| `/settings/server/providers`   | モデルプロバイダーとアダプター                                                        |
+| `/settings/server/mcp`         | 組み込みおよび外部の MCP サーバー                                                      |
+| `/settings/server/voice`       | 音声とミーティングのモデル（ASR、話者分離）                                            |
+| `/settings/server/rigs`        | リグ: このホストが起動できるもの、ベースイメージ、カスタムイメージ、実行中のマシン        |
+| `/settings/server/sandbox`     | サンドボックス実行許可: エージェントがあなたのリポジトリの作業コピーから実行できるプログラム |
+| `/settings/server/diagnostics` | 診断とプライバシー: サンドボックス化、埋め込み、同期エンジン、ログ、クラッシュレポート     |
+| `/settings/server/backup`      | バックアップと復元: インストールのスナップショット、ワークスペース単位のエクスポート、インポート、削除 |
+| `/settings/server/about`       | このアプリについてと更新                                                              |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`lib/features/settings/settings_nav.dart` の `kSettingsNav` が、この一覧の唯一の信頼できる情報源です。`settings_nav_test.dart` は、一意な id、一意なルート、フラット化した J/K 順序、3 つのスコープを固定します。登録されたすべての `GoRoute` を走査するわけではありません。
 
-## Route configuration
+## ルート設定
 
-| Concern             | File                                                    |
-| ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| 関心事項 | ファイル |
+| --- | --- |
+| ルーター | `lib/router/app_router.dart` |
+| ルートビルダー | `lib/router/routes.dart` |
+| 認証ガード | `lib/router/guards.dart` |
+| オンボーディングゲート | `lib/features/auth/providers/onboarding_providers.dart` |
+| 設定ナビゲーション | `lib/features/settings/settings_nav.dart` |
 
-## See also
+## 関連項目
 
-- [Workspaces](/ja-JP/マニュアル/コンセプト/ワークスペース/)
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/)
-- [Keyboard shortcuts](/ja-JP/マニュアル/リファレンス/キーボードショートカット/)
+- [ワークスペース](/ja-JP/マニュアル/コンセプト/ワークスペース/)
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/)
+- [キーボードショートカット](/ja-JP/マニュアル/リファレンス/キーボードショートカット/)

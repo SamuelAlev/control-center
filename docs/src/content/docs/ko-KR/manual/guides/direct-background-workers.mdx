@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: 백그라운드 워커 지시
+description: 바이브 모드로 직접 작업하는 일을 그만두고, 병렬로 작업을 처리하는 여러 에이전트를 지시하세요.
 slug: ko-KR/매뉴얼/사용-가이드/백그라운드-워커-지시
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+이 가이드는 대화를 워커가 아니라 **디렉터**로 운영하는 방법을 보여줍니다. 세션이 읽고 검증하며, 백그라운드 에이전트가 편집을 맡습니다.
 
-## What changes when you type `/vibe`
+## `/vibe`를 입력하면 무엇이 바뀌는가
 
-Two things, and only the first is enforced by the machinery:
+바뀌는 것은 두 가지이며, 구조적으로 강제되는 것은 첫 번째뿐입니다:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **세션 자체의 도구가 읽기 전용으로 내려가고**, 여기에 워커 동사 다섯 개가 더해집니다. 세션이 저장소에 영향을 줄 수 있는 유일한 경로는 워커를 통하는 것이고, 무슨 일이 일어났는지 알 수 있는 유일한 방법은 워커가 건드린 파일을 읽는 것입니다.
+2. **믿지 말고 읽어서 검증하라는 지시를 받습니다.** 워커의 보고는 자기가 무엇을 했다는 주장일 뿐, 실제로 잘 되었다는 증거가 아닙니다.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+이 중 근간을 이루는 것은 첫 번째입니다. 여전히 grep과 편집이 가능한 디렉터는 압박을 받으면 스스로 작업을 해 버리는데, 이것이 바로 이 장치가 막으려는 실패 양상입니다.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## 워커는 빈 상태로 시작합니다
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+워커는 여러분의 대화를 본 적이 없고 앞으로도 보지 못합니다. 브리프가 워커의 전체 컨텍스트입니다.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+이 덕분에 이 패턴은 비용이 낮게 유지됩니다. 각자 디렉터의 기록을 들고 있는 워커 스무 개는 디렉터 컨텍스트의 스무 배를 소모하게 됩니다. 동시에 이것이 브리프를 쓰기 어렵게 만드는 바로 그 지점이기도 합니다. 디렉터에게 "이제 다른 것도 해 줘"는 완전한 지시로 읽히지만, 새로 시작한 세션에게는 아무 의미도 없습니다.
 
-A good brief names files, commands and the definition of done:
+좋은 브리프는 파일과 명령, 그리고 완료 기준을 명시합니다:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> `lib/features/auth/`에서 `SessionStore.read(key)` 호출을 모두 `SessionStore.get(key)`로 바꿉니다. 새 메서드는 이전 메서드가 `String?`를 반환하던 자리에서 `Future<String?>`를 반환하므로 호출부에 `await`가 필요합니다. 작업이 끝나면 `fvm flutter analyze lib/features/auth`를 실행하고, 고치지 못한 오류가 있으면 보고합니다.
 
-## The five verbs
+## 다섯 가지 동사
 
-| Verb         | What it does                                            |
+| 동사         | 하는 일                                                 |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | 브리프를 받아 워커를 시작합니다. **즉시 반환합니다.**     |
+| `vibe_list`  | 모든 워커의 티어, 상태, 경과 시간, 마지막 결과           |
+| `vibe_send`  | 이미 턴을 마친 워커에게 보내는 후속 턴                   |
+| `vibe_wait`  | 워커 하나가 끝날 때까지 차단합니다                       |
+| `vibe_kill`  | 하나를 중지합니다                                        |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+스폰은 설계상 비동기입니다. 스폰할 때마다 차단하는 디렉터는 워커를 한 번에 하나씩 실행하는 셈이며, 이는 이미 스스로 하던 일을 더 느리게 하는 방식일 뿐입니다. 특정 답이 없으면 정말로 진행할 수 없을 때만 `vibe_wait`를 사용하세요.
 
-## Two tiers
+## 두 가지 티어
 
-| Tier   | For                                                              |
+| 티어   | 용도                                                              |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | 명세가 분명한 기계적 작업 — 편집, 이름 변경, 초안 작성, 명령 실행 |
+| `good` | 설계, 판단, 또는 `fast` 워커가 만든 결과를 리뷰하는 일             |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+흔한 형태는 서로 독립적인 파일들에 `fast` 워커를 흩뿌린 뒤, 그들이 함께 해낸 일을 리뷰할 `good` 워커 하나를 스폰하는 것입니다.
 
-## Verifying
+## 검증
 
-This is the part that decides whether the pattern is worth anything.
+이 패턴에 가치가 있는지를 결정하는 부분이 바로 여기입니다.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+그다음 **워커가 언급한 파일을 읽습니다**. 디렉터에게는 `read`, `search`, `lsp`, `ast_grep`이 있으며, 이것들을 남겨 둔 이유가 바로 그것입니다. 보고를 액면 그대로 받아들이는 디렉터는 다른 에이전트의 낙관을 요약하는 존재일 뿐입니다.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+워커들을 한 차례 돌린 뒤의 `lsp(action: "diagnostics", file: "*")`는 대개 가장 빠른 단일 검사입니다.
 
-## When a worker loses the thread
+## 워커가 흐름을 놓쳤을 때
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+워커를 종료하고 다시 브리프하세요. 새로 쓴 교정 브리프가 실랑이하는 것보다 저렴하며, `vibe_send`는 이미 턴을 마친 워커에만 작동합니다.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## 제한
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **동시 워커 여덟 개.** 기술적 한계가 아니라 비용 상한입니다. 워커 하나하나가 온전한 모델 세션이며, 스무 개를 흩뿌린 디렉터는 그들이 모두 무엇을 하는지 더는 추적하지 못합니다.
+- **어떤 워커도 모드보다 오래 살아남지 않습니다.** 실행이 끝나면 워커가 모두 중지되고, 트랜스크립트에 그 개수가 기록됩니다. 대화가 다음으로 넘어간 뒤에도 파일을 계속 편집하는 백그라운드 에이전트는 이 구조가 결코 허용할 수 없는 유일한 실패입니다.
+- **워커는 내부적으로 평범한 서브에이전트입니다.** 깊이 상한도, 가드레일 정책도, 실행 로그 자식도 동일합니다. 바이브 모드는 누가 이들을 몰아가는지를 바꿀 뿐, 이들이 할 수 있는 일을 바꾸지 않습니다. 따라서 워커의 쓰기 및 exec 호출에는 여전히 승인 프롬프트가 나타납니다.
 
-## When not to use it
+## 사용하지 말아야 할 때
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/) or an [orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+바이브 모드는 독립적인 브리프로 분해되는 작업에 적합합니다. 다음 단계가 이전 단계의 출력에 의존한다면, 그것은 [파이프라인](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/)이나 [오케스트레이션](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)을 설명하는 것이며, 둘 다 디렉터가 `vibe_wait`로 의존성을 흉내 내게 하는 대신 의존성을 제대로 표현합니다.
 
-## Related
+## 관련 항목
 
-- [Run agents in parallel](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/) — the other ways to fan out
-- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/) — when the work has a shape
-- [Built-in agent tools](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — the verbs and their arguments
+- [에이전트 병렬 실행](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/) — 작업을 흩뿌리는 다른 방법들
+- [오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/) — 작업에 형태가 있을 때
+- [내장 에이전트 도구](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — 동사와 그 인수

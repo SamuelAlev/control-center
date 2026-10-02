@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Slack-integráció beállítása
+description: Csatlakoztasson egy Slack-alkalmazást egy Control Center-munkaterülethez, hogy a tagok a Slackből vezérelhessék az ügynököket.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Ez az útmutató bemutatja, hogyan kapcsolhatja össze a Slacket egy Control Center-munkaterülettel, akár úgy, hogy a Control Center hozza létre az alkalmazást, akár úgy, hogy Ön építi fel saját maga.
 
-For a guided first run, see [Bridge Slack to your workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/).
+Az első, vezetett végigpróbáláshoz lásd: [Slack összekötése a munkaterülettel](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[A Slack az egyetlen csevegőszolgáltató]
+A híd felépítésénél fogva szolgáltatófüggetlen — egy deskriptorvezérelt felület
+szolgáltatónként egy adapter fölött —, de a Slack az egyetlen létező adapter.
+Nincs Discord-, Telegram-, Teams- vagy Matrix-implementáció.
 :::
 
-## Prerequisites
+## Előfeltételek
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Az `owner` vagy `admin` szerepkör a Control Center-munkaterületen — egy csevegőalkalmazás összekapcsolása a munkaterület beállításainak módosítása
+- Jogosultság alkalmazások létrehozásához és telepítéséhez a Slack-munkaterületen
+- Semmi nyilvánosan elérhető: a kapcsolat kifelé indul (Socket Mode), így a szervernek nem kell bejövő port, alagút vagy domain
 
-## Three ways to get the app
+## Három mód az alkalmazás megszerzésére
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Útvonal                        | Amit Ön biztosít                       | Amit a Control Center végez                                                                                                 |
+| ------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Vezetett**                   | Egy alkalmazáskonfigurációs token (`xoxe-…`) | Létrehozza az alkalmazást a megfelelő hatókörökkel, eseményekkel, Socket Mode-dal és slash-paranccsal; átadja Önnek azt a két lépést, amelyre a Slacknek nincs API-ja |
+| **Létrehozás a(z) Slack felületen** | Semmit                             | Megnyitja a Slacket ugyanezzel az előre kitöltött konfigurációval; Ön kiválaszt egy munkaterületet, és megerősíti          |
+| **Kézzel**                     | A kész alkalmazás tokenjeit             | Ellenőrzi őket, és csatlakozik                                                                                              |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+A vezetett útvonal az egyetlen, amely azt is eléri, hogy az alkalmazás a Control Centerből _kezelhető_ legyen, és ez teszi lehetővé a [Csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/) funkciót. Egy **Létrehozás a(z) Slack felületen** módon készült alkalmazás később kezelt alkalmazássá léptethető elő, ha beilleszt egy alkalmazáskonfigurációs tokent a csatlakozási párbeszédablakban.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Szándékosan nincs „a Control Center Slack-alkalmazásának telepítése” gomb. Egy megosztott Slack-alkalmazás telepítéséhez közös client secret kell (a Slacknek nincs PKCE-je), a Socket Mode pedig egy alkalmazás eseményeit véletlenszerűen osztja el a kapcsolatai között — így egyetlen közös alkalmazás a munkaterülete üzeneteit mások szervereire kézbesítené. Ezért minden munkaterület a saját alkalmazásával rendelkezik, és ez a három útvonal arról szól, hogy ez mennyire kevés munkájába kerül Önnek.
 
-## Option A: let Control Center create the app
+## A. lehetőség: hagyja, hogy a Control Center hozza létre az alkalmazást
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Hozzon létre egy alkalmazáskonfigurációs tokenpárt az [api.slack.com/apps](https://api.slack.com/apps) oldalon, és másolja ki a **refresh** tokent (`xoxe-…`)
+2. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+3. A Slack blokkon kattintson az **Alkalmazás létrehozása helyettem** elemre
+4. Illessze be a tokent, módosítsa az alkalmazás nevét, a bot nevét, a leírásokat és a slash-parancsot, majd kattintson az **Alkalmazás létrehozása** elemre
+5. Kövesse a párbeszédablakban látható két hátralévő lépést, amelyek mindegyike a Slackbe mutató hivatkozás:
+   - **Basic Information → App-Level Tokens**: generáljon egy tokent a `connections:write` hatókörrel (`xapp-…`)
+   - **Install App**: telepítse a munkaterületre, és másolja ki a **Bot User OAuth Token** értékét (`xoxb-…`)
+6. Kattintson a **Hitelesítő adatok beillesztése** elemre, és folytassa a [Csatlakoztatás](#csatlakoztatás) szakasszal
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+A konfigurációs token minden használatkor rotálódik. A Control Center menet közben elmenti a rotált értéket, így soha többé nem kell beillesztenie.
 
-## Option B: create it in Slack, pre-filled
+## B. lehetőség: hozza létre a Slackben, előre kitöltve
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Ugyanaz az alkalmazás, konfigurációs token nélkül — a Slack a saját létrehozási képernyőjét adja Önnek, amelyen a teljes manifest már ki van töltve.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+2. A Slack blokkon kattintson az **Alkalmazás létrehozása helyettem** elemre
+3. Módosítsa az alkalmazás nevét, a bot nevét, a leírásokat és a slash-parancsot — ezek a hivatkozással együtt utaznak
+4. Kattintson a **Létrehozás a(z) Slack felületen** elemre. A böngészője megnyitja a Slack alkalmazáslétrehozó oldalát az előre kitöltött konfigurációval
+5. Válassza ki a Slack-munkaterületet, és erősítse meg. A hatókörök, az események, a Socket Mode és a slash-parancs már helyes
+6. Visszatérve a Control Centerbe kövesse a párbeszédablakban látható két hátralévő lépést:
+   - **Basic Information → App-Level Tokens**: generáljon egy tokent a `connections:write` hatókörrel (`xapp-…`)
+   - **Install App**: telepítse a munkaterületre, és másolja ki a **Bot User OAuth Token** értékét (`xoxb-…`)
+7. Kattintson a **Hitelesítő adatok beillesztése** elemre, és folytassa a [Csatlakoztatás](#csatlakoztatás) szakasszal
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+A Slack nem jelenti, melyik alkalmazást hozta létre, így a Control Center nem tudja meg az alkalmazásazonosítót, és a 6. lépés hivatkozásai az alkalmazáslistájára visznek, nem közvetlenül arra az alkalmazásra. A **Bot testreszabása** funkcióhoz konfigurációs token kell.
 
-## Option C: build the app yourself
+## C. lehetőség: építse fel az alkalmazást saját maga
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Hozzon létre egy alkalmazást az [api.slack.com/apps](https://api.slack.com/apps) oldalon, majd állítsa be a következőképpen.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: engedélyezze, és hagyjon minden kérés URL-t üresen. A Slack elutasítja azt a manifestet, amely egyszerre kér Socket Mode-ot és webhookos kézbesítést.
 
-**Bot token scopes** (OAuth & Permissions):
+**Bot token hatókörök** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Eseményfeliratkozások** (botesemények):
 
 ```text
 app_home_opened
@@ -91,134 +92,137 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+A `message.channels` és a `message.groups` teszi lehetővé, hogy egy _válasz_ működjön egy már áthidalt Slack-szálban. Nélkülük csak az első említés érkezik meg.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Slash parancs**: `/cc` (bármilyen név működik — a híd azt a parancsot használja, amellyel utoljára meghívták).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: engedélyezze a Messages lapot, és hagyja írhatónak, hogy a tagok közvetlen üzenetet küldhessenek a botnak.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Tokenek**: generáljon egy alkalmazásszintű tokent a `connections:write` hatókörrel, majd telepítse az alkalmazást, és másolja ki a bot user OAuth tokent.
 
-## Connect
+## Csatlakoztatás
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+2. A Slack blokkon kattintson a **Slack csatlakoztatása** elemre
+3. Töltse ki a mezőket:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Mező                                                | Érték    | Hol található a Slackben                                   |
+| --------------------------------------------------- | -------- | ---------------------------------------------------------- |
+| **Bot user OAuth token**                            | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Alkalmazásszintű token**                          | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Alkalmazáskonfigurációs refresh token** (nem kötelező) | `xoxe-…` | Az alkalmazáskonfigurációs tokenpár az api.slack.com/apps oldalon |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Az egyes értékek előtagját mindkét oldalon ellenőrzik, mielőtt bármi elküldésre
+kerülne, így a rossz mezőbe beillesztett értéket mindkét esetben ugyanazzal a
+mondattal utasítja el.
 
-4. Click **Connect**
+4. Kattintson a **Csatlakozás** elemre
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+A Control Center a Slack `auth.test` hívásával ellenőrzi a bot tokent, _mielőtt_ bármit tárolna, így egy elírásról Ön értesül, ahelyett hogy egy csendben soha nem működő socketé válna. Az alkalmazásszintű tokent csak a socket megnyitása bizonyíthatja, így egy hibás token egy pillanattal később kapcsolódási hibaként jelenik meg ugyanabban a sorban.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Az opcionális alkalmazáskonfigurációs token nélkül a kapcsolat jól működik — csak a botot nem tudja szerkeszteni a Control Centerből.
 
-## What connecting does
+## Mit tesz a csatlakoztatás
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- A hitelesítő adatokat a munkaterület saját könyvtárában tárolja, az adatbázisa mellett, csak a tulajdonos által olvasható módon. Soha nem jutnak vissza egy klienshez
+- Egy Socket Mode-kapcsolatot nyit ehhez a munkaterülethez, és elkezdi fogadni az említéseket, a Slack-szálválaszokat, a közvetlen üzeneteket és a slash-parancsokat
+- Újra előkészíti az összes korábban áthidalt Slack-szálat, így az újracsatlakozás folytatja a meglévő beszélgetéseket, ahelyett hogy magukra hagyná őket
+- Semmibe nem kerül azoknak a munkaterületeknek, amelyeknek nincs csevegőalkalmazásuk: nincs socket, nincs időzítő, nincs forgalom
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Hol élnek a tokenek, és miért nem a kulcstárban]
+A bot hitelesítő adatai szolgáltatónként egyetlen egyszerű JSON-fájlt alkotnak a
+`<dataDir>/<workspaceId>/chat_credentials/` alatt, atomikusan írva és csak a
+tulajdonosra szűkítve. Ez szándékos, nem figyelmetlenség: egy munkaterület
+törlése megszünteti annak a könyvtárnak a hivatkozását, így a tokenjei is vele
+mennek, a `workspace.export` és a mentések pedig a `workspace.db`-t másolják —
+nem a könyvtárat —, így egy másnak átadott munkaterület soha nem hordoz élő bot
+tokeneket. Ebből az következik, hogy egy munkaterület máshol történő
+visszaállítása azt jelenti, hogy ott újra csatlakoztatni kell a Slacket.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+A hídhoz való hozzáférés a munkaterület **tagsága**, soha nem egy token
+birtoklása. Egy Slack-fiókot egy olyan Control Center-felhasználóhoz kell
+kapcsolni, aki tag, és írási jogosultságú szerepkörrel rendelkezik. A
+csatlakoztatás, a leválasztás, a vezetett beállítás, a beállítási hivatkozás és a
+bot testreszabása mind adminisztrátori jogosultsághoz kötött.
 :::
 
-## Verify
+## Ellenőrzés
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+A Slack sor egy állapotcímkét mutat: **Élő**, **Csatlakozás…**, **Kapcsolódási hiba** (mellette a Slack saját hibaüzenetével) vagy **Nincs csatlakoztatva**. A teljes folyamat ellenőrzéséhez:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. A Slackben hívja meg a botot egy csatornába: `/invite @your-bot-name`
+2. Említse meg egy kéréssel
+3. Megjelenik egy Slack-szálválasz, és egy hozzá tartozó tér jelenik meg a Control Centerben
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/).
+Ezután minden tag, aki használni szeretné a hidat, összekapcsolja a saját fiókját — lásd: [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/).
 
-## What a reply looks like in Slack
+## Hogyan néz ki egy válasz a Slackben
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+A streamelt szavak fölött egyetlen csoportosított kártya áll, lépésenként egy sorral. A beállítás egyetlen sor, amelynek címe `Working on it…`, majd `Cloning …`, végül `Starting the agent…`. A gondolkodás hozzáad egy `Thinking…` sort; amikor az a lépés befejeződik, egy rövid gondolat jelenhet meg rajta. Minden eszköz a saját sorát kapja (`Read lib/main.dart`). A válasz a kártya alatt egyszerű szövegként érkezik. A kártya akkor vált készre, amikor a kör befejeződik, és hibásra, amikor a futás meghiúsult, megszakadt vagy elérte a körkorlátját.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+A kártya abban a pillanatban indul, amikor a bot elfogadja az említést — `Working on it…` —, így a Slack-szál nem marad néma, amíg a munkaterület még épül. Az első említése egy Slack-csatornában hozza létre a beszélgetést, amely klónozza azokat a repókat, amelyekben az ügynök dolgozik, így az a beállítássor ezt írja: `Cloning acme/widgets…`, majd `Setting up Reviewer…`, majd `Starting the agent…`, végül egy `Thinking…` sor, amint az ügynök ténylegesen gondolkodik. Egy nagy repóban az első beállítás eltart egy darabig; a kártya mutatja, hogy dolgozik, nem pedig figyelmen kívül hagyja Önt. A későbbi említések ugyanabban a Slack-szálban továbbra is a `Working on it…` üzenettel nyitnak, majd kihagyják a klónozási lépéseket, mert a munkaterület már ott van.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+A gondolkodás szövegfalként és az eszközkimenet soha nem hagyja el a Control Centert — a `Thinking…` sorban megjelenő gondolat egy rövid sor, nem átirat. A kártyán a **View in Control Center** megnyitja a teljes beszélgetést az asztali alkalmazásban — a hivatkozás a saját Control Center-szerverére mutat, amely átadja a böngészőt az alkalmazásnak.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Ha a kattintáskor semmi nem történik, akkor az üzenetet küldő szerver nem érhető el arról a gépről, amelyen kattintott (például egy csak loopbacken elérhető szerver, amelyre telefonról kattintott), vagy a Control Center nem fut ott. Egy elérhető címmel nem rendelkező szerver gomb nélküli kártyát küld, nem olyat, amely sehová sem vezet.
 
-## Rotate a token
+## Token rotálása
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Illessze be újra az új értéket a csatlakozási párbeszédablakban, és kattintson a **Csatlakozás** elemre. A csatlakoztatás lecseréli a munkaterülethez éppen futó kapcsolatot, így a socket az új hitelesítő adatokkal tárcsázódik újra.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+A két kötelező tokennek minden csatlakozáskor jelen kell lennie. Az opcionális alkalmazáskonfigurációs token megőrzi a tárolt értékét, ha üresen hagyja a mezőt, így egy bot token rotálása soha nem kerül az alkalmazás szerkesztésének képességébe.
 
-## Disconnect
+## Leválasztás
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Kattintson a **Leválasztás** elemre a Slack sorban (csak adminok). A socket bezárul, és a hitelesítő adatok feledésbe merülnek.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+A tér- és felhasználóhivatkozások szándékosan megmaradnak: ugyanazon alkalmazás újracsatlakoztatása visszaállít minden áthidalt Slack-szálat. Ezek munkaterület-hatókörű sorok, így a munkaterület törlése úgyis eltávolítja őket.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The row says "Connection error"
+### A sor ezt írja: „Kapcsolódási hiba”
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Olvassa el a címke mellett látható hibát. Egy elutasított hitelesítő adat (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) végleges — a híd leállítja az újrapróbálkozást, és új tokenekre vár, mert egy visszavont token örökös újrapróbálása csak sebességkorlátozást von maga után. Illessze be újra a tokeneket a csatlakozási párbeszédablakban.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+A `missing_scope` hiba azt jelenti, hogy az alkalmazás kevesebb hatókörrel van telepítve, mint amennyire a hídnak szüksége van. Adja hozzá a hiányzó hatókört, telepítse újra az alkalmazást a Slackben, majd csatlakozzon újra.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Bármi átmeneti (egy megszakadt socket, egy Slack-buklás) magától újracsatlakozik, exponenciális visszalépéssel, legfeljebb 30 másodpercig, és a Slack rutin socketrotációja nem növeli ezt a visszalépést.
 
-### The bot does not answer a mention
+### A bot nem válaszol egy említésre
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Benne van a bot a csatornában?** A Slack csak azoknak az alkalmazásoknak kézbesíti a csatornaüzeneteket, amelyek tagok. Futtassa a `/invite @your-bot-name` parancsot
+- **Össze van kapcsolva?** Az össze nem kapcsolt tag abban a Slack-szálban kap választ, amely elmagyarázza az összekapcsolást. Lásd: [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
+- **Tagja a munkaterületnek írási jogosultságú szerepkörrel?** A `viewer` és `guest` szerepkörűnek azt mondja, hogy a szerepköre csak olvasható. A híd soha nem indít munkát olyasvalaki nevében, akit nem tud azonosítani
+- **Van a munkaterületen ügynök?** Ügynökök nélkül az üzenet eltárolódik, de nincs, aki válaszoljon rá
 
-### It answers in a channel but ignores plain messages
+### Egy csatornában válaszol, de a sima üzeneteket figyelmen kívül hagyja
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Ez szándékos. Közvetlen üzeneten kívül a híd csak arra az üzenetre cselekszik, amely megemlíti a botot, vagy egy olyan Slack-szálban lévő válaszra, amely már az övé. Minden más mások beszélgetése.
 
-### Replies arrive as one big message instead of streaming
+### A válaszok streamelés helyett egyetlen nagy üzenetként érkeznek
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+A sor ezt írja: „Az élő streamelés ki van kapcsolva ehhez a Slack-alkalmazáshoz — a válaszok egy üzenetként érkeznek.” A Slack streamelt válaszaihoz az Agents & AI Apps funkció kell fizetős csomagon; amikor a Slack elutasítja, a híd a kapcsolat hátralévő élettartamára felhagy a kéréssel, és teljes válaszokat tesz közzé. Semmi nem vész el — a teljes átirat mindig a Control Centerben van.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+A streameléshez Slack-szálhorgony is kell, így az a válasz, amelynek nincs Slack-szála, ahol növekedhet, egészben kerül ki. A feladatkártya így is megérkezik: egy teljes válasznál ugyanazon az üzeneten utazik, már készen.
 
-### The reply has no card above it
+### A válasz fölött nincs kártya
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+A Slack feladatkártyái ugyanannak az új Agents & AI Apps felületnek a részei, mint a streamelés, és a Slack csak híváskor utasítja el. Amikor ezt teszi, a Control Center megtartja a választ, és a kapcsolat hátralévő élettartamára elejti a kártyát — egy állapotsor nélküli válasz többet ér, mint egy válasz nélküli állapotsor.
 
-### "Control Center needs an app configuration token to edit the bot"
+### „A Control Centernek alkalmazáskonfigurációs tokenre van szüksége a bot szerkesztéséhez”
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+A **Bot testreszabása** sor le van tiltva, mert a kapcsolatnak nincs alkalmazáskonfigurációs tokenje. Ez egy kézzel vagy a **Létrehozás a(z) Slack felületen** lehetőséggel készült alkalmazásnál várható — a Slack soha nem mondta meg a Control Centernek, melyik alkalmazásról van szó. Hozzon létre egy tokenpárt az api.slack.com/apps oldalon, és csatlakozzon újra kitöltött refresh tokennel.
 
-### A long answer is cut off
+### Egy hosszú válasz levágódik
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+A Slack egyetlen üzenetet 40 000 karakterre korlátoz, így a híd 39 000-nél levágja, és egy a Control Centerre mutató hivatkozást fűz hozzá — egy rövidített válasz többet ér, mint egy, amelyet a Slack egyenesen elutasít. A teljes szöveg mindig a tér átiratában van.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
-- [Customize the chat bot](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
-- [Chat bridge](/hu-HU/kezikonyv/referencia/csevegohid/)
+- [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
+- [Csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
+- [Csevegőhíd](/hu-HU/kezikonyv/referencia/csevegohid/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/)

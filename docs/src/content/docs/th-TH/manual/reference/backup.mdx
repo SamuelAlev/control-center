@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: สำรอง นำออก และนำเข้า
+description: โครงร่างของสแนปช็อต แมนิเฟสต์ ทุกปฏิบัติการสำรองและเส้นทางถ่ายโอน และไฟล์ใดบ้างที่ข้อมูลสำรองมีและไม่มีอย่างแน่ชัด
 slug: th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/); for why persistence is
-split this way, see [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/).
+ทุกสิ่งที่ Control Center คัดลอก ส่งต่อ หรือนำมาใช้ได้ พร้อมรูปร่างที่แน่นอนของอาร์ติแฟกต์
+แต่ละชิ้น หากต้องการสำรองข้อมูลจริง ๆ ดู
+[สำรองและกู้คืน](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/) ส่วนเหตุใดการเก็บข้อมูลถาวรจึง
+แยกแบบนี้ ดู[เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
 
-## Artifacts
+## อาร์ติแฟกต์
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+มีอาร์ติแฟกต์สำเนาฐานข้อมูลสามแบบ ซึ่งมีขอบเขตและนโยบายการลบต่างกัน
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| อาร์ติแฟกต์                | เขียนโดย                     | รูปร่าง                                | ครอบคลุม                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **สแนปช็อตการติดตั้ง**    | `server.backupNow`           | **ไดเรกทอรี**ที่ประทับเวลา           | ทุกฐานข้อมูลบนการติดตั้ง |
+| **ข้อมูลสำรองของเวิร์กสเปซ**    | ไปป์ไลน์ `Workspace backup`  | ไดเรกทอรีที่ประทับเวลาซึ่งมี `.db` หนึ่งไฟล์  | ฐานข้อมูลของเวิร์กสเปซหนึ่งตัว      |
+| **การส่งออกเวิร์กสเปซ**    | `workspace.export`           | **ไฟล์** `.db` ไฟล์เดียว               | ฐานข้อมูลของเวิร์กสเปซหนึ่งตัว      |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+ทั้งหมดเขียนด้วย `VACUUM INTO` ของ SQLite ซึ่งปลอดภัยกับฐานข้อมูล WAL ที่ใช้งานอยู่:
+มันเปิดทรานแซกชันแบบอ่าน สร้างสำเนาที่จัดเรียงข้อมูลใหม่และสอดคล้องเชิงทรานแซกชัน
+และไม่ต้องหยุดเซิร์ฟเวอร์เลย
 
-## Snapshot layout
+## โครงร่างของสแนปช็อต
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,120 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+โครงร่างสะท้อนไดเรกทอรีข้อมูลที่ใช้งานอยู่แบบตรงทั้งหมด ซึ่งเป็นสิ่งที่ทำให้การกู้คืน
+การติดตั้งเป็นการคัดลอกกลับ ไม่ใช่การแปลง ชื่อไดเรกทอรีคือเวลาประทับ UTC
+โดยแทน `:` และ `.` ด้วย `-` จึงปลอดภัยกับระบบไฟล์บน Windows และเรียงตามเวลาได้
+ด้วยการเทียบสตริงธรรมดา
 
-Scheduled workspace backups live separately at
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+ข้อมูลสำรองของเวิร์กสเปซตามกำหนดเวลาอยู่แยกกันที่
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`
+โดยไม่มีแมนิเฟสต์หรือ `global.db` และไม่ใช่สแนปช็อตการติดตั้ง
+ขั้นตอนการเก็บรักษาของไปป์ไลน์รายสัปดาห์ลบเฉพาะข้อมูลสำรองของเวิร์กสเปซตัวเอง
+ที่เก่ากว่าอายุที่กำหนดไว้ (ค่าเริ่มต้น 30 วัน) เท่านั้น สแนปช็อตการติดตั้งที่สร้างด้วยมือ
+จะไม่ถูกหมุนเวียนโดยขั้นตอนนั้นเลย `server.listBackups` แสดงเฉพาะสแนปช็อตการติดตั้ง
+รวมถึงสแนปช็อตที่ไม่ครบด้วย
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| ฟิลด์                      | ชนิด            | ความหมาย                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | เวอร์ชันรูปแบบของแมนิเฟสต์ ปัจจุบันคือ `1`                              |
+| `created_at`               | ISO-8601 UTC    | เวลาที่ถ่ายสแนปช็อต                                         |
+| `global.file`              | string          | เป็น `global.db` เสมอ                                                  |
+| `global.schema_version`    | int             | เวอร์ชันสคีมาของ `GlobalDatabase` ณ เวลาที่จับข้อมูล                     |
+| `global.bytes`             | int             | ขนาดของ `global.db` ที่เขียนลงดิสก์                                     |
+| `workspace_schema_version` | int             | เวอร์ชันสคีมาของ `WorkspaceDatabase` ที่ไฟล์เวิร์กสเปซทุกไฟล์ใช้ร่วมกัน   |
+| `workspaces[]`             | array           | หนึ่งรายการต่อเวิร์กสเปซที่จับมา                                    |
+| `workspaces[].workspace_id`| string          | เวิร์กสเปซที่ไฟล์นี้เก็บไว้                                       |
+| `workspaces[].file`        | string          | พาธเทียบกับรากของสแนปช็อต `<workspaceId>/workspace.db`    |
+| `workspaces[].bytes`       | int             | ขนาดของไฟล์นั้น                                                   |
+| `skipped_workspaces[]`     | array of string | เวิร์กสเปซที่ข้อมูลสำรอง **จับไม่ได้**                         |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+เวิร์กสเปซจะถูกข้ามเมื่อมันถูกลงทะเบียนแต่ยังไม่เคยถูกเขียนเลย (จึงยังไม่มีไฟล์)
+หรือเมื่อ `VACUUM INTO` ของมันล้มเหลว ไม่ว่ากรณีใด สแนปช็อตก็ยังเสร็จสมบูรณ์
+และแมนิเฟสต์ระบุสิ่งที่ขาดหายไว้
 
-### Completeness
+### ความครบถ้วน
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` รายงานแฟล็ก `complete` ต่อสแนปช็อตหนึ่งตัว โดยเป็น false เมื่อ
+แมนิเฟสต์หายไปหรืออ่านไม่รู้เรื่อง เมื่อ `global.db` หายไป หรือเมื่อแมนิเฟสต์
+ระบุชื่อไฟล์เวิร์กสเปซที่ไม่มีอยู่บนดิสก์
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+สแนปช็อตที่ไม่ครบยังคงถูกแสดง เพราะสแนปช็อตที่ผู้ดำเนินการมองไม่เห็นคือ
+สแนปช็อตที่พวกเขาเชื่อว่ามีอยู่ เมื่ออ่านแมนิเฟสต์ไม่ได้ การแสดงรายการจะถอยไปใช้
+โครงร่างเองและรายงานไฟล์ `<workspaceId>/workspace.db` ที่หาเจอ —
+ไฟล์เหล่านั้นยังนำมาใช้ทีละไฟล์ผ่าน `workspace.import` ได้ แม้สแนปช็อต
+ทั้งก้อนจะกู้คืนการติดตั้งไม่ได้ก็ตาม
 
-## What a backup does not contain
+## สิ่งที่ข้อมูลสำรองไม่มี
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+อาร์ติแฟกต์ทั้งสองเป็น**ฐานข้อมูลเท่านั้น** ไดเรกทอรีของเวิร์กสเปซเก็บมากกว่า
+ฐานข้อมูลของมัน และส่วนที่เหลือไม่ได้เดินทางไปด้วยเลย:
 
-| Path                                | In a snapshot? | In a workspace export? |
+| พาธ                                | อยู่ในสแนปช็อต? | อยู่ในการส่งออกเวิร์กสเปซ? |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | ใช่            | ไม่                     |
+| `<workspaceId>/workspace.db`        | ใช่            | ใช่ (มัน*คือ*ไฟล์นั้น) |
+| `<workspaceId>/blobs/`              | ไม่             | ไม่                     |
+| `<workspaceId>/skills/`             | ไม่             | ไม่                     |
+| `<workspaceId>/agents/`             | ไม่             | ไม่                     |
+| `<workspaceId>/chat_credentials/`   | ไม่             | ไม่                     |
+| `<workspaceId>/spaces/<spaceId>/`   | ไม่             | ไม่                     |
+| `<workspaceId>/pr_clones/`          | ไม่             | ไม่                     |
+| `secrets.json`                      | ไม่             | ไม่                     |
+| `models/`                           | ไม่             | ไม่                     |
+| `meetings/<meetingId>/`             | ไม่             | ไม่                     |
+| `rigs/`                             | ไม่             | ไม่                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/).
+บางส่วนทิ้งได้ — `spaces/` เก็บเวิร์กทรีแบบ copy-on-write ที่จัดเตรียมใหม่จากรีโป,
+`pr_clones/` เป็นแคช, `models/` ดาวน์โหลดใหม่ได้, `rigs/` เป็นสถานะของเครื่อง
+บางส่วนทิ้งไม่ได้: `blobs/` เก็บรูปที่วางเข้ามาซึ่งแถวในฐานข้อมูลชี้ไปหา, `skills/`
+และ `agents/` เก็บไฟล์ที่เอเจนต์ใช้รัน และ `secrets.json` เก็บคีย์จับคู่ทุกอัน
+ข้อมูลรับรองของผู้ให้บริการ และการตั้งค่า SSO ทั้งหมดบนการติดตั้ง ดู
+[สำรองและกู้คืน](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/#copy-backups-off-the-machine)
+สำหรับวิธีครอบคลุมส่วนที่เหลือ
+:::note[โทเค็นแชทจงใจไม่ให้ติดไปด้วย]
+`chat_credentials/` ที่วางอยู่ข้างฐานข้อมูลแทนที่จะอยู่ข้างใน คือเหตุผลที่เวิร์กสเปซ
+ที่ส่งมอบให้คนอื่นไม่มีโทเค็นบอทที่ใช้อยู่ติดไปด้วย ดู
+[เอกสารอ้างอิงสะพานแชท](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/)
 :::
 
-## Operations
+## ปฏิบัติการ
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+RPC สำหรับสำรองการติดตั้งและการส่งออก/นำเข้าเวิร์กสเปซใช้ได้เฉพาะ `fullClient`:
+โทรศัพท์ที่จับคู่แล้วเรียกใช้ไม่ได้ ทั้งหมดไม่มีอยู่เลย — ไม่ใช่ถูกปฏิเสธ แต่หายไป
+เชิงโครงสร้าง — บนเซิร์ฟเวอร์ที่ไม่ได้ต่อพอร์ตสำรองไว้ เช่นเซิร์ฟเวอร์สาธิต
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
+| ปฏิบัติการ                   | ชนิด   | ขอบเขต     | บทบาทขั้นต่ำ | อาร์กิวเมนต์     | ส่งคืน                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| `server.backupNow`   | กลายพันธุ์ | การติดตั้ง   | **เจ้าของ** การติดตั้ง | ไม่มี     | `{ok, path}`                  |
+| `server.listBackups` | อ่าน   | การติดตั้ง   | **เจ้าของ** การติดตั้ง | ไม่มี     | `{backups: [...]}`            |
+| `server.deleteBackup` | กลายพันธุ์ | การติดตั้ง | **เจ้าของ** การติดตั้ง | `name` | `{ok}` |
+| `workspace.export`   | อ่าน   | เวิร์กสเปซ | `admin`      | ไม่มี          | `{ok, path}`                  |
+| `workspace.import`   | กลายพันธุ์ | เวิร์กสเปซ | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | กลายพันธุ์ | การติดตั้ง*  | `owner`      | `id`          | แถวในทะเบียนถูกทำเครื่องหมายว่าลบแล้ว   |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` ไม่มีขอบเขตเพราะแถวที่มันทำเครื่องหมายอยู่ในทะเบียน
+ส่วนกลาง ตัวจัดการของมันตรวจสอบสมาชิกภาพของผู้เรียกในเวิร์กสเปซที่ระบุชื่อ
+และกำหนดให้ต้องเป็น `owner`
 
-`path` in every response is a path on the **server host**.
+`path` ในทุกคำตอบเป็นพาธบน**โฮสต์เซิร์ฟเวอร์**
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[สแนปช็อตของการติดตั้งทั้งหมดถูกกั้นด้วยสิทธิ์เจ้าของทั้งสองช่องทาง]
+`server.backupNow`, `server.listBackups` และ `server.deleteBackup` ต้องเป็น
+**เจ้าของ**การติดตั้ง (`ServerAuthority.serverOwner`) ซึ่งเป็นประตูเดียวกับ
+`GET /backup/snapshot` สแนปช็อตจับฐานข้อมูลของทุกเวิร์กสเปซ ดังนั้น
+การเป็นแอดมินของเวิร์กสเปซเดียวจึงไม่พอที่จะจัดการเวิร์กสเปซอื่น การลบ
+รับเฉพาะชื่อไดเรกทอรีที่ประทับเวลาซึ่งอยู่ในรายการเท่านั้น ไม่ใช่พาธเซิร์ฟเวอร์
+อะไรก็ได้ และลบสแนปช็อตทั้งก้อน (รวมถึงสแนปช็อตที่ไม่ครบ)
+การส่งออก/นำเข้าต่อเวิร์กสเปซยังคงอยู่ที่แอดมิน/เจ้าของเวิร์กสเปซ ไม่ใช่เจ้าของการติดตั้ง
 :::
 
-### `server.listBackups` response
+### คำตอบของ `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+ใหม่สุดก่อน เรียงตามชื่อไดเรกทอรี (ซึ่งก็คือเวลาประทับ ลำดับจึงยังถูกต้องแม้
+กับสแนปช็อตที่อ่านแมนิเฟสต์ไม่ได้)
 
 ```json
 {
@@ -169,99 +170,99 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` จะถูกละไว้เมื่ออ่านแมนิเฟสต์ไม่ได้ ส่วน `bytes` ระดับบนสุดคือ
+ขนาดจริงบนดิสก์ของทั้งไดเรกทอรี ไม่ใช่ผลรวมในแมนิเฟสต์เอง — คำถามที่ผู้ดำเนินการ
+ซึ่งคัดสแนปช็อตทิ้งถามคือไดเรกทอรีนี้กินพื้นที่เท่าไร ไม่ใช่ว่าข้อมูลสำรอง
+ตั้งใจจะเขียนอะไร
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+`workspaces[].path` แต่ละรายการคือสิ่งที่ `workspace.import` รับเป็น `source_path`
+พอดี เป็นเจตนา: "กู้คืนเวิร์กสเปซนี้จากสแนปช็อตนี้" *ก็คือ* ปฏิบัติการนำเข้า
+ทั้งสองจึงแยกไปปฏิบัติต่อไฟล์เดียวกันต่างกันไม่ได้
 
-### `workspace.import` validation
+### การตรวจสอบความถูกต้องของ `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+ก่อนที่จะแทนที่สิ่งใด ไฟล์ตัวเลือกจะถูกเปิดแบบอ่านเท่านั้นด้วยการเชื่อมต่อ SQLite
+ดิบอายุสั้น และอ่านแถว `workspace_meta` ของมัน
 
-| Condition                                        | Result                                                          |
+| เงื่อนไข                                        | ผลลัพธ์                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| ไม่ใช่ฐานข้อมูล SQLite ที่อ่านได้ หรือไม่มี `workspace_meta` | ปฏิเสธ ไม่มีอะไรถูกแตะต้อง                                |
+| ไอดีเวิร์กสเปซที่บันทึกไว้ ≠ เป้าหมาย                | **อนุญาต** พร้อมบันทึกล็อก นี่คือวิธีทำสำเนาเวิร์กสเปซหรือกู้คืนภายใต้ไอดีใหม่ |
+| ไอดีการติดตั้งที่บันทึกไว้ ≠ การติดตั้งนี้                | **อนุญาต** พร้อมบันทึกล็อก อุปกรณ์ที่จับคู่และไอดีผู้ใช้ของมันเป็นของการติดตั้งนั้นและจะรีโซลฟ์ที่นี่ไม่ได้ |
+| ไอดีเวิร์กสเปซไม่ถูกต้อง หรือไฟล์ไม่มีอยู่      | ปฏิเสธ                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+เมื่อรับ ฐานข้อมูลของเวิร์กสเปซเป้าหมายจะถูกปิดและถอดออกจากตัวจัดการ
+ก่อนคัดลอกไฟล์ทับ (การเชื่อมต่อ drift ที่เปิดอยู่จะยึดไฟล์และ `-wal` ของมันไว้)
+จากนั้นเปิดใหม่เพื่อให้ `beforeOpen` ติดตั้งทริกเกอร์ FTS และซิงก์ใหม่ และดัชนี
+FTS ถูกสร้างใหม่ — ตารางเนื้อหาของไฟล์ที่นำเข้ามีข้อมูลครบ แต่ดัชนีของมันอาจ
+ล้าสมัย
 
-## Transfer routes
+## เส้นทางถ่ายโอน
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+ทุกปฏิบัติการข้างต้นพูดถึงพาธฝั่งเซิร์ฟเวอร์ ซึ่งเป็นคำตอบที่ครบถ้วนเฉพาะเมื่อ
+เซิร์ฟเวอร์คือเครื่องของคุณเอง สามเส้นทางนี้ขนย้ายไบต์ บนเลนที่ลงนามด้วย PSK
+เส้นเดียวกับที่พร็อกซีสื่อและที่เก็บบล็อบใช้อยู่ ผู้เรียกเซ็นสตริงเป้าหมายด้วย
+คีย์ที่แชร์ล่วงหน้าของอุปกรณ์ แล้วส่งลายเซ็นมาเป็น `s`
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| เส้นทาง                   | เมธอด | คำค้น           | เป้าหมายที่ลงนาม                  | ต้องมี                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **แอดมิน** เวิร์กสเปซ   |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **เจ้าของ** การติดตั้ง     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **เจ้าของ** เวิร์กสเปซ   |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` คือไอดีเวิร์กสเปซ `n` คือชื่อไดเรกทอรีสแนปช็อต `d` คือไอดีอุปกรณ์ที่เรียก
+`s` คือลายเซ็น `n` ถูกตรีสินกับรายการข้อมูลสำรอง ไม่ใช่ต่อเข้ากับรากของ backups
+เส้นทางจึงไม่อาจเล็งไปที่ไดเรกทอรีที่รายการไม่เคยแสดง
 
-| Status | Cause                                                                              |
+| สถานะ | สาเหตุ                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | พารามิเตอร์คำค้นที่จำเป็นหายไป หรือบอดี้อัปโหลดว่างเปล่า                   |
+| `403`  | อุปกรณ์ไม่รู้จักหรือถูกเพิกถอน ลายเซ็นไม่ถูกต้อง หรือผู้เรียกไม่มีบทบาทนั้น              |
+| `404`  | ไม่มีพอร์ตสำรองบนโฮสต์นี้ หรือสแนปช็อต/ไฟล์เวิร์กสเปซที่ระบุชื่อไม่มีอยู่    |
+| `405`  | เรียก `/backup/restore` ด้วยเมธอดอื่นที่ไม่ใช่ `POST`                                   |
+| `413`  | บอดี้อัปโหลดเกิน 8 GiB ไม่ว่าจะตาม content-length ที่ประกาศไว้หรือตามไบต์ที่อ่านจริง     |
+| `500`  | การส่งออกหรือสร้างอาร์ไคฟ์ล้มเหลวฝั่งเซิร์ฟเวอร์                                            |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+การดาวน์โหลดทั้งสองตอบกลับด้วย `Cache-Control: no-store` พร้อม `Accept-Ranges: none`
+แต่ละคำขอสร้างสำเนา**ใหม่**และลบทิ้งเมื่อสตรีมจบ คำตอบที่ถูกแคชหรือสตรีมต่อ
+จึงจะเชื่อมไบต์จากการส่งออกสองครั้งที่ต่างกันเข้าเป็นไฟล์เดียวที่ดูเหมือนถูกต้องแต่ไม่ใช่
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` ส่งคืน `<name>.zip` โดยรายการภายในอ้างจากรากของสแนปช็อต
+การแตกไฟล์จึงสร้าง `manifest.json` + `global.db` + `<workspaceId>/workspace.db`
+กลับขึ้นมาซ้ำ รายการถูกเขียนตามลำดับที่เรียงแล้ว อาร์ไคฟ์สองชุดของสแนปช็อตเดียวกัน
+จึงเป็นอาร์ไคฟ์เดียวกัน
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` สตรีมบอดี้ออกไปยังไฟล์พักโดยตรงแทนการบัฟเฟอร์ จำกัดขนาดมัน
+ก่อนและระหว่างการอ่าน และลบไฟล์ที่พักไว้ใน**ทุก**เส้นทางที่ออกไป
+รวมถึงกรณีถูกปฏิเสธ
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[การเชื่อมต่อผ่านรีเลย์ไม่มี HTTP origin]
+รีเลย์ที่โบรกเกอร์ไว้ขนส่งเฟรม RPC ไม่ใช่การโอนไฟล์ ทุกสิ่งที่พูดถึงพาธฝั่งเซิร์ฟเวอร์
+ยังทำงานผ่านมันได้ ส่วนเส้นทางถ่ายโอนทั้งสามต้องมีการเชื่อมต่อโดยตรง
+และหน้าเว็บปิดใช้งานมันพร้อมข้อความแจ้ง แทนที่จะล้มกลางการดาวน์โหลด
 :::
 
-## Paths and limits
+## พาธและขีดจำกัด
 
-| Thing                          | Value                                                        |
+| สิ่ง                          | ค่า                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| สแนปช็อต                      | `<dataDir>/backups/<timestamp>/`                             |
+| ข้อมูลสำรองของเวิร์กสเปซตามกำหนดเวลา    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| การส่งออกเวิร์กสเปซ              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| การพักการถ่ายโอน               | `<dataDir>/backups/transfer/` — โต๊ะทำงานที่ถูกกวาดเก็บโดยเส้นทางที่เขียนมัน |
+| ชื่ออาร์ไคฟ์สแนปช็อต          | `<snapshot directory name>.zip`                              |
+| เพดานการอัปโหลด                 | 8 GiB ต่อ `POST /backup/restore`                             |
+| การเก็บรักษา                      | สแนปช็อตการติดตั้ง: ลบด้วยมือ ข้อมูลสำรองของเวิร์กสเปซ: ไปป์ไลน์รายสัปดาห์ ค่าเริ่มต้น 30 วัน |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+ไดเรกทอรี `exports/`, `transfer/` และ `workspace-backups/` ไม่ใช่
+สแนปช็อตการติดตั้งและถูกตัดออกจาก `server.listBackups` มีเพียงไดเรกทอรี
+สุดท้ายเท่านั้นที่มีการเก็บรักษาตามกำหนด การลบสแนปช็อตการติดตั้งต้องมี
+การดำเนินการอย่างชัดแจ้งของเจ้าของการติดตั้ง
 
-## See also
+## ดูเพิ่มเติม
 
-- [Back up and restore](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/) — the recipes these operations belong to
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) — why one workspace is one file
-- [`cc_server` CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/th-TH/คู่มือ/อ้างอิง/แผนที่เส้นทาง/) — where the UI lives
-- [Architecture](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/) — the client/server split the paths follow
+- [สำรองและกู้คืน](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/) — สูตรงานที่ปฏิบัติการเหล่านี้เป็นส่วนหนึ่ง
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) — เหตุใดหนึ่งเวิร์กสเปซคือหนึ่งไฟล์
+- [`cc_server` CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/) — ไดเรกทอรีข้อมูลที่พาธเหล่านี้อยู่
+- [แผนที่เส้นทาง](/th-TH/คู่มือ/อ้างอิง/แผนที่เส้นทาง/) — ที่อยู่ของส่วนติดต่อผู้ใช้
+- [สถาปัตยกรรม](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/) — การแยกไคลเอนต์/เซิร์ฟเวอร์ที่พาธเหล่านี้ยึดตาม

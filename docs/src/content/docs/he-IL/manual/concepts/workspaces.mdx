@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: סביבות עבודה ובידוד
+description: למה סביבת עבודה היא גבול דיירים קשיח, איך פיצול מסדי הנתונים הופך את הגבול הזה למבני, ומה חוצה אותו במכוון.
 slug: he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## מהי סביבת עבודה?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+סביבת עבודה היא דייר הבידוד העליון ב-Control Center. היא מקבצת סוכנים, מאגרים, מרחבים, כרטיסים, זיכרון, פייפליינים וחברים להקשר תחום. כל מה שקורה בתוך סביבת עבודה נשאר בתוכה.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+סביבת עבודה טיפוסית ממופה לפרויקט אחד או לבסיס קוד אחד. ייתכן שיהיו לכם סביבות עבודה נפרדות עבור "api-service", "frontend-v2" ו-"infrastructure".
 
-## Workspace-scoped data
+## נתונים בהיקף סביבת העבודה
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+השורות של סביבת עבודה יושבות בקובץ ה-SQLite של אותה סביבת עבודה עצמה, בנתיב `<dataDir>/<workspaceId>/workspace.db`. כל סביבת עבודה מקבלת תיקייה ולא קובץ חשוף, מפני שסביבת עבודה צוברת יותר ממסד נתונים — עצי עבודה לכל שיחה, קובצי הסוכנים והמיומנויות ופרטי הגישה של בוט הצ'אט — ומתן תיקייה לה פירושו שכל זה חי ונמחק יחד.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| ישות                                              | היקף                                          |
+| ------------------------------------------------- | --------------------------------------------- |
+| סוכנים                                            | שייכים לסביבת עבודה אחת בדיוק                 |
+| מאגרים                                            | נרשמים לסביבת עבודה אחת (ראו בהמשך)           |
+| מרחבים, שיחות והודעות                            | בהיקף סביבת העבודה                            |
+| כרטיסים, פרויקטים, תוכניות ותזמורים              | בהיקף סביבת העבודה                            |
+| עובדות זיכרון, מדיניות, תחומים והענקות גישה      | בהיקף סביבת העבודה                            |
+| הרצות פייפליין, תבניות וטריגרים                  | בהיקף סביבת העבודה                            |
+| מצב בקשות משיכה, מרחבי סקירה וקבוצות סקירה      | בהיקף סביבת העבודה                            |
+| יומני הרצה של סוכנים וזיכרון עבודה              | בהיקף סביבת העבודה                            |
+| חברים, הזמנות והענקות לפי מאגר                   | בהיקף סביבת העבודה                            |
+| סימבולים וקשתות של גרף הקוד                       | תחומים לפי `repoId` בתוך קובץ סביבת העבודה    |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+רוב השורות האלה נושאות עמודת `workspaceId`; קבצי מסד נתונים נפרדים אוכפים את הבידוד. ראו את אינואריאנטת הבידוד בהמשך.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## מאגרים הם בהיקף סביבת עבודה; זהות בין סביבות עבודה היא לפי נתיב
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+שורת מאגר יושבת בקובץ מסד הנתונים של סביבת העבודה שלה עצמה — הקובץ _הוא_ ההיקף, ולכן לטבלה אין עמודת `workspaceId` ואין טבלת חיבור.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+מוסיפים מאגר לסביבת עבודה בהגדרות ← סביבת עבודה ← מאגרים. רישום של אותו checkout בשתי סביבות עבודה יוצר שתי שורות בלתי תלויות עם שני מזהים; זהותו של מאגר _בין_ סביבות עבודה נקבעת לפי נתיב במערכת הקבצים (או לפי owner/name ב-GitHub), ולעולם לא לפי מזהה.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+הרישום קפדני: הנתיב חייב להיות בתוך עץ עבודה של git, לחיבור חייב להיות remote בשם `origin`, וה-remote הזה חייב להצביע על מארח קוד נתמך (github.com, gitlab.com או bitbucket.org). מארח הקוד נקרא מה-remote ונשמר על המאגר, כך שסביבת עבודה אחת יכולה להחזיק מאגרים מכל השלושה. כל דבר אחר נדחה. דפדפן התיקיות שמתוכו בוחרים מציג את מערכת הקבצים של **מארח השרת**, והוא מוגבל לרשימת ההיתרים `--repo-roots` של השרת (שברירת המחדל שלה היא תיקיית הבית של משתמש השרת).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+הסרה של מאגר מסביבת עבודה מוחקת את השורה לחלוטין ומפעילה מחיקה משורשרת של סימבולי הקוד, הקשתות, הקבצים, נקודות הביקורת של האינדקס וההענקות לפי חבר. ה-checkout בדיסק נשאר ללא שינוי.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+גרף הקוד יושב באותו קובץ, במפתח `repoId`, מפני שסביבות עבודה שונות עשויות להחזיק את אותו מאגר על ענפים שונים עם קוד שונה.
 
-## The isolation invariant
+## אינואריאנטת הבידוד
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+דליפות נתונים בין סביבות עבודה מטופלות כבאגים. הבידוד הוא **מבני**, והוא נאכף בכמה רבדים:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **שכבת מסד הנתונים.** לכל סביבת עבודה יש קובץ SQLite משלה, המסופק על ידי `WorkspaceDatabaseManager.of(workspaceId)`. מסד נתונים של סביבת עבודה אינו מצהיר על `users`, `workspaces` או טבלאות של סביבת עבודה אחרת, ולכן קריאה חוצת סביבות עבודה אינה באג שאפשר לכתוב — היא לא מתקמפלת. מאגרים מפענחים את ה-DAO שלהם בכל קריאה במקום לשמור אחד במטמון, ומכיוון שכל מתודה של מאגר מקבלת `workspaceId` חובה, אי אפשר להסיק את סביבת העבודה ולא להחיל עליה ברירת מחדל.
+- **מזהה סביבת העבודה הוא מקטע נתיב.** מכיוון שהמזהה הופך לשם תיקייה, עליו להתאים לתבנית בטוחה של מקטע יחיד (התחלה בתו אלפאנומרי, ואחריו תווים אלפאנומריים, נקודות, קווים תחתונים ומקפים; בלי `..`). המזהים הם UUID בכל המוצר. כל דבר אחר זורק חריגה במקום לעבור ניקוי — זהו אמצעי ההגנה מפני מעבר בנתיב (path traversal), והוא נכשל בקול רם במקום לכתוב את הנתונים של סביבת עבודה לנתיב שמישהו אחר בחר.
+- **הגנה בעומק.** עמודות ה-`workspaceId` עדיין שם ועדיין נכתבות. מיותרות בתוך קובץ, הן משאירות את טריגרי פיד הסנכרון, אינדקסי FTS וצורות השורות הקיימות ללא שינוי, והן הופכות קובץ לכזה שמתאר את עצמו כאשר בוחנים אותו לבדו — וזה מה שייצוא וייבוא נשענים עליו.
+- **שכבת התחום.** שירותים שמשנים ישויות לפי מזהה מאמתים `entity.workspaceId == workspaceId` בצוואר בקבוק יחיד לפני שהם ממשיכים, וזורקים `WorkspaceMismatchException` באי-התאמה — הכשל הרועש עבור מזהה שהגיע מההקשר הלא נכון. סירוב בקול רם חשוב: פעולה שקטה שאינה עושה דבר מסתירה את הבאג, והמשך הפעולה מדליף.
+- **שכבת ה-RPC.** ה-dispatcher של repo-RPC הוא צוואר הבקבוק. כל פעולה בהיקף סביבת עבודה חייבת לשאת `workspace_id` בארגומנטים שלה עצמה — אין "סביבת עבודה נוכחית" לפי סשן שאפשר להדליף, ומזהה לא מוכר נדחה כ"לא נמצא" _לפני_ שמשהו פותח מסד נתונים, כך שמזהה שגוי אינו יכול להפיק `workspace.db` רפאים. פעולות גלובליות באמת (עדכוני החדשות, תור הצי) מצהירות על עצמן כלא-תחומות כהחלטה מפורשת שנבדקה. כלי MCP נוהגים לפי אותו כלל: כל כלי שנוגע בנתונים בהיקף סביבת עבודה דורש `workspace_id`.
+- **הפיזור בין סביבות עבודה ניתן למנייה.** מענה על שאלה לגבי כמה סביבות עבודה פירושו פתיחה של כמה מסדי נתונים. הפיזור הזה מצומצם לעוזר אחד, `CrossWorkspaceQueries`, כך שהרשימה המלאה של הדברים שחוצים את הגבול באופן לגיטימי יושבת בנקודות הקריאה של קובץ אחד במקום להתפזר מאחורי הערות תיעוד. נקודות הקריאה האלה הן: צבירה ברמת השרת, מפייסי אתחול, סריקות שימור ו-GC, גיבוי, מנתבי אירועים — ובדיקת החברות שלהלן.
+- **גישה לפי מזהה בלבד אינה מספקת.** שליפת ישות לפי ה-UUID שלה אינה מוכיחה שהיא שייכת לסביבת העבודה של הקורא. פיצול הקבצים הופך את הקובץ הלא נכון לבלתי נגיש; אימות שכבת התחום תופס מזהה שגוי שמגיע דרך קובץ לגיטימי.
 
-## Membership, not the pairing key, is what grants access
+## החברות, ולא מפתח הצימוד, היא שמעניקה גישה
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+החזקה של פרטי גישה של מכשיר מאמתת _מכשיר_. היא אינה מקנה הרשאה לשום דבר בתוך סביבת עבודה. כל פעולה בהיקף סביבת עבודה מפענחת את תפקיד החברות של הקורא ואוכפת רצפה הנגזרת מסוג הפעולה — קריאה דורשת `guest`, שינוי דורש `member`, ופעולה הרסנית דורשת `admin` — ופעולות שחושפות תוכן של מאגר בודקות בנוסף את ההענקה של הקורא לפי מאגר. מפתח צימוד תקף בלי חברות מקבל `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+המשמעות לבידוד אלגנטית: שורות החברות יושבות בקובץ של _סביבת העבודה עצמה_, ולכן "מי נמצא בסביבת העבודה הזו?" היא קריאה תחומה רגילה. השאלה ההפוכה — "באילו סביבות עבודה אני נמצא?" — פרושה מעצם הגדרתה על פני קבצים, ולכן היא אחד הפיזורים הבודדים המאושרים של `CrossWorkspaceQueries`, והיא מה שבורר סביבות העבודה מריץ לפני שנבחרה סביבת עבודה כלשהי.
 
-See [Multiplayer](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/) for the role ladder and repo grants.
+ראו [רב־משתמשים](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/) לסולם התפקידים ולהענקות לפי מאגר.
 
-## The global registry
+## הרישום הגלובלי
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+לא הכול בהיקף סביבת עבודה. מסד נתונים שני, `<dataDir>/global.db`, מחזיק את מה שהוא באמת ברמת השרת:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **רישום סביבות העבודה**, כך שהמחליף יכול להציג כל סביבת עבודה בלי לפתוח ולו קובץ סביבת עבודה אחד — וכדי שהשם, הלוגו, הבעלים, הסדר הידני וסמן המחיקה הרכה של סביבת עבודה יימצאו מחוץ לקובץ שהם מתארים;
+- **זהות**: משתמשים, העדפות משתמש ומכשירים מצומדים, מפני שאדם אחד הוא משתמש אחד בכל סביבות העבודה, ומכשיר מצומד שורד מחיקה של סביבת עבודה;
+- **תור הצי** (עובדים, עבודות ויומן שיבוץ), שהמתזמן שלו מתאים את כל התור מול כל עובד בכל פעימה;
+- **עדכוני החדשות**, שהם לפי משתמש (ולא לפי סביבת עבודה) — הוספה של פיד מלווה אתכם אל כל סביבת עבודה;
+- **`workspace_routes`**, אינדקס טרום־אימות שעונה על "איזו סביבת עבודה היא הבעלים של המפתח הזה?" עבור נקודות כניסה שמגיעות עם סוד בלבד או עם מזהה אטום (גיבוב של הזמנה, אסימון webhook, קישור עמוק) ובלי סביבת עבודה. החמצה בו היא "לא נמצא"; אין במכוון נפילה חזרה לסריקה;
+- **הגדרות וזהות בהיקף ההתקנה**: מזהה ההתקנה, הגדרות ברמת המארח, חיבורי SSO ומדיניות פעולות מנוהלות (הגבלה בהיקף ההתקנה שיכולה רק להדק את מעקות הבטיחות של סביבות עבודה).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+האתחול פותח רק את הקובץ הזה. קבצי סביבות עבודה נפתחים באופן עצל במגע הראשון, ולכן עלות האתחול נשארת קבועה ולא משנה כמה היסטוריה צוברות סביבות העבודה, וה-`quick_check` לכל קובץ משולם בשימוש הראשון ולא בדרך לבאנר המוכנות.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+קובץ של סביבת עבודה נושא רק `workspace_meta` בשורה אחת לצורך זיהוי עצמי (המזהה שלו, ההתקנה שיצרה אותו, גרסת הסכימה שאיתה נוצר ומתי). כל מה שתיאורי לגבי סביבת עבודה נמצא ברישום.
 
-## Creating a workspace
+## יצירת סביבת עבודה
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+יצירה של סביבת עבודה עושה יותר מהוספה של שורה לרישום. בפעולה אחת השרת מחתים את המשתמש היוצר כ-`ownerUserId`, רושם את החברות של אותו משתמש בתפקיד בעלים ומפרסם אירוע תחום `WorkspaceCreated`. מאזינים לאירוע הזה מזריעים אז, באופן אידמפוטנטי וברקע:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **סוכן CEO** וארבעה מומחים — `qa`, `architect`, `engineer`, `librarian` — כשהמומחים מדווחים ל-CEO;
+- **תבניות הפייפליין המובנות** והטריגרים שלהן (טריגרים של אירוע וטריגרים ידניים מגיעים דלוקים; טריגרים מתוזמנים דורשים הצטרפות מבחירה, למעט סריקת ה-GC היומית של עצי העבודה);
+- **חבילות ההערכה ההתחלתיות**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
+זה קורה ל_כל_ סביבת עבודה, לא רק לראשונה. הסוכנים הנזרעים נוצרים בלי מתאם, ולכן הם רצים על **Control Center (מובנה)** עם מודל ברירת המחדל של Anthropic (`claude-opus-4-8` אלא אם תצמידו אחר) עד שתגדירו מתאם ומודל לכל סוכן בהגדרות ← סביבת עבודה ← סוכנים. ראו [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+כתיבת החברות של הבעלים חשובה יותר ממה שהיא נראית: בלעדיה לסביבת העבודה שזה עתה נוצרה לא יהיו חברים, וכל קריאה בהיקף סביבת עבודה שהמשתמש היוצר יעשה לאחר מכן תידחה.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[סוכנים אינם יכולים ליצור סביבת עבודה]
+אין כלי MCP בשם `create_workspace`. בני אדם יוצרים סביבת עבודה דרך `workspace.create` (צוואר בקבוק לשם בלבד) או `workspace.upsert` (רשומה מלאה, שמשמשת גם לעדכונים). שניהם מחתימים את המשתמש היוצר כ-`owner` ומפרסמים `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## מחיקה, ייצוא וייבוא
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+מחיקה של סביבת עבודה **מסמנת את שורת הרישום ומבטלת את הקישור לתיקייה**. סביבת העבודה נעלמת מכל רשימה ומכל שליפה. שורת הרישום נשארת (במחיקה רכה) כך שהמזהה עדיין מוכר לגיבוי ולתחזוקה, אבל `workspace.delete` מפיל מיד את התיקייה של אותה סביבת עבודה — מסד הנתונים, עצי העבודה, קובצי הסוכנים והשאר — דרך `WorkspaceDatabaseManager.dropAndClose`. רק ה**בעלים** של סביבת העבודה יכול למחוק אותה.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+מכיוון שסביבת עבודה אחת היא קובץ אחד, העברה של סביבת עבודה היא פעולת קובץ ולא ייצוא טבלה־אחר־טבלה:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` הוא `VACUUM INTO` יחיד — תמונת מצב עקבית ומאוחה שנלקחת תחת טרנזקציית קריאה בזמן שהשרת ממשיך לשרת.
+- `workspace.import` מאמץ קובץ כזה, ומחליף כל מה שסביבת העבודה היעד מחזיקה כעת. ה-`workspace_meta` המוטבע מאפשר לייבוא להבחין בין "הקובץ שלי עצמי, שאומץ מחדש" לבין "קובץ מהתקנה אחרת" (האחרון מותר, אך נרשם ביומן במקום להיות בלתי נראה).
+- `server.backupNow` יוצר תמונת מצב של ההתקנה כולה לתיקייה עם חותמת זמן שמשקפת את תיקיית הנתונים החיה — `manifest.json`, `global.db` וקובץ `<workspaceId>/workspace.db` אחד לכל סביבת עבודה — כך ששחזור הוא העתקה שלה חזרה.
+- `server.listBackups` קורא את התיקייה הזו חזרה, מהחדש לישן, עם הגודל ורשימת סביבות העבודה של כל תמונת מצב. תמונת מצב שחסר בה ה-manifest או שמציינת קבצים שאינם שם עדיין מדווחת, מסומנת כלא שלמה — העלמתה היא הדרך שבה מפעיל מגיע להאמין שיש לו גיבוי שאין לו.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+פעולות הגיבוי נמצאות תחת **הגדרות ← שרת ← גיבוי ושחזור**: **גיבוי עכשיו** לוקח תמונת מצב של ההתקנה, הרשימה מציגה אילו תמונות מצב שלמות ומאפשרת לבעלים של ההתקנה למחוק אחת לאחר אישור, וכל סביבת עבודה מציעה ייצוא וייבוא. הפייפליין המובנה **Workspace backup** לוקח רק את מסד הנתונים של אותה סביבת עבודה בלוח זמנים שבועי ומוחק את הגיבויים שלו עצמו שישנים מגיל השימור המוגדר. שחזור של סביבת עבודה מתמונת מצב של ההתקנה הוא `workspace.import` שמופנה אל `<workspaceId>/workspace.db` של תמונת המצב; שחזור של התקנה שלמה נשאר העתקה חזרה של תיקיית תמונת המצב כשהשרת כבוי.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/he-IL/מדריך-למשתמש/עזר/גיבוי/#what-a-backup-does-not-contain) has the full table.
+מה שאף אחד מהם אינו נושא הוא שאר תיקיית סביבת העבודה. סביבת עבודה צוברת יותר ממסד נתונים — תמונות שהודבקו, קובצי מיומנויות וסוכנים, פרטי גישה של צ'אט, עצי עבודה — וייצוא וייבוא מעבירים את ה**קובץ**, ולכן כל מה שלידו נשאר במקומו. זה מכוון עבור פרטי גישה וזניח עבור עצי עבודה; עבור השאר זו מגבלה שכדאי להכיר ולא תכונה. ל[עזר הגיבוי](/he-IL/מדריך-למשתמש/עזר/גיבוי/#what-a-backup-does-not-contain) יש את הטבלה המלאה.
 
-## Moving a backup between the server and your device
+## העברת גיבוי בין השרת למכשיר שלכם
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/he-IL/מדריך-למשתמש/עזר/גיבוי/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+כל פעולה שלמעלה מדברת בנתיבים על ה**שרת**, וזו תשובה מלאה רק כשהשרת הוא המחשב שלכם. שלושה נתיבי HTTP חתומים — [`/backup/workspace`, `/backup/snapshot` ו-`/backup/restore`](/he-IL/מדריך-למשתמש/עזר/גיבוי/#transfer-routes) — נושאים את הבתים עבור כל טופולוגיה אחרת, על אותו מסלול מאומת שכבר משתמשים בו פרוקסי המדיה ומאגר התמונות. בדף זהו כפתור **הורדה** לצד כל ייצוא וכל תמונת מצב (אתם בוחרים היכן היא נוחתת), ו**בחירת קובץ והעלאה** כדי לשחזר מקובץ שנמצא במחשב שאתם עובדים עליו. ההעלאה היא זו שעובדת כשהשרת אינו המחשב שלכם: `workspace.import` צריך שהקובץ כבר יהיה על המארח, וזו הדרך שבה הוא מגיע לשם.
 
-Three properties are worth knowing:
+שלושה מאפיינים שכדאי להכיר:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **הורדה מנפיקה עותק טרי והשרת לא שומר ממנו דבר.** הורדה אינה "שליפת הקובץ שכפתור הייצוא יצר" — היא מייצאת שוב, מזרימה את התוצאה ומוחקת אותה. התשובה היא `no-store` עם `Accept-Ranges: none` מאותו נימוק: טווח שממשיך מנקודת עצירה היה מלחים שני ייצואים שונים לקובץ אחד שנראה תקין ואינו.
+- **העלאה מוזרמת לדיסק, ולעולם אינה נשמרת במאגר זמני**, בשני הקצוות, והעותק הזמני נמחק בכל מסלול יציאה — כולל סירוב. מסד נתונים של סביבת עבודה אינו צילום מסך.
+- **לחיבור שעובר בממסר אין מקור HTTP**, ולכן פקדי ההעברה מושבתים בו, עם הערה שמסבירה למה. כל מה שמדבר בנתיבים בצד השרת ממשיך לעבוד דרך הממסר; רק מסלולי הבתים דורשים חיבור ישיר.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[אילו נתיבים שייכים למי]
+הנתיבים שהדף *מציג* — תיקיית תמונות המצב, הקובץ שייצוא כתב, המקור שייבוא קורא — נמצאים במחשב שמריץ את `cc_server`. הנתיב ש**הורדה** מדווחת עליו נמצא במחשב שאתם יושבים מולו. ההבחנה הזו היא הסיבה ששניהם קיימים: הראשון הוא מה שסקריפט תחזוקה או הפעלת ssh צריכים, והשני הוא מה שאדם שאוסף גיבוי צריך.
 :::
 
-## Multiple workspaces
+## כמה סביבות עבודה
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+אפשר להריץ כמה סביבות עבודה זו לצד זו. כל אחת פועלת באופן עצמאי: סוכנים בסביבת עבודה אחת אינם יכולים לשלוח הודעות לסוכנים באחרת, אינם יכולים לקרוא את הזיכרון של סביבת עבודה אחרת ואינם יכולים לראות את הכרטיסים שלה. פענוח הנמען בהודעות בין סוכנים הוא מדויק ולעולם אינו חוצה סביבת עבודה.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+אין לוח מחוונים חוצה סביבות עבודה. משטח האנליטיקה בנתיב `/workspaces/:workspaceId/observability` נרשם לפיד גלובלי תחום של הרצות אחרונות ומצמצם אותו מיד לסביבת העבודה הפעילה, כך שמה שרואים שם הוא סביבת עבודה אחת בכל רגע. המשטחים היחידים שהם באמת רב-סביבתיים שאדם נוגע בהם הם בורר סביבות העבודה והמחליף.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+מגבלה מעשית אחת שכדאי להכיר: סביבת עבודה שמישהו משתמש בה נשארת פתוחה — אין LRU. מעבר ל-32 כאלה השרת מזהיר במקום לסרב, מפני שכל קובץ פתוח מחזיק isolate ברקע ומטמון עמודים. הפיזור בין סביבות עבודה פותח קבצים לזמן חולף וסוגר אותם אחר כך אם שום דבר אחר לא תפס אותם.
 
-## Related concepts
+## מושגים קשורים
 
-- [Multiplayer](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): agents belong to exactly one workspace
-- [Memory and knowledge](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/): memory is workspace-scoped
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): where the databases sit in the client/server split
-- [Back up and restore](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/he-IL/מדריך-למשתמש/עזר/גיבוי/): every operation, route, manifest field and limit
-- [Add repositories](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/): registering a checkout into a workspace
+- [רב־משתמשים](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): חברות, תפקידים והענקות לפי מאגר — חצי הגישה של הבידוד
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): סוכנים שייכים לסביבת עבודה אחת בדיוק
+- [זיכרון וידע](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/): הזיכרון הוא בהיקף סביבת העבודה
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): היכן יושבים מסדי הנתונים בפיצול שבין לקוח לשרת
+- [גיבוי ושחזור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/): נטילת תמונת מצב, העברת סביבת עבודה ושמירת עותקים במקום אחר
+- [גיבוי, ייצוא וייבוא](/he-IL/מדריך-למשתמש/עזר/גיבוי/): כל פעולה, נתיב, שדה manifest ומגבלה
+- [הוספת מאגרים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/): רישום checkout לתוך סביבת עבודה

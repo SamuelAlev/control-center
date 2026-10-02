@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: روٹ میپ
+description: Control Center کی رجسٹر کردہ ہر روٹ، اُس کی اسکرین اور کوئری پیرامز کے ساتھ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## ایپ شیل
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+ایپ شیل (`ControlCenterLayout`) ورک اسپیس کے اندر موجود ہر روٹ کو ایک `ShellRoute` کے ذریعے لپیٹتا ہے۔ **شیل کے اندر کی ہر منزل پر ورک اسپیس کا پری فکس لگا ہوتا ہے — `/workspaces/:workspaceId/…` — اور URL میں موجود ورک اسپیس آئی ڈی فعال ورک اسپیس کا واحد ذریعۂ حقیقت ہے۔** صرف سیاق سے پہلے کی سطحوں پر کوئی پری فکس نہیں ہوتا: `/splash`، `/onboarding`، `/signed-out` اور بغیر سابقہ `/workspaces` پکر، جو سب فل اسکرین اور شیل سے باہر ہیں۔
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+گیٹ اُس وقت مکمل ہوتا ہے جب **سائن اِن صارف کے لیے** کم از کم ایک forge منسلک ہو اور کم از کم ایک ورک اسپیس موجود ہو۔
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+کسی کریڈنشل کا نہ ہونا اور کوئی سیٹ اپ نہ ہونا دو الگ اسکرینیں ہیں، اور اِن میں فرق کرنے والی چیز `users.onboarding_finished_at` ہے جو کالر کے اپنے `identity.me` سے پڑھی جاتی ہے — ہرگز “ورک اسپیسز موجود ہیں” نہیں، جو اُس لمحے غلط ثابت ہو جاتا ہے جب کسی کو ایسے ورک اسپیس میں مدعو کیا جائے جو اُس نے خود نہ بنایا ہو۔ کوئی forge منسلک نہ ہونے پر، وہ اکاؤنٹ جس نے آن بورڈنگ مکمل کر لی ہو دوبارہ تصدیق کے لیے `/signed-out` پر جاتا ہے؛ اور جس نے نہ کی ہو وہ `/onboarding` پر جاتا ہے۔ جب تک یہ فلیگ نامعلوم رہتا ہے، گارڈ اندازہ لگانے کے بجائے اسپلاش کو روکے رکھتا ہے، کیونکہ وہ کبھی آن بورڈنگ سے واپس باہر ری ڈائریکٹ نہیں کرتا۔
 
-## Unprefixed routes
+## بغیر پری فکس والے روٹس
 
-| Path                       | Screen                                           |
+| راستہ                      | اسکرین                                           |
 | -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| `/splash`                  | اسٹارٹ اپ اسپلاش جو آن بورڈنگ گیٹ کو حل کرتا ہے  |
+| `/onboarding`              | ایک forge جوڑیں، ورک اسپیس بنائیں یا اُس میں شامل ہوں، سینڈ باکس، ڈیفالٹ اڈاپٹر، پھر آواز۔ ورک اسپیس والا مرحلہ اُس وقت ہٹا دیا جاتا ہے جب اکاؤنٹ پہلے ہی کسی ورک اسپیس سے وابستہ ہو |
+| `/signed-out`              | دوبارہ تصدیق: وہی forge-کنکشنز کارڈ جو ترتیبات رینڈر کرتی ہے، بغیر اسٹیپ بار اور بغیر جاری رکھیں بٹن — forge کے رپورٹ کرتے ہی روٹر خود بخود نکل جاتا ہے |
+| `/workspaces`              | ورک اسپیس کی فہرست اور پکر                        |
+| `/workspaces/:workspaceId` | `/workspaces/:workspaceId/inbox` پر ری ڈائریکٹ کرتا ہے |
 
-## Workspace routes
+## ورک اسپیس روٹس
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+نیچے دیے گئے راستوں میں `/workspaces/:workspaceId` پری فکس شامل نہیں ہے۔
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| راستہ                                   | کوئری پیرامز                              | اسکرین                                                                                                                                                                   |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | متحد ان باکس: ریویو لائف سائیکل کے مطابق درجہ بند PRs کے ساتھ ساتھ وہ غیر-PR کام بھی جو آپریٹر کو روکے ہوئے ہو۔ گارڈ کے بعد لینڈنگ کا راستہ؛ بغیر سابقہ `/workspaces/:workspaceId` یہاں ری ڈائریکٹ ہوتا ہے |
+| `/spaces`                               | —                                         | اسپیس کی سطح، کوئی اسپیس منتخب نہیں                                                                                                                                        |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | ایک اسپیس؛ `m` کسی پیغام کو ڈیپ لنک کرتا ہے اور کھلنے پر ایک بار استعمال ہو جاتا ہے                                                                                       |
+| `/tickets`                              | —                                         | ٹکٹ بورڈ                                                                                                                                                                 |
+| `/tickets/:ticketId`                    | —                                         | ٹکٹ ماسٹر-ڈیٹیل                                                                                                                                                           |
+| `/projects/:projectId`                  | —                                         | پروجیکٹ کا جائزہ                                                                                                                                                          |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | PR کی فہرست؛ `repo` بائیں ریل میں اُس ریپوزٹری کو منتخب کرتا ہے                                                                                                            |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | نیا pull request تحریر کریں؛ `space` اُس اسپیس کا نام دیتا ہے جس کا الگ تھلگ ورک ٹری برانچ فراہم کرتا ہے                                                                    |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | diff ویوئر کے ساتھ PR کی تفصیل؛ `comment` کسی ایک تبصرے کی عددی REST آئی ڈی ہے                                                                                            |
+| `/pipelines`                            | —                                         | پائپ لائن رن کی فہرست                                                                                                                                                     |
+| `/pipelines/run`                        | `?templateId=<id>`                        | دستی رن لانچر                                                                                                                                                             |
+| `/pipelines/:runId`                     | —                                         | پائپ لائن رن کی تفصیل (اسٹیپ ٹائم لائن)                                                                                                                                   |
+| `/plans`                                | —                                         | Plan Studio ہب: فعال پلانز، پلان دستاویزات، پلے بکس                                                                                                                        |
+| `/plans/:kind/:id`                      | —                                         | ایک پلان کے لیے Plan Studio؛ `kind` یا `orchestration` ہوتا ہے یا `document`                                                                                              |
+| `/meetings`                             | —                                         | میٹنگز کی فہرست                                                                                                                                                           |
+| `/meetings/record`                      | —                                         | لائیو میٹنگ ریکارڈنگ اسکرین                                                                                                                                               |
+| `/meetings/:meetingId`                  | —                                         | میٹنگ کی تفصیل: نوٹس، ٹرانسکرپٹ، ایکشن آئٹمز، فیصلے                                                                                                                        |
+| `/calendar`                             | —                                         | کیلنڈر: ماہ، ہفتہ اور ایجنڈا ویو                                                                                                                                           |
+| `/calendar/:eventId`                    | —                                         | کیلنڈر ایونٹ کی تفصیل (بہن روٹ؛ کیلنڈر صفحہ کی کلید شیئر کرتا ہے)                                                                                                          |
+| `/newsfeed`                             | —                                         | نیوز فیڈ کی فہرست                                                                                                                                                         |
+| `/newsfeed/article/:articleId`          | —                                         | آرٹیکل ریڈر                                                                                                                                                               |
+| `/observability`                        | —                                         | آبزرویبلٹی ہب: ورک اسپیس کے رن-لاگ فیڈ پر استعمال، بصیرتیں، لائیو اور معیار کے ٹیبز۔ ڈیفالٹ طور پر استعمال ٹیب کھلتا ہے                                                   |
+| `/users/:login`                         | —                                         | GitHub صارف پروفائل                                                                                                                                                       |
+| `/teams/:organization/:slug`            | —                                         | GitHub آرگنائزیشن ٹیم پروفائل                                                                                                                                             |
+| `/api-keys`                             | —                                         | API کلیدوں کا انتظام۔ **نیویگیشن کا کوئی انٹری پوائنٹ نہیں** — صرف URL سے قابلِ رسائی                                                                                      |
+| `/settings/…`                           | —                                         | ترتیبات کی اسکرینیں (نیچے)                                                                                                                                                |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+گفتگوؤں اور تھریڈز کا **اپنا کوئی روٹ نہیں ہوتا** — تھریڈ `/spaces/:spaceId` کے اندر ایک گفتگو ہوتی ہے، جو URL سے مخاطب کرنے کے بجائے ایڈیٹر ٹیب کے طور پر کھولی جاتی ہے۔
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**کوئی `/dashboard` روٹ نہیں** ہے اور نہ کوئی ڈیش بورڈ اسکرین۔ تجزیاتی سطح `/observability` ہے، جہاں سائیڈبار کے فوٹر سے پہنچا جاتا ہے۔
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+سائیڈبار میں **کوئی “پلانز” آئٹم نہیں** ہے۔ Plan Studio اُس گفتگو میں پلان کی قطار سے ایڈیٹر ٹیب کے طور پر کھلتا ہے جس نے اُسے بنایا؛ `/plans` اور `/plans/:kind/:id` ڈیپ لنک ہیں۔
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` اور `/pull-requests/compose` کا روٹ-ٹائٹل یا بریڈ کرمب رجسٹریوں میں کوئی اندراج نہیں، اس لیے دونوں وِنڈو ٹائٹل میں محض ایپ کا نام دکھاتے ہیں اور کوئی بریڈ کرمب ٹریل نہیں دکھاتے۔
 
-## Settings routes
+## ترتیبات کے روٹس
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings`، `/settings/you/appearance` پر ری ڈائریکٹ کرتا ہے۔ سائیڈبار کا ترتیبات بٹن اور `Cmd/Ctrl + ,` دونوں `/settings/you/appearance` پر جاتے ہیں۔
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+ترتیبات کے راستے **اسکوپ** کے مطابق نیم اسپیس میں رکھے جاتے ہیں — `you/`، `workspace/`، `server/` — کیونکہ یہ سیگمنٹ بتاتا ہے کہ کوئی تبدیلی کس پر اثر ڈالتی ہے۔ دو راستے اِس نیم اسپیسنگ سے پہلے کے ہیں اور URL میں اسکوپ شدہ نہیں: `/settings/memory` اور `/settings/pipelines`۔
 
-### You
+### آپ
 
-| Path                          | Screen                                                                     |
+| راستہ                          | اسکرین                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | تھیم، زبان، ٹائپوگرافی، ایڈیٹر تھیم (ترتیبات کی لینڈنگ)                    |
+| `/settings/you/notifications` | فی ایونٹ ٹوگلز، خاموش اوقات                                                 |
+| `/settings/you/keybindings`   | کی بورڈ شارٹ کٹ کا حوالہ (صرف پڑھنے کے لیے)                                 |
+| `/settings/you/audio`         | مائیکروفون، ڈکٹیشن، میٹنگ کی شناخت اور ساؤنڈ اسکیپ آؤٹ پٹ                    |
+| `/settings/you/devices`       | پیئر شدہ فونز اور ریموٹ کنٹرول                                              |
+| `/settings/you/newsfeed`      | فیڈ کا انتظام: ذرائع، ریفریش، پڑھے جانے کی حالت                            |
 
-### Workspace
+### ورک اسپیس
 
-| Path                               | Screen                                                                                              |
+| راستہ                               | اسکرین                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | اِس ورک اسپیس میں پروفائل اور شناخت: نام، git مصنف، کوڈ ہوسٹنگ، کیلنڈر |
+| `/settings/workspace/general`      | نام، لوگو، سیکرٹ گلوبز، ریویو کی بیک وقتی، برانچ کے نام کا انداز، سنک ہیلتھ، چیٹ برجز، ڈینجر زون |
+| `/settings/workspace/meetings`     | میٹنگ نوٹ کے ٹیمپلیٹس اور محفوظ آواز پروفائلز                                                       |
+| `/settings/workspace/members`      | راسٹر، دعوتیں، آڈٹ ٹریل۔ آڈٹ ٹریل اختیاری `?cursor=` کے ساتھ صفحہ بند ہوتی ہے                        |
+| `/settings/workspace/repositories` | اِس ورک اسپیس میں رجسٹرڈ ریپوزٹریز                                                                   |
+| `/settings/workspace/agents`       | رجسٹرڈ ایجنٹ شناختیں                                                                                 |
+| `/settings/workspace/skills`       | مہارت کی کنفیگریشن                                                                                   |
+| `/settings/memory`                 | ورک اسپیس میموری: حقائق، پالیسیاں، نالج گراف                                                          |
+| `/settings/workspace/permissions`  | ایجنٹ اجازتیں: گارڈریل میٹرکس اور what-if پروب                                                       |
+| `/settings/pipelines`              | پائپ لائن ٹیمپلیٹس                                                                                    |
+| `/settings/pipelines/:templateId`  | پائپ لائن ٹیمپلیٹ ایڈیٹر (ڈریگ اینڈ ڈراپ کینوس)                                                       |
 
-### Server
+### سرور
 
-| Path                           | Screen                                                                                |
+| راستہ                          | اسکرین                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | کنکشن اور اسٹیٹس                                                                      |
+| `/settings/server/sso`         | سنگل سائن آن (SAML، OIDC، SCIM پروویژننگ)                                             |
+| `/settings/server/providers`   | ماڈل فراہم کنندگان اور اڈاپٹرز                                                         |
+| `/settings/server/mcp`         | بلٹ اِن اور بیرونی MCP سرورز                                                          |
+| `/settings/server/voice`       | آواز اور میٹنگ ماڈلز (ASR، ڈائریائزیشن)                                               |
+| `/settings/server/rigs`        | رگز: یہ ہوسٹ کیا بوٹ کر سکتا ہے، بیس امیجز، حسب ضرورت امیجز، چلتی مشینیں               |
+| `/settings/server/sandbox`     | سینڈ باکس ایگزیک گرانٹس: وہ پروگرام جو ایجنٹ آپ کے ریپوز کی اپنی ورکنگ کاپی سے چلا سکتے ہیں |
+| `/settings/server/diagnostics` | تشخیص اور پرائیویسی: سینڈ باکسنگ، ایمبیڈنگ، سنک انجن، لاگنگ، کریش رپورٹنگ               |
+| `/settings/server/backup`      | بیک اپ اور بحالی: انسٹال اسنیپ شاٹس، فی ورک اسپیس ایکسپورٹ، امپورٹ اور حذف               |
+| `/settings/server/about`       | تعارف اور اپ ڈیٹس                                                                       |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`lib/features/settings/settings_nav.dart` میں `kSettingsNav` اِس فہرست کا واحد ذریعۂ حقیقت ہے۔ `settings_nav_test.dart` منفرد آئی ڈیز، منفرد روٹس، فلیٹ شدہ J/K ترتیب اور تینوں اسکوپس پن کرتا ہے۔ یہ ہر رجسٹرڈ `GoRoute` پر نہیں چلتا۔
 
-## Route configuration
+## روٹ کنفیگریشن
 
-| Concern             | File                                                    |
+| معاملہ              | فائل                                                    |
 | ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| روٹر                | `lib/router/app_router.dart`                            |
+| روٹ بلڈرز           | `lib/router/routes.dart`                                |
+| آتھ گارڈز           | `lib/router/guards.dart`                                |
+| آن بورڈنگ گیٹ       | `lib/features/auth/providers/onboarding_providers.dart` |
+| ترتیبات کی نیویگیشن | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## مزید دیکھیں
 
-- [Workspaces](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/)
-- [Keyboard shortcuts](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/)
+- [ورک اسپیسز](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/)
+- [کی بورڈ شارٹ کٹس](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/)

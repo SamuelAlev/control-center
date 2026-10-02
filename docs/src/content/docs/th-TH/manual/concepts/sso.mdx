@@ -1,19 +1,15 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: การลงชื่อเข้าใช้ครั้งเดียว
+description: การลงชื่อเข้าใช้แบบ SAML และ OIDC ทำงานอย่างไร ตรวจสอบสิ่งใดบ้าง และบัญชีปลอดภัยได้อย่างไร
 slug: th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+การลงชื่อเข้าใช้ครั้งเดียวช่วยให้ผู้ให้บริการข้อมูลระบุตัวตนภายนอก (IdP) เป็นผู้ตัดสินว่าใครสามารถลงชื่อเข้าใช้เซิร์ฟเวอร์ Control Center ของคุณได้ รองรับสองโปรโตคอล — SAML 2.0 และ OpenID Connect — และทั้งคู่ลงเอยที่จุดเดียวกัน คือข้อมูลรับรองอุปกรณ์ที่เพิ่งออกใหม่ ซึ่งแยกไม่ออกจากคำเชิญหรือการจับคู่ด้วย QR ในทุกส่วนปลายน้ำ
 
-## The shape of a login
+## รูปแบบของการลงชื่อเข้าใช้
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+การลงชื่อเข้าใช้ด้วย SAML เป็น**การดำเนินการผ่านเบราว์เซอร์** IdP ไม่เคยเปิดการเชื่อมต่อไปยังเซิร์ฟเวอร์ของคุณ เบราว์เซอร์ของผู้ใช้เป็นตัวนำพาทุกสิ่งไปเอง:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +22,48 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+เพราะเบราว์เซอร์เป็นผู้ส่งสาร **เซิร์ฟเวอร์ที่อยู่หลัง NAT จึงใช้งานได้ตามปกติ** สำหรับการลงชื่อเข้าใช้: localhost, LAN, Tailscale, VPN หรือทันเนลก็ใช้ได้ทั้งนั้น — มีเพียงเบราว์เซอร์ของผู้ใช้เท่านั้นที่ต้องเข้าถึง ACS URL ได้ รีเลย์ WebSocket ที่ใช้ในการควบคุมระยะไกลผ่านโทรศัพท์ไม่สามารถรับส่งการไปกลับของ HTTP ได้ จึงเป็นเหตุให้จุดเริ่มต้นของ SSO กำหนดเป้าหมายเป็น HTTP origin ของเซิร์ฟเวอร์เสมอ
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect มีรูปแบบเดียวกัน โดยใช้การไปกลับแบบ authorization-code + PKCE ส่วน claims ถูกอ่านจาก token endpoint ของผู้ออกโทเคนผ่าน TLS เบราว์เซอร์จึงไม่ต้องส่งข้อมูลระบุตัวตนเลย
 
-## The adapters
+## อะแดปเตอร์
 
-Control Center splits the responsibility deliberately:
+Control Center แบ่งความรับผิดชอบอย่างจงใจ:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| ส่วนประกอบ                     | อยู่ที่ใด                            | รับผิดชอบ                                                                                                                                   |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| `cc_saml` เนทีฟ                | `packages/cc_natives/native/saml/` | การตรวจสอบ XML-DSig, การทำ canonicalization, การตรวจสอบความถูกต้องของโปรไฟล์ SAML — มอบหมายให้ crate `saml` แบบ pure-Rust ที่ปักหมุดเวอร์ชันไว้ ซึ่งอยู่เบื้องหลัง C ABI ที่ไม่มีสถานะ |
+| `SamlService` / `OidcService` | `cc_server_core`                   | สถานะการลงชื่อเข้าใช้ (ตัวติดตามคำขอที่ค้างอยู่, การตัดรายการซ้ำของการเล่นซ้ำ), ปุ่มปรับนโยบายการตรวจสอบความถูกต้อง, การเรียกจัดสรรผู้ใช้ที่ใช้ร่วมกัน                               |
+| `SsoProvisioner`              | `cc_server_core`                   | ค้นหาหรือสร้างผู้ใช้, ปักหมุด subject ของผู้ให้บริการ, ให้สิทธิ์สมาชิกภายใต้นโยบายสมาชิกอัตโนมัติ                                          |
+| `ScimService`                 | `cc_server_core`                   | พื้นผิวแบบ push ของ SCIM 2.0 (วงจรชีวิตการจัดสรร/ถอนการจัดสรร)                                                                                |
+| `SsoSettingsService`          | `cc_server_core`                   | แถวการเชื่อมต่อที่บันทึกไว้, การนำไปใช้ใหม่แบบสด, โทเคน SCIM                                                                                   |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+จงใจแล้วว่า**ไม่มีทางถอยกลับไปใช้การเข้ารหัส SAML แบบ pure-Dart**: การเขียน XML-DSig/canonicalization ขึ้นเองด้วยมือคือที่อยู่ของช่องโหว่ signature-wrapping พอดี ดังนั้นหากไลบรารี `cc_saml` หายไป ระบบจะปฏิเสธทั้งการลงชื่อเข้าใช้ด้วย SAML และการบูตเซิร์ฟเวอร์ เนทีฟนี้ไม่มีสถานะโดยออกแบบไว้ — สถานะข้ามคำขออยู่ในเซอร์วิส Dart ใช้ครั้งเดียวและมีอายุสั้น
 
-## What a login verifies
+## การลงชื่อเข้าใช้ตรวจสอบอะไรบ้าง
 
-Inside the verified native and the service, in order:
+ภายในเนทีฟที่ผ่านการตรวจสอบและเซอร์วิส เรียงตามลำดับ:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **ลายเซ็น**ของ assertion (บังคับเสมอ ส่วนลายเซ็นของซอง response เป็นทางเลือกตามการกำหนดค่า) — ต้านทาน signature-wrapping เชิงโครงสร้าง เพราะเพย์โหลดที่ผ่านการตรวจสอบผูกติดกับอิลิเมนต์ที่ตรวจสอบแล้ว,
+2. **ผู้ออก**ตรงกับ IdP ที่กำหนดค่าไว้,
+3. **ผู้รับ**ระบุชื่อ service provider รายนี้,
+4. **ปลายทาง**คือ ACS URL ของเรา,
+5. `InResponseTo` ตรงกับ AuthnRequest ที่ค้างอยู่ซึ่งเราออกไป (response ที่ไม่ได้ร้องขอและที่ IdP เป็นผู้เริ่ม ปิดไว้เป็นค่าเริ่มต้น),
+6. หน้าต่าง **ช่วงอายุ** ยังอยู่ในเกณฑ์ความคลาดเคลื่อนของนาฬิกา (ค่าเริ่มต้น 90s) และ
+7. **รหัส assertion** ไม่เคยปรากฏมาก่อน (แคชกันการเล่นซ้ำ)
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+ความล้มเหลวจะส่งกลับมาเป็นรหัสที่มีชนิด — signature, expired, audience, destination, issuer, request-match — และปลายทางจะตอบด้วยข้อผิดพลาดแบบกว้าง ๆ ผู้โจมตีจึงไม่รู้อะไรเลยว่าการปลอมแปลงล้มเหลวเพราะเหตุใด
 
-## Accounts and subject pinning
+## บัญชีและการปักหมุด subject
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+การลงชื่อเข้าใช้ด้วย SSO ครั้งแรกจะปักหมุด subject ที่เปลี่ยนแปลงไม่ได้ของผู้ให้บริการ (`issuer` รวมกับ SAML NameID / OIDC `sub` หรือ SCIM externalId) ไว้กับบัญชี ตั้งแต่นั้นเป็นต้นไป subject — ไม่ใช่อีเมล — เป็นสิ่งที่ระบุตัวตนของการลงชื่อเข้าใช้ หากภายหลังมีคนอื่นนำอีเมลเดียวกันมาจาก IdP เดียวกันหรือ IdP อื่น บัญชีที่ปักหมุดไว้จะปฏิเสธผู้นั้น นี่คือสิ่งที่หยุดไม่ให้อีเมลที่ถูกนำกลับมาใช้ใหม่ที่ผู้ให้บริการรายหนึ่งกลายเป็นการยึดบัญชี
 
-## Provisioning and deprovisioning
+## การจัดสรรและการถอนการจัดสรร
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+การจัดสรรแบบ JIT เกิดขึ้นตอนลงชื่อเข้าใช้ (`SsoProvisioner`) ส่วน SCIM เป็นพื้นผิวแบบ push แยกต่างหาก (`ScimService`) ที่ปักหมุด subject เดียวกันไว้บนแถวผู้ใช้ แต่ไม่ได้ให้สิทธิ์สมาชิกเวิร์กสเปซ การถอนการจัดสรร — SCIM `active: false` หรือ `DELETE` — จะปฏิเสธหากบัญชีเป็นเจ้าของเวิร์กสเปซ (ต้องโอนก่อน) มิฉะนั้นจะเพิกถอนข้อมูลรับรองของอุปกรณ์ทุกชิ้นก่อน (เซสชันจะหลุดภายในไม่กี่วินาทีผ่านการเฝ้าดูอุปกรณ์) ลบสิทธิ์สมาชิกเวิร์กสเปซทุกแห่ง และประทับว่าบัญชีถูกปิดใช้งาน แถวผู้ใช้ยังคงอยู่: การระบุที่มาเป็นสิ่งที่ถาวร การเปิดใช้งานอีกครั้งจะคืนการลงชื่อเข้าใช้ แต่ไม่เคยให้สิทธิ์สมาชิกกลับคืน
 
-## What stays out
+## สิ่งที่ถูกกันออกไป
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **การแมปกลุ่ม→บทบาทเกิดขึ้นตอนลงชื่อเข้าใช้** จากแอตทริบิวต์ SAML / claims ของ OIDC — กลุ่มที่ push ผ่าน SCIM จะไม่ถูกจัดเก็บ
+- **บทบาทเจ้าของเอื้อมไม่ถึงจาก SSO** — ทั้งในฐานะบทบาทเริ่มต้นและผ่านการแมปกลุ่ม
+- รีเลย์ WebSocket ไม่เคยเป็นช่องทางของ SSO โทรศัพท์ที่เข้าถึงเซิร์ฟเวอร์ได้ทางรีเลย์เท่านั้นไม่สามารถทำการไปกลับผ่านเบราว์เซอร์กับเซิร์ฟเวอร์ได้

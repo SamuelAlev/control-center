@@ -1,153 +1,166 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Domainesemények
+description: Miért egy folyamaton belüli eseménybuszon keresztül beszélnek egymással a funkciók ahelyett, hogy kölcsönösen importálnák egymást, minek az igazságforrása a busz és minek nem, és mely események tudnak valójában automatizmust vezérelni.
 slug: hu-HU/kezikonyv/fogalmak/domainesemenyek
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Mi a domainesemény
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+A domainesemények az a leválasztási mechanizmus, amely révén a funkciók közvetlen
+függőségek nélkül tudnak kommunikálni. Ahelyett, hogy az A funkció hívná a B
+funkciót, az A funkció közzétesz egy eseményt, a B funkció pedig előfizet rá.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+A `DomainEventBus` egy folyamaton belüli, szórásos publish/subscribe busz. A
+közzétevők a `publish(event)` metódust hívják, az előfizetők pedig egy típusos
+`on<T>()` adatfolyamot fogyasztanak. Minden esemény implementálja a `DomainEvent`
+interfészt, és hordozza az `occurredAt` értéket.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**A busz a `cc_server` belsejében fut.** Minden közzétevő és minden élő
+előfizető ott él. Ezt a buszt egyetlen kliens sem látja. Amit egy kliens lát, az
+egy válogatott részhalmaz, amelyet a szerver `notifications/*` JSON-RPC
+wire-frame-ekként bocsát ki újra.
 
-## Why a bus at all
+## Miért kell egyáltalán busz
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Események nélkül minden funkciókon átívelő reakció egy import lenne. Az
+értesítési útvonalnak importálnia kellene az ügynökfunkciót, a pull requestek
+funkcióját, a jegykezelést és a megbeszéléseket, csak hogy tudja, mikor kell
+toastot megjelenítenie — és ezek mindegyikének tudnia kellene azt is, hogy
+léteznek értesítések. A jegykezelés importálná a pipeline-okat, hogy egy
+befejezett jegy továbbíthasson egy futtatást. A függőségi gráf csomóvá záródik,
+a megosztott kernel pedig megszűnik megosztottnak lenni.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Egy esemény közzététele megtöri ezt. Az értesítési útvonal 21 eseményosztályra
+fizet elő, és egyetlen olyan funkciót sem importál, amely ezeket kiváltja. A
+pipeline-eseményindítók diszpécsere az egész buszra előfizet, és semmit sem tud a
+pull requestekről, a jegyekről vagy a megbeszélésekről. A megfigyelhetőség
+összesíti a futtatások kimeneteleit anélkül, hogy belenyúlna a diszpécserbe.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Az ár a szokásos: egy közzétevő nem tudhatja, hogy figyel-e rá valaki, és egy
+soha létre nem hozott figyelő csendben tétlen marad. `TicketRemoteSyncHandler`
+az állandó példa: deklarálva van, tesztek fedik, éles környezetben viszont soha
+nem kötődik be.
 
-## What the bus is not
+## Ami nem a busz dolga
 
-It is worth being precise about one thing the bus does _not_ own.
+Érdemes pontosan megfogalmazni egy dolgot, amelyet a busz _nem_ birtokol.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Az auditnapló nem az eseményfolyam vetülete.** Minden módosító RPC-művelet
+alapértelmezés szerint auditált — a `RepoOp.audited` értéke alapból true, és egy
+művelet csak úgy lép ki ez alól, ha `audited: false` értéket deklarál; ez
+szándékos aktus, amely magán a műveleten látszik. A diszpécser közvetlenül egy
+sikeres hívás után fűzi be a „ki mit tett, honnan” sort. `DomainEventAuditBridge`
+nem létezik. Az `ActivityLogPersister` az `ActivityLogged` eseményekből ír
+`activity_log` sorokat; ez az RPC-audittól különálló csatorna.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Az eseménybusz _az_ értesítések és az automatizálás szállítója. A hivatalos
+nyilvántartás viszont nem ő.
 
-## What the bus does drive
+## Amit a busz valóban vezérel
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Értesítések.** A szerver 21 eseményosztályt alakít `notifications/*`
+  wire-frame-ekké, tartós, munkaterületenkénti hírfolyamba rögzíti őket, és
+  kiküldi a csatlakozott munkameneteknek. Az a keret, amelynek `workspace_id`
+  mezője olyan munkaterületet nevez meg, amelynek a munkamenet felhasználója nem
+  tagja, a szerveren elvész; a kliens ezután a maradékot arra a munkaterületre
+  szűri, amelyet éppen néz.
+- **Eseményvezérelt automatizálás.** A pipeline-eseményindítók előfizetnek a
+  buszra, és maguktól elindítják a megfelelő pipeline-okat (lásd lent).
+- **Életciklus-reakciók.** Egy munkaterület létrehozása elveti a saját CEO-t és
+  szakértő ügynökeit, a beépített pipelinesablonokat és a kezdő kiértékelési
+  csomagokat. Egy befejezett ügynökfuttatás folytat egy szüneteltetett
+  pipeline-lépést, lezár egy feladatot, táplálja a célfelügyelőt,
+  felébreszthet egy megnevezett ellenőrzőt, és újraindíthat egy csapatvezetőt.
+  Egy összefésült PR vagy egy törölt tér elindítja a worktree-k
+  szemétgyűjtését.
+- **Szolgáltatók közötti szinkronizálás.** A helyi jegyek módosításait egy
+  koordinátor továbbítja a beállított szolgáltatóknak, amely öt jegyeseményre
+  figyel.
 
-## Event categories
+## Eseménykategóriák
 
-Events span the whole product surface. At a high level:
+Az események a termék teljes felületét átfogják. Magas szinten:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Munkaterületek, ügynökök és repók** — munkaterület létrehozása, futtatás befejezése, repó regisztrálása, készségfrissítések
+- **Pull requestek** — közzététel, állapotváltozások, összefésülések, átnézési kérések, említések, a saját PR-ek figyelése, kívülről észlelt PR-ek
+- **Üzenetküldés** — üzenetek, terek és a térprovisionálás előrehaladása
+- **Jegyek** — létrehozás, hozzárendelés, újrahozzárendelés, részletek, állapot és a három végkimenetel
+- **Feladatok** — sorrendbe állított életciklus-keretek egyetlen indított futtatáshoz, hogy a kliensek sorba tudják rendezni és ki tudják szűrni a duplikátumaikat
+- **Pipeline-ok** — csak a futtatás végállapot-eseményei (befejezve, megszakítva, sikertelen)
+- **Megfigyelhetőség** — tevékenységnapló-bejegyzések és költségkeret-küszöbök
+- **Identitás és tagság** — tag hozzáadva, eltávolítva, szerep módosítva
+- **Naptár és megbeszélések** — a hitelesítés lejárta, a megbeszélések kezdete és a felvételek befejeződése
+- **Állomások** — átvétel, begyűjtés és váratlan lezárás
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+A memória, az orchestráció, a tervdokumentumok, az artefaktumok, a
+jóváhagyások, a jegyszinkronizációs bemenet, a naptárfrissítés, a
+worktree-összefésülések, a felhasználók létrehozása, a meghívók és az
+eszközvisszavonás nem domainesemények; lásd a referenciát.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/hu-HU/kezikonyv/referencia/domainesemenyek/). That page is the
-inventory; this one is the model.
+A teljes katalógust — mind az 53 konkrét eseményosztályt, azok payloadjait és a
+24 előfizetőt, amelyek fogyasztják őket — a
+[Domainesemények referenciája](/hu-HU/kezikonyv/referencia/domainesemenyek/)
+tartalmazza. Az a lap a leltár, ez pedig a modell.
 
-## Live access control rides two different mechanisms
+## Az élő hozzáférés-vezérlés két különböző mechanizmuson nyugszik
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+A tagsági és az eszközesemények szimmetrikusnak látszanak, de nem azok, és ez
+számít, ha arról gondolkodik, milyen gyorsan érvényesül egy visszavonás.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Egy eszköz visszavonása valóban lezárja annak munkameneteit.** A szerver
+figyeli a párosított eszközök tábláját, és másodperceken belül eldob minden élő
+munkamenetet, amelynek eszköze kikerült az aktív halmazból.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Egy tag eltávolítása nem zárja be a socketet.** A `WorkspaceMemberRemoved`
+eseményt feldolgozzák: a `LocalRpcServer` és a `RemoteRelayHost` eldobja az
+adott felhasználó csatolt munkaterület-előfizetéseit, a `RemoteEventForwarder`
+pedig érvényteleníti a tagsági gyorsítótárát, így nem küld további kereteket
+arról a munkaterületről. A következő RPC-t továbbra is a szerepkapu utasítja el,
+amely **minden** híváskor újra feloldja a tagságot — így a következő kérésüket
+„Not a member of this workspace” üzenettel utasítja el. A hatás azonnali
+mindarra, amit megpróbálnak tenni; csak éppen nem a kapcsolat bontásával érhető
+el.
 
-## Pipeline triggers
+## Pipeline-eseményindítók
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+A pipeline-eseményindítók domaineseményekre fizetnek elő, és maguktól
+elindítják a megfelelő pipeline-okat. A `PipelineTriggerDispatcher` az egész
+buszra figyel, majd:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Rövidre zár, ha az eseménytípus nem olyan, amelyet payloadra képes leképezni
+2. Kikeresi az adott eseménytípushoz illeszkedő engedélyezett eseményindítókat, az összes munkaterületen
+3. Mindegyiket a saját munkaterületére szűri, és alkalmazza a payload-egyezési szűrőjét
+4. Elindít egy futtatást minden egyes eseményindítóhoz, amely talpon marad
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+A fontos megkötés az 1. lépés. A busz 53 eseménytípust szállít; az
+eseményindító hozzáadására szolgáló választó erre a tizennégyre indít
+futtatást (`EventPayloadMapper` payload-ágak):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+és `SpaceDeleted`. Semmi más nem indíthat pipeline-t.
 
-## How a client sees any of this
+## Hogyan látja mindezt egy kliens
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/hu-HU/kezikonyv/fogalmak/architektura/).
+A `RemoteEventForwarder` az értesítési osztályba tartozó eseményeket
+wire-frame-ekké alakítja, és RPC-n keresztül továbbítja a csatlakozott
+munkameneteknek, ahol egy keretleképező alkalmazáson belüli értesítésekké
+alakítja őket. Egy vékony kliens így a szerver eseményfolyamának egy vetületét
+látja, anélkül hogy bármilyen végrehajtást birtokolna — pontosan ez a lényege a
+[vékonykliens-szétválasztásnak](/hu-HU/kezikonyv/fogalmak/architektura/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Nem minden továbbított keret értesítés azonban. A feladat-életciklus
+adatfolyamát és a jegyek újrahozzárendelését élőben továbbítják a felület
+vezérléséhez, de nem kerülnek be az értesítési hírfolyamba, és nem jelenítenek
+meg toastot.
 
-## See also
+## Kapcsolódó fogalmak
 
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): what a trigger starts
-- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/): assignment to an agent vs a team
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/): how events fit the dependency rule
-- [Domain events reference](/hu-HU/kezikonyv/referencia/domainesemenyek/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
-- [Configure notifications](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): mit indít el egy eseményindító
+- [Jegyek és delegálás](/hu-HU/kezikonyv/fogalmak/jegyek/): hozzárendelés ügynökhöz vagy csapathoz
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/): hogyan illeszkednek az események a függőségi szabályhoz
+- [Domainesemények referenciája](/hu-HU/kezikonyv/referencia/domainesemenyek/): a teljes katalógus és előfizetői
+- [Pipeline-eseményindítók beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
+- [Értesítések konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)

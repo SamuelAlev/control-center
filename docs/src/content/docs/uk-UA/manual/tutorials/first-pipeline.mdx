@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Зберіть свій перший конвеєр
+description: Створіть шаблон конвеєра, налаштуйте його крок, дозвольте ручні запуски й запустіть один із них.
 slug: uk-UA/керівництво/посібники/перший-конвеєр
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Що ви створите
 
-By the end of this tutorial, you will have:
+Після цього посібника у вас буде:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Збережений шаблон конвеєра, який запускає агента з промптом
+- Увімкнені ручні запуски, тож його можна запускати вручну
+- Один завершений запуск із видимими входом і виводом кроку
 
-Prerequisites: [Dispatch your first agent](/uk-UA/керівництво/посібники/перший-агент/) completed, so you have an agent with an adapter and a model.
+Передумова: виконаний [Запустіть першого агента](/uk-UA/керівництво/посібники/перший-агент/), тож у вас є агент з адаптером і моделлю.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/uk-UA/керівництво/поняття/конвеєри/); for the full step vocabulary, [Pipeline step kinds](/uk-UA/керівництво/довідка/кроки-конвеєра/).
+Конвеєр — це DAG із кроків. Шаблони визначають граф; запуски — це виконання. Про модель, що за цим стоїть, читайте [Конвеєри та автоматизація](/uk-UA/керівництво/поняття/конвеєри/); повний словник кроків — [Типи кроків конвеєра](/uk-UA/керівництво/довідка/кроки-конвеєра/).
 
-## Step 1: Create a template
+## Крок 1: Створіть шаблон
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Перейдіть до **Налаштування → Робочий простір → Шаблони конвеєрів**
+2. Натисніть **Новий шаблон**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Редактор відкривається на підготовленому каркасі під назвою **Новий конвеєр**
+(id `pipeline_N`). Натисніть заголовок у верхній частині й перейменуйте його —
+для цього посібника добре підійде `code_quality_check`. Діалогу для
+ідентифікатора й поля опису немає.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Полотно не порожнє. Новий шаблон одразу зібраний як **Trigger → Step →
+terminal**, де **Step** — це вузол промпт-агента, а термінал — невидимий
+сторожовий елемент, який редактор перепідключає до кожного досяжного стоку.
 
-You configure the Step that is already there.
+Ви налаштовуєте той **Step**, який уже стоїть на місці.
 
-## Step 2: Configure the step
+## Крок 2: Налаштуйте крок
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Натисніть вузол **Step** на полотні
+2. У панелі **Конфігурація вузла** праворуч задайте:
+   - **Агент**: ваш агент із попереднього посібника
+   - **Шаблон промпту**: «Перевірте код у поточній гілці на проблеми з якістю. Перелічіть усе, що знайдете.»
+3. Не чіпайте **Triggers from** — вузол уже з’єднаний так, щоб спрацьовувати після Trigger
 
-## Step 3: Save
+## Крок 3: Збережіть
 
-Press **Save** in the editor header.
+Натисніть **Зберегти** у верхній частині редактора.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Контрольна точка.** Підпис «Незбережені зміни» зникає.
 
-## Step 4: Allow manual runs
+## Крок 4: Дозвольте ручні запуски
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Натисніть пунктирну плитку **Додати тригер** на полотні (або перетягніть
+   **Ручний запуск** із розділу **Тригери** бібліотеки вузлів) і виберіть
+   **Ручний запуск**.
+2. Виберіть цей вузол. В інспекторі праворуч увімкніть **Увімкнено** —
+   «Показати на сторінці запуску й запускати вручну.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Це обов’язково, і це легко пропустити. Новий шаблон створюється **без жодного рядка тригера**, тож доки ви це не увімкнете, сторінка запуску його не покаже і запускати буде нічого. Перемикач записує тригер негайно; він не чекає на наступне збереження.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Той самий перемикач стоїть за кнопкою **Ручний запуск** у верхній частині редактора, поруч з оголошеними входами шаблону.
 
-## Step 5: Run it
+## Крок 5: Запустіть його
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Натисніть **Конвеєри** на бічній панелі
+2. Натисніть **Запустити конвеєр** у заголовку
+3. Виберіть `code_quality_check` на лівій панелі
+4. Натисніть **Запустити конвеєр** у формі — ваш шаблон не оголошує жодного входу, тож заповнювати нічого
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Контрольна точка.** Тост підтверджує, що запуск почався, і Control Center відкриває сторінку деталей запуску.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Рушій створює запис запуску, завершує тригер, планує крок, запускає агента й завершує запуск, коли завершується вхідна гілка термінала.
 
-## Step 6: Inspect the result
+## Крок 6: Огляньте результат
 
-Click the step in the run to open its detail panel:
+Натисніть крок у запуску, щоб відкрити панель його деталей:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Мітки часу **Почато** й **Завершено** та **Тривалість**
+- **Вхід**: стан, переданий у крок
+- **Вихід**: те, що він створив, — тут це відповідь агента
+- **Активність агента** з посиланням на розмову, яку вів цей крок
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Контрольна точка.** Крок відображається як завершений, а в його виводі — відгук агента.
 
-## Adding more steps
+## Додати більше кроків
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Вузли додають, перетягуючи елемент із бібліотеки вузлів ліворуч на полотно, або
+натискаючи **Додати крок** (`+`) одразу після вузла. Перетягніть із порту
+виводу вузла на інший вузол, щоб з’єднати їх, або виберіть новий вузол і
+позначте його крок вище за потоком у **Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Термінальний вузол не відображається, і його не можна вибрати. Редактор
+перепідключає його до кожного досяжного стоку, тож вузол, доданий після
+підготовленого **Step**, усе одно виконується.
 
-## Recap
+## Підсумок
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Ви створили шаблон, налаштували підготовлений вузол промпт-агента, зберегли його, дозволили ручні запуски, запустили конвеєр і прочитали вхід та вивід кроку.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Конвеєри бувають значно більшими за цей — умовні маршрутизатори, паралельні гілки, вузли об’єднання, розгалуження for-each, людські шлюзи — але форма ніколи не змінюється: кроки в DAG, що передають стан.
 
-**Next:** [Bridge Slack to your workspace](/uk-UA/керівництво/посібники/перший-чат-міст/), the last tutorial in this sequence.
+**Далі:** [Підключіть Slack до робочого простору](/uk-UA/керівництво/посібники/перший-чат-міст/), останній посібник у цій послідовності.
 
-- [Set up pipeline triggers](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/) to start pipelines from events or a schedule
-- [Pipelines and automation](/uk-UA/керівництво/поняття/конвеєри/) for the model underneath
-- [Pipeline step kinds](/uk-UA/керівництво/довідка/кроки-конвеєра/) for every step type
+- [Налаштувати тригери конвеєра](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/), щоб запускати конвеєри від подій або за розкладом
+- [Конвеєри та автоматизація](/uk-UA/керівництво/поняття/конвеєри/) — про модель під цим усім
+- [Типи кроків конвеєра](/uk-UA/керівництво/довідка/кроки-конвеєра/) — про кожен тип кроку

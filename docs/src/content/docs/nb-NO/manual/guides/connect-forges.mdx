@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Koble til en kodevert
+description: Koble til GitHub, GitLab eller Bitbucket slik at PR-flaten, repo-registrering og agentkjøringer fungerer — ett arbeidsområde kan bruke alle tre.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kodevert
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center støtter tre kodeverter, kalt **forger** i hele appen: **GitHub**, **GitLab** og **Bitbucket Cloud**. Ingen av dem er standardvalget. Koble til én, og alt fungerer; koble til flere, og ett enkelt arbeidsområde kan romme repoer fra alle samtidig.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Forgen er en egenskap ved hvert **repo**, lest fra `origin`-remoteen når du registrerer det. Du velger aldri én, og det finnes ingen innstilling per arbeidsområde å gjøre feil.
 
-## Connect a forge
+## Koble til en forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Åpne **Innstillinger → Arbeidsområde → Profil og identitet** (`/settings/workspace/profile`).
+2. Finn kortet **Kodehosting**. Alle forger som støttes, er listet opp, tilkoblet eller ikke.
+3. Trykk **Logg inn med …** hvis raden tilbyr det, eller **Legg til token** og lim inn ett.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Logg inn** vises for en forge serveren din har en registrert app for — i dag gjelder det GitHub, via en device-flyt (se [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)). Alt annet er et innlimt token, som er den ærlige og tydelige løsningen i stedet for en knapp som ikke kan fullføres.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Uansett er påloggingsinformasjonen **din og ligger på serveren**, knyttet til bruker-ID-en din: ingen token lagres på maskinen der du skrev den inn, hver enhet du logger inn fra, bruker den samme, og ingen andre medlemmer kan lese den. Den trer i kraft ved **neste forespørsel** — det er ingenting å starte på nytt, og å koble fra stopper sendingen umiddelbart.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Hver rad forteller hvor påloggingsinformasjonen kom fra, fordi det er forskjellen mellom «tokenet mitt fungerer ikke» og «et annet token svarer»:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Undertekst                                                        | Betydning                                                              |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `Logget inn som octocat`                                          | Din egen påloggingsinformasjon brukes                                  |
+| `Logget inn som octocat · via denne serverens app`                | Serverens appidentitet svarer — du er ikke logget inn                  |
+| `Logget inn som octocat · fra miljøet`                            | En miljøvariabel på serveren svarer, ikke påloggingsinformasjonen din  |
+| `Ikke tilkoblet`                                                  | Du har ingen påloggingsinformasjon for denne forgen                    |
 
-### What token each forge wants
+### Hvilket token hver forge vil ha
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| Forge         | Token                                                     | Hvor du oppretter det                                      |
+| ------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| **GitHub**    | Klassisk: `repo` og `read:org`. Finkornet: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Et personlig tilgangstoken med `api`                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Et Atlassian-API-token, pluss e-postadressen til kontoen din | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket autentiserer med **e-postadressen til kontoen din som brukernavn** og tokenet som passord. Sett `BITBUCKET_EMAIL` i servermiljøet, slik at den vet hvilken e-postadresse som skal kobles til tokenet.
 
-### Or use the environment
+### Eller bruk miljøet
 
-For a headless or CI install, the server reads these:
+For en headless- eller CI-installasjon leser serveren disse:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, deretter `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, deretter `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, deretter `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Dette er **serverens** påloggingsinformasjon, ikke din, og skillet er avgjørende: en forespørsel som gjøres på dine vegne, bruker din påloggingsinformasjon og ingenting annet, så miljøet trer aldri stille inn i stedet for deg. Arbeid uten et menneske bak — webhooks, PR-polling, sakssynk — bruker først serverens appidentitet, deretter servereierens påloggingsinformasjon, så miljøet. Rekkefølgen er fast, slik at «jeg logget inn, og ingenting endret seg» aldri er et gyldig utfall.
 
-## You are a different person on each forge
+## Du er en annen person hos hver forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Det samme mennesket er `octocat` på GitHub og noe helt annet på GitLab. Control Center fastslår identiteten din **per forge** og bruker den riktige for hvert repo, og det er dette som gjør «trenger min gjennomgang», «opprettet av meg» og «du godkjente dette» riktige i et blandet arbeidsområde.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Hvis identiteten din hos en forge ikke er fastslått, bidrar repoene derfra med ingenting i innboksen i stedet for å matche alt. Innboksen sier fra om det i stedet for å påstå at du har full oversikt.
 
-## One inbox, every forge
+## Én innboks, alle forger
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Innboksen og PR-køen grener ut over alle forger som er representert i arbeidsområdet, og fletter resultatene sammen til én strøm — en GitHub-pull request og en Bitbucket-pull request ligger ved siden av hverandre, ordnet etter tid i stedet for gruppert etter leverandør.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Feil er isolert. En forge som er nede, har nådd en hastighetsgrense eller ikke er tilkoblet, bidrar med ingenting og lar de andre være i fred; den tømmer aldri hele innboksen. Repoene dens fortsetter å vise sist kjente tilstand til den er tilbake.
 
-## What each forge can do
+## Hva hver forge kan gjøre
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Alle forger støtter kjerneflyten: å liste opp og åpne pull requests, lese differ, kommentere i linjen og på toppnivå, gjennomgå, slå sammen og lukke. Utover det er de genuint forskjellige, og Control Center skjuler det en forge ikke kan gjøre, i stedet for å vise en kontroll som feiler i stillhet.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Egenskap                          | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Samlede (ventende) gjennomganger  |   ✓    |   ✓    |     —     |
+| Be om endringer                   |   ✓    |   ✓    |     ✓     |
+| «Sett»-status per fil synkronisert |   ✓    |   —    |     —     |
+| Emoji-reaksjoner                  |   ✓    |   ✓    |     —     |
+| Team-/gruppereviewere             |   ✓    |   ✓    |     —     |
+| Foreslåtte reviewere              |   ✓    |   —    |     ✓     |
+| CI-resultater på en PR            |   ✓    |   ✓    |     ✓     |
+| Gå i dybden på steg/logger for en CI-jobb |   ✓    |   ✓    |     —     |
+| Stablede pull requests            |   ✓    |   —    |     —     |
+| Maler for PR-beskrivelse          |   ✓    |   ✓    |     —     |
+| Polling av varsler                |   ✓    |   —    |     —     |
+| Rike brukerprofiler               |   ✓    |   ✓    |     —     |
+| PR-head-ref på serversiden        |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Der en egenskap mangler, degraderes funksjonen på en ærlig måte:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Sett-status** fungerer fortsatt, men bare på enheten der du satte den.
+- **Samlede gjennomganger** på Bitbucket publiseres kommentar for kommentar, så reviewerene ser dem komme enkeltvis i stedet for alle på én gang.
+- **Ingen PR-head-ref** på Bitbucket betyr at utsjekking av en pull request henter kildegrenen etter navn, noe som feiler når grenen er slettet.
 
-## Vocabulary
+## Ordliste
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab kaller en pull request for en **merge request**. Control Center sier «pull request» i hele sin egen modell, og bruker hver forges eget ord der den snakker om den forgen.
 
-## Troubleshooting
+## Feilsøking
 
-### The PR list is empty and says a forge is not connected
+### PR-listen er tom og sier at en forge ikke er tilkoblet
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Du har ingen påloggingsinformasjon for den forgen. Logg inn eller lim inn et token i **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**. Repoer fra andre forger påvirkes ikke.
 
-### I connected a forge but its repos still show nothing
+### Jeg koblet til en forge, men repoene viser fortsatt ingenting
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Sjekk underteksten på raden. Hvis den sier «via denne serverens app» eller «fra miljøet», er det en annen påloggingsinformasjon som svarer enn den du forventet — din egen påloggingsinformasjon vinner for alt du ber om, så hvis den sier noe annet, ble ikke din lagret.
 
-### A repo will not register
+### Et repo vil ikke registreres
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/).
+Registrering krever alle tre: stien ligger inne i et git-worktree, den har en `origin`-remote, og den remote-en peker på github.com, gitlab.com eller bitbucket.org. Se [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/).
 
-### Everything stops working for a while after heavy use
+### Alt slutter å fungere en stund etter tung bruk
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Det er kretsbryteren for hastighetsgrenser. En forge som signaliserer sin primære grense, får klienten til å avvise videre forespørsler lokalt, uten et nettverkskall, til vinduet er ute — slik at en storm av nye forsøk ikke kan forverre grensen. Forbigående feil prøves på nytt med eksponentiell backoff.
 
-## Related guides
+## Relaterte guider
 
-- [Add repos to a workspace](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-- [Review and merge a PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
-- [Triage the inbox](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)
+- [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
+- [Prioriter innboksen din](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)

@@ -1,68 +1,75 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Запустить конвейер вручную
+description: Запустите конвейер из окна запуска, заполните входные данные и перейдите к деталям запуска.
 slug: ru-RU/руководство/практические-руководства/запустить-конвейер
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/).
+Это руководство описывает запуск конвейера вручную. О том, как наблюдать за
+запуском, читать вывод шагов и восстанавливаться после сбоя, см. в разделе
+[Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/).
 
-## Start a run
+## Начать запуск
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Нажмите **Конвейеры** на боковой панели рабочего пространства.
+2. Нажмите **Запустить конвейер** в шапке. Откроется окно запуска
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Выберите шаблон на панели слева. На каждой карточке указаны название
+   шаблона, его описание и наличие входных данных.
+4. Заполните форму входных данных справа. Обязательные поля блокируют кнопку,
+   пока не заполнены; если у шаблона нет входных данных, он сообщает об этом.
+5. Нажмите **Запустить конвейер**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Откроется страница запуска, где в реальном времени отображаются хронология
+этапов и холст графа.
 
-## If the rail is empty
+## Если панель пуста
 
-The launcher shows a template only when **both** are true:
+Окно запуска показывает шаблон, только когда верны **оба** условия:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Переключатель шаблона включён в разделе **Настройки → Рабочее пространство
+  → Шаблоны конвейеров**.
+- В диалоге **Ручной запуск** редактора шаблона включён параметр **Разрешить
+  ручной запуск** — именно этот переключатель создаёт триггер `manual`,
+  который читает окно запуска.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Восемь из тринадцати встроенных шаблонов поставляются отключёнными:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` и `pr_digest`. Движок
+отказывается запускать отключённый шаблон, поэтому включите его переключатель,
+прежде чем искать его здесь.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+В списке шаблонов нет действия **Запустить** для отдельного шаблона и нет
+кнопки запуска внутри редактора — окно запуска остаётся единственной точкой
+ручного входа.
 
-## Fill in a repository input
+## Заполнить входное поле «Репозиторий»
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Входное поле типа **Репозиторий** отображает средство выбора по
+зарегистрированным в рабочем пространстве репозиториям. При выборе репозитория
+в полезную нагрузку запуска записываются `repo_id`, `repo_local_path`,
+`repo_full_name`, а если у репозитория есть удалённый GitHub — ещё `repo_owner`
+и `repo_name`, чтобы последующие шаги могли читать любое из них.
 
-## Watch it run
+## Наблюдать за запуском
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Страница запуска состоит из трёх частей: строка метаданных (время старта,
+активная длительность, прогресс по шагам, баннер сбоя, **Повторить** и
+**Удалить**), сворачиваемая хронология этапов с длительностью и стоимостью
+каждого шага и холст графа. Выбор узла открывает панель с деталями этого шага.
 
-[Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
+описывает всё это, включая чтение приостановленного шага и что делать при сбое
+шага.
 
-Every run you start from the app is a real one.
+Каждый запуск, начатый из приложения, — настоящий.
 
-## Related guides
+## Связанные руководства
 
-- [Create a pipeline template](/ru-RU/руководство/практические-руководства/создать-конвейер/)
-- [Set up pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
-- [Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
+- [Создать шаблон конвейера](/ru-RU/руководство/практические-руководства/создать-конвейер/)
+- [Настроить триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
+- [Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
 
-## Related concepts
+## Связанные понятия
 
-- [Pipelines](/ru-RU/руководство/понятия/конвейеры/)
+- [Конвейеры](/ru-RU/руководство/понятия/конвейеры/)

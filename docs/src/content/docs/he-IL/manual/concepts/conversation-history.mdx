@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: היסטוריית שיחה
+description: איך ריצה שומרת, מקפלת, מפצלת ומחדשת את ההקשר שלה — אסטרטגיות דחיסה, עץ השיחה, ומה באמת המשמעות של "חידוש".
 slug: he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+שיחה ארוכה נתקלת בקיר קשיח: חלון ההקשר של המודל. כל מה שבדף הזה קיים בגלל הקיר הזה, והחלק המעניין הוא מה נזרק, מה נשמר ומה אפשר להשיב.
 
-## Four ways to reclaim context
+## ארבע דרכים לשחרר הקשר
 
-They are not alternatives so much as a ladder, cheapest first.
+הן פחות חלופות זו לזו ויותר סולם, מהזול ביותר ואילך.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| מנגנון      | עלות           | שומר                                | מאבד                             |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **השמטה**    | כלום        | כל מילה של הנרטיב          | תוצאות כלים ישנות ונטולות עניין     |
+| **השלכת תמונות** | כלום        | הטקסט שסביבן                 | צילומי מסך ישנים                   |
+| **תמונות מצב**  | כלום        | כל מילה, כפיקסלים                | קריאות למודל ללא ראייה  |
+| **סיכום**    | קריאת מודל אחת | נרטיב                          | הפרטים שהוא לא בחר       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+השמטה והשלכה פועלות ראשונות מפני שהן חינמיות ונטולות אובדן במובן החשוב: הן מורידות נפח שאיש לא התכוון לקרוא שוב.
 
-### Why summarizing is the last resort
+### למה סיכום הוא המוצא האחרון
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+סיכום הוא היחיד מבין הארבעה ש**מוציא קריאת מודל** והיחיד ש**מחליט בשבילכם** מה היה חשוב. שתי אלה עלויות אמיתיות. הקריאה היא המעניינת מבין השתיים, בגלל מתי היא מתרחשת.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+דחיסה רצה בדרך כלל *לפני* הקיר, לפי סף. אבל היא רצה גם **באופן תגובתי**, אחרי שהספק עצמו דוחה בקשה כגדולה מדי — האומדן ההיוריסטי ספר פחות ממה שהספק מדד בפועל. במצב כזה מדחס שמסכם צריך לשלוח בקשה כדי לכווץ את ההקשר, והבקשה שהוא שולח היא בדיוק זו שזה עתה גלשה.
 
-### Snapshots
+### תמונות מצב
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+דחיסת תמונות מצב מרנדרת היסטוריה שנזרקה אל דפים צפופים של גליפי פיקסלים ומחזירה אותם כתמונות.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+הנחת היסוד היא מוזרות של חיוב: מודל ראייה מחייב עבור תמונה בתעריף אחיד או לפי שטח, שאין לו דבר עם מספר התווים שבה. שנים עשר אלף תווים של שיחה שנזרקה עולים כמו שנים עשר אלף תווים של טוקני טקסט. אותם תווים שרונדרו לדף אחד עולים תמונה אחת.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+מה שהופך אותה לכדאית ולא רק לחכמה הוא שהיא אינה דורשת **קריאת מודל, לא מפתח ולא רשת**. זו האסטרטגיה היחידה שזמינה תמיד בזמן התאוששות מגלישה.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+צורת השחזור היא ראש מילולי, אמצע כתמונה, זנב מילולי. הראש הוא המשימה והאילוצים שכל המשך העבודה מפנה אליהם בחזרה; הזנב הוא המקום שבו העבודה נמצאת כרגע. האמצע הוא מה שמקריאים אותו הכי מעט ועולה הכי הרבה.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[זה מתדרדר ביושר]
+מודל בלי ראייה לא יכול לקרוא דפים של פיקסלים, ולרנדר טקסט שאין מי שיוכל להסתכל עליו זו לא דחיסה מדורדרת — זו שיחה שנמחקה. לכן היכולת של הקורא היא שמכריעה, ומודל בלי ראייה מקבל תמיד את הסיכום.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[צורת הדף מתומחרת לפי ה-API, לא לפי המשקלים]
+Gemini מחייב תעריף אחיד לתמונה, ולכן כל תו נוסף בדף הוא בחינם והדפים שלו הם הרחבים ביותר. OpenAI ו-Anthropic מחייבים לפי שטח, ולכן דף גדול יותר לא קונה דבר. חלק מהמעבדים מקטינים מעבר לסף מסוים, וכך משמידים בשקט גליפים של 5 פיקסלים, ולכן הדפים שלהם נשארים מתחת לסף. Claude שמוגש דרך gateway מחויב לפי ה-gateway, ולכן הצורה נגזרת ממזהה המודל כפי שהנתיב מכנה אותו.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+תמונות מצב מרונדרות מחדש מ**טקסט המקור שנשמר** בכל מעבר, ולעולם לא מהפיקסלים של המעבר הקודם. המרת תמונה לתמונה מדרדרת את הגליפים דור אחד בכל דחיסה, עד שאין מי שיצליח לקרוא אותם.
 
-## What a run actually resumes from
+## ממה ריצה באמת מתחדשת
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+בעבר כל ריצת harness החלה מהיסטוריה ריקה ובנתה מחדש רציפות מבלוק `<context>` בהנחיה — *סיכום* של השיחה ולא השיחה עצמה. שלושה דברים נבעו מכך:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **החידוש היה סיפור מחדש.** המודל מעולם לא ראה את החשיבה הקודמת של עצמו או את הבייטים שהכלים שלו החזירו בפועל, אלא רק תיאור שלהם.
+- **rewind מת עם התהליך.** `checkpoint` הוא אינדקס לתוך רשימת ההודעות החיה, ולכן הפעלה מחדש איבדה כל תווית שהמודל קבע.
+- **ניסיון חוזר לא הצליח להבדיל בין "אין מה לנסות שוב" ל"דבר לא נטען".** אחרי הפעלה מחדש, התור שנכשל נעלם מהמצב החי כך או כך.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+את שלושתם פותר שמירת התמליל. הוא נשמר בכל **גבול תור** ולעולם לא באמצע תור: היסטוריה שנלכדה בין קריאת כלי לתוצאתה היא כזו ששום ספק לא יקבל, ולכן קריסה באותו רגע משחזרת את התור *שלפני* ולא חצי תור שאי אפשר להריץ שוב.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+ריצה שמתחדשת נחתכת להודעות החדשות ביותר שלה, וחיתוך נעשה בגבול שאינו תוצאת כלי יתומה — תוצאה שהקריאה שלה נחתכה היא בקשה שספקים דוחים על הסף, ותמליל שאי אפשר לשלוח גרוע מתמליל קצר.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[איפה זה יושב]
+קובץ JSON אחד לכל שיחה וסוכן, בתיקייה של סביבת העבודה עצמה, לצד מסד הנתונים שלה. שני סוכנים באותה שיחה מחזיקים שתי היסטוריות: הם ראו תוצאות כלים שונות וקיבלו הנחיות מערכת שונות, ולכן מיזוג שלהן היה מוסר לכל אחד את החשיבה של האחר כשלו.
 :::
 
-## The session tree
+## עץ השיחה
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+כל הודעה רושמת את ההודעה שממנה היא ממשיכה, וכל שיחה מציינת את **קצה הענף** הנוכחי שלה. ההחלטה האחת הזו היא כל היכולת.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**הסתעפות לא כותבת דבר.** היא מזיזה את המצביע. המסלול שעזבתם עדיין שם, ולכן מעבר חזרה הוא עוד הזזת מצביע ולא שחזור — ועריכת הנחיה כדי להריץ אותה מחדש מפסיקה לעלות לכם את התשובה שהשוויתם מולה.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+בלעדיה, כל צורה של חזרה אחורה חייבת להסתיר או למחוק הודעות, והסתרה היא שקר שהקורא הבא לא יכול לראות מבעדו.
 
-### Branch versus fork
+### ענף מול פיצול
 
-|                | Branch              | Fork                        |
+|                | ענף              | פיצול                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| מה קורה   | המצביע זז   | המסלול מועתק          |
+| לאן זה הולך  | אותה שיחה   | שיחה חדשה          |
+| עלות           | כלום             | העתקה אחת של הענף      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+פיצול מעתיק עם **מזהים חדשים** במקום לחלוק שורות. שתי שיחות שחולקות שורות היו מציגות זו לזו הודעות מאוחרות יותר, וזה הדבר היחיד שפיצול אסור לו לעשות.
 
-### Rewind rides the same pointer
+### rewind רוכב על אותו מצביע
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+הצמד `checkpoint` / `rewind` שבתוך הריצה מסמן גבול תור נקי וחוזר אליו לאחר חקירה, תוך שמירת תמצית. מכיוון שנקודות ביקורת נשמרות לצד התמליל, תווית שהמודל קבע לפני הפעלה מחדש עדיין נוחתת במקום שבו נקבעה. נקודת ביקורת שהיעד שלה לא שרד חיתוך **נזרקת**, ולא מוצמדת — חזרה אחורה "אל התווית" ונחיתה במקום אחר היא בדיוק הכשל שתווית נועדה למנוע.
 
-## Related
+## נושאים קשורים
 
-- [Branch a conversation](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פיצול-שיחה/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים/) — the other half of what fills a context window
-- [Slash commands](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/) — `/compact`, `/shake`, `/context`, `/tree`
+- [פיצול שיחה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פיצול-שיחה/) — מנווט העץ, פיצול וייצוא
+- [הקשר כלים ומטמון הנחיות](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים/) — החצי השני של מה שממלא חלון הקשר
+- [פקודות קו נטוי](/he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי/) — `/compact`, `/shake`, `/context`, `/tree`

@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Introducere
+description: Control Center este cabina de comandă pentru dezvoltarea software cu mai mulți agenți.
 slug: ro-RO/manual
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center îți dă controlul asupra unei flote de agenți IA de programare. Pornește agenți, urmărește-i lucrând în timp real, revizuiește-le PR-urile și gestionează repo-uri, spații de lucru și integrări — dintr-o aplicație desktop nativă, dintr-un browser sau de pe telefon.
 
 <div className="docs-start not-content">
-  <LinkButton href="/ro-RO/manual/pornire-rapida/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/ro-RO/manual/instalare/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/ro-RO/manual/pornire-rapida/" icon="right-arrow">Pornire rapidă</LinkButton>
+  <LinkButton href="/ro-RO/manual/instalare/" variant="minimal" icon="download">Instalează Control Center</LinkButton>
 </div>
 
-## What you can do
+## Ce poți face
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/ro-RO/manual/concepte/pipeline-uri/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/ro-RO/manual/ghiduri-practice/foloseste-statii/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Trimite mesaje agenților**: spațiile sunt modul principal de a dirija flota. Menționează un agent cu @ și acesta este trimis într-un worktree copy-on-write al său, astfel încât mai mulți pot programa și revizui în paralel fără să atingă checkout-ul tău
+- **Orchestrează cererile mari**: dă orchestratorului un obiectiv, aprobă o singură dată planul întregii echipe pe care îl propune, iar un [pipeline](/ro-RO/manual/concepte/pipeline-uri/) generat îl rulează
+- **Revizuiește și îmbină PR-uri** cu un vizualizator de diff integrat, comentarii inline și revizuire bazată pe IA
+- **Oferă agenților mașini de unică folosință**: o [stație](/ro-RO/manual/ghiduri-practice/foloseste-statii/) este un VM de unică folosință — un browser, un desktop, un telefon sau un terminal închis — pe care agentul îl conduce în timp ce tu urmărești în direct și poți prelua controlul; serverele de dezvoltare din interior sunt redirecționate către `localhost`, browserul agentului și `https://myapp.test`
+- **Automatizează fluxurile de lucru** cu pipeline-uri bazate pe DAG, declanșate de evenimente sau de programări
+- **Gestionează cunoștințele** cu memorie, fapte și politici la nivel de spațiu de lucru
+- **Urmărește munca** cu tichete, proiecte și delegare, independent de furnizor
+- **Înregistrează întâlniri** cu captură, transcriere și diarizare pe dispozitiv, apoi rezumate în note, acțiuni și decizii
+- **Vezi-ți ziua** cu sincronizare Google Calendar, RSVP, alerte de întâlnire și înregistrare cu legare
+- **Urmărește flota de pe telefon**: asociază un dispozitiv cu serverul tău și citește mesaje, răspunde și triază tichete. Telefonul alege cea mai bună cale pe care o poate atinge — loopback, LAN, tailnet sau TLS — și revine la un releu sigilat cap la cap care retransmite cadre pe care nu le poate citi
+- **Condu agenții din Slack**: conectează un spațiu de lucru la o aplicație de chat și menționează botul, răspunde într-un fir Slack sau deschide un tichet cu o comandă slash — printr-o conexiune către exterior, astfel încât nu este nevoie de niciun punct final public
+- **Integrează** cu GitHub, Linear, Slack, Google Calendar și peste 100 de instrumente MCP
 
-## You do not have to install it
+## Nu trebuie să-l instalezi
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Aceeași aplicație rulează în browserul tău la
+[app.usectrl.dev](https://app.usectrl.dev), cu aceleași funcții.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Fiecare client — desktop, web și telefon — este un renderer subțire peste un server headless
+care îți deține datele și face munca. Desktopul poate porni acel server pentru tine; o filă
+de browser nu poate, așa că aplicația web se conectează la unul pe care îl rulezi tu. Acel
+server poate sta pe propria ta mașină (`ws://localhost:9030`, care nu are nevoie de certificat)
+sau pe un host remote accesibil prin TLS, un VPN sau un tunel.
 
-See [Install](/ro-RO/manual/instalare/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/ro-RO/manual/concepte/implementare/) for how the three clients relate.
+Vezi [Instalare](/ro-RO/manual/instalare/#use-it-in-your-browser) pentru ruta din browser și
+[Implementare și clienți](/ro-RO/manual/concepte/implementare/) pentru modul în care se leagă cele trei clienturi între ele.
 
-## Next steps
+## Pașii următori
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/ro-RO/manual/instalare/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/ro-RO/manual/pornire-rapida/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/ro-RO/manual/tutoriale/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/ro-RO/manual/ghiduri-practice/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/ro-RO/manual/concepte/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/ro-RO/manual/referinta/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Instalare" href="/ro-RO/manual/instalare/" description="Descărcări, cerințe de sistem și unde rulează serverul." />
+  <LinkCard title="Pornire rapidă" href="/ro-RO/manual/pornire-rapida/" description="Cea mai scurtă cale completă până la un agent care lucrează pe repo-ul tău." />
+  <LinkCard title="Tutoriale" href="/ro-RO/manual/tutoriale/" description="Lecții mai lungi, în ordine, începând cu primul tău spațiu de lucru." />
+  <LinkCard title="Ghiduri practice" href="/ro-RO/manual/ghiduri-practice/" description="Rețete pentru câte o sarcină: adaugă repo-uri, configurează guardrail-urile sau asociază-ți telefonul." />
+  <LinkCard title="Concepte" href="/ro-RO/manual/concepte/" description="De ce funcționează produsul așa cum funcționează, începând cu implementarea și clienții." />
+  <LinkCard title="Referință" href="/ro-RO/manual/referinta/" description="Tabele complete pentru rute, instrumente MCP, scurtături de tastatură și evenimente de domeniu." />
 </div>

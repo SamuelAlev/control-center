@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Pautkan akaun Slack anda
+description: Buktikan bahawa identiti Slack itu milik anda supaya ejen bertindak ke atas mesej anda dan kerja anda diatribusikan kepada anda.
 slug: ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Panduan ini menunjukkan cara memautkan identiti sembang anda kepada pengguna Control Center anda dan cara menyahpautnya.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Setiap ahli melakukan ini sekali bagi setiap penyedia sembang. Ia berasingan daripada menyambungkan aplikasi: sambungan itu menjadikan bot boleh dicapai untuk seluruh ruang kerja, manakala pautan itu menjadikan _anda_ boleh dikenali di dalamnya.
 
-## Why linking is required
+## Mengapa pautan diperlukan
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Jambatan enggan bertindak bagi akaun sembang yang tidak dapat dipadankannya dengan ahli ruang kerja. Itu memang disengajakan — tanpa pautan, setiap mesej daripada Slack terpaksa diatribusikan kepada sesiapa sahaja yang memasang aplikasi itu, dan jejak audit, had kadar per Principal serta pelapor tiket semuanya akan menamakan orang yang salah.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Ahli yang belum dipautkan dan menyebut bot akan menerima balasan dalam utas Slack itu yang menerangkan cara memautkan. Tiada apa-apa dihantar.
 
-## Link with a code
+## Pautkan dengan kod
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti** dan tatal ke kad **Akaun sembang dipautkan**
+2. Pada blok Slack, klik **Pautkan akaun Slack saya**
+3. Salin perintah yang ditunjukkannya, sebagai contoh:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Dalam Slack, hantar perintah itu kepada bot — DM ialah tempat yang paling mudah
+5. Bot mengesahkan pengguna Control Center yang kini anda pautkan, dan dialog yang anda biarkan terbuka dikemas kini untuk menyatakannya pada saat yang sama — anda tidak perlu menutupnya dan menyemak semula
 
-The code:
+Kod itu:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Boleh digunakan sekali sahaja dan luput **15 minit** selepas dijana
+- Sentiasa dijana untuk _anda_, tidak pernah untuk rakan sepasukan
+- Menggantikan sebarang kod yang anda sudah pegang, jadi menekan butang itu lagi membatalkan kod sebelumnya
+- Hanya wujud dalam memori, jadi but semula pelayan membatalkan kod yang belum digunakan — tekan butang itu lagi
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Kod yang tidak dikenali, telah luput, atau dijana untuk ruang kerja yang lain gagal dengan cara yang sama tidak dapat dibezakan: "kod itu tidak sah (atau telah luput)".
 
-## Automatic linking by email
+## Pautan automatik melalui e-mel
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Jika profil Slack anda membawa e-mel disahkan yang sepadan dengan pengguna Control Center yang **sudah menjadi ahli ruang kerja ini**, jambatan memautkan anda pada kali pertama anda bercakap dengannya. Tiada kod diperlukan.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Kedua-dua bahagian itu penting: padanan e-mel membuktikan identiti, tetapi hanya keahlian memberikan akses, jadi orang asing yang e-melnya kebetulan wujud pada pelayan itu tidak dipautkan kepada apa-apa. Senarai itu menunjukkan bagaimana setiap pautan dibuat ("dipadankan mengikut e-mel" atau "dipautkan dengan kod").
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Pautan automatik memerlukan skop `users:read.email`. Tanpanya, Slack tidak akan mendedahkan alamat itu dan aliran kod ialah satu-satunya jalan.
 
-## See who is linked
+## Lihat siapa yang dipautkan
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Senarai itu ialah pentadbiran ruang kerja, jadi ia berada pada separuh permukaan yang satu lagi: **Tetapan → Ruang kerja → Umum → Jambatan sembang → Akaun dipautkan**. Ia menyenaraikan setiap ahli ruang kerja yang dipautkan, bersama akaun Slack yang dipetakan kepada setiap satu dan cara pautan itu dibuat.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Keadaan anda sendiri berada pada halaman profil anda: baris **Pautkan akaun Slack saya** berbunyi "Dipautkan ke _id-slack-anda_" sebaik sahaja anda dipautkan dan memberitahu anda untuk memautkan apabila anda belum dipautkan.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Senarai itu ialah langganan langsung, kerana perubahan itu berlaku di sisi yang satu lagi — anda menaip kod itu dalam Slack, jadi tiada permintaan daripada aplikasi boleh membawa jawapannya kembali.
 
-## Unlink
+## Nyahpaut
 
-Click **Unlink** on a row in the workspace roster.
+Klik **Nyahpaut** pada baris dalam senarai ruang kerja.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Sesiapa sahaja boleh menyahpaut dirinya sendiri
+- Hanya pentadbir boleh menyahpaut ahli lain
+- Menyahpaut juga membatalkan sebarang kod pautan ahli itu yang belum digunakan
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Selepas dinyahpaut, akaun Slack itu tidak lagi boleh memacu ejen sehingga ia dipautkan semula. Ruang, transkrip dan tiket yang sedia ada mengekalkan atribusi asalnya — menyahpaut bukan penarikan balik kerja lampau.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### The bot says I am not a member of this workspace
+### Bot mengatakan saya bukan ahli ruang kerja ini
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/ms-MY/manual-pengguna/konsep/multipemain/).
+Akaun Slack anda dipautkan kepada pengguna Control Center, tetapi pengguna itu tidak memegang sebarang keahlian dalam ruang kerja ini. Minta pentadbir menjemput anda; lihat [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/).
 
-### The bot says my role is read-only
+### Bot mengatakan peranan saya hanya baca
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Peranan `viewer` dan `guest` tidak boleh memulakan kerja. Pentadbir perlu menaikkan peranan anda kepada `member` atau lebih tinggi.
 
-### The slash command is not recognized
+### Perintah slash tidak dikenali
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Semak bahawa perintah slash itu wujud dalam Slack dan bahawa anda menghantar perintah yang ditunjukkan oleh dialog tetapan kepada anda — pentadbir mungkin telah menamakannya semula, dan dalam kes itu dialog menunjukkan nama semasa.
 
-## Related guides
+## Panduan berkaitan
 
-- [Set up Slack integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
-- [Customize the chat bot](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
-- [Chat bridge](/ms-MY/manual-pengguna/rujukan/jambatan-sembang/)
+- [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/)
+- [Sesuaikan bot sembang](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
+- [Jambatan sembang](/ms-MY/manual-pengguna/rujukan/jambatan-sembang/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Chat bridges](/ms-MY/manual-pengguna/konsep/jambatan-sembang/)
-- [Multiplayer — identity, membership and presence](/ms-MY/manual-pengguna/konsep/multipemain/)
+- [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/)
+- [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/)

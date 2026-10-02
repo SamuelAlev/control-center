@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Διαχείριση μνήμης χώρου εργασίας
+description: Ελέγξτε, διορθώστε και κλαδέψτε τα γεγονότα και τις πολιτικές που έχουν γράψει οι πράκτορες σε έναν χώρο εργασίας.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-μνήμης
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Αυτός ο οδηγός σας δείχνει πώς να εργαστείτε με την αποθήκη γνώσης ενός χώρου εργασίας.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Το σημαντικό που πρέπει να ξέρετε πριν ξεκινήσετε: **το περιβάλλον χρήστη της μνήμης είναι επιφάνεια ανασκόπησης, όχι συγγραφής.** Τα γεγονότα και οι πολιτικές γράφονται από πράκτορες — μέσω των `propose_fact` και `propose_policy`, με τα `supersede_fact` και `supersede_policy` για την αντικατάστασή τους. Το `remember` γράφει ένα στοιχείο θερμού επιπέδου περιορισμένο στη συνεδρία, το οποίο το `consolidate_memory` μπορεί αργότερα να αναγάγει σε γεγονός. Οι αποφάσεις συσκέψεων που καταγράφονται συγκομίζονται στον τομέα `decisions`· δεν υπάρχει συγκομιδή σε ολοκληρωμένες εκτελέσεις πρακτόρων. Αυτό που κάνετε εδώ είναι να διαβάζετε ό,τι έγραψαν, να το διορθώνετε, να το απενεργοποιείτε ή να το διαγράφετε.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Η μνήμη βρίσκεται στις **Ρυθμίσεις → Χώρος εργασίας → Μνήμη** (`/workspaces/<id>/settings/memory`). Δεν είναι προορισμός πρώτου επιπέδου στην πλαϊνή στήλη.
 
-## The three tabs
+## Οι τρεις καρτέλες
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Η σελίδα έχει ακριβώς τρεις καρτέλες. Τα Γεγονότα και οι Πολιτικές εμφανίζουν ζωντανό αριθμό· ο γράφος όχι:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Γεγονότα** — κάθε γεγονός στον χώρο εργασίας, με αριθμό αυτών που δεν έχουν αντικατασταθεί
+- **Πολιτικές** — κανονιστικοί κανόνες ομαδοποιημένοι κατά τομέα, με αριθμό των ενεργών
+- **Γράφος γνώσης** — ένας διαδραστικός καμβάς τομέων, θεμάτων, γεγονότων και πολιτικών
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Οι τομείς δεν είναι κάτι που δημιουργείτε. Ένας τομέας υπάρχει από τη στιγμή που ένας πράκτορας γράψει το πρώτο γεγονός ή την πρώτη πολιτική σε αυτόν· δεν υπάρχει χειριστήριο δημιουργίας τομέα πουθενά στο περιβάλλον χρήστη.
 
-## Review and correct a fact
+## Ανασκόπηση και διόρθωση ενός γεγονότος
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Ανοίξτε την καρτέλα **Γεγονότα**.
+2. Χρησιμοποιήστε το πλαίσιο αναζήτησης για να περιορίσετε τη λίστα. Είναι ένα απλό φίλτρο υποσυμβολοσειράς πάνω στον τομέα, το θέμα και το περιεχόμενο κάθε γεγονότος — χωρίς ευρετήριο λέξεων-κλειδιών, χωρίς κατάταξη.
+3. Χρησιμοποιήστε το φίλτρο εύρους για να εμφανίσετε όλα τα εύρη, μόνο τα γεγονότα σε επίπεδο χώρου εργασίας ή τα γεγονότα ενός αποθετηρίου.
+4. Χρησιμοποιήστε τον διακόπτη ταξινόμησης για σειρά κατά προσφατότητα ή κατά εμπιστοσύνη.
+5. Κάντε κλικ στο χειριστήριο επεξεργασίας ενός γεγονότος.
 
-The edit dialog lets you change:
+Το παράθυρο διαλόγου επεξεργασίας σάς επιτρέπει να αλλάξετε:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Τομέα** — μετακίνηση ενός γεγονότος μεταξύ τομέων
+- **Θέμα** — τη σύντομη ετικέτα του
+- **Περιεχόμενο** — το κείμενο της γνώσης
+- **Εμπιστοσύνη** — ένα ρυθμιστικό σε βήματα του 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Αποθηκεύστε για να το γράψετε πίσω. Δεν υπάρχει κουμπί **Προσθήκη γεγονότος**· το παράθυρο διαλόγου ανοίγει μόνο σε υπάρχουσα γραμμή.
 
-## See superseded facts
+## Προβολή αντικατασταθέντων γεγονότων
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Η καρτέλα Γεγονότα έχει έναν διακόπτη **Εμφάνιση αντικατασταθέντων**. Τα αντικατασταθέντα γεγονότα είναι κρυμμένα από προεπιλογή και αποκαλύπτονται από αυτόν τον διακόπτη, όπου ζει το ίχνος ελέγχου — η αντικατάσταση δεν διαγράφει ποτέ.
 
-## Delete a fact
+## Διαγραφή ενός γεγονότος
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Χρησιμοποιήστε το χειριστήριο διαγραφής ενός γεγονότος και επιβεβαιώστε. Αυτή είναι πραγματική διαγραφή, όχι αντικατάσταση: χρησιμοποιήστε την για γεγονότα που ήταν απλώς λάθος να καταγραφούν και αφήστε τους πράκτορες να αντικαταστήσουν γεγονότα των οποίων το _περιεχόμενο_ έχει εξελιχθεί.
 
-## Manage policies
+## Διαχείριση πολιτικών
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Η καρτέλα **Πολιτικές** ομαδοποιεί τις ενεργές πολιτικές κατά τομέα και υποβιβάζει τις ανενεργές σε ενότητα στο τέλος. Ανά πολιτική μπορείτε να:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Επεξεργαστείτε** την
+- **Διαγράψετε** την
+- **Απενεργοποιήσετε** / **Ενεργοποιήσετε** την — η αναστρέψιμη επιλογή και συνήθως η σωστή. Μόνο οι ενεργές πολιτικές φτάνουν στις προτροπές των πρακτόρων.
 
-As with facts, there is no create control.
+Όπως με τα γεγονότα, δεν υπάρχει χειριστήριο δημιουργίας.
 
-## Explore the knowledge graph
+## Εξερεύνηση του γράφου γνώσης
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Η καρτέλα **Γράφος γνώσης** απλώνει τομείς, θέματα, γεγονότα και πολιτικές ως πλοηγήσιμο καμβά κόμβων — μετακίνηση, ζουμ, σύρσιμο κόμβων. Το πάτημα σε έναν κόμβο ανοίγει το φύλλο λεπτομερειών του, από όπου είναι προσβάσιμα τα ίδια παράθυρα διαλόγου επεξεργασίας. Είναι ο γρηγορότερος τρόπος να δείτε ποιοι τομείς είναι πραγματικά γεμάτοι.
 
-## Edit an agent's working memory
+## Επεξεργασία της μνήμης εργασίας ενός πράκτορα
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Η μνήμη εργασίας είναι ένα ιδιωτικό πρόχειρο ανά πράκτορα, που εισάγεται στην προτροπή του τη στιγμή της αποστολής. Οι πράκτορες τη γράφουν μόνοι τους με τα `record_observation` και `update_my_notes`, αλλά μπορείτε να τη διαβάσετε και να την επεξεργαστείτε απευθείας:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** → επιλέξτε τον πράκτορα → η καρτέλα **Μνήμη**.
 
-## Access grants
+## Παραχωρήσεις πρόσβασης
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Οι παραχωρήσεις πρόσβασης μνήμης αντιστοιχίζουν τον ρόλο ενός πράκτορα σε ένα δικαίωμα (`none`, `read`, `write`) ανά τομέα. Γράψτε τες με τις λειτουργίες `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Δύο πράγματα που πρέπει να κατανοήσετε για το πώς επιλύονται:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Οι αναγνώσεις αποτυγχάνουν ανοιχτά.** Χωρίς γραμμή παραχώρησης για ένα ζεύγος (ρόλος, τομέας), το πραγματικό δικαίωμα είναι `read`. Η μόνη εγγραφή που πετάει σφάλμα χωρίς `write` είναι το `propose_policy`. Οι εγγραφές γεγονότων δεν ελέγχονται από παραχωρήσεις.
+- **Οι παραχωρήσεις έχουν κλειδί τον ρόλο του πράκτορα.** Τα εργαλεία πρότασης προεπιλέγουν `general` για ένα απόν `agent_role`. Μια παραχώρηση γραμμένη για άλλον ρόλο δεν δεσμεύει αυτούς τους πράκτορες· μια παραχώρηση `general` ναι.
 
-## Search is not the same everywhere
+## Η αναζήτηση δεν είναι ίδια παντού
 
-Three different things are called "memory search" and they do not agree:
+Τρία διαφορετικά πράγματα ονομάζονται «αναζήτηση μνήμης» και δεν συμφωνούν:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Πού                                  | Τι κάνει                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Το πλαίσιο αναζήτησης της καρτέλας Γεγονότα | Φίλτρο υποσυμβολοσειράς πάνω στα γεγονότα που έχουν ήδη φορτωθεί στον πελάτη                                  |
+| Η λειτουργία RPC `memory_fact.search` | Αναζήτηση λέξεων-κλειδιών μόνο FTS5 — ένας λεπτός πελάτης δεν μπορεί να στέλνει ενσωμάτωση ερωτήματος, οπότε η υβριδική αναζήτηση παραμένει εσωτερική στον κεντρικό υπολογιστή |
+| Το εργαλείο `search_memory` στην πλευρά του πράκτορα | `keyword`, `semantic` ή `hybrid` (η προεπιλογή). Το υβριδικό συγχωνεύει τέσσερις φωνές: λεξιλογική, σημασιολογική, χρονική και γράφου |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Έτσι, ένας πράκτορας και η σελίδα Μνήμη δεν θα κατατάξουν το ίδιο ερώτημα με τον ίδιο τρόπο. Όταν ελέγχετε τι μπορεί πραγματικά να ανακαλέσει ένας πράκτορας, ρωτήστε τον πράκτορα.
 
-## Embeddings
+## Ενσωματώσεις
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Τα γεγονότα ενσωματώνονται **τη στιγμή της εγγραφής** και μόνο όταν είναι εγκατεστημένο το μοντέλο ενσωματώσεων στη συσκευή. Ελέγξτε την κατάστασή του στις **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο → Σημασιολογική αναζήτηση**. Εγκαταστήστε το μοντέλο προτού οι πράκτορες αρχίσουν να γράφουν μνήμη, αν θέλετε σημασιολογική ανάκληση.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [Use the MCP server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Χρήση του διακομιστή MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Memory and knowledge](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/)
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
+- [Μνήμη και γνώση](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/)
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)

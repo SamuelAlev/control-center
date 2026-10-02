@@ -1,33 +1,37 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Evals en kwaliteit
+description: Eval-suites, de starterset die in elke werkruimte wordt geïnitialiseerd en waar ze in Observeerbaarheid verschijnen.
 slug: nl-NL/handleiding/concepten/evals-en-kwaliteit
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Een **eval-suite** is een werkruimtegebonden definitie van een taak die je tegen
+een agent uitvoert: een prompt, een doelagent en een modus, een optionele
+voorbereiding, een optionele fixture met een vastgezette SHA en een lijst met
+beoordelaars. Beoordelaars zijn in de eerste plaats deterministisch; een
+LLM-rechter op basis van een rubriek dekt wat die controles niet kunnen
+uitdrukken.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Bij het aanmaken van een werkruimte worden vijf startersuites geïnitialiseerd.
+Ze dekken orkestratievoorstellen, een review die een bewust ingebouwde bug
+vindt, een planmodus die alleen-lezen blijft, een planmodus die een plan
+oplevert en een volledige ticketronde. De initialisatie luistert naar
+`WorkspaceCreated` (`workspace.upsert` of `workspace.create`), slaat een naam
+over die al bestaat en vult oudere werkruimtes niet retroactief aan.
 
-## Where they appear
+## Waar ze verschijnen
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observeerbaarheid → Kwaliteit** (`/workspaces/<id>/observability`) vermeldt
+elke suite in de werkruimte.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Maak, bekijk, bewerk en verwijder suites met `evals.upsertSuite`,
+`evals.deleteSuite` en `evals.watchSuites`. Het tabblad Kwaliteit is de lijst;
+die bewerkingen vormen de editor.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): the configuration a suite
-  pins
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/): the autonomy dial
-- [Manage costs and budgets](/nl-NL/handleiding/gidsen/kosten-beheren/): spend recorded
-  alongside a run
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): de configuratie die een suite
+  vastlegt
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): de autonomieregelaar
+- [Kosten en budgetten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/): uitgaven die naast
+  een run worden vastgelegd

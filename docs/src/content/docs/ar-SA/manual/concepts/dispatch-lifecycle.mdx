@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: دورة حياة إرسال الوكيل
+description: ما يحدث بين وصول الرسالة وإغلاق سجل التشغيل — تجميع المطالبة، وأشجار العمل، والهوية، وما يحدّ التشغيل، وكيف تُسجَّل نتيجته بصدق.
 slug: ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## ما الإرسال؟
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+الإرسال تشغيل واحد لوكيل واحد، في محادثة واحدة، وعلى محوّل واحد. يحدث كله على `cc_server`. يرسل العميل رسالة، ثم يتابع الأحداث وهي تعود بثًا. لا مسار إرسال في أي عميل.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+يُوقَظ الوكلاء لستة أسباب، ويحملها التشغيل في **سياق الإيقاظ** حتى يعرف الوكيل _لماذا_ هو مستيقظ:
 
-| Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| سبب الإيقاظ | المشغّل |
+| --- | --- |
+| `userMessage` | أرسل أحدهم رسالة في مساحة، أو أشار إلى الوكيل |
+| `assignment` | أُسنِدت تذكرة إلى الوكيل |
+| `pipelineStep` | أرسلته خطوة في خط أنابيب |
+| `childCompleted` | اكتملت تذكرة فرعية |
+| `followUp` | نبضة متابعة مجدولة |
+| `recovery` | أعاد مسار الاستعادة الإرسال بعد إخفاق |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+يحمل سياق الإيقاظ المعرّفات الملازمة للسبب، التذكرة والمساحة والرسالة وتشغيل خط الأنابيب، وتُحقَن في بيئة الوكيل وفي مطالبته.
 
-## Prompt assembly
+## تجميع المطالبة
 
-The prompt is built in layers, each one a labelled section:
+تُبنى المطالبة طبقات، وكل طبقة قسم بعنوان:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **الهوية**: معرّف الوكيل واسمه ومعرّف مساحة عمله، مع تعليمة صريحة بتمرير هذه القيم UUID كما هي إلى الأدوات العاملة في نطاق مساحة العمل. مساحة العمل أصيلة في الوكيل، فهي حاضرة دائمًا.
+- **فهرس الأدوات وبروتوكولات الموارد**، ثم **تخطيط مساحة العمل**.
+- **تجاوز موجّه النظام**، إن وُجد للوكيل، ثم **الشخصية** (تُضبَط حسب الدور) و**موجز الفريق**.
+- **المهارات**: الأسماء المحمولة على الوكيل.
+- **عقد التنفيذ والإجراء** للوضع الحالي.
+- **سياق الإيقاظ** و**سياق الإشارة**: من استدعى الوكيل، والكشف من حوله.
+- **كتلة الوضع**: تُولَّد من ملف قدرات الوضع _ومن قائمة أدواته المُحقَّقة_، فلا تسمّي المطالبة أداة لا يملكها التشغيل فعلًا.
+- **سياق الذاكرة**: وقائع تُجلب للمهمة.
+- **سياق المحادثة**: أحدث ما في المساحة، بسقف 50,000 حرف من النافذة الحرفية، أيًّا كان حجم السياق المضبوط للوكيل. التاريخ الأقدم لا يُبتر: يسترجعه الوكيل عند الطلب بـ `get_messages`، وتظل الرسائل الأقدم ذات الصلة في المعنى تظهر.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[تُقرأ أوامر الشرطة المائلة من نص المستخدم الخام]
+تبدأ المطالبة ذات الطبقات بكتلة سياق، فلا تُفتتح بشرطة مائلة. تُستخرج الأوامر من رسالة المستخدم بنصها، ثم تُقص من ذيل المطالبة ذات الطبقات، فتبقى طبقات السياق كلها.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+تنقسم الأوامر على موضعين. يُعترَض `/todo` و`/compact` في حقل الكتابة، وعن عمد لا يُحفظان رسائل ولا يُرسلان إلى الوكيل. حفظ `/compact` كان سيؤخّر حد الضغط جولة ويلوّث نص المحادثة. يُعالَج `/plan` في الموضعين: يبدّل حقل الكتابة وضع المساحة، فيتفق سطح الأدوات والضبط المسبق للضوابط والمطالبة لهذه الجولة ولكل جولة بعدها. تُعالَج `/goal` و`/loop` و`/skill:<name>` داخل التشغيل نفسه، وعلى الإطار المضمّن وحده. يبدأ `/goal` و`/loop` عملًا مستقلًا بميزانية تكلفة، والاسم المسبوق بـ `skill:` يُحلّ على مهارة يصير متن `SKILL.md` فيها توجيه الجولة. النطاق هو ما يفصل المفرداتين: كان حلّ الاسم بلا بادئة على المهارات يُبقي مهارة اسمها `plan` أو `compact` محجوبة دائمًا بالأمر المضمّن. والاسم بلا بادئة، إن لم يكن أمرًا مضمّنًا، يظل يُحَل في الرسائل المكتوبة قبل وجود النطاق. والاسم الذي لا يُعرَف يمر نصًا عاديًا.
 
-## Worktree provisioning
+## تجهيز شجرة العمل
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+قبل أن يجري شيء، تحصل المحادثة على جذر عمل خاص بها، وتحته شجرة عمل معزولة بالنسخ عند الكتابة لكل مستودع. افتراضيًا يشمل ذلك كل مستودع مرتبط بمساحة العمل. مساحة طلب سحب، أو مساحة أُنشئت باختيار صريح، تجهّز المستودعات المسموح بها فقط. ومحادثة مراجعة طلب السحب تثبّت مستودعها الوحيد على مرجع head للطلب، وتُبقي سائر المستودعات على فرعها الافتراضي. لا تُمَس نسخة المصدر أبدًا، ويُسترد مجلد المحادثة كله عند حذف المساحة.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+النسخ عند الكتابة هو التنفيذ **الوحيد** أينما يُشحَن `rift`، وتسنده المكتبة الأصلية المضمّنة. إذا عجز نظام الملفات عن reflink، أو كان دليل البيانات على وحدة تخزين غير وحدة المستودع، فشل التجهيز ولم يُرجَع إلى بديل. `git worktree` هو الخلفية على Windows، حيث لا تُبنى خلفية للنسخ عند الكتابة، وليس ذلك تراجعًا صامتًا على المضيفات الأخرى. غياب `rift` على منصة تشحنه تثبيت معطوب. يرفض الخادم الإقلاع بدل أن يرجع في صمت، لأن الرجوع الصامت يخفي العطب إلى الأبد خلف مسار أبطأ.
 
-## Identity and credentials
+## الهوية وبيانات الاعتماد
 
-Two identities are resolved per run, before any process launches.
+تُحَل هويتان في كل تشغيل، قبل إطلاق أي عملية.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**تأليف Git.** إيداعات الوكيل تُؤلَّف _باسم الوكيل_، بالصيغة `<Name> (agent) <agentId@agents.control-center.local>` في `GIT_AUTHOR_*` و`GIT_COMMITTER_*` معًا، ومن غير انتحال إنسان. الجزء المحلي هو UUID الوكيل، لا اسم مساره. تُنسَب مشاركة الإنسان الطالب في تذييل `Co-Authored-By:` يُحمَل في البيئة وتذكره تعليمات موجّه النظام. هوية يضبطها المستدعي صراحةً تغلب الاثنتين دائمًا.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**هوية مضيف الشفرة.** بيانات اعتماد GitHub للتشغيل هي ما لدى الوسيط لا غير: رمز تثبيت GitHub App محصور بالمستودع، أو الرجوع إلى PAT من البيئة، لا الرمز المخزّن للعضو الطالب. `actingUserId` يحدّ رجوع PAT، فلا يرث عضو ليس مالك الخادم مدى وصول الخادم، ولا يضع رمزًا شخصيًا في بيئة الوكيل.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**بيانات اعتماد مزوّد النموذج** تُحَل بترتيب ثابت، والترتيب مؤثر:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. تجاوز بيئة خاص بالمحوّل،
+2. بيئة المستدعي،
+3. مخزن بيانات اعتماد الخادم، مع تحديث رمز OAuth إن قارب الانتهاء،
+4. بيئة العملية.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+ولأن تجاوز المحوّل يأتي أولًا، فهو يغلب في صمت حساب مزوّد موصولًا في التطبيق. إن حُوسب التشغيل على الحساب الخطأ، فأول ما يُنظَر فيه هذا التجاوز. بيانات اعتماد المزوّد عامة على المضيف، ومشتركة بين مساحات العمل كلها في التثبيت.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
+الرموز المقيّدة بالقدرات (GitHub، والتذاكر) تأتي من وسيط بيانات الاعتماد، ولا يحقن إلا ما تسمح به قدرات التشغيل. انظر [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
 
-## Launch
+## الإطلاق
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+يُطلَق التشغيل وشجرة عمله هي دليل العمل. ولـ Claude Code يُولَّد إعداد MCP حتى يصل الوكيل إلى سطح أدوات Control Center. تُعقَّم بيئة ACP وأداة `bash` في الإطار، ويرث Claude Code عبر `NoSandboxAdapter` بيئة المضيف.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[بيئة نظام التشغيل المعزولة لا تغلف التشغيل إلا حيث للمضيف خلفية]
+يفحص `cc_server` المضيف مرة واحدة عند الإقلاع، وإن توفرت خلفية غلّف بها عمليات الوكيل: Seatbelt على macOS، وbubblewrap على Linux وWSL2. يُغلَّف مسارا الإرسال كلاهما، لأنهما لا يشتركان في مسار. سطر أوامر Claude Code يمر بمنفذ البيئة المعزولة، ومحوّلات ACP وأداة `bash` في الإطار المضمّن تمران بمدير البيئة المعزولة. ومن هنا تُطبَّق المسارات المحمية للتشغيل: نسخ المستودعات المسجّلة لديك ممنوعة الكتابة داخل البيئة المعزولة، في كل وضع.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+حيث لا خلفية، فالتشغيل **غير** معزول، ولا يتغيّر شيء آخر تعويضًا. يعني ذلك Windows دائمًا (لا تغليف أصلي، و`microvm` مسار منفصل مشروط بالفحص للطرفيات والمنصات)، وLinux أو WSL2 من غير `bwrap` و`socat` على `PATH`. يسمّي الخادم حالته في سطر سجل الإقلاع، و`--sandbox off` تعطيل مقصود للعزل.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+تبقى فجوتان حتى حيث البيئة المعزولة تعمل. أدوات الملفات داخل عملية الإطار (read, write, edit, apply patch, search, find, search_files) تعمل داخل عملية الخادم، فلا يقيّدها ملف تعريف. حدّها حصر المسار في الأدوات نفسها، مع الضوابط. ويُطلَق Claude Code مع `--dangerously-skip-permissions`، فلا تمر استدعاءات ملفاته وصدفته ببوابة Control Center، وبيئة نظام التشغيل المعزولة هي الحد من حولها.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+وتثبت الحدود الباقية على كل مضيف، ببيئة معزولة أو من دونها: شجرة عمل التشغيل نفسها (نسخ عند الكتابة حيث يُشحَن `rift`، و`git worktree` على Windows)، وبيانات الاعتماد المقيّدة بالقدرات التي يصدرها الوسيط عند كل إطلاق وتُسحَب عند التفكيك، وضوابط الإجراء الموحّدة (مغلقة عند الفشل: قرار `prompt` بلا معتمِد متصل يُرفَض)، وسطح الأدوات الذي يبيحه وضع المحادثة. وتبقى بيئة ACP وأداة `bash` في الإطار معقّمة، ويرث Claude Code عبر `NoSandboxAdapter` بيئة المضيف.
 :::
 
-## Streaming
+## البث
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+يبث التشغيل تسلسل أحداث مُنمَّطًا. يثبّته معالج البث فروقات رسائل، ويطويه في مقاطع النص، ويحوّله أحداث مراسلة:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| الحدث | ما يحمله |
+| --- | --- |
+| `thinking` | خرج الاستدلال، ويُعرَض في السطر |
+| `text` | الخرج المرئي |
+| `toolCall` | استدعاء أداة، بمعرّفه ووسائطه المنظَّمة |
+| `toolResult` | النتيجة المطابقة، وتُعلَّم إن أخطأت أو كانت بثًا جزئيًا |
+| `usage` | عدد الرموز والتكلفة في نافذة قياس |
+| `error` | خطأ، مع الرمز المنظَّم للمحوّل إن بلّغ عنه |
+| `sandboxViolation` | رفض نظام التشغيل استدعاء نظام. لا يُصدَر إلا حيث تغلف بيئة معزولة العملية فعلًا. انظر الملاحظة أعلاه |
+| `debug` | تشخيصات أثناء التشغيل (علامات الإطلاق، وقرارات الضوابط، وتنبيهات العقد) |
+| `done` | انتهى التشغيل |
 
-## What bounds a run
+## ما يحدّ التشغيل
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+عمدًا، **لا سقف للجولات في أي موضع**. عدّ تكرارات صارم يقتل العمل الطويل المشروع، كالترحيل وتنظيف العمل المتفرّع، ولا يمسك شيئًا تمسكه الحراسات أدناه قبل ذلك. ينتهي التشغيل حين:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **يتوقف النموذج** من نفسه.
+- **يوقفه إنسان**، أو يتولّى المحادثة، فيتوقف الإطار المضمّن مؤقتًا عند حد الجولة النظيف التالي. أما تشغيل Claude Code، ولا حد آمن له، فيُوقَف.
+- **ينطلق مراقب الصمت.** إن غاب الخرج طوال العتبة أُنهيت الجلسة بفشل `silentRun`. الافتراضي 15 دقيقة، وينزل إلى 10 في أوضاع القراءة في الغالب (المراجعة والتخطيط)، وللوكيل أن يتجاوزه بين 1 و240 دقيقة. يُسلَّح المراقب حين تبلّغ عملية فرعية عن PID، فيغطي سطر أوامر Claude Code، **لا** الإطار المضمّن الذي لا يولّد عملية.
+- **يسري سقف تكلفة**، لكن للأوامر المستقلة وحدها.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+حارس الحلقة المفرغة لا ينهي التشغيل. بعد ثلاث استدعاءات أداة متطابقة متوالية _توجّه_ الحلقة الوكيل إلى تغيير نهجه.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[الجولة العادية بلا سقف تكلفة]
+حارس التكلفة داخل الجلسة موصول بـ `/goal` و`/loop` فقط، وكل تشغيل سواهما لا يمرّر ميزانية أصلًا. لهذين الأمرين يجوز لمقطع غير مراقب أن يستهلك 500 سنت ($5.00) افتراضيًا، مع توجيه ليّن عند 80% يطلب من الوكيل أن يختم العمل بنظافة قبل التوقف الصارم، وميزانية هدف دائمة قدرها 5000 سنت ($50.00) تمتد على المقاطع. وميزانية `/goal --budget` الصريحة لا يجاوزها مقطع كامل.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+محصّلة ذلك أن الجولة التفاعلية العادية على الإطار المضمّن بلا سقف جولات، وبلا سقف تكلفة، وبلا مراقب صمت. تنتهي حين يتوقف النموذج أو حين توقفها أنت. المقايضة مقصودة، فالبدائل تقتل العمل الطويل المشروع، غير أن التشغيل التفاعلي غير المراقب لا يحدّه إلا حكم النموذج نفسه.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+في أثناء التشغيل تُصفَّ الرسالة المرسلة إلى وكيل يعمل على أنها **توجيه**، وتُفرَّغ عند حد الجولة التالي، فيمكن دفع التشغيل من غير قطعه. التوجيه والإيقاف المؤقت والوكلاء الفرعيون وعقد الإكمال ميزات الإطار المضمّن، وليس في Claude Code شيء منها.
 
-## How a run is recorded
+## كيف يُسجَّل التشغيل
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+كل إرسال يكتب `AgentRunLog`: وقت البدء والانتهاء، والملخص، وعدد الرموز، والتكلفة التقديرية ومنها ما يُجمَّع من الوكلاء الفرعيين، والمحوّل والنموذج، ومعرّف العملية ومسار السجل، والمحادثة وأي تذكرة أو تشغيل خط أنابيب ينتمي إليه، وحقلان للتصنيف يحملان معظم الحقيقة.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **الحالة** خشنة: `pending` و`running` و`completed` و`error`.
+- **الحيوية** أدق: `alive` و`productive` و`completed` و`blocked` و`empty` و`looping` و`failed` و`stalled` و`dead`.
+- **عائلة الخطأ** تجمّع الإخفاق تجميعًا نافعًا: `transientUpstream` و`sandboxInfrastructure` و`budgetExceeded` و`processLost` و`silentRun` و`unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` لا يعني «مُسلَّمًا»]
+إذا انتهى التشغيل من غير التسليم الذي أوجبه وضعه، كتشغيل وضع التخطيط لم يستدعِ `submit_plan`، أو تشغيل تنسيق لم يقدّم اقتراحًا، بقيت الحالة `completed` لأن العملية خرجت خروجًا نظيفًا. الإشارة الصادقة في الحيوية (`empty`) وعائلة الخطأ (`silentRun`) وملخص يسمّي ما لم يُنتَج. والملخص محمي: الإنهاء لا يستبدله بآخر كلام النموذج.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+وهذا مقصود. قلب الحالة يحرّك آلات حالة التذكرة وخط الأنابيب، ولا شأن لها بالأثر الغائب. ويعني ذلك أن «status: completed» وحدها لا تكفي للحكم بنجاح التشغيل. اقرأ الملخص.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+إغلاق التشغيل ينشر `AgentRunCompleted`، ويتفرّع عنه الكثير: إطار الإشعار وبند موجزه الدائم، والمُرحّل الحي الذي يدفعه إلى العملاء المتصلين، وتجميع تكلفة خط الأنابيب، واستئناف خطوة خط أنابيب كانت تنتظر التشغيل، وإكمال التذكرة الداعمة، ونقل التنسيق إلى حالة نهائية، وقرار مشرف الهدف بالمتابعة أو التوقف، ودور المدقّق، وتقييم الميزانية بعد التشغيل. أما كشف الحضور فيلحق على حدة، بمراقبة سجلات التشغيل الأخيرة لا بالحدث.
 
-## Budgets, after the fact
+## الميزانيات بعد الوقوع
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+فرض الميزانية _رد فعل_ لا بوابة. عند اكتمال التشغيل يقارن المُقيِّم إنفاق الوكيل منذ مطلع الشهر بسقفه الفعّال (سياسة ميزانية مربوطة إن وُجدت، وإلا رقمه الشهري، والصفر يعني غير محدود). تجاوز العتبة اللينة يسجّل حادثة تحذير، واستنفاد الميزانية يسجّل حادثة صارمة ويقلب حالة دورة حياة الوكيل إلى `paused` في الهيكل التنظيمي. ويظل الإرسال يقبل العمل من هذا الوكيل. ويستطيع مشغّل خط الأنابيب `BudgetThresholdCrossed` أن يبدأ عمل متابعة من الحدث نفسه.
 
-## Retry lineage
+## نسب إعادة المحاولة
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+يمكن لكل سجل تشغيل أن يحمل نسب إعادة المحاولة: معرّف تشغيل أب، وعدّاد محاولات، وملخص استئناف. تعرض شجرة تشغيل المحادثة رقم المحاولة إذا لم يكن صفرًا. «حاول مرة أخرى» من الدردشة إرسال جديد بسجل تشغيل جديد.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): what the adapter can and cannot enforce
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): where the tool surface and the completion contract come from
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): the effect-class policy every gated call passes
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): the isolation story in full
-- [Multiplayer](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): steering, take-over and the autonomy dial
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): what `AgentRunCompleted` sets off
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): ما يفرضه المحوّل وما يخرج عن فرضه
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): من أين يأتي سطح الأدوات وعقد الإكمال
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): سياسة صنف الأثر التي يمر بها كل استدعاء محروس
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): قصة العزل كاملة
+- [تعدد اللاعبين والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): التوجيه، والتولّي، ومؤشر الاستقلالية
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): ما يترتّب على `AgentRunCompleted`

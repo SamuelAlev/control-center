@@ -1,166 +1,154 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: 執行機群工作節點
+description: 建置、配對並執行 cc_worker 無介面執行器，讓它向 cc_server 註冊並出現在機群面板中。
 slug: zh-HK/手冊/操作指南/執行機群工作節點
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+在一部備用機器上執行 `cc_worker`，為你的機群增加執行容量。它是一個純 Dart
+二進位檔——不含 Flutter 引擎——會與一個 `cc_server` 配對、宣告主機的能力、發出
+心跳、拉取租約工作、執行它們，並把行程事件串流傳回。它不持有任何持久狀態：
+監督程式重新啟動它，它就會重新註冊。
 
-You need a running `cc_server` first — see [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/).
+你首先需要一個執行中的 `cc_server`——請參閱[執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)。
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+已配對的工作節點會註冊、發出心跳，並等待租約工作。以 `fleet.submitJob` 提交
+工作。這部伺服器上的代理派發不會經過機群；本指南的成功訊號，是工作節點帶着
+最新的心跳出現在機群面板中。開機時註冊的行程內工作節點，其執行器對應表是空
+的，因此放到它上面的工作會傳回 `No local runner for job kind …`。
 
-## Prerequisites
+## 先決條件
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart)。此程式庫以 [fvm](https://fvm.app) 鎖定其 SDK，因此指令請加上 `fvm` 前綴。
+- 在工作節點機器上檢出此程式庫。
+- 一個可觸達的 `cc_server`（開發時用回送，正式環境用區域網絡或遠端）。
+- `PATH` 上有 `git`——工作節點會具體化程式庫，並執行 `git` 探測。
 
-## Step 1: Build the binary
+## 步驟 1：建置二進位檔
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+這會在 `./build/cli/<os_arch>/bundle/bin/cc_worker` 產生一個自成一體的套件組合。
 
-## Step 2: Mint the worker's credential
+## 步驟 2：簽發工作節點的憑證
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+`cc_server` 只接受出示已配對裝置 id 與預共享金鑰的工作節點——包括回送伺服器
+在內。請在**伺服器**機器上簽發它們（伺服器運作期間也可以執行 `pair`；新裝置會
+在無須重新啟動的情況下被接收）：
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+它會印出 `Device id` 與 `Pairing key`——這些正是 `--device-id` 與 `--psk` /
+`--psk-file` / `CC_WORKER_PSK` 所接受的值。
 
-## Step 3: Start the worker
+## 步驟 3：啟動工作節點
 
-Against a paired server:
+連接已配對的伺服器時：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+連接回送伺服器時（仍須配對——`cc_server` 一律會執行 PSK 交握）：
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
+| 旗標                 | 說明                                                                                             | 預設值      |
 | -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| `--server <url>`     | cc_server URL（`ws://`/`wss://`；`http(s)` 與缺少的 `/rpc` 路徑會被強制轉換）。**必填。**         | —           |
+| `--name <name>`      | 面向操作者的工作節點名稱。                                                                       | 主機名稱    |
+| `--device-id <id>`   | 穩定的已配對裝置 id，同時用作工作節點 id。                                                       | `cc-worker` |
+| `--psk-file <path>`  | 一個檔案，其第一行非空白內容就是配對金鑰。較 `--psk` 優先。                                      | —           |
+| `--psk <key>`        | 在指令列上提供的配對金鑰。會顯示於 `ps` 與 shell 歷史紀錄中——二進位檔會就此警告。                | —           |
+| `--max-jobs <n>`     | 此行程同時執行的工作數量硬上限（正整數）。                                                       | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+金鑰的解析順序是 `--psk-file` → `CC_WORKER_PSK` → `--psk`。略去所有來源，就會跳過
+工作節點的身分驗證交握；真正的 `cc_server` 接着會拒絕該工作階段（`auth_denied`），
+而不是接受一個未經驗證的工作節點。未知的旗標屬於用法錯誤（`exit 64`）——與
+`cc_server` 不同，這個二進位檔使用 `package:args`，不會忽略錯別字。
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` 會覆寫 worktree 具體化快取目錄（預設：系統暫存目錄下的一個
+`cc_worker_cache` 目錄）。
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+工作節點會以 `fleet.registerWorker` 註冊，然後每 20 秒發出一次心跳，並每 2 秒輪詢
+一次租約。它會一直執行，直到收到 `SIGINT`/`SIGTERM`；請把它置於 systemd 或
+launchd 之下，讓它在當機或重新啟動後重新啟動並重新註冊。
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[沒有協定相容窗口]
+機群協定版本與伺服器不同的工作節點，會被註冊為**不相容**，永遠不會獲派租約，
+而 `cc_worker` 本身會以 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
+to match the server release` 中止。請以與伺服器相同的發行版本建置工作節點。
 :::
 
-## Step 4: Verify it in the fleet panel
+## 步驟 4：在機群面板中驗證
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+在桌面或網頁應用程式中開啟**可觀測性**，切換至**即時**分頁，並捲動至底部。
+**工作節點**會列出每個已註冊的工作節點，附帶其平台、核心、能力索引鍵與最後一次
+心跳；**作業**則列出分佈在它們之間的工作。
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+你的工作節點帶着最近的心跳出現在那裏，就是配對與註冊成功的確認。
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+從工作節點的圖磚，你可以**排空**它（完成目前的工作，不再接受新租約）、
+**恢復**一個正在排空的工作節點、**撤銷**它的憑證，或**移除**該列。
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+工作節點與工作的資料列都存放在伺服器的 `global.db` 中——工作節點本身除了具體化
+快取以外，不會在磁碟上寫入任何內容。
 
-## What the worker advertises
+## 工作節點對外宣告的內容
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+註冊時，工作節點會自動偵測自己的能力，而排程器會據此比對工作。你無須手動設定
+這些：
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **作業系統與架構**（`macos`/`linux`/`windows`，`arm64`/`x64`）——精確探測，並可回退至 `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **核心數與 RAM**——精確的核心數；無法探測時 RAM 會降級為 `0`
+- **`flutter`**——當可觸達 Flutter SDK 時設定（先找純 `flutter`，再找 `fvm flutter`）；需要 golden 渲染的工作必須具備它
+- **`sandbox`**——macOS 上為 `native-macos`，Linux 上為 `native-linux`。這是放置提示，不是承諾：工作節點宣告其平台_所擁有_的後端，但不會把自己執行的工作包裹在其中。與 `cc_server` 不同，`cc_worker` 會直接衍生租約工作
+- **`always-on` 與 `parallel`**——專用的 `cc_worker` 一律宣告兩者，因此有資格承接評估批次與其他用完即棄的並行容量
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+偵測是盡力而為：任何無法探測的項目都會降級為安全預設值，而不是令啟動失敗。
 
-## What the worker would execute
+## 工作節點會執行的內容
 
-The lease protocol carries six job kinds:
+租約協定承載六種工作類型：
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| 類型           | 說明                                            |
+| -------------- | ----------------------------------------------- |
+| `agentRun`     | 單次代理執行（派發）                            |
+| `pipelineStep` | 一次管線步驟執行                                |
+| `codeIndex`    | 一次程式庫程式碼索引建置                        |
+| `goldenRender` | 一次介面視覺 golden 渲染（需要 `flutter`）      |
+| `benchmark`    | 一次效能基準測試執行                            |
+| `evalBatch`    | 一批評估（偏好 `parallel` 容量）                |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+執行是貨真價實的子行程串流實作，而不是完整的內嵌代理執行框架。當租約帶有
+`repoRemote` 時，工作節點會 `git clone --depth 1` 到一個以遠端與 SHA 為鍵的快取
+目錄，然後執行 `git fetch` 與 `git checkout`。對於 `agentRun`，它會在工作目錄中
+執行租約環境 `CC_JOB_COMMAND` 裏的指令，把 stdout 與 stderr 串流傳回作為事件；
+若沒有 `CC_JOB_COMMAND`，它會回顯提示詞，讓傳輸路徑仍能端到端地演練一次。其他
+類型則執行一些細小而真實的指令（`git rev-parse HEAD`、`git --version`）作為誠實
+的探測。租約環境中屬於工作範圍的憑證，會注入每一個子行程，且永遠不會寫入
+日誌。
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+事件會分批處理，每 250 毫秒或每 32 個事件刷新一次；每個工作結束時都會送出一個
+完成事件與一份完成報告。這個模型是心跳加上短 TTL 租約：若工作節點失去聯繫，
+它的租約就會到期，伺服器會回收該工作以便重試。工作節點上沒有任何持久狀態，
+工作節點之間也沒有共識或工作竊取。
 
-## Related guides
+## 相關指南
 
-- [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/)
-- [Connect to a remote server](/zh-HK/手冊/操作指南/連接遠端伺服器/)
-- [Pair a device](/zh-HK/手冊/操作指南/配對裝置/)
+- [執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)
+- [連接遠端伺服器](/zh-HK/手冊/操作指南/連接遠端伺服器/)
+- [配對裝置](/zh-HK/手冊/操作指南/配對裝置/)
 
-## Related concepts
+## 相關概念
 
-- [Deployment and clients](/zh-HK/手冊/概念/部署/)
+- [部署與用戶端](/zh-HK/手冊/概念/部署/)

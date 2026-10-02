@@ -1,123 +1,127 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: اتصال یک Google Calendar
+description: Google Calendar را به یک فضای کاری متصل کنید، چند حساب را مدیریت کنید و هنگام منقضی‌شدن توکن دوباره متصل شوید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/fa-IR/راهنمای-کاربر/مفهومها/تقویم/) for the full picture.
+این راهنما نشان می‌دهد چگونه Google Calendar را به یک فضای کاری متصل کنید. اتصال
+به تفکیک فضای کاری است: رویدادهای همان فضای کاری را فقط‌خواندنی به Control Center
+همگام‌سازی می‌کند. برای تصویر کامل،
+[تقویم و زمان‌بندی(/fa-IR/راهنمای-کاربر/مفهومها/تقویم/) را ببینید.
 
-## Connect an account
+## اتصال یک حساب
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. **تقویم** را در نوار کناری باز کنید.
+2. در نوار کناری تقویم روی **افزودن حساب تقویم** کلیک کنید. (همین بخش در **تنظیمات ← فضای کاری ← نمایه و هویت**، زیر **Google Calendar** قرار دارد.)
+3. انتخاب کنید که چگونه مجوز بدهید:
+   - **استفاده از برنامهٔ Google متعلق به Control Center** — چیزی برای راه‌اندازی نیست. این گزینه وقتی نسخهٔ شما یکی همراه دارد، پیش‌فرض است.
+   - **استفاده از کلاینت Google Cloud خودم** — شناسهٔ کلاینت و کلید محرمانه را از پروژهٔ خودتان بچسبانید (به [آوردن کلاینت Google خودتان](#آوردن-کلاینت-google-خودتان-فورکها-و-میزبانی-شخصی) نگاه کنید).
+4. روی **اتصال Google Calendar** کلیک کنید. پنجرهٔ گفتگو یک کد کوتاه و پیوندی به صفحهٔ دستگاه Google نشان می‌دهد.
+5. آن صفحه را روی هر دستگاهی باز کنید، کد را وارد کنید و دسترسی درخواست‌شده را تأیید کنید. پنجرهٔ گفتگو خودش بسته می‌شود و رویدادهای شما شروع به همگام‌سازی می‌کنند.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+این تبادل را سرور اجرا می‌کند، نه دستگاه شما، و توکن تازه‌سازی حاصل را نگه
+می‌دارد — به همین دلیل کد روی «هر دستگاهی» تأیید می‌شود، نه به‌طور خاص در این
+برنامه.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+این حساب **فقط به فضای کاری فعال** متصل می‌شود. فضای کاری را عوض کنید و به‌جایش
+تقویم‌های همان فضای کاری را می‌بینید.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+جریان اتصال `calendar.readonly` به‌همراه ایمیل شما را درخواست می‌کند — همان
+محدوده‌ها برای برنامهٔ داخلی و برای کلاینتی که خودتان وارد می‌کنید. Control Center
+رویدادها را می‌خواند؛ روی Google چیزی نمی‌سازد، ویرایش یا حذف نمی‌کند و به
+دعوت‌نامه‌ها پاسخ نمی‌دهد.
 
-## How syncing works
+## همگام‌سازی چگونه کار می‌کند
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**سرور** صاحب زمان‌بندی است: هر دو دقیقه حساب‌های متصل هر فضای کاری را جاروب
+می‌کند و رویدادها را در پایگاه‌دادهٔ آن فضای کاری می‌نویسد. کلاینت‌ها هرگز با
+Google صحبت نمی‌کنند — آنچه سرور نوشته است را می‌خوانند.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+جاروب افزایشی است. نخستین گذر برای هر تقویم یک پنجرهٔ چرخشی (۶۰ روز گذشته، ۹۰ روز
+آینده) می‌گیرد و توکن همگام‌سازی Google را ثبت می‌کند؛ گذرهای بعدی همان توکن را
+ارائه می‌دهند و فقط آنچه تغییر کرده را دریافت می‌کنند، و همین است که تناوب
+دودقیقه‌ای را مقرون‌به‌صرفه می‌کند. این پنجره هر ۲۴ ساعت و هر بار که Google توکن
+را بی‌اعتبار کند، با یک همگام‌سازی کامل دوباره لنگر می‌اندازد.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+توکن‌های تازه‌سازی سمت سرور و در `secrets.json` زیر شاخهٔ دادهٔ سرور قرار دارند و
+فقط برای مالک نوشته می‌شوند (`0600`) — نه در جاکلیدی سیستم‌عامل و هرگز روی یک
+دستگاه کلاینت.
 
-## Connect multiple accounts
+## اتصال چند حساب
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+یک فضای کاری می‌تواند چند حساب Google را متصل کند (برای نمونه کاری و شخصی). برای
+هر حساب مرحلهٔ اتصال را تکرار کنید؛ رویدادهایشان در همان نماهای
+ماه / هفته / برنامه ادغام می‌شوند. هر حساب مستقل همگام‌سازی و تازه‌سازی می‌شود و
+هر کدام می‌تواند جداگانه قطع شود.
 
-## Reconnect an expired account
+## اتصال مجدد یک حساب منقضی‌شده
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+اگر Google توکن یک حساب را برای همیشه بی‌اعتبار کند (نشستی لغوشده یا مدتی طولانی
+منقضی‌شده)، همگام‌سازی متوقف می‌شود و Control Center روی تقویم یک بنر
+**اتصال مجدد** به‌همراه یک اعلان دسکتاپ نشان می‌دهد. روی **اتصال مجدد** کلیک کنید
+و یک کد جدید را تأیید کنید؛ بنر در نخستین همگام‌سازی موفق بعدی پاک می‌شود.
 
-## Disconnect an account
+## قطع اتصال یک حساب
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+از نوار کناری تقویم (یا **تنظیمات ← فضای کاری ← نمایه و هویت**)، روی **قطع اتصال**
+حساب کلیک کنید. این کار رویدادهای همگام‌شدهٔ آن را حذف و توکن‌های ذخیره‌شدهٔ آن را
+روی سرور پاک می‌کند.
 
-## Connect from a headless server
+## اتصال از یک سرور بدون رابط
 
-A server with no GUI attached connects the same account from its own terminal:
+سروری که رابط گرافیکی متصل ندارد، همان حساب را از ترمینال خودش متصل می‌کند:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+یک کد و یک URL چاپ می‌کند، منتظر تأیید می‌ماند، سپس توکن‌ها را ذخیره می‌کند و در
+جاروب بعدی همگام‌سازی می‌کند.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+نسخه‌ای که از کد منبع ساخته می‌شود **هیچ** کلاینت Google همراه ندارد، بنابراین
+شناسه و کلید محرمانه الزامی‌اند — `GOOGLE_OAUTH_CLIENT_ID` و
+`GOOGLE_OAUTH_CLIENT_SECRET` را تنظیم کنید. فلگ `--google-client-id` وجود ندارد
+(فلگ‌های ناشناخته نادیده گرفته می‌شوند). بدون این جفت متغیر محیطی، فرمان با خطای
+نبود کلاینت خارج می‌شود.
 
-## Bring your own Google client (forks and self-hosting)
+## آوردن کلاینت Google خودتان (فورک‌ها و میزبانی شخصی)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+نسخه‌های منتشرشده یک کلاینت Google همراه دارند، بنابراین بیشتر افراد هرگز به این
+بخش دست نمی‌زنند. اگر از کد منبع می‌سازید، سرور خودتان را اجرا می‌کنید یا می‌خواهید
+صفحهٔ رضایت نام پروژهٔ خودتان را نشان دهد، کلاینت خودتان را بیاورید.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. در [Google Cloud Console](https://console.cloud.google.com/apis/credentials)، **Google Calendar API** را فعال کنید و **صفحهٔ رضایت OAuth** را پیکربندی کنید و محدوده‌های `calendar.readonly`، `openid` و `email` را اضافه کنید. تا وقتی برنامه تأییدنشده است، خودتان را به‌عنوان یک **کاربر آزمایشی** اضافه کنید. افزودن `calendar.events` در صفحهٔ رضایت، امکان پاسخ دادن به دعوت‌ها را فعال نمی‌کند — Control Center هرگز آن محدوده را درخواست نمی‌کند.
+2. یک **شناسهٔ کلاینت OAuth** از نوع برنامهٔ **TVs and limited input devices** بسازید و هم شناسهٔ کلاینت و هم کلید محرمانهٔ آن را کپی کنید.
+3. آن‌ها را یا برای هر اتصال تأمین کنید (در پنجرهٔ گفتگو **استفاده از کلاینت Google Cloud خودم** را انتخاب کنید) یا برای کل سرور با `GOOGLE_OAUTH_CLIENT_ID` و `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+یک جفت سطح‌سرور، جفت داخلی را همه‌جا جایگزین می‌کند، از جمله پشت گزینهٔ «استفاده از
+برنامهٔ Google متعلق به Control Center» — پس روی سرور خودتان، آن گزینه همان
+برنامهٔ شماست.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+کلید محرمانهٔ کلاینت هرگز از سرور بیرون نمی‌رود: هیچ پاسخ RPC آن را حمل نمی‌کند و
+حسابی که از طریق کلاینت خود سرور متصل شده، به‌جای نسخه‌ای از آن جفت، یک نشانگر
+ذخیره می‌کند؛ پس چرخاندن آن فقط به راه‌اندازی مجدد با یک مقدار جدید نیاز دارد.
 
-### Troubleshooting
+### عیب‌یابی
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| نشانه                                                | علت احتمالی                                                                                                                                           |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| پنجرهٔ گفتگو هیچ گزینهٔ داخلی ارائه نمی‌دهد            | این نسخه هیچ کلاینت Google همراه ندارد (نسخهٔ ساخته‌شده از کد منبع)، یا سرور تنها با یک نیمهٔ آن جفت راه‌اندازی شده است. هم شناسه و هم کلید محرمانه الزامی‌اند |
+| `invalid_scope` هنگام شروع جریان                      | Calendar برای یک کلاینت کد دستگاه در آن پروژهٔ Cloud مجاز نیست. به‌جایش از پروژه‌ای با کلاینت loopback یا کلاینت وب استفاده کنید                        |
+| `invalid_client` از سوی Google                        | کلاینت از نوع **TVs and limited input devices** نیست، یا شناسه و کلید محرمانه از دو کلاینت متفاوت‌اند                                                 |
+| تأیید موفق می‌شود اما همگام‌سازی خالی است              | حساب شما در صفحهٔ رضایت یک **کاربر آزمایشی** نیست، یا `calendar.readonly` اعطا نشده است                                                              |
+| کد پیش از تأیید شما منقضی می‌شود                      | کدهای دستگاه عمر کوتاهی دارند. اتصال را دوباره شروع کنید تا کد تازه‌ای بگیرید                                                                          |
+| «به‌روزرسانی پاسخ شما ممکن نشد» هنگام پاسخ به یک دعوت | انتظار می‌رود: جریان اتصال هرگز `calendar.events` را درخواست نمی‌کند                                                                                    |
+| همگام‌سازی با یک هشدار تازه‌سازی در گزارش سرور متوقف می‌شود | حساب با کلاینتی متصل شده که دیگر پیکربندی نشده است. حساب را دوباره متصل کنید، یا آن شناسه و کلید محرمانهٔ کلاینت را بازگردانید                     |
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Record and summarize a meeting](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ضبط-جلسه/): turn an event into a recording
-- [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
+- [ضبط و خلاصه‌کردن یک جلسه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ضبط-جلسه/): رویدادی را به یک ضبط تبدیل کنید
+- [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/): توکن‌ها و زمان‌بندی همگام‌سازی کجا قرار دارند
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Calendar and scheduling](/fa-IR/راهنمای-کاربر/مفهومها/تقویم/)
+- [تقویم و زمان‌بندی(/fa-IR/راهنمای-کاربر/مفهومها/تقویم/)

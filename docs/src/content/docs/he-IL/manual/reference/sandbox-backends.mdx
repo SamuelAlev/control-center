@@ -1,192 +1,193 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: מנועי ארגז חול
+description: מנועי ארגז החול, היכן הם מוחלים וכל אובייקט ערך שסביבת הריצה של ארגז החול משתמשת בו.
 slug: he-IL/מדריך-למשתמש/עזר/מנועי-ארגז-חול
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[האם הרצה עטופה בארגז חול תלויה במארח]
+`cc_server` בודק את המארח פעם אחת באתחול ועוטף את שיגור הסוכן בבקאנד המקורי כשהבדיקה מדווחת שאחד זמין ו-`--sandbox` אינו `off`. שני תפרי השיגור נעטפים: ה-CLI של Claude Code דרך יציאת ארגז החול, ו-ACP יחד עם כלי ה-`bash` של מנגנון ההרצה המובנה דרך מנהל ארגז החול.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+במקום שהבדיקה מדווחת שאין בקאנד — **ב-Windows תמיד**, וב-Linux או WSL2 בלי `bwrap` ו-`socat` — הרצות סוכן **אינן** עטופות בארגז חול. ACP וכלי ה-`bash` של מנגנון ההרצה עדיין נולדים עם חיטוי הסביבה; Claude Code עובר דרך `NoSandboxAdapter` ויורש את סביבת המארח. הגבולות שנותרו הם עץ העבודה הפרטי של ההרצה (בהעתקה בעת כתיבה במקום שבו `rift` נשלח; `git worktree` ב-Windows), פרטי גישה מגודרי-יכולת שמונפקים לכל הפעלה ומבוטלים בפירוק, מדיניות הפקודות לכל מצב, [מעקות הבטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) המאוחדות של הפעולות (כשל באופן סגור), חיטוי הסביבה במסלולי ACP ו-`bash` של מנגנון ההרצה, ומשטח הכלים שהמצב מתיר.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+כלי הקבצים בתהליך של מנגנון ההרצה (read, write, edit, apply patch, search, find, search_files) נמצאים מחוץ לארגז החול בכל מארח: הם רצים בתהליך השרת, ולכן רק `bash` נעטף.
 :::
 
-## Backend overview
+## סקירת הבקאנדים
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
+| בקאנד | ערך | פלטפורמה | זמינות |
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/he-IL/מדריך-למשתמש/מושגים/תחנות/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| VM מסוגר | `microvm` | macOS, Linux, Windows (היפרוויזר microVM) | מותנה בבדיקה של סביבת הריצה של microVM; חל על מסופים אינטראקטיביים — המעטפת רצה בתוך [תחנה](/he-IL/מדריך-למשתמש/מושגים/תחנות/), לא על המארח |
+| מקורי | `native` | macOS (Seatbelt), Linux ו-WSL2 (bubblewrap) | נבדק באתחול; Linux מסרב להרצה שדורשת דחיות כתיבה לפי תבניות גלוב של שמות קבצים, שאין ביכולתו של bubblewrap לאכוף |
+| ללא | `none` | הכול | ברירת המחדל של הפענוח, ברירת המחדל של המסוף והנסיגה כשאף בקאנד אינו זמין או כשמוגדר `--sandbox off` |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` מחזיר `none` עבור ערך שמור שהוא null או שאינו מזוהה. ערך שמור של `"docker"` ממופה ל-`native`.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/).
+**`microvm` הוא הבקאנד היחיד עם גבול קרנל** — עומס העבודה
+באמת אינו רץ על המארח. הוא לעולם אינו נסיגה שקטה לאף אחד
+מהכיוונים: בקשה מפורשת שלו במארח שאינו יכול להעלות VM נכשלת
+בקול רם ("ביקשתי VM וקיבלתי את הלפטופ שלי" היא ההידרדרות היחידה
+שהמתחם הסגור אינו יכול להרשות לעצמו), ורק *ברירת מחדל לא מצוינת* יורדת
+אל `native`, עם שורת יומן שאומרת זאת. הבקאנד בפועל של המושב מדווח
+חזרה ללקוח ומסומן בתג, כך שמסוף לעולם אינו יכול להצהיר שהוא מסוגר
+בעודו רץ על המארח. מחזור החיים, התמונות והיציאה של ה-VM עצמו
+מכוסים ב[מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**ב-Windows אין ארגז חול מקורי.** `NativeSandboxAdapter.probe` מחזיר `available: false` בכל מארח שאינו macOS או Linux/WSL2. לכן שיגור סוכן ב-Windows משתמש ב-`none`. הבקאנד `microvm` נפרד: הוא מותנה בבדיקה של סביבת הריצה של microVM וחל על מסופים אינטראקטיביים ועל תחנות, ולא על עטיפת `bash` במארח.
 
-## Probe results
+## תוצאות הבדיקה
 
-The probe is what gates enforcement. It runs once, at server boot.
+הבדיקה היא מה שמשער את האכיפה. היא רצה פעם אחת, באתחול השרת.
 
-| Host                                   | `available` | Note / hint                                                               |
+| מארח                                   | `available` | הערה / רמז                                                               |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — בידוד מרחבי שמות, בלי גבול קרנל       |
+| Linux או WSL2 עם `bwrap` ו-`socat` | `true`      | bubblewrap — בידוד מרחבי שמות, בלי גבול קרנל                      |
+| Linux או WSL2 שחסר בהם אחד מהכלים      | `false`     | `requiresInstall: true`, עם רמז התקנה שמציין את החבילות החסרות |
+| כל פלטפורמה אחרת                     | `false`     | ארגז חול מקורי אינו מוצע בפלטפורמה הזו                            |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+השרת רושם את התוצאה בשורת אתחול אחת: `agent sandbox ON` בתוספת ההערה, `no OS-native agent sandbox on this host` בתוספת הרמז, או `agent sandbox DISABLED by --sandbox off`. `GET /healthz` אינו נושא שדה של ארגז חול.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` מקבל `on` (ברירת מחדל) או `off`. זהו ביטול מכוון, לא הפעלה: `on` משמעו "עטוף כשהמארח מציע בקאנד", ולעולם לא "דרוש אחד".
 
-## Native backend
+## הבקאנד המקורי
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+משתמש במנגנון ארגז החול Seatbelt של Apple (אותה מערכת שמשמשת את macOS App Sandbox).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+הפרופיל שנוצר הוא **מתירני כברירת מחדל** (`(allow default)`) ומגלף ממנו דחיות, משום שפרופיל שדוחה הכול כברירת מחדל הופך מעטפת אינטראקטיבית לבלתי שמישה — יש יותר מדי קריאות dyld, XPC ו-Mach כדי למנות אותן. ההשלכה המעשית היא שסוכן עדיין יכול לקרוא את רוב המארח; הצ׳קאאוטים הרשומים שלכם מוגנים בדחיות כתיבה ושינוי-שם מפורשות, ולא בהיעדר נראות.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **קריאות ממערכת הקבצים**: נדחות עבור נתיבי הסודות (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` ושאר קבוצת דחיית הקריאה)
+- **כתיבה למערכת הקבצים**: מאופסת לדחייה, ואז היתרים מפורשים לתת-נתיבים, כשנתיבי הדחייה המחייבת (קובצי rc של המעטפת, `.git/hooks`, תצורת Claude, צ׳קאאוטים מוגנים) חסומים גם בתוך שורש שניתן לכתיבה. `file-write-unlink` נדחה בכל נתיב נדחה ובאבותיו, כך ששינוי שם אינו יכול לעקוף דחיית כתיבה
+- **תהליכים**: דחיות `process-exec` לקובצי ההרצה המסוכנים תמיד, בתוספת חסימה של הרצת כל דבר מספרייה הניתנת לכתיבה
+- **רשת**: מוגבלת לפורטי ה-proxy בתהליך בתוספת DNS — loopback אינו מותר באופן גורף ושקעי Unix אינם מותרים. ה-proxy-ים אוכפים את רשימת ההיתר של הדומיינים לכל מושב (ראו [יציאה לרשת](#יציאה-לרשת))
+- **תצורה**: הפרופילים נוצרים לכל הפעלה מתוך ה-`SandboxSpec`
 
-Requirements:
+דרישות:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), חלק מכל התקנת macOS — לא נדרשים כלים נוספים
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+משתמש ב-bubblewrap (`bwrap`) כדי ליצור מרחבי שמות של עיגון ו-PID.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **מערכת הקבצים**: יוצר מרחב שמות של עיגון שבו רק הנתיבים המעוגנים נראים
+- **רשת**: רץ במרחב שמות רשת לא משותף; התעבורה מגיעה ל-proxy-ים של המארח דרך גשרי שקעי Unix של `socat`
+- **תהליכים**: בידוד מרחב שמות של PID
 
-Requirements:
+דרישות:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- `bubblewrap` ו-`socat` מותקנים (`sudo apt-get install bubblewrap socat` ב-Debian/Ubuntu)
+- תמיכה במרחבי שמות של הקרנל (תקנית ב-Linux מודרני)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap יכול להסתיר נתיב קיים אבל אינו יכול לאסור קובץ `.env`,
+`*.key` או `*.pem` *חדש* בתוך עיגון שניתן לכתיבה. מדיניות השיגור
+התקנית דורשת את דחיות תבניות-הגלוב האלה של שמות קבצים, ולכן שיגור סוכן
+מקורי **נכשל באופן סגור ב-Linux/WSL2 גם כשהבדיקה מוצאת את bubblewrap**. הוא
+אינו רץ עם מדיניות חלשה יותר בשקט. בקאנד עם כללים לפי שם קובץ בזמן
+יצירה נדרש כדי להחזיר את השיגור המקורי ב-Linux. השבתת ארגז החול היא
+ביטול מכוון בלי הגבלה, ולא עקיפה שוות-ערך.
 
-## None backend
+## בקאנד `none`
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+בלי ארגז חול. התהליך רץ ישירות על המארח עם הגישה של המארח למערכת הקבצים, לרשת ולתהליכים. ACP וכלי ה-`bash` של מנגנון ההרצה עדיין מקבלים חיטוי הסביבה ואת מדיניות הפקודות; Claude Code דרך `NoSandboxAdapter` יורש את סביבת המארח. זה מה שאליו נופל שיגור סוכן במארח שאין בו בקאנד זמין או שיש בו `--sandbox off`, וזו ברירת המחדל של המסוף כשלקוח אינו מציין דבר.
 
-## Server-hosted terminal
+## מסוף מתארח בשרת
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+המסוף עטוף בארגז חול בתנאים שלו עצמו, ולא בידי בדיקת השיגור. `defaultBackend` של `TerminalSessionService` הוא `none` ו-`cc_server` אינו עוקף אותו, ולכן מושב מסוף מריץ את מעטפת המארח אלא אם הלקוח מבקש `native` במפורש — פאנל המסוף של שולחן העבודה אינו עושה זאת.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+כשמבקשים `native`, המעטפת נעטפת דרך `SandboxManager` תחת פרופיל מסוף קבוע: `$HOME` וספריית העבודה של המושב ניתנים לכתיבה, הרשת פתוחה, והקריאה מ-`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ו-`~/Library/Keychains` נדחית. גידור יכולות אינו חל — זה עניין של שיגור. אם העטיפה אינה נתמכת, המושב נכשל במקום להציג תג מקורי על PTY של מעטפת המארח.
 
-## Network egress
+## יציאה לרשת
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+כשארגז חול מופעל, הגישה היוצאת לרשת נאכפת בידי proxy-ים בתהליך, ולא בכללי חומת אש של הקרנל. במארח שאין בו בקאנד זמין שום דבר מזה אינו חל, ותהליך בן מגיע לרשת בדיוק כפי שמשתמש השרת היה מגיע.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- סביבת הריצה של ארגז החול מריצה proxy של HTTP/HTTPS ו-proxy של SOCKS5 על `127.0.0.1` בתוך תהליך ה-`cc_server`, **זוג אחד לכל מושב מוגבל** (`http_proxy.dart`, `socks_proxy.dart`). הרצות במקביל אינן חולקות זוג.
+- תהליכים בארגז חול מקבלים משתני סביבה של proxy (`HTTP_PROXY`/`HTTPS_PROXY` → ה-proxy של HTTP, `ALL_PROXY` → ה-proxy של SOCKS; `GIT_SSH_COMMAND` מנתב git-over-SSH דרך ה-proxy של SOCKS). ב-Linux מרחב השמות של הרשת אינו משותף, ולכן ה-proxy-ים הם הדרך היחידה החוצה; ב-macOS ארגז החול חולק את ה-loopback של המארח ומדבר איתם ישירות.
+- מארח היעד של כל חיבור נבדק מול רשימת ההיתר של הדומיינים של המושב; כל דבר אחר נדחה. שתי צורות של תווים כלליים, כל אחת עם `*` אחד בדיוק: `*.example.com` מוביל תואם כל תת־דומיין (כולל `a.b.example.com`) אבל לא את השורש עצמו; `bedrock.*.amazonaws.com` עם תווית אמצעית תואם תווית אחת בדיוק (`bedrock.us-east-1.amazonaws.com`, לא `bedrock.evil.attacker.amazonaws.com`).
+- רשימת ההיתר נפתרת לכל מושב מתוך קו הבסיס הנבחר (`kBaselineAllowedDomains`: ספקי LLM, אחסון Git, מרשמי חבילות), בתוספת דומייני GitHub כשלסוכן יש יכולות GitHub או דחיפה, בתוספת `SandboxSpec.egressAllowlist`. הפותר מקבל גם דומייני ספק כרטיסים כשהסוכן יכול לקרוא לכרטוס, אבל מסלול השיגור לעולם אינו מעביר את הרשימה הזו (או רשומות נוספות של `egressAllowlist`), ולכן בפועל כל הרצה מקבלת את קו הבסיס בתוספת דומייני ה-GitHub שיכולותיה מקנות לה.
+- רשימת דחייה קבועה (`kBaselineDeniedDomains`: נקודות קצה של מטא-נתוני ענן, משקעי טלמטריה) גוברת על כל ההיתרים.
+- `networkEnabled: false` (או סוכן בלי יכולת הרשת) עדיין מפעיל את ה-proxy-ים של המושב, אבל רשימת ההיתר ריקה ולכן כל חיבור יוצא נדחה.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+המפרט שמועבר אל `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| שדה             | סוג                                        | תיאור                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId`       | `String`                                    | מזהה מושב יציב (בדרך כלל מזהה המרחב)                                                                                          |
+| `workspaceId`     | `String`                                    | מזהה סביבת העבודה הבעלים                                                                                                                         |
+| `agentId`         | `String?`                                   | הסוכן המשויך כרגע לארגז החול, אם יש כזה                                                                                                |
+| `bindMounts`      | `List<SandboxBindMount>`                    | עיגונים ממארח לאורח; ארגז החול רואה רק את נתיבי המארח הרשומים כאן                                                                         |
+| `networkEnabled`  | `bool` (ברירת מחדל `true`)                     | משולב עם יכולת הרשת של הסוכן. כשהוא כבוי, ה-proxy-ים של המושב עדיין עולים אבל רשימת ההיתר ריקה ולכן כל חיבור יוצא נדחה |
+| `egressAllowlist` | `List<String>` (ברירת מחדל `[]`)               | דומייני יציאה מותרים נוספים; תווים כלליים נתמכים (`*.example.com`, בתוספת צורה עם תווית אמצעית אחת). השיגור לעולם אינו מאכלס את זה, ולכן הרצה עטופה מקבלת את קו הבסיס הנבחר בתוספת דומייני GitHub שיכולותיה מקנות לה |
+| `guestWorkdir`    | `String?`                                   | ספריית העבודה כברירת מחדל בתוך ארגז החול; קריאות `exec` בודדות יכולות לעקוף אותה                                                       |
+| `mode`            | `Mode` (ברירת מחדל `chat`)                     | מגלף את כללי הכתיבה במערכת הקבצים: `chat` משאיר את עיגוני ה-bind ניתנים לכתיבה; `review`, `plan` ו-`orchestrate` הם לקריאה בלבד                      |
+| `capabilities`    | `AgentCapabilities` (ברירת מחדל `safeDefault`) | גוזר את ההחלטה על הדלקת או כיבוי הרשת ואת דומייני היציאה של GitHub. דומייני כרטוס הם ארגומנט של הפותר שמסלול השיגור לעולם אינו מספק |
+| `protectedPaths`  | `List<String>` (ברירת מחדל `[]`)               | נתיבי מארח שאסור שלעולם יהיו ניתנים לכתיבה בתוך ארגז החול, בכל מצב                                                                      |
+| `runnerStateDirs` | `List<String>` (ברירת מחדל `[]`)               | ספריות מארח שהראנר שומר בהן את המצב של עצמו, ניתנות לכתיבה בכל מצב (`CLAUDE_CONFIG_DIR` בניהול Control Center היא זו שבתוקף) |
+| `execGrantRoots`  | `List<String>` (ברירת מחדל `[]`)               | עצי ספריות שאושרו בידי מפעיל ופותחים מחדש את חסימת ה-exec של ספרייה הניתנת לכתיבה ב-macOS. Linux מתעלם מהם — ל-bwrap אין חסימת exec של `$HOME` לפתוח מחדש |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` מחזיק את הצ׳קאאוטים המקוריים של המאגרים הרשומים, הנפתרים לכל שיגור מתוך המאגרים של סביבת העבודה. סוכנים עובדים אך ורק בעצי עבודה בהעתקה בעת כתיבה לכל שיחה, ולכן המקוריים אסור שלעולם יהיו ניתנים לכתיבה מתוך ארגז החול — ב-macOS, היתר הכתיבה הגורף של Seatbelt ל-`$HOME` היה אחרת משאיר אותם ניתנים לכתיבה דרך `bash`. הם מצטרפים לקבוצת דחיית הכתיבה של הסודות בכל מצב, כולל `chat`.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+כל נתיב של דחיית קריאה ושל דחיית כתיבה נפלט גם בצורתו המילולית וגם בצורתו המפוענחת-סימבולית. הקרנל מתאים כלל דחייה לנתיב המפוענח, ולכן כלל שנכתב כנגד נתיב עם קישור סימבולי לעולם אינו פועל — וב-macOS זה המקרה השכיח ולא החריג, משום ש-`/tmp` נפתר ל-`/private/tmp` ו-`/var/folders/…` ל-`/private/var/folders/…`. רשומות שמכילות `*` או `?` מטופלות כגלובים ונשארות כפי שהן; נתיב שאינו נפתר נשמר כפי שנכתב.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| שדה       | סוג                     | תיאור                                                                                             |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | נתיב מוחלט במארח                                                                               |
+| `guestPath` | `String`                 | נתיב בתוך ארגז החול (בארגז החול המקורי הוא שווה ל-`hostPath`; נשמר לסימטריה של המתאם) |
+| `readOnly`  | `bool` (ברירת מחדל `false`) | עיגון לקריאה בלבד כשהוא true                                                                               |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+מוחזר בידי `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| שדה       | סוג                   | תיאור                                                              |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | מזהה מושב                                                       |
+| `backend`   | `SandboxBackend`       | איזה בקאנד רץ                                                 |
+| `state`     | `SandboxState`         | מצב מחזור החיים                                                          |
+| `error`     | `Object?`              | מוגדר כאשר `state` הוא `error`                                              |
+| `details`   | `Map<String, Object?>` | רישום פנימי של המתאם (ספריית עבודה, PID, נתיב פרופיל וכו') |
 
 ### SandboxState
 
-| State       | Description                                 |
+| מצב       | תיאור                                 |
 | ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| `created`   | המפרט נוצר אבל ה-VM טרם עלה |
+| `warm`      | רץ ומוכן להריץ פקודות          |
+| `active`    | מריץ פקודה כעת               |
+| `suspended` | מושהה / נשמר כנקודת ביקורת לדיסק כדי לחסוך בזיכרון   |
+| `destroyed` | מפורק; הידית אינה תקפה עוד    |
+| `error`     | ההפעלה נכשלה — ראו `SandboxHandle.error`   |
 
-## Sandbox events
+## אירועי ארגז חול
 
-| Event type  | Description                                                  |
+| סוג אירוע  | תיאור                                                  |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout`    | פלט תקני מארגז החול                             |
+| `stderr`    | שגיאה תקנית מארגז החול                              |
+| `exit`      | תהליך ארגז החול הסתיים (נושא `exitCode`)                  |
+| `starting`  | ארגז החול מתחיל לעלות                                       |
+| `ready`     | ארגז החול מוכן לקבל קריאות exec                        |
+| `killed`    | התהליך נהרג בידי המארח (OOM, פסק זמן, עצירה ידנית)       |
+| `violation` | מדיניות של ארגז חול הופרה (נושא `SandboxViolation`) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| שדה                 | סוג      | תיאור                                                                |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | הפועל הנדחה (למשל `file-read*`, `network-outbound`)                    |
+| `target`              | `String`  | נתיב או מארח שהיו היעד של הפעולה הנדחית                   |
+| `suggestedCapability` | `String?` | דגל היכולת שהיה מתיר את הפעולה הזו (למשל `canCallGitHubApi`) |
+| `raw`                 | `String?` | שורת יומן גולמית, שימושית לניפוי באגים                                         |
 
-## See also
+## ראו גם
 
-- [Sandbox security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
-- [Sandbox policies](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
-- [cc_server CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/): the `--sandbox` flag
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [הגדרת מדיניות ארגז חול](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/)
+- [CLI של cc_server](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/): הדגל `--sandbox`

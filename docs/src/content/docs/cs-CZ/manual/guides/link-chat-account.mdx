@@ -1,95 +1,95 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Propojte účet Slack
+description: Dokaž, že identita ve Slacku patří tobě, aby agenti podle tvých zpráv jednali a práce se připisovala tobě.
 slug: cs-CZ/prirucka/navody/propojeni-chatoveho-uctu
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Tenhle návod ukazuje, jak propojit chatovou identitu s uživatelem Control Center a jak ji odpojit.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Každý člen to udělá jednou u každého poskytovatele chatu. Od připojení aplikace je to oddělené: připojení zpřístupní bota celému pracovnímu prostoru, propojení v něm rozpozná _tebe_.
 
-## Why linking is required
+## Proč je propojení nutné
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Most odmítne jednat za chatový účet, který nedokáže přiřadit členovi pracovního prostoru. Je to záměr — bez propojení by se každá zpráva ze Slacku musela připsat tomu, kdo aplikaci nainstaloval, a auditní záznam, limity četnosti na principála i nahlašovatelé ticketů by všichni jmenovali špatnou osobu.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Nepropojený člen, který bota zmíní, dostane v tom vlákně Slacku odpověď s návodem, jak se propojit. Nic se neodešle.
 
-## Link with a code
+## Propojení kódem
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Jdi do **Nastavení → Pracovní prostor → Profil a identita** a sjeď ke kartě **Propojené účty chatu**
+2. V bloku Slack klikni na **Propojit můj účet Slack**
+3. Zkopíruj příkaz, který ukáže, například:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Ve Slacku ten příkaz pošli botovi — nejjednodušší je přímá zpráva
+5. Bot potvrdí uživatele Control Center, se kterým jsi teď propojený, a dialog, který máš pořád otevřený, se ve stejnou chvíli aktualizuje — nemusíš ho zavírat a jít se podívat
 
-The code:
+Kód:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Je jednorázový a vyprší **15 minut** po vystavení
+- Vystavuje se vždy pro _tebe_, nikdy pro kolegu
+- Nahradí kód, který už držíš, takže další stisk tlačítka ten předchozí zneplatní
+- Zůstává jen v paměti, takže restart serveru zneplatní nevyužité kódy — stiskni tlačítko znovu
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Kód, který je neznámý, prošlý nebo vystavený pro jiný pracovní prostor, selže pokaždé stejně a příčina se nedá rozlišit: „that code is not valid (or has expired)“.
 
-## Automatic linking by email
+## Automatické propojení podle e-mailu
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Když tvůj profil ve Slacku nese ověřený e-mail shodný s uživatelem Control Center, který je **už členem tohoto pracovního prostoru**, most tě propojí, jakmile s ním poprvé promluvíš. Kód není potřeba.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Obě poloviny jsou důležité: shoda e-mailu dokazuje identitu, přístup ale dává jen členství, takže cizí člověk, jehož e-mail na serveru náhodou existuje, se nepropojí s ničím. Seznam ukazuje, jak každé propojení vzniklo („spárováno podle e-mailu“ nebo „propojeno kódem“).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Automatické propojení potřebuje scope `users:read.email`. Bez něj Slack adresu neprozradí a jedinou cestou zůstane kód.
 
-## See who is linked
+## Kdo je propojený
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Seznam patří ke správě pracovního prostoru, takže leží na druhé polovině té
+plochy: **Nastavení → Pracovní prostor → Obecné → Mosty chatu → Propojené účty**.
+Vypíše každého propojeného člena pracovního prostoru, účet Slack, na který se
+každý mapuje, a jak propojení vzniklo.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Vlastní stav máš na stránce profilu: řádek **Propojit můj účet Slack** po
+propojení hlásí „Propojeno s _your-slack-id_“ a dokud propojení nemáš, vyzve
+tě, ať se propojíš.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Seznam je živý odběr, protože změna nastane na druhé straně — kód píšeš ve
+Slacku, takže žádný požadavek z aplikace nemůže odpověď přinést zpátky.
 
-## Unlink
+## Odpojení
 
-Click **Unlink** on a row in the workspace roster.
+Na řádku v seznamu pracovního prostoru klikni na **Odpojit**.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Každý se může odpojit sám
+- Jiného člena může odpojit jen admin
+- Odpojení taky zneplatní každý nevyužitý propojovací kód toho člena
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Po odpojení už ten účet Slack nemůže řídit agenty, dokud se znovu nepropojí. Existující prostory, přepisy a tickety si ponechají původní přisouzení — odpojení není zpětvzetí minulé práce.
 
-## Troubleshooting
+## Řešení problémů
 
-### The bot says I am not a member of this workspace
+### Bot říká, že nejsem členem tohoto pracovního prostoru
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/).
+Tvůj účet Slack je propojený s uživatelem Control Center, ten uživatel ale v tomhle pracovním prostoru členství nemá. Požádej admina o pozvánku; viz [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/).
 
-### The bot says my role is read-only
+### Bot říká, že moje role je jen ke čtení
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Role `viewer` a `guest` nemůžou začít práci. Admin ti musí roli zvýšit na `member` nebo výš.
 
-### The slash command is not recognized
+### Slash příkaz se nerozpoznal
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Zkontroluj, že slash příkaz ve Slacku existuje a že posíláš příkaz, který ukázal dialog v nastavení — admin ho mohl přejmenovat a dialog pak ukazuje aktuální název.
 
-## Related guides
+## Související návody
 
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
-- [Customize the chat bot](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
-- [Chat bridge](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
+- [Chatový most](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
 
-## Related concepts
+## Související koncepty
 
-- [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/)
-- [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/)
+- [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/)
+- [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/)

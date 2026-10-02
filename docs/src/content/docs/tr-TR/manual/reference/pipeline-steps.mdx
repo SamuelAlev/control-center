@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Pipeline adımları
+description: Pipeline adım türleri, adım gövdesi anahtarları, bunların yapılandırması ve adım sonuçları için referans.
 slug: tr-TR/kilavuz/referans/pipeline-adimlari
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Bir pipeline adımının birbirinden bağımsız iki ekseni vardır:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Tür** (`StepKind`) — motorun adımı tetikleyicilerine göre _nasıl zamanladığı_.
+- **Gövde anahtarı** (`BuiltInBodyKeys`) — adımın işini hangi kayıtlı gövde closure’ının _yürüttüğü_.
 
-## Step kinds
+## Adım türleri
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+`packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart` içinde tanımlıdır.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| Tür        | Zamanlama semantiği                                                                                                                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | Zorunlu giriş noktası — şablon başına tam olarak bir tane, her zaman ilk düğüm. Kendi başına hiçbir iş yapmaz; çalıştırmayı neyin başlattığı (elle / olay / zamanlama) ayrıca `PipelineTrigger` satırları olarak izlenir. Gövdesi etkisiz `pipeline.trigger`’dır. |
+| `listen`   | Tüm kaynak adımlar (`StepTrigger.sourceStepIds` içindekiler) tamamlandığında tetiklenir.                                                                                                                                                 |
+| `join`     | `waitForStepIds` içindeki tüm adımlar terminal duruma ulaştığında tetiklenir.                                                                                                                                                            |
+| `router`   | Koşullu dallanma — gövde `StepResult.route(key)` döndürür; bu yalnızca `routeKey`’i eşleşen alt kenarı tetikler, seçilmeyen dallar atlanmış olarak işaretlenir.                                                                          |
+| `forEach`  | `listen` gibi zamanlanır (tüm `sourceStepIds` tamamlandığında tetiklenir). Yinelemeyi yapan, kayıtlı `flow.forEach` gövdesidir; motor her öğe için bir alt adım üretmez.                                                                  |
+| `terminal` | Gövdesi olmayan zamanlayıcı nöbetçisi. Pipeline çalıştırması, bir terminal adım bittiğinde tamamlanır.                                                                                                                                     |
 
-## Step bodies
+## Adım gövdeleri
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+`BuiltInBodyKeys` içindeki sabitlerle anahtarlanan kayıtlı gövde closure’ları (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). 25 tanedir ve tümü aşağıda listelenmiştir. Aksi belirtilmedikçe yapılandırma, adımın `PipelineNodeConfig` öğesinden okunur (aşağıya bakın); “durum anahtarları” yürütme sırasında pipeline durumundan / tetikleyici yükünden okunur.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+`bodyKey`’i kayıtlı olmayan bir adım, şablon yüklenirken bir uyarı üretir ve ardından hiç çalışmaz — çalıştırmayı başarısız kılmaz. `trigger` ve `terminal` adımları bu uyarıdan muaftır: tetikleyici yine de etkisiz `pipeline.trigger` gövdesini çalıştırır; bir `terminal` adımının gövdesi yoktur.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Zorunlu `trigger` düğümünün etkisiz gövdesi — hemen tamamlanır, böylece motor alt dinleyicilere dağılır. Yapılandırma yoktur.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Ajansız kabuk adımı (`bash -c`). Betikteki `{{key}}` yer tutucuları, durum + tetikleyici yükünden kabuk için kaçışlanmış değerlerle değiştirilir.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Yapılandırma alanı | Açıklama                                      |
+| ------------------ | --------------------------------------------- |
+| `script`           | Yürütülecek kabuk komutu (zorunlu)            |
+| `outputKey`        | 0 çıkışında kırpılmış stdout’u alan durum anahtarı |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+`cwd` `<cc_root>/pipelines/<pipelineRunId>/` (bir çalıştırmadaki tüm bash adımları tarafından paylaşılır) ve ortamda `GITHUB_TOKEN` ile çalışır. Ayrıca `<stepId>_runDir` değerini duruma yazar. Sıfırdan farklı çıkış, adımı stderr çıktısının sonuyla başarısız kılar.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Genel istem ve gönderim düğümü: istemi işler, ajanı bir konuşmaya gönderir ve çalıştırma bitene kadar askıya alır. Ajanın `submit_output` yükü, `outputKey` altında duruma toplanır.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Yapılandırma alanı       | Açıklama                                                  |
+| ------------------------ | --------------------------------------------------------- |
+| `agentId`                | Gönderilecek çalışma alanına özel ajan UUID’si (zorunlu)  |
+| `prompt`                 | Yönerge metni; `{{key}}` yer tutucu değişimini destekler (zorunlu) |
+| `outputKey`              | Toplanan çıktı için durum anahtarı                        |
+| `outputSchema`           | Çıktının karşılaması gereken JSON Schema                  |
+| `label`                  | Tuvalde gösterilen insan okunur etiket                    |
+| `extras.spaceId`         | İçinde çalışılacak mevcut konuşma (varsayılan: gizli bir konuşma) |
+| `extras.conversationTitle` | O alan içindeki adlandırılmış akış (isteğe bağlı)       |
+| `extras.mode`            | Burada değil, odayı *açan* düğümde (`messaging.createSpace`) okunur. Varsayılan `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Router gövdesi — `config.extras` okur, bir koşulu değerlendirir ve `StepResult.route(key)` döndürür. Koşullar JavaScript ifadeleri **değildir**; öncelik sırasına göre üç yazım biçimi desteklenir:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Koşul ağacı** (`extras.predicate`) — `"true"` / `"false"` olarak yönlendiren mantıksal bir ağaç. Her düğüm, bir `type` içeren bir haritadır:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — listelenen yollardan herhangi biri diskte varsa true; `negate` bunu tersine çevirir; `recursive` alt dizinlerde de arar (`.git`, `node_modules`, `build`, `.dart_tool` atlanarak). Göreli yollar `state[baseKey]` (varsayılan `repo_local_path`) değerine göre çözümlenir; yoksa çalıştırma başına çalışma alanı dizinine göre.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operatörler: `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; dosya sistemini değil, pipeline durumunu okur.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — mantıksal gruplar.
+  - `{"type": "not", "of": <predicate>}` — değilleme.
+- **Seçim** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; durum değerinin büyük/küçük harf ayrımı gözetmeksizin içerdiği ilk seçeneğe, aksi halde `default`’a yönlendirir.
+- **Karşılaştırma** (eski tarz üst düzey `extras.left` / `extras.op` / `extras.right`) — bir `comparison` koşuluna eşdeğerdir; ağaçtan önce yazılmış şablonlar için korunmuştur.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Düğümden çıkan kenarlar, döndürülen anahtarla eşleşmesi gereken bir `routeKey` taşır.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Birleştirilmiş bulguları GitHub PR istemcisi üzerinden bir PR inceleme yorumu olarak yayımlar.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Durum anahtarı           | Açıklama                                     |
+| ------------------------ | -------------------------------------------- |
+| `repo_full_name`         | `owner/repo` (zorunlu)                       |
+| `pr_number`              | PR numarası — int veya sayısal dize (zorunlu) |
+| `consolidated_findings`  | Yorum gövdesi (zorunlu)                      |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Durumda `comment_review_id` ve `commented_at` ile `StepResult.terminal` döndürür.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+`MessagingPort` üzerinden bir mesajlaşma alanına mesaj gönderir.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Durum anahtarı | Açıklama                                        |
+| -------------- | ----------------------------------------------- |
+| `space_id`     | Hedef alan (zorunlu)                            |
+| `content`      | Mesaj gövdesi, durumdan olduğu gibi okunur (zorunlu) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Duruma `posted_space_id` ve `posted_at` yazar.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Tek bir ajan yerine bütün bir ekibi gönderir, sonra üyelerin çalıştırmaları bitene kadar askıya alır.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Yapılandırma alanı                         | Açıklama                                                                                            |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `teamId`                                   | Gönderilecek çalışma alanına özel ekip (zorunlu; `agentId` ile birbirini dışlar)                     |
+| `prompt`                                   | Hedef metni; `{{key}}` yer tutucu değişimini destekler (zorunlu)                                     |
+| `dispatchMode`                             | `allParallel` (varsayılan — üye başına bir görev) veya `manager` (yalnızca lideri eşgüdüm için gönder) |
+| `outputKey`                                | Toplanan üye çıktıları için durum anahtarı                                                          |
+| `outputSchema`, `label`, `extras.spaceId`  | `conversation.promptAgent` ile aynı                                                                 |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Onay kapısı. Onaylayan ajanı, kapı istemi ve bir `{decision, reason}` çıktı sözleşmesiyle bir konuşmaya (inceleme modu) gönderir, sonra onaylayan `submit_output` ile gönderene kadar askıya alır.
 
-| Config field                | Description                                                                    |
+| Yapılandırma alanı          | Açıklama                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | Onaylayan ajan (zorunlu)                                                       |
+| `prompt`                    | Kapı istemi (isteğe bağlı; yoksa bir varsayılan kullanılır)                    |
+| `outputKey`                 | Toplanan `{decision, reason}` yükü için durum anahtarı                          |
+| `outputSchema`              | Varsayılan olarak bir onay şeması (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId`   | `conversation.promptAgent` ile aynı                                            |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Kapı yalnızca `submit_output` üzerinden çözümlenir. `BuiltInBodyKeys.humanGate`, düğüm türü kitaplığı ve bir yerleşik şablonun istem metni, `approve_step` ve `reject_step` MCP araçlarını adlandırır; **bu araçların ikisi de** hiçbir paket veya kayıt defterinde yoktur.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Bayat yalıtılmış çalışma ağaçlarını kaldırır; modunu tetikleyici yükünden seçer. Çalıştırmanın `dryRun` bayrağına uyar.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Durum anahtarı                 | Açıklama                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | O biletin çalışma ağaçlarını serbest bırakır                                          |
+| `repo_full_name` + `pr_number` | Geçici PR düzenleyici çalışma ağacını serbest bırakır                                 |
+| `space_id`                     | O konuşmanın çalışma ağaçlarını ve klasörünü yıkar                                    |
+| (yukarıdakilerden hiçbiri)     | Çalışma alanını süpürür: kaybolmuş dizinler, ölü alanlar, sahipsiz konuşma klasörleri |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (isteğe bağlı) bir özet dizesi alır.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Bir durum koleksiyonu üzerinde eşleme / dağıtım: istemi her öğe için bir kez işler, sonra ajanı bu istemler birleştirilmiş olarak (`---` ayırıcılarıyla) **bir kez** gönderir ve o çalıştırma bitene kadar askıya alır. Boş bir koleksiyon hemen boş bir listeyle tamamlanır. Bu, öğe başına bir paralel gönderim değildir.
 
-| Config field         | Description                                                     |
+| Yapılandırma alanı   | Açıklama                                                        |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Öğe başına gönderilecek ajan (zorunlu)                          |
+| `prompt`             | Öğe başına istem; `{{key}}` yer tutucu değişimini destekler (zorunlu) |
+| `extras.iterableKey` | Koleksiyonu tutan durum anahtarı (zorunlu)                      |
+| `extras.itemKey`     | Geçerli öğenin istemde bağlandığı anahtar (varsayılan `item`)   |
+| `outputKey`          | Toplanan çıktı için durum anahtarı (liste değil, tek gönderim)  |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Başka bir pipeline şablonunu iç içe bir alt adım olarak çalıştırır (alt pipeline, `parentPipelineRunId` ayarlanmış bir alt çalıştırma olarak çalışır). Adım, alt çalıştırma terminal duruma ulaşana kadar askıya alınır, ardından alt çalıştırmanın son durumu `outputKey` altında birleştirilir.
 
-| Config field        | Description                                                     |
+| Yapılandırma alanı  | Açıklama                                                        |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | Çalıştırılacak alt şablon (zorunlu; bir pipeline kendini çağıramaz) |
+| `inputKeys`         | Alt çalıştırmanın tetikleyici yüküne kopyalanan durum anahtarları |
+| `outputKey`         | Alt çalıştırmanın birleştirilmiş son durumu için durum anahtarı |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Arka planda tree-sitter dizinleme: bir depoyu dolaşır, sembolleri/kenarları worker isolate’larında çıkarır ve bunları çalışma alanının kod grafiğine alır. İlerlemeyi adım çalıştırma satırına akıtır; kuru çalıştırmayı destekler. Tree-sitter ve dil bilgileri gerekli yerel bileşenlerdir — eksik bir dylib, sunucunun hiç açılmadığı anlamına gelir ve çalıştırma ortasında çözülemeyen bir dil bilgisi, adımı atlamak yerine başarısız kılar.
 
-| State key         | Description                           |
+| Durum anahtarı    | Açıklama                              |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Dizinlenecek depo (zorunlu)           |
+| `repo_local_path` | Checkout’un yerel yolu (zorunlu)      |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Çevrimdışı konuşmacı diyarizasyonu. Toplantının saklanan sesini okur, konuşmacılara kümelendirir (`Person 1`, `Person 2`, …), transkript bölümlerini yeniden etiketler ve `transcript` durumunu yeniden yazar; ayrıca paralel `meeting.updateTranscript` adımı için `diarization_spans` üretir. Hiç ses saklanmadıysa veya modeller kurulu değilse transkripti değiştirmeden geçirir.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Durum anahtarı | Açıklama                      |
+| -------------- | ----------------------------- |
+| `meeting_id`   | Diyarize edilecek toplantı (zorunlu) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Toplantı özetini kalıcı hâle getiren deterministik gövdeler. Her biri, durumdan `meeting_id` ile ajan adımının yapılandırılmış `meeting_outcome` yükünü (`{summary, enhancedNotes, actionItems[], decisions[]}`) okur ve kendi bölümünü kendi tablosuna yazar — notlar, eylem öğeleri veya kararlar. Kusurlu bir çalıştırmada daha önce kaydedilmiş satırlar asla silinmez.
 
-### Other built-in bodies
+### Diğer yerleşik gövdeler
 
-| Body key                           | Description                                                                                                                                                                              |
+| Gövde anahtarı                     | Açıklama                                                                                                                                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Toplantılar arası konuşmacı tanıma: diyarize edilmiş konuşmacıları kayıtlı ses profilleriyle eşleştirir ve güvenilir eşleşmeleri otomatik uygular. Profiller/gömlemler yoksa etkisizdir. |
+| `meeting.updateTranscript`         | `diarization_spans` içindeki `Person N` etiketlerini uygular ve pencere başına parçaları konuşmacı başına turlarda birleştirir, ardından temizlenmiş transkripti kalıcı hâle getirir. Diyarizasyon hiçbir şey üretmediğinde etkisizdir. |
+| `meeting.assemblePlayback`         | Toplantının karışık oynatma parçasını, saklanan kanal başına WAV’lerden oluşturur. Hiç ses saklanmadığında etkisizdir.                                                                  |
+| `orchestration.markPhase`          | İş DAG’ının sonunda, çıktısı olmayan alt biletler için başarısızlık nöbetçileri yazar ve orkestrasyonu `synthesizing` durumuna geçirir.                                                   |
+| `orchestration.persistDeliverable` | Sentez çıktısını üst bilete yazar, onu tamamlar, teslimatı yayımlar ve orkestrasyonu `completed` olarak işaretler.                                                                       |
+| `orchestration.awaitApproval`      | Kısmi onay kapısı: adımın düğüm anahtarı orkestrasyonun onaylanmış kümesindeyse hemen tamamlanır; aksi halde sonraki bir onay onu sürdürene kadar askıya alınır. `extras.awaitApproval` ayarını yapan tek gövde budur; bu ayar, onu 24 saatlik askıya alınmış adım zaman aşımından muaf tutar. |
+| `messaging.createSpace`            | Şablonun geri kalanının içinde çalıştığı konuşmayı açar; bu konuşma, adımın `outputKey`’i altında yayımlanır (yerleşikler `pipeline_space_id` kullanır). Boş bir `repoIds` listesi hiçbir şeyi checkout etmez; `extras['allRepos']` tüm çalışma alanı depolarını checkout eder. `extras['createConversation']` (varsayılan olarak kapalı) ayrıca adlandırılmış bir akış açar. Bir ajan adımı bir odaya KATILIR ve asla bir oda açmaz; bu yüzden bu düğüm olmadan yapılan bir dağıtım, gönderim sırasında başarısız olur — ve bunu bir kez bağlamak, her birine bir tane sağlamak yerine tüm dağıtımın tek bir checkout paylaşması anlamına gelir. |
+| `prReview.finalize`                | PR inceleme şablonunun son adımı: biriken inceleme düğümlerini uzlaşma gruplarına ayırır ve PR başına kararı hesaplar.                                                                   |
+| `skills.analyze`                   | Bir çalışma alanında kurulu beceriler üzerinde beceri tedarik zinciri taramasını çalıştırır ve her kararı kaydeder.                                                                      |
 
-## Step results
+## Adım sonuçları
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Bir adım gövdesi bir `StepResult` döndürür (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). `failed` hariç tüm fabrikalar, pipeline durumuna birleştirilen isteğe bağlı bir `mutatedState` haritası kabul eder.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Fabrika                     | İmza                                                            | Açıklama                                                                  |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal tamamlanma; alt dinleyiciler değerlendirilir                       |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router tamamlanması; `routeKey`’i eşleşen alt dalı seçer                  |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Belirli bir alan olayı türü tetiklenene kadar duraklatır                  |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Listelenen tüm görevler terminal duruma ulaşana kadar duraklatır          |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Pipeline çalıştırması bitti — başka adım yok                              |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Adım bir hata mesajıyla başarısız oldu                                    |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Başarısız olan bir düğüm gövdesi için yeniden deneme davranışı (`PipelineNodeConfig.retryPolicy`; null yeniden denemeleri devre dışı bırakır).
 
-| Field            | Type     | Description                                                                    |
+| Alan             | Tür      | Açıklama                                                                       |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | İlk deneme dahil toplam deneme sayısı (3 = 1 deneme + 2 yeniden deneme); ≥ 1 olmalıdır |
+| `backoff`        | `String` | `linear` veya `exponential` (varsayılan)                                       |
+| `initialDelayMs` | `int`    | İlk yeniden denemeden önceki gecikme, milisaniye cinsinden; sonraki gecikmeler `backoff`’a göre artar |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Adım tanımının içinde taşınan düğüm başına yapılandırma (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Hem yerleşik hem de özel düğümler bu biçimi paylaşır; her gövde yalnızca ilgilendiği alanları okur.
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| Alan             | Tür                     | Açıklama                                                                                                                                                              |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`         | `String?`               | `{{key}}` yer tutucu değişimli istem şablonu                                                                                                                          |
+| `script`         | `String?`               | `{{key}}` yer tutucu değişimli bash betik gövdesi                                                                                                                     |
+| `agentId`        | `String?`               | Gönderilecek çalışma alanına özel ajan UUID’si                                                                                                                        |
+| `inputKeys`      | `List<String>`          | Bu düğümün girdi olarak tükettiği durum anahtarları                                                                                                                   |
+| `repoIds`        | `List<String>`          | `messaging.createSpace` düğümünün checkout ettiği depolar (`<repoId>` veya `<repoId>@<branch>`). Boş = hiçbiri; `extras['allRepos']` = tüm çalışma alanı depoları. Ajan adımlarında yok sayılır. |
+| `outputKey`      | `String?`               | Bu düğümün çıktısının yazıldığı durum anahtarı                                                                                                                        |
+| `label`          | `String?`               | Tuvalde gösterilen insan okunur etiket (varsayılan: adım kimliği)                                                                                                     |
+| `outputSchema`   | `Map<String, dynamic>?` | Çıktı değerinin karşılaması gereken JSON Schema (alt küme)                                                                                                            |
+| `reducer`        | `String?`               | Paralel dallar aynı `outputKey`’e yazdığında birleştirme stratejisi: `append`, `mergeLists`, `mergeMaps`, `sum` veya `override` (varsayılan)                          |
+| `retryPolicy`    | `StepRetryPolicy?`      | Gövde başarısız olduğunda yeniden deneme politikası; null = tek deneme                                                                                                |
+| `continueOnFail` | `bool`                  | True olduğunda terminal bir başarısızlık çalıştırmayı başarısız kılmaz; hata `state['_stepErrors'][stepId]` altında saklanır                                          |
+| `timeoutMs`      | `int?`                  | Düğüm gövdesi için milisaniye cinsinden duvar saati zaman aşımı; null = zaman aşımı yok                                                                               |
+| `teamId`         | `String?`               | Gönderilecek ekip (`team.dispatch` düğümleri); `agentId` ile birbirini dışlar                                                                                         |
+| `dispatchMode`   | `String?`               | Ekip yürütme modu: `allParallel` veya `manager`                                                                                                                       |
+| `extras`         | `Map<String, dynamic>`  | Serbest biçimli, gövdeye özgü yapılandırma (örn. `iterableKey`, `templateId`, koşul ağaçları)                                                                          |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Türetilmiş erişimciler: `spaceId` (`extras['spaceId']` — içinde çalışılacak mevcut konuşma), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, alanı açan düğümde okunur) ve `runWhen` (`extras['runWhen']` — karşılanmadığında düğümü atlar).
 
-## See also
+## Ayrıca bkz.
 
-- [Pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/)
-- [Create a pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
-- [Pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
-- [Run a pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
+- [Pipeline’lar](/tr-TR/kilavuz/kavramlar/pipelinelar/)
+- [Bir pipeline şablonu oluşturun](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
+- [Pipeline tetikleyicilerini kurun](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
+- [Bir pipeline’ı elle çalıştırın](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)

@@ -1,166 +1,172 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Запустити воркер флоту
+description: Зберіть, спаруйте й запустіть headless-виконавець cc_worker, щоб він зареєструвався на cc_server і з’явився в панелі флоту.
 slug: uk-UA/керівництво/практичні-посібники/запустити-воркер-флоту
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Запустіть `cc_worker` на вільній машині, щоб додати своєму флоту виконавчих
+потужностей. Це чистий Dart-бінарник — без рушія Flutter — який спарюється з
+`cc_server`, заявляє можливості свого хоста, надсилає heartbeat, забирає
+орендовані завдання, виконує їх і транслює події процесів назад. Він не тримає
+жодного довготривалого стану: супервізор перезапускає його, і він реєструється
+заново.
 
-You need a running `cc_server` first — see [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
+Спершу вам потрібен запущений `cc_server` — див. [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
+Спарований воркер реєструється, надсилає heartbeat і чекає на орендовані
+завдання. Надсилайте роботу через `fleet.submitJob`. Диспетчеризація агентів на
+цьому сервері не йде через флот; сигнал успіху для цього посібника — поява
+воркера в панелі флоту зі свіжим heartbeat. Внутрішньопроцесний воркер,
+зареєстрований під час запуску, має порожню мапу виконавців, тож завдання,
+розміщене на ньому, повертає `No local runner for
 job kind …`.
 
-## Prerequisites
+## Передумови
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). Цей репозиторій фіксує версію SDK через [fvm](https://fvm.app), тож додавайте до команд префікс `fvm`.
+- Цей репозиторій, клонований на машині воркера.
+- Доступний `cc_server` (loopback для розробки, локальна мережа або віддалений хост для продакшену).
+- `git` у `PATH` — воркер матеріалізує репозиторії та запускає зондування через `git`.
 
-## Step 1: Build the binary
+## Крок 1: Зібрати бінарник
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Це створює самодостатній пакет за шляхом `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## Крок 2: Видати облікові дані воркера
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+`cc_server` приймає лише той воркер, який пред’являє ідентифікатор спарованого
+пристрою та попередньо спільний ключ — зокрема й на loopback-сервері. Видайте їх
+на машині **сервера** (`pair` можна запускати, поки сервер працює; новий пристрій
+підхоплюється без перезапуску):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Він друкує `Device id` і `Pairing key` — саме їх приймають `--device-id` та
+`--psk` / `--psk-file` / `CC_WORKER_PSK`.
 
-## Step 3: Start the worker
+## Крок 3: Запустити воркер
 
-Against a paired server:
+Для спарованого сервера:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Для loopback-сервера (він теж спарований — `cc_server` завжди виконує
+PSK-рукостискання):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
+| Прапорець            | Опис                                                                                             | Типово      |
 | -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| `--server <url>`     | URL cc_server (`ws://`/`wss://`; `http(s)` і пропущений шлях `/rpc` приводяться до потрібної форми). **Обов’язковий.** | —           |
+| `--name <name>`      | Назва воркера, яку бачить оператор.                                                              | ім’я хоста  |
+| `--device-id <id>`   | Стабільний ідентифікатор спарованого пристрою; він же ідентифікатор воркера.                     | `cc-worker` |
+| `--psk-file <path>`  | Файл, перший непорожній рядок якого — ключ спарювання. Має перевагу над `--psk`.                 | —           |
+| `--psk <key>`        | Ключ спарювання в командному рядку. Видимий у `ps` та історії оболонки — бінарник попереджає.    | —           |
+| `--max-jobs <n>`     | Жорстка стеля кількості завдань, які цей процес виконує одночасно (додатне ціле число).          | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+Порядок пошуку ключа: `--psk-file` → `CC_WORKER_PSK` → `--psk`. Якщо не вказати
+жодного джерела, воркер пропустить рукостискання автентифікації; справжній
+`cc_server` тоді відхилить сеанс (`auth_denied`), а не прийме неавтентифікований
+воркер. Невідомі прапорці — це помилка використання (`exit 64`): на відміну від
+`cc_server`, цей бінарник використовує `package:args` і не ігнорує помилки в
+написанні.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` перевизначає каталог кешу матеріалізації worktree (типово:
+каталог `cc_worker_cache` у системному тимчасовому каталозі).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+Воркер реєструється через `fleet.registerWorker`, далі надсилає heartbeat кожні
+20 с і опитує сервер щодо оренд кожні 2 с. Він працює до `SIGINT`/`SIGTERM`;
+поставте його під systemd або launchd, щоб він перезапускався й реєструвався
+заново після збою чи перезавантаження.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[Вікна сумісності протоколу немає]
+Воркер, чия версія протоколу флоту відрізняється від серверної, реєструється як
+**несумісний**, йому ніколи не пропонують оренду, а сам `cc_worker` аварійно
+завершується з `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
+to match the server release`. Збирайте воркер із того самого випуску, що й сервер.
 :::
 
-## Step 4: Verify it in the fleet panel
+## Крок 4: Перевірити його в панелі флоту
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+Відкрийте **Спостережуваність** у настільному чи вебзастосунку, перемкніться на
+вкладку **Наживо** та прокрутіть донизу. У розділі **Воркери** перелічено кожен
+зареєстрований воркер з його платформою, ядрами, ключами можливостей та останнім
+heartbeat; у розділі **Завдання** — завдання, розподілені між ними.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+Поява вашого воркера там зі свіжим heartbeat — це підтвердження, що спарювання й
+реєстрація спрацювали.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+З плитки воркера ви можете **зупинити прийом** (завершити поточні завдання, не
+брати нових оренд), **відновити** воркер, який зупинив прийом, **відкликати**
+його облікові дані або **вилучити** рядок.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+Рядки воркерів і завдань зберігаються в `global.db` сервера — сам воркер нічого
+не пише на диск, крім кешу матеріалізації.
 
-## What the worker advertises
+## Що заявляє воркер
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+Під час реєстрації воркер автоматично визначає свої можливості, і планувальник
+зіставляє з ними завдання. Вручну їх налаштовувати не потрібно:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **ОС та архітектура** (`macos`/`linux`/`windows`, `arm64`/`x64`) — точне зондування, з відкатом до `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **Ядра та RAM** — точна кількість ядер; RAM знижується до `0`, коли її неможливо визначити
+- **`flutter`** — заявляється, коли доступний Flutter SDK (спершу просто `flutter`, потім `fvm flutter`); завдання golden-рендерингу потребують його
+- **`sandbox`** — `native-macos` на macOS, `native-linux` на Linux. Це підказка для розміщення, а не обіцянка: воркер заявляє той бекенд, який _має_ його платформа, але не загортає в нього завдання, які виконує. На відміну від `cc_server`, `cc_worker` запускає орендоване завдання напряму
+- **`always-on` і `parallel`** — виділений `cc_worker` завжди заявляє обидві, тож він підходить для eval-пакетів та іншої одноразової паралельної потужності
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+Визначення виконується за принципом найкращого зусилля: усе, що не вдалося
+зондувати, знижується до безпечного типового значення, а не зриває запуск.
 
-## What the worker would execute
+## Що воркер виконуватиме
 
-The lease protocol carries six job kinds:
+Протокол оренди переносить шість видів завдань:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| Вид            | Що це                                           |
+| -------------- | ----------------------------------------------- |
+| `agentRun`     | Один запуск агента (диспетчеризація)             |
+| `pipelineStep` | Виконання кроку конвеєра                         |
+| `codeIndex`    | Побудова індексу коду репозиторію                |
+| `goldenRender` | Візуальний golden-рендеринг інтерфейсу (потребує `flutter`) |
+| `benchmark`    | Запуск бенчмарку продуктивності                  |
+| `evalBatch`    | Eval-пакет (надає перевагу потужності `parallel`) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+Виконання — це справжня реалізація з потоковою передачею підпроцесів, а не
+повноцінне вбудоване середовище виконання агентів. Коли оренда несе `repoRemote`,
+воркер виконує `git clone --depth 1` у каталог кешу, ключ якого складається з
+віддаленого репозиторію та SHA, далі `git fetch` і `git checkout`. Для `agentRun`
+він запускає команду з `CC_JOB_COMMAND` середовища оренди в робочому каталозі,
+транслюючи stdout і stderr назад як події; без `CC_JOB_COMMAND` він повторює
+промпт луною, щоб транспорт усе одно задіявся наскрізно. Інші види запускають
+невеликі справжні команди (`git rev-parse HEAD`, `git --version`) як чесне
+зондування. Облікові дані, прив’язані до завдання, з середовища оренди
+впорскуються в кожен підпроцес і ніколи не потрапляють у журнал.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Події групуються й скидаються кожні 250 мс або кожні 32 події; кожне завдання
+завершується подією завершення та звітом про виконання. Модель — це heartbeat
+плюс оренди з коротким TTL: якщо воркер втрачає зв’язок, його оренда спливає, і
+сервер забирає завдання на повторну спробу. На воркері немає довготривалого
+стану, а між воркерами — ні консенсусу, ні перехоплення роботи.
 
-## Related guides
+## Пов’язані посібники
 
-- [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/)
-- [Connect to a remote server](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/)
-- [Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/)
+- [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/)
+- [Під’єднатися до віддаленого сервера](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/)
+- [Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/)
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/)

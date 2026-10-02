@@ -1,128 +1,120 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: التقويم والجدولة
+description: كيف يزامن Control Center بيانات Google Calendar على الخادم، ولماذا يكون تسجيل الدخول بمنح رمز الجهاز، وما الذي يغطيه نطاق القراءة فقط.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تقويم
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/).
+يتصل Control Center بـ Google Calendar حتى يظهر يومك إلى جانب أسطولك. يزامن
+أحداثك، ويعرضها في عروض الشهر والأسبوع واليوم وجدول الأعمال، وينبّهك قبل بدء
+الاجتماع، ويحوّل أي حدث إلى [اجتماع](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) مُسجَّل ومُلخَّص.
 
-## What it changes on Google
+## ما الذي يغيّره على Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+لا شيء تقريبًا. يسحب التكامل الأحداث ويعرضها. لا ينشئ دعوات ولا يحرّرها ولا
+يحذفها ولا يردّ عليها. كل اتصال بمنح رمز الجهاز، سواء كان العميل مضمّنًا أو
+جلبته أنت، يطلب `calendar.readonly` بالإضافة إلى `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+تُزامَن الأحداث في قاعدة مساحة العمل نفسها **على الخادم**
+(`<dataDir>/<workspaceId>/workspace.db`)، ويعرضها كل عميل عبر RPC. لا يحتفظ أي
+عميل ببيانات اعتماد Google.
 
-## Per-workspace accounts
+## حسابات لكل مساحة عمل
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+حسابات التقويم نطاقها مساحة العمل، كسائر ما في Control Center. تربط كل
+[مساحة عمل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) حساب Google الخاص بها (أو عدة
+حسابات)، ولا تظهر أحداث مساحة ولا رموزها من مساحة أخرى. تبديل مساحة العمل يبدّل
+التقويمات التي تراها.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+تستطيع مساحة العمل ربط **عدة** حسابات Google، كحساب العمل وحساب شخصي، وتُدمَج
+أحداثها في العروض نفسها.
 
-## Why sign-in is a device code
+## لماذا تسجيل الدخول برمز جهاز
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` بلا واجهة، ولا متصفح لديه يلتقط إعادة توجيه OAuth، فلا يستخدمها.
+التفويض يتم بـ**منح رمز الجهاز** (RFC 8628). يعرض الخادم رمز مستخدم قصيرًا ورابط
+Google، وتوافق على أي جهاز فيه متصفح، ويواصل الخادم الاستطلاع حتى توافق.
+ولهذا تحديدًا يستطيع التثبيت بلا واجهة ربط حساب: لا نقطة نهاية لإعادة التوجيه
+يلزم استضافتها.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+ما يلزم معرفته قبل جلب بيانات الاعتماد بنفسك: يجب أن يكون نوع العميل
+«TV and Limited Input devices» لدى Google. لا تمنح Google هذا النوع إلا مجموعة
+نطاقات مدرجة في قائمة السماح، وإذا لم يُسمح بـ Google Calendar لهذا النوع في
+المشروع يفشل التدفق مع `invalid_scope` — وتحتاج عندئذٍ إلى عميل loopback أو عميل ويب.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+لا تغادر الرموز الخادم. تُكتب في `secrets.json` الخاص بالخادم داخل دليل بياناته،
+بمفتاح `google_google:<workspaceId>:<email>`، إلى جانب قواعد البيانات وضمن حد
+الثقة نفسه لنظام ملفات المضيف. يجدّد الخادم الوصول تلقائيًا، وحين يُبطل Google
+حسابًا إبطالًا دائمًا (جلسة مُلغاة أو منتهية منذ وقت طويل) ينشر
+`CalendarAuthExpired` ويُظهر شريط **إعادة الاتصال** بدل أن يفشل بصمت.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+البناء من المصدر بلا **أي** بيانات اعتماد Google — توفّر معرّف العميل وسرّه
+بنفسك. تُضمِّن بناءات الإصدار الرسمية عميلًا غير سري لمنح رمز الجهاز حتى يعمل
+مسار الربط من غير إعداد إضافي، ولا يخزّن الخادم إلا علامة تشير إليه، لا نسخة
+منه أبدًا. يتقدّم `GOOGLE_OAUTH_CLIENT_ID` (وسرّه) في البيئة دائمًا على الزوج
+المضمَّن. وعمدًا لا يوجد علم `--google-client-id`: الأعلام غير المعروفة
+تُتجاهل، والسر على سطر الأوامر يُقرأ عبر `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/).
+لتشغيل مشروع Google الخاص بك، انظر
+[ربط Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/).
 
-## Sync
+## المزامنة
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+يسحب الخادم نافذة متحركة من أحداث كل حساب متصل — كل تقويم في الحساب، لا
+التقويم الأساسي وحده — **كل دقيقتين**، وكذلك عند الطلب (البدء، والربط، والتحديث
+اليدوي). الإيقاع القصير قليل الكلفة لأن المسح تزايدي: يحمل كل تقويم رمز مزامنة
+خاصًا به، فالتقويم الذي لم يتغيّر يكلّف استجابة واحدة شبه فارغة بدل إعادة جلب
+نافذة من خمسة أشهر.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+تُوسَّع الأحداث المتكررة على جهة الخادم، فلا يحلّل أي عميل قاعدة تكرار. الانتقال
+إلى شهر خارج النافذة الحالية يحمّل ذلك النطاق عند الحاجة. الأحداث المحذوفة، أو
+التي خرجت من النطاق، تُزال بالمطابقة في المزامنة التالية.
 
-## Views
+## العروض
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| العرض | ما يعرضه |
+| --- | --- |
+| **شهر** | شبكة شهر كامل (مدعومة بحزمة `kalender`) |
+| **أسبوع** | أحداث الأسبوع ذات الوقت المحدد في شبكة زمنية |
+| **يوم** | أحداث يوم واحد ذات الوقت المحدد في شبكة زمنية |
+| **جدول الأعمال** | قائمة قابلة للتمرير للأحداث القادمة |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+افتح التقويم على `/calendar`؛ واختيار حدث يفتح تفاصيله على
+`/calendar/:eventId`. العرض الذي تختاره يُخزَّن في تفضيلات ذلك العميل، فلا
+يتبعك إلى جهاز آخر.
 
-## Meeting alerts
+## تنبيهات الاجتماع
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+يفحص مُجدول يعمل كل دقيقة الأحداث التي تبدأ ضمن نافذة تنبيه مسبقة قابلة للضبط،
+ويُطلق إشعار **«اجتماع يبدأ قريبًا»** (`MeetingStartingSoon`، وهو
+[حدث نطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)). يحمل الإشعار رابط الانضمام إن
+وُجد، والنقر عليه يفتح تفاصيل الحدث. تُلغى التنبيهات المكررة بالاستناد إلى
+`alertedAt` على الحدث، فلا يُنبَّه الاجتماع نفسه مرتين حتى بعد إعادة التشغيل،
+ولا يُعاد تنبيه حدث مضى وقت بدئه والتطبيق مغلق.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+حدّان يسهل الوقوع فيهما. يعمل المُجدول **على جهة العميل في الحاسوب**، ولمساحة
+العمل المفتوحة حاليًا فقط — مساحة لست فيها لا ترفع تنبيهًا. ونسخة الويب بلا
+مسار إشعارات لنظام التشغيل أصلًا، فلا ترفع تنبيهًا هي أيضًا.
 
-## Record and link
+## التسجيل والربط
 
-From a calendar event you can start a [meeting recording](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+من حدث في التقويم تستطيع بدء [تسجيل اجتماع](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/)
+بعنوان الحدث. يخزّن Control Center ارتباطًا واحدًا لواحد بين التسجيل والحدث،
+فتبقى ملاحظات الاجتماع مربوطة بقيد التقويم، من غير أن تعتمد إحدى الميزتين على
+الأخرى.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**بدء التسجيل والربط** على الحاسوب فقط. في عميل الويب يُبلّغ الإجراء أن التسجيل
+غير متاح — مع أن مسار التسجيل في شاشة الاجتماعات نفسها يعمل في المتصفح.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[لا يستطيع الوكلاء قراءة تقويمك]
+لا توجد أدوات MCP للتقويم. لا يستطيع الوكيل سرد الأحداث، ولا قراءة تفاصيل حدث،
+ولا الرد على الدعوة نيابةً عنك. سطح `calendar.*` هو RPC لعملاء البشر فقط.
 :::
 
-## See also
+## انظر أيضًا
 
-- [Meetings and transcription](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/): what happens after you start a recording
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): why calendar accounts are per-workspace
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)
-- [Record and summarize a meeting](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/)
+- [الاجتماعات والنسخ النصي](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/): ما يحدث بعد بدء التسجيل
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): لماذا حسابات التقويم لكل مساحة عمل
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): `MeetingStartingSoon` و`CalendarAuthExpired`
+- [ربط Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)
+- [تسجيل اجتماع وتلخيصه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/)

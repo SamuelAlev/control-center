@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Sohbet köprüsü
+description: Sohbet köprüsünün sağlayıcıları, komutları, kimlik bilgileri, yetenekleri, RPC işlemleri ve depolaması.
 slug: tr-TR/kilavuz/referans/sohbet-koprusu
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Sağlayıcılar
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Sağlayıcı | Tel değeri | Taşıma                  | Alan türü |
+| --------- | ---------- | ----------------------- | --------- |
+| Slack     | `slack`    | Socket Mode (giden WSS) | `slack`   |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Tek sağlayıcı Slack'tir.** `ChatProvider` tek değerli bir enum'dur ve `cc_server` tek bir eklenti kaydeder. Şema, her arama ve her benzersiz indeks `provider` üzerine anahtarlanmıştır; böylece kimlikler sağlayıcılar arasında geçmez ve yeni bir sağlayıcı eklemek yalnızca sunucuyu ilgilendiren bir değişikliktir.
 
-One provider-side app per **workspace × provider**.
+Her **çalışma alanı × sağlayıcı** için bir sağlayıcı tarafı uygulama.
 
-## Chat commands
+## Sohbet komutları
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Komut adı uygulama başına belirlenir (varsayılan olarak `cc`, yani `/cc`). Bir yönetici bu adı değiştirebilir; köprü de o andan sonra en son hangi adla çağrıldıysa onu kullanır.
 
-| Command                               | Effect                                                        |
-| ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| Komut                               | Etkisi                                                              |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `/cc help` (veya fiilsiz `/cc`)     | Botun neler yapabileceğini listeler                                 |
+| `/cc link <code>`                   | Tek kullanımlık bir kodu kullanır ve gönderenin sohbet kimliğini bağlar |
+| `/cc ticket <title>`                | Bağlı üyenin bildirdiği yerel bir bilet açar                        |
+| `/cc ticket <title> \| <description>` | Aynısı; ilk `\|` sonrasındaki her şey açıklama olur                 |
+| Bilinmeyen fiil                     | Bilinmeyen fiili ve yardım metnini bildirir                         |
 
-Ways to reach an agent:
+Bir ajana ulaşmanın yolları:
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| Hareket                    | Davranış                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Bir kanalda `@bot …`       | Bir Slack dizisi ve ona karşılık gelen bir Control Center alanı açar; ajan Slack dizisinde yanıtlar                     |
+| Köprülenmiş bir Slack dizisinde yanıt | Aynı Control Center alanını sürdürür — anma gerekmez                                                          |
+| Bir kanalda düz ileti      | Yok sayılır (bota hitap etmiyor ve köprülenmiş bir Slack dizisinde değil)                                               |
+| Bota DM                    | Her DM konuşması için bir Control Center alanı; ajan çalışırken bir Slack dizi başlığı ve "düşünüyor…" durumu ayarlar   |
 
-## Credential fields (Slack)
+## Kimlik bilgisi alanları (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Bağlantı iletişim kutusunu üreten ve gönderimi doğrulayan sağlayıcı tanımlayıcısı tarafından bildirilir.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Alan kimliği         | Etiket                                  | Zorunlu | Önek    | Bulunduğu yer                                                   |
+| -------------------- | --------------------------------------- | ------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Bot kullanıcısı OAuth token'ı           | Evet    | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Uygulama düzeyi token                   | Evet    | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | Uygulama yapılandırma yenileme token'ı  | Hayır   | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` uygulama yönetimi kimlik bilgisidir: onsuz bağlantı çalışır ama bot Control Center'dan oluşturulamaz veya düzenlenemez. Her kullanımda rotasyona uğrar ve döndürülen değer anında saklanır.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Değerlerin başındaki ve sonundaki boşluklar kırpılır, bildirilmemiş anahtarlar atılır ve önek uyuşmazlığı istemcide ve sunucuda aynı cümleyle reddedilir. Zorunlu alanlar her bağlantıda dolu olmalıdır; boş bırakılan isteğe bağlı bir alan, zaten saklanmış olan değeri korur.
 
-## Slack app requirements
+## Slack uygulaması gereksinimleri
 
-Bot token scopes:
+Bot token kapsamları:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Bot olay abonelikleri:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Control Center'ın uygulamayı oluştururken veya düzenlerken dayattığı yapısal ayarlar: Socket Mode etkin, istek URL'si yok, Messages sekmesi etkin ve yazılabilir, bot `always_online`, gerekli kapsamlar ve olaylar uygulamanın hâlihazırda sahip olduklarıyla birleştirilir (asla çıkarılmaz) ve `File a ticket or link your Control Center account` açıklamasını taşıyan tek bir slash komutu — dışa aktarılan bir manifestte Control Center'ın kendi komutunu tanımlayan işaret.
 
-## Connection states
+## Bağlantı durumları
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Durum            | Tel            | Anlamı                                                                         |
+| ---------------- | -------------- | ------------------------------------------------------------------------------ |
+| Bağlı değil      | `disconnected` | Bu çalışma alanı × sağlayıcı için saklanmış kimlik bilgisi yok                  |
+| Bağlanıyor…      | `connecting`   | Kimlik bilgileri saklandı, taşıma bağlanıyor veya yeniden bağlanıyor            |
+| Canlı            | `connected`    | Taşıma ayakta ve olay alıyor                                                    |
+| Bağlantı hatası  | `error`        | Saklandı ama başarısız oluyor; sağlayıcının kendi hatası yanında gösterilir     |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Yeniden bağlanma, jitter eklenmiş ve 30 saniyeyle sınırlanmış üstel geri çekilmedir. Sağlayıcının başlattığı bir soket rotasyonu, geri çekilmeyi artırmadan hızla yeniden bağlanır. Reddedilen bir kimlik bilgisi (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) veya eksik bir kapsam nihaidir: köprü, yeni kimlik bilgileri gelene kadar yeniden denemeyi bırakır.
 
-## Provider capabilities (Slack)
+## Sağlayıcı yetenekleri (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Köprü en zengin yüzeye göre yazılmıştır ve yetenek başına kademeli olarak azalır.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Yetenek                   | Slack  | Yokluğunda etkisi                                                                              |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | evet   | Yanıtın tamamı, sonunda bir kez gönderilir                                                      |
+| `streamingRequiresThread` | evet   | Dizi çapası olmayan bir yanıt hedefi, yanıtları bütün olarak gönderir                            |
+| `ephemeralMessages`       | evet   | Kullanılabilir bir yanıt tanıtıcısı olmayan bir slash komutu yanıtı düşürülür (redler her zaman dizi içinde gönderilir) |
+| `threadStatus`            | evet   | Geçici "düşünüyor…" satırı olmaz                                                                |
+| `threadTitle`             | evet   | Sohbet dizisi varsayılan başlığını korur                                                        |
+| `slashCommands`           | evet   | `/cc` yüzeyi olmaz                                                                              |
+| `taskCards`               | evet   | Yalnızca metin — yanıtın üstünde kart yok ve "View in Control Center" bağlantısı yok             |
+| `maxMessageLength`        | 39.000 | Daha uzun yanıtlar, Control Center'a işaret eden bir ifadeyle kısaltılır                         |
+| `maxStreamChunkLength`    | 3.800  | Eklemeler bir paragraf, satır veya boşluk sınırından bölünür                                     |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Akış bildirmek, akış vaat etmek değildir: Slack'inki ücretli bir planda Agents & AI Apps özelliğini gerektirir. Çağrı anındaki bir ret (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) bağlantının ömrü boyunca hatırlanır ve `streamingAvailable: false` olarak bildirilir. Slack'in görev kartları aynı çağrıya biner; bu yüzden kartın görüntüleme modunu reddeden bir Slack akışını korur ve yalnızca kartı kaybeder — bir kez, bağlantının ömrü boyunca.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Bir akışın ayrıca kime olduğunu, yani okuyucusunu adlandırması gerekir. Slack, bir akışı bir **kanalda** açmak için hem bir alıcı kullanıcı hem de o kullanıcının ekibini ister (DM istemez) ve aksi halde `missing_recipient_user_id` / `missing_recipient_team_id` ile reddeder — bu çağrı başına bir rettir; bu yüzden köprü denemeye devam eder ve bu sırada tur, tek bir gönderilmiş yanıt olarak ulaşır. Alıcı, soran kişidir ve gelen iletiden alınır (uygulamanın ekibi değil, kişinin kendi ekibi; böylece bir Slack Connect kanalı doğru çözümlenir). Sohbetten kimsenin başlatmadığı bir tur için — Control Center'da, zaten köprülenmiş bir konuşma üzerinde başlatılan iş — bu, bağlantıyı kuran üyedir; o kişi sohbet hesabının bağlantısını o sırada kaldırmışsa, o tur akış yerine bütün olarak gönderilir.
 
-## Task cards
+## Görev kartları
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Ajan turu başına, her adım için bir satırı olan gruplanmış tek kart (`task_display_mode: plan`). Her satır `id` + `title` + `status` içeren bir `task_update`'tir; düşünce hazır olduğunda buna tek seferlik bir `details` eklenir. Aynı kimliğe sahip `details` ve `output` ayraç olmadan birleşir; bu yüzden `details` bir kez gönderilir ve `output` asla akış halinde gönderilmez. Planın başlığı istektir; yanıt ise `markdown_text` parçası taşıyan, sonradan gelen ayrı bir eklemedir.
 
-| Part           | Content                                                                                                                                                       |
+| Bölüm          | İçerik                                                                                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Plan başlığı   | Ne istendiği                                                                                                                                                  |
+| Kurulum satırı | `Working on it…`, ardından `Cloning …`, ardından `Starting the agent…` — tek satır, başlığı değiştirilir                                                        |
+| Düşünme satırı | `Thinking…`, ajan akıl yürütmeye başladığında eklenir; düşünce bu satırın `details` değeridir ve akıl yürütme bittiğinde bir kez gönderilir                    |
+| Araç satırları | Her araç için bir satır (`Bash which swift`), yan yana durmaları için benzersiz kimlik                                                                        |
+| Durum          | O satır çalışırken devam ediyor; sonraki satır başladığında veya tur bittiğinde tamamlandı; başarısız, kesintiye uğramış ve tur sınırı için hata              |
+| Eylem çağrısı  | Tur bittiğinde sondaki satır olarak `View in Control Center` — iş hâlâ sürerken yoktur ve sunucunun erişilebilir genel URL'si yoksa da yoktur                  |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Bir kartın asla taşımadığı şeyler: araç çıktısı, o izin listesinin dışında bir argüman veya veritabanından okunan herhangi bir şey. Akıl yürütme metni yalnızca `Thinking…` satırının ayrıntılarıdır (256 karakterle sınırlıdır), ileti gövdesi değildir. Yeni bir şey söylemeyecek bir kart yeniden gönderilmez. Bir anma akışı hemen açar, böylece Slack dizisi sessiz kalmaz; ardından hiç metin üretmeyen bir tur, ikinci bir ileti göndermek yerine aynı kartı kısa bir notla tamamlar. Akışı hiç açmamış bir alanda sözsüz geçen bir tur (kart yok ya da akış zaten reddedilmiş) yine de tamamlanmış kartı ve notu taşıyan tek bir ileti gönderir.
 
-Streamed and posted cards are different payloads:
+Akış halinde gönderilen ve gönderilen kartlar farklı yüklerdir:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Biçim         | Yapı                                                | Düz metin                                        |
+| ------------- | --------------------------------------------------- | ------------------------------------------------ |
+| Akış halinde  | `plan_update` artı `id` ile anahtarlanmış `task_update` parçaları | Düz dize, parça başına 256 karakterle sınırlı |
+| Gönderilen    | `task_id` ile anahtarlanmış `task_card`'ları saran bir `plan` bloğu | Zengin metin                              |
 
-Failure handling:
+Hata işleme:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Durum                                        | Davranış                                                                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Sağlayıcı bir eklemede kartı reddeder        | Ekleme, kartsız olarak hemen yeniden denenir; düz metin yine canlı ulaşır ve kartlar bağlantının ömrü boyunca düşürülür      |
+| Sağlayıcı düz metni de reddeder              | Akış kapatılır ve yanıt bütün olarak gönderilir                                                                             |
+| Yanıtın bir kısmı ulaştıktan sonra akış kopar | Akış kapatılır ve hiçbir şey yeniden gönderilmez                                                                            |
 
-See [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/) for why the payload is split this way.
+Yükün neden bu şekilde bölündüğü için bkz. [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/).
 
-### Setup, before there is a turn
+### Kurulum, henüz bir tur yokken
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Kart, bir anma kabul edildiğinde, klonlamadan ve ilk token'dan önce açılır; ardından gelen tur aynı kartı ve akışı devralır. Sonrasındaki anlatım, alan olay veri yolundaki `SpaceProvisioningChanged` olayından gelir — masaüstünün hazırlama şeridinin alan satırından okuduğu ilerlemenin aynısı.
 
-| Provisioning state          | Narration                                                      |
+| Hazırlama durumu            | Anlatım                                                        |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Anma kabul edildi           | `Working on it…`                                               |
+| `repo` adımı                | `Cloning <repo>…`                                              |
+| `prCheckout` adımı          | `Checking out the pull request in <repo>…`                     |
+| `script` adımı              | `Running the setup script for <repo>…`                         |
+| `agent` adımı               | `Setting up <agent>…`                                          |
+| `provisioning`, henüz adım yok | `Preparing the workspace…`                                  |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Ajan akıl yürütüyor         | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Kurulum anlatımı dört koşulun hepsini gerektirir:
 
-| Condition                                 |
+| Koşul                                     |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Sağlayıcı kartları görüntülüyor            |
+| Akış bu bağlantıda kullanılabilir          |
+| Alanda uçuşta bir sohbet isteği var        |
+| Orada bir turu zaten bildiren bir kart yok |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+İstek, bir tur başlayana veya kurulum başarısız olana kadar uçuşta kalır. Zaten açık bir kart yokken gelen bir `ready` olayı sıcak bir alandır ve sessiz bırakılır; sohbette kimsenin beklemediği bir hazırlama — uygulamada açılmış bir konuşma ya da açılışta devam ettirilen başıboş bir konuşma — hiç kart üretmez.
 
-## The `/open` bounce page
+## `/open` yönlendirme sayfası
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Sohbet ürünleri bir bağlantıda `http(s)` dışında hiçbir şey kabul etmez; bu yüzden bir eylem çağrısı masaüstünün şemasını doğrudan adlandıramaz.
 
-| Property   | Value                                                                                                                                       |
+| Özellik    | Değer                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Rota       | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Köken      | Sunucunun genel URL'sinden türetilir (`ws` → `http`, `wss` → `https`); loopback korunur                                                      |
+| Yanıt      | `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` adresine giden ve elle basılacak bir düğme gösteren küçük, no-store bir HTML sayfası |
+| Doğrulama  | Kimlikler `[A-Za-z0-9_.-]{1,128}` ile eşleşmelidir; başka her şey 404'tür                                                                     |
+| Erişim     | Herkese açık ve etkisiz — hiçbir veritabanı okumaz, dolayısıyla bir varlık sorgusu değildir; yetkilendirmeyi açtığı uygulama yapar             |
 
-## Bot profile fields
+## Bot profil alanları
 
-| Field              | Limit       | Notes                                                                                             |
+| Alan               | Sınır       | Notlar                                                                                            |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 karakter  | Varsayılanı `Control Center · <workspace name>`                                                |
+| `botDisplayName`   | 1–80 karakter  | Varsayılanı `control-center`                                                                    |
+| `description`      | ≤ 140 karakter |                                                                                                 |
+| `agentDescription` | ≤ 300 karakter | Botla bir DM'in üstünde gösterilir                                                             |
+| `command`          | ≤ 32 karakter  | Normalleştirilir: baştaki eğik çizgiler kaldırılır, küçük harfe çevrilir, `[^a-z0-9_-]` silinir, boşsa `cc` değerine düşer |
+| `agentEnabled`     | —           | DM/ajan deneyiminin sunulup sunulmadığı                                                           |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Boş bir kutu "dokunma" anlamına gelir, "temizle" değil. Sınırlar Slack'inkilerdir; modellenen ürünler arasında en dar olanlar bunlardır.
 
-## Link codes
+## Bağlantı kodları
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Özellik   | Değer                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------- |
+| Uzunluk   | 6 karakter                                                                               |
+| Alfabe    | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (`0`/`O`, `1`/`I`, `U` yok)                            |
+| Ömür      | 15 dakika                                                                                |
+| Kullanım  | Bir kez                                                                                  |
+| Depolama  | Bellekte — sunucu yeniden başlatıldığında bekleyen kodlar geçersiz olur                  |
+| Kapsam    | Bir çalışma alanı ve bir sağlayıcı; yeni bir kod üretmek üyenin önceki kodunu geçersiz kılar |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Kod kullanımı, büyük/küçük harf ayrımı gözetilmeden eşleştirilir. Bilinmeyen, süresi geçmiş, başka bir çalışma alanına ait ve yanlış sağlayıcıya ait kodların tümü bilinçli olarak aynı şekilde başarısız olur.
 
-## Link methods
+## Bağlantı yöntemleri
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Yöntem   | Tel     | Nasıl                                                                            |
+| -------- | ------- | -------------------------------------------------------------------------------- |
+| Kod      | `code`  | Üye `/cc link <code>` komutunu kullandı                                          |
+| E-posta  | `email` | Sağlayıcının doğrulanmış e-postası, zaten çalışma alanı üyesi olan bir kullanıcıyla eşleşti |
 
-## RPC operations
+## RPC işlemleri
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Tümü çalışma alanı kapsamlıdır. Sunucu durumsuzdur; bu yüzden her çağrı kendi `workspace_id` değerini argümanlarda taşır ve dağıtıcı, `workspace_id` değerini atlayan çalışma alanı kapsamlı bir işlemi herhangi bir veritabanı açılmadan önce reddeder. Kimlik bilgileri yalnızca _içeri_ girer — durum okumaları onları asla geri döndürmez.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
-| ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| İşlem                   | Tür         | En düşük rol                                     | Eylem sınıfları                 |
+| ----------------------- | ----------- | ------------------------------------------------ | ------------------------------- |
+| `chat.providers`        | okuma       | `guest`                                          | —                               |
+| `chat.status`           | okuma       | `guest`                                          | —                               |
+| `chat.connect`          | değişiklik  | `admin`                                          | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | yıkıcı      | `admin`                                          | `secretAccess`                  |
+| `chat.listUserLinks`    | okuma       | `guest`                                          | —                               |
+| `chat.beginUserLink`    | değişiklik  | `member`                                         | —                               |
+| `chat.unlinkUser`       | değişiklik  | kendiniz için `member`, başkası için `admin`      | —                               |
+| `chat.createApp`        | değişiklik  | `admin`                                          | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | okuma       | `admin`                                          | —                               |
+| `chat.botProfile`       | okuma       | `admin`                                          | `networkEgress`                 |
+| `chat.updateBotProfile` | değişiklik  | `admin`                                          | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Okuma işlemleri `guest` tabanını türlerinden devralır; açık bir tabanı olmayan değişiklikler `member` gerektirir.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink`, bot profilinden bir sağlayıcı uygulama oluşturma URL'si oluşturur. Hiçbir sır okumadığı ve hiçbir yere bağlanmadığı için bir eylem sınıfı bildirmez — tek çağrıyı kullanıcının kendi tarayıcısı yapar.
 
-One reactive query completes the surface:
+Yüzeyi tek bir reaktif sorgu tamamlar:
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| Sorgu                 | Tür     | Yaydığı                                                   |
+| --------------------- | ------- | --------------------------------------------------------- |
+| `chat.watchUserLinks` | izleme  | Kadro; bir bağlantı kurulduğunda veya kaldırıldığında yeniden gönderilir |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Bu sorgu, bağlama işi _diğer_ tarafta gerçekleştiği için vardır: üye tek kullanımlık kodu bota yazar, dolayısıyla hiçbir istemci yanıtı cevabı geri taşıyamaz. Ayarlardaki kadro ve açık "hesabımı bağla" iletişim kutusu bunu izler; üyenin kendi bağlantısı geldiği anda iletişim kutusu bir onaya döner.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` her zaman çağıranın kendi kimliği için bir kod üretir. `chat.updateBotProfile`, yalnızca geriye bir adım kaldığında (tipik olarak bir yeniden yükleme) bir `remaining_step` döndürür; bunun yokluğu, düzenlemenin etkin olduğu anlamına gelir.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers`, sunulan her sağlayıcı için bir girdi döndürür — tanımlayıcı ve varsa bağlantı durumu. Ayarlar arayüzünün görüntülediği her şey bu yükten gelir; bir sağlayıcı eklemenin yalnızca sunucuyu ilgilendiren bir değişiklik olmasının nedeni budur.
 
-## Storage
+## Depolama
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Ne                            | Nerede                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Bağlantı kimlik bilgileri     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Yarım kalmış rehberli kurulum | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| Eski Slack dosyaları          | `<dataDir>/<workspaceId>/slack_credentials.json` ve `slack_app_setup.json`; bir kez okunur ve yerinde taşınır |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Kimlik bilgileri, çalışma alanının veritabanının içinde değil yanında durur: bir çalışma alanını silmek sohbet token'larını da onunla götürür ve `workspace.export` veya bir yedek `workspace.db` dosyasını kopyalar — böylece başkasına verilen bir çalışma alanı canlı bot token'ları taşımaz. Yazmalar atomiktir (geçici dosya artı yeniden adlandırma) ve yalnızca sahibinin erişimine sıkılaştırılır.
 
-## Database tables
+## Veritabanı tabloları
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+İkisi de çalışma alanı veritabanında yaşar; bu veritabanı sıkıştırılmış bir v1 temeli taşır — bu yüzden çalışma alanları arası bir okuma derlenmez.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — bir harici konuşma ↔ bir Control Center alanı:
 
-| Column                                                 | Notes                                                                      |
+| Sütun                                                  | Notlar                                                                     |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Çalışma alanı kapsamı                                                      |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Slack ekibi `T…`, bu kavramı olmayan sağlayıcılarda boş                     |
+| `external_channel_id`                                  | Slack kanalı `C…`, grup `G…`, DM `D…`                                      |
+| `external_thread_id`                                   | Slack dizi çapası veya konuşmanın tamamı çapa olduğunda (bot DM'leri) null  |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+`(workspace_id, provider, external_channel_id, external_thread_id)` üzerinde benzersizdir; null dizi kimlikleri için de aynısını uygulayan kısmi bir indeks vardır (SQLite NULL'ları birbirinden farklı sayar).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — bir harici üye ↔ bir Control Center kullanıcısı:
 
-| Column                                 | Notes                                           |
+| Sütun                                  | Notlar                                          |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Çalışma alanı kapsamı                           |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Slack üyesi `U…`                                |
+| `user_id`                              | Control Center kullanıcısı (genel, bu yüzden yabancı anahtar yok) |
+| `method`                               | `code` veya `email`                             |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+`(workspace_id, provider, external_team_id, external_user_id)` ve `(workspace_id, provider, user_id)` üzerinde benzersizdir — aynı kişi birden çok sağlayıcıda bağlı olabilirken her iki yönde de tek değerli atıf sağlar.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Bir bağlantı, kimlik çözümlemesidir, bir erişim izni **değildir**: üyelik her gelen olayda yeniden denetlenir; böylece sonradan çıkarılmış bir üyeye ait bağlantı bir redde çözümlenir.
 
-## Space kind and message metadata
+## Alan türü ve ileti meta verileri
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Köprülenmiş bir alan, sağlayıcının `SpaceKind` değeriyle (`slack`) oluşturulur. Sıradan, insana yönelik bir alan gibi davranır — `topic` gibi bildirilir ve bölümlere ayrılır — ve her davranışın (aynalama, rozetleme, saklama) içinden geçtiği denetim `isExternalChat`'tir.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Köprünün içeri getirdiği her ileti bir `metadata['chat']` damgası taşır:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Damga aynı zamanda yankı korumasıdır: dışa dönük aynalama, onu taşıyan her iletiyi atlar; sohbetten gelen bir iletinin doğrudan geri gönderilmesini engelleyen şey budur.
 
-## Relay behavior
+## Aktarma davranışı
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Davranış                                        | Ayrıntı                                                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Dışarı aktarılan                                | Yalnızca ajan **metni** ve görev kartının durum satırı. Akıl yürütme metni ve araç çıktısı Control Center'da kalır |
+| Akış temposu                                    | Bir tur sürerken saniyede bir boşaltmaya kısılır; kart ve açıkladığı metin aynı çağrıda gider                   |
+| Control Center'da yazılan insan iletileri       | Yazarın görünen adı öne eklenerek bağlı diziye yansıtılır                                                        |
+| Boş turlar                                      | Sessizlik yerine kısa bir not olarak bildirilir (çalıştırma başarısız oldu, kesintiye uğradı veya tur sınırında durdu) |
+| Yinelenenleri ayıklama                          | Sağlayıcının kendi olay kimliğine göre anahtarlanır; son 512 tanesi hatırlanır                                  |
+| Ön kapı ajanı                                   | Yeni köprülenmiş bir konuşma, çalışma alanının CEO ajanını uyandırır; o yoksa ilk ajanını, o da yoksa kimseyi   |
+| Alan adlandırma                                 | Bir Slack kanal dizisi için `#channel · <request>`, bir DM için `Slack DM · <request>`; başlıklar 48 karakterle sınırlıdır |
+| Hata yalıtımı                                   | Tek bir hatalı olay köprüyü asla düşürmez; bağlantı diğer tüm konuşmalara hizmet etmeye devam eder              |
 
-## See also
+## Ayrıca bakınız
 
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
-- [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
-- [Customize the chat bot](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
-- [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/) for the action classes the ops declare
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
+- [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
+- [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
+- İşlemlerin bildirdiği eylem sınıfları için [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/).

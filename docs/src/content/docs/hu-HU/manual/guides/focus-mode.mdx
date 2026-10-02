@@ -1,185 +1,198 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Fókuszmód és hangtájak használata
+description: Futtasson időzített fókuszmunkamenetet lebegő visszaszámláló pirulával és elnyomott értesítésekkel, és alakítsa a közben szóló adaptív hangtájat.
 dateModified: 2026-08-17
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/fokuszmod
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Ez az útmutató bemutatja, hogyan futtathat fókuszmunkamenetet: egy időzített
+szakaszt, amely alatt a Control Center elnyomja a nem sürgős értesítéseket, és
+egy visszaszámláló pirulát lebegtet a többi ablaka fölé. Kitér arra a hangtájra
+is, amely (alapértelmezés szerint) közben szól — egy végtelen ambient számra,
+amelyet a szervere élőben szintetizál, és amelyet a választott hangulat, a kinti
+időjárás és a napszak alakít.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+A fókuszmunkamenet az alkalmazáshéj szintjén működő funkció. Nem kötődik
+egyetlen pillérhez sem — nem változtatja meg az elrendezést, nem rejti el az
+oldalsávot, és nem módosítja a PR-átnézés felületét.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Csak asztali gépen]
+A lebegő pirula és a hangtáj kiemelt mini lejátszója natív testvér-ablakok,
+amelyeket kizárólag az asztali bootstrap hoz létre. Az `app.usectrl.dev` webes
+build egyikkel sem rendelkezik, és operációs rendszer szintű értesítési
+folyamata sincs, így ott egy fókuszmunkamenetnek nincs mit megjelenítenie vagy
+elnyomnia. A hangtáj panel és annak lejátszása viszont bárhol működik, ahol
+szerverhez csatlakozik.
 :::
 
-## Start a focus session
+## Fókuszmunkamenet indítása
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Kattintson a címsáv jobb szélén a fókusz ikonra (tippszöveg: **Fókuszmunkamenet
+   indítása**)
+2. A párbeszédpanelen írjon be egy opcionális **Cél** mezőt — amin éppen dolgozik
+3. Válasszon **Időtartam**ot: 25m, 50m, 1h, 1h 30m vagy 2h. Az alapértelmezett az
+   50m, és az utolsó választását megjegyzi
+4. Nyomja meg az **Indítás** gombot
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Ellenőrzőpont: a címsáv gombja helyére egy kiemelőszínű chip kerül, amely a
+hátralévő perceket mutatja, a lebegő pirula megjelenik a többi ablaka fölött, és
+— ha az **Indítás fókuszmóddal** be van kapcsolva — a hangtáj el is kezd szólni.
 
-Two other entry points reach the same session:
+Két további belépési pont ugyanehhez a munkamenethez vezet:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- A **⌘K → Start focus session** ugyanezt a párbeszédpanelt nyitja meg.
+- A **⌘⇧⌥F** azonnal elindít egy munkamenetet a megjegyzett időtartammal és cél
+  nélkül — átugorja a párbeszédpanelt. Ha újra lenyomja, a munkamenet befejeződik.
 
-## Read the floating pill
+## A lebegő pirula áttekintése
 
-The pill is a small frameless window you can drag anywhere. It shows:
+A pirula egy kicsi, keret nélküli ablak, amelyet bárhová áthúzhat. A következőket
+mutatja:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Egy élő jelenlétpontot és a hátralévő időt `mm:ss` formátumban
+- A célját, vagy „Focus session” feliratot, ha nem adott meg egyet
+- Egy vékony folyamatjelző sávot az alsó él mentén
 
-Hover it to reveal two actions:
+Vigye rá az egérmutatót, hogy előtűnjön két művelet:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — leállítja a visszaszámlálást. A szüneteltetés csak a
+  pirulára vonatkozik; maga a munkamenet aktív marad.
+- **Complete** — befejezi a munkamenetet.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+A pirula a sötét palettát használja, bármilyen témát is használ a főablak, mert
+tetszőleges asztali tartalom fölött lebeg.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Ha a címsávból bezárja a pirulát, a munkamenet tovább fut. A visszahozásához
+nyomja meg a fókusz chip melletti kép a képben gombot (tippszöveg:
+**Minimalizálás sávra**).
 
-## Know what gets suppressed
+## Tudja, mi kerül elnyomásra
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Amíg egy munkamenet aktív, a Control Center minden értesítést elvet, kivéve két
+kategóriát, amelyek mindig megérkeznek:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Hamarosan kezdődő megbeszélés** — egy megbeszélésre figyelmeztetés, amelyet
+  csak utólag lát meg, mit sem ér
+- **PR közzétéve**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Minden más csendben elnyomásra kerül a teljes munkamenet alatt — nincs hang,
+nincs operációs rendszer szintű felugró értesítés. Az elnyomott értesítéseket a
+rendszer nem állítja sorba későbbi kézbesítésre.
 
-## Play a soundscape
+## Hangtáj lejátszása
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Kattintson a címsáv jobb szélén a hangszóró ikonra (tippszöveg: **Hangtájak**)
+   a panel megnyitásához
+2. Válasszon **Hangulat**ot — **Fókusz**, **Emelkedés**, **Lazítás** vagy **Alvás**
+3. Nyomja meg a **Lejátszás** gombot
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Ellenőrzőpont: a **Most szól** kártya megnevezi az aktuális jelenetet — a
+munkaterülete helyszínén uralkodó időjárást, a hőmérsékletet °C-ban és a helyszín
+címkéjét. Amíg az „A hangulat hangolása…” felirat olvasható, a jelenet még éppen
+beáll.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+A szám nem egy ismétlődő hurok. A szervere folyamatosan szintetizálja a
+hangulatból, a munkaterület helyszínén mért élő időjárásból és a napszakból. Az
+eső világosnak és mozgalmasnak hat, a vihar hangosnak és szelesnek, a köd
+tompának; az éjszaka sötétebb és visszhangosabb, mint a délelőtt. A hangulat adja
+a szókincset:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Hangulat  | Hang                                                                                   |
+| --------- | -------------------------------------------------------------------------------------- |
+| Fókusz    | Szelíd, éber ambience mély pulzussal — a munka alá szánva                              |
+| Emelkedés | Könnyed dallam lágy pulzussal — amikor a munka nehéznek tűnik                          |
+| Lazítás   | Melegebb, összecsengőbb padok, ütem nélkül                                             |
+| Alvás     | Mély drone-ok szinte esemény nélkül, mély visszhang                                    |
 
-Switching mood while playing hands playback to the new mood without stopping.
+A hangulat lejátszás közbeni váltása leállás nélkül adja át a lejátszást az új
+hangulatnak.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+A panel a ⌘K-ból is elérhető a **Focus** kategóriában, közvetlenül a
+fókuszmunkamenet mellett.
 
-## Shape the sound
+## A hang alakítása
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Hangolás** (Fókusz, Emelkedés és Lazítás) — négyzet alakú felület egy
+  húzható koronggal. A vízszintes tengely a **Lágy**tól az **Energikus**ig tart
+  (mennyi történik), a függőleges a **Tágas**tól a **Világos**ig (mennyire
+  nyitottan szól). Koppintson duplán a felületre a semleges középpontra való
+  visszaállításhoz; a nyílbillentyűk elmozdítják a korongot. A hangolása
+  hangulatonként megjegyzésre kerül, és a módosítások beleolvadnak a futó mixbe
+  — a stream soha nem indul újra. Az Alvás hangulat szándékosan nem hangolható.
+- **Hangerő** — csúszka 0 és 100% között, alapértéke 60%. Független a
+  rendszerhangerőtől, és megjegyzésre kerül.
+- **Helyszín** — automatikusan felismeri a munkaterületről. Nyomja meg az
+  **Időjárás frissítése** gombot a jelenet újbóli lekéréséhez.
 
-## Pop out the mini player
+## A mini lejátszó kiemelése
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Amíg hang szól, a címsávon megjelenik egy második gomb (tippszöveg: **Lejátszó
+kiemelése**). Ez egy kis, mindig felül lévő HUD-ot lebegtet lejátszás/szünet
+gombbal, az időjárás jelképével, a jelenet nevével és egy **Vissza az
+alkalmazáshoz** gombbal — hasznos, amikor a fókuszmunkamenet miatt teljesen egy
+másik alkalmazásban van.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+A mini lejátszóból történő szüneteltetés nem zárja be; csak a bezárás gombja
+(vagy az alkalmazás bezárása) távolítja el.
 
-## Run them together
+## Együtt futtatásuk
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+A két funkciót a hangtáj paneljén egyetlen kapcsoló köti össze: **Indítás
+fókuszmóddal**, amely alapértelmezés szerint be van kapcsolva.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- A fókuszmunkamenet indítása elindítja a hangtájat, ha éppen nem szól semmi.
+- A munkamenet befejezése — bárhogyan is ér véget, beleértve az időzítő
+  lejártát is — leállítja, még akkor is, ha a hangtájat kézzel indította el.
 
-Turn the switch off to keep the two independent.
+Kapcsolja ki a kapcsolót, ha a kettőt egymástól függetlenül szeretné tartani.
 
-## End a session
+## Munkamenet befejezése
 
-Any one of these ends it:
+Ezek bármelyike befejezi:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Kattintson a címsávban a fókusz chipre (tippszöveg: **Fókuszmód aktív —
+  koppintson a befejezéshez**)
+- Nyomja meg a **Complete** gombot a pirulán
+- Nyomja meg a **⌘⇧⌥F** billentyűkombinációt
+- Válassza az **Exit focus mode** lehetőséget a ⌘K-ban
+- Hagyja lejárni az időzítőt — a munkamenet nullánál automatikusan befejeződik
 
-The pill closes, notifications resume immediately and the soundscape stops.
+A pirula bezárul, az értesítések azonnal folytatódnak, a hangtáj pedig leáll.
 
-## Understand what does not persist
+## Amit a rendszer nem őriz meg
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Egy munkamenet pontosan egy alkalmazásfuttatásig él. Ha kilép a Control Centerből,
+majd újra megnyitja, inaktívan, nullázott időzítővel indul — akár a munkamenet
+közepén is —; nincs összeomlás utáni helyreállítás és nincs munkamenet-előzmény.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Csak két dolog marad meg: a preferált időtartama és az értesítésblokkolás
+jelzője. A cél, az eltelt idő és a pirula nyitott állapota nem.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+A lejátszás ugyanilyen múlékony — a hangtáj indításkor mindig le van állítva. A
+hangulata, a hangerő és a hangulatonkénti hangolásai megmaradnak; maga a stream
+soha nem indul újra magától.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The tune pad is missing
+### Hiányzik a hangolófelület
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Az Alvás hangulaton van, amely szándékosan nem hangolható. Váltson Fókuszra vagy
+Lazításra, hogy visszakapja a hangolófelületet.
 
-### Nothing plays after restarting the app
+### Semmi sem szól az alkalmazás újraindítása után
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Ez szándékos — a lejátszás az alkalmazás indításakor mindig le van állítva.
+Nyissa meg a panelt, és nyomja meg újra a **Lejátszás** gombot. Ha továbbra is
+néma marad, ellenőrizze a panel hangerő-csúszkáját, amely független a
+rendszerhangerőtől.
 
-### The weather or temperature looks wrong
+### Az időjárás vagy a hőmérséklet hibásnak tűnik
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+A jelenet az aktív munkaterület helyszínét követi. Nyomja meg a panelen az
+**Időjárás frissítése** gombot az újbóli lekéréséhez.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Configure notifications](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)
-- [Keyboard shortcuts](/hu-HU/kezikonyv/referencia/billentyuparancsok/)
+- [Értesítések konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)
+- [Billentyűparancsok](/hu-HU/kezikonyv/referencia/billentyuparancsok/)

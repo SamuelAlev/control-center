@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: حالت‌ها
+description: چرا «حالت» ویژگی یک فضا است و نه یک عامل؛ هر یک از چهار حالت چه چیزی را تضمین می‌کند؛ و این تضمین کجا ساختاری است و نه فقط با پرامپت.
 slug: fa-IR/راهنمای-کاربر/مفهومها/حالتها
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## حالت چیست
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+حالت ویژگی یک **فضا** است و به‌صورت یک ستون روی ردیف فضا ذخیره می‌شود. هر گفتگویی درون یک فضا آن را به اشتراک می‌گذارد، از جمله رشته‌ها — یک رشته حالت فضای خود را مانند هر گفتگوی دیگری به ارث می‌برد. بنابراین یک عامل می‌تواند هم‌زمان در فضاهای مختلف حالت‌های متفاوت داشته باشد و تغییر حالت یک فضا، بدون دست‌زدن به عامل، رفتار نوبت بعد را عوض می‌کند.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+دقیقاً چهار حالت وجود دارد: `chat`، `review`، `plan`، `orchestrate`. خودِ این enum هیچ سیاستی در خود ندارد. هر چیزی که یک حالت تضمین می‌کند یک‌بار و در یک **نمایهٔ توانمندی** اعلام می‌شود و هر لایهٔ اعمال قواعد از همان مشتق می‌شود:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **سطح ابزار** — اینکه اصلاً چه ابزارهایی در آن حالت وجود دارند؛ به‌صورت یک ردهٔ حداکثر تأیید، یک فهرست مجاز، یک فهرست مسدود و مجموعه‌ای از کلاس‌های اثر ردشده بیان می‌شود.
+2. **فعل خروجی الزامی** — چه فراخوانی‌ای باید انجام شود تا اجرا چیزی تحویل داده باشد.
+3. **کلاس‌های اثر ردشده** — چیزهایی که نگهبان کنش مستقیماً رد می‌کند.
+4. **وضعیت worktree** — اینکه آیا می‌توان در worktree نوشت. این مورد با حذف ابزارهای تغییردهنده از سطح ابزار اعمال می‌شود و همین است که آن را روی هر میزبانی برقرار می‌دارد. جایی که میزبان سندباکس سیستم‌عامل دارد، همان وضعیت قواعد نوشتن فایل‌سیستم را هم می‌تراشد — یک حالت فقط‌خواندنی، worktree را فقط‌خواندنی سوار می‌کند — اما این نسخهٔ دومی از همان تضمین است، نه همان نسخه‌ای که کار را انجام می‌دهد.
+5. **بلوک پرامپت سیستمی** — یک پیش‌گفتار توانمندیِ _تولیدشده_ که از فهرست واقعی و مادی‌سازی‌شدهٔ ابزارها مشتق می‌شود، به‌علاوهٔ راهنمایی دست‌نویس.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+هر لایهٔ اعمال قواعد از همان یک نمایه مشتق می‌شود، بنابراین سطح ابزار، نگهبان، وضعیت worktree و پرامپت نمی‌توانند با هم ناسازگار باشند.
 
-## The four modes
+## چهار حالت
 
-### Chat — displayed as "Agent"
+### گفتگو — با عنوان «عامل» نمایش داده می‌شود
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+حالت پیش‌فرض و تنها حالتی که محدودیت اضافه‌ای ندارد: سطح ابزار کامل تا ردهٔ اجرا، یک worktree نوشتنی، بدون کلاس اثر ردشده و بدون قرارداد تکمیل. برای پیاده‌سازی، رفع اشکال، پرسش دربارهٔ کدبیس و هر کار موردی از آن استفاده کنید.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+به برچسب توجه کنید: در نویسندهٔ پیام، این حالت به‌صورت **«عامل»** نمایش داده می‌شود، نه «گفتگو».
 
-### Plan — read-only, one deliverable
+### برنامه — فقط‌خواندنی، یک خروجی
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+حالت برنامه، worktree را فقط‌خواندنی می‌کند و ابزارهای نوشتن را کامل از سطح ابزار حذف می‌کند، بنابراین محدودیت ساختاری است و نه دستوری. عامل می‌خواند، جستجو و پژوهش می‌کند و دقیقاً یک چیز تحویل می‌دهد: یک فراخوانی `submit_plan` که یک گراف وابستگی نوع‌دار را حمل می‌کند — یک هدف به‌همراه گره‌هایی با کلید، عنوان، توضیح و کلید گره‌هایی که هر گره به آن‌ها وابسته است.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+طرح به‌صورت یک ردیف جمع‌وجور در گفتگو رندر می‌شود و Plan Studio را در زبانه‌ای کنار آن باز می‌کند. تأیید آن، گراف را به یک ارکستراسیون کامپایل می‌کند، کار تولیدشده را اجرا می‌کند و فضای نویسنده را به حالت عامل برمی‌گرداند.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+اگر یک اجرای حالت برنامه بدون هیچ فراخوانی `submit_plan` به پایان برسد، حلقه ابتدا یک تلنگر تزریق می‌کند که می‌گوید تا وقتی آن فراخوانی موفق نشود، طرحی وجود ندارد. این تلنگر صریحاً یک خروج صادقانه با مضمون «اینجا نیازی به طرح نیست» را مجاز می‌کند، چون حالت برنامه تنظیمی برای فضا است و پرسشی ساده که درون آن پرسیده می‌شود نباید طرحی نادرست را تحمیل کند.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/).
+:::note[قرارداد برآورده‌نشده، اجرای ناموفق نیست]
+اجرایی که بدون طرحش به پایان می‌رسد، همچنان با وضعیت `completed` ثبت می‌شود — فرایند پاک خارج شده است. حقیقت ماجرا روی زنده‌مانی اجرا (`empty`)، خانوادهٔ خطا (`silentRun`) و خلاصه‌ای سوار است که نام می‌برد چه چیزی تولید نشده است. [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/) را ببینید.
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+راه خروج دوم و جداگانه‌ای هم وجود دارد: `exit_plan_mode`. این یک دروازهٔ سخت تأیید است، نه یک فعل خروجی — عاملی که به‌جای `submit_plan` آن را فراخوانی کند، هیچ چیزی تحویل نداده است. فراخوانی نخست یک تأیید ماندگار `plan_exit` باز می‌کند و `pending` را برمی‌گرداند و فضا فقط‌خواندنی می‌ماند؛ فراخوانی‌های تکراری هم به‌جای بازکردن دروازهٔ دوم، در وضعیت `pending` می‌مانند. تنها پس از اعطای تأیید است که یک فراخوانی بعدی، فضا را به حالت گفتگو می‌چرخاند. رد شدن، به عامل اجازه می‌دهد درخواست تازه‌ای برای طرحی بازنگری‌شده باز کند.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+برای آنکه خودتان از حالت برنامه خارج شوید، فهرست بازشوی نویسندهٔ پیام را عوض کنید (یا Shift+Tab). `exit_plan_mode` با ابزار MCP به نام `decide_approval` تصمیم‌گیری می‌شود. ردیف‌های «تأیید عامل» در صندوق ورودی چیز دیگری هستند: پرامپت‌های تأیید هر نوبت از یک عامل در حال اجرا.
 
-### Review — read-only, no contract
+### بازبینی — فقط‌خواندنی، بدون قرارداد
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+حالت بازبینی برای بازبینی PR است. worktree را فقط‌خواندنی می‌کند، سطح ابزار را زیر ردهٔ اجرا محدود می‌کند و یک فهرست مجازِ دست‌چین‌شده از ابزارهای بازبینی، تیکتینگ و ارتباطات را اعمال می‌کند. فضایی که برای یک pull request باز می‌شود، به‌طور خودکار در حالت بازبینی ساخته می‌شود.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+خروجی عامل یافته‌های ساخت‌یافته است — **گره‌های بازبینی** — و وقتی بازبینی نهایی شود، یک **حکم**. یک گره حامل این‌هاست: یک نوع (`bug`، `suggestion`، `recommendation`، `question` یا `ticket`)، یک اولویت از P0 (مانع انتشار) تا P3 (خوب اما نه ضروری)، یک اطمینان خودسنجی‌شده، یک لنگر اختیاری (فایل به‌علاوهٔ یک محدودهٔ خط؛ یادداشت‌های سراسر مخزن لنگر ندارند) و یک وضعیت چرخهٔ عمر که پس از تأیید یک همتا — هرگز خود نویسنده — از `open` به `consensusReady` می‌رود. یافته‌ای که اولویت یا اطمینانش نباشد یا بیرون از محدوده باشد، همان‌جا در مرز خواندن حذف می‌شود و حکم را آلوده نمی‌کند.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+حکم یکی از ship، hold یا block است و نتایج هر محور که در آن تنیده می‌شود، آن را فقط _شدیدتر_ می‌کند: محور دروازه‌داری که شکست خورده باشد `block` را الزام می‌کند و محور دروازه‌داری که اجرا نشده باشد حداقل `hold` را. نبودِ شواهد هرگز دروازه‌ای را سبز نمی‌کند.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+برخلاف برنامه و ارکستر، بازبینی **هیچ قرارداد تکمیلی ندارد**. یافته‌ها از طریق `add_review_node` انباشته می‌شوند و با `finalize_review` منتشر می‌شوند و هر دوی این‌ها می‌توانند به‌درستی صفر بار فراخوانی شوند — یک عامل پایپ‌لاین که در حالت بازبینی اجرا می‌شود، ممکن است آن‌جا باشد تا به‌جایش تیکتی را تکمیل کند.
 
-### Orchestrate — read-only, proposes a team
+### ارکستر — فقط‌خواندنی، تیمی را پیشنهاد می‌دهد
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+حالت ارکستر یک هدف را به طرحی برای تمام تیم تبدیل می‌کند. مانند حالت برنامه فقط‌خواندنی است و نمی‌تواند فایل بنویسد؛ روی سطح پژوهش، یک فعل ممتاز منفرد دارد: `propose_orchestration` که پیشنهادی ساخت‌یافته منتشر می‌کند: نقش‌ها، یک درخت زیرتیکت، یک گام برآیند و یک بودجه. پرامپت فقط ابزارهای روی سطح را نام می‌برد، پس مدل نوبت‌هایش را صرف روایت‌کردن استخدام یا کار تیکتی نمی‌کند که نمی‌تواند فراخوانی کند.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/).
+هیچ چیز در پیشنهاد اجرا نمی‌شود تا آنکه شما آن را تأیید کنید. هنگام تأیید، یک مادی‌ساز قطعی عامل‌ها را استخدام می‌کند، تیکت‌ها و یک پروژه می‌سازد و یک پایپ‌لاین تولیدشده را اجرا می‌کند. تأیید فقط در اختیار اپراتور است: هیچ ابزار MCPای برای آن نیست، بنابراین یک عامل می‌تواند پیشنهاد بدهد اما هرگز نمی‌تواند طرح خودش را تأیید کند. پیشنهادهای دوباره‌ای که عامل آغاز می‌کند، با یک دورهٔ خنک‌سازیِ دو دقیقه‌ای محدود می‌شوند، بنابراین طرح‌های پشت‌سرهم رد می‌شوند و به آن‌ها گفته می‌شود که یکدیگر را ادغام کنند. [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) را ببینید.
 
-## Two rules worth knowing
+## دو قاعده که دانستنشان می‌ارزد
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**فعل خروجی خودِ یک حالت هرگز نمی‌تواند رد شود.** `submit_plan` و `propose_orchestration` در سطح ابزار سنجاق می‌شوند و از پیش تصویب‌شده‌اند، چه از فیلتر ابزار، چه از دروازهٔ تأیید و چه از نگهبان کنش، بنابراین درجهٔ خودمختاری هر فضا نمی‌تواند خروجی یک حالت را خاموش کند. `ask_user` هارنس به همین دلیل سنجاق شده است: آن _همان_ راهی است که یک اجرا به اپراتور می‌رسد، پس دروازه‌گذاشتن روی آن، اجرایی را که باید چیزی بپرسد در بن‌بست می‌گذارد. این ابزار در ردهٔ خواندن است، بنابراین هر حالت فقط‌خواندنی آن را نگه می‌دارد، و از پوشش تأیید معاف است — یک پرامپت جلوی پرامپت دیگر با نبود تأییدگرِ متصل به شکست بسته منتهی می‌شود، که یعنی سلب‌کردن عمل پرسیدن از عامل.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**حالت‌های فقط‌خواندنی دسترسی شبکه یا رازها را رد نمی‌کنند.** کلاس‌های اثری که بازبینی، برنامه و ارکستر رد می‌کنند همان‌هایی هستند که دنیا را تغییر می‌دهند: حذف فایل، نوشتن بیرون از worktree، کامیت‌ها، پوش‌ها، ساخت و انتشار PR، نوشتن‌های همگام‌سازی فروشنده، نصب بسته‌ها، ایجاد فرایند، دستکاری فضای کاری و کنترل محفظه. خروج شبکه و دسترسی به رازها عمداً در پیش‌فرض خود می‌مانند — پژوهش، تمام هدف یک حالت فقط‌خواندنی است.
 
-## Choosing and changing a mode
+## انتخاب و تغییر حالت
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+فهرست بازشوی حالت در نویسندهٔ پیام **سه** گزینه دارد: عامل (گفتگو)، برنامه و ارکستر. `review` **انتخاب‌پذیر برای کاربر نیست** — این حالت را سیستم هنگام ساخت یک فضای بازبینی PR و همچنین گام‌های پایپ‌لاین تعیین می‌کند.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+یک گرهٔ پایپ‌لاین که **فضایی باز می‌کند** می‌تواند حالت آن اتاق را با کلید `extras['mode']` سنجاق کند (`chat`، `review` یا `plan`). این کلید تطبیق دقیق دارد: هر املای دیگری — از جمله `orchestrate` — بی‌صدا نادیده گرفته می‌شود و اتاق پیش‌فرض بدنه را می‌گیرد (`review` روی بدنهٔ ساخت فضا). یک گام عامل به اتاقی می‌پیوندد که خودش نساخته است و مجوزهایش را دوباره تنظیم نمی‌کند.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+خودِ تعیین حالت ساده است. اعزام‌کننده ستون `mode` فضا را می‌خواند؛ اعزامی که فضایی ندارد — یک اجرای یک‌باره، یک فراخوانی CLI، یا شناسهٔ فضایی از فضای کاری دیگر که به‌سادگی در فایل پایگاه‌دادهٔ این فضای کاری نیست — به `chat` می‌رسد. تغییر حالت از نوبت بعد اثر می‌گذارد.
 
-## Where the guarantee actually holds
+## تضمین کجا واقعاً برقرار است
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+سطح ابزار یک حالت توسط **هارنس داخلی** ساخته و اعمال می‌شود. این تنها بستر انتقالی است که می‌تواند یک ابزار را به‌جای صرفاً ردکردن، نامرئی کند، هر فراخوانی را پیش از اجرا دروازه‌گذاری کند و یک قرارداد تکمیل را رصد کند.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/).
+روی بستر انتقال Claude Code، یک حالت غیرگفتگو به‌شکل `--permission-mode plan` فرستاده می‌شود. Claude این را به‌عنوان یک قرارداد رعایت می‌کند؛ ابزارهای خواندن، نوشتن، ویرایش و شل خودش بی‌آنکه دیده شوند اجرا می‌شوند. برای آن بستر انتقال، حالت فقط یک راهنماست و نه مرز Control Center — [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) را ببینید.
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+فهرست‌های مجاز، ابزارهای ردهٔ نوشتن و بالاتر را محدود می‌کنند. ردهٔ خواندنِ هارنس داخلی همچنان به ابزارهایی می‌رسد که هیچ فهرستی نامشان را نمی‌برد؛ در Claude Code، ابزاری که فهرست مجاز حذفش کرده باشد، رد می‌شود — چه سرور آن را داشته باشد و چه نداشته باشد.
 
-## Related concepts
+## مفاهیم مرتبط
 
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): where the mode is resolved and projected
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): which transports can enforce a mode
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/): what an approved orchestrate proposal does
-- [Use plan mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/): the practical walkthrough
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): جایی که حالت تعیین و بر لایه‌ها اعمال می‌شود
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): کدام بسترهای انتقال می‌توانند یک حالت را اعمال کنند
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): سیاست کلاس‌های اثری که پیش‌تنظیم یک حالت به آن تغذیه می‌شود
+- [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/): یک پیشنهاد ارکسترِ تأییدشده چه می‌کند
+- [استفاده از حالت برنامه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/): راهنمای عملی گام‌به‌گام

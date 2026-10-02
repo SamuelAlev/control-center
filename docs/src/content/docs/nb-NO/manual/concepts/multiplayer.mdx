@@ -1,216 +1,226 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Flerbruker — identitet, medlemskap og tilstedeværelse
+description: Hvordan Control Center modellerer mennesker og agenter som likeverdige deltakere, hva som faktisk gir tilgang til et arbeidsområde, og hvorfor levende bevissthet og delte registre ferdes i to forskjellige baner.
 slug: nb-NO/handbok/konsepter/flerbruker
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center fungerer for én operatør, men modellen under det er fleraktør
+fra første stund. Mennesker og agenter sender meldinger i de samme områdene,
+redigerer de samme sakene og vises i den samme oversikten. Å gjøre dette trygt
+og forståelig koker ned til tre beslutninger: **hvem som regnes som en aktør**,
+**hva som gir tilgang** og **hvilken tilstand som deles varig, kontra bare
+kringkastes i sanntid**.
 
-## Principals: users and agents are co-equal actors
+## Principaler: brukere og agenter er likeverdige aktører
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Alt som registrerer «hvem gjorde dette» — meldinger, saker, gjennomganger,
+planer, kjøringslogger, revisjonsoppføringer — løses gjennom en **Principal**,
+en lukket union av `UserPrincipal` og `AgentPrincipal` med en kompakt
+wire-form (`user:<id>` / `agent:<id>`). Attribusjon kollapser aldri N
+mennesker (eller N agenter) til én sentinelkonto, så en gjennomgang skrevet av
+en agent og en gjennomgang skrevet av et menneske kan skilles fra hverandre
+overalt der de dukker opp.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Fordi principalen er identitetsenheten, er den også enheten for inneslutning:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Rategrenser er per principal, ikke per økt.** Flombeskyttelsen på eksterne
+  verktøykall budsjetterer per bruker, ikke per tilkobling: alle enhetene til
+  et medlem trekker fra ett delt, glidende vindu (120 kall i minuttet, hvorav
+  maks 30 kan mutere), så å åpne tre enheter tredobler ikke noens kvote, og
+  ett støyende medlem kan ikke sulte ut de andre.
+- **Angre er per principal.** Hver klients handlingsjournal registrerer bare
+  mutasjonene _dens_ principal utførte. Du kan ⌘Z din egen sakeredigering; du
+  kan ikke angre en kollegas — når du ser den, har den varige banen allerede
+  avgjort den (se nedenfor).
 
-## Membership is the access boundary — not the pairing key
+## Medlemskap er tilgangsgrensen — ikke paringsnøkkelen
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+To separate legitimasjoner svarer på to separate spørsmål. **Paringsnøkkelen**
+(se [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/))
+autentiserer en _enhet_ mot serveren. **Medlemskap** gir den enhetens bruker
+rett til å handle inne i et _arbeidsområde_. En paret enhet hvis bruker ikke
+har medlemskap i et arbeidsområde, kan verken lese eller mutere det.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Medlemskap er én rad per (arbeidsområde, bruker), lagret i **arbeidsområdets
+egen databasefil** — så «hvem er med i dette arbeidsområdet?» er en helt
+vanlig avgrenset lesing, mens det inverse spørsmålet, «hvilke arbeidsområder
+er jeg med i?», nødvendigvis spenner over filer og er en av de få godkjente
+fan-outene på tvers av arbeidsområder. Det er dette arbeidsområdevelgeren
+kjører før noe arbeidsområde er valgt.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Hver rad har en rolle fra en rangordnet stige med fem nivåer:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Rolle    | Kan                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `owner`  | Full kontroll, inkludert sletting av arbeidsområdet; nøyaktig én per arbeidsområde                                          |
+| `admin`  | Administrere medlemmer, invitasjoner, innstillinger og destruktive operasjoner                                             |
+| `member` | Daglig lesing og skriving: meldinger, saker, agentkjøringer                                                                |
+| `viewer` | Skrivebeskyttet i hele arbeidsområdet; glob-mønstre for hemmelighetsutelatelse skjuler matchende stier på flater med kode  |
+| `guest`  | Samme lesegulv som leser-rollen, på det laveste trinnet i stigen                                                           |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Hvert tilgangsvedtak reduseres til «har den som spør, minst rolle X». Gulvet
+utledes fra operasjonens type med mindre den erklærer ett eksplisitt: en lesing
+trenger `guest`, en mutasjon trenger `member`, en destruktiv operasjon trenger
+`admin`. ACL-er per objekt utover repo-tilgangene nedenfor er bevisst utenfor
+omfanget.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Invitasjoner** er måten medlemskap gis på, fra Innstillinger → Arbeidsområde
+→ Medlemmer. En admin lager en engangskode (som en lenke eller QR-kode) som
+utløper etter sju dager som standard; serveren lagrer bare kodens SHA-256-hash,
+og selve koden vises nøyaktig én gang. Å løse den inn provisjonerer brukeren
+JIT, registrerer medlemskapet med invitasjonens rolle (aldri `owner` —
+eierskap overføres eksplisitt, gis aldri via invitasjon) og overlater til
+enhetsparing. Enhetslegitimasjoner som lages etter paring, er selv
+tidsbegrenset til 30 dager, så en paring er ikke en permanent nøkkel.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Repotilganger** ligger under medlemskap. Fordi serveren har fullstendige
+utsjekker, må medlemskap i arbeidsområdet alene aldri gi mer rettigheter enn
+kodeverten: hver flate som inneholder kode — filer, differ, PR-gjennomgang,
+kodesøk — sjekker medlemmets tilgang til _det_ repoet. Tilganger er per
+(arbeidsområde, bruker, repo) og rangert `none` → `read` → `review` → `write`,
+der `write` betyr å drive agentkjøringer som skriver til repoet. En manglende
+rad betyr `none`; eiere og admins har implisitt `write` på alle tilknyttede
+repoer og har ingen rader i det hele tatt.
 
-## Two lanes of collaboration state
+## To baner for samarbeidstilstand
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center deler delt tilstand i to baner med motsatte varighetsregler,
+fordi de to typene tilstand feiler på motsatte måter.
 
-### The ephemeral presence lane
+### Den flyktige tilstedeværelsesbanen
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Tilstedeværelse — hvem som er pålogget, hvor de er, hva de skriver, hva en
+agent gjør akkurat nå — er verdiløs i det øyeblikket den er utdatert. Hvis den
+ble lagret, måtte hver gjentilkobling avstemme «databasen sier at Sam redigerer
+denne saken» mot virkeligheten. Derfor **skrives tilstedeværelse aldri til
+databasen**. Den lever i en **tilstedeværelseshub** i minnet på serveren:
+klienter publiserer med `presence.update`, andre klienter abonnerer med
+`presence.watch`, og oppføringer utløper automatisk etter tre tapte hjerteslag
+(hjerteslag går hvert 10. sekund; hubben rydder hvert 5.). Det finnes ingenting
+å avstemme — bare å la falle.
 
-Two properties keep the lane trustworthy:
+To egenskaper holder banen til å stole på:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Identiteten kommer fra økten, aldri fra klientargumenter.** Serveren kobler
+  tilkoblingens autentiserte enhet til en bruker-id; en klient kan bare
+  oppdatere sin egen tilstedeværelse, så ingen kan forfalske en annen
+  deltakers status eller posisjon. En eksplisitt `offline`-oppdatering
+  (frakobling eller den usynlige bryteren) fjerner oppføringen umiddelbart.
+- **Oversikten formidles gjennom serveren.** Klienter utveksler aldri
+  tilstedeværelse direkte, så alle deltakere ser den samme oversikten uansett
+  topologi. Agenter har ingen klient, så serveren _syntetiserer_ oppføringene
+  deres fra levende kjøringstilstand — tenker, kjører, blokkert på en
+  godkjenningsport, ferdig — med én representativ kjøring som avgjør agentens
+  tilstand og posisjon, slik at samtidige kjøringer ikke får oversikten til å
+  flakke.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Utsendingen er lagdelt per konsument: skrivebord og nett ligger på en full
+lagdeling (maks én oversiktsutsending per 100 ms), telefonen på en
+oppsummeringslagdeling (per 500 ms), så oppdateringer i markørtakt ikke smelter
+PWA-en.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+En deltakers **posisjon** — hvor de befinner seg akkurat nå, helt ned til
+artefakten — er en lukket union: `Space`, `File` (repo + sti + valgfri linje),
+`Pr`, `Ticket`, `PlanNode`. Ikke alle posisjoner har et sted å hoppe til: det
+finnes ingen rute for filvisning, så en `File`-posisjon vises som en etikett i
+stedet for et reisemål. Banen bærer også **myke krav** («Sam redigerer denne
+saken», «en agent holder denne worktreen»): konflikt _synlighet_, ikke låser.
+Ukjente posisjonstyper parses til null, så en gammel klient bare lar være å
+vise det den ikke forstår.
 
-### The durable shared lane
+### Den varige delte banen
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Registre som må overleve — saker, det delte Notater-dokumentet i området,
+meldinger — tar den motsatte veien: autoritative, ordnede og lagrede.
+Samtidige redigeringer avgjøres av **siste skriver vinner, i den rekkefølgen
+serveren mottok dem**, aldri av klientklokker. Avgjørelsen er bevisst
+finkornet: sakeredigeringer er _per kolonne_, så to personer som redigerer
+ulike felt i samme sak, lander begge, og ingen overskriver den andre
+(arbeidsflytoverganger beholder optimistisk låsing i stedet);
+Notater-dokumentet i området er én kolonne, så hele dokumentet er LWW, med
+myke krav på tilstedeværelsesbanen som gjør samtidig redigering synlig i
+stedet for låst. Det er bevisst ikke en CRDT — bevisbyrden ligger på CRDT-en,
+og mottaksrekkefølge-LWW pluss synlige krav dekker de faktiske
+samarbeidsmønstrene.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+«Siste skriver» betyr **rekkefølgen serveren mottok dem i**, aldri en
+klientklokke — en bærbar maskin med feil klokke kan ikke vinne en redigering
+den tapte. Bak den varige banen ligger **synkroniseringsstrømmen**:
+SQLite-triggere legger hver mutasjon til en endringslogg per arbeidsområde
+_inne i skrivetransaksjonen_, og tildeler et monotont sekvensnummer per
+arbeidsområde i samme transaksjon som mutasjonen selv. En tjeneste på serveren
+følger den loggen og lager versjonerte delta-rammer i sekvensrekkefølge.
+Klienter utvikler seg fra fulle øyeblikksbilder til deltaer; et hull i
+sekvensen setter det lageret tilbake til øyeblikksbildemodus i stedet for å
+bruke rammer feil.
 
-## Follow, steer, take over, hand back
+## Følg, styr, ta over, gi tilbake
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Tilstedeværelsesbanen er ikke bare en oversikt — den driver samarbeidsverbene:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Følg-modus.** Klikk på en deltaker, og klienten din rir på posisjonen
+  deres og navigerer mens de navigerer. Følg varer «til du handler»: i det
+  øyeblikket du navigerer på egen hånd, kobles følgen fra. Et banner som kan
+  avvises, varsler når en annen deltaker setter søkelys på (presenterer) et
+  område du er i.
+- **Styr.** En melding til en kjørende agent kølegges som styring; agenten
+  leser den på nytt før den fortsetter på neste tur, så du kan dytte en kjøring
+  i riktig retning underveis uten å drepe den.
+- **Ta over.** Å overta kontrollen over en samtale setter hver aktive kjøring
+  på pause ved neste rene tur-grense (en Claude Code-kjøring, som ikke har noen
+  trygg grense, stoppes) bak et git-øyeblikksbilde per tur, så overtakelsen kan
+  reverseres. En varig markør blokkerer nye utsendinger inn i området og
+  overlever en serveromstart — serveren gjenopptar aldri automatisk inn i et
+  menneskes halvferdige redigering. Én levende redaktør per worktree er et
+  mykt krav: en andre overtakelse er synlig og avvises i stedet for å slås
+  sammen i det stille.
+- **Gi tilbake.** Å gi tilbake kontrollen legger ut et strukturert
+  diff-sammendrag av worktreen i området, kølegger det som styring for de
+  pausede kjøringene, gjenopptar dem og fjerner markøren.
 
-## The autonomy dial
+## Autonomibryteren
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Styring og overtakelse er inngrep i etterkant. **Autonomibryteren** er den
+varige innstillingen: per område, per agent, satt fra områdehodet, og den
+avgjør hva som skjer når en agent når en handling bak en port.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Nivå                   | Wire-verdi        | Effekt på et verktøykall bak en port                                                                           |
+| ---------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| Bare foreslå           | `proposeOnly`     | Nektes umiddelbart, med en begrunnelse agenten bes formidle videre — den kan beskrive handlingen, men ikke utføre den |
+| Handle med godkjenning | `actWithApproval` | Godkjenningsporten som feiler lukket: én bekreftelse vises til en tilkoblet operatør, og ingen godkjenner betyr nektet |
+| Handle fritt           | `actFreely`       | Forhåndsgodkjent, unntatt der en hard `deny`-regel i tillatelsesreglene gjelder — en nekt-regel vinner alltid  |
+| (ikke satt)            | `null`            | Samme som handle med godkjenning: serverens standard                                                            |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+To ting ligger utenfor bryteren i begge retninger. En modus' eget utdataverb er
+låst og kan aldri nektes, uansett hva bryteren sier — orkestreringsmodus var en
+gang strukturelt ute av stand til å sende fra seg det eneste den leverer,
+fordi et forhåndsvalg nektet den effektklassen verbet erklærer. Og en hard
+`deny` fra handlingstillatelsesreglene kan ikke overstyres av `actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/nb-NO/handbok/konsepter/agentmodell/).
+:::note[Bryteren gjelder bare for den innebygde harnessen]
+Den brukes av godkjenningscallbacken i harness-løkken. En agent som kjører på
+Claude Code-adapteret, gjør sine egne verktøykall inne i sin egen prosess, der
+Control Center ikke har noe å kontrollere — se
+[Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
 :::
 
-## Solo zero-regression
+## Solo – ingen regresjon
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Alt dette er additivt. Arbeidsflyten til en som jobber alene, er uendret: med
+ett menneske og ingen agenter har tilstedeværelseshubben ingenting å
+kringkaste, så banen sender sitt første øyeblikksbilde og ligger deretter i ro
+med null trafikk; LWW- og synkroniseringsmaskineriet er den samme
+enkelt-skriver-banen som det alltid har vært; og paringsnøkkelen er fortsatt
+enhetslegitimasjonen den alltid har vært. Medlemskap er allerede
+tilgangsgrensen — med ett menneske finnes det én eierrad og ingen ekstra
+grensesnittelementer for oversikten.
 
-## Related concepts
+## Se også
 
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/): the boundary membership enforces
-- [Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/): the pairing key and device credential side of identity
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): the agent half of the principal union
-- [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/): the runs that steering and take-over pause and resume
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/): the effect-class policy the autonomy dial composes with
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/): the bus that live updates ride
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/): grensen medlemskapet håndhever
+- [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/): paringsnøkkelen og enhetslegitimasjonen på identitetssiden
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): agenthalvdelen av principal-unionen
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/): kjøringene som styring og overtakelse setter på pause og gjenopptar
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): effektklassepolicyen autonomibryteren spiller sammen med
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/): bussen som sanntidsoppdateringene rir på

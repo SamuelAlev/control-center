@@ -2,6 +2,7 @@
 title: Direct background workers
 description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
 slug: en-GB/manual/guides/direct-background-workers
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
 This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
@@ -46,7 +47,7 @@ Spawning is asynchronous by design. A director that blocks on every spawn is run
 | Tier   | For                                                              |
 | ------ | ---------------------------------------------------------------- |
 | `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `good` | Design, judgement, or reviewing what a `fast` worker produced      |
 
 A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
 
@@ -60,7 +61,7 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summariser of other agents' optimism.
 
 `lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
 

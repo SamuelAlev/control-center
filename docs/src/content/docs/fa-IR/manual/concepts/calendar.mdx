@@ -1,128 +1,135 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: تقویم و زمان‌بندی
+description: چگونه Control Center تقویم Google را روی سرور همگام‌سازی می‌کند، چرا ورود با اعطای کد دستگاه انجام می‌شود و محدودهٔ فقط‌خواندنی چه چیزی را پوشش می‌دهد.
 slug: fa-IR/راهنمای-کاربر/مفهومها/تقویم
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/).
+Control Center به Google Calendar متصل می‌شود تا روزِ کاری شما در کنار
+ناوگانتان قرار بگیرد. این یکپارچه‌سازی رویدادهای شما را همگام می‌کند، آن‌ها را
+در نمای ماه، هفته، روز و برنامه نشان می‌دهد، پیش از شروع جلسه به شما هشدار
+می‌دهد و هر رویداد را به یک [جلسه(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/)ی
+ضبط‌شده و خلاصه‌شده تبدیل می‌کند.
 
-## What it changes on Google
+## چه چیزی را در Google تغییر می‌دهد
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+تقریباً هیچ‌چیز. این یکپارچه‌سازی رویدادها را می‌گیرد و نمایش می‌دهد. دعوت‌نامه‌ها را
+نمی‌سازد، ویرایش یا حذف نمی‌کند و به آن‌ها پاسخ نمی‌دهد. هر اتصالِ کد دستگاه، چه
+کلاینتِ داخلی و چه کلاینتِ خودتان، `calendar.readonly` به‌همراه `openid email` را
+درخواست می‌کند.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+رویدادها در پایگاه‌دادهٔ خودِ فضای کاری **روی سرور**
+(`<dataDir>/<workspaceId>/workspace.db`) همگام‌سازی می‌شوند و هر کلاینت آن‌ها را
+روی RPC رندر می‌کند. هیچ کلاینتی اعتبارنامهٔ Google را در اختیار ندارد.
 
-## Per-workspace accounts
+## حساب‌ها به تفکیک فضای کاری
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+حساب‌های تقویم، مثل هر چیز دیگری در Control Center، در محدودهٔ فضای کاری تعریف
+می‌شوند. هر [فضای کاری(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) حساب Google
+خودش (یا چند حساب) را متصل می‌کند و رویدادها و توکن‌های یک فضای کاری هرگز از
+فضای کاری دیگر دیده نمی‌شوند. با جابه‌جا شدن بین فضاهای کاری، تقویم‌هایی که
+می‌بینید هم عوض می‌شوند.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+یک فضای کاری می‌تواند **چندین** حساب Google را متصل کند، مثلاً یک حساب کاری و
+یک حساب شخصی؛ رویدادهای آن‌ها در همان نماها ادغام می‌شوند.
 
-## Why sign-in is a device code
+## چرا ورود با کد دستگاه انجام می‌شود
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` بدون رابط، مرورگری ندارد که تغییرمسیر OAuth را دریافت کند. پس از
+چنین چیزی استفاده نمی‌کند: مجوز را با **اعطای کد دستگاه** (RFC 8628) می‌گیرد.
+سرور یک کد کاربر کوتاه و یک نشانی Google نشان می‌دهد، شما روی هر دستگاهی که
+مرورگر دارد تأیید می‌کنید و سرور تا زمان تأیید شما درخواست‌ها را تکرار می‌کند. یک
+نصب بدون رابط دقیقاً به این دلیل می‌تواند حساب متصل کند که هیچ نقطهٔ پایانیِ
+تغییرمسیری برای میزبانی وجود ندارد.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+نکته‌ای که پیش از آوردن اعتبارنامه‌های خودتان باید بدانید: نوع کلاینت باید
+«TV and Limited Input devices» گوگل باشد. Google فقط مجموعه‌ای محدود و
+از پیش‌مجاز از محدوده‌ها را به این نوع کلاینت اعطا می‌کند و پروژه‌ای که Calendar
+برای آن مجاز نباشد با `invalid_scope` شکست می‌خورد — در این حالت به کلاینت
+loopback یا کلاینت وب نیاز خواهید داشت.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+توکن‌ها هرگز از سرور بیرون نمی‌روند. آن‌ها در `secrets.json` سرور، در شاخهٔ دادهٔ
+آن، با کلید `google_google:<workspaceId>:<email>`، در کنار پایگاه‌داده‌ها و زیر
+همان مرز اعتمادِ فایل‌سیستم میزبان نوشته می‌شوند. سرور دسترسی را خودکار تازه
+می‌کند و هنگامی که Google یک حساب را برای همیشه بی‌اعتبار می‌کند (نشستی لغوشده
+یا مدتی طولانی منقضی‌شده)، رویداد `CalendarAuthExpired` را منتشر می‌کند و به‌جای
+شکست خاموش، بنر **اتصال مجدد** را نشان می‌دهد.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+نسخه‌ای که از کد منبع ساخته می‌شود **هیچ** اعتبارنامهٔ Google با خود ندارد — شما
+شناسه و کلید محرمانهٔ کلاینت خودتان را تأمین می‌کنید. نسخه‌های رسمی انتشار، یک
+کلاینت کد دستگاهِ غیرمحرمانه را در خود جای می‌دهند تا جریان اتصال بدون هیچ
+تنظیمی کار کند؛ سرور فقط نشانگری که به آن ارجاع می‌دهد ذخیره می‌کند، نه نسخه‌ای از
+آن. متغیر `GOOGLE_OAUTH_CLIENT_ID` (و کلید محرمانهٔ آن) در محیط همیشه بر جفت
+جاسازی‌شده اولویت دارد. به‌عمد هیچ فلگ `--google-client-id` وجود ندارد: فلگ‌های
+ناشناخته نادیده گرفته می‌شوند و یک کلید محرمانه روی خط فرمان از طریق `ps` قابل
+خواندن است.
 
-For running your own Google project, see
-[Connect a Google Calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/).
+برای راه‌اندازی پروژهٔ Google خودتان،
+[اتصال Google Calendar(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/) را ببینید.
 
-## Sync
+## همگام‌سازی
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+سرور یک پنجرهٔ چرخشی از رویدادهای هر حساب متصل — همهٔ تقویم‌های آن حساب، نه فقط
+تقویم اصلی — را **هر دو دقیقه** می‌گیرد، به‌علاوه به‌صورت درخواستی (شروع، اتصال،
+تازه‌سازی دستی). این فاصلهٔ کوتاه مقرون‌به‌صرفه است چون جاروب افزایشی است: هر
+تقویم توکن همگام‌سازی خودش را دارد، بنابراین یک تقویم بدون تغییر به‌جای دریافت
+دوبارهٔ پنجره‌ای پنج‌ماهه، فقط هزینهٔ یک پاسخ تقریباً خالی را دارد.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+رویدادهای تکرارشونده سمت سرور باز می‌شوند، پس هیچ کلاینتی قاعدهٔ تکرار را تجزیه
+نمی‌کند. جابه‌جا شدن به ماهی خارج از پنجرهٔ فعلی، آن بازه را به‌صورت تنبل بارگذاری
+می‌کند. رویدادهای حذف‌شده یا آن‌هایی که از بازه بیرون رفته‌اند، در همگام‌سازی
+بعدی از فهرست کنار گذاشته می‌شوند.
 
-## Views
+## نماها
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| نما         | چه چیزی را نشان می‌دهد                                    |
+| ----------- | ---------------------------------------------------------- |
+| **ماه**     | شبکهٔ کامل یک ماه (مبتنی بر بستهٔ `kalender`)              |
+| **هفته**    | رویدادهای زمان‌دار یک هفته در یک شبکهٔ زمانی              |
+| **روز**     | رویدادهای زمان‌دار یک روز در یک شبکهٔ زمانی               |
+| **برنامه**  | فهرستی قابل اسکرول از رویدادهای پیش‌رو                     |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+تقویم را در `/calendar` باز کنید؛ انتخاب یک رویداد، جزئیات آن را در
+`/calendar/:eventId` باز می‌کند. نمای انتخابی شما در ترجیحات خودِ همان کلاینت
+ذخیره می‌شود، پس به دستگاه دیگری منتقل نمی‌شود.
 
-## Meeting alerts
+## هشدارهای جلسه
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+یک زمان‌بندِ هر-دقیقه رویدادهایی را بررسی می‌کند که تا یک بازهٔ مقدمِ قابل
+پیکربندی شروع می‌شوند و یک اعلان **«جلسه به‌زودی شروع می‌شود»** (رویداد دامنهٔ
+`MeetingStartingSoon`) ایجاد می‌کند. اعلان در صورت وجود، نشانی پیوستن را با خود
+دارد و کلیک روی آن جزئیات رویداد را باز می‌کند. هشدارها بر پایهٔ `alertedAt` روی
+رویداد یکتا می‌شوند، بنابراین یک جلسه هرگز دو بار هشدار نمی‌دهد، حتی در
+راه‌اندازی‌های مجدد؛ و رویدادی که زمان شروعش هنگام بسته‌بودن برنامه گذشته باشد،
+هرگز دوباره پخش نمی‌شود.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+دو محدودیت وجود دارد که به‌سادگی شما را غافلگیر می‌کند. این زمان‌بند **سمت کلاینت
+و روی دسکتاپ** اجرا می‌شود و فقط برای فضای کاری‌ای که همین حالا باز دارید — فضای
+کاری‌ای که در آن نیستید هیچ هشداری نمی‌دهد. و نسخهٔ وب اصلاً مسیری برای اعلان
+سیستم‌عامل ندارد، پس آن هم هیچ هشداری نمی‌دهد.
 
-## Record and link
+## ضبط و پیوند
 
-From a calendar event you can start a [meeting recording](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+از روی یک رویداد تقویم می‌توانید یک
+[ضبط جلسه(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) را با عنوان همان رویداد شروع
+کنید. Control Center پیوندی یک‌به‌یک بین ضبط و رویداد ذخیره می‌کند، بنابراین
+یادداشت‌های جلسه و ورودی تقویم به‌هم متصل می‌مانند، بدون اینکه هیچ‌یک از این دو
+قابلیت به دیگری وابسته باشد.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**شروع ضبط و پیوند** فقط در دسکتاپ در دسترس است. در کلاینت وب، این کنش گزارش
+می‌دهد که ضبط در دسترس نیست — حتی با اینکه جریان ضبط خودِ صفحهٔ جلسه‌ها در مرورگر
+کار می‌کند.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[عامل‌ها نمی‌توانند تقویم شما را بخوانند]
+هیچ ابزار MCP تقویمی وجود ندارد. یک عامل نمی‌تواند رویدادها را فهرست کند، جزئیات
+یک رویداد را بخواند یا از طرف شما به دعوت‌نامه‌ها پاسخ دهد؛ سطح `calendar.*` فقط
+RPC و تنها برای کلاینت‌های انسانی است.
 :::
 
-## See also
+## همچنین ببینید
 
-- [Meetings and transcription](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/): what happens after you start a recording
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): why calendar accounts are per-workspace
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
-- [Record and summarize a meeting](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ضبط-جلسه/)
+- [جلسه‌ها و رونویسی(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/): پس از شروع یک ضبط چه اتفاقی می‌افتد
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): چرا حساب‌های تقویم به تفکیک فضای کاری هستند
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): `MeetingStartingSoon` و `CalendarAuthExpired`
+- [اتصال Google Calendar(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
+- [ضبط و خلاصه‌کردن یک جلسه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ضبط-جلسه/)

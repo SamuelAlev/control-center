@@ -1,155 +1,156 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Tickety a delegování
+description: Proč ticket zaznamenává práci, aniž by ji odesílal, jak se delegování hlídá a co zrcadlo dodavatele vlastní a co ne.
 slug: cs-CZ/prirucka/koncepty/tickety
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Ticket je jednotka práce, kterou Control Center sleduje. Schválně toho umí
+málo: název, tělo, stav, vlastník a místo ve stromu. Není to plocha, na které
+agenti pracují. Práce agentů žije v konverzacích a strukturovaný výstup běhu
+leží na záznamu běhu.
 
-## Assignment records ownership; it dispatches nothing
+## Přiřazení zapisuje vlastnictví a nic neodesílá
 
-This is the single most important thing to get right about tickets.
+Tohle je na ticketech to nejdůležitější, co je potřeba mít správně.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/cs-CZ/prirucka/koncepty/domenove-udalosti/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Nastavení `assignedAgentId` zapíše pole a publikuje
+[doménovou událost](/cs-CZ/prirucka/koncepty/domenove-udalosti/) `TicketAssigned`.
+Ta událost je signál pro audit a pro oznámení a zároveň spouštěč pipeline.
+**Přiřazení agentovi nespustí žádný běh.** Žádný dispečer ticketů nesleduje
+`assignedAgentId` a toho agenta neprobudí.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Výjimka je tým. Když je nastavené `assignedTeamId`, `TeamRoutingService`
+odešle vedoucího týmu s provozním protokolem a sestavou.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Má-li na ticketu pracovat konkrétní agent, požádáš ho v konverzaci, odešle ho
+krok pipeline, nebo mu práci deleguje jiný agent. Přiřadit ticket agentovi a
+čekat je to jediné, z čeho práce nikdy nevznikne.
 
-## Mirror and overlay
+## Zrcadlo a překryv
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Ticket může být čistě místní, nebo ho kryje externí tracker. Obojí nese jeden
+řádek.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Zrcadlo** (poskytovatel, externí klíč, URL, název, popis, priorita, štítky,
+surový a normalizovaný stav, časová razítka) je u vzdáleného ticketu cache.
+Zdroj pravdy je tam vzdálená strana a obnovení zrcadlo přepíše celé.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Překryv** (přiřazení, delegování, vazba na prostor, rodič, projekt, propojené
+PR) patří jen Control Center. Tracker o něm neví a obnovení se ho nedotkne.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Právě tohle rozdělení dělá synchronizaci bezpečnou. Stažení od dodavatele smí
+zrcadlo přepsat i destruktivně a orchestrační metadata navršená nad ním se
+neztratí.
 
-## The lifecycle graph binds agents, not you
+## Graf životního cyklu váže agenty, ne tebe
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Stavy jdou `backlog → open → inProgress → inReview → done`. `blocked` je
+vedlejší smyčka a `failed` / `cancelled` jsou další koncové stavy.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Graf přechodů se vynucuje **jen na cestě agenta a automatizace**, tedy u
+nástrojů MCP a rekoncilerů. Nepovolený přechod se tam zapíše do logu a
+ignoruje, takže zmatený agent ticket z koncového stavu nevrátí zpátky.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Každá změna, kterou člověk udělá v rozhraní, posílá `force: true` a graf
+úplně obejde. Člověk smí ticket přesunout na jakýkoli stav, který výběr
+nabízí, včetně znovuotevření koncového. Výběr `failed` nenabízí. Ten
+nastavují agenti přes `fail_ticket`. Graf je pojistka pro automatizaci, ne
+pravidlo o tom, jak smí práce postupovat.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` vlastní každou mutaci přes jediný průchod. Načte
+řádek, ověří, že patří do pracovního prostoru volajícího, a zapíše s
+očekávanou `version`, takže dvě souběžné úpravy se navzájem tiše nepřepíšou.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/).
+Úplnou tabulku stavů, přechody, seznam polí a druhy vazeb najdeš v
+[Životním cyklu ticketu](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/).
 
-## Provenance: how a ticket came to exist
+## Původ: jak ticket vznikl
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Každý ticket má `originKind`. Enum má pět hodnot (`manual`, `pipelineStep`,
+`agentDelegation`, `externalSync`, `recovery`), ale dnes se zapisují jen dvě:
+`manual` (výchozí hodnota u `createTicket`, včetně delegovaných potomků) a
+`externalSync` (synchronizační engine při stažení od dodavatele).
+`TicketWorkflowService.createTicket` argument původu nepřijímá, takže
+`pipelineStep`, `agentDelegation` a `recovery` se na řádek nikdy nedostanou.
 
-## Guarded delegation
+## Hlídané delegování
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Delegování je místo, kde agent zakládá práci pro jiného agenta, a právě tady
+by mohlo uniknout oprávnění. Pojistky proto sedí na serveru v jednom průchodu,
+ne v pokynech promptu.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` jde přes `TicketWorkflowService.delegateGuarded`. Ten z
+rodičovského řetězce spočítá hloubku a kořen potomka a pak spustí všechny čtyři
+kontroly `DelegationGuards`: skok, který by překročil **strop hloubky 3**, skok
+zpět k agentovi, který už v řetězci je (**detekce cyklu**), **strop autonomie**
+(účinná úroveň delegáta v prostoru nesmí přesáhnout úroveň toho, kdo deleguje)
+a **obálku rozpočtu** (delegování se účtuje ze zbývajícího rozpočtu do tvrdého
+zastavení toho, kdo deleguje, a další rozpočet nevyrobí). Produkční zapojení
+dodá oba porty resolverů. Autonomie a rozpočet se přeskočí, když chybí
+`from_agent_id` (projde i neomezený rozpočet a rozpočet bez politiky).
+Odmítnutí se vyhodí jako `DelegationRefusedException` a jeho zpráva dojde
+delegujícímu agentovi doslova. Je to hlasité ne, ne tiché nic.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` je starší sourozenec **bez pojistek**: volá přímo
+`createTicket` a všechny pojistky přeskočí. Používej `delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Nepleť strop hloubky delegování (3, na řetězcích `delegate_task`) se stropem
+zanoření podagentů ve vestavěném harnessu (2). Jsou to různé limity na různých
+mechanismech.
 
-## Hierarchy, links and projects
+## Hierarchie, vazby a projekty
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Vztah rodiče a podticketu žije na `tickets.parent_ticket_id` a vlastní ho
+`setParent` / `clearParent`. Nejsou to řádky `ticket_links`, takže cokoli, co
+čte vazby ticketu, musí oba zdroje sloučit.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` drží orientované hrany mezi tickety, které jinak spolu
+nesouvisejí:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Typ vazby     | Význam                                   |
+| ------------- | ---------------------------------------- |
+| `blocks`      | Zdroj blokuje cíl                        |
+| `relatesTo`   | Oba tickety spolu souvisejí (symetricky) |
+| `duplicateOf` | Zdroj je duplikát cíle                   |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**Projekt** je seskupení ticketů v rámci jednoho pracovního prostoru ke
+společnému cíli. Projekty patří jen Control Center a k externímu poskytovateli
+se nikdy nesynchronizují.
 
-## Collaborators
+## Spolupracovníci
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Řádky `TicketCollaborator` připojují k ticketu víc než jednoho principála, v
+roli `assignee`, `collaborator` nebo `reviewer`. Lidé a agenti jsou rovnocenné
+řádky: `principalId` a `collaboratorType`. Není tu sentinelová hodnota pro
+„uživatele“ ani cizí klíč do jedné nebo druhé tabulky.
 
-## External sync
+## Externí synchronizace
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Primární je ticket v Control Center. Smazání ticketu je **jen místní**, takže
+ticket krytý dodavatelem, který smažeš, se na trackeru nesmaže a při další
+synchronizaci se může vrátit. Spolupracovníci a podtickety se mažou kaskádou.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Přihlašovací údaje adaptéru se berou z úložišť přihlašovacích údajů na serveru
+(klíč Linear nebo token GitHub vložený v Nastavení se vezme při dalším
+požadavku; prostředí ta úložiště jen naplní).
 
-## Tickets and pipelines
+## Tickety a pipelines
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Žádný uzel pipeline ticket nevytvoří, nedokončí ani nezruší. Paleta takový
+krok nemá a engine nevolá `TicketWorkflowService`. Spouštěč pipeline se přesto
+může spustit na `TicketAssigned`, `TicketCompleted`, `TicketFailed` nebo
+`TicketCancelled` (ty čtyři ticketové události `EventPayloadMapper` skutečně
+mapuje). Sloupec `pipelineRunId` na ticketu není. Vazba na pipeline žije na
+záznamu běhu agenta.
 
-## See also
+## Viz také
 
-- [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/): ticket events can trigger a pipeline
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/): where a DAG of sub-tickets comes from
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): who a ticket is assigned to
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/): the ticket lifecycle events
-- [Ticket lifecycle](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/): statuses, fields, transitions, relations
-- [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/)
-- [Delegate work to agents](/cs-CZ/prirucka/navody/delegovani-ticketu/)
-- [Organize work with projects](/cs-CZ/prirucka/navody/projekty/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/): události ticketu umí spustit pipeline
+- [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/): odkud se bere DAG podticketů
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): komu se ticket přiřazuje
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): události životního cyklu ticketu
+- [Životní cyklus ticketu](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/): stavy, pole, přechody, vazby
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/)
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Organizujte práci v projektech](/cs-CZ/prirucka/navody/projekty/)

@@ -1,7 +1,8 @@
 ---
 title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+description: How a GitHub PR comment becomes an agent turn with no webhook, what authorises the author, and who each side of the conversation is attributed to.
 slug: en-GB/manual/concepts/pr-conversations
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
 A pull request is already where the conversation about code happens. PR
@@ -15,7 +16,7 @@ bot's answers come back on GitHub, in the lane the question was asked in.
 
 Three decisions shape the feature, and each is the same decision the chat
 bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
+runs**, **what authorises a comment that arrives from outside** and **who each
 side is attributed to**.
 
 ## Polling is the transport
@@ -25,7 +26,7 @@ inbound URL — the one thing this surface deliberately never requires. So
 discovery is a sweep: every minute or so, one aliased search per app
 installation asks GitHub for PRs that mention the bot (or its short slug) and
 for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
+have their comment threads read, and everything is diffed by comment id against
 what was seen last sweep.
 
 The design consequences are worth naming:
@@ -38,10 +39,10 @@ The design consequences are worth naming:
 - **Offline time is caught up, not replayed.** The seen-set is persisted, so a
   restart delivers what arrived while it was down. The one exception is the
   first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
+  recorded silently — an operator who labelled twenty PRs before this server
   existed must not come back to twenty running reviews.
 - **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
+  labelled PR triggers once, ever. Re-adding a label after removing it is
   invisible to the sweep; a mention is the re-run path.
 
 The search runs once per installation account on that owner's own client,
@@ -49,7 +50,7 @@ because an installation token only sees its own installation's repos — a
 single server-wide credential would quietly miss every PR under the app's
 other installations.
 
-## Membership authorizes, not the comment
+## Membership authorises, not the comment
 
 A PR comment arrives carrying little more than an author login — an
 unauthenticated external identity until proven. The bot resolves it against a

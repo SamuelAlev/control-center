@@ -1,134 +1,121 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: שיחות בקשות משיכה
+description: איך הערה בבקשת משיכה ב-GitHub הופכת לתור של סוכן בלי webhook, מה מעניק הרשאה למחבר, ולמי מיוחס כל צד של השיחה.
 slug: he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+בקשת משיכה היא ממילא המקום שבו מתרחשת השיחה על הקוד. שיחות בקשות משיכה הופכות
+אותה למשטח בסביבת עבודה של Control Center, באותה דרך שבה
+[גשר צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) הופך את Slack למשטח כזה: תייגו
+ב-@ את הבוט של ה-GitHub App של השרת בבקשת משיכה, השיבו בתוך שרשורי הסקירה שלו, או
+הוסיפו את התווית `ai-review`, והעבודה מתרחשת במרחב הסקירה של ה-PR — תחת אותו ייחוס
+ואותם מעקות בטיחות כמו כל מה שמוקלד באפליקציה. הערה גם מותנית בחברות; התווית לא,
+מפני שאין לה מחבר. תשובות הבוט חוזרות ב-GitHub, במסלול שבו נשאלה השאלה.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+שלוש החלטות מעצבות את התכונה, וכל אחת מהן היא אותה החלטה שגשר הצ'אט קיבל עבור
+צ'אט, מנוסחת מחדש עבור מארח קוד: **לאיזה כיוון רץ החיבור**, **מה מעניק הרשאה
+להערה שמגיעה מבחוץ** ו**למי מיוחס כל צד**.
 
-## Polling is the transport
+## הסריקה היא אמצעי התעבורה
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+ערוץ הדחיפה היחיד של GitHub עבור אפליקציה הוא webhook, ו-webhook זקוק לכתובת
+נכנסת — הדבר האחד שהמשטח הזה בכוונה לעולם אינו דורש. לכן הגילוי הוא סבב: בערך כל
+דקה, חיפוש אחד עם כינוי לכל התקנת אפליקציה מבקש מ-GitHub את בקשות המשיכה
+שמאזכרות את הבוט (או את ה-slug הקצר שלו) ואת בקשות המשיכה הפתוחות שנושאות את
+תווית הסקירה; בקשות משיכה שכבר יש להן מרחב סקירה נקראים שרשורי ההערות שלהן; והכול
+מושווה לפי מזהה הערה מול מה שנראה בסבב הקודם.
 
-The design consequences are worth naming:
+השלכות העיצוב ראויות לציון:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **השהיה היא מרווח של סבב, לא אירוע.** אישור ה-👀 נוחת בתוך כדקה. שום דבר דחוף
+  אינו תלוי בכך.
+- **פעם אחת בדיוק, לכל הערה.** מזהי הערות ייחודיים ברחבי GitHub; כל אחד נרשם ברגע
+  שהוא מסווג כמתאים, לפני שדבר כלשהו פועל עליו. קריסה יכולה לאבד את הטיפול בהערה,
+  אבל לעולם לא להפעיל אותה פעמיים.
+- **זמן לא מקוון מושלם, לא משוחזר.** קבוצת מה שנראה נשמרת בדיסק, כך שהפעלה מחדש
+  מספקת את מה שהגיע בזמן שהשרת היה למטה. היוצא מן הכלל היחיד הוא הסבב הראשון אי
+  פעם: בלי זיכרון להשוות מולו, כל מה שתלוי ועומד נרשם בשקט — מפעיל שתייג עשרים
+  בקשות משיכה לפני שהשרת הזה נוצר אסור שיחזור לעשרים סקירות שרצות.
+- **התווית היא קבוצה, לא אירוע.** החיפוש מדווח על _נוכחות_ של תווית, כך שבקשת
+  משיכה מתויגת מופעלת פעם אחת, ורק פעם אחת. הוספה מחדש של תווית לאחר הסרתה אינה
+  נראית לסבב; אזכור הוא הנתיב להרצה חוזרת.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+החיפוש רץ פעם אחת לכל חשבון התקנה, בלקוח של אותו בעלים עצמו, מפני שאסימון התקנה
+רואה רק את המאגרים של ההתקנה שלו — אישור גישה יחיד ברמת השרת היה מחמיץ בשקט כל
+בקשת משיכה תחת שאר ההתקנות של האפליקציה.
 
-## Membership authorizes, not the comment
+## החברות מעניקה הרשאה, לא ההערה
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+הערה בבקשת משיכה מגיעה כשהיא נושאת מעט יותר משם המשתמש של המחבר — זהות חיצונית
+שאינה מאומתת עד שהיא מוכחת. הבוט פותר אותה מול אינדקס הפוך של חברי סביבת העבודה
+ושבי חשבונות ה-GitHub המקושרים שלהם, שנבנה מחדש לפי TTL מפני שאנשים נכנסים
+ומוזמנים בזמן שהשרת רץ.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+כשל סגור נראה כמו סולם, וכל שליב עונה בשרשור שבו סירב:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **שם משתמש לא מוכר** — כזה שאינו מקושר, או שמקושר למישהו שאינו חבר בסביבת העבודה
+  הזו — נענה שעליו להיכנס ולבדוק שהוא אכן שייך
+- **חבר עם הרשאת קריאה בלבד** (`viewer` או `guest`) נענה שהתפקיד שלו אינו יכול
+  להתחיל עבודה
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+שני מקרי שם המשתמש הלא מוכר חולקים תשובה אחת: האינדקס ההפוך מחזיר רק חבר של סביבת
+העבודה _הזו_, כך שחשבון לא מקושר וחשבון מקושר שאינו חבר הם אותה החמצה. אף אחד מהם
+אינו ממשיך. הערה לעולם אינה מיוחסת למי שלא שלח אותה, ומילותיו של זר לעולם אינן
+נכנסות לסביבת עבודה שהוא אינו יכול לראות.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+לתווית `ai-review` אין מחבר לפתור, ולכן היא אינה מטפסת בסולם הזה. הוספה שלה
+מתחילה את הסקירה בסביבת העבודה שכבר מקשרת את המאגר.
 
-## Two identities, on purpose
+## שתי זהויות, במכוון
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+כל צד של השיחה נושא זהות אחרת, וההבדל הוא התכונה:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **ב-GitHub, הבוט הוא השרת.** כל הערה, ריאקציה ותשובה שהגשר מפרסם נוסעת על אסימון
+  ההתקנה של האפליקציה. איש לא לחץ על דבר בלקוח, ולכן שום דבר לא שואל את החשבון של
+  אדם — אותו כלל שמרחיק webhooks וסריקה מאישורים של בני אדם.
+- **במרחב, השאלה היא שלכם.** ההודעה מיוחסת לחבר שאליו נפתר המחבר, והרצת הסוכן
+  מתבצעת בשמו: הסוכן נרשם כשותף בקומיטים, וחוגת האוטונומיה ומעקות הבטיחות לפעולות
+  של המרחב חלות בדיוק כפי שהן חלות על הודעה שמוקלדת באפליקציה. פעולות כתיבה למארח
+  הקוד מההרצה עדיין יוצאות כהאפליקציה — אותו כלל כמו בנקודה שלמעלה — ולא על האסימון
+  האישי של החבר.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+פרסום ממצאי הסקירה חזרה ל-GitHub נשאר החלטה של אדם, שמתקבלת ב-Control Center.
+אזכור יכול _להתחיל_ סקירה; רק אדם מפרסם אחת.
 
-## The loop guard, and the short name
+## הגנת הלולאה, והשם המקוצר
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+כל מה שנכתב על ידי חשבון בוט נזרק לפני שרץ שער כלשהו — שלנו במיוחד, וכל סיומת
+`[bot]`, כך שגם בוט הסקירה של אפליקציה אחרת לא יכול להעיר את שלנו. בלי זה,
+התשובות של הבוט עצמו היו מגיעות כהערות חדשות ומפעילות אותו שוב, לנצח.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+סיומת ה-`[bot]` היא גם הסיבה שהצורה המקוצרת קיימת. GitHub קובע את שם המשתמש של
+חשבון אפליקציה כ-`<slug>[bot]`, אינו מציע השלמה אוטומטית עבורו, ולעולם אינו מפענח
+את `@slug` לאפליקציה — כך שקבלת ה-slug החשוף היא החלטה של מנגנון ההתאמה _שלנו_,
+וגילוי שלו דורש מסלול חיפוש גולמי ב**טקסט** ההערה ולא באינדקס האזכורים של GitHub.
+המחיר מוצהר ולא מחובר: משתמש אנושי שחולק את ה-slug של האפליקציה פונה אל הבוט בכל
+אזכור קצר של עצמו. שמות אפליקציה ייחודיים הופכים את ההתנגשות להיפותטית.
 
-## What is deliberately not offered
+## מה שבמכוון אינו מוצע
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **בלי פרסום אוטומטי.** הממצאים נוחתים במרחב הסקירה; פרסום ל-GitHub הוא פעולה
+  נפרדת, של אדם
+- **בלי זהות מטושטשת.** המחבר נפתר לחבר אחד בדיוק או נדחה — אין ייחוס על בסיס
+  ניחוש
+- **בלי webhook של GitHub App.** המשטח הזה לעולם אינו רושם אחד כזה, ולכן אין כתובת
+  נכנסת לחשוף עבור הערות בבקשות משיכה. webhooks אחרים של המוצר (פייפליינים,
+  סנכרון כרטיסים) הם הגדרה נפרדת ואופציונלית.
 
-## See also
+## ראו גם
 
-- [Talk to Control Center from a GitHub PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/):
-  the how-to for all of this
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/):
-  the principals and roles a login resolves through
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/): the pipeline a mention
-  or label starts
+- [דיבור עם Control Center מבקשת משיכה ב־GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr/):
+  המדריך המעשי לכל זה
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/): אותן שלוש החלטות, עבור צ'אט
+- [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): מהיכן מגיעה
+  זהות הבוט
+- [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/):
+  הגורמים והתפקידים שדרכם נפתר שם משתמש
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): מה שמותר לסוכן
+  שמשיב לעשות
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/):
+  הפייפליין שאזכור או תווית מפעילים

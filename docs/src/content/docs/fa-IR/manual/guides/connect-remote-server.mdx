@@ -1,109 +1,111 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: اتصال به سرور راه دور
+description: برنامهٔ رومیزی یا کلاینت وب را به یک cc_server در حال اجرا در جای دیگر اشاره دهید و بدون راه‌اندازی مجدد میان سرورها جابه‌جا شوید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+هر کلاینت یک رندرکننده روی یک `cc_server` است که مالک داده است. رومیزی می‌تواند
+یکی را درون خودش اجرا کند؛ اما اپ وب در [app.usectrl.dev](https://app.usectrl.dev)
+نمی‌تواند، چون یک تب مرورگر نمی‌تواند میزبان سرور باشد. در هر حالت، این راهنما یک
+کلاینت را به سروری اشاره می‌دهد که جای دیگری اجرا می‌شود — یک جعبهٔ کوچک، یک VM
+ابری، یک سرور ساخت.
 
-## Prerequisites
+## پیش‌نیازها
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- یک `cc_server` در حال اجرا. اگر یکی ندارید، [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/) را ببینید.
+- یا آن سه مقدار جفت‌سازی که سرور ساخته — **URL سرور** (`ws://…/rpc` یا `wss://…/rpc`)، یک **شناسهٔ دستگاه** و یک **کلید جفت‌سازی** — **یا** یک **کد دعوت** یک‌بارمصرف از یک مدیر فضای کاری. بازخرید یک دعوت، کاربر شما را تأمین می‌کند، عضویتتان را ثبت می‌کند و اعتبارنامهٔ این کلاینت را برایتان صادر می‌کند، پس هرگز با شناسهٔ دستگاه یا کلید سروکار پیدا نمی‌کنید.
 
-### Make sure the server is reachable
+### مطمئن شوید سرور قابل‌دسترسی است
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+یک سرور محلی چیزی لازم ندارد: `ws://localhost:9030/rpc` هم از رومیزی و هم از
+مرورگر کار می‌کند، چون مرورگرها لوپ‌بک را مبدأی قابل‌اعتماد می‌دانند.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+سروری روی ماشینی دیگر فرق دارد. `app.usectrl.dev` روی HTTPS ارائه می‌شود، پس
+مرورگر فقط سوکت `wss://` را با گواهی‌ای باز می‌کند که از قبل به آن اعتماد دارد —
+و خودِ `cc_server` هم از همان ابتدا از بایند کردن یک نشانی غیرلوپ‌بک بدون TLS سر
+باز می‌زند. یکی از این‌ها را به آن بدهید:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- گواهی مستقیماً، با `--tls-cert` و `--tls-key`
+- یک پروکسی معکوس پایان‌دهندهٔ TLS در جلو، با سرور اجراشده با `--insecure` (متن ساده پشت پروکسی، فقط روی یک شبکهٔ قابل‌اعتماد)
+- یک تونل یا VPN که گواهی را تأمین می‌کند — Tailscale، cloudflared یا مشابه. **تنظیمات ← سرور ← اتصال و وضعیت** گزینهٔ اشتراک تونل توکار را زیر **اشتراک این سرور** دارد.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+دو تنظیم در سمت سرور آسان از چشم می‌افتند. پشت یک پروکسی، NAT یا تونل،
+`--public-url` را روی نشانی‌ای بگذارید که کلاینت‌ها باید واقعاً شماره‌گیری کنند —
+پیش‌فرضش بایند محلی است، پس بدون آن کلاینت‌ها میزبان اشتباه را امتحان می‌کنند. و
+اگر نسخهٔ خودتان از ساخت وب را میزبانی می‌کنید، مبدأ آن را به `--allowed-origins`
+اضافه کنید، که پیش‌فرضش تنها `https://app.usectrl.dev` است؛ لوپ‌بک و کلاینت‌های
+بومی همیشه مجازند.
 
-## Connect the desktop app
+## اتصال برنامهٔ رومیزی
 
-On a fresh install:
+روی یک نصب تازه:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Control Center را اجرا کنید. صفحهٔ نخستین اجرا می‌پرسد **Control Center چطور اجرا شود؟**
+2. به‌جای **اجرا در این برنامه**، فیلدهای اتصال را پر کنید: URL سرور، به‌همراه یا یک کد دعوت یا یک شناسهٔ دستگاه و کلید جفت‌سازی.
+3. روی **اتصال** کلیک کنید. Control Center سرور را شماره‌گیری می‌کند و روی صندوق ورودی فضای کاری فرود می‌آید.
 
-On a desktop that already runs its own server:
+روی رومیزی‌ای که خودش از قبل سرور خودش را اجرا می‌کند:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. **تنظیمات ← سرور ← اتصال و وضعیت** را باز کنید.
+2. روی **افزودن سرور** کلیک کنید. URL سرور (`wss://host:9030/rpc`) و یا یک کد دعوت یا یک شناسهٔ دستگاه و کلید جفت‌سازی را وارد کنید. دکمهٔ پسوند فیلد URL نمونه‌های `cc_server` را روی LAN یا تیل‌نت شما کشف می‌کند.
+3. روی **اتصال** و سپس روی **تعویض** در ردیف سرور جدید کلیک کنید.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+تعویض زنده است: اپ در جای خودش پیرامون نشست جدید بازساخته می‌شود، بدون راه‌اندازی
+مجدد. اگر اتصال شکست بخورد روی سرور کنونی می‌مانید و خطا را می‌بینید. ردیف سروری
+که روی آن هستید کنش **تعویض** ندارد؛ سرور محلی ردیف اول است، با برچسب **اجرا در این برنامه**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+پس از تعویض، رومیزی هیچ پایگاه‌داده‌ای را مالک نیست. هر صفحه از طریق سرور راه دور
+روی یک WebSocket می‌خواند و می‌نویسد.
 
-## Connect the web client
+## اتصال کلاینت وب
 
-The web build is always remote.
+ساخت وب همیشه راه دور است.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. [app.usectrl.dev](https://app.usectrl.dev) یا نسخهٔ خودتان از ساخت وب را باز کنید.
+2. URL سرور به‌همراه یا یک کد دعوت یا یک شناسهٔ دستگاه و کلید جفت‌سازی را وارد کنید.
+3. کلاینت سرور را شماره‌گیری می‌کند و همان رابطی را رندر می‌کند که رومیزی.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+اگر پیوند عمیق جفت‌سازی در URL باشد، فیلدها پیش‌پر شده‌اند. کلید جفت‌سازی در
+**قطعهٔ** URL سوار می‌شود، که مرورگرها هرگز آن را به سرور میزبان صفحه نمی‌فرستند،
+پس میزبان ایستا هرگز آن را نمی‌بیند.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[رسانه و امنیت]
+رسانه (آواتارها، تصاویر خوراک، تصاویر PR) از طریق سرور متصل پروکسی می‌شود، پس
+مرورگر هرگز یک میزبان بالادستی را مستقیماً واکشی نمی‌کند. یک Content-Security
+Policy به‌ازای هر درخواست، که از یک کوکی غیرحساس مهر می‌شود، تنها مبدأ سرور متصل
+را مجاز می‌کند.
 :::
 
-### What the browser does not do
+### کارهایی که مرورگر انجام نمی‌دهد
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+کلاینت وب همان سروری را می‌خواند و می‌نویسد که رومیزی، اما چند سطح به یک پنجرهٔ
+بومی یا دستگاه‌های خود ماشین نیاز دارند:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- بدون توست اعلان سیستم‌عامل، بدون صداهای اعلان، بدون ریل بنر محیطی (مرکز اعلان درون‌برنامه‌ای همچنان کار می‌کند)
+- بدون کشف سرور روی LAN یا تیل‌نت در پنجرهٔ **افزودن سرور**
+- بدون مقاله‌خوان درون‌برنامه‌ای — مقاله‌های خوراک خبری در یک تب جدید باز می‌شوند
+- بدون اجرای دوبارهٔ خلاصهٔ جلسه و بدون لغو خلاصه‌ای که در حال پردازش است
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+دو مورد به‌جای آنکه نبود داشته باشند، متفاوت رفتار می‌کنند. **ضبط** جلسه در مرورگر
+کار می‌کند: میکروفون شما به‌علاوهٔ یک اشتراک صفحه که آهنگ صوتی دارد را می‌گیرد.
+**باز کردن در IDE** هم کار می‌کند، اما از سرور می‌خواهد که ویرایشگر را روی نمایشگر
+_سرور_ اجرا کند، پس دکمه در برابر یک میزبان بدون رابط که هیچ ویرایشگری نصب ندارد
+خودش را پنهان می‌کند.
 
-## Troubleshooting
+## عیب‌یابی
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/).
+- **مهلت اتصال تمام می‌شود**: سرور باید از سمت کلاینت قابل‌دسترسی باشد. بایند (`--bind any`) را بررسی کنید، اینکه پورت باز است و اینکه `--public-url` نشانی‌ای را نام می‌برد که کلاینت واقعاً می‌تواند شماره‌گیری کند. روی اینترنت باز، TLS اجباری است — یک بایند غیرلوپ‌بک با متن ساده در زمان راه‌اندازی رد می‌شود مگر اینکه سرور پشت یک پروکسی با `--insecure` اجرا شده باشد.
+- **مرورگر از اتصال سر باز می‌زند اما یک کلاینت بومی کار می‌کند**: مبدأ مرورگر در فهرست `--allowed-origins` سرور نیست. پیش‌فرض تنها `https://app.usectrl.dev` را مجاز می‌کند (به‌علاوهٔ لوپ‌بک).
+- **کلید جفت‌سازی رد می‌شود**: `cc_server pair` را روی سرور دوباره اجرا کنید تا کلید آن دستگاه بچرخد، سپس کلید جدید را وارد کنید. یک دستگاه ابطال‌شده اعتبارنامه‌اش را ازدست‌رفته می‌یابد و بسته شکست می‌خورد؛ ابطال یک نشست زنده را در عرض چند ثانیه می‌اندازد.
+- **فضای کاری اشتباه**: فضای کاری بخشی از URL است (`/workspaces/:workspaceId/…`) و با هر فراخوانی سفر می‌کند، پس عوض‌کردن فضای کاری در یک کلاینت فقط نمای خودتان را تغییر می‌دهد. تنها به فضاهای کاری‌ای می‌رسید که عضو آن هستید — هر چیز دیگری با «Not a member of this workspace» رد می‌شود. [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) را ببینید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
-- [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): the phone relay path
+- [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
+- [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): مسیر رلهٔ تلفن
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)
-- [Remote control and mobile](/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/)
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)
+- [کنترل از راه دور و موبایل(/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/)

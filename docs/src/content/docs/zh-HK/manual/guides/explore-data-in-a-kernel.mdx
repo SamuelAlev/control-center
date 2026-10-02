@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: 在持久核心中探索資料
+description: 讓代理擁有一個 Python 或 JavaScript 直譯器，在多次呼叫之間保留變數、把圖表畫進對話，並可在儲存格內呼叫你自己的工具。
 slug: zh-HK/手冊/操作指南/在核心中探索資料
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+本指南說明如何讓代理只載入一次昂貴的內容，然後就它提出多個問題，而不必為每個問題重複付出載入成本。
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+`eval` 工具會執行一個**持久直譯器**。變數、匯入的模組與已載入的資料，都會在呼叫之間保留下來。
 
-## Why not just run a script
+## 為何不直接跑腳本
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+一次性的 `python -c` 會為每個問題重複付出設定成本。載入一個資料框要花上數秒與上百 MB；把它畫成圖表卻只需數毫秒。當每個問題都要付一次載入成本，代理問的問題就會比它應該問的少——而每個答案都以文字形式回傳，它還得重新解析一遍。
 
-## Load once, then ask
+## 載入一次，反覆提問
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> 載入 `data/runs.csv`，並告訴我每個代理的 p95 持續時間。
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+最後一個運算式會像筆記本那樣被回顯出來，因此 `len(runs)` 不須 `print` 就能報出列數。
 
-Then, in a **separate call**:
+然後，在**另一次呼叫**中：
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` 仍然處於已載入狀態。pandas 資料框回傳時會渲染成表格，而不是以 repr 呈現。
 
-## Charts land in the chat
+## 圖表會直接出現在對話中
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+圖表會在儲存格執行完之後被擷取，並以影像形式回傳，由對話紀錄負責渲染。你看得到圖表，代理也看得到。
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+圖表會在擷取後關閉。未被收回的圖表會連*下一個*儲存格都重畫並重送一次，因此一段五個儲存格的工作階段，就會把第一張圖表送出五次。
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[不需要 Jupyter、不需要 pip、也沒有安裝步驟]
+運行器只是 `python3 -u`，在 stdio 上以行協定溝通。它自行實作 `display()`、MIME 組合分派與圖表擷取，因此任何 Python 3 都能用——包括在沙箱之內，而沙箱存在的目的，正是阻止安裝這種事。
 :::
 
-## The idioms you would type anyway
+## 你本來就會照打的慣用寫法
 
-These are rewritten into plain code rather than erroring:
+這些寫法會被改寫成一般的程式碼，而不是直接報錯：
 
-| You type    | What happens                                        |
+| 你輸入的    | 會發生的事                                          |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | 執行 pip，然後**清除模組快取**，讓下一次 `import` 看得到 |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | 一個被擷取的子行程                                  |
+| `%%bash`    | 儲存格其餘部分當作 shell 腳本執行                   |
+| `%%timeit`  | 1000 次計時執行                                     |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+真正關鍵的是 `%pip` 的快取逐出：對一個已在運作中的直譯器安裝套件，對已經匯入的模組毫無作用，因此少了它，實際在跑的根本不是你剛剛安裝的那個版本。
 
-## Calling your own tools from inside a cell
+## 在儲存格內呼叫你自己的工具
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` 會重新進入代理自己的工具註冊表。也就是說，一個儲存格可以對上百個檔案扇出作業，或透過 `task` 委派，而不必讓模型為每一項各花一個回合。
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[橋接不會繞過你的護欄]
+橋接呼叫與模型發出的呼叫，都是對着**同一個**工具註冊表解析，因此 `ActionClass` 政策、核准提示與每一層包裝都一視同仁地適用。一個能越過註冊表的橋接，就是一個形狀剛好是「寫一行 Python」的破洞。
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+橋接呼叫在尚未完成期間，會**暫停儲存格的逾時計算**。這個預算量度的是閒置，而不是實際流逝的時間——一個扇出到子代理、等了四分鐘的儲存格並沒有卡住，而在扇出途中把它殺掉，會令整個核心的狀態付諸流水。
 
-## Starting over
+## 重新開始
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+丟棄目前的直譯器，另起一個乾淨的。所有已載入的東西都會消失，而這正是重點。
 
-## Where the kernel runs
+## 核心在哪裏執行
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+對話有**隔離環境**時，就在其中執行；否則在主機上。
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+由模型讀取不受信任的程式庫所驅動的持久直譯器，正是「僅限隔離環境執行」存在的理由：一次性的 `bash` 呼叫至少會結束，而核心卻是一個會記住東西的 shell。
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/zh-HK/手冊/操作指南/使用測試機/).
+它**不會**為了這樣做而啟動隔離環境——這與阻止測試機分頁自動啟動的是同一條規則。若你想讓核心處於封閉環境中，請先開啟對話的 shell。詳見[給代理一部測試用機器](/zh-HK/手冊/操作指南/使用測試機/)。
 
-## Limits
+## 限制
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **每個核心一次只能執行一個儲存格。** 兩個儲存格在同一個直譯器裏互相搶跑，就是兩個程式各自的一半交錯在同一個命名空間之中。
+- **輸出有上限。** 陷入 print 迴圈的儲存格會被截斷，而不會放任它填滿上下文窗口。
+- **每個儲存格四張影像。** 繪圖迴圈可能每迭代就輸出一張圖表，而每張影像在承載它的請求中，都是一筆可觀的固定成本。
+- **核心會隨執行結束而消亡。** 對話結束後仍握着資料框的核心，就是一種洩漏。
 
-## Related
+## 相關
 
-- [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/) — what "enclosed" means here
-- [Give an agent a machine to test on](/zh-HK/手冊/操作指南/使用測試機/) — opening the enclosure
-- [Built-in agent tools](/zh-HK/手冊/參考/代理工具/) — the arguments
+- [沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/) —— 在此「封閉」是甚麼意思
+- [給代理一部測試用機器](/zh-HK/手冊/操作指南/使用測試機/) —— 開啟隔離環境
+- [內建代理工具](/zh-HK/手冊/參考/代理工具/) —— 參數

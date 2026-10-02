@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Εξερεύνηση δεδομένων σε μόνιμο πυρήνα
+description: Δώστε σε έναν πράκτορα έναν διερμηνευτή Python ή JavaScript που κρατά τις μεταβλητές του ανάμεσα στις κλήσεις, σχεδιάζει γραφήματα μέσα στη συνομιλία και μπορεί να καλέσει τα δικά σας εργαλεία μέσα από ένα κελί.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εξερεύνηση-δεδομένων-σε-πυρήνα
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Αυτός ο οδηγός δείχνει πώς να φορτώνει ένας πράκτορας κάτι ακριβό μία φορά και μετά να του θέτει πολλές ερωτήσεις, αντί να πληρώνει το κόστος της φόρτωσης σε κάθε ερώτηση.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Το εργαλείο `eval` εκτελεί έναν **μόνιμο διερμηνευτή**. Οι μεταβλητές, τα imports και τα δεδομένα που έχουν φορτωθεί επιβιώνουν ανάμεσα στις κλήσεις.
 
-## Why not just run a script
+## Γιατί να μην εκτελέσετε απλώς ένα σενάριο
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Ένα εφάπαξ `python -c` πληρώνει την προετοιμασία σε κάθε ερώτηση. Η φόρτωση ενός dataframe κοστίζει δευτερόλεπτα και εκατό megabyte· η σχεδίασή του κοστίζει χιλιοστά του δευτερολέπτου. Όταν κάθε ερώτηση κοστίζει τη φόρτωση, ένας πράκτορας κάνει λιγότερες ερωτήσεις από όσες θα έπρεπε — και κάθε απάντηση επιστρέφει ως κείμενο που πρέπει μετά να ξαναναλύσει.
 
-## Load once, then ask
+## Φορτώστε μία φορά και μετά ρωτήστε
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Φόρτωσε το `data/runs.csv` και πες μου τη διάρκεια p95 ανά πράκτορα.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Η τελευταία έκφραση επιστρέφεται όπως σε ένα notebook, οπότε το `len(runs)` αναφέρει τον αριθμό των γραμμών χωρίς `print`.
 
-Then, in a **separate call**:
+Έπειτα, σε **ξεχωριστή κλήση**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+Το `runs` είναι ακόμη φορτωμένο. Ένα frame της pandas επιστρέφεται αποδοσμένο ως πίνακας και όχι ως αναπαράσταση.
 
-## Charts land in the chat
+## Τα γραφήματα φτάνουν στη συνομιλία
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Τα σχήματα συλλαμβάνονται μετά το κελί και επιστρέφονται ως εικόνες, τις οποίες αποδίδει η μεταγραφή. Βλέπετε το γράφημα· το βλέπει και ο πράκτορας.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Τα σχήματα κλείνουν μετά τη σύλληψη. Ένα σχήμα που δεν συλλέχθηκε θα ξανασχεδιαζόταν και θα ξαναστέλνονταν και από το *επόμενο* κελί, οπότε μια συνεδρία πέντε κελιών θα εξέπεμπε το πρώτο γράφημα πέντε φορές.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Χωρίς Jupyter, χωρίς pip, χωρίς βήμα εγκατάστασης]
+Ο εκτελεστής είναι σκέτο `python3 -u` που μιλά ένα πρωτόκολλο γραμμών μέσω stdio. Υλοποιεί το `display()`, την αποστολή δεσμίδων MIME και τη σύλληψη σχημάτων μόνος του, οπότε λειτουργεί σε οποιαδήποτε Python 3 — ακόμη και μέσα σε ένα sandbox, όπου η εγκατάσταση είναι ακριβώς αυτό που το sandbox υπάρχει για να εμποδίζει.
 :::
 
-## The idioms you would type anyway
+## Τα ιδιώματα που θα πληκτρολογούσατε ούτως ή άλλως
 
-These are rewritten into plain code rather than erroring:
+Αυτά ξαναγράφονται σε απλό κώδικα αντί να προκαλούν σφάλμα:
 
-| You type    | What happens                                        |
+| Πληκτρολογείτε   | Τι συμβαίνει                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Εκτελεί το pip και μετά **καθαρίζει την προσωρινή μνήμη αρθρωμάτων**, ώστε το επόμενο `import` να το δει |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | Μια καταγεγραμμένη υποδιεργασία                     |
+| `%%bash`    | Το υπόλοιπο του κελιού ως σενάριο κελύφους           |
+| `%%timeit`  | 1000 χρονομετρημένες εκτελέσεις                     |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Η εκκαθάριση της προσωρινής μνήμης από το `%pip` είναι αυτή που έχει σημασία: η εγκατάσταση σε έναν ζωντανό διερμηνευτή δεν κάνει τίποτα για ένα άρθρωμα που έχει ήδη εισαχθεί, οπότε χωρίς αυτήν η έκδοση που μόλις εγκαταστήσατε δεν είναι αυτή που εκτελείται.
 
-## Calling your own tools from inside a cell
+## Κλήση των δικών σας εργαλείων μέσα από ένα κελί
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+Το `tool(name, args)` επανεισέρχεται στο μητρώο εργαλείων του ίδιου του πράκτορα. Αυτό σημαίνει ότι ένα κελί μπορεί να απλωθεί σε εκατό αρχεία ή να αναθέσει μέσω του `task`, χωρίς το μοντέλο να ξοδεύει έναν γύρο ανά στοιχείο.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Η γέφυρα δεν παρακάμπτει τους περιορισμούς σας]
+Μια κλήση μέσω γέφυρας επιλύεται στο **ίδιο** μητρώο εργαλείων με μια κλήση που εκδίδει το μοντέλο, οπότε η πολιτική `ActionClass`, οι προτροπές έγκρισης και κάθε περιτύλιγμα εφαρμόζονται με τον ίδιο τρόπο. Μια γέφυρα που θα προσπερνούσε το μητρώο θα ήταν μια τρύπα με ακριβώς το σχήμα του «γράψε μια εντολή Python σε μία γραμμή».
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Μια κλήση μέσω γέφυρας **αναστέλλει το χρονικό όριο του κελιού** όσο εκκρεμεί. Ο προϋπολογισμός μετρά την αδράνεια, όχι τον πραγματικό χρόνο — ένα κελί που απλώνεται σε υποπράκτορες και περιμένει τέσσερα λεπτά δεν έχει κολλήσει, και ο τερματισμός του στη μέση της διασποράς θα έχανε όλη την κατάσταση του πυρήνα.
 
-## Starting over
+## Ξεκινώντας από την αρχή
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Πετάει τον διερμηνευτή και ξεκινά έναν καθαρό. Ό,τι έχει φορτωθεί χάνεται, κι αυτός είναι ο σκοπός.
 
-## Where the kernel runs
+## Πού εκτελείται ο πυρήνας
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+Μέσα στο **περίβλημα** της συνομιλίας όταν αυτή έχει ένα, αλλιώς στον κεντρικό υπολογιστή.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Ένας μόνιμος διερμηνευτής που τον οδηγεί ένα μοντέλο διαβάζοντας ένα μη αξιόπιστο αποθετήριο είναι ακριβώς ο λόγος ύπαρξης της εκτέλεσης αποκλειστικά μέσα σε περίβλημα: μια εφάπαξ κλήση `bash` τουλάχιστον τελειώνει, ενώ ένας πυρήνας είναι ένα κέλυφος που θυμάται.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/).
+**Δεν** εκκινεί περίβλημα για να φτάσει εκεί — ο ίδιος κανόνας που εμποδίζει μια καρτέλα σταθμού να ξεκινήσει αυτόματα. Αν θέλετε ο πυρήνας μέσα σε περίβλημα, ανοίξτε πρώτα το κέλυφος της συνομιλίας. Δείτε [Δώστε σε πράκτορα μηχανή για δοκιμές](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/).
 
-## Limits
+## Όρια
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Ένα κελί τη φορά ανά πυρήνα.** Δύο κελιά που συναγωνίζονται σε έναν διερμηνευτή είναι δύο μισά από δύο προγράμματα, αλληλοδιαπλεγμένα σε ένα namespace.
+- **Η έξοδος είναι περιορισμένη.** Ένα κελί μέσα σε βρόχο εκτυπώσεων κόβεται αντί να του επιτραπεί να γεμίσει το παράθυρο πλαισίου.
+- **Τέσσερις εικόνες ανά κελί.** Ένας βρόχος σχεδίασης μπορεί να παράγει ένα σχήμα ανά επανάληψη, και κάθε εικόνα είναι ένα μεγάλο σταθερό κόστος στο αίτημα που τη μεταφέρει.
+- **Ο πυρήνας πεθαίνει μαζί με την εκτέλεση.** Ένας πυρήνας που κρατά ακόμη ένα dataframe αφού τελείωσε η συνομιλία είναι διαρροή.
 
-## Related
+## Σχετικά
 
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) — what "enclosed" means here
-- [Give an agent a machine to test on](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) — opening the enclosure
-- [Built-in agent tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — the arguments
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) — τι σημαίνει εδώ το «απομονωμένο»
+- [Δώστε σε πράκτορα μηχανή για δοκιμές](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) — το άνοιγμα του περιβλήματος
+- [Ενσωματωμένα εργαλεία πράκτορα](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — τα ορίσματα

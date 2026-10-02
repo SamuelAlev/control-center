@@ -1,138 +1,147 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Создать GitHub App
+description: Зарегистрируйте GitHub App для своего сервера, чтобы участники могли входить, а фоновая работа шла от имени приложения, а не человека.
 slug: ru-RU/руководство/практические-руководства/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Это руководство показывает, как дать вашему серверу собственную идентичность в
+GitHub. Это занимает около двух минут, делать это должен только владелец сервера,
+и требуется это один раз на сервер.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Возможно, оно вам не нужно]
+Официальная сборка уже поставляется с **ID клиента** GitHub, поэтому
+[Войти через GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/) работает из коробки
+без всякой регистрации — поток устройства аутентифицируется одним ID клиента,
+так что поставлять его безопасно. Регистрируйте собственное приложение, когда
+хотите, чтобы СЕРВЕР действовал от своего имени (вебхуки, опрос PR и
+синхронизация тикетов идут на установке приложения, а не на учётных данных
+человека), или когда вы собираете из исходного кода.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/).
+Чтобы после этого подключить собственный аккаунт, см.
+[Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/).
 
-## Why your server needs its own app
+## Почему вашему серверу нужно собственное приложение
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Из одной регистрации выходят две разные задачи, и именно приложение делает обе
+честными:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Задача                   | Что на неё отвечает                          | Почему это важно                                                                                        |
+| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Человек входит**       | ID клиента приложения, через поток устройства | Вы получаете учётные данные, которые принадлежат вам, на сервере и на каждом устройстве — без токена, который нужно вставить или ротировать |
+| **Сервер действует**     | ID приложения + закрытый ключ → токен установки | Вебхуки, опрос PR и синхронизация тикетов перестают зависеть от того, что токен одного человека всё ещё действителен |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Обратите внимание, чего в этой таблице **нет**: секрета клиента. Поток
+устройства GitHub аутентифицируется одним ID клиента — и запрос кода устройства,
+и опрос токена, — поэтому для входа не нужно хранить никакой секрет.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Без собственного приложения первая задача всё равно работает благодаря ID
+клиента, который поставляет сборка; вторая же опирается на учётные данные
+владельца сервера, поэтому фоновая работа держится на том, кто первым прошёл
+настройку.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Кнопки «Установить GitHub App от Control Center» не существует]
+Распространяемая GitHub App означала бы один общий секрет клиента и одну общую
+установку на серверах у всех, поэтому доступ к репозиториям каждого рабочего
+пространства шёл бы через учётные данные, которые никто в этом рабочем
+пространстве не контролирует. Поэтому каждый сервер владеет собственным
+приложением — это руководство о том, как мало это стоит.
 :::
 
-## Prerequisites
+## Предварительные требования
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Вы — **владелец сервера**: операции `providerApps.*` доступны только ему, и
+  карточка невидима для всех остальных
+- Аккаунт GitHub или организация, в которой вы можете создавать приложения
+- Ничего публично доступного: вход — это **поток устройства**, поэтому серверу
+  не нужны входящий порт, туннель, URL обратного вызова или домен
 
-## Register the app
+## Зарегистрируйте приложение
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Перейдите на [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (для организации: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — любое; подойдёт `Control Center (yourname)`. Оно
+   отображается на коммитах и комментариях, которые делает сервер
+3. **Homepage URL** — любое, например `https://github.com/your-name`
+4. **Callback URL** — оставьте пустым. У потока устройства его нет
+5. Отметьте **Enable Device Flow**. Это единственная настройка, без которой вход
+   не работает
+6. Снимите отметку с **Webhook → Active**, если вы не настраиваете вебхуки
+   отдельно
+7. В разделе **Repository permissions** выдайте как минимум:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (обязательно)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, если вы используете GitHub Issues для тикетов,
+     а также для поиска комментариев бота в разговорах PR
+     (см. [Общаться с Control Center из GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/))
+   - **Checks**: Read-only, для состояния CI на странице PR
+8. В **Where can this GitHub App be installed?** выберите подходящий вариант —
+   «Only on this account» подойдёт для личного сервера
+9. Нажмите **Create GitHub App**
 
-## Collect the three values
+## Соберите три значения
 
-On the app's page, immediately after creation:
+На странице приложения сразу после создания:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Значение        | Где                                                  |
+| --------------- | ---------------------------------------------------- |
+| **App ID**      | Вкладка **General**, ближе к верху                    |
+| **Client ID**   | Вкладка **General**, под «Client secrets»             |
+| **Private key** | **Generate a private key** — скачивается файл `.pem`  |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Файл закрытого ключа скачивается один раз, и GitHub больше его не показывает.
+Храните его, пока не вставите; новый можно создать в любой момент.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**Секрет клиента** необязателен и даёт ровно одну вещь: если оставить «Expire
+user authorization tokens» включённым, именно он незаметно продлевает чей-то
+токен вместо того, чтобы просить человека входить заново каждые восемь часов.
+Сам вход его никогда не использует.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Проще всего отключить это истечение — тогда секрет не нужен нигде. Если вы
+оставляете его включённым, создайте секрет и вставьте его в разделе
+**Настройки → Сервер → Единый вход** (карточка **Приложения провайдера**) —
+переменной окружения для него нет, и в сборку она не зашита, поэтому он остаётся
+на вашем сервере.
 
-## Install it on your account
+## Установите его на свой аккаунт
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Приложение, которое зарегистрировано, но не установлено, может аутентифицировать
+людей и не может прочитать ничего.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. На странице приложения откройте **Install App**
+2. Установите его на свой аккаунт или в организацию
+3. Выберите **All repositories** или отметьте те репозитории, которые должен
+   видеть этот сервер
 
-## Paste it into Control Center
+## Вставьте его в Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Перейдите в **Настройки → Сервер → Единый вход** и прокрутите до карточки
+   **Приложения провайдера**
+2. В блоке **GitHub** задайте каждое поле:
+   - **ID приложения** — числовой App ID
+   - **Закрытый ключ** — вставьте весь файл `.pem`, включая строки `BEGIN` и
+     `END`
+   - **ID клиента** — с той же страницы
+   - **Секрет клиента** — только если вы его создали (для обновления токена)
+3. Нажмите **Тест**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Ключ разбирается в момент сохранения, поэтому обрезанный или неверно
+отформатированный текст отклоняется сразу, а не даёт сбой при фоновом запросе
+через несколько часов. **Тест** идёт дальше и спрашивает у GitHub, на каких
+аккаунтах установлено приложение, — «сохранено» и «работает» — это разные
+утверждения, и только второе означает, что что-то будет работать.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Проверка: блок **GitHub** показывает «Сервер может действовать от своего имени, и
+люди могут входить», а строка **GitHub** в разделе
+**Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода**
+теперь предлагает **Войти через GitHub**.
 
-## Configure it with environment variables instead
+## Настройте его через переменные окружения
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+При headless- или скриптовой установке сервер заполняет каждое поле из окружения
+в первый раз, когда у него нет сохранённого значения:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +149,67 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Для них нет флагов командной строки — секрет в командной строке доступен любому
+процессу на хосте через `ps`. Окружение — единственное место, где их можно
+задать, и оно имеет приоритет над тем, что поставляет сборка. `.env.template`
+содержит полный список.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Для локальной разработки те же значения лежат в `.env` в корне репозитория, и
+десктоп передаёт их запускаемому серверу. Записывайте ключ там **в одну строку**:
+значение в `.env` — это одна строка, а `\n` внутри двойных кавычек превращается в
+перевод строки.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` и `GITHUB_APP_PRIVATE_KEY` — те же имена, которые уже читает
+брокер токенов песочницы, поэтому хост, где настроены детализированные токены
+агентов, получает вход бесплатно. Заполнение происходит **один раз для каждого
+поля** — после этого побеждает сохранённое значение, поэтому правку в настройках
+не отменяет следующий перезапуск.
 
-## Do the same for Linear
+## Сделайте то же для Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+В Linear нет потока устройства, поэтому вход там — это переход в браузере и
+обратно, и ему действительно нужен URL обратного вызова — карточка
+**Приложения провайдера** показывает, какой именно нужно зарегистрировать.
 
-1. Create an OAuth application at
+1. Создайте OAuth-приложение по адресу
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Укажите в поле **Callback URL** тот URL, который показывает карточка, дословно
+3. Вставьте **ID клиента** и **Секрет клиента** в блок Linear
+4. При желании добавьте **API-ключ** рабочего пространства — именно эти учётные
+   данные сервер использует для синхронизации тикетов, когда никто из людей не
+   запрашивал её вручную
 
-## Troubleshooting
+## Устранение неполадок
 
-### The sign-in dialog says the provider returned no device code
+### Диалог входа сообщает, что провайдер не вернул код устройства
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+В приложении выключен **Enable Device Flow**. Включите его на вкладке **General**
+и повторите попытку.
 
-### Test says the credentials work but the app is not installed anywhere
+### Тест сообщает, что учётные данные работают, но приложение нигде не установлено
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Регистрация и установка — разные шаги. Откройте **Install App** на странице
+приложения и установите его.
 
-### Test says the private key could not be read
+### Тест сообщает, что не удалось прочитать закрытый ключ
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Вставьте весь файл `.pem`, включая строки `-----BEGIN` и `-----END`. Ключ
+`ed25519` или EC использовать нельзя — GitHub Apps подписывают с помощью RSA.
 
-### A member signed in but sees no repositories
+### Участник вошёл, но не видит ни одного репозитория
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Приложение не установлено на аккаунт, которому они принадлежат, либо его
+установка выбирает другие репозитории. Собственный вход участника даёт только то,
+что разрешено видеть приложению.
 
-## Related guides
+## Связанные руководства
 
-- [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
-- [Talk to Control Center from a GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/)
-- [Connect a code host](/ru-RU/руководство/практические-руководства/подключить-хост-кода/)
-- [Manage API keys](/ru-RU/руководство/практические-руководства/api-ключи/)
-- [Set up Slack integration](/ru-RU/руководство/практические-руководства/интеграция-slack/)
+- [Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/)
+- [Общаться с Control Center из GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/)
+- [Подключить хост кода](/ru-RU/руководство/практические-руководства/подключить-хост-кода/)
+- [Управлять API-ключами](/ru-RU/руководство/практические-руководства/api-ключи/)
+- [Настроить интеграцию Slack](/ru-RU/руководство/практические-руководства/интеграция-slack/)

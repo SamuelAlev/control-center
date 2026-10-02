@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Einen Code-Host verbinden
+description: Verbinde GitHub, GitLab oder Bitbucket, damit PR-Oberfläche, Repo-Registrierung und Agentenläufe funktionieren — ein Arbeitsbereich kann alle drei nutzen.
 slug: de-DE/handbuch/anleitungen/code-host-verbinden
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center arbeitet mit drei Code-Hosts — in der App heißen sie genau so: **GitHub**, **GitLab** und **Bitbucket Cloud**. Keiner davon ist die Vorgabe. Verbindest du einen, funktioniert alles; verbindest du mehrere, kann ein einzelner Arbeitsbereich Repos von allen gleichzeitig halten.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Der Code-Host ist eine Eigenschaft jedes **Repos** und wird beim Registrieren aus dem `origin`-Remote gelesen. Du wählst ihn nie selbst, und es gibt keine Einstellung je Arbeitsbereich, an der du etwas falsch machen kannst.
 
-## Connect a forge
+## Einen Code-Host verbinden
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Öffne **Einstellungen → Arbeitsbereich → Profil und Identität** (`/settings/workspace/profile`).
+2. Finde die Karte **Code-Hosting**. Jeder unterstützte Code-Host steht dort, verbunden oder nicht.
+3. Drücke **Mit … anmelden**, wenn die Zeile das anbietet, oder **Token hinzufügen** und füge eines ein.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/de-DE/handbuch/anleitungen/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Mit … anmelden** erscheint bei einem Code-Host, für den dein Server eine App registriert hat — heute ist das GitHub, über einen Device-Flow (siehe [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)). Alles andere ist ein eingefügtes Token, weil sich eine Schaltfläche hier nicht zu Ende führen ließe.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+So oder so ist das Zugangsdatum **deins und liegt auf dem Server**, gebunden an deine Benutzer-ID: Auf dem Rechner, auf dem du es eintippst, liegt kein Token, jedes Gerät, von dem du dich anmeldest, nutzt dasselbe, und kein anderes Mitglied kann es lesen. Es gilt ab der **nächsten Anfrage** — neu starten musst du nichts, und trennst du die Verbindung, wird es sofort nicht mehr gesendet.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Jede Zeile sagt, woher ihr Zugangsdatum kommt. Daran scheiden sich „mein Token funktioniert nicht“ und „ein anderes Token antwortet“:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Untertitel                                             | Bedeutung                                                              |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `Angemeldet als octocat`                               | Dein eigenes Zugangsdatum wird verwendet                               |
+| `Angemeldet als octocat · über die App dieses Servers` | Die App-Identität des Servers antwortet — du bist nicht angemeldet    |
+| `Angemeldet als octocat · aus der Umgebung`            | Eine Umgebungsvariable des Servers antwortet, nicht dein Zugangsdatum |
+| `Nicht verbunden`                                      | Du hast für diesen Code-Host kein Zugangsdatum                         |
 
-### What token each forge wants
+### Welches Token welcher Code-Host braucht
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| Code-Host     | Token                                                                                                              | Wo du es anlegst                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| **GitHub**    | Classic: `repo` und `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read)       | github.com → Settings → Developer settings → Tokens    |
+| **GitLab**    | Ein persönliches Zugriffstoken mit `api`                                                                           | gitlab.com → User settings → Access tokens             |
+| **Bitbucket** | Ein Atlassian-API-Token plus die E-Mail deines Kontos                                                              | id.atlassian.com → Security → API tokens               |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket authentifiziert mit deiner **Konto-E-Mail als Benutzername** und dem Token als Passwort. Setze `BITBUCKET_EMAIL` in der Umgebung des Servers, damit er weiß, welche E-Mail zum Token gehört.
 
-### Or use the environment
+### Oder die Umgebung nutzen
 
-For a headless or CI install, the server reads these:
+Bei einer Headless- oder CI-Installation liest der Server diese Werte:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, dann `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, dann `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, dann `BITBUCKET_TOKEN` (mit `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Das sind die Zugangsdaten **des Servers**, nicht deine, und daran hängt, wer antwortet: Eine Anfrage in deinem Auftrag nutzt dein Zugangsdatum und sonst nichts. Die Umgebung springt also nie still für dich ein. Arbeit ohne Menschen dahinter — Webhooks, PR-Polling, Ticket-Sync — löst zuerst die App-Identität des Servers auf, dann das Zugangsdatum des Server-Eigentümers, dann die Umgebung. Die Reihenfolge steht fest, damit „Ich habe mich angemeldet und nichts hat sich geändert“ nie ein unterstütztes Ergebnis ist.
 
-## You are a different person on each forge
+## Auf jedem Code-Host bist du eine andere Person
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Derselbe Mensch ist auf GitHub `octocat` und auf GitLab jemand ganz anderes. Control Center löst deine Identität **je Code-Host** auf und nimmt für jedes Repo die passende. Erst dadurch stimmen „braucht mein Review“, „von mir erstellt“ und „du hast das genehmigt“ in einem gemischten Arbeitsbereich.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Ist die Identität eines Code-Hosts noch nicht aufgelöst, tragen seine Repos nichts zum Posteingang bei, statt auf alles zu passen. Der Posteingang sagt das, statt zu behaupten, du seist auf dem neuesten Stand.
 
-## One inbox, every forge
+## Ein Posteingang, jeder Code-Host
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Posteingang und PR-Warteschlange fragen jeden Code-Host ab, der im Arbeitsbereich vorkommt, und führen die Ergebnisse zu einem Strom zusammen — ein Pull Request von GitHub und einer von Bitbucket stehen nebeneinander, nach Zeit geordnet statt nach Anbieter gruppiert.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Ausfälle bleiben isoliert. Ein Code-Host, der ausfällt, am Rate-Limit hängt oder nicht verbunden ist, trägt nichts bei und lässt die anderen in Ruhe; den ganzen Posteingang leert er dabei nie. Seine eigenen Repos zeigen weiter den letzten bekannten Stand, bis er wieder da ist.
 
-## What each forge can do
+## Was jeder Code-Host kann
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Jeder Code-Host trägt die Kernschleife: Pull Requests auflisten und öffnen, Diffs lesen, inline und auf der obersten Ebene kommentieren, ein Review abgeben, mergen und schließen. Darüber hinaus unterscheiden sie sich wirklich, und Control Center blendet aus, was ein Code-Host nicht kann, statt eine Steuerung zu zeigen, die still fehlschlägt.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Fähigkeit                                    | GitHub | GitLab | Bitbucket |
+| -------------------------------------------- | :----: | :----: | :-------: |
+| Gebündelte (ausstehende) Reviews             |   ✓    |   ✓    |     —     |
+| Änderungen anfordern                         |   ✓    |   ✓    |     ✓     |
+| „Angesehen“-Status pro Datei, synchronisiert |   ✓    |   —    |     —     |
+| Emoji-Reaktionen                             |   ✓    |   ✓    |     —     |
+| Team- oder Gruppen-Reviewer                  |   ✓    |   ✓    |     —     |
+| Vorgeschlagene Prüfer                        |   ✓    |   —    |     ✓     |
+| CI-Ergebnisse an einem PR                    |   ✓    |   ✓    |     ✓     |
+| Schritte und Logs eines CI-Jobs aufklappen   |   ✓    |   ✓    |     —     |
+| Gestapelte Pull Requests                     |   ✓    |   —    |     —     |
+| Vorlagen für die PR-Beschreibung             |   ✓    |   ✓    |     —     |
+| Abruf von Benachrichtigungen                 |   ✓    |   —    |     —     |
+| Ausführliche Nutzerprofile                   |   ✓    |   ✓    |     —     |
+| Serverseitige PR-Head-Ref                    |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Fehlt eine Fähigkeit, baut die Funktion ehrlich ab:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- Der **Status „angesehen“** funktioniert weiter, aber nur auf dem Gerät, auf dem du ihn gesetzt hast.
+- **Gebündelte Reviews** auf Bitbucket gehen Kommentar für Kommentar raus, Reviewer sehen sie also einzeln ankommen statt alle auf einmal.
+- **Keine PR-Head-Ref** auf Bitbucket heißt: Beim Auschecken eines Pull Requests wird der Quell-Branch über den Namen geholt, und das scheitert, sobald der Branch gelöscht ist.
 
-## Vocabulary
+## Begriffe
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab nennt einen Pull Request **Merge Request**. Control Center sagt im eigenen Modell durchgängig „Pull Request“ und nutzt das Wort des jeweiligen Code-Hosts, wo es über genau diesen Code-Host spricht.
 
-## Troubleshooting
+## Fehlersuche
 
-### The PR list is empty and says a forge is not connected
+### Die PR-Liste ist leer und meldet, ein Code-Host sei nicht verbunden
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Du hast für diesen Code-Host kein Zugangsdatum. Melde dich an oder füge unter **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** ein Token ein. Die Repos der anderen Code-Hosts bleiben unberührt.
 
-### I connected a forge but its repos still show nothing
+### Ich habe einen Code-Host verbunden, seine Repos zeigen aber nichts
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Prüfe den Untertitel der Zeile. Steht dort „über die App dieses Servers“ oder „aus der Umgebung“, antwortet ein anderes Zugangsdatum als das, das du erwartest. Für alles, was du anfragst, gewinnt dein eigenes. Steht dort also etwas anderes, wurde deins nicht gespeichert.
 
-### A repo will not register
+### Ein Repo lässt sich nicht registrieren
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/de-DE/handbuch/anleitungen/repos-hinzufuegen/).
+Zur Registrierung müssen alle drei gelten: Der Pfad liegt in einem Git-Arbeitsbaum, er hat ein `origin`-Remote, und dieses Remote zeigt auf github.com, gitlab.com oder bitbucket.org. Siehe [Repos zu einem Arbeitsbereich hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/).
 
-### Everything stops working for a while after heavy use
+### Nach starker Nutzung steht eine Weile alles still
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Das ist der Schutzschalter für das Rate-Limit. Meldet ein Code-Host sein primäres Limit, lässt der Client weitere Anfragen lokal scheitern, ohne Netzwerkaufruf, bis das Fenster abgelaufen ist — eine Flut von Wiederholungen kann das Limit so nicht weiter verschärfen. Vorübergehende Fehler werden mit exponentiellem Backoff erneut versucht.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Add repos to a workspace](/de-DE/handbuch/anleitungen/repos-hinzufuegen/)
-- [Set up GitHub integration](/de-DE/handbuch/anleitungen/github-integration/)
-- [Review and merge a PR](/de-DE/handbuch/anleitungen/pr-pruefen-und-mergen/)
-- [Triage the inbox](/de-DE/handbuch/anleitungen/posteingang-triagieren/)
+- [Repos zu einem Arbeitsbereich hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/)
+- [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)
+- [Einen PR prüfen und mergen](/de-DE/handbuch/anleitungen/pr-pruefen-und-mergen/)
+- [Deinen Posteingang triagieren](/de-DE/handbuch/anleitungen/posteingang-triagieren/)

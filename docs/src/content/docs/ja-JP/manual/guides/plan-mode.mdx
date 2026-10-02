@@ -1,135 +1,145 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: プランモードを使う
+description: スペースをプランモードに切り替え、型付きプランを得て、承認して実行中の作業にします。
 slug: ja-JP/マニュアル/ハウツーガイド/プランモード
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+このガイドでは、エージェントがコードを書く前に、構造化されたプランを受け取る
+方法を説明します。
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+プランモードでは、エージェントは読み取り専用で調査し、その唯一の成果物は
+**型付きプラン**です。あなたが承認するステップの依存関係グラフであり、
+Control Center がそれを実際の作業にコンパイルします。変更の範囲を確認したい
+とき、ステップを分解してほしいとき、あるいは何かに手を付ける前にリスクと
+依存関係を明らかにしたいときに使います。
 
-## Switch a space into plan mode
+## スペースをプランモードに切り替える
 
-Any of these flips the space's mode and the change is persisted:
+次のいずれかでスペースのモードが切り替わり、変更は永続化されます:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- コンポーザーのツールバー左端にあるモードドロップダウンから **プラン**を選択する
+- **Shift+Tab** を押す
+- `/plan` を送信する。単独の `/plan` はモードを有効にするだけです。
+  `/plan <request>` はモードを有効にし、残りをあなたのメッセージとして送信します
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` がテキストとして送られることはありません — これは保存されたモードを
+設定するものであり、ツールサーフェス、ガードプリセット、プロンプトが
+そろって参照する権威です。したがってモードは、あなたが元に戻すまで、この
+ターンとそれ以降のすべてのターンにわたって維持されます。
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+モードはスペースに保存されるため、同じエージェントがここではプランモード、
+別の場所ではエージェントモードになることができます。
 
-## What the agent produces
+## エージェントが生成するもの
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. 読み取り専用で調査します — メモリ、コードインデックス、ファイル
+2. `submit_plan` を**一度だけ**呼び出します。`goal` と `nodes` を伴い、各
+   ノードは安定した `key`、`title`、`description`、および `dependsOn` する
+   ノードキーを持ちます（これにより独立した作業を並列で実行できます）
+3. 停止します
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+このツールはグラフを検証し（重複したキー、宙に浮いた依存関係、循環）、
+壊れたプランを受け入れるのではなく、エージェントが修正すべき違反を返します。
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+プランは**会話の中に**コンパクトな行として表示され、ゴール、そのステータス、
+ステップ数を示します。**Plan Studio** — 依存関係グラフ、ノード単位の
+インスペクター、コスト見積もり — は会話の横にタブとして開きます。行の
+**開く**を押すか、あるいはただ待つだけです。会話を眺めている間に 30 秒以内に
+届いたプランは、自分でタブを開くからです。
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[読み取り専用の保証は構造的ですが、それが当てはまるのは組み込みハーネスだけです]
+Control Center 自身のハーネスは、プランモードのサーフェス仕様からエージェントの
+ツールレジストリを構築するため、呼び出せる書き込み・編集・コマンドツールが
+そもそも存在しません — この制約は、モデルが言い逃れできるプロンプトの指示では
+ありません。
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code アダプターにはこのようなフィルタリングがありません。モードは、
+それ自身のランナーが従うかどうかわからないリクエストとして届き、Control Center
+が見るのは常にその `mcp__*` 呼び出しだけです。モードドロップダウンの横にある
+強制バッジ（**機能制限**）は、まさにその場合に表示されます。
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[エージェントはあなたに確認の質問ができます]
+リクエストが曖昧なとき、プランエージェントは一時停止し、`ask_user` ツールで
+最大 3 つまでのブロッキングな質問をあなたにできます。会話の中にフォーム
+（選択肢、または自由記述）を描画し、あなたが答えるまで実行はブロックされます。
+このツールは読み取りティアなので、プランモードの読み取り専用サーフェスでも
+残り、承認ラッパーからも免除されています（プロンプトの前にプロンプトを置くと、
+承認者が接続されていない状態でフェイルクローズし、エージェントは尋ねるという
+行為そのものを拒否されることになります）。
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+描画先のスペースが必要なため、会話のないワンショットディスパッチでは
+使えません。範囲、対象リポジトリ、受け入れ基準を最初のメッセージに先に
+詰め込んでおくほうが、往復するよりそれでも速いです。
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+ここでは散文は成果物ではありません。`submit_plan` を呼ばずに終わった実行は、
+会話に「Ended without submitting a plan (no `submit_plan` call).」という目に
+見える行を投稿し、その実行が成果物を逃したものとしてフラグを立てます。実行の
+ステータスは意図的に _completed_ のままです — これによりパイプラインと
+チケットのステートマシンが変更されずに済みます — ので、ステータスバッジでは
+なく行を読んでください。
 
-## Approve the plan
+## プランを承認する
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+会話の中のプランの行から **承認して実行**を押します。Plan Studio の承認バー
+では **プランを承認**を押します（その横の **却下**でもかまいません。グラフに
+検証エラーがある間は承認は無効です）。
 
-Then:
+その後は次のとおりです:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center はプランをオーケストレーションにコンパイルし、それを
+   マテリアライズします — チケットと実行です。このステップにモデルは
+   関与しません。決定論的です
+2. プランは、それを書いたエージェントとして実行されます。ほかの誰かを
+   関わらせるかどうかは、実行時にそのエージェントが判断します — ワークスペースの
+   委任の深さ上限の範囲内で、`delegate_task` によってステップをより適した
+   チームメイトに任せられます
+3. プランのゴールは**会話のゴール**になり、作業は**その同じ会話の中で**
+   実行されます。各ステップはエージェントが依頼された内容を投稿し、その
+   ターンをストリーミングで返すため、あなたはすでにいる場所でそれを追い
+   （ターンを停止もでき）ます
+4. 会話の**一般**サイドパネル（やることの下）のゴール行に、実行の進捗が
+   `settled/total` として表示され、停止ボタンもあります。Plan Studio は
+   グラフ上にノード単位の状態を表示し、そこでもキャンセルできます
 
-## Keep working without approving
+## 承認せずに作業を続ける
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+プランを承認するよりもこの会話にとどまりたい場合、エージェントは
+`exit_plan_mode` を呼べます。これが唯一認められた出口です。会話に紐づいた
+永続的な承認リクエストを開き、`pending` を返します — スペースはプランモードの
+ままで、エージェントは行動してはなりません。リクエストが承認されると、
+エージェントの次の `exit_plan_mode` 呼び出しがスペースをプランモードから
+エージェントモードへ切り替え、その変更系ツールを解放します。却下された場合は、
+修正されたプランに対して新しいリクエストを開けます。
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+プランモードを抜けるには、コンポーザーのドロップダウンを切り替えるか
+（または Shift+Tab）、提出されたプランを承認します。`exit_plan_mode` は、
+`decide_approval` MCP ツールで決定される永続的な承認を開きます。ブロックされた
+ツール呼び出しに対するガードレールのオーバーレイは、別のインメモリキューであり、
+プラン終了のリクエストを運びません。
 
-## Plan mode in a pipeline step
+## パイプラインステップでのプランモード
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+`messaging.createSpace` パイプラインノードは、ノード設定の `mode` **エクストラ**
+から会話モードを読み取ります — `extras['mode']: 'plan'`。このキーは完全一致です。
+`conversationMode` や `dispatchMode` を含め、ほかの綴りは黙って無視され、ルームに
+はボディのデフォルトが適用されます。それは chat ではなく **review** モードです。
+`promptAgent` ステップは、自分が作成していないルームに参加し、その権限を変更
+しません。ノード設定エディタの **ディスパッチモード**セレクト（`allParallel` /
+`manager`）は、チームディスパッチノード用です。会話モードは、スペースを開く
+テンプレートで、または API 経由でそのノードの設定で、`extras['mode']` を使って
+設定します。
 
-## Related guides
+## 関連ガイド
 
-- [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
-- [Use spaces](/ja-JP/マニュアル/ハウツーガイド/スペース/)
-- [Work in Plan Studio](/ja-JP/マニュアル/ハウツーガイド/plan-studio/)
-- [Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+- [エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+- [スペースを使う](/ja-JP/マニュアル/ハウツーガイド/スペース/)
+- [Plan Studio で作業する](/ja-JP/マニュアル/ハウツーガイド/plan-studio/)
+- [オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/)

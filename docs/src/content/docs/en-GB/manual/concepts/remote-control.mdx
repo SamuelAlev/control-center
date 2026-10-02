@@ -2,6 +2,7 @@
 title: Remote control and mobile
 description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
 slug: en-GB/manual/concepts/remote-control
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
 Control Center is a desktop app, but the work it tracks doesn't stop when you
@@ -26,7 +27,7 @@ relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
 ## Transport
 
 The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
+(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signalling
 broker that relays sealed frames. There is no peer-to-peer data channel.
 
 ## What the phone can do

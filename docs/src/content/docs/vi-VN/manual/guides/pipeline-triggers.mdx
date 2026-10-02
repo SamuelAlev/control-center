@@ -1,159 +1,168 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Thiết lập trình kích hoạt quy trình
+description: Nối một mẫu để tự khởi chạy theo sự kiện miền, theo lịch hoặc qua webhook gửi đến — từ thư viện nút và trình kiểm tra của trình kích hoạt đang chọn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Trình kích hoạt là thứ khởi chạy một quy trình. Mỗi trình kích hoạt là một node
+trên canvas, được kéo thả từ mục **Bộ kích hoạt** trong thư viện nút. Chọn node
+đó sẽ mở trình kiểm tra của nó ở bên phải — không có danh sách trình kích hoạt
+thường trực, không có tab trình kích hoạt và cũng không có màn hình trình kích
+hoạt.
 
-## Open a trigger inspector
+## Mở trình kiểm tra của trình kích hoạt
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Vào **Cài đặt → Không gian làm việc → Mẫu quy trình**.
+2. Nhấn biểu tượng bút chì trên hàng của mẫu để mở trình chỉnh sửa.
+3. Chọn một node trình kích hoạt trên canvas. Bảng bên phải hiện ra với các
+   thiết lập của trình kích hoạt đó. Khi không chọn gì, bảng này bị ẩn.
 
-## Add a trigger
+## Thêm một trình kích hoạt
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+Mục **Bộ kích hoạt** trong thư viện nút liệt kê mọi kiểu khởi chạy thành một
+node riêng: thủ công, theo lịch, webhook và một thẻ cho mỗi sự kiện miền. Hãy
+tìm `merged`, `ticket` hoặc tên loại (`PrMerged`) rồi kéo thẻ đó vào canvas.
+Một mẫu mới cũng hiển thị một ô giữ chỗ mờ **Thêm bộ kích hoạt** tại điểm neo
+lối vào — hãy chọn từ chính danh sách có thể tìm kiếm đó.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+Trình kích hoạt được chèn ngay lập tức. Các trình kích hoạt tự động mới khởi
+đầu ở trạng thái tắt để một thao tác kéo thả không kích hoạt một lần chạy trước
+khi bạn cấu hình xong. Dùng công tắc **Đã bật** trong trình kiểm tra để bật nó,
+hoặc biểu tượng thùng rác để xóa nó.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Mỗi loại sự kiện chỉ một trình kích hoạt]
+`pipeline_triggers` là duy nhất theo không gian làm việc, loại sự kiện và mẫu.
+Một loại sự kiện bạn đã nối sẽ biến mất khỏi trình chọn. Mọi trình kích hoạt
+webhook dùng chung một loại sự kiện tổng hợp `webhook`, nên một mẫu chỉ có thể
+chứa tối đa một webhook.
 :::
 
-## Allow manual runs
+## Cho phép chạy thủ công
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Kéo thả **Chạy thủ công** (hoặc chọn nó từ ô giữ chỗ mờ) rồi bật **Đã bật**
+trong trình kiểm tra của nó. Đó là thứ khiến mẫu xuất hiện trong trình chọn lần
+chạy. Đây không phải một trường hợp đặc biệt — công tắc này ghi một hàng trình
+kích hoạt bình thường với loại sự kiện là `manual`. Nó được lưu bền ngay lập
+tức; không có gì để lưu.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+Công tắc tương tự nằm sau **Chạy thủ công** ở thanh tiêu đề trình chỉnh sửa,
+nơi nó đứng cạnh các đầu vào đã khai báo của mẫu.
 
-## On an event
+## Theo một sự kiện
 
-These events start a run:
+Những sự kiện sau khởi chạy một lần chạy:
 
-| Picker label              | Event                      |
+| Nhãn trong trình chọn     | Sự kiện                    |
 | ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| PR bên ngoài được mở      | `ExternalPrDetected`       |
+| PR được xuất bản          | `PullRequestPublished`     |
+| Trạng thái PR đã đổi      | `PullRequestStatusChanged` |
+| PR được hợp nhất          | `PrMerged`                 |
+| Đã nhận tin nhắn          | `MessageReceived`          |
+| Phiếu được tạo            | `TicketCreated`            |
+| Trạng thái phiếu đã đổi   | `TicketStatusChanged`      |
+| Phiếu được gán            | `TicketAssigned`           |
+| Phiếu hoàn tất            | `TicketCompleted`          |
+| Phiếu thất bại            | `TicketFailed`             |
+| Phiếu bị hủy              | `TicketCancelled`          |
+| Đã vượt ngưỡng ngân sách  | `BudgetThresholdCrossed`   |
+| Đã thêm kho lưu trữ       | `RepoAdded`                |
+| Đã dừng ghi cuộc họp      | `MeetingRecordingStopped`  |
+| Kỹ năng đã cập nhật       | `SkillUpdated`             |
+| Không gian đã xóa         | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` là sự kiện mà quy trình dọn dẹp worktree tích hợp sẵn lắng nghe:
+nó mang id của space đã xóa, nên lần chạy chỉ thu hồi đúng các worktree của
+space đó thay vì quét toàn bộ không gian làm việc.
 
-For the payload keys each event carries, see the
-[domain events reference](/vi-VN/so-tay/tham-chieu/su-kien-mien/).
+Để biết các khóa payload mà mỗi sự kiện mang theo, xem
+[tham chiếu sự kiện miền](/vi-VN/so-tay/tham-chieu/su-kien-mien/).
 
-### Filter an event trigger
+### Lọc một trình kích hoạt theo sự kiện
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Chọn node **Trạng thái PR đã đổi**. Các chip trạng thái trong trình kiểm tra là
+bộ lọc duy nhất mà giao diện có thể tạo. Nhấn vào bất kỳ mục nào trong
+`merged`, `closed`, `approved`, `opened`, `reopened`; khi đó trình kích hoạt chỉ
+kích hoạt nếu `status` của sự kiện khớp với một trong số đó. Để tất cả chip
+không được chọn nghĩa là không lọc.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Không có trường lọc JSON tự do. Một khóa lọc mà payload của sự kiện không mang
+theo sẽ không bao giờ khớp, nên đừng tự viết một khóa mà bạn chưa xác nhận
+trong tham chiếu sự kiện miền.
 
-## On a schedule
+## Theo lịch
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Chọn node **Lịch** để chỉnh thời điểm nó kích hoạt. Các trường trong trình kiểm
+tra được lưu lại đúng như khi bạn rời khỏi chúng:
 
-| Field                                | Description                                                                                                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| Trường                               | Mô tả                                                                                                                                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lịch (cron hoặc every:seconds)**   | Một biểu thức cron năm trường như `0 9 * * 1`, hoặc một khoảng thời gian như `every:86400`. Một con số trần sẽ được chuyển thành `every:<n>`.                                            |
+| **Múi giờ (tùy chọn)**               | Một vùng IANA như `Europe/Paris`. Mặc định là UTC.                                                                                                                                       |
+| **Khi bỏ lỡ lần chạy**               | Phải làm gì với những lần kích hoạt bị bỏ lỡ khi máy chủ ngừng chạy: **Chạy một lần** gộp mọi khung giờ bị bỏ lỡ thành một lần kích hoạt khi khởi động lại (mặc định), **Bỏ qua** tiếp tục từ khung giờ tương lai kế tiếp. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+Dòng tóm tắt của thẻ trên canvas chỉ ghi rõ khoảng thời gian với dạng
+`every:<seconds>`; một biểu thức cron chỉ hiển thị là “Lịch”.
 
-## Via a webhook
+## Qua webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Kéo thả **Webhook** sẽ tạo ngẫu nhiên một token. Chọn node đó để sao chép đường
+dẫn `POST /webhooks/<token>` từ trình kiểm tra.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+Token cũng chính là khóa bí mật HMAC: request phải mang
+`X-Hub-Signature-256: sha256=<hex>`, trong đó chuỗi hex là `HMAC-SHA256(body, token)`.
+Một gói tin không xác minh được sẽ bị từ chối, được ghi log và không thể phát
+lại. Các bản trùng lặp bị bỏ qua theo khóa khử trùng lặp của chúng.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[Token nằm trong cơ sở dữ liệu]
+Trình kiểm tra hiển thị đường dẫn. Bản thân token chính là đoạn đường dẫn đó; nó
+cũng được lưu trên hàng `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Mỗi điểm khởi chạy là một node riêng trên đồ thị. Kéo một dây nối từ **Lịch**
+chỉ gắn với Lịch; **Chạy thủ công** có thể đi theo một đường khác (ví dụ qua một
+node điều kiện) trước khi hòa vào cùng công việc. Một lần chạy đi vào điểm khởi
+chạy khớp với loại sự kiện của nó và bỏ qua các đồ thị con thuộc những điểm
+khởi chạy khác.
 
-## How a trigger reaches a run
+## Cách một trình kích hoạt đi đến một lần chạy
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Một trình kích hoạt đang bật có loại sự kiện và bộ lọc đều khớp sẽ khởi chạy
+một lần chạy với payload của sự kiện làm payload trình kích hoạt của lần chạy —
+đó chính là thứ mà `{{key}}` trong prompt hoặc script của một bước phân giải dựa
+vào. Những sự kiện mang khóa tự nhiên được khử trùng lặp, nên cùng một sự kiện
+kích hoạt hai lần sẽ không tạo ra hai lần chạy.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Một _mẫu_ bị tắt vẫn bị từ chối ngay cả khi trình kích hoạt của nó khớp. Tám
+trong số mười ba mẫu tích hợp sẵn xuất xưởng ở trạng thái tắt, nên các trình
+kích hoạt được gieo của chúng kích hoạt vào khoảng không cho tới khi bạn bật
+mẫu lên.
 
-## Useful patterns
+## Những mẫu hữu dụng
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Chỉ chặn đường thủ công** — nối **Chạy thủ công** qua một node điều kiện,
+  còn **Lịch** nối thẳng tới công việc. Mỗi điểm khởi chạy sở hữu các dây nối
+  của riêng nó.
+- **Xem xét mọi PR mới** — sự kiện **PR được xuất bản** trên mẫu `pr_review`.
+- **Dọn dẹp sau khi hợp nhất** — sự kiện **Trạng thái PR đã đổi**, lọc theo
+  `merged` / `closed` / `approved`. Mẫu tích hợp sẵn `pr_merged_cleanup` đã
+  lắng nghe theo cách này, cùng với phiếu hoàn tất/bị hủy, `SpaceDeleted`, và
+  một lịch chạy hằng ngày luôn bị buộc bật ở mỗi lần gieo lại vì đó là việc thu
+  gom rác.
+- **Quét hằng đêm** — lịch `0 2 * * *` kèm múi giờ, trên một mẫu có node đầu
+  tiên là script bash.
+- **Phản ứng với một hệ thống bên ngoài** — một trình kích hoạt webhook, với hệ
+  thống gọi ký phần thân request của nó như trên.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create a pipeline template](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
-- [Run a pipeline manually](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
-- [Monitor pipeline runs](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
-- [Domain events reference](/vi-VN/so-tay/tham-chieu/su-kien-mien/)
+- [Tạo mẫu quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
+- [Chạy quy trình thủ công](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
+- [Theo dõi lần chạy quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
+- [Tham chiếu sự kiện miền](/vi-VN/so-tay/tham-chieu/su-kien-mien/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Pipelines](/vi-VN/so-tay/khai-niem/quy-trinh/)
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/)
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/)
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/)

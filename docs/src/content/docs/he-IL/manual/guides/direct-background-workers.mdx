@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: הכוונת עובדי רקע
+description: השתמשו במצב vibe כדי להפסיק לעשות את העבודה בעצמכם ולהתחיל לכוון כמה סוכנים שעושים אותה במקביל.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הכוונת-עובדי-רקע
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+המדריך הזה מראה איך להריץ שיחה בתור **מכוון** ולא בתור עובד: הסשן קורא ומאמת, וסוכני רקע עושים את העריכה.
 
-## What changes when you type `/vibe`
+## מה משתנה כשמקלידים `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+שני דברים, ורק הראשון נאכף על ידי המנגנון:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **הכלים של הסשן עצמו מצטמצמים לקריאה בלבד**, בתוספת חמישה פעלים של עובדים. הדרך היחידה שבה הוא יכול להשפיע על המאגר היא דרך עובד, והדרך היחידה שבה הוא יכול לדעת מה קרה היא לקרוא את הקבצים שעובד נגע בהם.
+2. **אומרים לו לאמת בקריאה, לא מתוך אמונה.** הדוח של עובד הוא טענה לגבי מה שהוא עשה, לא ראיה שזה עבד.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+הראשון הוא זה שנושא את המשקל. מכוון שעדיין יכול להריץ grep ולערוך יעשה את העבודה בעצמו תחת לחץ, וזה בדיוק מצב הכשל שכל העניין נועד למנוע.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## עובדים מתחילים מדף חלק
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+עובד מעולם לא ראה את השיחה שלכם, וגם לא יראה. התדרוך הוא ההקשר כולו שלו.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+זה מה ששומר על הדפוס זול — עשרים עובדים שכל אחד מחזיק את ההיסטוריה של המכוון היו עולים פי עשרים מההקשר של המכוון — וזה גם הדבר האחד שהופך כתיבת תדרוכים לקשה. "עכשיו תעשה גם את האחר" נקרא כהנחיה שלמה בעיני המכוון, וכשום דבר בכלל בעיני סשן טרי.
 
-A good brief names files, commands and the definition of done:
+תדרוך טוב נוקב בשמות קבצים, בפקודות ובהגדרה של מה נחשב גמור:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> ב-`lib/features/auth/`, החליפו כל קריאה ל-`SessionStore.read(key)` ב-`SessionStore.get(key)`. המתודה החדשה מחזירה `Future<String?>` בעוד הישנה החזירה `String?`, ולכן הקוראים צריכים `await`. הריצו `fvm flutter analyze lib/features/auth` כשתסיימו, ודווחו על כל שגיאה שלא הצלחתם לתקן.
 
-## The five verbs
+## חמשת הפעלים
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| פועל         | מה הוא עושה                                            |
+| ------------ | ------------------------------------------------------ |
+| `vibe_spawn` | מתחיל עובד על תדרוך. **חוזר מיד.**                      |
+| `vibe_list`  | דרגה, מצב, זמן שחלף ותוצאה אחרונה עבור כולם              |
+| `vibe_send`  | סבב המשך לעובד שכבר סיים                                 |
+| `vibe_wait`  | חוסם עד שאחד העובדים מגיע למצב סופי                      |
+| `vibe_kill`  | עוצר אחד                                                 |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+הפעלת עובדים היא אסינכרונית מעצם התכנון. מכוון שחוסם בכל הפעלה מריץ עובדים בזה אחר זה, וזו דרך איטית יותר לעשות את מה שהוא כבר עשה בעצמו. השתמשו ב-`vibe_wait` רק כשבאמת אי אפשר להתקדם בלי תשובה מסוימת.
 
-## Two tiers
+## שתי דרגות
 
-| Tier   | For                                                              |
+| דרגה   | עבור                                                             |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | עבודה מכנית עם מפרט ברור — עריכות, שינויי שמות, טיוטות, הרצת פקודות |
+| `good` | עיצוב, שיקול דעת, או סקירה של מה שעובד `fast` הפיק                |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+צורה נפוצה היא לפזר עובדי `fast` על פני קבצים בלתי תלויים, ואז להפעיל עובד `good` אחד שיסקור את מה שהם עשו יחד.
 
-## Verifying
+## אימות
 
-This is the part that decides whether the pattern is worth anything.
+זה החלק שקובע אם לדפוס הזה יש בכלל ערך.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+ואז **קראו את הקבצים שהוא ציין**. למכוון יש `read`, `search`, `lsp` ו-`ast_grep`; זו כל הסיבה להשאיר אותם. מכוון שמקבל את הדוח כפשוטו הוא רק מסכם את האופטימיות של סוכנים אחרים.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` אחרי סבב עובדים הוא בדרך כלל הבדיקה הבודדת המהירה ביותר.
 
-## When a worker loses the thread
+## כשעובד מאבד את החוט
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+הרגו אותו ותדרכו מחדש. תדרוך טרי ומתוקן זול יותר מוויכוח, ו-`vibe_send` עובד רק על עובד שכבר סיים את הסבב שלו.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## מגבלות
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **שמונה עובדים במקביל.** תקרה על ההוצאה, לא מגבלה טכנית: כל אחד הוא סשן מודל מלא, ומכוון שפורש עשרים כבר הפסיק לעקוב אחרי מה שכולם עושים.
+- **אף עובד לא שורד את המצב.** כשההרצה מסתיימת, כל אחד מהם נעצר והתמלול אומר כמה. סוכן רקע שעדיין עורך קבצים אחרי שהשיחה התקדמה הלאה הוא הכשל האחד שאסור שיקרה.
+- **מתחת לפני השטח, העובדים הם סוכני משנה רגילים.** אותה תקרת עומק, אותה מדיניות מעקות בטיחות, ואותו רישום בן ביומן ההרצות. מצב vibe משנה מי מניע אותם, לא מה שמותר להם לעשות — ולכן בקשות אישור עדיין מופיעות לקריאות כתיבה ו-exec של עובד.
 
-## When not to use it
+## מתי לא להשתמש בזה
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/) or an [orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+מצב vibe מיועד לעבודה שמתפרקת לתדרוכים בלתי תלויים. אם הצעד הבא תלוי בפלט של הצעד הקודם, אתם מתארים [פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/) או [תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/), ושניהם מבטאים תלויות כראוי במקום לגרום למכוון לחקות אותן עם `vibe_wait`.
 
-## Related
+## נושאים קשורים
 
-- [Run agents in parallel](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/) — the other ways to fan out
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/) — when the work has a shape
-- [Built-in agent tools](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — the verbs and their arguments
+- [הפעלת סוכנים במקביל](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/) — הדרכים האחרות לפזר עבודה
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/) — כשהעבודה כבר בעלת מבנה
+- [כלי סוכן מובנים](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — הפעלים והארגומנטים שלהם

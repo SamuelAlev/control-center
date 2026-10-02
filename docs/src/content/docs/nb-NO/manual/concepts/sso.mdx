@@ -1,19 +1,19 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Enkel pålogging
+description: Hvordan SAML- og OIDC-innlogging virker, hva den verifiserer, og hvordan kontoer holdes trygge.
 slug: nb-NO/handbok/konsepter/sso
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Enkel pålogging lar en ekstern identitetsleverandør (IdP) avgjøre hvem som får
+logge inn på Control Center-serveren din. To protokoller støttes — SAML 2.0 og
+OpenID Connect — og begge ender på samme sted: en nyutstedt enhetslegitimasjon
+som er umulig å skille fra en invitasjon eller QR-paring nedstrøms.
 
-## The shape of a login
+## Formen på en innlogging
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+SAML-innlogginger er **nettleserformidlet**. IdP-en åpner aldri en tilkobling
+til serveren din; brukerens nettleser frakter alt:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +26,81 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Fordi nettleseren er kurer, **fungerer en server bak NAT helt fint** for
+innlogginger: localhost, LAN, Tailscale, VPN eller en tunnel duger alle — det
+er bare brukerens nettleser som må nå ACS-URL-en. WebSocket-reléet som
+telefonfjernstyringen bruker, kan ikke frakte HTTP-rundturen, og derfor retter
+SSO-inngangspunktene seg alltid mot serverens HTTP-origin.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect følger samme form med en autorisasjonskode- + PKCE-rundtur;
+claims leses fra utstederens token-endepunkt over TLS, så nettleseren leverer
+aldri identitetsdata i det hele tatt.
 
-## The adapters
+## Adapterne
 
-Control Center splits the responsibility deliberately:
+Control Center deler ansvaret med vilje:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| Del                           | Hvor                               | Eier                                                                                                                                          |
+| ----------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig-verifisering, kanonisering, SAML-profilvalidering — delegert til den fastpinnede `saml`-craten i ren Rust bak en tilstandsløs C-ABI    |
+| `SamlService` / `OidcService` | `cc_server_core`                   | innloggingstilstand (sporing av ventende forespørsler, deduplisering ved replay), brytere for valideringspolicy, det delte provisjoneringskallet |
+| `SsoProvisioner`              | `cc_server_core`                   | finn-eller-opprett brukeren, fest leverandørens subjekt, gi medlemskap etter policyen for automatisk medlemskap                                |
+| `ScimService`                 | `cc_server_core`                   | pushflaten for SCIM 2.0 (livssyklus for provisjonering/deprovisjonering)                                                                       |
+| `SsoSettingsService`          | `cc_server_core`                   | de lagrede tilkoblingsradene, re-anvendelse i sanntid, SCIM-tokenet                                                                            |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Det finnes bevisst **ingen kryptografisk SAML-reservevei i ren Dart**:
+håndrullert XML-DSig/kanonisering er nøyaktig der sårbarheter for
+signaturinnpakking holder til, så et manglende `cc_saml`-bibliotek avviser
+både SAML-innlogging og serveroppstart. Native-modulen er tilstandsløs med
+vilje — tilstand på tvers av forespørsler ligger i Dart-tjenestene, til
+engangsbruk og kortvarig.
 
-## What a login verifies
+## Hva en innlogging verifiserer
 
-Inside the verified native and the service, in order:
+I den verifiserte native-modulen og tjenesten, i denne rekkefølgen:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **Signaturen** til assertionen (alltid påkrevd; svarkonvoluttens er
+   valgfri per konfigurasjon) — strukturelt motstandsdyktig mot
+   signaturinnpakking fordi den validerte nyttelasten er bundet til det
+   verifiserte elementet,
+2. **utstederen** samsvarer med den konfigurerte IdP-en,
+3. **audience** navngir denne tjenesteleverandøren,
+4. **destinasjonen** er vår ACS-URL,
+5. `InResponseTo` samsvarer med en ventende AuthnRequest vi utstedte
+   (uoppfordrede, IdP-initierte svar er av som standard),
+6. **levetidsvinduene** holder seg innenfor klokkeavviket (standard 90 s) og
+7. **assertion-id-en** er aldri sett før (replay-cache).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Feil kommer tilbake som typede koder — signature, expired, audience,
+destination, issuer, request-match — og endepunktene svarer med generiske
+feil, så en angriper ikke lærer noe om hvorfor en forfalskning mislyktes.
 
-## Accounts and subject pinning
+## Kontoer og festing av subjekt
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Den første SSO-innloggingen fester leverandørens uforanderlige subjekt
+(`issuer` pluss SAML NameID / OIDC `sub`, eller SCIM externalId) til kontoen.
+Fra da av er det subjektet — ikke e-postadressen — som identifiserer
+innloggingen. Hvis noen andre senere oppgir den samme e-postadressen fra
+samme eller en annen IdP, avviser den festede kontoen dem. Det er dette som
+hindrer at en resirkulert e-postadresse hos en leverandør blir til en
+kontoovertakelse.
 
-## Provisioning and deprovisioning
+## Provisjonering og deprovisjonering
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT-provisjonering skjer ved innlogging (`SsoProvisioner`). SCIM er en separat
+pushflate (`ScimService`) som fester det samme subjektet på brukerraden; den
+gir ikke medlemskap i arbeidsområder. Deprovisjonering — SCIM `active: false`
+eller `DELETE` — avvises hvis kontoen er eier av et arbeidsområde (overfør
+først). Ellers tilbakekaller den først all enhetslegitimasjon (øktene faller
+innen sekunder via enhetsvakten), fjerner alle medlemskap i arbeidsområder og
+merker kontoen som deaktivert. Brukerraden består: attribusjonen er permanent.
+Reaktivering gjenoppretter innlogging, men gir aldri medlemskapene tilbake.
 
-## What stays out
+## Hva som holdes utenfor
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Gruppe→rolle-tilordning skjer ved innlogging** fra SAML-attributtene /
+  OIDC-claimene — grupper som pushes via SCIM, lagres ikke.
+- **Eierrollen er ikke oppnåelig via SSO** — verken som standardrolle eller
+  gjennom en gruppetilordning.
+- WebSocket-reléet er aldri en SSO-kanal; telefoner som bare når serveren
+  gjennom reléet, kan ikke fullføre en nettleserrundtur mot den.

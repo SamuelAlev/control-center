@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Introductie
+description: Control Center is de cockpit voor softwareontwikkeling met meerdere agents.
 slug: nl-NL/handleiding
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center geeft je de leiding over een vloot AI-codeeragenten. Start agenten, kijk ze in realtime werken, review hun pull requests en beheer repo's, werkruimtes en integraties — vanuit een native desktop-app, een browser of je telefoon.
 
 <div className="docs-start not-content">
-  <LinkButton href="/nl-NL/handleiding/snelstart/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/nl-NL/handleiding/installeren/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/nl-NL/handleiding/snelstart/" icon="right-arrow">Snelstart</LinkButton>
+  <LinkButton href="/nl-NL/handleiding/installeren/" variant="minimal" icon="download">Control Center installeren</LinkButton>
 </div>
 
-## What you can do
+## Wat je kunt doen
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/nl-NL/handleiding/concepten/pipelines/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/nl-NL/handleiding/gidsen/rigs-gebruiken/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Berichten naar agenten sturen**: ruimtes zijn de belangrijkste manier om de vloot aan te sturen. Noem een agent met @ en die start in zijn eigen copy-on-write-worktree, zodat meerdere agenten parallel kunnen coderen en reviewen zonder dat jouw checkout wordt aangeraakt
+- **De grote opdrachten orkestreren**: geef de orchestrator een doel, keur het plan voor het hele team dat hij voorstelt één keer goed en een gegenereerde [pipeline](/nl-NL/handleiding/concepten/pipelines/) voert het uit
+- **Pull requests reviewen en mergen** met een ingebouwde diff-viewer, inline opmerkingen en AI-gestuurde review
+- **Agenten wegwerpmachines geven**: een [rig](/nl-NL/handleiding/gidsen/rigs-gebruiken/) is een wegwerp-VM — een browser, een desktop, een telefoon of een omhulde terminal — die de agent bestuurt terwijl jij live meekijkt en kunt overnemen; dev-servers erin worden doorgestuurd naar `localhost`, de browser van de agent en `https://myapp.test`
+- **Werkstromen automatiseren** met op DAG's gebaseerde pipelines die door gebeurtenissen of planningen worden geactiveerd
+- **Kennis beheren** met geheugen, feiten en beleid per werkruimte
+- **Werk volgen** met leverancieronafhankelijke tickets, projecten en delegatie
+- **Vergaderingen opnemen** met opname, transcriptie en diarisatie op het apparaat, daarna samengevat in notities, actiepunten en besluiten
+- **Je dag overzien** met synchronisatie met Google Agenda, reacties op uitnodigingen, vergadermeldingen en opnemen en koppelen
+- **De vloot volgen vanaf je telefoon**: koppel een apparaat aan je server, lees berichten, antwoord en trieer tickets. De telefoon neemt het beste pad dat hij kan bereiken — loopback, LAN, tailnet of TLS — en valt terug op een end-to-end verzegelde relay die frames doorstuurt die hij niet kan lezen
+- **Agenten aansturen vanuit Slack**: verbind een werkruimte met een chat-app en noem de bot, antwoord in een Slack-thread of maak een ticket aan met een slash-commando — via een uitgaande verbinding, dus er is geen openbaar eindpunt nodig
+- **Integreren** met GitHub, Linear, Slack, Google Agenda en meer dan 100 MCP-tools
 
-## You do not have to install it
+## Je hoeft het niet te installeren
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Dezelfde applicatie draait in je browser op
+[app.usectrl.dev](https://app.usectrl.dev), met dezelfde functies.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Elke client — desktop, web en telefoon — is een dunne renderer boven op een headless server die
+je gegevens bezit en het werk doet. De desktop kan die server voor je starten; een
+browsertabblad kan dat niet, dus de webapp verbindt met een server die jij draait. Die server
+kan op je eigen machine staan (`ws://localhost:9030`, geen certificaat nodig) of op een externe
+host die bereikbaar is via TLS, een VPN of een tunnel.
 
-See [Install](/nl-NL/handleiding/installeren/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/nl-NL/handleiding/concepten/deployment/) for how the three clients relate.
+Zie [Installeren](/nl-NL/handleiding/installeren/#use-it-in-your-browser) voor de route via de browser en
+[Deployment en clients](/nl-NL/handleiding/concepten/deployment/) voor hoe de drie clients zich tot elkaar verhouden.
 
-## Next steps
+## Volgende stappen
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/nl-NL/handleiding/installeren/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/nl-NL/handleiding/snelstart/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/nl-NL/handleiding/zelfstudies/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/nl-NL/handleiding/gidsen/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/nl-NL/handleiding/concepten/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/nl-NL/handleiding/referentie/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Installeren" href="/nl-NL/handleiding/installeren/" description="Downloads, systeemvereisten en waar de server draait." />
+  <LinkCard title="Snelstart" href="/nl-NL/handleiding/snelstart/" description="De kortste complete weg naar een agent die aan je repo werkt." />
+  <LinkCard title="Zelfstudies" href="/nl-NL/handleiding/zelfstudies/" description="Langere lessen, in volgorde, te beginnen bij je eerste werkruimte." />
+  <LinkCard title="How-to-gidsen" href="/nl-NL/handleiding/gidsen/" description="Recepten voor één taak tegelijk: repo's toevoegen, beveiligingen configureren of je telefoon koppelen." />
+  <LinkCard title="Concepten" href="/nl-NL/handleiding/concepten/" description="Waarom het product werkt zoals het werkt, te beginnen bij deployment en clients." />
+  <LinkCard title="Referentie" href="/nl-NL/handleiding/referentie/" description="Complete tabellen voor routes, MCP-tools, sneltoetsen en domeingebeurtenissen." />
 </div>

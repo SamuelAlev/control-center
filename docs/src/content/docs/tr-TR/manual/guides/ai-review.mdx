@@ -1,152 +1,161 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: YZ destekli inceleme kullanma
+description: Bir PR üzerinde pr_review pipeline'ını çalıştırın, bulguları ve kararı okuyun, ardından incelemeyi GitHub'a yayınlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yz-incelemesi
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Bu kılavuz, inceleyici ajanların bir pull request'i nasıl inceleyeceğini ve sonucu
+GitHub'a nasıl yayınlayacağınızı gösterir.
 
-## Start an AI review
+## Bir YZ incelemesi başlatın
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. PR'ı açın ve **Genel bakış** sekmesine gidin
+2. Eylem satırındaki ⋯ taşma menüsünü açın ve **AI'ya sor** seçeneğini seçin
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Bu öğe yalnızca PR açıkken görünür — bu, birleştirme öncesi bir eylemdir. Aynı düğme,
+henüz hiçbir inceleme yokken **İncele** sekmesinin boş durumunda da **AI'ya sor**
+olarak sunulur.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center, yerleşik `pr_review` pipeline'ını başlatır ve izleyebilmeniz için
+PR'ın **İncele** sekmesini açar. Pipeline şunları yapar:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. PR'ın kendi inceleme alanını açar; bu alanın yalıtılmış çalışma ağacında PR,
+   head'inde checkout edilmiş olarak durur
+2. Çalışma alanının inceleme düzeyine göre inceleyicileri dağıtır — varsayılan
+   olarak üç (yerleşik **qa**, **architect** ve **engineer** ajanları, paralel
+   olarak). Dil veya alan tespiti yoktur
+3. Lider (CEO) ajana bulgularını bir rehberli anlatımda birleştirtir
+4. Sonlandırır: bulguları uzlaşma gruplarına ayırır ve kararı hesaplar.
+   İlişkilendirme `awaiting approval` durumuna ulaştığında, İncele sekmesinde
+   **GitHub'a yayınla** görünür
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+İncelemenin ne kadar derine gideceği çalışma alanının **inceleme düzeyidir** —
+`light` (tek inceleyici), `balanced` (üç, varsayılan) veya `thorough` (beşin
+tamamı, güvenlik ve performans uzmanlarını da ekler) — ve
+**Ayarlar → Çalışma alanı → Genel** altındaki **Çalışma alanı ilkesi** kartında
+ayarlanır. Daha hafif bir düzey de tam olarak aynı sayıda bulgu kaydeder;
+bunların daha azını ön planda raporlar.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/tr-TR/kilavuz/kavramlar/yz-incelemesi/) for how the pieces fit together.
+Tüm inceleyiciler PR'ın tek inceleme alanına yazar; bulgularını karşılaştırılabilir
+kılan da budur. Parçaların birbirine nasıl oturduğunu
+[YZ incelemesi](/tr-TR/kilavuz/kavramlar/yz-incelemesi/) sayfasında görebilirsiniz.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/).
+`pr_review` yalnızca elle tetikleme ile gelir. Yayınlanan her PR'da çalışmasını
+istiyorsanız kendiniz bir tetikleyici ekleyin — bkz.
+[İnceleyici ajanları gönderme](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/). GitHub'ın
+kendisinden de başlatabilirsiniz; pipeline tetikleyicisi gerekmez: PR'da sunucunun
+botundan bahsedin veya `ai-review` etiketini ekleyin — bkz.
+[Bir GitHub PR'ından Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Bir bildirim, bu pull request için zaten bir incelemenin çalıştığını söylüyorsa bir
+inceleme çoktan yoldadır; onu bulmak için **İncele** sekmesinde kalın veya
+**Pipelines**'ı açın.
 
-## Read the findings
+## Bulguları okuyun
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+İnceleyiciler bulguları inceleme alanına **inceleme düğümleri** olarak kaydeder.
+Her biri şunları taşır:
 
-| Field          | Description                                                   |
+| Alan           | Açıklama                                                      |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Tür            | `bug`, `suggestion`, `recommendation`, `question` veya `ticket` |
+| Öncelik        | P0 (kritik) → P3 (ince ayrıntı)                               |
+| Kategori       | `security`, `stability`, `data_integrity`, `correctness`, `performance` veya `maintainability` |
+| Dosya ve satır | Bulgunun çapalandığı yer                                     |
+| Özgün kod      | Bulgunun konusu olan kod                                      |
+| Önerilen kod   | Önerilen düzeltme                                             |
+| Güven          | İnceleyicinin ne kadar emin olduğu                            |
+| Durum          | `open` → `consensus-ready` → `resolved` veya `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Bir bulgu, ancak bir _akran_ inceleyici onayladığında **consensus-ready** durumuna
+ulaşır. Bir ajan kendi bulgusunu onaylayamaz; bu yüzden tek bir inceleyicinin
+görüşü kendi başına asla olgunlaşmaz.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/) for what the pass produces.
+**İncele** sekmesi, bulgular listesini tür ve duruma göre filtrelenebilir biçimde,
+yoksayılan bulgular için bir anahtarla birlikte, birleştiren ajanın yayınladığı
+yapıtın yanında gösterir. Deterministik görünüm — kohortlar, çok eksenli pano,
+sözleşme ve görsel diff'ler — sunucu tarafında hesaplanır ancak uygulamada bir
+yüzeyi yoktur; geçişin neler ürettiğini
+[İnceleme hesaplaması](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/) sayfasında
+görebilirsiniz.
 
-## Check the disagreements panel
+## Anlaşmazlıklar panelini kontrol edin
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+İki inceleyici bulguları aynı dosyaya ve satıra çapalayıp bunları çok farklı
+derecelendirdiğinde — öncelikler arasında iki veya daha fazla düzey fark olduğunda
+ya da biri buna `bug` derken diğeri `suggestion` dediğinde — bulgular listesinin
+üzerinde bir anlaşmazlık paneli görünür. Önce bunları okuyun: inceleyicilerin
+görüşlerinin ayrıldığı ve sizin yargınızın en değerli olduğu yer burasıdır.
 
-## Read the verdict
+## Kararı okuyun
 
-When the lead agent finalizes, it computes a **verdict**:
+Lider ajan sonlandırdığında bir **karar** hesaplar:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Karar     | Anlamı                                        |
+| --------- | --------------------------------------------- |
+| **Ship**  | Engelleyici hiçbir şey bulunmadı              |
+| **Hold**  | Birleştirmeden önce ele alınması gereken sorunlar |
+| **Block** | Düzeltilmesi gereken kritik sorunlar          |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Karar, toplu bir güven puanı ve öncelik başına bulgu sayıları taşır.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Ardından inceleme eksenleri buna katılır ve kararı yalnızca **daha** ağır hâle
+getirebilirler. Kapıya bağlı bir eksen başarısız olursa **Block**'u zorlar; kapıya
+bağlı bir eksen tamamlanamazsa (`partial`) ya da hiç çalışamazsa (`unavailable`) en
+azından **Hold**'u zorlar. Kanıt yokluğu hiçbir kapıyı asla geçirmez.
 
-## Publish the review to GitHub
+## İncelemeyi GitHub'a yayınlayın
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Yayınlama ayrı ve bilinçli olarak kullanıcı kapısına bağlanmış bir adımdır.
+`pr_review` pipeline'ı incelemeyi Control Center'da tutar; GitHub'a göndermez.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. **İncele** sekmesinde **GitHub'a yayınla** görünene kadar bekleyin
+2. **GitHub'a yayınla** düğmesine basın
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center **tek** bir GitHub incelemesi gönderir. Zaten çözülmüş veya
+yoksayılmış bulgular atlanır. Düğme, kalan tüm açık bulguları içerir ve **Ship**
+durumunda `APPROVE` gönderir. (MCP aracı `publish_review_to_github` yine de
+varsayılan olarak yalnızca akran onaylı bulguları alır ve `approve_on_ship`
+vermediğiniz sürece onaylamaz.) Dosya ve satır çapası taşıyanlar satır içi yoruma
+dönüşür; geri kalan her şey, kaynağın belirsiz olmaması için her biri bir
+"— Control Center AI review" altbilgisiyle özet gövdesine katılır. **Block** kararı
+`REQUEST_CHANGES` olarak; **Hold** `COMMENT` olarak; **Ship** ise bu düğmeden
+`APPROVE` olarak gönderilir. Ardından bir bildirim **Yayınlandı** yazar. İnceleme,
+sunucunun uygulama kimliği altında yayınlanır.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+GitHub bir satır içi çapayı, satır diff'in parçası olmadığı için reddederse, tüm
+inceleme her bulgu gövdeye katılarak yeniden gönderilir; böylece hiçbir şey sessizce
+düşürülmez.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Yayınlama korumalarla kapıya bağlı]
+`pr_review.publishReview`, `prPublish` eylem sınıfını bildirir ve koruma
+darboğazından geçer. Çözümlenen karar `prompt` ise ve bağlı bir onaylayıcı yoksa,
+yayınlama reddedilir — korumalar kapalı yönde başarısız olur. Gözetimsiz
+çalışmasını istiyorsanız Ayarlar → Çalışma alanı → Ajan izinleri altında açık bir
+kural tanımlayın.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Diğer yerleşik pipeline'lar doğrudan GitHub'a gönderir: `cross_review`, `pr_triage`,
+`ticket_to_pr` ve `pre_merge_gate` her biri bir yorum adımıyla biter. Yalnızca
+`pr_review` çıktısını sizin için geride tutar.
 
-## Dispatch reviewers yourself
+## İnceleyicileri kendiniz gönderin
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/).
+PR'ı hangi rollerin inceleyeceği ve her birinin hangi dosyalara bakacağı üzerinde
+kontrol sahibi olmak için, mevcut bir inceleme alanında `dispatch_reviewers` MCP
+aracını kullanın veya bir pipeline'a inceleyici düğümleri ekleyin. Aracın tam
+imzasıyla birlikte her iki yol da
+[İnceleyici ajanları gönderme](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/)
+sayfasındadır.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Review and merge a PR](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
-- [Dispatch reviewer agents](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/)
-- [Review compute (cohorts and axes)](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/)
+- [Bir PR'ı inceleme ve birleştirme](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
+- [İnceleyici ajanları gönderme](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/)
+- [İnceleme hesaplaması (kohortlar ve eksenler)](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [AI review](/tr-TR/kilavuz/kavramlar/yz-incelemesi/)
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/)
+- [YZ incelemesi](/tr-TR/kilavuz/kavramlar/yz-incelemesi/)
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/)

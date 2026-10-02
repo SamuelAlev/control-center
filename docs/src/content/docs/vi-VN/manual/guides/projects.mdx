@@ -1,94 +1,97 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Tổ chức công việc bằng dự án
+description: Nhóm phiếu thành dự án từ thanh bên, theo dõi tiến độ và lưu trữ dự án khi đã xong.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/du-an
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Dự án là một nhóm phiếu trong phạm vi không gian làm việc, hướng tới một mục tiêu
+chung. Dự án chỉ tồn tại trong Control Center — chúng không bao giờ đồng bộ sang
+nhà cung cấp bên ngoài như Linear.
 
-## Create a project
+## Tạo một dự án
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Mở rộng nhóm **Phiếu** trong thanh bên của không gian làm việc. Nhóm này liệt
+   kê **Tất cả phiếu**, mỗi dự án chưa lưu trữ một hàng, rồi đến **Dự án mới**.
+2. Nhấp **Dự án mới**.
+3. Điền **Tên dự án**, **Mô tả** (không bắt buộc) và chọn một **Màu**.
+4. Nhấn **Tạo dự án**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Bạn được đưa đến phần tổng quan của dự án mới, và dự án xuất hiện thành một hàng
+trên thanh bên dưới **Phiếu**.
 
-## Add tickets to a project
+## Thêm phiếu vào một dự án
 
-Project is a single-ticket field, set in either of two places:
+Dự án là một trường của từng phiếu, được đặt ở một trong hai nơi:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Mở phiếu và đặt **Dự án** trong thanh thuộc tính của phiếu.
+- Nhấp chuột phải vào phiếu trong danh sách và dùng menu con **Dự án**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Trình chọn trong thanh thuộc tính cũng có **Dự án mới**, nên bạn có thể xếp một
+phiếu vào dự án mà mình tạo ngay tại chỗ. **Không có dự án** sẽ xóa trống trường
+này.
 
-A ticket belongs to at most one project.
+Một phiếu chỉ thuộc tối đa một dự án.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Dự án không phải thao tác hàng loạt]
+Thanh nổi xuất hiện khi bạn chọn nhiều phiếu bao gồm trạng thái, độ ưu tiên, người
+được gán, nhãn và xóa. Thanh này không có chip dự án, nên muốn xếp nhiều phiếu thì
+phải làm lần lượt từng phiếu một.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Bạn cũng có thể bắt đầu từ phía dự án: **Phiếu mới** trên phần tổng quan của dự án
+sẽ tạo một phiếu và xếp phiếu đó vào dự án.
 
-## Read project progress
+## Theo dõi tiến độ dự án
 
-Open a project from its sidebar row, or go to
+Mở một dự án từ hàng của nó trên thanh bên, hoặc truy cập
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Phần tổng quan hiển thị biểu tượng và tên của dự án, một huy hiệu trạng thái, mô
+tả và một thanh tiến trình hoàn thành trên tổng số. Bên dưới đó, các phiếu của dự
+án được nhóm theo trạng thái.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Trang này không tổng hợp gì thêm — không có phần phân tách theo người được gán và
+cũng không có phân bố theo độ ưu tiên. Muốn xem những thứ đó, hãy lọc danh sách
+phiếu chính.
 
-## Change project status
+## Thay đổi trạng thái dự án
 
-Projects have three states:
+Dự án có ba trạng thái:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Trạng thái         | Ý nghĩa                |
+| ------------------ | ---------------------- |
+| **Đang hoạt động** | Công việc đang diễn ra |
+| **Đã hoàn thành**  | Mọi công việc đã xong  |
+| **Đã lưu trữ**     | Tham chiếu lịch sử     |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Dùng menu **⋯** trên tiêu đề dự án. Menu này có **Sửa dự án**,
+**Đánh dấu hoàn thành** / **Đánh dấu đang hoạt động**, **Lưu trữ** / **Khôi phục**
+và **Xóa dự án**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Việc lưu trữ ẩn dự án khỏi danh sách trên thanh bên và khỏi các trình chọn phiếu.
+Thao tác này có thể hoàn tác — **Khôi phục** đưa dự án trở lại trạng thái đang
+hoạt động — nhưng trong lúc bị lưu trữ, dự án chỉ truy cập được bằng URL.
 
-## Projects created for you
+## Những dự án được tạo sẵn cho bạn
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/).
+Phê duyệt một điều phối sẽ tạo một dự án và xếp phiếu cha vào dưới dự án đó, cùng
+với bất cứ thứ gì bạn đã xếp thủ công. Các mục công việc được tạo ra là bước quy
+trình, không phải hàng phiếu, nên chúng không xuất hiện trên bảng dự án. Đó là con
+đường tự động duy nhất: không nút quy trình nào tạo phiếu, nên một quy trình không
+thể đổ đầy một dự án. Xem
+[Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Dự án là bề mặt dành cho người vận hành]
+Hãy tạo, liệt kê, cập nhật và xóa dự án trong ứng dụng. Agent không có công cụ về
+dự án.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
-- [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
-- [Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Tickets](/vi-VN/so-tay/khai-niem/phieu/)
+- [Phiếu](/vi-VN/so-tay/khai-niem/phieu/)

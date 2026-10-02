@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: ประวัติการสนทนา
+description: การรันหนึ่งครั้งเก็บบริบท พับ แยกสาขา และทำต่ออย่างไร — กลยุทธ์การย่อ ต้นไม้เซสชัน และความหมายจริง ๆ ของ “การทำต่อ”
 slug: th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+การสนทนายาว ๆ ต้องชนกำแพงแข็งทื่อ นั่นคือหน้าต่างบริบทของโมเดล ทุกอย่างในหน้านี้มีอยู่เพราะกำแพงนั้น และส่วนที่น่าสนใจคืออะไรที่ถูกทิ้ง อะไรที่ถูกเก็บไว้ และอะไรที่เอากลับคืนมาได้
 
-## Four ways to reclaim context
+## สี่วิธีเรียกคืนบริบท
 
-They are not alternatives so much as a ladder, cheapest first.
+สิ่งเหล่านี้ไม่ใช่ตัวเลือกที่แทนกันได้เสียทีเดียว หากเป็นบันไดที่เรียงจากวิธีที่ถูกที่สุดก่อน
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| กลไก              | ต้นทุน          | เก็บไว้                              | สูญเสีย                                  |
+| ---------------- | -------------- | ------------------------------------ | ---------------------------------------- |
+| **การตัดทอน**      | ไม่มี           | ทุกคำของเรื่องเล่า                    | ผลลัพธ์เครื่องมือเก่าที่ไม่มีอะไรเกิดขึ้น   |
+| **การทิ้งภาพ**     | ไม่มี           | ข้อความรอบ ๆ ภาพเหล่านั้น              | ภาพหน้าจอเก่า                             |
+| **สแนปช็อต**      | ไม่มี           | ทุกคำ ในรูปพิกเซล                     | ความอ่านออกของโมเดลที่ไม่รองรับภาพ        |
+| **การสรุป**        | เรียกโมเดลหนึ่งครั้ง | เรื่องเล่าหนึ่งเรื่อง                | รายละเอียดที่มันไม่ได้เลือกไว้             |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+การตัดทอนและการทิ้งภาพทำงานก่อน เพราะไม่มีต้นทุนและไม่สูญเสียในแบบที่สำคัญ นั่นคือมันตัดทิ้งปริมาณมากที่ไม่มีใครตั้งใจจะกลับมาอ่านซ้ำ
 
-### Why summarizing is the last resort
+### ทำไมการสรุปจึงเป็นทางเลือกสุดท้าย
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+การสรุปเป็นวิธีเดียวในสี่วิธีที่ **ต้องเรียกโมเดลหนึ่งครั้ง** และเป็นวิธีเดียวที่ **ตัดสินแทนคุณ** ว่าอะไรสำคัญ ทั้งสองอย่างเป็นต้นทุนจริง ๆ ที่น่าสนใจกว่าคือการเรียกโมเดล เพราะจังหวะที่มันเกิดขึ้น
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+โดยปกติการย่อจะทำงาน *ล่วงหน้า* ก่อนถึงกำแพง ด้วยเกณฑ์ที่ตั้งไว้ แต่มันยังทำงานแบบตอบสนอง **หลังเกิดเหตุ** เมื่อผู้ให้บริการเองปฏิเสธคำขอว่าใหญ่เกินไป — การประเมินแบบฮิวริสติกนับต่ำกว่าที่ผู้ให้บริการวัดได้จริง ในสถานการณ์นั้นตัวย่อที่ใช้การสรุปต้องส่งคำขอเพื่อย่อบริบท และคำขอที่มันส่งก็คือคำขอที่เพิ่งล้นไปหมาด ๆ
 
-### Snapshots
+### สแนปช็อต
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+การย่อแบบสแนปช็อตเรนเดอร์ประวัติที่ถูกทิ้งลงบนหน้าหนาแน่นด้วยอักขระพิกเซล แล้วส่งกลับคืนมาเป็นรูปภาพ
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+หลักคิดตั้งอยู่บนความแปลกของการคิดค่าบริการ โมเดลที่มองเห็นภาพคิดค่าบริการต่อภาพในอัตราคงที่หรือตามพื้นที่ ซึ่งไม่เกี่ยวเลยกับจำนวนอักขระในภาพ บทสนทนาที่ถูกทิ้งไป 12,000 อักขระมีต้นทุนเท่ากับโทเคนข้อความ 12,000 อักขระ แต่อักขระชุดเดียวกันที่เรนเดอร์ลงหนึ่งหน้าคิดเป็นภาพเดียว
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+สิ่งที่ทำให้วิธีนี้น่าใช้ ไม่ใช่แค่เก๋ คือมัน**ไม่ต้องเรียกโมเดล ไม่ต้องใช้คีย์ และไม่ต้องต่อเครือข่าย** มันเป็นกลยุทธ์เดียวที่พร้อมใช้เสมอเมื่อต้องกู้คืนจากภาวะล้นบริบท
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+รูปร่างของการประกอบกลับคืนคือส่วนหัวแบบคำต่อคำ ส่วนกลางเป็นภาพ และส่วนท้ายแบบคำต่อคำ ส่วนหัวคือโจทย์และข้อจำกัดที่ทุกอย่างถัดจากนั้นอ้างกลับมาถึง ส่วนท้ายคือจุดที่งานอยู่ปัจจุบัน ส่วนกลางคือส่วนที่ถูกอ่านซ้ำน้อยที่สุดและมีต้นทุนสูงสุด
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[มันด้อยลงอย่างซื่อตรง]
+โมเดลที่ไม่มีความสามารถมองเห็นภาพอ่านหน้าพิกเซลไม่ได้ และการเรนเดอร์ข้อความที่ไม่มีใครดูได้ก็ไม่ใช่การย่อที่ด้อยลง แต่คือการลบบทสนทนาทิ้ง ดังนั้นความสามารถของผู้อ่านจึงเป็นตัวตัดสิน และโมเดลที่ไม่รองรับภาพจะได้การสรุปเสมอ
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[รูปทรงของหน้าถูกตั้งราคาไว้เพื่อ API ไม่ใช่เพื่อน้ำหนักโมเดล]
+Gemini คิดค่าบริการแบบอัตราคงที่ต่อภาพ ทุกอักขระที่เพิ่มบนหน้าจึงฟรี และหน้าของมันก็กว้างที่สุด OpenAI กับ Anthropic คิดตามพื้นที่ หน้าที่ใหญ่ขึ้นจึงไม่ได้อะไรเพิ่ม ตัวประมวลผลบางตัวย่อขนาดภาพลงเมื่อเกินเกณฑ์หนึ่ง ซึ่งทำลายอักขระขนาด 5 พิกเซลอย่างเงียบ ๆ หน้าของมันจึงถูกคุมให้อยู่ต่ำกว่าเกณฑ์นั้น Claude ที่ให้บริการผ่านเกตเวย์ถูกคิดค่าบริการโดยเกตเวย์ รูปทรงของหน้าจึงเป็นไปตาม id ของโมเดลที่เส้นทางนั้นเรียกชื่อ
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+สแนปช็อตถูกเรนเดอร์ใหม่จาก **ข้อความต้นทางที่ยังเก็บไว้** ทุกครั้งที่ย่อ ไม่เคยเรนเดอร์จากพิกเซลของรอบก่อนหน้า การถ่ายภาพซ้ำจากภาพเดิมจะทำให้อักขระด้อยลงหนึ่งรุ่นต่อการย่อหนึ่งครั้ง จนไม่มีอะไรอ่านออก
 
-## What a run actually resumes from
+## การรันกลับมาทำต่อจากอะไรจริง ๆ
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+ในอดีต ทุกครั้งที่ฮาร์เนสรันจะเริ่มจากประวัติว่างเปล่า และสร้างความต่อเนื่องขึ้นใหม่จากบล็อก `<context>` ในพรอมต์ — ซึ่งเป็น *บทสรุป* ของบทสนทนา ไม่ใช่ตัวบทสนทนาเอง สามสิ่งตามมาจากการออกแบบนั้น
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **การทำต่อคือการเล่าใหม่** โมเดลไม่เคยเห็นการให้เหตุผลก่อนหน้าของตัวเอง หรือไบต์จริงที่เครื่องมือส่งคืน มีเพียงคำอธิบายของสิ่งเหล่านั้น
+- **การย้อนกลับตายไปพร้อมโปรเซส** `checkpoint` เป็นดัชนีชี้เข้าสู่รายการข้อความที่ยังมีชีวิต การรีสตาร์ตจึงทำป้ายทุกป้ายที่โมเดลตั้งไว้หายไป
+- **การลองใหม่แยกไม่ออกระหว่าง “ไม่มีอะไรให้ลองใหม่” กับ “ไม่มีอะไรถูกโหลด”** หลังรีสตาร์ต เทิร์นที่ล้มเหลวหายไปจากสถานะที่มีชีวิตไม่ว่าจะกรณีใด
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+ทั้งสามข้อแก้ได้ด้วยการเก็บทรานสคริปต์ลงดิสก์ มันถูกบันทึกที่ **ขอบเขตของเทิร์น** ทุกครั้ง และไม่เคยบันทึกกลางเทิร์น ประวัติที่ถูกจับระหว่างการเรียกเครื่องมือกับผลลัพธ์ของมันคือประวัติที่ไม่มีผู้ให้บริการรายใดยอมรับ การพังในจังหวะนั้นจึงกู้คืนเทิร์น *ก่อนหน้า* แทนที่จะเป็นครึ่งเทิร์นที่เล่นซ้ำไม่ได้
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+การรันที่ทำต่อจะถูกตัดให้เหลือเฉพาะข้อความใหม่สุด โดยตัดตรงขอบเขตที่ไม่ใช่ผลลัพธ์เครื่องมือที่ไร้คู่ — ผลลัพธ์ที่การเรียกของมันถูกตัดทิ้งไปคือคำขอที่ผู้ให้บริการปฏิเสธทันที และทรานสคริปต์ที่ส่งไม่ได้ก็แย่กว่าทรานสคริปต์สั้น ๆ
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[มันอยู่ที่ไหน]
+ไฟล์ JSON หนึ่งไฟล์ต่อหนึ่งคู่บทสนทนา-เอเจนต์ อยู่ในไดเรกทอรีของเวิร์กสเปซเอง ข้างฐานข้อมูลของมัน เอเจนต์สองตัวในบทสนทนาเดียวถือประวัติคนละชุด เพราะเห็นผลลัพธ์เครื่องมือต่างกันและได้รับพรอมต์ระบบคนละแบบ การรวมเข้าด้วยกันจึงเท่ากับยื่นการให้เหตุผลของอีกฝ่ายให้เป็นของตัวเอง
 :::
 
-## The session tree
+## ต้นไม้เซสชัน
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+ทุกข้อความบันทึกว่ามันต่อจากข้อความใด และทุกบทสนทนาระบุ **ปลายสาขา** ปัจจุบันของตัวเอง การตัดสินใจเพียงข้อเดียวนี้คือคุณสมบัติทั้งหมด
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**การแยกสาขาไม่เขียนอะไรเลย** มันแค่เลื่อนตัวชี้ เส้นทางที่คุณจากมายังอยู่ตรงนั้น การสลับกลับจึงเป็นการเลื่อนตัวชี้อีกครั้ง ไม่ใช่การกู้คืน — และการแก้พรอมต์เพื่อรันใหม่ก็ไม่ต้องแลกกับคำตอบที่คุณกำลังเทียบอยู่
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+ถ้าไม่มีมัน การย้อนกลับทุกรูปแบบต้องซ่อนหรือลบข้อความ และการซ่อนคือคำโกหกที่ผู้อ่านคนถัดไปมองไม่ออก
 
-### Branch versus fork
+### สาขากับการแยก
 
-|                | Branch              | Fork                        |
+|                | สาขา                | การแยก                      |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| สิ่งที่เกิดขึ้น   | ตัวชี้เลื่อน          | เส้นทางถูกคัดลอก              |
+| ไปที่ไหน        | บทสนทนาเดิม          | บทสนทนาใหม่                  |
+| ต้นทุน          | ไม่มี                | สำเนาสาขาหนึ่งชุด             |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+การแยกคัดลอกด้วย **id ใหม่** แทนที่จะใช้แถวร่วมกัน บทสนทนาสองอันที่ใช้แถวร่วมกันจะเห็นข้อความถัด ๆ ไปของกันและกัน ซึ่งเป็นสิ่งเดียวที่การแยกต้องไม่ทำ
 
-### Rewind rides the same pointer
+### การย้อนกลับใช้ตัวชี้เดียวกัน
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+คู่ `checkpoint` / `rewind` ระหว่างการรันทำเครื่องหมายขอบเขตเทิร์นที่สะอาดไว้ แล้วกลับมาที่จุดนั้นหลังการสำรวจ โดยเก็บไดเจสต์ไว้ เพราะ checkpoint ถูกเก็บลงดิสก์เคียงข้างทรานสคริปต์ ป้ายที่โมเดลตั้งไว้ก่อนรีสตาร์ตจึงยังลงตรงจุดที่ตั้งไว้จริง checkpoint ที่เป้าหมายไม่รอดจากการตัดจะถูก **ทิ้ง** ไม่ใช่ถูกปรับเข้าหาจุดใกล้เคียง — การย้อนกลับ “ไปที่ป้าย” แล้วไปลงที่อื่นคือความล้มเหลวแบบเดียวกับที่การมีป้ายอยู่มีไว้เพื่อป้องกัน
 
-## Related
+## เรื่องที่เกี่ยวข้อง
 
-- [Branch a conversation](/th-TH/คู่มือ/วิธีทำ/แยกสาขาการสนทนา/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ/) — the other half of what fills a context window
-- [Slash commands](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/) — `/compact`, `/shake`, `/context`, `/tree`
+- [แยกสาขาการสนทนา](/th-TH/คู่มือ/วิธีทำ/แยกสาขาการสนทนา/) — ตัวนำทางต้นไม้ การแยกสาขา และการนำออก
+- [บริบทเครื่องมือและการแคชพรอมต์](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ/) — อีกครึ่งหนึ่งของสิ่งที่เติมเต็มหน้าต่างบริบท
+- [คำสั่งสแลช](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/) — `/compact`, `/shake`, `/context`, `/tree`

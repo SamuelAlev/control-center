@@ -1,121 +1,123 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-mention เอเจนต์"
+description: กล่าวถึงเอเจนต์ในสเปซเพื่อสั่งงานพวกมัน และกล่าวถึงเพื่อนร่วมทีมเพื่อแจ้งเตือน
 slug: th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+คู่มือนี้แสดงวิธี @-mention เอเจนต์และเพื่อนร่วมทีมในสเปซ
 
-## Mention an agent
+## กล่าวถึงเอเจนต์
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+พิมพ์ `@` ในช่องเขียนข้อความแล้วเลือกเอเจนต์จากรายการเติมข้อความอัตโนมัติ
+หรือพิมพ์ชื่อเองก็ได้:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+เอเจนต์ที่ถูกกล่าวถึงจะถูกเพิ่มเข้าในสเปซในฐานะผู้เข้าร่วมหากยังไม่ได้เป็นอยู่
+และถูกสั่งงานด้วยบริบทและโหมดของสเปซ ผู้เข้าร่วมที่ไม่ได้ถูกกล่าวถึงจะเห็น
+ข้อความแต่ไม่ถูกสั่งงาน
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+หากคุณส่งข้อความโดยไม่กล่าวถึงเอเจนต์เลย Control Center จะเลือกผู้ตอบเอง:
+เอเจนต์ที่พูดคนสุดท้ายในบทสนทนา มิฉะนั้นเลือกเจ้าของบทสนทนาเมื่อมีอยู่ มิฉะนั้น
+เลือกเอเจนต์ระดับบนสุดตัวแรกในบรรดาผู้เข้าร่วมของสเปซ ในสเปซที่มีเอเจนต์ตัวเดียว
+ตัวที่ถูกเลือกจะเป็นเอเจนต์ตัวนั้นเสมอ
 
-## Know how a name is matched
+## ทำความเข้าใจการจับคู่ชื่อ
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+โทเค็นการกล่าวถึงถูกจับคู่แบบ**ไม่สนตัวพิมพ์** ด้วย**ชื่อแบบตรงตัวหรือคำนำหน้า**
+ดังนั้น `@arch` จึงไปถึงเอเจนต์ชื่อ `architect` และ `@Alice` ไปถึง `alice`
 
-Two consequences worth planning around:
+มีสองผลที่ควรวางแผนรับมือ:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **โทเค็นสั้นไม่ถือเป็นข้อผิดพลาด** หากเอเจนต์สองตัวใช้คำนำหน้าร่วมกัน ตัวที่พบ
+  ก่อนจะเป็นผู้ชนะ และตัวที่ชนะนั้นขึ้นอยู่กับลำดับ — ไม่ใช่กฎตัดสินเสมอใด ๆ
+  ใช้ชื่อเต็มทุกครั้งที่ชื่อซ้อนทับกัน
+- **มีเพียงตัวอักษร ตัวเลข และขีดล่างเท่านั้นที่เป็นส่วนหนึ่งของโทเค็น** ตัวแยก
+  วิเคราะห์จับคู่ `@(\w+)` ดังนั้น `@code-reviewer` จึงถูกอ่านเป็นโทเค็น `code`
+  และ `@my agent` เป็น `my` เอเจนต์ที่ชื่อมีเครื่องหมายขีด จุด หรือช่องว่าง
+  ไม่สามารถถูกกล่าวถึงได้อย่างน่าเชื่อถือ — รวมถึงผ่านการเติมข้อความอัตโนมัติ
+  ซึ่งแทรกชื่อเป็นข้อความล้วน ตั้งชื่อเอเจนต์เป็นคำเดียว หรือใช้ขีดล่าง
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+การกล่าวถึงจะถูกตัดออกจากข้อความก่อนที่ข้อความจะไปถึงเอเจนต์ ดังนั้นข้อความที่
+_มีแต่_การกล่าวถึง (`@alice`) จึงไม่สั่งงานอะไรเลย — จงให้อะไรสักอย่างมันทำด้วย
 
-## Mention several agents at once
+## กล่าวถึงเอเจนต์หลายตัวพร้อมกัน
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+เอเจนต์ทั้งสองตัวถูกสั่งงานขนานกันเข้าไปในบทสนทนาเดียวกัน และทั้งคู่ได้รับ
+ข้อความเต็ม
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+พวกมันยัง**ใช้ worktree ของสเปซนั้นร่วมกัน** worktree ของรีโปถูกจัดเตรียมต่อ
+สเปซ ไม่ใช่ต่อเอเจนต์ เอเจนต์แต่ละตัวได้ไดเรกทอรีทำงานแบบโอเวอร์เลย์ของตัวเอง
+สำหรับ `AGENTS.md` สกิล และการกำหนดค่า โดยมีรีโปที่ใช้ร่วมกันถูกเชื่อมเข้ามา
+แบบอ่าน-เขียน ดังนั้นเอเจนต์สองตัวที่ถูกกล่าวถึงพร้อมกันจึงมองเห็น — และชนกันกับ
+— การแก้ไขของกันและกันได้
 
-## Mention a teammate
+## กล่าวถึงเพื่อนร่วมทีม
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+`@token` ใดก็ตามที่ไม่ตรงกับเอเจนต์จะถูกนำไปลองจับคู่กับสมาชิกที่เป็นมนุษย์ของ
+เวิร์กสเปซ ด้วยแฮนด์เดิล โดยใช้กฎชื่อตรงตัวหรือคำนำหน้าแบบไม่สนตัวพิมพ์เดียวกัน
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+การกล่าวถึงมนุษย์ที่แปลงสำเร็จ **ไม่สั่งงานอะไรเลย** มันติดไปกับเมทาดาทาของ
+ข้อความเพียงเพื่อให้ตัวกำหนดเส้นทางการแจ้งเตือนทักคนคนนั้นได้
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+ชื่อเอเจนต์ถูกนำมาลองก่อนเสมอ และโทเค็นที่เอเจนต์ยึดไปแล้วจะไม่ถูกเสนอให้รายชื่อ
+สมาชิกเลย — `@word` หนึ่งอันแปลงเป็นผู้กระทำได้เพียงรายเดียวเท่านั้น
 
-## What the agent receives
+## เอเจนต์ได้รับอะไร
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+เอเจนต์ที่ถูกสั่งงานจะได้รับบล็อก "Summons" ในพรอมต์ ซึ่งระบุว่าใครเรียกมันมาและ
+แสดงรายชื่อผู้เข้าร่วมของสเปซ — เอเจนต์ตัวอื่น (ที่ทำเครื่องหมายว่าระดับบนสุด
+หรือระดับรอง) และสมาชิกที่เป็นมนุษย์ — เพื่อให้มันรู้ว่าสามารถส่งต่องานให้ใครได้
+บล็อกนี้ยังบอกมันด้วยว่าการกล่าวถึงเอเจนต์ตัวอื่นในการตอบกลับจะปลุกเอเจนต์
+ตัวนั้น และการกล่าวถึงตัวเองจะถูกละเว้น
 
-## When an agent mentions an agent
+## เมื่อเอเจนต์กล่าวถึงเอเจนต์
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+เอเจนต์สามารถส่งต่องานในการตอบกลับของตัวเองได้ เมื่อเทิร์นหนึ่ง**จบลงอย่าง
+เรียบร้อย** การกล่าวถึงในข้อความของเทิร์นนั้นจะถูกแปลง และเอเจนต์เหล่านั้นจะถูก
+เพิ่มเข้าในสเปซและสั่งงานเข้าไปในบทสนทนาเดียวกัน โดยมีเทิร์นที่กล่าวถึงเป็น
+พรอมต์ของพวกมัน เทิร์นที่ล้มเหลวหรือถูกขัดจังหวะจะไม่ปลุกใครเลย — มันหยุดไปกลาง
+ความคิด
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+กฎนี้เข้มงวดกว่าของช่องเขียนข้อความโดยเจตนา เพราะไม่มีใครคอยเฝ้าดูเพื่อแก้
+การเดาที่ผิด:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **ชื่อแบบตรงตัวเท่านั้น** ไม่มีการจับคู่คำนำหน้า `@arch` ไปถึง `architect`
+  เมื่อมนุษย์พิมพ์ แต่จากเอเจนต์จะไปไม่ถึงใครเลย ชื่อที่ตรงกับเอเจนต์สองตัวก็ไป
+  ไม่ถึงใครเช่นกัน
+- **โค้ดไม่ใช่ข้อความร้อยเรียง** การกล่าวถึงภายในบล็อกรั้วโค้ดหรือใน `` `backticks` ``
+  จะถูกละเว้น ดังนั้นการอ้างอิงแอนโนเทชัน `@Override` หรือ `pip install foo@1.2`
+  จึงปลอดภัย รั้วที่ไม่ได้ปิดจะทำให้ทุกอย่างหลังจากนั้นว่างเปล่า
+- **`@` ที่ต่อติดกับโทเค็นก่อนหน้าไม่ถือเป็นการกล่าวถึง** — `sam@host.com`,
+  `pkg/@scope` และ `node@20` ไปไม่ถึงใคร
+- **เครื่องหมายขีดถูกเก็บไว้** ดังนั้น `@code-reviewer` จึงแปลงเป็นตัวเอง
+  ไม่ใช่เป็นโทเค็น `code`
+- **เอเจนต์ไม่เกินสามตัวต่อเทิร์น** เอเจนต์ที่ไล่ชื่อเพื่อนร่วมทีมหกคนในบทสรุป
+  กำลังไล่ชื่อ แต่ไม่ได้เรียกพวกมันมา
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+ห่วงโซ่การปลุกถูกจำกัดขอบเขตแบบเดียวกับการมอบงาน คือ **ความลึก 3** และเอเจนต์
+ที่อยู่ในห่วงโซ่แล้วจะถูกปลุกซ้ำโดยห่วงโซ่นั้นไม่ได้ (ไม่มี `A → B → A`) คู่ลำดับ
+ยังถูกจำกัดอัตราไว้ข้ามห่วงโซ่ด้วย การปลุกที่ถูกปฏิเสธจะโพสต์ข้อความระบบเข้าใน
+บทสนทนาเพื่อบอกว่าการกล่าวถึงใดไม่ถูกส่งถึงและเพราะเหตุใด — แต่ชื่อที่แปลงไม่ได้
+จะไม่โพสต์ เพราะไม่เช่นนั้น `@` ใดก็ตามในประโยคก็จะเล่าเรื่องตัวเอง
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+สำหรับการส่งต่องานที่ไม่ควรพึ่งพาข้อความร้อยเรียง — อย่างคำขอ/การตอบกลับ หรือ
+การไปถึงเอเจนต์นอกสเปซ — ให้ใช้เครื่องมือ `send_to_agent`, `ask_agent` และ
+`delegate_task` แทน
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Use spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
-- [Run agents in parallel](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [ใช้สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
+- [รันเอเจนต์แบบขนาน](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [วงจรชีวิตการสั่งงาน](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

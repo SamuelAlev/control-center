@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Подключить хост кода
+description: Подключите GitHub, GitLab или Bitbucket, чтобы работали поверхность PR, регистрация репозиториев и запуски агентов — одно рабочее пространство может использовать все три.
 slug: ru-RU/руководство/практические-руководства/подключить-хост-кода
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center работает с тремя хостами кода, которые в приложении называются **forges**: **GitHub**, **GitLab** и **Bitbucket Cloud**. Ни один из них не используется по умолчанию. Подключите один — и всё работает; подключите несколько — и одно рабочее пространство сможет одновременно содержать репозитории всех трёх.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Хост кода — это свойство каждого **репозитория**: он считывается из его remote `origin` при регистрации. Вы никогда не выбираете его вручную, и здесь нет настройки уровня рабочего пространства, которую можно было бы задать неправильно.
 
-## Connect a forge
+## Подключить хост кода
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Откройте **Настройки → Рабочее пространство → Профиль и идентичность** (`/settings/workspace/profile`).
+2. Найдите карточку **Хостинг кода**. В ней перечислены все поддерживаемые хосты кода — подключённые и нет.
+3. Нажмите **Войти через …**, если строка это предлагает, либо **Добавить токен** и вставьте токен.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ru-RU/руководство/практические-руководства/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Войти** появляется для хоста кода, для которого на вашем сервере зарегистрировано приложение, — сегодня это GitHub, через device flow (см. [Создать GitHub App](/ru-RU/руководство/практические-руководства/github-app/)). Во всех остальных случаях используется вставленный токен: это честный вариант взаимодействия, а не кнопка, которая не может довести дело до конца.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+В любом случае учётные данные **принадлежат вам и хранятся на сервере** с привязкой к вашему идентификатору пользователя: токен не сохраняется на машине, в которую вы его ввели, все устройства, с которых вы входите, используют один и тот же токен, и ни один другой участник не может его прочитать. Он вступает в силу при **следующем запросе** — перезапускать ничего не нужно, а отключение немедленно прекращает его отправку.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Каждая строка сообщает, откуда взялись её учётные данные, — ведь в этом и разница между «мой токен не работает» и «отвечает другой токен»:
 
-| Subtitle                         | Meaning                                                            |
+| Подпись                          | Значение                                                           |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Вы вошли как octocat`           | Используются ваши собственные учётные данные                        |
+| `Вы вошли как octocat · через приложение этого сервера` | Отвечает идентичность приложения сервера — вы не входили в систему |
+| `Вы вошли как octocat · из окружения` | Отвечает переменная окружения сервера, а не ваши учётные данные |
+| `Не подключено`                  | У вас нет учётных данных для этого хоста кода                       |
 
-### What token each forge wants
+### Какой токен нужен каждому хосту кода
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Хост кода     | Токен                                                     | Где его создать                                           |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Классический: `repo` и `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Персональный токен доступа с областью действия `api`      | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Токен Atlassian API и адрес электронной почты вашего аккаунта | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket аутентифицируется, используя **адрес электронной почты аккаунта как имя пользователя** и токен как пароль. Задайте `BITBUCKET_EMAIL` в окружении сервера, чтобы он знал, с каким адресом электронной почты сопоставлять токен.
 
-### Or use the environment
+### Или используйте окружение
 
-For a headless or CI install, the server reads these:
+Для headless-установки или установки в CI сервер читает следующие переменные:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, затем `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, затем `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, затем `BITBUCKET_TOKEN` (вместе с `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Это учётные данные **сервера**, а не ваши, и это различие принципиально: запрос, сделанный от вашего имени, использует ваши учётные данные и ничего больше, поэтому окружение никогда не подменяет вас незаметно. Работа, за которой не стоит человек, — вебхуки, опрос PR, синхронизация тикетов — сначала обращается к идентичности приложения сервера, затем к учётным данным владельца сервера, а затем к окружению. Порядок фиксирован, поэтому «я вошёл, а ничего не изменилось» никогда не является поддерживаемым исходом.
 
-## You are a different person on each forge
+## На каждом хосте кода вы — другой человек
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Один и тот же человек — `octocat` на GitHub и совсем кто-то другой на GitLab. Control Center определяет вашу идентичность **для каждого хоста кода** и использует подходящую для каждого репозитория — именно поэтому в смешанном рабочем пространстве корректно работают «нужно моё ревью», «создано мной» и «вы это одобрили».
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Если идентичность для хоста кода не определена, его репозитории ничего не добавляют во «Входящие», а не совпадают со всем подряд. «Входящие» сообщают об этом, а не утверждают, что вы всё просмотрели.
 
-## One inbox, every forge
+## Одни «Входящие» для всех хостов кода
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+«Входящие» и очередь PR расходятся по всем хостам кода, представленным в рабочем пространстве, и сливают результаты в один поток — pull request из GitHub и pull request из Bitbucket стоят рядом, упорядоченные по времени, а не сгруппированные по поставщику.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Сбои изолированы. Хост кода, который недоступен, ограничен по частоте запросов или не подключён, ничего не добавляет и не затрагивает остальные; он никогда не опустошает «Входящие» целиком. Его собственные репозитории продолжают показывать последнее известное состояние, пока он не восстановится.
 
-## What each forge can do
+## Что умеет каждый хост кода
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Каждый хост кода поддерживает основной цикл: показывать список и открывать pull requests, читать диффы, комментировать построчно и на верхнем уровне, проводить ревью, мержить и закрывать. Помимо этого они действительно различаются, и Control Center скрывает то, чего хост кода не умеет, вместо того чтобы показывать элемент управления, который молча не сработает.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Возможность                       | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Пакетные (отложенные) ревью       |   ✓    |   ✓    |     —     |
+| Запрос изменений                  |   ✓    |   ✓    |     ✓     |
+| Синхронизация состояния «просмотрено» по файлам |   ✓    |   —    |     —     |
+| Реакции эмодзи                    |   ✓    |   ✓    |     —     |
+| Ревьюеры из команды или группы    |   ✓    |   ✓    |     —     |
+| Предложенные рецензенты           |   ✓    |   —    |     ✓     |
+| Результаты CI в PR                |   ✓    |   ✓    |     ✓     |
+| Просмотр шагов и логов задачи CI  |   ✓    |   ✓    |     —     |
+| Стек pull request                 |   ✓    |   —    |     —     |
+| Шаблоны описания PR               |   ✓    |   ✓    |     —     |
+| Опрос уведомлений                 |   ✓    |   —    |     —     |
+| Подробные профили пользователей   |   ✓    |   ✓    |     —     |
+| Серверная ссылка head для PR      |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Там, где возможности не хватает, функциональность честно деградирует:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Состояние просмотра** по-прежнему работает, но только на том устройстве, где вы его отметили.
+- **Пакетные ревью** в Bitbucket публикуются комментарий за комментарием, поэтому ревьюеры видят, как они приходят по отдельности, а не все сразу.
+- **Отсутствие ссылки head для PR** в Bitbucket означает, что при переключении на pull request его исходная ветка забирается по имени, а это перестаёт работать, как только ветка удалена.
 
-## Vocabulary
+## Терминология
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab называет pull request **merge request**. Control Center во всей своей модели говорит «pull request» и использует собственный термин каждого хоста кода там, где речь идёт именно о нём.
 
-## Troubleshooting
+## Устранение неполадок
 
-### The PR list is empty and says a forge is not connected
+### Список PR пуст и сообщает, что хост кода не подключён
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+У вас нет учётных данных для этого хоста кода. Войдите или вставьте токен в разделе **Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода**. Репозитории других хостов кода не затрагиваются.
 
-### I connected a forge but its repos still show nothing
+### Я подключил хост кода, но его репозитории по-прежнему ничего не показывают
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Проверьте подпись в строке. Если там указано «через приложение этого сервера» или «из окружения», отвечают не те учётные данные, которых вы ожидали: для всего, что запрашиваете вы, побеждают ваши собственные учётные данные, поэтому если строка говорит иначе, ваши не сохранились.
 
-### A repo will not register
+### Репозиторий не регистрируется
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ru-RU/руководство/практические-руководства/добавить-репозитории/).
+Для регистрации нужны все три условия: путь находится внутри рабочего дерева git, у него есть remote `origin`, и этот remote указывает на github.com, gitlab.com или bitbucket.org. См. [Добавить репозитории в рабочее пространство](/ru-RU/руководство/практические-руководства/добавить-репозитории/).
 
-### Everything stops working for a while after heavy use
+### После интенсивного использования всё на время перестаёт работать
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Это автоматический выключатель при превышении лимита запросов. Когда хост кода сообщает о достижении основного лимита, клиент начинает локально отклонять дальнейшие запросы без сетевого обращения, пока окно не истечёт, — поэтому шквал повторных попыток не может усугубить лимит. Временные сбои повторяются с экспоненциальной задержкой.
 
-## Related guides
+## Связанные руководства
 
-- [Add repos to a workspace](/ru-RU/руководство/практические-руководства/добавить-репозитории/)
-- [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
-- [Review and merge a PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
-- [Triage the inbox](/ru-RU/руководство/практические-руководства/разобрать-входящие/)
+- [Добавить репозитории в рабочее пространство](/ru-RU/руководство/практические-руководства/добавить-репозитории/)
+- [Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/)
+- [Проверить и смержить PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
+- [Разобрать входящие](/ru-RU/руководство/практические-руководства/разобрать-входящие/)

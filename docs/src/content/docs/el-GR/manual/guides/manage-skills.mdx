@@ -1,129 +1,147 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Εγκατάσταση και διαχείριση δεξιοτήτων
+description: Προσθέστε αποθετήρια GitHub ως πηγές δεξιοτήτων, περιηγηθείτε στους καταλόγους τους και εγκαταστήστε, ενημερώστε ή απεγκαταστήστε δεξιότητες μέσω της πύλης σάρωσης antivirus.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-δεξιοτήτων
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Αυτός ο οδηγός δείχνει πώς να γεμίσετε έναν χώρο εργασίας με δεξιότητες από το
+GitHub: προσθέστε ένα αποθετήριο ως πηγή, εγκαταστήστε τις δεξιότητες που θέλετε
+από αυτό και κρατήστε τις ενημερωμένες στον χρόνο.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/); this page stays
-on the doing.
+Το σημαντικό που πρέπει να ξέρετε πριν ξεκινήσετε: **ένα αποθετήριο πηγής δεν
+είναι αξιόπιστο.** Το όνομα, η περιγραφή και ο αριθμός των αστεριών του τα γράφει
+όποιος το κατέχει. Το μόνο σήμα ασφάλειας που εμπιστεύεται το Control Center είναι
+η ετυμηγορία της σάρωσης antivirus, από την οποία περνά κάθε εγκατάσταση πριν
+φτάσει οτιδήποτε στον δίσκο ή σε μια προτροπή πράκτορα. Αν θέλετε το σκεπτικό,
+διαβάστε την [ενότητα για τις δεξιότητες του μοντέλου
+πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/); αυτή η σελίδα μένει στην
+πράξη.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Οι δεξιότητες βρίσκονται στις **Ρυθμίσεις → Χώρος εργασίας → Δεξιότητες**
+(`/workspaces/<id>/settings/workspace/skills`). Έχουν εμβέλεια χώρου εργασίας: οι
+δεξιότητες που εγκαθιστάτε εδώ ανήκουν μόνο σε αυτόν τον χώρο εργασίας. Η σελίδα
+έχει δύο καρτέλες: **Εγκατεστημένες** (τοπικές δεξιότητες, μαζί με έναν
+επεξεργαστή **Νέα δεξιότητα**) και **Πηγές** (κατάλογοι GitHub). Και οι δύο
+εγγραφές περνούν από την ίδια πύλη σάρωσης.
 
-## Add a skill repository
+## Προσθήκη αποθετηρίου δεξιοτήτων
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Ανοίξτε τις **Ρυθμίσεις → Χώρος εργασίας → Δεξιότητες** και μεταβείτε στην
+   καρτέλα **Πηγές**.
+2. Πατήστε **Προσθήκη αποθετηρίου**.
+3. Επικολλήστε το URL ενός αποθετηρίου GitHub, π.χ.
+   `https://github.com/anthropics/skills`, και επιβεβαιώστε.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Ο διακομιστής ελέγχει ότι το αποθετήριο υπάρχει και είναι ορατό με τα
+διαπιστευτήριά του και μετά το προσθέτει στην αριστερή στήλη. Δεν υπάρχει
+επιμελημένο κατάστημα στη μέση: οποιοδήποτε αποθετήριο GitHub λειτουργεί, κάτι που
+σημαίνει επίσης ότι η φήμη είναι δική σας κρίση — ο αριθμός των αστεριών είναι
+ένδειξη, ποτέ εγγύηση.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Οι δεξιότητες ενός αποθετηρίου είναι οι κατάλογοι που περιέχουν ένα `SKILL.md`
+(έως τρία επίπεδα βάθος, συν τη διάταξη plugin-marketplace του Claude
+`plugins/<plugin>/skills/<skill>`, με τα δέντρα εξαρτήσεων και προμηθευτών να
+παραλείπονται). Αν το πλέγμα αργότερα πει ότι το αποθετήριο δεν έχει δεξιότητες,
+αυτό ακριβώς σημαίνει: κανένας κατάλογος μέσα του δεν ταιριάζει με τη σύμβαση
+δεξιοτήτων.
 
-## Inspect a skill before installing
+## Επιθεωρήστε μια δεξιότητα πριν την εγκατάσταση
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Επιλέξτε ένα αποθετήριο στη στήλη· οι δεξιότητές του εμφανίζονται ως πλέγμα στα
+δεξιά, με ένα πεδίο φίλτρου πάνω από αυτό που περιορίζει τον κατάλογο κατά όνομα,
+περιγραφή ή slug. Κάντε κλικ σε μια κάρτα για να ανοίξετε την προβολή
+λεπτομερειών. Δείχνει τρία πράγματα:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **Το README**, αποδοσμένο ως markdown — το `README.md` του καταλόγου της
+  δεξιότητας, ή το σώμα του `SKILL.md` όταν δεν υπάρχει README.
+- **Η προεπισκόπηση σάρωσης** — η ετυμηγορία (`pass`, `warn` ή `quarantine`), οι
+  δυνατότητες που δηλώνει το περιεχόμενο της δεξιότητας (εκτελεί shell, γράφει
+  αρχεία, πρόσβαση δικτύου…) και κάθε εύρημα που κατέγραψε ο σαρωτής.
+- **Ο αριθμός αρχείων** — μια εγκατάσταση γράφει ολόκληρο τον κατάλογο της
+  δεξιότητας, όχι μόνο το `SKILL.md` της.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Η προεπισκόπηση σαρώνει τα ακριβή byte που θα έγραφε μια εγκατάσταση, οπότε η
+ετυμηγορία που βλέπετε είναι η ετυμηγορία που παίρνει η εγκατάσταση· τίποτα δεν
+επανακρίνεται πίσω από την πλάτη σας.
 
-## Install a skill
+## Εγκατάσταση μιας δεξιότητας
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Ανοίξτε την προβολή λεπτομερειών της δεξιότητας.
+2. Διαβάστε την ετυμηγορία της σάρωσης. Για ετυμηγορία `warn` ή `pass`, πατήστε
+   **Εγκατάσταση**.
+3. Για ετυμηγορία `quarantine`, η εγκατάσταση μένει ανενεργή μέχρι να τσεκάρετε
+   το **Κατανοώ τον κίνδυνο — εγκατάσταση ούτως ή άλλως**. Αυτή η παράκαμψη
+   καταγράφεται, δεν τεκμαίρεται.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+Η εγκατάσταση γράφει τον κατάλογο της δεξιότητας στον χώρο εργασίας, καταγράφει
+μια καρφίτσα στο `skills-lock.json` (αποθετήριο πηγής, διαδρομή, το commit από το
+οποίο προήλθε και έναν κατακερματισμό περιεχομένου) και η δεξιότητα γίνεται
+διαθέσιμη στους πράκτορες του χώρου εργασίας. Μια κάρτα με την ένδειξη **Το όνομα
+χρησιμοποιείται** σημαίνει ότι μια άλλη δεξιότητα κατέχει ήδη αυτό το όνομα
+τοπικά — απεγκαταστήστε πρώτα εκείνη.
 
-## Update skills over time
+## Ενημέρωση δεξιοτήτων στον χρόνο
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Οι κάρτες των εγκατεστημένων δεξιοτήτων φέρουν σήματα: **Εγκατεστημένη**, ή
+**Διαθέσιμη ενημέρωση** όταν το αποθετήριο έχει προχωρήσει πέρα από το commit που
+καρφιτσώσατε. Ανοίξτε την προβολή λεπτομερειών και πατήστε **Ενημέρωση** για να
+γίνει νέα λήψη στο νέο commit. Μια ενημέρωση περνά από την ίδια πύλη σάρωσης με μια
+εγκατάσταση — μια δεξιότητα της οποίας η νέα έκδοση μπαίνει σε καραντίνα
+απορρίπτεται και η έκδοση που είχατε μένει ως έχει. Ο κατακερματισμός της παλιάς
+έκδοσης κρατείται ως αναφορά επαναφοράς στο αρχείο κλειδώματος.
 
-## Uninstall a skill, remove a repository
+## Απεγκατάσταση μιας δεξιότητας, αφαίρεση ενός αποθετηρίου
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+Η **Απεγκατάσταση** (στην προβολή λεπτομερειών μιας εγκατεστημένης δεξιότητας, ή
+διαγραφή στην καρτέλα Εγκατεστημένες) αφαιρεί μαζί τον κατάλογο της δεξιότητας και
+την καρφίτσα της στο αρχείο κλειδώματος — μια απεγκατεστημένη δεξιότητα δεν αφήνει
+τίποτα πίσω.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+Η **αφαίρεση ενός αποθετηρίου** από τη στήλη αφαιρεί μόνο τον κατάλογο: οι
+δεξιότητες που εγκαταστήσατε από αυτό μένουν εγκατεστημένες και ενημερώνονται
+ακόμη, επειδή μια καρφίτσα καταγράφει το αποθετήριο κατά όνομα και όχι με αναφορά
+στην καταχώριση της πηγής. Προσθέστε ξανά το αποθετήριο αν θέλετε να το
+περιηγηθείτε πάλι.
 
-## Invoke a skill
+## Κλήση μιας δεξιότητας
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Οι δεξιότητες καλούνται κάτω από τον δικό τους χώρο ονομάτων, οπότε δεν
+συγκρούονται ποτέ με τις ενσωματωμένες εντολές slash (`/plan`, `/goal`, `/loop`,
+`/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — μια δεξιότητα εγκατεστημένη σε αυτόν τον χώρο εργασίας, ή
+  συνδεδεμένη με τον πράκτορα
+- `/skill:<repo>:<name>` — μια δεξιότητα που παρέχει ένα αποθετήριο με checkout σε
+  αυτόν τον χώρο
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Ένα γυμνό μη ενσωματωμένο όνομα εξακολουθεί να επιλύεται, για μηνύματα γραμμένα
+πριν υπάρξει ο χώρος ονομάτων. Το `/skill:plan` είναι αυτό που φτάνει σε μια
+δεξιότητα με το όνομα `plan`· το `/plan` είναι πάντα η ενσωματωμένη εντολή.
 
-## Repo-scoped skills
+## Δεξιότητες ανά αποθετήριο
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Ένα αποθετήριο με checkout μπορεί να παρέχει δικές του δεξιότητες, στους
+`.agents/skills/`, `.agent/skills/`, `.claude/skills/`, `.opencode/skills/` ή
+`skills/`. Αυτές **δεν** εγκαθίστανται μέσω αυτής της σελίδας. Ένας πράκτορας
+φέρει μόνο τις δεξιότητες του αποθετηρίου στο οποίο εργάζεται αυτή τη στιγμή·
+αλλάζουν όταν μετακινείται. Το πεδίο σύνταξης μηνυμάτων δεν έχει τέτοια εμβέλεια:
+το `/skill:<repo>:<name>` φτάνει σε οποιοδήποτε αποθετήριο του χώρου.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Οι δεξιότητες αποθετηρίου περνούν την ίδια σάρωση με αποτυχία-κλεισίματος (`pass` /
+`warn` / `quarantine`) πριν το frontmatter τους φτάσει σε μια προτροπή. Το `warn`
+γίνεται δεκτό· το `quarantine` κρατείται, χωρίς παράκαμψη χειριστή σε αυτή τη
+διαδρομή.
 
-See [Repo-scoped skills](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/#repo-scoped-skills) and
-[Slash commands](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/).
+Δείτε [Δεξιότητες ανά
+αποθετήριο](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/#repo-scoped-skills) και
+[Εντολές slash](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)

@@ -1,71 +1,73 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Ρύθμιση ενσωμάτωσης Slack
+description: Συνδέστε μια εφαρμογή Slack σε έναν χώρο εργασίας του Control Center, ώστε τα μέλη να κατευθύνουν πράκτορες μέσω Slack.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Αυτός ο οδηγός δείχνει πώς να συνδέσετε το Slack σε έναν χώρο εργασίας του Control Center, είτε αφήνοντας το Control Center να δημιουργήσει την εφαρμογή είτε δημιουργώντας την μόνοι σας.
 
-For a guided first run, see [Bridge Slack to your workspace](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/).
+Για μια καθοδηγούμενη πρώτη εκτέλεση, δείτε [Συνδέστε το Slack στον χώρο εργασίας σας](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Το Slack είναι ο μόνος πάροχος συνομιλίας]
+Η γέφυρα είναι εκ κατασκευής τυφλή ως προς τον πάροχο — ένα UI καθοδηγούμενο από
+περιγραφείς πάνω από έναν προσαρμογέα ανά πάροχο — αλλά το Slack είναι ο μόνος
+προσαρμογέας που υπάρχει. Δεν υπάρχει υλοποίηση για Discord, Telegram, Teams ή
+Matrix.
 :::
 
-## Prerequisites
+## Προϋποθέσεις
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Ο ρόλος `owner` ή `admin` στον χώρο εργασίας του Control Center — η σύνδεση εφαρμογής συνομιλίας είναι αλλαγή ρυθμίσεων χώρου εργασίας
+- Άδεια δημιουργίας και εγκατάστασης εφαρμογών στον χώρο εργασίας του Slack
+- Τίποτα δημόσια προσβάσιμο: η σύνδεση είναι εξερχόμενη (Socket Mode), οπότε ο διακομιστής δεν χρειάζεται εισερχόμενη θύρα, σήραγγα ή τομέα
 
-## Three ways to get the app
+## Τρεις τρόποι για να αποκτήσετε την εφαρμογή
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Διαδρομή                | Εσείς παρέχετε                        | Το Control Center κάνει                                                                                                    |
+| ----------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Καθοδηγούμενη**       | Ένα token ρύθμισης εφαρμογής (`xoxe-…`) | Δημιουργεί την εφαρμογή με τα σωστά scopes, συμβάντα, Socket Mode και εντολή κάθετου· σας παραδίδει τα δύο βήματα για τα οποία το Slack δεν έχει API |
+| **Δημιουργία στο Slack** | Τίποτα                                | Ανοίγει το Slack με την ίδια ρύθμιση προσυμπληρωμένη· εσείς επιλέγετε χώρο εργασίας και επιβεβαιώνετε                    |
+| **Χειροκίνητα**         | Τα token της έτοιμης εφαρμογής        | Τα επαληθεύει και συνδέεται                                                                                                |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Η καθοδηγούμενη διαδρομή είναι η μόνη που αφήνει επίσης την εφαρμογή _διαχειρίσιμη_ από το Control Center, και αυτό είναι που επιτρέπει την [Προσαρμογή του chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/). Μια εφαρμογή **Δημιουργία στο Slack** μπορεί αργότερα να αναβαθμιστεί σε διαχειριζόμενη, επικολλώντας ένα token ρύθμισης στο παράθυρο διαλόγου σύνδεσης.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Δεν υπάρχει σκόπιμα κουμπί «εγκατάσταση της εφαρμογής Slack του Control Center». Η εγκατάσταση μιας διανεμόμενης εφαρμογής Slack απαιτεί κοινόχρηστο client secret (το Slack δεν έχει PKCE) και το Socket Mode κατανέμει τα συμβάντα μιας εφαρμογής τυχαία στις συνδέσεις της — οπότε μία κοινόχρηστη εφαρμογή θα παρέδιδε τα μηνύματα του χώρου εργασίας σας στους διακομιστές άλλων. Κάθε χώρος εργασίας κατέχει επομένως τη δική του εφαρμογή και αυτές οι τρεις διαδρομές αφορούν το πόσο λίγη δουλειά σάς κοστίζει αυτό.
 
-## Option A: let Control Center create the app
+## Επιλογή Α: αφήστε το Control Center να δημιουργήσει την εφαρμογή
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Δημιουργήστε ένα ζεύγος token ρύθμισης εφαρμογής στο [api.slack.com/apps](https://api.slack.com/apps) και αντιγράψτε το token **refresh** (`xoxe-…`)
+2. Στο Control Center, πηγαίνετε στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** και μετακινηθείτε στην κάρτα **Γέφυρες συνομιλίας**
+3. Στο τμήμα του Slack, κάντε κλικ στο **Δημιουργία εφαρμογής για μένα**
+4. Επικολλήστε το token, προσαρμόστε το όνομα εφαρμογής, το όνομα bot, τις περιγραφές και την εντολή κάθετου και μετά κάντε κλικ στο **Δημιουργία εφαρμογής**
+5. Ακολουθήστε τα δύο εναπομείναντα βήματα που δείχνει το παράθυρο διαλόγου, καθένα ως σύνδεσμο προς το Slack:
+   - **Basic Information → App-Level Tokens**: δημιουργήστε ένα token με το scope `connections:write` (`xapp-…`)
+   - **Install App**: εγκαταστήστε στον χώρο εργασίας και αντιγράψτε το **Bot User OAuth Token** (`xoxb-…`)
+6. Κάντε κλικ στο **Επικόλληση των διαπιστευτηρίων** και συνεχίστε με τη [Σύνδεση](#σύνδεση)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Το token ρύθμισης εναλλάσσεται σε κάθε χρήση. Το Control Center αποθηκεύει την εναλλαγμένη τιμή στην πορεία, οπότε δεν χρειάζεται να το επικολλήσετε ξανά.
 
-## Option B: create it in Slack, pre-filled
+## Επιλογή Β: δημιουργήστε την στο Slack, προσυμπληρωμένη
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Ίδια εφαρμογή, χωρίς token ρύθμισης — το Slack σας δίνει τη δική του οθόνη δημιουργίας με ολόκληρο το manifest ήδη συμπληρωμένο.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Στο Control Center, πηγαίνετε στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** και μετακινηθείτε στην κάρτα **Γέφυρες συνομιλίας**
+2. Στο τμήμα του Slack, κάντε κλικ στο **Δημιουργία εφαρμογής για μένα**
+3. Προσαρμόστε το όνομα εφαρμογής, το όνομα bot, τις περιγραφές και την εντολή κάθετου — αυτά ταξιδεύουν με τον σύνδεσμο
+4. Κάντε κλικ στο **Δημιουργία στο Slack**. Το πρόγραμμα περιήγησής σας ανοίγει τη σελίδα δημιουργίας εφαρμογής του Slack με τη ρύθμιση προσυμπληρωμένη
+5. Επιλέξτε τον χώρο εργασίας του Slack και επιβεβαιώστε. Τα scopes, τα συμβάντα, το Socket Mode και η εντολή κάθετου είναι ήδη σωστά
+6. Πίσω στο Control Center, ακολουθήστε τα δύο εναπομείναντα βήματα που δείχνει το παράθυρο διαλόγου:
+   - **Basic Information → App-Level Tokens**: δημιουργήστε ένα token με το scope `connections:write` (`xapp-…`)
+   - **Install App**: εγκαταστήστε στον χώρο εργασίας και αντιγράψτε το **Bot User OAuth Token** (`xoxb-…`)
+7. Κάντε κλικ στο **Επικόλληση των διαπιστευτηρίων** και συνεχίστε με τη [Σύνδεση](#σύνδεση)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Το Slack δεν αναφέρει ποια εφαρμογή δημιούργησε, οπότε το Control Center δεν μαθαίνει το app id και οι σύνδεσμοι στο βήμα 6 οδηγούν στη λίστα εφαρμογών σας αντί κατευθείαν σε εκείνη την εφαρμογή. Το **Προσαρμογή bot** χρειάζεται token ρύθμισης.
 
-## Option C: build the app yourself
+## Επιλογή Γ: δημιουργήστε την εφαρμογή μόνοι σας
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Δημιουργήστε μια εφαρμογή στο [api.slack.com/apps](https://api.slack.com/apps) και μετά ρυθμίστε την ως εξής.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: ενεργοποιήστε το και αφήστε κάθε request URL κενό. Το Slack απορρίπτει manifest που ζητά ταυτόχρονα Socket Mode και παράδοση webhook.
 
 **Bot token scopes** (OAuth & Permissions):
 
@@ -81,7 +83,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Συνδρομές συμβάντων** (συμβάντα bot):
 
 ```text
 app_home_opened
@@ -91,134 +93,136 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+Τα `message.channels` και `message.groups` είναι αυτά που κάνουν να λειτουργεί μια _απάντηση_ μέσα σε ένα ήδη γεφυρωμένο νήμα του Slack. Χωρίς αυτά, φτάνει μόνο η πρώτη αναφορά.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Εντολή κάθετου**: `/cc` (οποιοδήποτε όνομα λειτουργεί — η γέφυρα χρησιμοποιεί όποια εντολή χρησιμοποιήθηκε τελευταία φορά).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: ενεργοποιήστε την καρτέλα Messages και αφήστε την εγγράψιμη, ώστε τα μέλη να μπορούν να στέλνουν DM στο bot.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Token**: δημιουργήστε ένα app-level token με `connections:write`, μετά εγκαταστήστε την εφαρμογή και αντιγράψτε το bot user OAuth token.
 
-## Connect
+## Σύνδεση
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Πηγαίνετε στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** και μετακινηθείτε στην κάρτα **Γέφυρες συνομιλίας**
+2. Στο τμήμα του Slack, κάντε κλικ στο **Σύνδεση Slack**
+3. Συμπληρώστε τα πεδία:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
+| Πεδίο                                          | Τιμή     | Πού βρίσκεται στο Slack                                    |
 | ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| **Token bot**                                  | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Token επιπέδου εφαρμογής**                   | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Token ανανέωσης ρύθμισης εφαρμογής** (προαιρετικό) | `xoxe-…` | Το ζεύγος token ρύθμισης εφαρμογής στο api.slack.com/apps  |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Το πρόθεμα κάθε τιμής ελέγχεται και στις δύο πλευρές πριν σταλεί οτιδήποτε, οπότε
+μια τιμή που επικολλήθηκε σε λάθος πεδίο απορρίπτεται με την ίδια φράση και στις
+δύο περιπτώσεις.
 
-4. Click **Connect**
+4. Κάντε κλικ στο **Σύνδεση**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Το Control Center επαληθεύει το token bot με το `auth.test` του Slack _πριν_ αποθηκεύσει οτιδήποτε, οπότε ένα τυπογραφικό λάθος αναφέρεται σε εσάς αντί να γίνει ένα socket που σιωπηλά δεν λειτουργεί ποτέ. Το app-level token μπορεί να αποδειχθεί μόνο ανοίγοντας το socket, οπότε ένα κακό token εμφανίζεται λίγο αργότερα ως σφάλμα σύνδεσης στην ίδια γραμμή.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Χωρίς το προαιρετικό token ρύθμισης εφαρμογής, η σύνδεση λειτουργεί μια χαρά — απλώς δεν μπορείτε να επεξεργαστείτε το bot από το Control Center.
 
-## What connecting does
+## Τι κάνει η σύνδεση
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Αποθηκεύει τα διαπιστευτήρια στον φάκελο του ίδιου του χώρου εργασίας, δίπλα στη βάση δεδομένων του, αναγνώσιμα μόνο από τον ιδιοκτήτη. Δεν ταξιδεύουν ποτέ πίσω σε πελάτη
+- Ανοίγει μία σύνδεση Socket Mode για αυτόν τον χώρο εργασίας και αρχίζει να λαμβάνει αναφορές, απαντήσεις σε νήματα του Slack, DM και εντολές κάθετου
+- Επανενεργοποιεί κάθε νήμα του Slack που είχε γεφυρωθεί προηγουμένως, ώστε μια επανασύνδεση να συνεχίζει τις υπάρχουσες συνομιλίες αντί να τις εγκαταλείπει
+- Δεν κοστίζει τίποτα για χώρους εργασίας που δεν έχουν εφαρμογή συνομιλίας: χωρίς socket, χωρίς χρονομετρητές, χωρίς κίνηση
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Πού ζουν τα token και γιατί όχι στο keychain]
+Τα διαπιστευτήρια bot είναι ένα απλό αρχείο JSON ανά πάροχο στο
+`<dataDir>/<workspaceId>/chat_credentials/`, γραμμένο ατομικά και περιορισμένο σε
+πρόσβαση μόνο του ιδιοκτήτη. Αυτό είναι σκόπιμο, όχι παράλειψη: η διαγραφή ενός
+χώρου εργασίας αποσυνδέει αυτόν τον φάκελο, οπότε τα token του φεύγουν μαζί του,
+και το `workspace.export` και τα αντίγραφα ασφαλείας αντιγράφουν το `workspace.db`
+— όχι τον φάκελο — οπότε ένας χώρος εργασίας που παραδίδετε σε κάποιον άλλο δεν
+κουβαλά ποτέ μέσα του ζωντανά token bot. Το επακόλουθο είναι ότι η επαναφορά ενός
+χώρου εργασίας αλλού σημαίνει επανασύνδεση του Slack εκεί.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Η πρόσβαση στη γέφυρα είναι **συμμετοχή** στον χώρο εργασίας, ποτέ κατοχή ενός
+token. Ένας λογαριασμός Slack πρέπει να συνδεθεί με χρήστη του Control Center που
+είναι μέλος με ρόλο εγγραφής. Η σύνδεση, η αποσύνδεση, η καθοδηγούμενη ρύθμιση, ο
+σύνδεσμος ρύθμισης και η προσαρμογή του bot είναι όλα περιορισμένα σε διαχειριστές.
 :::
 
-## Verify
+## Επαλήθευση
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Η γραμμή του Slack δείχνει μια ετικέτα κατάστασης: **Ζωντανά**, **Σύνδεση…**, **Σφάλμα σύνδεσης** (με το ίδιο το σφάλμα του Slack δίπλα του) ή **Δεν έχει συνδεθεί**. Για έλεγχο από άκρη σε άκρη:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Στο Slack, προσκαλέστε το bot σε ένα κανάλι: `/invite @your-bot-name`
+2. Αναφέρετέ το με ένα αίτημα
+3. Εμφανίζεται μια απάντηση σε νήμα του Slack και ένας αντίστοιχος χώρος εμφανίζεται στο Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/).
+Κάθε μέλος που θέλει να χρησιμοποιήσει τη γέφυρα συνδέει μετά τον δικό του λογαριασμό — δείτε [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/).
 
-## What a reply looks like in Slack
+## Πώς φαίνεται μια απάντηση στο Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Πάνω από τις λέξεις που μεταδίδονται βρίσκεται μία ομαδοποιημένη κάρτα με μια γραμμή ανά βήμα. Η προετοιμασία είναι μία γραμμή της οποίας ο τίτλος περνά από `Working on it…` σε `Cloning …` σε `Starting the agent…`. Η συλλογιστική προσθέτει μια γραμμή `Thinking…`· όταν ολοκληρωθεί αυτό το βήμα, μπορεί να εμφανιστεί σε αυτήν μια σύντομη σκέψη. Κάθε εργαλείο έχει τη δική του γραμμή (`Read lib/main.dart`). Η απάντηση φτάνει ως συνηθισμένο κείμενο κάτω από την κάρτα. Η κάρτα γίνεται πλήρης όταν ολοκληρωθεί η στροφή και σε σφάλμα όταν η εκτέλεση απέτυχε, διακόπηκε ή έφτασε το όριο στροφών της.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Η κάρτα ξεκινά τη στιγμή που το bot δέχεται την αναφορά — `Working on it…` — ώστε το νήμα του Slack να μη μένει σιωπηλό όσο ο χώρος εργασίας χτίζεται ακόμη. Η πρώτη σας αναφορά σε ένα κανάλι του Slack δημιουργεί τη συνομιλία, η οποία κλωνοποιεί τα αποθετήρια στα οποία δουλεύει ο πράκτορας, οπότε αυτή η γραμμή προετοιμασίας διαβάζεται μετά ως `Cloning acme/widgets…`, μετά `Setting up Reviewer…`, μετά `Starting the agent…` και μετά μια γραμμή `Thinking…` μόλις ο πράκτορας αρχίσει πράγματι να συλλογίζεται. Σε ένα μεγάλο αποθετήριο αυτή η πρώτη προετοιμασία παίρνει ώρα· η κάρτα είναι ο τρόπος να καταλάβετε ότι δουλεύει αντί να σας αγνοεί. Οι επόμενες αναφορές στο ίδιο νήμα του Slack ανοίγουν ακόμη με `Working on it…` και μετά παραλείπουν τα βήματα κλωνοποίησης, επειδή ο χώρος εργασίας υπάρχει ήδη.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Η συλλογιστική, ως τοίχος κειμένου και εξόδου εργαλείων, δεν φεύγει ποτέ από το Control Center — η σκέψη στη γραμμή `Thinking…` είναι μια σύντομη γραμμή, όχι πρακτικό. Το **View in Control Center** στην κάρτα ανοίγει την πλήρη συνομιλία στην εφαρμογή υπολογιστή — ο σύνδεσμος πηγαίνει στον δικό σας διακομιστή Control Center, ο οποίος παραδίδει το πρόγραμμα περιήγησης στην εφαρμογή.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Αν δεν συμβεί τίποτα όταν το πατήσετε, ο διακομιστής που έστειλε το μήνυμα δεν είναι προσβάσιμος από το μηχάνημα στο οποίο κάνατε κλικ (για παράδειγμα, ένας διακομιστής μόνο loopback από κινητό) ή το Control Center δεν εκτελείται εκεί. Ένας διακομιστής χωρίς προσβάσιμη διεύθυνση στέλνει κάρτα χωρίς κουμπί αντί για μία που δεν οδηγεί πουθενά.
 
-## Rotate a token
+## Εναλλαγή token
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Επικολλήστε ξανά τη νέα τιμή στο παράθυρο διαλόγου σύνδεσης και κάντε κλικ στο **Σύνδεση**. Η σύνδεση αντικαθιστά όποια σύνδεση εκτελούνταν για αυτόν τον χώρο εργασίας, οπότε το socket καλείται ξανά με τα νέα διαπιστευτήρια.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Τα δύο απαιτούμενα token πρέπει να υπάρχουν σε κάθε σύνδεση. Το προαιρετικό token ρύθμισης εφαρμογής διατηρεί την αποθηκευμένη τιμή του όταν αφήνετε το πεδίο κενό, οπότε η εναλλαγή ενός token bot δεν σας κοστίζει ποτέ τη δυνατότητα επεξεργασίας της εφαρμογής.
 
-## Disconnect
+## Αποσύνδεση
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Κάντε κλικ στο **Αποσύνδεση** στη γραμμή του Slack (μόνο διαχειριστές). Το socket κλείνει και τα διαπιστευτήρια ξεχνιούνται.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Οι σύνδεσμοι χώρων και χρηστών επιβιώνουν σκόπιμα: η επανασύνδεση της ίδιας εφαρμογής αποκαθιστά κάθε γεφυρωμένο νήμα του Slack. Είναι εγγραφές με εύρος χώρου εργασίας, οπότε η διαγραφή του χώρου εργασίας τις αφαιρεί έτσι κι αλλιώς.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The row says "Connection error"
+### Η γραμμή λέει «Σφάλμα σύνδεσης»
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Διαβάστε το σφάλμα που εμφανίζεται δίπλα στην ετικέτα. Ένα διαπιστευτήριο που απορρίπτεται (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) είναι τελεσίδικο — η γέφυρα σταματά να επαναλαμβάνει και περιμένει νέα token, γιατί η ατέρμονη επανάληψη ενός ανακληθέντος token σας κερδίζει μόνο ένα όριο ρυθμού. Επικολλήστε ξανά τα token στο παράθυρο διαλόγου σύνδεσης.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Ένα σφάλμα `missing_scope` σημαίνει ότι η εφαρμογή είναι εγκατεστημένη με λιγότερα scopes από όσα χρειάζεται η γέφυρα. Προσθέστε το scope που λείπει, επανεγκαταστήστε την εφαρμογή στο Slack και μετά συνδεθείτε ξανά.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Κάθε παροδικό (μια σύνδεση που έπεσε, ένα κόλλημα του Slack) επανασυνδέεται μόνο του με εκθετική υποχώρηση με ανώτατο όριο τα 30 δευτερόλεπτα και η συνήθης εναλλαγή socket του Slack δεν κλιμακώνει αυτή την υποχώρηση.
 
-### The bot does not answer a mention
+### Το bot δεν απαντά σε αναφορά
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Είναι το bot στο κανάλι;** Το Slack παραδίδει μηνύματα καναλιού μόνο σε εφαρμογές που είναι μέλη. Εκτελέστε `/invite @your-bot-name`
+- **Είστε συνδεδεμένοι;** Ένα μη συνδεδεμένο μέλος λαμβάνει απάντηση σε εκείνο το νήμα του Slack που εξηγεί πώς να συνδεθεί. Δείτε [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
+- **Είστε μέλος του χώρου εργασίας με ρόλο εγγραφής;** Σε έναν `viewer` ή `guest` λέγεται ότι ο ρόλος του είναι μόνο ανάγνωσης. Η γέφυρα δεν ξεκινά ποτέ εργασία για λογαριασμό κάποιου που δεν μπορεί να αποδώσει
+- **Έχει ο χώρος εργασίας πράκτορες;** Χωρίς πράκτορες, το μήνυμα αποθηκεύεται αλλά δεν έχει κανέναν να το απαντήσει
 
-### It answers in a channel but ignores plain messages
+### Απαντά σε κανάλι αλλά αγνοεί απλά μηνύματα
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Αυτό είναι σκόπιμο. Έξω από ένα DM, η γέφυρα ενεργεί μόνο σε μήνυμα που αναφέρει το bot ή σε απάντηση μέσα σε νήμα του Slack που ήδη κατέχει. Όλα τα άλλα είναι συνομιλία άλλων.
 
-### Replies arrive as one big message instead of streaming
+### Οι απαντήσεις φτάνουν ως ένα μεγάλο μήνυμα αντί να μεταδίδονται σε ροή
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Η γραμμή λέει «Η ζωντανή ροή είναι απενεργοποιημένη για αυτή την εφαρμογή Slack — οι απαντήσεις φτάνουν ως ένα μήνυμα». Οι απαντήσεις σε ροή του Slack χρειάζονται τη δυνατότητα Agents & AI Apps σε επί πληρωμή πλάνο· όταν το Slack την αρνείται, η γέφυρα σταματά να τη ζητά για όλη τη ζωή αυτής της σύνδεσης και αναρτά ολόκληρες απαντήσεις αντ' αυτού. Τίποτα δεν χάνεται — το πλήρες πρακτικό είναι πάντα στο Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Η ροή χρειάζεται επίσης άγκυρα νήματος στο Slack, οπότε μια απάντηση που δεν έχει νήμα του Slack για να αναπτυχθεί αναρτάται ολόκληρη. Η κάρτα εργασίας φτάνει ούτως ή άλλως: σε μια ολόκληρη απάντηση ταξιδεύει με το ίδιο μήνυμα, ήδη ολοκληρωμένη.
 
-### The reply has no card above it
+### Η απάντηση δεν έχει κάρτα από πάνω της
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Οι κάρτες εργασίας του Slack είναι μέρος της ίδιας νέας επιφάνειας Agents & AI Apps με τη ροή και το Slack αρνείται μόνο τη στιγμή της κλήσης. Όταν το κάνει, το Control Center κρατά την απάντηση και απορρίπτει την κάρτα για όλη τη ζωή αυτής της σύνδεσης — μια απάντηση χωρίς γραμμή κατάστασης είναι καλύτερη από μια γραμμή κατάστασης χωρίς απάντηση.
 
-### "Control Center needs an app configuration token to edit the bot"
+### «Το Control Center χρειάζεται token ρύθμισης εφαρμογής για επεξεργασία του bot»
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Η γραμμή **Προσαρμογή bot** είναι απενεργοποιημένη επειδή η σύνδεση δεν έχει token ρύθμισης εφαρμογής. Αυτό είναι αναμενόμενο για εφαρμογή φτιαγμένη χειροκίνητα ή μέσω **Δημιουργία στο Slack** — το Slack δεν είπε ποτέ στο Control Center ποια εφαρμογή είναι. Δημιουργήστε ένα ζεύγος token στο api.slack.com/apps και συνδεθείτε ξανά με το token refresh συμπληρωμένο.
 
-### A long answer is cut off
+### Μια μεγάλη απάντηση κόβεται
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Το Slack περιορίζει ένα μεμονωμένο μήνυμα στους 40.000 χαρακτήρες, οπότε η γέφυρα περικόπτει στους 39.000 και προσθέτει στο τέλος έναν δείκτη προς το Control Center — μια συντομευμένη απάντηση είναι καλύτερη από μία που το Slack απορρίπτει εξαρχής. Το πλήρες κείμενο είναι πάντα στο πρακτικό του χώρου.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
-- [Customize the chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
-- [Chat bridge](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
+- [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
+- [Προσαρμογή του chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
+- [Γέφυρα συνομιλίας](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)

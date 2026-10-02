@@ -1,128 +1,142 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Календарь и планирование
+description: Как Control Center синхронизирует Google Calendar на сервере, почему вход выполняется через предоставление кода устройства и что покрывает область только для чтения.
 slug: ru-RU/руководство/понятия/календарь
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ru-RU/руководство/понятия/встречи/).
+Control Center подключается к Google Calendar, чтобы ваш день был рядом с вашим
+флотом. Он синхронизирует события, показывает их в представлениях «Месяц»,
+«Неделя», «День» и «Расписание», предупреждает перед началом встречи и
+превращает любое событие в записанную, резюмированную
+[встречу](/ru-RU/руководство/понятия/встречи/).
 
-## What it changes on Google
+## Что она меняет в Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Почти ничего. Интеграция загружает события и отображает их. Она не создаёт, не
+редактирует, не удаляет события и не отвечает на приглашения. Любое подключение
+по коду устройства — встроенное или с собственными учётными данными — запрашивает
+`calendar.readonly` и `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+События синхронизируются в собственную базу данных рабочего пространства **на
+сервере** (`<dataDir>/<workspaceId>/workspace.db`) и отображаются каждым клиентом
+по RPC. Ни один клиент не хранит учётные данные Google.
 
-## Per-workspace accounts
+## Аккаунты для каждого рабочего пространства
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ru-RU/руководство/понятия/рабочие-пространства/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Аккаунты календаря принадлежат рабочему пространству, как и всё остальное в
+Control Center. Каждое [рабочее
+пространство](/ru-RU/руководство/понятия/рабочие-пространства/) подключает свой
+аккаунт Google (или несколько), и события и токены одного рабочего пространства
+никогда не видны из другого. Переключение рабочего пространства меняет и
+календари, которые вы видите.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Рабочее пространство может подключить **несколько** аккаунтов Google, например
+рабочий и личный, и их события объединяются в одних и тех же представлениях.
 
-## Why sign-in is a device code
+## Почему вход выполняется через код устройства
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+У headless `cc_server` нет браузера, который мог бы принять перенаправление
+OAuth. Поэтому он его и не использует: он авторизуется с помощью
+**предоставления кода устройства** (RFC 8628). Сервер показывает короткий код
+пользователя и URL Google, вы подтверждаете на любом устройстве с браузером, а
+сервер опрашивает, пока вы это не сделаете. Headless-установка может подключить
+аккаунт именно потому, что ей не нужно размещать конечную точку перенаправления.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Что важно знать, прежде чем использовать свои учётные данные: тип клиента должен
+быть «TV and Limited Input devices» от Google. Google выдаёт этому типу клиента
+только набор областей из списка разрешённых, и проект, в котором Calendar для
+него не разрешён, завершается ошибкой `invalid_scope` — вместо этого понадобится
+клиент loopback или веб-клиент.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Токены никогда не покидают сервер. Они записываются в `secrets.json` сервера в
+его каталоге данных с ключом `google_google:<workspaceId>:<email>`, рядом с
+базами данных и в той же границе доверия файловой системы хоста. Сервер
+автоматически обновляет доступ и, когда Google окончательно признаёт аккаунт
+недействительным (отозванный или давно истёкший сеанс), публикует
+`CalendarAuthExpired` и показывает баннер **Подключить снова**, а не молча
+отказывает.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Сборка из исходного кода вообще **не** содержит учётных данных Google — вы
+указываете свой идентификатор клиента и секрет. Официальные сборки релизов
+включают неконфиденциальный клиент с кодом устройства, чтобы подключение
+работало из коробки; сервер хранит лишь маркер, ссылающийся на него, а не его
+копию. `GOOGLE_OAUTH_CLIENT_ID` (и его секрет) в окружении всегда имеют
+приоритет над встроенной парой. Флага `--google-client-id` намеренно нет:
+неизвестные флаги игнорируются, а секрет в командной строке можно прочитать через
+`ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/ru-RU/руководство/практические-руководства/подключить-календарь/).
+Чтобы запустить собственный проект Google, см. [Подключить Google
+Calendar](/ru-RU/руководство/практические-руководства/подключить-календарь/).
 
-## Sync
+## Синхронизация
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Сервер загружает скользящее окно событий каждого подключённого аккаунта — все
+календари аккаунта, а не только основной — **каждые две минуты**, а также по
+запросу (при запуске, подключении, ручном обновлении). Столь частый цикл
+оправдан, потому что обход инкрементальный: у каждого календаря есть собственный
+токен синхронизации, поэтому неизменившийся календарь стоит одного почти пустого
+ответа, а не повторной загрузки окна в пять месяцев.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Повторяющиеся события разворачиваются на стороне сервера, поэтому ни один клиент
+не разбирает правило повторения. При переходе к месяцу за пределами текущего
+окна этот диапазон загружается лениво. Удалённые события и события, перемещённые
+за пределы диапазона, отсеиваются при следующей синхронизации.
 
-## Views
+## Представления
 
-| View       | What it shows                                         |
+| Представление  | Что показывает                                    |
 | ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| **Месяц**  | Сетка на весь месяц (работает на пакете `kalender`)   |
+| **Неделя** | События недели с указанием времени в сетке времени    |
+| **День**   | События одного дня с указанием времени в сетке времени |
+| **Расписание** | Прокручиваемый список предстоящих событий         |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Откройте календарь по адресу `/calendar`; выбор события открывает его
+подробности по адресу `/calendar/:eventId`. Выбранное представление хранится в
+собственных настройках этого клиента, поэтому оно не переносится на другое
+устройство.
 
-## Meeting alerts
+## Оповещения о встречах
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ru-RU/руководство/понятия/доменные-события/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Планировщик, запускаемый раз в минуту, ищет события, начинающиеся в пределах
+настраиваемого окна опережения, и отправляет уведомление **«Встреча скоро
+начнётся»** ([доменное
+событие](/ru-RU/руководство/понятия/доменные-события/) `MeetingStartingSoon`).
+Если у события есть ссылка для подключения, уведомление несёт её, а нажатие
+открывает подробности события. Оповещения дедуплицируются по полю `alertedAt`
+события, поэтому одна и та же встреча никогда не оповещает дважды, даже при
+перезапусках, а событие, начало которого прошло, пока приложение было закрыто, не
+воспроизводится.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Есть два ограничения, о которые легко споткнуться. Планировщик работает **на
+стороне клиента, в настольном приложении**, и только для рабочего пространства,
+открытого в данный момент, — для рабочего пространства, в котором вы не
+находитесь, оповещение не срабатывает. А в веб-сборке вообще нет канала
+системных уведомлений, поэтому там оповещения тоже не появляются.
 
-## Record and link
+## Запись и привязка
 
-From a calendar event you can start a [meeting recording](/ru-RU/руководство/понятия/встречи/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Из события календаря можно запустить [запись
+встречи](/ru-RU/руководство/понятия/встречи/), начальное название которой
+берётся из события. Control Center хранит связь один к одному между записью и
+событием, поэтому заметки встречи и запись в календаре остаются связанными, хотя
+ни одна из функций не зависит от другой.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Начать запись и привязать** доступно только в настольном приложении. В
+веб-клиенте действие сообщает, что запись недоступна, — хотя собственный процесс
+записи на экране встреч в браузере всё же работает.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Агенты не могут читать ваш календарь]
+Инструментов MCP для календаря нет. Агент не может перечислить события, прочитать
+подробности события или ответить на приглашение за вас; поверхность `calendar.*`
+— это RPC только для клиентов-людей.
 :::
 
-## See also
+## См. также
 
-- [Meetings and transcription](/ru-RU/руководство/понятия/встречи/): what happens after you start a recording
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/): why calendar accounts are per-workspace
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ru-RU/руководство/практические-руководства/подключить-календарь/)
-- [Record and summarize a meeting](/ru-RU/руководство/практические-руководства/записать-встречу/)
+- [Встречи и транскрипция](/ru-RU/руководство/понятия/встречи/): что происходит после запуска записи
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/): почему аккаунты календаря привязаны к рабочему пространству
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/): `MeetingStartingSoon` и `CalendarAuthExpired`
+- [Подключить Google Calendar](/ru-RU/руководство/практические-руководства/подключить-календарь/)
+- [Записать и резюмировать встречу](/ru-RU/руководство/практические-руководства/записать-встречу/)

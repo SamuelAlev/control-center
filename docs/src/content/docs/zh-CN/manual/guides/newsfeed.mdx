@@ -1,130 +1,98 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: 整理你的新闻流
+description: 添加和管理 RSS/Atom 订阅源，在拦截内容的加持下阅读文章，并了解你的订阅源会跟随你进入每一个工作区。
 dateModified: 2026-09-19
 slug: zh-CN/手册/操作指南/新闻流
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+本指南介绍如何塑造新闻流：它从哪些来源拉取内容、文章如何阅读，以及内容拦截会做什么。
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[新闻流按用户划分，而不是按工作区划分]
+订阅源和文章属于已登录的用户：你的订阅源列表、阅读状态和书签会跟随你进入每一个工作区，也会跟随你到每一台登录过的设备，其他用户看不到它们。订阅源存放在服务器的全局数据库中，因此 `/newsfeed` URL 之所以带有工作区 id，只是因为应用内的每条路由都是如此。
 :::
 
-## Read articles
+## 阅读文章
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. 点击侧边栏中的 **新闻流**
+2. 用工具栏的分段控件在 **全部**、**未读** 和 **已保存** 之间切换
+3. 用搜索框或来源选择器缩小列表范围
+4. 用布局按钮在杂志式网格与紧凑列表之间切换
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+打开文章会把它标为已读。使用页面标题栏中的 **全部标为已读**——它只在存在未读内容时出现——一次性清空积压，用卡片上的书签控件把某篇文章留待以后阅读。
 
-The layout choice persists across launches.
+布局选择在各次启动之间保持不变。
 
-## Add a feed
+## 添加订阅源
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. 打开 **设置 → 你 → 新闻流**（新闻流标题栏中的设置图标可直接跳转到这里）
+2. 按下 **添加订阅源**
+3. 填写**名称**和**订阅源 URL**（RSS 或 Atom）
+4. 可选：展开 **高级** 并设置自定义 **User-Agent**——有些出版方会对默认客户端返回不同的响应
+5. 按下 **添加订阅源**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+检查点：订阅源会出现在 **订阅源** 列表中，它的文章会在首次抓取后到达。已经订阅过的 URL 会被拒绝，并提示“此 URL 的订阅源已存在。”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+首次使用时，每位用户都会预置十四个订阅源：Control Center、The Verge、TechCrunch、Hacker News、ByteByteGo、Product Hunt、TLDR AI、Import AI、The Pragmatic Engineer、Martin Fowler、Will Larson 的 Irrational Exuberance、The Engineering Manager、Lea Verou 和 CSS-Tricks。
 
-## Manage feeds
+## 管理订阅源
 
-Each row in the **Feeds** list gives you three controls:
+**订阅源** 列表中的每一行都提供三个控件：
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| 控件      | 作用                                                     |
+| --------- | -------------------------------------------------------- |
+| 开关      | 停用该订阅源。停用的行会变暗，且不再被抓取               |
+| 刷新图标  | 立即抓取这一个订阅源                                     |
+| 垃圾桶图标 | 删除该订阅源，需要先确认                                 |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+列表顶部的 **全部刷新** 会抓取每一个已启用的订阅源。
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+订阅源的副标题显示它的描述以及上次抓取距今多久；抓取失败的订阅源会在该位置以警告色显示错误信息。
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+没有任何编辑入口——要更改订阅源的名称、URL 或 user agent，请删除它再重新添加。
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+抓取完全在服务器上运行：每位用户在启动时抓取一次（之后创建的账号则在首次使用时抓取），此后每 30 分钟一次。
 
-## Block ads and trackers in the reader
+## 在阅读器中拦截广告与跟踪器
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. 在 设置 → 你 → 新闻流 中，找到 **阅读器偏好**
+2. 保持 **在应用内打开文章** 开启可使用内置阅读器，或关闭它把文章交给系统浏览器
+3. 保持 **拦截广告、跟踪器与 Cookie 横幅** 开启
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+拦截默认开启。嵌入式阅读器仅支持 macOS 和 Windows：在网页版构建和 Linux 上，系统浏览器_就是_阅读器，文章会在其中打开（网页端为新标签页）。在网页端，拦截开关、**筛选列表**卡片和**受信任站点**卡片会被隐藏。
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+应用内阅读器不会重排文章。它在嵌入式 webview 中渲染出版方的页面，并借助缓存的筛选列表抑制广告、跟踪器和 Cookie 横幅。
 
-### Check or update the filter lists
+### 检查或更新筛选列表
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+**筛选列表** 卡片显示已加载多少条隐藏 Cookie、隐藏广告和网络拦截规则，以及它去除的跟踪参数和列表上次更新的时间。按下 **检查更新** 即可刷新它们。
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+来源包括 EasyList、i-dont-care-about-cookies、Fanboy Cookiemonster、若干 uBlock Origin 列表以及 uBO 的跟踪参数列表。在下载成功之前，卡片会把这些列表标为从未更新过的内置默认列表——广告、Cookie 和网络规则的数量保持为零；跟踪参数去除仍使用一套内置的默认规则。
 
-### Allowlist a site
+### 将站点加入允许列表
 
-Some sites break under blocking.
+有些站点在拦截下会出错。
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. 在 设置 → 你 → 新闻流 中，前往 **受信任站点**
+2. 按下 **添加受信任站点** 并输入域名
 
-Blocking is skipped there.
+这些站点会跳过拦截。
 
-## Troubleshooting
+## 故障排查
 
-### A feed I added shows up in another workspace
+### 我添加的订阅源出现在另一个工作区中
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+这是预期行为。新闻流按用户划分，而不是按工作区划分——你的订阅源会跟随你到所有已登录的地方。参见开头的警告。
 
-### A feed row shows an error instead of a description
+### 订阅源行显示错误而非描述
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+上次抓取失败了，该行会原样显示原因。按下刷新图标重试，并检查该 URL 是否仍在提供 RSS 或 Atom。拒绝未知客户端的出版方可能需要自定义 user agent，这意味着要删除该订阅源再重新添加。
 
-### An article page renders badly
+### 文章页面渲染异常
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+通过 **受信任站点** 为该域名关闭 **拦截广告、跟踪器与 Cookie 横幅**，或关闭 **在应用内打开文章**，改在浏览器中阅读。
 
-## Related guides
+## 相关指南
 
-- [Configure notifications](/zh-CN/手册/操作指南/通知/)
-- [Triage your inbox](/zh-CN/手册/操作指南/分拣收件箱/)
+- [配置通知](/zh-CN/手册/操作指南/通知/)
+- [分拣收件箱](/zh-CN/手册/操作指南/分拣收件箱/)

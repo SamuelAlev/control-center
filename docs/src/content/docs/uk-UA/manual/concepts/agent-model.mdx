@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Модель агента
+description: Що таке агент у Control Center насправді, які з його полів змінюють поведінку і як адаптер, на якому він працює, визначає, що можна забезпечити примусово.
 slug: uk-UA/керівництво/поняття/модель-агента
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Що таке агент?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Агент — це іменований діяч із персоною, набором навичок, адаптером для запуску та набором можливостей. Агенти є принципалами так само, як і люди: вони пишуть повідомлення, володіють тікетами, залишають рецензії та з’являються в тому самому реєстрі. Саме вони виконують роботу.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Кожен агент належить рівно до одного робочого простору. Це жорсткий інваріант — `agent.workspaceId` не може бути null, саме власний робочий простір агента визначає файл бази даних, у який потрапляють його рядки, а створення агента без робочого простору відхиляється.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Агент — це також каталог. Його визначення лежить у `agents/<slug>/AGENTS.md` у каталозі даних робочого простору, а навички, які він має, символічно пов’язані в `agents/<slug>/.agents/skills`. Рядок у базі даних і файл записуються разом. Початкове наповнення ідемпотентне: якщо рядок агента вже існує, файли на диску та посилання на навички все одно перезаписуються. Продакшн-виклик — це створення робочого простору, а не кожен запуск сервера.
 
-## What an agent carries
+## Що містить агент
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| Атрибут                 | Що він робить                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | Короткий ідентифікатор у стилі slug (`architect`, `qa`). Також те, на що розв’язуються `@mentions`                          |
+| `title`                 | Зрозуміла людині назва посади                                                                                                |
+| `persona`               | Довільний текст із рисами характеру та вказівками щодо поведінки; вставляється як розділ промпту                             |
+| `systemPrompt`          | Необов’язкові додаткові вказівки; вставляються як розділ "Agent instructions" — решти зібраного промпту вони не замінюють    |
+| `skills`                | Набір назв навичок без урахування регістру, віддзеркалений на диску як посилання на навички                                 |
+| `adapterId`             | До якого раннера агент надсилає запуски. **Null повертає до вбудованого циклу**                                              |
+| `modelId`               | Яка модель у межах цього адаптера                                                                                            |
+| `effort`                | Рівень міркування, узятий із власного словника вибраної моделі                                                               |
+| `contextSize`           | Перевизначення контекстного вікна                                                                                            |
+| `capabilities`          | Прапорці облікових даних і мережевого виходу, перевіряються під час запуску                                                  |
+| `silenceTimeoutMinutes` | Перевизначення (1–240) для вартового тиші на рівні агента                                                                    |
+| `reportsTo`             | ID батьківського агента — ланцюг підпорядкування, який малює організаційна схема                                             |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Усе це ви редагуєте в Налаштування → Робочий простір → Агенти. **Новий агент** створює агента без назви, якого ви потім заповнюєте.
 
-## Skills
+## Навички
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Навички — це назви на сутності агента, що не враховують регістр. Із ними відбуваються дві окремі речі:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Назви перелічуються у зібраному промпті в розділі "Skills". Це все, що набір сутності робить сам собою — жодної бібліотеки промптів для окремих навичок, прив’язаної до нього, не існує.
+- Каталог кожної названої навички (`skills/<slug>/SKILL.md` у робочому просторі) пов’язується з власною текою агента. У вбудованому harness frontmatter пов’язаних навичок автоматично завантажується в системний промпт, а агент читає тіло на вимогу; введення `/skill:<name>` у розмові завантажує це тіло як директиву на цей хід.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/uk-UA/керівництво/практичні-посібники/керувати-навичками/).
+Навички, отримані ззовні, між завантаженням і записом проходять сканування ланцюга постачання, що відмовляє за замовчуванням — жоден вміст навички не потрапляє на диск чи в промпт без вердикту. Ззовні — це репозиторії GitHub, які ви самі реєструєте як джерела навичок: курованого сховища немає, тож власні метадані репозиторію (його опис, його зірки, назва навички) є недовіреними даними для показу, і вердикт сканування — єдиний сигнал безпеки. Встановлення завантажує весь каталог навички, фіксує його на коміті, з якого він походить, у `skills-lock.json`, а пізніше оновлення знову проходить шлюз, перш ніж щось замінити. Інструкція — у [встановленні та керуванні навичками](/uk-UA/керівництво/практичні-посібники/керувати-навичками/).
 
-### Repo-scoped skills
+### Навички в межах репозиторію
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Репозиторій може постачати власні навички в будь-якому зі звичних місць (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Простір вивантажує кожен пов’язаний репозиторій поряд у `repos/<name>/`, але агент працює в одному репозиторії за раз — тож він несе навички **лише цього репозиторію**, і вони змінюються, коли він переходить до іншого.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Який репозиторій активний, визначають із файлів, яких торкається агент: запис файлу в `repos/<name>/` робить цей репозиторій активним, а саме лише читання з різних репозиторіїв — ні, тож пошук символу в сусідньому сервісі ніколи не підмінює набір посеред завдання. У просторі з одним репозиторієм відповідь відома ще до першого ходу.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Обмеження області — це рішення про бюджет контексту. Індекс навичок сидить у промпті на кожному ході, а тіла — ні, тож перелічення навичок усіх репозиторіїв одразу безперервно з’їдає токени — а навичка `testing` з одного сервісу активно вводить в оману, коли робота точиться в іншому. Із тієї самої причини індекс агента несе один репозиторій, а поле введення так не обмежене: назвати навичку самому — це одна явна дія, тож `/skill:<repo>:<name>` дістає будь-який репозиторій у просторі.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Навички репозиторію завантажуються для **кожного** адаптера, а не лише для вбудованого harness. Навички активного репозиторію матеріалізуються в робочий каталог агента — той самий шлях, який Claude Code і так сканує; той самий індекс складається в `AGENTS.md`, який читає вбудований harness. Навички репозиторію проходять те саме сканування з відмовою за замовчуванням, що й встановлена навичка, перш ніж усе це станеться — вивантажений репозиторій є клонованим вмістом, а його frontmatter потрапляє в промпт.
 
-## Capabilities
+## Можливості
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Можливості визначають, що запуск _отримує_, а не те, що йому дозволяє торкатися файлова система. Брокер облікових даних перевіряє їх під час запуску: якщо можливість вимкнено, відповідний токен просто не інжектується.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Надсилання в репозиторій** — керує інжекцією токена GitHub, що використовується для `git push`.
+- **GitHub API** — керує інжекцією `GH_TOKEN` і виходом до api.github.com.
+- **Тікетинг** — керує API-ключем провайдера тікетів і виходом до його доменів.
+- **Мережевий вихід** — довільні вихідні запити.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Запуск визначає їх із власного рядка агента. Коли в агента їх немає, діє фіксований консервативний стандарт: три прапорці облікових даних вимкнено, мережевий вихід увімкнено. Перемикач "Дозволи пісочниці" у формі агента обирає між цим запасним варіантом і власним набором, збереженим в агенті.
 
-See [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Про другу половину історії, зокрема про те, що примусово забезпечується на рівні файлової системи, а що ні, дивіться в [Пісочниці та безпеці](/uk-UA/керівництво/поняття/пісочниця-та-безпека/).
 
-## The adapter decides what can be enforced
+## Адаптер вирішує, що можна забезпечити примусово
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Найважливіше поле агента — його адаптер, бо транспорт адаптера визначає, яку частину політики Control Center справді можна забезпечити примусово.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Транспорт        | Адаптери                  | Що забезпечує Control Center                                                                                                                                                                                                                                            |
+| ---------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Вбудований harness | Control Center (вбудований) | Усе. Поверхня інструментів _будується_ з режиму, тож заборонений інструмент невидимий, а не просто відхилений; кожен виклик проходить шлюз схвалення та обмеження дій; контракт завершення може підштовхнути, а потім завалити запуск, який завершується без свого результату |
+| Claude CLI       | Claude Code               | Лише ті інструменти `mcp__*`, які йому надано. Власні інструменти Claude для читання, запису, редагування та shell живуть у його процесі й виконуються невидимо — а запускається він із `--dangerously-skip-permissions`, бо неінтерактивний `claude -p` інакше заблокувався б назавжди на власному запиті                                  |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Конкретно: **лише вбудований harness підтримує субагентів, коригування під час запуску, паузу й відновлення (а отже, і перехоплення) та структурне забезпечення режиму.** Claude Code не має нічого з цього.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Пісочниця ОС — це нижня межа, а не засіб забезпечення режиму, і вона є не на кожному хості]
+Наведена вище матриця — про те, що Control Center може _бачити й пропускати через шлюз_. Під нею `cc_server` загортає CLI Claude Code у пісочницю ОС хоста там, де вона існує — Seatbelt на macOS, bubblewrap на Linux і WSL2 — тож невидимий `rm` чи невидимий запис усе одно обмежує ОС. На **Windows бекенду немає взагалі**, а на Linux чи WSL2 без `bwrap` і `socat` перевірка не знаходить жодного, тож там такі запуски повертаються до санітизації середовища, облікових даних через брокер, обмежень на виклики, які Control Center бачить, і власного робочого дерева розмови (copy-on-write там, де постачається `rift`; `git worktree` на Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/).
+Чим пісочниця не є, то це _шлюзом_. Вона окреслює, де процес може читати, писати й з’єднуватися — режим лише для читання справді її досягає, як bind-монтування лише для читання — але вона не може перехопити виклик, підняти запит на схвалення чи розповісти вам потім, що намагався зробити CLI. Це разом із чотирма можливостями, названими вище, — усе ще те, що має вбудований harness і не мають інші. Дивіться [Пісочницю та безпеку](/uk-UA/керівництво/поняття/пісочниця-та-безпека/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Агент **без** адаптера повертається до **Control Center (вбудований)** — циклу всередині сервера, тож немає жодного CLI для встановлення — і його журнал запусків записує `cc-harness`. Кожен початково створений агент створюється без адаптера й моделі, тож п’ять агентів нового робочого простору всі працюють там, на типовій моделі Anthropic, доки ви не задасте адаптер і модель для кожного агента. Вибір "типовий адаптер" під час початкового налаштування — це клієнтська перевага, яку сервер ніколи не читає, і вона не застосовується заднім числом до вже створених агентів.
 
-## Where agents come from
+## Звідки беруться агенти
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Створюються разом із робочим простором.** Кожен робочий простір — не лише перший — отримує CEO і чотирьох фахівців (`qa`, `architect`, `engineer`, `librarian`), підпорядкованих йому, яких ідемпотентно створюють у фоновому режимі під час створення робочого простору. Дивіться [Робочі простори та ізоляцію](/uk-UA/керівництво/поняття/робочі-простори/).
+- **Додаються вручну** в Налаштування → Робочий простір → Агенти. Прохання до агента найняти колегу не створює рядка; скористайтеся цим екраном.
 
-## Live state
+## Поточний стан
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+В агента немає збереженого стовпця статусу. Його поточний стан виводиться з найновіших журналів запусків щоразу, коли його читають:
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| Стан       | Значення                                                                    |
+| ---------- | --------------------------------------------------------------------------- |
+| `neverRun` | Журналу запусків не існує                                                    |
+| `running`  | Принаймні один запуск триває зараз                                           |
+| `failed`   | Останній запуск завершився помилкою, або його живучість — failed чи dead      |
+| `blocked`  | Живучість останнього запуску — blocked, stalled або looping                   |
+| `idle`     | Усе інше — агент уже запускався і нічого не виконує                          |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Ще два стани, `queued` і `succeeded`, існують для окремих запусків у дереві запусків розмови; реєстр їх ніколи не видає, бо зелений завершений запуск — це факт про запуск, а не про агента.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/uk-UA/керівництво/поняття/спільна-робота/).
+Список присутності показує паралельну, грубішу картину, синтезовану на сервері з живих подій запусків — думає, виконується, заблоковано на схваленні, готово — і саме завдяки цьому агенти з’являються поряд із людьми. Дивіться [Спільну роботу та присутність](/uk-UA/керівництво/поняття/спільна-робота/).
 
-## Related concepts
+## Пов’язані поняття
 
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): what happens when an agent is actually run
-- [Modes](/uk-UA/керівництво/поняття/режими/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/uk-UA/керівництво/поняття/спільна-робота/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): what constrains a run today
-- [Agent configuration reference](/uk-UA/керівництво/довідка/конфігурація-агента/): the full field list
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): що відбувається, коли агента фактично запускають
+- [Режими](/uk-UA/керівництво/поняття/режими/): налаштування на рівні розмови, яке формує поверхню інструментів агента
+- [Спільна робота та присутність](/uk-UA/керівництво/поняття/спільна-робота/): агенти як принципали, присутність і регулятор автономності
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): що обмежує запуск сьогодні
+- [Конфігурація агента](/uk-UA/керівництво/довідка/конфігурація-агента/): повний перелік полів

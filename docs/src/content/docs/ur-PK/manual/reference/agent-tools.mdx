@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: بلٹ اِن ایجنٹ ٹولز
+description: وہ ٹول سطح جو بلٹ اِن ہارنس ایک ایجنٹ کو دیتا ہے — لینگویج سرور، ساختی تلاش، ڈی بگر، کرنل اور ورکر کنٹرول — ہر آپریشن اور اُس کے آرگیومنٹس کے ساتھ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/ur-PK/ہدایت-نامہ/حوالہ/mcp-ٹولز/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+یہ وہ **سرور سے بندھے** ٹولز ہیں جو بلٹ اِن ایجنٹ رن ٹائم براہِ راست رجسٹر کرتا ہے — لینگویج سرور، ساختی تلاش، ڈی بگر، کرنل، سوالات اور ورکر کنٹرول — بخلاف اُن [MCP ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/mcp-ٹولز/) کے جو وہ برج کے ذریعے جوڑتا ہے، اور ہارنس رن ٹائم کے عام فائل، تلاش اور شیل ٹولز کے۔ یہ MCP رجسٹری پر نہیں ہیں: کوئی بیرونی MCP کلائنٹ انہیں نہیں دیکھے گا، کیونکہ ہر ایک سرور کی جانب موجود کسی زندہ وسیلے سے بندھا ہوتا ہے — ایک لینگویج سرور پروسیس، ایک ڈی بگ اڈاپٹر، ایک انٹرپریٹر — جو کسی ایک رن کا ہوتا ہے۔
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+یہاں ہر ٹول صرف اُس وقت رجسٹر ہوتا ہے جب اُس کا پشت پناہ وسیلہ اُس رن کے لیے جڑا ہو — لینگویج سرور یا ڈی بگ سپروائزر، ایک ٹری-سِٹر پارسر، ایک کرنل فیکٹری، ایک سوال پورٹ، ایک vibe راسٹر۔ *اِس چیک آؤٹ* کے لیے لینگویج سرور یا ڈی بگ اڈاپٹر کی پہچان ایک الگ، بعد کی جانچ ہے (`status` / `adapters`): وہ ٹولز سطح پر موجود رہتے ہیں تاکہ ایجنٹ اندازہ لگانے کے بجائے پوچھ سکے کہ کچھ بھی قابلِ استعمال کیوں نہیں۔
 
-## Approval tiers
+## منظوری کے درجے
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+ہر ٹول ایک درجہ قرار دیتا ہے، اور درجہ ہی طے کرتا ہے کہ **اُسے کون سی سطحیں دیکھتی ہیں** — نہ کہ صرف یہ کہ وہ پرامپٹ کرتا ہے یا نہیں۔ پلان موڈ اور صرف پڑھنے والے ذیلی ایجنٹس `read` تک محدود رہتے ہیں، اس لیے `write` یا `exec` درجے کا ٹول اُن کے اسکیما سے مکمل طور پر غائب ہوتا ہے۔
 
-| Tier    | Meaning                                | Tools here                                         |
+| درجہ   | مطلب                                  | یہاں کے ٹولز                                         |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | کوئی ضمنی اثر نہیں                     | `lsp`, `ast_grep`, `ask_user`, پانچوں `vibe_*`   |
+| `write` | فائلیں بدلتا ہے                        | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | کوئی پروسیس شروع یا کنٹرول کرتا ہے     | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — لینگویج سرور کوئریز
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+اُس وقت رجسٹر ہوتا ہے جب رن کے پاس لینگویج سرور سپروائزر اور ایک ورکنگ ڈائریکٹری ہو۔ سرور واقعی جواب دے سکتا ہے یا نہیں، یہ کال کے وقت ایک **تقاطع** کے طور پر پہچانا جاتا ہے: روٹ مارکر کا موجود ہونا لازم ہے *اور* سرور بائنری کا حل ہونا بھی۔ صرف ایک کا ہونا یعنی کوئی سرور شروع نہیں ہوتا — `status` یہی بتاتا ہے — خاموش اندازے کے بجائے۔
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+پوزیشنیں `line` کے ساتھ `symbol` کے سب اسٹرنگ سے مخاطب کی جاتی ہیں، کالم سے کبھی نہیں۔ جس ماڈل سے کالم مانگا جائے وہ اندازہ لگاتا ہے، اور غلط اندازہ اُسی لائن کے کسی مختلف علامت پر اتر آتا ہے — ایسا جواب جو درست لگتا ہے مگر کسی اور چیز کے بارے میں ہے۔ نیویگیشن ایکشن پر `symbol` چھوڑ دینا ایک خرابی ہے، پہلے کالم کا اندازہ نہیں۔
 
-| Action            | Arguments                        | Returns                                    |
+| ایکشن            | آرگیومنٹس                        | واپسی                                    |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (یا `"*"`)                | ایررز اور وارننگز؛ `"*"` اُس کے بجائے پروجیکٹ چیکر چلاتا ہے |
+| `definition`      | `file`, `line`, `symbol`         | جہاں علامت کا اعلان کیا گیا ہے               |
+| `type_definition` | `file`, `line`, `symbol`         | جہاں اُس کے ٹائپ کا اعلان کیا گیا ہے                 |
+| `implementation`  | `file`, `line`, `symbol`         | ٹھوس اپلیمنٹیشنز                   |
+| `references`      | `file`, `line`, `symbol`         | ہر استعمال، زیادہ سے زیادہ 50                    |
+| `hover`           | `file`, `line`, `symbol`         | سگنیچر اور ڈاک کمینٹ                  |
+| `symbols`         | `query` یا `file`                | `query` کے ساتھ ورک اسپیس تلاش (حد 100)؛ `file` کے ساتھ دستاویزی علامات (حد 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | سرور کی پیش کردہ فوری اصلاحات              |
+| `status`          | —                                | کون سے سرور چل رہے ہیں، اور کون سے روٹس کے لیے |
+| `reload`          | —                                | اِس روٹ کے لیے سرور دوبارہ شروع کرتا ہے          |
 
-### Diagnostics on write
+### تحریر پر تشخیصات
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+اصل فائدہ ٹول نہیں ہے۔ `write`، `edit` اور `apply_patch` **لپیٹے ہوئے** ہیں: تحریر کے بعد فائل لینگویج سرور کے ذریعے سنک اور محفوظ ہوتی ہے، اور صرف **نئی سامنے آنے والی** تشخیصات ٹول کے نتیجے میں شامل کی جاتی ہیں۔ ایجنٹ کو اُسی لمحے پتہ چل جاتا ہے جب اُس نے بلڈ توڑا، بغیر یہ یاد رکھنے کے کہ پوچھنا تھا۔
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+پہلے بتائی جا چکی تشخیصات کو فی رن ایک لیجر دبا دیتا ہے جو شدت، کوڈ اور پیغام کی بنیاد پر کلید بندھا ہوتا ہے — پوزیشن جان بوجھ کر خارج، تاکہ جو تشخیص صرف چار لائن نیچے سرک گئی ہو، اُسے نئی کہہ کر دوبارہ نہ بتایا جائے۔
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — پورے پروجیکٹ میں نام کی تبدیلی
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+ایک الگ، `write` درجے کا ٹول، بالکل ایک ہی وجہ سے: درجہ ہی نظر آنا طے کرتا ہے۔ نام کی تبدیلی کو `lsp` میں سمو دینا یا تو صرف پڑھنے والے ایکسپلورر کو ریپو دوبارہ لکھنے کی اہلیت دے دیتا، یا ہر `hover` کو منظوری کے پرامپٹ کے پیچھے ڈال دیتا۔
 
-| Argument | Meaning                                    |
+| آرگیومنٹ | مطلب                                    |
 | -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| `file`   | جہاں علامت ہے                        |
+| `line`   | 1-انڈیکس والی لائن                             |
+| `symbol` | اُس لائن پر اسے پہچاننے والا سب اسٹرنگ      |
+| `new_name` | اُسے کیا کہا جائے                          |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — ساختی تلاش
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+کوڈ کو متن کے بجائے **شکل** سے ڈھونڈتا ہے۔ `$NAME` کسی بھی نوڈ سے میل کھاتا ہے، `$$$NAME` بہن بھائیوں کی کسی قطار سے، اور `$_` ایسا وائلڈ کارڈ ہے جو کچھ نہیں باندھتا۔
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+وہ خاصیت جو اسے چند اضافی قدموں والا ریجیکس بننے سے روکتی ہے: ایک ہی پیٹرن میں دہرایا گیا میٹا متغیر لازماً وہی متن پکڑتا ہے۔
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+ایسی گارڈ سے میل کھاتا ہے جو اُسی چیز کو ڈسپوز کرتی ہے جس کی اُس نے جانچ کی تھی، اور ایسی گارڈ سے میل **نہیں** کھاتا جو کسی اور چیز کو ڈسپوز کرے۔
 
-| Argument      | Meaning                                                     |
+| آرگیومنٹ      | مطلب                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | میٹا متغیرات والا کوڈ ٹکڑا                          |
+| `path`        | تلاش کے لیے فائل یا ڈائریکٹری؛ ڈیفالٹ پورا ورک اسپیس |
+| `language`    | کوئی فراہم کردہ گرامر آئی ڈی (`dart`, `python`, `rust`, `c`, …)۔ جب `path` کسی فائل کا نام ہو تو خود اخذ ہو جاتی ہے |
+| `max_results` | ڈیفالٹ 50                                                  |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[پیٹرن اُسی گرامر سے پارس ہوتا ہے جس سے فائل]
+چنانچہ `dispose(x)` اُس کال سے میل کھاتا ہے، خواہ وہ کسی بھی طرح فاصلے، لپیٹ یا تبصرے میں ہو — اور سٹرنگ لٹرل یا تبصرے کے اندر انہی حروف سے کبھی میل نہیں کھاتا۔
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[ٹکڑا ننگے طور پر نہیں، ایک سکیفولڈ میں پارس ہوتا ہے]
+Dart کے ٹاپ لیول پر پارس کیا گیا `dispose(x)` ایک درست *فنکشن سگنیچر* ہے۔ پیٹرن کمپائلر سیاق و سباق کی ایک سیڑھی آزماتا ہے (سٹیٹمنٹ، ایکسپریشن، کلاس ممبر، اعلان) اور جو پہلا ٹکڑے کو قبول کر لے، وہی استعمال کرتا ہے۔ جس پیٹرن کو کوئی سیاق قبول نہ کرے، اُسے تلاش کر کے خاموشی سے نہ پائے جانے کے بجائے ناقابلِ پارس بتا دیا جاتا ہے۔
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — ساختی ری رائٹ، اسٹیج شدہ
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+وہی میچنگ، باضافہ ایک `rewrite` ٹیمپلیٹ جس میں میٹا متغیرات واپس شامل کر دیے جاتے ہیں۔ **کچھ بھی نہیں لکھا جاتا۔** تبدیلی اسٹیج کر دی جاتی ہے اور نتیجہ ایک `edit_id` کا نام لیتا ہے۔
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| آرگیومنٹ   | مطلب                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | کس سے میل کھانا ہے                                       |
+| `rewrite`  | وہاں کیا رکھنا ہے، `$NAME` شامل کر کے         |
+| `path`     | دائرہ کار؛ ڈیفالٹ پورا ورک اسپیس              |
+| `language` | زبان کی آئی ڈی                                         |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — اسٹیج شدہ تبدیلی کمٹ یا مسترد کریں
 
-| Argument  | Meaning                          |
+| آرگیومنٹ  | مطلب                          |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | `(proposed)` نتیجے سے     |
+| `action`  | `accept` یا `discard`            |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+ہر فائل کا موازنہ اسٹیجنگ کے وقت محفوظ کیے گئے مواد سے کیا جاتا ہے، اور **کوئی بھی** عدم مطابقت پوری تبدیلی کو مسترد کر دیتی ہے۔ ادھورا لاگو ہوا ساختی ری رائٹ ایسا درخت چھوڑتا ہے جو نہ پرانی شکل میں کمپائل ہوتا ہے نہ نئی میں۔
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — ڈی بگر چلائیں
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+اُس وقت رجسٹر ہوتا ہے جب رن کے پاس ڈی بگ سیشن سپروائزر، ایک ورکنگ ڈائریکٹری اور ایک گفتگو آئی ڈی ہو۔ اڈاپٹر واقعی شروع ہو سکتا ہے یا نہیں، یہ کال کے وقت اُسی تقاطع اصول سے پہچانا جاتا ہے جو لینگویج سرور کا ہے (روٹ مارکر *اور* بائنری)۔ `exec` درجہ؛ متوازی کے لیے محفوظ نہیں (سیشن کالز کے درمیان حالت ہوتا ہے، چنانچہ `stack` سے آگے نکل جانے والا `continue` ایسا فریم پڑھے گا جو آگے بڑھ چکا ہوگا)۔
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+فی گفتگو ایک سیشن، سخت TTL کے ساتھ (30 منٹ)۔ دوسری `launch` خاموشی سے پہلی کی جگہ لینے کے بجائے مسترد کر دی جاتی ہے۔
 
-| Op            | Arguments                     | Notes                                          |
+| آپریشن            | آرگیومنٹس                     | نوٹس                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | یہاں کون سے اڈاپٹرز قابلِ استعمال ہیں، اور کیوں نہیں     |
+| `status`      | —                             | کوئی سیشن چل رہا ہے یا نہیں، اور کہاں رکا |
+| `breakpoints` | `file`, `lines[]`             | خالی `lines` فائل صاف کر دیتا ہے۔ لانچ کرنے سے **پہلے** سیٹ کیا جا سکتا ہے |
+| `launch`      | `program`, `args[]`           | پروگرام کو آپ کے بریک پوائنٹس پر رکا ہوا شروع کرتا ہے |
+| `attach`      | `port`                        | پہلے سے چل رہے ڈی بگی سے جڑتا ہے         |
+| `continue`    | `thread_id?`                  | اگلے اسٹاپ تک چلتا ہے                        |
+| `pause`       | `thread_id?`                  | اسے وہیں روک دیتا ہے جہاں ہے                            |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | ایک قدم آگے بڑھاتا ہے                          |
+| `threads`     | —                             | تھریڈ آئی ڈیز اور نام                            |
+| `stack`       | `thread_id?`                  | فریمز، زیادہ سے زیادہ 30                            |
+| `scopes`      | `frame_id`                    | ایک فریم پر اسکوپس، ہر ایک کے ساتھ ایک `reference`      |
+| `variables`   | `reference`                   | بچے، حد 50، ویلیوز حد 400 حروف |
+| `evaluate`    | `expression`, `frame_id?`     | فریم کے اپنے اسکوپ میں جانچا گیا              |
+| `output`      | —                             | ڈی بگی کی stdout/stderr، محدود           |
+| `terminate`   | —                             | سیشن ختم کرتا ہے اور اڈاپٹر مار ڈالتا ہے          |
 
-### Adapters
+### اڈاپٹرز
 
-| Id        | Command                    | Root markers                                    |
+| آئی ڈی        | کمانڈ                    | روٹ مارکرز                                    |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` پروجیکٹ کے اندر موجود `.venv/bin` یا `venv/bin` کو `$PATH` پر ترجیح دیتا ہے: `$PATH` والا python ایک مختلف ماحول ہوتا ہے، اور غلط والے سے اٹیچ کرنا ایسے انداز میں ناکام ہوتا ہے جو ٹوٹے ہوئے کوڈ جیسا لگتا ہے۔
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — مستقل انٹرپریٹرز
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+ایک Python یا JavaScript سیل جس کے ویری ایبلز، امپورٹس اور لوڈ شدہ ڈیٹا کالز کے درمیان برقرار رہتے ہیں۔ `exec` درجہ؛ متوازی کے لیے محفوظ نہیں۔
 
-| Argument      | Meaning                                          |
+| آرگیومنٹ      | مطلب                                          |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | سیل                                         |
+| `description` | لازمی۔ ٹرانسکرپٹ لیبل کے لیے 5–10 الفاظ    |
+| `language`    | `python` (ڈیفالٹ) یا `javascript`               |
+| `reset`       | انٹرپریٹر رد کر کے پہلے صاف سا شروع کرتا ہے    |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- آخری ایکسپریشن ویسے ہی ظاہر ہوتا ہے جیسے نوٹ بک کرتی ہے۔
+- `display()` کام کرتا ہے، pandas فریم ٹیبل کی صورت میں رینڈر ہوتا ہے، اور matplotlib فگر ایک **تصویر** کی صورت میں واپس آتا ہے جسے ٹرانسکرپٹ دکھاتا ہے۔
+- وہ IPython محاورے جو لوگ بے ساختہ ٹائپ کرتے ہیں — `%pip`، `%cd`، `!cmd`، `%%bash`، `%%timeit` — سادہ کوڈ میں دوبارہ لکھ دیے جاتے ہیں۔ `%pip` ساتھ ہی `sys.modules` سے بھی نکال دیتا ہے، تاکہ اگلا `import` وہی دیکھے جو ابھی انسٹال ہوا۔
 
-### Calling your own tools from inside a cell
+### سیل کے اندر سے اپنے ٹولز کال کرنا
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+برج **ہارنس ٹول رجسٹری میں دوبارہ داخل ہوتا ہے**، اس لیے گارڈریلز، منظوری اور ہر ریپر بالکل ویسے ہی لاگو ہوتے ہیں جیسے ماڈل کی جاری کردہ کال پر۔ یہ لوپ بیک ساکٹ کے بجائے کرنل کے اپنے پائپ پر سوار ہوتا ہے: نہ کوئی پورٹ، نہ کوئی راز، نہ کوئی اگریس اصول۔
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+سیل کا ٹائم آؤٹ ایک *غیر فعالیت* کا بجٹ ہے (ڈیفالٹ 5 منٹ) اور جب تک کوئی برج کے ذریعے کی گئی کال زیر التوا ہو، وہ **معطل** رہتا ہے، چنانچہ جو سیل سب ایجنٹس تک پھیلے، وہ پھیلاؤ کے بیچ مارا نہیں جاتا۔
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[کرنل کہاں چلتا ہے]
+گفتگو کا انکلوژر ہو تو اُسی میں، ورنہ ہوسٹ پر۔ یہ وہاں تک پہنچنے کے لیے انکلوژر **بوٹ نہیں** کرتا — وہی اصول جو رگ ٹیب کو خودکار شروع ہونے سے روکتا ہے۔
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — انسان سے سوال پوچھیں
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+`read` درجہ۔ کسی رن کا آپریٹر سے کچھ پوچھنے کا **واحد** طریقہ۔ یہ گفتگو میں نمبر والا کارڈ دکھاتا ہے اور جب تک کوئی جواب نہ دے، نہ چھوڑے، یا سوال ٹائم آؤٹ نہ ہو جائے، رکتا ہے۔ سوال کو کبھی چیٹ پیغام کے طور پر نہ لکھیں — وہ ٹرن ختم کر دیتا ہے۔
 
-| Argument       | Meaning                                    |
+| آرگیومنٹ       | مطلب                                    |
 | -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| `question`     | کیا پوچھنا ہے                                |
+| `context`      | اختیاری: آپ کیوں پوچھ رہے ہیں اور جواب پر کیا منحصر ہے |
+| `options[]`    | انتخاب، ہر ایک `{label, description?}`      |
+| `allow_free_text` | آیا ٹائپ کیا گیا جواب قبول کیا جاتا ہے       |
+| `multi_select` | آیا کئی اختیار چنے جا سکتے ہیں      |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+چھوڑ دینا کامیابی ہے: ایک بیان کردہ مفروضے پر آگے بڑھیں اور دوبارہ نہ پوچھیں۔ ٹائم آؤٹ ایک خرابی ہے، اُسی ہدایت کے ساتھ۔ اجازت کے پرامپٹس (”کیا میں یہ کر سکتا ہوں؟“) ایک الگ چوک پوائنٹ ہیں اور گفتگو میں وہی کارڈ دکھاتے ہیں۔
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+صرف اُس وقت رجسٹر ہوتا ہے جب سوال پورٹ اور ہدف اسپیس، دونوں موجود ہوں۔ کوئی انسان منسلک نہ ہو تو کال ہمیشہ کے لیے رکنے کے بجائے **ناکام** ہو جاتی ہے — وہی بند ہو کر ناکام ہونے کا رویہ جو کوئی گارڈریل `prompt` کوئی منظور کنندہ منسلک نہ ہونے پر اپناتا ہے۔
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — پس منظر ورکرز کی ہدایت
 
-Registered only while [vibe mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پس-منظر-ورکرز-کی-ہدایت/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+صرف اُس وقت رجسٹر ہوتے ہیں جب [vibe موڈ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پس-منظر-ورکرز-کی-ہدایت/) آن ہو۔ پانچوں `read` درجے کے ہیں: گیٹ ورکر کے ٹولز پر ہونا چاہیے، جہاں ترمیم واقعی ہوتی ہے۔
 
-| Tool         | Arguments                                | Notes                                       |
+| ٹول         | آرگیومنٹس                                | نوٹس                                       |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | فوراً واپس آ جاتا ہے؛ ورکر چلتا رہتا ہے     |
+| `vibe_send`  | `worker_id`, `message`                   | بریف میں شامل کر کے دوبارہ چلاتا ہے            |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | جب تک وہ اپنا کام ختم نہ کر لے رکتا ہے                     |
+| `vibe_kill`  | `worker_id`                              | اسے روک دیتا ہے                                    |
+| `vibe_list`  | —                                        | درجہ، حیثیت، گزرا ہوا وقت اور آخری نتیجہ       |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` یا `fast` ہے (واضح تفصیل والا مکینیکل کام) یا `good` (ڈیزائن، فیصلہ سازی، یا کسی `fast` ورکر کے آؤٹ پٹ کا جائزہ)۔

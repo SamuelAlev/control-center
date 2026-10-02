@@ -1,137 +1,138 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Přesměrujte porty z terminálu
+description: Jak se dostat k vývojovému serveru spuštěnému v Terminal (VM) nebo v shellu hostitele — ze svého stroje, z Browser (VM), z Androidu, ze sítě, nebo na vývojové doméně s HTTPS.
 slug: cs-CZ/prirucka/navody/porty-vm
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Server, který spustíš v terminálu konverzace, se vystaví jen pro **tenhle prostor**. Panel **Předané porty** si všimne posluchačů, které tam tahle aplikace spustila, namapuje je a dá ti adresu pro každé místo, odkud se k nim chceš dostat. Dva prostory můžou oba naslouchat na `5173`; jejich mapy se nikdy nesmíchají.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Nic z tohohle stroj neotevírá: každou cestu vytvoří server, na požádání, a ta zanikne s terminálem nebo stanicí.
 
-## See what is listening
+## Podívej se, co naslouchá
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Otevři **Terminal (VM)** konverzace nebo shell hostitele (v prostoru, nebo na stránce PR).
+2. Spusť server — `pnpm dev`, `python -m http.server 8000`, cokoli.
+3. Během pár sekund dostane **ikona zástrčky** v pravém horním rohu terminálu
+   tečku. Klikni na ni.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panel vypíše každý naslouchající port i s procesem, který ho vlastní, ve tvaru
+`3000 → 3000`: vlevo port, na který se proces navázal, vpravo port, na kterém
+odpovídá místně (stejné číslo, kdykoli bylo na tvém stroji volné). Každý řádek
+taky řekne, jestli na něj dosáhne desktopové `localhost`, Browser (VM)
+a Android.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Zjišťování zůstává uvnitř: u Terminal (VM) se posluchači hledají v tom hostu,
+u shellu hostitele ve stromu procesů PTY té relace. Ostatní prostory
+a ostatní procesy na tvém Macu v seznamu nejsou.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Nové porty v **tomhle** terminálu se předávají automaticky. **Automaticky předávat porty**
+vypni ve stejném panelu, když chceš jen ty, které přidáš sám.
 
-## Reach it from this computer
+## Dostaň se k němu z tohohle počítače
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Na řádku použij **Kopírovat místní URL** — `http://localhost:3000`. Předání
+naslouchá jen na loopbacku, takže ho ve tvé síti nikdo jiný neuvidí.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Když dva prostory vystaví `5173` hosta a tvůj stroj už drží
+`127.0.0.1:5173`, druhý prostor si `5173` hosta nechá a dostane
+dočasný místní port. **Kopírovat místní URL** bere číslo vpravo.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+U shellu hostitele už proces běží na tvém stroji. Namapovat stejný
+místní port nic neudělá; když zvolíš **jiný** místní port, naváže se loopbacková
+proxy na ten, který sis vybral.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (nebo navázání na `0.0.0.0`) uzavřenému Browser (VM)
+**neumožní** dosáhnout serveru na Macu. Host má vlastní loopback; server
+do toho hosta zasadí tunel, když je karta Browser ve
+**stejném prostoru**.
 
-## Reach it from the Browser (VM)
+## Dostaň se k němu z Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Otevři uzavřený prohlížeč ve **stejné konverzaci**. Napiš
+`localhost:<left-hand port>` — číslo, na které se proces navázal. Přemapování
+(`5173 → 3000`) v tom prohlížeči odpovídá i na čísle vpravo, takže
+tam **Kopírovat místní URL** funguje taky. Agentovo `browser_use` umí přejít
+na kteroukoli z nich.
+Server v Prostoru A se v prohlížeči Prostoru B nikdy neobjeví jako `localhost:5173`.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Používej `localhost`, ne IP adresu v LAN a ne `--host`. Host má vlastní
+loopback; tunel tam naslouchá na IPv4 i na IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Stránky, které najednou otevřou spoustu spojení (desítky assetů, socket
+live reloadu), sdílejí tentýž tunel. Browser (VM) je multiplexuje
+na jeden trvalý exec, takže příval fetchů není spawn procesu
+na každé spojení a nevyprší jako bílá stránka.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Uvnitř jednoho prostoru má předání z Terminal (VM) přednost před shellem hostitele
+na stejném čísle. Napříč prostory přednost není — mapy jsou oddělené.
 
-## Reach it from Android
+## Dostaň se k němu z Androidu
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Otevři kartu **Android** toho prostoru. `localhost:<port>` emulátoru se
+pak reverzně přepojí na vystavený port tohohle prostoru (`adb reverse`). Jeden emulátor
+platí pro celé zařízení: připojení Prostoru B přenastaví `:5173` na B a mapování A zahodí.
+Zavři kartu a reverzní přepojení, která tahle stanice zasadila, se odstraní.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS Simulator už je ten Mac — žádný reverse. Fyzický iPhone pořád
+potřebuje sdílení v LAN.
 
-## Share it on your network
+## Sdílej ho ve své síti
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Sdílet v místní síti** vystaví port na
+`<server-ip>:<random port>` — hodí se, když chceš stránku otevřít na telefonu, nebo
+když server běží na jiném stroji.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Port v LAN vždy přidělí operační systém, nikdy číslo hosta, takže ven jde
+  záměrná, viditelná adresa, kterou nejde uhodnout.
+- Zůstane soukromý (jen loopback), dokud ho nepřepneš, a **⋯ → Jen místně**
+  ho ze sítě zase stáhne.
 
-## Give it a name — with HTTPS
+## Dej mu jméno — s HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Nastavit doménu prohlížeče (.test)** přiřadí portu vývojovou doménu, třeba
+`myapp.test`. Uvnitř Browser (VM) pak `https://myapp.test` načte tvůj
+server s platným zámečkem — hodí se pro všechno, co se chová jinak
+na pojmenovaném originu nebo v zabezpečeném kontextu (cookies, service workers, OAuth
+callbacky).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domény musí končit na `.test` nebo `.localhost` — to jsou dvě TLD vyhrazené pro
+  vývoj, takže vývojové jméno nikdy nezastíní skutečný web.
+- **Jména** domén jsou na serveru jedinečná, **čísla** portů ne. Dva
+  prostory můžou oba používat `5173`, ale `myapp.test` si nemůžou nárokovat oba.
+- Certifikát pochází z místní autority, kterou server vydá při
+  prvním použití. Její klíče žijí v datovém adresáři serveru
+  a nikdy nevstoupí do žádného hosta; uzavřený prohlížeč důvěřuje právě tomu jednomu
+  klíči, takže TLS do skutečného internetu se dál ověřuje normálně.
+- Doména se překládá **jen uvnitř Browser (VM)**. Tvůj prohlížeč na
+  hostiteli místo toho používá `localhost:<port>`.
+- Obyčejné `http://myapp.test` funguje taky.
 
-## Forward a port by hand
+## Předej port ručně
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Přidat port** dole v panelu namapuje port předem, ať na něm
+něco naslouchá, nebo ne. Ruční předání si adresu podrží, i když
+server restartuješ — řádek ukazuje *nenaslouchá*, dokud se nevrátí —
+kdežto automatická předání zmizí spolu se svým portem. U shellu hostitele můžeš
+taky nastavit jiný místní port.
 
-## How it stays contained
+## Jak to zůstane uzavřené
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/cs-CZ/prirucka/koncepty/stanice/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/cs-CZ/prirucka/referencni-prirucka/stanice/#ports-and-dev-domains).
+Klíčem portu je pracovní prostor a prostor. Vlastní mapa portů
+hypervizoru se při startu stroje zafixuje, takže Terminal (VM) jede dvěma úzkými kanály,
+které ovládá server: jedním předem vytvořeným příchozím kanálem do hosta, který
+odmítne spojení na port, na kterém host ve skutečnosti nenaslouchá, a
+reverzními tunely, které server drží otevřené pro Browser (VM) a Android.
+Shell hostitele nikdy neprohledává celý stroj. Uvnitř hosta nevznikne
+posluchač, kterého tam nedal server, a všechno se strhne
+s terminálem nebo stanicí. Jak je to postavené, vysvětluje
+[Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/#porty-bez-děr);
+přesné vyhrazené porty a pravidla domén jsou v
+[referenci stanic](/cs-CZ/prirucka/referencni-prirucka/stanice/#porty-a-vývojové-domény).
 
-## Related
+## Související
 
-- [Give an agent a machine to test on](/cs-CZ/prirucka/navody/pouziti-stanic/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/cs-CZ/prirucka/referencni-prirucka/stanice/) — reserved ports, dev TLDs,
-  defaults
+- [Dejte agentovi stroj na testování](/cs-CZ/prirucka/navody/pouziti-stanic/) — otevírání,
+  sledování a přebírání stanic
+- [Reference stanic](/cs-CZ/prirucka/referencni-prirucka/stanice/) — vyhrazené porty, vývojové TLD,
+  výchozí hodnoty

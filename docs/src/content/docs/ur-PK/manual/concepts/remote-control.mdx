@@ -1,207 +1,207 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: ریموٹ کنٹرول اور موبائل
+description: فون کیسے پیئر ٹو پیئر لنک کے بجائے ایک بروکر شدہ، اینڈ ٹو اینڈ سیل شدہ ریلے کے ذریعے آپ کے سرور تک پہنچتا ہے، اور وہ تہہ در تہہ رسائی ماڈل جو اِس رسائی کو تنگ رکھتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center ایک ڈیسک ٹاپ ایپ ہے، مگر جس کام کی یہ نگرانی کرتا ہے وہ آپ کے
+میز سے دور جانے پر رکتا نہیں۔ **ریموٹ کنٹرول** آپ کے فون کو آپ کے `cc_server`
+کے ساتھ جوڑتا ہے، اور اِس کے لیے **[Remote](https://remote.usectrl.dev/)** استعمال
+کرتا ہے، یعنی remote.usectrl.dev پر موجود ساتھی ایپ، تاکہ آپ وہیں سے فلیٹ کا پیچھا
+کر سکیں: پیغامات اور ٹکٹس پڑھیں، کسی ایجنٹ کو جواب دیں، اپنی نیوز فیڈ ٹرائیج
+کریں — اور سرور پر موجود آڈیو، ٹرانسکرپٹ، سورس کوڈ یا اسناد کبھی وہاں سے باہر نہ
+جائیں۔
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+اِسے ڈیک کے ساتھ چلنے والا ایسا ساتھی سمجھیں جو زیادہ تر پڑھتا ہے۔ یہ مکمل
+ڈیسک ٹاپ کلائنٹ کی جگہ لینے کے لیے نہیں بنایا گیا۔
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) for how the two differ.
+:::note[دو مختلف ریموٹ راستے]
+فون کی ساتھی ایپ `cc_server` کے ساتھ ایک **بروکر شدہ WebSocket ریلے** پر پیئر ہوتی
+ہے جو اینڈ ٹو اینڈ سیل شدہ JSON-RPC فریم لے کر چلتا ہے۔ مکمل **ویب بلڈ** (اور وہ
+ڈیسک ٹاپ جو کسی ریموٹ سرور کی طرف اشارہ کرے) دوسرا ریموٹ راستہ ہے؛ یہ WebSocket کے
+ذریعے `cc_server` کو کال کرتا ہے اور پوری ایپ پیش کرتا ہے۔ دونوں میں فرق جاننے کے
+لیے [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) دیکھیں۔
 :::
 
-## Transport
+## ٹرانسپورٹ
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+فون `cc_server` تک WebSocket کے ذریعے پہنچتا ہے: یا تو براہِ راست کنکشن (لوپ بیک،
+LAN، ٹیل نیٹ یا `wss://`) سے، یا کسی سگنلنگ بروکر پر دعوت نامے سے محدود کمرے سے
+جو سیل شدہ فریم آگے بھیجتا ہے۔ کوئی پیئر ٹو پیئر ڈیٹا چینل نہیں ہوتا۔
 
-## What the phone can do
+## فون کیا کر سکتا ہے
 
-The paired phone reaches a small, intentional slice of the server's surface:
+پیئر شدہ فون سرور کی سطح کے ایک چھوٹے اور جان بوجھ کر محدود حصے تک پہنچتا ہے:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **پڑھنا**: ٹکٹس، ایجنٹس، اسپیسز اور اُن کے پیغامات، اور آپ کی نیوز فیڈ
+- **جواب دینا**: کسی اسپیس میں پیغام بھیجنا، ٹکٹ اپ ڈیٹ کرنا یا تفویض کرنا، کسی
+  مضمون کو پڑھا ہوا یا محفوظ نشان زد کرنا
+- **پلی بک چلانا**: محفوظ شدہ پلان ٹیمپلیٹ کو اُس کے پیرامیٹرز کے ساتھ تشکیل
+  دینا۔ یہ صرف پلان کی _تجویز_ دیتا ہے؛ جب تک کوئی آپریٹر مکمل کلائنٹ پر Plan
+  Studio میں اُس کی منظوری نہ دے، کچھ بھی چلتا یا خرچ نہیں ہوتا
+- **ورک اسپیسز بدلنا**، فون کے اپنے منتخب کنندہ سے
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+یہ تقریباً سب کچھ ہے۔ فون مکمل کلائنٹ کے مقابلے **کم تر مراعات یافتہ پرنسپل**
+ہوتا ہے۔ یہ پروسیس شروع نہیں کر سکتا، LLM بجٹ خرچ نہیں کر سکتا، GitHub پر پش نہیں
+کر سکتا اور نہ ورک اسپیسز بنا سکتا ہے۔ یہ صرف نیت نہیں بلکہ واقعی نافذ کیسے کیا
+جاتا ہے، یہ [رسائی کا ماڈل](#رسائی-کا-ماڈل) دیکھیں۔
 
-## How the link is built
+## لنک کیسے بنتا ہے
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+کنکشن ایک **بروکر شدہ ریلے** پر چلتا ہے: سرور بطور مالک `wss://` بروکر پر دعوت
+نامے سے محدود ایک کمرے میں شامل ہوتا ہے اور ہر پیئر شدہ کلائنٹ — ڈیسک ٹاپ، ویب،
+فون — وقت کی حد والے داخلہ ٹوکن کے ساتھ اُسی کمرے میں شامل ہوتا ہے۔ تین ٹکڑے مل
+کر یہ بناتے ہیں:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
+| ٹکڑا | کردار |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| **Remote (فون ایپ)** | ساتھی ویب ایپ، جو بطور ڈیفالٹ `remote.usectrl.dev` پر میزبانی شدہ ہے یا خود میزبان۔ براؤزر میں لوڈ ہوتی ہے اور پیئرنگ ریکارڈ IndexedDB میں رکھتی ہے۔ |
+| **ریلے بروکر** | بے حالت `wss://` ریلے (`cc_signaling_server`) جو N طرفہ کمروں کی میزبانی کرتا ہے۔ یہ **صرف مبہم فریم** لے کر چلتا ہے: ہر پے لوڈ فون اور سرور کے درمیان اینڈ ٹو اینڈ سیل ہوتا ہے، چنانچہ بروکر نہ کبھی ایپ ڈیٹا یا پیئرنگ راز دیکھتا ہے اور نہ آگے بھیجی گئی چیز کی تشریح کرتا ہے۔ |
+| **`cc_server`** | کمرے کا مالک۔ یہ فون کی کالوں کا جواب اُسی ڈسپیچر کے ذریعے دیتا ہے جو ہر دوسرا کلائنٹ استعمال کرتا ہے۔ |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+پیئرنگ کی پیشکش ایک **کنکشن ڈسکرپٹر** لے کر آتی ہے جس میں سرور تک کے تمام راستے
+(LAN، ٹیل نیٹ، عوامی `wss://`، ریلے) اور اُس کا شناختی فنگر پرنٹ درج ہوتا ہے۔ فون
+کا ریزالور بہترین قابلِ رسائی راستہ چنتا ہے اور پہلی کنکٹ پر فنگر پرنٹ کو پن کر
+دیتا ہے (TOFU)؛ ریلے رسائی کی ضمانت دیتا ہے چاہے کوئی براہِ راست راستہ موجود نہ
+ہو، مگر ٹریفک کبھی پڑھ نہیں سکتا۔
 
-## What the pairing payload is
+## پیئرنگ پے لوڈ کیا ہوتا ہے
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/) for the procedure. The anatomy is
-what matters here.
+پیئرنگ ایپ سے جاری کی جاتی ہے اور ڈیپ لنک کی صورت میں پہنچائی جاتی ہے؛ طریقہ کار
+کے لیے [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
+دیکھیں۔ یہاں اصل بات اُس کی ساخت ہے۔
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+پے لوڈ URL کے **فریگمنٹ** میں سفر کرتا ہے، یعنی `#` کے بعد کا وہ حصہ جسے براؤزر
+کبھی سرور کو نہیں بھیجتے، چنانچہ PWA کا HTTPS ہوسٹ اُسے کبھی نہیں دیکھتا۔ اِس میں
+وہ سب کچھ ہوتا ہے جو فون کو سرور تک پہنچنے اور یہ ثابت کرنے کے لیے درکار ہے کہ وہ
+کون ہے: کنکشن ڈسکرپٹر (ہر راستہ اور شناختی فنگر پرنٹ)، نیا جاری کیا گیا ڈیوائس
+id، 32 بائٹ کی پری شیئرڈ کلید اور میعاد کا اسٹیمپ۔ فون اُسے ڈی کوڈ کرتا ہے،
+پیئرنگ ریکارڈ مقامی طور پر محفوظ کرتا ہے اور فریگمنٹ ہٹا دیتا ہے تاکہ راز URL سے
+نکل جائے۔
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+پے لوڈ کی دو شکلیں ہیں اور وہ **آپس میں بدلی نہیں جا سکتیں**۔ ایپ کے اندر پیئرنگ
+پینل سے جاری ہونے والا فون QR وہی اوپر والا v2 `PairingPayload` ہے جو Remote PWA
+ہوسٹ کی طرف اشارہ کرتا ہے۔ `cc_server pair --client-url` ایک مختلف، پرانا v1 لنک
+(`{s, i, k}` — سرور URL، ڈیوائس id، کلید) خارج کرتا ہے جو صرف **ویب** کلائنٹ کے
+لیے ہے۔
 
-They also differ in lifetime, which is easy to get wrong:
+اِن کی عمر بھی مختلف ہوتی ہے، اور یہاں غلطی کرنا آسان ہے:
 
-| Minted by                             | Credential expiry                         |
+| کس نے جاری کیا | اسناد کی میعاد |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| ایپ کے اندر پیئرنگ پینل (`pairing.mint`) | ہمیشہ 30 دن |
+| کمانڈ لائن پر `cc_server pair` | **کوئی نہیں** — اسناد میعاد ختم نہیں ہوتیں |
 
-## The access model
+## رسائی کا ماڈل
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+پیئر شدہ ڈیوائس **تصدیق شدہ مگر غیر قابلِ اعتماد** ہوتی ہے۔ کئی آزاد گیٹ یہ روکتے
+ہیں کہ کوئی منظور شدہ (یا لیک ہو گئی) پیئرنگ سرور پر مکمل کنٹرول بن جائے۔
 
-### 1. Membership, not pairing, is the boundary
+### 1. حد رکنیت ہے، پیئرنگ نہیں
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+درست پیئرنگ کلید یہ ثابت کرتی ہے کہ آپ _کون سی ڈیوائس_ ہیں۔ آپ کیا پڑھ یا بدل
+سکتے ہیں، یہ آپ کا **ورک اسپیس کردار** طے کرتا ہے — جو ہر ایک کال پر دوبارہ حل
+ہوتا ہے — اور ریپو کا مواد سامنے لانے والی ہر چیز پر فی ریپو گرانٹس بھی۔ ایسی
+ڈیوائس جس کے پاس بالکل درست کلید ہو مگر اُس کا صارف نامزد ورک اسپیس کا رکن نہ ہو،
+"Not a member of this workspace" کے ساتھ مسترد کر دی جاتی ہے۔
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+کردار کی کم سے کم حد آپریشن کی قسم سے اخذ ہوتی ہے، الا یہ کہ وہ اپنی حد خود بتائے:
+پڑھنے کے لیے `guest`، تبدیلیوں کے لیے `member` اور تباہ کن آپریشنز کے لیے `admin`
+درکار ہے۔
 
-### 2. A phone is a lower session tier
+### 2. فون ایک نچلے درجے کا سیشن ہے
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+کردار کی جانچ کے علاوہ، فون سیشن کی صلاحیت ڈیسک ٹاپ یا ویب سیشن سے کم ہوتی ہے۔ جو
+آپریشنز صرف مکمل کلائنٹ کے لیے قرار دیے گئے ہوں، وہ فون کے لیے ہینڈلر چلنے سے
+پہلے ہی مسترد کر دیے جاتے ہیں، چاہے اُس کے پیچھے موجود صارف کتنے ہی اختیارات رکھتا
+ہو: ڈیوائس پیئرنگز جاری کرنا، فہرست بنانا، نام بدلنا اور منسوخ کرنا؛ ٹنل
+کنیکٹوٹی پڑھنا اور سیٹ کرنا؛ سرور بیک اپ اور ورک اسپیس ایکسپورٹ/امپورٹ؛ پروسیس
+کی نشان دہی اور قتل؛ اڈاپٹر پروبز؛ سرور ترتیبات؛ SSO ایڈمن؛ فلیٹ کنٹرول؛ اور کسی
+چلتے ایجنٹ کا کنٹرول سنبھالنا یا واپس دینا۔
 
-### 3. A default-deny tool allow-list
+### 3. بطور ڈیفالٹ انکار کرنے والی ٹول اجازت فہرست
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+خاص طور پر MCP ٹول سطح (`tools/call`) کے لیے ایک ایسی اجازت فہرست ہے جو بطور
+ڈیفالٹ انکار کرتی ہے اور طے کرتی ہے کہ فون کون سے ٹول کال کر سکتا ہے۔ جو فہرست
+میں نہ ہو وہ چلنے سے پہلے مسترد ہو جاتا ہے۔ فہرست زیادہ تر پڑھنے اور مشاہدے پر
+مبنی ہے، نیز چند **صرف مقامی** تحریریں — ایک پیغام، ٹکٹ کی اپ ڈیٹ، مضمون پر
+نشان — جو نہ LLM بجٹ خرچ کرتی ہیں، نہ کوئی پروسیس شروع کرتی ہیں اور نہ کسی بیرونی
+نظام کو چھوتی ہیں۔
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+مسترد ہیں، مثلاً: کسی ایجنٹ سے مشورہ لینا، AI ریویو شروع کرنا، ایجنٹ کو قتل کرنا،
+GitHub پر ریویو شائع کرنا، ایجنٹس کی بھرتی یا برخاستگی، اور ورک اسپیس بنانا۔
 
-### 4. Per-call workspace scoping
+### 4. فی کال ورک اسپیس کا دائرہ
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) invariant the rest of the
-product enforces.
+سرور کے پاس **کوئی** ”موجودہ ورک اسپیس“ نہیں ہوتا۔ یہ بناوٹ ہی سے بے حالت ہے: ہر
+ورک اسپیس کے دائرے والی کال کو اپنے دلائل میں ہدف `workspace_id` بتانا ہوتا ہے اور
+ڈسپیچر اُس کال کو فوراً مسترد کر دیتا ہے جب وہ غائب ہو یا ایسا ورک اسپیس بتائے جو
+سرور کے پاس رجسٹرڈ نہ ہو — اور یہ سب کچھ کسی ڈیٹا بیس کے کھلنے سے پہلے ہوتا ہے۔
+چنانچہ فون نہ کبھی کسی دوسرے کلائنٹ کے دائرے کا وارث بن سکتا ہے اور نہ اُس میں سرک
+سکتا ہے، اور کسی اجنبی ورک اسپیس کا نام لینا بھی فائدہ نہیں دیتا، کیونکہ گیٹ 1 کی
+رکنیت کی جانچ پھر بھی لاگو ہوتی ہے۔ یہ وہی
+[ورک اسپیس تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) کی لازمی شرط ہے جو
+مصنوعات کا باقی حصہ نافذ کرتا ہے۔
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. پری شیئرڈ کلید سے بندھے اینڈ ٹو اینڈ سیل شدہ فریم
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+فون اور سرور کے درمیان ہر فریم پیئرنگ کلید سے سیل ہوتا ہے؛ داخلہ ٹوکن کسی کلائنٹ
+کو صرف کمرے میں پہنچاتا ہے، وہ کچھ بھی ڈی کرپٹ نہیں کرتا۔ بروکر خفیہ متن آگے
+بھیجتا ہے اور کلید کبھی نہیں دیکھتا۔ منسوخ شدہ ڈیوائس اپنی اسناد پہلے ہی غائب
+پاتی ہے، اس لیے دوبارہ کنکٹ پر وہ **بند حالت میں ناکام** ہوتی ہے۔
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+ایپ سے جاری اسناد 30 دن تک محدود ہوتی ہیں؛ اُس کے بعد کنکٹ گیٹ اُنہیں ناکام کر
+دیتا ہے اور فون کو دوبارہ پیئر کرنا ہوتا ہے۔ منسوخی بروقت ہوتی ہے: سرور ڈیوائس
+ٹیبل پر نظر رکھتا ہے اور منسوخ شدہ ڈیوائس کے کھلے سیشنز اگلی کنکٹ کا انتظار کرنے
+کے بجائے سیکنڈوں میں گرا دیتا ہے۔
 
-### 6. Rate limiting per principal
+### 6. فی پرنسپل ریٹ لمٹنگ
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+ایک سلائیڈنگ ونڈو لیمیٹر ریموٹ ٹول ٹریفک کو 120 کال فی منٹ پر محدود کرتا ہے، اور
+تبدیلی کرنے والے فعلوں پر 30 فی منٹ کی مزید سخت ذیلی حد ہے۔ یہ بجٹ **پرنسپل کا ہے،
+سیشن کا نہیں**: آپ کی تین ڈیوائسز ایک ہی کھاتے سے خرچ کرتی ہیں، اس لیے ہائی جیک
+ہوا کلائنٹ مزید سیشنز کھول کر گنجائش نہیں خرید سکتا اور کوئی شور مچانے والا رکن
+باقیوں کو ختم نہیں کر سکتا۔
 
-### 7. A broker that learns nothing
+### 7. ایسا بروکر جو کچھ نہیں جانتا
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+ریلے بروکر جان بوجھ کر سادہ رکھا گیا ہے: یہ کمرے میزبانی میں دیتا ہے، سیل شدہ
+فریم آگے بھیجتا ہے، اور کوئی اکاؤنٹ، کوئی ایپ ڈیٹا اور کوئی کلید نہیں رکھتا۔ کمرے
+دعوت نامے سے محدود اور عارضی ہوتے ہیں۔ ایپ ڈیٹا، آڈیو، ٹرانسکرپٹ، سورس اور اسناد
+سب سرور پر ہی رہتے ہیں۔
 
-## Live updates
+## لائیو اپ ڈیٹس
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+پیئر ہونے کے بعد فون کو **لائیو اپ ڈیٹس** اطلاعاتی فریم کی صورت میں ملتی ہیں —
+نئے ایجنٹ پیغامات، آپ کو تفویض شدہ ٹکٹس، اسٹیٹس کی تبدیلیاں — جو ڈیسک ٹاپ کی اپنی
+اطلاعات کی عکاسی کرتی ہیں۔ سرور یہ فریم ہر منسلک سیشن کو نشر کرتا ہے اور ورک
+اسپیس کا فلٹر کلائنٹ کی طرف لاگو ہوتا ہے، اس لیے جو آپ دیکھتے ہیں وہ اُسی ورک
+اسپیس تک محدود ہے جو آپ کے سامنے کھلا ہے۔
 
-## Where it lives
+## یہ کہاں رہتا ہے
 
-| Surface                                                                             | What it shows                                                                                               |
+| سطح                                                                             | یہ کیا دکھاتی ہے                                                                                               |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **ترتیبات → آپ → آپ کی ڈیوائسز** (`/workspaces/:workspaceId/settings/you/devices`) | لائیو اسٹیٹس کے ساتھ پیئر کلائنٹس، نیز **نیا کلائنٹ پیئر کریں** (ویب براؤزر، ڈیسک ٹاپ ایپ یا فون) اور منسوخی |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+یہی پینل صرف فونز کے لیے نہیں بلکہ دوسرے براؤزر یا ڈیسک ٹاپ ایپ کے لیے بھی پیئرنگز
+جاری کرتا ہے — طریقہ کار بالکل یکساں ہے، صرف ڈیپ لنک مختلف ہوتا ہے۔
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+ریموٹ کنٹرول سرور کی طرف ہے اور MCP کے ذریعے **ظاہر نہیں** کیا جاتا۔ فون ریلے کے
+ذریعے سرور کے اپنے ڈسپیچر سے بات کرتا ہے؛ یہ کسی بیرونی سرور کا MCP کلائنٹ نہیں
+ہے۔
 ::::
 
-## See also
+## مزید دیکھیں
 
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): roles, membership and repo grants
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/): where remote control sits among the client tiers
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): where remote control sits in the stack
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): فی کال دائرہ بندی جس پر یہ ٹکا ہے
+- [ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): کردار، رکنیت اور ریپو گرانٹس
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/): کلائنٹ درجوں میں ریموٹ کنٹرول کہاں بیٹھتا ہے
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): اسٹیک میں ریموٹ کنٹرول کہاں بیٹھتا ہے
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)

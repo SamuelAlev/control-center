@@ -1,267 +1,278 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Sandbox và bảo mật
+description: Điều gì thực sự ràng buộc một agent trong Control Center hiện nay, sandbox hệ điều hành vươn tới đâu và những ranh giới nào vẫn đứng vững trên một máy chủ không có backend.
 slug: vi-VN/so-tay/khai-niem/sandbox-va-bao-mat
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Sandbox hệ điều hành vươn tới đâu và không vươn tới đâu]
+`cc_server` dò máy chủ lúc khởi động và bọc việc thực thi lệnh của agent trong
+sandbox gốc của hệ điều hành khi có sẵn một cái — Seatbelt trên macOS, bubblewrap
+trên Linux và WSL2 (cần `bwrap` và `socat` trên `PATH`). Nơi không có backend nào
+— Windows, hoặc một máy Linux thiếu những công cụ đó — các lượt chạy quay về
+những ranh giới khác bên dưới và máy chủ nói rõ điều đó trong log khởi động.
+`--sandbox off` tắt nó một cách có chủ đích.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Hai lỗ hổng vẫn tồn tại bên trong sandbox và đáng để ghi nhớ:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- **Công cụ tệp in-process** của harness tích hợp (`read`, `write`, `edit`,
+  `apply_patch`, `search`, `find`, `search_files`) chạy bên trong tiến trình máy
+  chủ, nên chỉ `bash` được bọc. Thứ ràng buộc chúng là giới hạn đường dẫn trong
+  chính các công cụ đó cùng với rào chắn hành động.
+- **Claude Code được khởi chạy với `--dangerously-skip-permissions`**, bởi một
+  `claude -p` phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt của chính nó.
+  Vì vậy các lệnh gọi tệp và shell của nó không bị rào chắn của Control Center
+  kiểm soát — sandbox hệ điều hành mới là ranh giới bao quanh chúng.
   :::
 
-## Why isolation matters here
+## Vì sao cô lập lại quan trọng ở đây
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Một agent đọc tệp, chạy lệnh shell và gọi API bên ngoài thay bạn. Kiểu hỏng hóc
+bạn cần bận tâm hiếm khi là ác ý — mà là một agent đọc nhầm đường dẫn và viết
+lại bản checkout đang làm việc của bạn, hoặc đẩy lên một nhánh mà bạn chưa xem
+xét xong. Vậy nên câu hỏi mà sản phẩm phải trả lời không phải "agent có đáng tin
+không" mà là "bán kính ảnh hưởng là bao nhiêu khi nó sai".
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center trả lời điều đó bằng nhiều lớp và các lớp này độc lập với nhau
+một cách có chủ đích. Nếu thiếu một lớp, những lớp khác vẫn đứng vững. Điều đó
+quan trọng, bởi lớp ngoài cùng — sandbox hệ điều hành — là lớp duy nhất có điều
+kiện: nó phụ thuộc vào việc máy chủ có cung cấp backend hay không, và trên
+Windows thì không máy nào có.
 
-## What actually constrains an agent
+## Điều gì thực sự ràng buộc một agent
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Năm thứ ràng buộc một lượt chạy agent trên mọi máy chủ, dù có sandbox hay không.
+Không thứ nào là ranh giới kernel; tất cả đều là thật. Nơi máy chủ cung cấp
+backend, sandbox hệ điều hành nằm bên trên chúng và mục "Sandbox bổ sung điều gì
+và dừng lại ở đâu" bên dưới nói về những gì điều đó thay đổi.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Cây làm việc copy-on-write của riêng nó.** Mỗi cuộc hội thoại tự khởi tạo bản
+checkout của riêng mình cho từng kho mã đã liên kết, được nhân bản theo cơ chế
+copy-on-write thông qua native `rift` đi kèm thay vì sao chép từng byte một, nên
+cô lập đủ rẻ để trở thành mặc định. Kho mã đã đăng ký mà bạn thêm vào không gian
+làm việc không phải là thư mục mà agent làm việc trong đó — hai cuộc hội thoại
+cùng đụng vào một kho mã không thể thấy các chỉnh sửa của nhau và cả hai đều
+không chỉnh sửa bản checkout của bạn.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Độ chi tiết này đáng để nói cho chính xác: **cây làm việc là theo từng cuộc hội
+thoại, không phải theo từng agent.** Hai agent trong cùng một cuộc hội thoại nhận
+được những thư mục làm việc overlay riêng biệt nhưng _chia sẻ_ thư mục `repos/`
+của cuộc hội thoại đó — đó chính là mục đích, vì chúng đang cộng tác trên cùng
+một thay đổi — trong khi các thư mục agent riêng của chúng vẫn tách biệt.
+Copy-on-write là backend duy nhất ở mọi nơi `rift` được phát hành: một hệ thống
+tệp không thể reflink, hoặc một thư mục dữ liệu nằm trên ổ đĩa khác với kho mã,
+sẽ làm việc khởi tạo thất bại thay vì quay về phương án khác. Windows là ngoại lệ
+— ở đó không có backend copy-on-write, nên `git worktree` là backend, không phải
+một sự suy giảm âm thầm.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Giới hạn đường dẫn trong các công cụ tệp của harness tích hợp.** Các công cụ
+`read`, `write`, `edit`, `apply_patch`, `search`, `find` và `search_files` của
+harness phân giải mọi đường dẫn dựa trên thư mục làm việc của lượt chạy cộng với
+các gốc chia sẻ — thư mục `repos/` của cuộc hội thoại, nơi chứa các cây làm việc,
+và thư mục tệp đính kèm của space khi nó tồn tại — và từ chối bất cứ thứ gì nằm
+ngoài. Đường dẫn tuyệt đối chỉ được chấp nhận nếu chúng vốn đã nằm bên trong. Một
+symlink bên trong cây làm việc trỏ ra ngoài cũng bị phân giải và từ chối. Đây là
+lý do một agent không thể `write` vào `~/.ssh` ngay cả khi không có sandbox.
 
-**The mode's tool surface.** A conversation's [mode](/vi-VN/so-tay/khai-niem/che-do/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Bề mặt công cụ của chế độ.** [Chế độ](/vi-VN/so-tay/khai-niem/che-do/) của một
+cuộc hội thoại quyết định những công cụ nào được hiện thực hóa cho lượt chạy.
+Trong các chế độ chỉ đọc (`plan`, `review`, `orchestrate`), các công cụ thay đổi
+dữ liệu đơn giản là không có trong sổ đăng ký và chính sách lệnh shell cho những
+chế độ đó từ chối thẳng mọi lệnh thay đổi — `git commit`, `git push`,
+`npm install`, `docker` và phần còn lại — thay vì hỏi trước. Một công cụ không
+hiện diện thì không thể bị gọi, đó là một bảo đảm mạnh hơn một công cụ hiện diện
+nhưng bị kiểm soát.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) for the resolution model.
+**Rào chắn hành động hợp nhất.** Mọi công cụ thay đổi dữ liệu đều khai báo các
+lớp hiệu ứng mà nó có thể tạo ra và bộ máy chính sách phân giải từng lớp thành
+cho phép, hỏi trước, hoặc từ chối trước khi lệnh gọi chạy. Một quyết định
+`prompt` không có người phê duyệt nào kết nối sẽ phân giải thành _bị từ chối_ —
+một câu hỏi không ai trả lời được thì không bao giờ là đồng ý. Xem
+[Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) để biết mô hình phân giải.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Thông tin xác thực được kiểm soát theo khả năng và một môi trường đã làm
+sạch.** Thông tin xác thực được tạo mới ở mỗi lần khởi chạy từ các cờ khả năng
+của cuộc hội thoại và bị thu hồi khi lượt chạy kết thúc. ACP, `bash` của harness
+và Claude Code dưới lớp bọc native nhận một môi trường đã bị loại bỏ các vector
+chèn của trình liên kết động và trình thông dịch (`LD_PRELOAD`,
+`DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` và những thứ tương
+tự) trước khi tiến trình khởi động. Claude Code qua `NoSandboxAdapter` kế thừa
+môi trường của máy chủ.
 
-### Where those bounds thin out
+### Nơi những ranh giới đó mỏng đi
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Các công cụ tệp của harness chạy _trong tiến trình máy chủ_, không phải trong
+một tiến trình con, nên không profile sandbox nào có thể ràng buộc chúng kể cả
+khi có gắn một cái — chỉ `bash` đi qua bộ chạy lệnh đã được sandbox. Sự ràng
+buộc của chúng là phép kiểm tra đường dẫn đã mô tả ở trên và do đó phép kiểm tra
+đó có tính quyết định chứ không phải một lớp phòng thủ thứ hai.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+Công cụ `bash` là chỗ khác cần nói cho chính xác. Các lệnh của nó được đánh giá
+dựa trên chính sách lệnh của chế độ rồi được spawn với một môi trường đã làm
+sạch và cây làm việc làm thư mục làm việc. Nơi có backend, lần spawn đó được
+bọc, nên sandbox chính là thứ ngăn một lệnh shell ghi ra ngoài cây làm việc; nơi
+không có — Windows, hoặc Linux thiếu `bwrap` và `socat` — chính sách lệnh là thứ
+duy nhất nằm giữa lệnh đó và phần còn lại của ổ đĩa. Ở chế độ `chat`, chính sách
+từ chối cứng một danh sách cố định (leo thang đặc quyền, phá hủy hệ thống và ổ
+đĩa, thoát khỏi container và namespace) và hỏi trước với các thay đổi trạng thái
+từ xa (`git push`, `gh pr create`, xuất bản và cài đặt gói). Bất cứ thứ gì không
+nằm trong cả hai danh sách đều chạy. Pipeline, chuỗi lệnh và subshell được phân
+tích cú pháp và từng lệnh con được đánh giá riêng, với quyết định hạn chế nhất
+giành phần thắng.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/vi-VN/so-tay/khai-niem/rao-chan/#the-adapter-honesty-matrix).
+Claude Code, khi được dùng như một adapter, là trường hợp mà sandbox mang trọng
+lượng lớn nhất. Control Center khởi chạy nó với `--dangerously-skip-permissions`,
+bởi một `claude -p` phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt phê
+duyệt của chính nó. Các lệnh gọi read, write, edit và shell của nó diễn ra bên
+trong tiến trình của chính nó và Control Center không bao giờ thấy chúng; những
+lệnh gọi duy nhất của nó chạm tới một cổng là các công cụ `mcp__*` do chính
+Control Center phục vụ. Nơi có backend, những lệnh gọi vô hình đó vẫn diễn ra
+bên trong lớp bọc sandbox, nên hệ điều hành là ranh giới bao quanh chúng. Nơi
+không có, thì không có gì cả. Mỗi adapter nói rõ điều này trong ma trận thực thi
+của nó — xem [ma trận trung thực của adapter](/vi-VN/so-tay/khai-niem/rao-chan/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Kiểm soát theo khả năng là thực thi bằng sự vắng mặt
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Một cuộc hội thoại mang bốn cờ khả năng: push lên kho mã, gọi GitHub API, gọi
+nhà cung cấp phiếu và truy cập mạng. Chúng không được kiểm tra khi agent hành
+động. Chúng được kiểm tra một lần, lúc khởi chạy, bởi broker thông tin xác thực —
+và một khả năng bị tắt nghĩa là token tương ứng đơn giản là không bao giờ được
+đưa vào môi trường.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Đó là toàn bộ cơ chế và đáng để nói thẳng vì kiểu hỏng hóc không giống như người
+ta tưởng. Tắt "GitHub API" không tạo ra thông báo "khả năng bị từ chối". Nó tạo
+ra một `401` bình thường bên trong agent, vì không có `GH_TOKEN` nào để gửi.
+Agent hoàn toàn có thể kể lại điều đó như một vấn đề thông tin xác thực. Thực thi
+bằng sự vắng mặt rất vững chắc — không có phép kiểm tra nào để lách — nhưng nó im
+lặng và agent không biết vì sao mình thất bại.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Cờ mạng cũng hành xử y hệt. Khi nó tắt, các công cụ `web_fetch` và `web_search`
+của harness từ chối mọi lệnh gọi và danh sách cho phép proxy của một lần spawn đã
+sandbox là rỗng, nên mọi kết nối ra ngoài đều bị từ chối.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Thông tin xác thực bị thu hồi khi lượt chạy kết thúc, nên một handle không sống
+lâu hơn lượt chạy đã tạo ra nó.
 
-## What the sandbox adds and where it stops
+## Sandbox bổ sung điều gì và dừng lại ở đâu
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+Enum `SandboxBackend` có ba giá trị — `native` (Seatbelt trên macOS, bubblewrap
+trên Linux và WSL2), `none`, và `microvm`. Việc bọc lệnh của agent chỉ dùng hai
+giá trị đầu: `microvm` là backend VM khép kín cho terminal tương tác và rig,
+không phải một bản nâng cấp âm thầm của lớp bọc `bash`. Hiểu rõ hình dạng native
+sẽ giải thích bạn được lợi gì khi có một cái được gắn vào và những gì nó vốn dĩ
+sẽ không bao giờ mang lại cho bạn.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` dò máy chủ một lần lúc khởi động và nơi một backend trả lời, nó cấp
+cho cả hai đường nối mà đường điều phối có, bởi các transport không dùng chung
+một đường. Đường thứ nhất (`SandboxPort`) bọc CLI Claude Code. Đường thứ hai
+(`SandboxManager`) bọc các adapter ACP và công cụ `bash` của harness tích hợp.
+Chỉ cấp cho một đường sẽ khiến những đường còn lại spawn mà không được bọc, đó là
+điều từng xảy ra. Trên một máy chủ không có backend, hoặc dưới `--sandbox off`,
+tất cả chúng spawn không được bọc và máy chủ nói rõ bạn đang ở trường hợp nào
+trên dòng khởi động của nó. ACP và `bash` của harness vẫn làm sạch môi trường;
+Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Một bề mặt cố tình không tham gia: terminal do máy chủ cung cấp nhận một đối số
+backend theo từng phiên và `cc_server` khởi tạo nó với mặc định là shell của máy
+chủ, nên một terminal bạn mở từ ứng dụng sẽ chạy không có sandbox trừ khi máy
+khách nêu rõ `native`. Đó là một shell thật trên máy chủ, không phải một lượt
+chạy agent.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Trên Linux, `bubblewrap` dựng một namespace mount, nên agent thực sự chỉ thấy
+những gì đã được gắn vào đó. Trên macOS, `sandbox-exec` áp dụng một profile
+Seatbelt **mặc định là dễ dãi** — một profile từ chối-hoàn-toàn-theo-mặc-định sẽ
+khiến một shell tương tác không dùng được, vì số lượng lệnh gọi dyld, XPC và Mach
+cần liệt kê là quá nhiều. Vì vậy profile macOS bắt đầu từ `(allow default)` rồi
+khoét ra các lệnh từ chối: đọc các đường dẫn bí mật, chính sách ghi được đặt lại
+thành từ chối cùng những lệnh cho phép tường minh đặt lên trên, chặn unlink trên
+mọi đường dẫn bị từ chối và các tổ tiên của nó để một lệnh rename không thể lách
+qua một lệnh từ chối ghi, từ chối exec với các tệp nhị phân luôn nguy hiểm và với
+bất cứ thứ gì được sao chép vào một thư mục có thể ghi, và mạng bị giới hạn ở
+các cổng proxy loopback cùng DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Hệ quả thực tế: trên Linux, tầm nhìn của agent về hệ thống tệp bị thu hẹp; trên
+macOS, agent vẫn có thể _đọc_ phần lớn máy chủ và các bản checkout đã đăng ký của
+bạn được bảo vệ bằng những lệnh từ chối ghi và rename tường minh thay vì bằng sự
+vô hình. Cả hai đều là cô lập ở cấp namespace, không phải một ranh giới bảo mật
+cấp kernel — chính các backend nói rõ điều đó trong ghi chú khả năng của chúng.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Tập bind-mount là nơi ranh giới giữa các agent được vạch ra. Điều phối overlay
+(Claude Code và ACP) gắn tối đa bốn đường dẫn, được phân giải theo từng lượt
+chạy: thư mục làm việc overlay của agent ở chế độ đọc-ghi, thư mục cấu hình của
+agent ở chế độ chỉ đọc, thư mục `repos/` dùng chung của cuộc hội thoại ở chế độ
+đọc-ghi khi nó tồn tại, và thư mục tệp đính kèm của space ở chế độ chỉ đọc khi nó
+tồn tại. Thư mục của một agent anh em không bao giờ được gắn. Lớp bọc `bash` của
+harness hẹp hơn: nó chỉ bind-mount thư mục làm việc của lượt chạy. Đây là cùng
+hình dạng mà phép kiểm tra đường dẫn in-process của harness thực thi bằng phần
+mềm, nên cả hai khớp nhau — nhưng chỉ phép kiểm tra đường dẫn mới bao phủ các
+công cụ tệp của chính harness, những công cụ không bao giờ chạm tới một namespace
+mount cả.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Các bản checkout đã đăng ký của bạn gia nhập nhóm từ chối ghi thêm vào đó, ở mọi
+chế độ và trên cả ba đường được bọc (Claude Code, ACP, `bash` của harness), và
+mỗi quy tắc được phát ra theo cả cách viết nguyên văn lẫn cách viết đã phân giải
+symlink. Cách viết thứ hai không phải là một chi tiết nhỏ nhặt:
+kernel so khớp một quy tắc từ chối với đường dẫn đã phân giải và trên macOS việc
+phân giải là trường hợp phổ biến chứ không phải ngoại lệ — `/tmp` thực ra là
+`/private/tmp`, `/var/folders/…` thực ra là `/private/var/folders/…` — nên một
+bản checkout đi tới qua một trong hai cách đó sẽ vẫn có thể ghi được trong khi
+profile trông như thể đang cấm nó.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Mạng, khi ở trong một sandbox, là một danh sách cho phép theo **tên miền** cho
+từng phiên, được thực thi bởi các proxy loopback in-process. Egress mặc định bị
+từ chối: khi khả năng mạng tắt, các proxy vẫn khởi động nhưng danh sách cho phép
+của chúng rỗng, nên mọi kết nối ra ngoài đều bị từ chối. Khi nó bật, bộ phân giải
+dựng danh sách cho phép từ một đường cơ sở được tuyển chọn — các nhà cung cấp API
+LLM, nơi lưu trữ git, các registry gói, danh mục mô hình — cộng với các tên miền
+GitHub mà khả năng GitHub hoặc push của agent kiếm được, rồi đối chiếu máy chủ
+đích của mọi kết nối với nó. Ký tự đại diện hoạt động (`*.example.com` khớp với
+các tên miền con, không khớp với tên miền gốc). Một danh sách luôn bị từ chối
+riêng biệt thắng danh sách cho phép và bao gồm các endpoint metadata của cloud và
+các điểm thu thập telemetry. Thứ _không_ cấu hình được chính là bản thân danh
+sách: spec mang một trường `egressAllowlist` cho các tên miền bổ sung và một hook
+tên miền phiếu, nhưng không có gì trong đường điều phối điền vào cả hai, nên trên
+thực tế mọi lượt chạy đều nhận đường cơ sở cộng với các tên miền suy ra từ khả
+năng của nó và không hơn.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+Các lệnh từ chối, trên macOS, có thể quan sát được: một trình giám sát theo dõi
+system log để tìm các lệnh từ chối của Sandbox, lọc nhiễu đã biết, loại trùng các
+đợt thử lại và đưa mỗi cái lên thành một `SandboxViolation` nêu rõ điều gì đã
+được thử và khả năng nào sẽ gỡ chặn nó. Trên Linux, đường bọc phân tích stderr để
+tìm `EPERM`, `Operation not permitted` và `Permission denied` rồi phát ra cùng
+loại sự kiện — không có việc theo dõi system log. Những sự kiện đó đến trên luồng
+sự kiện của chính lượt chạy, nên một syscall bị từ chối hiện ra trong bản tường
+thuật chứ không chỉ trong một log. Telemetry chỉ tồn tại khi một sandbox native
+thực sự đang bọc tiến trình — trên một máy chủ không có backend thì không có gì
+để quan sát. Nó cũng không liên quan gì tới kiểm soát theo khả năng: một vi phạm
+đến từ một syscall bị từ chối, không bao giờ từ một lần tra cứu khả năng.
 
-## Confirmations come from the guardrails, not the sandbox
+## Xác nhận đến từ rào chắn, không phải từ sandbox
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Sandbox không có đường phê duyệt nào. Nó khởi chạy, thực thi, phát sự kiện và kết
+thúc; không có chỗ nào trong đó để một con người trả lời một câu hỏi. Khi bạn
+thấy một xác nhận trong một space — phê duyệt lần push này, phê duyệt lần xóa này
+— thì nó đã được bộ máy rào chắn (hoặc chính sách lệnh của harness) đưa ra _trước
+khi_ hành động đó chạm tới runtime.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Thứ tự này là có chủ đích. Một phê duyệt diễn ra sau syscall sẽ chỉ là một bản
+ghi kiểm toán, không phải một cổng chặn. Đó cũng là lý do quy tắc đóng-khi-lỗi
+nằm trong rào chắn: khi không có người phê duyệt nào kết nối, quyết định được
+đưa ra trước khi bất cứ thứ gì chạy và nó là một lệnh từ chối.
 
-## Diagnostics
+## Chẩn đoán
 
-[Run agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) is the single place
-that states what can be checked by hand.
+[Chạy chẩn đoán agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) là nơi
+duy nhất nêu rõ những gì có thể kiểm tra bằng tay.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Rigs and enclosures](/vi-VN/so-tay/khai-niem/rigs/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): where isolation fits in the dispatch flow
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/vi-VN/so-tay/tham-chieu/backend-sandbox/): the backends and their configuration
+- [Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/): bước nằm trên sandbox — khi công việc cần cả một cỗ máy dùng-một-lần với ranh giới kernel, chứ không phải một tiến trình được bọc
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): lớp chính sách nằm trên sàn hệ điều hành và nơi các phê duyệt thực sự đến từ đó
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): nơi cô lập khớp vào luồng điều phối
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/): cách một chế độ thu hẹp bề mặt công cụ và chính sách lệnh
+- [Tham chiếu backend sandbox](/vi-VN/so-tay/tham-chieu/backend-sandbox/): các backend và cấu hình của chúng
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Configure sandbox policies](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/): capability flags and filesystem posture
-- [Run agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/): what the diagnostic checks cover
+- [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/): các cờ khả năng và thế đứng của hệ thống tệp
+- [Chạy chẩn đoán agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/): phạm vi của các kiểm tra chẩn đoán

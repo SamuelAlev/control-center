@@ -1,109 +1,118 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Se connecter à un serveur distant
+description: Pointez l'application de bureau ou le client web vers un cc_server exécuté ailleurs et basculez d'un serveur à l'autre sans redémarrer.
 slug: fr-FR/manuel/guides/connecter-serveur-distant
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Tout client est un moteur de rendu au-dessus d'un `cc_server` qui détient les
+données. L'application de bureau peut en exécuter un en son sein ; l'application
+web sur [app.usectrl.dev](https://app.usectrl.dev) ne le peut pas, car un onglet
+de navigateur ne peut pas héberger de serveur. Dans un cas comme dans l'autre, ce
+guide pointe un client vers un serveur exécuté ailleurs — une petite machine, une
+VM cloud, un serveur de build.
 
-## Prerequisites
+## Prérequis
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/fr-FR/manuel/guides/executer-serveur-sans-interface/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Un `cc_server` en cours d'exécution. Si vous n'en avez pas, voir [Exécuter un serveur sans interface](/fr-FR/manuel/guides/executer-serveur-sans-interface/).
+- Soit les trois valeurs d'appairage émises par le serveur — l'**URL du serveur** (`ws://…/rpc` ou `wss://…/rpc`), un **identifiant d'appareil** et une **clé d'appairage** —, **soit** un **code d'invitation** à usage unique fourni par un administrateur de l'espace de travail. Utiliser une invitation provisionne votre utilisateur, enregistre votre appartenance et émet pour vous l'identifiant de ce client : vous n'avez donc jamais à manipuler un identifiant d'appareil ni une clé.
 
-### Make sure the server is reachable
+### Vérifier que le serveur est joignable
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Un serveur local n'a besoin de rien : `ws://localhost:9030/rpc` fonctionne aussi
+bien depuis le bureau que depuis le navigateur, car les navigateurs considèrent la
+boucle locale comme une origine fiable.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Un serveur sur une autre machine, lui, est différent. `app.usectrl.dev` est servi
+en HTTPS, si bien que le navigateur n'ouvrira une socket `wss://` qu'avec un
+certificat auquel il fait déjà confiance — et `cc_server` refuse d'emblée de se
+lier à une adresse autre que la boucle locale sans TLS. Fournissez-lui l'un des
+éléments suivants :
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- un certificat directement, avec `--tls-cert` et `--tls-key`
+- un proxy inverse qui termine le TLS en amont, le serveur étant démarré avec `--insecure` (en clair derrière le proxy, sur un réseau de confiance uniquement)
+- un tunnel ou un VPN qui fournit le certificat — Tailscale, cloudflared ou équivalent. **Paramètres → Serveur → Connexion et état** propose l'activation du tunnel intégré sous **Partager ce serveur**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Deux réglages côté serveur sont faciles à manquer. Derrière un proxy, un NAT ou un
+tunnel, définissez `--public-url` sur l'adresse que les clients doivent réellement
+joindre — par défaut, elle correspond à la liaison locale, si bien que sans ce
+réglage, les clients essaient le mauvais hôte. Et si vous hébergez votre propre
+copie de la version web, ajoutez son origine à `--allowed-origins`, qui ne
+contient par défaut que `https://app.usectrl.dev` ; la boucle locale et les
+clients natifs sont toujours autorisés.
 
-## Connect the desktop app
+## Connecter l'application de bureau
 
-On a fresh install:
+Sur une installation neuve :
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Lancez Control Center. L'écran de premier lancement demande **Comment exécuter Control Center ?**
+2. Au lieu de **Exécuter dans cette application**, renseignez les champs de connexion : l'URL du serveur, plus soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage.
+3. Cliquez sur **Connecter**. Control Center joint le serveur et arrive sur la boîte de réception de l'espace de travail.
 
-On a desktop that already runs its own server:
+Sur un poste de bureau qui exécute déjà son propre serveur :
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Ouvrez **Paramètres → Serveur → Connexion et état**.
+2. Cliquez sur **Ajouter un serveur**. Saisissez l'URL du serveur (`wss://host:9030/rpc`) et soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage. Le bouton suffixe du champ d'URL découvre les instances `cc_server` sur votre réseau local ou votre tailnet.
+3. Cliquez sur **Connecter**, puis sur **Basculer** dans la ligne du nouveau serveur.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+La bascule s'effectue à chaud : l'application se reconstruit autour de la nouvelle
+session sur place, sans redémarrage. Si la connexion échoue, vous restez sur le
+serveur actuel et voyez l'erreur. La ligne du serveur sur lequel vous êtes n'a pas
+d'action **Basculer** ; le serveur local est la première ligne, intitulée
+**Exécuter dans cette application**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Une fois la bascule effectuée, le bureau ne détient plus de base de données.
+Chaque écran lit et écrit via le serveur distant par une connexion WebSocket.
 
-## Connect the web client
+## Connecter le client web
 
-The web build is always remote.
+La version web est toujours distante.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Ouvrez [app.usectrl.dev](https://app.usectrl.dev), ou votre propre copie de la version web.
+2. Saisissez l'URL du serveur, plus soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage.
+3. Le client joint le serveur et affiche la même interface que le bureau.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Si un lien profond d'appairage figure dans l'URL, les champs sont préremplis. La
+clé d'appairage voyage dans le **fragment d'URL**, que les navigateurs n'envoient
+jamais au serveur qui héberge la page : l'hôte statique ne la voit donc jamais.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Médias et sécurité]
+Les médias (avatars, images du fil, captures d'écran de PR) passent par le serveur
+connecté, si bien que le navigateur ne récupère jamais directement un hôte en
+amont. Une Content-Security Policy par requête, apposée à partir d'un cookie non
+sensible, n'autorise que l'origine du serveur connecté.
 :::
 
-### What the browser does not do
+### Ce que le navigateur ne fait pas
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Le client web lit et écrit sur le même serveur que le bureau, mais quelques
+surfaces nécessitent une fenêtre native ou les périphériques propres à la machine :
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- aucune notification toast du système d'exploitation, aucun son de notification ni rail de bannières d'ambiance (le centre de notifications intégré fonctionne toujours)
+- aucune découverte de serveurs sur le réseau local ou le tailnet dans la boîte de dialogue **Ajouter un serveur**
+- aucun lecteur d'articles intégré — les articles du fil d'actualités s'ouvrent dans un nouvel onglet
+- impossible de relancer un résumé de réunion ni d'en annuler un en cours de traitement
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Deux fonctions se comportent différemment plutôt que d'être absentes.
+L'**enregistrement** de réunion fonctionne dans le navigateur, en capturant votre
+microphone ainsi qu'un partage d'écran comportant une piste audio. **Ouvrir dans
+l'IDE** fonctionne aussi, mais demande au serveur de lancer l'éditeur sur
+l'affichage du _serveur_, si bien que le bouton se masque face à un hôte sans
+interface où aucun éditeur n'est installé.
 
-## Troubleshooting
+## Résolution des problèmes
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/fr-FR/manuel/concepts/espaces-de-travail/).
+- **La connexion expire** : le serveur doit être joignable depuis le client. Vérifiez la liaison (`--bind any`), l'ouverture du port et que `--public-url` désigne l'adresse que le client peut réellement joindre. Sur l'internet ouvert, TLS est obligatoire — une liaison en clair sur une adresse autre que la boucle locale est refusée au démarrage, sauf si le serveur a été démarré avec `--insecure` derrière un proxy.
+- **Le navigateur refuse de se connecter alors qu'un client natif fonctionne** : l'origine du navigateur ne figure pas dans la liste `--allowed-origins` du serveur. Par défaut, seule `https://app.usectrl.dev` est autorisée (plus la boucle locale).
+- **Clé d'appairage rejetée** : relancez `cc_server pair` sur le serveur pour renouveler la clé de cet appareil, puis saisissez la nouvelle. Un appareil révoqué constate la disparition de son identifiant et échoue en refusant l'accès ; la révocation coupe une session active en quelques secondes.
+- **Mauvais espace de travail** : l'espace de travail fait partie de l'URL (`/workspaces/:workspaceId/…`) et accompagne chaque appel, si bien que changer d'espace de travail dans un client ne modifie que votre propre vue. Vous ne pouvez atteindre que les espaces de travail dont vous êtes membre — tout le reste est refusé par « Not a member of this workspace ». Voir [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/).
 
-## Related guides
+## Guides connexes
 
-- [Run a headless server](/fr-FR/manuel/guides/executer-serveur-sans-interface/)
-- [Pair a device](/fr-FR/manuel/guides/associer-appareil/): the phone relay path
+- [Exécuter un serveur sans interface](/fr-FR/manuel/guides/executer-serveur-sans-interface/)
+- [Associer un appareil](/fr-FR/manuel/guides/associer-appareil/) : la voie du relais téléphonique
 
-## Related concepts
+## Concepts connexes
 
-- [Deployment and clients](/fr-FR/manuel/concepts/deploiement/)
-- [Remote control and mobile](/fr-FR/manuel/concepts/controle-a-distance/)
+- [Déploiement et clients](/fr-FR/manuel/concepts/deploiement/)
+- [Contrôle à distance et mobile](/fr-FR/manuel/concepts/controle-a-distance/)

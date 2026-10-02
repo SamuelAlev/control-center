@@ -1,129 +1,140 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Pasang dan urus kemahiran
+description: Tambah repositori GitHub sebagai sumber kemahiran, layari katalognya, dan pasang, kemas kini atau nyahpasang kemahiran melalui pintu imbasan antivirus.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-kemahiran
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Panduan ini menunjukkan cara mengisi ruang kerja dengan kemahiran daripada
+GitHub: tambah repositori sebagai sumber, pasang kemahiran yang anda mahu
+daripadanya, dan pastikan semuanya terkini dari semasa ke semasa.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/ms-MY/manual-pengguna/konsep/model-ejen/); this page stays
-on the doing.
+Perkara penting yang perlu anda tahu sebelum bermula: **repositori sumber tidak
+dipercayai.** Nama, penerangan dan bilangan bintangnya ditulis oleh sesiapa
+sahaja yang memilikinya. Satu-satunya isyarat keselamatan yang dipercayai oleh
+Control Center ialah keputusan imbasan antivirus, yang dilalui oleh setiap
+pemasangan sebelum apa-apa pun sampai ke cakera atau prompt ejen. Jika anda
+mahukan alasannya, baca
+[bahagian kemahiran dalam model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/);
+halaman ini kekal pada praktiknya.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Kemahiran berada di **Tetapan → Ruang kerja → Kemahiran**
+(`/workspaces/<id>/settings/workspace/skills`). Ia berskop ruang kerja: kemahiran
+yang anda pasang di sini hanya milik ruang kerja ini. Halaman ini mempunyai dua
+tab: **Dipasang** (kemahiran setempat, termasuk penyunting **Kemahiran baharu**)
+dan **Sumber** (katalog GitHub). Kedua-dua operasi tulis melalui pintu imbasan
+yang sama.
 
-## Add a skill repository
+## Tambah repositori kemahiran
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Buka **Tetapan → Ruang kerja → Kemahiran** dan tukar ke tab **Sumber**.
+2. Tekan **Tambah repositori**.
+3. Tampal URL repositori GitHub, contohnya `https://github.com/anthropics/skills`,
+   dan sahkan.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Pelayan menyemak bahawa repositori itu wujud dan kelihatan dengan kelayakannya,
+kemudian menambahkannya ke rel kiri. Tiada kedai yang dikurasi di
+tengah-tengahnya: mana-mana repositori GitHub boleh digunakan, yang juga
+bermakna reputasinya terpulang kepada anda untuk menilai — bilangan bintang
+hanyalah bukti, bukan jaminan.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Kemahiran sesuatu repositori ialah direktori yang mengandungi `SKILL.md`
+(sehingga tiga peringkat dalam, ditambah susun atur pasaran plugin Claude
+`plugins/<plugin>/skills/<skill>`, dengan pokok kebergantungan dan vendor
+dilangkau). Jika grid kemudian menyatakan repositori itu tiada kemahiran,
+itulah maksudnya: tiada direktori di dalamnya yang sepadan dengan konvensyen
+kemahiran.
 
-## Inspect a skill before installing
+## Periksa kemahiran sebelum memasang
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Pilih repositori dalam rel; kemahirannya muncul sebagai grid di sebelah kanan,
+dengan medan penapis di atasnya yang menyempitkan katalog mengikut nama,
+penerangan atau slug. Klik kad untuk membuka paparan butiran. Ia menunjukkan
+tiga perkara:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**, dipaparkan sebagai markdown — `README.md` direktori kemahiran
+  itu, atau isi `SKILL.md` apabila tiada README.
+- **Pratonton imbasan** — keputusan (`pass`, `warn` atau `quarantine`),
+  keupayaan yang diisytiharkan oleh kandungan kemahiran itu (menjalankan shell,
+  menulis fail, akses rangkaian…) dan setiap penemuan yang direkodkan oleh
+  pengimbas.
+- **Bilangan fail** — pemasangan menulis keseluruhan direktori kemahiran itu,
+  bukan hanya `SKILL.md`-nya.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Pratonton mengimbas bait-bait tepat yang akan ditulis oleh pemasangan, jadi
+keputusan yang anda lihat ialah keputusan yang akan diterima oleh pemasangan;
+tiada apa-apa dinilai semula di belakang anda.
 
-## Install a skill
+## Pasang kemahiran
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Buka paparan butiran kemahiran itu.
+2. Baca keputusan imbasan. Untuk keputusan `warn` atau `pass`, tekan **Pasang**.
+3. Untuk keputusan `quarantine`, butang pasang kekal dilumpuhkan sehingga anda
+   tandakan **Saya faham risikonya — pasang juga**. Pengatasan itu direkodkan,
+   bukan diandaikan.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+Pemasangan menulis direktori kemahiran itu ke dalam ruang kerja, merekodkan
+sematan dalam `skills-lock.json` (repositori sumber, laluan, commit asalnya dan
+hash kandungan), lalu kemahiran itu menjadi tersedia kepada ejen dalam ruang
+kerja tersebut. Kad bertanda **Nama sedang digunakan** bermakna kemahiran lain
+sudah memiliki nama itu secara setempat — nyahpasang kemahiran itu dahulu.
 
-## Update skills over time
+## Kemas kini kemahiran dari semasa ke semasa
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Kad untuk kemahiran yang dipasang membawa lencana: **Dipasang**, atau **Kemas
+kini tersedia** apabila repositori itu sudah melepasi commit yang anda sematkan.
+Buka paparan butiran dan tekan **Kemas kini** untuk mengambil semula pada commit
+baharu. Kemas kini melalui pintu imbasan yang sama seperti pemasangan —
+kemahiran yang versi baharunya dikuarantin akan ditolak dan versi yang anda
+miliki kekal tidak berubah. Hash versi lama disimpan sebagai rujukan rollback
+dalam fail lock itu.
 
-## Uninstall a skill, remove a repository
+## Nyahpasang kemahiran, buang repositori
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Nyahpasang** (pada paparan butiran kemahiran yang dipasang, atau padam dalam
+tab Dipasang) membuang direktori kemahiran itu berserta sematannya dalam fail
+lock sekali gus — kemahiran yang dinyahpasang tidak meninggalkan apa-apa pun.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Membuang repositori** dari rel hanya membuang katalognya: kemahiran yang anda
+pasang daripadanya kekal dipasang dan masih dikemas kini, kerana sematan
+merekodkan repositori itu mengikut nama dan bukan mengikut rujukan kepada entri
+sumbernya. Tambah semula repositori itu jika anda mahu melayarinya lagi.
 
-## Invoke a skill
+## Panggil kemahiran
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Kemahiran dipanggil di bawah namespace-nya sendiri, jadi ia tidak pernah
+bercanggah dengan perintah slash terbina (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — kemahiran yang dipasang dalam ruang kerja ini, atau yang
+  dilampirkan pada ejen
+- `/skill:<repo>:<name>` — kemahiran yang disertakan oleh repo yang
+  di-checkout dalam ruang ini
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Nama bukan terbina tanpa awalan masih tetap dikenali, untuk mesej yang ditulis
+sebelum namespace itu wujud. `/skill:plan` itulah yang sampai kepada kemahiran
+bernama `plan`; `/plan` sentiasa terbina.
 
-## Repo-scoped skills
+## Kemahiran berskop repositori
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Repo yang di-checkout boleh menyertakan kemahirannya sendiri, dalam
+`.agents/skills/`, `.agent/skills/`, `.claude/skills/`, `.opencode/skills/`
+atau `skills/`. Semua itu **tidak** dipasang melalui halaman ini. Ejen hanya
+membawa kemahiran repo tempat ia sedang bekerja; kemahiran itu bertukar apabila
+ia berpindah. Penggubah mesej tidak diskop begitu: `/skill:<repo>:<name>` sampai
+kepada mana-mana repo dalam ruang itu.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Kemahiran repo melalui imbasan menolak secara lalai yang sama (`pass` / `warn` /
+`quarantine`) sebelum frontmatter-nya sampai ke prompt. `warn` diterima;
+`quarantine` ditahan, tanpa pengatasan operator pada laluan itu.
 
-See [Repo-scoped skills](/ms-MY/manual-pengguna/konsep/model-ejen/#repo-scoped-skills) and
-[Slash commands](/ms-MY/manual-pengguna/rujukan/perintah-slash/).
+Lihat [Kemahiran berskop repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#repo-scoped-skills) dan
+[Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/).
 
-## Related guides
+## Panduan berkaitan
 
-- [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/)
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/)

@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Pipeline-lépésfajták
+description: Referencia a pipeline-lépések fajtáihoz, a lépéstörzsek kulcsaihoz, azok konfigurációjához és a lépéseredményekhez.
 slug: hu-HU/kezikonyv/referencia/pipeline-lepesek
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Egy pipeline-lépésnek két egymástól független tengelye van:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Fajta** (`StepKind`) — hogyan _ütemezi_ a motor a lépést az eseményindítóihoz képest.
+- **Törzskulcs** (`BuiltInBodyKeys`) — melyik regisztrált törzs-closure _végzi_ a lépés munkáját.
 
-## Step kinds
+## Lépésfajták
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+A `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart` fájlban definiálva.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| Fajta      | Ütemezési szemantika                                                                                                                                                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | Kötelező belépési pont — sablononként pontosan egy, mindig az első csomópont. Maga nem végez munkát; azt, hogy mi indítja a futtatást (kézi / esemény / ütemezés), külön `PipelineTrigger` sorok követik. A törzse a semmittevő `pipeline.trigger`. |
+| `listen`   | Akkor sül el, amikor az összes forráslépés (a `StepTrigger.sourceStepIds`-ban) befejeződik.                                                                                                                                               |
+| `join`     | Akkor sül el, amikor a `waitForStepIds` összes lépése végállapotba kerül.                                                                                                                                                                |
+| `router`   | Feltételes elágazás — a törzs `StepResult.route(key)` értéket ad vissza, amely csak az ahhoz illeszkedő `routeKey`-ű alsóbb élt tüzeli; a ki nem választott ágak kihagyottként jelölődnek meg.                                           |
+| `forEach`  | A `listen`hez hasonlóan ütemeződik (akkor sül el, amikor az összes `sourceStepIds` befejeződik). A regisztrált `flow.forEach` törzs az, amely iterál; a motor nem indít elemenként egy gyermeklépést.                                     |
+| `terminal` | Törzs nélküli ütemező-őrszem. A pipeline-futtatás akkor fejeződik be, amikor egy terminál lépés befejeződik.                                                                                                                               |
 
-## Step bodies
+## Lépéstörzsek
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+A `BuiltInBodyKeys` konstansaival kulcsolt, regisztrált törzs-closure-ök (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Számuk 25, mindegyik alább szerepel. A konfiguráció — hacsak másképp nem jelezzük — a lépés `PipelineNodeConfig`jából olvasódik (lásd alább); az „állapotkulcsok” végrehajtáskor a pipeline állapotából / trigger payloadjából olvasódnak.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Egy lépés, amelynek `bodyKey`-je nincs regisztrálva, figyelmeztetést ad a sablon betöltésekor, majd soha nem fut le — a futtatást nem buktatja meg. A `trigger` és a `terminal` lépés mentesül ez alól a figyelmeztetés alól: a trigger továbbra is lefuttatja a semmittevő `pipeline.trigger` törzset; a `terminal` lépésnek nincs törzse.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+A kötelező `trigger` csomópont semmittevő törzse — azonnal befejeződik, hogy a motor elindíthassa az alsóbb figyelőket. Nincs konfigurációja.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Ügynök nélküli shell-lépés (`bash -c`). A szkript `{{key}}` helyőrzői az állapotból és a trigger payloadjából, shell szerint escape-elt értékekkel helyettesítődnek.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Konfigurációs mező | Leírás                                           |
+| ------------------ | ------------------------------------------------ |
+| `script`           | Végrehajtandó shell-parancs (kötelező)           |
+| `outputKey`        | Állapotkulcs, amely 0-s kilépésnél a levágott stdoutot kapja |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+A cwd a `<cc_root>/pipelines/<pipelineRunId>/` (ezt egy futtatás összes bash-lépése megosztja), a környezetben pedig ott van a `GITHUB_TOKEN`. Emellett a `<stepId>_runDir` értéket is az állapotba írja. A nem nulla kilépés a stderr utolsó soraival megbuktatja a lépést.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Általános prompt-és-kiosztás csomópont: rendereli a promptot, elindítja az ügynököt egy beszélgetésbe, majd felfüggeszti magát, amíg a futtatás be nem fejeződik. Az ügynök `submit_output` payloadja az `outputKey` alatt begyűjtődik az állapotba.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Konfigurációs mező         | Leírás                                                        |
+| -------------------------- | ------------------------------------------------------------- |
+| `agentId`                  | A kiosztandó, munkaterület-hatókörű ügynök UUID (kötelező)    |
+| `prompt`                   | Utasításszöveg; támogatja a `{{key}}` helyettesítést (kötelező) |
+| `outputKey`                | Állapotkulcs a begyűjtött kimenetnek                          |
+| `outputSchema`             | JSON-séma, amelynek a kimenetnek meg kell felelnie            |
+| `label`                    | A vásznon megjelenő címke                                     |
+| `extras.spaceId`           | Létező beszélgetés, amelyben dolgozni kell (alapértelmezés: egy rejtett) |
+| `extras.conversationTitle` | Nevesített adatfolyam azon a téren belül (nem kötelező)       |
+| `extras.mode`              | Annál a csomópontnál olvasódik, amelyik *megnyitja* a szobát (`messaging.createSpace`), nem itt. Alapértelmezés: `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Routertörzs — beolvassa a `config.extras` értéket, kiértékel egy feltételt, és `StepResult.route(key)` értéket ad vissza. A feltételek **nem** JavaScript-kifejezések; három szerzői alak támogatott, elsőbbségi sorrendben:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Predikátumfa** (`extras.predicate`) — logikai fa, amely `"true"` / `"false"` útvonalra visz. Minden csomópont egy `type` mezővel rendelkező map:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — igaz, ha bármelyik felsorolt útvonal létezik a lemezen; a `negate` megfordítja; a `recursive` az alkönyvtárakat is átkutatja (kihagyva a `.git`, `node_modules`, `build`, `.dart_tool` könyvtárat). A relatív útvonalak a `state[baseKey]`-hez (alapértelmezés: `repo_local_path`) képest oldódnak fel, egyébként a futtatásonkénti munkaterület-könyvtárhoz képest.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operátorok: `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; a pipeline állapotát olvassa, nem a fájlrendszert.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — logikai csoportok.
+  - `{"type": "not", "of": <predicate>}` — tagadás.
+- **Kapcsoló** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; arra az első esetre visz, amelyet az állapotérték kis-nagybetűtől függetlenül tartalmaz, egyébként a `default`-ra.
+- **Összehasonlítás** (örökölt, legfelső szintű `extras.left` / `extras.op` / `extras.right`) — egyenértékű egy `comparison` predikátummal, a fa előtt szerződött sablonok miatt megőrizve.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+A csomópontból kimenő élek `routeKey`-t hordoznak, amelynek egyeznie kell a visszaadott kulccsal.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+A konszolidált megállapításokat PR-átnézési hozzászólásként teszi közzé a GitHub PR-kliensen keresztül.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Állapotkulcs              | Leírás                                        |
+| ------------------------- | --------------------------------------------- |
+| `repo_full_name`          | `owner/repo` (kötelező)                       |
+| `pr_number`               | PR-szám — int vagy numerikus sztring (kötelező) |
+| `consolidated_findings`   | A hozzászólás törzse (kötelező)               |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+`StepResult.terminal` értéket ad vissza, az állapotban `comment_review_id` és `commented_at` kulccsal.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Üzenetet tesz közzé egy üzenetküldő térben a `MessagingPort`on keresztül.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Állapotkulcs | Leírás                                                     |
+| ------------ | ---------------------------------------------------------- |
+| `space_id`   | Cél-tér (kötelező)                                          |
+| `content`    | Az üzenet törzse, szó szerint az állapotból beolvasva (kötelező) |
 
-Writes `posted_space_id` and `posted_at` to state.
+A `posted_space_id` és a `posted_at` értéket az állapotba írja.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Egy egész csapatot oszt ki egyetlen ügynök helyett, majd felfüggeszti magát, amíg a tagok futtatásai be nem fejeződnek.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Konfigurációs mező                          | Leírás                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `teamId`                                    | A kiosztandó, munkaterület-hatókörű csapat (kötelező; kölcsönösen kizárja az `agentId`-t)                |
+| `prompt`                                    | Célszöveg; támogatja a `{{key}}` helyettesítést (kötelező)                                               |
+| `dispatchMode`                              | `allParallel` (alapértelmezés — tagonként egy feladat) vagy `manager` (csak a vezetőt osztja ki, hogy koordináljon) |
+| `outputKey`                                 | Állapotkulcs a begyűjtött tagkimeneteknek                                                                |
+| `outputSchema`, `label`, `extras.spaceId` | Mint a `conversation.promptAgent` esetében                                                                 |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Jóváhagyási kapu. Elindítja a jóváhagyó ügynököt egy beszélgetésbe (átnézési mód) a kapu promptjával és egy `{decision, reason}` kimeneti szerződéssel, majd felfüggeszti magát, amíg a jóváhagyó be nem küldi a választ a `submit_output` híváson keresztül.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| Konfigurációs mező          | Leírás                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `agentId`                   | A jóváhagyó ügynök (kötelező)                                                    |
+| `prompt`                    | A kapu promptja (nem kötelező; hiányában egy alapértelmezett lép a helyére)      |
+| `outputKey`                 | Állapotkulcs a begyűjtött `{decision, reason}` payloadnak                        |
+| `outputSchema`              | Alapértelmezésben egy jóváhagyási séma (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId` | Mint a `conversation.promptAgent` esetében                                          |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+A kapu kizárólag a `submit_output` híváson keresztül oldódik fel. A `BuiltInBodyKeys.humanGate`, a csomóponttípus-könyvtár és egy beépített sablon promptszövege egyaránt `approve_step` és `reject_step` MCP-eszközöket nevez meg; **egyik eszköz sem létezik** egyetlen csomagban vagy regisztrériumban sem.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Eltávolítja az elavult, elszigetelt worktree-ket; a módját a trigger payloadjából választja. Tiszteletben tartja a futtatás `dryRun` kapcsolóját.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Állapotkulcs                  | Leírás                                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| `ticket_id`                   | Felszabadítja az adott jegy worktree-jeit                                              |
+| `repo_full_name` + `pr_number` | Felszabadítja a rövid életű PR-szerkesztő worktree-t                                  |
+| `space_id`                    | Lebontja az adott beszélgetés worktree-jeit és mappáját                                |
+| (a fentiek egyike sem)        | Végigsöpri a munkaterületet: eltűnt könyvtárak, halott terek, árva beszélgetésmappák    |
 
-`outputKey` (optional) receives a summary string.
+Az `outputKey` (nem kötelező) egy összegző sztringet kap.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Leképezés / fan-out egy állapotgyűjtemény fölött: elemenként egyszer rendereli a promptot, majd **egyszer** osztja ki az ügynököt az így összefűzött promptokkal (`---` elválasztókkal), és felfüggeszti magát, amíg az a futtatás be nem fejeződik. Egy üres gyűjtemény azonnal befejeződik egy üres listával. Ez nem elemenkénti párhuzamos kiosztás.
 
-| Config field         | Description                                                     |
+| Konfigurációs mező   | Leírás                                                          |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Elemenként kiosztandó ügynök (kötelező)                         |
+| `prompt`             | Elemenkénti prompt; támogatja a `{{key}}` helyettesítést (kötelező) |
+| `extras.iterableKey` | A gyűjteményt tartó állapotkulcs (kötelező)                     |
+| `extras.itemKey`     | Kulcs, amelyhez az aktuális elem a promptban kötődik (alapértelmezés: `item`) |
+| `outputKey`          | Állapotkulcs a begyűjtött kimenetnek (egy kiosztás, nem lista)  |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Egy másik pipeline-sablont futtat beágyazott al-lépésként (az al-pipeline gyermekfuttatásként fut, beállított `parentPipelineRunId`-vel). A lépés felfüggeszti magát, amíg a gyermek végállapotba nem kerül, majd a gyermek végleges állapota az `outputKey` alá fésülődik.
 
-| Config field        | Description                                                     |
+| Konfigurációs mező  | Leírás                                                          |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | A futtatandó gyermeksablon (kötelező; egy pipeline nem hívhatja meg önmagát) |
+| `inputKeys`         | A gyermek trigger payloadjába másolt állapotkulcsok             |
+| `outputKey`         | Állapotkulcs a gyermek összefésült végleges állapotának         |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Háttérbeli tree-sitter indexelés: bejár egy repót, worker-izolátumokban szimbólumokat/éleket nyer ki, és beolvasztja őket a munkaterület kódgráfjába. A folyamatjelzést a lépésfuttatási sorba streameli; támogatja a száraz futtatást. A tree-sitter és a nyelvtanai kötelező natívok — egy hiányzó dylib azt jelenti, hogy a szerver soha nem indult el, egy futás közben fel nem oldható nyelvtan pedig kihagyás helyett megbuktatja a lépést.
 
-| State key         | Description                           |
-| ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| Állapotkulcs      | Leírás                               |
+| ----------------- | ------------------------------------ |
+| `repo_id`         | Indexelendő repó (kötelező)          |
+| `repo_local_path` | A checkout helyi útvonala (kötelező) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Offline beszélőszétválasztás. Beolvassa a megbeszélés megőrzött hangját, beszélőkre csoportosítja (`Person 1`, `Person 2`, …), újracímkézi az átirat szegmenseit és újraírja a `transcript` állapotot; emellett `diarization_spans` értéket bocsát ki a párhuzamos `meeting.updateTranscript` lépésnek. Az átiratot változatlanul engedi át, ha nem őrződött meg hang, vagy a modellek nincsenek telepítve.
 
-| State key     | Description                   |
+| Állapotkulcs  | Leírás                        |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | A szétválasztandó megbeszélés (kötelező) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Determinisztikus, megbeszélés-összefoglalót mentő törzsek. Mindegyik beolvassa az állapotból a `meeting_id`-t és az ügynöklépés strukturált `meeting_outcome` payloadját (`{summary, enhancedNotes, actionItems[], decisions[]}`), és a saját táblájába írja a maga részét — a jegyzeteket, a teendőket vagy a döntéseket. A korábban mentett sorok egy degradált futtatás során sem törlődnek soha.
 
-### Other built-in bodies
+### Egyéb beépített törzsek
 
-| Body key                           | Description                                                                                                                                                                              |
+| Törzskulcs                         | Leírás                                                                                                                                                                                   |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Megbeszélések közötti beszélőfelismerés: a szétválasztott beszélőket a mentett hangprofilokhoz illeszti, és a magabiztos egyezéseket automatikusan alkalmazza. Profilok/beágyazások nélkül semmittevő. |
+| `meeting.updateTranscript`         | A `diarization_spans`-ból származó `Person N` címkéket alkalmazza, és az ablakonkénti töredékeket beszélőnkénti megszólalásokká vonja össze, majd elmenti a megtisztított átiratot. Ha a szétválasztás nem hozott létre semmit, semmittevő. |
+| `meeting.assemblePlayback`         | A megbeszélés kevert lejátszási sávját állítja össze a megőrzött, csatornánkénti WAV-okból. Ha nem őrződött meg hang, semmittevő.                                                          |
+| `orchestration.markPhase`          | A munka-DAG végén hiba-őrszemeket ír azon aljegyekhez, amelyeknek nincs kimenetük, és az orchestrációt `synthesizing` állapotra billenti.                                                |
+| `orchestration.persistDeliverable` | Az összegzés kimenetét a szülőjegybe írja, befejezi azt, közzéteszi a szállítandót, és az orchestrációt `completed` állapotúnak jelöli.                                                    |
+| `orchestration.awaitApproval`      | Részleges jóváhagyási kapu: azonnal befejeződik, ha a lépés csomópontkulcsa benne van az orchestráció jóváhagyott halmazában, egyébként felfüggeszti magát, amíg egy későbbi jóváhagyás fel nem ébreszti. Ez az egyetlen törzs, amely beállítja az `extras.awaitApproval` értéket, ami mentesíti a 24 órás felfüggesztett lépés időtúllépése alól. |
+| `messaging.createSpace`            | Megnyitja azt a beszélgetést, amelyben a sablon többi része dolgozik, a lépés `outputKey`-je alatt közzétéve (a beépítettek a `pipeline_space_id`-t használják). Egy üres `repoIds` lista egyet sem checkoutol; az `extras['allRepos']` a munkaterület minden repóját checkoutolja. Az `extras['createConversation']` (alapértelmezésben kikapcsolva) egy nevesített adatfolyamot is megnyit. Egy ügynöklépés CSATLAKOZIK egy szobához, és soha nem nyit újat, így egy fan-out e csomópont nélkül a kiosztásnál megbukik — egyszeri bekötése viszont azt jelenti, hogy az egész fan-out egyetlen checkouton osztozik ahelyett, hogy mindegyik kapna sajátot. |
+| `prReview.finalize`                | A PR-átnézési sablon utolsó lépése: az összegyűlt átnézési csomópontokat konszenzuscsoportokba rendezi, és kiszámítja a PR-enkénti ítéletet.                                                    |
+| `skills.analyze`                   | Lefuttatja a készségek ellátásilánc-vizsgálatát a munkaterület telepített készségein, és rögzíti az egyes ítéleteket.                                                                     |
 
-## Step results
+## Lépéseredmények
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Egy lépéstörzs `StepResult` értéket ad vissza (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Minden gyártómetódus elfogad egy nem kötelező `mutatedState` mapet, amely a pipeline állapotába fésülődik — kivéve a `failed`-et.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Gyártómetódus               | Aláírás                                                         | Leírás                                                                    |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normál befejezés; az alsóbb figyelők kiértékelődnek                       |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router befejezés; kiválasztja azt az alsóbb ágat, amelynek `routeKey`-je illeszkedik |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Szüneteltetés, amíg egy adott domainesemény-típus el nem sül              |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Szüneteltetés, amíg a felsorolt feladatok mindegyike végállapotba nem kerül |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | A pipeline-futtatás befejeződött — nincs több lépés                       |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | A lépés meghibásodott egy hibaüzenettel                                   |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Egy meghibásodó csomóponttörzs újrapróbálkozási viselkedése (`PipelineNodeConfig.retryPolicy`; a null letiltja az újrapróbálkozásokat).
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| Mező             | Típus    | Leírás                                                                          |
+| ---------------- | -------- | ------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | A teljes kísérletszám az elsővel együtt (3 = 1 próba + 2 újrapróbálkozás); ≥ 1 kell legyen |
+| `backoff`        | `String` | `linear` vagy `exponential` (alapértelmezés)                                    |
+| `initialDelayMs` | `int`    | Az első újrapróbálkozás előtti késleltetés ezredmásodpercben; a későbbi késleltetések a `backoff` szerint nőnek |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+A lépésdefinícióban hordozott, csomópontonkénti konfiguráció (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). A beépített és az egyéni csomópontok is ezt az alakot használják; minden törzs csak azokat a mezőket olvassa, amelyek érdeklik.
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| Mező             | Típus                   | Leírás                                                                                                                                 |
+| ---------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`         | `String?`               | Prompt-sablon `{{key}}` helyettesítéssel                                                                                               |
+| `script`         | `String?`               | Bash-szkripttörzs `{{key}}` helyettesítéssel                                                                                           |
+| `agentId`        | `String?`               | A kiosztandó, munkaterület-hatókörű ügynök UUID                                                                                        |
+| `inputKeys`      | `List<String>`          | Állapotkulcsok, amelyeket ez a csomópont bemenetként fogyaszt                                                                           |
+| `repoIds`        | `List<String>`          | A `messaging.createSpace` csomópont által checkoutolt repók (`<repoId>` vagy `<repoId>@<branch>`). Üres = egy sem; `extras['allRepos']` = a munkaterület minden repója. Az ügynöklépéseken figyelmen kívül marad. |
+| `outputKey`      | `String?`               | Állapotkulcs, amely alá a csomópont kimenete íródik                                                                                     |
+| `label`          | `String?`               | A vásznon megjelenő címke (alapértelmezés: a lépés azonosítója)                                                                         |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON-séma (részhalmaz), amelynek a kimeneti értéknek meg kell felelnie                                                                  |
+| `reducer`        | `String?`               | Összefésülési stratégia, amikor párhuzamos ágak ugyanazt az `outputKey`-t írják: `append`, `mergeLists`, `mergeMaps`, `sum` vagy `override` (alapértelmezés) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Újrapróbálkozási szabályzat törzshiba esetén; null = egyetlen próba                                                                     |
+| `continueOnFail` | `bool`                  | Ha igaz, a végleges hiba nem buktatja meg a futtatást; a hiba a `state['_stepErrors'][stepId]` alatt tárolódik                          |
+| `timeoutMs`      | `int?`                  | A csomóponttörzs falióra szerinti időtúllépése ezredmásodpercben; null = nincs időtúllépés                                              |
+| `teamId`         | `String?`               | A kiosztandó csapat (`team.dispatch` csomópontok); kölcsönösen kizárja az `agentId`-t                                                   |
+| `dispatchMode`   | `String?`               | Csapat-végrehajtási mód: `allParallel` vagy `manager`                                                                                   |
+| `extras`         | `Map<String, dynamic>`  | Szabad formájú, törzsspecifikus konfiguráció (pl. `iterableKey`, `templateId`, feltételfák)                                             |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Származtatott getterek: `spaceId` (`extras['spaceId']` — létező beszélgetés, amelyben dolgozni kell), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, a teret megnyitó csomópontnál olvasódik) és `runWhen` (`extras['runWhen']` — a csomópont kihagyása, ha a feltétel nem teljesül).
 
-## See also
+## Lásd még
 
-- [Pipelines](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)
-- [Create a pipeline](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/)
-- [Pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
-- [Run a pipeline](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)
+- [Pipeline-ok](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)
+- [Pipeline létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/)
+- [Pipeline-eseményindítók](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
+- [Pipeline futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)

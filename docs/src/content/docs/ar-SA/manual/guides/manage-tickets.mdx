@@ -1,39 +1,36 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: إنشاء التذاكر وإدارتها
+description: أنشئ التذاكر، وانقلها عبر دورة حياتها، وأضف التسميات والروابط، وسجّل من يملك كل واحدة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+يبيّن هذا الدليل كيف تنشئ التذاكر وتديرها.
 
-## Create a ticket
+## إنشاء تذكرة
 
-### From the UI
+### من الواجهة
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. انقر **التذاكر** في الشريط الجانبي لمساحة العمل.
+2. انقر **تذكرة جديدة**.
+3. املأ الحقول:
+   - **العنوان** — ملخص قصير. هو الحقل الوحيد المطلوب.
+   - **الوصف** — Markdown، مع شريط تنسيق.
+   - **الحالة** — **للتنفيذ** (الافتراضي) أو **الأعمال المتراكمة**. حالات ما بعد البدء والحالات النهائية تُضبط عبر دورة الحياة، لا عند الإنشاء.
+   - **الأولوية** — بلا، عاجلة، مرتفعة، متوسطة أو منخفضة.
+   - **المُسنَد إليه** — أنت، أو أي وكيل في مساحة العمل.
+   - **المشروع** — تجميع اختياري.
+4. انقر **إنشاء**، أو فعّل **إنشاء المزيد** أولًا ليبقى الحوار مفتوحًا للإدخال السريع.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+الحوار بلا منتقي مزوّد. تُنشأ التذكرة على مزوّد التذاكر النشط في مساحة العمل.
 
-### From an agent
+### من وكيل
 
-Ask an agent in a space:
+اطلب من وكيل في مساحة:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> أنشئ تذكرة لإصلاح انتهاء مهلة تسجيل الدخول على الاتصالات البطيئة.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+يستدعي أداة MCP `create_ticket`. الأولوية في هذه الأداة **عدد صحيح**، لا اسم:
 
 ```
 create_ticket(
@@ -44,21 +41,19 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| القيمة | الأولوية |
+| ------ | -------- |
+| `0`    | بلا      |
+| `1`    | عاجلة    |
+| `2`    | مرتفعة   |
+| `3`    | متوسطة   |
+| `4`    | منخفضة   |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+لا يلزم إلا `workspace_id` و`title`. أما `description` و`priority` و`assignee` (معرّف وكيل) و`team_id` فاختيارية. تُصنَّف الأداة كتابة مزامنة إلى المورّد، وتطلب موافقتك قبل أن تعمل.
 
-## Update ticket status
+## تحديث حالة التذكرة
 
-Tickets follow this lifecycle:
+تتبع التذاكر دورة الحياة هذه:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +63,91 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done` و`failed` و`cancelled` نهائية. يُنتقَل إلى `cancelled` من أي حالة غير نهائية. يُنتقَل إلى `done` و`failed` من `inProgress` أو `inReview`، ويمكن أن تنتقل `open` مباشرة إلى `blocked`. يعرض منتقي الحالة في الواجهة كل الحالات إلا `failed`، والوكلاء يضبطونها عبر `fail_ticket`.
 
-To change it, use any of:
+لتغيير الحالة، استخدم أيًا مما يلي:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- صف **الحالة** في عمود خصائص التذكرة،
+- القائمة الفرعية **الحالة** في قائمة النقر بزر الفأرة الأيمن على التذكرة في القائمة،
+- شريحة **الحالة** في الشريط العائم بعد تحديد عدة تذاكر.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[مخطط دورة الحياة يقيّد الوكلاء، لا أنت]
+كل تغيير حالة من الواجهة يُفرَض ويتجاوز المخطط كله. يمكنك نقل التذكرة إلى أي حالة يعرضها المنتقي، ومنها إعادة فتح تذكرة `done` أو `failed` أو `cancelled`. المنتقي لا يعرض `failed` هدفًا. المخطط أعلاه يحكم الوكلاء والأتمتة: الانتقال غير الجائز الذي تحاوله أداة MCP أو خدمة مصالحة يُسجَّل ويُتجاهَل، ولا يُطبَّق.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/).
+تغييرات الحالة تنشر أحداث نطاق (`TicketStatusChanged` و`TicketCompleted` وغيرهما) يمكن أن تشغّل خطوط الأنابيب. انظر
+[إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/).
 
-## Assign a ticket
+## إسناد تذكرة
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. افتح التذكرة.
+2. في عمود الخصائص، اضبط **المُسنَد إليه**: أنت، أو عضو آخر في مساحة العمل، أو وكيل.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)).
+:::caution[الإسناد لا يبدأ أي عمل]
+الإسناد يسجّل الملكية، ويقف عند ذلك. لا ينشئ مساحة، ولا يغيّر الحالة، ولا يُرسل وكيلًا. `TicketAssigned` إشارة تدقيق خالصة، بلا موزّع خلفها. لتشغيل وكيل، راسله في مساحة
+(انظر [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+الاستثناء الوحيد: `TicketAssigned` نوع حدث يمكنك أن تربط به مشغّل خط أنابيب، فيتفاعل قالب من عندك مع الإسناد.
 :::
 
-## Add labels
+## إضافة التسميات
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+تُطبَّق التسميات دفعة واحدة من قائمة التذاكر. عمود الخصائص بلا عنصر للتسميات.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. مرّر المؤشر على صف في قائمة التذاكر وعلّم مربع اختياره. علّم ما شئت من الصفوف، فيظهر شريط عائم فور تحديد أي تذكرة.
+2. في ذلك الشريط، افتح شريحة **التسميات**.
+3. اختر تسمية. تُضاف إلى كل تذكرة محددة تخلو منها، والتسميات الموجودة تبقى. **مسح التسميات** يزيلها كلها. يعرض المنتقي التسميات الموجودة أصلًا على تذكرة في مساحة العمل. ويستطيع الوكيل إضافة اسم جديد عبر `update_ticket` أو `tickets.patch`.
 
-## Link tickets
+## ربط التذاكر
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+العلاقات في بطاقة **العلاقات** ضمن عمود الخصائص، أو خلف **ربط مع** في قائمة النقر بزر الفأرة الأيمن في القائمة.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. افتح التذكرة وابحث عن بطاقة **العلاقات**.
+2. انقر زر الإضافة فيها واختر العلاقة:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| العلاقة              | المعنى                                |
+| -------------------- | ------------------------------------- |
+| **مشكلة فرعية من…** | أصل هذه التذكرة هو التذكرة الأخرى      |
+| **أصل لـ…**          | التذكرة الأخرى مشكلة فرعية لهذه       |
+| **محظورة بواسطة…**   | هذه التذكرة محظورة بواسطة الأخرى      |
+| **تحظر…**            | هذه التذكرة تحظر الأخرى               |
+| **مرتبطة بـ…**       | متناظرة، بلا اتجاه                    |
+| **تكرار لـ…**        | هذه التذكرة نسخة مكررة من الأخرى      |
 
-3. Pick the target ticket.
+3. اختر التذكرة الهدف.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**مكرَّرة بواسطة** تظهر في البطاقة ولا تظهر في المنتقي. هي عكس **تكرار لـ**، وتُضبط من التذكرة الأخرى. كل علاقة معروضة تُفتح بالنقر على التذكرة المرتبطة، وتُزال عند تمرير المؤشر.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+علاقات الأصل والمشكلة الفرعية تُخزَّن على التذكرة نفسها، لا صفوف روابط، فحذف الأصل يتتابع إلى أبنائه (انظر أدناه)، وروابط الحظر والارتباط لا تتتابع.
 
-## Add collaborators
+## إضافة متعاونين
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+المتعاونون كشف على التذكرة: من المعنيّ، وبأي صفة.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. افتح التذكرة.
+2. انقر زر الشخص مع علامة الزائد في بطاقة **إضافة متعاون**.
+3. اختر وكيلًا.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+الأدوار الثلاثة هي **assignee** و**collaborator** (الافتراضي) و**reviewer**. منتقي الواجهة لا يسرد إلا وكلاء مساحة العمل، ويكتب دائمًا الدور الافتراضي. قد يظهر البشر صفوفًا، لكن القائمة لا تعرضهم. أداة MCP `add_ticket_collaborator` تقبل `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/).
+إضافة متعاون تكتب صفًا، ولا تنشر حدث نطاق، ولا تمنح وصولًا إلى المساحة. لإدخال وكيل في المحادثة، أضفه مشاركًا من ترويسة المساحة. انظر [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/).
 
-## Delete a ticket
+## حذف تذكرة
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+استخدم **حذف التذكرة** أسفل عمود الخصائص، أو من قائمة النقر بزر الفأرة الأيمن، أو من إجراء الحذف في الشريط العائم بعد التحديد المتعدد.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[الحذف محلي فقط]
+التذكرة الآتية من متتبع خارجي لا تُحذف هناك، فلا مزوّد يدعم ذلك، وقد تعود في المزامنة التالية. ويتتابع الحذف: يذهب معه متعاونو التذكرة وأي تذاكر فرعية.
 :::
 
-## Related guides
+## أدلة ذات صلة
 
-- [Delegate work to agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
-- [Organize work with projects](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)
-- [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
-- [Ticket lifecycle reference](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/)
+- [تفويض العمل إلى الوكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
+- [تنظيم العمل بالمشاريع](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)
+- [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
+- [دورة حياة التذكرة](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Tickets](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)

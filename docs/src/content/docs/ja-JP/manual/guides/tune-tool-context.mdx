@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: エージェントのツールコンテキストを調整
+description: 実行が実際に何を送信するのかを確認し、事前に読み込むツールを変更し、不適切なツール選択が検索ミスだったのかプロンプトの問題だったのかを見極めます。
 slug: ja-JP/マニュアル/ハウツーガイド/ツールコンテキスト調整
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ja-JP/マニュアル/コンセプト/ツールコンテキスト).
+このガイドでは、二層のツールサーフェスを扱う実務 — 実行が何を送信するかの確認、その変更、そしてエージェントが誤ったツールに手を伸ばしたときの診断 — を扱います。なぜこのような仕組みになっているのかについては、[ツールコンテキストとプロンプトキャッシュ](/ja-JP/マニュアル/コンセプト/ツールコンテキスト)をお読みください。
 
-## Look at what a run actually sends
+## 実行が実際に送信するものを確認する
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+会話を開き、会話ヘッダーのコンテキスト使用量インジケーターをタップします。これは何も実行することなく、次のディスパッチが送信するのとまったく同じサーフェスを再構築します。**さらに表示**（または `/context` コマンド）で完全なコンテキストエクスプローラーが開き、そこで各ツールを確認できます。
 
-Two segments matter here:
+ここでは 2 つのセグメントが重要です:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **ツール定義**と **MCPと動的ツール** — 常駐セットで、各ツールの実際のトークンコストが示されます。
+- **オンデマンドで読み込まれるツール** — 遅延インデックスです。各エントリに課されるのはその名前だけです。リクエストが運ぶのは名前だけだからです。エントリを開くと完全な説明とスキーマが表示されるので、実行がそれを引き込んだ場合に*どれほど*コストがかかるかを確認できます。
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli).
+遅延セグメントが空の場合、このサーバーでは遅延が無効です。[`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli) の `--tool-deferral` を確認してください。
 
-## Change which tools load up front
+## 事前に読み込むツールを変更する
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+常駐セットは設定ではなくポリシーです — それは `ModeToolPolicy`（`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`）にあり、すべての実行に適用されます:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ja-JP/マニュアル/コンセプト/モード) uses on nearly every turn.
+- `residentBuiltins` — ファイルとシェルの語彙。
+- `residentDiscovery` — `search_tools` と `list_my_tools`。これらは削除しないでください。エージェントが他のすべてに到達する手段だからです。
+- `residentMcpTools` — リクエストごとにスキーマに見合う価値がある、わずかな Control Center ツール。
+- モードごとのブロック。特定の[モード](/ja-JP/マニュアル/コンセプト/モード)がほぼ毎ターン使うツールのためのものです。
 
-Two rules when editing it:
+編集する際のルールは 2 つです:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**大半の実行が使う場合にのみツールを追加します。** すべての名前は、すべての実行のすべてのリクエストで、永久にそのスキーマ分のコストを伴います。使われるときには重要でも全体としてはまれなツールは、遅延される側に属します — エージェントはそれでもそれを見つけられます。
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**ツールの実際の名前を使用します。** どのツールにも一致しない常駐名は無効です。エラーも警告も出ず、そのツールは単に遅延されるだけです。`test/tooling/resident_tool_names_test.dart` がこれを検出し、さらに各モードを常駐ツール 40 個未満に保ちます。これがこの取り組みの要点です — その範囲を超えると、ツール選択は目に見えて悪化します。
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+モードの必須および固定の動詞は自動的に追加されるので、モード自身の出力動詞を列挙する必要は決してありません。
 
-## Diagnose a bad tool choice
+## 誤ったツール選択を診断する
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+エージェントが誤ったツールを使った、または何かを行えないと主張したときは、3 つのうちどれが起きたのかを突き止めます。
 
-### 1. Did it look?
+### 1. 探したか?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+各実行は、読み込んだ遅延ツールとそのきっかけ — 名前による直接呼び出し、または `search_tools` クエリ — を記録します。その実行のイベントストリーム（**設定 → ワークスペース → エージェント** → エージェント → **ログ** → **表示**）を開き、`[harness] loaded N deferred tool(s)` を探します。
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **何も記録されておらず、エージェントがケイパビリティが存在しないと言った** — 一度も探していません。これはプロンプトの問題であり、検索の問題ではありません。遅延インデックスはシステムプロンプトにあり、検索が空の結果を返すまでケイパビリティが存在しないと宣言しないよう指示されています。
+- **検索は記録されたが、何も読み込まれなかった** — 真の検索ミスです。手順 2 に進みます。
+- **ツールは読み込まれたが、誤ったものが使われた** — 見つかったツールが似すぎています。手順 3 に進みます。
 
-### 2. Fix a retrieval miss
+### 2. 検索ミスを修正する
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` は名前、説明、引数名で照合します。ミスはほとんどの場合、説明にエージェントが使った言葉が含まれていないことを意味します。
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+それらを追加します。説明は検索インデックスなので、**削るのではなく長くします** — 内部的な名詞だけでなく、オペレーターが実際に入力する語彙（"assign"、"hand off"、"give to"）を書きます。トークンを節約するために説明を削ると、検索ヒットと選択精度の両方を失い、スキーマに比べればほとんど節約になりません。
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+適切なツールが存在するのに順位が低い場合、そのための引数が `limit` です。ツール自身の説明が、惜しいが見つからない検索を広げるようエージェントに指示しています。
 
-### 3. Fix look-alike tools
+### 3. 似たツールを修正する
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+2 つのツールの説明が、違いをすでに知らない人には同じように読めるなら、モデルは推測しています。それらを、区別するための引数を持つ 1 つのツールに統合します。
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` と `ticket_pr_link` はこのパターンに従っています。それぞれが、区別するための引数を通じてリンクとリンク解除を処理します。1 回の呼び出しの*内部*で、リクエストの完全なコンテキストとともに行われる選択は、似た 2 つの説明の間で行われる選択よりも信頼できます。
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+異なる承認ゲート、異なる監査、または異なるレンダリングが必要な場合は、ツールを分けたままにします — これらは、統合すると実際のコストが生じる理由です。
 
-## Check the prompt cache is working
+## プロンプトキャッシュが機能していることを確認する
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+キャッシュヒット率は **オブザーバビリティ → インサイト** に **キャッシュ率** として表示されます。健全な長時間実行の会話は高い値を維持します。低い状態が続く場合、毎ターン何かがプレフィックスを書き換えています。
 
-Common causes, in order of likelihood:
+よくある原因を、可能性の高い順に示します:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **プロンプトの早い段階にある非決定的なもの。** タイムスタンプ、リクエスト ID、または順序が変わる形で反復されるセットでも起こります。
+- **会話の途中でのモデルまたは推論の程度の変更。** どちらもプレフィックスを変えます。ここでは特にサブエージェントを誤りやすいです。コストを節約するために子を低い推論の程度で実行すると、失われるキャッシュ共有のコストが節約分を上回ることがあります。
+- **頻繁な圧縮。** 圧縮は設計上履歴を書き換えるため、そのコストは実在します。対処法は、頻繁かつ浅くではなく、まれに深く圧縮することです。
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+`--tool-deferral=off` で遅延を無効にするのは、動作の変化が二層のサーフェスに由来するかどうかを切り分けるための有効な A/B です。遅延が存在する前のリクエストを正確に再現するので、無効にしても動作が続く場合、そのサーフェスが原因ではありません。

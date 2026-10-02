@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Đánh giá và chất lượng
+description: Các bộ đánh giá, bộ khởi đầu được gieo sẵn vào mỗi không gian làm việc và nơi chúng xuất hiện trong Quan sát.
 slug: vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**Bộ đánh giá** là một định nghĩa trong phạm vi không gian làm việc về một tác
+vụ cần chạy trên một agent: một prompt, một agent đích cùng chế độ, phần thiết
+lập tùy chọn, một fixture tùy chọn với SHA được ghim và một danh sách các bộ
+chấm điểm. Các bộ chấm điểm mang tính tất định trước tiên; một giám khảo LLM
+theo bảng tiêu chí sẽ đảm nhận những gì mà các kiểm tra đó không thể diễn đạt.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Năm bộ khởi đầu được gieo sẵn khi tạo một không gian làm việc. Chúng bao quát
+các đề xuất điều phối, một lượt đánh giá tìm ra lỗi đã gieo sẵn, chế độ Kế hoạch
+giữ nguyên chỉ đọc, chế độ Kế hoạch tạo ra một kế hoạch và một vòng khứ hồi của
+phiếu. Việc gieo sẵn lắng nghe `WorkspaceCreated` (`workspace.upsert` hoặc
+`workspace.create`), bỏ qua tên đã tồn tại và không điền bù cho các không gian
+làm việc cũ.
 
-## Where they appear
+## Nơi chúng xuất hiện
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Quan sát → Chất lượng** (`/workspaces/<id>/observability`) liệt kê từng bộ
+đánh giá trong không gian làm việc.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Tạo, liệt kê, sửa và xóa bộ đánh giá qua `evals.upsertSuite`,
+`evals.deleteSuite` và `evals.watchSuites`. Tab Chất lượng chính là danh sách;
+còn những thao tác đó chính là trình biên tập.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): the configuration a suite
-  pins
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/): the autonomy dial
-- [Manage costs and budgets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/): spend recorded
-  alongside a run
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): cấu hình mà một bộ đánh giá
+  ghim lại
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): núm tự chủ
+- [Quản lý chi phí và ngân sách](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/): chi phí được ghi lại
+  song song với một lần chạy

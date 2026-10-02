@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Ваше первое рабочее пространство
+description: Создайте рабочее пространство, зарегистрируйте в нём репозиторий и посмотрите на границу изоляции своими глазами.
 slug: ru-RU/руководство/учебники/первое-рабочее-пространство
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Что вы создадите
 
-By the end of this tutorial, you will have:
+К концу этого руководства у вас будет:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- рабочее пространство, названное по вашему проекту;
+- зарегистрированный в нём репозиторий Git;
+- пять заложенных агентов, один из которых настроен достаточно, чтобы запуститься;
+- второе, пустое рабочее пространство, которое доказывает границу изоляции.
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Онбординг уже создал вам рабочее пространство. В этом руководстве мы намеренно создаём новое, чтобы вы увидели каждую часть процесса.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Прежде чем начать, выберите рабочую копию Git, удовлетворяющую всем трём условиям, — на шаге регистрации всё остальное отклоняется:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- она находится внутри рабочего дерева git;
+- у неё есть удалённый репозиторий `origin`;
+- этот удалённый репозиторий указывает на github.com, gitlab.com или bitbucket.org.
 
-## Step 1: Create a workspace
+## Шаг 1. Создайте рабочее пространство
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Нажмите чип рабочего пространства в строке заголовка
+2. Выберите **Добавить рабочее пространство…**
+3. Введите имя, идентифицирующее проект, например «api-service» или «frontend-v2»
+4. При желании выберите логотип
+5. Нажмите **Добавить рабочее пространство**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center переключается на новое рабочее пространство и открывает его входящие (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+За этим сервер публикует событие `WorkspaceCreated` и закладывает в рабочее пространство:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **агента CEO**, чья персона — координация и делегирование;
+- четырёх специалистов — `qa`, `architect`, `engineer` и `librarian` — каждого со своими инструкциями и навыками;
+- встроенные шаблоны конвейеров и их строки триггеров.
 
-Every workspace you create gets all of this, not just the first one.
+Всё это получает каждое созданное вами рабочее пространство, а не только первое.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+**Контрольная точка.** Откройте **Настройки → Рабочее пространство → Агенты**. В списке пять агентов, у каждого — пустое кольцо статуса.
 
-## Step 2: Register a repository
+## Шаг 2. Зарегистрируйте репозиторий
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Перейдите в **Настройки → Рабочее пространство → Репозитории**
+2. Нажмите **Добавить репозиторий**
+3. Перейдите к своей рабочей копии. Диалог обходит папки на машине, где запущен `cc_server`, а не на вашем клиенте, и остаётся внутри корней, которые предоставляет этот сервер (по умолчанию — домашний каталог его пользователя). Рабочая копия git получает отдельный значок папки и флажок; обычная папка не получает ни того, ни другого, поэтому выбрать можно только рабочие копии.
+4. Отметьте одну или несколько рабочих копий и зарегистрируйте их пакетом. Выбор сохраняется при навигации, поэтому за один проход можно собрать несколько копий, и одна неудачная отметка никогда не сбрасывает остальные.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center считывает у каждой рабочей копии удалённый репозиторий `origin`, определяет владельца и репозиторий и создаёт строку репозитория **внутри этого рабочего пространства**. Второго шага для связывания нет: именно регистрация задаёт область действия.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Если позже зарегистрировать ту же рабочую копию в другом рабочем пространстве, появится вторая, независимая строка репозитория со своим идентификатором. Между рабочими пространствами рабочая копия определяется путём в файловой системе, но никогда — идентификатором.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+**Контрольная точка.** Репозиторий появляется в списке со своим `owner/repo` и текущей ветвью.
 
-## Step 3: Make one agent runnable
+## Шаг 3. Сделайте одного агента готовым к запуску
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+У пяти агентов, только что заложенных в это рабочее пространство, нет ни адаптера, ни модели. Диспетчеризация запускает их на **Control Center (built-in)** и, если модель не задана, запрашивает у Anthropic модель по умолчанию — поэтому они работают, только если вы подключили аккаунт Anthropic, и на модели, которую вы не выбирали, если подключили. Онбординг при первом запуске однократно закрепляет свой выбор за каждым агентом первого рабочего пространства; рабочее пространство, созданное после этого, начинает работу со всеми пятью агентами без заданных адаптера и модели. Задайте одного сейчас.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Откройте **Настройки → Рабочее пространство → Агенты**
+2. Выберите `engineer` в списке
+3. На вкладке **Настройки** в поле **Адаптер** укажите `Control Center (built-in)` и выберите **Модель** у провайдера, подключённого в разделе Настройки → Сервер → Провайдеры моделей
+4. Нажмите **Сохранить изменения**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+**Контрольная точка.** Откройте агента снова — оба поля сохраняют ваш выбор.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ru-RU/руководство/практические-руководства/создать-агента/) covers the rest of the form.
+Каждый агент несёт собственные адаптер и модель, поэтому повторите это для любого другого агента, которого собираетесь использовать. Остальные поля формы разобраны в разделе [Создать и настроить агента](/ru-RU/руководство/практические-руководства/создать-агента/).
 
-## Step 4: See the isolation boundary
+## Шаг 4. Посмотрите на границу изоляции
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Создайте второе рабочее пространство с помощью чипа в строке заголовка — точно так же, как на шаге 1. Затем посмотрите на него:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- Раздел **Настройки → Рабочее пространство → Репозитории** пуст. Репозитория, зарегистрированного минуту назад, там нет.
+- В разделе **Настройки → Рабочее пространство → Агенты** пять агентов, но это другие строки: адаптер, заданный на шаге 3, исчез.
+- Список пространств, тикеты и память пусты.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Ничего не утекло, потому что утекать неоткуда: строки каждого рабочего пространства живут в его собственном файле базы данных. Чтение между рабочими пространствами — это не запрос, который фильтруется, а запрос, которому негде выполняться. Удаление рабочего пространства — это удаление ссылки на файл.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Переключитесь обратно чипом в строке заголовка или откройте **Управлять рабочими пространствами**, чтобы увидеть их рядом.
 
-For the full model, read [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/).
+Полная модель описана в разделе [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/).
 
-## Recap
+## Итоги
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Вы создали рабочее пространство, увидели, как оно закладывает агента CEO и четырёх специалистов, зарегистрировали в нём репозиторий, дали одному агенту адаптер и модель и убедились, что второе рабочее пространство не делит с ним ничего из этого.
 
-**Next:** [Dispatch your first agent](/ru-RU/руководство/учебники/первый-агент/) to put the workspace to work.
+**Далее:** [Запустите первого агента](/ru-RU/руководство/учебники/первый-агент/), чтобы пустить рабочее пространство в работу.

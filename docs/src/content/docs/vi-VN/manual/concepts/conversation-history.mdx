@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Lịch sử hội thoại
+description: Cách một lượt chạy giữ lại, gấp gọn, tách nhánh và khôi phục ngữ cảnh của nó — các chiến lược nén, cây phiên, và “khôi phục” thực sự nghĩa là gì.
 slug: vi-VN/so-tay/khai-niem/lich-su-hoi-thoai
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Một cuộc hội thoại dài sẽ đụng phải một bức tường cứng: cửa sổ ngữ cảnh của mô hình. Mọi thứ trên trang này tồn tại vì bức tường đó, và phần thú vị nằm ở chỗ cái gì bị vứt đi, cái gì được giữ lại, và cái gì có thể lấy lại được.
 
-## Four ways to reclaim context
+## Bốn cách thu hồi ngữ cảnh
 
-They are not alternatives so much as a ladder, cheapest first.
+Chúng không hẳn là những lựa chọn thay thế cho nhau mà giống một cái thang hơn, rẻ nhất trước.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| Cơ chế         | Chi phí        | Giữ lại                              | Mất đi                            |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **Lược bỏ**    | Không gì       | Mọi từ của bản tường thuật           | Kết quả công cụ cũ không có gì đáng chú ý |
+| **Bỏ bớt hình ảnh** | Không gì  | Phần văn bản xung quanh chúng        | Ảnh chụp màn hình cũ              |
+| **Ảnh chụp nhanh** | Không gì    | Mọi từ, dưới dạng điểm ảnh           | Khả năng đọc được đối với mô hình không có thị giác |
+| **Tóm tắt**    | Một lần gọi mô hình | Một bản tường thuật             | Những chi tiết nó không chọn      |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Lược bỏ và bỏ bớt hình ảnh chạy trước vì chúng miễn phí và không mất mát theo đúng cách quan trọng: chúng loại đi khối lượng mà không ai định đọc lại.
 
-### Why summarizing is the last resort
+### Vì sao tóm tắt là phương án cuối cùng
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Tóm tắt là cách duy nhất trong bốn cách **tiêu tốn một lần gọi mô hình** và cũng là cách duy nhất **quyết định thay bạn** điều gì là quan trọng. Cả hai đều là chi phí thật. Lần gọi mô hình là điểm đáng bàn hơn, vì thời điểm nó diễn ra.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Việc nén thường chạy *trước* khi chạm bức tường, theo một ngưỡng. Nhưng nó cũng chạy **theo phản ứng**, sau khi chính nhà cung cấp từ chối một yêu cầu vì quá lớn — ước lượng theo kinh nghiệm đã đếm thiếu so với mức nhà cung cấp thực sự đo được. Trong tình huống đó, bộ nén kiểu tóm tắt phải gửi một yêu cầu để thu nhỏ ngữ cảnh, mà yêu cầu nó gửi lại chính là yêu cầu vừa bị tràn.
 
-### Snapshots
+### Ảnh chụp nhanh
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Nén bằng ảnh chụp nhanh kết xuất phần lịch sử bị loại bỏ lên những trang dày đặc ký tự điểm ảnh rồi trả lại chúng dưới dạng hình ảnh.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Tiền đề nằm ở một điểm lạ trong cách tính phí: mô hình có thị giác tính phí cho một hình ảnh theo mức cố định hoặc theo diện tích, không liên quan gì đến số ký tự có trong đó. Mười hai nghìn ký tự hội thoại bị loại bỏ tốn lượng token văn bản tương đương mười hai nghìn ký tự. Cùng số ký tự đó, khi kết xuất lên một trang, chỉ tốn một hình ảnh.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Điều khiến nó đáng có chứ không chỉ là một mẹo hay là nó cần **không lần gọi mô hình, không khóa và không mạng**. Đây là chiến lược duy nhất luôn sẵn dùng trong quá trình khắc phục tràn ngữ cảnh.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Hình dạng tái dựng là: phần đầu nguyên văn, phần giữa dưới dạng hình ảnh, phần cuối nguyên văn. Phần đầu là nhiệm vụ và những ràng buộc mà mọi thứ phía sau đều tham chiếu tới; phần cuối là nơi công việc đang diễn ra. Phần giữa là chỗ ít được đọc lại nhất mà tốn kém nhất.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Nó xuống cấp một cách trung thực]
+Một mô hình không có thị giác không thể đọc những trang điểm ảnh, và việc kết xuất văn bản thành thứ không gì có thể nhìn vào không phải là một dạng nén suy giảm — đó là một cuộc hội thoại bị xóa. Vậy nên khả năng của bên đọc quyết định, và mô hình không có thị giác luôn nhận bản tóm tắt.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Hình dạng trang được định giá theo API, chứ không theo trọng số]
+Gemini tính phí cố định cho mỗi hình ảnh, nên mỗi ký tự thêm trên trang đều miễn phí và các trang của nó rộng nhất. OpenAI và Anthropic tính phí theo diện tích, nên một trang lớn hơn chẳng mua được gì. Một số bộ xử lý giảm độ phân giải khi vượt một ngưỡng, âm thầm phá hủy các ký tự 5 pixel, nên trang của chúng luôn nằm dưới ngưỡng đó. Một Claude được phục vụ qua cổng nối thì bị tính phí bởi cổng nối, nên hình dạng đi theo model id đúng như tuyến đường gọi tên nó.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Ảnh chụp nhanh được kết xuất lại từ **văn bản nguồn được giữ lại** ở mỗi lượt, không bao giờ từ điểm ảnh của lượt trước. Chụp ảnh lên một hình ảnh sẽ làm các ký tự suy giảm một thế hệ mỗi lần nén cho đến khi không gì đọc được chúng.
 
-## What a run actually resumes from
+## Một lượt chạy thực sự khôi phục từ đâu
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Trước đây, mỗi lượt chạy của khung thực thi đều bắt đầu từ lịch sử rỗng và dựng lại mạch liên tục từ một khối `<context>` trong prompt — một *bản tóm tắt* cuộc hội thoại chứ không phải chính cuộc hội thoại. Ba hệ quả kéo theo từ đó:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Khôi phục chỉ là kể lại.** Mô hình không bao giờ thấy lập luận trước đó của chính nó hay đúng những byte mà công cụ của nó trả về, mà chỉ thấy phần mô tả chúng.
+- **Tua lại chết cùng tiến trình.** `checkpoint` là một chỉ mục trong danh sách tin nhắn đang sống, nên việc khởi động lại làm mất mọi nhãn mà mô hình đã đặt.
+- **Thử lại không phân biệt được “không có gì để thử lại” với “không tải được gì”.** Sau khi khởi động lại, lượt thất bại đều biến mất khỏi trạng thái sống trong cả hai trường hợp.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Cả ba đều được khắc phục bằng cách lưu bền bản ghi hội thoại. Bản ghi được lưu ở mọi **ranh giới lượt** và không bao giờ lưu giữa lượt: một lịch sử được ghi lại giữa lúc gọi công cụ và lúc nhận kết quả là lịch sử mà không nhà cung cấp nào chấp nhận, nên một cú sập đúng lúc đó sẽ khôi phục lượt *trước đó* thay vì một nửa lượt không thể phát lại.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Một lượt chạy được khôi phục sẽ được cắt gọn về những tin nhắn mới nhất, cắt tại một ranh giới không phải là kết quả công cụ mồ côi — một kết quả mà lời gọi của nó đã bị cắt bỏ là yêu cầu bị nhà cung cấp từ chối thẳng, và một bản ghi không thể gửi đi còn tệ hơn một bản ghi ngắn.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Nơi nó được lưu]
+Mỗi cặp hội thoại–agent có một tệp JSON, nằm trong thư mục riêng của không gian làm việc, cạnh cơ sở dữ liệu của nó. Hai agent trong một cuộc hội thoại giữ hai lịch sử riêng: chúng thấy những kết quả công cụ khác nhau và nhận những system prompt khác nhau, nên gộp chúng lại sẽ khiến mỗi bên nhận lập luận của bên kia như của chính mình.
 :::
 
-## The session tree
+## Cây phiên
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Mỗi tin nhắn ghi lại tin nhắn mà nó tiếp nối, và mỗi cuộc hội thoại chỉ định **đầu nhánh** hiện tại của nó. Chỉ một quyết định đó đã làm nên toàn bộ tính năng.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Tạo nhánh không ghi gì cả.** Nó chỉ di chuyển con trỏ. Đường đi bạn rời bỏ vẫn còn nguyên, nên quay lại chỉ là một lần di chuyển con trỏ khác thay vì khôi phục — và việc sửa một prompt để chạy lại không còn khiến bạn mất câu trả lời đang đối chiếu.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Nếu không có nó, mọi cách quay lại đều phải ẩn hoặc xóa tin nhắn, mà ẩn đi là một lời nói dối khiến người đọc kế tiếp không thể nhìn thấu.
 
-### Branch versus fork
+### Nhánh so với tách nhánh
 
-|                | Branch              | Fork                        |
+|                | Nhánh               | Tách nhánh                  |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Điều xảy ra    | Con trỏ di chuyển   | Đường đi được sao chép      |
+| Đi tới đâu     | Cùng cuộc hội thoại | Một cuộc hội thoại mới      |
+| Chi phí        | Không gì            | Một bản sao của nhánh       |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Một lần tách nhánh sao chép với **id mới** thay vì dùng chung các hàng. Hai cuộc hội thoại dùng chung hàng sẽ cho thấy những tin nhắn về sau của nhau, đó là điều duy nhất mà việc tách nhánh không được phép làm.
 
-### Rewind rides the same pointer
+### Tua lại cũng dựa trên con trỏ đó
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Cặp `checkpoint` / `rewind` trong lượt chạy đánh dấu một ranh giới lượt sạch sẽ và quay lại đó sau một bước khám phá, đồng thời giữ lại một bản tóm lược. Vì checkpoint được lưu bền cùng với bản ghi hội thoại, một nhãn mà mô hình đặt trước khi khởi động lại vẫn hạ cánh đúng nơi nó được đặt. Một checkpoint mà đích của nó không sống sót qua lần cắt gọn sẽ bị **loại bỏ**, chứ không bị kẹp lại — tua lại “đến nhãn” mà lại hạ cánh ở chỗ khác chính là kiểu thất bại mà một nhãn sinh ra để ngăn chặn.
 
-## Related
+## Liên quan
 
-- [Branch a conversation](/vi-VN/so-tay/huong-dan-thuc-hanh/nhanh-hoi-thoai/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/) — the other half of what fills a context window
-- [Slash commands](/vi-VN/so-tay/tham-chieu/lenh-slash/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Nhánh một cuộc hội thoại](/vi-VN/so-tay/huong-dan-thuc-hanh/nhanh-hoi-thoai/) — trình điều hướng cây, tách nhánh và xuất
+- [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/) — nửa còn lại của những gì lấp đầy một cửa sổ ngữ cảnh
+- [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/) — `/compact`, `/shake`, `/context`, `/tree`

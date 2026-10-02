@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: 에이전트로 실패 테스트 디버그
+description: print 문을 추가하는 대신 에이전트가 중단점을 설정하고 디버거에서 실행한 뒤 실제 스택 프레임을 읽도록 합니다.
 slug: ko-KR/매뉴얼/사용-가이드/실패-테스트-디버그
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+이 가이드에서는 print 문으로는 설명되지 않는 실패에 대해 에이전트가 디버거를 사용하도록 하는 방법을 보여 줍니다.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` 도구는 실제 Debug Adapter Protocol 세션을 구동합니다. 중지된 프레임은 그 순간에 관한 모든 질문 — 모든 지역 변수, 모든 호출자, 그리고 프레임 자체의 스코프에서 평가된 표현식 — 에 한 번에 답하는 반면, print 문은 실행하기 전에 생각해 낸 질문에만 답합니다.
 
-## Before you start
+## 시작하기 전에
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+이 도구는 에이전트가 추측하는 대신 왜 아무것도 쓸 수 없는지 물어볼 수 있도록 도구 표면에 그대로 남아 있습니다. 어댑터가 실제로 시작될 수 있는 것은 다음 **두 가지** 조건이 모두 성립할 때뿐입니다:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- 체크아웃에 프로젝트 마커가 있을 것, 그리고
+- 어댑터의 바이너리가 해석될 것.
 
-Ask the agent to check:
+에이전트에게 다음을 확인하도록 요청합니다:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+도구는 찾은 내용을 답하거나, 어댑터에는 두 조건이 모두 필요하다고 설명합니다.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| 언어           | 어댑터                       | 마커                                            | 설치                               |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | SDK에 포함 — 할 일 없음             |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | LLVM에 포함                        |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python은 프로젝트의 인터프리터를 선택합니다]
+`debugpy`는 `$PATH`보다 `.venv/bin` 또는 `venv/bin`에서 먼저 찾습니다. `$PATH`의 python은 다른 환경이며, 잘못된 환경에서 연결하면 잘못된 인터프리터 때문이 아니라 코드가 깨진 것처럼 보이는 방식으로 실패합니다.
 :::
 
-## Set the breakpoint first, then launch
+## 중단점을 먼저 설정하고 실행하기
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+순서가 중요하며 도구가 이를 강제합니다: 중단점은 세션이 존재하기 **전에** 설정할 수 있는데, 그것이 프로토콜이 요구하는 순서이기 때문입니다.
 
-Ask the agent something like:
+에이전트에게 다음과 같이 요청합니다:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart`의 `compute` 함수가 잘못된 값을 반환합니다. `product`를 할당하는 줄에 중단점을 설정하고, 디버거에서 실행한 뒤 `a`와 `b`가 실제로 무엇인지 알려 주세요.
 
-It will run roughly:
+그러면 대략 다음을 실행합니다:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+`launch`는 어디에서 멈췄는지 보고합니다:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[대신 프로그램이 종료되었다고 보고하는 경우]
+중단점이 바인딩되지 않았습니다. 빈 줄, 주석, 또는 빌드에 컴파일되지 않은 줄은 중단점을 담을 수 없습니다. 활성 세션에 대해 `breakpoints`를 호출하면 설정한 중단점 중 실제로 배치된 개수를 보고합니다.
 :::
 
-## Read the frame
+## 프레임 읽기
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+그런 다음 그 내부를 살펴봅니다:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+자식이 있는 객체는 `[expand: reference N]`을 보고합니다. 다만 그 뒤에 실제로 무언가 있을 때만 그렇습니다. 따라서 에이전트가 쓸 수 없는 확장은 결코 제공되지 않습니다.
 
-For anything not visible as a local:
+지역 변수로는 보이지 않는 값이 있다면:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## 단계별 실행
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| 원하는 작업                | 연산        |
+| -------------------------- | ----------- |
+| 다음 중지 지점까지 실행     | `continue`  |
+| 다음 줄, 같은 프레임        | `step_over` |
+| 호출 안으로                 | `step_in`   |
+| 호출자 밖으로               | `step_out`  |
+| 실행 중인 프로그램 중지      | `pause`     |
 
-## Attach to something already running
+## 이미 실행 중인 대상에 연결하기
 
-For a wedged process rather than one you are starting:
+새로 시작하는 프로세스가 아니라 멈춰 버린 프로세스의 경우:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## 마무리
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+항상 세션을 끝내야 합니다. 디버그 어댑터는 **중지된 프로세스**를 소유하며, 그 프로세스가 쥐고 있는 것 — 포트, 잠금, 데이터베이스 연결 — 을 함께 붙듭니다.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[세션이 통제를 벗어날 수 없습니다]
+모든 세션에는 연장할 수 없는 하드 TTL이 있고, 대화당 정확히 하나만 존재하며, 서버가 중지되면 모든 것이 정리됩니다. 두 번째 `launch`는 첫 번째를 대체하는 대신 거부됩니다. 하나를 끝내지 않고 다른 하나를 시작하는 에이전트는 거의 확실히 첫 번째를 놓치고 있는 것입니다.
 :::
 
-## Bounded output
+## 출력 제한
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+깊은 객체 그래프에 대한 `variables` 확장은 본질적으로 무한합니다. Flutter 위젯 하나가 전체 요소 트리에 닿기 때문입니다. 스코프당 자식은 50개, 값은 400자, 스택 프레임은 30개로 제한됩니다. 컨텍스트 창을 가득 채우는 도구 결과는 자신이 돕던 실행을 끝내 버리는 도구입니다.
 
-## Related
+## 관련 항목
 
-- [Code intelligence](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — every `debug` op and argument
-- [Diagnose an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/) — when the problem is the agent, not the code
+- [코드 인텔리전스](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — 디버거, 컴파일러, 매처가 서로 다른 질문에 답하는 이유
+- [내장 에이전트 도구](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — 모든 `debug` 연산과 인수
+- [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/) — 문제가 코드가 아니라 에이전트일 때

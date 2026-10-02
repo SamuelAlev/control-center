@@ -1,156 +1,158 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: اسپیسز استعمال کریں
+description: اسپیسز بنائیں، اُن کا موڈ سیٹ کریں، شرکاء اور خود مختاری منظم کریں اور گفتگوئیں اور تھریڈز کھولیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+یہ گائیڈ دکھاتی ہے کہ اسپیسز کیسے استعمال کی جائیں۔ **اسپیس** Control Center میں
+پیغام رسانی کی سطح ہے: ورک اسپیس تک محدود ایک کمرہ جس میں ایک یا زیادہ شرکاء (آپ
+اور/یا ایجنٹس) ہوتے ہیں، اور جس کے لیے بنائے گئے ہر ریپو کا ایک copy-on-write ورک
+ٹری اُس کے پاس ہوتا ہے۔
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+ون آن ون اور کئی ایجنٹس والے کمرے، دونوں محض اسپیسز ہیں اور اُن میں فرق صرف یہ ہے
+کہ کتنے شرکاء ہیں۔ صرف ایک استثنا وہ اسپیسز ہیں جو ایجنٹس ایک دوسرے سے بات کرنے
+کے لیے کھولتے ہیں — نیچے
+[ایجنٹ سے ایجنٹ اسپیسز](#ایجنٹ-سے-ایجنٹ-اسپیسز) دیکھیں۔
 
-## Create a space
+## ایک اسپیس بنائیں
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. **اسپیسز** پر جائیں
+2. اسپیسز ہیڈنگ کے ساتھ والے **+** بٹن پر کلک کریں
+3. اسے ایک **نام** دیں — یہ لازمی ہے۔ خالی نام مسترد ہو جاتا ہے؛
+   ڈائیلاگ کھلا رہتا ہے
+4. اختیاری طور پر ورک اسپیس سے ایجنٹس شامل کریں
+5. جب ورک اسپیس میں کوئی ریپو موجود ہو، تو چنیں کہ یہ اسپیس کن کے لیے ورک ٹریز
+   بنائے گی۔ ڈیفالٹ میں سب منتخب ہوتے ہیں؛ ہر ریپو غیر منتخب کرنے سے ایسی اسپیس
+   بنتی ہے جس میں کچھ بھی چیک آؤٹ نہیں ہوتا
+6. تصدیق کریں
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+اسپیسز ورک اسپیس تک محدود ہوتی ہیں: آپ صرف موجودہ ورک اسپیس کے ایجنٹس دیکھتے ہیں
+اور کوئی اسپیس کبھی کسی دوسرے ورک اسپیس کا ڈیٹا سامنے نہیں لاتی۔
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills).
+ہر ریپو اسپیس کے اندر `repos/<name>/` پر چیک آؤٹ ہوتا ہے۔ جو ریپو اپنی ایجنٹ
+مہارتیں ساتھ لاتا ہو، وہ اُنہیں اُس ایجنٹ کو دیتا ہے جو اُس میں کام کر رہا ہو — ایک
+وقت میں ایک ہی ریپو کا سیٹ، اور ایجنٹ کے آگے بڑھنے پر بدلتا رہتا ہے۔ کمپوزر سے آپ
+`/skill:<repo>:<name>` کے ذریعے اُن میں سے کسی تک بھی پہنچ سکتے ہیں۔
+[ریپو تک محدود مہارتیں](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills) دیکھیں۔
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+یہ سطح `/workspaces/<id>/spaces` پر رہتی ہے، اور کوئی ایک اسپیس
+`/workspaces/<id>/spaces/<spaceId>` پر۔
 
-## Set the space's mode
+## اسپیس کا موڈ سیٹ کریں
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+نئی اسپیس ڈیفالٹ موڈ میں شروع ہوتی ہے۔ اسے کمپوزر ٹول بار کے بالکل بائیں طرف والے
+**موڈ ڈراپ ڈاؤن** سے بدلیں — نہ بنانے کے ڈائیلاگ سے (جس میں موڈ کا کوئی فیلڈ نہیں) اور
+نہ اسپیس ہیڈر سے۔
 
-| Mode            | Effect                                                                                                |
+| موڈ             | اثر                                                                                                |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **ایجنٹ**       | مکمل رسائی۔ ڈیفالٹ؛ اندرونی طور پر `chat`، ڈراپ ڈاؤن میں “ایجنٹ” کا لیبل                         |
+| **پلان**        | صرف پڑھنا اور تحقیق؛ ڈیلیوریبل ایک ٹائپ شدہ پلان ہوتا ہے                                               |
+| **آرکیسٹریٹ** | پڑھنا اور تحقیق، اور ساتھ ایک واحد `propose_orchestration` فعل؛ پلان صرف آپ کی منظوری کے بعد چلتا ہے |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab کسی ڈراپ ڈاؤن کو کھولے بغیر پلان اور ایجنٹ موڈ کے درمیان ٹوگل کرتا ہے۔
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+ایک چوتھا موڈ، **ریویو**، بھی موجود ہے مگر ڈراپ ڈاؤن میں پیش نہیں کیا جاتا — یہ PR
+ریویو اسپیسز پر خود بخود لاگو ہوتا ہے۔
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+موڈ اسپیس پر محفوظ رہتا ہے، چنانچہ ایک ہی ایجنٹ ایک اسپیس میں پلان موڈ میں اور دوسری
+میں ایجنٹ موڈ میں ہو سکتا ہے۔ اسپیس کے اندر ہر گفتگو اُسی اسپیس کا موڈ سانجھا کرتی
+ہے۔
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[نفاذ کے بیج پر نظر رکھیں]
+جب اسپیس کے ایجنٹس ایسے اڈاپٹر پر چلیں جو آپ کے چنے ہوئے موڈ کو نافذ نہیں کر سکتا،
+تو موڈ ڈراپ ڈاؤن کے ساتھ ایک بیج ظاہر ہوتا ہے۔ صرف بلٹ اِن Control Center ہارنس ٹول
+سطح چھانٹتا ہے اور ہر کال کو گیٹ کرتا ہے؛ Claude Code اور ACP اڈاپٹرز موڈ کو ایک
+درخواست کے طور پر وصول کرتے ہیں جسے اُن کا رنر مانے یا نہ مانے۔ بیج نہ ہونے کا مطلب
+“کوئی دعویٰ نہیں کیا جا رہا” ہے، یہ نہیں کہ “تصدیق شدہ محفوظ ہے”۔
 :::
 
-See [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) for the full model.
+مکمل ماڈل کے لیے [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) دیکھیں۔
 
-## Manage participants and per-agent autonomy
+## شرکاء اور فی ایجنٹ خود مختاری منظم کریں
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+**شرکاء منظم کریں** کھولنے کے لیے اسپیس ہیڈر میں لوگوں والے آئیکن پر کلک کریں۔
+اسپیس میں پہلے سے موجود ہر ایجنٹ کے لیے آپ یہ کر سکتے ہیں:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- اسے اسپیس سے ہٹا دیں
+- اس اسپیس کے لیے اس کی **خود مختاری** سیٹ کریں: **ڈیفالٹ**، **صرف تجویز**،
+  **منظوری سے عمل** یا **آزادانہ عمل**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+خود مختاری کا ڈائل فی (اسپیس، ایجنٹ) ہے، چنانچہ جس ایجنٹ پر آپ ایک کمرے میں بھروسا
+کرتے ہیں، اُسے دوسرے میں صرف تجویز تک محدود رکھا جا سکتا ہے۔
 
-## React to a message
+## پیغام پر ردعمل دیں
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+کسی پیغام پر ہوور کریں اور ردعمل کا پیلیٹ کھولنے کے لیے مسکراہٹ والے آئیکن پر کلک
+کریں۔ یہ چھ کا ایک مقررہ سیٹ ہے: 👍 👎 🎉 ❤️ 👀 ✅۔ کوئی آزاد ایموجی پکر نہیں —
+کسی ایک پر ٹیپ کرنے سے وہ آپ کی طرف سے ٹوگل ہو جاتا ہے اور جمع شدہ چپس پیغام کے
+نیچے ظاہر ہو جاتی ہیں۔
 
-## Open a conversation
+## ایک گفتگو کھولیں
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+ایک اسپیس بیک وقت کئی گفتگوؤں کی میزبانی کرتی ہے اور وہ سب برابر کی ہم مرتبہ ہوتی
+ہیں — کوئی بنیادی نہیں ہوتی۔ اسپیس ہمیشہ کم از کم ایک زندہ گفتگو رکھتی ہے: آخری
+فعال گفتگو کو آپ آرکائیو نہیں کر سکتے، اور جس اسپیس میں ابھی کوئی نہ ہو، اسے کھولنے
+پر ایک بلا عنوان مستقل گفتگو بن جاتی ہے۔
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+گفتگوئیں ایڈیٹر ٹیبز کے طور پر، اور ایک سے زیادہ ہونے پر سائیڈبار میں اسپیس کے نیچے
+نیسٹڈ قطاروں کے طور پر ظاہر ہوتی ہیں۔ **نئی گفتگو** ایڈیٹر کے نئے-ٹیب مینو میں رہتی
+ہے اور بغیر عنوان کے پرامپٹ کے ایک بلا عنوان گفتگو بناتی ہے — ٹائٹل ماڈل اسے پہلے
+پیغام کے بعد نام دے دیتا ہے۔ ایک ہی ایجنٹ اور ورک ٹری کے ساتھ متوازی کام چلانے کے
+لیے اِسے استعمال کریں۔
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+ہر گفتگو اپنی پیغامات کی تاریخ اور ایجنٹ سیشنز رکھتی ہے، جبکہ اسپیس کے ورک ٹریز اور
+اُس کا موڈ سانجھا کرتی ہے۔ ٹیب بند کرنے سے وہ چھپ جاتی ہے؛ **گفتگو آرکائیو کریں**
+(سائیڈبار قطار یا چیٹ ٹیب کے کانٹیکسٹ مینو سے) صرف اُسی گفتگو کو آرکائیو کرتا ہے۔
 
-## Start a thread
+## ایک تھریڈ شروع کریں
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+کسی بھی پیغام پر ہوور کریں اور **تھریڈ شروع کریں** چنیں۔ اس سے اُس پیغام پر اینکر
+شدہ ایک گفتگو کھلتی ہے: اینکر نئی گفتگو کے ایجنٹ کانٹیکسٹ کو ایک سطر سے بیج دیتا
+ہے اور پیرنٹ کی تاریخ **کاپی نہیں** کی جاتی۔
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+ایک بار تھریڈ کے جوابات آ جائیں تو جس پیغام سے وہ لٹکا ہے، اُس کے نیچے ایک قطار اُگ
+آتی ہے — کون کون بول چکا ہے اُن کے چہرے، جوابات کی تعداد اور آخری جواب کب پہنچا۔
+یہی قطار واپس جانے کا راستہ ہے: اُس پر کلک کرنے سے تھریڈ کا ٹیب کھلتا ہے (یا فوکس
+ہوتا ہے)۔ جس اسٹریم سے تھریڈ نکلا، اُس میں تھریڈ کا یہی واحد نشان رہ جاتا ہے، اور
+یہی وجہ ہے کہ یہ قطار وہاں موجود ہے۔
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+تھریڈ کے ٹیب کا عنوان `Thread: <name>` ہوتا ہے اور اُس پر شاخ کا گلِف لگا ہوتا ہے،
+تاکہ ایک ہی اسپیس کے دو ٹیب کبھی ایک دوسرے سے مغالطہ نہ کھائیں۔
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+تھریڈ کبھی نیسٹ نہیں ہوتے — ایسے پیغام پر اینکر کرنے سے انکار ہو جاتا ہے جو پہلے ہی
+کسی تھریڈ کے اندر ہو۔ گفتگو کا ہیڈر واپس اینکر پیغام کی طرف لنک کرتا ہے۔ اینکر پیغام
+حذف کرنے سے تھریڈ حذف ہو جاتا ہے، اور پیرنٹ گفتگو آرکائیو کرنا اُس کے موجودہ تھریڈز
+کو نہیں روکتا۔
 
-## Read state
+## پڑھے جانے کی حالت
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+پڑھے جانے کے نشان گفتگو کے نہیں، اسپیس کے دائرے میں ہوتے ہیں: اسپیس میں کوئی بھی
+گفتگو کھولنے سے پورا کمرہ صاف ہو جاتا ہے۔ ان پڑھا اب بھی اسپیس کی تمام گفتگوؤں —
+تھریڈز سمیت — پر جمع ہوتا ہے۔ جب گفتگوئیں اسپیس کے نیچے فہرست ہوں تو ان پڑھے کا
+نقطہ پیرنٹ قطار کے بجائے اُس گفتگو پر لگتا ہے جس میں نہ دیکھا گیا کام موجود ہو۔
 
-## Agent-to-agent spaces
+## ایجنٹ سے ایجنٹ اسپیسز
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+وہ اسپیسز جو ایجنٹس ایک دوسرے سے بات کرنے کے لیے کھولتے ہیں، سائیڈبار میں
+**ایجنٹس** کے نیچے الگ سیکشن میں رکھی جاتی ہیں، ڈیفالٹ میں سکیڑی ہوئی اور مدھم
+انداز میں دکھائی جاتی ہیں۔ وہ کبھی آپ کے ان پڑھے کے بیج کو نہیں بڑھاتیں — ایجنٹس کی
+گپ شپ اپنی بناوٹ ہی سے خاموش ہوتی ہے، کسی ایسی سیٹنگ سے نہیں جو آپ کو ڈھونڈنی پڑے۔
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+اسپیس کی قسم پانچ ویلیوز میں سے ایک ہوتی ہے: `topic` (آپ کی بنائی ہر چیز کے لیے
+ڈیفالٹ)، `agentPeer`، `system` (پائپ لائن سے منظم)، `pr` (اُس وقت بنتی ہے جب کسی PR
+سطح کو ورک ٹری اینکر درکار ہو، اور جب تک اُس میں پیغامات نہ ہوں سائیڈبار سے چھپی
+رہتی ہے) اور `slack` (چیٹ برج کی طرف سے کسی Slack تھریڈ یا بوٹ DM کے لیے بنائی جاتی
+ہے، اور ایک عام انسانی گفتگو کی طرح سمجھی جاتی ہے)۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [@-mention agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/)
-- [Use plan mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [ایجنٹس کا @-ذکر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/)
+- [پلان موڈ استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
-- [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/): how a Slack thread becomes a space
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/): ایک Slack تھریڈ اسپیس کیسے بن جاتا ہے

@@ -1,128 +1,151 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Calendrier et planification
+description: Comment Control Center synchronise Google Calendar sur le serveur, pourquoi la connexion passe par un octroi par code d’appareil et ce que couvre la portée en lecture seule.
 slug: fr-FR/manuel/concepts/calendrier
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/fr-FR/manuel/concepts/reunions/).
+Control Center se connecte à Google Calendar pour que votre journée côtoie votre
+flotte. Il synchronise vos événements, les affiche en vues mois, semaine, jour et
+agenda, vous avertit avant le début d’une réunion et transforme n’importe quel
+événement en une [réunion](/fr-FR/manuel/concepts/reunions/) enregistrée et
+résumée.
 
-## What it changes on Google
+## Ce qu’il change dans Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Presque rien. L’intégration récupère les événements et les affiche. Elle n’en
+crée pas, n’en modifie pas, n’en supprime pas et ne répond à aucune invitation.
+Chaque connexion par code d’appareil, qu’elle utilise le client intégré ou le
+vôtre, demande `calendar.readonly` ainsi que `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Les événements sont synchronisés dans la base de données propre à l’espace de
+travail **sur le serveur** (`<dataDir>/<workspaceId>/workspace.db`) et affichés
+par chaque client via RPC. Aucun client ne détient d’identifiant Google.
 
-## Per-workspace accounts
+## Comptes par espace de travail
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/fr-FR/manuel/concepts/espaces-de-travail/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Les comptes de calendrier sont rattachés à l’espace de travail, comme tout le
+reste dans Control Center. Chaque
+[espace de travail](/fr-FR/manuel/concepts/espaces-de-travail/) connecte son
+propre compte Google (ou plusieurs), et les événements et jetons d’un espace de
+travail ne sont jamais visibles depuis un autre. Changer d’espace de travail
+change aussi les calendriers que vous voyez.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Un espace de travail peut connecter **plusieurs** comptes Google, par exemple un
+compte professionnel et un compte personnel, et leurs événements sont fusionnés
+dans les mêmes vues.
 
-## Why sign-in is a device code
+## Pourquoi la connexion passe par un code d’appareil
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+Le `cc_server` sans interface n’a aucun navigateur pour intercepter une
+redirection OAuth. Il n’en utilise donc pas : il s’autorise au moyen d’un
+**octroi par code d’appareil** (RFC 8628). Le serveur affiche un court code
+utilisateur et une URL Google ; vous approuvez sur n’importe quel appareil doté
+d’un navigateur et le serveur interroge jusqu’à ce que vous le fassiez. Une
+installation sans interface peut connecter un compte précisément parce qu’il n’y
+a aucun point de terminaison de redirection à héberger.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Une conséquence à connaître avant d’utiliser vos propres identifiants : le type
+de client doit être celui des « TV and Limited Input devices » de Google. Google
+n’accorde à ce type de client qu’un ensemble de portées figurant sur une liste
+autorisée, et un projet où Calendar n’est pas autorisé pour ce type échoue avec
+`invalid_scope` — il vous faudrait plutôt un client loopback ou un client web.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Les jetons ne quittent jamais le serveur. Ils sont écrits dans le fichier
+`secrets.json` du serveur, dans son répertoire de données, sous la clé
+`google_google:<workspaceId>:<email>`, aux côtés des bases de données et à
+l’intérieur de la même frontière de confiance du système de fichiers de l’hôte.
+Le serveur renouvelle l’accès automatiquement et, lorsque Google invalide
+définitivement un compte (session révoquée ou expirée depuis longtemps), publie
+`CalendarAuthExpired` et affiche une bannière **Reconnecter** au lieu d’échouer
+en silence.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Une compilation à partir du code source ne fournit **aucun** identifiant Google :
+vous devez fournir votre propre identifiant client et votre propre secret. Les
+versions officielles intègrent un client à code d’appareil non confidentiel pour
+que le flux de connexion fonctionne dès l’installation ; le serveur ne stocke
+qu’un marqueur qui y renvoie, jamais une copie. La variable
+`GOOGLE_OAUTH_CLIENT_ID` (et son secret) dans l’environnement a toujours
+préséance sur la paire intégrée. Il n’existe délibérément aucun drapeau
+`--google-client-id` : les drapeaux inconnus sont ignorés, et un secret passé sur
+la ligne de commande est lisible par `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/).
+Pour utiliser votre propre projet Google, consultez
+[Connecter un Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/).
 
-## Sync
+## Synchronisation
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Le serveur récupère une fenêtre glissante des événements de chaque compte
+connecté — tous les calendriers du compte, pas seulement le principal — **toutes
+les deux minutes**, et aussi à la demande (démarrage, connexion, actualisation
+manuelle). Cette cadence courte est abordable parce que le balayage est
+incrémentiel : chaque calendrier porte son propre jeton de synchronisation, et un
+calendrier inchangé ne coûte donc qu’une réponse presque vide plutôt qu’une
+nouvelle récupération d’une fenêtre de cinq mois.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Les événements récurrents sont développés côté serveur, de sorte qu’aucun client
+n’a jamais à interpréter une règle de récurrence. Naviguer vers un mois à
+l’extérieur de la fenêtre courante charge cette plage à la demande. Les
+événements supprimés ou sortis de la plage sont réconciliés et disparaissent à la
+prochaine synchronisation.
 
-## Views
+## Vues
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Vue         | Ce qu’elle affiche                                                 |
+| ----------- | ------------------------------------------------------------------ |
+| **Mois**    | Une grille complète d’un mois (propulsée par le paquet `kalender`) |
+| **Semaine** | Les événements horodatés d’une semaine dans une grille horaire     |
+| **Jour**    | Les événements horodatés d’une seule journée dans une grille horaire |
+| **Agenda**  | Une liste défilante des événements à venir                         |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Ouvrez le calendrier à `/calendar` ; sélectionner un événement ouvre son détail à
+`/calendar/:eventId`. La vue que vous choisissez est stockée dans les préférences
+propres à ce client ; elle ne vous suit donc pas sur un autre appareil.
 
-## Meeting alerts
+## Alertes de réunion
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/fr-FR/manuel/concepts/evenements-de-domaine/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Un planificateur s’exécute chaque minute, repère les événements qui commencent à
+l’intérieur d’une fenêtre de préavis configurable et déclenche une notification
+**« Réunion imminente »** (un
+[événement de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/)
+`MeetingStartingSoon`). La notification contient l’URL de participation
+lorsqu’une telle URL est présente, et un clic dessus ouvre le détail de
+l’événement. Les alertes sont dédupliquées selon le champ `alertedAt` de
+l’événement : une même réunion n’alerte donc jamais deux fois, même après un
+redémarrage, et un événement dont l’heure de début est passée pendant que
+l’application était fermée n’est jamais rejoué.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Deux limites sont faciles à négliger. Le planificateur s’exécute **côté client,
+sur l’ordinateur**, et uniquement pour l’espace de travail que vous avez
+actuellement ouvert — un espace de travail dans lequel vous n’êtes pas ne
+déclenche aucune alerte. Et la version web n’a aucune chaîne de notifications du
+système d’exploitation, de sorte qu’elle n’en déclenche pas non plus.
 
-## Record and link
+## Enregistrer et lier
 
-From a calendar event you can start a [meeting recording](/fr-FR/manuel/concepts/reunions/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+À partir d’un événement du calendrier, vous pouvez démarrer un
+[enregistrement de réunion](/fr-FR/manuel/concepts/reunions/) prérempli avec le
+titre de l’événement. Control Center conserve un lien un à un entre
+l’enregistrement et l’événement, de sorte que les notes de la réunion et l’entrée
+du calendrier restent liées sans que l’une des fonctionnalités dépende de
+l’autre.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Enregistrer et lier** n’existe que sur l’ordinateur. Dans le client web,
+l’action indique que l’enregistrement n’est pas disponible, même si le flux
+d’enregistrement propre à l’écran des réunions fonctionne, lui, dans le
+navigateur.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Les agents ne peuvent pas lire votre calendrier]
+Il n’existe aucun outil MCP pour le calendrier. Un agent ne peut ni lister les
+événements, ni lire le détail d’un événement, ni répondre à une invitation en
+votre nom ; la surface `calendar.*` est une interface RPC réservée aux clients
+humains.
 :::
 
-## See also
+## Voir aussi
 
-- [Meetings and transcription](/fr-FR/manuel/concepts/reunions/): what happens after you start a recording
-- [Workspaces and isolation](/fr-FR/manuel/concepts/espaces-de-travail/): why calendar accounts are per-workspace
-- [Domain events](/fr-FR/manuel/concepts/evenements-de-domaine/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/)
-- [Record and summarize a meeting](/fr-FR/manuel/guides/enregistrer-reunion/)
+- [Réunions et transcription](/fr-FR/manuel/concepts/reunions/) : ce qui se passe après le démarrage d’un enregistrement
+- [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/) : pourquoi les comptes de calendrier sont propres à chaque espace de travail
+- [Événements de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/) : `MeetingStartingSoon` et `CalendarAuthExpired`
+- [Connecter un Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/)
+- [Enregistrer et résumer une réunion](/fr-FR/manuel/guides/enregistrer-reunion/)

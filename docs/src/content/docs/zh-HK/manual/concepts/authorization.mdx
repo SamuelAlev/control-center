@@ -1,123 +1,112 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: 授權——誰可以做甚麼，以及你如何證明這一點
+description: Control Center 各角色背後的權限目錄、每一項授權決策所記入的防篡改審計軌跡，以及操作員可以固定的安裝層級控制項。
 slug: zh-HK/手冊/概念/授權
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/zh-HK/手冊/概念/護欄/).
+Control Center 要回答兩個授權問題，而兩者截然不同。**「這個人可以呼叫這項
+操作嗎？」**談的是人、角色與程式庫。**「這個代理可以造成這個效果嗎？」**談的是
+動作、參數與影響範圍——後者屬於[護欄](/zh-HK/手冊/概念/護欄/)。
 
-This page is the first question, plus the record both of them leave behind.
+本頁談的是第一個問題，以及兩者共同留下的紀錄。
 
-## One decision point
+## 單一決策點
 
-Every human-side authorization decision resolves through a single function:
+每一項屬於人這一方的授權決策，都經由同一個函式裁定：
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**權限**的形式是 `<domain>:<tier>`——`tickets:write`、
+`members:administer`、`repos:read`。權限目錄是**推導**出來的，而不是
+人手撰寫：它由操作介面本身計算得出（操作名稱的前綴給出網域，該操作
+原本已強制的角色下限給出等級），因此全部約 550 項操作都帶有一項權限，
+無需任何人逐一輸入。
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+這項推導正是值得保護的性質。它意味著新增操作預設就受到管制——
+手工標註模型的失效模式，就是有人忘記標註，而他們忘記的恰恰是管制本身。
+有一項棘輪測試會釘住由此得出的網域集合，因此在新的前綴下新增操作，
+是人為作出的命名決定，而不是一次意外。
 
-The four tiers map exactly onto the built-in roles:
+這四個等級與內建角色精確對應：
 
-| Tier | Role floor | Example |
+| 等級 | 角色下限 | 例子 |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | 訪客 | `tickets:read` |
+| `write` | 成員 | `tickets:write` |
+| `administer` | 管理員 | `members:administer` |
+| `own` | 擁有者 | `workspace:own` |
 
-## Roles
+## 角色
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+五個內建角色——**擁有者、管理員、成員、檢視者、訪客**——是這套目錄上的
+預設組合。每個工作區的擁有權只有一個席位，須以**轉移擁有權**明確移交
+（否則離任的擁有者將無法移除：SCIM 取消佈建會拒絕任何工作區擁有者——
+請先移交）。
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**自訂角色是減法式的。**自訂角色會指定一個基礎預設（`admin`、
+`member`、`viewer` 或 `guest`——絕不能是 `owner`），以及一組從中
+移除的權限——「管理員，但不能管理成員」。它授予的權限永遠不會超過其基礎
+預設，這正是它們可以安全引入既有安裝的原因：所有既有檢查仍然是可靠的
+上限。成員以 `custom:<id>` 的形式持有它們，而無法理解該值的舊用戶端
+會退回訪客，而不是任意猜測。
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+角色之下還有**逐程式庫授權**（`none` / `read` / `review` /
+`write`）：工作區成員身分絕不會悄悄給予高於程式碼託管的權限。所有會
+曝露程式碼的介面都會檢查這些授權——包括從側面觸及程式碼的介面，例如在
+空間的 worktree 上開啟的終端或編輯器工作階段。
 
-## Server authority
+## 伺服器專屬權限
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+有些操作與工作區完全無關：整台安裝的設定、SSO 設定、供應商憑證、模型
+管理、整個安裝的備份。這些操作會聲明**伺服器專屬權限**，除該安裝的
+操作員（記錄在案的伺服器擁有者）外，對所有人一律拒絕。這裡刻意只保留
+一個操作員身分，以及關於它的唯一定義。
 
-## The audit trail
+## 審計軌跡
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+每一個授權決策——**無論允許還是拒絕**——都會追加到按工作區劃分、
+以雜湊鏈串連的審計軌跡。
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+只記錄拒絕的日誌能回答「我們攔截了甚麼？」，卻回答不了「這個代理究竟
+做了甚麼，又是誰授權的？」——而這正是事故檢討要問的第一個問題。因此每筆
+記錄都會寫下完整的歸屬鏈：執行的主體、它所代表的人、它所經由的委派、
+動作及其參數（以摘要形式）、決策，以及**作出該決策的規則**。
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+各筆記錄串成一條鏈：每一筆的雜湊都涵蓋前一筆，因此編輯、刪除或重排任何
+一行，都會破壞其後的所有雜湊。**驗證鏈**會重新推導整條鏈，並指出第一個
+不成立的環節。無法核驗的審計日誌只是日誌；能重新推導的才是證據。
 
-Two consequences worth knowing:
+有兩個值得了解的後果：
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- 審計表**不受按時間清理影響**。雜湊鏈無法從中間裁剪。保留的做法是先
+  匯出、再截斷，而截斷會留下一個攜帶被移除區段末端雜湊的檢查點，
+  因此留存下來的內容仍能一路驗證回起點。
+- 它與活動時間軸**並列**，而不是疊在其上。時間軸記錄人做了甚麼；這裡
+  記錄甚麼被授權、甚麼被拒絕。借助共用的關聯 id，可以在兩者中讀懂
+  同一次呼叫。
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+它匯出為換行分隔的 JSON，並可串流傳送到 SIEM（Splunk、Elastic、
+Sentinel——一個帶 bearer token 的 HTTP 端點）。串流按設計就是盡力
+而為：SIEM 故障絕不能阻塞代理的工具呼叫，而且無論哪種情況，持久、
+可驗證的副本都在磁碟上。
 
-## Sessions
+## 工作階段
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+安裝可以設定**工作階段最長有效時間**和**閒置逾時**。兩者都在裝置憑證
+檢查處強制執行，所有經過認證的通道都會匯聚到那裡——用戶端可以無視的
+工作階段約束，回答的是問卷，而不是攻擊者。安裝也可以要求使用 SSO，
+這會停用新裝置的手動配對（並設有鎖定保護：在沒有可用的 SSO 連線時
+會拒絕）。
 
-## What this is not
+## 這不是甚麼
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **不是按對象的 ACL。**這裡刻意不提供按工單或按訊息的權限。團隊真正
+  需要的是程式庫層級的隔離，而它已經存在；按對象分享會造成組合爆炸，
+  而這裡並沒有顯示出這種需求。
+- **不是用 DSL 設定的政策引擎。**詞彙表是刻意封閉的，因此整份政策都
+  可以被呈現、解釋和列舉。
+- **除伺服器之外，不在任何地方強制執行。**用戶端檢查的存在，只是為了
+  不提供一個必然會被拒絕的控制項。權威決策始終由伺服器作出。

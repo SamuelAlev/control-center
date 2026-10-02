@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Send ut din første agent
+description: Opprett en agent, gi den et område og en oppgave, og se kjøringen strømme tilbake.
 slug: nb-NO/handbok/veiledninger/forste-agent
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Det du skal bygge
 
-By the end of this tutorial, you will have:
+Når du er ferdig med denne veiledningen, har du:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- En agent du har opprettet og konfigurert selv
+- Et område der du og den agenten snakker sammen
+- Én fullført kjøring, med committet arbeid i et isolert worktree og en rad i agentens kjøringslogg
 
-Prerequisites: [Your first workspace](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/) completed, so this workspace has a repo registered and at least one model provider connected.
+Forutsetninger: [Ditt første arbeidsområde](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/) fullført, slik at dette arbeidsområdet har et repo registrert og minst én modellleverandør tilkoblet.
 
-## Step 1: Create an agent
+## Steg 1: Opprett en agent
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Gå til **Innstillinger → Arbeidsområde → Agenter**
+2. Klikk **Ny agent**. En agent som heter «Navnløs agent» opprettes umiddelbart og velges i agentlisten — det finnes ingen opprettingsdialog og ingenting å bekrefte. Du konfigurerer den på stedet.
+3. På fanen **Innstillinger** fyller du ut:
+   - **Navn**: noe kort og lett å huske, som `alice`. Dette er det du skriver etter `@`.
+   - **Tittel**: hva den gjør, f.eks. «Backend-utvikler»
+   - **Adapter**: `Control Center (built-in)`. Velg denne med vilje — bare det innebygde harnesset kan styres midt i en kjøring og settes på pause ved en turgrense, og det krever ingen CLI installert på serververten.
+   - **Modell**: velg fra listen den tilkoblede leverandøren tilbyr
+   - **Ferdigheter**: fest de som passer, f.eks. `testing` eller `architecture`
+4. Trykk **Lagre endringer**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[En agent uten adapter kjører på den innebygde løkken]
+Når Adapter-feltet ikke er satt, faller utsending tilbake til **Control Center (built-in)** — agentløkken inne i serveren, så det er ingenting å installere på verten. Den trenger fortsatt en modell: uten en satt spør den Anthropic om standarden sin, noe som virker hvis du har koblet til en Anthropic-konto, og ellers feiler med `No credential for provider "anthropic"`. Sett begge eksplisitt likevel, ellers kjører du på en modell du ikke valgte.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Sjekkpunkt.** Raden i agentlisten viser agentens navn og en hul statusring.
 
-## Step 2: Start a space
+## Steg 2: Start et område
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. I sidepanelet finner du **Områder**-delen og klikker på **+**-knappen
+2. Gi området et navn
+3. Under **Legg til agenter** velger du agenten du nettopp opprettet
+4. Hvis arbeidsområdet har repoer, velger du hvilke dette området skal jobbe med
+5. Klikk **Opprett**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Området åpnes. I bakgrunnen klargjør Control Center et copy-on-write-worktree av de valgte repoene for denne samtalen, på sin egen gren. Kildeutsjekkingen din blir aldri rørt.
 
-## Step 3: Send a task
+## Steg 3: Send en oppgave
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Skriv én konkret, liten oppgave mot repoet du registrerte. Noe med et kontrollerbart utfall fungerer best — legg til en test, rett opp en lint-feil, gi et symbol nytt navn.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Trykk Enter. Du trenger ikke å `@`-nevne noen: med én agent i området vekker en vanlig melding den. I et område med flere agenter velger `@name` én.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center setter sammen prompten fra agentens instrukser, persona, skills og områdets kontekst, og sender deretter ut kjøringen.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Sjekkpunkt.** Send-knappen i skrivefeltet blir til en stopp-knapp — en agent jobber i denne samtalen — og tekst begynner å komme inn.
 
-## Step 4: Watch it work
+## Steg 4: Se den jobbe
 
-The conversation renders the run as it happens:
+Samtalen viser kjøringen mens den skjer:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Resonnering**, vist inline mens agenten tenker
+- **Verktøykall**: fillesing og -skriving, søk, skallkommandoer, hver med resultatet sitt
+- **Tekst**: sammendrag, forklaringer og spørsmål til deg
 
-If the agent asks something, answer in the conversation and it resumes.
+Hvis agenten spør om noe, svarer du i samtalen, og den fortsetter.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+For en kjørings egne måltall og kontrollene for pause, fortsett og stopp finner du den kjørende agenten i **Agenter**-delen av **Generelt**-panelet i området og velger **Åpne aktivitet**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+I aktivitetsfanen viser statusmerket **Kjører**, og deretter **Lyktes** når kjøringen er ferdig. En kjøring som stanser eller går i løkke, viser **Blokkert**; en som feiler, viser **Mislyktes**. I agentregisteret er ringen i agentlisten hul før den første kjøringen og hel når agenten er ledig igjen.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/).
+Det som begrenser kjøringen: dens eget copy-on-write-worktree, legitimasjonen som formidles til den ved oppstart og tilbakekalles ved avslutning, et renset miljø, verktøyflaten modusen tillater og tillatelsesreglene for handlinger. Effekter som å pushe en gren eller åpne en pull request er portvoktet separat — se [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/).
 
-## Step 5: Check the result
+## Steg 5: Sjekk resultatet
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Åpne **Innstillinger → Arbeidsområde → Agenter** og velg agenten din
+2. Åpne fanen **Logger**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Sjekkpunkt.** Én kjøringsrad som viser status, varighet, start- og sluttidspunkt og adapteren den kjørte på.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Agentens endringer er committet på samtalens gren, i worktreet dens. Commitene er forfattet som agenten, med deg kreditert i en `Co-Authored-By:`-trailer.
 
-## Getting a pull request
+## Å få en pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Ingenting åpner en pull request av seg selv. Vil du ha en, ber du om den i den samme samtalen:
 
-> Push this branch and open a pull request against the default branch.
+> Push denne grenen og åpne en pull request mot standardgrenen.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Å pushe (`gitPush`) og PR-oppretting (`prCreate`) ber begge om godkjenning som standard, så forvent en bekreftelse før hver av dem. Hvis ingen godkjenner er koblet til når forespørselen utløses, avvises handlingen i stedet for å tillates — tillatelsesreglene feiler lukket.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR-en åpnes under den GitHub-identiteten hvis token kjøringen brukte — din, hvis du lagret et personlig token — ikke under agentens navn. Agentens forfatterskap vises på commitene.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Du kan også åpne den selv: **Kildekontroll**-panelet i området har en **Opprett pull request**-knapp som tar med samtalens gren inn i komponeringsskjermen, og **Pull requests → Ny PR** åpner den samme skjermen tom. Det er der den neste veiledningen tar over.
 
-## Recap
+## Oppsummering
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Du opprettet en agent, konfigurerte adapteren og modellen dens, ga den et område og en oppgave og så en ekte kjøring fullføres i et isolert worktree uten å røre utsjekkingen din.
 
-**Next:** [Review your first pull request](/nb-NO/handbok/veiledninger/forste-pr/) to learn the review workflow.
+**Neste:** [Gjennomgå din første pull request](/nb-NO/handbok/veiledninger/forste-pr/) for å lære gjennomgangsarbeidsflyten.
 
-For more on agents: [The agent model](/nb-NO/handbok/konsepter/agentmodell/). For dispatch details: [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).
+Mer om agenter: [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/). For detaljer om utsending: [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).

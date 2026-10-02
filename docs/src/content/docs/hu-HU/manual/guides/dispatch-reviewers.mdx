@@ -1,26 +1,31 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Átnéző ügynökök indítása
+description: Szakértő átnéző ügynököket küld egy PR-hez a PR nézetéből, egy MCP-eszközzel vagy egy pipeline-lépéssel.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Ez az útmutató bemutatja, hogyan indíthat átnéző ügynököket pull requestek
+átnézéséhez.
 
-## From the PR view
+## A PR nézetéből
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Nyissa meg a PR-t, és lépjen az **Áttekintés** fülére
+2. Nyissa meg a ⋯ túlcsordulásmenüt, és válassza a **Kérdezze az AI-t**
+   lehetőséget
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Ez elindítja az alapból létrehozott `pr_review` pipeline-t, amely megnyitja a PR
+átnézési terét, és elindítja az átnézőket a munkaterület átnézési szintje
+szerint — alapértelmezés szerint hármat (az alapból létrehozott **qa**,
+**architect** és **engineer** ügynököt) —, majd a vezető ügynökkel
+konszolidáltatja az eredményt. Ezen az útvonalon Ön nem választja ki a
+szerepköröket. Ha kézben szeretné tartani, hogy mely szerepkörök fussanak, és
+melyikük mely fájlokat vizsgálja, használja az alábbi MCP eszközt vagy egy
+pipeline-lépést.
 
-## Via the `dispatch_reviewers` MCP tool
+## A `dispatch_reviewers` MCP eszközzel
 
-Call it from inside an existing review space:
+Hívja meg egy meglévő átnézési térből:
 
 ```
 dispatch_reviewers(
@@ -33,109 +38,120 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+A `space_id`, a `workspace_id` és a `reviewers` mind kötelező. Minden
+átnézőspecifikáció egy `role` mezőt vesz át, valamint egy opcionális fájl-glob
+`scope` és egy `prompt_override` mezőt, amely lecseréli az alapértelmezett
+utasítást. Egy opcionális `concurrency` (1–8) korlátozza a párhuzamos
+indításokat; ha hiányzik, a munkaterület `review_concurrency` beállítása él
+(alapértelmezés szerint 3, a Beállítások → Munkaterület → Általános helyen
+állítható be).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Az eszköz azonnal visszatér a `dispatched` és az `unmatched` listával. Minden
+elindított átnéző résztvevőként bekerül a térbe, egy rendszerüzenet jelenti be,
+és a saját utasításával indul el. A megállapítások `review_node` üzenetekként
+érkeznek meg abba a térbe.
 
-## From a pipeline step
+## Indítás pipeline-lépésből
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Nyissa meg a **Beállítások → Munkaterület → Pipeline-sablonok** helyet, nyisson
+meg egy sablont, majd:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Adjon hozzá egy **Reviewer (prompt)** csomópontot a palettáról
+2. Válassza ki az elindítandó ügynököt, és írja meg az átnéző promptját,
+   `{{key}}` helyőrzőkkel hivatkozva a felsőbb lépések kimeneteire (például
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Állítsa be a kimeneti kulcsot (alapértelmezés szerint `reviewer_findings`),
+   hogy az alsóbb lépések olvashassák a megállapításokat
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+A lépés elindítja az ügynököt, és felfüggeszti magát, amíg az a futtatás be nem
+fejeződik. A motor ezután begyűjti a futtatás `submit_output` payloadját a
+pipeline állapotába, a csomópont kimeneti kulcsa alatt. (A paletta leírása még
+mindig azt írja, hogy a lépés egy `complete_task` hívásra vár — ilyen eszköz nem
+létezik; hagyja figyelmen kívül ezt a szöveget.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Ágaztasson szét úgy, hogy több átnézőcsomópontot köt ugyanahhoz a felsőbb
+lépéshez, majd konszolidálja a kimeneteiket egy **Consolidate (join)**
+csomóponttal.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+A szerkesztő minden elérhető nyelőhöz átkötözi a rejtett terminált, így az
+alapból létrehozott Step után hozzáadott csomópont is lefut. Az ugyanahhoz a
+felsőbb lépéshez bekötött szétágazó csomópontok párhuzamosan futnak.
 
-## Automatic dispatch on a new PR
+## Automatikus indítás új PR esetén
 
-To have a review pipeline fire by itself:
+Ahhoz, hogy egy átnézési pipeline magától elinduljon:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Nyissa meg a sablont a **Beállítások → Munkaterület → Pipeline-sablonok**
+   helyen
+2. Húzza a **PR közzétéve** vagy a **Külső PR megnyitva** elemet a
+   csomópontkönyvtár Triggerek szakaszából a vászonra (vagy válassza ki a
+   **Trigger hozzáadása** szellemcsempéről)
+3. Válassza ki az új csomópontot, és kapcsolja be az **Engedélyezve** lehetőséget
+   a vizsgálójában, majd engedélyezze a sablont
 
-Two events matter here and they are not interchangeable:
+Két esemény számít itt, és ezek nem felcserélhetők:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| Esemény                | Akkor tüzel, amikor                                                                                             | Payload-kulcsok                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | Egy PR **a Control Centeren keresztül** nyílik meg — a PR-összeállító felületen, vagy amikor egy ügynök meghívja a `pr_lifecycle.publish` műveletet | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | A PR-lekérdező szolgáltatás egy közvetlenül a GitHubon megnyitott PR-t talál                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+A github.com-on megnyitott PR soha nem váltja ki a `PullRequestPublished`
+eseményt, ezért egy csak ahhoz az eseményhez bekötött sablon nem fogja észlelni.
+Vegye figyelembe azt is, hogy a `PullRequestPublished` nem hordoz `pr_number`
+mezőt — egy olyan lépést, amelynek a szkriptje vagy a promptja a `{{pr_number}}`
+értékre hivatkozik, az `ExternalPrDetected` eseményből kell megtáplálni, vagy
+egy kézi futtatásból, amely megadja azt.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Ellenőrzőpont: engedélyezés után nyissa meg a **Pipeline-ok** oldalt, és
+győződjön meg róla, hogy megjelenik egy futtatás a következő illeszkedő PR-nál.
+Egy letiltva hagyott sablon eseményindítója a semmibe tüzel — a motor elutasítja
+a letiltott sablont, és futtatás indítása nélkül tér vissza.
 
-## How a role is matched to an agent
+## Hogyan párosul egy szerepkör egy ügynökhöz
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+A `dispatch_reviewers` a munkaterület minden ügynökét pontozza az egyes kért
+szerepkörcímkék ellenében, a kis- és nagybetűk megkülönböztetése nélkül:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Illeszkedés                              | Pontszám |
+| ---------------------------------------- | -------- |
+| Egy készség, amely tartalmazza a szerepkörcímkét | +3       |
+| Egy cím, amely tartalmazza a szerepkörcímkét     | +2       |
+| Egy ügynöknév, amely tartalmazza a szerepkörcímkét | +1     |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+A pontszámok összeadódnak, és a legmagasabb összeg nyer (holtverseny esetén az
+elsőként megtalált jelölt). Ha egyetlen jelölt sem ér el nullánál nagyobb
+pontszámot, a specifikáció az eszköz `unmatched` listájában tér vissza ahelyett,
+hogy elindulna — így egy olyan szerepkör, amelyhez senki sem illeszkedik,
+jelentésre kerül, és soha nem marad ki csendben.
 
-## The review space
+## Az átnézési tér
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Egy PR-hez pontosan **egy** átnézési tér tartozik, nem átnézőnként egy. A
+`pr.ensureSpace` idempotensen hozza létre, egy `ReviewSpaceAssociation`
+kapcsolja a PR-hez, és a PR head refjéhez provisionálódik. Minden elindított
+átnéző csatlakozik ehhez a térhez, és ott teszi közzé a `review_node`
+megállapításait; éppen ez teszi összehasonlíthatóvá a megállapításokat, és ez
+teszi lehetővé, hogy a vezető ügynök konszenzusra jusson köztük.
 
-## Monitor the dispatch
+## Az indítás figyelése
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Minden elindított átnéző saját `AgentRunLog`-ot kap. A haladást itt követheti:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- Az **átnézési tér**, ahol a megállapítások élőben, folyamatosan érkeznek be
+- A PR **Átnézés** füle, amely az átnézés állapotsávját és az ítéletet mutatja
+- A **Megfigyelhetőség → Élő** (`/workspaces/:id/observability`) oldal, az
+  ügynöknévsor futásonkénti állapottal, élő eltelt idővel, átiratfiókkal és
+  leállításvezérlővel. Nincs hozzá billentyűparancs — az oldalsáv láblécéből
+  érheti el.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/)
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Set up pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
+- [MI-alapú átnézés használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Pipeline-eseményindítók beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [AI review](/hu-HU/kezikonyv/fogalmak/mi-atnezes/)
-- [Pipelines](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)
+- [MI-átnézés](/hu-HU/kezikonyv/fogalmak/mi-atnezes/)
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)

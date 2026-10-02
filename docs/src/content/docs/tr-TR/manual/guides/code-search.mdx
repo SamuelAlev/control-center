@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Kod grafiğiyle kod arama
+description: Bir depoyu indeksleyin, kod grafiği araçlarıyla sembolleri bulun ve bir değişikliğin neleri bozacağını görün.
 slug: tr-TR/kilavuz/nasil-yapilir/kod-arama
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Bu kılavuz, bir depoyu kod grafiğine nasıl alacağınızı ve ardından bir yeniden düzenlemeden önce gerçekten sorduğunuz soruyu yanıtlamak için ondan nasıl yararlanacağınızı gösterir: buna ne bağlı?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Kod grafiği, kayıtlı checkout'larınızın tree-sitter ile ayrıştırılmasıyla oluşturulan bir sembol ve kenar veritabanıdır. Araçları **ajana yöneliktir** — onlara bir ajandan isteyerek ulaşırsınız.
 
-## Before you start
+## Başlamadan önce
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Grafik; Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ve Ada dillerini indeksler. Başka bir dildeki dosyalar ayrıştırılmaz, bu yüzden `search_code`, `code_symbol`, `code_callers`, `code_callees` veya `code_impact` sonuçlarında görünmezler.
 
-Two more things shape what gets indexed:
+İndekslenenleri belirleyen iki etken daha var:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Bir git çalışma ağacında numaralandırma `git ls-files --cached --others --exclude-standard` komutuna bırakılır; böylece her `.gitignore`, iç içe ignore dosyası, `.git/info/exclude` ve genel excludes dosyası dikkate alınır. `node_modules` ile derleme çıktısını graftan uzak tutan şey budur.
+- Üretilmiş Dart dosyaları ise her durumda dışarıda bırakılır. Üretilmiş dosyalar genellikle commit'lenir, dolayısıyla git tek başına onları dışlamaz ve her kod üretimi çalıştırmasında değişip dururlar.
 
-## Get a repo indexed
+## Bir depoyu indeksletme
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+Bir checkout kaydettiğinizde `RepoAdded` olayı tetiklenir ve bu olay onun için `index_code` pipeline'ını otomatik olarak başlatır. Bkz. [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
 
-To re-index by hand:
+Elle yeniden indekslemek için:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. **Ayarlar → Çalışma alanı → Depolar** yolunu açın.
+2. Deponun satırındaki **Kodu indeksle** düğmesine tıklayın.
+3. Çalışırken düğme, tamamlanan dosya sayısını toplam dosya sayısı üzerinden gösterir ve yanında bir iptal denetimi bulunur. İş bittiğinde düğme, sembol sayısını gösteren bir onay işaretine dönüşür.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Grafik; çalışma alanına, depoya ve checkout'a göre bölümlenir: bağlantılı checkout tek bir bölümdür ve her alan worktree'si kendi bölümüne sahiptir (yalıtılmış depo kimliğiyle anahtarlanır).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Takılmış gibi görünen bir bekleyişi açıkladıkları için bilmeye değer iki kısıtlama var:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Dosya izleyici, ana makinede aynı anda yalnızca **bir** indeks çalıştırmasına izin verir — ikinci bir checkout bekler. `index_code` pipeline'ı ayrıca çalışma alanı başına bir çalıştırmayla sınırlıdır, dolayısıyla aynı çalışma alanındaki iki depo kuyruğa girer; farklı çalışma alanları paralel indekslenebilir. İndeksleyicinin kendisi **aynı** checkout'un iki çalıştırmasını sıraya sokar; böylece bir pipeline başlangıcı ile bir izleyici taraması onu iki kez ayrıştıramaz.
+- **Uyku durumundaki alanlara** (son bir haftada hiç mesaj almamış olanlara) ait worktree'ler ne izlenir ne de indekslenir. Bağlantılı checkout'lar izlenmeye devam eder. Atlama kararı beş dakika sonra yeniden denetlenir; böylece yeniden etkinleşen bir alan yakalanır.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Eksik bir gramer sunucuyu durdurur, aramayı değil]
+Tree-sitter ve gramerleri gerekli yerel bileşenlerdir. Biri eksikse `cc_server` açılmayı reddeder ve eksik dylib'in adını verir — belirti, başlatılamayan bir sunucudur; asla bozulmuş bir arama değil. Bunları `scripts/natives/build_natives.sh` ile hazırlayın ve sunucu ikili dosyasını yeniden derleyin.
 :::
 
-## Find a symbol
+## Bir sembol bulma
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Aramayı bir ajandan isteyin. Araç `search_code`'tur ve hem bir çalışma alanına hem de bir depoya ihtiyaç duyar:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Depo kimlikleri `list_repos`'tan gelir. İsteğe bağlı `mode` argümanı `keyword`, `semantic` veya `hybrid` değerlerini alır ve varsayılanı `hybrid`'dir — adlar, imzalar ve doküman yorumları üzerinde BM25'in vektör benzerliğiyle kaynaştırılması.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Her sonuç, sembolün kimliğini, adını, nitelikli adını, türünü, dosya yolunu, başlangıç ve bitiş satırını ve varsa imzasını taşır. **id**, bu sayfadaki diğer tüm araçlara verdiğiniz tanıtıcıdır.
 
-When you know the exact name, look it up directly instead:
+Tam adı biliyorsanız, bunun yerine doğrudan ona bakın:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Çağrıları izleme
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+İkisi de bir arama sonucundan gelen bir `symbol_id` ile isteğe bağlı bir `limit` (varsayılan 50) alır:
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers`, bu sembole gelen kenarı olan sembolleri döndürür; `code_callees` ise onun bağımlı olduğu sembolleri döndürür.
 
-## Check what a change would break
+## Bir değişikliğin neleri bozacağını denetleme
 
-This is the tool the whole page exists for:
+Bu sayfanın var olma sebebi olan araç şudur:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+**Ters** bağımlılık yarıçapını hesaplar: `calls`, `extends` ve `implements` kenarları boyunca sembole doğrudan ya da dolaylı olarak bağlı olan her şey (imports, mixes-in ve generic referanslar grafta saklanır ama burada dolaşılmaz). `depth`, en fazla atlama sayısıdır; 1 ile 6 arasında bir değer alır ve varsayılanı 2'dir.
 
-The result is three fields:
+Sonuç üç alandan oluşur:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — hakkında soru sorduğunuz sembol
+- `impacted` — ulaşılabilen küme; kök 0. derinlikte olacak şekilde kümeye dahildir ve her öğe kökten uzaklığını `depth` olarak taşır
+- `edgeCount` — dolaşmanın kaç kenardan geçtiği; kenarların kendisi değil, sayısı
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Bir adı ya da bir imzayı değiştirmeden önce bunu çalıştırın ve etkilenenler listesini ajanın kapsamı olarak verin.
 
-## Results are checked against the caller's own working copy
+## Sonuçlar çağıranın kendi çalışma kopyasına göre denetlenir
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Çağıran bir ajansa alan kimliği otomatik olarak eklenir ve sonuçlar **o alanın** çalışma kopyasına göre doğrulanır. Dosyası çağıranın ağacında artık bulunmayan bir sembol atlanır; yanıt, bir `staleOmitted` sayısı ve bu semboller için indeksin bayat olduğunu belirten bir not taşır.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Hem sizinle bir ajanın aynı sorguya farklı yanıtlar alabilmesinin hem de bir alandaki ajanın başka bir alandaki ajandan farklı yanıt alabilmesinin nedeni budur. Bir alandaki her konuşma o tek worktree'yi paylaşır. Doğrulama, hata durumunda kabul yönünde başarısız olur: boş bir yanıt yerine bayat bir yanıt tercih edilir.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/).
+Bir değişikliğin etki yarıçapını istediğinizde bir ajandan `code_impact` (veya `review_studio.blastRadius`) çalıştırmasını isteyin. Bkz. [İnceleme hesaplaması](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/).
 
-## Semantic search needs the embedding model
+## Anlamsal arama için gömme modeli gerekir
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Semboller ve olgular, yazma anında ve yalnızca cihazdaki gömme modeli kuruluysa gömülür. Model kurulana kadar `mode: "semantic"` ile hybrid'in anlamsal yarısının eşleştirecek bir şeyi yoktur ve arama fiilen yalnızca anahtar sözcükle çalışır.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+İndekslemeden önce modeli **Ayarlar → Sunucu → Tanılama ve gizlilik → Anlamsal arama** yolundan kurun. Semboller, dosyaları içeri alındığında bir vektör edinir.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Ayrıca sunucu ikili dosyasının her yeniden derlenmesinin gramer dylib'lerini yeniden hazırladığını ve mtime'larını değiştirdiğini unutmayın; bu, her indeks denetim noktasını geçersiz kılar ve bir sonraki çalıştırmada her checkout için tam bir yeniden tarama zorunlu kılar. Yeniden karma hesaplanır, ancak değişmemiş dosyalar yeniden çıkarılmaz.
 
-## What is in the graph
+## Grafta neler var
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Sembol türleri:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Kenar türleri:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/tr-TR/kilavuz/referans/mcp-araclari/).
+Bu araçların kurallı imzaları [MCP araçları](/tr-TR/kilavuz/referans/mcp-araclari/) sayfasındadır.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Add repos to a workspace](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
-- [Review compute (cohorts and axes)](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/)
-- [Use the MCP server](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
+- [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
+- [İnceleme hesaplaması (kohortlar ve eksenler)](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/)
+- [MCP sunucusunu kullanma](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)

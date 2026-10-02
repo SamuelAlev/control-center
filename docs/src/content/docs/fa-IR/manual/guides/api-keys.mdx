@@ -1,115 +1,120 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: مدیریت کلیدهای API
+description: این‌که هر اعتبارنامه کجا نگه‌داری می‌شود — حساب کاربری شما روی سرور، خود سرور، یا یک CLI بیرونی — و چگونه آن را تنظیم، تعویض و حذف کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/کلیدهای-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+این راهنما نشان می‌دهد هر اعتبارنامه‌ای که Control Center استفاده می‌کند کجا ذخیره
+می‌شود و چگونه آن را تغییر دهید.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**هیچ چیز روی دستگاهی که با آن تایپ می‌کنید ذخیره نمی‌شود.** هر اعتبارنامه روی
+سرور زندگی می‌کند؛ این‌که کدام‌یک به درخواستی مشخص پاسخ می‌دهد به این بستگی دارد که
+انسانی پشت آن باشد یا نه.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| اعتبارنامه                            | محل ذخیره                                                     | چه کسی از آن استفاده می‌کند                                          |
+| ------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| اعتبارنامهٔ میزبان کد / تیکتینگ شما     | فایل رازهای 0600 سرور، کلیدشده با شناسهٔ کاربری شما            | هر چیزی که درخواست کنید: سطح PR، اجراهای عامل شما، ایمیج‌های شما      |
+| هویت برنامهٔ سرور                      | همان فایل، به‌علاوهٔ `server_settings` برای چیزهای غیرراز       | کاری که انسانی درخواستش نکرده: وب‌هوک‌ها، نظرسنجی PR، همگام‌سازی تیکت  |
+| کلیدهای ارائه‌دهندهٔ مدل و توکن‌های OAuth | مخزن اعتبارنامهٔ خود سرور                                     | آداپتور داخلی، برای هر فضای کاری روی این نصب                           |
+| توکن‌های ربات Slack                    | `<dataDir>/<workspaceId>/chat_credentials/` روی سرور           | پل گفتگوی همان فضای کاری                                              |
+| اعتبارنامه‌های CLI بیرونی              | هر چیزی که آن CLI استفاده می‌کند                                | Claude Code، روی میزبان سرور                                          |
 
-## Two GitHub credentials, and they answer different questions
+## دو اعتبارنامهٔ GitHub که به پرسش‌های متفاوتی پاسخ می‌دهند
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **مال شما**، از ورود (جریان دستگاه) یا چسباندن یک توکن. همان چیزی است که هر
+  درخواستِ *از طرف شما* با آن انجام می‌شود، پس نظری که به نام شما ثبت شود نام شما
+  را همراه دارد. عضو دیگر نمی‌تواند آن را بخواند، و آن‌ها اعتبارنامهٔ خودشان را
+  متصل می‌کنند
+- **مال سرور**، از GitHub Appی که اپراتور ثبت کرده است. به هر چیزی که فراخوان
+  ندارد پاسخ می‌دهد — پس دسترسی به میزبان کد وقتی یک نفر می‌رود یا توکنی را تعویض
+  می‌کند از دست نمی‌رود
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
-and [Create the GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/).
+مال شما در کارت **میزبانی کد** در **تنظیمات → فضای کاری → نمایه و هویت** تنظیم
+می‌شود؛ مال سرور در **برنامه‌های ارائه‌دهنده** در **تنظیمات → سرور → ورود
+یکپارچه**. [راه‌اندازی یکپارچه‌سازی
+GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/) و [ایجاد GitHub
+App(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/) را ببینید.
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[صفحه‌ای هم هست که فقط با URL در دسترس است]
+`/workspaces/<workspaceId>/api-keys` همان دو کارتِ نخستین گام راه‌اندازی اولیه را
+نشان می‌دهد. **هیچ ورودی‌ای در ناوبری هیچ‌جای رابط کاربری ندارد**؛ فقط با تایپ URL
+در دسترس است. به‌جایش از تنظیمات → فضای کاری → نمایه و هویت استفاده کنید.
 :::
 
-## Set model provider keys
+## تنظیم کلیدهای ارائه‌دهندهٔ مدل
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+آداپتور داخلی خودش ارائه‌دهنده‌ها را احراز هویت می‌کند و آن اعتبارنامه‌ها روی سرور
+زندگی می‌کنند.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. به **تنظیمات → سرور → ارائه‌دهندگان مدل** بروید
+2. تا **ارائه‌دهنده‌ها و مدل‌ها** پایین بروید
+3. ارائه‌دهنده را متصل کنید — OAuth مرورگری برای OpenAI، Codex، Cursor و Kimi Code؛
+   یک کلید API برای Anthropic و بقیه
 
-See [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/) for the full list and
-for adding a custom endpoint.
+برای فهرست کامل و افزودن یک اندپوینت سفارشی، [مدیریت آداپتورها و
+مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/) را ببینید.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+این اعتبارنامه‌ها **سراسری در سطح میزبان** هستند: یک کلید به هر فضای کاری روی این
+نصب خدمت می‌کند. توکن‌های OAuth پیش از انقضا تازه‌سازی می‌شوند.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLIهای آداپتور بیرونی اعتبارنامه‌های خودشان را، در پیکربندی خودشان، روی میزبان سرور
+نگه می‌دارند — Control Center آن‌ها را مدیریت نمی‌کند. احراز هویت Claude Code را
+همان‌طور که مستندات خودش می‌گوید، روی ماشینی که `cc_server` روی آن اجرا می‌شود انجام
+دهید.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/).
+دیالوگ **متغیرهای محیطی** هر آداپتور شبیه جایی است برای گذاشتن کلید یکی از آن‌ها،
+اما نیست: روی دستگاه شما می‌نویسد، در حالی که سرور نسخهٔ خودش را می‌خواند و هیچ
+چیزی این دو را به هم پل نمی‌زند. [مدیریت آداپتورها و
+مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/) را ببینید.
 
-## Connect a ticketing vendor
+## اتصال یک ارائه‌دهندهٔ تیکتینگ
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+کارت **تیکتینگ** در **تنظیمات → فضای کاری → عمومی** هر دو نیمهٔ یک تصمیم را در خود
+دارد: این‌که تیکت‌های شما در کدام ارائه‌دهنده زندگی می‌کنند، و اعتبارنامهٔ آن. انتخاب
+**محلی** ردیف اعتبارنامه را پنهان می‌کند — تیکت‌های محلی در پایگاه‌دادهٔ خود همین سرور
+زندگی می‌کنند و چیزی برای احراز هویت ندارند.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-linear/).
+کلید شما روی سرور در برابر شناسهٔ کاربری‌تان ذخیره می‌شود، مثل کلید میزبان کد. سرور
+کلید Linear خودش را جداگانه نگه می‌دارد (**برنامه‌های ارائه‌دهنده**)، و همگام‌سازی تیکت
+وقتی انسانی درخواست نکرده روی همان اجرا می‌شود. کلیدی که یک عامل دریافت می‌کند تنها
+وقتی تزریق می‌شود که عامل قابلیت **اجازهٔ فراخوانی‌های API تیکتینگ** را داشته باشد.
+[راه‌اندازی یکپارچه‌سازی
+Linear(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-linear/) را ببینید.
 
-## Rotate or revoke
+## تعویض یا لغو
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
+- **اعتبارنامهٔ GitHub شما**: **قطع اتصال** را بزنید، سپس دوباره وارد شوید یا توکن
+  جدید را بچسبانید. توکن قدیمی را در GitHub لغو کنید
+- **برنامهٔ سرور**: یک کلید خصوصی یا راز کلاینت جدید در صفحهٔ GitHub برنامه بسازید،
+  آن را در **برنامه‌های ارائه‌دهنده** بچسبانید و **آزمایش** را بزنید
+- **یک ارائه‌دهندهٔ مدل**: روی ردیفش، خارج شوید (OAuth) یا کلید را حذف کنید، سپس
+  دوباره متصل شوید
+- **Slack**: توکن‌ها را در دیالوگ اتصال دوباره بچسبانید. [راه‌اندازی یکپارچه‌سازی
+  Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/) را ببینید
 
-## Troubleshooting
+## عیب‌یابی
 
-### The PR list is empty but my token works in `curl`
+### فهرست PR خالی است ولی توکن من در `curl` کار می‌کند
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+زیرعنوان ردیف **میزبانی کد** را بررسی کنید. اگر منبع دیگری را نام می‌برد («از طریق
+برنامهٔ این سرور»، «از محیط»)، اعتبارنامه‌ای که آزمایش می‌کنید همانی نیست که پاسخ
+می‌دهد — مال شما ذخیره نشده است.
 
-### The token is accepted but later requests fail
+### توکن پذیرفته می‌شود ولی درخواست‌های بعدی شکست می‌خورند
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+توکن همان‌طور که ذخیره شده بررسی می‌شود، پس ردیف حساب پشت آن را نام می‌برد — اما فقط
+حساب را، نه اسکوپ‌ها را. توکنی با اسکوپ‌های بسیار کم متصل می‌شود و سپس در
+درخواست‌های تک‌تک شکست می‌خورد. اسکوپ‌ها و انقضا را بررسی کنید:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
-- [Create the GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/)
-- [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
-- [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
-- [Set up Linear integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-linear/)
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
+- [ایجاد GitHub App(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/)
+- [مدیریت آداپتورها و مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
+- [راه‌اندازی یکپارچه‌سازی Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
+- [راه‌اندازی یکپارچه‌سازی Linear(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-linear/)

@@ -1,126 +1,128 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Spusťte orchestaci
+description: Požádej orchestrátora o plán, projdi ho a uprav v Plan Studio, schval jednou a nech vygenerovanou pipeline udělat práci.
 slug: cs-CZ/prirucka/navody/spusteni-orchestrace
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/) for how it works.
+Tenhle návod ukáže, jak z jednoho velkého cíle udělat plán pro celý tým, který
+poběží sám. Jak to funguje, popisuje
+[Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/).
 
-## When to use an orchestration
+## Kdy použít orchestraci
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/cs-CZ/prirucka/navody/chat-s-agentem/); for a process you can spell out by
-hand, build a [pipeline template](/cs-CZ/prirucka/navody/vytvoreni-pipeline/).
+Sáhni po orchestraci, když je zadání větší než jeden agent a přesné kroky ještě
+neznáš. Jeden úkol pošli agentovi v
+[prostoru](/cs-CZ/prirucka/navody/chat-s-agentem/). Postup, který umíš zapsat
+ručně, slož jako
+[šablonu pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/).
 
-## Step 1: Ask for the plan
+## Krok 1: Požádej o plán
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Otevři (nebo založ) prostor a **nadřazený ticket**. Návrh ho vyžaduje
+   (`propose_orchestration` bere `ticket_id`); sdílený prostor se vezme z
+   toho ticketu.
+2. Volitelně přepni rozbalovací nabídku režimu v composeru na **Orchestrate**.
+   Režim agenta zúží na čtení a navrhování: paměť, graf kódu, čtení repozitáře
+   a ticketů, `propose_orchestration` a nástroje playbooků. Místo plánu kód
+   psát nezačne.
+3. Oslov orchestrátora přes @ (obvykle agenta CEO) a cíl napiš obyčejně:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Prozkoumej konkurenční prostředí offline-first záznamníku schůzek
+> a napiš jednostránkový dokument k pozicování.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orchestrátor odpoví ve prostoru strukturovanou kartou **návrhu**: role, které
+potřebuje, práce rozložená do podřízených ticketů, volitelná fáze průzkumu a
+diskuse, krok syntézy, který vytvoří výstup, a rozpočet.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Návrh je typovaný objekt, takže ho aplikace před spuštěním ověří (správně
+utvořené role, deklarovaná výstupní schémata, DAG bez cyklů). Návrh, který
+ověřením neprojde, schválit nejde.
 
-## Step 2: Review and edit the proposal
+## Krok 2: Projdi návrh a uprav ho
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Karta v konverzaci nabízí tři akce: **Schválit plán**, **Odmítnout** a
+**Otevřít**. **Otevřít** otevře plán v Plan Studio jako kartu editoru. Samotnou
+kartu upravit nejde.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Cokoli chceš změnit, otevři přes **Otevřít** a uprav v inspektoru vpravo:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Název**, **Popis**, **Role**, **Závisí na** a **Výstupní schéma (JSON)**
+  u libovolného kroku práce. **Role** je klíč role, která v plánu už je a krok
+  vlastní. Ke konkrétnímu pojmenovanému agentovi roli z inspektoru nepřipneš.
+  Seznam náborů a rozpočet inspektor k úpravě nenabízí.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Jen ke čtení zůstávají strukturální uzly (průzkum, diskuse, syntéza) a každý
+uzel, jehož práce už proběhla. Upravovat jde, jen dokud je orchestrace ve
+stavu `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/cs-CZ/prirucka/navody/plan-studio/) for the full editor.
+Než se rozhodneš, stiskni na liště schválení **Odhadnout**. Dostaneš rozsahy
+nákladů, trvání a dosahu dopadu. Celý editor je v
+[Pracujte v Plan Studio](/cs-CZ/prirucka/navody/plan-studio/).
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/cs-CZ/prirucka/navody/sprava-nakladu/).
+:::note[Rozpočet není limit útraty]
+Rozpočet návrhu se porovná s _odhadem_ na liště schválení. Když horní konec
+odhadu strop překročí, součet zčervená s varováním „nad rozpočtem“. Během
+provádění plánu útratu nikdo nehlídá, takže běh se kvůli tomu nezastaví ani
+neselže. Skutečné zastavení útraty zařídí politiky rozpočtu na agenta. Viz
+[Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/).
 :::
 
-## Step 3: Approve
+## Krok 3: Schval
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Plán schval z karty v konverzaci, nebo z lišty schválení v Plan Studio.
+**Tohle je jediné rozhodnutí, které uděláš.** Schválit smí jen operátor:
+nástroj MCP na to není. Agent návrh podá a revize pošle. Schválení zůstane
+na tobě.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) and creates the
-scaffolding:
+Odtud deterministický materializátor (čistá funkce, bez LLM) udělá z návrhu
+skutečnou [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) a postaví kostru:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- najme nové role (a zapíše id najatých agentů, aby se pád uprostřed schválení
+  dal obnovit bez duplicitních náborů)
+- sdruží role do **týmu**
+- založí **projekt** a zařadí pod něj nadřazený ticket
+- spustí **běh pipeline**, který to celé pohání
 
-The status moves to `approved`, then `executing`.
+Stav přejde na `approved`, pak na `executing`.
 
-## Step 4: Watch it run
+## Krok 4: Sleduj běh
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Podřízené tickety se provedou jako kroky pipeline. Když jsi zapnul kolo
+diskuse, každá role nejdřív napíše stanovisko. Postup se ukáže tam, kam se
+díváš už teď:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/)
-- the **project** the parent ticket was filed under
+- **nadřazený ticket**, ke kterému je orchestrace ukotvená
+- sdílený **prostor**, ve kterém tým mluví a řádek plánu sleduje stav každého
+  uzlu
+- detail **běhu pipeline**, s obvyklým vodopádem a nákladem za krok. Viz
+  [Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/)
+- **projekt**, pod který se nadřazený ticket zařadil
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Jakmile jsou podřízené tickety hotové, stav přejde na `synthesizing` a krok
+syntézy vytvoří výstup. Text se zveřejní ve sdíleném prostoru, nadřazený
+ticket se označí jako dokončený a stav přejde na `completed`.
 
-## Stop it early
+## Zastav ji dřív
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Na kartě v konverzaci stiskni **Zrušit orchestraci**, nebo na liště schválení
+v Plan Studio **Zrušit běh**. Zrušení strhne práci, která právě běží.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Orchestrace selže, když selže materializace, nebo když selže její vygenerovaný
+běh pipeline (průzkum, diskuse, syntéza nebo persist; tyhle kroky při selhání
+nepokračují). Vygenerované kroky **práce** při selhání vždy pokračují, takže
+jeden spadlý podřízený ticket běh neshodí. Překročení rozpočtu běh chybou
+neukončí a práh „selhaly všechny podřízené tickety“ orchestrace nemá.
 
-## Related guides
+## Související návody
 
-- [Work in Plan Studio](/cs-CZ/prirucka/navody/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/cs-CZ/prirucka/navody/projekty/): where the parent ticket is filed
-- [Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/cs-CZ/prirucka/navody/sestaveni-tymu-agentu/): the roles an orchestration fills or hires
+- [Pracujte v Plan Studio](/cs-CZ/prirucka/navody/plan-studio/): uprav, odhadni, porovnej a schval plán
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/): nadřazený ticket, ke kterému je orchestrace ukotvená
+- [Organizujte práci v projektech](/cs-CZ/prirucka/navody/projekty/): kam se nadřazený ticket zařadí
+- [Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/): jak vypadá zmaterializovaná orchestrace v enginu
+- [Sestavte tým agentů](/cs-CZ/prirucka/navody/sestaveni-tymu-agentu/): role, které orchestrace obsadí nebo najme
 
-## Related concepts
+## Související koncepty
 
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/)
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)

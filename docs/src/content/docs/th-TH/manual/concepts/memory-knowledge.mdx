@@ -1,199 +1,192 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: หน่วยความจำและความรู้
+description: Control Center จัดเก็บความรู้ของเอเจนต์อย่างไร อะไรที่ไปถึงพรอมต์ของเอเจนต์จริง ๆ และทำไมการอ่านหน่วยความจำจึงเป็นแบบ fail-open
 slug: th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## หน่วยความจำมีไว้เพื่ออะไร
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+หากไม่มีหน่วยความจำ การสนทนากับเอเจนต์ทุกครั้งจะเริ่มจากศูนย์ใหม่: ข้อตกลงเดิม
+ต้องอธิบายซ้ำ การตัดสินใจเดิมต้องถกเถียงกันอีกครั้ง ทางตันเดิมต้องสำรวจซ้ำ
+หน่วยความจำคือที่จัดเก็บระดับเวิร์กสเปซที่คงอยู่ข้ามการรัน และมันมีไว้เพื่อให้
+ความรู้ที่เอเจนต์ตัวหนึ่งสร้างขึ้นนั้นถูกพบโดยเอเจนต์อีกตัวในภายหลัง
 
-It has three layers and they answer different questions:
+มันมีสามชั้น ซึ่งตอบคำถามที่ต่างกัน:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **ข้อเท็จจริง** — สิ่งที่เป็นจริง (ข้อตกลง ผลลัพธ์ การตัดสินใจ)
+2. **นโยบาย** — สิ่งที่เอเจนต์ต้องทำเกี่ยวกับเรื่องนั้น (กฎเชิงบรรทัดฐาน)
+3. **หน่วยความจำทำงาน** — สิ่งที่เอเจนต์ตัวหนึ่งกำลังทำค้างอยู่
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+ความแตกต่างนี้สำคัญเพราะแต่ละชั้นไปถึงเอเจนต์ผ่านเส้นทางที่ต่างกัน ข้อเท็จจริง
+ถูกค้นหา นโยบายถูกผลักไป ส่วนหน่วยความจำทำงานเป็นเรื่องส่วนตัว
 
-## Facts
+## ข้อเท็จจริง
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` คือหน่วยความรู้ที่ผูกอยู่ในขอบเขตของเวิร์กสเปซและโดเมนหนึ่ง
 
-| Attribute                                   | What it is                                                                |
+| แอตทริบิวต์                                 | ความหมาย                                                                  |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | โดเมนความรู้ ("conventions", "decisions", "codebase")                     |
+| `topic`                                     | ป้ายหัวข้อสั้น ๆ                                                          |
+| `content`                                   | ข้อความความรู้                                                             |
+| `confidence`                                | 0.0–1.0 เริ่มต้นจากแหล่งที่มาและเพิ่มขึ้นเมื่อถูกกล่าวถึงซ้ำ               |
+| `memoryType`                                | ชนิดของข้อเท็จจริง — กำหนดเส้นโค้งการเสื่อมตามเวลา                          |
+| `veracity`                                  | ข้อเท็จจริงนี้ถูกรู้มาได้อย่างไร — ตั้งค่าความเชื่อมั่นเริ่มต้นและกำหนดขนาดของส่วนเพิ่มเมื่อถูกกล่าวถึงซ้ำแต่ละครั้ง |
+| `sourceObservationIds`                      | ข้อสังเกตใดที่นำไปสู่ข้อเท็จจริงนี้                                        |
+| `supersededBy`                              | ข้อเท็จจริงใหม่ที่มาแทนที่ ถ้ามี                                           |
+| `validUntil`, `recallCount`, `mentionCount` | สัญญาณการหมดอายุและการใช้งานที่ใช้ตอนเรียกคืน                              |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+สองแถวสุดท้ายคือสิ่งที่คนมักมองข้าม และเป็นตัวตัดสินว่าข้อเท็จจริง_ใด_จะปรากฏขึ้น
+`memoryType` มีพารามิเตอร์การเสื่อมแบบ Weibull ต่อชนิด ดังนั้นคำมั่นที่มีกรอบเวลา
+จะจางหายอย่างรวดเร็ว ในขณะที่ข้อเท็จจริงเชิงโปรไฟล์ที่มั่นคงจะไม่เป็นเช่นนั้น
+`veracity` บันทึกแหล่งที่มา — ระบุโดยมนุษย์ (น้ำหนัก 1.0) อนุมานโดยเอเจนต์ (0.7)
+ผลิตโดยเครื่องมือ (0.5) นำเข้า (0.6) — และน้ำหนักนั้นจะตั้งค่าความเชื่อมั่นเริ่มต้น
+ของข้อเท็จจริง
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+ข้อเท็จจริงจะไม่ถูกแก้ไขในที่เดิมเมื่อมีสิ่งขัดแย้งกัน การเขียนข้อเท็จจริงจะรัน
+การตรวจจับความขัดแย้งกับข้อเท็จจริงในโดเมนและหัวข้อเดียวกัน แล้วแทนที่ตัวที่แพ้
+พร้อมบันทึกแถวความขัดแย้ง จุดประสงค์คือร่องรอยการตรวจสอบ: คุณเห็นได้เสมอว่าเดิม
+เชื่ออะไรและอะไรเข้ามาแทนที่
 
-## Policies
+## นโยบาย
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` คือกฎเชิงบรรทัดฐานที่ได้มาจากข้อเท็จจริง ผูกอยู่ในขอบเขตของ
+เวิร์กสเปซและโดเมน มีแฟล็ก active และ `requiredRole` ซึ่งเป็นทางเลือก
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+นโยบายที่ **active** ทุกตัวในเวิร์กสเปซจะถูกฉีดเข้าไปใน**ทุก**การสั่งงาน โดยไม่กรอง
+— ไม่มีการกรองตามโดเมน บทบาท งาน หรือสเปซ เรื่องนี้ควรรู้ไว้ก่อนคุณเขียนนโยบาย
+ตัวที่ยี่สิบ เพราะนโยบายแย่งชิงหน้าต่างบริบทเดียวกับงาน นี่ก็เป็นเหตุผลที่
+`requiredRole` บนนโยบายเป็นเพียงคำแนะนำ: มันบอกว่ากฎนี้มุ่งเป้าไปที่ใคร แต่ไม่ได้
+หยุดไม่ให้กฎไปถึงคนอื่น ๆ
 
-## Domains
+## โดเมน
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` จัดกลุ่มข้อเท็จจริงและนโยบายภายในเวิร์กสเปซ โดเมนมอบโครงสร้าง
+เชิงองค์กรให้กับความรู้ และเป็นหน่วยที่การให้สิทธิ์เข้าถึงเขียนอ้างอิงถึง — แต่โปรดดู
+คำเตือนด้านล่างก่อนจะถือว่าโดเมนเป็นขอบเขตความลับ
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+โดเมนอาจเป็นระดับทั้งเวิร์กสเปซ (`architecture`) หรือผูกกับรีโปเดียว
+(`repo:<slug>/architecture`) ชื่อเดียวกันในสองขอบเขตคือที่จัดเก็บอิสระสองแห่ง:
+ข้อเท็จจริงที่เป็นจริงกับโค้ดเบสหนึ่งจะไม่เขียนทับข้อเท็จจริงระดับทั้งเวิร์กสเปซ
+`search_memory` และคำนำหน่วยความจำตอนสั่งงานจะจัดอันดับหน่วยความจำที่ผูกกับรีโป
+ไว้ก่อนเมื่อเอเจนต์ทำงานในรีโปนั้น แต่จะไม่กรองส่วนที่เหลือออก ส่ง `repo` ไปกับ
+`propose_fact` / `propose_policy` / `search_memory` เพื่อเขียนหรือเพิ่มน้ำหนัก
+ให้ขอบเขตนั้น
 
-## Access control is fail-open for reads
+## การควบคุมการเข้าถึงเป็นแบบ fail-open สำหรับการอ่าน
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` จับคู่บทบาทของเอเจนต์และโดเมนเข้ากับระดับสิทธิ์หนึ่งในสามระดับ:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| สิทธิ์  | ความหมาย                                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| `none`     | ไม่มีการเข้าถึง                                                                                              |
+| `read`     | ค้นหาและดึงข้อเท็จจริงได้                                                                                     |
+| `write`    | จำเป็นสำหรับ `propose_policy` การเขียนข้อเท็จจริง (`propose_fact`, `supersede_fact`) ไม่ได้ถูกควบคุมด้วยการให้สิทธิ์ |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[การไม่มีสิทธิ์หมายถึงอ่านได้ ไม่ใช่ปฏิเสธ]
+เมื่อไม่มีแถวการให้สิทธิ์สำหรับคู่ `(role, domain)` สิทธิ์ที่มีผลจริงคือ **`read`**
+การอ่านเป็นแบบ fail-open โดยการออกแบบ การเขียนเดียวที่โยนข้อผิดพลาดคือ
+`propose_policy` เมื่อไม่มีสิทธิ์ `write` (`InsufficientMemoryPermission`)
+การใส่เนื้อหาที่ละเอียดอ่อนลงในโดเมนหน่วยความจำไม่ได้จำกัดว่าใครอ่านได้ เว้นแต่
+คุณจะเขียนสิทธิ์ `none` ไว้อย่างชัดเจนสำหรับทุกบทบาทที่ไม่ควรเห็นมัน
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+นอกจากนี้ วันนี้ยังไม่มี UI สำหรับการให้สิทธิ์ที่ไหนในผลิตภัณฑ์ หน้าจอหน่วยความจำ
+มีแท็บข้อเท็จจริง นโยบาย และกราฟความรู้ และไม่มีอย่างอื่นเลย; การให้สิทธิ์เข้าถึง
+ได้ผ่าน ops ของ RPC `memory_access_grant.*` เท่านั้น
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+ความไม่สมมาตรนี้ — ผ่อนปรนกับการอ่าน เข้มงวดกับการเขียนนโยบาย — เป็นการแลกเปลี่ยน
+ที่จงใจ หน่วยความจำมีประโยชน์ที่สุดเมื่อมันหมุนเวียน และการปฏิเสธการอ่านทำให้
+เอเจนต์รู้เรื่องน้อยลงอย่างเงียบ ๆ แทนที่จะรายงานปัญหา ตรงกันข้าม การปฏิเสธ
+การเขียนนโยบายนั้นดังและแก้ไขได้ จึงเป็นจุดที่การบังคับใช้อยู่ โดเมนที่สร้างใหม่
+จะตั้งค่า `write` ให้ทุกบทบาทโดยปริยาย การทำให้เข้มงวดขึ้นในภายหลังเป็นการแก้ไข
+ผ่าน RPC เท่านั้น เพราะไม่มี UI สำหรับการให้สิทธิ์
 
-## Working memory
+## หน่วยความจำทำงาน
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+เอเจนต์แต่ละตัวมี `AgentWorkingMemory`: สมุดจดชั่วคราวแบบข้อความอิสระที่จัดคีย์
+ตามเวิร์กสเปซและเอเจนต์ มันคงอยู่ข้ามการรัน เป็นส่วนตัวของเอเจนต์ตัวนั้น และ
+ถูกฉีดเข้าไปในพรอมต์ของมันทุกครั้งที่สั่งงาน มันคือที่อยู่ของ "ฉันรีแฟกเตอร์ auth
+ไปได้ครึ่งทาง" — สถานะที่ควรพาไปยังการรันครั้งถัดไป แต่ไม่ควรยกระดับเป็น
+ข้อเท็จจริงถาวร
 
-## What actually reaches an agent's prompt
+## อะไรที่ไปถึงพรอมต์ของเอเจนต์จริง ๆ
 
-At dispatch, the memory preamble is assembled from exactly three things:
+ตอนสั่งงาน คำนำหน่วยความจำถูกประกอบขึ้นจากสามสิ่งเท่านั้น:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **นโยบายที่ active ทุกตัวของเวิร์กสเปซ** ในรูปแบบบรรทัด `- [domain] rule`
+- **หน่วยความจำทำงานของเอเจนต์เอง** ตามตัวอักษร
+- **รายการข้อเท็จจริงสั้น ๆ ที่จับคู่ด้วยคีย์เวิร์ด** สำหรับงานนี้ — ไม่เกินห้ารายการ
+  ภายในงบประมาณประมาณ 1,200 อักขระ และเฉพาะเมื่อคำอธิบายงานยาวอย่างน้อย 20
+  อักขระ งานที่สั้นกว่านั้นจะไม่ได้ข้อเท็จจริงเลย
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+รายการสั้นนี้ใช้ FTS/คีย์เวิร์ดเท่านั้น และถูกจำกัดจำนวนอย่างจงใจ การสร้าง embedding
+ของคำค้นนั้นช้า และเส้นทางการสั่งงานเป็นจุดเดียวที่ความหน่วงปรากฏให้เห็นทันที
+จึงจงใจกันเส้นทางเชิงความหมายที่ช้าออกไป คำนำปิดท้ายด้วยการบอกให้เอเจนต์ตรวจสอบ
+รายการที่สำคัญด้วย `search_memory` ซึ่งเป็นที่ที่โมเดลการเรียกคืนเต็มรูปแบบอยู่
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+ไม่มีการตรวจสอบการให้สิทธิ์เข้าถึงบนเส้นทางนี้ สิ่งที่รายการสั้นค้นพบคือสิ่งที่
+เอเจนต์เห็น
 
-## Recall: one query, four voices
+## การเรียกคืน: หนึ่งคำค้น สี่เสียง
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+เครื่องมือ `search_memory` ที่ใช้ฝั่งเอเจนต์มีสามโหมด และเป็นการค้นหาที่ต่างกันจริง ๆ:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — FTS5 เท่านั้น
+- **`semantic`** — ผลลัพธ์จาก BM25 และเวกเตอร์ที่หลอมรวมด้วย reciprocal rank fusion
+- **`hybrid`** (ค่าเริ่มต้น) — การเรียกคืนแบบหลายเสียง: เสียงที่จัดอันดับแล้ว
+  สี่เสียงหลอมรวมกัน แล้วกระจายความหลากหลาย
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+เสียงทั้งสี่คือ lexical (FTS), semantic (เวกเตอร์ KNN), temporal (ข้อเท็จจริงที่
+active ล่าสุด) และ graph — การเดินสองฮอปผ่านเส้นเชื่อมแบบ episodic จากจุดตั้งต้น
+lexical และ semantic ที่แข็งแกร่งที่สุด เสียง graph คือเหตุผลที่เส้นเชื่อมแบบ
+episodic มีอยู่ตั้งแต่แรก: มันเผยข้อเท็จจริงที่_เชื่อมโยงกับ_คำตอบของคุณโดยไม่ตรงกับ
+คำใดของคุณเลย เสียงต่าง ๆ ถูกถ่วงน้ำหนักตามเจตนาของคำค้นที่จำแนกไว้ (ค่าเริ่มต้น
+semantic มีน้ำหนักมากที่สุด ตามด้วย graph และ lexical แล้วจึง recency) คะแนนของ
+ผู้สมัครแต่ละรายถูกปรับตามการเสื่อมแบบ Weibull ของมัน และชุดผลลัพธ์ถูกกระจาย
+ความหลากหลายแบบ MMR เพื่อไม่ให้ข้อเท็จจริงเดียวที่พูดซ้ำห้าครั้งมาเบียดข้อเท็จจริง
+ที่ต่างกันสี่ข้อออกไป
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[การเรียกคืนเชิงความหมายจะเงียบจนกว่าจะติดตั้งโมเดล]
+เสียงเวกเตอร์จะเริ่มมีส่วนร่วมก็ต่อเมื่อโมเดล embedding บนอุปกรณ์ถูกดาวน์โหลดแล้ว
+จนถึงตอนนั้น การเรียกคืนแบบ hybrid จะรันด้วยสามเสียง และไม่มีการเติมย้อนหลัง —
+ข้อเท็จจริงที่เขียนไว้ก่อนติดตั้งโมเดลจะไม่ได้รับเวกเตอร์เลย เส้นทางเวกเตอร์จะลด
+ระดับลงอีก เป็นการสแกนแบบ in-Dart บน embedding ที่แพ็กไว้ หากส่วนขยายเวกเตอร์
+ของ SQLite โหลดไม่สำเร็จ; การเรียกคืนยังตอบได้ เพียงแต่ช้าลง
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+การค้นหาหน่วยความจำบนเดสก์ท็อปและเว็บเป็นเส้นทางที่แยกออกไปและเรียบง่ายกว่า:
+op ของ RPC `memory_fact.search` เป็น **FTS5 เท่านั้น** เพราะไคลเอนต์แบบบาง
+ไม่สามารถส่ง embedding ของคำค้นไปด้วยได้ และเส้นทางแบบ hybrid ยังคงอยู่ภายใน
+โฮสต์ ดังนั้นการจัดอันดับที่คุณเห็นในเบราว์เซอร์หน่วยความจำจึงไม่ใช่การจัดอันดับ
+ที่เอเจนต์ได้จาก `search_memory` นี่เป็นสิ่งที่คาดไว้ ไม่ใช่บั๊ก แต่ก็หมายความว่า
+"ฉันค้นหาแล้วไม่เจอ" บน UI ไม่ใช่หลักฐานว่าเอเจนต์จะหาไม่เจอ
 
-## Where memory lives and who writes it
+## หน่วยความจำอยู่ที่ไหนและใครเป็นคนเขียน
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+เบราว์เซอร์หน่วยความจำอยู่ที่ **การตั้งค่า → เวิร์กสเปซ → หน่วยความจำ**
+(`/workspaces/<id>/settings/memory`) พร้อมแท็บข้อเท็จจริง นโยบาย และกราฟความรู้
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+มีความไม่สมมาตรตรงนี้ที่ทำให้หลายคนประหลาดใจ: **คุณแก้ไขและลบหน่วยความจำได้
+แต่สร้างมันไม่ได้** ทั้งแท็บข้อเท็จจริงและแท็บนโยบายไม่มีปุ่มสำหรับเพิ่ม การสร้าง
+เนื้อหาเป็นเรื่องฝั่งเอเจนต์ ผ่าน `propose_fact` และ `propose_policy`
+(`supersede_fact` / `supersede_policy` เพื่อแทนที่) `remember` เขียนรายการ
+hot-tier ที่ผูกกับเซสชัน ซึ่ง `consolidate_memory` อาจยกระดับเป็นข้อเท็จจริง
+ในภายหลัง; `record_observation` และ `update_my_notes` เขียนสมุดจดชั่วคราวส่วนตัว
+ที่ถูกฉีดตอนสั่งงาน เบราว์เซอร์นี้เป็นพื้นที่สำหรับตรวจทานและแก้ไข ไม่ใช่สำหรับ
+สร้างเนื้อหา — ดังนั้นถ้าคุณอยากได้ข้อเท็จจริงในหน่วยความจำ วิธีใส่เข้าไปคือ
+บอกเอเจนต์
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+การดำเนินการบำรุงรักษาสองอย่างก็ถูกเรียกโดยเอเจนต์เช่นกัน ไม่ได้ตั้งเวลาไว้:
+`consolidate_memory` รวมและตัดข้อเท็จจริงที่สะสมไว้ และ `harmonize_memory`
+ประสานความเชื่อที่แยกจากกันไปในหมู่เอเจนต์ `list_memory_conflicts` แสดงสิ่งที่
+การตรวจจับความขัดแย้งบันทึกไว้แล้ว ไม่มีอะไรมาหารันให้คุณตามตัวจับเวลา
+ข้อตัดสินใจจากการประชุมจะถูกเก็บเข้าสู่โดเมน `decisions` เมื่อขั้นตอนบันทึก
+การประชุมบันทึกไว้; นั่นไม่ใช่ตัวจับเวลาบนการรันเอเจนต์ที่เสร็จสิ้น
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): roles are what grants are written against
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/th-TH/คู่มือ/วิธีทำ/จัดการหน่วยความจำ/): working with memory in practice
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): บทบาทคือสิ่งที่การให้สิทธิ์เขียนอ้างอิงถึง
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): หน่วยความจำถูกผูกกับเวิร์กสเปซและอยู่ในไฟล์ฐานข้อมูลของเวิร์กสเปซนั้นเอง
+- [จัดการหน่วยความจำของเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/จัดการหน่วยความจำ/): การทำงานกับหน่วยความจำในทางปฏิบัติ

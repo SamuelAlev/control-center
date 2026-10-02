@@ -1,69 +1,70 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: Bygg ett agentteam
+description: Gruppera agenter under en ledare så att tilldelat arbete går via en koordinator.
 slug: sv-SE/handbok/how-to-guider/bygg-agentteam
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+Den här guiden visar hur du skapar ett team, ger det en ledare och dirigerar arbete till det.
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+Ett team är en namngiven grupp av agenter inom en arbetsyta, där en agent utses till dess **ledare**. Att tilldela ett ärende till teamet väcker ledaren, som bryter ner arbetet och delegerar till medlemmar; när en medlems körning är klar väcks ledaren igen för att avgöra vad som ska hända härnäst.
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+Skapa, byt namn på och bemanna team i **Inställningar → Arbetsyta → Agenter → Team**. Du kan dirigera arbete till ett team på två sätt: en agent anropar `assign_ticket` med teamets `team_id`, eller så skickar en pipeline-nod av typen **Team dispatch** ut teamet (utan att tilldela något ärende). Väljaren för ärendets tilldelade visar dig och enskilda agenter.
 
-## Create a team
+## Skapa ett team
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. Öppna **Inställningar → Arbetsyta → Agenter** (`/settings/workspace/agents`).
+2. Klicka på **Team** i sidhuvudet.
+3. Klicka på **Lägg till team**.
+4. Ange ett **namn** (till exempel "backend" eller "review squad") och en valfri **beskrivning** och klicka sedan på **Skapa**.
 
-The team is created and selected and its editor opens in the right-hand pane.
+Teamet skapas och markeras, och dess redigerare öppnas i den högra panelen.
 
-## Set the leader
+## Ange ledaren
 
-This is the step the whole feature depends on. In the team's editor:
+Det här är steget som hela funktionen hänger på. I teamets redigerare:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. Under **Ledare** väljer du en agent. Hjälptexten beskriver det exakt: "Koordinatorn som tar emot teamtilldelat arbete och delegerar till den bäst lämpade medlemmen."
+2. Fyll vid behov i **Driftsinstruktioner** — fritext som lämnas till ledaren tillsammans med varje dirigerat ärende.
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+Om du befordrar en agent till ledare blir den också medlem om den inte redan var det. Ett team som lämnas på **Ingen ledare** är inaktivt: inget skickas ut när arbete dirigeras till det, och om du tar bort den nuvarande ledaren från medlemslistan står teamet utan ledare igen.
 
-## Add members
+## Lägg till medlemmar
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+I samma redigerare använder du medlemskortet för att lägga till agenter från arbetsytan och för att ta bort dem. Medlemmarna är den lista som ledaren delegerar inom.
 
-Teams are workspace-scoped: only agents in this workspace can join.
+Team är knutna till arbetsytan: bara agenter i den här arbetsytan kan gå med.
 
-## Give the team a space
+## Ge teamet en yta
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+Det finns ingen automatisk teamyta. Om du vill ha en skapar du en vanlig yta från **Ytor** och lägger till teamets agenter i den. En `Team` bär ett namn, en beskrivning, en ledare, instruktioner och medlemmar — ingen koppling till någon yta.
 
-## Reporting lines are a separate thing
+## Rapporteringslinjer är en separat sak
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+Varje agent har också ett fält som heter **Rapporterar till**, som ställs in i **Inställningar → Arbetsyta → Agenter**. Det bygger arbetsytans rapporteringsträd, som du ser med knappen **Organisationsschema** på agentsidan.
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+Det styr inte dirigeringen till team. En ledare väljer en delegat ur teamets medlemslista utifrån skills och roll, inte utifrån rapporteringskedjan. Åtkomstbehörigheter för minnet nycklas på agentens roll, inte på rapporteringskedjan, och ingen analysyta aggregerar per team eller hierarki. Delegeringsspärrarna begränsar djupet och upptäcker cykler, men de kräver aldrig att målet är underordnat.
 
-## What a routed ticket does
+## Vad ett dirigerat ärende gör
 
-When a ticket does carry a team assignment:
+När ett ärende faktiskt bär en teamtilldelning:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. Teamets ledare skickas ut med ärendet, sina driftsinstruktioner och medlemslistan.
+2. Ledaren delegerar till medlemmar och registrerar sin bedömning med verktyget `record_team_activity` — `action` (delegerat), `no_action` (inget mer att göra, vilket stoppar ytterligare återutlösningar) eller `failed`.
+3. Varje medlemskörning som slutförs väcker ledaren igen, inom ramen för no-action-spärren.
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+Pipeline-noden **Team dispatch** är den andra ingången. Den tar ett team-id, en prompt och ett utskicksläge:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel` — en uppgift per medlem i ett delat dolt samtal, som pausas tills varje körning är klar, där varje medlems utdata samlas under nodens utdatanyckel
+- `manager` — skickar bara ut ledaren, som koordinerar i samtalet
 
-## Related guides
+## Relaterade guider
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Run agents in parallel](/sv-SE/handbok/how-to-guider/parallella-agenter/)
-- [Delegate work to agents](/sv-SE/handbok/how-to-guider/delegera-arenden/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Kör agenter parallellt](/sv-SE/handbok/how-to-guider/parallella-agenter/)
+- [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)
 
-## Related concepts
+## Relaterade koncept
 
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/)
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/)
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/)
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/)

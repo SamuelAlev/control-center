@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: 티켓 생성 및 관리
+description: 티켓을 만들고 수명주기를 따라 이동시키며, 레이블과 링크를 붙이고 누가 무엇을 소유하는지 기록합니다.
 slug: ko-KR/매뉴얼/사용-가이드/티켓-관리
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+이 가이드에서는 티켓을 만들고 관리하는 방법을 설명합니다.
 
-## Create a ticket
+## 티켓 만들기
 
-### From the UI
+### UI에서
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. 워크스페이스 사이드바에서 **티켓**을 클릭합니다.
+2. **새 티켓**을 누릅니다.
+3. 다음 항목을 입력합니다:
+   - **제목** — 간단한 요약입니다. 유일한 필수 필드입니다.
+   - **설명** — 마크다운이며, 서식 도구 모음이 있습니다.
+   - **상태** — **할 일**(기본값) 또는 **백로그**입니다. 시작된 상태와 종료
+     상태는 만들 때가 아니라 수명주기를 통해 도달합니다.
+   - **우선순위** — 없음, 긴급, 높음, 보통, 낮음.
+   - **담당자** — 본인 또는 워크스페이스의 모든 에이전트.
+   - **프로젝트** — 선택적인 그룹화.
+4. **만들기**를 누르거나, 먼저 **더 만들기**를 켜서 빠르게 입력할 수 있도록
+   대화상자를 열어 둡니다.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+대화상자에는 공급자 선택기가 없습니다. 티켓은 워크스페이스의 활성 티켓 공급자를
+기준으로 만들어집니다.
 
-### From an agent
+### 에이전트에서
 
-Ask an agent in a space:
+스페이스에서 에이전트에게 요청합니다:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> 느린 연결에서 로그인 타임아웃 문제를 해결할 티켓을 만들어 주세요.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+그러면 에이전트가 `create_ticket` MCP 도구를 호출합니다. 이 도구에서 우선순위는
+이름이 아니라 **정수**입니다:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| 값  | 우선순위 |
+| --- | -------- |
+| `0` | 없음     |
+| `1` | 긴급     |
+| `2` | 높음     |
+| `3` | 보통     |
+| `4` | 낮음     |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+`workspace_id`와 `title`만 필수이며, `description`, `priority`, `assignee`(에이전트
+id), `team_id`는 선택 사항입니다. 이 도구는 외부 트래커 쓰기로 분류되어 실행 전에
+승인을 요청합니다.
 
-## Update ticket status
+## 티켓 상태 변경
 
-Tickets follow this lifecycle:
+티켓은 다음 수명주기를 따릅니다:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,126 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed`, `cancelled`는 종료 상태입니다. `cancelled`는 모든 비종료 상태에서
+도달할 수 있습니다. `done`과 `failed`는 `inProgress` 또는 `inReview`에서 도달할 수
+있으며, `open`은 `blocked`로 바로 이동할 수도 있습니다. UI 상태 선택기에는
+`failed`를 제외한 모든 상태가 나열됩니다 — 에이전트는 `fail_ticket`으로 이를
+표시합니다.
 
-To change it, use any of:
+상태를 바꾸려면 다음 중 하나를 사용합니다:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- 티켓의 속성 패널에 있는 **상태** 행,
+- 목록에서 티켓을 마우스 오른쪽 버튼으로 클릭했을 때 나오는 **상태** 하위 메뉴,
+- 티켓을 여러 개 선택한 뒤 플로팅 바에 나타나는 **상태** 칩.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[수명주기 그래프는 사용자가 아니라 에이전트를 구속합니다]
+UI에서 이루어지는 모든 상태 변경은 그래프를 완전히 우회하여 강제로 적용됩니다 —
+선택기에 나열된 어떤 상태로든 티켓을 옮길 수 있으며, `done`, `failed`,
+`cancelled` 상태를 다시 여는 것도 가능합니다. 선택기는 `failed`를 대상으로
+제공하지 않습니다. 위 다이어그램은 에이전트와 자동화를 구속합니다: MCP 도구나
+조정기가 시도한 허용되지 않는 전이는 로그에 기록되고 무시되며, 적용되지
+않습니다.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/).
+상태 변경은 파이프라인을 트리거할 수 있는 도메인 이벤트(`TicketStatusChanged`,
+`TicketCompleted` 등)를 발행합니다.
+[파이프라인 트리거 설정](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)을 참고하세요.
 
-## Assign a ticket
+## 티켓 배정
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. 티켓을 엽니다.
+2. 속성 패널에서 **담당자**를 본인, 다른 워크스페이스 구성원 또는 에이전트로
+   설정합니다.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)).
+:::caution[배정해도 어떤 작업도 시작되지 않습니다]
+배정은 소유권을 기록할 뿐 그 이상은 아무것도 하지 않습니다. 스페이스도 만들지
+않고, 상태도 바꾸지 않으며, 어떤 에이전트도 디스패치하지 않습니다 —
+`TicketAssigned`는 뒤에 디스패처가 없는 순수한 감사 신호입니다. 에이전트가
+작업하게 하려면 스페이스에서 메시지를 보내세요
+([에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/) 참고).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+한 가지 예외가 있습니다: `TicketAssigned`는 파이프라인 트리거를 연결할 수 있는
+이벤트 유형이므로, 직접 만든 템플릿이 배정에 반응하게 할 수 있습니다.
 :::
 
-## Add labels
+## 레이블 추가
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+레이블은 개별 티켓이 아니라 티켓 목록에서 일괄 적용합니다 — 속성 패널에는 레이블
+컨트롤이 없습니다.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. 티켓 목록에서 행 위로 마우스를 가져가 체크박스를 선택합니다. 필요한 만큼
+   선택하세요. 하나라도 선택하면 플로팅 바가 나타납니다.
+2. 그 바에서 **레이블** 칩을 엽니다.
+3. 레이블을 고릅니다. 선택한 티켓 중 해당 레이블이 없는 모든 티켓에 추가되며,
+   기존 레이블은 절대 지워지지 않습니다. **레이블 지우기**는 모든 레이블을
+   제거합니다. 선택기에는 워크스페이스의 티켓에 이미 있는 레이블이 나열됩니다.
+   에이전트는 `update_ticket` 또는 `tickets.patch`를 통해 새 이름을 추가할 수
+   있습니다.
 
-## Link tickets
+## 티켓 연결
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+관계는 속성 패널의 티켓 **관계** 카드에 있거나, 목록의 마우스 오른쪽 버튼 메뉴에
+있는 **관계 지정** 뒤에 있습니다.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. 티켓을 열고 **관계** 카드를 찾습니다.
+2. 카드의 추가 컨트롤을 눌러 관계를 선택합니다:
 
-| Relation          | Meaning                                 |
+| 관계              | 의미                                    |
 | ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| **다음의 하위 이슈…** | 이 티켓의 상위 티켓이 상대 티켓입니다   |
+| **다음의 상위 이슈…** | 상대 티켓이 이 티켓의 하위 티켓입니다   |
+| **다음으로 인해 차단됨…** | 이 티켓이 상대 티켓으로 인해 차단됩니다 |
+| **다음을 차단 중…** | 이 티켓이 상대 티켓을 차단합니다        |
+| **다음과 관련됨…** | 대칭 관계이며 방향이 없습니다           |
+| **다음의 복제…**  | 이 티켓이 상대 티켓의 복제입니다        |
 
-3. Pick the target ticket.
+3. 대상 티켓을 고릅니다.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**복제됨**은 카드에는 나타나지만 선택기에는 없습니다 — **다음의 복제**의
+역방향이며 상대 티켓에서 설정합니다. 나열된 각 관계는 클릭하면 연결된 티켓이
+열리고, 마우스를 가져가면 제거할 수 있습니다.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+상위 및 하위 이슈 관계는 링크 행이 아니라 티켓 자체에 저장되므로, 상위 티켓을
+삭제하면 하위 티켓까지 연쇄 삭제되지만(아래 참고), 차단 및 관련 링크는 그렇지
+않습니다.
 
-## Add collaborators
+## 협업자 추가
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+협업자는 티켓의 로스터입니다 — 누가 어떤 역할로 관련되어 있는지를 나타냅니다.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. 티켓을 엽니다.
+2. **협업자 추가** 카드에서 사람 추가 컨트롤을 누릅니다.
+3. 에이전트를 고릅니다.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+역할은 **담당자**, **협업자**(기본값), **리뷰어** 세 가지입니다. UI 선택기에는
+워크스페이스 에이전트만 나열되며 항상 기본 역할을 기록합니다. 사람은 행으로
+나타날 수 있지만 그 메뉴에는 표시되지 않습니다. MCP `add_ticket_collaborator`
+도구는 `role`을 받습니다.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ko-KR/매뉴얼/사용-가이드/스페이스/).
+협업자를 추가하면 행 하나를 기록할 뿐 도메인 이벤트를 발행하지 않으며, 스페이스
+접근 권한도 부여하지 않습니다. 에이전트를 대화에 넣으려면 대신 스페이스 헤더에서
+참가자로 추가하세요 — [스페이스 사용](/ko-KR/매뉴얼/사용-가이드/스페이스/)을
+참고하세요.
 
-## Delete a ticket
+## 티켓 삭제
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+속성 패널 맨 아래의 **티켓 삭제**를 사용하거나, 마우스 오른쪽 버튼 메뉴를
+사용하거나, 티켓을 여러 개 선택한 뒤 플로팅 바의 삭제 동작을 사용합니다.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[삭제는 로컬에서만 이루어집니다]
+외부 트래커에서 온 티켓은 그곳에서 삭제되지 않으며 — 이를 지원하는 공급자가
+없습니다 — 따라서 다음 동기화 때 다시 나타날 수 있습니다. 삭제는 연쇄되기도
+합니다: 티켓의 협업자와 모든 하위 티켓이 함께 삭제됩니다.
 :::
 
-## Related guides
+## 관련 가이드
 
-- [Delegate work to agents](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
-- [Organize work with projects](/ko-KR/매뉴얼/사용-가이드/프로젝트/)
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [Ticket lifecycle reference](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/)
+- [에이전트에 작업 위임](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
+- [프로젝트로 작업 정리](/ko-KR/매뉴얼/사용-가이드/프로젝트/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [티켓 수명주기 레퍼런스](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/)
 
-## Related concepts
+## 관련 개념
 
-- [Tickets](/ko-KR/매뉴얼/개념/티켓/)
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/)
+- [티켓](/ko-KR/매뉴얼/개념/티켓/)
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/)

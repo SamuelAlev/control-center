@@ -1,7 +1,8 @@
 ---
 title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+description: Add GitHub repositories as skill sources, browse their catalogues, and install, update or uninstall skills through the antivirus scan gate.
 slug: en-GB/manual/guides/manage-skills
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
 This guide shows you how to fill a workspace with skills from GitHub: add a
@@ -14,13 +15,13 @@ it. The only safety signal Control Center trusts is the antivirus scan verdict,
 which every install passes through before anything reaches disk or an agent
 prompt. If you want the reasoning, read the
 [agent model's skills section](/en-GB/manual/concepts/agent-model/); this page stays
-on the doing.
+with the practical work.
 
 Skills live at **Settings → Workspace → Skills**
 (`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
 skills you install here belong to this workspace only. The page has two tabs:
 **Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+(GitHub catalogues). Both writes pass the same scan gate.
 
 ## Add a skill repository
 
@@ -30,8 +31,8 @@ skills you install here belong to this workspace only. The page has two tabs:
    and confirm.
 
 The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
+credentials, then adds it to the left rail. There is no curated store in
+between: any GitHub repository works, which also means reputation is yours to
 judge — a star count is evidence, never a guarantee.
 
 A repository's skills are the directories that contain a `SKILL.md` (up to
@@ -43,10 +44,10 @@ directory in it matches the skill convention.
 ## Inspect a skill before installing
 
 Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
+with a filter field above it that narrows the catalogue by name, description or
 slug. Click a card to open the detail view. It shows three things:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
+- **The README**, rendered as Markdown — the skill directory's `README.md`, or
   the `SKILL.md` body when there is no README.
 - **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
   capabilities the skill's content declares (runs shell, writes files, network
@@ -86,7 +87,7 @@ rollback reference in the lock.
 tab) removes the skill's directory and its lock pin together — an uninstalled
 skill leaves nothing behind.
 
-**Removing a repository** from the rail removes only the catalog: skills you
+**Removing a repository** from the rail removes only the catalogue: skills you
 installed from it stay installed and still update, because a pin records the
 repository by name rather than by reference to the source entry. Add the
 repository back if you want to browse it again.

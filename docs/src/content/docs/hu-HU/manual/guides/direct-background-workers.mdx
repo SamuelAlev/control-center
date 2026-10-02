@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Háttér-workerek irányítása
+description: Használja a vibe módot, hogy ne Ön végezze a munkát, hanem több ügynököt irányítson, amelyek párhuzamosan dolgoznak.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Ez az útmutató megmutatja, hogyan futtathat egy beszélgetést **irányítóként**, nem pedig workerként: a munkamenet olvas és ellenőriz, a szerkesztést pedig a háttér-ügynökök végzik.
 
-## What changes when you type `/vibe`
+## Mi változik, amikor beírja a `/vibe` parancsot
 
-Two things, and only the first is enforced by the machinery:
+Két dolog változik, és ebből csak az elsőt kényszeríti ki a gépezet:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **A munkamenet saját eszközei csak olvashatóvá válnak**, kiegészülve az öt worker-igével. A repóra kizárólag egy workeren keresztül hathat, és csak úgy tudhatja meg, mi történt, ha elolvassa azokat a fájlokat, amelyekhez egy worker hozzányúlt.
+2. **Arra kap utasítást, hogy ne elhiggye, hanem olvassa el és ellenőrizze.** Egy worker jelentése állítás arról, hogy mit tett, nem pedig bizonyíték arra, hogy sikerült.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Az első a döntő. Az az irányító, amelyik még mindig tud grep-elni és szerkeszteni, nyomás alatt maga végzi el a munkát — éppen ez az a hibaeset, amelyet ez az egész hivatott megelőzni.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## A workerek a nulláról indulnak
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Egy worker soha nem látta a beszélgetését, és soha nem is fogja. A feladatkiírás a teljes kontextusa.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Ez tartja olcsón a mintát — húsz worker, amelyek mindegyike az irányító előzményeit hordozná, az irányító kontextusának hússzorosába kerülne —, ugyanakkor ez az egyetlen dolog, ami megnehezíti a feladatkiírások megírását. A „Most csináld meg a másikat is” az irányítónak teljes utasításként hat, egy friss munkamenetnek viszont semmit sem mond.
 
-A good brief names files, commands and the definition of done:
+A jó feladatkiírás megnevezi a fájlokat, a parancsokat és azt, hogy mi számít késznek:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> A `lib/features/auth/` könyvtárban cserélje le a `SessionStore.read(key)` minden hívását `SessionStore.get(key)`-re. Az új metódus `Future<String?>` értéket ad vissza, ahol a régi `String?`-t adott vissza, ezért a hívóknak `await`-re van szükségük. Ha kész, futtassa a `fvm flutter analyze lib/features/auth` parancsot, és jelentse azokat a hibákat, amelyeket nem tudott kijavítani.
 
-## The five verbs
+## Az öt ige
 
-| Verb         | What it does                                            |
+| Ige          | Mit tesz                                                |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Elindít egy workert egy feladatkiírással. **Azonnal visszatér.** |
+| `vibe_list`  | Minden worker szintje, állapota, eltelt ideje és utolsó eredménye |
+| `vibe_send`  | Egy következő kör egy már befejezett workernek           |
+| `vibe_wait`  | Addig blokkol, amíg egy worker be nem fejeződik          |
+| `vibe_kill`  | Leállít egyet                                            |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Az indítás szándékosan aszinkron. Az az irányító, amelyik minden indításnál blokkol, egyszerre egy workert futtat — ez lassabb módja annak, amit addig is maga végzett. A `vibe_wait`-et csak akkor használja, ha egy konkrét válasz nélkül valóban nem tud továbblépni.
 
-## Two tiers
+## Két szint
 
-| Tier   | For                                                              |
+| Szint  | Mire való                                                        |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Mechanikus munka világos specifikációval — szerkesztések, átnevezések, vázlatok, parancsok futtatása |
+| `good` | Tervezés, mérlegelés, vagy egy `fast` worker kimenetének átnézése  |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Gyakori minta, hogy `fast` workereket osztunk szét egymástól független fájlokra, majd indítunk egy `good` workert, amely átnézi, amit együtt elvégeztek.
 
-## Verifying
+## Az ellenőrzés
 
-This is the part that decides whether the pattern is worth anything.
+Ez az a rész, amely eldönti, hogy a minta egyáltalán ér-e valamit.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Ezután **olvassa el azokat a fájlokat, amelyeket megnevezett**. Az irányítónak `read`, `search`, `lsp` és `ast_grep` áll rendelkezésére; éppen ezért tartottuk meg őket. Az az irányító, amelyik készpénznek veszi a jelentést, valójában más ügynökök optimizmusát összegzi.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+A `lsp(action: "diagnostics", file: "*")` egy worker-kör után általában a leggyorsabb egyszeri ellenőrzés.
 
-## When a worker loses the thread
+## Amikor egy worker elveszíti a fonalat
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Állítsa le, és írjon új feladatkiírást. Egy friss, javított feladatkiírás olcsóbb, mint egy vita, a `vibe_send` pedig csak olyan workernél működik, amely már befejezte a körét.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Korlátok
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Nyolc egyidejű worker.** A kiadások felső korlátja, nem technikai megkötés: mindegyik egy teljes modell-munkamenet, és az az irányító, amelyik húszat oszt szét, már nem követi, hogy azok éppen mit csinálnak.
+- **Egyetlen worker sem éli túl a módot.** Amikor a futtatás véget ér, mindegyikük leáll, és az átirat megmondja, hány volt. Az az egyetlen hiba, amit ez nem engedhet meg magának, hogy egy háttér-ügynök még azután is fájlokat szerkeszt, hogy a beszélgetés továbblépett.
+- **A workerek valójában hétköznapi alügynökök.** Ugyanaz a mélységi korlát, ugyanaz a korlátszabályzat, ugyanaz a gyermek a futtatási naplóban. A vibe mód azt változtatja meg, hogy ki vezeti őket, nem azt, hogy mit tehetnek — ezért egy worker írási és exec-hívásainál továbbra is megjelennek a jóváhagyási kérések.
 
-## When not to use it
+## Amikor nem érdemes használni
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/) or an [orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+A vibe mód az olyan munkára való, amely független feladatkiírásokra bontható. Ha a következő lépés az előző lépés kimenetétől függ, akkor valójában [pipeline-t](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/) vagy [orchestrációt](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/) ír le, és mindkettő rendesen kifejezi a függőségeket ahelyett, hogy az irányítóval szimuláltatná azokat a `vibe_wait` segítségével.
 
-## Related
+## Kapcsolódó
 
-- [Run agents in parallel](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/) — the other ways to fan out
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/) — when the work has a shape
-- [Built-in agent tools](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — the verbs and their arguments
+- [Ügynökök párhuzamos futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/) — a szétosztás további módjai
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/) — amikor a munkának szerkezete van
+- [Beépített ügynökeszközök](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — az igék és argumentumaik

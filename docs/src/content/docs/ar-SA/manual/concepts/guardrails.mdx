@@ -1,248 +1,226 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: الضوابط — سياسة واحدة لكل إجراء يعدّل الحالة
+description: لماذا يمرّر Control Center كل أثر جانبي للوكيل عبر محرك واحد للسماح والسؤال والرفض، وكيف يبقى تصنيف ActionClass صغيرًا عن قصد، وما الذي يغيّره قرص الاستقلالية فعلًا.
 slug: ar-SA/دليل-المستخدم/مفاهيم/ضوابط
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+يستطيع الوكلاء في Control Center حذف الملفات، ودفع الفروع، ونشر طلبات
+السحب، واستدعاء واجهات API خارجية. كل منها خطر من _نوع_ مختلف، وظلّت أوامر
+الصدفة وحدها، زمنًا طويلًا، هي صاحبة السياسة. وُضعت الضوابط لتجيب عن سؤال
+واحد، بالطريقة نفسها، عن كل إجراء يعدّل الحالة يمكن لوكيل أن يتخذه،
+أيًا كانت بيئة التشغيل أو الأداة التي تقترحه: **هل هذا مسموح، أم يحتاج
+موافقة، أم مرفوض؟**
 
-## One engine, every chokepoint
+## محرك واحد، وكل نقاط الاختناق
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+محرك السياسة واحد، لا غيره. يُستشار عند كل نقطة يمكن أن يخرج منها إجراء من
+النظام: سجل أدوات الإطار المضمّن، وبوابة موزّع MCP على الخادم، وتعديلات
+عمليات المستودع. القاعدة تُكتب مرة، فتسري على التشغيل المضمّن وعلى سطور
+أوامر الوكلاء الخارجية معًا. لا يوجد مسار ثانٍ أهدأ يلتف حولها. سياسة الأوامر
+القديمة، المقصورة على bash، ما زالت تعمل: تستطيع القاعدة أن تطابق بادئة أمر
+بدل صنف إجراء، والصيغتان تعيشان في المخزن نفسه.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+المحرك لا يغني عن بيئة نظام التشغيل المعزولة، والبيئة المعزولة لا تغني عن
+المحرك. السؤالان مختلفان: الضوابط تقرر هل يُسمح أصلًا لنداء يراه Control Center بأن
+يقع، والبيئة المعزولة تحصر المدى الذي تبلغه العملية الناتجة. يطبّق
+`cc_server` البيئة المعزولة حيث يوفّر المضيف خلفية، لكن
+[Windows لا يوفّر خلفية، وLinux يحتاج `bwrap` و`socat`](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/).
+على هذين المضيفين تكون الضوابط طبقة الفرض الخارجية، لا سياسة فوق أرضية،
+وهذا يهم حين تقرر كم تتساهل.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: تصنيف مغلق عن قصد
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+كل أداة تعدّل الحالة تصرّح بأصناف **ActionClass** التي تتبعها، من مجموعة
+مغلقة فيها ثلاثة عشر صنف أثر. خمسة منها قرارها السؤال أولًا من غير إعداد، والباقي
+السماح، والقاعدة هي ما يبدّل ذلك.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| الصنف | الافتراضي المضمّن | ما يغطيه |
+| --- | --- | --- |
+| `fileDelete` | **السؤال أولًا** | حذف ملف (كتابة على هيئة حذف، `rm`) |
+| `gitPush` | **السؤال أولًا** | الدفع إلى مستودع بعيد |
+| `prCreate` | **السؤال أولًا** | إنشاء طلب سحب |
+| `prPublish` | **السؤال أولًا** | نشر مراجعة، أو دمج طلب سحب |
+| `vendorSyncWrite` | **السؤال أولًا** | الكتابة إلى متتبع خارجي (Linear وJira ومزامنة GitHub) |
+| `fileWriteOutsideWorktree` | السماح | كتابة ملف خارج شجرة العمل المعزولة |
+| `gitCommit` | السماح | إنشاء إيداع Git |
+| `networkEgress` | السماح | الخروج إلى الشبكة (جلب من الويب، أو HTTP اعتباطي) |
+| `secretAccess` | السماح | قراءة سر أو بيانات اعتماد |
+| `packageInstall` | السماح | تثبيت حزمة (npm أو pip أو pub أو brew) |
+| `processSpawn` | السماح | تشغيل عملية (الصدفة، وكل ما يستدعي صدفة) |
+| `workspaceMutation` | السماح | تغيير بنية مساحة العمل (المستودعات والمساحات والوكلاء) |
+| `enclosureControl` | السماح | قيادة حاوية معزولة (منصة): إقلاع آلة افتراضية، وإرسال إدخال إليها |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+أُختيرت الأصناف الثمانية التي تسمح افتراضيًا على افتراض أن أرضية البيئة
+المعزولة تعمل تحتها. تعمل تلك الأرضية حيث يوفّر المضيف خلفية، ولا تعمل على
+Windows ولا على جهاز Linux ينقصه `bwrap` و`socat`. فإن أردت بوابة على
+`fileWriteOutsideWorktree` أو `packageInstall` هناك، فتلك قاعدة تكتبها أنت.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+المجموعة مغلقة عن قصد. أداة جديدة تعدّل الحالة ولا تصرّح بصنف تفشل في
+اختبار السقاطة، فالتصنيف لا يكبر إلا بقرار صريح يُسوَّغ. «توسّع التصنيف
+موت هذه الميزة.» يكفي ثلاثة عشر صنفًا للسياسات التي يكتبها الناس فعلًا
+(لا تدفع إلا بعد سؤال، ولا تحذف خارج شجرة العمل، واترك القراءة مسموحة
+دائمًا)، وهي قليلة بما يُبقي شاشة الإعدادات مفهومة.
 
-## Rules and scope resolution
+## القواعد وبتّ النطاق
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+تعيّن القاعدة `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+تتداخل النطاقات من الأكثر تحديدًا إلى الأعم:
 
-**space > agent > workspace > mode preset > built-in default**
+**المساحة > الوكيل > مساحة العمل > الإعداد المسبق للوضع > الافتراضي المضمّن**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+البتّ **للأكثر تحديدًا أولًا**: أول نطاق فيه قاعدة مطابقة هو الذي يقرر،
+ويقف البتّ هناك. الأكثر تقييدًا لكسر التعادل فقط، بين قاعدتين متساويتين في
+التحديد داخل نطاق واحد، وعند جمع الأصناف التي يصرّح بها إجراء واحد. داخل
+النطاق، قاعدة الأمر تطابق أطول بادئة أمر. السماح لا يغلب الرفض في أي موضع.
 
-Two decisions carry hard guarantees:
+قراران ضمانهما قاطع:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **سؤال مغلق عند الفشل.** `prompt` من غير معتمِد متصل يُبتّ _مرفوضًا_. السؤال
+  الذي لا جواب له ليس موافقة أبدًا.
+- **الجمع الأكثر تقييدًا.** إجراء يمتد على أكثر من صنف يُجمع بالطريقة
+  الأكثر تقييدًا، وإذا سأل أكثر من صنف فطلب تأكيد واحد يسردها كلها.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+لا تثبيت للقرار طوال الجولة، عن قصد. كل استدعاء أداة يعيد البتّ في السياسة
+من الصفر، فتكرار السؤال عن الإجراء نفسه يحدّه ما يختاره المشغّل في «تذكّر
+هذا القرار»، لا أي شيء محصور بالجولة.
 
-## Argument-level rules
+## قواعد على مستوى الوسائط
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+القاعدة تقيّد وسائط الإجراء، لا فعله وحده. «يجوز الدفع» و«يجوز الدفع إلى
+`feature/*`» قولان مختلفان، والثاني وحده قيد. بوابة القدرة التي تأذن
+بالفعل وحده هي الشكل وراء أكثر حوادث الوكلاء المنشورة.
 
-A constraint may name:
+قد يسمّي القيد:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **المسارات** — أنماط glob (`repos/**` و`!**/.env`)
+- **المراجع** — مراجع Git، مع نفي `!` (`['**', '!main']` تُقرأ «أي فرع إلا main»)
+- **المضيفات** — وجهات على الشبكة، مع رموز بدل للنطاق الفرعي (`*.internal`)
+- **الأوامر** — بادئات أوامر، والمطابقة عند حد كلمة
+- **الأسقف** — `maxCount` / `maxCents`، فيصير «احذف حتى 50 ملفًا» قابلًا للصياغة
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+من إبقاء النحو مغلقًا ومن غير حلقات تخرج ثلاث خصائص، والثلاث هي المقصد: كل
+قاعدة تُعرض جملة تستطيع إعادة قراءتها، وكل رفض يسمّي القيد الذي طابق،
+والسياسة كلها تُعدَّد. ترى ما يجوز للوكيل فعله *قبل* أن يعمل.
 
-Three rules that matter:
+ثلاث قواعد لها وزن:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **القاعدة ذات القيد أكثر تحديدًا** من القاعدة بلا قيد في النطاق نفسه،
+  فـ«ارفض الدفع إلى `main`» تغلب «اسمح بالدفع» من غير تفكير في الترتيب.
+- القاعدة **المضيِّقة** (رفض / سؤال) تنطبق إذا لمس الطلب *أي* قيمة
+  تسمّيها، والقاعدة **المتساهلة** (سماح) لا تنطبق إلا إذا كان الطلب
+  *بالكامل* داخلها. قراءتهما قراءة واحدة تتيح للوكيل أن يبيّض مسارًا
+  ممنوعًا بأن يضع إلى جواره مسارًا بريئًا في الدفعة نفسها.
+- القاعدة التي تسمّي جانبًا يسكت عنه الطلب لا تُطبَّق ولا تُتخطى:
+  **تُصعَّد إلى موافقة**. التخطي الصامت يجعل كل قاعدة لفرع محمي بلا أثر
+  أمام أداة لا تبلّغ عن مرجعها، والرفض الصامت يرفض كل دفع يعجز المستخرِج
+  عن وصفه. ومن غير معتمِد متصل، تجعل قاعدة الإغلاق عند الفشل القائمة هذا
+  التصعيد رفضًا.
 
-## What a command rule can and cannot catch
+## ما تلتقطه قاعدة الأمر وما يفوتها
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+قاعدة `commandPrefix` تطابق عند حد كلمة: `git push` تغطي
+`git push origin main` ولا تغطي `git pushx`. وهي **لا** تُطبّع الصدفة.
+`git  push` (مسافتان) و`cd sub && git push` و`GIT_DIR=… git push` سلاسل
+مختلفة، ولا واحدة تطابق قاعدة عن `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+هذا حد حقيقي، وهو مذكور لا مُجمَّل. قواعد الأوامر راحة للمشغّل يصوغ بها
+سلوك الوكيل المعتاد، **وليست** حدًا في وجه وكيل خصم. الحدود هي أصناف الأثر
+(تصرّح بها الأداة ولا تستطيع إعادة صياغتها)، وشبكة أوامر الوضع تحت مخزن
+السياسة، وبيئة نظام التشغيل المعزولة تحتهما. قاعدة أمر تُبتّ إلى `allow`
+لا تُرخي أيًا من هذين. شبكة الوضع تعمل بعدها، و`deny` فيها نهائي.
 
-## Standing approvals
+## الموافقات القائمة
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+الإجابة عن السؤال بـ«تذكّر هذا» تكتب قاعدة سياسة حقيقية: بنطاق (المساحة /
+الوكيل / مساحة العمل)، و**مقيّدة بالوسائط** (الموافقة على دفع إلى
+`feature/login` تمنح `feature/**` لا `main`)، و**تلغي نفسها** عند TTL
+صريح. الموافقة لبضع ساعات ليست إعادة كتابة صامتة لسياستك الدائمة. القواعد
+التي تُكتب تستقر في المخزن نفسه، بمصدر `remembered` وبأجل، فيمكن إلغاؤها قبل
+الأجل.
 
-## Enforcement levels
+## مستويات الفرض
 
-Each rule carries one:
+كل قاعدة تحمل واحدًا من هذه:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **استشاري** — يسمح، ويسجّل أن القاعدة طابقت. هذا مسار التبنّي: انشر
+  قاعدة صارمة في الوضع الاستشاري، واقرأ سجل التدقيق لأسبوع لترى ما *كانت*
+  ستحجبه بالضبط، ثم ارفعها. من غير هذه الطبقة لا تُفعَّل السياسات الصارمة
+  أبدًا.
+- **ليّن** — يرفض، ويجوز لمن يملك صلاحية التجاوز أن يتجاوزه مع تبرير
+  يُسجَّل. التجاوز نفسه حدث مُدقَّق.
+- **صارم** (وهذا الافتراضي) — يرفض. لا شيء يتجاوزه.
 
-## The managed tier
+## الطبقة المُدارة
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+مشغّل التثبيت يستطيع تثبيت سياسة لا يستطيع مسؤول مساحة العمل إرخاءها.
+القواعد المُدارة تعيش على الخادم، وتُدمج **بالأكثر تقييدًا** مع سلسلة كل
+مساحة عمل. ليست نطاقًا على رأس السلسلة، لأن `allow` المُدار، إن وُضع على
+رأس السلسلة، يتيح للتثبيت أن يتغلّب على رفض مساحة العمل، وهذا عكس عمل
+الملزمة. فالقاعدة المُدارة لا تستطيع إلا أن تضيّق.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+ضبط `CC_SERVER_MANAGED_POLICY` على ملف JSON يعلو القواعد المخزّنة كلها،
+وبهذا يثبّت المشغّل وضعية لا تقلبها واجهة إدارة. وهذا جواب «هل أستطيع أن
+أمنع المطوّرين من تعطيل ضوابط الأمان؟».
 
-## The autonomy dial is a profile, not a parallel system
+## قرص الاستقلالية ملف تعريف لا نظام موازٍ
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+قرص الاستقلالية في كل مساحة ملف مسمّى فوق مخزن السياسة نفسه، لا آلية
+ثانية. إعداداته الثلاثة تُخزَّن وتُرسَل `proposeOnly` و`actWithApproval`
+و`actFreely` (نص الواجهة «اقتراح فقط» و«التصرف بموافقة» و«التصرف بحرية»
+للعرض فقط، و`autonomy.setForSpace` يرفض ما عدا هذه الثلاث). تركه بلا قيمة
+يسلك سلوك `actWithApproval`.
 
-What each one does to a resolved decision:
+أثر كل منها في القرار الذي بُتّ فيه:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** يرفض كل أداة محكومة رفضًا باتًا. يظل الوكيل يستدل
+  ويرد، ولا يفعل، ورسالته تبيّن السبب.
+- **`actWithApproval`** (وغير المضبوط) هو بوابة الموافقة المغلقة عند
+  الفشل الموصوفة أعلاه.
+- **`actFreely`** يوافق مسبقًا على كل ما لم يُبتّ إلى `deny` صارم.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+هذا الأخير يُقال بلا تلطيف. تحت `actFreely` قرار `prompt` **لا** يُصعَّد
+إلى معتمِد، بل يُسمح به ولا يُسأل أحد. لا يصمد أمام القرص إلا قاعدة
+`deny` صريحة. فـ`actFreely` منح استقلالية عن عمد، لا إعداد راحة، وقاعدة
+الإغلاق عند الفشل تحمي الحالة التي يهم فيها ذلك (`actWithApproval`، وهو
+الافتراضي).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+تفويض وكيل لوكيل محروس عند نقطة اختناق `delegate_task` بأربعة حراس: حد
+للعمق (افتراضه 3)، وكشف الحلقات، و**سقف استقلالية** (لا يعمل المفوَّض
+إليه باستقلالية أعلى من المفوِّض، ولا يُبيَّض الامتياز بتسليم العمل لوكيل
+أوسع حرية)، و**غلاف ميزانية** (التفويض يُخصم من بقية ميزانية المفوِّض، ولا
+يستطيع أن يصدر ميزانية جديدة). يُرفض كل منها رفضًا صريحًا، ويعود سبب
+الحارس إلى الوكيل بنصّه.
 
-## The adapter honesty matrix
+## مصفوفة صدق المحوّل
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+ليس كل مشغّل يتيح لـ Control Center أن يعترض كل إجراء. سطور أوامر الوكلاء
+الخارجية تشغّل بعض الأدوات داخل العملية، حيث لا موضع لبوابة. بدل ادّعاء
+غير ذلك، يحمل كل محوّل **مصفوفة صدق**: لكل محوّل، هل يختار Control Center الأدوات، وهل يُتحقَّق من كل استدعاء قبل تنفيذه، وهل يُلزَم التشغيل بتسليم ناتجه المطلوب، وهل أدوات المشغِّل نفسه مرئية، وهل الأدوات داخل العملية تعمل في بيئة معزولة.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+مدخلان يستحقان القراءة قبل أن تثق بتهيئة. يصرّح الإطار المضمّن أن أدوات
+الملفات داخل عمليته **ليست** في بيئة معزولة، فسطح الأدوات ومحرك السياسة
+هذا هما حد نظام الملفات الوحيد عنده. يصرّح Claude Code أن استدعاءات أدواته
+**غير** قابلة للاعتراض، لأنه يُطلَق مع `--dangerously-skip-permissions`.
+لا يرى Control Center إلا استدعاءات `mcp__*`، وأدواته للقراءة والكتابة
+والتحرير والصدفة تعمل من غير رصد.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+شاشة الإعدادات تعرض هذه المصفوفة، لأن الفشل الذي لا يُغتفر في نظام ضوابط
+هو ادّعاء تغطية غير موجودة.
 
-## Probing policy before it bites
+## سبر السياسة قبل أن تعض
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+الضوابط في **الإعدادات ← مساحة العمل ← أذونات الوكلاء**
+(`/workspaces/<id>/settings/workspace/permissions`). في الشاشة مصفوفة
+السياسة حيث تُكتب القواعد، وقوالب السياسات، ومسبار «ماذا لو؟»، وسجل تدقيق
+التفويض، ومصفوفة صدق المحوّل.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+يأخذ المسبار صنف إجراء (أو أمرًا) ونطاقًا، ويُظهر أي قاعدة بتّت ولماذا.
+البتّ نقي وحتمي: الإجراء نفسه والنطاق نفسه يعطيان القرار نفسه، وجواب
+المسبار هو ما سيحصل عليه الوكيل.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/): writing and testing rules in practice
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): ما الذي يقيّد تشغيل الوكيل فعلًا، وإلى أي مدى تصل أرضية نظام التشغيل تحت هذا المحرك
+- [تعدد اللاعبين — الهوية والعضوية والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): المساحات والأطراف، وأين يقيم قرص الاستقلالية
+- [تهيئة الضوابط](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/): كتابة القواعد واختبارها عمليًا

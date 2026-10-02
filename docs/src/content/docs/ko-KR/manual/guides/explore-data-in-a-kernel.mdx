@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: 영속 커널에서 데이터 탐색
+description: 에이전트에게 호출 사이에도 변수를 유지하고, 채팅에 차트를 그리고, 셀 안에서 자체 도구를 호출할 수 있는 Python 또는 JavaScript 인터프리터를 제공합니다.
 slug: ko-KR/매뉴얼/사용-가이드/커널에서-데이터-탐색
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+이 가이드에서는 에이전트가 비용이 큰 로딩을 한 번만 수행한 뒤, 질문할 때마다 그 비용을 치르는 대신 같은 데이터에 여러 질문을 던지도록 하는 방법을 보여 줍니다.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+`eval` 도구는 **영속 인터프리터**를 실행합니다. 변수, 임포트, 로드한 데이터는 호출 사이에도 그대로 유지됩니다.
 
-## Why not just run a script
+## 스크립트를 그냥 실행하면 안 되는 이유
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+일회성 `python -c`는 질문마다 준비 비용을 치릅니다. 데이터프레임을 로드하는 데는 몇 초와 100메가바이트가 들지만, 차트로 그리는 데는 밀리초밖에 걸리지 않습니다. 질문마다 로딩 비용이 붙으면 에이전트는 마땅히 해야 할 만큼 질문하지 않게 되고, 게다가 각 답변이 텍스트로 돌아오므로 다시 파싱해야 합니다.
 
-## Load once, then ask
+## 한 번 로드하고 여러 번 질문하기
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> `data/runs.csv`를 로드하고 에이전트별 p95 소요 시간을 알려 줘.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+마지막 표현식은 노트북처럼 에코되므로, `len(runs)`는 `print` 없이도 행 수를 보고합니다.
 
-Then, in a **separate call**:
+그다음에는 **별도의 호출**에서:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs`는 여전히 로드된 상태입니다. pandas 프레임은 repr이 아니라 표로 렌더링되어 반환됩니다.
 
-## Charts land in the chat
+## 차트는 채팅에 나타납니다
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+그림은 셀 실행 후에 캡처되어 이미지로 반환되고, 트랜스크립트가 이를 렌더링합니다. 여러분도 차트를 보고, 에이전트도 봅니다.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+그림은 캡처한 뒤 닫힙니다. 수집되지 않은 그림은 *다음* 셀에서도 다시 그려져 다시 전송되므로, 셀 다섯 개짜리 세션이라면 첫 번째 차트가 다섯 번 출력됩니다.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Jupyter도, pip도, 설치 단계도 없습니다]
+실행기는 stdio에서 라인 프로토콜을 사용하는 순수 `python3 -u`입니다. `display()`, MIME 번들 디스패치, 그림 캡처를 자체적으로 구현하므로 어떤 Python 3에서든 동작합니다 — 설치를 막는 것이 바로 그 샌드박스의 존재 이유인 샌드박스 안에서도 마찬가지입니다.
 :::
 
-## The idioms you would type anyway
+## 어차피 입력하게 되는 관용 표현
 
-These are rewritten into plain code rather than erroring:
+다음은 오류를 내는 대신 순수 코드로 다시 작성됩니다:
 
-| You type    | What happens                                        |
+| 입력하는 것    | 일어나는 일                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | pip를 실행한 뒤 **모듈 캐시를 지우므로** 다음 `import`가 인식합니다 |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | 캡처된 서브프로세스                               |
+| `%%bash`    | 셀의 나머지를 셸 스크립트로 실행              |
+| `%%timeit`  | 1000회 시간 측정 실행                                     |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+중요한 것은 `%pip`의 캐시 제거입니다. 실행 중인 인터프리터에 설치해도 이미 임포트된 모듈에는 아무 효과가 없으므로, 이것이 없으면 방금 설치한 버전이 실행되는 버전이 아닙니다.
 
-## Calling your own tools from inside a cell
+## 셀 안에서 자체 도구 호출하기
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)`는 에이전트 자체의 도구 레지스트리로 다시 들어갑니다. 즉, 모델이 항목마다 턴을 소비하지 않고도 셀이 파일 100개로 팬아웃하거나 `task`를 통해 위임할 수 있습니다.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[브리지는 가드레일을 우회하지 않습니다]
+브리지를 거친 호출은 모델이 실행한 호출과 **동일한** 도구 레지스트리를 기준으로 해석되므로, `ActionClass` 정책, 승인 프롬프트, 모든 래퍼가 똑같이 적용됩니다. 레지스트리를 건너뛰어 도달하는 브리지는 "Python 한 줄짜리를 작성하라"와 정확히 같은 모양의 구멍이 될 것입니다.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+브리지를 거친 호출은 완료되지 않은 동안 **셀의 타임아웃을 중단시킵니다**. 이 예산이 측정하는 것은 실시간이 아니라 비활성 시간입니다 — 서브에이전트로 팬아웃하고 4분을 기다리는 셀은 멈춘 것이 아니며, 팬아웃 도중에 이를 종료하면 커널의 상태 전체를 잃게 됩니다.
 
-## Starting over
+## 처음부터 다시 시작하기
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+인터프리터를 버리고 깨끗한 것을 새로 시작합니다. 로드한 모든 것이 사라지며, 바로 그것이 핵심입니다.
 
-## Where the kernel runs
+## 커널이 실행되는 위치
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+대화에 **인클로저**가 있으면 그 안에서, 없으면 호스트에서 실행됩니다.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+신뢰할 수 없는 저장소를 읽는 모델이 구동하는 영속 인터프리터는 인클로저 전용 실행이 존재하는 바로 그 이유입니다. 일회성 `bash` 호출은 적어도 끝나지만, 커널은 기억하는 셸입니다.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/ko-KR/매뉴얼/사용-가이드/리그-사용/).
+그렇다고 해서 인클로저를 부팅하지는 **않습니다** — 리그 탭이 자동으로 시작되지 않게 하는 것과 같은 규칙입니다. 커널을 인클로저 안에서 실행하려면 먼저 대화의 셸을 여십시오. [에이전트에 테스트용 머신 제공](/ko-KR/매뉴얼/사용-가이드/리그-사용/)을 참고하십시오.
 
-## Limits
+## 제한
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **커널당 한 번에 하나의 셀.** 하나의 인터프리터에서 두 셀이 경쟁하면 두 프로그램의 절반씩이 하나의 네임스페이스에서 뒤섞여 실행되는 셈입니다.
+- **출력에는 상한이 있습니다.** print 루프에 빠진 셀은 컨텍스트 윈도우를 채우도록 내버려 두지 않고 잘라냅니다.
+- **셀당 이미지 네 개.** 플롯 루프는 반복마다 그림을 하나씩 내보낼 수 있으며, 이미지마다 이를 실어 보내는 요청에 큰 고정 비용이 붙습니다.
+- **커널은 실행과 함께 종료됩니다.** 대화가 끝난 뒤에도 데이터프레임을 붙들고 있는 커널은 누수입니다.
 
-## Related
+## 관련 항목
 
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/) — what "enclosed" means here
-- [Give an agent a machine to test on](/ko-KR/매뉴얼/사용-가이드/리그-사용/) — opening the enclosure
-- [Built-in agent tools](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — the arguments
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/) — 여기서 "인클로저 안"이 뜻하는 것
+- [에이전트에 테스트용 머신 제공](/ko-KR/매뉴얼/사용-가이드/리그-사용/) — 인클로저 열기
+- [내장 에이전트 도구](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — 인수

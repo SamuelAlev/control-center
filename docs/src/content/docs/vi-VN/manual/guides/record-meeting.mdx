@@ -1,118 +1,124 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Ghi và tóm tắt một cuộc họp
+description: Ghi một cuộc gọi, nhận bản ghi rồi biến nó thành ghi chú, mục hành động và quyết định.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/vi-VN/so-tay/khai-niem/cuoc-hop/) for how it works.
+Hướng dẫn này chỉ cho bạn cách ghi một cuộc họp và nhận bản tóm tắt do AI tạo ra.
+Xem [Cuộc họp và phiên âm](/vi-VN/so-tay/khai-niem/cuoc-hop/) để hiểu cách hoạt động.
 
-## Before you start
+## Trước khi bắt đầu
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Chờ mô hình giọng nói, rồi khởi động lại máy chủ.** Một lần khởi động bình
+  thường sẽ cài đặt bắt buộc mô hình ASR đã chọn (Parakeet TDT 0.6B v3, mặc định
+  đa ngôn ngữ, khoảng 600 MB) trong nền. Máy chủ phân giải mô hình **đúng một
+  lần lúc khởi động**, nên lần chạy đầu tiên vẫn không ghi âm được cho tới khi
+  bạn khởi động lại. Nếu trên đĩa không có mô hình, việc ghi âm thất bại với
+  `Could not start recording on the host: …`. Để chọn một bản dựng khác, vào
+  **Cài đặt → Máy chủ → Mô hình giọng nói & cuộc họp** — thao tác đó cũng cần
+  một lần khởi động lại.
+- Cấp quyền **micro** khi hệ điều hành hỏi ở lần ghi âm đầu tiên.
+- Trên **macOS 14.4+**, âm thanh hệ thống được thu bằng các bộ tap process của Core Audio — không cần cài trình điều khiển, nhưng hệ điều hành hỏi thêm một lần nữa để cấp quyền _thu âm thanh_. Đó không phải quyền Ghi màn hình và không bao giờ bật chỉ báo ghi màn hình. Từ chối quyền này khiến việc bắt đầu thất bại với `System-audio capture permission denied.` Dưới macOS 14.4 không có tính năng thu âm thanh hệ thống.
+- Trên **Linux**, `parecord` (pulseaudio-utils) hoặc `pw-record` (pipewire) phải có trên `PATH` — quá trình thu âm chạy một trong hai lệnh đó nhắm vào một nguồn monitor của PipeWire/PulseAudio. Thiếu cả hai thì việc bắt đầu thất bại với `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Âm thanh cuộc họp của bạn đi đâu]
+Thu âm, phiên âm, khử vọng và phân tách người nói đều chạy trên thiết bị, không
+gọi đám mây — nhưng “thiết bị” ở đây là **máy chủ cc_server**, một máy khác nếu
+bạn chạy máy chủ từ xa. Và bản tóm tắt cuối cùng là một lần chạy agent bình
+thường: quy trình `meeting_summary` gửi toàn bộ bản ghi cùng ghi chú thô của bạn
+tới bất kỳ nhà cung cấp mô hình nào mà agent đó dùng. Hãy trỏ agent đó tới một
+nhà cung cấp cục bộ nếu bản ghi không được phép rời khỏi máy.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Màn hình ghi âm nêu rõ điều này trong khi bạn ghi, nên bạn đưa ra quyết định
+trước khi có bản ghi để gửi đi.
 :::
 
-## Start a recording
+## Bắt đầu ghi âm
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Mở **Cuộc họp** trên thanh bên.
+2. Nhấp **Ghi cuộc họp**. HUD ghi âm trực tiếp mở tại `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Việc ghi âm bắt đầu ngay và thu micro của bạn cùng âm thanh đầu ra của hệ thống —
+những người tham gia khác. Không có lời nhắc chọn chế độ và không có trình chọn
+nguồn âm thanh: chế độ một micro dành cho gặp trực tiếp có trong API nhưng hiện
+chưa có giao diện.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Trên trình duyệt, cùng luồng đó vẫn hoạt động, chỉ khác một điểm: “âm thanh hệ
+thống” là một phiên chia sẻ màn hình buộc phải kèm track âm thanh. Hãy chia sẻ một
+tab trình duyệt (hoặc toàn bộ màn hình) và bật "Share tab audio" / "Share system
+audio" trong trình chọn. Safari, Firefox và việc chia sẻ toàn màn hình trên macOS
+thường không cung cấp được track đó.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD hiển thị đồng hồ đo mức, thời gian đã trôi qua và bản ghi trực tiếp đang dần
+hiện ra ở một bên.
 
-## During the meeting
+## Trong cuộc họp
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Ghi chú nhanh** trong khung ghi chú. Chúng được lưu ngay khi bạn gõ và được chuyển cho agent tóm tắt sau đó, nên hãy ghi lại bất cứ điều gì bản ghi có thể bỏ sót.
+- **Chọn mẫu ghi chú** ở hàng **Mẫu đang dùng**. Mẫu này định hình bản tóm tắt của cuộc họp và được lưu cùng bản ghi, nên lần chạy lại sau đó sẽ tái tạo đúng mẫu bạn chọn ở đây.
+- **Tạm dừng và tiếp tục** bằng nút tạm dừng. Quá trình phiên âm dừng lại khi tạm dừng và đồng hồ đứng yên.
+- Bản ghi truyền về kèm thẻ người nói: lời của bạn là **Bạn**, mọi người trong cuộc gọi là **Người khác** — cho tới khi phân tách người nói tách Người khác thành `Person 1`, `Person 2`, … mà bạn có thể đổi tên.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Người nói quá nhỏ có thể không được phiên âm]
+Quá trình phiên âm bỏ qua mọi cửa sổ âm thanh không bao giờ vượt ngưỡng im lặng,
+mà không giải mã nó chút nào. Cách này giữ cho một kênh nhỏ không đốt CPU vào
+những token ảo giác không phải tiếng nói, nhưng cũng có nghĩa là một người nói yếu
+ớt hoặc ở xa có thể không tạo ra bản ghi nào. Hãy kiểm tra đồng hồ đo mức từ sớm
+thay vì đến cuối.
 :::
 
-## Stop and summarize
+## Dừng và tóm tắt
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Nhấp **Dừng và tóm tắt**.
+2. Control Center đưa bạn thẳng tới chế độ xem chi tiết của cuộc họp, được đánh dấu **Đang xử lý**: phân tách người nói chia kênh từ xa thành từng người nói riêng và quy trình `meeting_summary` tạo bản tóm tắt.
+3. Cuộc họp chuyển sang **Xong** khi quy trình đó hoàn tất. Bạn không cần chờ — chế độ xem chi tiết tự cập nhật.
 
-## Review the writeup
+## Xem lại bản tóm tắt
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Trang chi tiết cuộc họp (`/meetings/:meetingId`) có bốn tab:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Tab           | Nội dung                                                                          |
+| ------------- | --------------------------------------------------------------------------------- |
+| **Ghi chú**   | Bản tóm tắt của AI và ghi chú được cải thiện, dựng từ ghi chú thô của bạn + bản ghi |
+| **Bản ghi**   | Toàn bộ bản ghi kèm thẻ người nói và mốc thời gian                                 |
+| **Mục việc**  | Các việc cần làm được trích ra, mỗi mục kèm người phụ trách tùy chọn              |
+| **Quyết định** | Những quyết định được ghi lại trong cuộc gọi                                     |
 
-From here you can:
+Từ đây bạn có thể:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Đổi tên người nói**: đổi `Person 1` thành tên thật; thay đổi áp dụng cho toàn bộ bản ghi.
+- **Đánh dấu hoàn thành mục hành động** khi bạn làm xong chúng.
+- **Tạo phiếu** từ một mục hành động: thao tác này tạo một phiếu mới, chưa được gán, lấy tiêu đề từ mục hành động và liên kết ngược lại hàng đó. Hãy gán phiếu cho một agent ngay từ chính phiếu (xem [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)).
+- **Chạy lại tóm tắt** để có một lượt mới (ví dụ sau khi đổi tên người nói). Thao tác này dùng lại mẫu đã lưu khi cuộc họp được ghi. Chọn mẫu đang dùng tại **Cài đặt → Không gian làm việc → Cuộc họp**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Việc chỉnh sửa ghi chú, tiêu đề, mục hành động và quyết định hoạt động ở mọi nơi.
+**Chạy lại tóm tắt** và hủy một cuộc họp đang xử lý chỉ có **trên máy tính** —
+trên trình duyệt, cả hai nút đều không làm gì.
 
-## Record straight from a calendar event
+## Ghi trực tiếp từ một sự kiện trên lịch
 
-If you've [connected a calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Nếu bạn đã [kết nối lịch](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/), bạn có thể bỏ qua
+bước bắt đầu thủ công. Tính năng này chỉ có **trên máy tính**; máy khách web từ chối nó.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Mở sự kiện từ **Lịch**.
+2. Nhấp **Bắt đầu ghi & liên kết**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Bản ghi được khởi tạo bằng tiêu đề của sự kiện và liên kết ngược lại sự kiện đó,
+nên ghi chú và mục trên lịch luôn gắn với nhau.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Xóa một cuộc họp không xóa âm thanh của nó]
+Xóa một cuộc họp chỉ gỡ các hàng của nó, nhưng các tệp WAV đã ghi trong
+`<dataDir>/meetings/<meetingId>/` vẫn nằm trên đĩa — không có chính sách lưu giữ,
+giới hạn dung lượng hay đợt dọn dẹp nào. Hãy tự xóa thư mục đó nếu âm thanh là
+thứ quan trọng.
 :::
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Connect a Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
-- [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Meetings and transcription](/vi-VN/so-tay/khai-niem/cuoc-hop/)
+- [Cuộc họp và phiên âm](/vi-VN/so-tay/khai-niem/cuoc-hop/)

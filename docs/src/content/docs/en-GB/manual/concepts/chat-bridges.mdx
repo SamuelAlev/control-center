@@ -1,7 +1,8 @@
 ---
 title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+description: Why the Slack integration dials out instead of listening, what actually authorises a message that arrives from chat and how one bridge serves any chat product.
 slug: en-GB/manual/concepts/chat-bridges
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
 A chat bridge makes an external chat product — Slack today — a first-class way
@@ -17,13 +18,13 @@ provider-blind on purpose — adding a second product is one enum value, one
 adapter and one plugin — but today "chat" means Slack.
 
 Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
+workspace to Slack and customising the bot are **admin** actions under
 Settings → Workspace → General. Linking your own chat account to your Control
 Center identity is a **member** action under Settings → Workspace → Profile &
 identity.
 
 Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
+runs**, **what authorises a message that arrives from outside** and **where
 the product-specific knowledge is allowed to live**.
 
 ## Outbound by design
@@ -51,7 +52,7 @@ A workspace with no chat app costs nothing at all: no socket, no timers, no
 traffic. And the whole thing starts _after_ the server's ready banner, because a
 chat app that is slow to answer must never delay boot.
 
-## Membership authorizes, not token possession
+## Membership authorises, not token possession
 
 The person who installed the app is not the person sending the message. So
 every inbound event resolves to a **Principal** before anything happens and it
@@ -81,7 +82,7 @@ happens to exist on the server links to nothing.
 The codes are deliberately kept in memory, with a 15-minute time to live.
 Persisting one would create a durable credential-shaped row for something meant
 to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+correct behaviour, not a regression — the member presses "link" again.
 
 A refusal is answered **in the Slack thread the message opened**, as a real
 reply. A threaded reply badges the message it answers, reaches the one person who
@@ -173,7 +174,7 @@ Everything product-shaped lives behind a port. The generic core knows about
 markdown, chat conversations, chat threads and members; it knows nothing about
 Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
+- **The adapter** normalises one product: its transport, its API calls, its text
   codec and its envelope quirks. Slack's are instructive — a channel mention
   arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
   are chrome rather than new requests. Both are resolved in the adapter, so the
@@ -245,5 +246,5 @@ back out — status reads answer with connection metadata only.
 - [Bridge Slack to your workspace](/en-GB/manual/tutorials/first-chat-bridge/)
 - [Set up Slack integration](/en-GB/manual/guides/slack-integration/)
 - [Link your Slack account](/en-GB/manual/guides/link-chat-account/)
-- [Customize the chat bot](/en-GB/manual/guides/customise-chat-bot/)
+- [Customise the chat bot](/en-GB/manual/guides/customise-chat-bot/)
 - [PR conversations](/en-GB/manual/concepts/pr-conversations/): the same three decisions, made for a forge

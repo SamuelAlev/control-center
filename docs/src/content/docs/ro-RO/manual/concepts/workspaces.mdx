@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Spații de lucru și izolare
+description: De ce un spațiu de lucru este o graniță strictă de tenant, cum separarea bazelor de date face această graniță structurală și ce o traversează în mod deliberat.
 slug: ro-RO/manual/concepte/spatii-de-lucru
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Ce este un spațiu de lucru?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Un spațiu de lucru este chiriașul de izolare de nivel superior din Control Center. El grupează agenți, depozite, spații, tichete, memorie, pipeline-uri și membri într-un context delimitat. Tot ce se întâmplă în interiorul unui spațiu de lucru rămâne în interiorul lui.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Un spațiu de lucru tipic corespunde unui proiect sau unei baze de cod. Poți avea spații de lucru separate pentru „api-service”, „frontend-v2” și „infrastructure”.
 
-## Workspace-scoped data
+## Datele limitate la spațiul de lucru
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Rândurile unui spațiu de lucru se află în fișierul SQLite propriu acelui spațiu, la `<dataDir>/<workspaceId>/workspace.db`. Fiecare spațiu de lucru primește un director, nu un simplu fișier, pentru că un spațiu de lucru acumulează mai mult decât o bază de date — worktree-uri pentru fiecare conversație, fișierele agenților și ale skill-urilor, acreditările boților de chat — iar faptul că primește un folder înseamnă că toate acestea trăiesc și sunt șterse împreună.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entitate | Domeniu de aplicare |
+| -------- | ------------------- |
+| Agenți | Aparțin exact unui spațiu de lucru |
+| Depozite | Înregistrate într-un singur spațiu de lucru (vezi mai jos) |
+| Spații, conversații și mesaje | Limitate la spațiul de lucru |
+| Tichete, proiecte, planuri, orchestrări | Limitate la spațiul de lucru |
+| Fapte de memorie, politici, domenii, acordări de acces | Limitate la spațiul de lucru |
+| Rulări de pipeline, șabloane, trigger-e | Limitate la spațiul de lucru |
+| Starea pull request-urilor, spații de revizuire, cohorte de revizuire | Limitate la spațiul de lucru |
+| Jurnale de rulare ale agenților și memoria de lucru | Limitate la spațiul de lucru |
+| Membri, invitații, acordări per depozit | Limitate la spațiul de lucru |
+| Simboluri și muchii ale grafului de cod | Limitate după `repoId` în fișierul spațiului de lucru |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Majoritatea acestor rânduri poartă o coloană `workspaceId`; fișierele de bază de date separate impun izolarea. Vezi invariantul de izolare de mai jos.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repo-urile sunt limitate la spațiul de lucru; identitatea între spații de lucru este dată de cale
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Un rând de depozit se află în fișierul de bază de date propriu spațiului său de lucru — fișierul _este_ domeniul de aplicare, așa că tabelul nu are nicio coloană `workspaceId` și niciun tabel de legătură.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Adaugi un repo într-un spațiu de lucru la Setări → Spațiu de lucru → Depozite. Înregistrarea aceluiași checkout în două spații de lucru creează două rânduri independente, cu două id-uri; identitatea unui repo _între_ spații de lucru este dată de calea din sistemul de fișiere (sau de perechea proprietar/nume de pe GitHub), niciodată de id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Înregistrarea este strictă: calea trebuie să fie în interiorul unui arbore de lucru git, trebuie să aibă un remote `origin`, iar acel remote trebuie să indice către o forge acceptată (github.com, gitlab.com sau bitbucket.org). Forge-ul este citit din remote și stocat pe depozit, așa că un spațiu de lucru poate ține depozite din toate cele trei. Orice altceva este refuzat. Browserul de foldere din care alegi listează sistemul de fișiere al **gazdei serverului**, limitat la lista de permisiuni `--repo-roots` a serverului (care implicit este directorul home al utilizatorului serverului).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Eliminarea unui depozit dintr-un spațiu de lucru șterge rândul cu desăvârșire și propagă în cascadă simbolurile de cod, muchiile, fișierele, punctele de control ale indexului și acordările per membru. Checkout-ul de pe disc rămâne neatins.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Graful de cod se află în același fișier, indexat după `repoId`, pentru că spații de lucru diferite pot avea același depozit pe ramuri diferite, cu cod diferit.
 
-## The isolation invariant
+## Invariantul de izolare
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Scurgerile de date între spații de lucru sunt tratate ca bug-uri. Izolarea este **structurală**, impusă la mai multe niveluri:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Stratul de bază de date.** Fiecare spațiu de lucru are propriul fișier SQLite, distribuit de `WorkspaceDatabaseManager.of(workspaceId)`. O bază de date de spațiu de lucru nu declară `users`, `workspaces` sau tabelele vreunui alt spațiu de lucru, așa că o citire între spații de lucru nu este un bug pe care îl poți scrie — nu se compilează. Depozitele își rezolvă DAO-ul la fiecare apel în loc să pună unul în cache, iar pentru că fiecare metodă de depozit cere un `workspaceId` obligatoriu, spațiul de lucru nu poate fi niciodată dedus sau implicit.
+- **Id-ul spațiului de lucru este un segment de cale.** Pentru că id-ul devine nume de director, el trebuie să respecte un model sigur cu un singur segment (începe cu alfanumeric, apoi alfanumerice, puncte, liniuțe de subliniere, cratime; fără `..`). În tot produsul, id-urile sunt UUID-uri. Orice altceva aruncă o excepție în loc să fie sanitizat — aceasta este garda împotriva traversării de cale și eșuează zgomotos în loc să scrie datele unui spațiu de lucru la o cale aleasă de altcineva.
+- **Apărare în adâncime.** Coloanele `workspaceId` sunt încă acolo și încă sunt scrise. Redundante în cadrul unui fișier, ele păstrează neschimbate trigger-ele fluxului de sincronizare, indexurile FTS și forma existentă a rândurilor și fac un fișier auto-descriptiv atunci când este inspectat singur — pe asta se bazează exportul și importul.
+- **Stratul de domeniu.** Serviciile care modifică entități după id validează `entity.workspaceId == workspaceId` la un singur punct de trecere înainte de a continua și aruncă `WorkspaceMismatchException` la nepotrivire — eșecul zgomotos pentru un id venit din contextul greșit. Refuzul zgomotos contează: un no-op silențios ascunde bug-ul, iar continuarea scurge date.
+- **Stratul RPC.** Dispecerul repo-RPC este punctul de trecere. Fiecare operație limitată la spațiul de lucru trebuie să poarte `workspace_id` în propriile argumente — nu există un „spațiu de lucru curent” per sesiune care ar putea scurge, iar un id necunoscut este refuzat ca inexistent _înainte_ ca ceva să deschidă o bază de date, așa că un id greșit nu poate materializa un `workspace.db` fantomă. Operațiile cu adevărat globale (fluxul de știri, coada flotei) se declară fără domeniu de aplicare, printr-o decizie explicită și revizuită. Instrumentele MCP urmează aceeași regulă: orice instrument care atinge date limitate la spațiul de lucru cere `workspace_id`.
+- **Distribuirea între spații de lucru este enumerabilă.** A răspunde la o întrebare despre mai multe spații de lucru înseamnă a deschide mai multe baze de date. Această distribuire este limitată la un singur helper, `CrossWorkspaceQueries`, așa că lista completă a lucrurilor care traversează legitim granița stă în punctele de apel dintr-un singur fișier, în loc să se difuzeze în spatele comentariilor de documentație. Acele puncte de apel sunt: agregarea la nivel de server, reconcilierile de pornire, curățările de retenție și GC, backupul, routerele de evenimente — și căutarea apartenenței de mai jos.
+- **Accesul doar după id nu este suficient.** Căutarea unei entități după UUID-ul ei nu dovedește că aparține spațiului de lucru al apelantului. Separarea fișierelor face fișierul greșit inaccesibil; validarea din stratul de domeniu prinde un id greșit care ajunge printr-un fișier legitim.
 
-## Membership, not the pairing key, is what grants access
+## Apartenența, nu cheia de asociere, este cea care acordă accesul
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Deținerea unei acreditări de dispozitiv autentifică un _dispozitiv_. Ea nu autorizează nimic în interiorul unui spațiu de lucru. Fiecare operație limitată la spațiul de lucru rezolvă rolul de apartenență al apelantului și impune un prag derivat din tipul operației — citirea cere `guest`, o mutație cere `member`, o operație distructivă cere `admin` — iar operațiile care expun conținut de depozit verifică în plus acordarea per depozit a apelantului. O cheie de asociere validă, dar fără apartenență, primește `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Consecința pentru izolare este elegantă: rândurile de apartenență se află în fișierul _propriu al spațiului de lucru_, așa că „cine este în acest spațiu de lucru?” este o citire obișnuită, limitată. Întrebarea inversă — „în ce spații de lucru sunt?” — este prin definiție răspândită în mai multe fișiere, așa că este una dintre puținele distribuiri sancționate ale `CrossWorkspaceQueries` și este ceea ce rulează selectorul de spații de lucru înainte ca vreun spațiu de lucru să fie ales.
 
-See [Multiplayer](/ro-RO/manual/concepte/multiplayer/) for the role ladder and repo grants.
+Vezi [Multiplayer](/ro-RO/manual/concepte/multiplayer/) pentru ierarhia de roluri și acordările per depozit.
 
-## The global registry
+## Registrul global
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Nu totul este limitat la spațiul de lucru. O a doua bază de date, `<dataDir>/global.db`, ține ceea ce este cu adevărat la nivel de server:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **registrul spațiilor de lucru**, ca comutatorul să poată lista fiecare spațiu de lucru fără a deschide vreun fișier de spațiu de lucru — și ca numele, sigla, proprietarul, ordinea în manual și marcajul de ștergere logică ale unui spațiu de lucru să se afle în afara fișierului pe care îl descriu;
+- **identitatea**: utilizatori, preferințele utilizatorilor și dispozitivele asociate, pentru că un singur om este un singur utilizator în toate spațiile de lucru, iar un dispozitiv asociat supraviețuiește ștergerii unui spațiu de lucru;
+- **coada flotei** (workeri, sarcini, jurnal de plasare), al cărei planificator potrivește întreaga coadă cu fiecare worker la fiecare ciclu;
+- **fluxul de știri**, care este per utilizator (nu per spațiu de lucru) — adăugarea unui flux te urmează în fiecare spațiu de lucru;
+- **`workspace_routes`**, indexul dinainte de autentificare care răspunde la „cărui spațiu de lucru îi aparține această cheie?” pentru punctele de intrare care sosesc doar cu un secret sau un id opac (un hash de invitație, un token de webhook, un link profund) și fără niciun spațiu de lucru. O ratare acolo înseamnă inexistent; în mod deliberat nu există nicio soluție de rezervă cu scanare;
+- **setări și identitate la nivel de instalare**: id-ul instalării, setările la nivel de gazdă, conexiunile SSO și politicile de acțiuni administrate (o limită la nivel de instalare care poate doar înăspri guardrail-urile spațiilor de lucru).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Pornirea deschide doar acest fișier. Fișierele spațiilor de lucru se deschid leneș, la prima atingere, așa că costul pornirii rămâne constant indiferent cât de mult istoric acumulează spațiile de lucru, iar `quick_check` per fișier se plătește la prima utilizare, nu pe drumul către bannerul de disponibilitate.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Un fișier de spațiu de lucru conține doar un `workspace_meta` cu un singur rând, pentru autoidentificare (id-ul lui, instalarea care l-a creat, versiunea de schemă cu care a fost creat, când anume). Tot ce descrie un spațiu de lucru se află în registru.
 
-## Creating a workspace
+## Crearea unui spațiu de lucru
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Crearea unui spațiu de lucru face mai mult decât să insereze un rând în registru. Într-o singură operație, serverul îl marchează pe utilizatorul care creează drept `ownerUserId`, înregistrează apartenența acelui utilizator cu rol de proprietar și publică un eveniment de domeniu `WorkspaceCreated`. Ascultătorii acelui eveniment populează apoi, idempotent și în fundal:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- un **agent CEO** plus patru specialiști — `qa`, `architect`, `engineer`, `librarian` — specialiștii raportând CEO-ului;
+- **șabloanele de pipeline încorporate** și trigger-ele lor (trigger-ele de eveniment și cele manuale vin activate; cele programate sunt opționale, cu excepția curățării zilnice de GC a worktree-urilor);
+- **suitele eval de pornire**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ro-RO/manual/concepte/modelul-agentilor/).
+Acest lucru se întâmplă pentru _fiecare_ spațiu de lucru, nu doar pentru primul. Agenții creați prin populare sunt creați fără adaptor, așa că rulează pe **Control Center (built-in)** cu modelul implicit al Anthropic (`claude-opus-4-8` dacă nu fixezi altul) până când setezi un adaptor și un model per agent la Setări → Spațiu de lucru → Agenți. Vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Scrierea apartenenței de proprietar contează mai mult decât pare: fără ea, spațiul de lucru abia creat nu ar avea niciun membru, iar fiecare apel limitat la spațiul de lucru pe care îl face în continuare creatorul ar fi refuzat.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agenții nu pot crea un spațiu de lucru]
+Nu există niciun instrument MCP `create_workspace`. Oamenii creează un spațiu de lucru prin `workspace.create` (punct de trecere doar cu numele) sau `workspace.upsert` (înregistrare completă, folosită și pentru actualizări). Ambele îl marchează pe utilizatorul care creează ca `owner` și publică `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Ștergerea, exportul, importul
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Ștergerea unui spațiu de lucru **marchează rândul din registru și rupe legătura cu directorul**. Spațiul de lucru dispare din fiecare listă și din fiecare interogare. Rândul din registru rămâne (șters logic), așa că id-ul este în continuare cunoscut de backup și de mentenanță, dar `workspace.delete` elimină imediat directorul acelui spațiu de lucru — baza de date, worktree-urile, fișierele agenților și restul — prin `WorkspaceDatabaseManager.dropAndClose`. Doar **proprietarul** spațiului de lucru îl poate șterge.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Pentru că un spațiu de lucru este un singur fișier, a da un spațiu de lucru mai departe este o operație pe fișiere, nu un dump tabel cu tabel:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` este un singur `VACUUM INTO` — un snapshot consistent și defragmentat, luat într-o tranzacție de citire în timp ce serverul continuă să servească.
+- `workspace.import` adoptă un astfel de fișier, înlocuind tot ce deține în acel moment spațiul de lucru țintă. `workspace_meta` încorporat permite unui import să distingă „propriul meu fișier, readoptat” de „un fișier din altă instalare” (cel din urmă este permis, dar consemnat în jurnal, nu invizibil).
+- `server.backupNow` face un snapshot al întregii instalări într-un director cu timestamp care oglindește directorul de date live — `manifest.json`, `global.db` și un `<workspaceId>/workspace.db` per spațiu de lucru — așa că restaurarea înseamnă să-l copiezi înapoi.
+- `server.listBackups` citește acel director înapoi, cele mai noi primele, cu dimensiunea și lista de spații de lucru ale fiecărui snapshot. Un snapshot al cărui manifest lipsește sau care numește fișiere ce nu sunt acolo este totuși raportat, marcat ca incomplet — ascunderea lui este modul în care un operator ajunge să creadă că are un backup pe care nu îl are.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Operațiile de backup se află sub **Setări → Server → Backup și restaurare**: **Fă backup acum** ia un snapshot al instalării, lista arată ce snapshoturi sunt complete și îi permite proprietarului instalării să șteargă unul după confirmare, iar fiecare spațiu de lucru oferă export și import. Pipeline-ul încorporat **Workspace backup** ia doar baza de date a acelui spațiu de lucru, după un program săptămânal, și își șterge propriile backupuri mai vechi decât vârsta de retenție configurată. Restaurarea unui spațiu de lucru dintr-un snapshot al instalării este `workspace.import` îndreptat către `<workspaceId>/workspace.db` al snapshotului; restaurarea întregii instalări rămâne o copiere înapoi, cu serverul oprit, a directorului snapshotului.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain) has the full table.
+Ce nu transportă niciuna dintre ele este restul directorului spațiului de lucru. Un spațiu de lucru acumulează mai mult decât o bază de date — imagini lipite, fișiere de skill-uri și de agenți, acreditări de chat, worktree-uri — iar exportul și importul mută **fișierul**, așa că tot ce stă alături de el rămâne acolo unde este. Acest lucru este deliberat pentru acreditări și de unică folosință pentru worktree-uri; pentru restul este o limită de cunoscut, nu o funcționalitate. [Referința pentru backup](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain) are tabelul complet.
 
-## Moving a backup between the server and your device
+## Mutarea unui backup între server și dispozitivul tău
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ro-RO/manual/referinta/backup/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Fiecare operație de mai sus vorbește în căi de pe **server**, ceea ce este un răspuns complet doar atunci când serverul este propria ta mașină. Trei rute HTTP semnate — [`/backup/workspace`, `/backup/snapshot` și `/backup/restore`](/ro-RO/manual/referinta/backup/#transfer-routes) — cară octeții pentru orice altă topologie, pe aceeași cale autentificată pe care o folosesc deja proxy-ul media și depozitul de imagini. În pagină, acesta este un buton **Descarcă** lângă fiecare export și fiecare snapshot (tu alegi unde ajunge) și **Alege un fișier și încarcă** pentru a restaura dintr-un fișier aflat pe mașina pe care o folosești. Încărcarea este varianta care funcționează când serverul nu este mașina ta: `workspace.import` are nevoie ca fișierul să fie deja pe gazdă, iar așa ajunge acolo.
 
-Three properties are worth knowing:
+Trei proprietăți merită cunoscute:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **O descărcare creează o copie nouă, iar serverul nu păstrează nimic din ea.** Descărcarea nu înseamnă „preia fișierul pe care l-a creat butonul de export” — exportă din nou, transmite în flux rezultatul și îl șterge. Răspunsul este `no-store` cu `Accept-Ranges: none` din același motiv: un interval reluat ar îmbina două exporturi diferite într-un singur fișier care pare valid, dar nu este.
+- **O încărcare este transmisă în flux direct pe disc, niciodată tamponată**, la ambele capete, iar copia pregătită este ștearsă pe fiecare cale de ieșire — inclusiv la un refuz. O bază de date de spațiu de lucru nu este o captură de ecran.
+- **O conexiune prin releu nu are origine HTTP**, așa că acolo controalele de transfer sunt dezactivate, cu o notă care explică de ce. Tot ce vorbește în căi de pe server continuă să funcționeze prin releu; doar căile de octeți au nevoie de o conexiune directă.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Ale cui sunt căile]
+Căile pe care le *arată* pagina — directorul snapshotului, fișierul scris de un export, sursa citită de un import — sunt pe mașina care rulează `cc_server`. Calea raportată de o **descărcare** este pe mașina la care stai. Această distincție este motivul pentru care există ambele: prima este ceea ce are nevoie un script de mentenanță sau o sesiune ssh, a doua este ceea ce are nevoie o persoană care adună un backup.
 :::
 
-## Multiple workspaces
+## Mai multe spații de lucru
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Poți rula mai multe spații de lucru în paralel. Fiecare funcționează independent: agenții dintr-un spațiu de lucru nu pot trimite mesaje agenților din altul, nu pot citi memoria altui spațiu de lucru și nu pot vedea tichetele acestuia. Rezolvarea destinatarilor pentru mesageria de la agent la agent este exactă și nu traversează niciodată un spațiu de lucru.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Nu există niciun tablou de bord care să acopere mai multe spații de lucru. Suprafața de analiză de la `/workspaces/:workspaceId/observability` se abonează la un flux global mărginit de rulări recente și îl restrânge imediat la spațiul de lucru activ, așa că ceea ce vezi acolo este un singur spațiu de lucru odată. Singurele suprafețe cu adevărat multi-spațiu pe care le atinge o persoană sunt selectorul de spații de lucru și comutatorul.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+O limită practică pe care merită să o știi: un spațiu de lucru pe care cineva îl folosește rămâne deschis — nu există LRU. Dincolo de 32 dintre ele, serverul avertizează în loc să refuze, pentru că fiecare fișier deschis ține un isolate de fundal și un cache de pagini. Distribuirea între spații de lucru deschide fișiere tranzitoriu și le închide după aceea, dacă nimic altceva nu le-a revendicat.
 
-## Related concepts
+## Concepte conexe
 
-- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): agents belong to exactly one workspace
-- [Memory and knowledge](/ro-RO/manual/concepte/memorie-si-cunostinte/): memory is workspace-scoped
-- [Architecture](/ro-RO/manual/concepte/arhitectura/): where the databases sit in the client/server split
-- [Back up and restore](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ro-RO/manual/referinta/backup/): every operation, route, manifest field and limit
-- [Add repositories](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/): registering a checkout into a workspace
+- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): apartenența, rolurile și acordările per depozit — jumătatea de acces a izolării
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): agenții aparțin exact unui spațiu de lucru
+- [Memorie și cunoștințe](/ro-RO/manual/concepte/memorie-si-cunostinte/): memoria este limitată la spațiul de lucru
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/): unde stau bazele de date în separarea client/server
+- [Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/): luarea unui snapshot, mutarea unui spațiu de lucru, păstrarea copiilor în altă parte
+- [Backup, export și import](/ro-RO/manual/referinta/backup/): fiecare operație, rută, câmp de manifest și limită
+- [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/): înregistrarea unui checkout într-un spațiu de lucru

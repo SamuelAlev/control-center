@@ -2,6 +2,7 @@
 title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 slug: en-GB/manual/reference/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
 Every process flag takes a CLI flag or an environment variable; the flag wins,
@@ -66,7 +67,7 @@ rather than failing the boot.
 The server probes the host once at boot and wraps agent command execution in the
 OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
 `bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
+those tools — runs fall back to environment sanitisation, the command policy and the
 action guardrails and the startup log says which state applies.
 
 `--sandbox off` is the field kill switch for the case the probe cannot see: a host where
@@ -175,7 +176,7 @@ no home or app-data directory resolves.
 | `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
 | `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
+| `models/`                         | On-device embedding, diarisation and speech models                              |
 | `meetings/<meetingId>/`           | Retained meeting audio                                                          |
 | `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
 | `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |

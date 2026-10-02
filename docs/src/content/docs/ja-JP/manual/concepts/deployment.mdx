@@ -1,239 +1,119 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: デプロイメントとクライアント
+description: Control Center のシンクライアントアーキテクチャが、ヘッドレスサーバーをデスクトップ・Web・モバイルの各クライアントからどのように分離しているかを説明します。
 slug: ja-JP/マニュアル/コンセプト/デプロイメント
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center は 1 つのプログラムではありません。**シンクライアントアーキテクチャ**です。データを所有するヘッドレスサーバーと、そこへの単一の RPC 接続を介してインターフェースを描画する一連のクライアントで構成されます。この分離を理解すると、なぜ一部の処理がその場所で動くのか、各クライアントが何に到達できて何に到達できないのかがわかります。
 
-## The server owns the data
+## サーバーがデータを所有する
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/ja-JP/マニュアル/コンセプト/ワークスペース/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+**`cc_server`** というプロセスがデータベースを保持します。サーバー全体の状態を保存する小さな `global.db` と、[ワークスペース](/ja-JP/マニュアル/コンセプト/ワークスペース/)ごとに 1 つの SQLite ファイル（遅延して開かれます）です。そして、長期間動き続ける処理、つまりパイプラインエンジン、リコンサイラー、MCP ツールサーフェス、オーケストレーションリスナーを実行します。ウィンドウより長く生き残る必要があるもの、あるいは 2 つのクライアントが同一に見えるべきものは、すべてそこに存在します。
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+どのクライアントもデータベースファイルを自ら開くことはありません。代わりに、各クライアントは 1 つの **`RemoteRpcClient`** を保持し、それを介してリポジトリ操作とサブスクリプションを発行します。サーバーは、ペアリング済みデバイスの事前共有キーに対して接続を認証し、その後は接続を気にかけなくなります。**セッションはワークスペースに束縛されません。** ディスパッチャーはステートレスです。ワークスペーススコープのすべての呼び出しは、引数に自身の `workspace_id` を含み、それを省略した呼び出しは拒否されます。
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+これは意図的な設計であり、1 つのサーバー上の 2 つのクライアントが、サーバー側に保持された「現在のワークスペース」をめぐって食い違うことなく、異なるワークスペースに留まれるようにするものです。代わりに、分離は呼び出しごとに次の 4 つのステップで強制されます。
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. 操作は自身がワークスペーススコープかどうかを宣言します。スコープであり、`workspace_id` が届かなければ、その呼び出しは拒否されます。
+2. 指定された id は**登録済み**のワークスペースでなければならず、これはデータベースを開く前にチェックされます。そうでなければ、未知の id がリクエストのたびに空の幽霊 `workspace.db` を実体化させてしまいます。見つからなければ not-found です。
+3. 呼び出し元の `WorkspaceRole` は、操作の種類から導かれる下限を満たす必要があります。読み取りはゲスト、変更はメンバー、破壊的操作は管理者が必要です。
+4. リポジトリの内容を公開する操作は、さらに自身が宣言したレベルでのリポジトリ単位の許可（grant）を必要とします — `none` / `read` / `review` / `write` — これにより、ワークスペースのメンバーシップが暗黙にコードホストを上回る権限を得ることはありません。
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+重要な一文はこれです。**ペアリングキーを保持していることはアクセスの境界ではありません。メンバーシップが境界です。**
 
-## Why split it this way
+## なぜこのように分離するのか
 
-Three pressures pushed toward a server:
+サーバーへ向かわせた 3 つの圧力がありました。
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **唯一の信頼できる情報源。** デスクトップとスマートフォン、あるいはノート PC とデスクトップは、同じフリート状態を見るべきです。それぞれが独自のデータベースを持てば、それらは乖離していきます。単一のサーバーであれば、すべてのクライアントが同じライブデータを読み取ります。
+2. **Web は自己完結できない。** ブラウザーはサブプロセスを起動したりローカルファイルを開いたりできないため、Web ビルドがデータベースを所有したりエージェントを実行したりすることは決してできません。それを実行するサーバーと通信する必要があります。Web 専用の 2 つ目のデータ経路を構築するのではなく、デスクトップが同じ経路に載せられました。
+3. **ヘッドレス運用。** 小さなマシンで実行でき、電車の中のスマートフォンやどこからでもブラウザーから到達できるサーバーは、開いたままにしておかなければならない GUI よりも便利です。
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+トレードオフは、サーバーが依存先になったことです。サーバーが動いていなければ、何も動きません。デスクトップのデフォルトの答えは、**自分でサーバーを起動する**ことです。
 
-## The clients
+## クライアント
 
-Five clients reach the server, each with a different shape and trust profile.
+5 つのクライアントがサーバーに到達し、それぞれ形と信頼プロファイルが異なります。
 
-### Desktop app
+### デスクトップアプリ
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter のデスクトップアプリケーション（macOS、Windows、Linux）はフルクライアントです。初回起動時にどのように実行するかを尋ね、その選択を記憶します。
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **ローカル**: このマシンで `cc_server` を起動して監視します。デフォルトの、自己完結したシングルユーザー構成です。デスクトップがサーバーを起動し、サーバーはアプリサポートルート配下のデータベースを所有して、ループバック経由で通信します。
+- **リモート**: 別の場所で動いている `cc_server` に、安全な WebSocket 経由で接続します。データはそのサーバー上にあり、このデスクトップは純粋にレンダラーです。
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+どちらの場合も、得られた RPC クライアントがアプリのデータプロバイダーを上書きするため、UI 全体（すべての画面、すべての機能）がサーバーを介して読み書きします。デスクトップがデータベースファイルに直接触れることはありません。
 
-### Web client
+### Web クライアント
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Web ビルドは、ブラウザーで動くようにコンパイルされた同じ Flutter アプリで、[app.usectrl.dev](https://app.usectrl.dev) でホストされているためインストールする必要はありません。ブラウザーはサブプロセスを起動できないため、Web クライアントは**常に**リモートです。`wss://` 経由で `cc_server` に接続し、デスクトップの完全なインターフェースを描画します。接続後は、同じコードを同じ RPC 上で動かしているため、同じフリートに対して同じ画面を表示します。欠けているのは、ブラウザーにはないネイティブ機能を必要とするわずかな箇所です。以下で説明するミーティングキャプチャの品質レイヤーが主なもので、OS 通知ももう 1 つです。
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+これが、「ダウンロード不要」と「サーバー不要」が異なる主張である理由です。Web クライアントはインストールを不要にしますが、サーバーを不要にはしません。接続先は同じノート PC 上の `cc_server` でもかまいません — `ws://localhost:9030` は、ブラウザーがループバックを信頼できるものとして扱うため証明書を必要としません — あるいは別のマシン上のサーバーで、ブラウザーが信頼する証明書を伴う `wss://` 経由で到達可能でなければなりません。`cc_server` は TLS なしで非ループバックアドレスをバインドすることを拒否するため、リモートサーバーとは、それ自身の証明書、TLS 終端プロキシ、または証明書を提供するトンネルか VPN のいずれかを意味します。
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+バンドル自体は、通信先のサーバーとは別にホストされます。スタンドアロンの `cc_server` は RPC エンドポイント、MCP サーフェス、およびそのプロキシを提供しますが、Web バンドルは提供し**ません** — 静的ファイルの経路はサーバー内に存在しますが、スタンドアロンバイナリには Web ルートが構成されていないため、`/` で提供するものがありません。公開されている `cc-webapp` コンテナイメージがバンドルをホストし、`scripts/build_web.sh` がそれをビルドします。サーバーは `--allowed-origins` リストにあるブラウザーオリジンのみを受け入れ、そのデフォルトは `https://app.usectrl.dev` です。したがって、バンドルをセルフホストする場合はそのオリジンを追加する必要があります。
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+メディア（アバター、フィードの画像、PR のスクリーンショット）は、上流のホストに直接アクセスするのではなく、サーバーのプロキシエンドポイントを経由するため、ブラウザーが任意のオリジンを取得することはありません。デプロイされたクライアントは、機密性のない Cookie からリクエストごとの Content-Security-Policy を付与し、接続中のサーバーのオリジンのみを許可します。
 
-### Phone companion (cc_remote)
+### スマートフォンコンパニオン（cc_remote）
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**Remote** アプリは、別個のより軽量なクライアントです。[remote.usectrl.dev](https://remote.usectrl.dev/) にある Flutter Web の PWA です。意図的にフルアプリでは**ありません**。ブローカー経由のエンドツーエンドで密封された WebSocket リレーでペアリングし、ツールサーフェスの読み取り中心のスライスを扱います。チケット、メッセージ、ニュースフィードを読み取り、返信の送信やチケットの更新を行います。
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/) for the full
-security model.
+スマートフォンは、ローカルエージェントよりも**低い権限のプリンシパル**です。デフォルト拒否のツールポリシー、すべてのフレームを密封する事前共有キー、特権操作（たとえばペアリング）をコンパニオンクライアントから締め出すセッションケイパビリティ、上記の呼び出しごとのロールとリポジトリ許可のチェック、およびレート制限によって、承認された（あるいは漏洩した）ペアリングが完全なリモート操作になることを防ぎます。セキュリティモデルの全体は[リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)を参照してください。
 
-### MCP clients
+### MCP クライアント
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/) and the
-[MCP tools reference](/ja-JP/マニュアル/リファレンス/mcp-ツール/).
+エディター、他のエージェント、CLI など、Model Context Protocol を話す外部ツールが、サーバーの MCP サーフェスに接続し、型付きのツールレジストリを利用します。これはプログラムによるインテグレーションの経路であり、GUI ではありません。[MCP サーバーを使う](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/)と [MCP ツールリファレンス](/ja-JP/マニュアル/リファレンス/mcp-ツール/)を参照してください。
 
-### Fleet executors (cc_worker)
+### フリートエグゼキューター（cc_worker）
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** は、`cc_server` とペアリングするヘッドレスの純粋な Dart バイナリで、ホストのケイパビリティを宣言し、実行するリース済みジョブを取得します。同じ RPC を介してプロセスイベントをストリームで返し、**永続状態を一切持ちません**。データベース、認証、承認、予算はなく、それらが `cc_server` を離れることはありません。ワーカーは四肢であり、第二の脳ではありません。1 つの権威あるサーバーと N 個の愚直な四肢で、コンセンサスもワーカー間の通信もありません。
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+リース実行は依然としてリースの配管です。実際のコマンドを実行するのは `agentRun` だけです（`CC_JOB_COMMAND`、指定がなければエコーされたプロンプト）。`pipelineStep`、`codeIndex`、`goldenRender`、`benchmark`、`evalBatch` は現在、ストリーミング経路がそれらのジョブを実行したふりをすることなく動くよう、`git --version` / `rev-parse HEAD` でプローブします。
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+ワーカーが公開するのは、オペレーティングシステム、CPU アーキテクチャ、コア数、RAM、Flutter SDK に到達可能かどうか、およびホストが持つサンドボックスバックエンド（Windows ではなし）です。専用ワーカーはさらに常に `alwaysOn` と `acceptsParallel` を公開し、pin → prefer → spill スケジューラーはこれを基準に配置を行います。GPU や ML のプローブはありません。
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+単独のデスクトップはこれらを一切意識しません。通常のディスパッチはフリートをまったく経由しないためです。サーバーホストに対して暗黙のインプロセスワーカーが登録されて_います_が、それはランナーが接続されていない登録用のシームです。ローカルワーカーに実際に配置されたジョブは、実行されずに失敗します。現時点でリース済みジョブを実行するのは、実際の `cc_worker` だけです。
 
-## What runs where
+## どこで何が動くか
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| 関心事                                         | サーバー（`cc_server`）    | フリートエグゼキューター（`cc_worker`） | デスクトップクライアント | Web / スマートフォンクライアント |
+| ---------------------------------------------- | -------------------------- | --------------------------------------- | ------------------------ | -------------------------------- |
+| データベース（Drift/SQLite）                   | 所有する                   | —                                       | —                        | —                                |
+| 認証、承認、予算、ID                           | 所有する                   | —                                       | —                        | —                                |
+| パイプライン、リコンサイラー、オーケストレーションリスナー | 実行する                   | —                                       | —                        | —                                |
+| MCP ツールサーフェス                           | 提供する                   | —                                       | —                        | —                                |
+| エージェント実行                               | 実行する（またはリースで外部に出す） | リース済みジョブを実行する              | —                        | —                                |
+| UI 描画                                        | —                          | —                                       | フル                     | フル（Web）/ 読み取り中心（スマートフォン） |
+| ミーティングキャプチャ（マイク + ミーティング音声） | —                          | —                                       | ネイティブキャプチャ     | Web のみ、画面共有音声経由       |
+| カレンダー OAuth（Google）                     | トークンを保存する         | —                                       | —                        | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
-for what bounds a run in each case.
+この 2 つの階層は同じようにはサンドボックス化しません。`cc_server` は、自ら実行するランを、バックエンドが存在する場合はホストの OS サンドボックス — macOS では Seatbelt、Linux と WSL2 では bubblewrap — で包み、Windows や `bwrap` と `socat` がない場合は他の境界にフォールバックします。**`cc_worker` はまったくサンドボックス化しません。** サーバーがプラットフォーム別にジョブを配置できるよう `sandbox` ケイパビリティを公開しますが、ワーカー側でサンドボックスを適用するものは何もありません。リースされたジョブは直接起動され、リースの環境と与えられたワークツリーによって制限されます。したがって、作業を外部にリースすることは、サンドボックスを持つホストであっても実行をサンドボックスの外に移します。それぞれの場合にランを何が制限するかは[サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)を参照してください。
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+ミーティングキャプチャはクライアント上で行われます。マイクとミーティングの音声が必要であり、物置の中のサーバーは通話を録音できないためです。録音はその後サーバーのパイプラインで要約され、ノートはどのクライアントからも読める場所に保存されます。
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Web クライアントも録音しますが、これは表の形からは見えにくいかもしれません。ブラウザーでマイクと画面共有の音声トラックを取り込み、16 kHz の PCM をサーバーにストリーム配信します。この音声トラックを_必須_とするため、ブラウザーが提供しない場合は明示的に失敗します。本当にデスクトップ専用なのは、キャプチャ周辺の品質レイヤーです — ネイティブプロセッサによる信号レベルのエコーキャンセリング、入力レベルのメーターとマイク無音の警告、要約の再実行、処理のキャンセル、カレンダーの録音してリンクするアクションです。
 
-## Pairing and trust
+## ペアリングと信頼
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+すべてのクライアントは、一度プロビジョニングされた**事前共有キー**で自身を証明します。
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- ローカルモードのデスクトップは、起動のたびに新しいキーを生成し、環境変数を介して起動したサーバーに渡すため、デスクトップに秘密情報が永続化されません。
+- リモートクライアント（デスクトップのリモート、Web、スマートフォン）は、サーバーの `pair` コマンドで生成されたキーを使用し、OS のキーチェーン（スマートフォンではローカル）に保存します。
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+失効は遅延ではなく**ライブ**です。サーバーはペアリング済みデバイスのテーブルを監視し、デバイスがアクティブセットから外れた開いているセッションを数秒以内に切断します — 直接の WebSocket 経路でもリレー経路でも同様です。切断するためにデバイスが再接続するのを待つ必要はありません。
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+キーは、静的ホストが見ることのできる URL を通ることはありません。リンクで届く場合 — スマートフォンやブラウザーで — は、**URL フラグメント**、つまり `#` の後の部分に乗り、ブラウザーがそれをページをホストするサーバーに送ることはありません。これは覚えておく価値のある不変条件であり、どちらにも当てはまります。Web クライアントには他に 2 つのエントリーポイントがあります。サーバーとキーを直接貼り付ける接続フォームと、そのブラウザー専用に発行された資格情報と引き換える招待コードです。
 
-## Related concepts
+## 関連するコンセプト
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/): the phone pairing and security model
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): すべての RPC 呼び出しが自身のワークスペース id を含む理由と、データベースの分割が分離を構造的にする仕組み
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): コードベースがサーバーとそのクライアントを中心にどのように構成されているか
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/): スマートフォンのペアリングとセキュリティモデル
 
-## Related guides
+## 関連するガイド
 
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): start `cc_server` and pair a client
-- [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): point the desktop or web client at a server elsewhere
-- [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/ja-JP/マニュアル/ハウツーガイド/フリートワーカー実行/): add a `cc_worker` that pulls leased jobs
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): `cc_server` を起動し、クライアントをペアリングする
+- [リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): デスクトップまたは Web クライアントを別の場所のサーバーに向ける
+- [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): スマートフォン、2 つ目のブラウザー、または別のデスクトップを追加する
+- [フリートワーカーを実行](/ja-JP/マニュアル/ハウツーガイド/フリートワーカー実行/): リース済みジョブを取得する `cc_worker` を追加する

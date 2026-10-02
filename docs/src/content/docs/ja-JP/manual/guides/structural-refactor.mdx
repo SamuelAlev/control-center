@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: 構造的にコードをリファクタ
+description: エージェントに、テキストではなく形でコードを見つけて書き換えさせ、変更が確定する前にレビューします。
 slug: ja-JP/マニュアル/ハウツーガイド/構造的リファクタ
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+このガイドでは、構造検索と構造書き換えを使って、エージェントに広範囲の機械的な変更 — codemod、一括の API 移行、消し去りたいパターン — を加えさせる方法を説明します。変更は、何かが書き込まれる前にレビュー用にステージングされます。
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` はコードを**形**でマッチします。`ast_edit` はそれを書き換えます。`resolve` がコミットするか破棄します。
 
-## Before you start
+## 始める前に
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+構造ツールが扱うのは、コードグラフがパースする言語です: Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada。これらは tree-sitter の文法がステージされている必要がありますが、出荷ビルドでは常にそうなっています — 文法が欠けていると、検索が劣化するのではなくサーバーが停止します。
 
-## Find the shape first
+## まず形を見つける
 
-Never rewrite something you have not looked at. Ask the agent to search:
+見ていないものを書き換えてはいけません。エージェントに検索を頼みます:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> null チェックしたばかりの nullable に対して `dispose()` を呼び出している箇所をすべて見つけて。
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+出力は、各箇所の `file:line` と一致したソースです。
 
-### What the pattern syntax buys you
+### パターン構文で何が得られるか
 
-| Token      | Matches                                    |
+| トークン   | マッチするもの                             |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | 任意の単一ノード（捕捉される）             |
+| `$$$NAME`  | 任意の連続する兄弟 — 引数、文               |
+| `$_`       | 何にでもマッチ（名前を付けずに捕捉される）  |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+重要なのはこれです: **繰り返された `$NAME` は同じテキストを捕捉しなければなりません**。
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+これは、検査したものを破棄するガードを見つけます。`if (a != null) b.dispose()` は**見つけません** — そしてそれは通常、探していたバグそのものです。テキスト検索ではこれを表現できません。
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[文字列やコメントの内部にはマッチできません]
+パターンはファイルと同じ文法でパースされるため、ドキュメントコメントや文字列リテラルに書かれた `dispose(x)` は呼び出しではなく、マッチしません。`grep` ではなくこれに手を伸ばす理由は、まさにそこにあります。
 :::
 
-### When the pattern finds nothing
+### パターンが何も見つけないとき
 
-Two things to try, in order:
+順に試すべきことが 2 つあります:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **小さくする。** `if (a) { foo($X); }` より先に `foo($X)`。それ自体では有効なコードにならないパターンは、多くの場合、意図した構文ではありません。
+2. **言語を明示する。** `language:` が推論されるのは、`path` が単一のファイルを指すときだけです。
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+どのパースコンテキストも受け入れないパターンは、パース不能として報告されます — 見た目どおりには一度も読まれていないものに対して「マッチなし」と報告するのではなく、ツールがそう告げます。
 
-## Rewrite, and look before it lands
+## 書き換えて、確定する前に確認する
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+結果は**提案**です:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+まだディスクには何も書き込まれていません。リストを読み、検索が報告した箇所をいくつか確認してから、次を実行します:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+または
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[コミットはオール・オア・ナッシング]
+すべてのファイルは、変更をステージングしたときに捕捉した内容と照合されます。そのうちの 1 つでも変わっていると — エージェントが手で編集した、フォーマッターが実行された、診断パスが書き換えた — 変更**全体**が拒否され、破棄されます。部分的に適用された構造的書き換えは、古い形でも新しい形でもコンパイルできないツリーを残します。
 
-Re-run the tool against the current files; do not retry the stale id.
+現在のファイルに対してツールを再実行してください。古くなった id を再試行しないでください。
 :::
 
-## Check your work with the compiler
+## コンパイラーで作業を確認する
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+これを構造的に行う要点は、変更が広範囲に及ぶことです。広範囲の変更こそ、もっともらしく見える書き換えが型を壊す場所です。resolve の後に診断を要求します:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` はファイル単位のクエリではなく、プロジェクト自身のチェッカー（`dart analyze`、`tsc --noEmit`、`cargo check`、`go build`）を実行します — 40 ファイルに触れた変更の後にふさわしい問いの形です。
 
-## Worked example: migrating a call
+## 実例: 呼び出しの移行
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+`log(msg, level)` が `log(level: level, message: msg)` になるとします。
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+ヒットを確認します。その一部が*別の* 2 引数の `log` であるなら、違いをパターンで表現しようとするのではなく、`path` を目的の `log` を所有するディレクトリに絞ってパターンを狭めます。
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+次に `resolve`、そして `lsp(action: "diagnostics", file: "*")` です。
 
-## When to use something else
+## ほかのものを使うべきとき
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| 状況                                       | 適したツール                                 |
+| ------------------------------------------ | -------------------------------------------- |
+| シンボルの名前変更                         | `lsp_rename` — 形ではなく参照をたどります     |
+| 文字列、コメント、ファイル名の検索         | `search`（内容）/ `search_files`（名前）      |
+| 「これを変えると何が壊れるか？」           | [コードグラフ](/ja-JP/マニュアル/ハウツーガイド/コード検索/) |
+| 文法が対応していない言語                   | `search` と `edit`                           |
 
-## Related
+## 関連項目
 
-- [Code intelligence](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ja-JP/マニュアル/リファレンス/エージェントツール/) — the full argument list
-- [Search code with the code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/) — the symbol and impact side
+- [コードインテリジェンス](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — 構造マッチングがひと手間多い正規表現ではない理由
+- [内蔵エージェントツール](/ja-JP/マニュアル/リファレンス/エージェントツール/) — 引数の完全なリスト
+- [コードグラフでコードを検索](/ja-JP/マニュアル/ハウツーガイド/コード検索/) — シンボルと影響の側面

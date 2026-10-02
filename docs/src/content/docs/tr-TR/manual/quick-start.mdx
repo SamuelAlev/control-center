@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Hızlı başlangıç
+description: Control Center'ı kurun, bir ajanı yapılandırın ve deponuzda çalışmasını izleyin.
 slug: tr-TR/kilavuz/hizli-baslangic
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Bu, hiçbir şeyden yola çıkıp kendi kodunuz üzerinde çalışan bir ajana ulaşmanın en kısa eksiksiz yoludur. Adımları sırayla izleyin; her adım kendinden öncekine dayanır.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Git'e, bir GitHub hesabına ve ayrıca ya bir model sağlayıcısı hesabına (Anthropic, OpenAI, Codex, Cursor, Kimi Code veya API anahtarı olan herhangi bir sağlayıcı) ya da kurulu bir Claude Code CLI'ye ihtiyacınız var. Geri kalan her şey yol boyunca kurulur.
 
-## Step 1: Install and launch
+## 1. Adım: Kurun ve başlatın
 
-Install Control Center as described in [Install](/tr-TR/kilavuz/kurulum/), then open it.
+Control Center'ı [Kurulum](/tr-TR/kilavuz/kurulum/) sayfasında anlatıldığı gibi kurun, ardından açın.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+İlk açılışta masaüstü uygulaması **“Control Center nasıl çalışsın?”** diye sorar. **Bu uygulamada çalıştır** seçeneğini seçin. Control Center bu makinede, verilerinize sahip olan ve tüm işi yapan headless bir `cc_server` başlatır. Onu hiç görmezsiniz; yerine ilk kurulum ekranı açılır.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/tr-TR/kilavuz/kurulum/#use-it-in-your-browser) for the browser route.
+:::note[Hiçbir şey kurmak istemiyor musunuz?]
+Aynı uygulama, aynı özelliklerle tarayıcıda [app.usectrl.dev](https://app.usectrl.dev) adresinde
+çalışır. Ancak bir tarayıcı sekmesi sunucuyu barındıramaz, bu yüzden sunucuyu siz sağlarsınız —
+`cc_server`'ı yerel olarak çalıştırıp `ws://localhost:9030` adresine bağlanın ya da onu başka
+bir makinedeki bir sunucuya yönlendirin. Bu hızlı başlangıç, sunucu kurulumu gerektirmediği
+için masaüstü yolunu izler; tarayıcı yolu için [Kurulum](/tr-TR/kilavuz/kurulum/#use-it-in-your-browser)
+sayfasına bakın.
 :::
 
-## Step 2: Work through onboarding
+## 2. Adım: İlk kurulumu tamamlayın
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+İlk kurulumun beş adımı vardır ve bunlar sırayla çalışır — ileri atlamak yoktur.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Bağlan**: GitHub ile oturum açın ya da `repo` ve `read:org` kapsamlı bir kişisel erişim belirteci yapıştırın. Kimlik bilgisi sunucuda saklanır ve hesabınıza bağlanır.
+2. **Çalışma alanı**: ilk çalışma alanınızı adlandırın ve isterseniz bir logo seçin. Oluşturmak, beş ajanı — bir CEO ile `qa`, `architect`, `engineer` ve `librarian` — ve yerleşik pipeline şablonlarını tohumlar.
+3. **Sandbox**: bir sandbox tercihini kaydeder. Her iki seçenek de devam etmenizi sağlar.
+4. **Adaptör**: ajanların varsayılan olarak kullanacağı adaptörü ve modeli seçin. **Control Center (built-in)** seçeneğini seçin, ardından görünen sağlayıcı seçiciyi kullanarak bir model sağlayıcısına oturum açın — bir sağlayıcı bağlanana kadar model listesi boş kalır. Bu adımı bitirmek, adaptörü ve modeli çalışma alanının CEO ajanına da işler.
+5. **Ses (isteğe bağlı)**: dikte için cihaz üzerinde çalışan bir konuşma modeli kurun ya da atlayın.
 
-Control Center then opens your workspace inbox.
+Control Center ardından çalışma alanınızın gelen kutusunu açar.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
+:::note[Bir ajan çalıştırmasını ne sınırlar]
+Bir tane varsa ajan komutları ana makinenin işletim sistemine özgü sandbox'ına sarılır — macOS'ta Seatbelt, Linux'ta bubblewrap. Windows'ta arka uç yoktur, bu yüzden oradaki çalıştırmalar yalnızca diğer katmanlarla sınırlanır: konuşmanın kendi worktree'si (Windows'ta `git worktree`; `rift`'in geldiği yerde copy-on-write), başlatma başına aracılık edilen ve kapatmada geri alınan kimlik bilgileri ve eylem korumaları. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
-## Step 3: Add a repository
+## 3. Adım: Bir depo ekleyin
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+**Ayarlar → Çalışma alanı → Depolar** bölümüne gidin ve **Depo ekle**'ye tıklayın.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+İletişim kutusu, klasörlere istemcinizde değil sunucuyu çalıştıran makinede göz atar ve sunucunun açığa çıkarmak üzere yapılandırıldığı köklerin içinde kalır (varsayılan olarak kendi kullanıcısının ev dizini). Yalnızca git checkout'ları bir onay kutusu alır. Kendinizinkini işaretleyin ve kaydedin.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Bir checkout yalnızca bir git çalışma ağacının içindeyse, bir `origin` uzak deposu varsa ve bu uzak depo desteklenen bir kod barındırıcısına — github.com, gitlab.com veya bitbucket.org — işaret ediyorsa kabul edilir. Bunun dışındaki her şey, nedeniyle birlikte reddedilir.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Depolar çalışma alanı kapsamlıdır: burada bir checkout kaydetmek onu _bu_ çalışma alanına koyar. Ayrı bir bağlama adımı yoktur.
 
-## Step 4: Give an agent an adapter and a model
+## 4. Adım: Bir ajana adaptör ve model tanımlayın
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+**Ayarlar → Çalışma alanı → Ajanlar** bölümüne gidin. Kadrodan `engineer` ajanını seçin.
 
-On the **Settings** tab, set:
+**Ayarlar** sekmesinde şunları belirleyin:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Adaptör**: `Control Center (built-in)`
+- **Model**: ilk kurulumda bağladığınız sağlayıcıdan birini seçin
 
-Press **Save changes**.
+**Değişiklikleri kaydet**'e basın.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Bu adım pratikte isteğe bağlı değildir. İlk kurulum sırasında seçilen adaptörü yalnızca CEO ajanı devralır; dört uzman adaptörsüz oluşturulur. Anthropic'in varsayılan modeliyle birlikte **Control Center (built-in)** seçeneğine geri düşerler; bu yüzden yalnızca bir Anthropic hesabı bağladıysanız çalışırlar — ve bağladıysanız da seçmediğiniz bir model üzerinde çalışırlar.
 
-## Step 5: Send the agent a task
+## 5. Adım: Ajana bir görev gönderin
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Kenar çubuğunda **Alanlar** bölümünü bulun ve **+** düğmesine tıklayın.
+2. Alana bir ad verin, **Ajan ekle** altında `engineer` ajanını ekleyin ve oluşturun.
+3. Kaydettiğiniz depoya yönelik somut, küçük bir görev yazın ve Enter'a basın.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center bu konuşma için çalışma alanının depolarından copy-on-write bir worktree sağlar, ajanın rolünden, personasından, becerilerinden ve alanın bağlamından bir istem oluşturur ve çalıştırmayı gönderir. Kaynak checkout'unuza asla dokunulmaz.
 
-## Step 6: Watch it work
+## 6. Adım: Çalışmasını izleyin
 
-You should see, in order:
+Sırayla şunları görmelisiniz:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Bu konuşmada bir ajan çalıştığı için Composer'ın gönderme düğmesinin bir durdurma düğmesine dönüşmesi
+- Ajanın akıl yürütmesinin, araç çağrılarının ve metninin döküme akması
+- Çalıştırma bittiğinde gönderme düğmesinin geri gelmesi
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Ardından **Ayarlar → Çalışma alanı → Ajanlar** bölümünü açın, ajanı seçin ve **Loglar** sekmesine bakın: durumu, süresi, başlangıç ve bitiş zamanları ile üzerinde çalıştığı adaptörle birlikte tek bir çalıştırma satırı.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Döngü budur. Control Center'daki diğer her şey — pull request incelemesi, pipeline'lar, biletler, toplantılar, Slack — buna bağlıdır.
 
-## Next steps
+## Sonraki adımlar
 
-- [Your first workspace](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/tr-TR/kilavuz/ogreticiler/ilk-pr/): take an agent's branch through review and merge
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): what an agent is made of
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/): the rest of the agent form
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/): one goal, one approval, a generated pipeline
-- [Pair your phone](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): follow the fleet from anywhere
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/): how the desktop, web and phone clients relate to the server
+- [İlk çalışma alanınız](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/): aynı konu, daha yavaş, yalıtım modeli açıklanmış olarak
+- [İlk pull request'inizi inceleyin](/tr-TR/kilavuz/ogreticiler/ilk-pr/): bir ajanın dalını incelemeden ve birleştirmeden geçirin
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir ajan nelerden oluşur
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/): ajan formunun geri kalanı
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/): tek hedef, tek onay, üretilmiş bir pipeline
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): filoyu her yerden takip edin
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/): masaüstü, web ve telefon istemcilerinin sunucuyla ilişkisi

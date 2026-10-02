@@ -1,118 +1,141 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Enregistrer et résumer une réunion
+description: Enregistrez un appel, obtenez une transcription et transformez-la en notes, tâches et décisions.
 slug: fr-FR/manuel/guides/enregistrer-reunion
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/fr-FR/manuel/concepts/reunions/) for how it works.
+Ce guide vous montre comment enregistrer une réunion et obtenir un compte rendu
+rédigé par l’IA.
+Voir [Réunions et transcription](/fr-FR/manuel/concepts/reunions/) pour comprendre
+son fonctionnement.
 
-## Before you start
+## Avant de commencer
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Attendez le modèle vocal, puis redémarrez le serveur.** Un démarrage normal
+  installe de force en arrière-plan le modèle ASR sélectionné (Parakeet TDT 0.6B
+  v3, la valeur par défaut multilingue, environ 600 Mo). Le serveur résout le
+  modèle **une seule fois au démarrage** : le premier lancement reste donc sans
+  opération d’enregistrement tant que vous n’avez pas redémarré. Sans modèle sur
+  le disque, l’enregistrement échoue avec `Could not start recording on the
+  host: …`. Pour choisir une autre variante, allez dans **Paramètres → Serveur →
+  Modèles vocaux et de réunion** — un redémarrage est également nécessaire.
+- Accordez l’autorisation **microphone** lorsque votre système d’exploitation la
+  demande au premier enregistrement.
+- Sur **macOS 14.4+**, l’audio système est capté par des captures de processus
+  Core Audio — aucun pilote à installer, mais le système demande une seconde fois
+  une autorisation de _capture audio_. Ce n’est pas l’Enregistrement de l’écran
+  et cela n’allume jamais l’indicateur d’enregistrement de l’écran. La refuser
+  fait échouer le démarrage avec `System-audio capture permission denied.` En
+  dessous de macOS 14.4, il n’existe aucune capture d’audio système.
+- Sous **Linux**, `parecord` (pulseaudio-utils) ou `pw-record` (pipewire) doit
+  être présent dans le `PATH` — la capture en lance un contre une source moniteur
+  PipeWire/PulseAudio. Sans l’un des deux, le démarrage échoue avec `No
+  system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Où va l’audio de votre réunion]
+La capture, la transcription, l’annulation d’écho et la diarisation des locuteurs
+s’exécutent toutes sur l’appareil, sans aucun appel au cloud — mais « appareil »
+désigne l’**hôte de `cc_server`**, qui est une autre machine lorsque vous
+exécutez le serveur à distance. Et le compte rendu final est une exécution
+d’agent ordinaire : le pipeline `meeting_summary` envoie la transcription
+complète et vos notes brutes au fournisseur de modèles que cet agent utilise.
+Pointez cet agent vers un fournisseur local si la transcription ne doit pas
+quitter la machine.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+L’écran d’enregistrement l’indique pendant que vous enregistrez, de sorte que la
+décision est devant vous avant qu’il n’y ait une transcription à envoyer.
 :::
 
-## Start a recording
+## Démarrer un enregistrement
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Ouvrez **Réunions** dans la barre latérale.
+2. Cliquez sur **Enregistrer la réunion**. L’interface d’enregistrement en direct
+   s’ouvre à l’adresse `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+L’enregistrement démarre immédiatement et capte votre microphone ainsi que
+l’audio de sortie du système — les autres participants. Aucune invite de mode ni
+sélecteur de source audio : le mode en personne à microphone unique existe dans
+l’API mais n’a aucune interface aujourd’hui.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Dans le navigateur, le même flux fonctionne, à une différence près : l’« audio
+système » est un partage d’écran qui doit comporter une piste audio. Partagez un
+onglet du navigateur (ou l’intégralité de votre écran) et activez « Partager
+l’audio de l’onglet » / « Partager l’audio du système » dans le sélecteur. Safari
+et Firefox, ainsi que le partage plein écran sur macOS, ne peuvent souvent pas en
+fournir.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+L’interface affiche un indicateur de niveau, le temps écoulé et une transcription
+en direct qui se construit sur un côté.
 
-## During the meeting
+## Pendant la réunion
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Prenez des notes brutes** dans le volet des notes. Elles sont enregistrées au fil de la frappe et transmises plus tard à l’agent de synthèse : notez donc tout ce que la transcription pourrait manquer.
+- **Choisissez le modèle de notes** dans la ligne **Modèle actif**. Il façonne le résumé de cette réunion et est capturé avec l’enregistrement : une relance ultérieure reproduit donc le modèle que vous avez choisi ici.
+- **Mettez en pause et reprenez** avec la commande de pause. La transcription s’arrête pendant la pause et le chronomètre se fige.
+- La transcription arrive étiquetée par locuteur : vos paroles sous **Vous**, toutes les personnes en ligne sous **Autres** — jusqu’à ce que la diarisation scinde Autres en `Person 1`, `Person 2`, … que vous pouvez renommer.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Un locuteur très discret peut ne pas être transcrit]
+La transcription ignore toute fenêtre audio qui n’a jamais dépassé un seuil de
+silence, sans même la décoder. Cela évite qu’un canal discret consume du CPU sur
+des jetons non vocaux hallucinés, mais cela signifie aussi qu’un locuteur faible
+ou éloigné peut ne produire aucune transcription. Vérifiez l’indicateur de niveau
+tôt plutôt qu’à la fin.
 :::
 
-## Stop and summarize
+## Arrêter et résumer
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Cliquez sur **Arrêter et résumer**.
+2. Control Center vous amène directement à la vue de détail de la réunion, marquée **Traitement** : la diarisation scinde le canal distant en locuteurs individuels et le pipeline `meeting_summary` génère le compte rendu.
+3. La réunion passe à **Terminé** dès que ce pipeline se termine. Vous n’avez pas à attendre sa fin — la vue de détail se met à jour toute seule.
 
-## Review the writeup
+## Relire le compte rendu
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Le détail d’une réunion (`/meetings/:meetingId`) comporte quatre onglets :
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Onglet           | Contenu                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| **Notes**        | Le résumé par IA et les notes enrichies, construits à partir de vos notes brutes + la transcription |
+| **Transcription** | La transcription complète étiquetée par locuteur, avec horodatages                  |
+| **Tâches**       | Les tâches à faire extraites, chacune avec un responsable facultatif                 |
+| **Décisions**    | Les décisions prises pendant l’appel                                                 |
 
-From here you can:
+De là, vous pouvez :
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/fr-FR/manuel/guides/deleguer-tickets/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Renommer les locuteurs** : remplacez `Person 1` par un vrai nom ; cela s’applique à toute la transcription.
+- **Cocher les tâches** au fur et à mesure que vous les terminez.
+- **Créer un ticket** à partir d’une tâche : cela crée un nouveau ticket non attribué, intitulé d’après la tâche, et le relie à la ligne. Attribuez-le à un agent depuis le ticket lui-même (voir [Déléguer du travail aux agents](/fr-FR/manuel/guides/deleguer-tickets/)).
+- **Relancer le résumé** pour une nouvelle passe (par exemple après avoir renommé des locuteurs). Le modèle capturé lors de l’enregistrement de la réunion est réutilisé. Choisissez le modèle actif dans **Paramètres → Espace de travail → Réunions**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+La modification des notes, du titre, des tâches et des décisions fonctionne
+partout.
+**Relancer le résumé** et l’annulation d’une réunion en cours de traitement sont
+**réservés au bureau** — dans le navigateur, les deux boutons ne font rien.
 
-## Record straight from a calendar event
+## Enregistrer directement depuis un événement de calendrier
 
-If you've [connected a calendar](/fr-FR/manuel/guides/connecter-calendrier/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Si vous avez [connecté un calendrier](/fr-FR/manuel/guides/connecter-calendrier/),
+vous pouvez éviter le démarrage manuel. Cette fonction est **réservée au
+bureau** ; le client web la refuse.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Ouvrez l’événement depuis **Calendrier**.
+2. Cliquez sur **Enregistrer et lier**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+L’enregistrement est initialisé avec le titre de l’événement et relié à
+celui-ci, de sorte que les notes et l’entrée de calendrier restent connectées.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Supprimer une réunion ne supprime pas son audio]
+Supprimer une réunion efface ses lignes, mais les fichiers WAV enregistrés sous
+`<dataDir>/meetings/<meetingId>/` restent sur le disque — il n’existe aucune
+politique de conservation, aucun plafond de taille ni balayage de nettoyage.
+Supprimez ce répertoire vous-même si l’audio compte.
 :::
 
-## Related guides
+## Guides connexes
 
-- [Connect a Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/)
-- [Delegate work to agents](/fr-FR/manuel/guides/deleguer-tickets/)
+- [Connecter un Google Calendar](/fr-FR/manuel/guides/connecter-calendrier/)
+- [Déléguer du travail aux agents](/fr-FR/manuel/guides/deleguer-tickets/)
 
-## Related concepts
+## Concepts connexes
 
-- [Meetings and transcription](/fr-FR/manuel/concepts/reunions/)
+- [Réunions et transcription](/fr-FR/manuel/concepts/reunions/)

@@ -1,54 +1,56 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Giriş
+description: Control Center, çok ajanlı yazılım geliştirmenin kokpitidir.
 slug: tr-TR/kilavuz
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center, bir YZ kodlama ajanları filosuna komuta etmenizi sağlar. Ajanları başlatın, gerçek zamanlı olarak çalışmalarını izleyin, PR'larını inceleyin; depoları, çalışma alanlarını ve entegrasyonları yönetin — yerel bir masaüstü uygulamasından, bir tarayıcıdan ya da telefonunuzdan.
 
 <div className="docs-start not-content">
-  <LinkButton href="/tr-TR/kilavuz/hizli-baslangic/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/tr-TR/kilavuz/kurulum/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/tr-TR/kilavuz/hizli-baslangic/" icon="right-arrow">Hızlı başlangıç</LinkButton>
+  <LinkButton href="/tr-TR/kilavuz/kurulum/" variant="minimal" icon="download">Control Center'ı kurun</LinkButton>
 </div>
 
-## What you can do
+## Neler yapabilirsiniz
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/tr-TR/kilavuz/kavramlar/pipelinelar/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Ajanlara mesaj gönderin**: alanlar, filoyu yönlendirmenin birincil yoludur. Bir ajanı @ ile anın; ajan kendi kopyala-üzerine-yaz çalışma ağacına gönderilir, böylece birkaçı checkout'unuza dokunmadan paralel olarak kod yazıp inceleme yapabilir
+- **Büyük talepleri orkestre edin**: orkestratöre bir hedef verin, önerdiği tüm ekip planını bir kez onaylayın ve oluşturulan bir [pipeline](/tr-TR/kilavuz/kavramlar/pipelinelar/) bunu çalıştırır
+- **PR'ları inceleyin ve birleştirin**: yerleşik bir diff görüntüleyici, satır içi yorumlar ve YZ destekli incelemeyle
+- **Ajanlara atılabilir makineler verin**: bir [rig](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) tek kullanımlık bir VM'dir — bir tarayıcı, bir masaüstü, bir telefon ya da yalıtılmış bir terminal — ajan onu siz canlı izlerken sürer ve devralabilirsiniz; içindeki geliştirme sunucuları `localhost`'a, ajanın tarayıcısına ve `https://myapp.test` adresine yönlendirilir
+- **Akışları otomatikleştirin**: olaylarla ya da zamanlamalarla tetiklenen DAG tabanlı pipeline'lar kullanın
+- **Bilgiyi yönetin**: çalışma alanı kapsamlı bellek, olgular ve politikalar kullanın
+- **İşi takip edin**: satıcıdan bağımsız biletler, projeler ve devretmeyle
+- **Toplantıları kaydedin**: cihaz üzerinde yakalama, transkripsiyon ve konuşmacı ayırmayla; ardından notlara, eylem öğelerine ve kararlara özetlenir
+- **Gününüzü görün**: Google Calendar eşitleme, RSVP, toplantı uyarıları ve kaydet-ve-bağla ile
+- **Filoyu telefonunuzdan takip edin**: bir cihazı sunucunuzla eşleştirin; mesajları okuyun, yanıtlayın ve biletleri triyaj edin. Telefon, ulaşabildiği en iyi yolu kullanır — loopback, LAN, tailnet ya da TLS — ve okuyamadığı çerçeveleri ileten uçtan uca mühürlenmiş bir aktarıcıya düşer
+- **Ajanları Slack'ten yönetin**: bir çalışma alanını bir sohbet uygulamasına köprüleyin ve botu @ ile anın, bir Slack dizisinde yanıtlayın ya da bir slash komutuyla bilet açın — giden bir bağlantı üzerinden, yani genel bir uç nokta gerekmez
+- **Entegre olun**: GitHub, Linear, Slack, Google Calendar ve 100'den fazla MCP aracıyla
 
-## You do not have to install it
+## Yüklemek zorunda değilsiniz
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Aynı uygulama, aynı özelliklerle tarayıcınızda
+[app.usectrl.dev](https://app.usectrl.dev) adresinde çalışır.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Her istemci — masaüstü, web ve telefon — verinizin sahibi olan ve işi yapan headless
+bir sunucu üzerine çizen ince bir katmandır. Masaüstü bu sunucuyu sizin için
+başlatabilir; bir tarayıcı sekmesi başlatamaz, bu yüzden web uygulaması sizin
+çalıştırdığınız bir sunucuya bağlanır. Bu sunucu kendi makinenizde
+(`ws://localhost:9030`, sertifika gerekmez) ya da TLS, bir VPN veya bir tünel
+üzerinden erişilebilen uzak bir ana makinede durabilir.
 
-See [Install](/tr-TR/kilavuz/kurulum/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/) for how the three clients relate.
+Tarayıcı yolu için [Kurulum](/tr-TR/kilavuz/kurulum/#use-it-in-your-browser) sayfasına,
+üç istemcinin birbiriyle nasıl ilişkilendiği için [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/) sayfasına bakın.
 
-## Next steps
+## Sonraki adımlar
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/tr-TR/kilavuz/kurulum/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/tr-TR/kilavuz/hizli-baslangic/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/tr-TR/kilavuz/ogreticiler/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/tr-TR/kilavuz/nasil-yapilir/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/tr-TR/kilavuz/kavramlar/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/tr-TR/kilavuz/referans/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Kurulum" href="/tr-TR/kilavuz/kurulum/" description="İndirmeler, sistem gereksinimleri ve sunucunun nerede çalıştığı." />
+  <LinkCard title="Hızlı başlangıç" href="/tr-TR/kilavuz/hizli-baslangic/" description="Bir ajanın deponuz üzerinde çalışmasına giden en kısa eksiksiz yol." />
+  <LinkCard title="Öğreticiler" href="/tr-TR/kilavuz/ogreticiler/" description="İlk çalışma alanınızla başlayan, sırayla ilerleyen daha uzun dersler." />
+  <LinkCard title="Nasıl yapılır" href="/tr-TR/kilavuz/nasil-yapilir/" description="Tek seferde tek görev için tarifler: depo ekleyin, korumaları yapılandırın veya telefonunuzu eşleştirin." />
+  <LinkCard title="Kavramlar" href="/tr-TR/kilavuz/kavramlar/" description="Ürünün neden böyle çalıştığı; dağıtım ve istemcilerle başlar." />
+  <LinkCard title="Referans" href="/tr-TR/kilavuz/referans/" description="Rotalar, MCP araçları, klavye kısayolları ve alan olayları için eksiksiz tablolar." />
 </div>

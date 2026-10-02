@@ -1,131 +1,136 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Делегировать работу агентам
+description: Передайте тикет агенту в разговоре и позвольте агентам делегировать подзадачи друг другу под контролем проверок глубины и циклов.
 slug: ru-RU/руководство/практические-руководства/делегировать-тикеты
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Это руководство о том, как снять работу со своих плеч и передать её агенту, и о
+том, что происходит, когда агенты передают работу друг другу.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Назначение тикета агенту не запускает работу]
+Для назначенного агента нет диспетчера тикетов. Назначение фиксирует владение и
+ничего больше — пространство не создаётся, статус не меняется, агент не
+запускается. Исключение — тикет, назначенный **команде**: он будит лидера этой
+команды. Работа агента для указанного исполнителя живёт в разговорах, поэтому
+начинать её нужно именно там.
 :::
 
-## Hand a ticket to an agent
+## Передать тикет агенту
 
-1. [Create the ticket](/ru-RU/руководство/практические-руководства/управлять-тикетами/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Создайте тикет](/ru-RU/руководство/практические-руководства/управлять-тикетами/) с заголовком и
+   описанием, достаточно точным, чтобы по нему можно было работать.
+2. Укажите в его поле **Исполнитель** агента, чтобы владение было зафиксировано.
+3. Откройте (или создайте) пространство и @-упомяните этого агента.
+4. Сошлитесь на тикет упоминанием через `#` в своём сообщении — композер
+   автодополняет тикеты рабочего пространства — и скажите, что нужно сделать.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Агент подхватывает работу из разговора. Ход его работы транслируется в это
+пространство.
 
-## What the agent receives
+## Что получает агент
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Ваше сообщение, включая ссылку на тикет, которую вы отметили.
+- Пространство, в котором можно работать и отчитываться.
+- Изолированный worktree из связанных репозиториев рабочего пространства.
+- **Режим** пространства — именно он определяет поверхность инструментов запуска.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ru-RU/руководство/понятия/режимы/).
+Режим — свойство пространства, а не тикета: у тикета нет режима. Поэтому один и
+тот же агент может находиться в режиме `chat` в одном пространстве и `plan` в
+другом. Выберите его в выпадающем списке режимов в композере (**Агент**,
+**План** или **Оркестрация**); `review` задают пространства проверки PR, и
+выбрать его вручную нельзя. См. [Режимы](/ru-RU/руководство/понятия/режимы/).
 
-## Require a structured result
+## Требовать структурированный результат
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Контракт вывода объявляется при запуске, а не в тикете: `expected_output_schema`
+вместе с `output_contract_mode` (по умолчанию strict). Агент выполняет его,
+вызывая `submit_output`: тот проверяет полезную нагрузку по схеме и отклоняет
+несоответствующую.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+И принятый вывод, и любые отказы попадают в **журнал запуска агента**. Статус
+самого тикета при этом не меняется — провалившийся контракт не переводит тикет в
+состояние сбоя.
 
-## Monitor progress
+## Следить за ходом работы
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Пространство** — активность агента в реальном времени, основной вид.
+- **Тикет** — его статус, какой установит тот, кто его двигает.
+- **Наблюдаемость → Онлайн** (`/workspaces/<workspace-id>/observability`) —
+  список активных агентов в реальном времени.
+- **Наблюдаемость → Инсайты** — журнал запусков с затратами и длительностью.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Экрана панели управления нет; голый URL рабочего пространства перенаправляет во
+«Входящие».
 
-## Let agents delegate to each other
+## Позволить агентам делегировать друг другу
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Агент, столкнувшийся с подзадачей, делегирует её с помощью инструмента MCP
+`delegate_task`. Тот создаёт дочерний тикет, назначенный другому агенту, и —
+когда вы передаёте `parent_ticket_id` — записывает цепочку, чтобы её видели
+защитные проверки.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Две структурные проверки всегда срабатывают в узловой точке работы с тикетами, а
+не по инструкции в промпте:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Предел глубины** — цепочка глубже 3 переходов отклоняется.
+- **Обнаружение циклов** — переход назад к агенту, уже находящемуся в цепочке,
+  отклоняется.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Когда вы передаёте `from_agent_id`, срабатывают ещё две проверки (боевая
+конфигурация всегда предоставляет порты-резолверы):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Потолок автономии** — действующий уровень делегата в пространстве не должен
+  превышать уровень делегатора.
+- **Бюджетный конверт** — делегирование списывается с оставшегося бюджета
+  жёсткой остановки делегатора и не может выдать больше. Проверка проходит,
+  когда политики нет или она неограниченна.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Отказ громкий: инструмент возвращает причину срабатывания проверки дословно,
+поэтому делегирующий агент точно видит, почему. Поле `delegatedByAgentId`
+записывает, кто делегировал, образуя дерево делегирования.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` пропускает все защитные проверки]
+Более старый инструмент `delegate_ticket` всё ещё зарегистрирован и вызывает
+`createTicket` напрямую — без предела глубины, без проверки циклов, без потолка
+автономии, без бюджетного конверта. Предпочитайте `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Этот предел глубины делегирования, равный 3, — иное ограничение, чем предел
+вложенности субагентов встроенного раннера, равный 2: одно ограничивает тикеты
+между агентами, другое — субагентов внутри одного запуска.
 
-## Put several agents on one ticket
+## Поставить несколько агентов на один тикет
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Добавьте их в тикет как **соисполнителей** (роли: исполнитель, соисполнитель,
+ревьюер). Это состав — запись о том, кто участвует, — и сам по себе он ничего не
+даёт.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ru-RU/руководство/практические-руководства/пространства/).
+Чтобы действительно собрать агентов в одном разговоре, добавьте их как участников
+из шапки пространства. После этого они могут @-упоминать друг друга там. См.
+[Пространства](/ru-RU/руководство/практические-руководства/пространства/).
 
-## Automated ticket creation
+## Автоматическое создание тикетов
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Ни один узел в палитре конвейера не создаёт тикеты, поэтому конвейер не может
+раздать работу в виде назначенных тикетов.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/).
+Существующий путь — оркестрация: подтверждение предложения создаёт проект и
+команду, компилирует DAG подтикетов из предложения в **шаблон конвейера** (один
+шаг `promptAgent` на подтикет, а не отдельная строка `Ticket` на каждый) и
+стартует его. См.
+[Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/).
 
-## Related guides
+## Связанные руководства
 
-- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
-- [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
-- [Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
-- [Organize work with projects](/ru-RU/руководство/практические-руководства/проекты/)
-- [Ticket lifecycle reference](/ru-RU/руководство/справка/жизненный-цикл-тикета/)
+- [Создавать и управлять тикетами](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
+- [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
+- [Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
+- [Организовать работу через проекты](/ru-RU/руководство/практические-руководства/проекты/)
+- [Жизненный цикл тикета](/ru-RU/руководство/справка/жизненный-цикл-тикета/)
 
-## Related concepts
+## Связанные понятия
 
-- [Tickets](/ru-RU/руководство/понятия/тикеты/)
-- [Dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)
-- [Modes](/ru-RU/руководство/понятия/режимы/)
+- [Тикеты](/ru-RU/руководство/понятия/тикеты/)
+- [Жизненный цикл запуска](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)
+- [Режимы](/ru-RU/руководство/понятия/режимы/)

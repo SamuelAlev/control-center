@@ -1,95 +1,100 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Anslut en OpenID Connect-leverantör
+description: Koppla valfri OIDC-utfärdare – Pocket ID, Keycloak, Auth0, Zitadel – till inloggningen i Control Center.
 slug: sv-SE/handbok/how-to-guider/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Använd den här guiden när din identitetsleverantör talar **OpenID Connect**
+i stället för SAML. Valfri OIDC-certifierad utfärdare fungerar – Pocket ID,
+Keycloak, Auth0, Zitadel, Google Workspace och liknande följer alla samma
+steg; bara platsen där din leverantör visar värdena skiljer sig.
 
-## Prerequisites
+## Förutsättningar
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- en OIDC-leverantör där du kan skapa en klient – notera dess **klient-ID**
+  och dess **utfärdar-URL** (basen som dokumentet
+  `.well-known/openid-configuration` ligger under), plus dess
+  **klienthemlighet** när klienten är av den konfidentiella typen (publika
+  PKCE-klienter har ingen),
+- en Control Center-server som du administrerar (**serverägare**).
 
-## Steps
+## Steg
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Öppna **Inställningar → Server → Enkel inloggning** och växla till
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Fyll i **Utfärdar-URL**, **Klient-ID** och **Klienthemlighet (valfritt)**
+   när leverantören utfärdade en sådan. Control Center hittar endpointerna
+   via utfärdarens standardiserade discovery-dokument – ingen konfiguration
+   per leverantör.
+3. Registrera redirect-URL:en
+   `https://<your-server>/oidc/callback` på den klienten hos leverantören.
+4. Om dina grupper ligger under ett annat claim än `groups` anger du
+   namnet i **Gruppclaim**; mappa grupper till roller om du vill (SSO kan
+   aldrig ge ägarrollen).
+5. Välj medlemskapspolicyn (lägg till i varje arbetsyta automatiskt, eller
+   kräv inbjudningar per arbetsyta), slå på **Använd OpenID Connect för
+   inloggning** och tryck på **Spara anslutning**.
+6. Tryck på **Testa anslutning** – servern hämtar utfärdarens
+   discovery-dokument och bekräftar dess endpointern, så en grön toast
+   betyder att allt utom rundturen via webbläsaren fungerar. Använd
+   [kontrollverktyget nedan](#kontrollera-din-konfiguration-från-den-här-sidan) för
+   att även kontrollera klientregistreringen.
+7. Logga in: anslutningsskärmen i webben visar **Logga in med OpenID
+   Connect**, eller öppna `https://<your-server>/oidc/login` direkt.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claims (e-post, namn, grupper) läses från utfärdarens token-endpoint över
+TLS av din server – webbläsaren skickar aldrig in dem, så ingen lokal
+verifiering av JWT-signaturer är inblandad. Klienten bör få begära scopet
+`openid profile email`, vilket är exakt vad Control Center frågar efter.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Eftersom den TLS-kanalen är det enda som autentiserar claimsen måste
+utfärdar-URL:en vara **https** – en utfärdare i klartext skulle låta en
+angripare i nätvägen förfalska identiteter i stor skala. `http` accepteras
+bara för loopback-utfärdare (`localhost`, `127.0.0.1`, `::1`), för lokal
+utveckling.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Publik klient eller konfidentiell klient?]
+Standardformen – och den rekommenderade – är en **publik klient** som
+använder auktoriseringskodflöde med **PKCE** (RFC 7636): den tillfälliga
+kodverifierare som servern håller ersätter hemligheten och token-utbytet
+binds till den auktoriseringsbegäran som startade det. Det finns ingen
+hemlighet att läcka och en stulen auktoriseringskod är oanvändbar utan
+verifieraren. Vissa leverantörer kallar den här klienttypen "SPA" eller
+"native" när du skapar den.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Om din leverantör i stället utfärdade en **konfidentiell** klient markerar
+du antingen klienten som publik hos leverantören (PKCE är på oavsett), eller
+klistrar in klienthemligheten i anslutningens fält **Klienthemlighet
+(valfritt)**. Hemligheten lagras i serverns hemlighetsfil med 0600 (aldrig i
+databasen), skickas till token-endpointen som `client_secret_post` och
+returneras aldrig över RPC; lämnar du fältet tomt när du sparar behålls den
+lagrade hemligheten. När en inloggning misslyckas i token-utbytet namnger
+serverns logg leverantörens eget fel (`invalid_client` betyder nästan alltid
+att hemligheten saknas eller är fel).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/sv-SE/handbok/how-to-guider/sso-scim).
+:::note[Nåbarhet]
+Själva inloggningen går via webbläsaren: utfärdaren omdirigerar bara
+användarens webbläsare tillbaka till `/oidc/callback` och din server gör ett
+utgående HTTPS-anrop till token-endpointen – ingen inkommande anslutning
+från utfärdaren behövs, så en server bakom NAT fungerar så länge användarnas
+webbläsare når den (LAN, VPN, Tailscale eller en tunnel).
+**SCIM-provisionering är undantaget**: IdP:n anropar din server direkt,
+vilket kräver en tunnel eller en publik URL – se
+[provisionera användare med SCIM](/sv-SE/handbok/how-to-guider/sso-scim).
 :::
 
-## Check your configuration from this page
+## Kontrollera din konfiguration från den här sidan
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Kontrollverktyget nedan körs i din webbläsare. Det hämtar utfärdarens
+discovery-dokument direkt, så den här siten ser det aldrig, och tillämpar
+serverns regler: en https-utfärdare som matchar dokumentet, endpointerna på
+utfärdarens egen origin, PKCE S256 och den token-autentiseringsmetod som din
+klienttyp behöver. Med ett klient-ID och en serveradress kan det öppna en
+testinloggning som visar om klienten och dess redirect-URI är registrerade.
+Det frågar aldrig efter klienthemligheten.
 
 <SsoCheck kind="oidc" />

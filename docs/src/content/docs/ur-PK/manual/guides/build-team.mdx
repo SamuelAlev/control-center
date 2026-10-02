@@ -1,69 +1,70 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: ایک ایجنٹ ٹیم بنائیں
+description: ایجنٹس کو ایک لیڈر کے تحت گروپ کریں تاکہ تفویض شدہ کام ایک ہی کوآرڈینیٹر سے ہو کر گزرے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+یہ گائیڈ دکھاتی ہے کہ ٹیم کیسے بنائیں، اسے لیڈر کیسے دیں اور اسے کام کیسے روٹ کریں۔
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+ٹیم ایک ہی ورک اسپیس کے اندر ایجنٹس کا ایک نام والا گروپ ہوتی ہے، جس میں ایک ایجنٹ اس کا **لیڈر** مقرر ہوتا ہے۔ ٹیم کو کوئی ٹکٹ تفویض کرنے سے لیڈر جاگتا ہے، جو کام کو ٹکڑوں میں بانٹ کر اراکین کو تفویض کرتا ہے؛ کسی رکن کا رن مکمل ہونے پر لیڈر دوبارہ جگایا جاتا ہے تاکہ فیصلہ کرے کہ آگے کیا ہوگا۔
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+ٹیمیں **ترتیبات → ورک اسپیس → ایجنٹس → ٹیمز** پر بنائیں، دوبارہ نام دیں اور اراکین بھریں۔ کسی ٹیم کو کام دو طریقوں میں سے کسی ایک سے روٹ کیا جاتا ہے: کوئی ایجنٹ اُس ٹیم کے `team_id` کے ساتھ `assign_ticket` کال کرتا ہے، یا پائپ لائن کا **Team dispatch** نوڈ ٹیم کو ڈسپیچ کرتا ہے (بغیر ٹکٹ تفویض کیے)۔ ٹکٹ کے تفویض شدہ کو چننے والا پکر آپ اور انفرادی ایجنٹس کی فہرست دکھاتا ہے۔
 
-## Create a team
+## ٹیم بنائیں
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں (`/settings/workspace/agents`)۔
+2. صفحے کے ہیڈر میں **ٹیمز** پر کلک کریں۔
+3. **ٹیم شامل کریں** پر کلک کریں۔
+4. ایک **نام** (مثال کے طور پر "بیک اینڈ" یا "ریویو اسکواڈ") اور اختیاری **تفصیل** درج کریں، پھر **بنائیں** پر کلک کریں۔
 
-The team is created and selected and its editor opens in the right-hand pane.
+ٹیم بن جاتی ہے اور منتخب ہو جاتی ہے، اور اس کا ایڈیٹر دائیں پین میں کھل جاتا ہے۔
 
-## Set the leader
+## لیڈر مقرر کریں
 
-This is the step the whole feature depends on. In the team's editor:
+پورا فیچر اِسی قدم پر منحصر ہے۔ ٹیم کے ایڈیٹر میں:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. **لیڈر** کے تحت کوئی ایجنٹ منتخب کریں۔ مدد کا متن اسے بالکل یوں بیان کرتا ہے: "کوآرڈینیٹر جو ٹیم کو تفویض کام وصول کرتا ہے اور موزوں رکن کو تفویض کرتا ہے۔"
+2. اختیاری طور پر **عملی ہدایات** بھریں — آزاد متن جو ہر روٹ شدہ ٹکٹ کے ساتھ لیڈر کو دیا جاتا ہے۔
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+کسی ایجنٹ کو لیڈر بنانے سے وہ رکن بھی بن جاتا ہے، اگر پہلے سے نہ ہو۔ **کوئی لیڈر نہیں** پر چھوڑی گئی ٹیم بےاثر رہتی ہے: اسے کام روٹ کرنے پر کچھ ڈسپیچ نہیں ہوتا، اور موجودہ لیڈر کو اراکین کی فہرست سے ہٹانے پر ٹیم پھر سے بےلیڈر ہو جاتی ہے۔
 
-## Add members
+## اراکین شامل کریں
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+اِسی ایڈیٹر میں اراکین کے کارڈ سے ورک اسپیس کے ایجنٹس شامل کریں اور ہٹائیں۔ اراکین وہی راسٹر ہیں جس پر لیڈر تفویض کرتا ہے۔
 
-Teams are workspace-scoped: only agents in this workspace can join.
+ٹیمیں ورک اسپیس تک محدود ہوتی ہیں: صرف اِسی ورک اسپیس کے ایجنٹس شامل ہو سکتے ہیں۔
 
-## Give the team a space
+## ٹیم کو ایک اسپیس دیں
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+کوئی خودکار ٹیم اسپیس نہیں ہوتی۔ اگر آپ کو چاہیے تو **اسپیسز** سے ایک عام اسپیس بنائیں اور اس میں ٹیم کے ایجنٹس شامل کریں۔ ایک `Team` نام، تفصیل، لیڈر، ہدایات اور اراکین رکھتی ہے — کسی اسپیس سے کوئی وابستگی نہیں۔
 
-## Reporting lines are a separate thing
+## رپورٹنگ لائنیں الگ معاملہ ہیں
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+ہر ایجنٹ میں ایک **رپورٹ کرتا ہے** فیلڈ بھی ہوتی ہے، جو **ترتیبات → ورک اسپیس → ایجنٹس** پر سیٹ ہوتی ہے۔ یہ ورک اسپیس کا رپورٹنگ درخت بناتی ہے، جسے آپ ایجنٹس کے صفحے پر **آرگ چارٹ** بٹن سے دیکھ سکتے ہیں۔
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+یہ ٹیم روٹنگ کا تعین نہیں کرتی۔ لیڈر اپنے تفویض کردہ فرد کا انتخاب ٹیم کے اراکین کے راسٹر میں سے مہارتوں اور کردار کی بنیاد پر کرتا ہے، رپورٹنگ زنجیر سے نہیں۔ میموری رسائی گرانٹس ایجنٹ کے کردار پر بنی ہوتی ہیں، رپورٹنگ زنجیر پر نہیں، اور کوئی اینالیٹکس سطح ٹیم یا درجہ بندی کے لحاظ سے اعداد جمع نہیں کرتی۔ تفویض گارڈز گہرائی کی حد رکھتے ہیں اور سائیکل کی نشان دہی کرتے ہیں، مگر وہ کبھی لازم نہیں کرتے کہ ہدف ماتحت ہو۔
 
-## What a routed ticket does
+## روٹ شدہ ٹکٹ کیا کرتا ہے
 
-When a ticket does carry a team assignment:
+جب کسی ٹکٹ پر واقعی ٹیم کی تفویض ہو:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. ٹیم کا لیڈر ٹکٹ، اس کی عملی ہدایات اور اراکین کے راسٹر کے ساتھ ڈسپیچ کیا جاتا ہے۔
+2. لیڈر اراکین کو تفویض کرتا ہے اور اپنا جائزہ `record_team_activity` ٹول سے درج کرتا ہے — `action` (تفویض کیا)، `no_action` (آگے کچھ نہیں کرنا، جو مزید دوبارہ ٹرگر ہونے سے روک دیتا ہے) یا `failed`۔
+3. مکمل ہونے والا ہر رکن رن لیڈر کو دوبارہ جگاتا ہے، جس کی حد no-action گارڈ رکھتی ہے۔
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+پائپ لائن کا **Team dispatch** نوڈ دوسرا داخلہ نقطہ ہے۔ یہ ایک ٹیم id، ایک پرامپٹ اور ایک ڈسپیچ موڈ لیتا ہے:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel` — ہر رکن کے لیے ایک ٹاسک ایک مشترکہ پوشیدہ گفتگو میں، جو ہر رن مکمل ہونے تک معلق رہتی ہے، اور ہر رکن کا آؤٹ پٹ نوڈ کی آؤٹ پٹ کلید کے تحت جمع ہوتا ہے
+- `manager` — صرف لیڈر کو ڈسپیچ کرتا ہے، جو گفتگو میں کوآرڈینیٹ کرتا ہے
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Run agents in parallel](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
-- [Delegate work to agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [ایجنٹس متوازی چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
+- [ایجنٹس کو کام تفویض کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)

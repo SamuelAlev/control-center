@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Dirijează workerii din fundal
+description: Folosește modul vibe ca să nu mai faci singur munca și să începi să dirijezi mai mulți agenți care o fac în paralel.
 slug: ro-RO/manual/ghiduri-practice/dirijeaza-workeri-din-fundal
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Acest ghid îți arată cum să duci o conversație ca **director**, nu ca worker: sesiunea citește și verifică, iar agenții din fundal fac editările.
 
-## What changes when you type `/vibe`
+## Ce se schimbă când tastezi `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Două lucruri, iar doar primul este impus de mecanism:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Instrumentele proprii ale sesiunii trec în mod doar în citire**, plus cinci verbe pentru workeri. Singura cale prin care poate afecta repo-ul este printr-un worker, iar singurul mod în care poate afla ce s-a întâmplat este să citească fișierele atinse de un worker.
+2. **I se spune să verifice citind, nu crezând.** Raportul unui worker este o afirmație despre ce a făcut, nu o dovadă că a funcționat.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Primul este cel care susține totul. Un director care poate încă să caute cu grep și să editeze va face munca singur sub presiune, iar acesta este modul de eșec pe care acest mecanism există ca să îl prevină.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Workerii pornesc de la zero
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Un worker nu ți-a văzut niciodată conversația și nici nu o va vedea. Brieful este întregul lui context.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Asta este ce menține tiparul ieftin — douăzeci de workeri care ar ține fiecare istoricul directorului ar costa de douăzeci de ori contextul directorului — și este totodată singurul lucru care face briefurile greu de scris. „Acum fă-l și pe celălalt” sună ca o instrucțiune completă pentru director și ca nimic pentru o sesiune nouă.
 
-A good brief names files, commands and the definition of done:
+Un brief bun numește fișiere, comenzi și definiția lui „terminat”:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> În `lib/features/auth/`, înlocuiește fiecare apel la `SessionStore.read(key)` cu `SessionStore.get(key)`. Metoda nouă întoarce `Future<String?>`, pe când cea veche întorcea `String?`, așa că apelanții au nevoie de `await`. Rulează `fvm flutter analyze lib/features/auth` când termini și raportează orice erori pe care nu le-ai putut rezolva.
 
-## The five verbs
+## Cele cinci verbe
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| Verb         | Ce face                                                      |
+| ------------ | ------------------------------------------------------------ |
+| `vibe_spawn` | Pornește un worker pe baza unui brief. **Se întoarce imediat.** |
+| `vibe_list`  | Nivelul, starea, timpul scurs și ultimul rezultat pentru fiecare |
+| `vibe_send`  | O tură suplimentară pentru un worker care a terminat          |
+| `vibe_wait`  | Blochează până când un worker își încheie execuția            |
+| `vibe_kill`  | Oprește unul                                                  |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Pornirea este asincronă prin construcție. Un director care se blochează la fiecare pornire rulează workerii unul câte unul, ceea ce este o variantă mai lentă a ceea ce făcea oricum singur. Folosește `vibe_wait` doar când chiar nu poți continua fără un răspuns anume.
 
-## Two tiers
+## Două niveluri
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| Nivel  | Pentru                                                              |
+| ------ | ------------------------------------------------------------------- |
+| `fast` | Muncă mecanică cu o specificație clară — editări, redenumiri, schițe, rularea de comenzi |
+| `good` | Proiectare, judecată sau revizuirea a ceea ce a produs un worker `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+O formă obișnuită este să distribui în paralel workeri `fast` pe fișiere independente, apoi să pornești un worker `good` care să revizuiască ce au făcut ei împreună.
 
-## Verifying
+## Verificarea
 
-This is the part that decides whether the pattern is worth anything.
+Aceasta este partea care decide dacă tiparul valorează ceva.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Apoi **citește fișierele pe care le-a numit**. Directorul are `read`, `search`, `lsp` și `ast_grep`; exact acesta este rostul păstrării lor. Un director care ia raportul de bun este un sumarizator al optimismului altor agenți.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` după o rundă de workeri este de obicei cea mai rapidă verificare unică.
 
-## When a worker loses the thread
+## Când un worker pierde firul
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Oprește-l și dă-i un brief nou. Un brief nou, corectat, este mai ieftin decât o ceartă, iar `vibe_send` funcționează doar pe un worker care și-a terminat deja tura.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Limite
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Opt workeri concurenți.** Un plafon de cheltuială, nu o limită tehnică: fiecare este o sesiune completă de model, iar un director care distribuie douăzeci a încetat să mai urmărească ce fac toți.
+- **Niciun worker nu supraviețuiește modului.** Când rularea se încheie, toți sunt opriți, iar transcriptul spune câți. Un agent din fundal care încă editează fișiere după ce conversația a mers mai departe este singurul eșec pe care acest mecanism nu-l poate avea.
+- **Workerii sunt, în esență, subagenți obișnuiți.** Același plafon de adâncime, aceeași politică de guardrail-uri, același copil de jurnal de rulare. Vibe schimbă cine îi conduce, nu ce le este permis să facă — așa că solicitările de aprobare apar în continuare pentru apelurile de scriere și de execuție ale unui worker.
 
-## When not to use it
+## Când să nu îl folosești
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/) or an [orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Modul vibe este pentru munca ce se descompune în briefuri independente. Dacă pasul următor depinde de rezultatul pasului anterior, descrii un [pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/) sau o [orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/), iar ambele exprimă dependențele corect, în loc să îl facă pe director să le simuleze cu `vibe_wait`.
 
-## Related
+## Vezi și
 
-- [Run agents in parallel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/) — the other ways to fan out
-- [Orchestration](/ro-RO/manual/concepte/orchestrare/) — when the work has a shape
-- [Built-in agent tools](/ro-RO/manual/referinta/instrumente-agent/) — the verbs and their arguments
+- [Rulează agenți în paralel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/) — celelalte moduri de a distribui în paralel
+- [Orchestrare](/ro-RO/manual/concepte/orchestrare/) — când munca are o formă
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/) — verbele și argumentele lor

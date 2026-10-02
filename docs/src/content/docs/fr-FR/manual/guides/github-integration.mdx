@@ -1,166 +1,185 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Configurer l’intégration GitHub
+description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-FR/manuel/guides/integration-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/fr-FR/manuel/guides/connecter-hebergeur-de-code/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Ce guide couvre les aspects de la configuration propres à GitHub. GitHub est l’un
+des trois hébergeurs de code pris en charge — consultez
+[Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/)
+pour connecter GitLab ou Bitbucket, et pour savoir comment un espace de travail
+combine les trois.
 
-## Prerequisites
+## Prérequis
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/fr-FR/manuel/guides/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Un compte GitHub ayant accès aux dépôts sur lesquels vous voulez travailler
+- Soit une GitHub App enregistrée pour votre serveur (voir
+  [Créer la GitHub App](/fr-FR/manuel/guides/github-app/)) afin de pouvoir **vous
+  connecter**, **soit** un jeton d’accès personnel disposant de `repo` et
+  `read:org` à coller
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Les identifiants résident sur le serveur, rattachés à vous]
+Rien n’est stocké sur la machine depuis laquelle vous tapez. Votre identifiant est
+détenu par votre `cc_server`, indexé par votre ID utilisateur, et chaque appareil
+depuis lequel vous vous connectez l’utilise — ordinateur, web et téléphone. Un
+autre membre du même serveur ne peut pas le lire, et se connecter est une chose
+qu’il fait lui-même.
 :::
 
-## Sign in with GitHub
+## Se connecter avec GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Un **flux d’appareil** : GitHub vous affiche un code court, vous l’approuvez sur
+github.com, et le serveur reçoit l’identifiant — aucune URL de rappel, aucun port,
+rien à exposer. Disponible dès que le serveur dispose d’un ID client, ce qu’un
+build officiel embarque déjà.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Accédez à **Paramètres → Espace de travail → Profil et identité → Hébergement
+   de code** (ou à la première étape de la configuration initiale)
+2. Sur la ligne **GitHub**, cliquez sur **Se connecter avec GitHub**
+3. Une boîte de dialogue affiche un code de huit caractères et ouvre
+   [github.com/login/device](https://github.com/login/device) dans votre
+   navigateur. Le code est déjà dans votre presse-papiers
+4. Collez-le, approuvez l’application, puis revenez. La ligne passe d’elle-même à
+   « Connecté en tant que _your-username_ »
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+La boîte de dialogue peut être fermée pendant que vous terminez dans le
+navigateur — le serveur continue ses requêtes jusqu’à l’expiration du code
+(environ 15 minutes), la connexion aboutit donc quand même.
 
-## Or paste a token
+## Ou coller un jeton
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+La solution de repli lorsque le serveur n’a pas d’application, lorsque
+l’application n’est pas installée sur un compte dont vous avez besoin, ou lorsque
+vous préférez tout simplement utiliser un PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Accédez à **Paramètres → Espace de travail → Profil et identité → Hébergement
+   de code**
+2. Sur la ligne **GitHub**, cliquez sur **Ajouter un jeton**
+3. Collez un jeton disposant de `repo` et `read:org` (classique) et enregistrez.
+   Un jeton **à granularité fine** a besoin des permissions de dépôt **Contents**
+   et **Pull requests** (lecture et écriture), plus **Checks** et **Actions**
+   (lecture).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Le jeton est testé au moment de son enregistrement, ce qui permet à la ligne de
+nommer le compte auquel il appartient. Cliquez sur **Déconnecter** pour le
+supprimer.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Point de contrôle : la ligne **GitHub** affiche « Connecté en tant que
+_your-username_ ». Un suffixe indique la source lorsque l’identifiant qui répond
+n’est pas le vôtre — « via l’application de ce serveur » ou « depuis
+l’environnement ».
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[L’ordre de priorité est fixe]
+Une requête faite en votre nom utilise **vos** identifiants, et rien d’autre —
+l’environnement correspond aux identifiants du serveur, pas aux vôtres, il ne
+peut donc jamais vous remplacer. Le travail sans humain derrière (webhooks,
+interrogation périodique des PR, synchronisation des tickets) utilise l’identité
+applicative du serveur, puis l’identifiant du propriétaire du serveur, puis
+l’environnement.
 :::
 
-## What the integration gives you
+## Ce que l’intégration vous apporte
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Fonctionnalité            | Fonctionnement                                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Liste et détail des PR    | L’API REST GitHub, depuis le serveur, sous l’identité de l’application ou vos propres identifiants                    |
+| Exécutions de vérification | L’API GitHub Checks                                                                                                  |
+| Publication des revues    | Une étape soumise à une action de l’utilisateur, qui publie votre revue sur la PR                                     |
+| Enregistrement des dépôts | Un checkout est accepté si son dépôt distant `origin` pointe vers github.com — ou vers gitlab.com / bitbucket.org     |
+| Accès GitHub des agents   | Le courtier d’identifiants injecte le jeton sous forme de `GH_TOKEN` / `GITHUB_TOKEN`, selon les capacités de l’agent |
+| Signaux de notification   | Une interrogation côté serveur de votre boîte de réception GitHub déclenche « Mentionné dans une pull request » et « Revue demandée » |
+| Profils utilisateur       | Cartes de profil au survol et filtrage des PR par auteur                                                              |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Certains chemins passent par l’API GraphQL plutôt que REST lorsque c’est moins
+coûteux — l’activité des branches pour le sélecteur de composition de PR et
+l’état de revue en direct qui détermine si une notification de revue demandée est
+encore en attente.
 
-## Watch for GitHub outages
+## Surveiller les pannes de GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+La barre de titre affiche une pastille d’état lorsqu’un fournisseur est dégradé,
+pour GitHub, Claude, OpenAI et Kimi. **Elle est masquée tant que tout va bien** —
+c’est la présence qui signale un problème, pas son absence.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Cliquez sur la pastille pour ouvrir un volet indiquant l’état de chaque
+fournisseur, avec un bouton d’actualisation. Les états s’actualisent d’eux-mêmes
+toutes les deux minutes.
 
-## Know how agents act on GitHub
+## Savoir comment les agents agissent sur GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/fr-FR/manuel/guides/politiques-de-bac-a-sable/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Un agent ne reçoit un jeton GitHub que s’il dispose de **Autoriser les appels
+  API GitHub** ou **Autoriser git push**. Voir
+  [Configurer les politiques de bac à sable](/fr-FR/manuel/guides/politiques-de-bac-a-sable/)
+- Les commits créés par un agent sont signés **en tant qu’agent** — le nom
+  affiché suivi de ` (agent)`, à une adresse synthétique indexée par l’ID de
+  l’agent — jamais en tant qu’humain. La personne à l’origine de la demande est
+  créditée par un trailer `Co-Authored-By`
+- Avec une GitHub App configurée, le courtier génère à chaque lancement des jetons
+  d’installation à granularité fine, limités au dépôt et d’une durée d’environ une
+  heure, au lieu de transmettre un jeton large. L’installation est résolue à
+  partir du **propriétaire** du dépôt de l’exécution, de sorte qu’une application
+  installée sur plusieurs comptes s’applique correctement à celui que l’exécution
+  touche. Sans application, les agents reçoivent le jeton de l’environnement
+- Une exécution demandée par un membre connecté agit sous **l’identité GitHub de
+  ce membre** — ses identifiants sont fusionnés après l’environnement du
+  courtier, de sorte qu’un commit ou un commentaire qu’un agent produit pour ce
+  membre lui est attribué
 
-## Troubleshooting
+## Dépannage
 
-### The PR list is empty and says GitHub is not connected
+### La liste des PR est vide et indique que GitHub n’est pas connecté
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Vous n’avez aucun identifiant GitHub sur ce serveur. Connectez-vous ou collez un
+jeton dans **Hébergement de code**. Les dépôts des autres forges ne sont pas
+touchés — seuls ceux de GitHub n’apportent rien.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### La ligne propose « Ajouter un jeton » mais pas « Se connecter avec GitHub »
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/fr-FR/manuel/guides/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Le serveur n’a pas d’ID client — ce qui est normal pour un build depuis les
+sources, les identifiants n’étant intégrés qu’aux builds officiels. Voir
+[Créer la GitHub App](/fr-FR/manuel/guides/github-app/) : cela prend environ deux
+minutes et seul le propriétaire du serveur doit s’en charger, une fois.
 
-### The sign-in dialog says the provider returned no device code
+### La boîte de dialogue de connexion indique que le fournisseur n’a renvoyé aucun code d’appareil
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+La GitHub App existe, mais sa case **Device flow** est décochée. Activez-la dans
+les paramètres de l’application (General → Device flow) et réessayez.
 
-### The row says "via this server's app" when I expected my own account
+### La ligne indique « via l’application de ce serveur » alors que j’attendais mon propre compte
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Vous n’êtes pas connecté ; ce que vous voyez, c’est l’identité applicative du
+serveur qui répond. Cliquez sur **Se connecter avec GitHub** sur cette ligne.
 
-### A fine-grained PAT shows no merge button or check status
+### Un PAT à granularité fine n’affiche ni bouton de fusion ni état des vérifications
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Le jeton a besoin de **Contents** et **Pull requests** (lecture et écriture), plus
+**Checks** et **Actions** (lecture). Après l’avoir modifié, collez-le à nouveau
+dans **Hébergement de code**.
 
-### Adding a repo is rejected
+### Un dépôt refuse de s’enregistrer
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/fr-FR/manuel/guides/ajouter-des-depots/).
+L’enregistrement exige les trois conditions suivantes : le chemin se trouve à
+l’intérieur d’un arbre de travail Git, il possède un dépôt distant `origin`, et ce
+dépôt distant pointe vers une forge prise en charge (github.com, gitlab.com ou
+bitbucket.org). Voir
+[Ajouter des dépôts à un espace de travail](/fr-FR/manuel/guides/ajouter-des-depots/).
 
-### Everything stops working for a while after heavy use
+### Tout cesse de fonctionner un moment après un usage intensif
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+C’est le coupe-circuit de la limite de débit. GitHub signale sa limite principale
+par un `403` portant `x-ratelimit-remaining: 0` et une heure de réinitialisation ;
+à la vue d’une telle réponse, le client fait échouer localement les requêtes
+suivantes sans appel réseau jusqu’à l’écoulement de la fenêtre, de sorte qu’une
+tempête de nouvelles tentatives ne peut pas aggraver la limite. Les défaillances
+transitoires sont réessayées jusqu’à trois fois avec un délai exponentiel, en
+respectant `retry-after`.
 
-## Related guides
+## Guides connexes
 
-- [Create the GitHub App](/fr-FR/manuel/guides/github-app/)
-- [Connect a code host](/fr-FR/manuel/guides/connecter-hebergeur-de-code/)
-- [Manage API keys](/fr-FR/manuel/guides/cles-api/)
-- [Add repos to a workspace](/fr-FR/manuel/guides/ajouter-des-depots/)
-- [Review and merge a PR](/fr-FR/manuel/guides/examiner-et-fusionner-pr/)
-- [Set up Slack integration](/fr-FR/manuel/guides/integration-slack/)
+- [Créer la GitHub App](/fr-FR/manuel/guides/github-app/)
+- [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/)
+- [Gérer les clés API](/fr-FR/manuel/guides/cles-api/)
+- [Ajouter des dépôts à un espace de travail](/fr-FR/manuel/guides/ajouter-des-depots/)
+- [Examiner et fusionner une PR](/fr-FR/manuel/guides/examiner-et-fusionner-pr/)
+- [Configurer l’intégration Slack](/fr-FR/manuel/guides/integration-slack/)

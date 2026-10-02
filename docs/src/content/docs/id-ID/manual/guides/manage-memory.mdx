@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Kelola memori ruang kerja
+description: Tinjau, koreksi, dan pangkas fakta serta kebijakan yang telah ditulis agen ke dalam ruang kerja.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-memori
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Panduan ini menunjukkan cara bekerja dengan penyimpanan pengetahuan sebuah ruang kerja.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Hal penting yang perlu diketahui sebelum Anda mulai: **UI memori adalah permukaan peninjauan, bukan permukaan penulisan.** Fakta dan kebijakan ditulis oleh agen — melalui `propose_fact` dan `propose_policy`, dengan `supersede_fact` dan `supersede_policy` untuk menggantikannya. `remember` menulis butir tier panas yang dibatasi sesi yang nantinya mungkin diangkat `consolidate_memory` menjadi fakta. Keputusan rapat yang tercatat dipanen ke domain `decisions`; tidak ada pemanenan pada eksekusi agen yang selesai. Yang Anda lakukan di sini adalah membaca apa yang mereka tulis, mengoreksinya, menonaktifkannya, atau menghapusnya.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Memori berada di **Pengaturan → Ruang kerja → Memori** (`/workspaces/<id>/settings/memory`). Ini bukan tujuan di bilah samping tingkat atas.
 
-## The three tabs
+## Tiga tab
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Halaman ini memiliki tepat tiga tab. Fakta dan Kebijakan menampilkan jumlah langsung; graf tidak:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fakta** — setiap fakta di ruang kerja, beserta jumlah fakta yang belum digantikan
+- **Kebijakan** — aturan normatif yang dikelompokkan menurut domain, beserta jumlah kebijakan yang aktif
+- **Graf pengetahuan** — kanvas interaktif berisi domain, topik, fakta, dan kebijakan
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domain bukan sesuatu yang Anda buat. Sebuah domain mulai ada ketika agen menulis fakta atau kebijakan pertama ke dalamnya; tidak ada kontrol pembuatan domain di mana pun dalam UI.
 
-## Review and correct a fact
+## Meninjau dan mengoreksi fakta
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Buka tab **Fakta**.
+2. Gunakan kotak pencarian untuk mempersempit daftar. Ini filter substring sederhana atas domain, topik, dan konten setiap fakta — tanpa indeks kata kunci, tanpa peringkat.
+3. Gunakan filter cakupan untuk menampilkan semua cakupan, hanya fakta seluruh ruang kerja, atau fakta satu repositori.
+4. Gunakan tombol pengalih urutan untuk mengurutkan berdasarkan kebaruan atau keyakinan.
+5. Klik kontrol edit sebuah fakta.
 
-The edit dialog lets you change:
+Dialog edit memungkinkan Anda mengubah:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domain** — memindahkan fakta antardomain
+- **Topik** — label singkatnya
+- **Konten** — teks pengetahuannya
+- **Keyakinan** — penggeser dengan langkah 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Simpan untuk menuliskannya kembali. Tidak ada tombol **Tambah fakta**; dialog hanya terbuka pada baris yang sudah ada.
 
-## See superseded facts
+## Melihat fakta yang digantikan
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Tab Fakta memiliki sakelar **Tampilkan yang digantikan**. Fakta yang digantikan disembunyikan secara bawaan dan ditampilkan oleh sakelar itu, dan di sanalah jejak audit berada — penggantian tidak pernah menghapus.
 
-## Delete a fact
+## Menghapus fakta
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Gunakan kontrol hapus sebuah fakta lalu konfirmasi. Ini penghapusan sungguhan, bukan penggantian: gunakan untuk fakta yang memang salah dicatat, dan biarkan agen menggantikan fakta yang _kontennya_ sudah berubah.
 
-## Manage policies
+## Mengelola kebijakan
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Tab **Kebijakan** mengelompokkan kebijakan aktif menurut domain dan memindahkan yang tidak aktif ke bagian di akhir. Untuk setiap kebijakan, Anda dapat:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Mengeditnya**
+- **Menghapusnya**
+- **Menonaktifkan** / **Mengaktifkan** — opsi yang dapat dibalik dan biasanya yang tepat. Hanya kebijakan aktif yang sampai ke prompt agen.
 
-As with facts, there is no create control.
+Seperti halnya fakta, tidak ada kontrol pembuatan.
 
-## Explore the knowledge graph
+## Menjelajahi graf pengetahuan
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Tab **Graf pengetahuan** menampilkan domain, topik, fakta, dan kebijakan sebagai kanvas simpul yang dapat dinavigasi — geser, perbesar, seret simpul. Mengetuk sebuah simpul membuka lembar detailnya, tempat dialog edit yang sama dapat dijangkau. Ini cara tercepat untuk melihat domain mana yang benar-benar terisi.
 
-## Edit an agent's working memory
+## Mengedit memori kerja agen
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Memori kerja adalah buku catatan privat per agen, yang disuntikkan ke prompt-nya pada saat pengiriman. Agen menulisnya sendiri dengan `record_observation` dan `update_my_notes`, tetapi Anda dapat membacanya dan mengeditnya secara langsung:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Pengaturan → Ruang kerja → Agen** → pilih agen → tab **Memori**.
 
-## Access grants
+## Pemberian akses
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Pemberian akses memori memetakan peran agen ke izin (`none`, `read`, `write`) per domain. Tuliskan dengan operasi `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Ada dua hal yang perlu dipahami tentang cara resolusinya:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Pembacaan gagal terbuka.** Tanpa baris pemberian akses untuk pasangan (role, domain), izin efektifnya adalah `read`. Satu-satunya penulisan yang melempar galat tanpa `write` adalah `propose_policy`. Penulisan fakta tidak digerbangi pemberian akses.
+- **Pemberian akses dikunci pada peran agen.** Alat proposal menggunakan nilai bawaan `general` jika `agent_role` tidak ada. Pemberian akses yang ditulis untuk peran lain tidak mengikat agen tersebut; pemberian akses `general` mengikatnya.
 
-## Search is not the same everywhere
+## Pencarian tidak sama di semua tempat
 
-Three different things are called "memory search" and they do not agree:
+Ada tiga hal berbeda yang disebut "pencarian memori" dan ketiganya tidak sepakat:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Di mana | Apa yang dilakukannya |
+| --- | --- |
+| Kotak pencarian tab Fakta | Filter substring atas fakta yang sudah dimuat di klien |
+| Operasi RPC `memory_fact.search` | Hanya pencarian kata kunci FTS5 — klien tipis tidak dapat mengirimkan embedding kueri, sehingga pencarian hybrid tetap internal di host |
+| Alat `search_memory` di sisi agen | `keyword`, `semantic`, atau `hybrid` (bawaan). Hybrid menggabungkan empat suara: leksikal, semantik, temporal, dan graf |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Jadi agen dan halaman Memori tidak akan mengurutkan kueri yang sama dengan cara yang sama. Saat Anda memeriksa apa yang benar-benar dapat diingat agen, tanyakan kepada agen.
 
-## Embeddings
+## Embedding
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Fakta di-embed **pada saat penulisan** dan hanya ketika model embedding di perangkat sudah terpasang. Periksa statusnya di **Pengaturan → Server → Diagnostik & privasi → Pencarian semantik**. Pasang model tersebut sebelum agen mulai menulis memori jika Anda menginginkan recall semantik.
 
-## Related guides
+## Panduan terkait
 
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Use the MCP server](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Gunakan server MCP](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/)
 
-## Related concepts
+## Konsep terkait
 
-- [Memory and knowledge](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/)
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/)
+- [Memori dan pengetahuan](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/)
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/)

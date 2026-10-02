@@ -1,148 +1,142 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: مساحات العمل والعزل
+description: لماذا مساحة العمل حد مستأجر صارم، وكيف يجعل تقسيم قاعدة البيانات هذا الحد بنيويًا، وما الذي يعبره عن قصد.
 slug: ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## ما مساحة العمل؟
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+مساحة العمل هي مستأجر العزل الأعلى في Control Center. تجمع الوكلاء والمستودعات والمساحات والتذاكر والذاكرة وخطوط الأنابيب والأعضاء في سياق محدود. كل ما يحدث داخلها يبقى داخلها.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+مساحة العمل المعتادة تقابل مشروعًا واحدًا أو قاعدة شفرة واحدة. قد تكون لديك مساحات عمل منفصلة لـ «api-service» و«frontend-v2» و«infrastructure».
 
-## Workspace-scoped data
+## البيانات على نطاق مساحة العمل
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+تعيش صفوف مساحة العمل في ملف SQLite الخاص بها، على `<dataDir>/<workspaceId>/workspace.db`. تحصل كل مساحة عمل على دليل لا على ملف عارٍ، لأنها تجمع أكثر من قاعدة: أشجار عمل لكل محادثة، وملفات الوكيل والمهارات، وبيانات اعتماد بوت الدردشة. إعطاؤها مجلدًا يعني أن ذلك كله يعيش معًا ويُحذف معًا.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| الكيان | النطاق |
+| --- | --- |
+| الوكلاء | ينتمون إلى مساحة عمل واحدة بالضبط |
+| المستودعات | تُسجَّل في مساحة عمل واحدة (انظر أدناه) |
+| المساحات والمحادثات والرسائل | على نطاق مساحة العمل |
+| التذاكر والمشاريع والخطط والتنسيقات | على نطاق مساحة العمل |
+| حقائق الذاكرة والسياسات والنطاقات ومنح الوصول | على نطاق مساحة العمل |
+| تشغيلات خطوط الأنابيب والقوالب والمشغّلات | على نطاق مساحة العمل |
+| حالة طلب السحب ومساحات المراجعة ومجموعات المراجعة | على نطاق مساحة العمل |
+| سجلات تشغيل الوكيل والذاكرة العاملة | على نطاق مساحة العمل |
+| الأعضاء والدعوات والمنح لكل مستودع | على نطاق مساحة العمل |
+| رموز مخطط الشفرة وحوافه | نطاقها `repoId` داخل ملف مساحة العمل |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+معظم هذه الصفوف تحمل عمود `workspaceId`، وملفات القواعد المنفصلة هي التي تفرض العزل. انظر ثابت العزل أدناه.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## المستودعات على نطاق مساحة العمل، والهوية عبرها بالمسار
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+يعيش صف المستودع في ملف قاعدة مساحة عمله. الملف _هو_ النطاق، فلا عمود `workspaceId` في الجدول ولا جدول ربط.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+تضيف مستودعًا إلى مساحة العمل من الإعدادات ← مساحة العمل ← المستودعات. تسجيل نسخة العمل نفسها في مساحتي عمل ينشئ صفين مستقلين بمعرّفين، وهوية المستودع _عبر_ مساحات العمل هي مسار نظام الملفات (أو المالك والاسم على GitHub)، لا المعرّف.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+التسجيل صارم: يجب أن يقع المسار داخل شجرة عمل Git، وأن يكون له بعيد `origin`، وأن يشير ذلك البعيد إلى مضيف شفرة مدعوم (github.com أو gitlab.com أو bitbucket.org). يُقرأ مضيف الشفرة من البعيد ويُخزَّن على المستودع، فتستطيع مساحة عمل واحدة أن تضم مستودعات من الثلاثة. أي شيء آخر يُرفض. يعرض متصفح المجلدات الذي تختار منه نظام ملفات **مضيف الخادم**، محصورًا بقائمة السماح `--repo-roots` على الخادم (وافتراضها دليل المنزل لمستخدم الخادم).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+إزالة مستودع من مساحة العمل تحذف الصف نهائيًا، ويتتابع الحذف إلى رموزه وحوافه وملفاته ونقاط تفتيش فهرسه ومنحه لكل عضو. نسخة العمل على القرص لا تُمس.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+يعيش مخطط الشفرة في الملف نفسه، ومفتاحه `repoId`، فقد تحمل مساحات العمل المختلفة المستودع نفسه على فروع مختلفة بشفرة مختلفة.
 
-## The isolation invariant
+## ثابت العزل
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+تسريب البيانات عبر مساحات العمل يُعدّ خللًا. العزل **بنيوي**، ويُفرض على مستويات عدة:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **طبقة قاعدة البيانات.** لكل مساحة عمل ملف SQLite خاص، يسلّمه `WorkspaceDatabaseManager.of(workspaceId)`. قاعدة مساحة العمل لا تصرّح بجداول `users` ولا `workspaces` ولا بجداول أي مساحة عمل أخرى، فقراءة عابرة لمساحات العمل ليست خللًا تستطيع كتابته: إنها لا تُترجَم. تحل المستودعات كائن DAO عند كل استدعاء بدل تخزين واحد مؤقتًا، ولأن كل دالة مستودع تأخذ `workspaceId` مطلوبًا فلا تُستنتج مساحة العمل ولا تُفترض.
+- **معرّف مساحة العمل جزء من المسار.** لأن المعرّف يصير اسم دليل، لا بد أن يطابق نمطًا آمنًا من مقطع واحد (يبدأ بحرف أو رقم لاتيني، ثم حروف وأرقام لاتينية ونقاط وشرطات سفلية وواصلات، وبلا `..`). المعرّفات UUID في المنتج كله. أي شيء آخر يرمي استثناءً بدل أن يُنقَّى. ذلك حارس اجتياز المسار، ويفشل علنًا بدل أن يكتب بيانات مساحة عمل إلى مسار اختاره غيرها.
+- **الدفاع في العمق.** أعمدة `workspaceId` ما زالت موجودة وما زالت تُكتَب. هي زائدة داخل الملف، لكنها تبقي مشغّلات تغذية المزامنة وفهارس FTS وأشكال الصفوف القائمة كما هي، وتجعل الملف يصف نفسه حين يُفحَص وحده، وعلى ذلك يعتمد التصدير والاستيراد.
+- **طبقة النطاق.** الخدمات التي تعدّل الكيانات بالمعرّف تتحقق من `entity.workspaceId == workspaceId` عند نقطة عبور واحدة قبل أن تمضي، وترمي `WorkspaceMismatchException` عند الاختلاف. ذلك الرفض العلني لمعرّف وصل من السياق الخطأ. الرفض العلني مهم: التجاهل الصامت يخفي الخلل، والمضي يسرّب.
+- **طبقة RPC.** موزّع عمليات المستودع هو نقطة العبور. كل عملية على نطاق مساحة العمل تحمل `workspace_id` في وسائطها. لا توجد «مساحة عمل حالية» لكل جلسة يمكن أن تتسرّب، والمعرّف المجهول يُرفض على أنه غير موجود _قبل_ أن يُفتح أي ملف قاعدة، فلا يستطيع معرّف فاسد أن يُنشئ `workspace.db` شبحًا. العمليات العامة فعلًا (موجز الأخبار وطابور الأسطول) تعلن نفسها بلا نطاق، بقرار صريح مُراجَع. أدوات MCP تتبع القاعدة نفسها: أي أداة تلمس بيانات على نطاق مساحة العمل تشترط `workspace_id`.
+- **التفرّع عبر مساحات العمل قابل للحصر.** الإجابة عن سؤال يخص عدة مساحات عمل تعني فتح عدة قواعد. ذلك التفرّع محصور في مساعد واحد، `CrossWorkspaceQueries`، فالقائمة الكاملة لما يعبر الحد بصورة مشروعة تعيش في مواضع استدعاء ملف واحد، ولا تتناثر خلف تعليقات التوثيق. تلك المواضع: التجميع على نطاق الخادم، ومُوفِّقات الإقلاع، ومسوح الاحتفاظ وجمع المهملات، والنسخ الاحتياطي، وموجّهات الأحداث، والبحث عن العضوية أدناه.
+- **الوصول بالمعرّف وحده لا يكفي.** البحث عن كيان بـ UUID لا يثبت أنه يخص مساحة عمل المستدعي. تقسيم الملفات يجعل الملف الخطأ غير قابل للوصول، وتحقق طبقة النطاق يمسك المعرّف الخطأ الذي يصل عبر ملف مشروع.
 
-## Membership, not the pairing key, is what grants access
+## العضوية تمنح الوصول، لا مفتاح الاقتران
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+حيازة بيانات اعتماد الجهاز تصادق _جهازًا_. لا تأذن بشيء داخل مساحة العمل. كل عملية على نطاق مساحة العمل تحل دور عضوية المستدعي وتفرض حدًا أدنى مشتقًا من نوع العملية: القراءة تحتاج `guest`، والتعديل يحتاج `member`، والعملية التدميرية تحتاج `admin`، والعمليات التي تكشف محتوى مستودع تفحص أيضًا منحة المستدعي على ذلك المستودع. مفتاح اقتران صالح بلا عضوية يلقى `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+ما يترتب على ذلك للعزل مرتّب: صفوف العضوية تعيش في ملف _مساحة العمل نفسها_، فسؤال «من في مساحة العمل هذه؟» قراءة عادية ضمن النطاق. السؤال العكسي «في أي مساحات عمل أنا؟» يمتد بالتعريف عبر الملفات، فهو من القليل المسموح به من تفرّعات `CrossWorkspaceQueries`، وهو ما يشغّله منتقي مساحة العمل قبل أن تُختار أي مساحة.
 
-See [Multiplayer](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/) for the role ladder and repo grants.
+انظر [تعدد اللاعبين](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/) لسلّم الأدوار ومنح المستودعات.
 
-## The global registry
+## السجل العام
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+ليس كل شيء على نطاق مساحة العمل. قاعدة ثانية، `<dataDir>/global.db`، تحمل ما يخص الخادم كله فعلًا:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **سجل مساحات العمل**، حتى يسرد مبدّل المساحات كل مساحة عمل من غير أن يفتح ملف مساحة واحد، وحتى يعيش اسم المساحة وشعارها ومالكها وترتيبها اليدوي وعلامة حذفها الناعم خارج الملف الذي تصفه.
+- **الهوية**: المستخدمون وتفضيلات المستخدم والأجهزة المقترنة، لأن الإنسان الواحد مستخدم واحد عبر كل مساحات العمل، والجهاز المقترن يبقى بعد حذف مساحة عمل.
+- **طابور الأسطول** (العمال والمهام وسجل الإسناد)، ويطابق مجدوله الطابور كله مع كل عامل في كل نبضة.
+- **موجز الأخبار**، وهو لكل مستخدم لا لكل مساحة عمل: إضافة تغذية تتبعك إلى كل مساحة عمل.
+- **`workspace_routes`**، فهرس ما قبل المصادقة الذي يجيب عن «أي مساحة عمل تملك هذا المفتاح؟» لنقاط الدخول التي لا تصل إلا بسر أو بمعرّف مبهم (تجزئة دعوة، أو رمز webhook، أو رابط عميق) ومن غير مساحة عمل. الغياب هناك غير موجود، ولا رجوع إلى المسح عن قصد.
+- **إعدادات التثبيت وهويته**: معرّف التثبيت، وإعدادات المضيف، واتصالات SSO، وسياسات الإجراءات المُدارة (قيد على نطاق التثبيت لا يستطيع إلا تضييق ضوابط مساحة العمل).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+لا يفتح الإقلاع إلا هذا الملف. تُفتح ملفات مساحات العمل عند أول لمس، فتبقى كلفة البدء ثابتة مهما تراكم تاريخ المساحات، وتُدفَع كلفة `quick_check` لكل ملف عند أول استخدام لا في الطريق إلى لافتة الجاهزية.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+لا يحمل ملف مساحة العمل إلا صفًا واحدًا في `workspace_meta` ليعرّف نفسه (معرّفه، والتثبيت الذي أنشأه، وإصدار المخطط الذي أُنشئ به، ومتى). كل ما يصف مساحة العمل موجود في السجل.
 
-## Creating a workspace
+## إنشاء مساحة عمل
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+إنشاء مساحة العمل أكثر من إدراج صف في السجل. في عملية واحدة يختم الخادم المستخدم المنشئ في `ownerUserId`، ويسجّل عضويته بدور المالك، وينشر حدث النطاق `WorkspaceCreated`. ثم يبذر المستمعون إلى ذلك الحدث، من غير تكرار وفي الخلفية:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **وكيل CEO** وأربعة متخصصين — `qa` و`architect` و`engineer` و`librarian` — يتبعون له.
+- **قوالب خطوط الأنابيب المضمّنة** ومشغّلاتها (مشغّلات الأحداث واليدوية تصل مفعّلة، والمجدولة اختيارية إلا المسح اليومي لجمع مهملات أشجار العمل).
+- **حزم التقييم المبدئية**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
+يحدث هذا لـ _كل_ مساحة عمل، لا للأولى وحدها. الوكلاء المبذورون يُنشَؤون بلا محوّل، فيعملون على **Control Center (built-in)** بالنموذج الافتراضي لدى Anthropic (`claude-opus-4-8` ما لم تثبّت غيره) إلى أن تضبط محوّلًا ونموذجًا لكل وكيل من الإعدادات ← مساحة العمل ← الوكلاء. انظر [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+كتابة عضوية المالك أهم مما تبدو: من غيرها لا يكون لمساحة العمل المنشأة حديثًا أي عضو، ويُرفض كل استدعاء لاحق على نطاق مساحة العمل يصدره من أنشأها.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[لا يستطيع الوكلاء إنشاء مساحة عمل]
+لا توجد أداة MCP باسم `create_workspace`. ينشئها البشر عبر `workspace.create` (نقطة عبور تقتصر على الاسم) أو `workspace.upsert` (السجل الكامل، ويُستخدم للتحديث أيضًا). كلاهما يختم المستخدم المنشئ بـ `owner` وينشر `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## الحذف والتصدير والاستيراد
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+حذف مساحة العمل **يعلّم صف السجل ويفك ارتباط الدليل**. تختفي من كل قائمة وكل بحث. يبقى صف السجل (محذوفًا حذفًا ناعمًا) حتى يبقى المعرّف معروفًا للنسخ الاحتياطي والصيانة، لكن `workspace.delete` يسقط دليل تلك المساحة فورًا — القاعدة وأشجار العمل وملفات الوكيل وسواها — عبر `WorkspaceDatabaseManager.dropAndClose`. لا يحذفها إلا **المالك**.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+ولأن مساحة العمل ملف واحد، فتسليمها عملية على ملف لا تفريغًا جدولًا بعد جدول:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` جملة `VACUUM INTO` واحدة: لقطة متّسقة أُزيل تشتتها، تُؤخذ تحت معاملة قراءة والخادم يواصل الخدمة.
+- يتبنّى `workspace.import` هذا الملف، ويستبدل ما تحمله مساحة العمل المستهدفة الآن. يتيح `workspace_meta` المضمّن للاستيراد أن يميّز «ملفي، أُعيد تبنّيه» من «ملف من تثبيت آخر» (والثاني مسموح، لكنه يُسجَّل ولا يمر خفيًا).
+- يأخذ `server.backupNow` لقطة للتثبيت كله في دليل موسوم بالوقت يطابق دليل البيانات الحي: `manifest.json` و`global.db` و`<workspaceId>/workspace.db` لكل مساحة عمل. الاستعادة نسخ ذلك الدليل إلى موضعه.
+- يقرأ `server.listBackups` ذلك الدليل، الأحدث أولًا، مع حجم كل لقطة وقائمة مساحات عملها. لقطة ينقص بيانها أو تسمّي ملفات غير موجودة ما زالت تُبلَّغ، موسومة بأنها ناقصة. إخفاؤها هو كيف يظن المشغّل أن لديه نسخة احتياطية ليست لديه.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+عمليات النسخ الاحتياطي تحت **الإعدادات ← الخادم ← النسخ الاحتياطي والاستعادة**:
+**نسخ احتياطي الآن** يأخذ لقطة للتثبيت، وتعرض القائمة أي اللقطات مكتملة وتتيح لمالك التثبيت حذف واحدة بعد التأكيد، وتعرض كل مساحة عمل التصدير والاستيراد. خط الأنابيب المضمّن **Workspace backup** لا يأخذ إلا قاعدة تلك المساحة، على جدول أسبوعي، ويحذف نسخه الأقدم من عمر الاحتفاظ المضبوط. استعادة مساحة عمل من لقطة تثبيت هي `workspace.import` موجَّهًا إلى `<workspaceId>/workspace.db` في اللقطة، واستعادة التثبيت كله تبقى نسخ دليل اللقطة بعد إيقاف الخادم.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/#what-a-backup-does-not-contain) has the full table.
+ما لا يحمله أي منها هو بقية دليل مساحة العمل. تتراكم في مساحة العمل أكثر من قاعدة: صور ملصقة، وملفات مهارات ووكلاء، وبيانات اعتماد الدردشة، وأشجار عمل. التصدير والاستيراد ينقلان **الملف**، فيبقى كل ما بجواره في موضعه. هذا مقصود في بيانات الاعتماد، وقابل للاستغناء في أشجار العمل، وفي الباقي حدّ تعرفه لا ميزة. وفي [مرجع النسخ الاحتياطي](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/#ما-لا-تحتويه-النسخة-الاحتياطية) الجدول كاملًا.
 
-## Moving a backup between the server and your device
+## نقل نسخة احتياطية بين الخادم وجهازك
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+كل عملية أعلاه تتكلم بمسارات على **الخادم**، وهذا جواب كافٍ فقط حين يكون الخادم جهازك. ثلاثة مسارات HTTP موقَّعة — [`/backup/workspace` و`/backup/snapshot` و`/backup/restore`](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/#مسارات-النقل) — تحمل البايتات لكل طوبولوجيا سواها، على الممر المصادَق عليه نفسه الذي يستخدمه أصلًا وسيط الوسائط ومخزن الصور. في الصفحة زر **تنزيل** بجانب كل تصدير وكل لقطة (تختار أين يستقر)، و**اختيار ملف ورفعه** للاستعادة من ملف على الجهاز الذي تستخدمه. الرفع هو الذي ينفع حين لا يكون الخادم جهازك: يحتاج `workspace.import` إلى أن يكون الملف على المضيف أصلًا، وهكذا يصل.
 
-Three properties are worth knowing:
+ثلاث خصائص تستحق المعرفة:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **التنزيل يُنتج نسخة جديدة ولا يحتفظ الخادم بشيء منها.** التنزيل ليس «اجلب الملف الذي صنعه زر التصدير»: يصدّر من جديد، ويبث الناتج، ثم يحذفه. الاستجابة `no-store` مع `Accept-Ranges: none` للسبب نفسه: استئناف نطاق يوصل تصديرين مختلفين في ملف واحد يبدو سليمًا وليس كذلك.
+- **يُبث الرفع إلى القرص ولا يُخزَّن في الذاكرة**، من الطرفين، وتُحذف النسخة المرحّلة في كل مسار للخروج، والرفض منها. قاعدة مساحة العمل ليست لقطة شاشة.
+- **الاتصال عبر المرحّل بلا أصل HTTP**، فتُعطَّل عناصر النقل هناك مع ملاحظة تشرح السبب. كل ما يتكلم بمسارات على جهة الخادم يبقى عاملًا عبر المرحّل، وممرات البايت وحدها تحتاج اتصالًا مباشرًا.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[لمن هذه المسارات]
+المسارات التي *تعرضها* الصفحة — دليل اللقطة، والملف الذي كتبه التصدير، والمصدر الذي يقرأه الاستيراد — على الجهاز الذي يشغّل `cc_server`. المسار الذي يبلّغ عنه **التنزيل** على الجهاز الذي تجلس أمامه. هذا التمييز هو سبب وجود الاثنين: الأول ما يحتاجه سكربت صيانة أو جلسة ssh، والثاني ما يحتاجه من يجمع نسخة احتياطية.
 :::
 
-## Multiple workspaces
+## مساحات عمل متعددة
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+تستطيع تشغيل مساحات عمل عدة جنبًا إلى جنب. تعمل كل واحدة باستقلال: وكلاء مساحة لا يراسلون وكلاء أخرى، ولا يقرأون ذاكرتها، ولا يرون تذاكرها. حل المستلم في المراسلة من وكيل إلى وكيل مطابق تمامًا، ولا يعبر مساحة عمل.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+لا لوحة تمتد عبر مساحات العمل. سطح التحليلات على `/workspaces/:workspaceId/observability` يشترك في تغذية عامة محدودة لآخر التشغيلات، ثم يضيّقها فورًا إلى مساحة العمل النشطة، فما تراه هناك مساحة واحدة في كل مرة. السطحان الوحيدان اللذان يلمسهما شخص ويمتدّان فعلًا عبر مساحات العمل هما منتقي مساحة العمل ومبدّل المساحات.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+حد عملي يستحق المعرفة: مساحة العمل التي يستخدمها أحد تبقى مفتوحة، بلا إخلاء LRU. إذا تجاوز العدد 32 يحذّر الخادم ولا يرفض، لأن كل ملف مفتوح يحتجز isolate خلفيًا وذاكرة صفحات. التفرّع عبر مساحات العمل يفتح الملفات عابرًا، ويغلقها بعده إن لم يكن شيء آخر قد احتجزها.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Multiplayer](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): agents belong to exactly one workspace
-- [Memory and knowledge](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/): memory is workspace-scoped
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): where the databases sit in the client/server split
-- [Back up and restore](/ar-SA/دليل-المستخدم/أدلة-إرشادية/نسخ-احتياطي-واستعادة/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/): every operation, route, manifest field and limit
-- [Add repositories](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/): registering a checkout into a workspace
+- [تعدد اللاعبين](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): العضوية والأدوار ومنح المستودعات — نصف العزل الخاص بالوصول
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): الوكيل ينتمي إلى مساحة عمل واحدة بالضبط
+- [الذاكرة والمعرفة](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/): الذاكرة على نطاق مساحة العمل
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): أين تقع قواعد البيانات في فصل العميل عن الخادم
+- [النسخ الاحتياطي والاستعادة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/نسخ-احتياطي-واستعادة/): أخذ لقطة، ونقل مساحة عمل، والاحتفاظ بنسخ في موضع آخر
+- [النسخ الاحتياطي والتصدير والاستيراد](/ar-SA/دليل-المستخدم/مرجع/نسخ-احتياطي/): كل عملية ومسار وحقل في البيان وكل حد
+- [إضافة مستودعات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/): تسجيل نسخة عمل في مساحة عمل

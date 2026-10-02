@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: 程式碼智慧
+description: 代理為什麼需要編譯器、結構化比對工具和除錯工具——以及各自能回答哪些其他工具答不出的問題。
 slug: zh-TW/手冊/概念/程式碼智慧
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center 讓代理有四種閱讀以外的方式來理解程式碼。它們回答的是截然不同的問題；之所以是四種而不是一種，是因為沒有任何單一機制能回答全部的問題。
 
-| Mechanism            | Answers                                          | Costs                                  |
+| 機制                 | 回答的問題                                       | 成本                                   |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **程式碼圖**         | 這裡有什麼，以及什麼依賴它                        | 一次索引處理；查詢成本低               |
+| **語言伺服器**       | 這真的能編譯嗎，而這是什麼型別                    | 每個專案一個伺服器行程                 |
+| **結構化搜尋**       | 這個「形狀」出現在哪裡                            | 每個檔案一次剖析                       |
+| **除錯工具**         | 在這個時刻、這個堆疊框架裡，什麼是真的            | 一個停止的行程                         |
 
-## The gap the language server closes
+## 語言伺服器補上的缺口
 
-The [code graph](/zh-TW/手冊/操作指南/程式碼搜尋/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[程式碼圖](/zh-TW/手冊/操作指南/程式碼搜尋/)是從 tree-sitter 建構出來的：符號、呼叫邊、影響半徑。它很快、很省，而且對**型別**一無所知。它沒辦法告訴你，你剛寫的呼叫能不能編譯、那個欄位是否存在於物件上，或是你的重新命名有沒有漏掉某個再匯出。
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+沒有語言伺服器，代理要等到測試時才會發現——或者永遠不會發現。它寫出看起來合理的東西、繼續往下走，而失敗會在三個回合後、掛在另一個變更上浮現。
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+所以真正的收穫其實不是 `lsp` 工具，而是 `write`、`edit` 和 `apply_patch` 都被包了起來：每次寫入之後，檔案都會經過語言伺服器，**新產生**的診斷會併入工具結果。代理會在建置壞掉的那一刻就知道自己弄壞了它，無論它有沒有想到要問。
 
-### Only new diagnostics
+### 只回報新的診斷
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+重複代理已經被告知過的內容，比什麼都不說還糟：它會用雜訊塞滿結果，代理會學會略過這些雜訊，而那唯一的新錯誤也跟著被略過。每次執行都有一份帳本記錄已回報過的項目，並以嚴重性、代碼和訊息為鍵——**不是**以位置為鍵——所以只是往下移了四行的診斷，不會被當成新問題重新回報。
 
-### Lazy, and honest about being absent
+### 延後啟動，並誠實面對自己的缺席
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+開機時不會啟動任何伺服器。它會在第一次有需求時啟動，而那幾乎總是某個它宣稱支援的檔案第一次被編輯時；閒置的伺服器會被清掉。從不碰 Dart 的主機永遠不會啟動分析器。
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+偵測是一種**交集**：簽出的內容裡必須存在根標記，*而且*執行檔必須能解析得到。只有標記，只代表「這個專案是 Python」，完全沒說伺服器裝了沒；只有能解析的執行檔，只代表這台主機有工具鏈，完全沒說這個簽出是否有關。唯有兩者同時成立，查詢才可能成功；一個提供了卻總是失敗的工具，比根本不存在的工具還糟。
 
-## Why structural search, when grep exists
+## 既然有 grep，為什麼還需要結構化搜尋
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` 比對的是字元。找名稱時它是最合適的工具，找形狀時則完全不對。
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+結構化的模式是用**和檔案相同的文法**剖析的，所以 `dispose($X)` 找得到那個呼叫，不管它怎麼排版、換行或斷行；它也永遠不會比對到字串常值或註解裡相同的字元。
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+讓它不只是「多加幾步的 regex」的關鍵性質是：同一個模式中重複出現的中繼變數，必須補抓到相同的文字：
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+會比對到「處置它剛剛檢查過的對象」的防護，而不會比對到處置其他東西的防護。這是一整類用文字表達不出來的 bug。
 
-### It runs on the tree-sitter already linked
+### 它跑在已經連結進來的 tree-sitter 上
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+沒有第二個引擎。`cc_natives` 為了程式碼圖，本來就會載入 tree-sitter 及其文法，並帶有已編譯查詢的快取和語言表。比對器是純 Dart，跑在原本就已經在剖析的樹上。再搞一個結構化引擎，就代表要有第二個剖析器、第二組得在每個平台上建置和部署的文法，以及對「什麼是呼叫運算式」的兩種答案。
 
-### A fragment needs somewhere to live
+### 片段需要有地方可以落腳
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+文法只定義了整個*檔案*是什麼。在 Dart 最上層單獨剖析，`dispose(x)` 是完全合法的**函式簽章**——一個名為 `dispose`、接受參數 `x` 的宣告——不會有任何錯誤洩漏它的身分。用那份剖析結果打造的比對器會去找宣告，找不到呼叫，然後對一個從來就不是以它看起來的樣子被讀取的模式，回報「沒有相符項目」。
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+因此，模式會依序放進一連串鷹架裡試——陳述式、運算式、類別成員、最上層——第一個接受的勝出。沒有任何情境接受的片段，會被回報為無法剖析，而不是被搜尋後悄悄判定找不到。
 
-## Why a rewrite stages instead of writing
+## 為什麼重寫要先暫存，而不是直接寫入
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+結構化重寫是代理能做的最廣泛編輯：一個模式、四十個檔案，而且沒有人會逐行讀結果——模型不會，提出要求的人也不會。直接寫入並回報「完成」，等於這件事第一次被認真檢視，是之後的 `git diff`。
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+所以 `ast_edit` 回報的是它*將會*做什麼——數量、檔案、相符的位置——只有當 `resolve` 提交時，變更才會落地。這也正是能讓一份差異和「接受/捨棄」在任何東西寫到磁碟前，先擺在人面前的原因。
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+提交是全有或全無，而且每個檔案都會拿來和暫存當下捕捉到的內容比對。在暫存與提交之間，代理可能手動編輯過其中一個檔案、診斷流程可能重寫過它，或格式化工具可能動過它——硬是提交會丟掉那些工作，而且差異看起來還會像是刻意為之。只要有任何不符，整份變更都會被拒絕，因為只套用一半的結構化重寫，會留下一棵在新舊兩種形狀下都編譯不過的樹。
 
-## What a debugger answers that a print statement cannot
+## 除錯工具能回答哪些列印陳述式答不出的問題
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+列印陳述式的迴圈是：加一行列印、把整個東西重跑一遍、讀輸出、刪掉列印。每個問題都要付上一整輪測試執行的代價，而且它只回答你在執行*之前*就想到要問的問題。
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+停止的堆疊框架能一次回答關於那個時刻的每個問題——每個區域變數、每個呼叫者，以及在該框架自身範圍內求值的運算式。對於卡死的行程，或十次執行才重現一次的失敗，這就是花一個下午和花一分鐘的差別。
 
-### Bounded like an enclosure, and for the same reason
+### 像隔離艙一樣有界，理由也相同
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+除錯配接器擁有一個**停止的行程**，並持有那個行程所持有的一切——連接埠、鎖定、資料庫連線。沒有人操作的工作階段，是一種活得比啟動它的那個回合還久的洩漏。所以有硬性 TTL、每個對話恰好一個工作階段，而且第二次 `launch` 會被拒絕，而不是默默取代第一個：一個沒結束第一個就啟動第二個的代理，幾乎可以確定已經搞丟了第一個。
 
-### One transport, two protocols
+### 一套傳輸，兩種協定
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol 和 Language Server Protocol 共用 `Content-Length` 分幀，而在它之上什麼都不共用——不同的關聯鍵、不同的失敗形狀，還多了第三種訊息型別（事件），在 LSP 裡沒有對應。分幀只存在於一個地方；兩種協定各自疊在它上面。
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+把分幀寫兩次，就代表「一則訊息橫跨兩個區塊」、「一個區塊裡有三則訊息」和「伺服器在送出第一個訊框前先往 stdout 寫了橫幅」都會有兩種答案，而只有其中一個會得到修正。
 
-## Related
+## 相關內容
 
-- [Search code with the code graph](/zh-TW/手冊/操作指南/程式碼搜尋/) — the symbol and impact side
-- [Debug a failing test](/zh-TW/手冊/操作指南/除錯失敗測試/) — the debugger, end to end
-- [Refactor structurally](/zh-TW/手冊/操作指南/結構化重構/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/zh-TW/手冊/參考/代理工具/) — every operation and argument
+- [用程式碼圖搜尋程式碼](/zh-TW/手冊/操作指南/程式碼搜尋/)——符號與影響範圍那一面
+- [用代理除錯失敗的測試](/zh-TW/手冊/操作指南/除錯失敗測試/)——除錯工具的端到端流程
+- [以結構方式重構程式碼](/zh-TW/手冊/操作指南/結構化重構/)——`ast_grep` 與 `ast_edit`
+- [內建代理工具](/zh-TW/手冊/參考/代理工具/)——每個操作與引數

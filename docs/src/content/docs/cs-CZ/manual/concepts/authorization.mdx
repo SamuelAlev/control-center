@@ -1,123 +1,129 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Autorizace — kdo smí co dělat a jak to doložíš
+description: Katalog oprávnění za rolemi Control Center, auditní stopa odolná proti manipulaci, kam padá každé autorizační rozhodnutí, a nastavení celé instalace, která operátor umí ukotvit.
 slug: cs-CZ/prirucka/koncepty/autorizace
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/).
+Control Center odpovídá na dvě autorizační otázky a každá je jiná.
+**„Smí tahle osoba zavolat tuhle operaci?“** se týká lidí, rolí a
+repozitářů. **„Smí tenhle agent způsobit tenhle účinek?“** se týká akcí,
+argumentů a rozsahu dopadu. Ta druhá je
+[Guardraily](/cs-CZ/prirucka/koncepty/guardraily/).
 
-This page is the first question, plus the record both of them leave behind.
+Na téhle stránce je první otázka a záznam, který po obou zbude.
 
-## One decision point
+## Jedno rozhodovací místo
 
-Every human-side authorization decision resolves through a single function:
+Každé autorizační rozhodnutí na straně člověka vyřeší jedna funkce:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**Oprávnění** má tvar `<domain>:<tier>`, třeba `tickets:write`,
+`members:administer`, `repos:read`. Katalog je **odvozený**, nikdo ho
+nepíše ručně. Počítá se z plochy operací: předpona názvu dá doménu,
+minimální role, kterou operace už vynucuje, dá úroveň. Každá z ~550
+operací tak nese oprávnění, aniž by ho někdo musel zapsat.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Ten odvozený katalog stojí za ochranu. NOVÁ operace je ve výchozím
+stavu za branou. U modelu, kde se oprávnění dopisují ručně, selhání
+vypadá tak, že někdo zapomene, a zapomene právě bránu. Západkový test
+ukotvuje výslednou sadu domén, takže operace pod novou předponou vznikne
+rozhodnutím člověka o názvu.
 
-The four tiers map exactly onto the built-in roles:
+Čtyři úrovně sedí přesně na vestavěné role:
 
-| Tier | Role floor | Example |
+| Úroveň | Minimální role | Příklad |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Host | `tickets:read` |
+| `write` | Člen | `tickets:write` |
+| `administer` | Admin | `members:administer` |
+| `own` | Vlastník | `workspace:own` |
 
-## Roles
+## Role
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Pět vestavěných rolí, **Vlastník, Admin, Člen, Prohlížeč, Host**, jsou
+předvolby nad tím katalogem. Vlastník je v každém pracovním prostoru
+jeden a předává se výslovně akcí **Přenést vlastnictví** (vlastník,
+který odejde, se jinak odebrat nedá: deprovisioning přes SCIM odmítne
+každého vlastníka pracovního prostoru, vlastnictví předej předem).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Vlastní role jen ubírají.** Vlastní role jmenuje základní předvolbu
+(`admin`, `member`, `viewer` nebo `guest`, nikdy `owner`) a sadu
+oprávnění z ní **odebraných**: „Admin, ale nesmí spravovat členy“. Víc
+než svůj základ nikdy nedá. Proto se dají pustit do hotové instalace:
+každá stávající kontrola zůstává platnou horní mezí. Členové je mají
+jako `custom:<id>` a klient, který tu hodnotu ještě nezná, spadne na
+roli Host.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Pod rolemi jsou **přidělení na repozitář** (`none` / `read` / `review` /
+`write`). Členství v pracovním prostoru zůstává v mezích hostitele kódu.
+Kontroluje je každá plocha, která kód ukazuje, i ta, která se ke kódu
+dostane z boku, třeba terminál nebo relace editoru otevřená na worktree
+prostoru.
 
-## Server authority
+## Autorita serveru
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Některé operace se pracovního prostoru vůbec netýkají: nastavení celé
+instalace, konfigurace SSO, přihlašovací údaje poskytovatelů, správa
+modelů, zálohy celé instalace. Ty deklarují **autoritu serveru**. Pustí
+je jen operátor instalace (zaznamenaný vlastník serveru). Identita
+operátora je schválně jedna a definice taky.
 
-## The audit trail
+## Auditní stopa
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Každé autorizační rozhodnutí, **povolení i zamítnutí**, se připíše do
+auditní stopy pracovního prostoru, řetězené hashi.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Záznam, který má jen zamítnutí, odpoví na „co jsme zablokovali?“. Na
+„co ten agent opravdu udělal a kdo to povolil?“ už ne. Rozbor incidentu
+začíná tou druhou otázkou. Každý záznam proto nese celý řetězec
+atribuce: jednajícího principála, člověka, za kterého jednal, delegaci,
+přes kterou přišel, akci a její argumenty (jako otisk), rozhodnutí a
+**pravidlo, které rozhodlo**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Záznamy jsou zřetězené: hash každého kryje hash předchozího, takže
+úprava, smazání nebo přehození kteréhokoli řádku rozbije každý
+následující hash. **Ověřit řetěz** celý řetěz znovu odvodí a pojmenuje
+první článek, který nedrží. Auditní záznam, který neověříš, je záznam.
+Ten, který znovu odvodíš, je důkaz.
 
-Two consequences worth knowing:
+Dva důsledky, které stojí za to znát:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Auditní tabulka **nepodléhá prořezávání podle stáří**. Řetěz hashů se
+  z prostředka zkrátit nedá. Uchování znamená nejdřív export, potom
+  oříznutí, a oříznutí nechá kontrolní bod s koncovým hashem odebraného
+  úseku. Co zbude, ověří se zpátky k začátku.
+- Leží **vedle** časové osy aktivity. Osa ukazuje, co lidé udělali.
+  Auditní stopa ukazuje, co se povolilo a co se odmítlo. Společné
+  korelační id spojí jedno volání v obou.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Exportuje se jako JSON oddělený novými řádky a umí se streamovat do
+SIEM (Splunk, Elastic, Sentinel, HTTP endpoint s bearer tokenem).
+Streamování je schválně best effort: výpadek SIEM nesmí nikdy zastavit
+volání nástroje agenta. Ať SIEM běží, nebo ne, trvalá ověřitelná kopie
+je na disku.
 
-## Sessions
+## Relace
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Instalace umí nastavit **maximální stáří relace** a **časový limit
+nečinnosti**. Obojí se vynucuje při kontrole přihlašovacích údajů
+zařízení, kterou prochází každá autentizovaná cesta. Limit relace,
+který klient umí ignorovat, stačí na dotazník. Útočníka nezastaví.
+Instalace taky umí vyžadovat SSO, a tím vypne ruční párování nových
+zařízení (pojistka proti uzamčení to odmítne, dokud neběží funkční
+spojení SSO).
 
-## What this is not
+## Co to není
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Žádná ACL po objektech.** Oprávnění na jeden ticket nebo jednu
+  zprávu tu schválně není. Oddělení na úrovni repozitáře týmy opravdu
+  chtějí a tady je. Sdílení po objektech je kombinatorická plocha a
+  poptávka po ní se tu neukázala.
+- **Není to engine politik nastavovaný v DSL.** Slovník je schválně
+  uzavřený, takže se celá politika dá vykreslit, vysvětlit a vyjmenovat.
+- **Vynucuje se jen na serveru.** Kontroly na klientovi jsou tu proto,
+  aby se nenabídl ovládací prvek, který server odmítne. Rozhoduje
+  vždycky server.

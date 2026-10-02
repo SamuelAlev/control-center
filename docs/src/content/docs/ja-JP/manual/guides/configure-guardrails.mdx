@@ -1,152 +1,116 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: ガードレールを設定
+description: エージェントのアクションに対する許可・先に確認・拒否のルールを設定し、what-if プローブでテストして、スペースごとの自律度を調整します。
 slug: ja-JP/マニュアル/ハウツーガイド/ガードレール設定
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+このガイドでは、ガードレールの設定方法を説明します。ガードレールとは、エージェントのアクションを実行するか、先に承認を求めるか、拒否するかを決めるルールです。
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+ガードレールは、変更を伴うすべてのツールが宣言する 13 のエフェクトクラスを対象とします。これらはプロンプト内の指示によってではなく、ツールが呼び出される時点でサーバー側で適用されます。
 
-## Set a decision for an action class
+## アクションクラスに対する決定を設定する
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. **設定 → ワークスペース → エージェントの権限**を開きます
+2. セグメントコントロールでスコープを選びます: **ワークスペース**、**エージェント**（続いてエージェントを選択）、または**スペース**（続いてスペースを選択）
+3. アクションクラスの行で、**許可**、**先に確認**、**拒否**のいずれかを選びます
+4. 設定したルールを解除するには、その行の末尾に表示されるリセットボタン（**継承に戻す**）を押します — 決定はより広いスコープにフォールバックします
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+各行は、有効な決定をステータスタグとして、その由来をバッジとして表示します: **このスコープ**、**継承**、**組み込みのデフォルト**のいずれかです。マトリクスはエージェント（`chat`）モードで解決されるため、**モードプリセット**がここに現れることはありません — そのレイヤーを確認するには、読み取り専用モードを選択した状態で what-if プローブを使用します。
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+ルールの書き込みには `admin` ロールが必要です。マトリクスの閲覧には不要です。
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+チェックポイント: ワークスペーススコープで**リモートへプッシュ**を**拒否**に設定し、以下の what-if プローブを `git push origin main` に対して実行します。結果は `deny`、ソースは `workspace` と表示されます。
 
-## Understand how a decision is resolved
+## 決定がどのように解決されるかを理解する
 
-Resolution is **specificity first, then restrictiveness**:
+解決の順序は**まず具体性、次に制限の強さ**です:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. **スペース**のルール、次に**エージェント**、次に**ワークスペース**です。一致するルールを持つ最初のスコープが決定し、そこで解決は停止します
+2. 一致するルールがなければ、**モードプリセット**が適用されます — 読み取り専用モード（plan、review、orchestrate）は 13 クラスのうち 11 を拒否します
+3. モードが何も指定しない場合、**組み込みのデフォルト**が適用されます
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+1 つのスコープ内では、コマンドルールは最長一致プレフィックスで解決され、同じ具体性の競合は**最も制限の強いもの**で解決されます — 拒否は先に確認に、先に確認は許可に優先します。複数のクラスを宣言するアクションは、それぞれを独立に解決し、その後で最も制限の強いものに統合します。
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[許可は拒否に優先しない]
+より狭いルールは具体性で勝ち、同点は制限の強さで決まります —
+そのため、ワークスペーススコープの**許可**が、どこかの**拒否**を覆すことはありません。
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+**先に確認**の決定は、`prompt` に解決されたすべてのクラスを対象とする 1 つの承認プロンプトを表示します。**承認者が接続されていない場合は拒否されます** — シェルコマンドとハーネスのツール呼び出しの両方でそうです。これは意図的なものです。ゲートされない実行は、拒否される実行よりも悪いからです。
 
-### Action classes and built-in defaults
+### アクションクラスと組み込みのデフォルト
 
-| Action class                 | Built-in default |
+| アクションクラス               | 組み込みのデフォルト |
 | ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| ファイルを削除                | 先に確認          |
+| ワークツリー外への書き込み     | 許可             |
+| コミットを作成                | 許可             |
+| リモートへプッシュ            | 先に確認          |
+| プルリクエストを作成          | 先に確認          |
+| レビューの公開またはマージ     | 先に確認          |
+| 外部トラッカーへの書き込み     | 先に確認          |
+| ネットワークにアクセス         | 許可             |
+| シークレットを読み取る         | 許可             |
+| パッケージをインストール       | 許可             |
+| プロセスを実行                | 許可             |
+| ワークスペース構造の変更       | 許可             |
+| エンクロージャー（リグ）を操作  | 許可             |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+分類は閉じられています。クラスを宣言せずに出荷された新しいツールは CI のラチェットテストに失敗するため、エフェクト集合が黙って空のまま何かが入り込むことはありません。
 
-## Test a rule with the what-if probe
+## what-if プローブでルールをテストする
 
-Before changing a rule, check how the current policy already resolves it.
+ルールを変更する前に、現在のポリシーがそれをどう解決するかを確認します。
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. 同じページで**もしも？**までスクロールします
+2. **アクション**（13 クラスのいずれか）を選びます
+3. 任意で**コマンド**（例: `git push origin main`）、**エージェント**、**スペース**、**モード**を入力します
+4. 結果を読み取ります: 決定、理由、そして**ソース:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+プローブは、適用パスが使うのと同じリゾルバーを、あなたの現在のルールに対して実行するため、答えは正確です。結果に驚いたら、上のマトリクスでルールを変更し、もう一度プローブします。
 
-## Set a space's autonomy dial
+## スペースの自律度ダイヤルを設定する
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+ダイヤルはスペースごと・エージェントごとに設定し、ルールを置き換えるのではなく、ルールと組み合わせて機能します。
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. スペースを開きます
+2. スペースヘッダーから**参加者を管理**を開きます
+3. エージェントの行の**自律度**で、レベルを選びます:
 
-| Level                 | Effect                                                                                              |
+| レベル               | 効果                                                                                              |
 | --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| **デフォルト**        | スペース設定なし — **承認後に実行**として動作します                                                 |
+| **提案のみ**          | ゲートされたすべてのツールが即座に拒否され、代わりにそのアクションを提案するようエージェントに伝えるメッセージが表示されます |
+| **承認後に実行**      | 危険なアクションはフェイルクローズの承認ゲートに到達します                                          |
+| **自由に実行**        | ハード拒否に解決されなかったものはすべて事前承認されます                                            |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[自由に実行はすべてのプロンプトを飲み込む]
+**自由に実行**では、**先に確認**の決定が、あなたに尋ねることなく許可されます。
+引き続きブロックするのは `deny` だけです — ルール、モードプリセット、組み込みのデフォルトのいずれかに由来する `deny` です。スペースを注視しているときのために使い、デフォルトとしては使わないでください。
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+このダイヤルが届くのは内蔵ハーネスだけです。Claude Code アダプターは、このゲートの外で独自のツールを実行します。
 
-## Know where guardrails do not reach
+## ガードレールが届かない範囲を知る
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+同じページの下部にある**ルールの適用箇所**の表は、これをアプリ内で表したものです。エフェクトクラスごとに、各ランナーがそれをポリシーゲートで捕捉するのか、サンドボックスに委ねるのか、まったく横取りできないのかを示します。
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/).
+- **Claude Code アダプター**は、自身のツール呼び出しではゲートされません。Claude Code は `--dangerously-skip-permissions` 付きで起動されるため、その read、write、edit、bash 呼び出しはガードを通過しません。このアダプターでゲートされるのは、それが呼び戻す MCP ツールサーフェスと、Control Center が起動のためにスポーンするシェルコマンドです。
+- **モード自身の出力動詞**（`submit_plan`、`propose_orchestration`）は固定されており、決して拒否できません — そうでなければ、モードはその唯一の成果物を構造的に生み出せなくなります。
+- **サンドボックスがこれらのルールを支えるかどうかはホスト次第です。**
+  `cc_server` がバックエンドを見つけた場合、Claude Code CLI と
+  ハーネスの `bash` ツールをラップするため、あなたが書いていないルールにも OS の土台が下に存在します。**Windows にはそれがなく**、`bwrap` と `socat` のない Linux や WSL2 にもありません — そこでは、ガードレールとモードのツールサーフェスが適用のすべてであり、第二の防衛線ではありません。どちらのケースに当てはまるかは
+  [サンドボックスポリシーを設定](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/)で確認してください。
 
-## Related guides
+## 関連ガイド
 
-- [Configure sandbox policies](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/)
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
+- [サンドボックスポリシーを設定](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Guardrails — one policy for every mutating action](/ja-JP/マニュアル/コンセプト/ガードレール/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
+- [ガードレール — すべての変更操作に対する 1 つのポリシー](/ja-JP/マニュアル/コンセプト/ガードレール/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)

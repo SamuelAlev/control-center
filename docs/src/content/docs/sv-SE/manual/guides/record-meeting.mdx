@@ -1,118 +1,135 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Spela in och sammanfatta ett möte
+description: Spela in ett samtal, få ett transkript och gör om det till anteckningar, åtgärdspunkter och beslut.
 slug: sv-SE/handbok/how-to-guider/spela-in-mote
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/sv-SE/handbok/koncept/moten/) for how it works.
+Den här guiden visar hur du spelar in ett möte och får en AI-genererad
+sammanställning. Se [Möten och transkription](/sv-SE/handbok/koncept/moten/) för
+hur det fungerar.
 
-## Before you start
+## Innan du börjar
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Vänta på talmodellen och starta sedan om servern.** En vanlig uppstart
+  installerar med tvång den valda ASR-modellen (Parakeet TDT 0.6B v3, den
+  flerspråkiga standarden, cirka 600 MB) i bakgrunden. Servern löser modellen
+  **en gång vid uppstart**, så den första körningen har fortfarande ingen
+  inspelningsfunktion förrän du startar om. Utan en modell på disken misslyckas
+  inspelningen med `Could not start
+  recording on the host: …`. Vill du välja ett annat bygge går du till
+  **Inställningar → Server → Röst- och mötesmodeller** – det kräver också en
+  omstart.
+- Ge behörighet för **mikrofon** när operativsystemet frågar vid den första
+  inspelningen.
+- I **macOS 14.4+** fångas systemljudet med Core Audio-processtappar – ingen
+  drivrutin att installera, men operativsystemet frågar en andra gång efter
+  behörighet för _ljudinspelning_. Det är inte Skärminspelning och det tänder
+  aldrig skärminspelningsindikatorn. Nekar du den misslyckas starten med
+  `System-audio capture permission denied.` Under macOS 14.4 finns ingen
+  inspelning av systemljud.
+- I **Linux** måste `parecord` (pulseaudio-utils) eller `pw-record` (pipewire)
+  ligga i `PATH` – ljudfångsten startar en av dem mot en monitorkälla i
+  PipeWire/PulseAudio. Saknas båda misslyckas starten med `No system-audio
+  capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Vart mötesljudet tar vägen]
+Ljudfångst, transkribering, ekodämpning och talarseparation körs helt på
+enheten, utan något molnanrop – men ”enhet” betyder **värden för cc_server**,
+och det är en annan maskin när du kör servern på distans. Och den slutliga
+sammanställningen är en vanlig agentkörning: pipelinen `meeting_summary` skickar
+hela transkriptet och dina grova anteckningar till vilken modellleverantör som
+helst som agenten använder. Peka den agenten mot en lokal leverantör om
+transkriptet inte får lämna maskinen.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Inspelningsskärmen säger detta medan du spelar in, så beslutet ligger framför dig
+innan det finns något transkript att skicka.
 :::
 
-## Start a recording
+## Starta en inspelning
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Öppna **Möten** i sidofältet.
+2. Klicka på **Spela in möte**. Live-HUD:en för inspelning öppnas på `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Inspelningen startar direkt och fångar din mikrofon plus systemets utljud – de
+andra deltagarna. Det finns ingen lägesfråga och ingen väljare för ljudkälla:
+närvaroläget med en enda mikrofon finns i API:et men har ingen UI i dag.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+I webbläsaren fungerar samma flöde, med en skillnad: ”systemljudet” är en
+skärmdelning som måste innehålla ett ljudspår. Dela en webbläsarflik (eller hela
+skärmen) och aktivera ”Dela flikens ljud” / ”Dela systemljud” i väljaren. Safari
+och Firefox samt delning av helskärm i macOS kan ofta inte bidra med något.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD:en visar en nivåmätare, den förflutna tiden och ett transkript i realtid som
+byggs upp på ena sidan.
 
-## During the meeting
+## Under mötet
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Skriv grova anteckningar** i anteckningspanelen. De sparas medan du skriver och lämnas senare till sammanfattningsagenten, så anteckna allt som transkriptet kan missa.
+- **Välj anteckningsmall** i raden **Aktiv mall**. Den formar sammanfattningen av det här mötet och sparas med inspelningen, så en senare omkörning återger mallen du valde här.
+- **Pausa och återuppta** med pauskontrollen. Transkriberingen stoppas medan den är pausad och timern stannar.
+- Transkriptet strömmar in talarmärkt: dina ord som **Du**, alla andra i samtalet som **Andra** – tills diariseringen delar upp Andra i `Person 1`, `Person 2`, … som du kan byta namn på.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[En mycket tyst talare kanske inte transkriberas]
+Transkriberingen hoppar över varje ljudfönster som aldrig steg över en
+tystnadströskel, utan att avkoda det alls. Det hindrar en tyst kanal från att
+slösa CPU på hallucinerade icke-taltoken, men det betyder också att en svag eller
+avlägsen talare kan ge inget transkript alls. Kontrollera nivåmätaren tidigt i
+stället för på slutet.
 :::
 
-## Stop and summarize
+## Stoppa och sammanfatta
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klicka på **Stoppa och sammanfatta**.
+2. Control Center tar dig direkt till mötesdetaljen, märkt **Bearbetar**: diariseringen delar upp fjärrkanalen i enskilda talare och pipelinen `meeting_summary` genererar sammanställningen.
+3. Mötet växlar till **Klar** så snart pipelinen är färdig. Du behöver inte vänta på den – detaljvyn uppdaterar sig själv.
 
-## Review the writeup
+## Granska sammanställningen
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Mötesdetaljen (`/meetings/:meetingId`) har fyra flikar:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Flik               | Vad som finns där                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **Anteckningar**   | AI-sammanfattningen och de förbättrade anteckningarna, byggda av dina grova anteckningar + transkriptet |
+| **Utskrift**       | Hela det talarmärkta transkriptet med tidsstämplar                                          |
+| **Åtgärdspunkter** | Extraherade att-göra-punkter, var och en med en valfri ägare                                |
+| **Beslut**         | Beslut som fångades under samtalet                                                          |
 
-From here you can:
+Härifrån kan du:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/sv-SE/handbok/how-to-guider/delegera-arenden/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Byt namn på talare**: ändra `Person 1` till ett riktigt namn; det gäller i hela transkriptet.
+- **Bocka av åtgärdspunkter** allt eftersom du slutför dem.
+- **Skapa ärende** från en åtgärdspunkt: det skapar ett nytt, otilldelat ärende med titeln från åtgärdspunkten och länkar tillbaka det till raden. Tilldela det till en agent från ärendet självt (se [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)).
+- **Kör om sammanfattning** för en ny omgång (till exempel efter att ha bytt namn på talare). Den återanvänder mallen som fångades när mötet spelades in. Välj den aktiva mallen i **Inställningar → Arbetsyta → Möten**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Att redigera anteckningar, titeln, åtgärdspunkter och beslut fungerar överallt.
+**Kör om sammanfattning** och att avbryta ett möte som bearbetas **finns bara på
+skrivbordet** – i webbläsaren gör båda knapparna ingenting.
 
-## Record straight from a calendar event
+## Spela in direkt från en kalenderhändelse
 
-If you've [connected a calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Om du har [anslutit en kalender](/sv-SE/handbok/how-to-guider/anslut-kalender/)
+kan du hoppa över den manuella starten. Det här **finns bara på skrivbordet**;
+webbklienten vägrar.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Öppna händelsen från **Kalender**.
+2. Klicka på **Starta inspelning och länka**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Inspelningen förses med händelsens titel och länkas tillbaka till den, så att
+anteckningarna och kalenderposten hålls samman.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Att ta bort ett möte tar inte bort ljudet]
+Att ta bort ett möte tar bort dess rader, men de inspelade WAV-filerna under
+`<dataDir>/meetings/<meetingId>/` ligger kvar på disken – det finns ingen
+bevarandepolicy, ingen storleksgräns och ingen automatisk städning. Ta bort den katalogen
+själv om ljudet spelar roll.
 :::
 
-## Related guides
+## Relaterade guider
 
-- [Connect a Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/)
-- [Delegate work to agents](/sv-SE/handbok/how-to-guider/delegera-arenden/)
+- [Anslut en Google Calendar](/sv-SE/handbok/how-to-guider/anslut-kalender/)
+- [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Meetings and transcription](/sv-SE/handbok/koncept/moten/)
+- [Möten och transkription](/sv-SE/handbok/koncept/moten/)

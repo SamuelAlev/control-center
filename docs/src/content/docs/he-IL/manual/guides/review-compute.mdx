@@ -1,132 +1,125 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: חישוב סקירה (קבוצות, צירים ו-diffs דטרמיניסטיים)
+description: מה שמעבר חישוב הסקירה מפיק בצד השרת — קבוצות, diffs של חוזה API ותצוגה חזותית, ושערים לפי ציר — ואיך זה מתקפל לתוך לשונית סקירה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+לשונית **סקירה** של ה-PR מציגה את ההתקדמות החיה של פייפליין הסקירה בזמן שהוא
+עובד, ובהמשך את הארטיפקט שהוא פרסם, עם הפעולות שעליו. לשונית אחת עם שני מצבים,
+כי מדובר באותו דבר בשני רגעים. זו אינה לשונית ברירת מחדל: ל-PR אין סקירה עד
+שמישהו מבקש אחת, ולכן **שאל את ה־AI** הוא מה שפותח אותה.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+מאחורי הלשונית הזו, `cc_server` בונה קבוצות קבצים, מריץ את הצירים הדטרמיניסטיים
+ומגיש אותם דרך פעולות ה-RPC של `review_studio.*` (`cohorts`, `blastRadius`,
+`cohortImpact`, `ciSignals`, `dependencyDiffs`, `setContractDecision`,
+`approveVisual`, `compute` ותאומי ה-`watch*` שלהם). פריסה שמורה שעדיין מציינת את
+`pr.reviewStudio` פותחת את אותה לשונית **סקירה**.
 
-On the Review tab:
+בלשונית **סקירה**:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- הסוכן המאחד מפרסם ארטיפקט שיחה רגיל עם `publish_artifact`, כך שהלשונית מציגה
+  אותו דרך אותו מציג ארטיפקטים שנפתח מבועת צ׳אט — אין העתק בתצורת סקירה של מערכת
+  הארטיפקטים.
+- הממצאים יושבים במסילה לצידו, וההכרעה נסמכת על פס דק מעל הארטיפקט ולא על כותרת
+  של לוח מחוונים.
+- באנר מיושן מופיע כשהראש של ה-PR התקדם מעבר לסקירה.
 
-See [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) for the flow and
-[Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/) for acting on it.
+ראו [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) למהלך העבודה
+ו[סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/) כדי לפעול על הסקירה.
 
-## Cohorts
+## קבוצות
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+הקבוצות מקבצות את הקבצים שהשתנו ב-PR לדליים של קבצים הנגזרים מהתוכן, כאלה
+ששייכים יחד לפי המשמעות, מדורגות לפי מידת ההשפעה כך שהקבוצה המסוכנת ביותר נקראת
+ראשונה. הן מחושבות מחדש בכל שינוי של head-SHA ומוחלפות במלואן; לכל קבוצה יש מפתח
+יציב לאורך דחיפות, כך שסיכום והתקדמות הסקירה שורדים ריבייס.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+אם למאגר אין אינדקס קוד, הקבוצות נופלות חזרה לקיבוץ לפי נתיבים. כדי להכניס מאגר
+לאינדקס, השתמשו ב**הגדרות ← סביבת עבודה ← מאגרים** — כל שורה של מאגר נושאת פעולה
+**אינדוקס קוד** שמריצה את הפייפליין `index_code` ומדווחת על ההתקדמות במקום.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+גרף הקוד מנתח רק שפות שיש להן דקדוק שמצורף מראש (Dart, JS/TS, PHP, Python, Rust,
+Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada). מאגר בכל
+שפה אחרת לעולם לא יפיק קבוצות סמנטיות, ולא משנה כמה פעמים תיינדקסו אותו.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+סוכן יכול לרשום סיכום markdown לקבוצה עם `set_cohort_summary` ולצרף תרשים סיור
+מודרך מובנה עם `add_review_diagram` — אובייקט מוקלד של רצף, של יחסי ישויות או של
+מכונת מצבים, ולעולם לא טקסט mermaid. כל קצה נבדק בהצלבה מול גרף הקוד האמיתי, וקצה
+שהגרף אינו יכול לאשש מסומן כלא־מאומת במקום להיות מצויר כעובדה.
 
-## The API-contract axis
+## ציר חוזה ה-API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+ציר החוזה מבצע diff רק על קובצי מפרט **מפורשים**. הוא מזהה את ששת השמות שמוגדרים
+כברירת מחדל — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — ובנוסף כל קובץ שהשתנה ושמו מכיל `openapi` או
+`swagger` ומסתיים ב-`.yaml`, `.yml` או `.json`. חוזה שהוסק מקוד של handler נמצא
+מחוץ לתחום, וסכמות GraphQL אינן נכללות ב-diff.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+כל שינוי מסווג — הוספות, הסרות ושינויים של endpoint, פרמטר, סכמה ותגובה — ונושא
+חומרה: **breaking** (endpoint או פרמטר שהוסרו, טיפוס מצומצם יותר, פרמטר חובה חדש),
+non-breaking (תוספתי), או אינפורמטיבי. שינוי שנדחה מכשיל את שער החוזה, וכך גם שינוי
+breaking שנותר ללא החלטה; שינוי breaking שאושר מפיק אזהרה; כשאין שינויי breaking,
+השער עובר. diff שמסומן **derived (advisory)** לעולם אינו משער.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+אישור או דחייה של שינוי נעשים עם `review_studio.setContractDecision`.
 
-## The visual axis
+## הציר החזותי
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+אם ה-PR משנה רכיבי UI במאגר Flutter שיש בו אפליקציית Widgetbook, מעבר החישוב
+מרנדר את הרכיבים שהשתנו לפני ואחרי באמצעות מעבר גולדן של `flutter test` ללא ממשק
+גרפי, בעצי העבודה של הבסיס והראש של ה-PR, ואז מבצע diff על הפיקסלים.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[נדרש Flutter SDK במארח השרת]
+השרת ב-Dart טהור אינו יכול לרנדר ווידג'טים של Flutter בתוך התהליך, ולכן הוא מפעיל
+תהליך חיצוני של `flutter test`. ה-SDK חייב להיות מותקן על המחשב שמריץ את
+`cc_server` — ולא על הלקוח שלכם. בלעדיו הציר מדווח **unavailable** עם הסיבה
+„no Flutter SDK on host". הוא לעולם לא מדווח על הצלחה שלא הרוויח.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+תמונות מצב המסומנות **changed** או **removed** מחזיקות את השער החזותי עד אישורן;
+תמונות מצב **unchanged**, **added** ו-**approved** מסירות אותו. לאי־זמינות אחת
+מארבע סיבות: אין Flutter SDK במארח, אין אפליקציית Widgetbook במאגר, אין מקרי שימוש
+הניתנים לבדיקת גולדן, או שגיאה ברתמת הגולדן.
 
-Approving an intended change is `review_studio.approveVisual`.
+אישור של שינוי מכוון נעשה עם `review_studio.approveVisual`.
 
-## The axes and the verdict
+## הצירים וההכרעה
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| ציר        | מונע על ידי               |
+| ---------- | ------------------------- |
+| נכונות     | סוכני סקירה (טוקנים)      |
+| אבטחה      | סוכני סקירה (טוקנים)      |
+| פער בדיקות | סוכני סקירה (טוקנים)      |
+| חזותי      | דטרמיניסטי (רתמת גולדן)   |
+| חוזה API   | דטרמיניסטי (diff של מפרט) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+שלושת צירי הטוקנים נרשמים כשסוכן מוביל קורא ל-`finalize_review`; שני הצירים
+הדטרמיניסטיים נרשמים על ידי מעבר החישוב.
 
-Each axis reports one of:
+כל ציר מדווח על אחד מאלה:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| מצב             | משמעות                               |
+| --------------- | ------------------------------------ |
+| **Pass**        | רץ, ולא נמצא דבר חוסם                 |
+| **Warn**        | רץ, יש חששות שאינם חוסמים             |
+| **Fail**        | רץ, ונמצאה בעיה חוסמת                  |
+| **Partial**     | רץ אך לא הצליח להשלים; התוצאות חלקיות |
+| **Unavailable** | לא הצליח לרוץ כלל                     |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+רק **pass** ו-**warn** מסירים את השער מציר משעור. **Partial** ו-**unavailable**
+נבדלים במכוון מ-**fail**, ואף אחד מהם אינו מסיר שער.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+הצירים מתמזגים ל-**Ship**, **Hold** או **Block**, והם יכולים רק להפוך את ההכרעה
+ל_חמורה יותר_ — היא לעולם לא מדורגת מטה. ציר משעור ש**נכשל** כופה **Block**; ציר
+שהוא **partial** או **unavailable** כופה לפחות **Hold**. כך ציר חוסם שלא הצליח
+לרוץ _מחזיק_ את ההכרעה: היעדר ראיה לעולם לא הופך שער לירוק.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+ההכרעה בלשונית **סקירה** היא זו ש-`finalize_review` פרסם.
 
-## Related guides
+## מדריכים קשורים
 
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
-- [Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
-- [Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
-- [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/)
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
+- [שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/)
+- [סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
+- [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/)

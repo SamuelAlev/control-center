@@ -1,29 +1,32 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Αντίγραφο ασφαλείας, εξαγωγή και εισαγωγή
+description: Η διάταξη του στιγμιότυπου, το μανιφέστο, κάθε λειτουργία αντιγράφου ασφαλείας και διαδρομή μεταφοράς, και ακριβώς ποια αρχεία περιέχει και ποια δεν περιέχει ένα αντίγραφο ασφαλείας.
 slug: el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/); for why persistence is
-split this way, see [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
+Όλα όσα μπορεί να αντιγράψει, να παραδώσει ή να υιοθετήσει το Control Center, και η
+ακριβής μορφή κάθε τεχνουργήματος. Για να πάρετε πραγματικά ένα αντίγραφο ασφαλείας,
+δείτε το
+[Αντίγραφο ασφαλείας και επαναφορά](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/); για τον λόγο που η αποθήκευση είναι χωρισμένη κατ' αυτόν τον τρόπο, δείτε τους
+[Χώρους εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
 
-## Artifacts
+## Τεχνουργήματα
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Υπάρχουν τρία τεχνουργήματα αντιγραφής βάσεων δεδομένων, με διαφορετική εμβέλεια και
+πολιτική διαγραφής.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| Τεχνούργημα             | Γράφεται από                 | Μορφή                                 | Καλύπτει                     |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **Στιγμιότυπο εγκατάστασης** | `server.backupNow`      | Ένας κατάλογος με **χρονοσήμανση**    | Κάθε βάση δεδομένων της εγκατάστασης |
+| **Workspace backup**    | pipeline `Workspace backup`  | Κατάλογος με χρονοσήμανση που περιέχει ένα `.db` | Τη βάση δεδομένων ενός χώρου εργασίας |
+| **Εξαγωγή χώρου εργασίας** | `workspace.export`        | Ένα μεμονωμένο `.db` **αρχείο**       | Τη βάση δεδομένων ενός χώρου εργασίας |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Όλα γράφονται με SQLite `VACUUM INTO`, το οποίο είναι ασφαλές απέναντι σε μια ενεργή βάση
+δεδομένων WAL: λαμβάνει μια συναλλαγή ανάγνωσης, παράγει ένα αποσυμπιεσμένο και
+συναλλακτικά συνεπές αντίγραφο, και δεν απαιτεί ποτέ τη διακοπή του διακομιστή.
 
-## Snapshot layout
+## Διάταξη στιγμιότυπου
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +35,128 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Η διάταξη καθρεφτίζει ακριβώς τον ενεργό κατάλογο δεδομένων, και αυτό είναι που κάνει την
+επαναφορά μιας εγκατάστασης απλή αντιγραφή πίσω αντί για μετάφραση. Το όνομα του καταλόγου
+είναι η χρονοσήμανση UTC με τα `:` και `.` αντικατεστημένα από `-`, οπότε είναι ασφαλές για
+το σύστημα αρχείων στα Windows και ταξινομείται χρονολογικά ως απλή συμβολοσειρά.
 
-Scheduled workspace backups live separately at
+Τα προγραμματισμένα αντίγραφα ασφαλείας χώρων εργασίας βρίσκονται ξεχωριστά στη διαδρομή
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Δεν περιλαμβάνουν μανιφέστο ούτε `global.db` και δεν είναι στιγμιότυπα εγκατάστασης.
+Το βήμα διατήρησης του εβδομαδιαίου pipeline αφαιρεί μόνο αντίγραφα ασφαλείας του δικού
+του χώρου εργασίας που είναι παλαιότερα από τη διαμορφωμένη ηλικία του (30 ημέρες από
+προεπιλογή)· τα χειροκίνητα στιγμιότυπα εγκατάστασης δεν εκκαθαρίζονται ποτέ από αυτό το
+βήμα. Το `server.listBackups` απαριθμεί μόνο στιγμιότυπα εγκατάστασης, μαζί και τα
+ημιτελή.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| Πεδίο                      | Τύπος           | Σημασία                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | ακέραιος        | Έκδοση μορφής του μανιφέστου. Αυτή τη στιγμή `1`                    |
+| `created_at`               | ISO-8601 UTC    | Πότε λήφθηκε το στιγμιότυπο                                         |
+| `global.file`              | συμβολοσειρά    | Πάντα `global.db`                                                   |
+| `global.schema_version`    | ακέραιος        | Έκδοση σχήματος του `GlobalDatabase` τη στιγμή της καταγραφής       |
+| `global.bytes`             | ακέραιος        | Μέγεθος του γραμμένου `global.db`                                   |
+| `workspace_schema_version` | ακέραιος        | Έκδοση σχήματος του `WorkspaceDatabase` που μοιράζονται όλα τα αρχεία χώρων εργασίας |
+| `workspaces[]`             | πίνακας         | Μία εγγραφή ανά καταγεγραμμένο χώρο εργασίας                         |
+| `workspaces[].workspace_id`| συμβολοσειρά    | Ο χώρος εργασίας που κατέχει αυτό το αρχείο                          |
+| `workspaces[].file`        | συμβολοσειρά    | Διαδρομή σχετική με τη ρίζα του στιγμιότυπου, `<workspaceId>/workspace.db` |
+| `workspaces[].bytes`       | ακέραιος        | Μέγεθος αυτού του αρχείου                                           |
+| `skipped_workspaces[]`     | πίνακας συμβολοσειρών | Χώροι εργασίας που το αντίγραφο ασφαλείας **δεν** μπόρεσε να καταγράψει |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Ένας χώρος εργασίας παραλείπεται όταν είναι καταχωρισμένος αλλά δεν έχει γραφτεί ποτέ (άρα
+δεν υπάρχει ακόμη αρχείο), ή όταν το `VACUUM INTO` του απέτυχε. Όπως και να έχει, το
+στιγμιότυπο ολοκληρώνεται και το μανιφέστο ονομάζει τι λείπει.
 
-### Completeness
+### Πληρότητα
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+Το `server.listBackups` αναφέρει μια σημαία `complete` ανά στιγμιότυπο. Είναι false όταν
+το μανιφέστο απουσιάζει ή δεν μπορεί να αναλυθεί, όταν λείπει το `global.db`, ή όταν το
+μανιφέστο ονομάζει ένα αρχείο χώρου εργασίας που δεν βρίσκεται στον δίσκο.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Ένα ημιτελές στιγμιότυπο εξακολουθεί να εμφανίζεται στη λίστα, επειδή ένα στιγμιότυπο που
+δεν βλέπει ένας διαχειριστής είναι ένα στιγμιότυπο που πιστεύει ότι έχει. Όταν το
+μανιφέστο δεν είναι αναγνώσιμο, η λίστα καταφεύγει στην ίδια τη διάταξη και αναφέρει όποια
+αρχεία `<workspaceId>/workspace.db` βρει — αυτά παραμένουν μεμονωμένα υιοθετήσιμα μέσω του
+`workspace.import`, ακόμη και αν το στιγμιότυπο στο σύνολό του δεν μπορεί να επαναφέρει
+μια εγκατάσταση.
 
-## What a backup does not contain
+## Τι δεν περιέχει ένα αντίγραφο ασφαλείας
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Και τα δύο τεχνουργήματα είναι **μόνο βάσεις δεδομένων**. Ένας κατάλογος χώρου εργασίας
+περιέχει περισσότερα από τη βάση δεδομένων του, και τίποτα από τα υπόλοιπα δεν ταξιδεύει:
 
-| Path                                | In a snapshot? | In a workspace export? |
+| Διαδρομή                            | Σε ένα στιγμιότυπο; | Σε μια εξαγωγή χώρου εργασίας; |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | Ναι            | Όχι                    |
+| `<workspaceId>/workspace.db`        | Ναι            | Ναι (το *είναι* το αρχείο) |
+| `<workspaceId>/blobs/`              | Όχι            | Όχι                    |
+| `<workspaceId>/skills/`             | Όχι            | Όχι                    |
+| `<workspaceId>/agents/`             | Όχι            | Όχι                    |
+| `<workspaceId>/chat_credentials/`   | Όχι            | Όχι                    |
+| `<workspaceId>/spaces/<spaceId>/`   | Όχι            | Όχι                    |
+| `<workspaceId>/pr_clones/`          | Όχι            | Όχι                    |
+| `secrets.json`                      | Όχι            | Όχι                    |
+| `models/`                           | Όχι            | Όχι                    |
+| `meetings/<meetingId>/`             | Όχι            | Όχι                    |
+| `rigs/`                             | Όχι            | Όχι                    |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/).
+Κάποια από αυτά είναι αναλώσιμα — το `spaces/` περιέχει worktrees copy-on-write που
+παρέχονται εκ νέου από τα αποθετήρια, το `pr_clones/` είναι προσωρινή αποθήκευση, το
+`models/` κατεβαίνει ξανά με λήψη, το `rigs/` είναι κατάσταση μηχανήματος. Κάποια άλλα δεν
+είναι: το `blobs/` περιέχει επικολλημένες εικόνες στις οποίες δείχνουν γραμμές της βάσης
+δεδομένων, τα `skills/` και `agents/` περιέχουν τα αρχεία με τα οποία εκτελείται ένας
+πράκτορας, και το `secrets.json` περιέχει κάθε κλειδί σύζευξης, διαπιστευτήριο παρόχου και
+ρύθμιση SSO της εγκατάστασης. Δείτε το
+[Αντίγραφο ασφαλείας και επαναφορά](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/#copy-backups-off-the-machine)
+για την κάλυψη των υπολοίπων.
+:::note[Τα διακριτικά συνομιλίας μένουν σκόπιμα πίσω]
+Το ότι το `chat_credentials/` βρίσκεται δίπλα στη βάση δεδομένων και όχι μέσα της είναι ο
+λόγος που ένας χώρος εργασίας που παραδίδεται σε κάποιον άλλο δεν μεταφέρει ενεργά
+διακριτικά chat bot. Δείτε την
+[αναφορά γέφυρας συνομιλίας](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/).
 :::
 
-## Operations
+## Λειτουργίες
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+Τα RPC αντιγράφων ασφαλείας της εγκατάστασης και η εξαγωγή/εισαγωγή χώρου εργασίας είναι
+μόνο για `fullClient`: ένα συζευγμένο τηλέφωνο δεν μπορεί να τα ενεργοποιήσει. Όλα
+απουσιάζουν εντελώς — δεν απορρίπτονται, απουσιάζουν δομικά — σε έναν διακομιστή χωρίς
+συνδεδεμένη θύρα αντιγράφων ασφαλείας, όπως ο διακομιστής επίδειξης.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Λειτουργία           | Είδος     | Εμβέλεια      | Ελάχιστος ρόλος | Ορίσματα     | Επιστρέφει                   |
+| -------------------- | --------- | ------------- | --------------- | ------------ | ---------------------------- |
+| `server.backupNow`   | μετάλλαξη | Εγκατάσταση   | **ιδιοκτήτης** της εγκατάστασης | κανένα | `{ok, path}` |
+| `server.listBackups` | ανάγνωση  | Εγκατάσταση   | **ιδιοκτήτης** της εγκατάστασης | κανένα | `{backups: [...]}` |
+| `server.deleteBackup` | μετάλλαξη | Εγκατάσταση  | **ιδιοκτήτης** της εγκατάστασης | `name` | `{ok}` |
+| `workspace.export`   | ανάγνωση  | Χώρος εργασίας | `admin`        | κανένα       | `{ok, path}`                 |
+| `workspace.import`   | μετάλλαξη | Χώρος εργασίας | `owner`        | `source_path` | `{ok, workspace_id}`        |
+| `workspace.delete`   | μετάλλαξη | Εγκατάσταση*  | `owner`        | `id`         | γραμμή μητρώου σημαδεμένη ως διαγραμμένη |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* Το `workspace.delete` δεν έχει εμβέλεια, επειδή η γραμμή που σημαδεύει ζει στο καθολικό
+μητρώο· ο χειριστής του ελέγχει την ιδιότητα μέλους του καλούντος στον επώνυμο χώρο
+εργασίας και απαιτεί `owner`.
 
-`path` in every response is a path on the **server host**.
+Το `path` σε κάθε απόκριση είναι μια διαδρομή στον **κεντρικό υπολογιστή του διακομιστή**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Ένα στιγμιότυπο ολόκληρης της εγκατάστασης απαιτεί τον ιδιοκτήτη και στις δύο λωρίδες]
+Τα `server.backupNow`, `server.listBackups` και `server.deleteBackup` απαιτούν τον
+**ιδιοκτήτη** της εγκατάστασης (`ServerAuthority.serverOwner`), την ίδια πύλη με το
+`GET /backup/snapshot`. Ένα στιγμιότυπο καταγράφει τη βάση δεδομένων κάθε χώρου εργασίας,
+οπότε το να είστε διαχειριστής ενός χώρου εργασίας δεν αρκεί για να διαχειριστείτε τους
+άλλους. Η διαγραφή δέχεται μόνο το όνομα του καταλόγου χρονοσήμανσης που εμφανίζεται στη
+λίστα, όχι μια αυθαίρετη διαδρομή διακομιστή, και αφαιρεί ολόκληρο το στιγμιότυπο (μαζί και
+τα ημιτελή). Η εξαγωγή/εισαγωγή ανά χώρο εργασίας παραμένει στον διαχειριστή/ιδιοκτήτη του
+χώρου εργασίας, όχι στον ιδιοκτήτη της εγκατάστασης.
 :::
 
-### `server.listBackups` response
+### Απόκριση του `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Από το νεότερο προς το παλαιότερο, ταξινομημένα κατά όνομα καταλόγου (που είναι η
+χρονοσήμανση, οπότε η σειρά ισχύει ακόμη και για ένα στιγμιότυπο του οποίου το μανιφέστο
+δεν μπορούσε να διαβαστεί).
 
 ```json
 {
@@ -169,99 +180,107 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+Το `created_at` παραλείπεται όταν το μανιφέστο δεν μπορούσε να διαβαστεί. Το `bytes` στο
+ανώτατο επίπεδο είναι το πραγματικό μέγεθος στον δίσκο ολόκληρου του καταλόγου, όχι το
+άθροισμα του ίδιου του μανιφέστου — η ερώτηση που θέτει ένας διαχειριστής που καθαρίζει
+στιγμιότυπα είναι πόσο κοστίζει ο κατάλογος, όχι τι σκόπευε να γράψει το αντίγραφο
+ασφαλείας.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Κάθε `workspaces[].path` είναι ακριβώς αυτό που δέχεται το `workspace.import` ως
+`source_path`. Αυτό είναι σκόπιμο: το «επαναφορά αυτού του χώρου εργασίας από αυτό το
+στιγμιότυπο» *είναι* η λειτουργία εισαγωγής, ώστε οι δύο να μην μπορούν να αποκλίνουν σε
+διαφορετικούς χειρισμούς του ίδιου αρχείου.
 
-### `workspace.import` validation
+### Επικύρωση του `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Πριν αντικατασταθεί οτιδήποτε, το υποψήφιο αρχείο ανοίγεται μόνο για ανάγνωση με μια
+βραχύβια απευθείας σύνδεση SQLite και διαβάζεται η γραμμή `workspace_meta` του.
 
-| Condition                                        | Result                                                          |
+| Συνθήκη                                          | Αποτέλεσμα                                                       |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Δεν είναι αναγνώσιμη βάση δεδομένων SQLite, ή δεν υπάρχει `workspace_meta` | Απορρίπτεται. Δεν αγγίζεται τίποτα |
+| Το καταγεγραμμένο αναγνωριστικό χώρου εργασίας ≠ του προορισμού | **Επιτρέπεται**, καταγράφεται. Έτσι αντιγράφεται ένας χώρος εργασίας ή επαναφέρεται υπό νέο αναγνωριστικό |
+| Το καταγεγραμμένο αναγνωριστικό εγκατάστασης ≠ αυτής της εγκατάστασης | **Επιτρέπεται**, καταγράφεται. Οι συζευγμένες συσκευές και τα αναγνωριστικά χρηστών του ανήκουν σε εκείνη την εγκατάσταση και δεν θα επιλυθούν εδώ |
+| Μη έγκυρο αναγνωριστικό χώρου εργασίας, ή το αρχείο δεν υπάρχει | Απορρίπτεται |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Κατά την αποδοχή, η βάση δεδομένων του χώρου εργασίας-στόχου κλείνει και αποσπάται από τον
+διαχειριστή πριν αντιγραφεί το αρχείο πάνω της (μια ανοιχτή σύνδεση drift κρατά το αρχείο
+και το `-wal` του), και μετά ανοίγει ξανά ώστε το `beforeOpen` να επανεγκαταστήσει τους
+ενεργοποιητές FTS και συγχρονισμού, και τα ευρετήρια FTS ξαναχτίζονται — οι πίνακες
+περιεχομένου ενός εισαγμένου αρχείου είναι συμπληρωμένοι, αλλά το ευρετήριό του μπορεί να
+είναι παρωχημένο.
 
-## Transfer routes
+## Διαδρομές μεταφοράς
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Κάθε λειτουργία παραπάνω μιλά με διαδρομές στην πλευρά του διακομιστή, που είναι πλήρης
+απάντηση μόνο όταν ο διακομιστής είναι το δικό σας μηχάνημα. Αυτές οι τρεις μεταφέρουν τα
+byte, στην ίδια λωρίδα με υπογραφή PSK που χρησιμοποιούν ήδη ο μεσολαβητής πολυμέσων και η
+αποθήκη εικόνων. Ο καλών υπογράφει μια συμβολοσειρά προορισμού με το προκοινόχρηστο κλειδί
+της συσκευής του και περνά την υπογραφή ως `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| Διαδρομή                | Μέθοδος | Παράμετροι      | Υπογεγραμμένος προορισμός      | Απαιτεί                 |
+| ----------------------- | ------- | --------------- | ------------------------------ | ----------------------- |
+| `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **διαχειριστής** του χώρου εργασίας |
+| `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`       | **ιδιοκτήτης** της εγκατάστασης |
+| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>` | **ιδιοκτήτης** του χώρου εργασίας |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+Το `w` είναι αναγνωριστικό χώρου εργασίας, το `n` όνομα καταλόγου στιγμιότυπου, το `d` το
+αναγνωριστικό της καλούσας συσκευής, το `s` η υπογραφή. Το `n` επιλύεται απέναντι στη λίστα
+αντιγράφων ασφαλείας αντί να συνενώνεται με τη ρίζα των αντιγράφων, οπότε η διαδρομή δεν
+μπορεί να στοχεύσει σε κατάλογο που η λίστα δεν θα είχε εμφανίσει.
 
-| Status | Cause                                                                              |
-| ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| Κατάσταση | Αιτία                                                                              |
+| --------- | ----------------------------------------------------------------------------------- |
+| `400`  | Λείπει μια απαιτούμενη παράμετρος, ή το σώμα μιας μεταφόρτωσης είναι κενό              |
+| `403`  | Άγνωστη ή ανακλημένη συσκευή, κακή υπογραφή, ή ο καλών δεν έχει τον ρόλο               |
+| `404`  | Δεν υπάρχει θύρα αντιγράφων ασφαλείας σε αυτόν τον κεντρικό υπολογιστή, ή το επώνυμο στιγμιότυπο/αρχείο χώρου εργασίας δεν υπάρχει |
+| `405`  | Κλήση του `/backup/restore` με οτιδήποτε άλλο εκτός από `POST`                        |
+| `413`  | Το σώμα της μεταφόρτωσης ξεπερνά τα 8 GiB, είτε κατά το δηλωμένο content-length είτε κατά τα byte που διαβάστηκαν στην πραγματικότητα |
+| `500`  | Η εξαγωγή ή το αρχείο συμπίεσης απέτυχε στην πλευρά του διακομιστή                    |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Και οι δύο λήψεις απαντούν `Cache-Control: no-store` με `Accept-Ranges: none`. Κάθε αίτημα
+δημιουργεί ένα **φρέσκο** αντίγραφο και το διαγράφει μόλις μεταδοθεί με ροή, οπότε μια
+απόκριση από προσωρινή μνήμη ή μια συνεχισμένη απόκριση θα συνέραπτε byte από δύο
+διαφορετικές εξαγωγές σε ένα αρχείο που φαίνεται έγκυρο και δεν είναι.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+Το `/backup/snapshot` επιστρέφει `<name>.zip`, με εγγραφές σχετικές με τη ρίζα του
+στιγμιότυπου, ώστε η αποσυμπίεση να αναπαράγει `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db`. Οι εγγραφές γράφονται σε ταξινομημένη σειρά, οπότε δύο
+αρχεία συμπίεσης του ίδιου στιγμιότυπου είναι το ίδιο αρχείο συμπίεσης.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+Το `/backup/restore` μεταδίδει το σώμα κατευθείαν σε ένα αρχείο προσωρινής αποθήκευσης αντί
+να το αποθηκεύσει ενδιάμεσα, το περιορίζει πριν και κατά τη διάρκεια της ανάγνωσης, και
+διαγράφει το αρχείο προσωρινής αποθήκευσης σε **κάθε** διαδρομή εξόδου, ακόμη και σε
+άρνηση.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Μια αναμεταδιδόμενη σύνδεση δεν έχει προέλευση HTTP]
+Η αναμετάδοση μέσω μεσολαβητή μεταφέρει πλαίσια RPC, όχι αρχεία. Ό,τι μιλά με διαδρομές
+στην πλευρά του διακομιστή συνεχίζει να λειτουργεί μέσω αυτής· οι τρεις διαδρομές
+μεταφοράς χρειάζονται άμεση σύνδεση, και το UI τις απενεργοποιεί με σημείωση αντί να
+αποτύχει στη μέση μιας λήψης.
 :::
 
-## Paths and limits
+## Διαδρομές και όρια
 
-| Thing                          | Value                                                        |
+| Στοιχείο                        | Τιμή                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Στιγμιότυπα                    | `<dataDir>/backups/<timestamp>/`                             |
+| Προγραμματισμένα αντίγραφα ασφαλείας χώρων εργασίας | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Εξαγωγές χώρων εργασίας        | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Προσωρινή αποθήκευση μεταφοράς | `<dataDir>/backups/transfer/` — ένας πάγκος εργασίας, που τον σαρώνει η διαδρομή που τον γράφει |
+| Όνομα αρχείου συμπίεσης στιγμιότυπου | `<snapshot directory name>.zip`                         |
+| Όριο μεταφόρτωσης              | 8 GiB ανά `POST /backup/restore`                             |
+| Διατήρηση                      | Στιγμιότυπα εγκατάστασης: χειροκίνητη διαγραφή. Αντίγραφα ασφαλείας χώρων εργασίας: εβδομαδιαίο pipeline, προεπιλογή 30 ημερών |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Οι κατάλογοι `exports/`, `transfer/` και `workspace-backups/` δεν είναι στιγμιότυπα
+εγκατάστασης και εξαιρούνται από το `server.listBackups`. Μόνο ο τελευταίος κατάλογος έχει
+προγραμματισμένη διατήρηση· η διαγραφή ενός στιγμιότυπου εγκατάστασης απαιτεί ρητή ενέργεια
+του ιδιοκτήτη της εγκατάστασης.
 
-## See also
+## Δείτε επίσης
 
-- [Back up and restore](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/) — the recipes these operations belong to
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) — why one workspace is one file
-- [`cc_server` CLI](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/) — where the UI lives
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/) — the client/server split the paths follow
+- [Αντίγραφο ασφαλείας και επαναφορά](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/) — οι συνταγές στις οποίες ανήκουν αυτές οι λειτουργίες
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) — γιατί ένας χώρος εργασίας είναι ένα αρχείο
+- [CLI του `cc_server`](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/) — ο κατάλογος δεδομένων στον οποίο βρίσκονται αυτές οι διαδρομές
+- [Χάρτης διαδρομών](/el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών/) — πού ζει το UI
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/) — ο διαχωρισμός πελάτη/διακομιστή που ακολουθούν οι διαδρομές

@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Ejecutar agentes en paralelo
+description: Despacha varios agentes a la vez y evita que su trabajo choque.
 slug: es-ES/manual/guias/agentes-en-paralelo
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Esta guía muestra cómo ejecutar varios agentes al mismo tiempo sin que se sobrescriban entre sí.
 
-## The unit of isolation is the space, not the agent
+## La unidad de aislamiento es el espacio, no el agente
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Cuando empieza trabajo en un espacio, Control Center aprovisiona un checkout de copia en escritura por cada repositorio registrado bajo la raíz propia de ese espacio, en una rama derivada de la plantilla de nombre de rama del espacio de trabajo. Después, cada agente del espacio recibe su propio directorio de trabajo overlay, pero los overlays **comparten** el directorio `repos/` de ese espacio.
 
-So:
+Por tanto:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Dos agentes en **espacios diferentes** trabajan en checkouts diferentes, en ramas diferentes. Eso es aislamiento real.
+- Dos agentes en el **mismo espacio** trabajan en el mismo checkout, en la misma rama. Sus rutas de overlay difieren, así que el bloqueo de ruta del despacho (que serializa las ejecuciones solo cuando solicitan el mismo directorio de trabajo) tampoco los serializa a ellos. Pueden escribir los mismos archivos al mismo tiempo.
 
-The rule that follows: **one space per parallel task.**
+De ahí se deduce la regla: **un espacio por tarea en paralelo.**
 
-## Run tasks in parallel — separate spaces
+## Ejecutar tareas en paralelo — espacios separados
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Abre un espacio con el agente A y envíale una tarea.
+2. Abre un segundo espacio con el agente B y envíale otra tarea.
+3. Ambos se despachan de inmediato, cada uno en el checkout de su espacio y en su propia rama.
 
-This is the recipe to use whenever the agents will be editing files.
+Esta es la receta que debes usar siempre que los agentes vayan a editar archivos.
 
-## Work together in one space — several mentions
+## Colaborar en un mismo espacio — varias menciones
 
-In a single space, @-mention more than one agent:
+En un mismo espacio, menciona con @ a más de un agente:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Ambos agentes se despachan en paralelo y transmiten en el mismo espacio, etiquetados por el remitente. Como comparten el checkout del espacio, usa esto para colaborar —uno escribe y otro lee, o dos agentes razonando sobre el mismo árbol—, no para dos ediciones independientes.
 
-## Fan out from a pipeline
+## Reparto en abanico desde un pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+La plantilla `pr_review` integrada es el ejemplo incluido de un reparto en abanico: varios nodos revisores se ejecutan a la vez a partir de un único disparador y un nodo **Consolidate (join)** pliega sus hallazgos en un solo informe. Ejecútala desde la pantalla de pipelines y cada revisor se despachará en paralelo.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+El editor de pipelines oculta el centinela terminal y lo recablea para que espere a todos los sumideros activos cuando añades o conectas un paso, así que las ramas que dibujas tú mismo sí se ejecutan.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Asignar un ticket no despacha nada]
+Asignar un ticket a un agente registra la propiedad. No hay ningún despachador de tickets: `TicketAssigned` es una señal de auditoría y no arranca ningún trabajo a partir de ella. La única excepción es un ticket asignado a un _equipo_, que despierta al líder de ese equipo.
 :::
 
-## Watch them run
+## Verlos en ejecución
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observabilidad → En vivo** (pie de la barra lateral → Observabilidad y, después, la pestaña En vivo) muestra la lista de agentes de este espacio de trabajo, actualizada cada segundo: estado (En ejecución / Inactivo / Aparcado / Abortado), qué está haciendo cada uno, los tokens y el coste de su última ejecución y un control para detener un proceso en ejecución. Al seleccionar una fila se acopla un cajón con la transcripción en vivo.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Ajustes → Espacio de trabajo → Agentes** muestra esa misma lista con un vocabulario de estados distinto, que prioriza la atención y se deriva del historial de ejecuciones de cada agente —en ejecución, bloqueado, fallido, inactivo, nunca ejecutado—, ordenada de modo que todo lo que necesita atención quede arriba. La pestaña **Registros** de cada agente contiene su propio historial de ejecuciones.
 
-Both surfaces are scoped to the active workspace.
+Ambas superficies se limitan al espacio de trabajo activo.
 
-## Handle conflicts
+## Gestionar los conflictos
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Entre espacios, cada espacio está en su propia rama, así que una colisión aparece como un conflicto de fusión de Git normal cuando fusionas la segunda pull request. Resuélvelo como resolverías cualquier conflicto de fusión.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Dentro de un mismo espacio no hay frontera de rama ni bloqueo: los agentes escriben los mismos archivos en vivo y al perdedor se le sobrescribe sin más. Si te ves con la necesidad de que dos agentes editen en un mismo espacio, reparte el trabajo en dos espacios.
 
-To reduce collisions either way:
+Para reducir las colisiones en cualquiera de los dos casos:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/es-ES/manual/guias/buscar-codigo/).
-- Review and merge each agent's pull request promptly.
+- Da a cada agente un ámbito distinto: archivos diferentes, módulos diferentes.
+- Usa el grafo de código para comprobar qué toca un cambio antes de despachar. Consulta [Buscar código con el grafo de código](/es-ES/manual/guias/buscar-codigo/).
+- Revisa y fusiona la pull request de cada agente sin demora.
 
-## Resource considerations
+## Consideraciones sobre recursos
 
-Each running agent costs:
+Cada agente en ejecución cuesta:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Un checkout del espacio: insignificante en disco mientras haya copia en escritura; en Windows, un `git worktree`. Un sistema de archivos que no puede hacer reflink hace fallar el aprovisionamiento en lugar de copiar.
+- Un proceso en el host del servidor
+- Tokens del modelo, que se acumulan por agente
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/es-ES/manual/guias/gestionar-costes/) for the two commands that do have one.
+Los costes aparecen en **Observabilidad → Resumen**. Ten en cuenta que un turno interactivo normal no tiene tope de gasto; consulta [Gestionar costes](/es-ES/manual/guias/gestionar-costes/) para ver los dos comandos que sí lo tienen.
 
-## Related guides
+## Guías relacionadas
 
-- [Create and configure an agent](/es-ES/manual/guias/crear-agente/)
-- [Build an agent team](/es-ES/manual/guias/formar-equipo/)
-- [Manage costs](/es-ES/manual/guias/gestionar-costes/)
-- [Add repos to a workspace](/es-ES/manual/guias/anadir-repos/)
+- [Crear y configurar un agente](/es-ES/manual/guias/crear-agente/)
+- [Formar un equipo de agentes](/es-ES/manual/guias/formar-equipo/)
+- [Gestionar costes](/es-ES/manual/guias/gestionar-costes/)
+- [Añadir repos a un espacio de trabajo](/es-ES/manual/guias/anadir-repos/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Agent dispatch lifecycle](/es-ES/manual/conceptos/ciclo-de-vida-del-despacho/)
-- [Sandbox and security](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/)
+- [Ciclo de vida del despacho de agentes](/es-ES/manual/conceptos/ciclo-de-vida-del-despacho/)
+- [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/)

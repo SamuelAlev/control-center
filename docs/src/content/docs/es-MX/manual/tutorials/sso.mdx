@@ -1,125 +1,136 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Inicia sesión de tu equipo con SSO
+description: Conecta Okta (SAML) a tu servidor de Control Center y completa un inicio de sesión de principio a fin.
 slug: es-MX/manual/tutoriales/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Qué vas a crear
 
-By the end of this tutorial, you will have:
+Al terminar este tutorial, tendrás:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- una conexión SAML entre tu servidor de Control Center y un proveedor de
+  identidad (usamos Okta como ejemplo),
+- un usuario aprovisionado automáticamente en su primer inicio de sesión y
+- una política de pertenencia a espacios de trabajo que hayas elegido de
+  manera deliberada.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Necesitarás un servidor que administres (el **propietario del servidor** — el
+operador de la instalación) y una aplicación de IdP que puedas configurar.
+Calcula 20 minutos.
 
-## 1. Open the single sign-on settings
+## 1. Abre la configuración de inicio de sesión único
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Inicia sesión en Control Center y ve a
+**Ajustes → Servidor → Inicio de sesión único**. La pantalla alterna entre
+**SAML** y **OpenID Connect**, además de una tarjeta **Aprovisionamiento de
+usuarios (SCIM)**. Quédate en SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Todo lo que hay en esta pantalla abarca el servidor completo: un solo IdP
+autentica a las personas de todos los espacios de trabajo, así que solo el
+propietario del servidor puede editarlo.
 
-## 2. Paste the IdP metadata
+## 2. Pega los metadatos del IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+En Okta, abre la pestaña **Sign On** de tu aplicación y copia el XML de
+metadatos (o descárgalo y pega el contenido del archivo). De vuelta en Control
+Center, pégalo en **XML de metadatos del IdP** y presiona **Probar conexión**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+La notificación reporta el endpoint de inicio de sesión del IdP: prueba de
+que los metadatos se analizaron, el certificado se leyó y el servidor puede
+construir una solicitud de inicio de sesión contra él (la prueba ejercita todo
+salvo el recorrido de ida y vuelta del navegador). Si falla, el XML no era un
+`EntityDescriptor` completo (la pestaña SAML de Okta lo llama «Metadata URL»;
+abre la URL y copia lo que sirve). El mismo botón en **OpenID Connect** revisa
+en su lugar el documento de descubrimiento de tu emisor. Para detectar también
+un certificado a punto de caducar y ver si el IdP reconoce Control Center, usa
+el [verificador del paso 6](#6-verifícalo-desde-esta-página).
 
-## 3. Register Control Center at the IdP
+## 3. Registra Control Center en el IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Presiona **Copiar metadatos SP** y entrégaselo a quien configure el lado de
+Okta (o lee los dos valores que te pida):
 
-- **ACS URL**: `https://<your-server>/saml/acs`
-- **Entity ID**: `https://<your-server>/saml`
+- **URL de ACS**: `https://<your-server>/saml/acs`
+- **ID de entidad**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+Las URL se derivan del origen al que llegan los navegadores de tus usuarios.
+Si el servidor se ejecuta detrás de un túnel o un proxy inverso, asegúrate de
+que el origen sea estable
+(Ajustes → Servidor → Conexión y estado → Compartir este servidor muestra la URL pública) — o fija el ID de entidad
+de forma explícita en el campo **ID de entidad del SP**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[¿Detrás de NAT?]
+El inicio de sesión SAML **no** necesita una IP pública ni un dominio: el IdP
+nunca se conecta a tu servidor — el navegador del usuario transporta el
+recorrido de ida y vuelta, así que localhost, la LAN, una VPN, Tailscale o un
+túnel funcionan igual. Dos cosas que conviene tener claras:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/es-MX/manual/guias/sso-scim)).
+- el origen que usa el navegador debe **coincidir** con la URL de ACS / el ID
+  de entidad registrados en el IdP (fija el ID de entidad si los usuarios
+  llegan al servidor bajo más de un origen),
+- **el aprovisionamiento SCIM es la excepción** — el IdP llama directamente a
+  tu servidor, así que necesita un túnel o una URL pública
+  ([aprovisionar usuarios con SCIM](/es-MX/manual/guias/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Elige qué concede un inicio de sesión
 
-Two policies decide what a first login does:
+Dos políticas deciden qué hace un primer inicio de sesión:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Añadir usuarios a cada espacio en el primer inicio de sesión** — déjala
+  activada en un despliegue de un solo equipo, donde SSO equivale a confianza.
+  Desactívala cuando varios equipos o clientes compartan el servidor: cada
+  recién llegado necesita entonces una invitación explícita a un espacio de
+  trabajo, que es la opción predeterminada más segura.
+- **Aprovisionar usuarios desconocidos en el primer inicio de sesión** —
+  activada de forma predeterminada; desactívala para rechazar a cualquiera
+  cuya cuenta no exista todavía.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+De forma opcional, asigna un atributo que lleve nombres de grupo (el de Okta
+suele ser `groups`) y traduce los grupos a roles con el mapa — por ejemplo,
+`{"platform-leads": "admin"}`. SSO nunca puede otorgar el rol de propietario.
 
-## 5. Enable and take a login
+## 5. Actívalo y haz un inicio de sesión
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Activa **Usar SAML para iniciar sesión**, presiona **Guardar conexión** y
+luego abre una ventana de incógnito del navegador en
+`https://<your-server>/saml/login`. Inicia sesión en Okta y regresarás al
+cliente web — con la sesión iniciada, tu cuenta creada y su pertenencia
+concedida según la política que hayas elegido.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+El mismo punto de entrada aparece en la pantalla de conexión web (**Iniciar
+sesión con SAML**) en cuanto escribes la dirección del servidor — el
+formulario se adapta a lo que ofrece el servidor (OpenID Connect muestra
+**Iniciar sesión con OpenID Connect**). El botón abre el inicio de sesión en
+una **pestaña nueva**; cuando se completa el recorrido de ida y vuelta, la
+pestaña que esperaba retoma la sesión automáticamente. La pantalla de
+configuración del servidor de escritorio hace lo mismo: escribe la URL del
+servidor, aparece un botón **Iniciar sesión con SAML** que abre tu navegador y
+la aplicación inicia sesión cuando se completa el recorrido de ida y vuelta.
 
-## 6. Check it from this page
+## 6. Verifícalo desde esta página
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Antes de desplegar SSO, o cuando falle un inicio de sesión, verifica las
+piezas aquí. El verificador se ejecuta por completo en tu navegador: lee los
+metadatos que pegues en esta pestaña y aplica las mismas reglas que el
+servidor. Si le das la dirección de tu servidor, también le pregunta a ese
+servidor si el inicio de sesión SAML está activado.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Detecta lo que **Probar conexión** en la aplicación no puede ver: un
+certificado de firma a punto de caducar, un IdP que exige solicitudes firmadas
+y, con el inicio de sesión de prueba, si el IdP reconoce Control Center o no.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Siguientes pasos
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/es-MX/manual/guias/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/es-MX/manual/guias/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/es-MX/manual/conceptos/sso).
+- Dale también a tu IdP el control del ciclo de vida:
+  [aprovisionar y desaprovisionar usuarios con SCIM](/es-MX/manual/guias/sso-scim).
+- ¿Tu IdP habla OpenID Connect en lugar de SAML?
+  [Conecta un proveedor OpenID Connect](/es-MX/manual/guias/sso-oidc).
+- ¿Tienes curiosidad por saber qué verifica realmente el recorrido de ida y
+  vuelta del navegador?
+  [Cómo funciona el inicio de sesión único](/es-MX/manual/conceptos/sso).

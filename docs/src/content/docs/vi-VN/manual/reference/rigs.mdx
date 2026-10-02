@@ -1,137 +1,146 @@
 ---
 title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+description: Mọi bề mặt rig, backend, động từ hành động, trạng thái vòng đời, cổng, giá trị mặc định và hợp đồng — bản danh mục dữ kiện đầy đủ.
 slug: vi-VN/so-tay/tham-chieu/rigs
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/vi-VN/so-tay/khai-niem/rigs/); to open a machine, follow [the
-guide](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/).
+Chỉ dữ kiện mà thôi. Để hiểu mô hình đằng sau chúng, hãy đọc [Rigs và môi
+trường cách ly](/vi-VN/so-tay/khai-niem/rigs/); để mở một cỗ máy, hãy theo
+[hướng dẫn](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/).
 
-## Surfaces and backends
+## Bề mặt và backend
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Bề mặt | Điều khiển | Backend | Giá trị | Egress được cô lập |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminal (exec) | Một shell qua kênh exec của VM | microVM | `smolvm` | Có |
+| Trình duyệt | Chromium không giao diện (CDP), Firefox (WebDriver BiDi) hoặc WebKit (W3C WebDriver) | microVM | `smolvm` | Có |
+| Máy tính | Desktop X11: đầu vào qua hypervisor, ảnh chụp qua agent trong hệ thống khách | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (phương án dự phòng không tăng tốc, không bao giờ được chọn tự động) | Có |
+| Android | Android qua ADB | Trình giả lập của Google | `android-emulator` | **Không** — trình giả lập tự quản lý mạng của mình |
+| iOS | Trình mô phỏng iOS qua WebDriverAgent | CoreSimulator | `ios-simulator` | **Không** — mạng đi theo máy Mac chủ |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Terminal và bề mặt `computer_use` dùng chung giá trị bề mặt `computer`;
+terminal được phân biệt bằng dấu đánh dấu image exec của nó và không bao giờ
+được tái sử dụng như một desktop có thể điều khiển (hay ngược lại). Một cuộc
+hội thoại tái sử dụng một cỗ máy terminal.
 
-## Browser engines
+## Engine trình duyệt
 
-| Engine | Value | Protocol | Live view | Stills |
+| Engine | Giá trị | Giao thức | Chế độ xem trực tiếp | Ảnh tĩnh |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (mặc định) | Chrome DevTools Protocol | Screencast — trình duyệt đẩy khung hình khi trang vẽ lại | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Ảnh tĩnh thăm dò định kỳ (BiDi không có screencast), giới hạn ở 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (cổ điển) | Ảnh tĩnh thăm dò định kỳ, được ffmpeg của máy chủ chuyển mã | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Một rig chạy **một** engine duy nhất trong suốt vòng đời của nó. Một cuộc hội
+thoại có thể giữ một rig **cho mỗi engine**, và chính điều đó khiến việc so sánh
+song song trở nên khả thi: mở "Firefox (VM)" bên cạnh "Chromium (VM)" là hai cỗ
+máy, và đóng một cái sẽ để cái kia tiếp tục chạy.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Truyền `engine` cho `rig.open` hoặc cho công cụ `browser_use`. Một tên không xác
+định sẽ bị từ chối thay vì được thay bằng giá trị mặc định — yêu cầu một trình
+duyệt rồi âm thầm nhận một trình duyệt khác là trả lời sai cho một câu hỏi về
+khả năng tương thích.
 
-Engine-specific limits, stated rather than worked around:
+Các giới hạn riêng của từng engine, được nói rõ thay vì tìm cách lách qua:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** không có thao tác tải lại bỏ qua bộ nhớ đệm (nó từ chối thẳng
+  `ignoreCache` của BiDi), nên một lần tải lại cứng chỉ là một lần tải lại bình
+  thường.
+- **WebKit** cũng không có thao tác tải lại bỏ qua bộ nhớ đệm, không có luồng
+  console (đầu ra được thu lại bằng cách móc vào `console.*` sau mỗi lần điều
+  hướng, nên mọi thứ được ghi log trong lúc tải đều bị bỏ sót — mọi lần trích
+  xuất console đều nói rõ điều đó), và cần `ffmpeg` trên máy chủ cho chế độ xem
+  trực tiếp của nó.
+- **Cả hai** đều không phơi ra cây trợ năng của nền tảng qua giao thức của mình,
+  nên `extract (a11y)` trả về một kết quả gần đúng suy ra từ DOM, được dán nhãn
+  đúng như vậy.
+- **Cả hai** đều không thể nhận một thao tác thả tệp thật; một ô nhập tệp vẫn có
+  thể được trỏ tới các đường dẫn bên trong cỗ máy.
 
-## Machine images
+## Image của máy
 
-| Surface | Image | Fetched |
+| Bề mặt | Image | Được lấy |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminal | `ubuntu:24.04`, ghim theo digest | Tự động ở lần khởi động đầu tiên, qua mạng có cổng kiểm soát của chính cỗ máy |
+| Trình duyệt (Chromium, Firefox, WebKit) | `debian:trixie-slim`, ghim theo digest, cùng các gói riêng của engine | Tự động ở lần khởi động đầu tiên, rồi được lưu vào bộ nhớ đệm dưới dạng một pack đã được hâm nóng |
+| Máy tính | Một image desktop qcow2 với Chromium, Firefox, WebKit và đúng bộ CLI nền tảng kiểu runner do GitHub vận hành mà terminal hâm nóng | **Nhập** trong Cài đặt → Máy chủ → Rigs (các lượt tải được ghim bằng checksum khi có bản công bố) |
+| Android | Các system image của Google | Qua Android SDK |
+| iOS | Một runtime Xcode Simulator cùng WebDriverAgent được ghim bằng checksum | Runtime qua Xcode; cầu nối tự động hóa từ Cài đặt → Máy chủ → Rigs |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Sau lần khởi động đầu tiên của mỗi loại microVM, máy chủ lưu vào bộ nhớ đệm một
+bản sao đã giải nén sẵn trong thư mục dữ liệu và khởi động mọi cỗ máy về sau từ
+đó — kể cả những image đã được hâm nóng với các gói đã cài đặt. Terminal hâm
+nóng một bộ công cụ CLI kiểu runner do GitHub vận hành (`git`, `gcc`,
+`python3`, `jq`, `rsync`, các công cụ lưu trữ, và phần còn lại của nền tảng apt;
+không gồm Docker hay toolcache ngôn ngữ). Image qcow2 của Máy tính đưa sẵn đúng
+những tên CLI đó vào từ lúc dựng image, bên cạnh XFCE và ba trình duyệt. Mỗi
+trình duyệt hâm nóng engine của mình. Cả ba engine dùng chung một nền Debian
+nhưng không bao giờ dùng chung một pack: bộ nhớ đệm được khóa theo image, theo
+engine **và** theo một bản sửa đổi âm thanh (`audio-v1-<engine>`), bởi một cỗ
+máy được hâm nóng cho một engine — hoặc trước khi PulseAudio và ffmpeg trở thành
+một phần của khối lượng công việc — thì không có gì của engine kia trong đó.
+Pack của terminal được khóa theo một bản sửa đổi bộ công cụ (`tools-v1`) vì cùng
+lý do: một pack được hâm nóng trước khi trình biên dịch trở thành một phần của
+image không được phục vụ một cỗ máy lẽ ra phải có trình biên dịch.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Không có image tự động hóa dựng sẵn nào đáng dùng — `chromedp/headless-shell`
+của Chromium loại bỏ cả ALSA lẫn PulseAudio khi biên dịch, nên nó không bao giờ
+phát ra âm thanh; image Firefox duy nhất còn được bảo trì có kích thước gấp 33
+lần nền Debian mà vẫn không kèm `socat`; còn một image WebKit được bảo trì thì
+hoàn toàn không có. Vậy nên mỗi engine tự cài đặt ở lần khởi động đầu tiên
+(`chromium`, `firefox-esr`, hoặc `webkit2gtk-driver`) và trong lúc đó phải tiếp
+cận được các kho Debian (`deb.debian.org`, `security.debian.org`,
+`cloudfront.debian.net`). Chromium là tệp nhị phân của bản phân phối, được khởi
+chạy dưới dạng `chromium --headless=new`.
 
-### Per-workspace custom images
+### Image tùy chỉnh theo từng không gian làm việc
 
-| Setting key | Overrides |
+| Khóa cài đặt | Ghi đè |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Image Terminal (VM) |
+| `rigs.smolvm.browserImage` | Image Browser (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Được ghi qua kho cài đặt không gian làm việc có cổng quản trị (Cài đặt → Máy chủ
+→ Rigs → Image tùy chỉnh (không gian làm việc này)). Giá trị phải là một tham
+chiếu registry — đường dẫn cục bộ, tệp lưu trữ và chuỗi dạng cờ đều bị từ chối,
+cả tại trường nhập lẫn một lần nữa lúc khởi động. Một giá trị đã lưu không hợp
+lệ sẽ bị bỏ qua một cách ồn ào và image mặc định sẽ được khởi động thay thế.
+Registry của chính image đó (cùng các CDN blob đi kèm đã biết cho Docker Hub,
+GHCR, Quay, GitLab và GCR) được cho qua cổng egress để thực hiện lượt kéo.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Hợp đồng image Terminal** — có `bash`; `git`, `curl`, `socat` được cài sẵn
+*hoặc* một nền apt Debian/Ubuntu (môi trường cách ly cài ba thứ đó cùng một bộ
+công cụ CLI kiểu runner do GitHub vận hành ở lần khởi động đầu tiên: các trình
+biên dịch, Python 3, `jq`, các công cụ lưu trữ, `rsync`. Toolcache ngôn ngữ và
+Docker không được cài).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Hợp đồng image Trình duyệt** — một nền apt Debian/Ubuntu (hoặc các gói đã được
+cài sẵn) với `bash` và `socat`, cùng một tệp nhị phân `chromium` mà máy chủ tự
+khởi chạy dưới dạng `chromium --headless=new` với DevTools trên loopback của hệ
+thống khách `9223`, được chuyển tiếp tới cổng `9222` của hệ thống khách.
+PulseAudio và ffmpeg được cài ở lần khởi động đầu tiên cho làn âm thanh. Đừng
+dựng `FROM chromedp/headless-shell`: `headless.gn` thượng nguồn loại bỏ cả ALSA
+lẫn PulseAudio khi biên dịch, nên tệp nhị phân đó không thể phát ra âm thanh.
+Phần ghi đè chỉ áp dụng cho **các rig Chromium** — lệnh khối lượng công việc mà
+nó khởi động là của Chromium, và đưa nó cho Firefox hay WebKit sẽ khởi chạy một
+tệp nhị phân không tồn tại ở đó. Một rig Firefox hay WebKit sẽ bỏ qua nó một
+cách ồn ào và khởi động image được ghim của mình.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Cổng tự động hóa** — mỗi cỗ máy trình duyệt chuyển tiếp đúng một cổng loopback
+của máy chủ tới cổng `9222` của hệ thống khách. Đằng sau nó: DevTools của
+Chromium và remote agent của Firefox nằm trên loopback `9223` của hệ thống khách
+với một relay `socat` phía trước (cả hai đều bind loopback vô điều kiện); driver
+của WebKit nhận một `--host` và tự bind NIC của hệ thống khách. Firefox còn kiểm
+tra tiêu đề `Host` so với cổng của chính nó, nên client gửi authority phía hệ
+thống khách thay vì authority mà nó đã gọi tới.
 
-## Action verbs
+## Động từ hành động
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Mọi hành động đều được phân tích một cách toàn phần: một payload sai định dạng
+trả về một thông báo nêu tên trường, không bao giờ là một ngoại lệ. Các động từ
+quan sát (đánh dấu ○) vẫn được phép khi một người đang giữ quyền điều khiển; các
+động từ làm thay đổi dữ liệu bị từ chối.
 
 ### `computer_use`
 
@@ -141,219 +150,226 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Tọa độ là pixel của hệ thống khách theo chế độ hiện tại của hệ thống khách; mọi
+ảnh chụp đều ghi rõ kích thước màn hình. Các tổ hợp phím dùng cách viết của X11
+(`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` nhận một `selection`: `clipboard` (thứ mà ctrl+C đưa vào, mặc
+định), `primary` (chọn-để-sao-chép của X11) hoặc `xdnd` (một thao tác kéo đang
+diễn ra). Một kết quả rỗng là câu trả lời bình thường cho cả ba. `clipboard_write`
+chỉ nhận `text` — hình ảnh và tệp đi theo làn tệp, bởi các đối số của một hành
+động được lưu vào nhật ký kiểm toán và byte hình ảnh không có việc gì ở đó. Nội
+dung bảng nhớ tạm quay về được bao lại như dữ liệu không đáng tin cậy.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (chỉ http/https), `reload` (`hard` tùy chọn), `stop_loading`,
+`click` (bộ chọn hoặc tọa độ), `fill`, `type`, `key` (tên phím DOM),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+tùy chọn), `set_viewport` (tối thiểu 320×240), `history`, `wait_for`○ (bộ chọn,
+0,1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Nội dung trang được trích xuất quay về được bao lại như dữ liệu không đáng tin cậy.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Trình duyệt chỉ có đúng một bảng nhớ tạm, nên `clipboard_read` không nhận
+`selection`. Cả hai động từ bảng nhớ tạm đều cần một **ngữ cảnh bảo mật**: một
+trang được phục vụ qua `http://` thuần không có API bảng nhớ tạm nào cả, và động
+từ nói rõ điều đó thay vì báo về một bảng nhớ tạm rỗng — hãy dùng `type` trong
+trường hợp đó, nó chèn tại con trỏ mà không đi qua bảng nhớ tạm.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (bí danh `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power`, hoặc bất kỳ `KEYCODE_*` nào),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(bị giới hạn trong worktree của rig và thư mục dữ liệu của máy chủ), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, và `shell`.
+`shell` nhận một danh sách argv và chạy bên trong Android, không bao giờ qua
+shell của máy chủ; nó bao quát các chẩn đoán dành cho nhà phát triển như
+`logcat`, `dumpsys` và `pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` không có động từ bảng nhớ tạm nào. Từ Android 10, chỉ ứng dụng đang
+được lấy nét mới được đọc bảng nhớ tạm.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, các phím mũi tên hoặc một ký tự in được; các bổ ngữ tùy chọn
+`command`, `control`, `option` và `shift`), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (một thư mục `.app` của trình mô phỏng
+bị giới hạn trong worktree của rig hoặc thư mục dữ liệu của máy chủ), `start_app`,
+`stop_app`, `uninstall_app`, `open_url`, và `spawn`. `spawn` nhận argv và thực
+thi bên trong trình mô phỏng thông qua `simctl`; nó không bao giờ gọi shell của
+máy chủ.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Tọa độ là **điểm** trên màn hình iOS, không phải pixel của ảnh chụp. Luồng trực
+tiếp giữ nguyên kích thước cố định của trình mô phỏng và thêm viền đen cho vừa
+khung thay vì đổi kích thước thiết bị. Việc truyền bảng nhớ tạm văn bản từ máy
+chủ sang trình mô phỏng và ngược lại dùng cùng chính sách quyền theo từng người
+dùng, theo từng chiều như các rig khác; tệp và hình ảnh không được làn pasteboard
+của iOS chấp nhận.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Mỗi rig tạo một thiết bị CoreSimulator và một phiên WebDriverAgent thuộc sở hữu
+của nó. Đóng rig sẽ dừng WebDriverAgent, tắt và xóa thiết bị đó, đồng thời xóa
+mục đăng ký của nó. Các rig iOS chỉ chạy trên một máy chủ macOS có Xcode, một
+runtime iOS đã cài đặt và cầu nối tự động hóa được ghim. Chúng không phơi ra âm
+thanh, micrô, thao tác thả tệp, shell của máy chủ, cũng không đảm bảo về mạng
+khép kín.
 
-### Management tools
+### Công cụ quản lý
 
-| Tool | Description |
+| Công cụ | Mô tả |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Liệt kê các rig của một không gian làm việc kèm bề mặt, trạng thái, màn hình và bộ điều khiển |
+| `rig_close` | Hủy một rig và xóa đĩa của nó |
 
-## Lifecycle
+## Vòng đời
 
-| Phase | Meaning |
+| Giai đoạn | Ý nghĩa |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Đang khởi động; phần chi tiết trạng thái mang nguyên văn bước hiện tại |
+| `ready` | Có thể truy cập và sẵn sàng nhận hành động |
+| `parked` | Đỗ do nhàn rỗi: vCPU dừng, RAM vẫn thường trú; hành động kế tiếp sẽ đánh thức nó |
+| `closing` | Đang tắt |
+| `closed` | Đã biến mất; hàng dữ liệu vẫn tồn tại để phục vụ nhật ký kiểm toán |
+| `failed` | Đã chết hoặc không bao giờ khởi động được; có thể phân biệt để giao diện có thể đề nghị thử lại |
 
-| Close reason | Fired when |
+| Lý do đóng | Kích hoạt khi |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Một người hoặc agent yêu cầu |
+| `idleTimeout` | Nhàn rỗi quá 2× khoảng thời gian nhàn rỗi, hoặc bị loại bỏ vì bộ nhớ |
+| `ttlExpired` | Thời gian sống cứng đã hết |
+| `conversationEnded` | Cuộc hội thoại sở hữu đã kết thúc |
+| `workspaceGone` | Không gian làm việc bị xóa hoặc bị mất tư cách thành viên |
+| `serverShutdown` | Máy chủ đang dừng |
+| `backendFailure` | Hypervisor bên dưới đã chết |
 
-## Defaults and ceilings
+## Giá trị mặc định và giới hạn trên
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Giá trị | Terminal | Trình duyệt | Máy tính | Di động |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| Bộ nhớ | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| TTL cứng | 8 h | 2 h | 2 h | 2 h |
+| Khoảng nhàn rỗi | 45 min | 15 min | 15 min | 15 min |
+| Màn hình khi khởi động | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Ảnh tĩnh ở làn dành cho agent bị giới hạn ở **1280×800**; làn dành cho người
+  thương lượng lên tới **2560×1600**.
+- Ngân sách bộ nhớ thường trú của máy chủ cho tất cả các rig mặc định là **12 GB**,
+  được tính bằng megabyte thường trú (một VM đã đỗ vẫn giữ nguyên RAM). Việc
+  loại bỏ theo nguyên tắc ít được dùng gần đây nhất và không bao giờ lấy đi một
+  cỗ máy đang có người điều khiển, đang xem, hoặc đang mở terminal.
+- Một terminal đang mở hoặc một làn xem sẽ ghim rig lại, không cho đỗ và không
+  cho thu hồi khi nhàn rỗi; TTL cứng vẫn được áp dụng.
 
-## Ports and dev domains
+## Cổng và tên miền dev
 
-| Port | Where | Reserved for |
+| Cổng | Ở đâu | Dành riêng cho |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Hệ thống khách terminal | Bộ ghép kênh cổng mà mọi chuyển tiếp đều đi qua |
+| `9222`, `9223` | Hệ thống khách trình duyệt | Relay và điểm cuối tự động hóa (WebKit bind trực tiếp `9222` và không dùng relay) |
+| `80`, `443` | Loopback của hệ thống khách trình duyệt | Các làn HTTP/HTTPS của tên miền dev |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Việc dò tìm thăm dò các cổng TCP đang lắng nghe của hệ thống khách terminal
+  khoảng 4 giây một lần, ở phía máy chủ.
+- Tối đa **16** cổng được tự động chuyển tiếp cho mỗi rig; nhiều hơn thì chỉ được
+  liệt kê trong log, không được chuyển tiếp.
+- Chuyển tiếp phía máy chủ bind loopback, ưu tiên đúng số cổng của hệ thống
+  khách; **Chia sẻ trên mạng cục bộ** thêm một cổng LAN do hệ điều hành chỉ định.
+- Tên miền dev phải khớp với `name.test` hoặc `name.localhost` (chữ thường,
+  nhãn tối đa 63 ký tự). Một tên miền ánh xạ tới một cổng.
+- HTTPS của tên miền dev dùng một CA cục bộ trên máy chủ (EC P-256, nằm dưới
+  `<dataDir>/rigs/tls/`, khóa 0600 và không bao giờ nằm trong hệ thống khách) với
+  một chứng thư lá wildcard cho `*.test` / `*.localhost`. Không có `openssl`
+  trên máy chủ nghĩa là không có làn HTTPS; HTTP thuần vẫn được định tuyến.
 
-## Egress defaults
+## Giá trị mặc định của egress
 
-| Surface | Default allowlist |
+| Bề mặt | Danh sách cho phép mặc định |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminal | Nền tảng dành cho nhà phát triển của sandbox (các máy chủ mã, registry gói, nhà cung cấp mô hình) + các mirror apt của Ubuntu + máy chủ mã của chính worktree |
+| Trình duyệt | `usectrl.dev` (site của sản phẩm) — cộng với các kho Debian ở lần khởi động đầu tiên của mỗi engine, trong lúc nó cài các gói của mình. Trang chủ là một tài liệu `file://` cục bộ và không cần egress |
+| Máy tính | Rỗng — từ chối mọi thứ — cho tới khi một bên gọi cấp máy chủ |
+| Di động | Không được thực thi (mạng do trình giả lập quản lý) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Mỗi microVM còn nhận thêm các máy chủ registry của image mình, chỉ cho lượt kéo.
+Tập máy chủ được phép của broker thông tin xác thực được suy ra từ chính danh
+sách cho phép đó: không token nào được phát hành cho một máy chủ mà hệ thống
+khách không thể tiếp cận.
 
-## Clipboard and file transfer
+## Bảng nhớ tạm và truyền tệp
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Cả hai chiều sao chép/dán, và việc kéo tệp vào rồi ra. Dành cho một người đang
+điều khiển rig; agent nhận bảng nhớ tạm qua các động từ ở trên và không có chút
+truyền tệp nào (nó vốn đã có một shell bên trong môi trường cách ly).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Việc qua ranh giới của bảng nhớ tạm được kiểm soát riêng theo từng người dùng và
+từng chiều. Dán từ máy chủ vào rig được cho phép theo mặc định; sao chép từ rig
+ra máy chủ sẽ hỏi trước (một quyền trong mười phút, hoặc luôn cho phép trong
+Cài đặt → Máy chủ → Rigs → Quyền truy cập bảng nhớ tạm). Hai lựa chọn này độc
+lập với nhau và không bao giờ là một cài đặt của không gian làm việc.
 
-| Lane | Route | Carries |
+| Làn | Tuyến | Mang theo |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Bảng nhớ tạm | `GET`/`POST /rig/clipboard/<rigId>` | Văn bản, một ảnh PNG/JPEG (≤16 MB), và đường dẫn phía hệ thống khách của các tệp trên bảng nhớ tạm |
+| Tệp | `POST /rig/files/<rigId>` | Tối đa 64 tệp, mỗi tệp ≤256 MB và ≤512 MB mỗi lần thả, kèm một điểm thả theo pixel hệ thống khách tùy chọn |
+| Tệp | `GET /rig/files/<rigId>?p=<base64url path>` | Byte của một tệp, theo chiều ra |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, không phải RPC.** Socket RPC đóng kết nối khi có một khung gửi vào
+  vượt quá 256 KB — một biện pháp phòng chống DoS đúng đắn cho các lệnh JSON
+  nhưng lại chí mạng với một ảnh chụp được dán. Byte đi theo đúng kiểu tuyến mà
+  khung rig và âm thanh cuộc họp vốn đã dùng.
+- **Xác thực** là đích được ký `rig-files:<workspaceId>/<rigId>` cộng với tư cách
+  thành viên không gian làm việc — một đích riêng, nên một URL được phát hành để
+  *xem* một cỗ máy không thể đồng thời ghi tệp vào nó.
+- **Việc chiếm quyền điều khiển vẫn áp dụng.** Ghi vào bảng nhớ tạm và thả tệp là
+  hành vi làm thay đổi dữ liệu nên bị từ chối khi người khác đang giữ quyền điều
+  khiển; đọc bảng nhớ tạm và đọc một tệp ra là hành vi quan sát nên không bị từ chối.
+- **Tệp thả rơi vào đâu:** `~/Drops` (desktop), `~/drops` (terminal — bên cạnh
+  worktree, không bao giờ ở trong đó, nên một tệp được thả không bao giờ xuất
+  hiện như một thay đổi chưa được theo dõi), `/tmp/cc-drops` (trình duyệt). Máy
+  chủ chọn thư mục; bên gọi không thể đặt tên cho nó. Tệp đã tồn tại không bao
+  giờ bị ghi đè — một tên bị trùng sẽ rơi vào dưới dạng `2-name.ext`.
+- **Hệ thống khách được cho biết điều gì:** một trang trình duyệt nhận một sự kiện
+  thả *thật* tại điểm được yêu cầu (`Input.dispatchDragEvent`); một desktop nhận
+  các tệp cùng URI của chúng trên bảng nhớ tạm, vì không máy chủ nào có thể tạo
+  giả một thao tác kéo XDND vào một bộ toolkit bất kỳ mà không có một daemon đặc
+  quyền bên trong hệ thống khách. Phản hồi nói rõ trường hợp nào trong hai đã xảy ra.
+- **Kéo ra** chỉ có trên desktop và đọc `XdndSelection` của hệ thống khách trong
+  lúc thao tác kéo đang diễn ra. Một payload giống hệt thứ mà hệ thống khách đã
+  đang giữ khi thao tác nhấn bắt đầu sẽ bị coi là một vùng chọn cũ từ một thao
+  tác kéo đã kết thúc, chứ không phải một vùng chọn mới — X không có bước "thao
+  tác kéo đã kết thúc".
+- **Yêu cầu về image:** image desktop phải theo giao thức 2 trở lên (được dựng
+  sau khi tính năng bảng nhớ tạm ra đời). Một image cũ hơn sẽ trả về 404 và ứng
+  dụng khuyên dựng lại nó thay vì báo rằng cỗ máy bị hỏng.
+- **Nhật ký kiểm toán ghi lại hình dạng, không bao giờ ghi nội dung**: các hàng
+  `clipboard_read`, `clipboard_write`, `drop_files` và `read_file` mang số lượng,
+  kích thước và đường dẫn. Bảng nhớ tạm là nơi thông tin xác thực tồn tại trong
+  vài giây một lần, và không có gì trong đó bị ghi lại.
 
-## Guardrails, events, storage
+## Rào chắn, sự kiện, lưu trữ
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/vi-VN/so-tay/tham-chieu/su-kien-mien/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Các công cụ rig khai báo lớp hành động **`enclosureControl`** (cùng với
+  `networkEgress` và `processSpawn` trên các công cụ use; `mobile_use` và
+  `ios_use` còn khai báo `packageInstall`). `rig_close` khai báo
+  `enclosureControl`; `rig_list` không khai báo gì. Được cho phép theo mặc định;
+  các chế độ chỉ đọc từ chối toàn bộ; nút chỉnh tự chủ theo từng space có thể hạ
+  nó xuống mức hỏi trước.
+- Sự kiện miền: `RigClosedEvent` (kèm lý do đóng), `RigControlChanged` (chiếm
+  quyền / trả quyền), `RigReaped` (thu hồi do nhàn rỗi, TTL hoặc bộ nhớ, kèm
+  agent đang điều khiển). Việc mở một rig không phải là một sự kiện.
+  Xem [sự kiện miền](/vi-VN/so-tay/tham-chieu/su-kien-mien/).
+- Lưu trữ: `rig_sessions` và `rig_action_log` trong cơ sở dữ liệu của mỗi không
+  gian làm việc. Nhật ký hành động ghi lại mọi sự kiện đầu vào cùng chủ thể và
+  một số thứ tự đơn điệu theo từng rig; văn bản được gõ sẽ được che đi thành một
+  độ dài và một mã băm trước khi được ghi.
+- Thư mục dữ liệu: `rigs/images/` (các image qcow2 đã nhập), `rigs/smolvm/`
+  (trạng thái runtime theo từng rig), `rigs/smolvm-packs/` (các pack máy đã giải
+  nén sẵn), `rigs/tls/` (CA của tên miền dev), `rigs/run/` (các overlay và seed
+  của QEMU).
+- Tuyến: chế độ xem trực tiếp là một tab trong một space hoặc trang PR;
+  `/settings/server/rigs` là màn hình cài đặt Rigs.

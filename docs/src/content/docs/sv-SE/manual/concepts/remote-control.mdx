@@ -1,207 +1,215 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Fjärrstyrning och mobil
+description: Hur telefonen når din server över ett förmedlat, end-to-end-förseglat relä i stället för en peer-to-peer-förbindelse, och den skiktade åtkomstmodell som håller den räckvidden snäv.
 slug: sv-SE/handbok/koncept/fjarrstyrning
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center är en skrivbordsapp, men arbetet den håller reda på stannar inte
+när du lämnar skrivbordet. **Fjärrstyrning** parkopplar din telefon med din
+`cc_server` via **[Remote](https://remote.usectrl.dev/)**, kompanjonappen på
+remote.usectrl.dev, så att du kan följa flottan därifrån: läsa meddelanden och
+ärenden, svara en agent, triagea ditt nyhetsflöde – utan att ljud, avskrifter,
+källkod eller autentiseringsuppgifter som finns på servern någonsin lämnar den.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Se den som en kompanjon som mest läser, vid sidan av skrivbordsappen. Den är
+inte tänkt att ersätta den fullvärdiga skrivbordsklienten.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/sv-SE/handbok/koncept/driftsattning/) for how the two differ.
+:::note[Två olika fjärrvägar]
+Telefonkompanjonen parkopplas med en `cc_server` över ett **förmedlat
+WebSocket-relä** som bär end-to-end-förseglade JSON-RPC-ramar. Det fullständiga
+**webbbygget** (och ett skrivbord riktat mot en fjärrserver) är den andra
+fjärrvägen; det ringer upp `cc_server` över WebSocket och renderar hela appen.
+Se [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) för hur de två
+skiljer sig.
 :::
 
 ## Transport
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Telefonen når `cc_server` över en WebSocket: antingen en direkt anslutning
+(loopback, LAN, tailnet eller `wss://`) eller ett inbjudningsskyddat rum hos en
+signalbroker som vidarebefordrar förseglade ramar. Det finns ingen
+peer-to-peer-datakanal.
 
-## What the phone can do
+## Vad telefonen kan göra
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Den parkopplade telefonen når en liten, avsiktligt vald del av serverns yta:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Läsa** ärenden, agenter, ytor och deras meddelanden samt ditt nyhetsflöde
+- **Svara**: skicka ett meddelande i en yta, uppdatera eller tilldela ett
+  ärende, markera en artikel som läst eller sparad
+- **Köra en playbook**: instansiera en sparad planmall med dess parametrar.
+  Detta _föreslår_ bara en plan; ingenting körs eller spenderar något förrän en
+  operatör godkänner den i Plan Studio i en fullvärdig klient
+- **Byta arbetsyta**, från telefonens egen väljare
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Det är nästan allt. En telefon är en **principal med lägre privilegier** än en
+fullvärdig klient. Den kan inte starta processer, förbruka LLM-budget, pusha
+till GitHub eller skapa arbetsytor. Se
+[åtkomstmodellen](#åtkomstmodellen) för hur detta upprätthålls i praktiken och
+inte bara är avsett.
 
-## How the link is built
+## Hur länken byggs upp
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Anslutningen går över ett **förmedlat relä**: servern ansluter till ett
+inbjudningsskyddat rum hos en `wss://`-broker som dess ägare, och varje
+parkopplad klient – skrivbord, webb, telefon – ansluter till samma rum med ett
+tidsbegränsat tillträdestoken. Tre delar samverkar:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Del                    | Roll                                                                                                                                                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (telefonapp)** | Kompanjonwebbappen, som standard hostad på `remote.usectrl.dev`, eller egenhostad. Laddas i en webbläsare och håller parkopplingsposten i IndexedDB.                                                                                                                           |
+| **Reläbroker**         | Ett tillståndslöst `wss://`-relä (`cc_signaling_server`) som hyser rum för N parter. Det bär **endast ogenomskinliga ramar**: varje nyttolast förseglas end-to-end mellan telefonen och servern, så brokern ser aldrig appdata eller parkopplingshemligheten och tolkar aldrig det den vidarebefordrar. |
+| **`cc_server`**        | Rummets ägare. Den besvarar telefonens anrop genom samma dispatcher som alla andra klienter använder.                                                                                                                                                                           |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Ett parkopplingserbjudande bär en **anslutningsbeskrivning** som listar varje
+väg till servern (LAN, tailnet, publik `wss://`, relä) plus dess
+identitetsfingeravtryck. Telefonens uppslagning väljer den bäst nåbara vägen
+och fäster fingeravtrycket vid första anslutningen (TOFU); reläet garanterar
+anslutning även när ingen direkt väg finns, utan att någonsin kunna läsa
+trafiken.
 
-## What the pairing payload is
+## Vad parkopplingsnyttolasten är
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/) for the procedure. The anatomy is
-what matters here.
+Parkoppling skapas i appen och levereras som en djuplänk; se
+[Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/) för proceduren. Anatomin är
+det som spelar roll här.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Nyttolasten färdas i URL:ens **fragment**, delen efter `#` som webbläsare
+aldrig skickar till servern, så PWA:ns HTTPS-värd ser den aldrig. Den bär allt
+telefonen behöver för att nå servern och bevisa vem den är:
+anslutningsbeskrivningen (varje väg plus identitetsfingeravtrycket), ett nytt
+enhets-id, en i förväg delad nyckel på 32 byte och en utgångsstämpel. Telefonen
+avkodar den, lagrar en parkopplingspost lokalt och tar bort fragmentet så att
+hemligheten lämnar URL:en.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Det finns två former av nyttolasten och de är **inte utbytbara**. Telefon-QR:en
+som skapas i parkopplingspanelen i appen är v2-`PairingPayload` ovan, riktad
+mot Remote-PWA-värden. `cc_server pair --client-url` ger en annan, äldre
+v1-länk (`{s, i, k}` – server-URL, enhets-id, nyckel) avsedd endast för
+**webb**klienten.
 
-They also differ in lifetime, which is easy to get wrong:
+De skiljer sig också i livstid, vilket är lätt att få fel:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Skapad av                             | Autentiseringsuppgiftens giltighet          |
+| ------------------------------------- | ------------------------------------------- |
+| Parkopplingspanelen i appen (`pairing.mint`) | 30 dagar, alltid                      |
+| `cc_server pair` på kommandoraden     | **Ingen** – autentiseringsuppgiften löper inte ut |
 
-## The access model
+## Åtkomstmodellen
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+En parkopplad enhet är **autentiserad men ej betrodd**. Flera oberoende grindar
+hindrar en godkänd (eller läckt) parkoppling från att bli full kontroll över
+servern.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Medlemskapet, inte parkopplingen, är gränsen
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+En giltig parkopplingsnyckel bevisar _vilken enhet_ du är. Vad du får läsa
+eller ändra avgörs av din **arbetsyteroll**, som löses om vid varje enskilt
+anrop, och av behörigheter per repo för allt som exponerar repo-innehåll. En
+enhet med en fullt giltig nyckel men som tillhör en användare som inte är
+medlem i den angivna arbetsytan avvisas med "Not a member of this workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Det lägsta rollkravet härleds från operationens typ om den inte deklarerar ett
+eget: läsning kräver `guest`, ändringar kräver `member`, destruktiva
+operationer kräver `admin`.
 
-### 2. A phone is a lower session tier
+### 2. En telefon ligger på en lägre sessionsnivå
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Utöver rollkontrollen har en telefonsession lägre kapabilitet än en skrivbords-
+eller webbsession. Operationer som deklareras endast för fullvärdiga klienter
+avvisas för en telefon innan hanteraren körs, oavsett hur privilegierad
+användaren bakom den är: att skapa, lista, byta namn på och återkalla
+enhetsparkopplingar; att läsa och ställa in tunnelanslutning;
+serversäkerhetskopiering och export/import av arbetsytor; processdetektering
+och avlivning; adaptersonder; serverinställningar; SSO-administration;
+flottstyrning; samt att ta över eller lämna tillbaka en körande agent.
 
-### 3. A default-deny tool allow-list
+### 3. En tillåtelselista för verktyg med neka som standard
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+För just MCP-verktygsytan (`tools/call`) styr en tillåtelselista med neka som
+standard vilka verktyg telefonen får anropa. Allt som inte står på listan
+avvisas innan det körs. Listan domineras av läsning och observation plus en
+handfull **endast lokala** skrivningar – ett meddelande, en ärendeuppdatering,
+en artikelmarkering – som inte förbrukar någon LLM-budget, inte startar någon
+process och inte rör något externt system.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Nekade är till exempel: konsultera en agent, starta en AI-granskning, döda en
+agent, publicera en granskning till GitHub, anställa eller avskeda agenter,
+skapa en arbetsyta.
 
-### 4. Per-call workspace scoping
+### 4. Arbetsyteavgränsning per anrop
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/sv-SE/handbok/koncept/arbetsytor/) invariant the rest of the
-product enforces.
+Servern har **ingen** "aktuell arbetsyta". Den är tillståndslös till sin
+konstruktion: varje arbetsytebundet anrop måste ange sitt mål `workspace_id` i
+sina argument, och dispatchern avvisar anropet direkt när det saknas eller
+anger en arbetsyta som servern inte har registrerad – innan något öppnar en
+databas. En telefon kan därför aldrig ärva eller glida in i en annan klients
+omfattning, och att ange en främmande arbetsyta hjälper inte heller, eftersom
+medlemskapskontrollen i grind 1 fortfarande gäller. Det här är samma
+[arbetsyteisolering](/sv-SE/handbok/koncept/arbetsytor/) som resten av produkten
+upprätthåller.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. End-to-end-förseglade ramar som nycklas av den i förväg delade nyckeln
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Varje ram mellan telefon och server förseglas med parkopplingsnyckeln;
+tillträdestoken släpper bara in en klient i rummet, den dekrypterar ingenting.
+Brokern vidarebefordrar ciphertext och ser aldrig nyckeln. En enhet som
+återkallas upptäcker att dess autentiseringsuppgift redan är borta, så den
+**faller stängt** vid återanslutning.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+En autentiseringsuppgift som skapats i appen är tidsbegränsad till 30 dagar;
+därefter underkänns den av anslutningsgrinden och telefonen måste parkopplas på
+nytt. Återkallning sker direkt: servern bevakar enhetstabellen och stänger en
+återkallad enhets öppna sessioner inom några sekunder i stället för att vänta
+på nästa anslutning.
 
-### 6. Rate limiting per principal
+### 6. Hastighetsbegränsning per principal
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+En begränsare med glidande fönster sätter ett tak för fjärrverktygstrafiken vid
+120 anrop i minuten, med en snävare delgräns på 30 i minuten för de muterande
+verben. Budgeten tillhör **principalen, inte sessionen**: dina tre enheter tar
+från samma tilldelning, så en kapad klient kan inte köpa sig mer utrymme genom
+att öppna fler sessioner och en högljudd medlem kan inte svälta ut de andra.
 
-### 7. A broker that learns nothing
+### 7. En broker som inte får veta något
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Reläbrokern är medvetet dum: den hyser rum, vidarebefordrar förseglade ramar
+och har inga konton, ingen appdata och inga nycklar. Rummen är
+inbjudningsskyddade och kortlivade. Appdata, ljud, avskrifter, källkod och
+autentiseringsuppgifter stannar allt på servern.
 
-## Live updates
+## Liveuppdateringar
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+När telefonen är parkopplad tar den emot **liveuppdateringar** i form av
+aviseringsramar – nya agentmeddelanden, ärenden som tilldelats dig,
+statusändringar – som speglar skrivbordsappens egna aviseringar. Servern sänder
+dessa ramar till varje ansluten session och arbetsytefiltret tillämpas på
+klientsidan, så det du ser är begränsat till arbetsytan du tittar på.
 
-## Where it lives
+## Var den finns
 
-| Surface                                                                             | What it shows                                                                                               |
+| Yta                                                                                 | Vad den visar                                                                                               |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **Inställningar → Du → Dina enheter** (`/workspaces/:workspaceId/settings/you/devices`) | Parkopplade klienter med aktuell status, plus **Parkoppla en ny klient** (webbläsare, skrivbordsapp eller telefon) och återkallning |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Samma panel skapar parkopplingar för en andra webbläsare eller skrivbordsapp,
+inte bara telefoner – flödet är identiskt, bara djuplänken skiljer sig.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Fjärrstyrning sker på serversidan och exponeras **inte** över MCP. Telefonen
+talar med serverns egen dispatcher över reläet; den är inte en MCP-klient till
+en extern server.
 ::::
 
-## See also
+## Se även
 
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/): roles, membership and repo grants
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/): where remote control sits among the client tiers
-- [Architecture](/sv-SE/handbok/koncept/arkitektur/): where remote control sits in the stack
-- [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/)
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/): arbetsyteavgränsningen per anrop som detta vilar på
+- [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/): roller, medlemskap och behörigheter per repo
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/): var fjärrstyrningen hör hemma bland klientnivåerna
+- [Arkitektur](/sv-SE/handbok/koncept/arkitektur/): var fjärrstyrningen hör hemma i stacken
+- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/)

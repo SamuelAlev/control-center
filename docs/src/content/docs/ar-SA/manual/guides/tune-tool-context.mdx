@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: ضبط سياق أدوات وكيل
+description: افحص ما يرسله التشغيل فعلًا، وغيّر الأدوات التي تُحمَّل مقدمًا، وميّز أكان اختيار الأداة الخاطئ إخفاق استرجاع أم مشكلة في المطالبة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/ضبط-سياق-الأدوات
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات).
+يتناول هذا الدليل ما تفعله على السطح ذي الطبقتين: ترى ما يرسله التشغيل، وتغيّره، وتشخّص وكيلًا مدّ يده إلى الأداة الخطأ. لمعرفة لماذا يعمل هكذا، اقرأ [سياق الأدوات وتخزين المطالبات مؤقتًا](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات).
 
-## Look at what a run actually sends
+## اطّلع على ما يرسله التشغيل فعلًا
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+افتح محادثة واضغط مؤشر استخدام السياق في ترويسة المحادثة. يعيد بناء السطح عينه الذي كان الإرسال التالي سيرسله، من غير أن يُطلق تشغيلًا. **عرض المزيد** (أو الأمر `/context`) يفتح السياق كاملًا، فتفحص فيه كل أداة.
 
-Two segments matter here:
+قسمان يهمان هنا:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **تعريفات الأدوات** و**أدوات MCP والأدوات الديناميكية** — المجموعة المقيمة، مع كلفة الرموز الحقيقية لكل أداة.
+- **أدوات تُحمَّل عند الطلب** — فهرس المؤجَّل. لا يُحتسب لكل مدخل إلا اسمه، فالاسم كل ما يحمله الطلب، وفتح أحدها يظل يعرض الوصف والمخطط كاملين، فترى ما *كانت* ستكلّفه لو جلبها التشغيل.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ar-SA/دليل-المستخدم/مرجع/سطر-أوامر-cc-server).
+إن خلا قسم المؤجَّل، فالتأجيل مطفأ على هذا الخادم. راجع `--tool-deferral` في [واجهة سطر أوامر `cc_server`](/ar-SA/دليل-المستخدم/مرجع/سطر-أوامر-cc-server).
 
-## Change which tools load up front
+## غيّر الأدوات التي تُحمَّل مقدمًا
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+المجموعة المقيمة سياسة لا إعداد — موضعها `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) وتنطبق على كل تشغيل:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع) uses on nearly every turn.
+- `residentBuiltins` — مفردات الملفات والصدفة.
+- `residentDiscovery` — `search_tools` و`list_my_tools`. لا تحذفهما، فبهما يبلغ الوكيل كل ما عداهما.
+- `residentMcpTools` — حفنة من أدوات Control Center يستحق دفع مخططها في كل طلب.
+- كتلة لكل وضع، للأدوات التي يستخدمها [وضع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع) معيّن في جلّ الجولات.
 
-Two rules when editing it:
+قاعدتان عند تحريرها:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**أضف أداة فقط حين تستخدمها معظم التشغيلات.** كل اسم يدفع كلفة مخططه في كل طلب من كل تشغيل، دائمًا. الأداة المهمة حين تُستدعى والنادرة في المجمل مكانها النصف المؤجَّل، وسيجدها الوكيل.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**استخدم اسم الأداة الحقيقي.** الاسم المقيم الذي لا يطابق أي أداة خامل: لا خطأ ولا تحذير، وتُؤجَّل الأداة فحسب. `test/tooling/resident_tool_names_test.dart` يلتقط ذلك، ويبقي كل وضع دون 40 أداة مقيمة، وهو المقصود من التمرين — بعد هذا النطاق يتدهور اختيار الأدوات بما يظهر في القياس.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+تُضاف أفعال الوضع المطلوبة والمثبَّتة تلقائيًا، فلا حاجة إلى إدراج فعل الإخراج الخاص بالوضع.
 
-## Diagnose a bad tool choice
+## شخّص اختيار الأداة الخاطئ
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+حين يستخدم الوكيل الأداة الخطأ، أو يدّعي أنه لا يستطيع فعل شيء، تبيّن أي الحالات الثلاث وقعت.
 
-### 1. Did it look?
+### 1. هل نظر؟
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+يسجّل كل تشغيل الأدوات المؤجَّلة التي حمّلها، وما أطلق التحميل: استدعاء مباشر بالاسم، أو استعلام `search_tools`. افتح تيار أحداث التشغيل (**الإعدادات ← مساحة العمل ← الوكلاء** ← الوكيل ← **السجلات** ← **عرض**) وابحث عن `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **لا شيء في السجل، وقال الوكيل إن القدرة مفقودة** — لم ينظر. هذه مشكلة في المطالبة لا في الاسترجاع: فهرس المؤجَّل في موجّه نظامه، ومعه تعليمة ألا يُعلن أن قدرة مفقودة قبل أن يرجع البحث فارغًا.
+- **سُجّل بحث ولم يُحمَّل شيء** — إخفاق استرجاع حقيقي. انتقل إلى الخطوة 2.
+- **حُمّلت أدوات واستُخدمت الأداة الخطأ** — ما وجده متشابه أكثر مما ينبغي. انتقل إلى الخطوة 3.
 
-### 2. Fix a retrieval miss
+### 2. أصلح إخفاق الاسترجاع
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+يطابق `search_tools` الأسماء والأوصاف وأسماء الوسائط. والإخفاق يعني في الأغلب أن الوصف يخلو من الكلمات التي استخدمها الوكيل.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+أضفها. الأوصاف هي فهرس الاسترجاع، فـ**أطلها بدل اختصارها** — اكتب المفردات التي يكتبها المشغّل فعلًا («أسند»، «فوّض»، «سلّم»)، لا الاسم الداخلي وحده. اختصار الوصف توفيرًا للرموز يخسرك إصابة البحث ودقة الاختيار معًا، ووفره إلى جوار المخطط لا يُذكر.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+إن وُجدت الأداة الصحيحة وجاء ترتيبها متأخرًا، فهذا ما وُضع له وسيط `limit`، ووصف الأداة نفسه يأمر الوكيل بتوسيع بحث يبدو قريبًا ويخطئ.
 
-### 3. Fix look-alike tools
+### 3. أصلح الأدوات المتشابهة
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+إن بدا الوصفان متماثلين لمن لا يعرف الفرق سلفًا، فالنموذج يخمّن. ادمجهما في أداة واحدة بوسيط مميّز.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+تسير `ticket_relation` و`ticket_pr_link` على هذا النمط: كل منهما تربط وتفك الربط بوسيط مميّز. الاختيار الذي يُحسم *داخل* استدعاء واحد، وسياق الطلب كاملًا أمامه، أوثق من الاختيار بين وصفين متشابهين.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+أبقِ الأدوات منفصلة حين تقتضي بوابة موافقة مختلفة، أو تدقيقًا مختلفًا، أو عرضًا مختلفًا في الواجهة، فالدمج عندها يكلّفك شيئًا حقيقيًا.
 
-## Check the prompt cache is working
+## تحقق أن تخزين المطالبات مؤقتًا يعمل
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+يظهر معدّل إصابة الذاكرة المؤقتة في **قابلية الملاحظة ← الرؤى** باسم **معدل الذاكرة المؤقتة**. المحادثة الطويلة السليمة يبقى معدّلها مرتفعًا، وإن دام منخفضًا فشيء يعيد كتابة البادئة في كل جولة.
 
-Common causes, in order of likelihood:
+الأسباب الشائعة، بحسب الأرجحية:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **أي شيء غير حتمي في صدر المطالبة.** طابع زمني، أو معرّف طلب، أو مجموعة تُجتاز بترتيب يتغيّر، يكفي لذلك.
+- **تغيير النموذج أو جهد الاستدلال في منتصف المحادثة.** كلاهما يغيّر البادئة. والوكلاء الفرعيون أسهل موضع يُخطَأ فيه هنا: تشغيل الأبناء بجهد أدنى توفيرًا للمال قد يضيّع من الاشتراك في الذاكرة المؤقتة أكثر مما يوفّر.
+- **ضغط متكرر.** الضغط يعيد كتابة السجل بتصميمه، فكلفنه حقيقية، والعلاج أن تضغط نادرًا وعمقًا لا كثيرًا وسطحًا.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+إيقاف التأجيل بـ `--tool-deferral=off` اختبار A/B صالح لعزل ما إذا صدر تغيّر السلوك عن السطح ذي الطبقتين. يعيد الطلب كما كان قبل التأجيل حرفيًا، فإن بقي السلوك على حاله والتأجيل مطفأ فالسطح ليس السبب.

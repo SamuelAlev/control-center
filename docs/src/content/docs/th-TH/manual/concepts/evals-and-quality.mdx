@@ -1,33 +1,33 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: การประเมินและคุณภาพ
+description: ชุด eval ชุดเริ่มต้นที่ถูก seed ไว้ในทุกเวิร์กสเปซ และตำแหน่งที่ชุดเหล่านี้ปรากฏในการสังเกตการณ์
 slug: th-TH/คู่มือ/แนวคิด/การประเมินและคุณภาพ
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**ชุด eval** คือคำจำกัดความระดับเวิร์กสเปซของงานที่จะรันกับเอเจนต์ ประกอบด้วยพรอมต์
+เอเจนต์เป้าหมายและโหมด ขั้นตอนเซ็ตอัปที่ไม่บังคับ ฟิกซ์เจอร์ที่ไม่บังคับซึ่งปักหมุด SHA ไว้
+และรายการเกรดเดอร์ เกรดเดอร์เป็นแบบดีเทอร์มินิสติกก่อนเป็นอันดับแรก ส่วนผู้ตัดสินแบบ LLM
+ที่ใช้รูบริกจะครอบคลุมสิ่งที่การตรวจสอบเหล่านั้นไม่สามารถแสดงออกได้
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+ชุดเริ่มต้นห้าชุดจะถูก seed เมื่อสร้างเวิร์กสเปซ ชุดเหล่านี้ครอบคลุมข้อเสนอการประสานงาน
+รีวิวที่ตรวจจับบั๊กที่ seed ไว้ โหมดแผนที่คงสถานะอ่านอย่างเดียว โหมดแผนที่สร้างแผน
+และการไปกลับครบวงจรของตั๋วงาน การ seed จะฟังเหตุการณ์ `WorkspaceCreated`
+(`workspace.upsert` หรือ `workspace.create`) ข้ามชื่อที่มีอยู่แล้ว และไม่เติมข้อมูลย้อนหลัง
+ให้เวิร์กสเปซเก่า
 
-## Where they appear
+## ตำแหน่งที่ชุดเหล่านี้ปรากฏ
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**การสังเกตการณ์ → คุณภาพ** (`/workspaces/<id>/observability`) แสดงรายการชุด eval
+แต่ละชุดในเวิร์กสเปซ
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+สร้าง แสดงรายการ แก้ไข และลบชุด eval ผ่าน `evals.upsertSuite`,
+`evals.deleteSuite` และ `evals.watchSuites` แท็บคุณภาพคือรายการ
+ส่วนการดำเนินการเหล่านั้นคือตัวแก้ไข
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): the configuration a suite
-  pins
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): the autonomy dial
-- [Manage costs and budgets](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/): spend recorded
-  alongside a run
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): การกำหนดค่าที่ชุด eval ปักหมุดไว้
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): ปุ่มปรับระดับความเป็นอิสระ
+- [จัดการต้นทุนและงบประมาณ](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/): ค่าใช้จ่ายที่บันทึกไว้
+  ควบคู่กับการรัน

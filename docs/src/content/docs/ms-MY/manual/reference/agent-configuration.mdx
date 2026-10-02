@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Konfigurasi ejen
+description: Setiap medan pada entiti ejen dan enum yang digunakannya.
 slug: ms-MY/manual-pengguna/rujukan/konfigurasi-ejen
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/).
+Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bendera yang digunakannya. Untuk panduan langkah demi langkah mencipta atau mengedit ejen dalam aplikasi, lihat [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/).
 
-## Agent entity fields
+## Medan entiti ejen
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Medan                   | Jenis                  | Wajib | Penerangan                                                                                                                                                                                          |
+| ----------------------- | ---------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Ya    | Pengecam unik ejen                                                                                                                                                                                  |
+| `name`                  | `String`               | Ya    | Pengecam pendek untuk @-sebutan                                                                                                                                                                     |
+| `title`                 | `String`               | Ya    | Tajuk peranan yang boleh dibaca manusia                                                                                                                                                             |
+| `agentMdPath`           | `String`               | Ya    | Laluan mutlak ke fail definisi `.md` ejen                                                                                                                                                           |
+| `workspaceId`           | `String`               | Ya    | Ruang kerja pemilik (bukan nol)                                                                                                                                                                     |
+| `reportsTo`             | `String?`              | Tidak | Id ejen induk                                                                                                                                                                                       |
+| `skills`                | `AgentSkills`          | Ya    | Set pengecam kemahiran                                                                                                                                                                              |
+| `persona`               | `String?`              | Tidak | Arahan tingkah laku dalam bentuk teks bebas                                                                                                                                                         |
+| `systemPrompt`          | `String?`              | Tidak | Atasi prompt sistem lalai                                                                                                                                                                           |
+| `adapterId`             | `String?`              | Tidak | Id penyesuai inferens                                                                                                                                                                               |
+| `modelId`               | `String?`              | Tidak | Id model dalam penyesuai itu                                                                                                                                                                        |
+| `strictMode`            | `bool`                 | Tidak | Lalai `false`. Ditulis ke baris dan ke `AGENTS.md` ejen                                                                                                                                             |
+| `effort`                | `String?`              | Tidak | Id tahap penaakulan (cth. `'low'`, `'xhigh'`), bersumber daripada `thinkingLevels` model yang dipilih                                                                                               |
+| `contextSize`           | `int?`                 | Tidak | Saiz maksimum tetingkap konteks                                                                                                                                                                     |
+| `role`                  | `AgentRole?`           | Tidak | Peranan ejen                                                                                                                                                                                        |
+| `capabilities`          | `AgentCapabilities?`   | Tidak | Lalai keupayaan bagi setiap ejen; apabila null, lalai peringkat pengguna terpakai semasa penghantaran dan sesuatu perbualan masih boleh mengatasinya                                                 |
+| `monthlyBudgetCents`    | `int`                  | Tidak | Had perbelanjaan bulanan dalam sen (lalai `0`, tanpa had)                                                                                                                                           |
+| `silenceTimeoutMinutes` | `int?`                 | Tidak | Pengatasan tamat masa senyap dalam minit; mesti null atau dalam 1–240 (disahkan oleh pembina)                                                                                                       |
+| `maxConcurrentTasks`    | `int`                  | Tidak | Lalai `1`. Angka kapasiti yang dilaporkan oleh model kehadiran (kiraan sedang berjalan dan beratur dibandingkan dengannya)                                                                          |
+| `visibility`            | `AgentVisibility`      | Tidak | Lalai `workspace`                                                                                                                                                                                   |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Tidak | Status tadbir urus (lalai `active`). Ditulis oleh hentian keras belanjawan dan dipaparkan pada carta organisasi serta senarai kehadiran. Penghantaran masih menerima kerja daripada ejen `paused`     |
+| `budgetPolicyId`        | `String?`              | Tidak | Id polisi belanjawan bersama; apabila null, `monthlyBudgetCents` terpakai secara langsung                                                                                                            |
+| `runtimeProfileId`      | `String?`              | Tidak | Id profil masa jalan tersuai                                                                                                                                                                        |
+| `createdAt`             | `DateTime`             | Ya    | Cap masa penciptaan                                                                                                                                                                                 |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` dan `title` kedua-duanya mesti tidak kosong (disahkan oleh pembina). Lalai
+`monthlyBudgetCents` bernilai `0` bermakna tanpa had. Tetapkan siling dengan `agents.upsert`.
 
-## AgentRole enum
+## Enum AgentRole
 
-| Role       | Label    | Description                      |
+| Peranan    | Label    | Penerangan                       |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | Penyelarasan dan pewakilan        |
+| `coder`    | Coder    | Pelaksanaan kod                  |
+| `reviewer` | Reviewer | Semakan dan analisis PR          |
+| `qa`       | QA       | Pengujian dan jaminan kualiti    |
+| `designer` | Designer | Pelaksanaan UI/UX                |
+| `security` | Security | Semakan dan audit keselamatan    |
+| `devops`   | DevOps   | Infrastruktur dan penerapan      |
+| `pm`       | PM       | Pengurusan produk                |
+| `general`  | General  | Fleksibel, pelbagai guna         |
 
-## AgentVisibility enum
+## Enum AgentVisibility
 
-| Value       | Description                                             |
+| Nilai       | Penerangan                                              |
 | ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| `workspace` | Lalai; nilai tersimpan yang tidak dikenali dan null dihuraikan kepadanya |
+| `private`   | Peribadi kepada pengguna yang mencipta                  |
 
-## AgentLifecycleStatus enum
+## Enum AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Nilai      | Penerangan                                                                             |
+| ---------- | -------------------------------------------------------------------------------------- |
+| `active`   | Lalai. `isDispatchable` benar hanya untuk nilai ini                                     |
+| `paused`   | Ditetapkan oleh hentian keras belanjawan. Dipaparkan pada senarai kehadiran; penghantaran masih menerima kerja |
+| `archived` | Bersara dan tersembunyi daripada senarai aktif                                          |
 
-## AgentCapabilities flags
+## Bendera AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Dihuraikan bagi setiap penghantaran: lalai ejen, jatuh kembali kepada lalai peringkat pengguna apabila null, dengan pengatasan setiap perbualan di atasnya. Dikuatkuasakan melalui ketiadaan — broker kelayakan memang tidak menempa atau menyuntik apa yang diliputi oleh keupayaan yang dimatikan.
 
-| Flag               | Type   | Default | Description                                                                              |
+| Bendera            | Jenis  | Lalai   | Penerangan                                                                               |
 | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| `canPushToRepo`    | `bool` | `false` | Push commit ke remote; mengawal suntikan token GitHub bersama `canCallGitHubApi`          |
+| `canCallGitHubApi` | `bool` | `false` | Memanggil api.github.com; mengawal suntikan `GH_TOKEN` dan domain keluar GitHub           |
+| `canCallTicketing` | `bool` | `false` | Memanggil API penyedia penetikan; mengawal suntikan kunci API penyedia dan domain keluarnya |
+| `canAccessNetwork` | `bool` | `true`  | Keluar ke luar sewenang-wenangnya. Turut mengawal alat `web_fetch` dan `web_search` harness |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` ialah keempat-empat nilai lalai pembina. `legacyDefault` (keempat-empatnya benar) hanya digunakan oleh migrasi yang mengisi semula perbualan yang dicipta sebelum keupayaan wujud. Blob tersimpan yang cacat atau kosong dihuraikan kepada `safeDefault`; kunci legasi `canCallLinear` dibaca sebagai `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Set pengecam kemahiran yang tidak boleh diubah dan tidak sensitif huruf besar/kecil. Semasa penghantaran, slug tersebut disegerakkan sebagai pautan kemahiran dalam overlay ejen; harness kemudian memuatkan secara automatik frontmatter kemahiran yang dipautkan ke dalam prompt.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (terbitan)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Tidak disimpan. Tujuh nilai. Susunan pengisytiharan ialah susunan keutamaan (`sortPriority`, dipakukan oleh ujian), iaitu susunan yang digunakan oleh senarai kehadiran untuk menyusun:
 
-| State       | `sortPriority` | Condition                                                                                                           |
+| Keadaan     | `sortPriority` | Syarat                                                                                                              |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| `running`   | 0              | Mana-mana log larian berstatus `running`                                                                            |
+| `blocked`   | 1              | Keaktifan larian terbaharu ialah `blocked`, `stalled` atau `looping`                                                |
+| `failed`    | 2              | Status larian terbaharu ialah `error`, atau keaktifannya `failed` atau `dead`                                       |
+| `queued`    | 3              | Satu larian dihantar tetapi tidak dilaksanakan — tersekat di belakang larian lain bagi ejen yang sama, atau sudah ditulis tetapi belum dimulakan |
+| `succeeded` | 4              | Larian itu selesai dengan jayanya                                                                                   |
+| `idle`      | 5              | Ejen pernah berjalan sebelum ini dan tiada apa-apa yang sedang berjalan                                             |
+| `neverRun`  | 6              | Tiada log larian wujud                                                                                              |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` dan `succeeded` adalah **untuk setiap larian sahaja**. `deriveAgentLiveState`, yang mengira keadaan senarai bagi sesuatu ejen, tidak pernah menghasilkan kedua-duanya — ia mengembalikan `neverRun`, `running`, `failed`, `blocked` atau `idle`.
 
-## See also
+## Lihat juga
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/)
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/)
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)

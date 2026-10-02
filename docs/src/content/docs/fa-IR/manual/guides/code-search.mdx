@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: جستجوی کد با گراف کد
+description: یک مخزن را ایندکس کنید و با ابزارهای گراف کد نمادها را پیدا کنید و ببینید یک تغییر چه چیزی را می‌شکند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+این راهنما نشان می‌دهد چگونه یک مخزن را به گراف کد بیاورید و سپس از آن برای پاسخ به همان پرسشی استفاده کنید که پیش از بازآرایی واقعاً دارید: چه چیزی به این وابسته است؟
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+گراف کد یک پایگاه‌دادهٔ نماد و یال است که با تجزیهٔ چک‌اوت‌های ثبت‌شدهٔ شما به‌کمک tree-sitter ساخته می‌شود. ابزارهایش **رو به عامل** هستند — دسترسی به آن‌ها با درخواست از یک عامل ممکن است.
 
-## Before you start
+## پیش از شروع
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+گراف Dart، JavaScript، TypeScript، TSX، PHP، Python، Rust، Zig، C، C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB و Ada را ایندکس می‌کند. فایل‌های هر زبان دیگری تجزیه نمی‌شوند، پس در `search_code`، `code_symbol`، `code_callers`، `code_callees` یا `code_impact` ظاهر نمی‌شوند.
 
-Two more things shape what gets indexed:
+دو چیز دیگر هم تعیین می‌کنند چه چیزی ایندکس می‌شود:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- در یک work tree از git، فهرست‌کردن به `git ls-files --cached --others --exclude-standard` واگذار می‌شود، بنابراین هر `.gitignore`، فایل نادیده‌گیری تودرتو، `.git/info/exclude` و فایل نادیده‌گیری سراسری رعایت می‌شوند. همین است که `node_modules` و خروجی ساخت را از گراف بیرون نگه می‌دارد.
+- Dart تولیدشده در هر حالت کنار گذاشته می‌شود. فایل‌های تولیدشده معمولاً کامیت می‌شوند، پس git به‌تنهایی آن‌ها را مستثنا نمی‌کرد و در هر اجرای تولید کد دستخوش تغییر می‌شوند.
 
-## Get a repo indexed
+## ایندکس کردن یک مخزن
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/).
+ثبت یک چک‌اوت رویداد `RepoAdded` را راه می‌اندازد که به‌طور خودکار پایپ‌لاین `index_code` را برای آن شروع می‌کند. [افزودن مخزن به فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/) را ببینید.
 
-To re-index by hand:
+برای ایندکس دوباره به‌صورت دستی:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. **تنظیمات → فضای کاری → مخزن‌ها** را باز کنید.
+2. روی دکمهٔ **ایندکس کد** در سطر آن مخزن کلیک کنید.
+3. تا وقتی در حال اجراست، دکمه شمار فایل‌های انجام‌شده را نسبت به کل نشان می‌دهد، همراه با یک کنترل لغو. پس از پایان، به یک تیک همراه با شمار نمادها تبدیل می‌شود.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+گراف بر اساس فضای کاری، مخزن و چک‌اوت پارتیشن‌بندی می‌شود: چک‌اوت پیوندشده یک پارتیشن است و هر worktree فضا پارتیشن خودش را می‌گیرد (با کلید شناسهٔ مخزن ایزولهٔ آن).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+دو محدودیت ارزش دانستن دارند، چون انتظاری را توضیح می‌دهند که شبیه گیرکردن به نظر می‌رسد:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- ناظر فایل در هر میزبان فقط **یک** اجرای ایندکس را می‌پذیرد — چک‌اوت دوم در انتظار می‌ماند. پایپ‌لاین `index_code` جداگانه به یک اجرا در هر فضای کاری محدود شده است، پس دو مخزن در یک فضای کاری صف می‌بندند؛ فضاهای کاری مختلف می‌توانند موازی ایندکس کنند. خود ایندکسر دو اجرای **همان** چک‌اوت را پشت سر هم می‌گذارد تا شروع یک پایپ‌لاین و جاروب ناظر نتوانند آن را دو بار تجزیه کنند.
+- worktreeهای متعلق به **فضاهای خفته** (بدون پیامی در هفتهٔ گذشته) نه دیده‌بانی می‌شوند و نه ایندکس. چک‌اوت‌های پیوندشده دیده‌بانی می‌شوند. تصمیم ردکردن هر پنج دقیقه دوباره بررسی می‌شود، پس فضایی که دوباره فعال شود برداشته می‌شود.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[گرامر گمشده سرور را متوقف می‌کند، نه جست‌وجو را]
+Tree-sitter و گرامرهایش از کتابخانه‌های بومی الزامی‌اند. اگر یکی گم شود، `cc_server` از بالا آمدن سرباز می‌زند و نام dylib گمشده را می‌گوید — نشانهٔ آن سروری است که بالا نمی‌آید، هرگز جست‌وجویی که افت کرده باشد. آن‌ها را با `scripts/natives/build_natives.sh` آماده کنید و باینری سرور را دوباره بسازید.
 :::
 
-## Find a symbol
+## یافتن یک نماد
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+از یک عامل بخواهید جست‌وجو کند. ابزار آن `search_code` است و هم به یک فضای کاری و هم به یک مخزن نیاز دارد:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+شناسه‌های مخزن از `list_repos` می‌آیند. آرگومان اختیاری `mode` یکی از `keyword`، `semantic` یا `hybrid` است و پیش‌فرضش hybrid است — BM25 روی نام‌ها، امضاها و توضیحات مستند، که با شباهت برداری ترکیب می‌شود.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+هر نتیجه شناسه، نام، نام کامل، نوع، مسیر فایل، خط شروع و پایان نماد و در صورت وجود امضایش را همراه دارد. همان **id** دستگیره‌ای است که به هر ابزار دیگری در این صفحه می‌دهید.
 
-When you know the exact name, look it up directly instead:
+وقتی نام دقیق را می‌دانید، در عوض مستقیم جست‌وجو کنید:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## ردیابی فراخوانی‌ها
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+هر دو یک `symbol_id` از نتیجهٔ جست‌وجو می‌گیرند، به‌همراه یک `limit` اختیاری (پیش‌فرض 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` نمادهایی را برمی‌گرداند که یالی ورودی به این نماد دارند؛ `code_callees` آن‌هایی را برمی‌گرداند که این نماد به آن‌ها وابسته است.
 
-## Check what a change would break
+## بررسی اینکه یک تغییر چه چیزی را می‌شکند
 
-This is the tool the whole page exists for:
+این همان ابزاری است که کل این صفحه برای آن نوشته شده:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+این ابزار شعاع وابستگی **معکوس** را محاسبه می‌کند: هر چیزی که به‌طور مستقیم یا غیرمستقیم از راه یال‌های `calls`، `extends` و `implements` به نماد وابسته است (importها، mixes-in و ارجاع‌های جنریک در گراف ذخیره می‌شوند اما اینجا پیمایش نمی‌شوند). `depth` بیشترین شمار گام‌هاست، بین 1 و 6، با پیش‌فرض 2.
 
-The result is three fields:
+نتیجه سه فیلد دارد:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — همان نمادی که درباره‌اش پرسیدید
+- `impacted` — مجموعهٔ قابل‌دسترس، شامل خود ریشه در عمق 0، که هر کدام `depth` خود را نسبت به ریشه همراه دارد
+- `edgeCount` — شمار یال‌هایی که پیمایش از آن‌ها گذشت، به‌صورت یک عدد و نه خود یال‌ها
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+پیش از تغییر نام یا تغییر یک امضا آن را اجرا کنید و فهرست impacted را به‌عنوان دامنهٔ کار به عامل بدهید.
 
-## Results are checked against the caller's own working copy
+## نتیجه‌ها با نسخهٔ کاری خودِ فراخوان بررسی می‌شوند
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+برای فراخوانی که یک عامل است، شناسهٔ فضا به‌طور خودکار تزریق می‌شود و نتیجه‌ها با نسخهٔ کاری **همان فضا** بررسی می‌شوند. نمادی که فایلش دیگر در درخت فراخوان وجود ندارد کنار گذاشته می‌شود و پاسخ شمار `staleOmitted` را به‌همراه یادداشتی می‌آورد که می‌گوید ایندکس برای آن نمادها کهنه است.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+همین است که چرا شما و یک عامل می‌توانید به یک پرس‌وجوی یکسان پاسخ‌های متفاوت بگیرید و چرا یک عامل در یک فضا می‌تواند پاسخی متفاوت از عاملی در فضای دیگر بگیرد. هر گفتگو در یک فضا همان یک worktree را شریک است. بررسی با شکست باز رفتار می‌کند: پاسخ کهنه بر پاسخ خالی ترجیح داده می‌شود.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/).
+وقتی شعاع تأثیر یک تغییر را می‌خواهید، از یک عامل بخواهید `code_impact` (یا `review_studio.blastRadius`) را اجرا کند. [محاسبهٔ بازبینی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/) را ببینید.
 
-## Semantic search needs the embedding model
+## جست‌وجوی معنایی به مدل امبدینگ نیاز دارد
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+نمادها و واقعیت‌ها هنگام نوشتن امبد می‌شوند و تنها وقتی مدل امبدینگ روی دستگاه نصب باشد. تا آن زمان، `mode: "semantic"` و نیمهٔ معنایی حالت hybrid چیزی برای مطابقت ندارند و جست‌وجو عملاً فقط کلیدواژه‌ای است.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+پیش از ایندکس کردن، مدل را در **تنظیمات → سرور → تشخیص و حریم خصوصی → جست‌وجوی معنایی** نصب کنید. نمادها وقتی فایلشان وارد ایندکس می‌شود یک بردار می‌گیرند.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+همچنین توجه کنید که هر بازسازی باینری سرور، dylibهای گرامر را دوباره آماده می‌کند و mtime آن‌ها را عوض می‌کند، که هر چک‌پوینت ایندکس را بی‌اعتبار می‌سازد و در اجرای بعدی یک پیمایش کامل دوباره روی هر چک‌اوت را الزام می‌کند. فایل‌ها را دوباره هش می‌کند، اما فایل‌های بدون تغییر را دوباره استخراج نمی‌کند.
 
-## What is in the graph
+## چه چیزی در گراف هست
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**انواع نماد:** function، method، class، field، enum، constructor، getter، setter، typedef، extension، mixin، variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**انواع یال:** calls، imports، extends، implements، mixes in، references.
 
-The canonical signatures for these tools live in [MCP tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/).
+امضاهای متعارف این ابزارها در [ابزارهای MCP(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/) هست.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Add repos to a workspace](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
-- [Review compute (cohorts and axes)](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/)
-- [Use the MCP server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
+- [افزودن مخزن به فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
+- [محاسبهٔ بازبینی (گروه‌ها و محورها)(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/)
+- [استفاده از سرور MCP(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)

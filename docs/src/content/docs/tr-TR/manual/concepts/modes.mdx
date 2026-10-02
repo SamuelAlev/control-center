@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Modlar
+description: Bir modu neden bir ajanın değil bir alanın taşıdığı; dört modun her birinin neyi garanti ettiği; ve bu garantinin nerede yalnızca istemle değil yapısal olarak sağlandığı.
 slug: tr-TR/kilavuz/kavramlar/modlar
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Mod nedir
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Bir mod bir **alanın** özelliğidir ve alan satırındaki tek bir sütunda saklanır. Bir alanın içindeki her konuşma, thread'ler dahil, bu özelliği paylaşır — bir thread de tıpkı diğer konuşmalar gibi ait olduğu alanın modunu devralır. Bu sayede aynı ajan aynı anda farklı alanlarda farklı modlarda bulunabilir ve bir alanın modunu değiştirmek, ajana dokunmadan bir sonraki turda ne olacağını değiştirir.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Tam olarak dört mod vardır: `chat`, `review`, `plan`, `orchestrate`. Enum'un kendisi hiçbir politika taşımaz. Bir modun garanti ettiği her şey tek bir yerde, her denetim katmanının kendisinden türettiği bir **yetenek profili**nde tanımlanır:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Araç yüzeyi** — o modda hangi araçların var olduğu; bir üst onay kademesi, bir izin listesi, bir ret listesi ve bir reddedilen etki sınıfları kümesiyle ifade edilir.
+2. **Zorunlu çıktı fiili** — bir çalıştırmanın bir şey teslim etmiş sayılması için neyi çağırması gerektiği.
+3. **Reddedilen etki sınıfları** — eylem koruyucusunun doğrudan reddettikleri.
+4. **Worktree duruşu** — worktree'ye yazılıp yazılamayacağı. Bu, değişiklik yapan araçların yüzeyden çıkarılmasıyla uygulanır; garantinin her ana makinede geçerli olmasını sağlayan da budur. Ana makinede bir işletim sistemi sandbox'ı varsa aynı duruş dosya sistemi yazma kurallarını da şekillendirir — salt okunur bir mod worktree'yi salt okunur bağlar — ama bu, garantinin ikinci bir kopyasıdır, işi yapan şey değil.
+5. **Sistem istemi bloğu** — gerçekte somutlaşan araç listesinden türetilen _üretilmiş_ bir yetenek önsözü ve elle yazılmış yönlendirme.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Her denetim katmanı o tek profilden türetir; bu yüzden araç yüzeyi, koruyucu, worktree duruşu ve istem birbiriyle çelişemez.
 
-## The four modes
+## Dört mod
 
-### Chat — displayed as "Agent"
+### Sohbet — “Ajan” olarak gösterilir
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Varsayılan moddur ve ek kısıtı olmayan tek moddur: yürütme kademesine kadar tam araç yüzeyi, yazılabilir bir worktree, reddedilen etki sınıfı yok ve tamamlanma sözleşmesi yok. Uygulama, hata düzeltme, kod tabanıyla ilgili sorular ve her türlü doğaçlama iş için kullanın.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Etikete dikkat edin: ileti alanında bu mod “Sohbet” değil, **“Ajan”** olarak gösterilir.
 
-### Plan — read-only, one deliverable
+### Plan — salt okunur, tek teslimat
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Plan modu worktree'yi salt okunur yapar ve yazma araçlarını yüzeyden tamamen çıkarır; böylece kısıtlama talimatla değil yapısal olarak uygulanır. Ajan okur, arar ve araştırır ve tam olarak tek bir şey teslim eder: tipli bir bağımlılık grafiği taşıyan bir `submit_plan` çağrısı — bir hedef ile anahtarları, başlıkları, açıklamaları ve her birinin bağlı olduğu düğüm anahtarlarını içeren düğümler.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Plan, konuşmada kompakt bir satır olarak görünür ve yanındaki bir sekmede Plan Studio'yu açar. Onaylamak, grafiği bir orkestrasyona derler, üretilen işi çalıştırır ve planı yazan alanı yeniden ajan moduna döndürür.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Bir plan modu çalıştırması hiç `submit_plan` çağırmadan sona ererse, döngü önce planın o çağrı başarılı olana kadar var olmadığını söyleyen bir dürtme iletisi enjekte eder. Bu dürtme, dürüst bir “burada plana gerek yok” çıkışına açıkça izin verir; çünkü plan modu bir alan ayarıdır ve içinde sorulan sıradan bir soru uydurma bir planı zorlamamalıdır.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/).
+:::note[Karşılanmayan bir sözleşme başarısız bir çalıştırma değildir]
+Planı olmadan sona eren bir çalıştırma yine de `completed` durumuyla kaydedilir — süreç temiz biçimde çıkmıştır. Gerçek; çalıştırmanın canlılığında (`empty`), hata ailesinde (`silentRun`) ve neyin üretilmediğini adıyla söyleyen bir özette yatar. Bkz. [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+İkinci ve ayrı bir çıkış yolu daha vardır: `exit_plan_mode`. Bu bir çıktı fiili değil, katı bir onay kapısıdır — `submit_plan` yerine onu çağıran bir ajan hiçbir şey teslim etmemiştir. İlk çağrı kalıcı bir `plan_exit` onayı açar ve `pending` döndürür, alan salt okunur kalır; yinelenen çağrılar ikinci bir kapı açmak yerine `pending` olarak kalır. Ancak onay verildikten sonra sonraki bir çağrı alanı sohbete döndürür. Bir ret, ajanın revize edilmiş bir plan için yeni bir istek açmasına izin verir.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Plan modundan kendiniz çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) kullanın. `exit_plan_mode` kararı `decide_approval` MCP aracıyla verilir. Gelen kutusundaki “ajan onayı” satırları başka bir şeydir: çalışan bir ajanın tur bazlı onay istemleri.
 
-### Review — read-only, no contract
+### İnceleme — salt okunur, sözleşme yok
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+İnceleme modu PR incelemesi içindir. Worktree'yi salt okunur yapar, araç yüzeyini yürütme kademesinin altında sınırlar ve inceleme, biletleme ve iletişim araçlarından oluşan özenle seçilmiş bir izin listesi uygular. Bir pull request için açılan alan otomatik olarak inceleme modunda oluşturulur.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Ajanın çıktısı yapılandırılmış bulgulardır — **inceleme düğümleri** — ve bir inceleme kesinleştirildiğinde bir **karar**. Bir düğüm; bir tür (`bug`, `suggestion`, `recommendation`, `question` veya `ticket`), P0'dan (sürümü engeller) P3'e (olsa iyi olur) kadar bir öncelik, kendi değerlendirdiği bir güven düzeyi, isteğe bağlı bir çapa (dosya artı bir satır aralığı; depo geneli notların çapası yoktur) ve bir akran — asla yazar — onayladığında `open` durumundan `consensusReady` durumuna geçen bir yaşam döngüsü durumu taşır. Önceliği veya güven düzeyi eksik ya da aralık dışı olan bir bulgu, kararı kirletmek yerine okuma sınırında düşürülür.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Karar ship, hold veya block'tur ve yalnızca içine katılan eksen bazlı sonuçlarla _daha_ ağır hale gelir: kapı denetimli bir eksen başarısız olursa `block`, çalıştırılamayan kapı denetimli bir eksen ise en az `hold` zorunlu olur. Kanıt yokluğu hiçbir kapıyı yeşile çevirmez.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Plan ve orkestrasyondan farklı olarak inceleme **tamamlanma sözleşmesi taşımaz**. Bulgular `add_review_node` ile birikir ve `finalize_review` ile yayımlanır; her ikisi de meşru biçimde sıfır kez çağrılabilir — inceleme modunda çalışan bir pipeline ajanı bunun yerine bir bileti tamamlamak için orada olabilir.
 
-### Orchestrate — read-only, proposes a team
+### Orkestrasyon — salt okunur, bir ekip önerir
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Orkestrasyon modu tek bir hedefi tüm ekip için bir plana dönüştürür. Plan modu gibi salt okunurdur ve dosya yazamaz; araştırma yüzeyinin üzerine, yapılandırılmış bir öneri üreten tek bir ayrıcalıklı fiile sahiptir: `propose_orchestration`. Bu öneri; rolleri, bir alt bilet ağacını, bir sentez adımını ve bir bütçeyi içerir. İstem yalnızca yüzeydeki araçları adlandırır; böylece model, çağıramadığı işe alım veya bilet işlerini anlatarak tur harcamaz.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/).
+Önerideki hiçbir şey siz onaylayana kadar yürütülmez. Onay verildiğinde deterministik bir somutlaştırıcı ajanları işe alır, biletleri ve bir projeyi oluşturur ve üretilmiş bir pipeline çalıştırır. Onaylama yalnızca operatöre aittir: bunun için bir MCP aracı yoktur; dolayısıyla bir ajan öneri sunabilir ama kendi planını asla onaylayamaz. Ajan tarafından başlatılan yeniden öneriler iki dakikalık bir bekleme süresiyle sınırlanır; art arda gelen yeniden planlama istekleri reddedilir ve birleştirilmeleri söylenir. Bkz. [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/).
 
-## Two rules worth knowing
+## Bilinmeye değer iki kural
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Bir modun kendi çıktı fiili asla reddedilemez.** `submit_plan` ve `propose_orchestration`, araç yüzeyine sabitlenir ve araç filtresini, onay kapısını ve eylem koruyucusunu aynı şekilde aşacak biçimde önceden onaylanır; böylece alan bazlı otonomi kadranı bir modun teslimatını susturamaz. Harness'in `ask_user` aracı da aynı nedenle sabitlenir: bir çalıştırmanın operatöre ulaşma yolu _odur_; dolayısıyla onu kapıdan geçirmek, bir şey sorması gereken bir çalıştırmayı kilitler. Okuma kademesindedir, bu yüzden her salt okunur mod onu korur ve onay sarmalayıcısından muaftır — bir istemin önüne konan istem, onaylayıcı bağlı değilken kapalı yönde başarısız olur; bu da ajandan sorma eylemini esirger.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Salt okunur modlar ağ erişimini veya sırları reddetmez.** İnceleme, plan ve orkestrasyonun reddettiği etki sınıfları dünyayı değiştirenlerdir: dosya silme, worktree dışına yazma, commit'ler, push'lar, PR oluşturma ve yayımlama, harici takip sistemi eşitleme yazmaları, paket kurulumları, süreç başlatma, çalışma alanı mutasyonu ve enclosure denetimi. Ağ çıkışı ve sır erişimi bilinçli olarak varsayılanlarında kalır — araştırma, salt okunur bir modun tüm amacıdır.
 
-## Choosing and changing a mode
+## Mod seçme ve değiştirme
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+İleti alanındaki mod açılır menüsü **üç** seçenek sunar: Ajan (sohbet), Plan ve Orkestrasyon. `review` **kullanıcı tarafından seçilemez** — bir PR inceleme alanı oluşturulduğunda sistem tarafından ve pipeline adımları tarafından ayarlanır.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Bir alanı **açan** bir pipeline düğümü, `extras['mode']` anahtarıyla (`chat`, `review` veya `plan`) o odanın modunu sabitleyebilir. Anahtar tam eşleşmelidir: başka herhangi bir yazım — `orchestrate` dahil — sessizce yok sayılır ve oda gövdenin varsayılanını alır (create-space gövdesinde `review`). Bir ajan adımı, kendi oluşturmadığı bir odaya katılır ve odaya yeniden izin vermez.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Çözümlemenin kendisi basittir. Gönderici, alanın `mode` sütununu okur; alanı olmayan bir gönderim — tek seferlik bir çalıştırma, bir CLI çağrısı veya bu çalışma alanının veritabanı dosyasında zaten bulunmayan başka bir çalışma alanından gelen bir alan kimliği — `chat` olarak çözümlenir. Modu değiştirmek bir sonraki turdan itibaren geçerli olur.
 
-## Where the guarantee actually holds
+## Garantinin gerçekte geçerli olduğu yer
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Bir modun araç yüzeyi **yerleşik harness** tarafından oluşturulur ve uygulanır. Bir aracı yalnızca reddetmek yerine görünmez kılabilen, her çağrıyı çalışmadan önce kapıdan geçirebilen ve bir tamamlanma sözleşmesini gözlemleyebilen tek taşıma katmanıdır.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+Claude Code taşıma katmanında sohbet dışı bir mod `--permission-mode plan` olarak geçirilir. Claude bunu yalnızca bir gelenek olarak dikkate alır; kendi okuma, yazma, düzenleme ve shell araçları görünmeden çalışır. Bu taşıma katmanı için mod bir yönlendirmedir, bir Control Center sınırı değil — bkz. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+İzin listeleri yazma kademesi ve üzerindeki araçları kısıtlar. Yerleşik harness'in okuma kademesi, hiçbir listenin adlandırmadığı araçlara yine de erişir; Claude Code'da ise izin listesinin dışarıda bıraktığı bir araç, sunucuda bulunsun ya da bulunmasın reddedilir.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): where the mode is resolved and projected
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): which transports can enforce a mode
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/): what an approved orchestrate proposal does
-- [Use plan mode](/tr-TR/kilavuz/nasil-yapilir/plan-modu/): the practical walkthrough
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): modun nerede çözümlendiği ve yansıtıldığı
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): hangi taşıma katmanlarının bir modu uygulayabildiği
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): bir modun ön ayarının beslediği etki sınıfı politikası
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/): onaylanan bir orkestrasyon önerisinin ne yaptığı
+- [Plan modunu kullanma](/tr-TR/kilavuz/nasil-yapilir/plan-modu/): uygulamalı adım adım anlatım

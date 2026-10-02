@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: میان‌برهای صفحه‌کلید
+description: رجیستری کامل کلیدبندی، به تفکیک دامنه، همراه با شرط‌هایی که هر میان‌بر تحت آن‌ها فعال می‌شود.
 slug: fa-IR/راهنمای-کاربر/مرجع/میانبرهای-صفحه-کلید
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+میان‌برها از یک رجیستری `const` می‌آیند: `KeybindingRegistry` در `lib/core/constants/keybindings.dart`. این رجیستری **۴۸ کلیدبندی** دارد. مسیر **تنظیمات → شما → میان‌برهای صفحه‌کلید** آن رجیستری را به‌صورت یک **مرجع فقط‌خواندنی** نمایش می‌دهد: هیچ رابطی برای تخصیص مجدد و هیچ فایل کلیدبندی کاربری وجود ندارد.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` که در ادامه می‌آید، تغییردهندهٔ اصلی فرمان است — ⌘ روی macOS و Ctrl روی Windows و Linux. یک کلیدبندی تنها زمانی فعال می‌شود که فرمانش روی صفحهٔ فعلی یک گردانندهٔ ثبت‌شده داشته باشد و بند `when` آن برقرار باشد؛ `!textInputFocus` یعنی اگر فیلد متنی فعال باشد، کلید در عوض به همان فیلد سپرده می‌شود.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+هیچ میان‌بر پیمایشی با کلیدهای عددی وجود ندارد. صندوق ورودی، تیکت‌ها، pull requestها و بقیه از نوار کناری یا با ⌘K باز می‌شوند. مشاهده‌پذیری هم هیچ میان‌بری ندارد.
 
-## Global (19)
+## سراسری (۱۹)
 
-Scope `global`, so they are live anywhere in the shell.
+دامنهٔ آن‌ها `global` است، پس در هر نقطه از پوسته فعال‌اند.
 
-### System
+### سیستم
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| میانبر | کنش | شرط |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | پالت فرمان                                      | —                                                          |
+| `Shift + /` (`?`)                           | برگهٔ میان‌برهای صفحه‌کلید                       | وقتی در فیلدی تایپ نمی‌کنید                                |
+| `Cmd/Ctrl + Z`                              | واگرد                                            | وقتی در فیلدی تایپ نمی‌کنید (فیلد فعال واگرد خودش را دارد) |
+| `Cmd/Ctrl + Shift + Z`                      | ازنو                                             | وقتی در فیلدی تایپ نمی‌کنید                                |
+| `Cmd/Ctrl + Shift + T`                      | تغییر تم                                         | —                                                          |
+| `Cmd/Ctrl + ,`                              | باز کردن تنظیمات (روی `/settings/you/appearance` فرود می‌آید) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | تغییر وضعیت حالت تمرکز                           | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | تغییر وضعیت تعویض‌گر فضای کاری                   | —                                                          |
+| `Cmd/Ctrl + ]`                              | فضای کاری بعدی                                   | —                                                          |
+| `Cmd/Ctrl + [`                              | فضای کاری قبلی                                   | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | رفتن به فضای کاری ۱–۹                            | —                                                          |
 
-## Pull request list (3)
+## فهرست pull request (۳)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+دامنه: `/pull-requests`. همه به `route == '/pull-requests'` و نبود فیلد متنی فعال نیاز دارند، بنابراین وقتی مسیر جزئیات PR روی فهرست باز است فعال نمی‌شوند.
 
-| Shortcut | Action           |
+| میانبر | کنش |
 | -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| `R`      | تازه‌سازی        |
+| `Enter`  | باز کردن PR      |
+| `F`      | باز کردن منوی فیلتر |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) در رجیستری اعلام شده و در مرجع کلیدبندی هم دیده می‌شود، اما **صفحهٔ فهرست هیچ گرداننده‌ای برایش ثبت نکرده است**، پس فعلاً فعال نمی‌شود. `F` منوی فیلتر (`pr.list-open-filter`) را باز می‌کند، نه جستجو.
 
-## Pull request detail (2)
+## جزئیات pull request (۲)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+دامنه: `/pull-requests/`. تازه‌سازی به نبود فیلد متنی فعال نیاز دارد. بستن زبانه هیچ محافظ ورودی متنی ندارد (فشرده‌ای که با ⌘ اصلاح شده باشد هرگز متن ساده به شمار نمی‌آید) و یک عبارت باقاعده برای مسیر دارد تا روی فهرست فعال نشود.
 
-| Shortcut       | Action    | Condition                          |
+| میانبر | کنش | شرط |
 | -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| `R`            | تازه‌سازی | وقتی در فیلدی تایپ نمی‌کنید        |
+| `Cmd/Ctrl + W` | بستن زبانه | روی یک نشانی `/pull-requests/<…>` |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+جابه‌جایی زبانه (`1`/`2`/`3`)، دیده‌شده/جمع‌کردن فایل (`V`/`C`)، فهرست فایل (`T`) و یافتن در دیف (`Cmd/Ctrl + F`) در اختیار گردانندهٔ خودِ نمایشگر دیف‌اند — [کلیدهای نمایشگر دیف بیرون از رجیستری](#کلیدهای-نمایشگر-دیف-بیرون-از-رجیستری) را ببینید.
 
-## Inbox (1)
+## صندوق ورودی (۱)
 
-| Shortcut | Action           |
+| میانبر | کنش |
 | -------- | ---------------- |
-| `F`      | Open filter menu |
+| `F`      | باز کردن منوی فیلتر |
 
-Requires `route == '/inbox'` and no focused text field.
+به `route == '/inbox'` و نبود فیلد متنی فعال نیاز دارد.
 
-## GitHub user and team profiles (3)
+## نمایه‌های کاربر و تیم GitHub (۳)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+دامنه: `/users/`. شرط `when` یک عبارت باقاعده در برابر `/users/<login>` **یا** `/teams/<organization>/<slug>` است، به‌علاوهٔ نبود فیلد متنی فعال.
 
-| Shortcut       | Action       |
+| میانبر | کنش |
 | -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| `R`            | تازه‌سازی    |
+| `/`            | تمرکز روی جستجو |
+| `Cmd/Ctrl + F` | تمرکز روی جستجو |
 
-## Spaces (8)
+## فضاها (۸)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+دامنه: `/spaces`. شرط‌های `when` از یک عبارت باقاعده استفاده می‌کنند تا هم روی فهرست فضاها (`/spaces`) و هم روی فضای انتخاب‌شده (`/spaces/<id>`) فعال شوند.
 
-| Shortcut               | Action                 | Condition             |
+| میانبر | کنش | شرط |
 | ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Enter`                | ارسال پیام             | —                     |
+| `Cmd/Ctrl + N`         | فضای جدید              | روی یک مسیر `/spaces` |
+| `J`                    | فضای بعدی              | وقتی در فیلدی تایپ نمی‌کنید |
+| `K`                    | فضای قبلی              | وقتی در فیلدی تایپ نمی‌کنید |
+| `Cmd/Ctrl + Shift + D` | دیکتهٔ فشار دهید تا صحبت کنید | —                     |
+| `Cmd/Ctrl + T`         | باز کردن زبانهٔ ویرایشگر | روی یک مسیر `/spaces` |
+| `Cmd/Ctrl + W`         | بستن زبانهٔ ویرایشگر   | روی یک مسیر `/spaces` |
+| `Cmd/Ctrl + B`         | تغییر وضعیت نوار کناری ویرایشگر | روی یک مسیر `/spaces` |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+ارسال با Enter در اختیار فیلد متنی ویرایشگر پیام است؛ فشار دهید تا صحبت کنید هم در اختیار دکمهٔ میکروفون ویرایشگر پیام است (گردانندهٔ صفحه‌کلید سخت‌افزاری خودش). هر دو فقط برای مرجع تنظیمات در رجیستری فهرست شده‌اند.
 
-## Workspace picker (2)
+## انتخاب‌گر فضای کاری (۲)
 
-Scope `/workspaces`, live only on the picker itself.
+دامنه: `/workspaces`، فقط روی خود انتخاب‌گر فعال‌اند.
 
-| Shortcut       | Action                  |
+| میانبر | کنش |
 | -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| `Cmd/Ctrl + N` | فضای کاری جدید          |
+| `Enter`        | باز کردن فضای کاری انتخاب‌شده |
 
-`Enter` requires no focused text field.
+`Enter` به نبود فیلد متنی فعال نیاز دارد.
 
-## Settings (5)
+## تنظیمات (۵)
 
-| Shortcut       | Action                 | Screen                              |
+| میانبر | کنش | صفحه |
 | -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| `J`            | صفحهٔ بعدی تنظیمات     | هر مسیر `/settings`، در حال تایپ نباشید |
+| `K`            | صفحهٔ قبلی تنظیمات     | هر مسیر `/settings`، در حال تایپ نباشید |
+| `Cmd/Ctrl + N` | عامل جدید              | تنظیمات → فضای کاری → عامل‌ها       |
+| `Cmd/Ctrl + N` | افزودن مخزن            | تنظیمات → فضای کاری → مخزن‌ها       |
+| `R`            | اسکن دوبارهٔ آداپتورها | تنظیمات → سرور → ارائه‌دهندگان مدل  |
 
-## Newsfeed (5)
+## خوراک خبری (۵)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+دامنه: `/newsfeed`. همه به `route == '/newsfeed'` و نبود فیلد متنی فعال نیاز دارند.
 
-| Shortcut | Action           |
+| میانبر | کنش |
 | -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| `J`      | مقالهٔ بعدی      |
+| `K`      | مقالهٔ قبلی      |
+| `Enter`  | باز کردن مقاله   |
+| `S`      | تغییر وضعیت نشانک |
+| `R`      | تازه‌سازی خوراک‌ها |
 
-## Diff viewer keys outside the registry
+## کلیدهای نمایشگر دیف بیرون از رجیستری
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+نمایشگر دیف PR خودش این‌ها را مدیریت می‌کند (`PrDiffKeyboardHandler`). جستجو/دیده‌شده/جمع‌کردن فقط در توضیحات رجیستری و تنها برای مرجع تنظیمات فهرست شده‌اند — هیچ گرداننده‌ای در توزیع‌کننده ثبت نشده، بنابراین توزیع‌کننده آن‌ها را به نمای دیف وا می‌گذارد. این‌ها به‌صورت ردیف مستقل در مرجع کلیدبندی ظاهر نمی‌شوند.
 
-| Shortcut        | Action                                               |
+| میانبر | کنش |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | جستجو در دیف                                         |
+| `J` / `K`       | فایل بعدی / قبلی                                     |
+| `V`             | تغییر وضعیت دیده‌شده روی فایل فعال                   |
+| `C`             | تغییر وضعیت جمع‌کردن روی فایل فعال                   |
+| `T`             | نمایش فهرست فایل                                     |
+| `Enter`         | نتیجهٔ بعدی جستجو (تنها وقتی یافتن در دیف باز است)   |
+| `Shift + Enter` | نتیجهٔ قبلی جستجو                                    |
+| `Escape`        | بستن یافتن در دیف، یا پاک کردن انتخاب متن دیف        |
+| `Cmd/Ctrl + C`  | کپی انتخاب دیف                                       |
 
-## Browser-reserved combinations
+## ترکیب‌های رزروشده برای مرورگر
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+در نسخهٔ وب، مرورگر برخی شتاب‌دهنده‌ها را پیش از آن‌که صفحه آن‌ها را ببیند مصرف می‌کند، پس کلیدبندی‌های متناظر هرگز آنجا فعال نمی‌شوند. روی دسکتاپ به‌طور عادی کار می‌کنند. این‌ها وقتی با تغییردهندهٔ اصلی فرمان ترکیب شوند رزرو می‌شوند: `T`، `W`، `N` و ارقام `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+این شامل جابه‌جایی فضای کاری با `Cmd/Ctrl + Alt + 1`–`9`، `Cmd/Ctrl + N` (فضای جدید، فضای کاری جدید، عامل جدید، افزودن مخزن) و `Cmd/Ctrl + T` / `Cmd/Ctrl + W` در فضاها و جزئیات PR می‌شود.
 
-## See also
+## همچنین ببینید
 
-- [Route map](/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/)
-- [Focus mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-تمرکز/)
+- [نقشهٔ مسیرها(/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/)
+- [حالت تمرکز(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-تمرکز/)

@@ -1,131 +1,141 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Déléguer du travail aux agents
+description: Confiez un ticket à un agent dans une conversation et laissez les agents se déléguer des sous-tâches entre eux, sous les gardes de profondeur et de cycle.
 slug: fr-CA/manuel/guides/deleguer-tickets
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Ce guide explique comment retirer du travail de votre assiette pour le confier à
+un agent, et ce qui se passe quand les agents se transmettent du travail entre
+eux.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Attribuer un ticket à un agent ne lance rien]
+Il n’existe aucun répartiteur de tickets pour un agent assigné. L’attribution
+consigne la propriété et rien de plus — aucun espace n’est créé, aucun statut ne
+change, aucun agent ne démarre. L’exception est un ticket attribué à une
+**équipe**, qui réveille le responsable de cette équipe. Le travail d’agent pour
+un assigné nommé vit dans les conversations, c’est donc là qu’il faut le lancer.
 :::
 
-## Hand a ticket to an agent
+## Confier un ticket à un agent
 
-1. [Create the ticket](/fr-CA/manuel/guides/gerer-tickets/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Créez le ticket](/fr-CA/manuel/guides/gerer-tickets/) avec un titre et une
+   description assez précis pour travailler à partir d’eux.
+2. Choisissez l’agent dans le champ **Assigné à**, afin que la propriété soit
+   consignée.
+3. Ouvrez (ou créez) un espace et mentionnez cet agent avec @.
+4. Référencez le ticket par une mention `#` dans votre message — le composeur
+   complète automatiquement les tickets de l’espace de travail — et dites ce que
+   vous voulez qu’il fasse.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+L’agent prend le travail en charge depuis la conversation. Sa progression est
+diffusée en direct dans cet espace.
 
-## What the agent receives
+## Ce que l’agent reçoit
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Votre message, y compris la référence de ticket que vous avez mentionnée.
+- L’espace dans lequel travailler et faire rapport.
+- Un arbre de travail isolé issu des dépôts liés de l’espace de travail.
+- Le **mode** de l’espace, qui régit la surface d’outils de l’exécution.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/fr-CA/manuel/concepts/modes/).
+Le mode est une propriété de l’espace, et non du ticket — un ticket n’a pas de
+mode. Un même agent peut donc être en `chat` dans un espace et en `plan` dans un
+autre. Choisissez-le dans le menu déroulant de mode du composeur (**Agent**,
+**Plan** ou **Orchestrate**) ; `review` est défini par les espaces de révision
+de PR et n’est pas sélectionnable. Voir
+[Modes](/fr-CA/manuel/concepts/modes/).
 
-## Require a structured result
+## Exiger un résultat structuré
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Un contrat de sortie est déclaré sur le lancement, et non sur le ticket :
+`expected_output_schema` et `output_contract_mode` (strict par défaut). L’agent
+le satisfait en appelant `submit_output`, qui valide la charge utile par rapport
+au schéma et rejette toute charge non conforme.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Tant la sortie acceptée que les refus aboutissent dans le **journal d’exécution
+de l’agent**. Le statut du ticket lui-même n’est pas touché par cela — un contrat
+non respecté ne fait pas échouer le ticket.
 
-## Monitor progress
+## Surveiller la progression
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **L’espace** — l’activité des agents en direct, la vue principale.
+- **Le ticket** — son statut, tel que le définit la personne qui le déplace.
+- **Observabilité → En direct** (`/workspaces/<workspace-id>/observability`) —
+  la liste des agents en direct.
+- **Observabilité → Aperçu** — le journal d’exécution, avec le coût et la durée.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Il n’existe aucun écran de tableau de bord ; une URL d’espace de travail nue
+renvoie vers la boîte de réception.
 
-## Let agents delegate to each other
+## Laisser les agents se déléguer du travail
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Un agent qui bute sur un sous-problème délègue à l’aide de l’outil MCP
+`delegate_task`. Cet outil crée un ticket enfant attribué à un autre agent et —
+quand vous passez `parent_ticket_id` — consigne la chaîne pour que les gardes
+puissent la voir.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Deux gardes structurelles s’exécutent toujours au point de passage des tickets,
+jamais par instruction du prompt :
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Plafond de profondeur** — une chaîne de plus de 3 sauts est refusée.
+- **Détection de cycle** — un saut vers un agent déjà présent dans la chaîne est
+  refusé.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Quand vous passez `from_agent_id`, deux autres gardes s’exécutent (la production
+fournit toujours les ports de résolution) :
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Plafond d’autonomie** — le niveau effectif du délégataire dans l’espace ne
+  doit pas dépasser celui du délégant.
+- **Enveloppe budgétaire** — la délégation est imputée au budget d’arrêt ferme
+  restant du délégant et ne peut pas en créer davantage. Une absence de
+  politique, ou une politique illimitée, passe.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Un refus est explicite : l’outil renvoie mot pour mot la raison de la garde, de
+sorte que l’agent délégant voit exactement pourquoi. Le champ
+`delegatedByAgentId` consigne qui a délégué, formant un arbre de délégation.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` saute toutes les gardes]
+L’outil plus ancien `delegate_ticket` est toujours enregistré et appelle
+`createTicket` directement — aucun plafond de profondeur, aucune vérification de
+cycle, aucun plafond d’autonomie, aucune enveloppe budgétaire. Préférez
+`delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Ce plafond de profondeur de délégation de 3 est une limite différente du plafond
+d’imbrication de sous-agents de 2 du harnais intégré — l’un borne les tickets
+entre agents, l’autre borne les sous-agents à l’intérieur d’une même exécution.
 
-## Put several agents on one ticket
+## Mettre plusieurs agents sur un même ticket
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Ajoutez-les comme **collaborateurs** sur le ticket (rôles : assigné,
+collaborateur, relecteur). Il s’agit d’un effectif — un registre des personnes
+concernées — qui n’accorde rien en soi.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/fr-CA/manuel/guides/espaces/).
+Pour réellement placer des agents dans la même conversation, ajoutez-les comme
+participants depuis l’en-tête de l’espace. Ils peuvent alors se mentionner entre
+eux avec @. Voir [Espaces](/fr-CA/manuel/guides/espaces/).
 
-## Automated ticket creation
+## Création automatisée de tickets
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Aucun nœud de la palette de pipelines ne crée de tickets, un pipeline ne peut
+donc pas répartir du travail sous forme de tickets assignés.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/fr-CA/manuel/guides/lancer-orchestration/).
+La voie qui existe est l’orchestration : l’approbation d’une proposition crée un
+projet et une équipe, compile le DAG de sous-tickets de la proposition en un
+**modèle de pipeline** (une étape `promptAgent` par sous-ticket, et non une ligne
+`Ticket` chacun) et démarre cette exécution. Voir
+[Lancer une orchestration](/fr-CA/manuel/guides/lancer-orchestration/).
 
-## Related guides
+## Guides connexes
 
-- [Create and manage tickets](/fr-CA/manuel/guides/gerer-tickets/)
-- [Chat with an agent](/fr-CA/manuel/guides/clavarder-avec-agent/)
-- [Run an orchestration](/fr-CA/manuel/guides/lancer-orchestration/)
-- [Organize work with projects](/fr-CA/manuel/guides/projets/)
-- [Ticket lifecycle reference](/fr-CA/manuel/reference/cycle-de-vie-des-tickets/)
+- [Créer et gérer des tickets](/fr-CA/manuel/guides/gerer-tickets/)
+- [Clavarder avec un agent](/fr-CA/manuel/guides/clavarder-avec-agent/)
+- [Lancer une orchestration](/fr-CA/manuel/guides/lancer-orchestration/)
+- [Organiser le travail avec des projets](/fr-CA/manuel/guides/projets/)
+- [Référence du cycle de vie des tickets](/fr-CA/manuel/reference/cycle-de-vie-des-tickets/)
 
-## Related concepts
+## Concepts connexes
 
 - [Tickets](/fr-CA/manuel/concepts/tickets/)
-- [Dispatch lifecycle](/fr-CA/manuel/concepts/cycle-de-vie-du-lancement/)
+- [Cycle de vie du lancement](/fr-CA/manuel/concepts/cycle-de-vie-du-lancement/)
 - [Modes](/fr-CA/manuel/concepts/modes/)

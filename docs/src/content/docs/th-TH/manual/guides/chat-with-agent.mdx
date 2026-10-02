@@ -1,172 +1,167 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: แชทกับเอเจนต์
+description: สร้างสเปซที่มีเอเจนต์ ส่งงานให้มัน ชี้นำระหว่างรัน และหยุดมัน
 slug: th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+คู่มือนี้แสดงวิธีทำงานกับเอเจนต์ในสเปซ
 
-## Create a space
+## สร้างสเปซ
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. ไปที่ **สเปซ** ในแถบข้าง
+2. คลิกปุ่ม **+** ข้างหัวข้อสเปซ
+3. พิมพ์ **ชื่อ** — จำเป็นต้องระบุ หากปล่อยชื่อว่างจะถูกปฏิเสธ
+   ไดอะล็อกจะยังเปิดอยู่
+4. เพิ่มเอเจนต์จากเวิร์กสเปซก็ได้ตามต้องการ
+5. หากเวิร์กสเปซมีรีโปอยู่ ตัวเลือกรีโปจะปรากฏขึ้น เริ่มต้นด้วยการเลือกรีโป
+   ทุกตัว ให้จำกัดขอบเขตให้แคบลง (รวมถึงยกเลิกการเลือกรีโปเพียงตัวเดียว) ให้เหลือ
+   เฉพาะรีโปที่สเปซนี้ควรจัดเตรียม worktree ให้
+6. ยืนยัน
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center จะเปิดสเปซและเริ่มจัดเตรียม worktree แบบ copy-on-write
+ให้แต่ละรีโปที่เลือกไว้ในเบื้องหลัง
 
-## Send the first message
+## ส่งข้อความแรก
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+พิมพ์ข้อความของคุณในช่องเขียนข้อความแล้วกด Enter เอเจนต์จะถูกสั่งงานและเริ่ม
+สตรีมคำตอบ
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+หากสเปซยังจัดเตรียมอยู่ ข้อความของคุณจะถูกพักไว้ไม่ให้หายไป —
+ช่องเขียนข้อความจะเก็บไว้และส่งให้อัตโนมัติเมื่อ worktree พร้อม
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+ขณะที่เอเจนต์ทำงาน คุณจะเห็นเทิร์นของมันสตรีมเข้ามา: ส่วนการให้เหตุผล การเรียก
+เครื่องมือ (อ่านไฟล์ เขียนไฟล์ คำสั่งเชลล์) และข้อความคำตอบ ทั้งหมดอยู่ในข้อความ
+เทิร์นของเอเจนต์ข้อความเดียว
 
-## Steer a running agent
+## ชี้นำเอเจนต์ที่กำลังรัน
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+ขณะเอเจนต์กำลังทำงาน ข้อความสนทนาธรรมดาจะ **ไม่** ถูกจัดคิวเป็นเทิร์นใหม่
+แต่จะกลายเป็นการ์ดชี้นำที่จัดคิวอยู่ในแถบเหนือช่องเขียนข้อความ และถูกฉีดเข้าไปใน
+รันที่กำลังทำงานที่ขอบเขตเทิร์นถัดไป ไม่มีการแจ้งเตือนแบบทอสต์ — การ์ดคือการตอบรับ
 
-Three things change that behaviour:
+มีสามสิ่งเปลี่ยนพฤติกรรมนี้:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- ข้อความที่มี **@mention** จะถูกส่งเป็นข้อความเสมอ ไม่ใช่ข้อความชี้นำ
+- ข้อความที่ขึ้นต้นด้วย **คำสั่งสแลช** จะถูกจัดการเป็นคำสั่งนั้นเสมอ
+- ข้อความที่มี **ไฟล์แนบ** จะถูกส่งเป็นข้อความเสมอ — คิวข้อความชี้นำรองรับเฉพาะ
+  ข้อความ
+- หากรันที่กำลังทำงานทุกรันจบไปแล้ว ข้อความจะหลุดผ่านไปและถูกส่งเป็น
+  ข้อความปกติ
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[การชี้นำต้องใช้ฮาร์เนสในตัว]
+เฉพาะฮาร์เนสในตัวของ Control Center เท่านั้นที่ฉีดข้อความระหว่างรัน บนอะแดปเตอร์
+Claude Code ข้อความยังถูกจัดคิวเป็นการ์ดชี้นำอยู่ เมื่อรันจบ สิ่งที่ยังอยู่ในคิว
+จะถูกแปลงเป็นข้อความปกติ
 :::
 
-## Approve a blocked action
+## อนุมัติการกระทำที่ถูกบล็อก
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+เมื่อเอเจนต์พบการกระทำที่กฎคุมกั้นไว้ — คำสั่งที่ทำลายข้อมูล เครื่องมือที่ได้สิทธิ์
+สูง — เซิร์ฟเวอร์จะ **บล็อกรัน** และเผยแพร่คำขออนุมัติไปยังไคลเอนต์ที่เชื่อมต่ออยู่
+ทุกตัว หากคุณเปิดบทสนทนานั้นอยู่ คำขอจะปรากฏ **ในแชท** เหนือช่องเขียนข้อความ
+เป็นการ์ดตัวเลือกแบบมีหมายเลขแบบเดียวกับที่ใช้กับ `ask_user` (ปฏิเสธ อนุมัติ
+และอนุมัติเป็นเวลา 8 ชั่วโมงตามตัวเลือก) ไม่มีตัวเลือกข้าม:
+เอเจนต์ที่ถูกบล็อกกำลังรอการตัดสินใจ
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+หากคุณอยู่ที่อื่นในแอป แผงที่ลอยอยู่บนสุดของเชลล์จะยังแสดงรายการสิ่งที่รออยู่
+คุณจึงปลดบล็อกเอเจนต์ได้โดยไม่ต้องตามหาสเปซนั้น แผงซ้อนทับนี้จะซ่อนคำขอทันทีที่
+บทสนทนาของสเปซนั้นปรากฏบนหน้าจอ คุณจึงไม่ต้องตอบคำถามเดิมสองครั้ง
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+ไม่มีการหมดเวลา: เอเจนต์ที่ถูกบล็อกรอจนกว่าจะมีคนตัดสินใจ คำขอเดียวกันยังปรากฏ
+ในแถบความสนใจของกล่องขาเข้าและบนไคลเอนต์มือถือ
 
-## Answer an agent's question
+## ตอบคำถามของเอเจนต์
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+เอเจนต์ที่ต้องการทราบความชอบ ข้อกำหนดที่ขาดไป หรือทางแยกที่ต้องเลือกจริง ๆ
+**ต้อง** เรียก `ask_user` การเขียนคำถามเป็นข้อความแชทจะจบเทิร์น และคุณต้องพรอมป์
+ใหม่ เครื่องมือนี้จะเรนเดอร์การ์ดแบบมีหมายเลขในบทสนทนา — ตัวเลือก ข้อความอิสระที่
+ไม่บังคับ หรือทั้งสองอย่าง — และรันจะรอคำตอบของคุณ
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+แตะตัวเลือกเดียวเพื่อส่ง (หมายเลขต่อท้ายจะกลายเป็นลูกศรเมื่อวางเมาส์)
+การเลือกหลายตัวเลือกและคำตอบที่พิมพ์เองใช้ **ดำเนินการต่อ** (`⌘↵` / `Ctrl↵`)
+**ข้าม** บอกให้เอเจนต์เลือกค่าเริ่มต้นที่สมเหตุสมผลและไม่ถามอีก
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+มันเป็นกลไกแยกจากการ์ดอนุมัติด้านบน: การอนุมัติคือ “ฉันทำสิ่งนี้ได้ไหม?”
+ส่วนคำถามคือ “คุณหมายถึงตัวเลือกใดในเหล่านี้?” การถามคำถามใช้ได้บนฮาร์เนสในตัว
+ในทุกโหมด รวมถึงโหมดอ่านอย่างเดียว (มันไม่แก้ไขอะไรเลย) และตั้งใจไม่ห่อไว้ใน
+พรอมป์การอนุมัติ — ไดอะล็อกที่ซ้อนอยู่หน้าอีกไดอะล็อกจะล้มเหลวแบบปิดกั้นเมื่อไม่มี
+ผู้อนุมัติเชื่อมต่ออยู่ รันที่ไม่มีการสนทนาให้เรนเดอร์ลงก็จะไม่ได้รับเครื่องมือนี้ไปเอง
 
-## Stop an agent
+## หยุดเอเจนต์
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+ขณะมีรันที่กำลังทำงาน ปุ่มส่งของช่องเขียนข้อความจะกลายเป็นปุ่ม **หยุด**
+ล้างช่องเขียนข้อความแล้วกดปุ่มนี้ — จะหยุดเอเจนต์ทุกตัวที่กำลังรันในบทสนทนานั้น
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+ไม่มีตัวควบคุมสำหรับหยุดในส่วนหัวของสเปซ และไม่มีทางลัดแป้นพิมพ์สำหรับการหยุด
+หากต้องการหยุดเพียงรันเดียวในขณะที่มีหลายรันทำงานอยู่ ให้เปิดแท็บกิจกรรมของรันนั้น
+— ส่วนหัวมีปุ่มหยุดชั่วคราว/ทำต่อ และหยุด ที่จำกัดอยู่ในรันนั้น (ปุ่มหยุดจะขอให้คุณ
+ยืนยัน) **การสังเกตการณ์ → สด** แสดงรายการเอเจนต์ที่กำลังรันทุกตัวในเวิร์กสเปซ
+พร้อมตัวควบคุมเดียวกัน
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+รันที่หยุดแล้วจะถูกทำเครื่องหมายว่าหยุด ส่งข้อความใหม่เพื่อสั่งงานอีกครั้ง
 
-## Use slash commands
+## ใช้คำสั่งสแลช
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+พิมพ์ `/` ในช่องเขียนข้อความเพื่อดูรายการคำสั่ง คำสั่งที่เปลี่ยนพฤติกรรมของ
+บทสนทนา:
 
-| Command        | What it does                                                                                                                         |
+| คำสั่ง         | สิ่งที่คำสั่งทำ                                                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | สลับสเปซเข้าสู่โหมดแผน `/plan` เดี่ยว ๆ แค่เตรียมโหมดให้พร้อม ส่วน `/plan <request>` จะเตรียมโหมดให้พร้อมและส่งส่วนที่เหลือเป็นข้อความของคุณ |
+| `/goal <text>` | บันทึกเป้าหมายการทำงานของบทสนทนา                                                                                                        |
+| `/loop <text>` | วนทำงานหนึ่งจนกว่าจะเสร็จ                                                                                                                |
+| `/compact`     | พับประวัติเก่าเข้าเป็นบทสรุปที่ยึดเป็นหลัก แล้วทำต่อบนบริบทที่ถูกย่อ                                                                       |
+| `/todo …`      | ดูและแก้ไขรายการสิ่งที่ต้องทำที่บันทึกไว้ของบทสนทนานี้                                                                                     |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+สกิลจะปรากฏในรายการเดียวกันภายใต้เนมสเปซ `skill:` ของตัวเอง จึงไม่ชนกับคำสั่ง
+ข้างบนเลย — สกิลที่ชื่อ `plan` หรือ `compact` ยังเข้าถึงได้:
 
-| Command                     | What it runs                                                       |
+| คำสั่ง                     | สิ่งที่คำสั่งรัน                                                      |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | สกิลที่ติดตั้งในเวิร์กสเปซ หรือที่ผูกไว้กับเอเจนต์                     |
+| `/skill:<repo>:<name>`      | สกิลที่รีโปใดรีโปหนึ่งซึ่งเช็กเอาต์ในสเปซนี้มาด้วย                       |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+สกิลจากรีโปจะติดป้ายบอกว่ารีโปที่มา เพราะชื่ออย่างเดียวไม่ได้บอกว่ามันบรรจุ
+ธรรมเนียมของบริการไหนไว้ และรีโปสองแห่งอาจมี `testing` กันคนละตัว คุณไม่จำเป็น
+ต้องพิมพ์คำนำหน้าเพื่อค้นหา: การพิมพ์ชื่อสกิลล้วน ๆ ก็จับคู่กับรายการที่มีเนมสเปซ
+ด้วย
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+เอเจนต์จะพกเฉพาะสกิลของรีโปที่มันทำงานอยู่เท่านั้น —
+ดู [สกิลที่จำกัดตามรีโป](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills)
+ช่องเขียนข้อความไม่ได้จำกัดขอบเขตแบบนั้น: คุณเรียกสกิลของรีโปใดก็ได้โดยระบุชื่อ
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` และ `/todo` ถูกดักจับโดยไคลเอนต์และไม่ถูกบันทึกเป็นข้อความเลย —
+บรรทัด `/compact` ในทรานสคริปต์จะดันจุดตัดของการย่อครั้งถัดไปถอยกลับไปหนึ่งเทิร์น
+`/plan` จะสลับโหมดที่จัดเก็บไว้ของสเปซแทนที่จะเดินทางไปเป็นข้อความ ดังนั้นทั้งสาม
+คำสั่งจึงไม่ใช่ “ข้อความที่คุณส่งให้เอเจนต์” อย่าคาดว่าจะเห็นมันในประวัติ
 
-## Ask for a plan first
+## ขอแผนก่อน
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/).
+ก่อนการเปลี่ยนแปลงที่ซับซ้อน ให้สลับสเปซเข้าสู่โหมดแผนด้วย `/plan`
+เมนูเลือกโหมดบนแถบเครื่องมือของช่องเขียนข้อความ หรือ Shift+Tab เอเจนต์จะค้นคว้า
+แบบอ่านอย่างเดียวและส่งแผนที่มีชนิดข้อมูลกำกับมาให้คุณอนุมัติก่อนงานจะเริ่ม
+ดู [ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
 
-## Reach an agent without a dedicated space
+## เข้าถึงเอเจนต์โดยไม่ต้องมีสเปซเฉพาะ
 
-You do not need a space per agent. In any space:
+คุณไม่จำเป็นต้องมีสเปซแยกให้เอเจนต์ทุกตัว ในสเปซใดก็ได้:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/) for how names are
-matched.
+เอเจนต์ที่ถูกกล่าวถึงจะถูกเพิ่มเข้าในสเปซและสั่งงานด้วยบริบทของสเปซนั้น
+ดู [@-mention เอเจนต์](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/) ว่าชื่อถูกจับคู่
+อย่างไร
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Use spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
-- [@-mention agents](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/)
-- [Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/) to do the same from Slack
+- [ใช้สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
+- [@-mention เอเจนต์](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/)
+- [ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/) เพื่อทำแบบเดียวกันจาก Slack
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)

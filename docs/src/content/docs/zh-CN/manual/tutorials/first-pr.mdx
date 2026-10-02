@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: 审查你的第一个 Pull request
+description: 在工作台中打开 PR，阅读差异、评论、批准并合并。
 slug: zh-CN/手册/教程/第一个-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+读完本教程，你将拥有：
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- 在 Control Center 的 PR 工作台中打开了一个 pull request
+- 阅读了它的差异，并留下了一条行内评论
+- 提交了一次审查判定
+- 合并了该 PR
 
-Prerequisites: [Dispatch your first agent](/zh-CN/手册/教程/第一个智能体/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+前置条件：已完成[派发你的第一个智能体](/zh-CN/手册/教程/第一个智能体/)，并且本工作区中注册的某个仓库上有一个打开的 pull request。审查相关的步骤请选择一个不是你打开的 PR——**评审**按钮在你自己发起的 PR 上会被隐藏。合并操作在你发起的 PR 上仍然可用。
 
-## Step 1: Open the pull request
+## 第 1 步：打开 pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. 点击侧边栏中的 **Pull requests**
+2. 找到你的 PR 并点击它
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**检查点。**该 PR 会以标签式工作台的形式打开——**概览**、**Diff**、**源代码管理**、**聊天**、**操作**——并聚焦在 **概览** 上：标题与操作、描述与活动时间线，以及一个侧栏，其中有状态、审查者、受理人、检查和变更文件。点击那里的某个文件会跳到 Diff 标签页中的对应位置。在有人请求 AI 审查之前，**PR 审查** 标签页不会打开。
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[队列为空并提示“连接 GitHub”]
+出现该状态说明_服务器_没有持有 GitHub 令牌——你的客户端从不持有令牌。在**设置 → 工作区 → 个人资料与身份 → 代码托管**中设置一个，然后刷新列表。
 :::
 
-## Step 2: Read the diff
+## 第 2 步：阅读差异
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+打开 **Diff** 标签页。左侧是可折叠的文件树，差异上方的条带中有一个提交范围选择器——可把差异缩小到单个提交或一段提交——以及文件数量和实时的新增与删除行数。
 
-The settings button in the diff toolbar controls how it renders:
+差异工具栏中的设置按钮控制它的渲染方式：
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- **分栏**或**统一**视图
+- **自动换行**或滚动长行
+- **代码字体连字**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/zh-CN/手册/参考/键盘快捷键/).
+在大差异中把文件标记为已查看，可以跟踪你的进度。键盘导航见[键盘快捷键](/zh-CN/手册/参考/键盘快捷键/)。
 
-## Step 3: Leave an inline comment
+## 第 3 步：留下行内评论
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. 将鼠标悬停在差异中的某一行上——行号栏中会出现一个小小的 `+` 胶囊按钮
+2. 点击它即可对该行发表评论，或先垂直拖动它来选择一段范围
+3. 输入你的反馈。撰写框提供两种提交方式：
+   - **开始审查**（如果已有审查正在进行，则为 **添加到审查**）会把评论加入队列。在你于第 4 步提交判定之前，讨论串会显示 **待提交的审查**。
+   - **添加单条评论**会立即把它发布到 GitHub。讨论串会显示 **正在发布…**，然后是 **已同步**；如果发布失败，会提供重试。
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+本教程请使用 **开始审查**，这样评论会随判定一起发出。
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[排队中的评论尚未发布到 GitHub]
+**开始审查** / **添加到审查** 会把评论保留在本地，直到你提交判定。只有 **添加单条评论** 会立即发布。你在第 4 步撰写的审查_正文_是一份独立的草稿。
 :::
 
-## Step 4: Submit a review
+## 第 4 步：提交审查
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. 点击 **概览** 操作行中的 **评审**——同一个按钮也位于 Diff 标签页的工具栏中。在你发起的 PR 上，以及已关闭或已合并的 PR 上，它都会被隐藏。
+2. 在撰写框中写一段摘要。它会自动保存为草稿，因此你可以关闭这个浮层稍后再回来。
+3. 选择一个判定：
+   - **请求变更**
+   - **评论**
+   - **批准**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+判定_就是_这个按钮。按下 **批准** 或 **请求变更** 后，按钮会改名为 **已批准** 或 **已请求变更**。**评论** 判定则让按钮保持 **评审**。
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**检查点。**如果你选择了这两者之一，按钮会显示“已批准”或“已请求变更”。
 
-## Step 5: Merge
+## 第 5 步：合并
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+只要 GitHub 报告该 PR 可合并，**合并** 按钮就会出现——它并不以你自己的批准为前提。它的颜色表示的是就绪程度而非权限：必需的批准和检查都为绿色时为主色，检查仍在运行时为次色，被请求的审查者尚未批准或某个检查未通过时为危险色。
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. 点击 **合并**
+2. 选择一种方式：**压缩并合并**、**创建合并提交** 或 **变基并合并**
+3. 对于前两种，编辑已预填的提交标题和说明
+4. 确认
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+任何尚未解决的问题——“检查未通过”、“部分审阅待完成”——都会在你确认前列在浮出面板中。
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[合并不可逆]
+合并会把提交推送到 GitHub。它永远不会进入 Control Center 的撤销栈，也无法从这里撤销。
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/zh-CN/手册/参考/领域事件/) for what else listens.
+合并后，`PrMerged` 领域事件会触发；分析和通知会消费它。其他监听者见[领域事件](/zh-CN/手册/参考/领域事件/)。
 
-## Reviewing with AI
+## 用 AI 审查
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center 可以把审查者流水线放到一个打开的 PR 上，但只有在你主动请求时才行：`pr_review` 模板只有手动触发器，没有别的触发方式。
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. 打开 **概览** 操作行中的溢出菜单，选择 **询问 AI**。Control Center 会启动该运行并打开 **PR 审查** 标签页，这样你就能看到各位专家的工作过程。
+2. 审查者智能体会把它们的发现项记录为该 PR 空间中的审查节点；最后一个步骤会把它们汇总成一份报告。
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/zh-CN/手册/操作指南/ai-审查/).
+该流水线刻意不发布到 GitHub——它在汇总之后就结束了。发布是你自己单独执行的一步，使用 **PR 审查** 标签页上的 **发布到 GitHub** 按钮。见[使用 AI 审查](/zh-CN/手册/操作指南/ai-审查/)。
 
-## Recap
+## 回顾
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+你在工作台中打开了一个 PR，阅读了带语法高亮的差异，留下了一条行内评论，提交了判定并完成合并——全程没有离开应用。
 
-**Next:** [Build your first pipeline](/zh-CN/手册/教程/第一条流水线/) to automate multi-step workflows.
+**下一步：**[构建你的第一条流水线](/zh-CN/手册/教程/第一条流水线/)，把多步骤工作流自动化。

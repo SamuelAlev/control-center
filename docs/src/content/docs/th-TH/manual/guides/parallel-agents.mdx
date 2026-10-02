@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: รันเอเจนต์แบบขนาน
+description: สั่งงานเอเจนต์หลายตัวพร้อมกันและกันไม่ให้งานของพวกมันชนกัน
 slug: th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+คู่มือนี้แสดงวิธีรันเอเจนต์หลายตัวพร้อมกันโดยที่มันไม่เขียนทับกันเอง
 
-## The unit of isolation is the space, not the agent
+## หน่วยของการแยกคือสเปซ ไม่ใช่เอเจนต์
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+เมื่องานเริ่มในสเปซ Control Center จะจัดเตรียมเช็กเอาต์แบบคัดลอกเมื่อเขียนหนึ่งชุดต่อรีโปที่ลงทะเบียนไว้หนึ่งตัว ไว้ใต้รากของสเปซนั้นเอง บนสาขาที่มาจากเทมเพลตสาขาของเวิร์กสเปซ จากนั้นเอเจนต์แต่ละตัวในสเปซจะได้ไดเรกทอรีทำงานแบบโอเวอร์เลย์ของตัวเอง — แต่โอเวอร์เลย์เหล่านั้น**ใช้ร่วมกัน**ไดเรกทอรี `repos/` ของสเปซนั้น
 
-So:
+ดังนั้น:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- เอเจนต์สองตัวใน**สเปซต่างกัน**ทำงานในเช็กเอาต์คนละชุด บนสาขาคนละสาขา นั่นคือการแยกที่แท้จริง
+- เอเจนต์สองตัวใน**สเปซเดียวกัน**ทำงานในเช็กเอาต์ชุดเดียวกัน บนสาขาเดียวกัน พาธโอเวอร์เลย์ของพวกมันต่างกัน ล็อกพาธการสั่งงาน (ซึ่งบังคับให้การรันเรียงกันเป็นคิวเฉพาะเมื่อพวกมันขอไดเรกทอรีทำงานเดียวกันเป๊ะ) จึงไม่บังคับให้พวกมันเรียงคิวกันเช่นกัน พวกมันเขียนไฟล์เดียวกันพร้อมกันได้
 
-The rule that follows: **one space per parallel task.**
+กฎที่ตามมาคือ: **หนึ่งสเปซต่อหนึ่งงานที่รันขนานกัน**
 
-## Run tasks in parallel — separate spaces
+## รันงานแบบขนาน — แยกสเปซ
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. เปิดสเปซกับเอเจนต์ A แล้วส่งงานหนึ่งอย่างให้มัน
+2. เปิดสเปซที่สองกับเอเจนต์ B แล้วส่งงานอีกอย่างที่ต่างกันให้มัน
+3. ทั้งคู่ถูกสั่งงานทันที แต่ละตัวอยู่ในเช็กเอาต์ของสเปซตัวเองบนสาขาของตัวเอง
 
-This is the recipe to use whenever the agents will be editing files.
+นี่คือสูตรที่ควรใช้ทุกครั้งที่เอเจนต์จะแก้ไขไฟล์
 
-## Work together in one space — several mentions
+## ทำงานร่วมกันในสเปซเดียว — กล่าวถึงหลายตัว
 
-In a single space, @-mention more than one agent:
+ในสเปซเดียว ให้ @-mention เอเจนต์มากกว่าหนึ่งตัว:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+เอเจนต์ทั้งสองถูกสั่งงานแบบขนานและสตรีมเข้าสเปซเดียวกัน โดยติดแท็กผู้ส่ง เพราะพวกมันใช้เช็กเอาต์ของสเปซร่วมกัน ให้ใช้วิธีนี้เพื่อการทำงานร่วมกัน — ตัวหนึ่งเขียน อีกตัวอ่าน หรือเอเจนต์สองตัววิเคราะห์ทรีเดียวกัน — ไม่ใช่สำหรับการแก้ไขอิสระสองชุด
 
-## Fan out from a pipeline
+## กระจายงานออกจากไปป์ไลน์
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+เทมเพลต `pr_review` ที่มีมาในตัวคือตัวอย่างที่ส่งมอบจริงของการกระจายงาน: โหนดรีวิวเวอร์หลายโหนดรันพร้อมกันจากทริกเกอร์เดียว และโหนด **Consolidate (join)** รวมข้อค้นพบของพวกมันเข้าเป็นรายงานเดียว รันมันจากหน้าจอไปป์ไลน์แล้วรีวิวเวอร์ทุกตัวจะถูกสั่งงานแบบขนาน
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+ตัวแก้ไขไปป์ไลน์ซ่อนเครื่องหมายเฉพาะปลายทางไว้ และต่อสายใหม่ให้มันรอทุกปลายทางที่ยังใช้งานอยู่เมื่อคุณเพิ่มหรือเชื่อมขั้นตอน สาขาที่คุณวาดเองจึงรันจริง
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[การมอบหมายตั๋วงานไม่สั่งงานอะไรเลย]
+การมอบหมายตั๋วงานให้เอเจนต์เป็นการบันทึกความเป็นเจ้าของ ไม่มีตัวสั่งงานตั๋วงาน — `TicketAssigned` เป็นสัญญาณการตรวจสอบและไม่มีงานใดเริ่มจากมัน ข้อยกเว้นเดียวคือตั๋วงานที่มอบหมายให้ _ทีม_ ซึ่งจะปลุกหัวหน้าทีมนั้น
 :::
 
-## Watch them run
+## เฝ้าดูการทำงานของพวกมัน
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**การสังเกตการณ์ → สด** (ส่วนท้ายของแถบข้าง → การสังเกตการณ์ แล้วเลือกแท็บสด) แสดงรายชื่อเอเจนต์ของเวิร์กสเปซนี้ โดยอัปเดตใหม่ทุกวินาที: สถานะ (กำลังรัน / ว่าง / จอดไว้ / ยกเลิกแล้ว) สิ่งที่แต่ละตัวกำลังทำ โทเค็นและค่าใช้จ่ายของการรันล่าสุด และตัวควบคุมการฆ่าสำหรับโปรเซสที่กำลังรัน การเลือกรายการหนึ่งจะเปิดลิ้นชักทรานสคริปต์สด
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**การตั้งค่า → เวิร์กสเปซ → เอเจนต์** แสดงรายชื่อเดียวกันด้วยชุดคำศัพท์สถานะที่ต่างออกไปและเน้นสิ่งที่ต้องให้ความสนใจก่อน ซึ่งอนุมานจากประวัติการรันของเอเจนต์แต่ละตัว — กำลังรัน, ถูกบล็อก, ล้มเหลว, ว่าง, ยังไม่เคยรัน — เรียงลำดับให้สิ่งที่ต้องให้ความสนใจลอยขึ้นมาอยู่บนสุด แท็บ **บันทึก** ของเอเจนต์แต่ละตัวเก็บบันทึกการรันของมันเอง
 
-Both surfaces are scoped to the active workspace.
+พื้นผิวทั้งสองถูกจำกัดขอบเขตไว้ที่เวิร์กสเปซที่ใช้งานอยู่
 
-## Handle conflicts
+## จัดการความขัดแย้ง
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+ระหว่างสเปซ แต่ละสเปซอยู่บนสาขาของตัวเอง การชนกันจึงปรากฏเป็นความขัดแย้งในการรวมของ Git ธรรมดา ๆ เมื่อคุณรวม pull request ตัวที่สอง จงแก้มันด้วยวิธีเดียวกับที่คุณแก้ความขัดแย้งในการรวมใด ๆ
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+ภายในสเปซเดียวไม่มีเส้นแบ่งสาขาและไม่มีล็อก: เอเจนต์กำลังเขียนไฟล์เดียวกันแบบสด ๆ และตัวที่แพ้ก็แค่ถูกเขียนทับไปเลย หากคุณพบว่าตัวเองอยากให้เอเจนต์สองตัวแก้ไขในสเปซเดียว ให้แยกงานออกเป็นสองสเปซแทน
 
-To reduce collisions either way:
+วิธีลดการชนกันทั้งสองกรณี:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/).
-- Review and merge each agent's pull request promptly.
+- ให้ขอบเขตที่ต่างกันชัดเจนแก่เอเจนต์แต่ละตัว — ไฟล์ต่างกัน โมดูลต่างกัน
+- ใช้กราฟโค้ดตรวจว่าการเปลี่ยนแปลงหนึ่ง ๆ แตะอะไรบ้างก่อนสั่งงาน ดู [ค้นหาโค้ดด้วยกราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/)
+- รีวิวและรวม pull request ของเอเจนต์แต่ละตัวอย่างทันท่วงที
 
-## Resource considerations
+## ข้อควรพิจารณาด้านทรัพยากร
 
-Each running agent costs:
+เอเจนต์ที่รันอยู่แต่ละตัวกินทรัพยากรดังนี้:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- เช็กเอาต์ของสเปซ — แทบไม่มีต้นทุนบนดิสก์ตราบใดที่การคัดลอกเมื่อเขียนยังใช้ได้ บน Windows จะเป็น `git worktree` ระบบไฟล์ที่ไม่สามารถ reflink ได้จะทำให้การจัดเตรียมล้มเหลว แทนที่จะคัดลอก
+- โปรเซสหนึ่งตัวบนโฮสต์ของเซิร์ฟเวอร์
+- โทเค็นของโมเดล ซึ่งสะสมเพิ่มขึ้นตามจำนวนเอเจนต์
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/) for the two commands that do have one.
+ค่าใช้จ่ายไปลงที่ **การสังเกตการณ์ → ข้อมูลเชิงลึก** โปรดทราบว่าเทิร์นแบบโต้ตอบปกติไม่มีเพดานค่าใช้จ่าย ดู [จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/) สำหรับสองคำสั่งที่มีเพดาน
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Build an agent team](/th-TH/คู่มือ/วิธีทำ/สร้างทีมเอเจนต์/)
-- [Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
-- [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [สร้างทีมเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างทีมเอเจนต์/)
+- [จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
+- [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)

@@ -1,153 +1,159 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Доменні події
+description: Чому модулі спілкуються через внутрішньопроцесну шину подій, а не імпортують один одного, для чого шина є джерелом істини, а для чого — ні, і які події насправді можуть керувати автоматизацією.
 slug: uk-UA/керівництво/поняття/доменні-події
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Що таке доменна подія
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Доменні події — це механізм розв'язування залежностей, який дає модулям змогу
+спілкуватися без прямих залежностей. Замість того щоб модуль A викликав
+модуль B, модуль A публікує подію, а модуль B на неї підписується.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` — це внутрішньопроцесна широкомовна шина
+публікації/підписки. Видавці викликають `publish(event)`; підписники
+споживають типізований потік `on<T>()`. Кожна подія реалізує `DomainEvent` і
+несе `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Шина працює всередині `cc_server`.** Кожен видавець і кожен живий підписник
+живуть там. Жоден клієнт не бачить цієї шини. Клієнт бачить лише дібрану
+підмножину, яку сервер перевидає у вигляді фреймів JSON-RPC `notifications/*`.
 
-## Why a bus at all
+## Навіщо взагалі шина
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Без подій кожна реакція між модулями — це імпорт. Шляху сповіщень довелося б
+імпортувати модуль агентів, модуль pull request-ів, тікети й зустрічі лише для
+того, щоб знати, коли показати спливне сповіщення, — а кожен із них тоді мав би
+знати, що сповіщення існують. Тікети імпортували б конвеєри, щоб завершений
+тікет міг просунути запуск. Граф залежностей затягується у вузол, а спільне
+ядро перестає бути спільним.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Публікація події це розриває. Шлях сповіщень підписується на двадцять один
+клас подій і не імпортує жодного з модулів, які їх породжують. Диспетчер
+тригерів конвеєрів підписується на всю шину і нічого не знає про pull
+request-и, тікети чи зустрічі. Спостережуваність агрегує результати запусків,
+не зазираючи в диспетчеризацію.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Ціна звична: видавець не може сказати, чи хтось слухає, а слухач, який ніколи
+не створюється, залишається мовчки неактивним. `TicketRemoteSyncHandler` —
+постійний приклад: він оголошений, покритий тестами і ніколи не під'єднаний у
+продакшені.
 
-## What the bus is not
+## Чим шина не є
 
-It is worth being precise about one thing the bus does _not_ own.
+Варто точно визначити одну річ, якою шина _не_ володіє.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Журнал аудиту не є проєкцією потоку подій.** Кожна операція RPC, що змінює
+стан, за замовчуванням проходить аудит — `RepoOp.audited` типово має значення
+true, а операція відмовляється від аудиту, лише оголосивши `audited: false`, що
+є свідомою дією, видимою в самій операції. Диспетчер додає рядок «хто що
+зробив і звідки» одразу після успішного виклику. `DomainEventAuditBridge` не
+існує. `ActivityLogPersister` записує рядки `activity_log` з подій
+`ActivityLogged`; це окремий канал, відмінний від аудиту RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Шина подій _є_ транспортом для сповіщень і для автоматизації. Але вона не є
+системою обліку, що слугує джерелом істини.
 
-## What the bus does drive
+## Чим шина керує
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Сповіщення.** Двадцять один клас подій сервер перетворює на фрейми
+  `notifications/*`, записує їх у довговічний канал кожного робочого простору й
+  транслює під'єднаним сесіям. Фрейм, у якому `workspace_id` указує на робочий
+  простір, учасником якого користувач сесії не є, відкидається на сервері;
+  далі клієнт фільтрує решту до того робочого простору, який переглядає.
+- **Автоматизація на основі подій.** Тригери конвеєрів підписуються на шину й
+  автоматично запускають відповідні конвеєри (див. нижче).
+- **Реакції життєвого циклу.** Створення робочого простору закладає його агента
+  CEO та агентів-спеціалістів, вбудовані шаблони конвеєрів і стартові набори
+  eval. Завершений запуск агента відновлює призупинений крок конвеєра, закриває
+  завдання, живить супервізора цілей, може розбудити вказаного перевіряча й
+  може повторно запустити лідера команди. Змерджений PR або видалений простір
+  запускає збирання сміття в worktree.
+- **Синхронізація між постачальниками.** Локальні зміни тікетів надсилаються до
+  налаштованих постачальників координатором, який слухає п'ять подій тікетів.
 
-## Event categories
+## Категорії подій
 
-Events span the whole product surface. At a high level:
+Події охоплюють усю поверхню продукту. На високому рівні:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Робочі простори, агенти й репозиторії** — створення робочого простору, завершення запуску, реєстрація репозиторію, оновлення навичок
+- **Pull requests** — публікація, зміни статусу, мерджі, запити на перевірку, згадки, стеження за авторськими PR, PR, виявлені ззовні
+- **Повідомлення** — повідомлення, простори та перебіг підготовки просторів
+- **Тікети** — створення, призначення, перепризначення, деталі, статус і три кінцеві результати
+- **Завдання** — упорядковані фрейми життєвого циклу для одного запуску, щоб клієнти могли їх упорядковувати й дедуплікувати
+- **Конвеєри** — лише кінцеві події запуску (завершено, скасовано, не вдалося)
+- **Спостережуваність** — записи журналу активності та пороги бюджету
+- **Ідентичність і членство** — учасника додано, видалено, роль змінено
+- **Календар і зустрічі** — сплив авторизації, початок зустрічей і завершення записів
+- **Rigs** — перехоплення керування, збирання та неочікуване закриття
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Пам'ять, оркестрація, документи планів, артефакти, схвалення, приймання
+синхронізації тікетів, оновлення календаря, злиття worktree, створення
+користувачів, запрошення та відкликання пристроїв не є доменними подіями; див.
+довідку.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/uk-UA/керівництво/довідка/доменні-події/). That page is the
-inventory; this one is the model.
+Щоб отримати повний каталог — усі 53 конкретні класи подій, їхні корисні
+навантаження та 24 підписники, які їх споживають — див.
+[довідку з доменних подій](/uk-UA/керівництво/довідка/доменні-події/). Та
+сторінка — це інвентар; ця — модель.
 
-## Live access control rides two different mechanisms
+## Контроль доступу в реальному часі спирається на два різні механізми
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Події членства й події пристроїв виглядають симетричними, але такими не є, і це
+важливо, якщо ви міркуєте про те, як швидко набуває чинності відкликання.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Відкликання пристрою справді завершує його сесії.** Сервер стежить за
+таблицею прив'язаних пристроїв і протягом секунд розриває кожну живу сесію,
+чий пристрій вибув з активного набору.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Видалення учасника не закриває сокет.** `WorkspaceMemberRemoved`
+споживається: `LocalRpcServer` і `RemoteRelayHost` відкидають підписки на
+робочі простори, прикріплені до цього користувача, а `RemoteEventForwarder`
+анулює свій кеш членства, щоб подальші фрейми для цього робочого простору не
+надсилалися. Тим, що відхиляє наступний RPC, усе ще залишається рольова
+перевірка, яка заново визначає членство при **кожному** виклику — тож їхній
+наступний запит відхиляється з «Not a member of this workspace». Ефект настає
+негайно для всього, що вони спробують зробити; просто досягається він не
+розривом з'єднання.
 
-## Pipeline triggers
+## Тригери конвеєрів
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Тригери конвеєрів підписуються на доменні події й автоматично запускають
+відповідні конвеєри. `PipelineTriggerDispatcher` слухає всю шину, а потім:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Завершується достроково, якщо тип події не належить до тих, які він уміє зіставити з корисним навантаженням
+2. Знаходить увімкнені тригери, що відповідають цьому типу події, у всіх робочих просторах
+3. Фільтрує кожен до його власного робочого простору й застосовує його фільтр збігу корисного навантаження
+4. Запускає виконання для кожного тригера, що залишився
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Найважливіше обмеження — крок 1. Шина несе 53 типи подій; селектор додавання
+тригера запускає виконання для цих чотирнадцяти (гілки корисного навантаження
+`EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+і `SpaceDeleted`. Ніщо інше не може запустити конвеєр.
 
-## How a client sees any of this
+## Як клієнт усе це бачить
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/uk-UA/керівництво/поняття/архітектура/).
+`RemoteEventForwarder` перетворює події класу сповіщень на фрейми й надсилає
+їх через RPC під'єднаним сесіям, де перетворювач фреймів робить із них
+сповіщення в застосунку. Тонкий клієнт бачить лише проєкцію потоку подій
+сервера, не володіючи жодним виконанням — і саме в цьому суть
+[розділення на тонкого клієнта](/uk-UA/керівництво/поняття/архітектура/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Щоправда, не кожен надісланий фрейм є сповіщенням. Потік життєвого циклу
+завдань і перепризначення тікетів передаються наживо, щоб керувати
+інтерфейсом, але вони не записуються в канал сповіщень і не показують
+спливного сповіщення.
 
-## See also
+## Дивіться також
 
-- [Pipelines and automation](/uk-UA/керівництво/поняття/конвеєри/): what a trigger starts
-- [Tickets and delegation](/uk-UA/керівництво/поняття/тікети/): assignment to an agent vs a team
-- [Architecture](/uk-UA/керівництво/поняття/архітектура/): how events fit the dependency rule
-- [Domain events reference](/uk-UA/керівництво/довідка/доменні-події/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
-- [Configure notifications](/uk-UA/керівництво/практичні-посібники/сповіщення/)
+- [Конвеєри та автоматизація](/uk-UA/керівництво/поняття/конвеєри/): що запускає тригер
+- [Тікети та делегування](/uk-UA/керівництво/поняття/тікети/): призначення агенту чи команді
+- [Архітектура](/uk-UA/керівництво/поняття/архітектура/): як події вписуються в правило залежностей
+- [Довідка з доменних подій](/uk-UA/керівництво/довідка/доменні-події/): повний каталог і його підписники
+- [Налаштувати тригери конвеєра](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
+- [Налаштувати сповіщення](/uk-UA/керівництво/практичні-посібники/сповіщення/)

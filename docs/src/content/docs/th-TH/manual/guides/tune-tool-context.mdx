@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: ปรับบริบทเครื่องมือของเอเจนต์
+description: ตรวจดูว่าการรันส่งอะไรจริง ๆ เปลี่ยนว่าเครื่องมือใดโหลดล่วงหน้า และวิเคราะห์ว่าการเลือกเครื่องมือที่ไม่ดีเป็นเพราะการค้นหาพลาดหรือเป็นปัญหาที่พรอมต์
 slug: th-TH/คู่มือ/วิธีทำ/ปรับบริบทเครื่องมือ
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ).
+คู่มือนี้ครอบคลุมงานภาคปฏิบัติรอบพื้นผิวเครื่องมือสองชั้น: การดูว่าการรันส่งอะไร การเปลี่ยนมัน และการวินิจฉัยเอเจนต์ที่เอื้อมไปหยิบเครื่องมือผิด สำหรับเหตุผลที่มันทำงานแบบนี้ อ่าน[บริบทเครื่องมือและการแคชพรอมต์](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ)
 
-## Look at what a run actually sends
+## ดูว่าการรันส่งอะไรจริง ๆ
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+เปิดบทสนทนาแล้วแตะตัวบ่งชี้การใช้บริบทในส่วนหัวของบทสนทนา มันประกอบพื้นผิวเดิมทุกประการที่การสั่งงานครั้งถัดไปจะส่งขึ้นใหม่ โดยไม่รันอะไรเลย **ดูเพิ่ม** (หรือคำสั่ง `/context`) เปิดตัวสำรวจบริบทแบบเต็ม ที่คุณตรวจสอบเครื่องมือแต่ละตัวได้
 
-Two segments matter here:
+มีสองส่วนที่สำคัญตรงนี้:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **คำจำกัดความเครื่องมือ** และ **เครื่องมือ MCP และไดนามิก** — ชุดประจำ พร้อมต้นทุนโทเค็นจริงของเครื่องมือแต่ละตัว
+- **เครื่องมือที่โหลดตามต้องการ** — ดัชนีที่ถูกหน่วงไว้ แต่ละรายการคิดค่าเพียงชื่อของมัน เพราะคำขอพกมาแค่ชื่อ การเปิดรายการหนึ่งยังคงแสดงคำอธิบายและสคีมาแบบเต็ม คุณจึงเห็นได้ว่ามัน*จะ*มีต้นทุนเท่าใดหากการรันดึงมันเข้ามา
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli).
+หากส่วนที่ถูกหน่วงว่างเปล่า แสดงว่าการหน่วงถูกปิดสำหรับเซิร์ฟเวอร์นี้ ตรวจสอบ `--tool-deferral` ใน [CLI ของ `cc_server`](/th-TH/คู่มือ/อ้างอิง/cc-server-cli)
 
-## Change which tools load up front
+## เปลี่ยนว่าเครื่องมือใดโหลดล่วงหน้า
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+ชุดประจำคือนโยบาย ไม่ใช่การตั้งค่า — มันอยู่ใน `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) และใช้กับการรันทุกครั้ง:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/th-TH/คู่มือ/แนวคิด/โหมด) uses on nearly every turn.
+- `residentBuiltins` — คำศัพท์ว่าด้วยไฟล์และเชลล์
+- `residentDiscovery` — `search_tools` และ `list_my_tools` อย่าลบสิ่งเหล่านี้ เพราะมันคือวิธีที่เอเจนต์เข้าถึงทุกอย่างอื่น
+- `residentMcpTools` — เครื่องมือ Control Center ไม่กี่ตัวที่คุ้มค่ากับการส่งสคีมาในทุกคำขอ
+- บล็อกรายโหมด สำหรับเครื่องมือที่[โหมด](/th-TH/คู่มือ/แนวคิด/โหมด)หนึ่ง ๆ ใช้เกือบทุกเทิร์น
 
-Two rules when editing it:
+มีสองกฎเมื่อแก้ไขมัน:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**เพิ่มเครื่องมือเฉพาะเมื่อการรันส่วนใหญ่ใช้มัน** ทุกชื่อมีต้นทุนเท่าสคีมาของมันในทุกคำขอของการรันทุกครั้งตลอดไป เครื่องมือที่สำคัญเมื่อถูกใช้แต่หายากโดยรวมควรอยู่ในครึ่งที่ถูกหน่วงไว้ — เอเจนต์จะยังหามันเจอ
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**ใช้ชื่อจริงของเครื่องมือ** ชื่อประจำที่ไม่ตรงกับเครื่องมือใดเลยจะไม่มีผลอะไร: ไม่มีข้อผิดพลาด ไม่มีคำเตือน เครื่องมือนั้นก็แค่ถูกหน่วงไว้ `test/tooling/resident_tool_names_test.dart` จับกรณีนี้และยังคุมให้แต่ละโหมดมีเครื่องมือประจำต่ำกว่า 40 ตัว ซึ่งคือจุดประสงค์ของแบบฝึกนี้ — เมื่อพ้นช่วงนั้นไป การเลือกเครื่องมือจะแย่ลงอย่างวัดได้
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+คำกริยาที่โหมดต้องมีและที่ถูกปักหมุดไว้จะถูกเพิ่มอัตโนมัติ คุณจึงไม่จำเป็นต้องระบุคำกริยาส่งผลลัพธ์ของโหมดเองเลย
 
-## Diagnose a bad tool choice
+## วินิจฉัยการเลือกเครื่องมือที่ไม่ดี
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+เมื่อเอเจนต์ใช้เครื่องมือผิดหรืออ้างว่าทำบางอย่างไม่ได้ ให้หาว่าเกิดจากหนึ่งในสามกรณีใด
 
-### 1. Did it look?
+### 1. มันค้นหาหรือไม่
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+การรันแต่ละครั้งบันทึกเครื่องมือที่ถูกหน่วงไว้ซึ่งมันโหลด และบันทึกว่าอะไรเป็นตัวกระตุ้น — การเรียกตรงด้วยชื่อ หรือคำค้น `search_tools` เปิดสตรีมเหตุการณ์ของการรัน (**การตั้งค่า → เวิร์กสเปซ → เอเจนต์** → เอเจนต์ → **บันทึก** → **ดู**) แล้วมองหา `[harness] loaded N deferred tool(s)`
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **ไม่มีอะไรถูกบันทึก และเอเจนต์บอกว่าขีดความสามารถนั้นหายไป** — มันไม่เคยค้นหาเลย นั่นคือปัญหาที่พรอมต์ ไม่ใช่ปัญหาการดึงข้อมูล: ดัชนีที่ถูกหน่วงไว้อยู่ในพรอมต์ระบบของมัน พร้อมคำสั่งไม่ให้ประกาศว่าขีดความสามารถใดหายไปจนกว่าการค้นหาจะส่งผลลัพธ์ว่างกลับมา
+- **บันทึกว่ามีการค้นหา แต่ไม่มีอะไรถูกโหลด** — เป็นการพลาดในการดึงข้อมูลจริง ไปที่ขั้นตอนที่ 2
+- **โหลดเครื่องมือแล้ว แต่ใช้ผิดตัว** — เครื่องมือที่มันพบคล้ายกันเกินไป ไปที่ขั้นตอนที่ 3
 
-### 2. Fix a retrieval miss
+### 2. แก้ไขการพลาดในการดึงข้อมูล
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` จับคู่จากชื่อ คำอธิบาย และชื่ออาร์กิวเมนต์ การพลาดเกือบทุกครั้งหมายความว่าคำอธิบายไม่มีคำที่เอเจนต์ใช้
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+เพิ่มคำเหล่านั้นเข้าไป คำอธิบายคือดัชนีสำหรับการดึงข้อมูล ดังนั้น**ทำให้มันยาวขึ้นแทนที่จะตัดให้สั้นลง** — เขียนคำศัพท์ที่ผู้ปฏิบัติงานจะพิมพ์จริง ๆ ("assign", "hand off", "give to") ไม่ใช่แค่คำนามภายใน การตัดคำอธิบายให้สั้นลงเพื่อประหยัดโทเค็นทำให้คุณเสียทั้งการค้นหาที่เคยเจอและความแม่นยำในการเลือก และประหยัดได้แทบไม่มีอะไรเลยเมื่อเทียบกับสคีมา
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+หากเครื่องมือที่ใช่มีอยู่แต่อันดับต่ำ นั่นคือสิ่งที่อาร์กิวเมนต์ `limit` มีไว้สำหรับ คำอธิบายของเครื่องมือเองบอกให้เอเจนต์ขยายการค้นหาที่ดูใกล้เคียงแต่ไม่พบ
 
-### 3. Fix look-alike tools
+### 3. แก้ไขเครื่องมือที่หน้าตาคล้ายกัน
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+หากเครื่องมือสองตัวมีคำอธิบายที่คนซึ่งไม่รู้ความต่างอยู่แล้วจะอ่านว่าเหมือนกัน โมเดลก็กำลังเดา ให้รวมมันเป็นเครื่องมือเดียวที่มีอาร์กิวเมนต์แยกแยะ
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` และ `ticket_pr_link` ทำตามรูปแบบนี้: แต่ละตัวจัดการการเชื่อมและการยกเลิกเชื่อมผ่านอาร์กิวเมนต์แยกแยะ การเลือกที่ทำ*ภายใน*การเรียกครั้งเดียว โดยมีบริบทเต็มของคำขอ เชื่อถือได้มากกว่าการเลือกที่ทำระหว่างคำอธิบายสองอันที่หน้าตาคล้ายกัน
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+เก็บเครื่องมือไว้แยกกันเมื่อมันต้องใช้การควบคุมการอนุมัติ การตรวจสอบ หรือการแสดงผลที่ต่างกัน — นั่นคือเหตุผลที่การรวมเข้าด้วยกันจะทำให้คุณเสียสิ่งที่มีค่าจริง
 
-## Check the prompt cache is working
+## ตรวจสอบว่าแคชพรอมต์ทำงานอยู่
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+อัตราการเข้าแคชแสดงอยู่ใน **การสังเกตการณ์ → ข้อมูลเชิงลึก** เป็น **อัตราแคช** บทสนทนายาว ๆ ที่สุขภาพดีจะอยู่ในระดับสูง หากมันต่ำอย่างต่อเนื่อง แสดงว่ามีบางอย่างเขียนคำนำหน้าขึ้นใหม่ทุกเทิร์น
 
-Common causes, in order of likelihood:
+สาเหตุที่พบบ่อย เรียงตามความเป็นไปได้:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **สิ่งใดก็ตามที่ไม่เป็นดีเทอร์มินิสติกตอนต้นพรอมต์** ไทม์สแตมป์ รหัสคำขอ หรือเซตที่วนซ้ำในลำดับที่แปรผัน ก็ทำให้เกิดได้
+- **การเปลี่ยนโมเดลหรือระดับความพยายามกลางบทสนทนา** ทั้งสองอย่างเปลี่ยนคำนำหน้า ซับเอเจนต์เป็นจุดที่พลาดได้ง่ายเป็นพิเศษตรงนี้: การรันเอเจนต์ลูกด้วยความพยายามที่ต่ำลงเพื่อประหยัดเงินอาจเสียมากกว่าที่ประหยัดได้จากการแชร์แคชที่หายไป
+- **การบีบอัดบ่อยครั้ง** การบีบอัดเขียนประวัติใหม่โดยการออกแบบ ต้นทุนของมันจึงเป็นของจริง วิธีแก้คือบีบอัดให้นาน ๆ ครั้งและลึก แทนที่จะบ่อยและตื้น
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+การปิดการหน่วงด้วย `--tool-deferral=off` เป็นการทดสอบ A/B ที่ใช้ได้เพื่อแยกว่าการเปลี่ยนพฤติกรรมมาจากพื้นผิวสองชั้นหรือไม่ มันสร้างคำขอก่อนมีการหน่วงขึ้นมาใหม่ได้อย่างแม่นยำ ดังนั้นหากพฤติกรรมยังคงอยู่เมื่อปิดมัน พื้นผิวก็ไม่ใช่สาเหตุ

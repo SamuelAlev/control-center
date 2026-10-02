@@ -1,241 +1,262 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Stesen dan persekitaran terasing
+description: Mengapa ejen mendapat mesin pakai buang dan bukan komputer anda — sempadan pengasingan, lorong paparan, kelayakan, port dan kitaran hayat.
 slug: ms-MY/manual-pengguna/konsep/stesen
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/); for the exact
-verbs, ports and defaults, see the [rigs reference](/ms-MY/manual-pengguna/rujukan/stesen/).
+Sebuah **stesen** ialah mesin pakai buang yang dipandu ejen secara masa nyata —
+penyemak imbas, desktop Linux, emulator Android, Simulator iOS, atau mesin di
+sebalik terminal terasing. Kebanyakan stesen ialah VM; simulator mudah alih yang
+diuruskan hos ialah pengecualian yang nyata. Halaman ini menerangkan setiap
+sempadan dan mengapa bahagian-bahagiannya dibentuk sebegitu. Untuk membuka satu,
+lihat
+[Berikan ejen mesin untuk diuji](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/); untuk kata
+kerja, port dan lalai yang tepat, lihat
+[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/).
 
-## Why a VM, not a sandbox
+## Mengapa VM, bukan kotak pasir
 
-The [native sandbox](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[Kotak pasir natif](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) membalut sesuatu
+proses dalam pengasingan ruang nama — nyata, tetapi ia berkongsi kernel anda, dan
+ia mengekang satu *proses*, bukan satu *komputer*. Sebaik sahaja ejen perlu
+mengklik di sekeliling aplikasi desktop, memaparkan halaman dalam penyemak imbas
+sebenar, atau menjalankan eksperimen `rm -rf` yang anda lebih suka tidak
+fikirkan, sempadan yang jujur ialah sebuah mesin: kernel sendiri, cakera sendiri,
+tindanan rangkaian sendiri.
 
-The enclosed surfaces use two VM backends:
+Permukaan terasing menggunakan dua bahagian belakang VM:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM** untuk terminal dan penyemak imbas — but hipervisor dalam masa
+  kurang sesaat daripada imej kontena yang dipinkan mengikut digest.
+- **QEMU** untuk desktop Linux penuh, yang memerlukan peranti paparan yang tiada
+  pada microVM.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Permukaan mudah alih diuruskan hos dan menyatakan sempadan yang lebih lemah itu
+secara terus:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** memandu emulator Google melalui ADB.
+- **iOS** mencipta dan memiliki peranti CoreSimulator pada hos Mac dan memandunya
+  melalui WebDriverAgent. Peranti itu dan datanya dipadamkan apabila stesen
+  ditutup, tetapi rangkaiannya mengikut Mac hos.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Stesen terasing menulis ke tindanan pakai buang di atas imej asas baca sahaja,
+jadi satu stesen tidak boleh mengubah apa yang dibut oleh stesen seterusnya.
+Stesen iOS memiliki peranti CoreSimulator pakai buang yang dipadamkan apabila
+stesen ditutup. Android melampirkan diri pada emulator hos yang hidup lebih lama
+daripada sesi itu.
 
-## Deny-by-default egress
+## Keluar yang ditolak secara lalai
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+Rangkaian sesebuah stesen bermula pada **tiada apa-apa**. Hos diterima masuk bagi
+setiap stesen melalui pintu yang tidak boleh dilencongkan oleh tetamu:
+satu-satunya laluan keluar bagi mesin itu ialah yang dicipta oleh konfigurasi
+pelancaran. Terminal terasing mendapat garis dasar pembangun (daftar pakej, hos
+kod, cermin apt); stesen penyemak imbas menerima masuk tapak produk
+(`usectrl.dev`) dan but ke halaman `file://` setempat yang tidak memerlukan
+keluar; segala-galanya yang lain ditolak pada masa sambungan.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android dan iOS tidak dilindungi oleh pintu ini. Emulator dan simulator hos
+mereka menggunakan rangkaian hos pelayan, jadi antara muka dan laporan keupayaan
+menandakan keluar sebagai tidak dikuatkuasakan dan tidak pernah menawarkan
+kawalan “Mulakan semula tanpa sekatan” yang mengelirukan.
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Keluar dan kelayakan ialah satu polisi yang dilihat daripada dua sisi — broker
+kelayakan (di bawah) tidak akan mengeluarkan token untuk hos yang tidak boleh
+dicapai oleh tetamu.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Segala yang *dibaca* oleh stesen dianggap tidak dipercayai: teks halaman,
+pepohon DOM dan kebolehcapaian, longgokan UI dan output konsol kembali kepada
+ejen dipagari dengan peraturan tetap “ini data, bukan arahan”. Pagar itu ialah
+pembingkaian; pintu keluar ialah penguatkuasaan di belakangnya.
 
-## Input goes through the hypervisor, capture through the guest
+## Input melalui hipervisor, tangkapan melalui tetamu
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+Untuk permukaan desktop, peristiwa papan kekunci dan penunjuk disuntik oleh
+peranti input maya *hipervisor* sendiri. Tetamu tidak pernah menjalankan daemon
+istimewa yang boleh mensintesis input — jadi kompromi perisian tetamu tidak
+menyerahkan papan kekunci kepada penyerang. Tangkapan mengalir ke arah
+sebaliknya, melalui ejen dalam tetamu yang kecil dan tanpa keistimewaan, kerana
+tetamu boleh menskalakan bingkai sebelum ia melintasi wayar.
 
-## Two display lanes
+## Dua lorong paparan
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+Orang yang menonton dan model yang memandu mempunyai keperluan yang
+bertentangan, jadi stesen menyajikan dua strim yang berasingan:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **Lorong manusia** ialah resolusi penuh pada saiz panel anda, dirunding
+  semula apabila anda mengubah saiz, digeganti oleh pelayan sebagai bait legap —
+  pelayan tidak pernah menyahkod bingkai, kerana penyahkod video pada laluan
+  permintaan itulah yang menghalangnya daripada menjawab RPC.
+- **Lorong ejen** ialah gambar pegun yang dikecilkan, dihadkan pada saiz yang
+  mesra model, satu imej bagi setiap hasil alat, dengan bingkai lama digugurkan
+  semasa pemadatan manakala perihalan teksnya kekal.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Tiada lorong berkompromi untuk yang lain: anda mendapat gambar yang lancar,
+model mendapat gambar yang murah.
 
-## Take-over is a chokepoint, not a request
+## Pengambilalihan ialah titik sesak, bukan permintaan
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Kawalan eksklusif dikuatkuasakan pada satu titik yang dilalui setiap tindakan —
+bukan dengan meminta model berkelakuan baik. Semasa seseorang manusia
+memegangnya, pelayan menolak tindakan *yang mengubah keadaan* oleh ejen. Ejen
+mengekalkan kata kerja pemerhatiannya (tangkap layar, pengekstrakan) supaya ia
+boleh menceritakan apa yang anda lakukan, dan ia dimaklumkan tentang
+pengambilalihan itu melalui lorong pemanduannya dan bukan dibiarkan menemuinya
+melalui klik yang ditolak. Mengklik dan menaip pada kanvas berfungsi selagi
+tiada orang lain memegang kunci itu — atau apabila anda yang memegangnya; teg
+status memaparkan **Anda mempunyai kawalan**. Setiap peristiwa input — milik
+anda dan milik ejen — masuk ke dalam log audit setiap stesen dengan prinsipalnya
+serta jujukan monotonik, jadi “siapa yang klik itu” kekal boleh dijawab selepas
+mesin itu hilang.
 
-## Content crosses the boundary; the machines stay separate
+## Kandungan melintasi sempadan; mesin tetap berasingan
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Salin dan tampal berfungsi dalam kedua-dua arah, begitu juga menyeret fail masuk
+dan keluar — tetapi stesen ialah komputer yang berbeza, dan reka bentuk ini
+tidak pernah berpura-pura sebaliknya.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Papan klip** dibawa atas permintaan, bukan dicerminkan secara berterusan.
+Tekan kord salin pada stesen dan tetamu diminta menyalin, kemudian apa sahaja
+yang diletakkannya pada papan klipnya — teks, imej, senarai fail — diambil dan
+diletakkan pada papan klip anda. Tampal menghantar kandungan yang sama ke arah
+sebaliknya dan kemudian menekan tampal di dalam tetamu. Tiada apa-apa
+disegerakkan di latar belakang: kata laluan yang anda salin pada mesin anda
+sendiri tidak tiba secara senyap di dalam VM kerana pemasa tercetus.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Pelintasan dipagari bagi setiap pengguna dan setiap arah, secara berasingan.
+Tampal ke dalam stesen dibenarkan secara lalai; salin keluar daripada stesen
+akan bertanya dahulu (kebenaran sepuluh minit, atau **Sentiasa benarkan** di
+bawah **Tetapan → Pelayan → Stesen → Akses papan klip**). Ia tidak pernah
+menjadi tetapan ruang kerja: seorang ahli tidak boleh memberi kebenaran bagi
+papan klip ahli lain.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+Pada macOS kord pelintasan ialah ⌘C/⌘V, yang tidak kabur — ⌃C terus sampai ke
+shell tetamu sebagai isyarat gangguan yang sememangnya. Pada Windows dan Linux,
+kedua-dua kord itu ialah ketukan kekunci yang sama, jadi tetamu menerimanya
+tanpa perubahan dan papan klip anda hanya ditulis ganti apabila papan klip
+tetamu benar-benar berubah. Isyarat gangguan kekal sebagai isyarat gangguan.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Fail yang diseret masuk** disalin ke dalam folder lepasan mesin itu dan
+kemudian ditawarkan kepadanya. Apa maksud “ditawarkan” bergantung pada apa yang
+benar-benar boleh dilakukan: halaman penyemak imbas menerima peristiwa lepas
+yang *sebenar* pada titik anda melepaskannya, jadi zon muat naik berkelakuan
+sama seperti untuk fail setempat; desktop menerima fail itu dalam `~/Drops`
+dengan laluannya pada papan klipnya, kerana tiada hos boleh mensintesis seretan
+ke dalam toolkit Linux sewenang-wenangnya tanpa menjalankan daemon istimewa di
+dalam tetamu — dan itulah tepatnya yang ditolak oleh reka bentuk ini. Hasilnya
+menyatakan apa yang berlaku, jadi CSV yang dilepaskan pada zon muat naik tidak
+pernah dilaporkan sebagai dimuat naik sedangkan ia sekadar fail dalam folder.
+Melepaskan fail ke atas **terminal** terasing menyalin fail itu masuk dan menaip
+laluan tetamunya pada prompt, yang itulah yang benar-benar boleh digunakan oleh
+shell.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Fail yang diseret keluar** berfungsi pada permukaan desktop, tempat protokol
+seretan X11 menjadikan muatannya boleh dibaca semasa seretan sedang
+berlangsung. Mulakan seretan di dalam tetamu, bawa keluar dari kanvas, dan fail
+itu diambil ke mesin anda dan diserahkan kepada OS sebagai seretan sebenar.
+Menyalin fail dalam pengurus fail tetamu dan menampalnya pada hos berfungsi
+dengan cara yang sama. Permukaan penyemak imbas sengaja *tidak* menawarkan ini:
+penyemak imbas tanpa kepala tiada pilihan seretan untuk dibaca, dan isyarat
+terdekat yang ada — pemilihan teks halaman — sama sekali bukan bukti seretan,
+jadi bertindak berdasarkan itu akan merampas klik biasa.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Segala yang dibaca daripada tetamu kekal sebagai kandungan tidak dipercayai:
+teks papan klip sampai kepada model di dalam pagar yang sama seperti
+pengekstrakan halaman, dan log audit merekodkan bahawa tampal berlaku dan berapa
+banyak kandungannya — tidak pernah apa isinya.
 
-## Credentials never live in the guest
+## Kelayakan tidak pernah tinggal dalam tetamu
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` berfungsi dari terminal terasing, namun tetamu tidak menyimpan
+sebarang token hos kod. Ia memegang satu rahsia bagi setiap VM yang
+satu-satunya kuasanya ialah *meminta* kepada broker kelayakan hos — melalui
+terowong yang dikawal hos — token berjangka pendek yang berskop repo, bagi
+setiap operasi, dihadkan kadarnya, dibatasi oleh senarai kebenaran hos yang sama
+seperti keluar, dan dibatalkan sebaik sahaja stesen ditutup. Mesin yang dibina
+untuk dibuang tidak boleh mengandungi apa-apa yang berharga untuk dicuri.
 
-## The worktree in a rig is a satellite
+## Worktree dalam stesen ialah satelit
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+Apabila stesen membawa repositori anda, worktree hos kekal berwibawa. Salinan
+itu *disegerakkan masuk* semasa but (dengan rahsia seperti fail `.env`
+dikecualikan), dan komit hanya kembali apabila anda memintanya — diambil ke
+dalam `refs/rigs/<id>/*`, tidak pernah ditolak, tidak pernah di-checkout. Tiada
+apa-apa di dalam VM boleh menggerakkan cabang anda atau menyentuh pokok kerja
+anda; mencantumkan apa yang dihasilkan stesen sentiasa keputusan manusia yang
+dibuat pada hos.
 
-## Ports without holes
+## Port tanpa lubang
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
+Pelayan dev yang dimulakan di dalam VM terminal menjadi boleh dicapai — pada
+mesin anda, dalam Penyemak imbas (VM), secara pilihan pada LAN anda, secara
+pilihan di bawah domain dev dengan HTTPS — tanpa pernah membuka mesin itu. Peta
+port hipervisor ditetapkan semasa but, jadi semua pemajuan selepas itu menaiki
+dua saluran sempit yang dikawal hos: satu pemultipleks masuk yang telah dicipta
+lebih awal yang enggan mendail apa-apa yang tetamu tidak benar-benar
+mendengarnya, dan terowong terbalik yang dibiarkan terbuka oleh hos untuk
+sambungan yang dimulakan tetamu. HTTPS domain dev ditamatkan pada pelayan
+menggunakan autoriti yang dikeluarkan secara setempat yang kuncinya tidak
+pernah masuk ke mana-mana tetamu. Mekanismenya ada dalam [Majukan port dari
 terminal](/ms-MY/manual-pengguna/panduan-cara/port-vm/).
 
-## Machines are bounded by construction
+## Mesin dibatasi secara binaan
 
-A rig cannot become a pet:
+Stesen tidak boleh menjadi haiwan belaan:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- **TTL keras** yang tidak boleh dilanjutkan oleh tetamu;
+- **tangga melahu** — diparkirkan (vCPU dihentikan, RAM kekal dimuat) selepas
+  tetingkap melahu, ditutup selepas dua kali gandanya — dengan terminal yang
+  terbuka atau penonton yang menonton dikira sebagai “sedang digunakan”;
+- **bajet memori** yang dikira dalam *megabait mastautin*, bukan sesi, kerana
+  VM yang diparkirkan membebaskan CPU tetapi mengekalkan setiap bait RAM; mesin
+  yang paling lama tidak digunakan disingkirkan dahulu, dan tidak pernah mesin
+  yang sedang dipandu atau ditonton oleh seseorang;
+- peruntuhan apabila pelayan dimatikan, serta sapuan yatim yang ditandai
+  pemilikan pada permulaan seterusnya, supaya pelayan yang ranap tidak pernah
+  meninggalkan hipervisor yang tidak menjawab sesiapa.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+But pertama menarik imej mesin yang dipinkan; pelayan kemudian menyimpan
+salinan pra-ekstrak dalam cache di latar belakang, jadi setiap mesin seumpama
+itu selepas itu but dalam beberapa saat dan terminal terasing muncul dengan
+garis dasar CLI seperti runner yang dihoskan GitHub sudah dipasang — pengkompil,
+Python, `jq`, alat arkib — bukan toolcache bahasa atau Docker. Imej Komputer
+membenamkan garis dasar CLI yang sama pada masa binaan, bersebelahan XFCE dan
+penyemak imbas.
 
-## Three browsers, not one
+## Tiga penyemak imbas, bukan satu
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+“Ia berfungsi pada mesin saya” ialah dakwaan tentang satu enjin pemaparan. Jadi
+stesen penyemak imbas bukan “penyemak imbas” — ia ialah **Chromium, Firefox
+atau WebKit**, dipilih semasa anda membukanya, dan stesen menjalankan yang
+dengannya ia dibuka sepanjang hayatnya. Satu perbualan boleh memegang satu bagi
+setiap jenis: membuka *Firefox (VM)* di sebelah *Chromium (VM)* memberi anda dua
+mesin, dan mengarahkan kedua-duanya ke halaman yang sama itulah perbandingannya.
+WebKit hampir sama dengan Safari seperti apa-apa sahaja yang berjalan pada
+Linux — keturunan enjin yang sama, jadi ia menangkap jurang yang dialami
+pengguna Safari.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Kata kerjanya serupa pada ketiga-tiganya; protokol di bawahnya tidak, dan
+perbezaannya dinyatakan dan bukan dilicinkan. Chromium bertutur dalam DevTools
+Protocol dan *menolak* bingkai, jadi paparan langsungnya tidak menelan kos
+selagi halaman itu pegun. Firefox bertutur WebDriver BiDi dan WebKit bertutur
+WebDriver klasik, dan kedua-duanya tiada screencast, jadi paparan langsungnya
+meninjau secara berkala — beberapa bingkai sesaat, yang sesuai untuk menonton
+halaman dan bukan untuk menonton animasi. Apabila sesuatu enjin benar-benar
+tidak boleh melakukan sesuatu (Firefox tiada muat semula yang melangkau cache;
+WebKit tidak boleh melihat output konsol yang dilog sebelum halaman selesai
+dimuatkan), jawapannya menyatakan demikian dan bukan secara senyap melakukan
+perkara lain.
 
-## Where rigs live in the product
+## Di mana stesen berada dalam produk
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/ms-MY/manual-pengguna/konsep/guardrail/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+Stesen sengaja **bukan** destinasi global. Paparan langsung ialah tab dalam ruang
+atau PR tempat kerja itu berlaku, berskop kepada perbualan itu — jadi tab anda
+dan panggilan `browser_use` ejen menujukan *satu* mesin (satu bagi setiap
+enjin, pada permukaan penyemak imbas). Sama ada stesen boleh but langsung ialah
+sifat hos, jadi keupayaan, imej, imej tersuai bagi setiap ruang kerja dan senarai
+mesin yang berjalan terletak di bawah **Tetapan → Pelayan → Stesen**. Memandu
+persekitaran terasing ialah
+[kelas tindakan guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) tersendiri,
+jadi ruang kerja, ejen atau ruang boleh membenarkannya, memerlukan kelulusan,
+atau menolaknya terus — modus baca sahaja menolaknya secara menyeluruh.

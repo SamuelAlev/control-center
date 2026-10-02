@@ -1,149 +1,162 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Skonfiguruj powiadomienia
+description: Włączaj i wyłączaj kategorie, ustaw godziny ciszy i dźwięk oraz wiedz, które powiadomienia docierają do Ciebie i gdzie.
 slug: pl-PL/podrecznik/poradniki/powiadomienia
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Ten poradnik pokazuje, jak skonfigurować powiadomienia i czym naprawdę steruje
+każde ustawienie.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Powiadomienia docierają dwiema powierzchniami. **Centrum powiadomień** —
+dzwonek na pasku tytułu — czyta trwały kanał na serwerze, prowadzony osobno dla
+każdego obszaru roboczego. **Toasty systemowe** to oddzielna ścieżka dostępna
+tylko na pulpicie, zasilana ramkami przesyłanymi na żywo z serwera.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Wersja webowa nie pokazuje powiadomień systemowych]
+Potok toastów tworzy wyłącznie bootstrap wersji desktopowej. W `app.usectrl.dev`
+nie ma toastów systemowych, dźwięków powiadomień ani banerów w tle — dzwonek i
+jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie ma
+żadnej powierzchni powiadomień.
 :::
 
-## Turn categories on or off
+## Włączaj i wyłączaj kategorie
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Przejdź do **Ustawienia → Ty → Powiadomienia**
+2. Zostaw **Włącz powiadomienia** włączone
+3. Przełącz kategorie, których chcesz. Jest ich dokładnie szesnaście:
 
-| Category                  | Fires when                                                                 |
+| Kategoria                 | Wyzwalane, gdy                                                             |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Agent ukończył pracę      | Agent zakończył uruchomienie                                               |
+| Opublikowano PR           | Agent opublikował PR                                                       |
+| Scalono PR                | PR został scalony                                                          |
+| Nowe wiadomości           | Wiadomość dotarła do przestrzeni, na którą nie patrzysz                    |
+| Wzmianka w pull requeście | Odpytywanie powiadomień GitHuba wykryło, że wspomniano Cię w PR            |
+| Prośba o recenzję         | Twoja recenzja została faktycznie zamówiona w PR, który nie jest wersją roboczą |
+| Nieaktualna recenzja      | Do pull requesta, który już zrecenzowałeś, trafiły nowe commity            |
+| Gotowy do scalenia        | Utworzony przez Ciebie pull request stał się możliwy do scalenia albo przestał |
+| Decyzje recenzji          | Recenzent zatwierdził, zażądał zmian albo jego zatwierdzenie zostało odrzucone |
+| Sprawdzenia               | CI zawiodło w utworzonym przez Ciebie pull requeście albo znów zadziałało  |
+| Wątki recenzji            | Ktoś odpowiedział w wątku, w którym uczestniczysz, albo go rozwiązał       |
+| Przypisano zgłoszenie     | Zgłoszenie zostało przypisane                                              |
+| Zmieniono status zgłoszenia | Zgłoszenie zmieniło status                                               |
+| Spotkanie wkrótce się rozpocznie | Spotkanie w kalendarzu wchodzi w okno wyprzedzenia                  |
+| Kalendarz rozłączony      | Wygasł token OAuth połączonego kalendarza                                  |
+| Aktualizacje rigów        | Rig został przejęty, odzyskany albo uległ awarii                           |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Wszystko poza tą listą nie może być zgłaszane ani filtrowane — nie ma kategorii
+„wszystko inne”.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Te preferencje podążają za Twoim użytkownikiem na wszystkie urządzenia, więc
+telefon i laptop pozostają zgodne. Głośność to celowy wyjątek i pozostaje
+ustawieniem danego urządzenia.
 
-## Set quiet hours
+## Ustaw godziny ciszy
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Na tej samej stronie włącz **Quiet hours**
+2. Wpisz godzinę początku i końca w formacie `HH:MM` (domyślne okno to
+   22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+W godzinach ciszy powiadomienia niepilne są odrzucane — nie trafiają do kolejki
+ani nie są odtwarzane później.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Dwie kategorie są **pilne** i docierają zawsze, omijając godziny ciszy _oraz_
+tryb skupienia: **Spotkanie wkrótce się rozpocznie** i **Opublikowano PR**.
+Alert o spotkaniu, który zobaczysz dopiero po fakcie, jest bezwartościowy — i
+właśnie to jest tego powodem.
 
-## Choose a sound
+## Wybierz dźwięk
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Przewiń do **Dźwięk powiadomienia**
+2. Wybierz jeden z jedenastu dołączonych dźwięków albo **Brak**
+3. Naciśnij przycisk testu, aby go usłyszeć, a suwakiem ustaw głośność
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Dźwięk odtwarza sama aplikacja; powiadomienie systemowe dostarczane jest
+bezgłośnie, więc nie usłyszysz go dwa razy.
 
-## Set the meeting lead time
+## Ustaw czas wyprzedzenia spotkania
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Przewiń do **Czas wyprzedzenia alertu**
+2. Wybierz **5**, **10**, **15** lub **30** minut
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Tyle wcześniej przed wydarzeniem w kalendarzu wyzwalane jest powiadomienie
+**Spotkanie wkrótce się rozpocznie**. Domyślnie jest to 5 minut.
 
-## Know when a notification is suppressed
+## Wiedz, kiedy powiadomienie jest wstrzymywane
 
-A notification is dropped, silently, when any of these is true:
+Powiadomienie jest po cichu odrzucane, gdy spełniony jest którykolwiek z tych
+warunków:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Powiadomienia są globalnie wyłączone albo wyłączona jest jego kategoria
+- Jesteś już na trasie, na którą miało Cię zaprowadzić — a w przypadku
+  wiadomości, już w tej przestrzeni
+- Tryb skupienia jest aktywny, a kategoria nie jest pilna
+- Godziny ciszy są aktywne, a kategoria nie jest pilna
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Te warunki dotyczą toastów systemowych. Trwały dzwonek i tak zapisuje zdarzenie.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Dwa kolejne wstrzymania działają wcześniej, na tym, co serwer w ogóle wysyła:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Wiadomość od innego **człowieka**, w której nie ma wzmianki o Tobie, nigdy nie
+  staje się powiadomieniem
+- Przestrzenie agent–agent są wyciszone na pasku bocznym, więc nigdy nie
+  zwiększają plakietki nieprzeczytanych
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+W obrębie przestrzeni nie ma cichego zakątka: każda rozmowa powiadamia tak samo,
+łącznie z wątkami. Stan przeczytania obowiązuje dla całej przestrzeni, więc
+nieprzeczytane sumują się w obrębie jej rozmów, a nie są śledzone osobno dla
+każdej rozmowy.
 
-## Read and clear the notification centre
+## Czytaj i czyść centrum powiadomień
 
-1. Click the bell in the title bar
+1. Kliknij dzwonek na pasku tytułu
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Wyskakujące okienko pokazuje ostatnią aktywność, prowadząc każdy wpis
+bezpośrednim linkiem do tego, czego dotyczy. Jego otwarcie **nie** oznacza
+wszystkiego jako przeczytane — użyj **Oznacz wszystkie jako przeczytane** w
+nagłówku albo oznacz pojedynczy wiersz. Stan przeczytania podąża za Twoim
+użytkownikiem na wszystkie urządzenia.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Wyczyść wszystko to znak wodny, nie usunięcie]
+**Wyczyść wszystko** stawia znak wodny dla danego użytkownika, który ukrywa
+wszystko starsze; wiersze zostają. Osobno każdy obszar roboczy przechowuje
+tylko **200** najnowszych wierszy kanału, przycinanych w miarę napływania
+nowych, a dzwonek subskrybuje najnowsze **50** pozycji, z których wyskakujące
+okienko wymienia maksymalnie **15**. Historia poza tym przepada, niezależnie od
+stanu przeczytania.
 :::
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-### No OS notifications on macOS
+### Brak powiadomień systemowych w systemie macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Zgoda jest pytana natywnie przy uruchomieniu aplikacji. Jeśli ją odrzucisz,
+włącz ponownie Control Center w Ustawienia systemowe → Powiadomienia; w
+aplikacji nie ma monitu, który wywołałby tę prośbę ponownie.
 
-### Nothing arrives on the web build
+### W wersji webowej nic nie dociera
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+To oczekiwane — wersja webowa nie ma potoku powiadomień systemowych. Użyj
+dzwonka.
 
-### The bell badge shows zero but there is clearly new activity
+### Plakietka dzwonka pokazuje zero, choć wyraźnie widać nową aktywność
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Dopóki po połączeniu nie ustali się strumień znaczników przeczytania, wpisy
+wyświetlają się jako przeczytane, aby plakietka nie mrugała i nie pustoszała.
+Ustabilizuje się, gdy znacznik się wczyta.
 
-### An agent's run finished but nothing pinged me
+### Uruchomienie agenta się zakończyło, ale nic mnie nie powiadomiło
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Sprawdź, czy nie byłeś już w przestrzeni, w której to się stało — aktywna trasa
+wstrzymuje własny toast systemowy.
 
-## Related guides
+## Powiązane poradniki
 
-- [Use focus mode and soundscapes](/pl-PL/podrecznik/poradniki/tryb-skupienia/)
-- [Triage your inbox](/pl-PL/podrecznik/poradniki/przeglad-skrzynki/)
-- [Curate your newsfeed](/pl-PL/podrecznik/poradniki/newsfeed/)
+- [Używaj trybu skupienia i pejzaży dźwiękowych](/pl-PL/podrecznik/poradniki/tryb-skupienia/)
+- [Przeglądaj skrzynkę](/pl-PL/podrecznik/poradniki/przeglad-skrzynki/)
+- [Kuratoruj newsfeed](/pl-PL/podrecznik/poradniki/newsfeed/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Domain events](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/)
+- [Zdarzenia domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/)

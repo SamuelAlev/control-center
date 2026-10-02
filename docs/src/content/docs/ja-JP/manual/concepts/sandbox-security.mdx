@@ -1,267 +1,98 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: サンドボックスとセキュリティ
+description: 今日の Control Center でエージェントを実際に制約しているもの、OS サンドボックスがどこまで届くのか、バックエンドを持たないホストでどの境界が保たれるのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[OS サンドボックスが届く範囲と届かない範囲]
+`cc_server` は起動時にホストをプローブし、利用可能な場合にはエージェントのコマンド実行を OS ネイティブのサンドボックスでラップします — macOS では Seatbelt、Linux と WSL2 では bubblewrap です（後者には `PATH` 上の `bwrap` と `socat` が必要です）。バックエンドが存在しない場合 — Windows、またはこれらのツールを欠いた Linux マシン — は、実行は以下に挙げる他の境界へフォールバックし、サーバーはその旨を起動ログで通知します。`--sandbox off` はそれを意図的に無効にします。
 
-Two gaps survive the sandbox and are worth holding in mind:
+サンドボックスをすり抜けるまま残る 2 つの隙間があり、これらは覚えておく価値があります:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- 内蔵ハーネスの**インプロセスのファイルツール**（`read`、`write`、`edit`、`apply_patch`、`search`、`find`、`search_files`）はサーバープロセス内で動作するため、ラップされるのは `bash` だけです。これらを制約しているのは、ツール自体のパス制限とアクションガードレールです。
+- **Claude Code は `--dangerously-skip-permissions` 付きで起動されます**。非対話の `claude -p` が自身のプロンプトで永久にブロックしてしまうからです。そのため、そのファイル呼び出しとシェル呼び出しは Control Center のガードレールではゲートされません — それらを取り囲む境界が OS サンドボックスです。
   :::
 
-## Why isolation matters here
+## ここで分離が重要になる理由
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+エージェントはあなたに代わってファイルを読み、シェルコマンドを実行し、外部 API を呼び出します。気にすべき障害が悪意であることはまれです — あるのは、パスを読み違えて作業中のチェックアウトを書き換えてしまうエージェントであり、レビューを終えていないブランチをプッシュしてしまうエージェントです。したがって、製品が答えなければならない問いは「エージェントは信頼できるか」ではなく、「エージェントが誤ったときの影響範囲はどこまでか」です。
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center はこれに層で答えており、その層は意図的に独立しています。ひとつが欠けても、ほかは保たれます。これは重要なことです。というのも、最も外側の層である OS サンドボックスだけが唯一の条件付きの層であり、バックエンドを提供するホストに依存し、Windows ではどのホストも提供しないからです。
 
-## What actually constrains an agent
+## エージェントを実際に制約しているもの
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+サンドボックスの有無にかかわらず、あらゆるホストでエージェントの実行を制約するものが 5 つあります。いずれもカーネルの境界ではありませんが、どれも現実のものです。ホストがバックエンドを提供する場合、OS サンドボックスはそれらの上に位置し、以下に挙げる「サンドボックスが追加するものと、それが止まる場所」で、それによって何が変わるかを説明します。
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**エージェント自身のコピーオンライトのワークツリー。** すべての会話は、リンクされた各リポジトリのチェックアウトを独自に用意し、バイト単位のコピーではなく同梱の `rift` ネイティブによるコピーオンライトでクローンします。そのため、分離はデフォルトにできるほど低コストです。ワークスペースに追加した登録済みリポジトリは、エージェントが作業するディレクトリではありません — 同じリポジトリに触れる 2 つの会話は互いの編集を見ることができず、どちらもあなたのチェックアウトを編集していません。
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+粒度については正確に述べておく価値があります: **ワークツリーは会話単位であり、エージェント単位ではありません。** 同じ会話の 2 つのエージェントは、その会話の `repos/` を _共有_ する別々のオーバーレイ作業ディレクトリを受け取ります — ひとつの変更に対して協力しているのですから、これが狙いです — 一方で、それぞれのプライベートなエージェントディレクトリは分離されたままです。`rift` が出荷される環境ではコピーオンライトが唯一のバックエンドです。reflink できないファイルシステムや、リポジトリとは別のボリュームにあるデータディレクトリでは、フォールバックせずにプロビジョニングが失敗します。例外は Windows です。そこにはコピーオンライトのバックエンドが存在しないため、`git worktree` がバックエンドになります。これは暗黙の劣化ではありません。
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**内蔵ハーネスのファイルツールにおけるパス制限。** ハーネスの `read`、`write`、`edit`、`apply_patch`、`search`、`find`、`search_files` ツールは、すべてのパスを実行の作業ディレクトリと共有ルート — 会話の `repos/` ディレクトリ（ワークツリーが置かれる場所）と、存在する場合のスペースの添付ファイルディレクトリ — を基準に解決し、その外側に着地するものは拒否します。絶対パスは、すでに内側にあった場合にのみ受け入れられます。ワークツリー内から外を指すシンボリックリンクも解決され、拒否されます。これが、サンドボックスが関与していなくてもエージェントが `~/.ssh` に `write` できない理由です。
 
-**The mode's tool surface.** A conversation's [mode](/ja-JP/マニュアル/コンセプト/モード/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**モードのツールサーフェス。** 会話の[モード](/ja-JP/マニュアル/コンセプト/モード/)は、その実行でどのツールがそもそも実体化されるかを決めます。読み取り専用のモード（`plan`、`review`、`orchestrate`）では、変更を伴うツールはそもそもレジストリに存在せず、それらのモードのシェルコマンドポリシーは、あらゆる変更コマンドをプロンプトするのではなく、そもそも拒否します — `git commit`、`git push`、`npm install`、`docker` などすべてです。存在しないツールは呼び出せません。これは、存在してゲートされているツールよりも強い保証です。
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/) for the resolution model.
+**統一されたアクションガードレール。** 変更を伴うすべてのツールは、生み出しうるエフェクトクラスを宣言し、ポリシーエンジンは呼び出しが実行される前に、それぞれを許可・確認・拒否のいずれかに解決します。承認者が接続されていない `prompt` は _拒否_ に解決されます — 誰も答えられない問いが「はい」になることはありません。解決モデルについては[ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)を参照してください。
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**ケイパビリティでゲートされた資格情報とサニタイズされた環境。** 資格情報は起動ごとに会話のケイパビリティフラグから発行され、実行の終了時に取り消されます。ACP、ハーネスの `bash`、ネイティブラップ下の Claude Code は、プロセスが始まる前に、動的リンカーとインタープリターのインジェクションベクター（`LD_PRELOAD`、`DYLD_INSERT_LIBRARIES`、`NODE_OPTIONS`、`GIT_SSH_COMMAND` とその類）を除去した環境を受け取ります。`NoSandboxAdapter` 経由の Claude Code はホストの環境を継承します。
 
-### Where those bounds thin out
+### それらの境界が薄くなる場所
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+ハーネスのファイルツールは子プロセスではなく_サーバープロセス内_で動作するため、サンドボックスプロファイルが接続されたとしてもそれを制約できません — サンドボックス化されたコマンドランナーを通るのは `bash` だけです。それらの閉じ込めは前述のパスチェックであり、したがってこのチェックは第二の防衛線ではなく、まさに構造を支える要素です。
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+`bash` ツールは、正確さが求められるもうひとつの箇所です。そのコマンドはモードのコマンドポリシーに対して評価され、その後、サニタイズされた環境とワークツリーを作業ディレクトリとしてスポーンされます。バックエンドが存在する場合、そのスポーンはラップされるため、シェルコマンドがワークツリーの外に書き込むのを止めるのはサンドボックスです。存在しない場合 — Windows、または `bwrap` と `socat` のない Linux — コマンドポリシーが、コマンドとディスクの残りの間にある唯一のものです。`chat` モードでは、ポリシーは固定リスト（特権昇格、システムとディスクの破壊、コンテナと名前空間の脱出）をハード拒否し、リモート状態の変更（`git push`、`gh pr create`、パッケージの公開とインストール）では確認を求めます。どちらのリストにもないものは実行されます。パイプライン、チェーン、サブシェルは解析され、各サブコマンドが個別に評価され、最も制限の厳しい決定が優先されます。
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/ja-JP/マニュアル/コンセプト/ガードレール/#the-adapter-honesty-matrix).
+Claude Code をアダプターとして使う場合が、サンドボックスが最も大きな重みを担うケースです。Control Center はそれを `--dangerously-skip-permissions` 付きで起動します。非対話の `claude -p` が自身の承認プロンプトで永久にブロックしてしまうからです。その読み取り、書き込み、編集、シェル呼び出しは自プロセス内で行われ、Control Center はそれらを決して見ません。ゲートに到達する呼び出しは、Control Center 自身が提供する `mcp__*` ツールだけです。バックエンドが存在する場合、それらの見えない呼び出しも依然としてサンドボックスのラップ内で行われるため、それらを取り囲む境界は OS です。存在しない場合、何もありません。各アダプターはこれを自身のエンフォースメントマトリクスで明示しています — [アダプターの正直さマトリクス](/ja-JP/マニュアル/コンセプト/ガードレール/#the-adapter-honesty-matrix)を参照してください。
 
-## Capability gating is enforcement by absence
+## ケイパビリティのゲートは「不在による強制」である
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+会話は 4 つのケイパビリティフラグを持ちます: リポジトリへのプッシュ、GitHub API の呼び出し、チケットプロバイダーの呼び出し、ネットワークへのアクセスです。これらはエージェントが行動するときにチェックされるのではありません。起動時に一度だけ、資格情報ブローカーによってチェックされます — そしてオフのケイパビリティとは、対応するトークンがそもそも環境に置かれないというだけのことです。
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+これが仕組みのすべてであり、はっきり述べておく価値があります。失敗の様相が、人が期待するものとは違うからです。「GitHub API の呼び出しを許可」をオフにしても、「ケイパビリティが拒否されました」というメッセージは出ません。送るべき `GH_TOKEN` が存在しないため、エージェントの内部でごく普通の `401` が出るだけです。エージェントはそれを資格情報の問題として語るかもしれません。不在による強制は堅牢です — 回避すべきチェックが存在しません — しかし静かであり、エージェントはなぜ失敗したのか分かりません。
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+ネットワークフラグも同じように振る舞います。オフの場合、ハーネスの `web_fetch` と `web_search` ツールはあらゆる呼び出しを拒否し、サンドボックス化されたスポーンのプロキシ許可リストは空になるため、外向きの接続はすべて拒否されます。
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+資格情報は実行の終了時に取り消されるため、ハンドルがそれを発行した実行より長生きすることはありません。
 
-## What the sandbox adds and where it stops
+## サンドボックスが追加するものと、それが止まる場所
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+`SandboxBackend` enum には 3 つの値があります — `native`（macOS では Seatbelt、Linux と WSL2 では bubblewrap）、`none`、`microvm` です。エージェントのコマンドラッピングが使うのは最初の 2 つだけです。`microvm` は対話ターミナルとリグ向けの閉じ込め VM バックエンドであり、`bash` ラップの暗黙のアップグレードではありません。native の形を理解すると、接続されている場合に何を得られるのか、そしてそれが決して与えようとしなかったものは何かが分かります。
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` は起動時に一度だけホストをプローブし、バックエンドが応答する場合、ディスパッチ経路が持つ 2 つのシームの両方にそれを与えます。トランスポートが 1 つを共有しているわけではないからです。1 つ目（`SandboxPort`）は Claude Code CLI をラップします。2 つ目（`SandboxManager`）は ACP アダプターと内蔵ハーネスの `bash` ツールをラップします。片方だけに与えると、ほかはラップされずにスポーンされますが、以前はそうなっていました。バックエンドのないホスト、または `--sandbox off` の下では、それらはすべてラップされずにスポーンし、サーバーは起動行でどちらのケースなのかを通知します。ACP とハーネスの `bash` は依然として環境をサニタイズします。`NoSandboxAdapter` 経由の Claude Code はホストの環境を継承します。
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+ひとつのサーフェスだけが意図的に除外されます。サーバーがホストするターミナルはセッションごとのバックエンド引数を受け入れ、`cc_server` はそれをホストシェルをデフォルトとして構築します。そのため、アプリから開くターミナルは、クライアントが明示的に `native` を指定しない限り、サンドボックスなしで動作します。それはサーバーホスト上の本物のシェルであり、エージェントの実行ではありません。
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Linux では、`bubblewrap` がマウント名前空間を構築するため、エージェントはそこにバインドされたものだけを本当に見ます。macOS では、`sandbox-exec` が **デフォルトで許可** の Seatbelt プロファイルを適用します — 完全なデフォルト拒否のプロファイルでは、対話シェルが使えなくなります。列挙すべき dyld、XPC、Mach 呼び出しの数が非現実的だからです。そのため macOS のプロファイルは `(allow default)` から始まり、拒否を切り出します: シークレットパスの読み取り、明示的な許可を上に重ねてデフォルト拒否にリセットされた書き込みポリシー、拒否されたすべてのパスとその祖先に対する unlink の禁止（リネームで書き込み拒否を迂回できないようにするため）、常に危険なバイナリと書き込み可能ディレクトリにコピーされたものに対する exec の拒否、そしてループバックプロキシポートと DNS に制限されたネットワークです。
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+実際の結果はこうです: Linux ではエージェントから見えるファイルシステムが狭められ、macOS ではエージェントは依然としてホストのほとんどを _読み取る_ ことができ、あなたの登録済みチェックアウトは不可視性によってではなく、明示的な書き込みとリネームの拒否によって保護されます。どちらも名前空間レベルの分離であり、カーネルのセキュリティ境界ではありません — バックエンド自身がその能力ノートでそう述べています。
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+バインドマウントの集合が、エージェント間境界の引かれる場所です。オーバーレイディスパッチ（Claude Code と ACP）は、実行ごとに解決される最大 4 つのパスをマウントします: エージェントのオーバーレイ作業ディレクトリは読み書き可、エージェントの設定ディレクトリは読み取り専用、会話の共有 `repos/` ディレクトリは存在する場合に読み書き可、スペースの添付ファイルディレクトリは存在する場合に読み取り専用です。兄弟エージェントのディレクトリがマウントされることはありません。ハーネスの `bash` ラップはより狭く、実行の作業ディレクトリだけをバインドマウントします。これはハーネスのインプロセスのパスチェックがソフトウェアで強制するのと同じ形であり、両者は一致しています — ただしハーネス自身のファイルツールをカバーするのはパスチェックだけであり、それらはマウント名前空間にまったく到達しません。
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+あなたの登録済みチェックアウトは、その上に書き込み拒否の集合として加わります。すべてのモードで、3 つのラップされたパス（Claude Code、ACP、ハーネスの `bash`）すべてにおいてです。そして各ルールは、そのリテラルの綴りとシンボリックリンク解決後の綴りの両方で出力されます。2 つ目の綴りはおまけではありません: カーネルは拒否ルールを解決後のパスに対して照合し、macOS では解決は例外的なものではなく日常的なものです — `/tmp` は実際には `/private/tmp` であり、`/var/folders/…` は実際には `/private/var/folders/…` です — そのため、どちらかを通して到達したチェックアウトは、プロファイルが禁じているように見えながら書き込み可能でした。
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+サンドボックス下のネットワークは、インプロセスのループバックプロキシによって強制されるセッションごとの**ドメイン**許可リストです。外向き通信はデフォルト拒否です: ネットワークケイパビリティがオフの場合、プロキシは依然として起動しますが許可リストは空なので、外向き接続はすべて拒否されます。オンの場合、リゾルバーは、厳選されたベースライン — LLM API プロバイダー、git ホスティング、パッケージレジストリ、モデルカタログ — に加えて、エージェントの GitHub またはプッシュのケイパビリティが獲得する GitHub ドメインから許可リストを構築し、すべての接続のターゲットホストをそれに照合します。ワイルドカードは機能します（`*.example.com` はサブドメインに一致し、apex には一致しません）。別の常時拒否リストが許可リストに優先し、クラウドのメタデータエンドポイントとテレメトリのシンクをカバーします。設定_できない_のはリスト自体です: 仕様は追加ドメイン用の `egressAllowlist` フィールドとチケットドメインのフックを持ちますが、ディスパッチ経路のどこもそのどちらも埋めないため、実際にはすべての実行がベースラインとケイパビリティ由来のドメインだけを取得し、それ以上はありません。
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+macOS では、拒否は観測可能です: モニターが Sandbox の拒否についてシステムログを監視し、既知のノイズをフィルタリングし、リトライの嵐を重複排除し、それぞれを `SandboxViolation` として表面化します。何が試みられ、どのケイパビリティがそれを解消するのかを名指ししてです。Linux では、ラップ経路が stderr を解析して `EPERM`、`Operation not permitted`、`Permission denied` を探し、同じイベントタイプを発行します — システムログのタップはありません。それらは実行自身のイベントストリームに届くため、拒否されたシステムコールはログだけでなくトランスクリプトにも現れます。テレメトリは、ネイティブサンドボックスが実際にプロセスをラップしている間だけ存在します — バックエンドのないホストでは観測するものがありません。またこれはケイパビリティのゲーティングとは無関係です。違反は拒否されたシステムコールから生じ、ケイパビリティの参照から生じることは決してありません。
 
-## Confirmations come from the guardrails, not the sandbox
+## 確認はガードレールから来るのであり、サンドボックスからではない
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+サンドボックスには承認の経路がありません。起動し、実行し、イベントを発行し、終了します。そこに人間が問いに答える場所はありません。スペースで確認を見るとき — このプッシュを承認、この削除を承認 — それは、アクションがそもそもランタイムに到達する_前に_、ガードレールエンジン（またはハーネスのコマンドポリシー）が提起したものです。
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+この順序は意図的です。システムコールの後に起きた承認は、ゲートではなく監査記録になってしまいます。フェイルクローズのルールがガードレールにある理由もここにあります。承認者が接続されていない場合、決定は何かが実行される前に下され、それは拒否です。
 
-## Diagnostics
+## 診断
 
-[Run agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/) is the single place
-that states what can be checked by hand.
+[エージェント診断の実行](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)は、手作業で確認できることを記している唯一の場所です。
 
-## Related concepts
+## 関連するコンセプト
 
-- [Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): where isolation fits in the dispatch flow
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/ja-JP/マニュアル/リファレンス/サンドボックスバックエンド/): the backends and their configuration
+- [リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/): サンドボックスの一段上 — 作業に、ラップされたプロセスではなく、カーネル境界を持つ使い捨てのマシン全体が必要なとき
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): OS の土台の上にあるポリシー層であり、承認が実際にどこから来るか
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): ディスパッチフローの中で分離がどこに位置するか
+- [モード](/ja-JP/マニュアル/コンセプト/モード/): モードがツールサーフェスとコマンドポリシーをどう狭めるか
+- [サンドボックスバックエンドのリファレンス](/ja-JP/マニュアル/リファレンス/サンドボックスバックエンド/): バックエンドとその設定
 
-## Related guides
+## 関連するガイド
 
-- [Configure sandbox policies](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/): capability flags and filesystem posture
-- [Run agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/): what the diagnostic checks cover
+- [サンドボックスポリシーを設定](/ja-JP/マニュアル/ハウツーガイド/サンドボックスポリシー/): ケイパビリティフラグとファイルシステムの姿勢
+- [エージェント診断の実行](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/): 診断チェックがカバーする内容

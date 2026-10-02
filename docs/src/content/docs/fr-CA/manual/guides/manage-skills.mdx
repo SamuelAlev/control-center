@@ -1,129 +1,146 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Installer et gérer des skills
+description: Ajoutez des dépôts GitHub comme sources de skills, parcourez leurs catalogues et installez, mettez à jour ou désinstallez des skills en passant par la barrière de scan antivirus.
 slug: fr-CA/manuel/guides/gerer-skills
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Ce guide vous montre comment remplir un espace de travail de skills venus de
+GitHub : ajoutez un dépôt comme source, installez les skills que vous voulez
+depuis celui-ci et tenez-les à jour au fil du temps.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/fr-CA/manuel/concepts/modele-agent/); this page stays
-on the doing.
+Ce qu'il faut savoir avant de commencer : **un dépôt source n'est pas
+fiable.** Son nom, sa description et son nombre d'étoiles sont écrits par
+quiconque le possède. Le seul signal de sécurité auquel Control Center se fie
+est le verdict du scan antivirus, par lequel passe chaque installation avant
+que quoi que ce soit n'atteigne le disque ou le prompt d'un agent. Si vous
+voulez le raisonnement, lisez la
+[section sur les skills du modèle d'agent](/fr-CA/manuel/concepts/modele-agent/); cette page
+s'en tient à la pratique.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Les skills se trouvent sous **Paramètres → Espace de travail → Compétences**
+(`/workspaces/<id>/settings/workspace/skills`). Ils sont limités à l'espace de
+travail : les skills que vous installez ici appartiennent uniquement à cet
+espace de travail. La page compte deux onglets :
+**Installées** (les skills locaux, y compris un éditeur **Nouvelle
+compétence**) et **Sources** (les catalogues GitHub). Les deux écritures
+passent par la même barrière de scan.
 
-## Add a skill repository
+## Ajouter un dépôt de skills
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Ouvrez **Paramètres → Espace de travail → Compétences** et basculez vers
+   l'onglet **Sources**.
+2. Appuyez sur **Ajouter un dépôt**.
+3. Collez l'URL d'un dépôt GitHub, p. ex. `https://github.com/anthropics/skills`,
+   puis confirmez.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Le serveur vérifie que le dépôt existe et qu'il est visible avec ses
+identifiants, puis l'ajoute à la barre latérale gauche. Il n'y a pas de
+catalogue organisé au milieu : n'importe quel dépôt GitHub fait l'affaire, ce
+qui veut aussi dire que la réputation est à votre jugement — un nombre
+d'étoiles est une preuve, jamais une garantie.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Les skills d'un dépôt sont les répertoires qui contiennent un `SKILL.md`
+(jusqu'à trois niveaux de profondeur, en plus de la disposition du
+marché de plugins de Claude
+`plugins/<plugin>/skills/<skill>`, les arborescences de dépendances et de code
+tiers étant ignorées).
+Si la grille indique plus tard que le dépôt ne contient aucun skill, c'est
+exactement ce que cela veut dire : aucun répertoire qu'il contient ne
+correspond à la convention des skills.
 
-## Inspect a skill before installing
+## Inspecter un skill avant de l'installer
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Sélectionnez un dépôt dans la barre latérale ; ses skills apparaissent sous
+forme de grille à droite, avec au-dessus un champ de filtre qui restreint le
+catalogue par nom, description ou slug. Cliquez sur une carte pour ouvrir la
+vue de détail. Elle montre trois choses :
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **Le README**, rendu en markdown — le `README.md` du répertoire du skill, ou
+  le corps du `SKILL.md` lorsqu'il n'y a pas de README.
+- **L'aperçu du scan** — le verdict (`pass`, `warn` ou `quarantine`), les
+  capacités que déclare le contenu du skill (exécute un shell, écrit des
+  fichiers, accès réseau…) et chaque constat consigné par l'analyseur.
+- **Le nombre de fichiers** — une installation écrit tout le répertoire du
+  skill, pas seulement son `SKILL.md`.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+L'aperçu analyse exactement les octets qu'écrirait une installation, de sorte
+que le verdict que vous voyez est celui que l'installation reçoit ; rien n'est
+réévalué à votre insu.
 
-## Install a skill
+## Installer un skill
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Ouvrez la vue de détail du skill.
+2. Lisez le verdict du scan. Pour un verdict `warn` ou `pass`, appuyez sur
+   **Installer**.
+3. Pour un verdict `quarantine`, l'installation reste désactivée tant que vous
+   ne cochez pas **Je comprends le risque — installer quand même**. Cette
+   dérogation est consignée, pas présumée.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+L'installation écrit le répertoire du skill dans l'espace de travail, consigne
+une épingle dans `skills-lock.json` (dépôt source, chemin, le commit dont il
+provient et une empreinte du contenu), et le skill devient disponible pour les
+agents de l'espace de travail. Une carte marquée **Nom déjà utilisé** signifie
+qu'un autre skill possède déjà ce nom localement — désinstallez-le d'abord.
 
-## Update skills over time
+## Mettre les skills à jour au fil du temps
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Les cartes des skills installés portent des badges : **Installé**, ou **Mise à
+jour disponible** lorsque le dépôt a dépassé le commit que vous avez épinglé.
+Ouvrez la vue de détail et appuyez sur **Mettre à jour** pour récupérer de
+nouveau au nouveau commit. Une mise à jour passe par la même barrière de scan
+qu'une installation — un skill dont la nouvelle version est mise en
+quarantaine est refusé et la version que vous aviez reste en place. L'empreinte
+de l'ancienne version est conservée comme référence de retour en arrière dans
+le fichier de verrouillage.
 
-## Uninstall a skill, remove a repository
+## Désinstaller un skill, retirer un dépôt
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Désinstaller** (dans la vue de détail d'un skill installé, ou en supprimant
+dans l'onglet Installées) retire ensemble le répertoire du skill et son
+épingle de verrouillage — un skill désinstallé ne laisse rien derrière lui.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Retirer un dépôt** de la barre latérale ne retire que le catalogue : les
+skills que vous avez installés depuis celui-ci restent installés et continuent
+de se mettre à jour, parce qu'une épingle enregistre le dépôt par son nom
+plutôt que par référence à l'entrée source. Rajoutez le dépôt si vous voulez
+le parcourir de nouveau.
 
-## Invoke a skill
+## Invoquer un skill
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Les skills s'invoquent sous leur propre espace de noms, de sorte qu'ils
+n'entrent jamais en collision avec les commandes slash intégrées (`/plan`,
+`/goal`, `/loop`, `/compact`) :
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — un skill installé dans cet espace de travail, ou rattaché à
+  l'agent
+- `/skill:<repo>:<name>` — un skill fourni par un dépôt extrait dans cet espace
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Un nom seul non intégré se résout quand même, pour les messages écrits avant
+l'existence de l'espace de noms. `/skill:plan` est ce qui atteint un skill
+nommé `plan` ; `/plan` est toujours la commande intégrée.
 
-## Repo-scoped skills
+## Skills à portée de dépôt
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Un dépôt extrait peut fournir ses propres skills, dans `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` ou `skills/`. Ceux-ci
+ne sont **pas** installés depuis cette page. Un agent ne porte que les skills
+du dépôt dans lequel il travaille actuellement ; ils sont échangés lorsqu'il se
+déplace. Le composeur n'a pas cette portée : `/skill:<repo>:<name>` atteint
+n'importe quel dépôt de l'espace.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Les skills de dépôt passent le même scan à refus par défaut (`pass` / `warn` /
+`quarantine`) avant que leur frontmatter n'atteigne un prompt. `warn` est
+admis ; `quarantine` est retenu, sans dérogation d'opérateur sur ce chemin.
 
-See [Repo-scoped skills](/fr-CA/manuel/concepts/modele-agent/#repo-scoped-skills) and
-[Slash commands](/fr-CA/manuel/reference/commandes-slash/).
+Voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#repo-scoped-skills) et
+[Commandes slash](/fr-CA/manuel/reference/commandes-slash/).
 
-## Related guides
+## Guides connexes
 
-- [Chat with an agent](/fr-CA/manuel/guides/clavarder-avec-agent/)
-- [Create and configure an agent](/fr-CA/manuel/guides/creer-agent/)
+- [Clavarder avec un agent](/fr-CA/manuel/guides/clavarder-avec-agent/)
+- [Créer et configurer un agent](/fr-CA/manuel/guides/creer-agent/)
 
-## Related concepts
+## Concepts connexes
 
-- [The agent model](/fr-CA/manuel/concepts/modele-agent/)
+- [Le modèle d'agent](/fr-CA/manuel/concepts/modele-agent/)

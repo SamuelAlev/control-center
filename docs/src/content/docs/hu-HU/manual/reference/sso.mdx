@@ -1,104 +1,108 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: SSO-konfigurációs referencia
+description: Az egyszeri bejelentkezés minden kapcsolója, végpontja, művelete és hibakódja.
 slug: hu-HU/kezikonyv/referencia/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Az egyszeri bejelentkezés minden beállítható eleme egy helyen. Az értékek a
+`global.db` `sso_connections` soraiban élnek (tervezés szerint szerver
+szintűek), és a **Beállítások → Szerver → Egyszeri bejelentkezés** felületen
+vagy az `sso.*` RPC-műveletekkel szerkeszthetők. A mentett sor az egyetlen
+igazságforrás — nincs `CC_SAML_*` / `CC_OIDC_*` környezeti útvonal (egy
+kapcsolat, amely két helyről érkezhetne, olyan, amellyel a beállítások
+képernyő ellentmondhat).
 
-## Connection fields
+## Kapcsolat mezői
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Mező                   | Érvényes erre | Alapértelmezés  | Jelentés                                                                                                                                            |
+| ---------------------- | ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | mindkettő     | ki              | a bejelentkezések használhatják ezt a kapcsolatot                                                                                                   |
+| `idpMetadataXml`       | SAML          | —               | az IdP `EntityDescriptor` XML-je (az engedélyezéshez kötelező)                                                                                       |
+| `spEntityId`           | SAML          | `<origin>/saml` | a saját entitásazonosítónk, rögzítve, amikor az origin változik                                                                                      |
+| `emailAttribute`       | SAML          | `email`         | az e-mail-címet hordozó attribútum; e-mail alakú NameID a tartalék                                                                                   |
+| `displayNameAttribute` | SAML          | `displayName`   | a megjelenítendő nevet hordozó attribútum                                                                                                           |
+| `groupsAttribute`      | SAML          | `groups`        | a csoportneveket hordozó attribútum                                                                                                                 |
+| `clockSkewSeconds`     | SAML          | 90              | az élettartam-ellenőrzés megengedett óraeltérése                                                                                                    |
+| `allowIdpInitiated`    | SAML          | ki              | kéretlen válaszok elfogadása (nincs `InResponseTo`)                                                                                                 |
+| `wantResponseSigned`   | SAML          | ki              | a válasz gyökérelemének aláírásának megkövetelése (az állítás aláírása mindig kötelező)                                                              |
+| `issuer`               | OIDC          | —               | a kibocsátó alap URL-je (az engedélyezéshez kötelező)                                                                                               |
+| `clientId`             | OIDC          | —               | nyilvános kliens azonosítója (az engedélyezéshez kötelező)                                                                                          |
+| `clientSecret`         | OIDC          | —               | csak bizalmas kliensekhez; a 0600 jogosultságú titkosfájlban tárolva, soha nem az adatbázisban — RPC-n keresztül csak írható (`sso.getConfig` a `clientSecretPresent` értéket jelenti) |
+| `groupsClaim`          | OIDC          | `groups`        | a csoportneveket hordozó claim                                                                                                                      |
+| `defaultRole`          | mindkettő     | `member`        | a szerep, ha egyetlen csoport sem képeződik le — soha nem `owner`                                                                                    |
+| `groupRoleMap`         | mindkettő     | `{}`            | csoport → szerep; a tulajdonosi leképezéseket mentéskor elutasítjuk                                                                                  |
+| `autoMember`           | mindkettő     | be              | a felhasználók automatikus hozzáadása minden munkaterülethez az első bejelentkezéskor                                                              |
+| `allowJit`             | mindkettő     | be              | ismeretlen felhasználók provisionálása bejelentkezéskor                                                                                             |
 
-## Process configuration
+## Folyamatkonfiguráció
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+Az SSO-kapcsolatok nem a környezetből töltődnek fel. Egy megmaradt
+folyamatkapcsoló a **böngészős átadásról** szól, nem a kapcsolatsorról:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Változó / kapcsoló                               | Jelentés                                                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | az az origin, amelyre az SSO-visszahívások visszairányítják a böngészőt (a hitelesítő adat az URL-fragmentumban utazik). Beállítatlanul az átadás azonos originen marad. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+Magának a kibocsátó URL-jének `https`-nek kell lennie (`http` csak
+visszacsatolási (loopback) kibocsátókhoz, a `localhost`, `127.0.0.1` és `::1`
+esetében fogadható el).
 
-## HTTP endpoints
+## HTTP-végpontok
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| Végpont                                          | Hitelesítés         | Cél                                                                                                                                                                                                              |
+| ------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /saml/login?relay=…`                        | nincs (átirányítás) | SP által indított bejelentkezés indítása; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` postMessage-t küld a várakozó csatlakozási lapnak (amely megadja a saját `client_origin` értékét; ezt csak akkor vesszük figyelembe, ha az origin-engedélylista megbízik benne) |
+| `POST /saml/acs`                                 | nincs (IdP POST)    | az állításfeldolgozó — ellenőriz, provisionál, kiállít                                                                                                                                                            |
+| `GET /saml/metadata`                             | nincs               | a saját SP `EntityDescriptor`-ünk                                                                                                                                                                                |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | nincs               | az OIDC-körforduló; a `relay=desktop` átadja az alkalmazásnak, a `relay=web-popup` a várakozó csatlakozási lapnak (ugyanaz a `client_origin` konvenció)                                                          |
+| `GET /auth/providers`                            | nincs, CORS `*`     | a csatlakozási képernyő próbája: a felkínált SSO-kapcsolatok (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                             |
+| `/scim/v2/Users…`                                | Bearer (SCIM-token) | Users létrehozás/lekérés/lista+szűrés/PUT/PATCH/DELETE                                                                                                                                                            |
+| `/scim/v2/Groups`                                | Bearer              | csak olvasható; a csoportpush tervezés szerint 501-gyel válaszol                                                                                                                                                  |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | képességdokumentum                                                                                                                                                                                                |
 
-## RPC ops
+## RPC-műveletek
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Minden `sso.*` művelet szerverhatókörű, és a **szerver tulajdonosa** (a
+telepítés operátora, `ServerAuthority.serverOwner`) számára engedélyezett. A
+munkaterület tulajdonlása nem elég; a puszta párosítás soha nem adja meg
+ezeket.
 
-| Op                        | Purpose                                                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| Művelet                   | Cél                                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sso.getConfig`           | egy adott fajtához mentett kapcsolat                                                                                                                        |
+| `sso.saveConfig`          | érvényesítés, mentés és élő alkalmazás                                                                                                                      |
+| `sso.status`              | engedélyezett/beállított jelzők, a SCIM-token megléte, a kanonikus origin                                                                                    |
+| `sso.testConnection`      | kapcsolat tesztelése a böngészős körforduló nélkül (SAML: metaadat-feldolgozás + AuthnRequest felépítése; OIDC: kibocsátófelfedezés), opcionális, még nem mentett képernyőértékekkel |
+| `sso.spMetadata`          | az SP `EntityDescriptor` kibocsátása egy originhez                                                                                                          |
+| `sso.setPairingEnabled`   | a kézi párosítás engedélyezése/tiltása (meghívókódok, párosítási kulcsok); a letiltás megtagadása, amíg nem létezik működő SSO-kapcsolat, a kizárás ellen véd |
+| `sso.sessionPolicy`       | a telepítés eszközhitelesítő adatának maximális élettartamának és tétlenségi időtúllépésének beolvasása (percben; `0` = nincs beállítva)                     |
+| `sso.setSessionPolicy`    | e korlátok beállítása; az eszközellenőrzésnél érvényesülnek, a klienseknek nem hirdetjük őket                                                               |
+| `sso.scimRegenerateToken` | a SCIM bearer token előállítása + visszaadása (egyszer)                                                                                                     |
 
-## Validation error codes
+## Érvényesítési hibakódok
 
-`cc_saml_verify_response` failures carry a stable code:
+A `cc_saml_verify_response` hibái stabil kódot hordoznak:
 
-| Code                   | Meaning                                                                          |
+| Kód                    | Jelentés                                                                         |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | hiányzó/nem megbízható/módosított aláírás, vagy nem engedélyezett algoritmus/transzformáció |
+| `expired`              | a `NotBefore`/`NotOnOrAfter` tartományon kívül (az eltérésen túl)                |
+| `audience`             | a célközönség-korlátozás nem minket nevez meg                                    |
+| `destination`          | a válasz célállomása nem a mi ACS-ünk                                            |
+| `request_match`        | az `InResponseTo` nem egyezik egy függőben lévő kéréssel, vagy kéretlen, miközben tilos |
+| `issuer`               | a kibocsátó nem a beállított IdP                                                 |
+| `recipient`            | az alany-megerősítés címzettje nem a mi ACS-ünk                                  |
+| `malformed`            | XML-/sémaszintű hiba                                                             |
+| `status`               | az IdP által jelentett állapot nem Success volt                                  |
+| `invalid` / `internal` | minden más / illesztési hiba                                                     |
 
-## Database surfaces
+## Adatbázis-felületek
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — fajtánként egy sor, TERVEZÉS SZERINT
+  MUNKATERÜLETEKEN ÁTNYÚLÓ.
+- `users.sso_subject` + `users.sso_issuer` — a szolgáltatói alany rögzítése,
+  `(issuer, subject)` szerint egyedi, részleges indexszel.
+- `users.deactivated_at` — a SCIM-deaktiválás bélyegzője.
+- A SCIM bearer token és az OIDC kliens titkos kulcsa a 0600 jogosultságú
+  titkosfájlban él, soha nem az adatbázisban.

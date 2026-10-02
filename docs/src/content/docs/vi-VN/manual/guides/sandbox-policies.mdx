@@ -1,193 +1,198 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Cấu hình chính sách sandbox
+description: Điều gì ràng buộc một lượt chạy agent, làm sao biết sandbox hệ điều hành có đang bọc nó hay không và máy chủ thực sự đọc những cài đặt khả năng nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Việc một lượt chạy agent có được sandbox hay không được quyết định trên máy chủ,
+lúc khởi động (`--sandbox`). Nút gạt **Bật sandboxing**, hộp chọn **Backend** và
+các nút gạt **Khả năng mặc định · không gian mới** trong **Cài đặt → Máy chủ →
+Chẩn đoán & quyền riêng tư** là những tùy chọn lưu trên thiết bị của bạn. Phần dò
+host của thẻ **Sandbox** cho biết máy chủ có thể bọc được những gì.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Có hai điều khiển tác động tới một lượt chạy và hướng dẫn này bao quát cả hai:
+**Quyền sandbox** theo từng agent ở bên dưới và cờ `--sandbox` của chính máy chủ.
 
-## What constrains an agent run
+## Điều gì ràng buộc một lượt chạy agent
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Sáu thứ ràng buộc một agent. Thứ nhất là sandbox hệ điều hành và đây là thứ có
+điều kiện — năm thứ còn lại đúng trên mọi máy chủ.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| Ranh giới                 | Nó làm gì                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Sandbox hệ điều hành           | Seatbelt trên macOS, bubblewrap trên Linux và WSL2. Bọc CLI Claude Code, các adapter ACP và công cụ `bash` của harness. **Không có trên Windows và trên Linux thiếu `bwrap` và `socat`** |
+| Cây làm việc riêng của nó         | Mỗi cuộc hội thoại nhận một bản checkout copy-on-write. Bản checkout gốc được đưa vào lượt chạy như một đường dẫn từ chối ghi và chính sandbox là thứ thực thi điều đó                                            |
+| Thông tin xác thực qua broker     | Broker thông tin xác thực tạo mới một môi trường theo từng lượt chạy từ các khả năng của agent rồi thu hồi nó khi lượt chạy kết thúc. Không có khả năng thì không có token trong môi trường                                            |
+| Rào chắn hành động        | Mọi công cụ thay đổi trạng thái đều khai báo các lớp hiệu ứng của nó và bộ gác phân giải chúng trước khi lệnh gọi chạy. Một `prompt` không có người phê duyệt nào kết nối sẽ bị từ chối                                                 |
+| Làm sạch môi trường | ACP và công cụ `bash` của harness nhận một môi trường đã lọc. Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ                                                                  |
+| Bề mặt công cụ của chế độ  | Chế độ chỉ đọc loại bỏ hẳn các công cụ thay đổi cây làm việc và ghim động từ đầu ra của chính chế độ để nó vẫn có thể bàn giao                                                                         |
 
-Three things stay weaker than they look:
+Ba thứ vẫn yếu hơn vẻ ngoài của chúng:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Chỉ **harness tích hợp** mới thực thi cổng công cụ, các hợp đồng hoàn thành và
+  những quy tắc cấu trúc của chế độ. Adapter Claude Code thì không. Riêng Claude
+  Code được khởi chạy với `--dangerously-skip-permissions`, bởi một `claude -p`
+  phi tương tác nếu không thì sẽ chặn mãi mãi ở prompt của chính nó — nên các
+  lệnh gọi read, write, edit và bash của Claude không được Control Center nhìn
+  thấy cũng không bị đặt cổng. Ở nơi sandbox bật, nó chính là ranh giới bao quanh
+  những lệnh gọi đó.
+- Các công cụ tệp in-process của harness (read, write, edit, apply patch, search,
+  find, search_files) chạy bên trong tiến trình máy chủ, nên không profile
+  sandbox nào ràng buộc chúng. Chỉ công cụ `bash` đi qua bộ chạy lệnh đã được
+  sandbox. Những công cụ đó bị ràng buộc bởi giới hạn đường dẫn của chính chúng
+  cùng với rào chắn hành động.
+- Trên một máy chủ không có backend, hàng đầu tiên hoàn toàn không áp dụng. ACP
+  và công cụ `bash` của harness quay về việc làm sạch môi trường cùng chính sách
+  lệnh; Claude Code kế thừa môi trường của máy chủ qua `NoSandboxAdapter`. Máy
+  chủ nói rõ điều đó trong log khởi động. Hãy kiểm tra máy của bạn ở bên dưới.
 
-## Set an agent's capabilities
+## Đặt khả năng cho một agent
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Đây là điều khiển khả năng duy nhất mà máy chủ đọc. Nó theo từng agent và quyết
+định thứ mà broker thông tin xác thực đưa vào môi trường của agent đó.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Vào **Cài đặt → Không gian làm việc → Agent**
+2. Chọn agent trong danh sách
+3. Trên tab **Cài đặt**, cuộn tới **Quyền sandbox**
+4. Bật nút gạt — chú thích của hàng đổi từ **Dùng mặc định không gian làm việc**
+5. Đặt bốn nút gạt:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| Nút gạt                           | Nó kiểm soát điều gì                                                                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cho phép git push**               | Khi tắt, lượt chạy nhận `GIT_ASKPASS=/usr/bin/false` và `GIT_TERMINAL_PROMPT=0`, nên một lần push không thể hỏi thông tin xác thực                                                                                                                   |
+| **Cho phép gọi GitHub API**       | Cùng với **Cho phép git push**, quyết định việc broker có chèn token GitHub dưới dạng `GH_TOKEN` / `GITHUB_TOKEN` hay không                                                                                                                               |
+| **Cho phép gọi API phiếu**    | Quyết định việc broker có chèn `TICKETING_API_KEY` hay không                                                                                                                                                                                             |
+| **Cho phép truy cập mạng chung** | Ở nơi sandbox bật, đây là một cổng egress thực sự: khi tắt, danh sách cho phép của lượt chạy rỗng và mọi yêu cầu ra ngoài đều bị từ chối tại proxy. Ở nơi không có backend, nó được ghi nhận trên lượt chạy nhưng không chặn được gì mà một tiến trình được spawn làm |
 
-6. Save
+6. Lưu
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Điểm kiểm tra: mở lại agent và nút gạt vẫn bật cùng các tùy chọn của bạn — một bộ
+khả năng đã lưu sẽ đi vòng qua máy chủ và một agent không có bộ nào sẽ quay về
+mặc định thận trọng (push tắt, GitHub API tắt, phiếu tắt, mạng bật).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Hai cách điều này phản tác dụng]
+Chú thích ghi **Dùng mặc định không gian làm việc**, nhưng không có cài đặt khả
+năng nào ở cấp không gian làm việc mà máy chủ đọc. Một agent có nút gạt tắt sẽ
+nhận mặc định thận trọng tích hợp.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Ngoài ra, thông tin xác thực GitHub của lượt chạy luôn chỉ thuộc về broker — một
+token cài đặt GitHub App giới hạn theo kho mã, hoặc phương án dự phòng PAT từ môi
+trường — chứ không bao giờ là token đã lưu của chính thành viên yêu cầu.
+`actingUserId` được truyền để broker có thể *giữ lại* PAT của máy chủ khỏi một
+thành viên không phải chủ sở hữu và chưa kết nối GitHub; nó không gộp một token
+cá nhân đè lên một khả năng đang tắt. Đừng coi **Cho phép gọi GitHub API** là một
+ranh giới egress cứng trên một máy chủ không có sandbox hệ điều hành: một tiến
+trình được spawn vẫn có thể ra mạng.
 :::
 
-## Check whether your agent runs are sandboxed
+## Kiểm tra xem các lượt chạy agent của bạn có được sandbox không
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Hai thứ quyết định điều đó, cả hai đều trên máy chủ: máy chủ có cung cấp backend
+hay không và `--sandbox` có bật hay không. Hãy kiểm tra theo đúng thứ tự đó.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Vào **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư**
+2. Đọc thẻ **Sandbox**. Mục **Host** là cỗ máy mà `cc_server` chạy trên đó, không
+   phải cỗ máy bạn đang nhìn. Trường **Backend** liệt kê **Sandbox gốc** (Seatbelt
+   trên macOS, bubblewrap trên Linux và WSL2) hoặc **Không cô lập**. Mục **Đang
+   áp dụng** là tùy chọn của thiết bị này, không phải lớp bọc mà máy chủ thực sự dùng.
+3. Đọc log khởi động của máy chủ. Nó in đúng một trong ba dòng:
+   - `agent sandbox ON` cùng ghi chú backend — các lượt chạy được bọc
+   - `no OS-native agent sandbox on this host` cùng một gợi ý cài đặt nếu có —
+     các lượt chạy không được bọc
+   - `agent sandbox DISABLED by --sandbox off` — một sự chọn không dùng có chủ đích
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` không báo cáo trạng thái sandbox, nên log khởi động chính là cách
+kiểm tra.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Để tắt sandbox một cách có chủ đích — một máy chủ nơi profile hành xử sai chính là
+lý do tính năng này tồn tại — hãy khởi động máy chủ với `--sandbox off`, hoặc đặt
+`CC_SERVER_SANDBOX=off`. Mặc định là `on` và `on` nghĩa là "dùng backend nếu máy
+chủ có một cái", chứ không bao giờ là "bắt buộc phải có một cái".
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Hai tình huống không bao giờ được bọc bằng sandbox gốc. Trên **Windows**, phép dò
+native luôn báo không khả dụng và không có gì để cài — việc điều phối agent dùng
+`none`. Backend `microvm` là riêng biệt (terminal tương tác và rig) và được đặt
+cổng dò theo runtime của chính nó. Trên **Linux và WSL2**, cả `bwrap` và `socat`
+đều phải có trên `PATH`; thiếu chúng thì phép dò báo không khả dụng và nêu tên các
+gói còn thiếu.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Trên Linux/WSL2 có cài bubblewrap, các mẫu glob tệp bí mật của chính sách chuẩn
+không thể được thực thi với những tệp mà agent tạo về sau. Một lượt chạy native
+như vậy giờ thất bại thay vì âm thầm bỏ qua các quy tắc. Vì vậy một phép dò khởi
+động thành công không bảo đảm rằng một lần điều phối trên Linux có thể bắt đầu.
+`--sandbox off` là một sự chọn không dùng không-giới-hạn có chủ đích, không phải
+một ranh giới bảo mật thay thế.
 
-## Know what a mode already forbids
+## Biết điều một chế độ vốn đã cấm
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Chế độ được lưu theo từng space và được đưa vào bộ giải quyết rào chắn với vai trò
+lớp **preset chế độ**. Ba trong bốn chế độ là chỉ đọc và một chế độ chỉ đọc từ
+chối thẳng mười một lớp hiệu ứng:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| Chế độ               | Cây làm việc  | Bị preset từ chối                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **Agent** (`chat`) | Có thể ghi  | Không gì cả — các mặc định tích hợp được áp dụng                                                                                                                                            |
+| **Kế hoạch**           | Chỉ đọc | Xóa một tệp, ghi bên ngoài cây làm việc, tạo commit, push, mở một PR, xuất bản hoặc merge, ghi vào tracker bên ngoài, cài một gói, chạy một tiến trình, thay đổi cấu trúc không gian làm việc, khởi động hoặc điều khiển một enclosure |
+| **Rà soát**         | Chỉ đọc | Cùng mười một lớp đó. Người dùng không thể tự chọn — trình soạn chỉ đưa ra Agent, Kế hoạch và Điều phối                                                                                         |
+| **Điều phối**    | Chỉ đọc | Cùng mười một lớp đó                                                                                                                                                                     |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Truy cập mạng và truy cập secret cố tình _không_ bị một chế độ chỉ đọc từ chối:
+nghiên cứu chính là ý nghĩa của một chế độ như vậy.
 
-## Require approval before an action runs
+## Yêu cầu phê duyệt trước khi một hành động chạy
 
-Approval is a guardrail decision, not a sandbox setting.
+Phê duyệt là một quyết định của rào chắn, không phải một cài đặt sandbox.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Vào **Cài đặt → Không gian làm việc → Quyền của agent**
+2. Đặt lớp hành động thành **Hỏi trước** ở phạm vi không gian làm việc, agent hoặc space
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/) for the full
-resolution order.
+Một quyết định **Hỏi trước** ngắt lượt chạy và hỏi bạn. Khi không có người phê
+duyệt nào kết nối, nó đóng khi lỗi và hành động bị từ chối. Xem
+[Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/) để biết
+đầy đủ thứ tự phân giải.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### An agent cannot push and I never denied it
+### Một agent không thể push mà tôi chưa từng từ chối
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Hãy kiểm tra **Quyền sandbox** của agent. Một agent không có bộ khả năng tùy chỉnh
+sẽ nhận mặc định thận trọng, trong đó **Cho phép git push** bị tắt — nên broker
+không chèn token GitHub nào và git không có cách nào xác thực.
 
-### The Sandboxing card reports no native sandbox
+### Thẻ Sandbox báo không có sandbox gốc
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/).
+Thì các lượt chạy agent trên máy chủ đó không được Seatbelt hay bubblewrap bọc, và
+những ranh giới còn lại là tất cả những gì bạn có. Trên Linux và WSL2, hãy cài cả
+hai công cụ còn thiếu — `sudo apt-get install bubblewrap socat` — rồi khởi động
+lại máy chủ; log khởi động sau đó phải cho biết sandbox đang bật. Trên Windows
+không có backend gốc nào để cài, nên thay vào đó hãy siết chặt rào chắn: xem
+[Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/).
 
-### An agent reached a file outside its worktree
+### Một agent với tới được một tệp bên ngoài cây làm việc của nó
 
-Which tool reached it decides whether this is expected.
+Công cụ nào với tới nó sẽ quyết định liệu điều này có nằm trong dự kiến hay không.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Các công cụ tệp in-process của harness (read, write, edit, apply patch, search,
+find, search_files) chạy trong tiến trình máy chủ, nên không profile sandbox nào
+áp dụng cho chúng — ràng buộc của chúng là giới hạn đường dẫn của chính chúng
+cùng với rào chắn. Một lệnh `bash` hoặc CLI Claude Code thì _có_ được bọc ở nơi
+tồn tại backend, và các bản checkout đã đăng ký của bạn nằm trong nhóm từ chối ghi
+bên trong lớp bọc đó ở mọi chế độ, kể cả những cách viết đã phân giải symlink của
+chúng (trên macOS, một đường dẫn đi qua `/tmp` hoặc `/var/folders` được phân giải
+dưới `/private` và cả hai cách viết giờ đều bị từ chối). Trên một máy chủ không có
+backend thì không điều nào trong số đó áp dụng. Dù thế nào, rào chắn vẫn có thể từ
+chối thẳng **Ghi bên ngoài cây làm việc**.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/)
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Diagnose an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
-- [Sandbox backends](/vi-VN/so-tay/tham-chieu/backend-sandbox/)
-- [cc_server CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server/): the `--sandbox` flag
+- [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
+- [Backend sandbox](/vi-VN/so-tay/tham-chieu/backend-sandbox/)
+- [CLI cc_server](/vi-VN/so-tay/tham-chieu/cli-cc-server/): cờ `--sandbox`
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)

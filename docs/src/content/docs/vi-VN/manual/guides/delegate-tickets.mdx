@@ -1,131 +1,137 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Ủy thác công việc cho agent
+description: Giao một phiếu cho agent trong một cuộc hội thoại và để các agent ủy thác bài toán con cho nhau dưới các rào cản về độ sâu và chu trình.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Hướng dẫn này trình bày cách đưa công việc ra khỏi tay bạn và giao cho một
+agent, cùng những gì xảy ra khi các agent chuyền việc cho nhau.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Gán phiếu cho một agent không điều phối gì cả]
+Không có bộ điều phối phiếu nào cho một agent được gán. Việc gán chỉ ghi nhận
+quyền sở hữu và không hơn gì — không space nào được tạo, không trạng thái nào
+thay đổi, không agent nào khởi chạy. Ngoại lệ là một phiếu được gán cho một
+**đội**, việc này đánh thức trưởng đội đó. Công việc của agent cho một người
+được gán cụ thể nằm trong các cuộc hội thoại, nên đó là nơi bạn bắt đầu nó.
 :::
 
-## Hand a ticket to an agent
+## Giao một phiếu cho agent
 
-1. [Create the ticket](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Tạo phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/) với một tiêu đề
+   và một mô tả đủ chính xác để làm việc dựa trên đó.
+2. Đặt **Người được gán** của phiếu thành agent đó, để quyền sở hữu được ghi
+   nhận.
+3. Mở (hoặc tạo) một space và @-mention agent đó.
+4. Tham chiếu phiếu bằng một mention `#` trong tin nhắn của bạn — trình soạn tự
+   động hoàn thành các phiếu trong không gian làm việc — và nói rõ bạn muốn làm
+   gì.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agent nhận công việc từ cuộc hội thoại. Tiến độ của nó được truyền trực tiếp vào
+space đó.
 
-## What the agent receives
+## Agent nhận được gì
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Tin nhắn của bạn, kèm theo tham chiếu phiếu mà bạn đã gắn thẻ.
+- Space để làm việc và báo cáo.
+- Một worktree cách ly lấy từ các kho mã đã liên kết của không gian làm việc.
+- **Chế độ** của space, thứ chi phối bề mặt công cụ của lượt chạy.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/vi-VN/so-tay/khai-niem/che-do/).
+Chế độ là thuộc tính của space, không phải của phiếu — một phiếu không có chế
+độ. Vì vậy một agent có thể ở `chat` trong space này và `plan` trong space khác.
+Chọn nó từ hộp chọn chế độ của trình soạn (**Agent**, **Kế hoạch** hoặc **Điều
+phối**); `review` do các space xem xét PR đặt và không cho người dùng chọn. Xem
+[Chế độ](/vi-VN/so-tay/khai-niem/che-do/).
 
-## Require a structured result
+## Yêu cầu một kết quả có cấu trúc
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Một hợp đồng đầu ra được khai báo trên lượt điều phối, không phải trên phiếu:
+`expected_output_schema` cộng với `output_contract_mode` (mặc định là nghiêm
+ngặt). Agent đáp ứng nó bằng cách gọi `submit_output`, công cụ này kiểm tra dữ
+liệu gửi lên theo schema và từ chối dữ liệu không khớp.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Cả đầu ra được chấp nhận lẫn mọi lời từ chối đều được ghi vào **nhật ký chạy của
+agent**. Trạng thái của chính phiếu không bị đụng tới — một hợp đồng thất bại
+không làm phiếu thất bại.
 
-## Monitor progress
+## Theo dõi tiến độ
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Space** — hoạt động trực tiếp của agent, góc nhìn chính.
+- **Phiếu** — trạng thái của nó, do bất kỳ ai di chuyển phiếu đặt ra.
+- **Quan sát → Trực tiếp** (`/workspaces/<workspace-id>/observability`) — danh
+  sách agent trực tiếp.
+- **Quan sát → Phân tích** — nhật ký chạy, kèm chi phí và thời lượng.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Không có màn hình bảng điều khiển; một URL không gian làm việc trần sẽ chuyển
+hướng tới Hộp thư.
 
-## Let agents delegate to each other
+## Để các agent ủy thác cho nhau
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Một agent gặp phải một bài toán con sẽ ủy thác bằng công cụ MCP `delegate_task`.
+Nó tạo một phiếu con được gán cho một agent khác và — khi bạn truyền
+`parent_ticket_id` — ghi lại chuỗi để các rào cản nhìn thấy được nó.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Hai rào cản mang tính cấu trúc luôn chạy tại điểm nghẽn của việc tạo phiếu, không
+bao giờ dựa vào chỉ dẫn trong prompt:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Giới hạn độ sâu** — một chuỗi sâu hơn 3 bước nhảy sẽ bị từ chối.
+- **Phát hiện chu trình** — một bước nhảy quay lại một agent đã có trong chuỗi sẽ
+  bị từ chối.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Khi bạn truyền `from_agent_id`, hai rào cản nữa sẽ chạy (môi trường production
+luôn cung cấp các cổng resolver):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Mức trần tự chủ** — cấp hiệu lực của bên được ủy thác trong space không được
+  vượt quá cấp của bên ủy thác.
+- **Hạn mức ngân sách** — việc ủy thác tính vào ngân sách dừng cứng còn lại của
+  bên ủy thác và không thể tạo thêm. Không có chính sách, hoặc một chính sách
+  không giới hạn, đều được chấp nhận.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Một lời từ chối rất rõ ràng: công cụ trả lại lý do của rào cản nguyên văn, nên
+agent đang ủy thác thấy chính xác vì sao. Trường `delegatedByAgentId` ghi lại ai
+đã ủy thác, tạo thành một cây ủy thác.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` bỏ qua mọi rào cản]
+Công cụ `delegate_ticket` cũ hơn vẫn được đăng ký và gọi thẳng `createTicket` —
+không có giới hạn độ sâu, không kiểm tra chu trình, không mức trần tự chủ, không
+hạn mức ngân sách. Hãy ưu tiên `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Giới hạn độ sâu ủy thác bằng 3 này là một giới hạn khác với giới hạn lồng
+subagent bằng 2 của harness tích hợp — một cái chặn các phiếu giữa các agent, cái
+kia chặn các subagent bên trong một lượt chạy.
 
-## Put several agents on one ticket
+## Đưa nhiều agent vào cùng một phiếu
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Thêm họ làm **cộng tác viên** trên phiếu (các vai trò: người được gán, cộng tác
+viên, người đánh giá). Đó chỉ là một danh sách — một bản ghi những ai có liên
+quan — và tự nó không cấp quyền gì.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/).
+Để thực sự đưa các agent vào cùng một cuộc hội thoại, hãy thêm họ làm người tham
+gia từ thanh tiêu đề của space. Sau đó họ có thể @-mention lẫn nhau ở đó. Xem
+[Space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/).
 
-## Automated ticket creation
+## Tạo phiếu tự động
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Không có nút nào trong bảng chọn quy trình tạo phiếu, nên một quy trình không
+thể chia công việc thành các phiếu được gán.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/).
+Con đường thực sự tồn tại là điều phối: phê duyệt một đề xuất sẽ tạo một dự án và
+một đội, biên dịch DAG phiếu con của đề xuất thành một **mẫu quy trình** (mỗi
+phiếu con một bước `promptAgent`, chứ không phải mỗi phiếu một hàng `Ticket`) rồi
+khởi chạy lượt chạy đó. Xem
+[Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
-- [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
-- [Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
-- [Organize work with projects](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)
-- [Ticket lifecycle reference](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/)
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/)
+- [Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
+- [Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
+- [Tổ chức công việc bằng dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)
+- [Vòng đời phiếu](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Tickets](/vi-VN/so-tay/khai-niem/phieu/)
-- [Dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
+- [Phiếu](/vi-VN/so-tay/khai-niem/phieu/)
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)

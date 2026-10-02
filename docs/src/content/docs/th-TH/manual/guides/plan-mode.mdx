@@ -1,135 +1,132 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: ใช้โหมดแผน
+description: สลับสเปซเข้าสู่โหมดแผน รับแผนแบบมีชนิดข้อมูล แล้วอนุมัติให้กลายเป็นงานที่กำลังรัน
 slug: th-TH/คู่มือ/วิธีทำ/โหมดแผน
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+คู่มือนี้แสดงวิธีดึงแผนที่มีโครงสร้างออกมาจากเอเจนต์ก่อนที่มันจะเขียนโค้ดใด ๆ
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+ในโหมดแผน เอเจนต์จะค้นคว้าแบบอ่านอย่างเดียว และสิ่งที่ต้องส่งมอบมีเพียงอย่างเดียว
+คือ **แผนแบบมีชนิดข้อมูล**: กราฟการพึ่งพาของขั้นตอนที่คุณอนุมัติ ซึ่ง Control Center
+จะคอมไพล์ให้กลายเป็นงานจริง ใช้โหมดนี้เมื่อคุณต้องการเห็นขอบเขตของการเปลี่ยนแปลง
+ให้ขั้นตอนถูกแบ่งย่อยออกมา หรือให้ความเสี่ยงและการพึ่งพาถูกระบุชื่อก่อนที่สิ่งใด
+จะถูกแตะต้อง
 
-## Switch a space into plan mode
+## สลับสเปซเข้าสู่โหมดแผน
 
-Any of these flips the space's mode and the change is persisted:
+การกระทำใดต่อไปนี้ก็สลับโหมดของสเปซ และการเปลี่ยนแปลงนั้นถูกบันทึกไว้:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- เลือก **แผน** จากดรอปดาวน์โหมดที่ซ้ายสุดของแถบเครื่องมือช่องเขียนข้อความ
+- กด **Shift+Tab**
+- ส่ง `/plan` การส่ง `/plan` เปล่า ๆ แค่เปิดโหมดไว้ ส่วน `/plan <request>`
+  จะเปิดโหมดแล้วส่งส่วนที่เหลือเป็นข้อความของคุณ
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` ไม่เคยเดินทางในฐานะข้อความ — มันตั้งค่าโหมดที่จัดเก็บไว้ ซึ่งเป็นแหล่ง
+อ้างอิงที่พื้นผิวเครื่องมือ พรีเซ็ตของกฎคุม และพรอมป์ต์ต่างอ่านด้วยกัน โหมดจึงคงอยู่
+ทั้งเทิร์นนี้และทุกเทิร์นถัดจากนี้ จนกว่าคุณจะเปลี่ยนมันกลับ
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+โหมดถูกจัดเก็บไว้ที่สเปซ เอเจนต์ตัวเดียวกันจึงอยู่ในโหมดแผนที่นี่และอยู่ในโหมด
+เอเจนต์ที่อื่นได้
 
-## What the agent produces
+## สิ่งที่เอเจนต์ผลิตออกมา
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. มันค้นคว้าแบบอ่านอย่างเดียว — หน่วยความจำ ดัชนีโค้ด ไฟล์
+2. มันเรียก `submit_plan` **หนึ่งครั้ง** พร้อมด้วย `goal` และ `nodes` โดยแต่ละโหนด
+   มี `key` ที่คงที่ มี `title` มี `description` และมีคีย์ของโหนดที่มัน `dependsOn`
+   (ซึ่งเป็นสิ่งที่ทำให้งานที่เป็นอิสระต่อกันรันแบบขนานได้)
+3. มันหยุด
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+เครื่องมือนี้ตรวจสอบความถูกต้องของกราฟ — คีย์ซ้ำ การพึ่งพาที่หลุดลอย วงจร — และ
+คืนค่าการละเมิดให้เอเจนต์แก้ไข แทนที่จะยอมรับแผนที่พัง
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+แผนจะปรากฏ **ในการสนทนา** เป็นแถวกะทัดรัดที่แสดงเป้าหมาย สถานะของมัน และจำนวน
+ขั้นตอน **Plan Studio** — กราฟการพึ่งพา ตัวตรวจสอบรายโหนด และค่าประมาณการต้นทุน —
+เปิดเป็นแท็บข้างการสนทนา: กด **เปิด** บนแถวนั้น หรือเพียงรอ เพราะแผนที่มาถึงภายใน
+30 วินาทีขณะที่คุณกำลังดูการสนทนาอยู่ จะเปิดแท็บของมันเอง
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[การรับประกันการอ่านอย่างเดียวเป็นเชิงโครงสร้าง แต่เฉพาะบนฮาร์เนสในตัว]
+ฮาร์เนสของ Control Center เองสร้างทะเบียนเครื่องมือของเอเจนต์จากสเปกพื้นผิวของ
+โหมดแผน จึงไม่มีเครื่องมือเขียน แก้ไข หรือคำสั่งให้เรียกได้เลย — ข้อจำกัดนี้ไม่ใช่
+คำสั่งในพรอมป์ต์ที่โมเดลจะโน้มน้าวตัวเองให้หลุดออกมาได้
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+อะแดปเตอร์ Claude Code ไม่ได้รับการกรองเช่นนี้: โหมดไปถึงมันในฐานะคำขอที่ตัวรัน
+ของมันอาจทำตามหรือไม่ก็ได้ และ Control Center เห็นเพียงการเรียก `mcp__*` ของมัน
+เท่านั้น ป้ายการบังคับใช้ข้างดรอปดาวน์โหมดจะปรากฏขึ้นเมื่อเป็นเช่นนั้นพอดี
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[เอเจนต์ถามคำถามเพื่อความกระจ่างกับคุณได้]
+เมื่อคำขอคลุมเครือ เอเจนต์โหมดแผนสามารถหยุดและถามคุณได้สูงสุดสามคำถามแบบบล็อก
+ด้วยเครื่องมือ `ask_user` มันเรนเดอร์แบบฟอร์มในการสนทนา — ตัวเลือก หรือข้อความ
+อิสระ — และการรันจะบล็อกจนกว่าคุณจะตอบ เครื่องมือนี้อยู่ระดับอ่าน จึงอยู่รอดบน
+พื้นผิวอ่านอย่างเดียวของโหมดแผน และมันได้รับการยกเว้นจากตัวห่อการอนุมัติ (พรอมป์ต์
+ที่วางไว้หน้าพรอมป์ต์จะล้มเหลวแบบปิดเมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่ ซึ่งจะปฏิเสธ
+เอเจนต์ในเรื่องการถาม)
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+มันต้องมีสเปซให้เรนเดอร์ลงไป การสั่งงานครั้งเดียวที่ไม่มีการสนทนาจึงไม่ได้รับมัน
+การใส่ขอบเขต รีโปเป้าหมาย และเกณฑ์การยอมรับไว้ล่วงหน้าในข้อความแรกของคุณยังเร็วกว่า
+การไปกลับหนึ่งรอบ
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+ความเรียงไม่ใช่สิ่งที่ต้องส่งมอบที่นี่ การรันที่จบลงโดยไม่เรียก `submit_plan` จะโพสต์
+บรรทัดที่มองเห็นได้ว่า "Ended without submitting a plan (no `submit_plan` call)."
+ในการสนทนา และติดธงว่าการรันนั้นพลาดสิ่งที่ต้องส่งมอบ สถานะของการรันจงใจคงเป็น
+_completed_ — นั่นทำให้เครื่องสถานะของไปป์ไลน์และตั๋วงานไม่ถูกแตะต้อง — ดังนั้น
+จงอ่านบรรทัดนั้น ไม่ใช่ป้ายสถานะ
 
-## Approve the plan
+## อนุมัติแผน
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+จากแถวของแผนในการสนทนา กด **อนุมัติและรัน** จากแถบอนุมัติของ Plan Studio กด
+**อนุมัติแผน** (หรือ **ปฏิเสธ** ที่อยู่ข้าง ๆ การอนุมัติจะถูกปิดกั้นขณะกราฟมี
+ข้อผิดพลาดในการตรวจสอบความถูกต้อง)
 
-Then:
+จากนั้น:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center คอมไพล์แผนเป็นการประสานงานและทำให้มันเกิดขึ้นจริง — ตั๋วงานและ
+   การรัน ไม่มีโมเดลเกี่ยวข้องในขั้นตอนนี้ มันเป็นแบบกำหนดแน่นอน
+2. แผนรันในฐานะเอเจนต์ที่เขียนมันขึ้นมา การจะดึงใครอื่นเข้ามาหรือไม่เป็นดุลพินิจ
+   ของเอเจนต์ตัวนั้นตอนรัน — มันสามารถ `delegate_task` ขั้นตอนหนึ่งให้เพื่อนร่วมทีม
+   ที่เหมาะสมกว่าได้ ภายในเพดานความลึกของการมอบหมายของเวิร์กสเปซ
+3. เป้าหมายของแผนกลายเป็น **เป้าหมายของการสนทนา** และงานรัน **ในการสนทนาเดียวกัน
+   นั้น**: แต่ละขั้นตอนจะโพสต์สิ่งที่เอเจนต์ถูกสั่ง และสตรีมเทิร์นของมันกลับมา คุณจึง
+   ติดตามมันได้ (และหยุดเทิร์นได้) ในที่ที่คุณอยู่แล้ว
+4. แถวเป้าหมายในแผงด้านข้าง **ทั่วไป** ของการสนทนา (ใต้สิ่งที่ต้องทำ) แบกความ
+   คืบหน้าของการรันเป็น `settled/total` พร้อมปุ่มหยุดของมัน; Plan Studio แสดงสถานะ
+   รายโหนดบนกราฟและยกเลิกได้ที่นั่นด้วย
 
-## Keep working without approving
+## ทำงานต่อโดยไม่อนุมัติ
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+หากคุณอยากอยู่ในการสนทนานี้มากกว่าจะอนุมัติแผน เอเจนต์สามารถเรียก `exit_plan_mode`
+ได้ นั่นคือทางออกเดียวที่ได้รับอนุญาต: มันเปิดคำขออนุมัติแบบถาวรที่เชื่อมโยงกับ
+การสนทนาและคืนค่า `pending` — สเปซยังคงอยู่ในโหมดแผนและเอเจนต์ต้องไม่ลงมือ เมื่อ
+คำขอได้รับการอนุมัติ การเรียก `exit_plan_mode` ครั้งถัดไปของเอเจนต์จะสลับสเปซจาก
+โหมดแผนไปเป็นโหมดเอเจนต์และปลดล็อกเครื่องมือที่เปลี่ยนแปลงสถานะของมัน การถูกปฏิเสธ
+ทำให้มันเปิดคำขอใหม่กับแผนฉบับแก้ไขได้
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+หากต้องการออกจากโหมดแผน ให้สลับดรอปดาวน์ของช่องเขียนข้อความ (หรือ Shift+Tab)
+หรืออนุมัติแผนที่ส่งเข้ามา `exit_plan_mode` เปิดการอนุมัติแบบถาวรที่ตัดสินด้วย
+เครื่องมือ MCP `decide_approval` แผงซ้อนทับของกฎคุมสำหรับการเรียกเครื่องมือที่ถูก
+บล็อกเป็นคิวในหน่วยความจำที่แยกกัน และไม่พกคำขอออกจากโหมดแผน
 
-## Plan mode in a pipeline step
+## โหมดแผนในขั้นตอนไปป์ไลน์
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+โหนดไปป์ไลน์ `messaging.createSpace` อ่านโหมดของการสนทนาจาก **extra** `mode` ของ
+การตั้งค่าโหนด — `extras['mode']: 'plan'` คีย์นี้ต้องตรงตัว: การสะกดแบบอื่นใด
+รวมถึง `conversationMode` หรือ `dispatchMode` จะถูกเพิกเฉยอย่างเงียบ ๆ และห้องจะ
+ถอยกลับไปใช้ค่าเริ่มต้นของบอดี ซึ่งเป็นโหมด **รีวิว** ไม่ใช่โหมดแชท ขั้นตอน
+`promptAgent` เข้าร่วมห้องที่มันไม่ได้สร้างและไม่ได้กำหนดสิทธิ์ให้มันใหม่ ตัวเลือก
+**โหมดจัดส่ง** ในตัวแก้ไขการตั้งค่าโหนด (`allParallel` / `manager`) ใช้สำหรับโหนด
+สั่งงานทีม ตั้งค่าโหมดของการสนทนาด้วย `extras['mode']` บนเทมเพลตที่เปิดสเปซ หรือ
+บนการตั้งค่าโหนดนั้นผ่าน API
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Use spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
-- [Work in Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/)
-- [Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [ใช้สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
+- [ทำงานใน Plan Studio](/th-TH/คู่มือ/วิธีทำ/plan-studio/)
+- [รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)

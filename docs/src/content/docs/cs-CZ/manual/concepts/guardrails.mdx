@@ -1,248 +1,248 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Guardraily — jedna politika pro každou měnící akci
+description: Proč Control Center vede každý vedlejší efekt agenta jedním enginem allow/prompt/deny, proč taxonomie ActionClass zůstává schválně malá a co volič autonomie skutečně mění.
 slug: cs-CZ/prirucka/koncepty/guardraily
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agenti v Control Center mohou mazat soubory, odesílat větve, publikovat pull
+requesty a volat externí API. Každá z těch akcí nese jiný _druh_ rizika
+a dlouho měla politiku jen jedna z nich, příkazy shellu. Guardraily odpovídají
+na jednu otázku stejně u každé měnící akce, kterou agent může provést, ať ji
+navrhne kterýkoli runtime nebo nástroj: **je povolená, potřebuje schválení,
+nebo je zakázaná?**
 
-## One engine, every chokepoint
+## Jeden engine, každý kontrolní bod
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Engine politiky je právě jeden. Konzultuje se na každém místě, kde může akce
+systém opustit: v registru nástrojů vestavěného harnessu, na bráně serverového
+dispatcheru MCP a u mutací repo operací. Pravidlo zapsané jednou proto platí
+pro vestavěný runtime i pro externí CLI agentů. Žádná druhá, tišší cesta okolo
+nevede. Starší politika jen pro bash pořád platí: pravidlo může místo třídy
+akce odpovídat prefixu příkazu a obě podoby žijí ve stejném úložišti.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Engine ale nenahrazuje sandbox operačního systému a sandbox nenahrazuje jeho.
+Každý odpovídá na jinou otázku. Guardraily rozhodují, jestli se volání, které
+Control Center vidí, smí vůbec stát. Sandbox omezuje, kam smí výsledný proces
+dosáhnout. `cc_server` použije sandbox tam, kde hostitel nabízí backend, ale
+[Windows žádný nenabízí a Linux potřebuje `bwrap` a `socat`](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+Na těch hostitelích jsou guardraily nejvnější vrstvou vynucení, ne politikou
+položenou na podlahu. To se hodí vědět, když se rozhoduješ, jak volné
+nastavení zvolit.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: schválně uzavřená taxonomie
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Každý měnící nástroj deklaruje, do kterých **ActionClasses** patří, z uzavřené
+sady třinácti tříd efektů. Pět z nich má z výroby **prompt**, zbytek allow
+a mění to až pravidlo.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Třída                      | Vestavěný výchozí | Co pokrývá                                                        |
+| -------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `fileDelete`               | **prompt**        | Smazání souboru (zápis ve tvaru smazání, `rm`)                    |
+| `gitPush`                  | **prompt**        | Odeslání na git remote                                            |
+| `prCreate`                 | **prompt**        | Vytvoření pull requestu                                           |
+| `prPublish`                | **prompt**        | Publikování kontroly, sloučení PR                                 |
+| `vendorSyncWrite`          | **prompt**        | Zápis do externího systému ticketů (synchronizace Linear, Jira, GitHub) |
+| `fileWriteOutsideWorktree` | allow             | Zápis souboru mimo izolovaný worktree                             |
+| `gitCommit`                | allow             | Vytvoření git commitu                                             |
+| `networkEgress`            | allow             | Odchozí síťový provoz (web fetch, libovolné HTTP)                 |
+| `secretAccess`             | allow             | Čtení tajemství nebo přihlašovacích údajů                         |
+| `packageInstall`           | allow             | Instalace balíčku (npm, pip, pub, brew)                           |
+| `processSpawn`             | allow             | Spuštění procesu (shell a všechno, co si přes shell zavolá)       |
+| `workspaceMutation`        | allow             | Změna struktury pracovního prostoru (repozitáře, prostory, agenti) |
+| `enclosureControl`         | allow             | Ovládání izolovaného prostředí (stanice): start VM, poslání vstupu |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Osm tříd s výchozím allow počítá s tím, že pod nimi leží podlaha sandboxu.
+Leží tam, kde hostitel nabízí backend. Na Windows a na Linuxu bez `bwrap`
+a `socat` ne. Chceš-li tam hlídat `fileWriteOutsideWorktree` nebo
+`packageInstall`, musíš to pravidlo napsat.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Sada je uzavřená schválně. Nový měnící nástroj, který nedeklaruje žádnou
+třídu, neprojde testem západky, takže taxonomie roste jen výslovným
+a zdůvodněným rozhodnutím. „Rozbujení taxonomie je pro tuhle funkci konec.“
+Třináct tříd stačí na politiky, které lidé opravdu píšou (nikdy neodesílat
+bez dotazu, nikdy nemazat mimo worktree, čtení vždy povolit), a je jich dost
+málo na to, aby nastavení zůstalo srozumitelné.
 
-## Rules and scope resolution
+## Pravidla a vyhodnocení rozsahu
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Pravidlo mapuje `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Rozsahy se vnořují od nejužšího k nejširšímu:
 
-**space > agent > workspace > mode preset > built-in default**
+**Prostor > Agent > Pracovní prostor > Předvolba režimu > Vestavěný výchozí**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Vyhodnocení jde **nejdřív podle konkrétnosti**: první rozsah s odpovídajícím
+pravidlem rozhodne a vyhodnocení tam končí. Nejpřísnější varianta je jen
+rozhodčí při shodě, mezi dvěma stejně konkrétními pravidly v jednom rozsahu
+a při skládání několika tříd, které jedna akce deklaruje. Uvnitř rozsahu se
+pravidlo příkazu páruje podle nejdelšího prefixu příkazu. Allow nikde
+nepřebije deny.
 
-Two decisions carry hard guarantees:
+Dvě rozhodnutí nesou tvrdé záruky:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Výzvy se při chybějícím schvalovateli zamítnou.** `prompt` bez
+  připojeného schvalovatele se vyhodnotí jako _zamítnuto_. Nezodpovězená
+  otázka nikdy není ano.
+- **Nejpřísnější složení.** Akce přes několik tříd je složí nejpřísněji.
+  Když se ptá několik tříd, jedno potvrzení je vypíše všechny.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Schválně tu není západka na tah. Každé volání nástroje vyhodnotí politiku
+znovu od začátku, takže opakované dotazování na stejnou akci omezuje jen to,
+že si rozhodnutí pamatuješ volbou „Schválit na 8 hodin“, ne nic vázaného
+na tah.
 
-## Argument-level rules
+## Pravidla na úrovni argumentů
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Pravidlo může omezit ARGUMENTY akce, ne jen její sloveso. „Smí odeslat“
+a „smí odeslat na `feature/*`“ jsou různá tvrzení a kontrolou je jen to
+druhé. Brána schopností, která pustí jen sloveso, je tvar za většinou
+popsaných incidentů s agenty.
 
-A constraint may name:
+Omezení může jmenovat:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **cesty** – vzory glob (`repos/**`, `!**/.env`)
+- **refy** – git refy, s negací `!` (`['**', '!main']` se čte jako „libovolná
+  větev kromě main“)
+- **hostitelé** – síťové cíle, se zástupnými znaky subdomén (`*.internal`)
+- **příkazy** – prefixy příkazů, párované na hranici slova
+- **stropy** – `maxCount` / `maxCents`, takže „smazat až 50 souborů“ jde
+  vyjádřit
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Z uzavřené gramatiky bez smyček plynou tři vlastnosti a právě o ně jde.
+Každé pravidlo se vykreslí jako věta, kterou si přečteš. Každé zamítnutí umí
+pojmenovat omezení, které sedělo. Celou politiku jde vyjmenovat, takže vidíš,
+co agent smí, *dřív* než se spustí.
 
-Three rules that matter:
+Tři pravidla, na kterých záleží:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **Omezené pravidlo je konkrétnější** než neomezené ve stejném rozsahu,
+  takže „zakázat odeslání na `main`“ vyhraje nad „povolit odeslání“ a na
+  pořadí nemusíš myslet.
+- **Restriktivní** pravidlo (deny / prompt) platí, když požadavek sahá na
+  *libovolnou* jmenovanou hodnotu. **Permisivní** (allow) platí jen tehdy,
+  když požadavek leží *celý* uvnitř. Stejné čtení obou by agentovi dovolilo
+  propašovat zakázanou cestu tak, že k ní přibalí nevinnou.
+- Pravidlo, které jmenuje hledisko, o němž požadavek nic neříká, se ani
+  nepoužije, ani nepřeskočí: **eskaluje na schválení**. Tiché přeskočení by
+  každé pravidlo chráněné větve zneškodnilo proti nástroji, který svůj ref
+  neohlásí. Tiché zamítnutí by odmítlo každé odeslání, které extraktor neumí
+  popsat. Když není připojený schvalovatel, existující pravidlo uzavření při
+  neúspěchu z té eskalace udělá zamítnutí.
 
-## What a command rule can and cannot catch
+## Co pravidlo příkazu zachytí a co ne
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Pravidlo `commandPrefix` se páruje na hranici slova: `git push` pokryje
+`git push origin main`, ne `git pushx`. Shell **nenormalizuje**.
+`git  push` (dvě mezery), `cd sub && git push` a
+`GIT_DIR=… git push` jsou jiné řetězce a žádný z nich nesedí na pravidlo
+o `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Je to skutečný limit a je řečený napřímo. Pravidla příkazů jsou pohodlí
+operátora pro běžné chování agenta, **ne** hranice proti útočníkovi. Hranice
+jsou třídy efektů (nástroj je deklaruje a nemůže je přepsat jiným zápisem),
+příkazová síť režimu pod úložištěm politiky a sandbox operačního systému pod
+obojím. Pravidlo příkazu, které se vyhodnotí jako `allow`, žádnou z těch dvou
+neuvolní. Příkazová síť režimu běží až potom a její `deny` je konečné.
 
-## Standing approvals
+## Zapamatovaná schválení
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Odpověď na výzvu volbou „Schválit na 8 hodin“ zapíše skutečné pravidlo
+politiky. Má rozsah (prostor / agent / pracovní prostor), je **vázané na
+argumenty** (schválení odeslání na `feature/login` udělí `feature/**`, ne
+`main`) a **samo se zruší** po explicitním TTL. Ano na pár následujících hodin
+není tiché přepsání trvalé politiky. Vzniklá pravidla spadnou do stejného
+úložiště s proveniencí `remembered` a s expirací, takže je můžeš odvolat dřív.
 
-## Enforcement levels
+## Úrovně vynucení
 
-Each rule carries one:
+Každé pravidlo nese jednu:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** – povolit, ale zaznamenat, že pravidlo sedělo. Tudy vede
+  zavedení. Nasadíš přísné pravidlo v režimu advisory, týden čteš auditní
+  stopu a vidíš přesně, co by *bylo* zablokovalo, a pak ho povýšíš. Bez
+  téhle úrovně se přísné politiky nikdy nezapnou.
+- **soft** – zakázat, s možností přebití pro toho, kdo drží oprávnění
+  k přebití, a se zaznamenaným zdůvodněním. Samotné přebití je auditovaná
+  událost.
+- **hard** (výchozí) – zakázat. Nic ho nepřepíše.
 
-## The managed tier
+## Spravovaná vrstva
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Operátor instalace může připnout politiku, kterou správce pracovního prostoru
+neuvolní. Spravovaná pravidla žijí na serveru a s vlastním řetězem každého
+pracovního prostoru se slučují **nejpřísněji**. Nejsou rozsahem na jeho
+začátku. Spravované `allow` v čele řetězu by instalaci dovolilo přebít deny
+pracovního prostoru, a to je opak toho, k čemu svorka slouží. Spravované
+pravidlo proto umí jen přitáhnout.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Když `CC_SERVER_MANAGED_POLICY` ukazuje na soubor JSON, má před uloženými
+pravidly úplnou přednost. Operátor tak připne postoj, který žádné správcovské
+rozhraní nepřepne. To je odpověď na otázku „zabráním vývojářům vypnout
+bezpečnostní kontroly?“.
 
-## The autonomy dial is a profile, not a parallel system
+## Volič autonomie je profil, ne paralelní systém
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Volič autonomie na prostor je pojmenovaný profil nad stejným úložištěm
+politiky, ne druhý mechanismus. Tři nastavení se ukládají a posílají jako
+`proposeOnly`, `actWithApproval` a `actFreely` (v rozhraní jsou to jen texty
+„Jen navrhovat“, „Jednat se schválením“ a „Jednat volně“ a
+`autonomy.setForSpace` cokoli jiného odmítne). Nenastavený se chová jako
+`actWithApproval`.
 
-What each one does to a resolved decision:
+Co každé udělá s už vyhodnoceným rozhodnutím:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** rovnou zakáže každý hlídaný nástroj. Agent pořád umí
+  uvažovat a odpovídat, jen nemůže jednat a jeho zpráva řekne proč.
+- **`actWithApproval`** (a nenastavený stav) je výše popsaná brána schválení,
+  která se při chybějícím schvalovateli uzavře.
+- **`actFreely`** předem schválí vše, co nedopadlo jako tvrdé `deny`.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+To poslední je potřeba říct napřímo. Pod `actFreely` se rozhodnutí `prompt`
+ke schvalovateli **ne**eskaluje: povolí se a nikdo se neptá. Volič přežije
+jen explicitní pravidlo `deny`. `actFreely` je záměrné udělení autonomie, ne
+nastavení pro pohodlí, a pravidlo uzavření při neúspěchu chrání právě případ,
+kde na něm záleží (`actWithApproval`, výchozí).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Delegování mezi agenty hlídá v kontrolním bodě `delegate_task` všechny čtyři
+pojistky: strop hloubky (výchozí 3), detekce cyklů, **strop autonomie**
+(delegát nikdy nejedná s vyšší autonomií než jeho delegátor, oprávnění nejde
+proprat předáním práce volnějšímu agentovi) a **obálka rozpočtu** (delegování
+účtuje zbývající rozpočet delegátora a neumí vyrobit další). Každá se odmítne
+nahlas a důvod pojistky se agentovi vrátí doslova.
 
-## The adapter honesty matrix
+## Matice upřímnosti adaptéru
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Ne každý runtime nechá Control Center zachytit každou akci. Externí CLI
+agentů pouštějí některé nástroje nativně, v procesu, kam se brána nevejde.
+Místo předstírání proto každý adaptér nese **matici upřímnosti**. U každého
+adaptéru říká, jestli Control Center filtruje plochu nástrojů, zachytává
+volání nástrojů, sleduje kontrakt dokončení, vidí nativní nástroje runneru
+a jestli nástroje v procesu kryje profil sandboxu.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Dva záznamy si přečti, než konfiguraci uvěříš. Vestavěný harness deklaruje,
+že jeho souborové nástroje v procesu **nejsou** v sandboxu. Plocha nástrojů
+a tenhle engine politiky jsou jediná hranice souborového systému, kterou má.
+Claude Code deklaruje, že jeho vlastní volání nástrojů **nejsou**
+zachytitelná, protože se spouští s `--dangerously-skip-permissions`. Control
+Center vidí jen jeho volání `mcp__*` a jeho vlastní nástroje pro čtení,
+zápis, úpravy a shell běží mimo dohled.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Obrazovka nastavení tu matici ukazuje, protože jediné neodpustitelné selhání
+systému guardrailů je tvrdit pokrytí, které neexistuje.
 
-## Probing policy before it bites
+## Prověř politiku, než se zakousne
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Guardraily jsou v **Nastavení → Pracovní prostor → Oprávnění agentů**
+(`/workspaces/<id>/settings/workspace/permissions`). Na obrazovce je matice
+politiky, kam se pravidla zapisují, **Šablony politik**, sonda **Co kdyby?**,
+**Auditní stopa autorizací** a **Kde se pravidla vynucují**.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Sonda vezme třídu akce (nebo příkaz) a rozsah a ukáže, které pravidlo rozhodlo
+a proč. Vyhodnocení je čisté a deterministické, takže stejná akce a stejný
+rozsah dají stejné rozhodnutí. Odpověď sondy je odpověď, kterou dostane agent.
 
-## Related concepts
+## Související koncepty
 
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/): writing and testing rules in practice
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): co běh agenta skutečně omezuje a jak daleko sahá podlaha operačního systému pod tímhle enginem
+- [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): prostory, principálové a kde volič autonomie žije
+- [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/): jak pravidla v praxi napsat a vyzkoušet

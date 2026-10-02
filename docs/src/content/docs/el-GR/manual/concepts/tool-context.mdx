@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Πλαίσιο εργαλείων και προσωρινή αποθήκευση προτροπών
+description: Γιατί ένας πράκτορας βλέπει ένα μικρό σύνολο εργαλείων αντί για όλα, πώς φτάνει στα υπόλοιπα και ποιοι κανόνες διατηρούν ζεστή την cache προτροπών του παρόχου καθ' όλη τη διάρκεια μιας εκτέλεσης.
 slug: el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Δύο πράγματα ισχύουν για κάθε αίτημα που κάνει ο ενσωματωμένος μηχανισμός: οι ορισμοί εργαλείων είναι το μεγαλύτερο σταθερό κόστος του και σχεδόν κανένας από αυτούς δεν θα χρησιμοποιηθεί. Αυτή η σελίδα εξηγεί τι κάνει το Control Center γι' αυτό και γιατί η απάντηση δεν είναι απλώς «στείλε λιγότερα εργαλεία».
 
-## The problem is attention, not bytes
+## Το πρόβλημα είναι η προσοχή, όχι τα byte
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Το Control Center καταχωρίζει περίπου 126 εργαλεία. Όταν αποστέλλονται ολόκληρα, οι ορισμοί τους κοστίζουν περίπου **23.000 token σε κάθε αίτημα** — κόστος που καμία συμπύκνωση δεν μπορεί να αγγίξει, γιατί οι ορισμοί εργαλείων ταξιδεύουν σε ξεχωριστό μέρος του αιτήματος από τη συνομιλία.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+Ο λογαριασμός των token είναι το προφανές παράπονο και, μαζί με την προσωρινή αποθήκευση προτροπών, είναι και ο μικρότερος. Το πραγματικό κόστος είναι η **ακρίβεια επιλογής**. Δημοσιευμένες αξιολογήσεις της κλήσης εργαλείων συμφωνούν ότι τα μοντέλα επιλέγουν σωστά το εργαλείο αξιόπιστα μέχρι περίπου 30–50 εργαλεία στο πλαίσιο, και χειροτερεύουν προοδευτικά πέρα από αυτό. Η αναφερόμενη αιτία δεν είναι ο αριθμός των token αλλά η **σημασιολογική επικάλυψη**: όταν ένας κατάλογος περιέχει αρκετά εργαλεία των οποίων οι περιγραφές μοιάζουν, το μοντέλο επιλέγει ανάμεσα σε παρόμοια αντί να ανακαλεί μια δυνατότητα.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Με 126 εργαλεία, ένας πράκτορας είναι πολύ πέρα από αυτή τη ζώνη σε κάθε στροφή — ακόμη και στις πολλές στροφές όπου χρειαζόταν μόνο να διαβάσει ένα αρχείο.
 
-## The two-tier surface
+## Η επιφάνεια δύο επιπέδων
 
-A run is therefore shown two things:
+Μια εκτέλεση βλέπει επομένως δύο πράγματα:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- ένα **μόνιμο** σύνολο — περίπου δύο δωδεκάδες εργαλεία, που αποστέλλονται με πλήρη σχήματα σε κάθε αίτημα;
+- ένα **ευρετήριο ονομάτων** για όλα τα υπόλοιπα, ομαδοποιημένα κάτω από επικεφαλίδες όπως «Tickets and projects» ή «Memory and knowledge», με κόστος μερικών εκατοντάδων token για ολόκληρο τον κατάλογο.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Μετρημένο στον τρέχοντα κατάλογο, αυτό πάει το μπλοκ εργαλείων από **~23.1k token σε ~5.0k, περίπου 78% μικρότερο**, και βάζει το πάντα ορατό σύνολο μέσα στη ζώνη όπου η επιλογή είναι αξιόπιστη.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+Το μόνιμο σύνολο είναι τα εργαλεία που χρησιμοποιεί μια εκτέλεση στις *περισσότερες* εκτελέσεις: το λεξιλόγιο αρχείων και κελύφους (`read`, `write`, `edit`, `search`, `bash`, …), τα εργαλεία ανακάλυψης, η λίστα ελέγχου εργασιών, η αναζήτηση μνήμης και όποιο ρήμα πρέπει να καλέσει η τρέχουσα [λειτουργία](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες) για να παραδώσει την έξοδό της. Το ρήμα εξόδου της ίδιας της λειτουργίας είναι πάντα μόνιμο — μια εκτέλεση δεν πρέπει ποτέ να χρειάζεται να ψάξει την κλήση που παράγει το παραδοτέο της.
 
-### Deferred does not mean unavailable
+### «Αναβαλλόμενο» δεν σημαίνει «μη διαθέσιμο»
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Αυτό είναι το μέρος που κάνει τον σχεδιασμό ασφαλή και όχι απλώς φθηνό. **Ένα αναβαλλόμενο εργαλείο καλείται από την πρώτη στροφή.** Μόνο το σχήμα του κρατείται.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Ο πράκτορας βλέπει το όνομα στην προτροπή του. Αν καλέσει απευθείας αυτό το όνομα, ο μηχανισμός φορτώνει το σχήμα και εκτελεί το εργαλείο στο ίδιο βήμα — χωρίς σφάλμα, χωρίς επιπλέον διαδρομή. Το μοντέλο δεν χρειάζεται να ξέρει ότι το εργαλείο ήταν ποτέ «εκφορτωμένο».
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Όταν ο πράκτορας ξέρει την εργασία αλλά όχι το όνομα, το `search_tools` δέχεται μια περιγραφή σε φυσική γλώσσα («ανάθεσε ένα εισιτήριο σε κάποιον»), κατατάσσει ολόκληρη την επιφάνεια της εκτέλεσης και επιστρέφει τα αποτελέσματα *με τα σχήματά τους ήδη φορτωμένα*, ώστε η αμέσως επόμενη στροφή να καλέσει κάποιο. Αν μια αναζήτηση δεν βρει τίποτα, το δηλώνει ρητά και προτείνει διαφορετική διατύπωση ή ευρύτερη αναζήτηση — σκόπιμα, γιατί ένας πράκτορας που διαβάζει μια κενή αναζήτηση ως «αυτή η δυνατότητα δεν υπάρχει» θα επινοήσει υποκατάστατο αντί να ψάξει ξανά.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+Το `search_tools` υπάρχει μόνο στον ενσωματωμένο μηχανισμό. Οι εξωτερικοί πελάτες MCP έχουν αντ' αυτού το `search_tool_bm25`, το οποίο κατατάσσει το ίδιο ευρετήριο αλλά μόνο περιγράφει τα αποτελέσματα — αυτοί οι πελάτες έχουν ήδη λάβει κάθε σχήμα από το `tools/list`, οπότε δεν υπάρχει τίποτα να φορτωθεί.
 
-### What deferral never does
+### Τι δεν κάνει ποτέ η αναβολή
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Η αναβολή εφαρμόζεται **μετά** το φίλτρο εργαλείων της λειτουργίας, ποτέ αντί γι' αυτό. Κρύβει ένα σχήμα· δεν μπορεί να αποκαλύψει ένα εργαλείο που η λειτουργία απέρριψε. Ένα εργαλείο που ενεργοποιείται περνά ακόμη από την προτροπή έγκρισης και τους [περιορισμούς ενεργειών](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί) ακριβώς όπως θα περνούσε ένα μόνιμο, και ένα εργαλείο δεν μπορεί να φορτώσει ένα όνομα που δεν ήταν εξαρχής στην επιφάνεια της εκτέλεσης.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Η επιφάνεια MCP που βλέπουν οι εξωτερικοί πελάτες **δεν** επηρεάζεται. Το `tools/list` εξακολουθεί να επιστρέφει τον πλήρη κατάλογο. Μια παλαιότερη απόπειρα να περιοριστεί το έσπασε εντελώς: οι πελάτες MCP επικυρώνουν τα ονόματα εργαλείων με βάση τη δική τους λίστα στην cache και απορρίπτουν καθετί που δεν περιλαμβάνεται χωρίς να ρωτήσουν ποτέ τον διακομιστή, οπότε ένα εργαλείο «κρυφό αλλά καλούμενο» ήταν απλώς απρόσιτο. Η αναβολή ζει στον μηχανισμό, όπου η φόρτωση ενός εργαλείου στη μέση της εκτέλεσης είναι κάτι που ο μηχανισμός μπορεί πραγματικά να κάνει.
 
-### Turning it off
+### Πώς απενεργοποιείται
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli).
+Τα `--tool-deferral=off` (ή `CC_SERVER_TOOL_DEFERRAL=off`) κάνουν κάθε εργαλείο που έχει γίνει δεκτό και πάλι μόνιμο, παράγοντας ακριβώς τα αιτήματα που έκανε ο διακομιστής πριν υπάρξει η αναβολή. Δείτε την [αναφορά CLI του `cc_server`](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli).
 
-## Prompt caching
+## Προσωρινή αποθήκευση προτροπών
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Τα φόρτια εργασίας πρακτόρων είναι ασύμμετρα: στέλνουν τεράστιες προτροπές και λαμβάνουν μικρές απαντήσεις, στροφή τη στροφή, με το ίδιο πρόθεμα κάθε φορά. Οι πάροχοι κάνουν cache σε αυτό το πρόθεμα, και μια ανάγνωση από την cache κοστίζει περίπου το ένα δέκατο μιας νέας. Το ποσοστό επιτυχιών στην cache είναι επομένως ιδιότητα πρώτης κατηγορίας του μηχανισμού και όχι βελτιστοποίηση — και στην Anthropic αποφέρει και ρυθμαπόδοση, γιατί τα token που βρίσκονται στην cache δεν προσμετρώνται στο όριο εισόδου ανά λεπτό.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Η cache λειτουργεί με ακριβή αντιστοίχιση προθέματος, πράγμα που αποδίδει έναν κανόνα που τα διέπει όλα.
 
-### Never rewrite what was already sent
+### Μην ξαναγράφεις ποτέ ό,τι έχει ήδη σταλεί
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Οποιοδήποτε byte αλλάξει ακυρώνει την cache από εκείνο το σημείο και μετά. Έτσι ο μηχανισμός μόνο **προσθέτει στο τέλος**: νέα μηνύματα στο τέλος και σχήματα εργαλείων που μόλις ενεργοποιήθηκαν *μετά* το μπλοκ εργαλείων που βρίσκεται στην cache, αντί να ενσωματώνονται σε αυτό. Αυτή η σειρά είναι ο λόγος που η ενεργοποίηση είναι φθηνή — το πρόθεμα που βρίσκεται στην cache μένει πανομοιότυπο και η εκτέλεση πληρώνει μόνο για τα σχήματα που μόλις φόρτωσε.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+Ο βρόχος επίσης κόβει τις παλιές εξόδους εργαλείων από προηγούμενες στροφές για να ανακτήσει συμφραζόμενα. Περιμένει μέχρι να υπάρχει αρκετό υλικό προς ανάκτηση ώστε να αξίζει η επανεγγραφή, οπότε το κόψιμο είναι μια σπάνια βαθιά επανεγγραφή αντί για συνεχή αστοχία στην cache.
 
-### Where the breakpoints go
+### Πού τοποθετούνται τα σημεία διακοπής
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Ένας πάροχος επιτρέπει περιορισμένο αριθμό δεικτών cache και το Control Center τους ξοδεύει σκόπιμα:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Δείκτης                     | Καλύπτει                          | Διάρκεια ζωής |
+| --------------------------- | --------------------------------- | ------------- |
+| Τελευταίο **μόνιμο** εργαλείο | Το μπλοκ εργαλείων              | 1 ώρα         |
+| Τελευταίο μπλοκ συστήματος  | Εργαλεία + προτροπή συστήματος    | 1 ώρα         |
+| Ουρά της προηγούμενης στροφής | Ιστορικό μέχρι το τελευταίο αίτημα | 5 λεπτά      |
+| Ουρά της τρέχουσας στροφής  | Το πλήρες ιστορικό                | 5 λεπτά       |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Οι δύο τελευταίοι είναι ένα κυλιόμενο ζεύγος, και ο λόγος γι' αυτό το ζεύγος είναι λεπτός: μια αναζήτηση στην cache ψάχνει προς τα πίσω έναν πεπερασμένο αριθμό μπλοκ για κάτι που αποθήκευσε ένα προηγούμενο αίτημα. Μια μεμονωμένη στροφή που εκτελεί πολλά εργαλεία παράλληλα μπορεί να εκπέμψει περισσότερα μπλοκ από αυτό το παράθυρο, οπότε ένας δείκτης ουράς αστοχεί σιωπηλά και το αίτημα πληρώνει το πλήρες τίμημα χωρίς τίποτα στην απάντηση να το δηλώνει. Η σήμανση του ακριβούς σημείου όπου σταμάτησε το προηγούμενο αίτημα κάνει την επιτυχία δομική αντί για κούρσα.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Το πρόθεμα εργαλείων-και-συστήματος παίρνει τη μεγάλη διάρκεια ζωής επειδή είναι σταθερό για ολόκληρη την εκτέλεση, το μοιράζονται κάθε εκτέλεση και υποπράκτορας με το ίδιο σχήμα, και επειδή το ρολόι ξεκινά όταν ένα αίτημα *αρχίζει* — μια στροφή που μεταδίδεται σε ροή για αρκετά λεπτά έχει ήδη ξοδέψει το μεγαλύτερο μέρος ενός σύντομου παραθύρου πριν σχηματιστεί το επόμενο αίτημα.
 
-### Subagents share one prefix
+### Οι υποπράκτορες μοιράζονται ένα πρόθεμα
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Οι υποπράκτορες του ίδιου τύπου παράγουν πανομοιότυπα κατά byte προθέματα προτροπών, οπότε θα πρέπει να διαβάζουν μία καταχώριση cache αντί να γράφει ο καθένας τη δική του. Όμως μια καταχώριση γίνεται αναγνώσιμη μόνο όταν το αίτημα που την έγραψε αρχίσει να απαντά, οπότε μια διασπορά που ξεκινά όλη μαζί κάνει κάθε παιδί να πληρώνει το επιπλέον κόστος για ένα πρόθεμα που όλα το μοιράζονται.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+Ο μηχανισμός αφήνει το πρώτο παιδί ενός δεδομένου σχήματος να ξεκινήσει και μετά ελευθερώνει τα αδέλφια του μόλις αυτό αρχίσει να μεταδίδει σε ροή. Η αναμονή είναι φραγμένη: ένα αργό πρώτο παιδί κοστίζει μία επιτυχία στην cache, ποτέ την ίδια τη διασπορά. Για τον ίδιο λόγο, κάθε υποπράκτορας παίρνει το ίδιο μόνιμο σύνολο εργαλείων ανεξάρτητα από το προφίλ του — η μεταβολή του ανά προφίλ θα κατακερμάτιζε το κοινόχρηστο πρόθεμα χωρίς όφελος, αφού το προφίλ έχει ήδη αποφασίσει τι επιτρέπεται να καλέσει το παιδί.
 
-## Watching it work
+## Παρακολουθώντας το στην πράξη
 
-Both halves are observable rather than assumed:
+Και τα δύο μισά είναι παρατηρήσιμα αντί να υποτίθενται:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- Ο **εξερευνητής συμφραζομένων** σε μια συνομιλία αναφέρει τα μόνιμα εργαλεία, το αναβαλλόμενο ευρετήριο και πόσο *θα* κόστιζε κάθε σχήμα που κρατείται, χτισμένος από την ίδια διαδρομή κώδικα που χρησιμοποιεί μια πραγματική εκτέλεση.
+- Κάθε εκτέλεση καταγράφει ποια αναβαλλόμενα εργαλεία φόρτωσε και τι την προκάλεσε, ώστε μια αναζήτηση που δεν βρίσκει τίποτα να φαίνεται ως αστοχία ανάκτησης αντί να χάνεται μέσα σε έναν πράκτορα που κάνει ήσυχα κάτι συναφές.
+- Η παρατηρησιμότητα αναφέρει το **Ποσοστό cache** ως τις αναγνώσεις από την cache προς όλα τα token προτροπών που υποβλήθηκαν σε επεξεργασία, μαζί με τις εγγραφές στην cache — μια εκτέλεση που ξαναχτίζει συνεχώς το πρόθεμά της βαθμολογείται χαμηλά, αντί να βαθμολογείται σαν μια που δεν χρειάστηκε ποτέ cache.

@@ -1,137 +1,152 @@
 ---
 title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+description: Chaque surface, backend, verbe d’action, état de cycle de vie, port, valeur par défaut et contrat d’un rig — le catalogue factuel complet.
 slug: fr-FR/manuel/reference/rigs
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/fr-FR/manuel/concepts/rigs/); to open a machine, follow [the
+Des faits uniquement. Pour le modèle qui les sous-tend, consultez [Rigs et
+enceintes](/fr-FR/manuel/concepts/rigs/) ; pour ouvrir une machine, suivez [le
 guide](/fr-FR/manuel/guides/utiliser-rigs/).
 
-## Surfaces and backends
+## Surfaces et backends
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Surface | Pilote | Backend | Valeur | Sortie réseau confinée |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminal (exec) | Un shell sur le canal exec de la VM | microVM | `smolvm` | Oui |
+| Navigateur | Chromium sans interface (CDP), Firefox (WebDriver BiDi) ou WebKit (W3C WebDriver) | microVM | `smolvm` | Oui |
+| Ordinateur | Bureau X11 : entrée via l’hyperviseur, capture via l’agent de l’invité | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (repli non accéléré, jamais choisi automatiquement) | Oui |
+| Android | Android via ADB | L’émulateur de Google | `android-emulator` | **Non** — l’émulateur gère son propre réseau |
+| iOS | Le simulateur iOS via WebDriverAgent | CoreSimulator | `ios-simulator` | **Non** — le réseau suit le Mac hôte |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Le terminal et la surface `computer_use` partagent la valeur de surface
+`computer` ; le terminal se distingue par son marqueur d’image exec et n’est
+jamais réutilisé comme bureau pilotable (et inversement). Une conversation
+réutilise une seule machine terminal.
 
-## Browser engines
+## Moteurs de navigateur
 
-| Engine | Value | Protocol | Live view | Stills |
+| Moteur | Valeur | Protocole | Vue en direct | Images fixes |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (par défaut) | Chrome DevTools Protocol | Screencast — le navigateur pousse les images à mesure que la page se redessine | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Images fixes par interrogation (BiDi n’a pas de screencast), plafonnées à 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (classique) | Images fixes par interrogation, transcodées par le ffmpeg de l’hôte | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Un rig exécute **un seul** moteur pendant toute sa vie. Une conversation peut
+contenir un rig **par moteur**, ce qui rend possible une comparaison côte à
+côte : ouvrir « Firefox (VM) » à côté de « Chromium (VM) », c’est deux
+machines, et fermer l’une laisse l’autre en marche.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Passez `engine` à `rig.open` ou à l’outil `browser_use`. Un nom inconnu est
+refusé plutôt que remplacé par la valeur par défaut — demander un navigateur
+et en obtenir silencieusement un autre répond à une question de compatibilité
+par une mauvaise réponse.
 
-Engine-specific limits, stated rather than worked around:
+Limites propres à chaque moteur, énoncées plutôt que contournées :
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** n’a pas de rechargement contournant le cache (il rejette
+  d’emblée `ignoreCache` de BiDi), si bien qu’un rechargement forcé est un
+  rechargement normal.
+- **WebKit** n’a pas non plus de rechargement contournant le cache, ni de
+  flux de console (la sortie est capturée en interceptant `console.*` après
+  chaque navigation, si bien que tout ce qui est journalisé pendant le
+  chargement est manqué — chaque extraction de console le dit), et a besoin
+  de `ffmpeg` sur l’hôte pour sa vue en direct.
+- **Ni l’un ni l’autre** n’expose d’arbre d’accessibilité de la plateforme via
+  son protocole, si bien que `extract (a11y)` renvoie une approximation
+  dérivée du DOM, étiquetée comme telle.
+- **Ni l’un ni l’autre** ne peut recevoir un vrai dépôt de fichiers ; un champ
+  de fichier peut toujours être pointé vers des chemins à l’intérieur de la
+  machine.
 
-## Machine images
+## Images de machine
 
-| Surface | Image | Fetched |
+| Surface | Image | Récupération |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminal | `ubuntu:24.04`, épinglée par empreinte | Automatiquement au premier démarrage, via le réseau filtré de la machine elle-même |
+| Navigateur (Chromium, Firefox, WebKit) | `debian:trixie-slim`, épinglée par empreinte, plus les paquets propres au moteur | Automatiquement au premier démarrage, puis mise en cache comme pack préchauffé |
+| Ordinateur | Une image de bureau qcow2 avec Chromium, Firefox, WebKit et le même socle d’outils CLI de type runner hébergé par GitHub que celui préchauffé par le terminal | **Importer** sous Paramètres → Serveur → Rigs (téléchargements épinglés par somme de contrôle lorsqu’ils sont publiés) |
+| Android | Les images système de Google | Via le SDK Android |
+| iOS | Un runtime Xcode Simulator et un WebDriverAgent épinglé par somme de contrôle | Runtime via Xcode ; pont d’automatisation depuis Paramètres → Serveur → Rigs |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Après le premier démarrage de chaque type de microVM, le serveur met en cache
+une copie pré-extraite dans le répertoire de données et démarre toutes les
+machines suivantes à partir d’elle — y compris des images préchauffées dont
+les paquets sont déjà installés. Le terminal préchauffe un socle d’outils CLI
+de type runner hébergé par GitHub (`git`, `gcc`, `python3`, `jq`, `rsync`,
+les outils d’archivage et le reste du socle apt ; ni Docker ni les caches
+d’outils par langage). Le qcow2 Ordinateur intègre ces mêmes noms d’outils
+CLI au moment de la construction de l’image, aux côtés de XFCE et des trois
+navigateurs. Chaque navigateur préchauffe son moteur. Les trois moteurs
+partagent une base Debian mais ne partagent jamais un pack : le cache est
+indexé sur l’image, le moteur **et** une révision audio
+(`audio-v1-<engine>`), car une machine préchauffée pour un moteur — ou avant
+que PulseAudio et ffmpeg ne fassent partie de la charge de travail — ne
+contient rien de l’autre. Le pack du terminal est indexé sur une révision
+d’outillage (`tools-v1`) pour la même raison : un pack préchauffé avant que le
+compilateur ne fasse partie de l’image ne doit pas servir une machine censée
+en avoir un.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Il n’existe aucune image d’automatisation préconstruite qui vaille la peine
+d’être reprise — le `chromedp/headless-shell` de Chromium compile ALSA et
+PulseAudio hors du binaire, il ne peut donc jamais émettre de son ; la seule
+image Firefox maintenue fait 33× la taille de la base Debian et ne fournit
+toujours pas `socat` ; il n’existe aucune image WebKit maintenue. Chaque
+moteur s’installe donc au premier démarrage (`chromium`, `firefox-esr` ou
+`webkit2gtk-driver`) et atteint les archives Debian (`deb.debian.org`,
+`security.debian.org`, `cloudfront.debian.net`) pour ce faire. Chromium est
+le binaire de la distribution, lancé sous la forme `chromium --headless=new`.
 
-### Per-workspace custom images
+### Images personnalisées par espace de travail
 
-| Setting key | Overrides |
+| Clé de réglage | Remplace |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | L’image du Terminal (VM) |
+| `rigs.smolvm.browserImage` | L’image du Navigateur Chromium (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Écrite via le magasin de réglages d’espace de travail réservé aux
+administrateurs (Paramètres → Serveur → Rigs → Images personnalisées (cet
+espace de travail)). La valeur doit être une référence de registre — les
+chemins locaux, les archives et les chaînes ressemblant à des options sont
+refusés, à la saisie comme au démarrage. Une valeur stockée invalide est
+ignorée avec un message explicite, et l’image par défaut démarre à la place.
+Le registre de l’image elle-même (ainsi que les CDN d’objets associés connus
+pour Docker Hub, GHCR, Quay, GitLab et GCR) est admis par la porte de sortie
+réseau pour le tirage.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Contrat de l’image Terminal** — `bash` présent ; `git`, `curl`, `socat`
+préinstallés *ou* une base apt Debian/Ubuntu (l’enceinte installe ces trois
+outils plus un socle d’outils CLI de type runner hébergé par GitHub au premier
+démarrage : compilateurs, Python 3, `jq`, outils d’archivage, `rsync`. Les
+caches d’outils par langage et Docker ne sont pas installés).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Contrat de l’image Navigateur** — une base apt Debian/Ubuntu (ou les
+paquets déjà installés) avec `bash` et `socat`, plus un binaire `chromium` que
+le serveur lance lui-même sous la forme `chromium --headless=new`, avec
+DevTools sur la boucle locale de l’invité `9223`, relayé vers le port invité
+`9222`. PulseAudio et ffmpeg sont installés au premier démarrage pour la voie
+audio. Ne construisez pas `FROM chromedp/headless-shell` : le `headless.gn`
+amont compile ALSA et PulseAudio hors du binaire, celui-ci ne peut donc pas
+émettre de son. La surcharge ne s’applique **qu’aux rigs Chromium** — la
+commande de charge de travail qu’elle démarre est celle de Chromium, et la
+confier à Firefox ou WebKit lancerait un binaire absent. Un rig Firefox ou
+WebKit l’ignore avec un message explicite et démarre son image épinglée.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Ports d’automatisation** — chaque machine navigateur transfère exactement un
+port de boucle locale de l’hôte vers le port invité `9222`. Derrière ce port :
+les DevTools de Chromium et l’agent distant de Firefox se trouvent sur la
+boucle locale de l’invité `9223`, avec un relais `socat` devant (tous deux se
+lient à la boucle locale sans condition) ; le pilote de WebKit accepte un
+`--host` et se lie lui-même à la carte réseau de l’invité. Firefox valide en
+outre l’en-tête `Host` par rapport à son propre port, si bien que le client
+envoie l’autorité côté invité plutôt que celle qu’il a contactée.
 
-## Action verbs
+## Verbes d’action
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Chaque action est analysée de façon totale : une charge utile mal formée
+renvoie un message nommant le champ, jamais une exception. Les verbes
+d’observation (marqués ○) restent autorisés tant qu’un humain détient le
+contrôle ; les verbes modificateurs sont refusés.
 
 ### `computer_use`
 
@@ -141,219 +156,244 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Les coordonnées sont exprimées en pixels de l’invité, dans le mode actuel de
+celui-ci ; chaque capture d’écran indique la taille de l’écran. Les
+combinaisons de touches utilisent la notation X11 (`ctrl+s`, `alt+Tab`,
+`Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` prend une `selection` : `clipboard` (ce que remplit ctrl+C,
+la valeur par défaut), `primary` (la sélection pour copie X11) ou `xdnd` (un
+glisser en cours). Un résultat vide est une réponse normale pour les trois.
+`clipboard_write` ne prend que `text` — les images et les fichiers passent par
+la voie des fichiers, car les arguments d’une action sont conservés dans le
+journal d’audit et les octets d’image n’y ont rien à faire. Le contenu du
+presse-papiers revient encadré comme donnée non fiable.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
-`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
-`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`navigate` (http/https uniquement), `reload` (`hard` facultatif),
+`stop_loading`, `click` (sélecteur ou coordonnée), `fill`, `type`, `key` (noms
+de touches DOM), `scroll`, `mouse_move`, `drag`, `left_mouse_down`,
+`left_mouse_up`, `extract`○ (`a11y` | `dom` | `console`), `screenshot`○
+(`full_page` facultatif), `set_viewport` (min 320×240), `history`, `wait_for`○
+(sélecteur, 0,1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Le contenu de page extrait revient encadré comme donnée non fiable.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Le navigateur n’a qu’un seul presse-papiers, donc `clipboard_read` ne prend
+pas de `selection`. Les deux verbes de presse-papiers exigent un **contexte
+sécurisé** : une page servie en `http://` simple n’a aucune API de
+presse-papiers, et le verbe le signale plutôt que de rapporter un
+presse-papiers vide — utilisez `type` dans ce cas, qui insère au niveau du
+curseur sans passer par un presse-papiers.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
-`recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`tap`, `swipe` (50–5000 ms), `type`, `key` (alias `back`, `home`, `recents`,
+`enter`, `delete`, `backspace`, `tab`, `escape`, `search`, `menu`,
+`volume_up`, `volume_down`, `power`, ou tout `KEYCODE_*`), `screenshot`○,
+`ui_dump`○, `install_apk` (limité à l’arbre de travail du rig et au répertoire
+de données du serveur), `start_app`, `stop_app`, `clear_app_data`,
+`uninstall_app`, `open_url`, et `shell`. `shell` prend une liste d’arguments
+et s’exécute dans Android, jamais via un shell de l’hôte ; il couvre des
+diagnostics de développeur tels que `logcat`, `dumpsys` et `pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` n’a pas de verbes de presse-papiers. Depuis Android 10, seule
+l’application au premier plan peut lire le presse-papiers.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, les touches fléchées ou un caractère imprimable ; modificateurs
+facultatifs `command`, `control`, `option` et `shift`), `home`, `lock`,
+`unlock`, `screenshot`○, `ui_dump`○, `install_app` (un répertoire `.app` de
+simulateur limité à l’arbre de travail du rig ou au répertoire de données du
+serveur), `start_app`, `stop_app`, `uninstall_app`, `open_url`, et `spawn`.
+`spawn` prend des arguments et s’exécute dans le simulateur via `simctl` ; il
+n’invoque jamais un shell de l’hôte.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Les coordonnées sont des **points** d’écran iOS, et non des pixels de capture
+d’écran. Le flux en direct conserve la taille fixe du simulateur et l’affiche
+avec des bandes plutôt que de redimensionner l’appareil. Le transfert de texte
+par presse-papiers de l’hôte vers le simulateur et du simulateur vers l’hôte
+applique la même politique d’autorisation par utilisateur et par sens que les
+autres rigs ; les fichiers et les images ne sont pas acceptés par la voie du
+presse-papiers iOS.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Chaque rig crée un appareil CoreSimulator et une session WebDriverAgent qui
+lui appartiennent. Sa fermeture arrête WebDriverAgent, éteint et supprime cet
+appareil, et retire son entrée du registre. Les rigs iOS ne s’exécutent que
+sur un serveur macOS doté de Xcode, d’un runtime iOS installé et du pont
+d’automatisation épinglé. Ils n’exposent ni audio, ni microphone, ni dépôt de
+fichiers, ni shell de l’hôte, ni garantie de réseau confiné.
 
-### Management tools
+### Outils de gestion
 
-| Tool | Description |
+| Outil | Description |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Liste les rigs d’un espace de travail avec leur surface, leur état, leur affichage et leur contrôleur |
+| `rig_close` | Détruit un rig et abandonne son disque |
 
-## Lifecycle
+## Cycle de vie
 
-| Phase | Meaning |
+| Phase | Signification |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Démarrage ; le détail d’état reprend l’étape en cours telle quelle |
+| `ready` | Joignable et acceptant des actions |
+| `parked` | Mis en veille : vCPU arrêtés, RAM toujours résidente ; l’action suivante le réveille |
+| `closing` | Arrêt en cours |
+| `closed` | Disparu ; la ligne subsiste pour la piste d’audit |
+| `failed` | Mort ou jamais démarré ; distinguable pour que l’interface puisse proposer un nouvel essai |
 
-| Close reason | Fired when |
+| Motif de fermeture | Déclenché quand |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Une personne ou un agent l’a demandé |
+| `idleTimeout` | Inactif au-delà de 2× la fenêtre d’inactivité, ou évincé pour libérer de la mémoire |
+| `ttlExpired` | La durée de vie maximale a expiré |
+| `conversationEnded` | La conversation propriétaire s’est terminée |
+| `workspaceGone` | L’espace de travail a été supprimé ou l’appartenance a été perdue |
+| `serverShutdown` | Le serveur s’arrête |
+| `backendFailure` | L’hyperviseur est tombé sous lui |
 
-## Defaults and ceilings
+## Valeurs par défaut et plafonds
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Valeur | Terminal | Navigateur | Ordinateur | Mobile |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Mémoire | 512 Mo | 2048 Mo (Chromium) ; 2560 Mo (Firefox, WebKit) | 4096 Mo | 4096 Mo |
+| vCPU | 2 | 2 | 4 | 4 |
+| TTL maximal | 8 h | 2 h | 2 h | 2 h |
+| Fenêtre d’inactivité | 45 min | 15 min | 15 min | 15 min |
+| Affichage au démarrage | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Les images fixes de la voie de l’agent sont plafonnées à **1280×800** ; la
+  voie humaine négocie jusqu’à **2560×1600**.
+- Le budget de mémoire résidente de l’hôte pour tous les rigs est par défaut de
+  **12 Go**, compté en mégaoctets résidents (une VM en veille conserve sa
+  RAM). L’éviction suit la règle du moins récemment utilisé et ne prend jamais
+  une machine que quelqu’un pilote, regarde ou dans laquelle un terminal est
+  ouvert.
+- Un terminal ouvert ou une voie d’observation active empêche la mise en
+  veille et la récupération pour inactivité du rig ; le TTL maximal s’applique
+  toujours.
 
-## Ports and dev domains
+## Ports et domaines de développement
 
-| Port | Where | Reserved for |
+| Port | Où | Réservé à |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Invité terminal | Le multiplexeur de ports par lequel passe chaque transfert |
+| `9222`, `9223` | Invité navigateur | Le relais et le point de terminaison d’automatisation (WebKit se lie directement à `9222` et n’utilise aucun relais) |
+| `80`, `443` | Boucle locale de l’invité navigateur | Les voies HTTP/HTTPS des domaines de développement |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- La découverte interroge côté serveur les ports TCP en écoute de l’invité
+  terminal toutes les ~4 s.
+- Au plus **16** ports sont transférés automatiquement par rig ; au-delà, ils
+  sont listés dans le journal sans être transférés.
+- Le transfert côté hôte se lie à la boucle locale, en préférant le numéro de
+  port de l’invité lui-même ; **Partager sur le réseau local** ajoute un port
+  LAN attribué par le système.
+- Les domaines de développement doivent correspondre à `name.test` ou
+  `name.localhost` (en minuscules, étiquette de 63 caractères au maximum). Un
+  domaine correspond à un port.
+- Le HTTPS des domaines de développement utilise une autorité de certification
+  locale au serveur (EC P-256, sous `<dataDir>/rigs/tls/`, clés en 0600 et
+  jamais dans un invité) avec un certificat feuille générique pour `*.test` /
+  `*.localhost`. Sans `openssl` sur l’hôte, pas de voie HTTPS ; le HTTP simple
+  continue d’être routé.
 
-## Egress defaults
+## Sortie réseau par défaut
 
-| Surface | Default allowlist |
+| Surface | Liste d’autorisation par défaut |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminal | Le socle développeur du bac à sable (forges, registres de paquets, fournisseurs de modèles) + les miroirs apt d’Ubuntu + l’hôte de forge de l’arbre de travail lui-même |
+| Navigateur | `usectrl.dev` (le site du produit) — plus les archives Debian au premier démarrage de chaque moteur, pendant qu’il installe ses paquets. La page d’accueil est un document `file://` local et n’a besoin d’aucune sortie réseau |
+| Ordinateur | Vide — tout refuser — jusqu’à ce qu’un appelant accorde des hôtes |
+| Mobile | Non appliquée (réseau géré par l’émulateur) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Chaque microVM reçoit en outre les hôtes de registre de son image, pour le
+tirage uniquement. L’ensemble d’hôtes autorisés du courtier d’identifiants est
+dérivé de la même liste d’autorisation : aucun jeton n’est émis pour un hôte
+que l’invité ne peut pas atteindre.
 
-## Clipboard and file transfer
+## Presse-papiers et transfert de fichiers
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Le copier-coller dans les deux sens, ainsi que le glisser-déposer de fichiers
+dans un sens comme dans l’autre. Disponible pour une personne qui pilote un
+rig ; un agent obtient le presse-papiers via les verbes ci-dessus et aucun
+transfert de fichiers (il dispose déjà d’un shell à l’intérieur de l’enceinte).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Le franchissement du presse-papiers se fait par utilisateur et par sens. Le
+collage de l’hôte vers le rig est autorisé par défaut ; la copie du rig vers
+l’hôte demande confirmation (une autorisation de dix minutes, ou **Toujours
+autoriser** sous **Paramètres → Serveur → Rigs → Accès au presse-papiers**).
+Les deux choix sont indépendants et ne constituent jamais un réglage d’espace
+de travail.
 
-| Lane | Route | Carries |
+| Voie | Route | Transporte |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Presse-papiers | `GET`/`POST /rig/clipboard/<rigId>` | Du texte, un PNG/JPEG (≤16 Mo) et les chemins invité des fichiers présents dans le presse-papiers |
+| Fichiers | `POST /rig/files/<rigId>` | Jusqu’à 64 fichiers, ≤256 Mo chacun et ≤512 Mo par dépôt, avec un point de dépôt optionnel en pixels de l’invité |
+| Fichiers | `GET /rig/files/<rigId>?p=<base64url path>` | Les octets d’un fichier, en sortie |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, pas RPC.** La socket RPC ferme la connexion sur une trame entrante
+  de plus de 256 Ko — une protection anti-DoS adaptée aux commandes JSON et
+  fatale pour une capture d’écran collée. Les octets empruntent le même genre
+  de route que celle déjà utilisée par les trames des rigs et l’audio des
+  réunions.
+- **L’authentification** repose sur la cible signée
+  `rig-files:<workspaceId>/<rigId>` plus l’appartenance à l’espace de travail —
+  une cible à part, afin qu’une URL émise pour *regarder* une machine ne
+  puisse pas aussi y écrire des fichiers.
+- **La prise de contrôle s’applique.** L’écriture dans le presse-papiers et le
+  dépôt de fichiers sont des actions modificatrices et sont refusées tant que
+  quelqu’un d’autre détient le contrôle ; la lecture du presse-papiers et
+  l’extraction d’un fichier relèvent de l’observation et ne le sont pas.
+- **Où atterrissent les dépôts :** `~/Drops` (bureau), `~/drops` (terminal — à
+  côté de l’arbre de travail, jamais dedans, pour qu’un dépôt n’apparaisse
+  jamais comme une modification non suivie), `/tmp/cc-drops` (navigateur). Le
+  serveur choisit le répertoire ; un appelant ne peut pas le nommer. Les
+  fichiers existants ne sont jamais écrasés — un nom en collision arrive sous
+  la forme `2-name.ext`.
+- **Ce que l’on annonce à l’invité :** une page de navigateur reçoit un vrai
+  événement de dépôt au point demandé (`Input.dispatchDragEvent`) ; un bureau
+  reçoit les fichiers et leurs URI dans son presse-papiers, car aucun hôte ne
+  peut synthétiser un glisser XDND vers une boîte à outils arbitraire sans un
+  démon privilégié dans l’invité. La réponse indique laquelle des deux
+  possibilités s’est produite.
+- **Le glisser vers l’extérieur** ne concerne que le bureau et lit la
+  `XdndSelection` de l’invité pendant qu’un glisser est en cours. Une charge
+  utile identique à ce que l’invité détenait déjà au début de l’appui est
+  traitée comme une sélection obsolète d’un glisser terminé, et non comme une
+  nouvelle — X n’a pas d’étape « le glisser est terminé ».
+- **Exigences relatives à l’image :** l’image de bureau doit être en
+  protocole 2 ou ultérieur (construite après l’arrivée de la prise en charge
+  du presse-papiers). Une image plus ancienne répond 404 et l’application
+  invite à la reconstruire plutôt que de signaler une machine en panne.
+- **Le journal d’audit consigne la forme, jamais le contenu** : les lignes
+  `clipboard_read`, `clipboard_write`, `drop_files` et `read_file` portent des
+  compteurs, des tailles et des chemins. Un presse-papiers est l’endroit où
+  des identifiants vivent quelques secondes à la fois, et rien de tout cela
+  n’est écrit.
 
-## Guardrails, events, storage
+## Garde-fous, événements, stockage
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/fr-FR/manuel/reference/evenements-de-domaine/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Les outils de rig déclarent la classe d’actions **`enclosureControl`** (plus
+  `networkEgress` et `processSpawn` sur les outils d’utilisation ;
+  `mobile_use` et `ios_use` déclarent aussi `packageInstall`). `rig_close`
+  déclare `enclosureControl` ; `rig_list` n’en déclare aucune. Autorisée par
+  défaut ; les modes en lecture seule la refusent catégoriquement ; le curseur
+  d’autonomie par espace peut la ramener à « demander d’abord ».
+- Événements de domaine : `RigClosedEvent` (avec son motif de fermeture),
+  `RigControlChanged` (prise de contrôle / restitution), `RigReaped` (éviction
+  pour inactivité, TTL ou mémoire, avec l’agent pilote). L’ouverture d’un rig
+  n’est pas un événement. Voir [événements de
+  domaine](/fr-FR/manuel/reference/evenements-de-domaine/).
+- Stockage : `rig_sessions` et `rig_action_log` dans la base de données de
+  chaque espace de travail. Le journal d’actions consigne chaque événement
+  d’entrée avec son principal et une séquence monotone par rig ; le texte
+  saisi est réduit à une longueur et un hachage avant d’être écrit.
+- Répertoire de données : `rigs/images/` (images qcow2 importées),
+  `rigs/smolvm/` (état d’exécution par rig), `rigs/smolvm-packs/` (packs de
+  machines pré-extraits), `rigs/tls/` (l’autorité de certification des
+  domaines de développement), `rigs/run/` (surcouches et amorces QEMU).
+- Routes : la vue en direct est un onglet dans un espace ou une page de PR ;
+  `/settings/server/rigs` est l’écran de réglages des Rigs.

@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Modelul agenților
+description: Ce este de fapt un agent în Control Center, care dintre câmpurile lui schimbă comportamentul și cum decide adaptorul pe care rulează ce anume poate fi impus.
 slug: ro-RO/manual/concepte/modelul-agentilor
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Ce este un agent?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Un agent este un actor numit, cu o persona, un set de skill-uri, un adaptor pe care să ruleze și un set de capacități. Agenții sunt actori cu drepturi depline în același sens în care sunt și oamenii: redactează mesaje, dețin tichete, lasă revizuiri și apar în aceeași listă. Ei sunt cei care fac munca.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Fiecare agent aparține exact unui singur spațiu de lucru. Acesta este un invariant strict — `agent.workspaceId` nu este niciodată nul, spațiul de lucru al agentului este cel care alege fișierul de bază de date în care ajung rândurile lui, iar crearea unui agent fără spațiu de lucru este refuzată.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Un agent este și un director. Definiția lui se află la `agents/<slug>/AGENTS.md`, sub directorul de date al spațiului de lucru, iar skill-urile pe care le deține sunt legate simbolic în `agents/<slug>/.agents/skills`. Rândul din baza de date și fișierul sunt scrise împreună. Popularea este idempotentă: dacă rândul agentului există deja, fișierele de pe disc și legăturile de skill-uri sunt rescrise oricum. Apelantul din producție este crearea spațiului de lucru, nu fiecare pornire a serverului.
 
-## What an agent carries
+## Ce poartă un agent
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| Atribut                 | Ce face                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `name`                  | Identificator scurt, de tip slug (`architect`, `qa`). Este și numele față de care se rezolvă `@mentions` |
+| `title`                 | Titlu de post lizibil pentru oameni                                                    |
+| `persona`               | Instrucțiuni de personalitate și comportament în text liber, injectate ca secțiune de prompt |
+| `systemPrompt`          | Instrucțiuni suplimentare opționale, injectate ca secțiune „Agent instructions" — nu înlocuiesc restul promptului asamblat |
+| `skills`                | Set de nume de skill-uri insensibil la majuscule și minuscule, oglindit pe disc ca legături de skill-uri |
+| `adapterId`             | Runner-ul către care trimite agentul. **O valoare nulă retombe pe bucla încorporată**  |
+| `modelId`               | Modelul din cadrul acelui adaptor                                                      |
+| `effort`                | Nivel de raționament, preluat din vocabularul propriu al modelului selectat            |
+| `contextSize`           | Suprascrierea ferestrei de context                                                     |
+| `capabilities`          | Indicatori de acreditări și de ieșire în rețea, verificați la lansare                  |
+| `silenceTimeoutMinutes` | Suprascriere per agent (1–240) pentru monitorizarea tăcerii                            |
+| `reportsTo`             | Id-ul agentului părinte — lanțul ierarhic pe care îl desenează organigrama             |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Toate acestea se editează în Setări → Spațiu de lucru → Agenți. **Agent nou** creează un agent fără nume pe care îl completezi apoi.
 
-## Skills
+## Skill-uri
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Skill-urile sunt nume insensibile la majuscule și minuscule atașate entității de agent. Cu ele se întâmplă două lucruri distincte:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Numele sunt listate în promptul asamblat sub un titlu „Skills". Atât face setul entității de unul singur — nu există o bibliotecă de prompturi per skill care să depindă de el.
+- Directorul fiecărui skill numit (`skills/<slug>/SKILL.md` din spațiul de lucru) este legat în dosarul propriu al agentului. Pe harness-ul încorporat, frontmatter-ul skill-urilor legate este încărcat automat în promptul de sistem, iar agentul citește un corp la cerere; tastarea `/skill:<name>` într-o conversație încarcă acel corp ca directivă pentru tura respectivă.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri/).
+Skill-urile aduse din exterior trec printr-o scanare a lanțului de aprovizionare cu eșec închis, între descărcare și scriere — niciun conținut de skill nu ajunge pe disc sau într-un prompt fără un verdict. Exteriorul înseamnă repo-uri GitHub pe care le înregistrezi singur ca surse de skill-uri: nu există un magazin curatoriat, așa că metadatele proprii ale repo-ului (descrierea lui, numărul de stele, numele skill-ului) sunt date de afișare neîncrezute, iar verdictul scanării este singurul semnal de siguranță. O instalare aduce întregul director al skill-ului, îl fixează la commit-ul din care provine în `skills-lock.json`, iar o actualizare ulterioară trece din nou prin poartă înainte de a înlocui ceva. Ghidul practic se află în [instalează și gestionează skill-uri](/ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri/).
 
-### Repo-scoped skills
+### Skill-uri limitate la repo
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Un repo își poate livra propriile skill-uri, în oricare dintre locurile convenționale (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Un spațiu extrage fiecare repo legat unul lângă altul, sub `repos/<name>/`, dar un agent lucrează într-un singur repo o dată — așa că poartă **doar skill-urile acelui repo**, iar acestea se schimbă când se mută.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Repo-ul activ este dedus din fișierele pe care le atinge agentul: scrierea unui fișier sub `repos/<name>/` face din acesta repo-ul activ, în timp ce simpla citire dintr-un repo în altul nu, așa că urmărirea unui simbol până într-un serviciu vecin nu schimbă niciodată setul de sub o sarcină. Într-un spațiu cu un singur repo, răspunsul este cunoscut înainte de prima tură.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Limitarea este o decizie de buget de context. Indexul de skill-uri stă în prompt la fiecare tură, în timp ce corpurile nu, așa că listarea deodată a skill-urilor tuturor repo-urilor costă tokenuri în mod continuu — iar un skill `testing` dintr-un serviciu induce activ în eroare când munca se desfășoară în altul. Același raționament explică de ce indexul unui agent conține un singur repo, dar compozitorul nu este limitat la fel: numirea unui skill de către tine este un act explicit, așa că `/skill:<repo>:<name>` ajunge la orice repo din spațiu.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Skill-urile de repo sunt încărcate pentru **fiecare** adaptor, nu doar pentru harness-ul încorporat. Skill-urile repo-ului activ sunt materializate în directorul de lucru al agentului, care este calea pe care Claude Code o scanează deja; același index este compus în `AGENTS.md`, pe care îl citește harness-ul încorporat. Skill-urile unui repo trec prin aceeași scanare cu eșec închis ca un skill instalat, înainte să se întâmple oricare dintre acestea — un repo extras este conținut clonat, iar frontmatter-ul lui ajunge într-un prompt.
 
-## Capabilities
+## Capacități
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Capacitățile controlează ce _primește_ o rulare, nu la ce îi permite sistemul de fișiere să ajungă. Brokerul de acreditări le verifică la lansare: dacă o capacitate este oprită, tokenul corespunzător pur și simplu nu este injectat.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Push către repo** — controlează injectarea tokenului GitHub folosit pentru `git push`.
+- **API GitHub** — controlează injectarea `GH_TOKEN` și ieșirea către api.github.com.
+- **Tichete** — controlează cheia API a furnizorului de tichete și ieșirea către domeniile acestuia.
+- **Ieșire în rețea** — cereri arbitrare către exterior.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+O rulare le rezolvă din rândul propriu al agentului. Când agentul nu are niciuna, se aplică o valoare implicită conservatoare fixă: cele trei indicatoare de acreditare oprite, ieșirea în rețea pornită. Comutatorul „Permisiuni sandbox" din formularul agentului alege între această variantă de rezervă și un set personalizat stocat pe agent.
 
-See [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru cealaltă jumătate a poveștii, inclusiv ce se impune și ce nu la nivel de sistem de fișiere.
 
-## The adapter decides what can be enforced
+## Adaptorul decide ce poate fi impus
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Cel mai important câmp al unui agent este adaptorul, pentru că transportul adaptorului determină cât din politica Control Center poate fi impusă efectiv.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| Transport        | Adaptoare                 | Ce impune Control Center                                                                                                                                                                                                                                                    |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Harness încorporat | Control Center (built-in) | Totul. Suprafața de instrumente este _construită_ din mod, așa că un instrument nepermis este invizibil, nu doar refuzat; fiecare apel trece prin poarta de aprobare și prin guardrail-urile de acțiune; contractul de finalizare poate îndemna și apoi poate marca drept eșuată o rulare care se termină fără livrabilul ei |
+| Claude CLI       | Claude Code               | Doar instrumentele `mcp__*` care îi sunt puse la dispoziție. Instrumentele proprii de citire, scriere, editare și shell ale Claude trăiesc în procesul lui și rulează nevăzute — iar el este lansat cu `--dangerously-skip-permissions`, pentru că un `claude -p` neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Concret, **doar harness-ul încorporat suportă subagenți, dirijare pe parcursul rulării, pauză și reluare (și, prin urmare, preluarea controlului) și impunerea structurală a modului.** Claude Code nu beneficiază de nimic din toate acestea.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Sandbox-ul sistemului de operare este un minim garantat, nu un mecanism care impune modurile, și nu orice gazdă are unul]
+Matricea de mai sus se referă la ce poate Control Center să _vadă și să filtreze_. Dedesubt, `cc_server` învelește CLI-ul Claude Code în sandbox-ul de sistem de operare al gazdei, acolo unde există unul — Seatbelt pe macOS, bubblewrap pe Linux și WSL2 — așa că un `rm` nevăzut sau o scriere nevăzută rămân totuși limitate de sistemul de operare. Pe **Windows nu există niciun backend**, iar pe Linux sau WSL2 fără `bwrap` și `socat` sonda nu raportează niciunul, așa că acolo rulările respective retombe pe sanitizarea mediului, pe acreditările puse la dispoziție de broker, pe guardrail-urile apelurilor pe care Control Center le poate vedea și pe worktree-ul propriu al conversației (copy-on-write acolo unde vine `rift`; `git worktree` pe Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/).
+Ceea ce sandbox-ul nu este: o _poartă_. El limitează unde poate citi, scrie și conecta un proces — chiar și un mod doar-citire ajunge la el, sub formă de montări bind doar-citire — dar nu poate intercepta un apel, nu poate ridica o aprobare și nu-ți poate spune ulterior ce a încercat CLI-ul. Asta, plus cele patru capacități numite imediat mai sus, este tot ceea ce are harness-ul încorporat și ceilalți nu. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Un agent **fără** niciun adaptor retombe pe **Control Center (built-in)** — bucla din interiorul serverului, așa că nu există niciun CLI de instalat — iar jurnalul lui de rulare consemnează `cc-harness`. Fiecare agent populat este creat fără adaptor și fără model, așa că cei cinci agenți ai unui spațiu de lucru nou rulează cu toții acolo, pe modelul implicit al Anthropic, până când setezi un adaptor și un model pentru fiecare agent. Alegerea „adaptor implicit" din asistentul de început este o preferință de client pe care serverul nu o citește niciodată și nu se aplică retroactiv agenților deja creați.
 
-## Where agents come from
+## De unde vin agenții
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Populare odată cu spațiul de lucru.** Fiecare spațiu de lucru — nu doar primul — primește un CEO plus patru specialiști (`qa`, `architect`, `engineer`, `librarian`) care raportează acestuia, creați idempotent în fundal la crearea spațiului de lucru. Vezi [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
+- **Adăugare manuală** din Setări → Spațiu de lucru → Agenți. Faptul că ceri unui agent să angajeze un coleg nu creează un rând; folosește acel ecran.
 
-## Live state
+## Stare în timp real
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Un agent nu are o coloană de stare stocată. Starea lui în timp real este derivată din cele mai recente jurnale de rulare de fiecare dată când este citit:
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| Stare      | Semnificație                                                                    |
+| ---------- | ------------------------------------------------------------------------------- |
+| `neverRun` | Nu există niciun jurnal de rulare                                               |
+| `running`  | Cel puțin o rulare este în curs                                                 |
+| `failed`   | Ultima rulare a dat eroare, sau starea ei de funcționare este eșuată ori moartă |
+| `blocked`  | Starea de funcționare a ultimei rulări este blocată, împotmolită sau în buclă   |
+| `idle`     | Orice altceva — agentul a rulat înainte și nu are nimic în desfășurare          |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Încă două stări, `queued` și `succeeded`, există pentru rulările individuale din arborele de rulări al conversației; lista nu le produce niciodată, pentru că faptul că o rulare încheiată este verde este un lucru despre rulare, nu despre agent.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ro-RO/manual/concepte/multiplayer/).
+Lista de prezență arată o imagine paralelă, mai grosieră, sintetizată pe server din evenimentele de rulare în direct — se gândește, rulează, blocat la aprobare, gata — și tocmai de aceea agenții apar alături de oameni. Vezi [Multiplayer](/ro-RO/manual/concepte/multiplayer/).
 
-## Related concepts
+## Concepte conexe
 
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): what happens when an agent is actually run
-- [Modes](/ro-RO/manual/concepte/moduri/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/): what constrains a run today
-- [Agent configuration reference](/ro-RO/manual/referinta/configurarea-agentilor/): the full field list
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): ce se întâmplă când un agent este chiar rulat
+- [Moduri](/ro-RO/manual/concepte/moduri/): setarea per conversație care modelează suprafața de instrumente a unui agent
+- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): agenții ca actori cu drepturi depline, prezența și reglajul de autonomie
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/): ce constrânge o rulare astăzi
+- [Referință pentru configurarea agenților](/ro-RO/manual/referinta/configurarea-agentilor/): lista completă a câmpurilor

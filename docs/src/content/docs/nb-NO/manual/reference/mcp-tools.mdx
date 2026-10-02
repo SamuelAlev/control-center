@@ -1,310 +1,367 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP-verktøy
+description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
+serverens hovedport (standard `9030`) på `POST /mcp` og `GET /sse`, med
+protokollversjon `2024-11-05`. Alle klienter når det samme registeret:
+skrivebordsappen, nettappen, eksterne MCP-klienter og den innebygde
+agentkjøretiden. Eksterne MCP-servere kan broes inn i det samme registeret som
+et dynamisk lag.
 
-## Registry size
+## Registerets størrelse
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Mål                                                                                              | Antall |
+| ------------------------------------------------------------------------------------------------ | ------ |
+| Verktøy registrert av `cc_server`                                                                | 110    |
+| Fra `packages/cc_mcp`                                                                            | 108    |
+| Fra `packages/cc_mcp_client` (verktøyoppdagelse)                                                 | 2      |
+| Registrert i basisregisteret (`server_mcp_registry.dart`)                                        | 63     |
+| Registrert etter oppstart etter hvert som tjenestene deres kommer opp (`cc_server_runtime.dart`) | 47     |
+| Av basisregisterets 63: betinget av et kodegraf-repositorium                                     | 5      |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+De fem kodegraf-verktøyene registreres bare når verten sender et
+kodegraf-repositorium til `buildServerMcpRegistry`. `cc_server` sender alltid
+ett, så alle 110 er aktive i binæren som leveres.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Hele registeret annonseres i `tools/list` uten noen porting ved oppdagelse.
+Redigering av saker skjer gjennom typede verktøy.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Eksterne klienter ser alltid hele katalogen]
+`tools/list` kuttes aldri ned. MCP-klienter validerer verktøynavn mot sin egen
+bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren,
+så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/nb-NO/handbok/konsepter/verktoykontekst).
+Den **innebygde harnessen** er annerledes: den laster bare et fastboende
+delsett av definisjoner per forespørsel og henter resten ved første bruk. Det er
+en oppførsel på harness-siden og endrer ikke dette registeret. Se
+[Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Hver verktøyklasse er registrert]
+En kildefil under `packages/cc_mcp/lib/src/tools/` er et verktøy en agent kan
+kalle. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+får bygget til å feile hvis en ny verktøyklasse ikke konstrueres av noe.
 :::
 
-## Common parameters
+## Felles parametere
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Påkrevd** på hvert verktøy som berører data med arbeidsområdeomfang. En
+manglende eller ugyldig `workspace_id` gir en eksplisitt feil, og en verdi som
+ikke samsvarer med arbeidsområdet til enheten det gjelder, avvises i stedet for
+å ignoreres i stillhet. Utelat den på de virkelig globale verktøyene:
+`list_workspaces` og de seks nyhetsstrømverktøyene (`list_feeds`,
+`list_articles`, `get_article`, `set_article_read`, `set_article_saved`,
+`refresh_feeds`), som går på servereierens strømliste per bruker.
+Oppdagelsesverktøyene (`search_tool_bm25`, `list_my_tools`) tar den valgfritt,
+slik at de kan klassifisere kallbarhet etter samtalemodus. Når en agent sendes ut
+av serveren, tvinges arbeidsområdet på serversiden, så agenten kan ikke nå et
+annet arbeidsområde ved å sende inn en fremmed id.
 
-## Tool discovery
+## Verktøyoppdagelse
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Begge kommer fra `cc_mcp_client`, ikke `cc_mcp`, og begge konsulterer
+modusvakten, slik at de rapporterer hva som er kallbart i den _gjeldende_
+samtalemodusen.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Verktøy            | Beskrivelse                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | Søk i verktøykatalogen etter nøkkelord; returnerer verktøyene som matcher, argumentskjemaene deres og om hvert av dem er kallbart akkurat nå |
+| `list_my_tools`    | List opp verktøyene som er kallbare akkurat nå i denne samtalen, filtrert etter samtalens modus                                  |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Et tredje oppdagelsesverktøy, **`search_tools`**, finnes bare inne i den
+innebygde harnessen og er ikke en del av dette MCP-registeret. Det rangerer
+kjøringens egen verktøyflate og **laster** – i motsetning til `search_tool_bm25`
+– skjemaene til det det finner, slik at agenten kan kalle et treff på neste tur.
+Agenter på harnessen bør foretrekke det; MCP-klienter har `search_tool_bm25`.
 
-## Agent tools
+## Agentverktøy
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Verktøy       | Beskrivelse                                         |
+| ------------- | --------------------------------------------------- |
+| `list_agents` | List opp de registrerte agentene i et arbeidsområde |
 
-## Agent peer messaging and delegation
+## Agent-til-agent-meldinger og delegering
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Agenter snakker med hverandre over områder (varige og synlige i
+deltakerlisten). `ask_agent` er forespørsel/svar med obligatorisk tidsavbrudd;
+`delegate_task` er beskyttet på serversiden av et dybdemaksimum,
+syklusdeteksjon, en budsjettramme og et autonomitak.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| Verktøy         | Beskrivelse                                                                                                |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `send_to_agent` | Send en enveis melding til en annen agent, adressert med `to_agent_id` eller nøyaktig `to_agent_name`       |
+| `ask_agent`     | Still et spørsmål til en annen agent og vent på svaret, eller la kallet gå ut på tid                       |
+| `delegate_task` | Deleger en oppgave til en annen agent som en sporet, underordnet sak                                       |
+| `consult_agent` | Legg den spesialisten som matcher best ut fra skills, til i området og send den ut med en fokusert oppgavebeskrivelse |
+| `todo_read`     | Les denne samtalens lagrede gjøremålsliste                                                                 |
 
-## Skill tools
+## Skill-verktøy
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Hver installasjon og oppdatering passerer en skanneport som feiler lukket, før
+noe skill-innhold når disken eller en agentprompt.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Verktøy              | Beskrivelse                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `list_skills`        | List opp skill-slugene som er tilgjengelige i et arbeidsområde                  |
+| `create_skill`       | Opprett en ny skill fra markdown-innhold                                        |
+| `install_skill`      | Installer hele katalogen til en skill fra et GitHub-repositorium på en festet ref |
+| `update_skill`       | Oppdater en installert GitHub-skill til en ny ref, med ny skanning og ny festing |
+| `list_skill_updates` | List opp skills der en nyere versjon er tilgjengelig                            |
+| `verify_skills`      | Verifiser låste skills mot innholdshashene deres på disk                        |
+| `pin_skill`          | Hash en eksisterende skill på disk inn i `skills-lock.json`                     |
 
-## Plan, playbook and artifact tools
+## Verktøy for planer, playbooks og artefakter
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| Verktøy            | Beskrivelse                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `submit_plan`      | Planmodusens utdatakontrakt: send inn et typet `PlanDocument` som åpnes i Plan Studio                                    |
+| `create_playbook`  | Lagre en plan som en navngitt, versjonert mal med typede `{{param}}`-plassholdere                                        |
+| `run_playbook`     | Instansier en playbook med parameterverdier og lag en plan som operatøren godkjenner                                     |
+| `publish_artifact` | Publiser en ordnet liste med typede blokker (markdown, tabell, diagram, mermaid, kode, JSON) som vises naturlig i klienten |
+| `revise_artifact`  | Erstatt innholdet i en publisert artefakt                                                                                |
+| `list_artifacts`   | List opp arbeidsområdets artefakter                                                                                      |
+| `get_artifact`     | Les én artefakt                                                                                                          |
+| `complete_goal`    | Erklær samtalens aktive, varige mål (startet med `/goal` eller `/loop`) som oppnådd                                      |
 
-## Workspace tools
+## Verktøy for arbeidsområder
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Verktøy           | Beskrivelse                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| `list_workspaces` | List opp alle arbeidsområder med id-ene og navnene deres (globalt; ingen `workspace_id`) |
 
-## Repo tools
+## Repo-verktøy
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Verktøy      | Beskrivelse                                                                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | List opp repoene som er registrert i et arbeidsområde. Agentkallere får samtalens isolerte copy-on-write-worktree-stier, aldri de opprinnelige utsjekkingene           |
 
-## Messaging tools
+## Meldingsverktøy
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Verktøy              | Beskrivelse                                                                       |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `list_spaces`        | List opp meldingsområdene i et arbeidsområde                                      |
+| `get_messages`       | Hent meldinger fra et område                                                      |
+| `send_message`       | Send en melding til et område som en navngitt avsenderagent                       |
+| `get_space_notes`    | Les et områdes delte overleveringsdokument                                        |
+| `update_space_notes` | Erstatt et områdes delte overleveringsdokument                                    |
+| `todo_write`         | Erstatt denne samtalens gjøremålsliste i ett kall (send inn hele listen)           |
 
-## Review tools
+## Verktøy for gjennomgang
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Verktøy                    | Beskrivelse                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | Start AI-gjennomgangen for en PR: beregn områdene som skal gjennomgås, send ut spesialistreviewere til PR-ens gjennomgangsområde, skriv den samlede fremstillingen og fullfør |
+| `add_review_node`          | Legg til et strukturert gjennomgangsfunn (fil, linje, prioritet P0–P3) i et gjennomgangsområde |
+| `confirm_review_node`      | Bekreft et funn fra en kollega; forfatteren kan ikke bekrefte sitt eget                        |
+| `resolve_review_node`      | Merk et funn som rettet etter at endringen faktisk er gjort; legger inn et spor i gjennomgangsområdet |
+| `dismiss_review_node`      | Avvis et funn som ikke er relevant; registrerer et undertrykkingsfaktum, slik at reviewere slutter å flagge det på nytt |
+| `request_peer_review`      | Be en annen reviewer-agent om en ny vurdering av et funn                                        |
+| `dispatch_reviewers`       | Send ut matchede reviewer-agenter til et gjennomgangsområde, samtidig                          |
+| `submit_reviewer_verdict`  | Legg inn en ship/hold/block-dom per reviewer med konfidens og en forklaring                     |
+| `finalize_review`          | Beregn konsensus per node og dommen for PR-en, og lukk gjennomgangen                            |
+| `set_cohort_summary`       | Angi et klarspråkssammendrag for en gjennomgangskohort                                          |
+| `add_review_diagram`       | Fest et strukturert, grafverifisert diagram (`sequence`, `entityRelation`, `stateMachine`) til en kohort |
+| `publish_review_to_github` | Publiser den fullførte gjennomgangen til GitHub som inline-kommentarer pluss en sammendragstekst |
 
-## Memory tools
+## Minneverktøy
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Verktøy                 | Beskrivelse                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `search_memory`         | Søk i fakta og policyer (nøkkelord, semantisk eller hybrid – hybrid er standard)                     |
+| `propose_fact`          | Lagre et kort markdown-faktum i et domene                                                            |
+| `supersede_fact`        | Merk et faktum som erstattet av et annet                                                             |
+| `propose_policy`        | Lagre en normativ regel i et domene (krever skrivetilgang til det)                                   |
+| `supersede_policy`      | Trekk tilbake en policy – merker den inaktiv mens den beholdes for revisjon                          |
+| `list_policies`         | List opp aktive policyer, valgfritt filtrert på domene                                               |
+| `list_memory_domains`   | List opp arbeidsområdets minnedomener med antall fakta og policyer                                   |
+| `record_observation`    | Registrer en rå observasjon i agentens arbeidsminne                                                  |
+| `get_my_notes`          | Les den kallende agentens kladdeblokk i arbeidsminnet                                                |
+| `update_my_notes`       | Oppdater den kallende agentens kladdeblokk i arbeidsminnet                                           |
+| `remember`              | Legg til et notat i agentens varme arbeidsminne for denne økten (begrenset av TTL og antall)         |
+| `consolidate_memory`    | Kjør en konsolideringsrunde («søvn»): kast ut utløpte varme elementer og rull varige inn i langsiktige fakta |
+| `harmonize_memory`      | Kjør harmonisering av overbevisninger på tvers av agenter (SHMR) og flagg motsetninger               |
+| `list_memory_conflicts` | List opp oppdagede motsetninger og hvordan hver av dem ble løst                                      |
 
-## Governance tools
+## Styringsverktøy
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Verktøy                      | Beskrivelse                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `create_goal`                | Opprett et organisasjonsmål (på selskaps-, team-, agent- eller oppgavenivå)                                   |
+| `list_goals`                 | List opp mål med nivå, status og samlet framdrift                                                             |
+| `update_goal_progress`       | Angi framdriften til et mål                                                                                   |
+| `create_approval`            | Åpne en styregodkjenning for en regulert handling (avslutning av plan, sammenslåing, utgivelse, ansettelse, egendefinert) |
+| `list_approvals`             | List opp godkjenninger, valgfritt filtrert på status                                                          |
+| `decide_approval`            | Registrer en avgjørelse: godkjenn, avvis, be om revisjon eller send inn på nytt                               |
+| `comment_approval`           | Kommenter en styregodkjenning                                                                                 |
+| `exit_plan_mode`             | Åpne (og, når den er godkjent, forbruk) en `plan_exit`-godkjenning og vipp samtalen ut av planmodus            |
+| `agent_heartbeat`            | Rapporter livstegn (alive, idle, stuck); stillhet vipper kjøretidshelsen til nylig tapt og deretter frakoblet |
+| `list_runtime_health`        | List opp kjøretidshelsen til hver agent                                                                      |
+| `list_agent_presence`        | List opp tilstedeværelsen til hver agent (helse, livssyklus, antall kjørende og i kø, kapasitet)              |
+| `get_org_chart`              | Les rapporteringstreet med CEO i roten, nestet etter `reports_to`                                             |
+| `create_work_product`        | Opprett en varig leveranse knyttet til en sak                                                                 |
+| `save_work_product_revision` | Lagre en ny revisjon; send inn `base_revision_id` for å bli avvist ved en samtidig redigering                 |
+| `list_work_products`         | List opp arbeidsprodukter, valgfritt filtrert til én sak                                                      |
+| `get_work_product`           | Les et arbeidsprodukt med revisjonshistorikken sin                                                            |
+| `create_runtime_profile`     | Definer en gjenbrukbar kjøretidsprofil (protokollfamilie, CLI-kommando, faste startargumenter)                |
+| `list_runtime_profiles`      | List opp arbeidsområdets kjøretidsprofiler                                                                    |
 
-## Code graph tools
+## Kodegraf-verktøy
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Registreres bare når verten oppgir et kodegraf-repositorium. Indeksen dekker
+grammatikksettet som følger med (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go,
+Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symboler i alle andre
+språk finnes ikke.
 
-| Tool           | Description                                                                        |
+| Verktøy        | Beskrivelse                                                                        |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Søk i indekserte symboler etter navn, signatur og dokkommentar (hybrid BM25 + semantisk) |
+| `code_symbol`  | Slå opp symboler etter nøyaktig navn; returnerer `file:line` og signatur           |
+| `code_callers` | List opp symbolene som kaller eller er avhengige av et symbol (inngående kanter)   |
+| `code_callees` | List opp symbolene et symbol kaller eller er avhengig av (utgående kanter)         |
+| `code_impact`  | Beregn den transitive påvirkningsradiusen til et symbol, til en gitt dybde         |
 
-## Ticketing tools
+## Saksverktøy
 
-| Tool                      | Description                                                                                                                  |
+| Verktøy                   | Beskrivelse                                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | Opprett en sak hos leverandøren som er konfigurert                                                                           |
+| `get_ticket`              | Hent én sak etter id                                                                                                         |
+| `list_tickets`            | List opp saker, valgfritt filtrert på status eller tildelt person                                                            |
+| `update_ticket`           | Oppdater status, tittel, beskrivelse, prioritet eller etiketter (status godtar aliaser som `in_progress` / `completed`)      |
+| `assign_ticket`           | Tildel en sak til en agent og/eller et team                                                                                   |
+| `reassign_ticket`         | Tildel en sak på nytt til en annen agent                                                                                     |
+| `add_ticket_collaborator` | Inviter en agent til å samarbeide om en sak (legges til i området til saken)                                                 |
+| `comment_on_ticket`       | Kommenter en sak                                                                                                             |
+| `close_ticket`            | Lukk en sak (merker den som fullført) med valgfritt utdata                                                                    |
+| `fail_ticket`             | Merk en sak som mislykket med en feilmelding                                                                                 |
+| `delegate_ticket`         | Deleger en sak til en agent og opprett en sporet sak                                                                         |
+| `ticket_pr_link`          | Koble til eller fra en sak og en pull request etter PR-node-id (`action`: `link` \| `unlink`)                                |
+| `ticket_relation`         | Legg til eller fjern en relasjon mellom to saker – `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | List opp en saks overordnede sak, undersaker og avhengighetskoblinger                                                        |
 
-## Team and pipeline tools
+## Team- og pipeline-verktøy
 
-| Tool                   | Description                                                                                                                    |
+| Verktøy                | Beskrivelse                                                                                                                    |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| `record_team_activity` | Registrer en aktivitetsoppføring for en teamleder mot en sak                                                                   |
+| `preview_trigger`      | Tørrkjør hvilke pipeline-kjøringer en tenkt hendelse ville starte, uten å utføre noe                                           |
+| `submit_output`        | Send inn den strukturerte utdatalasten for den kallende partens gjeldende pipeline-kjøring; valideres mot utdataskjemaet som kjøringen har erklært |
 
-## Orchestration tools
+## Orkestreringsverktøy
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Verktøy                 | Beskrivelse                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | Send inn en strukturert orkestreringsplan for flere agenter til én forhåndsgodkjenning; validerer og returnerer eventuelle brudd |
 
-## Newsfeed tools
+## Nyhetsstrømverktøy
 
-| Tool                | Description                                                  |
+| Verktøy             | Beskrivelse                                                  |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | List opp de registrerte RSS-/Atom-strømmene                  |
+| `list_articles`     | List opp artikler, valgfritt filtrert på strøm, ulest eller lagret |
+| `get_article`       | Hent én artikkel                                             |
+| `set_article_read`  | Merk en artikkel som lest eller ulest                        |
+| `set_article_saved` | Lagre eller fjern lagringen av en artikkel                   |
+| `refresh_feeds`     | Hent alle aktiverte strømmer på nytt nå                      |
 
-## Enclosure (rig) tools
+## Verktøy for isolerte miljøer (stasjoner)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/nb-NO/handbok/konsepter/tillatelsesregler/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/nb-NO/handbok/referanse/stasjoner/#action-verbs).
+Styr kastbare maskiner – en innesluttet nettleser eller et Linux-skrivebord, en
+Android-emulator eller en iOS-simulator – inne fra en kjøring. Registreres etter
+oppstart, ubetinget: om en maskin faktisk kan starte, er et sonderingsspørsmål
+verktøyene svarer på per kall. Gjentatte kall i én samtale gjenbruker én maskin;
+skjermbilder returneres som bildeinnhold med et budsjett på ett bilde per
+resultat, og uthentet side- og grensesnittinnhold rammes inn som ikke-klarerte
+data. De fire bruksverktøyene pluss `rig_close` erklærer `enclosureControl` som
+[handlingsklasse](/nb-NO/handbok/konsepter/tillatelsesregler/)
+(bruksverktøyene erklærer også `networkEgress` og `processSpawn`; `mobile_use`
+og `ios_use` erklærer også `packageInstall`), så skrivebeskyttede moduser avviser
+dem. `rig_list` erklærer ingen – det leser bare arbeidsområdets tilstand. Det
+fulle verbvokabularet per flate står i
+[stasjonsreferansen](/nb-NO/handbok/referanse/stasjoner/#action-verbs).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Verktøy        | Beskrivelse                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `computer_use` | Styr et Linux-skrivebord i en innesluttet VM: flytt, klikk, dra, rull, skriv, endre størrelse, utklippstavle, skjermbilde |
+| `browser_use`  | Styr en headless Chromium, Firefox eller WebKit (`engine`): naviger, klikk, fyll ut, hent ut (a11y/DOM/konsoll), utklippstavle, skjermbilde |
+| `mobile_use`   | Styr Android over ADB: inspiser/gi input, skjermbilder, installer/start/stopp/nullstill/avinstaller apper, dype lenker og enhetskommandoer formet som argv |
+| `ios_use`      | Styr iOS-simulatoren gjennom WebDriverAgent/CoreSimulator: inspiser/gi input, skjermbilder, installer/start/stopp/avinstaller apper, dype lenker og simulatorprosesser formet som argv |
+| `rig_list`     | List opp stasjonene i et arbeidsområde med flate, status, skjermstørrelse og kontroller         |
+| `rig_close`    | Ødelegg en stasjon og forkast maskintilstanden den eier                                          |
 
-## Not exposed over MCP
+## Ikke eksponert over MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/nb-NO/handbok/konsepter/moter/), not as a tool an agent can call.
+Kalender og møter har ingen MCP-verktøy. Agenter kan ikke lese kalenderen,
+møtene, transkriptene, tiltakene eller beslutningene dine. Sammendraget som
+produserer tiltak og beslutninger, kjører som den innebygde
+[`meeting_summary`-pipelinen](/nb-NO/handbok/konsepter/moter/), ikke som et
+verktøy en agent kan kalle.
 
-## Tool gating by mode
+## Verktøyporting etter modus
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Portingen håndheves to ganger fra én tabell (`ModeToolPolicy`): én gang i
+MCP-utsenderen for Claude Code-adapteren og én gang i det innebygde
+harness-registeret. Et blokkert kall returnerer årsaken.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| Modus         | Verktøyflate                                                                                                                                                                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat`        | Alle registrerte verktøy; ingen tillatelsesliste                                                                                                                                                                                    |
+| `plan`        | En kuratert tillatelsesliste. Ingen skriving til worktreet og ingen `create`- / `assign`- / `delegate`-saksverb, men minne, artefakter, gjøremål, `submit_plan`, `exit_plan_mode` og verbene for fullføring av saken som er sendt ut, er tillatt |
+| `review`      | En kuratert tillatelsesliste: gjennomgangsdeltakelse, kommunikasjon, skrivebeskyttede konteksthentinger og hele settet med saksverb, inkludert `create_ticket` og `assign_ticket`                                                    |
+| `orchestrate` | En kuratert tillatelsesliste: research- og leseverktøy pluss `propose_orchestration`, `create_playbook` og `run_playbook`. Ansettelser, dekomponering og fullføring av saker skjer deterministisk etter godkjenning, aldri midt i en kjøring |
 
-Permitted in every mode regardless of allow-list:
+Tillatt i alle moduser, uavhengig av tillatelseslisten:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Sett                | Verktøy                                                                                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Minne og artefakter | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Kodegraf            | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Kjøringsmekanikk    | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Å stå på en tillatelsesliste gjør ikke et verktøy kallbart, og det motsatte
+gjelder også: evnen til å stille operatøren spørsmål er et **harness**-verktøy
+(`ask_user`), så det dukker aldri opp i denne MCP-katalogen i det hele tatt.
 
-## Approval-gated tools
+## Verktøy med godkjenningsport
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Et verktøy kan erklære `requiresApproval`. Utsenderen bygger da en
+`ApprovalPayload` og viser den gjennom `ConfirmationPort` før verktøyet kjører;
+`cc_server` kobler til den porten, så porten er aktiv.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Registrerte verktøy som erklærer det: `create_ticket`, `update_ticket`,
+`assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`,
+`create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`,
+`comment_approval`, `create_work_product`, `save_work_product_revision`,
+`create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/).
+Uavhengig av dette håndhever de samlede tillatelsesreglene for handlinger en
+port for ethvert verktøy som erklærer et ikke-tomt sett med `ActionClass`. En
+`prompt`-avgjørelse uten en tilkoblet godkjenner avvises. Se
+[Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/).
 
-## Capabilities with no tool behind them
+## Evner uten et verktøy bak seg
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Ikke alle evner i produktet kan nås av en agent. Disse har ikke noe verktøy i
+det hele tatt, så et navn du kan ha sett referert andre steder, returnerer
+«unknown tool»:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/nb-NO/handbok/slik-gjor-du/prosjekter/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Evne                                     | Hvor den bor i stedet                                                                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Å ansette, si opp eller redigere en agent | Agentgrensesnittet. Det finnes ikke noe `hire_agent` / `fire_agent` / `update_agent`-verktøy   |
+| Å opprette et arbeidsområde               | `workspace.upsert` over RPC, som seeder og stempler eierskap                                    |
+| Prosjekter (opprett / list opp / oppdater / plasser) | Saksgrensesnittet. Prosjekter er en operatørflate – se [Prosjekter](/nb-NO/handbok/slik-gjor-du/prosjekter/) |
+| Å stille operatøren et blokkerende spørsmål | **harness**-verktøyet `ask_user`, ikke MCP. Det viser et skjema i samtalen og blokkerer til svaret kommer |
+| Diagnostikk per agent                     | Ingenting. Det finnes ingen `doctor` – se [Diagnostiser en agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/) |
+| Kalender og møter                         | RPC bare for menneskelige klienter (se over)                                                    |
 
-## See also
+## Se også
 
-- [Use Control Center as an MCP server](/nb-NO/handbok/slik-gjor-du/mcp-server/)
-- [Modes](/nb-NO/handbok/konsepter/moduser/)
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/)
+- [Bruk MCP-serveren](/nb-NO/handbok/slik-gjor-du/mcp-server/)
+- [Moduser](/nb-NO/handbok/konsepter/moduser/)
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/)

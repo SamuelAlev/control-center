@@ -1,123 +1,132 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Yetkilendirme — kimin neyi yapabileceği ve bunu nasıl kanıtladığınız
+description: Control Center rollerinin arkasındaki izin kataloğu, her yetkilendirme kararının düştüğü kurcalamayı açığa çıkaran denetim kaydı ve bir operatörün sabitleyebileceği kurulum geneli kontroller.
 slug: tr-TR/kilavuz/kavramlar/yetkilendirme
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/).
+Control Center iki yetkilendirme sorusunu yanıtlar ve bu ikisi gerçekten
+farklıdır. **"Bu kişi bu işlemi çağırabilir mi?"** sorusu insanlarla, rollerle
+ve depolarla ilgilidir. **"Bu ajan bu etkiye yol açabilir mi?"** sorusu ise
+eylemlerle, argümanlarla ve hasar yarıçapıyla ilgilidir — o soru
+[Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) sayfasının konusudur.
 
-This page is the first question, plus the record both of them leave behind.
+Bu sayfa ilk soruyu ele alır; ayrıca ikisinin de geride bıraktığı kaydı.
 
-## One decision point
+## Tek karar noktası
 
-Every human-side authorization decision resolves through a single function:
+İnsan tarafındaki her yetkilendirme kararı tek bir işlevden geçerek sonuçlanır:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Bir **izin**, `<domain>:<tier>` biçimindedir — `tickets:write`,
+`members:administer`, `repos:read`. Katalog **türetilir**, elle yazılmaz:
+işlem yüzeyinin kendisinden hesaplanır (işlemin ad öneki alanı, hâlihazırda
+uyguladığı rol tabanı ise kademeyi verir); böylece yaklaşık 550 işlemin
+tamamı, kimse tek bir tane bile yazmadan bir izin taşır.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Korunmaya değer olan şey bu türetmedir. Yeni bir işlemin varsayılan olarak
+izin denetiminden geçtiği anlamına gelir — elle etiketlenmiş bir modelin
+başarısızlık biçimi, birinin unutmasıdır ve unuttuğu şey de kapının
+kendisidir. Ortaya çıkan alan kümesi bir mandal testiyle sabitlenir; böylece
+yeni bir önek altında işlem eklemek, kazara değil, insanın verdiği bir
+adlandırma kararı olur.
 
-The four tiers map exactly onto the built-in roles:
+Dört kademe, yerleşik rollere tam olarak karşılık gelir:
 
-| Tier | Role floor | Example |
+| Kademe | Rol tabanı | Örnek |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Misafir | `tickets:read` |
+| `write` | Üye | `tickets:write` |
+| `administer` | Yönetici | `members:administer` |
+| `own` | Sahip | `workspace:own` |
 
-## Roles
+## Roller
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Beş yerleşik rol — **Sahip, Yönetici, Üye, İzleyici, Misafir** — bu katalog
+üzerinde ön ayarlardır. Sahiplik, çalışma alanı başına tek bir koltuktur ve
+açıkça **Sahipliği devret** ile devredilir (ayrılan bir sahip, aksi hâlde
+kaldırılamaz: SCIM ile sağlamadan çıkarma herhangi bir çalışma alanı sahibini
+reddeder — önce devredin).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Özel roller çıkarımsaldır.** Bir özel rol, bir temel ön ayar (`admin`,
+`member`, `viewer` veya `guest` — asla `owner` değil) ile ondan ÇIKARILAN
+izinler kümesini adlandırır — "yönetici, ancak üyeleri yönetemez". Temelinden
+daha fazlasını asla veremez; onları mevcut bir kuruluma sokmayı güvenli kılan
+şey de budur: mevcut her denetim sağlam bir üst sınır olarak kalır. Üyeler
+bunları `custom:<id>` olarak taşır ve bu değeri anlayamayacak kadar eski bir
+istemci, tahmin yürütmek yerine misafire geri düşer.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Rollerin altında **depo başına izinler** (`none` / `read` / `review` /
+`write`) yer alır: çalışma alanı üyeliği, kod barındırıcısının verdiğinden
+fazla ayrıcalığı asla sessizce sağlamaz. Kodu açığa çıkaran her yüzey bunları
+denetler — koda dolaylı yollardan erişenler de dahil: bir alanın çalışma
+ağacı üzerinde açılan terminal ya da düzenleyici oturumu gibi.
 
-## Server authority
+## Sunucu yetkisi
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Bazı işlemler hiçbir şekilde bir çalışma alanıyla ilgili değildir: kurulum
+geneli ayarlar, SSO yapılandırması, sağlayıcı kimlik bilgileri, model yönetimi,
+kurulumun tamamının yedekleri. Bunlar **sunucu yetkisi** bildirir ve
+kurulumun operatörü (kayıtlı sunucu sahibi) dışındaki herkes için reddedilir.
+Kasıtlı olarak tek bir operatör kimliği ve onun tek bir tanımı vardır.
 
-## The audit trail
+## Denetim kaydı
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Her yetkilendirme kararı — **izin ve ret** — çalışma alanı başına, hash
+zinciriyle bağlı bir denetim kaydına eklenir.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Yalnızca retleri tutan bir kayıt, "neyi engelledik?" sorusunu yanıtlar ama "bu
+ajan gerçekte ne yaptı ve bunu kim yetkilendirdi?" sorusunu yanıtlamaz; oysa
+bir olay incelemesi tam da bu soruyla başlar. Bu yüzden her kayıt, tam atıf
+zincirini tutar: işlemi yapan kimlik, adına hareket ettiği kişi, hangi yetki
+devriyle geldiği, eylem ve argümanları (özet olarak), karar ve **kararı veren
+kural**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Kayıtlar zincirlenmiştir: her birinin hash'i kendinden öncekininkini kapsar;
+dolayısıyla herhangi bir satırı düzenlemek, silmek veya yeniden sıralamak,
+ondan sonraki her hash'i bozar. **Zinciri doğrula** her şeyi baştan türetir ve
+tutmayan ilk halkayı adlandırır. Denetleyemediğiniz bir denetim kaydı yalnızca
+bir kayıttır; yeniden türetebildiğiniz kayıt ise kanıttır.
 
-Two consequences worth knowing:
+Bilinmeye değer iki sonuç:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Denetim tablosu **yaşa dayalı budamadan muaftır**. Bir hash zinciri
+  ortasından kırpılamaz. Saklama, önce dışa aktar sonra kırp biçimindedir ve
+  kırpma, kaldırılan bölümün uç hash'ini taşıyan bir kontrol noktası bırakır;
+  böylece geriye kalanlar yine de başa kadar doğrulanır.
+- Etkinlik zaman çizelgesinin **yanında** durur, üstünde değil. Zaman
+  çizelgesi insanların ne yaptığıdır; buradaki ise neyin yetkilendirildiği ve
+  reddedildiğidir. Paylaşılan bir korelasyon kimliği, tek bir çağrıyı her
+  ikisinde birlikte okumanızı sağlar.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Yeni satırla ayrılmış JSON olarak dışa aktarılır ve bir SIEM'e (Splunk,
+Elastic, Sentinel — bearer token'lı bir HTTP uç noktası) akıtılabilir. Akış
+kasıtlı olarak en iyi gayret esaslıdır: bir SIEM'in çökmesi bir ajanın araç
+çağrısını asla engellememelidir; kalıcı ve doğrulanabilir kopya her durumda
+diskte durur.
 
-## Sessions
+## Oturumlar
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Bir kurulum, bir **azami oturum yaşı** ve bir **boşta kalma zaman aşımı**
+belirleyebilir. Her ikisi de, kimliği doğrulanmış her yolun geçtiği cihaz
+kimlik bilgisi denetiminde uygulanır — bir istemcinin görmezden gelebileceği
+bir oturum sınırı, bir saldırgana değil, bir ankete yanıt verir. Bir kurulum
+ayrıca SSO zorunlu kılabilir; bu, yeni cihazlar için elle eşleştirmeyi devre
+dışı bırakır (bir kilitlenme korumasıyla: çalışan bir SSO bağlantısı yokken
+reddeder).
 
-## What this is not
+## Bu sayfa ne değildir
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Nesne başına ACL'ler değildir.** Bilet başına veya mesaj başına izin
+  kasıtlı olarak yoktur. Ekiplerin gerçekte istediği şey depo düzeyinde
+  ayrımdır ve bu mevcuttur; nesne başına paylaşım, burada talebi
+  gösterilmemiş, kombinasyonel bir yüzeydir.
+- **Bir DSL'de yapılandırdığınız bir politika motoru değildir.** Sözcük
+  dağarcığı kasıtlı olarak kapalıdır; böylece politikanın tamamı işlenebilir,
+  açıklanabilir ve sayılabilir.
+- **Sunucudan başka hiçbir yerde uygulanmaz.** İstemci tarafı denetimler
+  yalnızca reddedilecek bir kontrolün sunulmasını önlemek için vardır.
+  Yetkili karar her zaman sunucunundur.

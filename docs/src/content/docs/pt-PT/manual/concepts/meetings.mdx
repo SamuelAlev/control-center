@@ -1,213 +1,227 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Reuniões e transcrição
+description: Como o Control Center grava uma chamada, a transcreve e a diariza no servidor e onde acontece o único passo que sai do host.
 slug: pt-PT/manual/conceitos/reunioes
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+O Control Center consegue gravar uma chamada e devolver-lhe um relatório limpo —
+um resumo, tarefas e decisões — com reconhecimento de fala e separação de
+falantes a correr no seu próprio hardware. Pense no Granola, mas autoalojado e
+ligado ao mesmo espaço de trabalho onde vivem os seus agentes.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[A gravação precisa de um modelo de voz e de reiniciar o servidor]
+A gravação e o ditado só começam depois de um modelo de fala (ASR) estar no
+disco **e** de o servidor ter sido reiniciado. Um arranque normal instala à força
+o modelo selecionado (Parakeet TDT 0.6B v3 por omissão) em segundo plano, mas o
+servidor resolve os caminhos dos modelos de voz exatamente uma vez, perto do
+início do arranque — minutos antes de essa transferência poder terminar. Depois
+de o modelo indicar que está instalado, reinicie o `cc_server`.
+Para escolher outra compilação, use Definições → Servidor → Modelos de voz e
+reunião — isso também exige um reinício.
 :::
 
-## What a meeting is
+## O que é uma reunião
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/pt-PT/manual/conceitos/calendario/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Uma **reunião** é uma sessão gravada e transcrita. _Não_ é a mesma coisa que um
+[evento de calendário](/pt-PT/manual/conceitos/calendario/): um evento é um compromisso
+agendado sincronizado a partir do Google, enquanto uma reunião é algo que gravou
+de facto. Os dois podem estar ligados, uma vez que pode iniciar uma gravação a
+partir de um evento, mas continuam a ser registos distintos.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Todas as reuniões têm o âmbito do espaço de trabalho, tal como tudo o resto no
+Control Center. As reuniões gravadas num espaço de trabalho nunca aparecem
+noutro.
 
-## Where the work happens
+## Onde acontece o trabalho
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+«No dispositivo» é o instinto certo, mas o substantivo errado. O cliente capta o
+áudio e transmite tramas PCM16 a 16 kHz para a **máquina que executa o
+`cc_server`**. Esse host faz tudo o resto: escreve os WAV por canal em
+`<dataDir>/meetings/<meetingId>/`, transcreve num isolate de worker, filtra o
+eco e faz a diarização a posteriori. Num computador autónomo, esse host é a mesma
+máquina. Apontado a um servidor remoto, já não é — por isso «nada sai do meu
+portátil» só é verdade quando o servidor é o seu portátil.
 
-There is one further exception and it is the important one.
+Há mais uma exceção, e é a importante.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[O resumo sai do host]
+A transcrição e as suas notas são enviadas para o fornecedor de modelos para o
+qual o agente de resumo estiver configurado. Para qualquer fornecedor na nuvem,
+isso significa que a transcrição completa vai para a API desse fornecedor. Se uma
+transcrição não puder sair do host, aponte o agente de resumo para um endpoint
+local (Ollama, LM Studio ou outro servidor local).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Tudo antes do resumo — captura, transcrição, cancelamento de eco, diarização e
+correspondência de impressões de voz — corre no servidor sem qualquer chamada de
+rede.
 
-## Which models ship
+## Que modelos são incluídos
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Os modelos de **embedding, diarização e fala (ASR)** são instalados à força no
+primeiro arranque (ignorado numa demonstração), pelo que a separação de falantes
+e a gravação existem sem visitar as definições. O ASR continua a ser
+**selecionável** — ocupa várias centenas de megabytes e há quatro compilações no
+seletor. A fala ainda precisa de um reinício após essa primeira transferência,
+porque o transcritor resolve o seu modelo antes de a transferência poder
+terminar.
 
-The four picker entries, differing in size, language coverage and accuracy:
+As quatro entradas do seletor, que diferem em tamanho, cobertura de idiomas e
+precisão:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — multilingue, a predefinição recomendada (~600 MB)
+- Parakeet TDT 0.6B v2 — inglês (~480 MB)
+- Whisper large-v3-turbo — multilingue (~626 MB)
+- Whisper base.en — apenas inglês, a pequena predefinição histórica (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Os modelos são os únicos artefactos que o servidor obtém em tempo de execução;
+todas as bibliotecas nativas vêm incluídas no pacote.
 
-## How capture works
+## Como funciona a captura
 
-A meeting records **two audio channels at once**:
+Uma reunião grava **dois canais de áudio em simultâneo**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **O utilizador («me»)**: o seu microfone.
+- **Os outros («them»)**: a saída de áudio da reunião, captada por um loopback
+  sem controladores — taps de processo/dispositivo do Core Audio no macOS,
+  loopback WASAPI no Windows e um monitor PipeWire / PulseAudio no Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Como os dois canais são captados separadamente, a transcrição fica atribuída por
+falante desde o início: as suas palavras são marcadas com `me` e todos os que
+estão na chamada são marcados com `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+A sua própria voz passa da saída do sistema de volta para o microfone e, de outro
+modo, seria transcrita duas vezes. Dois filtros impedem isso. O **AEC3 ao nível
+do sinal corre em todas as gravações em modo remoto e é obrigatório** — se a
+biblioteca AEC nativa não conseguir carregar, a gravação recusa-se a iniciar em
+vez de transmitir silenciosamente um microfone poluído pelo eco. (O modo
+presencial não tem referência do lado remoto contra a qual cancelar, pelo que aí
+o AEC é uma passagem direta.) Além disso, um filtro de eco ao nível do texto do
+lado do host corre em todas as plataformas.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Todo o processamento de microfone ao nível do sistema operativo está
+deliberadamente desativado. Ativar o cancelamento de eco ou o ganho automático do
+próprio sistema no macOS muda o microfone para Voice Processing I/O, o que nesta
+compilação matava tanto o microfone _como_ o tap de áudio do sistema.
 
-## Transcription and diarization
+## Transcrição e diarização
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Enquanto grava, o áudio é descodificado em **janelas deslizantes** — cortadas
+numa breve cauda de silêncio ou ao atingir um comprimento máximo de janela —
+fora da thread da interface. Cada janela torna-se um segmento de transcrição
+marcado por falante, com deslocamentos em milissegundos.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+As janelas que nunca ultrapassaram um limite RMS são ignoradas **sem serem sequer
+descodificadas**, porque um modelo de fala interpreta o silêncio como tokens de
+não-fala alucinados e a descodificação desperdiça CPU. A consequência prática: um
+falante consistentemente muito baixo não produz transcrição. Se alguém aparecer
+sem nada, verifique o nível de entrada antes de culpar o modelo.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Depois de parar, a **diarização** corre offline sobre a gravação e divide o canal
+remoto em falantes individuais (`Person 1`, `Person 2`, …) que pode renomear. O
+número de falantes é inferido a partir de um limiar de agrupamento, não de uma
+contagem que defina — por isso é um artefacto do limiar e um falante baixo ou
+sobreposto pode ser fundido com um vizinho. A transcrição é apresentada como
+linhas `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Perfis de voz
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Renomear um falante faz mais do que etiquetar uma transcrição. O Control Center
+pode guardar a impressão de voz do falante como um **perfil de voz**, para o
+reconhecer automaticamente em reuniões futuras. Quando dá um nome a um falante
+diarizado, é-lhe perguntado se quer guardar a impressão de voz; se guardar, esta
+é integrada num centroide acumulado para esse nome e comparada com novos falantes
+por semelhança de cosseno, para que a mesma pessoa apareça com o seu nome da
+próxima vez sem ter de a reetiquetar.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Os perfis de voz têm o âmbito do espaço de trabalho e nunca atravessam a
+fronteira. Faça a gestão deles em **Definições → Espaço de trabalho → Reuniões**.
+Renomear um falante que já tinha sido guardado anula o registo do nome antigo e
+oferece-se para registar o novo; eliminar um perfil remove a impressão de voz
+guardada, mas deixa intactos quaisquer nomes já aplicados a reuniões anteriores.
 
-## The summary pipeline
+## O pipeline de resumo
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/pt-PT/manual/conceitos/eventos-de-dominio/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Quando uma gravação para, o servidor publica um
+`MeetingRecordingStopped` [evento de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/). O modelo de pipeline integrado **`meeting_summary`** é
+acionado por esse evento. O gravador não espera por ele; a reunião limita-se a
+transitar pelo seu ciclo de vida de estados:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+O agente de resumo recebe o título, as suas notas ao vivo aproximadas e a
+transcrição, e devolve **JSON estruturado**. As secções que escreve são
+determinadas pelo **modelo de notas de reunião ativo** do espaço de trabalho
+(Definições → Espaço de trabalho → Reuniões); o modelo ativo aplica-se a resumos
+novos e a resumos reexecutados. Os passos de persistência do pipeline escrevem
+então esse JSON em linhas distintas:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` e `summary` → as notas da reunião
+- cada tarefa → uma linha `MeetingActionItem` (conteúdo, responsável, ligação opcional a ticket)
+- cada decisão → uma linha `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+As tarefas e as decisões **nunca** são extraídas de markdown de forma livre,
+apenas dos arrays estruturados do agente. Se uma execução não produzir saída
+estruturada, os passos de persistência são ignorados e a transcrição em bruto é
+mantida como alternativa, para nunca perder o registo. Nada no pipeline marca a
+reunião como `done` — é um único reconciliador que o faz a partir do evento
+terminal da execução, para que a falha de um passo irmão não deixe uma reunião
+meio escrita que já parece terminada.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/pt-PT/manual/guias/servidor-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Os agentes não conseguem ler as suas reuniões]
+Não existem ferramentas MCP de reuniões nem de calendário. Um agente ligado por
+[MCP](/pt-PT/manual/guias/servidor-mcp/) não consegue listar reuniões, ler uma transcrição nem
+ver tarefas e decisões — esses dados chegam aos clientes humanos apenas por RPC.
+As decisões chegam indiretamente aos agentes, como factos de memória no domínio
+`decisions`.
 :::
 
-## Where meetings show up
+## Onde aparecem as reuniões
 
-| Surface                | What it shows                                                                         |
+| Superfície                | O que mostra                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | A lista de reuniões, com contagens de tarefas e decisões                            |
+| `/meetings/record`     | O HUD de gravação em direto: as suas notas de um lado e a transcrição em fluxo do outro |
+| `/meetings/:meetingId` | O detalhe de uma reunião: separadores Notas, Transcrição, Tarefas e Decisões                |
+| Definições → Espaço de trabalho → Reuniões | Modelos de notas e perfis de voz guardados para este espaço de trabalho                  |
 
-## Platform support
+## Plataformas suportadas
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+A captura não precisa de controladores nas três plataformas de computador (taps
+do Core Audio no macOS, WASAPI no Windows e PipeWire no Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**O cliente web também grava**, algo que o enquadramento no computador do resto
+desta página pode esconder: o navegador obtém o microfone através de
+`getUserMedia` e o áudio da reunião através de `getDisplayMedia` (partilha de
+ecrã), reduz a amostragem para PCM16 a 16 kHz e transmite para o mesmo host. Aí
+aplicam-se três ressalvas:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- A superfície partilhada **tem** de transportar uma faixa de áudio. O Safari, o
+  Firefox e a partilha de ecrã inteiro do macOS não fornecem nenhuma, e a
+  gravação recusa-se a iniciar.
+- Não há AEC3 nativo. O cancelamento de eco do próprio navegador é pedido no
+  microfone; o filtro de eco de texto do lado do host continua a correr. O HUD
+  mostra um medidor de nível de entrada alimentado pelo PCM do microfone.
+- Refazer resumo e cancelar o processamento só existem no computador.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+A ação **Gravar e vincular** do calendário só existe no computador e indica-o
+claramente na web, mesmo que o próprio fluxo de gravação do ecrã de reuniões
+funcione aí.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Eliminar uma reunião deixa o seu áudio para trás]
+Eliminar uma reunião remove apenas as suas linhas da base de dados. O diretório
+de áudio por canal retido `<dataDir>/meetings/<meetingId>/` nunca é limpo — não
+existe política de retenção, limite de tamanho nem varrimento de GC para ele.
+Recuperar esse espaço em disco é uma tarefa manual no host do servidor.
 :::
 
-## See also
+## Ver também
 
-- [Calendar and scheduling](/pt-PT/manual/conceitos/calendario/): record a meeting straight from a calendar event
-- [Pipelines and automation](/pt-PT/manual/conceitos/pipelines/): the engine behind `meeting_summary`
-- [Tickets and delegation](/pt-PT/manual/conceitos/tickets/): link a meeting's action items to tickets
-- [Domain events](/pt-PT/manual/conceitos/eventos-de-dominio/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/pt-PT/manual/guias/gravar-reuniao/)
+- [Calendário e agendamento](/pt-PT/manual/conceitos/calendario/): gravar uma reunião diretamente a partir de um evento de calendário
+- [Pipelines e automatização](/pt-PT/manual/conceitos/pipelines/): o motor por trás de `meeting_summary`
+- [Tickets e delegação](/pt-PT/manual/conceitos/tickets/): ligar as tarefas de uma reunião a tickets
+- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/): `MeetingRecordingStopped` e `MeetingStartingSoon`
+- [Gravar e resumir uma reunião](/pt-PT/manual/guias/gravar-reuniao/)

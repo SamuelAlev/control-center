@@ -1,97 +1,86 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: 從 GitHub PR 與 Control Center 對話
+description: 直接在 PR 對話中向伺服器的 GitHub App 機械人要求審查或提出問題，無需 webhook 或公開 URL。
 slug: zh-HK/手冊/操作指南/github-pr-對話
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+本指南說明如何在不用離開 GitHub 的情況下使用 Control Center：從 PR 頁面
+要求 AI 審查、在評論中向機械人提問，並在它的審查討論串中延續對話。
 
-The bot is your server's own [GitHub App](/zh-HK/手冊/操作指南/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+這個機械人就是你伺服器自己的 [GitHub App](/zh-HK/手冊/操作指南/github-app/) ——
+也就是已經負責讓人登入和執行背景工作的那一個。無需註冊任何新東西，也沒有
+任何東西必須能從互聯網連到：伺服器以輪詢方式探索 GitHub 上說了些甚麼，所以
+位於 NAT 後方的筆記型電腦，行為與公開部署完全相同。
 
-## Prerequisites
+## 開始之前
 
-- The server has its GitHub App [registered and
-  installed](/zh-HK/手冊/操作指南/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- 伺服器已[註冊並安裝](/zh-HK/手冊/操作指南/github-app/)它的 GitHub App，並具備
+  **Pull requests: read and write**（用於評論、討論串和表情反應）與
+  **Issues: read**（用於評論搜尋）。兩者都已在該指南的權限清單中
+- 該程式庫已連結到 Control Center 中的一個工作區
+- 沒有 webhook URL、沒有通道、沒有回呼 —— 網絡方面沒有任何東西需要設定
 
-## Find your bot's name
+## 尋找你的機械人名稱
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+機械人的登入名稱是 `<appslug>[bot]`，其中 `appslug` 是你註冊應用程式時
+給它的名稱。
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. 前往 **設定 → 伺服器 → 單一登入**，捲動到**供應商應用**卡片
+2. 展開 **GitHub** 區塊，然後按**測試**
+3. 當 **機械人登入名**填好後複製它。如果它仍顯示空白提示，登入名稱一律是
+   `<appslug>[bot]` —— 直接輸入它，或使用簡短的 `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub 的 `@` 自動完成不提供應用程式帳戶，所以登入名稱必須手動輸入 ——
+這正是設定卡片讓你可以一按複製的原因。`[bot]` 後綴是可選的：`@myapp` 和
+`@myapp[bot]` 都能觸及機械人。
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[選擇獨特的應用程式名稱]
+短格式是以文字方式比對。如果某個人類 GitHub 使用者碰巧與你的應用程式共用
+同一個 slug，以短格式提及該使用者也同樣會觸及機械人。完整的 `@myapp[bot]`
+格式則永遠明確無歧義。
 :::
 
-## Request a review from GitHub
+## 從 GitHub 要求審查
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+有兩種方式，兩者都會啟動與 **詢問 AI** 按鈕相同的預先植入 `pr_review` 管線：
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **為 PR 加上 `ai-review` 標籤**。這是 GitHub 所能提供、最接近把機械人指派為
+  審查者的做法 —— 應用程式帳戶無法佔用原生的「要求審查者」欄位。沒有評論
+  可供回應，所以 GitHub 上不會發佈任何內容；審查會在 Control Center 中啟動
+- **在 PR 對話中評論 `@myapp review`**（或只輸入 `@myapp`）。機械人會以 👀
+  回應，然後在審查開始時回覆（或告知已有一個正在執行）
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/zh-HK/手冊/操作指南/ai-審查/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+審查者會在該 PR 的審查空間中工作；閱讀與發佈發現項的方式與
+[使用 AI 輔助審查](/zh-HK/手冊/操作指南/ai-審查/)相同。發佈回 GitHub 仍然是由你
+在 Control Center 所作的決定 —— 從 GitHub 啟動審查，本身不會向 GitHub
+發佈任何內容。
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+該標籤每個 PR 只觸發一次：加上它就是提出要求，而移除後重新加上並不會
+重新觸發它。若要再次執行審查 —— 例如在一次 push 之後 —— 請提及機械人。
 
-## Ask a question
+## 提出問題
 
-Comment on the PR conversation:
+在 PR 對話中評論：
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+依序會發生以下事情：
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. 機械人會以 👀 回應，讓你知道評論已被看到
+2. 問題會**以你的身分**發佈到該 PR 的審查空間 —— 歸屬方式與你在
+   Control Center 中輸入完全相同
+3. 一個代理會在空間中回答，而答案會以 @提及你的評論形式發佈回 PR
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+在尚未有審查的 PR 上提問，會喚醒該工作區的 CEO 代理；一旦審查執行過，
+則由最後發言的代理回答，所以後續追問會落到掌握上下文的那一位身上。
 
-## Follow up in a review thread
+## 在審查討論串中跟進
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+在機械人參與的行內審查討論串中回覆 —— 它留下的 diff 評論，或它在該
+討論串中發佈的答案。無需提及；討論串**本身**就是定址：
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +88,69 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+多輪對話的運作方式相同：每次回覆都是同一則對話中的另一個問題，並以審查
+空間作為上下文，而答案會回到該討論串中。
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+在 PR 對話時間軸上的後續追問是一則新的頂層評論，所以仍然需要 @提及。
 
-## Who the bot talks to
+## 機械人與誰對話
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+一則 GitHub 評論送達時，所帶的幾乎只有登入名稱，所以機械人會在做任何事
+之前先解析作者：
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/zh-HK/手冊/操作指南/github-整合/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **你的 GitHub 帳戶必須連結到你在 Control Center 中的身分** ——
+  從 **設定 → 工作區 → 個人資料與身分 → 程式碼託管**
+  [以 GitHub 登入](/zh-HK/手冊/操作指南/github-整合/)，或貼上權杖
+- **你必須是具備寫入角色的成員**（`member`、`admin` 或 `owner`），且隸屬於
+  連結該程式庫的工作區
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+其他任何人只會收到一則禮貌的回覆，說明缺少了甚麼 —— 未知的登入名稱
+（未連結，或已連結但不是此處的成員）與唯讀角色是兩種情況 —— 而他們的話
+永遠不會進入工作區。`ai-review` 標籤不受這道關卡限制：它沒有作者，所以會
+在已經連結該程式庫的工作區中啟動審查。
 
-## What to expect
+## 預期會發生甚麼
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| 項目       | 行為                                                          |
+| ---------- | ------------------------------------------------------------- |
+| 確認       | 評論會在大約一分鐘內出現 👀 —— 即掃描週期。`ai-review` 標籤沒有評論可供回應 |
+| 答案       | 以機械人（應用程式）身分發佈，並出現在問題所提出的同一條渠道上 |
+| 空間內歸屬 | 問題屬於你；代理代表你執行，並遵循該空間的自主程度設定        |
+| 審查       | 發現項會落在審查空間；發佈到 GitHub 則需手動進行              |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+大約一分鐘的延遲，換來的是完全不需要任何入站網絡存取。掃描沒有任何急迫
+之處，而伺服器離線期間也不會遺失任何東西 —— 停機期間到達的評論會在下一次
+掃描時被捕捉到。
 
-## Troubleshooting
+## 疑難排解
 
-**Nothing happens for a comment that mentions the bot.**
+**提及機械人的評論沒有任何反應。**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- 應用程式是否已**安裝**在擁有該程式庫的帳戶上，而且該程式庫已**連結**到
+  工作區？未連結的程式庫會在記錄任何東西之前被略過，所以稍後再連結仍然
+  會送達
+- 你的 GitHub 帳戶是否已連結，而你是否是具備寫入角色的成員？請查看 PR 上
+  機械人的拒絕回覆 —— 它會說明是哪一種
+- 仍然沒有反應？當有東西失敗時，伺服器日誌會寫出掃描和 PR；請尋找
+  `pr_conversation:`（輪詢器）和 `github_pr_conversation:`（橋接）
 
-**The label does not start a review.**
+**該標籤沒有啟動審查。**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+它每個 PR 只觸發一次。如果審查已經執行過，或標籤是在伺服器首次看到該 PR
+之前加上的（第一次掃描會靜靜記錄積壓項目，而不是向它蜂擁而上），請改為
+提及機械人 —— 除非已有審查正在進行，否則 `@myapp review` 一定會啟動一次。
 
-**The bot's answer never arrived on GitHub.**
+**機械人的答案一直沒有出現在 GitHub 上。**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+答案本身永遠不會遺失 —— 它就在 Control Center 中該 PR 的審查空間裏。發佈
+失敗（GitHub 故障、權限變更）會被記錄下來，而且不會重試該回覆；如果這件事
+要緊，請在討論串中再問一次。
 
-## Related guides
+## 相關指南
 
-- [Create the GitHub App](/zh-HK/手冊/操作指南/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/zh-HK/手冊/操作指南/ai-審查/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/zh-HK/手冊/操作指南/空間/): the room all of this lands in
+- [建立 GitHub App](/zh-HK/手冊/操作指南/github-app/)：機械人所從出的註冊
+- [使用 AI 輔助審查](/zh-HK/手冊/操作指南/ai-審查/)：閱讀由提及啟動的審查所
+  產生的發現項
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)：連結你自己的 GitHub
+  帳戶，機械人正是以此解析你的身分
+- [使用空間](/zh-HK/手冊/操作指南/空間/)：以上一切所降落的房間

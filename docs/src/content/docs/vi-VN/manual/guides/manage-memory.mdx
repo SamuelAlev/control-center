@@ -1,101 +1,145 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Quản lý bộ nhớ không gian làm việc
+description: Xem lại, chỉnh sửa và cắt tỉa những sự kiện cùng chính sách mà agent đã ghi vào một không gian làm việc.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-bo-nho
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Hướng dẫn này trình bày cách làm việc với kho tri thức của một không gian làm
+việc.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Điều quan trọng cần biết trước khi bắt đầu: **giao diện bộ nhớ là bề mặt để xem
+lại, không phải để soạn thảo.** Sự kiện và chính sách do agent ghi — thông qua
+`propose_fact` và `propose_policy`, cùng `supersede_fact` và `supersede_policy`
+để thay thế chúng. `remember` ghi một mục thuộc tầng nóng, giới hạn theo phiên, mà
+`consolidate_memory` có thể nâng cấp thành một sự kiện sau này. Các quyết định
+cuộc họp đã ghi lại được thu hoạch vào miền `decisions`; không có thu hoạch nào
+khi các lần chạy agent hoàn tất. Việc bạn làm ở đây là đọc những gì chúng đã ghi,
+sửa lại, vô hiệu hóa hoặc xóa đi.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Bộ nhớ nằm tại **Cài đặt → Không gian làm việc → Bộ nhớ**
+(`/workspaces/<id>/settings/memory`). Nó không phải là một đích đến cấp cao nhất
+trên thanh bên.
 
-## The three tabs
+## Ba thẻ
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Trang có đúng ba thẻ. Sự kiện và Chính sách hiển thị số lượng trực tiếp; đồ thị
+thì không:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Sự kiện** — mọi sự kiện trong không gian làm việc, kèm số lượng những sự kiện
+  chưa bị thay thế
+- **Chính sách** — các quy tắc mang tính quy phạm được nhóm theo miền, kèm số
+  lượng những chính sách đang hoạt động
+- **Đồ thị tri thức** — một khung tương tác gồm các miền, chủ đề, sự kiện và chính
+  sách
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Miền không phải thứ bạn tự tạo. Một miền ra đời khi agent ghi sự kiện hoặc chính
+sách đầu tiên vào đó; không có điều khiển tạo miền nào ở bất kỳ đâu trong giao
+diện.
 
-## Review and correct a fact
+## Xem lại và sửa một sự kiện
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Mở thẻ **Sự kiện**.
+2. Dùng ô tìm kiếm để thu hẹp danh sách. Đây chỉ là bộ lọc chuỗi con trên miền,
+   chủ đề và nội dung của từng sự kiện — không có chỉ mục từ khóa, không có xếp
+   hạng.
+3. Dùng bộ lọc phạm vi để hiển thị mọi phạm vi, chỉ sự kiện toàn không gian làm
+   việc, hoặc sự kiện của một kho mã.
+4. Dùng nút chuyển sắp xếp để sắp theo độ mới hoặc theo độ tin cậy.
+5. Nhấp vào điều khiển chỉnh sửa của một sự kiện.
 
-The edit dialog lets you change:
+Hộp thoại chỉnh sửa cho phép bạn thay đổi:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Miền** — di chuyển một sự kiện giữa các miền
+- **Chủ đề** — nhãn ngắn của sự kiện
+- **Nội dung** — văn bản tri thức
+- **Độ tin cậy** — thanh trượt theo bước 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Lưu để ghi lại. Không có nút **Thêm sự kiện**; hộp thoại chỉ mở trên một dòng đã
+tồn tại.
 
-## See superseded facts
+## Xem các sự kiện bị thay thế
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Thẻ Sự kiện có công tắc **Hiện bản bị thay thế**. Các sự kiện bị thay thế mặc định
+bị ẩn và được công tắc đó hiện ra; đây chính là nơi lưu dấu vết kiểm toán — việc
+thay thế không bao giờ xóa.
 
-## Delete a fact
+## Xóa một sự kiện
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Dùng điều khiển xóa của một sự kiện rồi xác nhận. Đây là xóa thật, không phải thay
+thế: hãy dùng nó cho những sự kiện vốn dĩ không nên ghi lại, và để agent thay thế
+những sự kiện mà _nội dung_ của chúng đã thay đổi.
 
-## Manage policies
+## Quản lý chính sách
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Thẻ **Chính sách** nhóm các chính sách đang hoạt động theo miền và đẩy những chính
+sách không hoạt động xuống một mục ở cuối. Với mỗi chính sách, bạn có thể:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Sửa** nó
+- **Xóa** nó
+- **Vô hiệu hóa** / **Kích hoạt** nó — lựa chọn có thể đảo ngược và thường là lựa
+  chọn đúng. Chỉ những chính sách đang hoạt động mới đến được prompt của agent.
 
-As with facts, there is no create control.
+Như với sự kiện, không có điều khiển tạo mới.
 
-## Explore the knowledge graph
+## Khám phá đồ thị tri thức
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Thẻ **Đồ thị tri thức** bày biện các miền, chủ đề, sự kiện và chính sách thành một
+khung nút có thể điều hướng — di chuyển, thu phóng, kéo các nút. Chạm vào một nút
+sẽ mở bảng chi tiết của nút đó, từ đó có thể truy cập chính những hộp thoại chỉnh
+sửa như trên. Đây là cách nhanh nhất để thấy những miền nào thực sự có dữ liệu.
 
-## Edit an agent's working memory
+## Chỉnh sửa bộ nhớ làm việc của một agent
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Bộ nhớ làm việc là một bảng nháp riêng tư của từng agent, được chèn vào prompt của
+nó tại thời điểm điều phối. Agent tự ghi vào đó bằng `record_observation` và
+`update_my_notes`, nhưng bạn có thể đọc và chỉnh sửa trực tiếp:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Cài đặt → Không gian làm việc → Agent** → chọn agent → thẻ **Bộ nhớ**.
 
-## Access grants
+## Cấp quyền truy cập
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Cấp quyền truy cập bộ nhớ ánh xạ vai trò của một agent vào một quyền (`none`,
+`read`, `write`) theo từng miền. Ghi chúng bằng các thao tác
+`memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Hai điều cần hiểu về cách chúng được giải quyết:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Thao tác đọc mở khi lỗi.** Khi không có dòng cấp quyền nào cho cặp (vai trò,
+  miền), quyền hiệu lực là `read`. Thao tác ghi duy nhất ném lỗi khi không có
+  quyền `write` là `propose_policy`. Ghi sự kiện không bị chặn bởi cấp quyền.
+- **Cấp quyền được đánh khóa theo vai trò của agent.** Các công cụ đề xuất mặc định
+  `agent_role` còn thiếu thành `general`. Một cấp quyền viết cho vai trò khác không
+  ràng buộc những agent đó; cấp quyền `general` thì có.
 
-## Search is not the same everywhere
+## Tìm kiếm không giống nhau ở mọi nơi
 
-Three different things are called "memory search" and they do not agree:
+Có ba thứ khác nhau đều được gọi là "tìm kiếm bộ nhớ" và chúng không khớp với
+nhau:
 
-| Where                               | What it does                                                                                                 |
+| Nơi                                 | Việc nó làm                                                                                                  |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Ô tìm kiếm của thẻ Sự kiện          | Lọc chuỗi con trên những sự kiện đã được nạp sẵn trong máy khách                                             |
+| Thao tác RPC `memory_fact.search`   | Chỉ tìm kiếm từ khóa FTS5 — một máy khách mỏng không thể gửi kèm embedding truy vấn, nên tìm kiếm kết hợp vẫn nằm trong nội bộ máy chủ |
+| Công cụ `search_memory` phía agent  | `keyword`, `semantic` hoặc `hybrid` (mặc định). Chế độ hybrid hợp nhất bốn tiếng nói: từ vựng, ngữ nghĩa, thời gian và đồ thị |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Vì vậy, một agent và trang Bộ nhớ sẽ không xếp hạng cùng một truy vấn theo cùng một
+cách. Khi bạn muốn kiểm tra xem agent thực sự có thể nhớ lại được gì, hãy hỏi
+chính agent.
 
-## Embeddings
+## Nhúng vector
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Sự kiện được nhúng **tại thời điểm ghi** và chỉ khi mô hình nhúng trên thiết bị đã
+được cài đặt. Kiểm tra trạng thái của nó tại **Cài đặt → Máy chủ → Chẩn đoán &
+quyền riêng tư → Tìm kiếm ngữ nghĩa**. Hãy cài mô hình trước khi agent bắt đầu ghi
+bộ nhớ nếu bạn muốn truy hồi ngữ nghĩa.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Use the MCP server](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Dùng máy chủ MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Memory and knowledge](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/)
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
+- [Bộ nhớ và tri thức](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/)
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)

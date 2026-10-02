@@ -1,156 +1,153 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: פקודות קו נטוי
+description: כל פקודה שאפשר להקליד בתיבת הכתיבה, מה היא עושה והיכן היא רצה.
 slug: he-IL/מדריך-למשתמש/עזר/פקודות-קו-נטוי
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+פקודות שנכתבות בתיבת הכתיבה של מרחב. הן מתחלקות לשלוש קבוצות לפי היכן הן נכנסות לתוקף, וההבדל ביניהן משמעותי: פקודה **מקומית** לעולם אינה עוברת כהודעה, ולכן היא גם אינה מופיעה בתמלול וגם אינה מגיעה לסוכן.
 
-| Where it runs | What that means                                                                    |
+| היכן היא רצה | מה זה אומר                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **מקומי**     | מטופלת בלקוח (או בפעולת שרת שיזם הלקוח). הפקודה לעולם אינה עוברת כהודעה, ולכן אף סוכן אינו רואה אותה. |
+| **צד**      | קריאת מודל אחת בצד השרת על השיחה. השיחה אינה משתנה. |
+| **שליחה**  | קובעת מצב או הנחיה להרצה שההודעה מתחילה.                            |
 
 ---
 
-## Directing a run
+## הכוונת הרצה
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**מקומי → שליחה.** מחמש את מצב תכנון על השיחה: עץ עבודה לקריאה בלבד לחלוטין ומשטח כלים שמוגבל ל-`read`. התוצר של הסוכן הוא תוכנית, לא עריכה. `/plan` לבדו רק מחליף את המצב ולעולם אינו עובר כהודעה; עם הנחיה, שאר השורה הוא מה שמתחיל את ההרצה.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**שליחה.** מתחיל מטרה אוטונומית שמפקח היעד שולח מחדש בין מקטעים והפעלות מחדש.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+הקלדת `/goal` עם טקסט פותחת תחילה את **ראיון המטרה** — סבב קצר שמסרב לקבל טיוטה עד שיש בה את כל חמשת הדברים: קריטריוני הצלחה שמעריך יכול להכריע בהם בלי שיקול דעת, פקודת אימות מדויקת, תקרת ניסיונות, גבולות היקף ותנאי עצירה. כל שלב מציע *דילוג והרצה כפי שנכתב*: הראיון הוא ברירת מחדל, לא שער.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` ו-`/goal drop` אינם פקודות קו נטוי. השהיה, המשך ועצירה נמצאים ברשימת היעדים של השיחה בסרגל הצד. דגלי ההתחלה על המטרה עצמה הם `--budget <dollars>`, `--max <N>` (תקציב הרצה) ו-`--days <N>` (מועד אחרון). יעד שהגיע לתקרת העלות שלו ממשיך רק על ידי העלאת התקרה הזו, מאותו פקד בסרגל הצד.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[למה זה מפריע בכלל]
+יעד אוטונומי הוא המקום היחיד שבו תדרוך מעורפל הוא באמת יקר. ההרצה עובדת שעות על מטרה שאת ה"סיום" שלה אף אחד לא הגדיר, ואז מדווחת על הצלחה לפי התנאים של עצמה. חמש שאלות זולות יותר מהרצה אחת של לילה שלם שהסתיימה מתי שהיא הרגישה שסיימה.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**שליחה.** עובד באופן איטרטיבי עד להשלמה. מקבל גבול: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+מחרוזת ש*נראית* כמו גבול (מתחילה בספרה או בסימן) ואינה מצליחה להיפרס היא שגיאה קשה. טקסט חופשי הוא פשוט טקסט חופשי, ולכן `/loop keep going until the tests pass` הוא לולאה בלי גבול עם הנחיה בתוך השורה, ולא פירוש שגוי.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הכוונת-עובדי-רקע/).
+**שליחה.** הופך את הסשן ל**מכוון**: הכלים של עצמו מצטמצמים ל-`read` בתוספת חמישה פעלים של עובדים, ועובדי רקע מבצעים את העריכה. ראו [הכוונת עובדי רקע](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הכוונת-עובדי-רקע/).
 
-Workers never outlive the mode — exiting kills every one of them.
+עובדים לעולם לא שורדים את המצב — היציאה ממנו מחסלת כל אחד מהם.
 
 ---
 
-## Managing context
+## ניהול ההקשר
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**מקומי → שרת.** מקפל היסטוריה ישנה לסיכום מעוגן וממשיך על ההקשר המקופל. אין ארגומנט שמופנה למודל: הפקודה לעולם אינה עוברת כהודעה, ומעבר הדחיסה אינו מקבל רמז מיקוד.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**מקומי → שרת.** משליך תוכן כבד **בלי** לסכם: אין קריאת מודל, כל מילה נשמרת, ורק הנפח שאיש לא היה חוזר לקרוא בו מתרוקן.
 
-| Target        | Drops                             |
+| מטרה        | מה מושלך                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | תוצאות כלים ישנות ללא אירועים מיוחדים (ברירת מחדל) |
+| `images`      | צילומי מסך ישנים, כשהטקסט שלהם נשמר |
+| `all`         | שניהם                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+זהו פתח המילוט ל"ההקשר שלי שמן אבל אני לא רוצה סיכום".
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**מקומי.** פותח את סייר ההקשר של הסוכן של השיחה הזו בלשונית משל עצמו: כל מקטע
+וחלק בחלון ההקשר שלו — הנחיית המערכת, מיומנויות, קובצי הקשר, סכימות כלים,
+היסטוריה ותמונות — עם מה שכל אחד מהם עולה והתוכן ככתבו שמאחוריו.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+הלשונית מזוהה לפי הצמד (מרחב, סוכן), כך שהרצתה פעמיים רק ממקדת מחדש לשונית
+אחת במקום לערום עותקים של אותו פירוט.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+במרחב עם **יותר מסוכן אחד**, `/context` לבדו פותח את החלון שמד ההקשר שבכותרת
+קורא — הסוכן שעבד כאן אחרון, זה שההודעה שלו נמצאת בתחתית המסלול — והלשונית
+מסומנת `Context · <name>` כדי שיהיה כתוב של מי היא. נקבו בשם אחר כדי לעבור: `/context qa` (ה-`@` הוא רשות). שם
+שהוקלד נפתר בדיוק מוחלט, ולעולם לא בקירוב: שני סוכנים מחזיקים שני חלונות שונים,
+ולכן פספוס קל שהיה פותח את האחר היה תשובה שנראית סבירה לשאלה שלא שאלתם.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+אותו סייר עומד מאחורי צ'יפ מד ההקשר בכותרת המרחב, והוא עוקב אחרי אותו סוכן —
+הפקודה והצ'יפ לעולם לא יכולים לחלוק על המשמעות של "ההקשר" כאן.
 
 ---
 
-## Asking about the conversation
+## שאלות על השיחה
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+אלה צורכות קריאת מודל אחת ו**לעולם אינן משנות את השיחה**. התור הממשי הבא של הסוכן רואה בדיוק את מה שהיה רואה בכל מקרה, וזה כל הערך של לשאול.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**צד.** כותב מסמך מסירה למי שלוקח את העבודה בלי שום הקשר מוקדם: מהי המשימה, מה נלמד ומה נותר.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**צד.** עונה על שאלה על העבודה עד כה בלי להוסיף את השאלה או את התשובה לתמלול.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[שתי פקודות, מימוש אחד]
+שתיהן באותו מבנה — קחו את השיחה כפי שהיא, שאלו עליה שאלה אחת, ואל תשמרו אף אחד מהצדדים. מיושמות פעם אחת כדי שלא ייפרדו לשתי תפיסות שונות של "ההקשר עד כה".
 :::
 
 ---
 
-## Navigating and exporting
+## ניווט וייצוא
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פיצול-שיחה/).
+**מקומי.** פותח את מנווט הענפים: היכן השיחה התפצלה, באיזה מסלול היא נמצאת כעת ואיך לחזור לאחד שעזבתם. ראו [פיצול שיחה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פיצול-שיחה/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**מקומי.** כותב את השיחה לקובץ HTML עצמאי — כרטיסי כלים מתקפלים, בלי גיליון סגנונות, בלי סקריפט ובלי מארח תמונות. נוחת ב-`Documents/ControlCenter/exports/` במחשב השולחני ומורד בדפדפן.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**מקומי.** מעתיק את התמלול ללוח כ-markdown, כשקריאות כלים מופיעות בבלוקים מתקפלים. החשיבה מוחרגת במכוון: תמלול שמודבק לדוח באג נקרא על ידי אדם.
 
 ---
 
-## Everything else
+## כל השאר
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**מקומי.** מציג ועורך את רשימת המשימות השמורה של השיחה. `/todo` לבדו פותח את העורך. תת־פקודות: `append`, `start`, `done`, `drop` (כינוי `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**שליחה.** מחיל מיומנות מותקנת. מיומנויות יושבות תחת קידומת `skill:` משלהן, כך שאין להן מרחב שמות משותף עם המובנות — בלי זה, מיומנות בשם `plan` הייתה בלתי נגישה לתמיד.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**שליחה.** כל קובץ markdown תחת `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` או `.opencode/commands` במאגר. קובץ מקונן `foo/bar.md` נגיש גם כ-`foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+תבניות: `$1`, `$@`, `$@[start:length]` ו-`$ARGUMENTS`. ה-frontmatter עשוי להגדיר `description` (השלמה אוטומטית בתיבת הכתיבה). `allowed-tools` ו-`model` מנותחים מהקובץ, אבל הפעלה של פקודת משתמש מציבה כרגע רק ארגומנטים בגוף — הם אינם משנים את המודל או את משטח הכלים של ההרצה.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+פקודה שכתב משתמש גוברת על מיומנות באותו שם — זהו קיצור דרך שאדם הפעיל במכוון, עם ארגומנטים.
 
 ---
 
-## Magic keywords
+## מילות מפתח קסומות
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+לא פקודות. מילה באותיות קטנות שעומדת בפני עצמה בכל מקום בהנחיה מצרפת הוראה נסתרת לאותו תור.
 
-| Word          | Effect                                                             |
+| מילה          | השפעה                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | מאמץ חשיבה מרבי לתור                              |
+| `orchestrate` | האצלת עבודה בלתי תלויה במקביל ואימות כל שלב        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+המתאים קפדני במכוון לגבי גבולות. `orchestrate,` מתאים; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` ו-`orchestrate()` לא, ובלוקי קוד מגודרים, מקטעים בתוך השורה ומקטעי XML מסוננים החוצה תחילה. בלי זה, הדבקה של מעקב מחסנית הייתה משנה את התנהגות הסוכן.
 
 ---

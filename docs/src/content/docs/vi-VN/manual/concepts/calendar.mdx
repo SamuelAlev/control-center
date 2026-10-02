@@ -1,128 +1,138 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Lịch và lên lịch
+description: Cách Control Center đồng bộ Google Calendar trên máy chủ, vì sao đăng nhập dùng cấp quyền bằng mã thiết bị và phạm vi chỉ đọc bao gồm những gì.
 slug: vi-VN/so-tay/khai-niem/lich
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/vi-VN/so-tay/khai-niem/cuoc-hop/).
+Control Center kết nối với Google Calendar để ngày làm việc của bạn nằm cạnh
+đội máy của bạn. Nó đồng bộ sự kiện, hiển thị chúng ở chế độ xem tháng, tuần,
+ngày và lịch trình, cảnh báo bạn trước khi một cuộc họp bắt đầu và biến bất kỳ
+sự kiện nào thành một [cuộc họp](/vi-VN/so-tay/khai-niem/cuoc-hop/) đã được ghi
+lại và tóm tắt.
 
-## What it changes on Google
+## Nó thay đổi những gì trên Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Gần như không gì cả. Tích hợp này kéo sự kiện về và hiển thị chúng. Nó không
+tạo, sửa, xóa hay phản hồi lời mời. Mọi kết nối bằng mã thiết bị, dù là loại
+tích hợp sẵn hay do bạn tự cung cấp, đều yêu cầu `calendar.readonly` cùng
+`openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Sự kiện được đồng bộ vào cơ sở dữ liệu riêng của không gian làm việc **trên máy
+chủ** (`<dataDir>/<workspaceId>/workspace.db`) và được mọi máy khách hiển thị
+qua RPC. Không máy khách nào giữ thông tin xác thực Google.
 
-## Per-workspace accounts
+## Tài khoản theo từng không gian làm việc
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Tài khoản lịch thuộc phạm vi không gian làm việc, giống mọi thứ khác trong
+Control Center. Mỗi [không gian làm việc](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
+kết nối tài khoản Google riêng của mình (hoặc nhiều tài khoản), và sự kiện cùng
+token của một không gian làm việc không bao giờ hiển thị được từ không gian
+khác. Chuyển không gian làm việc là chuyển những lịch bạn nhìn thấy.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Một không gian làm việc có thể kết nối **nhiều** tài khoản Google, chẳng hạn
+một tài khoản công việc và một tài khoản cá nhân, và sự kiện của chúng được gộp
+vào cùng các chế độ xem.
 
-## Why sign-in is a device code
+## Vì sao đăng nhập dùng mã thiết bị
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` không giao diện không có trình duyệt để bắt chuyển hướng OAuth. Nên
+nó không dùng cách đó: nó ủy quyền bằng **cấp quyền mã thiết bị** (RFC 8628).
+Máy chủ hiển thị một mã người dùng ngắn và một URL Google, bạn phê duyệt trên
+bất kỳ thiết bị nào có trình duyệt và máy chủ sẽ thăm dò cho đến khi bạn làm
+vậy. Một bản cài không giao diện có thể kết nối tài khoản chính là vì không có
+endpoint chuyển hướng nào để lưu trữ.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Hệ quả cần biết trước khi bạn tự cung cấp thông tin xác thực: loại máy khách
+phải là "TV and Limited Input devices" của Google. Google chỉ cấp một tập phạm
+vi nằm trong danh sách cho phép cho loại máy khách đó, và một dự án không được
+phép dùng Calendar cho loại máy khách này sẽ thất bại với `invalid_scope` — khi
+đó bạn cần dùng máy khách loopback hoặc web.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Token không bao giờ rời khỏi máy chủ. Chúng được ghi vào `secrets.json` của máy
+chủ trong thư mục dữ liệu của nó, với khóa
+`google_google:<workspaceId>:<email>`, nằm cạnh các cơ sở dữ liệu và trong cùng
+ranh giới tin cậy của hệ thống tệp máy chủ. Máy chủ tự động làm mới quyền truy
+cập và, khi Google vô hiệu hóa vĩnh viễn một tài khoản (phiên bị thu hồi hoặc
+hết hạn từ lâu), nó phát `CalendarAuthExpired` và hiện banner **kết nối lại**
+thay vì thất bại âm thầm.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Bản dựng từ mã nguồn **không** kèm thông tin xác thực Google nào — bạn tự cung
+cấp client id và secret của mình. Các bản phát hành chính thức nhúng sẵn một máy
+khách mã thiết bị không bí mật để luồng kết nối chạy được ngay; máy chủ chỉ lưu
+một dấu tham chiếu tới nó, không bao giờ lưu bản sao.
+`GOOGLE_OAUTH_CLIENT_ID` (và secret của nó) trong môi trường luôn được ưu tiên
+hơn cặp nhúng sẵn. Cố ý không có cờ `--google-client-id`: các cờ không rõ bị bỏ
+qua, và một secret trên dòng lệnh có thể bị đọc qua `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
+Để chạy dự án Google của riêng bạn, xem
+[Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
 
-## Sync
+## Đồng bộ
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Máy chủ kéo một cửa sổ trượt gồm sự kiện của mỗi tài khoản đã kết nối — mọi
+lịch trên tài khoản, không chỉ lịch chính — **hai phút một lần**, cùng với khi
+có yêu cầu (khởi động, kết nối, làm mới thủ công). Nhịp ngắn như vậy vẫn chấp
+nhận được vì lần quét là tăng dần: mỗi lịch mang token đồng bộ riêng, nên một
+lịch không thay đổi chỉ tốn một phản hồi gần như rỗng thay vì tải lại cả cửa sổ
+năm tháng.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Sự kiện lặp lại được mở rộng ở phía máy chủ, nên không máy khách nào phải phân
+tích quy tắc lặp. Khi bạn chuyển tới một tháng nằm ngoài cửa sổ hiện tại, khoảng
+đó được tải khi cần. Các sự kiện đã xóa hoặc đã chuyển ra ngoài phạm vi được
+đối chiếu và loại bỏ ở lần đồng bộ kế tiếp.
 
-## Views
+## Các chế độ xem
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Chế độ xem    | Nội dung hiển thị                                     |
+| ------------- | ----------------------------------------------------- |
+| **Tháng**     | Lưới đầy đủ của một tháng (dùng gói `kalender`)       |
+| **Tuần**      | Các sự kiện có giờ trong một tuần, trên lưới thời gian |
+| **Ngày**      | Các sự kiện có giờ trong một ngày, trên lưới thời gian |
+| **Lịch trình** | Danh sách cuộn được gồm các sự kiện sắp tới          |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Mở lịch tại `/calendar`; chọn một sự kiện sẽ mở trang chi tiết của nó tại
+`/calendar/:eventId`. Chế độ xem bạn chọn được lưu trong tùy chọn riêng của máy
+khách đó, nên nó không đi theo bạn sang thiết bị khác.
 
-## Meeting alerts
+## Cảnh báo cuộc họp
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/vi-VN/so-tay/khai-niem/su-kien-mien/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Một bộ lập lịch chạy mỗi phút quét các sự kiện bắt đầu trong khoảng báo trước
+có thể cấu hình và phát thông báo **"cuộc họp sắp bắt đầu"** (một
+[sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) `MeetingStartingSoon`).
+Thông báo mang theo URL tham gia khi có, và nhấp vào nó sẽ mở trang chi tiết sự
+kiện. Cảnh báo được chống trùng lặp dựa trên `alertedAt` của sự kiện, nên cùng
+một cuộc họp không bao giờ cảnh báo hai lần, kể cả qua các lần khởi động lại,
+và một sự kiện có giờ bắt đầu trôi qua khi ứng dụng đang đóng cũng không bao giờ
+phát lại.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Có hai giới hạn dễ bị bỏ qua. Bộ lập lịch chạy **ở phía máy khách trên máy tính
+để bàn** và chỉ cho không gian làm việc bạn đang mở — một không gian bạn không ở
+trong đó sẽ không phát cảnh báo nào. Và bản web hoàn toàn không có luồng thông
+báo hệ điều hành, nên cũng không phát cảnh báo nào.
 
-## Record and link
+## Ghi và liên kết
 
-From a calendar event you can start a [meeting recording](/vi-VN/so-tay/khai-niem/cuoc-hop/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Từ một sự kiện lịch, bạn có thể bắt đầu một
+[bản ghi cuộc họp](/vi-VN/so-tay/khai-niem/cuoc-hop/) được khởi tạo bằng tiêu đề
+của sự kiện. Control Center lưu một liên kết một-một giữa bản ghi và sự kiện,
+nên ghi chú của cuộc họp và mục lịch vẫn gắn với nhau mà không tính năng nào
+phụ thuộc vào tính năng kia.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Bắt đầu ghi & liên kết** chỉ có trên máy tính để bàn. Trên máy khách web, hành
+động này báo rằng không thể ghi — dù luồng ghi của chính màn hình cuộc họp vẫn
+hoạt động trong trình duyệt.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agent không thể đọc lịch của bạn]
+Không có công cụ MCP nào dành cho lịch. Agent không thể liệt kê sự kiện, đọc chi
+tiết một sự kiện hay RSVP thay bạn; bề mặt `calendar.*` chỉ là RPC dành cho máy
+khách con người.
 :::
 
-## See also
+## Xem thêm
 
-- [Meetings and transcription](/vi-VN/so-tay/khai-niem/cuoc-hop/): what happens after you start a recording
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): why calendar accounts are per-workspace
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
-- [Record and summarize a meeting](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/)
+- [Cuộc họp và phiên âm](/vi-VN/so-tay/khai-niem/cuoc-hop/): điều gì xảy ra sau khi bạn bắt đầu ghi
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): vì sao tài khoản lịch thuộc từng không gian làm việc
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): `MeetingStartingSoon` và `CalendarAuthExpired`
+- [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
+- [Ghi và tóm tắt một cuộc họp](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/)

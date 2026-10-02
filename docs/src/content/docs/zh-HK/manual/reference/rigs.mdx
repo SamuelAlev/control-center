@@ -1,359 +1,333 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: 測試機
+description: 測試機的每一個介面、後端、動作動詞、生命週期狀態、連接埠、預設值與合約 —— 完整如實的目錄。
 slug: zh-HK/手冊/參考/測試機
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/zh-HK/手冊/概念/測試機/); to open a machine, follow [the
-guide](/zh-HK/手冊/操作指南/使用測試機/).
+只講事實。若要了解這些事實背後的概念模型，請參閱
+[測試機與隔離環境](/zh-HK/手冊/概念/測試機/)；若要開啟一部機器，請按照
+[這份指南](/zh-HK/手冊/操作指南/使用測試機/)。
 
-## Surfaces and backends
+## 介面與後端
 
-| Surface | Drives | Backend | Value | Contained egress |
+| 介面 | 驅動 | 後端 | 值 | 受控對外連線 |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| 終端（exec） | 在 VM exec 通道上運作的一個 shell | microVM | `smolvm` | 是 |
+| 瀏覽器 | 無介面 Chromium（CDP）、Firefox（WebDriver BiDi）或 WebKit（W3C WebDriver） | microVM | `smolvm` | 是 |
+| 電腦 | X11 桌面：輸入經由虛擬機器管理程式，擷取經由客體代理 | QEMU | `qemu-hvf`（macOS）、`qemu-kvm`（Linux）、`qemu-tcg`（未加速的後備選項，永不自動選用） | 是 |
+| Android | 經 ADB 驅動的 Android | Google 的模擬器 | `android-emulator` | **否** —— 模擬器自行管理其網絡 |
+| iOS | 經 WebDriverAgent 驅動的 iOS Simulator | CoreSimulator | `ios-simulator` | **否** —— 網絡跟隨主機 Mac |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+終端與 `computer_use` 介面共用 `computer` 這個介面值；終端以其 exec 映像標記
+區分，且永不會被當作可操控的桌面重用（反之亦然）。一則對話會重用同一部終端
+機器。
 
-## Browser engines
+## 瀏覽器引擎
 
-| Engine | Value | Protocol | Live view | Stills |
+| 引擎 | 值 | 協定 | 即時畫面 | 靜態畫面 |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium`（預設） | Chrome DevTools Protocol | 螢幕串流 —— 瀏覽器在頁面重繪時推送畫面 | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | 輪詢式靜態畫面（BiDi 沒有螢幕串流），上限 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver（經典） | 輪詢式靜態畫面，由主機的 ffmpeg 轉碼 | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+一部測試機終其一生只運行**一款**引擎。一則對話可以**每個引擎**各持有一部
+測試機 —— 這正是並排比較得以成立的原因：把「Firefox（VM）」開在
+「Chromium（VM）」旁邊就是兩部機器，關掉其中一部，另一部仍會繼續運行。
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+把 `engine` 傳給 `rig.open` 或 `browser_use` 工具。未知的名稱會被拒絕，而不是
+套用預設值 —— 要求一款瀏覽器卻默默得到另一款，等於用錯誤的答案回答一個相容性
+問題。
 
-Engine-specific limits, stated rather than worked around:
+各引擎特有的限制，會如實說明，而不是繞過去：
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** 沒有可繞過快取的重新載入（它直接拒絕 BiDi 的 `ignoreCache`），
+  因此強制重新載入就等同一般重新載入。
+- **WebKit** 同樣沒有可繞過快取的重新載入，也沒有主控台饋送（輸出是在每次
+  導覽之後透過掛鉤 `console.*` 擷取的，因此載入期間記錄的任何內容都會遺漏 ——
+  每一次主控台擷取都會如此說明），而且它的即時畫面需要主機上安裝 `ffmpeg`。
+- **兩者**都不會經由其協定公開平台無障礙樹，因此 `extract (a11y)` 傳回的是由
+  DOM 衍生的近似結果，並標示為近似。
+- **兩者**都無法接收真正的檔案拖放；不過檔案輸入仍然可以指向機器內部的路徑。
 
-## Machine images
+## 機器映像
 
-| Surface | Image | Fetched |
+| 介面 | 映像 | 取得方式 |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| 終端 | `ubuntu:24.04`，以摘要鎖定 | 首次開機時自動取得，經由機器本身受閘門管制的網絡 |
+| 瀏覽器（Chromium、Firefox、WebKit） | `debian:trixie-slim`，以摘要鎖定，另加引擎本身的套件 | 首次開機時自動取得，然後快取為預熱包 |
+| 電腦 | 一個 qcow2 桌面映像，內含 Chromium、Firefox、WebKit，以及終端所預熱的同一套 GitHub 託管執行器 CLI 基準 | 在**設定 → 伺服器 → 測試機**下**匯入**（在有發布的地方，下載會以校驗和鎖定） |
+| Android | Google 的系統映像 | 經由 Android SDK |
+| iOS | 一個 Xcode Simulator 執行環境，外加以摘要鎖定的 WebDriverAgent | 執行環境經由 Xcode；自動化橋接器則在**設定 → 伺服器 → 測試機**取得 |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+每一種 microVM 首次開機之後，伺服器會在資料目錄下快取一份預先解壓的複本，
+之後每一部機器都從它開機 —— 包括已裝好套件的預熱映像。終端會預熱一套
+GitHub 託管執行器風格的 CLI 工具組（`git`、`gcc`、`python3`、`jq`、`rsync`、
+封存工具，以及 apt 基準中其餘的部分；不含 Docker 或語言工具快取）。電腦的
+qcow2 在建立映像時就把同一批 CLI 一併烘焙進去，與 XFCE 及三款瀏覽器並列。
+每一款瀏覽器都會預熱自己的引擎。三款引擎共用同一個 Debian 基底，但永不共用
+同一個包：快取以映像、引擎**以及**一個音訊修訂版本（`audio-v1-<engine>`）
+作為索引鍵，因為為某一款引擎預熱的機器 —— 或在 PulseAudio 與 ffmpeg 尚未
+成為工作負載一部分之前預熱的機器 —— 裡面都沒有其他引擎的東西。基於同樣
+理由，終端的那個包以工具組修訂版本（`tools-v1`）作為索引鍵：在編譯器成為
+映像一部分之前所預熱的包，絕不能拿去供應一部本應配備編譯器的機器。
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+沒有任何現成的自動化映像值得採用 —— Chromium 的
+`chromedp/headless-shell` 在編譯時把 ALSA 與 PulseAudio 都排除掉，因此它
+永遠無法發出聲音；唯一仍有人維護的 Firefox 映像，大小是 Debian 基底的
+33 倍，卻仍然不附 `socat`；而有人維護的 WebKit 映像則完全不存在。因此每一款
+引擎都在首次啟動時安裝（`chromium`、`firefox-esr` 或 `webkit2gtk-driver`），
+並在過程中連上 Debian 封存站（`deb.debian.org`、`security.debian.org`、
+`cloudfront.debian.net`）。Chromium 用的是發行版提供的二進位檔，以
+`chromium --headless=new` 啟動。
 
-### Per-workspace custom images
+### 各工作區的自訂映像
 
-| Setting key | Overrides |
+| 設定鍵 | 覆寫的項目 |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | 終端（VM）映像 |
+| `rigs.smolvm.browserImage` | Chromium 瀏覽器（VM）映像 |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+經由受管理員閘門管制的工作區設定存放區寫入（**設定 → 伺服器 →
+測試機 → 自訂映像（此工作區）**）。值必須是一個註冊表參照 —— 本機
+路徑、封存檔與類似旗標的字串都會被拒絕，在欄位處拒絕一次，開機時再拒絕
+一次。已儲存的值若無效，會被響亮地忽略，改為啟動預設值。映像本身的註冊表
+（再加上 Docker Hub、GHCR、Quay、GitLab 與 GCR 已知的 blob CDN 夥伴）
+會為了拉取而獲對外連線閘門放行。
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**終端映像合約** —— 必須有 `bash`；`git`、`curl`、`socat` 已預先安裝，
+*或*是一個 Debian/Ubuntu apt 基底（隔離環境會在首次啟動時安裝這三項，再加
+一套 GitHub 託管執行器風格的 CLI 工具組：編譯器、Python 3、`jq`、封存工具、
+`rsync`。語言工具快取與 Docker 不會安裝）。
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**瀏覽器映像合約** —— 一個 Debian/Ubuntu apt 基底（或已安裝好的套件），
+具備 `bash` 與 `socat`，再加上一個 `chromium` 二進位檔，由伺服器自行以
+`chromium --headless=new` 啟動，並把 DevTools 放在客體回送位址 `9223`，
+再轉送到客體連接埠 `9222`。首次啟動時會為音訊通道安裝 PulseAudio 與
+ffmpeg。不要建置 `FROM chromedp/headless-shell`：上游的 `headless.gn`
+在編譯時把 ALSA 與 PulseAudio 都排除掉，因此那個二進位檔無法發出聲音。
+這項覆寫只適用於 **Chromium 測試機** —— 它啟動的工作負載指令屬於
+Chromium，交給 Firefox 或 WebKit 只會啟動一個根本不存在的二進位檔。
+Firefox 或 WebKit 測試機會響亮地忽略它，並啟動自己固定的映像。
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**自動化連接埠** —— 每一部瀏覽器機器都只把一個主機回送連接埠轉送到客體
+`9222`。在它背後：Chromium 的 DevTools 與 Firefox 的遠端代理位於客體回送
+位址 `9223`，前面有一道 `socat` 轉送（兩者都無條件繫結回送位址）；WebKit
+的驅動程式接受一個 `--host`，自行繫結客體的網絡介面。Firefox 另外會以其
+自身連接埠驗證 `Host` 標頭，因此用戶端送出的是客體端的 authority，而不是
+它撥接時所用的那一個。
 
-## Action verbs
+## 動作動詞
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+每個動作都以全函數方式解析：格式錯誤的載荷會傳回一則指出欄位名稱的訊息，
+永不拋出例外。觀察類動詞（標有 ○）在人類持有控制權時仍然允許；變更類動詞
+則會被拒絕。
 
 ### `computer_use`
 
-`screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
-`right_click`, `middle_click`, `double_click`, `triple_click`,
-`left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
-`clipboard_read`○, `clipboard_write`.
+`screenshot`○、`cursor_position`○、`mouse_move`、`left_click`、
+`right_click`、`middle_click`、`double_click`、`triple_click`、
+`left_mouse_down`、`left_mouse_up`、`left_click_drag`、`scroll`、`key`、
+`hold_key`（0–60 秒）、`type`、`wait`○（0–60 秒）、`set_display`、
+`clipboard_read`○、`clipboard_write`。
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+座標是客體目前模式下的客體像素；每一張螢幕截圖都會說明顯示尺寸。按鍵組合
+使用 X11 的寫法（`ctrl+s`、`alt+Tab`、`Return`）。
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` 接受一個 `selection`：`clipboard`（ctrl+C 所填滿的內容，
+預設值）、`primary`（X11 的選取即複製）或 `xdnd`（正在進行中的拖曳）。
+三者之中，空結果都是正常答案。`clipboard_write` 只接受 `text` —— 影像與
+檔案走檔案通道，因為動作的引數會寫進稽核日誌，而影像的位元組不該出現在
+那裡。剪貼板內容會以不受信任資料的形式、外加圍欄後傳回。
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
-`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
-`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`navigate`（僅限 http/https）、`reload`（`hard` 可選）、`stop_loading`、
+`click`（選擇器或座標）、`fill`、`type`、`key`（DOM 鍵名）、
+`scroll`、`mouse_move`、`drag`、`left_mouse_down`、`left_mouse_up`、
+`extract`○（`a11y` | `dom` | `console`）、`screenshot`○（`full_page`
+可選）、`set_viewport`（最小 320×240）、`history`、`wait_for`○（選擇器，
+0.1–30 秒）、`clipboard_read`○、`clipboard_write`。
 
-Extracted page content returns fenced as untrusted data.
+擷取到的頁面內容會以不受信任資料的形式、外加圍欄後傳回。
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+瀏覽器只有一個剪貼板，因此 `clipboard_read` 不接受 `selection`。兩個剪貼板
+動詞都需要**安全上下文**：以純 `http://` 提供的頁面完全沒有剪貼板 API，
+而這個動詞會如實說明，而不是回報一個空的剪貼板 —— 在那裡請改用 `type`，
+它會直接在游標位置插入，不經剪貼板。
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
-`recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`tap`、`swipe`（50–5000 毫秒）、`type`、`key`（別名 `back`、`home`、
+`recents`、`enter`、`delete`、`backspace`、`tab`、`escape`、`search`、
+`menu`、`volume_up`、`volume_down`、`power`，或任何 `KEYCODE_*`）、
+`screenshot`○、`ui_dump`○、`install_apk`
+（僅限測試機的工作樹與伺服器資料目錄）、`start_app`、
+`stop_app`、`clear_app_data`、`uninstall_app`、`open_url`，以及 `shell`。
+`shell` 接受一個 argv 清單，在 Android 內部執行，永不經由主機 shell；
+它涵蓋 `logcat`、`dumpsys` 與 `pm grant` 之類的開發者診斷工具。
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` 沒有剪貼板動詞。自 Android 10 起，只有取得焦點的應用程式可以
+讀取剪貼板。
 
 ### `ios_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`tap`、`swipe`（50–5000 毫秒）、`type`、`key`（`enter`、`backspace`、`tab`、
+`escape`、方向鍵或一個可列印字元；可選的 `command`、
+`control`、`option` 與 `shift` 修飾鍵）、`home`、`lock`、`unlock`、
+`screenshot`○、`ui_dump`○、`install_app`（一個模擬器 `.app` 目錄，
+僅限測試機的工作樹或伺服器資料目錄）、`start_app`、`stop_app`、
+`uninstall_app`、`open_url`，以及 `spawn`。`spawn` 接受 argv，經由 `simctl`
+在模擬器內部執行；它永不叫用主機 shell。
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+座標是 iOS 螢幕的**點**，不是螢幕截圖的像素。即時串流維持模擬器固定的
+尺寸，以黑邊填補，而不是調整裝置大小。主機到模擬器、以及模擬器到主機的
+文字剪貼板傳輸，採用與其他測試機相同的按使用者、按方向許可政策；iOS 的
+剪貼板通道不接受檔案與影像。
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+每部測試機都會建立一個自己擁有的 CoreSimulator 裝置與 WebDriverAgent
+工作階段。關閉它會停止 WebDriverAgent、關機並刪除該裝置，以及移除它的
+註冊表項目。iOS 測試機只在配備 Xcode、已安裝 iOS 執行環境及固定版本自動化
+橋接器的 macOS 伺服器上運行。它們不提供音訊、麥克風、檔案拖放、主機
+shell，也不保證封閉網絡。
 
-### Management tools
+### 管理工具
 
-| Tool | Description |
+| 工具 | 說明 |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | 列出工作區的測試機，連同介面、狀態、顯示與控制者 |
+| `rig_close` | 銷毀一部測試機並丟棄其磁碟 |
 
-## Lifecycle
+## 生命週期
 
-| Phase | Meaning |
+| 階段 | 含義 |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | 正在開機；狀態詳情會原樣帶出目前的步驟 |
+| `ready` | 可觸及並接受動作 |
+| `parked` | 閒置停駐：vCPU 已停止，RAM 仍常駐；下一個動作會喚醒它 |
+| `closing` | 正在關機 |
+| `closed` | 已消失；該列會為稽核軌跡保留下來 |
+| `failed` | 已死亡或從未啟動；可資區分，以便介面提供重試 |
 
-| Close reason | Fired when |
+| 關閉原因 | 觸發時機 |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | 有人或代理要求 |
+| `idleTimeout` | 閒置超過閒置時限的 2 倍，或因記憶體而遭淘汰 |
+| `ttlExpired` | 硬性壽命耗盡 |
+| `conversationEnded` | 擁有它的對話已結束 |
+| `workspaceGone` | 工作區被刪除，或成員資格已失去 |
+| `serverShutdown` | 伺服器正在停止 |
+| `backendFailure` | 底下的虛擬機器管理程式死亡 |
 
-## Defaults and ceilings
+## 預設值與上限
 
-| Value | Terminal | Browser | Computer | Mobile |
+| 值 | 終端 | 瀏覽器 | 電腦 | 流動裝置 |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| 記憶體 | 512 MB | 2048 MB（Chromium）；2560 MB（Firefox、WebKit） | 4096 MB | 4096 MB |
+| vCPU | 2 | 2 | 4 | 4 |
+| 硬性 TTL | 8 小時 | 2 小時 | 2 小時 | 2 小時 |
+| 閒置時限 | 45 分鐘 | 15 分鐘 | 15 分鐘 | 15 分鐘 |
+| 開機顯示 | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- 代理通道的靜態畫面上限為 **1280×800**；人類通道最多可協商至
+  **2560×1600**。
+- 主機為所有測試機設定的常駐記憶體預算預設為 **12 GB**，以常駐 MB 計算
+  （已停駐的 VM 仍佔住它的 RAM）。淘汰採最久未使用優先，且永不帶走有人
+  正在操控、觀看，或開着終端的機器。
+- 開啟中的終端或觀看通道會令測試機免於停駐與閒置回收；硬性 TTL 依然適用。
 
-## Ports and dev domains
+## 連接埠與開發網域
 
-| Port | Where | Reserved for |
+| 連接埠 | 位置 | 保留用途 |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | 終端客體 | 每個轉送都經由它乘載的連接埠多工器 |
+| `9222`, `9223` | 瀏覽器客體 | 自動化轉送與端點（WebKit 直接繫結 `9222`，不使用轉送） |
+| `80`, `443` | 瀏覽器客體回送 | 開發網域的 HTTP/HTTPS 通道 |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- 探索會在伺服器端每約 4 秒輪詢終端客體正在監聽的 TCP 連接埠。
+- 每部測試機最多自動轉送 **16** 個連接埠；更多連接埠只會列在日誌中，不會
+  轉送。
+- 主機端的轉送繫結回送位址，並優先使用客體本身的連接埠號；
+  **在區域網絡分享**會加上一個由作業系統指派的區域網絡連接埠。
+- 開發網域必須符合 `name.test` 或 `name.localhost`（小寫，標籤最長
+  63 個字元）。一個網域對應一個連接埠。
+- 開發網域的 HTTPS 使用一個伺服器本機的憑證頒發機構（EC P-256，位於
+  `<dataDir>/rigs/tls/` 之下，金鑰權限為 0600，且永不進入任何客體），並為
+  `*.test` / `*.localhost` 簽發一張萬用字元葉憑證。主機上沒有 `openssl`
+  就沒有 HTTPS 通道；純 HTTP 仍然可以路由。
 
-## Egress defaults
+## 對外連線預設值
 
-| Surface | Default allowlist |
+| 介面 | 預設允許清單 |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| 終端 | 沙箱開發者基準（程式碼託管平台、套件註冊表、模型供應商）+ Ubuntu apt 鏡像站 + 工作樹自身的程式碼託管主機 |
+| 瀏覽器 | `usectrl.dev`（產品網站）—— 再加上每一款引擎首次開機、安裝其套件期間的 Debian 封存站。首頁是本機的 `file://` 文件，無需對外連線 |
+| 電腦 | 空的 —— 一律拒絕 —— 直到有呼叫者授予主機 |
+| 流動裝置 | 不強制執行（網絡由模擬器管理） |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+每一個 microVM 另外還會取得其映像的註冊表主機，且僅限於拉取之用。憑證代理
+的允許主機集合源自同一份允許清單：客體觸及不到的主機，不會獲簽發任何權杖。
 
-## Clipboard and file transfer
+## 剪貼板與檔案傳輸
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+複製／貼上的兩個方向，以及把檔案拖入與拖出。這些功能開放給操控測試機的人；
+代理則透過上述動詞取得剪貼板，並完全沒有檔案傳輸（它在隔離環境內本來就有
+一個 shell）。
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+剪貼板跨越邊界是按使用者、按方向各自把關的。主機貼到測試機預設允許；測試機
+複製到主機會先彈出詢問（可授予十分鐘權限，或在**設定 → 伺服器 → 測試機 →
+剪貼板存取**下選擇永遠允許）。這兩個選擇互相獨立，而且永遠不是工作區設定。
 
-| Lane | Route | Carries |
+| 通道 | 路由 | 承載的內容 |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| 剪貼板 | `GET`/`POST /rig/clipboard/<rigId>` | 文字、一張 PNG/JPEG（≤16 MB），以及剪貼板上那些檔案的客體路徑 |
+| 檔案 | `POST /rig/files/<rigId>` | 最多 64 個檔案，每個 ≤256 MB，每次投放 ≤512 MB，可附帶一個客體像素的投放點 |
+| 檔案 | `GET /rig/files/<rigId>?p=<base64url path>` | 一個檔案的位元組，向外讀出 |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **是 HTTP，不是 RPC。** RPC socket 會在任何超過 256 KB 的入站訊框上
+  關閉連線 —— 這道 DoS 防護對 JSON 指令來說是對的，但對貼上的一張螢幕
+  截圖來說卻是致命的。位元組走的是測試機畫面與會議音訊早已使用的那一類
+  路由。
+- **認證**用的是已簽署的目標 `rig-files:<workspaceId>/<rigId>`，再加上
+  工作區成員資格 —— 它是獨立的目標，因此一個為了*觀看*某部機器而簽發的
+  URL，不能同時把檔案寫進該機器。
+- **接管同樣適用。** 寫入剪貼板與投放檔案屬於變更類操作，在別人持有控制權
+  時會被拒絕；讀取剪貼板與把檔案讀出則屬觀察類，不受此限。
+- **投放落在何處：** `~/Drops`（桌面）、`~/drops`（終端 —— 在工作樹旁邊，
+  永不放在裡面，因此投放永遠不會以未追蹤變更的形式出現）、`/tmp/cc-drops`
+  （瀏覽器）。目錄由伺服器挑選；呼叫者無法指定。現有檔案永不被覆寫 ——
+  名稱相撞時會以 `2-name.ext` 落地。
+- **客體會被告知甚麼：** 瀏覽器頁面會在請求的位置收到一個真實的拖放事件
+  （`Input.dispatchDragEvent`）；桌面則會在它的剪貼板上取得這些檔案及其
+  URI，因為沒有主機能在客體內沒有特權守護程序的情況下，向任意工具組合成
+  一次 XDND 拖曳。回覆會說明實際發生的是兩者中的哪一種。
+- **拖出**僅限桌面，並在拖曳進行期間讀取客體的 `XdndSelection`。若載荷與
+  按下那一刻客體手上已有的內容完全相同，就會被視為一次已完成拖曳所遺下的
+  過期選取，而不是新的選取 —— X 並沒有「拖曳已結束」這一步。
+- **映像要求：** 桌面映像必須是協定第 2 版或之後的版本（在剪貼板支援落地
+  之後建置）。較舊的映像會回應 404，而應用程式會叫你重新建置它，而不是
+  回報機器故障。
+- **稽核日誌只記錄形狀，永不記錄內容**：`clipboard_read`、
+  `clipboard_write`、`drop_files` 與 `read_file` 的列只帶有數量、大小與
+  路徑。剪貼板正是憑證每次短暫停留數秒的地方，而其中的任何內容都不會被
+  記下。
 
-## Guardrails, events, storage
+## 護欄、事件與儲存
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/zh-HK/手冊/參考/領域事件/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- 測試機工具會宣告 **`enclosureControl`** 動作類別（使用類工具另外宣告
+  `networkEgress` 與 `processSpawn`；`mobile_use` 與 `ios_use` 還會宣告
+  `packageInstall`）。`rig_close` 宣告 `enclosureControl`；`rig_list`
+  不宣告任何類別。預設允許；唯讀模式一概拒絕；每個空間的自主程度旋鈕可以
+  把它降為先詢問。
+- 領域事件：`RigClosedEvent`（帶其關閉原因）、`RigControlChanged`
+  （接管／交還）、`RigReaped`（閒置、TTL 或記憶體淘汰，並帶上正在操控的
+  代理）。開啟測試機不是事件。參見
+  [領域事件](/zh-HK/手冊/參考/領域事件/)。
+- 儲存：每個工作區資料庫中的 `rig_sessions` 與 `rig_action_log`。動作日誌
+  會記錄每一個輸入事件，連同其主體與一個按測試機單調遞增的序號；輸入的
+  文字在寫入之前會被縮減為長度與雜湊值。
+- 資料目錄：`rigs/images/`（匯入的 qcow2 映像）、`rigs/smolvm/`（按測試機的
+  執行期狀態）、`rigs/smolvm-packs/`（預先解壓的機器包）、`rigs/tls/`
+  （開發網域的憑證頒發機構）、`rigs/run/`（QEMU 覆寫層與種子）。
+- 路由：即時畫面是空間或 PR 頁面裡的其中一個分頁；
+  `/settings/server/rigs` 就是測試機設定畫面。

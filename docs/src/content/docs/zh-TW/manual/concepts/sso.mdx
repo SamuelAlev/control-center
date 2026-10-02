@@ -1,19 +1,19 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: 單一登入
+description: SAML 與 OIDC 登入如何運作、它們會驗證什麼，以及帳戶如何保持安全。
 slug: zh-TW/手冊/概念/單一登入
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+單一登入讓外部身分識別供應商（IdP）決定誰可以登入你的 Control Center
+伺服器。系統支援兩種協定——SAML 2.0 與 OpenID Connect——而兩者最終都
+匯入同一個地方：一份全新簽發的裝置憑證，它在所有下游環節都與邀請或 QR
+配對無從區分。
 
-## The shape of a login
+## 登入的形態
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+SAML 登入**以瀏覽器為中介**。IdP 從不與你的伺服器建立連線；一切都由
+使用者的瀏覽器傳遞：
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +26,72 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+因為瀏覽器就是傳遞者，**位於 NAT 之後的伺服器照樣能正常登入**：
+localhost、LAN、Tailscale、VPN 或通道都可以——只有使用者的瀏覽器必須能
+連上 ACS URL。手機遠端控制所用的 WebSocket 轉送無法承載這段 HTTP 往返，
+這正是 SSO 進入點一律指向伺服器 HTTP 來源的原因。
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect 遵循同樣的形態，改以授權碼 + PKCE 往返；宣告透過 TLS 從
+簽發者的權杖端點讀取，因此瀏覽器完全不提供身分資料。
 
-## The adapters
+## 配接器
 
-Control Center splits the responsibility deliberately:
+Control Center 刻意拆分職責：
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| 組件 | 位置 | 負責 |
+| --- | --- | --- |
+| `cc_saml` 原生模組 | `packages/cc_natives/native/saml/` | XML-DSig 驗證、正規化、SAML 設定檔驗證——委由固定版本的純 Rust `saml` crate 處理，位於無狀態 C ABI 之後 |
+| `SamlService` / `OidcService` | `cc_server_core` | 登入狀態（待處理請求追蹤器、重播去重）、驗證原則開關、共用的佈建呼叫 |
+| `SsoProvisioner` | `cc_server_core` | 尋找或建立使用者、釘選供應商主體、依自動成員原則授予成員身分 |
+| `ScimService` | `cc_server_core` | SCIM 2.0 推送介面（佈建／取消佈建生命週期） |
+| `SsoSettingsService` | `cc_server_core` | 已儲存的連線資料列、即時重新套用、SCIM 權杖 |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+系統刻意**不提供純 Dart 的 SAML 加密後備方案**：手寫的 XML-DSig／正規化
+正是簽章包裹漏洞的溫床，因此缺少 `cc_saml` 程式庫會同時拒絕 SAML 登入與
+伺服器啟動。原生模組在設計上是無狀態的——跨請求的狀態位於 Dart 服務中，
+僅供單次使用且壽命短暫。
 
-## What a login verifies
+## 一次登入會驗證什麼
 
-Inside the verified native and the service, in order:
+在驗證過的原生模組與服務內部，依序進行：
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. 判斷提示的**簽章**（一律必要；回應封套的簽章則依設定為選用）——因為
+   受驗證的酬載與被驗證的元素相互綁定，它在結構上能抵禦簽章包裹，
+2. **簽發者**符合設定的 IdP，
+3. **對象**指向此服務提供者，
+4. **目的地**是我們的 ACS URL，
+5. `InResponseTo` 符合我們發出的某個待處理 AuthnRequest（未經請求、由
+   IdP 起始的回應預設為關閉），
+6. **有效期間**窗期落在時鐘偏差範圍內（預設 90s），以及
+7. **判斷提示 id** 從未出現過（重播快取）。
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+失敗會以具型別的錯誤碼回傳——signature、expired、audience、destination、
+issuer、request-match——而端點只回應籠統的錯誤，因此攻擊者無從得知偽造
+為何失敗。
 
-## Accounts and subject pinning
+## 帳戶與主體釘選
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+首次 SSO 登入會把供應商不可變的主體（`issuer` 加上 SAML NameID／OIDC
+`sub`，或 SCIM externalId）釘選到該帳戶上。此後，識別登入的是主體——而
+不是電子郵件。若之後有人從同一個或另一個 IdP 提出相同的電子郵件，已釘
+選的帳戶會拒絕他們。這正是防止供應商端被回收的電子郵件演變成帳戶接管的
+關鍵。
 
-## Provisioning and deprovisioning
+## 佈建與取消佈建
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT 佈建會在登入時進行（`SsoProvisioner`）。SCIM 是獨立的推送介面
+（`ScimService`），會把同一個主體釘選到使用者資料列上；它不授予工作區
+成員身分。取消佈建——SCIM `active: false` 或 `DELETE`——若該帳戶是工作區
+擁有者便會拒絕（請先轉移）。否則它會先撤銷所有裝置憑證（透過裝置監看，
+工作階段會在數秒內中斷），移除所有工作區成員身分，並將帳戶標記為已停用。
+使用者資料列仍然保留：歸屬是永久的。重新啟用會恢復登入，但絕不會重新
+授予成員身分。
 
-## What stays out
+## 什麼被排除在外
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **群組→角色對應在登入時進行**，來源是 SAML 屬性／OIDC 宣告——推送的
+  SCIM 群組不會被儲存。
+- **擁有者角色無法透過 SSO 取得**——既不能當作預設角色，也不能透過群組
+  對應取得。
+- WebSocket 轉送絕不是 SSO 通道；只能透過該轉送連上伺服器的手機，無法
+  對它完成瀏覽器往返。

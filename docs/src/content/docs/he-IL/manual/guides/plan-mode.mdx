@@ -1,135 +1,128 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: שימוש במצב תוכנית
+description: העבירו מרחב למצב תכנון, קבלו תוכנית טיפוסית ואשרו אותה כדי להפוך אותה לעבודה שרצה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+מדריך זה מראה כיצד להפיק מסוכן תוכנית מובנית לפני שהוא כותב שורת קוד.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+במצב תכנון הסוכן חוקר בקריאה בלבד, והתוצר היחיד שלו הוא **תוכנית טיפוסית**:
+גרף תלויות של שלבים שאתם מאשרים, שאותו מקמפל Control Center לעבודה ממשית.
+השתמשו בו כשרוצים לראות את היקף השינוי, לקבל את השלבים כשהם מפורקים לפרטים,
+או שהסיכונים והתלויות ייקראו בשמם לפני שנוגעים במשהו.
 
-## Switch a space into plan mode
+## העברת מרחב למצב תכנון
 
-Any of these flips the space's mode and the change is persisted:
+כל אחת מהפעולות האלה מחליפה את המצב של המרחב, והשינוי נשמר:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- בחרו **תכנון** מהתפריט הנפתח של המצב בקצה השמאלי ביותר של סרגל הכלים של תיבת
+  הכתיבה
+- הקישו **Shift+Tab**
+- שלחו `/plan`. ‏`/plan` לבדו רק מחמש את המצב; `/plan <request>` מחמש אותו
+  ושולח את שאר הטקסט כהודעה שלכם
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+‏`/plan` לעולם אינו עובר כטקסט — הוא מגדיר את המצב השמור, שהוא הסמכות שמשטח
+הכלים, פריסט מעקות הבטיחות וההנחיה כולם קוראים ממנה. לכן המצב תקף לתור הזה ולכל
+תור שאחריו, עד שתחזירו אותו.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+המצב נשמר על המרחב, כך שאותו סוכן יכול להיות במצב תכנון כאן ובמצב סוכן במקום אחר.
 
-## What the agent produces
+## מה הסוכן מפיק
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. הוא חוקר בקריאה בלבד — הזיכרון, אינדקס הקוד, קבצים
+2. הוא קורא ל-`submit_plan` **פעם אחת**, עם `goal` ו-`nodes`, כשכל צומת נושא
+   `key` יציב, `title`, `description` ומפתחות הצמתים שהוא `dependsOn` (וזה מה
+   שמאפשר לעבודה בלתי־תלויה לרוץ במקביל)
+3. הוא עוצר
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+הכלי מאמת את הגרף — מפתחות כפולים, תלויות יתומות, מחזורים — ומחזיר את ההפרות
+כדי שהסוכן יתקן אותן, במקום לקבל תוכנית שבורה.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+התוכנית מופיעה **בשיחה** כשורה קומפקטית שמציגה את המטרה, את הסטטוס שלה ואת
+מספר השלבים. **Plan Studio** — גרף התלויות, חלונית הפרטים לכל צומת והערכת העלות
+— נפתח כלשונית לצד השיחה: לחצו על **פתיחה** בשורה, או פשוט המתינו, כי תוכנית
+שנוחתת בתוך 30 שניות בזמן שאתם צופים בשיחה פותחת את הלשונית שלה בעצמה.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[ההבטחה לקריאה בלבד היא מבנית, אך רק במנגנון ההרצה המובנה]
+מנגנון ההרצה של Control Center עצמו בונה את מרשם הכלים של הסוכן מתוך מפרט המשטח
+של מצב תכנון, כך שפשוט אין כלי כתיבה, עריכה או פקודה לקרוא לו — ההגבלה אינה
+הנחיה שהמודל יכול לשכנע את עצמו להתעלם ממנה.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+המתאם של Claude Code לא מקבל סינון כזה: המצב מגיע אליו כבקשה שהמריץ של עצמו עשוי
+לכבד או שלא לכבד, ו-Control Center רואה רק את קריאות ה-`mcp__*` שלו. תג האכיפה
+שלצד התפריט הנפתח של המצב מופיע בדיוק כשזה המצב.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[הסוכן יכול לשאול אתכם שאלות הבהרה]
+כשהבקשה עמומה, סוכן במצב תכנון יכול לעצור ולשאול אתכם עד שלוש שאלות חוסמות עם
+הכלי `ask_user`. הוא מרנדר טופס בשיחה — אפשרויות, או טקסט חופשי — וההרצה נחסמת
+עד שתשיבו. הכלי הוא מדרגת הקריאה, ולכן הוא שורד את המשטח לקריאה בלבד של מצב
+תכנון, והוא פטור ממעטפת האישור (הנחיה לפני הנחיה תיכשל באופן סגור כשאין מאשר
+מחובר, ותמנע מהסוכן את עצם השאלה).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+הוא צריך מרחב שאליו ירנדר, ולכן שליחה חד־פעמית בלי שיחה לא מקבלת אותו. הצגת
+ההיקף, המאגר היעד וקריטריוני הקבלה כבר בהודעה הראשונה שלכם מהירה בכל זאת מסבב
+הלוך ושוב.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+פרוזה אינה תוצר כאן. הרצה שמסתיימת בלי לקרוא ל-`submit_plan` מפרסמת בשיחה שורה
+גלויה "Ended without submitting a plan (no `submit_plan` call)." ומסמנת את ההרצה
+ככזו שהחמיצה את התוצר שלה. הסטטוס של ההרצה נשאר במכוון _completed_ — זה משאיר את
+מכונות המצב של פייפליין ושל כרטיס ללא שינוי — לכן קראו את השורה, ולא את תג
+הסטטוס.
 
-## Approve the plan
+## אישור התוכנית
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+מהשורה של התוכנית בשיחה, לחצו על **אישור והרצה**. מסרגל האישור של Plan Studio,
+לחצו על **אישור התוכנית** (או **דחייה** שלצידו; האישור מושבת כשבגרף יש שגיאת
+אימות).
 
-Then:
+לאחר מכן:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center מקמפל את התוכנית לתזמור ומממש אותה — הכרטיסים וההרצה. שום מודל
+   אינו מעורב בשלב הזה; הוא דטרמיניסטי
+2. התוכנית רצה כסוכן שכתב אותה. אם לצרף מישהו נוסף הוא החלטה של אותו סוכן בזמן
+   ההרצה — הוא יכול `delegate_task` שלב לעמית מתאים יותר, בתוך תקרת העומק של
+   ההאצלה של סביבת העבודה
+3. המטרה של התוכנית הופכת ל**מטרת השיחה**, והעבודה רצה **באותה שיחה**: כל שלב
+   מפרסם מה התבקש מהסוכן ומזרים את התור שלו בחזרה, כך שאתם עוקבים אחריו (ויכולים
+   לעצור תור) במקום שבו אתם כבר נמצאים
+4. שורת המטרה בלוח הצד **כללי** של השיחה (מתחת ל**מטלות**) נושאת את התקדמות
+   ההרצה כ-`settled/total` ואת כפתור העצירה שלה; Plan Studio מציג מצב לכל צומת
+   על הגרף ומאפשר לבטל גם שם
 
-## Keep working without approving
+## המשך העבודה בלי לאשר
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+אם תעדיפו להישאר בשיחה הזו במקום לאשר את התוכנית, הסוכן יכול לקרוא ל-`exit_plan_mode`.
+זו היציאה המאושרת היחידה: היא פותחת בקשת אישור עמידה הקשורה לשיחה ומחזירה
+`pending` — המרחב נשאר במצב תכנון ואסור לסוכן לפעול. לאחר שהבקשה תאושר, הקריאה
+הבאה של הסוכן ל-`exit_plan_mode` מעבירה את המרחב ממצב תכנון למצב סוכן ומשחררת את
+כלי השינוי שלו. דחייה מאפשרת לו לפתוח בקשה חדשה כנגד תוכנית מתוקנת.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+כדי לצאת ממצב תכנון, החליפו את התפריט הנפתח של תיבת הכתיבה (או Shift+Tab), או
+אשרו את התוכנית שהוגשה. `exit_plan_mode` פותח אישור עמיד המוכרע בכלי ה-MCP
+‏`decide_approval`. שכבת-העל של מעקות הבטיחות לקריאות כלים חסומות היא תור אחר,
+בזיכרון, ואינה נושאת בקשות יציאה ממצב תכנון.
 
-## Plan mode in a pipeline step
+## מצב תכנון בשלב פייפליין
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+צומת פייפליין מסוג `messaging.createSpace` קורא את מצב השיחה מה**extra** ‏`mode`
+של תצורת הצומת — `extras['mode']: 'plan'`. המפתח הוא התאמה מדויקת: כל איות אחר,
+כולל `conversationMode` או `dispatchMode`, מתעלמים ממנו בשקט, והחדר נופל חזרה
+לברירת המחדל של הגוף, שהיא מצב **סקירה**, ולא צ'אט. שלב `promptAgent` מצטרף לחדר
+שהוא לא יצר ואינו משנה את ההרשאות שלו. הבורר **מצב שיגור** (`allParallel` /
+`manager`) בעורך תצורת הצומת מיועד לצומתי שיגור צוות. הגדירו את מצב השיחה עם
+`extras['mode']` בתבנית שפותחת את המרחב, או בתצורה של אותו צומת דרך ה-API.
 
-## Related guides
+## מדריכים קשורים
 
-- [Chat with an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
-- [Use spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/)
-- [Work in Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/)
-- [Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
+- [צ'אט עם סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
+- [שימוש במרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/)
+- [עבודה ב־Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/)
+- [הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/)

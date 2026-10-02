@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: اربط Slack بمساحة عملك
+description: أنشئ تطبيق Slack، وصّله، اربط حسابك، واجعل وكيلًا يجيبك في خيط Slack.
 slug: ar-SA/دليل-المستخدم/دروس/أول-جسر-دردشة
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## ما الذي ستبنيه
 
-By the end of this tutorial, you will have:
+في نهاية هذا الدرس يكون لديك:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- تطبيق Slack أُنشئ لمساحة عملك، بالأذونات والأحداث الصحيحة أصلًا
+- اتصال مباشر بين Slack وControl Center
+- حساب Slack الخاص بك مربوط بمستخدمك في Control Center
+- وكيل يجيبك في خيط Slack، وتذكرة تُفتح بأمر شرطة مائلة
 
-Prerequisites:
+المتطلبات:
 
-- [Your first workspace](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/) and [Dispatch your first agent](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- إتمام [مساحة عملك الأولى](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/) و[أرسل وكيلك الأول](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) — مساحة عمل بلا وكلاء تستطيع استقبال رسالة Slack، لكن لا أحد يجيبها
+- لدى **وكيل CEO** في مساحة العمل محوّل ونموذج مضبوطان في **الإعدادات ← مساحة العمل ← الوكلاء**. يوقظ الجسر وكيل CEO، لا الوكيل الذي هيّأته في الدرس السابق، والوكيل بلا محوّل يعمل على الحلقة المضمّنة بالنموذج الافتراضي لدى Anthropic.
+- دور `owner` أو `admin` في مساحة عمل Control Center (توصيل تطبيق دردشة يتحدث باسم مساحة العمل كلها)
+- إذن بإنشاء التطبيقات وتثبيتها في مساحة عمل Slack
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+لا شيء هنا يحتاج إلى عنوان عام، أو نفق، أو منفذ وارد. يتصل Control Center _نحو الخارج_ إلى Slack عبر Socket Mode، فيعمل هذا من حاسوب محمول خلف NAT.
 
-## Step 1: Get a Slack app configuration token
+## الخطوة 1: الحصول على رمز وصول تكوين التطبيق
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+هذا السر الوحيد الذي تجلبه بنفسك. يتيح لـ Control Center إنشاء التطبيق وتحريره لاحقًا نيابةً عنك.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. افتح [api.slack.com/apps](https://api.slack.com/apps)
+2. مرّر إلى قسم رموز تكوين التطبيق في أسفل الصفحة
+3. ولّد زوج رموز لمساحة عمل Slack الخاصة بك
+4. انسخ رمز **التحديث** — يبدأ بـ `xoxe-`
 
-## Step 2: Let Control Center create the app
+## الخطوة 2: إنشاء التطبيق من Control Center
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. في Control Center، انتقل إلى **الإعدادات ← مساحة العمل ← عام** وابحث عن بطاقة **جسور الدردشة**
+2. في كتلة **Slack**، انقر **أنشئ التطبيق نيابةً عني**
+3. الصق رمز وصول تكوين التطبيق
+4. راجع الشكل الذي سيظهر به البوت:
+   - **اسم التطبيق**: كيف يسرد Slack التطبيق، مثل `Control Center · Acme`
+   - **اسم البوت**: ما يكتبه الأعضاء بعد `@`، مثل `control-center`
+   - **وصف قصير** و**ما يقول البوت إنه يستطيع فعله**
+   - **أمر الشرطة المائلة**: `cc` افتراضيًا، فيكون الأمر `/cc`
+   - **الرسائل المباشرة**: اتركها مفعّلة حتى يستطيع الأعضاء مراسلة البوت برسالة مباشرة
+5. انقر **إنشاء التطبيق**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+يؤلف Control Center تعريف التطبيق كاملًا — تفعيل Socket Mode، ونطاقات البوت واشتراكات الأحداث التي يحتاجها، وأمر الشرطة المائلة، وتبويب Messages — وينشئه في Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## الخطوة 3: إتمام الخطوتين اللتين لا يستطيعهما إلا Slack
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+لا واجهة لدى Slack لتوليد رمز على مستوى التطبيق أو لتثبيت تطبيق، فيسلّمك الحوار الخطوتين كلتيهما كرابطين:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **أنشئ رمز وصول على مستوى التطبيق** — يفتح **Basic Information → App-Level Tokens**. أنشئ رمزًا بنطاق `connections:write` وانسخه. يبدأ بـ `xapp-`
+2. **ثبّت التطبيق** — يفتح **Install App**. ثبّته في مساحة العمل، ثم انسخ **Bot User OAuth Token**. يبدأ بـ `xoxb-`
 
-Keep both values around for the next step.
+أبقِ القيمتين للخطوة التالية.
 
-## Step 4: Connect
+## الخطوة 4: الاتصال
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. عُد إلى الحوار، وانقر **لصق بيانات الاعتماد**
+2. أدخل **رمز وصول البوت** (`xoxb-…`) و**رمز وصول على مستوى التطبيق** (`xapp-…`)
+3. اترك **رمز وصول تكوين التطبيق** فارغًا — رمز الخطوة 1 مخزَّن أصلًا (دوّره Slack وحفظ Control Center القيمة الجديدة)
+4. انقر **اتصال**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+يتحقق Control Center من رمز البوت لدى Slack قبل أن يخزّن شيئًا، ثم يفتح المقبس. يعرض الصف الآن اسم البوت واسم مساحة عمل Slack مع وسم **مباشر**.
 
-## Step 5: Link your own Slack account
+## الخطوة 5: ربط حساب Slack الخاص بك
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+الاتصال يجعل البوت في المتناول، والربط يجعلك _أنت_ معروفًا. إلى أن تُربَط هوية Slack الخاصة بك، لن يتصرف البوت بناءً على رسائلك — ولا ينسب رسالة أبدًا إلى من ثبّت التطبيق.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+الربط شخصي، لذلك يعيش في صفحة غير الاتصال الذي يشمل مساحة العمل كلها.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. انتقل إلى **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية** وابحث عن بطاقة **حسابات الدردشة المرتبطة**
+2. انقر **ربط حسابي في Slack**
+3. انسخ الأمر الذي يعرضه، مثل `/cc link K7M2QP`
+4. في Slack، أرسل هذا الأمر إلى البوت في رسالة مباشرة
+5. يجيب البوت «Linked — you are …»
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+الرمز يُستخدم مرة واحدة، وتنتهي صلاحيته بعد 15 دقيقة. إن طابق بريدك في Slack مستخدم Control Center هو عضو أصلًا في مساحة العمل هذه، يربطك الجسر تلقائيًا في أول مرة تخاطبه، ويمكنك تخطي هذه الخطوة.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+إن أشرت إلى البوت قبل إتمام ذلك، يرفض ويبيّن السبب. حالات الرفض الثلاث مختلفة، فاقرأ أيها وصلتك:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **حساب دردشة غير مربوط**: يخبرك البوت كيف تربط نفسك. عُد إلى هذه الخطوة.
+- **حساب مربوط، وصاحبه ليس عضوًا في مساحة العمل هذه**: اطلب من مسؤول أن يدعوك.
+- **عضو بدور للقراءة فقط** (`viewer` أو `guest`): لن يبدأ البوت العمل نيابةً عنك.
 
-## Step 6: Put an agent on something
+## الخطوة 6: توجيه وكيل إلى عمل
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. في Slack، ادعُ البوت إلى قناة: `/invite @control-center`
+2. أشر إليه بطلب حقيقي:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center لخّص طلبات السحب المفتوحة في مستودع api
 
-The bridge:
+الجسر:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. ينشئ مساحة في Control Center لخيط Slack ذاك، باسم قناة Slack وطلبك
+2. يوقظ وكيل الاستقبال في مساحة العمل (وكيل CEO إن وُجد، وإلا الوكيل الأول)
+3. يبث جواب الوكيل إلى خيط Slack أثناء كتابته
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+أجب في خيط Slack نفسه للمتابعة — لا حاجة إلى إشارات إضافية، لأن خيط Slack مربوط بالجسر الآن. أو راسل البوت برسالة مباشرة بدل القناة. كل محادثة مباشرة تقود مساحة Control Center خاصة بها، بعنوان وسطر حالة «جارٍ التفكير…» بينما يعمل الوكيل.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+البث يحتاج واجهة البث لدى Slack، وليست متاحة في كل خطة. إن رُفض تطبيقك، يتوقف الجسر عن المحاولة طوال عمر الاتصال وينشر كل رد كرسالة واحدة، وتقرأ بطاقة جسور الدردشة «البث المباشر متوقف لتطبيق Slack هذا — تصل الردود كرسالة واحدة.» وكل ما عدا ذلك يعمل كما هو.
 
-## Step 7: File a ticket without leaving Slack
+## الخطوة 7: فتح تذكرة من غير مغادرة Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+يجيب البوت بمفتاح التذكرة التي فتحها. التذكرة تذكرة محلية عادية في Control Center، وأنت من بلّغ عنها، وهي جاهزة للتعيين إلى وكيل. يسرد `/cc help` كل ما يستطيع الأمر فعله.
 
-## Recap
+## الخلاصة
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+أنشأت تطبيق Slack من Control Center، ووصلته عبر مقبس صادر، وربطت هوية Slack بمستخدمك في Control Center، ووجّهت وكيلًا من خيط Slack. كل ما حدث في Slack موجود أيضًا في Control Center: خيط Slack مساحة، والرد نسخة نصية، والتذكرة تذكرة.
 
-**Next:** [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/).
+**التالي:** [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/) يغطي المسار اليدوي وتدوير الرموز واستكشاف الأخطاء. وللنموذج الذي يقوم عليه، اقرأ [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/).

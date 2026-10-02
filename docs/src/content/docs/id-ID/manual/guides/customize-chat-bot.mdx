@@ -1,98 +1,100 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Sesuaikan bot chat
+description: Ubah nama bot, ubah kata-katanya tentang dirinya sendiri, atau ubah perintah slash-nya dari Control Center.
 slug: id-ID/panduan-pengguna/panduan-praktis/sesuaikan-bot-chat
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Panduan ini menunjukkan cara mengubah bentuk aplikasi bot di sisi penyedia tanpa meninggalkan Control Center.
 
-## Prerequisites
+## Prasyarat
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Peran `owner` atau `admin` di ruang kerja
+- Penyedia yang **terhubung**. Baris **Sesuaikan bot** baru muncul setelah ruang kerja terhubung
+- Aplikasi yang dapat dikelola Control Center. Untuk Slack, artinya koneksi menyimpan token refresh konfigurasi aplikasi (`xoxe-…`); jika tidak, barisnya menyatakan hal itu dan tetap nonaktif
 
-## What you can change
+## Apa yang dapat Anda ubah
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Bidang | Arti | Batas |
+| --- | --- | --- |
+| **Nama aplikasi** | Cara penyedia mencantumkan aplikasi | 1–35 karakter |
+| **Nama bot (yang diketik anggota setelah @)** | Yang diketik anggota setelah `@` | 1–80 karakter |
+| **Deskripsi singkat** | Satu baris yang ditampilkan penyedia | 140 karakter atau kurang |
+| **Yang dikatakan bot dapat dilakukannya** | Ditampilkan di atas DM dengan bot | 300 karakter atau kurang |
+| **Perintah slash** | Perintah yang dipanggil anggota, tanpa garis miring | Huruf kecil, hanya `a–z 0–9 _ -`, dipotong pada 32 karakter |
+| **Pesan langsung** | Apakah bot menyediakan pengalaman DM/agen | Aktif atau nonaktif |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center memvalidasi keempat bidang teks sebelum memanggil penyedia, jadi Anda mendapatkan "the app name must be between 1 and 35 characters" alih-alih `invalid_manifest` yang tidak transparan dari server yang tidak dapat Anda lihat. Perintahnya tidak ditolak melainkan dinormalisasi: garis miring di awal dihapus, sisanya dijadikan huruf kecil, apa pun di luar `a–z 0–9 _ -` dibuang, dan hasil kosong kembali ke `cc`.
 
-## Edit the bot
+## Edit bot
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+2. Pada blok penyedia, klik **Sesuaikan bot**
+3. Dialog terbuka dengan nilai _langsung_ aplikasi, yang dibaca kembali dari penyedia — jadi perubahan yang dilakukan seseorang di antarmuka Slack sendiri adalah titik awalnya
+4. Edit yang Anda perlukan lalu simpan
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Membaca nilai langsung itu memerlukan rotasi token di sisi Slack; itulah sebabnya baris ini berupa klik yang disengaja, bukan sesuatu yang dilakukan halaman saat dimuat.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Penulisan menimpa perubahan Anda ke definisi aplikasi saat ini. Apa pun yang tidak dimodelkan Control Center — perintah slash kedua yang Anda tambahkan di Slack, langkah alur kerja, setelan yang tidak berkaitan — tetap utuh. Scope dan peristiwa digabungkan, tidak pernah dikurangi.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Setelah menyimpan, Control Center membaca ulang identitas bot agar nama di pengaturan cocok dengan nama di aplikasi chat.
 
-## Reinstall when permissions change
+## Instal ulang saat izin berubah
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Instal ulang setelah perubahan izin]
+Slack menerapkan definisi aplikasi baru segera, tetapi mempertahankan pemberian izin
+pada kondisi saat dipasang. Instal ulang aplikasi agar perubahan izin berlaku.
+Jembatan tetap berjalan dengan pemberian izin sebelumnya sampai Anda melakukannya.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Saat penyimpanan mengubah izin, dialog tetap terbuka dan berkata "Slack mengubah
+izin aplikasi. Instal ulang aplikasi agar berlaku.", dengan tombol **Instal ulang
+aplikasi** yang membuka halaman pemasangan aplikasi itu di tim Slack. Di Slack,
+itu adalah **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Ubah nama perintah slash
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Ubah **Perintah slash** lalu simpan. Jembatan kemudian menulis instruksi memakai perintah yang terakhir kali dipakai untuk memanggilnya, sehingga teks bantuan dan instruksi tautan mengikuti perubahan nama itu alih-alih menyebut perintah yang sudah tidak ada.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Mengubah nama tidak merusak utas yang sudah dijembatani: utas dikunci berdasarkan percakapan, bukan berdasarkan perintah.
 
-## What Control Center will not change
+## Apa yang tidak diubah Control Center
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Setelan struktural.** Transport (Socket Mode), scope yang diperlukan, dan langganan peristiwa ditetapkan, bukan ditawarkan. Aplikasi yang bisa dibungkam dari layar pengaturan adalah tiket dukungan, bukan fitur
+- **Ikon bot.** Hanya pengaturan aplikasi penyedia sendiri yang dapat mengubahnya dan dialog menyatakan hal itu
+- **Migrasi fitur milik penyedia.** Aplikasi yang sudah memakai bentuk asisten lama Slack tetap memakainya; dialog ini mengedit deskripsi, bukan memigrasikan aplikasi
 
-## Troubleshooting
+## Pemecahan masalah
 
-### There is no Customize bot row at all
+### Baris Sesuaikan bot tidak ada sama sekali
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/).
+Ruang kerja belum terhubung. Baris itu baru muncul setelah blok penyedia
+menampilkan koneksi aktif. Lihat [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/).
 
-### The Customize bot row is disabled
+### Baris Sesuaikan bot dinonaktifkan
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Koneksi tidak memiliki kredensial pengelolaan aplikasi — subjudul barisnya berkata
+"Control Center memerlukan token konfigurasi aplikasi untuk mengedit bot. Hubungkan
+ulang dan sertakan token." Untuk Slack, buat pasangan token konfigurasi aplikasi di
+[api.slack.com/apps](https://api.slack.com/apps) lalu hubungkan ulang dengan token
+refresh yang terisi. Ini wajar untuk aplikasi yang dibuat secara manual atau dibuat
+melalui **Buat di Slack**, karena Slack tidak pernah melaporkan aplikasi mana yang
+dibuatnya.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Koneksi yang tersimpan tidak membawa id aplikasi — biasanya aplikasi yang dihubungkan secara manual sebelum id dicatat. Hubungkan ulang ruang kerja, atau buat aplikasinya dari Control Center.
 
-### The bot's new name has not appeared in chat
+### Nama baru bot belum muncul di chat
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Penyedia menyimpan metadata aplikasi di cache sebentar. Jika nama masih basi setelah satu menit, periksa apakah penyimpanan meminta Anda menginstal ulang aplikasi.
 
-## Related guides
+## Panduan terkait
 
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
-- [Link your Slack account](/id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat/)
-- [Chat bridge](/id-ID/panduan-pengguna/referensi/jembatan-chat/)
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- [Tautkan akun Slack Anda](/id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat/)
+- [Jembatan chat](/id-ID/panduan-pengguna/referensi/jembatan-chat/)
 
-## Related concepts
+## Konsep terkait
 
-- [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/)
+- [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/)

@@ -1,34 +1,33 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: 設定 Linear 整合
+description: 將 Linear API 金鑰存放在伺服器上，讓代理可以呼叫 Linear，並選擇以 Linear 作為新工單的工單供應商。
 slug: zh-HK/手冊/操作指南/linear-整合
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/zh-HK/手冊/操作指南/管理工單/).
+把 Linear API 金鑰貼到伺服器上並繫結到你的用戶，就像連接程式碼託管一樣。
+工單、項目、連結、協作者、委派與指派全都對着 Control Center 自己的資料庫運作，
+無需任何外部服務——參見[建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)。
 
-## Store your Linear key
+## 儲存你的 Linear 金鑰
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**工單 API 金鑰**位於 **設定 → 工作區 → 一般**，就在**工單系統**卡片上。它會以你的
+用戶 id 為鍵，把金鑰存放在伺服器上。伺服器為無人操作的工作所用的自有金鑰，來自
+`LINEAR_API_KEY` 或**供應商應用**卡片，而且只有在該代理具備**允許工單 API 呼叫**
+能力時，才會以 `TICKETING_API_KEY` 注入。
 
-## Stamp new tickets as Linear
+## 將新工單標記為 Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**工單供應商**（新手導引的第一步，以及
+`/workspaces/<workspaceId>/api-keys`）提供 `local` 和 `linear`。選擇
+`linear` 之後，你往後建立的工單都會蓋上 `provider: linear`。
 
-## Related guides
+## 相關指南
 
-- [Create and manage tickets](/zh-HK/手冊/操作指南/管理工單/)
-- [Set up GitHub integration](/zh-HK/手冊/操作指南/github-整合/)
-- [Manage API keys](/zh-HK/手冊/操作指南/api-金鑰/)
+- [建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)
+- [設定 GitHub 整合](/zh-HK/手冊/操作指南/github-整合/)
+- [管理 API 金鑰](/zh-HK/手冊/操作指南/api-金鑰/)
 
-## Related concepts
+## 相關概念
 
-- [Tickets and delegation](/zh-HK/手冊/概念/工單/)
+- [工單與委派](/zh-HK/手冊/概念/工單/)

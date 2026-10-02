@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Λειτουργίες
+description: Γιατί μια λειτουργία ανήκει σε έναν χώρο και όχι σε έναν πράκτορα· τι εγγυάται καθεμία από τις τέσσερις λειτουργίες· και πού αυτή η εγγύηση είναι δομική και όχι απλώς ζητούμενη με προτροπή.
 slug: el-GR/εγχειρίδιο/έννοιες/λειτουργίες
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Τι είναι μια λειτουργία
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Μια λειτουργία είναι ιδιότητα ενός **χώρου**, αποθηκευμένη ως μία στήλη στη γραμμή του χώρου. Κάθε συνομιλία μέσα σε έναν χώρο τη μοιράζεται, μαζί και τα νήματα — ένα νήμα κληρονομεί τη λειτουργία του χώρου του όπως κάθε άλλη συνομιλία. Ο ίδιος πράκτορας μπορεί επομένως να βρίσκεται σε διαφορετικές λειτουργίες σε διαφορετικούς χώρους ταυτόχρονα, και η αλλαγή της λειτουργίας ενός χώρου αλλάζει το τι συμβαίνει στην επόμενη στροφή χωρίς να αγγίξει τον πράκτορα.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Υπάρχουν ακριβώς τέσσερις: `chat`, `review`, `plan`, `orchestrate`. Η ίδια η απαρίθμηση δεν κουβαλά πολιτική. Ό,τι εγγυάται μια λειτουργία δηλώνεται μία φορά, σε ένα **προφίλ δυνατοτήτων**, από το οποίο προβάλλει κάθε επίπεδο επιβολής:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Επιφάνεια εργαλείων** — ποια εργαλεία υπάρχουν καθόλου σε αυτή τη λειτουργία, εκφρασμένα ως μέγιστη βαθμίδα έγκρισης, λίστα επιτρεπόμενων, λίστα απαγορευμένων και σύνολο απορριπτόμενων κλάσεων ενεργειών.
+2. **Απαιτούμενο ρήμα εξόδου** — τι πρέπει να καλέσει η εκτέλεση για να έχει παραδώσει οτιδήποτε.
+3. **Απορριπτόμενες κλάσεις ενεργειών** — τι αρνείται οριστικά ο φύλακας ενεργειών.
+4. **Στάση του worktree** — αν επιτρέπεται η εγγραφή στο worktree. Αυτό επιβάλλεται αφαιρώντας τα εργαλεία μετάλλαξης από την επιφάνεια, κι αυτό είναι που την κάνει να ισχύει σε κάθε κεντρικό υπολογιστή. Όπου ο κεντρικός υπολογιστής διαθέτει sandbox του λειτουργικού συστήματος, η ίδια στάση χαράσσει και τους κανόνες εγγραφής του συστήματος αρχείων — μια λειτουργία μόνο ανάγνωσης προσαρτά το worktree μόνο για ανάγνωση — αλλά αυτό είναι ένα δεύτερο αντίγραφο της εγγύησης, όχι αυτό που κάνει τη δουλειά.
+5. **Ενότητα προτροπής συστήματος** — ένα _παραγόμενο_ προοίμιο δυνατοτήτων που προκύπτει από την πραγματική υλοποιημένη λίστα εργαλείων, συν χειρόγραφη καθοδήγηση.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Κάθε επίπεδο επιβολής προβάλλει από αυτό το ένα προφίλ, οπότε η επιφάνεια εργαλείων, ο φύλακας, η στάση του worktree και η προτροπή δεν μπορούν να διαφωνήσουν.
 
-## The four modes
+## Οι τέσσερις λειτουργίες
 
-### Chat — displayed as "Agent"
+### Συνομιλία — εμφανίζεται ως «Πράκτορας»
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Η προεπιλογή και η μόνη λειτουργία χωρίς πρόσθετους περιορισμούς: η πλήρης επιφάνεια εργαλείων μέχρι τη βαθμίδα εκτέλεσης, ένα worktree με δυνατότητα εγγραφής, καμία απορριπτόμενη κλάση ενεργειών και κανένα συμβόλαιο ολοκλήρωσης. Χρησιμοποιήστε τη για υλοποίηση, διορθώσεις σφαλμάτων, ερωτήσεις για την κωδικοβάση και κάθε ad hoc εργασία.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Προσέξτε την ετικέτα: στο πεδίο σύνταξης μηνύματος η λειτουργία εμφανίζεται ως **«Πράκτορας»**, όχι ως «Συνομιλία».
 
-### Plan — read-only, one deliverable
+### Σχέδιο — μόνο ανάγνωση, ένα παραδοτέο
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Η λειτουργία σχεδίου κάνει το worktree μόνο για ανάγνωση και αφαιρεί εντελώς τα εργαλεία εγγραφής από την επιφάνεια, ώστε ο περιορισμός να είναι δομικός και όχι υποδεικνυόμενος. Ο πράκτορας διαβάζει, αναζητά και ερευνά και παραδίδει ακριβώς ένα πράγμα: μια κλήση `submit_plan` που μεταφέρει ένα τυποποιημένο γράφημα εξαρτήσεων — έναν στόχο συν κόμβους με κλειδιά, τίτλους, περιγραφές και τα κλειδιά των κόμβων από τους οποίους εξαρτάται ο καθένας.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Το σχέδιο αποδίδεται ως συμπαγής γραμμή μέσα στη συνομιλία και ανοίγει το Plan Studio σε καρτέλα δίπλα της. Η έγκρισή του μεταγλωττίζει το γράφημα σε μια ενορχήστρωση, εκτελεί την παραγόμενη εργασία και επιστρέφει τον χώρο σύνταξης σε λειτουργία πράκτορα.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Αν μια εκτέλεση σε λειτουργία σχεδίου τελειώσει χωρίς να καλέσει ποτέ το `submit_plan`, ο βρόχος εγχέει πρώτα μια παρότρυνση που λέει ότι το σχέδιο δεν υπάρχει μέχρι να πετύχει αυτή η κλήση. Η παρότρυνση εξουσιοδοτεί ρητά μια έντιμη έξοδο «εδώ δεν χρειάζεται σχέδιο», γιατί η λειτουργία σχεδίου είναι ρύθμιση χώρου και μια απλή ερώτηση που τίθεται μέσα σε αυτή δεν πρέπει να εξαναγκάζει ένα ψεύτικο σχέδιο.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/).
+:::note[Ένα ανεκπλήρωτο συμβόλαιο δεν είναι αποτυχημένη εκτέλεση]
+Μια εκτέλεση που τελειώνει χωρίς το σχέδιό της καταγράφεται ωστόσο με κατάσταση `completed` — η διεργασία τερματίστηκε καθαρά. Η αλήθεια μεταφέρεται από τη ζωτικότητα της εκτέλεσης (`empty`), την οικογένεια σφαλμάτων (`silentRun`) και μια σύνοψη που κατονομάζει τι δεν παρήχθη. Δείτε το [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Υπάρχει και ένας δεύτερος, ξεχωριστός δρόμος εξόδου: το `exit_plan_mode`. Είναι μια αυστηρή πύλη έγκρισης, όχι ρήμα εξόδου — ένας πράκτορας που το καλεί αντί για το `submit_plan` δεν έχει παραδώσει τίποτα. Η πρώτη κλήση ανοίγει μια διαρκή έγκριση `plan_exit` και επιστρέφει `pending`, και ο χώρος παραμένει μόνο για ανάγνωση· οι επαναλαμβανόμενες κλήσεις παραμένουν `pending` αντί να ανοίξουν δεύτερη πύλη. Μόνο αφού χορηγηθεί η έγκριση μια επόμενη κλήση γυρίζει τον χώρο σε συνομιλία. Μια απόρριψη επιτρέπει στον πράκτορα να ανοίξει ένα νέο αίτημα για αναθεωρημένο σχέδιο.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Για να βγείτε μόνοι σας από τη λειτουργία σχεδίου, αλλάξτε το αναπτυσσόμενο μενού του πεδίου σύνταξης (ή πατήστε Shift+Tab). Το `exit_plan_mode` αποφασίζεται με το εργαλείο MCP `decide_approval`. Οι γραμμές «έγκριση πράκτορα» στα Εισερχόμενα είναι κάτι διαφορετικό: προτροπές επιβεβαίωσης ανά στροφή από έναν πράκτορα που εκτελείται.
 
-### Review — read-only, no contract
+### Έλεγχος — μόνο ανάγνωση, χωρίς συμβόλαιο
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Η λειτουργία ελέγχου είναι για έλεγχο PR. Κάνει το worktree μόνο για ανάγνωση, περιορίζει την επιφάνεια εργαλείων κάτω από τη βαθμίδα εκτέλεσης και εφαρμόζει μια επιμελημένη λίστα επιτρεπόμενων εργαλείων ελέγχου, εισιτηρίων και επικοινωνίας. Ένας χώρος που ανοίγει για ένα pull request δημιουργείται αυτόματα σε λειτουργία ελέγχου.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Η έξοδος του πράκτορα είναι δομημένα ευρήματα — **κόμβοι ελέγχου** — και, όταν ένας έλεγχος οριστικοποιηθεί, μια **ετυμηγορία**. Ένας κόμβος φέρει ένα είδος (`bug`, `suggestion`, `recommendation`, `question` ή `ticket`), προτεραιότητα από P0 (μπλοκάρει την κυκλοφορία) έως P3 (καλό να υπάρχει), αυτοαξιολογούμενη βεβαιότητα, προαιρετική άγκυρα (αρχείο συν εύρος γραμμών· οι σημειώσεις σε όλο το αποθετήριο δεν έχουν καμία) και κατάσταση κύκλου ζωής που κινείται από `open` σε `consensusReady` μόλις την επιβεβαιώσει ένας ομότιμος — ποτέ ο συντάκτης. Ένα εύρημα του οποίου η προτεραιότητα ή η βεβαιότητα λείπει ή είναι εκτός εύρους απορρίπτεται στο όριο ανάγνωσης αντί να μολύνει την ετυμηγορία.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Η ετυμηγορία είναι Ship, Hold ή Block και γίνεται μόνο _πιο_ αυστηρή από τα αποτελέσματα ανά άξονα που ενσωματώνονται σε αυτή: ένας άξονας με πύλη που απέτυχε επιβάλλει `block` και ένας άξονας με πύλη που δεν μπόρεσε να εκτελεστεί επιβάλλει τουλάχιστον `hold`. Η απουσία τεκμηρίων δεν κάνει ποτέ πράσινη μια πύλη.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Σε αντίθεση με το σχέδιο και την ενορχήστρωση, ο έλεγχος δεν φέρει **κανένα συμβόλαιο ολοκλήρωσης**. Τα ευρήματα συσσωρεύονται μέσω του `add_review_node` και δημοσιεύονται από το `finalize_review`, και τα δύο μπορούν νόμιμα να κληθούν μηδέν φορές — ένας πράκτορας pipeline που εκτελείται σε λειτουργία ελέγχου μπορεί να βρίσκεται εκεί για να ολοκληρώσει ένα εισιτήριο αντ' αυτού.
 
-### Orchestrate — read-only, proposes a team
+### Ενορχήστρωση — μόνο ανάγνωση, προτείνει ομάδα
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Η λειτουργία ενορχήστρωσης μετατρέπει έναν στόχο σε σχέδιο ολόκληρης ομάδας. Όπως η λειτουργία σχεδίου, είναι μόνο για ανάγνωση και δεν μπορεί να γράψει αρχεία· πάνω από την επιφάνεια έρευνας έχει ένα μόνο προνομιούχο ρήμα, το `propose_orchestration`, που εκπέμπει μια δομημένη πρόταση: ρόλους, δέντρο υποεισιτηρίων, βήμα σύνθεσης και προϋπολογισμό. Η προτροπή κατονομάζει μόνο τα εργαλεία που βρίσκονται στην επιφάνεια, ώστε το μοντέλο να μη σπαταλά στροφές αφηγούμενο προσλήψεις ή εργασία εισιτηρίων που δεν μπορεί να καλέσει.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/).
+Τίποτα στην πρόταση δεν εκτελείται μέχρι να την εγκρίνετε. Με την έγκριση, ένας ντετερμινιστικός μηχανισμός υλοποίησης προσλαμβάνει τους πράκτορες, δημιουργεί τα εισιτήρια και ένα έργο και εκτελεί ένα παραγόμενο pipeline. Η έγκριση είναι αποκλειστικά του χειριστή: δεν υπάρχει εργαλείο MCP γι' αυτή, οπότε ένας πράκτορας μπορεί να προτείνει αλλά ποτέ να εγκρίνει το δικό του σχέδιο. Οι επαναπροτάσεις που ξεκινά πράκτορας περιορίζονται από περίοδο ψύξης δύο λεπτών, οπότε διαδοχικοί επανασχεδιασμοί απορρίπτονται και τους ζητείται να συνενωθούν. Δείτε την [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/).
 
-## Two rules worth knowing
+## Δύο κανόνες που αξίζει να γνωρίζετε
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Το ίδιο το ρήμα εξόδου μιας λειτουργίας δεν μπορεί ποτέ να απορριφθεί.** Τα `submit_plan` και `propose_orchestration` είναι καρφιτσωμένα στην επιφάνεια εργαλείων και προεγκρίνονται, προσπερνώντας εξίσου το φίλτρο εργαλείων, την πύλη έγκρισης και τον φύλακα ενεργειών, ώστε ο δείκτης αυτονομίας ανά χώρο να μην μπορεί να φιμώσει το παραδοτέο μιας λειτουργίας. Το `ask_user` του ενσωματωμένου μηχανισμού είναι καρφιτσωμένο για τον ίδιο λόγο: _είναι_ ο τρόπος με τον οποίο μια εκτέλεση φτάνει στον χειριστή, οπότε το να το βάλουμε σε πύλη θα αδιεξόδευε μια εκτέλεση που χρειάζεται να ρωτήσει κάτι. Είναι βαθμίδας ανάγνωσης, οπότε κάθε λειτουργία μόνο ανάγνωσης το διατηρεί, και εξαιρείται από το περίβλημα έγκρισης — μια προτροπή μπροστά από μια προτροπή αποτυγχάνει με απόρριψη όταν δεν είναι συνδεδεμένος κανένας εγκριτής, κάτι που θα απέκλειε από έναν πράκτορα την ίδια την πράξη της ερώτησης.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Οι λειτουργίες μόνο ανάγνωσης δεν απαγορεύουν την πρόσβαση στο δίκτυο ή στα μυστικά.** Οι κλάσεις ενεργειών που απορρίπτουν ο έλεγχος, το σχέδιο και η ενορχήστρωση είναι εκείνες που αλλάζουν τον κόσμο: διαγραφή αρχείων, εγγραφές έξω από το worktree, commits, pushes, δημιουργία και δημοσίευση PR, εγγραφές συγχρονισμού προμηθευτών, εγκαταστάσεις πακέτων, εκκίνηση διεργασιών, μετάλλαξη χώρου εργασίας και έλεγχος περιβλήματος. Η έξοδος δικτύου και η πρόσβαση σε μυστικά παραμένουν στις προεπιλογές τους σκόπιμα — η έρευνα είναι το όλο νόημα μιας λειτουργίας μόνο ανάγνωσης.
 
-## Choosing and changing a mode
+## Επιλογή και αλλαγή λειτουργίας
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Το αναπτυσσόμενο μενού λειτουργίας του πεδίου σύνταξης προσφέρει **τρεις** επιλογές: Πράκτορας (συνομιλία), Σχέδιο και Ενορχήστρωση. Το `review` **δεν επιλέγεται από τον χρήστη** — το ορίζει το σύστημα όταν δημιουργείται ένας χώρος ελέγχου PR και τα βήματα pipeline.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Ένας κόμβος pipeline που **ανοίγει χώρο** μπορεί να καρφιτσώσει τη λειτουργία αυτού του δωματίου με κλειδί `extras['mode']` (`chat`, `review` ή `plan`). Το κλειδί απαιτεί ακριβή αντιστοίχιση: οποιαδήποτε άλλη γραφή — συμπεριλαμβανομένου του `orchestrate` — αγνοείται σιωπηλά και το δωμάτιο παίρνει την προεπιλογή του σώματος (`review` στο σώμα δημιουργίας χώρου). Ένα βήμα πράκτορα μπαίνει σε δωμάτιο που δεν δημιούργησε και δεν επαναρυθμίζει τα δικαιώματά του.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Η ίδια η επίλυση είναι απλή. Ο αποστολέας διαβάζει τη στήλη `mode` του χώρου· μια αποστολή χωρίς χώρο — μια μεμονωμένη εκτέλεση, μια κλήση CLI ή ένα αναγνωριστικό χώρου από άλλον χώρο εργασίας, που απλώς δεν βρίσκεται στο αρχείο βάσης δεδομένων αυτού του χώρου εργασίας — επιλύεται σε `chat`. Η αλλαγή της λειτουργίας ισχύει από την επόμενη στροφή.
 
-## Where the guarantee actually holds
+## Πού ισχύει πραγματικά η εγγύηση
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Η επιφάνεια εργαλείων μιας λειτουργίας χτίζεται και επιβάλλεται από τον **ενσωματωμένο μηχανισμό**. Είναι το μόνο μέσο μεταφοράς που μπορεί να κάνει ένα εργαλείο αόρατο αντί απλώς απορριπτέο, να βάλει σε πύλη κάθε κλήση πριν εκτελεστεί και να τηρήσει συμβόλαιο ολοκλήρωσης.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
+Στο μέσο μεταφοράς Claude Code, μια λειτουργία που δεν είναι συνομιλία περνά ως `--permission-mode plan`. Το Claude το σέβεται κατά σύμβαση· τα δικά του εργαλεία ανάγνωσης, εγγραφής, επεξεργασίας και κελύφους εκτελούνται αθέατα. Για αυτό το μέσο μεταφοράς η λειτουργία είναι καθοδήγηση, όχι όριο του Control Center — δείτε το [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Οι λίστες επιτρεπόμενων περιορίζουν τα εργαλεία βαθμίδας εγγραφής και άνω. Η βαθμίδα ανάγνωσης του ενσωματωμένου μηχανισμού φτάνει ακόμη και εργαλεία που καμία λίστα δεν κατονομάζει· στο Claude Code, ένα εργαλείο που η λίστα επιτρεπόμενων παραλείπει απορρίπτεται ανεξάρτητα από το αν το έχει ο διακομιστής.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): where the mode is resolved and projected
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): which transports can enforce a mode
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/): what an approved orchestrate proposal does
-- [Use plan mode](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/): the practical walkthrough
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): πού επιλύεται και προβάλλεται η λειτουργία
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): ποια μέσα μεταφοράς μπορούν να επιβάλουν μια λειτουργία
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): η πολιτική κλάσεων ενεργειών στην οποία τροφοδοτείται το προκαθορισμένο σύνολο μιας λειτουργίας
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/): τι κάνει μια εγκεκριμένη πρόταση ενορχήστρωσης
+- [Χρήση λειτουργίας σχεδίου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/): η πρακτική περιήγηση

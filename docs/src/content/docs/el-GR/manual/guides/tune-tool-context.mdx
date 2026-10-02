@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Ρύθμιση του πλαισίου εργαλείων ενός πράκτορα
+description: Ελέγξτε τι στέλνει πραγματικά μια εκτέλεση, αλλάξτε ποια εργαλεία φορτώνονται εκ των προτέρων και βγάλτε συμπέρασμα αν μια κακή επιλογή εργαλείου ήταν αστοχία ανάκτησης ή πρόβλημα προτροπής.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-πλαισίου-εργαλείων
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
+Αυτός ο οδηγός καλύπτει την πρακτική εργασία γύρω από την επιφάνεια εργαλείων δύο επιπέδων: να βλέπετε τι στέλνει μια εκτέλεση, να το αλλάζετε και να διαγιγνώσκετε έναν πράκτορα που έκανε λάθος επιλογή εργαλείου. Για το γιατί λειτουργεί έτσι, διαβάστε το [Πλαίσιο εργαλείων και προσωρινή αποθήκευση προτροπών](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
 
-## Look at what a run actually sends
+## Δείτε τι στέλνει πραγματικά μια εκτέλεση
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Ανοίξτε μια συνομιλία και πατήστε την ένδειξη χρήσης συμφραζομένων στην κεφαλίδα της συνομιλίας. Αναδομεί την ακριβή επιφάνεια που θα έστελνε η επόμενη αποστολή, χωρίς να εκτελέσει τίποτα. Το **Δείτε περισσότερα** (ή η εντολή `/context`) ανοίγει τον πλήρη εξερευνητή συμφραζομένων, όπου μπορείτε να εξετάσετε κάθε εργαλείο.
 
-Two segments matter here:
+Δύο τμήματα έχουν σημασία εδώ:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Ορισμοί εργαλείων** και **MCP και δυναμικά εργαλεία** — το μόνιμο σύνολο, με το πραγματικό κόστος token κάθε εργαλείου.
+- **Εργαλεία κατ' απαίτηση** — το αναβαλλόμενο ευρετήριο. Κάθε καταχώριση χρεώνεται μόνο το όνομά της, γιατί ένα όνομα είναι το μόνο που μεταφέρει το αίτημα· το άνοιγμά της δείχνει ακόμη την πλήρη περιγραφή και το σχήμα, ώστε να δείτε πόσο *θα* κόστιζε αν η εκτέλεση το τραβούσε μέσα.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli).
+Αν το αναβαλλόμενο τμήμα είναι κενό, η αναβολή είναι απενεργοποιημένη για αυτόν τον διακομιστή. Ελέγξτε το `--tool-deferral` στο [CLI του `cc_server`](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli).
 
-## Change which tools load up front
+## Αλλάξτε ποια εργαλεία φορτώνονται εκ των προτέρων
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Το μόνιμο σύνολο είναι πολιτική, όχι διαμόρφωση — ζει στο `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) και εφαρμόζεται σε κάθε εκτέλεση:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες) uses on nearly every turn.
+- `residentBuiltins` — το λεξιλόγιο αρχείων και κελύφους.
+- `residentDiscovery` — `search_tools` και `list_my_tools`. Μην τα αφαιρέσετε· είναι ο τρόπος με τον οποίο ένας πράκτορας φτάνει σε όλα τα υπόλοιπα.
+- `residentMcpTools` — η χούφτα εργαλείων του Control Center που αξίζουν το σχήμα τους σε κάθε αίτημα.
+- Ένα μπλοκ ανά λειτουργία, για τα εργαλεία που μια δεδομένη [λειτουργία](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες) χρησιμοποιεί σχεδόν σε κάθε στροφή.
 
-Two rules when editing it:
+Δύο κανόνες όταν το επεξεργάζεστε:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Προσθέστε ένα εργαλείο μόνο αν οι περισσότερες εκτελέσεις το χρησιμοποιούν.** Κάθε όνομα κοστίζει το σχήμα του σε κάθε αίτημα κάθε εκτέλεσης, για πάντα. Ένα εργαλείο που είναι σημαντικό όταν χρησιμοποιείται αλλά σπάνιο συνολικά ανήκει στο αναβαλλόμενο μισό — ο πράκτορας θα το βρει ακόμη.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Χρησιμοποιήστε το πραγματικό όνομα του εργαλείου.** Ένα μόνιμο όνομα που δεν αντιστοιχεί σε κανένα εργαλείο είναι αδρανές: κανένα σφάλμα, καμία προειδοποίηση, το εργαλείο απλώς αναβάλλεται. Το `test/tooling/resident_tool_names_test.dart` το πιάνει αυτό και επίσης κρατά κάθε λειτουργία κάτω από 40 μόνιμα εργαλεία, που είναι και το νόημα της άσκησης — πέρα από αυτή τη ζώνη, η επιλογή εργαλείου υποβαθμίζεται μετρήσιμα.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Τα απαιτούμενα και καρφιτσωμένα ρήματα μιας λειτουργίας προστίθενται αυτόματα, οπότε δεν χρειάζεται ποτέ να απαριθμήσετε το ρήμα εξόδου της ίδιας της λειτουργίας.
 
-## Diagnose a bad tool choice
+## Διάγνωση μιας κακής επιλογής εργαλείου
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Όταν ένας πράκτορας χρησιμοποίησε το λάθος εργαλείο ή ισχυρίστηκε ότι δεν μπορούσε να κάνει κάτι, προσδιορίστε ποιο από τρία πράγματα συνέβη.
 
-### 1. Did it look?
+### 1. Έψαξε;
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Κάθε εκτέλεση καταγράφει τα αναβαλλόμενα εργαλεία που φόρτωσε και τι την προκάλεσε — μια άμεση κλήση με όνομα ή ένα ερώτημα `search_tools`. Ανοίξτε τη ροή γεγονότων της εκτέλεσης (**Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** → τον πράκτορα → **Αρχεία καταγραφής** → **Προβολή**) και αναζητήστε το `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Δεν καταγράφηκε τίποτα και ο πράκτορας δήλωσε ότι η δυνατότητα έλειπε** — δεν έψαξε ποτέ. Αυτό είναι πρόβλημα προτροπής, όχι ανάκτησης: το αναβαλλόμενο ευρετήριο βρίσκεται στην προτροπή συστήματός του με οδηγία να μη δηλώνει ότι λείπει μια δυνατότητα προτού επιστρέψει κενή μια αναζήτηση.
+- **Καταγράφηκε αναζήτηση αλλά δεν φορτώθηκε τίποτα** — γνήσια αστοχία ανάκτησης. Πηγαίνετε στο βήμα 2.
+- **Φορτώθηκαν εργαλεία αλλά χρησιμοποιήθηκε λάθος** — τα εργαλεία που βρήκε μοιάζουν υπερβολικά μεταξύ τους. Πηγαίνετε στο βήμα 3.
 
-### 2. Fix a retrieval miss
+### 2. Διορθώστε μια αστοχία ανάκτησης
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+Το `search_tools` αντιστοιχίζει ονόματα, περιγραφές και ονόματα ορισμάτων. Μια αστοχία σημαίνει σχεδόν πάντα ότι η περιγραφή δεν περιέχει τις λέξεις που χρησιμοποίησε ο πράκτορας.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Προσθέστε τις. Οι περιγραφές είναι το ευρετήριο ανάκτησης, οπότε **επεκτείνετέ τις αντί να τις κόβετε** — γράψτε το λεξιλόγιο που θα πληκτρολογούσε πραγματικά ένας χειριστής («ανάθεσε», «παράδωσε», «δώσε σε»), όχι μόνο το εσωτερικό ουσιαστικό. Το κόψιμο μιας περιγραφής για εξοικονόμηση token σας κοστίζει και την επιτυχία στην αναζήτηση και την ακρίβεια επιλογής, και δεν εξοικονομεί σχεδόν τίποτα δίπλα στο σχήμα.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Αν το σωστό εργαλείο υπάρχει αλλά κατατάσσεται χαμηλά, γι' αυτό είναι το όρισμα `limit`· η ίδια η περιγραφή του εργαλείου λέει στον πράκτορα να διευρύνει μια αναζήτηση που φαίνεται κοντά αλλά αστοχεί.
 
-### 3. Fix look-alike tools
+### 3. Διορθώστε εργαλεία που μοιάζουν μεταξύ τους
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Αν δύο εργαλεία έχουν περιγραφές που θα διάβαζε το ίδιο κάποιος που δεν ξέρει ήδη τη διαφορά, το μοντέλο μαντεύει. Συγχωνεύστε τα σε ένα εργαλείο με ένα διακριτικό όρισμα.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+Τα `ticket_relation` και `ticket_pr_link` ακολουθούν αυτό το μοτίβο: το καθένα χειρίζεται τη σύνδεση και την αποσύνδεση μέσω ενός διακριτικού ορίσματος. Μια επιλογή που γίνεται *μέσα* σε μία κλήση, με όλα τα συμφραζόμενα του αιτήματος, είναι πιο αξιόπιστη από μια επιλογή ανάμεσα σε δύο περιγραφές που μοιάζουν.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Κρατήστε τα εργαλεία χωριστά όταν χρειάζονται διαφορετική πύλη έγκρισης, διαφορετική καταγραφή ελέγχου ή διαφορετική απόδοση — αυτοί είναι λόγοι για τους οποίους μια συγχώνευση θα σας κόστιζε κάτι πραγματικό.
 
-## Check the prompt cache is working
+## Ελέγξτε ότι λειτουργεί η cache προτροπών
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Το ποσοστό επιτυχιών στην cache εμφανίζεται στην **Παρατηρησιμότητα → Στοιχεία** ως **Ποσοστό cache**. Μια υγιής μακροχρόνια συνομιλία κάθεται ψηλά· αν είναι επίμονα χαμηλό, κάτι ξαναγράφει το πρόθεμα σε κάθε στροφή.
 
-Common causes, in order of likelihood:
+Συνήθεις αιτίες, κατά σειρά πιθανότητας:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Οτιδήποτε μη ντετερμινιστικό νωρίς στην προτροπή.** Μια χρονοσφραγίδα, ένα αναγνωριστικό αιτήματος ή ένα σύνολο που διατρέχεται με μεταβαλλόμενη σειρά αρκεί.
+- **Αλλαγή μοντέλου ή προσπάθειας στη μέση της συνομιλίας.** Και τα δύο αλλάζουν το πρόθεμα. Οι υποπράκτορες είναι ιδιαίτερα εύκολο να γίνουν λάθος εδώ: η εκτέλεση παιδιών σε χαμηλότερη προσπάθεια για εξοικονόμηση χρημάτων μπορεί να κοστίσει περισσότερο σε χαμένο διαμοιρασμό cache από όσο εξοικονομεί.
+- **Συχνή συμπύκνωση.** Η συμπύκνωση ξαναγράφει το ιστορικό εκ σχεδιασμού, οπότε το κόστος της είναι πραγματικό· η διόρθωση είναι να συμπυκνώνετε σπάνια και βαθιά αντί συχνά και ρηχά.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Η απενεργοποίηση της αναβολής με `--tool-deferral=off` είναι ένα έγκυρο A/B για να απομονώσετε αν μια αλλαγή συμπεριφοράς προήλθε από την επιφάνεια δύο επιπέδων. Αναπαράγει ακριβώς το αίτημα πριν από την αναβολή, οπότε αν η συμπεριφορά επιμένει με αυτήν απενεργοποιημένη, η επιφάνεια δεν είναι η αιτία.

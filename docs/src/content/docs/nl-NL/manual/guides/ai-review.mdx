@@ -1,152 +1,166 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: AI-gestuurde review gebruiken
+description: Voer de pr_review-pipeline uit op een PR, lees de bevindingen en het oordeel en publiceer de review vervolgens naar GitHub.
 slug: nl-NL/handleiding/gidsen/ai-review
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Deze gids laat zien hoe je reviewer-agenten een pull request laat reviewen en hoe
+je het resultaat naar GitHub publiceert.
 
-## Start an AI review
+## Een AI-review starten
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Open de PR en ga naar het tabblad **Overzicht**
+2. Open het ⋯-overloopmenu in de actierij en kies **Ask AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Het item verschijnt alleen zolang de PR open is — het is een actie vóór de
+merge. Dezelfde knop wordt als **Ask AI** aangeboden in de lege weergave van het
+tabblad **Review**, voordat er een review bestaat.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center start de meegeleverde `pr_review`-pipeline en opent het tabblad
+**Review** van de PR zodat je kunt meekijken. De pipeline:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Opent de eigen reviewruimte van de PR, waarvan de geïsoleerde worktree de PR
+   heeft uitgecheckt op zijn head-ref
+2. Waaiert reviewer-agenten uit voor het reviewniveau van de werkruimte — standaard
+   drie (de meegeleverde **qa**-, **architect**- en **engineer**-agenten,
+   parallel). Er is geen taal- of domeindetectie
+3. Laat de lead-agent (CEO) hun bevindingen bundelen tot een rondleiding
+4. Finaliseert: sorteert de bevindingen in consensusgroepen en berekent het
+   oordeel. Wanneer de koppeling `awaiting approval` bereikt, verschijnt
+   **Publiceren naar GitHub** op het tabblad Review
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Hoe diep de review gaat, is het **reviewniveau** van de werkruimte — `light`
+(één reviewer), `balanced` (drie, de standaard) of `thorough` (alle vijf,
+inclusief de specialisten beveiliging en performance) — ingesteld via
+**Instellingen → Werkruimte → Algemeen**, op de kaart **Werkruimtebeleid**. Een
+lichter niveau legt precies evenveel bevindingen vast; het toont er minder
+vooraan.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/nl-NL/handleiding/concepten/ai-review/) for how the pieces fit together.
+Alle reviewers posten in de ene reviewruimte van de PR, en dat is wat hun
+bevindingen vergelijkbaar maakt. Zie
+[AI-review](/nl-NL/handleiding/concepten/ai-review/) voor hoe de onderdelen
+samenhangen.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/nl-NL/handleiding/gidsen/reviewers-starten/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/nl-NL/handleiding/gidsen/github-pr-gesprekken/).
+`pr_review` wordt alleen met een handmatige trigger geleverd. Wil je dat de
+pipeline bij elke gepubliceerde PR afgaat, voeg dan zelf een trigger toe — zie
+[Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/). Je kunt
+er ook een starten vanuit GitHub zelf, zonder pipelinetrigger: vermeld de bot van
+de server in de PR of voeg het label `ai-review` toe — zie
+[Met Control Center praten vanuit een GitHub-PR](/nl-NL/handleiding/gidsen/github-pr-gesprekken/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Als een melding zegt dat er al een review draait voor deze pull request, dan is
+er al een onderweg; blijf op het tabblad **Review** of open **Pipelines** om hem
+te vinden.
 
-## Read the findings
+## De bevindingen lezen
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Reviewers leggen bevindingen vast als **reviewnodes** in de reviewruimte. Elke
+node bevat:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Veld              | Beschrijving                                                    |
+| ----------------- | --------------------------------------------------------------- |
+| Soort             | `bug`, `suggestion`, `recommendation`, `question` of `ticket`   |
+| Prioriteit        | P0 (kritiek) → P3 (nit)                                         |
+| Categorie         | `security`, `stability`, `data_integrity`, `correctness`, `performance` of `maintainability` |
+| Bestand en regel  | Waar de bevinding verankerd is                                  |
+| Oorspronkelijke code | De code waarop de bevinding betrekking heeft                 |
+| Voorgestelde code | De voorgestelde oplossing                                       |
+| Betrouwbaarheid   | Hoe zeker de reviewer is                                        |
+| Status            | `open` → `consensus-ready` → `resolved` of `dismissed`          |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Een bevinding bereikt pas **consensus-ready** als een _peer_-reviewer hem
+bevestigt. Een agent kan zijn eigen bevinding niet bevestigen, dus de mening van
+één reviewer gaat nooit op eigen kracht verder.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/nl-NL/handleiding/gidsen/review-compute/) for what the pass produces.
+Het tabblad **Review** toont de bevindingenlijst, filterbaar op soort en status,
+met een schakelaar voor verworpen bevindingen, naast het artefact dat de
+bundelende agent heeft gepubliceerd. De deterministische weergave — cohorten, het
+dashboard met meerdere assen, contract- en visuele diffs — wordt server-side
+berekend maar heeft geen oppervlak in de app; zie
+[Review-compute (cohorten en assen)](/nl-NL/handleiding/gidsen/review-compute/)
+voor wat de ronde oplevert.
 
-## Check the disagreements panel
+## Het paneel met meningsverschillen bekijken
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Wanneer twee reviewers bevindingen aan hetzelfde bestand en dezelfde regel
+verankeren maar ze heel verschillend beoordelen — prioriteiten twee of meer
+niveaus uit elkaar, of de een noemt het een `bug` terwijl de ander het een
+`suggestion` noemt — verschijnt er een paneel met meningsverschillen boven de
+bevindingenlijst. Lees die eerst: daar lopen de meningen van de reviewers uiteen
+en is jouw oordeel het meest waard.
 
-## Read the verdict
+## Het oordeel lezen
 
-When the lead agent finalizes, it computes a **verdict**:
+Wanneer de lead-agent finaliseert, berekent die een **oordeel**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Oordeel   | Betekenis                                        |
+| --------- | ------------------------------------------------ |
+| **Ship**  | Niets blokkerends gevonden                       |
+| **Hold**  | Problemen die vóór de merge moeten worden aangepakt |
+| **Block** | Kritieke problemen die moeten worden opgelost    |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Het oordeel draagt een samengestelde betrouwbaarheidsscore en aantallen
+bevindingen per prioriteit.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+De reviewassen wegen daarna mee en kunnen het oordeel alleen **strenger** maken.
+Een as met een poort die faalt, dwingt **Block** af; een as met een poort die
+niet kon afronden (`partial`) of helemaal niet kon draaien (`unavailable`) dwingt
+minstens **Hold** af. Afwezigheid van bewijs opent nooit een poort.
 
-## Publish the review to GitHub
+## De review naar GitHub publiceren
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publiceren is een aparte stap die bewust door de gebruiker wordt geactiveerd. De
+`pr_review`-pipeline houdt de review in Control Center; er wordt niets naar
+GitHub gepost.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Wacht op het tabblad **Review** totdat **Publiceren naar GitHub** verschijnt
+2. Druk op **Publiceren naar GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center verstuurt **één** GitHub-review. Bevindingen die al zijn opgelost
+of verworpen, worden overgeslagen. De knop neemt elke resterende open bevinding
+mee en dient bij **Ship** `APPROVE` in. (De MCP-tool `publish_review_to_github`
+gebruikt standaard nog steeds alleen door peers bevestigde bevindingen en keurt
+niet goed tenzij je `approve_on_ship` meegeeft.) Bevindingen met een anker naar
+een bestand en regel worden inline reacties; al het overige komt in de
+samenvattingstekst terecht, elk met een voettekst "— Control Center AI review",
+zodat de bron ondubbelzinnig is. Een **Block**-oordeel wordt ingediend als
+`REQUEST_CHANGES`; **Hold** als `COMMENT`; **Ship** als `APPROVE` vanaf deze
+knop. Een melding luidt dan **Gepubliceerd**. De review wordt geplaatst onder de
+app-identiteit van de server.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Als GitHub een inline anker weigert omdat de regel geen deel uitmaakt van de
+diff, wordt de hele review opnieuw verstuurd met elke bevinding in de tekst
+opgenomen, zodat niets stilzwijgend verdwijnt.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publiceren is achter een beveiligingspoort geplaatst]
+`pr_review.publishReview` declareert de actieklasse `prPublish` en loopt door het
+controlepunt van de beveiligingen. Als de uitgerekende beslissing `prompt` is en
+er is geen goedkeurder verbonden, wordt het publiceren geweigerd — beveiligingen
+falen gesloten. Stel een expliciete regel in bij
+Instellingen → Werkruimte → Agentmachtigingen als je wilt dat het zonder toezicht
+draait.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Andere ingebouwde pipelines posten wél rechtstreeks naar GitHub: `cross_review`,
+`pr_triage`, `ticket_to_pr` en `pre_merge_gate` eindigen elk in een
+commentaarstap. Alleen `pr_review` houdt zijn uitvoer voor jou achter.
 
-## Dispatch reviewers yourself
+## Zelf reviewers starten
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/nl-NL/handleiding/gidsen/reviewers-starten/).
+Wil je zelf bepalen welke rollen de PR reviewen en naar welke bestanden elk van
+hen kijkt, gebruik dan de MCP-tool `dispatch_reviewers` in een bestaande
+reviewruimte, of voeg reviewernodes toe aan een pipeline. Beide manieren, met de
+exacte signatuur van de tool, staan in
+[Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
-- [Dispatch reviewer agents](/nl-NL/handleiding/gidsen/reviewers-starten/)
-- [Review compute (cohorts and axes)](/nl-NL/handleiding/gidsen/review-compute/)
+- [Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
+- [Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/)
+- [Review-compute (cohorten en assen)](/nl-NL/handleiding/gidsen/review-compute/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [AI review](/nl-NL/handleiding/concepten/ai-review/)
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/)
+- [AI-review](/nl-NL/handleiding/concepten/ai-review/)
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/)

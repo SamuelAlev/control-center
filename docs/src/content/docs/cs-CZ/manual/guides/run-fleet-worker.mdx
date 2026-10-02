@@ -1,166 +1,169 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Spusťte worker flotily
+description: Sestav, spáruj a spusť headless vykonavatele cc_worker, ať se zaregistruje u cc_server a objeví se v panelu flotily.
 slug: cs-CZ/prirucka/navody/spusteni-workeru-flotily
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Spusť `cc_worker` na volném stroji a přidej flotile kapacitu na provádění. Je to
+binární soubor v čistém Dartu — bez enginu Flutter — který se spáruje
+s `cc_server`, ohlásí schopnosti hostitele, posílá heartbeat, stahuje zapůjčené
+úlohy, provádí je a streamuje události procesu zpátky. Trvalý stav nedrží:
+dohled ho restartuje a on se zaregistruje znovu.
 
-You need a running `cc_server` first — see [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
+Nejdřív potřebuješ běžící `cc_server` — viz
+[Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
+Spárovaný worker se zaregistruje, posílá heartbeat a čeká na zapůjčené úlohy.
+Práci odešleš přes `fleet.submitJob`. Odeslání agenta na tomhle serveru flotilou
+neprochází; znamení, že tenhle návod vyšel, je worker v panelu flotily
+s čerstvým heartbeatem. Worker v procesu, který se zaregistruje při startu, má
+prázdnou mapu runnerů, takže úloha položená na něj vrátí `No local runner for
 job kind …`.
 
-## Prerequisites
+## Předpoklady
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [SDK Dart](https://dart.dev/get-dart). Tenhle repozitář si SDK připíná přes [fvm](https://fvm.app), takže příkazům předřazuj `fvm`.
+- Checkout tohohle repozitáře na stroji workera.
+- Dosažitelný `cc_server` (loopback pro vývoj, LAN nebo vzdálený stroj pro produkci).
+- `git` na `PATH` — worker materializuje repozitáře a spouští sondy `git`.
 
-## Step 1: Build the binary
+## Krok 1: Sestav binární soubor
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Vznikne samostatný balík v `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## Krok 2: Vydej workerovi pověření
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+`cc_server` přijme jen workera, který předloží id spárovaného zařízení
+a předem sdílený klíč — i server na loopbacku. Vydej je na stroji **serveru**
+(`pair` může běžet, i když server už běží; nové zařízení se vezme bez
+restartu):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Vypíše `Device id` a `Pairing key` — právě ty bere `--device-id` a `--psk` /
+`--psk-file` / `CC_WORKER_PSK`.
 
-## Step 3: Start the worker
+## Krok 3: Spusť workera
 
-Against a paired server:
+Na spárovaný server:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Na server na loopbacku (pořád spárovaný — `cc_server` handshake PSK spouští
+vždycky):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| Příznak              | Popis                                                                                            | Výchozí          |
+| -------------------- | ------------------------------------------------------------------------------------------------ | ---------------- |
+| `--server <url>`     | URL cc_server (`ws://`/`wss://`; `http(s)` a chybějící cesta `/rpc` se srovnají). **Povinné.** | —                |
+| `--name <name>`      | Název workera pro operátora.                                                                     | název hostitele  |
+| `--device-id <id>`   | Stabilní id spárovaného zařízení, zároveň id workera.                                            | `cc-worker`      |
+| `--psk-file <path>`  | Soubor, jehož první neprázdný řádek je párovací klíč. Lepší volba než `--psk`.                   | —                |
+| `--psk <key>`        | Párovací klíč na příkazové řádce. Je vidět v `ps` i v historii shellu — binární soubor varuje.   | —                |
+| `--max-jobs <n>`     | Tvrdý strop úloh, které tenhle proces provádí souběžně (kladné celé číslo).                      | `4`              |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+Klíč se bere v pořadí `--psk-file` → `CC_WORKER_PSK` → `--psk`. Když vynecháš
+všechny zdroje, worker přeskočí handshake autentizace; skutečný `cc_server`
+pak relaci odmítne (`auth_denied`) a neautentizovaného workera nepřijme.
+Neznámé příznaky jsou chyba použití (`exit 64`) — na rozdíl od `cc_server`
+tenhle binární soubor používá `package:args` a překlepy neignoruje.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` přepíše adresář cache pro materializaci worktree (výchozí:
+adresář `cc_worker_cache` v systémovém dočasném adresáři).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+Worker se registruje přes `fleet.registerWorker`, pak posílá heartbeat každých
+20 s a na zapůjčení se ptá každé 2 s. Běží, dokud nedostane `SIGINT`/`SIGTERM`;
+dej ho pod systemd nebo launchd, ať se po pádu nebo restartu znovu spustí
+a zaregistruje.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
-`Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+:::caution[Okno kompatibility protokolu tu není]
+Worker, jehož verze protokolu flotily se od serveru liší, se zaregistruje jako
+**Nekompatibilní**, zapůjčení nikdy nedostane a samotný `cc_worker` skončí
+s `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
+to match the server release`. Workera sestav ze stejného vydání jako server.
 :::
 
-## Step 4: Verify it in the fleet panel
+## Krok 4: Ověř ho v panelu flotily
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+V desktopové nebo webové aplikaci otevři **Observabilita**, přepni na záložku
+**Živé** a sjeď dolů. **Workeři** vypíšou každého zaregistrovaného workera
+s platformou, jádry, klíči schopností a posledním heartbeatem; **Úlohy**
+vypíšou úlohy rozdělené mezi ně.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+Když se tam tvůj worker objeví s čerstvým heartbeatem, párování i registrace
+prošly.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+Z dlaždice workera ho můžeš **Vypustit** (dokončí aktuální úlohy a nové
+zapůjčení nevezme), **Obnovit** workera ve vypouštění, **Odvolat** jeho
+pověření, nebo řádek **Odebrat**.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+Řádky workerů a úloh žijí v serverovém `global.db` — sám worker na disk
+nezapíše nic kromě cache materializace.
 
-## What the worker advertises
+## Co worker ohlašuje
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+Při registraci worker sám zjistí své schopnosti a plánovač podle nich páruje
+úlohy. Ručně je nenastavuješ:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **OS a architektura** (`macos`/`linux`/`windows`, `arm64`/`x64`) — přesné sondy, se zálohou na `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **Jádra a RAM** — přesný počet jader; RAM spadne na `0`, když se sonda nepodaří
+- **`flutter`** — nastaví se, když je dosažitelný Flutter SDK (holé `flutter`, pak `fvm flutter`); úlohy golden render ho vyžadují
+- **`sandbox`** — `native-macos` na macOS, `native-linux` na Linuxu. Je to nápověda pro umístění, ne slib: worker ohlašuje backend, který jeho platforma _má_, ale úlohy, které spouští, do něj nebalí. Na rozdíl od `cc_server` spouští `cc_worker` zapůjčenou úlohu přímo
+- **`always-on` a `parallel`** — vyhrazený `cc_worker` ohlašuje vždycky obojí, takže se hodí pro dávky eval a další jednorázovou paralelní kapacitu
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+Detekce sahá jen tam, kam sonda dosáhne: co neprosonduje, spadne na bezpečný
+výchozí stav a start kvůli tomu neselže.
 
-## What the worker would execute
+## Co by worker prováděl
 
-The lease protocol carries six job kinds:
+Protokol zapůjčení nese šest druhů úloh:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| Druh           | Co to je                                            |
+| -------------- | --------------------------------------------------- |
+| `agentRun`     | Jeden běh agenta (odeslání)                         |
+| `pipelineStep` | Provedení kroku pipeline                            |
+| `codeIndex`    | Sestavení indexu kódu repozitáře                    |
+| `goldenRender` | Vizuální golden render rozhraní (vyžaduje `flutter`) |
+| `benchmark`    | Běh výkonnostního benchmarku                        |
+| `evalBatch`    | Dávka eval (dává přednost kapacitě `parallel`)      |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+Provádění je skutečné streamování podprocesů, ne plný vestavěný runtime
+agenta. Když zapůjčení nese `repoRemote`, worker udělá `git clone --depth 1`
+do adresáře cache klíčovaného remotem a SHA, pak `git fetch` a `git checkout`.
+U `agentRun` spustí v pracovním adresáři příkaz z `CC_JOB_COMMAND` v prostředí
+zapůjčení a stdout i stderr streamuje zpátky jako události; bez
+`CC_JOB_COMMAND` prompt jen ozve, aby se transport pořád procvičil od začátku
+do konce. Ostatní druhy spouštějí malé skutečné příkazy (`git rev-parse HEAD`,
+`git --version`) jako poctivé sondy. Pověření v rozsahu úlohy v prostředí
+zapůjčení se vloží do každého podprocesu a do logu se nikdy nezapíšou.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Události se dávkují a odesílají každých 250 ms nebo po 32 událostech; každá
+úloha končí událostí done a hlášením o dokončení. Model je heartbeat plus
+zapůjčení s krátkým TTL: když worker ztratí spojení, zapůjčení vyprší a server
+úlohu sebere k novému pokusu. Na workeru není trvalý stav a mezi workery není
+konsenzus ani kradení práce.
 
-## Related guides
+## Související návody
 
-- [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
-- [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/)
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/)
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
+- [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/)
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/)
 
-## Related concepts
+## Související koncepty
 
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/)
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/)

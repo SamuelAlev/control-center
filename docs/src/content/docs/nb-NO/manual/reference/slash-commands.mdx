@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Skråstrekkommandoer
+description: Alle kommandoene du kan skrive i skrivefeltet, hva de gjør, og hvor de kjører.
 slug: nb-NO/handbok/referanse/skrastrekkommandoer
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Kommandoer du skriver i skrivefeltet til et område. De faller i tre grupper etter hvor de virker, og forskjellen betyr noe: en **lokal** kommando reiser aldri som en melding, så den verken vises i transkriptet eller når fram til en agent.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Hvor den kjører | Hva det betyr |
+| --------------- | ------------- |
+| **Lokal**     | Håndteres i klienten (eller en klientinitiert serveroperasjon). Kommandoen reiser aldri som en melding, så ingen agent ser den. |
+| **Sidekall**  | Ett modellkall på serversiden om samtalen. Samtalen endres ikke. |
+| **Utsending** | Setter en modus eller et direktiv for kjøringen meldingen starter. |
 
 ---
 
-## Directing a run
+## Styre en kjøring
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Lokal → utsending.** Armer planmodus på samtalen: et fullt skrivebeskyttet worktree og en verktøyflate begrenset til `read`. Leveransen fra agenten er en plan, ikke en redigering. En bar `/plan` vipper bare modusen og reiser aldri som en melding; med en prompt er resten av linjen det som starter kjøringen.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Utsending.** Starter et autonomt mål som målsupervisoren sender ut på nytt på tvers av segmenter og omstarter.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Å skrive `/goal` med tekst først åpner **objektivintervjuet** — en kort runde som nekter å godta et utkast før det har alle fem: suksesskriterier en evaluator kan avgjøre uten skjønn, en eksakt verifiseringskommando, et tak på antall forsøk, omfangsgrenser og stoppbetingelser. Hvert steg tilbyr *Hopp over og kjør som skrevet*: intervjuet er en standard, ikke en sperre.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` og `/goal drop` er ikke skråstrekkommandoer. Pause, fortsett og stopp finnes i samtalens målliste i sidepanelet. Startflaggene på selve målet er `--budget <dollars>`, `--max <N>` (kjøringsbudsjett) og `--days <N>` (frist). Et mål som har nådd kostnadstaket, gjenopptas bare ved å heve taket, fra den samme kontrollen i sidepanelet.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Hvorfor den i det hele tatt avbryter]
+Et autonomt mål er det ene stedet der en vag oppdragsbeskrivelse virkelig koster. Kjøringen jobber i timevis med et mål der ingen har definert «ferdig», og rapporterer så suksess på egne premisser. Fem spørsmål er billigere enn én nattlig kjøring som ble ferdig når den selv følte seg ferdig.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Utsending.** Jobber iterativt til den er ferdig. Godtar et tak: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Et token som *ser ut* som en grense (starter med et siffer eller et fortegn) og ikke lar seg tolke, er en hard feil. Prosa er bare prosa, så `/loop keep going until the tests pass` er en ubegrenset løkke med en prompt på samme linje i stedet for en feiltolkning.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/).
+**Utsending.** Gjør økten om til en **regissør**: dens egne verktøy nedgraderes til `read` pluss fem worker-verb, og bakgrunnsworkere gjør redigeringene. Se [Styr bakgrunnsworkere](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Workere overlever aldri modusen — å gå ut av den dreper hver eneste en.
 
 ---
 
-## Managing context
+## Administrere kontekst
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Lokal → server.** Folder eldre historikk inn i et forankret sammendrag og fortsetter på den komprimerte konteksten. Ingen argument rettet mot modellen: kommandoen reiser aldri som en melding, og komprimeringspasset tar ikke imot noe fokusvink.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Lokal → server.** Fjerner tungt innhold **uten** å oppsummere: ingen modellkall, hvert ord beholdt, bare massen ingen ville lest på nytt, blir tømt.
 
-| Target        | Drops                             |
-| ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| Mål           | Fjerner |
+| ------------- | ------- |
+| `tool_output` | Eldre verktøyresultater uten hendelser (standard) |
+| `images`      | Gamle skjermbilder, med teksten deres beholdt |
+| `all`         | Begge |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Dette er nødutgangen for «konteksten min er tjukk, men jeg vil ikke ha et sammendrag».
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Lokal.** Åpner kontekstutforskeren for agenten i denne samtalen i en egen
+fane: hvert segment og hver del av kontekstvinduet dens — systemprompt, skills,
+kontekstfiler, verktøyskjemaer, historikk og bilder — med hva hver del koster og
+det ordrette innholdet bak.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Fanen er nøklet på paret (område, agent), så å kjøre den to ganger flytter fokus
+tilbake til én fane i stedet for å stable kopier av den samme oversikten.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+I et område med **mer enn én agent** åpner en bar `/context` vinduet som
+kontekstmåleren i toppteksten leser — den agenten som sist jobbet her, altså den
+hvis melding ligger nederst i transkriptet — og fanen merkes
+`Kontekst · <name>` så det står hvem sin den er. Oppgi en annen for å bytte: `/context qa` (`@` er valgfritt). Et navn
+du skriver, løses eksakt, aldri tilnærmet: to agenter har to forskjellige vinduer, så et
+nesten-treff som åpnet det andre, ville vært et svar som så plausibelt ut på et
+spørsmål du ikke stilte.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Den samme utforskeren ligger bak kontekstmåler-brikken i toppteksten til området, som
+følger den samme agenten — kommandoen og brikken kan aldri være uenige om
+hva «konteksten» betyr her.
 
 ---
 
-## Asking about the conversation
+## Spørre om samtalen
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Disse bruker ett modellkall og **endrer aldri samtalen**. Agentens neste virkelige tur ser nøyaktig det den ville sett uansett, og det er hele verdien av å spørre.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Sidekall.** Skriver et overleveringsdokument for den som tar over arbeidet uten forkunnskap: hva oppgaven er, hva som er lært, og hva som gjenstår.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Sidekall.** Svarer på et spørsmål om arbeidet så langt uten å legge spørsmålet eller svaret til i transkriptet.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[To kommandoer, én implementasjon]
+Begge har samme form — ta samtalen som den står, still ett spørsmål om den, og lagre ingen av sidene. Implementert én gang så de ikke kan gli fra hverandre til to forskjellige oppfatninger av «konteksten så langt».
 :::
 
 ---
 
-## Navigating and exporting
+## Navigere og eksportere
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/nb-NO/handbok/slik-gjor-du/forgren-samtale/).
+**Lokal.** Åpner grennavigatoren: hvor samtalen forgrenet seg, hvilken sti den er på nå, og hvordan du kommer tilbake til en du forlot. Se [Forgren en samtale](/nb-NO/handbok/slik-gjor-du/forgren-samtale/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Lokal.** Skriver samtalen til en selvstendig HTML-fil — sammenleggbare verktøykort, uten stilark, uten skript, uten bildetjener. Havner i `Documents/ControlCenter/exports/` på skrivebordet og lastes ned på web.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Lokal.** Kopierer transkriptet til utklippstavlen som markdown, med verktøykall i sammenleggbare blokker. Resonnering er bevisst utelatt: et transkript limt inn i en feilrapport leses av et menneske.
 
 ---
 
-## Everything else
+## Alt annet
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Lokal.** Viser og redigerer samtalens lagrede gjøremålsliste. En bar `/todo` åpner editoren. Underkommandoer: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Utsending.** Bruker en installert skill. Skills lever under sitt eget `skill:`-prefiks, så de deler ikke navnerom med de innebygde — uten det ville en skill som heter `plan` vært permanent utilgjengelig.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Utsending.** Enhver markdown-fil under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` eller `.opencode/commands` i repoet. En nestet `foo/bar.md` kan også nås som `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Malbehandling: `$1`, `$@`, `$@[start:length]` og `$ARGUMENTS`. Frontmatter kan sette `description` (autofullføring i skrivefeltet). `allowed-tools` og `model` leses fra filen, men en brukerkommando setter foreløpig bare inn argumentene i innholdet — de endrer ikke kjøringens modell eller verktøyflate.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+En kommando brukeren selv har skrevet, vinner over en skill med samme navn — det er en snarvei et menneske bevisst har påkalt, med argumenter.
 
 ---
 
-## Magic keywords
+## Magiske nøkkelord
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Ikke kommandoer. Et frittstående ord med bare små bokstaver hvor som helst i en prompt fester en skjult instruks til den turen.
 
-| Word          | Effect                                                             |
-| ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| Ord           | Effekt |
+| ------------- | ------ |
+| `ultrathink`  | Maksimal resonneringsinnsats for turen |
+| `orchestrate` | Deleger uavhengig arbeid parallelt og verifiser hver fase |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Matcheren er bevisst streng på ordgrenser. `orchestrate,` matcher; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` og `orchestrate()` gjør det ikke, og inngjerdede kodeblokker, innebygde kodespenn og XML-seksjoner maskeres bort først. Uten det ville det å lime inn en stakksporing endre hvordan agenten oppfører seg.
 
 ---

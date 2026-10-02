@@ -1,126 +1,83 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: オーケストレーションを実行
+description: オーケストレーターにプランを依頼し、Plan Studio でレビューして編集し、一度承認するだけで、生成されたパイプラインに作業を任せられます。
 slug: ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/) for how it works.
+このガイドでは、ひとつの大きな目標を、それ自体が動くチーム全体のプランに変える方法を説明します。仕組みについては[オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/)を参照してください。
 
-## When to use an orchestration
+## オーケストレーションをいつ使うか
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/); for a process you can spell out by
-hand, build a [pipeline template](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/).
+依頼が 1 つのエージェントの手に余り、正確な手順をまだ把握していないときは、オーケストレーションを使います。単一のタスクなら[スペース](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)でエージェントにメッセージを送り、自分で手作業で書き出せるプロセスなら[パイプラインテンプレート](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)を構築してください。
 
-## Step 1: Ask for the plan
+## ステップ 1: プランを依頼する
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. スペースを開き（または作成し）、**アンカーチケット** を用意します。すべての提案には 1 つ必要で（`propose_orchestration` は `ticket_id` を取ります）、共有スペースはそのチケットから決まります。
+2. 任意で、コンポーザーのモードドロップダウンを **オーケストレート** に切り替えます。このモードでは、エージェントのできることが読み取りと提案（メモリ、コードグラフ、リポジトリとチケットの読み取り、`propose_orchestration`、プレイブックツール）に絞られるため、プランを立てる代わりにコードを書き始めることはできません。
+3. オーケストレーター（通常は CEO エージェント）を @メンションし、目標を平易な言葉で伝えます:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo オフラインファーストのミーティングレコーダーについて競合状況を調査し、1 ページのポジショニングドキュメントを書いてください。
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+オーケストレーターは、スペースに構造化された **提案** カードで応答します。必要なロール、サブチケットに分解された作業、任意の調査とディスカッションのフェーズ、成果物を生成する統合ステップ、そして予算が含まれます。
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+提案は型付きオブジェクトであるため、何かが実行される前にアプリが検証します（整ったロール、宣言された出力スキーマ、循環のない DAG）。検証に失敗した提案は承認できません。
 
-## Step 2: Review and edit the proposal
+## ステップ 2: 提案をレビューして編集する
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+チャット内のカードには 3 つのアクションがあります: **プランを承認**、**却下**、**開く**。**開く** はプランをエディタータブとして Plan Studio で開きます。カード自体は編集できません。
 
-To change anything, press **Open** and work in the right-hand inspector:
+何かを変更するには、**開く** を押して右側のインスペクターで作業します:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- 任意の作業ステップの **タイトル**、**説明**、**ロール**、**依存先**、**出力スキーマ**。ここでのロールとは、プランが既に持つロールキーのうちどれがそのステップを所有するかという意味です — インスペクターからロールを特定の名前付きエージェントに固定したり、採用リストを編集したりすることはできず、予算も編集できません。
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+読み取り専用なのは 2 つです。構造ノード（調査、ディスカッション、統合）と、すでに作業が実行されたノードです。編集できるのは、オーケストレーションがまだ `proposed` の間だけです。
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ja-JP/マニュアル/ハウツーガイド/plan-studio/) for the full editor.
+承認する前に、承認バーの **見積もり** を押すと、コスト、所要時間、影響範囲の範囲を確認できます。エディターの全体像は [Plan Studio で作業する](/ja-JP/マニュアル/ハウツーガイド/plan-studio/) を参照してください。
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ja-JP/マニュアル/ハウツーガイド/コスト管理/).
+:::note[予算は支出上限ではありません]
+提案の予算は、承認バーの_見積もり_と比較されます。見積もりの上限が予算を超えると、合計が赤くなり予算超過の警告が表示されます。プランの実行中に支出をチェックするものはないため、実行を停止したり失敗させたりすることはありません。実際に支出を止めるには、エージェント単位の予算ポリシーを使います — [コスト管理](/ja-JP/マニュアル/ハウツーガイド/コスト管理/)を参照してください。
 :::
 
-## Step 3: Approve
+## ステップ 3: 承認する
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+プランは、チャットのカードから、または Plan Studio の承認バーから承認します。**これがあなたが下す唯一の判断です。** 承認はオペレーター専用です — そのための MCP ツールは存在しないため、エージェントは提案と修正はできても、自分のプランを承認することはできません。
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ja-JP/マニュアル/コンセプト/パイプライン/) and creates the
-scaffolding:
+ここからは、決定論的なマテリアライザー（純粋関数で、LLM は使いません）が提案を実際の[パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)に変換し、スキャフォールドを作成します:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- 新しいロールを採用します（採用したエージェント id を記録するため、承認途中でクラッシュしても重複採用なしで再開できます）
+- ロールを **チーム** にまとめます
+- **プロジェクト** を作成し、その下に親チケットを登録します
+- すべてを動かす **パイプライン実行** を開始します
 
-The status moves to `approved`, then `executing`.
+ステータスは `approved` に進み、次に `executing` になります。
 
-## Step 4: Watch it run
+## ステップ 4: 実行を見守る
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+サブチケットはパイプラインのステップとして実行されます。ディスカッションラウンドを有効にした場合、まず各ロールが立場を投稿します。進捗は、あなたがすでに確認している場所に表示されます:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)
-- the **project** the parent ticket was filed under
+- オーケストレーションを固定した **親チケット**
+- チームが会話する共有 **スペース**。ここではプランの行が各ノードの状態を追跡します
+- **パイプライン実行** の詳細。通常どおりウォーターフォールとステップごとのコストが表示されます — [パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)を参照してください
+- 親チケットを登録した **プロジェクト**
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+サブチケットが完了すると、ステータスは `synthesizing` に進み、統合ステップが成果物を生成します。そのテキストは共有スペースに投稿され、親チケットは完了としてマークされ、その後 `completed` になります。
 
-## Stop it early
+## 途中で停止する
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+チャット内のカードで **オーケストレーションをキャンセル** を押すか、Plan Studio の承認バーで **実行をキャンセル** を押します。キャンセルすると、進行中の作業は破棄されます。
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+オーケストレーションは、マテリアライズが失敗したとき、または生成されたパイプライン実行が失敗したときに失敗します（調査、ディスカッション、統合、永続化 — これらのステップは失敗時に続行しません）。生成された **作業** ステップは常に失敗時も続行するため、サブチケットが 1 つ失敗しても実行全体は失敗しません。予算超過による失敗経路はなく、「すべてのサブチケットが失敗した」場合のしきい値もありません。
 
-## Related guides
+## 関連ガイド
 
-- [Work in Plan Studio](/ja-JP/マニュアル/ハウツーガイド/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/): where the parent ticket is filed
-- [Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ja-JP/マニュアル/ハウツーガイド/エージェントチーム構築/): the roles an orchestration fills or hires
+- [Plan Studio で作業する](/ja-JP/マニュアル/ハウツーガイド/plan-studio/): プランの編集、見積もり、差分、承認
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/): オーケストレーションを固定する親チケット
+- [プロジェクトで作業を整理](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/): 親チケットを登録する場所
+- [パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/): マテリアライズされたオーケストレーションがエンジンでどう見えるか
+- [エージェントチームを構築](/ja-JP/マニュアル/ハウツーガイド/エージェントチーム構築/): オーケストレーションが満たす、または採用するロール
 
-## Related concepts
+## 関連コンセプト
 
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)

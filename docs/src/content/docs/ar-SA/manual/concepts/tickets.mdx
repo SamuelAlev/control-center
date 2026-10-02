@@ -1,155 +1,93 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: التذاكر والتفويض
+description: لماذا تتتبع التذكرة العمل من غير أن ترسله، وكيف يُحرس التفويض، وما الذي تملكه مرآة المورّد وما لا تملكه.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تذاكر
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+التذكرة وحدة العمل التي يتتبعها Control Center. وهي عمدًا كيان _بسيط_: عنوان، ومتن، وحالة، ومالك، وموضع في شجرة. ليست ما يُنفَّذ الوكلاء عليه، فعمل الوكيل يعيش في المحادثات، والمخرج المنظَّم للتشغيل يعيش في سجل التشغيل.
 
-## Assignment records ownership; it dispatches nothing
+## الإسناد يسجّل الملكية، ولا يُرسل شيئًا
 
-This is the single most important thing to get right about tickets.
+هذا أهم ما يُفهَم عن التذاكر على وجهه.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+ضبط `assignedAgentId` يكتب حقلًا وينشر [حدث نطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/) باسم `TicketAssigned`. هذا الحدث إشارة للتدقيق وللإشعار، ومشغّل لخط أنابيب. **الإسناد إلى وكيل لا يبدأ تشغيلًا.** لا موزّع تذاكر يراقب `assignedAgentId` ويوقظ ذلك الوكيل.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+الاستثناء هو الفريق: عند ضبط `assignedTeamId` يُرسل `TeamRoutingService` تشغيل قائد الفريق، ومعه بروتوكول التشغيل والكشف.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+إن أردت أن يعمل وكيل بعينه على تذكرة، فاطلب منه ذلك في محادثة، أو أرسله بخطوة في خط أنابيب، أو فوّض العمل إليه من وكيل آخر. إسناد التذكرة إلى وكيل ثم الانتظار هو التصرف الوحيد الذي لن ينتج عملًا.
 
-## Mirror and overlay
+## المرآة والتراكب
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+قد تكون التذكرة محلية خالصة أو مدعومة بمتتبع خارجي، والصف الواحد يحمل الجهتين معًا.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**المرآة**، وهي المزوّد والمفتاح الخارجي وURL والعنوان والوصف والأولوية والتسميات والحالة الخام والحالة المطبَّعة والطوابع الزمنية، ذاكرة مؤقتة حين تكون التذكرة بعيدة. البعيد هناك مصدر الحقيقة، وإعادة الجلب تعيد كتابة المرآة كلها.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**التراكب**، وهو الإسناد والتفويض وربط المساحة والأصل والمشروع وطلبات السحب المرتبطة، خاص بـ Control Center. المتتبع لا يعرف عنه شيئًا، وإعادة الجلب لا تمسّه.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+هذا الفصل هو ما يجعل المزامنة آمنة من أساسها: سحب من المورّد قد يهدم المرآة، وبيانات التنسيق الوصفية التي فوقها تبقى.
 
-## The lifecycle graph binds agents, not you
+## مخطط دورة الحياة يقيّد الوكلاء، لا أنت
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+تسير الحالات على `backlog → open → inProgress → inReview → done`، و`blocked` حلقة جانبية، و`failed` / `cancelled` الحالتان النهائيتان الأخريان.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+يُفرَض مخطط الانتقال **على مسار الوكيل والأتمتة فقط**، أي أدوات MCP وخدمات المصالحة. الانتقال غير الجائز هناك يُسجَّل ويُتجاهل، فلا يستطيع وكيل مرتبك أن يُخرج تذكرة من حالة نهائية إلى الوراء.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+كل تغيير يجريه المستخدم في الواجهة يمر بقيمة `force: true` ويتجاوز المخطط كله. يجوز للإنسان أن ينقل التذكرة إلى أي حالة تعرضها قائمة الاختيار، ومنها إعادة فتح حالة نهائية. قائمة الاختيار لا تعرض `failed`، والوكلاء يضبطونها عبر `fail_ticket`. المخطط حاجز حماية للأتمتة، لا قاعدة تحكم مسار العمل.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` يملك كل تعديل عبر نقطة اختناق واحدة: تحمّل الصف، وتتحقق أنه يخص مساحة عمل المستدعي، وتكتب بقيمة `version` متوقعة، فلا يطمس تعديلان متزامنان أحدهما الآخر في صمت.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/).
+لجدول الحالات الكامل، والانتقالات، وقائمة الحقول، وأنواع العلاقات، انظر [دورة حياة التذكرة](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/).
 
-## Provenance: how a ticket came to exist
+## المنشأ: كيف وُجدت التذكرة
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+لكل تذكرة `originKind`. في التعداد خمس قيم، `manual` و`pipelineStep` و`agentDelegation` و`externalSync` و`recovery`، لكن اثنتين فقط تُكتبان اليوم: `manual` (الافتراضي عند `createTicket`، ويشمل ذلك الأبناء المفوَّضين) و`externalSync` (محرّك المزامنة، عند السحب من المورّد). `TicketWorkflowService.createTicket` لا يأخذ وسيط منشأ، فلا تُكتَب `pipelineStep` ولا `agentDelegation` ولا `recovery` في أي صف.
 
-## Guarded delegation
+## التفويض المحروس
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+التفويض هو حيث ينشئ وكيل عملًا لوكيل آخر، وهو الموضع الذي قد يتسرب منه امتياز، فالحراسة على الخادم في نقطة اختناق، لا في تعليمات المطالبة.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+يمر `delegate_task` عبر `TicketWorkflowService.delegateGuarded`، فيحسب عمق الابن وجذره من سلسلة الأصل، ثم يجري فحوص `DelegationGuards` الأربعة: قفزة تتجاوز **سقف عمق قدره 3**، وقفزة ترجع إلى وكيل موجود أصلًا في السلسلة (**كشف الدورات**)، و**سقف الاستقلالية** (لا يتجاوز المستوى الفعلي للمفوَّض إليه في المساحة مستوى المفوِّض)، و**غلاف الميزانية** (يُخصم التفويض من ميزانية الحد الصارم المتبقية لدى المفوِّض، ولا يستحدث ميزانية فوقها). وتوصيلات الإنتاج توفّر منفذي الحل كليهما. تُتخطى الاستقلالية والميزانية حين لا يُمرَّر `from_agent_id` (والميزانية غير المحدودة، أو التي بلا سياسة، تمر أيضًا). الرفض استثناء `DelegationRefusedException` تصل رسالته إلى الوكيل المفوِّض بنصها: رفض يُسمَع، لا عملية صامتة.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` الشقيق الأقدم، وهو **غير محروس**: يستدعي `createTicket` مباشرة ويتجاوز الحراسة كلها. فضّل `delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+لا تخلط بين سقف عمق التفويض (3، على سلاسل `delegate_task`) وسقف تداخل الوكلاء الفرعيين في الإطار المضمّن (2). هما حدّان مختلفان على آليتين مختلفتين.
 
-## Hierarchy, links and projects
+## التسلسل والروابط والمشاريع
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+علاقات الأصل والتذاكر الفرعية تعيش في `tickets.parent_ticket_id`، وتملكها `setParent` / `clearParent`. وليست صفوف `ticket_links`، فمن يقرأ علاقات تذكرة يجمع المصدرين.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` يحمل الروابط الموجَّهة بين تذاكر لا علاقة هرمية بينها:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| نوع الرابط    | المعنى                              |
+| ------------- | ----------------------------------- |
+| `blocks`      | المصدر يعوق الهدف                   |
+| `relatesTo`   | التذكرتان مرتبطتان (علاقة متناظرة) |
+| `duplicateOf` | المصدر نسخة مكررة من الهدف          |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**المشروع** تجميع لتذاكر على نطاق مساحة العمل نحو هدف مشترك. المشاريع خاصة بـ Control Center، ولا تُزامَن إلى مزوّد خارجي.
 
-## Collaborators
+## المتعاونون
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+صفوف `TicketCollaborator` هي كيف يُربَط أكثر من طرف واحد بتذكرة، بدور `assignee` أو `collaborator` أو `reviewer`. البشر والوكلاء صفوف متكافئة، `principalId` إلى جانب `collaboratorType`، بلا قيمة خاصة تمثّل «المستخدم»، وبلا مفتاح أجنبي إلى جدول المستخدمين ولا إلى جدول الوكلاء.
 
-## External sync
+## المزامنة الخارجية
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+تذكرة Control Center هي السجل الأساس. حذف التذكرة **محلي فقط**، فالتذكرة التي يسندها مورّد لا تُحذف من المتتبع إن حذفتها، وقد تعود في المزامنة التالية. ويتتابع الحذف إلى المتعاونين والتذاكر الفرعية.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+تُحَل بيانات اعتماد المحوّل من مخازن بيانات الاعتماد على الخادم (مفتاح Linear أو رمز GitHub، إن لصقته في الإعدادات، يُلتقط في الطلب التالي، ولا تفعل البيئة غير بذر تلك المخازن).
 
-## Tickets and pipelines
+## التذاكر وخطوط الأنابيب
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+لا عقدة في خط الأنابيب تنشئ تذكرة أو تكملها أو تلغيها. لا خطوة من هذا النوع في اللوحة، والمحرّك لا يستدعي `TicketWorkflowService`. ويبقى لمشغّل خط الأنابيب أن ينطلق عند `TicketAssigned` أو `TicketCompleted` أو `TicketFailed` أو `TicketCancelled` (وهذه الأربعة هي أحداث التذكرة التي يقابلها `EventPayloadMapper` فعلًا). لا عمود `pipelineRunId` على التذكرة، وارتباطها بخط الأنابيب يعيش في سجل تشغيل الوكيل.
 
-## See also
+## انظر أيضًا
 
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): ticket events can trigger a pipeline
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/): where a DAG of sub-tickets comes from
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): who a ticket is assigned to
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): the ticket lifecycle events
-- [Ticket lifecycle](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
-- [Delegate work to agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
-- [Organize work with projects](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): أحداث التذكرة قد تشغّل خط أنابيب
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/): من أين يأتي مخطط DAG للتذاكر الفرعية
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): لمن تُسنَد التذكرة
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/): أحداث دورة حياة التذكرة
+- [دورة حياة التذكرة](/ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة/): الحالات والحقول والانتقالات والعلاقات
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
+- [تفويض العمل إلى الوكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
+- [تنظيم العمل بالمشاريع](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشاريع/)

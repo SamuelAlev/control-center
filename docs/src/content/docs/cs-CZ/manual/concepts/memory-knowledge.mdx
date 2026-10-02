@@ -1,199 +1,198 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Paměť a znalosti
+description: Jak Control Center ukládá znalosti agentů, co se skutečně dostane do promptu agenta a proč je čtení paměti ve výchozím stavu otevřené.
 slug: cs-CZ/prirucka/koncepty/pamet-a-znalosti
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## K čemu paměť slouží
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Bez paměti začíná každá konverzace s agentem od nuly: stejnou konvenci je potřeba
+vysvětlit znovu, stejné rozhodnutí znovu obhajovat a stejnou slepou uličku znovu
+prozkoumat. Paměť je úložiště vázané na pracovní prostor, které přežije běhy.
+Existuje proto, aby znalost vytvořenou jedním agentem později našel jiný.
 
-It has three layers and they answer different questions:
+Má tři vrstvy a každá odpovídá na jinou otázku:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Fakta** – co platí (konvence, výsledek, rozhodnutí).
+2. **Politiky** – co s tím agenti musí udělat (normativní pravidlo).
+3. **Pracovní paměť** – u čeho jeden agent zrovna byl.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Rozlišení je důležité, protože k agentovi se dostávají různými cestami. Fakta
+se vyhledávají. Politiky se do kontextu vkládají. Pracovní paměť je soukromá.
 
-## Facts
+## Fakta
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` je jednotka znalosti vázaná na pracovní prostor a doménu.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Atribut                                     | Co to je                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `domain`                                    | Doména znalosti („conventions“, „decisions“, „codebase“)                                      |
+| `topic`                                     | Krátký štítek tématu                                                                          |
+| `content`                                   | Text znalosti                                                                                 |
+| `confidence`                                | 0.0–1.0, výchozí hodnota vychází z původu a roste při opětovném zmínění                      |
+| `memoryType`                                | Druh faktu – řídí křivku jeho časového útlumu                                                 |
+| `veracity`                                  | Jak se o něm systém dozvěděl – nasazuje jistotu a určuje přírůstek při každém dalším zmínění |
+| `sourceObservationIds`                      | Která pozorování k němu vedla                                                                 |
+| `supersededBy`                              | Novější fakt, který ho nahradil, pokud nějaký je                                              |
+| `validUntil`, `recallCount`, `mentionCount` | Signály expirace a používání, se kterými se počítá při vyvolání                               |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Poslední dva řádky lidé často přehlédnou a právě ony rozhodují, _který_
+fakt se vynoří. `memoryType` nese parametry Weibullova útlumu podle druhu, takže
+časově omezený závazek rychle vybledne, zatímco stabilní fakt o profilu ne.
+`veracity` zaznamenává původ – řekl to člověk (váha 1.0), odvodil to agent
+(0.7), vyprodukoval to nástroj (0.5), bylo to importované (0.6) – a touto vahou
+se nasadí výchozí jistota faktu.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Fakta se při rozporu nikdy neupravují na místě. Zápis faktu spustí detekci
+konfliktů proti faktům ve stejné doméně a se stejným tématem, poražený fakt
+nahradí a zapíše řádek konfliktu. Smyslem je auditní stopa: vždy uvidíš, čemu
+se věřilo předtím a co to nahradilo.
 
-## Policies
+## Politiky
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` je normativní pravidlo odvozené z fakt, vázané na pracovní
+prostor a doménu, s příznakem aktivity a volitelným `requiredRole`.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Každá **aktivní** politika v pracovním prostoru se vloží do **každého**
+odeslání, bez filtru – žádné filtrování podle domény, role, úkolu ani prostoru.
+Stojí za to to vědět, než napíšeš dvacátou politiku, protože politiky soutěží
+o stejné kontextové okno jako úkol. Proto je `requiredRole` u politiky jen
+orientační: říká, na koho pravidlo míří, ale nezabrání tomu, aby se dostalo
+i ke všem ostatním.
 
-## Domains
+## Domény
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` sdružuje fakta a politiky v rámci pracovního prostoru. Domény
+dávají znalostem organizační strukturu a jsou jednotkou, vůči které se zapisují
+přístupové granty. Než ale budeš doménu brát jako hranici důvěrnosti, podívej
+se na upozornění níže.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Doména je buď pro celý pracovní prostor (`architecture`), nebo vázaná na jeden
+repozitář (`repo:<slug>/architecture`). Stejný název v obou rozsazích jsou dvě
+nezávislá úložiště: fakt, který platí pro jeden repozitář, nepřepíše ten platný
+pro celý pracovní prostor. `search_memory` a preambule odeslání dají paměti
+vázané na repozitář přednost, když agent v tom repozitáři pracuje; zbytek
+neodfiltrují. Parametr `repo` u `propose_fact` / `propose_policy` /
+`search_memory` do tohoto rozsahu zapíše, nebo ho při hledání zvýhodní.
 
-## Access control is fail-open for reads
+## Řízení přístupu je u čtení ve výchozím stavu otevřené
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` mapuje roli agenta a doménu na jednu ze tří úrovní
+oprávnění:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Oprávnění | Význam                                                                                           |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| `none`    | Žádný přístup                                                                                    |
+| `read`    | Může fakta vyhledávat a načítat                                                                  |
+| `write`   | Vyžaduje ho `propose_policy`. Zápisy fakt (`propose_fact`, `supersede_fact`) na grant vázané nejsou |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Chybějící grant znamená čtení, ne zamítnutí]
+Když pro dvojici `(role, domain)` neexistuje řádek grantu, účinné oprávnění je
+**`read`**. Čtení je ve výchozím stavu otevřené záměrně. Jediný zápis, který
+vyhodí výjimku, je `propose_policy` bez oprávnění `write`
+(`InsufficientMemoryPermission`). Citlivý obsah v doméně paměti neomezí, kdo ho
+smí číst, dokud pro každou roli, která ho vidět nemá, výslovně nezapíšeš grant
+`none`.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+V produktu dnes nikde není rozhraní pro granty. Obrazovka paměti má karty
+Fakta, Politiky a Graf znalostí a nic dalšího; ke grantům se dostaneš jen přes
+RPC operace `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Asymetrie, u čtení měkká a u zápisu politik tvrdá, je záměrný kompromis.
+Paměť je nejužitečnější, když koluje, a odmítnuté čtení vyrobí agenta, který
+tiše ví méně, místo agenta, který problém nahlásí. Odmítnutí zápisu politiky
+je hlasité a dá se opravit, a právě tam vynucení sedí. Nově vytvořená doména
+nasadí `write` každé roli; pozdější zpřísnění je úprava jen přes RPC, protože
+rozhraní pro granty není.
 
-## Working memory
+## Pracovní paměť
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Každý agent má `AgentWorkingMemory`: volný textový zápisník klíčovaný pracovním
+prostorem a agentem. Přežívá mezi běhy, patří jen tomu agentovi a při každém
+odeslání se vloží do jeho promptu. Sem patří „Byl jsem v půlce refaktoringu
+autentizace“ – stav, který stojí za přenos do dalšího běhu, ale ne za povýšení
+na trvalý fakt.
 
-## What actually reaches an agent's prompt
+## Co se skutečně dostane do promptu agenta
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Při odeslání se preambule paměti skládá přesně ze tří věcí:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Každá aktivní politika pracovního prostoru**, jako řádky `- [domain] rule`.
+- **Vlastní pracovní paměť agenta**, doslova.
+- **Krátký seznam fakt vybraných podle klíčových slov** pro tento úkol – nejvýš
+  pět, v rozpočtu zhruba 1 200 znaků a jen když má popis úkolu alespoň 20
+  znaků. Kratší úkoly nedostanou žádná fakta.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Krátký seznam je jen FTS a klíčová slova a strop má schválně. Spočítat embedding
+dotazu je pomalé a cesta odeslání je to místo, kde je latence hned vidět, takže
+pomalá sémantická cesta na ní záměrně není. Preambule končí tím, že agentovi
+řekne, ať nosné položky ověří přes `search_memory`. Tam žije úplný model
+vyvolání.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Na této cestě se přístupové granty nekontrolují. Agent vidí to, co krátký
+seznam najde.
 
-## Recall: one query, four voices
+## Vyvolání: jeden dotaz, čtyři hlasy
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Nástroj `search_memory`, se kterým pracuje agent, má tři režimy a každé je
+jiné hledání:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** – jen FTS5.
+- **`semantic`** – výsledky BM25 a vektorů sloučené fúzí recipročního pořadí.
+- **`hybrid`** (výchozí) – polyfonní vyvolání: čtyři seřazené hlasy se sloučí
+  a výsledek se pak rozrůzní.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Čtyři hlasy jsou lexikální (FTS), sémantický (vektorové KNN), časový (nedávná
+aktivní fakta) a grafový: dvouskokový průchod po epizodických hranách od
+nejsilnějších lexikálních a sémantických semen. Grafový hlas je důvod, proč
+epizodické hrany vůbec jsou: vynese fakt, který je s odpovědí _spojený_, aniž
+by se shodoval s nějakým tvým slovem. Váhu hlasů určuje klasifikovaný záměr
+dotazu (ve výchozím stavu má největší váhu sémantika, pak graf a lexikální
+hlas, pak aktuálnost), skóre každého kandidáta se přenásobí jeho Weibullovým
+útlumem a sada výsledků se diverzifikuje pomocí MMR, aby pět přeformulování
+jednoho faktu nevytlačilo čtyři jiná.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Sémantické vyvolání mlčí, dokud není nainstalovaný model]
+Vektorový hlas se zapojí až po stažení embeddingového modelu na zařízení. Do té
+doby hybridní vyvolání běží se třemi hlasy a nic se zpětně nedoplňuje. Fakta
+zapsaná před instalací modelu vektory nikdy nezískají. Když se nepodaří načíst
+samotné vektorové rozšíření SQLite, vektorová cesta se dál zhorší na průchod
+v Dartu přes zabalené embeddingy. Vyvolání pořád odpoví, jen pomaleji.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Hledání v paměti na počítači a na webu je samostatná, jednodušší cesta: RPC
+operace `memory_fact.search` je **jen FTS5**, protože tenký klient neumí poslat
+embedding dotazu a hybridní cesta zůstává uvnitř hostitele. Pořadí, které vidíš
+v prohlížeči paměti, tedy není pořadí, které agent dostane z `search_memory`.
+Je to očekávané chování. „Hledal jsem to a nenašel“ v rozhraní neznamená, že to
+nenajde ani agent.
 
-## Where memory lives and who writes it
+## Kde paměť žije a kdo ji zapisuje
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Prohlížeč paměti je v **Nastavení → Pracovní prostor → Paměť**
+(`/workspaces/<id>/settings/memory`), s kartami Fakta, Politiky a Graf znalostí.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Je tam asymetrie, která lidi překvapí: **paměť můžeš upravit a smazat, vytvořit
+ji nemůžeš.** Ani karta Fakta, ani karta Politiky nemá ovládání pro přidání.
+Vytváření je na straně agenta, přes `propose_fact` a `propose_policy`
+(`supersede_fact` / `supersede_policy` je nahrazují). `remember` zapíše položku
+horké vrstvy vázanou na relaci a `consolidate_memory` ji může později povýšit
+na fakt; `record_observation` a `update_my_notes` zapisují soukromý zápisník,
+který se vkládá při odeslání. Prohlížeč slouží ke kontrole a opravě. Chceš-li
+fakt do paměti, řekni to agentovi.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Dvě údržbové operace se stejně tak volají z agenta a neběží podle plánu:
+`consolidate_memory` slučuje a prořezává nahromaděná fakta a
+`harmonize_memory` srovnává přesvědčení, která se mezi agenty rozešla.
+`list_memory_conflicts` ukáže, co detekce konfliktů už zaznamenala.
+Žádný časovač je za tebe nespouští. Rozhodnutí ze schůzek se sklízejí do domény
+`decisions`, když je zapíše krok uložení schůzky. Není to časovač nad
+dokončenými běhy agentů.
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): roles are what grants are written against
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/cs-CZ/prirucka/navody/sprava-pameti/): working with memory in practice
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): role jsou to, vůči čemu se granty zapisují
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): paměť je vázaná na pracovní prostor a leží v jeho vlastním databázovém souboru
+- [Spravujte paměť pracovního prostoru](/cs-CZ/prirucka/navody/sprava-pameti/): práce s pamětí v praxi

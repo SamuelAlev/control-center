@@ -1,123 +1,125 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: مجوزدهی — چه کسی مجاز است چه کاری انجام دهد و چگونه آن را اثبات می‌کنید
+description: کاتالوگ مجوزهای پشت نقش‌های Control Center، رد حسابرسی‌ای که دستکاری را آشکار می‌کند و هر تصمیم مجوزدهی در آن ثبت می‌شود، و کنترل‌های سطح کل نصب که یک اپراتور می‌تواند تثبیت کند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/مجوزدهی
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/).
+Control Center دو پرسش مجوزدهی را پاسخ می‌دهد و این دو واقعاً متفاوت‌اند.
+**«آیا این فرد می‌تواند این عملیات را فراخوانی کند؟»** دربارهٔ انسان‌ها، نقش‌ها
+و مخزن‌ها است. **«آیا این عامل می‌تواند این اثر را پدید آورد؟»** دربارهٔ کنش‌ها،
+آرگومان‌ها و دامنهٔ اثر است — آن یکی به [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) مربوط می‌شود.
 
-This page is the first question, plus the record both of them leave behind.
+این صفحه به پرسش نخست می‌پردازد، به‌همراه سابقه‌ای که هر دو از خود به‌جا می‌گذارند.
 
-## One decision point
+## یک نقطهٔ تصمیم
 
-Every human-side authorization decision resolves through a single function:
+هر تصمیم مجوزدهی در سمت انسان از یک تابع واحد می‌گذرد:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+یک **مجوز** به شکل `<domain>:<tier>` است — `tickets:write`،
+`members:administer`، `repos:read`. این کاتالوگ **استخراج‌شده** است، نه
+دست‌نویس: از خودِ سطح عملیات محاسبه می‌شود (پیشوند نام عملیات دامنه را می‌دهد
+و حداقل نقشی که از قبل اعمال می‌کند، رده را)، بنابراین هر ~550 عملیات بدون
+آنکه کسی چیزی تایپ کند، یک مجوز دارد.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+همین استخراج، همان ویژگی‌ای است که ارزش محافظت دارد. یعنی یک عملیات تازه
+به‌طور پیش‌فرض دروازه‌بندی می‌شود — حالت شکست یک مدل دستیِ حاشیه‌خورده این است
+که کسی فراموش می‌کند، و چیزی که فراموش می‌شود همان دروازه است. یک تست
+ratchet مجموعهٔ دامنه‌های حاصل را تثبیت می‌کند، بنابراین افزودن یک عملیات زیر
+پیشوندی تازه، تصمیمی در نام‌گذاری است که یک انسان می‌گیرد، نه یک اتفاق.
 
-The four tiers map exactly onto the built-in roles:
+این چهار رده دقیقاً با نقش‌های توکار متناظرند:
 
-| Tier | Role floor | Example |
+| رده | حداقل نقش | نمونه |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | مهمان | `tickets:read` |
+| `write` | عضو | `tickets:write` |
+| `administer` | ادمین | `members:administer` |
+| `own` | مالک | `workspace:own` |
 
-## Roles
+## نقش‌ها
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+پنج نقش توکار — **مالک، ادمین، عضو، بیننده، مهمان** — پیش‌تنظیم‌هایی روی همان
+کاتالوگ هستند. مالکیت یک جایگاه واحد در هر فضای کاری است که با **انتقال
+مالکیت** به‌صورت صریح واگذار می‌شود (در غیر این صورت مالکی که می‌رود، قابل حذف
+نیست: لغو تأمین SCIM هر مالک فضای کاری را رد می‌کند — اول مالکیت را واگذار
+کنید).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**نقش‌های سفارشی فقط کم می‌کنند.** یک نقش سفارشی یک پیش‌تنظیم پایه نام می‌برد
+(`admin`، `member`، `viewer` یا `guest` — هرگز `owner`) و مجموعه‌ای از مجوزها
+که از آن حذف می‌شود — «ادمین، اما نمی‌تواند اعضا را مدیریت کند». هرگز نمی‌تواند
+بیش از پایه‌اش اعطا کند و همین است که ورودشان به یک نصب موجود را بی‌خطر
+می‌کند: هر بررسی موجود همچنان یک کران بالای معتبر می‌ماند. اعضا آن‌ها را به
+شکل `custom:<id>` نگه می‌دارند و کلاینتی که برای فهمیدن آن مقدار بیش از حد
+قدیمی باشد، به‌جای حدس‌زدن به مهمان بازمی‌گردد.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+زیر نقش‌ها **اعطاهای هر مخزن** قرار دارند (`none` / `read` / `review` /
+`write`): عضویت در فضای کاری هرگز بی‌سروصدا اختیاراتی فراتر از میزبان کد
+نمی‌دهد. هر سطحی که کد را در معرض دید می‌گذارد آن‌ها را بررسی می‌کند — از جمله
+آن‌هایی که از پهلو به کد می‌رسند، مثل یک ترمینال یا نشستی از ویرایشگر که روی
+worktree یک فضا باز شده است.
 
-## Server authority
+## اختیار سرور
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+برخی عملیات اصلاً دربارهٔ یک فضای کاری نیستند: تنظیمات سطح کل نصب، پیکربندی
+SSO، گواهی‌های ارائه‌دهنده، مدیریت مدل، پشتیبان‌گیری از کل نصب. این‌ها
+**اختیار سرور** را اعلام می‌کنند و برای همه به‌جز اپراتور نصب (مالک ثبت‌شدهٔ
+سرور) رد می‌شوند. به‌عمد فقط یک هویت اپراتور و یک تعریف از آن وجود دارد.
 
-## The audit trail
+## رد حسابرسی
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+هر تصمیم مجوزدهی — **اجازه و رد** — به یک رد حسابرسی که برای هر فضای کاری
+جداگانه نگه داشته می‌شود و با هش زنجیره شده است، افزوده می‌شود.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+گزارشی که فقط ردها را ثبت کند به «چه چیزهایی را مسدود کردیم؟» پاسخ می‌دهد،
+اما به «این عامل واقعاً چه کرد و چه کسی آن را مجاز دانست؟» نه — پرسشی که
+بررسی یک حادثه از آن آغاز می‌شود. بنابراین هر ورودی کل زنجیرهٔ اسناد را ثبت
+می‌کند: principal کنشگر، انسانی که به نمایندگی از او عمل شده، واگذاری‌ای که از
+آن رسیده، کنش و آرگومان‌هایش (به‌صورت چکیده)، تصمیم، و **قاعده‌ای که تصمیم را
+گرفته است**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+ورودی‌ها زنجیره شده‌اند: هش هر ورودی، هش ورودی قبلی را در بر می‌گیرد؛ پس
+ویرایش، حذف یا جابه‌جایی هر ردیف، همهٔ هش‌های پس از آن را می‌شکند. **تأیید
+زنجیره** کل زنجیره را از نو استخراج می‌کند و نخستین حلقه‌ای را نام می‌برد که
+برقرار نمی‌شود. یک گزارش حسابرسی که نمی‌توانید بررسی کنید، یک گزارش است؛ آنکه
+می‌توانید از نو استخراج کنید، مدرک است.
 
-Two consequences worth knowing:
+دو پیامد که دانستنشان ارزش دارد:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- جدول حسابرسی **از هرس مبتنی بر عمر معاف است**. یک زنجیرهٔ هش را نمی‌توان از
+  میانه کوتاه کرد. نگهداشت به شکل برون‌بری و سپس کوتاه‌سازی است، و کوتاه‌سازی
+  یک نقطهٔ بازرسی به‌جا می‌گذارد که هش پایانی بخش حذف‌شده را حمل می‌کند،
+  بنابراین آنچه باقی می‌ماند همچنان تا ابتدا قابل‌تأیید است.
+- این رد **کنار** خط زمانی فعالیت می‌نشیند، نه روی آن. خط زمانی آن چیزی است
+  که مردم انجام دادند؛ اینجا آن چیزی است که مجاز یا رد شده است. یک شناسهٔ
+  همبستگی مشترک، یک فراخوانی را در هر دو می‌خواند.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+به‌صورت JSON جداشده با خط جدید برون‌بری می‌شود و می‌تواند به یک SIEM جریان
+یابد (Splunk، Elastic، Sentinel — یک نقطهٔ پایانی HTTP با یک توکن bearer).
+جریان‌دهی از روی طراحی بدون تضمین است: پایین‌بودن یک SIEM هرگز نباید فراخوانی
+ابزار یک عامل را مسدود کند، و نسخهٔ پایدار و قابل‌تأیید در هر حالت روی دیسک
+است.
 
-## Sessions
+## نشست‌ها
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+یک نصب می‌تواند **حداکثر عمر نشست** و **مهلت بیکاری** را تعیین کند. هر دو در
+بررسی گواهی دستگاه اعمال می‌شوند؛ همان جایی که هر مسیر احرازشده از آن می‌گذرد
+— محدودیتی از جنس نشست که کلاینت بتواند نادیده بگیرد، به یک پرسشنامه پاسخ
+می‌دهد، نه به یک مهاجم. یک نصب همچنین می‌تواند SSO را الزامی کند که
+جفت‌کردن دستی دستگاه‌های جدید را غیرفعال می‌کند (با یک محافظ قفل‌شدن: تا وقتی
+هیچ اتصال SSO کارآمدی وجود ندارد، درخواست را رد می‌کند).
 
-## What this is not
+## این چه چیزی نیست
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **ACLهای هر شیء نیست.** به‌عمد هیچ مجوزی برای هر تیکت یا هر پیام وجود ندارد.
+  جداسازی در سطح مخزن همان چیزی است که تیم‌ها واقعاً درخواست می‌کنند و وجود
+  دارد؛ اشتراک‌گذاری هر شیء سطحی ترکیباتی است که اینجا تقاضای اثبات‌شده‌ای
+  ندارد.
+- **موتور سیاستی نیست که در یک DSL پیکربندی کنید.** واژگان به‌عمد بسته است، تا
+  کل سیاست بتواند نمایش داده، توضیح داده و برشمرده شود.
+- **جایی جز سرور اعمال نمی‌شود.** بررسی‌های سمت کلاینت تنها برای پرهیز از
+  ارائهٔ کنترلی وجود دارند که رد خواهد شد. تصمیم معتبر همیشه تصمیم سرور است.

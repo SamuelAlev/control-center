@@ -1,104 +1,105 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: SSO yapılandırması referansı
+description: Tek oturum açmanın her ayarı, uç noktası, işlemi ve hata kodu.
 slug: tr-TR/kilavuz/referans/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Tek oturum açmayla ilgili yapılandırılabilir her şey tek bir yerde. Değerler
+`global.db` içindeki `sso_connections` satırlarında yaşar (tasarım gereği
+sunucu genelinde) ve **Ayarlar → Sunucu → Tek oturum açma** ekranından ya da
+`sso.*` RPC işlemleriyle düzenlenir. Kaydedilen satır tek doğruluk kaynağıdır —
+`CC_SAML_*` / `CC_OIDC_*` ortam yolu yoktur (iki yerden gelebilen bir bağlantı,
+ayarlar ekranının çelişebileceği bir bağlantıdır).
 
-## Connection fields
+## Bağlantı alanları
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Alan                   | Geçerli olduğu | Varsayılan      | Anlamı                                                                                                                                                |
+| ---------------------- | -------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | her ikisi      | kapalı          | oturum açmalar bu bağlantıyı kullanabilir                                                                                                             |
+| `idpMetadataXml`       | SAML           | —               | IdP'nin `EntityDescriptor` XML'i (etkinleştirmek için gerekli)                                                                                        |
+| `spEntityId`           | SAML           | `<origin>/saml` | origin değişebildiği için sabitlenen varlık kimliğimiz                                                                                                |
+| `emailAttribute`       | SAML           | `email`         | e-postayı taşıyan öznitelik; e-posta biçimli bir NameID yedektir                                                                                      |
+| `displayNameAttribute` | SAML           | `displayName`   | görünen ad özniteliği                                                                                                                                 |
+| `groupsAttribute`      | SAML           | `groups`        | grup adları özniteliği                                                                                                                                |
+| `clockSkewSeconds`     | SAML           | 90              | yaşam süresi doğrulaması için saat kayması payı                                                                                                       |
+| `allowIdpInitiated`    | SAML           | kapalı          | istem dışı Response'ları kabul et (`InResponseTo` yok)                                                                                                |
+| `wantResponseSigned`   | SAML           | kapalı          | Response kökünde imza zorunlu kıl (assertion imzaları her zaman zorunludur)                                                                           |
+| `issuer`               | OIDC           | —               | issuer temel URL'si (etkinleştirmek için gerekli)                                                                                                     |
+| `clientId`             | OIDC           | —               | herkese açık istemci kimliği (etkinleştirmek için gerekli)                                                                                            |
+| `clientSecret`         | OIDC           | —               | yalnızca gizli istemciler için; 0600 secrets dosyasında saklanır, asla veritabanında değil — RPC üzerinden yalnızca yazılabilir (`sso.getConfig` `clientSecretPresent` bildirir) |
+| `groupsClaim`          | OIDC           | `groups`        | grup adlarını taşıyan claim                                                                                                                           |
+| `defaultRole`          | her ikisi      | `member`        | hiçbir grup eşlenmediğinde rol — asla `owner`                                                                                                         |
+| `groupRoleMap`         | her ikisi      | `{}`            | grup → rol; owner eşlemeleri kaydetme sırasında reddedilir                                                                                            |
+| `autoMember`           | her ikisi      | açık            | ilk oturum açmada kullanıcıları her çalışma alanına otomatik ekle                                                                                      |
+| `allowJit`             | her ikisi      | açık            | oturum açmada bilinmeyen kullanıcıları sağla                                                                                                          |
 
-## Process configuration
+## Süreç yapılandırması
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+SSO bağlantıları ortamdan beslenmez. Geriye kalan tek süreç bayrağı, bağlantı
+satırıyla değil **tarayıcı devri** ile ilgilidir:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Değişken / bayrak                               | Anlamı                                                                                                                        |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | SSO geri çağırmalarının tarayıcıyı yönlendirdiği origin (kimlik bilgisi URL fragment'ında taşınır). Ayarlanmazsa devir aynı origin'de kalır. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+Issuer URL'sinin kendisi `https` olmalıdır (`http` yalnızca loopback
+issuer'ları `localhost`, `127.0.0.1` ve `::1` için kabul edilir).
 
-## HTTP endpoints
+## HTTP uç noktaları
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| Uç nokta                                         | Kimlik doğrulama    | Amaç                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /saml/login?relay=…`                        | yok (yönlendirme)   | SP tarafından başlatılan oturum açmayı başlatır; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine postMessage gönderir (sekme kendi `client_origin` değerini bildirir; yalnızca origin izin listesi ona güveniyorsa dikkate alınır)              |
+| `POST /saml/acs`                                 | yok (IdP POST)      | assertion tüketicisi — doğrular, sağlar, üretir                                                                                                                                                                                                                                  |
+| `GET /saml/metadata`                             | yok                 | SP `EntityDescriptor`'ımız                                                                                                                                                                                                                                                       |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | yok                 | OIDC gidiş-dönüşü; `relay=desktop` uygulamaya devreder, `relay=web-popup` bekleyen bağlanma sekmesine (aynı `client_origin` kuralı)                                                                                                                                               |
+| `GET /auth/providers`                            | yok, CORS `*`       | bağlanma ekranı yoklaması: sunulan SSO bağlantıları (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                                                                      |
+| `/scim/v2/Users…`                                | Bearer (SCIM token'ı) | Users oluşturma/get/listeleme+filtreleme/PUT/PATCH/DELETE                                                                                                                                                                                                                      |
+| `/scim/v2/Groups`                                | Bearer              | salt okunur; grup push'u tasarım gereği 501 yanıtı verir                                                                                                                                                                                                                         |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | yetenek belgesi                                                                                                                                                                                                                                                                  |
 
-## RPC ops
+## RPC işlemleri
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Tüm `sso.*` işlemleri sunucu kapsamlıdır ve **sunucu sahibiyle** sınırlıdır
+(kurulumun işletmecisi, `ServerAuthority.serverOwner`). Bir çalışma alanına
+sahip olmak yeterli değildir; eşleştirme tek başına bunları asla vermez.
 
-| Op                        | Purpose                                                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| İşlem                     | Amaç                                                                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sso.getConfig`           | bir tür için kaydedilmiş bağlantı                                                                                                                                                                |
+| `sso.saveConfig`          | doğrular, kalıcı hâle getirir ve canlı uygular                                                                                                                                                   |
+| `sso.status`              | etkin/yapılandırılmış bayraklar, SCIM token'ının varlığı, kurallı origin                                                                                                                         |
+| `sso.testConnection`      | tarayıcı gidiş-dönüşü dışında bir bağlantıyı dener (SAML: metadata ayrıştırma + AuthnRequest oluşturma; OIDC: issuer keşfi); ekrandaki kaydedilmemiş değerleri isteğe bağlı olarak kullanır      |
+| `sso.spMetadata`          | bir origin için SP `EntityDescriptor`'ını üretir                                                                                                                                                  |
+| `sso.setPairingEnabled`   | elle eşleştirmeye izin verir/yasaklar (davet kodları, eşleştirme anahtarları); çalışan bir SSO bağlantısı yokken bunu devre dışı bırakmayı reddetmek kilitlenmeye karşı korur                    |
+| `sso.sessionPolicy`       | kurulumun cihaz kimlik bilgisi azami yaşını ve boşta kalma zaman aşımını okur (dakika; `0` = ayarlanmamış)                                                                                        |
+| `sso.setSessionPolicy`    | bu sınırları belirler; cihaz denetiminde uygulanır, istemcilere duyurulmaz                                                                                                                       |
+| `sso.scimRegenerateToken` | SCIM bearer token'ını üretir + döndürür (bir kez)                                                                                                                                                |
 
-## Validation error codes
+## Doğrulama hata kodları
 
-`cc_saml_verify_response` failures carry a stable code:
+`cc_saml_verify_response` hataları kararlı bir kod taşır:
 
-| Code                   | Meaning                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| Kod                    | Anlamı                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `signature`            | eksik/güvenilmeyen/kurcalanmış imza ya da izin verilmeyen algoritma/dönüşüm      |
+| `expired`              | `NotBefore`/`NotOnOrAfter` dışında (kaymanın ötesinde)                          |
+| `audience`             | audience kısıtlaması bizi adlandırmıyor                                          |
+| `destination`          | yanıt destination'ı bizim ACS'imiz değil                                        |
+| `request_match`        | `InResponseTo` bekleyen bir istekle eşleşmiyor ya da izin verilmediği hâlde istem dışı |
+| `issuer`               | issuer yapılandırılmış IdP değil                                                |
+| `recipient`            | subject doğrulama alıcısı bizim ACS'imiz değil                                  |
+| `malformed`            | XML/şema düzeyinde hata                                                          |
+| `status`               | IdP'nin bildirdiği durum Success değildi                                        |
+| `invalid` / `internal` | diğer her şey / seam hatası                                                      |
 
-## Database surfaces
+## Veritabanı yüzeyleri
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — tür başına bir satır, TASARIM GEREĞİ
+  ÇALIŞMA ALANLARI ARASI.
+- `users.sso_subject` + `users.sso_issuer` — sağlayıcı subject sabitlemesi,
+  kısmi bir dizin aracılığıyla `(issuer, subject)` başına benzersiz.
+- `users.deactivated_at` — SCIM devre dışı bırakma damgası.
+- SCIM bearer token'ı ve OIDC client secret'ı 0600 izinli secrets dosyasında
+  yaşar, asla veritabanında değil.

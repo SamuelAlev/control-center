@@ -1,180 +1,199 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Bekerja dalam Plan Studio
+description: Semak, sunting, anggar, bezakan dan luluskan rancangan dalam editor Plan Studio serta jalankan buku panduan berparameter.
 slug: ms-MY/manual-pengguna/panduan-cara/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/) and
-[Use plan mode](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/).
+Panduan ini menunjukkan cara anda bekerja dengan rancangan dalam Plan Studio.
+Untuk mengetahui apa itu orkestrasi dan dokumen rancangan, lihat
+[Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/) dan
+[Gunakan modus pelan](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/).
 
-## Open a plan
+## Buka rancangan
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Sesuatu rancangan kepunyaan perbualan yang menghasilkannya, jadi di situlah
+anda biasanya mencapainya: baris rancangan dalam perbualan mempunyai tindakan
+**Buka** dan Plan Studio terbuka sebagai tab editor di sebelah perbualan.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Tiada entri "Rancangan" dalam bar sisi]
+Itu memang disengajakan, bukan kecuaian. Hab di
+`/workspaces/<workspace-id>/plans` hanyalah pautan mendalam yang boleh dilalui,
+jadi tandakannya jika anda mahukan senarai tetap.
 :::
 
-The hub lists three sections:
+Hab menyenaraikan tiga seksyen:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Rancangan aktif** — orkestrasi, yang dicadangkan didahulukan, dengan
+  status, bilangan langkah dan nombor semakannya.
+- **Dokumen rancangan** — rancangan yang diserahkan oleh satu ejen dengan
+  `submit_plan` dalam [modus pelan](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/), selagi ia dicadangkan atau diluluskan.
+- **Buku panduan** — templat rancangan tersimpan yang berparameter.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Klik kad untuk membukanya dalam Plan Studio. Laluannya ialah
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, dengan `kind` ialah
+`orchestration` atau `document`, jadi anda juga boleh memaut terus satu
+rancangan.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Jika anda membuka **orkestrasi**, anda mendapat kanvas boleh sunting, garis
+masa versi dan bar kelulusan. Jika anda membuka **dokumen rancangan**, graf
+yang sama dipaparkan sebagai baca sahaja — dokumen rancangan dikarang oleh
+ejen; anda menyemak, menganggar dan meluluskan atau menolaknya, dan dokumen
+yang diluluskan memaparkan keadaan larian setiap nod secara langsung daripada
+orkestrasi yang dihasilkan oleh kompilasinya.
 
-## Edit the DAG
+## Sunting DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Suntingan boleh dilakukan pada **orkestrasi** selagi ia `proposed`. Semua
+suntingan kanvas dipacu papan kekunci:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Klik kanvas, kemudian gerakkan pilihan dengan **kekunci anak panah**.
+2. Tekan **n** untuk menambah langkah. Ia muncul terpilih sebagai "Langkah
+   baharu"; namakannya semula dalam pemeriksa di sebelah kanan.
+3. Tekan **e** pada langkah yang mesti berjalan dahulu, kemudian klik langkah
+   bersandar (atau pilihnya dan tekan **Enter**) untuk menyambung
+   kebergantungan. Tekan **Esc** untuk membatalkan sambungan yang belum
+   selesai.
+4. Tekan **x** untuk memotong kebergantungan terbaharu langkah yang dipilih,
+   atau togol kebergantungan tepat dalam editor kebergantungan pemeriksa.
+5. Tekan **Delete** untuk membuang langkah yang dipilih; rujukan kepadanya
+   dibuang daripada kebergantungan langkah yang tinggal.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Dalam pemeriksa, anda juga boleh menyunting perihalan, peranan dan skema
+output langkah. Suntingan disimpan secara automatik sebagai semakan baharu
+selepas jeda singkat; ralat pengesahan (dipaparkan dalam bar kelulusan)
+menyekat penyimpanan sehingga anda membaikinya.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Hanya langkah kerja boleh disunting. Nod struktur — kajian, perbincangan dan
+sintesis — adalah baca sahaja, begitu juga mana-mana langkah yang kerjanya
+sudah berjalan (ia ditandakan "sudah dilaksanakan", kerana menyuntingnya akan
+mencabangkan rancangan).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Penyimpanan bersifat serentak optimistik pada semakan yang anda mulakan. Jika
+orkestrator merancang semula di bawah anda, simpanan anda ditolak dengan
+"rancangan telah berubah" dan bukan digabungkan atau ditimpa secara senyap;
+baca semula semakan semasa dan ulangi suntingan anda. Perancangan semula yang
+dimulakan ejen sendiri dihadkan kadar kepada satu setiap dua minit, jadi ini
+jarang berlaku.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Kanvas tidak mempunyai fungsi seret untuk mengubah kedudukan: susun aturnya
+dikira daripada struktur kebergantungan, jadi "menggerakkan" langkah bermakna
+menyambung semula kebergantungannya.
 :::
 
-## Read cost, time and risk estimates
+## Baca anggaran kos, masa dan risiko
 
-Press **Estimate** in the approval bar.
+Tekan **Anggar** dalam bar kelulusan.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Setiap langkah pada kanvas mendapat lencana dengan julat kos dan saiz sampel
+  di sebaliknya, atau "Belum ada sejarah" apabila peranan langkah itu tidak
+  pernah berjalan. Pilih langkah untuk perincian penuh dalam pemeriksa: julat
+  kos dengan saiz sampel, julat tempoh dan jejari letupan (fail dan simbol)
+  yang diperoleh daripada asal usul langkah itu — atau "tidak diketahui"
+  apabila langkah itu tiada asal usul.
+- Bar kelulusan menunjukkan jumlah rancangan: julat kos keseluruhan, julat
+  tempoh untuk laluan kritikal (cabang selari bertindih, jadi ini bukan
+  jumlah) dan siling bajet apabila rancangan menetapkannya.
+- Jika hanya sebahagian langkah mempunyai sejarah, jumlahnya ditandakan
+  **sebahagian** dan hanya merangkumi langkah yang boleh dianggarkan. Jika
+  hujung tinggi anggaran melebihi siling bajet, jumlahnya bertukar merah
+  dengan amaran melebihi bajet.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Anggaran bersifat jujur atau tiada: langkah yang peranannya tiada sejarah
+larian yang selesai melaporkan saiz sampel sifar tanpa sebarang julat dan
+dipaparkan sebagai tidak diketahui dan bukan diagak. Anggap "Belum ada
+sejarah" sebagai "tiada siapa tahu", bukan "murah".
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/) for controls that actually stop
-spending.
+Siling bajet hanyalah perbandingan paparan terhadap anggaran ini. Tiada
+apa-apa yang menguatkuasakannya sebaik rancangan berjalan — lihat
+[Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/) untuk kawalan yang benar-benar
+menghentikan perbelanjaan.
 
-## Diff a revision against an earlier proposal
+## Bezakan semakan dengan cadangan terdahulu
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Setiap suntingan dan setiap perancangan semula oleh orkestrator ditambah pada
+garis masa semakan yang hanya menambah, dipaparkan dalam panel **Versi** di
+sebelah kiri rancangan orkestrasi.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Klik satu semakan untuk membezakannya dengan cadangan semasa. Tanpa
+   pilihan, panel membezakan semakan sebelumnya dengan semakan semasa.
+2. Baca perbezaan pada separuh bawah panel: langkah yang ditambah, dibuang
+   atau diubah antara dua semakan itu.
+3. Jika rancangan masih `proposed`, klik ikon undur pada sesuatu semakan untuk
+   kembali kepadanya. Mengundur menyimpan cadangan itu sebagai semakan
+   **baharu** — tiada apa-apa yang hilang.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` dan editor kedua-duanya menolak perubahan sebaik
+rancangan tidak lagi `proposed`, jadi larian yang sedang berjalan tidak
+mengambil perancangan semula di tengah pelaksanaan.
 
-## Approve, reject, or widen a plan
+## Luluskan, tolak atau luaskan rancangan
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Dalam apl, rancangan yang dicadangkan ialah satu keputusan yang diambil secara
+menyeluruh: **Luluskan rancangan** atau **Tolak** dalam bar kelulusan.
+**Luluskan rancangan** sentiasa meluluskan setiap langkah — tiada cara untuk
+memilih sebahagian kecil dahulu. Kelulusan disekat selagi cadangan mempunyai
+ralat pengesahan, yang dipaparkan di sebelah butang.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Meluluskan hanya untuk pengendali. Tiada alat MCP untuknya, jadi ejen boleh
+mencadangkan dan menyemak semula rancangan tetapi tidak pernah boleh
+meluluskannya.
 
-Once an orchestration is executing, the bar changes:
+Sebaik orkestrasi mula melaksana, bar berubah:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Jika sesuatu langkah berhenti untuk bertanya di tengah larian, pilihnya dan
+  tekan **Teruskan nod** untuk menyambungnya semula.
+- Tekan **Luluskan yang dipilih** untuk meluaskan kelulusan _sebahagian_
+  kepada langkah yang dipilih serta semua yang bergantung secara transitif
+  kepadanya (sesuatu langkah tidak pernah boleh diluluskan tanpa
+  kebergantungannya). Kawalan ini ada pada bar pelaksanaan bagi setiap
+  orkestrasi; ia tidak melakukan apa-apa apabila rancangan diluluskan secara
+  menyeluruh.
+- Tekan **Batal larian** untuk menghentikan keseluruhan orkestrasi.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Langkah di luar set kelulusan sebahagian dipaparkan sebagai ditangguhkan dan
+tidak berjalan sehingga anda meluaskan set itu.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Kelulusan sebahagian tidak boleh bermula dalam apl]
+Kelulusan sebahagian hanya wujud apabila sesuatu memanggil
+`orchestration.approve` melalui RPC dengan senarai `approved_node_keys` yang
+eksplisit. **Luluskan rancangan** dalam apl sentiasa meluluskan setiap langkah.
+Dokumen rancangan diluluskan secara menyeluruh dalam semua kes, jadi dokumen
+yang sedang dilaksanakan hanya menawarkan **Batal larian**.
 :::
 
-## Run a playbook with parameters
+## Jalankan buku panduan dengan parameter
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/) instead.
+Buku panduan ialah templat rancangan tersimpan dengan pemegang tempat
+`{{param}}` bertipe dalam matlamat, tajuk langkah, perihalan dan gesaannya.
+Penggantian bersifat literal — tiada bahasa ungkapan; jika anda perlukan
+logik, gunakan
+[pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/) sebaliknya.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Dalam seksyen **Buku panduan** hab, tekan **Jalankan** pada buku panduan itu
+   (atau buka palet ⌘K dan pilih buku panduan di situ).
+2. Isi parameter. Parameter penghitungan dipaparkan sebagai menu lungsur;
+   parameter repo dan ejen mengambil rujukan repo atau ejen; parameter pilihan
+   kembali kepada nilai lalainya.
+3. Pilih **tiket sauh** yang menjadi sandaran cadangan rancangan itu, kemudian
+   sahkan.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Menjalankan buku panduan hanya **mencadangkan** rancangan — orkestrasi yang
+terhasil terbuka dalam Plan Studio sebagai `proposed` dan tiada apa-apa yang
+dilaksanakan sehingga anda meluluskannya di situ. Untuk membuang buku panduan,
+tekan ikon tong sampah pada kadnya.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/ms-MY/manual-pengguna/rujukan/alat-mcp/).
+Ejen mencipta dan menjalankan buku panduan dengan alat MCP `create_playbook`
+dan `run_playbook`; lihat [Rujukan alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/).
 
-## Related guides
+## Panduan berkaitan
 
-- [Use plan mode](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/): the engine view of an approved plan
+- [Gunakan modus pelan](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/): cara ejen menghasilkan dokumen rancangan dengan `submit_plan`
+- [Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/): kitaran hayat lulus-sekali dari sisi perbualan
+- [Cipta templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/): apabila anda perlukan logik yang tidak dapat diungkapkan oleh buku panduan
+- [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/): paparan enjin bagi rancangan yang diluluskan
 
-## Related concepts
+## Konsep berkaitan
 
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/)
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/)

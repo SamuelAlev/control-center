@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Arahkan pekerja latar belakang
+description: Gunakan modus vibe untuk berhenti melakukan kerja itu sendiri dan mula mengarahkan beberapa ejen yang melakukannya secara selari.
 slug: ms-MY/manual-pengguna/panduan-cara/arahkan-pekerja-latar-belakang
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Panduan ini menunjukkan cara menjalankan sesuatu perbualan sebagai **pengarah** dan bukan sebagai pekerja: sesi itu membaca dan mengesahkan, manakala ejen latar belakang melakukan penyuntingan.
 
-## What changes when you type `/vibe`
+## Apa yang berubah apabila anda menaip `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Dua perkara, dan hanya yang pertama dikuatkuasakan oleh jentera:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Alat sesi itu sendiri jatuh ke baca sahaja**, ditambah lima kata kerja pekerja. Satu-satunya cara ia boleh mempengaruhi repo ialah melalui pekerja, dan satu-satunya cara ia boleh tahu apa yang berlaku ialah dengan membaca fail yang disentuh oleh pekerja.
+2. **Ia diarahkan untuk mengesahkan dengan membaca, bukan dengan mempercayai.** Laporan pekerja ialah dakwaan tentang apa yang dilakukannya, bukan bukti bahawa ia berjaya.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Yang pertama itulah yang menanggung beban. Pengarah yang masih boleh grep dan edit akan melakukan kerja itu sendiri apabila tertekan, dan itulah mod kegagalan yang cuba dicegah oleh ciri ini.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Pekerja bermula kosong
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Seorang pekerja tidak pernah melihat perbualan anda dan tidak akan pernah melihatnya. Taklimat itulah keseluruhan konteksnya.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Itulah yang menjadikan corak ini murah — dua puluh pekerja yang masing-masing memegang sejarah pengarah akan menelan kos dua puluh kali ganda konteks pengarah — dan ia juga satu-satunya perkara yang menyukarkan penulisan taklimat. "Sekarang buat satu lagi itu juga" terbaca sebagai arahan yang lengkap bagi pengarah dan tidak bermakna apa-apa langsung bagi sesi yang baharu.
 
-A good brief names files, commands and the definition of done:
+Taklimat yang baik menamakan fail, perintah dan definisi siap:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> Dalam `lib/features/auth/`, gantikan setiap panggilan `SessionStore.read(key)` dengan `SessionStore.get(key)`. Kaedah baharu memulangkan `Future<String?>` manakala kaedah lama memulangkan `String?`, jadi pemanggil memerlukan `await`. Jalankan `fvm flutter analyze lib/features/auth` apabila selesai dan laporkan sebarang ralat yang tidak dapat anda baiki.
 
-## The five verbs
+## Lima kata kerja
 
-| Verb         | What it does                                            |
+| Kata kerja   | Apa yang dilakukannya                                   |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Memulakan pekerja berdasarkan taklimat. **Kembali serta-merta.** |
+| `vibe_list`  | Tahap, status, masa berlalu dan hasil terakhir bagi setiap pekerja |
+| `vibe_send`  | Giliran susulan untuk pekerja yang telah selesai        |
+| `vibe_wait`  | Menyekat sehingga seorang pekerja selesai               |
+| `vibe_kill`  | Menghentikan seorang                                    |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Melahirkan pekerja adalah tak segerak secara reka bentuk. Pengarah yang menyekat pada setiap pelahiran menjalankan pekerja satu demi satu, iaitu cara yang lebih perlahan untuk melakukan apa yang sudah dilakukannya sendiri. Gunakan `vibe_wait` hanya apabila anda benar-benar tidak boleh meneruskan tanpa jawapan yang tertentu.
 
-## Two tiers
+## Dua tahap
 
-| Tier   | For                                                              |
+| Tahap  | Untuk                                                            |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Kerja mekanikal dengan spesifikasi yang jelas — suntingan, penamaan semula, draf, menjalankan perintah |
+| `good` | Reka bentuk, pertimbangan, atau menyemak apa yang dihasilkan oleh pekerja `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Bentuk yang lazim ialah menyebarkan pekerja `fast` ke atas fail yang bebas, kemudian melahirkan seorang pekerja `good` untuk menyemak apa yang mereka lakukan secara kolektif.
 
-## Verifying
+## Mengesahkan
 
-This is the part that decides whether the pattern is worth anything.
+Inilah bahagian yang menentukan sama ada corak ini berbaloi atau tidak.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Kemudian **baca fail yang dinamakannya**. Pengarah mempunyai `read`, `search`, `lsp` dan `ast_grep`; itulah tujuan utama mengekalkannya. Pengarah yang menerima laporan itu bulat-bulat hanyalah peringkas kepada optimisme ejen-ejen lain.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` selepas satu pusingan pekerja biasanya pemeriksaan tunggal yang paling pantas.
 
-## When a worker loses the thread
+## Apabila pekerja tersasar
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Bunuh ia dan taklimatkan semula. Taklimat baharu yang diperbetulkan lebih murah daripada berhujah, dan `vibe_send` hanya berfungsi pada pekerja yang telah menamatkan gilirannya.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Had
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Lapan pekerja serentak.** Siling perbelanjaan, bukan had teknikal: setiap satu ialah sesi model yang penuh, dan pengarah yang menyebarkan dua puluh sudah berhenti menjejaki apa yang mereka semua lakukan.
+- **Tiada pekerja yang hidup melebihi modus.** Apabila larian tamat, setiap daripada mereka dihentikan dan transkrip menyatakan berapa banyak. Ejen latar belakang yang masih menyunting fail selepas perbualan beralih ialah satu kegagalan yang tidak boleh dibenarkan oleh ciri ini.
+- **Pekerja ialah subejen biasa di bawahnya.** Had kedalaman yang sama, polisi guardrail yang sama, anak log larian yang sama. Vibe mengubah siapa yang memandu mereka, bukan apa yang dibenarkan mereka lakukan — jadi gesaan kelulusan masih muncul untuk panggilan tulis dan exec seorang pekerja.
 
-## When not to use it
+## Bila tidak menggunakannya
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/) or an [orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Modus vibe adalah untuk kerja yang boleh diuraikan kepada taklimat yang bebas. Jika langkah seterusnya bergantung pada output langkah sebelumnya, anda sedang memperihalkan [pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/) atau [orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/), dan kedua-duanya menyatakan kebergantungan dengan betul dan bukannya membiarkan pengarah mensimulasikannya dengan `vibe_wait`.
 
-## Related
+## Berkaitan
 
-- [Run agents in parallel](/ms-MY/manual-pengguna/panduan-cara/ejen-selari/) — the other ways to fan out
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/) — when the work has a shape
-- [Built-in agent tools](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — the verbs and their arguments
+- [Jalankan ejen secara selari](/ms-MY/manual-pengguna/panduan-cara/ejen-selari/) — cara-cara lain untuk menyebarkan kerja
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/) — apabila kerja itu mempunyai bentuk
+- [Alat ejen terbina](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — kata kerja itu dan argumennya

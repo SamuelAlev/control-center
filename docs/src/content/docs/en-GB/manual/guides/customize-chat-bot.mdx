@@ -1,7 +1,8 @@
 ---
-title: Customize the chat bot
+title: Customise the chat bot
 description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
 slug: en-GB/manual/guides/customise-chat-bot
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
 This guide shows you how to reshape the provider-side bot app without leaving Control Center.
@@ -9,7 +10,7 @@ This guide shows you how to reshape the provider-side bot app without leaving Co
 ## Prerequisites
 
 - The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
+- A **connected** provider. The **Customise bot** row only appears once the workspace is connected
 - An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
 
 ## What you can change
@@ -23,12 +24,12 @@ This guide shows you how to reshape the provider-side bot app without leaving Co
 | **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
 | **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalised: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
 
 ## Edit the bot
 
 1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
+2. On the provider block, click **Customise bot**
 3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
 4. Edit what you need and save
 
@@ -65,12 +66,12 @@ Renaming does not break existing bridged threads: threads are keyed by conversat
 
 ## Troubleshooting
 
-### There is no Customize bot row at all
+### There is no Customise bot row at all
 
 The workspace is not connected yet. The row only appears once the provider block
 shows a live connection. See [Set up Slack integration](/en-GB/manual/guides/slack-integration/).
 
-### The Customize bot row is disabled
+### The Customise bot row is disabled
 
 The connection has no app-management credential — the row's subtitle says
 "Control Center needs an app configuration token to edit the bot. Reconnect and

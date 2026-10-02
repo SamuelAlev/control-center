@@ -1,109 +1,117 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Csatlakozás távoli szerverhez
+description: Irányítsa az asztali alkalmazást vagy a webes klienst egy máshol futó cc_server felé, és váltson szerverek között újraindítás nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Minden kliens csupán megjelenítő réteg egy `cc_server` fölött, amely az adatokat
+birtokolja. Az asztali alkalmazás futtathat egyet saját magában; a webes
+alkalmazás az [app.usectrl.dev](https://app.usectrl.dev) címen erre nem képes,
+mert egy böngészőlap nem tud szervert üzemeltetni. Akárhogy is, ez az útmutató
+egy klienst egy máshol futó szerverre irányít — egy kis gépre, egy felhőbeli
+VM-re, egy buildszerverre.
 
-## Prerequisites
+## Előfeltételek
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Egy futó `cc_server`. Ha még nincs ilyen, lásd a [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/) oldalt.
+- Vagy a szerver által kiadott három párosítási érték — a **szerver URL** (`ws://…/rpc` vagy `wss://…/rpc`), egy **Eszköz-ID** és egy **Párosítási kulcs** —, **vagy** egy munkaterület-adminisztrátortól kapott, egyszer használatos **Meghívókód**. Egy meghívó beváltása provisionálja a felhasználóját, rögzíti a tagságát, és kiállítja az ehhez a klienshez tartozó hitelesítő adatot, így Önnek soha nem kell eszköz-ID-t vagy kulcsot kezelnie.
 
-### Make sure the server is reachable
+### Győződjön meg arról, hogy a szerver elérhető
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Egy helyi szerverhez semmi sem kell: a `ws://localhost:9030/rpc` az asztali
+alkalmazásból és a böngészőből is működik, mert a böngészők a loopbacket
+megbízható originnak tekintik.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+A másik gépen futó szerver esete más. Az `app.usectrl.dev` HTTPS-en keresztül
+érhető el, ezért a böngésző csak olyan `wss://` socketet nyit meg, amelynek
+tanúsítványában már megbízik — a `cc_server` pedig eleve megtagadja, hogy TLS
+nélkül nem loopback címre kössön. Adjon neki az alábbiak egyikét:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- tanúsítványt közvetlenül, a `--tls-cert` és a `--tls-key` kapcsolóval
+- egy elé kötött, TLS-t lezáró fordított proxyt, a szervert `--insecure` kapcsolóval elindítva (sima szöveg a proxy mögött, kizárólag megbízható hálózaton)
+- egy alagutat vagy VPN-t, amely biztosítja a tanúsítványt — Tailscale, cloudflared vagy hasonló. A **Beállítások → Szerver → Kapcsolat és állapot** alatt, a **Szerver megosztása** részen található a beépített alagút bekapcsolása.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+A szerveroldalon két beállítást könnyű kihagyni. Proxy, NAT vagy alagút mögött
+állítsa a `--public-url` értékét arra a címre, amelyet a klienseknek ténylegesen
+hívniuk kell — alapértelmezésben a helyi bind-címet veszi fel, így enélkül a
+kliensek a rossz hosztot próbálják elérni. Ha a webes build saját példányát
+üzemelteti, vegye fel annak originjét a `--allowed-origins` listára, amely
+alapértelmezésben csak a `https://app.usectrl.dev` címet tartalmazza; a loopback
+és a natív kliensek mindig engedélyezettek.
 
-## Connect the desktop app
+## Az asztali alkalmazás csatlakoztatása
 
-On a fresh install:
+Friss telepítés esetén:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Indítsa el a Control Centert. Az első indítás képernyője azt kérdezi: **Hogyan fusson a Control Center?**
+2. A **Futtatás ebben az alkalmazásban** helyett töltse ki a csatlakozási mezőket: a szerver URL-t, valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot.
+3. Kattintson a **Csatlakozás** elemre. A Control Center tárcsázza a szervert, és a munkaterület Beérkezett nézetében köt ki.
 
-On a desktop that already runs its own server:
+Egy olyan asztali gépen, amely már futtatja a saját szerverét:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Nyissa meg a **Beállítások → Szerver → Kapcsolat és állapot** részt.
+2. Kattintson a **Szerver hozzáadása** elemre. Adja meg a szerver URL-t (`wss://host:9030/rpc`), valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot. Az URL-mező végén lévő gomb felderíti a `cc_server` példányokat az Ön LAN-ján vagy tailnetjén.
+3. Kattintson a **Csatlakozás** elemre, majd az új szerver sorában a **Váltás** elemre.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+A váltás élő: az alkalmazás helyben épül újra az új munkamenet köré,
+újraindítás nélkül. Ha a csatlakozás meghiúsul, az aktuális szerveren marad, és
+látja a hibát. Annak a szervernek a során, amelyen éppen van, nincs **Váltás**
+művelet; a helyi szerver az első sor, **Futtatás ebben az alkalmazásban**
+címkével.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+A váltás után az asztali alkalmazás nem birtokol adatbázist. Minden képernyő a
+távoli szerveren keresztül olvas és ír egy WebSocketen.
 
-## Connect the web client
+## A webes kliens csatlakoztatása
 
-The web build is always remote.
+A webes build mindig távoli.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Nyissa meg az [app.usectrl.dev](https://app.usectrl.dev) címet, vagy a webes build saját példányát.
+2. Adja meg a szerver URL-t, valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot.
+3. A kliens tárcsázza a szervert, és ugyanazt a felületet rendereli, mint az asztali alkalmazás.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Ha a URL-ben párosítási deep link szerepel, a mezők előre ki vannak töltve. A
+párosítási kulcs az URL **töredékében** utazik, amelyet a böngészők soha nem
+küldenek el az oldalt üzemeltető szervernek, így a statikus hoszt soha nem látja.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Média és biztonság]
+A média (profilképek, hírfolyamképek, PR-képernyőképek) a csatlakoztatott
+szerveren keresztül, proxyn át halad, így a böngésző soha nem kéri le
+közvetlenül a felsőbb hosztot. Egy kérésenkénti Content-Security Policy, amely
+egy nem érzékeny cookie-ból származik, csak a csatlakoztatott szerver originjét
+engedi át.
 :::
 
-### What the browser does not do
+### Amit a böngésző nem tesz meg
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+A webes kliens ugyanazt a szervert olvassa és írja, mint az asztali alkalmazás,
+de néhány felülethez natív ablakra vagy a gép saját eszközeire van szükség:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- nincs operációs rendszer szintű értesítési buborék, értesítési hang és hangulat-bannersáv (az alkalmazáson belüli értesítési központ továbbra is működik)
+- nincs LAN- vagy tailnet-felderítés a **Szerver hozzáadása** párbeszédablakban
+- nincs alkalmazáson belüli cikkolvasó — a hírfolyam cikkei új lapon nyílnak meg
+- nem lehet újrafuttatni egy megbeszélés-összefoglalót, és nem lehet megszakítani egy éppen feldolgozás alatt állót
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Két dolog nem hiányzik, hanem másképp viselkedik. A megbeszélések **felvétele** a
+böngészőben is működik: rögzíti a mikrofonját, valamint egy képmegosztást, amely
+hangpályát is tartalmaz. A **Megnyitás IDE-ben** szintén működik, de a szervertől
+azt kéri, hogy a szerkesztőt _a szerver_ képernyőjén indítsa el, ezért a gomb
+elrejti magát egy olyan headless hoszton, ahol nincs telepítve szerkesztő.
 
-## Troubleshooting
+## Hibaelhárítás
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/).
+- **A kapcsolat időtúllépésbe fut**: a szervernek elérhetőnek kell lennie a kliensről. Ellenőrizze a bind-címet (`--bind any`), hogy a port nyitva van-e, és hogy a `--public-url` azt a címet adja-e meg, amelyet a kliens ténylegesen el tud érni. A nyílt internet fölött a TLS kötelező — a nem loopback, sima szöveges bind indításkor elutasításra kerül, kivéve, ha a szervert proxy mögött `--insecure` kapcsolóval indították.
+- **A böngésző megtagadja a csatlakozást, egy natív kliens viszont működik**: a böngésző originje nincs rajta a szerver `--allowed-origins` listáján. Az alapértelmezés csak a `https://app.usectrl.dev` címet engedélyezi (a loopbackkel együtt).
+- **A párosítási kulcsot elutasítja a szerver**: futtassa újra a `cc_server pair` parancsot a szerveren, hogy lecserélje az adott eszköz kulcsát, majd adja meg az újat. Egy visszavont eszköz úgy találja, hogy a hitelesítő adata eltűnt, és zártan meghiúsul; a visszavonás másodperceken belül eldob egy élő munkamenetet.
+- **Rossz munkaterület**: a munkaterület az URL része (`/workspaces/:workspaceId/…`), és minden hívással együtt utazik, ezért a munkaterület váltása az egyik kliensben csak az Ön saját nézetét változtatja meg. Csak olyan munkaterületeket érhet el, amelyeknek tagja — minden mást a "Not a member of this workspace" üzenettel utasít el a rendszer. Lásd a [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) oldalt.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
-- [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): the phone relay path
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): a telefon reléútja
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/)
-- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/)
+- [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)

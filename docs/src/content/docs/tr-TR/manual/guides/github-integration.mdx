@@ -1,166 +1,173 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: GitHub entegrasyonunu kurma
+description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'da oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
+kod barındırıcısından biridir — GitLab ya da Bitbucket'ı bağlamak ve bir çalışma
+alanının bunları nasıl karıştırdığı için
+[Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
+sayfasına bakın.
 
-## Prerequisites
+## Önkoşullar
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Üzerinde çalışmak istediğiniz depolara erişimi olan bir GitHub hesabı
+- Sunucunuz için kaydedilmiş bir GitHub App (bkz.
+  [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)) — böylece **oturum
+  açabilirsiniz** — **ya da** yapıştırmak için `repo` ve `read:org` yetkilerine
+  sahip bir kişisel erişim token'ı
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Kimlik bilgileri sunucuda yaşar ve size bağlıdır]
+Yazdığınız makinede hiçbir şey saklanmaz. Kimlik bilginiz `cc_server` tarafından
+tutulur, kullanıcı kimliğinize göre anahtarlanır ve oturum açtığınız her cihaz
+— masaüstü, web ve telefon — onu kullanır. Aynı sunucudaki başka bir üye onu
+okuyamaz ve onları oturum açtırmak onların kendi yaptığı bir şeydir.
 :::
 
-## Sign in with GitHub
+## GitHub ile oturum açma
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Bir **cihaz akışı**: GitHub size kısa bir kod gösterir, siz onu github.com'da
+onaylarsınız ve sunucu kimlik bilgisini alır — callback URL yok, port yok, açığa
+çıkarılacak hiçbir şey yok. Sunucunun bir istemci id'si olduğunda kullanılabilir;
+resmî bir yapı bunu zaten içerir.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** bölümüne gidin
+   (ya da ilk kurulumun ilk adımına)
+2. **GitHub** satırında **GitHub ile oturum aç**'a tıklayın
+3. Bir iletişim kutusu sekiz karakterlik bir kod gösterir ve tarayıcınızda
+   [github.com/login/device](https://github.com/login/device) adresini açar. Kod
+   zaten panonuzdadır
+4. Yapıştırın, uygulamayı onaylayın ve geri dönün. Satır kendiliğinden
+   "_kullanıcı-adınız_ olarak oturum açıldı" durumuna geçer
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Tarayıcıda işinizi bitirirken iletişim kutusu kapatılabilir — sunucu, kodun
+süresi dolana kadar (yaklaşık 15 dakika) yoklamayı sürdürür; böylece oturum açma
+yine de tamamlanır.
 
-## Or paste a token
+## Ya da bir token yapıştırın
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Sunucunun uygulaması olmadığında, uygulama ihtiyaç duyduğunuz bir hesaba
+kurulmadığında ya da yalnızca bir PAT kullanmayı tercih ettiğinizdeki geri dönüş
+yolu.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** bölümüne gidin
+2. **GitHub** satırında **Token ekle**'ye tıklayın
+3. `repo` ve `read:org` içeren bir token yapıştırın (klasik) ve kaydedin. **İnce
+   taneli** bir token için depo **Contents** ve **Pull requests** (okuma ve
+   yazma) ile **Checks** ve **Actions** (okuma) gerekir.
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Token saklanırken sınanır; böylece satır ait olduğu hesabı adlandırabilir.
+Kaldırmak için **Bağlantıyı kes**'e tıklayın.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Kontrol noktası: **GitHub** satırı "_kullanıcı-adınız_ olarak oturum açıldı"
+yazar. Yanıt veren kimlik bilgisi sizinki olmadığında bir son ek kaynağı
+adlandırır — "bu sunucunun uygulaması üzerinden" ya da "ortamdan".
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Öncelik sabittir]
+Sizin adınıza yapılan bir istek **sizin** kimlik bilginizi kullanır, başka hiçbir
+şeyi değil — ortam, sunucunun kimlik bilgisidir, sizinki değil; dolayısıyla
+sizin yerinize asla geçmez. Ardında hiç insan olmayan işler (webhook'lar, PR
+yoklaması, bilet eşitleme) sunucunun uygulama kimliğini, ardından sunucu
+sahibinin kimlik bilgisini, ardından ortamı kullanır.
 :::
 
-## What the integration gives you
+## Entegrasyonun size verdikleri
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Özellik               | Nasıl                                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| PR listesi ve ayrıntısı | Sunucudan, uygulama kimliğiyle ya da kendi kimlik bilginizle GitHub REST API'si                             |
+| Kontrol çalıştırmaları | GitHub Checks API'si                                                                                          |
+| İnceleme yayımlama    | İncelemenizi PR'a gönderen, kullanıcı kapılı bir adım                                                          |
+| Depo kaydı            | Bir checkout, `origin` remote'u github.com'a — ya da gitlab.com / bitbucket.org'a — işaret ediyorsa kabul edilir |
+| Ajanın GitHub erişimi | Kimlik bilgisi broker'ı token'ı `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte eder; bu, ajanın yeteneklerine kapılıdır |
+| Bildirim ping'leri    | GitHub bildirim gelen kutunuzu sunucu tarafında yoklamak "Pull request'te bahsedildi" ve "İnceleme istendi" bildirimlerini tetikler |
+| Kullanıcı profilleri  | Profil üzerine gelme kartları ve yazara göre PR filtreleme                                                     |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Bazı yollar, daha ucuza geldiği yerlerde REST yerine GraphQL API'sini kullanır —
+PR oluşturma seçicisi için dal etkinliği ve bir inceleme istendi bildiriminin
+hâlâ beklemede olup olmadığını belirleyen canlı inceleme durumu.
 
-## Watch for GitHub outages
+## GitHub kesintilerine dikkat edin
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Bir sağlayıcı bozulduğunda başlık çubuğu GitHub, Claude, OpenAI ve Kimi'yi
+kapsayan bir durum çipi gösterir. **Her şey yolundayken gizlenir** — varlık
+sorunu bildirir, yokluğunu değil.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Her sağlayıcının durumunu ve bir yenile düğmesini içeren bir açılır panel açmak
+için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
 
-## Know how agents act on GitHub
+## Ajanların GitHub'da nasıl davrandığını bilin
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Bir ajan GitHub token'ını yalnızca **GitHub API çağrılarına izin ver** ya da
+  **git push'a izin ver** yetkisi varsa alır. Bkz.
+  [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
+- Bir ajanın yaptığı commit'ler **ajan olarak** yazılır — görünen ad artı
+  ` (agent)`, ajanın kimliğine göre anahtarlanmış sentetik bir adreste — asla bir
+  insan olarak değil. İsteyen kişi bir `Co-Authored-By` trailer'ıyla anılır
+- Bir GitHub App yapılandırıldığında broker, geniş bir token vermek yerine her
+  başlatma için ince taneli, depo kapsamlı, kabaca bir saatlik kurulum token'ları
+  üretir. Kurulum, çalıştırmanın deposunun **sahibinden** çözülür; böylece birkaç
+  hesaba kurulmuş tek bir uygulama, çalıştırmanın hangisine dokunduğuna göre
+  doğru şekilde kapsamlanır. Uygulama yoksa ajanlar ortam token'ını alır
+- Oturum açmış bir üye tarafından istenen çalıştırma, **o üyenin** GitHub kimliği
+  altında hareket eder — kimlik bilgileri broker'ın ortamından sonra
+  birleştirilir; böylece bir ajanın onlar için yaptığı commit ya da yorum onlara
+  atfedilebilir
 
-## Troubleshooting
+## Sorun giderme
 
-### The PR list is empty and says GitHub is not connected
+### PR listesi boş ve GitHub'ın bağlı olmadığını söylüyor
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Bu sunucuda GitHub kimlik bilginiz yok. **Kod barındırma** altında oturum açın
+ya da bir token yapıştırın. Diğer forge'lardaki depolar etkilenmez — yalnızca
+GitHub'ınkiler hiçbir şey katmaz.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Satır "Token ekle" sunuyor ama "GitHub ile oturum aç" sunmuyor
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Sunucunun istemci id'si yok — bu, kaynaktan derlenen bir yapı için normal
+durumdur; çünkü kimlik bilgileri yalnızca resmî yapılara gömülür. Bkz.
+[GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/): yaklaşık iki dakika
+sürer ve yalnızca sunucu sahibinin, bir kez yapması gerekir.
 
-### The sign-in dialog says the provider returned no device code
+### Oturum açma iletişim kutusu sağlayıcının cihaz kodu döndürmediğini söylüyor
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App var ama **Device flow** onay kutusu kapalı. Uygulamanın ayarlarında
+(General → Device flow) açıp yeniden deneyin.
 
-### The row says "via this server's app" when I expected my own account
+### Satır, kendi hesabımı beklerken "bu sunucunun uygulaması üzerinden" diyor
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Oturum açmamışsınız; gördüğünüz şey sunucunun uygulama kimliğinin yanıt vermesi.
+O satırda **GitHub ile oturum aç**'a tıklayın.
 
-### A fine-grained PAT shows no merge button or check status
+### İnce taneli bir PAT birleştirme düğmesi ya da kontrol durumu göstermiyor
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Token'ın **Contents** ve **Pull requests** (okuma ve yazma) ile **Checks** ve
+**Actions** (okuma) yetkilerine ihtiyacı vardır. Değiştirdikten sonra Kod
+barındırma altında yeniden yapıştırın.
 
-### Adding a repo is rejected
+### Depo ekleme reddediliyor
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+Kayıt için üçünün de olması gerekir: yol bir git çalışma ağacının içindedir, bir
+`origin` remote'u vardır ve o remote desteklenen bir forge'a (github.com,
+gitlab.com ya da bitbucket.org) işaret eder. Bkz.
+[Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
 
-### Everything stops working for a while after heavy use
+### Yoğun kullanımdan sonra her şey bir süre çalışmayı durduruyor
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Bu, hız sınırı devre kesicisidir. GitHub birincil sınırına ulaştığını
+`x-ratelimit-remaining: 0` taşıyan bir `403` ve bir sıfırlama zamanıyla bildirir;
+istemci bunu gördüğünde, pencere geçene kadar ağ çağrısı yapmadan daha fazla
+isteği yerel olarak başarısız kılar; böylece bir yeniden deneme fırtınası sınırı
+derinleştiremez. Geçici hatalar, `retry-after` değerine uyularak üstel geri
+çekilmeyle en fazla üç kez yeniden denenir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)
-- [Connect a code host](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
-- [Manage API keys](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
-- [Add repos to a workspace](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
-- [Review and merge a PR](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)
+- [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
+- [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
+- [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
+- [Bir PR'ı inceleme ve birleştirme](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)

@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Samtalshistorik
+description: Hur en körning behåller, viker, förgrenar och återupptar sin kontext — kompakteringsstrategier, sessionsträdet och vad ”återuppta” faktiskt innebär.
 slug: sv-SE/handbok/koncept/samtalshistorik
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Ett långt samtal kör rakt in i en hård vägg: modellens kontextfönster. Allt på den här sidan finns till på grund av den väggen, och det intressanta är vad som kastas bort, vad som behålls och vad som går att få tillbaka.
 
-## Four ways to reclaim context
+## Fyra sätt att återta kontext
 
-They are not alternatives so much as a ladder, cheapest first.
+De är inte så mycket alternativ som en stege, med det billigaste först.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| Mekanism       | Kostnad        | Behåller                             | Förlorar                          |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **Elision**    | Ingenting      | Vartenda ord i berättelsen           | Händelselösa äldre verktygsresultat |
+| **Bildrensning** | Ingenting    | Texten runt dem                      | Gamla skärmbilder                  |
+| **Ögonblicksbilder** | Ingenting | Vartenda ord, som pixlar             | Läsbarhet för en modell utan bildseende |
+| **Sammanfattning** | Ett modellanrop | En berättelse                    | Detaljerna den inte valde         |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Elision och bildrensning körs först eftersom de är gratis och förlustfria på det sätt som spelar roll: de skalar bort massa som ingen ändå skulle läsa om.
 
-### Why summarizing is the last resort
+### Varför sammanfattning är den sista utvägen
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+En sammanfattning är den enda av de fyra som **kostar ett modellanrop** och den enda som **bestämmer åt dig** vad som spelade roll. Båda är verkliga kostnader. Anropet är den mer intressanta, på grund av när det sker.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Kompaktering körs vanligtvis *före* väggen, vid en tröskel. Men den körs också **reaktivt**, efter att leverantören själv har avvisat en förfrågan som för stor — den heuristiska uppskattningen underskattade det leverantören faktiskt mätte. I den situationen måste en sammanfattande kompaktor skicka en förfrågan för att krympa kontexten, och den förfrågan den skickar är den som just svämmade över.
 
-### Snapshots
+### Ögonblicksbilder
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Kompaktering med ögonblicksbilder renderar bortkastad historik till täta sidor av pixelglyfer och ger tillbaka dem som bilder.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Premissen är en faktureringsdetalj: en bildseende modell tar betalt för en bild till ett fast eller areaproportionellt pris som inte har något att göra med hur många tecken den innehåller. Tolvtusen tecken bortkastat samtal kostar texttokens motsvarande tolvtusen tecken. Samma tecken renderade på en enda sida kostar en bild.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Det som gör den värd att ha och inte bara fiffig är att den kräver **inget modellanrop, ingen nyckel och inget nätverk**. Det är den enda strategin som alltid är tillgänglig vid återhämtning efter överflöd.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Rekonstruktionens form är ordagrant huvud, avbildad mitt, ordagrann svans. Huvudet är uppgiften och de begränsningar som allt nedströms hänvisar tillbaka till; svansen är där arbetet befinner sig just nu. Mitten är det som läses om minst och kostar mest.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Den försämras ärligt]
+En modell utan bildseende kan inte läsa sidor av pixlar, och att rendera text som ingenting kan titta på är inte en försämrad kompaktering — det är ett raderat samtal. Så läsarens förmåga avgör, och en modell utan bildseende får alltid sammanfattningen.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Sidformen är prissatt för API:t, inte för vikterna]
+Gemini tar en fast avgift per bild, så varje extra tecken på sidan är gratis och dess sidor är de bredaste. OpenAI och Anthropic tar betalt per area, så en större sida ger ingenting. Vissa processorer skalar ner över en tröskel, vilket tyst förstör 5-pixelsglyfer, så deras sidor håller sig under den. En Claude som serveras via en gateway faktureras av gatewayen, så formen följer modell-id:t så som rutten namnger det.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Ögonblicksbilder renderas på nytt från **bibehållen källtext** vid varje omgång, aldrig från föregående omgångs pixlar. Att avbilda en bild försämrar glyferna en generation per kompaktering tills ingenting kan läsa dem.
 
-## What a run actually resumes from
+## Vad en körning faktiskt återupptar från
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Historiskt startade varje harness-körning från en tom historik och byggde upp kontinuiteten igen från ett `<context>`-block i prompten — en *sammanfattning* av samtalet snarare än samtalet. Tre saker följde av det:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Återupptagning var en återberättelse.** Modellen såg aldrig sitt eget tidigare resonemang eller de faktiska bytes som dess verktyg returnerade, bara en beskrivning av dem.
+- **Tillbakaspolning dog med processen.** En `checkpoint` är ett index in i den levande meddelandelistan, så en omstart förlorade varje etikett modellen hade satt.
+- **Nytt försök kunde inte skilja på ”inget att försöka igen” och ”inget inläst”.** Efter en omstart är den misslyckade turen borta från det levande tillståndet i båda fallen.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Alla tre åtgärdas genom att transkriptet bevaras. Det sparas vid varje **turgräns** och aldrig mitt i en tur: en historik som fångas mellan ett verktygsanrop och dess resultat är en som ingen leverantör accepterar, så en krasch i det ögonblicket återställer turen *före* i stället för en halv tur som inte kan spelas upp igen.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+En återupptagen körning trimmas till sina nyaste meddelanden och skärs vid en gräns som inte är ett föräldralöst verktygsresultat — ett resultat vars anrop har trimmats bort är en förfrågan som leverantörer avvisar direkt, och ett transkript som inte kan skickas är värre än ett kort.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Var den bor]
+En JSON-fil per samtal-och-agent, under arbetsytans egen katalog bredvid dess databas. Två agenter i ett samtal har två historiker: de såg olika verktygsresultat och fick olika systemprompter, så att slå ihop dem skulle ge var och en av dem den andras resonemang som sitt eget.
 :::
 
-## The session tree
+## Sessionsträdet
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Varje meddelande registrerar vilket det fortsätter från, och varje samtal namnger sin aktuella **grenspets**. Det enda beslutet är hela funktionen.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Förgrening skriver ingenting.** Den flyttar pekaren. Sökvägen du lämnade finns kvar, så att byta tillbaka är ännu en pekarflytt i stället för en återställning — och att redigera en prompt för att köra den igen slutar kosta dig svaret du jämförde med.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Utan den måste varje form av att gå tillbaka dölja eller radera meddelanden, och att dölja är en lögn som nästa läsare inte kan genomskåda.
 
-### Branch versus fork
+### Gren kontra fork
 
-|                | Branch              | Fork                        |
+|                | Gren                | Fork                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Vad som händer | Pekaren flyttas     | Sökvägen kopieras           |
+| Vart den tar vägen | Samma samtal    | Ett nytt samtal             |
+| Kostnad        | Ingenting           | En kopia av grenen          |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+En fork kopierar med **nya id:n** i stället för att dela rader. Två samtal som delar rader skulle visa varandras senare meddelanden, vilket är det enda en fork inte får göra.
 
-### Rewind rides the same pointer
+### Tillbakaspolning följer samma pekare
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Paret `checkpoint` / `rewind` i körningen markerar en ren turgräns och återvänder till den efter en utforskning, och behåller en digest. Eftersom checkpoints bevaras tillsammans med transkriptet landar en etikett som modellen satte före en omstart fortfarande där den sattes. En checkpoint vars mål inte överlevde en trimning **släpps**, den kläms inte — att spola tillbaka ”till etiketten” och landa någon annanstans är precis det fel en etikett finns för att förhindra.
 
-## Related
+## Relaterat
 
-- [Branch a conversation](/sv-SE/handbok/how-to-guider/forgrena-samtal/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/sv-SE/handbok/koncept/verktygskontext/) — the other half of what fills a context window
-- [Slash commands](/sv-SE/handbok/referens/slash-kommandon/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Förgrena ett samtal](/sv-SE/handbok/how-to-guider/forgrena-samtal/) — trädnavigatorn, forks och export
+- [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/) — den andra halvan av det som fyller ett kontextfönster
+- [Slash-kommandon](/sv-SE/handbok/referens/slash-kommandon/) — `/compact`, `/shake`, `/context`, `/tree`

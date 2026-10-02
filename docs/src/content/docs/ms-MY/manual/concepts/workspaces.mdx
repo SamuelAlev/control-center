@@ -1,148 +1,150 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Ruang kerja dan pengasingan
+description: Mengapa ruang kerja ialah sempadan penyewa yang tegas, bagaimana pemisahan pangkalan data menjadikan sempadan itu bersifat struktur dan apa yang sengaja melintasinya.
 slug: ms-MY/manual-pengguna/konsep/ruang-kerja
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Apakah itu ruang kerja?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Ruang kerja ialah penyewa pengasingan peringkat atas dalam Control Center. Ia mengumpulkan ejen, repositori, ruang, tiket, memori, pipeline dan ahli ke dalam satu konteks terbatas. Segala yang berlaku di dalam ruang kerja kekal di dalamnya.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Ruang kerja lazimnya sepadan dengan satu projek atau satu pangkalan kod. Anda mungkin mempunyai ruang kerja berasingan untuk "api-service", "frontend-v2" dan "infrastructure".
 
-## Workspace-scoped data
+## Data berskop ruang kerja
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Baris ruang kerja tersimpan dalam fail SQLite ruang kerja itu sendiri, di `<dataDir>/<workspaceId>/workspace.db`. Setiap ruang kerja mendapat direktori dan bukannya fail semata-mata, kerana ruang kerja mengumpul lebih daripada sekadar pangkalan data — worktree setiap perbualan, fail ejen dan kemahiran, kelayakan bot sembang — dan memberikannya folder bermakna semua itu hidup dan dipadam bersama-sama.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entiti                                             | Skop                                                  |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| Ejen                                               | Milik tepat satu ruang kerja                           |
+| Repositori                                         | Didaftarkan ke dalam satu ruang kerja (lihat di bawah) |
+| Ruang, perbualan dan mesej                         | Berskop ruang kerja                                    |
+| Tiket, projek, pelan, orkestrasi                   | Berskop ruang kerja                                    |
+| Fakta memori, polisi, domain, geran akses          | Berskop ruang kerja                                    |
+| Larian pipeline, templat, pencetus                 | Berskop ruang kerja                                    |
+| Keadaan pull request, ruang semakan, kohort semakan | Berskop ruang kerja                                   |
+| Log larian ejen dan memori kerja                   | Berskop ruang kerja                                    |
+| Ahli, jemputan, geran setiap repo                  | Berskop ruang kerja                                    |
+| Simbol dan tepi graf kod                           | Berskop mengikut `repoId` dalam fail ruang kerja       |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Kebanyakan baris ini membawa lajur `workspaceId`; fail pangkalan data yang berasingan menguatkuasakan pengasingan. Lihat invarian pengasingan di bawah.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repo berskop ruang kerja; identiti merentas ruang kerja adalah mengikut laluan
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Baris repo tersimpan dalam fail pangkalan data ruang kerjanya sendiri — fail itu _ialah_ skopnya, jadi jadualnya tiada lajur `workspaceId` dan tiada jadual gabungan.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Anda menambah repo ke dalam ruang kerja di Tetapan → Ruang kerja → Repositori. Mendaftarkan checkout yang sama dalam dua ruang kerja menghasilkan dua baris bebas dengan dua id; identiti repo _merentas_ ruang kerja adalah mengikut laluan sistem fail (atau pemilik/nama GitHub), tidak pernah mengikut id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Pendaftaran adalah ketat: laluan mesti berada di dalam pokok kerja git, ia mesti mempunyai remote `origin` dan remote itu mesti menunjuk ke hos kod yang disokong (github.com, gitlab.com atau bitbucket.org). Hos kod dibaca daripada remote dan disimpan pada repo, jadi satu ruang kerja boleh menyimpan repo daripada ketiga-tiganya. Apa-apa selain itu ditolak. Pelayar folder yang anda pilih menyenaraikan sistem fail **hos pelayan**, terhad kepada senarai benarkan `--repo-roots` pelayan (yang lalainya ialah direktori home pengguna pelayan).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Membuang repositori daripada ruang kerja memadam baris itu terus dan menggugurkan secara berantai simbol kod, tepi, fail, titik pemeriksaan indeks dan geran setiap ahli. Checkout pada cakera tidak disentuh.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Graf kod tersimpan dalam fail yang sama, dikunci mengikut `repoId`, kerana ruang kerja yang berbeza mungkin mempunyai repositori yang sama pada cawangan berbeza dengan kod yang berbeza.
 
-## The isolation invariant
+## Invarian pengasingan
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Kebocoran data merentas ruang kerja dianggap sebagai pepijat. Pengasingan bersifat **struktur**, dikuatkuasakan pada beberapa peringkat:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Lapisan pangkalan data.** Setiap ruang kerja mempunyai fail SQLite sendiri, yang dikeluarkan oleh `WorkspaceDatabaseManager.of(workspaceId)`. Pangkalan data ruang kerja tidak mengisytiharkan `users`, `workspaces` atau jadual mana-mana ruang kerja lain, jadi bacaan merentas ruang kerja bukan pepijat yang boleh anda tulis — ia tidak akan dikompil. Repositori meleraikan DAO mereka pada setiap panggilan dan bukannya menyimpannya dalam cache, dan kerana setiap kaedah repositori menerima `workspaceId` yang wajib, ruang kerja itu tidak boleh disimpulkan atau dijadikan lalai.
+- **Id ruang kerja ialah segmen laluan.** Kerana id itu menjadi nama direktori, ia mesti sepadan dengan corak satu segmen yang selamat (bermula dengan abjad angka, diikuti abjad angka, titik, garis bawah, sempang; tiada `..`). Id ialah UUID di seluruh produk. Apa-apa selainnya akan membaling ralat dan bukannya dibersihkan — itulah pengawal pengembaraan laluan dan ia gagal secara lantang daripada menulis data ruang kerja ke laluan yang dipilih orang lain.
+- **Pertahanan berlapis.** Lajur `workspaceId` masih ada dan masih ditulis. Walaupun berlebihan dalam satu fail, ia mengekalkan pencetus suapan segerak, indeks FTS dan bentuk baris sedia ada tanpa perubahan serta menjadikan fail itu menerangkan dirinya sendiri apabila diperiksa secara berasingan — itulah yang diharapkan oleh eksport dan import.
+- **Lapisan domain.** Perkhidmatan yang mengubah entiti mengikut id mengesahkan `entity.workspaceId == workspaceId` pada satu titik sekatan sebelum meneruskan dan membaling `WorkspaceMismatchException` apabila tidak sepadan — kegagalan lantang bagi id yang tiba daripada konteks yang salah. Menolak secara lantang itu penting: operasi senyap yang tiada kesan menyembunyikan pepijat, manakala meneruskan akan membocorkan data.
+- **Lapisan RPC.** Penghantar repo-RPC ialah titik sekatan itu. Setiap operasi berskop ruang kerja mesti membawa `workspace_id` dalam argnya sendiri — tiada "ruang kerja semasa" bagi setiap sesi untuk dibocorkan, dan id yang tidak dikenali ditolak sebagai tidak ditemui _sebelum_ apa-apa membuka pangkalan data, jadi id yang salah tidak boleh melahirkan `workspace.db` hantu. Operasi yang benar-benar global (suapan berita, baris gilir armada) mengisytiharkan dirinya tidak berskop sebagai keputusan yang eksplisit dan disemak. Alat MCP mengikut peraturan yang sama: mana-mana alat yang menyentuh data berskop ruang kerja memerlukan `workspace_id`.
+- **Fan-out merentas ruang kerja boleh dienumerasi.** Menjawab soalan tentang beberapa ruang kerja bermakna membuka beberapa pangkalan data. Fan-out itu terhad kepada satu pembantu, `CrossWorkspaceQueries`, jadi senarai lengkap perkara yang sah melintasi sempadan itu terletak pada tapak panggilan satu fail dan bukannya bertaburan di sebalik ulasan dokumentasi. Tapak panggilan itu ialah: pengagregatan seluruh pelayan, pengselaras permulaan, sapuan pengekalan dan GC, sandaran, penghala peristiwa — dan carian keahlian di bawah.
+- **Akses mengikut id sahaja tidak mencukupi.** Mencari entiti mengikut UUID-nya tidak membuktikan ia milik ruang kerja pemanggil. Pemisahan fail menjadikan fail yang salah tidak dapat dicapai; pengesahan lapisan domain menangkap id yang salah yang tiba melalui fail yang sah.
 
-## Membership, not the pairing key, is what grants access
+## Keahlian, bukan kunci pasangan, yang memberikan akses
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Memegang kelayakan peranti mengesahkan identiti _peranti_. Ia tidak memberi kuasa terhadap apa-apa di dalam ruang kerja. Setiap operasi berskop ruang kerja meleraikan peranan keahlian pemanggil dan menguatkuasakan had minimum yang diperoleh daripada jenis operasi itu — bacaan memerlukan `guest`, mutasi memerlukan `member`, operasi pemusnahan memerlukan `admin` — dan operasi yang mendedahkan kandungan repo turut menyemak geran setiap repo pemanggil. Kunci pasangan yang sah tanpa keahlian akan mendapat `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Kesan terhadap pengasingan cukup kemas: baris keahlian tersimpan dalam fail _ruang kerja itu sendiri_, jadi "siapa berada dalam ruang kerja ini?" ialah bacaan berskop biasa. Soalan sebaliknya — "dalam ruang kerja mana saya berada?" — mengikut takrifnya tersebar merentas fail, jadi ia salah satu daripada beberapa fan-out `CrossWorkspaceQueries` yang dibenarkan dan itulah yang dijalankan oleh pemilih ruang kerja sebelum mana-mana ruang kerja dipilih.
 
-See [Multiplayer](/ms-MY/manual-pengguna/konsep/multipemain/) for the role ladder and repo grants.
+Lihat [Multipemain](/ms-MY/manual-pengguna/konsep/multipemain/) untuk tangga peranan dan geran repo.
 
-## The global registry
+## Daftar global
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Bukan semua perkara berskop ruang kerja. Pangkalan data kedua, `<dataDir>/global.db`, menyimpan perkara yang benar-benar merentas pelayan:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **daftar ruang kerja**, supaya penukar boleh menyenaraikan setiap ruang kerja tanpa membuka satu pun fail ruang kerja — dan supaya nama, logo, pemilik, susunan manual dan penanda padam lembut sesuatu ruang kerja tersimpan di luar fail yang diterangkannya;
+- **identiti**: pengguna, keutamaan pengguna dan peranti dipasangkan, kerana seorang manusia ialah satu pengguna merentas setiap ruang kerja dan peranti yang dipasangkan terus wujud walaupun satu ruang kerja dipadam;
+- **baris gilir armada** (pekerja, tugas, log penempatan), yang penjadualnya memadankan keseluruhan baris gilir dengan setiap pekerja pada setiap detik;
+- **suapan berita**, yang bersifat setiap pengguna (bukan setiap ruang kerja) — menambah suapan akan mengikut anda ke setiap ruang kerja;
+- **`workspace_routes`**, indeks pra-pengesahan yang menjawab "ruang kerja mana yang memiliki kunci ini?" bagi titik masuk yang tiba dengan hanya rahsia atau id legap (hash jemputan, token webhook, pautan dalam) dan tiada ruang kerja. Ketiadaan padanan di situ bermakna tidak ditemui; tiada pengimbasan sandaran secara sengaja;
+- **tetapan dan identiti seluruh pemasangan**: id pemasangan, tetapan peringkat hos, sambungan SSO dan polisi tindakan terurus (pengapit seluruh pemasangan yang hanya boleh mengetatkan guardrail ruang kerja).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+But hanya membuka fail ini. Fail ruang kerja dibuka secara malas pada sentuhan pertama, jadi kos permulaan kekal rata tidak kira berapa banyak sejarah yang dikumpulkan oleh ruang kerja dan `quick_check` setiap fail dibayar pada penggunaan pertama dan bukannya pada laluan ke sepanduk sedia.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Fail ruang kerja hanya membawa `workspace_meta` satu baris untuk pengenalan diri (idnya, pemasangan yang menciptanya, versi skema yang digunakan untuk menciptanya, bilanya). Segala yang bersifat deskriptif tentang ruang kerja berada dalam daftar.
 
-## Creating a workspace
+## Mencipta ruang kerja
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Mencipta ruang kerja melakukan lebih daripada memasukkan satu baris daftar. Dalam satu operasi, pelayan menandakan pengguna pencipta sebagai `ownerUserId`, merekodkan keahlian peranan pemilik pengguna itu dan menerbitkan peristiwa domain `WorkspaceCreated`. Pendengar peristiwa itu kemudian menyemai, secara idempoten dan di latar belakang:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- satu **ejen CEO** serta empat pakar — `qa`, `architect`, `engineer`, `librarian` — dengan pakar melapor kepada CEO;
+- **templat pipeline terbina** dan pencetusnya (pencetus peristiwa dan manual disertakan dalam keadaan didayakan; yang berjadual adalah pilihan kecuali sapuan GC worktree harian);
+- **suite eval permulaan**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/).
+Ini berlaku bagi _setiap_ ruang kerja, bukan yang pertama sahaja. Ejen yang disemai dicipta tanpa penyesuai, jadi ia berjalan pada **Control Center (built-in)** dengan model lalai Anthropic (`claude-opus-4-8` melainkan anda menetapkan yang lain) sehingga anda menetapkan penyesuai dan model bagi setiap ejen di Tetapan → Ruang kerja → Ejen. Lihat [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Penulisan keahlian pemilik itu lebih penting daripada yang kelihatan: tanpanya, ruang kerja yang baru dicipta tidak akan mempunyai ahli dan setiap panggilan berskop ruang kerja yang dibuat pencipta selepas itu akan ditolak.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Ejen tidak boleh mencipta ruang kerja]
+Tiada alat MCP `create_workspace`. Manusia mencipta ruang kerja melalui `workspace.create` (titik sekatan nama sahaja) atau `workspace.upsert` (rekod penuh, turut digunakan untuk kemas kini). Kedua-duanya menandakan pengguna pencipta sebagai `owner` dan menerbitkan `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Memadam, mengeksport, mengimport
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Memadam ruang kerja **menandakan baris daftar dan menyahpaut direktori**. Ruang kerja itu hilang daripada setiap senarai dan carian. Baris daftar kekal (dipadam lembut) supaya id itu masih dikenali oleh sandaran dan penyelenggaraan, tetapi `workspace.delete` serta-merta menggugurkan direktori ruang kerja itu — pangkalan data, worktree, fail ejen dan selebihnya — melalui `WorkspaceDatabaseManager.dropAndClose`. Hanya **pemilik** ruang kerja boleh memadamnya.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Kerana satu ruang kerja ialah satu fail, memindahkan ruang kerja ialah operasi fail dan bukannya lambakan jadual demi jadual:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` ialah satu `VACUUM INTO` — snapshot yang konsisten dan dinyahserpihan, diambil di bawah transaksi baca sementara pelayan terus melayan.
+- `workspace.import` mengguna pakai fail sedemikian, menggantikan apa sahaja yang sedang dipegang oleh ruang kerja sasaran. `workspace_meta` yang tertanam membolehkan import membezakan "fail saya sendiri, diguna pakai semula" daripada "fail dari pemasangan lain" (yang kedua dibenarkan, tetapi direkodkan dan bukan dibiarkan tanpa jejak).
+- `server.backupNow` mengambil snapshot keseluruhan pemasangan ke dalam direktori bertarikh yang mencerminkan direktori data langsung — `manifest.json`, `global.db` dan satu `<workspaceId>/workspace.db` bagi setiap ruang kerja — jadi pemulihan hanyalah menyalinnya kembali.
+- `server.listBackups` membaca semula direktori itu, yang terbaharu dahulu, dengan saiz dan senarai ruang kerja setiap snapshot. Snapshot yang manifesnya hilang atau menamakan fail yang tidak ada tetap dilaporkan, ditandakan tidak lengkap — menyembunyikannya ialah cara seorang pengendali mula mempercayai mereka mempunyai sandaran yang sebenarnya tiada.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Operasi sandaran terletak di bawah **Tetapan → Pelayan → Sandaran & pulih**:
+**Sandarkan sekarang** mengambil snapshot pemasangan, senarai menunjukkan snapshot
+mana yang lengkap dan membenarkan pemilik pemasangan memadam satu selepas
+pengesahan, dan setiap ruang kerja menawarkan eksport dan import. Pipeline
+**Workspace backup** terbina hanya mengambil pangkalan data ruang kerja itu
+mengikut jadual mingguan dan memadam sandarannya sendiri yang lebih lama
+daripada usia pengekalan yang dikonfigurasikan. Memulihkan satu ruang kerja
+daripada snapshot pemasangan ialah `workspace.import` yang ditunjuk ke
+`<workspaceId>/workspace.db` snapshot itu; memulihkan seluruh pemasangan kekal
+sebagai penyalinan kembali direktori snapshot dengan pelayan dihentikan.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ms-MY/manual-pengguna/rujukan/sandaran/#what-a-backup-does-not-contain) has the full table.
+Apa yang tidak dibawa oleh mana-mana daripadanya ialah seluruh direktori ruang kerja yang lain. Ruang kerja mengumpul lebih daripada sekadar pangkalan data — imej yang ditampal, fail kemahiran dan ejen, kelayakan sembang, worktree — dan eksport serta import memindahkan **fail** itu, jadi segala di sisinya kekal di tempatnya. Itu memang sengaja bagi kelayakan dan boleh dibuang bagi worktree; bagi yang selebihnya, ia had yang perlu diketahui dan bukannya ciri. [Rujukan sandaran](/ms-MY/manual-pengguna/rujukan/sandaran/#what-a-backup-does-not-contain) mempunyai jadual penuhnya.
 
-## Moving a backup between the server and your device
+## Memindahkan sandaran antara pelayan dan peranti anda
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Setiap operasi di atas bercakap dalam laluan pada **pelayan**, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda sendiri. Tiga laluan HTTP bertandatangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#transfer-routes) — membawa bait untuk setiap topologi lain, pada lorong yang disahkan sama yang sudah digunakan oleh proksi media dan stor imej. Pada halaman, ini ialah butang **Muat turun** di sebelah setiap eksport dan setiap snapshot (anda pilih tempat ia disimpan), dan **Pilih fail dan muat naik** untuk memulihkan daripada fail yang berada pada mesin yang anda gunakan. Muat naik itulah yang berfungsi apabila pelayan bukan mesin anda: `workspace.import` memerlukan fail itu sudah berada pada hos, dan inilah caranya ia sampai ke sana.
 
-Three properties are worth knowing:
+Tiga sifat wajar diketahui:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Muat turun menghasilkan salinan baharu dan pelayan tidak menyimpan satu pun daripadanya.** Memuat turun bukan "ambil fail yang dihasilkan butang eksport" — ia mengeksport semula, menstrim hasilnya dan memadamnya. Responsnya ialah `no-store` dengan `Accept-Ranges: none` atas sebab yang sama: julat yang disambung semula akan mencantumkan dua eksport berbeza menjadi satu fail yang kelihatan sah tetapi sebenarnya tidak.
+- **Muat naik distrim ke cakera, tidak pernah melalui penimbal**, pada kedua-dua hujung, dan salinan pentas dipadam pada setiap laluan keluar — termasuk penolakan. Pangkalan data ruang kerja bukan tangkapan skrin.
+- **Sambungan melalui geganti tiada asal HTTP**, jadi kawalan pemindahan dilumpuhkan di situ dengan nota yang menerangkan sebabnya. Segala yang bercakap dalam laluan sisi pelayan terus berfungsi melalui geganti; hanya lorong bait memerlukan sambungan langsung.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Laluan siapa milik siapa]
+Laluan yang *ditunjukkan* oleh halaman — direktori snapshot, fail yang ditulis oleh eksport, sumber yang dibaca oleh import — berada pada mesin yang menjalankan `cc_server`. Laluan yang dilaporkan oleh **muat turun** berada pada mesin tempat anda duduk. Perbezaan itulah sebabnya kedua-duanya wujud: yang pertama ialah apa yang diperlukan oleh skrip penyelenggaraan atau sesi ssh, yang kedua ialah apa yang diperlukan oleh seseorang yang mengumpul sandaran.
 :::
 
-## Multiple workspaces
+## Berbilang ruang kerja
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Anda boleh menjalankan berbilang ruang kerja bersebelahan. Setiap satu beroperasi secara bebas: ejen dalam satu ruang kerja tidak boleh menghantar mesej kepada ejen dalam ruang kerja lain, tidak boleh membaca memori ruang kerja lain dan tidak boleh melihat tiketnya. Peleraian penerima bagi pemesejan ejen ke ejen adalah tepat dan tidak pernah melintasi ruang kerja.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Tiada papan pemuka merentas ruang kerja. Permukaan analitik di `/workspaces/:workspaceId/observability` melanggan suapan global terbatas bagi larian terkini dan terus menyempitkannya kepada ruang kerja aktif, jadi apa yang anda lihat di situ ialah satu ruang kerja pada satu masa. Satu-satunya permukaan berbilang ruang kerja sebenar yang disentuh seseorang ialah pemilih ruang kerja dan penukar.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Satu had praktikal wajar diketahui: ruang kerja yang sedang digunakan oleh seseorang akan kekal terbuka — tiada LRU. Melebihi 32 daripadanya, pelayan memberi amaran dan bukannya menolak, kerana setiap fail yang terbuka memegang isolate latar belakang dan cache halaman. Fan-out merentas ruang kerja membuka fail secara sementara dan menutupnya semula selepas itu jika tiada apa-apa lain yang menuntutnya.
 
-## Related concepts
+## Konsep berkaitan
 
-- [Multiplayer](/ms-MY/manual-pengguna/konsep/multipemain/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/): agents belong to exactly one workspace
-- [Memory and knowledge](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/): memory is workspace-scoped
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/): where the databases sit in the client/server split
-- [Back up and restore](/ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ms-MY/manual-pengguna/rujukan/sandaran/): every operation, route, manifest field and limit
-- [Add repositories](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/): registering a checkout into a workspace
+- [Multipemain](/ms-MY/manual-pengguna/konsep/multipemain/): keahlian, peranan dan geran repo — separuh akses daripada pengasingan
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): ejen milik tepat satu ruang kerja
+- [Memori dan pengetahuan](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/): memori berskop ruang kerja
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/): di mana pangkalan data berada dalam pemisahan klien/pelayan
+- [Sandarkan dan pulihkan](/ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan/): mengambil snapshot, memindahkan ruang kerja, menyimpan salinan di tempat lain
+- [Sandaran, eksport dan import](/ms-MY/manual-pengguna/rujukan/sandaran/): setiap operasi, laluan, medan manifes dan had
+- [Tambah repositori](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/): mendaftarkan checkout ke dalam ruang kerja

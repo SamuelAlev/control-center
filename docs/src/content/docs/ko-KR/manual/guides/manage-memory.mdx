@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: 워크스페이스 메모리 관리
+description: 에이전트가 워크스페이스에 기록한 팩트와 정책을 검토하고, 교정하고, 정리합니다.
 slug: ko-KR/매뉴얼/사용-가이드/메모리-관리
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+이 가이드에서는 워크스페이스의 지식 저장소를 다루는 방법을 설명합니다.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+시작하기 전에 알아 두어야 할 중요한 점은 **메모리 UI는 작성 표면이 아니라 검토 표면이라는 것입니다.** 팩트와 정책은 에이전트가 작성합니다. `propose_fact`와 `propose_policy`로 쓰고, `supersede_fact`와 `supersede_policy`로 대체합니다. `remember`는 세션 범위의 핫 티어 항목을 기록하며, `consolidate_memory`가 나중에 이를 팩트로 승격할 수 있습니다. 녹음된 회의 결정은 `decisions` 도메인으로 수집됩니다. 완료된 에이전트 실행에는 수집이 없습니다. 여기서 하는 일은 에이전트가 기록한 내용을 읽고, 교정하고, 비활성화하거나 삭제하는 것입니다.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+메모리는 **설정 → 워크스페이스 → 메모리**(`/workspaces/<id>/settings/memory`)에 있습니다. 최상위 사이드바 항목은 아닙니다.
 
-## The three tabs
+## 세 개의 탭
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+이 페이지에는 정확히 세 개의 탭이 있습니다. 사실과 정책 탭은 실시간 개수를 표시하지만, 그래프 탭은 표시하지 않습니다:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **사실** — 워크스페이스의 모든 팩트와, 그중 대체되지 않은 팩트의 개수
+- **정책** — 도메인별로 묶인 규범적 규칙과, 그중 활성 규칙의 개수
+- **지식 그래프** — 도메인, 주제, 팩트, 정책을 보여 주는 대화형 캔버스
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+도메인은 직접 만드는 것이 아닙니다. 도메인은 에이전트가 그 안에 첫 팩트나 정책을 기록할 때 생깁니다. UI 어디에도 도메인을 만드는 기능은 없습니다.
 
-## Review and correct a fact
+## 팩트 검토 및 교정
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. **사실** 탭을 엽니다.
+2. 검색 상자로 목록을 좁힙니다. 각 팩트의 도메인, 주제, 내용에 대한 단순 부분 문자열 필터이며, 키워드 색인도 순위도 없습니다.
+3. 범위 필터로 모든 범위, 워크스페이스 전체 팩트만, 또는 저장소 하나의 팩트만 표시합니다.
+4. 정렬 전환으로 최신순 또는 신뢰도순으로 정렬합니다.
+5. 팩트의 편집 컨트롤을 클릭합니다.
 
-The edit dialog lets you change:
+편집 대화 상자에서는 다음을 변경할 수 있습니다:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **도메인** — 팩트를 도메인 간에 이동
+- **주제** — 팩트의 짧은 레이블
+- **내용** — 지식 텍스트
+- **신뢰도** — 5% 단위의 슬라이더
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+저장하면 다시 기록됩니다. **팩트 추가** 버튼은 없으며, 대화 상자는 기존 행에서만 열립니다.
 
-## See superseded facts
+## 대체된 팩트 확인
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+사실 탭에는 **대체된 항목 표시** 스위치가 있습니다. 대체된 팩트는 기본적으로 숨겨져 있으며 그 스위치로 표시됩니다. 감사 추적이 사는 곳이 바로 여기입니다. 대체는 결코 삭제하지 않습니다.
 
-## Delete a fact
+## 팩트 삭제
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+팩트의 삭제 컨트롤을 사용하고 확인합니다. 이는 대체가 아니라 실제 삭제입니다. 기록한 것 자체가 잘못이었던 팩트에 사용하고, _내용_이 달라진 팩트는 에이전트가 대체하도록 두십시오.
 
-## Manage policies
+## 정책 관리
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+**정책** 탭은 활성 정책을 도메인별로 묶고, 비활성 정책은 맨 뒤 섹션으로 내립니다. 각 정책에 대해 다음을 할 수 있습니다:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **편집**
+- **삭제**
+- **비활성화** / **활성화** — 되돌릴 수 있는 선택지이며 보통은 이것이 옳습니다. 활성 정책만 에이전트 프롬프트에 도달합니다.
 
-As with facts, there is no create control.
+팩트와 마찬가지로 생성 기능은 없습니다.
 
-## Explore the knowledge graph
+## 지식 그래프 살펴보기
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+**지식 그래프** 탭은 도메인, 주제, 팩트, 정책을 탐색 가능한 노드 캔버스로 펼쳐 보여 줍니다. 팬, 확대/축소, 노드 드래그가 가능합니다. 노드를 탭하면 상세 시트가 열리고, 거기서 같은 편집 대화 상자에 접근할 수 있습니다. 어떤 도메인에 실제로 내용이 채워져 있는지 가장 빠르게 확인하는 방법입니다.
 
-## Edit an agent's working memory
+## 에이전트의 워킹 메모리 편집
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+워킹 메모리는 에이전트마다 있는 비공개 스크래치패드이며, 디스패치 시점에 해당 에이전트의 프롬프트에 주입됩니다. 에이전트가 `record_observation`과 `update_my_notes`로 직접 기록하지만, 여러분이 직접 읽고 편집할 수도 있습니다:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**설정 → 워크스페이스 → 에이전트** → 에이전트 선택 → **메모리** 탭.
 
-## Access grants
+## 접근 권한 부여
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+메모리 접근 권한 부여는 에이전트의 역할을 도메인별 권한(`none`, `read`, `write`)에 매핑합니다. `memory_access_grant.*` 작업으로 기록합니다.
 
-Two things to understand about how they resolve:
+이들이 어떻게 결정되는지에 관해 이해해야 할 두 가지가 있습니다:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **읽기는 페일 오픈입니다.** (역할, 도메인) 쌍에 대한 권한 부여 행이 없으면 실제 권한은 `read`입니다. `write` 없이 예외를 던지는 유일한 쓰기는 `propose_policy`입니다. 팩트 쓰기는 권한 부여로 제한되지 않습니다.
+- **권한 부여는 에이전트의 역할을 키로 합니다.** 제안 도구는 누락된 `agent_role`을 `general`로 기본 설정합니다. 다른 역할에 대해 기록한 권한 부여는 그 에이전트들을 구속하지 않으며, `general` 권한 부여는 구속합니다.
 
-## Search is not the same everywhere
+## 검색은 어디에서나 같지 않습니다
 
-Three different things are called "memory search" and they do not agree:
+세 가지 서로 다른 것이 "메모리 검색"이라고 불리며, 서로 일치하지 않습니다:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| 위치                                | 동작                                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 사실 탭의 검색 상자                 | 클라이언트에 이미 로드된 팩트에 대한 부분 문자열 필터                                                       |
+| `memory_fact.search` RPC 작업       | FTS5 키워드 검색만 수행합니다. 씬 클라이언트는 쿼리 임베딩을 실어 보낼 수 없으므로 하이브리드 검색은 호스트 내부에 머뭅니다 |
+| 에이전트 측 `search_memory` 도구    | `keyword`, `semantic` 또는 `hybrid`(기본값)입니다. 하이브리드는 어휘, 의미론, 시간, 그래프의 네 목소리를 융합합니다 |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+따라서 에이전트와 메모리 페이지는 같은 쿼리를 같은 방식으로 순위 매기지 않습니다. 에이전트가 실제로 무엇을 회수할 수 있는지 확인할 때는 에이전트에게 물어보십시오.
 
-## Embeddings
+## 임베딩
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+팩트는 **기록 시점에** 임베딩되며, 온디바이스 임베딩 모델이 설치되어 있을 때만 그렇습니다. 상태는 **설정 → 서버 → 진단 및 개인정보 보호 → 시맨틱 검색**에서 확인합니다. 의미론적 회수를 원한다면 에이전트가 메모리를 쓰기 시작하기 전에 모델을 설치하십시오.
 
-## Related guides
+## 관련 가이드
 
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Use the MCP server](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [MCP 서버 사용](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
 
-## Related concepts
+## 관련 개념
 
-- [Memory and knowledge](/ko-KR/매뉴얼/개념/메모리와-지식/)
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/)
+- [메모리와 지식](/ko-KR/매뉴얼/개념/메모리와-지식/)
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)

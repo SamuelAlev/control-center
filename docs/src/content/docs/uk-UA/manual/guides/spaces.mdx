@@ -1,156 +1,164 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Використовувати простори
+description: Створюйте простори, задавайте їхній режим, керуйте учасниками й автономністю та відкривайте розмови й гілки.
 slug: uk-UA/керівництво/практичні-посібники/простори
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Цей посібник показує, як користуватися просторами. **Простір** — це поверхня
+повідомлень у Control Center: кімната в межах робочого простору з одним або
+кількома учасниками (вами та/або агентами), яка володіє окремим copy-on-write
+worktree для кожного репозиторію, для якого її створено.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Кімнати «один на один» і кімнати з багатьма агентами — це просто простори, які
+різняться лише кількістю учасників. Єдиний виняток — простори, які агенти
+відкривають, щоб спілкуватися одне з одним; див.
+[Простори агент-агент](#простори-агент-агент) нижче.
 
-## Create a space
+## Створити простір
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Перейдіть до **Простори**
+2. Натисніть кнопку **+** поруч із заголовком «Простори»
+3. Дайте йому **назву** — обов’язково. Порожню назву відхилено; діалог
+   залишається відкритим
+4. За бажанням додайте агентів із робочого простору
+5. Якщо в робочому просторі є репозиторії, виберіть, для яких із них цей простір
+   розгортає worktree. Типово вибрано всі; якщо зняти вибір з усіх репозиторіїв,
+   простір створиться без жодного розгорнутого репозиторію
+6. Підтвердіть
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Простори належать робочому простору: ви бачите лише агентів із поточного
+робочого простору, і простір ніколи не показує дані з іншого робочого простору.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills).
+Кожен репозиторій розгортається за шляхом `repos/<name>/` усередині простору.
+Репозиторій, який постачає власні навички агента, передає їх тому агенту, що в
+ньому працює — набір одного репозиторію за раз, змінюючись, коли агент
+переходить. Із композера до будь-яких із них можна дістатися через
+`/skill:<repo>:<name>`. Див.
+[Навички в межах репозиторію](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Поверхня доступна за `/workspaces/<id>/spaces`, а окремий простір — за
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Задати режим простору
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Новий простір починає в типовому режимі. Змініть його через **випадаючий список
+режимів** у лівому краї панелі інструментів композера — не в діалозі створення
+(там немає поля режиму) і не в заголовку простору.
 
-| Mode            | Effect                                                                                                |
+| Режим           | Вплив                                                                                                |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **Agent**       | Повний доступ. Типовий; внутрішньо `chat`, у випадаючому списку підписаний як «Agent»                 |
+| **Plan**        | Лише читання й дослідження; результат — типізований план                                              |
+| **Orchestrate** | Читання й дослідження плюс єдине дієслово `propose_orchestration`; план виконується лише після вашого схвалення |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab перемикає між режимом плану й режимом агента, не відкриваючи
+випадаючий список.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Є й четвертий режим, **review**: у випадаючому списку його не пропонують — його
+застосовують автоматично до просторів перевірки PR.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Режим зберігається в просторі, тож той самий агент може бути в режимі плану в
+одному просторі та в режимі агента в іншому. Кожна розмова всередині простору
+поділяє режим цього простору.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Стежте за бейджем примусу]
+Бейдж з’являється поруч із випадаючим списком режимів, коли агенти простору
+працюють на адаптері, який не може примусово застосувати вибраний вами режим.
+Лише вбудований harness Control Center фільтрує поверхню інструментів і
+контролює кожен виклик; адаптери Claude Code та ACP отримують режим як запит,
+який їхній раннер може виконати, а може й ні. Відсутність бейджа означає «жодних
+заяв не робиться», а не «перевірено на безпеку».
 :::
 
-See [Modes](/uk-UA/керівництво/поняття/режими/) for the full model.
+Повну модель див. у [Режими](/uk-UA/керівництво/поняття/режими/).
 
-## Manage participants and per-agent autonomy
+## Керувати учасниками й автономністю окремих агентів
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Натисніть іконку людей у заголовку простору, щоб відкрити **Керувати
+учасниками**. Для кожного агента, який уже є в просторі, ви можете:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Видалити його з простору
+- Задати його **Автономність** для цього простору: **Типовий**, **Лише
+  пропонувати**, **Діяти з підтвердженням** або **Діяти вільно**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Автономність задається для пари (простір, агент), тож агента, якому ви
+довіряєте в одній кімнаті, в іншій можна тримати в режимі «лише пропонувати».
 
-## React to a message
+## Реагувати на повідомлення
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Наведіть курсор на повідомлення й натисніть іконку смайлика, щоб відкрити
+палітру реакцій. Це фіксований набір із шести: 👍 👎 🎉 ❤️ 👀 ✅. Вільного
+вибору емодзі немає — дотик до одного перемикає його для вас, а зведені чіпи
+з’являються під повідомленням.
 
-## Open a conversation
+## Відкрити розмову
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Простір вміщує кілька розмов одночасно, і всі вони рівні — головної серед них
+немає. Простір завжди зберігає щонайменше одну живу розмову: останню активну
+архівувати не можна, а відкриття простору, у якому їх ще немає, створює постійну
+розмову без назви.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Розмови показуються як вкладки редактора, а в бічній панелі — як вкладені рядки
+під простором, щойно їх стає більше ніж одна. **Нова розмова** міститься в меню
+нової вкладки редактора й створює розмову без назви без запиту назви — модель
+назв назве її за першим повідомленням. Скористайтеся нею, щоб вести паралельну
+роботу з тим самим агентом і worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Кожна розмова зберігає власну історію повідомлень і сеанси агента, водночас
+поділяючи worktree простору та його режим. Закриття вкладки ховає її;
+**Архівувати розмову** (рядок у бічній панелі або контекстне меню вкладки чату)
+архівує лише цю розмову.
 
-## Start a thread
+## Почати гілку
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Наведіть курсор на будь-яке повідомлення й виберіть **Почати гілку**. Це
+відкриває розмову, прив’язану до цього повідомлення: якір засіває контекст
+агента нової розмови одним рядком, а історія батьківської розмови **не**
+копіюється.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Коли в гілки з’являються відповіді, повідомлення, від якого вона відгалужена,
+обростає рядком під собою — обличчя тих, хто писав, кількість відповідей і коли
+надійшла остання. Цей рядок — шлях назад: натиснувши його, ви відкриваєте (або
+переводите фокус на) вкладку гілки. Це єдиний слід, який гілка залишає в потоці,
+з якого відгалузилася, — саме тому він там і є.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+Вкладка гілки має заголовок `Thread: <name>` і позначена глифом відгалуження,
+тож дві вкладки в тому самому просторі ніколи не сплутати.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Гілки ніколи не вкладаються — прив’язку до повідомлення, яке вже перебуває
+всередині гілки, відхилено. Заголовок розмови веде назад до повідомлення-якоря.
+Видалення повідомлення-якоря видаляє гілку, а архівування батьківської розмови
+не блокує її наявні гілки.
 
-## Read state
+## Стан прочитання
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Позначки прочитання прив’язані до простору, а не до розмови: відкриття будь-якої
+розмови в просторі очищає кімнату. Непрочитане все одно збирається по всіх
+розмовах простору, включно з гілками. Коли розмови перелічено під простором,
+крапка непрочитаного стоїть на розмові, у якій є небачена робота, а не на
+батьківському рядку.
 
-## Agent-to-agent spaces
+## Простори агент-агент
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Простори, які агенти відкривають, щоб спілкуватися одне з одним, винесено в
+бічній панелі окремим розділом **Агенти**, згорнутим типово й приглушеним. Вони
+ніколи не збільшують ваш бейдж непрочитаного — балачки агентів тихі за
+побудовою, а не через налаштування, яке вам доводиться шукати.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Тип простору — одне з п’яти значень: `topic` (типове для всього, що ви
+створюєте), `agentPeer`, `system` (керується конвеєром), `pr` (створюється, коли
+поверхні PR потрібен якір worktree, і ховається з бічної панелі, доки в ньому не
+з’являться повідомлення) і `slack` (створюється чат-мостом для гілки Slack або
+особистих повідомлень бота й обробляється як звичайна людська розмова).
 
-## Related guides
+## Пов’язані посібники
 
-- [Chat with an agent](/uk-UA/керівництво/практичні-посібники/спілкуватися-з-агентом/)
-- [@-mention agents](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/)
-- [Use plan mode](/uk-UA/керівництво/практичні-посібники/режим-плану/)
+- [Спілкуватися з агентом](/uk-UA/керівництво/практичні-посібники/спілкуватися-з-агентом/)
+- [@-згадувати агентів](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/)
+- [Використовувати режим плану](/uk-UA/керівництво/практичні-посібники/режим-плану/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Modes](/uk-UA/керівництво/поняття/режими/)
-- [Chat bridges](/uk-UA/керівництво/поняття/чат-мости/): how a Slack thread becomes a space
+- [Режими](/uk-UA/керівництво/поняття/режими/)
+- [Чат-мости](/uk-UA/керівництво/поняття/чат-мости/): як гілка Slack стає простором

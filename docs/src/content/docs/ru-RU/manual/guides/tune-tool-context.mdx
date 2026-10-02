@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Настроить контекст инструментов агента
+description: Посмотрите, что запуск отправляет на самом деле, измените, какие инструменты загружаются заранее, и разберитесь, был ли неудачный выбор инструмента промахом поиска или проблемой промпта.
 slug: ru-RU/руководство/практические-руководства/настроить-контекст-инструментов
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ru-RU/руководство/понятия/контекст-инструментов).
+Это руководство посвящено практической работе с двухуровневой поверхностью инструментов: как увидеть, что отправляет запуск, как это изменить и как диагностировать агента, который потянулся не к тому инструменту. О том, почему это устроено именно так, читайте в разделе [Контекст инструментов и кэш промптов](/ru-RU/руководство/понятия/контекст-инструментов).
 
-## Look at what a run actually sends
+## Что запуск отправляет на самом деле
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Откройте разговор и нажмите индикатор использования контекста в заголовке разговора. Он заново собирает ровно ту поверхность, которую отправил бы следующий запуск, ничего при этом не выполняя. **Ещё** (или команда `/context`) открывает полный обозреватель контекста, где можно изучить каждый инструмент.
 
-Two segments matter here:
+Здесь важны два сегмента:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Определения инструментов** и **MCP и динамические инструменты** — резидентный набор с реальной стоимостью каждого инструмента в токенах.
+- **Инструменты по требованию** — отложенный индекс. За каждую запись здесь начисляется только её имя, потому что запрос несёт лишь имя; при открытии всё равно показываются полное описание и схема, так что видно, сколько она *стоила бы*, если бы запуск её подтянул.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ru-RU/руководство/справка/cc-server-cli).
+Если отложенный сегмент пуст, отложенная загрузка для этого сервера выключена. Проверьте `--tool-deferral` в [CLI `cc_server`](/ru-RU/руководство/справка/cc-server-cli).
 
-## Change which tools load up front
+## Измените, какие инструменты загружаются заранее
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Резидентный набор — это политика, а не конфигурация: он живёт в `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) и применяется к каждому запуску:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ru-RU/руководство/понятия/режимы) uses on nearly every turn.
+- `residentBuiltins` — словарь файлов и оболочки.
+- `residentDiscovery` — `search_tools` и `list_my_tools`. Не удаляйте их: именно так агент добирается до всего остального.
+- `residentMcpTools` — несколько инструментов Control Center, которые стоят своей схемы в каждом запросе.
+- Блок для каждого режима — для инструментов, которые данный [режим](/ru-RU/руководство/понятия/режимы) использует почти на каждом ходу.
 
-Two rules when editing it:
+При его редактировании действуют два правила:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Добавляйте инструмент, только если его использует большинство запусков.** Каждое имя стоит своей схемы в каждом запросе каждого запуска — и так навсегда. Инструмент, важный когда он нужен, но в целом редкий, относится к отложенной половине: агент всё равно его найдёт.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Используйте настоящее имя инструмента.** Резидентное имя, не совпадающее ни с одним инструментом, инертно: ни ошибки, ни предупреждения — инструмент просто откладывается. `test/tooling/resident_tool_names_test.dart` это ловит, а заодно удерживает каждый режим в пределах 40 резидентных инструментов — в этом и смысл упражнения: за этой полосой точность выбора инструментов заметно падает.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Обязательные и закреплённые глаголы режима добавляются автоматически, поэтому собственный глагол вывода режима перечислять никогда не нужно.
 
-## Diagnose a bad tool choice
+## Диагностируйте неудачный выбор инструмента
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Когда агент использовал не тот инструмент или заявил, что чего-то не может, разберитесь, что из трёх вещей произошло.
 
-### 1. Did it look?
+### 1. Искал ли он?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Каждый запуск записывает, какие отложенные инструменты он загрузил и что это вызвало — прямой вызов по имени или запрос `search_tools`. Откройте поток событий запуска (**Настройки → Рабочее пространство → Агенты** → агент → **Журнал** → **Просмотр**) и поищите `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Ничего не записано, а агент сказал, что возможности нет** — он даже не искал. Это проблема промпта, а не поиска: отложенный индекс присутствует в его системном промпте вместе с указанием не объявлять возможность отсутствующей, пока поиск не вернулся пустым.
+- **Поиск записан, но ничего не загрузилось** — настоящий промах поиска. Переходите к шагу 2.
+- **Инструменты загрузились, но использован не тот** — найденные инструменты слишком похожи. Переходите к шагу 3.
 
-### 2. Fix a retrieval miss
+### 2. Исправьте промах поиска
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` сопоставляет имена, описания и названия аргументов. Промах почти всегда означает, что в описании нет слов, которые использовал агент.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Добавьте их. Описания — это поисковый индекс, поэтому **удлиняйте их, а не сокращайте** — пишите словарь, который оператор действительно набрал бы ("assign", "hand off", "give to"), а не только внутреннее существительное. Сокращение описания ради экономии токенов лишает вас и попадания в поиске, и точности выбора, а экономит почти ничего по сравнению со схемой.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Если нужный инструмент существует, но ранжируется низко, для этого и предназначен аргумент `limit`; собственное описание инструмента подсказывает агенту расширить поиск, который выглядит близким, но промахивается.
 
-### 3. Fix look-alike tools
+### 3. Исправьте похожие инструменты
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Если описания двух инструментов читались бы одинаково для того, кто ещё не знает разницы, модель угадывает. Объедините их в один инструмент с различающим аргументом.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` и `ticket_pr_link` следуют этому образцу: каждый обрабатывает связывание и развязывание через различающий аргумент. Выбор, сделанный *внутри* одного вызова, с полным контекстом запроса, надёжнее выбора между двумя похожими описаниями.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Оставляйте инструменты раздельными, когда им нужны разные правила подтверждения, разный аудит или разная отрисовка, — это причины, по которым объединение обошлось бы по-настоящему дорого.
 
-## Check the prompt cache is working
+## Проверьте, что кэш промптов работает
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Доля попаданий в кэш отображается в разделе **Наблюдаемость → Инсайты** как **Доля кэша**. У здорового долгого разговора она высокая; если она стабильно низкая, что-то перезаписывает префикс на каждом ходу.
 
-Common causes, in order of likelihood:
+Частые причины, в порядке вероятности:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Что угодно недетерминированное в начале промпта.** Достаточно отметки времени, идентификатора запроса или множества, обходимого в разном порядке.
+- **Смена модели или уровня усилий посреди разговора.** И то и другое меняет префикс. С субагентами здесь особенно легко ошибиться: запуск дочерних на более низком уровне усилий ради экономии может стоить дороже в виде потерянного общего кэша, чем экономит.
+- **Частая компакция.** Компакция по своей природе перезаписывает историю, так что её цена реальна; лечится это редкой и глубокой компакцией вместо частой и поверхностной.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Отключение отложенной загрузки через `--tool-deferral=off` — законный A/B-тест, позволяющий выяснить, вызвано ли изменение поведения двухуровневой поверхностью. Он в точности воспроизводит запрос, каким тот был до появления отложенной загрузки, поэтому если поведение сохраняется и с выключенной загрузкой, причина не в поверхности.

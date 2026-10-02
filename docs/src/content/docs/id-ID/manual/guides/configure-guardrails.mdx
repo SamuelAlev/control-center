@@ -1,152 +1,165 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Konfigurasi pagar pengaman
+description: Tetapkan aturan izinkan, tanyakan dulu, dan tolak untuk tindakan agen, uji aturannya dengan “Bagaimana jika?”, dan sesuaikan otonomi per space.
 slug: id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Panduan ini menunjukkan cara mengonfigurasi pagar pengaman: aturan yang
+menentukan apakah tindakan agen dijalankan, meminta persetujuan lebih dulu,
+atau ditolak.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Pagar pengaman mencakup tiga belas kelas efek yang dideklarasikan setiap alat
+yang mengubah keadaan. Semuanya ditegakkan di sisi server pada titik alat itu
+dipanggil, tidak pernah lewat instruksi di dalam prompt.
 
-## Set a decision for an action class
+## Tetapkan keputusan untuk kelas aksi
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Buka **Pengaturan → Ruang kerja → Izin agen**
+2. Pilih cakupan dengan kontrol tersegmentasi: **Ruang kerja**, **Agen** (lalu
+   pilih agennya), atau **Space** (lalu pilih space tersebut)
+3. Pada baris kelas aksi, pilih **Izinkan**, **Tanyakan dulu**, atau **Tolak**
+4. Untuk menghapus aturan yang Anda tetapkan, tekan tombol reset yang muncul di
+   ujung baris itu (**Kembalikan ke diwariskan**) — keputusannya kembali ke
+   cakupan yang lebih luas
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Setiap baris menampilkan keputusan efektif sebagai tag status dan badge yang
+menunjukkan asalnya: **Cakupan ini**, **Diwariskan**, atau **Default bawaan**.
+Matriks ini diselesaikan pada mode Agen (`chat`), sehingga **Preset mode** tidak
+pernah muncul di sini — gunakan “Bagaimana jika?” dengan mode hanya-baca yang
+dipilih untuk melihat lapisan itu.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Menulis aturan membutuhkan peran `admin`. Membaca matriksnya tidak.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Titik pemeriksaan: tetapkan **Push ke remote** ke **Tolak** pada cakupan ruang
+kerja, lalu jalankan “Bagaimana jika?” di bawah untuk `git push origin main`.
+Hasilnya terbaca `deny` dengan sumber `workspace`.
 
-## Understand how a decision is resolved
+## Memahami cara keputusan diselesaikan
 
-Resolution is **specificity first, then restrictiveness**:
+Penyelesaiannya adalah **spesifisitas lebih dulu, lalu keketatan**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Aturan **Space**, lalu **Agen**, lalu **Ruang kerja**. Cakupan pertama yang
+   memiliki aturan yang cocoklah yang memutuskan dan penyelesaian berhenti
+2. Jika tidak ada aturan yang cocok, **preset mode** berlaku — mode hanya-baca
+   (rencana, tinjauan, orkestrasi) menolak sebelas dari tiga belas kelas
+3. Jika mode tidak menentukan apa pun, **default bawaan** yang berlaku
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Dalam satu cakupan, aturan perintah diselesaikan berdasarkan prefiks yang cocok
+paling panjang, dan konflik yang sama spesifiknya diselesaikan secara **paling
+ketat** — tolak mengalahkan tanyakan dulu, yang mengalahkan izinkan. Tindakan
+yang mendeklarasikan beberapa kelas diselesaikan satu per satu secara independen,
+lalu digabungkan secara paling ketat.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Izinkan tidak mengalahkan tolak]
+Aturan yang lebih sempit menang berdasarkan spesifisitas, dan seri diputus oleh
+keketatan — jadi **Izinkan** pada cakupan ruang kerja tidak menimpa **Tolak** di
+mana pun.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Keputusan **Tanyakan dulu** memunculkan satu prompt persetujuan yang mencakup
+setiap kelas yang diselesaikan menjadi `prompt`. **Tanpa pemberi persetujuan
+yang terhubung, keputusan itu ditolak**, baik untuk perintah shell maupun
+panggilan alat harness. Itu memang disengaja: eksekusi tanpa gerbang lebih buruk
+daripada eksekusi yang ditolak.
 
-### Action classes and built-in defaults
+### Kelas aksi dan default bawaan
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Kelas aksi                   | Default bawaan |
+| ---------------------------- | -------------- |
+| Hapus file                   | Tanyakan dulu  |
+| Tulis di luar pohon kerja    | Izinkan        |
+| Buat commit                  | Izinkan        |
+| Push ke remote               | Tanyakan dulu  |
+| Buka pull request            | Tanyakan dulu  |
+| Publikasikan review atau merge | Tanyakan dulu |
+| Tulis ke pelacak eksternal   | Tanyakan dulu  |
+| Akses jaringan               | Izinkan        |
+| Baca secret                  | Izinkan        |
+| Instal paket                 | Izinkan        |
+| Jalankan proses              | Izinkan        |
+| Ubah struktur ruang kerja    | Izinkan        |
+| Kendalikan enclosure (rig)   | Izinkan        |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Taksonomi ini tertutup. Alat baru yang dirilis tanpa mendeklarasikan kelasnya
+akan gagal dalam uji ratchet di CI, sehingga tidak ada yang hadir dengan
+himpunan efek yang kosong secara diam-diam.
 
-## Test a rule with the what-if probe
+## Uji aturan memakai “Bagaimana jika?”
 
-Before changing a rule, check how the current policy already resolves it.
+Sebelum mengubah aturan, periksa bagaimana kebijakan saat ini sudah
+menyelesaikannya.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Di halaman yang sama, gulir ke **Bagaimana jika?**
+2. Pilih **Aksi** (salah satu dari tiga belas kelas)
+3. Secara opsional isi **Perintah** (misalnya `git push origin main`),
+   **Agen**, **Ruang**, dan **Mode**
+4. Baca hasilnya: keputusan, alasannya, dan **Sumber:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+“Bagaimana jika?” menjalankan resolver yang sama dengan yang dipakai jalur
+penegakan, terhadap aturan aktif Anda, sehingga jawabannya persis. Jika hasilnya
+mengejutkan Anda, ubah aturan di matriks di atas lalu jalankan “Bagaimana
+jika?” lagi.
 
-## Set a space's autonomy dial
+## Tetapkan dial otonomi sebuah space
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Dial ini berlaku per agen per space dan digabungkan dengan aturan, bukan
+menggantikannya.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Buka space tersebut
+2. Buka **Kelola peserta** dari header space
+3. Di bawah **Otonomi** pada baris agen, pilih sebuah level:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Level                     | Efek                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Bawaan**                | Tidak ada pengaturan space — berperilaku seperti **Bertindak dengan persetujuan**                 |
+| **Hanya usulkan**         | Setiap alat yang melewati gerbang ditolak langsung, dengan pesan yang memberi tahu agen agar mengusulkan tindakan itu sebagai gantinya |
+| **Bertindak dengan persetujuan** | Tindakan berisiko mengenai gerbang persetujuan fail-closed                                 |
+| **Bertindak bebas**       | Menyetujui di muka apa pun yang tidak diselesaikan menjadi deny keras                             |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Bertindak bebas menelan setiap prompt]
+Di bawah **Bertindak bebas**, keputusan **Tanyakan dulu** diberikan tanpa
+menanyakan Anda. Hanya `deny` — dari aturan, dari preset mode, atau dari default
+bawaan — yang masih memblokir. Gunakan opsi ini saat Anda sedang mengawasi
+space, bukan sebagai pengaturan default.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Dial ini hanya menjangkau harness bawaan. Adapter Claude Code menjalankan
+alatnya sendiri di luar gerbang ini.
 
-## Know where guardrails do not reach
+## Ketahui di mana pagar pengaman tidak menjangkau
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Tabel **Di mana aturan ditegakkan** di bagian bawah halaman yang sama adalah
+versi dalam aplikasi dari hal ini: untuk setiap kelas efek, tabel itu menyatakan
+apakah setiap runner menangkapnya di gerbang kebijakan, membiarkannya ke
+sandbox, atau tidak dapat mencegatnya sama sekali.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/).
+- **Adapter Claude Code** tidak melewati gerbang untuk panggilan alatnya
+  sendiri. Claude Code dijalankan dengan `--dangerously-skip-permissions`,
+  sehingga panggilan baca, tulis, edit, dan bash-nya tidak pernah melewati
+  pagar pengaman. Yang melewati gerbang untuk adapter itu adalah permukaan alat
+  MCP yang dipanggilnya kembali dan perintah shell yang dijalankan Control
+  Center untuk memulainya.
+- **Verba keluaran milik sebuah mode** (`submit_plan`, `propose_orchestration`)
+  dipakukan dan tidak pernah dapat ditolak — jika tidak, sebuah mode secara
+  struktural tidak akan mampu menghasilkan satu-satunya keluarannya.
+- **Apakah sandbox menopang aturan-aturan ini bergantung pada host.** Di tempat
+  `cc_server` menemukan backend, ia membungkus CLI Claude Code dan alat `bash`
+  milik harness, sehingga aturan yang tidak Anda tulis pun masih memiliki dasar
+  OS di bawahnya. Di **Windows tidak ada dasar itu** dan di Linux atau WSL2
+  tanpa `bwrap` dan `socat` juga tidak ada — di sana, pagar pengaman plus
+  permukaan alat milik mode merupakan keseluruhan penegakannya, bukan lapisan
+  keduanya. Periksa Anda berada di kasus yang mana dengan
+  [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/).
 
-## Related guides
+## Panduan terkait
 
-- [Configure sandbox policies](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
+- [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
 
-## Related concepts
+## Konsep terkait
 
-- [Guardrails — one policy for every mutating action](/id-ID/panduan-pengguna/konsep/pagar-pengaman/)
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
+- [Pagar pengaman — satu kebijakan untuk setiap tindakan yang mengubah keadaan](/id-ID/panduan-pengguna/konsep/pagar-pengaman/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)

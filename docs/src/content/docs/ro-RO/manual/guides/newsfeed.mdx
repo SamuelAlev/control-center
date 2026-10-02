@@ -1,130 +1,145 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Curatează fluxul de știri
+description: Adaugă și gestionează fluxuri RSS/Atom, citește articole cu blocare de conținut și află că fluxurile tale te urmează în orice spațiu de lucru.
 dateModified: 2026-09-19
 slug: ro-RO/manual/ghiduri-practice/flux-de-stiri
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Acest ghid îți arată cum să modelezi fluxul de știri: ce surse preia, cum sunt
+citite articolele și ce face blocarea de conținut.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Fluxul de știri este per utilizator, nu per spațiu de lucru]
+Fluxurile și articolele aparțin utilizatorului autentificat: lista ta de fluxuri,
+starea de citire și marcajele te urmează în fiecare spațiu de lucru și pe fiecare
+dispozitiv de pe care te autentifici, iar niciun alt utilizator nu le vede.
+Fluxurile se află în baza de date globală a serverului, așa că adresa URL
+`/newsfeed` conține un id de spațiu de lucru doar pentru că orice rută din
+aplicație o face.
 :::
 
-## Read articles
+## Citește articolele
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Dă clic pe **Flux de știri** în bara laterală
+2. Comută între **Toate**, **Necitite** și **Salvate** cu segmentele barei de
+   instrumente
+3. Restrânge lista cu caseta de căutare sau cu selectorul de sursă
+4. Comută între grila de tip revistă și lista densă cu butoanele de aranjare
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Deschiderea unui articol îl marchează ca citit. Folosește **Marchează tot ca
+citit** din antetul paginii — apare doar cât timp ceva este necitit — pentru a
+goli restanța dintr-o singură mișcare, iar controlul de marcaj de pe un card
+pentru a salva un articol pentru mai târziu.
 
-The layout choice persists across launches.
+Alegerea aranjării se păstrează între lansări.
 
-## Add a feed
+## Adaugă un flux
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Deschide **Setări → Tu → Flux de știri** (pictograma de setări din antetul
+   fluxului de știri duce direct acolo)
+2. Apasă **Adaugă flux**
+3. Completează un **nume** și **URL flux** (RSS sau Atom)
+4. Opțional, extinde **Avansat** și setează un **User-Agent** personalizat — unii
+   editori servesc un răspuns diferit unui client implicit
+5. Apasă **Adaugă flux**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Verificare: fluxul apare în lista **Fluxuri** și articolele sale sosesc după
+prima preluare. O adresă URL deja abonată este refuzată cu „Un flux cu acest URL
+există deja.”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Paisprezece fluxuri sunt preîncărcate pentru fiecare utilizator la prima
+utilizare: Control Center, The Verge, TechCrunch, Hacker News, ByteByteGo,
+Product Hunt, TLDR AI, Import AI, The Pragmatic Engineer, Martin Fowler,
+Irrational Exuberance de Will Larson, The Engineering Manager, Lea Verou și
+CSS-Tricks.
 
-## Manage feeds
+## Gestionează fluxurile
 
-Each row in the **Feeds** list gives you three controls:
+Fiecare rând din lista **Fluxuri** îți oferă trei controale:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Control                | Efect                                                                |
+| ---------------------- | -------------------------------------------------------------------- |
+| Comutator              | Dezactivează fluxul. Un rând dezactivat este estompat și nu mai este preluat |
+| Pictogramă de reîmprospătare | Preia acum acest flux                                          |
+| Pictogramă de coș de gunoi   | Șterge fluxul, după o confirmare                              |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Reîmprospătează tot** din partea de sus a listei preia toate fluxurile
+activate.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Subtitlul unui flux afișează descrierea acestuia și de cât timp a fost preluat
+ultima dată; un flux care a eșuat afișează eroarea în locul descrierii, în
+culoarea de avertizare.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Nu există nicio opțiune de editare — pentru a schimba numele, URL-ul sau agentul
+utilizator al unui flux, șterge-l și adaugă-l din nou.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Preluarea rulează în întregime pe server: o dată per utilizator la pornire (și la
+prima utilizare pentru conturile create ulterior), apoi la fiecare 30 de minute.
 
-## Block ads and trackers in the reader
+## Blochează reclamele și trackerele în cititor
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. În Setări → Tu → Flux de știri, găsește **Preferințe cititor**
+2. Lasă **Deschide articolele în aplicație** activat pentru a folosi cititorul
+   integrat, sau dezactivează-l pentru a preda articolele browserului tău de
+   sistem
+3. Lasă **Blochează reclame, trackere și bannere de cookie-uri** activat
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Blocarea este activată implicit. Cititorul integrat există doar pe macOS și
+Windows: în versiunea web și pe Linux browserul de sistem _este_ cititorul, iar
+un articol se deschide acolo (într-o filă nouă pe web). Pe web, comutatorul de
+blocare, cardul **Liste de filtre** și cardul **Site-uri de încredere** sunt
+ascunse.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Cititorul din aplicație nu reformatează articolul. Afișează pagina editorului
+într-un webview integrat și elimină reclamele, trackerele și bannerele de
+cookie-uri folosind liste de filtre stocate în cache.
 
-### Check or update the filter lists
+### Verifică sau actualizează listele de filtre
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Cardul **Liste de filtre** arată câte reguli de ascundere a cookie-urilor, de
+ascundere a reclamelor și de blocare la nivel de rețea sunt încărcate, plus
+parametrii de urmărire pe care îi elimină și când au fost actualizate ultima
+dată listele. Apasă **Verifică actualizări** pentru a le actualiza.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Sursele sunt EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, mai multe
+liste uBlock Origin și lista de parametri de urmărire a uBO. Până când o
+descărcare reușește, cardul etichetează listele ca valori implicite incluse care
+nu au fost niciodată actualizate — contoarele de reguli pentru reclame, cookie-uri
+și rețea rămân la zero; eliminarea parametrilor de urmărire folosește în
+continuare un set implicit integrat.
 
-### Allowlist a site
+### Permite un site
 
-Some sites break under blocking.
+Unele site-uri se strică atunci când blocarea este activă.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. În Setări → Tu → Flux de știri, mergi la **Site-uri de încredere**
+2. Apasă **Adaugă site de încredere** și introdu domeniul
 
-Blocking is skipped there.
+Acolo blocarea este omisă.
 
-## Troubleshooting
+## Depanare
 
-### A feed I added shows up in another workspace
+### Un flux pe care l-am adăugat apare într-un alt spațiu de lucru
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Normal. Fluxul de știri este per utilizator, nu per spațiu de lucru — fluxurile
+tale te urmează peste tot unde ești autentificat. Vezi atenționarea din partea de
+sus.
 
-### A feed row shows an error instead of a description
+### Un rând de flux afișează o eroare în locul unei descrieri
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Ultima preluare a eșuat, iar rândul afișează motivul întocmai. Apasă pictograma
+de reîmprospătare pentru a reîncerca și verifică dacă adresa URL mai servește RSS
+sau Atom. Un editor care respinge clienții necunoscuți poate avea nevoie de un
+agent utilizator personalizat, ceea ce înseamnă să ștergi fluxul și să-l adaugi
+din nou.
 
-### An article page renders badly
+### O pagină de articol se afișează prost
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Dezactivează **Blochează reclame, trackere și bannere de cookie-uri** pentru acel
+domeniu din **Site-uri de încredere**, sau dezactivează **Deschide articolele în
+aplicație** și citește articolul în browser.
 
-## Related guides
+## Ghiduri conexe
 
-- [Configure notifications](/ro-RO/manual/ghiduri-practice/notificari/)
-- [Triage your inbox](/ro-RO/manual/ghiduri-practice/triaza-inbox/)
+- [Configurează notificările](/ro-RO/manual/ghiduri-practice/notificari/)
+- [Triază inbox-ul](/ro-RO/manual/ghiduri-practice/triaza-inbox/)

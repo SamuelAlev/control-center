@@ -1,123 +1,116 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: التفويض — من يجوز له أن يفعل ماذا، وكيف تثبت ذلك
+description: فهرس الصلاحيات الذي تقوم عليه أدوار Control Center، وسجل التدقيق الذي يكشف العبث ويستقر فيه كل قرار تفويض، وضوابط نطاق التثبيت التي يستطيع المشغّل تثبيتها.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تفويض
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
+يجيب Control Center عن سؤالين في التفويض، وهما مختلفان فعلًا.
+**«هل يجوز لهذا الشخص استدعاء هذه العملية؟»** يخص البشر والأدوار
+والمستودعات. **«هل يجوز لهذا الوكيل إحداث هذا الأثر؟»** يخص الإجراءات
+والوسائط ونطاق الأثر، وذلك موضوع [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
 
-This page is the first question, plus the record both of them leave behind.
+هذه الصفحة للسؤال الأول، وللسجل الذي يتركه السؤالان معًا.
 
-## One decision point
+## نقطة قرار واحدة
 
-Every human-side authorization decision resolves through a single function:
+كل قرار تفويض من جهة البشر يُحسم عبر دالة واحدة:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**الصلاحية** على شكل `<domain>:<tier>`، مثل `tickets:write`
+و`members:administer` و`repos:read`. الفهرس **مشتق** لا يُكتب يدويًا:
+يُحسب من سطح العمليات نفسه (بادئة اسم العملية تعطي المجال، والحد الأدنى
+للدور الذي تفرضه أصلًا يعطي المستوى)، فتحمل العمليات كلها، وهي نحو 550،
+صلاحية من غير أن يكتبها أحد.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+هذا الاشتقاق هو ما يستحق الحماية. معناه أن أي عملية جديدة تمر بالبوابة
+افتراضيًا. نمط الفشل في النموذج الموسوم يدويًا أن ينسى أحدهم، وما ينساه
+هو البوابة. يثبّت اختبار السقاطة مجموعة المجالات الناتجة، فإضافة عملية
+تحت بادئة جديدة هي قرار تسمية يتخذه إنسان، لا مصادفة.
 
-The four tiers map exactly onto the built-in roles:
+تتطابق المستويات الأربعة مع الأدوار المضمّنة تمامًا:
 
-| Tier | Role floor | Example |
+| المستوى | الحد الأدنى للدور | مثال |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | ضيف | `tickets:read` |
+| `write` | عضو | `tickets:write` |
+| `administer` | مسؤول | `members:administer` |
+| `own` | مالك | `workspace:own` |
 
-## Roles
+## الأدوار
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+خمسة أدوار مضمّنة — **مالك، مسؤول، عضو، مشاهد، ضيف** — هي قوالب جاهزة
+فوق ذلك الفهرس. الملكية مقعد واحد في كل مساحة عمل، وتُسلَّم صراحة عبر
+**نقل الملكية** (بغير ذلك لا يُزال المالك الذي يغادر: إلغاء التوفير عبر
+SCIM يرفض أي مالك لمساحة عمل، فانقل الملكية أولًا).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**الأدوار المخصصة تحذف ولا تضيف.** يسمّي الدور المخصص قالبًا أساسيًا
+(`admin` أو `member` أو `viewer` أو `guest`، ولا يكون `owner` أبدًا)
+ومجموعة صلاحيات **تُحذف** منه، مثل «مسؤول، لكن لا يستطيع إدارة الأعضاء».
+لا يمنح أكثر من قالبه أبدًا، وهذا ما يجعل إدخالها في تثبيت قائم آمنًا:
+يبقى كل فحص قائم حدًا أعلى سليمًا. يحملها الأعضاء بالصيغة `custom:<id>`،
+والعميل الأقدم من أن يفهم هذه القيمة يعود إلى الضيف بدل أن يخمّن.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+تحت الأدوار تقع **المنح لكل مستودع** (`none` / `read` / `review` /
+`write`): عضوية مساحة العمل لا تعطي، بصمت، صلاحيات أوسع من مضيف الشفرة.
+كل سطح يعرض الشفرة يفحصها، ومنها ما يلامس الشفرة من جانب، كالطرفية أو
+جلسة محرر تُفتح على شجرة عمل المساحة.
 
-## Server authority
+## سلطة الخادم
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+بعض العمليات لا تخص مساحة عمل أصلًا: إعدادات على نطاق التثبيت، وتهيئة
+SSO، وبيانات اعتماد المزوّدين، وإدارة النماذج، والنسخ الاحتياطي للتثبيت
+كاملًا. هذه تعلن **سلطة الخادم**، وتُرفض للجميع إلا مشغّل التثبيت (مالك
+الخادم المسجَّل). هناك هوية مشغّل واحدة وتعريف واحد لها، عن قصد.
 
-## The audit trail
+## سجل التدقيق
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+كل قرار تفويض، **السماح والرفض**، يُلحَق بسجل تدقيق لكل مساحة عمل مربوط
+بسلسلة تجزئة.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+سجل يقتصر على الرفض يجيب عن «ماذا حجبنا؟»، ولا يجيب عن «ماذا فعل هذا
+الوكيل فعلًا، ومن فوّضه؟»، ومراجعة الحادث تبدأ من السؤال الثاني. لذلك
+يسجّل كل إدخال سلسلة الإسناد كاملة: الفاعل المنفِّذ، والإنسان الذي
+تصرّف نيابة عنه، والإنابة التي وصل عبرها، والإجراء ووسائطه (على شكل
+ملخص تجزئة)، والقرار، و**القاعدة التي حسمت**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+الإدخالات متسلسلة: تغطي تجزئة كل إدخال تجزئة الذي سبقه، فتعديل أي صف أو
+حذفه أو إعادة ترتيبه يكسر كل تجزئة بعده. **التحقق من السلسلة** يعيد
+اشتقاق السلسلة كلها ويسمّي أول حلقة لا تثبت. سجل لا تستطيع التحقق منه
+يبقى سجلًا، وسجل تستطيع إعادة اشتقاقه يصير دليلًا.
 
-Two consequences worth knowing:
+نتيجتان تستحقان المعرفة:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- جدول التدقيق **مستثنى من التقليم حسب العمر**. لا تُقص سلسلة التجزئة من
+  وسطها. الاحتفاظ يكون بالتصدير ثم الاقتطاع، ويترك الاقتطاع نقطة تفتيش
+  تحمل التجزئة الختامية للمقطع المحذوف، فما يبقى يُتحقق منه رجوعًا إلى
+  البداية.
+- يقع سجل التدقيق **بجوار** الخط الزمني للنشاط، لا فوقه. الخط الزمني هو
+  ما فعله الناس، وهذا ما فُوِّض وما رُفض. معرّف ارتباط مشترك يُقرأ به
+  الاستدعاء الواحد في الاثنين.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+يُصدَّر بصيغة JSON مفصولة بأسطر جديدة، ويمكن بثّه إلى SIEM (Splunk
+وElastic وSentinel، نقطة نهاية HTTP برمز وصول من نوع bearer). البث أفضل
+جهد عن قصد: تعطل SIEM يجب ألا يحجب استدعاء أداة لوكيل أبدًا، والنسخة
+الدائمة القابلة للتحقق تبقى على القرص في الحالتين.
 
-## Sessions
+## الجلسات
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+يستطيع التثبيت ضبط **الحد الأقصى لعمر الجلسة** و**مهلة الخمول**. يُفرض
+الاثنان عند فحص بيانات اعتماد الجهاز الذي تمر به كل قناة مصادَق عليها.
+حد جلسة يستطيع العميل تجاهله يجيب عن استبيان، لا عن مهاجم. ويستطيع
+التثبيت أيضًا اشتراط SSO، فيُعطَّل الاقتران اليدوي للأجهزة الجديدة (مع
+حارس من الإقفال: يُرفض ذلك ما دام لا يوجد اتصال SSO يعمل).
 
-## What this is not
+## ما ليس هذا
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **ليست قوائم تحكم في الوصول لكل كائن.** لا توجد صلاحية لكل تذكرة أو
+  لكل رسالة، عن قصد. الفصل على مستوى المستودع هو ما تطلبه الفرق فعلًا،
+  وهو موجود. المشاركة لكل كائن سطح توافيقي لم يثبت لها طلب هنا.
+- **ليس محرك سياسات يُضبط بلغة نطاق مخصّصة.** المفردات مغلقة عن قصد، حتى
+  تُعرض السياسة كلها وتُشرح وتُعدَّد.
+- **لا يُفرض إلا على الخادم.** فحوصات العميل موجودة فقط لتجنّب عرض عنصر
+  تحكم سيُرفض. القرار المرجعي دائمًا قرار الخادم.

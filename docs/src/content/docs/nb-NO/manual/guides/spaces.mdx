@@ -1,156 +1,162 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Bruk områder
+description: Opprett områder, sett modusen deres, administrer deltakere og autonomi, og åpne samtaler og tråder.
 slug: nb-NO/handbok/slik-gjor-du/omrader
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Denne veiledningen viser hvordan du bruker områder. Et **område** er
+meldingsflaten i Control Center: et rom avgrenset til arbeidsområdet, med én
+eller flere deltakere (du og/eller agenter), som eier ett copy-on-write-worktree
+per repo det ble opprettet for.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Én-til-én-rom og rom med mange agenter er begge bare områder, og skiller seg
+utelukkende ved hvor mange deltakere de har. Det eneste unntaket er områder
+agenter åpner for å snakke med hverandre — se
+[Områder mellom agenter](#områder-mellom-agenter) nedenfor.
 
-## Create a space
+## Opprett et område
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Gå til **Områder**
+2. Klikk **+**-knappen ved siden av overskriften Områder
+3. Gi det et **navn** — påkrevd. Et tomt navn avvises; dialogen blir stående
+   åpen
+4. Legg eventuelt til agenter fra arbeidsområdet
+5. Hvis arbeidsområdet har noen repoer, velger du hvilke dette området klargjør
+   worktrees for. Alle er valgt som standard; velger du bort alle repoene,
+   opprettes et område der ingenting er sjekket ut
+6. Bekreft
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Områder er avgrenset til arbeidsområdet: du ser bare agenter fra det gjeldende
+arbeidsområdet, og et område viser aldri data fra et annet arbeidsområde.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills).
+Hvert repo sjekkes ut i `repos/<name>/` inne i området. Et repo som leverer
+sine egne agentskills, bidrar med dem til den agenten som jobber der — ett repos
+sett om gangen, og det byttes når agenten flytter seg. Fra skrivefeltet kan du
+nå hvilken som helst av dem med `/skill:<repo>:<name>`. Se
+[Repo-avgrensede skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Flaten ligger på `/workspaces/<id>/spaces`, og et enkelt område på
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Sett modusen for området
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Et nytt område starter i standardmodusen. Du endrer den fra
+**modusnedtrekksmenyen** helt til venstre på verktøylinjen i skrivefeltet — ikke
+fra opprettingsdialogen (som ikke har noe modusfelt) og ikke fra toppteksten til
+området.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Modus        | Virkning                                                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent**    | Full tilgang. Standardmodusen; `chat` internt, vist som «Agent» i nedtrekksmenyen                                                  |
+| **Plan**     | Bare lesing og undersøkelse; leveransen er en typet plan                                                                          |
+| **Orkestrer** | Lesing og undersøkelse pluss ett enkelt verb, `propose_orchestration`; planen kjøres først etter at du godkjenner den            |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab veksler mellom planmodus og agentmodus uten å åpne nedtrekksmenyen.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+En fjerde modus, **gjennomgang**, finnes, men den tilbys ikke i
+nedtrekksmenyen — den brukes automatisk på områder for PR-gjennomgang.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Modusen lagres på området, så den samme agenten kan være i planmodus i ett
+område og i agentmodus i et annet. Hver samtale inne i et område deler områdets
+modus.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Se opp for håndhevingsmerket]
+Et merke vises ved siden av modusnedtrekksmenyen når områdets agenter kjører på
+en adapter som ikke kan håndheve modusen du valgte. Bare det innebygde
+Control Center-harnesset filtrerer verktøyflaten og setter hvert kall bak en
+port; Claude Code- og ACP-adaptere mottar modusen som en forespørsel som
+kjøreren deres kan velge å følge eller ikke. Ingen merke betyr «ingen påstand
+fremsettes», ikke «verifisert trygg».
 :::
 
-See [Modes](/nb-NO/handbok/konsepter/moduser/) for the full model.
+Se [Moduser](/nb-NO/handbok/konsepter/moduser/) for den fulle modellen.
 
-## Manage participants and per-agent autonomy
+## Administrer deltakere og autonomi per agent
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Klikk på personikonet i toppteksten til området for å åpne **Administrer
+deltakere**. For hver agent som allerede er i området kan du:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Fjerne den fra området
+- Angi **Autonomi** for agenten i dette området: **Standard**, **Bare
+  foreslå**, **Handle med godkjenning** eller **Handle fritt**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Autonomiknotten gjelder per (område, agent), så en agent du stoler på i ett rom,
+kan settes til bare foreslå i et annet.
 
-## React to a message
+## Reager på en melding
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Hold pekeren over en melding og klikk på smileikonet for å åpne
+reaksjonspaletten. Den er et fast sett på seks: 👍 👎 🎉 ❤️ 👀 ✅. Det finnes
+ingen fri emojivelger — trykker du på én, slås den på eller av for deg, og de
+samlede brikkene vises under meldingen.
 
-## Open a conversation
+## Åpne en samtale
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Et område holder flere samtaler samtidig, og de er helt likestilte — ingen av
+dem er primære. Et område beholder alltid minst én levende samtale: du kan ikke
+arkivere den siste aktive, og åpner du et område som ennå ikke har noen,
+opprettes en varig samtale uten tittel.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Samtaler vises som faner i redigereren, og som nestede rader under området i
+sidestolpen så snart det er mer enn én. **Ny samtale** ligger i redigererens
+meny for nye faner og oppretter en samtale uten tittel, uten å spørre om tittel
+— tittemodellen navngir den etter den første meldingen. Bruk én til å kjøre
+parallelt arbeid med samme agent og samme worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Hver samtale beholder sin egen meldingshistorikk og sine egne agentsesjoner,
+samtidig som den deler områdets worktrees og modus. Å lukke en fane skjuler den;
+**Arkiver samtale** (rad i sidestolpen eller kontekstmenyen til chatfanen)
+arkiverer bare den samtalen.
 
-## Start a thread
+## Start en tråd
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Hold pekeren over en melding og velg **Start tråd**. Det åpner en samtale som er
+forankret i den meldingen: ankeret fyller agentkonteksten til den nye samtalen
+med én linje, og historikken til foreldresamtalen blir **ikke** kopiert.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Så snart en tråd har svar, får meldingen den henger på, en rad rett under seg —
+ansiktene til dem som har uttalt seg, antall svar og når det siste svaret kom
+inn. Den raden er veien tilbake: å klikke på den åpner (eller gir fokus til)
+fanen til tråden. Det er det eneste sporet en tråd etterlater i strømmen den
+forgrenet seg fra, og nettopp derfor er den der.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+Fanen til en tråd har tittelen `Thread: <name>` og bærer forgreningssymbolet,
+slik at to faner i samme område aldri forveksles.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Tråder nestes aldri — å forankre i en melding som allerede ligger inne i en tråd,
+avvises. Toppteksten til samtalen lenker tilbake til ankermeldingen. Sletter du
+ankermeldingen, slettes tråden, og å arkivere foreldresamtalen blokkerer ikke de
+eksisterende trådene.
 
-## Read state
+## Lesestatus
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Lesemerker er avgrenset til området, ikke til samtalen: åpner du en hvilken som
+helst samtale i området, markeres hele rommet som lest. Ulest samles fortsatt på
+tvers av alle samtalene i et område, tråder inkludert. Når samtalene listes opp
+under området, sitter den uleste prikken på samtalen som har usett arbeid, ikke
+på foreldreraden.
 
-## Agent-to-agent spaces
+## Områder mellom agenter
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Områder som agenter åpner for å snakke med hverandre, grupperes for seg i
+sidestolpen under **Agenter**, er sammenslått som standard og vises nedtonet. De
+øker aldri det uleste-merket ditt — agentprat er stille i utgangspunktet, ikke på
+grunn av en innstilling du må finne.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Et områdes type er én av fem verdier: `topic` (standardverdien for alt du
+oppretter), `agentPeer`, `system` (styrt av en pipeline), `pr` (opprettes når en
+PR-flate trenger et worktree-anker, og skjules fra sidestolpen til den har
+meldinger) og `slack` (opprettes av chatbroen for en Slack-tråd eller en bot-DM,
+og behandles som en vanlig samtale mellom mennesker).
 
-## Related guides
+## Beslektede veiledninger
 
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [@-mention agents](/nb-NO/handbok/slik-gjor-du/nevn-agenter/)
-- [Use plan mode](/nb-NO/handbok/slik-gjor-du/planmodus/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [@-nevn agenter](/nb-NO/handbok/slik-gjor-du/nevn-agenter/)
+- [Bruk planmodus](/nb-NO/handbok/slik-gjor-du/planmodus/)
 
-## Related concepts
+## Beslektede konsepter
 
-- [Modes](/nb-NO/handbok/konsepter/moduser/)
-- [Chat bridges](/nb-NO/handbok/konsepter/chatbroer/): how a Slack thread becomes a space
+- [Moduser](/nb-NO/handbok/konsepter/moduser/)
+- [Chatbroer](/nb-NO/handbok/konsepter/chatbroer/): hvordan en Slack-tråd blir et område

@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: 並行執行代理
+description: 一次派發多個代理，並避免它們的工作互相碰撞。
 slug: zh-HK/手冊/操作指南/並行代理
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+本指南說明如何同時執行多個代理，而不讓它們互相覆寫對方的工作。
 
-## The unit of isolation is the space, not the agent
+## 隔離的單位是空間，而非代理
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+當工作在某個空間中開始時，Control Center 會為該空間下每個已註冊程式庫，在該空間自己的根目錄下預備一份寫入時複製檢出，並置於一條由工作區分支範本衍生的分支上。空間中的每個代理接著會取得自己的覆蓋層工作目錄——但這些覆蓋層**共用**該空間的 `repos/` 目錄。
 
-So:
+因此：
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- **不同空間**中的兩個代理，在不同的檢出上、不同的分支上工作。那是真正的隔離。
+- **同一個空間**中的兩個代理，在同一個檢出上、同一條分支上工作。它們的覆蓋層路徑不同，因此派發路徑鎖（只有在它們要求完全相同的工作目錄時才序列化執行）也不會把它們序列化。它們可以同時寫入相同的檔案。
 
-The rule that follows: **one space per parallel task.**
+由此得出的規則：**每個並行任務一個空間。**
 
-## Run tasks in parallel — separate spaces
+## 並行執行任務——分開的空間
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. 用代理 A 開啟一個空間，並向它發送一項任務。
+2. 用代理 B 開啟第二個空間，並向它發送另一項任務。
+3. 兩者會立即派發，各自在自己的空間檢出中、自己的分支上。
 
-This is the recipe to use whenever the agents will be editing files.
+只要代理將會編輯檔案，就採用這個做法。
 
-## Work together in one space — several mentions
+## 在同一個空間中合作——多個提及
 
-In a single space, @-mention more than one agent:
+在單一空間中，@ 提及多於一個代理：
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+兩個代理會並行派發，並串流到同一個空間，依發送者加上標記。由於它們共用該空間的檢出，這個做法適用於協作——一個寫入、一個閱讀，或兩個代理就同一棵樹推理——而不是兩項獨立的編輯。
 
-## Fan out from a pipeline
+## 從管線扇出
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+內建的 `pr_review` 範本是扇出的隨附範例：多個審查者節點由同一個觸發器並行執行，而一個 **Consolidate (join)** 節點把它們的發現項匯總成一份報告。從管線畫面執行它，每個審查者都會並行派發。
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+當你新增或連接步驟時，管線編輯器會隱藏終端哨兵，並把它重新接線，以等待每一個運作中的匯點，因此你自己畫出的分支確實會執行。
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[把工單指派給代理並不會派發任何東西]
+把工單指派給代理只記錄擁有權。並沒有工單派發器——`TicketAssigned` 是一個稽核訊號，不會由它啟動任何工作。唯一的例外是指派給_團隊_的工單，它會喚醒該團隊的負責人。
 :::
 
-## Watch them run
+## 觀察它們執行
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**可觀測性 → 即時**（側邊欄頁腳 → 可觀測性，然後是即時分頁）會顯示此工作區的代理名冊，每秒重新更新：狀態（執行中／閒置／已停駐／已中止）、每個代理正在做甚麼、它最近一次執行的 token 與成本，以及執行中程序的終止控制項。選取某一列會停駐一個即時轉錄抽屜。
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**設定 → 工作區 → 代理**顯示同一份名冊，但採用另一套以注意力為先的狀態詞彙，由每個代理的執行紀錄衍生——執行中、已封鎖、失敗、閒置、從未執行——並按此排序，讓任何需要注意的項目浮到最頂。每個代理的**日誌**分頁各自保存其執行紀錄。
 
-Both surfaces are scoped to the active workspace.
+兩個介面都只涵蓋作用中的工作區。
 
-## Handle conflicts
+## 處理衝突
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+跨空間時，每個空間都在自己的分支上，因此碰撞會在你合併第二個 pull request 時，以普通的 Git 合併衝突形式浮現。像處理任何合併衝突那樣解決它。
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+在同一個空間內，既沒有分支界線，也沒有鎖：代理正在即時寫入相同的檔案，落敗的一方就這樣被覆寫。如果你發現自己想讓兩個代理在同一個空間中編輯，請把工作拆成兩個空間。
 
-To reduce collisions either way:
+無論哪種情況，要減少碰撞：
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/zh-HK/手冊/操作指南/程式碼搜尋/).
-- Review and merge each agent's pull request promptly.
+- 給每個代理一個不同的範圍——不同的檔案、不同的模組。
+- 派發前先用程式碼圖查看一項變更會觸及甚麼。參見[以程式碼圖搜尋程式碼](/zh-HK/手冊/操作指南/程式碼搜尋/)。
+- 及時審查並合併每個代理的 pull request。
 
-## Resource considerations
+## 資源考量
 
-Each running agent costs:
+每個執行中的代理會耗用：
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- 一份空間檢出——在可使用寫入時複製時，對磁碟的佔用微不足道；在 Windows 則是 `git worktree`。無法 reflink 的檔案系統會令預備失敗，而不會退而複製。
+- 伺服器主機上的一個程序
+- 模型 token，會按代理累積
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/zh-HK/手冊/操作指南/管理成本/) for the two commands that do have one.
+成本會落在**可觀測性 → 洞察**。請注意，一般的互動回合沒有支出上限；那兩個確實有上限的指令，請參見[管理成本](/zh-HK/手冊/操作指南/管理成本/)。
 
-## Related guides
+## 相關指南
 
-- [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/)
-- [Build an agent team](/zh-HK/手冊/操作指南/組成代理團隊/)
-- [Manage costs](/zh-HK/手冊/操作指南/管理成本/)
-- [Add repos to a workspace](/zh-HK/手冊/操作指南/加入程式庫/)
+- [建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)
+- [組成代理團隊](/zh-HK/手冊/操作指南/組成代理團隊/)
+- [管理成本](/zh-HK/手冊/操作指南/管理成本/)
+- [將程式庫加入工作區](/zh-HK/手冊/操作指南/加入程式庫/)
 
-## Related concepts
+## 相關概念
 
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/)
-- [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/)
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)
+- [沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/)

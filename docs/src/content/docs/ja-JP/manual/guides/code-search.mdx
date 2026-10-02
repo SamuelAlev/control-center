@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: コードグラフでコードを検索
+description: リポジトリをインデックスし、コードグラフのツールでシンボルを見つけ、変更が何を壊すかを確認します。
 slug: ja-JP/マニュアル/ハウツーガイド/コード検索
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+このガイドでは、リポジトリをコードグラフに入れ、リファクタリングの前に本当に知りたい問い — これには何が依存しているのか — に答えるために使う方法を説明します。
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+コードグラフは、登録済みのチェックアウトを tree-sitter でパースして構築される、シンボルとエッジのデータベースです。そのツールは**エージェント向け**であり、エージェントに頼むことで利用できます。
 
-## Before you start
+## 始める前に
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+グラフがインデックスするのは Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada です。これ以外の言語のファイルはパースされないため、`search_code`、`code_symbol`、`code_callers`、`code_callees`、`code_impact` には現れません。
 
-Two more things shape what gets indexed:
+インデックスの対象を決める要素がもう2つあります:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- git ワークツリーでは、列挙は `git ls-files --cached --others --exclude-standard` に委ねられるため、あらゆる `.gitignore`、ネストした ignore ファイル、`.git/info/exclude`、グローバル除外ファイルが尊重されます。これが `node_modules` やビルド成果物をグラフに入れない理由です。
+- 生成された Dart は無条件に除外されます。生成ファイルは通常コミットされるため、git だけでは除外されず、コード生成のたびに変化し続けます。
 
-## Get a repo indexed
+## リポジトリをインデックスする
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/).
+チェックアウトを登録すると `RepoAdded` が発火し、そのチェックアウトの `index_code` パイプラインが自動的に開始されます。[ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)を参照してください。
 
-To re-index by hand:
+手動で再インデックスするには:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. **設定 → ワークスペース → リポジトリ**を開きます。
+2. リポジトリの行にある**コードをインデックス**ボタンをクリックします。
+3. 実行中はボタンが、完了ファイル数と合計を示す表示に変わり、キャンセル操作が付きます。完了すると、シンボル数が付いたチェックに落ち着きます。
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+グラフはワークスペース、リポジトリ、チェックアウトで分割されます。リンクされたチェックアウトが1つのパーティションで、各スペースのワークツリーがそれぞれ独自のパーティションを持ちます（分離リポジトリの id をキーとします）。
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+ハングしたように見える待ち時間の説明になるので、知っておく価値のあるスロットルが2つあります:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- ファイルウォッチャーがホスト上で同時に受け入れるインデックス実行は**1つ**だけなので、2つ目のチェックアウトは待ちます。`index_code` パイプラインはさらに、ワークスペースあたり1実行に制限されているため、同じワークスペースの2つのリポジトリはキューに入り、別のワークスペースは並行してインデックスできます。インデクサー自身は**同じ**チェックアウトの2つの実行を直列化するため、パイプラインの開始とウォッチャーのスイープが同じものを二重にパースすることはありません。
+- **休眠スペース**（直近1週間にメッセージがない）に属するワークツリーは、監視もインデックスもされません。リンクされたチェックアウトは監視され続けます。スキップの判断は5分後に再確認されるため、再びアクティブになったスペースは拾い上げられます。
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[文法が欠けていると止まるのは検索ではなくサーバー]
+Tree-sitter とその文法は必須のネイティブです。欠けているものがあると、`cc_server` は起動を拒否し、欠けている dylib を名指しします — 症状はサーバーが起動しないことであり、検索が劣化することは決してありません。これらは `scripts/natives/build_natives.sh` でステージし、サーバーバイナリを再ビルドしてください。
 :::
 
-## Find a symbol
+## シンボルを検索する
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+エージェントに検索を頼みます。ツールは `search_code` で、ワークスペースとリポジトリの両方が必要です:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+リポジトリの id は `list_repos` から取得します。省略可能な `mode` 引数は `keyword`、`semantic`、`hybrid` のいずれかで、既定は hybrid です — 名前、シグネチャ、ドキュメントコメントに対する BM25 と、ベクトル類似度を融合したものです。
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+各結果は、シンボルの id、名前、修飾名、種別、ファイルパス、開始行と終了行、そしてシグネチャがあればそれを運びます。**id** は、このページのほかのあらゆるツールに渡すハンドルです。
 
-When you know the exact name, look it up directly instead:
+正確な名前が分かっている場合は、代わりに直接参照します:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## 呼び出しをたどる
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+どちらも検索結果の `symbol_id` と、省略可能な `limit`（既定は 50）を取ります:
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` はこのシンボルへ向かうエッジを持つシンボルを返し、`code_callees` はこれが依存しているシンボルを返します。
 
-## Check what a change would break
+## 変更が何を壊すかを確認する
 
-This is the tool the whole page exists for:
+このページ全体が存在する理由であるツールがこれです:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+これは**逆**依存の半径を計算します。つまり、`calls`、`extends`、`implements` エッジをたどってそのシンボルに直接的または推移的に依存するすべてです（import、mixin、ジェネリック参照はグラフに保存されていますが、ここではたどられません）。`depth` は最大ホップ数で、1 から 6 の間、既定は 2 です。
 
-The result is three fields:
+結果は3つのフィールドです:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — 問い合わせたシンボル
+- `impacted` — 到達可能な集合。深さ 0 のルートを含み、それぞれがルートからの `depth` を持ちます
+- `edgeCount` — 走査がまたいだエッジの数。エッジそのものではなく件数です
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+名前を変更したりシグネチャを変更したりする前にこれを実行し、影響を受けるリストをエージェントのスコープとして渡してください。
 
-## Results are checked against the caller's own working copy
+## 結果は呼び出し元自身のワーキングコピーに対して検証される
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+エージェントの呼び出し元では、スペース id が自動的に注入され、結果は**そのスペースの**ワーキングコピーに対して検証されます。呼び出し元のツリーにファイルがもう存在しないシンボルは省略され、応答には `staleOmitted` の件数と、それらのシンボルについてインデックスが古くなっていることを伝える注記が付きます。
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+同じ問い合わせに対してあなたとエージェントが別の答えを得られるのはこのためであり、あるスペースのエージェントが別のスペースのエージェントと異なる答えを得られるのもこのためです。スペース内のすべての会話はその1つのワークツリーを共有します。検証はフェイルオープンです。古い答えのほうが、空の答えより好まれます。
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/).
+変更の影響範囲を知りたいときは、エージェントに `code_impact`（または `review_studio.blastRadius`）を実行するよう頼んでください。[レビューコンピュート](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)を参照してください。
 
-## Semantic search needs the embedding model
+## セマンティック検索には埋め込みモデルが必要
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+シンボルと事実は書き込み時に、しかもオンデバイスの埋め込みモデルがインストールされている場合にだけ埋め込まれます。それまでは、`mode: "semantic"` と hybrid のセマンティック側には照合する対象がなく、検索は事実上キーワードのみになります。
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+インデックスする前に、**設定 → サーバー → 診断とプライバシー → セマンティック検索**でモデルをインストールしてください。シンボルは、そのファイルが取り込まれたときにベクトルを得ます。
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+また、サーバーバイナリを再ビルドすると文法の dylib が再ステージされて mtime が変わり、そのためすべてのインデックスのチェックポイントが無効になり、次回の実行ですべてのチェックアウトを完全に再走査することになります。再ハッシュはしますが、変更されていないファイルを再抽出はしません。
 
-## What is in the graph
+## グラフに含まれるもの
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**シンボルの種別:** function、method、class、field、enum、constructor、getter、setter、typedef、extension、mixin、variable
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**エッジの種別:** calls、imports、extends、implements、mixes in、references
 
-The canonical signatures for these tools live in [MCP tools](/ja-JP/マニュアル/リファレンス/mcp-ツール/).
+これらのツールの正規のシグネチャは [MCP ツール](/ja-JP/マニュアル/リファレンス/mcp-ツール/)にあります。
 
-## Related guides
+## 関連するガイド
 
-- [Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
-- [Review compute (cohorts and axes)](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)
-- [Use the MCP server](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/)
+- [ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
+- [レビューコンピュート（コホートと軸）](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)
+- [MCP サーバーを使う](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/)
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)

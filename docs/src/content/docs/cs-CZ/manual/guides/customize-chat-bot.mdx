@@ -1,98 +1,90 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Přizpůsobte chatbota
+description: Přejmenuj bota, přeformuluj, co o sobě říká, nebo mu z Control Center změň slash příkaz.
 slug: cs-CZ/prirucka/navody/prizpusobeni-chatbota
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Tenhle návod ukazuje, jak upravit aplikaci bota u poskytovatele a zůstat přitom v Control Center.
 
-## Prerequisites
+## Předpoklady
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Role `owner` nebo `admin` v pracovním prostoru
+- Poskytovatel ve stavu **Připojeno**. Řádek **Přizpůsobit bota** se objeví, teprve když je pracovní prostor připojený
+- Aplikace, kterou Control Center umí spravovat. U Slacku to znamená, že spojení drží refresh token konfigurace aplikace (`xoxe-…`); když ho nemá, řádek to napíše a zůstane neaktivní
 
-## What you can change
+## Co se dá změnit
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Pole | Význam | Limit |
+| --- | --- | --- |
+| **Název aplikace** | Jak poskytovatel aplikaci uvádí | 1–35 znaků |
+| **Jméno bota (co členové píší za @)** | Co členové píší za `@` | 1–80 znaků |
+| **Krátký popis** | Jeden řádek, který poskytovatel ukazuje | nejvýše 140 znaků |
+| **Co bot říká, že umí** | Text nad DM s botem | nejvýše 300 znaků |
+| **Slash příkaz** | Příkaz, který členové spouštějí, bez lomítka | malá písmena, jen `a–z 0–9 _ -`, oříznuto na 32 znaků |
+| **Přímé zprávy** | Jestli bot nabízí prostředí DM a agenta | Zapnuto nebo vypnuto |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center čtyři textová pole ověří dřív, než zavolá poskytovatele, takže dostaneš „the app name must be between 1 and 35 characters“ místo holého `invalid_manifest` ze serveru, který nevidíš. Příkaz se neodmítne, ale znormalizuje: úvodní lomítko se odstraní, zbytek se převede na malá písmena, všechno mimo `a–z 0–9 _ -` odpadne a prázdný výsledek se nahradí `cc`.
 
-## Edit the bot
+## Úprava bota
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+2. V bloku poskytovatele klikni na **Přizpůsobit bota**
+3. Dialog se otevře na _živých_ hodnotách aplikace, načtených od poskytovatele, takže změna, kterou někdo udělal přímo ve Slacku, je to, z čeho vycházíš
+4. Uprav, co potřebuješ, a ulož
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Načtení těch živých hodnot na straně Slacku spotřebuje rotaci tokenu. Proto je řádek záměrné kliknutí a stránka to při načtení nedělá sama.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Zápis položí tvoje změny na aktuální definici aplikace. Cokoli Control Center nemodeluje, zůstane nedotčené: druhý slash příkaz přidaný ve Slacku, krok workflow, nesouvisející nastavení. Scopes a události se slučují, neodebírají.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Po uložení Control Center znovu načte identitu bota, aby jméno v nastavení sedělo se jménem v chatové aplikaci.
 
-## Reinstall when permissions change
+## Nová instalace po změně oprávnění
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Znovu nainstalovat po změně oprávnění]
+Slack novou definici aplikace použije hned, ale nainstalované udělení nechá,
+jak bylo. Aby se změna oprávnění projevila, aplikaci znovu nainstaluj. Most do
+té doby běží na předchozím udělení.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Když uložení změní oprávnění, dialog zůstane otevřený a napíše „Slack změnil oprávnění aplikace. Aplikaci znovu nainstalujte, aby se projevila.“, s tlačítkem **Znovu nainstalovat aplikaci**, které otevře stránku Slacku pro instalaci do týmu. Ve Slacku je to **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Přejmenování slash příkazu
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Změň **Slash příkaz** a ulož. Most pak píše pokyny tím příkazem, kterým byl naposledy vyvolaný, takže nápověda i pokyny k propojení sledují přejmenování a nejmenují příkaz, který už neexistuje.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Přejmenování nerozbije existující přemostěná vlákna: vlákna se vážou na konverzaci, ne na příkaz.
 
-## What Control Center will not change
+## Co Control Center nezmění
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Strukturální nastavení.** Přenos (Socket Mode), povinné scopes a odběry událostí se vynucují, nenabízejí. Aplikace, kterou jde z obrazovky nastavení umlčet, je ticket na podporu, ne funkce
+- **Ikona bota.** Změnit ji umí jen vlastní nastavení aplikace u poskytovatele a dialog to říká
+- **Vlastní migrace funkcí u poskytovatele.** Aplikace, která už běží na starší podobě asistenta Slacku, na ní zůstane; tenhle dialog upravuje popis, aplikaci nemigruje
 
-## Troubleshooting
+## Řešení problémů
 
-### There is no Customize bot row at all
+### Řádek Přizpůsobit bota vůbec chybí
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/).
+Pracovní prostor ještě není připojený. Řádek se objeví, teprve když blok poskytovatele ukazuje živé spojení. Viz [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/).
 
-### The Customize bot row is disabled
+### Řádek Přizpůsobit bota je neaktivní
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Spojení nemá přihlašovací údaj ke správě aplikace. Podtitul řádku říká „Control Center k úpravě bota potřebuje token konfigurace aplikace. Připojte znovu a jeden přidejte.“ U Slacku na [api.slack.com/apps](https://api.slack.com/apps) vygeneruj pár tokenů konfigurace aplikace a připoj se znovu s vyplněným refresh tokenem. Čeká se to u aplikace postavené ručně nebo vytvořené přes **Vytvořit v Slack**, protože Slack neohlásí, kterou aplikaci vytvořil.
 
-### "Control Center does not know which app to edit"
+### „Control Center does not know which app to edit“
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Uložené spojení nenese id aplikace, typicky u aplikace připojené ručně, ještě než se id začalo ukládat. Připoj pracovní prostor znovu, nebo aplikaci vytvoř z Control Center.
 
-### The bot's new name has not appeared in chat
+### Nové jméno bota se v chatu neukázalo
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Poskytovatelé si metadata aplikace chvíli pamatují. Když je jméno po minutě pořád staré, zkontroluj, jestli tě uložení požádalo o novou instalaci aplikace.
 
-## Related guides
+## Související návody
 
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
-- [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
-- [Chat bridge](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
+- [Chatový most](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
 
-## Related concepts
+## Související koncepty
 
-- [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/)
+- [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/)

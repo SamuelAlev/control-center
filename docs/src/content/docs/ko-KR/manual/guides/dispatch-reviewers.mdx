@@ -1,26 +1,22 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: 리뷰어 에이전트 디스패치
+description: PR 뷰, MCP 도구 또는 파이프라인 단계에서 전문 리뷰어 에이전트를 PR로 보냅니다.
 slug: ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+이 가이드에서는 리뷰어 에이전트를 디스패치해 풀 리퀘스트를 리뷰하도록 하는 방법을 설명합니다.
 
-## From the PR view
+## PR 뷰에서
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. PR을 열고 **개요** 탭으로 이동합니다
+2. ⋯ 오버플로 메뉴를 열고 **AI에게 물어보기**를 선택합니다
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+이렇게 하면 기본 제공되는 `pr_review` 파이프라인이 시작됩니다. 이 파이프라인은 PR의 리뷰 스페이스를 열고, 워크스페이스의 리뷰 수준에 따라 리뷰어를 디스패치한 다음(기본값은 기본 제공되는 **qa**, **architect**, **engineer** 에이전트 세 명입니다), 리드 에이전트가 이를 통합하게 합니다. 이 경로에서는 역할을 직접 선택하지 않습니다. 어떤 역할이 실행되고 각 역할이 어떤 파일을 보는지 제어하려면, 아래의 MCP 도구나 파이프라인 단계를 사용하세요.
 
-## Via the `dispatch_reviewers` MCP tool
+## `dispatch_reviewers` MCP 도구 사용
 
-Call it from inside an existing review space:
+기존 리뷰 스페이스 안에서 호출합니다:
 
 ```
 dispatch_reviewers(
@@ -33,109 +29,74 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id`, `reviewers`는 모두 필수입니다. 각 리뷰어 명세는 `role`과, 선택 사항인 파일 글롭 `scope`, 기본 브리프를 대체하는 `prompt_override`를 받습니다. 선택 사항인 `concurrency`(1–8)는 병렬 디스패치 수를 제한합니다. 생략하면 워크스페이스의 `review_concurrency` 설정이 적용됩니다(기본값 3, **설정 → 워크스페이스 → 일반**에서 설정).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+이 도구는 `dispatched`와 `unmatched` 목록과 함께 즉시 반환합니다. 디스패치된 모든 리뷰어는 참가자로 스페이스에 추가되고, 시스템 메시지로 알려지며, 자신의 브리프와 함께 디스패치됩니다. 발견 사항은 해당 스페이스에 `review_node` 메시지로 도착합니다.
 
-## From a pipeline step
+## 파이프라인 단계에서
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+**설정 → 워크스페이스 → 파이프라인 템플릿**을 열고 템플릿을 연 다음:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. 팔레트에서 **Reviewer (prompt)** 노드를 추가합니다
+2. 디스패치할 에이전트를 선택하고 리뷰어 프롬프트를 작성합니다. 업스트림 출력에는 `{{key}}` 플레이스홀더를 사용합니다(예: `{{repo_local_path}}`, `{{pr_number}}`)
+3. 다운스트림 단계에서 발견 사항을 읽을 수 있도록 출력 키를 설정합니다(기본값 `reviewer_findings`)
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+이 단계는 에이전트를 디스패치하고 해당 실행이 끝날 때까지 중단됩니다. 그러면 엔진이 그 실행의 `submit_output` 페이로드를 노드의 출력 키 아래에 있는 파이프라인 상태로 가져옵니다. (팔레트 설명에는 이 단계가 `complete_task` 호출을 기다린다고 적혀 있지만, 그 도구는 존재하지 않습니다. 해당 문구는 무시하세요.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+여러 리뷰어 노드를 같은 업스트림 단계에 연결해 팬아웃한 다음, **Consolidate (join)** 노드로 그 출력을 통합하세요.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+편집기는 숨겨진 터미널을 도달 가능한 모든 싱크에 다시 연결하므로, 기본 제공되는 Step 뒤에 추가한 노드도 실행됩니다. 같은 업스트림 단계에 연결된 팬아웃 노드는 병렬로 실행됩니다.
 
-## Automatic dispatch on a new PR
+## 새 PR에서 자동 디스패치
 
-To have a review pipeline fire by itself:
+리뷰 파이프라인이 스스로 실행되게 하려면:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. **설정 → 워크스페이스 → 파이프라인 템플릿**에서 템플릿을 엽니다
+2. 노드 라이브러리의 트리거 섹션에서 **PR 게시됨** 또는 **외부 PR 열림**을 캔버스로 끌어다 놓습니다(또는 **트리거 추가** 고스트 타일에서 선택합니다)
+3. 새 노드를 선택하고 인스펙터에서 **활성화됨**을 켠 다음, 템플릿을 활성화합니다
 
-Two events matter here and they are not interchangeable:
+여기서 중요한 이벤트는 두 가지이며, 서로 바꿔 쓸 수 없습니다:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| 이벤트                 | 발생 시점                                                                                                        | 페이로드 키                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | **Control Center를 통해** PR이 열림 — 작성 화면 또는 `pr_lifecycle.publish`를 호출하는 에이전트                 | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | PR 폴링 서비스가 GitHub에서 직접 열린 PR을 발견함                                                                | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+github.com에서 열린 PR은 결코 `PullRequestPublished`를 발생시키지 않으므로, 그 이벤트에만 연결된 템플릿은 그 PR을 보지 못합니다. 또한 `PullRequestPublished`에는 `pr_number`가 없습니다. 스크립트나 프롬프트가 `{{pr_number}}`를 참조하는 단계는 `ExternalPrDetected`가, 또는 그 값을 제공하는 수동 실행이 입력을 공급해야 합니다.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+체크포인트: 활성화한 뒤 **파이프라인**을 열고 다음으로 일치하는 PR에 대해 실행이 나타나는지 확인합니다. 비활성화된 템플릿은 트리거가 허공에 발화하게 만듭니다. 엔진은 비활성화된 템플릿을 거부하고 실행을 시작하지 않은 채 반환합니다.
 
-## How a role is matched to an agent
+## 역할이 에이전트와 매칭되는 방식
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers`는 워크스페이스의 모든 에이전트를 요청된 각 역할 레이블과 대소문자를 구분하지 않고 채점합니다:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| 일치 항목                        | 점수 |
+| -------------------------------- | ---- |
+| 역할 레이블을 포함하는 스킬      | +3   |
+| 역할 레이블을 포함하는 제목      | +2   |
+| 역할 레이블을 포함하는 에이전트 이름 | +1   |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+점수는 누적되며 총점이 가장 높은 후보가 선택됩니다(동점이면 먼저 발견된 후보). 0점보다 높은 후보가 없으면 그 명세는 디스패치되지 않고 도구의 `unmatched` 목록으로 돌아옵니다. 따라서 아무도 매칭되지 않는 역할은 보고되며, 결코 조용히 건너뛰지 않습니다.
 
-## The review space
+## 리뷰 스페이스
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+PR에는 리뷰어마다 하나가 아니라 정확히 **하나**의 리뷰 스페이스가 있습니다. 이 스페이스는 `pr.ensureSpace`가 멱등하게 생성하며, `ReviewSpaceAssociation`을 통해 PR에 연결되고, PR의 head ref를 기준으로 프로비저닝됩니다. 디스패치된 모든 리뷰어는 그 스페이스에 참여하고 자신의 `review_node` 발견 사항을 그곳에 게시합니다. 이것이 발견 사항을 서로 비교할 수 있게 하고, 리드 에이전트가 그 전반에서 합의에 도달할 수 있게 합니다.
 
-## Monitor the dispatch
+## 디스패치 모니터링
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+디스패치된 각 리뷰어는 자체 `AgentRunLog`를 갖습니다. 진행 상황은 다음에서 확인합니다:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **리뷰 스페이스** — 발견 사항이 실시간으로 들어옵니다
+- PR의 **리뷰** 탭 — 리뷰 상태 표시줄과 판정을 보여줍니다
+- **옵저버빌리티 → 실시간**(`/workspaces/:id/observability`) — 실행별 상태, 실시간 경과 시간, 대화록 드로어, 종료 제어 기능을 갖춘 에이전트 로스터입니다. 여기에는 키보드 단축키가 없습니다. 사이드바 하단에서 열 수 있습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Use AI-powered review](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)
-- [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
-- [Set up pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
+- [AI 리뷰 사용](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)
+- [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
+- [파이프라인 트리거 설정](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
 
-## Related concepts
+## 관련 개념
 
-- [AI review](/ko-KR/매뉴얼/개념/ai-리뷰/)
-- [Pipelines](/ko-KR/매뉴얼/개념/파이프라인/)
+- [AI 리뷰](/ko-KR/매뉴얼/개념/ai-리뷰/)
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/)

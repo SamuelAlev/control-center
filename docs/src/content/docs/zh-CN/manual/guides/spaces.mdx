@@ -1,156 +1,133 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: 使用空间
+description: 创建空间、设置其模式、管理参与者与自主程度，并打开对话和话题。
 slug: zh-CN/手册/操作指南/空间
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+本指南介绍如何使用空间。**空间**是 Control Center 中的消息界面：一个以工作区为范围的房间，
+包含一个或多个参与者（你和/或智能体），并为它创建时涉及的每个仓库持有一份写时复制工作树。
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+一对一的房间和多智能体的房间都只是空间，区别仅在于参与者有多少。唯一的例外是智能体为
+彼此交谈而打开的空间——见下文[智能体与智能体之间的空间](#智能体与智能体之间的空间)。
 
-## Create a space
+## 创建空间
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. 导航到**空间**
+2. 点击“空间”标题旁的 **+** 按钮
+3. 为它取一个**名称**——必填项。名称留空会被拒绝；对话框会保持打开
+4. 可选地从工作区添加智能体
+5. 当工作区中有任何仓库时，选择该空间为哪些仓库预配工作树。默认全部选中；取消选中所有
+   仓库会创建一个什么都没检出的空间
+6. 确认
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+空间以工作区为范围：你只能看到当前工作区中的智能体，空间也绝不会显示来自其他工作区的
+数据。
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills).
+每个仓库都会在空间内检出到 `repos/<name>/`。自带智能体技能的仓库会把这些技能提供给在
+其中工作的智能体——一次只提供一个仓库的技能集，随智能体的移动而切换。在输入框中，你
+可以用 `/skill:<repo>:<name>` 访问其中任何一个。参见
+[仓库范围内的技能](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills)。
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+该界面位于 `/workspaces/<id>/spaces`，单个空间位于
+`/workspaces/<id>/spaces/<spaceId>`。
 
-## Set the space's mode
+## 设置空间的模式
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+新空间以默认模式启动。在输入框工具栏最左侧的**模式下拉菜单**中更改它——不是在创建对话框
+（那里没有模式字段），也不是在空间标题栏。
 
-| Mode            | Effect                                                                                                |
+| 模式            | 效果                                                                                                  |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **Agent**       | 完全访问。默认模式；内部名为 `chat`，在下拉菜单中显示为 "Agent"                                       |
+| **Plan**        | 仅限阅读和调研；交付物是一份带类型的计划                                                              |
+| **Orchestrate** | 阅读和调研，外加一个 `propose_orchestration` 动词；只有在你批准之后计划才会运行                        |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab 可以在计划模式和智能体模式之间切换，无需打开下拉菜单。
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+还有第四种模式 **审查**，但它不在下拉菜单中提供——它会自动应用到 PR 审查空间。
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+模式存储在空间上，因此同一个智能体可以在这个空间里处于计划模式，而在另一个空间里处于
+智能体模式。空间内的每段对话都共享该空间的模式。
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[留意强制执行徽标]
+当空间的智能体运行在一个无法强制执行你所选模式的适配器上时，模式下拉菜单旁会出现一个
+徽标。只有 Control Center 的内置运行器会筛选工具面并对每次调用把关；Claude Code 和 ACP
+适配器只是把模式当作一项请求接收，它们的运行器可能遵守，也可能不遵守。没有徽标意味着
+“没有做出任何断言”，而不是“已验证安全”。
 :::
 
-See [Modes](/zh-CN/手册/概念/模式/) for the full model.
+关于完整的模型，参见[模式](/zh-CN/手册/概念/模式/)。
 
-## Manage participants and per-agent autonomy
+## 管理参与者与每个智能体的自主程度
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+点击空间标题栏中的人形图标即可打开**管理参与者**。对于已经在该空间中的每个智能体，你
+可以：
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- 将它移出该空间
+- 为它在这个空间里设置**自主程度**：**默认**、**仅提议**、**批准后行动**或**自由行动**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+自主程度是逐（空间、智能体）设置的，因此你在一个房间里信任的智能体，在另一个房间里可以
+被限制为仅提议。
 
-## React to a message
+## 回应消息
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+将鼠标悬停在一条消息上，点击笑脸图标即可打开回应面板。它是一组固定的六个：👍 👎 🎉 ❤️ 👀 ✅。
+没有自由选择表情符号的选择器——点击其中一个就会为你切换它，聚合后的标签会出现在消息
+下方。
 
-## Open a conversation
+## 打开对话
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+一个空间可以同时承载多段对话，它们彼此完全平等——没有主对话一说。空间始终保留至少一段
+活动对话：你无法归档最后一段活动对话，而打开一个还没有任何对话的空间会创建一段无标题的
+常设对话。
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+对话会以编辑器标签页的形式出现，数量超过一个时，还会作为嵌套行出现在侧边栏中空间的下方。
+**新对话**位于编辑器的新标签页菜单中，它会创建一段无标题的对话、不提示你输入标题——标题
+模型会根据第一条消息为它命名。用它可以让同一个智能体和同一份工作树并行推进多项工作。
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+每段对话都保有自己的消息历史和智能体会话，同时共享空间的工作树和模式。关闭标签页只是
+把它隐藏起来；**归档会话**（侧边栏行或聊天标签页的上下文菜单）只归档那一段对话。
 
-## Start a thread
+## 发起话题
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+将鼠标悬停在任意消息上，选择**发起话题**。这会打开一段锚定到该消息的对话：锚点用一行
+内容为新对话的智能体上下文打底，而父对话的历史**不会**被复制。
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+一旦某个话题有了回复，它所挂靠的那条消息下方就会长出一行——发过言者的头像、回复条数，
+以及最后一条回复的时间。那一行就是重新进去的入口：点击它会打开（或聚焦）该话题的标签页。
+它是话题在分出它的那条消息流中留下的唯一痕迹，这也正是它存在的全部理由。
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+话题标签页的标题为 `Thread: <name>`，并带有分支符号，因此同一个空间上的两个标签页绝不会
+被彼此混淆。
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+话题绝不会嵌套——锚定到已经位于某个话题内部的消息会被拒绝。对话标题栏会链接回锚点消息。
+删除锚点消息会删除该话题，而归档父对话不会影响它已有的话题。
 
-## Read state
+## 已读状态
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+已读标记以空间为范围，而不是以对话为范围：打开该空间中的任意一段对话都会清空整个房间。
+未读仍然跨空间的所有对话汇总，话题也包括在内。当对话列在空间下方时，未读圆点会落在有
+未读内容的对话上，而不是父行上。
 
-## Agent-to-agent spaces
+## 智能体与智能体之间的空间
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+智能体为彼此交谈而打开的空间会在侧边栏的**智能体**下单独分组，默认折叠，并以弱化样式
+呈现。它们绝不会增加你的未读徽标——智能体之间的闲聊在构造上就是安静的，而不是靠某个
+你得自己去找到的设置。
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+空间的种类是以下五个值之一：`topic`（你创建的任何空间的默认值）、`agentPeer`、
+`system`（由流水线管理）、`pr`（当 PR 界面需要工作树锚点时创建，在有消息之前会从侧边栏
+中隐藏）以及 `slack`（由聊天桥接为某个 Slack 话题或机器人私信创建，并被当作普通的人类
+对话对待）。
 
-## Related guides
+## 相关指南
 
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [@-mention agents](/zh-CN/手册/操作指南/提及智能体/)
-- [Use plan mode](/zh-CN/手册/操作指南/计划模式/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [@提及智能体](/zh-CN/手册/操作指南/提及智能体/)
+- [使用计划模式](/zh-CN/手册/操作指南/计划模式/)
 
-## Related concepts
+## 相关概念
 
-- [Modes](/zh-CN/手册/概念/模式/)
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/): how a Slack thread becomes a space
+- [模式](/zh-CN/手册/概念/模式/)
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/)：一个 Slack 话题如何变成一个空间

@@ -1,118 +1,155 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Записати й резюмувати зустріч
+description: Запишіть дзвінок, отримайте транскрипт і перетворіть його на нотатки, пункти дій та рішення.
 slug: uk-UA/керівництво/практичні-посібники/записати-зустріч
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/uk-UA/керівництво/поняття/зустрічі/) for how it works.
+Цей посібник показує, як записати зустріч і отримати згенерований ШІ підсумок.
+Про те, як це працює, дивіться в розділі
+[Зустрічі та транскрипція](/uk-UA/керівництво/поняття/зустрічі/).
 
-## Before you start
+## Перш ніж почати
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Дочекайтеся моделі розпізнавання мовлення, а потім перезапустіть сервер.**
+  Звичайний запуск примусово встановлює вибрану модель ASR (Parakeet TDT 0.6B v3,
+  багатомовну типову, близько 600 МБ) у фоновому режимі. Сервер визначає модель
+  **рівно один раз під час запуску**, тож після першого запуску операції запису
+  не з’являться, доки ви не перезапустите сервер. Без моделі на диску запис
+  завершується помилкою `Could not start recording on the host: …`. Щоб вибрати
+  іншу збірку, перейдіть до **Налаштування → Сервер → Моделі голосу та
+  зустрічей** — це теж потребує перезапуску.
+- Надайте дозвіл на **мікрофон**, коли ваша ОС запитає його під час першого
+  запису.
+- У **macOS 14.4+** системне аудіо захоплюється через перехоплення процесів Core
+  Audio — драйвер встановлювати не потрібно, але ОС запитує вдруге дозвіл на
+  _захоплення аудіо_. Це не «Запис екрана», і він ніколи не вмикає індикатор
+  запису екрана. Якщо відхилити цей дозвіл, запуск завершується помилкою
+  `System-audio capture permission denied.` У версіях до macOS 14.4 захоплення
+  системного аудіо немає.
+- У **Linux** `parecord` (pulseaudio-utils) або `pw-record` (pipewire) має бути в
+  `PATH` — захоплення запускає один із них проти джерела-монітора
+  PipeWire/PulseAudio. Без будь-якого з них запуск завершується помилкою
+  `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Куди потрапляє аудіо вашої зустрічі]
+Захоплення, транскрипція, придушення відлуння та діаризація промовців
+виконуються на пристрої, без звернень до хмари — але «пристрій» означає
+**хост cc_server**, а це інший комп’ютер, якщо ви запускаєте сервер віддалено. А
+остаточний підсумок — це звичайний запуск агента: конвеєр `meeting_summary`
+надсилає повний транскрипт і ваші чорнові нотатки тому провайдеру моделей, який
+використовує цей агент. Спрямуйте цього агента на локального провайдера, якщо
+транскрипт не повинен залишати машину.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Екран запису повідомляє про це під час запису, тож ви ухвалюєте рішення до того,
+як з’явиться транскрипт, який можна надіслати.
 :::
 
-## Start a recording
+## Почати запис
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Відкрийте **Зустрічі** на бічній панелі.
+2. Натисніть **Записати зустріч**. Живий HUD запису відкривається за адресою
+   `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Запис починається негайно й захоплює ваш мікрофон разом із аудіо системного
+виходу — тобто інших учасників. Немає ні запиту режиму, ні вибору джерела аудіо:
+режим очної зустрічі з одним мікрофоном існує в API, але сьогодні не має
+інтерфейсу.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+У браузері той самий процес працює, але з однією відмінністю: «системне аудіо» —
+це демонстрація екрана, яка обов’язково має містити звукову доріжку. Поділіться
+вкладкою браузера (або всім екраном) і увімкніть «Поділитися звуком вкладки» /
+«Поділитися системним звуком» у вікні вибору. Safari, Firefox і повноекранна
+демонстрація в macOS часто не можуть надати її.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD показує індикатор рівня, витрачений час і живий транскрипт, що накопичується
+з одного боку.
 
-## During the meeting
+## Під час зустрічі
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Робіть чорнові нотатки** на панелі нотаток. Вони зберігаються під час
+  введення й пізніше передаються агенту підсумку, тож занотуйте все, що може
+  пропустити транскрипт.
+- **Виберіть шаблон нотаток** у рядку **Активний шаблон**. Він визначає форму
+  підсумку цієї зустрічі й зберігається разом із записом, тож подальший
+  повторний запуск відтворить шаблон, який ви вибрали тут.
+- **Призупиняйте й продовжуйте** запис керуванням паузи. Під час паузи
+  транскрипція зупиняється, а таймер завмирає.
+- Транскрипт надходить із позначками промовців: ваші слова як **Ви**, усі інші в
+  дзвінку як **Інші** — доки діаризація не розділить «Інших» на `Person 1`,
+  `Person 2`, …, які ви можете перейменувати.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Дуже тихого промовця може не бути в транскрипті]
+Транскрипція пропускає будь-яке вікно аудіо, яке жодного разу не перевищило
+поріг тиші, взагалі без декодування. Це не дає тихому каналу марнувати CPU на
+вигадані несловесні токени, але також означає, що слабкий або далекий промовець
+може не дати жодного транскрипту. Перевіряйте індикатор рівня на початку, а не в
+кінці.
 :::
 
-## Stop and summarize
+## Зупинити й підсумувати
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Натисніть **Зупинити й підсумувати**.
+2. Control Center одразу відкриває подання деталей зустрічі з позначкою
+   **Обробка**: діаризація розділяє віддалений канал на окремих промовців, а
+   конвеєр `meeting_summary` генерує підсумок.
+3. Щойно цей конвеєр завершиться, зустріч переходить у стан **Готово**. Чекати на
+   це не потрібно — подання деталей оновлюється саме.
 
-## Review the writeup
+## Переглянути підсумок
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Подання деталей зустрічі (`/meetings/:meetingId`) має чотири вкладки:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Вкладка          | Що там                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| **Нотатки**      | Підсумок ШІ та покращені нотатки, побудовані з ваших чорнових нотаток + транскрипту   |
+| **Транскрипт**   | Повний транскрипт із позначками промовців і часовими мітками                          |
+| **Пункти дій**   | Витягнуті завдання, кожне з необов’язковим відповідальним                             |
+| **Рішення**      | Рішення, зафіксовані під час дзвінка                                                  |
 
-From here you can:
+Звідси ви можете:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/uk-UA/керівництво/практичні-посібники/делегувати-тікети/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Перейменувати промовців**: змініть `Person 1` на справжнє ім’я; це
+  застосується до всього транскрипту.
+- **Позначати пункти дій виконаними** в міру їх завершення.
+- **Створити тікет** з пункту дій: він створює новий непризначений тікет із
+  назвою пункту дій і прив’язує його назад до рядка. Призначте його агенту із
+  самого тікета (дивіться
+  [Делегувати роботу агентам](/uk-UA/керівництво/практичні-посібники/делегувати-тікети/)).
+- **Повторити підсумок**, щоб отримати новий прохід (наприклад, після
+  перейменування промовців). Він повторно використовує шаблон, збережений під
+  час запису зустрічі. Виберіть активний шаблон у **Налаштування → Робочий
+  простір → Зустрічі**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Редагування нотаток, назви, пунктів дій і рішень працює всюди.
+**Повторити підсумок** і скасування зустрічі в обробці доступні **лише в
+настільному застосунку** — у браузері обидві кнопки нічого не роблять.
 
-## Record straight from a calendar event
+## Запис безпосередньо з події календаря
 
-If you've [connected a calendar](/uk-UA/керівництво/практичні-посібники/підключити-календар/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Якщо ви
+[підключили календар](/uk-UA/керівництво/практичні-посібники/підключити-календар/),
+можете обійти ручний запуск. Це доступно **лише в настільному застосунку**;
+вебклієнт відмовляється це робити.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Відкрийте подію в **Календарі**.
+2. Натисніть **Почати запис і прив’язати**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Запис отримує назву події як початкову й прив’язується назад до неї, тож нотатки
+й подія календаря залишаються пов’язаними.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Видалення зустрічі не видаляє її аудіо]
+Видалення зустрічі прибирає її рядки, але записані WAV-файли в
+`<dataDir>/meetings/<meetingId>/` залишаються на диску — немає ні політики
+зберігання, ні обмеження розміру, ні прибирання. Видаліть цей каталог
+самостійно, якщо аудіо має значення.
 :::
 
-## Related guides
+## Пов’язані посібники
 
-- [Connect a Google Calendar](/uk-UA/керівництво/практичні-посібники/підключити-календар/)
-- [Delegate work to agents](/uk-UA/керівництво/практичні-посібники/делегувати-тікети/)
+- [Підключити Google Calendar](/uk-UA/керівництво/практичні-посібники/підключити-календар/)
+- [Делегувати роботу агентам](/uk-UA/керівництво/практичні-посібники/делегувати-тікети/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Meetings and transcription](/uk-UA/керівництво/поняття/зустрічі/)
+- [Зустрічі та транскрипція](/uk-UA/керівництво/поняття/зустрічі/)

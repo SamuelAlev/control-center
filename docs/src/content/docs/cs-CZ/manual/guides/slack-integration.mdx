@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Nastavte integraci Slack
+description: Připoj aplikaci Slack k pracovnímu prostoru Control Center, aby z něj členové mohli řídit agenty.
 slug: cs-CZ/prirucka/navody/integrace-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Tenhle návod ukazuje, jak Slack připojit k pracovnímu prostoru Control Center: buď aplikaci necháš vytvořit Control Center, nebo ji postavíš sám.
 
-For a guided first run, see [Bridge Slack to your workspace](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/).
+Pro první průchod s průvodcem viz [Propojte Slack s pracovním prostorem](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack je jediný poskytovatel chatu]
+Most je schválně napsaný tak, aby poskytovatele neznal — rozhraní z deskriptorů
+nad jedním adaptérem na poskytovatele — ale existuje jen adaptér pro Slack.
+Implementace Discordu, Telegramu, Teams ani Matrixu není.
 :::
 
-## Prerequisites
+## Předpoklady
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Role `owner` nebo `admin` v pracovním prostoru Control Center — připojení chatové aplikace je změna nastavení pracovního prostoru
+- Oprávnění vytvářet a instalovat aplikace v pracovním prostoru Slacku
+- Nic veřejně dosažitelného: spojení je odchozí (Socket Mode), takže server nepotřebuje příchozí port, tunel ani doménu
 
-## Three ways to get the app
+## Tři cesty k aplikaci
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Cesta | Co dodáš | Co udělá Control Center |
+| --- | --- | --- |
+| **S průvodcem** | Token konfigurace aplikace (`xoxe-…`) | Vytvoří aplikaci se správnými scopes, událostmi, Socket Mode a slash příkazem a tobě nechá dva kroky, pro které Slack nemá API |
+| **Vytvořit v Slack** | Nic | Otevře Slack se stejnou konfigurací předvyplněnou; vybereš pracovní prostor a potvrdíš |
+| **Ručně** | Tokeny hotové aplikace | Ověří je a připojí |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Cesta s průvodcem je jediná, která aplikaci nechá z Control Center i _spravovat_, a právě to zapne [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/). Aplikaci z **Vytvořit v Slack** lze později povýšit na spravovanou: do dialogu připojení vložíš token konfigurace.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Tlačítko na instalaci sdílené aplikace Slack od Control Center schválně chybí. Instalace distribuované aplikace Slack potřebuje sdílené client secret (Slack nemá PKCE) a Socket Mode rozesílá události aplikace náhodně mezi její spojení, takže jedna sdílená aplikace by zprávy tvého pracovního prostoru doručovala na cizí servery. Každý pracovní prostor proto vlastní svou aplikaci a tyhle tři cesty jsou o tom, jak málo práce tě to stojí.
 
-## Option A: let Control Center create the app
+## Varianta A: aplikaci vytvoří Control Center
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Na [api.slack.com/apps](https://api.slack.com/apps) vygeneruj pár tokenů konfigurace aplikace a zkopíruj **refresh** token (`xoxe-…`)
+2. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+3. V bloku Slack klikni na **Vytvořit aplikaci za mě**
+4. Vlož token, uprav název aplikace, jméno bota, popisy a slash příkaz, pak klikni na **Vytvořit aplikaci**
+5. Dokonči dva zbývající kroky, které dialog ukáže, každý jako odkaz do Slacku:
+   - **Basic Information → App-Level Tokens**: vygeneruj token se scopem `connections:write` (`xapp-…`)
+   - **Install App**: nainstaluj do pracovního prostoru a zkopíruj **Bot User OAuth Token** (`xoxb-…`)
+6. Klikni na **Vložit přihlašovací údaje** a pokračuj na [Připojení](#připojení)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Token konfigurace se při každém použití otočí. Control Center si otočenou hodnotu ukládá průběžně, takže ho už nemusíš vkládat znovu.
 
-## Option B: create it in Slack, pre-filled
+## Varianta B: vytvoření ve Slacku, předvyplněné
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Stejná aplikace, bez tokenu konfigurace. Slack ti otevře vlastní obrazovku vytvoření s celým manifestem už vyplněným.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+2. V bloku Slack klikni na **Vytvořit aplikaci za mě**
+3. Uprav název aplikace, jméno bota, popisy a slash příkaz. Tyhle hodnoty jedou s odkazem
+4. Klikni na **Vytvořit v Slack**. Prohlížeč otevře stránku Slacku pro vytvoření aplikace s předvyplněnou konfigurací
+5. Vyber pracovní prostor Slacku a potvrď. Scopes, události, Socket Mode i slash příkaz už sedí
+6. Zpět v Control Center dokonči dva zbývající kroky, které dialog ukáže:
+   - **Basic Information → App-Level Tokens**: vygeneruj token se scopem `connections:write` (`xapp-…`)
+   - **Install App**: nainstaluj do pracovního prostoru a zkopíruj **Bot User OAuth Token** (`xoxb-…`)
+7. Klikni na **Vložit přihlašovací údaje** a pokračuj na [Připojení](#připojení)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack neohlásí, kterou aplikaci vytvořil, takže Control Center nezjistí id aplikace a odkazy v kroku 6 vedou na seznam aplikací, ne rovnou na tu aplikaci. **Přizpůsobit bota** potřebuje token konfigurace.
 
-## Option C: build the app yourself
+## Varianta C: aplikaci postavíš sám
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Aplikaci vytvoř na [api.slack.com/apps](https://api.slack.com/apps) a nastav ji takhle.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: zapni ho a každou request URL nech prázdnou. Slack odmítne manifest, který chce Socket Mode i doručení webhookem.
 
-**Bot token scopes** (OAuth & Permissions):
+**Scopy tokenu bota** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Odběry událostí** (bot events):
 
 ```text
 app_home_opened
@@ -91,134 +92,134 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` a `message.groups` jsou to, díky čemu funguje _odpověď_ uvnitř už přemostěného vlákna Slacku. Bez nich dorazí jen první zmínka.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Slash příkaz**: `/cc` (funguje libovolné jméno; most použije příkaz, kterým byl naposledy vyvolaný).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: zapni kartu Messages a nech ji zapisovatelnou, aby členové mohli botovi psát DM.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Tokeny**: vygeneruj token na úrovni aplikace se scopem `connections:write`, pak aplikaci nainstaluj a zkopíruj OAuth token uživatele bota.
 
-## Connect
+## Připojení
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+2. V bloku Slack klikni na **Připojit Slack**
+3. Vyplň pole:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Pole | Hodnota | Kde to ve Slacku je |
+| --- | --- | --- |
+| **Token bota** | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token |
+| **Token na úrovni aplikace** | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Token konfigurace aplikace** (volitelné) | `xoxe-…` | Pár tokenů konfigurace aplikace na api.slack.com/apps |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Prefix každé hodnoty se zkontroluje na obou stranách, ještě než se cokoli odešle, takže
+hodnota vložená do špatného pole se odmítne stejnou větou na obou stranách.
 
-4. Click **Connect**
+4. Klikni na **Připojit**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center ověří token bota přes Slackové `auth.test` _ještě před_ uložením, takže překlep uvidíš ty a nevznikne z něj socket, který tiše nikdy nefunguje. Token na úrovni aplikace se dá dokázat jen otevřením socketu, takže špatný se o chvíli později ukáže jako chyba připojení na stejném řádku.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Bez volitelného tokenu konfigurace aplikace spojení funguje. Bota z Control Center jen neupravíš.
 
-## What connecting does
+## Co připojení udělá
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Uloží přihlašovací údaje do vlastního adresáře pracovního prostoru, vedle jeho databáze, čitelné jen pro vlastníka. Ke klientovi se nikdy nevracejí
+- Otevře jedno spojení Socket Mode pro tenhle pracovní prostor a začne přijímat zmínky, odpovědi ve vláknech Slacku, přímé zprávy a slash příkazy
+- Znovu aktivuje každé vlákno Slacku, které už bylo přemostěné, takže opětovné připojení pokračuje v existujících konverzacích a nenechá je viset
+- Pracovní prostory bez chatové aplikace nic nestojí: žádný socket, žádné časovače, žádný provoz
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Kde tokeny leží a proč ne v klíčence]
+Přihlašovací údaje bota jsou jeden prostý soubor JSON na poskytovatele v
+`<dataDir>/<workspaceId>/chat_credentials/`, zapsaný atomicky a stažený na
+práva jen pro vlastníka. Je to záměr, ne opomenutí: smazání pracovního prostoru
+ten adresář odlinkuje, takže tokeny odejdou s ním, a `workspace.export` i zálohy
+kopírují `workspace.db`, ne ten adresář, takže pracovní prostor, který někomu
+předáš, v sobě nenese živé tokeny bota. Z toho plyne, že obnovení pracovního
+prostoru jinde znamená Slack tam připojit znovu.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Přístup k mostu je **členství** v pracovním prostoru, ne držení tokenu. Účet
+Slacku musí být propojený s uživatelem Control Center, který je člen s rolí
+s právem zápisu. Připojení, odpojení, nastavení s průvodcem, odkaz na založení
+aplikace i úprava bota jsou jen pro adminy.
 :::
 
-## Verify
+## Ověření
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Řádek Slacku ukazuje stavový štítek: **Živě**, **Připojování…**, **Chyba připojení** (vedle něj vlastní chyba Slacku) nebo **Nepřipojeno**. Kontrola od začátku do konce:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Ve Slacku pozvi bota do kanálu: `/invite @your-bot-name`
+2. Zmiň ho s požadavkem
+3. Objeví se odpověď ve vláknu Slacku a v Control Center odpovídající prostor
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/).
+Každý člen, který chce most používat, si pak propojí vlastní účet. Viz [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/).
 
-## What a reply looks like in Slack
+## Jak vypadá odpověď ve Slacku
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Nad streamovanými slovy sedí jedna seskupená karta, řádek na krok. Příprava je jeden řádek, jehož nadpis přechází z `Working on it…` na `Cloning …` a na `Starting the agent…`. Uvažování přidá řádek `Thinking…`; když ten krok skončí, může se na něm objevit krátká myšlenka. Každý nástroj má vlastní řádek (`Read lib/main.dart`). Odpověď přijde jako obyčejný text pod kartou. Karta se dokončí, když skončí tah, a označí chybu, když běh selhal, byl přerušen, nebo narazil na limit tahů.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Karta začne v okamžiku, kdy bot zmínku přijme, u `Working on it…`, takže vlákno Slacku nemlčí, dokud se pracovní prostor ještě staví. První zmínka v kanálu Slacku vytvoří konverzaci a ta naklonuje repozitáře, ve kterých agent pracuje, takže řádek přípravy pak čte `Cloning acme/widgets…`, pak `Setting up Reviewer…`, pak `Starting the agent…` a pak řádek `Thinking…`, jakmile agent opravdu uvažuje. Na velkém repozitáři ta první příprava chvíli trvá a karta je způsob, jak poznáš, že to běží. Pozdější zmínky ve stejném vláknu Slacku pořád začínají `Working on it…` a kroky klonování přeskočí, protože pracovní prostor už stojí.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Uvažování ve formě zdi textu a výstup nástroje Control Center neopouštějí. Myšlenka na řádku `Thinking…` je krátký řádek, ne přepis. **View in Control Center** na kartě otevře celou konverzaci v desktopové aplikaci. Odkaz míří na tvůj vlastní server Control Center, který prohlížeč předá aplikaci.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Když se po kliknutí nic nestane, server, který zprávu poslal, není z počítače, na kterém jsi klikl, dosažitelný (třeba server jen na loopback, na který klikneš z telefonu), nebo tam Control Center neběží. Server bez dosažitelné adresy pošle kartu bez tlačítka, ne kartu, která nikam nevede.
 
-## Rotate a token
+## Rotace tokenu
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Novou hodnotu vlož znovu do dialogu připojení a klikni na **Připojit**. Připojení nahradí spojení, které pro tenhle pracovní prostor běželo, takže se socket naváže znovu s novými přihlašovacími údaji.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Při každém připojení musí být oba povinné tokeny vyplněné. Volitelný token konfigurace aplikace si uloženou hodnotu nechá, když pole necháš prázdné, takže rotace tokenu bota tě o možnost aplikaci upravovat nepřipraví.
 
-## Disconnect
+## Odpojení
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Na řádku Slacku klikni na **Odpojit** (jen admini). Socket se zavře a přihlašovací údaje se zapomenou.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Vazby prostorů a uživatelů schválně zůstanou: opětovné připojení stejné aplikace obnoví každé přemostěné vlákno Slacku. Jsou to řádky vázané na pracovní prostor, takže smazání pracovního prostoru je stejně odstraní.
 
-## Troubleshooting
+## Řešení problémů
 
-### The row says "Connection error"
+### Řádek hlásí „Chyba připojení“
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Přečti chybu vedle štítku. Odmítnutý přihlašovací údaj (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) je konečný: most přestane zkoušet znovu a čeká na nové tokeny, protože opakované zkoušení odvolaného tokenu tě jen přivede na limit četnosti. Tokeny vlož znovu do dialogu připojení.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Chyba `missing_scope` znamená, že aplikace je nainstalovaná s méně scopes, než most potřebuje. Chybějící scope přidej, aplikaci ve Slacku znovu nainstaluj a pak se znovu připoj.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Všechno přechodné (spadlý socket, krátký výpadek Slacku) se připojí samo, s exponenciální prodlevou se stropem 30 sekund, a běžná rotace socketu ve Slacku tu prodlevu nezvedá.
 
-### The bot does not answer a mention
+### Bot na zmínku neodpoví
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Je bot v kanálu?** Slack doručí zprávy kanálu jen aplikacím, které jsou členy. Spusť `/invite @your-bot-name`
+- **Jsi propojený?** Nepropojený člen dostane v tom vláknu Slacku odpověď s návodem, jak se propojit. Viz [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
+- **Jsi člen pracovního prostoru s rolí s právem zápisu?** `viewer` nebo `guest` se dozví, že jeho role je jen ke čtení. Most nikdy nespustí práci za někoho, koho nedokáže přisoudit
+- **Má pracovní prostor nějaké agenty?** Bez agentů se zpráva uloží, ale nemá kdo odpovědět
 
-### It answers in a channel but ignores plain messages
+### V kanálu odpovídá, obyčejné zprávy ignoruje
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Je to schválně. Mimo přímou zprávu most jedná jen u zprávy, která bota zmíní, nebo u odpovědi uvnitř vlákna Slacku, které už vlastní. Všechno ostatní je cizí konverzace.
 
-### Replies arrive as one big message instead of streaming
+### Odpovědi přijdou jako jedna velká zpráva místo streamu
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Řádek hlásí „Živé streamování je pro tuto aplikaci Slack vypnuté — odpovědi přijdou jako jedna zpráva.“ Streamované odpovědi Slacku potřebují funkci Agents & AI Apps na placeném tarifu; když ji Slack odmítne, most o ni po zbytek života toho spojení přestane žádat a posílá celé odpovědi. Nic se neztratí. Celý přepis je vždy v Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Streamování taky potřebuje kotvu vlákna Slacku, takže odpověď, která nemá vlákno Slacku, do kterého by rostla, se pošle celá. Karta úkolu přijde tak jako tak: u celé odpovědi jede na stejné zprávě, už dokončená.
 
-### The reply has no card above it
+### Nad odpovědí chybí karta
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Karty úkolů ve Slacku patří ke stejné nové ploše Agents & AI Apps jako streamování a Slack je odmítne až v okamžiku volání. Když se to stane, Control Center si odpověď nechá a kartu po zbytek života toho spojení zahodí. Odpověď bez stavového řádku je lepší než stavový řádek bez odpovědi.
 
-### "Control Center needs an app configuration token to edit the bot"
+### „Control Center k úpravě bota potřebuje token konfigurace aplikace“
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Řádek **Přizpůsobit bota** je neaktivní, protože spojení nemá token konfigurace aplikace. Čeká se to u aplikace postavené ručně nebo přes **Vytvořit v Slack**, protože Slack neohlásí, kterou aplikaci vytvořil. Na api.slack.com/apps vygeneruj pár tokenů konfigurace aplikace a připoj se znovu s vyplněným refresh tokenem.
 
-### A long answer is cut off
+### Dlouhá odpověď je useknutá
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack omezuje jednu zprávu na 40 000 znaků, takže most zkrátí na 39 000 a připojí odkaz do Control Center. Zkrácená odpověď je lepší než ta, kterou Slack rovnou odmítne. Plný text je vždy v přepisu prostoru.
 
-## Related guides
+## Související návody
 
-- [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
-- [Customize the chat bot](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
-- [Chat bridge](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
+- [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
+- [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
+- [Chatový most](/cs-CZ/prirucka/referencni-prirucka/chatovy-most/)
 
-## Related concepts
+## Související koncepty
 
-- [Chat bridges](/cs-CZ/prirucka/koncepty/chatove-mosty/)
+- [Chatové mosty](/cs-CZ/prirucka/koncepty/chatove-mosty/)

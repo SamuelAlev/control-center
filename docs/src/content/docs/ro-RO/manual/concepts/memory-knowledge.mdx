@@ -1,199 +1,214 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Memorie și cunoștințe
+description: Cum stochează Control Center cunoștințele agenților, ce ajunge de fapt în promptul unui agent și de ce citirile din memorie sunt permisive la eroare.
 slug: ro-RO/manual/concepte/memorie-si-cunostinte
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Pentru ce este memoria
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Fără memorie, fiecare conversație cu un agent pornește de la zero: aceeași
+convenție trebuie explicată din nou, aceeași decizie redeschisă, același drum
+înfundat reexplorat. Memoria este depozitul la nivel de spațiu de lucru care
+supraviețuiește rulărilor și există pentru ca cunoștințele produse de un agent să
+poată fi găsite de altul mai târziu.
 
-It has three layers and they answer different questions:
+Are trei straturi și ele răspund la întrebări diferite:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Fapte** — ce este adevărat (o convenție, un rezultat, o decizie).
+2. **Politici** — ce trebuie să facă agenții în privința lor (o regulă normativă).
+3. **Memorie de lucru** — la ce lucra un agent în acel moment.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Distincția contează pentru că ajung la agent pe căi diferite. Faptele se caută.
+Politicile se împing. Memoria de lucru este privată.
 
-## Facts
+## Fapte
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Un `MemoryFact` este o unitate de cunoștințe limitată la un spațiu de lucru și
+la un domeniu.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Atribut                                     | Ce este                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `domain`                                    | Domeniul de cunoștințe ("conventions", "decisions", "codebase")                                             |
+| `topic`                                     | O etichetă scurtă de subiect                                                                                |
+| `content`                                   | Textul cunoștinței                                                                                          |
+| `confidence`                                | 0.0–1.0, inițializată din proveniență și crescută la o nouă mențiune                                        |
+| `memoryType`                                | Tipul faptului — determină curba sa de decădere temporală                                                   |
+| `veracity`                                  | Cum a ajuns să fie cunoscut — inițializează încrederea și dimensionează fiecare majorare la o nouă mențiune |
+| `sourceObservationIds`                      | Ce observații au dus la el                                                                                  |
+| `supersededBy`                              | Faptul mai nou care l-a înlocuit, dacă există                                                               |
+| `validUntil`, `recallCount`, `mentionCount` | Semnale de expirare și de utilizare folosite la rechemare                                                   |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Ultimele două rânduri sunt cele pe care lumea le ratează și sunt exact cele care
+decid _care_ fapt iese la suprafață. `memoryType` poartă parametri de decădere
+Weibull specifici tipului, așa că un angajament cu termen limită se estompează
+repede, în timp ce un fapt de profil stabil nu se estompează. `veracity`
+înregistrează proveniența — enunțat de un om (pondere 1.0), dedus de un agent
+(0.7), produs de un instrument (0.5), importat (0.6) — iar acea pondere
+inițializează încrederea de pornire a faptului.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Faptele nu sunt niciodată editate pe loc atunci când sunt contrazise. Scrierea
+unui fapt rulează detectarea conflictelor împotriva faptelor din același domeniu
+și cu același subiect și o înlocuiește pe cea învinsă, înregistrând un rând de
+conflict. Jurnalul de audit este însuși scopul: poți vedea oricând ce se credea
+înainte și ce a înlocuit.
 
-## Policies
+## Politici
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+O `MemoryPolicy` este o regulă normativă derivată din fapte, limitată la un
+spațiu de lucru și la un domeniu, cu un indicator de activare și un `requiredRole`
+opțional.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Fiecare politică **activă** din spațiul de lucru este injectată în **fiecare**
+trimitere, fără filtrare — nicio filtrare după domeniu, rol, sarcină sau spațiu.
+Merită să știi asta înainte de a-ți scrie a douăzecea politică, pentru că
+politicile concurează cu sarcina pentru aceeași fereastră de context. Tot de
+aceea `requiredRole` pe o politică este orientativ: descrie cui i se adresează
+regula, nu împiedică regula să ajungă la toți ceilalți.
 
-## Domains
+## Domenii
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Un `MemoryDomain` grupează fapte și politici în cadrul unui spațiu de lucru.
+Domeniile dau cunoștințelor structură organizatorică și sunt unitatea față de
+care se scriu acordările de acces — dar vezi atenționarea de mai jos înainte de a
+trata un domeniu ca pe o graniță de confidențialitate.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Un domeniu este fie la nivel de spațiu de lucru (`architecture`), fie limitat la
+un singur repository (`repo:<slug>/architecture`). Același nume în ambele
+perimetre înseamnă două depozite independente: un fapt adevărat pentru o bază de
+cod nu îl suprascrie pe cel de la nivel de spațiu de lucru. `search_memory` și
+preambulul de trimitere clasează prima memoria limitată la repository atunci când
+agentul lucrează în acel repository; nu elimină restul prin filtrare. Transmite
+`repo` la `propose_fact` / `propose_policy` / `search_memory` pentru a scrie în
+acel perimetru sau a-l favoriza.
 
-## Access control is fail-open for reads
+## Controlul accesului este permisiv la eroare pentru citiri
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` asociază un rol de agent și un domeniu cu unul dintre cele
+trei niveluri de permisiune:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Permisiune | Semnificație                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| `none`     | Fără acces                                                                                                           |
+| `read`     | Poate căuta și recupera fapte                                                                                        |
+| `write`    | Cerută de `propose_policy`. Scrierile de fapte (`propose_fact`, `supersede_fact`) nu sunt condiționate de o acordare |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[O acordare lipsă înseamnă citire, nu refuz]
+Când nu există un rând de acordare pentru o pereche `(role, domain)`, permisiunea
+efectivă este **`read`**. Citirile sunt permisive la eroare, prin proiectare.
+Singura scriere care aruncă o eroare este `propose_policy` fără permisiunea
+`write` (`InsufficientMemoryPermission`). Dacă pui conținut sensibil într-un
+domeniu de memorie, nu restricționezi cine îl poate citi decât dacă ai scris
+explicit o acordare `none` pentru fiecare rol care nu ar trebui să îl vadă.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+De asemenea, astăzi nu există nicio interfață pentru acordări nicăieri în produs.
+Ecranul de memorie are filele Fapte, Politici și Graf și nimic altceva; acordările
+sunt accesibile doar prin operațiunile RPC `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Asimetria — permisivă la citiri, strictă la scrierile de politici — este un
+compromis deliberat. Memoria este cel mai utilă când circulă, iar un refuz de
+citire produce un agent care știe mai puțin în tăcere, nu unul care raportează o
+problemă. Un refuz la scrierea unei politici, dimpotrivă, este zgomotos și
+corectabil, așa că acolo se află aplicarea. Un domeniu nou creat inițializează
+`write` pentru fiecare rol; restrângerea lui ulterioară este o modificare exclusiv
+prin RPC, pentru că nu există o interfață pentru acordări.
 
-## Working memory
+## Memoria de lucru
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Fiecare agent are un `AgentWorkingMemory`: un bloc de notițe cu text liber,
+indexat după spațiu de lucru și agent. Persistă între rulări, este privat pentru
+acel agent și este injectat în promptul lui la fiecare trimitere. Aici trăiește
+„eram la jumătatea refactorizării autentificării” — starea care merită dusă în
+următoarea rulare, dar nu merită promovată la un fapt durabil.
 
-## What actually reaches an agent's prompt
+## Ce ajunge de fapt în promptul unui agent
 
-At dispatch, the memory preamble is assembled from exactly three things:
+La trimitere, preambulul de memorie este alcătuit din exact trei lucruri:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Fiecare politică activă din spațiul de lucru**, ca linii de forma
+  `- [domain] rule`.
+- **Memoria de lucru proprie agentului**, literal.
+- **O listă scurtă de fapte potrivite după cuvinte-cheie** pentru această sarcină
+  — cel mult cinci, într-un buget de ~1.200 de caractere și doar când descrierea
+  sarcinii are cel puțin 20 de caractere. Sarcinile mai scurte nu primesc deloc
+  fapte.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Lista scurtă se bazează doar pe FTS/cuvinte-cheie și este limitată intenționat.
+Înglobarea unei interogări este lentă, iar calea de trimitere este singurul loc
+unde latența se vede imediat, așa că calea semantică lentă este ținută deliberat
+în afara ei. Preambulul se încheie spunându-i agentului să verifice elementele
+critice cu `search_memory`, acolo unde trăiește modelul complet de rechemare.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Pe această cale nu se consultă nicio acordare de acces. Orice găsește lista
+scurtă este ceea ce vede agentul.
 
-## Recall: one query, four voices
+## Rechemare: o interogare, patru voci
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Instrumentul `search_memory`, expus agenților, are trei moduri, iar acestea
+sunt căutări cu adevărat diferite:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — doar FTS5.
+- **`semantic`** — rezultate BM25 și vectoriale combinate prin fuziune de ranguri
+  reciproce.
+- **`hybrid`** (implicit) — rechemare polifonică: patru voci clasate, combinate,
+  apoi diversificate.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Cele patru voci sunt lexicală (FTS), semantică (KNN vectorial), temporală (fapte
+active recente) și de graf — o parcurgere în doi pași peste muchiile episodice,
+pornind de la cele mai puternice puncte de pornire lexicale și semantice. Vocea de
+graf este însuși motivul pentru care există muchiile episodice: scoate la suprafață
+faptul care este _conectat la_ răspunsul tău fără să se potrivească cu vreunul
+dintre cuvintele tale. Vocile sunt ponderate după intenția interogării,
+clasificată (semantica are cea mai mare pondere implicit, apoi graful și lexicul,
+apoi recentitatea), scorul fiecărui candidat este scalat cu decăderea lui Weibull,
+iar setul de rezultate este diversificat prin MMR, astfel încât cinci reformulări
+ale unui fapt să nu le înăbușe pe alte patru diferite.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Rechemarea semantică tace până când modelul este instalat]
+Vocea vectorială contribuie abia după ce modelul de înglobare de pe dispozitiv a
+fost descărcat. Până atunci, rechemarea hibridă rulează cu trei voci și nu există
+completare retroactivă — faptele scrise înainte de instalarea modelului nu primesc
+niciodată vectori. Calea vectorială se degradează și mai mult, până la o scanare
+în Dart peste înglobarile împachetate, dacă extensia vectorială SQLite nu se
+încarcă; rechemarea răspunde în continuare, doar mai lent.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Căutarea în memorie din desktop și din web este o cale separată, mai simplă:
+operațiunea RPC `memory_fact.search` este **doar FTS5**, pentru că un client
+subțire nu poate trimite o înglobare de interogare, iar calea hibridă rămâne
+internă gazdei. Așadar, clasamentul pe care îl vezi în browserul de memorie nu
+este clasamentul pe care îl primește un agent de la `search_memory`. Acest lucru
+este de așteptat, nu este un defect, dar înseamnă că „am căutat și nu l-am
+găsit” în interfață nu este o dovadă că agentul nu îl va găsi.
 
-## Where memory lives and who writes it
+## Unde se află memoria și cine o scrie
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Browserul de memorie se află la **Setări → Spațiu de lucru → Memorie**
+(`/workspaces/<id>/settings/memory`), cu filele Fapte, Politici și Graf.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Acolo există o asimetrie care surprinde lumea: **poți edita și șterge memoria,
+dar nu o poți crea.** Nici fila Fapte, nici fila Politici nu are un control de
+adăugare. Autorarea se face dinspre agent, prin `propose_fact` și
+`propose_policy` (`supersede_fact` / `supersede_policy` pentru a le înlocui).
+`remember` scrie un element de nivel fierbinte, limitat la sesiune, pe care
+`consolidate_memory` îl poate promova ulterior la fapt; `record_observation` și
+`update_my_notes` scriu blocul de notițe privat injectat la trimitere. Browserul
+este o suprafață de revizuire și corectare, nu una de autorare — așa că, dacă
+vrei un fapt în memorie, modalitatea de a-l pune acolo este să îi spui unui
+agent.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Două operațiuni de întreținere sunt, de asemenea, invocate de agent, nu
+programate: `consolidate_memory` fuzionează și elimină faptele acumulate, iar
+`harmonize_memory` reconciliază convingerile care au divergat între agenți.
+`list_memory_conflicts` arată ce a înregistrat deja detectarea conflictelor.
+Nimic nu le rulează pentru tine după un temporizator. Deciziile din ședințe sunt
+colectate în domeniul `decisions` atunci când un pas de persistare a ședinței le
+înregistrează; acesta nu este un temporizator pentru rulările de agent
+finalizate.
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): roles are what grants are written against
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ro-RO/manual/ghiduri-practice/gestioneaza-memoria/): working with memory in practice
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): rolurile sunt cele față de care se scriu acordările
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): memoria este la nivel de spațiu de lucru și stă în fișierul de bază de date propriu al acelui spațiu
+- [Gestionează memoria spațiului de lucru](/ro-RO/manual/ghiduri-practice/gestioneaza-memoria/): lucrul cu memoria în practică

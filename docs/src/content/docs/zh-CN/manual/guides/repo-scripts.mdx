@@ -1,37 +1,36 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: 仓库脚本
+description: 按仓库配置的设置脚本与归档脚本，针对空间的工作树运行。
 slug: zh-CN/手册/操作指南/仓库脚本
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+仓库脚本是你按仓库配置的 shell 脚本（**设置 → 仓库 → 仓库所在行上的终端
+图标**），Control Center 的服务器会针对该仓库的**某个空间的工作树**运行它们
+——也就是智能体工作的那个隔离检出，位于
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` 下。
 
-There are two kinds:
+共有两种：
 
-| Script | When it runs | Use it for |
+| 脚本 | 何时运行 | 用途 |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **设置** | 为空间预配工作树之后立即运行 | 安装依赖、生成文件、复制 `.env` |
+| **归档** | 在工作树被销毁或垃圾回收之前 | 清理工作树之外的资源（docker 网络、隧道、外部状态） |
 
-## Where scripts run
+## 脚本在哪里运行
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+两个脚本都通过 `bash -lc` 运行（登录 shell，因此通过 Homebrew/nvm 安装的
+工具都在 `PATH` 上），并**以工作树作为工作目录**，同时设置以下环境变量：
 
-| Variable | Value |
+| 变量 | 值 |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | 工作树（脚本的 cwd） |
+| `CC_ROOT_PATH` | 已注册的源仓库——你自己的检出 |
+| `CC_SPACE_ID` | 该工作树所属的空间 |
+| `CC_SPACE_NAME` | 空间的显示名称 |
+| `CC_REPO_NAME` | 仓库的显示名称 |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+例如，下面这个设置脚本会安装依赖，并引入仓库中被 git 忽略的 `.env`：
 
 ```bash
 pnpm install
@@ -39,28 +38,26 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## 失败行为
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- **设置**脚本以非零状态退出（或超过 5 分钟超时）会让该空间的预配失败：空间
+  会显示失败状态并提供重试，同时记录该次运行的输出尾部。重试会从干净的工作树
+  开始预配，并再次运行该脚本——编写设置脚本时，要保证在安装只完成一部分之后
+  重新运行仍然可用（包管理器本身就是这样做的）。
+- **归档**脚本是尽力而为：失败（或 2 分钟超时）会被记录，但**绝不会阻止
+  删除**。归档会在无人能回答提示的 GC 路径上运行（空间被删除、PR 被合并、
+  计划清理）。
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+设置只在**全新**的工作树上运行：把智能体重新派发到一个已经热起来的空间会复用
+现有的检出，不会重复付出安装的代价。
 
-## Run history
+## 运行历史
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+每一次执行都会记录其状态、耗时、退出码和一段有上限的输出尾部，可在同一个设置
+对话框的“最近运行”下查看（`repos.watchScriptRuns` 订阅会实时推送它）。
 
-## Permissions
+## 权限
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+这些脚本是由**服务器**执行的 shell，因此只有工作区管理员可以编写，并受
+`processSpawn` 操作类别的护栏保护——与其他所有派生进程的操作共用的同一套
+护栏网。

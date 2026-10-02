@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Jalankan ejen secara selari
+description: Hantar beberapa ejen serentak dan pastikan kerja mereka tidak berlanggar.
 slug: ms-MY/manual-pengguna/panduan-cara/ejen-selari
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Panduan ini menunjukkan cara menjalankan beberapa ejen pada masa yang sama tanpa mereka menulis ganti kerja satu sama lain.
 
-## The unit of isolation is the space, not the agent
+## Unit pengasingan ialah ruang, bukan ejen
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Apabila kerja bermula dalam sesuatu ruang, Control Center menyediakan satu checkout copy-on-write bagi setiap repo berdaftar di bawah akar ruang itu sendiri, pada cawangan yang diperoleh daripada templat cawangan ruang kerja. Setiap ejen dalam ruang itu kemudian mendapat direktori kerja overlay sendiri — tetapi lapisan overlay itu **berkongsi** direktori `repos/` ruang berkenaan.
 
-So:
+Justeru:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Dua ejen dalam **ruang berbeza** bekerja dalam checkout berbeza, pada cawangan berbeza. Itulah pengasingan sebenar.
+- Dua ejen dalam **ruang yang sama** bekerja dalam checkout yang sama, pada cawangan yang sama. Laluan overlay mereka berbeza, jadi kunci laluan penghantaran (yang hanya menjadikan larian bersiri apabila ia meminta direktori kerja yang sama) juga tidak menjadikan mereka bersiri. Mereka boleh menulis fail yang sama pada masa yang sama.
 
-The rule that follows: **one space per parallel task.**
+Peraturan yang menyusul: **satu ruang bagi setiap tugas selari.**
 
-## Run tasks in parallel — separate spaces
+## Jalankan tugas secara selari — ruang berasingan
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Buka ruang dengan ejen A dan hantar satu tugas kepadanya.
+2. Buka ruang kedua dengan ejen B dan hantar satu tugas yang berbeza kepadanya.
+3. Kedua-duanya dihantar serta-merta, masing-masing dalam checkout ruangnya sendiri pada cawangannya sendiri.
 
-This is the recipe to use whenever the agents will be editing files.
+Inilah resipi yang perlu digunakan apabila ejen akan menyunting fail.
 
-## Work together in one space — several mentions
+## Bekerjasama dalam satu ruang — beberapa sebutan
 
-In a single space, @-mention more than one agent:
+Dalam satu ruang, @-sebut lebih daripada satu ejen:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Kedua-dua ejen dihantar secara selari dan menstrim ke dalam ruang yang sama, ditag mengikut penghantar. Kerana mereka berkongsi checkout ruang itu, gunakan ini untuk kolaborasi — seorang menulis, seorang membaca, atau dua ejen menaakul tentang pokok yang sama — bukan untuk dua suntingan bebas.
 
-## Fan out from a pipeline
+## Lakukan fan-out daripada pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Templat `pr_review` terbina dalam ialah contoh fan-out yang disertakan: beberapa nod penyemak berjalan serentak daripada satu pencetus dan nod **Consolidate (join)** melipat penemuan mereka menjadi satu laporan. Jalankannya dari skrin Pipeline dan setiap penyemak dihantar secara selari.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Editor pipeline menyembunyikan sentinel terminal dan menyambung semulanya untuk menunggu setiap sink yang ada apabila anda menambah atau menyambung langkah, jadi cabang yang anda lukis sendiri memang berjalan.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Menetapkan tiket tidak menghantar apa-apa]
+Menetapkan tiket kepada ejen merekodkan pemilikan. Tiada penghantar tiket — `TicketAssigned` ialah isyarat audit dan tiada kerja bermula daripadanya. Satu-satunya pengecualian ialah tiket yang ditetapkan kepada _pasukan_, yang membangunkan ketua pasukan itu.
 :::
 
-## Watch them run
+## Perhatikan mereka berjalan
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Kebolehcerapan → Langsung** (pengaki bar sisi → Kebolehcerapan, kemudian tab Langsung) memaparkan senarai ejen ruang kerja ini, berdetik semula setiap saat: status (berjalan / terlengah / diparkir / digugurkan), apa yang sedang dilakukan oleh setiap ejen, token dan kos bagi larian terbaharunya serta kawalan henti paksa untuk proses yang sedang berjalan. Memilih satu baris menambat laci transkrip langsung.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Tetapan → Ruang kerja → Ejen** memaparkan senarai yang sama dengan kosa kata status yang berbeza dan mengutamakan perhatian, diperoleh daripada sejarah larian setiap ejen — berjalan, disekat, gagal, terlengah, belum ada larian — disusun supaya apa-apa yang memerlukan perhatian muncul di atas. Tab **Log** setiap ejen menyimpan sejarah lariannya sendiri.
 
-Both surfaces are scoped to the active workspace.
+Kedua-dua permukaan berskop kepada ruang kerja aktif.
 
-## Handle conflicts
+## Tangani konflik
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Merentas ruang, setiap ruang berada pada cawangannya sendiri, jadi perlanggaran muncul sebagai konflik cantuman Git biasa apabila anda mencantumkan pull request kedua. Selesaikannya seperti mana-mana konflik cantuman.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Di dalam satu ruang tiada sempadan cawangan dan tiada kunci: ejen-ejen menulis fail yang sama secara langsung dan yang tewas hanya ditulis ganti. Jika anda mendapati diri anda ingin dua ejen menyunting dalam satu ruang, pecahkan kerja itu kepada dua ruang sebaliknya.
 
-To reduce collisions either way:
+Untuk mengurangkan perlanggaran dalam kedua-dua keadaan:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/).
-- Review and merge each agent's pull request promptly.
+- Berikan setiap ejen skop yang berbeza — fail berbeza, modul berbeza.
+- Gunakan graf kod untuk menyemak apa yang disentuh oleh sesuatu perubahan sebelum menghantar. Lihat [Cari kod dengan graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/).
+- Semak dan cantumkan pull request setiap ejen dengan segera.
 
-## Resource considerations
+## Pertimbangan sumber
 
-Each running agent costs:
+Setiap ejen yang berjalan menelan kos:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Satu checkout ruang — boleh diabaikan pada cakera selagi copy-on-write tersedia; pada Windows, satu `git worktree`. Sistem fail yang tidak boleh melakukan reflink menggagalkan penyediaan itu dan bukannya menyalin.
+- Satu proses pada hos pelayan
+- Token model, yang terkumpul bagi setiap ejen
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/) for the two commands that do have one.
+Kos terkumpul dalam **Kebolehcerapan → Wawasan**. Perhatikan bahawa giliran interaktif biasa tiada siling perbelanjaan; lihat [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/) untuk dua perintah yang memilikinya.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [Build an agent team](/ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen/)
-- [Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
-- [Add repos to a workspace](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Bina pasukan ejen](/ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen/)
+- [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
+- [Tambah repositori ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
-- [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)

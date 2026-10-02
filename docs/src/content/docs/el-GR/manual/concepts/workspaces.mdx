@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Χώροι εργασίας και απομόνωση
+description: Γιατί ένας χώρος εργασίας είναι ένα αυστηρό όριο μισθωτή, πώς ο διαχωρισμός των βάσεων δεδομένων κάνει αυτό το όριο δομικό και τι το διαπερνά σκόπιμα.
 slug: el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Τι είναι ένας χώρος εργασίας;
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Ένας χώρος εργασίας είναι ο μισθωτής απομόνωσης ανώτατου επιπέδου στο Control Center. Ομαδοποιεί πράκτορες, αποθετήρια, χώρους, εισιτήρια, μνήμη, pipeline και μέλη σε ένα οριοθετημένο πλαίσιο. Ό,τι συμβαίνει μέσα σε έναν χώρο εργασίας παραμένει μέσα σε αυτόν.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Ένας τυπικός χώρος εργασίας αντιστοιχίζεται σε ένα έργο ή μία βάση κώδικα. Μπορεί να έχετε ξεχωριστούς χώρους εργασίας για τα «api-service», «frontend-v2» και «infrastructure».
 
-## Workspace-scoped data
+## Δεδομένα με εμβέλεια χώρου εργασίας
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Οι εγγραφές ενός χώρου εργασίας ζουν στο δικό του αρχείο SQLite, στο `<dataDir>/<workspaceId>/workspace.db`. Κάθε χώρος εργασίας παίρνει έναν κατάλογο αντί για ένα σκέτο αρχείο, επειδή ένας χώρος εργασίας συσσωρεύει περισσότερα από μια βάση δεδομένων — worktrees ανά συνομιλία, τα αρχεία πράκτορα και δεξιοτήτων, διαπιστευτήρια chat bot — και το να του δώσετε φάκελο σημαίνει ότι όλα αυτά ζουν και διαγράφονται μαζί.
 
-| Entity                                              | Scope                                        |
+| Οντότητα                                            | Εμβέλεια                                     |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Πράκτορες                                           | Ανήκουν σε ακριβώς έναν χώρο εργασίας        |
+| Αποθετήρια                                          | Καταχωρίζονται σε έναν χώρο εργασίας (δείτε παρακάτω) |
+| Χώροι, συνομιλίες και μηνύματα                      | Εμβέλεια χώρου εργασίας                      |
+| Εισιτήρια, έργα, σχέδια, ενορχηστρώσεις            | Εμβέλεια χώρου εργασίας                      |
+| Γεγονότα μνήμης, πολιτικές, τομείς, παραχωρήσεις πρόσβασης | Εμβέλεια χώρου εργασίας              |
+| Εκτελέσεις pipeline, πρότυπα, ενεργοποιητές         | Εμβέλεια χώρου εργασίας                      |
+| Κατάσταση pull request, χώροι ελέγχου, κοόρτες ελέγχου | Εμβέλεια χώρου εργασίας                   |
+| Αρχεία καταγραφής εκτελέσεων πράκτορα και μνήμη εργασίας | Εμβέλεια χώρου εργασίας                |
+| Μέλη, προσκλήσεις, παραχωρήσεις ανά αποθετήριο      | Εμβέλεια χώρου εργασίας                      |
+| Σύμβολα και ακμές του γραφήματος κώδικα             | Εμβέλεια κατά `repoId` μέσα στο αρχείο του χώρου εργασίας |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Οι περισσότερες από αυτές τις εγγραφές φέρουν στήλη `workspaceId`· ξεχωριστά αρχεία βάσης δεδομένων επιβάλλουν την απομόνωση. Δείτε την αναλλοίωτη συνθήκη απομόνωσης παρακάτω.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Τα αποθετήρια έχουν εμβέλεια χώρου εργασίας· η ταυτότητα μεταξύ χώρων εργασίας είναι κατά διαδρομή
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Μια εγγραφή αποθετηρίου ζει στο δικό του αρχείο βάσης δεδομένων του χώρου εργασίας — το αρχείο _είναι_ η εμβέλεια, οπότε ο πίνακας δεν έχει στήλη `workspaceId` ούτε πίνακα συνένωσης.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Προσθέτετε ένα αποθετήριο σε έναν χώρο εργασίας στις Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια. Η καταχώριση του ίδιου checkout σε δύο χώρους εργασίας δημιουργεί δύο ανεξάρτητες εγγραφές με δύο αναγνωριστικά· η ταυτότητα του αποθετηρίου _μεταξύ_ χώρων εργασίας είναι κατά διαδρομή συστήματος αρχείων (ή κατά ιδιοκτήτη/όνομα στο GitHub), ποτέ κατά αναγνωριστικό.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Η καταχώριση είναι αυστηρή: η διαδρομή πρέπει να βρίσκεται μέσα σε ένα δέντρο εργασίας git, πρέπει να έχει ένα απομακρυσμένο `origin` και αυτό το απομακρυσμένο να δείχνει σε έναν υποστηριζόμενο κεντρικό υπολογιστή κώδικα (github.com, gitlab.com ή bitbucket.org). Ο κεντρικός υπολογιστής κώδικα διαβάζεται από το απομακρυσμένο και αποθηκεύεται στο αποθετήριο, οπότε ένας χώρος εργασίας μπορεί να κρατά αποθετήρια και από τους τρεις. Οτιδήποτε άλλο απορρίπτεται. Ο περιηγητής φακέλων από τον οποίο επιλέγετε απαριθμεί το σύστημα αρχείων **του κεντρικού υπολογιστή του διακομιστή**, περιορισμένος στη λίστα επιτρεπόμενων `--repo-roots` του διακομιστή (η οποία έχει ως προεπιλογή τον αρχικό κατάλογο του χρήστη του διακομιστή).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Η αφαίρεση ενός αποθετηρίου από έναν χώρο εργασίας διαγράφει την εγγραφή οριστικά και συμπαρασύρει τα σύμβολα κώδικα, τις ακμές, τα αρχεία, τα σημεία ελέγχου του ευρετηρίου και τις παραχωρήσεις ανά μέλος. Το checkout στον δίσκο μένει άθικτο.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Το γράφημα κώδικα ζει στο ίδιο αρχείο, με κλειδί το `repoId`, επειδή διαφορετικοί χώροι εργασίας μπορεί να έχουν το ίδιο αποθετήριο σε διαφορετικούς κλάδους με διαφορετικό κώδικα.
 
-## The isolation invariant
+## Η αναλλοίωτη συνθήκη απομόνωσης
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Οι διαρροές δεδομένων μεταξύ χώρων εργασίας αντιμετωπίζονται ως σφάλματα. Η απομόνωση είναι **δομική** και επιβάλλεται σε πολλά επίπεδα:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Επίπεδο βάσης δεδομένων.** Κάθε χώρος εργασίας έχει το δικό του αρχείο SQLite, που το παραχωρεί το `WorkspaceDatabaseManager.of(workspaceId)`. Μια βάση δεδομένων χώρου εργασίας δεν δηλώνει τους πίνακες `users`, `workspaces` ή οποιουδήποτε άλλου χώρου εργασίας, οπότε μια ανάγνωση μεταξύ χώρων εργασίας δεν είναι σφάλμα που μπορείτε να γράψετε — δεν μεταγλωττίζεται. Τα αποθετήρια επιλύουν το DAO τους ανά κλήση αντί να το αποθηκεύουν στην προσωρινή μνήμη και, επειδή κάθε μέθοδος αποθετηρίου παίρνει υποχρεωτικό `workspaceId`, ο χώρος εργασίας δεν μπορεί ποτέ να συναχθεί ούτε να λάβει προεπιλεγμένη τιμή.
+- **Το αναγνωριστικό του χώρου εργασίας είναι τμήμα διαδρομής.** Επειδή το αναγνωριστικό γίνεται όνομα καταλόγου, πρέπει να ταιριάζει με ένα ασφαλές μοτίβο ενός μόνο τμήματος (ξεκινά με αλφαριθμητικό, μετά αλφαριθμητικά, τελείες, κάτω παύλες, παύλες· όχι `..`). Τα αναγνωριστικά είναι UUID παντού στο προϊόν. Οτιδήποτε άλλο πετάει εξαίρεση αντί να καθαριστεί — αυτός είναι ο φύλακας κατά της διαπέρασης διαδρομών και αποτυγχάνει θορυβωδώς αντί να γράψει τα δεδομένα ενός χώρου εργασίας σε διαδρομή που διάλεξε κάποιος άλλος.
+- **Άμυνα σε βάθος.** Οι στήλες `workspaceId` είναι ακόμη εκεί και εξακολουθούν να γράφονται. Πλεονασματικές μέσα σε ένα αρχείο, κρατούν αμετάβλητους τους ενεργοποιητές της ροής συγχρονισμού, τα ευρετήρια FTS και τα υπάρχοντα σχήματα εγγραφών, και κάνουν ένα αρχείο αυτοπεριγραφόμενο όταν εξετάζεται μόνο του — κάτι στο οποίο βασίζονται η εξαγωγή και η εισαγωγή.
+- **Επίπεδο τομέα.** Οι υπηρεσίες που μεταβάλλουν οντότητες κατά αναγνωριστικό επικυρώνουν το `entity.workspaceId == workspaceId` σε ένα μόνο σημείο ελέγχου πριν προχωρήσουν και πετούν `WorkspaceMismatchException` σε περίπτωση ασυμφωνίας — η θορυβώδης αποτυχία για ένα αναγνωριστικό που έφτασε από λάθος πλαίσιο. Η θορυβώδης άρνηση έχει σημασία: μια σιωπηλή ενέργεια που δεν κάνει τίποτα κρύβει το σφάλμα, ενώ η συνέχιση προκαλεί διαρροή.
+- **Επίπεδο RPC.** Ο αποστολέας repo-RPC είναι το σημείο ελέγχου. Κάθε ενέργεια με εμβέλεια χώρου εργασίας πρέπει να φέρει `workspace_id` στα δικά της ορίσματα — δεν υπάρχει «τρέχων χώρος εργασίας» ανά συνεδρία για να διαρρεύσει, και ένα άγνωστο αναγνωριστικό απορρίπτεται ως μη βρέθηκε _πριν_ ανοίξει οτιδήποτε βάση δεδομένων, ώστε ένα κακό αναγνωριστικό να μην μπορεί να υλοποιήσει ένα φάντασμα `workspace.db`. Γνήσια καθολικές ενέργειες (η ροή ειδήσεων, η ουρά του στόλου) δηλώνουν τον εαυτό τους χωρίς εμβέλεια ως ρητή απόφαση που έχει περάσει από έλεγχο. Τα εργαλεία MCP ακολουθούν τον ίδιο κανόνα: κάθε εργαλείο που αγγίζει δεδομένα με εμβέλεια χώρου εργασίας απαιτεί `workspace_id`.
+- **Η διασπορά μεταξύ χώρων εργασίας είναι απαριθμήσιμη.** Η απάντηση σε μια ερώτηση για πολλούς χώρους εργασίας σημαίνει άνοιγμα πολλών βάσεων δεδομένων. Αυτή η διασπορά περιορίζεται σε ένα βοηθητικό στοιχείο, το `CrossWorkspaceQueries`, ώστε ο πλήρης κατάλογος των πραγμάτων που διαπερνούν νόμιμα το όριο να βρίσκεται στα σημεία κλήσης ενός αρχείου αντί να διαχέεται πίσω από σχόλια τεκμηρίωσης. Τα σημεία κλήσης αυτά είναι: συγκέντρωση σε επίπεδο διακομιστή, εργασίες συμφιλίωσης κατά την εκκίνηση, σαρώσεις διατήρησης και GC, δημιουργία αντιγράφων ασφαλείας, δρομολογητές γεγονότων — και η αναζήτηση μέλους παρακάτω.
+- **Η πρόσβαση μόνο με αναγνωριστικό δεν αρκεί.** Η αναζήτηση μιας οντότητας με το UUID της δεν αποδεικνύει ότι ανήκει στον χώρο εργασίας του καλούντος. Ο διαχωρισμός αρχείων κάνει το λάθος αρχείο μη προσπελάσιμο· η επικύρωση στο επίπεδο τομέα πιάνει ένα λάθος αναγνωριστικό που φτάνει μέσα από ένα νόμιμο αρχείο.
 
-## Membership, not the pairing key, is what grants access
+## Η ιδιότητα μέλους, όχι το κλειδί σύζευξης, είναι αυτό που παραχωρεί πρόσβαση
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Η κατοχή ενός διαπιστευτηρίου συσκευής επαληθεύει την ταυτότητα μιας _συσκευής_. Δεν εξουσιοδοτεί τίποτα μέσα σε έναν χώρο εργασίας. Κάθε ενέργεια με εμβέλεια χώρου εργασίας επιλύει τον ρόλο μέλους του καλούντος και επιβάλλει ένα κατώτατο όριο που προκύπτει από το είδος της ενέργειας — η ανάγνωση χρειάζεται `guest`, μια μετάλλαξη χρειάζεται `member`, μια καταστρεπτική ενέργεια χρειάζεται `admin` — και οι ενέργειες που εκθέτουν περιεχόμενο αποθετηρίου ελέγχουν επιπλέον την παραχώρηση του καλούντος ανά αποθετήριο. Ένα έγκυρο κλειδί σύζευξης χωρίς ιδιότητα μέλους λαμβάνει `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Η συνέπεια για την απομόνωση είναι κομψή: οι εγγραφές των μελών ζουν στο _δικό του_ αρχείο του χώρου εργασίας, οπότε το «ποιοι είναι σε αυτόν τον χώρο εργασίας;» είναι μια συνηθισμένη ανάγνωση με εμβέλεια. Η αντίστροφη ερώτηση — «σε ποιους χώρους εργασίας βρίσκομαι;» — είναι εξ ορισμού κατανεμημένη σε πολλά αρχεία, οπότε είναι μία από τις λίγες εγκεκριμένες διασπορές του `CrossWorkspaceQueries` και είναι αυτή που εκτελεί ο επιλογέας χώρου εργασίας πριν επιλεγεί οποιοσδήποτε χώρος εργασίας.
 
-See [Multiplayer](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/) for the role ladder and repo grants.
+Δείτε τη [Συνεργασία και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/) για την κλίμακα ρόλων και τις παραχωρήσεις αποθετηρίων.
 
-## The global registry
+## Το καθολικό μητρώο
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Δεν έχουν όλα εμβέλεια χώρου εργασίας. Μια δεύτερη βάση δεδομένων, το `<dataDir>/global.db`, περιέχει ό,τι είναι γνήσια σε επίπεδο διακομιστή:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- το **μητρώο χώρων εργασίας**, ώστε ο εναλλαγέας να μπορεί να απαριθμεί κάθε χώρο εργασίας χωρίς να ανοίξει ούτε ένα αρχείο χώρου εργασίας — και ώστε το όνομα, το λογότυπο, ο ιδιοκτήτης, η χειροκίνητη σειρά και ο δείκτης μαλακής διαγραφής ενός χώρου εργασίας να βρίσκονται έξω από το αρχείο που περιγράφουν;
+- **ταυτότητα**: χρήστες, προτιμήσεις χρήστη και συζευγμένες συσκευές, επειδή ένας άνθρωπος είναι ένας χρήστης σε κάθε χώρο εργασίας και μια συζευγμένη συσκευή επιβιώνει από τη διαγραφή ενός χώρου εργασίας;
+- την **ουρά του στόλου** (εργάτες, εργασίες, αρχείο καταγραφής τοποθέτησης), της οποίας ο χρονοπρογραμματιστής αντιπαραβάλλει ολόκληρη την ουρά με κάθε εργάτη σε κάθε κύκλο;
+- τη **ροή ειδήσεων**, η οποία είναι ανά χρήστη (όχι ανά χώρο εργασίας) — η προσθήκη μιας ροής σας ακολουθεί σε κάθε χώρο εργασίας;
+- το **`workspace_routes`**, το ευρετήριο πριν από τον έλεγχο ταυτότητας που απαντά «ποιος χώρος εργασίας κατέχει αυτό το κλειδί;» για σημεία εισόδου που φτάνουν με τίποτα άλλο παρά ένα μυστικό ή ένα αδιαφανές αναγνωριστικό (έναν κατακερματισμό πρόσκλησης, ένα token webhook, έναν βαθύ σύνδεσμο) και χωρίς χώρο εργασίας. Μια αστοχία εκεί είναι μη βρέθηκε· σκόπιμα δεν υπάρχει εφεδρική σάρωση;
+- **ρυθμίσεις και ταυτότητα σε επίπεδο εγκατάστασης**: το αναγνωριστικό της εγκατάστασης, ρυθμίσεις σε επίπεδο κεντρικού υπολογιστή, συνδέσεις SSO και πολιτικές διαχειριζόμενων ενεργειών (ένας περιορισμός σε επίπεδο εγκατάστασης που μπορεί μόνο να στενέψει τους περιορισμούς του χώρου εργασίας).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Η εκκίνηση ανοίγει μόνο αυτό το αρχείο. Τα αρχεία χώρων εργασίας ανοίγουν καθυστερημένα με το πρώτο άγγιγμα, ώστε το κόστος εκκίνησης να μένει σταθερό ανεξάρτητα από το πόσο ιστορικό συσσωρεύουν οι χώροι εργασίας και το `quick_check` ανά αρχείο να πληρώνεται με την πρώτη χρήση και όχι στη διαδρομή προς το πανό ετοιμότητας.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Ένα αρχείο χώρου εργασίας φέρει μόνο ένα `workspace_meta` μιας εγγραφής για αυτοπροσδιορισμό (το αναγνωριστικό του, την εγκατάσταση που το δημιούργησε, την έκδοση σχήματος με την οποία δημιουργήθηκε, πότε). Όλα τα περιγραφικά στοιχεία ενός χώρου εργασίας βρίσκονται στο μητρώο.
 
-## Creating a workspace
+## Δημιουργία χώρου εργασίας
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Η δημιουργία ενός χώρου εργασίας κάνει περισσότερα από το να εισάγει μια εγγραφή στο μητρώο. Σε μία ενέργεια, ο διακομιστής σφραγίζει τον χρήστη που δημιουργεί ως `ownerUserId`, καταγράφει την ιδιότητα μέλους του χρήστη αυτού με ρόλο ιδιοκτήτη και δημοσιεύει ένα γεγονός τομέα `WorkspaceCreated`. Οι ακροατές αυτού του γεγονότος τροφοδοτούν κατόπιν, με τρόπο ιδιοδύναμο και στο παρασκήνιο:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- έναν **πράκτορα CEO** και τέσσερις ειδικούς — `qa`, `architect`, `engineer`, `librarian` — με τους ειδικούς να αναφέρονται στον CEO;
+- τα **ενσωματωμένα πρότυπα pipeline** και τους ενεργοποιητές τους (οι ενεργοποιητές γεγονότος και οι χειροκίνητοι παραδίδονται ενεργοποιημένοι· οι προγραμματισμένοι είναι προαιρετικοί, εκτός από τη νυχτερινή σάρωση GC των worktrees);
+- τις **αρχικές σουίτες αξιολόγησης**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
+Αυτό συμβαίνει για _κάθε_ χώρο εργασίας, όχι μόνο για τον πρώτο. Οι πράκτορες που εφοδιάζονται δημιουργούνται χωρίς προσαρμογέα, οπότε εκτελούνται στο **Control Center (built-in)** με το προεπιλεγμένο μοντέλο της Anthropic (`claude-opus-4-8`, εκτός αν ορίσετε κάποιο άλλο) μέχρι να ορίσετε προσαρμογέα και μοντέλο ανά πράκτορα στις Ρυθμίσεις → Χώρος εργασίας → Πράκτορες. Δείτε [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Η εγγραφή της ιδιότητας μέλους του ιδιοκτήτη έχει μεγαλύτερη σημασία απ' ό,τι φαίνεται: χωρίς αυτήν, ο νεοδημιουργημένος χώρος εργασίας δεν θα είχε μέλη και κάθε κλήση με εμβέλεια χώρου εργασίας που θα έκανε στη συνέχεια ο δημιουργός θα απορριπτόταν.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Οι πράκτορες δεν μπορούν να δημιουργήσουν χώρο εργασίας]
+Δεν υπάρχει εργαλείο MCP `create_workspace`. Οι άνθρωποι δημιουργούν έναν χώρο εργασίας μέσω του `workspace.create` (σημείο ελέγχου μόνο με όνομα) ή του `workspace.upsert` (πλήρης εγγραφή, που χρησιμοποιείται και για ενημερώσεις). Και τα δύο σφραγίζουν τον χρήστη που δημιουργεί ως `owner` και δημοσιεύουν το `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Διαγραφή, εξαγωγή, εισαγωγή
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Η διαγραφή ενός χώρου εργασίας **σημαδεύει την εγγραφή του μητρώου και αποσυνδέει τον κατάλογο**. Ο χώρος εργασίας εξαφανίζεται από κάθε λίστα και κάθε αναζήτηση. Η εγγραφή του μητρώου παραμένει (μαλακά διαγραμμένη) ώστε το αναγνωριστικό να είναι ακόμη γνωστό στο αντίγραφο ασφαλείας και στη συντήρηση, αλλά το `workspace.delete` απορρίπτει αμέσως τον κατάλογο αυτού του χώρου εργασίας — βάση δεδομένων, worktrees, αρχεία πράκτορα και τα λοιπά — μέσω του `WorkspaceDatabaseManager.dropAndClose`. Μόνο ο **ιδιοκτήτης** του χώρου εργασίας μπορεί να τον διαγράψει.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Επειδή ένας χώρος εργασίας είναι ένα αρχείο, το να δώσετε έναν χώρο εργασίας αλλού είναι λειτουργία αρχείου και όχι εξαγωγή πίνακα προς πίνακα:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- το `workspace.export` είναι ένα μόνο `VACUUM INTO` — ένα συνεπές, αποσυμπιεσμένο στιγμιότυπο που λαμβάνεται μέσα σε συναλλαγή ανάγνωσης ενώ ο διακομιστής συνεχίζει να εξυπηρετεί.
+- το `workspace.import` υιοθετεί ένα τέτοιο αρχείο, αντικαθιστώντας ό,τι κρατά αυτή τη στιγμή ο χώρος εργασίας-στόχος. Το ενσωματωμένο `workspace_meta` επιτρέπει σε μια εισαγωγή να ξεχωρίσει το «δικό μου αρχείο, που υιοθετήθηκε ξανά» από «ένα αρχείο από άλλη εγκατάσταση» (το δεύτερο επιτρέπεται, αλλά καταγράφεται αντί να μένει αόρατο).
+- το `server.backupNow` αποτυπώνει ολόκληρη την εγκατάσταση σε έναν κατάλογο με χρονοσφραγίδα που καθρεφτίζει τον ζωντανό κατάλογο δεδομένων — `manifest.json`, `global.db` και ένα `<workspaceId>/workspace.db` ανά χώρο εργασίας — ώστε η επαναφορά να είναι αντιγραφή του πίσω.
+- το `server.listBackups` διαβάζει πίσω αυτόν τον κατάλογο, από το νεότερο προς το παλαιότερο, με το μέγεθος και τη λίστα χώρων εργασίας κάθε στιγμιότυπου. Ένα στιγμιότυπο του οποίου το manifest λείπει ή ονομάζει αρχεία που δεν υπάρχουν εξακολουθεί να αναφέρεται, επισημασμένο ως ελλιπές — το να το κρύψετε είναι ο τρόπος με τον οποίο ένας διαχειριστής φτάνει να πιστεύει ότι έχει ένα αντίγραφο ασφαλείας που δεν έχει.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Οι λειτουργίες αντιγράφων ασφαλείας βρίσκονται στις **Ρυθμίσεις → Διακομιστής → Αντίγραφο ασφαλείας και επαναφορά**: το **Αντίγραφο ασφαλείας τώρα** λαμβάνει ένα στιγμιότυπο της εγκατάστασης, η λίστα δείχνει ποια στιγμιότυπα είναι πλήρη και επιτρέπει στον ιδιοκτήτη της εγκατάστασης να διαγράψει ένα μετά από επιβεβαίωση, και κάθε χώρος εργασίας προσφέρει εξαγωγή και εισαγωγή. Το ενσωματωμένο pipeline **Workspace backup** παίρνει μόνο τη βάση δεδομένων αυτού του χώρου εργασίας σε εβδομαδιαίο πρόγραμμα και διαγράφει τα δικά του αντίγραφα ασφαλείας που είναι παλαιότερα από τη διαμορφωμένη ηλικία διατήρησης. Η επαναφορά ενός χώρου εργασίας από ένα στιγμιότυπο εγκατάστασης είναι `workspace.import` στραμμένο στο `<workspaceId>/workspace.db` του στιγμιότυπου· η επαναφορά ολόκληρης της εγκατάστασης παραμένει αντιγραφή προς τα πίσω του καταλόγου του στιγμιότυπου με τον διακομιστή σταματημένο.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/#what-a-backup-does-not-contain) has the full table.
+Αυτό που δεν μεταφέρει κανένα από αυτά είναι ο υπόλοιπος κατάλογος του χώρου εργασίας. Ένας χώρος εργασίας συσσωρεύει περισσότερα από μια βάση δεδομένων — επικολλημένες εικόνες, αρχεία δεξιοτήτων και πρακτόρων, διαπιστευτήρια chat, worktrees — και η εξαγωγή και η εισαγωγή μετακινούν το **αρχείο**, οπότε ό,τι βρίσκεται δίπλα του μένει εκεί που είναι. Αυτό είναι σκόπιμο για τα διαπιστευτήρια και αναλώσιμο για τα worktrees· για τα υπόλοιπα είναι ένας περιορισμός που πρέπει να γνωρίζετε και όχι ένα χαρακτηριστικό. Η [αναφορά αντιγράφων ασφαλείας](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/#what-a-backup-does-not-contain) έχει τον πλήρη πίνακα.
 
-## Moving a backup between the server and your device
+## Μετακίνηση αντιγράφου ασφαλείας μεταξύ του διακομιστή και της συσκευής σας
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Κάθε ενέργεια παραπάνω μιλά με διαδρομές στον **διακομιστή**, που είναι πλήρης απάντηση μόνο όταν ο διακομιστής είναι το δικό σας μηχάνημα. Τρεις υπογεγραμμένες διαδρομές HTTP — [`/backup/workspace`, `/backup/snapshot` και `/backup/restore`](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/#transfer-routes) — μεταφέρουν τα byte για κάθε άλλη τοπολογία, στην ίδια πιστοποιημένη λωρίδα που χρησιμοποιούν ήδη ο μεσολαβητής πολυμέσων και η αποθήκη εικόνων. Στη σελίδα αυτό είναι ένα κουμπί **Λήψη** δίπλα σε κάθε εξαγωγή και κάθε στιγμιότυπο (επιλέγετε πού θα καταλήξει) και **Επιλογή αρχείου και μεταφόρτωση** για επαναφορά από αρχείο που βρίσκεται στο μηχάνημα που χρησιμοποιείτε. Η μεταφόρτωση είναι εκείνη που λειτουργεί όταν ο διακομιστής δεν είναι το μηχάνημά σας: το `workspace.import` χρειάζεται το αρχείο να βρίσκεται ήδη στο μηχάνημα-διακομιστή, και έτσι φτάνει εκεί.
 
-Three properties are worth knowing:
+Τρία χαρακτηριστικά αξίζει να γνωρίζετε:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Η λήψη παράγει ένα φρέσκο αντίγραφο και ο διακομιστής δεν κρατά τίποτα από αυτό.** Η λήψη δεν είναι «πάρε το αρχείο που έφτιαξε το κουμπί εξαγωγής» — εξάγει ξανά, μεταδίδει αυτό και το διαγράφει. Η απόκριση είναι `no-store` με `Accept-Ranges: none` για τον ίδιο λόγο: ένα συνεχιζόμενο range θα συνέραπτε δύο διαφορετικές εξαγωγές σε ένα αρχείο που φαίνεται έγκυρο και δεν είναι.
+- **Η μεταφόρτωση γίνεται με ροή προς τον δίσκο, ποτέ με ενδιάμεση αποθήκευση**, και στα δύο άκρα, και το σταθμευμένο αντίγραφο διαγράφεται σε κάθε διαδρομή εξόδου — ακόμη και σε άρνηση. Μια βάση δεδομένων χώρου εργασίας δεν είναι στιγμιότυπο οθόνης.
+- **Μια αναμεταδιδόμενη σύνδεση δεν έχει προέλευση HTTP**, οπότε τα στοιχεία ελέγχου μεταφοράς είναι απενεργοποιημένα εκεί, με σημείωση που εξηγεί γιατί. Ό,τι μιλά με διαδρομές στην πλευρά του διακομιστή συνεχίζει να λειτουργεί μέσω της αναμετάδοσης· μόνο οι λωρίδες byte χρειάζονται άμεση σύνδεση.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Ποιες διαδρομές ανήκουν σε ποιον]
+Οι διαδρομές που *δείχνει* η σελίδα — ο κατάλογος στιγμιότυπων, το αρχείο που έγραψε μια εξαγωγή, η πηγή που διαβάζει μια εισαγωγή — βρίσκονται στο μηχάνημα που εκτελεί το `cc_server`. Η διαδρομή που αναφέρει μια **λήψη** βρίσκεται στο μηχάνημα όπου κάθεστε. Αυτή η διάκριση είναι ο λόγος που υπάρχουν και οι δύο: η πρώτη είναι αυτό που χρειάζεται ένα σενάριο συντήρησης ή μια συνεδρία ssh, η δεύτερη είναι αυτό που χρειάζεται ένας άνθρωπος που συλλέγει ένα αντίγραφο ασφαλείας.
 :::
 
-## Multiple workspaces
+## Πολλοί χώροι εργασίας
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Μπορείτε να εκτελέσετε πολλούς χώρους εργασίας παράλληλα. Καθένας λειτουργεί ανεξάρτητα: οι πράκτορες σε έναν χώρο εργασίας δεν μπορούν να στείλουν μήνυμα σε πράκτορες άλλου, δεν μπορούν να διαβάσουν τη μνήμη άλλου χώρου εργασίας και δεν μπορούν να δουν τα εισιτήριά του. Η επίλυση παραληπτών για μηνύματα πράκτορα προς πράκτορα είναι ακριβής και δεν διαπερνά ποτέ έναν χώρο εργασίας.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Δεν υπάρχει πίνακας ελέγχου μεταξύ χώρων εργασίας. Η επιφάνεια αναλυτικών στοιχείων στο `/workspaces/:workspaceId/observability` συνδρομείται σε μια οριοθετημένη καθολική ροή πρόσφατων εκτελέσεων και αμέσως την περιορίζει στον ενεργό χώρο εργασίας, οπότε αυτό που βλέπετε εκεί είναι ένας χώρος εργασίας τη φορά. Οι μόνες γνήσια επιφάνειες πολλών χώρων εργασίας που αγγίζει ένας άνθρωπος είναι ο επιλογέας χώρου εργασίας και ο εναλλαγέας.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Ένα πρακτικό όριο που αξίζει να γνωρίζετε: ένας χώρος εργασίας που τον χρησιμοποιεί κάποιος μένει ανοιχτός — δεν υπάρχει LRU. Πάνω από 32 από αυτούς, ο διακομιστής προειδοποιεί αντί να αρνείται, επειδή κάθε ανοιχτό αρχείο κρατά ένα isolate παρασκηνίου και μια προσωρινή μνήμη σελίδων. Η διασπορά μεταξύ χώρων εργασίας ανοίγει αρχεία παροδικά και τα κλείνει μετά, αν δεν τα έχει διεκδικήσει κάτι άλλο.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Multiplayer](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): agents belong to exactly one workspace
-- [Memory and knowledge](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/): memory is workspace-scoped
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): where the databases sit in the client/server split
-- [Back up and restore](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/): every operation, route, manifest field and limit
-- [Add repositories](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/): registering a checkout into a workspace
+- [Συνεργασία και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): ιδιότητα μέλους, ρόλοι και παραχωρήσεις αποθετηρίων — το μισό της απομόνωσης που αφορά την πρόσβαση
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): οι πράκτορες ανήκουν σε ακριβώς έναν χώρο εργασίας
+- [Μνήμη και γνώση](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/): η μνήμη έχει εμβέλεια χώρου εργασίας
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): πού βρίσκονται οι βάσεις δεδομένων στον διαχωρισμό πελάτη/διακομιστή
+- [Αντίγραφο ασφαλείας και επαναφορά](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/): λήψη στιγμιότυπου, μετακίνηση ενός χώρου εργασίας, τήρηση αντιγράφων αλλού
+- [Αντίγραφο ασφαλείας, εξαγωγή και εισαγωγή](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/): κάθε λειτουργία, διαδρομή, πεδίο manifest και όριο
+- [Προσθήκη αποθετηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/): καταχώριση ενός checkout σε έναν χώρο εργασίας

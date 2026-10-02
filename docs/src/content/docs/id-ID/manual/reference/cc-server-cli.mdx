@@ -1,193 +1,201 @@
 ---
-title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+title: CLI cc_server
+description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
+lalu variabel lingkungan, lalu nilai bawaan. Kredensial pihak ketiga adalah
+pengecualiannya — lihat di bawah.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Flag yang tidak dikenal diabaikan secara diam-diam]
+Parser argumen dibuat sendiri dan melewati apa pun yang tidak dikenali, sehingga salah ketik
+(`--tls-key-file`, `--bindany`) tidak menghasilkan galat — server tetap mulai dengan nilai
+bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
 :::
 
-## Core
+## Inti
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| Flag            | Env                    | Bawaan                                           | Arti                                                                                                           |
 | --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | direktori data aplikasi per pengguna OS (lihat di bawah) | Basis data, rahasia, model, dan media yang di-cache                                                   |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | Port TCP (`0` = sementara)                                                                                     |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, atau `any`/`all`/`0.0.0.0` untuk semua antarmuka (perlu TLS atau `--insecure`)                     |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | direktori home pengguna server                   | Direktori dasar yang dipisahkan koma yang boleh dijelajahi klien saat mendaftarkan repo. Menjelajah di atas sebuah root ditolak |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, atau `error`. Baris booting/ready selalu dicetak                                    |
+| `--server-name` | `CC_SERVER_NAME`       | hostname mesin                                   | Nama yang ditampilkan di pemilih, penemuan, dan antarmuka pemasangan                                           |
 
-## Reachability and TLS
+## Keterjangkauan dan TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
+| Flag                | Env                         | Bawaan                        | Arti                                                                                                                                                         |
 | ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | belum disetel                 | Rantai sertifikat PEM. Menyajikan `wss://` di dalam proses bila disetel bersama kuncinya                                                                     |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | belum disetel                 | Kunci privat PEM yang cocok dengan sertifikatnya                                                                                                             |
+| `--insecure`        | `CC_SERVER_INSECURE`        | nonaktif                      | Izinkan pengikatan non-loopback plaintext. Hanya di balik proxy terminasi TLS pada jaringan tepercaya; diabaikan bila TLS dikonfigurasi                       |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | diturunkan dari pengikatan    | URL RPC yang diiklankan server ini ke klien yang dipasangkan. **Setel ini secara eksplisit di balik proxy, NAT, atau tunnel** — nilai bawaannya hanya perkiraan dari pengikatan lokal |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Origin peramban yang dipisahkan koma yang diizinkan menghubungi `/rpc` lintas origin. Loopback dan klien native selalu diizinkan                               |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | belum disetel                 | Origin klien web yang dihosting, tempat callback single sign-on dipantulkan kembali                                                                           |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | Broker relay yang diikuti server ini agar ponsel dapat menjangkaunya tanpa jalur langsung                                                                     |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | Iklan LAN: `auto` (hanya bila diikat di luar loopback), `on`, `off`. Penemuan hanya mengiklankan keberadaan — bergabung tetap memerlukan pemasangan             |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Penyedia tunnel terkelola: `off`, `cloudflared`, `ngrok`, `tailscale`. Eksposur publik bersifat opsional                                                       |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | diselesaikan dari `PATH`      | Jalur biner tunnel yang eksplisit                                                                                                                             |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | belum disetel                 | SHA-256 yang diharapkan dari biner itu, diverifikasi sebelum setiap spawn                                                                                      |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | kosong                        | Argumen tambahan yang dipisahkan koma untuk pemanggilan tunnel                                                                                                 |
 
-## Indexing and third-party credentials
+## Pengindeksan dan kredensial pihak ketiga
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
+| Flag                     | Env                             | Bawaan                                | Arti                                                                                                                         |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Apakah run agen dibungkus dalam sandbox native OS host bila tersedia. Penolakan ikut (opt-out), bukan pengaktifan — lihat di bawah |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Sakelar pemutus lapangan untuk pengindeksan graf kode latar belakang. `off` melakukan boot bersih tanpa build ulang           |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Detik untuk menahan penyapuan indeks pertama setelah banner siap (dibatasi 0–300)                                             |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Apakah run harness mengirim kumpulan alat residen yang kecil plus indeks nama, lalu memuat sisanya saat pertama dipakai. Lihat di bawah |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Detik sebuah run diparkir menunggu manusia memperbaiki kredensial yang tidak dapat melayaninya (dibatasi 0–3600). Lihat di bawah |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+Nilai kosong untuk sebuah kredensial dibaca sebagai belum disetel, sehingga fallback
+bawaan tetap berlaku. Build dari sumber sama sekali tidak membawa kredensial bawaan.
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar dan pemilih GIF Klipy **hanya dapat diatur lewat variabel lingkungan** —
+tidak ada flag `--google-client-id` / `--klipy-app-key` (flag yang tidak dikenal
+diabaikan). Setel `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, dan
+`KLIPY_APP_KEY`, di lingkungan (atau `.env` di samping server). Nilai kosong
+menonaktifkan fitur itu alih-alih menggagalkan boot.
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+Server memeriksa host sekali saat boot dan membungkus eksekusi perintah agen dalam
+sandbox native OS bila backend tersedia: `sandbox-exec` (Seatbelt) di macOS,
+`bwrap` plus `socat` di Linux dan WSL2. Bila tidak ada — Windows, atau host Linux yang
+tidak memiliki alat tersebut — run jatuh ke sanitasi lingkungan, kebijakan perintah, dan
+pagar pengaman tindakan, dan log startup menyebutkan keadaan mana yang berlaku.
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` adalah sakelar pemutus lapangan untuk kasus yang tidak dapat dilihat
+pemeriksaan: host tempat profil sandbox itu sendiri berperilaku salah. Ini tidak
+memerlukan build ulang dan server mencatat peringatan sepanjang umur proses sehingga
+keadaan itu tidak pernah senyap.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/id-ID/panduan-pengguna/konsep/konteks-alat).
+Run harness bawaan mengirim kumpulan residen kecil berisi definisi alat plus indeks
+hanya nama untuk sisanya, yang memuat skemanya saat pertama kali dipakai. Ini memangkas
+blok alat sekitar 78% dan menjaga kumpulan yang selalu terlihat tetap dalam rentang tempat
+model memilih alat secara andal. Alat yang ditangguhkan tetap dapat dipanggil dengan
+namanya sepanjang run, dan `search_tools` menemukannya berdasarkan maksud. Lihat
+[Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` membuat setiap alat yang diizinkan kembali residen, mereproduksi
+permintaan yang dibuat server sebelum penangguhan ada. Ini sakelar pemutus untuk model
+yang buruk dalam menangani permukaan dua tingkat — sebuah flag, bukan build ulang. Ini
+hanya memengaruhi harness bawaan; `tools/list` MCP yang dilihat klien eksternal selalu
+katalog lengkap.
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+Run yang kredensial penyedianya hilang atau habis akan **diparkir**, bukan digagalkan:
+operator mendapat perintah untuk memperbaikinya, dan run dilanjutkan jika mereka
+melakukannya. Tenggat bawaannya 900 detik (15 menit), dibatasi 0–3600.
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+Tenggat ini sengaja jauh lebih panjang daripada tenggat prompt persetujuan: persetujuan
+adalah keputusan yang dibuat seseorang dalam hitungan detik, sedangkan memperbaiki
+kredensial berarti membuka terminal, masuk, lalu kembali. Batas atas itulah yang mencegah
+run tanpa pengawasan — langkah pipeline, pemicu cron, webhook — menunggu seseorang yang
+sedang tidur. Saat tenggatnya habis, run gagal dengan pesan yang sama seperti jika
+digagalkan sejak awal.
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` adalah sakelar pemutusnya: tidak ada yang pernah diparkir dan
+kredensial buruk mengakhiri giliran persis seperti sebelum gerbang ini ada.
 
-## Subcommands
+## Subperintah
 
-| Command                                       | What it does                                                                                        |
+| Perintah                                      | Yang dilakukannya                                                                                   |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| `cc_server`                                   | Menjalankan server hingga `SIGINT`/`SIGTERM`                                                        |
+| `cc_server pair`                              | Menyediakan perangkat dan mencetak id serta kunci pairing-nya. Aman terhadap direktori data yang sudah disajikan server — server yang berjalan akan mengenali perangkat itu tanpa perlu dimulai ulang |
+| `cc_server calendar connect --workspace <id>` | Menghubungkan akun Google ke ruang kerja melalui alur kode perangkat, lalu keluar                   |
+| `cc_server update`                            | Memeriksa, mengunduh, dan memverifikasi rilis mandiri yang lebih baru                               |
+| `cc_server --version`                         | Mencetak versi build dan SHA git — identitas yang sama yang diiklankan `/healthz` dan handshake RPC |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| Flag           | Bawaan                                                    | Arti                                                                                                                                                                 |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | Id perangkat. Platform disimpulkan darinya, jadi `--device desktop` membuat baris desktop dan `--device ios`/`android` membuat baris ponsel; selain itu diperlakukan sebagai web |
+| `--label`      | nama platform plus hostname mesin ini                     | Nama tampilan di daftar perangkat                                                                                                                                    |
+| `--host`       | `localhost`, atau `<this-host>` bila diikat ke semua antarmuka | Host yang disematkan di URL yang dicetak. Setel ke IP LAN atau host tunnel yang benar-benar akan dihubungi klien                                                |
+| `--client-url` | belum disetel                                             | Origin klien **web** yang dihosting. Menambahkan deep link yang dapat dipindai dan QR terminal                                                                        |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` juga menerima flag inti `--data-dir`, `--port`, dan `--bind`: flag itu
+memilih direktori data yang akan ditulis dan membentuk URL server yang dicetak (`ws`
+di loopback, `wss` bila `--bind any`). Menjalankan ulang `pair` untuk `--device`
+yang sama memutar kuncinya dan memutus sesi aktif perangkat itu. Kredensial yang
+dibuat di sini **tidak memiliki masa kedaluwarsa**, berbeda dari 30 hari yang
+ditetapkan pemasangan di dalam aplikasi.
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
+:::caution[QR `--client-url` bukan QR ponsel]
+`pair --client-url` mengisi formulir koneksi klien **web** (URL server, id perangkat,
+dan kunci di fragmen URL). Ponsel dipasangkan dengan payload berbeda yang dibuat dari
+panel pemasangan di dalam aplikasi — deskriptor koneksi lengkap server plus masa
+kedaluwarsa. Keduanya tidak dapat saling ditukar — lihat [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` menggantikan instalasi; ini ditolak selama server masih menjawab di port yang
+dikonfigurasi kecuali Anda memberikan `--force`. `--allow-downgrade` mengizinkan rilis
+yang lebih lama.
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+Perintah ini menolak secara langsung, dengan penjelasan alih-alih galat, untuk instalasi
+yang bukan miliknya:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| Lingkungan                    | Terdeteksi oleh                              | Yang dikatakannya                                           |
+| ----------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
+| Server tertanam di desktop    | `CC_EMBEDDED=1` atau `CC_BOOTSTRAP_DEVICE_ID` | Perbarui aplikasinya sebagai gantinya — penginstal menukar seluruh pohon |
+| Checkout sumber `dart run`    | jalur skrip berakhiran `.dart`               | Perbarui dengan git                                         |
+| Docker                        | penanda kontainer                            | Tarik image yang lebih baru                                 |
 
-## Process lifecycle
+## Siklus hidup proses
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` berjalan hingga `SIGINT` / `SIGTERM`. Satu variabel lingkungan tambahan
+mengaturnya, dan variabel itu disetel oleh desktop, bukan oleh Anda:
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| Variabel                 | Efek                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1`  | Server keluar saat proses induknya keluar, dideteksi dari induk yang menutup ujung tulis pipa stdin-nya. Desktop menyetelnya agar aplikasi yang mogok tidak pernah meninggalkan server yatim yang memegang direktori data |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+Setel sendiri hanya jika Anda mengawasi `cc_server` sebagai proses anak dan
+menginginkan jaminan yang sama.
 
-## Data directory layout
+## Tata letak direktori data
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+Direktori data bawaannya adalah `~/Library/Application Support/control-center` di macOS,
+`%APPDATA%\control-center` di Windows, dan `$XDG_DATA_HOME/control-center` (atau
+`~/.local/share/control-center`) di tempat lain. `.cc_server` yang relatif terhadap cwd
+hanya digunakan bila tidak ada direktori home atau direktori data aplikasi yang dapat
+ditentukan.
 
-| Path                              | Contents                                                                        |
+| Jalur                             | Isi                                                                             |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | Registri ruang kerja, pengguna, perangkat yang dipasangkan, umpan berita, dan antrean fleet |
+| `<workspaceId>/workspace.db`      | Satu basis data per ruang kerja — agen, space, tiket, memori, graf kode          |
+| `<workspaceId>/chat_credentials/` | Token bot chat, sebagai JSON biasa, sehingga ikut bersama ruang kerja            |
+| `secrets.json`                    | Kunci pairing, identitas aplikasi penyedia, token per pengguna dan Google, SSO (`0600`) |
+| `backups/<timestamp>/`            | Satu snapshot instalasi — `manifest.json`, `global.db`, dan salinan setiap ruang kerja |
+| `backups/exports/`                | Ekspor satu ruang kerja, `<workspaceId>-<timestamp>.db`                          |
+| `backups/transfer/`               | Area penampungan untuk unduhan dan unggahan cadangan; dibersihkan oleh rute yang menulisnya |
+| `models/`                         | Model embedding, diarisasi, dan ucapan di perangkat                              |
+| `meetings/<meetingId>/`           | Audio rapat yang disimpan                                                        |
+| `rigs/images/`                    | Image disk rig yang diimpor (permukaan desktop QEMU)                             |
+| `rigs/smolvm/<rigId>/`            | Status runtime microVM per rig (rahasia broker, `0600`)                          |
+| `rigs/smolvm-packs/`              | Paket mesin yang telah diekstrak — cache yang mempercepat boot rig berulang      |
+| `rigs/tls/`                       | Otoritas sertifikat domain dev untuk HTTPS rig (kunci `0600`)                     |
+| `rigs/run/<rigId>/`               | Overlay QEMU, image seed, dan kunci per VM (`0600`)                              |
 
-## See also
+## Lihat juga
 
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/) — the setup recipe these flags belong to
-- [Run a fleet worker](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pekerja-fleet/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/) — copying this directory somewhere safe
-- [Backup, export and import](/id-ID/panduan-pengguna/referensi/cadangan/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/) — pointing a client at one
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/) — why the server owns everything
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/) — resep penyiapan tempat flag ini menjadi bagiannya
+- [Jalankan pekerja fleet](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pekerja-fleet/) — biner `cc_worker` terpisah yang mendaftar ke server ini
+- [Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/) — menyalin direktori ini ke tempat yang aman
+- [Cadangan, ekspor, dan impor](/id-ID/panduan-pengguna/referensi/cadangan/) — tata letak snapshot dan setiap operasi pencadangan
+- [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/) — mengarahkan klien ke sana
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) — mengapa server memiliki semuanya

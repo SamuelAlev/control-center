@@ -1,153 +1,95 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: ドメインイベント
+description: 機能同士が互いをインポートする代わりにインプロセスのイベントバスを介してやり取りする理由、そのバスが何の信頼できる情報源であり何ではないのか、そして実際に自動化を駆動できるのはどのイベントなのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/ドメインイベント
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## ドメインイベントとは
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+ドメインイベントは、機能同士が直接的な依存関係を持たずにやり取りできるようにする疎結合の仕組みです。機能 A が機能 B を呼び出す代わりに、機能 A がイベントを発行し、機能 B がそれをサブスクライブします。
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` はインプロセスのブロードキャスト型パブリッシュ/サブスクライブバスです。パブリッシャーは `publish(event)` を呼び出し、サブスクライバーは型付きの `on<T>()` ストリームを消費します。すべてのイベントは `DomainEvent` を実装し、`occurredAt` を保持します。
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**バスは `cc_server` の内部で動作します。** すべてのパブリッシャーと、稼働中のすべてのサブスクライバーはそこに存在します。このバスを目にするクライアントはありません。クライアントが見るのは、サーバーが `notifications/*` JSON-RPC フレームとして再送信する、厳選されたサブセットです。
 
-## Why a bus at all
+## そもそもなぜバスなのか
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+イベントがなければ、機能をまたぐあらゆる反応はインポートになります。通知の経路は、トーストをいつ表示すべきかを知るためだけに、エージェント機能、プルリクエスト機能、チケッティング、ミーティングをインポートしなければならず、さらにそれらはいずれも通知が存在することを知らなければならなくなります。チケッティングは、完了したチケットが実行を進められるように、パイプラインをインポートすることになるでしょう。依存グラフは結び目となって閉じ、共有カーネルは共有されなくなります。
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+イベントを発行すれば、それが崩れます。通知の経路は 21 個のイベントクラスをサブスクライブし、それらを発生させる機能を一切インポートしません。パイプライントリガーのディスパッチャーはバス全体をサブスクライブし、プルリクエスト、チケット、ミーティングについて何も知りません。オブザーバビリティは、ディスパッチの内部に踏み込むことなく実行結果を集計します。
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+コストはいつもどおりです。パブリッシャーは誰かが聞いているかどうかを知ることができず、決して生成されないリスナーは静かに無効のままです。`TicketRemoteSyncHandler` がその常設の例です。これは宣言され、テストでカバーされていながら、本番では決して接続されません。
 
-## What the bus is not
+## バスが担わないもの
 
-It is worth being precise about one thing the bus does _not_ own.
+バスが _担わない_ ものについて、正確に述べておく価値があります。
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**監査証跡はイベントストリームの投影ではありません。** 変更を伴うすべての RPC 操作はデフォルトで監査されます。`RepoOp.audited` はデフォルトで true であり、操作がオプトアウトできるのは `audited: false` を宣言した場合だけです。これは操作そのものに表れる意図的な行為です。ディスパッチャーは、呼び出しが成功した直後に「誰が、どこから、何をしたか」の行を追記します。`DomainEventAuditBridge` は存在しません。`ActivityLogPersister` は `ActivityLogged` イベントから `activity_log` の行を書き込みます。これは RPC 監査とは別のフィードです。
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+イベントバスは通知と自動化のための輸送手段 _そのもの_ です。記録を管理するシステムではありません。
 
-## What the bus does drive
+## バスが実際に駆動するもの
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **通知。** 21 個のイベントクラスがサーバーによって `notifications/*` ワイヤフレームに変換され、ワークスペースごとの永続フィードに記録され、接続中のセッションにブロードキャストされます。`workspace_id` が、セッションユーザーの所属していないワークスペースを指すフレームは、サーバー上で破棄されます。その後クライアントが、残りを自分が表示しているワークスペースに絞り込みます。
+- **イベント駆動の自動化。** パイプライントリガーがバスをサブスクライブし、一致するパイプラインを自動起動します（後述）。
+- **ライフサイクルの反応。** ワークスペースを作成すると、その CEO とスペシャリストエージェント、組み込みのパイプラインテンプレート、スターターの評価スイートがシードされます。完了したエージェント実行は、中断されたパイプラインステップを再開し、タスクをクローズし、ゴールスーパーバイザーに情報を供給し、名前を指定したチェッカーを起こすことができ、チームリーダーを再トリガーできます。PR がマージされたりスペースが削除されたりすると、ワークツリーのガベージコレクションがトリガーされます。
+- **ベンダー間同期。** ローカルのチケット変更は、5 つのチケットイベントをリッスンするコーディネーターによって、設定済みのベンダーへプッシュされます。
 
-## Event categories
+## イベントのカテゴリー
 
-Events span the whole product surface. At a high level:
+イベントはプロダクトの表面全体に広がっています。大まかには次のとおりです。
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **ワークスペース、エージェント、リポジトリ** — ワークスペースの作成、実行の完了、リポジトリの登録、スキルの更新
+- **プルリクエスト** — 公開、ステータス変更、マージ、レビュー依頼、メンション、自作 PR のウォッチ、外部で検出された PR
+- **メッセージング** — メッセージ、スペース、スペースのプロビジョニング進捗
+- **チケット** — 作成、割り当て、再割り当て、詳細、ステータス、および 3 つの終端結果
+- **タスク** — 1 回のディスパッチされた実行に対する順序付きライフサイクルフレーム。クライアントが並べ替えと重複排除を行えるようにします
+- **パイプライン** — 終端の実行イベントのみ（完了、キャンセル、失敗）
+- **オブザーバビリティ** — アクティビティログのエントリと予算しきい値
+- **アイデンティティとメンバーシップ** — メンバーの追加、削除、ロール変更
+- **カレンダーとミーティング** — 認証の有効期限切れ、ミーティングの開始、録画の終了
+- **リグ** — テイクオーバー、回収、予期しないクローズ
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+メモリ、オーケストレーション、プランドキュメント、アーティファクト、承認、チケット同期の取り込み、カレンダーの更新、ワークツリーのマージ、ユーザーの作成、招待、デバイスの失効はドメインイベントではありません。リファレンスを参照してください。
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/ja-JP/マニュアル/リファレンス/ドメインイベント/). That page is the
-inventory; this one is the model.
+完全なカタログ（53 個の具象イベントクラスすべて、それらのペイロード、およびそれらを消費する 24 個のサブスクライバー）については、[ドメインイベントリファレンス](/ja-JP/マニュアル/リファレンス/ドメインイベント/)を参照してください。あのページは一覧であり、このページはモデルです。
 
-## Live access control rides two different mechanisms
+## ライブアクセス制御は 2 つの異なる仕組みで成り立つ
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+メンバーシップのイベントとデバイスのイベントは対称に見えますが、実際にはそうではありません。失効がどれだけ速く反映されるかを考えるなら、この違いは重要です。
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**デバイスを失効させると、そのセッションは確かに終了します。** サーバーはペアリングされたデバイスのテーブルを監視し、デバイスがアクティブな集合から外れた稼働中セッションを、数秒以内に切断します。
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**メンバーを削除してもソケットは閉じません。** `WorkspaceMemberRemoved` は消費されます。`LocalRpcServer` と `RemoteRelayHost` は、そのユーザーがアタッチしたワークスペース購読を削除し、`RemoteEventForwarder` はメンバーシップキャッシュを無効化するため、そのワークスペース向けの以降のフレームはプッシュされません。次の RPC を拒否するのは依然としてロールゲートであり、これは **すべての** 呼び出しでメンバーシップを再解決します。したがって、そのユーザーの次のリクエストは "Not a member of this workspace" で拒否されます。影響は、そのユーザーが行おうとするあらゆることに対して即座に現れます。ただし、それは接続を切ることによって達成されるわけではありません。
 
-## Pipeline triggers
+## パイプライントリガー
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+パイプライントリガーはドメインイベントをサブスクライブし、一致するパイプラインを自動起動します。`PipelineTriggerDispatcher` はバス全体をリッスンし、次のことを行います。
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. イベントタイプが、ペイロードへのマッピング方法を把握しているものでない限り、早期に処理を打ち切る
+2. そのイベントタイプに一致する有効なトリガーを、すべてのワークスペースにわたって検索する
+3. それぞれを自身のワークスペースに絞り込み、ペイロード一致フィルターを適用する
+4. 絞り込みを通過した各トリガーに対して実行を開始する
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+重要な制約はステップ 1 です。バスは 53 種類のイベントタイプを運びますが、トリガー追加ピッカーが実行を開始するのは次の 14 種類です（`EventPayloadMapper` のペイロード分岐）:
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+および `SpaceDeleted`。それ以外ではパイプラインを開始できません。
 
-## How a client sees any of this
+## クライアントからはどう見えるか
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/ja-JP/マニュアル/コンセプト/アーキテクチャ/).
+`RemoteEventForwarder` は通知クラスのイベントをワイヤフレームに変換し、RPC 経由で接続中のセッションにプッシュします。そこでフレームマッパーがそれらをアプリ内通知に変換します。したがってシンクライアントは、実行を一切所有することなく、サーバーのイベントストリームの投影を目にすることになります。これが[シンクライアント分割](/ja-JP/マニュアル/コンセプト/アーキテクチャ/)の狙いそのものです。
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+ただし、プッシュされるすべてのフレームが通知というわけではありません。タスクライフサイクルのストリームとチケットの再割り当ては、UI を駆動するためにライブで転送されますが、通知フィードには記録されず、トーストも表示されません。
 
-## See also
+## 関連項目
 
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/): what a trigger starts
-- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/): assignment to an agent vs a team
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): how events fit the dependency rule
-- [Domain events reference](/ja-JP/マニュアル/リファレンス/ドメインイベント/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
-- [Configure notifications](/ja-JP/マニュアル/ハウツーガイド/通知/)
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/): トリガーが何を開始するか
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/): エージェントへの割り当てとチームへの割り当ての違い
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): イベントが依存関係ルールにどう当てはまるか
+- [ドメインイベントリファレンス](/ja-JP/マニュアル/リファレンス/ドメインイベント/): 完全なカタログとそのサブスクライバー
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+- [通知を設定](/ja-JP/マニュアル/ハウツーガイド/通知/)

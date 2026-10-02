@@ -1,97 +1,101 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: گفتگو با Control Center از یک pull request در GitHub
+description: از ربات GitHub App سرور بخواهید از خودِ گفتگوی PR یک بازبینی انجام دهد یا پرسشی را پاسخ دهد، بدون webhook و URL عمومی.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگوهای-pr-در-github
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+این راهنما نشان می‌دهد چگونه بدون ترک GitHub با Control Center کار کنید: از
+صفحهٔ PR یک بازبینی هوش مصنوعی بخواهید، در یک نظر از ربات پرسشی بپرسید و
+گفتگو را در رشته‌های بازبینی آن ادامه دهید.
 
-The bot is your server's own [GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+ربات، [GitHub App(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/) خودِ سرور شماست — همان
+که از پیش افراد را وارد می‌کند و کارهای پس‌زمینه را اجرا می‌کند. چیز تازه‌ای
+ثبت نمی‌شود و هیچ‌چیز لازم نیست از اینترنت قابل‌دسترس باشد: سرور با پولینگ
+کشف می‌کند روی GitHub چه گفته شده است، پس یک لپ‌تاپ پشت NAT دقیقاً مثل یک
+استقرار عمومی رفتار می‌کند.
 
-## Prerequisites
+## پیش‌نیازها
 
-- The server has its GitHub App [registered and
-  installed](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- سرور، GitHub App خود را [ثبت و
+  نصب(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/) کرده است، با **Pull requests: read and write**
+  (برای نظرها، رشته‌ها و واکنش‌ها) و **Issues: read** (برای جست‌وجوی
+  نظرها). هر دو از پیش در فهرست مجوزهای همان راهنما آمده‌اند
+- مخزن به یک فضای کاری در Control Center پیوند خورده است
+- نه URL وب‌هوک، نه تونل، نه callback — در سمت شبکه چیزی برای پیکربندی وجود
+  ندارد
 
-## Find your bot's name
+## نام ربات خود را پیدا کنید
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+نام کاربری ربات `<appslug>[bot]` است، که در آن `appslug` همان نامی است که
+هنگام ثبت به برنامه داده‌اید.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. به **تنظیمات → سرور → ورود یکپارچه** بروید و تا کارت
+   **برنامه‌های ارائه‌دهنده** پایین بیایید
+2. بلوک **GitHub** را باز کنید و **آزمایش** را کلیک کنید
+3. وقتی **ورود ربات** پر شد آن را کپی کنید. اگر هنوز راهنمای خالی را نشان
+   می‌دهد، نام کاربری همیشه `<appslug>[bot]` است — همان را تایپ کنید، یا شکل
+   کوتاه `@appslug` را
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub حساب‌های برنامه را در تکمیل خودکار `@` خود ارائه نمی‌دهد، پس نام
+کاربری باید تایپ شود — به همین دلیل کارت تنظیمات کپی‌کردن آن را یک‌کلیکی
+می‌کند. پسوند `[bot]` اختیاری است: `@myapp` و `@myapp[bot]` هر دو ربات را
+خطاب قرار می‌دهند.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[یک نام متمایز برای برنامه انتخاب کنید]
+شکل کوتاه به‌صورت متنی تطبیق داده می‌شود. اگر تصادفاً یک کاربر انسانی GitHub
+همان slug برنامهٔ شما را داشته باشد، منشن‌کردن آن کاربر با شکل کوتاه هم به
+ربات می‌رسد. شکل کامل `@myapp[bot]` همیشه بی‌ابهام است.
 :::
 
-## Request a review from GitHub
+## از GitHub درخواست بازبینی کنید
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+دو راه، که هر دو همان پایپ‌لاین از پیش تعریف‌شدهٔ `pr_review` را شروع می‌کنند
+که دکمهٔ **پرسش از AI** شروع می‌کند:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- روی PR **برچسب `ai-review` را اضافه کنید**. این نزدیک‌ترین چیزی است که
+  GitHub برای گماشتن ربات به‌عنوان بازبین ارائه می‌دهد — حساب‌های برنامه
+  نمی‌توانند جایگاه بومی بازبین درخواست‌شده را بگیرند. نظری برای واکنش نشان
+  دادن وجود ندارد، پس چیزی روی GitHub منتشر نمی‌شود؛ بازبینی در Control
+  Center آغاز می‌شود
+- روی گفتگوی PR **`@myapp review` را کامنت کنید** (یا فقط `@myapp`). ربات با
+  👀 واکنش نشان می‌دهد و سپس وقتی بازبینی آغاز شد پاسخ می‌دهد (یا می‌گوید
+  یکی از قبل در حال اجراست)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+بازبین‌ها در فضای بازبینی PR کار می‌کنند؛ یافته‌ها را همان‌طور که در
+[استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) آمده بخوانید و
+منتشر کنید. انتشار دوباره در GitHub همچنان تصمیمی است که در Control Center
+می‌گیرید — آغاز یک بازبینی از GitHub به‌خودی‌خود چیزی روی GitHub منتشر نمی‌کند.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+برچسب یک‌بار به‌ازای هر PR فعال می‌شود: افزودن آن همان درخواست است و با
+برداشتن و افزودن دوباره از نو مسلح نمی‌شود. برای اجرای دوبارهٔ یک بازبینی —
+مثلاً پس از یک push — ربات را منشن کنید.
 
-## Ask a question
+## پرسشی بپرسید
 
-Comment on the PR conversation:
+روی گفتگوی PR نظر بگذارید:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+چه اتفاقی می‌افتد، به ترتیب:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. ربات با 👀 واکنش نشان می‌دهد تا بدانید نظر دیده شده است
+2. پرسش **به‌عنوان شما** در فضای بازبینی PR فرستاده می‌شود — همان انتسابی که
+   اگر خودتان آن را در Control Center تایپ کرده بودید
+3. یک عامل در فضا پاسخ می‌دهد و پاسخ به‌شکل نظری که شما را با @ منشن می‌کند
+   روی PR بازگردانده می‌شود
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+پرسشی روی PRی که هنوز بازبینی‌ای ندارد، عامل CEO فضای کاری را بیدار می‌کند؛
+پس از آنکه یک بازبینی اجرا شد، عاملی که آخر از همه سخن گفته پاسخ می‌دهد، پس
+پیگیری‌ها به دست کسی می‌رسد که بافت را دارد.
 
-## Follow up in a review thread
+## پیگیری در یک رشتهٔ بازبینی
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+داخل یک رشتهٔ بازبینی درون‌خطی که ربات عضوی از آن است پاسخ دهید — نظری روی
+diff که ربات گذاشته، یا پاسخی که در همان رشته نوشته است. نیازی به منشن نیست؛
+خودِ رشته **همان** خطاب قرار دادن است:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +103,75 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+چندنوبتی هم همین‌طور کار می‌کند: هر پاسخ پرسش دیگری در همان گفتگو است، با فضای
+بازبینی به‌عنوان بافت، و پاسخ در همان رشته بازمی‌گردد.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+یک پیگیری روی خط زمانی گفتگوی PR یک نظر جدید در سطح بالا است، پس همچنان به
+یک @منشن نیاز دارد.
 
-## Who the bot talks to
+## ربات با چه کسی سخن می‌گوید
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+یک نظر GitHub چیزی بیش از یک نام کاربری با خود نمی‌آورد، پس ربات پیش از انجام
+هر کاری نویسنده را حل می‌کند:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **حساب GitHub شما باید به هویت شما پیوند شده باشد** در Control Center —
+  [ورود با GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)، یا جای‌گذاری یک توکن،
+  از **تنظیمات → فضای کاری → نمایه و هویت → میزبانی کد**
+- **شما باید عضوی با نقش نوشتن باشید** (`member`، `admin` یا `owner`) در
+  فضای کاری‌ای که مخزن را پیوند می‌دهد
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+هر کس دیگری یک پاسخ مؤدبانه می‌گیرد که توضیح می‌دهد چه چیزی کم است — نام
+کاربری ناشناس (پیوندنشده، یا پیوندشده اما عضو اینجا نباشد) و نقش فقط‌خواندنی
+دو حالت‌اند — و سخنانشان هرگز وارد فضای کاری نمی‌شود. برچسب `ai-review` این‌گونه
+دروازه‌بانی نمی‌شود: نویسنده‌ای ندارد، پس بازبینی را در همان فضای کاری‌ای آغاز
+می‌کند که از پیش مخزن را پیوند داده است.
 
-## What to expect
+## چه انتظاری داشته باشید
 
-| Thing               | Behaviour                                                                 |
+| مورد                | رفتار                                                                    |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| تأیید               | 👀 روی یک نظر، ظرف حدود یک دقیقه — همان بازهٔ جاروب. برچسب `ai-review` نظری برای واکنش نشان دادن ندارد |
+| پاسخ‌ها             | به‌عنوان ربات (همان برنامه)، در همان خطی که پرسش در آن مطرح شد، فرستاده می‌شوند |
+| انتساب در فضا       | پرسش مال شماست؛ عامل به نمایندگی شما و تحت تنظیمات خودمختاری فضا اجرا می‌شود |
+| بازبینی‌ها          | یافته‌ها در فضای بازبینی می‌نشینند؛ انتشار در GitHub دستی است              |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+تأخیر حدوداً یک‌دقیقه‌ای، بهای رفع نیاز به هرگونه دسترسی شبکهٔ ورودی است.
+هیچ‌چیز در جاروب فوری نیست و تا وقتی سرور آفلاین است چیزی از دست نمی‌رود —
+نظری که در زمان خاموشی می‌رسد، در جاروب بعدی گرفته می‌شود.
 
-## Troubleshooting
+## عیب‌یابی
 
-**Nothing happens for a comment that mentions the bot.**
+**برای نظری که ربات را منشن می‌کند، هیچ اتفاقی نمی‌افتد.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- آیا برنامه روی حسابی که مالک مخزن است **نصب** شده و مخزن به یک فضای کاری
+  **پیوند** خورده است؟ مخزن پیوندنشده پیش از ثبت هر چیزی نادیده گرفته می‌شود،
+  پس اگر بعداً آن را پیوند بزنید، باز هم تحویل می‌شود
+- آیا حساب GitHub شما پیوند شده و عضوی با نقش نوشتن هستید؟ روی PR پاسخ رد
+  ربات را بگردید — می‌گوید کدام مورد است
+- هنوز هیچ؟ وقتی چیزی شکست می‌خورد، لاگ سرور نام جاروب و PR را می‌آورد؛ دنبال
+  `pr_conversation:` (پولر) و `github_pr_conversation:` (پل) بگردید
 
-**The label does not start a review.**
+**برچسب یک بازبینی را آغاز نمی‌کند.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+یک‌بار به‌ازای هر PR فعال می‌شود. اگر بازبینی‌ای از قبل اجرا شده، یا برچسب پیش
+از آنکه سرور هرگز PR را دیده باشد اضافه شده است (نخستین جاروب کارهای معوق را
+بی‌صدا ثبت می‌کند، نه اینکه یک‌جا راهشان بیندازد)، به‌جایش ربات را منشن کنید —
+`@myapp review` همیشه یکی را آغاز می‌کند، مگر آنکه بازبینی‌ای از قبل در جریان
+باشد.
 
-**The bot's answer never arrived on GitHub.**
+**پاسخ ربات هرگز روی GitHub نرسید.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+خودِ پاسخ هرگز گم نمی‌شود — در فضای بازبینی PR در Control Center است. شکست در
+فرستادن (از کار افتادن GitHub، تغییر مجوزها) ثبت می‌شود و پاسخ دوباره تلاش
+نمی‌شود؛ اگر مهم است در همان رشته دوباره بپرسید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create the GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/): the room all of this lands in
+- [ایجاد GitHub App(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/): ثبتی که ربات از آن
+  زاده می‌شود
+- [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/): خواندن یافته‌هایی
+  که یک بازبینی منشن‌آغازشده تولید می‌کند
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/): پیوند دادن
+  حساب GitHub خودتان، که ربات شما را با آن حل می‌کند
+- [استفاده از فضاها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/): اتاقی که همهٔ این‌ها در آن
+  می‌نشیند

@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Vòng đời điều phối agent
+description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Một lần điều phối là gì
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Một lần điều phối là một lượt chạy của một agent, trong một cuộc hội thoại, trên một adapter. Mọi thứ về nó đều diễn ra trên `cc_server`: máy khách gửi một tin nhắn rồi quan sát dòng sự kiện chảy ngược về. Không có đường điều phối nào trong bất kỳ máy khách nào.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Agent được đánh thức vì sáu lý do, và lượt chạy mang chúng dưới dạng **ngữ cảnh đánh thức** để agent biết _vì sao_ nó thức:
 
-| Wake reason      | Trigger                                                      |
+| Lý do đánh thức  | Trình kích hoạt                                               |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Ai đó gửi một tin nhắn trong một space, hoặc nhắc đến agent  |
+| `assignment`     | Một phiếu được giao cho agent                                |
+| `pipelineStep`   | Một bước quy trình đã điều phối nó                           |
+| `childCompleted` | Một phiếu con đã hoàn tất                                    |
+| `followUp`       | Một nhịp tim theo dõi đã được lên lịch                       |
+| `recovery`       | Đường khôi phục đã điều phối lại sau một thất bại           |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Ngữ cảnh đánh thức mang các id đi kèm lý do — phiếu, space, tin nhắn, lượt chạy quy trình — và chúng được tiêm vào môi trường cùng prompt của agent.
 
-## Prompt assembly
+## Lắp ghép prompt
 
-The prompt is built in layers, each one a labelled section:
+Prompt được dựng theo từng lớp, mỗi lớp là một phần có nhãn:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Danh tính** — id, tên và id không gian làm việc của chính agent, kèm chỉ dẫn rõ ràng phải truyền đúng những UUID đó cho các công cụ theo phạm vi không gian làm việc. Không gian làm việc vốn thuộc về agent, nên nó luôn hiện diện.
+- **Danh mục công cụ và giao thức tài nguyên**, rồi đến **bố cục không gian làm việc**.
+- **Ghi đè prompt hệ thống**, nếu agent có, rồi đến **persona** (được tham số hóa theo vai trò) và **bản tóm tắt đội**.
+- **Skill** — những tên gắn trên agent.
+- **Hợp đồng thực thi và thủ tục** cho chế độ hiện tại.
+- **Ngữ cảnh đánh thức** và **ngữ cảnh nhắc đến**: ai đã gọi agent và danh sách những người xung quanh nó.
+- **Khối chế độ** — được tạo từ hồ sơ năng lực của chế độ _và danh sách công cụ đã được cụ thể hóa của nó_, nên một prompt không bao giờ có thể nêu tên một công cụ mà lượt chạy thực sự không có.
+- **Ngữ cảnh bộ nhớ** — những dữ kiện được truy xuất cho nhiệm vụ.
+- **Ngữ cảnh hội thoại** — lịch sử gần đây của space, giới hạn ở 50.000 ký tự cửa sổ nguyên văn bất kể kích thước ngữ cảnh đã cấu hình của agent. Lịch sử cũ hơn không bị cắt bỏ: agent tự truy xuất khi cần bằng `get_messages`, và những tin nhắn cũ hơn có liên quan về ngữ nghĩa vẫn hiện ra.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Lệnh slash được phân tích từ văn bản thô của người dùng]
+Prompt phân lớp bắt đầu bằng một khối ngữ cảnh, nên nó không mở đầu bằng dấu gạch chéo. Các lệnh được phân tích nguyên văn từ tin nhắn của người dùng rồi được cắt ra khỏi phần đuôi của prompt phân lớp để mọi lớp ngữ cảnh còn nguyên vẹn.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Các lệnh được chia về hai nơi. `/todo` và `/compact` bị chặn ngay trong trình soạn và cố ý không bao giờ được lưu thành tin nhắn hay gửi tới agent — lưu `/compact` sẽ đẩy mốc cắt nén lùi lại một lượt và làm bẩn bản ghi hội thoại. `/plan` được xử lý ở cả hai: trình soạn đổi chế độ của space, và chính điều đó khiến bề mặt công cụ, preset rào chắn và prompt khớp nhau trong lượt này cùng mọi lượt sau. `/goal`, `/loop` và `/skill:<name>` được xử lý bên trong chính lượt chạy và chỉ trên harness tích hợp — `/goal` và `/loop` bắt đầu công việc tự chủ với một ngân sách chi phí, còn một tên có tiền tố `skill:` được tra như một skill mà phần thân `SKILL.md` trở thành chỉ thị của lượt. Chính không gian tên giữ hai bộ từ vựng tách rời nhau: tra một tên trần theo skill nghĩa là một skill tên `plan` hay `compact` bị lệnh tích hợp che khuất vĩnh viễn. Một tên trần không phải lệnh tích hợp vẫn được tra, dành cho những tin nhắn được viết trước khi không gian tên ra đời. Một tên không được nhận diện chỉ đơn giản rơi xuống thành văn bản thuần.
 
-## Worktree provisioning
+## Chuẩn bị worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Trước khi bất cứ thứ gì chạy, cuộc hội thoại có gốc làm việc riêng, với một worktree copy-on-write tách biệt cho mỗi repo nằm bên dưới nó. Mặc định đó là mọi repo được liên kết với không gian làm việc; một space PR — hoặc một space được tạo với lựa chọn rõ ràng — chỉ chuẩn bị những repo nằm trong danh sách cho phép, và một hội thoại rà soát PR ghim repo duy nhất của nó vào head ref của pull request trong khi những repo khác nằm trên nhánh mặc định. Bản checkout nguồn không bao giờ bị thay đổi, và toàn bộ thư mục hội thoại được thu hồi khi space bị xóa.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write là cách hiện thực **duy nhất** ở bất cứ đâu `rift` được phát hành, dựa trên thành phần native đi kèm. Một hệ thống tệp không thể reflink — hoặc một thư mục dữ liệu nằm trên ổ đĩa khác với repo — sẽ làm bước chuẩn bị thất bại thay vì dùng phương án dự phòng. `git worktree` là backend trên Windows, nơi không có backend copy-on-write để xây dựng, và đó không phải là sự xuống cấp âm thầm trên các máy chủ khác. Thiếu `rift` trên một nền tảng vốn có phát hành nó nghĩa là bản cài đặt hỏng — máy chủ từ chối khởi động thay vì lặng lẽ dự phòng, bởi một phương án dự phòng âm thầm sẽ mãi mãi che giấu hỏng hóc phía sau một đường chậm hơn.
 
-## Identity and credentials
+## Danh tính và thông tin xác thực
 
-Two identities are resolved per run, before any process launches.
+Hai danh tính được xác định cho mỗi lượt chạy, trước khi bất kỳ tiến trình nào khởi chạy.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Quyền tác giả Git.** Các commit do agent tạo được ghi tác giả _là chính agent_ — `<Name> (agent) <agentId@agents.control-center.local>` trong cả `GIT_AUTHOR_*` và `GIT_COMMITTER_*` — không bao giờ mạo danh con người. Phần local là UUID của agent, không phải slug tên của nó. Người yêu cầu được ghi công bằng một trailer `Co-Authored-By:`, được mang trong môi trường và hướng dẫn trong prompt hệ thống. Một danh tính do bên gọi đặt rõ ràng luôn thắng cả hai.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Danh tính forge.** Thông tin xác thực GitHub của lượt chạy luôn chỉ là của broker — một token cài đặt App giới hạn theo repo, hoặc phương án dự phòng PAT từ môi trường — không bao giờ là token đã lưu của chính thành viên yêu cầu. `actingUserId` giới hạn phương án dự phòng PAT để một thành viên không phải chủ máy chủ không thừa hưởng phạm vi của máy chủ; nó không phủ một token cá nhân lên môi trường của agent.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Thông tin xác thực của nhà cung cấp mô hình** được xác định theo một thứ tự cố định và thứ tự đó quan trọng:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. ghi đè môi trường theo từng adapter,
+2. môi trường của bên gọi,
+3. kho thông tin xác thực của máy chủ (làm mới một token OAuth nếu nó sắp hết hạn),
+4. môi trường của tiến trình.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Vì ghi đè theo từng adapter đứng đầu, nó âm thầm thắng một tài khoản nhà cung cấp đã kết nối trong ứng dụng. Nếu một lượt chạy đang tính phí vào sai tài khoản, ghi đè đó là nơi đầu tiên cần xem. Thông tin xác thực của nhà cung cấp là toàn cục theo máy chủ — dùng chung cho mọi không gian làm việc trong bản cài đặt.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+Các token được gác theo năng lực (GitHub, ticketing) đến từ broker thông tin xác thực, nơi chỉ tiêm những gì năng lực của lượt chạy cho phép. Xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
 
-## Launch
+## Khởi chạy
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Lượt chạy được khởi tạo với worktree của nó làm thư mục làm việc và — với Claude Code — một cấu hình MCP được tạo để agent tiếp cận bề mặt công cụ của Control Center. ACP và `bash` của harness nhận một môi trường đã được làm sạch; Claude Code qua `NoSandboxAdapter` thừa hưởng môi trường của máy chủ.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Sandbox của hệ điều hành chỉ bọc một lượt chạy khi máy chủ có backend]
+`cc_server` dò máy chủ một lần lúc khởi động và, khi có backend, bọc các tiến trình agent trong đó — Seatbelt trên macOS, bubblewrap trên Linux và WSL2. Cả hai điểm nối điều phối đều được bọc, vì chúng không dùng chung một điểm: CLI Claude Code đi qua cổng sandbox; các adapter ACP và công cụ `bash` của harness tích hợp đi qua trình quản lý sandbox. Đây cũng là thứ áp dụng các đường dẫn được bảo vệ của lượt chạy: những checkout repo đã đăng ký của bạn bị cấm ghi bên trong sandbox, ở mọi chế độ.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Ở nơi không có backend, lượt chạy **không** được sandbox và không có gì khác thay đổi để bù đắp. Điều đó nghĩa là Windows luôn như vậy (không có lớp bọc native — `microvm` là một đường riêng, chỉ mở khi qua bước dò, dành cho terminal và rig) và Linux hay WSL2 không có `bwrap` và `socat` trên `PATH`. Máy chủ nêu rõ mình đang ở trạng thái nào trên dòng log khởi động, và `--sandbox off` là cách chủ động từ chối.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Hai lỗ hổng vẫn tồn tại dù sandbox đang bật. Các công cụ tệp trong tiến trình của harness (read, write, edit, apply patch, search, find, search_files) chạy bên trong tiến trình máy chủ, nên không hồ sơ nào ràng buộc chúng — giới hạn của chúng là sự giam đường dẫn của chính công cụ cộng với rào chắn. Và Claude Code được khởi chạy với `--dangerously-skip-permissions`, nên các lời gọi tệp và shell của chính nó không bị Control Center gác; sandbox của hệ điều hành là ranh giới bao quanh chúng.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Những giới hạn còn lại vẫn đúng trên mọi máy chủ, dù có sandbox hay không: worktree của chính lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), thông tin xác thực được gác theo năng lực, cấp qua broker mỗi lần khởi chạy rồi thu hồi khi dọn dẹp, rào chắn hành động thống nhất (đóng khi lỗi — một quyết định `prompt` không có người phê duyệt kết nối sẽ bị từ chối) và bề mặt công cụ mà chế độ của hội thoại cho phép. ACP và `bash` của harness vẫn làm sạch môi trường; Claude Code qua `NoSandboxAdapter` thừa hưởng môi trường của máy chủ.
 :::
 
-## Streaming
+## Truyền phát
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Lượt chạy truyền ngược về một chuỗi sự kiện có kiểu, mà bộ xử lý luồng lưu lại thành các delta tin nhắn, gấp thành các phân đoạn bản ghi hội thoại và biến thành các sự kiện nhắn tin:
 
-| Event              | What it carries                                                                                                  |
+| Sự kiện            | Nội dung mang theo                                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | Đầu ra suy luận, được hiển thị nội tuyến                                                                         |
+| `text`             | Đầu ra hiển thị                                                                                                  |
+| `toolCall`         | Một lời gọi công cụ, kèm id và các đối số có cấu trúc                                                            |
+| `toolResult`       | Kết quả tương ứng, được đánh dấu khi gặp lỗi hoặc là một luồng một phần                                           |
+| `usage`            | Số lượng token và chi phí cho một cửa sổ đo                                                                      |
+| `error`            | Một lỗi, kèm mã có cấu trúc của adapter khi adapter báo lỗi đó                                                    |
+| `sandboxViolation` | Hệ điều hành từ chối một syscall. Chỉ được phát ra ở nơi có sandbox thực sự bọc tiến trình — xem ghi chú ở trên  |
+| `debug`            | Chẩn đoán lúc chạy (dấu mốc khởi chạy, quyết định của rào chắn, nhắc nhở hợp đồng)                               |
+| `done`             | Lượt chạy đã kết thúc                                                                                            |
 
-## What bounds a run
+## Điều gì giới hạn một lượt chạy
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Cố ý **không có giới hạn số lượt ở bất cứ đâu**. Một số vòng lặp cứng sẽ giết công việc dài chính đáng (di trú, dọn dẹp sau khi phân nhánh) mà chẳng bắt được gì sớm hơn những rào chắn bên dưới. Một lượt chạy kết thúc khi:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **mô hình tự dừng**;
+- **một người dừng nó**, hoặc tiếp quản cuộc hội thoại (việc này tạm dừng harness tích hợp ở ranh giới lượt sạch tiếp theo — còn một lượt chạy Claude Code, vốn không có ranh giới an toàn, thì bị dừng thay vì tạm dừng);
+- **bộ giám sát im lặng kích hoạt.** Không có đầu ra trong suốt ngưỡng thời gian thì phiên bị kết thúc với lỗi `silentRun`. Mặc định là 15 phút, giảm còn 10 ở những chế độ chủ yếu đọc (rà soát và kế hoạch); agent có thể ghi đè trong khoảng 1 đến 240 phút. Bộ giám sát được kích hoạt khi một tiến trình con báo PID của nó, nên nó bao được CLI Claude Code — **không** bao harness tích hợp, vốn không khởi tạo gì;
+- **một trần chi phí có hiệu lực** — nhưng chỉ với các lệnh tự chủ.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Rào chắn vòng lặp chết không phải là thứ chấm dứt: ba lời gọi công cụ giống hệt nhau liên tiếp và vòng lặp _điều hướng_ agent đổi cách làm.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Một lượt bình thường không có trần chi phí]
+Rào chắn chi phí trong phiên chỉ được nối cho `/goal` và `/loop`; mọi lượt chạy khác không truyền ngân sách nào cả. Với những lệnh đó, một phân đoạn không người trông mặc định có thể đốt 500 cent ($5.00), với một lần điều hướng mềm ở mức 80% yêu cầu agent kết thúc gọn gàng trước khi dừng cứng, và một ngân sách mục tiêu bền vững 5000 cent ($50.00) xuyên các phân đoạn. Một `/goal --budget` rõ ràng không bao giờ bị vượt quá nguyên một phân đoạn.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Gộp lại, một lượt tương tác thông thường trên harness tích hợp không có giới hạn số lượt, không có trần chi phí và không có bộ giám sát im lặng. Nó kết thúc khi mô hình dừng hoặc khi bạn dừng nó. Đó là một đánh đổi có chủ đích — mọi phương án thay thế đều giết công việc dài chính đáng — nhưng nó cũng có nghĩa là một lượt chạy tương tác không người trông chỉ bị giới hạn bởi chính phán đoán của mô hình.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Giữa lượt chạy, một tin nhắn gửi tới agent đang chạy được xếp hàng như **điều hướng** và được xử lý ở ranh giới lượt kế tiếp, nên bạn có thể thúc nhẹ một lượt chạy mà không giết nó. Điều hướng, tạm dừng, subagent và hợp đồng hoàn tất là những tính năng của harness tích hợp; Claude Code không có thứ nào trong số đó.
 
-## How a run is recorded
+## Cách một lượt chạy được ghi lại
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Mỗi lần điều phối ghi một `AgentRunLog`: thời điểm bắt đầu và kết thúc, bản tóm tắt, số lượng token và chi phí ước tính (gồm chi phí tổng hợp từ các subagent), adapter và mô hình, id tiến trình và đường dẫn log, cuộc hội thoại cùng mọi phiếu hay lượt chạy quy trình mà nó thuộc về, cộng thêm hai trường phân loại mang phần lớn sự thật.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Trạng thái** thì thô: `pending`, `running`, `completed`, `error`.
+- **Độ sống** là cách đọc chi tiết hơn: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Nhóm lỗi** gom các thất bại một cách hữu ích: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` không có nghĩa là "đã giao"]
+Khi một lượt chạy kết thúc mà không có kết quả giao mà chế độ của nó yêu cầu — một lượt chạy ở chế độ kế hoạch chưa từng gọi `submit_plan`, một lượt chạy điều phối chưa từng đề xuất — thì trạng thái vẫn là `completed`, vì tiến trình đã thoát sạch. Tín hiệu trung thực nằm ở độ sống (`empty`), nhóm lỗi (`silentRun`) và một bản tóm tắt nói rõ điều gì đã không được tạo ra. Bản tóm tắt đó được bảo vệ: bước hoàn tất sẽ không ghi đè nó bằng những lời lảm nhảm cuối cùng của mô hình.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Đây là chủ ý. Đảo trạng thái sẽ làm dịch chuyển máy trạng thái của phiếu và quy trình, những thứ chẳng liên quan gì đến artifact còn thiếu. Nó cũng có nghĩa là chỉ "status: completed" thì không bao giờ đủ để kết luận một lượt chạy thành công — hãy đọc bản tóm tắt.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Việc đóng lượt chạy phát `AgentRunCompleted` và rất nhiều thứ phụ thuộc vào nó: khung thông báo và mục nhập bền vững của nó trong bảng tin, bộ chuyển tiếp trực tiếp đẩy nó tới các máy khách đã kết nối, việc tổng hợp chi phí quy trình, việc tiếp tục một bước quy trình đang chờ lượt chạy, việc hoàn tất phiếu đứng sau, việc ánh xạ một điều phối sang một trạng thái cuối, quyết định tiếp tục hay dừng của bộ giám sát mục tiêu, vai trò trình kiểm tra và việc đánh giá ngân sách sau lượt chạy. Danh sách hiện diện theo sau một cách riêng, bằng cách quan sát các log lượt chạy gần đây thay vì sự kiện.
 
-## Budgets, after the fact
+## Ngân sách, sau khi việc đã rồi
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Việc thi hành ngân sách là một _phản ứng_, không phải một cổng chặn. Khi một lượt chạy hoàn tất, bộ đánh giá so sánh chi tiêu từ đầu tháng đến nay của agent với mức trần hiệu dụng của nó (một chính sách ngân sách được liên kết nếu có, nếu không thì con số hàng tháng của chính agent; số không nghĩa là không giới hạn). Vượt ngưỡng mềm ghi lại một sự cố cảnh báo; cạn ngân sách ghi lại một sự cố cứng và đảo trạng thái vòng đời của agent thành `paused` trên sơ đồ tổ chức. Việc điều phối vẫn nhận công việc từ agent đó. Một trình kích hoạt quy trình `BudgetThresholdCrossed` có thể bắt đầu công việc tiếp nối từ chính sự kiện đó.
 
-## Retry lineage
+## Dòng dõi thử lại
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Mỗi log lượt chạy có thể mang dòng dõi thử lại — id lượt chạy cha, một bộ đếm số lần thử và một bản tóm tắt tiếp nối. Cây lượt chạy của hội thoại hiển thị số lần thử khi nó khác không. Một lần "thử lại" từ chat là một lần điều phối mới với một log lượt chạy mới.
 
-## Related concepts
+## Các khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): what the adapter can and cannot enforce
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/): where the tool surface and the completion contract come from
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/): the effect-class policy every gated call passes
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): the isolation story in full
-- [Multiplayer](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): steering, take-over and the autonomy dial
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): what `AgentRunCompleted` sets off
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): điều adapter có thể và không thể thi hành
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/): nơi bề mặt công cụ và hợp đồng hoàn tất bắt nguồn
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): chính sách theo lớp hiệu ứng mà mọi lời gọi bị gác đều đi qua
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): toàn bộ câu chuyện cách ly
+- [Đa người dùng](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): điều hướng, tiếp quản và nút tự chủ
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): những gì `AgentRunCompleted` khởi động

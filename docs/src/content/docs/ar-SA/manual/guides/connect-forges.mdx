@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: ربط مضيف شفرة
+description: اربط GitHub أو GitLab أو Bitbucket حتى يعمل سطح طلبات السحب وتسجيل المستودعات وتشغيلات الوكلاء — وتستطيع مساحة عمل واحدة استخدام الثلاثة معًا.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+يعمل Control Center مع ثلاثة مضيفين للشفرة، ويُطلَق على كل منها **مضيف شفرة**: **GitHub** و**GitLab** و**Bitbucket Cloud**. ولا واحد منهم افتراضي. اربط واحدًا فيعمل كل شيء، واربط أكثر من واحد فتستطيع مساحة العمل الواحدة أن تضم مستودعات من المضيفين الثلاثة معًا.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+المضيف خاصية لكل **مستودع**، يُقرأ من مستودعه البعيد `origin` عند التسجيل. لا تختاره أنت، ولا إعداد على نطاق مساحة العمل يمكن أن تخطئ فيه.
 
-## Connect a forge
+## ربط مضيف شفرة
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. افتح **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية** (`/settings/workspace/profile`).
+2. اعثر على بطاقة **استضافة الكود**. كل مضيف مدعوم ظاهر فيها، متصلًا كان أو لا.
+3. انقر **تسجيل الدخول عبر …** إن عرضه الصف، أو **إضافة رمز وصول** والصق رمزًا.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+يظهر **تسجيل الدخول** حين يكون للخادم تطبيق مسجّل عند ذلك المضيف — واليوم هذا GitHub، عبر تدفق الجهاز (انظر [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)). وما سواه رمز تلصقه: الزر لا يظهر إلا إذا كان الإتمام ممكنًا.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+في الحالين الاعتماد **لك ويعيش على الخادم**، ومفتاحه معرّف مستخدمك: لا يُخزَّن أي رمز على الجهاز الذي كتبته فيه، وكل جهاز تسجّل الدخول منه يستخدم الرمز نفسه، ولا يقرؤه عضو آخر. يسري في **الطلب التالي** — لا شيء يُعاد تشغيله، وقطع الاتصال يوقف إرساله فورًا.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+كل صف يقول من أين جاء اعتماده، لأن هذا الفرق بين «رمزي لا يعمل» و«رمز آخر هو الذي يجيب»:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| العنوان الفرعي | المعنى |
+| --- | --- |
+| `Signed in as octocat` | اعتمادك أنت هو المستخدم |
+| `Signed in as octocat · via this server's app` | هوية تطبيق الخادم هي التي تجيب — لم تسجّل دخولك |
+| `Signed in as octocat · from the environment` | متغيّر بيئة على الخادم هو الذي يجيب، لا اعتمادك |
+| `Not connected` | ليس لديك اعتماد لهذا المضيف |
 
-### What token each forge wants
+### أي رمز يطلبه كل مضيف
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| المضيف | الرمز | أين يُنشأ |
+| --- | --- | --- |
+| **GitHub** | كلاسيكي: `repo` و`read:org`. دقيق الصلاحيات: المحتويات + طلبات السحب (قراءة/كتابة)، والفحوصات + الإجراءات (قراءة) | github.com ← الإعدادات ← إعدادات المطوّر ← الرموز |
+| **GitLab** | رمز وصول شخصي بصلاحية `api` | gitlab.com ← إعدادات المستخدم ← رموز الوصول |
+| **Bitbucket** | رمز API من Atlassian، مع بريد حسابك | id.atlassian.com ← الأمان ← رموز API |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+يصادق Bitbucket مستخدمًا **بريد حسابك اسمًا للمستخدم**، والرمز كلمة مرور. اضبط `BITBUCKET_EMAIL` في بيئة الخادم حتى يعرف أي بريد يقرنه بالرمز.
 
-### Or use the environment
+### أو استخدم البيئة
 
-For a headless or CI install, the server reads these:
+في التثبيت بلا واجهة، أو في التكامل المستمر، يقرأ الخادم هذه:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`، ثم `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`، ثم `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`، ثم `BITBUCKET_TOKEN` (مع `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+هذه اعتماد **الخادم** لا اعتمادك، والفرق بينهما هو ما يحدّد السلوك: الطلب الذي يُقدَّم نيابة عنك يستخدم اعتمادك ولا شيء غيره، فلا تنوب البيئة عنك في صمت. العمل الذي لا إنسان خلفه — خطافات الويب، واستطلاع طلبات السحب، ومزامنة التذاكر — يحل هوية تطبيق الخادم أولًا، ثم اعتماد مالك الخادم، ثم البيئة. الترتيب ثابت، حتى لا يقع «سجّلت الدخول ولم يتغيّر شيء».
 
-## You are a different person on each forge
+## أنت شخص آخر على كل مضيف
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+الإنسان نفسه `octocat` على GitHub واسم آخر تمامًا على GitLab. يحل Control Center هويتك **لكل مضيف** ويستخدم المناسبة منها لكل مستودع، وهذا ما يجعل «يحتاج إلى مراجعتي» و«من إنشائي» و«وافقت على هذا» صحيحة في مساحة العمل المختلطة.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+إن لم تُحَل هوية مضيف، فلا تضيف مستودعاته شيئًا إلى الوارد، بدل أن تُطابق كل شيء. يقول الوارد ذلك، ولا يدّعي أنك «لقد اطلعت على كل شيء».
 
-## One inbox, every forge
+## وارد واحد لكل المضيفين
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+ينتشر الوارد وقائمة طلبات السحب على كل مضيف تمثّله مساحة العمل، ثم تُجمع النتائج في مجرى واحد: يجاور طلب سحب من GitHub طلب سحب من Bitbucket، والترتيب بالوقت لا حسب الشركة.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+الإخفاق معزول. المضيف المتوقف، أو الذي بلغ حد المعدّل، أو غير المتصل، لا يساهم بشيء ولا يمسّ الباقي، ولا يفرغ الوارد كله. تبقى مستودعاته على آخر حالة عُرفت لها إلى أن يعود.
 
-## What each forge can do
+## ما يستطيعه كل مضيف
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+يدعم كل مضيف الحلقة الأساسية: سرد طلبات السحب وفتحها، وقراءة الفروق، والتعليق على السطر وعلى الطلب، ثم المراجعة والدمج والإغلاق. وبعد ذلك يختلفون فعلًا، ويخفي Control Center ما لا يستطيعه المضيف بدل عنصر تحكم يفشل في صمت.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| القدرة | GitHub | GitLab | Bitbucket |
+| --- | :---: | :---: | :---: |
+| المراجعات المجمّعة (المعلّقة) | ✓ | ✓ | — |
+| طلب تغييرات | ✓ | ✓ | ✓ |
+| مزامنة حالة «معروض» لكل ملف | ✓ | — | — |
+| تفاعلات الإيموجي | ✓ | ✓ | — |
+| مراجعون من فريق أو مجموعة | ✓ | ✓ | — |
+| مراجعون مقترحون | ✓ | — | ✓ |
+| نتائج الفحوصات على طلب السحب | ✓ | ✓ | ✓ |
+| الدخول إلى خطوات مهمة الفحص وسجلاتها | ✓ | ✓ | — |
+| طلبات السحب المكدّسة | ✓ | — | — |
+| قوالب وصف طلب السحب | ✓ | ✓ | — |
+| استطلاع الإشعارات | ✓ | — | — |
+| ملفات المستخدم المفصّلة | ✓ | ✓ | — |
+| مرجع head لطلب السحب على الخادم | ✓ | ✓ | — |
 
-Where a capability is missing the feature degrades honestly:
+حيث تغيب قدرة، تتراجع الميزة بلا ادّعاء:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **حالة «معروض»** تبقى تعمل، لكن على الجهاز الذي ضبطتها عليه فقط.
+- **المراجعات المجمّعة** على Bitbucket تُنشر تعليقًا بعد تعليق، فيراها المراجعون تصل فرادى لا دفعة واحدة.
+- **غياب مرجع head** على Bitbucket يعني أن جلب طلب السحب يأخذ فرع المصدر باسمه، فيفشل متى حُذف الفرع.
 
-## Vocabulary
+## المفردات
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+يسمّي GitLab طلب السحب **طلب دمج**. يقول Control Center «طلب سحب» في نموذجه كله، ويستخدم اسم المضيف نفسه حين الكلام عن ذلك المضيف.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The PR list is empty and says a forge is not connected
+### قائمة طلبات السحب فارغة وتقول إن مضيفًا غير متصل
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+ليس لديك اعتماد لذلك المضيف. سجّل الدخول أو الصق رمزًا في **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود**. مستودعات المضيفين الآخرين لا تتأثر.
 
-### I connected a forge but its repos still show nothing
+### ربطت مضيفًا ومستودعاته لا تعرض شيئًا
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+افحص العنوان الفرعي للصف. إن ورد فيه «عبر تطبيق هذا الخادم» أو «من البيئة»، فاعتماد غير الذي توقعته هو الذي يجيب — اعتمادك يغلب في كل ما تطلبه، فإن قال الصف غير ذلك فلم يُحفظ اعتمادك.
 
-### A repo will not register
+### مستودع لا يُسجَّل
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/).
+يحتاج التسجيل إلى الثلاثة: أن يكون المسار داخل شجرة عمل Git، وأن يكون لها مستودع بعيد `origin`، وأن يشير ذلك المستودع البعيد إلى github.com أو gitlab.com أو bitbucket.org. انظر [إضافة مستودعات إلى مساحة عمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/).
 
-### Everything stops working for a while after heavy use
+### يتوقف كل شيء فترة بعد استخدام كثيف
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+هذا قاطع حد المعدّل. إذا أشار المضيف إلى بلوغ حدّه الأساسي للمعدّل، يفشل العميل ما يلي من طلبات محليًا وبلا اتصال بالشبكة، إلى أن تنقضي النافذة — فلا يعمّق تكرار المحاولة الحد. والأعطال العابرة تُعاد محاولتها بتراجع أسي.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Add repos to a workspace](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-- [Review and merge a PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
-- [Triage the inbox](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)
+- [إضافة مستودعات إلى مساحة عمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [مراجعة طلب سحب ودمجه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
+- [فرز الوارد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)

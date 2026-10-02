@@ -1,207 +1,222 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Afstandsbediening en mobiel
+description: Hoe de telefoon je server bereikt via een relay met een broker en end-to-end verzegelde frames in plaats van een peer-to-peer-verbinding, en het gelaagde toegangsmodel dat dat bereik beperkt houdt.
 slug: nl-NL/handleiding/concepten/afstandsbediening
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center is een desktopapp, maar het werk dat het volgt stopt niet wanneer
+je van je bureau weggaat. **Afstandsbediening** koppelt je telefoon aan je
+`cc_server`, met **[Remote](https://remote.usectrl.dev/)**, de bijbehorende app
+op remote.usectrl.dev, zodat je de fleet vanaf daar kunt volgen: berichten en
+tickets lezen, een agent antwoorden, je nieuwsfeed triëren, zonder dat de audio,
+het transcript, de broncode of de referenties die op de server staan die ooit
+verlaten.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Zie het als een metgezel van het deck die vooral leest. Het is niet bedoeld om
+de volledige desktopclient te vervangen.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/nl-NL/handleiding/concepten/deployment/) for how the two differ.
+:::note[Twee verschillende routes op afstand]
+De telefoonmetgezel koppelt met een `cc_server` via een **relay met een broker**
+die end-to-end verzegelde JSON-RPC-frames doorgeeft. De volledige **webbuild**
+(en een desktop die naar een externe server wijst) is de andere route op
+afstand; die belt `cc_server` via WebSocket en toont de complete app. Zie
+[Deployment en clients](/nl-NL/handleiding/concepten/deployment/) voor hoe de twee verschillen.
 :::
 
 ## Transport
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+De telefoon bereikt `cc_server` via een WebSocket: ofwel een directe verbinding
+(loopback, LAN, tailnet of `wss://`), ofwel een ruimte waarvoor een uitnodiging
+nodig is op een signaleringsbroker die verzegelde frames doorgeeft. Er is geen
+peer-to-peer-datakanaal.
 
-## What the phone can do
+## Wat de telefoon kan doen
 
-The paired phone reaches a small, intentional slice of the server's surface:
+De gekoppelde telefoon bereikt een klein, bewust gekozen deel van het oppervlak
+van de server:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Lezen**: tickets, agenten, ruimtes en hun berichten, en je nieuwsfeed
+- **Antwoorden**: een bericht in een ruimte sturen, een ticket bijwerken of
+  toewijzen, een artikel als gelezen of bewaard markeren
+- **Een playbook uitvoeren**: een opgeslagen planningssjabloon met zijn
+  parameters instantiëren. Dit _stelt alleen_ een plan voor; er wordt niets
+  uitgevoerd of besteed tot een operator het in Plan Studio op een volledige
+  client goedkeurt
+- **Van werkruimte wisselen**, via de eigen kiezer van de telefoon
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Dat is ongeveer alles. Een telefoon is een **principal met minder rechten** dan
+een volledige client. Hij kan geen processen starten, geen LLM-budget besteden,
+niet naar GitHub pushen en geen werkruimtes aanmaken. Zie
+[het toegangsmodel](#het-toegangsmodel) voor hoe dat wordt afgedwongen in plaats
+van alleen bedoeld.
 
-## How the link is built
+## Hoe de verbinding tot stand komt
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+De verbinding loopt via een **relay met een broker**: de server voegt zich als
+eigenaar bij één ruimte waarvoor een uitnodiging nodig is op een `wss://`-broker
+en elke gekoppelde client — desktop, web, telefoon — voegt zich bij dezelfde
+ruimte met een tijdgebonden toegangstoken. Drie onderdelen komen samen:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Onderdeel                | Rol                                                                                                                                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (telefoonapp)** | De bijbehorende webapp, standaard gehost op `remote.usectrl.dev`, of zelf gehost. Laadt in een browser en houdt de koppelingsregistratie bij in IndexedDB.                                                                                                                      |
+| **Relay-broker**         | Een stateless `wss://`-relay (`cc_signaling_server`) die N-weg-ruimtes host. Geeft **alleen ondoorzichtige frames** door: elke payload wordt end-to-end verzegeld tussen de telefoon en de server, dus de broker ziet nooit app-gegevens of het koppelingsgeheim en interpreteert nooit wat hij doorstuurt. |
+| **`cc_server`**          | De eigenaar van de ruimte. Beantwoordt de aanroepen van de telefoon via dezelfde dispatcher die elke andere client gebruikt.                                                                                                                                                    |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Een koppelingsaanbod bevat een **verbindingsdescriptor** met elke route naar de
+server (LAN, tailnet, publieke `wss://`, relay) plus de identiteitsvingerafdruk.
+De resolver van de telefoon kiest de best bereikbare route en pint de
+vingerafdruk vast bij de eerste verbinding (TOFU); de relay garandeert
+verbinding zelfs wanneer er geen directe route bestaat, zonder ooit het verkeer
+te kunnen lezen.
 
-## What the pairing payload is
+## Wat de koppelingspayload is
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/nl-NL/handleiding/gidsen/apparaat-koppelen/) for the procedure. The anatomy is
-what matters here.
+De koppeling wordt vanuit de app aangemaakt en als deeplink afgeleverd; zie
+[Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/) voor de procedure. De anatomie is
+hier wat telt.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+De payload reist mee in het **fragment** van de URL, het deel na `#` dat
+browsers nooit naar de server sturen, zodat de HTTPS-host van de PWA het nooit
+ziet. Hij bevat alles wat de telefoon nodig heeft om de server te bereiken en te
+bewijzen wie hij is: de verbindingsdescriptor (elke route plus de
+identiteitsvingerafdruk), een nieuw aangemaakte apparaat-id, een 32-byte vooraf
+gedeelde sleutel en een vervalstempel. De telefoon decodeert hem, slaat lokaal
+een koppelingsregistratie op en verwijdert het fragment zodat het geheim de URL
+verlaat.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Er zijn twee payloadvormen en ze zijn **niet uitwisselbaar**. De telefoon-QR die
+het koppelingspaneel in de app aanmaakt, is de v2 `PairingPayload` hierboven,
+gericht op de Remote PWA-host. `cc_server pair --client-url` levert een andere,
+oudere v1-link (`{s, i, k}` — server-URL, apparaat-id, sleutel) die alleen voor
+de **web**client bedoeld is.
 
-They also differ in lifetime, which is easy to get wrong:
+Ze verschillen ook in levensduur, wat makkelijk mis te gaan is:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Aangemaakt door                          | Verval van referenties                    |
+| ---------------------------------------- | ----------------------------------------- |
+| Koppelingspaneel in de app (`pairing.mint`) | 30 dagen, altijd                       |
+| `cc_server pair` op de opdrachtregel     | **Geen** — de referenties verlopen niet    |
 
-## The access model
+## Het toegangsmodel
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Een gekoppeld apparaat is **geauthenticeerd maar niet vertrouwd**. Verschillende
+onafhankelijke controles voorkomen dat een goedgekeurde (of gelektte) koppeling
+volledige controle over de server wordt.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Lidmaatschap, niet de koppeling, is de grens
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Een geldige koppelingssleutel bewijst _welk apparaat_ je bent. Wat je mag lezen
+of wijzigen, wordt bepaald door je **werkruimterol**, die bij elke afzonderlijke
+aanroep opnieuw wordt bepaald, en door rechten per repo voor alles wat
+repo-inhoud blootstelt. Een apparaat met een volkomen geldige sleutel dat
+toebehoort aan een gebruiker die geen lid is van de genoemde werkruimte, wordt
+geweigerd met "Not a member of this workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+De minimumrol volgt uit het soort bewerking, tenzij die zijn eigen rol aangeeft:
+lezen vereist `guest`, mutaties vereisen `member`, destructieve bewerkingen
+vereisen `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Een telefoon is een lager sessieniveau
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Naast de rolcontrole heeft een telefoonsessie minder mogelijkheden dan een
+desktop- of websessie. Bewerkingen die als alleen-voor-volledige-clients zijn
+aangemerkt, worden voor een telefoon geweigerd voordat de handler draait,
+ongeacht hoe bevoorrecht de gebruiker erachter is: het aanmaken, opvragen,
+hernoemen en intrekken van apparaatkoppelingen; het lezen en instellen van
+tunnelverbindingen; serverback-up en export/import van werkruimtes;
+procesdetectie en het doden van processen; adaptertests; serverinstellingen;
+SSO-beheer; fleet-beheer; en het overnemen of teruggeven van een draaiende
+agent.
 
-### 3. A default-deny tool allow-list
+### 3. Een allow-list met standaard weigeren
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Specifiek voor het MCP-tooloppervlak (`tools/call`) bepaalt een allow-list die
+standaard weigert welke tools de telefoon mag aanroepen. Alles wat niet op de
+lijst staat, wordt geweigerd voordat het draait. De lijst leunt zwaar op lezen
+en observeren, plus een handvol **alleen lokale** schrijfacties — een bericht,
+een ticketupdate, een artikelmarkering — die geen LLM-budget besteden, geen
+proces starten en geen extern systeem aanraken.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Geweigerd is bijvoorbeeld: een agent raadplegen, een AI-review starten, een
+agent doden, een review naar GitHub publiceren, agenten aannemen of ontslaan,
+een werkruimte aanmaken.
 
-### 4. Per-call workspace scoping
+### 4. Werkruimtebereik per aanroep
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/nl-NL/handleiding/concepten/werkruimtes/) invariant the rest of the
-product enforces.
+De server heeft **geen** "huidige werkruimte". Hij is bewust stateless: elke
+aanroep met werkruimtebereik moet zijn doel-`workspace_id` in zijn argumenten
+noemen, en de dispatcher weigert de aanroep direct wanneer die ontbreekt of een
+werkruimte noemt die de server niet geregistreerd heeft — voordat er iets een
+database opent. Een telefoon kan dus nooit het bereik van een andere client
+overnemen of daarin afdrijven, en een vreemde werkruimte noemen helpt ook niet,
+want de lidmaatschapscontrole in controle 1 geldt nog steeds. Dit is dezelfde
+[werkruimte-isolatie](/nl-NL/handleiding/concepten/werkruimtes/)-invariant die de rest van het
+product afdwingt.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. End-to-end verzegelde frames met de vooraf gedeelde sleutel
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Elk frame tussen telefoon en server wordt verzegeld met de koppelingssleutel;
+het toegangstoken krijgt een client alleen de ruimte in, het ontsleutelt niets.
+De broker geeft ciphertext door en ziet de sleutel nooit. Een apparaat dat wordt
+ingetrokken, ontdekt dat zijn referenties al weg zijn, dus het **faalt gesloten**
+bij opnieuw verbinden.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Een referentie die de app aanmaakt, is tijdgebonden aan 30 dagen; daarna laat de
+verbindingscontrole hem mislukken en moet de telefoon opnieuw koppelen. Intrekken
+gebeurt live: de server houdt de apparaattabel in de gaten en verbreekt de open
+sessies van een ingetrokken apparaat binnen enkele seconden in plaats van te
+wachten op de volgende verbinding.
 
-### 6. Rate limiting per principal
+### 6. Snelheidsbeperking per principal
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Een limiter met een schuivend venster beperkt het verkeer van remote tools tot
+120 aanroepen per minuut, met een strakkere sublimiet van 30 per minuut op de
+muterende werkwoorden. Het budget hoort bij de **principal, niet bij de
+sessie**: drie van je apparaten putten uit één tegoed, dus een gekaapte client
+kan geen extra ruimte kopen door meer sessies te openen en één luidruchtig lid
+kan de anderen niet uithongeren.
 
-### 7. A broker that learns nothing
+### 7. Een broker die niets leert
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+De relay-broker is bewust dom: hij host ruimtes, stuurt verzegelde frames door
+en houdt geen accounts, geen app-gegevens en geen sleutels bij. Ruimtes zijn
+uitnodigingsgebonden en tijdelijk. De app-gegevens, audio, het transcript, de
+broncode en de referenties blijven allemaal op de server.
 
-## Live updates
+## Live-updates
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Eenmaal gekoppeld ontvangt de telefoon **live-updates** als
+notificatieframes — nieuwe agentberichten, tickets die aan jou zijn toegewezen,
+statuswijzigingen — die de eigen meldingen van de desktop spiegelen. De server
+zendt die frames naar elke verbonden sessie uit en het werkruimtefilter wordt
+aan de clientkant toegepast, dus wat je ziet is beperkt tot de werkruimte waar
+je naar kijkt.
 
-## Where it lives
+## Waar het te vinden is
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Oppervlak                                                                           | Wat het toont                                                                                             |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Instellingen → Jij → Je apparaten** (`/workspaces/:workspaceId/settings/you/devices`) | Gekoppelde clients met live-status, plus **Een nieuwe client koppelen** (webbrowser, desktopapp of telefoon) en intrekken |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Hetzelfde paneel maakt koppelingen voor een tweede browser of desktopapp, niet
+alleen voor telefoons — de flow is identiek, alleen de deeplink verschilt.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Afstandsbediening is server-side en wordt **niet** via MCP beschikbaar gesteld.
+De telefoon praat via de relay met de eigen dispatcher van de server; hij is
+geen MCP-client van een externe server.
 ::::
 
-## See also
+## Zie ook
 
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/): roles, membership and repo grants
-- [Deployment and clients](/nl-NL/handleiding/concepten/deployment/): where remote control sits among the client tiers
-- [Architecture](/nl-NL/handleiding/concepten/architectuur/): where remote control sits in the stack
-- [Pair a device](/nl-NL/handleiding/gidsen/apparaat-koppelen/)
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/): het bereik per aanroep waarop dit leunt
+- [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/): rollen, lidmaatschap en reporechten
+- [Deployment en clients](/nl-NL/handleiding/concepten/deployment/): waar afstandsbediening zich bevindt tussen de clientniveaus
+- [Architectuur](/nl-NL/handleiding/concepten/architectuur/): waar afstandsbediening zich bevindt in de stack
+- [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/)

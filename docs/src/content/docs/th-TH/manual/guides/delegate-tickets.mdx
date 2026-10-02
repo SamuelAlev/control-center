@@ -1,131 +1,130 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: มอบงานให้เอเจนต์
+description: ส่งตั๋วงานให้เอเจนต์ในบทสนทนา และให้เอเจนต์มอบงานย่อยให้กันและกันภายใต้ตัวป้องกันด้านความลึกและวงจร
 slug: th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+คู่มือนี้ครอบคลุมวิธีปลดงานออกจากมือคุณไปให้เอเจนต์ และสิ่งที่เกิดขึ้นเมื่อ
+เอเจนต์ส่งงานระหว่างกัน
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[การมอบหมายตั๋วงานให้เอเจนต์ไม่ได้จัดส่งงาน]
+ไม่มีตัวจัดส่งตั๋วงานสำหรับผู้รับมอบหมายที่เป็นเอเจนต์ การมอบหมายบันทึกความ
+เป็นเจ้าของเท่านั้น — ไม่มีสเปซถูกสร้างขึ้น ไม่มีสถานะเปลี่ยน และไม่มีเอเจนต์
+เริ่มทำงาน ข้อยกเว้นคือตั๋วงานที่มอบหมายให้ **ทีม** ซึ่งจะปลุกหัวหน้าทีมนั้น
+งานของเอเจนต์สำหรับผู้รับมอบหมายที่ระบุชื่ออยู่ในบทสนทนา คุณจึงเริ่มงานที่นั่น
 :::
 
-## Hand a ticket to an agent
+## ส่งตั๋วงานให้เอเจนต์
 
-1. [Create the ticket](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [สร้างตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)ด้วยชื่อและคำอธิบายที่
+   ละเอียดพอจะลงมือทำได้
+2. ตั้ง **ผู้รับมอบหมาย** เป็นเอเจนต์ เพื่อให้ความเป็นเจ้าของถูกบันทึกไว้
+3. เปิด (หรือสร้าง) สเปซ แล้ว @-mention เอเจนต์ตัวนั้น
+4. อ้างอิงตั๋วงานด้วย `#` mention ในข้อความของคุณ — ช่องเขียนข้อความเติมตั๋วงาน
+   ของเวิร์กสเปซให้อัตโนมัติ — แล้วบอกว่าคุณต้องการให้ทำอะไร
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+เอเจนต์หยิบงานขึ้นมาจากบทสนทนา ความคืบหน้าของมันจะสตรีมเข้าสู่สเปซนั้น
 
-## What the agent receives
+## สิ่งที่เอเจนต์ได้รับ
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- ข้อความของคุณ รวมถึงการอ้างอิงตั๋วงานที่คุณแท็กไว้
+- สเปซสำหรับทำงานและรายงานผล
+- worktree ที่แยกออกมาต่างหากจากรีโปที่เชื่อมโยงกับเวิร์กสเปซ
+- **โหมด** ของสเปซ ซึ่งเป็นสิ่งที่กำหนดพื้นผิวเครื่องมือของการรัน
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/).
+โหมดเป็นคุณสมบัติของสเปซ ไม่ใช่ของตั๋วงาน — ตั๋วงานไม่มี
+โหมด เอเจนต์ตัวเดียวจึงอยู่ใน `chat` ในสเปซหนึ่งและอยู่ใน `plan` ในอีกสเปซ
+ได้ เลือกโหมดจากดรอปดาวน์โหมดของช่องเขียนข้อความ (**เอเจนต์**, **แผน** หรือ
+**ประสานงาน**); `review` ถูกตั้งโดยสเปซรีวิว PR และเลือกไม่ได้
+ดู[โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)
 
-## Require a structured result
+## กำหนดให้มีผลลัพธ์แบบมีโครงสร้าง
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+สัญญาผลลัพธ์ถูกประกาศไว้ที่การสั่งงาน ไม่ใช่ที่ตั๋วงาน:
+`expected_output_schema` บวกกับ `output_contract_mode` (ค่าเริ่มต้นคือ strict)
+เอเจนต์ทำตามสัญญาโดยเรียก `submit_output` ซึ่งตรวจสอบเพย์โหลดเทียบกับสคีมา
+และปฏิเสธเพย์โหลดที่ไม่เป็นไปตามนั้น
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+ทั้งผลลัพธ์ที่ยอมรับและการปฏิเสธทั้งหมดจะไปอยู่บน **บันทึกการรันของเอเจนต์**
+สถานะของตั๋วงานเองไม่ถูกแตะต้องจากสิ่งนี้ — สัญญาที่ล้มเหลวไม่ทำให้ตั๋วงาน
+ล้มเหลว
 
-## Monitor progress
+## ติดตามความคืบหน้า
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **สเปซ** — กิจกรรมสดของเอเจนต์ ซึ่งเป็นมุมมองหลัก
+- **ตั๋วงาน** — สถานะของมัน ตามที่ผู้ที่เลื่อนสถานะกำหนด
+- **การสังเกตการณ์ → สด** (`/workspaces/<workspace-id>/observability`) —
+  รายชื่อเอเจนต์สด
+- **การสังเกตการณ์ → ข้อมูลเชิงลึก** — บันทึกการรัน พร้อมต้นทุนและระยะเวลา
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+ไม่มีหน้าจอแดชบอร์ด URL ของเวิร์กสเปซเปล่า ๆ จะเปลี่ยนเส้นทางไปยังกล่อง
+ขาเข้า
 
-## Let agents delegate to each other
+## ให้เอเจนต์มอบงานให้กันและกัน
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+เอเจนต์ที่เจอปัญหาย่อยจะมอบหมายงานต่อด้วยเครื่องมือ MCP `delegate_task`
+มันสร้างตั๋วงานลูกที่มอบหมายให้เอเจนต์ตัวอื่น และ — เมื่อคุณส่ง
+`parent_ticket_id` — บันทึกสายงานไว้เพื่อให้ตัวป้องกันมองเห็นได้
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+ตัวป้องกันเชิงโครงสร้างสองตัวทำงานที่จุดคอขวดของการจัดการตั๋วงานเสมอ
+ไม่เคยทำงานตามคำสั่งในพรอมต์:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **เพดานความลึก** — สายงานที่ลึกเกิน 3 การกระโดดจะถูกปฏิเสธ
+- **การตรวจจับวงจร** — การกระโดดกลับไปยังเอเจนต์ที่อยู่ในสายแล้วจะถูกปฏิเสธ
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+เมื่อคุณส่ง `from_agent_id` ตัวป้องกันอีกสองตัวจะทำงาน (โปรดักชันจัดหา
+พอร์ตรีโซลเวอร์เสมอ):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **เพดานความเป็นอิสระ** — ระดับที่มีผลจริงของผู้รับมอบหมายในสเปซต้องไม่
+  เกินของผู้มอบหมาย
+- **กรอบวงเงินงบประมาณ** — การมอบหมายหักจากงบประมาณหยุดแข็งที่เหลืออยู่ของ
+  ผู้มอบหมาย และสร้างเพิ่มไม่ได้ กรณีไม่มีนโยบาย หรือนโยบายแบบไม่จำกัด ก็ผ่าน
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+การปฏิเสธดังชัดเจน: เครื่องมือส่งคืนเหตุผลของตัวป้องกันแบบคำต่อคำ เอเจนต์ที่
+มอบหมายจึงเห็นสาเหตุได้อย่างชัดเจน ฟิลด์ `delegatedByAgentId` บันทึกว่าใครเป็น
+ผู้มอบหมาย เกิดเป็นแผนภูมิต้นไม้การมอบหมาย
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` ข้ามตัวป้องกันทุกตัว]
+เครื่องมือ `delegate_ticket` รุ่นเก่ายังถูกลงทะเบียนอยู่และเรียก `createTicket`
+โดยตรง — ไม่มีเพดานความลึก ไม่มีการตรวจวงจร ไม่มีเพดานความเป็นอิสระ ไม่มี
+กรอบวงเงินงบประมาณ ควรใช้ `delegate_task` แทน
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+เพดานความลึกของการมอบหมายที่ 3 นี้เป็นขีดจำกัดที่ต่างจากเพดานการซ้อนของ
+ซับเอเจนต์ของฮาร์เนสในตัวที่ 2 — ตัวหนึ่งจำกัดตั๋วงานระหว่างเอเจนต์ อีกตัวจำกัด
+ซับเอเจนต์ภายในรันเดียว
 
-## Put several agents on one ticket
+## วางเอเจนต์หลายตัวบนตั๋วงานเดียว
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+เพิ่มพวกมันเป็น **ผู้ร่วมงาน** บนตั๋วงาน (บทบาท: assignee, collaborator,
+reviewer) นั่นคือรายชื่อ — บันทึกว่าใครเกี่ยวข้อง — และไม่ได้ให้สิทธิ์ใด ๆ
+โดยตัวมันเอง
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/).
+หากต้องการให้เอเจนต์อยู่ในบทสนทนาเดียวกันจริง ๆ ให้เพิ่มพวกมันเป็นผู้เข้าร่วม
+จากส่วนหัวของสเปซ จากนั้นพวกมันจะ @-mention กันและกันได้ที่นั่น ดู
+[สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/)
 
-## Automated ticket creation
+## การสร้างตั๋วงานอัตโนมัติ
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+ไม่มีโหนดใดในพาเลตต์ของไปป์ไลน์ที่สร้างตั๋วงาน ไปป์ไลน์จึงไม่สามารถกระจายงาน
+ออกเป็นตั๋วงานที่มีผู้รับมอบหมายได้
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/).
+เส้นทางที่มีอยู่จริงคือการประสานงาน: การอนุมัติข้อเสนอจะสร้างโปรเจกต์และทีม
+คอมไพล์ DAG ของตั๋วงานย่อยในข้อเสนอให้เป็น **เทมเพลตไปป์ไลน์** (หนึ่งขั้นตอน
+`promptAgent` ต่อตั๋วงานย่อยหนึ่งใบ ไม่ใช่แถว `Ticket` ต่อใบ) และเริ่มรันนั้น
+ดู[รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
-- [Organize work with projects](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)
-- [Ticket lifecycle reference](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/)
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
+- [จัดงานด้วยโปรเจกต์](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)
+- [เอกสารอ้างอิงวงจรชีวิตตั๋วงาน](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Tickets](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
-- [Dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [ตั๋วงาน](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
+- [วงจรชีวิตการสั่งงาน](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)

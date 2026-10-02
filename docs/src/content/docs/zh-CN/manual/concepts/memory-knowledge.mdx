@@ -1,199 +1,114 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: 记忆与知识
+description: Control Center 如何存储智能体知识、究竟有哪些内容会进入智能体的提示词，以及记忆读取为何采用失效开放。
 slug: zh-CN/手册/概念/记忆与知识
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## 记忆有什么用
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+没有记忆，每次与智能体的对话都得从零开始：同一条约定要重新解释一遍，同一个决策要重新争论一遍，同一个死胡同要重新走一遍。记忆是以工作区为作用域、能跨运行存续的存储，它存在的意义在于：一个智能体产出的知识，之后能被另一个智能体找到。
 
-It has three layers and they answer different questions:
+它分三层，回答的是不同的问题：
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **事实** —— 什么是真的（一条约定、一个结果、一个决策）。
+2. **策略** —— 智能体据此必须做什么（一条规范性规则）。
+3. **工作记忆** —— 某个智能体当时正做到哪一步。
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+这个区分很重要，因为它们到达智能体的路径不同。事实靠搜索取得。策略靠推送送达。工作记忆则是私有的。
 
-## Facts
+## 事实
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` 是一条以工作区和域为作用域的知识单元。
 
-| Attribute                                   | What it is                                                                |
+| 属性                                        | 含义                                                                      |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | 知识域（“conventions”“decisions”“codebase”）                              |
+| `topic`                                     | 简短的主题标签                                                            |
+| `content`                                   | 知识正文                                                                  |
+| `confidence`                                | 0.0–1.0，初值来自来源信息，并随再次提及而提升                             |
+| `memoryType`                                | 事实的种类 —— 决定它的时间衰减曲线                                        |
+| `veracity`                                  | 它是如何被得知的 —— 决定置信度的起点，也决定每次再次提及的增幅            |
+| `sourceObservationIds`                      | 由哪些观察记录得出                                                        |
+| `supersededBy`                              | 取代它的那份更新的事实（如果有）                                          |
+| `validUntil`, `recallCount`, `mentionCount` | 召回时使用的到期与使用信号                                                |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+最后两行最容易被忽略，而恰恰是它们决定了*哪一条*事实会浮现出来。`memoryType` 带有各类型自己的 Weibull 衰减参数，因此有期限的承诺会很快淡出，而稳定的画像型事实则不会。`veracity` 记录来源 —— 由人陈述（权重 1.0）、由智能体推断（0.7）、由工具产出（0.5）、导入（0.6）—— 这个权重就是该事实起始置信度的初值。
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+当事实被推翻时，绝不会就地编辑。写入一条事实会对同域、同主题的事实运行冲突检测，让落败的一方被取代，并记录一条冲突行。审计轨迹才是重点：你始终能看到此前相信的是什么，以及是什么取代了它。
 
-## Policies
+## 策略
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` 是从事实中推导出的规范性规则，以工作区和域为作用域，带有一个启用标志和一个可选的 `requiredRole`。
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+工作区中每一条**启用**的策略都会被注入**每一次**派发，不做任何过滤 —— 不按域、角色、任务或空间筛选。在写下第二十条策略之前，这一点值得先了解：策略会与任务争夺同一个上下文窗口。这也是策略上的 `requiredRole` 只是建议性字段的原因：它说明这条规则针对谁，并不能阻止规则送达其他所有人。
 
-## Domains
+## 域
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` 在工作区内对事实和策略进行分组。域为知识提供组织结构，也是访问授权所针对的单元 —— 但在把域当作机密性边界之前，请先看下面的警告。
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+域要么是整个工作区范围（`architecture`），要么限定到某一个仓库（`repo:<slug>/architecture`）。同名但作用域不同就是两个彼此独立的存储：对某个代码库成立的事实，不会覆盖工作区范围的那一条。当智能体正在某个仓库中工作时，`search_memory` 和派发前导会把仓库范围的记忆排在前面；但它们不会把其余记忆过滤掉。在 `propose_fact` / `propose_policy` / `search_memory` 上传入 `repo`，即可写入或提升该作用域的权重。
 
-## Access control is fail-open for reads
+## 访问控制对读取采用失效开放
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` 把智能体角色和域映射到三档权限之一：
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| 权限     | 含义                                                                                                 |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| `none`   | 无访问权限                                                                                           |
+| `read`   | 可以搜索和获取事实                                                                                   |
+| `write`  | `propose_policy` 所必需。事实写入（`propose_fact`、`supersede_fact`）不受授权限制                    |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[缺少授权记录意味着可读，而不是拒绝]
+当某个 `(role, domain)` 组合没有对应的授权记录时，实际生效的权限是 **`read`**。读取在设计上就是失效开放的。唯一会抛错的写入，是在没有 `write` 权限时调用 `propose_policy`（`InsufficientMemoryPermission`）。把敏感内容放进记忆域，并不能限制谁可以读到它 —— 除非你为每一个不该看到它的角色都显式写了一条 `none` 授权。
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+目前产品中任何地方都没有用于管理授权的界面。记忆界面只有“事实”“策略”和“知识图谱”三个标签页，别无其他；授权只能通过 `memory_access_grant.*` 的 RPC 操作访问。
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+这种不对称 —— 读取宽松、策略写入严格 —— 是有意为之的取舍。记忆在流通时才最有用，而读取被拒只会让智能体默不作声地知道得更少，而不是把问题报出来。相比之下，策略写入被拒既响亮又容易纠正，所以强制约束就落在那里。新建的域会为每个角色预置 `write`；之后再收紧只能通过 RPC 编辑，因为没有授权管理界面。
 
-## Working memory
+## 工作记忆
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+每个智能体都有一个 `AgentWorkingMemory`：以工作区和智能体为键的自由文本草稿本。它跨运行存续，只属于该智能体，并在每次派发时注入它的提示词。“我当时正把认证重构做到一半”这样的记录就存在这里 —— 这种状态值得带到下一次运行，但不值得提升为一条持久事实。
 
-## What actually reaches an agent's prompt
+## 究竟有哪些内容会进入智能体的提示词
 
-At dispatch, the memory preamble is assembled from exactly three things:
+派发时，记忆前导只由三样东西拼装而成：
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **工作区中每一条启用的策略**，以 `- [domain] rule` 行的形式。
+- **智能体自己的工作记忆**，原文照录。
+- **针对本任务按关键词匹配出的一份事实短名单** —— 最多五条，受限于约 1,200 个字符的预算，且只有当任务描述至少 20 个字符时才有。更短的任务完全拿不到事实。
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+这份短名单只用 FTS/关键词，而且上限是刻意设置的。为查询生成嵌入很慢，而派发路径恰恰是延迟最容易被立刻察觉的地方，所以那条缓慢的语义路径被有意排除在外。前导的结尾会告诉智能体用 `search_memory` 去核实关键项，那才是完整召回模型所在的地方。
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+这条路径不查询任何访问授权。短名单找到什么，智能体就看到什么。
 
-## Recall: one query, four voices
+## 召回：一次查询，四个声部
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+面向智能体的 `search_memory` 工具有三种模式，它们是真正不同的搜索：
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** —— 仅 FTS5。
+- **`semantic`** —— 用倒数排名融合把 BM25 与向量结果合并在一起。
+- **`hybrid`**（默认）—— 复调召回：把四个排好序的声部融合在一起，再做多样化处理。
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+这四个声部是词法（FTS）、语义（向量 KNN）、时序（近期活跃的事实）和图谱 —— 从最强的词法种子和语义种子出发，沿情节边游走两跳。图谱声部正是情节边存在的全部理由：它会浮现出*与你的答案相连*、却不匹配你任何用词的那条事实。各声部的权重由一个分类出的查询意图决定（默认语义权重最高，其次图谱和词法，再次是时间新近度），每个候选的分数都会按其 Weibull 衰减缩放，结果集还会用 MMR 做多样化，以免某条事实的五种重复说法挤掉另外四条不同的事实。
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[在模型安装完成之前，语义召回是无声的]
+只有当设备本地的嵌入模型下载完成后，向量声部才会参与。在此之前，混合召回只靠三个声部运行，而且不会追溯回填 —— 在模型安装之前写入的事实永远不会获得向量。如果 SQLite 向量扩展本身加载失败，向量路径会进一步降级为在 Dart 内扫描打包好的嵌入；召回仍然能给出答案，只是更慢。
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+桌面端和 Web 端的记忆搜索是一条独立且更简单的路径：`memory_fact.search` 这个 RPC 操作**只用 FTS5**，因为瘦客户端无法提交查询嵌入，混合路径始终留在主机内部。因此，你在记忆浏览器里看到的排序，并不是智能体从 `search_memory` 得到的排序。这是预期行为，不是缺陷，但它确实意味着：在界面上“我搜过但没找到”，并不能证明智能体也找不到。
 
-## Where memory lives and who writes it
+## 记忆存放在哪里，由谁写入
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+记忆浏览器位于 **设置 → 工作区 → 记忆**（`/workspaces/<id>/settings/memory`），其中有“事实”“策略”和“知识图谱”三个标签页。
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+这里有一处让人意外的不对称：**你可以编辑和删除记忆，但不能新建记忆。** 事实标签页和策略标签页都没有新增入口。撰写发生在智能体一侧，通过 `propose_fact` 和 `propose_policy` 完成（替换它们用 `supersede_fact` / `supersede_policy`）。`remember` 写入的是一条受会话限制的热层条目，之后 `consolidate_memory` 可能会把它提升为事实；`record_observation` 和 `update_my_notes` 写入的则是派发时注入的那份私有草稿本。这个浏览器是复核与纠错的界面，而不是撰写的界面 —— 所以，如果你想让某条事实进入记忆，办法就是去告诉一个智能体。
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+两项维护操作同样由智能体调用，而不是按计划执行：`consolidate_memory` 合并并修剪累积的事实，`harmonize_memory` 调和在不同智能体之间产生分歧的信念。`list_memory_conflicts` 显示冲突检测已经记录下的内容。没有任何定时器会替你运行它们。会议决策会在会议持久化步骤记录它们时被采集进 `decisions` 域；那并不是针对已完成的智能体运行设置的定时器。
 
-## Related concepts
+## 相关概念
 
-- [The agent model](/zh-CN/手册/概念/智能体模型/): roles are what grants are written against
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/zh-CN/手册/操作指南/管理记忆/): working with memory in practice
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：授权正是针对角色写入的
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)：记忆以工作区为作用域，存放在该工作区自己的数据库文件中
+- [管理工作区记忆](/zh-CN/手册/操作指南/管理记忆/)：在实践中使用记忆

@@ -1,123 +1,134 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Авторизация — кто что может и как вы это доказываете
+description: Каталог разрешений, лежащий в основе ролей Control Center, защищённый от подмены журнал аудита, в который попадает каждое решение об авторизации, и общесерверные параметры, которые может закрепить оператор.
 slug: ru-RU/руководство/понятия/авторизация
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/ru-RU/руководство/понятия/ограничения/).
+Control Center отвечает на два вопроса об авторизации, и они по-настоящему
+разные. **«Может ли этот человек вызвать эту операцию?»** — это про людей,
+роли и репозитории. **«Может ли этот агент вызвать этот эффект?»** — это про
+действия, аргументы и радиус поражения; этим занимаются
+[Ограничения](/ru-RU/руководство/понятия/ограничения/).
 
-This page is the first question, plus the record both of them leave behind.
+Эта страница — про первый вопрос и про след, который оставляют оба.
 
-## One decision point
+## Одна точка принятия решений
 
-Every human-side authorization decision resolves through a single function:
+Любое решение об авторизации на стороне человека проходит через одну функцию:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**Разрешение** — это `<domain>:<tier>`: `tickets:write`,
+`members:administer`, `repos:read`. Каталог **выводится**, а не пишется
+вручную: он вычисляется из самого набора операций (префикс имени операции
+задаёт домен, минимальная роль, которую она уже требует, — уровень), поэтому
+все ~550 операций получают разрешение, и никому не приходится вписывать его
+руками.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Именно это свойство и стоит защищать. Благодаря ему у НОВОЙ операции проверка
+прав включается по умолчанию — слабое место модели с ручными аннотациями в
+том, что кто-то забывает, а забывают как раз проверку. Ratchet-тест
+фиксирует получившийся набор доменов, поэтому добавление операции с новым
+префиксом — это осознанное решение человека об именовании, а не случайность.
 
-The four tiers map exactly onto the built-in roles:
+Четыре уровня точно соответствуют встроенным ролям:
 
-| Tier | Role floor | Example |
+| Уровень | Минимальная роль | Пример |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | гость | `tickets:read` |
+| `write` | участник | `tickets:write` |
+| `administer` | администратор | `members:administer` |
+| `own` | владелец | `workspace:own` |
 
-## Roles
+## Роли
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Пять встроенных ролей — **владелец, администратор, участник, наблюдатель,
+гость** — это готовые наборы поверх этого каталога. Владение — одно место на
+рабочее пространство, и передаётся оно явно, через **Передать владение**
+(иначе уходящий владелец неудаляем: депровизионинг через SCIM отказывается
+удалять владельца рабочего пространства — сначала передайте владение).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Пользовательские роли работают на вычитание.** Такая роль указывает базовый
+набор (`admin`, `member`, `viewer` или `guest` — но никогда `owner`) и набор
+разрешений, УДАЛЯЕМЫХ из него, — «администратор, но без управления
+участниками». Она никогда не даёт больше, чем её основа, и именно поэтому их
+безопасно вводить в уже существующую установку: все существующие проверки
+остаются корректной верхней границей. У участников они хранятся как
+`custom:<id>`, а клиент, слишком старый, чтобы понять это значение,
+откатывается к гостю, а не угадывает.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Под ролями лежат **права на уровне репозитория** (`none` / `read` / `review` /
+`write`): членство в рабочем пространстве никогда молча не даёт больше прав,
+чем хост кода. Их проверяет каждая поверхность, открывающая доступ к коду, —
+включая те, что дотягиваются до кода сбоку, например терминал или сессия
+редактора, открытая на worktree пространства.
 
-## Server authority
+## Полномочия сервера
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Некоторые операции вообще не про рабочее пространство: настройки всей
+установки, конфигурация SSO, учётные данные провайдеров, управление моделями,
+резервные копии всей установки. Такие операции объявляют **полномочия
+сервера**, и их отклоняют всем, кроме оператора установки (записанного
+владельца сервера). Так сделано намеренно: личность оператора одна, и
+определение у неё одно.
 
-## The audit trail
+## Журнал аудита
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Каждое решение об авторизации — и **разрешение, и отказ** — дописывается в
+журнал аудита соответствующего рабочего пространства, связанный
+хеш-цепочкой.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Журнал только отказов отвечает на вопрос «что мы заблокировали?», но не на
+вопрос «что этот агент на самом деле сделал и кто это разрешил?», а разбор
+инцидента начинается именно с него. Поэтому каждая запись хранит всю цепочку
+атрибуции: действующий субъект, человек, от имени которого он действовал,
+делегирование, через которое он пришёл, действие и его аргументы (в виде
+дайджеста), решение и **правило, по которому оно принято**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Записи связаны в цепочку: хеш каждой покрывает предыдущую, поэтому правка,
+удаление или перестановка любой строки ломает все хеши после неё.
+**Проверить цепочку** заново пересчитывает всё и называет первое звено,
+которое не сходится. Журнал аудита, который нельзя проверить, — просто
+журнал; тот, который можно пересчитать, — доказательство.
 
-Two consequences worth knowing:
+Два следствия, о которых стоит знать:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Таблица аудита **не подпадает под очистку по возрасту**. Хеш-цепочку
+  нельзя усечь из середины. Срок хранения реализован как экспорт с
+  последующим усечением, и после усечения остаётся контрольная точка с
+  конечным хешем удалённого сегмента, так что сохранившееся по-прежнему
+  проверяется вплоть до самого начала.
+- Он идёт **рядом** с лентой активности, а не поверх неё. Лента — это то, что
+  делали люди; журнал — то, что было разрешено и отклонено. Общий
+  идентификатор корреляции позволяет прочитать один вызов в обоих.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Он экспортируется как JSON с разделителями-переводами строк и может потоково
+передаваться в SIEM (Splunk, Elastic, Sentinel — HTTP-эндпоинт с
+bearer-токеном). Потоковая передача по замыслу не даёт гарантий: недоступный
+SIEM ни в коем случае не должен блокировать вызов инструмента агентом, а
+надёжная проверяемая копия в любом случае лежит на диске.
 
-## Sessions
+## Сеансы
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Установка может задать **максимальный срок жизни сеанса** и **тайм-аут
+простоя**. И то и другое проверяется при проверке учётных данных устройства,
+через которую проходит каждый аутентифицированный канал: срок сеанса,
+который клиент мог бы проигнорировать, отвечает на анкету, а не на действия
+атакующего. Установка также может потребовать SSO — тогда ручная привязка
+новых устройств отключается (со страховкой от блокировки: пока нет ни одного
+работающего подключения SSO, запрос отклоняется).
 
-## What this is not
+## Чем это не является
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Это не ACL на отдельные объекты.** Разрешений на отдельный тикет или
+  сообщение нет — и это намеренно. Команды на практике просят разделение на
+  уровне репозиториев, и оно есть; общий доступ к отдельным объектам —
+  комбинаторная поверхность, спроса на которую здесь не показано.
+- **Это не движок политик, который настраивают на DSL.** Словарь намеренно
+  закрыт, поэтому всю политику можно отобразить, объяснить и перечислить.
+- **Проверка идёт только на сервере.** Клиентские проверки существуют лишь
+  затем, чтобы не предлагать элемент управления, в котором откажут.
+  Окончательное решение всегда за сервером.

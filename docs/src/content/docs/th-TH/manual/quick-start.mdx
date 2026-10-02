@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: เริ่มอย่างรวดเร็ว
+description: ติดตั้ง Control Center กำหนดค่าเอเจนต์หนึ่งตัว แล้วดูมันทำงานบนรีโพของคุณ
 slug: th-TH/คู่มือ/เริ่มอย่างรวดเร็ว
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+นี่คือเส้นทางที่สั้นที่สุดและครบถ้วนที่สุดจากศูนย์ไปจนถึงเอเจนต์ที่รันกับโค้ดของคุณเอง ทำตามลำดับ ทุกขั้นตอนต้องอาศัยขั้นตอนก่อนหน้า
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+คุณต้องมี Git บัญชี GitHub และไม่ว่าจะเป็นบัญชีผู้ให้บริการโมเดล (Anthropic, OpenAI, Codex, Cursor, Kimi Code หรือผู้ให้บริการใดก็ตามที่มีคีย์ API) หรือ Claude Code CLI ที่ติดตั้งไว้แล้ว ส่วนที่เหลือจะถูกตั้งค่าไปตามทาง
 
-## Step 1: Install and launch
+## ขั้นตอนที่ 1: ติดตั้งและเปิดใช้งาน
 
-Install Control Center as described in [Install](/th-TH/คู่มือ/ติดตั้ง/), then open it.
+ติดตั้ง Control Center ตามที่อธิบายไว้ใน[ติดตั้ง](/th-TH/คู่มือ/ติดตั้ง/) แล้วเปิดมันขึ้นมา
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+ในการเปิดครั้งแรก เดสก์ท็อปจะถามว่า **“Control Center ควรรันอย่างไร?”** ให้เลือก **รันในแอปนี้** Control Center จะสปอว์น `cc_server` แบบไม่มีส่วนติดต่อบนเครื่องนี้ ซึ่งเป็นเจ้าของข้อมูลของคุณและทำงานทั้งหมด คุณจะไม่เห็นมัน แต่หน้าจอการเริ่มต้นใช้งานจะเปิดขึ้นแทน
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/th-TH/คู่มือ/ติดตั้ง/#use-it-in-your-browser) for the browser route.
+:::note[ไม่อยากติดตั้งอะไรเลยใช่ไหม?]
+แอปเดียวกันรันในเบราว์เซอร์ได้ที่ [app.usectrl.dev](https://app.usectrl.dev) ด้วย
+คุณสมบัติเดียวกัน อย่างไรก็ตาม แท็บเบราว์เซอร์ไม่สามารถโฮสต์เซิร์ฟเวอร์ได้ คุณจึงต้อง
+เตรียมเซิร์ฟเวอร์เอง — รัน `cc_server` ในเครื่องแล้วเชื่อมต่อกับ `ws://localhost:9030`
+หรือชี้ไปที่เซิร์ฟเวอร์บนเครื่องอื่น เริ่มอย่างรวดเร็วนี้ใช้เส้นทางเดสก์ท็อปเพราะไม่ต้อง
+ตั้งค่าเซิร์ฟเวอร์ ดู[ติดตั้ง](/th-TH/คู่มือ/ติดตั้ง/#use-it-in-your-browser)สำหรับเส้นทางผ่านเบราว์เซอร์
 :::
 
-## Step 2: Work through onboarding
+## ขั้นตอนที่ 2: ทำขั้นตอนการเริ่มต้นใช้งานให้ครบ
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+การเริ่มต้นใช้งานมีห้าขั้นตอนและรันตามลำดับ — ข้ามไปข้างหน้าไม่ได้
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **เชื่อมต่อ**: ลงชื่อเข้าใช้ด้วย GitHub หรือวางโทเค็นการเข้าถึงส่วนบุคคลที่มี `repo` และ `read:org` ข้อมูลรับรองจะถูกเก็บไว้บนเซิร์ฟเวอร์ ผูกกับบัญชีของคุณ
+2. **เวิร์กสเปซ**: ตั้งชื่อเวิร์กสเปซแรกของคุณและเลือกโลโก้ได้ตามต้องการ การสร้างมันจะซีดเอเจนต์ห้าตัว — CEO หนึ่งตัว บวก `qa`, `architect`, `engineer` และ `librarian` — พร้อมเทมเพลตไปป์ไลน์ที่มีมาให้ในตัว
+3. **แซนด์บ็อกซ์**: บันทึกค่ากำหนดเรื่องการทำแซนด์บ็อกซ์ ไม่ว่าจะเลือกแบบใดก็ไปต่อได้
+4. **อะแดปเตอร์**: เลือกอะแดปเตอร์และโมเดลที่เอเจนต์ควรใช้เป็นค่าเริ่มต้น เลือก **Control Center (built-in)** จากนั้นใช้ตัวเลือกผู้ให้บริการที่ปรากฏขึ้นเพื่อลงชื่อเข้าใช้ผู้ให้บริการโมเดล — รายการโมเดลจะว่างอยู่จนกว่าจะเชื่อมต่อผู้ให้บริการสักราย การทำขั้นตอนนี้ให้เสร็จจะประทับอะแดปเตอร์และโมเดลลงบนเอเจนต์ CEO ของเวิร์กสเปซด้วย
+5. **เสียง (ไม่บังคับ)**: ติดตั้งโมเดลเสียงพูดบนอุปกรณ์สำหรับการป้อนข้อความด้วยเสียง หรือข้ามขั้นตอนนี้
 
-Control Center then opens your workspace inbox.
+จากนั้น Control Center จะเปิดกล่องขาเข้าของเวิร์กสเปซคุณ
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/).
+:::note[อะไรเป็นตัวจำกัดการรันของเอเจนต์]
+คำสั่งของเอเจนต์ถูกห่อหุ้มด้วยแซนด์บ็อกซ์เนทีฟของระบบปฏิบัติการโฮสต์เมื่อมีให้ใช้ — Seatbelt บน macOS, bubblewrap บน Linux Windows ไม่มีแบ็กเอนด์ การรันที่นั่นจึงถูกจำกัดด้วยชั้นอื่น ๆ เท่านั้น: worktree ของการสนทนาเอง (`git worktree` บน Windows; copy-on-write เมื่อ `rift` มีให้ใช้) ข้อมูลรับรองที่ผ่านนายหน้าต่อการเปิดใช้แต่ละครั้งและถูกเพิกถอนตอนรื้อถอน และกฎคุมการกระทำ ดู[แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
 :::
 
-## Step 3: Add a repository
+## ขั้นตอนที่ 3: เพิ่มรีโพสิทอรี
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+ไปที่ **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี** แล้วคลิก **เพิ่มรีโพสิทอรี**
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+ไดอะล็อกจะเรียกดูโฟลเดอร์บนเครื่องที่รันเซิร์ฟเวอร์ ไม่ใช่เครื่องไคลเอนต์ของคุณ และมันจะอยู่ภายในราก (root) ที่เซิร์ฟเวอร์ถูกกำหนดค่าให้เปิดเผยเท่านั้น (โดยค่าเริ่มต้นคือโฮมไดเรกทอรีของผู้ใช้ของเซิร์ฟเวอร์) มีเฉพาะเช็กเอาต์ git เท่านั้นที่ได้ช่องทำเครื่องหมาย ติ๊กของคุณแล้วลงทะเบียนมัน
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+เช็กเอาต์จะถูกยอมรับก็ต่อเมื่อมันอยู่ภายใน git work tree มี remote `origin` และ remote นั้นชี้ไปที่โฮสต์โค้ดที่รองรับ — github.com, gitlab.com หรือ bitbucket.org สิ่งอื่นจะถูกปฏิเสธพร้อมระบุเหตุผล
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+รีโพถูกจำกัดขอบเขตตามเวิร์กสเปซ: การลงทะเบียนเช็กเอาต์ที่นี่จะใส่ไว้ในเวิร์กสเปซ_นี้_ ไม่มีขั้นตอนการเชื่อมโยงแยกต่างหาก
 
-## Step 4: Give an agent an adapter and a model
+## ขั้นตอนที่ 4: กำหนดอะแดปเตอร์และโมเดลให้เอเจนต์
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+ไปที่ **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** เลือกเอเจนต์ `engineer` ในรายการเอเจนต์
 
-On the **Settings** tab, set:
+ในแท็บ **การตั้งค่า** กำหนด:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **อะแดปเตอร์**: `Control Center (built-in)`
+- **โมเดล**: เลือกหนึ่งตัวจากผู้ให้บริการที่คุณเชื่อมต่อไว้ในการเริ่มต้นใช้งาน
 
-Press **Save changes**.
+กด **บันทึกการเปลี่ยนแปลง**
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+ในทางปฏิบัติ ขั้นตอนนี้ไม่ใช่ตัวเลือกเสริม เฉพาะเอเจนต์ CEO เท่านั้นที่สืบทอดอะแดปเตอร์ที่เลือกไว้ระหว่างการเริ่มต้นใช้งาน ผู้เชี่ยวชาญอีกสี่ตัวถูกสร้างขึ้นโดยไม่มีอะแดปเตอร์ พวกมันจะถอยกลับไปใช้ **Control Center (built-in)** พร้อมโมเดลเริ่มต้นของ Anthropic จึงรันได้เฉพาะเมื่อคุณเชื่อมต่อบัญชี Anthropic ไว้แล้ว — และจะรันบนโมเดลที่คุณไม่ได้เลือกหากคุณเชื่อมต่อไว้
 
-## Step 5: Send the agent a task
+## ขั้นตอนที่ 5: ส่งงานให้เอเจนต์
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. ในแถบด้านข้าง หาส่วน **สเปซ** แล้วคลิกปุ่ม **+**
+2. ตั้งชื่อสเปซ เพิ่มเอเจนต์ `engineer` ใต้ **เพิ่มเอเจนต์** แล้วสร้างมัน
+3. พิมพ์งานเล็ก ๆ ที่เป็นรูปธรรมโดยอิงกับรีโพที่คุณลงทะเบียนไว้ แล้วกด Enter
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center จัดเตรียม worktree แบบ copy-on-write ของรีโพในเวิร์กสเปซสำหรับการสนทนานี้ ประกอบพรอมต์จากบทบาท เพอร์โซนา สกิลของเอเจนต์และบริบทของสเปซ แล้วส่งงานรัน เช็กเอาต์ต้นทางของคุณจะไม่ถูกแตะต้อง
 
-## Step 6: Watch it work
+## ขั้นตอนที่ 6: ดูมันทำงาน
 
-You should see, in order:
+คุณควรเห็นตามลำดับ:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- ปุ่มส่งของคอมโพเซอร์เปลี่ยนเป็นปุ่มหยุด เพราะมีเอเจนต์กำลังทำงานอยู่ในการสนทนานี้
+- การให้เหตุผล การเรียกเครื่องมือ และข้อความของเอเจนต์ที่สตรีมเข้าสู่ทรานสคริปต์
+- ปุ่มส่งกลับมาอีกครั้งเมื่อการรันจบลง
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+จากนั้นเปิด **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** เลือกเอเจนต์ แล้วดูแท็บ **บันทึก**: จะมีแถวการรันหนึ่งแถว พร้อมสถานะ ระยะเวลา เวลาเริ่มและเวลาสิ้นสุด และอะแดปเตอร์ที่ใช้รัน
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+นั่นคือวงจรหลัก ทุกสิ่งอื่นใน Control Center — การรีวิว pull request, ไปป์ไลน์, ตั๋วงาน, การประชุม, Slack — ล้วนต่อยอดจากมัน
 
-## Next steps
+## ขั้นตอนถัดไป
 
-- [Your first workspace](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/th-TH/คู่มือ/บทสอน/pr-แรก/): take an agent's branch through review and merge
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): what an agent is made of
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/): the rest of the agent form
-- [Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/): one goal, one approval, a generated pipeline
-- [Pair your phone](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/): follow the fleet from anywhere
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): how the desktop, web and phone clients relate to the server
+- [เวิร์กสเปซแรกของคุณ](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/): เนื้อหาเดิม แต่ช้ากว่า พร้อมคำอธิบายโมเดลการแยกโดด
+- [รีวิว Pull request แรกของคุณ](/th-TH/คู่มือ/บทสอน/pr-แรก/): พาสาขาของเอเจนต์ผ่านการรีวิวและการรวม
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): เอเจนต์ประกอบขึ้นจากอะไร
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/): ส่วนที่เหลือของฟอร์มเอเจนต์
+- [รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/): เป้าหมายเดียว การอนุมัติครั้งเดียว ไปป์ไลน์ที่ถูกสร้างขึ้น
+- [จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/): ติดตามฟลีตได้จากทุกที่
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): ไคลเอนต์เดสก์ท็อป เว็บ และโทรศัพท์เกี่ยวข้องกับเซิร์ฟเวอร์อย่างไร

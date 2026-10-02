@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Jelajahi data di kernel persisten
+description: Beri agen interpreter Python atau JavaScript yang mempertahankan variabelnya di antara panggilan, menggambar grafik ke dalam chat, dan dapat memanggil alat Anda sendiri dari dalam sel.
 slug: id-ID/panduan-pengguna/panduan-praktis/jelajahi-data-di-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Panduan ini menunjukkan cara membuat agen memuat sesuatu yang mahal sekali, lalu mengajukan beberapa pertanyaan tentangnya, alih-alih membayar biaya pemuatan pada setiap pertanyaan.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Alat `eval` menjalankan **interpreter persisten**. Variabel, impor, dan data yang dimuat tetap bertahan di antara panggilan.
 
-## Why not just run a script
+## Mengapa tidak sekadar menjalankan skrip
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+`python -c` sekali jalan membayar biaya penyiapan pada setiap pertanyaan. Memuat dataframe memakan waktu beberapa detik dan seratus megabita; menggambarnya sebagai grafik memakan waktu milidetik. Ketika setiap pertanyaan memakan biaya pemuatan, agen mengajukan lebih sedikit pertanyaan daripada yang seharusnya — dan setiap jawaban kembali sebagai teks yang kemudian harus diuraikan ulang.
 
-## Load once, then ask
+## Muat sekali, lalu bertanya
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Muat `data/runs.csv` dan beri tahu saya durasi p95 per agen.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Ekspresi terakhir ditampilkan kembali seperti yang dilakukan notebook, sehingga `len(runs)` melaporkan jumlah baris tanpa `print`.
 
-Then, in a **separate call**:
+Lalu, dalam **panggilan terpisah**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` masih termuat. Frame pandas dikembalikan dengan dirender sebagai tabel, bukan sebagai repr.
 
-## Charts land in the chat
+## Grafik muncul di chat
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Gambar ditangkap setelah sel dan dikembalikan sebagai gambar yang dirender oleh transkrip. Anda melihat grafiknya; agen pun melihatnya.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Gambar ditutup setelah ditangkap. Gambar yang tidak dikumpulkan akan digambar ulang dan dikirim lagi oleh sel *berikutnya* juga, sehingga sesi lima sel akan memunculkan grafik pertama sebanyak lima kali.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Tanpa Jupyter, tanpa pip, tanpa langkah instalasi]
+Runner-nya adalah `python3 -u` biasa yang berbicara protokol baris di stdio. Runner tersebut mengimplementasikan `display()`, pengiriman bundel MIME, dan penangkapan gambar sendiri, sehingga berfungsi pada Python 3 apa pun — termasuk di dalam sandbox yang justru ada untuk mencegah pemasangan.
 :::
 
-## The idioms you would type anyway
+## Idiom yang memang akan Anda ketik
 
-These are rewritten into plain code rather than erroring:
+Ini ditulis ulang menjadi kode biasa alih-alih memunculkan galat:
 
-| You type    | What happens                                        |
+| Yang Anda ketik | Apa yang terjadi |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Menjalankan pip, lalu **membersihkan cache modul** agar `import` berikutnya melihatnya |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | Subproses yang ditangkap                            |
+| `%%bash`    | Sisa sel sebagai skrip shell                        |
+| `%%timeit`  | 1000 eksekusi terukur                               |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Penggusuran cache `%pip` adalah yang paling penting: memasang ke interpreter yang sedang berjalan tidak berpengaruh apa pun bagi modul yang sudah diimpor, jadi tanpanya versi yang baru Anda pasang bukan versi yang sedang berjalan.
 
-## Calling your own tools from inside a cell
+## Memanggil alat Anda sendiri dari dalam sel
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` masuk kembali ke registri alat milik agen itu sendiri. Artinya, sebuah sel dapat menyebar ke lebih dari seratus berkas, atau didelegasikan melalui `task`, tanpa model menghabiskan satu giliran per item.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Jembatan tidak melewati pagar pengaman Anda]
+Panggilan yang dijembatani diselesaikan terhadap registri alat yang **sama** dengan panggilan yang dikeluarkan model, sehingga kebijakan `ActionClass`, prompt persetujuan, dan setiap wrapper berlaku secara identik. Jembatan yang melangkahi registri akan menjadi celah yang bentuknya persis seperti "tulis satu baris Python".
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Panggilan yang dijembatani **menangguhkan batas waktu sel** selama panggilan itu belum selesai. Anggaran mengukur ketidakaktifan, bukan waktu jam dinding — sel yang menyebar ke subagen dan menunggu empat menit tidak macet, dan mematikannya di tengah penyebaran akan menghilangkan seluruh status kernel.
 
-## Starting over
+## Memulai ulang
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Membuang interpreter dan memulai yang bersih. Semua yang dimuat hilang, dan itulah intinya.
 
-## Where the kernel runs
+## Di mana kernel berjalan
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+Di **enclosure** percakapan bila percakapan memilikinya, jika tidak di host.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Interpreter persisten yang digerakkan oleh model yang membaca repo tidak tepercaya adalah persis alasan eksekusi yang hanya dijalankan di dalam enclosure ada: panggilan `bash` sekali jalan setidaknya berakhir, sedangkan kernel adalah shell yang mengingat.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/).
+Ia **tidak** menyalakan enclosure untuk mencapai itu — aturan yang sama yang mencegah tab rig memulai otomatis. Jika Anda ingin kernel berada di dalam enclosure, buka shell percakapan terlebih dahulu. Lihat [Berikan agen mesin untuk menguji](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/).
 
-## Limits
+## Batas
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Satu sel pada satu waktu per kernel.** Dua sel yang berlomba dalam satu interpreter adalah dua paruh dari dua program yang saling menyisip dalam satu namespace.
+- **Output dibatasi.** Sel dalam loop print dipotong alih-alih dibiarkan memenuhi jendela konteks.
+- **Empat gambar per sel.** Loop yang menggambar grafik dapat memunculkan satu gambar per iterasi, dan setiap gambar adalah biaya tetap yang besar dalam permintaan yang membawanya.
+- **Kernel mati bersama run.** Kernel yang masih memegang dataframe setelah percakapan berakhir adalah kebocoran.
 
-## Related
+## Terkait
 
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) — what "enclosed" means here
-- [Give an agent a machine to test on](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) — opening the enclosure
-- [Built-in agent tools](/id-ID/panduan-pengguna/referensi/alat-agen/) — the arguments
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) — apa arti "tertutup" di sini
+- [Berikan agen mesin untuk menguji](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) — membuka enclosure
+- [Alat agen bawaan](/id-ID/panduan-pengguna/referensi/alat-agen/) — argumennya

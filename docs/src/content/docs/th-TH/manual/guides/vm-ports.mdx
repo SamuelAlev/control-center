@@ -1,137 +1,139 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: ส่งต่อพอร์ตจากเทอร์มินัล
+description: เข้าถึงเซิร์ฟเวอร์พัฒนาที่เริ่มใน Terminal (VM) หรือเชลล์ของโฮสต์ — จากเครื่องของคุณ จาก Browser (VM) จาก Android บนเครือข่ายของคุณ หรือภายใต้โดเมนสำหรับพัฒนาที่มี HTTPS
 slug: th-TH/คู่มือ/วิธีทำ/ส่งต่อพอร์ต
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+เซิร์ฟเวอร์ที่คุณเริ่มในเทอร์มินัลของการสนทนาจะถูกเผยแพร่ให้เฉพาะ
+**สเปซนั้น** เท่านั้น แผงพอร์ตจะตรวจจับตัวฟังที่แอปนี้เริ่มไว้ที่นั่น แมปมัน
+และให้ที่อยู่สำหรับทุกที่ที่คุณอาจต้องการเข้าถึงมัน สองสเปซฟังที่ `5173`
+พร้อมกันได้ แผนที่ของทั้งคู่ไม่เคยปะปนกัน
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+ไม่มีอะไรที่นี่เปิดเครื่องออก: ทุกเส้นทางถูกสร้างโดยเซิร์ฟเวอร์ เมื่อมีการ
+ร้องขอ และดับไปพร้อมกับเทอร์มินัลหรือริก
 
-## See what is listening
+## ดูว่ามีอะไรกำลังฟังอยู่
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. เปิด **Terminal (VM)** ของการสนทนา หรือเชลล์ของโฮสต์ (ในสเปซหรือบนหน้า PR)
+2. เริ่มเซิร์ฟเวอร์ของคุณ — `pnpm dev`, `python -m http.server 8000` อะไรก็ได้
+3. ภายในไม่กี่วินาที **ไอคอนปลั๊ก** ที่มุมขวาบนของเทอร์มินัล
+   จะมีจุดขึ้นมา คลิกมัน
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+แผงจะแสดงทุกพอร์ตที่กำลังฟังพร้อมโพรเซสที่เป็นเจ้าของมัน ในรูปแบบ
+`3000 → 3000`: พอร์ตที่โพรเซสบายด์ไว้ทางซ้าย พอร์ตที่มันตอบในเครื่องทางขวา
+(เป็นหมายเลขเดียวกันทุกครั้งที่หมายเลขนั้นว่างบนเครื่องของคุณ) แต่ละแถวยัง
+บอกด้วยว่า `localhost` บนเดสก์ท็อป, Browser (VM) และ Android เข้าถึงมันได้หรือไม่
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+การค้นหาถูกจำกัดขอบเขตไว้: Terminal (VM) ถูกโพลจากภายในเกสต์นั้น
+ส่วนเชลล์ของโฮสต์ถูกโพลจากทรีโพรเซส PTY ของเซสชันนั้น สเปซอื่น
+และโพรเซสอื่นบน Mac ของคุณ จะไม่ปรากฏในรายการ
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+พอร์ตใหม่ในเทอร์มินัล**นี้**จะถูกส่งต่อโดยอัตโนมัติ ปิด
+**ส่งต่อพอร์ตอัตโนมัติ** ในแผงเดียวกัน หากคุณต้องการเฉพาะพอร์ตที่คุณเพิ่มเอง
 
-## Reach it from this computer
+## เข้าถึงจากคอมพิวเตอร์เครื่องนี้
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+ใช้ **คัดลอก URL ในเครื่อง** บนแถวนั้น — `http://localhost:3000` การส่งต่อ
+จะฟังบนลูปแบ็กเท่านั้น สิ่งอื่นบนเครือข่ายของคุณจึงมองไม่เห็นมัน
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+หากสองสเปซเปิดเผยเกสต์ `5173` ทั้งคู่ และเครื่องของคุณจอง `127.0.0.1:5173`
+ไว้แล้ว สเปซที่สองจะคงเกสต์ `5173` ไว้และได้พอร์ตภายในเครื่องแบบชั่วคราว
+คัดลอก URL จะใช้หมายเลขทางขวา
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+บนเชลล์ของโฮสต์ โพรเซสอยู่ในเครื่องของคุณอยู่แล้ว การแมปพอร์ตภายในเครื่อง
+เดียวกันจึงไม่มีผลอะไร การเลือกพอร์ตภายในเครื่องที่ **ต่างออกไป** จะผูก
+พร็อกซีลูปแบ็กเข้ากับพอร์ตที่คุณเลือก
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (หรือการผูกกับ `0.0.0.0`) **ไม่** ทำให้ Browser (VM) ที่อยู่ใน
+เอนโคลเจอร์เข้าถึงเซิร์ฟเวอร์บน Mac ได้ เกสต์มีลูปแบ็กของตัวเอง เซิร์ฟเวอร์
+จะปลูกทันเนลเข้าไปในเกสต์นั้นเมื่อแท็บ Browser อยู่ใน **สเปซเดียวกัน**
 
-## Reach it from the Browser (VM)
+## เข้าถึงจาก Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+เปิดเบราว์เซอร์ที่อยู่ในเอนโคลเจอร์ใน**การสนทนาเดียวกัน** พิมพ์
+`localhost:<left-hand port>` — หมายเลขที่โพรเซสบายด์ไว้ การแมปใหม่
+(`5173 → 3000`) ก็ตอบที่หมายเลขทางขวาในเบราว์เซอร์นั้นด้วย คัดลอก URL
+จึงใช้ได้ที่นั่นเช่นกัน `browser_use` ของเอเจนต์สามารถไปยังหมายเลขใดก็ได้
+เซิร์ฟเวอร์ในสเปซ A ไม่เคยปรากฏเป็น `localhost:5173` ในเบราว์เซอร์ของสเปซ B
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+ใช้ `localhost` ไม่ใช่ IP ของ LAN และไม่ใช่ `--host` เกสต์มีลูปแบ็กของ
+ตัวเอง ทันเนลจะฟังที่นั่นทั้งบน IPv4 และ IPv6
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+หน้าเว็บที่เปิดการเชื่อมต่อจำนวนมากในคราวเดียว (แอสเซ็ตนับสิบ ซ็อกเก็ต
+รีโหลดสด) จะใช้ทันเนลเดียวกันนั้นร่วมกัน Browser (VM) จะมัลติเพล็กซ์พวกมัน
+ไปบน exec แบบถาวรหนึ่งตัว การเรียกข้อมูลที่ถาโถมมาจึงไม่ใช่การสปอว์นโพรเซส
+หนึ่งตัวต่อการเชื่อมต่อหนึ่งครั้ง และไม่หมดเวลาเป็นหน้าจอขาว
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+ภายในสเปซเดียว การส่งต่อของ Terminal (VM) ชนะเชลล์ของโฮสต์บนหมายเลข
+เดียวกัน ข้ามสเปซไม่มีความเป็นลำดับความสำคัญ — มันเป็นแผนที่แยกจากกัน
 
-## Reach it from Android
+## เข้าถึงจาก Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+เปิดแท็บ **Android** ของสเปซนั้น `localhost:<port>` ของโปรแกรมจำลองจะถูก
+ส่งต่อย้อนกลับไปยังพอร์ตที่เผยแพร่ของสเปซนี้ (`adb reverse`) โปรแกรมจำลอง
+มีเพียงตัวเดียวสำหรับทั้งอุปกรณ์: การเชื่อมสเปซ B จะเปลี่ยนเป้าหมายของ
+`:5173` ไปที่ B และทิ้งของ A ปิดแท็บแล้วการส่งต่อย้อนกลับที่ริกนี้ติดตั้งไว้
+จะถูกลบออก
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+เครื่องจำลอง iOS ก็คือ Mac อยู่แล้ว — ไม่ต้องส่งต่อย้อนกลับ iPhone เครื่องจริง
+ยังต้องใช้การแชร์บน LAN
 
-## Share it on your network
+## แชร์บนเครือข่ายของคุณ
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → แชร์บนเครือข่ายภายใน** จะเผยแพร่พอร์ตที่
+`<server-ip>:<random port>` — มีประโยชน์สำหรับเปิดหน้าเว็บบนโทรศัพท์ของคุณ
+หรือเมื่อเซิร์ฟเวอร์รันอยู่บนเครื่องอื่น
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- พอร์ต LAN ถูกกำหนดโดย OS เสมอ ไม่เคยเป็นหมายเลขของเกสต์ การเปิดเผย
+  จึงเป็นที่อยู่ที่จงใจและมองเห็นได้ ไม่ใช่ที่อยู่ที่เดาได้
+- มันยังคงเป็นส่วนตัว (ลูปแบ็กเท่านั้น) จนกว่าคุณจะเปิด และ
+  **⋯ → เฉพาะเครื่องนี้** จะดึงมันกลับออกจากเครือข่าย
 
-## Give it a name — with HTTPS
+## ตั้งชื่อให้มัน — ด้วย HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → ตั้งโดเมนเบราว์เซอร์ (.test)** กำหนดโดเมนสำหรับพัฒนา เช่น `myapp.test`
+ให้กับพอร์ต ภายใน Browser (VM) `https://myapp.test` จะโหลดเซิร์ฟเวอร์ของ
+คุณพร้อมสัญลักษณ์กุญแจที่ถูกต้อง — มีประโยชน์สำหรับสิ่งใดก็ตามที่ทำงาน
+ต่างออกไปบนออริจินที่มีชื่อ หรือในบริบทที่ปลอดภัย (คุกกี้, service workers,
+คอลแบ็ก OAuth)
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- โดเมนต้องลงท้ายด้วย `.test` หรือ `.localhost` — สอง TLD ที่สงวนไว้สำหรับ
+  การพัฒนา ชื่อสำหรับพัฒนาจึงไม่มีทางบดบังไซต์จริงได้
+- **ชื่อ**โดเมนไม่ซ้ำกันบนเซิร์ฟเวอร์ แต่**หมายเลข**พอร์ตไม่เป็นเช่นนั้น
+  สองสเปซอาจใช้ `5173` ทั้งคู่ได้ แต่ทั้งคู่จะอ้าง `myapp.test` พร้อมกันไม่ได้
+- ใบรับรองมาจากหน่วยออกใบรับรองภายในเครื่องที่สร้างขึ้นบนเซิร์ฟเวอร์ของคุณ
+  ในครั้งแรกที่จำเป็นต้องใช้ กุญแจของมันอยู่ในไดเรกทอรีข้อมูลของเซิร์ฟเวอร์
+  และไม่เคยเข้าไปในเกสต์ใด ๆ เบราว์เซอร์ที่อยู่ในเอนโคลเจอร์เชื่อถือกุญแจ
+  นั้นเพียงหนึ่งเดียว TLS ไปยังอินเทอร์เน็ตจริงจึงยังตรวจสอบได้ตามปกติ
+- โดเมนจะ resolve **ภายใน Browser (VM) เท่านั้น** ส่วนเบราว์เซอร์ของคุณเอง
+  บนโฮสต์จะใช้ `localhost:<port>` แทน
+- `http://myapp.test` แบบธรรมดาก็ใช้ได้เช่นกัน
 
-## Forward a port by hand
+## ส่งต่อพอร์ตด้วยตนเอง
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**เพิ่มพอร์ต** ที่ด้านล่างของแผงจะแมปพอร์ตไว้ล่วงหน้า (หรือไม่ว่าอะไรจะ
+กำลังฟังอยู่บนพอร์ตนั้นหรือไม่) การส่งต่อด้วยตนเองจะคงที่อยู่ไว้ขณะเซิร์ฟเวอร์
+ของคุณรีสตาร์ท — แถวนั้นจะแสดงว่า *ไม่ได้ฟัง* จนกว่ามันจะกลับมา — ในขณะที่
+การส่งต่ออัตโนมัติจะหายไปเมื่อพอร์ตของมันหายไป บนเชลล์ของโฮสต์คุณยังตั้ง
+พอร์ตภายในเครื่องที่ต่างออกไปได้ด้วย
 
-## How it stays contained
+## มันยังคงถูกจำกัดขอบเขตได้อย่างไร
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/th-TH/คู่มือ/แนวคิด/ริก/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/th-TH/คู่มือ/อ้างอิง/ริก/#ports-and-dev-domains).
+พอร์ตถูกจัดคีย์ตามเวิร์กสเปซและสเปซ แผนที่พอร์ตของไฮเปอร์ไวเซอร์ถูกกำหนดไว้
+ตายตัวตอนเครื่องบูต Terminal (VM) จึงวิ่งบนช่องทางแคบ ๆ สองช่องที่เซิร์ฟเวอร์
+ควบคุม: เลนขาเข้าที่สร้างไว้ล่วงหน้าหนึ่งเลนเข้าไปในเกสต์ ซึ่งปฏิเสธที่จะ
+เชื่อมต่อกับพอร์ตใด ๆ ที่เกสต์ไม่ได้กำลังฟังอยู่จริง และทันเนลย้อนกลับที่
+เซิร์ฟเวอร์เปิดค้างไว้สำหรับ Browser (VM) และ Android เชลล์ของโฮสต์ไม่เคย
+สแกนทั้งเครื่อง ไม่มีตัวฟังใดถูกสร้างขึ้นภายในเกสต์ที่เซิร์ฟเวอร์ไม่ได้ใส่ไว้
+ที่นั่น และทุกอย่างจะถูกรื้อถอนไปพร้อมกับเทอร์มินัลหรือริก การออกแบบนี้อธิบาย
+ไว้ใน [ริกและเอนโคลเจอร์](/th-TH/คู่มือ/แนวคิด/ริก/#ports-without-holes)
+ส่วนพอร์ตที่สงวนไว้และกฎของโดเมนที่แน่นอนอยู่ใน
+[ข้อมูลอ้างอิงริก](/th-TH/คู่มือ/อ้างอิง/ริก/#ports-and-dev-domains)
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Give an agent a machine to test on](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/th-TH/คู่มือ/อ้างอิง/ริก/) — reserved ports, dev TLDs,
-  defaults
+- [ให้เอเจนต์มีเครื่องสำหรับทดสอบ](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/) — การเปิด
+  การดู และการเข้าควบคุมริก
+- [ข้อมูลอ้างอิงริก](/th-TH/คู่มือ/อ้างอิง/ริก/) — พอร์ตที่สงวนไว้ TLD
+  สำหรับพัฒนา และค่าเริ่มต้น

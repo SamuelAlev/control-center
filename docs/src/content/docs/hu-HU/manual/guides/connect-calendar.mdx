@@ -1,123 +1,133 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Google Calendar csatlakoztatása
+description: Csatlakoztassa a Google Calendar naptárat egy munkaterülethez, kezeljen több fiókot, és csatlakozzon újra, amikor egy token lejár.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/hu-HU/kezikonyv/fogalmak/naptar/) for the full picture.
+Ez az útmutató bemutatja, hogyan csatlakoztathat Google Calendar naptárat egy
+munkaterülethez. Munkaterületenként működik: írásvédetten szinkronizálja az adott
+munkaterület eseményeit a Control Centerbe. A teljes képről a
+[Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/) oldalon olvashat.
 
-## Connect an account
+## Fiók csatlakoztatása
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Nyissa meg a **Naptár** elemet az oldalsávon.
+2. Kattintson a **Naptárfiók hozzáadása** elemre a naptár oldalsávján. (Ugyanez a szakasz a **Beállítások → Munkaterület → Profil és identitás** alatt, a **Google Calendar** alpontban található.)
+3. Válassza ki az engedélyezés módját:
+   - **A Control Center Google-alkalmazásának használata** — nincs mit beállítani. Ez az alapértelmezett, ha a buildhez tartozik ilyen.
+   - **Saját Google Cloud kliens használata** — illessze be a saját projektje kliens-ID-ját és titkát (lásd: [Saját Google-kliens használata](#saját-google-kliens-használata-forkok-és-saját-hosztolás)).
+4. Kattintson a **Google Calendar csatlakoztatása** elemre. A párbeszédpanel egy rövid kódot és egy hivatkozást mutat a Google eszközoldalára.
+5. Nyissa meg ezt az oldalt bármely eszközön, adja meg a kódot, és hagyja jóvá a kért hozzáférést. A párbeszédpanel magától bezárul, és az eseményei elkezdenek szinkronizálódni.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Ezt a folyamatot nem az eszköze, hanem a szerver bonyolítja le, és ő őrzi a
+keletkező refresh tokent — ezért hagyja jóvá a kódot „bármely eszközön”, nem
+pedig kifejezetten ebben az alkalmazásban.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+A fiók **csak az aktív munkaterülethez** kapcsolódik. Ha munkaterületet vált,
+az adott munkaterület naptárait fogja látni helyette.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+A csatlakozási folyamat a `calendar.readonly` hatókört kéri, valamint az
+e-mail-címét — ugyanezeket a hatóköröket a beépített alkalmazás és a beillesztett
+kliens esetében is. A Control Center olvassa az eseményeket; nem hoz létre,
+szerkeszt, töröl és nem válaszol meghívókra a Google-on.
 
-## How syncing works
+## Hogyan működik a szinkronizálás
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+Az ütemezést a **szerver** birtokolja: kétpercenként bejárja az egyes
+munkaterületek csatlakoztatott fiókjait, és beírja az eseményeket a munkaterület
+adatbázisába. A kliensek soha nem beszélnek a Google-lel — azt olvassák, amit a
+szerver írt.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+A bejárás inkrementális. Naptáranként az első kör egy gördülő ablakot húz be (60
+nappal visszamenőleg, 90 nappal előre), és elmenti a Google szinkrontokenjét; a
+későbbi körök bemutatják ezt a tokent, és csak a megváltozott adatokat kapják
+meg — ez teszi megfizethetővé a kétperces ütemet. Az ablak 24 óránként, valamint
+minden alkalommal, amikor a Google érvényteleníti a tokent, egy teljes
+szinkronizálással horgonyzódik újra.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+A refresh tokenek a szerveroldalon, a szerver adatkönyvtárában lévő
+`secrets.json` fájlban élnek, amely csak tulajdonosi jogosultsággal (`0600`)
+íródik — nem az operációs rendszer kulcskarikájában, és soha nem egy kliensen.
 
-## Connect multiple accounts
+## Több fiók csatlakoztatása
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Egy munkaterület több Google-fiókot is csatlakoztathat (például egy munkahelyit
+és egy személyeset). Ismételje meg mindegyiknél a csatlakoztatás lépéseit; az
+eseményeik ugyanabba a havi / heti / napirend nézetbe olvadnak össze. Minden fiók
+önállóan szinkronizál és frissül, és mindegyik külön leválasztható.
 
-## Reconnect an expired account
+## Lejárt fiók újracsatlakoztatása
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Ha a Google véglegesen érvényteleníti egy fiók tokenjét (visszavont vagy rég
+lejárt munkamenet), a szinkronizálás leáll, és a Control Center egy
+**Újracsatlakozás** sávot jelenít meg a naptáron, valamint egy asztali
+értesítést. Kattintson az **Újracsatlakozás** elemre, és hagyjon jóvá egy új
+kódot; a sáv a következő sikeres szinkronizáláskor eltűnik.
 
-## Disconnect an account
+## Fiók leválasztása
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+A naptár oldalsávján (vagy a **Beállítások → Munkaterület → Profil és
+identitás** alatt) kattintson a fiók **Leválasztás** elemére. Ez törli a
+szinkronizált eseményeit, és törli a szerveren tárolt tokenjeit.
 
-## Connect from a headless server
+## Csatlakoztatás headless szerverről
 
-A server with no GUI attached connects the same account from its own terminal:
+Egy grafikus felület nélküli szerver ugyanezt a fiókot a saját termináljából
+csatlakoztatja:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Kiír egy kódot és egy URL-t, megvárja a jóváhagyást, majd eltárolja a tokeneket,
+és a következő bejáráskor szinkronizál.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+A forrásból készült build **nem** tartalmaz Google-klienst, ezért az ID és a
+titok kötelező — állítsa be a `GOOGLE_OAUTH_CLIENT_ID` és a
+`GOOGLE_OAUTH_CLIENT_SECRET` változót. Nincs `--google-client-id` kapcsoló (az
+ismeretlen kapcsolókat a rendszer figyelmen kívül hagyja). A környezeti
+változópár nélkül a parancs hiányzó kliensre utaló hibával lép ki.
 
-## Bring your own Google client (forks and self-hosting)
+## Saját Google-kliens használata (forkok és saját hosztolás)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+A kiadott buildek tartalmaznak Google-klienst, így a legtöbb felhasználó soha nem
+nyúl ehhez. Akkor használjon sajátot, ha forrásból buildel, saját szervert
+futtat, vagy szeretné, hogy a hozzájárulási képernyő az Ön projektjét nevezze
+meg.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. A [Google Cloud Console](https://console.cloud.google.com/apis/credentials) felületén engedélyezze a **Google Calendar API**-t, és konfigurálja az **OAuth hozzájárulási képernyőt**, hozzáadva a `calendar.readonly`, `openid` és `email` hatókört. Amíg az alkalmazás nincs ellenőrizve, vegye fel magát **tesztfelhasználóként**. A `calendar.events` hozzáadása a hozzájárulási képernyőn nem teszi lehetővé az RSVP-t — a Control Center soha nem kéri ezt a hatókört.
+2. Hozzon létre egy **OAuth kliens-ID**-t **TV-k és korlátozott bemenetű eszközök** alkalmazástípussal, és másolja ki a kliens-ID-t és a kliens titkot is.
+3. Adja meg őket vagy kapcsolatonként (válassza a **Saját Google Cloud kliens használata** lehetőséget a párbeszédpanelen), vagy szerver szinten a `GOOGLE_OAUTH_CLIENT_ID` és a `GOOGLE_OAUTH_CLIENT_SECRET` változóval.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+A szerver szinten megadott pár mindenhol felváltja a beépítettet, még a „Control
+Center Google-alkalmazásának használata” beállítás mögött is — így a saját
+szerverén ez a beállítás az Ön alkalmazását jelenti.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+A kliens titok soha nem hagyja el a szervert: egyetlen RPC-válasz sem
+tartalmazza, és a szerver saját kliense útján csatlakoztatott fiók jelölőt tárol
+a pár másolata helyett, így a cseréje csak annyi, hogy új értékkel újraindítja a
+szervert.
 
-### Troubleshooting
+### Hibaelhárítás
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Tünet                                                  | Valószínű ok                                                                                                                                                      |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A párbeszédpanel nem kínál beépített lehetőséget        | Ez a build nem tartalmaz Google-klienst (forrásból készült build), vagy a szervert a párnak csak az egyik felével indították. Mind az ID, mind a titok kötelező |
+| `invalid_scope` a folyamat indításakor                 | A Naptár nincs engedélyezve az adott Cloud-projektben egy eszközkódos kliens számára. Használjon helyette loopback- vagy webkliens-projektet                     |
+| `invalid_client` a Google-től                          | A kliens nem **TV-k és korlátozott bemenetű eszközök** típusú, vagy az ID és a titok különböző kliensekből származik                                               |
+| A jóváhagyás sikerül, de a szinkronizálás üres         | A fiókja nincs **tesztfelhasználóként** felvéve a hozzájárulási képernyőn, vagy a `calendar.readonly` hatókört nem adták meg                                      |
+| A kód a jóváhagyás előtt lejár                         | Az eszközkódok rövid élettartamúak. Indítsa újra a csatlakoztatást egy új kódért                                                                                  |
+| „Nem sikerült frissíteni a válaszát” egy RSVP-nél       | Várható: a csatlakozási folyamat soha nem kéri a `calendar.events` hatókört                                                                                       |
+| A szinkronizálás leáll, és a szervernaplóban frissítési figyelmeztetés jelenik meg | A fiókot olyan klienssel csatlakoztatták, amely már nincs konfigurálva. Csatlakoztassa újra a fiókot, vagy állítsa vissza azt a kliens-ID-t és titkot             |
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Record and summarize a meeting](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/): turn an event into a recording
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+- [Megbeszélés rögzítése és összefoglalása](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/): alakítson egy eseményt felvétellé
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): hol élnek a tokenek és a szinkronizálási ütemezés
+- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Calendar and scheduling](/hu-HU/kezikonyv/fogalmak/naptar/)
+- [Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/)

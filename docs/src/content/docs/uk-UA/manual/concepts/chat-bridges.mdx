@@ -1,249 +1,268 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Чат-мости
+description: Чому інтеграція зі Slack встановлює вихідне з’єднання, а не слухає порт, що насправді дає право повідомленню, яке надходить із чату, і як один міст обслуговує будь-який чат-продукт.
 slug: uk-UA/керівництво/поняття/чат-мости
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Чат-міст робить зовнішній чат-продукт — сьогодні це Slack — повноцінним шляхом
+до робочого простору Control Center. Згадайте бота — і прокинеться агент;
+дайте відповідь у гілці Slack — і розмова продовжиться; введіть slash-команду —
+і створиться тікет. А під цим — ті самі простори, транскрипти, тікети й
+атрибуція, якими користується застосунок для комп’ютера. Чат — це _поверхня_
+робочого простору, а не його копія.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Єдиний провайдер, який постачається, — Slack.** Реалізацій Discord, Telegram,
+Teams чи Matrix у продукті немає ніде. Цю функцію навмисно написано без
+прив’язки до провайдера: додати другий продукт — це одне значення enum, один
+адаптер і один плагін, — але сьогодні «чат» означає Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Цю можливість охоплюють дві поверхні, і належать вони різним людям. Підключення
+робочого простору до Slack і налаштування бота — це дії **адміністратора** в
+розділі Налаштування → Робочий простір → Загальні. Прив’язка власного
+облікового запису в чаті до вашої особи в Control Center — дія **учасника** в
+розділі Налаштування → Робочий простір → Профіль і ідентичність.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Усю цю функцію визначають три рішення: **у якому напрямку встановлюється
+з’єднання**, **що дає право повідомленню, яке надходить ззовні**, і **де
+дозволено зберігати знання, специфічні для продукту**.
 
-## Outbound by design
+## Вихідне з’єднання за задумом
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Міст ніколи не слухає провайдера. Зі Slack міст з’єднується через **Socket
+Mode**: сервер запитує у Slack URL сокета й сам встановлює вихідне з’єднання, а
+потім отримує через нього згадки, особисті повідомлення та slash-команди.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Саме наслідок тут і є суттю. Ноутбук за NAT, домашній сервер без домену,
+машина, що переміщається між мережами, — усі вони можуть працювати з мостом без
+вхідного порту, без тунелю, без сертифіката TLS і без публічного URL, який
+доводилося б оновлювати, коли він змінюється. Немає ендпоінта webhook, який
+треба захищати, бо ендпоінта webhook немає взагалі. Коли Control Center формує
+визначення застосунку, він жорстко задає Socket Mode і прибирає будь-який
+request URL, бо застосунок, налаштований на обидва варіанти, працював би
+наполовину.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Ціна цього — з’єднання, яке треба підтримувати живим, і це робота сервера:
+перепідключення виконується з експоненційним збільшенням затримки та джиттером
+і верхньою межею 30 секунд, ротація сокета за ініціативою провайдера
+перепідключається, не нарощуючи цю затримку, а _відхилені облікові дані_ — це
+остаточна відмова: нескінченні спроби з відкликаним токеном дали б лише
+обмеження частоти, тож міст зупиняється й чекає на нові токени, дослівно
+показуючи в налаштуваннях власну помилку провайдера.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Робочий простір без чат-застосунку не коштує нічого: ні сокета, ні таймерів,
+ні трафіку. І все це запускається _після_ банера готовності сервера, бо
+чат-застосунок, який повільно відповідає, ніколи не повинен затримувати
+завантаження.
 
-## Membership authorizes, not token possession
+## Членство дає право, а не володіння токеном
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Той, хто встановив застосунок, — не той, хто надсилає повідомлення. Тому кожна
+вхідна подія, перш ніж щось станеться, зводиться до **Principal**, і за
+найменшої невідповідності запит відхиляється з поясненням:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Неприв’язаному обліковому запису в чаті** пояснюють, як виконати прив’язку,
+  у тій гілці Slack, де він написав.
+- **Прив’язаному обліковому запису, користувач якого не є учасником** цього
+  робочого простору, радять попросити в адміністратора запрошення.
+- **Учаснику, чия роль доступна лише для читання** (`viewer`, `guest`),
+  повідомляють, що його роль не дозволяє запускати роботу.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/)
-for the membership model this leans on.
+Жоден із цих випадків не продовжується. Повідомлення з чату ніколи не
+приписується тому, хто його не надсилав, — саме це зберігає чесними журнал
+аудиту, обмеження частоти для кожного Principal і авторів тікетів. Модель
+членства, на яку все це спирається, описано в розділі
+[Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/).
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Прив’язка — це зіставлення особи, **а не** надання доступу. Членство
+перевіряється заново на кожній події, тож прив’язка того, кого згодом вилучили,
+дає відмову, а не його колишні привілеї. Прив’язку можна встановити двома
+шляхами: короткоживучий одноразовий код, який учасник вводить у чаті, або
+автоматичне зіставлення за _підтвердженою_ адресою електронної пошти в
+провайдера — і шлях через пошту все одно вимагає, щоб зіставлений користувач
+уже був учасником, тож стороння особа, чия адреса випадково є на сервері, не
+прив’язується ні до чого.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Коди навмисно тримають у пам’яті з часом життя 15 хвилин. Збереження такого
+коду створило б довговічний рядок, схожий на облікові дані, для того, що має
+зникнути, а перезапуск сервера, який знецінює всі невикористані коди, — це
+правильна поведінка, а не регресія: учасник просто натискає «прив’язати» ще
+раз.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+На відмову відповідають **у тій гілці Slack, яку відкрило повідомлення**,
+справжньою відповіддю. Відповідь у гілці позначає повідомлення, на яке
+відповідає, доходить до єдиної людини, якій це потрібно, і при цьому не
+виносить «ви не прив’язані» в сам канал. До того ж надсилання повідомлення — це
+єдина можливість, яка є в кожного провайдера, тож пояснення ніколи не залежить
+від функції, якої застосунок може не мати.
 
-## Provenance and the echo problem
+## Походження та проблема відлуння
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Міст, який дзеркалить в обидва боки, зациклиться, якщо щось не розрізнятиме ці
+два напрямки. Кожне повідомлення, яке міст приймає, позначається
+`metadata['chat']` — провайдер, команда, розмова, гілка, повідомлення й
+відправник. Вихідне дзеркало пропускає будь-яке повідомлення з цією позначкою.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Саме це єдине правило робить двостороннє дзеркалення безпечним: повідомлення
+людини, набране в Control Center, передається назовні в прив’язану гілку (з
+іменем автора на початку), а повідомлення, що надійшло _з_ чату, зупиняється
+там, де увійшло.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Назовні проходить навмисно вузький набір. **Відповідь** агента передається як
+звичайний текст чату. Коротка думка може з’явитися в рядку `Thinking…` картки.
+Вивід інструментів — це стіна дифів, і він залишається в Control Center, куди ж
+веде й урізана відповідь.
 
-## A card reports the work; the text is still the message
+## Картка звітує про роботу; текст залишається повідомленням
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Там, де провайдер їх відображає, хід несе **одну картку завдання**, яку
+редагують на місці, поки триває хід, і яка стоїть над відповіддю, що її
+пояснює.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Картка — це один згрупований план, а не зліплений абзац. Slack об’єднує
+`details` і `output` в одному завданні, тож деталі рядка надсилають один раз
+(думку в рядку `Thinking…`), а `output` ніколи не передається потоком.
+Підготовка — це один рядок, заголовок якого замінюється (`Working on it…`,
+`Cloning …`). Міркування додає рядок `Thinking…`. Кожен інструмент — окремий
+рядок (`Read lib/main.dart`). Відповідь — це звичайний текст під карткою:
+подання плану в Slack читає його з пізнішого долучення markdown, а не з
+фрагмента, домішаного до завдань. І більше нічого: жодного виводу інструментів
+і лише аргумент інструмента з короткого списку дозволених, бо аргументи
+невідомого інструмента можуть бути цілим тілом файлу, а рядок — це один рядок.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Картка охоплює й очікування _перед_ ходом. Перша згадка створює розмову, а її
+створення клонує кожен репозиторій, у якому працюватиме агент, — і на реальному
+репозиторії це хвилини, коли агента ще ні про що не спитали, а гілка виглядає
+так, ніби бот проігнорував запит. Тож картка відкривається тієї ж миті, коли
+згадку прийнято (`Working on it…`), потім рядок підготовки оновлюється тими
+самими словами, які показує застосунок для комп’ютера, — `Cloning acme/widgets…`,
+`Setting up Reviewer…`, `Starting the agent…` — далі рядок `Thinking…`, щойно
+агент починає міркувати, а потім по рядку на кожен інструмент. Одна картка, одне
+повідомлення — від «я вас почув» до відповіді звичайним текстом під нею. Про
+підготовку повідомляють лише там, де її хтось чекає в чаті: розмова, яку готують
+у застосунку, або застрягла розмова, відновлена під час запуску сервера,
+розгортається взагалі без картки.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Вона несе єдине, чого чат не може дати читачеві: посилання **View in Control
+Center** на розмову за відповіддю. Чат-продукти приймають у посиланні `http(s)`
+і нічого більше, тож кнопка вказує на невелику сторінку, яку віддає цей сервер
+і яка перенаправляє браузер на посилання `control-center://` застосунку для
+комп’ютера. Ця сторінка нічого не читає й нічого не вирішує — ідентифікатори з
+її URL передаються в глибоке посилання і більше нікуди, — а сервер без
+доступного публічного URL просто створює картку без кнопки, а не зламану.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Картки — така сама можливість, як і будь-яка інша. Провайдер без них поводиться
+точно як раніше, лише текстом, а провайдер, який відмовляє від картки під час
+виклику, зберігає свій потік: відповідь завжди важливіша за картку, що її
+описує. Коли потокову передачу вимкнено повністю, готова картка їде разом з
+єдиним надісланим повідомленням. Створений тікет отримує таке саме ставлення:
+підтвердження `/cc ticket` — це завершена картка, єдиний сенс якої — посилання
+на щойно створений тікет.
 
-## Capabilities are negotiated, then remembered
+## Можливості узгоджуються, а потім запам’ятовуються
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Чат-продукти різняться тим, що вони вміють відображати, тож міст написано під
+найбагатшу поверхню — відповідь, що росте наживо в гілці, тимчасовий статус
+«is thinking…», гілку із заголовком, ефемерну відповідь на slash-команду — і
+відмовляється від можливостей по одній. Провайдер, у якого немає нічого з
+цього, все одно працює: відповіді просто приходять одним повідомленням.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Заявлена можливість — це ще не обіцянка. Потокові відповіді Slack потребують
+функції платного тарифу, і Slack відмовляє лише під час виклику. Відмову,
+позначену як постійна, запам’ятовують **на весь час життя з’єднання**: міст
+перестає питати й відтоді надсилає відповіді цілком, а налаштування прямо про
+це повідомляють, бо на «мої відповіді перестали йти потоком» має бути відповідь
+і без читання журналу. Картки завдань відкидаються так само, якщо Slack
+відмовляє від однієї з них.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Кожна межа належить провайдеру, а не ретранслятору: стеля довжини повідомлення,
+стеля фрагмента потоку й те, чи потрібен потокові якір гілки, оголошуються
+адаптером, а довга відповідь розбивається за межею абзацу, рядка чи слова, а не
+посеред слова.
 
-## One bridge, one adapter per product
+## Один міст, один адаптер на продукт
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Усе, що має форму продукту, живе за портом. Загальне ядро знає про markdown,
+розмови в чаті, гілки чату й учасників; воно нічого не знає про конверти Slack,
+`mrkdwn` чи gateway intents. Це забезпечують три частини:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Адаптер** нормалізує один продукт: його транспорт, його виклики API, його
+  текстовий кодек і його особливості конвертів. Особливості Slack повчальні:
+  згадка в каналі надходить двічі (як `app_mention` _і_ як `message`), а
+  більшість підтипів повідомлень — це оформлення, а не нові запити. І те й те
+  вирішується в адаптері, тож ядро ніколи не дізнається, що Slack доставляє
+  двічі.
+- **Дескриптор** — це публічна форма провайдера: які облікові дані йому
+  потрібні, які в них формати, які URL допомагають користувачеві їх знайти, що
+  він уміє і чи можна створити або змінити його застосунок звідси. Картка
+  налаштувань, діалог підключення й перевірка аргументів — усе це
+  _генерується_ з нього: клієнт надсилає назад провайдера та карту з ключами
+  за ідентифікаторами полів.
+- **Плагін** — це серверна композиція: як облікові дані стають перевіреним
+  з’єднанням, як збирається адаптер і як керується застосунок на боці
+  провайдера.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Отже, додавання продукту — це одне значення enum, один адаптер і один плагін.
+Жодної нової операції RPC, жодної зміни схеми, жодної зміни клієнта — і клієнт
+залишається чесним, бо поле, про яке він ніколи не чув, усе одно відображається
+з міткою, яку надав сервер.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Дві деталі не дають абстракції протекти нагору. Кроки керування застосунком,
+для яких у провайдера немає API (створити токен, установити застосунок,
+перевстановити після зміни дозволів), повертаються як **іменовані кроки з
+власними посиланнями**, тож екран завершення налаштування показує їх, не
+знаючи, про якого провайдера йдеться. А кожна інструкція, яку пише міст,
+називає провайдера й ту команду, яку застосунок насправді використовує, тож
+перейменована команда або другий провайдер читаються правильно без нового
+рядка.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Перевстановлення після зміни дозволів]
+Зміна імені, опису чи значка бота набуває чинності негайно. Зміна **дозволів**
+потребує перевстановлення: Slack застосовує новий маніфест, але залишає надані
+права такими, якими вони були під час установлення. Після зміни повертається
+крок, що залишився, з посиланням на сторінку Slack «Reinstall to Workspace».
 :::
 
-## Where credentials live
+## Де зберігаються облікові дані
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Чат-токени робочого простору лежать у **його власному каталозі, поруч із його
+базою даних** — як звичайний JSON за шляхом
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, не в базі даних і
+навмисно не у зв’язці ключів ОС. Два наслідки легко згодом упустити: видалення
+робочого простору відв’язує каталог, і токени зникають разом із ним, а експорт
+чи резервне копіювання робочого простору копіює `workspace.db`, тож робочий
+простір, переданий комусь іншому, не несе всередині живих токенів бота. Файл
+успадковує межу довіри файлової системи хост-сервера: усе, що має доступ на
+читання до каталогу даних, може прочитати токен бота, а це та сама межа, за
+якою лежать бази даних.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Один файл на провайдера, який записують атомарно й лише для власника:
+відкликаний застосунок видаляється відв’язуванням одного файлу, а пошкоджений
+файл коштує одного провайдера, а не всіх. Облікові дані заходять _усередину_
+через операцію підключення й ніколи не повертаються назад: читання статусу
+відповідає лише метаданими з’єднання.
 
-## What is deliberately not offered
+## Що навмисно не пропонується
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Структурні налаштування застосунку.** Транспорт, області доступу й підписки
+  на події задаються примусово, а не виставляються назовні. Застосунок, який
+  можна налаштувати до повного мовчання з екрана налаштувань, — це звернення до
+  підтримки, а не функція.
+- **Розмова та slash-команди.** Поверхня Slack — це повідомлення, відповіді в
+  гілках і slash-команди.
+- **Друге джерело істини.** Чат — не місце, де зберігається робота. Гілка Slack
+  — це простір, відповідь — транскрипт, тікет — тікет, і все це в робочому
+  просторі, доступне з будь-якого клієнта.
 
-## See also
+## Див. також
 
-- [Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/): why links and credentials are per workspace
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): what wakes when a mention arrives
-- [Tickets and delegation](/uk-UA/керівництво/поняття/тікети/): what `/cc ticket` files
-- [Architecture](/uk-UA/керівництво/поняття/архітектура/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/uk-UA/керівництво/посібники/перший-чат-міст/)
-- [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
-- [Link your Slack account](/uk-UA/керівництво/практичні-посібники/підключити-обліковий-запис-чату/)
-- [Customize the chat bot](/uk-UA/керівництво/практичні-посібники/налаштувати-чат-бота/)
-- [PR conversations](/uk-UA/керівництво/поняття/розмови-в-pr/): the same three decisions, made for a forge
+- [Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/): Principal і ролі, крізь які міст визначає особу
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/): чому прив’язки й облікові дані належать робочому простору
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): що прокидається, коли надходить згадка
+- [Тікети та делегування](/uk-UA/керівництво/поняття/тікети/): що створює `/cc ticket`
+- [Архітектура](/uk-UA/керівництво/поняття/архітектура/): де міст стоїть між сервером і клієнтами
+- [Підключіть Slack до робочого простору](/uk-UA/керівництво/посібники/перший-чат-міст/)
+- [Налаштувати інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
+- [Прив’язати обліковий запис Slack](/uk-UA/керівництво/практичні-посібники/підключити-обліковий-запис-чату/)
+- [Налаштувати чат-бота](/uk-UA/керівництво/практичні-посібники/налаштувати-чат-бота/)
+- [Розмови в PR](/uk-UA/керівництво/поняття/розмови-в-pr/): ті самі три рішення, ухвалені для хоста коду

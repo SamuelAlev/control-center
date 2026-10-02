@@ -1,166 +1,159 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: הגדרת אינטגרציית GitHub
+description: היכנסו ל-GitHub כדי שממשק בקשות המשיכה, רישום המאגרים והרצות הסוכנים יעבדו.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+המדריך הזה מכסה את החלקים הספציפיים ל-GitHub בהגדרה. GitHub הוא אחד משלושה
+מארחי קוד נתמכים — ראו [חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
+לחיבור GitLab או Bitbucket, ולמידע על איך סביבת עבודה משלבת ביניהם.
 
-## Prerequisites
+## דרישות מוקדמות
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- חשבון GitHub עם גישה למאגרים שעליהם תרצו לעבוד
+- או GitHub App רשום לשרת שלכם (ראו
+  [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)) כדי שתוכלו **להיכנס**,
+  **או** אסימון גישה אישי עם `repo` ו-`read:org` להדבקה
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[פרטי הגישה יושבים בשרת ומצורפים אליכם]
+דבר אינו נשמר במחשב שאתם מקלידים בו. פרטי הגישה שלכם מוחזקים ב-`cc_server` שלכם,
+לפי מזהה המשתמש שלכם, וכל מכשיר שממנו אתם נכנסים משתמש בהם — שולחן העבודה, הווב
+והטלפון. חבר אחר באותו שרת לא יכול לקרוא אותם, וכניסה שלהם היא משהו שהם עושים
+בעצמם.
 :::
 
-## Sign in with GitHub
+## כניסה עם GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**זרימת מכשיר**: GitHub מציג לכם קוד קצר, אתם מאשרים אותו ב-github.com, והשרת
+מקבל את פרטי הגישה — בלי כתובת URL ל-callback, בלי פורט, בלי דבר לחשוף. זמין בכל
+פעם שלשרת יש מזהה לקוח, שגרסה רשמית כבר מגיעה איתו.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. עברו אל **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד** (או לשלב הראשון
+   של ההצטרפות)
+2. בשורה של **GitHub**, לחצו על **כניסה עם GitHub**
+3. חלון דו-שיח מציג קוד בן שמונה תווים ופותח את
+   [github.com/login/device](https://github.com/login/device) בדפדפן שלכם.
+   הקוד כבר נמצא בלוח שלכם
+4. הדביקו אותו, אשרו את האפליקציה וחזרו. השורה מתחלפת מעצמה ל
+   "מחובר בתור _your-username_"
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+אפשר לסגור את חלון הדו-שיח בזמן שאתם מסיימים בדפדפן — השרת ממשיך לסרוק עד שהקוד
+פג (כ-15 דקות), כך שהכניסה עדיין מתבצעת.
 
-## Or paste a token
+## או הדבקת אסימון
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+האפשרות החלופית כשבשרת אין אפליקציה, כשהאפליקציה אינה מותקנת בחשבון שאתם צריכים,
+או כשאתם פשוט מעדיפים להשתמש ב-PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. עברו אל **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד**
+2. בשורה של **GitHub**, לחצו על **הוספת אסימון גישה**
+3. הדביקו אסימון עם `repo` ו-`read:org` (קלאסי) ושמרו. אסימון **עדין** זקוק
+   להרשאות **Contents** ו**Pull requests** במאגר (קריאה וכתיבה), ובנוסף
+   ל**Checks** ו**Actions** (קריאה).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+האסימון נבדק בזמן שהוא נשמר, כך שהשורה יכולה לציין את החשבון שאליו הוא שייך. לחצו
+על **ניתוק** כדי להסיר אותו.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+נקודת ביקורת: השורה **GitHub** מציגה "מחובר בתור _your-username_". סיומת מציינת את
+המקור כשפרטי הגישה שמשיבים אינם שלכם — "דרך האפליקציה של השרת הזה" או "ממשתני
+הסביבה".
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[סדר הקדימות קבוע]
+בקשה שנעשית בשמכם משתמשת בפרטי הגישה **שלכם**, ושום דבר אחר — הסביבה היא פרטי
+הגישה של השרת, לא שלכם, ולכן היא לעולם לא מחליפה אתכם. עבודה שאין מאחוריה אדם
+(webhooks, סריקת בקשות משיכה, סנכרון כרטיסים) משתמשת בזהות האפליקציה של השרת, אחר
+כך בפרטי הגישה של בעלי השרת, ואחר כך בסביבה.
 :::
 
-## What the integration gives you
+## מה האינטגרציה נותנת לכם
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| תכונה                    | אופן הפעולה                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| רשימת בקשות משיכה ופרטיהן | ‏GitHub REST API, מהשרת, בזהות האפליקציה או בפרטי הגישה שלכם                                          |
+| הרצות בדיקות             | ‏GitHub Checks API                                                                                    |
+| פרסום סקירות             | שלב שתלוי בפעולת משתמש ומפרסם את הסקירה שלכם בבקשת המשיכה                                             |
+| רישום מאגרים             | עותק מקומי מתקבל אם ה־remote בשם `origin` שלו מצביע אל github.com — או אל gitlab.com / bitbucket.org |
+| גישת הסוכן ל-GitHub      | מתווך פרטי הגישה מזריק את האסימון בתור `GH_TOKEN` / `GITHUB_TOKEN`, בכפוף ליכולות של הסוכן           |
+| התראות                   | סריקה בצד השרת של תיבת ההתראות שלכם ב-GitHub מעלה "אוזכרת בבקשת משיכה" ו"התבקשה סקירה"               |
+| פרופילים של משתמשים      | כרטיסי פרופיל בריחוף וסינון בקשות משיכה לפי מחבר                                                      |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+חלק מהנתיבים משתמשים ב-API של GraphQL במקום ב-REST כשהוא זול יותר — פעילות ענפים
+עבור בורר כתיבת בקשות המשיכה, ומצב הסקירה החי שקובע אם התראת "התבקשה סקירה" עדיין
+ממתינה.
 
-## Watch for GitHub outages
+## שימו לב לתקלות GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+שורת הכותרת מציגה תג סטטוס כשספק במצב פגום, ומכסה את GitHub, Claude, OpenAI
+ו-Kimi. **הוא מוסתר כשהכול תקין** — הנוכחות שלו מדווחת על תקלה, לא היעדרותה.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+לחצו על התג כדי לפתוח חלון צף עם מצב כל ספק וכפתור רענון. הסטטוסים מתרעננים מעצמם
+כל שתי דקות.
 
-## Know how agents act on GitHub
+## דעו כיצד סוכנים פועלים ב-GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- סוכן מקבל אסימון GitHub רק אם יש לו **אפשר קריאות ל־API של GitHub** או
+  **אפשר git push**. ראו
+  [הגדרת מדיניות ארגז חול](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול/)
+- קומיטים שסוכן יוצר מיוחסים **לסוכן** — שם התצוגה בתוספת ` (agent)`, בכתובת
+  מלאכותית שנגזרת ממזהה הסוכן — ולעולם לא כאדם. מי שביקש מקבל זיכוי בשורת
+  `Co-Authored-By`
+- כש-GitHub App מוגדר, המתווך מנפיק בכל הפעלה אסימוני התקנה עדינים, מוגבלים
+  למאגר ובעלי תוקף של כשעה, במקום למסור אסימון רחב. ההתקנה נגזרת מה**בעלים** של
+  המאגר שאליו רצה ההרצה, כך שאפליקציה אחת המותקנת בכמה חשבונות מותאמת נכון לזה
+  שההרצה נוגעת בו. בלי אפליקציה, הסוכנים מקבלים את אסימון הסביבה
+- הרצה שמבקש חבר שנכנס פועלת בזהות ה-GitHub של **אותו חבר** — פרטי הגישה שלו
+  ממוזגים אחרי הסביבה של המתווך, כך שקומיט או תגובה שסוכן עושה עבורו מיוחסים לו
 
-## Troubleshooting
+## פתרון תקלות
 
-### The PR list is empty and says GitHub is not connected
+### רשימת בקשות המשיכה ריקה ומופיע בה ש-GitHub אינו מחובר
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+אין לכם פרטי גישה ל-GitHub בשרת הזה. היכנסו או הדביקו אסימון תחת **אחסון קוד**.
+מאגרים ב-forges אחרים אינם מושפעים — רק אלה של GitHub אינם תורמים דבר.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### השורה מציעה "הוספת אסימון גישה" אבל לא "כניסה עם GitHub"
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+לשרת אין מזהה לקוח — וזה המצב הרגיל בבנייה מקוד מקור, מפני שפרטי גישה מוטמעים רק
+בגרסאות רשמיות. ראו
+[יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): זה לוקח כשתי דקות
+ורק בעלי השרת צריך לעשות את זה, פעם אחת.
 
-### The sign-in dialog says the provider returned no device code
+### חלון הכניסה אומר שהספק לא החזיר קוד מכשיר
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+‏GitHub App קיים אבל תיבת הסימון **Device flow** שלו כבויה. הפעילו אותה בהגדרות
+האפליקציה (General → Device flow) ונסו שוב.
 
-### The row says "via this server's app" when I expected my own account
+### השורה אומרת "דרך האפליקציה של השרת הזה" כשייחלתי לחשבון שלי
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+לא נכנסתם; מה שאתם רואים זו זהות האפליקציה של השרת שמשיבה. לחצו על **כניסה עם
+GitHub** בשורה הזו.
 
-### A fine-grained PAT shows no merge button or check status
+### ‏PAT עדין לא מציג כפתור מיזוג או מצב בדיקות
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+האסימון זקוק להרשאות **Contents** ו**Pull requests** (קריאה וכתיבה), ובנוסף
+ל**Checks** ו**Actions** (קריאה). אחרי שתשנו אותו, הדביקו אותו שוב תחת אחסון קוד.
 
-### Adding a repo is rejected
+### הוספת מאגר נדחית
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
+הרישום דורש את שלושת התנאים: הנתיב נמצא בתוך עץ עבודה של git, יש לו remote בשם
+`origin`, וה־remote הזה מצביע אל forge נתמך (github.com, gitlab.com או
+bitbucket.org). ראו
+[הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
 
-### Everything stops working for a while after heavy use
+### הכול מפסיק לעבוד לזמן מה אחרי שימוש כבד
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+זהו מנגנון ההגנה של הגבלת הקצב. GitHub מסמן את המגבלה הראשית שלו ב-`403` הנושא
+`x-ratelimit-remaining: 0` וזמן איפוס; כשהוא רואה כזה, הלקוח מכשיל בקשות נוספות
+באופן מקומי בלי קריאת רשת עד שחלון הזמן חולף, כך שסופת ניסיונות חוזרים אינה יכולה
+להעמיק את המגבלה. כשלים חולפים מנוסים מחדש עד שלוש פעמים עם השהיה מעריכית, תוך
+כיבוד `retry-after`.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)
-- [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
-- [Manage API keys](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מפתחות-api/)
-- [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
-- [Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)
+- [חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/)
+- [ניהול מפתחות API](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מפתחות-api/)
+- [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
+- [סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)

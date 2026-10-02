@@ -1,123 +1,131 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Auktorisering – vem får göra vad, och hur du bevisar det
+description: Behörighetskatalogen bakom Control Centers roller, revisionsspåret som avslöjar manipulation och som varje auktoriseringsbeslut hamnar i, samt de installationsövergripande reglage en operatör kan låsa fast.
 slug: sv-SE/handbok/koncept/auktorisering
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/sv-SE/handbok/koncept/racken/).
+Control Center besvarar två auktoriseringsfrågor, och de är verkligen olika.
+**”Får den här personen anropa den här operationen?”** handlar om människor,
+roller och repositorier. **”Får den här agenten orsaka den här effekten?”**
+handlar om åtgärder, argument och skadeomfång – den frågan besvaras av
+[Räcken](/sv-SE/handbok/koncept/racken/).
 
-This page is the first question, plus the record both of them leave behind.
+Den här sidan handlar om den första frågan, plus den dokumentation båda lämnar
+efter sig.
 
-## One decision point
+## En enda beslutspunkt
 
-Every human-side authorization decision resolves through a single function:
+Varje auktoriseringsbeslut på människosidan avgörs genom en enda funktion:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+En **behörighet** är `<domain>:<tier>` – `tickets:write`,
+`members:administer`, `repos:read`. Katalogen är **härledd**, inte
+handskriven: den beräknas från själva operationsytan (operationens namnprefix
+ger domänen, den lägsta roll den redan upprätthåller ger nivån), så alla ~550
+operationer har en behörighet utan att någon har skrivit en.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Den härledningen är egenskapen som är värd att skydda. Den innebär att en NY
+operation grindas som standard – felmoden hos en handannoterad modell är att
+någon glömmer, och det man glömmer är grinden. Ett spärrtest låser fast den
+resulterande uppsättningen domäner, så att lägga till en operation under ett
+nytt prefix blir ett namngivningsbeslut som en människa fattar i stället för
+en olyckshändelse.
 
-The four tiers map exactly onto the built-in roles:
+De fyra nivåerna motsvarar exakt de inbyggda rollerna:
 
-| Tier | Role floor | Example |
+| Nivå | Lägsta roll | Exempel |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
+| `read` | gäst | `tickets:read` |
+| `write` | medlem | `tickets:write` |
 | `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `own` | ägare | `workspace:own` |
 
-## Roles
+## Roller
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Fem inbyggda roller – **ägare, admin, medlem, visare, gäst** – är förval över
+den katalogen. Ägarskap är en enda plats per arbetsyta och överlämnas
+uttryckligen med **Överför ägarskap** (en ägare som slutar går annars inte att
+ta bort: SCIM-avprovisionering vägrar varje arbetsytaägare – överför först).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Anpassade roller är subtraktiva.** En anpassad roll anger ett basförval
+(`admin`, `member`, `viewer` eller `guest` – aldrig `owner`) och en
+uppsättning behörigheter som TAS BORT från den – ”admin, men kan inte hantera
+medlemmar”. Den kan aldrig ge mer än sin bas, vilket är det som gör dem säkra
+att införa i en befintlig installation: varje befintlig kontroll förblir en
+giltig övre gräns. Medlemmar har dem som `custom:<id>`, och en klient som är
+för gammal för att förstå det värdet faller tillbaka på gäst i stället för
+att gissa.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Under rollerna ligger **behörigheter per repo** (`none` / `read` / `review` /
+`write`): ett arbetsytemedlemskap ger aldrig tyst fler privilegier än
+forge-tjänsten. Varje yta som exponerar kod kontrollerar dem – även de som når
+kod på omvägar, som en terminal eller en redigerarsession som öppnats mot en
+ytas worktree.
 
-## Server authority
+## Serverauktoritet
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Vissa operationer handlar inte om en arbetsyta alls: installationsövergripande
+inställningar, SSO-konfiguration, leverantörsuppgifter, modellhantering,
+säkerhetskopior av hela installationen. De deklarerar **serverauktoritet** och
+nekas för alla utom installationens operatör (den registrerade serverägaren).
+Det finns medvetet en enda operatörsidentitet och en enda definition av den.
 
-## The audit trail
+## Revisionsspåret
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Varje auktoriseringsbeslut – **tillåtelse och nekande** – läggs till i ett
+hashkedjat revisionsspår per arbetsyta.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+En logg med bara nekanden svarar på ”vad blockerade vi?” men inte på ”vad
+gjorde agenten egentligen, och vem auktoriserade det?”, vilket är frågan en
+incidentutredning börjar med. Så varje post registrerar hela
+attributionkedjan: den agerande aktören, människan den handlade på uppdrag
+av, den delegering den kom in genom, åtgärden och dess argument (som en
+digest), beslutet och **regeln som avgjorde**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Posterna är kedjade: varje posts hash täcker den föregåendes, så att redigera,
+ta bort eller ändra ordningen på en rad bryter varje hash efter den.
+**Verifiera kedja** räknar om hela kedjan och pekar ut den första länk som
+inte håller. En revisionslogg du inte kan kontrollera är en logg; en du kan
+räkna om är bevis.
 
-Two consequences worth knowing:
+Två konsekvenser värda att känna till:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Revisionstabellen är **undantagen från åldersbaserad gallring**. En
+  hashkedja kan inte kortas av i mitten. Bevarande sker genom export och
+  därefter avkortning, och avkortningen lämnar en kontrollpunkt som bär det
+  borttagna segmentets slutliga hash, så det som finns kvar verifieras
+  fortfarande bakåt till början.
+- Det ligger **bredvid** aktivitetstidslinjen, inte ovanpå den. Tidslinjen är
+  vad människor gjorde; det här är vad som auktoriserades och nekades. En
+  gemensam korrelations-id följer ett och samma anrop i båda.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Det exporteras som nyradsavgränsad JSON och kan strömmas till en SIEM (Splunk,
+Elastic, Sentinel – en HTTP-slutpunkt med en bearer-token). Strömningen sker
+med bästa möjliga ansträngning, medvetet: en SIEM som ligger nere får aldrig
+blockera en agents verktygsanrop, och den hållbara, verifierbara kopian finns
+på disk oavsett.
 
-## Sessions
+## Sessioner
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+En installation kan ange en **maximal sessionsålder** och en **timeout för
+inaktivitet**. Båda upprätthålls i kontrollen av enhetsuppgifter som varje
+autentiserad väg passerar – en sessionsbindning som en klient kunde strunta i
+svarar på ett frågeformulär, inte mot en angripare. En installation kan också
+kräva SSO, vilket stänger av manuell parkoppling för nya enheter (med en
+utelåsningsspärr: den vägrar så länge ingen fungerande SSO-anslutning finns).
 
-## What this is not
+## Vad det här inte är
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Inte ACL:er per objekt.** Det finns medvetet ingen behörighet per ärende
+  eller per meddelande. Separering på repositorienivå är vad team faktiskt
+  efterfrågar, och den finns; delning per objekt är en kombinatorisk yta utan
+  påvisad efterfrågan här.
+- **Inte en policymotor du konfigurerar i ett DSL.** Vokabulären är medvetet
+  sluten, så hela policyn kan renderas, förklaras och räknas upp.
+- **Inte upprätthållet någon annanstans än på servern.** Kontroller på
+  klientsidan finns bara för att undvika att erbjuda en kontroll som ändå
+  kommer att nekas. Det auktoritativa beslutet är alltid serverns.

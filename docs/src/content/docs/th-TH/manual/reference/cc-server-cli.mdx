@@ -1,193 +1,195 @@
 ---
-title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+title: CLI ของ cc_server
+description: แฟล็ก ตัวแปรสภาพแวดล้อม คำสั่งย่อย และพาธไดเรกทอรีข้อมูลทุกตัวของเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
 slug: th-TH/คู่มือ/อ้างอิง/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+ทุกแฟล็กของโปรเซสรับค่าได้ทั้งจากแฟล็ก CLI หรือตัวแปรสภาพแวดล้อม โดยแฟล็กเป็น
+ฝ่ายชนะ จากนั้นจึงเป็นตัวแปรสภาพแวดล้อม แล้วจึงเป็นค่าเริ่มต้น ข้อมูลรับรองของ
+บุคคลที่สามเป็นข้อยกเว้น — ดูด้านล่าง
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[แฟล็กที่ไม่รู้จักจะถูกเพิกเฉยอย่างเงียบ ๆ]
+ตัวแยกวิเคราะห์อาร์กิวเมนต์เขียนขึ้นเองและข้ามสิ่งที่ไม่รู้จัก พิมพ์ผิด
+(`--tls-key-file`, `--bindany`) จึงไม่เกิดข้อผิดพลาด — เซิร์ฟเวอร์แค่เริ่มด้วย
+ค่าเริ่มต้น ให้ตรวจบรรทัดบันทึกตอนเริ่มระบบเมื่อแฟล็กดูเหมือนไม่มีผล
 :::
 
-## Core
+## หลัก
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
-| --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| แฟล็ก          | ตัวแปรสภาพแวดล้อม     | ค่าเริ่มต้น                                       | ความหมาย                                                                                                        |
+| -------------- | ---------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--data-dir`   | `CC_SERVER_DATA_DIR`   | ไดเรกทอรีข้อมูลแอปพลิเคชันต่อผู้ใช้ของระบบปฏิบัติการ (ดูด้านล่าง) | ฐานข้อมูล ข้อมูลลับ โมเดล และสื่อที่แคชไว้                                                                     |
+| `--port`       | `CC_SERVER_PORT`       | `9030`                                            | พอร์ต TCP (`0` = ชั่วคราว)                                                                                       |
+| `--bind`       | `CC_SERVER_BIND`       | `loopback`                                        | `loopback` หรือ `any`/`all`/`0.0.0.0` สำหรับทุกอินเทอร์เฟซ (ต้องมี TLS หรือ `--insecure`)                        |
+| `--repo-roots` | `CC_SERVER_REPO_ROOTS` | ไดเรกทอรีโฮมของผู้ใช้ที่รันเซิร์ฟเวอร์                | ไดเรกทอรีฐานที่คั่นด้วยจุลภาค ซึ่งไคลเอนต์เรียกดูได้เมื่อลงทะเบียนรีโป การเรียกดูเหนือรากขึ้นไปจะถูกปฏิเสธ      |
+| `--log-level`  | `CC_SERVER_LOG_LEVEL`  | `warning`                                         | `debug`, `info`, `warning` หรือ `error` บรรทัดตอนบูต/พร้อมจะพิมพ์เสมอ                                           |
+| `--server-name` | `CC_SERVER_NAME`      | ชื่อโฮสต์ของเครื่อง                               | ชื่อที่แสดงในตัวเลือก การค้นหา และพื้นผิวการจับคู่                                                             |
 
-## Reachability and TLS
+## การเข้าถึงได้และ TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
-| ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| แฟล็ก              | ตัวแปรสภาพแวดล้อม           | ค่าเริ่มต้น                     | ความหมาย                                                                                                                                                     |
+| ------------------ | --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--tls-cert`       | `CC_SERVER_TLS_CERT`        | ไม่ได้ตั้ง                      | เชนใบรับรอง PEM ให้บริการ `wss://` ในโปรเซสเมื่อตั้งพร้อมกับคีย์                                                                                              |
+| `--tls-key`        | `CC_SERVER_TLS_KEY`         | ไม่ได้ตั้ง                      | คีย์ส่วนตัว PEM ที่เข้าคู่กับใบรับรอง                                                                                                                         |
+| `--insecure`       | `CC_SERVER_INSECURE`        | ปิด                             | อนุญาตการผูกแบบข้อความล้วนที่ไม่ใช่ลูปแบ็ก เฉพาะเมื่ออยู่หลังพร็อกซีที่ยุติ TLS บนเครือข่ายที่เชื่อถือได้ และจะถูกเพิกเฉยเมื่อตั้งค่า TLS ไว้                      |
+| `--public-url`     | `CC_SERVER_PUBLIC_URL`      | อนุมานจากการผูก                 | URL ของ RPC ที่เซิร์ฟเวอร์นี้ประกาศให้ไคลเอนต์ที่จับคู่ไว้ **ตั้งค่านี้อย่างชัดเจนเมื่ออยู่หลังพร็อกซี, NAT หรือทันเนล** — ค่าเริ่มต้นเป็นเพียงการเดาจากการผูกในเครื่อง |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`      | ออริจินของเบราว์เซอร์ที่คั่นด้วยจุลภาค ซึ่งได้รับอนุญาตให้เรียก `/rpc` ข้ามออริจิน ลูปแบ็กและไคลเอนต์เนทีฟได้รับอนุญาตเสมอ                                        |
+| `--web-client-url` | `CC_SERVER_WEB_CLIENT_URL`  | ไม่ได้ตั้ง                      | ออริจินของไคลเอนต์เว็บแบบโฮสต์ที่คอลแบ็กการลงชื่อเข้าใช้ครั้งเดียวเด้งกลับไป                                                                                   |
+| `--signaling-url`  | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev`   | โบรกเกอร์รีเลย์ที่เซิร์ฟเวอร์นี้เข้าร่วม เพื่อให้โทรศัพท์เข้าถึงมันได้โดยไม่มีเส้นทางตรง                                                                        |
+| `--mdns`           | `CC_SERVER_MDNS`            | `auto`                          | การประกาศบน LAN: `auto` (เฉพาะเมื่อผูกเกินลูปแบ็ก), `on`, `off` การค้นหาประกาศเพียงการมีอยู่เท่านั้น — การเข้าร่วมยังต้องจับคู่                                   |
+| `--tunnel`         | `CC_SERVER_TUNNEL`          | `off`                           | ผู้ให้บริการทันเนลแบบมีการจัดการ: `off`, `cloudflared`, `ngrok`, `tailscale` การเปิดเผยสู่สาธารณะเป็นแบบเลือกเปิดใช้เอง                                         |
+| `--tunnel-binary`  | `CC_SERVER_TUNNEL_BINARY`   | หาได้จาก `PATH`                 | พาธไบนารีของทันเนลที่ระบุชัดเจน                                                                                                                               |
+| `--tunnel-sha256`  | `CC_SERVER_TUNNEL_SHA256`   | ไม่ได้ตั้ง                      | ค่า SHA-256 ที่คาดหมายของไบนารีนั้น ตรวจสอบก่อนเปิดโปรเซสทุกครั้ง                                                                                             |
+| `--tunnel-args`    | `CC_SERVER_TUNNEL_ARGS`     | ว่าง                            | อาร์กิวเมนต์เพิ่มเติมที่คั่นด้วยจุลภาคสำหรับการเรียกทันเนล                                                                                                     |
 
-## Indexing and third-party credentials
+## การทำดัชนีและข้อมูลรับรองของบุคคลที่สาม
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
-| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| แฟล็ก                   | ตัวแปรสภาพแวดล้อม               | ค่าเริ่มต้น                          | ความหมาย                                                                                                                    |
+| ----------------------- | ------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`             | `CC_SERVER_SANDBOX`             | `on`                                 | ว่าการรันของเอเจนต์ถูกห่อด้วยแซนด์บ็อกซ์เนทีฟของระบบปฏิบัติการโฮสต์หรือไม่เมื่อมีให้ใช้ เป็นการเลือกปิด ไม่ใช่การเลือกเปิด — ดูด้านล่าง |
+| `--code-index`          | `CC_SERVER_CODE_INDEX`          | `on`                                 | สวิตช์ตัดการทำงานหน้างานสำหรับการทำดัชนีกราฟโค้ดเบื้องหลัง `off` บูตสะอาดโดยไม่ต้องบิลด์ใหม่                                  |
+| `--code-index-defer`    | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                 | จำนวนวินาทีที่จะหน่วงการกวาดดัชนีรอบแรกหลังแบนเนอร์พร้อม (จำกัด 0–300)                                                        |
+| `--tool-deferral`       | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                 | ว่าการรันของฮาร์เนสส่งชุดเครื่องมือประจำชุดเล็กบวกดัชนีชื่อ แล้วโหลดส่วนที่เหลือเมื่อใช้ครั้งแรกหรือไม่ ดูด้านล่าง             |
+| `--credential-gate`     | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                | จำนวนวินาทีที่การรันพักไว้รอให้มนุษย์แก้ไขข้อมูลรับรองที่ให้บริการมันไม่ได้ (จำกัด 0–3600) ดูด้านล่าง                           |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+ค่าที่ว่างเปล่าของข้อมูลรับรองจะถูกอ่านเสมือนไม่ได้ตั้งไว้ กลไกสำรองในตัวจึงยังมีผล
+อยู่ บิลด์จากซอร์สไม่พาข้อมูลรับรองในตัวมาเลยแม้แต่ตัวเดียว
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar และตัวเลือก GIF ของ Klipy ใช้**ตัวแปรสภาพแวดล้อมเท่านั้น** —
+ไม่มีแฟล็ก `--google-client-id` / `--klipy-app-key` (แฟล็กที่ไม่รู้จักจะถูก
+เพิกเฉย) ให้ตั้ง `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` และ
+`KLIPY_APP_KEY` ในสภาพแวดล้อม (หรือไฟล์ `.env` ข้างเซิร์ฟเวอร์) ค่าว่างจะปิด
+ความสามารถนั้นแทนที่จะทำให้การบูตล้มเหลว
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+เซิร์ฟเวอร์ตรวจสอบโฮสต์หนึ่งครั้งตอนบูต และห่อการรันคำสั่งของเอเจนต์ด้วย
+แซนด์บ็อกซ์เนทีฟของระบบปฏิบัติการเมื่อมีแบ็กเอนด์ให้ใช้: `sandbox-exec` (Seatbelt)
+บน macOS, `bwrap` บวก `socat` บน Linux และ WSL2 เมื่อไม่มีเลย — Windows หรือโฮสต์
+Linux ที่ขาดเครื่องมือเหล่านั้น — การรันจะถอยไปใช้การทำสภาพแวดล้อมให้ปลอดภัย
+นโยบายคำสั่ง และกฎคุมการกระทำ และบันทึกตอนเริ่มระบบจะบอกว่าสถานะใดมีผล
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` คือสวิตช์ตัดการทำงานหน้างานสำหรับกรณีที่การตรวจสอบมองไม่เห็น:
+โฮสต์ที่โปรไฟล์แซนด์บ็อกซ์เองทำงานผิดปกติ มันไม่ต้องบิลด์ใหม่ และเซิร์ฟเวอร์จะ
+บันทึกคำเตือนตลอดอายุของโปรเซส สถานะจึงไม่เคยเงียบ
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ).
+การรันของฮาร์เนสในตัวส่งชุดนิยามเครื่องมือประจำชุดเล็กบวกดัชนีที่บอกแค่ชื่อของ
+ที่เหลือ ซึ่งจะโหลดสคีมาของมันเมื่อถูกใช้ครั้งแรก มันตัดบล็อกเครื่องมือลงราว 78%
+และทำให้ชุดที่มองเห็นเสมออยู่ในช่วงที่โมเดลเลือกเครื่องมือได้อย่างเชื่อถือได้
+เครื่องมือที่ถูกหน่วงไว้ยังเรียกได้ด้วยชื่อตลอด และ `search_tools` หาพวกมันได้จาก
+เจตนา ดู[บริบทเครื่องมือและการแคชพรอมต์](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ)
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` ทำให้เครื่องมือทุกตัวที่ได้รับอนุญาตกลับเข้าชุดประจำอีกครั้ง
+ส่งคำขอเหมือนที่เซิร์ฟเวอร์เคยส่งก่อนมีการหน่วงทุกประการ มันคือสวิตช์ตัดการทำงาน
+สำหรับโมเดลที่รับมือพื้นผิวสองชั้นได้ไม่ดี — เป็นแฟล็กแทนการบิลด์ใหม่ มันมีผล
+เฉพาะฮาร์เนสในตัว ส่วน MCP `tools/list` ที่ไคลเอนต์ภายนอกเห็นนั้นเป็นแค็ตตาล็อก
+เต็มเสมอ
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+การรันที่ข้อมูลรับรองของผู้ให้บริการหายไปหรือใช้หมดจะถูก**พักไว้**แทนที่จะ
+ล้มเหลว: ผู้ดูแลจะได้รับพรอมต์ให้แก้ไข และการรันจะดำเนินต่อหากแก้แล้ว กำหนดเวลา
+สูงสุดเริ่มต้นคือ 900 วินาที (15 นาที) จำกัดไว้ที่ 0–3600
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+กำหนดเวลานี้นานกว่าของพรอมต์ขออนุมัติอย่างตั้งใจ: การอนุมัติเป็นการตัดสินใจที่
+ใครสักคนทำในไม่กี่วินาที ขณะที่การแก้ข้อมูลรับรองหมายถึงการเปิดเทอร์มินัล
+ลงชื่อเข้าใช้ แล้วกลับมา เพดานนี้เองที่กันไม่ให้การรันแบบไม่มีคนดูแล — ขั้นตอน
+ไปป์ไลน์ ทริกเกอร์ cron เว็บฮุก — ต้องรอคนที่นอนหลับอยู่ เมื่อมันหมดเวลา การรัน
+จะล้มเหลวด้วยข้อความที่มันจะล้มเหลวอยู่แล้ว
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` คือสวิตช์ตัดการทำงาน: จะไม่มีการพักสิ่งใดเลย และข้อมูล
+รับรองที่ไม่ดีจะจบเทิร์นเหมือนก่อนที่ประตูนี้จะมีอยู่ทุกประการ
 
-## Subcommands
+## คำสั่งย่อย
 
-| Command                                       | What it does                                                                                        |
+| คำสั่ง                                        | สิ่งที่มันทำ                                                                                         |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| `cc_server`                                   | รันเซิร์ฟเวอร์จนถึง `SIGINT`/`SIGTERM`                                                               |
+| `cc_server pair`                              | จัดสรรอุปกรณ์และพิมพ์ ID กับคีย์จับคู่ของมัน ปลอดภัยแม้กับไดเรกทอรีข้อมูลที่เซิร์ฟเวอร์กำลังให้บริการอยู่ — เซิร์ฟเวอร์ที่รันอยู่จะรับอุปกรณ์ใหม่โดยไม่ต้องรีสตาร์ต |
+| `cc_server calendar connect --workspace <id>` | เชื่อมต่อบัญชี Google เข้ากับเวิร์กสเปซผ่านขั้นตอน device code แล้วออก                                 |
+| `cc_server update`                            | ตรวจหา ดาวน์โหลด และตรวจสอบรีลีสแบบสแตนด์อโลนที่ใหม่กว่า                                              |
+| `cc_server --version`                         | พิมพ์เวอร์ชันบิลด์และ git SHA — ตัวตนเดียวกับที่ `/healthz` และการจับมือ RPC ประกาศ                    |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
-| -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| แฟล็ก          | ค่าเริ่มต้น                                                  | ความหมาย                                                                                                                                                             |
+| -------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--device`     | `web-client`                                               | ID อุปกรณ์ แพลตฟอร์มอนุมานจากมัน ดังนั้น `--device desktop` จะสร้างแถวเดสก์ท็อป และ `--device ios`/`android` สร้างแถวโทรศัพท์ ส่วนอย่างอื่นถือเป็นเว็บ             |
+| `--label`      | ชื่อแพลตฟอร์มบวกชื่อโฮสต์ของเครื่องนี้                        | ชื่อที่แสดงในรายการอุปกรณ์                                                                                                                                           |
+| `--host`       | `localhost` หรือ `<this-host>` เมื่อผูกกับทุกอินเทอร์เฟซ    | โฮสต์ที่จะฝังใน URL ที่พิมพ์ ตั้งเป็นที่อยู่ LAN หรือโฮสต์ทันเนลที่ไคลเอนต์จะเรียกจริง                                                                                  |
+| `--client-url` | ไม่ได้ตั้ง                                                  | ออริจินของไคลเอนต์**เว็บ**แบบโฮสต์ เพิ่มดีปลิงก์ที่สแกนได้และ QR ในเทอร์มินัล                                                                                          |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` ยังรับแฟล็กหลักอย่าง `--data-dir`, `--port` และ `--bind` ด้วย: พวกมัน
+เลือกไดเรกทอรีข้อมูลที่จะเขียนและกำหนดรูปร่าง URL ของเซิร์ฟเวอร์ที่พิมพ์ (`ws`
+บนลูปแบ็ก, `wss` เมื่อ `--bind any`) การรัน `pair` ซ้ำสำหรับ `--device` เดิมจะ
+หมุนคีย์ของมันและตัดเซสชันที่ใช้งานอยู่ของอุปกรณ์นั้นทิ้ง ข้อมูลรับรองที่สร้าง
+ที่นี่**ไม่มีเวลาหมดอายุ** ต่างจาก 30 วันที่การจับคู่ในแอปกำหนด
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/).
+:::caution[QR ของ `--client-url` ไม่ใช่ QR ของโทรศัพท์]
+`pair --client-url` กรอกแบบฟอร์มเชื่อมต่อของไคลเอนต์**เว็บ** (URL ของเซิร์ฟเวอร์,
+ID อุปกรณ์ และคีย์ในแฟรกเมนต์ของ URL) โทรศัพท์จับคู่ด้วยเพย์โหลดที่ต่างออกไป
+ซึ่งสร้างจากแผงจับคู่ในแอป — ตัวบอกการเชื่อมต่อฉบับเต็มของเซิร์ฟเวอร์พร้อมเวลา
+หมดอายุ ทั้งสองใช้แทนกันไม่ได้ — ดู[จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` แทนที่การติดตั้ง มันจะถูกปฏิเสธขณะที่เซิร์ฟเวอร์ยังตอบบนพอร์ตที่กำหนด
+ไว้ เว้นแต่คุณจะส่ง `--force` `--allow-downgrade` อนุญาตรีลีสที่เก่ากว่า
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+คำสั่งนี้จะปฏิเสธทันที พร้อมคำอธิบายแทนข้อผิดพลาด สำหรับการติดตั้งที่มันไม่ได้
+เป็นเจ้าของ:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| สภาพแวดล้อม                  | ตรวจพบโดย                                   | สิ่งที่มันบอก                                              |
+| ---------------------------- | ------------------------------------------- | ---------------------------------------------------------- |
+| เซิร์ฟเวอร์ฝังตัวของเดสก์ท็อป | `CC_EMBEDDED=1` หรือ `CC_BOOTSTRAP_DEVICE_ID` | ให้อัปเดตแอปแทน — ตัวติดตั้งสลับทั้งทรี                    |
+| เช็กเอาต์ซอร์สที่รันด้วย `dart run` | พาธสคริปต์ลงท้ายด้วย `.dart`                | ให้อัปเดตด้วย git                                          |
+| Docker                       | ตัวบ่งชี้คอนเทนเนอร์                          | ดึงอิมเมจที่ใหม่กว่า                                        |
 
-## Process lifecycle
+## วงจรชีวิตของโปรเซส
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` รันจนถึง `SIGINT` / `SIGTERM` มีตัวแปรสภาพแวดล้อมเพิ่มเติมตัวหนึ่ง
+ควบคุมเรื่องนี้ และมันถูกตั้งโดยเดสก์ท็อปไม่ใช่โดยคุณ:
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| ตัวแปร                  | ผล                                                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1` | เซิร์ฟเวอร์จะออกเมื่อโปรเซสแม่ของมันออก ตรวจได้จากการที่โปรเซสแม่ปิดปลายเขียนของไปป์ stdin ของมัน เดสก์ท็อปตั้งค่านี้เพื่อให้แอปที่แครชไม่ทิ้งเซิร์ฟเวอร์กำพร้าที่ยึดไดเรกทอรีข้อมูลไว้ |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+ตั้งค่าเองเฉพาะเมื่อคุณกำกับ `cc_server` เป็นโปรเซสลูกและต้องการการรับประกัน
+แบบเดียวกัน
 
-## Data directory layout
+## เลย์เอาต์ของไดเรกทอรีข้อมูล
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+ไดเรกทอรีข้อมูลเริ่มต้นคือ `~/Library/Application Support/control-center` บน macOS,
+`%APPDATA%\control-center` บน Windows และ `$XDG_DATA_HOME/control-center` (หรือ
+`~/.local/share/control-center`) ที่อื่น ๆ จะใช้ `.cc_server` สัมพัทธ์กับ cwd
+ก็เฉพาะเมื่อหาไดเรกทอรีโฮมหรือไดเรกทอรีข้อมูลแอปไม่เจอเท่านั้น
 
-| Path                              | Contents                                                                        |
+| พาธ                              | เนื้อหา                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | ทะเบียนเวิร์กสเปซ ผู้ใช้ อุปกรณ์ที่จับคู่ ฟีดข่าว และคิวของฟลีต                    |
+| `<workspaceId>/workspace.db`      | ฐานข้อมูลหนึ่งตัวต่อเวิร์กสเปซ — เอเจนต์ สเปซ ตั๋วงาน หน่วยความจำ กราฟโค้ด        |
+| `<workspaceId>/chat_credentials/` | โทเค็นของแชทบอต เป็น JSON ธรรมดา จึงไปกับเวิร์กสเปซ                                |
+| `secrets.json`                    | คีย์จับคู่ ตัวตนแอปของผู้ให้บริการ โทเค็นรายผู้ใช้และของ Google, SSO (`0600`)      |
+| `backups/<timestamp>/`            | สแนปช็อตการติดตั้งหนึ่งชุด — `manifest.json`, `global.db` และสำเนาของแต่ละเวิร์กสเปซ |
+| `backups/exports/`                | การนำออกของเวิร์กสเปซเดียว, `<workspaceId>-<timestamp>.db`                        |
+| `backups/transfer/`               | พื้นที่พักสำหรับดาวน์โหลดและอัปโหลดข้อมูลสำรอง และกวาดโดยเส้นทางที่เขียนมัน          |
+| `models/`                         | โมเดลการฝังตัว การแยกผู้พูด และเสียงพูดที่อยู่บนอุปกรณ์                             |
+| `meetings/<meetingId>/`           | เสียงการประชุมที่เก็บไว้                                                          |
+| `rigs/images/`                    | อิมเมจดิสก์ของริกที่นำเข้า (พื้นผิวเดสก์ท็อป QEMU)                                 |
+| `rigs/smolvm/<rigId>/`            | สถานะรันไทม์ของ microVM ต่อริก (ข้อมูลลับของโบรกเกอร์, `0600`)                     |
+| `rigs/smolvm-packs/`              | แพ็กเครื่องที่แตกไฟล์ไว้ล่วงหน้า — แคชที่ทำให้การบูตริกซ้ำ ๆ เร็ว                  |
+| `rigs/tls/`                       | หน่วยออกใบรับรองสำหรับ HTTPS ของริกในโดเมนสำหรับพัฒนา (คีย์ `0600`)              |
+| `rigs/run/<rigId>/`               | โอเวอร์เลย์ QEMU อิมเมจต้นแบบ และคีย์ต่อ VM (`0600`)                              |
 
-## See also
+## ดูเพิ่มเติม
 
-- [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/) — the setup recipe these flags belong to
-- [Run a fleet worker](/th-TH/คู่มือ/วิธีทำ/รันวอร์กเกอร์ของฟลีต/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/) — copying this directory somewhere safe
-- [Backup, export and import](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/) — pointing a client at one
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) — why the server owns everything
+- [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/) — สูตรการตั้งค่าที่แฟล็กเหล่านี้เป็นส่วนหนึ่งของมัน
+- [รันวอร์กเกอร์ของฟลีต](/th-TH/คู่มือ/วิธีทำ/รันวอร์กเกอร์ของฟลีต/) — ไบนารี `cc_worker` แยกต่างหากที่ลงทะเบียนกับเซิร์ฟเวอร์นี้
+- [สำรองและกู้คืน](/th-TH/คู่มือ/วิธีทำ/สำรองและกู้คืน/) — การคัดลอกไดเรกทอรีนี้ไปไว้ที่ปลอดภัย
+- [สำรอง นำออก และนำเข้า](/th-TH/คู่มือ/อ้างอิง/สำรองข้อมูล/) — เลย์เอาต์ของสแนปช็อตและทุกการดำเนินการสำรอง
+- [เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/) — การชี้ไคลเอนต์ไปที่ตัวหนึ่ง
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) — ทำไมเซิร์ฟเวอร์จึงเป็นเจ้าของทุกอย่าง

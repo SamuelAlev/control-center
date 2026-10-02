@@ -1,310 +1,313 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: ابزارهای MCP
+description: کاتالوگ کامل ابزارهای MCP که cc_server ثبت می‌کند، به تفکیک خانواده.
 slug: fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` یک رجیستری ابزار MCP (JSON-RPC 2.0) را میزبانی می‌کند که روی پورت اصلی سرور (پیش‌فرض `9030`) در `POST /mcp` و `GET /sse` سرو می‌شود؛ نسخهٔ پروتکل `2024-11-05` است. هر کارخواه به همان رجیستری می‌رسد: برنامهٔ رومیزی، نسخهٔ وب، کارخواه‌های بیرونی MCP و زمان اجرای داخلی عامل. سرورهای بیرونی MCP را می‌توان به‌صورت یک لایهٔ پویا به همان رجیستری پل زد.
 
-## Registry size
+## اندازهٔ رجیستری
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| سنجه                                                                                       | شمار |
+| ------------------------------------------------------------------------------------------ | ----- |
+| ابزارهای ثبت‌شده توسط `cc_server`                                                          | ۱۱۰   |
+| از `packages/cc_mcp`                                                                       | ۱۰۸   |
+| از `packages/cc_mcp_client` (کشف ابزار)                                                    | ۲     |
+| ثبت‌شده در رجیستری پایه (`server_mcp_registry.dart`)                                        | ۶۳    |
+| ثبت‌شده پس از بوت، هم‌زمان با بالا آمدن سرویس‌هایشان (`cc_server_runtime.dart`)              | ۴۷    |
+| از ۶۳ ابزار رجیستری پایه، مشروط به یک مخزن گراف کد                                          | ۵     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+پنج ابزار گراف کد تنها زمانی ثبت می‌شوند که میزبان یک مخزن گراف کد به `buildServerMcpRegistry` بدهد. `cc_server` همیشه یکی می‌فرستد، پس هر ۱۱۰ ابزار در باینری عرضه‌شده زنده‌اند.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+رجیستری کامل در `tools/list` اعلام می‌شود، بدون هیچ دروازه‌گذاری کشف. ویرایش‌های تیکت ابزارهایی نوعدارند.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[کارخواه‌های بیرونی همیشه کل کاتالوگ را می‌بینند]
+`tools/list` هرگز پیراسته نمی‌شود. کارخواه‌های MCP نام ابزارها را در برابر نسخهٔ کش‌شدهٔ خودشان از همان فهرست اعتبارسنجی می‌کنند و هر چیزی را که در آن فهرست نباشد، بی‌آنکه از سرور بپرسند، رد می‌کنند؛ پس ابزاری که آنجا پنهان شود، به‌جای تنها ساکت‌بودن، دست‌نیافتنی است.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار).
+**هارنس داخلی** فرق دارد: در هر درخواست تنها زیرمجموعه‌ای ساکن از تعریف‌ها را بار می‌کند و بقیه را در نخستین استفاده می‌کشد؛ این رفتاری در سمت هارنس است و این رجیستری را تغییر نمی‌دهد. [بافت ابزار و کش پرامپت(/fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار) را ببینید.
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[هر کلاس ابزار ثبت می‌شود]
+هر فایل منبعی زیر `packages/cc_mcp/lib/src/tools/` ابزاری است که یک عامل می‌تواند
+فراخوانی کند. اگر کلاس ابزاری تازه توسط هیچ‌چیز ساخته نشود،
+`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+بیلد را شکست می‌دهد.
 :::
 
-## Common parameters
+## پارامترهای مشترک
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+روی هر ابزاری که به دادهٔ محدود به فضای کاری دست می‌زند **الزامی** است. `workspace_id` گم یا نامعتبر خطای صریحی برمی‌گرداند و مقداری که با فضای کاری موجودیت هدف نمی‌خواند، به‌جای نادیده‌گرفتن بی‌صدا، رد می‌شود. روی ابزارهای واقعاً سراسری آن را حذف کنید: `list_workspaces` و شش ابزار خوراک خبری (`list_feeds`، `list_articles`، `get_article`، `set_article_read`، `set_article_saved`، `refresh_feeds`)، که روی فهرست خوراک‌های هر-کاربرِ مالک سرور سوار می‌شوند. ابزارهای کشف (`search_tool_bm25`، `list_my_tools`) آن را اختیاری می‌گیرند تا بتوانند فراخوانی‌پذیری را بر پایهٔ حالت گفتگو دسته‌بندی کنند. وقتی سرور یک عامل را اعزام می‌کند، فضای کاری سمت سرور تحمیل می‌شود، پس عامل نمی‌تواند با فرستادن شناسه‌ای بیگانه به فضای کاری دیگری برسد.
 
-## Tool discovery
+## کشف ابزار
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+هر دو از `cc_mcp_client` می‌آیند، نه `cc_mcp`، و هر دو نگهبان حالت را می‌پرسند تا گزارش دهند در حالت گفتگوی _کنونی_ چه چیزی فراخوانی‌پذیر است.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| ابزار              | توضیح                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | جست‌وجوی کاتالوگ ابزار با کلیدواژه؛ ابزارهای منطبق، اسکیمای آرگومان‌هایشان و اینکه هرکدام همین حالا فراخوانی‌پذیر است یا نه را برمی‌گرداند |
+| `list_my_tools`    | فهرست‌کردن ابزارهای فراخوانی‌پذیر در همین گفتگو، پالایش‌شده بر پایهٔ حالت آن                                                     |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+ابزار کشف سومی، **`search_tools`**، تنها درون هارنس داخلی وجود دارد و بخشی از این رجیستری MCP نیست. سطح ابزار خودِ اجرا را رتبه‌بندی می‌کند و برخلاف `search_tool_bm25`، اسکیمای آنچه می‌یابد را **بارگذاری** می‌کند تا عامل بتواند در نوبت بعدی‌اش یک تطبیق را فراخوانی کند. عامل‌های روی هارنس باید آن را ترجیح دهند؛ کارخواه‌های MCP `search_tool_bm25` را دارند.
 
-## Agent tools
+## ابزارهای عامل
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| ابزار         | توضیح                                    |
+| ------------- | ---------------------------------------- |
+| `list_agents` | فهرست‌کردن عامل‌های ثبت‌شده در یک فضای کاری |
 
-## Agent peer messaging and delegation
+## پیام‌رسانی و واگذاری میان عامل‌های همتا
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+عامل‌ها از طریق فضاها با یکدیگر گفتگو می‌کنند (ماندگار و در فهرست اعضا دیدنی). `ask_agent` درخواست/پاسخ است با مهلت زمانی الزامی؛ `delegate_task` سمت سرور با سقف عمق، تشخیص چرخه، پاکت بودجه و سقف خودمختاری دروازه‌بانی می‌شود.
 
-| Tool            | Description                                                                                    |
+| ابزار           | توضیح                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | فرستادن یک پیام یک‌طرفه به عاملی دیگر، با نشانی `to_agent_id` یا `to_agent_name` دقیق          |
+| `ask_agent`     | پرسیدن پرسشی از عاملی دیگر و انتظار برای پاسخش، یا پایان مهلت                                   |
+| `delegate_task` | واگذاری یک کار به عاملی دیگر به‌صورت یک تیکت فرزند ردیابی‌شده                                    |
+| `consult_agent` | افزودن متخصصی با بهترین تطبیق بر پایهٔ مهارت‌ها به فضا و اعزام آن با یک شرح مأموریت متمرکز       |
+| `todo_read`     | خواندن چک‌لیست کار ماندگارشدهٔ این گفتگو                                                        |
 
-## Skill tools
+## ابزارهای مهارت
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+هر نصب و به‌روزرسانی پیش از آنکه هر محتوای مهارتی به دیسک یا پرامپت عاملی برسد، از یک دروازهٔ اسکنِ با شکست بسته می‌گذرد.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| ابزار                | توضیح                                                                       |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_skills`        | فهرست‌کردن slugهای مهارت موجود در یک فضای کاری                             |
+| `create_skill`       | ساختن مهارتی تازه از محتوای markdown                                        |
+| `install_skill`      | نصب کل پوشهٔ یک مهارت از یک مخزن GitHub روی یک ref پین‌شده                   |
+| `update_skill`       | به‌روزرسانی یک مهارت GitHub نصب‌شده به یک ref تازه، با اسکن و پین دوباره      |
+| `list_skill_updates` | فهرست‌کردن مهارت‌هایی که نسخهٔ تازه‌تری دارند                                |
+| `verify_skills`      | راستی‌آزمایی مهارت‌های قفل‌شده در برابر هش محتوایشان روی دیسک                 |
+| `pin_skill`          | هش‌کردن یک مهارت موجود روی دیسک در `skills-lock.json`                       |
 
-## Plan, playbook and artifact tools
+## ابزارهای برنامه، کتابچه و آرتیفکت
 
-| Tool               | Description                                                                                                           |
+| ابزار              | توضیح                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | قرارداد خروجی حالت برنامه: انتشار یک `PlanDocument` نوعدار که در Plan Studio باز می‌شود                                |
+| `create_playbook`  | ذخیرهٔ یک برنامه به‌صورت قالبی نام‌دار و نسخه‌دار با جانگهدارهای `{{param}}` نوعدار                                      |
+| `run_playbook`     | نمونه‌سازی یک کتابچه با مقادیر پارامترها، و تولید برنامه‌ای که اپراتور تأییدش می‌کند                                     |
+| `publish_artifact` | انتشار فهرستی مرتب از بلوک‌های نوعدار (markdown، جدول، نمودار، mermaid، کد، JSON) که به‌صورت بومی در کارخواه رندر می‌شود |
+| `revise_artifact`  | جایگزینی محتوای یک آرتیفکت منتشرشده                                                                                   |
+| `list_artifacts`   | فهرست‌کردن آرتیفکت‌های فضای کاری                                                                                       |
+| `get_artifact`     | خواندن یک آرتیفکت                                                                                                     |
+| `complete_goal`    | اعلام برآورده‌شدن هدف ماندگار فعال گفتگو (که با `/goal` یا `/loop` آغاز شده است)                                        |
 
-## Workspace tools
+## ابزارهای فضای کاری
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| ابزار             | توضیح                                                                   |
+| ----------------- | ----------------------------------------------------------------------- |
+| `list_workspaces` | فهرست‌کردن همهٔ فضاهای کاری با شناسه‌ها و نام‌هایشان (سراسری؛ بدون `workspace_id`) |
 
-## Repo tools
+## ابزارهای مخزن
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| ابزار        | توضیح                                                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `list_repos` | فهرست‌کردن مخزن‌های ثبت‌شده در یک فضای کاری. فراخوان‌های عامل مسیرهای worktree جدا و کپی‌هنگام‌نوشتنِ گفتگوی خود را می‌گیرند، هرگز چک‌اوت‌های اصلی را            |
 
-## Messaging tools
+## ابزارهای پیام‌رسانی
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| ابزار                | توضیح                                                                |
+| -------------------- | -------------------------------------------------------------------- |
+| `list_spaces`        | فهرست‌کردن فضاهای پیام‌رسانی یک فضای کاری                             |
+| `get_messages`       | واکشی پیام‌ها از یک فضا                                               |
+| `send_message`       | ارسال پیامی به یک فضا به‌عنوان عاملی فرستنده با نام مشخص              |
+| `get_space_notes`    | خواندن سند تحویل مشترک یک فضا                                        |
+| `update_space_notes` | جایگزینی سند تحویل مشترک یک فضا                                      |
+| `todo_write`         | جایگزینی چک‌لیست کارهای این گفتگو در یک فراخوانی (فهرست کامل را بفرستید) |
 
-## Review tools
+## ابزارهای بازبینی
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| ابزار                      | توضیح                                                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | آغاز بازبینی هوش مصنوعی برای یک PR: محاسبهٔ حوزه‌های بازبینی، پخش بازبین‌های متخصص در فضای PR، نوشتن مرور گام‌به‌گام و نهایی‌سازی |
+| `add_review_node`          | افزودن یک یافتهٔ بازبینی ساخت‌یافته (فایل، خط، اولویت P0–P3) به یک فضای بازبینی                                              |
+| `confirm_review_node`      | تأیید یافتهٔ یک همتا؛ نویسنده نمی‌تواند یافتهٔ خودش را تأیید کند                                                                 |
+| `resolve_review_node`      | علامت‌زدن یافته‌ای به‌عنوان رفع‌شده، پس از واقعاً انجام‌دادن تغییر؛ اثری را در فضای بازبینی ثبت می‌کند                            |
+| `dismiss_review_node`      | ردکردن یافته‌ای که مصداق ندارد؛ یک واقعیت سرکوب ثبت می‌کند تا بازبین‌ها دیگر آن را دوباره علامت نزنند                          |
+| `request_peer_review`      | درخواست نگاهی دوباره به یک یافته از عاملی بازبین دیگر                                                                          |
+| `dispatch_reviewers`       | اعزام هم‌زمان عامل‌های بازبین منطبق به یک فضای بازبینی                                                                         |
+| `submit_reviewer_verdict`  | ثبت یک حکم ship/hold/block به‌ازای هر بازبین، همراه با اطمینان و یک توضیح                                                      |
+| `finalize_review`          | محاسبهٔ اجماع به‌ازای هر گره و حکم به‌ازای هر PR و بستن بازبینی                                                                 |
+| `set_cohort_summary`       | تنظیم خلاصهٔ به‌زبان سادهٔ یک گروه بازبینی                                                                                    |
+| `add_review_diagram`       | ضمیمه‌کردن یک نمودار ساخت‌یافته و راستی‌آزمایی‌شده با گراف (`sequence`، `entityRelation`، `stateMachine`) به یک گروه             |
+| `publish_review_to_github` | انتشار بازبینی نهایی‌شده در GitHub به‌صورت نظرهای درون‌خطی به‌همراه یک بدنهٔ خلاصه                                              |
 
-## Memory tools
+## ابزارهای حافظه
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| ابزار                   | توضیح                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `search_memory`         | جست‌وجوی واقعیت‌ها و سیاست‌ها (کلیدواژه، معنایی، یا ترکیبی — ترکیبی پیش‌فرض است)                          |
+| `propose_fact`          | ذخیرهٔ یک واقعیت کوتاه markdown در یک دامنه                                                               |
+| `supersede_fact`        | علامت‌زدن یک واقعیت به‌عنوان منسوخ‌شده با واقعیتی دیگر                                                     |
+| `propose_policy`        | ذخیرهٔ یک قاعدهٔ هنجاری در یک دامنه (به دسترسی نوشتن روی آن نیاز دارد)                                    |
+| `supersede_policy`      | بازنشسته‌کردن یک سیاست — آن را غیرفعال علامت می‌زند و برای حسابرسی نگه می‌دارد                              |
+| `list_policies`         | فهرست‌کردن سیاست‌های فعال، به‌صورت اختیاری پالایش‌شده بر پایهٔ دامنه                                        |
+| `list_memory_domains`   | فهرست‌کردن دامنه‌های حافظهٔ فضای کاری همراه با شمار واقعیت‌ها و سیاست‌ها                                     |
+| `record_observation`    | ثبت یک مشاهدهٔ خام در حافظهٔ کاری عامل                                                                    |
+| `get_my_notes`          | خواندن چرک‌نویس حافظهٔ کاری عامل فراخوان                                                                |
+| `update_my_notes`       | به‌روزرسانی چرک‌نویس حافظهٔ کاری عامل فراخوان                                                             |
+| `remember`              | افزودن یک یادداشت به حافظهٔ کاری داغ عامل برای این نشست (محدود با TTL و شمار)                             |
+| `consolidate_memory`    | اجرای یک گذر ادغام («خواب»): بیرون‌راندن اقلام داغ منقضی‌شده و ارتقای اقلام ماندگار به واقعیت‌های بلندمدت    |
+| `harmonize_memory`      | اجرای آشتی باورها میان عامل‌ها (SHMR) و علامت‌زدن تضادها                                                  |
+| `list_memory_conflicts` | فهرست‌کردن تضادهای تشخیص‌داده‌شده و اینکه هرکدام چگونه حل شد                                               |
 
-## Governance tools
+## ابزارهای حاکمیت
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| ابزار                        | توضیح                                                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `create_goal`                | ساختن یک هدف سازمانی (در سطح شرکت، تیم، عامل یا کار)                                                     |
+| `list_goals`                 | فهرست‌کردن هدف‌ها با سطح، وضعیت و پیشرفت تجمیعی                                                          |
+| `update_goal_progress`       | تنظیم پیشرفت یک هدف                                                                                      |
+| `create_approval`            | بازکردن یک تأیید هیئت برای یک کنش تحت حاکمیت (خروج از برنامه، ادغام، انتشار، استخدام، سفارشی)              |
+| `list_approvals`             | فهرست‌کردن تأییدها، به‌صورت اختیاری پالایش‌شده بر پایهٔ وضعیت                                              |
+| `decide_approval`            | ثبت یک تصمیم: تأیید، رد، درخواست بازنگری، یا ارسال دوباره                                                 |
+| `comment_approval`           | نظر دادن روی یک تأیید هیئت                                                                               |
+| `exit_plan_mode`             | بازکردن یک تأیید `plan_exit` (و پس از تأییدشدن، مصرف آن) و بیرون‌بردن گفتگو از حالت برنامه                |
+| `agent_heartbeat`            | گزارش زنده‌بودن (فعال، بیکار، گیرکرده)؛ سکوت‌کردن سلامت زمان اجرا را نخست به «تازه‌گم‌شده» و سپس به «آفلاین» می‌چرخاند |
+| `list_runtime_health`        | فهرست‌کردن سلامت زمان اجرای هر عامل                                                                       |
+| `list_agent_presence`        | فهرست‌کردن حضور هر عامل (سلامت، چرخهٔ عمر، شمار در حال اجرا و در صف، ظرفیت)                                 |
+| `get_org_chart`              | خواندن درخت گزارش‌دهی؛ مدیرعامل در ریشه، تودرتو بر پایهٔ `reports_to`                                       |
+| `create_work_product`        | ساختن یک محصول تحویلی ماندگار پیوست‌شده به یک تیکت                                                         |
+| `save_work_product_revision` | ذخیرهٔ یک بازنگری تازه؛ `base_revision_id` را بفرستید تا در ویرایش هم‌زمان رد شود                          |
+| `list_work_products`         | فهرست‌کردن محصول‌های کار، به‌صورت اختیاری پالایش‌شده به یک تیکت                                            |
+| `get_work_product`           | خواندن یک محصول کار همراه با تاریخچهٔ بازنگری‌هایش                                                        |
+| `create_runtime_profile`     | تعریف یک نمایهٔ اجرای بازاستفاده‌پذیر (خانوادهٔ پروتکل، فرمان CLI، آرگومان‌های راه‌اندازی ثابت)              |
+| `list_runtime_profiles`      | فهرست‌کردن نمایه‌های اجرای فضای کاری                                                                      |
 
-## Code graph tools
+## ابزارهای گراف کد
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+تنها زمانی ثبت می‌شوند که میزبان یک مخزن گراف کد عرضه کند. این نمایه مجموعهٔ گرامرهای عرضه‌شده را پوشش می‌دهد (Dart، JS/TS، PHP، Python، Rust، Zig، C/C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB، Ada)؛ نمادهای هر زبان دیگری حاضر نیستند.
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| ابزار          | توضیح                                                                               |
+| -------------- | ----------------------------------------------------------------------------------- |
+| `search_code`  | جست‌وجوی نمادهای نمایه‌شده با نام، امضا و توضیح مستند (ترکیبی BM25 + معنایی)          |
+| `code_symbol`  | جستن نمادها با نام دقیق؛ `file:line` و امضا را برمی‌گرداند                            |
+| `code_callers` | فهرست‌کردن نمادهایی که یک نماد را فرامی‌خوانند یا به آن وابسته‌اند (یال‌های ورودی)      |
+| `code_callees` | فهرست‌کردن نمادهایی که یک نماد فرامی‌خواند یا به آن‌ها وابسته است (یال‌های خروجی)       |
+| `code_impact`  | محاسبهٔ شعاع اثر گذرای یک نماد، تا یک عمق مشخص                                        |
 
-## Ticketing tools
+## ابزارهای تیکتینگ
 
-| Tool                      | Description                                                                                                                  |
+| ابزار                     | توضیح                                                                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | ساختن یک تیکت روی ارائه‌دهندهٔ پیکربندی‌شده                                                                                   |
+| `get_ticket`              | واکشی یک تیکت بر پایهٔ شناسه                                                                                                  |
+| `list_tickets`            | فهرست‌کردن تیکت‌ها، به‌صورت اختیاری پالایش‌شده بر پایهٔ وضعیت یا مسئول                                                        |
+| `update_ticket`           | به‌روزرسانی وضعیت، عنوان، توضیح، اولویت یا برچسب‌ها (وضعیت نام‌های مستعاری مانند `in_progress` / `completed` را می‌پذیرد)       |
+| `assign_ticket`           | واگذاری یک تیکت به یک عامل و/یا تیم                                                                                          |
+| `reassign_ticket`         | واگذاری دوبارهٔ یک تیکت به عاملی دیگر                                                                                         |
+| `add_ticket_collaborator` | دعوت یک عامل به هم‌کاری روی یک تیکت (به فضای آن افزوده می‌شود)                                                                 |
+| `comment_on_ticket`       | نظر دادن روی یک تیکت                                                                                                          |
+| `close_ticket`            | بستن یک تیکت (آن را انجام‌شده علامت می‌زند) با خروجی اختیاری                                                                     |
+| `fail_ticket`             | علامت‌زدن یک تیکت به‌عنوان ناموفق، همراه با یک پیام خطا                                                                          |
+| `delegate_ticket`         | واگذاری یک تیکت به یک عامل، با ساختن یک تیکت ردیابی‌شده                                                                         |
+| `ticket_pr_link`          | پیوند یا لغو پیوند یک تیکت و یک pull request بر پایهٔ شناسهٔ گرهٔ PR (`action`: `link` \| `unlink`)                             |
+| `ticket_relation`         | افزودن یا حذف رابطه‌ای میان دو تیکت — `blocked_by`، `blocking`، `related_to`، `duplicate_of`، `duplicated_by`، `sub_issue_of`، `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | فهرست‌کردن والد یک تیکت، زیرتیکت‌ها و پیوندهای وابستگی آن                                                                      |
 
-## Team and pipeline tools
+## ابزارهای تیم و پایپ‌لاین
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| ابزار                  | توضیح                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | ثبت یک ورودی فعالیت رهبر تیم در برابر یک تیکت                                                                              |
+| `preview_trigger`      | اجرای آزمایشی اینکه یک رویداد فرضی کدام اجراهای پایپ‌لاین را آغاز می‌کند، بدون ثبت هیچ چیز                                   |
+| `submit_output`        | ارسال محمولهٔ خروجی ساخت‌یافته برای اجرای پایپ‌لاین کنونی فراخوان؛ در برابر شِمای خروجی اعلام‌شدهٔ اجرا اعتبارسنجی می‌شود        |
 
-## Orchestration tools
+## ابزارهای ارکستراسیون
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| ابزار                   | توضیح                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | انتشار یک برنامهٔ ارکستراسیون چندعاملی ساخت‌یافته برای یک تأیید پیشاپیش؛ اعتبارسنجی می‌کند و هر تخلفی را برمی‌گرداند |
 
-## Newsfeed tools
+## ابزارهای خوراک خبری
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| ابزار               | توضیح                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| `list_feeds`        | فهرست‌کردن خوراک‌های RSS/Atom ثبت‌شده                                      |
+| `list_articles`     | فهرست‌کردن مقاله‌ها، به‌صورت اختیاری پالایش‌شده بر پایهٔ خوراک، خوانده‌نشده یا ذخیره‌شده |
+| `get_article`       | واکشی یک مقاله                                                            |
+| `set_article_read`  | علامت‌زدن یک مقاله به‌عنوان خوانده یا خوانده‌نشده                            |
+| `set_article_saved` | ذخیره یا لغو ذخیرهٔ یک مقاله                                              |
+| `refresh_feeds`     | واکشی دوبارهٔ همهٔ خوراک‌های فعال، همین حالا                               |
 
-## Enclosure (rig) tools
+## ابزارهای محفظه (ریگ)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/fa-IR/راهنمای-کاربر/مرجع/ریگها/#action-verbs).
+ماشین‌های یک‌بارمصرف — یک مرورگر یا میزکار Linux محفظه‌ای، یک شبیه‌ساز Android،
+یا یک شبیه‌ساز iOS — را از درون یک اجرا برانید. پس از بوت و بدون قید و شرط ثبت
+می‌شوند: اینکه ماشینی واقعاً می‌تواند بوت شود، پرسشی کاوشی است که ابزارها در هر
+فراخوانی پاسخ می‌دهند. فراخوانی‌های تکراری در یک گفتگو یک ماشین را دوباره به کار
+می‌گیرند؛ نماگرفت‌ها به‌صورت محتوای تصویری با بودجهٔ یک تصویر در هر نتیجه برمی‌گردند و
+محتوای صفحه/رابط کاربری استخراج‌شده به‌عنوان دادهٔ نامطمئن حصار می‌شود. چهار ابزار
+use به‌همراه `rig_close` [کلاس کنش(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
+`enclosureControl` را اعلام می‌کنند
+(ابزارهای use همچنین `networkEgress` و `processSpawn` را اعلام می‌کنند؛ `mobile_use` و
+`ios_use` هم `packageInstall` را)، پس حالت‌های فقط‌خواندنی آن‌ها را رد می‌کنند. `rig_list`
+هیچ‌کدام را اعلام نمی‌کند — تنها وضعیت فضای کاری را می‌خواند. واژگان کامل فعل‌ها به‌ازای هر سطح در
+[مرجع ریگ‌ها(/fa-IR/راهنمای-کاربر/مرجع/ریگها/#action-verbs) آمده است.
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| ابزار          | توضیح                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `computer_use` | راندن یک میزکار Linux در یک VM محفظه‌ای: جابه‌جایی، کلیک، کشیدن، پیمایش، تایپ، تغییر اندازه، بریده‌دان، نماگرفت                          |
+| `browser_use`  | راندن یک Chromium، Firefox یا WebKit بی‌سر (`engine`): پیمایش، کلیک، پرکردن، استخراج (a11y/DOM/کنسول)، بریده‌دان، نماگرفت            |
+| `mobile_use`   | راندن Android روی ADB: بررسی/ورود، نماگرفت، نصب/شروع/توقف/بازنشانی/حذف برنامه‌ها، پیوندهای عمیق و فرمان‌های دستگاه به‌شکل argv        |
+| `ios_use`      | راندن شبیه‌ساز iOS از طریق WebDriverAgent/CoreSimulator: بررسی/ورود، نماگرفت، نصب/شروع/توقف/حذف برنامه‌ها، پیوندهای عمیق و فرایندهای شبیه‌ساز به‌شکل argv |
+| `rig_list`     | فهرست‌کردن ریگ‌های یک فضای کاری با سطح، وضعیت، اندازهٔ نمایشگر و کنترل‌کننده                                                       |
+| `rig_close`    | نابودکردن یک ریگ و دور انداختن وضعیت ماشین تحت مالکیت آن                                                                         |
 
-## Not exposed over MCP
+## چیزهایی که از طریق MCP عرضه نمی‌شوند
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/), not as a tool an agent can call.
+تقویم و جلسه‌ها هیچ ابزار MCP‌ای ندارند. عامل‌ها نمی‌توانند تقویم، جلسه‌ها، رونوشت‌ها، آیتم‌های کنشی یا تصمیم‌های شما را بخوانند. خلاصه‌ای که آیتم‌های کنشی و تصمیم‌ها را تولید می‌کند، به‌صورت پایپ‌لاین توکار [`meeting_summary`(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) اجرا می‌شود، نه به‌صورت ابزاری که یک عامل بتواند فراخوانی کند.
 
-## Tool gating by mode
+## دروازه‌گذاری ابزار بر پایهٔ حالت
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+دروازه‌گذاری دو بار از یک جدول (`ModeToolPolicy`) اعمال می‌شود: یک‌بار در اعزام‌کنندهٔ MCP برای آداپتور Claude Code و یک‌بار در رجیستری هارنس داخلی. یک فراخوان مسدودشده دلیل را برمی‌گرداند.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| حالت          | سطح ابزار                                                                                                                                                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat`        | هر ابزار ثبت‌شده؛ بدون فهرست مجاز                                                                                                                                                                                                  |
+| `plan`        | یک فهرست مجاز دست‌چین‌شده. بدون نوشتن در worktree و بدون افعال تیکتی `create` / `assign` / `delegate`، اما حافظه، آرتیفکت‌ها، کارها، `submit_plan`، `exit_plan_mode` و افعال تکمیل تیکت روی تیکت اعزام‌شده مجازند                    |
+| `review`      | یک فهرست مجاز دست‌چین‌شده: مشارکت در بازبینی، ارتباطات، واکش‌های زمینهٔ فقط‌خواندنی و مجموعهٔ کامل افعال تیکت، از جمله `create_ticket` و `assign_ticket`                                                                              |
+| `orchestrate` | یک فهرست مجاز دست‌چین‌شده: ابزارهای پژوهش و خواندن به‌همراه `propose_orchestration`، `create_playbook` و `run_playbook`. استخدام، تجزیه و تکمیل تیکت پس از تأیید و به‌صورت قطعی رخ می‌دهند، هرگز در میانهٔ اجرا                       |
 
-Permitted in every mode regardless of allow-list:
+مجاز در هر حالت، صرف‌نظر از فهرست مجاز:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| مجموعه             | ابزارها                                                                                                                                                                                                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| حافظه و آرتیفکت‌ها | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| گراف کد            | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| سازوکار اجرا       | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+قرارداشتن در یک فهرست مجاز، ابزاری را فراخوانی‌پذیر نمی‌کند، و عکس آن هم درست است: قابلیت پرسیدن از اپراتور یک ابزار **هارنس** (`ask_user`) است، پس هرگز اصلاً در این کاتالوگ MCP ظاهر نمی‌شود.
 
-## Approval-gated tools
+## ابزارهای دروازه‌بندی‌شده با تأیید
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+یک ابزار می‌تواند `requiresApproval` را اعلام کند. آن‌گاه اعزام‌کننده یک `ApprovalPayload` می‌سازد و آن را پیش از اجرای ابزار از طریق `ConfirmationPort` رو می‌کند؛ `cc_server` آن درگاه را سیم‌کشی می‌کند، پس این دروازه زنده است.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+ابزارهای ثبت‌شده‌ای که آن را اعلام می‌کنند: `create_ticket`، `update_ticket`، `assign_ticket`، `reassign_ticket`، `close_ticket`، `ticket_relation`، `create_goal`، `update_goal_progress`، `create_approval`، `decide_approval`، `comment_approval`، `create_work_product`، `save_work_product_revision`، `create_runtime_profile`، `install_skill`، `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/).
+به‌طور مستقل، گاردریل‌های کنش یکپارچه هر ابزاری را که مجموعهٔ `ActionClass` ناتهی اعلام کند، دروازه‌بانی می‌کنند. تصمیم `prompt` بدون هیچ تأییدکنندهٔ متصل، رد می‌شود. [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) را ببینید.
 
-## Capabilities with no tool behind them
+## قابلیت‌هایی که هیچ ابزاری پشتشان نیست
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+هر قابلیتی در محصول برای یک عامل قابل‌دسترس نیست. این‌ها هیچ ابزاری
+ندارند، پس نامی که ممکن است جای دیگری به آن برخورده باشید، «unknown tool» برمی‌گرداند:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| قابلیت                                     | به‌جای آن کجا زندگی می‌کند                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| استخدام، اخراج یا ویرایش یک عامل            | رابط کاربری عامل‌ها. هیچ ابزار `hire_agent` / `fire_agent` / `update_agent` وجود ندارد             |
+| ساختن یک فضای کاری                          | `workspace.upsert` روی RPC، که مالکیت را می‌کارد و مهر می‌زند                                      |
+| پروژه‌ها (ساخت / فهرست / به‌روزرسانی / فایل)  | رابط کاربری تیکت‌ها. پروژه‌ها سطحی برای اپراتورند — [پروژه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/) را ببینید |
+| پرسیدن یک پرسش مسدودکننده از اپراتور        | ابزار `ask_user` هارنس، نه MCP. یک فرم در گفتگو رندر می‌کند و تا آمدن پاسخ مسدود می‌ماند           |
+| عیب‌یابی هر عامل                             | هیچ. `doctor` وجود ندارد — [عیب‌یابی عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/) را ببینید |
+| تقویم و جلسه‌ها                              | RPC تنها برای کارخواه‌های انسانی (بالا را ببینید)                                                 |
 
-## See also
+## همچنین ببینید
 
-- [Use Control Center as an MCP server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
+- [استفاده از Control Center به‌عنوان یک سرور MCP(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)

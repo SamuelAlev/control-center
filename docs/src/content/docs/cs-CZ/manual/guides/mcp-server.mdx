@@ -1,45 +1,46 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Používejte MCP server
+description: Namiř externího klienta MCP na server nástrojů Control Center, nastav bearer token a zjisti, co plocha vystavuje.
 slug: cs-CZ/prirucka/navody/mcp-server
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Tenhle návod ukazuje, jak připojit externího klienta MCP — Claude Code, editor
+nebo MCP Inspector — k vlastnímu serveru nástrojů Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center registruje **110** nástrojů a poskytuje je přes Model Context
+Protocol ve verzi protokolu `2024-11-05`. Celé rodiny nástrojů, které bys
+čekal, chybí: nástroje pro schůzky a kalendář tu nejsou a projektové nástroje
+taky ne.
 
-## Find the endpoint
+## Najdi endpoint
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Plocha MCP sdílí hlavní listener `cc_server`. Samostatný port pro MCP není.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| Endpoint | Metoda   | Účel                                              |
+| -------- | -------- | ------------------------------------------------- |
+| `/mcp`   | `POST`   | Přenos Streamable HTTP — tím klient mluví        |
+| `/mcp`   | `DELETE` | Ukončení relace                                   |
+| `/sse`   | `GET`    | Proud notifikací odesílaných serverem             |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Výchozí místní instalace je tedy na `http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Jdi do **Nastavení → Server → Servery MCP**
+2. Přečti kartu **Server MCP** — ukazuje **Běží** nebo **Zastaveno** a port,
+   na kterém naslouchá
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Na čerstvé instalaci je plocha zapnutá, takže klient na loopbacku funguje bez
+zajížďky do nastavení. **Spustit při startu aplikace** určuje, jestli se po
+restartu vrátí. **Start** a **Zastavit** platí jen pro aktuální běh a tuhle
+předvolbu nemění.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Server se ve výchozím stavu váže na loopback, takže endpoint je dosažitelný jen
+ze stroje, na kterém běží `cc_server`, pokud jsi ho nespustil s `--bind any`.
 
-## Connect a client
+## Připoj klienta
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Namiř klienta na endpoint Streamable HTTP. Přesný tvar konfigurace je věc
+klienta, URL je v obou případech stejná.
 
 ```json
 {
@@ -54,41 +55,43 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code tohle z projektového `.mcp.json` nevezme. Projektové servery MCP
+drží za výzvou ke schválení, na kterou neinteraktivní `claude -p` nikdy
+neodpoví. Konfiguraci předej přímo:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` donutí Claude brát jen tenhle soubor, takže se stejný
+server z projektu ještě neobjeví a nezaregistruje podruhé.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Kontrolní bod: požádej klienta, ať vypíše nástroje. Měl bys vidět položky
+`mcp__*` pro tickety, prostory, paměť, graf kódu a kontrolu.
 
-## Serve MCP beyond the host
+## Zpřístupni MCP mimo hostitele
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. V **Nastavení → Server → Servery MCP** na řádku **Autentizační token**
+   stiskni **Nastavit** a vlož token
+2. Posílej ho jako `Authorization: Bearer <token>` u každého požadavku
+   `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Plocha bez tokenu odmítne každého volajícího mimo loopback kódem 403. Je to
+záměrně uzavřené: právě token službu mimo hostitele vůbec umožňuje.
 
-Token changes apply to the live surface immediately — no restart.
+Změna tokenu se na živé ploše projeví hned, restart není potřeba.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` bere token v query stringu]
+Proud notifikací se na token kontroluje jako každá jiná trasa, ale prohlížečové
+`EventSource` neumí poslat hlavičku `Authorization`. Proto `/sse` bere token i
+jako `?token=<token>`. Bez něj odpoví 401.
 :::
 
-## Scope every call to a workspace
+## Omez každé volání na pracovní prostor
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Každý nástroj, který sahá na data vázaná na pracovní prostor, vyžaduje
+`workspace_id`. Volání bez něj se odmítne a nevyhodnotí se proti nějakému
+„aktuálnímu“ pracovnímu prostoru:
 
 ```json
 {
@@ -98,56 +101,57 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Id je to z URL v prohlížeči nebo v aplikaci: `/workspaces/<workspace_id>/…`.
+Výjimku mají jen nástroje, které pracovní prostory opravdu přesahují, třeba
+`list_workspaces` a nástroje kanálu novinek. Kanál novinek patří uživateli, ne
+pracovnímu prostoru, a agent vlastního uživatele nemá, takže tyhle nástroje
+pracují s kanály vlastníka serveru.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Nástroje vázané na repozitář navíc kontrolují, že je repozitář s tím pracovním
+prostorem propojený.
 
-## Know what the surface will refuse
+## Poznej, co plocha odmítne
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Brána režimu.** Volání se na serveru vyhodnotí podle režimu prostoru
+  volajícího agenta. Agent v režimu jen pro čtení se k zapisovacímu nástroji
+  nedostane tím, že vynechá `space_id`. Režim se vezme z jeho aktivního běhu.
+- **Guardraily akcí.** Měnící nástroje deklarují třídy efektů a procházejí
+  stejnou politikou jako zbytek produktu. Viz
+  [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
+- **Potvrzení.** Některé destruktivní nástroje sestaví potvrzovací payload a
+  volání pokračuje až po jeho schválení.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Celý katalog se hlásí v `tools/list` a nic se z něj neschovává. Externí klient
+MCP odmítne zavolat nástroj, který v jeho uloženém seznamu není, takže
+schovávání nástrojů je rozbije, místo aby seznam uklidilo.
 
-## Troubleshooting
+## Řešení problémů
 
-### The client sees no tools
+### Klient nevidí žádné nástroje
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Zkontroluj, že karta **Server MCP** ukazuje **Běží**
+- Zkontroluj, že port sedí s portem tvého `cc_server`
+- U Claude Code zkontroluj, že jsi předal `--mcp-config` a `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 403 ze stroje, který není serverem
 
-No bearer token is configured. Set one and send it.
+Bearer token není nastavený. Nastav ho a pošli ho.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Volání nástroje selže hláškou „Missing or invalid argument: workspace_id“
 
-Add `workspace_id`. There is no implicit workspace.
+Přidej `workspace_id`. Implicitní pracovní prostor není.
 
-### A tool call is refused as unknown
+### Volání nástroje se odmítne jako neznámé
 
-[MCP tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[Nástroje MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/) vypisuje
+katalog. Volej název přesně tak, jak tam stojí.
 
-## Related guides
+## Související návody
 
-- [MCP tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/)
-- [Configure guardrails](/cs-CZ/prirucka/navody/nastaveni-guardrailu/)
-- [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
+- [Nástroje MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/)
+- [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/)
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
 
-## Related concepts
+## Související koncepty
 
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/)
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/)

@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Додати репозиторії до робочого простору
+description: Зареєструйте копії Git у робочому просторі, щоб агенти могли з ними працювати.
 slug: uk-UA/керівництво/практичні-посібники/додати-репозиторії
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Цей посібник показує, як зареєструвати копію Git у робочому просторі, переіндексувати її та знову видалити.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Репозиторії існують **у межах робочого простору**. Немає ні глобального реєстру, ні окремого кроку зв'язування: додати репозиторій і помістити його в робочий простір — це одна й та сама дія. Та сама копія, зареєстрована в двох робочих просторах, стає двома незалежними рядками з двома різними ідентифікаторами — у межах різних робочих просторів ідентичність репозиторію визначає його шлях у файловій системі, а не ідентифікатор.
 
-## Before you start
+## Перш ніж почати
 
-A folder can only be registered if all three of these hold:
+Папку можна зареєструвати, лише якщо виконуються всі три умови:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Вона лежить усередині **робочого дерева** git.
+2. У цього робочого дерева є **віддалене сховище `origin`**.
+3. Віддалене сховище `origin` указує на **підтримуваний хостинг коду**: github.com, gitlab.com або bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Усе інше відхиляється під час реєстрації з явним повідомленням: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." або "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Режиму лише локально не існує.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Хостинг коду визначається за віддаленим сховищем і зберігається в репозиторії — ви його ніколи не обираєте. Робочий простір може містити репозиторії з усіх трьох одночасно, і з кожним із них працюють через його власний API з власними обліковими даними. Вкладені простори імен GitLab зберігаються, тож `gitlab.com/group/subgroup/project` реєструється з власником `group/subgroup` і назвою `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Папка також має лежати на машині, де розміщено `cc_server`, усередині одного з каталогів `--repo-roots` цього сервера. Типово цей список дозволеного — домашній каталог користувача сервера, і перегляд вище за корінь відхиляється.
 
-## Register a checkout
+## Зареєструйте копію
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Відкрийте **Налаштування → Робочий простір → Репозиторії** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Натисніть **Додати репозиторій**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Діалогове вікно — це навігаційний оглядач файлової системи **сервера**, а не вашої. Це той самий процес на комп'ютері, у вебі та на телефоні, бо системний засіб вибору папок вибрав би папку на не тій машині.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Переміщуйтеся налаштованими коренями сервера. Папки, які є копіями git, позначено.
+4. Позначте будь-яку їх кількість. Вибір зберігається під час навігації, тож ви можете зібрати копії з кількох папок.
+5. Зареєструйте їх одним пакетом.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Один невдалий вибір ніколи не скасовує решту пакета — ви отримуєте створені ідентифікатори та помилку для кожного шляху, який було відхилено. Повторна реєстрація шляху, який уже є в цьому робочому просторі, повертає наявний репозиторій, а не створює дублікат.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Кожен зареєстрований репозиторій з'являється у списку зі своїм `owner/name`, бейджем із назвою хостингу коду та шляхом на сервері. Репозиторії GitHub також показують аватар власника; в інших хостингів коду немає URL аватара власника, який можна вгадати, тож вони показують ініціали.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Бейдж хостингу коду має значення у змішаному робочому просторі: два репозиторії можуть називатися `acme/web` на різних хостингах коду, і поводяться вони по-різному: відрізняється і те, що може перевірка, і те, куди веде посилання.
 
-## What happens next
+## Що відбувається далі
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Реєстрація породжує подію `RepoAdded` з областю дії цього робочого простору, яка запускає конвеєр `index_code` для цієї копії. Саме це наповнює граф коду, тож пошуку й аналізу впливу є з чим відповідати.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/).
+Індексуються лише файли, для мови яких постачається граматика (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB і Ada). Див. [Шукати код через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/).
 
-## Re-index a repo
+## Переіндексуйте репозиторій
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+У кожному рядку є кнопка **Індексувати код**. Натисніть її, щоб перезапустити індексатор для цієї копії; поки він працює, кнопка стає індикатором поступу, що показує, скільки файлів оброблено із загальної кількості, з елементом керування для скасування. Коли він завершується, кнопка набуває вигляду позначки з кількістю символів або попередження, якщо запуск не вдався.
 
-## Reorder repos
+## Змініть порядок репозиторіїв
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Перетягніть маркер у рядку. Порядок, який ви задали, — це порядок, у якому читається кожен список репозиторіїв у застосунку.
 
-## Fix the GitHub link
+## Виправте посилання GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Іконка посилання в рядку відкриває редактор власника GitHub і назви репозиторію — стане в пригоді, коли віддалене сховище перейменували чи перенесли.
 
-## Remove a repo
+## Видаліть репозиторій
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Відкрийте **Налаштування → Робочий простір → Репозиторії**.
+2. Натисніть іконку кошика в рядку.
+3. Підтвердьте «Видалити репозиторій із робочого простору?»
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+У вікні сказано, що саме станеться: «_name_ буде видалено з цього робочого простору. Локальні файли на диску не змінюються.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Видалення прибирає рядок репозиторію з цього робочого простору й каскадно видаляє його рядки графа коду — символи, ребра, файли та контрольні точки індексації — а також усі дозволи на репозиторій для окремих учасників, його зв'язки з просторами та записи про ізольовані копії. Та сама копія, зареєстрована в іншому робочому просторі, — це незалежний рядок, і її це не зачіпає. Робочі дерева на диску, на які вказували ці записи, видалення не знищує.
 
-## Related guides
+## Пов'язані посібники
 
-- [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/)
-- [Run agents in parallel](/uk-UA/керівництво/практичні-посібники/паралельні-агенти/)
-- [Set up GitHub integration](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
-- [Your first workspace](/uk-UA/керівництво/посібники/перший-робочий-простір/)
+- [Шукати код через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/)
+- [Запускати агентів паралельно](/uk-UA/керівництво/практичні-посібники/паралельні-агенти/)
+- [Налаштувати інтеграцію GitHub](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
+- [Ваш перший робочий простір](/uk-UA/керівництво/посібники/перший-робочий-простір/)
 
-## Related concepts
+## Пов'язані поняття
 
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/)
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/)

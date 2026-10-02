@@ -1,172 +1,150 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: 与智能体聊天
+description: 创建一个带智能体的空间，给它派发工作，在运行途中引导它，并停止它。
 slug: zh-CN/手册/操作指南/与智能体聊天
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+本指南介绍如何在空间中与智能体协作。
 
-## Create a space
+## 创建空间
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. 在侧边栏中打开**空间**
+2. 点击“空间”标题旁的 **+** 按钮
+3. 输入**名称**——这是必填项。名称为空会被拒绝，对话框保持打开
+4. 可选地从工作区添加智能体
+5. 如果工作区中有任何仓库，会出现仓库选择器。它一开始选中所有仓库；把它收窄到
+   该空间应当为其预配工作树的仓库（也可以只取消选中某一个）
+6. 确认
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center 会打开该空间，并在后台为每个选中的仓库开始预配一个写时复制工作树。
 
-## Send the first message
+## 发送第一条消息
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+在输入框中输入消息，然后按 Enter。智能体随即派发并开始流式输出回复。
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+如果空间仍在预配中，你的消息会被暂存而不是丢失——输入框会保留它，并在工作树就绪后
+自动发送。
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+随着智能体工作，你会看到它的回合流式输出：推理片段、工具调用（文件读取、写入、
+shell 命令）和回答文本，全都位于同一条智能体回合消息中。
 
-## Steer a running agent
+## 引导运行中的智能体
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+智能体工作时，普通的对话文本**不会**排队成一个新回合。它会变成输入框上方条带中的
+一张排队引导卡片，并在下一个回合边界被注入当前运行。不会弹出提示——卡片本身就是
+反馈。
 
-Three things change that behaviour:
+有三种情况会改变这一行为：
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- 包含 **@提及** 的消息始终作为消息发送，绝不会作为引导
+- 以**斜杠命令**开头的消息始终按该命令处理
+- 带**附件**的消息始终作为消息发送——引导队列只支持文本
+- 如果所有进行中的运行都已结束，该文本会落回常规路径，作为普通消息发送
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[引导需要内置运行器]
+只有 Control Center 的内置运行器会在运行中途注入。在 Claude Code
+适配器上，文本仍会作为引导卡片排队；运行结束后，仍处于排队中的内容会转换为普通消息。
 :::
 
-## Approve a blocked action
+## 批准被阻止的操作
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+当智能体撞上一个由其护栏把关的操作——一条破坏性命令、一个特权工具——服务器会
+**阻止该运行**，并向每个已连接的客户端发布一条审批请求。如果你打开着该对话，请求会
+**在聊天中**、输入框上方出现，形式与 `ask_user` 所用的编号选项卡片相同（拒绝、批准，
+以及可选的批准八小时）。没有跳过这一说：被阻止的智能体正在等待一个决定。
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+如果你正在应用的别处，外壳中的置顶面板仍会列出有哪些事项在等待，因此你无需满应用
+寻找该空间就能解除智能体的阻塞。当该空间的对话出现在屏幕上时，浮层会立即隐藏对应的
+请求，因此你绝不会对同一个提示回答两次。
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+没有超时：被阻止的智能体会一直等待，直到有人做出决定。同一请求也会出现在收件箱的
+关注栏和手机客户端上。
 
-## Answer an agent's question
+## 回答智能体的提问
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+当智能体需要某个偏好、某项缺失的需求，或遇到一个真正的分岔时，它**必须**调用
+`ask_user`。把问题写成聊天消息会结束当前回合，你不得不重新提示。该工具会在对话中
+渲染一张编号卡片——选项、可选的自由文本，或两者兼有——运行会等待你的回答。
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+点按单个选项即可将其发送（悬停时末尾的编号会变成箭头）。多选和手动输入的回答使用
+**继续**（`⌘↵` / `Ctrl↵`）。**跳过**会告诉智能体选取一个合理的默认值，并且不再
+询问。
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+它与上面的审批卡片是两套不同的机制：审批问的是“我可以这样做吗？”，提问问的是
+“你说的是这几个中的哪一个？”。在包括只读模式在内的所有模式中，内置运行器都支持
+提问（它不会改动任何东西），并且刻意不把它包在审批提示里——在一个对话框前面再放
+一个对话框，在没有审批人连接时会以失败关闭的方式处理。没有对话可供渲染的运行根本
+拿不到这个工具。
 
-## Stop an agent
+## 停止智能体
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+当有运行处于进行状态时，输入框的发送按钮会变成一个**停止**按钮。清空输入框并按下
+它——这会停止该对话中所有正在运行的智能体。
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+空间标题栏中没有停止控件，也没有对应的键盘快捷键。当有多个运行同时进行、而你只想
+停止其中一个时，打开该运行的活动标签页——它的标题栏带有针对该次运行的暂停/继续和
+停止（停止会要求你确认）。**可观测性 → 实时**会列出工作区中每个正在运行的智能体，
+并提供相同的控件。
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+已停止的运行会被标记为已停止。发送新消息即可再次派发。
 
-## Use slash commands
+## 使用斜杠命令
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+在输入框中输入 `/` 即可看到命令列表。以下命令会改变对话的行为：
 
-| Command        | What it does                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| 命令           | 作用                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/plan`        | 将空间切换到计划模式。单独一个 `/plan` 只是开启该模式；`/plan <request>` 会开启模式并把其余内容作为你的消息发送 |
+| `/goal <text>` | 记录该对话的工作目标                                                                                            |
+| `/loop <text>` | 反复迭代某个任务，直到完成                                                                                      |
+| `/compact`     | 把较早的历史折叠成一份带锚点的摘要，并在压缩后的上下文上继续                                                     |
+| `/todo …`      | 查看和编辑该对话持久化的待办列表                                                                                |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+技能会出现在同一个列表中，位于它们自己的 `skill:` 命名空间下，因此绝不会与上面的
+命令冲突——名为 `plan` 或 `compact` 的技能仍然可用：
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| 命令                   | 它会运行什么                                            |
+| ---------------------- | ------------------------------------------------------- |
+| `/skill:<name>`        | 安装在工作区中、或附加到该智能体上的技能                 |
+| `/skill:<repo>:<name>` | 本空间中检出的某个仓库所自带的技能                       |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+仓库技能会带有其来源仓库的标记，因为仅凭一个名字看不出它编码的是哪个服务的约定，
+而且两个仓库可能各自都带一个 `testing`。你不必输入前缀也能找到它：直接输入技能名
+同样会匹配到带命名空间的条目。
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+智能体始终只携带它当前所在仓库的技能——参见
+[仓库范围内的技能](/zh-CN/手册/概念/智能体模型/#repo-scoped-skills)。输入框不这样
+限定：你可以指名调用任意仓库的技能。
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` 和 `/todo` 由客户端拦截，绝不会作为消息持久化——转录中出现一行 `/compact`
+会把下一次压缩的切点往回推一个回合。`/plan` 翻转空间所存储的模式，而不是以文本形式
+传递。所以这三者都不是“你发给智能体的消息”；不要指望在历史记录中看到它们。
 
-## Ask for a plan first
+## 先要一份计划
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/zh-CN/手册/操作指南/计划模式/).
+在进行复杂改动之前，用 `/plan`、输入框工具栏上的模式下拉菜单或 Shift+Tab 把空间
+切换到计划模式。随后智能体以只读方式调研，并交付一份类型化的计划，由你在任何工作
+开始前批准。参见[使用计划模式](/zh-CN/手册/操作指南/计划模式/)。
 
-## Reach an agent without a dedicated space
+## 无需专用空间就能触达智能体
 
-You do not need a space per agent. In any space:
+你不必为每个智能体都建一个空间。在任意空间中：
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/zh-CN/手册/操作指南/提及智能体/) for how names are
-matched.
+被提及的智能体会被加入该空间，并带着该空间的上下文派发。参见
+[@提及智能体](/zh-CN/手册/操作指南/提及智能体/)，了解名称是如何匹配的。
 
-## Related guides
+## 相关指南
 
-- [Use spaces](/zh-CN/手册/操作指南/空间/)
-- [@-mention agents](/zh-CN/手册/操作指南/提及智能体/)
-- [Use plan mode](/zh-CN/手册/操作指南/计划模式/)
-- [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/) to do the same from Slack
+- [使用空间](/zh-CN/手册/操作指南/空间/)
+- [@提及智能体](/zh-CN/手册/操作指南/提及智能体/)
+- [使用计划模式](/zh-CN/手册/操作指南/计划模式/)
+- [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)，以便从 Slack 完成同样的操作
 
-## Related concepts
+## 相关概念
 
-- [Modes](/zh-CN/手册/概念/模式/)
+- [模式](/zh-CN/手册/概念/模式/)

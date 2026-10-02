@@ -1,310 +1,298 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP ツール
+description: cc_server が登録する MCP ツールの、ファミリー別の完全なカタログ。
 slug: ja-JP/マニュアル/リファレンス/mcp-ツール
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` はひとつの MCP（JSON-RPC 2.0）ツールレジストリをホストし、メインサーバーポート（既定 `9030`）の `POST /mcp` と `GET /sse` で、プロトコルバージョン `2024-11-05` として提供します。デスクトップ、Web ビルド、外部 MCP クライアント、内蔵エージェントランタイムというすべてのクライアントが、同じレジストリに到達します。外部 MCP サーバーは、動的レイヤーとして同じレジストリにブリッジできます。
 
-## Registry size
+## レジストリの規模
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| 項目                                                                      | 数  |
+| ------------------------------------------------------------------------- | --- |
+| `cc_server` が登録するツール                                              | 110 |
+| `packages/cc_mcp` 由来                                                    | 108 |
+| `packages/cc_mcp_client` 由来（ツールディスカバリ）                       | 2   |
+| ベースレジストリに登録（`server_mcp_registry.dart`）                      | 63  |
+| 起動後、各サービスが立ち上がるにつれて登録（`cc_server_runtime.dart`）   | 47  |
+| ベースレジストリの 63 のうち、コードグラフリポジトリを条件とするもの      | 5   |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+5 つのコードグラフツールは、ホストが `buildServerMcpRegistry` にコードグラフリポジトリを渡したときだけ登録されます。`cc_server` は常に渡すため、出荷されるバイナリでは 110 すべてが有効です。
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+完全なレジストリは、ディスカバリのゲートなしで `tools/list` に公開されます。チケットの編集は型付きツールです。
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[外部クライアントには常にカタログ全体が見えます]
+`tools/list` が削減されることは決してありません。MCP クライアントはツール名を、そのリストの自身のキャッシュ済みコピーと照合して検証し、サーバーに問い合わせることなく、リストにないものを拒否します。そのため、そこで隠されたツールは単に静かなのではなく、到達不能です。
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ja-JP/マニュアル/コンセプト/ツールコンテキスト).
+**内蔵ハーネス**は異なります。リクエストごとに定義の常駐サブセットだけを読み込み、残りは初回使用時に取り込みます。これはハーネス側の振る舞いであり、このレジストリを変えるものではありません。[ツールコンテキストとプロンプトキャッシュ](/ja-JP/マニュアル/コンセプト/ツールコンテキスト)を参照してください。
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[すべてのツールクラスが登録されます]
+`packages/cc_mcp/lib/src/tools/` 配下のソースファイルは、エージェントが呼び出せるツールです。新しいツールクラスがどこからも構築されていない場合、`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart` がビルドを失敗させます。
 :::
 
-## Common parameters
+## 共通パラメータ
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+ワークスペーススコープのデータに触れるすべてのツールで**必須**です。`workspace_id` がないか無効な場合は明示的なエラーが返り、対象エンティティのワークスペースと一致しない値は黙って無視されるのではなく拒否されます。真にグローバルなツールでは省略します。`list_workspaces` と 6 つのニュースフィードツール（`list_feeds`、`list_articles`、`get_article`、`set_article_read`、`set_article_saved`、`refresh_feeds`）で、これらはサーバー所有者のユーザー単位のフィードリストに乗ります。ディスカバリツール（`search_tool_bm25`、`list_my_tools`）では任意であり、会話モードごとに呼び出し可否を分類できるようにしています。サーバーがエージェントをディスパッチする場合、ワークスペースはサーバー側で強制されるため、エージェントは外部の id を渡して別のワークスペースに到達することはできません。
 
-## Tool discovery
+## ツールディスカバリ
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+どちらも `cc_mcp` ではなく `cc_mcp_client` 由来で、どちらもモードガードを参照するため、_現在_ の会話モードで呼び出し可能なものを報告します。
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| ツール             | 説明                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | キーワードでツールカタログを検索し、一致するツール、その引数スキーマ、それぞれが今呼び出し可能かどうかを返します        |
+| `list_my_tools`    | この会話で今呼び出し可能なツールを、そのモードで絞り込んで一覧表示します                                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+3 つ目のディスカバリツール **`search_tools`** は内蔵ハーネスの内側にのみ存在し、この MCP レジストリには含まれません。これは実行自身のツールサーフェスを順位付けし、`search_tool_bm25` と違って見つけたもののスキーマを**読み込む**ため、エージェントは次のターンで一致したものを呼び出せます。ハーネス上のエージェントはこちらを優先すべきです。MCP クライアントには `search_tool_bm25` があります。
 
-## Agent tools
+## エージェントツール
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| ツール        | 説明                                              |
+| ------------- | ------------------------------------------------- |
+| `list_agents` | ワークスペースに登録されているエージェントを一覧表示します |
 
-## Agent peer messaging and delegation
+## エージェント間のメッセージングと委任
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+エージェント同士はスペース（永続的で、ロスターに見える）を介して会話します。`ask_agent` は必須のタイムアウトを伴う要求／応答です。`delegate_task` はサーバー側で、深さの上限、循環検出、予算エンベロープ、自律性の上限によってガードされます。
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| ツール          | 説明                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `send_to_agent` | `to_agent_id` または完全一致の `to_agent_name` で宛先を指定し、別のエージェントへ一方向のメッセージを送ります |
+| `ask_agent`     | 別のエージェントに質問し、その返信を待つか、タイムアウトします                                   |
+| `delegate_task` | タスクを追跡対象の子チケットとして別のエージェントに委任します                                   |
+| `consult_agent` | スキルに基づいて最適なスペシャリストをスペースに追加し、焦点を絞ったブリーフでディスパッチします |
+| `todo_read`     | この会話に永続化されたタスクチェックリストを読み取ります                                         |
 
-## Skill tools
+## スキルツール
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+すべてのインストールと更新は、スキルのコンテンツがディスクやエージェントのプロンプトに到達する前に、フェイルクローズドのスキャンゲートを通過します。
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| ツール               | 説明                                                                         |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `list_skills`        | ワークスペースで利用可能なスキルのスラッグを一覧表示します                   |
+| `create_skill`       | markdown コンテンツから新しいスキルを作成します                              |
+| `install_skill`      | GitHub リポジトリの固定した ref から、スキルのディレクトリ全体をインストールします |
+| `update_skill`       | インストール済みの GitHub スキルを新しい ref に更新し、再スキャンして再固定します |
+| `list_skill_updates` | より新しいバージョンが利用可能なスキルを一覧表示します                       |
+| `verify_skills`      | ロックされたスキルを、ディスク上のコンテンツハッシュと照合して検証します     |
+| `pin_skill`          | ディスク上に既存のスキルをハッシュ化して `skills-lock.json` に記録します     |
 
-## Plan, playbook and artifact tools
+## プラン、プレイブック、アーティファクトのツール
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| ツール             | 説明                                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `submit_plan`      | プランモードの出力契約です。Plan Studio で開く型付きの `PlanDocument` を出力します                             |
+| `create_playbook`  | プランを、型付きの `{{param}}` プレースホルダーを持つ名前付き・バージョン付きテンプレートとして保存します      |
+| `run_playbook`     | パラメータ値でプレイブックを実体化し、オペレーターが承認するプランを生成します                                 |
+| `publish_artifact` | 型付きブロック（markdown、table、chart、mermaid、code、JSON）の順序付きリストを公開し、クライアントでネイティブにレンダリングします |
+| `revise_artifact`  | 公開済みアーティファクトの内容を置き換えます                                                                   |
+| `list_artifacts`   | ワークスペースのアーティファクトを一覧表示します                                                               |
+| `get_artifact`     | アーティファクトをひとつ読み取ります                                                                           |
+| `complete_goal`    | 会話のアクティブな永続ゴール（`/goal` または `/loop` で開始）が達成されたことを宣言します                      |
 
-## Workspace tools
+## ワークスペースツール
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| ツール            | 説明                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| `list_workspaces` | すべてのワークスペースを id と名前とともに一覧表示します（グローバル。`workspace_id` なし） |
 
-## Repo tools
+## リポジトリツール
 
-| Tool         | Description                                                                                                                                              |
+| ツール       | 説明                                                                                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | ワークスペースに登録されたリポジトリを一覧表示します。エージェントの呼び出し元は、その会話の分離されたコピーオンライトのワークツリーパスを受け取り、元のチェックアウトを渡されることはありません |
 
-## Messaging tools
+## メッセージングツール
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| ツール               | 説明                                                                        |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_spaces`        | ワークスペースのメッセージングスペースを一覧表示します                      |
+| `get_messages`       | スペースからメッセージを取得します                                          |
+| `send_message`       | 名前付きの送信元エージェントとしてスペースにメッセージを送ります            |
+| `get_space_notes`    | スペースの共有ハンドオフドキュメントを読み取ります                          |
+| `update_space_notes` | スペースの共有ハンドオフドキュメントを置き換えます                          |
+| `todo_write`         | この会話のタスクチェックリストを 1 回の呼び出しで置き換えます（リスト全体を渡します） |
 
-## Review tools
+## レビューツール
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| ツール                     | 説明                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | PR の AI レビューを開始します。レビュー領域を計算し、スペシャリストのレビュアーを PR スペースへファンアウトし、ウォークスルーを執筆して確定します |
+| `add_review_node`          | 構造化されたレビューの指摘（ファイル、行、P0–P3 の優先度）をレビュースペースに追加します                       |
+| `confirm_review_node`      | ピアの指摘を確認します。作成者が自己確認することはできません                                                  |
+| `resolve_review_node`      | 実際に変更を加えたうえで指摘を修正済みにします。レビュースペースにトレースを投稿します                        |
+| `dismiss_review_node`      | 該当しない指摘を却下します。抑制ファクトを記録し、レビュアーがその指摘を再び立てないようにします              |
+| `request_peer_review`      | 別のレビュアーエージェントに、指摘の再確認を依頼します                                                        |
+| `dispatch_reviewers`       | マッチしたレビュアーエージェントをレビュースペースに同時にディスパッチします                                  |
+| `submit_reviewer_verdict`  | レビュアーごとの Ship/Hold/Block の判定を、確信度と説明とともに投稿します                                     |
+| `finalize_review`          | ノードごとのコンセンサスと PR ごとの判定を計算し、レビューをクローズします                                    |
+| `set_cohort_summary`       | レビューコホートの平易な言葉による要約を設定します                                                            |
+| `add_review_diagram`       | 構造化された、グラフで検証済みの図（`sequence`、`entityRelation`、`stateMachine`）をコホートに添付します      |
+| `publish_review_to_github` | 確定したレビューを、インラインコメントと要約本文として GitHub に公開します                                    |
 
-## Memory tools
+## メモリツール
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| ツール                  | 説明                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `search_memory`         | ファクトとポリシーを検索します（キーワード、セマンティック、またはハイブリッド。既定はハイブリッド）  |
+| `propose_fact`          | 短い markdown のファクトをドメインに保存します                                                        |
+| `supersede_fact`        | ファクトを別のファクトによって置き換えられたものとしてマークします                                    |
+| `propose_policy`        | 規範的なルールをドメインに保存します（そのドメインへの書き込み権限が必要です）                        |
+| `supersede_policy`      | ポリシーを廃止します。監査のために保持しつつ、非アクティブとしてマークします                          |
+| `list_policies`         | アクティブなポリシーを一覧表示します。任意でドメインで絞り込めます                                    |
+| `list_memory_domains`   | ワークスペースのメモリドメインを、ファクト数とポリシー数とともに一覧表示します                        |
+| `record_observation`    | 生の観測をエージェントのワーキングメモリに記録します                                                  |
+| `get_my_notes`          | 呼び出し元エージェントのワーキングメモリのスクラッチパッドを読み取ります                              |
+| `update_my_notes`       | 呼び出し元エージェントのワーキングメモリのスクラッチパッドを更新します                                |
+| `remember`              | このセッションのエージェントのホットワーキングメモリにノートを追加します（TTL と件数に上限あり）      |
+| `consolidate_memory`    | 統合（「睡眠」）パスを実行します。期限切れのホット項目を追い出し、永続的なものを長期ファクトに繰り入れます |
+| `harmonize_memory`      | エージェント間の信念ハーモナイゼーション（SHMR）を実行し、矛盾にフラグを立てます                      |
+| `list_memory_conflicts` | 検出された矛盾と、それぞれがどう解決されたかを一覧表示します                                          |
 
-## Governance tools
+## ガバナンスツール
 
-| Tool                         | Description                                                                                           |
+| ツール                       | 説明                                                                                                  |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | 組織のゴールを作成します（会社、チーム、エージェント、またはタスクのレベル）                          |
+| `list_goals`                 | ゴールを、レベル、ステータス、集計された進捗とともに一覧表示します                                    |
+| `update_goal_progress`       | ゴールの進捗を設定します                                                                              |
+| `create_approval`            | ガバナンス対象のアクション（プラン終了、マージ、リリース、採用、カスタム）に対するボード承認を開きます |
+| `list_approvals`             | 承認を一覧表示します。任意でステータスで絞り込めます                                                  |
+| `decide_approval`            | 決定を記録します。承認、却下、修正依頼、再提出です                                                    |
+| `comment_approval`           | ボード承認にコメントします                                                                            |
+| `exit_plan_mode`             | `plan_exit` 承認を開き（承認されるとそれを消費し）、会話をプランモードから切り替えます                 |
+| `agent_heartbeat`            | 生存を報告します（alive、idle、stuck）。沈黙するとランタイムヘルスが recently-lost、次いで offline に切り替わります |
+| `list_runtime_health`        | 各エージェントのランタイムヘルスを一覧表示します                                                      |
+| `list_agent_presence`        | 各エージェントのプレゼンス（ヘルス、ライフサイクル、実行中およびキューの件数、キャパシティ）を一覧表示します |
+| `get_org_chart`              | レポーティングツリーを読み取ります。CEO がルートにあり、`reports_to` によってネストされます           |
+| `create_work_product`        | チケットに紐づく永続的な成果物を作成します                                                            |
+| `save_work_product_revision` | 新しいリビジョンを保存します。並行編集で拒否させるには `base_revision_id` を渡します                  |
+| `list_work_products`         | ワークプロダクトを一覧表示します。任意で 1 つのチケットに絞り込めます                                 |
+| `get_work_product`           | ワークプロダクトを、そのリビジョン履歴とともに読み取ります                                            |
+| `create_runtime_profile`     | 再利用可能なランタイムプロファイル（プロトコルファミリー、CLI コマンド、固定の起動引数）を定義します  |
+| `list_runtime_profiles`      | ワークスペースのランタイムプロファイルを一覧表示します                                                |
 
-## Code graph tools
+## コードグラフツール
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+ホストがコードグラフリポジトリを提供したときだけ登録されます。インデックスは同梱の文法セット（Dart、JS/TS、PHP、Python、Rust、Zig、C/C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada）を対象とし、それ以外の言語のシンボルは含まれません。
 
-| Tool           | Description                                                                        |
+| ツール         | 説明                                                                               |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | インデックス済みのシンボルを、名前、シグネチャ、doc コメントで検索します（BM25 + セマンティックのハイブリッド） |
+| `code_symbol`  | 完全一致した名前でシンボルを検索します。`file:line` とシグネチャを返します         |
+| `code_callers` | あるシンボルを呼び出す、または依存するシンボル（入力エッジ）を一覧表示します       |
+| `code_callees` | あるシンボルが呼び出す、または依存するシンボル（出力エッジ）を一覧表示します       |
+| `code_impact`  | あるシンボルの推移的な影響範囲を、指定した深さまで計算します                       |
 
-## Ticketing tools
+## チケッティングツール
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| ツール                    | 説明                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `create_ticket`           | 設定されたプロバイダーにチケットを作成します                                                                                  |
+| `get_ticket`              | id でチケットを 1 件取得します                                                                                                |
+| `list_tickets`            | チケットを一覧表示します。任意でステータスまたは担当者で絞り込めます                                                          |
+| `update_ticket`           | ステータス、タイトル、説明、優先度、ラベルを更新します（ステータスは `in_progress` / `completed` などのエイリアスを受け付けます） |
+| `assign_ticket`           | チケットをエージェントまたはチーム（あるいはその両方）に割り当てます                                                          |
+| `reassign_ticket`         | チケットを別のエージェントに再割り当てします                                                                                  |
+| `add_ticket_collaborator` | エージェントをチケットのコラボレーターとして招待します（そのスペースに追加されます）                                          |
+| `comment_on_ticket`       | チケットにコメントします                                                                                                      |
+| `close_ticket`            | チケットをクローズし（完了としてマーク）、任意で出力を付けられます                                                            |
+| `fail_ticket`             | エラーメッセージとともにチケットを失敗としてマークします                                                                      |
+| `delegate_ticket`         | チケットをエージェントに委任し、追跡対象のチケットを作成します                                                                |
+| `ticket_pr_link`          | PR ノード id によってチケットとプルリクエストをリンクまたはリンク解除します（`action`: `link` \| `unlink`）                    |
+| `ticket_relation`         | 2 つのチケット間の関係を追加または削除します — `blocked_by`、`blocking`、`related_to`、`duplicate_of`、`duplicated_by`、`sub_issue_of`、`parent_of`（`action`: `add` \| `remove`） |
+| `list_ticket_relations`   | チケットの親、サブイシュー、依存関係リンクを一覧表示します                                                                    |
 
-## Team and pipeline tools
+## チームとパイプラインのツール
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| ツール                 | 説明                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `record_team_activity` | チームリーダーのアクティビティエントリをチケットに対して記録します                                                                               |
+| `preview_trigger`      | 仮定のイベントが開始するパイプライン実行をドライランします。何もコミットしません                                                                 |
+| `submit_output`        | 呼び出し元の現在のパイプライン実行に対する構造化出力ペイロードを送信します。その実行が宣言した出力スキーマに対して検証されます                   |
 
-## Orchestration tools
+## オーケストレーションツール
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| ツール                  | 説明                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | 事前の 1 回の承認のために、構造化されたマルチエージェントのオーケストレーションプランを出力します。検証し、違反があれば返します |
 
-## Newsfeed tools
+## ニュースフィードツール
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| ツール              | 説明                                                          |
+| ------------------- | ------------------------------------------------------------- |
+| `list_feeds`        | 登録された RSS/Atom フィードを一覧表示します                  |
+| `list_articles`     | 記事を一覧表示します。任意でフィード、未読、保存済みで絞り込めます |
+| `get_article`       | 記事を 1 件取得します                                         |
+| `set_article_read`  | 記事を既読または未読としてマークします                        |
+| `set_article_saved` | 記事を保存または保存解除します                                |
+| `refresh_feeds`     | 有効なすべてのフィードを今すぐ再取得します                    |
 
-## Enclosure (rig) tools
+## エンクロージャー（リグ）のツール
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ja-JP/マニュアル/コンセプト/ガードレール/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ja-JP/マニュアル/リファレンス/リグ/#action-verbs).
+使い捨てのマシン — エンクロージャー内のブラウザや Linux デスクトップ、Android エミュレータ、iOS シミュレータ — を実行の内部から操作します。起動後に無条件で登録されます。マシンが実際に起動できるかどうかは、ツールが呼び出しごとに答えるプローブの問いです。1 つの会話で繰り返し呼び出すと 1 台のマシンが再利用されます。スクリーンショットは画像コンテンツとして返り、結果ごとに 1 枚という予算があり、抽出されたページ／UI のコンテンツは信頼できないデータとしてフェンスされます。4 つの use ツールと `rig_close` は `enclosureControl` の[アクションクラス](/ja-JP/マニュアル/コンセプト/ガードレール/)を宣言するため（use ツールは `networkEgress` と `processSpawn` も、`mobile_use` と `ios_use` は `packageInstall` も宣言します）、読み取り専用モードでは拒否されます。`rig_list` は何も宣言しません — ワークスペースの状態を読むだけです。サーフェスごとの動詞の語彙の全体は[リグのリファレンス](/ja-JP/マニュアル/リファレンス/リグ/#action-verbs)にあります。
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| ツール         | 説明                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| `computer_use` | エンクロージャー内の VM で Linux デスクトップを操作します: 移動、クリック、ドラッグ、スクロール、入力、リサイズ、クリップボード、スクリーンショット |
+| `browser_use`  | ヘッドレスの Chromium、Firefox、WebKit（`engine`）を操作します: ナビゲート、クリック、入力、抽出（a11y/DOM/コンソール）、クリップボード、スクリーンショット |
+| `mobile_use`   | ADB 経由で Android を操作します: 検査／入力、スクリーンショット、アプリのインストール／起動／停止／リセット／アンインストール、ディープリンク、argv 形式のデバイスコマンド |
+| `ios_use`      | WebDriverAgent/CoreSimulator を通じて iOS シミュレータを操作します: 検査／入力、スクリーンショット、アプリのインストール／起動／停止／アンインストール、ディープリンク、argv 形式のシミュレータプロセス |
+| `rig_list`     | ワークスペースのリグを、サーフェス、ステータス、ディスプレイサイズ、コントローラーとともに一覧表示します |
+| `rig_close`    | リグを破棄し、それが所有するマシンの状態を捨てます                                       |
 
-## Not exposed over MCP
+## MCP では公開されないもの
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ja-JP/マニュアル/コンセプト/ミーティング/), not as a tool an agent can call.
+カレンダーとミーティングには MCP ツールがありません。エージェントはあなたのカレンダー、ミーティング、文字起こし、アクションアイテム、決定を読むことはできません。アクションアイテムと決定を生成する要約は、エージェントが呼び出せるツールとしてではなく、内蔵の [`meeting_summary` パイプライン](/ja-JP/マニュアル/コンセプト/ミーティング/)として実行されます。
 
-## Tool gating by mode
+## モードによるツールのゲート
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+ゲートはひとつのテーブル（`ModeToolPolicy`）から 2 回適用されます。1 回は Claude Code アダプターの MCP ディスパッチャーで、もう 1 回は内蔵ハーネスのレジストリです。ブロックされた呼び出しは理由を返します。
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| モード        | ツールサーフェス                                                                                                                                                                                                                    |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | 登録されたすべてのツール。許可リストなし                                                                                                                                                                                            |
+| `plan`        | 厳選された許可リスト。ワークツリーへの書き込みと、`create` / `assign` / `delegate` のチケット動詞はありませんが、メモリ、アーティファクト、todo、`submit_plan`、`exit_plan_mode`、およびディスパッチされたチケットに対するチケット完了の動詞は許可されます |
+| `review`      | 厳選された許可リスト: レビューへの参加、コミュニケーション、読み取り専用のコンテキスト取得、そして `create_ticket` と `assign_ticket` を含むチケット動詞の全体セット                                                                    |
+| `orchestrate` | 厳選された許可リスト: 調査と読み取りのツール、および `propose_orchestration`、`create_playbook`、`run_playbook`。採用、分解、チケットの完了は承認後に決定的に行われ、実行の途中で行われることは決してありません                        |
 
-Permitted in every mode regardless of allow-list:
+許可リストに関係なく、すべてのモードで許可されるもの:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| セット               | ツール                                                                                                                                                                                                                                                            |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| メモリとアーティファクト | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| コードグラフ         | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| 実行のメカニクス     | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+許可リストに載っているからといってツールが呼び出し可能になるわけではなく、逆もまた同様です。オペレーターへの質問のケイパビリティは**ハーネス**のツール（`ask_user`）であるため、この MCP カタログには一切現れません。
 
-## Approval-gated tools
+## 承認でゲートされるツール
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+ツールは `requiresApproval` を宣言できます。その場合ディスパッチャーは `ApprovalPayload` を構築し、ツールが実行される前に `ConfirmationPort` を通じてそれを提示します。`cc_server` がそのポートを配線するため、ゲートは有効です。
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+これを宣言している登録済みツール: `create_ticket`、`update_ticket`、`assign_ticket`、`reassign_ticket`、`close_ticket`、`ticket_relation`、`create_goal`、`update_goal_progress`、`create_approval`、`decide_approval`、`comment_approval`、`create_work_product`、`save_work_product_revision`、`create_runtime_profile`、`install_skill`、`update_skill`。
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/).
+これとは別に、統合アクションガードレールは、空でない `ActionClass` セットを宣言するあらゆるツールをゲートします。承認者が接続されていない状態での `prompt` の決定は拒否されます。[ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)を参照してください。
 
-## Capabilities with no tool behind them
+## ツールが背後にないケイパビリティ
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+製品のすべてのケイパビリティがエージェントから到達できるわけではありません。以下にはツールがまったくないため、他所で参照されているのを見かけたかもしれない名前は "unknown tool" を返します:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| ケイパビリティ                           | 代わりにどこにあるか                                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| エージェントの採用、解雇、編集           | エージェント UI。`hire_agent` / `fire_agent` / `update_agent` ツールはありません                             |
+| ワークスペースの作成                     | RPC 経由の `workspace.upsert`。これが所有権をシードして刻印します                                             |
+| プロジェクト（作成／一覧／更新／ファイル登録） | チケット UI。プロジェクトはオペレーター向けのサーフェスです — [プロジェクト](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)を参照してください |
+| オペレーターへのブロッキングな質問       | MCP ではなく**ハーネス**の `ask_user` ツール。会話内にフォームをレンダリングし、回答が来るまでブロックします |
+| エージェントごとの診断                   | 何もありません。`doctor` は存在しません — [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)を参照してください |
+| カレンダーとミーティング                 | 人間のクライアント専用の RPC（前述）                                                                         |
 
-## See also
+## 関連項目
 
-- [Use Control Center as an MCP server](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/)
+- [Control Center を MCP サーバーとして使う](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)

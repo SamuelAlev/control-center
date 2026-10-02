@@ -1,138 +1,147 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Buat GitHub App
+description: Daftarkan GitHub App untuk server Anda agar anggota dapat masuk, dan agar pekerjaan latar belakang berjalan sebagai app, bukan sebagai orang.
 slug: id-ID/panduan-pengguna/panduan-praktis/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Panduan ini menunjukkan cara memberi server Anda identitas GitHub-nya sendiri.
+Prosesnya sekitar dua menit, hanya pemilik server yang melakukannya, dan cukup
+sekali per server.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Anda mungkin tidak memerlukannya]
+Build resmi sudah menyertakan **client id** GitHub, sehingga
+[Masuk dengan GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/) langsung berfungsi
+tanpa perlu mendaftarkan apa pun — device flow mengautentikasi hanya dengan
+client id, jadi aman untuk disertakan. Daftarkan app Anda sendiri ketika Anda
+ingin SERVER bertindak sebagai dirinya sendiri (webhook, polling PR, dan
+sinkronisasi tiket berjalan pada instalasi app, bukan pada kredensial
+seseorang), atau ketika Anda membangun dari sumber.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/).
+Untuk menghubungkan akun Anda sendiri setelahnya, lihat
+[Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/).
 
-## Why your server needs its own app
+## Mengapa server Anda memerlukan app sendiri
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Satu pendaftaran menghasilkan dua pekerjaan berbeda, dan app-lah yang membuat
+keduanya jujur:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
+| Pekerjaan                  | Yang menjawabnya                                | Mengapa penting                                                                                       |
 | ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| **Seseorang masuk**  | Client id app, melalui device flow      | Anda mendapat kredensial milik Anda sendiri, di server, di setiap perangkat — tanpa token yang harus ditempel atau dirotasi |
+| **Server bertindak**    | Id app + kunci privat → token instalasi | Webhook, polling PR, dan sinkronisasi tiket tidak lagi bergantung pada masih validnya token satu orang            |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Perhatikan apa yang **tidak** ada di tabel itu: client secret. Device flow
+GitHub mengautentikasi hanya dengan client id — baik permintaan kode perangkat
+maupun polling token — sehingga tidak ada rahasia yang perlu disimpan untuk
+masuk.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Tanpa app Anda sendiri, yang pertama tetap berfungsi melalui client id bawaan
+build; yang kedua beralih ke kredensial pemilik server, sehingga pekerjaan latar
+belakang menumpang pada siapa pun yang melakukan onboarding lebih dulu.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Tidak ada tombol "pasang GitHub App milik Control Center"]
+GitHub App yang didistribusikan berarti satu client secret bersama dan satu
+instalasi bersama di seluruh server semua orang, sehingga akses repositori
+setiap ruang kerja akan melewati kredensial yang tidak dikendalikan siapa pun di
+ruang kerja itu. Karena itu setiap server memiliki app-nya sendiri — panduan ini
+menunjukkan betapa kecil biayanya.
 :::
 
-## Prerequisites
+## Prasyarat
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Anda adalah **pemilik server** — operasi `providerApps.*` dibatasi hanya
+  untuknya, dan kartu itu tidak terlihat oleh orang lain
+- Akun GitHub, atau organisasi tempat Anda dapat membuat app
+- Tidak ada yang perlu dapat dijangkau publik: proses masuknya adalah **device
+  flow**, sehingga server tidak memerlukan port masuk, tunnel, URL callback,
+  atau domain
 
-## Register the app
+## Daftarkan app
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Buka [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (untuk organisasi: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — apa saja; `Control Center (yourname)` tidak masalah.
+   Nama ini muncul pada commit dan komentar yang dibuat server
+3. **Homepage URL** — apa saja, mis. `https://github.com/your-name`
+4. **Callback URL** — biarkan kosong. Device flow tidak memilikinya
+5. Centang **Enable Device Flow**. Ini satu-satunya setelan yang tanpanya
+   proses masuk tidak dapat berfungsi
+6. Hapus centang **Webhook → Active** kecuali Anda menyambungkan webhook secara
+   terpisah
+7. Di bawah **Repository permissions**, berikan setidaknya:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (wajib)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, jika Anda memakai GitHub Issues untuk tiket,
+     dan untuk pencarian komentar percakapan PR bot
+     (lihat [Bicara ke Control Center dari PR GitHub](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/))
+   - **Checks**: Read-only, untuk status CI di halaman PR
+8. Di bawah **Where can this GitHub App be installed?**, pilih yang sesuai —
+   "Only on this account" cocok untuk server pribadi
+9. Klik **Create GitHub App**
 
-## Collect the three values
+## Kumpulkan ketiga nilainya
 
-On the app's page, immediately after creation:
+Di halaman app, tepat setelah pembuatan:
 
-| Value           | Where                                             |
+| Nilai           | Di mana                                             |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | Tab **General**, di dekat bagian atas                 |
+| **Client ID**   | Tab **General**, di bawah "Client secrets"       |
+| **Private key** | **Generate a private key** — berkas `.pem` diunduh   |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Berkas kunci privat hanya diunduh sekali dan GitHub tidak pernah menampilkannya
+lagi. Simpan sampai Anda menempelkannya; Anda selalu dapat membuat yang baru.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**Client secret** bersifat opsional dan hanya memberi satu hal: jika Anda
+membiarkan "Expire user authorization tokens" AKTIF, dialah yang memperbarui
+token seseorang secara diam-diam alih-alih memintanya masuk lagi setiap delapan
+jam. Proses masuknya sendiri tidak pernah memakainya.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Penyiapan yang lebih sederhana adalah mematikan masa berlaku itu, dan setelah
+itu tidak ada rahasia yang diperlukan di mana pun. Jika Anda membiarkannya
+aktif, buat rahasia dan tempel di
+**Pengaturan → Server → Single sign-on** (kartu **Aplikasi penyedia**) — tidak ada variabel lingkungan untuk
+rahasia itu, dan tidak ada yang ditanam dalam build, sehingga rahasia itu tetap
+berada di server Anda.
 
-## Install it on your account
+## Pasang di akun Anda
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+App yang terdaftar tetapi tidak dipasang dapat mengautentikasi orang dan tidak
+dapat membaca apa pun.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Di halaman app, buka **Install App**
+2. Pasang di akun atau organisasi Anda
+3. Pilih **All repositories**, atau pilih repositori yang harus dilihat server
+   ini
 
-## Paste it into Control Center
+## Tempel ke Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Buka **Pengaturan → Server → Single sign-on** dan gulir ke
+   kartu **Aplikasi penyedia**
+2. Pada blok **GitHub**, isi setiap kolom:
+   - **Id aplikasi** — App ID numeriknya
+   - **Kunci privat** — tempel seluruh `.pem`, termasuk baris `BEGIN` dan `END`
+   - **Id klien** — dari halaman yang sama
+   - **Rahasia klien** — hanya jika Anda membuatnya (untuk penyegaran token)
+3. Klik **Tes**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Kunci diurai saat disimpan, sehingga tempelan yang terpotong atau salah format
+langsung ditolak di situ, bukan gagal pada permintaan latar belakang berjam-jam
+kemudian. **Tes** melangkah lebih jauh dan menanyakan ke GitHub di akun mana app
+itu dipasang — "tersimpan" dan "berfungsi" adalah dua klaim yang berbeda, dan
+hanya yang kedua berarti ada sesuatu yang akan berjalan.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Titik pemeriksaan: blok GitHub berbunyi "Server dapat bertindak sebagai dirinya
+sendiri, dan orang dapat masuk", dan baris **GitHub** di bawah **Pengaturan → Ruang kerja → Profil & identitas →
+Hosting kode** kini menawarkan **Masuk dengan GitHub**.
 
-## Configure it with environment variables instead
+## Konfigurasikan dengan variabel lingkungan sebagai gantinya
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Untuk instalasi headless atau berbasis skrip, server menyemai setiap kolom dari
+lingkungan saat pertama kali tidak memiliki nilai tersimpan:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +149,66 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Tidak ada flag baris perintah untuk ini — rahasia di baris perintah dapat dibaca
+oleh setiap proses di host melalui `ps`. Lingkungan adalah satu-satunya tempat
+untuk mengonfigurasinya, dan itu mengalahkan apa pun yang disertakan build.
+`.env.template` adalah daftar lengkapnya.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Untuk pengembangan lokal, `.env` di akar repo membawa nilai yang sama dan
+aplikasi desktop meneruskannya ke server yang dijalankannya. Letakkan kunci itu
+pada **satu baris** di sana: nilai `.env` adalah satu baris, dan `\n` di dalam
+tanda kutip ganda didekode menjadi baris baru.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` dan `GITHUB_APP_PRIVATE_KEY` adalah nama yang sama yang sudah
+dibaca broker token sandbox, sehingga host yang telah mengonfigurasi token agen
+fine-grained mendapat jalur masuknya gratis. Penyemaian terjadi **sekali per
+kolom** — setelah itu nilai tersimpan yang menang, sehingga penyuntingan di
+Pengaturan tidak dibatalkan oleh mulai ulang berikutnya.
 
-## Do the same for Linear
+## Lakukan hal yang sama untuk Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear tidak memiliki device flow, jadi proses masuknya berupa perjalanan
+bolak-balik melalui browser dan memang memerlukan URL callback — kartu
+**Aplikasi penyedia** menunjukkan URL persisnya untuk didaftarkan.
 
-1. Create an OAuth application at
+1. Buat aplikasi OAuth di
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Setel **Callback URL** ke URL yang ditampilkan kartu, persis apa adanya
+3. Tempel **Id klien** dan **Rahasia klien** ke blok Linear
+4. Secara opsional tambahkan **Kunci API** ruang kerja — itulah kredensial yang
+   dipakai server untuk menyinkronkan tiket saat tidak ada manusia yang meminta
 
-## Troubleshooting
+## Pemecahan masalah
 
-### The sign-in dialog says the provider returned no device code
+### Dialog proses masuk menyebut penyedia tidak mengembalikan kode perangkat
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** mati pada app. Aktifkan di bawah **General**, lalu coba
+lagi.
 
-### Test says the credentials work but the app is not installed anywhere
+### Tes menyebut kredensial berfungsi tetapi app tidak dipasang di mana pun
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Pendaftaran dan pemasangan adalah langkah terpisah. Buka **Install App** di
+halaman app, lalu pasang.
 
-### Test says the private key could not be read
+### Tes menyebut kunci privat tidak dapat dibaca
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Tempel seluruh berkas `.pem`, termasuk baris `-----BEGIN` dan `-----END`. Kunci
+`ed25519` atau EC tidak dapat dipakai — GitHub Apps menandatangani dengan RSA.
 
-### A member signed in but sees no repositories
+### Seorang anggota berhasil masuk tetapi tidak melihat repositori
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+App tidak dipasang pada akun yang memilikinya, atau pemasangannya memilih
+repositori yang berbeda. Proses masuk milik mereka hanya memberikan apa yang
+boleh dilihat app.
 
-## Related guides
+## Panduan terkait
 
-- [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-- [Talk to Control Center from a GitHub PR](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/)
-- [Connect a code host](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
-- [Manage API keys](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)
+- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Bicara ke Control Center dari PR GitHub](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/)
+- [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/)
+- [Kelola kunci API](/id-ID/panduan-pengguna/panduan-praktis/kunci-api/)
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/)

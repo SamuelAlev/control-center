@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Типы шагов конвейера
+description: Справочник по видам шагов конвейера, ключам тела шага, их конфигурации и результатам шагов.
 slug: ru-RU/руководство/справка/шаги-конвейера
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+У шага конвейера две независимые оси:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Вид** (`StepKind`) — как движок _планирует_ шаг относительно его триггеров.
+- **Ключ тела** (`BuiltInBodyKeys`) — какое зарегистрированное замыкание тела _выполняет_ работу шага.
 
-## Step kinds
+## Виды шагов
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Определены в `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| Вид        | Семантика планирования                                                                                                                                                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`  | Обязательная точка входа — ровно одна на шаблон, всегда первый узел. Сам никакой работы не делает; то, что инициирует запуск (вручную / по событию / по расписанию), отслеживается отдельно в строках `PipelineTrigger`. Его тело — `pipeline.trigger`, не выполняющее ничего. |
+| `listen`   | Срабатывает, когда завершаются все исходные шаги (в `StepTrigger.sourceStepIds`).                                                                                                                                                            |
+| `join`     | Срабатывает, когда все шаги в `waitForStepIds` достигают терминального состояния.                                                                                                                                                            |
+| `router`   | Условное ветвление — тело возвращает `StepResult.route(key)`, что активирует только то нижестоящее ребро, чей `routeKey` совпадает; невыбранные ветви помечаются пропущенными.                                                              |
+| `forEach`  | Планируется как `listen` (срабатывает, когда завершаются все `sourceStepIds`). Именно зарегистрированное тело `flow.forEach` выполняет перебор; движок не порождает по одному дочернему шагу на элемент.                                     |
+| `terminal` | Сторожевой элемент планировщика без тела. Запуск конвейера завершается, когда завершается терминальный шаг.                                                                                                                                   |
 
-## Step bodies
+## Тела шагов
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Замыкания тел, зарегистрированные под константами из `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Всего их 25, и все перечислены ниже. Конфигурация читается из `PipelineNodeConfig` шага (см. ниже), если не указано иное; «ключи состояния» читаются из состояния конвейера / payload триггера во время выполнения.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Шаг, чей `bodyKey` не зарегистрирован, выдаёт предупреждение при загрузке шаблона и затем никогда не выполняется — запуск из-за этого не проваливается. Шаги `trigger` и `terminal` от этого предупреждения освобождены: триггер всё равно выполняет тело `pipeline.trigger`, которое ничего не делает; у шага `terminal` тела нет.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Тело обязательного узла `trigger`, не выполняющее никакой работы, — завершается немедленно, чтобы движок разошёлся по нижестоящим слушателям. Конфигурации нет.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Шаг оболочки без агента (`bash -c`). Заполнители `{{key}}` в скрипте подставляются из состояния и payload триггера экранированными для оболочки значениями.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Поле конфигурации | Описание                                                    |
+| ----------------- | ----------------------------------------------------------- |
+| `script`          | Команда оболочки для выполнения (обязательно)               |
+| `outputKey`       | Ключ состояния, получающий обрезанный stdout при завершении с кодом 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Выполняется с cwd `<cc_root>/pipelines/<pipelineRunId>/` (общим для всех bash-шагов запуска) и с `GITHUB_TOKEN` в окружении. Также записывает `<stepId>_runDir` в состояние. Завершение с ненулевым кодом проваливает шаг, а сообщением об ошибке становится хвост stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Обобщённый узел «промпт и отправка»: рендерит промпт, отправляет агента в разговор и приостанавливается до завершения запуска. Payload `submit_output` агента собирается в состояние под `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Поле конфигурации          | Описание                                                     |
+| -------------------------- | ------------------------------------------------------------ |
+| `agentId`                  | UUID агента в пределах рабочего пространства для отправки (обязательно) |
+| `prompt`                   | Текст инструкции; поддерживает подстановку `{{key}}` (обязательно) |
+| `outputKey`                | Ключ состояния для собранного вывода                         |
+| `outputSchema`             | JSON Schema, которой должен соответствовать вывод            |
+| `label`                    | Человекочитаемая метка на холсте                             |
+| `extras.spaceId`           | Существующий разговор для работы (по умолчанию — скрытый)    |
+| `extras.conversationTitle` | Именованный поток внутри этого пространства (необязательно)  |
+| `extras.mode`              | Читается на узле, который *открывает* комнату (`messaging.createSpace`), а не здесь. По умолчанию `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Тело роутера — читает `config.extras`, вычисляет условие и возвращает `StepResult.route(key)`. Условия — **не** выражения JavaScript; поддерживаются три формы записи, в порядке приоритета:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Дерево предикатов** (`extras.predicate`) — булево дерево, которое маршрутизирует `"true"` / `"false"`. Каждый узел — это отображение с полем `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — истина, когда любой из перечисленных путей существует на диске; `negate` инвертирует результат; `recursive` дополнительно ищет в подкаталогах (пропуская `.git`, `node_modules`, `build`, `.dart_tool`). Относительные пути разрешаются относительно `state[baseKey]` (по умолчанию `repo_local_path`), иначе — относительно каталога рабочего пространства для данного запуска.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — операторы `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; читает состояние конвейера, а не файловую систему.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — булевы группы.
+  - `{"type": "not", "of": <predicate>}` — отрицание.
+- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; переходит к первому варианту, который значение состояния содержит без учёта регистра, иначе — к `default`.
+- **Сравнение** (устаревшие поля верхнего уровня `extras.left` / `extras.op` / `extras.right`) — эквивалент предиката `comparison`, сохранённый для шаблонов, написанных до появления дерева.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Рёбра, выходящие из узла, несут `routeKey`, который должен совпадать с возвращённым ключом.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Публикует консолидированные находки как комментарий к ревью PR через клиент GitHub PR.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Ключ состояния          | Описание                                     |
+| ----------------------- | -------------------------------------------- |
+| `repo_full_name`        | `owner/repo` (обязательно)                   |
+| `pr_number`             | Номер PR — int или числовая строка (обязательно) |
+| `consolidated_findings` | Тело комментария (обязательно)               |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Возвращает `StepResult.terminal` с `comment_review_id` и `commented_at` в состоянии.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Публикует сообщение в пространство обмена сообщениями через `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Ключ состояния | Описание                                          |
+| -------------- | ------------------------------------------------- |
+| `space_id`     | Целевое пространство (обязательно)                |
+| `content`      | Тело сообщения, читаемое из состояния дословно (обязательно) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Записывает `posted_space_id` и `posted_at` в состояние.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Отправляет целую команду вместо отдельного агента, затем приостанавливается до завершения запусков участников.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Поле конфигурации                        | Описание                                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `teamId`                                 | Команда в пределах рабочего пространства для отправки (обязательно; взаимоисключающе с `agentId`)    |
+| `prompt`                                 | Текст цели; поддерживает подстановку `{{key}}` (обязательно)                                        |
+| `dispatchMode`                           | `allParallel` (по умолчанию — одна задача на участника) или `manager` (отправляется только лидер для координации) |
+| `outputKey`                              | Ключ состояния для собранных выводов участников                                                     |
+| `outputSchema`, `label`, `extras.spaceId` | Как в `conversation.promptAgent`                                                                    |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Ворота одобрения. Отправляет одобряющего агента в разговор (в режиме ревью) с промптом ворот и контрактом вывода `{decision, reason}`, затем приостанавливается, пока одобряющий не отправит результат через `submit_output`.
 
-| Config field                | Description                                                                    |
+| Поле конфигурации           | Описание                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | Одобряющий агент (обязательно)                                                 |
+| `prompt`                    | Промпт ворот (необязательно; при отсутствии используется значение по умолчанию) |
+| `outputKey`                 | Ключ состояния для собранного payload `{decision, reason}`                      |
+| `outputSchema`              | По умолчанию — схема одобрения (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId`   | Как в `conversation.promptAgent`                                               |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Ворота завершаются только через `submit_output`. `BuiltInBodyKeys.humanGate`, библиотека типов узлов и текст промпта одного встроенного шаблона — все называют MCP-инструменты `approve_step` и `reject_step`; **ни одного из этих инструментов не существует** ни в одном пакете или реестре.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Удаляет устаревшие изолированные worktree; режим выбирается из payload триггера. Учитывает флаг `dryRun` запуска.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Ключ состояния                 | Описание                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | Освободить worktree этого тикета                                                      |
+| `repo_full_name` + `pr_number` | Освободить эфемерный worktree редактора PR                                            |
+| `space_id`                     | Снести worktree и папку этого разговора                                               |
+| (ничего из перечисленного)     | Прочесать рабочее пространство: исчезнувшие каталоги, мёртвые пространства, папки осиротевших разговоров |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (необязательно) получает строку со сводкой.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Map / веерный запуск по коллекции состояния: рендерит промпт по одному разу на элемент, затем отправляет агента **один раз** с этими промптами, соединёнными разделителями `---`, и приостанавливается до завершения этого запуска. Пустая коллекция завершается немедленно с пустым списком. Это не по одной параллельной отправке на элемент.
 
-| Config field         | Description                                                     |
+| Поле конфигурации    | Описание                                                        |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Агент для отправки на каждый элемент (обязательно)              |
+| `prompt`             | Промпт на элемент; поддерживает подстановку `{{key}}` (обязательно) |
+| `extras.iterableKey` | Ключ состояния, хранящий коллекцию (обязательно)                |
+| `extras.itemKey`     | Ключ, к которому привязан текущий элемент в промпте (по умолчанию `item`) |
+| `outputKey`          | Ключ состояния для собранного вывода (одна отправка, не список) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Запускает другой шаблон конвейера как вложенный подшаг (подконвейер выполняется как дочерний запуск с установленным `parentPipelineRunId`). Шаг приостанавливается, пока дочерний запуск не достигнет терминального состояния, после чего итоговое состояние дочернего запуска сливается под `outputKey`.
 
-| Config field        | Description                                                     |
+| Поле конфигурации   | Описание                                                        |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | Дочерний шаблон для запуска (обязательно; конвейер не может вызвать сам себя) |
+| `inputKeys`         | Ключи состояния, копируемые в payload триггера дочернего запуска |
+| `outputKey`         | Ключ состояния для слитого итогового состояния дочернего запуска |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Фоновое индексирование через tree-sitter: обходит репозиторий, извлекает символы и рёбра в изолятах воркеров и загружает их в граф кода рабочего пространства. Передаёт прогресс в строку запуска шага; поддерживает dry-run. Tree-sitter и его грамматики — обязательные нативные зависимости: отсутствующая dylib означает, что сервер так и не запустился, а грамматика, которая не разрешается во время выполнения, проваливает шаг, а не пропускается.
 
-| State key         | Description                           |
-| ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| Ключ состояния    | Описание                     |
+| ----------------- | ---------------------------- |
+| `repo_id`         | Репозиторий для индексации (обязательно) |
+| `repo_local_path` | Локальный путь checkout (обязательно) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Офлайн-диаризация спикеров. Читает сохранённое аудио встречи, кластеризует его по спикерам (`Person 1`, `Person 2`, …), переразмечает сегменты транскрипта и перезаписывает состояние `transcript`; также выдаёт `diarization_spans` для параллельного шага `meeting.updateTranscript`. Пропускает транскрипт без изменений, если аудио не сохранилось или модели не установлены.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Ключ состояния | Описание                     |
+| -------------- | ---------------------------- |
+| `meeting_id`   | Встреча для диаризации (обязательно) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Детерминированные тела сохранения сводки встречи. Каждое читает `meeting_id` и структурированный payload `meeting_outcome` агентского шага (`{summary, enhancedNotes, actionItems[], decisions[]}`) из состояния и записывает свою часть в собственную таблицу — заметки, пункты действий или решения. Ранее сохранённые строки никогда не стираются, если запуск прошёл неполно.
 
-### Other built-in bodies
+### Прочие встроенные тела
 
-| Body key                           | Description                                                                                                                                                                              |
+| Ключ тела                          | Описание                                                                                                                                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Межвстречное распознавание спикеров: сопоставляет диаризованных спикеров с сохранёнными голосовыми профилями и автоматически применяет уверенные совпадения. Ничего не делает без профилей и эмбеддингов. |
+| `meeting.updateTranscript`         | Применяет метки `Person N` из `diarization_spans` и сливает фрагменты по окнам в реплики спикеров, затем сохраняет очищенный транскрипт. Ничего не делает, если диаризация ничего не дала. |
+| `meeting.assemblePlayback`         | Собирает сведённую дорожку воспроизведения встречи из сохранённых поканальных WAV. Ничего не делает, если аудио не сохранилось.                                                          |
+| `orchestration.markPhase`          | В конце рабочего DAG записывает маркеры сбоя для подтикетов без вывода и переключает оркестрацию в `synthesizing`.                                                                       |
+| `orchestration.persistDeliverable` | Записывает вывод синтеза в родительский тикет, завершает его, публикует результат и помечает оркестрацию как `completed`.                                                                |
+| `orchestration.awaitApproval`      | Ворота частичного одобрения: завершаются немедленно, если ключ узла шага входит в одобренное множество оркестрации, иначе приостанавливаются до более позднего одобрения, которое их возобновит. Это единственное тело, задающее `extras.awaitApproval`, что освобождает его от 24-часового тайм-аута приостановленного шага. |
+| `messaging.createSpace`            | Открывает разговор, в котором работает остальная часть шаблона, публикуя его под `outputKey` шага (встроенные шаблоны используют `pipeline_space_id`). Пустой список `repoIds` ничего не берёт в checkout; `extras['allRepos']` берёт в checkout все репозитории рабочего пространства. `extras['createConversation']` (по умолчанию выключен) также открывает именованный поток. Агентский шаг ПРИСОЕДИНЯЕТСЯ к комнате и никогда её не открывает, поэтому веерный запуск без этого узла проваливается при отправке — а если подключить его один раз, весь веерный запуск делит один checkout вместо выделения по одному на каждого. |
+| `prReview.finalize`                | Последний шаг шаблона ревью PR: раскладывает накопленные узлы ревью по корзинам консенсуса и вычисляет вердикт по каждому PR.                                                              |
+| `skills.analyze`                   | Запускает проверку цепочки поставок навыков по установленным в рабочем пространстве навыкам и записывает каждый вердикт.                                                                |
 
-## Step results
+## Результаты шагов
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Тело шага возвращает `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Все фабрики принимают необязательную карту `mutatedState`, которая сливается в состояние конвейера, кроме `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Фабрика                     | Сигнатура                                                       | Описание                                                                  |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Обычное завершение; нижестоящие слушатели вычисляются                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Завершение роутера; выбирает нижестоящую ветвь, чей `routeKey` совпадает  |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Пауза до срабатывания доменного события указанного типа                   |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Пауза, пока все перечисленные задачи не достигнут терминального состояния |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Запуск конвейера завершён — шагов больше нет                              |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Шаг завершился сбоем с сообщением об ошибке                               |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Поведение повторов при сбое тела узла (`PipelineNodeConfig.retryPolicy`; null отключает повторы).
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| Поле             | Тип      | Описание                                                                          |
+| ---------------- | -------- | --------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | Всего попыток, включая первую (3 = 1 попытка + 2 повтора); должно быть ≥ 1         |
+| `backoff`        | `String` | `linear` или `exponential` (по умолчанию)                                          |
+| `initialDelayMs` | `int`    | Задержка перед первым повтором в миллисекундах; последующие задержки растут согласно `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Конфигурация отдельного узла, хранимая внутри определения шага (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Встроенные и пользовательские узлы имеют одну и ту же форму; каждое тело читает только нужные ему поля.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Поле             | Тип                     | Описание                                                                                                                              |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Шаблон промпта с подстановкой `{{key}}`                                                                                               |
+| `script`         | `String?`               | Тело bash-скрипта с подстановкой `{{key}}`                                                                                            |
+| `agentId`        | `String?`               | UUID агента в пределах рабочего пространства для отправки                                                                             |
+| `inputKeys`      | `List<String>`          | Ключи состояния, которые этот узел потребляет на вход                                                                                 |
+| `repoIds`        | `List<String>`          | Репозитории, которые берёт в checkout узел `messaging.createSpace` (`<repoId>` или `<repoId>@<branch>`). Пусто = ничего; `extras['allRepos']` = все репозитории рабочего пространства. Игнорируется на агентских шагах. |
+| `outputKey`      | `String?`               | Ключ состояния, под которым записывается вывод этого узла                                                                             |
+| `label`          | `String?`               | Человекочитаемая метка на холсте (по умолчанию — ID шага)                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (подмножество), которой должно соответствовать значение вывода                                                             |
+| `reducer`        | `String?`               | Стратегия слияния, когда параллельные ветви пишут в один `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum` или `override` (по умолчанию) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Политика повторов при сбое тела; null = одна попытка                                                                                  |
+| `continueOnFail` | `bool`                  | Если true, терминальный сбой не проваливает запуск; ошибка складывается в `state['_stepErrors'][stepId]`                              |
+| `timeoutMs`      | `int?`                  | Тайм-аут тела узла по реальному времени в миллисекундах; null = без тайм-аута                                                         |
+| `teamId`         | `String?`               | Команда для отправки (узлы `team.dispatch`); взаимоисключающе с `agentId`                                                             |
+| `dispatchMode`   | `String?`               | Режим выполнения команды: `allParallel` или `manager`                                                                                 |
+| `extras`         | `Map<String, dynamic>`  | Свободная конфигурация, специфичная для тела (например, `iterableKey`, `templateId`, деревья условий)                                 |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Производные методы доступа: `spaceId` (`extras['spaceId']` — существующий разговор для работы), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, читается на узле, открывающем пространство) и `runWhen` (`extras['runWhen']` — пропустить узел, если условие не выполнено).
 
-## See also
+## См. также
 
-- [Pipelines](/ru-RU/руководство/понятия/конвейеры/)
-- [Create a pipeline](/ru-RU/руководство/практические-руководства/создать-конвейер/)
-- [Pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
-- [Run a pipeline](/ru-RU/руководство/практические-руководства/запустить-конвейер/)
+- [Конвейеры](/ru-RU/руководство/понятия/конвейеры/)
+- [Создать конвейер](/ru-RU/руководство/практические-руководства/создать-конвейер/)
+- [Триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
+- [Запустить конвейер](/ru-RU/руководство/практические-руководства/запустить-конвейер/)

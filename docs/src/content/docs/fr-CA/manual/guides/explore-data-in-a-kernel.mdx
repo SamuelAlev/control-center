@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Explorer des données dans un noyau persistant
+description: Donnez à un agent un interpréteur Python ou JavaScript qui conserve ses variables entre les appels, trace des graphiques directement dans le clavardage et peut appeler vos propres outils depuis l’intérieur d’une cellule.
 slug: fr-CA/manuel/guides/explorer-donnees-noyau
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Ce guide vous montre comment amener un agent à charger une fois quelque chose de coûteux, puis à l’interroger à plusieurs reprises, au lieu de payer le chargement à chaque question.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+L’outil `eval` exécute un **interpréteur persistant**. Les variables, les imports et les données chargées survivent d’un appel à l’autre.
 
-## Why not just run a script
+## Pourquoi ne pas simplement exécuter un script
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Un `python -c` ponctuel paie la préparation à chaque question. Charger un cadre de données coûte des secondes et une centaine de mégaoctets; en tracer un graphique coûte des millisecondes. Quand chaque question coûte le chargement, un agent pose moins de questions qu’il ne le devrait — et chaque réponse revient sous forme de texte qu’il doit ensuite réanalyser.
 
-## Load once, then ask
+## Charger une fois, puis interroger
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Chargez `data/runs.csv` et donnez-moi la durée p95 par agent.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+La dernière expression est renvoyée comme le ferait un carnet de notes, de sorte que `len(runs)` indique le nombre de lignes sans `print`.
 
-Then, in a **separate call**:
+Puis, dans un **appel distinct** :
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` est toujours chargé. Un cadre de données pandas revient rendu sous forme de tableau plutôt que sous forme de représentation brute.
 
-## Charts land in the chat
+## Les graphiques arrivent dans le clavardage
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Les figures sont capturées après la cellule et renvoyées sous forme d’images, que la transcription affiche. Vous voyez le graphique, et l’agent aussi.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Les figures sont fermées après la capture. Une figure non récupérée serait redessinée et renvoyée par la *cellule suivante* elle aussi, de sorte qu’une session de cinq cellules émettrait le premier graphique cinq fois.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Ni Jupyter, ni pip, ni étape d’installation]
+L’exécuteur est un simple `python3 -u` qui parle un protocole en mode ligne sur stdio. Il implémente lui-même `display()`, la répartition des paquets MIME et la capture des figures, de sorte qu’il fonctionne avec n’importe quel Python 3 — y compris à l’intérieur d’un bac à sable, où l’installation est exactement ce que le bac à sable est là pour empêcher.
 :::
 
-## The idioms you would type anyway
+## Les idiomes que vous taperiez de toute façon
 
-These are rewritten into plain code rather than erroring:
+Ceux-ci sont réécrits en code ordinaire plutôt que de produire une erreur :
 
-| You type    | What happens                                        |
+| Ce que vous tapez    | Ce qui se passe                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Exécute pip, puis **vide le cache des modules** pour que le prochain `import` le voie |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | Un sous-processus capturé                               |
+| `%%bash`    | Le reste de la cellule comme script shell              |
+| `%%timeit`  | 1000 exécutions chronométrées                                     |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+L’éviction du cache de `%pip` est celle qui compte : installer dans un interpréteur en cours d’exécution ne change rien pour un module déjà importé, donc sans elle, la version que vous venez d’installer n’est pas celle qui s’exécute.
 
-## Calling your own tools from inside a cell
+## Appeler vos propres outils depuis l’intérieur d’une cellule
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` revient dans le propre registre d’outils de l’agent. Une cellule peut donc se ramifier sur une centaine de fichiers, ou déléguer par l’entremise de `task`, sans que le modèle dépense un tour par élément.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Le pont ne contourne pas vos garde-fous]
+Un appel relayé par le pont est résolu dans le **même** registre d’outils qu’un appel émis par le modèle, de sorte que la politique `ActionClass`, les invites d’approbation et chaque enveloppe s’appliquent de façon identique. Un pont qui dépasserait le registre serait un trou de la forme exacte de « écrire un one-liner en Python ».
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Un appel relayé par le pont **suspend le délai d’expiration de la cellule** tant qu’il est en cours. Le budget mesure l’inactivité, pas le temps réel — une cellule qui se ramifie vers des sous-agents et attend quatre minutes n’est pas figée, et la tuer en pleine ramification ferait perdre l’état de tout le noyau.
 
-## Starting over
+## Repartir à zéro
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Abandonne l’interpréteur et en démarre un propre. Tout ce qui était chargé disparaît, et c’est précisément le but.
 
-## Where the kernel runs
+## Où s’exécute le noyau
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+Dans l’**enceinte** de la conversation lorsqu’elle en a une, sur l’hôte autrement.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Un interpréteur persistant piloté par un modèle qui lit un dépôt non fiable est exactement le cas pour lequel l’exécution en enceinte seulement existe : un appel `bash` ponctuel finit au moins par se terminer, alors qu’un noyau est un shell qui se souvient.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/fr-CA/manuel/guides/utiliser-rigs/).
+Il ne démarre **pas** d’enceinte pour y arriver — la même règle qui empêche l’onglet d’un rig de démarrer automatiquement. Si vous voulez que le noyau soit isolé dans une enceinte, ouvrez d’abord le shell de la conversation. Voir [Donner une machine de test à un agent](/fr-CA/manuel/guides/utiliser-rigs/).
 
-## Limits
+## Limites
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Une cellule à la fois par noyau.** Deux cellules qui se disputent un même interpréteur, ce sont deux moitiés de deux programmes entrelacées dans un même espace de noms.
+- **La sortie est plafonnée.** Une cellule prise dans une boucle d’impression est tronquée plutôt que de laisser remplir la fenêtre de contexte.
+- **Quatre images par cellule.** Une boucle de traçage peut produire une figure par itération, et chaque image représente un coût fixe élevé dans la requête qui la transporte.
+- **Le noyau meurt avec l’exécution.** Un noyau qui retient encore un cadre de données après la fin de la conversation est une fuite.
 
-## Related
+## Voir aussi
 
-- [Sandbox and security](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) — what "enclosed" means here
-- [Give an agent a machine to test on](/fr-CA/manuel/guides/utiliser-rigs/) — opening the enclosure
-- [Built-in agent tools](/fr-CA/manuel/reference/outils-agent/) — the arguments
+- [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) — ce que veut dire « dans une enceinte » ici
+- [Donner une machine de test à un agent](/fr-CA/manuel/guides/utiliser-rigs/) — ouvrir l’enceinte
+- [Outils d’agent intégrés](/fr-CA/manuel/reference/outils-agent/) — les arguments

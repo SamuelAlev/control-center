@@ -1,164 +1,175 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Triagea din inkorg
+description: Arbeta i den enhetliga inkorgen – rensa det som blockerar dig, granska det som väntar på dig och följ dina egna PR:ar.
 slug: sv-SE/handbok/how-to-guider/triagea-inkorg
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Den här guiden visar hur du arbetar i inkorgen: den enda ytan som samlar allt
+som blockerar dig eller uttryckligen frågar efter dig – väntande
+agentgodkännanden, misslyckade ärendesynkar och varje pull request som rör dig
+som granskare eller författare.
 
-## Open the inbox
+## Öppna inkorgen
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Klicka på **Inkorg** i sidofältet. Dess märke räknar väntande
+   agentgodkännanden, misslyckade synkar och öppna PR:ar som väntar på din
+   granskning.
+2. Eller tryck på <kbd>⌘K</kbd> och kör navigeringskommandot **Inkorg**.
+3. Eller djuplänka direkt till `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Posten i sidofältet visar alltid det aktuella antalet, så du ser triagearbetet
+växa utan att öppna sidan.
 
-## Read severity at a glance
+## Se allvarlighetsgraden i ett svep
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Skanna uppifrån och ned; inkorgen är redan ordnad efter brådska:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. Den fästa raden **Behöver din uppmärksamhet** ligger ovanför PR-sektionerna.
+   Varje kort har en allvarlighetsbricka. Registrerade källor (en agent som
+   fastnat på en bekräftelseprompt, en ärendesynk vars leverantörsspegel är
+   inaktuell) ger **Blockerad**.
+2. Inom raden kommer den mest brådskande allvarlighetsgraden först; vid lika
+   vinner posten som har väntat längst.
+3. Under raden grupperas PR:ar i fasta sektioner för granskningslivscykeln –
+   **Behöver din granskning**, **Åter till dig**, **Godkända**, **Utkast**,
+   **Väntar på granskare**, **Sammanslås och nyligen sammanslagna**, **Väntar
+   på författare**. De översta sektionerna är det som behöver _dig_; resten är
+   var _dina_ PR:ar står. **Behöver din granskning** omfattar PR:ar som
+   fortfarande begär ett team som du tillhör, hos kodvärdar som har team
+   (GitHub tar bort teamet så snart någon i teamet har granskat).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+En post hamnar bara i inkorgen när den blockerar något eller uttryckligen frågar
+efter dig. En tom rad plus en tom sektionslista visar **Du är ikapp** bara när
+tomheten går att lita på.
 
-## One inbox across every forge
+## En inkorg över alla kodvärdar
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Om arbetsytan har repos hos mer än en kodvärd slår inkorgen samman dem till en
+enda ström – en pull request från GitHub och en från Bitbucket ligger i samma
+sektion, sorterade efter tid i stället för grupperade efter leverantör. Radens
+`repo #number`-metadata är det som skiljer dem åt.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+”Dina” avgörs **per kodvärd**, eftersom du är ett annat konto hos var och en. En
+pull request räknas bara som din, eller som en begäran om din granskning, när
+den matchar din identitet hos den kodvärd som repot faktiskt ligger hos.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+En kodvärd som ligger nere eller inte är ansluten bidrar inte med något och
+lämnar resten av inkorgen orörd – en trasig anslutning tömmer aldrig hela
+listan. Tomtillståndet anger ett förbehåll i stället för **Du är ikapp** när
+varje kodvärdsinloggning fortfarande är olöst (**Kunde inte bekräfta ditt
+GitHub-konto** – texten nämner fortfarande GitHub), när githubstatus.com
+rapporterar en incident, eller när en GitHub App-installation som täcker länkade
+repos är avstängd.
 
-## Clear the attention strip
+## Rensa uppmärksamhetsraden
 
-Each strip card has one next action:
+Varje kort i raden har en enda nästa åtgärd:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Om ett kort är en väntande agentbekräftelse klickar du på **Granska** – du
+   hamnar i agentens yta med dess väntande bekräftelse. Godkänn eller avvisa där
+   (se [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)).
+2. Om ett kort säger **Synken misslyckades** för en leverantör klickar du på
+   **Öppna** – du hamnar i **Inställningar → Arbetsyta → Allmänt**, vars kort
+   **Synkhälsa** visar varje anslutnings senaste synk, antal fel i följd och
+   senaste utfall. Bara det senaste felet per leverantör visas i inkorgen, så en
+   återställd synk rensar kortet.
+3. Korten försvinner av sig själva när det underliggande tillståndet är löst
+   (agenten har fått svar, synken har återställts) – det finns inget att stänga
+   manuellt.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Det här är bekräftelser per tur, inte styrningsgodkännanden]
+Ett kort för ”agentgodkännande” är en körande agent som pausar för att be om
+tillstånd för en enskild åtgärd, i sitt eget samtal. Det är något annat än den
+styrningspost av typen `Approval` som agenter skapar med MCP-verktygen för
+godkännande – de har ingen mänsklig skärm någonstans i appen och visas aldrig
+här.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Synkhälsan är skrivskyddad]
+Kortet rapporterar om ärendesynkanslutningar; bortsett från en knapp för **Synka
+nu** kan det inte skapa, redigera eller återansluta en sådan, och det finns
+ingen annan skärm som kan det heller. Med ingen anslutning konfigurerad står det
+helt enkelt ”Inga synkanslutningar ännu”, vilket är vad en ny arbetsyta visar.
 :::
 
-## Filter to what is blocking
+## Filtrera fram det som blockerar
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Tryck på <kbd>f</kbd> (utan att något textfält har fokus) för att öppna
+   filtermenyn, eller klicka på filterknappen i verktygsfältet.
+2. Välj valfri kombination av status, författare, granskare, innehåll, repoägare
+   eller -namn, datumintervall eller snabba att granska. Fasettantalen i menyn
+   visar hur många inkorgsposter varje alternativ matchar.
+3. Aktiva filter visas som brickor i raden ovanför listan; klicka på en brickas
+   ✕ för att ta bort det kriteriet.
+4. Använd vänsterpanelen för att hoppa mellan sektioner – varje post visar sitt
+   aktuella antal och markeringen följer din rullningsposition. Klicka på en
+   sektionsrubrik för att fälla ihop sektioner som du inte triagear (till
+   exempel **Utkast** när du rensar granskningar).
+5. Klicka på en kolumnrubrik (titel, ändringar eller uppdaterad) för att sortera
+   alla sektioner; klicka på den aktiva kolumnen igen för att vända riktningen.
+   Knappen för visningsalternativ styr synligheten för utkast, fönstret för
+   nyligen sammanslagna, radegenskaper, ordning och gruppering (bara gruppering
+   efter författare ändrar inkorgens layout).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Filtren här är oberoende av PR-kön – att avgränsa inkorgen ändrar aldrig könens
+filter och tvärtom.
 
-## Act on a PR item
+## Agera på en PR-post
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/) and
-   [the dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/).
+1. Klicka på valfri rad för att öppna PR:ens detaljsida.
+2. Om PR:en ligger i **Behöver din granskning** granskar du den och skickar in
+   ditt beslut – se [Granska och slå ihop en
+   PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/).
+3. Om PR:en ligger i **Åter till dig** (ändringar begärda eller CI misslyckades)
+   pushar du åtgärder från din utcheckning eller lämnar över uppföljningen till
+   en agent.
+4. Om PR:en ligger i **Godkända** slår du ihop den från detaljsidan.
+5. Om du hellre delegerar en granskning än gör den själv, se
+   [Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/) och
+   [livscykeln för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+När det underliggande tillståndet ändras (din granskning landar, PR:en slås
+ihop) placerar klassificeraren automatiskt om PR:en i sin nya sektion.
 
-## Undo a mistaken action
+## Ångra en felaktig åtgärd
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Tryck på <kbd>⌘Z</kbd> för att ångra den senaste åtgärden, <kbd>⌘⇧Z</kbd>
+   för att göra om den.
+2. Om ett textfält har fokus redigerar ⌘Z fältets text i stället – klicka bort
+   från fältet först för att ångra en åtgärd på appnivå.
 
-## Look up shortcuts in place
+## Slå upp genvägar på plats
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/sv-SE/handbok/referens/tangentbordsgenvagar/).
+Tryck på <kbd>?</kbd> (utan att något textfält har fokus) för att öppna
+fuskbladet med tangentbordsgenvägar. Det listar varje bindning som är aktiv på
+den aktuella rutten, inklusive inkorgens filtergenväg <kbd>f</kbd>. Hela kartan
+finns i [referensen för
+tangentbordsgenvägar](/sv-SE/handbok/referens/tangentbordsgenvagar/).
 
-## Drive it from the command palette
+## Styr den från kommandopaletten
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Tryck på <kbd>⌘K</kbd> var som helst för att öppna kommandopaletten.
+2. Skriv **Inkorg** för att hoppa till sidan, eller skriv en PR-titel – paletten
+   listar matchande pull requests och öppnar den du väljer.
+3. Medan inkorgen är öppen kör du **Kopiera länk till den här sidan** för att
+   kopiera URL:en för delning. Kommandot kopierar den aktuella rutten, så det är
+   inkorgens URL bara när du är på den här sidan.
 
-## Refresh on demand
+## Uppdatera vid behov
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Inkorgen uppdateras live, men om du misstänker inaktuella data klickar du på
+uppdateringskontrollen i verktygsfältet – den tvingar fram en omedelbar
+genomsökning på serversidan av varje ansluten kodvärd och hämtar om överläggen
+för sammanslagna och granskade. Ikonen snurrar tills varje hämtning har
+slutförts.
 
-## Related guides
+## Relaterade guider
 
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
-- [Dispatch reviewers](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
+- [Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)

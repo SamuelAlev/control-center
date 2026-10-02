@@ -1,152 +1,166 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Korlátok konfigurálása
+description: Állítson be engedélyező, előbb kérdező és tiltó szabályokat az ügynökműveletekhez, tesztelje őket a „mi lenne, ha?” próbával, és hangolja térenként az autonómiát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Ez az útmutató megmutatja, hogyan konfigurálja a korlátokat: azokat a
+szabályokat, amelyek eldöntik, hogy egy ügynök művelete lefut, előbb
+jóváhagyást kér, vagy elutasításra kerül.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+A korlátok mind a tizenhárom hatásosztályt lefedik, amelyet minden
+állapotmódosító eszköz deklarál. Kiszolgálóoldalon, a hívás pillanatában
+érvényesülnek, soha nem egy utasítás révén a promptban.
 
-## Set a decision for an action class
+## Döntés beállítása egy műveletosztályhoz
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Nyissa meg a **Beállítások → Munkaterület → Ügynökjogosultságok** oldalt
+2. Válasszon hatókört a szegmentált vezérlővel: **Munkaterület**, **Ügynök**
+   (majd válassza ki az ügynököt) vagy **Tér** (majd válassza ki a teret)
+3. A műveletosztály sorában válassza az **Engedélyezés**, az **Előbb
+   kérdezzen** vagy a **Tiltás** lehetőséget
+4. Egy beállított szabály elvetéséhez nyomja meg a sor végén megjelenő
+   visszaállítógombot (**Törlés örököltre**) – a döntés visszaesik a tágabb
+   hatókörre
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Minden sor a hatályos döntést egy állapotcímkével, származását pedig egy
+jelvénnyel mutatja: **Ez a hatókör**, **Örökölt** vagy **Beépített
+alapértelmezett**. A mátrix feloldása ügynök (`chat`) módban történik, ezért a
+**Módkészlet** itt soha nem jelenik meg – használja a „mi lenne, ha?” próbát
+egy csak olvasható mód kiválasztásával, hogy azt a réteget is lássa.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+A szabály írásához `admin` szerepkör kell. A mátrix olvasásához nem.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Ellenőrzőpont: állítsa a **Küldés távoli tárolóra** szabályt **Tiltás**ra a
+munkaterület hatókörében, majd futtassa az alábbi „mi lenne, ha?” próbát a
+`git push origin main` parancsra. Az eredmény `deny` lesz, `workspace`
+forrással.
 
-## Understand how a decision is resolved
+## A döntés feloldásának megértése
 
-Resolution is **specificity first, then restrictiveness**:
+A feloldás során **először a specifikusság, aztán a szigorúság** dönt:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. A **tér** szabályai, majd az **ügynöké**, majd a **munkaterületé**. Az első
+   hatókör, amelyben van illeszkedő szabály, dönt, és a feloldás ott megáll
+2. Ha egyetlen szabály sem illeszkedik, a **módkészlet** lép életbe – egy csak
+   olvasható mód (plan, review, orchestrate) a tizenhárom osztály közül
+   tizenegyet elutasít
+3. Ha a módnak nincs mondanivalója, a **beépített alapértelmezett** lép életbe
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Egyetlen hatókörön belül egy parancsszabály a leghosszabb illeszkedő előtag
+alapján oldódik fel, az egyformán specifikus ütközés pedig a **legszigorúbb**
+módon dől el – a tiltás legyőzi az előbb kérdezzen döntést, az pedig az
+engedélyezést. Egy művelet, amely több osztályt deklarál, mindegyiket önállóan
+oldja fel, majd a legszigorúbb módon vonja össze őket.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Az engedélyezés nem győzi le a tiltást]
+A szűkebb szabály a specifikusság miatt nyer, a holtversenyt pedig a
+szigorúság dönti el – így egy munkaterületi hatókörben adott **Engedélyezés**
+nem ír felül egy **Tiltás**t sehol.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Egy **Előbb kérdezzen** döntés egyetlen jóváhagyási kérést jelenít meg, amely
+minden `prompt`-ra feloldódott osztályt lefed. **Ha nincs csatlakoztatott
+jóváhagyó, a kérés elutasításra kerül**, a shellparancsok és a harness
+eszközhívásai esetében egyaránt. Ez szándékos: egy kapuzatlan futás rosszabb
+egy elutasítottnál.
 
-### Action classes and built-in defaults
+### Műveletosztályok és beépített alapértelmezések
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Műveletosztály                             | Beépített alapértelmezett |
+| ------------------------------------------ | ------------------------- |
+| Fájl törlése                               | Előbb kérdezzen           |
+| Írás a worktree-n kívül                    | Engedélyezés              |
+| Commit létrehozása                         | Engedélyezés              |
+| Küldés távoli tárolóra                     | Előbb kérdezzen           |
+| Pull request megnyitása                    | Előbb kérdezzen           |
+| Átnézés vagy összefésülés közzététele      | Előbb kérdezzen           |
+| Írás külső követőbe                        | Előbb kérdezzen           |
+| Hálózati hozzáférés                        | Engedélyezés              |
+| Titok olvasása                             | Engedélyezés              |
+| Csomag telepítése                          | Engedélyezés              |
+| Folyamat futtatása                         | Engedélyezés              |
+| Munkaterület szerkezetének módosítása      | Engedélyezés              |
+| Elszigetelt környezet (állomás) irányítása | Engedélyezés              |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+A taxonómia zárt. Egy új eszköz, amely osztályainak deklarálása nélkül jelenik
+meg, megbukik egy ratchet-teszten a CI-ben, így semmi sem érkezik csendben üres
+hatáskészlettel.
 
-## Test a rule with the what-if probe
+## Szabály tesztelése a „mi lenne, ha?” próbával
 
-Before changing a rule, check how the current policy already resolves it.
+Mielőtt megváltoztatna egy szabályt, nézze meg, hogyan oldja fel azt már most a
+hatályos szabályzat.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Ugyanezen az oldalon görgessen a **Mi lenne, ha?** részhez
+2. Válasszon egy **Művelet**et (a tizenhárom osztály egyikét)
+3. Adja meg opcionálisan a **Parancs**ot (például `git push origin main`), az
+   **Ügynök**öt, a **Tér**t és a **Mód**ot
+4. Olvassa el az eredményt: a döntést, az indoklást és a **Forrás:** mezőt
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+A próba ugyanazt a feloldót futtatja, amelyet az érvényesítési útvonal használ,
+a tényleges szabályaival szemben, így a válasz pontos. Ha meglepődik,
+módosítson egy szabályt a fenti mátrixban, és próbálja ki újra.
 
-## Set a space's autonomy dial
+## Egy tér autonómiatárcsájának beállítása
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+A tárcsa ügynökönként és térenként értelmezett, és a szabályokkal együtt
+működik, nem helyettük.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Nyissa meg a teret
+2. Nyissa meg a **Résztvevők kezelése** elemet a tér fejlécéből
+3. Az **Autonómia** alatt az ügynök sorában válasszon szintet:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Szint                       | Hatás                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Alapértelmezett**         | Nincs térbeállítás – úgy viselkedik, mint a **Cselekvés jóváhagyással**                                    |
+| **Csak javaslat**           | Minden kapuzott eszköz egyenesen megtiltva, az ügynöknek szóló üzenettel, hogy inkább javasolja a műveletet |
+| **Cselekvés jóváhagyással** | A kockázatos műveletek a zárt hibamódú jóváhagyási kapuba futnak                                           |
+| **Szabad cselekvés**        | Előre jóváhagy mindent, ami nem kemény tiltásra oldódott fel                                               |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[A szabad cselekvés minden kérést elnyel]
+**Szabad cselekvés** mellett az **Előbb kérdezzen** döntés jóváhagyásra kerül
+anélkül, hogy megkérdezné Önt. Csak egy `deny` – szabályból, a módkészletből
+vagy a beépített alapértelmezésből – állít még meg. Akkor nyúljon hozzá, ha
+figyeli a teret, és ne alapértelmezésként.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+A tárcsa csak a beépített harnessre hat. A Claude Code adapter a saját eszközeit
+ezen a kapun kívül futtatja.
 
-## Know where guardrails do not reach
+## Hol nem érnek el a korlátok
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+A **Hol érvényesülnek a szabályok** táblázat ugyanezen az oldalon, legalul a
+funkció alkalmazáson belüli változata: hatásosztályonként megmondja, hogy az
+egyes futtatók elkapják-e a szabálykapunál, a homokozóra hagyják-e, vagy
+egyáltalán nem tudják elfogni.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/).
+- **A Claude Code adapter** a saját eszközhívásainál nincs kapuzva. A Claude
+  Code `--dangerously-skip-permissions` kapcsolóval indul, így az olvasó, író,
+  szerkesztő és bash hívásai soha nem haladnak át az őrszem előtt. Amit ennél
+  az adapternél kapuzunk, az az MCP eszközfelszín, amelyet visszahív, és az a
+  shellparancs, amelyet a Control Center az indításához létrehoz.
+- **Egy mód saját kimeneti igéje** (`submit_plan`, `propose_orchestration`)
+  rögzített, és soha nem lehet megtiltani – különben egy mód szerkezetileg
+  képtelen lenne előállítani az egyetlen szállítható kimenetét.
+- **Az, hogy a homokozó alátámasztja-e ezeket a szabályokat, a gazdagéptől
+  függ.** Ahol a `cc_server` háttérrendszert talál, becsomagolja a Claude Code
+  CLI-t és a harness `bash` eszközét, így egy Ön által nem írt szabály alatt is
+  ott van az operációs rendszer szintje. **Windowson ilyen nincs**, és
+  `bwrap` és `socat` nélküli Linuxon vagy WSL2-ben sincs – ott a korlátok és a
+  mód eszközfelszíne jelenti a teljes érvényesítést, nem annak egy második
+  vonalát. Nézze meg, melyik esetben van, itt:
+  [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Configure sandbox policies](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/)
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
-- [Manage adapters and models](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/)
+- [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Guardrails — one policy for every mutating action](/hu-HU/kezikonyv/fogalmak/korlatok/)
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
-- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
+- [Korlátok – egy szabályzat minden állapotmódosító művelethez](/hu-HU/kezikonyv/fogalmak/korlatok/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)

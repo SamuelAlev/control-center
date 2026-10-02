@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Ruang kerja dan isolasi
+description: Mengapa ruang kerja merupakan batas penyewa yang keras, bagaimana pemisahan basis data membuat batas itu bersifat struktural, dan apa yang sengaja melintasinya.
 slug: id-ID/panduan-pengguna/konsep/ruang-kerja
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Apa itu ruang kerja?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Ruang kerja adalah penyewa isolasi tingkat teratas di Control Center. Ruang kerja mengelompokkan agen, repositori, space, tiket, memori, pipeline, dan anggota ke dalam satu konteks yang terbatas. Semua yang terjadi di dalam sebuah ruang kerja tetap berada di dalamnya.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Ruang kerja pada umumnya memetakan ke satu proyek atau satu basis kode. Anda mungkin memiliki ruang kerja terpisah untuk "api-service", "frontend-v2" dan "infrastructure".
 
-## Workspace-scoped data
+## Data bercakupan ruang kerja
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Baris-baris milik sebuah ruang kerja berada di berkas SQLite ruang kerja itu sendiri, di `<dataDir>/<workspaceId>/workspace.db`. Setiap ruang kerja mendapat sebuah direktori dan bukan sekadar berkas, karena ruang kerja mengakumulasi lebih dari sekadar basis data — worktree per percakapan, berkas agen dan skill, kredensial bot chat — dan memberinya sebuah folder berarti semua itu hidup dan terhapus bersama-sama.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entitas                                             | Cakupan                                             |
+| --------------------------------------------------- | --------------------------------------------------- |
+| Agen                                                | Tergolong tepat pada satu ruang kerja               |
+| Repositori                                          | Terdaftar ke dalam satu ruang kerja (lihat di bawah) |
+| Space, percakapan, dan pesan                        | Bercakupan ruang kerja                              |
+| Tiket, proyek, rencana, orkestrasi                  | Bercakupan ruang kerja                              |
+| Fakta memori, kebijakan, domain, pemberian akses    | Bercakupan ruang kerja                              |
+| Eksekusi pipeline, templat, pemicu                  | Bercakupan ruang kerja                              |
+| Status pull request, space tinjauan, kohort tinjauan | Bercakupan ruang kerja                             |
+| Log run agen dan memori kerja                       | Bercakupan ruang kerja                              |
+| Anggota, undangan, pemberian izin per repo          | Bercakupan ruang kerja                              |
+| Simbol dan edge graf kode                           | Bercakupan menurut `repoId` di dalam berkas ruang kerja |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Sebagian besar baris ini membawa kolom `workspaceId`; berkas basis data yang terpisah menegakkan isolasi. Lihat invarian isolasi di bawah.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repo bercakupan ruang kerja; identitas lintas ruang kerja berdasarkan jalur
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Baris repo berada di berkas basis data ruang kerjanya sendiri — berkas itulah cakupannya, jadi tabelnya tidak memiliki kolom `workspaceId` maupun tabel join.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Anda menambahkan repo ke sebuah ruang kerja di Pengaturan → Ruang kerja → Repositori. Mendaftarkan checkout yang sama ke dua ruang kerja akan membuat dua baris independen dengan dua id; identitas repo _lintas_ ruang kerja ditentukan oleh jalur sistem berkas (atau owner/name GitHub), tidak pernah oleh id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Pendaftarannya ketat: jalurnya harus berada di dalam work tree git, harus memiliki remote `origin`, dan remote itu harus menunjuk ke forge yang didukung (github.com, gitlab.com, atau bitbucket.org). Forge-nya dibaca dari remote dan disimpan pada repo, sehingga satu ruang kerja dapat memuat repo dari ketiganya. Apa pun selain itu ditolak. Penjelajah folder tempat Anda memilih akan mendaftar sistem berkas **host server**, dibatasi pada daftar izin `--repo-roots` milik server (yang secara default adalah direktori home pengguna server).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Menghapus sebuah repositori dari ruang kerja akan menghapus barisnya sekaligus dan menggugurkan simbol kode, edge, berkas, checkpoint indeks, serta pemberian izin per anggota miliknya. Checkout di disk tidak tersentuh.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Graf kode berada di berkas yang sama, dikunci berdasarkan `repoId`, karena ruang kerja yang berbeda dapat memiliki repositori yang sama pada cabang berbeda dengan kode yang berbeda.
 
-## The isolation invariant
+## Invarian isolasi
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Kebocoran data lintas ruang kerja diperlakukan sebagai bug. Isolasi bersifat **struktural**, ditegakkan pada beberapa lapisan:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Lapisan basis data.** Setiap ruang kerja memiliki berkas SQLite sendiri, yang dibagikan oleh `WorkspaceDatabaseManager.of(workspaceId)`. Basis data sebuah ruang kerja tidak mendeklarasikan tabel `users`, `workspaces`, atau tabel ruang kerja lain mana pun, sehingga pembacaan lintas ruang kerja bukanlah bug yang bisa Anda tulis — kode itu tidak dapat dikompilasi. Repositori me-resolve DAO-nya per pemanggilan alih-alih menyimpannya di cache, dan karena setiap metode repositori menerima `workspaceId` yang wajib, ruang kerja tidak akan pernah bisa disimpulkan atau memakai nilai default.
+- **Id ruang kerja adalah segmen jalur.** Karena id-nya menjadi nama direktori, id tersebut harus cocok dengan pola satu segmen yang aman (diawali alfanumerik, lalu alfanumerik, titik, garis bawah, tanda hubung; tanpa `..`). Di seluruh produk, id-nya berupa UUID. Apa pun selain itu akan melempar pengecualian alih-alih disanitasi — itulah pengaman path traversal dan ia gagal dengan berisik alih-alih menuliskan data sebuah ruang kerja ke jalur yang dipilih orang lain.
+- **Pertahanan berlapis.** Kolom `workspaceId` tetap ada dan tetap ditulis. Redundan di dalam satu berkas, kolom itu menjaga trigger sync-feed, indeks FTS, dan bentuk baris yang ada tetap tidak berubah, sekaligus membuat berkas dapat menjelaskan dirinya sendiri saat diperiksa secara mandiri — dan itulah yang menjadi andalan ekspor dan impor.
+- **Lapisan domain.** Layanan yang memutasi entitas berdasarkan id memvalidasi `entity.workspaceId == workspaceId` di satu titik pengunci sebelum melanjutkan dan melempar `WorkspaceMismatchException` saat tidak cocok — kegagalan yang berisik untuk id yang datang dari konteks yang salah. Menolak dengan berisik itu penting: no-op yang senyap menyembunyikan bug, sedangkan melanjutkan berarti membocorkan data.
+- **Lapisan RPC.** Dispatcher repo-RPC adalah titik penguncinya. Setiap op bercakupan ruang kerja harus membawa `workspace_id` di argumennya sendiri — tidak ada "ruang kerja saat ini" per sesi yang bisa bocor, dan id yang tidak dikenal ditolak sebagai not-found _sebelum_ apa pun membuka basis data, sehingga id yang buruk tidak dapat mewujudkan `workspace.db` hantu. Op yang benar-benar global (newsfeed, antrean fleet) mendeklarasikan dirinya tanpa cakupan sebagai keputusan eksplisit yang telah ditinjau. Alat MCP mengikuti aturan yang sama: alat apa pun yang menyentuh data bercakupan ruang kerja mewajibkan `workspace_id`.
+- **Fan-out lintas ruang kerja dapat dienumerasi.** Menjawab pertanyaan tentang beberapa ruang kerja berarti membuka beberapa basis data. Fan-out itu dibatasi pada satu helper, `CrossWorkspaceQueries`, sehingga daftar lengkap hal-hal yang sah melintasi batas tersebut berada di titik pemanggilan satu berkas alih-alih menyebar di balik komentar dokumentasi. Titik pemanggilan itu adalah: agregasi seluruh server, rekonsiliator saat mulai, sapuan retensi dan GC, cadangan, router peristiwa — dan pencarian keanggotaan di bawah.
+- **Akses hanya dengan id tidak cukup.** Mencari entitas berdasarkan UUID-nya tidak membuktikan bahwa entitas itu milik ruang kerja pemanggil. Pemisahan berkas membuat berkas yang salah tidak terjangkau; validasi lapisan domain menangkap id yang salah yang datang melalui berkas yang sah.
 
-## Membership, not the pairing key, is what grants access
+## Keanggotaan, bukan kunci pemasangan, yang memberikan akses
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Memegang kredensial perangkat mengautentikasi sebuah _perangkat_. Itu tidak memberi wewenang apa pun di dalam sebuah ruang kerja. Setiap op bercakupan ruang kerja me-resolve peran keanggotaan pemanggil dan menegakkan batas bawah yang diturunkan dari jenis op-nya — pembacaan membutuhkan `guest`, mutasi membutuhkan `member`, operasi destruktif membutuhkan `admin` — dan op yang menampilkan konten repo juga memeriksa pemberian izin per repo milik pemanggil. Kunci pemasangan yang sah tanpa keanggotaan akan mendapat `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Konsekuensinya bagi isolasi rapi: baris keanggotaan berada di berkas _milik ruang kerja itu sendiri_, sehingga "siapa saja yang ada di ruang kerja ini?" adalah pembacaan bercakupan yang biasa. Pertanyaan kebalikannya — "saya berada di ruang kerja mana saja?" — menurut definisinya tersebar di banyak berkas, jadi ia termasuk sedikit fan-out `CrossWorkspaceQueries` yang disahkan, dan itulah yang dijalankan pemilih ruang kerja sebelum ruang kerja mana pun dipilih.
 
-See [Multiplayer](/id-ID/panduan-pengguna/konsep/multiplayer/) for the role ladder and repo grants.
+Lihat [Multiplayer](/id-ID/panduan-pengguna/konsep/multiplayer/) untuk tangga peran dan pemberian izin repo.
 
-## The global registry
+## Registri global
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Tidak semua hal bercakupan ruang kerja. Basis data kedua, `<dataDir>/global.db`, memuat hal-hal yang benar-benar berskala server:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **registri ruang kerja**, agar pengalih dapat mendaftar setiap ruang kerja tanpa membuka satu pun berkas ruang kerja — dan agar nama, logo, pemilik, urutan manual, serta penanda hapus lunak sebuah ruang kerja berada di luar berkas yang mereka gambarkan;
+- **identitas**: pengguna, preferensi pengguna, dan perangkat yang dipasangkan, karena satu orang adalah satu pengguna di setiap ruang kerja dan perangkat yang dipasangkan tetap bertahan saat sebuah ruang kerja dihapus;
+- **antrean fleet** (worker, pekerjaan, log penempatan), yang penjadwalnya mencocokkan seluruh antrean dengan setiap worker pada tiap tick;
+- **newsfeed**, yang bersifat per pengguna (bukan per ruang kerja) — menambahkan feed akan mengikuti Anda ke setiap ruang kerja;
+- **`workspace_routes`**, indeks pra-autentikasi yang menjawab "ruang kerja mana yang memiliki kunci ini?" untuk titik masuk yang datang hanya bermodal rahasia atau id buram (hash undangan, token webhook, deep link) dan tanpa ruang kerja. Tidak ditemukan di sana berarti not-found; memang sengaja tidak ada pemindaian cadangan;
+- **pengaturan dan identitas berskala pemasangan**: id pemasangan, pengaturan tingkat host, koneksi SSO, dan kebijakan tindakan terkelola (pengunci berskala pemasangan yang hanya dapat memperketat pagar pengaman ruang kerja).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Saat boot, hanya berkas ini yang dibuka. Berkas ruang kerja dibuka secara lazy pada sentuhan pertama, sehingga biaya startup tetap datar tak peduli berapa banyak riwayat yang diakumulasi ruang kerja, dan `quick_check` per berkas dibayar pada pemakaian pertama, bukan di jalur menuju banner siap.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Berkas ruang kerja hanya memuat `workspace_meta` satu baris untuk identifikasi diri (id-nya, pemasangan yang membuatnya, versi skema saat dibuat, dan kapan). Segala hal deskriptif tentang sebuah ruang kerja berada di registri.
 
-## Creating a workspace
+## Membuat ruang kerja
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Membuat ruang kerja melakukan lebih dari sekadar menyisipkan baris registri. Dalam satu operasi, server menstempel pengguna pembuat sebagai `ownerUserId`, mencatat keanggotaan peran owner pengguna itu, dan menerbitkan peristiwa domain `WorkspaceCreated`. Pendengar peristiwa itu kemudian menanam, secara idempoten dan di latar belakang:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- seorang **agen CEO** plus empat spesialis — `qa`, `architect`, `engineer`, `librarian` — dengan para spesialis melapor kepada CEO;
+- **templat pipeline bawaan** beserta pemicunya (pemicu peristiwa dan manual langsung aktif sejak awal; yang terjadwal bersifat opt-in kecuali sapuan GC worktree harian);
+- **suite eval pemula**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/).
+Ini terjadi pada _setiap_ ruang kerja, bukan hanya yang pertama. Agen hasil seeding dibuat tanpa adapter, sehingga mereka berjalan di **Control Center (built-in)** dengan model default Anthropic (`claude-opus-4-8` kecuali Anda mematok model lain) sampai Anda menetapkan adapter dan model per agen di Pengaturan → Ruang kerja → Agen. Lihat [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Penulisan keanggotaan owner lebih penting daripada kelihatannya: tanpanya, ruang kerja yang baru dibuat tidak akan punya anggota dan setiap panggilan bercakupan ruang kerja yang dilakukan pembuatnya berikutnya akan ditolak.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agen tidak dapat membuat ruang kerja]
+Tidak ada alat MCP `create_workspace`. Manusia membuat ruang kerja melalui `workspace.create` (titik pengunci hanya nama) atau `workspace.upsert` (rekaman penuh, juga dipakai untuk pembaruan). Keduanya menstempel pengguna pembuat sebagai `owner` dan menerbitkan `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Menghapus, mengekspor, mengimpor
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Menghapus ruang kerja **menandai baris registri dan memutus tautan direktorinya**. Ruang kerja itu hilang dari setiap daftar dan pencarian. Baris registrinya tetap ada (terhapus lunak) agar id-nya masih diketahui oleh pencadangan dan pemeliharaan, tetapi `workspace.delete` segera membuang direktori ruang kerja tersebut — basis data, worktree, berkas agen, dan sisanya — melalui `WorkspaceDatabaseManager.dropAndClose`. Hanya **owner** ruang kerja yang dapat menghapusnya.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Karena satu ruang kerja adalah satu berkas, memindahkan ruang kerja adalah operasi berkas dan bukan pembuangan tabel demi tabel:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` adalah satu `VACUUM INTO` — snapshot yang konsisten dan terdefragmentasi, diambil di dalam transaksi baca sementara server terus melayani.
+- `workspace.import` mengadopsi berkas semacam itu, menggantikan apa pun yang saat ini dipegang ruang kerja tujuan. `workspace_meta` yang tertanam memungkinkan sebuah impor membedakan "berkas saya sendiri, diadopsi kembali" dari "berkas dari pemasangan lain" (yang terakhir diizinkan, tetapi dicatat, bukan dibiarkan tak terlihat).
+- `server.backupNow` membuat snapshot seluruh pemasangan ke dalam direktori bertanda waktu yang mencerminkan data dir aktif — `manifest.json`, `global.db`, dan satu `<workspaceId>/workspace.db` per ruang kerja — sehingga pemulihannya adalah menyalinnya kembali.
+- `server.listBackups` membaca kembali direktori itu, dari yang terbaru, beserta ukuran dan daftar ruang kerja tiap snapshot. Snapshot yang manifest-nya hilang atau menyebut berkas yang tidak ada tetap dilaporkan, ditandai tidak lengkap — menyembunyikannya justru membuat operator percaya memiliki cadangan yang sebenarnya tidak ada.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Operasi pencadangan berada di bawah **Pengaturan → Server → Cadangan & pemulihan**: **Cadangkan sekarang** mengambil snapshot pemasangan, daftarnya menunjukkan snapshot mana yang lengkap dan memungkinkan pemilik pemasangan menghapusnya setelah konfirmasi, dan setiap ruang kerja menawarkan ekspor dan impor. Pipeline bawaan **Workspace backup** hanya mengambil basis data ruang kerja itu dengan jadwal mingguan dan menghapus cadangannya sendiri yang lebih tua dari usia retensi yang dikonfigurasi. Memulihkan sebuah ruang kerja dari snapshot pemasangan berarti `workspace.import` yang diarahkan ke `<workspaceId>/workspace.db` milik snapshot; memulihkan seluruh pemasangan tetap berupa penyalinan kembali direktori snapshot dengan server dihentikan.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain) has the full table.
+Yang tidak dibawa oleh satu pun dari operasi itu adalah sisa direktori ruang kerja. Ruang kerja mengakumulasi lebih dari sekadar basis data — gambar yang ditempel, berkas skill dan agen, kredensial chat, worktree — dan ekspor serta impor memindahkan **berkas** itu, sehingga semua yang ada di sampingnya tetap di tempatnya. Itu memang disengaja untuk kredensial dan dapat dibuang untuk worktree; untuk sisanya, ini adalah batasan yang perlu diketahui, bukan sebuah fitur. [Referensi cadangan](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain) memuat tabel lengkapnya.
 
-## Moving a backup between the server and your device
+## Memindahkan cadangan antara server dan perangkat Anda
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/id-ID/panduan-pengguna/referensi/cadangan/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Setiap op di atas berbicara dalam jalur di **server**, yang merupakan jawaban utuh hanya jika server itu adalah mesin Anda sendiri. Tiga rute HTTP bertanda tangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/id-ID/panduan-pengguna/referensi/cadangan/#transfer-routes) — membawa byte untuk semua topologi lainnya, di jalur terautentikasi yang sama yang sudah dipakai proksi media dan penyimpan gambar. Di halaman, ini berupa tombol **Unduh** di samping setiap ekspor dan setiap snapshot (Anda memilih tempat penyimpanannya), dan **Pilih file lalu unggah** untuk memulihkan dari berkas yang berada di mesin yang Anda pakai. Unggahan inilah yang berfungsi saat server bukan mesin Anda: `workspace.import` memerlukan berkasnya sudah ada di host, dan beginilah cara berkas itu sampai ke sana.
 
-Three properties are worth knowing:
+Ada tiga sifat yang perlu diketahui:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Unduhan membuat salinan baru dan server tidak menyimpan satu pun.** Mengunduh bukan berarti "mengambil berkas yang dibuat tombol ekspor" — ia mengekspor ulang, menyalurkan hasilnya, lalu menghapusnya. Responsnya `no-store` dengan `Accept-Ranges: none` karena alasan yang sama: rentang yang dilanjutkan akan menyambung dua ekspor berbeda menjadi satu berkas yang terlihat valid padahal tidak.
+- **Unggahan disalurkan ke disk, tidak pernah ditampung di memori**, di kedua ujungnya, dan salinan yang di-staging dihapus pada setiap jalur keluar — termasuk saat ditolak. Basis data ruang kerja bukanlah tangkapan layar.
+- **Koneksi yang direlai tidak memiliki origin HTTP**, sehingga kontrol transfer dinonaktifkan di sana disertai catatan yang menjelaskan alasannya. Semua hal yang berbicara dalam jalur sisi server tetap berfungsi lewat relay; hanya jalur byte yang memerlukan koneksi langsung.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Jalur mana milik siapa]
+Jalur yang *ditampilkan* halaman — direktori snapshot, berkas yang ditulis sebuah ekspor, sumber yang dibaca sebuah impor — berada di mesin yang menjalankan `cc_server`. Jalur yang dilaporkan sebuah **unduhan** berada di mesin tempat Anda duduk. Perbedaan itulah alasan keduanya ada: yang pertama adalah yang dibutuhkan skrip pemeliharaan atau sesi ssh, yang kedua adalah yang dibutuhkan orang yang mengumpulkan cadangan.
 :::
 
-## Multiple workspaces
+## Beberapa ruang kerja
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Anda dapat menjalankan beberapa ruang kerja secara berdampingan. Masing-masing beroperasi secara independen: agen di satu ruang kerja tidak dapat mengirim pesan ke agen di ruang kerja lain, tidak dapat membaca memori ruang kerja lain, dan tidak dapat melihat tiketnya. Resolusi penerima untuk perpesanan antar-agen bersifat persis dan tidak pernah melintasi ruang kerja.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Tidak ada dasbor lintas ruang kerja. Permukaan analitik di `/workspaces/:workspaceId/observability` berlangganan feed global terbatas berisi run terbaru lalu langsung mempersempitnya ke ruang kerja aktif, sehingga yang Anda lihat di sana adalah satu ruang kerja pada satu waktu. Satu-satunya permukaan yang benar-benar multi-ruang kerja yang disentuh seseorang adalah pemilih ruang kerja dan pengalihnya.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Satu batasan praktis yang perlu diketahui: ruang kerja yang sedang digunakan seseorang tetap terbuka — tidak ada LRU. Setelah melewati 32 ruang kerja seperti itu, server memberi peringatan alih-alih menolak, karena setiap berkas yang terbuka menahan isolate latar belakang dan cache halaman. Fan-out lintas ruang kerja membuka berkas secara sementara lalu menutupnya kembali jika tidak ada hal lain yang mengklaimnya.
 
-## Related concepts
+## Konsep terkait
 
-- [Multiplayer](/id-ID/panduan-pengguna/konsep/multiplayer/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): agents belong to exactly one workspace
-- [Memory and knowledge](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/): memory is workspace-scoped
-- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/): where the databases sit in the client/server split
-- [Back up and restore](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/id-ID/panduan-pengguna/referensi/cadangan/): every operation, route, manifest field and limit
-- [Add repositories](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/): registering a checkout into a workspace
+- [Multiplayer](/id-ID/panduan-pengguna/konsep/multiplayer/): keanggotaan, peran, dan pemberian izin repo — separuh akses dari isolasi
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): agen tergolong tepat pada satu ruang kerja
+- [Memori dan pengetahuan](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/): memori bercakupan ruang kerja
+- [Arsitektur](/id-ID/panduan-pengguna/konsep/arsitektur/): di mana basis data berada dalam pemisahan klien/server
+- [Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/): mengambil snapshot, memindahkan ruang kerja, menyimpan salinan di tempat lain
+- [Cadangan, ekspor, dan impor](/id-ID/panduan-pengguna/referensi/cadangan/): setiap operasi, rute, bidang manifest, dan batas
+- [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/): mendaftarkan checkout ke sebuah ruang kerja

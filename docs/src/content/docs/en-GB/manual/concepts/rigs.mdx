@@ -2,6 +2,7 @@
 title: Rigs and enclosures
 description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
 slug: en-GB/manual/concepts/rigs
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
 A **rig** is a disposable machine an agent drives in real time — a browser,
@@ -66,7 +67,7 @@ framing; the egress gate is the enforcement behind it.
 
 For the desktop surface, keyboard and pointer events are injected by the
 *hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
+daemon that can synthesise input — so compromising the guest's software does
 not hand the attacker a keyboard. Capture flows the other way, through a
 small unprivileged in-guest agent, because the guest can scale frames before
 they cross the wire.
@@ -131,7 +132,7 @@ offered to it. What "offered" means depends on what can honestly be done: a
 browser page receives a *real* drop event at the point you let go, so an
 upload zone behaves exactly as it would for a local file; a desktop gets the
 files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
+synthesise a drag into an arbitrary Linux toolkit without running a
 privileged daemon inside the guest — which is precisely what this design
 refuses to have. The result says which happened, so a CSV dropped on an
 upload zone is never reported as uploaded when it is merely a file in a
@@ -189,7 +190,7 @@ A rig cannot become a pet:
 
 - a **hard TTL** the guest cannot extend;
 - an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
+  window, close after twice that — where an open terminal or a watching viewer
   counts as "in use";
 - a **memory budget** counted in *resident megabytes*, not sessions, because
   a parked VM frees CPU and keeps every byte of RAM; the least-recently-used

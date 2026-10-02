@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Pintasan papan kekunci
+description: Daftar penuh ikatan kekunci, mengikut skop, dengan syarat setiap pintasan berfungsi.
 slug: ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Pintasan datang daripada satu daftar `const`, `KeybindingRegistry` dalam `lib/core/constants/keybindings.dart`. Ia mengandungi **48 ikatan**. Tetapan → Anda → Ikatan kekunci memaparkan daftar itu sebagai **rujukan baca sahaja**: tiada UI pengikatan semula dan tiada fail ikatan kekunci pengguna.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` di bawah ialah pengubah arahan utama — ⌘ pada macOS, Ctrl pada Windows dan Linux. Sesuatu ikatan hanya berfungsi apabila perintahnya mempunyai pengendali berdaftar pada skrin semasa dan klausa `when`-nya dipenuhi; `!textInputFocus` bermaksud kekunci itu diserahkan kepada medan teks yang difokuskan.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Tiada pintasan navigasi kekunci angka. Peti masuk, tiket, pull request dan yang lain dicapai daripada bar sisi atau ⌘K. Kebolehcerapan juga tiada pintasan.
 
 ## Global (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Skop `global`, jadi ia aktif di mana-mana dalam shell.
 
-### System
+### Sistem
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| Pintasan                                    | Tindakan                                         | Syarat                                                     |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | Palet perintah                                   | —                                                          |
+| `Shift + /` (`?`)                           | Helaian pintasan papan kekunci                   | Bukan sedang menaip dalam medan                           |
+| `Cmd/Ctrl + Z`                              | Buat asal                                        | Bukan sedang menaip dalam medan (medan yang difokuskan menyimpan buat asal sendiri) |
+| `Cmd/Ctrl + Shift + Z`                      | Buat semula                                      | Bukan sedang menaip dalam medan                           |
+| `Cmd/Ctrl + Shift + T`                      | Togol tema                                       | —                                                          |
+| `Cmd/Ctrl + ,`                              | Buka tetapan (berakhir pada `/settings/you/appearance`) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | Togol modus fokus                                | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | Togol penukar ruang kerja                        | —                                                          |
+| `Cmd/Ctrl + ]`                              | Ruang kerja seterusnya                           | —                                                          |
+| `Cmd/Ctrl + [`                              | Ruang kerja sebelumnya                           | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Tukar ke ruang kerja 1–9                         | —                                                          |
 
-## Pull request list (3)
+## Senarai pull request (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Skop `/pull-requests`. Semuanya memerlukan `route == '/pull-requests'` dan tiada medan teks yang difokuskan, jadi ia tidak berfungsi semasa laluan butiran PR dibuka di atas senarai.
 
-| Shortcut | Action           |
+| Pintasan | Tindakan         |
 | -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| `R`      | Muat semula      |
+| `Enter`  | Buka PR          |
+| `F`      | Buka menu penapis |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) diisytiharkan dalam daftar dan muncul pada rujukan ikatan kekunci, tetapi **skrin senarai tidak mendaftarkan pengendali untuknya**, jadi ia tidak berfungsi buat masa ini. `F` membuka menu penapis (`pr.list-open-filter`), bukan carian.
 
-## Pull request detail (2)
+## Butiran pull request (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Skop `/pull-requests/`. Muat semula memerlukan tiada medan teks yang difokuskan. Tutup tab tiada pengawal input teks (ketukan yang diubah suai dengan ⌘ tidak sekali-kali teks biasa) dan mempunyai regex laluan supaya ia tidak berfungsi pada senarai.
 
-| Shortcut       | Action    | Condition                          |
+| Pintasan       | Tindakan  | Syarat                             |
 | -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| `R`            | Muat semula | Bukan sedang menaip dalam medan  |
+| `Cmd/Ctrl + W` | Tutup tab | Pada lokasi `/pull-requests/<…>`   |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Pertukaran tab (`1`/`2`/`3`), fail dilihat/kuncup (`V`/`C`), senarai fail (`T`) dan cari dalam diff (`Cmd/Ctrl + F`) dimiliki oleh pengendali paparan diff sendiri — lihat [Kekunci paparan diff di luar daftar](#kekunci-paparan-diff-di-luar-daftar).
 
-## Inbox (1)
+## Peti masuk (1)
 
-| Shortcut | Action           |
+| Pintasan | Tindakan         |
 | -------- | ---------------- |
-| `F`      | Open filter menu |
+| `F`      | Buka menu penapis |
 
-Requires `route == '/inbox'` and no focused text field.
+Memerlukan `route == '/inbox'` dan tiada medan teks yang difokuskan.
 
-## GitHub user and team profiles (3)
+## Profil pengguna dan pasukan GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Skop `/users/`. Klausa `when` ialah regex terhadap `/users/<login>` **atau** `/teams/<organization>/<slug>`, serta tiada medan teks yang difokuskan.
 
-| Shortcut       | Action       |
+| Pintasan       | Tindakan     |
 | -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| `R`            | Muat semula  |
+| `/`            | Fokus carian |
+| `Cmd/Ctrl + F` | Fokus carian |
 
-## Spaces (8)
+## Ruang (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Skop `/spaces`. Klausa `when` menggunakan regex supaya ia berfungsi pada senarai ruang (`/spaces`) dan ruang yang dipilih (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
+| Pintasan               | Tindakan               | Syarat                |
 | ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Enter`                | Hantar mesej           | —                     |
+| `Cmd/Ctrl + N`         | Ruang baharu           | Pada laluan `/spaces` |
+| `J`                    | Ruang seterusnya       | Bukan sedang menaip dalam medan |
+| `K`                    | Ruang sebelumnya       | Bukan sedang menaip dalam medan |
+| `Cmd/Ctrl + Shift + D` | Dikte tekan untuk bercakap | —                 |
+| `Cmd/Ctrl + T`         | Buka tab editor        | Pada laluan `/spaces` |
+| `Cmd/Ctrl + W`         | Tutup tab editor       | Pada laluan `/spaces` |
+| `Cmd/Ctrl + B`         | Togol bar sisi editor  | Pada laluan `/spaces` |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Hantar dengan Enter dimiliki oleh medan teks komposer; tekan untuk bercakap dimiliki oleh butang mikrofon komposer (pengendali papan kekunci perkakasan tersendiri). Kedua-duanya disenaraikan dalam daftar untuk rujukan tetapan.
 
-## Workspace picker (2)
+## Pemilih ruang kerja (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Skop `/workspaces`, aktif hanya pada pemilih itu sendiri.
 
-| Shortcut       | Action                  |
+| Pintasan       | Tindakan                |
 | -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| `Cmd/Ctrl + N` | Ruang kerja baharu      |
+| `Enter`        | Buka ruang kerja yang dipilih |
 
-`Enter` requires no focused text field.
+`Enter` memerlukan tiada medan teks yang difokuskan.
 
-## Settings (5)
+## Tetapan (5)
 
-| Shortcut       | Action                 | Screen                              |
+| Pintasan       | Tindakan               | Skrin                               |
 | -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| `J`            | Halaman tetapan seterusnya | Mana-mana laluan `/settings`, bukan menaip |
+| `K`            | Halaman tetapan sebelumnya | Mana-mana laluan `/settings`, bukan menaip |
+| `Cmd/Ctrl + N` | Ejen baharu            | Tetapan → Ruang kerja → Ejen        |
+| `Cmd/Ctrl + N` | Tambah repositori      | Tetapan → Ruang kerja → Repositori  |
+| `R`            | Imbas semula untuk penyesuai | Tetapan → Pelayan → Penyedia model |
 
-## Newsfeed (5)
+## Suapan berita (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Skop `/newsfeed`. Semuanya memerlukan `route == '/newsfeed'` dan tiada medan teks yang difokuskan.
 
-| Shortcut | Action           |
+| Pintasan | Tindakan         |
 | -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| `J`      | Artikel seterusnya |
+| `K`      | Artikel sebelumnya |
+| `Enter`  | Buka artikel     |
+| `S`      | Togol penanda buku |
+| `R`      | Muat semula suapan |
 
-## Diff viewer keys outside the registry
+## Kekunci paparan diff di luar daftar
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+Paparan diff PR mengendalikannya sendiri (`PrDiffKeyboardHandler`). Carian/dilihat/kuncup disenaraikan dalam komen daftar untuk rujukan tetapan sahaja — tiada pengendali penghantar berdaftar, jadi penghantar menyerahkannya kepada paparan diff. Ia tidak muncul sebagai baris tersendiri pada rujukan ikatan kekunci.
 
-| Shortcut        | Action                                               |
+| Pintasan        | Tindakan                                             |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | Cari dalam diff                                      |
+| `J` / `K`       | Fail seterusnya / sebelumnya                         |
+| `V`             | Togol dilihat pada fail yang difokuskan              |
+| `C`             | Togol kuncup pada fail yang difokuskan               |
+| `T`             | Tunjukkan senarai fail                               |
+| `Enter`         | Padanan carian seterusnya (hanya semasa cari-dalam-diff dibuka) |
+| `Shift + Enter` | Padanan carian sebelumnya                            |
+| `Escape`        | Tutup cari-dalam-diff, atau kosongkan pemilihan teks diff |
+| `Cmd/Ctrl + C`  | Salin pemilihan diff                                 |
 
-## Browser-reserved combinations
+## Kombinasi yang ditempah penyemak imbas
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+Pada binaan web, penyemak imbas menggunakan sesetengah pemecut sebelum halaman melihatnya, jadi ikatan yang sepadan tidak sekali-kali boleh berfungsi di situ. Ia berfungsi seperti biasa pada desktop. Ditempah apabila digabungkan dengan pengubah arahan utama: `T`, `W`, `N` dan digit `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Itu merangkumi pertukaran ruang kerja `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (ruang baharu, ruang kerja baharu, ejen baharu, tambah repositori) dan `Cmd/Ctrl + T` / `Cmd/Ctrl + W` dalam ruang dan butiran PR.
 
-## See also
+## Lihat juga
 
-- [Route map](/ms-MY/manual-pengguna/rujukan/peta-laluan/)
-- [Focus mode](/ms-MY/manual-pengguna/panduan-cara/modus-fokus/)
+- [Peta laluan](/ms-MY/manual-pengguna/rujukan/peta-laluan/)
+- [Modus fokus](/ms-MY/manual-pengguna/panduan-cara/modus-fokus/)

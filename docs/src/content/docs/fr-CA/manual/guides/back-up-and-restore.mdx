@@ -1,162 +1,183 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Sauvegarder et restaurer
+description: Prenez un instantané de l’installation, déplacez un espace de travail entre machines, restaurez un seul espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-CA/manuel/guides/sauvegarder-et-restaurer
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/fr-CA/manuel/reference/sauvegarde/).
+Ce guide couvre les cinq choses que les gens font réellement avec les sauvegardes : en
+prendre une, en récupérer une copie, déplacer un espace de travail, en remettre une en
+place et conserver des copies hors de la machine. Pour la forme exacte de chaque artefact
+et de chaque opération, consultez la
+[référence sur la sauvegarde](/fr-CA/manuel/reference/sauvegarde/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Tout ce qui suit se trouve dans **Paramètres → Serveur → Sauvegarde et restauration**.
 
-## Prerequisites
+## Prérequis
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- Un **client complet** — l’application de bureau ou l’application Web. Un téléphone associé ne peut déclencher aucune de ces opérations, par conception.
+- Pour créer, lister, télécharger ou supprimer un **instantané de l’installation** : le **propriétaire** de l’installation.
+- Pour les opérations par espace de travail : **admin** de cet espace de travail pour exporter, **propriétaire** pour l’importer ou le supprimer.
+- Pour les téléchargements et les téléversements : une connexion **directe** au serveur. Le relais intermédié transporte des trames RPC, pas des transferts de fichiers, et les commandes de transfert se désactivent avec une note lorsque vous passez par lui.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Les instantanés de l’installation sont manuels]
+**Sauvegarder maintenant** ne crée un instantané complet de l’installation que sur
+demande. Le pipeline intégré **Workspace backup** peut plutôt effectuer une sauvegarde de
+la base de données d’un espace de travail une fois par semaine, puis supprimer les
+sauvegardes de cet espace de travail de plus de 30 jours. Il ne copie pas `global.db`, les
+autres espaces de travail ni les fichiers à côté de la base de données. Conservez les
+copies hors machine séparément.
 :::
 
-## What a backup covers
+## Ce que couvre une sauvegarde
 
-Both artifacts are **databases only**:
+Les deux artefacts sont **des bases de données uniquement** :
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- Un **instantané de l’installation** est un répertoire horodaté : `manifest.json`, `global.db` et un `<workspaceId>/workspace.db` par espace de travail.
+- Une **exportation d’espace de travail** est ce seul fichier `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/fr-CA/manuel/reference/sauvegarde/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Ni l’un ni l’autre ne transporte le reste du répertoire de données : `secrets.json` (clés
+d’association, identifiants de fournisseurs, SSO), le dossier `blobs/` d’un espace de
+travail (images collées dans les messages), `skills/`, `agents/`,
+`chat_credentials/`, l’audio des réunions enregistrées ou les images de rig. Une partie de
+tout cela est jetable et une autre ne l’est pas — le
+[tableau complet se trouve dans la référence](/fr-CA/manuel/reference/sauvegarde/#what-a-backup-does-not-contain),
+et c’est à cela que sert la [section sur les copies hors machine](#copier-les-sauvegardes-hors-de-la-machine).
 
-## Take a snapshot of the whole install
+## Créer un instantané de toute l’installation
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Ouvrez **Paramètres → Serveur → Sauvegarde et restauration**.
+2. Sous **Instantanés de l’installation**, appuyez sur **Sauvegarder maintenant**.
+3. La notification indique le répertoire qui a été écrit, sur l’hôte du serveur. Le nouvel instantané apparaît au sommet de la liste.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Le serveur continue de fonctionner pendant toute l’opération. Chaque fichier est écrit
+avec `VACUUM INTO`, ce qui garantit la cohérence par rapport à une base de données active :
+aucune fenêtre de maintenance n’est nécessaire et il n’est pas utile d’arrêter les agents.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Chaque ligne de la liste indique l’horodatage, la taille sur le disque, le nombre
+d’espaces de travail capturés et si l’instantané est **Complet** ou **Incomplet**.
+« Incomplet » signifie que le manifeste est absent ou qu’il nomme des fichiers qui ne sont
+pas là — une sauvegarde interrompue par un plantage ou un disque plein. Ces instantanés
+restent listés volontairement : un instantané que vous ne voyez pas est un instantané que
+vous croyez avoir. Un instantané incomplet ne peut pas restaurer une installation
+complète, mais les fichiers d’espace de travail qu’il contient peuvent tout de même être
+adoptés un à la fois.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Une ligne peut aussi indiquer **_n_ espaces de travail non capturés**. Il s’agit d’un
+espace de travail enregistré, mais dans lequel rien n’a jamais été écrit (aucun fichier
+n’existe encore), ou dont la copie a échoué — vérifiez le journal du serveur.
 
-## Schedule workspace backups and retention
+## Planifier les sauvegardes d’espaces de travail et leur conservation
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Ouvrez **Paramètres → Pipelines → Modèles de pipeline** pour l’espace de travail et
+trouvez **Workspace backup**. Sa planification activée s’exécute chaque dimanche à
+03:00 UTC : **Back up workspace**, suivi de **Delete backups older than** (30 jours
+par défaut). Le second nœud ne s’exécute qu’après la réussite de la sauvegarde. Vous
+pouvez modifier le nombre de jours de conservation sur le nœud ou désactiver la
+planification. Si le serveur est hors ligne à l’heure prévue, la planification
+rattrape son retard une seule fois à son retour, plutôt que de rejouer chaque
+semaine manquée.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Les sauvegardes d’espaces de travail résident sur le serveur sous
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Le nœud de
+conservation ne supprime que les anciennes sauvegardes de cet espace de travail ; il
+ne supprime jamais les instantanés de l’installation ni les sauvegardes des autres
+espaces de travail. Ces fichiers ne contiennent que des bases de données. Pour une
+conservation hors machine, copiez-les indépendamment.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Ces sauvegardes sont distinctes de la liste **Instantanés de l’installation**. Pour en
+restaurer une, utilisez **Données des espaces de travail → Importer** avec le chemin
+`workspace.db` de la sauvegarde, côté serveur. L’importation remplace la base de
+données actuelle de cet espace de travail ; exportez-la d’abord si vous pourriez avoir
+besoin d’annuler la restauration.
 
-## Delete an install snapshot
+## Supprimer un instantané de l’installation
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Sous **Instantanés de l’installation**, dépliez l’instantané, même s’il est incomplet,
+et utilisez **Supprimer l’instantané** dans la section de danger. Confirmez son nom. Le
+répertoire de l’instantané est entièrement et définitivement supprimé du serveur ;
+téléchargez-le d’abord si vous en voulez une copie. Un pipeline de sauvegarde
+d’espace de travail ne supprime jamais ces instantanés.
 
-## Collect a copy on your own machine
+## Récupérer une copie sur votre propre machine
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Les chemins affichés dans la page se trouvent sur la machine qui exécute `cc_server`.
+Lorsque ce n’est pas la machine devant laquelle vous êtes assis, utilisez les boutons
+**Télécharger** :
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- À côté de chaque **espace de travail**, sous **Données des espaces de travail** → **Télécharger**, pour un seul fichier `.db`.
+- À côté de chaque **instantané**, sous **Instantanés de l’installation** → **Télécharger**, pour l’instantané complet sous forme de `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Sur ordinateur, vous choisissez l’emplacement du fichier et la notification l’indique ;
+sur le Web, il aboutit dans les téléchargements du navigateur. Dans les deux cas, la
+progression est exprimée en octets, car ce sont les deux charges utiles qui atteignent
+des gigaoctets.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Les deux produisent une copie fraîche au moment où vous appuyez sur le bouton, la
+diffusent en continu, puis suppriment la copie du serveur — un téléchargement ne consiste
+pas à « récupérer le fichier créé plus tôt par le bouton d’exportation ».
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Décompresser une archive d’instantané reproduit exactement la disposition de
+l’instantané, et c’est ce qui fait d’une restauration une simple copie en retour.
 
-## Move a workspace to another install
+## Déplacer un espace de travail vers une autre installation
 
-One workspace is one database file, so handing it over is a file operation.
+Un espace de travail correspond à un fichier de base de données, donc le transférer est
+une opération sur fichier.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Sur le serveur **source**, **Paramètres → Serveur → Sauvegarde et restauration → Données des espaces de travail**, dépliez l’espace de travail et appuyez sur **Télécharger**.
+2. Sur le serveur de **destination**, créez (ou choisissez) l’espace de travail qui le recevra.
+3. Dépliez cet espace de travail, puis, sous **Restaurer depuis cet appareil**, appuyez sur **Choisir un fichier et l’envoyer**. Choisissez le fichier `.db` que vous avez téléchargé.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Si les deux serveurs sont la même machine que celle devant laquelle vous êtes assis,
+**Enregistrer sur le serveur** suivi d’**Importer** → **Choisir un fichier** produit le
+même résultat sans aller-retour ; les chemins de la boîte de dialogue d’importation sont
+résolus sur l’hôte du serveur.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[L’importation remplace tout]
+L’importation écrase tout ce que contient actuellement l’espace de travail cible, et elle
+est irréversible. Exportez la cible d’abord si elle contient quoi que ce soit que vous
+voudriez récupérer.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Deux situations sont autorisées et journalisées plutôt que refusées : importer un fichier
+dont l’identifiant d’espace de travail enregistré diffère de celui de la cible (c’est
+ainsi qu’on duplique un espace de travail ou qu’on le restaure sous un nouvel
+identifiant), et importer un fichier provenant d’une **autre installation**. Dans ce
+second cas, les appareils associés et les identifiants d’utilisateur du fichier
+appartiennent à l’installation d’origine et ne se résoudront pas sur celle-ci — les
+données propres à l’espace de travail sont intactes, mais vérifiez de nouveau l’adhésion
+après son adoption.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Les jetons des robots de clavardage résident à côté de la base de données, pas à
+l’intérieur, de sorte qu’un espace de travail que vous remettez à quelqu’un d’autre ne
+transporte aucun identifiant actif. L’installation qui le reçoit reconnecte les siens.
 
-## Restore one workspace from a snapshot
+## Restaurer un espace de travail à partir d’un instantané
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Sous **Instantanés de l’installation**, dépliez l’instantané voulu.
+2. Repérez la ligne de l’espace de travail et appuyez sur **Restaurer**.
+3. Confirmez. Tout ce que cet espace de travail a fait depuis la création de l’instantané est perdu.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Il s’agit de la même opération qu’une importation, dirigée vers la copie du fichier de
+cet espace de travail contenue dans l’instantané — délibérément, pour qu’aucun second
+mécanisme ne puisse traiter le même fichier différemment.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Une ligne peut indiquer **N’existe plus sur ce serveur**, avec **Restaurer** désactivé :
+l’instantané contient un espace de travail que cette installation n’a plus. Récupérez-le
+manuellement — créez un espace de travail, puis, sous **Données des espaces de travail**,
+importez-y le fichier à partir de `<snapshot path>/<old workspace id>/workspace.db`.
+L’instantané déplié affiche son propre **Chemin sur le serveur** dans un champ copiable,
+et le titre de la ligne est l’ancien identifiant d’espace de travail : vous avez donc les
+deux moitiés de ce chemin sous les yeux.
 
-## Restore a whole install
+## Restaurer une installation complète
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Il n’existe aucun bouton pour cela, et il ne devrait pas y en avoir : cette opération
+remplace les bases de données que le serveur en cours d’exécution garde ouvertes.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Arrêtez `cc_server`.** Si vous utilisez l’application de bureau avec son serveur intégré, quittez l’application.
+2. Copiez le contenu de l’instantané par-dessus le répertoire de données. La disposition de l’instantané reproduit celle des données actives, il s’agit donc d’une simple copie :
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +192,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Supprimez les fichiers `-wal` et `-shm` qui se trouvent à côté des bases de données que vous avez remplacées. Ils appartiennent aux anciens fichiers, et un fichier résiduel à côté d’une base de données restaurée constitue un risque de corruption.
+4. Redémarrez le serveur.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+L’instantané ne contient aucun `secrets.json` : une installation restaurée sur un hôte
+**neuf** conserve donc ses données, mais pas ses identifiants. Les appareils associés, les
+jetons de fournisseurs et les paramètres SSO doivent être rétablis, ou restaurés depuis
+l’endroit où vous avez conservé ce fichier. Une restauration sur le même hôte, où
+`secrets.json` n’a jamais été perdu, conserve tout.
 
-## Copy backups off the machine
+## Copier les sauvegardes hors de la machine
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Un instantané sur le même disque que la base de données qu’il a copiée vous protège d’une
+mauvaise importation, pas d’une défaillance du disque. Rien dans Control Center n’envoie
+de copie où que ce soit, cette partie vous revient donc.
 
-### Sync the snapshots
+### Synchroniser les instantanés
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Les instantanés sont immuables une fois écrits et nommés selon leur horodatage, de sorte
+que n’importe quel outil de synchronisation les traite bien. Excluez `transfer/`, qui est
+un atelier pour les téléchargements et les téléversements en cours :
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +228,24 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` reproduit sur la destination votre élagage local. Omettez-le si vous voulez que
+la destination conserve les instantanés plus longtemps que l’hôte.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Ne synchronisez jamais directement les bases de données actives]
+Ne pointez pas rsync, `aws s3 sync` ou un agent de sauvegarde fichier par fichier vers
+`global.db` ou `<workspaceId>/workspace.db` pendant que le serveur fonctionne. Une base
+de données SQLite active possède un fichier annexe `-wal`, et une copie fichier par
+fichier capture les deux à des instants différents — le résultat est un fichier qui
+s’ouvre souvent en omettant silencieusement les écritures récentes, ou qui ne s’ouvre pas
+du tout. Copiez l’**instantané**, qui a été écrit dans le cadre d’une transaction de
+lecture, ou créez-en un avec `VACUUM INTO` comme ci-dessous.
 :::
 
-### Include what a snapshot leaves out
+### Inclure ce qu’un instantané omet
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Pour pouvoir reconstruire l’installation et pas seulement ses données, copiez aussi ces
+éléments. Ce sont des fichiers ordinaires, que vous pouvez copier sans danger pendant que
+le serveur fonctionne :
 
 ```bash
 rsync -a \
@@ -234,20 +260,23 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` a les permissions `0600` et contient toutes les clés d’association, tous
+les identifiants de fournisseurs et tous les paramètres SSO de l’installation. L’endroit
+où il aboutit doit être au moins aussi protégé que l’hôte du serveur — chiffré au repos,
+et non un compartiment que quiconque peut lire.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Omettez `spaces/` (arbres de travail en copie à l’écriture, reprovisionnés à partir de
+vos dépôts), `pr_clones/` (un cache), `models/` (retéléchargés), `media_cache/` et
+`rigs/` (état de la machine, et volumineux). L’audio des réunions enregistrées sous
+`meetings/` vaut la peine d’être inclus si vous conservez les réunions.
 
-### Schedule a whole-install snapshot outside the app
+### Planifier un instantané complet de l’installation à l’extérieur de l’application
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Le pipeline intégré ne sauvegarde qu’un seul espace de travail. Pour un instantané
+**complet de l’installation** sans surveillance, il n’existe aucune sous-commande CLI, et
+l’appel RPC d’instantané exige un client complet associé qui soit le propriétaire de
+l’installation. Une minuterie côté hôte peut utiliser `VACUUM INTO` sur les bases de
+données actives :
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +295,20 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Exécutez-le en tant que le même utilisateur que celui qui possède le répertoire de
+données, à partir de cron ou d’une minuterie systemd, puis synchronisez `DEST` à
+l’extérieur de l’hôte. `VACUUM INTO` exige SQLite 3.27 ou une version plus récente.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Écrivez-le **à l’extérieur** de `<dataDir>/backups/`. Un répertoire fabriqué à la main à
+cet endroit n’a pas de `manifest.json` : l’application le listerait comme un instantané
+incomplet et la liste cesserait d’être un relevé fidèle de ce que le serveur lui-même a
+produit.
 
-### Prune old whole-install snapshots
+### Élaguer les anciens instantanés complets de l’installation
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Vous pouvez supprimer des instantanés de l’installation un par un dans l’application.
+Pour appliquer une politique de conservation côté hôte, gardez le répertoire des
+sauvegardes d’espaces de travail séparé des instantanés de l’installation :
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +316,51 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Vérifiez la sortie d’une exécution avec `-print` avant d’ajouter `-exec`. Conservez-en
+plus d’un : la défaillance contre laquelle vous vous protégez est souvent « la dernière
+sauvegarde a aussi le problème ».
 
-## Check that a backup is good
+## Vérifier qu’une sauvegarde est bonne
 
-A backup nobody has restored is a hypothesis.
+Une sauvegarde que personne n’a restaurée n’est qu’une hypothèse.
 
-Cheap check — the file opens and its pages are intact:
+Vérification rapide — le fichier s’ouvre et ses pages sont intactes :
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Vérification réelle — adoptez-la. Créez un espace de travail jetable sur une installation
+qui n’est pas en production, importez-y un fichier d’espace de travail et regardez si les
+espaces, les tickets et les messages attendus s’y trouvent. Cela emprunte le même chemin
+qu’une vraie restauration, y compris la reconstruction du FTS, et c’est la seule
+vérification qui vous dit que la sauvegarde est restaurable et pas seulement lisible.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Faites-le une fois au moment de mettre en place les sauvegardes, puis de nouveau chaque
+fois que vous changez l’endroit où elles sont stockées.
 
-## Troubleshooting
+## Dépannage
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Symptôme                                                                | Cause et solution                                                                                                            |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Les commandes de téléchargement et de téléversement sont désactivées avec une note au sujet d’un relais | Vous êtes connecté par le relais intermédié, qui ne transporte aucun transfert de fichiers. Connectez-vous directement    |
+| « Le serveur a refusé »                                                 | Rôle. Créer ou lister un instantané de l’installation exige l’opérateur de l’installation. Télécharger un espace de travail exige le rôle admin, le restaurer exige le rôle propriétaire, et le zip d’un instantané complet exige l’opérateur de l’installation |
+| « Ce serveur n’a aucune interface de sauvegarde »                       | Aucun port de sauvegarde n’est câblé sur l’hôte — c’est un serveur de démonstration. Les opérations sont absentes plutôt que refusées |
+| « Le fichier dépasse ce que le serveur accepte »                        | Les téléversements sont plafonnés à 8 GiB. Placez le fichier sur l’hôte du serveur et utilisez plutôt **Importer** → **Choisir un fichier** |
+| Importation refusée : ce n’est pas une base de données d’espace de travail Control Center | Le fichier n’a pas de ligne `workspace_meta` — ce n’est pas une exportation d’espace de travail, ou il est tronqué. Rien n’a été remplacé |
+| Un instantané est listé comme **Incomplet**                             | Son manifeste est absent ou nomme des fichiers manquants. Créez-en un nouveau ; entre-temps, adoptez les fichiers d’espace de travail qu’il contient un par un |
+| Un instantané indique que des espaces de travail n’ont pas été capturés | Rien n’a jamais été écrit dans ces espaces de travail, ou leur copie a échoué. Vérifiez le journal du serveur          |
+| Une installation restaurée n’a aucun identifiant de forge ni de SSO     | `secrets.json` ne se trouve pas dans un instantané. Restaurez-le depuis l’endroit où vous l’avez conservé, ou reconnectez les fournisseurs |
+| Des images collées manquent dans un espace de travail restauré          | Les blobs résident à côté de la base de données, pas dedans. Copiez aussi `<workspaceId>/blobs/`                             |
 
-## Related guides
+## Guides connexes
 
-- [Run a headless server](/fr-CA/manuel/guides/executer-serveur-sans-interface/): where the data directory comes from
-- [Connect to a remote server](/fr-CA/manuel/guides/connecter-serveur-distant/): direct versus relayed connections
-- [Pair a device](/fr-CA/manuel/guides/associer-appareil/): the credential the transfer routes sign with
+- [Exécuter un serveur sans interface](/fr-CA/manuel/guides/executer-serveur-sans-interface/) : d’où vient le répertoire de données
+- [Se connecter à un serveur distant](/fr-CA/manuel/guides/connecter-serveur-distant/) : connexions directes ou relayées
+- [Associer un appareil](/fr-CA/manuel/guides/associer-appareil/) : l’identifiant avec lequel les routes de transfert signent
 
-## Related concepts and reference
+## Concepts et référence connexes
 
-- [Backup, export and import](/fr-CA/manuel/reference/sauvegarde/): every operation, route, field and limit
-- [Workspaces and isolation](/fr-CA/manuel/concepts/espaces-de-travail/): why one workspace is one file
-- [`cc_server` CLI](/fr-CA/manuel/reference/cc-server-cli/): the data directory layout
+- [Sauvegarde, export et import](/fr-CA/manuel/reference/sauvegarde/) : chaque opération, route, champ et limite
+- [Espaces de travail et isolation](/fr-CA/manuel/concepts/espaces-de-travail/) : pourquoi un espace de travail correspond à un seul fichier
+- [CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli/) : la disposition du répertoire de données

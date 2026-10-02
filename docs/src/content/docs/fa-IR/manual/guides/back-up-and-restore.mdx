@@ -1,162 +1,167 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: پشتیبان‌گیری و بازیابی
+description: از نصب اسنپ‌شات بگیرید، یک فضای کاری را میان ماشین‌ها جابه‌جا کنید، یک فضای کاری یا همه را بازیابی کنید، و رونوشت‌ها را جای دیگری نگه دارید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/پشتیبانگیری-و-بازیابی
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/).
+این راهنما پنج کاری را پوشش می‌دهد که مردم واقعاً با پشتیبان‌ها انجام می‌دهند: گرفتن
+یکی، جمع‌کردنش، جابه‌جا کردن یک فضای کاری، برگرداندن یکی، و نگه‌داشتن رونوشت‌ها
+بیرون از ماشین. برای شکل دقیق هر آرتیفکت و عملیات،
+[مرجع پشتیبان‌گیری(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/) را ببینید.
 
-Everything here lives at **Settings → Server → Backup & restore**.
+همه‌چیز اینجا زیر **تنظیمات → سرور → پشتیبان و بازیابی** قرار دارد.
 
-## Prerequisites
+## پیش‌نیازها
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- یک **کلاینت کامل** — اپ دسکتاپ یا وب. یک تلفن جفت‌شده به‌طور عامدانه هیچ‌یک از این کارها را نمی‌تواند راه بیندازد.
+- برای گرفتن، فهرست کردن، دانلود یا حذف یک **اسنپ‌شات نصب**: **مالک** نصب.
+- برای کارهای هر فضای کاری: **ادمین** آن فضای کاری برای برون‌بری، **مالک** برای درون‌بری یا حذف آن.
+- برای دانلود و آپلود: یک اتصال **مستقیم** به سرور. رلهٔ واسطه فریم‌های RPC را حمل می‌کند، نه انتقال فایل، و کنترل‌های انتقال وقتی روی یکی از آن‌ها هستید خودشان را با یک یادداشت غیرفعال می‌کنند.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[اسنپ‌شات‌های نصب دستی‌اند]
+**پشتیبان همین حالا** همچنان فقط بنا به درخواست، اسنپ‌شاتی از کل نصب می‌سازد. پایپ‌لاین
+توکار **Workspace backup** می‌تواند به‌جای آن هفته‌ای یک‌بار از پایگاه دادهٔ یک فضای کاری
+پشتیبان بگیرد و پشتیبان‌های آن فضای کاری را که از 30 روز قدیمی‌ترند بردارد. `global.db`،
+فضاهای کاری دیگر، یا فایل‌های کنار پایگاه داده را کپی نمی‌کند. رونوشت‌های بیرون از
+ماشین را جداگانه نگه دارید.
 :::
 
-## What a backup covers
+## یک پشتیبان چه چیزی را پوشش می‌دهد
 
-Both artifacts are **databases only**:
+هر دو آرتیفکت **فقط پایگاه داده** هستند:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- یک **اسنپ‌شات نصب** یک پوشهٔ زمان‌دار است: `manifest.json`، `global.db` و یک `<workspaceId>/workspace.db` به‌ازای هر فضای کاری.
+- یک **برون‌بری فضای کاری** همان تک‌فایل `workspace.db` است.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+هیچ‌یک بقیهٔ پوشهٔ داده را حمل نمی‌کند: `secrets.json` (کلیدهای جفت‌سازی،
+اعتبارنامه‌های ارائه‌دهنده، SSO)، `blobs/` یک فضای کاری (تصاویر جای‌گذاری‌شده در
+پیام‌ها)، `skills/`، `agents/`، `chat_credentials/`، صدای ضبط‌شدهٔ جلسه یا تصاویر ریگ.
+بخشی از آن یک‌بارمصرف است و بخشی نه —
+[جدول کامل در مرجع است(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#what-a-backup-does-not-contain)،
+و پوشش دادنش همان چیزی است که [بخش بیرون از ماشین](#کپی-کردن-پشتیبانها-بیرون-از-ماشین)
+برای آن هست.
 
-## Take a snapshot of the whole install
+## از کل نصب اسنپ‌شات گرفتن
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. **تنظیمات → سرور → پشتیبان و بازیابی** را باز کنید.
+2. زیر **اسنپ‌شات نصب**، **پشتیبان همین حالا** را بزنید.
+3. اعلان، پوشه‌ای را که روی میزبان سرور نوشته شده نام می‌برد. اسنپ‌شات جدید در بالای فهرست ظاهر می‌شود.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+سرور در تمام این مدت روشن می‌ماند. هر فایل با `VACUUM INTO` نوشته می‌شود که در برابر
+یک پایگاه دادهٔ زنده سازگار است، پس نه پنجرهٔ نگهداری‌ای وجود دارد و نه نیازی به متوقف
+کردن عامل‌ها.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+هر ردیف در فهرست، برچسب زمانی، اندازه روی دیسک، شمار فضاهای کاری ثبت‌شده و اینکه
+اسنپ‌شات **کامل** است یا **ناقص** را نشان می‌دهد. ناقص یعنی مانیفست گم است یا فایل‌هایی
+را نام می‌برد که آنجا نیستند — پشتیبانی که با یک کرش یا پر شدن دیسک نیمه‌کاره مانده.
+این‌ها به‌عمد همچنان فهرست می‌شوند: اسنپ‌شاتی که نمی‌بینید، همانی است که باور دارید
+داریدش. یک اسنپ‌شات ناقص نمی‌تواند کل نصب را بازیابی کند، اما فایل‌های فضای کاری که در
+خود دارد همچنان می‌توانند یکی‌یکی پذیرفته شوند.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+یک ردیف ممکن است **_n_ فضاهای کاری ثبت نشد** هم بگوید. آن یک فضای کاری است که ثبت
+شده اما هرگز چیزی در آن نوشته نشده (هنوز فایلی نیست)، یا یکی که کپی‌اش شکست خورده —
+لاگ سرور را بررسی کنید.
 
-## Schedule workspace backups and retention
+## زمان‌بندی پشتیبان‌گیری از فضاهای کاری و نگه‌داشت
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+برای فضای کاری، **تنظیمات → پایپ‌لاین‌ها → قالب‌های پایپ‌لاین** را باز کنید و
+**Workspace backup** را پیدا کنید. زمان‌بندی فعال‌ش هر یکشنبه ساعت 03:00 UTC اجرا
+می‌شود: **Back up workspace**، و پس از آن **Delete backups older than** (به‌طور
+پیش‌فرض 30 روز). گرهٔ دوم فقط پس از موفق شدن پشتیبان اجرا می‌شود. می‌توانید روزهای
+نگه‌داشت را روی گره عوض کنید یا زمان‌بندی را غیرفعال کنید. اگر سرور در زمان مقرر
+آفلاین باشد، زمان‌بندی هنگام برگشتن یک‌بار جبران می‌کند، نه اینکه هر هفتهٔ ازدست‌رفته را
+بازپخش کند.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+پشتیبان‌های فضای کاری روی سرور زیر
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` زندگی می‌کنند.
+گرهٔ نگه‌داشت فقط پشتیبان‌های قدیمی همین فضای کاری را حذف می‌کند؛ هرگز اسنپ‌شات‌های نصب
+یا پشتیبان‌های فضاهای کاری دیگر را حذف نمی‌کند. این فایل‌ها فقط پایگاه داده‌اند. برای
+نگه‌داشت بیرون از ماشین، آن‌ها را مستقل کپی کنید.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+این پشتیبان‌ها از فهرست **اسنپ‌شات نصب** جدا هستند. برای بازیابی یکی، از
+**دادهٔ فضای کاری → ورود** با مسیر سمت سرور `workspace.db` آن پشتیبان استفاده کنید.
+ورود، پایگاه دادهٔ کنونی آن فضای کاری را جایگزین می‌کند، پس اگر ممکن است نیاز به
+برگرداندن بازیابی داشته باشید، اول آن را برون‌بری کنید.
 
-## Delete an install snapshot
+## حذف یک اسنپ‌شات نصب
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+زیر **اسنپ‌شات نصب**، اسنپ‌شات را باز کنید — از جمله یک اسنپ‌شات ناقص — و از
+**حذف اسنپ‌شات** در بخش خطر استفاده کنید. نامش را تأیید کنید. کل پوشهٔ اسنپ‌شات برای
+همیشه از سرور حذف می‌شود؛ اگر به یک رونوشت نیاز دارید، اول دانلودش کنید. پایپ‌لاین
+پشتیبان‌گیری فضای کاری هرگز این اسنپ‌شات‌ها را حذف نمی‌کند.
 
-## Collect a copy on your own machine
+## جمع کردن یک رونوشت روی ماشین خودتان
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+مسیرهایی که صفحه نشان می‌دهد روی ماشینی هستند که `cc_server` را اجرا می‌کند. وقتی آن
+ماشینی نیست که شما کنارش نشسته‌اید، از دکمه‌های **دانلود** استفاده کنید:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- کنار هر **فضای کاری** زیر **دادهٔ فضای کاری** → **دانلود**، برای یک فایل `.db`.
+- کنار هر **اسنپ‌شات** زیر **اسنپ‌شات نصب** → **دانلود**، برای کل اسنپ‌شات به‌شکل یک `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+روی دسکتاپ شما انتخاب می‌کنید فایل کجا فرود بیاید و اعلان نامش را می‌برد؛ روی وب به
+دانلودهای مرورگر می‌رود. در هر دو حالت، هر دو پیشرفت را با بایت گزارش می‌کنند، چون
+این‌ها دو باری هستند که به گیگابایت می‌رسند.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+هر دو، در همان لحظه‌ای که دکمه را می‌زنید یک نسخهٔ تازه ضرب می‌کنند، آن را استریم
+می‌کنند، و رونوشت سرور را بعدش پاک می‌کنند — دانلود یعنی «همان فایلی را بگیر که دکمهٔ
+برون‌بری پیش‌تر ساخت» نیست.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+باز کردن یک آرشیو اسنپ‌شات، چیدمان اسنپ‌شات را دقیقاً بازتولید می‌کند، و همین است که
+بازیابی آن را به یک کپی به عقب تبدیل می‌کند.
 
-## Move a workspace to another install
+## جابه‌جا کردن یک فضای کاری به نصبی دیگر
 
-One workspace is one database file, so handing it over is a file operation.
+یک فضای کاری یک فایل پایگاه داده است، پس دست‌به‌دست کردنش یک عملیات فایل است.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. روی سرور **مبدأ**، **تنظیمات → سرور → پشتیبان و بازیابی → دادهٔ فضای کاری**، فضای کاری را باز کنید و **دانلود** را بزنید.
+2. روی سرور **مقصد**، فضای کاری‌ای را که آن را می‌پذیرد بسازید (یا انتخاب کنید).
+3. آن فضای کاری را باز کنید، و زیر **بازیابی از این دستگاه** **انتخاب فایل و آپلود** را بزنید. همان `.db` را که دانلود کردید انتخاب کنید.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+اگر هر دو سرور همان ماشینی هستند که کنارش نشسته‌اید، **ذخیره روی سرور** به‌همراه
+**ورود** → **انتخاب فایل** همین کار را بدون رفت‌وبرگشت انجام می‌دهد؛ مسیرهای پنجرهٔ
+درون‌بری روی میزبان سرور حل می‌شوند.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[درون‌بری همه چیز را جایگزین می‌کند]
+درون‌بری هر چیزی را که فضای کاری هدف هم‌اکنون در خود دارد بازنویسی می‌کند و
+برگشت‌ناپذیر است. اگر هدف چیزی دارد که ممکن است بخواهید برگردانید، اول آن را
+برون‌بری کنید.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+دو چیز مجاز است و به‌جای رد شدن ثبت می‌شود: درون‌بری فایلی که شناسهٔ فضای کاری
+ثبت‌شده‌اش با هدف فرق دارد (این همان راهی است که یک فضای کاری را تکثیر می‌کنید یا
+زیر شناسه‌ای تازه بازیابی می‌کنید)، و درون‌بری فایلی از یک **نصب دیگر**. در حالت دوم،
+دستگاه‌های جفت‌شده و شناسه‌های کاربری آن فایل به نصبی تعلق دارند که از آن آمده و روی
+این نصب حل نمی‌شوند — دادهٔ خود فضای کاری دست‌نخورده است، اما پس از پذیرفتنش عضویت را
+دوباره بررسی کنید.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+توکن‌های ربات گفتگو کنار پایگاه داده زندگی می‌کنند، نه درونش، پس فضای کاری‌ای که به
+کسی دیگر می‌دهید هیچ اعتبارنامهٔ زنده‌ای حمل نمی‌کند. نصب گیرنده، مال خودش را دوباره
+وصل می‌کند.
 
-## Restore one workspace from a snapshot
+## بازیابی یک فضای کاری از یک اسنپ‌شات
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. زیر **اسنپ‌شات نصب**، اسنپ‌شاتی را که می‌خواهید باز کنید.
+2. ردیف آن فضای کاری را پیدا کنید و **بازیابی** را بزنید.
+3. تأیید کنید. هر کاری که آن فضای کاری از زمان گرفتن اسنپ‌شات کرده از دست می‌رود.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+این همان عملیاتی است که یک درون‌بری، فقط نشانه‌رفته به رونوشت آن فایل فضای کاری در
+اسنپ‌شات — عامدانه، تا هیچ سازوکار دومی نباشد که بتواند همان فایل را متفاوت رفتار کند.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+یک ردیف ممکن است **دیگر روی این سرور نیست** بگوید، با **بازیابی** غیرفعال: اسنپ‌شات
+فضای کاری‌ای را در خود دارد که این نصب دیگر ندارد. دستی برگردانیدش — یک فضای کاری
+بسازید، سپس زیر **دادهٔ فضای کاری** از
+`<snapshot path>/<old workspace id>/workspace.db` درون آن درون‌بری کنید. اسنپ‌شات
+بازشده **مسیر روی سرور** خودش را در یک فیلد کپی‌شدنی نشان می‌دهد، و عنوان ردیف،
+شناسهٔ فضای کاری قدیمی است، پس هر دو نیمهٔ آن مسیر را پیش رویتان دارید.
 
-## Restore a whole install
+## بازیابی کل نصب
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+دکمه‌ای برای این کار نیست، و نباید هم باشد: پایگاه‌های داده‌ای را که سرور در حال اجرا
+باز نگه داشته جایگزین می‌کند.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **`cc_server` را متوقف کنید.** اگر اپ دسکتاپ را با سرور درون‌سازش اجرا می‌کنید، اپ را ببندید.
+2. محتوای اسنپ‌شات را روی پوشهٔ داده کپی کنید. چیدمان اسنپ‌شات آینهٔ چیدمان زنده است، پس این یک کپی ساده است:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +176,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. هر فایل `-wal` و `-shm` را که کنار پایگاه‌های دادهٔ جایگزین‌شده نشسته‌اند حذف کنید. آن‌ها به فایل‌های قدیمی تعلق دارند و ماندن یک فایل کهنه کنار یک پایگاه دادهٔ بازیابی‌شده خطر خرابی است.
+4. سرور را دوباره شروع کنید.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+اسنپ‌شات هیچ `secrets.json` ندارد، پس نصبی که روی میزبانی **تازه** بازیابی شود
+داده‌اش را نگه می‌دارد اما اعتبارنامه‌هایش را نه: دستگاه‌های جفت‌شده، توکن‌های
+ارائه‌دهنده و تنظیمات SSO باید از نو برقرار شوند، یا از همان‌جایی که آن فایل را نگه
+داشتید بازیابی شوند. بازیابی روی همان میزبان، جایی که `secrets.json` هرگز از دست
+نرفته، همه‌چیز را نگه می‌دارد.
 
-## Copy backups off the machine
+## کپی کردن پشتیبان‌ها بیرون از ماشین
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+یک اسنپ‌شات روی همان دیسکی که پایگاه دادهٔ کپی‌شده‌اش هست، شما را از یک درون‌بری بد
+محافظت می‌کند، نه از خود دیسک. هیچ‌چیز در Control Center رونوشتی جایی نمی‌فرستد، پس
+این بخش کار خودتان است.
 
-### Sync the snapshots
+### همگام‌سازی اسنپ‌شات‌ها
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+اسنپ‌شات‌ها پس از نوشته شدن تغییرناپذیرند و با برچسب زمانی نام‌گذاری می‌شوند، پس هر
+ابزار همگام‌سازی خوب از عهده‌شان برمی‌آید. `transfer/` را کنار بگذارید، که کارگاهی
+برای دانلود و آپلودهای در جریان است:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +212,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` هرس محلی شما را به مقصد آینه می‌کند. اگر می‌خواهید مقصد اسنپ‌شات‌ها را
+بیشتر از میزبان نگه دارد، برش دارید.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[هرگز پایگاه‌های دادهٔ زنده را مستقیم همگام نکنید]
+تا وقتی سرور در حال اجراست، rsync، `aws s3 sync` یا یک عامل پشتیبان‌گیری فایل‌محور را
+به `global.db` یا `<workspaceId>/workspace.db` نشانه نگیرید. یک پایگاه دادهٔ زندهٔ
+SQLite یک فایل جانبی `-wal` دارد، و یک کپی فایل‌به‌فایل آن دو را در دو لحظهٔ متفاوت
+ثبت می‌کند — نتیجه فایلی است که اغلب باز می‌شود و بی‌صدا نوشتن‌های اخیر را ندارد، یا
+اصلاً باز نمی‌شود. از **اسنپ‌شات** کپی کنید، که زیر یک تراکنش خواندن نوشته شده است،
+یا یکی با `VACUUM INTO` مطابق زیر بگیرید.
 :::
 
-### Include what a snapshot leaves out
+### گنجاندن آنچه یک اسنپ‌شات جا می‌گذارد
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+برای اینکه بتوانید نصب را بازسازی کنید نه فقط داده‌اش را، این‌ها را هم کپی کنید.
+فایل‌های معمولی‌اند و کپی کردنشان وقتی سرور در حال اجراست ایمن است:
 
 ```bash
 rsync -a \
@@ -234,20 +242,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` با مجوز `0600` است و هر کلید جفت‌سازی، اعتبارنامهٔ ارائه‌دهنده و تنظیم
+SSO روی نصب را در خود دارد. هر جا فرود بیاید باید دست‌کم به‌اندازهٔ میزبان سرور محافظت
+شود — رمزنگاری‌شده در حالت سکون، و نه سطلی که کس دیگری بتواند بخواند.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+`spaces/` (worktreeهای copy-on-write، که از مخزن‌های شما از نو تأمین می‌شوند)،
+`pr_clones/` (یک کش)، `models/` (از نو دانلود می‌شوند)، `media_cache/` و `rigs/`
+(وضعیت ماشین، و بزرگ) را کنار بگذارید. صدای ضبط‌شدهٔ جلسه زیر `meetings/` اگر جلسه
+نگه می‌دارید ارزش گنجاندن دارد.
 
-### Schedule a whole-install snapshot outside the app
+### زمان‌بندی اسنپ‌شات کل نصب بیرون از اپ
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+پایپ‌لاین توکار فقط از یک فضای کاری پشتیبان می‌گیرد. برای یک اسنپ‌شات **کل نصب**
+بی‌سرپرست، هیچ زیرفرمان CLI وجود ندارد، و RPC اسنپ‌شات به یک کلاینت کامل جفت‌شده نیاز
+دارد که مالک نصب باشد. یک زمان‌سنج سمت میزبان می‌تواند `VACUUM INTO` را روی پایگاه‌های
+دادهٔ زنده به کار ببرد:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +275,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+آن را با همان کاربری اجرا کنید که مالک پوشهٔ داده است، از cron یا یک زمان‌سنج systemd،
+و بعدش `DEST` را از میزبان بیرون همگام کنید. `VACUUM INTO` به SQLite نسخهٔ 3.27 یا
+تازه‌تر نیاز دارد.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+آن را **بیرون** از `<dataDir>/backups/` بنویسید. یک پوشهٔ دست‌ساز آنجا هیچ
+`manifest.json` ندارد، پس اپ آن را به‌عنوان یک اسنپ‌شات ناقص فهرست می‌کند و فهرست دیگر
+رکورد صادقانه‌ای از آنچه خود سرور تولید کرده نخواهد بود.
 
-### Prune old whole-install snapshots
+### هرس اسنپ‌شات‌های قدیمی کل نصب
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+می‌توانید اسنپ‌شات‌های نصب را یکی‌یکی در اپ حذف کنید. برای یک سیاست نگه‌داشت سمت
+میزبان، پوشهٔ پشتیبان فضای کاری را از اسنپ‌شات‌های نصب جدا نگه دارید:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +294,50 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+پیش از افزودن `-exec`، خروجی یک اجرای `-print` را بررسی کنید. بیش از یکی نگه دارید:
+خرابی‌ای که در برابر آن محافظت می‌کنید اغلب «آخرین پشتیبان هم همان مشکل را دارد» است.
 
-## Check that a backup is good
+## بررسی خوب بودن یک پشتیبان
 
-A backup nobody has restored is a hypothesis.
+پشتیبانی که هیچ‌کس بازیابی‌اش نکرده، یک فرضیه است.
 
-Cheap check — the file opens and its pages are intact:
+بررسی ارزان — فایل باز می‌شود و صفحه‌هایش سالماند:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+بررسی واقعی — بپذیریدش. روی یک نصب غیرتولیدی یک فضای کاری آزمایشی بسازید، یک فایل
+فضای کاری درون آن درون‌بری کنید، و ببینید آیا فضاها، تیکت‌ها و پیام‌هایی که انتظار
+دارید آنجا هستند. این همان مسیری را می‌آزماید که یک بازیابی واقعی می‌پیماید، از جمله
+بازسازی FTS، و تنها بررسی‌ای است که به شما می‌گوید پشتیبان قابل بازیابی است نه فقط
+خواندنی.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+این کار را یک‌بار وقتی پشتیبان‌ها را راه می‌اندازید انجام دهید، و هر بار که جایی را که
+ذخیره می‌شوند عوض می‌کنید باز هم.
 
-## Troubleshooting
+## عیب‌یابی
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| نشانه                                                                  | علت و راه‌حل                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| کنترل‌های دانلود و آپلود با یادداشتی دربارهٔ رله غیرفعال‌اند      | شما از رلهٔ واسطه وصل شده‌اید، که انتقال فایل ندارد. مستقیم وصل شوید                          |
+| «سرور رد کرد»                                                     | نقش. گرفتن یا فهرست کردن اسنپ‌شات نصب به اپراتور نصب نیاز دارد. دانلود یک فضای کاری به ادمین نیاز دارد، بازیابی یکی به مالک، و زیپ کل اسنپ‌شات به اپراتور نصب |
+| «این سرور سطح پشتیبانی ندارد»                                      | میزبان هیچ دروازهٔ پشتیبان‌گیری سیم‌کشی‌شده‌ای ندارد — یک سرور دمو. عملیات‌ها به‌جای رد شدن، غایب‌اند                          |
+| «فایل بزرگ‌تر از پذیرش سرور است»                             | آپلودها روی 8 GiB سقف دارند. فایل را روی میزبان سرور بگذارید و به‌جایش از **ورود** → **انتخاب فایل** استفاده کنید                 |
+| درون‌بری رد شد: پایگاه دادهٔ فضای کاری Control Center نیست                  | فایل هیچ سطر `workspace_meta` ندارد — برون‌بری یک فضای کاری نیست، یا بریده شده است. هیچ‌چیز جایگزین نشد             |
+| یک اسنپ‌شات **ناقص** فهرست شده است                                      | مانیفستش گم است یا فایل‌های غایب را نام می‌برد. یکی تازه بگیرید؛ در این فاصله فایل‌های تک‌تک فضاهای کاری را از آن بپذیرید |
+| یک اسنپ‌شات می‌گوید فضاهای کاری ثبت نشدند                             | آن فضاهای کاری هرگز چیزی در آن‌ها نوشته نشده، یا کپی‌شان شکست خورده. لاگ سرور را بررسی کنید                                  |
+| یک نصب بازیابی‌شده اعتبارنامهٔ میزبان کد یا SSO ندارد                       | `secrets.json` در اسنپ‌شات نیست. از همان‌جایی که نگهش داشتید بازیابی‌اش کنید، یا ارائه‌دهنده‌ها را دوباره وصل کنید                     |
+| یک فضای کاری بازیابی‌شده تصاویر جای‌گذاری‌شده را ندارد                            | بلاب‌ها کنار پایگاه داده زندگی می‌کنند، نه درونش. `<workspaceId>/blobs/` را هم کپی کنید                                     |
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/): where the data directory comes from
-- [Connect to a remote server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/): direct versus relayed connections
-- [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): the credential the transfer routes sign with
+- [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/): پوشهٔ داده از کجا می‌آید
+- [اتصال به سرور راه دور(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/): اتصال‌های مستقیم در برابر رله‌شده
+- [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): اعتبارنامه‌ای که مسیرهای انتقال با آن امضا می‌کنند
 
-## Related concepts and reference
+## مفاهیم و مرجع مرتبط
 
-- [Backup, export and import](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/): every operation, route, field and limit
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): why one workspace is one file
-- [`cc_server` CLI](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/): the data directory layout
+- [پشتیبان‌گیری، برون‌بری و درون‌بری(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/): هر عملیات، مسیر، فیلد و محدودیت
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): چرا یک فضای کاری یک فایل است
+- [`cc_server` CLI(/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/): چیدمان پوشهٔ داده

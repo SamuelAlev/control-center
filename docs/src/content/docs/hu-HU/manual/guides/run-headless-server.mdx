@@ -1,31 +1,34 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Headless szerver futtatása
+description: Futtassa a cc_server headless binárisát vagy annak Docker-image-ét, párosítson hozzá egy klienst, és konfigurálja a teljes CLI-kapcsoló- és környezetiváltozó-felülettel.
 dateModified: 2026-09-10
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Futtassa a `cc_server`-t egy folyamatosan bekapcsolt gépen, majd csatlakozzon
+hozzá az asztali gépéről, egy böngészőből vagy a telefonjáról. A szerver egy
+tisztán Dartban írt natív bináris — Flutter-motor nélkül —, ezért headless
+módon fut macOS-en, Linuxon és Windowson. Övé az adatbázis, ő futtatja az
+ügynököket, és ő tesz meg minden külső API-hívást; a kliensek csak megjelenítenek.
 
-## Run in Docker (prebuilt images)
+## Futtatás Dockerben (előre felépített image-ek)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Minden kiadás közzétesz egy saját üzemeltetésű stacket négy GHCR-image-ből — a
+háttérszolgáltatást, a két statikus vékonyklienst és az opcionális párosítási
+relét —, valamint egy külön `cc-server-demo` image-et a nyilvános demóhoszthoz.
+A saját üzemeltetésű telepítéshez nem kell kicheckolni a forráskódot. Rögzítsen
+egy verziócímkét (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`), vagy használja a
+`latest` címkét.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| Image                                             | Mi ez                                                    | Publikál         |
+| ------------------------------------------------- | -------------------------------------------------------- | ---------------- |
+| `ghcr.io/samuelalev/cc-server`                    | A háttérszolgáltatás: adatbázis, ügynökök, MCP, webhookok | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | A webes kliens (statikus nginx)                          | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | A telefonos társalkalmazás PWA-ja (statikus nginx)       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | A WebRTC-párosítási relé (opcionális)                    | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+A teljes stack egy compose-fájlban:
 
 ```yaml
 services:
@@ -51,91 +54,95 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Néhány dolog, amit érdemes tudni, mielőtt mindezt a loopbacken túlra nyitná:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **A `cc-server` image `CC_SERVER_INSECURE=1` beállítással indul** (a `0.0.0.0`-ra
+  kell kötnie, hogy fogadhassa a publikált portra érkező forgalmat), ami csak
+  megbízható hálózaton, TLS-t lezáró fordított proxy — Caddy, Traefik, nginx vagy
+  Cloudflare Tunnel — mögött biztonságos. Ha inkább a folyamaton belül zárná le a
+  TLS-t, csatoljon be egy tanúsítványt, és állítsa be a `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` értékét (majd törölje a `CC_SERVER_INSECURE`-t). Minden
+  felülírható a `docker run -e …` paranccsal vagy a compose `environment:`
+  blokkjával.
+- **A `/data` az egyetlen állapot.** Az SQLite-adatbázisok, a párosított eszközök
+  titkai, a letöltött modellek és a megbeszélések hanganyaga mind a kötetben élnek
+  — készítsen róla biztonsági mentést, és a konténer eldobhatóvá válik.
+- **Párosítson egy klienst az image-en belülről** az első csatlakozás előtt; ez a
+  konténeres megfelelője a [3. lépésnek](#3-lépés-kliens-párosítása-az-első-indítás-előtt):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **A két kliensimage statikus nginx-hoszt** — futásidőben semmit sem kell
+  beállítani; az egyes kliensek csatlakozási űrlapja a szerver URL-t, az
+  eszköz-ID-t és a párosítási kulcsot kéri. A jelzőrelé szintén csak a portját
+  igényli (`SIGNALING_HOST` / `SIGNALING_PORT` felülírható); állapotmentes, nem
+  tárol titkokat, és csak **tartalék** — a telefon loopbacket, LAN-t, tailnetet
+  vagy közvetlen `wss://` útvonalat használ, ha valamelyik elérhető, és csak
+  akkor esik vissza a relére, ha egyik sem az. Hagyja ki, ha a kliensei mindig
+  közvetlenül érik el a szervert.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Az útmutató többi része forrásból építi fel a szervert; az itt tárgyalt kapcsolók
+és viselkedés ugyanazok, amelyeket az image környezeti változói táplálnak.
 
-## Prerequisites
+## Előfeltételek
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- A [Dart SDK](https://dart.dev/get-dart). Ez a repó az [fvm](https://fvm.app) eszközzel rögzíti az SDK-verzióját, ezért minden parancs elé írja oda az `fvm`-et.
+- Ez a repó kicheckolva.
+- Az a natív eszközkészlet, amelyre az előkészítő szkriptnek szüksége van — Rust/`cargo`, valamint `meson`, `ninja`, `pkg-config`, `git` és egy C++-fordító. Minden buildszkript megnevezi, mit nem talál, és hogyan kell telepíteni.
+- Egy elérhető hoszt: loopback a helyi használathoz, vagy TLS-sel védett LAN-/nyilvános cím a távoli kliensekhez.
 
-## Step 1: Stage the native libraries
+## 1. lépés: A natív könyvtárak előkészítése
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+A natív komponensek **kötelezőek** — nincs csökkentett mód. Minden más előtt
+építse fel őket a repó gyökeréből:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Ez felépíti a `rift`, `fff`, a tree-sitter és nyelvtanai, az `aec`, a `lame`,
+a `ccpty`, a `cc_watcher`, a `cc_inference` és a SAML natív komponenst a
+`build/natives/` könyvtárba. A `cc_server` buildhook újrakibocsátja a bundle-be
+mindazt, ami ott elő van készítve, így ha kihagyja ezt a lépést, a build vagy
+egyenesen meghiúsul, vagy — az alábbi kiskapuval — egy olyan bináris születik,
+amelynek indítás előtti ellenőrzése megtagadja az indulást, és megnevezi a
+hiányzó könyvtárat.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Csak fordításra használható kiskapu]
+Ha létrehoz egy üres `.cc_natives_allow_missing` fájlt a repó gyökerében, a
+hiányzó natív komponensek miatti buildhiba figyelmeztetéssé szelídül. Ez egy
+friss klón szintaktikai ellenőrzésére szolgál; az így felépített szerver nem tud
+elindulni. **Fájlnak** kell lennie — a buildhook-futtató nem adja tovább a hívó
+környezetét, ezért a környezeti változót figyelmen kívül hagyja.
 :::
 
-## Step 2: Build the binary
+## 2. lépés: A bináris felépítése
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+A bundle a bináris mellett szállítja a `libsqlite3`-at és az előkészített natív
+komponenseket — nincs szükség rendszerszintű SQLite-ra és Flutter-motorra. A
+futtatható fájl a `./build/cli/<os_arch>/bundle/bin/cc_server` helyre kerül.
 
-## Step 3: Pair a client before first start
+## 3. lépés: Kliens párosítása az első indítás előtt
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Egy friss adatkönyvtárban nincs párosított eszköz és nincs előre megosztott kulcs,
+ezért egy kliens párosításikulcs-kérése még nem teljesíthető. Hozzon létre egyet a
+`pair` alparanccsal. Ez közvetlenül megírja a `global.db` és a `secrets.json`
+fájlt; egy már futó szerver, amely ugyanazt az adatkönyvtárat szolgálja ki,
+újraindítás nélkül felveszi az új eszközt:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Három értéket ír ki, amelyeket beilleszthet egy kliens csatlakozási űrlapjába:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +151,48 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Hasznos kapcsolók: `--device` (alapértelmezés: `web-client`; az azonosító az
+eszközszintet is meghatározza — `desktop`, `ios`, `android`, bármi más webes
+kliens), `--label` (alapértelmezésben a platform neve plusz e gép hosztneve),
+`--host` (az URL-be írandó hoszt, mivel a loopback egy másik gépről nem érhető el)
+és `--client-url`. A `pair` újbóli futtatása lecseréli az adott eszköz kulcsát, és
+eldobja annak élő munkameneteit. A párosítás soha nem hoz létre munkaterületet: a
+csatlakozó kliens bevezető folyamata nevezi el és hozza létre az elsőt.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+A `--client-url` kapcsolóval ezen kívül egy terminálból beolvasható QR-kódot is
+kiír, amely a már kitöltött webes klienst nyitja meg:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
+:::caution[Ez a QR-kód nem a telefonos QR-kód]
+A `--client-url` a **webes klienshez** épít hivatkozást — szerver URL, eszköz-ID és
+kulcs az URL-töredékben. A telefonos **Remote** alkalmazás más adatcsomagot vár (a
+szerver teljes kapcsolatleíróját és egy lejáratot), amelyet egy futó kliensben a
+**Beállítások → Ön → Az Ön eszközei** alatt lehet kiállítani. A kettő nem
+cserélhető fel egymással. Lásd: [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+A `cc_server pair` által kiállított hitelesítő adat **soha nem jár le**; az
+alkalmazásban kiállított viszont mindig 30 nap után lejár. Ha végzett egy
+CLI-vel kiállított eszközzel, vonja vissza a **Beállítások → Ön → Az Ön
+eszközei** alatt.
 
-## Step 4: Start the server
+## 4. lépés: A szerver indítása
 
-On loopback — the default and all you need for a client on the same machine:
+A loopbacken — ez az alapértelmezés, és minden, amire egy ugyanazon a gépen futó
+klienshez szükség van:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Ahhoz, hogy egy másik gépről elérje, kössön minden hálózati interfészre. A nem
+loopback címre irányuló, TLS nélküli bind indításkor **elutasításra kerül**
+(`Refusing to bind non-loopback address … without TLS`), ezért adjon meg egy
+tanúsítványt:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +200,44 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Vagy zárja le a TLS-t egy fordított proxyban egy megbízható magánhálózaton, és
+válassza a mögötte futó, sima szöveges bindet:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+A `--insecure` figyelmen kívül marad, ha a `--tls-cert` és a `--tls-key` is be van
+állítva — a TLS mindig nyer. A szerver a `GET /healthz` válaszban
+`insecure: true` értékkel jelzi a sima szöveges állapotot, és az ilyen
+kapcsolatot a kliensek nem biztonságosként jelölik meg.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+A szerver a `SIGINT`/`SIGTERM` jelig fut, majd tisztán leáll.
 
-## Step 5: Connect a client
+## 5. lépés: Kliens csatlakoztatása
 
-Point a client at the server URL and pairing key from step 3:
+Irányítson egy klienst a 3. lépésben kapott szerver URL-re és párosítási kulcsra:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
+- **Asztali alkalmazás**: az első indítás képernyőjén (**Hogyan fusson a Control Center?**) a **Futtatás ebben az alkalmazásban** helyett töltse ki a csatlakozási mezőket, vagy később vegye fel a szervert a **Beállítások → Szerver → Kapcsolat és állapot** alatt. Lásd: [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
+- **Webes kliens**: nyissa meg az [app.usectrl.dev](https://app.usectrl.dev) címet (vagy a webes build saját példányát), és adja meg a szerver URL-t, az eszköz-ID-t és a párosítási kulcsot.
+- **Telefon**: párosítsa a **Remote** alkalmazást egy futó kliensből — lásd: [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[A cc_server nem szolgál ki webes bundle-t]
+Egy önálló `cc_server` soha nem csatol be webes gyökérkönyvtárat, így a `GET /`
+404-gyel tér vissza. A webes klienst külön hosztolják — használja az
+`app.usectrl.dev` címet, vagy hosztolja a webes buildet saját maga bármely
+statikus HTTPS-hosztra (a fenti `cc-webapp` image pontosan ez). A loopbacken
+kívüli böngésző-origint fel kell venni a `--allowed-origins` listára, különben a
+`/rpc`-re irányuló WebSocket-frissítés elutasításra kerül; az alapértelmezett
+lista a `https://app.usectrl.dev`, a `localhost` és a `127.0.0.1` pedig mindig
+engedélyezett.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## 6. lépés: Google Calendar csatlakoztatása (opcionális)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Ha egy munkaterület naptárát grafikus felület nélkül szeretné szinkronizálni,
+használja az eszközkódos folyamatot:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +245,69 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
+Kiír egy kódot és egy URL-t, amelyet egy másik eszközön hagyhat jóvá, a refresh
+tokent szerveroldalon tárolja, majd kilép. Egy forrásból készült build nem
+tartalmaz Google-klienst, ezért az id és a secret környezeti változó kötelező —
+nincs `--google-client-id` kapcsoló. Lásd: [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
 
-## Configuration
+## Konfiguráció
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/hu-HU/kezikonyv/referencia/cc-server-cli/).
+A fent használt kapcsolók azok, amelyekre egy első beállításhoz szükség van. A
+teljes felület — 23 kapcsoló- és környezetiváltozó-pár, a négy alparancs és az
+adatkönyvtár felépítése — a [`cc_server` CLI-referenciában](/hu-HU/kezikonyv/referencia/cc-server-cli/)
+található.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Az ismeretlen kapcsolókat csendben figyelmen kívül hagyja]
+Az argumentumelemző kézzel írt, és mindent kihagy, amit nem ismer fel, ezért egy
+elírás (`--tls-key-file`, `--bindany`) nem ad hibát — a szerver egyszerűen az
+alapértelmezéssel indul el. Ha úgy tűnik, hogy egy kapcsolónak nincs hatása,
+ellenőrizze az indítási napló sorait.
 :::
 
-The four you are most likely to need:
+A négy, amelyre a legnagyobb valószínűséggel szüksége lesz:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Kapcsoló      | Alapértelmezés                                        | Jelentés                                                                                         |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | az operációs rendszer felhasználónkénti alkalmazásadat-könyvtára | Adatbázisok, titkok, modellek és gyorsítótárazott média                                          |
+| `--port`       | `9030`                               | TCP-port (`0` = ideiglenes)                                                                      |
+| `--bind`       | `loopback`                           | `loopback`, vagy `any` minden interfészhez (TLS-t vagy `--insecure`-t igényel)                   |
+| `--public-url` | a bind értékéből származtatva        | A párosított klienseknek hirdetett RPC URL. **Proxy, NAT vagy alagút mögött állítsa be kifejezetten** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Az alapértelmezett adatkönyvtár macOS-en `~/Library/Application Support/control-center`,
+Windowson `%APPDATA%\control-center`, másutt pedig `$XDG_DATA_HOME/control-center`
+(ha ez nincs, `~/.local/share/control-center`). A munkakönyvtárhoz viszonyított
+`.cc_server` csak akkor használatos, ha sem otthoni, sem alkalmazásadat-könyvtár
+nem oldható fel.
 
-## What the server serves
+## Mit szolgál ki a szerver
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+A `cc_server` a teljes termékfelület, nem annak egy részhalmaza: a repo-RPC
+adatútvonal és a feliratkozások, az MCP-eszközvégpont a `POST /mcp` és a
+`GET /sse` címen ugyanazon a porton, a bejövő webhookok, a média- és
+fontproxyk, az egyszeri bejelentkezés visszahívásai, a flotta bérleti protokollja,
+a szerveroldali RSS-lekérés 30 perces ütemezéssel, valamint a vektoros keresés
+(a `sqlite_vector` kiterjesztés folyamatglobális automatikus kiterjesztésként van
+regisztrálva, és csak ott esik vissza teljes szöveges keresésre, ahol a
+kiterjesztés nem érhető el).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+A diszpécser **állapotmentes**: nincs munkamenetenkénti munkaterület-kötés. Minden
+munkaterület-hatókörű hívás a saját `workspace_id`-jét hordozza, és a hozzáférést
+a hívó munkaterületi tagsága és szerepe dönti el — nem a párosítási kulcs
+birtoklása.
 
-Two things to know before you expose the port beyond loopback:
+Két dolgot érdemes tudni, mielőtt a portot a loopbacken túlra nyitná:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **Az MCP a hoszton kívül zártan hiúsul meg.** A token nélküli MCP-felület csak a loopbackre válaszol. Az `any` bind ezt nem tágítja ki — a hoszton kívüli kérést a „MCP requires a bearer token to answer non-loopback clients” üzenettel utasítja el, amíg be nem állít egy tokent (`mcp.setToken`, vagy **Beállítások → Szerver → MCP-szerverek**).
+- **A `GET /healthz` szándékosan hitelesítés nélküli**, helyettesítő karakteres CORS-szal, és közzéteszi a szerver azonosítóját, nevét, identitás-ujjlenyomatát és buildverzióját. A klienseknek szükségük van az ujjlenyomatra a szerver rögzítéséhez, tehát ez szándékos — de azt is jelenti, hogy bármely elérhető `cc_server` ennyit felfed bárkinek, aki kérdezi.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/)
-- [Pair a device](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
-- [Run a fleet worker](/hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa/)
-- [Connect a Google Calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
+- [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/)
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/)
+- [Flotta-worker futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/flotta-worker-futtatasa/)
+- [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/)
-- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/)
+- [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)

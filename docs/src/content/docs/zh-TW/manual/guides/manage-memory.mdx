@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: 管理工作區記憶
+description: 檢閱、修正並修剪代理已寫入工作區的事實與政策。
 slug: zh-TW/手冊/操作指南/管理記憶
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+本指南說明如何操作工作區的知識儲存。
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+開始之前你必須知道的重點是：**記憶介面是檢閱的介面，而不是撰寫的介面。** 事實與政策是由代理寫入的 —— 透過 `propose_fact` 與 `propose_policy`，並以 `supersede_fact` 與 `supersede_policy` 取代它們。`remember` 會寫入一筆受工作階段限制的熱層項目，之後 `consolidate_memory` 可能將其提升為事實。已記錄的會議決策會被收集進 `decisions` 領域；已完成的代理執行則不會進行收集。你在這裡所做的，就是讀取它們寫下的內容、加以修正、停用，或刪除。
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+記憶位於 **設定 → 工作區 → 記憶**（`/workspaces/<id>/settings/memory`）。它不是側邊欄中的頂層目的地。
 
-## The three tabs
+## 三個分頁
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+這個頁面恰好有三個分頁。事實與政策會顯示即時數量；圖譜則不會：
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **事實** —— 工作區中的每一條事實，並附上尚未被取代者的數量
+- **政策** —— 依領域分組的規範性規則，並附上啟用中者的數量
+- **知識圖譜** —— 由領域、主題、事實與政策構成的互動式畫布
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+領域不是你建立的東西。當代理把第一條事實或政策寫進某個領域時，該領域才隨之存在；介面中任何地方都沒有建立領域的控制項。
 
-## Review and correct a fact
+## 檢閱並修正事實
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. 開啟 **事實** 分頁。
+2. 使用搜尋框縮小清單範圍。它只是對每條事實的領域、主題與內容進行單純的子字串篩選 —— 沒有關鍵字索引，也沒有排名。
+3. 使用範圍篩選器顯示所有範圍、僅限整個工作區的事實，或單一儲存庫的事實。
+4. 使用排序切換鈕，依時間新近度或信心排序。
+5. 點擊某條事實的編輯控制項。
 
-The edit dialog lets you change:
+編輯對話框可讓你變更：
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **領域** —— 將事實移到其他領域
+- **主題** —— 它的簡短標籤
+- **內容** —— 知識文字
+- **信心** —— 以 5% 為級距的滑桿
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+儲存即可寫回。沒有 **新增事實** 按鈕；這個對話框只會從既有的資料列開啟。
 
-## See superseded facts
+## 查看已被取代的事實
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+事實分頁有一個 **顯示已被取代者** 開關。已被取代的事實預設為隱藏，並由該開關顯示出來，稽核軌跡就在那裡 —— 取代永遠不會刪除。
 
-## Delete a fact
+## 刪除事實
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+使用某條事實的刪除控制項並確認。這是真正的刪除，而非取代：請把它用在當初根本不該記錄的事實上，至於*內容*已經推進的事實，則交由代理以取代方式處理。
 
-## Manage policies
+## 管理政策
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+**政策** 分頁會依領域將啟用中的政策分組，並把未啟用者降到末尾的區段。針對每條政策，你可以：
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **編輯** 它
+- **刪除** 它
+- **停用** / **啟用** 它 —— 可逆的選項，通常也是正確的選擇。只有啟用中的政策會進入代理提示。
 
-As with facts, there is no create control.
+與事實相同，這裡沒有建立控制項。
 
-## Explore the knowledge graph
+## 探索知識圖譜
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+**知識圖譜** 分頁將領域、主題、事實與政策攤開成一張可瀏覽的節點畫布 —— 可平移、縮放、拖曳節點。點選節點會開啟其詳細資料面板，從中可觸及相同的編輯對話框。這是查看哪些領域確實有內容最快的方式。
 
-## Edit an agent's working memory
+## 編輯代理的工作記憶
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+工作記憶是每個代理各自的私有草稿區，會在派送時注入其提示。代理會以 `record_observation` 與 `update_my_notes` 自行寫入，但你也可以直接讀取與編輯它：
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**設定 → 工作區 → 代理** → 選取該代理 → **記憶** 分頁。
 
-## Access grants
+## 存取授權
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+記憶存取授權會將代理的角色對應到每個領域的一項權限（`none`、`read`、`write`）。以 `memory_access_grant.*` 操作寫入它們。
 
-Two things to understand about how they resolve:
+關於它們如何生效，有兩件事必須了解：
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **讀取採失效即開放。** 當某個 (role, domain) 組合沒有對應的授權資料列時，實際生效的權限是 `read`。唯一在缺少 `write` 時會拋出錯誤的寫入是 `propose_policy`。事實寫入不受授權限制。
+- **授權是以代理的角色為鍵。** 提案工具會把缺少的 `agent_role` 預設為 `general`。為其他角色寫入的授權不會約束這些代理；`general` 授權則會。
 
-## Search is not the same everywhere
+## 搜尋並非處處相同
 
-Three different things are called "memory search" and they do not agree:
+有三種不同的東西都被稱為「記憶搜尋」，而它們並不一致：
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| 位置 | 作用 |
+| --- | --- |
+| 事實分頁的搜尋框 | 對已載入用戶端的事實進行子字串篩選 |
+| `memory_fact.search` RPC 操作 | 僅使用 FTS5 關鍵字搜尋 —— 精簡用戶端無法提交查詢嵌入，因此混合搜尋始終留在主機內部 |
+| 代理端的 `search_memory` 工具 | `keyword`、`semantic` 或 `hybrid`（預設）。混合模式融合四個聲部：詞彙、語意、時序與圖譜 |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+因此，代理與記憶頁面對同一個查詢的排名不會相同。當你想確認代理實際上能回想起來什麼時，去問代理。
 
-## Embeddings
+## 嵌入
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+事實會在**寫入當下**建立嵌入，而且只有在裝置端嵌入模型已安裝時才會如此。在 **設定 → 伺服器 → 診斷與隱私 → 語意搜尋** 底下檢查它的狀態。如果你想要語意召回，請在代理開始寫入記憶之前先安裝模型。
 
-## Related guides
+## 相關指南
 
-- [Create and configure an agent](/zh-TW/手冊/操作指南/建立代理/)
-- [Use the MCP server](/zh-TW/手冊/操作指南/mcp-伺服器/)
+- [建立並設定代理](/zh-TW/手冊/操作指南/建立代理/)
+- [使用 MCP 伺服器](/zh-TW/手冊/操作指南/mcp-伺服器/)
 
-## Related concepts
+## 相關概念
 
-- [Memory and knowledge](/zh-TW/手冊/概念/記憶與知識/)
-- [Workspaces and isolation](/zh-TW/手冊/概念/工作區/)
+- [記憶與知識](/zh-TW/手冊/概念/記憶與知識/)
+- [工作區與隔離](/zh-TW/手冊/概念/工作區/)

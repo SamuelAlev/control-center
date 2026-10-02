@@ -1,249 +1,280 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Csevegőhidak
+description: Miért kifelé tárcsáz a Slack-integráció a hallgatózás helyett, mi jogosít fel egy csevegésből érkező üzenetet, és hogyan szolgál ki egyetlen híd bármely csevegőterméket.
 slug: hu-HU/kezikonyv/fogalmak/csevegohidak
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+A csevegőhíd egy külső csevegőterméket — ma a Slacket — első osztályú belépési
+úttá tesz egy Control Center-munkaterületre. Ha megemlíti a botot, felébred egy
+ügynök; ha a Slack szálában válaszol, folytatódik a beszélgetés; ha beír egy
+slash-parancsot, létrejön egy jegy. Alatta ugyanazok a terek, átiratok, jegyek
+és ugyanaz a hozzárendelés, amelyeket az asztali alkalmazás használ. A csevegés
+_felület_ a munkaterületen, nem annak másolata.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**A Slack az egyetlen szállított szolgáltató.** A termékben sehol sincs
+Discord-, Telegram-, Teams- vagy Matrix-implementáció. A funkció szándékosan
+szolgáltatófüggetlenül íródott — egy második termék hozzáadása egyetlen
+enumérték, egy adapter és egy plugin —, ma azonban a „csevegés” a Slacket
+jelenti.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Két felület fedi le, és ezek különböző emberekhez tartoznak. A munkaterület
+Slackhez csatlakoztatása és a bot testreszabása **admin** művelet a
+Beállítások → Munkaterület → Általános útvonalon. A saját csevegőfiók
+összekapcsolása a Control Center-identitással **tagi** művelet a
+Beállítások → Munkaterület → Profil és identitás útvonalon.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Három döntés alakítja az egész funkciót: **melyik irányban fut a kapcsolat**,
+**mi jogosít fel egy kívülről érkező üzenetet**, és **hol élhet a
+termékspecifikus tudás**.
 
-## Outbound by design
+## Szándékosan kifelé irányuló
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+A híd soha nem figyeli a szolgáltatót. A Slack **Socket Mode**-on keresztül
+érhető el: a szerver socket URL-t kér a Slacktől, és kifelé tárcsáz, majd ezen
+a kapcsolaton keresztül fogadja az említéseket, a közvetlen üzeneteket és a
+slash-parancsokat.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+A következmény a lényeg. Egy NAT mögötti laptop, egy domain nélküli otthoni
+szerver, egy hálózatok között vándorló gép — mindegyik futtathatja a hidat
+bejövő port, alagút és TLS-tanúsítvány nélkül, és anélkül, hogy nyilvános URL-t
+kellene cserélni, amikor az megváltozik. Nincs biztosítandó webhookvégpont,
+mert nincs webhookvégpont. Amikor a Control Center összeállítja az
+alkalmazásdefiníciót, kikényszeríti a Socket Mode-ot, és eltávolít minden
+kérési URL-t, mert egy mindkettőre beállított alkalmazás félig működő
+alkalmazás lenne.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Az ára egy életben tartandó kapcsolat, ami a szerver dolga: az újracsatlakozás
+exponenciális visszakapcsolás (exponential backoff) jitterrel, legfeljebb
+30 másodpercre korlátozva; a szolgáltató által kezdeményezett socket-rotáció
+újracsatlakozik, anélkül hogy fokozná ezt a visszakapcsolást; egy _elutasított
+hitelesítő adat_ pedig végleges — egy visszavont token végtelen újrapróbálása
+csak sebességkorlátot hozna, ezért a híd leáll, és új tokenekre vár, miközben a
+szolgáltató saját hibáját szó szerint jelenti a beállításokban.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Egy csevegőalkalmazás nélküli munkaterület semmibe sem kerül: nincs socket,
+nincsenek időzítők, nincs forgalom. És az egész csak _azután_ indul el, hogy a
+szerver jelzi a kész állapotot, mert egy lassan válaszoló csevegőalkalmazás
+soha nem késleltetheti az indítást.
 
-## Membership authorizes, not token possession
+## A tagság jogosít fel, nem a token birtoklása
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Az alkalmazást telepítő személy nem azonos az üzenetet küldő személlyel. Ezért
+minden bejövő esemény **Principal**ra oldódik fel, mielőtt bármi megtörténne,
+és minden esetben elutasítással zárul, magyarázattal együtt:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Egy nem összekapcsolt csevegőfiók** abban a Slack szálban, amelybe írt,
+  útmutatást kap az összekapcsolásra.
+- **Egy összekapcsolt fiók, amelynek felhasználója nem tagja** ennek a
+  munkaterületnek, arra kap útmutatást, hogy kérjen meghívást egy admintól.
+- **Egy tag, akinek a szerepköre csak olvasható** (`viewer`, `guest`),
+  megtudja, hogy a szerepköre nem indíthat munkát.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/)
-for the membership model this leans on.
+Ezek egyike sem folytatódik. Egy csevegőüzenetet soha nem rendelünk
+olyasvalakihez, aki nem küldte el — ez tartja korrekt módon az auditnaplót, a
+Principalonkénti sebességkorlátokat és a jegyek bejelentőit. A tagsági modellt,
+amelyre ez támaszkodik, lásd a
+[Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/)
+oldalon.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Az összekapcsolás identitásfeloldás, **nem** hozzáférési jogosultság megadása.
+A tagság minden eseménynél újraellenőrzésre kerül, így egy olyan valakihez
+tartozó kapcsolat, akit azóta eltávolítottak, elutasítást eredményez a régi
+kiváltságai helyett. Két útvonal hoz létre kapcsolatot: egy rövid életű, egyszer
+használatos kód, amelyet a tag a csevegésben beír, vagy automatikus egyezés a
+szolgáltató _ellenőrzött_ e-mail-címére — és az e-mailes útvonal továbbra is
+megköveteli, hogy az egyező felhasználó már tag legyen, így egy idegen, akinek a
+címe véletlenül létezik a szerveren, semmihez sem kapcsolódik.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+A kódok szándékosan a memóriában maradnak, 15 perces élettartammal. Egy kód
+tartósítása egy tartós, hitelesítő adatra hasonlító sort hozna létre valami
+olyasmihez, aminek el kell párolognia, és az, hogy a szerver újraindítása minden
+függőben lévő kódot érvénytelenít, helyes viselkedés, nem visszaesés — a tag
+ismét az „A Slack fiókom összekapcsolása” gombra kattint.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Az elutasításra **abban a Slack szálban érkezik válasz, amelyet az üzenet
+megnyitott**, valódi válaszként. A szálban küldött válasz megjelöli azt az
+üzenetet, amelyre válaszol, eléri az egyetlen személyt, akinek szüksége van rá,
+és közben a „nincs összekapcsolva” üzenetet is távol tartja magától a
+csatornától. Az üzenetküldés ráadásul az az egyetlen képesség, amellyel minden
+szolgáltató rendelkezik, így a magyarázat soha nem függ olyan funkciótól,
+amelyet az alkalmazás esetleg nem hordoz.
 
-## Provenance and the echo problem
+## Eredet és az echóprobléma
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Egy híd, amely mindkét irányba tükröz, hurkolódni fog, hacsak valami meg nem
+különbözteti a két irányt. Minden üzenet, amelyet a híd behoz, `metadata['chat']`
+bélyegzőt kap — szolgáltató, csapat, beszélgetés, szál, üzenet és küldő. A
+kifelé irányuló tükrözés kihagy minden ilyen bélyegzőt viselő üzenetet.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Ez az egyetlen szabály teszi biztonságossá a kétirányú tükrözést: egy Control
+Centerben beírt emberi üzenet továbbítódik a csatolt szálba (az író nevével az
+élen), míg egy _csevegésből_ érkező üzenet ott áll meg, ahol belépett.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Ami kifelé átmegy, szándékosan szűk. Az ügynök **válasza** közönséges
+csevegőszövegként továbbítódik. Egy rövid gondolat megjelenhet a kártya
+`Thinking…` sorában. Az eszközkimenet diffek falát alkotja, és a Control
+Centerben marad, ahová egy csonkolt válasz is mutat.
 
-## A card reports the work; the text is still the message
+## A kártya a munkáról számol be; a szöveg továbbra is az üzenet
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Ahol a szolgáltató megjeleníti őket, egy kör **egyetlen feladatkártyát** hordoz,
+amelyet a kör futásának teljes ideje alatt a helyén szerkesztenek, és amely az
+általa magyarázott válasz felett helyezkedik el.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+A kártya egy csoportosított terv, nem összegyúrt bekezdés. A Slack ugyanahhoz a
+feladathoz fűzi a `details` és az `output` mezőt, ezért egy sor részletei egyszer
+mennek ki (a gondolat a `Thinking…` sorban), az `output` pedig soha nem
+streamelődik. A beállítás egyetlen sor, amelynek címe cserélődik
+(`Working on it…`, `Cloning …`). Az érvelés hozzáad egy `Thinking…` sort. Minden
+eszköz a saját sorát kapja (`Read lib/main.dart`). A válasz közönséges szöveg a
+kártya alatt — a Slack tervnézete egy későbbi markdown-hozzáfűzésből olvassa ki,
+nem a feladatok közé keveredett darabból. Semmi más: eszközkimenet nem, és az
+eszköz argumentumai közül is csak egy rövid engedélylistáról, mert egy ismeretlen
+eszköz argumentumai egy egész fájl törzsét is jelenthetik, egy sor pedig egyetlen
+sor.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+A kártya a kör _előtti_ várakozást is lefedi. Az első említés létrehozza a
+beszélgetést, annak létrehozása pedig minden repót klónoz, amelyben az ügynök
+dolgozni fog — ami egy valódi tárolónál perceket jelent, amikor az ügynöktől még
+senki sem kért semmit, a szál pedig úgy néz ki, mintha a bot figyelmen kívül
+hagyta volna a kérést. A kártya ezért abban a pillanatban nyílik meg, amikor az
+említést elfogadják (`Working on it…`), majd ez a beállítási sor ugyanazokkal a
+szavakkal frissül, amelyeket az asztali alkalmazás mutat —
+`Cloning acme/widgets…`, `Setting up Reviewer…`, `Starting the agent…` —, aztán
+egy `Thinking…` sor, amint az ügynök elkezd gondolkodni, majd soronként egy-egy
+eszköz. Egy kártya, egy üzenet, a „hallottalak” pillanattól a válaszig, amely
+alatta közönséges szövegként jelenik meg. A beállítás csak ott kerül
+jelentésre, ahol valaki a csevegésben vár rá: egy alkalmazásban éppen
+előkészített beszélgetés vagy egy szerverindításkor folytatott, elakadt
+beszélgetés kártya nélkül provisionálódik.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Azt az egyetlen dolgot hordozza, amelyet a csevegés nem adhat meg az olvasónak:
+egy **View in Control Center** hivatkozást a válasz mögötti beszélgetésre. A
+csevegőtermékek egy hivatkozásban `http(s)`-t fogadnak el, mást nem, ezért a
+gomb egy kis oldalra mutat, amelyet ez a szerver szolgál ki, és amely a
+böngészőt az asztali alkalmazás `control-center://` hivatkozására irányítja. Az
+az oldal semmit nem olvas és semmit nem old fel — az URL-jében lévő azonosítók
+egy deep linkbe csengenek vissza, máshová nem —, és egy elérhető nyilvános URL
+nélküli szerver egyszerűen gomb nélküli kártyát állít elő, nem pedig egy
+hibásat.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+A kártyák olyan képességek, mint bármelyik másik. Egy szolgáltató nélkülük
+pontosan úgy viselkedik, mint korábban, csak szöveggel, és egy szolgáltató,
+amely egy kártyát a hívás pillanatában elutasít, megtartja a streamjét: a válasz
+mindig megelőzi az őt leíró kártyát. Amikor a streamelés teljesen ki van
+kapcsolva, a kész kártya helyette az egyetlen elküldött üzenetre kerül rá. Egy
+létrehozott jegy ugyanezt a bánásmódot kapja — a `/cc ticket` visszaigazolása egy
+befejezett kártya, amelynek létezésének oka a nemrég létrehozott jegyre mutató
+hivatkozás.
 
-## Capabilities are negotiated, then remembered
+## A képességekről tárgyalunk, majd megjegyezzük őket
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+A csevegőtermékek abban különböznek, hogy mit tudnak megjeleníteni, ezért a híd
+a leggazdagabb felületre íródott — egy válasz, amely élőben növekszik egy
+szálban, egy átmeneti „gondolkodik…” állapot, egy címmel ellátott szál, egy
+efemer válasz egy slash-parancsra —, és képességenként egyesével degradálódik.
+Egy szolgáltató, amelyből mindez hiányzik, akkor is működik; a válaszok
+egyszerűen egyetlen üzenetként érkeznek meg.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Egy képesség hirdetése nem ígéret annak meglétére. A Slack streamelő
+válaszaihoz egy fizetős csomag funkciója kell, és a Slack csak a hívás
+pillanatában utasít el. A véglegesként megjelölt elutasítást **a kapcsolat
+teljes élettartamára** megjegyezzük: a híd felhagy a kéréssel, és onnantól
+teljes válaszokat tesz közzé, a beállítások pedig ezt egyértelműen kiírják, mert
+a „leállt a válaszaim streamelése” kérdésre napló olvasása nélkül is válaszolni
+kell. A feladatkártyákat ugyanígy elhagyjuk, ha a Slack elutasít egyet.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Minden korlát a szolgáltatóhoz tartozik, nem a továbbítóhoz: az üzenetplafont, a
+streamdarabok plafonját és azt, hogy egy streamhez kell-e szálhorgony, mind az
+adapter deklarálja, és egy hosszú válasz bekezdés-, sor- vagy szóhatáron
+tördelődik, nem szó közben.
 
-## One bridge, one adapter per product
+## Egy híd, termékenként egy adapter
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Minden termék alakú dolog egy port mögött él. Az általános mag ismeri a
+markdownt, a csevegőbeszélgetéseket, a csevegőszálakat és a tagokat; semmit nem
+tud a Slack borítékjairól, a `mrkdwn`-ről vagy a gateway-intentekről. Három
+darab működteti ezt:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Az adapter** normalizál egy terméket: annak szállítási módját, API-hívásait,
+  szövegkodekjét és borítékjainak sajátosságait. A Slackéi tanulságosak — egy
+  csatornamegjelölés kétszer érkezik meg (mint `app_mention` _és_ mint `message`),
+  és a legtöbb üzenet-altípus díszítés, nem új kérés. Mindkettőt az adapter oldja
+  fel, így a mag soha nem tudja meg, hogy a Slack kétszer kézbesít.
+- **A deskriptor** a szolgáltató nyilvános alakja: milyen hitelesítő adatokra van
+  szüksége, milyen formátumúak azok, mely URL-ek segítenek a felhasználónak
+  megtalálni őket, mire képes, és hogy az alkalmazása létrehozható vagy
+  szerkeszthető-e innen. A beállítási kártya, a csatlakozási párbeszédablak és az
+  argumentumok érvényesítése mind ebből _generálódik_ — a kliens egy szolgáltatót
+  küld vissza, valamint egy mezőazonosítóval kulcsolt leképezést.
+- **A plugin** a szerveroldali összeállítás: hogyan lesz a hitelesítő adatokból
+  ellenőrzött kapcsolat, hogyan épül fel egy adapter, és hogyan kezeljük a
+  szolgáltató oldali alkalmazást.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Így egy termék hozzáadása egyetlen enumérték, egy adapter és egy plugin. Nincs új
+RPC-művelet, nincs sémaváltozás, nincs kliensváltozás — és a kliens korrekt
+marad, mert egy általa soha nem hallott mező is a szerver által szolgáltatott
+címkével jelenik meg.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Két részlet akadályozza meg, hogy az absztrakció felfelé szivárogjon. Azokat az
+alkalmazáskezelési lépéseket, amelyekhez a szolgáltatónak nincs API-ja (token
+generálása, az alkalmazás telepítése, újratelepítés jogosultságváltozás után),
+**saját hivatkozásokkal rendelkező, elnevezett lépésekként** adjuk vissza, így a
+beállítás befejezése képernyő anélkül jeleníti meg őket, hogy tudná, melyik
+szolgáltatóról van szó. A híd által írt minden utasítás megnevezi a szolgáltatót
+és az alkalmazás által ténylegesen használt parancsot, így egy átnevezett
+parancs vagy egy második szolgáltató is helyesen olvasható új szöveg hozzáadása
+nélkül.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Újratelepítés jogosultságváltozás után]
+A bot nevének, leírásának vagy ikonjának szerkesztése azonnal életbe lép. A
+**jogosultságok** módosítása újratelepítést igényel: a Slack alkalmazza az új
+manifesztet, de a megadott jogosultságot az eredetileg telepített szinten
+tartja. A szerkesztés egy hátralévő lépést ad vissza, amely a Slack „Reinstall
+to Workspace” oldalára mutató hivatkozást tartalmaz.
 :::
 
-## Where credentials live
+## Hol élnek a hitelesítő adatok
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+A munkaterület csevegési tokenjei a munkaterület **saját könyvtárában, az
+adatbázisa mellett** találhatók — egyszerű JSON-ként itt:
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, nem az adatbázisban,
+és szándékosan nem az operációs rendszer kulcstárában. Két következmény könnyen
+elvész később: egy munkaterület törlése leválasztja a könyvtárat, és a tokenek
+vele mennek; egy munkaterület exportálása vagy mentése pedig átmásolja a
+`workspace.db`-t, így egy másnak átadott munkaterület nem hordoz magában élő
+bottokeneket. A fájl a szervert futtató hoszt fájlrendszerének bizalmi határát
+örökli — bármi, aminek olvasási hozzáférése van az adatkönyvtárhoz, olvashat egy
+bottokent, és ugyanezen határ mögött vannak az adatbázisok is.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Szolgáltatónként egy fájl, atomikusan és csak a tulajdonos számára olvashatóan
+írva: egy visszavont alkalmazás egyetlen fájl leválasztásával törlődik, egy
+sérült fájl pedig egyetlen szolgáltatóba kerül, nem az összesbe. A hitelesítő
+adatok a csatlakozási műveleten keresztül _bemennek_, és soha nem jönnek ki — az
+állapotlekérdezések csak kapcsolati metaadatokat adnak vissza.
 
-## What is deliberately not offered
+## Amit szándékosan nem kínálunk
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Szerkezeti alkalmazásbeállítások.** A szállítást, a hatóköröket és az
+  eseményfeliratkozásokat nem tesszük közzé, hanem kikényszerítjük. Egy
+  alkalmazás, amelyet egy beállítási képernyőről el lehet hallgattatni,
+  támogatási jegy, nem funkció.
+- **Beszélgetés és slash-parancsok.** A Slack-felület üzenetekből, szálválaszokból
+  és slash-parancsokból áll.
+- **Egy második igazságforrás.** A csevegés nem hely, ahol a munkát tárolják. A
+  Slack szál egy tér, a válasz egy átirat, a jegy egy jegy — mindegyik a
+  munkaterületen, minden klienstől elérhetően.
 
-## See also
+## Lásd még
 
-- [Multiplayer — identity, membership and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): why links and credentials are per workspace
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): what wakes when a mention arrives
-- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/): what `/cc ticket` files
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/)
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
-- [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
-- [Customize the chat bot](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
-- [PR conversations](/hu-HU/kezikonyv/fogalmak/pr-beszelgetesek/): the same three decisions, made for a forge
+- [Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): a Principalok és szerepkörök, amelyeken keresztül a híd felold
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): miért munkaterületenkéntiek a kapcsolatok és a hitelesítő adatok
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): mi ébred fel, amikor megérkezik egy említés
+- [Jegyek és delegálás](/hu-HU/kezikonyv/fogalmak/jegyek/): mit hoz létre a `/cc ticket`
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/): hol helyezkedik el a híd a szerver és a kliensek között
+- [Slack összekötése a munkaterülettel](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
+- [Csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
+- [PR-beszélgetések](/hu-HU/kezikonyv/fogalmak/pr-beszelgetesek/): ugyanaz a három döntés, kódhosztra alkalmazva

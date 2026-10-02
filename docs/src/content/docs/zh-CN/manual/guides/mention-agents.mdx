@@ -1,121 +1,79 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@提及智能体"
+description: 在空间中提及智能体即可派发它们，提及队友则会通知他们。
 slug: zh-CN/手册/操作指南/提及智能体
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+本指南介绍如何在空间中 @提及智能体和队友。
 
-## Mention an agent
+## 提及智能体
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+在输入框中输入 `@`，从自动补全中选择一个智能体，或者自己把名字打出来：
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+被提及的智能体如果还不是该空间的参与者，会被作为参与者加入该空间，并以该空间的上下文和模式派发。未被提及的参与者会看到这条消息，但不会被派发。
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+如果你发送的消息没有提及任何智能体，Control Center 会自己挑选一个响应者：先是该对话中最后发言的智能体，否则是对话的所有者（如果它有一个），再否则是空间参与者中的第一个顶层智能体。在只有一个智能体的空间里，那始终是这唯一的智能体。
 
-## Know how a name is matched
+## 了解名称是如何匹配的
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+一个提及 token 按**精确名称或前缀**匹配，且**不区分大小写**。因此 `@arch` 能匹配到名为 `architect` 的智能体，`@Alice` 能匹配到 `alice`。
 
-Two consequences worth planning around:
+有两个后果值得提前规划：
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **短 token 不是错误。** 如果两个智能体共享一个前缀，先找到的那个胜出，而究竟是哪一个取决于排序——不取决于任何平局规则。名称有重叠时就使用完整名称。
+- **只有字母、数字和下划线构成 token。** 解析器匹配 `@(\w+)`，因此 `@code-reviewer` 会被读作 token `code`，`@my agent` 会被读作 `my`。名称中含连字符、点或空格的智能体无法被可靠地提及——包括通过自动补全，因为它会把名称作为纯文本插入。给智能体命名时用一个单词，或者用下划线。
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+提及会在文本到达智能体之前被剥离。因此，一条_只有_提及的消息（`@alice`）不会派发任何东西——给它点事做。
 
-## Mention several agents at once
+## 同时提及多个智能体
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+两个智能体会并行派发到同一个对话中，并且都会收到完整消息。
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+它们还会**共享那个空间的工作树**。仓库工作树是按空间预配的，而不是按智能体；每个智能体都会得到自己的覆盖层工作目录，用于存放它的 `AGENTS.md`、技能和配置，共享的仓库以读写方式链接进来。因此，被一起提及的两个智能体可以看到彼此的改动——并与之发生冲突。
 
-## Mention a teammate
+## 提及队友
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+任何不匹配任何智能体的 `@token` 都会按用户名拿去与工作区的人类成员比对，遵循同样不区分大小写的精确匹配或前缀匹配规则。
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+匹配成功的人类提及**不会派发任何东西**。它只是搭载在消息的元数据上，好让通知路由器能提醒那个人。
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+智能体名称始终会被优先尝试，而一个已被某个智能体占用的 token 绝不会再提供给成员列表——一个 `@word` 永远只能解析到一个主体。
 
-## What the agent receives
+## 智能体收到什么
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+被派发的智能体会在提示词中看到一个“Summons”区块，其中写明是谁召唤了它，并列出空间名册——其他智能体（标注为顶层或下属）和人类成员——这样它就知道自己可以向谁交接工作。该区块还会告诉它：在回复中提及另一个智能体会唤醒那个智能体，而提及它自己则会被忽略。
 
-## When an agent mentions an agent
+## 当智能体提及另一个智能体时
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+智能体可以在自己的回复中交接工作。当一个回合**干净地结束**时，它文本中的提及会被解析，那些智能体会被加入该空间并被派发到同一个对话中，以那次提及的回合作为它们的提示词。失败或被中断的回合不会唤醒任何人——它在思考中途就停下了。
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+这些规则刻意比输入框的更严格，因为没有人会盯着去纠正一次错误的猜测：
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **只匹配精确名称。** 不做前缀匹配。人类输入 `@arch` 能匹配到 `architect`；来自智能体时，它谁都匹配不到。一个能匹配到两个智能体的名称同样谁都匹配不到。
+- **代码不是普通文本。** 围栏代码块或 `` `backticks` `` 中的提及会被忽略，因此引用 `@Override` 注解或 `pip install foo@1.2` 是安全的。未闭合的围栏会让它之后的一切都失效。
+- **紧贴前一个 token 的 `@` 不是提及**——`sam@host.com`、`pkg/@scope` 和 `node@20` 都解析不到任何人。
+- **连字符会被保留**，因此 `@code-reviewer` 会解析为它本身，而不是 token `code`。
+- **每个回合最多三个智能体。** 一个智能体在总结里列出六个队友，那是在罗列，而不是在召唤。
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+唤醒链的约束方式与委派相同：**深度 3**，而且已经在链上的智能体不能再被这条链唤醒（不允许 `A → B → A`）。一个有序对还会跨链受到速率限制。被拒绝的唤醒会向对话中发布一条系统消息，说明哪条提及没有被送达以及原因——无法解析的名称则不会，否则句子里的任何一个 `@` 都会自说自话。
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+如果一次交接不能依赖普通文本——比如请求/回复，或者要触达空间之外的智能体——请改用 `send_to_agent`、`ask_agent` 和 `delegate_task` 这些工具。
 
-## Related guides
+## 相关指南
 
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [Use spaces](/zh-CN/手册/操作指南/空间/)
-- [Run agents in parallel](/zh-CN/手册/操作指南/并行智能体/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [使用空间](/zh-CN/手册/操作指南/空间/)
+- [并行运行智能体](/zh-CN/手册/操作指南/并行智能体/)
 
-## Related concepts
+## 相关概念
 
-- [Dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
+- [派发生命周期](/zh-CN/手册/概念/派发生命周期/)

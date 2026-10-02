@@ -1,166 +1,171 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: فلیٹ ورکر چلائیں
+description: cc_worker ہیڈلیس ایگزیکیوٹر بنائیں، پیئر کریں اور چلائیں تاکہ یہ کسی cc_server کے ساتھ رجسٹر ہو اور فلیٹ پینل میں ظاہر ہو۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+اپنی فلیٹ میں ایگزیکیوشن صلاحیت بڑھانے کے لیے کسی فارغ مشین پر `cc_worker` چلائیں۔
+یہ ایک pure-Dart بائنری ہے — کوئی Flutter انجن نہیں — جو کسی `cc_server` سے پیئر
+ہوتی ہے، میزبان کی صلاحیتیں ظاہر کرتی ہے، ہارٹ بیٹ دیتی ہے، لیز پر لیے گئے جابز
+کھینچتی ہے، اُنہیں چلاتی ہے اور پروسیس ایونٹس واپس اسٹریم کرتی ہے۔ یہ کوئی
+پائیدار حالت نہیں رکھتی: ایک سپروائزر اسے دوبارہ شروع کرتا ہے اور یہ پھر رجسٹر
+ہو جاتی ہے۔
 
-You need a running `cc_server` first — see [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/).
+پہلے آپ کو ایک چلتا ہوا `cc_server` درکار ہے — دیکھیں
+[ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)۔
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+ایک پیئر شدہ ورکر رجسٹر ہوتی ہے، ہارٹ بیٹ دیتی ہے اور لیز پر لیے گئے جابز کا
+انتظار کرتی ہے۔ `fleet.submitJob` سے کام جمع کرائیں۔ اِس سرور پر ایجنٹ ڈسپیچ فلیٹ
+سے ہو کر نہیں گزرتا؛ اِس گائیڈ کی کامیابی کی علامت یہ ہے کہ ورکر تازہ ہارٹ بیٹ کے
+ساتھ فلیٹ پینل میں ظاہر ہو۔ بوٹ پر رجسٹرڈ in-process ورکر کا رنر نقشہ خالی ہوتا
+ہے، اس لیے اُس پر رکھا گیا جاب `No local runner for job kind …` واپس کرتا ہے۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart)۔ یہ ریپو اپنا SDK [fvm](https://fvm.app) سے پن کرتا ہے، اس لیے کمانڈز سے پہلے `fvm` لگائیں۔
+- یہ ریپوزٹری ورکر مشین پر چیک آؤٹ ہو۔
+- ایک قابلِ رسائی `cc_server` (ڈیولپمنٹ کے لیے loopback، پروڈکشن کے لیے LAN یا ریموٹ)۔
+- `PATH` پر `git` — ورکر ریپوز میٹیریلائز کرتی ہے اور `git` پروبز چلاتی ہے۔
 
-## Step 1: Build the binary
+## مرحلہ 1: بائنری بنائیں
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+یہ `./build/cli/<os_arch>/bundle/bin/cc_worker` پر ایک خود مکتفی بنڈل تیار کرتا ہے۔
 
-## Step 2: Mint the worker's credential
+## مرحلہ 2: ورکر کی اسناد جاری کریں
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+ایک `cc_server` صرف اُسی ورکر کو قبول کرتا ہے جو پیئر شدہ ڈیوائس id اور پہلے سے
+شیئر کی گئی کلید پیش کرے — بشمول loopback سرور۔ انہیں **سرور** مشین پر جاری کریں
+(`pair` سرور کے چلتے ہوئے بھی چل سکتا ہے؛ نئی ڈیوائس بغیر ری اسٹارٹ کے اٹھا لی
+جاتی ہے):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+یہ ایک `Device id` اور ایک `Pairing key` پرنٹ کرتا ہے — `--device-id` اور
+`--psk` / `--psk-file` / `CC_WORKER_PSK` یہی لیتے ہیں۔
 
-## Step 3: Start the worker
+## مرحلہ 3: ورکر شروع کریں
 
-Against a paired server:
+پیئر شدہ سرور کے سامنے:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+loopback سرور کے سامنے (پھر بھی پیئر شدہ — `cc_server` ہمیشہ PSK ہینڈ شیک چلاتا
+ہے):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| فلیگ                | تفصیل                                                                                            | ڈیفالٹ        |
+| ------------------- | ------------------------------------------------------------------------------------------------ | ------------- |
+| `--server <url>`     | cc_server URL (`ws://`/`wss://`؛ `http(s)` اور غائب `/rpc` راستہ زبردستی درست کر دیے جاتے ہیں)۔ **لازمی۔** | —             |
+| `--name <name>`      | آپریٹر کو دکھنے والا ورکر نام۔                                                                    | میزبان کا نام |
+| `--device-id <id>`   | مستحکم پیئر شدہ ڈیوائس id، جو ورکر id کے طور پر بھی استعمال ہوتا ہے۔                              | `cc-worker`   |
+| `--psk-file <path>`  | وہ فائل جس کی پہلی غیر خالی سطر پیئرنگ کلید ہے۔ `--psk` پر ترجیح دی جاتی ہے۔                       | —             |
+| `--psk <key>`        | کمانڈ لائن پر پیئرنگ کلید۔ `ps` اور شیل ہسٹری میں نظر آتی ہے — بائنری انتباہ دیتی ہے۔              | —             |
+| `--max-jobs <n>`     | اِس پروسیس کے بیک وقت چلنے والے جابز کی سخت حد (مثبت عدد)۔                                        | `4`           |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+کلید کے لیے ترجیحی ترتیب `--psk-file` → `CC_WORKER_PSK` → `--psk` ہے۔ ہر ذریعہ
+چھوڑ دینے سے ورکر کا auth ہینڈ شیک چھوٹ جاتا ہے؛ پھر ایک حقیقی `cc_server` غیر
+تصدیق شدہ ورکر قبول کرنے کے بجائے سیشن مسترد کر دیتا ہے (`auth_denied`)۔ نامعلوم
+فلیگز استعمال کی خرابی ہیں (`exit 64`) — `cc_server` کے برعکس یہ بائنری
+`package:args` استعمال کرتی ہے اور ٹائپو نظر انداز نہیں کرتی۔
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` ورک ٹری میٹیریلائزیشن کیش ڈائریکٹری کو اوور رائیڈ کرتا ہے
+(ڈیفالٹ: سسٹم ٹیمپ ڈائر کے نیچے ایک `cc_worker_cache` ڈائریکٹری)۔
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+ورکر `fleet.registerWorker` سے رجسٹر ہوتی ہے، پھر ہر 20 سیکنڈ بعد ہارٹ بیٹ دیتی
+ہے اور ہر 2 سیکنڈ بعد لیز کے لیے پول کرتی ہے۔ یہ `SIGINT`/`SIGTERM` تک چلتی ہے؛
+اسے systemd یا launchd کے تحت رکھیں تاکہ کریش یا ری بوٹ کے بعد دوبارہ شروع ہو کر
+پھر رجسٹر ہو جائے۔
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
+:::caution[پروٹوکول مطابقت کی کوئی گنجائش نہیں]
+جس ورکر کا فلیٹ پروٹوکول ورژن سرور سے مختلف ہو وہ **غیر مطابق** رجسٹر ہوتی ہے،
+اُسے کبھی لیز پیش نہیں کی جاتی اور `cc_worker` خود
 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+to match the server release` کے ساتھ بند ہو جاتی ہے۔ ورکر کو سرور کی اُسی ریلیز
+سے بنائیں۔
 :::
 
-## Step 4: Verify it in the fleet panel
+## مرحلہ 4: فلیٹ پینل میں تصدیق کریں
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+ڈیسک ٹاپ یا ویب ایپ میں **آبزرویبلٹی** کھولیں، **لائیو** ٹیب پر جائیں اور نیچے
+تک اسکرول کریں۔ **ورکرز** ہر رجسٹرڈ ورکر کو اُس کے پلیٹ فارم، کورز، قابلیت کی
+کلیدوں اور آخری ہارٹ بیٹ کے ساتھ فہرست کرتا ہے؛ **جابز** اُن میں تقسیم شدہ جابز
+کی فہرست دیتا ہے۔
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+آپ کی ورکر کا وہاں حالیہ ہارٹ بیٹ کے ساتھ ظاہر ہونا ہی اِس بات کی تصدیق ہے کہ
+پیئرنگ اور رجسٹریشن کام کر گئی۔
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+کسی ورکر کے ٹائل سے آپ **ڈرین** کے ذریعے اُسے روک سکتے ہیں (موجودہ جابز مکمل
+کرے، کوئی نئی لیز نہ لے)، **جاری رکھیں** سے ڈرین ہو رہی ورکر بحال کر سکتے ہیں،
+**منسوخ کریں** سے اس کی اسناد باطل کر سکتے ہیں، یا **ہٹائیں** سے قطار ہٹا سکتے
+ہیں۔
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+ورکر اور جاب کی قطاریں سرور کی `global.db` میں رہتی ہیں — ورکر خود
+میٹیریلائزیشن کیش کے سوا ڈسک پر کچھ نہیں لکھتی۔
 
-## What the worker advertises
+## ورکر کیا ظاہر کرتی ہے
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+رجسٹریشن پر ورکر اپنی صلاحیتیں خودکار طور پر شناخت کرتی ہے اور شیڈیولر اُن کے
+مطابق جابز رکھتا ہے۔ آپ انہیں ہاتھ سے کنفیگر نہیں کرتے:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **OS اور آرک** (`macos`/`linux`/`windows`, `arm64`/`x64`) — درست پروبز، `uname -m` / `PROCESSOR_ARCHITECTURE` پر فال بیک کے ساتھ
+- **کورز اور RAM** — درست کور گنتی؛ جب پروب نہ ہو سکے تو RAM `0` تک گر جاتی ہے
+- **`flutter`** — جب Flutter SDK قابلِ رسائی ہو تو سیٹ ہوتا ہے (سادہ `flutter`، پھر `fvm flutter`)؛ golden-render جابز کو اِس کی ضرورت ہوتی ہے
+- **`sandbox`** — macOS پر `native-macos`، Linux پر `native-linux`۔ یہ ایک پلیسمنٹ اشارہ ہے، کوئی وعدہ نہیں: ورکر وہ بیک اینڈ ظاہر کرتی ہے جو اس کے پلیٹ فارم کے _پاس_ ہے، مگر وہ اپنے چلائے جانے والے جابز کو کسی ایک میں نہیں لپیٹتی۔ `cc_server` کے برعکس، `cc_worker` لیز پر لیا گیا جاب براہِ راست اسپان کرتی ہے
+- **`always-on` اور `parallel`** — ایک مخصوص `cc_worker` ہمیشہ دونوں ظاہر کرتی ہے، اس لیے یہ ایوال بیچز اور دیگر وقتی متوازی صلاحیت کے لیے اہل ہوتی ہے
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+شناخت حتیٰ الامکان ہوتی ہے: جو چیز بھی پروب نہ ہو سکے وہ اسٹارٹ اپ ناکام کرنے کے
+بجائے ایک محفوظ ڈیفالٹ تک گر جاتی ہے۔
 
-## What the worker would execute
+## ورکر کیا چلائے گی
 
-The lease protocol carries six job kinds:
+لیز پروٹوکول چھ جاب اقسام اٹھاتا ہے:
 
-| Kind           | What it is                                     |
+| قسم            | یہ کیا ہے                                       |
 | -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| `agentRun`     | ایک واحد ایجنٹ رن (ڈسپیچ)                      |
+| `pipelineStep` | ایک پائپ لائن قدم کا عمل درآمد                 |
+| `codeIndex`    | ایک ریپو کوڈ انڈیکس بلڈ                        |
+| `goldenRender` | ایک UI بصری گولڈن رینڈر (`flutter` درکار)      |
+| `benchmark`    | ایک پرفارمنس بینچ مارک رن                      |
+| `evalBatch`    | ایک ایوال بیچ (`parallel` صلاحیت کو ترجیح دیتا ہے) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+عمل درآمد ایک حقیقی subprocess-اسٹریمنگ نفاذ ہے، کوئی مکمل ایمبیڈڈ ایجنٹ رن ٹائم
+نہیں۔ جب کوئی لیز `repoRemote` اٹھائے تو ورکر ایک ریموٹ-اور-SHA-کلید شدہ کیش
+ڈائریکٹری میں `git clone --depth 1` کرتی ہے، پھر `git fetch` اور `git checkout`۔
+`agentRun` کے لیے یہ لیز ماحول کے `CC_JOB_COMMAND` میں دی گئی کمانڈ ورک ڈائریکٹری
+میں چلاتی ہے اور stdout اور stderr کو ایونٹس کے طور پر واپس اسٹریم کرتی ہے؛
+`CC_JOB_COMMAND` نہ ہونے پر یہ پرامپٹ کی بازگشت دیتی ہے تاکہ ٹرانسپورٹ پھر بھی
+شروع سے آخر تک آزمایا جائے۔ باقی اقسام چھوٹی حقیقی کمانڈز (`git rev-parse HEAD`،
+`git --version`) بطور دیانت دار پروبز چلاتی ہیں۔ لیز ماحول میں جاب سے وابستہ اسناد
+ہر subprocess میں انجیکٹ کی جاتی ہیں اور کبھی کسی لاگ میں نہیں لکھی جاتیں۔
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+ایونٹس بیچ ہو کر ہر 250ms یا ہر 32 ایونٹس پر فلیش ہوتے ہیں؛ ہر جاب ایک done ایونٹ
+اور ایک تکمیل رپورٹ پر ختم ہوتا ہے۔ یہ ماڈل ہارٹ بیٹس اور مختصر-TTL لیزز پر
+چلتا ہے: اگر کوئی ورکر رابطہ کھو دے تو اس کی لیز ختم ہو جاتی ہے اور سرور جاب کو
+دوبارہ کوشش کے لیے اٹھا لیتا ہے۔ ورکر پر کوئی پائیدار حالت نہیں اور ورکرز آپس
+میں نہ کسی اتفاقِ رائے پر چلتے ہیں نہ ایک دوسرے سے کام چھینتے ہیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)

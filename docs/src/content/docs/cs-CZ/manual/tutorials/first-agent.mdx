@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Odešlete prvního agenta
+description: Vytvoř agenta, dej mu prostor a úkol a sleduj, jak se běh vrací do konverzace.
 slug: cs-CZ/prirucka/tutorialy/prvni-agent
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Co postavíš
 
-By the end of this tutorial, you will have:
+Na konci tohohle tutoriálu budeš mít:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Agenta, kterého jsi vytvořil a nastavil ty
+- Prostor, kde si s tím agentem píšeš
+- Jeden dokončený běh, s commitnutou prací v izolovaném worktree a řádkem v protokolu běhů agenta
 
-Prerequisites: [Your first workspace](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/) completed, so this workspace has a repo registered and at least one model provider connected.
+Předpoklady: dokončený [Váš první pracovní prostor](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/), takže tenhle pracovní prostor má zaregistrovaný repozitář a aspoň jednoho připojeného poskytovatele modelů.
 
-## Step 1: Create an agent
+## Krok 1: Vytvoř agenta
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Jdi do **Nastavení → Pracovní prostor → Agenti**
+2. Klepni na **Nový agent**. Agent jménem „Nepojmenovaný agent“ vznikne hned a vybere se v soupisce — žádný dialog vytvoření a nic k potvrzení. Nastavíš ho na místě.
+3. Na kartě **Nastavení** vyplň:
+   - **Název**: něco krátkého a zapamatovatelného, třeba `alice`. To je to, co píšeš za `@`.
+   - **Název**: co dělá, např. „Backendový inženýr“
+   - **Adaptér**: `Control Center (built-in)`. Tohle zvol schválně — jen vestavěný harness se dá řídit uprostřed běhu a pozastavit na hranici tahu a na hostiteli serveru nepotřebuje nainstalované CLI.
+   - **Model**: vyber ze seznamu, který nabízí připojený poskytovatel
+   - **Dovednosti**: připoj ty, které sedí, třeba `testing` nebo `architecture`
+4. Stiskni **Uložit změny**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Agent bez adaptéru běží na vestavěné smyčce]
+Když pole **Adaptér** není nastavené, odeslání spadne zpět na **Control Center (built-in)** — smyčku agenta uvnitř serveru, takže na hostiteli není co instalovat. Model pořád potřebuje: když žádný nenastavíš, požádá Anthropic o jeho výchozí, což projde, když máš připojený účet Anthropic, a jinak selže hláškou `No credential for provider "anthropic"`. Nastav obojí výslovně i tak, jinak poběžíš na modelu, který sis nevybral.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Kontrolní bod.** Řádek soupisky ukazuje jméno tvého agenta a dutý stavový kroužek.
 
-## Step 2: Start a space
+## Krok 2: Založ prostor
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. V postranním panelu najdi sekci **Prostory** a klepni na tlačítko **+**
+2. Dej prostoru název
+3. Pod **Přidat agenty** vyber agenta, kterého jsi právě vytvořil
+4. Má-li pracovní prostor nějaké repozitáře, vyber ty, na kterých má tenhle prostor pracovat
+5. Klepni na **Vytvořit**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Prostor se otevře. Na pozadí Control Center pro tuhle konverzaci připraví copy-on-write worktree vybraných repozitářů, na vlastní větvi. Tvůj zdrojový checkout se nikdy nemění.
 
-## Step 3: Send a task
+## Krok 3: Pošli úkol
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Napiš jeden konkrétní malý úkol nad repozitářem, který jsi zaregistroval. Nejlíp sedí něco s ověřitelným výsledkem — přidej test, oprav lint, přejmenuj symbol.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Stiskni Enter. Nikoho nemusíš zmiňovat přes `@`: když je v prostoru jediný agent, probudí ho obyčejná zpráva. V prostoru s několika agenty vybere jednoho `@name`.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center složí prompt z pokynů, persony a skillů agenta a z kontextu prostoru a pak odešle běh.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Kontrolní bod.** Tlačítko odeslání v composeru se změní na **Zastavit** — v téhle konverzaci pracuje agent — a začne přicházet text.
 
-## Step 4: Watch it work
+## Krok 4: Sleduj, jak pracuje
 
-The conversation renders the run as it happens:
+Konverzace vykresluje běh tak, jak probíhá:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Uvažování**, přímo v konverzaci, jak agent přemýšlí
+- **Volání nástrojů**: čtení a zápis souborů, hledání, příkazy shellu, každé se svým výsledkem
+- **Text**: shrnutí, vysvětlení a otázky pro tebe
 
-If the agent asks something, answer in the conversation and it resumes.
+Když se agent na něco zeptá, odpověz v konverzaci a on pokračuje.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Metriky samotného běhu a ovládání pozastavení, obnovení a zastavení najdeš u běžícího agenta v sekci **Agenti** panelu **Obecné** u prostoru. Zvol **Otevřít aktivitu**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+V panelu aktivity odznak stavu hlásí **Běží** a po skončení běhu **Úspěšně**. Běh, který se zasekne nebo zacyklí, hlásí **Blokováno**; běh, který skončí chybou, hlásí **Selhalo**. V registru agentů je kroužek soupisky před prvním během dutý a plný, jakmile je agent zase nečinný.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/).
+Co běh ohraničuje: vlastní copy-on-write worktree, pověření vydaná při spuštění a odebraná při úklidu, očištěné prostředí, plocha nástrojů, kterou dovolí jeho režim, a guardraily akcí. Účinky jako push větve nebo otevření pull requestu se pouštějí zvlášť — viz [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/).
 
-## Step 5: Check the result
+## Krok 5: Zkontroluj výsledek
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Otevři **Nastavení → Pracovní prostor → Agenti** a vyber svého agenta
+2. Otevři kartu **Protokoly**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Kontrolní bod.** Jeden řádek běhu, se stavem, dobou trvání, časy začátku a konce a adaptérem, na kterém běžel.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Změny agenta jsou commitnuté na větvi konverzace, v jeho worktree. Commity jsou autorované jako agent a ty jsi uvedený v traileru `Co-Authored-By:`.
 
-## Getting a pull request
+## Jak získat pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Sám od sebe se pull request neotevře. Když ho chceš, požádej o něj ve stejné konverzaci:
 
-> Push this branch and open a pull request against the default branch.
+> Pushni tuhle větev a otevři pull request do výchozí větve.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Push (`gitPush`) i vytvoření PR (`prCreate`) ve výchozím stavu žádají tvoje schválení, takže před každým čekej potvrzení. Když ve chvíli výzvy není připojený schvalovatel, akce se zamítne, místo aby se povolila — guardraily se při selhání zavřou.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR se otevře pod identitou GitHub, jejíž token běh použil — pod tvojí, když jsi uložil osobní token — ne pod jménem agenta. Autorství agenta je vidět na commitech.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Otevřít ho můžeš i sám: panel **Správa zdrojového kódu** u prostoru má tlačítko **Vytvořit pull request**, které větev konverzace přenese na obrazovku sestavení, a **Pull requesty → Nový PR** otevře tu samou obrazovku prázdnou. Tam navazuje další tutoriál.
 
-## Recap
+## Shrnutí
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Vytvořil jsi agenta, nastavil mu adaptér a model, dal mu prostor a úkol a sledoval, jak skutečný běh doběhne v izolovaném worktree, aniž by se dotkl tvého checkoutu.
 
-**Next:** [Review your first pull request](/cs-CZ/prirucka/tutorialy/prvni-pr/) to learn the review workflow.
+**Další:** [Zkontrolujte první pull request](/cs-CZ/prirucka/tutorialy/prvni-pr/), kde se naučíš postup revize.
 
-For more on agents: [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/). For dispatch details: [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).
+Víc o agentech: [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/). Podrobnosti odeslání: [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).

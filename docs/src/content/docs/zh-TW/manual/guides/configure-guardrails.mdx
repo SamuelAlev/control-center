@@ -1,152 +1,114 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: 設定護欄
+description: 為代理動作設定允許、先詢問與拒絕規則，用假設情境探測器測試，並調整各空間的自主程度。
 slug: zh-TW/手冊/操作指南/設定護欄
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+本指南說明如何設定護欄：決定代理動作要執行、先要求核准，還是直接拒絕的規則。
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+護欄涵蓋每個會變更狀態的工具所宣告的十三種效果類別。它們在伺服器端、於工具被呼叫的那一刻強制執行，絕不會倚賴提示中的指示。
 
-## Set a decision for an action class
+## 為動作類別設定決策
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. 前往 **設定 → 工作區 → 代理權限**
+2. 用分段控制項選擇範圍：**工作區**、**代理**（接著選擇代理），或**空間**（接著選擇空間）
+3. 在動作類別那一列，選擇**允許**、**先詢問**或**拒絕**
+4. 若要移除你設下的規則，請按該列末端出現的重設按鈕（**還原為繼承**）——決策會退回較廣的範圍
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+每一列都會以狀態標籤顯示生效的決策，並以徽章顯示它的來源：**此範圍**、**繼承**或**內建預設**。這份矩陣是在 Agent（`chat`）模式下解析的，因此這裡永遠不會出現**模式預設**——若要看那一層，請選取唯讀模式後使用假設情境探測器。
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+撰寫規則需要 `admin` 角色。讀取矩陣則不需要。
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+檢查點：在工作區範圍把**推送到遠端**設為**拒絕**，然後對 `git push origin main` 執行下方的假設情境探測器。結果會顯示 `deny`，來源為 `workspace`。
 
-## Understand how a decision is resolved
+## 了解決策如何解析
 
-Resolution is **specificity first, then restrictiveness**:
+解析順序是**先比具體性，再比限制性**：
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. 先看**空間**規則，再看**代理**，最後是**工作區**。第一個有相符規則的範圍作出決定，解析隨即停止
+2. 若沒有規則相符，就套用**模式預設**——唯讀模式（plan、review、orchestrate）會拒絕十三種類別中的十一種
+3. 若模式沒有任何意見，就套用**內建預設**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+在同一個範圍內，命令規則以最長相符前綴解析，而具體程度相同的衝突則以**最嚴格**者為準——拒絕勝過先詢問，先詢問勝過允許。一個動作若宣告多個類別，會各自獨立解析，再以最嚴格者合併。
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[允許勝不過拒絕]
+較窄的規則以具體性勝出，同分時則以限制性決定——
+因此工作區範圍的**允許**，並不能覆寫任何地方的**拒絕**。
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+**先詢問**的決策會跳出一個核准提示，涵蓋所有解析為 `prompt` 的類別。**在沒有連接任何核准者的情況下，一律拒絕**，shell 命令與執行環境工具呼叫皆然。這是刻意的：一次未設閘門的執行，比一次被拒絕的執行更糟。
 
-### Action classes and built-in defaults
+### 動作類別與內建預設
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| 動作類別                   | 內建預設   |
+| -------------------------- | ---------- |
+| 刪除檔案                   | 先詢問     |
+| 寫入工作樹以外             | 允許       |
+| 建立提交                   | 允許       |
+| 推送到遠端                 | 先詢問     |
+| 開啟 pull request          | 先詢問     |
+| 發佈審查或合併             | 先詢問     |
+| 寫入外部追蹤器             | 先詢問     |
+| 存取網路                   | 允許       |
+| 讀取密鑰                   | 允許       |
+| 安裝套件                   | 允許       |
+| 執行程序                   | 允許       |
+| 變更工作區結構             | 允許       |
+| 操控 enclosure（rig）      | 允許       |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+這套分類法是封閉的。新工具若未宣告其類別就出貨，會在 CI 的棘輪測試中失敗，因此不會有任何東西帶著悄然為空的效果集合出現。
 
-## Test a rule with the what-if probe
+## 用假設情境探測器測試規則
 
-Before changing a rule, check how the current policy already resolves it.
+在變更規則之前，先查看目前政策已經如何解析它。
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. 在同一頁面中，捲到 **會怎樣？**
+2. 選擇一個**動作**（十三種類別之一）
+3. 可視需要填入**指令**（例如 `git push origin main`）、**代理**、**空間**與**模式**
+4. 讀取結果：決策、原因，以及**來源：**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+探測器會針對你目前的實際規則，執行與強制執行路徑相同的解析器，因此答案精確無誤。如果結果令你意外，請在上方的矩陣中變更規則，然後再探測一次。
 
-## Set a space's autonomy dial
+## 設定空間的自主程度旋鈕
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+這個旋鈕是每個代理在每個空間各一組，而且會與規則疊加，而不是取代規則。
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. 開啟該空間
+2. 從空間標頭開啟**管理參與者**
+3. 在代理那一列的**自主程度**底下，選擇一個層級：
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| 層級                 | 效果                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **預設**             | 沒有空間設定——行為等同**經核准後行動**                                                            |
+| **僅提出建議**       | 每個受閘控的工具都直接拒絕，並以訊息告知代理改為提出這項動作                                        |
+| **經核准後行動**     | 有風險的動作會落入失效即拒絕的核准關卡                                                             |
+| **自由行動**         | 預先核准任何未解析為硬性拒絕的動作                                                                 |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[自由行動會吞掉所有提示]
+在**自由行動**下，**先詢問**的決策會不經詢問就獲得核准。
+只有 `deny`——來自規則、模式預設或內建預設——仍會阻擋。
+請在你正盯著該空間時才動用它，別把它當成預設。
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+這個旋鈕只觸及內建執行環境。Claude Code 配接器會在這個閘門之外執行它自己的工具。
 
-## Know where guardrails do not reach
+## 了解護欄觸及不到的地方
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+同一頁面底部的**規則套用位置**表格，就是這件事的應用程式內版本：它會針對每個效果類別，說明各個執行器是在政策閘門攔截它、交給沙箱處理，還是根本無法攔截。
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/zh-TW/手冊/操作指南/沙箱原則/).
+- **Claude Code 配接器**自身的工具呼叫不受閘控。Claude Code 是以 `--dangerously-skip-permissions` 啟動，因此它的讀取、寫入、編輯與 bash 呼叫永遠不會通過這道防護。對該配接器設有閘門的，是它回呼的 MCP 工具介面，以及 Control Center 為了啟動它而生成的 shell 命令。
+- **模式自身的輸出動詞**（`submit_plan`、`propose_orchestration`）是固定的，永遠無法被拒絕——否則模式在結構上就無法產出它唯一的交付成果。
+- **沙箱是否為這些規則提供後盾，取決於主機。** 當 `cc_server` 找到後端時，它會包裝 Claude Code CLI 與執行環境的 `bash` 工具，因此即使規則不是你寫的，底下仍有作業系統下限。在 **Windows 上完全沒有下限**，而在缺少 `bwrap` 與 `socat` 的 Linux 或 WSL2 上也沒有——在那些環境裡，護欄加上模式的工具介面就是全部的強制執行，而不是第二道防線。請用[設定沙箱原則](/zh-TW/手冊/操作指南/沙箱原則/)確認你屬於哪一種情況。
 
-## Related guides
+## 相關指南
 
-- [Configure sandbox policies](/zh-TW/手冊/操作指南/沙箱原則/)
-- [Create and configure an agent](/zh-TW/手冊/操作指南/建立代理/)
-- [Manage adapters and models](/zh-TW/手冊/操作指南/配接器/)
+- [設定沙箱原則](/zh-TW/手冊/操作指南/沙箱原則/)
+- [建立並設定代理](/zh-TW/手冊/操作指南/建立代理/)
+- [管理配接器與模型](/zh-TW/手冊/操作指南/配接器/)
 
-## Related concepts
+## 相關概念
 
-- [Guardrails — one policy for every mutating action](/zh-TW/手冊/概念/護欄/)
-- [Modes](/zh-TW/手冊/概念/模式/)
-- [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/)
+- [護欄——為每個會變更狀態的動作提供同一套政策](/zh-TW/手冊/概念/護欄/)
+- [模式](/zh-TW/手冊/概念/模式/)
+- [沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)

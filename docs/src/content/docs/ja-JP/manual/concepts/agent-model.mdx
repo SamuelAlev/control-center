@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: エージェントモデル
+description: Control Center におけるエージェントの実体、どのフィールドが動作を変えるのか、そして実行先のアダプターが強制できる内容をどう決めるのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/エージェントモデル
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## エージェントとは何か
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+エージェントは、ペルソナ、スキルの集合、実行するアダプター、そしてケイパビリティの集合を備えた名前付きのアクターです。エージェントは、人間と同じ意味でのプリンシパルです。メッセージを作成し、チケットを所有し、レビューを残し、同じ名簿に表示されます。実際に作業を行うのはエージェントです。
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+各エージェントは正確に1つのワークスペースに属します。これは厳格な不変条件です — `agent.workspaceId` は null にならず、エージェントの行がどのデータベースファイルに入るかを決めるのはエージェント自身のワークスペースであり、ワークスペースを持たないエージェントの作成は拒否されます。
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+エージェントはディレクトリでもあります。その定義はワークスペースのデータディレクトリ配下の `agents/<slug>/AGENTS.md` にあり、保持するスキルは `agents/<slug>/.agents/skills` にシンボリックリンクされます。データベースの行とファイルは一緒に書き込まれます。シードは冪等です。エージェントの行がすでに存在していても、ディスク上のファイルとスキルのリンクはそれでも書き直されます。本番環境での呼び出し元はワークスペースの作成であり、サーバー起動のたびではありません。
 
-## What an agent carries
+## エージェントが持つもの
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| 属性                    | 内容                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | 短いスラッグ風の識別子（`architect`、`qa`）。`@mentions` が解決される対象でもある                                              |
+| `title`                 | 人間が読める職種名                                                                                                            |
+| `persona`               | 自由記述の性格と振る舞いに関する指示。プロンプトのセクションとして注入される                                                  |
+| `systemPrompt`          | 任意の追加指示。「Agent instructions」セクションとして注入され、組み立てられたプロンプトの残りを置き換えるものではない        |
+| `skills`                | 大文字小文字を区別しないスキル名の集合。ディスク上のスキルリンクとして反映される                                              |
+| `adapterId`             | エージェントがディスパッチする先のランナー。**null の場合は内蔵ループにフォールバックする**                                    |
+| `modelId`               | そのアダプター内で使用するモデル                                                                                              |
+| `effort`                | 推論レベル。選択したモデル固有の語彙から選ばれる                                                                              |
+| `contextSize`           | コンテキストウィンドウの上書き                                                                                                |
+| `capabilities`          | 資格情報とエグレスのフラグ。起動時に確認される                                                                                |
+| `silenceTimeoutMinutes` | 無応答を監視するウォッチドッグのエージェント単位の上書き（1–240）                                                             |
+| `reportsTo`             | 親エージェントの id — 組織図が描く報告ライン                                                                                  |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+これらはすべて 設定 → ワークスペース → エージェント で編集します。**新しいエージェント** は名前のないエージェントを作成し、その後で内容を入力します。
 
-## Skills
+## スキル
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+スキルは、エージェントエンティティ上の大文字小文字を区別しない名前です。スキルに関しては、2つの別々のことが起こります。
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- 名前は、組み立てられたプロンプト内の「Skills」という見出しの下に列挙されます。エンティティの集合がそれ自体で行うのはこれだけです — それをキーにしたスキル単位のプロンプトライブラリはありません。
+- 名前付きの各スキルのディレクトリ（ワークスペース内の `skills/<slug>/SKILL.md`）は、エージェント自身のフォルダにリンクされます。内蔵ハーネスでは、リンクされたスキルのフロントマターがシステムプロンプトに自動読み込みされ、エージェントは必要に応じて本文を読み取ります。会話で `/skill:<name>` と入力すると、その本文がそのターン向けのディレクティブとして読み込まれます。
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ja-JP/マニュアル/ハウツーガイド/スキル管理/).
+外部から取得したスキルは、取得と書き込みの間にフェイルクローズドなサプライチェーンスキャンを通ります — 判定なしにスキルの内容がディスクやプロンプトに到達することはありません。外部とは、スキルソースとして自分で登録した GitHub リポジトリです。キュレーションされたストアは存在しないため、リポジトリ自身のメタデータ（説明、スター数、スキル名）は信頼できない表示データであり、スキャンの判定だけが唯一の安全シグナルです。インストールではスキルのディレクトリ全体を取得し、`skills-lock.json` で取得元のコミットに固定します。その後の更新では、何かを置き換える前に同じゲートをもう一度通過します。手順は[スキルのインストールと管理](/ja-JP/マニュアル/ハウツーガイド/スキル管理/)にあります。
 
-### Repo-scoped skills
+### リポジトリ単位のスキル
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+リポジトリは、従来の場所（`.agents/skills/`、`.claude/skills/`、`.opencode/skills/`）のいずれかに独自のスキルを同梱できます。スペースはリンクされたすべてのリポジトリを `repos/<name>/` 以下に並べてチェックアウトしますが、エージェントが同時に作業するのは1つのリポジトリだけです — そのためエージェントが保持するのは**そのリポジトリの**スキルだけであり、移動すると入れ替わります。
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+どのリポジトリがアクティブかは、エージェントが触れるファイルから推測されます。`repos/<name>/` 以下にファイルを書き込むとそのリポジトリがアクティブになり、単にリポジトリをまたいで読むだけではアクティブになりません。そのため、シンボルを追って兄弟サービスに移動しても、タスクの足元でスキルセットが入れ替わることはありません。単一リポジトリのスペースでは、最初のターンの前に答えが判明しています。
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+このスコープ設定はコンテキスト予算の判断です。スキルのインデックスは毎ターンプロンプトに含まれますが、本文は含まれないため、すべてのリポジトリのスキルを一度に列挙すると継続的にトークンを消費します — しかも、あるサービスの `testing` スキルは、作業が別のサービスにあるときには積極的に誤解を招きます。同じ理由から、エージェントのインデックスが運ぶのは1つのリポジトリですが、コンポーザーはそのようにはスコープされません。スキルを自分で指定するのは1つの明示的な行為なので、`/skill:<repo>:<name>` はスペース内のどのリポジトリにも届きます。
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+リポジトリのスキルは、内蔵ハーネスだけでなく、**すべての**アダプターで読み込まれます。アクティブなリポジトリのスキルはエージェントの作業ディレクトリに実体化され、これは Claude Code がすでにスキャンするパスです。同じインデックスは、内蔵ハーネスが読み取る `AGENTS.md` にも組み込まれます。リポジトリのスキルは、そのいずれが起きる前にも、インストールされたスキルと同じフェイルクローズドスキャンを通ります — チェックアウトされたリポジトリはクローンされたコンテンツであり、そのフロントマターはプロンプトに到達します。
 
-## Capabilities
+## ケイパビリティ
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+ケイパビリティが制御するのは、実行に何が*渡される*かであり、そのファイルシステムが何に触れられるかではありません。資格情報ブローカーが起動時にそれらを確認します。ケイパビリティがオフの場合、対応するトークンは単に注入されません。
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **リポジトリへのプッシュ** — `git push` に使用する GitHub トークンの注入を制御します。
+- **GitHub API** — `GH_TOKEN` の注入と api.github.com へのエグレスを制御します。
+- **チケット管理** — チケットプロバイダーの API キーとそのドメインへのエグレスを制御します。
+- **ネットワークエグレス** — 任意の外向きリクエスト。
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+実行はエージェント自身の行からこれらを解決します。エージェントに設定がない場合は、固定の保守的なデフォルトが適用されます。3つの資格情報フラグはオフ、ネットワークエグレスはオンです。エージェントフォームの「サンドボックスの権限」トグルで、そのフォールバックとエージェントに保存されたカスタムセットを切り替えます。
 
-See [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) for the other half of the story, including what is and is not enforced at the filesystem level.
+ファイルシステムレベルで何が強制され、何が強制されないかを含む、話の残り半分については[サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)を参照してください。
 
-## The adapter decides what can be enforced
+## 何を強制できるかはアダプターが決める
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+エージェントで最も影響の大きい単一のフィールドはアダプターです。アダプターのトランスポートが、Control Center のポリシーのうち実際に強制できる範囲を決めるからです。
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| トランスポート   | アダプター                | Control Center が強制する内容                                                                                                                                                                                                                                            |
+| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 内蔵ハーネス     | Control Center (built-in) | すべて。ツールサーフェスはモードから*構築*されるため、許可されていないツールは単に拒否されるのではなく存在しません。すべての呼び出しが承認ゲートとアクションガードレールを通過します。完了コントラクトは、成果物を出さずに終了した実行を促し、その後失敗させることができます |
+| Claude CLI       | Claude Code               | 提供される `mcp__*` ツールのみ。Claude 自身の読み取り・書き込み・編集・シェルのツールはそのプロセス内にあり、見えないまま実行されます — また、非対話の `claude -p` はそうしないと自身のプロンプトで永久にブロックしてしまうため、`--dangerously-skip-permissions` を付けて起動されます |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+具体的には、**サブエージェント、実行中の軌道修正、一時停止と再開（ひいては引き継ぎ）、および構造的なモードの強制をサポートするのは内蔵ハーネスだけです。** Claude Code はそのどれも得られません。
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[OS サンドボックスは下限であり、モードの強制装置ではなく、すべてのホストに備わっているわけでもない]
+上のマトリクスは、Control Center が*見てゲートできる*ものについて述べたものです。その下層では、`cc_server` が存在する場合に Claude Code CLI をホストの OS サンドボックスで包みます — macOS では Seatbelt、Linux と WSL2 では bubblewrap — そのため、見えない `rm` や見えない書き込みも OS によって制限されます。**Windows にはバックエンドがまったく存在せず**、`bwrap` と `socat` のない Linux や WSL2 ではプローブが「なし」を報告するため、そこではこれらの実行は環境のサニタイズ、ブローカー経由の資格情報、Control Center が見ることのできる呼び出しに対するガードレール、そして会話自身のワークツリー（`rift` が提供される場合はコピーオンライト、Windows では `git worktree`）にフォールバックします。
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/).
+サンドボックスが*ゲート*ではないという点が重要です。サンドボックスはプロセスが読み取り・書き込み・接続できる範囲を制限します — 読み取り専用モードは読み取り専用のバインドマウントとして実際にサンドボックスに到達します — が、呼び出しを横取りしたり、承認を要求したり、CLI が何を試みたかを後から教えたりすることはできません。それに、すぐ上で挙げた4つのケイパビリティが、内蔵ハーネスにあって他のアダプターにないものの依然としてすべてです。[サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)を参照してください。
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+アダプターが**ない**エージェントは **Control Center (built-in)** にフォールバックします — サーバー内部のループであり、インストールする CLI はありません — そしてその実行ログには `cc-harness` が記録されます。シードされるすべてのエージェントはアダプターもモデルもなしで作成されるため、新しいワークスペースの5体のエージェントは、エージェントごとにアダプターとモデルを設定するまで、すべてそこで Anthropic のデフォルトモデル上で実行されます。オンボーディングの「デフォルトアダプター」の選択はクライアント側の設定であり、サーバーが読み取ることはなく、すでに作成されたエージェントに遡って適用されることもありません。
 
-## Where agents come from
+## エージェントはどこから来るのか
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **ワークスペースとともにシードされます。** すべてのワークスペース（最初のものだけでなく）に、CEO とそれに報告する4人のスペシャリスト（`qa`、`architect`、`engineer`、`librarian`）が用意され、ワークスペースの作成時にバックグラウンドで冪等に作成されます。[ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)を参照してください。
+- **手動で追加** 設定 → ワークスペース → エージェントから行います。エージェントに同僚を採用するよう頼んでも行は作成されません。この画面を使用してください。
 
-## Live state
+## ライブ状態
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+エージェントには保存されたステータス列がありません。そのライブ状態は、読み取られるたびに最新の実行ログから導出されます。
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| 状態       | 意味                                                                     |
+| ---------- | ------------------------------------------------------------------------ |
+| `neverRun` | 実行ログが存在しません                                                   |
+| `running`  | 少なくとも1つの実行が現在進行中です                                       |
+| `failed`   | 最新の実行がエラーになったか、その生存状態が failed または dead です      |
+| `blocked`  | 最新の実行の生存状態が blocked、stalled、または looping です              |
+| `idle`     | それ以外すべて — エージェントは以前に実行されたことがあり、進行中のものは何もありません |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+さらに2つの状態 `queued` と `succeeded` が、会話の実行ツリー内の個々の実行に対して存在します。名簿がこれらを生成することはありません。終了した実行がグリーンであることは実行についての事実であり、エージェントについての事実ではないからです。
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/).
+プレゼンス名簿は、ライブの実行イベントからサーバー側で合成された、並行するより粗い像を表示します — 思考中、実行中、承認待ちでブロック中、完了 — これがエージェントを人間の隣に表示させます。[マルチプレイヤー](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)を参照してください。
 
-## Related concepts
+## 関連する概念
 
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): what happens when an agent is actually run
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): what constrains a run today
-- [Agent configuration reference](/ja-JP/マニュアル/リファレンス/エージェント設定/): the full field list
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): エージェントが実際に実行されるときに何が起こるか
+- [モード](/ja-JP/マニュアル/コンセプト/モード/): エージェントのツールサーフェスを形作る会話単位の設定
+- [マルチプレイヤー](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): プリンシパルとしてのエージェント、プレゼンス、自律度ダイヤル
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): 現在、実行を制約しているもの
+- [エージェント設定リファレンス](/ja-JP/マニュアル/リファレンス/エージェント設定/): フィールドの完全な一覧

@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Puente de chat
+description: Proveedores, comandos, credenciales, capacidades, operaciones RPC y almacenamiento del puente de chat.
 slug: es-ES/manual/referencia/puente-de-chat
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Proveedores
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Proveedor | Valor serializado | Transporte                 | Tipo de espacio |
+| --------- | ----------------- | -------------------------- | --------------- |
+| Slack     | `slack`           | Socket Mode (WSS saliente) | `slack`         |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack es el único proveedor.** `ChatProvider` es una enumeración de un único valor y `cc_server` registra un solo plugin. El esquema, todas las búsquedas y todos los índices únicos llevan la clave `provider`, así que los identificadores nunca cruzan entre proveedores y añadir uno es un cambio solo del servidor.
 
-One provider-side app per **workspace × provider**.
+Una app del lado del proveedor por **espacio de trabajo × proveedor**.
 
-## Chat commands
+## Comandos de chat
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+El nombre del comando es por app (`cc` de forma predeterminada, así que `/cc`). Un administrador puede cambiarlo; el puente usa entonces aquel con el que se invocó por última vez.
 
-| Command                               | Effect                                                        |
+| Comando                               | Efecto                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (o `/cc` sin verbo)        | Enumera lo que puede hacer el bot                             |
+| `/cc link <code>`                     | Canjea un código de un solo uso y vincula la identidad de chat del remitente |
+| `/cc ticket <title>`                  | Registra un ticket local informado por el miembro vinculado   |
+| `/cc ticket <title> \| <description>` | Lo mismo, con todo lo que sigue al primer `\|` como descripción |
+| Verbo desconocido                     | Informa del verbo desconocido junto con el texto de ayuda     |
 
-Ways to reach an agent:
+Formas de llegar a un agente:
 
-| Gesture                    | Behavior                                                                                                               |
+| Gesto                      | Comportamiento                                                                                                         |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` en un canal       | Abre un hilo de Slack y un espacio correspondiente en Control Center; el agente responde en el hilo de Slack          |
+| Respuesta en un hilo de Slack puenteado | Continúa el mismo espacio de Control Center — no hace falta mención                                        |
+| Mensaje normal en un canal | Se ignora (no va dirigido al bot y no está en un hilo de Slack puenteado)                                              |
+| Mensaje directo al bot     | Un espacio de Control Center por conversación por mensaje directo; define un título de hilo de Slack y un estado «is thinking…» mientras el agente trabaja |
 
-## Credential fields (Slack)
+## Campos de credenciales (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Los declara el descriptor del proveedor, que es lo que genera el diálogo de conexión y valida el envío.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Id. de campo         | Etiqueta                        | Obligatorio | Prefijo | Dónde se encuentra                                              |
+| -------------------- | ------------------------------- | ----------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Token del bot                   | Sí          | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Token de aplicación             | Sí          | `xapp-` | Basic Information → App-Level Tokens, ámbito `connections:write` |
+| `configRefreshToken` | Token de configuración de la app | No         | `xoxe`  | Tokens de configuración de la app en api.slack.com/apps         |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` es la credencial de gestión de la app: sin ella la conexión funciona, pero el bot no se puede crear ni editar desde Control Center. Rota en cada uso y el valor rotado se guarda de inmediato.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Los valores se recortan, las claves no declaradas se descartan y un prefijo que no coincide se rechaza con la misma frase en el cliente y en el servidor. Los campos obligatorios deben estar presentes en cada conexión; un campo opcional que se deja vacío conserva lo que ya estaba guardado.
 
-## Slack app requirements
+## Requisitos de la app de Slack
 
-Bot token scopes:
+Ámbitos del token del bot:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Suscripciones a eventos del bot:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Ajustes estructurales que Control Center impone cuando crea o edita la app: Socket Mode activado, ninguna URL de solicitud, la pestaña Messages activada y con escritura habilitada, el bot `always_online`, los ámbitos y eventos necesarios fusionados con lo que la app ya tenga (nunca restados) y un comando slash con la descripción `File a ticket or link your Control Center account` — el marcador que identifica el comando propio de Control Center en un manifiesto exportado.
 
-## Connection states
+## Estados de conexión
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Estado            | Valor serializado | Significado                                                     |
+| ----------------- | ----------------- | --------------------------------------------------------------- |
+| Sin conectar      | `disconnected`    | No hay credenciales guardadas para este espacio de trabajo × proveedor |
+| Conectando…       | `connecting`      | Credenciales guardadas, el transporte está conectando o reconectando |
+| En vivo           | `connected`       | El transporte está activo y recibe eventos                      |
+| Error de conexión | `error`           | Guardadas pero fallando; el error del propio proveedor se muestra al lado |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+La reconexión es un retroceso exponencial con fluctuación aleatoria, acotado a 30 segundos. Una rotación de socket iniciada por el proveedor reconecta de inmediato sin aumentar el retroceso. Una credencial rechazada (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) o un ámbito ausente es terminal: el puente deja de reintentar hasta que lleguen credenciales nuevas.
 
-## Provider capabilities (Slack)
+## Capacidades del proveedor (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+El puente está escrito contra la superficie más rica y se degrada capacidad a capacidad.
 
-| Capability                | Slack  | Effect when absent                                                                             |
-| ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| Capacidad                 | Slack  | Efecto cuando falta                                                                             |
+| ------------------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `streaming`               | sí     | La respuesta entera se publica una sola vez, al final                                           |
+| `streamingRequiresThread` | sí     | Un destino de respuesta sin anclaje de hilo publica respuestas enteras                          |
+| `ephemeralMessages`       | sí     | La respuesta a un comando slash sin un identificador de respuesta utilizable se descarta (las negativas siempre se publican en el hilo) |
+| `threadStatus`            | sí     | Ninguna línea transitoria «is thinking…»                                                        |
+| `threadTitle`             | sí     | El hilo de chat conserva su título predeterminado                                               |
+| `slashCommands`           | sí     | Ninguna superficie `/cc`                                                                        |
+| `taskCards`               | sí     | Solo texto — ninguna tarjeta sobre la respuesta y ningún enlace «View in Control Center»        |
+| `maxMessageLength`        | 39.000 | Las respuestas más largas se truncan con un puntero a Control Center                            |
+| `maxStreamChunkLength`    | 3.800  | Los añadidos se dividen en un límite de párrafo, línea o espacio                                |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Anunciar streaming no es prometerlo: el de Slack necesita la función Agents & AI Apps en un plan de pago. Una negativa en el momento de la llamada (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) se recuerda durante toda la vida de la conexión y se expone como `streamingAvailable: false`. Las tarjetas de tarea de Slack viajan en la misma llamada, así que un Slack que rechace el modo de visualización de la tarjeta conserva su transmisión y pierde solo la tarjeta, una vez, durante toda la vida de la conexión.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Una transmisión también tiene que indicar para quién es. Slack exige tanto un usuario destinatario como su equipo para abrir una en un **canal** (un mensaje directo no lo exige) y, en caso contrario, rechaza con `missing_recipient_user_id` / `missing_recipient_team_id` — una negativa por llamada, así que el puente sigue intentándolo y, mientras tanto, el turno llega como una sola respuesta publicada. El destinatario es quien preguntó, tomado del mensaje entrante (su equipo, no el de la app, de modo que un canal de Slack Connect se resuelva correctamente). Para un turno que nadie inició desde el chat —trabajo lanzado en Control Center sobre una conversación ya puenteada— es el miembro cuyo vínculo creó el puente; si desde entonces ha desvinculado su cuenta de chat, ese turno se publica entero en lugar de transmitirse.
 
-## Task cards
+## Tarjetas de tarea
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Una tarjeta agrupada por turno del agente (`task_display_mode: plan`), con una fila por paso. Cada fila es un `task_update` de `id` + `title` + `status`, más unos `details` de un solo envío cuando el pensamiento está listo. Los `details` y el `output` de un mismo id se concatenan sin separador, así que los `details` se envían una vez y el `output` nunca se transmite. El título del plan es la petición; la respuesta es un añadido posterior aparte que lleva un fragmento `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
+| Parte          | Contenido                                                                                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Título del plan | Lo que se pidió                                                                                                                                              |
+| Fila de preparación | `Working on it…`, después `Cloning …`, después `Starting the agent…` — una fila, con el título reemplazado                                              |
+| Fila de pensamiento | `Thinking…`, añadida cuando el agente empieza a razonar; el pensamiento son los `details` de esta fila, enviados una vez al terminar el razonamiento      |
+| Filas de herramientas | Una por herramienta (`Bash which swift`), con un id único para que se sitúen una al lado de otra                                                       |
+| Estado         | En curso mientras esa fila se ejecuta; completa cuando empieza la fila siguiente o termina el turno; error si falló, se interrumpió o alcanzó el límite de turnos |
+| Llamada a la acción | `View in Control Center` como fila final cuando termina el turno — ausente mientras el trabajo sigue en marcha y ausente cuando el servidor no tiene una URL pública accesible |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Lo que una tarjeta nunca lleva: salida de herramientas, un argumento fuera de esa lista de permitidos o cualquier cosa leída de la base de datos. La prosa del razonamiento son solo los detalles de la fila `Thinking…` (limitados a 256 caracteres), no el cuerpo del mensaje. Una tarjeta que no diría nada nuevo no se reenvía. Una mención abre la transmisión de inmediato para que el hilo de Slack no quede en silencio; un turno que después no produjo ningún texto cierra esa misma tarjeta con una nota breve en lugar de publicar un segundo mensaje. Un turno sin palabras en un espacio que nunca abrió una transmisión (sin tarjetas, o con el streaming ya rechazado) publica de todos modos un mensaje que lleva la tarjeta terminada y la nota.
 
-Streamed and posted cards are different payloads:
+Las tarjetas transmitidas y las publicadas son cargas útiles distintas:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Forma      | Estructura                                          | Prosa                                            |
+| ---------- | --------------------------------------------------- | ------------------------------------------------ |
+| Transmitida | `plan_update` más fragmentos `task_update` con clave `id` | Cadena simple, limitada a 256 caracteres por fragmento |
+| Publicada  | Un bloque `plan` que envuelve `task_card`s con clave `task_id` | Texto enriquecido                          |
 
-Failure handling:
+Gestión de fallos:
 
-| Situation                                    | Behavior                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Situación                                             | Comportamiento                                                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| El proveedor rechaza la tarjeta en un añadido         | El añadido se reintenta de inmediato sin ella; la prosa sigue llegando en directo y las tarjetas se descartan durante toda la vida de la conexión |
+| El proveedor rechaza también la prosa                 | La transmisión se cierra y la respuesta se publica entera                                                                   |
+| La transmisión se rompe después de que parte de la respuesta haya llegado | La transmisión se cierra y no se vuelve a publicar nada                                                |
 
-See [Chat bridges](/es-ES/manual/conceptos/puentes-de-chat/) for why the payload is split this way.
+Consulta [Puentes de chat](/es-ES/manual/conceptos/puentes-de-chat/) para saber por qué la carga útil se divide así.
 
-### Setup, before there is a turn
+### Preparación, antes de que haya un turno
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+La tarjeta se abre cuando se acepta una mención, antes del clonado y antes del primer token; el turno que sigue adopta la misma tarjeta y la misma transmisión. La narración a partir de ahí viene de `SpaceProvisioningChanged` en el bus de eventos de dominio — el mismo progreso que el aviso de aprovisionamiento del escritorio lee de la fila del espacio.
 
-| Provisioning state          | Narration                                                      |
+| Estado de aprovisionamiento | Narración                                                      |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Mención aceptada            | `Working on it…`                                               |
+| Paso `repo`                 | `Cloning <repo>…`                                              |
+| Paso `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| Paso `script`               | `Running the setup script for <repo>…`                         |
+| Paso `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, aún sin paso | `Preparing the workspace…`                                    |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| El agente razona            | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+La narración de la preparación exige las cuatro condiciones:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Condición                                      |
+| ---------------------------------------------- |
+| El proveedor muestra tarjetas               |
+| El streaming está disponible en esta conexión  |
+| El espacio tiene una petición de chat en curso |
+| Ninguna tarjeta informa ya de un turno allí    |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+La petición permanece en curso hasta que empieza un turno o falla la preparación. Un evento `ready` sin ninguna tarjeta ya abierta es un espacio ya preparado y se deja en silencio, y un aprovisionamiento que nadie en el chat está esperando —una conversación abierta en la app, una abandonada que se reanuda al arrancar— no produce ninguna tarjeta.
 
-## The `/open` bounce page
+## La página intermedia `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Los productos de chat aceptan `http(s)` en un enlace y nada más, así que una llamada a la acción no puede nombrar directamente el esquema del escritorio.
 
-| Property   | Value                                                                                                                                       |
+| Propiedad  | Valor                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Ruta       | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Origen     | Derivado de la URL pública del servidor (`ws` → `http`, `wss` → `https`); el loopback se mantiene                                          |
+| Respuesta  | Una pequeña página HTML con no-store que navega a `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` y muestra un botón manual |
+| Validación | Los ids deben coincidir con `[A-Za-z0-9_.-]{1,128}`; cualquier otra cosa es un 404                                                          |
+| Acceso     | Pública e inerte — no lee ninguna base de datos, así que no es un oráculo de existencia; la app a la que abre es la que autoriza            |
 
-## Bot profile fields
+## Campos del perfil del bot
 
-| Field              | Limit       | Notes                                                                                             |
+| Campo              | Límite      | Notas                                                                                             |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 caracteres | Su valor predeterminado es `Control Center · <workspace name>`                                  |
+| `botDisplayName`   | 1–80 caracteres | Su valor predeterminado es `control-center`                                                     |
+| `description`      | ≤ 140 caracteres |                                                                                              |
+| `agentDescription` | ≤ 300 caracteres | Se muestra encima de un mensaje directo con el bot                                            |
+| `command`          | ≤ 32 caracteres | Normalizado: se quitan las barras iniciales, se pasa a minúsculas, se elimina `[^a-z0-9_-]` y, si queda vacío, se recurre a `cc` |
+| `agentEnabled`     | —           | Si se expone la experiencia de mensajes directos y agente                                         |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Un campo vacío significa «dejarlo como está», no «vaciarlo». Los límites son los de Slack, que son los más estrictos de los productos modelados.
 
-## Link codes
+## Códigos de vinculación
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Propiedad      | Valor                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| Longitud       | 6 caracteres                                                                             |
+| Alfabeto       | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (sin `0`/`O`, `1`/`I`, `U`)                             |
+| Vigencia       | 15 minutos                                                                               |
+| Usos           | Uno                                                                                      |
+| Almacenamiento | En memoria — reiniciar el servidor invalida los códigos pendientes                       |
+| Alcance        | Un espacio de trabajo y un proveedor; generar un código nuevo invalida el anterior del miembro |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+El canje se compara sin distinguir entre mayúsculas y minúsculas. Los códigos desconocidos, caducados, de otro espacio de trabajo y del proveedor equivocado fallan todos de forma idéntica a propósito.
 
-## Link methods
+## Métodos de vinculación
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Método | Valor serializado | Cómo                                                                            |
+| ------ | ----------------- | ------------------------------------------------------------------------------- |
+| Código | `code`            | El miembro canjeó `/cc link <code>`                                             |
+| Correo | `email`           | El correo verificado del proveedor coincidió con un usuario que ya es miembro del espacio de trabajo |
 
-## RPC operations
+## Operaciones RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Todas tienen ámbito de espacio de trabajo. El servidor no tiene estado, así que cada llamada lleva su propio `workspace_id` en los argumentos; el despachador rechaza una operación con ámbito de espacio de trabajo que lo omita, antes de que se abra ninguna base de datos. Las credenciales solo viajan _hacia dentro_ — las lecturas de estado nunca las devuelven.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Operación               | Tipo        | Rol mínimo                                     | Clases de acción                |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| `chat.providers`        | lectura     | `guest`                                        | —                               |
+| `chat.status`           | lectura     | `guest`                                        | —                               |
+| `chat.connect`          | mutación    | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | destructiva | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | lectura     | `guest`                                        | —                               |
+| `chat.beginUserLink`    | mutación    | `member`                                       | —                               |
+| `chat.unlinkUser`       | mutación    | `member` para ti mismo, `admin` para cualquier otra persona | —                   |
+| `chat.createApp`        | mutación    | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | lectura     | `admin`                                        | —                               |
+| `chat.botProfile`       | lectura     | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | mutación    | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Las operaciones de lectura heredan el suelo `guest` de su tipo; las mutaciones sin un suelo explícito exigen `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` compone una URL de creación de app del proveedor a partir del perfil del bot. No declara ninguna clase de acción porque no lee ningún secreto ni establece ninguna conexión de red — el navegador del propio usuario hace la única llamada.
 
-One reactive query completes the surface:
+Una consulta reactiva completa la superficie:
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| Consulta              | Tipo         | Emite                                                    |
+| --------------------- | ------------ | -------------------------------------------------------- |
+| `chat.watchUserLinks` | observación  | La lista, reenviada cada vez que se crea o se elimina un vínculo |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Existe porque la vinculación ocurre en el _otro_ lado: un miembro escribe el código de un solo uso en el bot, así que ninguna respuesta del cliente puede devolver el resultado. Tanto la lista de ajustes como el diálogo abierto «Vincular mi cuenta» la siguen, y el diálogo cambia a una confirmación en el momento en que llega el vínculo del propio miembro.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` siempre genera un código para la identidad del propio llamante. `chat.updateBotProfile` devuelve un `remaining_step` solo cuando queda algún paso (normalmente una reinstalación); su ausencia significa que la edición ya está activa.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` devuelve una entrada por proveedor ofrecido — el descriptor y, cuando existe, el estado de la conexión. Todo lo que muestra la interfaz de ajustes procede de esa carga útil, y por eso añadir un proveedor es un cambio solo del servidor.
 
-## Storage
+## Almacenamiento
 
-| What                       | Where                                                                                                        |
+| Qué                        | Dónde                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Credenciales de conexión   | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Configuración guiada a medias | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                          |
+| Archivos heredados de Slack | `<dataDir>/<workspaceId>/slack_credentials.json` y `slack_app_setup.json`, leídos una vez y migrados en su sitio |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Las credenciales viven junto a la base de datos del espacio de trabajo, no dentro de ella: eliminar un espacio de trabajo se lleva consigo sus tokens de chat, y `workspace.export` o una copia de seguridad copian `workspace.db` — así que un espacio de trabajo entregado a otra persona no lleva tokens de bot activos. Las escrituras son atómicas (archivo temporal más renombrado) y se restringen al propietario.
 
-## Database tables
+## Tablas de la base de datos
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Ambas viven en la base de datos del espacio de trabajo, que lleva una línea base v1 consolidada — así que una lectura entre espacios de trabajo no compila.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — una conversación externa ↔ un espacio de Control Center:
 
-| Column                                                 | Notes                                                                      |
+| Columna                                                | Notas                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Ámbito de espacio de trabajo                                               |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Equipo de Slack `T…`, vacío en proveedores sin el concepto                 |
+| `external_channel_id`                                  | Canal de Slack `C…`, grupo `G…`, mensaje directo `D…`                      |
+| `external_thread_id`                                   | Anclaje de hilo de Slack, o null cuando toda la conversación es el anclaje (mensajes directos del bot) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Único en `(workspace_id, provider, external_channel_id, external_thread_id)`, con un índice parcial que impone lo mismo para los identificadores de hilo nulos (SQLite trata los NULL como distintos).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — un miembro externo ↔ un usuario de Control Center:
 
-| Column                                 | Notes                                           |
+| Columna                                | Notas                                           |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Ámbito de espacio de trabajo                    |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Miembro de Slack `U…`                           |
+| `user_id`                              | Usuario de Control Center (global, así que sin clave externa) |
+| `method`                               | `code` o `email`                                |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Único en `(workspace_id, provider, external_team_id, external_user_id)` y en `(workspace_id, provider, user_id)` — atribución de valor único en ambas direcciones, mientras que una persona puede estar vinculada en varios proveedores.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Un vínculo es resolución de identidad, **no** una concesión de acceso: la pertenencia se vuelve a comprobar en cada evento entrante, así que un vínculo con un miembro que desde entonces ha sido eliminado se resuelve en una negativa.
 
-## Space kind and message metadata
+## Tipo de espacio y metadatos de mensajes
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Un espacio puenteado se crea con el `SpaceKind` del proveedor (`slack`). Se comporta como un espacio corriente orientado a personas —se notifica y se secciona como `topic`— y `isExternalChat` es la comprobación por la que pasa cada comportamiento (réplica, insignias, retención).
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Cada mensaje que el puente trae lleva un sello `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+El sello es también el guardián contra ecos: la réplica saliente omite cualquier mensaje que lo lleve, y eso es lo que impide que un mensaje de chat entrante se publique directamente de vuelta.
 
-## Relay behavior
+## Comportamiento de retransmisión
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Comportamiento                              | Detalle                                                                                                         |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Qué se retransmite hacia fuera              | Solo el **texto** del agente, más la línea de estado de la tarjeta de tarea. La prosa del razonamiento y la salida de las herramientas se quedan en Control Center |
+| Cadencia del streaming                      | Limitada a un volcado por segundo mientras dura un turno; la tarjeta y el texto que explica viajan en la misma llamada |
+| Mensajes humanos escritos en Control Center | Se replican en el hilo vinculado, con el nombre visible del autor como prefijo                                  |
+| Turnos vacíos                               | Se informan con una nota breve (la ejecución falló, se interrumpió o se detuvo en su límite de turnos) en lugar de silencio |
+| Deduplicación                               | Con clave en el id de evento propio del proveedor; se recuerdan los últimos 512                                 |
+| Agente de entrada                           | Una conversación puenteada nueva despierta al agente CEO del espacio de trabajo; si no, a su primer agente; si no, a nadie |
+| Nombres de espacios                         | `#channel · <request>` para un hilo de un canal de Slack y `Slack DM · <request>` para un mensaje directo; los títulos se limitan a 48 caracteres |
+| Aislamiento de fallos                       | Un evento defectuoso nunca tumba el puente; la conexión sigue atendiendo todas las demás conversaciones          |
 
-## See also
+## Consulta también
 
-- [Set up Slack integration](/es-ES/manual/guias/integracion-slack/)
-- [Link your Slack account](/es-ES/manual/guias/vincular-cuenta-de-chat/)
-- [Customize the chat bot](/es-ES/manual/guias/personalizar-bot-de-chat/)
-- [Chat bridges](/es-ES/manual/conceptos/puentes-de-chat/)
-- [Guardrails](/es-ES/manual/conceptos/barandillas/) for the action classes the ops declare
+- [Configurar la integración con Slack](/es-ES/manual/guias/integracion-slack/)
+- [Vincular tu cuenta de Slack](/es-ES/manual/guias/vincular-cuenta-de-chat/)
+- [Personalizar el bot de chat](/es-ES/manual/guias/personalizar-bot-de-chat/)
+- [Puentes de chat](/es-ES/manual/conceptos/puentes-de-chat/)
+- [Barandillas](/es-ES/manual/conceptos/barandillas/) para las clases de acción que declaran las operaciones

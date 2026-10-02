@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Script kho mã
+description: Script thiết lập và lưu trữ theo từng kho mã, chạy trên worktree của một space.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/script-kho-ma
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Script kho mã là các script shell bạn cấu hình theo từng kho mã (Cài đặt →
+Kho lưu trữ → biểu tượng terminal trên hàng của một kho mã) mà máy chủ Control
+Center chạy trên **worktree của một space** thuộc kho mã đó — bản checkout tách
+biệt nằm dưới `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`, nơi
+agent làm việc.
 
-There are two kinds:
+Có hai loại:
 
-| Script | When it runs | Use it for |
+| Script | Khi nào chạy | Dùng cho |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Thiết lập** | Ngay sau khi một worktree được cấp phát cho một space | Cài dependency, sinh tệp, sao chép `.env` |
+| **Lưu trữ** | Ngay trước khi một worktree bị hủy hoặc thu gom rác | Dọn tài nguyên bên ngoài worktree (mạng Docker, tunnel, trạng thái bên ngoài) |
 
-## Where scripts run
+## Nơi script chạy
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Cả hai script đều chạy qua `bash -lc` (shell đăng nhập, nên các công cụ cài
+bằng Homebrew/nvm có trên `PATH`), với **worktree là thư mục làm việc**, và
+các biến môi trường sau được đặt:
 
-| Variable | Value |
+| Biến | Giá trị |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktree (thư mục làm việc hiện tại của script) |
+| `CC_ROOT_PATH` | Kho mã nguồn đã đăng ký — bản checkout của chính bạn |
+| `CC_SPACE_ID` | Space mà worktree thuộc về |
+| `CC_SPACE_NAME` | Tên hiển thị của space |
+| `CC_REPO_NAME` | Tên hiển thị của kho mã |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Ví dụ, một script thiết lập cài dependency và đưa vào tệp `.env` nằm trong
+`.gitignore` của kho mã:
 
 ```bash
 pnpm install
@@ -39,28 +41,33 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Hành vi khi thất bại
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Một script **thiết lập** thoát với mã khác 0 (hoặc vượt quá thời gian chờ 5
+  phút) làm việc cấp phát space thất bại: space hiển thị trạng thái thất bại
+  kèm nút thử lại, và phần đuôi kết quả đầu ra của lần chạy được ghi lại. Lần
+  thử lại sẽ cấp phát từ một worktree sạch và chạy lại script — hãy viết script
+  thiết lập sao cho việc chạy lại sau một lần cài đặt dở dang vẫn hoạt động
+  (các trình quản lý gói vốn đã hoạt động như vậy).
+- Một script **lưu trữ** chạy theo kiểu nỗ lực tối đa: nếu thất bại (hoặc vượt
+  quá thời gian chờ 2 phút) thì được ghi lại nhưng **không bao giờ chặn việc
+  xóa**. Script lưu trữ chạy trên các đường GC không có ai để trả lời lời nhắc
+  (space bị xóa, PR được merge, dọn dẹp theo lịch).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Script thiết lập chỉ chạy trên một worktree **mới**: điều phối lại agent vào
+một space đã ấm sẽ dùng lại bản checkout hiện có và không phải trả chi phí cài
+đặt lần nữa.
 
-## Run history
+## Lịch sử chạy
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Mỗi lần thực thi đều được ghi lại cùng trạng thái, thời lượng, mã thoát và phần
+đuôi kết quả đầu ra có giới hạn, hiển thị trong cùng hộp thoại cài đặt ở mục
+"Lần chạy gần đây" (đăng ký `repos.watchScriptRuns` truyền trực tiếp dữ liệu
+này).
 
-## Permissions
+## Quyền
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Script là shell mà **máy chủ** thực thi, nên việc viết chúng chỉ dành cho quản
+trị viên của không gian làm việc và được bảo vệ bởi lớp hành động
+`processSpawn` — cùng lưới rào chắn kiểm soát mọi thao tác sinh tiến trình
+khác.

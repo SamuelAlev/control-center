@@ -1,225 +1,224 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: بازبینی هوش مصنوعی
+description: چگونه یک pull request به یک pull request بازبینی‌شده تبدیل می‌شود — فضاهای بازبینی، گره‌های بازبینی و اجماع همتا، گروه‌ها و محورها، حکم Ship/Hold/Block، و اینکه چرا انتشار همچنان گامی است که خودتان برمی‌دارید.
 slug: fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## شکل یک بازبینی
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+بازبینی هوش مصنوعی یک اجرای پایپ‌لاین از پیش تعریف‌شدهٔ `pr_review` روی یک pull
+request باز است. پایپ‌لاین فضای بازبینی PR را باز می‌کند، عامل‌های بازبین را پخش
+می‌کند تا دیف را در checkout جداشدهٔ آن فضا بخوانند، هرکدام یافته‌هایش را به‌صورت
+**گره‌های بازبینی** ساختاریافته ثبت می‌کند، یک عامل راهبر آن‌ها را در قالب یک مرور
+گام‌به‌گام یکپارچه می‌کند و یک نهایی‌ساز یک حکم می‌سازد: **Ship**، **Hold** یا
+**Block**. آنچه پایپ‌لاین هرگز انجام نمی‌دهد انتشار است — ارسال به GitHub گامی
+جداگانه و آگاهانه است که یک انسان برمی‌دارد.
 
-The rest of this page explains the pieces and why they are shaped this way.
+ادامهٔ این صفحه اجزا را توضیح می‌دهد و اینکه چرا این شکل را دارند.
 
-## One review space per PR
+## یک فضای بازبینی برای هر PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+بافت بازبینی یک PR یک فضای پیام‌رسانی است — حالت `review`، نوع `pr` — که با یک
+**پیوند فضای بازبینی** به pull request وصل می‌شود. به‌شکل خودتکرار ساخته می‌شود:
+صفحهٔ PR، پایپ‌لاین بازبینی و سطوح گفتگو همگی فضای پشتیبان _یکتای_ PR را از مسیر
+کد یکسانی حل می‌کنند، بنابراین قالبی که PR را بازبینی می‌کند و انسانی که بازش
+می‌کند هرگز نمی‌توانند به دو اتاق متفاوت و روبه‌روی دو checkout متفاوت برسند.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+worktree جداشدهٔ فضا، PR را روی head ref آن checkout کرده دارد. یک اتاق یعنی یک
+checkout: هر بازبین در همان فضا کار می‌کند، نه اینکه هرکدام کلون خودش از فضای کاری
+را بگیرد.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+هر بازبین در جریان نام‌دار خودش درون همان یک فضا می‌نویسد و یافته‌ها پیام‌های
+`review_node` هستند، نه متن ساده. گردآوری فضاعرض در پایان آگاهانه است — حکمی که از
+یافته‌های یک رشته محاسبه شود، بی‌سروصدا حکمی دربارهٔ یک بازبین خواهد بود.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+این پیوند یک نردبان وضعیت دارد — `requested` → `in progress` → `awaiting approval`
+→ `completed` — و همان است که **انتشار در GitHub** را در زبانهٔ بازبینی PR
+دروازه‌بانی می‌کند.
 
-## Review levels
+## سطح‌های بازبینی
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+اینکه بازبینی تا چه عمقی می‌رود یک سیاست فضای کاری با سه سطح است که در
+**تنظیمات → فضای کاری → عمومی**، روی کارت **سیاست فضای کاری** تنظیم می‌شود:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| سطح        | بازبین‌هایی که پخش می‌شوند                      | گزارش‌دهی                                      |
+| ---------- | ----------------------------------------------- | ---------------------------------------------- |
+| `light`    | فقط مهندس                                        | فقط آنچه واقعاً مهم است                         |
+| `balanced` | مهندس، تضمین کیفیت، معمار (پیش‌فرض)              | بررسی استاندارد                                 |
+| `thorough` | هر پنج مورد، شامل امنیت و عملکرد                 | هیچ یافته‌ای تنزل داده نمی‌شود                  |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+سطح، دو تنظیم را هم‌زمان تغییر می‌دهد: اینکه کدام بازبین‌ها پخش شوند — که با
+دروازه‌های وضعیت `runWhen` در قالب پایپ‌لاین اعمال می‌شود، نه با جمله‌بندی پرامپت؛
+جمله‌بندی پرامپت را می‌توان نادیده گرفت، اما دروازه را نمی‌توان — و اینکه یافته‌های
+زیر آستانه کجا نمایش داده شوند. هیچ‌کدام از این دو تنظیم هرگز یافته‌ای را حذف
+نمی‌کند: سطحی که کمتر گزارش می‌دهد، باز هم دقیقاً همان‌قدر ثبت می‌کند و باقی را
+گروه‌بندی می‌کند.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+بررسی‌های امنیت و عملکرد، همان عامل‌های معمار و مهندس از پیش تعریف‌شده را دوباره به
+کار می‌گیرند و عامل تازه‌ای معرفی نمی‌کنند. تخصص همان شرح مأموریتی است که بازبین با
+آن اعزام می‌شود، نه یک عامل جداگانه برای هر محور — یک عامل برای هر محور یعنی پنج
+سطر بیشتر در هر فضای کاری، بدون هیچ قابلیت افزوده‌ای. انتخاب بازبین هرگز دیف را برای
+زبان یا دامنه بررسی نمی‌کند.
 
-## Review nodes: findings as data, not prose
+## گره‌های بازبینی: یافته به‌مثابهٔ داده، نه متن
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+یافته‌ای که با `add_review_node` ثبت می‌شود به یک **گرهٔ بازبینی** روی PR تبدیل
+می‌شود — همان چیزی که زبانهٔ بازبینی نمایش می‌دهد، حکم از آن محاسبه می‌شود و
+"انتشار در GitHub" آن را به یک نظر درون‌خطی تبدیل می‌کند. بازبینی که فقط متن
+برمی‌گرداند، یک اجرای پایپ‌لاین ظاهراً موفق و یک سطح بازبینی خالی تولید می‌کند؛ ثبت
+کردن، بخش باربر است.
 
-Each node carries:
+هر گره این‌ها را همراه دارد:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| فیلد             | مقدارها                                                                    |
+| ---------------- | -------------------------------------------------------------------------- |
+| نوع              | `bug`، `suggestion`، `recommendation`، `question`، `ticket`                 |
+| اولویت           | P0 (بحرانی) → P3 (جزئی)                                                     |
+| سه‌گانهٔ تریاژ   | دسته (`security`، `stability`، …)، شدت، تلاش                                |
+| لنگر             | مسیر فایل، شروع و پایان خط                                                  |
+| همراه اصلاح      | خطوط جانشین پیشنهادی، یک دیف اختیاری، یک پرامپت اصلاح اختیاری               |
+| اطمینان          | امتیازی در [0, 1]                                                           |
+| استدلال          | تحلیل، که پیش از یافته نوشته می‌شود                                          |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+دو جزئیات آگاهانه‌اند. پیشنهاد یک‌کلیکی GitHub تنها زمانی ارائه می‌شود که بازبین
+خطوط جانشین دقیق را فراهم کرده باشد — استنباط آن‌ها از یک دیف یکپارچه بی‌سروصدا
+اشتباه پیش می‌رود و کامیت یک‌کلیکیِ یک استنباط اشتباه از نداشتن دکمه هم بدتر است. و
+شِمای `add_review_node`، `reasoning` را پیش از یافته ارائه می‌کند، بنابراین مدلی که
+شیء را به ترتیب شِما پر می‌کند، تحلیل را اول می‌نویسد. این فیلد اختیاری است: حذفش
+گره را رد نمی‌کند. گرهی که داده‌اش ناسالم باشد ناپدید می‌شود، به‌جای اینکه بازبینی
+را آلوده کند.
 
-## Peer consensus
+## اجماع همتا
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+یک گره مسیر `open` → `consensus-ready` → `resolved` یا `dismissed` را طی می‌کند.
+گام میانی قلب این مدل است: **یک یافته تنها زمانی ارتقا می‌یابد که یک بازبین همتا
+تأییدش کند، و یک عامل هرگز نمی‌تواند یافتهٔ خودش را تأیید کند.** ابزار MCP
+`publish_review_to_github` و پیش‌فرض RPC همچنان تنها یافته‌های تأییدشدهٔ همتا را
+منتشر می‌کنند. در مقابل، دکمهٔ **انتشار در GitHub** در زبانهٔ بازبینی هر یافتهٔ باز
+باقی‌مانده را می‌فرستد.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+این قاعده در سه جای مستقل اعمال می‌شود — ابزار تأیید، نهایی‌ساز و منتشرکننده —
+بنابراین از پسِ یک فراخوانِ باگ‌دار در هر کدام از آن‌ها برمی‌آید. همهٔ تغییرهای
+وضعیت از یک سرویس عبور می‌کنند و همین است که به وضعیت معنا می‌دهد: پیش از آن، دو
+مسیر نیمه‌کاره می‌توانستند دربارهٔ حل‌شدنِ یک یافتهٔ یکسان اختلاف داشته باشند.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+وقتی بازبین‌ها اختلاف دارند — همان فایل و خط، اولویت‌هایی با فاصلهٔ دو سطح یا
+بیشتر، یا اینکه یکی آن را `bug` بنامد و دیگری `suggestion` — این اختلاف بالای
+فهرست یافته‌ها نمایان می‌شود. همان‌جاست که نظر بازبین‌ها واگرا می‌شود و قضاوت انسان
+بیشترین ارزش را دارد.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+رد کردن یک یافته همچنین یک واقعیت سرکوب نرم را با اطمینان پایین در دامنهٔ حافظه
+می‌نویسد — یک بار رد کردن یک ترجیح است، نه یک قاعده.
 
-## Cohorts: what the review is grouped around
+## گروه‌ها: بازبینی حول چه چیزی گروه‌بندی می‌شود
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+گذر محاسبهٔ بازبینی، فایل‌های تغییریافتهٔ یک PR را در **گروه**هایی که از گراف کد
+مشتق شده‌اند گروه‌بندی می‌کند: فایل‌های تغییریافته به نمادهایی که لمس می‌کنند نگاشت
+می‌شوند، نمادها به اجزای هم‌بند، و گروه‌ها بر اساس شعاع اثر رتبه‌بندی می‌شوند. یک
+گروه به‌جای یک فهرست تخت فایل، ترتیب مطالعهٔ هدایت‌شده، نمودارها و بینش‌ها را همراه
+دارد.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+دو قاعدهٔ صداقت این را شکل می‌دهند. کلیدهای گروه از محتوا مشتق می‌شوند و در طول
+pushها پایدار می‌مانند، بنابراین یافته‌ها و پیشرفت بازبینی از یک rebase یا force-push
+جان سالم به در می‌برند، به‌جای اینکه یتیم شوند. و وقتی مخزن نمایهٔ کد ندارد،
+گروه‌بندی به مسیرهای ساده عقب‌نشینی می‌کند و همین را می‌گوید — این عقب‌نشینی هرگز
+اطمینان معنایی را جعل نمی‌کند.
 
-## Review axes and gates
+## محورهای بازبینی و دروازه‌ها
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+در کنار یافته‌های بازبین‌ها، یک بازبینی **نتایج محور** جمع می‌کند: شش محور، از دو
+نوع.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| محور                          | نوع            | برگرفته از                                    |
+| ----------------------------- | -------------- | --------------------------------------------- |
+| `correctness`، `security`     | مبتنی بر توکن  | یافته‌های خود بازبین‌ها                        |
+| `testGap`                     | مبتنی بر توکن  | یافته‌های بازبین‌ها                            |
+| `visual`، `apiContract`       | قطعی           | محاسبه‌شده بدون صرف توکن                       |
+| `performance`                 | قطعی           | فقط یک enum — هیچ‌چیز در محصول نتیجه‌ای محاسبه نمی‌کند |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+حکم یک محور `pass`، `warn`، `fail`، `partial` یا `unavailable` است — و تنها `pass`
+یا `warn` یک دروازه را باز می‌کند. تمایز میان `fail`، `partial` و `unavailable`
+باربر است: محوری که دروازه‌بانی می‌شود و نتوانسته کامل شود یا اصلاً نتوانسته اجرا
+شود، حکم کلی را نگه می‌دارد، نه اینکه آن را بگذراند. **نبود شواهد هرگز به یک
+دروازهٔ سبز تبدیل نمی‌شود.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+برخی محورها آگاهانه جنبهٔ مشورتی دارند. محور شکاف تست که از گروه‌ها مشتق می‌شود
+نمی‌تواند پوشش تزریق وابستگی یا کارخانه را ببیند — یک مخزن نمایه‌نشده با مجموعه‌ای
+جامع از تست‌ها و یکی بدون هیچ تستی از آن‌جا یکسان به نظر می‌رسند، پس ادعای هرکدام
+دروغ خواهد بود؛ این محور در داشبورد نمایان می‌شود، بدون دروازه‌بانی. محورهای توکن
+مشورتی‌اند چون اولویت‌های یافته از قبل حکم را هدایت می‌کنند و دروازه‌بانی دوبارهٔ
+آن‌ها دوباره‌شماری می‌شود.
 
-## The verdict
+## حکم
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+نهایی‌ساز حکم را روی یافته‌هایی با وضعیت `open` یا `consensus-ready` محاسبه
+می‌کند:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- هر یافتهٔ P0 با اطمینان ≥ 0.7 → **Block**
+- در غیر این صورت، هر P0 (کم‌اطمینان) یا هر P1 → **Hold**
+- در غیر این صورت → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+حکم یک اطمینان تجمعی دارد که از پراکندگی اطمینان‌های سهیم مشتق می‌شود — هم‌رأیی آن
+را بالا می‌برد، واگرایی پایین می‌آورد.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+یکپارچه‌سازی عامل راهبر (CEO) یک گذر ویرایشی است، نه فهرست‌کردن دوباره: نسخهٔ دوم
+دست‌نویس از یافته‌ها دقیقاً همان چیزی است که از نسخهٔ واقعی فاصله می‌گیرد. یافته‌های
+تکراری تنزل داده می‌شوند نه تکرار — چند بازبین با حدودِ عمداً هم‌پوشان به یک دیف
+نشانه گرفته می‌شوند، پس رسیدن سه‌بارهٔ یک نقص یکسان به نهایی‌ساز یعنی سیستم دارد کار
+می‌کند؛ انتشار سه‌بارهٔ آن یعنی سیستم معماری خودش را در صندوق ورودی خواننده
+می‌ریزد. در یک بازبینی مجدد، یافته‌ها اثرانگشت می‌گیرند و با دور قبل دیف می‌شوند،
+بنابراین آنچه نمایان می‌شود دلتاست.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+سرانجام محورها وارد می‌شوند و فقط می‌توانند حکم را **سخت‌تر** کنند: یک محور
+دروازه‌بانی‌شدهٔ مردود، Block را تحمیل می‌کند — نمی‌توان با یافته‌ها رأی آن را رد
+کرد — و محور دروازه‌بانی‌شده‌ای که نتوانسته کامل شود، حداقل Hold را تحمیل می‌کند.
 
-## Publishing stays with you
+## انتشار بر عهدهٔ خودتان می‌ماند
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+پایپ‌لاین آگاهانه به GitHub ارسال نمی‌کند؛ انتشار به دست کاربر دروازه‌بانی می‌شود
+تا یک بازبینی هرگز دوبار منتشر نشود. وقتی **انتشار در GitHub** را فشار می‌دهید:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- یک بازبینی GitHub ثبت می‌شود. یافته‌هایی که قبلاً حل یا رد شده‌اند نادیده گرفته
+  می‌شوند. این دکمه هر یافتهٔ باز باقی‌مانده را منتشر می‌کند
+  (`selection: all_open`). ابزار MCP `publish_review_to_github` همچنان به‌طور
+  پیش‌فرض فقط یافته‌های تأییدشدهٔ همتا را منتشر می‌کند (`consensus`).
+- یافته‌های لنگرشده به یک فایل و خط به نظرهای درون‌خطی تبدیل می‌شوند؛ هر چیز دیگری
+  در بدنهٔ خلاصه گنجانده می‌شود و هرکدام یک پایین‌بند "— Control Center AI review"
+  همراه دارد تا منبع بی‌ابهام باشد.
+- لنگرها هنگام انتشار دوباره در برابر دیف _فعلی_ PR بازبینی می‌شوند. نظری روی کدی
+  که پیش‌تر بازنویسی شده، بیشترین آسیب به اعتماد را می‌زند که یک بازبین می‌تواند
+  برجای بگذارد؛ اگر GitHub به هر حال یک لنگر درون‌خطی را رد کند، کل بازبینی دوباره
+  فرستاده می‌شود و هر یافته در بدنه گنجانده می‌شود تا چیزی بی‌سروصدا از قلم نیفتد.
+- حکم **Block** به‌صورت `REQUEST_CHANGES` ثبت می‌شود؛ **Hold** به‌صورت `COMMENT`؛
+  **Ship** از طریق دکمه به‌صورت `APPROVE` (`approve_on_ship: true`). ابزار MCP،
+  Ship را به‌صورت `COMMENT` رها می‌کند، مگر اینکه `approve_on_ship` را بفرستید.
+- بازبینی تحت هویت برنامهٔ سرور ارسال می‌شود. اینکه چه کسی Publish را فشار داده
+  برای دروازهٔ نقش و گزارش حسابرسی ثبت می‌شود؛ نویسندهٔ GitHub نیست.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/).
+انتشار کلاس کنش `prPublish` را اعلام می‌کند، بنابراین گلوگاه گاردریل آن را مانند هر
+کنش تغییردهنده‌ای دروازه‌بانی می‌کند — به‌طور پیش‌فرض درخواست تأیید می‌کند و وقتی
+هیچ تأییدکننده‌ای متصل نیست، به‌صورت بسته شکست می‌خورد.
+[گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) را ببینید.
 
-## What a reviewer may do
+## بازبین چه کاری می‌تواند انجام دهد
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+عامل‌های بازبین در حالت `review` اجرا می‌شوند: یک سندباکس فقط‌خواندنی و یک فهرست
+مجاز گزیدهٔ ابزارها که یافته‌ها، تفسیر، تیکت‌ها و بازبینی همتا را پوشش می‌دهد — اما
+هیچ کنش تغییردهنده‌ای. یک بازبین نمی‌تواند کدی را که نقد می‌کند اصلاح کند؛ می‌تواند
+یک اصلاح پیشنهادی ضمیمه کند که یک انسان اعمالش می‌کند. پیام امتناع این حالت به
+عاملی که به هر حال تلاش می‌کند کنش کند می‌گوید بازبینی را نهایی کند و بگذارد کاربر
+بر اساس خلاصهٔ منتشرشده عمل کند.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) — the policy engine that gates publishing
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) — what `review` mode changes for an agent
-- [Pipelines and automation](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) — the engine the review runs on
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/) — where the isolated worktree comes from
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) — موتور سیاستی که انتشار را دروازه‌بانی می‌کند
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) — حالت `review` چه چیزی را برای یک عامل تغییر می‌دهد
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) — موتوری که بازبینی روی آن اجرا می‌شود
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/) — worktree جداشده از کجا می‌آید
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) — run a review and publish it
-- [Dispatch reviewer agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/) — choose the reviewers yourself
-- [Review compute](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/) — cohorts, axes and diffs
+- [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) — یک بازبینی اجرا کنید و منتشرش کنید
+- [اعزام عامل‌های بازبین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/) — خودتان بازبین‌ها را انتخاب کنید
+- [محاسبهٔ بازبینی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/) — گروه‌ها، محورها و دیف‌ها

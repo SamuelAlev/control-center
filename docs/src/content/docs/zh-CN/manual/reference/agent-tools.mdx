@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: 内置智能体工具
+description: 内置运行器交给智能体的工具面——语言服务器、结构化搜索、调试器、内核与工作进程控制——包含每一项操作及其参数。
 slug: zh-CN/手册/参考/智能体工具
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/zh-CN/手册/参考/mcp-工具/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+这些是内置智能体运行时直接注册的**绑定服务端资源**的工具——语言服务器、结构化搜索、调试器、内核、提问与工作进程控制——它们既不同于它桥接进来的 [MCP 工具](/zh-CN/手册/参考/mcp-工具/)，也不同于运行器运行时提供的通用文件、搜索和 shell 工具。它们不在 MCP 注册表里：外部 MCP 客户端看不到它们，因为每一个都绑定着一项服务器端的实时资源——一个语言服务器进程、一个调试适配器、一个解释器——而这项资源只属于一次运行。
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+这里的每一个工具，只有在它的支撑资源为本次运行接入之后才会注册——语言服务器或调试监督进程、一个 tree-sitter 解析器、一个内核工厂、一个提问端口、一份 vibe 名册。对*这次检出*的语言服务器或调试适配器的检测，是另一项更靠后的检查（`status` / `adapters`）：这些工具会一直留在工具面上，好让智能体能问清楚为什么什么都不可用，而不是靠猜。
 
-## Approval tiers
+## 审批层级
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+每个工具都会声明一个层级，而层级决定的是**哪些调用方能看到这个工具**，而不只是它是否会弹出提示。计划模式和只读子智能体都被限制在 `read`，因此 `write` 或 `exec` 层级的工具根本不会出现在它们的 schema 中。
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
-
----
-
-## `lsp` — language-server queries
-
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
-
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
-
-| Action            | Arguments                        | Returns                                    |
-| ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
-
-### Diagnostics on write
-
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
-
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
-
-## `lsp_rename` — project-wide rename
-
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
-
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| 层级 | 含义 | 这里的工具 |
+| --- | --- | --- |
+| `read` | 无副作用 | `lsp`、`ast_grep`、`ask_user`，以及五个 `vibe_*` |
+| `write` | 会改动文件 | `lsp_rename`、`ast_edit`、`resolve` |
+| `exec` | 启动或控制一个进程 | `debug`、`eval` |
 
 ---
 
-## `ast_grep` — structural search
+## `lsp` — 语言服务器查询
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+当一次运行拥有语言服务器监督进程和工作目录时才会注册。服务器能否真正作答是在调用时按**交集**来检测的：根标记必须存在，*并且*服务器二进制文件必须能被解析到。只有其中一个成立都不会启动服务器——`status` 会如实说明——而不是悄悄靠猜。
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+定位由 `line` 加一个 `symbol` 子串指定，而绝不用列号。被要求给出列号的模型只能靠猜，而猜错会解析成同一行上的另一个符号——一个看起来正确、说的却是别的东西的答案。在导航类操作中省略 `symbol` 是一种错误，而不是默认猜第一列。
+
+| 操作 | 参数 | 返回 |
+| --- | --- | --- |
+| `diagnostics` | `file`（或 `"*"`） | 错误和警告；`"*"` 改为运行项目检查器 |
+| `definition` | `file`, `line`, `symbol` | 符号声明的位置 |
+| `type_definition` | `file`, `line`, `symbol` | 它的类型声明的位置 |
+| `implementation` | `file`, `line`, `symbol` | 具体的实现 |
+| `references` | `file`, `line`, `symbol` | 每一处使用，上限 50 处 |
+| `hover` | `file`, `line`, `symbol` | 签名和文档注释 |
+| `symbols` | `query` 或 `file` | 用 `query` 做工作区搜索（上限 100）；用 `file` 取文档符号（上限 200） |
+| `code_actions` | `file`, `line`, `symbol` | 服务器提供的快速修复 |
+| `status` | — | 哪些服务器正在运行，以及各自对应哪些根 |
+| `reload` | — | 重启这个根的服务器 |
+
+### 写入时的诊断
+
+真正的收益并不在工具本身。`write`、`edit` 和 `apply_patch` 都被**包了一层**：写入之后，文件会经过语言服务器同步并保存，只有**新引入的**诊断会被并入工具结果。智能体在弄坏构建的那一刻就知道自己弄坏了，而不必记得去问。
+
+已经报告过的诊断会由一份按运行维护的台账抑制，该台账以严重级别、代码和消息为键——刻意排除了位置，因此仅仅向下移动了四行的诊断不会被当作新增重新报告。
+
+## `lsp_rename` — 全项目重命名
+
+它是一个独立的 `write` 层级工具，理由只有一个：层级决定可见性。把重命名并进 `lsp`，要么是把改写仓库的能力交给一个只读的探索者，要么是让每一次 `hover` 都先过一道审批提示。
+
+| 参数 | 含义 |
+| --- | --- |
+| `file` | 符号所在的位置 |
+| `line` | 从 1 开始计数的行号 |
+| `symbol` | 在该行上标识它的子串 |
+| `new_name` | 改成什么名字 |
+
+---
+
+## `ast_grep` — 结构化搜索
+
+它按**形状**而不是按文本查找代码。`$NAME` 匹配任意节点，`$$$NAME` 匹配一串同级节点，`$_` 是通配符，不绑定任何东西。
+
+让它成为一个匹配器、而不只是一个多绕几步的正则的特性在于：同一个模式里重复出现的元变量必须捕获相同的文本。
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+它会匹配那种“销毁自己刚刚检查过的对象”的守卫，而**不会**匹配销毁别的东西的守卫。
 
-| Argument      | Meaning                                                     |
-| ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| 参数 | 含义 |
+| --- | --- |
+| `pattern` | 一段带元变量的代码片段 |
+| `path` | 要搜索的文件或目录；默认为整个工作区 |
+| `language` | 随附的语法 id（`dart`、`python`、`rust`、`c` 等）。当 `path` 指向单个文件时会被推断出来 |
+| `max_results` | 默认 50 |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[模式由与该文件相同的语法解析]
+因此 `dispose(x)` 无论怎么加空格、怎么换行或包裹都能匹配到这个调用——也绝不会匹配字符串字面量或注释里出现的同样字符。
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[片段是放在包裹上下文中解析的，而不是裸着解析]
+`dispose(x)` 当作 Dart 顶层内容裸着解析时，是一个完全合法的*函数签名*。模式编译器会依次尝试一整套上下文（语句、表达式、类成员、声明），并采用第一个接受该片段的上下文。没有任何上下文接受的模式会被报告为无法解析，而不是被搜上一圈、然后悄无声息地查无结果。
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — 结构化重写，先暂存
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+匹配方式相同，另外还接受一个 `rewrite` 模板，把元变量代回其中。**不会写入任何内容。** 改动会被暂存起来，结果中会给出一个 `edit_id`。
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
-| ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| 参数 | 含义 |
+| --- | --- |
+| `pattern` | 要匹配什么 |
+| `rewrite` | 换成什么，其中 `$NAME` 会被代回 |
+| `path` | 作用范围；默认为整个工作区 |
+| `language` | 语言 id |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — 提交或丢弃一次暂存的改动
 
-| Argument  | Meaning                          |
-| --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| 参数 | 含义 |
+| --- | --- |
+| `edit_id` | 来自 `(proposed)` 结果 |
+| `action` | `accept` 或 `discard` |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+每个文件都会与暂存时捕获的内容比对，**任何**不一致都会拒绝整个改动。只应用了一半的结构化重写，会留下一棵在旧形状和新形状下都编译不过的树。
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — 驱动调试器
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+当一次运行拥有调试会话监督进程、工作目录和对话 id 时才会注册。适配器能否真正启动是在调用时按与语言服务器相同的交集规则检测的（根标记*并且*二进制文件）。属于 `exec` 层级；非并行安全（会话是跨调用累积的状态，因此 `continue` 抢在 `stack` 前面会读到一个已经移动过的栈帧）。
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+每个对话只允许一个会话，并带一个硬性 TTL（30 分钟）。第二次 `launch` 会被拒绝，而不是悄悄替换掉第一个。
 
-| Op            | Arguments                     | Notes                                          |
-| ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| 操作 | 参数 | 说明 |
+| --- | --- | --- |
+| `adapters` | — | 这里哪些适配器可用，以及为什么不可用 |
+| `status` | — | 是否有会话正在运行，以及它停在了哪里 |
+| `breakpoints` | `file`, `lines[]` | `lines` 为空会清除该文件的断点。可以在启动**之前**设置 |
+| `launch` | `program`, `args[]` | 启动程序，并停在你的断点处 |
+| `attach` | `port` | 连接到一个已在运行的被调试进程 |
+| `continue` | `thread_id?` | 运行到下一个停止点 |
+| `pause` | `thread_id?` | 让它就地停止 |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | 单步移动一步 |
+| `threads` | — | 线程 id 和名称 |
+| `stack` | `thread_id?` | 栈帧，上限 30 个 |
+| `scopes` | `frame_id` | 某个栈帧上的作用域，每个都带一个 `reference` |
+| `variables` | `reference` | 子项，上限 50 个；值上限 400 个字符 |
+| `evaluate` | `expression`, `frame_id?` | 在该栈帧自身作用域中求值 |
+| `output` | — | 被调试进程的 stdout/stderr，有上限 |
+| `terminate` | — | 结束会话并杀掉适配器 |
 
-### Adapters
+### 适配器
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
+| Id | 命令 | 根标记 |
+| --- | --- | --- |
+| `dart` | `dart debug_adapter` | `pubspec.yaml` |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| `lldb` | `lldb-dap` | `Cargo.toml`, `CMakeLists.txt` |
+| `delve` | `dlv dap` | `go.mod` |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` 会优先选择项目本地的 `.venv/bin` 或 `venv/bin`，而不是 `$PATH`：`$PATH` 里的 python 是另一个环境，从错误的环境附加时，失败的样子读起来像代码坏了。
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — 持久解释器
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+一个 Python 或 JavaScript 单元格，它的变量、导入和已加载的数据在多次调用之间都会保留。属于 `exec` 层级；非并行安全。
 
-| Argument      | Meaning                                          |
-| ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| 参数 | 含义 |
+| --- | --- |
+| `code` | 单元格的代码 |
+| `description` | 必填。5–10 个词，用作转录标签 |
+| `language` | `python`（默认）或 `javascript` |
+| `reset` | 先丢弃解释器，从干净状态重新开始 |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- 最后一个表达式会像 notebook 那样被回显。
+- `display()` 可用，pandas 数据框会以表格形式渲染，matplotlib 图形会作为**转录中会显示出来的图像**返回。
+- 人们下意识会敲的那些 IPython 惯用写法——`%pip`、`%cd`、`!cmd`、`%%bash`、`%%timeit`——都会被改写成普通代码。`%pip` 还会清空 `sys.modules`，让下一次 `import` 能看到刚刚安装的东西。
 
-### Calling your own tools from inside a cell
+### 在单元格内调用你自己的工具
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+这座桥会**重新进入运行器的工具注册表**，因此护栏、审批以及每一层包装都以与模型发起的调用完全相同的方式生效。它走的是内核自己的管道，而不是回环套接字：没有端口、没有密钥、没有出网规则。
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+单元格的超时是一份*无活动*时间预算（默认 5 分钟），并且在一次桥接调用尚未返回期间会被**暂停**，因此一个扇出到子智能体的单元格不会在扇出途中被杀掉。
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[内核在哪里运行]
+如果该对话有隔离舱，就在隔离舱中运行；否则在主机上运行。它不会为了做到这一点而启动一个隔离舱——这和阻止机台标签页自动启动的是同一条规则。
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — 向人提问
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+属于 `read` 层级。这是一次运行向操作者提问的**唯一**方式。它会在对话中渲染一张编号卡片，并一直阻塞，直到有人回答、跳过，或者提问超时。绝不要把问题写成一条聊天消息——那会结束当前回合。
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| 参数 | 含义 |
+| --- | --- |
+| `question` | 要问什么 |
+| `context` | 可选：你为什么问，以及答案会决定什么 |
+| `options[]` | 可选项，每一项为 `{label, description?}` |
+| `allow_free_text` | 是否接受手动输入的答案 |
+| `multi_select` | 是否可以选择多项 |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+跳过即成功：基于一个明确说明的假设继续推进，并且不再询问。超时则是一种错误，附带同样的指示。权限提示（“我可以这样做吗？”）是另一道闸门，在对话中渲染为同样的卡片。
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+只有当提问端口和目标空间都存在时才会注册。在没有人工接入的情况下，这次调用会**失败**，而不是永远阻塞下去——这与护栏 `prompt` 在没有连接任何审批人时所采取的失败关闭姿态相同。
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — 指挥后台工作进程
 
-Registered only while [vibe mode](/zh-CN/手册/操作指南/指挥后台工作进程/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+只有在 [vibe 模式](/zh-CN/手册/操作指南/指挥后台工作进程/) 打开时才会注册。这五个工具都属于 `read` 层级：闸门应当设在工作进程的那些工具上，因为编辑真正发生的地方在那里。
 
-| Tool         | Arguments                                | Notes                                       |
-| ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| 工具 | 参数 | 说明 |
+| --- | --- | --- |
+| `vibe_spawn` | `brief`, `label`, `tier?` | 立即返回；工作进程继续运行 |
+| `vibe_send` | `worker_id`, `message` | 追加到简报中并重新运行 |
+| `vibe_wait` | `worker_id`, `timeout_seconds?` | 阻塞，直到它结束 |
+| `vibe_kill` | `worker_id` | 停止它 |
+| `vibe_list` | — | 层级、状态、已用时间和最近一次结果 |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` 可以是 `fast`（规格明确的机械性工作）或 `good`（设计、判断，或审查一个 `fast` 工作进程的产出）。

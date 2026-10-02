@@ -1,159 +1,171 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Pipeline-triggers instellen
+description: Koppel een sjabloon zodat het start op een domeingebeurtenis, een schema of een inkomende webhook — vanuit de node-bibliotheek en de inspector van de geselecteerde trigger.
 slug: nl-NL/handleiding/gidsen/pipeline-triggers
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Een trigger is wat een pipeline start. Elke trigger is een node op het canvas,
+gesleept uit de sectie **Triggers** van de node-bibliotheek. Selecteer je die
+node, dan opent rechts de inspector — er is geen altijd zichtbare triggerlijst,
+geen triggertabblad en geen triggerscherm.
 
-## Open a trigger inspector
+## Een trigger-inspector openen
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Ga naar **Instellingen → Werkruimte → Pipelinesjablonen**.
+2. Klik op het potlood in de rij van het sjabloon om de editor te openen.
+3. Selecteer een triggernode op het canvas. Rechts verschijnt het paneel met de
+   instellingen van die trigger. Zonder selectie blijft het paneel verborgen.
 
-## Add a trigger
+## Een trigger toevoegen
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+De sectie **Triggers** van de node-bibliotheek toont elk starttype als een eigen
+node: handmatig, schema, webhook en één kaart per domeingebeurtenis. Zoek op
+`merged`, `ticket` of de typenaam (`PrMerged`) en sleep de kaart naar het
+canvas. Een nieuw sjabloon toont bij het ingangspunt ook een lege tegel
+**Trigger toevoegen** — kies uit dezelfde doorzoekbare lijst.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+De trigger wordt direct ingevoegd. Nieuwe automatische triggers beginnen
+uitgeschakeld, zodat een drop geen run afvuurt voordat je hem hebt
+geconfigureerd. Gebruik de schakelaar **Ingeschakeld** in de inspector om hem
+aan te zetten, of het prullenbakpictogram om hem te verwijderen.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Eén trigger per gebeurtenistype]
+`pipeline_triggers` is uniek op werkruimte, gebeurtenistype en sjabloon. Een
+gebeurtenistype dat je al hebt gekoppeld, verdwijnt uit de kiezer. Elke
+webhooktrigger deelt het synthetische gebeurtenistype `webhook`, dus een sjabloon
+kan hooguit één webhook bevatten.
 :::
 
-## Allow manual runs
+## Handmatige runs toestaan
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Sleep **Handmatige uitvoering** (of kies die uit de lege tegel) en zet
+**Ingeschakeld** aan in de inspector. Dat is wat het sjabloon in de runkiezer
+laat verschijnen. Het is geen speciaal geval — de schakelaar schrijft een gewone
+triggerrij waarvan het gebeurtenistype `manual` is. Die wordt direct bewaard; er
+valt niets op te slaan.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+Dezelfde schakelaar zit achter **Handmatige uitvoering** in de kop van de
+editor, naast de gedeclareerde invoer van het sjabloon.
 
-## On an event
+## Bij een gebeurtenis
 
-These events start a run:
+Deze gebeurtenissen starten een run:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Label in de kiezer         | Gebeurtenis                |
+| -------------------------- | -------------------------- |
+| Externe PR geopend         | `ExternalPrDetected`       |
+| PR gepubliceerd            | `PullRequestPublished`     |
+| PR-status gewijzigd        | `PullRequestStatusChanged` |
+| PR samengevoegd            | `PrMerged`                 |
+| Bericht ontvangen          | `MessageReceived`          |
+| Ticket aangemaakt          | `TicketCreated`            |
+| Ticketstatus gewijzigd     | `TicketStatusChanged`      |
+| Ticket toegewezen          | `TicketAssigned`           |
+| Taak voltooid              | `TicketCompleted`          |
+| Taak mislukt               | `TicketFailed`             |
+| Taak geannuleerd           | `TicketCancelled`          |
+| Budgetdrempel overschreden | `BudgetThresholdCrossed`   |
+| Repository toegevoegd      | `RepoAdded`                |
+| Vergaderopname gestopt     | `MeetingRecordingStopped`  |
+| Vaardigheid bijgewerkt     | `SkillUpdated`             |
+| Ruimte verwijderd          | `SpaceDeleted`             |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` is waar de ingebouwde worktree-opruimpipeline op luistert: de
+gebeurtenis draagt het id van de verwijderde ruimte mee, zodat de run precies de
+worktrees van die ruimte opruimt in plaats van de hele werkruimte te doorlopen.
 
-For the payload keys each event carries, see the
-[domain events reference](/nl-NL/handleiding/referentie/domeingebeurtenissen/).
+Zie de [referentie domeingebeurtenissen](/nl-NL/handleiding/referentie/domeingebeurtenissen/)
+voor de payloadsleutels die elke gebeurtenis meedraagt.
 
-### Filter an event trigger
+### Een gebeurtenistrigger filteren
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Selecteer de node **PR-status gewijzigd**. De statuschips in de inspector zijn
+het enige filter dat de UI kan maken. Tik op een van `merged`, `closed`,
+`approved`, `opened`, `reopened`; de trigger gaat dan alleen af wanneer de
+`status` van de gebeurtenis met een ervan overeenkomt. Laat je alle chips
+uitgeschakeld, dan is er geen filter.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Er is geen vrij invulbaar JSON-filterveld. Een filtersleutel die de payload van de
+gebeurtenis niet bevat, komt nooit overeen, dus maak er niet met de hand een op
+basis van een sleutel die je niet hebt bevestigd in de referentie
+domeingebeurtenissen.
 
-## On a schedule
+## Volgens een schema
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Selecteer de node **Schema** om te bewerken wanneer die afgaat. De velden in de
+inspector worden bewaard zoals je ze achterlaat:
 
-| Field                                | Description                                                                                                                                                                         |
+| Veld                                 | Beschrijving                                                                                                                                                                        |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| **Planning (cron of every:seconden)** | Een cron-uitdrukking met vijf velden zoals `0 9 * * 1`, of een interval zoals `every:86400`. Een kaal getal wordt omgezet naar `every:<n>`.                                        |
+| **Tijdzone (optioneel)**              | Een IANA-zone zoals `Europe/Paris`. Standaard UTC.                                                                                                                                 |
+| **Bij gemiste uitvoeringen**          | Wat te doen met afvuringen die zijn gemist terwijl de server uit stond: **Eén keer uitvoeren** voegt elk gemist moment samen tot één afvuring bij het herstarten (de standaard), **Overslaan** gaat verder bij het eerstvolgende moment in de toekomst. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+De samenvattingsregel op de tegel in het canvas vermeldt het interval alleen
+voor de vorm `every:<seconds>`; een cron-uitdrukking verschijnt als alleen
+"Schema".
 
-## Via a webhook
+## Via een webhook
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Als je **Webhook** sleept, wordt een willekeurig token aangemaakt. Selecteer de
+node om het pad `POST /webhooks/<token>` uit de inspector te kopiëren.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+Het token is ook het HMAC-geheim: het verzoek moet
+`X-Hub-Signature-256: sha256=<hex>` meedragen, waarbij de hex
+`HMAC-SHA256(body, token)` is. Een levering die de verificatie niet haalt, wordt
+geweigerd en gelogd en kan niet opnieuw worden afgespeeld. Duplicaten worden
+genegeerd op hun dedupe-sleutel.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[Het token staat in de database]
+De inspector toont het pad. Het token zelf is het padsegment; het staat ook
+opgeslagen in de rij in `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Elke start is een eigen node in de graaf. Een draad vanaf **Schema** koppelt
+alleen Schema; **Handmatige uitvoering** kan een ander pad volgen (bijvoorbeeld
+een voorwaardennode) voordat die bij hetzelfde werk uitkomt. Een run gaat binnen
+bij de start die bij zijn gebeurtenistype hoort en slaat subgrafen over die bij
+de andere starts horen.
 
-## How a trigger reaches a run
+## Hoe een trigger bij een run uitkomt
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Een ingeschakelde trigger waarvan zowel het gebeurtenistype als het filter
+overeenkomt, start een run met de payload van de gebeurtenis als triggerpayload
+van de run — dat is waarop `{{key}}` in de prompt of het script van een stap
+wordt opgelost. Gebeurtenissen met een natuurlijke sleutel worden
+gededupliceerd, zodat dezelfde gebeurtenis die twee keer afgaat geen twee runs
+start.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Een uitgeschakeld _sjabloon_ wordt geweigerd, ook als de trigger overeenkomt.
+Acht van de dertien ingebouwde sjablonen worden uitgeschakeld geleverd, dus hun
+gezaaide triggers vuren in het niets tot je het sjabloon aanzet.
 
-## Useful patterns
+## Nuttige patronen
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Alleen het handmatige pad afschermen** — leid **Handmatige uitvoering** door
+  een voorwaardennode en **Schema** rechtstreeks naar het werk. Elke start bezit
+  zijn eigen draden.
+- **Elke nieuwe PR reviewen** — gebeurtenis **PR gepubliceerd** op het sjabloon
+  `pr_review`.
+- **Opruimen na een merge** — gebeurtenis **PR-status gewijzigd**, gefilterd op
+  `merged` / `closed` / `approved`. Het ingebouwde sjabloon `pr_merged_cleanup`
+  luistert al zo, plus ticket voltooid/geannuleerd, `SpaceDeleted` en een
+  dagelijks schema dat bij elke herzaaiing geforceerd wordt ingeschakeld omdat
+  het garbagecollection is.
+- **Nachtelijke sweep** — schema `0 2 * * *` met een tijdzone, op een sjabloon
+  waarvan de eerste node een bash-script is.
+- **Reageren op een extern systeem** — een webhooktrigger, waarbij het
+  aanroepende systeem zijn requestbody ondertekent zoals hierboven.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create a pipeline template](/nl-NL/handleiding/gidsen/pipeline-maken/)
-- [Run a pipeline manually](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
-- [Monitor pipeline runs](/nl-NL/handleiding/gidsen/pipelines-monitoren/)
-- [Domain events reference](/nl-NL/handleiding/referentie/domeingebeurtenissen/)
+- [Een pipeline-sjabloon maken](/nl-NL/handleiding/gidsen/pipeline-maken/)
+- [Een pipeline handmatig uitvoeren](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
+- [Pipeline-runs monitoren](/nl-NL/handleiding/gidsen/pipelines-monitoren/)
+- [Referentie domeingebeurtenissen](/nl-NL/handleiding/referentie/domeingebeurtenissen/)
 
-## Related concepts
+## Gerelateerde concepten
 
 - [Pipelines](/nl-NL/handleiding/concepten/pipelines/)
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/)
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/)

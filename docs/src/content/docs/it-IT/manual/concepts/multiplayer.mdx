@@ -1,216 +1,242 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Multigiocatore — identità, appartenenza e presenza
+description: Come Control Center modella esseri umani e agenti come partecipanti alla pari, cosa controlla davvero l'accesso a uno spazio di lavoro e perché la consapevolezza in tempo reale e i record condivisi viaggiano su due corsie diverse.
 slug: it-IT/manuale/concetti/multigiocatore
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center funziona per un singolo operatore, ma il modello che sta sotto
+è multi-attore fin dall'inizio. Esseri umani e agenti scrivono negli stessi
+spazi, modificano gli stessi ticket e compaiono nello stesso elenco. Rendere
+tutto questo sicuro e comprensibile si riduce a tre decisioni: **chi conta
+come attore**, **cosa controlla l'accesso** e **quale stato è condiviso in
+modo durevole rispetto a quello semplicemente trasmesso in tempo reale**.
 
-## Principals: users and agents are co-equal actors
+## I Principal: utenti e agenti sono attori alla pari
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Tutto ciò che registra «chi ha fatto questo» — messaggi, ticket, revisioni,
+piani, log di esecuzione, voci di controllo — si risolve attraverso un
+**Principal**, un'unione sealed di `UserPrincipal` e `AgentPrincipal` con una
+forma compatta di serializzazione (`user:<id>` / `agent:<id>`). L'attribuzione
+non collassa mai N persone (o N agenti) in un unico account sentinella, quindi
+una revisione lasciata da un agente e una lasciata da una persona restano
+distinguibili ovunque emergano.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Poiché il principale è l'unità di identità, è anche l'unità di contenimento:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **I limiti di velocità sono per principale, non per sessione.** La
+  protezione anti-flood sulle chiamate remote agli strumenti calcola il budget
+  per utente, non per connessione: tutti i dispositivi di un membro attingono
+  da un'unica finestra scorrevole condivisa (120 chiamate al minuto, di cui al
+  massimo 30 possono mutare), così aprire tre dispositivi non triplica la quota
+  di nessuno e un membro rumoroso non può affamare gli altri.
+- **L'annullamento è per principale.** Il diario delle azioni di ogni client
+  registra solo le mutazioni compiute dal _suo_ principale. Puoi fare ⌘Z sulla
+  tua modifica a un ticket; non puoi annullare quella di un collega: nel
+  momento in cui la vedi, la corsia durevole l'ha già risolta (vedi sotto).
 
-## Membership is the access boundary — not the pairing key
+## L'appartenenza è il confine di accesso, non la chiave di abbinamento
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/it-IT/manuale/concetti/controllo-remoto/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Due credenziali distinte rispondono a due domande distinte. La **chiave di
+abbinamento** (vedi [Controllo remoto e mobile](/it-IT/manuale/concetti/controllo-remoto/))
+autentica un _dispositivo_ presso il server. L'**appartenenza** autorizza
+l'utente di quel dispositivo ad agire all'interno di uno _spazio di lavoro_.
+Un dispositivo abbinato il cui utente non ha alcuna appartenenza a uno spazio
+di lavoro non può né leggerlo né modificarlo.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+L'appartenenza è una riga per coppia (spazio di lavoro, utente), memorizzata
+**nel file di database dello spazio di lavoro stesso** — quindi «chi c'è in
+questo spazio di lavoro?» è una normale lettura con ambito, mentre la domanda
+inversa, «in quali spazi di lavoro mi trovo?», attraversa necessariamente più
+file ed è uno dei pochi fan-out tra spazi di lavoro consentiti. È ciò che
+esegue il selettore dello spazio di lavoro prima che ne sia stato scelto uno.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Ogni riga porta un ruolo da una scala a cinque livelli ordinata per rango:
 
-| Role     | May                                                                                                        |
+| Ruolo    | Può                                                                                                        |
 | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| `owner`  | Controllo completo, inclusa l'eliminazione dello spazio di lavoro; esattamente uno per spazio di lavoro    |
+| `admin`  | Gestire membri, inviti, impostazioni, operazioni distruttive                                               |
+| `member` | Lettura-scrittura quotidiana: messaggi, ticket, esecuzioni di agenti                                       |
+| `viewer` | Sola lettura su tutto lo spazio di lavoro; i glob di esclusione dei segreti nascondono i percorsi corrispondenti sulle superfici che espongono codice |
+| `guest`  | Stessa soglia di sola lettura dell'osservatore, al rango più basso della scala                             |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Ogni decisione di accesso si riduce a «il ruolo del chiamante è almeno X». La
+soglia minima è derivata dal tipo di operazione, a meno che questa non ne
+dichiari una esplicitamente: una lettura richiede `guest`, una mutazione
+richiede `member`, un'operazione distruttiva richiede `admin`. Le ACL per
+oggetto oltre alle concessioni per repository descritte sotto sono
+deliberatamente fuori ambito.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+Gli **inviti** sono il modo in cui si concede l'appartenenza, da Impostazioni →
+Spazio di lavoro → Membri. Un admin conia un codice monouso (come link o QR)
+che scade dopo sette giorni per impostazione predefinita; il server memorizza
+solo l'hash SHA-256 del codice e il codice stesso viene mostrato una sola
+volta. Il suo riscatto esegue il provisioning JIT dell'utente, registra
+l'appartenenza con il ruolo dell'invito (mai `owner` — la proprietà si
+trasferisce esplicitamente, non si concede mai tramite invito) e passa
+all'abbinamento del dispositivo. Le credenziali del dispositivo generate dopo
+l'abbinamento hanno a loro volta una scadenza di 30 giorni, quindi un
+abbinamento non è una chiave permanente.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+Le **concessioni per repository** stanno sotto l'appartenenza. Poiché il
+server detiene checkout completi, la sola appartenenza a uno spazio di lavoro
+non deve mai attribuire più privilegi della forge: ogni superficie che espone
+codice — file, diff, revisione delle PR, ricerca nel codice — verifica la
+concessione del membro su _quel repository_. Le concessioni sono per (spazio
+di lavoro, utente, repository) e ordinate `none` → `read` → `review` →
+`write`, dove `write` significa guidare esecuzioni di agenti che scrivono nel
+repository. L'assenza di una riga significa `none`; proprietari e admin
+detengono implicitamente `write` su ogni repository collegato e non hanno
+alcuna riga.
 
-## Two lanes of collaboration state
+## Due corsie per lo stato di collaborazione
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center divide lo stato condiviso in due corsie con regole di
+durabilità opposte, perché i due tipi di stato falliscono in modi opposti.
 
-### The ephemeral presence lane
+### La corsia effimera della presenza
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+La presenza — chi è online, dove si trova, cosa sta digitando, cosa sta facendo
+un agente in questo momento — è inutile nel momento stesso in cui diventa
+obsoleta. Se fosse persistita, ogni riconnessione dovrebbe riconciliare «il
+database dice che Sam sta modificando questo ticket» con la realtà. Perciò la
+presenza **non viene mai scritta nel database**. Vive in un **hub della
+presenza** in memoria sul server: i client pubblicano con `presence.update`, i
+peer si iscrivono con `presence.watch` e le voci scadono automaticamente dopo
+tre heartbeat mancati (gli heartbeat vengono inviati ogni 10 secondi; l'hub
+esegue una scansione ogni 5). Non c'è nulla da riconciliare: solo da lasciar
+decadere.
 
-Two properties keep the lane trustworthy:
+Due proprietà mantengono affidabile la corsia:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **L'identità proviene dalla sessione, mai dagli argomenti del client.** Il
+  server mappa il dispositivo autenticato della connessione su un id utente; un
+  client può sempre e solo aggiornare la propria presenza, quindi nessuno può
+  falsificare lo stato o la posizione di un altro partecipante. Un aggiornamento
+  `offline` esplicito (disconnessione o l'interruttore dell'invisibilità)
+  rimuove la voce immediatamente.
+- **L'elenco è accentrato sul server.** I peer non si scambiano mai la presenza
+  direttamente, quindi ogni partecipante vede lo stesso elenco
+  indipendentemente dalla topologia. Gli agenti non hanno un client, quindi il
+  server _sintetizza_ le loro voci dallo stato di esecuzione in tempo reale —
+  sta pensando, in corso, bloccato su un gate di approvazione, completato — con
+  un'unica esecuzione rappresentativa che determina stato e posizione di un
+  agente, così le esecuzioni concorrenti non fanno sfarfallare l'elenco.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Il fan-out è suddiviso in livelli per consumatore: desktop e web viaggiano su
+un livello completo (al massimo un'emissione dell'elenco ogni 100 ms), il
+telefono su un livello riassuntivo (ogni 500 ms), così gli aggiornamenti a
+cadenza di cursore non possono fondere la PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+La **posizione** di un partecipante — dove si trova in questo momento, fino
+all'artefatto — è un'unione sealed: `Space`, `File` (repository + percorso +
+riga facoltativa), `Pr`, `Ticket`, `PlanNode`. Non ogni posizione ha una
+destinazione a cui saltare: non esiste una route di visualizzazione dei file,
+quindi una posizione `File` viene resa come etichetta anziché come
+destinazione. La corsia trasporta anche **rivendicazioni non bloccanti** («Sam
+sta modificando questo ticket», «un agente detiene questo worktree»):
+_visibilità_ dei conflitti, non blocchi. I tipi di posizione sconosciuti
+vengono interpretati come null, quindi un client vecchio semplicemente non
+rende ciò che non capisce.
 
-### The durable shared lane
+### La corsia condivisa durevole
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+I record che devono sopravvivere — ticket, il documento Note condiviso dello
+spazio, messaggi — seguono il percorso opposto: autorevoli, ordinati e
+persistiti. Le modifiche concorrenti si risolvono con **last-writer-wins
+nell'ordine di ricezione del server**, mai in base agli orologi dei client. La
+risoluzione è deliberatamente a grana fine: le modifiche ai ticket sono _per
+colonna_, quindi due persone che modificano campi diversi dello stesso ticket
+hanno entrambe successo e nessuna sovrascrive l'altra (le transizioni del
+flusso di lavoro mantengono invece il locking ottimistico); il documento Note
+dello spazio è una sola colonna, quindi l'intero documento è LWW e le
+rivendicazioni non bloccanti sulla corsia della presenza rendono visibile la
+modifica concorrente invece di bloccarla. Non è deliberatamente un CRDT:
+l'onere della prova spetta al CRDT, e il LWW nell'ordine di ricezione più le
+rivendicazioni visibili copre i modelli di collaborazione reali.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+«Ultimo scrittore» significa **ordine di ricezione del server**, mai l'orologio
+di un client: un portatile con un orologio sfasato non può vincere una modifica
+che ha perso. Dietro la corsia durevole c'è il **feed di sincronizzazione**: i
+trigger SQLite accodano ogni mutazione a un log delle modifiche per spazio di
+lavoro _all'interno della transazione di scrittura_, assegnando un numero di
+sequenza monotono per spazio di lavoro nella stessa transazione della mutazione
+stessa. Un servizio del server segue quel log e lo trasforma in frame delta
+versionati in ordine di sequenza. I client evolvono da snapshot completi a
+delta; una lacuna nella sequenza riporta quello store in modalità snapshot
+invece di applicare frame in modo errato.
 
-## Follow, steer, take over, hand back
+## Segui, guida, prendi il controllo e restituiscilo
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+La corsia della presenza non è solo un elenco: guida i verbi della
+collaborazione:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Modalità Segui.** Fai clic su un partecipante e il tuo client si aggancia
+  alla sua posizione, navigando mentre lui naviga. Segui vale «finché non
+  agisci»: nel momento in cui navighi di tua iniziativa, l'inseguimento si
+  stacca. Un banner chiudibile segnala quando un altro partecipante sta
+  presentando uno spazio in cui ti trovi.
+- **Guida.** Un messaggio a un agente in esecuzione viene messo in coda come
+  guida; l'agente lo rilegge prima di riprendere il turno successivo, così puoi
+  indirizzare un'esecuzione in corsa senza interromperla.
+- **Prendi il controllo.** Assumere il controllo di una conversazione mette in
+  pausa ogni esecuzione attiva al suo prossimo confine di turno pulito
+  (un'esecuzione di Claude Code, che non ha un confine sicuro, viene arrestata)
+  dietro uno snapshot git per turno, così la presa di controllo è reversibile.
+  Un marcatore durevole blocca i nuovi invii nello spazio e sopravvive al
+  riavvio del server: il server non riprende mai automaticamente dentro la
+  modifica a metà di una persona. Un solo editor attivo per worktree è una
+  rivendicazione non bloccante: un secondo tentativo di presa di controllo è
+  visibile e rifiutato, non fuso in silenzio.
+- **Restituisci il controllo.** Restituire il controllo pubblica nello spazio
+  un riepilogo strutturato del diff del worktree, lo accoda come guida per le
+  esecuzioni in pausa, le riprende e cancella il marcatore.
 
-## The autonomy dial
+## Il quadrante dell'autonomia
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+La guida e la presa di controllo sono interventi successivi ai fatti. Il
+**quadrante dell'autonomia** è l'impostazione permanente: per spazio, per
+agente, impostata dall'intestazione dello spazio, decide cosa succede quando un
+agente raggiunge un'azione controllata da un gate.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Livello                 | Valore di serializzazione | Effetto su una chiamata a uno strumento controllata da gate                                                       |
+| ----------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Solo proposta           | `proposeOnly`             | Rifiutata del tutto, con una motivazione che l'agente deve riferire: può descrivere l'azione ma non compierla     |
+| Agisci con approvazione | `actWithApproval`         | Il gate di approvazione fail-closed: una conferma compare a un operatore connesso e l'assenza di un approvatore significa rifiuto |
+| Agisci liberamente      | `actFreely`               | Pre-approvata, tranne dove si applica una regola `deny` rigida dei guardrail: una regola di rifiuto vince sempre  |
+| (non impostato)         | `null`                    | Come agisci con approvazione: il valore predefinito del server                                                    |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Due cose restano fuori dal quadrante in entrambe le direzioni. Il verbo di
+output di una modalità è fissato e non può mai essere negato, qualunque cosa
+dica il quadrante: la modalità orchestrate una volta era strutturalmente
+incapace di emettere il suo unico deliverable perché un preset negava la classe
+di effetto dichiarata da quel verbo. E un `deny` rigido dai guardrail delle
+azioni non è aggirabile con `actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/it-IT/manuale/concetti/modello-agenti/).
+:::note[Il quadrante controlla solo l'harness integrato]
+Viene consultato dalla callback di approvazione del loop dell'harness. Un agente
+in esecuzione sull'adattatore Claude Code effettua le proprie chiamate agli
+strumenti nel proprio processo, dove Control Center non ha nulla da controllare —
+vedi [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/).
 :::
 
-## Solo zero-regression
+## Zero regressioni per il lavoro in solitaria
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Tutto questo è additivo. Il flusso di lavoro di chi opera da solo è invariato:
+con un solo essere umano e nessun agente, l'hub della presenza non ha nulla da
+trasmettere, quindi la corsia emette il suo snapshot iniziale e poi resta
+inattiva a traffico zero; il meccanismo LWW e di sincronizzazione è lo stesso
+percorso a scrittore singolo di sempre; e la chiave di abbinamento resta la
+credenziale del dispositivo che è sempre stata. L'appartenenza è già il confine
+di accesso: con un solo essere umano c'è un'unica riga di proprietario e
+nessun elemento di interfaccia dell'elenco.
 
-## Related concepts
+## Concetti correlati
 
-- [Workspaces and isolation](/it-IT/manuale/concetti/spazi-di-lavoro/): the boundary membership enforces
-- [Remote control and mobile](/it-IT/manuale/concetti/controllo-remoto/): the pairing key and device credential side of identity
-- [The agent model](/it-IT/manuale/concetti/modello-agenti/): the agent half of the principal union
-- [Agent dispatch lifecycle](/it-IT/manuale/concetti/ciclo-di-vita-invio/): the runs that steering and take-over pause and resume
-- [Guardrails](/it-IT/manuale/concetti/guardrail/): the effect-class policy the autonomy dial composes with
-- [Domain events](/it-IT/manuale/concetti/eventi-di-dominio/): the bus that live updates ride
+- [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/): il confine che l'appartenenza applica
+- [Controllo remoto e mobile](/it-IT/manuale/concetti/controllo-remoto/): il lato identità fatto di chiave di abbinamento e credenziale del dispositivo
+- [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/): la metà agente dell'unione Principal
+- [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/): le esecuzioni che guida e presa di controllo mettono in pausa e riprendono
+- [Guardrail](/it-IT/manuale/concetti/guardrail/): la policy per classe di effetto con cui si compone il quadrante dell'autonomia
+- [Eventi di dominio](/it-IT/manuale/concetti/eventi-di-dominio/): il bus su cui viaggiano gli aggiornamenti in tempo reale

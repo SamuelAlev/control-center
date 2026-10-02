@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Konuşma geçmişi
+description: Bir çalıştırmanın bağlamını nasıl sakladığı, katladığı, dallandırdığı ve devam ettirdiği — sıkıştırma stratejileri, oturum ağacı ve "devam ettirme"nin gerçekte ne anlama geldiği.
 slug: tr-TR/kilavuz/kavramlar/konusma-gecmisi
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Uzun bir konuşma kaçınılmaz bir duvara toslar: modelin bağlam penceresi. Bu sayfadaki her şey o duvar yüzünden var ve işin ilginç kısmı neyin atıldığı, neyin saklandığı ve neyin geri alınabildiğidir.
 
-## Four ways to reclaim context
+## Bağlamı geri kazanmanın dört yolu
 
-They are not alternatives so much as a ladder, cheapest first.
+Bunlar birbirinin alternatifi olmaktan çok, en ucuzu en başta olan bir merdivendir.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Mekanizma          | Maliyet        | Korur                                | Kaybeder                          |
+| ------------------ | -------------- | ------------------------------------ | --------------------------------- |
+| **Eleme**          | Hiçbir şey     | Anlatının her kelimesini             | Olaysız eski araç sonuçlarını     |
+| **Görsel boşaltma** | Hiçbir şey    | Çevrelerindeki metni                 | Eski ekran görüntülerini          |
+| **Anlık görüntüler** | Hiçbir şey   | Her kelimeyi, piksel olarak          | Görme yetisi olmayan bir model için okunabilirliği |
+| **Özet**           | Bir model çağrısı | Bir anlatı                        | Seçmediği ayrıntıları             |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Eleme ve boşaltma ilk sırada çalışır çünkü bedavadır ve önemli olan anlamda kayıpsızdır: kimsenin yeniden okumayacağı yığını atarlar.
 
-### Why summarizing is the last resort
+### Özetleme neden son çaredir
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Özet, dördü arasında **bir model çağrısı harcayan** tek yöntemdir ve neyin önemli olduğuna **sizin adınıza karar veren** tek yöntemdir. İkisi de gerçek birer maliyettir. Çağrı daha ilginç olanıdır, çünkü ne zaman yapıldığı önemlidir.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Sıkıştırma genellikle duvarın *öncesinde*, bir eşik değerde çalışır. Ama aynı zamanda **tepkisel** olarak, sağlayıcı bir isteği fazla büyük diye reddettikten sonra da çalışır — sezgisel tahmin, sağlayıcının gerçekte ölçtüğünü eksik saymıştır. Bu durumda özetleyen bir sıkıştırıcı, bağlamı küçültmek için bir istek yapmak zorundadır ve yaptığı istek tam da az önce taşan istektir.
 
-### Snapshots
+### Anlık görüntüler
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Anlık görüntü sıkıştırması, atılan geçmişi yoğun piksel glif sayfalarına işler ve görüntü olarak geri verir.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Dayanak noktası bir faturalama tuhaflığıdır: görme yetisi olan bir model, bir görüntü için içindeki karakter sayısıyla hiçbir ilgisi olmayan sabit ya da alanla orantılı bir ücret alır. Atılan on iki bin karakterlik konuşma, on iki bin karaktere karşılık gelen metin token'ı kadar maliyetlidir. Aynı karakterler tek bir sayfaya işlendiğinde maliyeti tek bir görüntüdür.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Bunu sadece zekice olmaktan çıkarıp değerli kılan şey, **model çağrısı, anahtar ve ağ gerektirmemesidir**. Taşma kurtarma sırasında her zaman kullanılabilen tek stratejidir.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Yeniden kurma biçimi şöyledir: baş kısmı birebir, orta kısmı görüntülenmiş, son kısmı birebir. Baş kısım, görev ve sonraki her şeyin kendisine atıfta bulunduğu kısıtlardır; son kısım ise işin o anda bulunduğu yerdir. Orta kısım en az yeniden okunan ve en pahalıya mal olan kısımdır.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Dürüstçe bozulur]
+Görme yetisi olmayan bir model piksel sayfalarını okuyamaz ve kimsenin bakamayacağı bir metni işlemek, bozulmuş bir sıkıştırma değil, silinmiş bir konuşmadır. Dolayısıyla kararı okuyucunun yeteneği verir ve görme yetisi olmayan bir model her zaman özeti alır.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Sayfa biçiminin fiyatı ağırlıklara göre değil API'ye göre belirlenir]
+Gemini görüntü başına sabit ücret alır; dolayısıyla sayfadaki her ek karakter bedavadır ve sayfaları en geniştir. OpenAI ve Anthropic alana göre faturalandırır; bu yüzden daha büyük bir sayfa hiçbir şey kazandırmaz. Bazı işlemciler bir eşiğin ötesinde ölçeği küçültür ve bu, 5 piksellik glifleri sessizce yok eder; bu yüzden sayfaları o eşiğin altında kalır. Bir ağ geçidi üzerinden sunulan Claude'un faturası ağ geçidi tarafından kesilir; bu yüzden biçim, rotanın adlandırdığı model kimliğini izler.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Anlık görüntüler her geçişte **saklanan kaynak metinden** yeniden işlenir, asla önceki geçişin piksellerinden değil. Bir görüntüyü görüntülemek, glifleri her sıkıştırmada bir nesil bozar ve sonunda hiçbir şey onları okuyamaz.
 
-## What a run actually resumes from
+## Bir çalıştırma aslında nereden devam eder
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Geçmişte her harness çalıştırması boş bir geçmişle başlardı ve sürekliliği istemdeki bir `<context>` bloğundan yeniden kurardı — konuşmanın kendisinden değil, konuşmanın bir *özetinden*. Bundan üç sonuç doğdu:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Devam ettirme, yeniden anlatmaktı.** Model kendi önceki akıl yürütmesini ya da araçlarının döndürdüğü gerçek baytları hiç görmezdi; bunların yalnızca bir tarifini görürdü.
+- **Geri sarma süreçle birlikte ölürdü.** Bir `checkpoint`, canlı ileti listesindeki bir dizindir; dolayısıyla bir yeniden başlatma, modelin koyduğu her etiketi kaybederdi.
+- **Yeniden deneme, "yeniden denenecek bir şey yok" ile "yüklenmiş bir şey yok" arasındaki farkı göremezdi.** Yeniden başlatmadan sonra başarısız tur her iki durumda da canlı durumdan silinmiş olurdu.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Üçünün de çözümü transkripti kalıcı hale getirmektir. Transkript her **tur sınırında** kaydedilir ve asla turun ortasında kaydedilmez: bir araç çağrısı ile sonucu arasında yakalanan bir geçmişi hiçbir sağlayıcı kabul etmez; dolayısıyla o anda yaşanan bir çökme, yeniden oynatılamayacak yarım bir tur yerine *önceki* turu geri yükler.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Devam ettirilen bir çalıştırma en yeni iletilerine kadar kırpılır ve kesim, öksüz kalmış bir araç sonucuna denk gelmeyen bir sınırda yapılır — çağrısı kırpılıp atılmış bir sonuç, sağlayıcıların doğrudan reddettiği bir istektir ve gönderilemeyen bir transkript, kısa olandan daha kötüdür.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Nerede durur]
+Her konuşma-ajan çifti için, çalışma alanının kendi dizininde, veritabanının yanında bir JSON dosyası. Tek bir konuşmadaki iki ajan iki ayrı geçmiş tutar: farklı araç sonuçları gördüler ve onlara farklı sistem istemleri verildi; dolayısıyla bunları birleştirmek, her birine diğerinin akıl yürütmesini kendi akıl yürütmesi olarak verirdi.
 :::
 
-## The session tree
+## Oturum ağacı
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Her ileti, kendisinin devamı olduğu iletiyi kaydeder ve her konuşma geçerli **dal ucunu** adlandırır. Tüm özellik bu tek karardan ibarettir.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Dallandırma hiçbir şey yazmaz.** Yalnızca işaretçiyi taşır. Bıraktığınız yol hâlâ oradadır; dolayısıyla geri dönmek bir geri yükleme değil, bir işaretçi taşıma işlemidir — ve yeniden çalıştırmak için bir istemi düzenlemek, karşılaştırdığınız yanıtı size artık kaybettirmez.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Bu olmadan, geri gitmenin her biçimi iletileri gizlemek ya da silmek zorundadır; gizlemek ise bir sonraki okuyucunun içini göremeyeceği bir yalandır.
 
-### Branch versus fork
+### Dal ile fork arasındaki fark
 
-|                | Branch              | Fork                        |
-| -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+|                | Dal               | Fork                        |
+| -------------- | ----------------- | --------------------------- |
+| Ne olur        | İşaretçi taşınır  | Yol kopyalanır              |
+| Nereye gider   | Aynı konuşma      | Yeni bir konuşma            |
+| Maliyet        | Hiçbir şey        | Dalın bir kopyası           |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Fork, satırları paylaşmak yerine **yeni kimliklerle** kopyalar. Satırları paylaşan iki konuşma birbirinin sonraki iletilerini gösterirdi ki bu, bir fork'un asla yapmaması gereken tek şeydir.
 
-### Rewind rides the same pointer
+### Geri sarma da aynı işaretçiyi kullanır
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Çalıştırma sırasındaki `checkpoint` / `rewind` ikilisi temiz bir tur sınırını işaretler ve bir keşiften sonra oraya döner, bir özet tutar. Checkpoint'ler transkriptle birlikte kalıcı hale getirildiği için modelin yeniden başlatmadan önce koyduğu bir etiket hâlâ konulduğu yere iner. Hedefi bir kırpma sırasında ayakta kalmayan bir checkpoint **düşürülür**, kırpılıp yerleştirilmez — "etiketin olduğu yere" sarıp başka bir yere inmek, tam da bir etiketin engellemek için var olduğu başarısızlıktır.
 
-## Related
+## İlgili
 
-- [Branch a conversation](/tr-TR/kilavuz/nasil-yapilir/konusmayi-dallandirma/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/tr-TR/kilavuz/kavramlar/arac-baglami/) — the other half of what fills a context window
-- [Slash commands](/tr-TR/kilavuz/referans/slash-komutlari/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Bir konuşmayı dallandırma](/tr-TR/kilavuz/nasil-yapilir/konusmayi-dallandirma/) — ağaç gezgini, fork oluşturma ve dışa aktarma
+- [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami/) — bir bağlam penceresini dolduran şeyin diğer yarısı
+- [Slash komutları](/tr-TR/kilavuz/referans/slash-komutlari/) — `/compact`, `/shake`, `/context`, `/tree`

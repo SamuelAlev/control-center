@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Passaggi delle pipeline
+description: Riferimento per i tipi di passaggio delle pipeline, le chiavi del corpo dei passaggi, la loro configurazione e i risultati dei passaggi.
 slug: it-IT/manuale/riferimento/passaggi-pipeline
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Un passaggio di pipeline ha due assi indipendenti:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Tipo** (`StepKind`) — come il motore _pianifica_ il passaggio rispetto ai suoi trigger.
+- **Chiave del corpo** (`BuiltInBodyKeys`) — quale closure di corpo registrata _esegue_ il lavoro del passaggio.
 
-## Step kinds
+## Tipi di passaggio
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Definito in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| Tipo       | Semantica di pianificazione                                                                                                                                                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | Punto di ingresso obbligatorio — esattamente uno per modello, sempre il primo nodo. Non svolge alcun lavoro da sé; ciò che avvia l'esecuzione (manuale / evento / pianificazione) viene tracciato separatamente come righe `PipelineTrigger`. Il suo corpo è il no-op `pipeline.trigger`. |
+| `listen`   | Si attiva quando tutti i passaggi di origine (in `StepTrigger.sourceStepIds`) sono completati.                                                                                                                                           |
+| `join`     | Si attiva quando tutti i passaggi in `waitForStepIds` raggiungono lo stato terminale.                                                                                                                                                    |
+| `router`   | Diramazione condizionale — il corpo restituisce `StepResult.route(key)`, che attiva solo l'arco a valle il cui `routeKey` corrisponde; i rami non selezionati vengono contrassegnati come saltati.                                        |
+| `forEach`  | Pianificato come `listen` (si attiva quando tutti i `sourceStepIds` sono completati). È il corpo registrato `flow.forEach` a iterare; il motore non genera un passaggio figlio per ogni elemento.                                        |
+| `terminal` | Sentinella dello scheduler senza corpo. L'esecuzione della pipeline termina quando un passaggio terminale finisce.                                                                                                                       |
 
-## Step bodies
+## Corpi dei passaggi
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Closure di corpo registrate, indicizzate dalle costanti in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Sono 25, tutte elencate di seguito. La configurazione viene letta dal `PipelineNodeConfig` del passaggio (vedi sotto) salvo diversa indicazione; le "chiavi di stato" vengono lette dallo stato della pipeline / dal payload del trigger al momento dell'esecuzione.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Un passaggio la cui `bodyKey` non è registrata produce un avviso al caricamento del modello e poi non viene mai eseguito — non fa fallire l'esecuzione. I passaggi `trigger` e `terminal` sono esenti da quell'avviso: il trigger esegue comunque il corpo no-op `pipeline.trigger`; un passaggio `terminal` non ha corpo.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Corpo no-op del nodo `trigger` obbligatorio — si completa immediatamente, così il motore si dirama verso i listener a valle. Nessuna configurazione.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Passaggio shell senza agente (`bash -c`). I segnaposto `{{key}}` nello script vengono sostituiti a partire dallo stato + dal payload del trigger con valori con escape per la shell.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Campo di configurazione | Descrizione                                      |
+| ----------------------- | ------------------------------------------------ |
+| `script`                | Comando shell da eseguire (obbligatorio)         |
+| `outputKey`             | Chiave di stato che riceve lo stdout ripulito in caso di uscita 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Viene eseguito con cwd `<cc_root>/pipelines/<pipelineRunId>/` (condivisa da tutti i passaggi bash di un'esecuzione) e `GITHUB_TOKEN` nell'ambiente. Scrive inoltre `<stepId>_runDir` nello stato. Un'uscita diversa da zero fa fallire il passaggio con la coda dello stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Nodo generico di prompt e invio: renderizza il prompt, invia l'agente in una conversazione e sospende finché l'esecuzione non termina. Il payload `submit_output` dell'agente viene raccolto nello stato sotto `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Campo di configurazione    | Descrizione                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `agentId`                  | UUID dell'agente con ambito nello spazio di lavoro da inviare (obbligatorio) |
+| `prompt`                   | Testo dell'istruzione; supporta la sostituzione `{{key}}` (obbligatorio) |
+| `outputKey`                | Chiave di stato per l'output raccolto                        |
+| `outputSchema`             | JSON Schema che l'output deve soddisfare                      |
+| `label`                    | Etichetta leggibile mostrata sul canvas                      |
+| `extras.spaceId`           | Conversazione esistente in cui lavorare (predefinita: una nascosta) |
+| `extras.conversationTitle` | Flusso con nome all'interno di quello spazio (opzionale)     |
+| `extras.mode`              | Letto sul nodo che *apre* la stanza (`messaging.createSpace`), non qui. Predefinito `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Corpo del router — legge `config.extras`, valuta una condizione e restituisce `StepResult.route(key)`. Le condizioni **non** sono espressioni JavaScript; sono supportate tre forme di scrittura, in ordine di priorità:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Albero di predicati** (`extras.predicate`) — un albero booleano che instrada `"true"` / `"false"`. Ogni nodo è una map con un `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — vero quando uno qualsiasi dei percorsi elencati esiste su disco; `negate` lo inverte; `recursive` cerca anche nelle sottodirectory (saltando `.git`, `node_modules`, `build`, `.dart_tool`). I percorsi relativi vengono risolti rispetto a `state[baseKey]` (predefinito `repo_local_path`), altrimenti rispetto alla directory dello spazio di lavoro dell'esecuzione.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operatori `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; legge lo stato della pipeline, non il filesystem.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — gruppi booleani.
+  - `{"type": "not", "of": <predicate>}` — negazione.
+- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; instrada verso il primo caso che il valore di stato contiene senza distinguere maiuscole e minuscole, altrimenti verso `default`.
+- **Confronto** (legacy, a livello superiore `extras.left` / `extras.op` / `extras.right`) — equivalente a un predicato `comparison`, mantenuto per i modelli creati prima dell'albero.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Gli archi in uscita dal nodo portano un `routeKey` che deve corrispondere alla chiave restituita.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Pubblica le segnalazioni consolidate come commento di revisione della PR tramite il client PR di GitHub.
 
-| State key                 | Description                                  |
+| Chiave di stato           | Descrizione                                  |
 | ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| `repo_full_name`          | `owner/repo` (obbligatorio)                  |
+| `pr_number`               | Numero della PR — int o stringa numerica (obbligatorio) |
+| `consolidated_findings`   | Corpo del commento (obbligatorio)            |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Restituisce `StepResult.terminal` con `comment_review_id` e `commented_at` nello stato.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Pubblica un messaggio in uno spazio di messaggistica tramite `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Chiave di stato | Descrizione                                       |
+| --------------- | ------------------------------------------------- |
+| `space_id`      | Spazio di destinazione (obbligatorio)             |
+| `content`       | Corpo del messaggio, letto alla lettera dallo stato (obbligatorio) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Scrive `posted_space_id` e `posted_at` nello stato.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Invia un intero team invece di un singolo agente, poi sospende finché le esecuzioni dei membri non terminano.
 
-| Config field                                | Description                                                                                         |
+| Campo di configurazione                     | Descrizione                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| `teamId`                                    | Team con ambito nello spazio di lavoro da inviare (obbligatorio; mutuamente esclusivo con `agentId`) |
+| `prompt`                                    | Testo dell'obiettivo; supporta la sostituzione `{{key}}` (obbligatorio)                             |
+| `dispatchMode`                              | `allParallel` (predefinito — un'attività per membro) oppure `manager` (invia solo il leader a coordinare) |
+| `outputKey`                                 | Chiave di stato per gli output raccolti dei membri                                                   |
+| `outputSchema`, `label`, `extras.spaceId`   | Come per `conversation.promptAgent`                                                                 |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Cancello di approvazione. Invia l'agente approvatore in una conversazione (modalità review) con il prompt del cancello e un contratto di output `{decision, reason}`, poi sospende finché l'approvatore non invia tramite `submit_output`.
 
-| Config field                | Description                                                                    |
+| Campo di configurazione     | Descrizione                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | L'agente approvatore (obbligatorio)                                            |
+| `prompt`                    | Prompt del cancello (opzionale; se assente ne viene usato uno predefinito)      |
+| `outputKey`                 | Chiave di stato per il payload `{decision, reason}` raccolto                   |
+| `outputSchema`              | Predefinito a uno schema di approvazione (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId`   | Come per `conversation.promptAgent`                                            |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Il cancello si risolve solo tramite `submit_output`. `BuiltInBodyKeys.humanGate`, la libreria dei tipi di nodo e il testo del prompt di un modello integrato nominano tutti gli strumenti MCP `approve_step` e `reject_step`; **nessuno dei due strumenti esiste** in alcun pacchetto o registro.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Rimuove i worktree isolati obsoleti; sceglie la propria modalità dal payload del trigger. Rispetta il flag `dryRun` dell'esecuzione.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Chiave di stato                | Descrizione                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | Rilascia i worktree di quel ticket                                                    |
+| `repo_full_name` + `pr_number` | Rilascia il worktree effimero dell'editor di PR                                       |
+| `space_id`                     | Smantella i worktree e la cartella di quella conversazione                            |
+| (nessuna delle precedenti)     | Pulisci lo spazio di lavoro: directory scomparse, spazi morti, cartelle di conversazioni orfane |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (opzionale) riceve una stringa di riepilogo.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Map / fan-out su una collezione dello stato: renderizza il prompt una volta per elemento, poi invia l'agente **una sola volta** con quei prompt concatenati (separatori `---`) e sospende finché quell'esecuzione non termina. Una collezione vuota si completa immediatamente con una lista vuota. Non è un invio parallelo per elemento.
 
-| Config field         | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| Campo di configurazione | Descrizione                                                     |
+| ----------------------- | --------------------------------------------------------------- |
+| `agentId`               | Agente da inviare per ogni elemento (obbligatorio)              |
+| `prompt`                | Prompt per elemento; supporta la sostituzione `{{key}}` (obbligatorio) |
+| `extras.iterableKey`    | Chiave di stato che contiene la collezione (obbligatorio)       |
+| `extras.itemKey`        | Chiave a cui è associato l'elemento corrente nel prompt (predefinito `item`) |
+| `outputKey`             | Chiave di stato per l'output raccolto (un solo invio, non una lista) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Esegue un altro modello di pipeline come sotto-passaggio annidato (la sotto-pipeline viene eseguita come esecuzione figlia con `parentPipelineRunId` impostato). Il passaggio sospende finché il figlio non raggiunge uno stato terminale, poi lo stato finale del figlio viene unito sotto `outputKey`.
 
-| Config field        | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| Campo di configurazione | Descrizione                                                     |
+| ----------------------- | --------------------------------------------------------------- |
+| `extras.templateId`     | Modello figlio da eseguire (obbligatorio; una pipeline non può chiamare se stessa) |
+| `inputKeys`             | Chiavi di stato copiate nel payload del trigger del figlio      |
+| `outputKey`             | Chiave di stato per lo stato finale unito del figlio            |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Indicizzazione tree-sitter in background: percorre un repo, estrae simboli/archi in isolate worker e li inserisce nel grafo del codice dello spazio di lavoro. Trasmette l'avanzamento in streaming nella riga di esecuzione del passaggio; supporta il dry-run. Tree-sitter e le sue grammatiche sono native richieste — una dylib mancante significa che il server non è mai stato avviato, e una grammatica che non si risolve a metà esecuzione fa fallire il passaggio invece di saltarlo.
 
-| State key         | Description                           |
+| Chiave di stato   | Descrizione                           |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Repo da indicizzare (obbligatorio)    |
+| `repo_local_path` | Percorso locale del checkout (obbligatorio) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Diarizzazione offline dei parlanti. Legge l'audio conservato della riunione, lo raggruppa in parlanti (`Person 1`, `Person 2`, …), rietichetta i segmenti della trascrizione e riscrive lo stato `transcript`; emette anche `diarization_spans` per il passaggio parallelo `meeting.updateTranscript`. Restituisce la trascrizione invariata quando non è stato conservato alcun audio o i modelli non sono installati.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Chiave di stato | Descrizione                   |
+| --------------- | ----------------------------- |
+| `meeting_id`    | Riunione da diarizzare (obbligatorio) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Corpi deterministici di persistenza del riepilogo della riunione. Ognuno legge `meeting_id` e il payload strutturato `meeting_outcome` del passaggio agente (`{summary, enhancedNotes, actionItems[], decisions[]}`) dallo stato e scrive la propria parte nella propria tabella — note, attività da fare o decisioni. Le righe salvate in precedenza non vengono mai cancellate in un'esecuzione degradata.
 
-### Other built-in bodies
+### Altri corpi integrati
 
-| Body key                           | Description                                                                                                                                                                              |
+| Chiave del corpo                   | Descrizione                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Riconoscimento dei parlanti tra riunioni diverse: confronta i parlanti diarizzati con i profili vocali salvati e applica automaticamente le corrispondenze sicure. No-op senza profili/embedding. |
+| `meeting.updateTranscript`         | Applica le etichette `Person N` da `diarization_spans` e unisce i frammenti per finestra in turni per parlante, poi persiste la trascrizione ripulita. No-op quando la diarizzazione non ha prodotto nulla. |
+| `meeting.assemblePlayback`         | Assembla la traccia di riproduzione mixata della riunione dai WAV per canale conservati. No-op quando non è stato conservato alcun audio.                                               |
+| `orchestration.markPhase`          | Alla fine del DAG di lavoro, scrive sentinelle di errore per i sotto-ticket senza output e porta l'orchestrazione a `synthesizing`.                                                     |
+| `orchestration.persistDeliverable` | Scrive l'output di sintesi nel ticket padre, lo completa, pubblica il deliverable e contrassegna l'orchestrazione come `completed`.                                                       |
+| `orchestration.awaitApproval`      | Cancello di approvazione parziale: si completa immediatamente quando la chiave del nodo del passaggio è nell'insieme approvato dell'orchestrazione, altrimenti sospende finché un'approvazione successiva non lo riprende. È l'unico corpo che imposta `extras.awaitApproval`, il che lo esenta dal timeout di 24 ore dei passaggi sospesi. |
+| `messaging.createSpace`            | Apre la conversazione in cui lavora il resto del modello, pubblicata sotto l'`outputKey` del passaggio (i corpi integrati usano `pipeline_space_id`). Una lista `repoIds` vuota non fa il checkout di nulla; `extras['allRepos']` fa il checkout di ogni repo dello spazio di lavoro. `extras['createConversation']` (disattivato per impostazione predefinita) apre anche un flusso con nome. Un passaggio agente ADERISCE a una stanza e non ne apre mai una, quindi un fan-out senza questo nodo fallisce all'invio — e collegarlo una volta significa che l'intero fan-out condivide un unico checkout invece di procurarne uno per ciascuno. |
+| `prReview.finalize`                | L'ultimo passaggio del modello di revisione delle PR: ordina i nodi di revisione accumulati in bucket di consenso e calcola il verdetto per PR.                                         |
+| `skills.analyze`                   | Esegue la scansione della supply chain delle skill sulle skill installate di uno spazio di lavoro e registra ogni verdetto.                                                               |
 
-## Step results
+## Risultati dei passaggi
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Il corpo di un passaggio restituisce un `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Tutte le factory accettano una map opzionale `mutatedState` unita allo stato della pipeline, tranne `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Factory                     | Firma                                                           | Descrizione                                                               |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Completamento normale; i listener a valle vengono valutati                |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Completamento del router; seleziona il ramo a valle il cui `routeKey` corrisponde |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Sospende finché non si attiva un tipo specifico di evento di dominio       |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Sospende finché tutte le attività elencate non raggiungono lo stato terminale |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | L'esecuzione della pipeline è terminata — nessun altro passaggio          |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Il passaggio è fallito con un messaggio di errore                         |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Comportamento di retry per il corpo di un nodo che fallisce (`PipelineNodeConfig.retryPolicy`; null disabilita i retry).
 
-| Field            | Type     | Description                                                                    |
+| Campo            | Tipo     | Descrizione                                                                    |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | Tentativi totali, incluso il primo (3 = 1 tentativo + 2 retry); deve essere ≥ 1 |
+| `backoff`        | `String` | `linear` o `exponential` (predefinito)                                          |
+| `initialDelayMs` | `int`    | Ritardo prima del primo retry, in millisecondi; i ritardi successivi crescono in base a `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Configurazione per nodo contenuta nella definizione del passaggio (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). I nodi integrati e quelli personalizzati condividono questa forma; ogni corpo legge solo i campi che gli interessano.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Campo            | Tipo                    | Descrizione                                                                                                                           |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Modello di prompt con sostituzione `{{key}}`                                                                                           |
+| `script`         | `String?`               | Corpo dello script Bash con sostituzione `{{key}}`                                                                                     |
+| `agentId`        | `String?`               | UUID dell'agente con ambito nello spazio di lavoro da inviare                                                                         |
+| `inputKeys`      | `List<String>`          | Chiavi di stato che questo nodo consuma come input                                                                                    |
+| `repoIds`        | `List<String>`          | Repo di cui il nodo `messaging.createSpace` fa il checkout (`<repoId>` o `<repoId>@<branch>`). Vuoto = nessuno; `extras['allRepos']` = ogni repo dello spazio di lavoro. Ignorato sui passaggi agente. |
+| `outputKey`      | `String?`               | Chiave di stato sotto cui viene scritto l'output di questo nodo                                                                       |
+| `label`          | `String?`               | Etichetta leggibile mostrata sul canvas (predefinita: l'ID del passaggio)                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (sottoinsieme) che il valore di output deve soddisfare                                                                    |
+| `reducer`        | `String?`               | Strategia di unione quando rami paralleli scrivono lo stesso `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum` o `override` (predefinito) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Politica di retry in caso di fallimento del corpo; null = un solo tentativo                                                            |
+| `continueOnFail` | `bool`                  | Se vero, un fallimento terminale non fa fallire l'esecuzione; l'errore viene archiviato sotto `state['_stepErrors'][stepId]`           |
+| `timeoutMs`      | `int?`                  | Timeout in tempo reale per il corpo del nodo, in millisecondi; null = nessun timeout                                                   |
+| `teamId`         | `String?`               | Team da inviare (nodi `team.dispatch`); mutuamente esclusivo con `agentId`                                                             |
+| `dispatchMode`   | `String?`               | Modalità di esecuzione del team: `allParallel` o `manager`                                                                             |
+| `extras`         | `Map<String, dynamic>`  | Configurazione libera specifica del corpo (ad es. `iterableKey`, `templateId`, alberi di condizioni)                                  |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Accessor derivati: `spaceId` (`extras['spaceId']` — conversazione esistente in cui lavorare), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, letto sul nodo che apre lo spazio) e `runWhen` (`extras['runWhen']` — salta il nodo quando non è soddisfatto).
 
-## See also
+## Vedi anche
 
-- [Pipelines](/it-IT/manuale/concetti/pipeline/)
-- [Create a pipeline](/it-IT/manuale/guide/crea-pipeline/)
-- [Pipeline triggers](/it-IT/manuale/guide/trigger-pipeline/)
-- [Run a pipeline](/it-IT/manuale/guide/esegui-pipeline/)
+- [Pipeline](/it-IT/manuale/concetti/pipeline/)
+- [Crea una pipeline](/it-IT/manuale/guide/crea-pipeline/)
+- [Trigger delle pipeline](/it-IT/manuale/guide/trigger-pipeline/)
+- [Esegui una pipeline](/it-IT/manuale/guide/esegui-pipeline/)

@@ -1,45 +1,52 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Χρήση του διακομιστή MCP
+description: Στρέψτε έναν εξωτερικό πελάτη MCP στον διακομιστή εργαλείων του Control Center, ορίστε ένα token bearer και μάθετε τι εκθέτει η επιφάνεια.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Αυτός ο οδηγός δείχνει πώς να συνδέσετε έναν εξωτερικό πελάτη MCP — το
+Claude Code, έναν επεξεργαστή, το MCP Inspector — στον δικό του διακομιστή
+εργαλείων του Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Το Control Center καταχωρεί **110** εργαλεία και τα εξυπηρετεί μέσω του Model
+Context Protocol, στην έκδοση πρωτοκόλλου `2024-11-05`. Ολόκληρες οικογένειες
+εργαλείων που ίσως περιμένετε απουσιάζουν: δεν υπάρχουν εργαλεία συσκέψεων ή
+ημερολογίου, ούτε εργαλεία έργων.
 
-## Find the endpoint
+## Βρείτε το τελικό σημείο
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Η επιφάνεια MCP μοιράζεται τον κύριο ακροατή του `cc_server`. Δεν υπάρχει
+ξεχωριστή θύρα MCP.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| Τελικό σημείο | Μέθοδος  | Σκοπός                                                    |
+| ------------- | -------- | --------------------------------------------------------- |
+| `/mcp`        | `POST`   | Μεταφορά Streamable HTTP — αυτήν χρησιμοποιεί ο πελάτης    |
+| `/mcp`        | `DELETE` | Τερματισμός συνεδρίας                                     |
+| `/sse`        | `GET`    | Ροή ειδοποιήσεων από τον διακομιστή                        |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Έτσι, μια προεπιλεγμένη τοπική εγκατάσταση βρίσκεται στο
+`http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Μεταβείτε στις **Ρυθμίσεις → Διακομιστής → Διακομιστές MCP**
+2. Δείτε την κάρτα **Διακομιστής MCP** — δείχνει αν εκτελείται ή έχει διακοπεί
+   και τη θύρα στην οποία ακούει
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Η επιφάνεια είναι ενεργοποιημένη από προεπιλογή σε μια νέα εγκατάσταση, οπότε
+ένας πελάτης loopback λειτουργεί χωρίς να χρειαστεί να πειράξετε ρυθμίσεις. Το
+**Έναρξη με την εκκίνηση της εφαρμογής** ελέγχει αν θα επανέλθει μετά από
+επανεκκίνηση· τα **Έναρξη** / **Διακοπή** είναι στοιχεία ελέγχου συνεδρίας που
+δεν αλλάζουν αυτή την προτίμηση.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Ο διακομιστής δεσμεύει το loopback από προεπιλογή, οπότε το τελικό σημείο είναι
+προσβάσιμο μόνο από το μηχάνημα στο οποίο εκτελείται το `cc_server`, εκτός αν
+τον ξεκινήσατε με `--bind any`.
 
-## Connect a client
+## Συνδέστε έναν πελάτη
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Στρέψτε τον πελάτη σας στο τελικό σημείο Streamable HTTP. Η ακριβής μορφή της
+διαμόρφωσης είναι θέμα του πελάτη σας· το URL είναι το ίδιο και στις δύο
+περιπτώσεις.
 
 ```json
 {
@@ -54,41 +61,47 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Το Claude Code δεν θα το διαβάσει από ένα `.mcp.json` ενός έργου — βάζει τους
+διακομιστές MCP που ορίζονται σε επίπεδο έργου πίσω από ένα αίτημα έγκρισης που
+ένα μη διαδραστικό `claude -p` δεν απαντά ποτέ. Περάστε τη διαμόρφωση ρητά:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+Το `--strict-mcp-config` κάνει το Claude να χρησιμοποιεί μόνο αυτό το αρχείο,
+ώστε ο ίδιος διακομιστής να μην εντοπίζεται και από το έργο και να μην
+καταχωρίζεται δύο φορές.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Σημείο ελέγχου: ζητήστε από τον πελάτη να παραθέσει τα εργαλεία του. Θα πρέπει
+να δείτε καταχωρήσεις `mcp__*` που καλύπτουν εισιτήρια, χώρους, μνήμη, γράφημα
+κώδικα και έλεγχο.
 
-## Serve MCP beyond the host
+## Παροχή MCP πέρα από τον τοπικό υπολογιστή
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. Στις **Ρυθμίσεις → Διακομιστής → Διακομιστές MCP**, στη γραμμή **Token
+   ελέγχου ταυτότητας**, πατήστε **Ορισμός** και επικολλήστε ένα token
+2. Στείλτε το ως `Authorization: Bearer <token>` σε κάθε αίτημα `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Μια επιφάνεια χωρίς token απορρίπτει με 403 κάθε καλούντα που δεν προέρχεται
+από loopback. Αυτή η συμπεριφορά αποτυγχάνει κλειστά εκ σχεδιασμού: το token
+είναι αυτό που καθιστά δυνατή την παροχή εκτός τοπικού υπολογιστή.
 
-Token changes apply to the live surface immediately — no restart.
+Οι αλλαγές στο token εφαρμόζονται αμέσως στην ενεργή επιφάνεια — χωρίς
+επανεκκίνηση.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[Το `GET /sse` δέχεται το token στη συμβολοσειρά ερωτήματος]
+Η ροή ειδοποιήσεων ελέγχεται ως προς το token όπως κάθε άλλη διαδρομή, αλλά ένα
+`EventSource` του προγράμματος περιήγησης δεν μπορεί να στείλει κεφαλίδα
+`Authorization` — έτσι το `/sse` δέχεται το token και ως `?token=<token>`. Χωρίς
+token απαντά 401.
 :::
 
-## Scope every call to a workspace
+## Περιορίστε κάθε κλήση σε έναν χώρο εργασίας
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Κάθε εργαλείο που αγγίζει δεδομένα εμβέλειας χώρου εργασίας απαιτεί
+`workspace_id` και μια κλήση χωρίς αυτό απορρίπτεται αντί να επιλυθεί με βάση
+κάποιο «τρέχοντα» χώρο εργασίας:
 
 ```json
 {
@@ -98,56 +111,63 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Το id είναι αυτό που εμφανίζεται στο URL του προγράμματος περιήγησης ή της
+εφαρμογής: `/workspaces/<workspace_id>/…`. Οι μόνες εξαιρέσεις είναι εργαλεία
+που εκτείνονται πραγματικά σε πολλούς χώρους εργασίας, όπως το `list_workspaces`
+και τα εργαλεία της ροής ειδήσεων — η ροή ειδήσεων είναι ανά χρήστη και ένας
+πράκτορας δεν έχει δικό του χρήστη, οπότε αυτά τα εργαλεία λειτουργούν στις ροές
+του ιδιοκτήτη του διακομιστή.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Τα εργαλεία με εμβέλεια αποθετηρίου ελέγχουν επιπλέον ότι το αποθετήριο είναι
+συνδεδεμένο με αυτόν τον χώρο εργασίας.
 
-## Know what the surface will refuse
+## Μάθετε τι θα απορρίψει η επιφάνεια
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Περιορισμός ανά λειτουργία.** Μια κλήση επιλύεται ως προς τη λειτουργία του
+  χώρου του πράκτορα που καλεί, στην πλευρά του διακομιστή. Ένας πράκτορας σε
+  λειτουργία μόνο για ανάγνωση δεν μπορεί να φτάσει σε εργαλείο εγγραφής
+  παραλείποντας το `space_id` — η λειτουργία αναζητείται αντ’ αυτού από την
+  ενεργή εκτέλεσή του.
+- **Περιορισμοί ενεργειών.** Τα εργαλεία που μεταβάλλουν κατάσταση δηλώνουν τις
+  κατηγορίες επιδράσεών τους και περνούν από την ίδια πολιτική που χρησιμοποιεί
+  το υπόλοιπο προϊόν. Δείτε
+  [Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/).
+- **Επιβεβαίωση.** Κάποια καταστρεπτικά εργαλεία συγκροτούν μια δομή
+  επιβεβαίωσης που πρέπει να εγκριθεί πριν προχωρήσει η κλήση.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Ο πλήρης κατάλογος ανακοινώνεται στο `tools/list` χωρίς φραγή ανακάλυψης — ένας
+εξωτερικός πελάτης MCP αρνείται να καλέσει εργαλείο που δεν βρίσκεται στην
+προσωρινά αποθηκευμένη λίστα του, οπότε η απόκρυψη εργαλείων τα χαλάει αντί να
+τα τακτοποιεί.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The client sees no tools
+### Ο πελάτης δεν βλέπει εργαλεία
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Ελέγξτε ότι η κάρτα **Διακομιστής MCP** δείχνει ότι εκτελείται
+- Ελέγξτε ότι η θύρα ταιριάζει με τη θύρα του `cc_server` σας
+- Στο Claude Code, ελέγξτε ότι περάσατε τα `--mcp-config` και
+  `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 403 από μηχάνημα που δεν είναι ο διακομιστής
 
-No bearer token is configured. Set one and send it.
+Δεν έχει ρυθμιστεί token bearer. Ορίστε ένα και στείλτε το.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Μια κλήση εργαλείου αποτυγχάνει με «Missing or invalid argument: workspace_id»
 
-Add `workspace_id`. There is no implicit workspace.
+Προσθέστε το `workspace_id`. Δεν υπάρχει σιωπηρός χώρος εργασίας.
 
-### A tool call is refused as unknown
+### Μια κλήση εργαλείου απορρίπτεται ως άγνωστη
 
-[MCP tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+Τα [Εργαλεία MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/) παραθέτουν τον
+κατάλογο. Καλέστε το όνομα ακριβώς όπως εμφανίζεται εκεί.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [MCP tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/)
-- [Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
+- [Εργαλεία MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/)
+- [Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)

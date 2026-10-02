@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Slack koppelen aan je werkruimte
+description: Maak de Slack-app aan, verbind hem, koppel je account en laat een agent antwoorden in een Slack-thread.
 slug: nl-NL/handleiding/zelfstudies/eerste-chatbrug
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Wat je gaat bouwen
 
-By the end of this tutorial, you will have:
+Aan het eind van deze zelfstudie heb je:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- Een Slack-app die voor je werkruimte is aangemaakt, met de juiste rechten en gebeurtenissen al ingesteld
+- Een live verbinding tussen Slack en Control Center
+- Je eigen Slack-account gekoppeld aan je Control Center-gebruiker
+- Een agent die je antwoordt in een Slack-thread en een ticket dat met een slash-commando is aangemaakt
 
-Prerequisites:
+Vereisten:
 
-- [Your first workspace](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/) and [Dispatch your first agent](/nl-NL/handleiding/zelfstudies/eerste-agent/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [Je eerste werkruimte](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/) en [Je eerste agent starten](/nl-NL/handleiding/zelfstudies/eerste-agent/) afgerond — een werkruimte zonder agenten kan een Slack-bericht ontvangen, maar heeft niemand om het te beantwoorden
+- De **CEO-agent** van de werkruimte heeft een adapter en een model ingesteld via **Instellingen → Werkruimte → Agenten**. De brug wekt de CEO, niet de agent die je in de vorige zelfstudie hebt geconfigureerd, en een agent zonder adapter draait op de ingebouwde loop met het standaardmodel van Anthropic.
+- De rol `owner` of `admin` in de Control Center-werkruimte (een chat-app verbinden geldt voor de hele werkruimte)
+- Toestemming om apps te maken en te installeren in je Slack-werkruimte
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Niets hiervan heeft een publiek adres, een tunnel of een inkomende poort nodig. Control Center belt _naar buiten_ met Slack via Socket Mode, dus dit werkt vanaf een laptop achter NAT.
 
-## Step 1: Get a Slack app configuration token
+## Stap 1: Een app-configuratietoken voor Slack ophalen
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Dit is het enige geheim dat je met de hand moet ophalen. Het laat Control Center de app voor je aanmaken en later bewerken.
 
 1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+2. Scrol naar de sectie met app-configuratietokens onderaan de pagina
+3. Genereer een tokenpaar voor je Slack-werkruimte
+4. Kopieer het **refresh**-token — het begint met `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Stap 2: Control Center de app laten aanmaken
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Ga in Control Center naar **Instellingen → Werkruimte → Algemeen** en zoek de kaart **Chatbruggen**
+2. Klik in het blok **Slack** op **Maak de app voor mij**
+3. Plak het app-configuratietoken
+4. Controleer hoe de bot eruit komt te zien:
+   - **App-naam**: hoe Slack de app vermeldt, bijvoorbeeld `Control Center · Acme`
+   - **Botnaam**: wat mensen na `@` typen, bijvoorbeeld `control-center`
+   - **Korte beschrijving** en **Wat de bot zegt te kunnen**
+   - **Slash-commando**: standaard `cc`, dus het commando is `/cc`
+   - **Directe berichten**: laat dit aan staan zodat leden de bot een DM kunnen sturen
+5. Klik op **App maken**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center stelt de hele app-definitie samen — Socket Mode aan, de bot-scopes en gebeurtenisabonnementen die hij nodig heeft, het slash-commando, het tabblad Messages — en maakt de app aan in Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## Stap 3: De twee stappen afronden die alleen Slack kan
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack heeft geen API om een app-token te genereren of een app te installeren, dus de dialoog geeft je beide als links:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Een app-token genereren** — opent **Basic Information → App-Level Tokens**. Maak een token met de scope `connections:write` en kopieer het. Het begint met `xapp-`
+2. **De app installeren** — opent **Install App**. Installeer in je werkruimte en kopieer daarna het **Bot User OAuth Token**. Het begint met `xoxb-`
 
-Keep both values around for the next step.
+Bewaar beide waarden voor de volgende stap.
 
-## Step 4: Connect
+## Stap 4: Verbinden
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Klik terug in de dialoog op **Inloggegevens plakken**
+2. Vul het **Bot-token** (`xoxb-…`) en het **App-token** (`xapp-…`) in
+3. Laat **App-configuratietoken** leeg — die uit stap 1 is al opgeslagen (Slack heeft hem geroteerd en Control Center heeft de nieuwe bewaard)
+4. Klik op **Verbinden**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center verifieert het bot-token bij Slack voordat het iets opslaat en opent daarna de socket. De rij toont nu de naam van de bot en de naam van je Slack-werkruimte met het label **Live**.
 
-## Step 5: Link your own Slack account
+## Stap 5: Je eigen Slack-account koppelen
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+De verbinding maakt de bot bereikbaar; de koppeling maakt _jou_ herkenbaar. Zolang je Slack-identiteit niet is gekoppeld, handelt de bot niet op je berichten — hij schrijft een bericht nooit toe aan wie de app ook maar heeft geïnstalleerd.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Koppelen is persoonlijk en staat daarom op een andere pagina dan de werkruimtebrede verbinding.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Ga naar **Instellingen → Werkruimte → Profiel en identiteit** en zoek de kaart **Gekoppelde chataccounts**
+2. Klik op **Mijn Slack-account koppelen**
+3. Kopieer het commando dat het toont, bijvoorbeeld `/cc link K7M2QP`
+4. Stuur dat commando in Slack naar de bot in een DM
+5. De bot antwoordt "Gekoppeld — je bent …"
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+De code is eenmalig en verloopt na 15 minuten. Als je Slack-e-mailadres overeenkomt met een Control Center-gebruiker die al lid is van deze werkruimte, koppelt de brug je automatisch zodra je voor het eerst met hem praat en kun je deze stap overslaan.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Als je de bot vermeldt voordat dit is gebeurd, weigert hij en zegt waarom. De drie weigeringen verschillen van elkaar, dus lees goed welke je krijgt:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Afzender zonder koppeling**: de bot vertelt je hoe je koppelt. Kom terug naar deze stap.
+- **Gekoppeld, maar geen lid van deze werkruimte**: vraag een beheerder je uit te nodigen.
+- **Lid met een alleen-lezenrol** (kijker of gast): de bot begint geen werk namens jou.
 
-## Step 6: Put an agent on something
+## Stap 6: Een agent iets laten doen
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Nodig de bot in Slack uit in een kanaal: `/invite @control-center`
+2. Vermeld hem met een echte opdracht:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center vat de open PR's op de repo api samen
 
-The bridge:
+De brug:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Maakt een Control Center-ruimte voor die Slack-thread, vernoemd naar het Slack-kanaal en je opdracht
+2. Weckt de voordeur-agent van de werkruimte (de CEO-agent als die er is, anders de eerste agent)
+3. Streamt het antwoord van de agent terug naar de Slack-thread terwijl het wordt geschreven
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Antwoord in dezelfde Slack-thread om verder te gaan — verdere vermeldingen zijn niet nodig, want de Slack-thread is nu overbrugd. Of stuur de bot een DM in plaats van een kanaal te gebruiken; elk DM-gesprek drijft zijn eigen Control Center-ruimte aan, met een titel en een statusregel "aan het denken…" terwijl de agent werkt.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Streaming vereist de streaming-API van Slack, die niet elk abonnement heeft. Als je app die niet krijgt, stopt de brug voor de hele verbinding met proberen en plaatst hij elke reactie als één bericht in plaats daarvan; op de kaart **Chatbruggen** staat dan "Live streamen staat uit voor deze Slack-app — antwoorden komen als één bericht." Al het andere werkt hetzelfde.
 
-## Step 7: File a ticket without leaving Slack
+## Stap 7: Een ticket aanmaken zonder Slack te verlaten
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+De bot antwoordt met de ticketsleutel die hij heeft aangemaakt. Het ticket is een gewoon lokaal Control Center-ticket, door jou gemeld en klaar om aan een agent te worden toegewezen. `/cc help` laat zien wat het commando allemaal kan.
 
-## Recap
+## Samenvatting
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Je hebt vanuit Control Center een Slack-app aangemaakt, die via een uitgaande socket verbonden, je Slack-identiteit aan je Control Center-gebruiker gekoppeld en een agent vanuit een Slack-thread aangestuurd. Alles wat in Slack gebeurde, bestaat ook in Control Center: de Slack-thread is een ruimte, het antwoord is een transcript en het ticket is een ticket.
 
-**Next:** [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/).
+**Volgende:** [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/) behandelt de handmatige route, het roteren van tokens en probleemoplossing. Lees [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/) voor het model eronder.

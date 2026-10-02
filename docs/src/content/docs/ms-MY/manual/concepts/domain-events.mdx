@@ -1,153 +1,160 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Acara domain
+description: Mengapa ciri berkomunikasi melalui bas acara dalam proses dan bukan dengan mengimport satu sama lain, apa yang bas itu menjadi sumber kebenaran dan apa yang tidak, serta acara mana yang benar-benar boleh memacu automasi.
 slug: ms-MY/manual-pengguna/konsep/acara-domain
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Apakah itu acara domain
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Acara domain ialah mekanisme penyahgandingan yang membolehkan ciri berkomunikasi
+tanpa kebergantungan langsung. Daripada ciri A memanggil ciri B, ciri A
+menerbitkan satu acara dan ciri B melanggannya.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` ialah bas terbit/langgan siaran dalam proses. Penerbit memanggil
+`publish(event)`; pelanggan menggunakan strim `on<T>()` yang bertaip. Setiap
+acara melaksanakan `DomainEvent` dan membawa `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Bas ini berjalan dalam `cc_server`.** Setiap penerbit dan setiap pelanggan
+yang hidup berada di situ. Tiada klien melihat bas ini. Apa yang klien lihat
+ialah subset terpilih yang dipancarkan semula oleh pelayan sebagai bingkai
+JSON-RPC `notifications/*`.
 
-## Why a bus at all
+## Mengapa perlu ada bas
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Tanpa acara, setiap reaksi antara ciri ialah satu import. Laluan pemberitahuan
+terpaksa mengimport ciri ejen, ciri pull request, penetikan dan mesyuarat
+semata-mata untuk tahu bila perlu memaparkan toast — dan setiap satu daripadanya
+kemudiannya terpaksa tahu bahawa pemberitahuan wujud. Penetikan pula terpaksa
+mengimport pipeline supaya tiket yang selesai boleh memajukan satu larian. Graf
+kebergantungan menjadi kusut, dan kernel yang dikongsi berhenti dikongsi.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Menerbitkan acara memecahkan gelung itu. Laluan pemberitahuan melanggan dua
+puluh satu kelas acara dan tidak mengimport mana-mana ciri yang
+membangkitkannya. Penghantar pencetus pipeline melanggan seluruh bas dan tidak
+tahu apa-apa tentang pull request, tiket atau mesyuarat. Kebolehcerapan
+mengagregatkan hasil larian tanpa menyentuh penghantaran.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Kosnya yang biasa: penerbit tidak dapat tahu sama ada ada orang mendengar, dan
+pendengar yang tidak pernah dibina akan kekal lengai secara senyap.
+`TicketRemoteSyncHandler` ialah contoh yang kekal: ia diisytiharkan, dilindungi
+ujian, dan tidak pernah disambungkan dalam pengeluaran.
 
-## What the bus is not
+## Apa yang bas ini bukan
 
-It is worth being precise about one thing the bus does _not_ own.
+Ada satu perkara yang bas ini _tidak_ miliki, dan elok kita jelaskan dengan tepat.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Jejak audit bukan unjuran strim acara.** Setiap operasi RPC yang mengubah
+keadaan diaudit secara lalai — `RepoOp.audited` lalai kepada true dan sesuatu
+operasi hanya menarik diri dengan mengisytiharkan `audited: false`, tindakan
+sengaja yang kelihatan pada operasi itu sendiri. Penghantar menambahkan baris
+"siapa buat apa, dari mana" terus selepas panggilan yang berjaya. Tiada
+`DomainEventAuditBridge`. `ActivityLogPersister` menulis baris `activity_log`
+daripada acara `ActivityLogged`; itu suapan yang berasingan daripada audit RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Bas acara _ialah_ pengangkutan untuk pemberitahuan dan automasi. Ia bukan
+sistem rekod simpan kira.
 
-## What the bus does drive
+## Apa yang bas ini memang pacu
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Pemberitahuan.** Dua puluh satu kelas acara ditukar oleh pelayan menjadi
+  bingkai `notifications/*`, direkodkan ke dalam suapan kekal bagi setiap ruang
+  kerja dan disiarkan kepada sesi yang bersambung. Bingkai yang `workspace_id`-nya
+  menamakan ruang kerja yang pengguna sesi bukan ahlinya digugurkan di pelayan;
+  klien kemudian menapis bakinya kepada ruang kerja yang sedang dilihatnya.
+- **Automasi dipacu acara.** Pencetus pipeline melanggan bas dan memulakan
+  pipeline yang sepadan secara automatik (lihat di bawah).
+- **Reaksi kitaran hayat.** Mencipta ruang kerja menyemai ejen CEO dan
+  spesialisnya, templat pipeline terbina dalam, serta suite eval permulaan.
+  Larian ejen yang selesai menyambung semula langkah pipeline yang digantung,
+  menutup tugas, menyuap penyelia matlamat, boleh mengejutkan pemeriksa
+  bernama, dan boleh mencetuskan semula ketua pasukan. PR yang dicantumkan atau
+  ruang yang dipadam mencetuskan pengumpulan sampah worktree.
+- **Penyegerakan merentas vendor.** Perubahan tiket tempatan ditolak keluar
+  kepada vendor yang dikonfigurasikan oleh penyelaras yang mendengar lima acara
+  tiket.
 
-## Event categories
+## Kategori acara
 
-Events span the whole product surface. At a high level:
+Acara merangkumi seluruh permukaan produk. Secara ringkasnya:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Ruang kerja, ejen dan repo** — penciptaan ruang kerja, penyempurnaan larian, pendaftaran repo, kemas kini kemahiran
+- **Pull request** — penerbitan, perubahan status, cantuman, permintaan semakan, sebutan, pemantauan PR yang ditulis sendiri, PR yang dikesan secara luaran
+- **Pemesejan** — mesej, ruang dan kemajuan penyediaan ruang
+- **Tiket** — cipta, tugaskan, tugaskan semula, butiran, status dan tiga hasil akhir
+- **Tugas** — bingkai kitaran hayat berjujukan untuk satu larian yang dihantar, supaya klien boleh menyusun dan menyahpenduanya
+- **Pipeline** — acara larian akhir sahaja (selesai, dibatalkan, gagal)
+- **Kebolehcerapan** — entri log aktiviti dan ambang belanjawan
+- **Identiti dan keahlian** — ahli ditambah, dibuang, peranan diubah
+- **Kalendar dan mesyuarat** — tamat tempoh pengesahan, mesyuarat bermula dan rakaman selesai
+- **Stesen** — pengambilalihan, penuaian dan penutupan tidak dijangka
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Memori, orkestrasi, dokumen pelan, artifak, kelulusan, pengambilan penyegerakan
+tiket, penyegaran kalendar, cantuman worktree, penciptaan pengguna, jemputan dan
+pembatalan peranti bukan acara domain; lihat rujukan.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/ms-MY/manual-pengguna/rujukan/acara-domain/). That page is the
-inventory; this one is the model.
+Untuk katalog lengkap — kesemua 53 kelas acara konkrit, muatannya dan 24
+pelanggan yang menggunakannya — lihat
+[Rujukan acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/). Halaman itu
+ialah inventori; halaman ini modelnya.
 
-## Live access control rides two different mechanisms
+## Kawalan akses langsung berjalan atas dua mekanisme berbeza
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Acara keahlian dan peranti kelihatan simetri tetapi sebenarnya tidak, dan itu
+penting jika anda menaakul tentang betapa pantas sesuatu pembatalan berkuat
+kuasa.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Membatalkan peranti memang menamatkan sesinya.** Pelayan memantau jadual
+peranti berganding dan menggugurkan mana-mana sesi hidup yang perantinya telah
+keluar dari set aktif, dalam beberapa saat.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Membuang ahli tidak menutup soket.** `WorkspaceMemberRemoved` digunakan:
+`LocalRpcServer` dan `RemoteRelayHost` menggugurkan langganan ruang kerja yang
+dilampirkan oleh pengguna itu, dan `RemoteEventForwarder` membatalkan
+kesahihan cache keahliannya supaya bingkai seterusnya untuk ruang kerja itu
+tidak ditolak. Yang menafikan RPC berikutnya masih gate peranan, yang
+menyelesaikan semula keahlian pada **setiap** panggilan — jadi permintaan
+mereka yang seterusnya ditolak dengan "Not a member of this workspace".
+Kesannya serta-merta untuk apa sahaja yang mereka cuba lakukan; ia cuma tidak
+dicapai dengan menamatkan talian terhadap mereka.
 
-## Pipeline triggers
+## Pencetus pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Pencetus pipeline melanggan acara domain dan memulakan pipeline yang sepadan
+secara automatik. `PipelineTriggerDispatcher` mendengar seluruh bas, kemudian:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Memintas lebih awal melainkan jenis acara itu salah satu yang dapat dipetakannya kepada muatan
+2. Mencari pencetus yang didayakan yang sepadan dengan jenis acara itu, merentas setiap ruang kerja
+3. Menapis setiap satu mengikut ruang kerjanya sendiri dan menggunakan penapis padanan muatannya
+4. Memulakan satu larian bagi setiap pencetus yang terselamat
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Kekangan pentingnya ialah langkah 1. Bas membawa 53 jenis acara; pemilih
+tambah pencetus memulakan larian untuk empat belas ini (cabang muatan
+`EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+dan `SpaceDeleted`. Tiada apa-apa yang lain boleh memulakan pipeline.
 
-## How a client sees any of this
+## Bagaimana klien melihat semua ini
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/ms-MY/manual-pengguna/konsep/seni-bina/).
+`RemoteEventForwarder` menterjemah acara kelas pemberitahuan menjadi bingkai dan
+menolaknya melalui RPC kepada sesi yang bersambung, di mana pemeta bingkai
+menukarnya menjadi pemberitahuan dalam aplikasi. Klien nipis oleh itu melihat
+unjuran strim acara pelayan tanpa memiliki sebarang pelaksanaan — itulah inti
+[pemisahan klien nipis](/ms-MY/manual-pengguna/konsep/seni-bina/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Namun bukan setiap bingkai yang ditolak itu pemberitahuan. Strim kitaran hayat
+tugas dan penugasan semula tiket dihantar secara langsung untuk memacu UI,
+tetapi ia tidak direkodkan ke dalam suapan pemberitahuan dan tidak memaparkan
+toast.
 
-## See also
+## Lihat juga
 
-- [Pipelines and automation](/ms-MY/manual-pengguna/konsep/pipeline/): what a trigger starts
-- [Tickets and delegation](/ms-MY/manual-pengguna/konsep/tiket/): assignment to an agent vs a team
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/): how events fit the dependency rule
-- [Domain events reference](/ms-MY/manual-pengguna/rujukan/acara-domain/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
-- [Configure notifications](/ms-MY/manual-pengguna/panduan-cara/pemberitahuan/)
+- [Pipeline dan automasi](/ms-MY/manual-pengguna/konsep/pipeline/): apa yang dimulakan oleh pencetus
+- [Tiket dan perwakilan](/ms-MY/manual-pengguna/konsep/tiket/): penugasan kepada ejen berbanding pasukan
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/): bagaimana acara memenuhi peraturan kebergantungan
+- [Rujukan acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/): katalog lengkap dan pelanggannya
+- [Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
+- [Konfigurasikan pemberitahuan](/ms-MY/manual-pengguna/panduan-cara/pemberitahuan/)

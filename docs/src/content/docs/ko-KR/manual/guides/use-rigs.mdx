@@ -1,97 +1,100 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: 에이전트에 테스트용 머신 제공
+description: 에이전트에게 일회용 브라우저, 데스크톱, Android 에뮬레이터 또는 iOS 시뮬레이터를 제공합니다 — 실시간으로 지켜보고, 직접 넘겨받을 수 있는 제어와 함께.
 slug: ko-KR/매뉴얼/사용-가이드/리그-사용
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**리그**는 에이전트가 실제로 무언가를 시도해야 할 때 여는 일회용
+머신입니다: 페이지를 불러오고, 데스크톱 앱을 클릭해 보고, 휴대폰을 이리저리
+탭하는 일 말입니다. 에이전트가 작업하는 모습을 실시간으로 지켜볼 수 있고,
+원할 때면 언제든 제어권을 가져올 수 있습니다.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+인클로저 터미널, 브라우저, 데스크톱 리그는 일회용 디스크와 게이트로 통제되는
+네트워크를 가진 VM입니다. Android와 iOS는 호스트가 관리하는
+에뮬레이터입니다: 기기 상태는 일회용이지만, 네트워킹은 서버 호스트를
+따릅니다.
 
-## Set it up once
+## 한 번만 설정하면 됩니다
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+리그는 `cc_server`를 호스팅하는 머신에서 실행됩니다 — 지금 보고 있는 머신이
+아니라 바로 그 머신입니다. 사용자에게 노출되는 표면은 다섯 가지이며,
+데스크톱과 모바일 표면은 호스트 설정이 필요합니다:
 
-| Surface | Runs on | Setup |
+| 표면 | 실행 위치 | 설정 |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **터미널(VM)** | 고정된 Ubuntu 이미지로 부팅하는 마이크로VM | 없음 — 이미지는 처음 사용할 때 자동으로 가져옵니다 |
+| **브라우저(VM)** | 고정된 Debian 이미지로 부팅하며 처음 사용할 때 Chromium, Firefox 또는 WebKit을 설치하는 마이크로VM | 없음 — 마찬가지 |
+| **컴퓨터(VM)** | Chromium, Firefox, WebKit과 GitHub 호스팅 러너 수준의 CLI 기본 도구를 포함한 Linux 데스크톱 이미지를 사용하는 QEMU | QEMU를 설치하고(`brew install qemu`), **설정 → 서버 → 리그**에서 데스크톱 이미지를 **가져옵니다** |
+| **Android** | Google의 Android 에뮬레이터 | Android SDK를 설치하고 AVD를 만들어 시작합니다(아래 참조) |
+| **iOS 시뮬레이터** | 서버 Mac의 CoreSimulator | Xcode와 필요한 iOS 런타임을 설치한 뒤 **설정 → 서버 → 리그**에서 자동화 브리지를 설치합니다 |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+터미널과 브라우저 머신은 다이제스트로 고정된 이미지에서 부팅합니다: 정확한
+바이트가 미리 지정되어 있고, 첫 부팅 때 한 번 가져와 캐시합니다 — 각 종류를
+처음 부팅한 뒤에는 이후 머신이 다운로드를 완전히 건너뛰고 몇 초 만에
+올라옵니다. **설정 → 서버 → 리그**에서 서버가 부팅할 수 있는 것과 현재 실행
+중인 모든 머신을 볼 수 있습니다.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+설치한 데스크톱 이미지도 같은 페이지에서 계속 관리할 수 있습니다:
+**가져오기**는 더 새로운 qcow2로 교체하고, **삭제**는 이미지를 제거해 새
+빌드를 설치할 수 있게 합니다.
 
-### Mobile devices are set up differently
+### 모바일 기기는 다르게 설정합니다
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Android나 iOS용으로 저희가 제공하는 이미지는 없으며, 이는 누락이 아닙니다.
+Android 시스템 이미지는 Google의 SDK에서, iOS 런타임은 Xcode에서 옵니다.
+Android의 경우 Android Studio(또는 명령줄 SDK 도구)를 설치하고,
+**Device Manager**에서 가상 기기를 추가한 뒤 시작합니다. 그러면 리그 페이지가
+Android를 사용 가능으로 보고합니다.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+또한 어떤 단계가 빠졌는지 정확히 알려줍니다 — SDK가 없음, 에뮬레이터가 없음,
+가상 기기가 없음, 또는 기기가 그냥 실행되지 않음 — 이 넷은 해결 방법이 각각
+다르고 그중 하나만 다운로드이기 때문입니다. SDK를 인식하지 못하는 셸에서
+`cc_server`를 시작한다면 다음과 같이 내보냅니다:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+iOS의 경우 서버 자체가 macOS에서 실행되어야 하며, Xcode와 iOS 시뮬레이터
+런타임이 설치되어 있어야 합니다. **설정 → 서버 → 리그**를 열고
+**iOS 자동화 브리지 설치**를 누릅니다. 서버는 체크섬으로 고정된
+WebDriverAgent 아티팩트를 가져와 검증한 뒤, 서버가 소유한 자동화 저장소에
+설치합니다. 설정 중에는 어떤 시뮬레이터도 부팅하지 않습니다.
 
-## Open a machine
+## 머신 열기
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+머신은 채팅과 diff 옆에 **탭**으로 있습니다 — 스페이스나 PR 페이지에서, 같은
+`+` 메뉴의 **머신** 아래에 있습니다:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **컴퓨터** — Chromium, Firefox, WebKit이 있는 Linux 데스크톱
+- **Chromium**, **Firefox** 또는 **WebKit** — 브라우저
+- **Android** — 실행 중인 Android 에뮬레이터
+- **iOS 시뮬레이터** — 이 대화를 위해 생성된 일회용 시뮬레이터
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+하나를 선택하고 **머신 시작**을 누릅니다. 탭은 그냥 로딩만 도는 대신 부팅이
+어느 단계인지 알려줍니다("Starting the microVM", "Waiting for the guest to come
+up").
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+탭은 대화 범위에 속하며, 에이전트 도구도 마찬가지입니다. Chromium, Firefox
+또는 WebKit 탭과 `browser_use`, Android와 `mobile_use`, 또는 iOS 시뮬레이터와
+`ios_use`가 같은 기본 머신을 가리킵니다. 추가 UI 슬롯은 별도의 비교 머신이며,
+에이전트 도구는 항상 기본 머신을 사용합니다.
 
-To build, install and start a Flutter app on Android:
+Android에서 Flutter 앱을 빌드, 설치, 시작하려면:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+그런 다음 `mobile_use`를 `install_apk`와
+`build/app/outputs/flutter-apk/app-debug.apk`와 함께 호출하고, 이어서
+`start_app`과 Android 패키지 이름을 전달합니다. `ui_dump`, 스크린샷, 입력은
+사람용 탭에 표시되는 것과 같은 기기를 조작합니다. `stop_app`,
+`clear_app_data`, `uninstall_app`, `open_url`, argv 형태의 `shell` 호출이 나머지
+개발 주기를 처리하며, 서버 호스트에서 셸을 호출하지 않습니다.
 
-To build, install and start a Flutter app on iOS Simulator:
+iOS 시뮬레이터에서 Flutter 앱을 빌드, 설치, 시작하려면:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +102,207 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+그런 다음 `ios_use`를 `install_app`과 `.app` 디렉터리와 함께 호출하고,
+이어서 `start_app`과 `plutil`이 출력한 번들 식별자를 전달합니다.
+iOS 도구는 `stop_app`, `uninstall_app`, `open_url`, 그리고 시뮬레이터 내부
+진단을 위한 argv 형태의 `spawn` 작업도 제공합니다.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+데스크톱과 브라우저 화면은 패널에 맞춰 크기가 조정됩니다. iOS는 시뮬레이터의
+고정 포인트 크기를 유지하며 레터박스로 표시합니다. 모든 표면에는 여전히 두
+개의 독립적인 레인이 있습니다: 에이전트는 작고 저렴한 스크린샷을 받고,
+사용자는 라이브 뷰를 받습니다. 탭을 전환하면 사람용 스트림이 중지되므로
+백그라운드 머신이 디스플레이 대역폭을 소비하지 않습니다.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+리그 탭은 레이아웃 복원 중을 포함해 스스로 머신을 시작하지 않습니다. 이
+규칙은 앱을 실행했을 때 예상치 않게 VM을 부팅하거나 시뮬레이터 기기를 만드는
+일을 막습니다.
 
-## Drive the machine
+## 머신 조작하기
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+다른 누구도 배타적 제어를 쥐고 있지 않을 때 — 또는 사용자가 쥐고 있을 때 —
+캔버스에 자유롭게 입력하고 클릭할 수 있습니다. 그 잠금을 쥐고 있는 동안 상태
+태그는 **제어 권한이 있습니다**로 표시되고, 에이전트는 여전히 스크린샷을 찍을
+수 있지만, 서버는 모든 작업이 거치는 단일 병목 지점에서 에이전트의 변경
+작업을 거부합니다. 사용자가 하는 모든 일은 사용자 이름으로 기록됩니다.
 
-Press **Stop the machine** when you are done.
+끝나면 **머신 중지**를 누릅니다.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+제어가 배타적인 것은 의도된 것입니다: 두 주체가 한 머신에 입력하면 둘 다
+의도하지 않은 입력이 만들어집니다.
 
-## Move things in and out
+## 파일을 주고받기
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+복사와 붙여넣기는 리그 캔버스를 넘나들며 양방향으로 작동하며, 파일
+끌어놓기도 마찬가지입니다.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**복사 및 붙여넣기.** 캔버스 위에서 복사 단축키를 누르면 머신이 복사한 것 —
+텍스트, 이미지, 파일 목록 — 이 사용자 클립보드에 들어옵니다. 붙여넣기는
+사용자의 클립보드를 반대 방향으로 보내고 머신 안에서 붙여넣기를 실행합니다.
+macOS에서 단축키는 ⌘C/⌘V이고, ⌃C는 여전히 게스트 셸에 인터럽트로 전달됩니다.
+Windows와 Linux에서는 ⌃C/⌃V를 사용합니다 — 게스트는 어차피 받았을 것과 같은
+키 입력을 받으므로, 게스트 터미널의 ⌃C는 여전히 인터럽트로 작동하고 사용자
+자신의 클립보드는 건드리지 않습니다.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+백그라운드로 동기화되는 것은 없습니다. 사용자 머신에서 복사한 비밀번호가
+타이머가 울렸다는 이유로 VM 안에 도착하지는 않습니다. 붙여넣을 때
+건너갑니다.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+리그로의 붙여넣기는 기본적으로 허용됩니다. 리그 밖으로의 복사는 먼저 확인을
+요청합니다 — 10분 동안의 권한, 또는 **설정 → 서버 → 리그 → 클립보드 접근**의
+**항상 허용**입니다. 두 방향은 독립적이며, 워크스페이스가 아니라 사용자를
+따라갑니다.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**파일 끌어오기.** 캔버스 어디에든 파일을 놓습니다.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- **브라우저(VM)**에서는 놓은 지점에서 페이지가 *실제* 드롭을 받으므로, 업로드
+  영역이 로컬 파일과 똑같이 동작합니다.
+- **컴퓨터(VM)**에서는 파일이 `~/Drops`에 들어가고 그 경로가 머신의
+  클립보드에 올라가므로, ⌃V로 파일 관리자나 업로드 필드에 붙여넣을 수
+  있습니다. 호스트는 VM 안에서 특권 데몬을 실행하지 않고는 임의의 Linux 앱에
+  드래그를 합성할 수 없고, 리그에는 그런 데몬이 의도적으로 없습니다 — 그래서
+  드롭이 일어난 척하는 대신 토스트가 파일이 어디로 갔는지 알려줍니다.
+- **터미널**에서는 파일이 복사되어 들어가고 그 경로가 프롬프트에 입력되어
+  명령에 넘길 준비가 됩니다. 터미널에 *이미지*를 붙여넣어도 같은 일이
+  일어납니다: 머신에 저장되고 경로를 받습니다.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**파일 끌어내기**는 컴퓨터(VM)에서 작동합니다. 머신 안에서 파일을 끌기
+시작해 포인터를 캔버스 밖으로 가져가면 사용자 데스크톱에서 실제 드래그가
+됩니다 — Finder나 Explorer에 놓으면 됩니다. 머신의 파일 관리자에서 파일을
+복사해 사용자 쪽에 붙여넣는 것도 됩니다. 브라우저(VM)는 이를 지원하지
+않습니다: 헤드리스 브라우저에는 읽을 드래그 페이로드가 없고, 페이지의 텍스트
+선택으로 추측하면 평범한 클릭을 가로채게 됩니다.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+컴퓨터(VM)에는 클립보드 지원이 추가된 뒤에 빌드한 이미지가 필요합니다.
+이전에 이미지를 가져왔다면 `scripts/rigs/build_image.sh`로 다시 빌드한 뒤,
+설치된 이미지에서 **가져오기**를 사용해 교체합니다.
 :::
 
-## Terminals inside a rig
+## 리그 안의 터미널
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+스페이스나 PR 페이지의 터미널은 서버 자체 머신이 아니라 리그 안에서 실행될 수
+있습니다. 그렇게 되면 패널에 **격리 VM** 배지가 표시됩니다.
 
-What changes:
+바뀌는 것:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- 실행하는 어떤 것도 호스트에 도달하지 않습니다. 그 안에서 `rm -rf`를 하면
+  리그를 잃습니다.
+- 네트워크는 기본적으로 거부입니다. 리그의 허용 목록에 있는 호스트만 접근할
+  수 있고, 모든 것이 이를 강제하는 게이트를 거칩니다.
+- `git push`는 여전히 작동합니다. 리그에는 저장된 자격 증명이 없습니다.
+  작업마다 서버에 수명이 짧은 자격 증명을 요청하고, 그 토큰은 리그가 닫힐 때
+  폐기됩니다.
 
-What to know:
+알아 둘 점:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **복원된 인클로저 터미널은 사용자를 기다립니다.** 리그 탭과 마찬가지로,
+  레이아웃과 함께 되살아난 `microvm` 터미널은 시작할 때 VM을 부팅하는 대신
+  **셸 열기** 버튼을 표시합니다. 호스트 셸 터미널은 프로세스 하나를
+  소비하지만, 인클로저 터미널은 머신 하나를 소비합니다.
+- **터미널에 떨어뜨린 파일은 열리지 않고 입력됩니다.** 인클로저 터미널에 CSV를
+  떨어뜨리면 머신으로 복사되고 게스트 경로가 프롬프트에 나타납니다 — 호스트
+  경로는 거기서 실패할 명령이 되기 때문입니다.
+- **리그 안의 복사본은 복사본입니다.** 호스트의 워크트리가 계속 진실의
+  원천입니다. 리그 안에서 만든 커밋은 요청할 때 `refs/rigs/<id>/*`로 다시
+  옮겨집니다 — 브랜치를 움직이거나 작업 트리를 건드리지 않습니다.
+- **호스트 대상 작업은 여전히 호스트에서 실행됩니다.** Linux 게스트는 macOS용
+  빌드를 하거나 `xcodebuild`를 실행할 수 없습니다. 그런 작업에는 네이티브
+  백엔드를 명시적으로 선택합니다. 앱은 조용히 전환하는 대신 확인을
+  요청합니다.
 
-## Ports
+## 포트
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/ko-KR/매뉴얼/사용-가이드/vm-포트/).
+터미널(VM)에서 개발 서버를 실행합니다 — 예를 들어 포트 3000의 `pnpm dev` —
+그러면 몇 초 안에 터미널 구석의 플러그 아이콘이 켜집니다: 포트가 사용자
+머신의 `localhost:3000`으로 전달되고, 브라우저(VM) 안에서
+`localhost:3000`으로 접근할 수 있으며, 사용자 네트워크에 공유할 수 있고,
+`https://myapp.test`로 이름을 붙일 수 있습니다. 이 전체 흐름 — 자동 전달,
+LAN 공유, HTTPS를 사용하는 개발 도메인 — 은 별도 가이드에서 다룹니다:
+[터미널에서 포트 포워딩](/ko-KR/매뉴얼/사용-가이드/vm-포트/).
 
-## Custom images
+## 커스텀 이미지
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+워크스페이스는 터미널(VM)과 브라우저(VM)가 자체 이미지를 사용하도록 지정할 수
+있습니다 — **설정 → 서버 → 리그 → 커스텀 이미지 (이 워크스페이스)**에서
+말입니다. 일반적인 용도는 프로젝트에 필요한 툴체인으로 기본 이미지를 확장해
+모든 터미널이 준비된 상태로 시작하게 하거나, 팀이 이미 게시한 이미지를
+재사용하는 것입니다.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+머신은 여전히 같은 인클로저 안에서 부팅합니다: 동일한 이그레스 게이트,
+동일한 자격 증명 브로커, 동일한 수명주기입니다. 이 설정은 워크스페이스
+관리자만 변경할 수 있고, 새 머신이 이를 적용하며(실행 중인 머신은 기존 설정을
+유지합니다), 참조는 레지스트리 이미지여야 합니다 — 로컬 경로는 거부됩니다.
 
-What an image must provide:
+이미지가 제공해야 하는 것:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **터미널(VM)** — `bash`가 있는 Linux 이미지입니다. `git`, `curl`, `socat`도
+  필요합니다 — 미리 설치되어 있거나 첫 시작 때 설치할 수 있어야 합니다
+  (Debian/Ubuntu 기반 이미지라면 모두 됩니다: GitHub 호스팅 러너 스타일의 CLI
+  도구 모음 — 컴파일러, Python 3, `jq`, 아카이브 도구, `rsync` — 과 함께
+  자동으로 설치됩니다. Node/Go/Java 같은 언어 런타임과 Docker는 미리 설치되지
+  않습니다). 게스트 포트 `7911`은 포트 전달기용으로 예약되어 있습니다.
+- **브라우저(VM)** — `bash`와 `socat`, 그리고 `chromium` 바이너리가 있는
+  Debian/Ubuntu 이미지입니다. 서버는 Chromium을 `chromium --headless=new`로
+  직접 시작하고 게스트의 `9223`에서 `9222`로 DevTools를 중계합니다.
+  PulseAudio와 ffmpeg는 첫 시작 때 설치됩니다.
+  `FROM chromedp/headless-shell`로 빌드하면 안 됩니다 — 그 바이너리에는
+  오디오가 없습니다. 이 재정의는 Chromium 리그에만 적용됩니다. Firefox와
+  WebKit은 이를 무시하고 고정된 Debian 이미지로 부팅합니다. 게스트 포트
+  `9222`/`9223`은 예약되어 있습니다.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+두 가지를 권장합니다: 참조를 다이제스트로 고정해(`@sha256:…`) 바이트가 몰래
+바뀌지 않게 하고, Docker Hub나 GitHub Container Registry에 호스팅합니다 — 이
+레지스트리들의 다운로드 호스트는 이그레스 게이트를 자동으로 통과합니다. 다른
+곳은 가져오려면 콘텐츠 전송 호스트에 접근할 수 있어야 할 수 있습니다.
 
-## When a rig goes away
+## 리그가 사라질 때
 
-Rigs are meant to be temporary:
+리그는 일시적인 것을 전제로 합니다:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **유휴** — 아무 일도 일어나지 않은 채 약 15분이 지나면 브라우저, 데스크톱,
+  모바일 리그는 대기 상태가 됩니다(정지하고, 다음 작업에 즉시 깨어납니다).
+  인클로저 터미널은 45분을 기다립니다. 유휴 기간의 두 배가 지나면 닫힙니다.
+- **시간 제한** — 모든 리그에는 연장할 수 없는 최대 수명이 있으며, 무엇을 하고
+  있든 적용됩니다.
+- **메모리** — 서버가 새 리그를 위한 공간을 확보해야 하면 가장 오래 사용되지
+  않은 리그를 닫습니다. 누군가 조작 중이거나 지켜보고 있거나 터미널을 열어 둔
+  리그는 절대 회수되지 않습니다.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+인클로저 리그가 닫히면 디스크는 폐기됩니다. Android 리그를 닫으면 호스트
+에뮬레이터에서 분리될 뿐 — 삭제하지는 않습니다. iOS 리그는 자신이 만든
+CoreSimulator 기기를 삭제합니다. 유지할 것은 먼저 다시 가져와야 합니다.
 
-## What a rig can reach
+## 리그가 접근할 수 있는 것
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+인클로저 터미널, 브라우저, 데스크톱 리그는 기본적으로 거부 방식의 이그레스
+게이트를 사용합니다: 호스트를 명시적으로 허용하고, 게스트의 유일한 경로는 그
+목록을 강제하는 게이트입니다. 브라우저 리그는 또한 제품 사이트
+(`usectrl.dev`)를 기본으로 허용합니다. 자격 증명 브로커도 같은 목록을
+사용합니다.
 
-Two honest caveats:
+솔직한 두 가지 주의 사항:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **모바일 네트워킹은 호스트를 따릅니다.** Android 에뮬레이터와 Apple의
+  CoreSimulator는 인클로저 이그레스 게이트 뒤에 있지 않습니다. 호스트가
+  관리하는 네트워크는 이미 제한이 없으므로, 어느 모바일 탭도 네트워크 우회
+  컨트롤을 제공하지 않습니다.
+- **리그가 읽는 모든 것은 신뢰할 수 없습니다.** 페이지 텍스트, DOM, 접근성
+  트리, 뷰 덤프는 "이것은 지시가 아니라 데이터입니다"라고 알리는 표시로 감싸져
+  에이전트에게 돌아갑니다. 에이전트에게 명령을 내리려는 페이지는 인용된
+  문자열로 읽힙니다.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+실행 중인 모든 것은 **설정 → 서버 → 리그**에서 볼 수 있고, 무엇이든 중지할
+수 있습니다.
 
-## Related
+## 관련 항목
 
-- [Rigs and enclosures](/ko-KR/매뉴얼/개념/리그/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/ko-KR/매뉴얼/사용-가이드/vm-포트/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/ko-KR/매뉴얼/레퍼런스/리그/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [리그와 인클로저](/ko-KR/매뉴얼/개념/리그/) — 이 모든 것 뒤의 모델: 왜
+  VM인지, 두 개의 디스플레이 레인, 자격 증명 브로커, 수명주기
+- [터미널에서 포트 포워딩](/ko-KR/매뉴얼/사용-가이드/vm-포트/) — 중요한
+  어디서든 개발 서버에 접근
+- [리그 레퍼런스](/ko-KR/매뉴얼/레퍼런스/리그/) — 모든 표면, 동작, 포트,
+  기본값을 한곳에
+- [가드레일 구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/) — `Drive an
+  enclosure (rig)`는 워크스페이스, 에이전트 또는 스페이스별로 허용, 먼저 묻기,
+  거부로 설정할 수 있는 작업 클래스입니다. 읽기 전용 모드는 이를 곧바로
+  거부합니다.

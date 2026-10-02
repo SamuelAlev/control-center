@@ -1,216 +1,238 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Multiplayer — identiteit, lidmaatschap en aanwezigheid
+description: Hoe Control Center mensen en agenten als gelijkwaardige deelnemers modelleert, wat de toegang tot een werkruimte werkelijk begrenst en waarom live-aanwezigheid en gedeelde records over twee verschillende sporen reizen.
 slug: nl-NL/handleiding/concepten/multiplayer
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center werkt voor één enkele operator, maar het model eronder is vanaf
+het begin multi-actor. Mensen en agenten berichten in dezelfde ruimtes,
+bewerken dezelfde tickets en staan op dezelfde deelnemerslijst. Dat veilig en
+begrijpelijk maken komt neer op drie beslissingen: **wie als actor telt**,
+**wat de toegang begrenst** en **welke toestand duurzaam wordt gedeeld en
+welke alleen live wordt uitgezonden**.
 
-## Principals: users and agents are co-equal actors
+## Principalen: gebruikers en agenten zijn gelijkwaardige actoren
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Alles wat vastlegt "wie dit heeft gedaan" — berichten, tickets, reviews,
+plannen, runlogboeken, auditregels — loopt via een **Principal**, een
+verzegelde union van `UserPrincipal` en `AgentPrincipal` met een compacte
+draadvorm (`user:<id>` / `agent:<id>`). Toeschrijving vouwt nooit N mensen (of
+N agenten) samen in één sentinelaccount, dus een review die een agent
+achterliet en een review die een persoon achterliet zijn overal waar ze
+opduiken te onderscheiden.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Omdat de principal de eenheid van identiteit is, is het ook de eenheid van
+inkapseling:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Snelheidslimieten gelden per principal, niet per sessie.** De
+  overbelastingsbeveiliging op externe toolaanroepen budgetteert per gebruiker,
+  niet per verbinding: alle apparaten van een lid putten uit één gedeeld
+  schuivend venster (120 aanroepen per minuut, waarvan er hoogstens 30 mogen
+  muteren), dus drie apparaten openzetten verdrievoudigt niemands tegoed en één
+  luidruchtig lid kan de anderen niet uithongeren.
+- **Ongedaan maken geldt per principal.** Het actiejournaal van elke client
+  registreert alleen de mutaties die _zijn_ principal heeft uitgevoerd. Je kunt
+  je eigen ticketbewerking met ⌘Z terugdraaien; die van een teamgenoot niet —
+  tegen de tijd dat je hem ziet, heeft het duurzame spoor hem al opgelost (zie
+  hieronder).
 
-## Membership is the access boundary — not the pairing key
+## Lidmaatschap is de toegangsgrens — niet de koppelingssleutel
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/nl-NL/handleiding/concepten/afstandsbediening/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Twee afzonderlijke inloggegevens beantwoorden twee afzonderlijke vragen. De
+**koppelingssleutel** (zie
+[Afstandsbediening en mobiel](/nl-NL/handleiding/concepten/afstandsbediening/))
+authenticeert een _apparaat_ bij de server. **Lidmaatschap** machtigt de
+gebruiker van dat apparaat om binnen een _werkruimte_ te handelen. Een
+gekoppeld apparaat waarvan de gebruiker geen lidmaatschap in een werkruimte
+heeft, kan die werkruimte niet lezen en er niets in wijzigen.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Lidmaatschap is één rij per (werkruimte, gebruiker), opgeslagen in **het eigen
+databasebestand van die werkruimte** — dus "wie zit er in deze werkruimte?" is
+een gewone leesopdracht binnen één scope, terwijl de omgekeerde vraag, "in
+welke werkruimtes zit ik?", noodzakelijk bestanden overspant en een van de
+weinige toegestane fan-outs over werkruimtes heen is. Het is wat de
+werkruimtekiezer uitvoert voordat er een werkruimte is gekozen.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Elke rij draagt een rol uit een vijfledige, op rang geordende ladder:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Rol      | Mag                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| `owner`  | Volledige controle, inclusief het verwijderen van de werkruimte; precies één per werkruimte                  |
+| `admin`  | Leden, uitnodigingen, instellingen en destructieve bewerkingen beheren                                       |
+| `member` | Dagelijks lezen en schrijven: berichten, tickets, agentruns                                                  |
+| `viewer` | Alleen-lezen in de hele werkruimte; globs voor het uitsluiten van secrets verbergen overeenkomende paden op oppervlakken met code |
+| `guest`  | Dezelfde alleen-lezen-ondergrens als viewer, op de laagste rang van de ladder                                 |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Elke toegangsbeslissing komt neer op "is de rol van de aanvrager minstens X".
+De ondergrens wordt afgeleid uit de soort bewerking, tenzij die er expliciet
+een aangeeft: een lezing vereist `guest`, een mutatie vereist `member`, een
+destructieve bewerking vereist `admin`. ACL's per object, naast de
+repo-toekenningen hieronder, vallen bewust buiten scope.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Uitnodigingen** zijn hoe lidmaatschap wordt verleend, vanuit Instellingen →
+Werkruimte → Leden. Een admin maakt een eenmalige code aan (als link of QR)
+die standaard na zeven dagen verloopt; de server bewaart alleen de
+SHA-256-hash van de code en de code zelf wordt precies één keer getoond. Het
+inwisselen voorziet de gebruiker JIT van een account, legt het lidmaatschap
+vast in de rol van de uitnodiging (nooit `owner` — eigenaarschap wordt
+expliciet overgedragen, nooit per uitnodiging verleend) en draagt over aan de
+apparaatkoppeling. Apparaatreferenties die na het koppelen worden uitgegeven,
+zijn zelf beperkt tot 30 dagen, dus een koppeling is geen permanente sleutel.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Repo-toekenningen** liggen onder het lidmaatschap. Omdat de server volledige
+checkouts houdt, mag lidmaatschap van de werkruimte alleen nooit meer rechten
+geven dan de forge: elk oppervlak met code — bestanden, diffs, PR-review,
+codezoekopdrachten — controleert de toekenning van het lid op _die repo_.
+Toekenningen gelden per (werkruimte, gebruiker, repo) en zijn gerangschikt
+`none` → `read` → `review` → `write`, waarbij `write` betekent: agentruns
+aansturen die naar de repo schrijven. Het ontbreken van een rij betekent
+`none`; owners en admins hebben impliciet `write` op elke gekoppelde repo en
+dragen helemaal geen rijen.
 
-## Two lanes of collaboration state
+## Twee sporen van gedeelde samenwerkingsstaat
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center splitst gedeelde toestand in twee sporen met tegengestelde
+duurzaamheidsregels, omdat de twee soorten toestand op tegengestelde manieren
+falen.
 
-### The ephemeral presence lane
+### Het vluchtige aanwezigheidsspoor
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Aanwezigheid — wie online is, waar ze zijn, wat ze typen, wat een agent op dit
+moment doet — is waardeloos zodra ze verouderd is. Als ze werd gepersisteerd,
+zou elke herverbinding de bewering "de database zegt dat Sam dit ticket
+bewerkt" tegen de werkelijkheid moeten afwegen. Daarom wordt aanwezigheid
+**nooit naar de database geschreven**. Ze leeft in een in-memory
+**aanwezigheidshub** op de server: clients publiceren met `presence.update`,
+peers abonneren zich met `presence.watch` en vermeldingen verlopen automatisch
+na drie gemiste heartbeats (heartbeats lopen elke 10 seconden; de hub ruimt
+elke 5 op). Er valt niets af te stemmen — alleen iets te laten verlopen.
 
-Two properties keep the lane trustworthy:
+Twee eigenschappen houden het spoor betrouwbaar:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Identiteit komt uit de sessie, nooit uit clientargumenten.** De server
+  koppelt het geauthenticeerde apparaat van de verbinding aan een
+  gebruikers-id; een client kan alleen zijn eigen aanwezigheid bijwerken, dus
+  niemand kan de status of locus van een andere deelnemer vervalsen. Een
+  expliciete `offline`-update (verbinding verbreken of de
+  onzichtbaarheidsschakelaar) verwijdert de vermelding onmiddellijk.
+- **De deelnemerslijst loopt via de server.** Peers wisselen aanwezigheid
+  nooit rechtstreeks uit, dus elke deelnemer ziet dezelfde lijst, ongeacht de
+  topologie. Agenten hebben geen client, dus de server _synthetiseert_ hun
+  vermeldingen uit de live runstatus — aan het denken, aan het draaien,
+  geblokkeerd op een goedkeuringspoort, klaar — waarbij één representatieve run
+  de status en locus van een agent bepaalt, zodat gelijktijdige runs de lijst
+  niet laten flapperen.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+De fan-out is gelaagd per consument: desktop en web rijden op een volledige
+laag (hoogstens één lijstuitzending per 100 ms), de telefoon op een
+samenvattingslaag (per 500 ms), zodat updates op cursustempo de PWA niet laten
+smelten.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+De **locus** van een deelnemer — waar die zich op dit moment bevindt, tot op
+het artefact — is een verzegelde union: `Space`, `File` (repo + pad +
+optionele regel), `Pr`, `Ticket`, `PlanNode`. Niet elke locus heeft een plek
+om naartoe te springen: er is geen bestandsviewerroute, dus een `File`-locus
+wordt weergegeven als een label in plaats van als bestemming. Het spoor draagt
+ook **zachte claims** ("Sam bewerkt dit ticket", "een agent houdt deze worktree
+vast"): zichtbaarheid van conflicten, geen locks. Onbekende locussoorten parsen
+naar null, dus een oude client geeft eenvoudigweg niet weer wat hij niet
+begrijpt.
 
-### The durable shared lane
+### Het duurzame gedeelde spoor
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Records die moeten overleven — tickets, het gedeelde Notes-document van de
+ruimte, berichten — nemen het tegenovergestelde pad: gezaghebbend, geordend en
+gepersisteerd. Gelijktijdige bewerkingen worden opgelost met
+**last-writer-wins in de ontvangstvolgorde van de server**, nooit met
+clientklokken. De oplossing is bewust fijnmazig: ticketbewerkingen zijn _per
+kolom_, dus twee mensen die verschillende velden van hetzelfde ticket bewerken,
+landen allebei en geen van beiden overschrijft de ander
+(workflowovergangen behouden juist optimistische vergrendeling); het
+Notes-document van de ruimte is één kolom, dus het hele document is LWW,
+waarbij zachte claims op het aanwezigheidsspoor gelijktijdig bewerken zichtbaar
+maken in plaats van vergrendeld. Het is bewust geen CRDT — de bewijslast ligt
+bij de CRDT, en LWW op ontvangstvolgorde plus zichtbare claims dekt de
+werkelijke samenwerkingspatronen.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"Last writer" betekent **ontvangstvolgorde op de server**, nooit een
+clientklok — een laptop met een scheve klok kan een bewerking die hij verloor
+niet winnen. Achter het duurzame spoor zit de **syncfeed**: SQLite-triggers
+voegen elke mutatie toe aan een wijzigingenlogboek per werkruimte _binnen de
+schrijvende transactie_, en kennen een monotoon volgnummer per werkruimte toe
+in dezelfde transactie als de mutatie zelf. Een serverdienst volgt dat log in
+versiegebonden deltaframes in volgorde. Clients evolueren van volledige
+snapshots naar delta's; een gat in de reeks laat die opslag terugvallen op
+snapshotmodus in plaats van frames verkeerd toe te passen.
 
-## Follow, steer, take over, hand back
+## Volgen, bijsturen, overnemen, teruggeven
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Het aanwezigheidsspoor is niet alleen een deelnemerslijst — het stuurt de
+samenwerkingswerkwoorden aan:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Volgmodus.** Klik op een deelnemer en je client rijdt mee op diens locus en
+  navigeert terwijl die navigeert. Volgen geldt "totdat je zelf iets doet": op
+  het moment dat je op eigen kracht navigeert, wordt het volgen losgekoppeld.
+  Een wegklikbare banner meldt wanneer een andere deelnemer een ruimte waarin
+  jij zit in de spotlight zet (presenteert).
+- **Bijsturen.** Een bericht aan een draaiende agent wordt in de wachtrij gezet
+  als sturing; de agent leest het opnieuw voordat hij aan zijn volgende beurt
+  begint, zodat je een run midden in de vlucht kunt bijsturen zonder hem te
+  doden.
+- **Overnemen.** De controle over een gesprek overnemen pauzeert elke actieve
+  run op zijn volgende schone beurtgrens (een Claude Code-run, die geen veilige
+  grens heeft, wordt gestopt) achter een git-snapshot per beurt, zodat het
+  overnemen omkeerbaar is. Een duurzame markering blokkeert nieuwe dispatches
+  naar de ruimte en overleeft een herstart van de server — de server hervat
+  nooit automatisch in de half afgemaakte bewerking van een mens. Eén live
+  bewerker per worktree is een zachte claim: een tweede overname is zichtbaar
+  en wordt geweigerd, niet stil samengevoegd.
+- **Teruggeven.** De controle teruggeven plaatst een gestructureerde
+  diffsamenvatting van de worktree in de ruimte, zet die als sturing in de
+  wachtrij voor de gepauzeerde runs, hervat ze en wist de markering.
 
-## The autonomy dial
+## De autonomieregelaar
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Bijsturen en overnemen zijn interventies achteraf. De **autonomieregelaar** is
+de vaste instelling: per ruimte, per agent, ingesteld vanuit de ruimteheader,
+bepaalt hij wat er gebeurt wanneer een agent een afgeschermde actie bereikt.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Niveau                  | Draadwaarde       | Effect op een afgeschermde toolaanroep                                                                                        |
+| ----------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Alleen voorstellen      | `proposeOnly`     | Botweg geweigerd, met een reden die de agent moet doorgeven — hij kan de actie beschrijven maar niet uitvoeren               |
+| Handelen met goedkeuring | `actWithApproval` | De fail-closed goedkeuringspoort: één bevestiging verschijnt bij een verbonden operator en zonder goedkeurder betekent het weigering |
+| Vrij handelen           | `actFreely`       | Vooraf goedgekeurd, behalve waar een harde `deny`-regel uit de beveiligingen van toepassing is — een deny-regel wint altijd |
+| (niet ingesteld)        | `null`            | Hetzelfde als handelen met goedkeuring: de standaardwaarde van de server                                                      |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Twee dingen vallen in beide richtingen buiten de regelaar. Het eigen
+uitvoerwerkwoord van een modus is vastgezet en kan nooit worden geweigerd, wat
+de regelaar ook zegt — de orchestrate-modus kon ooit structureel zijn enige
+deliverable niet uitstoten omdat een preset de effectklasse weigerde die dat
+werkwoord declareert. En een harde `deny` uit de actiebeveiligingen kan niet
+door `actFreely` worden overschreven.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/nl-NL/handleiding/concepten/agentmodel/).
+:::note[De regelaar schermt alleen de ingebouwde harness af]
+De goedkeuringscallback van de harness-lus raadpleegt hem. Een agent die op de
+Claude Code-adapter draait, doet zijn eigen toolaanroepen binnen zijn eigen
+proces, waar Control Center niets te bewaken heeft — zie
+[Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
 :::
 
-## Solo zero-regression
+## Geen regressie in solo gebruik
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Dit alles is additief. De workflow van een solo-operator verandert niet: met
+één mens en geen agenten heeft de aanwezigheidshub niets uit te zenden, dus het
+spoor stuurt zijn beginsnapshot en blijft daarna inactief met nul verkeer; de
+LWW- en sync-machinerie is hetzelfde enkelvoudige-schrijverpad als altijd; en
+de koppelingssleutel blijft de apparaatreferentie die hij altijd al was.
+Lidmaatschap is al de toegangsgrens — met één mens is er één owner-rij en geen
+deelnemerslijst-opsmuk.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/): the boundary membership enforces
-- [Remote control and mobile](/nl-NL/handleiding/concepten/afstandsbediening/): the pairing key and device credential side of identity
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): the agent half of the principal union
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/): the runs that steering and take-over pause and resume
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/): the effect-class policy the autonomy dial composes with
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/): the bus that live updates ride
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/): de grens die lidmaatschap handhaaft
+- [Afstandsbediening en mobiel](/nl-NL/handleiding/concepten/afstandsbediening/): de koppelingssleutel en de apparaatreferentie-kant van identiteit
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): de agenthelft van de principal-union
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/): de runs die bijsturen en overnemen pauzeren en hervatten
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): het effectklassebeleid waarmee de autonomieregelaar samengaat
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): de bus waarop live-updates meerijden

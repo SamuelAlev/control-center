@@ -2,6 +2,7 @@
 title: Use the MCP server
 description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
 slug: en-GB/manual/guides/mcp-server
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
 This guide shows you how to connect an external MCP client — Claude Code, an
@@ -28,10 +29,10 @@ So a default local install is at `http://127.0.0.1:9030/mcp`.
 2. Read the **MCP server** card — it shows running or stopped and the port it is
    listening on
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+The surface is on by default on a fresh install, so a loopback client works
+without any settings changes. **Start on app launch** controls whether it comes
+back after a restart; **Start** / **Stop** are session controls that do not
+change that preference.
 
 The server binds loopback by default, so the endpoint is only reachable from the
 machine `cc_server` runs on unless you started it with `--bind any`.
@@ -39,7 +40,7 @@ machine `cc_server` runs on unless you started it with `--bind any`.
 ## Connect a client
 
 Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+is up to your client; the URL is the same either way.
 
 ```json
 {

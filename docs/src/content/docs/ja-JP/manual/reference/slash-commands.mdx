@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: スラッシュコマンド
+description: コンポーザーで入力できるすべてのコマンドと、その動作、そして実行される場所。
 slug: ja-JP/マニュアル/リファレンス/スラッシュコマンド
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+スペースのコンポーザーで入力するコマンドです。効果を及ぼす場所によって 3 つのグループに分かれ、その違いは重要です。**ローカル**なコマンドはメッセージとして運ばれることがないため、トランスクリプトに現れることも、エージェントに届くこともありません。
 
-| Where it runs | What that means                                                                    |
+| 実行される場所 | 意味                                                                                |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **ローカル**   | クライアント（またはクライアントが起動したサーバー操作）で処理されます。コマンドがメッセージとして運ばれることはないため、どのエージェントにも見えません。 |
+| **サイド**     | 会話についてのサーバー側のモデル呼び出し 1 回です。会話は変更されません。            |
+| **ディスパッチ** | メッセージが開始する実行のモードまたは指示を設定します。                            |
 
 ---
 
-## Directing a run
+## 実行の指示
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**ローカル → ディスパッチ。** 会話でプランモードを有効にします。完全に読み取り専用のワークツリーと、`read` までに制限されたツールサーフェスです。エージェントの成果物は編集ではなくプランです。引数なしの `/plan` はモードを切り替えるだけで、メッセージとして運ばれることはありません。プロンプトを伴う場合、その行の残りの部分が実行を開始します。
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**ディスパッチ。** 自律的な目的を開始し、ゴールスーパーバイザーがそれをセグメントをまたいで再ディスパッチし、再起動します。
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+`/goal` をテキスト付きで入力すると、まず**目的を明確にするヒアリング**が開きます — 次の 5 つがそろうまでドラフトを受け付けない短いパスです。判断を挟まずに評価者が決着できる成功基準、正確な検証コマンド、試行回数の上限、スコープの境界、停止条件です。各ステップには*スキップしてそのまま実行*が用意されています。このヒアリングは既定であり、ゲートではありません。
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`、`/goal resume`、`/goal drop` はスラッシュコマンドではありません。一時停止、再開、停止は、サイドバーにあるその会話のゴール一覧にあります。目的そのものに指定する開始フラグは `--budget <dollars>`、`--max <N>`（実行予算）、`--days <N>`（期限）です。コスト上限に達したゴールは、同じサイドバーのコントロールからその上限を引き上げることによってのみ再開します。
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[そもそもなぜ中断するのか]
+自律的なゴールは、曖昧なブリーフが本当に高くつく唯一の場所です。その実行は、誰も「完了」を定義していない目的のために何時間も働き、その後、自分自身の基準で成功を報告します。5 つの質問は、終わったと感じた時点で終わる夜通しの実行 1 回よりも安くつきます。
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**ディスパッチ。** 完了するまで反復的に作業します。上限を受け付けます: `/loop 10`、`/loop 30m`、`/loop 1h30m`、`/loop 10 minutes fix the tests`。
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+上限のように*見える*トークン（数字または符号で始まるもの）が解析に失敗した場合は、ハードエラーになります。散文はただの散文なので、`/loop keep going until the tests pass` は誤解析ではなく、インラインのプロンプトを伴う上限なしのループです。
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ja-JP/マニュアル/ハウツーガイド/バックグラウンドワーカーの指示/).
+**ディスパッチ。** セッションを**ディレクター**にします。自身のツールは `read` と 5 つのワーカー動詞に落ち、編集はバックグラウンドのワーカーが行います。[バックグラウンドワーカーを指示](/ja-JP/マニュアル/ハウツーガイド/バックグラウンドワーカーの指示/)を参照してください。
 
-Workers never outlive the mode — exiting kills every one of them.
+ワーカーがモードより長生きすることはありません — モードを抜けると、そのすべてが強制終了されます。
 
 ---
 
-## Managing context
+## コンテキストの管理
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**ローカル → サーバー。** 古い履歴をアンカー付きの要約に畳み込み、圧縮されたコンテキストで続行します。モデルに渡る引数はありません。コマンドがメッセージとして運ばれることはなく、コンパクションのパスもフォーカスのヒントを受け取りません。
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**ローカル → サーバー。** 要約**せずに**重いコンテンツを落とします。モデル呼び出しはなく、すべての語はそのまま残り、誰も読み返さないようなかさばりだけが空白になります。
 
-| Target        | Drops                             |
+| 対象          | 削除されるもの                    |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | これといった出来事のない古いツール結果（既定） |
+| `images`      | 古いスクリーンショット（そのテキストは保持） |
+| `all`         | 両方                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+これは「コンテキストは膨らんでいるが要約はしたくない」ときの逃げ道です。
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**ローカル。** この会話のエージェントのコンテキストエクスプローラーを、専用のタブで開きます。コンテキストウィンドウのすべてのセグメントと部分 — システムプロンプト、スキル、コンテキストファイル、ツールスキーマ、履歴、画像 — について、それぞれがどれだけコストになっているかと、その背後にあるそのままの内容を示します。
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+タブは（スペース、エージェント）の組をキーとするため、2 回実行しても同じ内訳のコピーが積み重なるのではなく、1 つのタブに再フォーカスします。
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+**エージェントが複数いる**スペースでは、引数なしの `/context` は、ヘッダーのコンテキストメーターが読んでいるウィンドウを開きます — ここで最後に作業したエージェント、つまりトレイルの一番下にメッセージがあるエージェントです — そしてタブには `コンテキスト · <name>` というラベルが付き、誰のものかが分かります。切り替えるには別の名前を指定します: `/context qa`（`@` は任意です）。入力した名前はあいまい一致ではなく完全一致で解決されます。2 体のエージェントは 2 つの異なるウィンドウを持つため、もう一方を開いてしまう惜しい一致は、尋ねていない質問へのもっともらしい答えになってしまうからです。
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+同じエクスプローラーはスペースヘッダーのコンテキストメーターのチップの背後にもあり、それも同じエージェントに追随します — コマンドとチップが、ここでの「コンテキスト」の意味について食い違うことはありません。
 
 ---
 
-## Asking about the conversation
+## 会話について尋ねる
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+これらはモデル呼び出しを 1 回消費し、**会話を変えることはありません**。エージェントの次の実際のターンは、どのみち見ていたはずのものをそのまま見ます。これが、尋ねることの価値のすべてです。
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**サイド。** 作業を冷たい状態で引き継ぐ人向けのハンドオフドキュメントを書きます。タスクは何か、何が分かったか、何が残っているか。
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**サイド。** ここまでの作業についての質問に、質問も答えもトランスクリプトに加えることなく答えます。
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[2 つのコマンド、1 つの実装]
+どちらも同じ形です — 今のままの会話を取り、それについて 1 つ質問し、どちら側も永続化しません。1 度だけ実装されているので、「ここまでのコンテキスト」という 2 つの異なる概念にずれていくことはありません。
 :::
 
 ---
 
-## Navigating and exporting
+## ナビゲートとエクスポート
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ja-JP/マニュアル/ハウツーガイド/会話のブランチ/).
+**ローカル。** ブランチナビゲーターを開きます。会話がどこで分岐したか、現在どのパスにいるか、離れたパスにどう戻るかが分かります。[会話をブランチ](/ja-JP/マニュアル/ハウツーガイド/会話のブランチ/)を参照してください。
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**ローカル。** 会話を自己完結した HTML ファイルに書き出します — 折りたたみ可能なツールカードがあり、スタイルシートもスクリプトも画像ホストも不要です。デスクトップでは `Documents/ControlCenter/exports/` に保存され、Web ではダウンロードになります。
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**ローカル。** トランスクリプトを markdown としてクリップボードにコピーします。ツール呼び出しは折りたたみ可能なブロックになります。推論は意図的に除外されています。バグレポートに貼り付けられるトランスクリプトは、人が読むものだからです。
 
 ---
 
-## Everything else
+## その他すべて
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**ローカル。** 会話に永続化されたチェックリストを表示および編集します。引数なしの `/todo` はエディターを開きます。サブコマンド: `append`、`start`、`done`、`drop`（別名 `rm`）、`edit`、`copy`、`export`、`import`。
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**ディスパッチ。** インストール済みのスキルを適用します。スキルは独自の `skill:` プレフィックスの下にあるため、組み込みコマンドとは名前空間を共有しません — そうでなければ、`plan` という名前のスキルは永久に到達不能になります。
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**ディスパッチ。** リポジトリ内の `.agents/commands`、`.agent/commands`、`.claude/commands`、`.codex/commands`、`.opencode/commands` の下にある任意の markdown ファイルです。ネストした `foo/bar.md` は `foo:bar` としても到達できます。
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+テンプレート: `$1`、`$@`、`$@[start:length]`、`$ARGUMENTS`。frontmatter では `description`（コンポーザーのオートコンプリート）を設定できます。`allowed-tools` と `model` はファイルから解析されますが、現時点でユーザーコマンドの呼び出しが行うのは本文への引数の置換だけです — 実行のモデルやツールサーフェスを変えることはありません。
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+ユーザーが作成したコマンドは、同名のスキルに優先します — 人間が引数付きで意図的に呼び出したショートカットだからです。
 
 ---
 
-## Magic keywords
+## マジックキーワード
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+コマンドではありません。プロンプト内のどこかにある、単独の小文字の単語が、そのターン用の隠れた指示を付け加えます。
 
-| Word          | Effect                                                             |
+| 単語          | 効果                                                               |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | そのターンの推論の程度を最大にする                                  |
+| `orchestrate` | 独立した作業を並列で委任し、各フェーズを検証する                     |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+マッチャーは境界について意図的に厳格です。`orchestrate,` は一致し、`orchestrated`、`orchestrate.ts`、`foo::orchestrate`、`orchestrate()` は一致しません。また、フェンス付きコードブロック、インラインスパン、XML セクションは先にマスクされます。これがなければ、スタックトレースを貼り付けるだけでエージェントの動作が変わってしまいます。
 
 ---

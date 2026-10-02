@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: 도구 컨텍스트와 프롬프트 캐싱
+description: 에이전트에 모든 도구가 아니라 일부 도구만 표시되는 이유, 나머지 도구에 접근하는 방식, 그리고 한 번의 실행 내내 프로바이더의 프롬프트 캐시를 따뜻하게 유지하는 규칙을 설명합니다.
 slug: ko-KR/매뉴얼/개념/도구-컨텍스트
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+내장 하네스가 보내는 모든 요청에는 두 가지 사실이 적용됩니다. 도구 정의가 그 요청에서 가장 큰 고정 비용이라는 점, 그리고 그중 거의 사용되지 않는다는 점입니다. 이 페이지에서는 Control Center가 이 문제에 대해 무엇을 하는지, 그리고 그 답이 단순히 "도구를 더 적게 보내는 것"이 아닌 이유를 설명합니다.
 
-## The problem is attention, not bytes
+## 문제는 바이트가 아니라 주의력입니다
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center는 약 126개의 도구를 등록합니다. 이를 전부 보내면 그 정의는 **요청마다 약 23,000토큰**을 차지합니다. 이는 어떤 압축으로도 손댈 수 없는 비용입니다. 도구 정의는 대화와는 요청의 다른 부분에 실려 가기 때문입니다.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+토큰 청구서는 누구나 하는 불만이며, 프롬프트 캐싱이 있으면 더 작은 쪽의 문제이기도 합니다. 진짜 비용은 **선택 정확도**입니다. 공개된 도구 호출 평가들은 모델이 컨텍스트에 도구가 대략 30~50개 있을 때까지는 올바른 도구를 안정적으로 고르고, 그 이상부터는 점점 나빠진다는 데 의견을 같이합니다. 지목된 원인은 토큰 수가 아니라 **의미적 중복**입니다. 카탈로그에 설명이 비슷한 도구가 여러 개 들어가면, 모델은 역량을 떠올리는 것이 아니라 서로 닮은 것들 사이에서 고르게 됩니다.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+도구가 126개이면 에이전트는 매 턴마다 그 범위를 한참 넘어섭니다. 파일 하나만 읽으면 되는 수많은 턴까지 포함해서 말입니다.
 
-## The two-tier surface
+## 2계층 표면
 
-A run is therefore shown two things:
+따라서 한 번의 실행에는 두 가지가 표시됩니다:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- **상주** 세트 — 도구 스물네 개 남짓으로, 요청마다 전체 스키마와 함께 전송됩니다;
+- 나머지 전부의 **이름 인덱스** — "Tickets and projects" 또는 "Memory and knowledge" 같은 제목 아래 묶이며, 카탈로그 전체가 몇백 토큰을 차지합니다.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+현재 카탈로그 기준으로 측정하면 도구 블록이 **약 23.1k 토큰에서 약 5.0k 토큰으로, 약 78% 줄어들고**, 항상 보이는 세트가 선택이 안정적인 범위 안에 들어옵니다.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/ko-KR/매뉴얼/개념/모드) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+상주 세트는 실행이 *대부분의* 실행에서 사용하는 도구들입니다. 파일과 셸 어휘(`read`, `write`, `edit`, `search`, `bash`, …), 탐색 도구, 작업 체크리스트, 메모리 검색, 그리고 현재 [모드](/ko-KR/매뉴얼/개념/모드)가 출력을 전달하기 위해 반드시 호출해야 하는 동사입니다. 모드 자체의 출력 동사는 언제나 상주합니다. 실행이 자신의 산출물을 만들어 내는 그 한 번의 호출을 찾아 나서야 하는 일은 결코 없어야 합니다.
 
-### Deferred does not mean unavailable
+### 지연은 사용할 수 없다는 뜻이 아닙니다
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+이 부분이 이 설계를 단지 저렴한 것이 아니라 안전하게 만듭니다. **지연된 도구는 첫 턴부터 호출할 수 있습니다.** 감춰지는 것은 그 스키마뿐입니다.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+에이전트는 프롬프트에서 그 이름을 봅니다. 그 이름을 직접 호출하면 하네스가 스키마를 적재하고 같은 단계에서 도구를 실행합니다. 오류도, 왕복도 없습니다. 모델은 그 도구가 한때 "언로드"되었었다는 사실을 알 필요가 없습니다.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+에이전트가 작업은 알지만 이름은 모를 때, `search_tools`는 평이한 설명("티켓을 누군가에게 할당")을 받아 그 실행의 표면 전체를 순위 매기고, 일치하는 항목을 *스키마가 이미 적재된 상태로* 반환하므로 바로 다음 턴에서 하나를 호출할 수 있습니다. 검색이 아무것도 찾지 못하면 솔직히 그렇게 알리고 다른 표현이나 더 넓은 검색을 제안합니다. 이는 의도된 것입니다. 빈 검색을 "이 역량은 존재하지 않는다"로 해석한 에이전트는 다시 찾아보는 대신 대체물을 지어내기 때문입니다.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools`는 내장 하네스에만 있습니다. 외부 MCP 클라이언트에는 대신 `search_tool_bm25`가 있는데, 같은 인덱스를 순위 매기지만 일치 항목을 설명만 합니다. 그 클라이언트들은 `tools/list`에서 이미 모든 스키마를 받았으므로 적재할 것이 없습니다.
 
-### What deferral never does
+### 지연이 결코 하지 않는 일
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/ko-KR/매뉴얼/개념/가드레일) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+지연은 모드의 도구 필터 **다음에** 적용되며, 결코 그 필터를 대신하지 않습니다. 지연은 스키마를 감출 뿐, 모드가 거부한 도구를 드러낼 수는 없습니다. 활성화된 도구도 상주 도구와 똑같이 승인 프롬프트와 [액션 가드레일](/ko-KR/매뉴얼/개념/가드레일)을 통과하며, 도구는 애초에 그 실행의 표면에 없던 이름을 적재할 수 없습니다.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+외부 클라이언트가 보는 MCP 표면은 **영향을 받지 않습니다.** `tools/list`는 여전히 전체 카탈로그를 반환합니다. 이전에 이 목록을 줄이려던 시도는 에이전트를 완전히 망가뜨렸습니다. MCP 클라이언트는 도구 이름을 자체 캐시된 목록과 대조해 검증하고, 서버에 묻지도 않은 채 목록에 없는 것은 무엇이든 거부하므로, "숨겨졌지만 호출 가능한" 도구는 그냥 도달할 수 없는 상태였습니다. 지연은 하네스 안에 있습니다. 실행 도중에 도구를 적재하는 것은 하네스가 실제로 할 수 있는 일이기 때문입니다.
 
-### Turning it off
+### 끄기
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/ko-KR/매뉴얼/레퍼런스/cc-server-cli).
+`--tool-deferral=off`(또는 `CC_SERVER_TOOL_DEFERRAL=off`)를 사용하면 허용된 모든 도구가 다시 상주하게 되어, 서버가 지연이 존재하기 전에 보내던 요청과 정확히 동일한 요청을 생성합니다. [`cc_server` CLI 레퍼런스](/ko-KR/매뉴얼/레퍼런스/cc-server-cli)를 참고하십시오.
 
-## Prompt caching
+## 프롬프트 캐싱
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+에이전트 워크로드는 한쪽으로 치우쳐 있습니다. 거대한 프롬프트를 보내고 작은 답을 받기를 턴마다 반복하며, 매번 같은 접두사를 씁니다. 프로바이더는 그 접두사를 캐시하고, 캐시 읽기는 새로 읽는 비용의 약 10분의 1밖에 들지 않습니다. 따라서 캐시 적중률은 최적화가 아니라 하네스의 일급 속성입니다. Anthropic에서는 처리량도 벌어 줍니다. 캐시된 토큰은 분당 입력 한도에 계산되지 않기 때문입니다.
 
-Caching works on an exact prefix match, which yields one governing rule.
+캐싱은 정확한 접두사 일치를 기준으로 동작하므로, 여기서 지배적인 규칙 하나가 나옵니다.
 
-### Never rewrite what was already sent
+### 이미 보낸 내용을 다시 쓰지 않습니다
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+바뀐 바이트가 있으면 그 지점부터 캐시가 무효화됩니다. 그래서 하네스는 오직 **덧붙이기만** 합니다. 새 메시지는 끝에, 새로 활성화된 도구 스키마는 캐시된 도구 블록에 합치는 대신 그 *뒤에* 둡니다. 이런 순서 덕분에 활성화가 저렴합니다. 캐시된 접두사는 그대로 유지되고, 실행은 방금 적재한 스키마에 대해서만 비용을 냅니다.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+이 루프는 또한 컨텍스트를 되찾기 위해 오래된 턴의 낡은 도구 출력을 잘라냅니다. 다시 쓰는 것이 가치 있을 만큼 되찾을 양이 충분해질 때까지 기다리므로, 잘라내기는 연속적인 캐시 미스가 아니라 드물게 일어나는 깊은 다시 쓰기입니다.
 
-### Where the breakpoints go
+### 중단점을 두는 위치
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+프로바이더는 제한된 수의 캐시 마커만 허용하며, Control Center는 이를 의도적으로 배분합니다:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| 마커                 | 대상                   | 수명  |
+| -------------------- | ---------------------- | ----- |
+| 마지막 **상주** 도구 | 도구 블록              | 1시간 |
+| 마지막 시스템 블록   | 도구 + 시스템 프롬프트 | 1시간 |
+| 이전 턴의 끝         | 마지막 요청까지의 기록 | 5분   |
+| 현재 턴의 끝         | 전체 기록              | 5분   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+마지막 두 개는 함께 굴러가는 한 쌍이며, 그 이유는 미묘합니다. 캐시 조회는 이전 요청이 저장한 무언가를 찾아 제한된 개수의 블록을 뒤로 거슬러 탐색합니다. 많은 도구를 병렬로 실행하는 한 턴은 그 창보다 많은 블록을 내보낼 수 있고, 그러면 끝 마커 하나가 조용히 빗나가 요청이 응답에 아무런 표시도 없이 전액을 지불합니다. 이전 요청이 멈춘 정확한 지점을 표시하면 적중이 경합이 아니라 구조적인 것이 됩니다.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+도구와 시스템 접두사가 긴 수명을 갖는 이유는 그것이 실행 전체에서 일정하고, 같은 모양을 가진 모든 실행과 서브에이전트가 공유하며, 시계가 요청이 *시작될* 때 출발하기 때문입니다. 몇 분 동안 스트리밍하는 턴은 다음 요청이 만들어지기 전에 이미 짧은 창의 대부분을 써 버립니다.
 
-### Subagents share one prefix
+### 서브에이전트는 하나의 접두사를 공유합니다
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+같은 유형의 서브에이전트는 바이트 단위로 동일한 프롬프트 접두사를 만들어 내므로, 각자 자기 것을 쓰기보다 하나의 캐시 항목을 읽어야 합니다. 하지만 항목은 그것을 쓴 요청이 응답을 시작해야만 읽을 수 있게 되므로, 한꺼번에 시작된 팬아웃에서는 모든 자식이 함께 공유하는 접두사에 대한 할증 비용을 지불합니다.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+하네스는 특정 모양의 첫 번째 자식을 먼저 시작하게 하고, 그것이 스트리밍을 시작하면 곧바로 형제들을 풀어 줍니다. 기다림에는 한계가 있습니다. 첫 자식이 느리면 손해 보는 것은 캐시 적중이고, 팬아웃 자체는 결코 아닙니다. 같은 이유로 모든 서브에이전트는 프로필과 무관하게 같은 상주 도구 세트를 받습니다. 프로필마다 다르게 하면 얻는 것도 없이 공유 접두사가 조각나기 때문입니다. 자식이 무엇을 호출할 수 있는지는 이미 프로필이 정했기 때문입니다.
 
-## Watching it work
+## 동작 관찰하기
 
-Both halves are observable rather than assumed:
+두 부분 모두 가정이 아니라 관찰할 수 있습니다:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- 대화의 **컨텍스트 탐색기**는 상주 도구, 지연 인덱스, 그리고 감춰진 각 스키마가 *얼마나* 비용이 들지를 보여 줍니다. 이는 실제 실행이 사용하는 것과 같은 코드 경로로 만들어집니다.
+- 각 실행은 어떤 지연 도구를 적재했고 무엇이 그렇게 했는지를 기록하므로, 아무것도 찾지 못한 검색은 에이전트가 조용히 다른 일을 하는 속으로 사라지는 대신 검색 미스로 드러납니다.
+- 옵저버빌리티는 **캐시율**을 처리한 전체 프롬프트 토큰(캐시 쓰기 포함) 대비 캐시 읽기로 보고합니다. 접두사를 계속 다시 만드는 실행은 캐시가 필요 없었던 실행처럼 점수를 받는 대신 낮은 점수를 받습니다.

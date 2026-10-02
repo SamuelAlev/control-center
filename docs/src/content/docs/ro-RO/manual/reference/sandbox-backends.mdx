@@ -1,192 +1,195 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: Backend-uri sandbox
+description: Backend-urile sandbox, unde se aplică și fiecare obiect-valoare folosit de runtime-ul sandbox-ului.
 slug: ro-RO/manual/referinta/backend-uri-sandbox
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[Dacă o rulare este sandboxată depinde de gazdă]
+`cc_server` sondează gazda o dată la pornire și învelește trimiterea agenților în backend-ul nativ atunci când sonda raportează că unul este disponibil și `--sandbox` nu este `off`. Ambele cusături de trimitere sunt învelite: CLI-ul Claude Code prin portul de sandbox, iar ACP plus instrumentul `bash` al harness-ului încorporat prin managerul de sandbox.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/ro-RO/manual/concepte/guardrail-uri/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+Acolo unde sonda nu raportează niciun backend — **Windows întotdeauna**, iar Linux sau WSL2 fără `bwrap` și `socat` — rulările de agent **nu** sunt sandboxate. ACP și instrumentul `bash` al harness-ului pornesc în continuare cu sanitizare a mediului; Claude Code trece prin `NoSandboxAdapter` și moștenește mediul gazdei. Granițele rămase sunt worktree-ul propriu al rulării (copy-on-write acolo unde este livrat `rift`; `git worktree` pe Windows), datele de autentificare limitate de capabilități, intermediate la fiecare lansare și revocate la desființare, politica de comenzi per mod, [guardrail-urile unificate de acțiuni](/ro-RO/manual/concepte/guardrail-uri/) (cu închidere la eșec), sanitizarea mediului pe căile ACP și `bash` ale harness-ului, și suprafața de instrumente pe care o permite modul său.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+Instrumentele de fișiere în proces ale harness-ului (read, write, edit, apply patch, search, find, search_files) sunt în afara sandbox-ului pe orice gazdă: rulează în procesul serverului, așa că doar `bash` este învelit.
 :::
 
-## Backend overview
+## Prezentare generală a backend-urilor
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
+| Backend     | Valoare     | Platformă                                      | Disponibilitate                                                                                                      |
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/ro-RO/manual/concepte/statii/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| VM izolat | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Condiționat de sondă pe runtime-ul microVM; se aplică terminalelor interactive — shell-ul rulează într-o [stație](/ro-RO/manual/concepte/statii/), nu pe gazdă |
+| Nativ      | `native`  | macOS (Seatbelt), Linux și WSL2 (bubblewrap) | Sondat la pornire; Linux refuză o rulare care necesită interdicții de scriere pe globuri de nume de fișiere, pe care bubblewrap nu le poate impune |
+| Niciunul      | `none`    | Toate                                           | Implicitul la parsare, implicitul terminalului și soluția de rezervă când nu este disponibil niciun backend sau este setat `--sandbox off` |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` returnează `none` pentru o valoare stocată nulă sau nerecunoscută. O valoare stocată `"docker"` se mapează la `native`.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/ro-RO/manual/referinta/statii/).
+**`microvm` este singurul backend cu o graniță de kernel** — sarcina de lucru
+chiar nu rulează pe gazdă. Nu este niciodată o soluție de rezervă silențioasă în
+niciun sens: cererea lui explicită pe o gazdă care nu poate porni un VM eșuează
+cu zgomot („Am cerut un VM și am primit laptopul meu” este singura degradare pe
+care izolarea nu și-o poate permite), iar doar un *implicit nespecificat* coboară
+la `native`, cu o linie de jurnal care spune asta. Backend-ul real al sesiunii este
+raportat înapoi clientului și marcat cu o insignă, așa că un terminal nu poate
+pretinde niciodată că este izolat în timp ce rulează pe gazdă. Ciclul de viață,
+imaginile și ieșirea în rețea pentru VM-ul însuși sunt acoperite de
+[referința pentru stații](/ro-RO/manual/referinta/statii/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows nu are sandbox nativ.** `NativeSandboxAdapter.probe` returnează `available: false` pe orice gazdă care nu este macOS sau Linux/WSL2. Trimiterea agenților pe Windows folosește deci `none`. Backend-ul `microvm` este separat: este condiționat de sondă pe runtime-ul microVM și se aplică terminalelor interactive și stațiilor, nu învelirii `bash` pe gazdă.
 
-## Probe results
+## Rezultatele sondei
 
-The probe is what gates enforcement. It runs once, at server boot.
+Sonda este cea care condiționează aplicarea. Rulează o dată, la pornirea serverului.
 
-| Host                                   | `available` | Note / hint                                                               |
+| Gazdă                                   | `available` | Notă / indiciu                                                               |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — izolare la nivel de namespace, fără graniță de kernel       |
+| Linux sau WSL2 cu `bwrap` și `socat` | `true`      | bubblewrap — izolare la nivel de namespace, fără graniță de kernel                      |
+| Linux sau WSL2 căruia îi lipsește oricare dintre instrumente      | `false`     | `requiresInstall: true`, cu un indiciu de instalare care numește pachetele lipsă |
+| Orice altă platformă                     | `false`     | Sandbox-ul nativ nu este oferit pe această platformă                            |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Serverul înregistrează rezultatul într-o singură linie de pornire: `agent sandbox ON` plus nota, `no OS-native agent sandbox on this host` plus indiciul, sau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` nu conține niciun câmp de sandbox.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` acceptă `on` (implicit) sau `off`. Este o dezactivare opțională, nu o activare: `on` înseamnă „învelește când gazda oferă un backend”, niciodată „cere unul”.
 
-## Native backend
+## Backend-ul nativ
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Folosește mecanismul de sandbox Seatbelt al Apple (același sistem folosit de macOS App Sandbox).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+Profilul generat este **permisiv implicit** (`(allow default)`) și decupează interdicții, pentru că un profil complet cu refuz implicit face un shell interactiv inutilizabil — sunt prea multe apeluri dyld, XPC și Mach de enumerat. Consecința practică este că un agent poate citi în continuare cea mai mare parte a gazdei; checkout-urile tale înregistrate sunt protejate prin interdicții explicite de scriere și de redenumire, nu prin invizibilitate.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **Citirile din sistemul de fișiere**: interzise pentru căile secrete (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` și restul setului cu citire interzisă)
+- **Scrierile în sistemul de fișiere**: resetate la refuz, apoi permisiuni explicite pe subcăi, cu căile cu interdicție obligatorie (fișierele rc ale shell-ului, `.git/hooks`, configurația Claude, checkout-urile protejate) blocate chiar și în interiorul unei rădăcini inscriptibile. `file-write-unlink` este interzis pe fiecare cale interzisă și pe strămoșii ei, așa că o redenumire nu poate ocoli o interdicție de scriere
+- **Procese**: `process-exec` interzice binarele mereu periculoase, plus o blocare a execuției oricărui lucru dintr-un director inscriptibil
+- **Rețea**: restricționată la porturile proxy din proces plus DNS — loopback nu este permis în bloc, iar socketurile Unix nu sunt permise. Proxy-urile impun lista de permisiuni de domenii per sesiune (vezi [Ieșirea în rețea](#ieșirea-în-rețea))
+- **Configurare**: profilurile sunt generate la fiecare lansare din `SandboxSpec`
 
-Requirements:
+Cerințe:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), parte din orice instalare macOS — nu este necesar niciun instrument suplimentar
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+Folosește bubblewrap (`bwrap`) pentru a crea namespace-uri de montare și PID.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **Sistemul de fișiere**: creează un namespace de montare în care sunt vizibile doar căile legate
+- **Rețea**: rulează într-un namespace de rețea nepartajat; traficul ajunge la proxy-urile gazdei prin punți de socketuri Unix `socat`
+- **Procese**: izolare prin namespace PID
 
-Requirements:
+Cerințe:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- `bubblewrap` și `socat` instalate (`sudo apt-get install bubblewrap socat` pe Debian/Ubuntu)
+- Suport pentru namespace-uri în kernel (standard pe Linux-ul modern)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap poate umbri o cale existentă, dar nu poate interzice un fișier `.env`,
+`*.key` sau `*.pem` *nou* în interiorul unei legături inscriptibile. Politica
+standard de trimitere cere aceste interdicții pe globuri de nume de fișiere, așa
+că trimiterea nativă a agenților **eșuează închis pe Linux/WSL2 chiar și atunci
+când sonda găsește bubblewrap**. Nu rulează cu o politică slăbită în tăcere.
+Este necesar un backend cu reguli de nume de fișiere la momentul creării pentru a
+restabili trimiterea nativă pe Linux. Dezactivarea sandbox-ului este o renunțare
+explicită la confinare, nu o soluție echivalentă.
 
-## None backend
+## Backend-ul none
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+Fără sandbox. Procesul rulează direct pe gazdă, cu accesul gazdei la sistemul de fișiere, rețea și procese. ACP și instrumentul `bash` al harness-ului primesc în continuare sanitizarea mediului și politica de comenzi; Claude Code prin `NoSandboxAdapter` moștenește mediul gazdei. La acesta se întoarce trimiterea agenților pe o gazdă fără niciun backend disponibil sau cu `--sandbox off`, și este implicitul terminalului atunci când un client nu numește niciunul.
 
-## Server-hosted terminal
+## Terminalul găzduit de server
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+Terminalul este sandboxat după propriile reguli, nu de sonda de trimitere. `defaultBackend` al `TerminalSessionService` este `none`, iar `cc_server` nu îl suprascrie, așa că o sesiune de terminal rulează shell-ul gazdei dacă clientul nu cere explicit `native` — panoul de terminal al aplicației desktop nu o face.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+Când se cere `native`, shell-ul este învelit prin `SandboxManager` sub un profil fix de terminal: `$HOME` și directorul de lucru al sesiunii sunt inscriptibile, rețeaua este deschisă, iar `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` și `~/Library/Keychains` au citirea interzisă. Limitarea pe capabilități nu se aplică — aceea este o problemă de trimitere. Dacă învelirea nu este acceptată, sesiunea eșuează în loc să afișeze o insignă de nativ pe un PTY cu shell-ul gazdei.
 
-## Network egress
+## Ieșirea în rețea
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+Când este lansat un sandbox, accesul de ieșire în rețea este impus de proxy-uri din proces, nu de reguli de firewall la nivel de kernel. Pe o gazdă fără niciun backend disponibil nimic din toate acestea nu se aplică, iar un proces pornit ajunge la rețea exact așa cum ar face-o utilizatorul serverului.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- Runtime-ul sandbox-ului rulează un proxy HTTP/HTTPS și un proxy SOCKS5 pe `127.0.0.1` în interiorul procesului `cc_server`, **o pereche per sesiune restricționată** (`http_proxy.dart`, `socks_proxy.dart`). Rulările concurente nu împart o pereche.
+- Procesele din sandbox primesc variabile de mediu pentru proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy-ul HTTP, `ALL_PROXY` → proxy-ul SOCKS; `GIT_SSH_COMMAND` direcționează git-over-SSH prin proxy-ul SOCKS). Pe Linux namespace-ul de rețea este nepartajat, așa că proxy-urile sunt singura cale de ieșire; pe macOS sandbox-ul împarte loopback-ul gazdei și vorbește cu ele direct.
+- Gazda țintă a fiecărei conexiuni este potrivită cu lista de permisiuni de domenii a sesiunii; orice altceva este refuzat. Două forme de wildcard, fiecare cu exact un `*`: un `*.example.com` la început potrivește orice subdomeniu (inclusiv `a.b.example.com`), dar nu apexul însuși; un `bedrock.*.amazonaws.com` cu etichetă la mijloc potrivește exact o etichetă (`bedrock.us-east-1.amazonaws.com`, nu `bedrock.evil.attacker.amazonaws.com`).
+- Lista de permisiuni este rezolvată per sesiune din baza de referință atent selectată (`kBaselineAllowedDomains`: furnizori de LLM, găzduire Git, registre de pachete), plus domeniile GitHub când agentul are capabilitățile GitHub sau de push, plus `SandboxSpec.egressAllowlist`. Rezolvatorul acceptă de asemenea domeniile furnizorilor de tichete când agentul poate apela sistemul de tichete, dar calea de trimitere nu transmite niciodată acea listă (sau intrări suplimentare de `egressAllowlist`), așa că în practică fiecare rulare primește baza de referință plus domeniile GitHub pe care le câștigă capabilitățile sale.
+- O listă fixă de interdicții (`kBaselineDeniedDomains`: puncte finale de metadate din cloud, destinații de telemetrie) are prioritate față de toate permisiunile.
+- `networkEnabled: false` (sau un agent fără capabilitatea de rețea) pornește totuși proxy-urile per sesiune, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+Specificația transmisă către `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| Câmp             | Tip                                        | Descriere                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId`       | `String`                                    | Identificator stabil de sesiune (de obicei id-ul spațiului)                                                                                          |
+| `workspaceId`     | `String`                                    | Id-ul spațiului de lucru proprietar                                                                                                                         |
+| `agentId`         | `String?`                                   | Agentul legat în prezent de sandbox, dacă există                                                                                                |
+| `bindMounts`      | `List<SandboxBindMount>`                    | Montări gazdă→invitat; sandbox-ul vede doar căile de gazdă listate aici                                                                         |
+| `networkEnabled`  | `bool` (implicit `true`)                     | Combinat cu capabilitatea de rețea a agentului. Când este oprit, proxy-urile per sesiune pornesc totuși, dar lista de permisiuni este goală, așa că fiecare conexiune de ieșire este refuzată |
+| `egressAllowlist` | `List<String>` (implicit `[]`)               | Domenii de ieșire suplimentare permise; wildcard-uri acceptate (`*.example.com`, plus o formă de mijloc cu o singură etichetă). Trimiterea nu populează niciodată acest câmp, așa că o rulare învelită primește baza de referință atent selectată plus domeniile GitHub pe care le câștigă capabilitățile sale |
+| `guestWorkdir`    | `String?`                                   | Directorul de lucru implicit din interiorul sandbox-ului; apelurile `exec` individuale îl pot suprascrie                                                       |
+| `mode`            | `Mode` (implicit `chat`)                     | Decupează regulile de scriere în sistemul de fișiere: `chat` păstrează montările bind inscriptibile; `review`, `plan` și `orchestrate` sunt doar pentru citire                      |
+| `capabilities`    | `AgentCapabilities` (implicit `safeDefault`) | Derivă decizia de pornire/oprire a rețelei și domeniile de ieșire GitHub. Domeniile de tichete sunt un argument al rezolvatorului pe care calea de trimitere nu îl furnizează niciodată |
+| `protectedPaths`  | `List<String>` (implicit `[]`)               | Căi de gazdă care nu trebuie să fie niciodată inscriptibile în interiorul sandbox-ului, în orice mod                                                                      |
+| `runnerStateDirs` | `List<String>` (implicit `[]`)               | Directoare de gazdă în care runner-ul își păstrează propria stare, inscriptibile în orice mod (un `CLAUDE_CONFIG_DIR` gestionat de Control Center este cel actual) |
+| `execGrantRoots`  | `List<String>` (implicit `[]`)               | Arbori de directoare aprobați de operator care redeschid blocarea de execuție pentru directoare inscriptibile pe macOS. Linux le ignoră — bwrap nu are nicio blocare de execuție pe `$HOME` de redeschis |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` conține checkout-urile originale ale repo-urilor înregistrate, rezolvate la fiecare trimitere din repo-urile spațiului de lucru. Agenții lucrează exclusiv în worktree-uri copy-on-write per conversație, așa că originalele nu trebuie să fie niciodată inscriptibile din interiorul sandbox-ului — pe macOS, permisiunea generală de scriere în `$HOME` a Seatbelt le-ar lăsa altfel inscriptibile prin `bash`. Ele se alătură setului cu scriere interzisă pentru secrete în fiecare mod, inclusiv `chat`.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+Fiecare cale cu citire interzisă și cu scriere interzisă este emisă atât în grafia ei literală, cât și în cea rezolvată prin symlink. Kernelul potrivește o regulă de interdicție cu calea rezolvată, așa că o regulă scrisă pe o cale cu symlink nu se declanșează niciodată — iar pe macOS acesta este cazul obișnuit, nu cel exotic, fiindcă `/tmp` se rezolvă la `/private/tmp`, iar `/var/folders/…` la `/private/var/folders/…`. Intrările care conțin `*` sau `?` sunt tratate ca globuri și lăsate în pace; o cale care nu se rezolvă este păstrată așa cum a fost scrisă.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| Câmp       | Tip                     | Descriere                                                                                             |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | Cale absolută pe gazdă                                                                               |
+| `guestPath` | `String`                 | Cale în interiorul sandbox-ului (cu sandbox-ul nativ aceasta este egală cu `hostPath`; păstrată pentru simetria adaptoarelor) |
+| `readOnly`  | `bool` (implicit `false`) | Montează doar pentru citire când este true                                                                               |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+Returnat de `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| Câmp       | Tip                   | Descriere                                                              |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | Identificator de sesiune                                                       |
+| `backend`   | `SandboxBackend`       | Ce backend rulează                                                 |
+| `state`     | `SandboxState`         | Starea ciclului de viață                                                          |
+| `error`     | `Object?`              | Setat când `state` este `error`                                              |
+| `details`   | `Map<String, Object?>` | Evidență privată a adaptorului (director de lucru, PID, calea profilului etc.) |
 
 ### SandboxState
 
-| State       | Description                                 |
+| Stare       | Descriere                                 |
 | ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| `created`   | Specificația a fost creată, dar VM-ul nu a pornit încă |
+| `warm`      | Rulează și este gata să execute comenzi          |
+| `active`    | Execută în prezent o comandă               |
+| `suspended` | Pauzat / salvat ca punct de control pe disc pentru a economisi RAM   |
+| `destroyed` | Desființat; handle-ul nu mai este valid    |
+| `error`     | Lansarea a eșuat — vezi `SandboxHandle.error`   |
 
-## Sandbox events
+## Evenimente de sandbox
 
-| Event type  | Description                                                  |
+| Tip de eveniment  | Descriere                                                  |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout`    | Ieșirea standard a sandbox-ului                             |
+| `stderr`    | Eroarea standard a sandbox-ului                              |
+| `exit`      | Procesul sandbox-ului s-a încheiat (poartă `exitCode`)                  |
+| `starting`  | Sandbox-ul pornește                                       |
+| `ready`     | Sandbox-ul este gata să accepte apeluri exec                        |
+| `killed`    | Procesul a fost omorât de gazdă (OOM, timeout, oprire manuală)       |
+| `violation` | O politică de sandbox a fost încălcată (poartă un `SandboxViolation`) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| Câmp                 | Tip      | Descriere                                                                |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | Verbul refuzat (de ex. `file-read*`, `network-outbound`)                    |
+| `target`              | `String`  | Calea sau gazda care a fost ținta operației refuzate                   |
+| `suggestedCapability` | `String?` | Flag-ul de capabilitate care ar permite această acțiune (de ex. `canCallGitHubApi`) |
+| `raw`                 | `String?` | Linia brută de jurnal, utilă pentru depanare                                         |
 
-## See also
+## Vezi și
 
-- [Sandbox security](/ro-RO/manual/concepte/sandbox-si-securitate/)
-- [Sandbox policies](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/)
-- [cc_server CLI](/ro-RO/manual/referinta/cc-server-cli/): the `--sandbox` flag
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/)
+- [Politici de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/)
+- [CLI cc_server](/ro-RO/manual/referinta/cc-server-cli/): flag-ul `--sandbox`

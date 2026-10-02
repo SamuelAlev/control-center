@@ -1,97 +1,106 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Parler à Control Center depuis une PR GitHub
+description: Demandez une révision ou posez une question au robot de la GitHub App de votre serveur directement depuis la conversation de la PR, sans webhook ni URL publique.
 slug: fr-CA/manuel/guides/conversations-pr-github
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Ce guide vous montre comment travailler avec Control Center sans quitter GitHub :
+demandez une révision par IA depuis la page de la PR, posez une question au robot
+dans un commentaire et poursuivez la conversation dans ses fils de révision.
 
-The bot is your server's own [GitHub App](/fr-CA/manuel/guides/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+Le robot est la [GitHub App](/fr-CA/manuel/guides/github-app/) de votre propre
+serveur — celle qui permet déjà aux gens de se connecter et qui exécute le travail
+en arrière-plan. Rien de nouveau n’est enregistré, et rien n’a besoin d’être
+accessible depuis Internet : le serveur découvre ce qui a été dit sur GitHub par
+interrogation périodique, de sorte qu’un ordinateur portatif derrière un NAT se
+comporte exactement comme un déploiement public.
 
-## Prerequisites
+## Prérequis
 
-- The server has its GitHub App [registered and
-  installed](/fr-CA/manuel/guides/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- Le serveur a sa GitHub App [enregistrée et
+  installée](/fr-CA/manuel/guides/github-app/), avec **Pull requests: read and write**
+  (pour les commentaires, les fils et les réactions) et **Issues: read** (pour la
+  recherche de commentaires). Les deux figurent déjà dans la liste de permissions
+  de ce guide
+- Le dépôt est lié à un espace de travail dans Control Center
+- Aucune URL de webhook, aucun tunnel, aucun rappel — il n’y a rien à configurer
+  du côté du réseau
 
-## Find your bot's name
+## Trouver le nom de votre robot
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+L’identifiant de connexion du robot est `<appslug>[bot]`, où `appslug` est le nom
+que vous avez donné à l’application au moment de l’enregistrer.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Allez dans **Paramètres → Serveur → Authentification unique** et faites défiler
+   jusqu’à la carte **Applications fournisseur**
+2. Ouvrez le bloc **GitHub** et cliquez sur **Tester**
+3. Copiez **Login du bot** une fois le champ rempli. S’il affiche encore l’indice
+   vide, l’identifiant de connexion est toujours `<appslug>[bot]` — saisissez-le,
+   ou la forme courte `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub n’offre pas les comptes d’application dans sa saisie semi-automatique `@`,
+l’identifiant de connexion doit donc être tapé à la main — c’est pourquoi la carte
+de paramètres le copie en un clic. Le suffixe `[bot]` est facultatif : `@myapp` et
+`@myapp[bot]` joignent tous deux le robot.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Choisissez un nom d’application distinctif]
+La forme courte est mise en correspondance comme du texte. Si un utilisateur
+humain de GitHub partage par hasard le slug de votre application, mentionner cet
+utilisateur par la forme courte joint aussi le robot. La forme complète
+`@myapp[bot]` est toujours sans ambiguïté.
 :::
 
-## Request a review from GitHub
+## Demander une révision depuis GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+Deux façons, qui démarrent toutes deux le même pipeline `pr_review` préamorcé que
+lance le bouton **Ask AI** :
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Ajoutez l’étiquette `ai-review`** à la PR. C’est ce que GitHub offre de plus
+  proche d’une affectation du robot comme relecteur — les comptes d’application ne
+  peuvent pas occuper l’emplacement natif de relecteur demandé. Aucun commentaire
+  ne permet de réagir, donc rien n’est publié sur GitHub ; la révision démarre dans
+  Control Center
+- **Commentez `@myapp review`** (ou simplement `@myapp`) dans la conversation de la
+  PR. Le robot réagit avec 👀, puis répond quand la révision a démarré (ou qu’une
+  révision est déjà en cours)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/fr-CA/manuel/guides/revision-par-ia/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Les relecteurs travaillent dans l’espace de révision de la PR ; lisez et publiez
+les constats comme dans [Utiliser la révision assistée par
+IA](/fr-CA/manuel/guides/revision-par-ia/). La publication vers GitHub demeure une
+décision que vous prenez dans Control Center — lancer une révision depuis GitHub
+ne publie rien sur GitHub en soi.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+L’étiquette se déclenche une seule fois par PR : l’ajouter constitue la demande,
+et elle n’est pas réarmée si on la retire puis la remet. Pour relancer une
+révision — après un push, par exemple —, mentionnez le robot.
 
-## Ask a question
+## Poser une question
 
-Comment on the PR conversation:
+Commentez dans la conversation de la PR :
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Ce qui se passe, dans l’ordre :
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. Le robot réagit avec 👀, ce qui vous confirme que le commentaire a été vu
+2. La question est publiée dans l’espace de révision de la PR **en votre nom** —
+   la même attribution que si vous l’aviez saisie dans Control Center
+3. Un agent répond dans l’espace, et la réponse est publiée dans la PR sous forme
+   de commentaire qui vous @-mentionne
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Une question sur une PR encore sans révision réveille l’agent principal (CEO) de
+l’espace de travail ; une fois qu’une révision a eu lieu, c’est l’agent qui a parlé
+en dernier qui répond, de sorte que les relances aboutissent chez la personne qui
+a le contexte.
 
-## Follow up in a review thread
+## Donner suite dans un fil de révision
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Répondez dans un fil de révision en ligne auquel le robot participe — un
+commentaire de diff qu’il a laissé, ou une réponse qu’il a publiée dans ce fil.
+Aucune mention n’est nécessaire ; le fil **est** l’adressage :
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +108,83 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+Les échanges à plusieurs tours fonctionnent de la même façon : chaque réponse est
+une nouvelle question dans la même conversation, avec l’espace de révision comme
+contexte, et la réponse revient dans le fil.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+Une relance dans la chronologie de la conversation de la PR constitue un nouveau
+commentaire de premier niveau ; elle a donc toujours besoin d’une @mention.
 
-## Who the bot talks to
+## À qui le robot parle
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Un commentaire GitHub n’arrive guère avec plus qu’un identifiant de connexion ; le
+robot résout donc l’auteur avant de faire quoi que ce soit :
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/fr-CA/manuel/guides/integration-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **Votre compte GitHub doit être lié à votre identité** dans Control Center —
+  [connectez-vous avec GitHub](/fr-CA/manuel/guides/integration-github/), ou collez
+  un jeton, à partir de **Paramètres → Espace de travail → Profil et identité →
+  Hébergement de code**
+- **Vous devez être membre avec un rôle d’écriture** (`member`, `admin` ou `owner`)
+  dans l’espace de travail qui lie le dépôt
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Toute autre personne reçoit une seule réponse courtoise expliquant ce qui manque —
+un identifiant de connexion inconnu (non lié, ou lié mais sans appartenance ici) et
+un rôle en lecture seule sont les deux cas —, et ses propos n’entrent jamais dans
+l’espace de travail. L’étiquette `ai-review` n’est pas assujettie à cette
+vérification : elle n’a pas d’auteur, elle démarre donc la révision dans l’espace
+de travail qui lie déjà le dépôt.
 
-## What to expect
+## À quoi s’attendre
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Élément                  | Comportement                                                             |
+| ------------------------ | ------------------------------------------------------------------------ |
+| Accusé de réception      | 👀 sur un commentaire en une minute environ — l’intervalle de balayage. L’étiquette `ai-review` n’a aucun commentaire sur lequel réagir |
+| Réponses                 | Publiées en tant que le robot (l’application), dans la voie où la question a été posée |
+| Attribution dans l’espace | La question est la vôtre ; l’agent s’exécute en votre nom, selon les réglages d’autonomie de l’espace |
+| Révisions                | Les constats arrivent dans l’espace de révision ; la publication vers GitHub est manuelle |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+Le délai d’environ une minute est le prix à payer pour n’avoir besoin d’aucun
+accès réseau entrant. Rien dans le balayage n’est urgent, et rien n’est perdu
+pendant que le serveur est hors ligne — un commentaire qui arrive pendant l’arrêt
+est rattrapé au balayage suivant.
 
-## Troubleshooting
+## Dépannage
 
-**Nothing happens for a comment that mentions the bot.**
+**Rien ne se produit pour un commentaire qui mentionne le robot.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- L’application est-elle **installée** sur le compte qui possède le dépôt, et le
+  dépôt est-il **lié** à un espace de travail ? Un dépôt non lié est ignoré avant
+  que quoi que ce soit soit consigné, donc le lier plus tard livre quand même le
+  commentaire
+- Votre compte GitHub est-il lié, et êtes-vous membre avec un rôle d’écriture ?
+  Cherchez dans la PR la réponse de refus du robot — elle indique lequel des deux
+  cas s’applique
+- Toujours rien ? Le journal du serveur nomme le balayage et la PR quand quelque
+  chose échoue ; cherchez `pr_conversation:` (l’interrogateur périodique) et
+  `github_pr_conversation:` (la passerelle)
 
-**The label does not start a review.**
+**L’étiquette ne démarre pas de révision.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+Elle se déclenche une seule fois par PR. Si une révision a déjà eu lieu, ou si
+l’étiquette a été ajoutée avant que le serveur ait vu la PR (le premier balayage
+consigne l’arriéré en silence plutôt que de le déclencher d’un coup), mentionnez
+plutôt le robot — `@myapp review` en démarre toujours une, à moins qu’une révision
+soit déjà en cours.
 
-**The bot's answer never arrived on GitHub.**
+**La réponse du robot n’est jamais arrivée sur GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+La réponse elle-même n’est jamais perdue — elle se trouve dans l’espace de
+révision de la PR, dans Control Center. Un échec de publication (GitHub
+indisponible, permissions modifiées) est consigné et la réponse n’est pas
+réessayée ; reposez la question dans le fil si cela compte.
 
-## Related guides
+## Guides connexes
 
-- [Create the GitHub App](/fr-CA/manuel/guides/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/fr-CA/manuel/guides/revision-par-ia/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/fr-CA/manuel/guides/integration-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/fr-CA/manuel/guides/espaces/): the room all of this lands in
+- [Créer la GitHub App](/fr-CA/manuel/guides/github-app/) : l’enregistrement dont
+  le robot est issu
+- [Utiliser la révision assistée par IA](/fr-CA/manuel/guides/revision-par-ia/) :
+  lire les constats que produit une révision lancée par mention
+- [Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/) :
+  lier votre propre compte GitHub, ce par quoi le robot vous résout
+- [Utiliser les espaces](/fr-CA/manuel/guides/espaces/) : l’espace où tout cela
+  aboutit

@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Điều phối agent đầu tiên của bạn
+description: Tạo một agent, giao cho nó một space và một tác vụ rồi xem lượt chạy truyền về.
 slug: vi-VN/so-tay/huong-dan/agent-dau-tien
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Bạn sẽ xây dựng gì
 
-By the end of this tutorial, you will have:
+Đến cuối hướng dẫn này, bạn sẽ có:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Một agent do chính bạn tạo và cấu hình
+- Một space nơi bạn và agent đó trò chuyện
+- Một lượt chạy đã hoàn tất, với công việc đã được commit trong một worktree cách ly và một hàng trong nhật ký lượt chạy của agent
 
-Prerequisites: [Your first workspace](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/) completed, so this workspace has a repo registered and at least one model provider connected.
+Điều kiện tiên quyết: đã hoàn thành [Không gian làm việc đầu tiên của bạn](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/), nghĩa là không gian làm việc này đã có một kho mã được đăng ký và ít nhất một nhà cung cấp mô hình được kết nối.
 
-## Step 1: Create an agent
+## Bước 1: Tạo một agent
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Mở **Cài đặt → Không gian làm việc → Agent**
+2. Nhấp **Agent mới**. Một agent tên “Agent chưa đặt tên” được tạo ngay lập tức và được chọn sẵn trong danh sách — không có hộp thoại tạo và không có gì để xác nhận. Bạn cấu hình nó ngay tại chỗ.
+3. Trên tab **Cài đặt**, điền:
+   - **Tên**: một cái gì đó ngắn gọn, dễ nhớ, ví dụ `alice`. Đây là thứ bạn gõ sau `@`.
+   - **Tiêu đề**: việc nó làm, ví dụ “Kỹ sư backend”
+   - **Bộ điều hợp**: `Control Center (built-in)`. Hãy chọn nó một cách có chủ đích — chỉ harness tích hợp sẵn mới có thể được điều hướng giữa lượt chạy và tạm dừng ở ranh giới lượt, và nó không cần cài CLI nào trên máy chủ.
+   - **Mô hình**: chọn từ danh sách mà nhà cung cấp đã kết nối cung cấp
+   - **Kỹ năng**: gắn bất kỳ kỹ năng nào phù hợp, ví dụ `testing` hoặc `architecture`
+4. Nhấn **Lưu thay đổi**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Agent không có bộ điều hợp sẽ chạy trên vòng lặp tích hợp sẵn]
+Khi trường Bộ điều hợp không được đặt, việc điều phối sẽ quay về **Control Center (built-in)** — vòng lặp agent bên trong máy chủ, nên không phải cài gì trên máy chủ. Nó vẫn cần một mô hình: khi không đặt mô hình nào, nó hỏi Anthropic mặc định của mình; cách này chạy được nếu bạn đã kết nối một tài khoản Anthropic, còn nếu không sẽ thất bại với `No credential for provider "anthropic"`. Dù sao hãy đặt cả hai một cách minh thị, nếu không bạn sẽ chạy trên một mô hình mà bạn không chọn.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Điểm kiểm tra.** Hàng trong danh sách hiển thị tên agent của bạn và một vòng trạng thái rỗng.
 
-## Step 2: Start a space
+## Bước 2: Khởi tạo một space
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. Trong thanh bên, tìm mục **Không gian** và nhấp nút **+**
+2. Đặt tên cho space
+3. Trong **Thêm agent**, chọn agent bạn vừa tạo
+4. Nếu không gian làm việc có kho mã nào, hãy chọn những kho mã mà space này sẽ làm việc trên đó
+5. Nhấp **Tạo**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Space mở ra. Ở hậu cảnh, Control Center cấp phát một worktree copy-on-write của các kho mã đã chọn cho cuộc hội thoại này, trên nhánh riêng của nó. Bản checkout nguồn của bạn không bao giờ bị thay đổi.
 
-## Step 3: Send a task
+## Bước 3: Gửi một tác vụ
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Gõ một tác vụ cụ thể, nhỏ đối với kho mã bạn đã đăng ký. Một việc có kết quả kiểm chứng được là tốt nhất — thêm một bài kiểm thử, sửa một lỗi lint, đổi tên một ký hiệu.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Nhấn Enter. Bạn không cần `@`-mention ai cả: khi space chỉ có một agent, một tin nhắn thường sẽ đánh thức nó. Trong một space có nhiều agent, `@name` sẽ chọn một agent.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center lắp ghép prompt từ chỉ dẫn, persona, kỹ năng của agent cùng ngữ cảnh của space, rồi điều phối lượt chạy.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Điểm kiểm tra.** Nút gửi của trình soạn biến thành nút dừng — một agent đang làm việc trong cuộc hội thoại này — và văn bản bắt đầu xuất hiện.
 
-## Step 4: Watch it work
+## Bước 4: Xem nó làm việc
 
-The conversation renders the run as it happens:
+Cuộc hội thoại hiển thị lượt chạy ngay khi nó diễn ra:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Suy luận**, hiển thị nội tuyến khi agent suy nghĩ
+- **Lời gọi công cụ**: đọc và ghi tệp, tìm kiếm, lệnh shell, mỗi lời gọi kèm kết quả của nó
+- **Văn bản**: tóm tắt, giải thích và câu hỏi dành cho bạn
 
-If the agent asks something, answer in the conversation and it resumes.
+Nếu agent hỏi điều gì đó, hãy trả lời trong cuộc hội thoại và nó sẽ tiếp tục chạy.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Để xem các chỉ số riêng của một lượt chạy cùng các nút tạm dừng, tiếp tục và dừng của nó, hãy tìm agent đang chạy trong mục **Agent** của khung **Chung** thuộc space rồi chọn **Mở hoạt động**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+Trong khung hoạt động, huy hiệu trạng thái hiển thị **Đang chạy**, rồi **Thành công** khi lượt chạy kết thúc. Một lượt chạy bị đình trệ hoặc lặp lại hiển thị **Bị chặn**; lượt chạy gặp lỗi hiển thị **Thất bại**. Trong danh sách agent, vòng trạng thái rỗng trước lượt chạy đầu tiên và đặc lại khi agent nhàn rỗi trở lại.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/).
+Những gì giới hạn lượt chạy: worktree copy-on-write riêng của nó, thông tin xác thực được bộ môi giới cấp lúc khởi chạy và bị thu hồi khi kết thúc, một môi trường đã được làm sạch, bề mặt công cụ mà chế độ của nó cho phép cùng các rào chắn hành động. Những hiệu ứng như push một nhánh hay mở một pull request được kiểm soát riêng — xem [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/).
 
-## Step 5: Check the result
+## Bước 5: Kiểm tra kết quả
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Mở **Cài đặt → Không gian làm việc → Agent** và chọn agent của bạn
+2. Mở tab **Nhật ký**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Điểm kiểm tra.** Một hàng lượt chạy, hiển thị trạng thái, thời lượng, thời điểm bắt đầu và kết thúc cùng bộ điều hợp mà nó đã chạy trên đó.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Các thay đổi của agent được commit trên nhánh của cuộc hội thoại, trong worktree của nó. Commit được tạo với tư cách tác giả là agent, còn bạn được ghi nhận trong trailer `Co-Authored-By:`.
 
-## Getting a pull request
+## Nhận một pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Không có gì tự mở pull request. Nếu bạn muốn có một cái, hãy yêu cầu ngay trong cuộc hội thoại đó:
 
-> Push this branch and open a pull request against the default branch.
+> Push nhánh này và mở một pull request nhắm vào nhánh mặc định.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Push (`gitPush`) và việc tạo PR (`prCreate`) đều mặc định nhắc bạn phê duyệt, nên hãy chờ một xác nhận trước mỗi thao tác. Nếu không có người phê duyệt nào được kết nối khi lời nhắc kích hoạt, hành động sẽ bị từ chối thay vì được cho phép — các rào chắn hành động fail-closed.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR được mở dưới danh tính GitHub mà lượt chạy đã dùng token của danh tính đó — của bạn, nếu bạn đã lưu token cá nhân — chứ không dưới tên của agent. Quyền tác giả của agent hiển thị trên các commit.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Bạn cũng có thể tự mở nó: khung **Kiểm soát mã nguồn** của space có nút **Tạo pull request** đưa nhánh của cuộc hội thoại vào màn hình soạn thảo, còn **Pull requests → PR mới** mở chính màn hình đó ở trạng thái trống. Đó là chỗ hướng dẫn tiếp theo tiếp nối.
 
-## Recap
+## Tóm tắt
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Bạn đã tạo một agent, cấu hình bộ điều hợp và mô hình cho nó, giao cho nó một space và một tác vụ rồi xem một lượt chạy thật hoàn tất trong một worktree cách ly mà không đụng tới bản checkout của bạn.
 
-**Next:** [Review your first pull request](/vi-VN/so-tay/huong-dan/pr-dau-tien/) to learn the review workflow.
+**Tiếp theo:** [Xem xét pull request đầu tiên](/vi-VN/so-tay/huong-dan/pr-dau-tien/) để tìm hiểu quy trình xem xét.
 
-For more on agents: [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/). For dispatch details: [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/).
+Để biết thêm về agent: [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/). Để biết chi tiết về điều phối: [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/).

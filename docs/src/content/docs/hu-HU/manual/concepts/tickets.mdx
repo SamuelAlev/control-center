@@ -1,155 +1,172 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Jegyek és delegálás
+description: Miért követi nyomon a jegy a munkát anélkül, hogy elindítaná, hogyan őrzik a delegálást, és mit birtokol – és mit nem – a szállítói tükör.
 slug: hu-HU/kezikonyv/fogalmak/jegyek
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+A jegy a munka egysége, amelyet a Control Center nyomon követ. Szándékosan egy
+_buta_ artefaktum: cím, törzs, állapot, tulajdonos és egy hely a fában. Nem az a
+dolog, amin az ügynökök végrehajtódnak — az ügynökmunka a beszélgetésekben él,
+egy futtatás strukturált kimenete pedig a futtatási naplóban.
 
-## Assignment records ownership; it dispatches nothing
+## A hozzárendelés tulajdonjogot rögzít; semmit nem indít el
 
-This is the single most important thing to get right about tickets.
+Ez az egyetlen legfontosabb dolog, amit a jegyekről helyesen kell érteni.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/hu-HU/kezikonyv/fogalmak/domainesemenyek/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Az `assignedAgentId` beállítása kiír egy mezőt, és közzétesz egy `TicketAssigned`
+[domaineseményt](/hu-HU/kezikonyv/fogalmak/domainesemenyek/). Ez az esemény
+audit- és értesítési jelzés, valamint pipeline-eseményindító. **Az ügynökhöz
+rendelés nem indít futtatást.** Nincs olyan jegykiosztó, amely az
+`assignedAgentId` mezőt figyelné, és felébresztené azt az ügynököt.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+A kivétel a csapat: amikor az `assignedTeamId` be van állítva, a
+`TeamRoutingService` kiosztja a csapatvezetőt az üzemeltetési protokollal és a
+névsorral.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Ha azt szeretné, hogy egy adott ügynök dolgozzon egy jegyen, arra egy
+beszélgetésben kéri meg, vagy egy pipeline-lépés osztja ki rá, vagy egy másik
+ügynök delegál neki. A jegy ügynökhöz rendelése és a várakozás az az egyetlen
+dolog, amely soha nem eredményez munkát.
 
-## Mirror and overlay
+## Tükör és fedvény
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Egy jegy lehet tisztán helyi, vagy állhat mögötte külső követőrendszer, és mindkettőt
+egyetlen soron hordozza.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+A **tükör** — szolgáltató, külső kulcs, URL, cím, leírás, prioritás, címkék,
+nyers és normalizált állapot, időbélyegek — gyorsítótár, amikor a jegy távoli.
+Ilyenkor a távoli a hiteles forrás, és egy frissítés teljes egészében újraírja a
+tükröt.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+A **fedvény** — hozzárendelés, delegálás, térkapcsolat, szülő, projekt, kapcsolt
+PR-ek — csak a Control Centerben létezik. A követőrendszer semmit nem tud róla,
+és egy frissítés soha nem nyúl hozzá.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Ez a szétválasztás teszi egyáltalán biztonságossá a szinkronizálást: egy
+szállítói szinkronizálás tönkreteheti a tükröt anélkül, hogy valaha elvesznének
+a fölé épült orchestrációs metaadatok.
 
-## The lifecycle graph binds agents, not you
+## Az életciklus-gráf az ügynököket köti, nem Önt
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Az állapotok így futnak: `backlog → open → inProgress → inReview → done`, a
+`blocked` egy mellékág, a `failed` / `cancelled` pedig a többi végállapot.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Az átmenetgráf **csak az ügynök- és automatizálási úton** érvényesül — MCP-eszközökön
+és reconcilereken. Egy szabálytalan átmenet ott csak naplózódik és figyelmen
+kívül marad, így egy zavart ügynök nem léptetheti visszafelé a jegyet egy
+végállapotból.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+A felületen minden felhasználói módosítás `force: true` értéket ad át, és
+teljesen megkerüli a gráfot. Egy ember a jegyet bármelyik állapotba
+átmozgathatja, amelyet a választó felsorol — beleértve egy végállapot
+újranyitását is. A választó nem kínálja a `failed` állapotot; azt az ügynökök a
+`fail_ticket` hívással állítják be. A gráf az automatizálás védőkorlátja, nem
+pedig szabály arról, hogyan haladhat a munka.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+A `TicketWorkflowService` minden módosítást egyetlen szűk keresztmetszeten
+keresztül birtokol: betölti a sort, ellenőrzi, hogy a hívó munkaterületéhez
+tartozik, és a várt `version` értékkel ír, így két párhuzamos szerkesztés nem
+írhatja felül csendben egymást.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/hu-HU/kezikonyv/referencia/jegyeletciklus/).
+A teljes állapottáblázatért, az átmenetekért, a mezőlistáért és a
+kapcsolattípusokért lásd a
+[Jegyéletciklus](/hu-HU/kezikonyv/referencia/jegyeletciklus/) oldalt.
 
-## Provenance: how a ticket came to exist
+## Eredet: hogyan jött létre egy jegy
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Minden jegynek van egy `originKind` értéke. Az enumnak öt értéke van — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` —, de ma csak
+kettő íródik: a `manual` (ez az alapértelmezett a `createTicket` hívásnál, a
+delegált gyermekeket is beleértve) és az `externalSync` (a szinkronizálómotor,
+szállítói szinkronizáláskor). A `TicketWorkflowService.createTicket` nem vesz át
+eredetargumentumot, így a `pipelineStep`, az `agentDelegation` és a `recovery`
+soha nem kerül rá egy sorra sem.
 
-## Guarded delegation
+## Védett delegálás
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+A delegálás az, ahol az egyik ügynök munkát hoz létre egy másiknak, és itt
+szivároghat ki a jogosultság, ezért az őrök a prompt utasításai helyett a
+szerveroldalon, egyetlen szűk keresztmetszetnél élnek.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+A `delegate_task` a `TicketWorkflowService.delegateGuarded` metóduson keresztül
+halad, amely a szülőláncból kiszámítja a gyermek mélységét és gyökerét, majd
+lefuttatja mind a négy `DelegationGuards` ellenőrzést: egy ugrást, amely
+túllépné a **3-as mélységkorlátot**; egy visszaugrást olyan ügynökhöz, aki már
+benne van a láncban (**ciklusdetektálás**); egy **autonómiaplafont** (a delegált
+térbeli effektív szintje nem haladhatja meg a delegálóét); és egy
+**költségvetési keretet** (a delegálás a delegáló fennmaradó hard-stop
+költségvetését terheli, és nem hozhat létre többet). Az éles összekötés mindkét
+feloldó portot biztosítja. Az autonómia és a költségvetés ellenőrzése kimarad,
+ha a `from_agent_id` hiányzik (a korlátlan, illetve szabályzat nélküli
+költségvetés is átmegy). Az elutasítás `DelegationRefusedException`
+kivételként dobódik, amelynek üzenete szó szerint eljut a delegáló ügynökhöz —
+hangos elutasítás, soha nem néma, hatás nélküli művelet.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+A `delegate_ticket` a régebbi, **őrizetlen** testvér: közvetlenül a
+`createTicket` metódust hívja, és minden őrt kihagy. Részesítse előnyben a
+`delegate_task` eszközt.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Ne keverje össze a delegálás mélységkorlátját (3, a `delegate_task` láncokon) a
+beépített harness alügynök-beágyazási korlátjával (2). Ezek különböző
+mechanizmusok különböző korlátai.
 
-## Hierarchy, links and projects
+## Hierarchia, kapcsolatok és projektek
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+A szülő- és gyermekjegy-kapcsolatok a `tickets.parent_ticket_id` mezőn élnek,
+amelyet a `setParent` / `clearParent` birtokol. Ezek **nem** `ticket_links`
+sorok, így mindennek, ami egy jegy kapcsolatait olvassa, mindkét forrást össze
+kell vonnia.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+A `ticket_links` az egyébként független jegyek közötti irányított éleket
+tartalmazza:
 
-| Link type     | Meaning                                 |
+| Kapcsolattípus | Jelentés                               |
 | ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| `blocks`      | A forrás blokkolja a célt               |
+| `relatesTo`   | A két jegy kapcsolatban áll egymással (szimmetrikus) |
+| `duplicateOf` | A forrás a cél duplikátuma              |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+A **projekt** a jegyek munkaterületre kiterjedő csoportosítása egy közös cél
+felé. A projektek csak a Control Centerben léteznek, és soha nem
+szinkronizálódnak külső szolgáltatóhoz.
 
-## Collaborators
+## Közreműködők
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+A `TicketCollaborator` sorokkal kapcsolódik egynél több szereplő egy jegyhez,
+`assignee`, `collaborator` vagy `reviewer` szerepkörben. Az emberek és az
+ügynökök egyenrangú sorok — egy `principalId` és egy `collaboratorType` —, nincs
+„a felhasználó” jelentésű kitüntetett érték, és nincs idegen kulcs egyik
+táblához sem.
 
-## External sync
+## Külső szinkronizálás
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+A Control Center jegye az elsődleges. Egy jegy törlése **csak helyben** történik,
+így egy szállító által támogatott jegy, amelyet töröl, nem törlődik a
+követőrendszerben, és a következő szinkronizáláskor újra megjelenhet. A
+közreműködők és a gyermekjegyek kaszkádolódnak.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Az adapter hitelesítő adatai a szerver hitelesítőadattáraiból oldódnak fel (a
+Beállításokban beillesztett Linear-kulcsot vagy GitHub-tokent a következő kérés
+veszi fel; a környezet csak kezdeti értékkel tölti fel ezeket a tárakat).
 
-## Tickets and pipelines
+## Jegyek és pipeline-ok
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Egyetlen pipeline-csomópont sem hoz létre, fejez be vagy szakít meg jegyeket —
+a palettán nincs ilyen lépés, és a motor nem hívja a `TicketWorkflowService`
+metódusait. Egy pipeline-eseményindító azonban továbbra is tüzelhet
+`TicketAssigned`, `TicketCompleted`, `TicketFailed` vagy `TicketCancelled`
+eseményre (ez a négy az a jegyesemény, amelyet az `EventPayloadMapper` valóban
+leképez). A jegyen nincs `pipelineRunId` oszlop; a pipeline-hoz kapcsolódás az
+ügynök futtatási naplójában él.
 
-## See also
+## Lásd még
 
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): ticket events can trigger a pipeline
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/): where a DAG of sub-tickets comes from
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): who a ticket is assigned to
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): the ticket lifecycle events
-- [Ticket lifecycle](/hu-HU/kezikonyv/referencia/jegyeletciklus/): statuses, fields, transitions, relations
-- [Create and manage tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
-- [Delegate work to agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
-- [Organize work with projects](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/)
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): a jegyesemények pipeline-t indíthatnak
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/): honnan származik a gyermekjegyek DAG-ja
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): kihez van hozzárendelve egy jegy
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): a jegy életciklus-eseményei
+- [Jegyéletciklus](/hu-HU/kezikonyv/referencia/jegyeletciklus/): állapotok, mezők, átmenetek, kapcsolatok
+- [Jegyek létrehozása és kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
+- [Munka delegálása ügynököknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
+- [Munka szervezése projektekkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/)

@@ -1,241 +1,214 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: תחנות ומתחמים מבודדים
+description: למה סוכנים מקבלים מכונות חד-פעמיות במקום המחשב שלכם — גבולות הבידוד, ערוצי התצוגה, אישורי הגישה, הפורטים ומחזור החיים.
 slug: he-IL/מדריך-למשתמש/מושגים/תחנות
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/); for the exact
-verbs, ports and defaults, see the [rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/).
+**תחנה** היא מכונה חד-פעמית שסוכן מפעיל בזמן אמת — דפדפן, שולחן עבודה של
+Linux, אמולטור של Android, סימולטור iOS, או המכונה שמאחורי מסוף מבודד. רוב
+התחנות הן מכונות וירטואליות; סימולטורים לנייד שמנוהלים במארח הם היוצאים מן
+הכלל המפורשים. הדף הזה מסביר כל גבול, ולמה החלקים מעוצבים כפי שהם. כדי לפתוח
+תחנה, ראו [תנו לסוכן מחשב לבדיקות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/); לפעלים,
+לפורטים ולברירות המחדל המדויקים, ראו [מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/).
 
-## Why a VM, not a sandbox
+## למה מכונה וירטואלית ולא ארגז חול
 
-The [native sandbox](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[ארגז החול המובנה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) עוטף תהליך בבידוד של
+מרחבי שמות (namespaces) — בידוד אמיתי, אבל הוא חולק את ליבת המערכת שלכם, והוא
+מגביל *תהליך*, לא *מכונה*. ברגע שסוכן צריך ללחוץ כאן וכאן באפליקציית שולחן
+עבודה, להציג דף בדפדפן אמיתי, או להריץ ניסויי `rm -rf` שהייתם מעדיפים לא לחשוב
+עליהם, הגבול הכנה הוא מכונה: ליבה משל עצמה, דיסק משל עצמה, ומחסנית רשת משל
+עצמה.
 
-The enclosed surfaces use two VM backends:
+המשטחים המבודדים משתמשים בשני מנועי מכונות וירטואליות:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM-ים** למסוף ולדפדפן — אתחול היפרוויזר בפחות משנייה מתמונות מכולה
+  מוצמדות לפי digest.
+- **QEMU** עבור שולחן העבודה המלא של Linux, שזקוק להתקן תצוגה שאין ל-microVM.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+משטחי המובייל מנוהלים במארח ומצהירים על הגבול החלש יותר במפורש:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** מפעיל את האמולטור של Google דרך ADB.
+- **iOS** יוצר ומחזיק התקן CoreSimulator במארח Mac ומפעיל אותו דרך
+  WebDriverAgent. ההתקן והנתונים שלו נמחקים כשהתחנה נסגרת, אבל הרשת שלו הולכת
+  אחרי מארח ה-Mac.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+תחנות מבודדות כותבות לשכבת-על חד-פעמית מעל תמונת בסיס לקריאה בלבד, כך שתחנה
+אחת לא יכולה לשנות את מה שהתחנה הבאה מאתחלת ממנו. תחנת iOS מחזיקה התקן
+CoreSimulator חד-פעמי שנמחק כשהתחנה נסגרת. Android מתחבר לאמולטור במארח
+שמאריך ימים מעבר להפעלה.
 
-## Deny-by-default egress
+## תעבורה יוצאת חסומה כברירת מחדל
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+הרשת של תחנה מתחילה מ**כלום**. מארחים מתקבלים לכל תחנה בנפרד דרך שער שהאורח לא
+יכול לעקוף: הנתיבים היחידים החוצה מהמכונה הם אלה שהגדרת ההפעלה יצרה. מסוף מבודד
+מקבל את קו הבסיס של מפתחים (רשמי חבילות, מארחי קוד, מראות apt); תחנת דפדפן
+מתירה את אתר המוצר (`usectrl.dev`) ומאתחלת לדף מקומי ב-`file://` שלא זקוק
+לתעבורה יוצאת; כל השאר נדחה בזמן ההתחברות.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android ו-iOS לא נכללים בשער הזה. האמולטור והסימולטור שלהם במארח משתמשים ברשת
+של מארח השרת, ולכן הממשק ודוח היכולות מסמנים את התעבורה היוצאת כלא נאכפת
+ולעולם לא מציעים לחצן מטעה של "הפעלה מחדש ללא הגבלות".
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+תעבורה יוצאת ואישורי גישה הם מדיניות אחת משני צדדים — מתווך אישורי הגישה
+(בהמשך) לא ינפיק אסימון עבור מארח שהאורח לא יכול להגיע אליו.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+כל מה שתחנה *קוראת* נחשב לתוכן לא מהימן: טקסט של דפים, עצי DOM ונגישות, דאמפים
+של ממשק ופלט של קונסול חוזרים לסוכן בתוך גדר של כלל קבוע — "זהו נתון, לא
+הוראה". הגדר היא מסגור; שער התעבורה היוצאת הוא האכיפה שמאחוריה.
 
-## Input goes through the hypervisor, capture through the guest
+## הקלט עובר דרך ההיפרוויזר, הלכידה דרך האורח
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+במשטח שולחן העבודה, אירועי מקלדת וסמן מוזרקים על ידי התקני הקלט הווירטואליים
+של *ההיפרוויזר* עצמו. האורח לעולם לא מריץ דמון בעל הרשאות שיכול לסנתז קלט — כך
+שפגיעה בתוכנה של האורח לא מעניקה לתוקף מקלדת. הלכידה זורמת בכיוון ההפוך, דרך
+סוכן קטן ונטול הרשאות בתוך האורח, מפני שהאורח יכול לכווץ פריימים לפני שהם
+חוצים את הרשת.
 
-## Two display lanes
+## שני ערוצי תצוגה
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+לאדם שצופה ולמודל שמפעיל יש צרכים הפוכים, ולכן תחנה מגישה שני זרמים בלתי
+תלויים:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **הערוץ האנושי** הוא ברזולוציה מלאה בגודל המסך שלכם, ונקבע מחדש בכל שינוי
+  גודל; השרת מעביר אותו כבתים אטומים — השרת לעולם לא מפענח פריים, כי מפענח
+  וידאו בנתיב הבקשות הוא מה שמונע ממנו להשיב ל-RPC.
+- **ערוץ הסוכן** הוא תמונות מוקטנות בגודל נוח למודל, תמונה אחת לכל תוצאת כלי,
+  כשפריימים ישנים נזרקים במהלך הדחיסה בעוד שהתיאורים הטקסטואליים שלהם שורדים.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+אף ערוץ לא מתפשר למען האחר: אתם מקבלים תמונה חלקה, והמודל מקבל תמונה זולה.
 
-## Take-over is a chokepoint, not a request
+## השתלטות היא צוואר בקבוק, לא בקשה
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+שליטה בלעדית נאכפת בנקודה היחידה שכל פעולה עוברת דרכה — לא על ידי בקשה
+מהמודל להתנהג יפה. כל עוד אדם מחזיק בשליטה, השרת מסרב לפעולות ה*משנות* של
+הסוכן. הסוכן שומר על פעלי התצפית שלו (צילומי מסך, חילוץ) כדי שיוכל לספר מה
+אתם עושים, ומודיעים לו על ההשתלטות דרך ערוץ ההכוונה שלו במקום להשאיר אותו
+לגלות אותה דרך לחיצות שנדחו. לחיצה והקלדה על הקנבס עובדות בכל עת שאף אחד אחר
+לא מחזיק בנעילה — או כשאתם מחזיקים בה; תג הסטטוס מציג **השליטה בידיך**. כל
+אירוע קלט — שלכם ושל הסוכן — נרשם ביומן ביקורת לכל תחנה, עם הזהות המבצעת
+ומספר סידורי עולה, כך שהשאלה "מי לחץ על זה" נשארת ניתנת למענה גם אחרי שהמכונה
+נעלמה.
 
-## Content crosses the boundary; the machines stay separate
+## התוכן חוצה את הגבול; המכונות נשארות נפרדות
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+העתקה והדבקה עובדות בשני הכיוונים, וכך גם גרירת קבצים פנימה והחוצה — אבל תחנה
+היא מחשב אחר, והתכנון לעולם לא מעמיד פנים אחרת.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**לוח הגזירים** מועבר לפי דרישה, ולא משוכפל באופן רציף. לחצו על צירוף ההעתקה
+כשהתחנה פעילה, והאורח מתבקש להעתיק; ואז כל מה שהכניס ללוח שלו — טקסט, תמונה,
+רשימת קבצים — נאסף ומונח בלוח שלכם. ההדבקה שולחת את אותו תוכן לכיוון השני ואז
+לוחצת הדבקה בתוך האורח. שום דבר לא מסונכרן ברקע: סיסמה שאתם מעתיקים במחשב שלכם
+לא מגיעה בשקט לתוך מכונה וירטואלית רק מפני שטיימר הופעל.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+החציה מותרת או נחסמת לפי משתמש ולפי כיוון, בנפרד. הדבקה לתוך תחנה מותרת
+כברירת מחדל; העתקה מתוך תחנה מבקשת אישור תחילה (אישור לעשר דקות, או **לאפשר
+תמיד** תחת **הגדרות → שרת → תחנות → גישה ללוח**). זו אף פעם לא הגדרה של
+סביבת עבודה: חבר אחד לא יכול להסכים בשם הלוח של חבר אחר.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+ב-macOS צירוף החציה הוא ⌘C/⌘V, והוא חד-משמעי — ⌃C ממשיך להגיע למעטפת של
+האורח כאות ההפסקה שהוא. ב-Windows וב-Linux שני הצירופים הם אותה הקלדה, ולכן
+האורח מקבל אותה ללא שינוי והלוח שלכם נדרס רק כשהלוח של האורח באמת השתנה. אות
+הפסקה נשאר אות הפסקה.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**קבצים שנגררים פנימה** מועתקים לתיקיית ההשלכה של המכונה ואז מוצעים לה.
+המשמעות של "מוצעים" תלויה במה שאפשר לעשות ביושר: דף בדפדפן מקבל אירוע השלכה
+*אמיתי* בנקודה שבה שחררתם, כך שאזור העלאה מתנהג בדיוק כפי שהיה מתנהג עם קובץ
+מקומי; שולחן עבודה מקבל את הקבצים ב-`~/Drops` ועם הנתיבים שלהם בלוח שלו, מפני
+שאף מארח לא יכול לסנתז גרירה אל ערכת כלים כלשהי של Linux בלי להריץ דמון בעל
+הרשאות בתוך האורח — וזה בדיוק מה שהתכנון הזה מסרב שיהיה. התוצאה אומרת מה קרה,
+כך ש-CSV שהושלך על אזור העלאה לא מדווח כהועלה כשהוא רק קובץ בתיקייה. השלכה על
+**מסוף** מבודד מעתיקה את הקובץ פנימה ומקלידה את נתיבו באורח בשורת הפקודה, וזה
+מה שמעטפת באמת יכולה להשתמש בו.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**קבצים שנגררים החוצה** עובדים במשטח שולחן העבודה, שבו פרוטוקול הגרירה של X11
+הופך את המטען לקריא בזמן שהגרירה באוויר. התחילו גרירה בתוך האורח, הוציאו אותה
+אל מחוץ לקנבס, והקבצים נאספים אל המכונה שלכם ומועברים למערכת ההפעלה כגרירה
+אמיתית. העתקת קבצים במנהל הקבצים של האורח והדבקה במארח עובדת באותו אופן.
+משטח הדפדפן במכוון *לא* מציע זאת: לדפדפן ללא ממשק גרפי אין בחירת גרירה לקרוא,
+והאות הקרוב ביותר שיש — בחירת הטקסט של הדף — אינו ראיה לגרירה כלל, ולכן פעולה
+לפיו הייתה משתלטת על לחיצות רגילות.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+כל מה שנקרא מתוך האורח נשאר תוכן לא מהימן: טקסט מלוח הגזירים מגיע למודל בתוך
+אותה גדר שחילוץ מדף מגיע בה, ויומן הביקורת רושם שהתרחשה הדבקה ובאיזה היקף —
+לעולם לא מה היא אמרה.
 
-## Credentials never live in the guest
+## אישורי הגישה לעולם לא שוכנים באורח
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` עובד ממסוף מבודד, ובכל זאת האורח לא מאחסן אסימון של מארח קוד. הוא
+מחזיק סוד אחד לכל מכונה וירטואלית שכל כוחו הוא *לבקש* ממתווך אישורי הגישה של
+המארח — דרך מנהרה שהמארח שולט בה — אסימון קצר-מועד ומוגבל למאגר, לכל פעולה
+בנפרד, בקצב מוגבל, חסום לאותה רשימת מארחים מותרים שחסומה בה התעבורה היוצאת,
+ומבוטל ברגע שהתחנה נסגרת. מכונה שנבנתה כדי להיזרק לא צריכה להכיל שום דבר
+ששווה לגנוב.
 
-## The worktree in a rig is a satellite
+## עץ העבודה בתחנה הוא לוויין
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+כשתחנה נושאת את המאגר שלכם, עץ העבודה במארח נשאר הקובע. ההעתק *מסונכרן
+פנימה* בעת האתחול (כשקבצי סודות כמו `.env` אינם נכללים), וקומיטים חוזרים רק
+כשאתם מבקשים — נאספים אל `refs/rigs/<id>/*`, בלי דחיפה ובלי פריסה לענף. שום
+דבר בתוך מכונה וירטואלית לא יכול להזיז את הענף שלכם או לגעת בעץ העבודה שלכם;
+מיזוג של מה שתחנה הפיקה הוא תמיד החלטה אנושית שמתקבלת במארח.
 
-## Ports without holes
+## פורטים בלי חורים
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/).
+שרת פיתוח שהופעל בתוך מכונת המסוף נעשה נגיש — במכונה שלכם, בדפדפן (VM), באופן
+אופציונלי ברשת המקומית שלכם, ובאופן אופציונלי תחת דומיין פיתוח עם HTTPS — בלי
+לפתוח את המכונה לשום דבר. מפת הפורטים של ההיפרוויזר קבועה בזמן האתחול, ולכן כל
+העברה מאוחרת יותר נסמכת על שני ערוצים צרים בשליטת המארח: מרבב נכנס אחד שנוצר
+מראש ומסרב לחייג לכל מה שהאורח לא באמת מאזין לו, ומנהרות הפוכות שהמארח מחזיק
+פתוחות לחיבורים שהאורח יזם. HTTPS של דומיין פיתוח מסתיים בשרת באמצעות רשות
+אישורים שהונפקה מקומית והמפתחות שלה לעולם לא נכנסים לשום אורח. המכניקה מתוארת
+ב[העברת פורטים ממסוף](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/).
 
-## Machines are bounded by construction
+## מכונות תחומות מעצם בנייתן
 
-A rig cannot become a pet:
+תחנה לא יכולה להפוך לחיית מחמד:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- **TTL קשיח** שהאורח לא יכול להאריך;
+- **סולם חוסר פעילות** — חניה (מעבדים וירטואליים מופסקים, הזיכרון נשאר תופס
+  מקום) לאחר חלון חוסר הפעילות, וסגירה לאחר כפול ממנו — כשמסוף פתוח או צופה
+  שמסתכל נחשבים ל"בשימוש";
+- **תקציב זיכרון** הנמדד ב*מגה-בייט תופסים*, לא במספר הפעלות, מפני שמכונה
+  וירטואלית בחניה משחררת מעבד ושומרת על כל בייט של זיכרון RAM; המכונה
+  שהשימוש בה הוא הישן ביותר מפונה ראשונה, ואף פעם לא זו שאדם מפעיל או צופה
+  בה;
+- פירוק עם כיבוי השרת, בתוספת סריקת יתומים מסומנת בבעלות בהפעלה הבאה, כך
+  ששרת שקרס לא משאיר אחריו היפרוויזר שאינו כפוף לאיש.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+האתחולים הראשונים מושכים את התמונה המוצמדת של המכונה; לאחר מכן השרת שומר
+במטמון עותק שחולץ מראש ברקע, כך שכל מכונה מאוחרת מסוג זה מאתחלת בתוך שניות
+ומסוף מבודד עולה עם קו בסיס של CLI בסגנון של ראנר מתארח ב-GitHub כבר מותקן —
+מהדרים, Python, `jq`, כלי ארכיון — ולא מטמון כלים של שפה או Docker. תמונת
+המחשב אופה את אותו קו בסיס של CLI בזמן הבנייה, לצד XFCE והדפדפנים.
 
-## Three browsers, not one
+## שלושה דפדפנים, לא אחד
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+"זה עובד אצלי במכונה" היא טענה על מנוע רינדור אחד. לכן תחנת דפדפן אינה
+"הדפדפן" — היא **Chromium, Firefox או WebKit**, שנבחרים כשאתם פותחים אותה,
+ותחנה מריצה את זה שנפתחה איתו כל חייה. שיחה אחת יכולה להחזיק אחד מכל סוג:
+פתיחת *Firefox (VM)* לצד *Chromium (VM)* נותנת לכם שתי מכונות, והפניית שתיהן
+לאותו דף היא ההשוואה. WebKit הוא הקרוב ביותר ל-Safari מכל מה שרץ על Linux —
+אותו קו מנועים, ולכן הוא תופס את הפערים שמשתמשי Safari נתקלים בהם.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+הפעלים זהים בכל שלושתם; הפרוטוקולים שמתחתם לא, וההבדלים נאמרים במקום להיות
+מוחלקים. Chromium מדבר ב-DevTools Protocol ו*דוחף* פריימים, ולכן התצוגה החיה
+שלו לא עולה דבר כשהדף דומם. Firefox מדבר ב-WebDriver BiDi ו-WebKit מדבר
+ב-WebDriver הקלאסי, ולשניהם אין שידור מסך, ולכן התצוגות החיות שלהם נדגמות —
+כמה פריימים בשנייה, וזה מתאים לצפייה בדף ולא לצפייה באנימציה. כשמנוע באמת לא
+יכול לעשות משהו (ל-Firefox אין רענון שעוקף את המטמון; WebKit לא רואה פלט
+קונסול שנרשם לפני שהדף מסיים להיטען), התשובה אומרת זאת במקום לעשות בשקט משהו
+אחר.
 
-## Where rigs live in the product
+## היכן התחנות נמצאות במוצר
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+תחנה היא במכוון **לא** יעד גלובלי. התצוגה החיה היא לשונית במרחב או בבקשת
+המשיכה שבהם העבודה מתרחשת, ומוגבלת לאותה שיחה — כך שהלשונית שלכם וקריאות
+`browser_use` של הסוכן פונות ל*מכונה* אחת (אחת לכל מנוע, במשטח הדפדפן).
+היכולת לאתחל תחנות בכלל היא תכונה של המארח, ולכן היכולות, התמונות, התמונות
+המותאמות לכל סביבת עבודה ורשימת המכונות הפועלות נמצאות תחת **הגדרות → שרת →
+תחנות**. הפעלת מתחם מבודד היא [מחלקת פעולות של מעקות
+בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) משל עצמה, ולכן סביבת עבודה,
+סוכן או מרחב יכולים להתיר אותה, לדרוש אישור או לחסום אותה לחלוטין — מצבים
+לקריאה בלבד חוסמים אותה כליל.

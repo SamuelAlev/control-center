@@ -1,94 +1,96 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Organizujte práci v projektech
+description: Seskup tickety do projektů z postranního panelu, sleduj postup a hotový projekt archivuj.
 slug: cs-CZ/prirucka/navody/projekty
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Projekt je seskupení ticketů v jednom pracovním prostoru ke společnému cíli.
+Projekty žijí jen v Control Center a s externím poskytovatelem, třeba Linear,
+se nikdy nesynchronizují.
 
-## Create a project
+## Vytvoř projekt
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. V postranním panelu pracovního prostoru rozbal skupinu **Tickety**. Vypíše
+   **Všechny tickety**, jeden řádek na každý nearchivovaný projekt a nakonec
+   **Nový projekt**.
+2. Klikni na **Nový projekt**.
+3. Vyplň **Název projektu**, volitelný **Popis** a vyber **Barvu**.
+4. Stiskni **Vytvořit projekt**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Ocitneš se na přehledu nového projektu a projekt se objeví jako řádek
+v postranním panelu pod **Tickety**.
 
-## Add tickets to a project
+## Přidej tickety do projektu
 
-Project is a single-ticket field, set in either of two places:
+Projekt je pole jednoho ticketu a nastavíš ho na jednom ze dvou míst:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Otevři ticket a v liště vlastností nastav **Projekt**.
+- V seznamu na ticket klikni pravým tlačítkem a použij podnabídku **Projekt**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Výběr v liště vlastností nabízí i **Nový projekt**, takže ticket zařadíš do
+projektu, který založíš rovnou na místě. **Žádný projekt** pole vymaže.
 
-A ticket belongs to at most one project.
+Ticket patří nejvýš do jednoho projektu.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Projekt není hromadná akce]
+Plovoucí lišta, která se objeví při výběru víc ticketů, pokrývá stav,
+prioritu, přiřazeného, štítky a smazání. Chip projektu na ní není, takže víc
+ticketů zařadíš po jednom.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Můžeš začít i od projektu: **Nový ticket** na přehledu projektu ticket založí
+a rovnou ho tam zařadí.
 
-## Read project progress
+## Sleduj postup projektu
 
-Open a project from its sidebar row, or go to
+Projekt otevři z řádku v postranním panelu, nebo jdi na
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Přehled ukáže značku a název projektu, odznak stavu, popis a pruh postupu
+s počtem hotových z celku. Pod tím jsou tickety projektu seskupené podle
+stavu.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Nic dalšího se tu nesčítá. Rozpad podle přiřazeného ani rozložení priorit tu
+není. To si vyfiltruješ v hlavním seznamu ticketů.
 
-## Change project status
+## Změň stav projektu
 
-Projects have three states:
+Projekt má tři stavy:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Stav            | Význam                  |
+| --------------- | ----------------------- |
+| **Aktivní**     | Práce probíhá           |
+| **Dokončeno**   | Veškerá práce je hotová |
+| **Archivováno** | Jen pro historii        |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+V záhlaví projektu otevři nabídku **⋯**. Nabízí **Upravit projekt**,
+**Označit jako dokončené** / **Označit jako aktivní**, **Archivovat** /
+**Obnovit** a **Smazat projekt**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Archivace schová projekt ze seznamu v postranním panelu i z výběrů na
+ticketu. Jde to vrátit: **Obnovit** projekt znovu nastaví jako aktivní.
+Dokud je archivovaný, dostaneš se k němu jen přes URL.
 
-## Projects created for you
+## Projekty založené za tebe
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/).
+Schválení orchestace založí projekt a zařadí pod něj nadřazený ticket, vedle
+toho, co jsi zařadil ručně. Vygenerované položky práce jsou kroky pipeline,
+ne řádky ticketů, takže se na nástěnce projektu neobjeví. To je jediná
+automatická cesta: žádný uzel pipeline tickety nezakládá, takže pipeline
+projekt naplnit neumí. Viz
+[Spusťte orchestaci](/cs-CZ/prirucka/navody/spusteni-orchestrace/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Projekty jsou plocha operátora]
+Projekty v aplikaci zakládáš, prohlížíš, upravuješ a mažeš. Agenti nástroje
+na projekty nemají.
 
-## Related guides
+## Související návody
 
-- [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/)
-- [Delegate work to agents](/cs-CZ/prirucka/navody/delegovani-ticketu/)
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/)
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Spusťte orchestaci](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
 
-## Related concepts
+## Související koncepty
 
-- [Tickets](/cs-CZ/prirucka/koncepty/tickety/)
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/)

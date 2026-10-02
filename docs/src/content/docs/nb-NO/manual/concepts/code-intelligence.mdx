@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Kodeintelligens
+description: Hvorfor en agent trenger kompilatoren, en strukturell matcher og en feilsøker — og hva hver av dem svarer på som de andre ikke kan.
 slug: nb-NO/handbok/konsepter/kodeintelligens
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center gir en agent fire måter å forstå kode på utover å lese den. De svarer på genuint forskjellige spørsmål, og grunnen til at det er fire og ikke én, er at ingen enkelt mekanisme svarer på alle.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mekanisme             | Svarer på                                              | Koster                                  |
+| --------------------- | ------------------------------------------------------ | --------------------------------------- |
+| **Kodegraf**          | Hva som finnes her, og hva som avhenger av det          | En indekseringsrunde; billig å spørre mot |
+| **Språkserver**       | Kompilerer dette faktisk, og hva er denne typen         | Én serverprosess per prosjekt           |
+| **Strukturelt søk**   | Hvor dukker denne FORMEN opp                            | Én parsing per fil                      |
+| **Feilsøker**         | Hva som var sant i dette øyeblikket, i denne rammen     | Én stoppet prosess                      |
 
-## The gap the language server closes
+## Gapet språkserveren lukker
 
-The [code graph](/nb-NO/handbok/slik-gjor-du/kodesok/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Kodegrafen](/nb-NO/handbok/slik-gjor-du/kodesok/) bygges fra tree-sitter: symboler, kallkanter, en påvirkningsradius. Den er rask, den er billig, og den vet ingenting om **typer**. Den kan ikke fortelle deg om kallet du nettopp skrev kompilerer, om det feltet finnes på objektet, eller om omdøpingen din mistet en re-eksport.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Uten en språkserver oppdager en agent det først ved testtid — eller aldri. Den skriver noe som virker rimelig, går videre, og feilen dukker opp tre runder senere, festet til en annen endring.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Så gevinsten er egentlig ikke `lsp`-verktøyet. Det er at `write`, `edit` og `apply_patch` er pakket inn: etter hver skriving går filen gjennom språkserveren, og **nyinnført** diagnostikk flettes inn i verktøyresultatet. Agenten får vite at den ødela bygget i det øyeblikket den ødela det, uansett om den kom på å spørre.
 
-### Only new diagnostics
+### Bare ny diagnostikk
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Å gjenta det agenten allerede har fått vite, er verre enn å si ingenting: det fyller resultatet med støy som agenten lærer seg å skumme forbi, og den ene nye feilen forsvinner sammen med den. En journal per kjøring holder rede på hva som er rapportert, nøklet på alvorlighetsgrad, kode og melding — **ikke** posisjon, slik at en diagnostisk melding som bare har flyttet seg fire linjer ned, ikke rapporteres på nytt som ny.
 
-### Lazy, and honest about being absent
+### Lat, og ærlig om at den ikke er til stede
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Ingen server starter ved oppstart. Én starter ved den første forespørselen som trenger den, noe som nesten alltid er den første redigeringen av en fil den gjør krav på, og ledige servere ryddes bort. En vert som aldri rører Dart, starter aldri en analysator.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Gjenkjenning er et **snitt**: en rotmarkør må finnes i utsjekkingen *og* binærfila må kunne løses opp. En markør alene sier «dette prosjektet er Python» og ingenting om hvorvidt serveren er installert; en oppløsbar binærfil alene sier at verten har en verktøykjede, og ingenting om denne utsjekkingen. Bare begge sammen betyr at en spørring kan lykkes, og et verktøy som tilbys og alltid feiler, er verre enn ett som ikke finnes.
 
-## Why structural search, when grep exists
+## Hvorfor strukturelt søk når grep finnes
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` matcher tegn. Det er det rette verktøyet for et navn og det gale for en form.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Et strukturelt mønster parses av **samme grammatikk som filen**, så `dispose($X)` finner kallet uansett hvordan det er delt opp med mellomrom, pakket inn eller brutt over linjer, og matcher aldri de samme tegnene inne i en strengliteral eller en kommentar.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Egenskapen som gjør det mer enn et regex med ekstra trinn, er at en metavariabel som gjentas i ett mønster, må fange den samme teksten:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+matcher en vakt som frigjør det den testet, og matcher ikke en som frigjør noe annet. Det er en feilklasse du ikke kan uttrykke tekstlig i det hele tatt.
 
-### It runs on the tree-sitter already linked
+### Den kjører på tree-sitteren som allerede er lenket inn
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Det finnes ingen motor nummer to. `cc_natives` laster allerede tree-sitter og grammatikkene for kodegrafen, med en hurtigbuffer for kompilerte spørringer og en språktabell. Matcheren er ren Dart over trær som ble parset uansett. En annen strukturell motor ville bety en annen parser, et annet grammatikksett som må bygges og klargjøres på hver plattform, og to svar på «hva er et kalluttrykk».
 
-### A fragment needs somewhere to live
+### Et fragment trenger et sted å bo
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+En grammatikk definerer bare hva en hel *fil* er. Hvis `dispose(x)` parses bart på Dart sitt toppnivå, er det en fullt gyldig **funksjonssignatur** — en deklarasjon med navnet `dispose` som tar en parameter `x` — uten noen feil noe sted som røper det. En matcher bygget på den parsingen leter etter deklarasjoner, finner ingen kall og rapporterer «ingen treff» for et mønster som aldri ble lest slik det ser ut.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Så et mønster prøves i en stige av stillaser — setning, uttrykk, klassemedlem, toppnivå — og det første som godtar det, vinner. Et fragment som ingen kontekst godtar, rapporteres som uparsbart i stedet for å bli søkt etter og stille ikke funnet.
 
-## Why a rewrite stages instead of writing
+## Hvorfor en omskriving mellomlagres i stedet for å skrives
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+En strukturell omskriving er den videste redigeringen en agent kan gjøre: ett mønster, førti filer, og ingen leser resultatet linje for linje — ikke modellen, og ikke personen som ba om det. Å skrive den og rapportere «ferdig» betyr at det første ærlige blikket på endringen er en `git diff` i etterkant.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Så `ast_edit` rapporterer hva den *ville* gjort — antallet, filene, de matchede stedene — og endringen lander først når `resolve` sender den inn. Det er også det som lar en diff og en Godta/Forkast ligge foran et menneske før noe som helst når disken.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Innsendingen er alt eller ingenting, og hver fil sjekkes mot innholdet som ble fanget opp ved mellomlagringen. Mellom mellomlagring og innsending kan agenten ha redigert en av filene for hånd, en diagnostikkrunde kan ha skrevet den om, eller en formatter kan ha rørt den — å sende inn likevel ville kaste bort det arbeidet, og diffen ville se tilsiktet ut. Ethvert avvik nekter hele endringen, for en delvis anvendt strukturell omskriving etterlater et tre som ikke kompilerer i noen av formene.
 
-## What a debugger answers that a print statement cannot
+## Hva en feilsøker svarer på som en print-setning ikke kan
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Løkka med print-setninger er: legg til en print, kjør hele greia på nytt, les utskriften, fjern printen. Den koster en full testkjøring per spørsmål, og den svarer bare på spørsmålet du kom på å stille *før* du kjørte.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+En stoppet ramme svarer på alle spørsmål om det øyeblikket på én gang — hver lokal variabel, hver kallende ramme, og et uttrykk evaluert i rammens eget omfang. For en prosess som har låst seg, eller en feil som reproduseres én gang av ti kjøringer, er det forskjellen mellom en hel ettermiddag og ett minutt.
 
-### Bounded like an enclosure, and for the same reason
+### Avgrenset som en innhegning, og av samme grunn
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+En feilsøkingsadapter eier en **stoppet prosess** som holder på hva nå enn den prosessen holder — en port, en lås, en databasetilkobling. En økt som ingen styrer, er en lekkasje som overlever runden som startet den. Derfor finnes det en hard TTL, nøyaktig én økt per samtale, og en andre `launch` nektes i stedet for å i det stille erstatte den første: en agent som starter en andre uten å avslutte den første, har nesten helt sikkert mistet oversikten over den første.
 
-### One transport, two protocols
+### Én transport, to protokoller
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol deler Language Server Protocol sin `Content-Length`-innramming og ingenting over den — forskjellige korrelasjonsnøkler, en annen feilform, og en tredje meldingstype (hendelser) uten noen LSP-motpart. Innrammingen bor på ett sted; protokollene ligger på toppen av den, hver for seg.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Å skrive innrammingen to ganger ville bety to svar på «en melding strekker seg over to biter», «en bit inneholder tre meldinger» og «serveren skrev et banner til stdout før sin første ramme», og bare ett av dem ville få rettelsen.
 
-## Related
+## Relatert
 
-- [Search code with the code graph](/nb-NO/handbok/slik-gjor-du/kodesok/) — the symbol and impact side
-- [Debug a failing test](/nb-NO/handbok/slik-gjor-du/feilsok-mislykket-test/) — the debugger, end to end
-- [Refactor structurally](/nb-NO/handbok/slik-gjor-du/strukturell-refaktorering/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/nb-NO/handbok/referanse/agentverktoy/) — every operation and argument
+- [Søk i kode med kodegrafen](/nb-NO/handbok/slik-gjor-du/kodesok/) — siden med symboler og påvirkning
+- [Feilsøk en mislykket test](/nb-NO/handbok/slik-gjor-du/feilsok-mislykket-test/) — feilsøkeren, ende til ende
+- [Refaktorer kode strukturelt](/nb-NO/handbok/slik-gjor-du/strukturell-refaktorering/) — `ast_grep` og `ast_edit`
+- [Innebygde agentverktøy](/nb-NO/handbok/referanse/agentverktoy/) — hver operasjon og hvert argument

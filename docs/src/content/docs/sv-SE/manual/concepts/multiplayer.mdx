@@ -1,216 +1,226 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Multiplayer – identitet, medlemskap och närvaro
+description: Hur Control Center modellerar människor och agenter som jämbördiga deltagare, vad som egentligen grindar åtkomsten till en arbetsyta och varför aktuell närvaro och delade poster färdas på två olika banor.
 slug: sv-SE/handbok/koncept/multiplayer
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center fungerar för en enskild operatör, men modellen under den är
+multiaktörs från början. Människor och agenter skickar meddelanden i samma
+ytor, redigerar samma ärenden och syns i samma personallista. Att göra det
+säkert och begripligt kokar ner till tre beslut: **vem som räknas som aktör**,
+**vad som grindar åtkomsten** och **vilket tillstånd som delas varaktigt
+kontra bara sänds ut live**.
 
-## Principals: users and agents are co-equal actors
+## Principaler: användare och agenter är jämbördiga aktörer
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Allt som registrerar ”vem gjorde detta” – meddelanden, ärenden, granskningar,
+planer, körningsloggar, revisionsposter – går genom en **Principal**, en
+förseglad union av `UserPrincipal` och `AgentPrincipal` med en kompakt
+trådform (`user:<id>` / `agent:<id>`). Tillskrivningen slår aldrig samman N
+människor (eller N agenter) till ett enda sentinelkonto, så en granskning från
+en agent och en granskning från en person går att skilja åt överallt där de
+dyker upp.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Eftersom principalen är identitetsenheten är den också inneslutningsenheten:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Hastighetsgränser gäller per principal, inte per session.**
+  Översvämningsskyddet för fjärranrop till verktyg budgeteras per användare,
+  inte per anslutning: alla en medlems enheter hämtar från ett gemensamt
+  glidande fönster (120 anrop i minuten, varav högst 30 får mutera), så att
+  öppna tre enheter tredubblar inte någons kvot och en stökig medlem kan inte
+  svälta ut de andra.
+- **Ångra gäller per principal.** Varje klients åtgärdsjournal registrerar
+  bara de mutationer som _dess_ principal utförde. Du kan ⌘Z din egen
+  ärenderedigering; du kan inte ångra en kollegas – när du ser den har den
+  varaktiga banan redan löst den (se nedan).
 
-## Membership is the access boundary — not the pairing key
+## Medlemskapet är åtkomstgränsen – inte parkopplingsnyckeln
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/sv-SE/handbok/koncept/fjarrstyrning/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Två separata autentiseringsuppgifter svarar på två separata frågor.
+**Parkopplingsnyckeln** (se
+[Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/)) autentiserar
+en _enhet_ mot servern. **Medlemskapet** auktoriserar den enhetens användare
+att agera inuti en _arbetsyta_. En parkopplad enhet vars användare inte har
+något medlemskap i en arbetsyta kan varken läsa eller mutera den.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Medlemskapet är en rad per (arbetsyta, användare), lagrad i **arbetsytans egen
+databasfil** – så ”vem är med i den här arbetsytan?” är en vanlig avgränsad
+läsning, medan den omvända frågan, ”vilka arbetsytor är jag med i?”,
+nödvändigtvis spänner över filer och är en av de få sanktionerade
+utskickningarna mellan arbetsytor. Det är vad arbetsyteväljaren kör innan
+någon arbetsyta har valts.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Varje rad bär en roll från en rangordnad stege med fem nivåer:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Roll     | Får                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------- |
+| `owner`  | Full kontroll, inklusive borttagning av arbetsytan; exakt en per arbetsyta                           |
+| `admin`  | Hantera medlemmar, inbjudningar, inställningar, destruktiva operationer                              |
+| `member` | Vardaglig läs- och skrivåtkomst: meddelanden, ärenden, agentkörningar                                  |
+| `viewer` | Skrivskyddad i hela arbetsytan; globmönster för hemlighetsundantag döljer matchande sökvägar på kodbärande ytor |
+| `guest`  | Samma skrivskyddade golv som visare, på stegens lägsta rang                                          |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Varje åtkomstbeslut kokar ner till ”har anroparens roll minst X”. Golvet härleds
+från operationens slag om den inte deklarerar ett eget: en läsning kräver
+`guest`, en mutation kräver `member`, en destruktiv operation kräver `admin`.
+ACL:er per objekt utöver behörigheterna per repo nedan ligger medvetet utanför
+omfattningen.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Inbjudningar** är hur medlemskap beviljas, från Inställningar → Arbetsyta →
+Medlemmar. En admin skapar en engångskod (som länk eller QR) som som standard
+går ut efter sju dagar; servern lagrar bara kodens SHA-256-hash och själva
+koden visas exakt en gång. Att lösa in den JIT-provisionerar användaren,
+registrerar medlemskap med inbjudningens roll (aldrig `owner` – ägarskap
+överförs uttryckligen och beviljas aldrig via inbjudan) och lämnar över till
+enhetsparkopplingen. Enhetsuppgifter som skapas efter parkopplingen är själva
+tidsbegränsade till 30 dagar, så en parkoppling är inte en permanent nyckel.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Repo-behörigheter** ligger under medlemskapet. Eftersom servern har fulla
+utcheckningar får ett arbetsytemedlemskap ensamt aldrig ge högre privilegier än
+forge-tjänsten: varje kodbärande yta – filer, diffar, PR-granskning, kodsökning
+– kontrollerar medlemmens behörighet på _det repot_. Behörigheter är per
+(arbetsyta, användare, repo) och rangordnas `none` → `read` → `review` →
+`write`, där `write` innebär att driva agentkörningar som skriver till repot.
+Avsaknad av en rad betyder `none`; ägare och admins har implicit `write` på
+varje länkat repo och bär inga rader alls.
 
-## Two lanes of collaboration state
+## Två banor för samarbetstillstånd
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center delar upp delat tillstånd i två banor med motsatta
+varaktighetsregler, eftersom de två slagen av tillstånd misslyckas på motsatta
+sätt.
 
-### The ephemeral presence lane
+### Den flyktiga närvarobanan
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Närvaro – vem som är online, var de är, vad de skriver, vad en agent gör just
+nu – är värdelös i samma stund den blir inaktuell. Om den bevarades skulle
+varje återanslutning behöva stämma av ”databasen säger att Sam redigerar det
+här ärendet” mot verkligheten. Så närvaro **skrivs aldrig till databasen**. Den
+lever i en **närvarohubb** i minnet på servern: klienter publicerar med
+`presence.update`, peers prenumererar med `presence.watch` och poster upphör
+automatiskt efter tre missade hjärtslag (hjärtslag körs var 10:e sekund;
+hubben sveper var 5:e). Det finns inget att stämma av – bara att låta förfalla.
 
-Two properties keep the lane trustworthy:
+Två egenskaper gör banan pålitlig:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Identiteten kommer från sessionen, aldrig från klientargument.** Servern
+  mappar anslutningens autentiserade enhet till ett användar-id; en klient kan
+  bara uppdatera sin egen närvaro, så ingen kan förfalska en annan deltagares
+  status eller locus. En uttrycklig `offline`-uppdatering (frånkoppling eller
+  växlingsknappen för osynlig) tar bort posten omedelbart.
+- **Närvarolistan hubbas på serversidan.** Peers utbyter aldrig närvaro
+  direkt, så varje deltagare ser samma närvarolista oavsett topologi. Agenter
+  har ingen klient, så servern _syntetiserar_ deras poster från livedata om
+  körningar – tänker, kör, blockerad på en godkännandegrind, klar – där en
+  enda representativ körning avgör en agents tillstånd och locus, så att
+  samtidiga körningar inte får närvarolistan att fladdra.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Utskickningen nivåindelas per konsument: skrivbordet och webben ligger på en
+full nivå (högst ett utskick av närvarolistan per 100 ms), telefonen på en
+sammanfattningsnivå (per 500 ms), så att uppdateringar i markörens takt inte
+kan smälta PWA:n.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+En deltagares **locus** – var de befinner sig just nu, ända ner till artefakten
+– är en förseglad union: `Space`, `File` (repo + sökväg + valfri rad), `Pr`,
+`Ticket`, `PlanNode`. Alla locus har inte någonstans att hoppa till: det finns
+ingen rutt för filvisaren, så en `File`-locus renderas som en etikett i
+stället för ett mål. Banan bär också **mjuka anspråk** (”Sam redigerar det här
+ärendet”, ”en agent håller den här worktreen”): konflikt_synlighet_, inte lås.
+Okända locus-typer parsas till null, så en gammal klient renderar helt enkelt
+inte det den inte förstår.
 
-### The durable shared lane
+### Den varaktiga delade banan
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Poster som måste överleva – ärenden, ytans delade Anteckningar-dokument,
+meddelanden – tar den motsatta vägen: auktoritativa, ordnade och bevarade.
+Samtidiga redigeringar löses med **last-writer-wins i serverns
+mottagningsordning**, aldrig av klientklockor. Upplösningen är medvetet
+finkornig: ärenderedigeringar sker _per kolumn_, så två personer som redigerar
+olika fält i samma ärende får båda genomslag och ingen skriver över den andra
+(arbetsflödesövergångar behåller i stället optimistisk låsning); ytans
+Anteckningar-dokument är en enda kolumn, så hela dokumentet är LWW, där mjuka
+anspråk på närvarobanan gör samtidig redigering synlig i stället för låst. Det
+är medvetet inte en CRDT – bevisbördan ligger på CRDT:n, och LWW i
+mottagningsordning plus synliga anspråk täcker de faktiska samarbetsmönstren.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+”Senaste skribenten” betyder **serverns mottagningsordning**, aldrig en
+klientklocka – en laptop med felställd klocka kan inte vinna en redigering som
+den förlorade. Bakom den varaktiga banan ligger **synkflödet**: SQLite-triggers
+lägger till varje mutation i en ändringslogg per arbetsyta _inuti
+skrivtransaktionen_ och tilldelar ett monotont sekvensnummer per arbetsyta i
+samma transaktion som själva mutationen. En servertjänst följer den loggen och
+omvandlar den till versionshanterade deltaramar i sekvensordning. Klienter
+utvecklas från fullständiga ögonblicksbilder till deltan; en lucka i sekvensen
+sätter tillbaka den butiken i ögonblicksläge i stället för att felaktigt
+tillämpa ramar.
 
-## Follow, steer, take over, hand back
+## Följ, styr, ta över, lämna tillbaka
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Närvarobanan är inte bara en närvarolista – den driver samarbetsverben:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Följläge.** Klicka på en deltagare och din klient följer deras locus och
+  navigerar när de navigerar. Följ gäller ”tills du agerar”: i samma stund du
+  navigerar på egen hand kopplas följningen loss. En banderoll som går att
+  stänga meddelar när en annan deltagare spotlightar (presenterar) en yta du
+  är i.
+- **Styr.** Ett meddelande till en körande agent köas som styrning; agenten
+  läser om det innan den återupptar sin nästa tur, så du kan knuffa en körning
+  medan den pågår utan att döda den.
+- **Ta över.** Att ta kontrollen över ett samtal pausar varje aktiv körning
+  vid dess nästa rena turgräns (en Claude Code-körning, som saknar säker
+  gräns, stoppas) bakom en git-ögonblicksbild per tur, så att övertagandet går
+  att ångra. En varaktig markör blockerar nya dispatchar in i ytan och
+  överlever en serveromstart – servern återupptar aldrig automatiskt in i en
+  människas halvfärdiga redigering. En levande redigerare per worktree är ett
+  mjukt anspråk: ett andra övertagande syns och avvisas, det slås inte tyst
+  samman.
+- **Lämna tillbaka.** Att lämna tillbaka kontrollen publicerar en strukturerad
+  diffsammanfattning av worktreen i ytan, köar den som styrning för de pausade
+  körningarna, återupptar dem och rensar markören.
 
-## The autonomy dial
+## Autonomireglaget
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Styrning och övertagande är ingripanden i efterhand. **Autonomireglaget** är
+den ständiga inställningen: per yta, per agent, inställd från ytans huvud, och
+den avgör vad som händer när en agent når en grindad åtgärd.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Nivå               | Trådvärde         | Effekt på ett grindat verktygsanrop                                                                           |
+| ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Bara föreslå       | `proposeOnly`     | Nekas direkt, med en anledning som agenten uppmanas att vidarebefordra – den kan beskriva åtgärden men inte utföra den |
+| Agera med godkännande | `actWithApproval` | Fail-closed-godkännandegrinden: en bekräftelse visas för en ansluten operatör och ingen godkännare betyder nekat |
+| Agera fritt        | `actFreely`       | Förhandsgodkänd, utom där en hård `deny`-regel bland räckena gäller – en deny-regel vinner alltid             |
+| (osatt)            | `null`            | Samma som agera med godkännande: serverns standard                                                             |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Två saker ligger utanför reglaget i båda riktningarna. Ett läges eget
+utdataverb är fäst och kan aldrig nekas, vad reglaget än säger –
+orkestreringsläget kunde en gång i strukturell mening inte sända ut sin enda
+leverabel eftersom en förinställning nekade den effektklass som verbet
+deklarerar. Och ett hårt `deny` från åtgärdsräckena kan inte åsidosättas av
+`actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/sv-SE/handbok/koncept/agentmodell/).
+:::note[Reglaget grindar bara den inbyggda harnessen]
+Den konsulteras av harnessloopens godkännandeåteranrop. En agent som körs på
+Claude Code-adaptern gör sina egna verktygsanrop inuti sin egen process, där
+Control Center inte har något att grinda – se
+[Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
 :::
 
-## Solo zero-regression
+## Solo utan regression
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Allt detta är additivt. En ensam operatörs arbetsflöde är oförändrat: med en
+människa och inga agenter har närvarohubben inget att sända ut, så banan
+skickar sin första ögonblicksbild och står sedan stilla med noll trafik; LWW-
+och synkmaskineriet är samma enkelskrivarväg som det alltid har varit; och
+parkopplingsnyckeln förblir den enhetsuppgift den alltid har varit.
+Medlemskapet är redan åtkomstgränsen – med en människa finns en enda ägarrad
+och ingen krom för någon närvarolista.
 
-## Related concepts
+## Relaterade koncept
 
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/): the boundary membership enforces
-- [Remote control and mobile](/sv-SE/handbok/koncept/fjarrstyrning/): the pairing key and device credential side of identity
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): the agent half of the principal union
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/): the runs that steering and take-over pause and resume
-- [Guardrails](/sv-SE/handbok/koncept/racken/): the effect-class policy the autonomy dial composes with
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/): the bus that live updates ride
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/): gränsen som medlemskapet upprätthåller
+- [Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/): parkopplingsnyckeln och enhetsuppgifterna i identiteten
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): agenthälften av principalunionen
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/): körningarna som styrning och övertagande pausar och återupptar
+- [Räcken](/sv-SE/handbok/koncept/racken/): effektklasspolicyn som autonomireglaget samverkar med
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): bussen som liveuppdateringarna rider på

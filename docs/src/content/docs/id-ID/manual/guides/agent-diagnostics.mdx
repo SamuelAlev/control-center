@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Diagnosis agen
+description: Telusuri log run, pemeriksaan adapter, status server, dan diagnostik host saat agen berhenti menghasilkan run.
 slug: id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Panduan ini menunjukkan cara mengetahui mengapa sebuah agen tidak menghasilkan run.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Periksa dari atas ke bawah: run agen itu sendiri terlebih dahulu, lalu backend-nya, lalu server, lalu host.
 
-## 1. Check the agent's run history
+## 1. Periksa riwayat run agen
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Pengaturan → Ruang kerja → Agen** → pilih agen → **Log**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Setiap run menampilkan lencana status, durasi ("Berjalan…" saat masih berlangsung), waktu mulai dan penyelesaiannya, PID-nya, dan adapter yang dipakainya. **Lihat** membuka aliran peristiwa mentah run tersebut. **Berhenti** mematikan proses yang sedang berjalan dan menandai run itu "Dihentikan oleh pengguna"; **Hentikan yang berjalan** di header melakukan hal yang sama untuk setiap run agen tersebut yang sedang berlangsung.
 
-Read it like this:
+Bacalah seperti ini:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Tidak ada run sama sekali** — pengiriman tidak pernah terjadi. Sebutan di composer adalah `@` ditambah karakter kata (huruf, angka, garis bawah). Resolusinya adalah pencocokan persis atau awalan pada nama agen, sehingga `@code-reviewer` diuraikan sebagai `code` dan tetap dapat membangunkan agen bernama `code-reviewer`. Nama yang mengandung spasi tidak dapat disebutkan sebagai satu token. Lalu lanjut ke langkah 2.
+- **Run yang langsung berakhir dengan galat** — buka **Lihat**. Kegagalan meluncurkan backend muncul di sini sebagai galat proses.
+- **Run yang macet pada "Berjalan…"** — hentikan, lalu periksa **Batas waktu diam** agen di tab Pengaturan. Batas waktu yang tidak diatur menggunakan default per mode.
+- **Run yang selesai tanpa keluaran berguna** — status log run tetap `completed` untuk run yang berakhir tanpa hasil kerja yang dideklarasikannya; sinyal yang jujur adalah teks ringkasan, bukan lencana.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Tab Log tidak menampilkan biaya. Untuk pengeluaran, gunakan tabel per agen di **Observabilitas → Wawasan**.
 
-## 2. Check the agent's backend
+## 2. Periksa backend agen
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Pengaturan → Server → Penyedia model** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Daftar **Runner terdeteksi** menampilkan setiap adapter beserta hasil pemeriksaannya — versi yang terpasang, "Memeriksa…", atau "Tidak ditemukan" — plus path yang diselesaikan dan chip kemampuan untuk CLI yang ditemukan. Klik **Segarkan** di header halaman untuk memeriksa ulang.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Pemeriksaan berjalan di mesin yang menghosting `cc_server`, bukan di mesin yang sedang Anda lihat. Jika Anda berada di klien web atau perangkat yang dipasangkan, "Tidak ditemukan" berarti CLI tersebut tidak ada di host server.
 
-Two things to confirm:
+Dua hal yang perlu dipastikan:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Agen memang punya adapter yang diatur.** Agen dengan adapter kosong dikirim ke **Control Center (built-in)** dan log run mencatat `cc-harness`, sehingga transkrip menyebutkan apa yang berjalan. Tanpa model juga, ia meminta default-nya kepada Anthropic — yang gagal dengan `No credential for provider "anthropic"` kecuali Anda telah menghubungkan akun Anthropic. Agen spesialis yang disemai hadir tanpa adapter.
+- **Adapter bawaan punya model.** Daftar modelnya diambil secara langsung dari penyedia yang terhubung di bagian bawah halaman yang sama ini, sehingga penyedia tanpa kredensial tersimpan menyumbang nol model.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Katalog adapter itu sendiri tetap — tidak ada cara untuk mendaftarkan adapter baru. Yang dapat Anda ubah per adapter di sini adalah argumen peluncuran dan variabel lingkungannya. Perhatikan bahwa penggantian lingkungan per adapter secara diam-diam mengalahkan akun penyedia yang terhubung saat kredensial diselesaikan.
 
-## 3. Check the server
+## 3. Periksa server
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Pengaturan → Server → Koneksi & status** (`/settings/server/connection`) menunjukkan server mana yang sedang diajak bicara klien ini dan apa yang dilaporkannya.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Untuk server headless, `GET /healthz` adalah informasi yang sama tanpa klien. Endpoint ini tanpa autentikasi dan terbuka CORS secara sengaja:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Endpoint ini mengembalikan status server, uptime dalam detik, jumlah koneksi aktif, port yang diikat, versi build dan SHA git, versi skema ruang kerja, versi katalog RPC, id server, nama dan sidik jari identitas, apakah binding tidak aman, serta blok `codeGraph` dengan jumlah `watching` / `indexing` / `pending`. Ketika sebuah cache telah menerima trafik, endpoint ini juga menyertakan blok `caches`; server demo menambahkan `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Dua hal yang perlu diketahui ketika sebuah perubahan "berhasil di pengujian tetapi tidak di aplikasi":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Aplikasi desktop meluncurkan biner `cc_server` **yang sudah dibangun** alih-alih dari sumber. Operasi RPC atau alat MCP baru tidak muncul sampai biner tersebut dibangun ulang, dan log boot mencatat peringatan ketika SHA git proses anak berbeda dari milik aplikasi.
+- Aplikasi desktop mematikan server yang dijalankan jika belum mencetak banner siapnya dalam 20 detik dan beralih ke layar galat.
 
-## 4. Check the host
+## 4. Periksa host
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Pengaturan → Server → Diagnostik & privasi** (`/settings/server/diagnostics`) adalah halaman tingkat host. Halaman ini memuat:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Sandboxing** — tombol utama, backend yang terdeteksi, petunjuk instalasi, dan tombol kemampuan default. Hanya backend yang terdeteksi yang berasal dari server; lihat peringatan di bawah. Tidak ada kontrol reset.
+- **Pencarian semantik** — siklus hidup model embedding di perangkat: terpasang, sedang diunduh dengan persentase, belum terpasang, atau galat instalasi. Sampai model tersebut terpasang, pencarian memori dan kode tetap hanya berdasarkan kata kunci.
+- **Perilaku sistem** — jaga komputer tetap terjaga saat agen berjalan.
+- **Mesin sinkronisasi** — tombol pemutus per penyimpanan untuk tiket, perpesanan, dan catatan. Ini adalah jalur keluar darurat untuk kembali ke langganan snapshot penuh; perubahan hanya memengaruhi langganan baru, jadi efek penuhnya baru terasa setelah muat ulang.
+- **Level log** — naikkan sebelum mereproduksi kegagalan.
+- **Privasi** — apakah konten diff mentah boleh diteruskan ke model agen dan apakah laporan kerusakan dikirim.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Bagian ini melaporkan host, dan kontrolnya ada di sisi klien]
+Deteksi dan penegakan kini sejalan: di tempat detektor melaporkan backend native, run agen di host itu benar-benar dibungkus olehnya. Tetapi detektor adalah satu-satunya hal yang aktif di bagian ini. Tombol utama, pemilih backend, dan tombol kemampuan default adalah preferensi yang disimpan di perangkat Anda dan server tidak membaca satu pun darinya — sakelar milik server sendiri adalah `--sandbox` (`on` secara default, `off` untuk tidak ikut) dan untuk agen apa pun yang dibiarkan pada "Gunakan default ruang kerja" server jatuh ke default konservatifnya: tanpa git push, tanpa API GitHub, tanpa kunci ticketing, jaringan aktif.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Jadi peringatan di sini layak ditindaklanjuti, tetapi biasanya bukan penyebab agen gagal. Untuk memastikan kondisi server, bacalah log startup-nya: log mencetak `agent sandbox ON` dengan catatan backend, `no OS-native agent sandbox on this host` dengan petunjuk instalasi, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tidak memuat kolom sandbox.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Di tempat yang tidak ada backend — Windows selalu, Linux atau WSL2 tanpa `bwrap` dan `socat` — run **tidak** di-sandbox dan yang membatasinya adalah checkout milik percakapan itu sendiri, kemampuan yang menjadi gerbang bagi kredensial mana yang diterbitkan ke dalamnya, pagar pengaman tindakan, sanitasi lingkungan, dan permukaan alat yang diizinkan modenya.
 :::
 
-## Common failures
+## Kegagalan umum
 
-### The run never starts and the adapter shows "Not found"
+### Run tidak pernah dimulai dan adapter menampilkan "Tidak ditemukan"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Instal CLI **di host server**, lalu klik **Segarkan** di halaman Penyedia model. Atau alihkan agen ke adapter bawaan, yang tidak memerlukan CLI, dan hubungkan penyedia di halaman yang sama.
 
-### The agent cannot push or open a pull request
+### Agen tidak dapat push atau membuka pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Kemampuannya adalah gerbangnya. Buka **Pengaturan → Ruang kerja → Agen** → agen → **Izin sandbox**, nyalakan tombolnya dan aktifkan **Izinkan git push** dan **Izinkan panggilan API GitHub**. Membiarkan tombol pada "Gunakan default ruang kerja" tidak memberi agen satu pun dari itu.
 
-### Semantic search returns nothing useful
+### Pencarian semantik tidak mengembalikan apa pun yang berguna
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Periksa **Pengaturan → Server → Diagnostik & privasi → Pencarian semantik**. Sampai model embedding terpasang, pencarian hanya berdasarkan kata kunci. Baris yang ditulis sebelum model terpasang tidak pernah diisi ulang, jadi tetap hanya berdasarkan kata kunci bahkan setelahnya.
 
-### The server will not boot at all
+### Server sama sekali tidak mau boot
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Pustaka native diperlukan dan tidak ada mode terdegradasi. Dylib yang hilang membuat `cc_server` menolak untuk mulai dan menyebutkan pelakunya dalam galat. Siapkan pustaka native dengan `scripts/natives/build_natives.sh` dan bangun ulang biner server.
 
-### An action is silently denied
+### Tindakan ditolak secara diam-diam
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Keputusan pagar pengaman `prompt` tanpa penyetuju yang terhubung akan ditolak, memang begitu desainnya. Periksa aturan ruang kerja di **Pengaturan → Ruang kerja → Izin agen**.
 
-## Related guides
+## Panduan terkait
 
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
-- [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/)
+- [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
 
-## Related concepts
+## Konsep terkait
 
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
-- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)

@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: هوش کد
+description: چرا یک عامل به کامپایلر، یک تطبیق‌دهندهٔ ساختاری و یک اشکال‌زدا نیاز دارد — و هرکدام به چه پرسشی پاسخ می‌دهد که دیگران نمی‌توانند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/هوش-کد
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center چهار راه در اختیار عامل می‌گذارد تا کد را فراتر از خواندنش بفهمد. این راه‌ها به پرسش‌هایی واقعاً متفاوت پاسخ می‌دهند، و دلیل اینکه چهار راه هست و نه یکی این است که هیچ سازوکار واحدی به همهٔ آن‌ها پاسخ نمی‌دهد.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| سازوکار              | پاسخ می‌دهد به                                      | هزینه                                    |
+| --------------------- | ------------------------------------------------- | --------------------------------------- |
+| **گراف کد**           | چه چیزی اینجاست و چه چیزی به آن وابسته است        | یک گذر نمایه‌سازی؛ پرس‌وجو از آن ارزان است |
+| **سرور زبان**         | آیا این واقعاً کامپایل می‌شود و این چه نوعی است    | یک فرایند سرور به‌ازای هر پروژه           |
+| **جستجوی ساختاری**    | این **شکل** کجا ظاهر می‌شود                        | یک تجزیه به‌ازای هر فایل                  |
+| **اشکال‌زدا**         | در این لحظه و در این فریم چه چیزی برقرار بود      | یک فرایند متوقف‌شده                       |
 
-## The gap the language server closes
+## شکافی که سرور زبان می‌بندد
 
-The [code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) از tree-sitter ساخته می‌شود: نمادها، یال‌های فراخوانی، یک شعاع تأثیر. سریع است، ارزان است و هیچ چیزی دربارهٔ **نوع‌ها** نمی‌داند. نمی‌تواند به شما بگوید آیا فراخوانی‌ای که همین حالا نوشتید کامپایل می‌شود، آیا آن فیلد روی شیء وجود دارد، یا اینکه تغییر نام‌تان یک صادرات مجدد را از قلم انداخته است.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+بدون سرور زبان، عامل هنگام اجرای تست می‌فهمد — یا هرگز. چیزی به‌ظاهر درست می‌نویسد، جلو می‌رود و خطا سه نوبت بعد، چسبیده به تغییری دیگر، سر می‌زند.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+پس سود واقعی خودِ ابزار `lsp` نیست. سود این است که `write`، `edit` و `apply_patch` پیچیده شده‌اند: پس از هر نوشتن، فایل از سرور زبان می‌گذرد و پیام‌های تشخیصی **تازه‌معرفی‌شده** در نتیجهٔ ابزار گنجانده می‌شوند. عامل همان لحظه‌ای که بیلد را شکسته است می‌فهمد که شکسته، چه به فکر پرسیدنش افتاده باشد و چه نه.
 
-### Only new diagnostics
+### فقط پیام‌های تشخیصی تازه
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+تکرار چیزی که پیش‌تر به عامل گفته شده از خاموش ماندن بدتر است: نتیجه را از نویزی پر می‌کند که عامل یاد می‌گیرد از آن سرسری بگذرد و همان یک خطای تازه هم همراه آن از دست می‌رود. یک دفتر ثبت به‌ازای هر اجرا نگه می‌دارد چه چیزهایی گزارش شده‌اند، با کلید شدت، کد و پیام — **نه** موقعیت؛ بنابراین پیامی تشخیصی که فقط چهار خط پایین‌تر رفته است، دوباره به‌عنوان تازه گزارش نمی‌شود.
 
-### Lazy, and honest about being absent
+### تنبل، و صادق دربارهٔ نبودنش
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+هیچ سروری هنگام راه‌اندازی شروع نمی‌شود. سرور با نخستین درخواستی که به آن نیاز دارد بالا می‌آید، که تقریباً همیشه نخستین ویرایش روی فایلی است که آن سرور مدعی آن است، و سرورهای بیکار جمع‌آوری می‌شوند. میزبانی که هرگز به Dart دست نمی‌زند، هرگز تحلیلگری را شروع نمی‌کند.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+تشخیص یک **اشتراک** است: هم باید نشانگر ریشه‌ای در چک‌اوت وجود داشته باشد و هم باینری باید قابل پیدا شدن باشد. نشانگر به‌تنهایی می‌گوید «این پروژه Python است» و هیچ چیزی دربارهٔ نصب‌بودن سرور نمی‌گوید؛ باینریِ قابل پیدا شدن به‌تنهایی می‌گوید میزبان یک زنجیرهٔ ابزار دارد و هیچ چیزی دربارهٔ این چک‌اوت نمی‌گوید. تنها هر دو با هم یعنی یک پرس‌وجو می‌تواند موفق شود، و ابزاری که عرضه می‌شود و همیشه شکست می‌خورد از ابزاری که وجود ندارد بدتر است.
 
-## Why structural search, when grep exists
+## چرا جستجوی ساختاری، وقتی grep وجود دارد
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` با کاراکترها مطابقت می‌کند. آن ابزار درست برای یک نام است و ابزار نادرست برای یک شکل.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+یک الگوی ساختاری با **همان گرامری تجزیه می‌شود که فایل با آن تجزیه می‌شود**، بنابراین `dispose($X)` فراخوانی را پیدا می‌کند، هرگونه که فاصله‌گذاری شده، شکسته یا چندخطی شده باشد، و هرگز همان کاراکترها را درون یک رشتهٔ متنی یا یک کامنت مطابقت نمی‌دهد.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+ویژگی‌ای که آن را بیش از یک regex با چند مرحلهٔ اضافه می‌کند این است که فرامتغیری که در یک الگو تکرار می‌شود باید همان متن را بگیرد:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+با گاردی مطابقت می‌کند که همان چیزی را که آزموده آزاد می‌کند و با گاردی که چیز دیگری را آزاد می‌کند مطابقت نمی‌کند. این دسته‌ای از باگ است که اصلاً نمی‌توان آن را به‌صورت متنی بیان کرد.
 
-### It runs on the tree-sitter already linked
+### روی همان tree-sitter که پیش‌تر پیوند شده اجرا می‌شود
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+موتور دومی وجود ندارد. `cc_natives` همین حالا tree-sitter و گرامرهایش را برای گراف کد بارگذاری می‌کند، همراه با یک کش پرس‌وجوی کامپایل‌شده و یک جدول زبان. تطبیق‌دهنده، Dart خالص روی درخت‌هایی است که در هر حال تجزیه می‌شدند. موتور ساختاری دوم یعنی تجزیه‌گر دوم، مجموعهٔ گرامر دومی که باید روی هر پلتفرم ساخته و آماده شود، و دو پاسخ به این پرسش که «فراخوانی‌بیان چیست».
 
-### A fragment needs somewhere to live
+### یک قطعه به جایی نیاز دارد که در آن بنشیند
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+گرامر فقط تعریف می‌کند که یک *فایل* کامل چیست. `dispose(x)` وقتی خالی در سطح بالای Dart تجزیه شود، یک **امضای تابع** کاملاً معتبر است — اعلانی به نام `dispose` که پارامتری به نام `x` می‌گیرد — و هیچ خطایی در هیچ جا نیست که آن را لو بدهد. تطبیق‌دهنده‌ای که روی آن تجزیه ساخته شود، دنبال اعلان‌ها می‌گردد، هیچ فراخوانی‌ای پیدا نمی‌کند و برای الگویی که هرگز آن‌گونه که به نظر می‌رسد خوانده نمی‌شد، «هیچ موردی» را گزارش می‌کند.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+بنابراین یک الگو در نردبانی از داربست‌ها آزموده می‌شود — دستور، عبارت، عضو کلاس، سطح بالا — و نخستینی که آن را می‌پذیرد برنده است. قطعه‌ای که هیچ زمینه‌ای نمی‌پذیرد، به‌عنوان تجزیه‌ناپذیر گزارش می‌شود، نه اینکه جست‌وجو شود و بی‌صدا پیدا نشود.
 
-## Why a rewrite stages instead of writing
+## چرا بازنویسی به‌جای نوشتن، در مرحلهٔ آماده‌سازی می‌ماند
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+بازنویسی ساختاری گسترده‌ترین ویرایشی است که یک عامل می‌تواند انجام دهد: یک الگو، چهل فایل، و هیچ‌کس نتیجه را خط‌به‌خط نمی‌خواند — نه مدل و نه کسی که آن را خواسته است. نوشتنش و گزارش دادن «انجام شد» یعنی نخستین نگاه صادقانه به تغییر، بعدها یک `git diff` است.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+بنابراین `ast_edit` گزارش می‌دهد چه کاری *انجام می‌داد* — تعداد، فایل‌ها، جاهای مطابقت — و تغییر تنها زمانی اعمال می‌شود که `resolve` آن را کامیت کند. همین هم باعث می‌شود یک diff و گزینهٔ پذیرش/دور انداختن، پیش از رسیدن هر چیزی به دیسک، جلوی چشم یک انسان قرار بگیرد.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+کامیت همه‌یاهیچ است و هر فایل با محتوایی بررسی می‌شود که در زمان آماده‌سازی ثبت شده است. میان آماده‌سازی و کامیت، ممکن است عامل یکی از آن فایل‌ها را دستی ویرایش کرده باشد، یک گذر تشخیصی آن را بازنویسی کرده باشد، یا یک ابزار قالب‌بندی به آن دست زده باشد — کامیت کردن به‌رغم آن، آن کار را دور می‌ریزد و diff طوری به نظر می‌رسد که گویی عمدی بوده است. هر ناهمخوانی کل تغییر را رد می‌کند، چون بازنویسی ساختاری نیمه‌اعمال‌شده درختی بر جا می‌گذارد که زیر هیچ‌یک از آن دو شکل کامپایل نمی‌شود.
 
-## What a debugger answers that a print statement cannot
+## آنچه اشکال‌زدا پاسخ می‌دهد و یک دستور print نمی‌تواند
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+حلقهٔ دستور print این است: یک print اضافه کن، کل ماجرا را دوباره اجرا کن، خروجی را بخوان، print را پاک کن. هزینه‌اش یک اجرای کامل تست به‌ازای هر پرسش است و تنها به پرسشی پاسخ می‌دهد که *پیش از* اجرا به ذهن‌تان رسیده است.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+یک فریم متوقف‌شده هم‌زمان به همهٔ پرسش‌ها دربارهٔ آن لحظه پاسخ می‌دهد — هر متغیر محلی، هر فراخوان، و عبارتی که در حوزهٔ خود فریم ارزیابی می‌شود. برای یک فرایند قفل‌شده یا خطایی که یک بار در ده اجرا بازتولید می‌شود، این تفاوت یک بعدازظهر و یک دقیقه است.
 
-### Bounded like an enclosure, and for the same reason
+### کران‌دار مثل یک محفظه، و به همان دلیل
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+یک آداپتور اشکال‌زدا مالک یک **فرایند متوقف‌شده** است که هر چه آن فرایند نگه داشته را نگه می‌دارد — یک پورت، یک قفل، یک اتصال پایگاه داده. نشستی که کسی آن را هدایت نمی‌کند، نشتی است که از نوبتی که آن را آغاز کرده عمر بیشتری می‌کند. پس یک TTL سخت وجود دارد، دقیقاً یک نشست به‌ازای هر گفتگو، و `launch` دوم رد می‌شود، نه اینکه بی‌صدا جای اولی را بگیرد: عاملی که دومی را بدون پایان دادن به اولی شروع کند، تقریباً قطعاً اولی را از دست داده است.
 
-### One transport, two protocols
+### یک انتقال، دو پروتکل
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol همان قالب‌بندی `Content-Length` مربوط به Language Server Protocol را دارد و هیچ چیز بالاتر از آن را — کلیدهای همبستگی متفاوت، شکل خطای متفاوت، و یک نوع پیام سوم (رویدادها) بدون همتای LSP. قالب‌بندی در یک جا زندگی می‌کند؛ پروتکل‌ها جداگانه روی آن می‌نشینند.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+نوشتن دوبارهٔ قالب‌بندی یعنی دو پاسخ به «یک پیام دو تکه را در بر می‌گیرد»، «یک تکه سه پیام را نگه می‌دارد» و «سرور پیش از نخستین فریمش یک بنر به stdout نوشته است»، و فقط یکی از آن‌ها اصلاحیه را می‌گیرد.
 
-## Related
+## مرتبط
 
-- [Search code with the code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) — the symbol and impact side
-- [Debug a failing test](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اشکالزدایی-تست-ناموفق/) — the debugger, end to end
-- [Refactor structurally](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازآرایی-ساختاری/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — every operation and argument
+- [جستجوی کد با گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) — سمت نمادها و تأثیر
+- [اشکال‌زدایی یک تست ناموفق(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اشکالزدایی-تست-ناموفق/) — اشکال‌زدا، از ابتدا تا انتها
+- [بازآرایی ساختاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازآرایی-ساختاری/) — `ast_grep` و `ast_edit`
+- [ابزارهای داخلی عامل(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — هر عملیات و آرگومان

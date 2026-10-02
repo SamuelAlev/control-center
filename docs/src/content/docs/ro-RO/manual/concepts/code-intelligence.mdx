@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Intelligence pentru cod
+description: De ce are nevoie un agent de compilator, de un potrivitor structural și de un depanator — și la ce răspunde fiecare dintre ele, la ce celelalte nu pot răspunde.
 slug: ro-RO/manual/concepte/intelligence-pentru-cod
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center îi dă unui agent patru moduri de a înțelege codul dincolo de simpla citire a lui. Ele răspund la întrebări cu adevărat diferite, iar motivul pentru care sunt patru, nu unul, este că niciun mecanism unic nu răspunde la toate.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mecanism              | Răspunde la                                              | Costuri                                    |
+| --------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| **Graful de cod**     | Ce se află aici și de ce depinde                         | O trecere de indexare; interogare ieftină  |
+| **Serverul de limbaj**| Chiar se compilează asta și ce tip este acesta           | Un proces de server per proiect            |
+| **Căutarea structurală**| Unde apare această FORMĂ                               | O analiză sintactică per fișier            |
+| **Depanatorul**       | Ce era adevărat în acel moment, în acel cadru            | Un proces oprit                            |
 
-## The gap the language server closes
+## Golul pe care îl acoperă serverul de limbaj
 
-The [code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/) este construit cu tree-sitter: simboluri, muchii de apel, o rază de impact. Este rapid, este ieftin și nu știe nimic despre **tipuri**. Nu îți poate spune dacă apelul pe care tocmai l-ai scris se compilează, dacă acel câmp există pe obiect sau dacă redenumirea ta a ratat un reexport.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Fără un server de limbaj, un agent află la momentul testelor — sau niciodată. Scrie ceva plauzibil, își vede mai departe de treabă, iar eșecul iese la suprafață trei tururi mai târziu, atașat de o altă modificare.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Așadar, câștigul nu este de fapt instrumentul `lsp`. Ci faptul că `write`, `edit` și `apply_patch` sunt înfășurate: după fiecare scriere, fișierul trece prin serverul de limbaj, iar diagnosticele **nou introduse** sunt incluse în rezultatul instrumentului. Agentul află că a stricat compilarea în chiar momentul în care a stricat-o, indiferent dacă i-a trecut prin minte să întrebe.
 
-### Only new diagnostics
+### Numai diagnosticele noi
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+A repeta ce i s-a spus deja agentului este mai rău decât să nu spui nimic: umple rezultatul cu zgomot pe lângă care agentul învață să treacă, iar singura eroare nouă se pierde odată cu el. Un registru per rulare ține evidența a ce s-a raportat, indexat după severitate, cod și mesaj — **nu** după poziție, așa că un diagnostic care doar s-a mutat patru rânduri mai jos nu este raportat din nou ca fiind nou.
 
-### Lazy, and honest about being absent
+### Leneș și sincer în privința absenței sale
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Niciun server nu pornește la boot. Unul pornește la prima cerere care are nevoie de el, care este aproape întotdeauna prima editare a unui fișier pe care îl revendică, iar cele inactive sunt curățate. O gazdă care nu atinge niciodată Dart nu pornește niciodată un analizor.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Detecția este o **intersecție**: un marker de rădăcină trebuie să existe în copia locală *și* binarul trebuie să se rezolve. Un marker singur spune „acest proiect este Python” și nimic despre dacă serverul este instalat; un binar care se rezolvă singur spune că gazda are un lanț de instrumente și nimic despre această copie locală. Numai ambele împreună înseamnă că o interogare poate reuși, iar un instrument care este oferit și eșuează mereu este mai rău decât unul care lipsește.
 
-## Why structural search, when grep exists
+## De ce căutare structurală, când există grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` potrivește caractere. Este instrumentul potrivit pentru un nume și cel greșit pentru o formă.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Un șablon structural este analizat sintactic de **aceeași gramatică precum fișierul**, așa că `dispose($X)` găsește apelul oricum ar fi spațiat, împachetat sau rupt pe linii și nu potrivește niciodată aceleași caractere dintr-un literal de șir sau dintr-un comentariu.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Proprietatea care îl face mai mult decât o expresie regulată cu pași în plus este că o metavariabilă repetată într-un șablon trebuie să capteze același text:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+potrivește o gardă care eliberează exact ce a testat și nu potrivește una care eliberează altceva. Este o clasă de erori pe care nu o poți exprima textual deloc.
 
-### It runs on the tree-sitter already linked
+### Rulează pe tree-sitter-ul deja linkat
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Nu există un al doilea motor. `cc_natives` încarcă deja tree-sitter și gramaticile sale pentru graful de cod, cu un cache de interogări compilate și un tabel de limbaje. Potrivitorul este Dart pur peste arbori care oricum erau analizați sintactic. Un al doilea motor structural ar însemna un al doilea parser, un al doilea set de gramatici de construit și de pregătit pe fiecare platformă și două răspunsuri la „ce este o expresie de apel”.
 
-### A fragment needs somewhere to live
+### Un fragment are nevoie de un loc unde să stea
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+O gramatică definește doar ce este un întreg *fișier*. Analizat simplu, la nivelul superior al Dart, `dispose(x)` este o **semnătură de funcție** perfect validă — o declarație numită `dispose` care ia un parametru `x` — fără nicio eroare care să trădeze asta. Un potrivitor construit pe acea analiză caută declarații, nu găsește niciun apel și raportează „nicio potrivire” pentru un șablon care nu era citit niciodată așa cum arată.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Așadar, un șablon este încercat într-o scară de încadrări — instrucțiune, expresie, membru de clasă, nivel superior — iar prima care îl acceptă câștigă. Un fragment pe care nu îl acceptă niciun context este raportat ca neanalizabil, în loc să fie căutat și pur și simplu negăsit.
 
-## Why a rewrite stages instead of writing
+## De ce o rescriere pregătește în loc să scrie
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+O rescriere structurală este cea mai largă modificare pe care o poate face un agent: un șablon, patruzeci de fișiere și nimeni nu citește rezultatul linie cu linie — nici modelul, nici persoana care a cerut-o. Să o scrii și să raportezi „gata” înseamnă că prima privire sinceră asupra modificării este un `git diff` de după.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Așa că `ast_edit` raportează ce *ar* face — numărul, fișierele, locurile potrivite — iar modificarea se aplică doar când `resolve` o comite. Acesta este și ce permite ca un diff și un Acceptă/Renunță să stea în fața unui om înainte ca ceva să ajungă pe disc.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Commit-ul este totul-sau-nimic și fiecare fișier este verificat față de conținutul capturat la momentul pregătirii. Între pregătire și commit, agentul poate să fi editat manual unul dintre acele fișiere, o trecere de diagnostice poate să îl fi rescris sau un formator poate să îl fi atins — dacă s-ar comite oricum, acea muncă ar fi pierdută, iar diff-ul ar părea intenționat. Orice nepotrivire refuză întreaga modificare, pentru că o rescriere structurală aplicată parțial lasă un arbore care nu se compilează în niciuna dintre forme.
 
-## What a debugger answers that a print statement cannot
+## La ce răspunde un depanator și nu poate răspunde o instrucțiune de tipărire
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Bucla cu instrucțiuni de tipărire este: adaugi o tipărire, rulezi din nou totul, citești rezultatul, ștergi tipărirea. Costă o rulare completă de teste per întrebare și răspunde doar la întrebarea la care te-ai gândit *înainte* de a rula.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Un cadru oprit răspunde deodată la orice întrebare despre acel moment — fiecare variabilă locală, fiecare apelant și o expresie evaluată în scopul propriu al cadrului. Pentru un proces blocat sau o defecțiune care se reproduce o dată la zece rulări, asta este diferența dintre o după-amiază și un minut.
 
-### Bounded like an enclosure, and for the same reason
+### Delimitat ca un țarc, și din același motiv
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Un adaptor de depanare deține un **proces oprit** care ține tot ce ține procesul respectiv — un port, o blocare, o conexiune la baza de date. O sesiune pe care nu o conduce nimeni este o scurgere care supraviețuiește turului care a pornit-o. Prin urmare există un TTL strict, exact o sesiune per conversație, iar un al doilea `launch` este refuzat în loc să îl înlocuiască silențios pe primul: un agent care pornește un al doilea fără să îl încheie pe primul și-a pierdut aproape sigur urma primului.
 
-### One transport, two protocols
+### Un transport, două protocoale
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol împarte cu Language Server Protocol încadrarea `Content-Length` și nimic deasupra ei — chei de corelare diferite, o formă de eșec diferită și un al treilea tip de mesaj (evenimente) fără echivalent în LSP. Încadrarea trăiește într-un singur loc; protocoalele stau separat deasupra ei.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+A scrie încadrarea de două ori ar însemna două răspunsuri la „un mesaj se întinde pe două segmente”, „un segment conține trei mesaje” și „serverul a scris un banner la stdout înainte de primul său cadru”, iar doar unul dintre ele ar primi corectura.
 
-## Related
+## Vezi și
 
-- [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/) — the symbol and impact side
-- [Debug a failing test](/ro-RO/manual/ghiduri-practice/depaneaza-test-esuat/) — the debugger, end to end
-- [Refactor structurally](/ro-RO/manual/ghiduri-practice/refactorizare-structurala/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ro-RO/manual/referinta/instrumente-agent/) — every operation and argument
+- [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/) — partea de simboluri și de impact
+- [Depanează un test eșuat cu un agent](/ro-RO/manual/ghiduri-practice/depaneaza-test-esuat/) — depanatorul, cap-coadă
+- [Refactorează codul structural](/ro-RO/manual/ghiduri-practice/refactorizare-structurala/) — `ast_grep` și `ast_edit`
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/) — fiecare operație și argumentul ei

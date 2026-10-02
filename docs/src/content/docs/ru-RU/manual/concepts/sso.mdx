@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Единый вход
+description: Как работают входы через SAML и OIDC, что они проверяют и как аккаунты остаются в безопасности.
 slug: ru-RU/руководство/понятия/единый-вход
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Единый вход позволяет внешнему провайдеру идентификации (IdP) решать, кому
+можно входить на ваш сервер Control Center. Поддерживаются два протокола —
+SAML 2.0 и OpenID Connect — и оба приводят в одну и ту же точку: только что
+выпущенные учётные данные устройства, которые дальше уже неотличимы от
+приглашения или сопряжения по QR-коду.
 
-## The shape of a login
+## Как устроен вход
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Входы SAML **идут через браузер**. IdP никогда не открывает соединение с
+вашим сервером — всё несёт браузер пользователя:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,86 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Поскольку курьер здесь — браузер, **сервер за NAT прекрасно подходит** для
+входов: localhost, локальная сеть, Tailscale, VPN или туннель одинаково
+работают; только браузер пользователя должен дотягиваться до URL ACS. Реле
+WebSocket, через которое работает удалённое управление с телефона, не может
+протащить HTTP-обмен туда и обратно, поэтому точки входа SSO всегда нацелены
+на HTTP-origin сервера.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect устроен так же, но с обменом по коду авторизации + PKCE;
+утверждения читаются с конечной точки токена эмитента по TLS, так что браузер
+вообще не передаёт данные идентичности.
 
-## The adapters
+## Адаптеры
 
-Control Center splits the responsibility deliberately:
+Control Center намеренно разделяет ответственность:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| Компонент                     | Где                                | За что отвечает                                                                                                                            |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| Нативный `cc_saml`            | `packages/cc_natives/native/saml/` | проверка XML-DSig, канонизация, валидация профиля SAML — делегированы закреплённому крейту `saml` на чистом Rust за C ABI без состояния     |
+| `SamlService` / `OidcService` | `cc_server_core`                   | состояние входа (трекеры ожидающих запросов, дедупликация повторов), параметры политики валидации, общий вызов провизионинга                 |
+| `SsoProvisioner`              | `cc_server_core`                   | найти или создать пользователя, закрепить субъект провайдера, выдать членство по политике автоматического членства                          |
+| `ScimService`                 | `cc_server_core`                   | поверхность push-обновлений SCIM 2.0 (жизненный цикл провизионинга и депровизионинга)                                                       |
+| `SsoSettingsService`          | `cc_server_core`                   | сохранённые строки подключений, повторное применение на лету, токен SCIM                                                                    |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Резервной реализации криптографии SAML на чистом Dart намеренно **не
+существует**: написанные вручную XML-DSig и канонизация — как раз то место,
+где живут уязвимости обёртывания подписи, поэтому при отсутствии библиотеки
+`cc_saml` отказывают и вход SAML, и загрузка сервера. Нативный модуль по
+замыслу не хранит состояние — межзапросное состояние живёт в сервисах Dart,
+одноразовое и недолговечное.
 
-## What a login verifies
+## Что проверяет вход
 
-Inside the verified native and the service, in order:
+Внутри проверенного нативного модуля и сервиса, по порядку:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **подпись** утверждения (обязательна всегда; подпись конверта ответа —
+   опционально, зависит от конфигурации) — структурно устойчива к
+   обёртыванию подписи, поскольку проверенная полезная нагрузка привязана к
+   проверяемому элементу,
+2. **эмитент** совпадает с настроенным IdP,
+3. **аудитория** называет этого поставщика услуг,
+4. **назначение** — это наш URL ACS,
+5. `InResponseTo` совпадает с выпущенным нами ожидающим AuthnRequest
+   (незапрошенные ответы, инициированные IdP, по умолчанию отключены),
+6. окна **времени жизни** укладываются в расхождение часов (по умолчанию
+   90 с) и
+7. **идентификатор утверждения** раньше не встречался (кэш повторов).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Ошибки возвращаются типизированными кодами — подпись, истёкший срок,
+аудитория, назначение, эмитент, несовпадение запроса, — а эндпоинты отвечают
+обобщёнными ошибками, поэтому атакующий не узнаёт, почему подделка не прошла.
 
-## Accounts and subject pinning
+## Аккаунты и закрепление субъекта
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Первый вход через SSO закрепляет за аккаунтом неизменяемый субъект
+провайдера (`issuer` плюс SAML NameID / OIDC `sub` или SCIM externalId).
+С этого момента вход идентифицирует субъект, а не адрес электронной почты.
+Если кто-то другой позже предъявит тот же адрес электронной почты от того же
+или другого IdP, закреплённый аккаунт его отклонит. Именно это не даёт
+переиспользованному у провайдера адресу электронной почты превратиться в
+захват аккаунта.
 
-## Provisioning and deprovisioning
+## Провизионинг и депровизионинг
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Провизионинг JIT происходит при входе (`SsoProvisioner`). SCIM — отдельная
+поверхность push-обновлений (`ScimService`), которая закрепляет тот же
+субъект в строке пользователя; членство в рабочих пространствах она не
+выдаёт. Депровизионинг — SCIM `active: false` или `DELETE` — отказывает, если
+аккаунт является владельцем рабочего пространства (сначала передайте
+владение). В остальных случаях он сначала отзывает все учётные данные
+устройства (сеансы обрываются за считаные секунды благодаря отслеживанию
+устройств), убирает все членства в рабочих пространствах и помечает аккаунт
+деактивированным. Строка пользователя остаётся: атрибуция сохраняется
+навсегда. Повторная активация возвращает вход, но членство заново не выдаёт.
 
-## What stays out
+## Что остаётся за рамками
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Сопоставление группа→роль происходит при входе** — по атрибутам SAML /
+  утверждениям OIDC; группы, переданные через SCIM, не сохраняются.
+- **Роль владельца из SSO недостижима** — ни как роль по умолчанию, ни
+  через сопоставление групп.
+- Реле WebSocket никогда не является каналом SSO; телефоны, которые
+  дотягиваются до сервера только через реле, не могут выполнить против него
+  обмен с браузером.

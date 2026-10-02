@@ -1,134 +1,72 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: PR 對話
+description: GitHub PR 留言如何在沒有 webhook 的情況下變成一次代理回合、作者的權限由什麼授予，以及對話雙方各自歸屬到誰名下。
 slug: zh-TW/手冊/概念/pr-對話
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/zh-TW/手冊/概念/聊天橋接/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+關於程式碼的討論本來就發生在 pull request 裡。PR 對話讓它成為 Control Center
+工作區上的一個介面，就像[聊天橋接](/zh-TW/手冊/概念/聊天橋接/)讓 Slack
+成為這樣的介面一樣：在 PR 上 @提及伺服器的 GitHub App
+機器人、在它的審查討論串裡回覆，或加上 `ai-review`
+標籤，工作就會在 PR 的審查空間中進行 — 歸屬與護欄和在應用程式裡輸入的任何內容完全相同。留言還必須通過成員身分的關卡；標籤則不必，因為它沒有作者。機器人的回答會回到 GitHub，回到問題被提出的那個討論串。
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+有三項決策塑造了這項功能，而每一項都跟聊天橋接為聊天所做的是同一個決策，只是為程式碼託管平台重新表述：**連線朝哪個方向建立**、**從外部到來的留言由什麼授予權限**，以及**雙方各自歸屬到誰名下**。
 
-## Polling is the transport
+## 輪詢就是傳輸方式
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+GitHub 為應用程式提供的唯一推送通道是 webhook，而 webhook 需要一個傳入 URL — 這正是這個介面刻意從不要求的東西。因此探索機制是一輪掃描：大約每分鐘，每個 App 安裝都發起一次以自身為別名的搜尋，向 GitHub 查詢提及機器人（或其短 slug）的 PR，以及帶有審查標籤的開放 PR；已經有審查空間的 PR 會讀取其留言討論串；而所有內容都會依留言 ID 與上一輪掃描看到的結果做差分。
 
-The design consequences are worth naming:
+這些設計帶來的後果值得點明：
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **延遲是掃描間隔，而不是事件。** 👀 確認會在大約一分鐘內送達。沒有什麼緊急的事依賴它。
+- **每則留言恰好處理一次。** 留言 ID 在整個 GitHub 上都是唯一的；每則留言在被判定為符合資格的那一刻就會被記錄下來，早於任何對它採取的行動。當機可能讓某則留言的處理遺失，但絕不會讓它被重複觸發。
+- **離線期間的內容會被補上，而不是重播。** 已見集合會持久化，因此重新啟動後會補上停機期間到達的內容。唯一的例外是有史以來的第一輪掃描：沒有可供差分的記憶，所有待處理的內容都會被靜默記錄 — 在這台伺服器存在之前就為二十個 PR 加上標籤的操作者，不該回來面對二十個正在執行的審查。
+- **標籤是集合，而不是事件。** 搜尋回報的是標籤的_存在性_，因此被加上標籤的 PR 只會觸發一次，而且僅此一次。移除標籤後再重新加上，對掃描來說是看不見的；重新執行的途徑是 @提及。
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+搜尋是對每個安裝帳戶、在該帳戶自己的用戶端上各執行一次，因為安裝權杖只看得到自己這次安裝下的儲存庫 — 單一的全伺服器憑證會悄悄漏掉該 App 其他安裝下的每一個 PR。
 
-## Membership authorizes, not the comment
+## 授權的是成員身分，而不是留言
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+一則 PR 留言送達時，除了作者的登入名稱之外幾乎不帶任何資訊 — 在被證實之前，它就只是一個未經驗證的外部身分。機器人會用一份反向索引來解析它，這份索引由工作區成員及其已連結的 GitHub 帳號構成，並依 TTL 重建，因為伺服器運作期間會有人登入，也會有人被邀請加入。
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+失效即拒絕的表現像一道階梯，而每一層都會在它拒絕的那條討論串裡作答：
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **未知的登入名稱** — 未連結，或由並非本工作區成員的人所連結 — 會被告知先登入，並確認自己確實屬於這個工作區
+- **唯讀成員**（`viewer` 或 `guest`）會被告知他們的角色無法啟動工作
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+這兩種未知登入名稱的情況共用同一個回覆：反向索引只會回傳_本_工作區的成員，因此未連結的帳號與已連結的非成員是同一種未命中。它們都不會繼續。留言絕不會歸屬到沒有送出它的人身上，而陌生人的話也絕不會進入他們看不見的工作區。
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+`ai-review` 標籤沒有可供解析的作者，因此不會爬上這道階梯。加上它，就會在已經連結該儲存庫的工作區裡啟動審查。
 
-## Two identities, on purpose
+## 刻意採用兩種身分
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+對話的每一方都帶著不同的身分，而這個差異正是這項功能的要點：
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **在 GitHub 上，機器人就是伺服器。** 橋接所張貼的每一則留言、每一個表情回應與每一次回覆，都使用 App 的安裝權杖。沒有任何人曾在用戶端點擊任何東西，因此沒有任何操作借用個人的帳號 — 這與讓 webhook 和輪詢都不使用人類憑證的是同一條規則。
+- **在空間裡，提問算在你頭上。** 訊息會歸屬到作者解析出的那位成員，代理執行也代表他們進行：提交會把他們列為共同作者，而空間的自主程度調節與動作護欄，也完全比照在應用程式裡輸入的訊息那樣套用。執行期間對程式碼託管平台的寫入仍然以 App 的身分送出 — 與上一條相同的規則 — 而不是用該成員的個人權杖。
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+把審查的發現發佈回 GitHub 仍然是人的決定，並且在 Control Center 中做出。@提及可以_啟動_一次審查；但只有人類能發佈審查。
 
-## The loop guard, and the short name
+## 迴圈防護與短名
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+任何由機器人帳號撰寫的內容，都會在任何關卡執行之前被丟棄 — 包括我們自己的機器人帳號，以及所有帶 `[bot]` 後綴的帳號，這樣其他 App 的審查機器人也無法喚醒我們的機器人。少了這道防護，機器人自己的回答就會以新留言的形式送達，並永遠重新觸發它。
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+`[bot]` 後綴也是短名之所以存在的原因。GitHub 把 App 帳號的登入名稱固定為 `<slug>[bot]`，不提供它的自動補全，也絕不會把 `@slug` 解析到該 App — 因此接受裸 slug 是_我們_的比對器所做的決定，而要有辦法找到它，需要的是一條原始的留言**文字**搜尋通道，而不是 GitHub 的 @提及索引。這項代價是明白說出而不是抹平的：如果某個人類使用者的名稱與 App 的 slug 相同，那麼他每一次以短名 @提及自己，都會叫到機器人。夠獨特的 App 名稱會讓這種衝突只停留在假想的層面。
 
-## What is deliberately not offered
+## 刻意不提供的東西
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **不自動發佈。** 發現會落在審查空間裡；發佈到 GitHub 是另一個獨立的人工操作
+- **不做模糊身分比對。** 作者要嘛精確解析到某一位成員，要嘛被拒絕 — 沒有憑猜測的歸屬
+- **不使用 GitHub App webhook。** 這個介面從不註冊 webhook，因此沒有需要為 PR 留言暴露的傳入 URL。其他產品層級的 webhook（管線、工單同步）是另一套選用的設定。
 
-## See also
+## 另請參閱
 
-- [Talk to Control Center from a GitHub PR](/zh-TW/手冊/操作指南/github-pr-對話/):
-  the how-to for all of this
-- [Chat bridges](/zh-TW/手冊/概念/聊天橋接/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/zh-TW/手冊/操作指南/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/zh-TW/手冊/概念/多人協作/):
-  the principals and roles a login resolves through
-- [Guardrails](/zh-TW/手冊/概念/護欄/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/zh-TW/手冊/操作指南/ai-審查/): the pipeline a mention
-  or label starts
+- [從 GitHub PR 與 Control Center 對話](/zh-TW/手冊/操作指南/github-pr-對話/)：
+  以上全部內容的操作指南
+- [聊天橋接](/zh-TW/手冊/概念/聊天橋接/)：為聊天做出的同樣三項決策
+- [建立 GitHub App](/zh-TW/手冊/操作指南/github-app/)：機器人身分的來源
+- [多人協作 — 身分、成員身分與線上狀態](/zh-TW/手冊/概念/多人協作/)：
+  登入名稱所解析到的主體與角色
+- [護欄](/zh-TW/手冊/概念/護欄/)：負責回答的代理被允許做什麼
+- [使用 AI 審查](/zh-TW/手冊/操作指南/ai-審查/)：@提及或標籤所啟動的管線

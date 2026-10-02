@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: آپ کا پہلا ورک اسپیس
+description: ایک ورک اسپیس بنائیں، اس میں ایک ریپو رجسٹر کریں اور تنہائی کی حد خود دیکھیں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اس ٹیوٹوریل کے اختتام تک آپ کے پاس یہ ہوگا:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- آپ کے پروجیکٹ کے نام پر ایک ورک اسپیس
+- اس میں رجسٹر شدہ ایک Git ریپوزٹری
+- پانچ سیڈ شدہ ایجنٹ، جن میں سے ایک ایسا کنفیگر کیا ہوا کہ اسے چلایا جا سکے
+- ایک دوسرا، خالی ورک اسپیس جو تنہائی کی حد ثابت کرتا ہے
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+آن بورڈنگ پہلے ہی آپ کے لیے ایک ورک اسپیس بنا چکی ہے۔ یہ ٹیوٹوریل جان بوجھ کر ایک بالکل نیا ورک اسپیس بناتا ہے، تاکہ آپ اس عمل کا ہر حصہ دیکھ سکیں۔
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+شروع کرنے سے پہلے کوئی ایسا Git چیک آؤٹ چنیں جو اِن تینوں شرائط پر پورا اترے — رجسٹریشن کا مرحلہ اس کے علاوہ کچھ قبول نہیں کرتا:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- وہ کسی git ورک ٹری کے اندر ہو
+- اس کا ایک `origin` ریموٹ موجود ہو
+- اور وہ ریموٹ github.com، gitlab.com یا bitbucket.org کی طرف اشارہ کرتا ہو
 
-## Step 1: Create a workspace
+## مرحلہ 1: ورک اسپیس بنائیں
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. ٹائٹل بار میں ورک اسپیس چپ پر کلک کریں
+2. **ورک اسپیس شامل کریں…** چنیں
+3. ایسا نام درج کریں جو پروجیکٹ کی شناخت کرتا ہو، مثلاً "api-service" یا "frontend-v2"
+4. اختیاری طور پر کوئی لوگو چنیں
+5. **ورک اسپیس شامل کریں** پر کلک کریں
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center نئے ورک اسپیس پر منتقل ہو جاتا ہے اور اس کے ان باکس (`/workspaces/<id>/inbox`) پر پہنچتا ہے۔
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+اس کے پیچھے سرور ایک `WorkspaceCreated` ایونٹ شائع کرتا ہے اور ورک اسپیس میں یہ چیزیں سیڈ کرتا ہے:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- ایک **CEO ایجنٹ**، جس کی شخصیت ہم آہنگی اور تفویض ہے
+- چار ماہرین — `qa`، `architect`، `engineer` اور `librarian` — ہر ایک کی اپنی ہدایات اور مہارتیں
+- بلٹ اِن پائپ لائن ٹیمپلیٹس اور اُن کی ٹریگر قطاریں
 
-Every workspace you create gets all of this, not just the first one.
+آپ کا بنایا ہوا ہر ورک اسپیس یہ سب کچھ پاتا ہے، صرف پہلا نہیں۔
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+تصدیق: **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں۔ روسٹر میں پانچ ایجنٹ ہیں، اور ہر ایک کے گرد اسٹیٹس کا ایک کھوکھلا حلقہ ہے۔
 
-## Step 2: Register a repository
+## مرحلہ 2: ریپوزٹری رجسٹر کریں
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. **ترتیبات → ورک اسپیس → ریپوزٹریز** پر جائیں
+2. **ریپوزٹری شامل کریں** پر کلک کریں
+3. اپنے چیک آؤٹ تک براؤز کریں۔ یہ ڈائیلاگ اُن فولڈرز میں چلتا ہے جو `cc_server` چلا رہی مشین پر ہیں — آپ کے کلائنٹ پر نہیں — اور اُنہی روٹس کے اندر رہتا ہے جو وہ سرور ظاہر کرتا ہے (ڈیفالٹ میں اس کے صارف کی ہوم ڈائریکٹری)۔ کسی git چیک آؤٹ کو ایک الگ فولڈر آئیکن اور ایک چیک باکس ملتا ہے؛ عام فولڈر کو کچھ نہیں، چنانچہ صرف چیک آؤٹ ہی منتخب کیے جا سکتے ہیں۔
+4. ایک یا زیادہ چیک آؤٹ پر نشان لگائیں اور بیچ رجسٹر کر دیں۔ نیویگیٹ کرتے ہوئے بھی انتخاب برقرار رہتے ہیں، اس لیے آپ ایک ہی پاس میں کئی جمع کر سکتے ہیں اور ایک غلط انتخاب باقی کو کبھی نہیں گراتا۔
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center ہر چیک آؤٹ کا `origin` ریموٹ پڑھتا ہے، مالک اور ریپو حل کرتا ہے اور ریپو کی قطار **اِسی ورک اسپیس کے اندر** بناتا ہے۔ اسے لنک کرنے کا کوئی دوسرا مرحلہ نہیں: رجسٹریشن ہی اس کا دائرہ طے کرتی ہے۔
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+بعد میں کسی اور ورک اسپیس میں وہی چیک آؤٹ رجسٹر کرنے سے ایک دوسری، آزاد ریپو قطار اپنے الگ id کے ساتھ بنتی ہے۔ ورک اسپیسز کے پار کوئی چیک آؤٹ اپنے فائل سسٹم پاتھ سے پہچانا جاتا ہے، id سے کبھی نہیں۔
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+تصدیق: ریپو فہرست میں اپنے `owner/repo` اور موجودہ برانچ کے ساتھ ظاہر ہوتا ہے۔
 
-## Step 3: Make one agent runnable
+## مرحلہ 3: ایک ایجنٹ کو چلانے کے قابل بنائیں
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+اِس ورک اسپیس نے جو پانچ ایجنٹ ابھی سیڈ کیے ہیں، اُن کا نہ کوئی اڈاپٹر ہے نہ ماڈل۔ ڈسپیچ انہیں **Control Center (built-in)** پر چلاتا ہے اور، ماڈل مقرر نہ ہونے پر، Anthropic سے اس کا ڈیفالٹ ماڈل مانگتا ہے — چنانچہ وہ صرف اُس صورت چلتے ہیں جب آپ نے Anthropic اکاؤنٹ منسلک کیا ہو، اور اگر کیا ہو تو اُس ماڈل پر چلتے ہیں جو آپ نے نہیں چنا۔ پہلی بار چلنے والی آن بورڈنگ اپنا انتخاب پہلے ورک اسپیس کے ہر ایجنٹ پر ایک بار ثبت کر دیتی ہے؛ اس کے بعد آپ کا بنایا ورک اسپیس پانچوں کو غیر سیٹ شروع کرتا ہے۔ اب ایک مقرر کریں۔
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں
+2. روسٹر میں `engineer` منتخب کریں
+3. **ترتیبات** ٹیب پر **اڈاپٹر** کو `Control Center (built-in)` پر سیٹ کریں اور کوئی **ماڈل** اُس فراہم کنندہ سے چنیں جو آپ نے ترتیبات → سرور → ماڈل فراہم کنندگان کے تحت منسلک کیا ہو
+4. **تبدیلیاں محفوظ کریں** دبائیں
 
-Confirm it: reopen the agent and the two fields hold your choices.
+تصدیق: ایجنٹ کو دوبارہ کھولیں تو دونوں فیلڈ آپ کے چنے ہوئے انتخاب برقرار رکھتے ہیں۔
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/) covers the rest of the form.
+ہر ایجنٹ اپنا اڈاپٹر اور ماڈل خود رکھتا ہے، اس لیے جس بھی دوسرے ایجنٹ کو آپ استعمال کرنے کا ارادہ رکھتے ہیں، اس کے لیے یہی دہرائیں۔ [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/) فارم کا باقی حصہ بتاتا ہے۔
 
-## Step 4: See the isolation boundary
+## مرحلہ 4: تنہائی کی حد دیکھیں
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+ٹائٹل بار کی چپ سے ایک دوسرا ورک اسپیس بنائیں، بالکل مرحلہ 1 کی طرح۔ پھر اسے دیکھیں:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **ترتیبات → ورک اسپیس → ریپوزٹریز** خالی ہے۔ ایک منٹ پہلے آپ کا رجسٹر کیا ہوا ریپو وہاں نہیں ہے۔
+- **ترتیبات → ورک اسپیس → ایجنٹس** میں پانچ ایجنٹ ہیں، مگر وہ مختلف قطاریں ہیں — مرحلہ 3 میں سیٹ کیا گیا اڈاپٹر غائب ہے۔
+- اسپیسز کی فہرست، ٹکٹس اور میموری سب خالی ہیں۔
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+کچھ بھی لیک نہیں ہوا، کیونکہ لیک ہونے کے لیے کچھ ہے ہی نہیں: ہر ورک اسپیس کی قطاریں اُسی ورک اسپیس کی اپنی ڈیٹا بیس فائل میں رہتی ہیں۔ ایک ورک اسپیس سے دوسری میں پڑھنا کوئی ایسی کوئری نہیں جسے فلٹر کیا جائے، یہ ایسی کوئری ہے جس کے چلنے کی کوئی جگہ ہی نہیں۔ ورک اسپیس حذف کرنا ایک فائل کا لنک توڑنا ہے۔
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+ٹائٹل بار کی چپ سے واپس جائیں، یا **ورک اسپیسز منظم کریں** کھول کر انہیں ساتھ ساتھ دیکھیں۔
 
-For the full model, read [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/).
+مکمل ماڈل کے لیے [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) پڑھیں۔
 
-## Recap
+## خلاصہ
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+آپ نے ایک ورک اسپیس بنایا، اسے ایک CEO اور چار ماہرین سیڈ کرتے دیکھا، اس میں ایک ریپو رجسٹر کیا، ایک ایجنٹ کو اڈاپٹر اور ماڈل دیا اور تصدیق کی کہ دوسرا ورک اسپیس ان میں سے کچھ بھی شیئر نہیں کرتا۔
 
-**Next:** [Dispatch your first agent](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) to put the workspace to work.
+**اگلا:** [اپنا پہلا ایجنٹ بھیجیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) تاکہ ورک اسپیس کو کام پر لگایا جا سکے۔

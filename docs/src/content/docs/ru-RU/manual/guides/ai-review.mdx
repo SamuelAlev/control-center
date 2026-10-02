@@ -1,152 +1,166 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Использовать ИИ-проверку
+description: Запустите конвейер pr_review для PR, прочитайте замечания и вердикт, а затем опубликуйте проверку в GitHub.
 slug: ru-RU/руководство/практические-руководства/ии-проверка
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+В этом руководстве показано, как поручить агентам-ревьюерам проверить pull request
+и как опубликовать результат в GitHub.
 
-## Start an AI review
+## Запустить ИИ-проверку
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Откройте PR и перейдите на вкладку «Обзор»
+2. Откройте меню переполнения ⋯ в строке действий и выберите **Спросить AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Этот пункт появляется, только пока PR открыт — это действие до мержа. Та же
+кнопка предлагается как **Спросить AI** в пустом состоянии вкладки «Ревью», до
+появления какой-либо проверки.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center запускает предустановленный конвейер `pr_review` и открывает
+вкладку «Ревью» этого PR, чтобы вы могли наблюдать за ним. Конвейер:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Открывает собственное пространство проверки PR, в изолированном worktree
+   которого PR выгружен на его head
+2. Запускает параллельно ревьюеров в соответствии с уровнем ревью рабочего
+   пространства — по умолчанию троих (предустановленные агенты **qa**,
+   **architect** и **engineer**, параллельно).
+   Никакого определения языка или предметной области нет
+3. Поручает ведущему агенту (CEO) свести их замечания в единый разбор
+4. Финализирует: раскладывает замечания по корзинам консенсуса и вычисляет
+   вердикт. Когда связь достигает `awaiting approval`, на вкладке «Ревью»
+   появляется **Опубликовать на GitHub**
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Насколько глубокой будет проверка, определяется **уровнем ревью** рабочего
+пространства — `light` (один ревьюер), `balanced` (трое, по умолчанию) или
+`thorough` (все пятеро, с добавлением специалистов по безопасности и
+производительности) — он задаётся в разделе
+**Настройки → Рабочее пространство → Основные**, на карточке **Политика рабочего
+пространства**. Более лёгкий уровень фиксирует ровно столько же замечаний; просто
+меньше из них показывается на первом плане.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ru-RU/руководство/понятия/ии-проверка/) for how the pieces fit together.
+Все ревьюеры пишут в единое пространство проверки PR — именно это делает их
+замечания сопоставимыми. О том, как все части складываются вместе, см.
+[ИИ-проверка](/ru-RU/руководство/понятия/ии-проверка/).
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/).
+`pr_review` поставляется только с ручным триггером. Чтобы он срабатывал на каждый
+опубликованный PR, добавьте триггер сами — см.
+[Запускать агентов-ревьюеров](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/). Можно также
+запустить проверку прямо из GitHub, без триггера конвейера: упомяните бота сервера
+в PR или добавьте метку `ai-review` — см.
+[Общаться с Control Center из GitHub PR](/ru-RU/руководство/практические-руководства/разговоры-в-github-pr/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Если всплывающее уведомление говорит, что проверка для этого pull request уже
+идёт, значит, она уже запущена; оставайтесь на вкладке «Ревью» или откройте
+**Конвейеры**, чтобы найти её.
 
-## Read the findings
+## Прочитать замечания
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Ревьюеры фиксируют замечания как **узлы проверки** в пространстве проверки.
+Каждый узел несёт:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Поле            | Описание                                                      |
+| --------------- | ------------------------------------------------------------- |
+| Тип             | `bug`, `suggestion`, `recommendation`, `question` или `ticket` |
+| Приоритет       | P0 (critical) → P3 (nit)                                      |
+| Категория       | `security`, `stability`, `data_integrity`, `correctness`, `performance` или `maintainability` |
+| Файл и строка   | Где привязано замечание                                       |
+| Исходный код    | Код, к которому относится замечание                           |
+| Предлагаемый код | Предлагаемое исправление                                     |
+| Уверенность     | Насколько ревьюер уверен                                      |
+| Статус          | `open` → `consensus-ready` → `resolved` или `dismissed`       |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Замечание достигает **consensus-ready** только тогда, когда его подтверждает
+_другой_ ревьюер. Агент не может подтвердить собственное замечание, поэтому
+мнение одного ревьюера никогда не продвигается дальше само по себе.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ru-RU/руководство/практические-руководства/вычисления-проверки/) for what the pass produces.
+Вкладка «Ревью» показывает список замечаний с фильтрацией по типу и статусу и
+переключателем для отклонённых замечаний, рядом с артефактом, который опубликовал
+ведущий агент. Детерминированное представление — когорты, многоосевой дашборд,
+контрактные и визуальные diff-ы — вычисляется на стороне сервера, но не имеет
+поверхности в приложении; о том, что производит этот проход, см.
+[Вычисления проверки](/ru-RU/руководство/практические-руководства/вычисления-проверки/).
 
-## Check the disagreements panel
+## Проверить панель расхождений
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Когда два ревьюера привязывают замечания к одному файлу и строке, но оценивают их
+очень по-разному — приоритеты различаются на два уровня или больше, либо один
+называет это `bug`, а другой — `suggestion`, — над списком замечаний появляется
+панель расхождений. Прочитайте их в первую очередь: именно там мнения ревьюеров
+расходятся, и ваше суждение стоит дороже всего.
 
-## Read the verdict
+## Прочитать вердикт
 
-When the lead agent finalizes, it computes a **verdict**:
+Когда ведущий агент завершает работу, он вычисляет **вердикт**:
 
-| Verdict   | Meaning                                      |
+| Вердикт   | Значение                                     |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Ничего блокирующего не найдено               |
+| **Hold**  | Проблемы, которые стоит устранить до мержа   |
+| **Block** | Критические проблемы, которые необходимо исправить |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Вердикт несёт агрегированную оценку уверенности и количество замечаний по каждому
+приоритету.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Затем в него встраиваются оси проверки, и они могут сделать его только **более**
+строгим. Ось под шлюзом, которая проваливается, принудительно даёт **Block**; ось
+под шлюзом, которая не смогла завершиться (`partial`) или вообще не смогла
+запуститься (`unavailable`), принудительно даёт как минимум **Hold**. Отсутствие
+доказательств никогда не открывает шлюз.
 
-## Publish the review to GitHub
+## Опубликовать проверку в GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Публикация — отдельный шаг, намеренно требующий подтверждения пользователя.
+Конвейер `pr_review` оставляет проверку в Control Center и не публикует ничего в
+GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. На вкладке «Ревью» дождитесь появления **Опубликовать на GitHub**
+2. Нажмите **Опубликовать на GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center отправляет **одно** ревью GitHub. Замечания, уже разрешённые или
+отклонённые, пропускаются. Кнопка включает все оставшиеся открытые замечания и
+при вердикте **Ship** отправляет `APPROVE`. (Инструмент MCP
+`publish_review_to_github` по-прежнему по умолчанию работает только с замечаниями,
+подтверждёнными другим ревьюером, и не одобряет, если вы не передадите
+`approve_on_ship`.) Замечания с привязкой к файлу и строке становятся встроенными
+комментариями; всё остальное складывается в тело сводки, и каждое несёт подпись
+«— Control Center AI review», чтобы источник был однозначен. Вердикт **Block**
+отправляется как `REQUEST_CHANGES`; **Hold** — как `COMMENT`; **Ship** — как
+`APPROVE` при нажатии этой кнопки. Затем появляется всплывающее уведомление
+**Опубликовано**. Ревью публикуется от имени приложения сервера.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Если GitHub отклоняет встроенную привязку, потому что строка не входит в diff,
+всё ревью отправляется заново, а каждое замечание складывается в тело, чтобы
+ничего не пропало молча.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Публикация проходит через ограничения]
+`pr_review.publishReview` объявляет класс действий `prPublish` и проходит через
+точку контроля ограничений. Если вычисленное решение — `prompt` и подтверждающий
+не подключён, публикация отклоняется — ограничения работают по принципу
+безопасного отказа. Задайте явное правило в разделе
+Настройки → Рабочее пространство → Разрешения агента, если хотите, чтобы это
+выполнялось без присмотра.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Другие встроенные конвейеры публикуют в GitHub напрямую: `cross_review`,
+`pr_triage`, `ticket_to_pr` и `pre_merge_gate` каждый завершается шагом
+комментария. Только `pr_review` придерживает свой результат для вас.
 
-## Dispatch reviewers yourself
+## Запустить ревьюеров самостоятельно
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/).
+Чтобы контролировать, какие роли проверяют PR и на какие файлы смотрит каждая из
+них, используйте инструмент MCP `dispatch_reviewers` в существующем пространстве
+проверки или добавьте узлы ревьюеров в конвейер. Оба пути вместе с точной
+сигнатурой инструмента описаны в разделе
+[Запускать агентов-ревьюеров](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/).
 
-## Related guides
+## Связанные руководства
 
-- [Review and merge a PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
-- [Dispatch reviewer agents](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/)
-- [Review compute (cohorts and axes)](/ru-RU/руководство/практические-руководства/вычисления-проверки/)
+- [Проверить и смержить PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
+- [Запускать агентов-ревьюеров](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/)
+- [Вычисления проверки (когорты и оси)](/ru-RU/руководство/практические-руководства/вычисления-проверки/)
 
-## Related concepts
+## Связанные понятия
 
-- [AI review](/ru-RU/руководство/понятия/ии-проверка/)
-- [Guardrails](/ru-RU/руководство/понятия/ограничения/)
+- [ИИ-проверка](/ru-RU/руководство/понятия/ии-проверка/)
+- [Ограничения](/ru-RU/руководство/понятия/ограничения/)

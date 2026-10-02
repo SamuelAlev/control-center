@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Koble Slack til arbeidsområdet ditt
+description: Opprett Slack-appen, koble den til, knytt kontoen din og få en agent til å svare i en Slack-tråd.
 slug: nb-NO/handbok/veiledninger/forste-chatbro
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Det du skal bygge
 
-By the end of this tutorial, you will have:
+Når du er ferdig med denne veiledningen, har du:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- En Slack-app opprettet for arbeidsområdet ditt, med de riktige tillatelsene og hendelsene allerede satt opp
+- En levende tilkobling mellom Slack og Control Center
+- Din egen Slack-konto knyttet til Control Center-brukeren din
+- En agent som svarer deg i en Slack-tråd, og en sak opprettet fra en skråstrekkommando
 
-Prerequisites:
+Forutsetninger:
 
-- [Your first workspace](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/) and [Dispatch your first agent](/nb-NO/handbok/veiledninger/forste-agent/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [Ditt første arbeidsområde](/nb-NO/handbok/veiledninger/forste-arbeidsomrade/) og [Send ut din første agent](/nb-NO/handbok/veiledninger/forste-agent/) fullført — et arbeidsområde uten agenter kan ta imot en Slack-melding, men har ingen som kan svare på den
+- Arbeidsområdets **CEO-agent** har en adapter og en modell satt under **Innstillinger → Arbeidsområde → Agenter**. Broen vekker CEO-en, ikke agenten du konfigurerte i forrige veiledning, og en agent uten adapter kjører på den innebygde løkken med Anthropics standardmodell.
+- Rollen `owner` eller `admin` i Control Center-arbeidsområdet (å koble til en chat-app taler for hele arbeidsområdet)
+- Tillatelse til å opprette og installere apper i Slack-arbeidsområdet
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Ingenting her trenger en offentlig adresse, en tunnel eller en innkommende port. Control Center ringer _ut_ til Slack over Socket Mode, så dette virker fra en bærbar maskin bak NAT.
 
-## Step 1: Get a Slack app configuration token
+## Steg 1: Skaff et appkonfigurasjonstoken for Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Dette er den ene hemmeligheten du må hente for hånd. Det lar Control Center opprette og senere redigere appen for deg.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Åpne [api.slack.com/apps](https://api.slack.com/apps)
+2. Rull ned til delen for appkonfigurasjonstokenet nederst på siden
+3. Generer et tokenpar for Slack-arbeidsområdet ditt
+4. Kopier **oppdaterings**tokenet — det begynner med `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Steg 2: La Control Center opprette appen
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. I Control Center går du til **Innstillinger → Arbeidsområde → Generelt** og finner kortet **Chat-broer**
+2. I **Slack**-blokken klikker du på **Opprett app for meg**
+3. Lim inn appkonfigurasjonstokenet
+4. Se gjennom hvordan boten vil se ut:
+   - **Appnavn**: hvordan Slack viser appen, f.eks. `Control Center · Acme`
+   - **Botnavn**: det folk skriver etter `@`, f.eks. `control-center`
+   - **Kort beskrivelse** og **Hva boten sier den kan gjøre**
+   - **Slash-kommando**: `cc` som standard, så kommandoen er `/cc`
+   - **Direktemeldinger**: la stå på, slik at medlemmer kan sende direktemeldinger til boten
+5. Klikk **Opprett app**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center setter sammen hele appdefinisjonen — Socket Mode på, bot-scopene og hendelsesabonnementene den trenger, skråstrekkommandoen, Messages-fanen — og oppretter den i Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## Steg 3: Fullfør de to stegene bare Slack kan gjøre
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack har ingen API for å generere et app-nivå-token eller installere en app, så dialogen gir deg begge som lenker:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Generer et app-nivå-token** — åpner **Basic Information → App-Level Tokens**. Opprett et token med scopet `connections:write` og kopier det. Det begynner med `xapp-`
+2. **Installer appen** — åpner **Install App**. Installer til arbeidsområdet, og kopier deretter **Bot User OAuth Token**. Det begynner med `xoxb-`
 
-Keep both values around for the next step.
+Ta vare på begge verdiene til neste steg.
 
-## Step 4: Connect
+## Steg 4: Koble til
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Tilbake i dialogen klikker du på **Lim inn påloggingsinformasjonen**
+2. Fyll inn **Bot-token** (`xoxb-…`) og **App-nivå-token** (`xapp-…`)
+3. La **Appkonfigurasjonstoken** stå tomt — det fra steg 1 er allerede lagret (Slack roterte det, og Control Center lagret det nye)
+4. Klikk **Koble til**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center verifiserer bot-tokenet med Slack før den lagrer noe, og åpner deretter socketen. Raden viser nå botens navn og navnet på Slack-arbeidsområdet ditt med et **Live**-merke.
 
-## Step 5: Link your own Slack account
+## Steg 5: Knytt din egen Slack-konto
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Tilkoblingen gjør boten tilgjengelig; knytningen gjør _deg_ gjenkjennelig. Inntil Slack-identiteten din er knyttet, vil ikke boten handle på meldingene dine — den tilskriver aldri en melding til den som installerte appen.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Knytningen er personlig, og ligger derfor på en annen side enn den arbeidsområdeomfattende tilkoblingen.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet** og finn kortet **Knyttede chat-kontoer**
+2. Klikk **Knytt Slack-kontoen min**
+3. Kopier kommandoen den viser, for eksempel `/cc link K7M2QP`
+4. I Slack sender du den kommandoen til boten i en direktemelding
+5. Boten svarer «Knyttet — du er …»
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Koden er til engangsbruk og utløper etter 15 minutter. Hvis Slack-e-postadressen din stemmer med en Control Center-bruker som allerede er medlem av dette arbeidsområdet, knytter broen deg til automatisk første gang du snakker med den, og du kan hoppe over dette steget.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Hvis du nevner boten før dette er gjort, avviser den og sier hvorfor. De tre avvisningene er forskjellige, så les hvilken du fikk:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Avsender uten knytning**: boten forteller deg hvordan du knytter. Kom tilbake til dette steget.
+- **Knyttet, men ikke medlem av dette arbeidsområdet**: be en admin om å invitere deg.
+- **Medlem med en skrivebeskyttet rolle** (viewer eller guest): boten starter ikke arbeid på dine vegne.
 
-## Step 6: Put an agent on something
+## Steg 6: Sett en agent på noe
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. I Slack inviterer du boten inn i en kanal: `/invite @control-center`
+2. Nevn den med en ekte forespørsel:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center oppsummer de åpne PR-ene i api-repoet
 
-The bridge:
+Broen:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Oppretter et Control Center-område for den Slack-tråden, oppkalt etter Slack-kanalen og forespørselen din
+2. Vekker arbeidsområdets frontdør-agent (CEO-agenten når det finnes en, ellers den første agenten)
+3. Strømmer agentens svar tilbake til Slack-tråden etter hvert som det skrives
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Svar i den samme Slack-tråden for å fortsette — du trenger ikke nevne boten flere ganger, fordi Slack-tråden nå er broet. Du kan også sende direktemelding til boten i stedet for å bruke en kanal; hver direktemeldingssamtale driver sitt eget Control Center-område, med en tittel og en «Tenker…»-statuslinje mens agenten jobber.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Strømming krever Slacks strømme-API, som ikke finnes i alle abonnementer. Hvis appen din avvises for det, slutter broen å prøve for hele tilkoblingen og legger i stedet ut hvert svar som én enkelt melding, og kortet Chat-broer viser «Live-strømming er av for denne Slack-appen — svar kommer som én melding.» Alt annet virker på samme måte.
 
-## Step 7: File a ticket without leaving Slack
+## Steg 7: Opprett en sak uten å forlate Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Boten svarer med saksnøkkelen den opprettet. Saken er en vanlig lokal Control Center-sak, rapportert av deg, klar til å tilordnes en agent. `/cc help` viser alt kommandoen kan gjøre.
 
-## Recap
+## Oppsummering
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Du opprettet en Slack-app fra Control Center, koblet den til over en utgående socket, knyttet Slack-identiteten din til Control Center-brukeren din og styrte en agent fra en Slack-tråd. Alt som skjedde i Slack, finnes også i Control Center: Slack-tråden er et område, svaret er en transkripsjon, saken er en sak.
 
-**Next:** [Set up Slack integration](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/nb-NO/handbok/konsepter/chatbroer/).
+**Neste:** [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/) dekker veien for hånd, rotasjon av token og feilsøking. For modellen under, les [Chatbroer](/nb-NO/handbok/konsepter/chatbroer/).

@@ -1,192 +1,179 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: 沙盒后端
+description: 各个沙盒后端、它们各自在何处生效，以及沙盒运行时用到的每一个值对象。
 slug: zh-CN/手册/参考/沙盒后端
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[一次运行是否被沙盒包裹取决于主机]
+`cc_server` 在启动时探测主机一次，只要探测报告有可用的后端且 `--sandbox` 不为 `off`，就用原生后端包裹智能体派发。两处派发接缝都会被包裹：Claude Code CLI 经由沙盒端口，ACP 加内置运行器的 `bash` 工具则经由沙盒管理器。
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/zh-CN/手册/概念/护栏/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+在探测报告没有后端的地方——**Windows 始终如此**，以及没有 `bwrap` 和 `socat` 的 Linux 或 WSL2——智能体运行**不会**被沙盒包裹。ACP 和运行器的 `bash` 工具仍会在净化过的环境中启动；Claude Code 则经由 `NoSandboxAdapter` 继承主机环境。其余的边界包括：这次运行自己的工作树（随附 `rift` 的地方用写时复制；Windows 上用 `git worktree`）、按能力门控并在每次启动时中介签发、在拆除时吊销的凭据、按模式的命令策略、统一的[操作护栏](/zh-CN/手册/概念/护栏/)（失败即关闭）、ACP 和运行器 `bash` 路径上的环境净化，以及它的模式所允许的工具面。
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+运行器的进程内文件工具（read、write、edit、apply patch、search、find、search_files）在每一种主机上都位于沙盒之外：它们运行在服务器进程内部，因此只有 `bash` 被包裹。
 :::
 
-## Backend overview
+## 后端概览
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
-| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/zh-CN/手册/概念/机台/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| 后端 | 取值 | 平台 | 可用性 |
+| --- | --- | --- | --- |
+| 封闭虚拟机 | `microvm` | macOS、Linux、Windows（microVM 虚拟机管理程序） | 受 microVM 运行时的探测门控；适用于交互式终端——shell 运行在一台[机台](/zh-CN/手册/概念/机台/)内，而不是主机上 |
+| 原生 | `native` | macOS（Seatbelt）、Linux 和 WSL2（bubblewrap） | 在启动时探测；Linux 会拒绝一次需要基于文件名通配符的写入拒绝的运行，而 bubblewrap 无法强制执行这一点 |
+| 无隔离 | `none` | 全部 | 解析时的默认值、终端的默认值，以及没有可用后端或设置了 `--sandbox off` 时的回退 |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` 对 null 或无法识别的已存值返回 `none`。已存的 `"docker"` 会映射为 `native`。
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/zh-CN/手册/参考/机台/).
+**`microvm` 是唯一带内核边界的后端**——工作负载确实不在主机上运行。它在任何一个方向上都不会成为静默回退：在无法启动 VM 的主机上显式请求它会大声失败（“我要的是一台 VM，拿到的却是自己的笔记本”是这套封闭方案唯一承受不起的降级），而只有*未指定的默认值*才会降级到 `native`，并打出一行日志说明这一点。会话实际使用的后端会回报给客户端并打上徽标，因此一台终端绝不可能在主机上运行的同时声称自己已被封闭。VM 自身的生命周期、镜像和出站访问由[机台参考](/zh-CN/手册/参考/机台/)介绍。
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows 没有原生沙盒。** `NativeSandboxAdapter.probe` 在所有非 macOS 也非 Linux/WSL2 的主机上都返回 `available: false`。因此 Windows 上的智能体派发使用 `none`。`microvm` 后端是另一回事：它受 microVM 运行时的探测门控，适用于交互式终端和机台，而不是在主机上包裹 `bash`。
 
-## Probe results
+## 探测结果
 
-The probe is what gates enforcement. It runs once, at server boot.
+探测才是决定是否强制执行的那道门。它在服务器启动时运行一次。
 
-| Host                                   | `available` | Note / hint                                                               |
-| -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| 主机 | `available` | 说明 / 提示 |
+| --- | --- | --- |
+| macOS | `true` | `sandbox-exec`（Seatbelt）——命名空间隔离，没有内核边界 |
+| 装有 `bwrap` 和 `socat` 的 Linux 或 WSL2 | `true` | bubblewrap——命名空间隔离，没有内核边界 |
+| Linux 或 WSL2 缺少其中任一工具 | `false` | `requiresInstall: true`，并带有指明缺失软件包的安装提示 |
+| 任何其他平台 | `false` | 此平台不提供原生沙盒 |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+服务器会在启动时用一行日志记录结果：`agent sandbox ON` 加说明、`no OS-native agent sandbox on this host` 加提示，或 `agent sandbox DISABLED by --sandbox off`。`GET /healthz` 不携带任何沙盒字段。
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` 接受 `on`（默认）或 `off`。它是退出开关，而不是启用开关：`on` 的意思是“主机提供后端时就包裹”，而绝不是“要求必须有后端”。
 
-## Native backend
+## 原生后端
 
-### macOS: Seatbelt
+### macOS：Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+使用 Apple 的 Seatbelt 沙盒机制（与 macOS App Sandbox 使用的是同一套系统）。
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+生成的配置**默认宽松**（`(allow default)`），再在其上划出一系列拒绝，因为一份完全默认拒绝的配置会让交互式 shell 无法使用——需要枚举的 dyld、XPC 和 Mach 调用太多了。实际后果是智能体仍然可以读取主机的大部分内容；你已注册的检出靠的是显式的写入和重命名拒绝来保护，而不是靠不可见。
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **文件系统读取**：对机密路径（`~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh`、`~/Library/Keychains` 以及拒绝读取集合中的其余路径）拒绝
+- **文件系统写入**：先重置为拒绝，再显式放行子路径，其中强制拒绝的路径（shell rc 文件、`.git/hooks`、Claude 配置、受保护的检出）即使在可写根目录之内也会被阻止。`file-write-unlink` 在每一条被拒绝路径及其祖先路径上都被拒绝，因此重命名无法绕过一次写入拒绝
+- **进程**：对始终危险的二进制文件执行 `process-exec` 拒绝，并阻止从任何可写目录执行任何东西
+- **网络**：限制为进程内代理端口加 DNS——回环并非一律放行，Unix 套接字也不允许。代理强制执行按会话的域名允许列表（见[网络出站](#网络出站)）
+- **配置**：配置在每次启动时根据 `SandboxSpec` 生成
 
-Requirements:
+要求：
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec`（`/usr/bin/sandbox-exec`），每次 macOS 安装都自带——无需额外的工具
 
-### Linux: bubblewrap
+### Linux：bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+使用 bubblewrap（`bwrap`）创建挂载和 PID 命名空间。
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **文件系统**：创建一个挂载命名空间，其中只有被绑定的路径可见
+- **网络**：运行在未共享的网络命名空间中；流量经由 `socat` 的 Unix 套接字桥到达主机代理
+- **进程**：PID 命名空间隔离
 
-Requirements:
+要求：
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- 已安装 `bubblewrap` 和 `socat`（Debian/Ubuntu 上为 `sudo apt-get install bubblewrap socat`）
+- 内核命名空间支持（现代 Linux 上为标准配置）
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap 可以遮蔽一个已存在的路径，但无法禁止可写绑定内*新增*的 `.env`、`*.key` 或 `*.pem` 文件。标准派发策略要求这些基于文件名的通配符拒绝，因此原生智能体派发目前在 Linux/WSL2 上**即便探测发现 bubblewrap 也会失败关闭**。它不会以静默削弱的策略运行。要恢复 Linux 原生派发，需要一个具备创建时文件名规则的后端。关闭沙盒是一种显式的无限制退出选择，而不是等效的变通办法。
 
-## None backend
+## 无隔离后端
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+没有沙盒。进程直接运行在主机上，拥有主机的文件系统、网络和进程访问权限。ACP 和运行器的 `bash` 工具仍会获得环境净化和命令策略；经由 `NoSandboxAdapter` 的 Claude Code 则继承主机环境。这就是在没有可用后端或设置了 `--sandbox off` 的主机上智能体派发所回退到的状态，也是客户端未指名任何后端时终端的默认值。
 
-## Server-hosted terminal
+## 服务器托管的终端
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+终端按自己的规则被沙盒包裹，而不是由派发探测决定。`TerminalSessionService` 的 `defaultBackend` 是 `none`，而 `cc_server` 不会覆盖它，因此终端会话运行的是主机 shell，除非客户端显式请求 `native`——桌面端的终端面板不会这么做。
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+请求 `native` 时，shell 会在一个固定的终端配置下经由 `SandboxManager` 包裹：`$HOME` 和会话的工作目录可写，网络开放，而 `~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh` 和 `~/Library/Keychains` 被拒绝读取。能力门控不适用——那是派发关心的事。如果无法进行包裹，会话会失败，而不是在主机 shell 的 PTY 上显示一个原生徽标。
 
-## Network egress
+## 网络出站
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+沙盒启动时，出站网络访问由进程内代理强制执行，而不是靠内核防火墙规则。在没有可用后端的主机上，这一切都不适用，被启动的进程会与服务器用户本人完全一样地访问网络。
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- 沙盒运行时在 `cc_server` 进程内部于 `127.0.0.1` 上运行一个 HTTP/HTTPS 代理和一个 SOCKS5 代理，**每个受限会话一对**（`http_proxy.dart`、`socks_proxy.dart`）。并发运行不共享同一对。
+- 被沙盒包裹的进程会收到代理环境变量（`HTTP_PROXY`/`HTTPS_PROXY` → HTTP 代理，`ALL_PROXY` → SOCKS 代理；`GIT_SSH_COMMAND` 让 git-over-SSH 走 SOCKS 代理）。在 Linux 上网络命名空间是未共享的，因此代理是唯一的出路；在 macOS 上沙盒与主机共享回环，可以直接与它们通信。
+- 每个连接的目标主机都会与会话的域名允许列表比对；其他一切都被拒绝。有两种通配符形式，各自恰好含一个 `*`：前缀式 `*.example.com` 匹配任意子域名（包括 `a.b.example.com`），但不匹配裸域本身；中间标签式 `bedrock.*.amazonaws.com` 恰好匹配一个标签（`bedrock.us-east-1.amazonaws.com`，而不是 `bedrock.evil.attacker.amazonaws.com`）。
+- 允许列表按会话从经过筛选的基线（`kBaselineAllowedDomains`：LLM 提供方、Git 托管、软件包注册表）解析而来，再加上智能体具备 GitHub 或推送能力时的 GitHub 域名，以及 `SandboxSpec.egressAllowlist`。解析器还会在智能体可以调用工单系统时接受工单提供方域名，但派发路径从不传入那份列表（也不传入额外的 `egressAllowlist` 条目），因此实际上每次运行得到的都是基线加上其能力所赢得的 GitHub 域名。
+- 一份固定的拒绝列表（`kBaselineDeniedDomains`：云元数据端点、遥测接收端）优先于所有允许项。
+- `networkEnabled: false`（或一个没有网络能力的智能体）仍会启动按会话的代理，但允许列表为空，因此所有出站连接都会被拒绝。
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+传给 `SandboxPort.launch` 的规范：
 
-| Field             | Type                                        | Description                                                                                                                                 |
-| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `sessionId` | `String` | 稳定的会话标识符（通常是空间 id） |
+| `workspaceId` | `String` | 所属工作区 id |
+| `agentId` | `String?` | 当前绑定到该沙盒的智能体（如果有） |
+| `bindMounts` | `List<SandboxBindMount>` | 主机→客户机挂载；沙盒只会看到这里列出的主机路径 |
+| `networkEnabled` | `bool`（默认 `true`） | 与智能体的网络能力合并。关闭时，按会话的代理仍会启动，但允许列表为空，因此所有出站连接都会被拒绝 |
+| `egressAllowlist` | `List<String>`（默认 `[]`） | 额外允许的出站域名；支持通配符（`*.example.com`，外加一种单标签的中间形式）。派发从不填充它，因此被包裹的运行得到的是经过筛选的基线加上其能力所赢得的 GitHub 域名 |
+| `guestWorkdir` | `String?` | 沙盒内的默认工作目录；单次 `exec` 调用可以覆盖它 |
+| `mode` | `Mode`（默认 `chat`） | 划定文件系统写入规则：`chat` 保持绑定挂载可写；`review`、`plan` 和 `orchestrate` 为只读 |
+| `capabilities` | `AgentCapabilities`（默认 `safeDefault`） | 推导网络的开/关决定和 GitHub 出站域名。工单域名是解析器的一个参数，而派发路径从不提供它 |
+| `protectedPaths` | `List<String>`（默认 `[]`） | 在任何模式下都绝不允许在沙盒内可写的主机路径 |
+| `runnerStateDirs` | `List<String>`（默认 `[]`） | 运行器存放自身状态的主机目录，在所有模式下都可写（当前是 Control Center 管理的 `CLAUDE_CONFIG_DIR`） |
+| `execGrantRoots` | `List<String>`（默认 `[]`） | 运维人员批准、用来在 macOS 上重新打开可写目录 exec 阻止的目录树。Linux 忽略它们——bwrap 没有可供重新打开的 `$HOME` exec 阻止 |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` 保存着已注册的原始仓库检出，在每次派发时从工作区的仓库解析而来。智能体只在按对话划分的写时复制工作树中工作，因此原始检出从沙盒内部绝不能可写——在 macOS 上，Seatbelt 对 `$HOME` 的一揽子写入放行否则会让它们经由 `bash` 仍可写。它们在所有模式下都会加入机密拒绝写入集合，`chat` 也不例外。
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+每一条拒绝读取和拒绝写入路径都会同时以它的字面写法和经符号链接解析后的写法输出。内核是按解析后的路径匹配拒绝规则的，因此针对符号链接路径写下的规则永远不会触发——而这在 macOS 上是常态而非特例，因为 `/tmp` 会解析为 `/private/tmp`，`/var/folders/…` 会解析为 `/private/var/folders/…`。包含 `*` 或 `?` 的条目会被当作通配符模式，保持原样；无法解析的路径则按原样保留。
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
-| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `hostPath` | `String` | 主机上的绝对路径 |
+| `guestPath` | `String` | 沙盒内的路径（使用原生沙盒时它等于 `hostPath`；保留它是为了适配器的对称性） |
+| `readOnly` | `bool`（默认 `false`） | 为 true 时以只读方式挂载 |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+由 `SandboxPort.launch` 返回：
 
-| Field       | Type                   | Description                                                              |
-| ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `sessionId` | `String` | 会话标识符 |
+| `backend` | `SandboxBackend` | 正在运行的是哪个后端 |
+| `state` | `SandboxState` | 生命周期状态 |
+| `error` | `Object?` | 当 `state` 为 `error` 时设置 |
+| `details` | `Map<String, Object?>` | 适配器私有的簿记信息（工作目录、PID、配置路径等） |
 
 ### SandboxState
 
-| State       | Description                                 |
-| ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| 状态 | 说明 |
+| --- | --- |
+| `created` | 规范已创建，但 VM 尚未启动 |
+| `warm` | 正在运行，可以执行命令 |
+| `active` | 当前正在执行命令 |
+| `suspended` | 已暂停 / 已检查点保存到磁盘以节省 RAM |
+| `destroyed` | 已拆除；句柄不再有效 |
+| `error` | 启动失败——见 `SandboxHandle.error` |
 
-## Sandbox events
+## 沙盒事件
 
-| Event type  | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| 事件类型 | 说明 |
+| --- | --- |
+| `stdout` | 来自沙盒的标准输出 |
+| `stderr` | 来自沙盒的标准错误 |
+| `exit` | 沙盒进程已退出（携带 `exitCode`） |
+| `starting` | 沙盒正在启动 |
+| `ready` | 沙盒已准备好接受 exec 调用 |
+| `killed` | 进程被主机终止（OOM、超时、手动停止） |
+| `violation` | 有一条沙盒策略被违反（携带 `SandboxViolation`） |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
-| --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `action` | `String` | 被拒绝的动词（例如 `file-read*`、`network-outbound`） |
+| `target` | `String` | 被拒绝操作的目标路径或主机 |
+| `suggestedCapability` | `String?` | 能解除这项操作的能力标志（例如 `canCallGitHubApi`） |
+| `raw` | `String?` | 原始日志行，便于调试 |
 
-## See also
+## 另见
 
-- [Sandbox security](/zh-CN/手册/概念/沙盒与安全/)
-- [Sandbox policies](/zh-CN/手册/操作指南/沙盒策略/)
-- [Guardrails](/zh-CN/手册/概念/护栏/)
-- [cc_server CLI](/zh-CN/手册/参考/cc-server-cli/): the `--sandbox` flag
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)
+- [沙盒策略](/zh-CN/手册/操作指南/沙盒策略/)
+- [护栏](/zh-CN/手册/概念/护栏/)
+- [cc_server CLI](/zh-CN/手册/参考/cc-server-cli/)：`--sandbox` 标志

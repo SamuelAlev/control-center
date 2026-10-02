@@ -1,34 +1,36 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Linear-Integration einrichten
+description: Speichere einen Linear-API-Schlüssel auf dem Server, damit Agenten Linear aufrufen können, und wähle Linear als Ticketing-Anbieter für neue Tickets.
 slug: de-DE/handbuch/anleitungen/linear-integration
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/de-DE/handbuch/anleitungen/tickets-verwalten/).
+Füge einen Linear-API-Schlüssel auf dem Server unter deinem Nutzer ein, so wie du
+eine Forge verbindest. Tickets, Projekte, Verknüpfungen, Mitwirkende, Delegation
+und Zuweisung funktionieren alle über die eigene Datenbank von Control Center,
+ohne dass ein externer Dienst nötig ist — siehe
+[Tickets erstellen und verwalten](/de-DE/handbuch/anleitungen/tickets-verwalten/).
 
-## Store your Linear key
+## Deinen Linear-Schlüssel speichern
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Ticketing-API-Schlüssel** liegt unter **Einstellungen → Arbeitsbereich → Allgemein**, auf der
+Karte **Tickets**. Er speichert den Schlüssel auf dem Server unter deiner Nutzer-ID. Den
+eigenen Schlüssel des Servers für Arbeit ohne Aufrufer liefert `LINEAR_API_KEY` oder die
+Karte **Anbieter-Apps**, und er wird nur dann als `TICKETING_API_KEY` injiziert, wenn
+dieser Agent die Befugnis **Ticketing-API-Aufrufe zulassen** hat.
 
-## Stamp new tickets as Linear
+## Neue Tickets als Linear stempeln
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Ticketing-Anbieter** (der erste Schritt des Onboardings und
+`/workspaces/<workspaceId>/api-keys`) bietet `local` und `linear`. Wählst du
+`linear`, stempelt das `provider: linear` auf Tickets, die du von da an anlegst.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Create and manage tickets](/de-DE/handbuch/anleitungen/tickets-verwalten/)
-- [Set up GitHub integration](/de-DE/handbuch/anleitungen/github-integration/)
-- [Manage API keys](/de-DE/handbuch/anleitungen/api-schluessel/)
+- [Tickets erstellen und verwalten](/de-DE/handbuch/anleitungen/tickets-verwalten/)
+- [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)
+- [API-Schlüssel verwalten](/de-DE/handbuch/anleitungen/api-schluessel/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Tickets and delegation](/de-DE/handbuch/konzepte/tickets/)
+- [Tickets und Delegation](/de-DE/handbuch/konzepte/tickets/)

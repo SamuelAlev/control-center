@@ -1,98 +1,99 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Προσαρμογή του chat bot
+description: Μετονομάστε το bot, αλλάξτε τη διατύπωση όσων λέει για τον εαυτό του ή αλλάξτε την εντολή κάθετου του από το Control Center.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Αυτός ο οδηγός δείχνει πώς να αναδιαμορφώσετε την εφαρμογή bot στην πλευρά του παρόχου χωρίς να φύγετε από το Control Center.
 
-## Prerequisites
+## Προαπαιτούμενα
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Ο ρόλος `owner` ή `admin` στον χώρο εργασίας
+- Ένας **συνδεδεμένος** πάροχος. Η γραμμή **Προσαρμογή bot** εμφανίζεται μόνο αφού συνδεθεί ο χώρος εργασίας
+- Μια εφαρμογή που μπορεί να διαχειριστεί το Control Center. Για το Slack αυτό σημαίνει ότι η σύνδεση κρατά ένα token ανανέωσης της ρύθμισης εφαρμογής (`xoxe-…`)· αν δεν το κρατά, η γραμμή το αναφέρει και παραμένει απενεργοποιημένη
 
-## What you can change
+## Τι μπορείτε να αλλάξετε
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Πεδίο | Σημασία | Όριο |
+| --- | --- | --- |
+| **Όνομα εφαρμογής** | Πώς ο πάροχος εμφανίζει την εφαρμογή στη λίστα του | 1–35 χαρακτήρες |
+| **Όνομα bot (τι πληκτρολογούν τα μέλη μετά το @)** | Τι πληκτρολογούν τα μέλη μετά το `@` | 1–80 χαρακτήρες |
+| **Σύντομη περιγραφή** | Μία γραμμή που εμφανίζει ο πάροχος | 140 χαρακτήρες ή λιγότεροι |
+| **Τι λέει το bot ότι μπορεί να κάνει** | Εμφανίζεται πάνω από ένα άμεσο μήνυμα προς το bot | 300 χαρακτήρες ή λιγότεροι |
+| **Εντολή κάθετου** | Η εντολή που καλούν τα μέλη, χωρίς την κάθετο | Πεζά γράμματα, μόνο `a–z 0–9 _ -`, κόβεται στους 32 χαρακτήρες |
+| **Άμεσα μηνύματα** | Αν το bot εκθέτει την εμπειρία άμεσων μηνυμάτων/πράκτορα | Ενεργό ή ανενεργό |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Το Control Center επικυρώνει τα τέσσερα πεδία κειμένου πριν καλέσει τον πάροχο, ώστε να βλέπετε «the app name must be between 1 and 35 characters» αντί για ένα αδιαφανές `invalid_manifest` από έναν διακομιστή που δεν μπορείτε να δείτε. Η εντολή δεν απορρίπτεται αλλά κανονικοποιείται: μια κάθετος στην αρχή αφαιρείται, τα υπόλοιπα γράφονται με πεζά, ό,τι βρίσκεται εκτός των `a–z 0–9 _ -` διαγράφεται και ένα κενό αποτέλεσμα καταλήγει στο `cc`.
 
-## Edit the bot
+## Επεξεργασία του bot
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Πηγαίνετε στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** και μετακινηθείτε στην κάρτα **Γέφυρες συνομιλίας**
+2. Στο τμήμα του παρόχου, κάντε κλικ στο **Προσαρμογή bot**
+3. Το παράθυρο διαλόγου ανοίγει με τις _ζωντανές_ τιμές της εφαρμογής, τις οποίες διαβάζει πίσω από τον πάροχο — οπότε αυτό με το οποίο ξεκινάτε είναι μια αλλαγή που έκανε κάποιος στο ίδιο το περιβάλλον του Slack
+4. Επεξεργαστείτε ό,τι χρειάζεστε και αποθηκεύστε
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Η ανάγνωση αυτών των ζωντανών τιμών κοστίζει μια περιστροφή token στην πλευρά του Slack, γι' αυτό η γραμμή απαιτεί σκόπιμο κλικ αντί να γίνεται κάτι που κάνει η σελίδα κατά τη φόρτωση.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Η εγγραφή επικαλύπτει τις αλλαγές σας πάνω στον τρέχοντα ορισμό της εφαρμογής. Ό,τι δεν μοντελοποιεί το Control Center — μια δεύτερη εντολή κάθετου που προσθέσατε στο Slack, ένα βήμα ροής εργασίας, μια άσχετη ρύθμιση — επιβιώνει άθικτο. Τα scopes και τα συμβάντα συγχωνεύονται, ποτέ δεν αφαιρούνται.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Μετά την αποθήκευση, το Control Center ξαναδιαβάζει την ταυτότητα του bot, ώστε το όνομα στις ρυθμίσεις να ταιριάζει με το όνομα στην εφαρμογή συνομιλίας.
 
-## Reinstall when permissions change
+## Επανεγκατάσταση όταν αλλάζουν τα δικαιώματα
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Επανεγκατάσταση μετά από αλλαγή δικαιωμάτων]
+Το Slack εφαρμόζει αμέσως τον νέο ορισμό της εφαρμογής, αλλά κρατά την
+εγκατεστημένη παραχώρηση ως έχει. Επανεγκαταστήστε την εφαρμογή για να ισχύσει
+η αλλαγή δικαιωμάτων. Η γέφυρα συνεχίζει να εκτελείται με την προηγούμενη
+παραχώρηση μέχρι να το κάνετε.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Όταν μια αποθήκευση αλλάζει τα δικαιώματα, το παράθυρο διαλόγου παραμένει ανοιχτό και λέει «Το Slack άλλαξε τα δικαιώματα της εφαρμογής. Επανεγκαταστήστε την εφαρμογή για να ισχύσουν», με ένα κουμπί **Επανεγκατάσταση εφαρμογής** που ανοίγει τη σελίδα εγκατάστασης αυτής της εφαρμογής στην ομάδα στο Slack. Στο Slack αυτό είναι **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Μετονομασία της εντολής κάθετου
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Αλλάξτε την **Εντολή κάθετου** και αποθηκεύστε. Στη συνέχεια η γέφυρα γράφει οδηγίες χρησιμοποιώντας όποια εντολή χρησιμοποιήθηκε την τελευταία φορά που κλήθηκε, ώστε το κείμενο βοήθειας και οι οδηγίες σύνδεσης να ακολουθούν τη μετονομασία αντί να αναφέρουν μια εντολή που δεν υπάρχει πια.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Η μετονομασία δεν σπάει τα υπάρχοντα νήματα της γέφυρας: τα νήματα βασίζονται στη συνομιλία, όχι στην εντολή.
 
-## What Control Center will not change
+## Τι δεν θα αλλάξει το Control Center
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Δομικές ρυθμίσεις.** Η μεταφορά (Socket Mode), τα απαιτούμενα scopes και οι συνδρομές συμβάντων επιβάλλονται, δεν προσφέρονται. Μια εφαρμογή που μπορεί να ρυθμιστεί ώστε να σιγήσει από μια οθόνη ρυθμίσεων είναι αίτημα υποστήριξης, όχι λειτουργία
+- **Το εικονίδιο του bot.** Μόνο οι ρυθμίσεις της ίδιας της εφαρμογής του παρόχου μπορούν να το αλλάξουν, και το παράθυρο διαλόγου το αναφέρει
+- **Οι μεταβάσεις λειτουργιών του ίδιου του παρόχου.** Μια εφαρμογή που βρίσκεται ήδη στην παλαιότερη μορφή assistant του Slack την κρατά· αυτό το παράθυρο διαλόγου επεξεργάζεται μια περιγραφή, δεν μετεγκαθιστά μια εφαρμογή
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### There is no Customize bot row at all
+### Δεν υπάρχει καθόλου γραμμή Προσαρμογή bot
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/).
+Ο χώρος εργασίας δεν έχει συνδεθεί ακόμη. Η γραμμή εμφανίζεται μόνο όταν το
+τμήμα του παρόχου δείχνει ενεργή σύνδεση. Δείτε τη [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/).
 
-### The Customize bot row is disabled
+### Η γραμμή Προσαρμογή bot είναι απενεργοποιημένη
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Η σύνδεση δεν έχει διαπιστευτήριο διαχείρισης εφαρμογής — ο υπότιτλος της
+γραμμής λέει «Το Control Center χρειάζεται token ρύθμισης εφαρμογής για
+επεξεργασία του bot. Επανασυνδεθείτε και συμπεριλάβετε ένα.» Για το Slack,
+δημιουργήστε ένα ζεύγος token ρύθμισης εφαρμογής στο
+[api.slack.com/apps](https://api.slack.com/apps) και επανασυνδεθείτε με
+συμπληρωμένο το token ανανέωσης. Αυτό είναι αναμενόμενο για μια εφαρμογή που
+φτιάχτηκε με το χέρι ή δημιουργήθηκε μέσω **Δημιουργία στο Slack**, επειδή το
+Slack δεν αναφέρει ποτέ ποια εφαρμογή δημιούργησε.
 
-### "Control Center does not know which app to edit"
+### «Control Center does not know which app to edit»
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Η αποθηκευμένη σύνδεση δεν φέρει αναγνωριστικό εφαρμογής — συνήθως πρόκειται για εφαρμογή που συνδέθηκε με το χέρι προτού καταγραφεί κάποιο αναγνωριστικό. Επανασυνδέστε τον χώρο εργασίας ή δημιουργήστε την εφαρμογή από το Control Center.
 
-### The bot's new name has not appeared in chat
+### Το νέο όνομα του bot δεν εμφανίστηκε στη συνομιλία
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Οι πάροχοι αποθηκεύουν προσωρινά τα μεταδεδομένα της εφαρμογής για λίγο. Αν το όνομα παραμένει παλιό μετά από ένα λεπτό, ελέγξτε αν η αποθήκευση σας ζήτησε να επανεγκαταστήσετε την εφαρμογή.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
-- [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
-- [Chat bridge](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
+- [Γέφυρα συνομιλίας](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)

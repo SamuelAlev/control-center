@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Ajustează contextul de instrumente al unui agent
+description: Inspectează ce trimite de fapt o rulare, schimbă ce instrumente se încarcă de la început și stabilește dacă o alegere proastă de instrument a fost o ratare de recuperare sau o problemă de prompt.
 slug: ro-RO/manual/ghiduri-practice/ajusteaza-contextul-instrumentelor
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ro-RO/manual/concepte/contextul-instrumentelor).
+Acest ghid acoperă munca practică din jurul suprafeței de instrumente pe două niveluri: să vezi ce trimite o rulare, să o schimbi și să diagnostichezi un agent care a apucat instrumentul greșit. Pentru explicația din spate, citește [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor).
 
-## Look at what a run actually sends
+## Uită-te la ce trimite de fapt o rulare
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Deschide o conversație și apasă indicatorul de utilizare a contextului din antetul conversației. Acesta reconstruiește exact suprafața pe care ar trimite-o următoarea trimitere, fără să ruleze nimic. **Vezi mai mult** (sau comanda `/context`) deschide exploratorul complet de context, unde poți inspecta fiecare instrument.
 
-Two segments matter here:
+Două segmente contează aici:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Definiții de instrumente** și **Instrumente MCP și dinamice** — setul rezident, cu costul real în tokeni al fiecărui instrument.
+- **Instrumente încărcate la cerere** — indexul amânat. Fiecărei intrări i se percepe doar numele, pentru că doar numele este tot ce cară cererea; deschiderea unei intrări arată totuși descrierea și schema completă, ca să vezi cât *ar* costa dacă rularea ar trage instrumentul înăuntru.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ro-RO/manual/referinta/cc-server-cli).
+Dacă segmentul amânat este gol, amânarea este dezactivată pentru acest server. Verifică `--tool-deferral` la [CLI-ul `cc_server`](/ro-RO/manual/referinta/cc-server-cli).
 
-## Change which tools load up front
+## Schimbă ce instrumente se încarcă de la început
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Setul rezident este politică, nu configurare — trăiește în `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) și se aplică fiecărei rulări:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ro-RO/manual/concepte/moduri) uses on nearly every turn.
+- `residentBuiltins` — vocabularul de fișiere și shell.
+- `residentDiscovery` — `search_tools` și `list_my_tools`. Nu le elimina; ele sunt calea prin care un agent ajunge la orice altceva.
+- `residentMcpTools` — mâna de instrumente Control Center care merită schema lor la fiecare cerere.
+- Un bloc pentru fiecare mod, pentru instrumentele pe care un anumit [mod](/ro-RO/manual/concepte/moduri) le folosește aproape la fiecare tură.
 
-Two rules when editing it:
+Două reguli când îl editezi:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Adaugă un instrument doar dacă majoritatea rulărilor îl folosesc.** Fiecare nume costă schema lui la fiecare cerere a fiecărei rulări, pentru totdeauna. Un instrument care este important când este folosit, dar rar în ansamblu, își are locul în jumătatea amânată — agentul îl va găsi oricum.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Folosește numele real al instrumentului.** Un nume rezident care nu se potrivește cu niciun instrument este inert: fără eroare, fără avertisment, instrumentul este pur și simplu amânat. `test/tooling/resident_tool_names_test.dart` prinde asta și ține fiecare mod sub 40 de instrumente rezidente, care este chiar scopul exercițiului — dincolo de acel interval, selecția instrumentelor se degradează măsurabil.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Verbele obligatorii și fixate ale unui mod sunt adăugate automat, așa că nu trebuie niciodată să listezi verbul de ieșire propriu al unui mod.
 
-## Diagnose a bad tool choice
+## Diagnostichează o alegere greșită de instrument
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Când un agent a folosit instrumentul greșit sau a susținut că nu poate face ceva, stabilește care dintre trei lucruri s-a întâmplat.
 
-### 1. Did it look?
+### 1. S-a uitat?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Fiecare rulare înregistrează instrumentele amânate pe care le-a încărcat și ce le-a declanșat — un apel direct pe nume sau o interogare `search_tools`. Deschide fluxul de evenimente al rulării (**Setări → Spațiu de lucru → Agenți** → agentul → **Jurnale** → **Vizualizează**) și caută `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Nimic consemnat, iar agentul a spus că îi lipsește capacitatea** — nu s-a uitat niciodată. Aceasta este o problemă de prompt, nu una de recuperare: indexul amânat se află în promptul lui de sistem, cu instrucțiunea de a nu declara o capacitate lipsă până când o căutare nu s-a întors goală.
+- **O căutare consemnată, dar nimic încărcat** — o ratare de recuperare autentică. Treci la pasul 2.
+- **Instrumente încărcate, dar folosit unul greșit** — instrumentele găsite seamănă prea mult. Treci la pasul 3.
 
-### 2. Fix a retrieval miss
+### 2. Repară o ratare de recuperare
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` potrivește pe nume, descrieri și nume de argumente. O ratare înseamnă aproape întotdeauna că descrierea nu conține cuvintele pe care le-a folosit agentul.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Adaugă-le. Descrierile sunt indexul de recuperare, așa că **lungește-le în loc să le scurtezi** — scrie vocabularul pe care un operator l-ar tasta de fapt („atribuie", „predă", „dă-i"), nu doar substantivul intern. Scurtarea unei descrieri pentru a economisi tokeni te costă atât potrivirea la căutare, cât și acuratețea selecției, și economisește aproape nimic în comparație cu schema.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Dacă instrumentul potrivit există, dar se clasează jos, pentru asta este argumentul `limit`; descrierea instrumentului însuși îi spune agentului să lărgească o căutare care pare apropiată, dar ratează.
 
-### 3. Fix look-alike tools
+### 3. Repară instrumentele care seamănă
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Dacă două instrumente au descrieri care s-ar citi la fel pentru cineva care nu cunoaște deja diferența, modelul ghicește. Contopește-le într-un singur instrument cu un argument discriminatoriu.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` și `ticket_pr_link` urmează acest tipar: fiecare se ocupă de legare și dezlegare printr-un argument discriminatoriu. O alegere făcută *în interiorul* unui singur apel, cu contextul complet al cererii, este mai fiabilă decât o alegere făcută între două descrieri care seamănă.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Ține instrumentele separate atunci când au nevoie de reguli de aprobare diferite, de auditare diferită sau de randare diferită — acestea sunt motive pentru care o contopire te-ar costa ceva real.
 
-## Check the prompt cache is working
+## Verifică dacă funcționează cache-ul de prompturi
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Rata de potrivire în cache apare în **Observabilitate → Insights** ca **Rată cache**. O conversație lungă sănătoasă stă sus; dacă este constant scăzută, ceva rescrie prefixul la fiecare tură.
 
-Common causes, in order of likelihood:
+Cauze frecvente, în ordinea probabilității:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Orice lucru nedeterminist devreme în prompt.** O marcă de timp, un id de cerere sau o mulțime iterată într-o ordine variabilă fac asta.
+- **O schimbare de model sau de efort la mijlocul conversației.** Ambele schimbă prefixul. Subagenții sunt deosebit de ușor de greșit aici: rularea copiilor la un efort mai mic pentru a economisi bani poate costa mai mult prin partajarea pierdută a cache-ului decât economisește.
+- **Compactare frecventă.** Compactarea rescrie istoricul prin concepție, așa că costul ei este real; soluția este să compactezi rar și profund, nu des și superficial.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Dezactivarea amânării cu `--tool-deferral=off` este un A/B valid pentru a izola dacă o schimbare de comportament a venit de la suprafața pe două niveluri. Reproduce exact cererea de dinainte de amânare, așa că dacă comportamentul persistă cu ea oprită, suprafața nu este cauza.

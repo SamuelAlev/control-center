@@ -1,199 +1,217 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Memori dan pengetahuan
+description: Bagaimana Control Center menyimpan pengetahuan ejen, apa yang benar-benar sampai ke prompt ejen dan mengapa bacaan memori bersifat fail-open.
 slug: ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Untuk apa memori
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Tanpa memori, setiap perbualan ejen bermula dari kosong: konvensyen yang sama
+perlu dijelaskan semula, keputusan yang sama dipertikaikan semula, jalan mati
+yang sama diteroka semula. Memori ialah stor berskop ruang kerja yang kekal
+merentas larian dan ia wujud supaya pengetahuan yang dihasilkan oleh satu ejen
+boleh ditemui oleh ejen lain kemudian.
 
-It has three layers and they answer different questions:
+Ia mempunyai tiga lapisan dan ketiga-tiganya menjawab soalan yang berbeza:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Fakta** — apa yang benar (satu konvensyen, satu hasil, satu keputusan).
+2. **Polisi** — apa yang ejen mesti lakukan mengenainya (satu peraturan normatif).
+3. **Memori kerja** — apa yang sedang dilakukan oleh satu ejen.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Perbezaan ini penting kerana ketiga-tiganya sampai kepada ejen melalui laluan
+yang berbeza. Fakta dicari. Polisi didorong. Memori kerja bersifat peribadi.
 
-## Facts
+## Fakta
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Sesuatu `MemoryFact` ialah unit pengetahuan yang berskop kepada satu ruang kerja
+dan satu domain.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Atribut                                     | Apa itu                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| `domain`                                    | Domain pengetahuan ("conventions", "decisions", "codebase")                 |
+| `topic`                                     | Label topik yang pendek                                                     |
+| `content`                                   | Teks pengetahuan                                                            |
+| `confidence`                                | 0.0–1.0, dijana daripada asal usul dan dinaikkan apabila disebut semula     |
+| `memoryType`                                | Jenis fakta itu — menentukan keluk pereputan masanya                        |
+| `veracity`                                  | Bagaimana ia diketahui — menjana keyakinan dan menentukan saiz setiap lonjakan sebutan semula |
+| `sourceObservationIds`                      | Pemerhatian mana yang membawa kepadanya                                     |
+| `supersededBy`                              | Fakta yang lebih baharu yang menggantikannya, jika ada                      |
+| `validUntil`, `recallCount`, `mentionCount` | Isyarat luput dan penggunaan yang digunakan semasa dapatan semula           |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Dua baris terakhir ialah baris yang orang selalu terlepas pandang dan itulah
+yang menentukan fakta _mana_ yang muncul. `memoryType` membawa parameter
+pereputan Weibull mengikut jenis, jadi komitmen yang terikat pada masa pudar
+dengan cepat manakala fakta profil yang stabil tidak. `veracity` merekodkan
+asal usul — dinyatakan oleh manusia (pemberat 1.0), disimpulkan oleh ejen
+(0.7), dihasilkan oleh alat (0.5), diimport (0.6) — dan pemberat itu menjana
+keyakinan permulaan fakta tersebut.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Fakta tidak pernah disunting di tempatnya apabila ia bercanggah. Menulis fakta
+menjalankan pengesanan konflik terhadap fakta yang sama domain dan sama topik
+lalu menggantikan yang kalah, sambil merekodkan baris konflik. Jejak audit
+itulah tujuannya: anda sentiasa boleh melihat apa yang diyakini sebelum ini dan
+apa yang menggantikannya.
 
-## Policies
+## Polisi
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+Sesuatu `MemoryPolicy` ialah peraturan normatif yang diperoleh daripada fakta,
+berskop kepada satu ruang kerja dan domain, dengan bendera aktif dan
+`requiredRole` yang pilihan.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Setiap polisi **aktif** dalam ruang kerja disuntik ke dalam **setiap**
+penghantaran, tanpa penapisan — tiada penapisan mengikut domain, peranan, tugas
+atau ruang. Ini wajar diketahui sebelum anda menulis polisi kedua puluh anda,
+kerana polisi bersaing untuk tetingkap konteks yang sama dengan tugas. Itulah
+juga sebabnya `requiredRole` pada polisi bersifat nasihat: ia menerangkan
+kepada siapa peraturan itu ditujukan, ia tidak menghalang peraturan itu sampai
+kepada orang lain.
 
-## Domains
+## Domain
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Sesuatu `MemoryDomain` mengelompokkan fakta dan polisi dalam satu ruang kerja.
+Domain memberi pengetahuan struktur organisasi dan ia merupakan unit yang
+menjadi asas pemberian akses ditulis — tetapi lihat amaran di bawah sebelum
+menganggap domain sebagai sempadan kerahsiaan.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Sesuatu domain sama ada merentas seluruh ruang kerja (`architecture`) atau
+berskop kepada satu repositori (`repo:<slug>/architecture`). Nama yang sama
+dalam kedua-dua skop ialah dua stor yang berasingan: fakta yang benar bagi satu
+pangkalan kod tidak menimpa fakta yang merentas seluruh ruang kerja.
+`search_memory` dan mukadimah penghantaran meletakkan memori berskop repo
+dahulu apabila ejen bekerja dalam repo itu; ia tidak menapis yang lain keluar.
+Hantar `repo` pada `propose_fact` / `propose_policy` / `search_memory` untuk
+menulis atau meningkatkan skop itu.
 
-## Access control is fail-open for reads
+## Kawalan akses bersifat fail-open untuk bacaan
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` memetakan peranan ejen dan domain kepada salah satu daripada
+tiga tahap kebenaran:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Kebenaran | Maksud                                                                                              |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `none`    | Tiada akses                                                                                         |
+| `read`    | Boleh mencari dan mendapatkan fakta                                                                 |
+| `write`   | Diperlukan oleh `propose_policy`. Penulisan fakta (`propose_fact`, `supersede_fact`) tidak terikat pada pemberian akses |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Pemberian yang tiada bermaksud baca, bukan menafikan]
+Apabila tiada baris pemberian untuk pasangan `(role, domain)`, kebenaran
+efektifnya ialah **`read`**. Bacaan memang fail-open secara reka bentuk.
+Satu-satunya penulisan yang melontarkan ralat ialah `propose_policy` tanpa
+kebenaran `write` (`InsufficientMemoryPermission`). Meletakkan kandungan
+sensitif dalam domain memori tidak mengehadkan siapa yang boleh membacanya
+melainkan anda menulis pemberian `none` secara eksplisit untuk setiap peranan
+yang tidak sepatutnya melihatnya.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Tiada juga UI untuk pemberian di mana-mana dalam produk pada hari ini. Skrin
+memori hanya mempunyai tab Fakta, Polisi dan Graf dan tiada yang lain; pemberian
+hanya boleh dicapai melalui operasi RPC `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Asimetri ini — longgar pada bacaan, ketat pada penulisan polisi — ialah
+pertukaran yang disengajakan. Memori paling berguna apabila ia beredar dan
+penafian bacaan menghasilkan ejen yang diam-diam tahu lebih sedikit daripada
+ejen yang melaporkan masalah. Penafian penulisan polisi, sebaliknya, nyaring
+dan boleh diperbaiki, jadi di situlah penguatkuasaannya terletak. Domain yang
+baru dicipta menjana `write` untuk setiap peranan; mengetatkannya selepas itu
+ialah suntingan melalui RPC sahaja, kerana tiada UI untuk pemberian.
 
-## Working memory
+## Memori kerja
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Setiap ejen mempunyai `AgentWorkingMemory`: papan coretan teks bebas yang
+dikunci mengikut ruang kerja dan ejen. Ia kekal merentas larian, bersifat
+peribadi kepada ejen itu dan disuntik ke dalam promptnya pada setiap
+penghantaran. Di situlah "saya baru separuh jalan melakukan refaktor auth"
+tinggal — keadaan yang berbaloi dibawa ke larian seterusnya tetapi tidak
+berbaloi dinaikkan menjadi fakta yang kekal.
 
-## What actually reaches an agent's prompt
+## Apa yang benar-benar sampai ke prompt ejen
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Semasa penghantaran, mukadimah memori dibentuk daripada tepat tiga perkara:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Setiap polisi ruang kerja yang aktif**, sebagai baris `- [domain] rule`.
+- **Memori kerja ejen itu sendiri**, verbatim.
+- **Senarai pendek fakta yang dipadankan dengan kata kunci** untuk tugas ini —
+  paling banyak lima, dalam belanjawan ~1,200 aksara dan hanya apabila
+  penerangan tugas sekurang-kurangnya 20 aksara panjangnya. Tugasan yang lebih
+  pendek tidak mendapat sebarang fakta.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Senarai pendek itu hanya FTS/kata kunci dan ia dihadkan secara sengaja.
+Membenamkan pertanyaan itu perlahan dan laluan penghantaran ialah satu-satunya
+tempat kependaman kelihatan serta-merta, jadi laluan semantik yang perlahan
+sengaja dijauhkan daripadanya. Mukadimah ditutup dengan memberitahu ejen supaya
+mengesahkan perkara yang menanggung beban dengan `search_memory`, di situlah
+model dapatan semula yang penuh berada.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Tiada pemberian akses dirujuk pada laluan ini. Apa sahaja yang ditemui oleh
+senarai pendek itulah yang dilihat oleh ejen.
 
-## Recall: one query, four voices
+## Dapatan semula: satu pertanyaan, empat suara
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Alat `search_memory` yang dihadapi ejen mempunyai tiga modus dan ketiga-tiganya
+carian yang benar-benar berbeza:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — FTS5 sahaja.
+- **`semantic`** — hasil BM25 dan vektor digabungkan melalui gabungan pangkat
+  salingan.
+- **`hybrid`** (yang lalai) — dapatan semula polifonik: empat suara berpangkat
+  digabungkan bersama, kemudian dipelbagaikan.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Keempat-empat suara itu ialah leksikal (FTS), semantik (KNN vektor), temporal
+(fakta aktif yang terkini) dan graf — satu penelusuran dua hop merentas tepi
+episodik daripada benih leksikal dan semantik yang paling kuat. Suara graf
+itulah sebabnya tepi episodik wujud sama sekali: ia memunculkan fakta yang
+_berkaitan dengan_ jawapan anda tanpa memadankan mana-mana perkataan anda.
+Suara-suara itu diberatkan oleh niat pertanyaan yang dikelaskan (semantik
+membawa pemberat paling banyak secara lalai, kemudian graf dan leksikal, kemudian
+keterkinian), skor setiap calon diskalakan oleh pereputan Weibullnya, dan set
+hasil dipelbagaikan dengan MMR supaya lima penyataan semula bagi satu fakta tidak
+menenggelamkan empat fakta yang berbeza.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Dapatan semula semantik senyap sehingga model dipasang]
+Suara vektor hanya menyumbang sebaik sahaja model pembenaman pada peranti telah
+dimuat turun. Sehingga itu, dapatan semula hibrid berjalan dengan tiga suara dan
+tiada pengisian semula secara retrospektif — fakta yang ditulis sebelum model
+dipasang tidak pernah mendapat vektor. Laluan vektor merosot lagi, kepada
+imbasan dalam Dart ke atas pembenaman yang dibungkus, jika sambungan vektor
+SQLite sendiri gagal dimuatkan; dapatan semula masih menjawab, cuma lebih
+perlahan.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Carian memori pada desktop dan web ialah laluan berasingan yang lebih ringkas:
+operasi RPC `memory_fact.search` ialah **FTS5 sahaja**, kerana klien nipis tidak
+boleh menyertakan pembenaman pertanyaan dan laluan hibrid kekal dalaman hos.
+Jadi kedudukan yang anda lihat dalam pelayar memori bukan kedudukan yang
+diterima oleh ejen daripada `search_memory`. Itu dijangka, bukan pepijat, tetapi
+ia bermakna "saya mencari dan tidak menjumpainya" dalam UI bukan bukti bahawa
+ejen tidak akan menjumpainya.
 
-## Where memory lives and who writes it
+## Di mana memori berada dan siapa yang menulisnya
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Pelayar memori berada di **Tetapan → Ruang kerja → Memori**
+(`/workspaces/<id>/settings/memory`), dengan tab Fakta, Polisi dan Graf.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Terdapat satu asimetri di situ yang mengejutkan orang: **anda boleh menyunting
+dan memadam memori, tetapi anda tidak boleh menciptanya.** Baik tab Fakta
+mahupun tab Polisi tiada pilihan untuk menambah. Pengarangan berlaku di pihak
+ejen, melalui `propose_fact` dan `propose_policy` (`supersede_fact` /
+`supersede_policy` untuk menggantikannya). `remember` menulis item tingkat panas
+yang terikat pada sesi yang mungkin dinaikkan oleh `consolidate_memory` menjadi
+fakta kemudian; `record_observation` dan `update_my_notes` menulis papan coretan
+peribadi yang disuntik semasa penghantaran. Pelayar itu ialah permukaan semakan
+dan pembetulan, bukan permukaan pengarangan — jadi jika anda mahu sesuatu fakta
+berada dalam memori, cara untuk meletakkannya di sana ialah memberitahu ejen.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Dua operasi penyelenggaraan juga dilancarkan oleh ejen dan bukan dijadualkan:
+`consolidate_memory` mencantum dan memangkas fakta terkumpul dan
+`harmonize_memory` menyelaraskan kepercayaan yang menyimpang antara ejen.
+`list_memory_conflicts` menunjukkan apa yang telah direkodkan oleh pengesanan
+konflik. Tiada apa-apa yang menjalankannya untuk anda mengikut pemasa. Keputusan
+mesyuarat dituai ke dalam domain `decisions` apabila langkah kekal mesyuarat
+merekodkannya; itu bukan pemasa pada larian ejen yang telah selesai.
 
-## Related concepts
+## Konsep berkaitan
 
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/): roles are what grants are written against
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ms-MY/manual-pengguna/panduan-cara/urus-memori/): working with memory in practice
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): peranan ialah asas yang menjadi rujukan pemberian
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/): memori berskop ruang kerja dan berada dalam fail pangkalan data ruang kerja itu sendiri
+- [Urus memori ruang kerja](/ms-MY/manual-pengguna/panduan-cara/urus-memori/): bekerja dengan memori dalam amalan

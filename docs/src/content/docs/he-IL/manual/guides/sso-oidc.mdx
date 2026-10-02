@@ -1,95 +1,88 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: חיבור ספק OpenID Connect
+description: חברו כל מנפיק OIDC — Pocket ID, Keycloak, Auth0, Zitadel — לכניסה ל-Control Center.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+השתמשו במדריך הזה כשספק הזהויות שלכם מדבר **OpenID Connect** ולא SAML. כל מנפיק
+בעל הסמכת OIDC עובד — Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace
+וחבריהם פועלים לפי אותם שלבים; רק המקום שבו הספק שלכם מציג את הערכים שונה.
 
-## Prerequisites
+## דרישות מוקדמות
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- ספק OIDC שבו תוכלו ליצור לקוח — רשמו את **מזהה לקוח** שלו ואת **כתובת
+  ה-Issuer** שלו (הבסיס שתחתיו נמצא המסמך
+  `.well-known/openid-configuration`), וכן את **סוד לקוח** שלו כשהלקוח הוא
+  מהסוג החסוי (ללקוחות PKCE ציבוריים אין כזה),
+- שרת Control Center שאתם מנהלים (**הבעלים של השרת**).
 
-## Steps
+## שלבים
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. פתחו את **הגדרות → שרת → כניסה מאוחדת** ועברו אל
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. מלאו את **כתובת ה-Issuer** ואת **מזהה לקוח** ואת **סוד לקוח
+   (אופציונלי)** כשהספק הנפיק אחד. Control Center מגלה את נקודות הקצה מתוך
+   מסמך הגילוי התקני של המנפיק — בלי תצורה נפרדת לכל ספק.
+3. אצל הספק, רשמו את כתובת ההפניה
+   `https://<your-server>/oidc/callback` עבור אותו לקוח.
+4. אם הקבוצות שלכם נמצאות תחת claim אחר ולא `groups`, הגדירו את שם
+   **Claim של קבוצות**; מפו קבוצות לתפקידים אם תרצו (SSO לעולם לא יכול
+   להעניק את תפקיד הבעלים).
+5. בחרו את מדיניות החברות (הוספה אוטומטית לכל סביבת עבודה, או דרישת הזמנה
+   נפרדת לכל סביבת עבודה), הפעילו את **שימוש ב-OpenID Connect לכניסה**
+   ולחצו על **שמירת החיבור**.
+6. לחצו על **בדיקת חיבור** — השרת מביא את מסמך הגילוי של המנפיק ומאמת את
+   נקודות הקצה שלו, כך שהודעת טוסט ירוקה אומרת שהכול עובד למעט סבב הדפדפן.
+   כדי לבדוק גם את רישום הלקוח, השתמשו
+   ב[בודק שלמטה](#בדיקת-התצורה-מהדף-הזה).
+7. בצעו התחברות: מסך ההתחברות האינטרנטי מציג **כניסה עם OpenID
+   Connect**, או פתחו את `https://<your-server>/oidc/login` ישירות.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+ה-claims (דוא"ל, שם, קבוצות) נקראים מנקודת הקצה לאסימונים של המנפיק דרך TLS
+על ידי השרת שלכם — הדפדפן לעולם אינו מספק אותם, ולכן אין מעורב כאן אימות חתימת
+JWT מקומי. יש לאפשר ללקוח לבקש את ה-scope‏ `openid profile email`, שהוא בדיוק
+מה ש-Control Center מבקש.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+מכיוון שערוץ ה-TLS הזה הוא הדבר היחיד שמאמת את ה-claims, כתובת ה-Issuer חייבת
+להיות **https** — מנפיק בטקסט גלוי יאפשר לכל תוקף בדרך לזייף זהויות בהיקף מלא.
+`http` מתקבל עבור מנפיקי loopback‏ (`localhost`, `127.0.0.1`, `::1`) בלבד,
+לצורכי פיתוח מקומי.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[לקוח ציבורי או לקוח חסוי?]
+צורת ברירת המחדל — והמומלצת — היא **לקוח ציבורי** המשתמש ב-authorization code
+flow עם **PKCE** (RFC 7636): מאמת הקוד החד-פעמי שהשרת מחזיק מחליף את הסוד,
+והחלפת האסימון כבולה לבקשת ההרשאה שהתחילה אותה. אין סוד שדולף, וקוד הרשאה
+שנגנב חסר תועלת בלי המאמת. יש ספקים שמכנים את סוג הלקוח הזה "SPA" או
+"native" כשיוצרים אותו.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+אם הספק שלכם הנפיק במקום זאת לקוח **חסוי**, סמנו את הלקוח כציבורי אצל הספק
+(PKCE נשאר פעיל בכל מקרה), או הדביקו את סוד הלקוח בשדה **סוד לקוח
+(אופציונלי)** של החיבור. הסוד נשמר בקובץ הסודות של השרת בהרשאות 0600 (ולעולם
+לא במסד הנתונים), נשלח לנקודת הקצה לאסימונים כ-`client_secret_post` ולעולם
+אינו מוחזר דרך RPC; השארת השדה ריק בשמירה משמרת את הסוד השמור. כשהתחברות
+נכשלת בהחלפת האסימון, יומן השרת מציין את השגיאה של הספק עצמו (`invalid_client`
+כמעט תמיד אומר שהסוד חסר או שגוי).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-scim).
+:::note[נגישות]
+ההתחברות עצמה מתווכת על ידי הדפדפן: המנפיק רק מפנה את הדפדפן של המשתמש חזרה
+אל `/oidc/callback`, והשרת שלכם מבצע קריאת HTTPS יוצאת אל נקודת הקצה
+לאסימונים — אין צורך בחיבור נכנס מהמנפיק, כך ששרת מאחורי NAT עובד כל עוד
+הדפדפנים של המשתמשים יכולים להגיע אליו (LAN, VPN, Tailscale או מנהרה).
+**הקצאת SCIM היא היוצא מן הכלל**: ה-IdP פונה ישירות לשרת שלכם, מה שדורש מנהרה
+או כתובת ציבורית — ראו
+[הקצאת משתמשים עם SCIM](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-scim).
 :::
 
-## Check your configuration from this page
+## בדיקת התצורה מהדף הזה
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+הבודק שלמטה פועל בדפדפן שלכם. הוא מביא ישירות את מסמך הגילוי של המנפיק שלכם,
+כך שהאתר הזה לעולם אינו רואה אותו, ומחיל את כללי השרת: מנפיק https שתואם
+למסמך, נקודות קצה על אותו origin של המנפיק, PKCE S256 ושיטת אימות האסימון
+שסוג הלקוח שלכם צריך. עם מזהה לקוח וכתובת שרת, הוא יכול לפתוח התחברות ניסיון
+שמראה אם הלקוח וכתובת ההפניה שלו רשומים. הוא לעולם אינו מבקש את סוד הלקוח.
 
 <SsoCheck kind="oidc" />

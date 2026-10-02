@@ -1,164 +1,177 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Prioriter innboksen din
+description: Jobb med den samlede innboksen — rydd unna det som blokkerer deg, gjennomgå det som venter på deg, og følg dine egne PR-er.
 slug: nb-NO/handbok/slik-gjor-du/prioriter-innboks
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Denne veiledningen viser deg hvordan du jobber med innboksen: den ene flaten
+som samler alt som blokkerer deg eller eksplisitt ber om deg — ventende
+agentgodkjenninger, mislykkede sakssynkroniseringer og hver pull request som
+involverer deg som reviewer eller forfatter.
 
-## Open the inbox
+## Åpne innboksen
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Klikk **Innboks** i sidepanelet. Merket på den teller ventende
+   agentgodkjenninger, mislykkede synkroniseringer og åpne PR-er som venter på
+   gjennomgangen din.
+2. Eller trykk <kbd>⌘K</kbd> og kjør navigasjonskommandoen **Innboks**.
+3. Eller lenk direkte til `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Oppføringen i sidepanelet viser alltid det oppdaterte antallet, slik at du kan
+se prioriteringsarbeidet hope seg opp uten å åpne siden.
 
-## Read severity at a glance
+## Les alvorlighetsgraden med ett blikk
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Skann ovenfra og ned; innboksen er allerede sortert etter haster:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. Den festede **Trenger oppmerksomheten din**-stripen ligger over
+   PR-seksjonene. Hvert kort har et alvorlighetsmerke. Registrerte kilder (en
+   agent som har kjørt seg fast på en bekreftelsesprompt, en
+   sakssynkronisering der leverandørspeilet er utdatert) utsteder
+   **Blokkert**.
+2. Innenfor stripen kommer den mest hasterike alvorlighetsgraden først; ved
+   likhet går plassen til elementet som har ventet lengst.
+3. Under stripen grupperes PR-er i faste seksjoner etter gjennomgangsløpet —
+   **Trenger gjennomgangen din**, **Returnert til deg**, **Godkjent**,
+   **Utkast**, **Venter på reviewere**, **Sammenslåing og nylig slått
+   sammen**, **Venter på forfatter**. Seksjonene øverst er det som trenger
+   _deg_; resten er der _dine_ PR-er står. **Trenger gjennomgangen din**
+   inkluderer PR-er som fortsatt ber om et team du er med i, på forger som
+   støtter det (GitHub fjerner teamet så snart en teamkamerat har gjennomgått).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Et element havner bare i innboksen når det blokkerer noe eller eksplisitt ber
+om deg. En tom stripe pluss en tom seksjonsliste viser **Du er à jour** bare
+når denne tomheten er til å stole på.
 
-## One inbox across every forge
+## Én innboks på tvers av alle forger
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Hvis arbeidsområdet har repoer på mer enn én kodevert, slår innboksen dem
+sammen til én strøm — en GitHub-pull request og en Bitbucket-pull request
+ligger i samme seksjon, sortert etter tid i stedet for gruppert etter
+leverandør. Det er `repo #number`-metadataen i raden som skiller dem.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+«Ditt» avgjøres **per forge**, fordi du er en annen konto på hver av dem. En
+pull request teller bare som din, eller som en som ber om gjennomgangen din,
+når den samsvarer med identiteten din på forgen repoet faktisk ligger på.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+En forge som er nede eller ikke tilkoblet, bidrar ikke med noe og lar resten av
+innboksen være intakt — én brutt tilkobling tømmer aldri hele listen.
+Tomtilstanden nevner et forbehold i stedet for **Du er à jour** når hver
+forge-pålogging fortsatt er uavklart (**Kunne ikke bekrefte GitHub-kontoen
+din** — teksten nevner fortsatt GitHub), når githubstatus.com rapporterer om en
+hendelse, eller når en GitHub App-installasjon som dekker koblede repoer, er
+suspendert.
 
-## Clear the attention strip
+## Tøm oppmerksomhetsstripen
 
-Each strip card has one next action:
+Hvert kort i stripen har én neste handling:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Hvis et kort er en ventende agentbekreftelse, klikker du **Gjennomgang** —
+   du lander i området til den agenten med den ventende bekreftelsen. Godkjenn
+   eller avvis der (se [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)).
+2. Hvis et kort sier **Synkronisering mislyktes** for en leverandør, klikker du
+   **Åpne** — du lander på **Innstillinger → Arbeidsområde → Generelt**, hvis
+   **Synkroniseringshelse**-kort viser hver tilkoblings siste synkronisering,
+   antall feil på rad og siste resultat. Bare den siste feilen per leverandør
+   vises i innboksen, så en synkronisering som har kommet seg, fjerner kortet.
+3. Kortene forsvinner av seg selv når tilstanden bak dem er løst (agenten har
+   fått svar, synkroniseringen har kommet seg) — det er ingenting å lukke
+   manuelt.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Dette er bekreftelser per tur, ikke styringsmessige godkjenninger]
+Et «agentgodkjenning»-kort er en agent som kjører og stopper for å be om
+tillatelse for én handling, i sin egen samtale. Det er noe annet enn den
+styringsmessige `Approval`-posten som agenter oppretter med
+godkjennings-MCP-verktøyene — de har ingen menneskelig skjerm noe sted i appen
+og vises aldri her.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Synkroniseringshelse er skrivebeskyttet]
+Kortet rapporterer om sakssynkroniseringstilkoblinger; bortsett fra en
+**Synkroniser nå**-knapp kan det ikke opprette, redigere eller koble til én på
+nytt, og det finnes ingen annen skjerm som kan det heller. Uten noen
+konfigurert tilkobling viser det bare «Ingen synkroniseringstilkoblinger ennå»,
+som er det et nytt arbeidsområde viser.
 :::
 
-## Filter to what is blocking
+## Filtrer til det som blokkerer
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Trykk <kbd>f</kbd> (uten at et tekstfelt har fokus) for å åpne filtermenyen,
+   eller klikk filterknappen i verktøylinjen.
+2. Velg en hvilken som helst kombinasjon av status, forfatter, reviewere,
+   innhold, repo-eier/navn, datointervaller eller rask å gjennomgå.
+   Fasettellingene i menyen viser hvor mange innbokselementer hvert alternativ
+   samsvarer med.
+3. Aktive filtre vises som merker i linjen over listen; klikk på ✕ i et merke
+   for å fjerne det kriteriet.
+4. Bruk kolonnen til venstre for å hoppe mellom seksjoner — hver oppføring
+   viser sitt oppdaterte antall, og uthevingen følger rulleposisjonen din.
+   Klikk på en seksjonsoverskrift for å folde sammen seksjoner du ikke
+   prioriterer (for eksempel **Utkast** mens du tømmer gjennomganger).
+5. Klikk på en kolonneoverskrift (tittel, endringer eller oppdatert) for å
+   sortere alle seksjoner; klikk på den aktive kolonnen igjen for å snu
+   retningen. Knappen for visningsvalg styrer synlighet for utkast, vinduet for
+   nylig sammenslåtte, radegenskaper, sortering og gruppering (bare gruppering
+   etter forfatter endrer oppsettet i innboksen).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Filtrene her er uavhengige av PR-køen — å snevre inn innboksen endrer aldri
+filtrene i køen, og omvendt.
 
-## Act on a PR item
+## Handle et PR-element
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/) and
-   [the dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).
+1. Klikk på en hvilken som helst rad for å åpne detaljsiden for PR-en.
+2. Hvis PR-en ligger under **Trenger gjennomgangen din**, gjennomgår du den og
+   sender inn avgjørelsen din — se
+   [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/).
+3. Hvis PR-en ligger under **Returnert til deg** (endringer forespurt eller CI
+   mislyktes), dytter du rettelser fra arbeidskopien din eller overlater
+   oppfølgingen til en agent.
+4. Hvis PR-en er **Godkjent**, slår du den sammen fra detaljsiden.
+5. Hvis du heller vil delegere en gjennomgang enn å gjøre den selv, se
+   [Send ut reviewer-agenter](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/) og
+   [livssyklusen for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Når tilstanden bak endrer seg (gjennomgangen din lander, PR-en slås sammen),
+flytter klassifisereren PR-en til den nye seksjonen automatisk.
 
-## Undo a mistaken action
+## Angre en feilaktig handling
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Trykk <kbd>⌘Z</kbd> for å angre den siste handlingen, <kbd>⌘⇧Z</kbd> for å
+   gjøre den om igjen.
+2. Hvis et tekstfelt har fokus, redigerer ⌘Z teksten i feltet i stedet — klikk
+   ut av feltet først for å angre en handling på appnivå.
 
-## Look up shortcuts in place
+## Slå opp snarveier der du står
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/nb-NO/handbok/referanse/tastatursnarveier/).
+Trykk <kbd>?</kbd> (uten at et tekstfelt har fokus) for å åpne juksearket for
+tastaturet. Det lister opp alle bindinger som er aktive på gjeldende rute,
+inkludert innboksens <kbd>f</kbd>-snarvei for filter. Hele oversikten finnes i
+[Tastatursnarveier](/nb-NO/handbok/referanse/tastatursnarveier/).
 
-## Drive it from the command palette
+## Styr den fra kommandopaletten
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Trykk <kbd>⌘K</kbd> hvor som helst for å åpne kommandopaletten.
+2. Skriv **Innboks** for å hoppe til siden, eller skriv inn tittelen på en PR —
+   paletten lister opp samsvarende pull requests og åpner den du velger.
+3. Mens innboksen er åpen, kjør **Kopier lenke til denne siden** for å kopiere
+   denne URL-en for deling. Kommandoen kopierer gjeldende rute, så den er bare
+   innboks-URL-en når du er på denne siden.
 
-## Refresh on demand
+## Oppdater ved behov
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Innboksen oppdateres i sanntid, men hvis du mistenker utdaterte data, klikker
+du på oppdateringskontrollen i verktøylinjen — den tvinger fram en umiddelbar
+gjennomgang på serversiden av hver tilkoblet forge og henter på nytt
+overleggene for sammenslått/gjennomgått. Ikonet spinner til alle hentinger er
+ferdige.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Review and merge a PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [Dispatch reviewers](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/)
+- [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [Send ut reviewer-agenter](/nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)

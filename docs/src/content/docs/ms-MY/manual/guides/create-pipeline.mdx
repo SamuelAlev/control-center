@@ -1,241 +1,262 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Cipta templat pipeline
+description: Karang templat aliran kerja DAG dalam editor pipeline — tambah nod, sambungkannya, isytiharkan input dan jadikannya boleh dijalankan.
 slug: ms-MY/manual-pengguna/panduan-cara/cipta-pipeline
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Templat pipeline dikarang dalam tetapan ruang kerja. Entri **Pipeline** dalam
+bar sisi ruang kerja ialah _baris gilir larian_, bukan senarai templat — ia
+tiada tindakan “cipta templat”.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/).
+Untuk mengetahui maksud setiap jenis langkah, kunci badan dan medan konfigurasi,
+lihat
+[rujukan langkah pipeline](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/).
 
-## Create a template
+## Cipta templat
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Pergi ke **Tetapan → Ruang kerja → Templat pipeline**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Tekan **Templat baharu**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Tiada dialog id. Editor terbuka serta-merta pada rangka kerja yang telah disemai
+bernama **Pipeline baharu**, dengan id yang diperuntukkan secara automatik
+(`pipeline_1`, kemudian `pipeline_2`, …). Klik tajuk dalam pengepala untuk
+menamakannya semula.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Kanvas tidak kosong: satu nod kemasukan **Trigger**, satu nod ejen prompt
+berlabel **Step** dan satu sentinel terminal yang menamatkan larian. Sentinel
+itu tidak dilukis. Editor menyambung semula terminal tersembunyi itu ke setiap
+titik akhir yang boleh dicapai, jadi kerja yang anda lampirkan selepas **Step**
+tetap berjalan.
 
-## Add nodes
+## Tambah nod
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Bar sisi **Pustaka nod** sentiasa berada di kiri editor. Tapisnya dengan kotak
+**Cari nod** dan seret satu entri ke kanvas — nod itu mendarat di tempat anda
+melepaskannya, tanpa sambungan masuk.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Nod palet                       | Jenis langkah | Apa yang dilakukannya                                                                   |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen        | Menjalankan skrip shell dengan penggantian `{{state}}`; tiada ejen dihantar             |
+| **Open conversation**           | listen        | Membuka satu-satunya ruang yang kelihatan bagi larian itu dan checkout-nya; nod ejen menyertai bilik ini |
+| **Clone PR branch**             | listen        | Menemui cawangan head PR melalui `gh pr view` dan mengklonnya ke direktori larian       |
+| **Post PR comment**             | listen        | Menyiarkan dapatan yang digabungkan ke PR sebagai komen semakan GitHub                  |
+| **Reviewer (prompt)**           | listen        | Menghantar ejen penyemak pakar; menangguhkan sehingga ejen menyerahkan hasilnya         |
+| **Consolidate (join)**          | join          | Menunggu beberapa cabang huluan, kemudian meminta ejen menggabungkan output mereka      |
+| **Custom prompt**               | listen        | Nod dipacu prompt generik yang dialirkan melalui badan `promptAgent`                    |
+| **Post to space**               | listen        | Menghantar mesej ke ruang pemesejan                                                     |
+| **Condition / switch (router)** | router        | Mencabangkan aliran berdasarkan nilai keadaan                                           |
+| **If file exists (router)**     | router        | Mengeluarkan kunci laluan `"true"` apabila sesuatu laluan wujud di bawah klon, jika tidak `"false"` |
+| **Any file exists (OR router)** | router        | Mengeluarkan kunci laluan `"true"` apabila mana-mana laluan yang disenaraikan wujud     |
+| **All conditions (AND router)** | router        | Mengeluarkan kunci laluan `"true"` hanya apabila setiap laluan yang disenaraikan wujud  |
+| **Team dispatch**               | listen        | Menghantar keseluruhan pasukan dan menangguhkan sehingga ia selesai                     |
+| **Approval gate**               | listen        | Berhenti seketika untuk keputusan kelulusan                                              |
+| **For each (map)**              | forEach       | Memaparkan prompt bagi setiap item, kemudian menghantar ejen sekali dengan prompt itu dicantumkan |
+| **Call sub-pipeline**           | listen        | Menjalankan templat lain sebagai langkah bersarang                                      |
+| **Clean up worktrees**          | listen        | Membuang worktree terasing yang lapuk; deterministik, tiada ejen dihantar               |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Pustaka ini mengelompokkan semua ini di bawah **Aliran & logik**, **Semakan
+PR**, **Ejen**, **Pemesejan** dan **Kod**. Tiada kumpulan Demo.
 
-## Wire nodes together
+## Sambungkan nod
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Setiap nod kerja mempunyai **port output** bulat di tepi kanannya. Seret dari
+port itu ke nod lain untuk menyambungkannya. Pencetus permulaan juga sama:
+setiap satu memiliki portnya sendiri, jadi wayar dari **Jadual** tidak juga
+keluar dari **Larian manual**. Tekan **Tambah langkah** (`+`) tepat selepas satu
+nod untuk menyisipkan satu jenis selepasnya. Tuding titik tengah tepi yang sedia
+ada dan tekan × untuk memutuskan sambungan.
 
-Connections are also edited from the node that _receives_ them:
+Sambungan juga boleh diedit dari nod yang _menerimanya_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Pilih nod hiliran. Panel konfigurasinya terbuka di sebelah kanan.
+2. Tatal ke **Pencetus dari** dan ketik cip bagi setiap nod huluan yang perlu
+   didengari nod ini. Mengetik cip yang dipilih akan membuang sambungan itu.
+3. Jika nod huluan ialah router, blok **Kunci laluan** muncul di bawah cip
+   dengan satu medan **Kunci laluan dari &lt;node&gt;** bagi setiap tepi router.
+   Masukkan kunci yang dicetuskan oleh tepi itu — `true` atau `false` untuk
+   router fail-wujud, atau nama kes untuk suis.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Setiap nod pencetus ialah titik kemasukan. Satu nod boleh mendengar beberapa
+huluan (fan-in) dan menyuap beberapa hiliran (fan-out), dan graf itu mesti kekal
+asiklik — tiada apa-apa dalam editor menghalang anda daripada menyambung
+kitaran, jadi semak kerja anda.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Sentinel terminal ditapis keluar dari kanvas, jadi ia tidak boleh dipilih.
+Editor menyambung semula sentinel itu ke setiap titik akhir yang boleh dicapai
+setiap kali graf berubah, jadi kerja yang anda lampirkan selepas **Step** yang
+disemai tetap berjalan. Graf kosong (pencetus tanpa pengganti kerja)
+menyenaraikan pencetus itu sendiri supaya satu larian selesai serta-merta.
 
-## Configure a node
+## Konfigurasikan nod
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Pilih satu nod untuk membuka panel konfigurasinya. Medan yang muncul bergantung
+pada badan nod itu.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Setiap nod mempunyai **Label**, **Kunci input** (kunci keadaan yang dipisahkan
+koma, dibaca pada masa pelaksanaan) dan, di bawah **Lanjutan**, **Pengurang**,
+**Tamat masa (ms)**, **Percubaan semula**, **Teruskan jika langkah ini gagal**
+dan **Skema output (JSON)**. Nod listen dan join juga boleh menukar **Jenis**-nya
+antara kedua-duanya.
 
-### Open conversation
+### Buka perbualan
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Menambah pemilih **skop repo** (repositori ruang kerja mana yang hendak
+di-checkout; kosong bermaksud tiada), satu **Nama ruang**, dan kotak centang
+**Buka perbualan di dalamnya**. Apabila kotak centang itu dihidupkan, medan
+**Nama perbualan** menamakan strim yang dibuka oleh bilik itu. Nod ejen
+menyertai bilik ini — ia tidak membuka biliknya sendiri.
 
-### Prompt agent
+### Ejen prompt
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Menambah **Ejen** (ejen mana yang hendak dihantar), **Templat prompt**
+(gunakan `{{key}}` untuk merujuk input atau output huluan) dan **Kunci output**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Tamat masa (ms)** adalah dalam _milisaat_, bukan saat — `900000` ialah 15
+minit. Memasukkan `900` memberi langkah itu 0.9 saat.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Modus perbualan yang digunakan oleh nod ejen prompt tiada medan editor pada nod
+ejen. Ia menumpang `extras['mode']` (`chat`, `plan` atau `review`) pada nod
+**Open conversation** yang mencipta bilik itu (lalai `review`). Menetapkannya
+pada langkah ejen diabaikan. Kunci itu dipadankan dengan tepat: sebarang ejaan
+lain diabaikan secara senyap.
 
-### Bash script
+### Skrip bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Menambah **Skrip Bash**. Tiada medan direktori kerja atau persekitaran, kerana
+kedua-duanya tidak boleh dikonfigurasi:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Setiap langkah bash dalam satu larian berkongsi cwd `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` disuntik daripada stor kelayakan, jadi `gh` dan
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` berfungsi tanpa penyediaan.
+- Skrip itu dilancarkan sebagai boleh laksana literal `bash`, jadi `bash` mesti
+  ada pada `PATH` hos pelayan. Itu pertimbangan Windows.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Router menilai satu syarat dan memulangkan kunci laluan; enjin hanya memicu tepi
+hiliran yang kunci laluannya sepadan dan menandakan cabang lain sebagai
+dilangkau.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Memilih router menggantikan medan **Kunci output** dengan editor syarat. Pilih
+salah satu daripada empat modusnya:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Fail wujud — mana-mana** — mengeluarkan kunci laluan `"true"` apabila
+  mana-mana laluan yang disenaraikan wujud.
+- **Fail wujud — semua** — mengeluarkan kunci laluan `"true"` hanya apabila
+  setiap laluan yang disenaraikan wujud.
+- **Perbandingan** — membandingkan nilai keadaan dengan satu literal.
+- **Suis** — mengeluarkan laluan berdasarkan nilai kunci keadaan, dengan satu
+  kes lalai.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Kemudian tetapkan kunci laluan yang sepadan pada tepi keluar (lihat
+[Sambungkan nod](#sambungkan-nod)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/).
+Kumpulan boolean `and` / `or` / `not` disokong oleh badan itu tetapi tidak boleh
+dikarang daripada borang ini — ia memerlukan pokok predikat yang ditulis dengan
+tangan di bawah `extras.predicate`. Kosa kata penuh predikat dan pengendali ada
+dalam
+[rujukan langkah pipeline](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Tiada konfigurasi tersendiri: ia menunggu semua langkah huluannya.
 
-### Approval gate
+### Gerbang kelulusan
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Gerbang itu menghantar ejen pelulus ke dalam perbualan tersembunyi dengan prompt
+gerbang dan menangguhkan. Pelulus meminta keputusan anda dalam perbualan itu dan
+menyerahkannya dengan `submit_output` sebagai
+`{ "decision": "approved" | "rejected", "reason": "..." }`. Keputusan itu
+mendarat di bawah kunci output (lalai `approval_decision`), jadi router suis di
+hiliran boleh mencabang berdasarkannya.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Tetapkan **Ejen** kepada pelulus dan **Templat prompt** kepada soalan gerbang.
+Gerbang diselesaikan melalui `submit_output` sebagai
+`{ "decision": "approved" | "rejected", "reason": "..." }`. Nod Reviewer (prompt)
+menyerah dengan cara yang sama.
 
-### Team dispatch
+### Penghantaran pasukan
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Menambah **ID pasukan** dan **Modus penghantaran**. Pemilih itu menawarkan tepat
+dua modus:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — satu tugasan bagi setiap anggota, menangguhkan sehingga semua
+  selesai.
+- `manager` — menghantar pemimpin, yang kemudian mewakilkan.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Sebarang nilai lain yang tersimpan berkelakuan sebagai `allParallel`. Tetapkan
+**Pengurang** kepada `append` untuk mengumpulkan hasil setiap anggota ke dalam
+senarai di bawah kunci output.
 
-### For each and Call sub-pipeline
+### For each dan Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** memetakan ke atas kunci keadaan `items` secara lalai
+(`extras.iterableKey` / `extras.itemKey` pada nod). Ia memaparkan promptnya
+sekali bagi setiap item (`{{item}}` secara lalai) dan menghantar ejen **sekali**
+dengan prompt itu dicantumkan. Koleksi kosong selesai serta-merta dengan senarai
+kosong. Ia bukan satu penghantaran selari bagi setiap item.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** menangguhkan sehingga larian anak mencapai keadaan
+terminal, kemudian menggabungkan keadaan akhir anak di bawah kunci output (lalai
+`subflow_result`). Arahkannya kepada anak dengan `extras.templateId`. Sesuatu
+templat tidak boleh memanggil dirinya sendiri; anak yang gagal atau dibatalkan
+menggagalkan langkah induk, yang kemudian menyuap polisi cuba semula dan
+terus-walaupun-gagal langkah itu.
 
-## Declare inputs and allow manual runs
+## Isytiharkan input dan benarkan larian manual
 
-Both live behind **Manual run** in the editor header.
+Kedua-duanya berada di sebalik **Larian manual** dalam pengepala editor.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Tekan **Larian manual**.
+2. Hidupkan **Benarkan larian manual**. Suis ini kekal serta-merta — ia mencipta
+   (atau memadam) baris pencetus `manual` yang menjadikan templat itu muncul
+   dalam pemilih larian.
+3. Tetapkan **Maksimum larian selari** jika anda mahu had (biarkan kosong untuk
+   tanpa had). Permulaan tambahan menunggu dalam keadaan `queued` sehingga satu
+   slot kosong.
+4. Tekan **Tambah input** bagi setiap medan borang yang perlu dikumpulkan oleh
+   larian manual:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Medan                          | Keterangan                                                     |
+| ------------------------------ | -------------------------------------------------------------- |
+| **Kunci**                      | Kunci keadaan tempat nilai disimpan; rujuk sebagai `{{key}}`   |
+| **Label**                      | Label paparan (lalai kepada kunci)                             |
+| **Jenis**                      | Teks, Teks berbilang baris, Nombor, Togol, Pilih, Repositori   |
+| **Pilihan (dipisahkan koma)**  | Pilihan dipisahkan koma, untuk Pilih sahaja                    |
+| **Nilai lalai**                | Nilai yang telah diisi terlebih dahulu                         |
+| **Pemegang tempat**            | Teks petunjuk di dalam medan kosong                            |
+| **Teks bantuan**               | Teks bantuan di bawah medan                                    |
+| **Diperlukan**                 | Sama ada borang larian menyekat nilai kosong                   |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Input **Repositori** memaparkan pemilih ke atas repositori ruang kerja dan
+mengisi `repo_id`, `repo_local_path`, `repo_full_name` dan — apabila repositori
+itu mempunyai remote GitHub — `repo_owner` dan `repo_name` ke dalam muatan
+larian.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Tekan **Simpan** dalam dialog. Suntingan input dilipat ke dalam draf; ia kekal
+   apabila anda menyimpan templat.
 
-## Save and enable
+## Simpan dan dayakan
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/).
+1. Tekan **Simpan** dalam pengepala editor. Pengepala menunjukkan “Perubahan
+   belum disimpan” sehingga anda melakukannya.
+2. Kembali ke **Tetapan → Ruang kerja → Templat pipeline** dan pastikan suis
+   baris templat itu dihidupkan. Enjin menolak untuk memulakan templat yang
+   dilumpuhkan dan templat yang dilumpuhkan tidak pernah muncul dalam pemilih
+   larian.
+3. Untuk memulakannya secara automatik, seret pencetus dari pustaka nod ke
+   kanvas — lihat
+   [Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/).
 
-## Related guides
+## Panduan berkaitan
 
-- [Run a pipeline manually](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
-- [Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
-- [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
-- [Pipeline steps reference](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/)
+- [Jalankan pipeline secara manual](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
+- [Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
+- [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
+- [Rujukan langkah pipeline](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)

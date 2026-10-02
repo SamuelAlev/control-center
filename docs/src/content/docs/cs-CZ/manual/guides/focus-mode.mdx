@@ -1,185 +1,185 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Používejte režim soustředění a zvukové krajiny
+description: Spusť časovanou soustředěnou relaci s plovoucí pilulkou odpočtu a potlačenými oznámeními a uprav adaptivní zvukovou krajinu, která pod ní hraje.
 dateModified: 2026-08-17
 slug: cs-CZ/prirucka/navody/rezim-soustredeni
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Tenhle návod ukazuje, jak spustit soustředěnou relaci: časovaný blok, ve kterém
+Control Center potlačí oznámení, která nespěchají, a nad ostatními okny nechá
+plavat pilulku s odpočtem. Popisuje i zvukovou krajinu, která pod ní ve výchozím
+stavu hraje. Je to nekonečná ambientní stopa, kterou server skládá živě podle
+zvolené nálady, počasí venku a denní doby.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Soustředěná relace je funkce pláště. Není vázaná na žádný pilíř: nemění
+rozložení, neschovává postranní panel a nemění plochu kontroly PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Jen na počítači]
+Plovoucí pilulka a vysunutý mini přehrávač zvukové krajiny jsou nativní
+sesterská okna. Připojí je jen bootstrap desktopové aplikace. Webové sestavení
+na `app.usectrl.dev` nemá ani jedno a nemá ani kanál systémových oznámení,
+takže tam soustředěná relace nemá co ukázat ani co potlačit. Panel zvukové
+krajiny a přehrávání fungují všude, kde se připojíš k serveru.
 :::
 
-## Start a focus session
+## Spusť soustředěnou relaci
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Klikni na ikonu soustředění vpravo na titulní liště (tooltip **Spustit soustředěnou relaci**)
+2. V dialogu napiš volitelný **Cíl**, na čem pracuješ
+3. Zvol **Délku**: 25m, 50m, 1h, 1h 30m nebo 2h. Výchozí je 50m a poslední
+   volba se pamatuje
+4. Stiskni **Spustit**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Kontrola: tlačítko v titulní liště nahradí akcentový čip se zbývajícími
+minutami, nad ostatními okny se objeví plovoucí pilulka a při zapnutém
+**Spustit s režimem soustředění** začne hrát zvuková krajina.
 
-Two other entry points reach the same session:
+Ke stejné relaci vedou ještě dva vstupy:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Spustit soustředěnou relaci** otevře stejný dialog.
+- **⌘⇧⌥F** spustí relaci hned, se zapamatovanou délkou a bez cíle. Dialog
+  přeskočí. Další stisk relaci ukončí.
 
-## Read the floating pill
+## Přečti plovoucí pilulku
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Pilulka je malé okno bez rámu, které můžeš táhnout kamkoli. Ukazuje:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- živou tečku přítomnosti a zbývající čas jako `mm:ss`
+- tvůj cíl, nebo „Focus session“, když cíl chybí
+- tenký ukazatel průběhu podél spodní hrany
 
-Hover it to reveal two actions:
+Najeď na ni a ukážou se dvě akce:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** zastaví odpočet. Pauza platí jen pro pilulku; samotná
+  relace zůstává aktivní.
+- **Complete** ukončí relaci.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Pilulka drží tmavou paletu, ať má hlavní okno jakýkoli motiv, protože plave nad
+libovolným obsahem plochy.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Když pilulku zavřeš z titulní lišty, relace běží dál. Stiskni tlačítko obrazu v
+obraze vedle čipu soustředění (tooltip **Minimalizovat na lištu**), ať se
+vrátí.
 
-## Know what gets suppressed
+## Co se potlačí
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Dokud relace běží, Control Center zahodí každé oznámení kromě dvou kategorií,
+které se doručí vždy:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Schůzka brzy začíná** — upozornění na schůzku, které uvidíš až zpětně, je k
+  ničemu
+- **PR zveřejněn**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Všechno ostatní se po celou relaci potichu potlačí: žádný zvuk, žádný systémový
+toast. Potlačená oznámení se do fronty k pozdějšímu doručení neukládají.
 
-## Play a soundscape
+## Pusť zvukovou krajinu
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Klikni na ikonu reproduktoru vpravo na titulní liště (tooltip **Soundscapes**)
+   a otevři panel
+2. Zvol **Náladu** — **Soustředění**, **Vzestup**, **Relaxace** nebo **Spánek**
+3. Stiskni **Přehrát**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Kontrola: karta **Právě hraje** pojmenuje aktuální scénu. Počasí v místě
+pracovního prostoru, teplotu ve °C a popisek místa. Dokud na ní stojí „Ladění
+atmosféry…“, scéna se ještě skládá.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Stopa není smyčka. Server ji skládá průběžně z nálady, živého počasí v místě
+pracovního prostoru a denní doby. Déšť zní jasně a rušně, bouře hlasitě a v
+poryvech, mlha tlumeně. Noc je temnější a víc doznívá než poledne. Nálada
+určuje slovník:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Nálada      | Zvuk                                                                 |
+| ----------- | -------------------------------------------------------------------- |
+| Soustředění | Jemná, bdělá atmosféra s nízkým pulsem. Má sedět pod prací           |
+| Vzestup     | Nesená melodie s měkkým pulsem, když práce táhne                     |
+| Relaxace    | Teplejší, souzvučnější plochy, bez rytmu                             |
+| Spánek      | Nízké táhlé tóny, skoro bez událostí, s hlubokým dozvukem            |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Když za běhu přepneš náladu, přehrávání přejde na novou a nezastaví se.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+K panelu se dostaneš i z ⌘K, v kategorii **Focus**, hned vedle soustředěné
+relace.
 
-## Shape the sound
+## Uprav zvuk
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Ladění** (Soustředění, Vzestup a Relaxace) — čtvercová plocha s táhnutelným
+  pukem. Vodorovně jde od **Mellow** k **Energetic** (kolik se toho děje),
+  svisle od **Spacy** k **Bright** (jak otevřeně to zní). Dvojité klepnutí na
+  plochu vrátí puk do neutrálního středu, šipky ho posunou. Ladění se pamatuje
+  zvlášť pro každou náladu a úpravy plynule přejdou do běžícího mixu. Stream se
+  nerestartuje. Nálada Spánek se schválně ladit nedá.
+- **Hlasitost** — posuvník od 0 do 100 %, výchozí hodnota je 60 %. Je oddělená
+  od systémové hlasitosti a pamatuje se.
+- **Místo** — zjistí se samo z pracovního prostoru. Stiskni **Obnovit počasí**,
+  ať se scéna načte znovu.
 
-## Pop out the mini player
+## Vysuň mini přehrávač
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Dokud hraje zvuk, na titulní liště přibude druhé tlačítko (tooltip **Vysunout
+přehrávač**). Vyplave malý HUD vždy navrchu: přehrát a pozastavit, značka
+počasí, název scény a tlačítko **Zpět do aplikace**. Hodí se, jakmile tě
+soustředěná relace nechá celého v jiné aplikaci.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Pozastavení z mini přehrávače ho nezavře. Zmizí jen po jeho zavíracím tlačítku,
+nebo když aplikaci ukončíš.
 
-## Run them together
+## Spusť je spolu
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Obě funkce váže jeden přepínač v panelu zvukové krajiny: **Spustit s režimem
+soustředění**, ve výchozím stavu zapnutý.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Spuštění soustředěné relace spustí zvukovou krajinu, pokud už nic nehraje.
+- Ukončení relace ji zastaví, ať skončí jakkoli, včetně vypršení časovače, a to
+  i po ručním startu.
 
-Turn the switch off to keep the two independent.
+Vypni přepínač a zůstanou nezávislé.
 
-## End a session
+## Ukonči relaci
 
-Any one of these ends it:
+Ukončí ji kterákoli z těchto možností:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Klikni na čip soustředění v titulní liště (tooltip **Režim soustředění je aktivní — klepněte pro ukončení**)
+- Stiskni **Complete** na pilulce
+- Stiskni **⌘⇧⌥F**
+- V ⌘K zvol **Exit focus mode**
+- Nech časovač doběhnout. V nule se relace sama dokončí
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Pilulka se zavře, oznámení se hned vrátí a zvuková krajina se zastaví.
 
-## Understand what does not persist
+## Co se nepřenese
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Relace žije přesně jedno spuštění aplikace. Ukonči Control Center a znovu ho
+otevři a začínáš neaktivní, s vynulovaným časovačem, i uprostřed relace. Obnova
+po pádu chybí a historie relací taky.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Přenášejí se jen dvě věci: preferovaná délka a příznak blokování oznámení. Cíl,
+uplynulý čas ani to, jestli je pilulka otevřená, ne.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Přehrávání je stejně pomíjivé. Zvuková krajina je při startu vždy zastavená.
+Nálada, hlasitost a ladění podle nálady zůstávají. Samotný stream se sám
+neobnoví.
 
-## Troubleshooting
+## Řešení problémů
 
-### The tune pad is missing
+### Chybí plocha ladění
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Jsi na náladě Spánek, která se schválně ladit nedá. Přepni na Soustředění nebo
+Relaxaci a plocha se vrátí.
 
-### Nothing plays after restarting the app
+### Po restartu aplikace nic nehraje
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Schválně: přehrávání je při startu aplikace vždy zastavené. Otevři panel a
+znovu stiskni **Přehrát**. Když je pořád ticho, zkontroluj posuvník hlasitosti
+v panelu. Je oddělený od systémové hlasitosti.
 
-### The weather or temperature looks wrong
+### Počasí nebo teplota nesedí
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Scéna se řídí polohou aktivního pracovního prostoru. V panelu stiskni **Obnovit
+počasí**, ať se načte znovu.
 
-## Related guides
+## Související návody
 
-- [Configure notifications](/cs-CZ/prirucka/navody/oznameni/)
-- [Keyboard shortcuts](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/)
+- [Nastavte oznámení](/cs-CZ/prirucka/navody/oznameni/)
+- [Klávesové zkratky](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/)

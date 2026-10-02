@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Model ejen
+description: Apakah sebenarnya ejen dalam Control Center, medan mana yang mengubah tingkah lakunya dan bagaimana penyesuai yang menjalankannya menentukan apa yang boleh dikuatkuasakan.
 slug: ms-MY/manual-pengguna/konsep/model-ejen
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Apakah itu ejen?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Ejen ialah pelaku bernama yang mempunyai persona, satu set kemahiran, penyesuai untuk dijalankan dan satu set keupayaan. Ejen ialah prinsipal dalam erti kata yang sama seperti manusia: mereka menulis mesej, memiliki tiket, meninggalkan semakan dan muncul dalam senarai yang sama. Merekalah yang melakukan kerja.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Setiap ejen tergolong dalam tepat satu ruang kerja. Ini invarian yang tegas — `agent.workspaceId` tidak boleh nol, ruang kerja ejen sendiri yang memilih fail pangkalan data tempat barisnya disimpan, dan penciptaan ejen tanpa ruang kerja ditolak.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Ejen juga ialah direktori. Definisinya terletak di `agents/<slug>/AGENTS.md` di bawah direktori data ruang kerja, dengan kemahiran yang dimilikinya dipautkan secara pautan simbolik ke dalam `agents/<slug>/.agents/skills`. Baris pangkalan data dan fail tersebut ditulis bersama. Pembenihan adalah idempoten: jika baris ejen sudah wujud, fail pada cakera dan pautan kemahiran tetap ditulis semula. Pemanggil dalam pengeluaran ialah penciptaan ruang kerja, bukan setiap pelancaran pelayan.
 
-## What an agent carries
+## Apa yang dibawa oleh ejen
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| Atribut                 | Apa fungsinya                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | Pengecam pendek seperti slug (`architect`, `qa`). Juga yang menjadi asas penyelesaian `@mentions`                      |
+| `title`                 | Jawatan yang boleh dibaca manusia                                                                                     |
+| `persona`               | Arahan personaliti dan tingkah laku dalam bentuk teks bebas, disuntik sebagai bahagian prompt                          |
+| `systemPrompt`          | Arahan tambahan pilihan, disuntik sebagai bahagian "Agent instructions" — ia tidak menggantikan bahagian lain prompt yang dipasang |
+| `skills`                | Set nama kemahiran yang tidak sensitif huruf besar/kecil, dicerminkan sebagai pautan kemahiran pada cakera            |
+| `adapterId`             | Pelari yang dituju oleh ejen. **Nilai nol jatuh kembali kepada gelung terbina**                                        |
+| `modelId`               | Model mana dalam penyesuai itu                                                                                        |
+| `effort`                | Tahap penaakulan, diambil daripada perbendaharaan kata model yang dipilih itu sendiri                                 |
+| `contextSize`           | Penggantian tetingkap konteks                                                                                         |
+| `capabilities`          | Tanda kelayakan dan keluar rangkaian, diperiksa semasa pelancaran                                                      |
+| `silenceTimeoutMinutes` | Penggantian setiap ejen (1–240) untuk pemantau senyap                                                                 |
+| `reportsTo`             | Id ejen induk — rantaian pelaporan yang dilukis oleh carta organisasi                                                  |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Anda mengedit semua ini di Tetapan → Ruang kerja → Ejen. **Ejen baharu** mencipta ejen tanpa nama yang kemudian anda isi.
 
-## Skills
+## Kemahiran
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Kemahiran ialah nama yang tidak sensitif huruf besar/kecil pada entiti ejen. Dua perkara berasingan berlaku dengannya:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Nama-nama tersebut disenaraikan dalam prompt yang dipasang di bawah tajuk "Skills". Itu sahaja yang dilakukan oleh set entiti itu dengan sendirinya — tiada pustaka prompt mengikut kemahiran yang berasaskan padanya.
+- Direktori setiap kemahiran yang dinamakan (`skills/<slug>/SKILL.md` dalam ruang kerja) dipautkan ke dalam folder ejen sendiri. Pada harness terbina, frontmatter kemahiran yang dipautkan dimuatkan secara automatik ke dalam prompt sistem dan ejen membaca isi kandungannya atas permintaan; menaip `/skill:<name>` dalam perbualan memuatkan isi tersebut sebagai arahan untuk giliran itu.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ms-MY/manual-pengguna/panduan-cara/urus-kemahiran/).
+Kemahiran yang diambil dari luar melalui imbasan rantaian bekalan yang menolak secara lalai antara pengambilan dan penulisan — tiada kandungan kemahiran mencapai cakera atau prompt tanpa keputusan. Yang dimaksudkan dengan luar ialah repositori GitHub yang anda daftarkan sendiri sebagai sumber kemahiran: tiada kedai yang dikurasi, jadi metadata repositori itu sendiri (penerangannya, bintangnya, nama kemahiran itu) ialah data paparan yang tidak dipercayai dan keputusan imbasan ialah satu-satunya isyarat keselamatan. Satu pemasangan mengambil keseluruhan direktori kemahiran itu, menyematkannya pada commit asalnya dalam `skills-lock.json`, dan kemas kini kemudian akan melalui pintu itu semula sebelum menggantikan apa-apa. Cara melakukannya ada dalam [Pasang dan urus kemahiran](/ms-MY/manual-pengguna/panduan-cara/urus-kemahiran/).
 
-### Repo-scoped skills
+### Kemahiran berskop repositori
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Sesuatu repositori boleh menyertakan kemahirannya sendiri, di mana-mana tempat konvensional (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Sesuatu ruang membuat checkout setiap repositori yang dipautkan secara bersebelahan di bawah `repos/<name>/`, tetapi ejen bekerja dalam satu repositori pada satu masa — jadi ia membawa kemahiran **repositori itu sahaja**, dan kemahiran tersebut bertukar apabila ia berpindah.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Repositori mana yang aktif disimpulkan daripada fail yang disentuh oleh ejen: menulis fail di bawah `repos/<name>/` menjadikan repositori itu aktif, manakala sekadar membaca merentas repositori tidak, jadi menjejaki simbol ke dalam perkhidmatan bersaudara tidak pernah menukar set tersebut di tengah-tengah sesuatu tugas. Dalam ruang satu repositori, jawapannya sudah diketahui sebelum giliran pertama.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Penskopan ini ialah keputusan bajet konteks. Indeks kemahiran berada dalam prompt pada setiap giliran manakala isi kandungannya tidak, jadi menyenaraikan kemahiran semua repositori sekali gus menelan token secara berterusan — dan kemahiran `testing` daripada satu perkhidmatan secara aktif mengelirukan apabila kerja itu berada dalam perkhidmatan lain. Alasan yang sama menjelaskan mengapa indeks ejen membawa satu repositori tetapi penggubah mesej tidak diskop begitu: menamakan kemahiran sendiri ialah satu tindakan eksplisit, jadi `/skill:<repo>:<name>` boleh mencapai mana-mana repositori dalam ruang itu.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Kemahiran repositori dimuatkan untuk **setiap** penyesuai, bukan hanya harness terbina. Kemahiran repositori aktif diwujudkan ke dalam direktori kerja ejen, iaitu laluan yang sudah diimbas oleh Claude Code; indeks yang sama disusun ke dalam `AGENTS.md` yang dibaca oleh harness terbina. Kemahiran sesuatu repositori melalui imbasan menolak secara lalai yang sama seperti kemahiran yang dipasang sebelum semua itu berlaku — repositori yang telah di-checkout ialah kandungan klon, dan frontmatter-nya mencapai prompt.
 
-## Capabilities
+## Keupayaan
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Keupayaan mengawal apa yang _diberikan_ kepada sesuatu larian, bukan apa yang dibenarkan oleh sistem failnya untuk disentuh. Broker kelayakan memeriksanya semasa pelancaran: jika sesuatu keupayaan dimatikan, token yang sepadan sememangnya tidak disuntik.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Push ke repositori** — mengawal suntikan token GitHub yang digunakan untuk `git push`.
+- **API GitHub** — mengawal suntikan `GH_TOKEN` dan keluar ke api.github.com.
+- **Tiket** — mengawal kunci API penyedia tiket dan keluar ke domainnya.
+- **Keluar rangkaian** — permintaan keluar sewenang-wenangnya.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Sesuatu larian menyelesaikannya daripada baris ejen itu sendiri. Apabila ejen tiada keupayaan sedemikian, satu lalai konservatif yang tetap terpakai: tiga tanda kelayakan dimatikan, keluar rangkaian dihidupkan. Togol "Kebenaran kotak pasir" dalam borang ejen memilih antara sandaran itu dan set tersuai yang disimpan pada ejen.
 
-See [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk separuh lagi cerita ini, termasuk apa yang dikuatkuasakan dan tidak dikuatkuasakan pada peringkat sistem fail.
 
-## The adapter decides what can be enforced
+## Penyesuai menentukan apa yang boleh dikuatkuasakan
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Medan yang paling besar kesannya pada sesuatu ejen ialah penyesuainya, kerana pengangkutan penyesuai itu menentukan berapa banyak polisi Control Center yang benar-benar boleh dikuatkuasakan.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Pengangkutan    | Penyesuai                | Apa yang dikuatkuasakan oleh Control Center                                                                                                                                                                                                                                                                  |
+| --------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Harness terbina | Control Center (built-in) | Semuanya. Permukaan alat _dibina_ daripada modus, jadi alat yang tidak dibenarkan adalah tidak kelihatan dan bukan sekadar ditolak; setiap panggilan melalui pintu kelulusan dan guardrail tindakan; kontrak penyiapan boleh menyentil dan kemudian menggagalkan larian yang tamat tanpa hasil serahannya |
+| Claude CLI      | Claude Code              | Hanya alat `mcp__*` yang disajikan kepadanya. Alat baca, tulis, edit dan shell Claude sendiri berada dalam prosesnya dan berjalan tanpa dilihat — dan ia dilancarkan dengan `--dangerously-skip-permissions`, kerana `claude -p` yang tidak interaktif jika tidak akan tergantung selama-lamanya pada promptnya sendiri                                    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Secara konkritnya, **hanya harness terbina menyokong subejen, pemanduan pertengahan larian, jeda dan sambung semula (dan oleh itu pengambilalihan) serta penguatkuasaan modus secara struktur.** Claude Code tidak mendapat satu pun daripada itu.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Kotak pasir OS ialah lantai, bukan penguatkuasa modus, dan bukan setiap hos mempunyainya]
+Matriks di atas adalah tentang apa yang boleh _dilihat dan dikawal_ oleh Control Center. Di bawahnya, `cc_server` membalut CLI Claude Code dalam kotak pasir OS hos jika ada — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2 — jadi `rm` yang tidak dilihat atau penulisan yang tidak dilihat masih dibatasi oleh OS. Pada **Windows tiada bahagian belakang sama sekali** dan pada Linux atau WSL2 tanpa `bwrap` dan `socat` probe melaporkan tiada, jadi di sana larian tersebut jatuh kembali kepada pensanitasi persekitaran, kelayakan yang diuruskan melalui broker, guardrail pada panggilan yang dapat dilihat oleh Control Center dan worktree perbualan itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
+Apa yang bukan dimiliki oleh kotak pasir ialah sifat _pintu_. Ia membatasi tempat sesuatu proses boleh membaca, menulis dan menyambung — modus baca sahaja memang sampai kepadanya, sebagai bind mount baca sahaja — tetapi ia tidak boleh memintas panggilan, meminta kelulusan, atau memberitahu anda selepas itu apa yang dicuba oleh CLI. Itu, ditambah dengan empat keupayaan yang disebut di atas, masih menjadi apa yang dimiliki oleh harness terbina dan tidak dimiliki oleh yang lain. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Ejen yang **tiada** penyesuai jatuh kembali kepada **Control Center (built-in)** — gelung di dalam pelayan, jadi tiada CLI untuk dipasang — dan log lariannya merekodkan `cc-harness`. Setiap ejen yang dibenihkan dicipta tanpa penyesuai atau model, jadi lima ejen dalam ruang kerja baharu semuanya berjalan di situ, pada model lalai Anthropic, sehingga anda menetapkan penyesuai dan model bagi setiap ejen. Pilihan "penyesuai lalai" semasa pengenalan ialah keutamaan di pihak klien yang tidak pernah dibaca oleh pelayan dan ia tidak digunakan secara retroaktif kepada ejen yang sudah dicipta.
 
-## Where agents come from
+## Dari mana ejen datang
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Dibenihkan bersama ruang kerja.** Setiap ruang kerja — bukan hanya yang pertama — mendapat seorang CEO serta empat pakar (`qa`, `architect`, `engineer`, `librarian`) yang melaporkan kepadanya, dicipta secara idempoten di latar belakang apabila ruang kerja itu dicipta. Lihat [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
+- **Ditambah secara manual** di Tetapan → Ruang kerja → Ejen. Meminta ejen mengupah rakan sekerja tidak mencipta baris; gunakan skrin itu.
 
-## Live state
+## Keadaan langsung
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Ejen tiada lajur status yang disimpan. Keadaan langsungnya diperoleh daripada log larian terbarunya setiap kali ia dibaca:
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| Keadaan    | Maksud                                                                    |
+| ---------- | ------------------------------------------------------------------------- |
+| `neverRun` | Tiada log larian wujud                                                     |
+| `running`  | Sekurang-kurangnya satu larian sedang berjalan                             |
+| `failed`   | Larian terbaharu mengalami ralat, atau keaktifannya gagal atau mati        |
+| `blocked`  | Keaktifan larian terbaharu tersekat, terhenti atau bergelung               |
+| `idle`     | Semua yang lain — ejen pernah berjalan sebelum ini dan tiada apa-apa yang sedang berjalan |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Dua keadaan lagi, `queued` dan `succeeded`, wujud untuk larian individu dalam pokok larian perbualan; senarai ejen tidak pernah menghasilkannya, kerana larian yang sudah selesai berwarna hijau ialah fakta tentang larian itu, bukan tentang ejen.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ms-MY/manual-pengguna/konsep/multipemain/).
+Senarai kehadiran menunjukkan gambaran selari yang lebih kasar yang disintesiskan di pihak pelayan daripada peristiwa larian langsung — berfikir, berjalan, tersekat menunggu kelulusan, selesai — dan inilah yang membuat ejen muncul bersebelahan manusia. Lihat [Multipemain](/ms-MY/manual-pengguna/konsep/multipemain/).
 
-## Related concepts
+## Konsep berkaitan
 
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): what happens when an agent is actually run
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ms-MY/manual-pengguna/konsep/multipemain/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/): what constrains a run today
-- [Agent configuration reference](/ms-MY/manual-pengguna/rujukan/konfigurasi-ejen/): the full field list
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): apa yang berlaku apabila ejen benar-benar dijalankan
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/): tetapan setiap perbualan yang membentuk permukaan alat ejen
+- [Multipemain](/ms-MY/manual-pengguna/konsep/multipemain/): ejen sebagai prinsipal, kehadiran dan dail autonomi
+- [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/): apa yang mengekang sesuatu larian hari ini
+- [Rujukan konfigurasi ejen](/ms-MY/manual-pengguna/rujukan/konfigurasi-ejen/): senarai medan penuh

@@ -1,60 +1,67 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Benutzer mit SCIM provisionieren
+description: Lass deinen IdP Control Center-Konten automatisch anlegen, aktualisieren und deprovisionieren.
 slug: de-DE/handbuch/anleitungen/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Nutze diese Anleitung, wenn du den Lebenszyklus steuern willst — beim
+Offboarding muss der Zugriff automatisch entzogen werden, nicht nur künftige
+Anmeldungen gesperrt. SCIM ist das Push-Protokoll, mit dem IdPs (Okta, Entra ID
+und andere) genau das tun.
 
-## Prerequisites
+## Voraussetzungen
 
-- SSO already working (the [SSO tutorial](/de-DE/handbuch/tutorials/sso) or the
-  [OIDC guide](/de-DE/handbuch/anleitungen/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO läuft bereits (das [SSO-Tutorial](/de-DE/handbuch/tutorials/sso/) oder die
+  [OIDC-Anleitung](/de-DE/handbuch/anleitungen/sso-oidc/)),
+- **ein Server, den der IdP über HTTPS erreicht** — die SCIM-Aufrufe kommen vom
+  IdP, nicht aus dem Browser der Person. Nutze den eingebauten Tunnel
+  (Einstellungen → Server → Verbindung und Status → Diesen Server teilen → Cloudflared/ngrok/Tailscale) oder eine öffentliche URL. Ein
+  Server, der nur über das WebSocket-Relay erreichbar ist, empfängt keine
+  SCIM-Pushes; die JIT-Provisionierung funktioniert dort weiter, diese
+  Anleitung nicht.
 
-## Steps
+## Schritte
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Öffne **Einstellungen → Server → Single sign-on** → die Karte
+   **Benutzerbereitstellung (SCIM)**. Die Karte zeigt den Endpoint, z. B.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. Klicke auf **Token erzeugen** (oder **Token neu generieren**, wenn schon
+   eines existiert) — das Bearer-Token erscheint einmal in einem Dialog und
+   liegt in der Zwischenablage. Lege es im Passwortmanager ab; der Server
+   behält nur eine Kopie, die sich in konstanter Zeit prüfen lässt.
+3. Aktiviere SCIM in den Provisionierungseinstellungen deines IdP mit:
+   - **Base URL**: der Endpoint oben
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (E-Mail) oder `externalId` — beides passt
+4. Teste mit einer Person: lege sie per Push vom IdP an und prüfe, dass sie
+   erscheint (ein SCIM-Create schreibt die `externalId` des Anbieters am Konto
+   fest, dieselbe Festschreibung wie die erste SSO-Anmeldung).
 
-## What deprovisioning does
+## Was die Deprovisionierung bewirkt
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Sendet der IdP `active: false` (oder `DELETE`), lehnt SCIM zuerst ab, wenn
+das Konto **Eigentümer** eines Arbeitsbereichs ist (übertrage die
+Eigentümerschaft zuerst). Sonst:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. zuerst werden alle Geräteanmeldedaten widerrufen — laufende Sitzungen
+   fallen innerhalb von Sekunden weg,
+2. jede Mitgliedschaft im Arbeitsbereich wird entfernt,
+3. das Konto wird als deaktiviert gestempelt (anmelden kann es sich nie, egal
+   was der IdP später sagt, bis es ausdrücklich reaktiviert wird).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Die User-Zeile selbst bleibt — die Zuordnung zu Tickets, Nachrichten und
+Commits ist dauerhaft. Eine Reaktivierung (SCIM `active: true`) stellt die
+Anmeldung wieder her, die Mitgliedschaften aber **nicht**: dafür braucht es
+eine neue Einladung oder die Auto-Member-Richtlinie bei der Anmeldung.
 
-## Troubleshooting
+## Fehlersuche
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 bei jedem Aufruf** — das Token hat sich geändert; generiere es neu und
+  aktualisiere den IdP.
+- **Der Endpoint ist nicht erreichbar** — der Tunnel ist ausgefallen, oder der
+  Server ist nur über das Relay erreichbar. SCIM braucht direktes HTTPS; die
+  JIT-Provisionierung funktioniert weiter.
+- **Fehler beim Gruppen-Push (501)** — absichtlich: die Zuordnung Gruppe→Rolle
+  passiert bei der Anmeldung aus den Gruppenattributen von SAML und OIDC, nicht
+  aus per Push gelieferten Gruppen.

@@ -1,73 +1,75 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Konfigurera Slack-integration
+description: Anslut en Slack-app till en arbetsyta i Control Center så att medlemmar kan styra agenter från Slack.
 slug: sv-SE/handbok/how-to-guider/slack-integration
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Den här guiden visar hur du ansluter Slack till en arbetsyta i Control Center, antingen genom att låta Control Center skapa appen eller genom att bygga den själv.
 
-For a guided first run, see [Bridge Slack to your workspace](/sv-SE/handbok/guider/forsta-chattbrygga/).
+För en guidad första körning, se [Koppla Slack till din arbetsyta](/sv-SE/handbok/guider/forsta-chattbrygga/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack är den enda chattleverantören]
+Bryggan är leverantörsblind till sin konstruktion — ett deskriptorstyrt
+gränssnitt över en adapter per leverantör — men Slack är den enda adapter som
+finns. Det finns ingen implementering för Discord, Telegram, Teams eller
+Matrix.
 :::
 
-## Prerequisites
+## Förutsättningar
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Rollen `owner` eller `admin` i Control Center-arbetsytan — att ansluta en chattapp är en ändring av arbetsytans inställningar
+- Behörighet att skapa och installera appar i Slack-arbetsytan
+- Inget som behöver vara nåbart utifrån: anslutningen är utgående (Socket Mode), så servern behöver ingen inkommande port, tunnel eller domän
 
-## Three ways to get the app
+## Tre vägar till appen
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Väg                 | Du bidrar med                        | Control Center gör                                                                                                          |
+| ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **Guidad**          | Ett par tokens för appkonfiguration (`xoxe-…`) | Skapar appen med rätt omfång, händelser, Socket Mode och slash-kommando; ger dig de två steg Slack inte har något API för  |
+| **Skapa i Slack**   | Ingenting                            | Öppnar Slack med samma konfiguration ifylld; du väljer en arbetsyta och bekräftar                                           |
+| **För hand**        | Den färdiga appens tokens            | Verifierar dem och ansluter                                                                                                 |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/sv-SE/handbok/how-to-guider/anpassa-chattbot/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Den guidade vägen är den enda som också lämnar appen _hanterbar_ från Control Center, och det är den som möjliggör [Anpassa chattboten](/sv-SE/handbok/how-to-guider/anpassa-chattbot/). En app som skapats med **Skapa i Slack** kan senare befordras till en hanterad genom att klistra in ett token för appkonfiguration i anslutningsdialogen.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Det finns medvetet ingen knapp för ”installera Control Centers Slack-app”. Att installera en distribuerad Slack-app kräver en delad klienthemlighet (Slack har ingen PKCE), och Socket Mode fördelar en apps händelser slumpmässigt över dess anslutningar — en delad app skulle alltså leverera din arbetsytas meddelanden till andra människors servrar. Varje arbetsyta äger därför sin egen app, och de här tre vägarna handlar om hur lite arbete det kostar dig.
 
-## Option A: let Control Center create the app
+## Alternativ A: låt Control Center skapa appen
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Generera ett par tokens för appkonfiguration på [api.slack.com/apps](https://api.slack.com/apps) och kopiera **refresh**-token (`xoxe-…`)
+2. Gå i Control Center till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+3. I Slack-blocket klickar du på **Skapa app åt mig**
+4. Klistra in token, justera appnamn, botnamn, beskrivningar och slash-kommando och klicka sedan på **Skapa app**
+5. Följ de två återstående stegen dialogen visar, vart och ett som en länk in i Slack:
+   - **Basic Information → App-Level Tokens**: generera en token med omfånget `connections:write` (`xapp-…`)
+   - **Install App**: installera i arbetsytan och kopiera **Bot User OAuth Token** (`xoxb-…`)
+6. Klicka på **Klistra in inloggningsuppgifterna** och fortsätt med [Anslut](#anslut)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Konfigurationstoken roterar vid varje användning. Control Center sparar det roterade värdet allteftersom, så du behöver aldrig klistra in det igen.
 
-## Option B: create it in Slack, pre-filled
+## Alternativ B: skapa den i Slack, ifylld i förväg
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Samma app, inget token för appkonfiguration — Slack visar dig sin egen skaparskärm med hela manifestet redan ifyllt.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Gå i Control Center till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+2. I Slack-blocket klickar du på **Skapa app åt mig**
+3. Justera appnamn, botnamn, beskrivningar och slash-kommando — de följer med länken
+4. Klicka på **Skapa i Slack**. Webbläsaren öppnar Slacks sida för att skapa appar med konfigurationen ifylld
+5. Välj Slack-arbetsyta och bekräfta. Omfången, händelserna, Socket Mode och slash-kommandot är redan korrekta
+6. Tillbaka i Control Center följer du de två återstående stegen dialogen visar:
+   - **Basic Information → App-Level Tokens**: generera en token med omfånget `connections:write` (`xapp-…`)
+   - **Install App**: installera i arbetsytan och kopiera **Bot User OAuth Token** (`xoxb-…`)
+7. Klicka på **Klistra in inloggningsuppgifterna** och fortsätt med [Anslut](#anslut)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack rapporterar inte vilken app den skapade, så Control Center får aldrig veta app-id:t och länkarna i steg 6 går till din applista i stället för direkt till den appen. **Anpassa bot** kräver ett token för appkonfiguration.
 
-## Option C: build the app yourself
+## Alternativ C: bygg appen själv
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Skapa en app på [api.slack.com/apps](https://api.slack.com/apps) och ställ sedan in den så här.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: aktivera det och lämna varje request-URL tom. Slack avvisar ett manifest som begär både Socket Mode och webhook-leverans.
 
-**Bot token scopes** (OAuth & Permissions):
+**Behörighetsomfång för bot-token** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +83,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Händelseprenumerationer** (bot-händelser):
 
 ```text
 app_home_opened
@@ -91,134 +93,135 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` och `message.groups` är det som får ett _svar_ inne i en redan bryggad Slack-tråd att fungera. Utan dem kommer bara den första omnämningen någonsin fram.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Slash-kommando**: `/cc` (vilket namn som helst fungerar — bryggan använder det kommando den senast anropades med).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: aktivera fliken Messages och låt den vara skrivbar, så att medlemmar kan skicka direktmeddelanden till boten.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Tokens**: generera en token på appnivå med `connections:write`, installera sedan appen och kopiera bot-användarens OAuth-token.
 
-## Connect
+## Anslut
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Gå till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+2. I Slack-blocket klickar du på **Anslut Slack**
+3. Fyll i fälten:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Fält                                          | Värde    | Var det finns i Slack                                      |
+| --------------------------------------------- | -------- | ---------------------------------------------------------- |
+| **Bot-token**                                 | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Appnivå-token**                             | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Token för appkonfiguration** (valfritt)     | `xoxe-…` | Paret tokens för appkonfiguration på api.slack.com/apps    |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Prefixet för varje värde kontrolleras på båda sidor innan något skickas, så ett
+värde som klistras in i fel ruta avvisas med samma mening oavsett håll.
 
-4. Click **Connect**
+4. Klicka på **Anslut**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center verifierar bot-token med Slacks `auth.test` _innan_ något sparas, så ett skrivfel rapporteras till dig i stället för att bli en socket som tyst aldrig fungerar. En token på appnivå kan bara bevisas genom att socketen öppnas, så en felaktig sådan dyker upp en stund senare som ett anslutningsfel på samma rad.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Utan det valfria tokenet för appkonfiguration fungerar anslutningen utmärkt — du kan bara inte redigera boten från Control Center.
 
-## What connecting does
+## Vad anslutningen gör
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Sparar inloggningsuppgifterna i arbetsytans egen katalog, bredvid dess databas, läsbara endast av ägaren. De färdas aldrig tillbaka till en klient
+- Öppnar en Socket Mode-anslutning för den här arbetsytan och börjar ta emot omnämningar, svar i Slack-trådar, direktmeddelanden och slash-kommandon
+- Återaktiverar varje Slack-tråd som bryggades tidigare, så att en återanslutning fortsätter befintliga samtal i stället för att lämna dem strandsatta
+- Kostar ingenting för arbetsytor som inte har någon chattapp: ingen socket, inga timers, ingen trafik
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Var tokens ligger, och varför inte i nyckelringen]
+Botens inloggningsuppgifter är en vanlig JSON-fil per leverantör i
+`<dataDir>/<workspaceId>/chat_credentials/`, skriven atomiskt och begränsad till
+ägaren. Det är avsiktligt, inte av slarv: att ta bort en arbetsyta avlänkar den
+katalogen så att dess tokens följer med, och `workspace.export` och
+säkerhetskopior kopierar `workspace.db` — inte katalogen — så en arbetsyta som
+du lämnar till någon annan bär aldrig levande bottokens inuti sig. Följden är
+att om du återställer en arbetsyta någon annanstans måste du ansluta Slack där
+igen.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Åtkomst till bryggan är arbetsytans **medlemskap**, aldrig innehavet av en
+token. Ett Slack-konto måste vara länkat till en Control Center-användare som är
+medlem med en skrivande roll. Att ansluta, koppla från, den guidade
+uppsättningen, uppsättningslänken och botanpassningen kräver alla admin.
 :::
 
-## Verify
+## Verifiera
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Slack-raden visar en statustagg: **Live**, **Ansluter…**, **Anslutningsfel** (med Slacks eget fel bredvid) eller **Inte ansluten**. Så kontrollerar du hela vägen:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Bjud i Slack in boten till en kanal: `/invite @your-bot-name`
+2. Nämn den med en begäran
+3. Ett svar i Slack-tråden dyker upp och en matchande yta dyker upp i Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/sv-SE/handbok/how-to-guider/lanka-chattkonto/).
+Varje medlem som vill använda bryggan länkar sedan sitt eget konto — se [Länka ditt Slack-konto](/sv-SE/handbok/how-to-guider/lanka-chattkonto/).
 
-## What a reply looks like in Slack
+## Hur ett svar ser ut i Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Ovanför de strömmade orden sitter ett grupperat kort med en rad per steg. Uppsättningen är en rad vars titel går från `Working on it…` till `Cloning …` till `Starting the agent…`. Resonemang lägger till en `Thinking…`-rad; när det steget är klart kan en kort tanke visas på den. Varje verktyg är en egen rad (`Read lib/main.dart`). Svaret kommer som vanlig text under kortet. Kortet blir slutfört när turen är slut och felmarkerat när körningen misslyckades, avbröts eller nådde sin tur-gräns.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Kortet börjar i samma stund som boten accepterar omnämningen — `Working on it…` — så att Slack-tråden inte är tyst medan arbetsytan fortfarande byggs. Din första omnämning i en Slack-kanal skapar samtalet, vilket klonar de repos agenten arbetar i, så den uppsättningsraden visar då `Cloning acme/widgets…`, sedan `Setting up Reviewer…`, sedan `Starting the agent…`, och därefter en `Thinking…`-rad när agenten faktiskt resonerar. I ett stort repository tar den första uppsättningen en stund; kortet är hur du kan se att den arbetar i stället för att ignorera dig. Senare omnämningar i samma Slack-tråd öppnar fortfarande med `Working on it…` och hoppar sedan över kloningsstegen eftersom arbetsytan redan finns.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Resonemang som en vägg av text och verktygsutdata lämnar aldrig Control Center — tanken på `Thinking…`-raden är en kort rad, inte en avskrift. **View in Control Center** på kortet öppnar hela samtalet i skrivbordsappen — länken går till din egen Control Center-server, som lämnar över webbläsaren till appen.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Händer inget när du klickar på den är servern som skickade meddelandet inte nåbar från maskinen du klickade på (en server som bara lyssnar på loopback, klickad från en telefon till exempel), eller så körs inte Control Center där. En server utan nåbar adress skickar ett kort utan knapp i stället för ett som inte leder någonstans.
 
-## Rotate a token
+## Rotera en token
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Klistra in det nya värdet i anslutningsdialogen och klicka på **Anslut**. Att ansluta ersätter vilken anslutning som helst som kördes för den här arbetsytan, så socketen slås upp på nytt med de nya inloggningsuppgifterna.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+De två obligatoriska tokens måste finnas vid varje anslutning. Det valfria tokenet för appkonfiguration behåller sitt sparade värde när du lämnar fältet tomt, så att rotera en bot-token kostar dig aldrig möjligheten att redigera appen.
 
-## Disconnect
+## Koppla från
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Klicka på **Koppla från** på Slack-raden (endast admin). Socketen stängs och inloggningsuppgifterna glöms bort.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Yt- och användarlänkar överlever medvetet: att återansluta samma app återställer varje bryggad Slack-tråd. De är rader knutna till arbetsytan, så att ta bort arbetsytan tar bort dem ändå.
 
-## Troubleshooting
+## Felsökning
 
-### The row says "Connection error"
+### Raden säger ”Anslutningsfel”
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Läs felet som visas bredvid taggen. En avvisad inloggningsuppgift (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) är slutgiltig — bryggan slutar försöka igen och väntar på nya tokens, för att försöka igen med en återkallad token i evighet ger bara hastighetsbegränsning. Klistra in tokens på nytt i anslutningsdialogen.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Ett `missing_scope`-fel betyder att appen är installerad med färre omfång än bryggan behöver. Lägg till det saknade omfånget, installera om appen i Slack och återanslut sedan.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Allt tillfälligt (en tappad socket, en Slack-hicka) återansluter av sig självt med exponentiell backoff begränsad till 30 sekunder, och Slacks rutinmässiga socketrotation trappar inte upp den backoffen.
 
-### The bot does not answer a mention
+### Boten svarar inte på en omnämning
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Finns boten i kanalen?** Slack levererar bara kanalmeddelanden till appar som är medlemmar. Kör `/invite @your-bot-name`
+- **Är du länkad?** En olänkad medlem får ett svar i den Slack-tråden som förklarar hur man länkar. Se [Länka ditt Slack-konto](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
+- **Är du medlem i arbetsytan med en skrivande roll?** En `viewer` eller `guest` får veta att rollen är skrivskyddad. Bryggan startar aldrig arbete åt någon den inte kan tillskriva
+- **Har arbetsytan några agenter?** Utan agenter sparas meddelandet men har ingen att svara
 
-### It answers in a channel but ignores plain messages
+### Den svarar i en kanal men ignorerar vanliga meddelanden
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Det är avsiktligt. Utanför ett direktmeddelande agerar bryggan bara på ett meddelande som nämner boten, eller ett svar inne i en Slack-tråd den redan äger. Allt annat är andras samtal.
 
-### Replies arrive as one big message instead of streaming
+### Svar kommer som ett enda stort meddelande i stället för att strömmas
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Raden säger ”Liveströmning är av för den här Slack-appen – svar kommer som ett meddelande.” Slacks strömmande svar kräver funktionen Agents & AI Apps i ett betalt abonnemang; när Slack nekar den slutar bryggan fråga för resten av den anslutningens livstid och postar hela svar i stället. Inget går förlorat — hela avskriften finns alltid i Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Strömning kräver också ett Slack-trådankare, så ett svar som inte har någon Slack-tråd att växa i postas i sin helhet. Uppgiftskortet kommer fortfarande fram oavsett: vid ett helt svar åker det med i samma meddelande, redan slutfört.
 
-### The reply has no card above it
+### Svaret har inget kort ovanför sig
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Slacks uppgiftskort är en del av samma nya yta Agents & AI Apps som strömningen, och Slack nekar först vid anropstillfället. När den gör det behåller Control Center svaret och släpper kortet för resten av den anslutningens livstid — ett svar utan statusrad slår en statusrad utan svar.
 
-### "Control Center needs an app configuration token to edit the bot"
+### ”Control Center behöver en token för appkonfiguration för att redigera boten”
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Raden **Anpassa bot** är inaktiverad eftersom anslutningen inte har något token för appkonfiguration. Det är väntat för en app som skapats för hand eller via **Skapa i Slack** — Slack berättade aldrig för Control Center vilken app det är. Generera ett tokenpar på api.slack.com/apps och återanslut med refresh-tokenet ifyllt.
 
-### A long answer is cut off
+### Ett långt svar klipps av
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack begränsar ett enskilt meddelande till 40 000 tecken, så bryggan trunkerar vid 39 000 och lägger till en hänvisning till Control Center — ett förkortat svar slår ett som Slack avvisar helt. Hela texten finns alltid i ytans avskrift.
 
-## Related guides
+## Relaterade guider
 
-- [Link your Slack account](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
-- [Customize the chat bot](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
-- [Chat bridge](/sv-SE/handbok/referens/chattbrygga/)
+- [Länka ditt Slack-konto](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
+- [Anpassa chattboten](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
+- [Chattbrygga](/sv-SE/handbok/referens/chattbrygga/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/)
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/)

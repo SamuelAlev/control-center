@@ -1,60 +1,67 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Παροχή χρηστών με SCIM
+description: Αφήστε το IdP σας να δημιουργεί, να ενημερώνει και να αποπαρέχει αυτόματα λογαριασμούς Control Center.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Χρησιμοποιήστε αυτόν τον οδηγό όταν θέλετε έλεγχο του κύκλου ζωής — η
+αποχώρηση ενός χρήστη πρέπει να ανακαλεί την πρόσβαση αυτόματα, όχι απλώς να
+αποκλείει μελλοντικές συνδέσεις. Το SCIM είναι το πρωτόκολλο push που
+χρησιμοποιούν τα IdP (Okta, Entra ID και άλλα) ακριβώς γι' αυτόν τον σκοπό.
 
-## Prerequisites
+## Προϋποθέσεις
 
-- SSO already working (the [SSO tutorial](/el-GR/εγχειρίδιο/οδηγοί/sso) or the
-  [OIDC guide](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO ήδη σε λειτουργία (το [μάθημα SSO](/el-GR/εγχειρίδιο/οδηγοί/sso) ή ο
+  [οδηγός OIDC](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-oidc)),
+- **έναν διακομιστή που το IdP μπορεί να προσεγγίσει μέσω HTTPS** — οι κλήσεις
+  SCIM προέρχονται από το IdP, όχι από το πρόγραμμα περιήγησης του χρήστη.
+  Χρησιμοποιήστε την ενσωματωμένη σήραγγα
+  (Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση → Κοινή χρήση αυτού του διακομιστή → Cloudflared/ngrok/Tailscale) ή ένα δημόσιο URL. Ένας
+  διακομιστής προσβάσιμος μόνο μέσω του relay WebSocket δεν μπορεί να δεχτεί
+  push SCIM· η παροχή JIT εξακολουθεί να λειτουργεί εκεί, αυτός ο οδηγός όχι.
 
-## Steps
+## Βήματα
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Ανοίξτε **Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση** → την κάρτα
+   **Παροχή χρηστών (SCIM)**. Η κάρτα εμφανίζει το endpoint, π.χ.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. Πατήστε **Δημιουργία token** (ή **Αναγέννηση token** αν υπάρχει ήδη ένα) —
+   το bearer token εμφανίζεται μία φορά σε έναν διάλογο και αντιγράφεται στο
+   πρόχειρο. Αποθηκεύστε το στον διαχειριστή κωδικών σας· ο διακομιστής κρατά
+   μόνο ένα αντίγραφο που επαληθεύεται σε σταθερό χρόνο.
+3. Στις ρυθμίσεις παροχής του IdP σας, ενεργοποιήστε το SCIM με:
+   - **Base URL**: το endpoint παραπάνω
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (email) ή `externalId` — και τα δύο ταιριάζουν
+4. Δοκιμάστε με έναν χρήστη: στείλτε τον με push από το IdP, επιβεβαιώστε ότι
+   εμφανίζεται (η δημιουργία μέσω SCIM κλειδώνει το `externalId` του παρόχου
+   στον λογαριασμό, το ίδιο κλείδωμα που θέτει και η πρώτη σύνδεση μέσω SSO).
 
-## What deprovisioning does
+## Τι κάνει η αποπαροχή
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Όταν το IdP στέλνει `active: false` (ή `DELETE`), το SCIM αρνείται πρώτα αν ο
+λογαριασμός είναι **ιδιοκτήτης** χώρου εργασίας (μεταβιβάστε πρώτα την
+κυριότητα). Διαφορετικά:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. πρώτα ανακαλείται κάθε διαπιστευτήριο συσκευής — οι ενεργές συνεδρίες
+   πέφτουν μέσα σε δευτερόλεπτα,
+2. αφαιρείται κάθε συμμετοχή σε χώρο εργασίας,
+3. ο λογαριασμός σημαίνεται ως απενεργοποιημένος (δεν μπορεί ποτέ να συνδεθεί,
+   ό,τι κι αν πει αργότερα το IdP, μέχρι να επανενεργοποιηθεί ρητά).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Η ίδια η γραμμή χρήστη επιβιώνει — η απόδοση σε εισιτήρια, μηνύματα και
+commits είναι μόνιμη. Η επανενεργοποίηση (SCIM `active: true`) επαναφέρει τη
+σύνδεση αλλά **όχι** τις συμμετοχές: αυτές χρειάζονται μια νέα πρόσκληση ή την
+πολιτική αυτόματης συμμετοχής κατά τη σύνδεση.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 σε κάθε κλήση** — το token άλλαξε· αναγεννήστε το και ενημερώστε το
+  IdP.
+- **Το endpoint δεν είναι προσβάσιμο** — η σήραγγα είναι εκτός λειτουργίας ή ο
+  διακομιστής είναι μόνο μέσω relay. Το SCIM χρειάζεται άμεσο HTTPS· η παροχή
+  JIT συνεχίζει να λειτουργεί ανεξάρτητα.
+- **Σφάλματα push ομάδων (501)** — σκόπιμα: η αντιστοίχιση ομάδας σε ρόλο
+  γίνεται κατά τη σύνδεση από τα χαρακτηριστικά ομάδων της SAML/OIDC, όχι από
+  ομάδες που έρχονται με push.

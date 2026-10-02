@@ -1,172 +1,188 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Adapters en modellen beheren
+description: Verbind modelproviders, kies het model waarop een agent draait en bekijk welke agent-runner-CLI's de serverhost heeft.
 slug: nl-NL/handleiding/gidsen/adapters
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Deze gids laat zien hoe je modelproviders verbindt en kiest waarop een agent
+draait.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Alles wat hier wordt beschreven staat op één pagina: **Instellingen → Server →
+Modelaanbieders**. De vermelding in de subsidebar heet "Modelaanbieders"; de
+paginakop heet "Adapters".
 
-## What an adapter is
+## Wat een adapter is
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Een adapter is de _runner_ die een agentbeurt uitvoert. Er zijn er twee en de
+lijst ligt vast — je kunt geen derde toevoegen.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Adapter                   | CLI      | Transport                                                  |
+| ------------------------- | -------- | ---------------------------------------------------------- |
+| Control Center (built-in) | geen     | In-process agentloop, praat via HTTP met providers         |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`                    |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI en de rest zijn **providers** op de ingebouwde
+adapter, geen afzonderlijke CLI's. Wat je wél kunt toevoegen is nog een provider
+— elk OpenAI- of Anthropic-compatibel endpoint. Dat komt in de volgende sectie.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Detectie probeert de server, niet jouw machine]
+De kaart **Gedetecteerde runners** laat zien wat `cc_server` op het `PATH` van de
+_serverhost_ heeft gevonden. Op een thin client of webclient is dat een andere
+machine dan degene waar je naar kijkt. Installeer de CLI op de machine die
+`cc_server` draait.
 :::
 
-## Connect a model provider
+## Een modelprovider verbinden
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+De ingebouwde adapter heeft minstens één verbonden provider nodig voordat hij kan
+draaien. Er zitten er veertien in de catalogus.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Ga naar **Instellingen → Server → Modelaanbieders**
+2. Scroll naar **Providers en modellen**
+3. Zoek je provider en verbind hem:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Provider                                                                                                 | Hoe je verbindt                                                                                                               |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API-sleutel. Een Claude Pro/Max-abonnement is geen Anthropic API-login — gebruik voor dat abonnement de Claude Code-adapter   |
+| OpenAI, Codex, Cursor                                                                                    | OAuth-login in de browser, of een API-sleutel. Codex is ChatGPT Plus/Pro via de Codex Responses-backend, geen CLI-spawn       |
+| Kimi Code                                                                                                | Alleen OAuth in de browser — een device-codeflow. Het is een abonnement met vast tarief, dus er is geen prijs per token       |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API-sleutel                                                                                                                   |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Controlepunt: de badge van de rij verandert naar verbonden en als je de rij
+uitklapt, zie je de modellen die de provider aanbiedt, elk met zijn prijs per
+miljoen tokens en zijn contextvenster.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth-tokens belanden in de eigen referentieopslag van de server en worden
+vernieuwd voordat ze verlopen. Providerreferenties zijn **host-globaal** — elke
+werkruimte op de installatie deelt ze; ze zijn niet aan één werkruimte gebonden.
 
-### Add a custom provider
+### Een aangepaste provider toevoegen
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Gebruik dit voor Ollama, LM Studio, vLLM of een privé-implementatie.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. Druk in **Providers en modellen**, onder **Aangepaste providers**, op
+   **Provider toevoegen**
+2. Vul een **naam** in, kies het **API-type** (OpenAI-compatibel of
+   Anthropic-compatibel) en geef de **Basis-URL** op (bijvoorbeeld
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Voeg een **API-sleutel** toe als het endpoint er een nodig heeft, en druk dan
+   op **Provider toevoegen**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Een aangepaste provider verschijnt in dezelfde lijst, met een verwijderknop die
+de ingebouwde providers niet hebben.
 
-## Pick a model for an agent
+## Een model kiezen voor een agent
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Ga naar **Instellingen → Werkruimte → Agenten** en selecteer de agent
+2. Kies op het tabblad **Instellingen** de **adapter**
+3. Kies het **model** in de keuzelijst ernaast
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Voor de ingebouwde adapter wordt de keuzelijst live samengesteld uit de eigen
+catalogus van elke verbonden provider. Een provider zonder opgeslagen referentie
+levert nul modellen, en daarom betekent een lege keuzelijst bijna altijd "nog
+niets verbonden" in plaats van "niets beschikbaar".
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev is verrijking, nooit een bron van id's]
+De meegeleverde [models.dev](https://models.dev)-catalogus levert de prijs en het
+contextvenster voor een model dat al in de live lijst staat. Hij voegt nooit een
+model-id toe. Als een model dat je verwacht ontbreekt, geeft het endpoint van de
+provider het niet terug.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Model-id's voor de ingebouwde adapter zijn gekwalificeerd als `provider/model` en
+kunnen een fallbackketen bevatten die met `|` wordt gescheiden. Bij een fallback
+worden de kosten afgerekend op het model dat de beurt werkelijk heeft
+afgehandeld, niet op het model dat je hebt opgevraagd.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Een agent zonder adapter draait op de ingebouwde loop]
+Elke werkruimte maakt standaard vijf agenten aan — een CEO plus `qa`, `architect`,
+`engineer` en `librarian` — zonder adapter en zonder model. Dispatch valt terug
+op **Control Center (built-in)**, niet op de instelling **Standaard-runners** op
+deze pagina; dat is een clientvoorkeur die het dispatchpad nooit leest. Het runlog
+registreert `cc-harness` voor die runs, zodat het transcript vermeldt wat er
+werkelijk draaide.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Zonder model erbij vraagt de ingebouwde loop Anthropic om zijn standaardmodel. Een
+agent die volledig oningesteld blijft, draait dus als je een Anthropic-account
+hebt verbonden, en mislukt anders met `No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Als je de adapterstap van de onboarding afrondt, worden **alle** agenten die nog
+geen adapter of model hebben — de CEO en de specialisten, in elke werkruimte die
+op dat moment bestaat — bijgewerkt met het paar dat je hebt gekozen. Werkruimtes
+die later worden aangemaakt, maken nog steeds alle vijf oningesteld aan. Stel de
+adapter en het model expliciet in op elke agent die je wilt gebruiken.
 :::
 
-## Install a runner CLI
+## Een runner-CLI installeren
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+De ingebouwde adapter hoeft niet te worden geïnstalleerd. Installeer voor Claude
+Code de CLI **op de serverhost** met de eigen pakketbeheerder van dat hulpmiddel,
+bijvoorbeeld:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Druk daarna boven aan de pagina op **Vernieuwen**. Elke gedetecteerde rij toont de
+gevonden versie en het pad, plus chips die aangeven of JSON-modus en
+modelselectie worden ondersteund.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Een externe CLI houdt zijn eigen referenties bij, in zijn eigen configuratie, op
+de serverhost. Control Center beheert ze niet.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Adapterargumenten en omgevingsvariabelen blijven op dit apparaat]
+Elke adapterrij biedt een veld **Extra argumenten** en een dialoogvenster
+**Omgevingsvariabelen**. Die waarden worden op jouw apparaat opgeslagen. De server
+leest de opstart-argv en env uit zijn eigen instellingenopslag. Zet
+providersleutels op de server (OAuth of het sleutelveld op de pagina
+Modelaanbieders), niet in die twee velden.
 :::
 
-## Restrict which providers a workspace may use
+## Beperken welke providers een werkruimte mag gebruiken
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Providerbesturing is per werkruimte en wordt geëvalueerd volgens het principe dat
+de laatste overeenkomst wint.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. Zet in **Providers en modellen** de schakelaar **Toestaan** op een providerrij
+   uit
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Daarmee wordt een `deny`-statement voor die provider in de actieve werkruimte
+geschreven, en zijn modellen verdwijnen uit de catalogus van die werkruimte. Zet
+je de schakelaar weer aan, dan verdwijnt het statement.
 
-## Troubleshooting
+## Problemen oplossen
 
-### A runner shows as not found
+### Een runner verschijnt als niet gevonden
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Controleer of de CLI op het `PATH` van de **serverhost** staat, niet alleen op
+  dat van jou
+- Een desktopapp die vanuit de GUI wordt gestart, start zijn server met een
+  minimaal `PATH`; een CLI die alleen via een shellpad te vinden is, kan daarvoor
+  onzichtbaar zijn
+- Druk na de installatie op **Vernieuwen**
 
-### The model dropdown is empty
+### De modelkeuzelijst is leeg
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- De adapter is de ingebouwde en er is geen provider verbonden — verbind er een in
+  **Providers en modellen**
+- Of de provider is verbonden, maar wordt geweigerd door de besturingsschakelaar
+  van deze werkruimte
 
-### A model runs but the price shows as unknown
+### Een model draait, maar de prijs verschijnt als onbekend
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+De live modellenlijst bevat het id; prijs en context komen van models.dev. Een
+gloednieuw model, of een model van een aangepaste provider, heeft nog geen
+catalogusvermelding.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
-- [Manage API keys](/nl-NL/handleiding/gidsen/api-sleutels/)
-- [Diagnose an agent](/nl-NL/handleiding/gidsen/agent-diagnosticeren/)
-- [Manage costs](/nl-NL/handleiding/gidsen/kosten-beheren/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
+- [API-sleutels beheren](/nl-NL/handleiding/gidsen/api-sleutels/)
+- [Een agent diagnosticeren](/nl-NL/handleiding/gidsen/agent-diagnosticeren/)
+- [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/)
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/)
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)

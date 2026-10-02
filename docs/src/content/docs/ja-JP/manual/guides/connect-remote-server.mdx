@@ -1,109 +1,107 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: リモートサーバーに接続
+description: デスクトップアプリまたは Web クライアントを別の場所で稼働している cc_server に向け、再起動せずにサーバーを切り替えます。
 slug: ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+どのクライアントも、データを所有する `cc_server` の上で動くレンダラーです。デスクトップは
+自身の中で `cc_server` を起動できますが、[app.usectrl.dev](https://app.usectrl.dev) の
+Web アプリはできません。ブラウザーのタブはサーバーをホストできないからです。いずれの場合も、このガイドでは
+クライアントを別の場所で動いているサーバー — 小さなマシン、クラウド VM、ビルドサーバー — に向けます。
 
-## Prerequisites
+## 前提条件
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- 稼働中の `cc_server`。まだない場合は、[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/) を参照してください。
+- サーバーが発行した 3 つのペアリング値 — **サーバー URL**（`ws://…/rpc` または `wss://…/rpc`）、**デバイス ID**、**ペアリングキー** — **または**、ワークスペース管理者からのワンタイムの**招待コード**。招待を引き換えると、あなたのユーザーがプロビジョニングされ、メンバーシップが記録され、このクライアントの資格情報が発行されるため、デバイス ID やキーを自分で扱う必要はありません。
 
-### Make sure the server is reachable
+### サーバーに到達できることを確認する
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+ローカルサーバーには何も必要ありません。ブラウザーはループバックを信頼できるオリジンとして扱うため、`ws://localhost:9030/rpc` は
+デスクトップとブラウザーの両方から動作します。
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+別のマシン上のサーバーは話が別です。`app.usectrl.dev` は HTTPS で提供されるため、
+ブラウザーはすでに信頼している証明書を持つ `wss://` ソケットしか開きません — そして `cc_server` は
+そもそも TLS なしで非ループバックアドレスをバインドすることを拒否します。次のいずれかを用意してください:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- `--tls-cert` と `--tls-key` を使って証明書を直接渡す
+- 前面に TLS 終端のリバースプロキシを置き、サーバーを `--insecure` で起動する（プロキシの背後は平文。信頼できるネットワークでのみ）
+- 証明書を提供するトンネルまたは VPN — Tailscale、cloudflared など。**設定 → サーバー → 接続とステータス**の
+  **このサーバーを共有**に、組み込みのトンネルのオプトインがあります。
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+サーバー側には、見落としやすい設定が 2 つあります。プロキシ、NAT、トンネルの背後では、
+`--public-url` にクライアントが実際に接続すべきアドレスを設定してください — 既定では
+ローカルのバインドになるため、設定しないとクライアントは誤ったホストに接続しようとします。また、Web ビルドを
+自分でホストする場合は、そのオリジンを `--allowed-origins` に追加してください。既定では
+`https://app.usectrl.dev` のみで、ループバックとネイティブクライアントは常に許可されます。
 
-## Connect the desktop app
+## デスクトップアプリを接続する
 
-On a fresh install:
+新規インストールの場合:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Control Center を起動します。初回起動画面で **Control Centerをどのように実行しますか？** と尋ねられます
+2. **このアプリで実行**ではなく、接続用のフィールドに入力します。サーバー URL と、招待コード、またはデバイス ID とペアリングキーです。
+3. **接続**をクリックします。Control Center はサーバーに接続し、ワークスペースの受信トレイに移動します。
 
-On a desktop that already runs its own server:
+すでに自身でサーバーを実行しているデスクトップの場合:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. **設定 → サーバー → 接続とステータス**を開きます。
+2. **サーバーを追加**をクリックします。サーバー URL（`wss://host:9030/rpc`）と、招待コード、またはデバイス ID とペアリングキーを入力します。URL フィールドの末尾のボタンは、LAN または tailnet 上の `cc_server` インスタンスを検出します。
+3. **接続**をクリックし、次に新しいサーバーの行の**切り替え**をクリックします。
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+切り替えはライブで行われます。アプリは再起動せず、新しいセッションを中心にその場で再構築されます。
+接続に失敗した場合は、現在のサーバーにとどまり、エラーが表示されます。
+接続中のサーバーの行には**切り替え**の操作はありません。ローカルサーバーは最初の行で、**このアプリで実行**というラベルが付いています。
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+切り替えた後は、デスクトップはデータベースを所有しません。すべての画面は
+WebSocket 経由でリモートサーバーを介して読み書きします。
 
-## Connect the web client
+## Web クライアントを接続する
 
-The web build is always remote.
+Web ビルドは常にリモートです。
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. [app.usectrl.dev](https://app.usectrl.dev)、または自分でホストしている Web ビルドのコピーを開きます。
+2. サーバー URL と、招待コード、またはデバイス ID とペアリングキーを入力します。
+3. クライアントはサーバーに接続し、デスクトップと同じインターフェースを描画します。
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+URL にペアリング用のディープリンクがある場合、フィールドはあらかじめ入力されています。ペアリングキーは
+URL の**フラグメント**に乗ります。ブラウザーはこれをページをホストするサーバーに送信しないため、
+静的ホストがキーを目にすることはありません。
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[メディアとセキュリティ]
+メディア（アバター、フィードの画像、PR のスクリーンショット）は接続中の
+サーバーを通じてプロキシされるため、ブラウザーが上流のホストに直接アクセスすることはありません。リクエストごとの
+Content-Security Policy は、機密性のない Cookie から付与され、接続中のサーバーのオリジンのみを許可します。
 :::
 
-### What the browser does not do
+### ブラウザーが行わないこと
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Web クライアントはデスクトップと同じサーバーを読み書きしますが、いくつかの
+サーフェスにはネイティブウィンドウか、そのマシン自身のデバイスが必要です:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- OS の通知トースト、通知音、常時表示のバナー列はありません（アプリ内の通知センターは引き続き動作します）
+- **サーバーを追加**ダイアログでの LAN または tailnet のサーバー検出はありません
+- アプリ内の記事リーダーはありません — ニュースフィードの記事は新しいタブで開きます
+- ミーティング要約の再実行、および処理中の要約のキャンセルはできません
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+2 つは存在しないのではなく、動作が異なります。ミーティングの**録音**は
+ブラウザーで動作し、マイクと、音声トラックを含む画面共有を取り込みます。**IDE で開く**も動作しますが、
+サーバーに対して_サーバー自身の_ディスプレイでエディターを起動するよう要求するため、
+エディターがインストールされていないヘッドレスホストに対しては、このボタンは表示されません。
 
-## Troubleshooting
+## トラブルシューティング
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/).
+- **接続がタイムアウトする**: サーバーにクライアントから到達できる必要があります。バインド（`--bind any`）、ポートが開いていること、`--public-url` がクライアントから実際に接続できるアドレスを指していることを確認してください。オープンなインターネット経由では TLS が必須です — 平文の非ループバックバインドは、プロキシの背後で `--insecure` を付けてサーバーを起動しない限り、起動時に拒否されます。
+- **ブラウザーは接続を拒否するが、ネイティブクライアントは動作する**: ブラウザーのオリジンがサーバーの `--allowed-origins` リストにありません。既定では `https://app.usectrl.dev` のみが許可されます（加えてループバック）。
+- **ペアリングキーが拒否される**: サーバーで `cc_server pair` を再実行してそのデバイスのキーをローテーションし、新しいキーを入力してください。失効したデバイスは資格情報が失われていることを検出し、フェイルクローズします。失効は数秒以内にライブセッションを切断します。
+- **ワークスペースが違う**: ワークスペースは URL の一部（`/workspaces/:workspaceId/…`）であり、すべての呼び出しに付随するため、あるクライアントでワークスペースを切り替えても、変わるのは自分自身の表示だけです。到達できるのは自分がメンバーであるワークスペースだけです — それ以外は "Not a member of this workspace" で拒否されます。[ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/) を参照してください。
 
-## Related guides
+## 関連するガイド
 
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)
-- [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): the phone relay path
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)
+- [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): スマートフォンのリレー経路
 
-## Related concepts
+## 関連するコンセプト
 
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/)
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/)
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)

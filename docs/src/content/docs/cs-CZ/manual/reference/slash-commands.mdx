@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Slash příkazy
+description: Každý příkaz, který můžeš napsat do composeru, co dělá a kde běží.
 slug: cs-CZ/prirucka/referencni-prirucka/slash-prikazy
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Příkazy, které se píšou do composeru prostoru. Padají do tří skupin podle toho, kde účinkují, a ten rozdíl je podstatný: **místní** příkaz neputuje jako zpráva, takže se neobjeví v přepisu a k agentovi se nedostane.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Kde běží      | Co to znamená                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Místní**    | Zpracuje ho klient (nebo operace na serveru, kterou spustí klient). Příkaz neputuje jako zpráva, takže ho žádný agent neuvidí. |
+| **Vedlejší**  | Jedno volání modelu na serveru o konverzaci. Konverzace se nemění.                                         |
+| **Odeslání**  | Nastaví režim nebo pokyn pro běh, který zpráva spustí.                                                     |
 
 ---
 
-## Directing a run
+## Řízení běhu
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Místní → odeslání.** Zapne na konverzaci režim Plan: worktree jen pro čtení a plocha nástrojů zastropovaná na `read`. Agent doručí plán a soubory nechá být. Holé `/plan` režim jen přepne a jako zpráva neputuje; když za ním je text, běh spustí zbytek řádku.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Odeslání.** Spustí autonomní cíl. Supervisor cíle ho po segmentech znovu odesílá a umí ho znovu spustit.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Napsání `/goal` s textem nejdřív otevře **zpřesnění cíle**. Je to krátký průchod, který návrh nepřijme, dokud v něm není všech pět věcí: kritéria úspěchu, která umí hodnotitel uzavřít bez vlastního úsudku, přesný ověřovací příkaz, strop pokusů, hranice rozsahu a podmínky zastavení. Na každém kroku je *Přeskočit a spustit jak je napsáno*. Průchod je výchozí a na každém kroku se dá přeskočit.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` a `/goal drop` nejsou slash příkazy. Pozastavení, obnovení a zastavení jsou v seznamu **Cíle** u konverzace v postranním panelu. Příznaky, kterými se cíl spouští, jsou `--budget <dollars>`, `--max <N>` (strop počtu běhů) a `--days <N>` (termín). Cíl, který narazil na strop nákladů, se obnoví jen zvýšením toho stropu, a to ze stejného ovládání v postranním panelu.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Proč vůbec přerušuje]
+Autonomní cíl je jediné místo, kde vágní zadání opravdu něco stojí. Běh pracuje hodiny na cíli, u kterého nikdo neřekl, co je „hotovo“, a pak ohlásí úspěch podle sebe. Pět otázek vyjde levněji než jeden noční běh, který skončil, když mu přišlo, že skončil.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Odeslání.** Pracuje po iteracích, dokud není hotovo. Bere mez: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Token, který *vypadá* jako mez (začíná číslicí nebo znaménkem) a nepodaří se ho rozebrat, je tvrdá chyba. Obyčejný text mezí není, takže `/loop keep going until the tests pass` zůstane neomezená smyčka s promptem na stejném řádku.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/).
+**Odeslání.** Udělá z relace **ředitele**: vlastní nástroje klesnou na `read` plus pět sloves pro workery a editaci dělají workeři na pozadí. Viz [Řiďte workery na pozadí](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Worker režim nepřežije. Odchod z režimu je všechny ukončí.
 
 ---
 
-## Managing context
+## Správa kontextu
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Místní → server.** Složí starší historii do ukotveného souhrnu a pokračuje na zkompaktovaném kontextu. Argument pro model nemá: příkaz neputuje jako zpráva a průchod kompakce si nenechá říct, na co se zaměřit.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Místní → server.** Zahodí těžký obsah **bez** souhrnu: žádné volání modelu, každé slovo zůstane a vyprázdní se jen ten objem, který by stejně nikdo nečetl znovu.
 
-| Target        | Drops                             |
-| ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| Parametr      | Zahodí                                    |
+| ------------- | ----------------------------------------- |
+| `tool_output` | Starší výsledky nástrojů, ve kterých se nic nestalo (výchozí) |
+| `images`      | Staré snímky obrazovky, text u nich zůstane |
+| `all`         | Obojí                                     |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Tohle je cesta ven pro „kontext je přecpaný, ale souhrn nechci“.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Místní.** Otevře průzkumník kontextu agenta téhle konverzace na vlastní záložce: každý segment a část jeho kontextového okna — systémový prompt, skilly, kontextové soubory, schémata nástrojů, historie a obrázky — s cenou každé části a s doslovným obsahem za ní.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Záložka se váže na dvojici (prostor, agent), takže druhé spuštění tu jednu záložku znovu zaostří a kopie téhož rozkladu se neskládají.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+V prostoru s **víc než jedním agentem** holé `/context` otevře okno, které právě čte ukazatel využití kontextu v záhlaví prostoru — toho agenta, který tu pracoval naposled, tedy toho, jehož zpráva je dole v proudu — a záložka se jmenuje `Kontext · <name>`, aby bylo vidět, čí je. Jiného přepneš jménem: `/context qa` (`@` je volitelné). Napsané jméno se shoduje jen přesně. Dva agenti drží dvě různá okna, takže skoro stejné jméno, které otevře toho druhého, by vypadalo jako věrohodná odpověď na otázku, kterou jsi nepoložil.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Za čipem ukazatele využití kontextu v záhlaví prostoru je tentýž průzkumník a čip sleduje téhož agenta. Příkaz a čip tu „kontextem“ vždycky míní totéž.
 
 ---
 
-## Asking about the conversation
+## Dotazy ke konverzaci
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Spotřebují jedno volání modelu a **konverzaci nikdy nezmění**. Příští skutečný tah agenta uvidí přesně to, co by viděl i bez nich, a právě proto se na to ptát vyplatí.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Vedlejší.** Napíše dokument předání pro toho, kdo práci bere bez předchozího kontextu: co je úkol, co se zjistilo, co zbývá.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Vedlejší.** Odpoví na otázku k dosavadní práci a otázku ani odpověď do přepisu nepřidá.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Dva příkazy, jedna implementace]
+Oba mají stejný tvar: vezmou konverzaci, jak právě stojí, položí k ní jednu otázku a ani jednu stranu neuloží. Implementace je jedna, aby se „kontext doposud“ nerozešel do dvou významů.
 :::
 
 ---
 
-## Navigating and exporting
+## Navigace a export
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/cs-CZ/prirucka/navody/vetveni-konverzace/).
+**Místní.** Otevře navigátor větví: kde se konverzace rozvětvila, na které cestě právě je a jak se vrátit k té, kterou jsi opustil. Viz [Větvení konverzace](/cs-CZ/prirucka/navody/vetveni-konverzace/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Místní.** Zapíše konverzaci do soběstačného souboru HTML: sbalitelné karty nástrojů, žádný soubor stylů, žádný skript, žádný hostitel obrázků. V desktopové aplikaci skončí v `Documents/ControlCenter/exports/`, na webu se stáhne.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Místní.** Zkopíruje přepis do schránky jako markdown, s voláními nástrojů ve sbalitelných blocích. Uvažování je schválně pryč: přepis vložený do hlášení chyby čte člověk.
 
 ---
 
-## Everything else
+## Všechno ostatní
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Místní.** Ukáže a upraví trvalý seznam úkolů konverzace. Holé `/todo` otevře editor. Podpříkazy: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Odeslání.** Použije nainstalovaný skill. Skilly mají vlastní předponu `skill:`, takže s vestavěnými příkazy nesdílejí jmenný prostor. Skill jménem `plan` by jinak byl trvale nedosažitelný.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Odeslání.** Libovolný soubor markdown v repozitáři pod `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` nebo `.opencode/commands`. Vnořené `foo/bar.md` je dostupné i jako `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Dosazování: `$1`, `$@`, `$@[start:length]` a `$ARGUMENTS`. Frontmatter smí nastavit `description` (našeptávání v composeru). `allowed-tools` a `model` se ze souboru přečtou, ale vyvolání uživatelského příkazu dnes do těla jen dosadí argumenty. Model běhu ani plochu nástrojů nemění.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Příkaz od člověka má přednost před skillem stejného jména. Je to zkratka, kterou člověk vyvolal schválně, a nese argumenty.
 
 ---
 
-## Magic keywords
+## Magická klíčová slova
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Příkazy to nejsou. Samostatné slovo malými písmeny kdekoli v promptu k tomu tahu připojí skrytý pokyn.
 
-| Word          | Effect                                                             |
+| Slovo         | Účinek                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Maximální úsilí uvažování na ten tah                               |
+| `orchestrate` | Deleguj nezávislou práci paralelně a ověř každou fázi              |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Porovnání je schválně přísné na hranice slov. `orchestrate,` sedí; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` a `orchestrate()` ne. Ohrazené bloky kódu, úseky kódu na řádku a sekce XML se nejdřív zamaskují. Jinak by vložený výpis zásobníku změnil chování agenta.
 
 ---

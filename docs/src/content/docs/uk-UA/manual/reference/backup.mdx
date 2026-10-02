@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Резервне копіювання, експорт і імпорт
+description: Структура знімка, маніфест, кожна операція резервного копіювання й маршрут передавання, а також точно те, які файли резервна копія містить, а які — ні.
 slug: uk-UA/керівництво/довідка/резервне-копіювання
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/); for why persistence is
-split this way, see [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/).
+Усе, що Control Center може скопіювати, передати чи прийняти, і точний вигляд кожного
+артефакту. Щоб насправді зробити резервну копію, дивіться
+[Резервне копіювання та відновлення](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/); про те, чому збереження даних
+поділено саме так, — у [Робочих просторах та ізоляції](/uk-UA/керівництво/поняття/робочі-простори/).
 
-## Artifacts
+## Артефакти
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Є три артефакти-копії бази даних, із різними областями дії та політиками видалення.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Артефакт                        | Що його створює              | Форма                                | Охоплює                       |
+| ------------------------------- | ---------------------------- | ------------------------------------ | ----------------------------- |
+| **Знімок інсталяції**           | `server.backupNow`           | **Каталог** із часовою міткою        | Кожну базу даних в інсталяції |
+| **Резервна копія робочого простору** | конвеєр `Workspace backup` | Каталог із часовою міткою та одним `.db` | Базу даних одного робочого простору |
+| **Експорт робочого простору**   | `workspace.export`           | Один **файл** `.db`                  | Базу даних одного робочого простору |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Усі вони записуються через SQLite `VACUUM INTO`, що безпечно працює з живою базою даних
+у режимі WAL: він бере транзакцію читання, створює дефрагментовану й транзакційно
+узгоджену копію та ніколи не вимагає зупиняти сервер.
 
-## Snapshot layout
+## Структура знімка
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,121 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Структура точно повторює живий каталог даних — саме тому відновлення інсталяції є
+копіюванням назад, а не перекладанням. Назва каталогу — це часова мітка UTC, у якій `:`
+і `.` замінено на `-`, тож вона безпечна для файлової системи Windows і сортується
+хронологічно як звичайний рядок.
 
-Scheduled workspace backups live separately at
+Заплановані резервні копії робочого простору лежать окремо за шляхом
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Вони не містять маніфесту чи `global.db` і не є знімками інсталяції.
+Крок зберігання тижневого конвеєра видаляє лише копії власного робочого простору,
+старші за налаштований вік (типово 30 днів); знімки інсталяції, створені вручну,
+цим кроком ніколи не прибираються. `server.listBackups` перелічує лише знімки
+інсталяції, зокрема й неповні.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| Поле                       | Тип             | Значення                                                            |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | Версія формату маніфесту. Наразі `1`                                |
+| `created_at`               | ISO-8601 UTC    | Коли було зроблено знімок                                           |
+| `global.file`              | string          | Завжди `global.db`                                                  |
+| `global.schema_version`    | int             | Версія схеми `GlobalDatabase` на момент захоплення                  |
+| `global.bytes`             | int             | Розмір записаного `global.db`                                       |
+| `workspace_schema_version` | int             | Версія схеми `WorkspaceDatabase`, спільна для кожного файлу робочого простору |
+| `workspaces[]`             | array           | Один запис на кожен захоплений робочий простір                      |
+| `workspaces[].workspace_id`| string          | Робочий простір, який містить цей файл                              |
+| `workspaces[].file`        | string          | Шлях відносно кореня знімка, `<workspaceId>/workspace.db`           |
+| `workspaces[].bytes`       | int             | Розмір цього файлу                                                  |
+| `skipped_workspaces[]`     | array of string | Робочі простори, які резервна копія **не** змогла захопити           |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Робочий простір пропускається, якщо його зареєстровано, але до нього ще жодного разу не
+писали (тож файлу ще немає), або якщо його `VACUUM INTO` не вдався. Так чи так знімок
+усе одно завершується, і маніфест називає те, чого бракує.
 
-### Completeness
+### Повнота
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` повідомляє прапорець `complete` для кожного знімка. Він хибний, коли
+маніфест відсутній або його не вдається розібрати, коли немає `global.db` або коли
+маніфест називає файл робочого простору, якого немає на диску.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Неповний знімок усе одно показується, бо знімок, якого оператор не бачить, — це знімок,
+який він вважає наявним. Коли маніфест не читається, список відкочується до самої
+структури й повідомляє ті файли `<workspaceId>/workspace.db`, які знаходить, — їх усе ще
+можна приймати по одному через `workspace.import`, хоч знімок як ціле й не може
+відновити інсталяцію.
 
-## What a backup does not contain
+## Чого резервна копія не містить
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Обидва артефакти — це **лише бази даних**. Каталог робочого простору містить більше,
+ніж його базу даних, і ніщо з решти не переноситься:
 
-| Path                                | In a snapshot? | In a workspace export? |
+| Шлях                                | У знімку?      | В експорті робочого простору? |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | Так            | Ні                     |
+| `<workspaceId>/workspace.db`        | Так            | Так (це *і є* той файл) |
+| `<workspaceId>/blobs/`              | Ні             | Ні                     |
+| `<workspaceId>/skills/`             | Ні             | Ні                     |
+| `<workspaceId>/agents/`             | Ні             | Ні                     |
+| `<workspaceId>/chat_credentials/`   | Ні             | Ні                     |
+| `<workspaceId>/spaces/<spaceId>/`   | Ні             | Ні                     |
+| `<workspaceId>/pr_clones/`          | Ні             | Ні                     |
+| `secrets.json`                      | Ні             | Ні                     |
+| `models/`                           | Ні             | Ні                     |
+| `meetings/<meetingId>/`             | Ні             | Ні                     |
+| `rigs/`                             | Ні             | Ні                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/uk-UA/керівництво/довідка/чат-міст/).
+Частина цього — одноразове: `spaces/` містить робочі дерева з копіюванням під час запису,
+які створюються заново з репозиторіїв, `pr_clones/` — це кеш, `models/` завантажуються
+знову, `rigs/` — стан машини. А частина — ні: `blobs/` містить вставлені зображення, на
+які вказують рядки в базі даних, `skills/` і `agents/` — файли, з якими працює агент, а
+`secrets.json` — кожен ключ спарювання, облікові дані провайдера та налаштування SSO в
+інсталяції. Про те, як покрити решту, дивіться в розділі
+[Резервне копіювання та відновлення](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/#copy-backups-off-the-machine).
+:::note[Токени чату навмисно залишаються поза копією]
+Те, що `chat_credentials/` лежать поряд із базою даних, а не всередині неї, — це причина,
+чому робочий простір, переданий комусь іншому, не несе живих токенів бота. Дивіться
+[довідку з чат-мосту](/uk-UA/керівництво/довідка/чат-міст/).
 :::
 
-## Operations
+## Операції
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+RPC резервного копіювання інсталяції та експорт/імпорт робочого простору доступні лише
+`fullClient`: спарований телефон не може їх запустити. На сервері без під’єднаного порту
+резервного копіювання, як-от демонстраційний сервер, їх немає взагалі — не відхилених,
+а структурно відсутніх.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Операція             | Вид     | Область   | Мінімальна роль | Аргументи     | Повертає                      |
+| -------------------- | ------- | --------- | --------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | зміна   | Інсталяція | **власник** інсталяції | немає    | `{ok, path}`                  |
+| `server.listBackups` | читання | Інсталяція | **власник** інсталяції | немає    | `{backups: [...]}`            |
+| `server.deleteBackup` | зміна  | Інсталяція | **власник** інсталяції | `name`  | `{ok}`                        |
+| `workspace.export`   | читання | Робочий простір | `admin`   | немає          | `{ok, path}`                  |
+| `workspace.import`   | зміна   | Робочий простір | `owner`   | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | зміна   | Інсталяція* | `owner`     | `id`          | рядок реєстру позначено як видалений |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` не має області, бо рядок, який він позначає, живе в глобальному
+реєстрі; його обробник перевіряє членство викликача в названому робочому просторі
+й вимагає `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` у кожній відповіді — це шлях на **хості сервера**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Знімок усієї інсталяції потребує власника на обох каналах]
+`server.backupNow`, `server.listBackups` і `server.deleteBackup` вимагають ролі
+**власника** інсталяції (`ServerAuthority.serverOwner`) — того самого шлюзу, що й
+`GET /backup/snapshot`. Знімок захоплює базу даних кожного робочого простору, тож бути
+адміном одного робочого простору недостатньо, щоб керувати рештою. Видалення приймає
+лише назву каталогу з часовою міткою зі списку, а не довільний серверний шлях, і видаляє
+весь знімок (разом із неповними). Експорт та імпорт окремого робочого простору й далі
+належать до рівня адміна/власника робочого простору, а не власника інсталяції.
 :::
 
-### `server.listBackups` response
+### Відповідь `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Від найновіших, відсортовано за назвою каталогу (а це часова мітка, тож порядок
+зберігається навіть для знімка, чий маніфест не вдалося прочитати).
 
 ```json
 {
@@ -169,99 +171,99 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` пропускається, коли маніфест не вдалося прочитати. `bytes` верхнього рівня —
+це справжній розмір усього каталогу на диску, а не сума з самого маніфесту: оператор,
+прибираючи знімки, питає, скільки коштує каталог, а не скільки копія мала намір записати.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Кожен `workspaces[].path` — це саме те, що `workspace.import` приймає як `source_path`.
+Це навмисно: «відновити цей робочий простір із цього знімка» — це *і є* операція імпорту,
+тож ці двоє не можуть розійтися в різному поводженні з тим самим файлом.
 
-### `workspace.import` validation
+### Перевірка `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Перш ніж щось замінюється, файл-кандидат відкривається лише для читання через
+недовговічне сире з’єднання SQLite, і з нього зчитується рядок `workspace_meta`.
 
-| Condition                                        | Result                                                          |
+| Умова                                            | Результат                                                       |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Не є читабельною базою даних SQLite, або немає `workspace_meta` | Відмовлено. Нічого не торкається               |
+| Записаний ідентифікатор робочого простору ≠ цільовий | **Дозволено**, записано в журнал. Так робочий простір дублюють або відновлюють під новим ідентифікатором |
+| Записаний ідентифікатор інсталяції ≠ цій інсталяції | **Дозволено**, записано в журнал. Його спаровані пристрої та ідентифікатори користувачів належать тій інсталяції й не розв’яжуться тут |
+| Неприпустимий ідентифікатор робочого простору, або файлу не існує | Відмовлено                                      |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Після прийняття база даних цільового робочого простору закривається й прибирається з
+менеджера, перш ніж файл копіюють поверх неї (відкрите з’єднання drift тримає файл і
+його `-wal`), потім відкривається знову, щоб `beforeOpen` перевстановив тригери FTS і
+синхронізації, а індекси FTS перебудовуються: таблиці вмісту імпортованого файлу
+заповнені, але його індекс може бути застарілим.
 
-## Transfer routes
+## Маршрути передавання
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Кожна з наведених операцій говорить серверними шляхами, а це повна відповідь лише тоді,
+коли сервер — ваша власна машина. Ці три переносять самі байти тим самим каналом із
+підписом PSK, який використовують медіапроксі та сховище blob. Викликач підписує цільовий
+рядок попередньо спільним ключем свого пристрою й передає підпис як `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| Маршрут                 | Метод | Параметри запиту | Підписана ціль                  | Потрібно               |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **адмін** робочого простору |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **власник** інсталяції |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **власник** робочого простору |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` — ідентифікатор робочого простору, `n` — назва каталогу знімка, `d` — ідентифікатор
+пристрою-викликача, `s` — підпис. `n` розв’язується за списком резервних копій, а не
+долучається до кореня `backups`, тож маршрут не можна націлити на каталог, якого список
+не показав би.
 
-| Status | Cause                                                                              |
+| Статус | Причина                                                                            |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | Бракує обов’язкового параметра запиту, або тіло вивантаження порожнє                 |
+| `403`  | Невідомий або відкликаний пристрій, поганий підпис, або викликачеві бракує ролі      |
+| `404`  | На цьому хості немає порту резервного копіювання, або названого знімка/файлу робочого простору не існує |
+| `405`  | `/backup/restore` викликано чимось іншим, ніж `POST`                                 |
+| `413`  | Тіло вивантаження перевищує 8 GiB — за заявленою довжиною вмісту або за фактично прочитаними байтами |
+| `500`  | Експорт або архівування не вдалося на боці сервера                                   |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Обидва завантаження відповідають `Cache-Control: no-store` із `Accept-Ranges: none`.
+Кожен запит викарбовує **свіжу** копію й видаляє її після потокового передавання, тож
+закешована чи продовжена відповідь зшила б байти двох різних експортів в один файл, який
+виглядає справним, але ним не є.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` повертає `<name>.zip`, де записи відносні до кореня знімка, тож
+розпакування відтворює `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
+Записи записуються у відсортованому порядку, тож два архіви одного знімка — це той самий
+архів.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` передає тіло потоком просто у проміжний файл, а не буферизує його,
+обмежує його до й під час читання та видаляє цей проміжний файл на **кожному** шляху
+виходу, зокрема й при відмові.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Ретрансльоване з’єднання не має джерела HTTP]
+Реле з брокером переносить кадри RPC, а не передавання файлів. Усе, що говорить
+серверними шляхами, і далі працює через нього; трьом маршрутам передавання потрібне пряме
+з’єднання, і інтерфейс вимикає їх із поясненням, а не падає посеред завантаження.
 :::
 
-## Paths and limits
+## Шляхи та обмеження
 
-| Thing                          | Value                                                        |
+| Що                             | Значення                                                     |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Знімки                         | `<dataDir>/backups/<timestamp>/`                             |
+| Заплановані резервні копії робочого простору | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Експорти робочого простору     | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Проміжне сховище передавання   | `<dataDir>/backups/transfer/` — робоча область, яку прибирає маршрут, що до неї пише |
+| Назва архіву знімка            | `<snapshot directory name>.zip`                              |
+| Стеля вивантаження             | 8 GiB на `POST /backup/restore`                              |
+| Зберігання                     | Знімки інсталяції: видалення вручну. Резервні копії робочого простору: тижневий конвеєр, типово 30 днів |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Каталоги `exports/`, `transfer/` і `workspace-backups/` не є знімками інсталяції й
+виключені з `server.listBackups`. Лише останній каталог має заплановане зберігання;
+видалення знімка інсталяції потребує явної дії власника інсталяції.
 
-## See also
+## Дивіться також
 
-- [Back up and restore](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/) — the recipes these operations belong to
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/) — why one workspace is one file
-- [`cc_server` CLI](/uk-UA/керівництво/довідка/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/uk-UA/керівництво/довідка/карта-маршрутів/) — where the UI lives
-- [Architecture](/uk-UA/керівництво/поняття/архітектура/) — the client/server split the paths follow
+- [Резервне копіювання та відновлення](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/) — рецепти, до яких належать ці операції
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/) — чому один робочий простір — це один файл
+- [CLI `cc_server`](/uk-UA/керівництво/довідка/cc-server-cli/) — каталог даних, у якому лежать ці шляхи
+- [Карта маршрутів](/uk-UA/керівництво/довідка/карта-маршрутів/) — де живе інтерфейс
+- [Архітектура](/uk-UA/керівництво/поняття/архітектура/) — поділ клієнт/сервер, якого дотримуються ці шляхи

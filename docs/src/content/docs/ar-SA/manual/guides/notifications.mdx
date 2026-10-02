@@ -1,149 +1,145 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: تهيئة الإشعارات
+description: فعّل الفئات أو عطّلها، واضبط ساعات الهدوء والصوت، واعرف أي الإشعارات يصلك وأين.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إشعارات
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+يبيّن هذا الدليل كيف تهيّئ الإشعارات، وما الذي يضبطه كل إعداد فعلًا.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+تصل الإشعارات على سطحين. **مركز الإشعارات** — الجرس في شريط العنوان —
+يقرأ تغذية دائمة لكل مساحة عمل على الخادم. **إشعارات النظام المنبثقة**
+مسار منفصل لسطح المكتب وحده، تغذّيه إطارات حيّة يدفعها الخادم.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[نسخة الويب لا تعرض إشعارات نظام]
+لا يُركَّب مسار الإشعارات المنبثقة إلا في إقلاع تطبيق سطح المكتب. على
+`app.usectrl.dev` لا إشعارات نظام منبثقة، ولا أصوات للإشعارات، ولا شريط
+لافتات محيطي — والجرس وسجله يعملان، لأنهما يقرآن تغذية الخادم. عميل
+الهاتف بلا سطح إشعارات أصلًا.
 :::
 
-## Turn categories on or off
+## تشغيل الفئات أو إيقافها
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. انتقل إلى **الإعدادات ← أنت ← الإشعارات**
+2. اترك **تمكين الإشعارات** مفعّلًا
+3. بدّل الفئات التي تريدها. عددها ستّ عشرة بالضبط:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| الفئة | متى يُطلَق |
+| --- | --- |
+| انتهى الوكيل | أنهى وكيل تشغيلًا |
+| تم نشر PR | نشر وكيل طلب سحب |
+| تم دمج PR | دُمج طلب سحب |
+| رسائل جديدة | وصلت رسالة في مساحة لا تنظر إليها |
+| تمت الإشارة إليك في طلب سحب | رصد استطلاع إشعارات GitHub إشارة إليك في طلب سحب |
+| تم طلب مراجعة | طُلبت مراجعتك فعلًا على طلب سحب ليس مسودة |
+| المراجعة لم تعد محدّثة | وصلت إيداعات جديدة إلى طلب سحب سبق أن راجعته |
+| جاهز للدمج | صار طلب سحب أنشأته قابلًا للدمج، أو كفّ عن ذلك |
+| قرارات المراجعة | وافق مراجع، أو طلب تغييرات، أو أُلغيت موافقته |
+| الفحوصات | فشل CI على طلب سحب أنشأته، أو تعافى |
+| سلاسل المراجعة | ردّ أحدهم في سلسلة تشارك فيها، أو حلّها |
+| تم إسناد تذكرة | أُسندت تذكرة |
+| تغيّرت حالة التذكرة | تغيّرت حالة تذكرة |
+| اجتماع يبدأ قريبًا | اجتماع في التقويم داخل مهلة التنبيه |
+| انقطع اتصال التقويم | انتهت صلاحية رمز OAuth لتقويم متصل |
+| تحديثات الحاوية المعزولة | تولي التحكم بحاوية معزولة، أو استردادها، أو فشلها |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+ما ليس في هذه القائمة لا يُرسَل إشعارًا ولا يُصفّى — لا فئة «كل ما عدا ذلك».
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+تتبع هذه التفضيلات مستخدمك عبر الأجهزة، فيبقى الهاتف والحاسوب المحمول
+على الإيقاع نفسه. مستوى الصوت استثناء مقصود، ويبقى خاصًا بكل جهاز.
 
-## Set quiet hours
+## ضبط ساعات الهدوء
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. في الصفحة نفسها، فعّل **ساعات الهدوء**
+2. اكتب وقت البداية ووقت النهاية بصيغة `HH:MM` (النافذة الافتراضية 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+أثناء ساعات الهدوء تُسقَط الإشعارات غير العاجلة — لا تُوضَع في طابور
+لتُسلَّم لاحقًا.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+فئتان **عاجلتان** وتُسلَّمان دائمًا، متجاوزتين ساعات الهدوء _و_ وضع
+التركيز: **اجتماع يبدأ قريبًا** و**تم نشر PR**. تنبيه اجتماع لا تراه إلا
+بعد فواته لا قيمة له، وهذا هو السبب.
 
-## Choose a sound
+## اختيار صوت
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. مرّر إلى **صوت الإشعار**
+2. اختر صوتًا من الأصوات الأحد عشر المضمّنة، أو **بلا**
+3. اضغط زر التجربة لتسمعه، واضبط مستوى الصوت بالمنزلقة
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+يشغّل التطبيق الصوت بنفسه، ويصل إشعار النظام صامتًا حتى لا تسمعه مرتين.
 
-## Set the meeting lead time
+## ضبط مهلة تنبيه الاجتماع
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. مرّر إلى **مهلة التنبيه**
+2. اختر **5** أو **10** أو **15** أو **30** دقيقة
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+هذه المدة التي تسبق حدث التقويم ويُطلَق عندها إشعار **اجتماع يبدأ
+قريبًا**. الافتراضي 5 دقائق.
 
-## Know when a notification is suppressed
+## معرفة متى يُكتم إشعار
 
-A notification is dropped, silently, when any of these is true:
+يُسقَط الإشعار بصمت إذا صدق أي مما يلي:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- الإشعارات معطّلة كلها، أو فئته معطّلة
+- أنت أصلًا على المسار الذي كان سيأخذك إليه — وفي حال الرسالة، أنت أصلًا في تلك المساحة
+- وضع التركيز نشط والفئة ليست عاجلة
+- ساعات الهدوء نشطة والفئة ليست عاجلة
 
-Those checks apply to OS toasts. The durable bell still records the event.
+تنطبق هذه الفحوصات على إشعارات النظام المنبثقة. ويبقى الجرس الدائم
+يسجّل الحدث.
 
-Two more suppressions live further upstream, in what the server sends at all:
+كتمانان آخران يقعان قبل ذلك، في ما يرسله الخادم أصلًا:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- رسالة من **إنسان** آخر لم تُشَر إليك فيها لا تصير إشعارًا أبدًا
+- مساحات من وكيل إلى وكيل مكتومة في الشريط الجانبي، فلا ترفع شارة غير المقروء لدى الإنسان
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+داخل المساحة لا ركن هادئ: كل محادثة تُنبّه بالقدر نفسه، والسلاسل معها.
+حالة القراءة على نطاق المساحة، فيتجمّع غير المقروء عبر محادثات المساحة
+ولا يُتتبَّع لكل محادثة.
 
-## Read and clear the notification centre
+## قراءة مركز الإشعارات ومسحه
 
-1. Click the bell in the title bar
+1. انقر الجرس في شريط العنوان
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+تعرض النافذة المنبثقة النشاط الأخير، وكل مدخل يفتح ما يخصه مباشرة.
+فتحها **لا** يعلّم الكل مقروءًا — استخدم **وضع علامة مقروء على الكل** في
+الترويسة، أو علّم صفًا واحدًا. حالة القراءة تتبع مستخدمك عبر الأجهزة.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[مسح الكل علامة مائية لا حذف]
+يختم **مسح الكل** علامة مائية لكل مستخدم تخفي كل ما هو أقدم، وتبقى
+الصفوف. وعلى حدة، لا تحتفظ كل مساحة عمل إلا بأحدث **200** صف من التغذية،
+وتُقلَّم كلما وصل جديد، بينما يشترك الجرس في أحدث **50** وتعرض النافذة
+المنبثقة ما يصل إلى **15** منها. ما بعد ذلك من السجل يزول، مهما كانت
+حالة القراءة.
 :::
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### No OS notifications on macOS
+### لا إشعارات نظام على macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+يُطلب التفويض أصيلًا عند إطلاق التطبيق. إن رفضته، أعد تمكين Control Center
+من إعدادات النظام ← الإشعارات؛ لا مطالبة داخل التطبيق تعيد طلبه.
 
-### Nothing arrives on the web build
+### لا يصل شيء في نسخة الويب
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+متوقَّع — نسخة الويب بلا مسار لإشعارات النظام. استخدم الجرس.
 
-### The bell badge shows zero but there is clearly new activity
+### شارة الجرس صفر والنشاط الجديد واضح
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+إلى أن يكتمل تيار علامات القراءة بعد الاتصال، تُعرض المدخلات مقروءة حتى
+لا تومض الشارة ثم تفرغ. تستقر حالما تُحمَّل العلامة.
 
-### An agent's run finished but nothing pinged me
+### انتهى تشغيل وكيل ولم يصلني تنبيه
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+تحقق أنك لم تكن أصلًا في المساحة التي حدث فيها — المسار النشط يكتم إشعار
+النظام المنبثق الخاص به.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Use focus mode and soundscapes](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-التركيز/)
-- [Triage your inbox](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)
-- [Curate your newsfeed](/ar-SA/دليل-المستخدم/أدلة-إرشادية/موجز-الأخبار/)
+- [استخدام وضع التركيز والمشاهد الصوتية](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-التركيز/)
+- [فرز الوارد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)
+- [تنظيم موجز الأخبار](/ar-SA/دليل-المستخدم/أدلة-إرشادية/موجز-الأخبار/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/)

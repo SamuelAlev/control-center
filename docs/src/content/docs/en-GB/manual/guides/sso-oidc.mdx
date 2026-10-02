@@ -2,6 +2,7 @@
 title: Connect an OpenID Connect provider
 description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
 slug: en-GB/manual/guides/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -56,10 +57,10 @@ issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
 
 :::note[Public client or confidential client?]
 The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
+authorisation code flow with **PKCE** (RFC 7636): the one-time code
 verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
+bound to the authorisation request that started it. There is no secret to
+leak and a stolen authorisation code is useless without the verifier. Some
 providers call this "SPA" or "native" client type when you create it.
 
 If your provider issued a **confidential** client instead, either mark the

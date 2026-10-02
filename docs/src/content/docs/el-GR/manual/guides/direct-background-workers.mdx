@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Κατεύθυνση εργατών παρασκηνίου
+description: Χρησιμοποιήστε τη λειτουργία vibe για να σταματήσετε να κάνετε τη δουλειά μόνοι σας και να αρχίσετε να κατευθύνετε αρκετούς πράκτορες που την κάνουν παράλληλα.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κατεύθυνση-εργατών-παρασκηνίου
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Αυτός ο οδηγός σάς δείχνει πώς να εκτελείτε μια συνομιλία ως **κατευθυντής** και όχι ως εργάτης: η συνεδρία διαβάζει και επαληθεύει, και οι πράκτορες παρασκηνίου κάνουν την επεξεργασία.
 
-## What changes when you type `/vibe`
+## Τι αλλάζει όταν πληκτρολογείτε `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Δύο πράγματα, και μόνο το πρώτο επιβάλλεται από τον μηχανισμό:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Τα εργαλεία της ίδιας της συνεδρίας πέφτουν σε μόνο για ανάγνωση**, συν πέντε ρήματα εργάτη. Ο μόνος τρόπος με τον οποίο μπορεί να επηρεάσει το αποθετήριο είναι μέσω ενός εργάτη, και ο μόνος τρόπος να μάθει τι συνέβη είναι διαβάζοντας τα αρχεία που άγγιξε ένας εργάτης.
+2. **Της ζητείται να επαληθεύει διαβάζοντας, όχι πιστεύοντας.** Η αναφορά ενός εργάτη είναι ισχυρισμός για το τι έκανε, όχι απόδειξη ότι δούλεψε.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Το πρώτο είναι το φέρον στοιχείο. Ένας κατευθυντής που μπορεί ακόμη να κάνει grep και να επεξεργάζεται θα κάνει τη δουλειά ο ίδιος υπό πίεση, που είναι ο τρόπος αποτυχίας που υπάρχει για να αποτρέψει αυτό.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Οι εργάτες ξεκινούν κενοί
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Ένας εργάτης δεν έχει δει ποτέ τη συνομιλία σας και ούτε θα τη δει. Η ανάθεση είναι ολόκληρο το πλαίσιό του.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Αυτό είναι που κρατά το μοτίβο φθηνό — είκοσι εργάτες που ο καθένας κρατά το ιστορικό του κατευθυντή θα κόστιζαν είκοσι φορές το πλαίσιο του κατευθυντή — και είναι επίσης το ένα πράγμα που κάνει τις αναθέσεις δύσκολες στη σύνταξη. Το «κάνε και το άλλο τώρα» διαβάζεται ως πλήρης οδηγία για τον κατευθυντή και ως απολύτως τίποτα για μια φρέσκια συνεδρία.
 
-A good brief names files, commands and the definition of done:
+Μια καλή ανάθεση κατονομάζει αρχεία, εντολές και τον ορισμό του τι σημαίνει ολοκληρωμένο:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> Στο `lib/features/auth/`, αντικαταστήστε κάθε κλήση προς `SessionStore.read(key)` με `SessionStore.get(key)`. Η νέα μέθοδος επιστρέφει `Future<String?>` ενώ η παλιά επέστρεφε `String?`, οπότε οι καλούντες χρειάζονται `await`. Εκτελέστε `fvm flutter analyze lib/features/auth` όταν τελειώσετε και αναφέρετε τυχόν σφάλματα που δεν μπορέσατε να διορθώσετε.
 
-## The five verbs
+## Τα πέντε ρήματα
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| Ρήμα         | Τι κάνει                                               |
+| ------------ | ------------------------------------------------------ |
+| `vibe_spawn` | Ξεκινά έναν εργάτη με μια ανάθεση. **Επιστρέφει αμέσως.** |
+| `vibe_list`  | Βαθμίδα, κατάσταση, χρόνος που πέρασε και τελευταίο αποτέλεσμα για όλους |
+| `vibe_send`  | Μια συμπληρωματική στροφή για έναν εργάτη που έχει τελειώσει |
+| `vibe_wait`  | Αποκλείει μέχρι να κατασταλάξει ένας εργάτης           |
+| `vibe_kill`  | Σταματά έναν                                           |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Η εκκίνηση είναι ασύγχρονη εξ ορισμού. Ένας κατευθυντής που μπλοκάρει σε κάθε εκκίνηση εκτελεί τους εργάτες έναν έναν, που είναι πιο αργός τρόπος να κάνει αυτό που έκανε ήδη ο ίδιος. Χρησιμοποιήστε το `vibe_wait` μόνο όταν πραγματικά δεν μπορείτε να προχωρήσετε χωρίς μια συγκεκριμένη απάντηση.
 
-## Two tiers
+## Δύο βαθμίδες
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| Βαθμίδα | Για                                                              |
+| ------- | ---------------------------------------------------------------- |
+| `fast`  | Μηχανική εργασία με σαφή προδιαγραφή — επεξεργασίες, μετονομασίες, προσχέδια, εκτέλεση εντολών |
+| `good`  | Σχεδιασμός, κρίση ή έλεγχος αυτού που παρήγαγε ένας εργάτης `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Μια συνηθισμένη μορφή είναι να απλώσετε εργάτες `fast` σε ανεξάρτητα αρχεία και μετά να ξεκινήσετε έναν εργάτη `good` για να ελέγξει τι έκαναν συλλογικά.
 
-## Verifying
+## Επαλήθευση
 
-This is the part that decides whether the pattern is worth anything.
+Αυτό είναι το σημείο που κρίνει αν το μοτίβο αξίζει τον κόπο.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Στη συνέχεια **διαβάστε τα αρχεία που κατονόμασε**. Ο κατευθυντής διαθέτει τα `read`, `search`, `lsp` και `ast_grep`· αυτός είναι όλος ο λόγος που τα διατηρεί. Ένας κατευθυντής που παίρνει την αναφορά ως έχει είναι ένας συνοψιστής της αισιοδοξίας άλλων πρακτόρων.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+Το `lsp(action: "diagnostics", file: "*")` μετά από έναν κύκλο εργατών είναι συνήθως ο ταχύτερος μεμονωμένος έλεγχος.
 
-## When a worker loses the thread
+## Όταν ένας εργάτης χάνει το νήμα
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Σκοτώστε τον και αναθέστε ξανά. Μια φρέσκια, διορθωμένη ανάθεση είναι φθηνότερη από μια διαφωνία, και το `vibe_send` λειτουργεί μόνο σε έναν εργάτη που έχει ήδη τελειώσει τη στροφή του.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Όρια
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Οκτώ ταυτόχρονοι εργάτες.** Ένα ανώτατο όριο δαπάνης, όχι τεχνικός περιορισμός: ο καθένας είναι μια πλήρης συνεδρία μοντέλου, και ένας κατευθυντής που απλώνει είκοσι έχει πάψει να παρακολουθεί τι κάνουν όλοι τους.
+- **Κανένας εργάτης δεν επιβιώνει πέρα από τη λειτουργία.** Όταν τελειώσει η εκτέλεση, όλοι τους σταματούν και η απομαγνητοφώνηση λέει πόσοι ήταν. Ένας πράκτορας παρασκηνίου που ακόμη επεξεργάζεται αρχεία αφού η συνομιλία προχώρησε είναι η μία αποτυχία που δεν μπορεί να ανεχθεί αυτό.
+- **Κάτω από την επιφάνεια, οι εργάτες είναι συνηθισμένοι υποπράκτορες.** Ίδιο όριο βάθους, ίδια πολιτική περιορισμών, ίδιο θυγατρικό αρχείο καταγραφής εκτέλεσης. Το vibe αλλάζει ποιος τους οδηγεί, όχι τι τους επιτρέπεται να κάνουν — οπότε οι προτροπές έγκρισης εξακολουθούν να εμφανίζονται για τις κλήσεις εγγραφής και εκτέλεσης ενός εργάτη.
 
-## When not to use it
+## Πότε να μην το χρησιμοποιήσετε
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/) or an [orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Η λειτουργία vibe είναι για εργασία που αποσυντίθεται σε ανεξάρτητες αναθέσεις. Αν το επόμενο βήμα εξαρτάται από την έξοδο του προηγούμενου, περιγράφετε ένα [pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/) ή μια [ενορχήστρωση](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/), και τα δύο εκφράζουν σωστά τις εξαρτήσεις αντί να αναγκάζουν τον κατευθυντή να τις προσομοιώνει με το `vibe_wait`.
 
-## Related
+## Σχετικά
 
-- [Run agents in parallel](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/) — the other ways to fan out
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) — when the work has a shape
-- [Built-in agent tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — the verbs and their arguments
+- [Εκτέλεση πρακτόρων παράλληλα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/) — οι άλλοι τρόποι να απλώσετε εργασία
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) — όταν η εργασία έχει σχήμα
+- [Ενσωματωμένα εργαλεία πράκτορα](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — τα ρήματα και τα ορίσματά τους

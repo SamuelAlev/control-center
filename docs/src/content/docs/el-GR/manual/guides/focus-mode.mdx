@@ -1,185 +1,206 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Χρήση λειτουργίας εστίασης και ηχητικών περιβαλλόντων
+description: Εκτελέστε μια χρονομετρημένη συνεδρία εστίασης με αιωρούμενη κάψουλα αντίστροφης μέτρησης και καταστολή ειδοποιήσεων, και διαμορφώστε το προσαρμοστικό ηχητικό περιβάλλον που παίζει από κάτω.
 dateModified: 2026-08-17
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-εστίασης
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Ο οδηγός αυτός δείχνει πώς να εκτελέσετε μια συνεδρία εστίασης: ένα
+χρονομετρημένο διάστημα κατά το οποίο το Control Center καταστέλλει τις μη
+επείγουσες ειδοποιήσεις και αιωρεί μια κάψουλα αντίστροφης μέτρησης πάνω από τα
+άλλα παράθυρά σας. Καλύπτει επίσης το ηχητικό περιβάλλον που παίζει (από
+προεπιλογή) από κάτω — ένα ατελείωτο κομμάτι ambient που ο διακομιστής σας
+συνθέτει ζωντανά, διαμορφωμένο από τη διάθεση που επιλέγετε, τον καιρό έξω και
+την ώρα της ημέρας.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Μια συνεδρία εστίασης είναι δυνατότητα επιπέδου κελύφους. Δεν συνδέεται με
+κανέναν πυλώνα — δεν αλλάζει τη διάταξη, δεν κρύβει την πλαϊνή γραμμή ούτε
+τροποποιεί την επιφάνεια ελέγχου ενός PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Μόνο για υπολογιστή]
+Η αιωρούμενη κάψουλα και το αποσπώμενο μίνι πρόγραμμα αναπαραγωγής του ηχητικού
+περιβάλλοντος είναι εγγενή αδελφά παράθυρα και τα τοποθετεί μόνο το πρόγραμμα
+εκκίνησης της εφαρμογής υπολογιστή. Το web build στο `app.usectrl.dev` δεν έχει
+κανένα από τα δύο, ούτε σωλήνα ειδοποιήσεων του λειτουργικού συστήματος, οπότε
+μια συνεδρία εστίασης δεν έχει τίποτα να δείξει ή να καταστείλει εκεί. Το πάνελ
+του ηχητικού περιβάλλοντος και η αναπαραγωγή του λειτουργούν όπου κι αν
+συνδεθείτε σε έναν διακομιστή.
 :::
 
-## Start a focus session
+## Έναρξη συνεδρίας εστίασης
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Κάντε κλικ στο εικονίδιο εστίασης στα δεξιά της γραμμής τίτλου (επεξήγηση
+   **Έναρξη συνεδρίας εστίασης**)
+2. Στον διάλογο, πληκτρολογήστε προαιρετικά έναν **Στόχο** — σε τι εργάζεστε
+3. Επιλέξτε **Διάρκεια**: 25m, 50m, 1h, 1h 30m ή 2h. Η προεπιλογή είναι 50m και
+   η τελευταία επιλογή σας απομνημονεύεται
+4. Πατήστε **Έναρξη**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Σημείο ελέγχου: το κουμπί της γραμμής τίτλου αντικαθίσταται από ένα τονισμένο
+τσιπ που δείχνει τα λεπτά που απομένουν, η αιωρούμενη κάψουλα εμφανίζεται πάνω
+από τα άλλα παράθυρά σας και — με ενεργή την επιλογή **Έναρξη με λειτουργία
+εστίασης** — το ηχητικό περιβάλλον αρχίζει να παίζει.
 
-Two other entry points reach the same session:
+Δύο ακόμη σημεία εισόδου οδηγούν στην ίδια συνεδρία:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** ανοίγει τον ίδιο διάλογο.
+- **⌘⇧⌥F** ξεκινά αμέσως μια συνεδρία με την απομνημονευμένη διάρκεια και χωρίς
+  στόχο — παραλείπει τον διάλογο. Ένα δεύτερο πάτημα τερματίζει τη συνεδρία.
 
-## Read the floating pill
+## Ανάγνωση της αιωρούμενης κάψουλας
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Η κάψουλα είναι ένα μικρό παράθυρο χωρίς πλαίσιο που μπορείτε να σύρετε
+οπουδήποτε. Δείχνει:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Μια ζωντανή κουκκίδα παρουσίας και τον χρόνο που απομένει ως `mm:ss`
+- Τον στόχο σας ή «Focus session» όταν δεν έχετε ορίσει κάποιον
+- Μια λεπτή γραμμή προόδου κατά μήκος της κάτω ακμής
 
-Hover it to reveal two actions:
+Περάστε τον δείκτη από πάνω της για να εμφανιστούν δύο ενέργειες:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — σταματά την αντίστροφη μέτρηση. Η παύση αφορά μόνο την
+  κάψουλα· η ίδια η συνεδρία παραμένει ενεργή.
+- **Complete** — τερματίζει τη συνεδρία.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Η κάψουλα μένει στη σκοτεινή παλέτα, όποιο θέμα κι αν χρησιμοποιεί το κύριο
+παράθυρο, επειδή αιωρείται πάνω από αυθαίρετο περιεχόμενο της οθόνης.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Αν κλείσετε την κάψουλα από τη γραμμή τίτλου, η συνεδρία συνεχίζει να εκτελείται.
+Πατήστε το κουμπί εικόνας σε εικόνα δίπλα στο τσιπ εστίασης (επεξήγηση
+**Ελαχιστοποίηση στη γραμμή**) για να την επαναφέρετε.
 
-## Know what gets suppressed
+## Τι καταστέλλεται
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Όσο μια συνεδρία είναι ενεργή, το Control Center απορρίπτει κάθε ειδοποίηση εκτός
+από δύο κατηγορίες, οι οποίες παραδίδονται πάντα:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Η σύσκεψη ξεκινά σύντομα** — μια προειδοποίηση σύσκεψης που τη βλέπετε εκ των
+  υστέρων είναι άχρηστη
+- **Το PR δημοσιεύτηκε**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Όλα τα υπόλοιπα καταστέλλονται σιωπηλά για όλη τη συνεδρία — χωρίς ήχο, χωρίς
+αναδυόμενο μήνυμα του λειτουργικού συστήματος. Οι ειδοποιήσεις που καταστέλλονται
+δεν μπαίνουν σε ουρά για μεταγενέστερη παράδοση.
 
-## Play a soundscape
+## Αναπαραγωγή ηχητικού περιβάλλοντος
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Κάντε κλικ στο εικονίδιο ηχείου στα δεξιά της γραμμής τίτλου (επεξήγηση
+   **Ηχητικά περιβάλλοντα**) για να ανοίξει το πάνελ
+2. Επιλέξτε **Διάθεση** — **Εστίαση**, **Άνοδος**, **Χαλάρωση** ή **Ύπνος**
+3. Πατήστε **Αναπαραγωγή**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Σημείο ελέγχου: η κάρτα **Τώρα παίζει** ονομάζει την τρέχουσα σκηνή — τον καιρό
+στην τοποθεσία του χώρου εργασίας σας, τη θερμοκρασία σε °C και την ετικέτα της
+τοποθεσίας. Όσο εμφανίζει «Ρύθμιση της ατμόσφαιρας…» η σκηνή εξακολουθεί να
+επιλύεται.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Το κομμάτι δεν είναι βρόχος. Ο διακομιστής σας το συνθέτει συνεχώς από τη
+διάθεση, τον ζωντανό καιρό στην τοποθεσία του χώρου εργασίας και την ώρα της
+ημέρας. Η βροχή ακούγεται φωτεινή και πολυάσχολη, η καταιγίδα δυνατή και ριπική,
+η ομίχλη υπόκωφη· η νύχτα είναι πιο σκοτεινή και πιο αντηχητική από το μεσημέρι.
+Η διάθεση ορίζει το λεξιλόγιο:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Διάθεση | Ήχος                                                                                  |
+| ------- | ------------------------------------------------------------------------------------- |
+| Εστίαση | Ήπια, σε εγρήγορση ατμόσφαιρα με χαμηλό παλμό — προορισμένη να κάθεται κάτω από τη δουλειά |
+| Άνοδος  | Ζωηρή μελωδία με απαλό παλμό — για όταν η δουλειά βαραίνει                             |
+| Χαλάρωση | Πιο ζεστά, πιο σύμφωνα ηχητικά στρώματα, χωρίς ρυθμό                                 |
+| Ύπνος  | Χαμηλοί βόμβοι με σχεδόν καθόλου συμβάντα, βαθιά αντήχηση                             |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Η εναλλαγή διάθεσης όσο παίζει παραδίδει την αναπαραγωγή στη νέα διάθεση χωρίς
+να σταματήσει.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Το πάνελ είναι επίσης προσβάσιμο από το ⌘K, στην κατηγορία **Focus**, δίπλα στην
+ίδια τη συνεδρία εστίασης.
 
-## Shape the sound
+## Διαμόρφωση του ήχου
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Ρύθμιση** (Εστίαση, Άνοδος και Χαλάρωση) — μια τετράγωνη επιφάνεια με έναν
+  δίσκο που σύρετε. Ο οριζόντιος άξονας πηγαίνει από **Ήπιο** προς **Ενεργητικό**
+  (πόσα συμβαίνουν), ο κατακόρυφος από **Διαστημικό** προς **Φωτεινό** (πόσο
+  ανοιχτό ακούγεται). Διπλό πάτημα στην επιφάνεια για επαναφορά στο ουδέτερο
+  κέντρο· τα πλήκτρα βέλους μετακινούν τον δίσκο. Η ρύθμιση απομνημονεύεται ανά
+  διάθεση και οι προσαρμογές περνούν ομαλά στη μίξη που παίζει — η ροή δεν ξεκινά
+  ποτέ από την αρχή. Η διάθεση Ύπνος δεν ρυθμίζεται, σκόπιμα.
+- **Ένταση** — ένα ρυθμιστικό από 0 έως 100%, με προεπιλογή 60%. Είναι ξεχωριστό
+  από την ένταση του συστήματος και απομνημονεύεται.
+- **Τοποθεσία** — εντοπίζεται αυτόματα από τον χώρο εργασίας. Πατήστε **Ανανέωση
+  καιρού** για να ξαναφορτωθεί η σκηνή.
 
-## Pop out the mini player
+## Απόσπαση του μίνι προγράμματος αναπαραγωγής
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Όσο παίζει ήχος, η γραμμή τίτλου αποκτά ένα δεύτερο κουμπί (επεξήγηση **Απόσπαση
+προγράμματος αναπαραγωγής**). Αιωρεί ένα μικρό HUD που μένει πάντα πάνω από όλα,
+με αναπαραγωγή/παύση, το σύμβολο του καιρού, το όνομα της σκηνής και ένα κουμπί
+**Επιστροφή στην εφαρμογή** — χρήσιμο μόλις μια συνεδρία εστίασης σας βάλει σε μια
+εντελώς άλλη εφαρμογή.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Η παύση από το μίνι πρόγραμμα αναπαραγωγής δεν το απομακρύνει· μόνο το κουμπί
+κλεισίματός του (ή η έξοδος από την εφαρμογή) το αφαιρεί.
 
-## Run them together
+## Συνδυασμένη χρήση
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Οι δύο δυνατότητες συνδέονται με έναν διακόπτη στο πάνελ του ηχητικού
+περιβάλλοντος: **Έναρξη με λειτουργία εστίασης**, ενεργός από προεπιλογή.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Η έναρξη μιας συνεδρίας εστίασης ξεκινά το ηχητικό περιβάλλον, αν δεν παίζει ήδη
+  κάτι.
+- Ο τερματισμός της συνεδρίας — όπως κι αν τερματιστεί, ακόμη και όταν λήξει ο
+  χρονομέτρης — το σταματά, ακόμη και αν ξεκινήσατε το ηχητικό περιβάλλον με το
+  χέρι.
 
-Turn the switch off to keep the two independent.
+Απενεργοποιήστε τον διακόπτη για να μείνουν τα δύο ανεξάρτητα.
 
-## End a session
+## Τερματισμός συνεδρίας
 
-Any one of these ends it:
+Οποιοδήποτε από τα παρακάτω τη τερματίζει:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Κάντε κλικ στο τσιπ εστίασης στη γραμμή τίτλου (επεξήγηση **Η λειτουργία
+  εστίασης είναι ενεργή — πατήστε για τερματισμό**)
+- Πατήστε **Complete** στην κάψουλα
+- Πατήστε **⌘⇧⌥F**
+- Επιλέξτε **Exit focus mode** στο ⌘K
+- Αφήστε τον χρονομέτρη να λήξει — η συνεδρία ολοκληρώνεται αυτόματα στο μηδέν
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Η κάψουλα κλείνει, οι ειδοποιήσεις επανέρχονται αμέσως και το ηχητικό περιβάλλον
+σταματά.
 
-## Understand what does not persist
+## Τι δεν διατηρείται
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Μια συνεδρία ζει για μία ακριβώς εκτέλεση της εφαρμογής. Κλείστε το Control
+Center και ανοίξτε το ξανά και ξεκινάτε ανενεργοί, με μηδενισμένο χρονομέτρη,
+ακόμη και στη μέση μιας συνεδρίας — δεν υπάρχει ανάκτηση μετά από κατάρρευση ούτε
+ιστορικό συνεδριών.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Μόνο δύο πράγματα μεταφέρονται: η προτιμώμενη διάρκειά σας και η σημαία
+αποκλεισμού ειδοποιήσεων. Ο στόχος, ο χρόνος που πέρασε και το αν η κάψουλα ήταν
+ανοιχτή, όχι.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Και η αναπαραγωγή είναι εξίσου εφήμερη — το ηχητικό περιβάλλον είναι πάντα
+σταματημένο στην εκκίνηση. Η διάθεση, η ένταση και οι ρυθμίσεις ανά διάθεση
+διατηρούνται· η ίδια η ροή δεν επανέρχεται ποτέ μόνη της.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The tune pad is missing
+### Λείπει η επιφάνεια ρύθμισης
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Βρίσκεστε στη διάθεση Ύπνος, η οποία σκόπιμα δεν ρυθμίζεται. Αλλάξτε σε Εστίαση ή
+Χαλάρωση για να επανέλθει η επιφάνεια.
 
-### Nothing plays after restarting the app
+### Δεν παίζει τίποτα μετά την επανεκκίνηση της εφαρμογής
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Είναι σκόπιμο — η αναπαραγωγή είναι πάντα σταματημένη στην εκκίνηση της
+εφαρμογής. Ανοίξτε το πάνελ και πατήστε ξανά **Αναπαραγωγή**. Αν παραμένει
+σιωπηλό, ελέγξτε το ρυθμιστικό έντασης του πάνελ, που είναι ξεχωριστό από την
+ένταση του συστήματος.
 
-### The weather or temperature looks wrong
+### Ο καιρός ή η θερμοκρασία φαίνεται λάθος
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Η σκηνή ακολουθεί την τοποθεσία του ενεργού χώρου εργασίας. Πατήστε **Ανανέωση
+καιρού** στο πάνελ για να ξαναφορτωθεί.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Configure notifications](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
-- [Keyboard shortcuts](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/)
+- [Ρύθμιση ειδοποιήσεων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
+- [Συντομεύσεις πληκτρολογίου](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/)

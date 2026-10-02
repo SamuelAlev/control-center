@@ -1,180 +1,172 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: ทำงานใน Plan Studio
+description: รีวิว แก้ไข ประมาณการ เทียบความต่าง และอนุมัติแผนในตัวแก้ไข Plan Studio และรันเพลย์บุ๊กที่รับพารามิเตอร์
 slug: th-TH/คู่มือ/วิธีทำ/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) and
-[Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/).
+คู่มือนี้แสดงวิธีทำงานกับแผนใน Plan Studio สำหรับความหมายของการประสานงานและ
+เอกสารแผน ดู[การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)และ
+[ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
 
-## Open a plan
+## เปิดแผน
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+แผนเป็นของบทสนทนาที่สร้างมันขึ้นมา นั่นจึงเป็นที่ที่คุณเข้าถึงมันตามปกติ: แถวของแผน
+ในบทสนทนามีการดำเนินการ **เปิด** และ Plan Studio จะเปิดเป็นแท็บตัวแก้ไขข้างบทสนทนา
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[ไม่มีรายการ "แผน" ในแถบข้าง]
+นั่นเป็นความตั้งใจ ไม่ใช่การมองข้าม ฮับที่
+`/workspaces/<workspace-id>/plans` เป็นเพียงดีปลิงก์ที่กำหนดเส้นทางได้เท่านั้น
+จึงควรบุ๊กมาร์กไว้ถ้าคุณต้องการรายการถาวร
 :::
 
-The hub lists three sections:
+ฮับแสดงสามส่วน:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **แผนที่ใช้งาน** — การประสานงาน โดยเสนอไว้ก่อน พร้อมสถานะ จำนวนขั้นตอน
+  และหมายเลขฉบับแก้ไข
+- **เอกสารแผน** — แผนที่เอเจนต์ตัวเดียวส่งด้วย `submit_plan` ใน
+  [โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/) ขณะที่ยังถูกเสนอหรืออนุมัติแล้ว
+- **เพลย์บุ๊ก** — เทมเพลตแผนที่บันทึกไว้และรับพารามิเตอร์
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+คลิกการ์ดเพื่อเปิดใน Plan Studio เส้นทางคือ
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>` โดย `kind` คือ
+`orchestration` หรือ `document` คุณจึงดีปลิงก์แผนเดียวได้เช่นกัน
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+หากคุณเปิด **การประสานงาน** คุณจะได้แคนวาสที่แก้ไขได้ ไทม์ไลน์เวอร์ชัน และแถบ
+อนุมัติ หากคุณเปิด **เอกสารแผน** กราฟเดียวกันจะเรนเดอร์แบบอ่านอย่างเดียว — เอกสาร
+แผนเป็นผลงานของเอเจนต์ คุณรีวิว ประมาณการ และอนุมัติหรือปฏิเสธมัน และเอกสารที่
+อนุมัติแล้วจะแสดงสถานะการรันจริงรายโหนดจากการประสานงานที่มันถูกแปลงเป็น
 
-## Edit the DAG
+## แก้ไข DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+แก้ไข **การประสานงาน** ได้ขณะสถานะเป็น `proposed` การแก้ไขบนแคนวาสทั้งหมด
+ขับเคลื่อนด้วยแป้นพิมพ์:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. คลิกแคนวาส แล้วเลื่อนส่วนที่เลือกด้วย**ปุ่มลูกศร**
+2. กด **n** เพื่อเพิ่มขั้นตอน มันจะปรากฏเป็นเลือกอยู่ชื่อ "ขั้นตอนใหม่" ให้เปลี่ยน
+   ชื่อในตัวตรวจสอบทางขวา
+3. กด **e** บนขั้นตอนที่ต้องรันก่อน แล้วคลิกขั้นตอนที่พึ่งพามัน (หรือเลือกขั้นตอน
+   นั้นแล้วกด **Enter**) เพื่อเชื่อมความสัมพันธ์พึ่งพา กด **Esc** เพื่อทิ้งการ
+   เชื่อมที่ค้างอยู่
+4. กด **x** เพื่อตัดความสัมพันธ์พึ่งพาใหม่สุดของขั้นตอนที่เลือก หรือสลับความ
+   สัมพันธ์พึ่งพาแบบเจาะจงในตัวแก้ไขความสัมพันธ์พึ่งพาของตัวตรวจสอบ
+5. กด **Delete** เพื่อลบขั้นตอนที่เลือก การอ้างอิงถึงมันจะถูกนำออกจากความสัมพันธ์
+   พึ่งพาของขั้นตอนที่เหลือ
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+ในตัวตรวจสอบคุณยังแก้คำอธิบาย บทบาท และสคีมาเอาต์พุตของขั้นตอนได้ด้วย การแก้ไขจะ
+บันทึกอัตโนมัติเป็นฉบับแก้ไขใหม่หลังหยุดพักสั้น ๆ ข้อผิดพลาดในการตรวจสอบความ
+ถูกต้อง (แสดงในแถบอนุมัติ) จะปิดกั้นการบันทึกจนกว่าคุณจะแก้ให้เรียบร้อย
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+แก้ไขได้เฉพาะขั้นตอนที่เป็นงานเท่านั้น โหนดเชิงโครงสร้าง — การวิจัย การอภิปราย และ
+การสังเคราะห์ — เป็นแบบอ่านอย่างเดียว เช่นเดียวกับขั้นตอนที่งานของมันรันไปแล้ว
+(มันถูกทำเครื่องหมายว่า "รันแล้ว" เพราะการแก้ไขมันจะแยกแผนออกเป็นสองทาง)
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+การบันทึกใช้การควบคุมการทำงานพร้อมกันแบบ optimistic บนฉบับแก้ไขที่คุณเริ่มจากมัน
+หากตัวประสานงานวางแผนใหม่ทับระหว่างนั้น การบันทึกของคุณจะถูกปฏิเสธด้วยข้อความ
+"แผนเดินหน้าต่อไปแล้ว" แทนที่จะถูกผสานหรือทับอย่างเงียบ ๆ ให้อ่านฉบับแก้ไขปัจจุบัน
+ใหม่แล้วแก้ไขของคุณอีกครั้ง การวางแผนใหม่ที่เอเจนต์เป็นผู้ริเริ่มเองก็ถูกจำกัดอัตรา
+ไว้ที่หนึ่งครั้งทุกสองนาที เหตุการณ์แบบนี้จึงเกิดขึ้นไม่บ่อย
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+แคนวาสไม่มีการลากเพื่อจัดตำแหน่งใหม่ เลย์เอาต์คำนวณจากโครงสร้างความสัมพันธ์
+พึ่งพา ดังนั้นการ "ย้าย" ขั้นตอนหมายถึงการต่อสายความสัมพันธ์พึ่งพาของมันใหม่
 :::
 
-## Read cost, time and risk estimates
+## อ่านค่าประมาณการต้นทุน เวลา และความเสี่ยง
 
-Press **Estimate** in the approval bar.
+กด **ประมาณการ** ในแถบอนุมัติ
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- แต่ละขั้นตอนบนแคนวาสจะได้ป้ายที่มีช่วงต้นทุนและขนาดตัวอย่างที่รองรับมัน หรือ
+  "ยังไม่มีประวัติ" เมื่อบทบาทของขั้นตอนนั้นไม่เคยรัน เลือกขั้นตอนเพื่อดู
+  รายละเอียดเต็มในตัวตรวจสอบ: ช่วงต้นทุนพร้อมขนาดตัวอย่าง ช่วงระยะเวลา และ
+  รัศมีผลกระทบ (ไฟล์และสัญลักษณ์) ที่ได้มาจากแหล่งที่มาของขั้นตอน — หรือ
+  "ไม่ทราบ" เมื่อขั้นตอนไม่มีแหล่งที่มา
+- แถบอนุมัติแสดงยอดรวมของแผน: ช่วงต้นทุนโดยรวม ช่วงระยะเวลาของเส้นทางวิกฤต
+  (สาขาที่ขนานกันทับซ้อนกัน จึงไม่ใช่ผลบวก) และเพดานงบประมาณเมื่อแผนกำหนดไว้
+- หากมีเพียงบางขั้นตอนที่มีประวัติ ยอดรวมจะถูกทำเครื่องหมายว่า **บางส่วน** และ
+  ครอบคลุมเฉพาะขั้นตอนที่ประมาณการได้ หากปลายบนของค่าประมาณการเกินเพดาน
+  งบประมาณ ยอดรวมจะเปลี่ยนเป็นสีแดงพร้อมคำเตือนเกินงบ
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+ค่าประมาณการจะซื่อตรงหรือไม่มีเลย: ขั้นตอนที่บทบาทไม่มีประวัติการรันที่เสร็จจะ
+รายงานขนาดตัวอย่างเป็นศูนย์โดยไม่มีช่วงใด ๆ เลย และแสดงเป็นไม่ทราบแทนที่จะเดา
+ให้ถือว่า "ยังไม่มีประวัติ" หมายถึง "ไม่มีใครรู้" ไม่ใช่ "ถูก"
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/) for controls that actually stop
-spending.
+เพดานงบประมาณเป็นการเปรียบเทียบเพื่อการแสดงผลเทียบกับค่าประมาณการนี้ ไม่มีอะไร
+บังคับใช้มันเมื่อแผนเริ่มรันแล้ว — ดู
+[จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/) สำหรับกลไกควบคุมที่หยุดการใช้จ่ายได้จริง
 
-## Diff a revision against an earlier proposal
+## เทียบฉบับแก้ไขกับข้อเสนอก่อนหน้า
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+การแก้ไขทุกครั้งและการวางแผนใหม่ทุกครั้งของตัวประสานงานจะต่อท้ายไทม์ไลน์ฉบับ
+แก้ไขแบบเพิ่มอย่างเดียว ซึ่งแสดงในแผง **เวอร์ชัน** ทางซ้ายของการประสานงาน
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. คลิกฉบับแก้ไขเพื่อเทียบกับข้อเสนอปัจจุบัน เมื่อไม่เลือกอะไร แผงจะเทียบฉบับ
+   แก้ไขก่อนหน้ากับฉบับปัจจุบัน
+2. อ่าน diff ในครึ่งล่างของแผง: ขั้นตอนที่เพิ่ม ลบ หรือเปลี่ยนไประหว่างสองฉบับ
+   แก้ไข
+3. หากแผนยังเป็น `proposed` ให้คลิกไอคอนย้อนกลับบนฉบับแก้ไขเพื่อย้อนไปยังฉบับ
+   นั้น การย้อนกลับจะบันทึกข้อเสนอนั้นเป็นฉบับแก้ไข**ใหม่** — ไม่มีอะไรสูญหาย
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` และตัวแก้ไขต่างก็ปฏิเสธการเปลี่ยนแปลงเมื่อแผนไม่ใช่
+`proposed` อีกต่อไป การรันที่กำลังดำเนินอยู่จึงไม่รับการวางแผนใหม่กลางการทำงาน
 
-## Approve, reject, or widen a plan
+## อนุมัติ ปฏิเสธ หรือขยายขอบเขตแผน
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+จากแอป แผนที่ถูกเสนอเป็นการตัดสินใจเดียวที่ทำทั้งชุด: **อนุมัติแผน** หรือ
+**ปฏิเสธ** ในแถบอนุมัติ **อนุมัติแผน** จะอนุมัติทุกขั้นตอนเสมอ — ไม่มีทางเลือก
+บางส่วนก่อนได้ การอนุมัติถูกปิดกั้นขณะข้อเสนอยังมีข้อผิดพลาดในการตรวจสอบความ
+ถูกต้อง ซึ่งแสดงไว้ข้างปุ่ม
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+การอนุมัติเป็นหน้าที่ของโอเปอเรเตอร์เท่านั้น ไม่มีเครื่องมือ MCP สำหรับการนี้
+เอเจนต์จึงเสนอและแก้ไขแผนได้แต่อนุมัติไม่ได้เลย
 
-Once an orchestration is executing, the bar changes:
+เมื่อการประสานงานกำลังดำเนินการอยู่ แถบจะเปลี่ยนไป:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- หากขั้นตอนหยุดเพื่อถามกลางการรัน ให้เลือกมันแล้วกด **ทำโหนดต่อ** เพื่อรันต่อ
+- กด **อนุมัติที่เลือก** เพื่อขยายการอนุมัติแบบ _บางส่วน_ ให้ครอบคลุมขั้นตอนที่เลือก
+  บวกทุกอย่างที่มันพึ่งพาแบบส่งผ่าน (ขั้นตอนจะถูกอนุมัติโดยไม่มีสิ่งที่มันพึ่งพา
+  ไม่ได้) ตัวควบคุมนี้อยู่บนแถบที่กำลังดำเนินการของการประสานงานทุกอัน และเป็น
+  การไม่ทำอะไรเลยเมื่อแผนถูกอนุมัติทั้งชุด
+- กด **ยกเลิกรัน** เพื่อหยุดการประสานงานทั้งหมด
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+ขั้นตอนที่อยู่นอกชุดที่อนุมัติบางส่วนจะเรนเดอร์เป็นรอเลื่อนและจะไม่รันจนกว่าคุณจะ
+ขยายชุดนั้น
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[การอนุมัติบางส่วนเริ่มต้นจากแอปไม่ได้]
+การอนุมัติบางส่วนเกิดขึ้นเฉพาะเมื่อมีบางสิ่งเรียก `orchestration.approve` ผ่าน RPC
+พร้อมรายการ `approved_node_keys` ที่ระบุชัดเจนเท่านั้น **อนุมัติแผน** ในแอปอนุมัติ
+ทุกขั้นตอนเสมอ เอกสารแผนถูกอนุมัติทั้งชุดในทุกกรณี เอกสารที่กำลังดำเนินการจึงมี
+ให้ใช้แค่ **ยกเลิกรัน**
 :::
 
-## Run a playbook with parameters
+## รันเพลย์บุ๊กพร้อมพารามิเตอร์
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/) instead.
+เพลย์บุ๊กคือเทมเพลตแผนที่บันทึกไว้พร้อมตัวยึด `{{param}}` แบบมีชนิดในเป้าหมาย
+ชื่อขั้นตอน คำอธิบาย และพรอมต์ของมัน การแทนที่เป็นแบบตรงตัว — ไม่มีภาษานิพจน์
+หากคุณต้องการตรรกะ ให้ใช้
+[ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)แทน
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. ในส่วน **เพลย์บุ๊ก** ของฮับ กด **รัน** บนเพลย์บุ๊ก (หรือเปิดพาเลตต์ ⌘K แล้ว
+   เลือกเพลย์บุ๊กที่นั่น)
+2. กรอกพารามิเตอร์ พารามิเตอร์แบบ enum เรนเดอร์เป็นดรอปดาวน์ พารามิเตอร์แบบรีโป
+   และเอเจนต์รับการอ้างอิงรีโปหรือเอเจนต์ พารามิเตอร์แบบเลือกได้จะถอยกลับไปใช้
+   ค่าเริ่มต้นของมัน
+3. เลือก **ตั๋วงานหลัก** ที่แผนจะถูกเสนอต่อ แล้วยืนยัน
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+การรันเพลย์บุ๊กเพียง**เสนอ**แผนเท่านั้น — การประสานงานที่ถูกสร้างอินสแตนซ์เปิดใน
+Plan Studio เป็น `proposed` และไม่มีอะไรทำงานจนกว่าคุณจะอนุมัติที่นั่น หากต้องการ
+ลบเพลย์บุ๊ก ให้กดไอคอนถังขยะบนการ์ดของมัน
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/).
+เอเจนต์สร้างและรันเพลย์บุ๊กด้วยเครื่องมือ MCP `create_playbook` และ `run_playbook`
+ดู[เอกสารอ้างอิงเครื่องมือ MCP](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/): the engine view of an approved plan
+- [ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/): เอเจนต์ผลิตเอกสารแผนด้วย `submit_plan` อย่างไร
+- [รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/): วงจรชีวิตแบบอนุมัติครั้งเดียวจากฝั่งบทสนทนา
+- [สร้างเทมเพลตไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/): เมื่อคุณต้องการตรรกะที่เพลย์บุ๊กแสดงออกไม่ได้
+- [ติดตามรันไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/): มุมมองของเอนจินต่อแผนที่อนุมัติแล้ว
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)

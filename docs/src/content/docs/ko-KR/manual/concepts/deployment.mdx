@@ -1,239 +1,119 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: 배포와 클라이언트
+description: Control Center의 씬 클라이언트 아키텍처가 헤드리스 서버와 데스크톱, 웹, 모바일 클라이언트를 어떻게 나누는지 설명합니다.
 slug: ko-KR/매뉴얼/개념/배포
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center는 하나의 프로그램이 아닙니다. 데이터를 소유하는 헤드리스 서버와, 그 서버에 대한 단일 RPC 연결 위에 인터페이스를 렌더링하는 클라이언트 집합으로 이루어진 **씬 클라이언트 아키텍처**입니다. 이 분리를 이해하면 어떤 것이 왜 그 위치에서 실행되는지, 각 클라이언트가 무엇에 닿을 수 있고 무엇에는 닿을 수 없는지가 설명됩니다.
 
-## The server owns the data
+## 서버가 데이터를 소유합니다
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/ko-KR/매뉴얼/개념/워크스페이스/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+**`cc_server`**라는 프로세스가 데이터베이스를 보유합니다. 서버 전역 상태를 담는 작은 `global.db`와 [워크스페이스](/ko-KR/매뉴얼/개념/워크스페이스/)마다 하나씩, 필요할 때 열리는 SQLite 파일입니다. 그리고 장기 실행 작업, 즉 파이프라인 엔진, 리콘사일러, MCP 도구 표면, 오케스트레이션 리스너를 실행합니다. 창보다 오래 살아남아야 하거나 두 클라이언트가 똑같이 보아야 하는 모든 것은 이곳에 있습니다.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+어떤 클라이언트도 데이터베이스 파일을 직접 열지 않습니다. 대신 모든 클라이언트는 **`RemoteRpcClient`** 하나를 보유하고 이를 통해 저장소 작업과 구독을 발행합니다. 서버는 페어링된 기기 사전 공유 키로 연결을 인증하고 나서는 그 연결에 더 이상 신경 쓰지 않습니다. **세션은 워크스페이스에 묶이지 않습니다.** 디스패처는 상태가 없습니다. 워크스페이스 범위의 모든 호출은 인자에 자체 `workspace_id`를 담고 있으며, 이를 생략한 호출은 거부됩니다.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+이는 의도된 설계이며, 한 서버의 두 클라이언트가 서로 다른 워크스페이스에 머물면서도 두 클라이언트가 의견을 달리할 서버 보유 "현재 워크스페이스"가 필요 없게 만드는 원리입니다. 대신 격리는 호출 단위로 다음 네 단계에 걸쳐 강제됩니다.
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. 연산은 자신이 워크스페이스 범위인지 선언합니다. 워크스페이스 범위인데 `workspace_id`가 도착하지 않으면 호출이 거부됩니다.
+2. 지정된 id는 **등록된** 워크스페이스여야 하며, 무언가 데이터베이스를 열기 전에 확인합니다. 그렇지 않으면 알 수 없는 id 때문에 요청마다 빈 유령 `workspace.db`가 생겨납니다. 일치하는 워크스페이스가 없으면 찾을 수 없음입니다.
+3. 호출자의 `WorkspaceRole`이 연산의 최소 기준을 충족해야 하며, 이 기준은 연산 종류에서 도출됩니다. 읽기는 게스트, 변경은 멤버, 파괴적 작업은 관리자가 필요합니다.
+4. 저장소 내용을 노출하는 연산에는 추가로 선언한 수준의 저장소별 권한 부여가 필요합니다 — `none` / `read` / `review` / `write` — 따라서 워크스페이스 멤버십이 코드 호스트보다 조용히 더 큰 권한을 갖는 일은 없습니다.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+중요한 문장은 이것입니다. **페어링 키를 보유하는 것은 접근 경계가 아닙니다. 멤버십이 접근 경계입니다.**
 
-## Why split it this way
+## 왜 이렇게 나눴는가
 
-Three pressures pushed toward a server:
+세 가지 압력이 서버 쪽으로 밀어붙였습니다.
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **단일 진실 공급원.** 데스크톱과 휴대폰, 또는 노트북과 데스크톱은 같은 플릿 상태를 보아야 합니다. 각자 자체 데이터베이스를 소유하면 서로 어긋납니다. 서버가 하나면 모든 클라이언트가 동일한 실시간 데이터를 읽습니다.
+2. **웹은 스스로를 제공할 수 없습니다.** 브라우저는 하위 프로세스를 띄우거나 로컬 파일을 열 수 없으므로, 웹 빌드는 데이터베이스를 소유하거나 에이전트를 실행할 수 없습니다. 그렇게 하는 서버와 통신해야 합니다. 웹 전용 데이터 경로를 따로 만드는 대신 데스크톱을 같은 경로로 끌어들였습니다.
+3. **헤드리스 운영.** 작은 장비에서 실행할 수 있고 기차 안의 휴대폰이나 어디서든 브라우저로 닿을 수 있는 서버는, 계속 열어 두어야 하는 GUI보다 유용합니다.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+트레이드오프는 서버가 이제 의존성이 되었다는 점입니다. 서버가 실행 중이 아니면 아무것도 작동하지 않습니다. 데스크톱의 기본 대응은 **스스로 서버를 하나 띄우는 것**입니다.
 
-## The clients
+## 클라이언트
 
-Five clients reach the server, each with a different shape and trust profile.
+다섯 개의 클라이언트가 서버에 접속하며, 각기 다른 형태와 신뢰 프로필을 가집니다.
 
-### Desktop app
+### 데스크톱 앱
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter 데스크톱 애플리케이션(macOS, Windows, Linux)은 완전한 클라이언트입니다. 처음 실행할 때 어떻게 동작할지 묻고 그 선택을 기억합니다.
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **로컬**: 이 머신에서 `cc_server`를 띄우고 감독합니다. 기본 설정이며 자체 완결형 단일 사용자 구성입니다. 데스크톱이 서버를 실행하고, 서버는 앱 지원 루트 아래의 데이터베이스를 소유하며 루프백으로 통신합니다.
+- **원격**: 다른 곳에서 실행 중인 `cc_server`에 보안 WebSocket으로 연결합니다. 데이터는 그 서버에 있고, 이 데스크톱은 순전히 렌더러입니다.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+두 경우 모두 그 결과로 만들어진 RPC 클라이언트가 앱의 데이터 공급자를 대체하므로, 전체 UI, 즉 모든 화면과 모든 기능이 서버를 통해 읽고 씁니다. 데스크톱은 데이터베이스 파일을 직접 건드리지 않습니다.
 
-### Web client
+### 웹 클라이언트
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+웹 빌드는 브라우저에서 실행되도록 컴파일된 동일한 Flutter 앱이며, 설치할 것이 없도록 [app.usectrl.dev](https://app.usectrl.dev)에 호스팅됩니다. 브라우저는 하위 프로세스를 띄울 수 없으므로 웹 클라이언트는 **항상** 원격입니다. `wss://`로 `cc_server`에 접속해 완전한 데스크톱 인터페이스를 렌더링합니다. 연결되고 나면 동일한 코드가 동일한 RPC를 타므로 같은 플릿에 대해 같은 화면을 보여줍니다. 빠지는 것은 브라우저에 없는 네이티브 기능이 필요한 몇 군데뿐입니다. 아래에서 다룰 회의 캡처 품질 계층이 으뜸이고, OS 알림도 또 하나입니다.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+이 때문에 "다운로드 없음"과 "서버 없음"은 다른 주장입니다. 웹 클라이언트는 설치를 없애지만 서버를 없애지는 않습니다. 웹 클라이언트가 접속하는 대상은 같은 노트북의 `cc_server`일 수 있습니다 — `ws://localhost:9030`이며, 브라우저가 루프백을 신뢰할 수 있는 것으로 취급하므로 인증서가 필요 없습니다. 다른 머신의 서버라면 브라우저가 신뢰하는 인증서와 함께 `wss://`로 닿을 수 있어야 합니다. `cc_server`는 TLS 없이 비루프백 주소에 바인딩하기를 거부하므로, 원격 서버는 자체 인증서, TLS 종료 프록시, 또는 인증서를 공급하는 터널이나 VPN을 뜻합니다.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+번들 자체는 통신하는 서버와 별도로 호스팅됩니다. 독립 실행형 `cc_server`는 RPC 엔드포인트, MCP 표면과 그 프록시를 제공하지만 웹 번들은 **제공하지 않습니다**. 정적 파일 경로는 서버에 존재하지만 독립 실행형 바이너리에는 웹 루트가 구성되지 않으므로 `/`에서 제공할 것이 없습니다. 게시된 `cc-webapp` 컨테이너 이미지가 번들을 호스팅하고 `scripts/build_web.sh`가 이를 빌드합니다. 서버는 `--allowed-origins` 목록에 있는 브라우저 오리진만 허용하며, 이 목록의 기본값은 `https://app.usectrl.dev`이므로 번들을 자체 호스팅하려면 그 오리진을 추가해야 합니다.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+미디어(아바타, 피드 이미지, PR 스크린샷)는 업스트림 호스트를 직접 치지 않고 서버의 프록시 엔드포인트를 거치므로, 브라우저가 임의의 오리진을 가져오는 일은 없습니다. 배포된 클라이언트는 민감하지 않은 쿠키에서 요청마다 Content-Security-Policy를 찍어 붙여, 연결된 서버의 오리진만 허용되게 합니다.
 
-### Phone companion (cc_remote)
+### 휴대폰 컴패니언 (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**Remote** 앱은 더 가벼운 별도 클라이언트로, [remote.usectrl.dev](https://remote.usectrl.dev/)에 있는 Flutter 웹 PWA입니다. 의도적으로 완전한 앱이 **아닙니다**. 중개되고 종단 간 봉인되는 WebSocket 릴레이를 통해 페어링하며, 도구 표면 중 읽기 중심 부분만 다룹니다. 티켓, 메시지, 뉴스피드를 읽고, 답장을 보내거나 티켓을 갱신합니다.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/) for the full
-security model.
+휴대폰은 로컬 에이전트보다 **권한이 낮은 주체**입니다. 기본 거부 도구 정책, 모든 프레임을 봉인하는 사전 공유 키, 특권 연산(예: 페어링)을 컴패니언 클라이언트에서 배제하는 세션 기능, 위에서 설명한 호출별 역할 및 저장소 권한 부여 검사, 속도 제한이 승인된(또는 유출된) 페어링이 완전한 원격 제어가 되지 않도록 막습니다. 전체 보안 모델은 [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/)을 참고하십시오.
 
-### MCP clients
+### MCP 클라이언트
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/ko-KR/매뉴얼/사용-가이드/mcp-서버/) and the
-[MCP tools reference](/ko-KR/매뉴얼/레퍼런스/mcp-도구/).
+Model Context Protocol을 사용하는 외부 도구 — 편집기, 다른 에이전트, CLI — 가 서버의 MCP 표면에 연결해 타입 지정된 도구 레지스트리를 소비합니다. 이것은 프로그래밍 방식 통합 경로이며 GUI가 아닙니다. [MCP 서버 사용](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)과 [MCP 도구 레퍼런스](/ko-KR/매뉴얼/레퍼런스/mcp-도구/)를 참고하십시오.
 
-### Fleet executors (cc_worker)
+### 플릿 실행기 (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`**는 `cc_server`와 페어링하는 헤드리스 순수 Dart 바이너리로, 자신의 호스트 기능을 알리고 임대된 작업을 가져와 실행합니다. 동일한 RPC로 프로세스 이벤트를 스트리밍하며 **영속 상태를 보유하지 않습니다**. 데이터베이스도, 인증도, 승인도, 예산도 없습니다. 그것들은 결코 `cc_server`를 떠나지 않습니다. 워커는 두 번째 뇌가 아니라 팔다리입니다. 권위 있는 서버 하나에 순종적인 팔다리 N개이며, 합의도 워커 간 트래픽도 없습니다.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+임대 실행은 아직 임대 배관에 머물러 있습니다. 실제 명령을 실행하는 종류는 `agentRun` 하나뿐입니다(`CC_JOB_COMMAND`, 또는 명령이 제공되지 않았다면 그대로 되돌려 주는 프롬프트). `pipelineStep`, `codeIndex`, `goldenRender`, `benchmark`, `evalBatch`는 현재 `git --version` / `rev-parse HEAD`로 탐침하여, 그 작업들이 실행된 척하지 않으면서도 스트리밍 경로를 행사합니다.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+워커가 알리는 것은 운영체제, CPU 아키텍처, 코어 수, RAM, Flutter SDK 접근 가능 여부, 그리고 호스트가 가진 샌드박스 백엔드(Windows에서는 없음)입니다. 전용 워커는 항상 `alwaysOn`과 `acceptsParallel`도 알리며, 고정 → 선호 → 스필 스케줄러가 이를 기준으로 배치합니다. GPU나 ML 탐침은 없습니다.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+단독 데스크톱은 이 중 아무것도 알아채지 못합니다. 일반적인 디스패치는 플릿을 전혀 거치지 않기 때문입니다. 서버 호스트를 위한 암시적 인프로세스 워커가 등록되어 있기는 _합니다_만, 러너가 하나도 연결되지 않은 등록 이음매에 불과합니다. 로컬 워커에 실제로 배치된 작업은 실행되지 않고 실패합니다. 오늘날 임대된 작업을 실행하는 것은 실제 `cc_worker`뿐입니다.
 
-## What runs where
+## 무엇이 어디에서 실행되는가
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| 항목 | 서버 (`cc_server`) | 플릿 실행기 (`cc_worker`) | 데스크톱 클라이언트 | 웹 / 휴대폰 클라이언트 |
+| --- | --- | --- | --- | --- |
+| 데이터베이스(Drift/SQLite) | 소유 | — | — | — |
+| 인증, 승인, 예산, 아이덴티티 | 소유 | — | — | — |
+| 파이프라인, 리콘사일러, 오케스트레이션 리스너 | 실행 | — | — | — |
+| MCP 도구 표면 | 제공 | — | — | — |
+| 에이전트 실행 | 실행(또는 임대로 외부 위임) | 임대된 작업 실행 | — | — |
+| UI 렌더링 | — | — | 전체 | 전체(웹) / 읽기 중심(휴대폰) |
+| 회의 캡처(마이크 + 회의 오디오) | — | — | 네이티브 캡처 | 웹 전용, 화면 공유 오디오 사용 |
+| 캘린더 OAuth(Google) | 토큰 저장 | — | — | — |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
-for what bounds a run in each case.
+두 계층은 샌드박싱 방식이 같지 않습니다. `cc_server`는 백엔드가 있는 곳에서 자신이 직접 실행하는 실행을 호스트의 OS 샌드박스로 감쌉니다 — macOS의 Seatbelt, Linux와 WSL2의 bubblewrap — 그리고 Windows이거나 `bwrap`과 `socat`이 없으면 다른 경계로 폴백합니다. **`cc_worker`는 전혀 샌드박싱하지 않습니다.** 서버가 플랫폼별로 작업을 배치할 수 있도록 `sandbox` 기능을 알리지만, 워커 안에서 이를 적용하는 것은 아무것도 없습니다. 임대된 작업은 직접 생성되며, 임대 환경과 부여받은 워크트리로만 제한됩니다. 따라서 작업을 임대로 넘기면 샌드박스가 있는 호스트에서도 실행이 샌드박스 밖으로 이동합니다. 각 경우에 실행을 무엇이 제한하는지는 [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을 참고하십시오.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+회의 캡처는 마이크와 회의 오디오가 필요하므로 클라이언트에서 이루어집니다. 벽장 속 서버는 통화를 녹음할 수 없습니다. 그런 다음 서버의 파이프라인이 녹음을 요약하고, 노트는 모든 클라이언트가 읽을 수 있는 곳에 저장됩니다.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+웹 클라이언트도 녹음하며, 이는 표의 형태만 보면 놓치기 쉽습니다. 브라우저에서 마이크와 화면 공유 오디오 트랙을 캡처해 16 kHz PCM을 서버로 스트리밍합니다. 이 오디오 트랙을 _반드시_ 요구하므로, 브라우저가 이를 제공하지 않으면 명시적으로 실패합니다. 정말로 데스크톱 전용인 것은 캡처를 둘러싼 품질 계층입니다 — 네이티브 프로세서를 통한 신호 수준 반향 제거, 입력 레벨 미터와 마이크 미작동 경고, 요약 재실행, 처리 취소, 캘린더의 녹음 및 연결 동작.
 
-## Pairing and trust
+## 페어링과 신뢰
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+모든 클라이언트는 한 번 프로비저닝되는 **사전 공유 키**로 자신이 누구인지 증명합니다.
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- 로컬 모드의 데스크톱은 부팅할 때마다 새 키를 생성하고 환경 변수를 통해 띄운 서버에 전달하므로, 데스크톱에는 아무 비밀도 저장되지 않습니다.
+- 원격 클라이언트(데스크톱 원격, 웹, 휴대폰)는 서버의 `pair` 명령이 발급하고 OS 키체인(휴대폰에서는 로컬)에 저장된 키를 사용합니다.
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+해지는 미루지 않고 **실시간**으로 이루어집니다. 서버는 페어링된 기기 테이블을 지켜보다가 활성 집합에서 벗어난 기기의 열린 세션을 몇 초 안에 끊습니다 — 직접 WebSocket 경로와 릴레이 경로 모두에서 마찬가지입니다. 기기를 차단하기 위해 그 기기가 다시 연결되기를 기다릴 필요는 없습니다.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+키는 정적 호스트가 볼 수 있는 URL을 통해 이동하지 않습니다. 휴대폰이나 브라우저에서 링크로 도착할 때는 **URL 프래그먼트**, 즉 `#` 뒤의 부분에 실리며, 브라우저는 이 부분을 페이지를 호스팅하는 서버로 결코 보내지 않습니다. 이것이 기억할 만한 불변 조건이며 두 경우 모두에 적용됩니다. 웹 클라이언트에는 다른 진입점이 둘 더 있습니다. 서버와 키를 직접 붙여 넣는 연결 폼과, 그 브라우저 전용으로 발급된 자격 증명으로 교환하는 초대 코드입니다.
 
-## Related concepts
+## 관련 개념
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/ko-KR/매뉴얼/개념/아키텍처/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/): the phone pairing and security model
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/): 모든 RPC 호출이 자체 워크스페이스 id를 담는 이유와 데이터베이스 분리가 격리를 구조적으로 만드는 방식
+- [아키텍처](/ko-KR/매뉴얼/개념/아키텍처/): 코드베이스가 서버와 그 클라이언트를 중심으로 어떻게 구성되는지
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/): 휴대폰 페어링과 보안 모델
 
-## Related guides
+## 관련 가이드
 
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): start `cc_server` and pair a client
-- [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): point the desktop or web client at a server elsewhere
-- [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/ko-KR/매뉴얼/사용-가이드/플릿-워커-실행/): add a `cc_worker` that pulls leased jobs
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): `cc_server`를 시작하고 클라이언트를 페어링
+- [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): 데스크톱이나 웹 클라이언트를 다른 곳의 서버로 지정
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): 휴대폰, 두 번째 브라우저 또는 다른 데스크톱 추가
+- [플릿 워커 실행](/ko-KR/매뉴얼/사용-가이드/플릿-워커-실행/): 임대된 작업을 가져오는 `cc_worker` 추가

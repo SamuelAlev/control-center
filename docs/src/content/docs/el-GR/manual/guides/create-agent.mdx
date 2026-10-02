@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Δημιουργία και ρύθμιση πράκτορα
+description: Προσθέστε έναν πράκτορα σε έναν χώρο εργασίας, δώστε του προσαρμογέα, μοντέλο, δεξιότητες και δικαιώματα και επιβεβαιώστε ότι εκτελείται.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Αυτός ο οδηγός δείχνει πώς να προσθέσετε έναν πράκτορα σε έναν χώρο εργασίας και να τον ρυθμίσετε ώσπου να μπορεί πραγματικά να εκτελεστεί.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Κάθε χώρος εργασίας εφοδιάζεται εξ αρχής με πέντε πράκτορες — έναν CEO και τους `qa`, `architect`, `engineer` και `librarian` — οπότε συνήθως έχετε ήδη πράκτορες πριν ρυθμίσετε κανέναν. Τα παρακάτω βήματα ισχύουν εξίσου για έναν πράκτορα που υπάρχει ήδη και για έναν νέο.
 
-## Before you start
+## Πριν ξεκινήσετε
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Βρίσκεστε μέσα σε έναν χώρο εργασίας. Όλη η επιφάνεια βρίσκεται στις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** (`/settings/workspace/agents`).
+- Ο πράκτορας θα χρειαστεί backend. Συνδέστε έναν πάροχο για το ενσωματωμένο harness στις **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων**, ή εγκαταστήστε το CLI του Claude Code στο μηχάνημα που φιλοξενεί το `cc_server`.
+- Αν θέλετε ο πράκτορας να φέρει δεξιότητες, εγκαταστήστε τις πρώτα στις **Ρυθμίσεις → Χώρος εργασίας → Δεξιότητες**. Η φόρμα του πράκτορα σας αφήνει να ενεργοποιείτε μόνο δεξιότητες που υπάρχουν ήδη στον χώρο εργασίας.
 
-## Add the agent
+## Προσθέστε τον πράκτορα
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Ανοίξτε τις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**.
+2. Κάντε κλικ στο **Νέος πράκτορας**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Δεν υπάρχει παράθυρο διαλόγου ούτε επιλογέας ρόλου. Δημιουργείται αμέσως ένας πράκτορας με το όνομα «Ανώνυμος πράκτορας» και επιλέγεται στο τμήμα λεπτομερειών στα δεξιά.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Θα πρέπει τώρα να βλέπετε τον πράκτορα «Ανώνυμος πράκτορας» στον κατάλογο στα αριστερά, με την καρτέλα **Ρυθμίσεις** του τμήματος λεπτομερειών του ανοιχτή και ένα πεδίο **Όνομα** που περιέχει «Ανώνυμος πράκτορας».
 
-## Name it
+## Δώστε του όνομα
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Όνομα** — το σύντομο αναγνωριστικό που χρησιμοποιείται στις @-αναφορές, για παράδειγμα `alice`. Η ανάλυση των αναφορών αντιστοιχίζει το `@` που ακολουθείται από χαρακτήρες λέξης, οπότε ένα όνομα που περιέχει παύλα, τελεία ή κενό δεν μπορεί ποτέ να αναφερθεί.
+- **Τίτλος** — η ετικέτα για ανθρώπινη ανάγνωση, για παράδειγμα «Έμπειρος προγραμματιστής».
+- **Προτροπή συστήματος** — προαιρετικές πρόσθετες οδηγίες, που εγχέονται ως ενότητα Agent instructions· δεν αντικαθιστούν το υπόλοιπο συναρμολογημένο μήνυμα προτροπής.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Κάντε κλικ στην **Αποθήκευση αλλαγών** στο κάτω μέρος της φόρμας. Κάθε πεδίο αυτής της σελίδας αποθηκεύεται με αυτό το ένα κουμπί.
 
-## Give it an adapter and a model
+## Δώστε του προσαρμογέα και μοντέλο
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Το αναπτυσσόμενο μενού **Προσαρμογέας** απαριθμεί τους εκτελεστές που διαθέτει πραγματικά το μηχάνημα του διακομιστή. Ο ενσωματωμένος προσαρμογέας βρίσκεται πάντα (είναι ο διακομιστής). Το Claude Code εμφανίζεται μόνο όταν το CLI του εντοπίστηκε σε αυτό το μηχάνημα:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| Προσαρμογέας              | Backend                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| Control Center (built-in) | Ο βρόχος πράκτορα εντός διεργασίας — χωρίς εξωτερικό CLI |
+| Claude Code               | `claude -p --output-format stream-json`                  |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Μόνο ο ενσωματωμένος προσαρμογέας επιβάλλει λειτουργίες, καθοδήγηση, παύση/συνέχεια, συμβόλαια ολοκλήρωσης και υποπράκτορες. Το Claude Code δεν σας παρέχει κανένα από αυτά. Το Cursor, το Codex και οι άλλοι πάροχοι μοντέλων προσαρτώνται στον ενσωματωμένο προσαρμογέα και όχι ως ξεχωριστοί εκτελεστές.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Ένας κενός προσαρμογέας σημαίνει τον ενσωματωμένο βρόχο]
+Ένας πράκτορας του οποίου ο προσαρμογέας δεν έχει οριστεί αποστέλλεται στο **Control Center (built-in)**, τον βρόχο μέσα στον διακομιστή, οπότε δεν χρειάζεται να εγκατασταθεί τίποτα στο μηχάνημα. Εφόσον δεν έχει οριστεί ούτε μοντέλο, ζητά από την Anthropic την προεπιλογή της, οπότε ένας πράκτορας χωρίς καμία απολύτως ρύθμιση εκτελείται μόνο αν έχετε συνδέσει λογαριασμό Anthropic. Οι ειδικοί του αρχικού εφοδιασμού δεν συνοδεύονται από κανένα από τα δύο· ορίστε και τα δύο σε κάθε πράκτορα που σκοπεύετε να χρησιμοποιήσετε.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Το αναπτυσσόμενο μενού **Μοντέλο** καθοδηγείται από τον προσαρμογέα που επιλέξατε. Για τον ενσωματωμένο προσαρμογέα, η λίστα αντλείται ζωντανά από τους παρόχους που έχετε συνδέσει στις **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων**, οπότε ένας πάροχος χωρίς αποθηκευμένο διαπιστευτήριο συνεισφέρει μηδέν μοντέλα.
 
-## Add skills
+## Προσθέστε δεξιότητες
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+Οι **Δεξιότητες** είναι ένας επιλογέας chip πάνω από τα πακέτα δεξιοτήτων που είναι εγκατεστημένα σε αυτόν τον χώρο εργασίας. Πατήστε ένα chip για να το εναλλάξετε· το σύμβολο ελέγχου σημειώνει τα επιλεγμένα. Αν ο χώρος εργασίας δεν έχει δεξιότητες, το πεδίο εμφανίζει «No skills available. Create skills in Settings → Skills first.»
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/#repo-scoped-skills).
+Δεν επιλέγετε εδώ τις δεξιότητες του ίδιου του αποθετηρίου. Ένα αποθετήριο που τις παρέχει (στο `.agents/skills/`, `.claude/skills/` ή `.opencode/skills/`) τις συνεισφέρει αυτόματα σε όποιον πράκτορα εργάζεται σε αυτό το αποθετήριο, και αντικαθίστανται όταν μετακινηθεί σε άλλο — δείτε [Δεξιότητες ανά αποθετήριο](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Ορίστε τη γραμμή αναφοράς και την περσόνα
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Αναφέρεται σε** — επιλέξτε έναν άλλον πράκτορα με το όνομά του. Αυτό χτίζει το δέντρο αναφορών που εμφανίζει το κουμπί **Οργανόγραμμα** στην κεφαλίδα της σελίδας. Δεν είναι ο κατάλογος που χρησιμοποιεί ένας επικεφαλής ομάδας όταν αναθέτει — αυτός προέρχεται από τα μέλη της ομάδας και τις δεξιότητές τους.
+- **Περσόνα** — ελεύθερο κείμενο που διαμορφώνει τον τόνο και τη συμπεριφορά, για παράδειγμα: «Προτιμά απλές, ευανάγνωστες λύσεις. Γράφει τεστ για κάθε νέο κώδικα.»
 
-## Tune the run
+## Ρυθμίστε την εκτέλεση
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Προσπάθεια συλλογισμού** — οι επιλογές προέρχονται από τα δικά του δημοσιευμένα επίπεδα του επιλεγμένου μοντέλου: Low / Medium / High, συν Extra High στα μοντέλα τύπου OpenAI και Extra High + Max στα μοντέλα τύπου Claude. Το πεδίο κρύβεται εντελώς όταν το επιλεγμένο μοντέλο δεν δηλώνει επίπεδα σκέψης και προεπιλέγεται η προεπιλογή του ίδιου του μοντέλου.
+- **Μέγεθος παραθύρου πλαισίου** — προσυμπληρώνεται από το παράθυρο πλαισίου του μοντέλου κάθε φορά που αλλάζετε μοντέλο, με chips ενός αγγίγματος για την προεπιλογή του μοντέλου, 200k, 500k και 1M. Μια τιμή που πληκτρολογείτε αφού επιλέξετε το μοντέλο υπερισχύει μέχρι την επόμενη αλλαγή μοντέλου.
+- **Χρονικό όριο σιωπής (λεπτά)** — τερματίζει μια εκτέλεση ύστερα από τόσο χρόνο χωρίς έξοδο. Αφήστε το κενό για να χρησιμοποιηθεί η προεπιλογή ανά λειτουργία.
 
-## Grant permissions
+## Παραχωρήστε δικαιώματα
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+Τα **Δικαιώματα sandbox** ξεκινούν στο «Χρήση προεπιλογής χώρου εργασίας». Ενεργοποιήστε τον διακόπτη για να τα ορίσετε για αυτόν τον πράκτορα και μετά εναλλάξτε:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Να επιτρέπεται git push** — εγχέει το token GitHub που χρειάζεται ο πράκτορας για να κάνει push
+- **Να επιτρέπονται κλήσεις GitHub API** — επιτρέπει στον πράκτορα να διαβάζει PR, issues και μεταδεδομένα αποθετηρίων
+- **Να επιτρέπονται κλήσεις API εισιτηρίων** — εγχέει το κλειδί του παρόχου εισιτηρίων
+- **Να επιτρέπεται γενική πρόσβαση στο δίκτυο** — ενεργοποιεί επίσης τα εργαλεία `web_fetch` και `web_search` του ενσωματωμένου harness
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Κάθε διακόπτης ελέγχεται από τον μεσίτη διαπιστευτηρίων όταν ξεκινά η εκτέλεση: μια δυνατότητα που είναι απενεργοποιημένη σημαίνει απλώς ότι το αντίστοιχο token δεν εκδίδεται ποτέ στο περιβάλλον της εκτέλεσης.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Η προεπιλογή χώρου εργασίας σημαίνει το συντηρητικό σύνολο του διακομιστή]
+Ένας πράκτορας που έχει μείνει στο «Χρήση προεπιλογής χώρου εργασίας» εκτελείται με το git push, το GitHub API και τα εισιτήρια όλα **κλειστά** και το δίκτυο **ανοιχτό**. Οι προεπιλογές δυνατοτήτων που εμφανίζονται στις Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο είναι προτίμηση της πλευράς του πελάτη. Αν θέλετε ένας πράκτορας να κάνει push ή να ανοίγει PR, ενεργοποιήστε τον διακόπτη και παραχωρήστε ρητά τις δυνατότητες.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) for the full set of boundaries.
+Αυτές οι δυνατότητες ελέγχουν διαπιστευτήρια και εργαλεία harness, δηλαδή ένα επίπεδο ξεχωριστό από το sandbox του λειτουργικού συστήματος. Το `cc_server` τυλίγει τις εκτελέσεις των πρακτόρων στο sandbox του κεντρικού υπολογιστή όπου αυτό υπάρχει — τα Windows δεν έχουν εγγενές backend, και τα Linux και WSL2 χρειάζονται `bwrap` και `socat`. Δείτε [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) για το πλήρες σύνολο των ορίων.
 :::
 
-## Verify it runs
+## Επαληθεύστε ότι εκτελείται
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Ανοίξτε τις **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων** και βεβαιωθείτε ότι ο προσαρμογέας που επιλέξατε αναφέρει εγκατεστημένη έκδοση και όχι «Δεν βρέθηκε». Κάντε κλικ στην **Ανανέωση** για επανανίχνευση — η ανίχνευση εκτελείται στο μηχάνημα που φιλοξενεί το `cc_server`, όχι στο μηχάνημα που κοιτάτε.
+2. Ανοίξτε έναν χώρο με τον πράκτορα και στείλτε του ένα μήνυμα, ή κάντε του @-αναφορά μέσα σε έναν υπάρχοντα χώρο.
+3. Επιστρέψτε στις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**, επιλέξτε τον πράκτορα και ανοίξτε την καρτέλα **Αρχεία καταγραφής**. Θα πρέπει να εμφανιστεί μια εκτέλεση με σήμα κατάστασης, διάρκεια, ώρα έναρξης και τον προσαρμογέα που χρησιμοποίησε. Η **Προβολή** ανοίγει τη ροή συμβάντων αυτής της εκτέλεσης.
 
-If no run appears at all, work through [Run agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/).
+Αν δεν εμφανίζεται απολύτως καμία εκτέλεση, ακολουθήστε τη [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/).
 
-## Delete an agent
+## Διαγράψτε έναν πράκτορα
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Επιλέξτε τον στον κατάλογο. Στην καρτέλα **Ρυθμίσεις**, μετακινηθείτε στη **Ζώνη κινδύνου** στο κάτω μέρος της φόρμας και κάντε κλικ στη **Διαγραφή**.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run agents in parallel](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
-- [Build an agent team](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-ομάδας/)
-- [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
-- [Run agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
-- [Agent configuration reference](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/)
+- [Εκτέλεση πρακτόρων παράλληλα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
+- [Δημιουργία ομάδας πρακτόρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-ομάδας/)
+- [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+- [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
+- [Διαμόρφωση πράκτορα](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)

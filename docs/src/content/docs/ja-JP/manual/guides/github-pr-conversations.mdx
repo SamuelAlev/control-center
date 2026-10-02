@@ -1,97 +1,101 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: GitHub PR から Control Center に話しかける
+description: Webhook も公開 URL も不要で、PR 会話そのものからサーバーの GitHub App ボットにレビューや質問を依頼できます。
 slug: ja-JP/マニュアル/ハウツーガイド/github-pr-会話
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+このガイドでは、GitHub から離れずに Control Center を操作する方法を説明します。
+PR ページから AI レビューを依頼し、コメントでボットに質問し、そのレビュースレッドで
+会話を続けられます。
 
-The bot is your server's own [GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+ボットは、あなたのサーバー自身の [GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/) です — すでに
+サインインとバックグラウンド作業を担っているものと同じです。新しく登録するものは
+何もなく、インターネットから到達可能でなければならないものもありません。サーバーは
+ポーリングによって GitHub 上で発言された内容を検出するため、NAT の背後にある
+ノート PC も公開デプロイとまったく同じように動作します。
 
-## Prerequisites
+## 前提条件
 
-- The server has its GitHub App [registered and
-  installed](/ja-JP/マニュアル/ハウツーガイド/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- サーバーに GitHub App が[登録および
+  インストール](/ja-JP/マニュアル/ハウツーガイド/github-app/)されていて、**Pull requests: read and write**
+  （コメント、スレッド、リアクション用）と **Issues: read**（コメント検索用）の権限が
+  あること。どちらもそのガイドの権限一覧にすでに含まれています
+- リポジトリが Control Center のワークスペースにリンクされていること
+- Webhook URL もトンネルもコールバックも不要 — ネットワーク側で設定するものは
+  何もありません
 
-## Find your bot's name
+## ボットの名前を調べる
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+ボットのログイン名は `<appslug>[bot]` です。ここで `appslug` は、アプリを登録した
+ときに付けた名前です。
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. **設定 → サーバー → シングルサインオン**に移動し、**プロバイダーアプリ**カードまで
+   スクロールします
+2. **GitHub** ブロックを開き、**テスト**をクリックします
+3. **ボットログイン**が入力されたらコピーします。空のヒントが表示されたままの
+   場合は、ログイン名は常に `<appslug>[bot]` です — それを入力するか、短縮形の
+   `@appslug` を入力します
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub は `@` オートコンプリートでアプリのアカウントを候補に出さないため、
+ログイン名は手入力する必要があります — 設定カードがワンクリックでコピーできる
+ようにしているのはそのためです。`[bot]` サフィックスは省略できます。`@myapp` と
+`@myapp[bot]` はどちらもボットに届きます。
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[特徴のあるアプリ名を付ける]
+短縮形はテキストとして照合されます。GitHub の人間のユーザーがたまたまあなたの
+アプリのスラッグと同じ場合、そのユーザーを短縮形でメンションするとボットにも
+届きます。完全な `@myapp[bot]` 形式は常に曖昧さがありません。
 :::
 
-## Request a review from GitHub
+## GitHub からレビューを依頼する
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+2 つの方法があり、どちらも **AIに質問**ボタンが開始するのと同じ、シード済みの
+`pr_review` パイプラインを開始します。
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **PR に `ai-review` ラベルを追加する**。これは、ボットをレビュアーとして割り当てる
+  ために GitHub が提供する最も近い手段です — アプリのアカウントは、GitHub
+  ネイティブの「レビュー依頼」スロットを保持できません。リアクションを付ける対象の
+  コメントがないため、GitHub には何も投稿されず、レビューは Control Center で
+  開始されます
+- **PR 会話に `@myapp review`**（または単に `@myapp`）**をコメントする**。ボットは
+  👀 でリアクションし、レビューが開始されたとき（またはすでに実行中であるとき）に
+  返信します
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+レビュアーはその PR のレビュースペースで作業します。指摘の読み方と公開の仕方は
+[AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/) と同じです。GitHub への公開は
+Control Center で下す判断のままです — GitHub からレビューを開始しても、それだけで
+GitHub に何かが公開されることはありません。
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+ラベルは PR ごとに 1 回だけ発火します。追加することが依頼であり、外して付け直しても
+再び武装されることはありません。レビューをもう一度実行するには — たとえば push の後
+など — ボットをメンションします。
 
-## Ask a question
+## 質問する
 
-Comment on the PR conversation:
+PR 会話にコメントします:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+何が起きるか、順番に:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. ボットが 👀 でリアクションし、コメントが見られたことがわかります
+2. 質問は**あなたとして**その PR のレビュースペースに投稿されます — Control Center
+   で入力した場合と同じ帰属です
+3. エージェントがスペースで回答し、その回答はあなたを @メンションする
+   コメントとして PR に返信されます
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+まだレビューのない PR での質問は、ワークスペースの CEO エージェントを起こします。
+レビューが一度実行された後は、最後に発言したエージェントが答えるため、
+フォローアップはコンテキストを持っている相手に届きます。
 
-## Follow up in a review thread
+## レビュースレッドでフォローアップする
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+ボットが参加しているインラインのレビュースレッドの中で返信します — ボットが残した
+diff コメント、またはそのスレッドに投稿した回答です。メンションは不要です。
+スレッド**自体が**宛先指定です:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +103,79 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+マルチターンも同じように機能します。各返信は同じ会話におけるもう 1 つの質問であり、
+レビュースペースがコンテキストとなり、回答はそのスレッドに返ってきます。
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+PR 会話のタイムラインでのフォローアップは新しいトップレベルのコメントになるため、
+依然として @メンションが必要です。
 
-## Who the bot talks to
+## ボットが応答する相手
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+GitHub のコメントはログイン名程度のものしか運んできません。そのためボットは、
+何かを行う前に作者を解決します:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **あなたの GitHub アカウントが、Control Center のあなたのアイデンティティに
+  リンクされている**必要があります — **設定 → ワークスペース →
+  プロフィールと識別情報 → コードホスティング**から
+  [GitHub でサインイン](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)するか、
+  トークンを貼り付けます
+- そのリポジトリをリンクしているワークスペースで、**書き込みロールを持つ
+  メンバー**（`member`、`admin`、`owner`）である必要があります
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+それ以外の相手には、何が足りないかを説明する丁寧な返信が 1 つ届くだけです —
+未知のログイン名（未リンク、またはリンク済みだがここのメンバーでない）と
+読み取り専用ロールの 2 つのケースがあります — そしてその発言がワークスペースに
+入ることはありません。`ai-review` ラベルはこのようにはゲートされません。
+作者が存在しないため、すでにそのリポジトリをリンクしているワークスペースで
+レビューを開始します。
 
-## What to expect
+## 想定される動作
 
-| Thing               | Behaviour                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| 項目                 | 動作                                                                     |
+| -------------------- | ------------------------------------------------------------------------ |
+| 確認                 | コメントに 1 分ほどで 👀 — スイープ間隔です。`ai-review` ラベルにはリアクションを付けるコメントがありません |
+| 回答                 | ボット（アプリ）として、質問が投げかけられたレーンに投稿されます          |
+| スペース内の帰属     | 質問はあなたのものです。エージェントはあなたの代理として、スペースの自律度設定のもとで実行されます |
+| レビュー             | 指摘はレビュースペースに届きます。GitHub への公開は手動です               |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+およそ 1 分のレイテンシは、受信方向のネットワークアクセスを一切必要としないことの
+代償です。スイープはどれも緊急ではなく、サーバーがオフラインの間に失われるものも
+ありません — 停止中に届いたコメントは、次のスイープで拾われます。
 
-## Troubleshooting
+## トラブルシューティング
 
-**Nothing happens for a comment that mentions the bot.**
+**ボットをメンションしたコメントに対して何も起きない。**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- アプリは、そのリポジトリを所有するアカウントに**インストール**されていますか。
+  また、そのリポジトリはワークスペースに**リンク**されていますか。
+  リンクされていないリポジトリは、何かが記録される前にスキップされるため、
+  後からリンクしてもコメントは配信されます
+- あなたの GitHub アカウントはリンクされていますか。また、書き込みロールを持つ
+  メンバーですか。PR でボットの拒否返信を確認してください — どちらが問題かが
+  書かれています
+- それでも何も起きない場合は、何かが失敗したときにサーバーログにスイープと PR が
+  記録されます。`pr_conversation:`（ポーラー）と
+  `github_pr_conversation:`（ブリッジ）を探してください
 
-**The label does not start a review.**
+**ラベルを付けてもレビューが開始されない。**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+これは PR ごとに 1 回だけ発火します。レビューがすでに実行されたか、サーバーが
+PR を認識する前にラベルが追加された場合（最初のスイープは未処理分を一斉に処理せず、
+黙って記録します）は、代わりにボットをメンションしてください —
+`@myapp review` は、レビューがすでに進行中でない限り、必ず開始します。
 
-**The bot's answer never arrived on GitHub.**
+**ボットの回答が GitHub に届かない。**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+回答自体が失われることはありません — Control Center のその PR のレビュースペースに
+あります。投稿の失敗（GitHub の障害、権限の変更）はログに記録され、
+返信は再試行されません。重要であれば、スレッドでもう一度質問してください。
 
-## Related guides
+## 関連ガイド
 
-- [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/ja-JP/マニュアル/ハウツーガイド/スペース/): the room all of this lands in
+- [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/): ボットの生まれ元となる
+  登録
+- [AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/): メンションで開始した
+  レビューが生み出す指摘の読み方
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/):
+  自分の GitHub アカウントのリンク。ボットがあなたを特定するよりどころです
+- [スペースを使う](/ja-JP/マニュアル/ハウツーガイド/スペース/): これらすべてが届く場所

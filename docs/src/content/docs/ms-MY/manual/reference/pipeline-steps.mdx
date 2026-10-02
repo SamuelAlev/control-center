@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Jenis langkah pipeline
+description: Rujukan untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya dan hasil langkah.
 slug: ms-MY/manual-pengguna/rujukan/langkah-pipeline
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Satu langkah pipeline mempunyai dua paksi bebas:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Jenis** (`StepKind`) — cara enjin _menjadualkan_ langkah itu berbanding pencetusnya.
+- **Kunci badan** (`BuiltInBodyKeys`) — closure badan berdaftar yang manakah _melaksanakan_ kerja langkah itu.
 
-## Step kinds
+## Jenis langkah
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Ditakrifkan dalam `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| Jenis      | Semantik penjadualan                                                                                                                                                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | Titik masuk wajib — tepat satu bagi setiap templat, sentiasa nod pertama. Ia sendiri tidak melakukan sebarang kerja; perkara yang memulakan larian (manual / acara / jadual) dijejak secara berasingan sebagai baris `PipelineTrigger`. Badannya ialah `pipeline.trigger` yang tidak melakukan apa-apa. |
+| `listen`   | Terpicu apabila semua langkah sumber (dalam `StepTrigger.sourceStepIds`) selesai.                                                                                                                                                        |
+| `join`     | Terpicu apabila semua langkah dalam `waitForStepIds` mencapai keadaan terminal.                                                                                                                                                          |
+| `router`   | Pencabangan bersyarat — badan mengembalikan `StepResult.route(key)`, yang hanya menyalakan tepi hiliran yang `routeKey`-nya sepadan; cabang yang tidak dipilih ditandakan sebagai dilangkau.                                              |
+| `forEach`  | Dijadualkan seperti `listen` (terpicu apabila semua `sourceStepIds` selesai). Badan `flow.forEach` yang berdaftar itulah yang membuat lelaran; enjin tidak menghasilkan satu sub-langkah anak bagi setiap item.                         |
+| `terminal` | Sentinel penjadual tanpa badan. Larian pipeline selesai apabila langkah terminal selesai.                                                                                                                                                |
 
-## Step bodies
+## Badan langkah
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Closure badan berdaftar yang dikunci oleh pemalar dalam `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Terdapat 25, semuanya disenaraikan di bawah. Konfigurasi dibaca daripada `PipelineNodeConfig` langkah itu (lihat di bawah) melainkan dinyatakan sebaliknya; “kunci keadaan” dibaca daripada keadaan pipeline / muatan pencetus pada masa pelaksanaan.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Langkah yang `bodyKey`-nya tidak berdaftar menghasilkan amaran semasa templat dimuatkan dan selepas itu tidak pernah dilaksanakan — ia tidak menggagalkan larian. Langkah `trigger` dan `terminal` dikecualikan daripada amaran itu: pencetus masih menjalankan badan `pipeline.trigger` yang tidak melakukan apa-apa; langkah `terminal` tiada badan.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Badan yang tidak melakukan apa-apa bagi nod `trigger` yang wajib — selesai serta-merta supaya enjin menyebar kepada pendengar hiliran. Tiada konfigurasi.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Langkah shell tanpa ejen (`bash -c`). Pemegang tempat `{{key}}` dalam skrip digantikan daripada keadaan + muatan pencetus dengan nilai yang di-escape untuk shell.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Medan konfigurasi | Keterangan                                               |
+| ----------------- | -------------------------------------------------------- |
+| `script`          | Perintah shell untuk dilaksanakan (wajib)                |
+| `outputKey`       | Kunci keadaan yang menerima stdout yang dipangkas pada keluar 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Berjalan dengan cwd `<cc_root>/pipelines/<pipelineRunId>/` (dikongsi oleh semua langkah bash dalam sesuatu larian) dan `GITHUB_TOKEN` dalam persekitaran. Juga menulis `<stepId>_runDir` ke keadaan. Keluar bukan sifar menggagalkan langkah itu dengan hujung stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Nod prompt-dan-hantar generik: menjana prompt, menghantar ejen ke dalam perbualan dan menggantung sehingga larian selesai. Muatan `submit_output` ejen dipungut ke dalam keadaan di bawah `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Medan konfigurasi          | Keterangan                                                    |
+| -------------------------- | ------------------------------------------------------------- |
+| `agentId`                  | UUID ejen berskop ruang kerja untuk dihantar (wajib)          |
+| `prompt`                   | Teks arahan; menyokong penggantian `{{key}}` (wajib)          |
+| `outputKey`                | Kunci keadaan bagi output yang dipungut                       |
+| `outputSchema`             | Skema JSON yang mesti dipenuhi oleh output                    |
+| `label`                    | Label yang boleh dibaca manusia, dipaparkan pada kanvas        |
+| `extras.spaceId`           | Perbualan sedia ada untuk digunakan (lalai: perbualan tersembunyi) |
+| `extras.conversationTitle` | Strim bernama dalam ruang itu (pilihan)                       |
+| `extras.mode`              | Dibaca pada nod yang *membuka* ruang itu (`messaging.createSpace`), bukan di sini. Lalai `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Badan router — membaca `config.extras`, menilai satu syarat dan mengembalikan `StepResult.route(key)`. Syarat **bukan** ungkapan JavaScript; tiga bentuk pengarangan disokong, mengikut keutamaan:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Pokok predikat** (`extras.predicate`) — pokok boolean yang menghala ke `"true"` / `"false"`. Setiap nod ialah peta dengan `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — benar apabila mana-mana laluan yang disenaraikan wujud pada cakera; `negate` menyongsangkannya; `recursive` turut mencari sub-direktori (melangkau `.git`, `node_modules`, `build`, `.dart_tool`). Laluan relatif diselesaikan terhadap `state[baseKey]` (lalai `repo_local_path`), jika tidak direktori ruang kerja bagi setiap larian.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — pengendali `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; membaca keadaan pipeline, bukan sistem fail.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — kumpulan boolean.
+  - `{"type": "not", "of": <predicate>}` — penafian.
+- **Suis** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; menghala ke kes pertama yang terkandung dalam nilai keadaan secara tidak sensitif huruf besar-kecil, jika tidak `default`.
+- **Perbandingan** (legasi aras atas `extras.left` / `extras.op` / `extras.right`) — setara dengan predikat `comparison`, dikekalkan untuk templat yang dikarang sebelum pokok itu.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Tepi yang keluar daripada nod membawa `routeKey` yang mesti sepadan dengan kunci yang dikembalikan.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Menyiarkan penemuan yang dikonsolidasikan sebagai komen semakan PR melalui klien PR GitHub.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Kunci keadaan           | Keterangan                                    |
+| ----------------------- | --------------------------------------------- |
+| `repo_full_name`        | `owner/repo` (wajib)                          |
+| `pr_number`             | Nombor PR — int atau rentetan angka (wajib)   |
+| `consolidated_findings` | Badan komen (wajib)                           |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Mengembalikan `StepResult.terminal` dengan `comment_review_id` dan `commented_at` dalam keadaan.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Menyiarkan mesej ke ruang pemesejan melalui `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Kunci keadaan | Keterangan                                          |
+| ------------- | --------------------------------------------------- |
+| `space_id`    | Ruang sasaran (wajib)                               |
+| `content`     | Badan mesej, dibaca apa adanya daripada keadaan (wajib) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Menulis `posted_space_id` dan `posted_at` ke keadaan.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Menghantar seluruh pasukan dan bukannya satu ejen, kemudian menggantung sehingga larian ahli selesai.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Medan konfigurasi                        | Keterangan                                                                                          |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `teamId`                                 | Pasukan berskop ruang kerja untuk dihantar (wajib; saling eksklusif dengan `agentId`)                |
+| `prompt`                                 | Teks matlamat; menyokong penggantian `{{key}}` (wajib)                                              |
+| `dispatchMode`                           | `allParallel` (lalai — satu tugasan setiap ahli) atau `manager` (hantar ketua sahaja untuk menyelaraskan) |
+| `outputKey`                              | Kunci keadaan bagi output ahli yang dipungut                                                         |
+| `outputSchema`, `label`, `extras.spaceId` | Seperti untuk `conversation.promptAgent`                                                            |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Gerbang kelulusan. Menghantar ejen pelulus ke dalam perbualan (modus semakan) dengan prompt gerbang dan kontrak output `{decision, reason}`, kemudian menggantung sehingga pelulus menghantar melalui `submit_output`.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| Medan konfigurasi         | Keterangan                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| `agentId`                 | Ejen pelulus (wajib)                                                           |
+| `prompt`                  | Prompt gerbang (pilihan; nilai lalai digunakan apabila tiada)                  |
+| `outputKey`               | Kunci keadaan bagi muatan `{decision, reason}` yang dipungut                  |
+| `outputSchema`            | Lalai kepada skema kelulusan (`decision`: `approved` / `rejected`, `reason`)   |
+| `label`, `extras.spaceId` | Seperti untuk `conversation.promptAgent`                                        |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Gerbang itu hanya diselesaikan melalui `submit_output`. `BuiltInBodyKeys.humanGate`, pustaka jenis nod dan teks prompt satu templat terbina dalam semuanya menamakan alat MCP `approve_step` dan `reject_step`; **kedua-dua alat itu tidak wujud** dalam mana-mana pakej atau registri.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Membuang worktree terasing yang basi; memilih modusnya daripada muatan pencetus. Mematuhi bendera `dryRun` larian.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Kunci keadaan                  | Keterangan                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | Lepaskan worktree tiket itu                                                           |
+| `repo_full_name` + `pr_number` | Lepaskan worktree editor PR yang efemeral                                             |
+| `space_id`                     | Robohkan worktree dan folder perbualan itu                                            |
+| (tiada satu di atas)           | Sapu ruang kerja: direktori yang hilang, ruang mati, folder perbualan yatim           |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (pilihan) menerima rentetan ringkasan.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Peta / sebar ke atas koleksi keadaan: menjana prompt sekali bagi setiap item, kemudian menghantar ejen **sekali** dengan prompt tersebut digabungkan (pemisah `---`) dan menggantung sehingga larian itu selesai. Koleksi kosong selesai serta-merta dengan senarai kosong. Ia bukan satu penghantaran selari bagi setiap item.
 
-| Config field         | Description                                                     |
+| Medan konfigurasi    | Keterangan                                                      |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Ejen untuk dihantar bagi setiap item (wajib)                    |
+| `prompt`             | Prompt bagi setiap item; menyokong penggantian `{{key}}` (wajib) |
+| `extras.iterableKey` | Kunci keadaan yang memegang koleksi (wajib)                     |
+| `extras.itemKey`     | Kunci yang diikat pada item semasa dalam prompt (lalai `item`)  |
+| `outputKey`          | Kunci keadaan bagi output yang dipungut (satu penghantaran, bukan senarai) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Menjalankan templat pipeline lain sebagai sub-langkah bersarang (sub-pipeline berjalan sebagai larian anak dengan `parentPipelineRunId` ditetapkan). Langkah itu menggantung sehingga anak mencapai keadaan terminal, kemudian keadaan akhir anak digabungkan di bawah `outputKey`.
 
-| Config field        | Description                                                     |
+| Medan konfigurasi   | Keterangan                                                      |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | Templat anak untuk dijalankan (wajib; pipeline tidak boleh memanggil dirinya sendiri) |
+| `inputKeys`         | Kunci keadaan yang disalin ke dalam muatan pencetus anak       |
+| `outputKey`         | Kunci keadaan bagi keadaan akhir anak yang digabungkan          |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Pengindeksan tree-sitter latar belakang: merentasi sesuatu repo, mengekstrak simbol/tepi dalam isolat pekerja dan menyuntiknya ke dalam graf kod ruang kerja. Menstrim kemajuan ke dalam baris larian langkah; menyokong dry-run. Tree-sitter dan tatabahasanya ialah natif yang diperlukan — dylib yang hilang bermakna pelayan tidak pernah boot, dan tatabahasa yang gagal diselesaikan semasa larian menggagalkan langkah itu dan bukannya melangkaunya.
 
-| State key         | Description                           |
+| Kunci keadaan     | Keterangan                            |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Repo untuk diindeks (wajib)           |
+| `repo_local_path` | Laluan setempat checkout (wajib)      |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Diarisasi penutur luar talian. Membaca audio mesyuarat yang disimpan, mengelompokkannya kepada penutur (`Person 1`, `Person 2`, …), melabel semula segmen transkrip dan menulis semula keadaan `transcript`; juga mengeluarkan `diarization_spans` untuk langkah `meeting.updateTranscript` yang selari. Melewatkan transkrip tanpa perubahan apabila tiada audio disimpan atau model tidak dipasang.
 
-| State key     | Description                   |
+| Kunci keadaan | Keterangan                    |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | Mesyuarat untuk didiarisasi (wajib) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Badan penyimpanan ringkasan mesyuarat yang deterministik. Setiap satu membaca `meeting_id` dan muatan `meeting_outcome` berstruktur langkah ejen (`{summary, enhancedNotes, actionItems[], decisions[]}`) daripada keadaan dan menulis bahagiannya ke jadualnya sendiri — nota, item tindakan atau keputusan. Baris yang disimpan sebelum ini tidak pernah dipadam pada larian yang merosot.
 
-### Other built-in bodies
+### Badan terbina dalam yang lain
 
-| Body key                           | Description                                                                                                                                                                              |
+| Kunci badan                        | Keterangan                                                                                                                                                                               |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Pengecaman penutur merentas mesyuarat: memadankan penutur yang didiarisasi dengan profil suara tersimpan dan menerapkan padanan yang meyakinkan secara automatik. Tidak melakukan apa-apa tanpa profil/embedding. |
+| `meeting.updateTranscript`         | Menerapkan label `Person N` daripada `diarization_spans` dan menggabungkan serpihan setiap tetingkap menjadi giliran setiap penutur, kemudian menyimpan transkrip yang dibersihkan. Tidak melakukan apa-apa apabila diarisasi tidak menghasilkan apa-apa. |
+| `meeting.assemblePlayback`         | Menghimpunkan trek main balik bercampur mesyuarat daripada WAV setiap saluran yang disimpan. Tidak melakukan apa-apa apabila tiada audio disimpan.                                        |
+| `orchestration.markPhase`          | Pada penghujung DAG kerja, menulis sentinel kegagalan untuk sub-tiket yang tiada output dan menukar orkestrasi kepada `synthesizing`.                                                    |
+| `orchestration.persistDeliverable` | Menulis output sintesis ke tiket induk, melengkapkannya, menyiarkan dapatan dan menandakan orkestrasi `completed`.                                                                       |
+| `orchestration.awaitApproval`      | Gerbang kelulusan separa: selesai serta-merta apabila kunci nod langkah itu berada dalam set kelulusan orkestrasi, jika tidak menggantung sehingga kelulusan kemudian menyambungnya semula. Inilah satu-satunya badan yang menetapkan `extras.awaitApproval`, yang mengecualikannya daripada tamat masa langkah digantung 24 jam. |
+| `messaging.createSpace`            | Membuka perbualan tempat seluruh templat selebihnya berfungsi, diterbitkan di bawah `outputKey` langkah itu (yang terbina dalam menggunakan `pipeline_space_id`). Senarai `repoIds` yang kosong tidak membuat checkout apa-apa; `extras['allRepos']` membuat checkout setiap repo ruang kerja. `extras['createConversation']` (mati secara lalai) juga membuka strim bernama. Langkah ejen MENYERTAI bilik dan tidak pernah membuka bilik, jadi sebaran tanpa nod ini gagal semasa penghantaran — dan menyambungkannya sekali bermakna seluruh sebaran berkongsi satu checkout dan bukannya menyediakan satu untuk setiap satu. |
+| `prReview.finalize`                | Langkah terakhir templat semakan PR: menyusun nod semakan yang terkumpul ke dalam kelompok konsensus dan mengira keputusan bagi setiap PR.                                              |
+| `skills.analyze`                   | Menjalankan imbasan rantaian bekalan kemahiran ke atas kemahiran yang dipasang dalam ruang kerja dan merekodkan setiap keputusan.                                                        |
 
-## Step results
+## Hasil langkah
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Badan langkah mengembalikan `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Semua factory menerima peta `mutatedState` pilihan yang digabungkan ke dalam keadaan pipeline, kecuali `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
-| --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| Factory                     | Tandatangan                                                       | Keterangan                                                                  |
+| --------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `ok`                        | `StepResult.ok({mutatedState})`                                   | Penyiapan normal; pendengar hiliran dinilai                                 |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`                 | Penyiapan router; memilih cabang hiliran yang `routeKey`-nya sepadan        |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`         | Jeda sehingga jenis acara domain tertentu terpicu                           |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})`   | Jeda sehingga semua tugasan yang tersenarai mencapai keadaan terminal       |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                             | Larian pipeline sudah tamat — tiada lagi langkah                            |
+| `failed`                    | `StepResult.failed(errorMessage)`                                 | Langkah itu gagal dengan mesej ralat                                        |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Tingkah laku cuba semula bagi badan nod yang gagal (`PipelineNodeConfig.retryPolicy`; null melumpuhkan cuba semula).
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| Medan            | Jenis    | Keterangan                                                                      |
+| ---------------- | -------- | ------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | Jumlah percubaan termasuk yang pertama (3 = 1 cubaan + 2 cuba semula); mesti ≥ 1  |
+| `backoff`        | `String` | `linear` atau `exponential` (lalai)                                             |
+| `initialDelayMs` | `int`    | Kelewatan sebelum cuba semula pertama, dalam milisaat; kelewatan seterusnya berkembang mengikut `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Konfigurasi bagi setiap nod yang dibawa dalam definisi langkah (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Kedua-dua nod terbina dalam dan tersuai berkongsi bentuk ini; setiap badan hanya membaca medan yang berkenaannya.
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| Medan            | Jenis                   | Keterangan                                                                                                                             |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`         | `String?`               | Templat prompt dengan penggantian `{{key}}`                                                                                             |
+| `script`         | `String?`               | Badan skrip Bash dengan penggantian `{{key}}`                                                                                           |
+| `agentId`        | `String?`               | UUID ejen berskop ruang kerja untuk dihantar                                                                                            |
+| `inputKeys`      | `List<String>`          | Kunci keadaan yang digunakan oleh nod ini sebagai input                                                                                 |
+| `repoIds`        | `List<String>`          | Repo yang di-checkout oleh nod `messaging.createSpace` (`<repoId>` atau `<repoId>@<branch>`). Kosong = tiada; `extras['allRepos']` = setiap repo ruang kerja. Diabaikan pada langkah ejen. |
+| `outputKey`      | `String?`               | Kunci keadaan tempat output nod ini ditulis                                                                                             |
+| `label`          | `String?`               | Label yang boleh dibaca manusia, dipaparkan pada kanvas (lalai kepada ID langkah)                                                        |
+| `outputSchema`   | `Map<String, dynamic>?` | Skema JSON (subset) yang mesti dipenuhi oleh nilai output                                                                               |
+| `reducer`        | `String?`               | Strategi gabungan apabila cabang selari menulis `outputKey` yang sama: `append`, `mergeLists`, `mergeMaps`, `sum` atau `override` (lalai) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Polisi cuba semula apabila badan gagal; null = satu percubaan                                                                            |
+| `continueOnFail` | `bool`                  | Apabila true, kegagalan terminal tidak menggagalkan larian; ralat itu disimpan di bawah `state['_stepErrors'][stepId]`                   |
+| `timeoutMs`      | `int?`                  | Tamat masa jam dinding untuk badan nod dalam milisaat; null = tiada tamat masa                                                           |
+| `teamId`         | `String?`               | Pasukan untuk dihantar (nod `team.dispatch`); saling eksklusif dengan `agentId`                                                          |
+| `dispatchMode`   | `String?`               | Modus pelaksanaan pasukan: `allParallel` atau `manager`                                                                                 |
+| `extras`         | `Map<String, dynamic>`  | Konfigurasi bebas khusus badan (contohnya `iterableKey`, `templateId`, pokok syarat)                                                     |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Pengakses terbitan: `spaceId` (`extras['spaceId']` — perbualan sedia ada untuk digunakan), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, dibaca pada nod yang membuka ruang) dan `runWhen` (`extras['runWhen']` — langkau nod itu apabila tidak dipenuhi).
 
-## See also
+## Lihat juga
 
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
-- [Create a pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
-- [Pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
-- [Run a pipeline](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Cipta templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
+- [Pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/)
+- [Jalankan pipeline secara manual](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)

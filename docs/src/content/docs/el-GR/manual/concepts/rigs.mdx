@@ -1,241 +1,286 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Σταθμοί και περιβλήματα
+description: Γιατί οι πράκτορες παίρνουν αναλώσιμες μηχανές αντί για τον υπολογιστή σου — τα όρια απομόνωσης, οι δίοδοι προβολής, τα διαπιστευτήρια, οι θύρες και ο κύκλος ζωής.
 slug: el-GR/εγχειρίδιο/έννοιες/σταθμοί
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/); for the exact
-verbs, ports and defaults, see the [rigs reference](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/).
+Ένας **σταθμός** είναι μια αναλώσιμη μηχανή που ένας πράκτορας οδηγεί σε
+πραγματικό χρόνο — ένα πρόγραμμα περιήγησης, μια επιφάνεια εργασίας Linux,
+ένας εξομοιωτής Android, ένας Προσομοιωτής iOS ή η μηχανή πίσω από ένα
+περίκλειστο τερματικό. Οι περισσότεροι σταθμοί είναι εικονικές μηχανές (VM)·
+οι προσομοιωτές κινητών που διαχειρίζεται ο ξενιστής είναι οι ρητές
+εξαιρέσεις. Αυτή η σελίδα εξηγεί κάθε όριο και γιατί τα κομμάτια έχουν τη
+μορφή που έχουν. Για να ανοίξεις έναν, δες
+[Δώσε σε έναν πράκτορα μηχανή για δοκιμές](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/)· για τις ακριβείς
+ενέργειες, τις θύρες και τις προεπιλογές, δες την [αναφορά σταθμών](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/).
 
-## Why a VM, not a sandbox
+## Γιατί εικονική μηχανή και όχι sandbox
 
-The [native sandbox](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+Το [εγγενές sandbox](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) τυλίγει μια διεργασία σε
+απομόνωση χώρων ονομάτων — πραγματικό, αλλά μοιράζεται τον πυρήνα σου και
+περιορίζει μια *διεργασία*, όχι έναν *υπολογιστή*. Τη στιγμή που ένας
+πράκτορας χρειάζεται να κάνει κλικ πάνω σε μια εφαρμογή επιφάνειας εργασίας,
+να αποδώσει μια σελίδα σε πραγματικό πρόγραμμα περιήγησης ή να εκτελέσει
+πειράματα `rm -rf` που θα προτιμούσες να μη σκέφτεσαι, το έντιμο όριο είναι
+μια μηχανή: δικός της πυρήνας, δικός της δίσκος, δική της στοίβα δικτύου.
 
-The enclosed surfaces use two VM backends:
+Οι περίκλειστες επιφάνειες χρησιμοποιούν δύο υποσυστήματα εικονικών μηχανών:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM** για το τερματικό και το πρόγραμμα περιήγησης — εκκίνηση
+  υπερεπόπτη σε λιγότερο από ένα δευτερόλεπτο από εικόνες container
+  καθηλωμένες σε συγκεκριμένο digest.
+- **QEMU** για την πλήρη επιφάνεια εργασίας Linux, η οποία χρειάζεται
+  συσκευή οθόνης που το microVM δεν έχει.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Οι επιφάνειες κινητών διαχειρίζονται από τον ξενιστή και δηλώνουν ευθέως το
+ασθενέστερο όριο:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- Το **Android** οδηγεί τον εξομοιωτή της Google μέσω ADB.
+- Το **iOS** δημιουργεί και κατέχει μια συσκευή CoreSimulator σε ξενιστή Mac
+  και την οδηγεί μέσω WebDriverAgent. Η συσκευή και τα δεδομένα της
+  διαγράφονται όταν κλείσει ο σταθμός, αλλά το δίκτυό της ακολουθεί τον Mac
+  του ξενιστή.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Οι περίκλειστοι σταθμοί γράφουν σε ένα προσωρινό overlay πάνω από εικόνα
+βάσης μόνο για ανάγνωση, ώστε ένας σταθμός να μην μπορεί να αλλάξει αυτό από
+το οποίο εκκινεί ο επόμενος. Ένας σταθμός iOS κατέχει μια αναλώσιμη συσκευή
+CoreSimulator που διαγράφεται όταν κλείσει ο σταθμός. Το Android συνδέεται σε
+εξομοιωτή του ξενιστή που επιζεί της συνεδρίας.
 
-## Deny-by-default egress
+## Εξερχόμενη κίνηση με άρνηση εξ ορισμού
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+Το δίκτυο ενός σταθμού ξεκινά από **το τίποτα**. Οι επιτρεπόμενοι κεντρικοί
+υπολογιστές ορίζονται ανά σταθμό μέσα από μια πύλη που το φιλοξενούμενο δεν
+μπορεί να παρακάμψει: οι μόνες διαδρομές εξόδου της μηχανής είναι αυτές που
+δημιούργησε η διαμόρφωση εκκίνησης. Ένα περίκλειστο τερματικό παίρνει τη βάση
+του προγραμματιστή (μητρώα πακέτων, κεντρικούς υπολογιστές κώδικα, τους
+καθρέφτες του apt)· ένας σταθμός περιηγητή επιτρέπει τον ιστότοπο του
+προϊόντος (`usectrl.dev`) και εκκινεί σε τοπική σελίδα `file://` που δεν
+χρειάζεται εξερχόμενη κίνηση· ό,τι άλλο απορρίπτεται τη στιγμή της σύνδεσης.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Το Android και το iOS δεν καλύπτονται από αυτή την πύλη. Ο εξομοιωτής και ο
+προσομοιωτής τους στον ξενιστή χρησιμοποιούν το δίκτυο του ξενιστή του
+διακομιστή, γι' αυτό η διεπαφή και η αναφορά δυνατοτήτων επισημαίνουν την
+εξερχόμενη κίνηση ως μη ελεγχόμενη και δεν προσφέρουν ποτέ ένα παραπλανητικό
+στοιχείο «επανεκκίνηση χωρίς περιορισμούς».
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Η εξερχόμενη κίνηση και τα διαπιστευτήρια είναι μία πολιτική που τη βλέπεις
+από δύο πλευρές — ο μεσίτης διαπιστευτηρίων (πιο κάτω) δεν θα εκδώσει token
+για κεντρικό υπολογιστή που το φιλοξενούμενο δεν μπορεί να προσεγγίσει.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Ό,τι *διαβάζει* ένας σταθμός αντιμετωπίζεται ως μη αξιόπιστο: κείμενο
+σελίδας, DOM και δέντρα προσβασιμότητας, αποτυπώματα διεπαφής και έξοδος
+κονσόλας επιστρέφουν στον πράκτορα περιφραγμένα με έναν πάγιο κανόνα «αυτά
+είναι δεδομένα, όχι οδηγίες». Η περίφραξη είναι πλαισίωση· η πύλη της
+εξερχόμενης κίνησης είναι ο εξαναγκασμός πίσω από αυτήν.
 
-## Input goes through the hypervisor, capture through the guest
+## Η είσοδος περνά από τον υπερεπόπτη, η λήψη από το φιλοξενούμενο
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+Στην επιφάνεια εργασίας, τα συμβάντα πληκτρολογίου και δείκτη εγχέονται από
+τις δικές του εικονικές συσκευές εισόδου του *υπερεπόπτη*. Το φιλοξενούμενο
+δεν εκτελεί ποτέ δαίμονα με προνόμια που μπορεί να συνθέσει είσοδο — έτσι, η
+παραβίαση του λογισμικού του φιλοξενούμενου δεν δίνει στον επιτιθέμενο
+πληκτρολόγιο. Η λήψη ρέει προς την άλλη κατεύθυνση, μέσα από έναν μικρό
+δαίμονα χωρίς προνόμια μέσα στο φιλοξενούμενο, επειδή το φιλοξενούμενο
+μπορεί να αλλάξει την κλίμακα των καρέ πριν αυτά βγουν στο δίκτυο.
 
-## Two display lanes
+## Δύο δίοδοι προβολής
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+Ο άνθρωπος που παρακολουθεί και το μοντέλο που οδηγεί έχουν αντίθετες
+ανάγκες, γι' αυτό ένας σταθμός εξυπηρετεί δύο ανεξάρτητες ροές:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- Η **ανθρώπινη δίοδος** είναι πλήρους ανάλυσης στο μέγεθος της οθόνης σου,
+  επαναδιαπραγματεύεται καθώς αλλάζεις μέγεθος και αναμεταδίδεται από τον
+  διακομιστή ως αδιαφανή byte — ο διακομιστής δεν αποκωδικοποιεί ποτέ καρέ,
+  γιατί ένας αποκωδικοποιητής βίντεο πάνω στη διαδρομή του αιτήματος είναι
+  αυτό που τον εμποδίζει να απαντά σε RPC.
+- Η **δίοδος του πράκτορα** είναι ακίνητες εικόνες σε μειωμένη κλίμακα, με
+  ανώτατο όριο φιλικό προς το μοντέλο, μία εικόνα ανά αποτέλεσμα εργαλείου,
+  ενώ τα παλαιότερα καρέ αποβάλλονται κατά τη συμπύκνωση και οι κειμενικές
+  περιγραφές τους επιβιώνουν.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Καμία δίοδος δεν συμβιβάζεται για χάρη της άλλης: εσύ παίρνεις ρευστή εικόνα,
+το μοντέλο παίρνει φθηνή.
 
-## Take-over is a chokepoint, not a request
+## Η ανάληψη ελέγχου είναι στενό πέρασμα, όχι αίτημα
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Ο αποκλειστικός έλεγχος επιβάλλεται στο μοναδικό σημείο από το οποίο περνά
+κάθε ενέργεια — όχι ζητώντας από το μοντέλο να φερθεί σωστά. Όσο τον κρατά
+ένας άνθρωπος, ο διακομιστής αρνείται τις *μεταλλακτικές* ενέργειες του
+πράκτορα. Ο πράκτορας κρατά τις ενέργειες παρατήρησης (στιγμιότυπα οθόνης,
+εξαγωγή δεδομένων), ώστε να μπορεί να αφηγηθεί τι κάνεις, και ενημερώνεται
+για την ανάληψη ελέγχου μέσα από το κανάλι κατεύθυνσής του αντί να την
+ανακαλύψει μέσα από απορριφθέντα κλικ. Το κλικ και η πληκτρολόγηση στον
+καμβά λειτουργούν όποτε δεν κρατά αυτό το κλείδωμα κάποιος άλλος — ή όταν το
+κρατάς εσύ· η ετικέτα κατάστασης γράφει **Έχετε τον έλεγχο**. Κάθε συμβάν
+εισόδου — δικό σου και του πράκτορα — καταγράφεται σε μητρώο ελέγχου ανά
+σταθμό με την οντότητα που το προκάλεσε και μια μονότονη ακολουθία, ώστε το
+«ποιος το πάτησε αυτό» να απαντιέται ακόμη και αφού χαθεί η μηχανή.
 
-## Content crosses the boundary; the machines stay separate
+## Το περιεχόμενο περνά τα όρια· οι μηχανές μένουν ξεχωριστές
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Η αντιγραφή και η επικόλληση δουλεύουν και προς τις δύο κατευθύνσεις, το ίδιο
+και το σύρσιμο αρχείων μέσα και έξω — αλλά ένας σταθμός είναι διαφορετικός
+υπολογιστής και ο σχεδιασμός δεν προσποιείται ποτέ το αντίθετο.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Το πρόχειρο** μεταφέρεται κατά απαίτηση, δεν καθρεφτίζεται συνεχώς. Πάτησε
+τον συνδυασμό αντιγραφής πάνω σε έναν σταθμό και το φιλοξενούμενο
+ενημερώνεται να αντιγράψει· τότε, ό,τι έβαλε στο πρόχειρό του — κείμενο,
+εικόνα, λίστα αρχείων — ανακτάται και τοποθετείται στο δικό σου. Η
+επικόλληση στέλνει το ίδιο περιεχόμενο προς την άλλη κατεύθυνση και μετά
+πατά επικόλληση μέσα στο φιλοξενούμενο. Τίποτα δεν συγχρονίζεται στο
+παρασκήνιο: ένας κωδικός που αντιγράφεις στη δική σου μηχανή δεν φτάνει
+σιωπηλά μέσα σε μια εικονική μηχανή επειδή ενεργοποιήθηκε ένα χρονόμετρο.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Η διέλευση ελέγχεται ανά χρήστη και ανά κατεύθυνση, ανεξάρτητα. Η επικόλληση
+προς έναν σταθμό επιτρέπεται εξ ορισμού· η αντιγραφή από έναν σταθμό ζητά
+πρώτα έγκριση (παραχώρηση δέκα λεπτών ή **Να επιτρέπεται πάντα** στις
+**Ρυθμίσεις → Διακομιστής → Σταθμοί → Πρόσβαση στο πρόχειρο**). Δεν είναι
+ποτέ ρύθμιση χώρου εργασίας: ένα μέλος δεν μπορεί να συγκατατεθεί για το
+πρόχειρο ενός άλλου μέλους.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+Στο macOS ο συνδυασμός διέλευσης είναι ⌘C/⌘V, που είναι σαφής — το ⌃C
+συνεχίζει να φτάνει σε ένα κέλυφος του φιλοξενούμενου ως η διακοπή που είναι.
+Στα Windows και στο Linux οι δύο συνδυασμοί είναι το ίδιο πάτημα πλήκτρου,
+έτσι το φιλοξενούμενο το λαμβάνει αμετάβλητο και το πρόχειρό σου
+αντικαθίσταται μόνο όταν το πρόχειρο του φιλοξενούμενου άλλαξε πραγματικά.
+Μια διακοπή παραμένει διακοπή.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Τα αρχεία που σύρονται μέσα** αντιγράφονται στον φάκελο απόθεσης της
+μηχανής και μετά προσφέρονται σε αυτήν. Το τι σημαίνει «προσφέρονται»
+εξαρτάται από το τι μπορεί να γίνει ειλικρινά: μια σελίδα περιηγητή λαμβάνει
+ένα *πραγματικό* συμβάν απόθεσης στο σημείο όπου αφήνεις το αρχείο, άρα μια
+ζώνη μεταφόρτωσης συμπεριφέρεται ακριβώς όπως θα συμπεριφερόταν για ένα
+τοπικό αρχείο· μια επιφάνεια εργασίας παίρνει τα αρχεία στον `~/Drops` με τις
+διαδρομές τους στο πρόχειρό της, επειδή κανένας ξενιστής δεν μπορεί να
+συνθέσει σύρσιμο σε μια αυθαίρετη εργαλειοθήκη του Linux χωρίς να εκτελέσει
+δαίμονα με προνόμια μέσα στο φιλοξενούμενο — πράγμα που ο σχεδιασμός αυτός
+αρνείται ακριβώς να έχει. Το αποτέλεσμα λέει τι συνέβη, ώστε ένα CSV που
+αποτέθηκε σε ζώνη μεταφόρτωσης να μην αναφέρεται ποτέ ως μεταφορτωμένο όταν
+είναι απλώς ένα αρχείο σε έναν φάκελο. Η απόθεση σε ένα περίκλειστο
+**τερματικό** αντιγράφει το αρχείο μέσα και πληκτρολογεί τη διαδρομή του στο
+φιλοξενούμενο στη γραμμή εντολών, που είναι αυτό που μπορεί πραγματικά να
+χρησιμοποιήσει ένα κέλυφος.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Τα αρχεία που σύρονται έξω** λειτουργούν στην επιφάνεια εργασίας, όπου το
+πρωτόκολλο συρσίματος του X11 κάνει το περιεχόμενο αναγνώσιμο ενόσω το
+σύρσιμο είναι σε εξέλιξη. Ξεκίνα ένα σύρσιμο μέσα στο φιλοξενούμενο, βγάλ' το
+έξω από τον καμβά, και τα αρχεία ανακτώνται στη μηχανή σου και παραδίδονται
+στο λειτουργικό σύστημα ως πραγματικό σύρσιμο. Η αντιγραφή αρχείων στον
+διαχειριστή αρχείων του φιλοξενούμενου και η επικόλληση στον ξενιστή
+λειτουργεί με τον ίδιο τρόπο. Η επιφάνεια περιηγητή σκόπιμα *δεν* το
+προσφέρει: ένα headless πρόγραμμα περιήγησης δεν έχει επιλογή συρσίματος να
+διαβάσει, και το πλησιέστερο διαθέσιμο σήμα — η επιλογή κειμένου της σελίδας
+— δεν αποδεικνύει καθόλου σύρσιμο, οπότε το να ενεργήσεις βάσει αυτού θα
+κατέλαβε συνηθισμένα κλικ.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Ό,τι διαβάζεται από ένα φιλοξενούμενο παραμένει μη αξιόπιστο περιεχόμενο: το
+κείμενο του πρόχειρου φτάνει σε ένα μοντέλο μέσα στην ίδια περίφραξη που
+περνά και η εξαγωγή μιας σελίδας, και το μητρώο ελέγχου καταγράφει ότι έγινε
+επικόλληση και πόσο μεγάλη ήταν — ποτέ τι έλεγε.
 
-## Credentials never live in the guest
+## Τα διαπιστευτήρια δεν κατοικούν ποτέ στο φιλοξενούμενο
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+Το `git push` λειτουργεί από ένα περίκλειστο τερματικό, κι όμως το
+φιλοξενούμενο δεν αποθηκεύει token κεντρικού υπολογιστή κώδικα. Κρατά ένα
+μυστικό ανά εικονική μηχανή, του οποίου η μόνη δύναμη είναι να *ρωτήσει* τον
+μεσίτη διαπιστευτηρίων του ξενιστή — μέσα από σήραγγα που ελέγχει ο ξενιστής
+— για ένα βραχύβιο token περιορισμένο σε αποθετήριο, ανά ενέργεια, με όριο
+ρυθμού, φραγμένο από την ίδια λίστα επιτρεπόμενων κεντρικών υπολογιστών με
+την εξερχόμενη κίνηση και ανακλημένο τη στιγμή που κλείνει ο σταθμός. Μια
+μηχανή φτιαγμένη για να πεταχτεί δεν πρέπει να περιέχει τίποτα που αξίζει να
+κλαπεί.
 
-## The worktree in a rig is a satellite
+## Το worktree σε έναν σταθμό είναι δορυφόρος
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+Όταν ένας σταθμός μεταφέρει το αποθετήριό σου, το worktree του ξενιστή
+παραμένει η αυθεντία. Το αντίγραφο *συγχρονίζεται προς τα μέσα* κατά την
+εκκίνηση (με εξαίρεση μυστικά όπως τα αρχεία `.env`), και τα commits
+επιστρέφουν μόνο όταν το ζητήσεις — ανακτώνται στο `refs/rigs/<id>/*`, δεν
+γίνεται ποτέ push, δεν γίνεται ποτέ checkout. Τίποτα μέσα σε μια εικονική
+μηχανή δεν μπορεί να μετακινήσει το branch σου ή να αγγίξει το working tree
+σου· η συγχώνευση όσων παρήγαγε ένας σταθμός είναι πάντα ανθρώπινη απόφαση
+που λαμβάνεται στον ξενιστή.
 
-## Ports without holes
+## Θύρες χωρίς τρύπες
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/).
+Ένας διακομιστής ανάπτυξης που ξεκινά μέσα στην εικονική μηχανή τερματικού
+γίνεται προσβάσιμος — στη μηχανή σου, στον Περιηγητή (VM), προαιρετικά στο
+τοπικό σου δίκτυο (LAN), προαιρετικά κάτω από domain ανάπτυξης με HTTPS —
+χωρίς να ανοίξει ποτέ η μηχανή προς τα έξω. Ο χάρτης θυρών του υπερεπόπτη
+είναι σταθερός από την εκκίνηση, έτσι κάθε μεταγενέστερη προώθηση ταξιδεύει
+σε δύο στενά κανάλια που ελέγχει ο ξενιστής: έναν προδημιουργημένο πολυπλέκτη
+εισερχόμενων που αρνείται να καλέσει οτιδήποτε δεν ακούει στην πραγματικότητα
+το φιλοξενούμενο, και αντίστροφες σήραγγες που ο ξενιστής κρατά ανοιχτές για
+συνδέσεις που ξεκινά το φιλοξενούμενο. Το HTTPS του domain ανάπτυξης
+τερματίζεται στον διακομιστή χρησιμοποιώντας αρχή έκδοσης πιστοποιητικών που
+παράγεται τοπικά και τα κλειδιά της δεν μπαίνουν ποτέ σε κανένα
+φιλοξενούμενο. Ο μηχανισμός περιγράφεται στο [Προώθηση θυρών από
+τερματικό](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών/).
 
-## Machines are bounded by construction
+## Οι μηχανές έχουν όρια εκ κατασκευής
 
-A rig cannot become a pet:
+Ένας σταθμός δεν μπορεί να γίνει κατοικίδιο:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- ένα **σκληρό TTL** που το φιλοξενούμενο δεν μπορεί να παρατείνει·
+- μια **κλίμακα αδράνειας** — στάθμευση (οι vCPU σταματούν, η RAM παραμένει
+  στη μνήμη) μετά το παράθυρο αδράνειας, κλείσιμο στο διπλάσιο αυτού — όπου
+  ένα ανοιχτό τερματικό ή ένας θεατής που παρακολουθεί μετράει ως «σε χρήση»·
+- έναν **προϋπολογισμό μνήμης** μετρημένο σε *megabyte που παραμένουν
+  δεσμευμένα*, όχι σε συνεδρίες, επειδή μια σταθμευμένη εικονική μηχανή
+  ελευθερώνει CPU και κρατά κάθε byte της RAM· η λιγότερο πρόσφατα
+  χρησιμοποιημένη μηχανή αποβάλλεται πρώτη, και ποτέ κάποια που οδηγεί ή
+  παρακολουθεί ένας άνθρωπος·
+- τερματισμό κατά το κλείσιμο του διακομιστή, συν ένα σκούπισμα ορφανών με
+  σήμανση ιδιοκτησίας στην επόμενη εκκίνηση, ώστε ένας διακομιστής που
+  κατέρρευσε να μην αφήνει ποτέ έναν υπερεπόπτη που δεν υπακούει σε κανέναν.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+Οι πρώτες εκκινήσεις κατεβάζουν την καθηλωμένη εικόνα της μηχανής· μετά ο
+διακομιστής αποθηκεύει προσωρινά ένα προ-εξαγμένο αντίγραφο στο παρασκήνιο,
+ώστε κάθε επόμενη μηχανή αυτού του είδους να εκκινεί σε δευτερόλεπτα και ένα
+περίκλειστο τερματικό να ξεκινά με τη βάση CLI που θα είχε ένας runner
+φιλοξενημένος στο GitHub ήδη εγκατεστημένη — μεταγλωττιστές, Python, `jq`,
+εργαλεία αρχειοθέτησης — όχι toolcache γλώσσας ή Docker. Η εικόνα του
+Υπολογιστή ενσωματώνει την ίδια βάση CLI κατά την κατασκευή, δίπλα στο XFCE
+και στα προγράμματα περιήγησης.
 
-## Three browsers, not one
+## Τρία προγράμματα περιήγησης, όχι ένα
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+Το «Δουλεύει στη μηχανή μου» είναι ισχυρισμός για μία μηχανή απόδοσης. Έτσι,
+ένας σταθμός περιηγητή δεν είναι «ο περιηγητής» — είναι **Chromium, Firefox ή
+WebKit**, που τον επιλέγεις όταν τον ανοίγεις, και ο σταθμός εκτελεί αυτόν με
+τον οποίο άνοιξε σε όλη του τη ζωή. Μία συνομιλία μπορεί να κρατά έναν από τον
+καθένα: ανοίγοντας τον *Firefox (VM)* δίπλα στον *Chromium (VM)* παίρνεις δύο
+μηχανές, και το να δείξεις και τους δύο στην ίδια σελίδα είναι η σύγκριση. Το
+WebKit είναι ό,τι πιο κοντινό στο Safari από οτιδήποτε τρέχει σε Linux — ίδια
+γενεαλογία μηχανής, οπότε πιάνει τα κενά που συναντούν οι χρήστες του Safari.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Οι ενέργειες είναι ίδιες και στα τρία· τα πρωτόκολλα από κάτω δεν είναι, και
+οι διαφορές δηλώνονται αντί να εξομαλύνονται. Το Chromium μιλά το DevTools
+Protocol και *σπρώχνει* καρέ, οπότε η ζωντανή προβολή του δεν κοστίζει τίποτα
+όσο μια σελίδα είναι ακίνητη. Ο Firefox μιλά το WebDriver BiDi και το WebKit
+μιλά το κλασικό WebDriver, και κανένα από τα δύο δεν έχει screencast, οπότε
+οι ζωντανές προβολές τους κάνουν δειγματοληψία — λίγα καρέ το δευτερόλεπτο,
+που είναι σωστό για να παρακολουθείς μια σελίδα και όχι για να παρακολουθείς
+μια κινούμενη εικόνα. Όπου μια μηχανή πραγματικά δεν μπορεί να κάνει κάτι (ο
+Firefox δεν έχει επαναφόρτωση με παράκαμψη της κρυφής μνήμης· το WebKit δεν
+βλέπει έξοδο κονσόλας που καταγράφηκε πριν ολοκληρωθεί η φόρτωση μιας
+σελίδας), η απάντηση το λέει αντί να κάνει σιωπηλά κάτι άλλο.
 
-## Where rigs live in the product
+## Πού ζουν οι σταθμοί στο προϊόν
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+Ένας σταθμός σκόπιμα **δεν** είναι καθολικός προορισμός. Η ζωντανή προβολή
+είναι μια καρτέλα στον χώρο ή στο PR όπου συμβαίνει η εργασία, με εμβέλεια
+εκείνης της συνομιλίας — έτσι η καρτέλα σου και οι κλήσεις `browser_use` του
+πράκτορα απευθύνονται σε *μία* μηχανή (μία ανά μηχανή απόδοσης, στην
+επιφάνεια περιηγητή).
+Το αν μπορούν να εκκινήσουν καθόλου σταθμοί είναι ιδιότητα του ξενιστή, γι'
+αυτό οι δυνατότητες, οι εικόνες, οι προσαρμοσμένες εικόνες ανά χώρο εργασίας
+και η λίστα των μηχανών που εκτελούνται βρίσκονται στις
+**Ρυθμίσεις → Διακομιστής → Σταθμοί**. Η οδήγηση ενός περιβλήματος αποτελεί
+δική της [κατηγορία ενεργειών
+περιορισμών](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/), έτσι ένας χώρος εργασίας,
+ένας πράκτορας ή ένας χώρος μπορεί να την επιτρέπει, να απαιτεί έγκριση ή να
+την αρνείται εντελώς — οι λειτουργίες μόνο για ανάγνωση την αρνούνται στο
+σύνολό της.

@@ -1,126 +1,136 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Rulează o orchestrare
+description: Cere-i unui orchestrator un plan, revizuiește-l și editează-l în Plan Studio, aprobă-l o singură dată și lasă un pipeline generat să facă munca.
 slug: ro-RO/manual/ghiduri-practice/ruleaza-orchestrare
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ro-RO/manual/concepte/orchestrare/) for how it works.
+Acest ghid îți arată cum să transformi un singur obiectiv mare într-un plan
+pentru o întreagă echipă care rulează singur. Vezi
+[Orchestrare](/ro-RO/manual/concepte/orchestrare/) pentru detalii despre cum
+funcționează.
 
-## When to use an orchestration
+## Când să folosești o orchestrare
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/); for a process you can spell out by
-hand, build a [pipeline template](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/).
+Apelează la o orchestrare când cererea este mai mare decât un singur agent și nu
+știi deja pașii exacți. Pentru o singură sarcină, trimite un mesaj unui agent
+într-un [spațiu](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/); pentru un
+proces pe care îl poți descrie în amănunt manual, construiește un
+[șablon de pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/).
 
-## Step 1: Ask for the plan
+## Pasul 1: Cere planul
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Deschide (sau creează) un spațiu și un **tichet ancoră**. Fiecare propunere
+   are nevoie de unul (`propose_orchestration` primește `ticket_id`); spațiul
+   partajat provine din acel tichet.
+2. Opțional, comută lista derulantă de moduri din zona de compunere pe
+   **Orchestrează**. Acel mod restrânge agentul la citire și propunere — memorie,
+   graful de cod, citiri din repo-uri și din tichete, `propose_orchestration` și
+   instrumentele de playbook — astfel încât să nu poată începe să scrie cod în
+   loc să planifice.
+3. @-menționează orchestratorul (de obicei agentul CEO) și enunță obiectivul
+   într-un limbaj simplu:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Cercetează peisajul competitiv pentru un reportofon de întâlniri
+> offline-first și scrie un document de poziționare de o pagină.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orchestratorul răspunde cu un card structurat de **propunere** în spațiu:
+rolurile de care are nevoie, munca împărțită în sub-tichete, o fază opțională de
+cercetare și discuție, un pas de sinteză care produce livrabilul și un buget.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Deoarece propunerea este un obiect tipizat, aplicația o validează (roluri bine
+formate, scheme de ieșire declarate, un DAG fără cicluri) înainte ca ceva să
+ruleze. O propunere care nu trece validarea nu poate fi aprobată.
 
-## Step 2: Review and edit the proposal
+## Pasul 2: Revizuiește și editează propunerea
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Cardul din chat oferă trei acțiuni: **Aprobă planul**, **Respinge** și
+**Deschide** — care deschide planul în Plan Studio ca filă de editor. Cardul în
+sine nu poate fi editat.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Pentru a schimba ceva, apasă **Deschide** și lucrează în inspectorul din
+dreapta:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Titlu**, **descriere**, **rol**, **dependențe** și **schemă de ieșire**
+  pentru orice pas de lucru. Rolul de aici înseamnă care dintre cheile de rol
+  existente ale planului deține pasul — nu poți fixa un rol pe un agent anume și
+  nu poți edita lista de angajări din inspector, iar bugetul nu poate fi editat.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Două lucruri sunt doar în citire: nodurile structurale (cercetare, discuție,
+sinteză) și orice nod a cărui muncă a rulat deja. Editarea este posibilă doar
+cât timp orchestrarea este încă `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/) for the full editor.
+Apasă **Estimează** în bara de aprobare pentru intervale de cost, durată și
+rază de impact înainte să te angajezi. Vezi
+[Lucrează în Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/) pentru
+editorul complet.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/).
+:::note[Bugetul nu este o limită de cheltuieli]
+Bugetul unei propuneri este comparat cu _estimarea_ din bara de aprobare: când
+capătul superior al estimării îl depășește, totalul devine roșu, cu un
+avertisment de depășire a bugetului. Nimic nu verifică cheltuielile în timp ce
+planul se execută, așa că nu va opri și nu va eșua o rulare. Pentru o oprire
+reală a cheltuielilor, folosește politicile de buget pe agent — vezi
+[Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/).
 :::
 
-## Step 3: Approve
+## Pasul 3: Aprobă
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Aprobă planul, din cardul de chat sau din bara de aprobare a Plan Studio.
+**Aceasta este singura decizie pe care o iei.** Aprobarea este rezervată
+operatorului — nu există niciun instrument MCP pentru ea, așa că un agent poate
+propune și revizui, dar nu își poate aproba niciodată propriul plan.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ro-RO/manual/concepte/pipeline-uri/) and creates the
-scaffolding:
+De aici, un materializator determinist (o funcție pură, fără LLM) transformă
+propunerea într-un [pipeline](/ro-RO/manual/concepte/pipeline-uri/) real și
+creează structura de bază:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- angajează orice roluri noi (și înregistrează id-urile agenților angajați,
+  astfel încât o pană în timpul aprobării să poată relua fără angajări duplicate)
+- grupează rolurile într-o **echipă**
+- creează un **proiect** și înregistrează tichetul părinte în el
+- pornește **rularea de pipeline** care le conduce pe toate
 
-The status moves to `approved`, then `executing`.
+Starea trece la `approved`, apoi la `executing`.
 
-## Step 4: Watch it run
+## Pasul 4: Urmărește-l cum rulează
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Sub-tichetele se execută ca pași de pipeline; dacă ai activat o rundă de
+discuție, fiecare rol publică mai întâi o poziție. Progresul apare acolo unde te
+uiți deja:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
-- the **project** the parent ticket was filed under
+- **tichetul părinte** pe care a fost ancorată orchestrarea
+- **spațiul** partajat în care vorbește echipa, unde rândul planului urmărește
+  starea fiecărui nod
+- detaliul **rulării de pipeline**, cu cascada sa obișnuită de durate și costul
+  pe pas — vezi
+  [Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
+- **proiectul** în care a fost înregistrat tichetul părinte
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Odată ce sub-tichetele sunt gata, starea trece la `synthesizing`, iar pasul de
+sinteză produce livrabilul. Acel text este publicat în spațiul partajat, iar
+tichetul părinte este marcat ca finalizat, apoi `completed`.
 
-## Stop it early
+## Oprește-o mai devreme
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Apasă **Anulează orchestrarea** pe cardul din chat sau **Anulează rularea** în
+bara de aprobare a Plan Studio. Anularea desființează munca în curs.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+O orchestrare eșuează când eșuează materializarea sau când eșuează rularea de
+pipeline generată (cercetare, discuție, sinteză sau persistare — acei pași nu
+continuă la eșec). Pașii de **lucru** generați continuă întotdeauna la eșec, așa
+că un sub-tichet eșuat nu duce la eșecul rulării. Nu există nicio cale de eșec
+pentru depășirea bugetului și niciun prag de „toate sub-tichetele au eșuat”.
 
-## Related guides
+## Ghiduri conexe
 
-- [Work in Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ro-RO/manual/ghiduri-practice/proiecte/): where the parent ticket is filed
-- [Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ro-RO/manual/ghiduri-practice/construieste-echipa/): the roles an orchestration fills or hires
+- [Lucrează în Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/): editează, estimează, compară și aprobă planul
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/): tichetul părinte pe care este ancorată o orchestrare
+- [Organizează munca cu proiecte](/ro-RO/manual/ghiduri-practice/proiecte/): unde este înregistrat tichetul părinte
+- [Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/): cum arată o orchestrare materializată în motor
+- [Construiește o echipă de agenți](/ro-RO/manual/ghiduri-practice/construieste-echipa/): rolurile pe care o orchestrare le completează sau le angajează
 
-## Related concepts
+## Concepte conexe
 
-- [Orchestration](/ro-RO/manual/concepte/orchestrare/)
-- [Modes](/ro-RO/manual/concepte/moduri/)
+- [Orchestrare](/ro-RO/manual/concepte/orchestrare/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)

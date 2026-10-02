@@ -1,213 +1,204 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: การประชุมและการถอดเสียง
+description: Control Center บันทึกการสนทนา ถอดเสียงและแยกผู้พูดบนเซิร์ฟเวอร์อย่างไร และขั้นตอนเดียวที่ออกจากโฮสต์อยู่ตรงไหน
 slug: th-TH/คู่มือ/แนวคิด/การประชุม
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center บันทึกการสนทนาและคืนบันทึกที่เรียบร้อยให้คุณได้ — สรุป
+รายการดำเนินการ และการตัดสินใจ — โดยที่การรู้จำเสียงพูดและการแยกผู้พูดทำงานบน
+ฮาร์ดแวร์ของคุณเอง ลองนึกถึง Granola แต่โฮสต์เองและเชื่อมเข้ากับเวิร์กสเปซ
+เดียวกับที่เอเจนต์ของคุณอยู่
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[การบันทึกต้องมีโมเดลเสียงและการรีสตาร์ตเซิร์ฟเวอร์]
+การบันทึกและการป้อนคำพูดจะเริ่มได้หลังจากมีโมเดลการพูด (ASR) อยู่บนดิสก์ **และ**
+เซิร์ฟเวอร์ถูกรีสตาร์ตแล้ว การบูตตามปกติจะบังคับติดตั้งโมเดลที่เลือก
+(ค่าเริ่มต้นคือ Parakeet TDT 0.6B v3) ในเบื้องหลัง แต่เซิร์ฟเวอร์แปลงพาธของ
+โมเดลเสียงเพียงครั้งเดียวช่วงต้นของการบูต — ก่อนที่ดาวน์โหลดนั้นจะเสร็จได้หลายนาที
+หลังจากโมเดลรายงานว่าติดตั้งแล้ว ให้รีสตาร์ต `cc_server`
+หากต้องการเลือกบิลด์อื่น ให้ใช้ การตั้งค่า → เซิร์ฟเวอร์ → โมเดลเสียงและการประชุม
+— ซึ่งก็ต้องรีสตาร์ตเช่นกัน
 :::
 
-## What a meeting is
+## การประชุมคืออะไร
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**การประชุม** คือเซสชันที่บันทึกและถอดเสียงไว้ มัน _ไม่_ ใช่สิ่งเดียวกับ
+[เหตุการณ์ในปฏิทิน](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/): เหตุการณ์คือนัดหมายที่จัดตารางไว้
+และซิงค์มาจาก Google ส่วนการประชุมคือสิ่งที่คุณบันทึกจริง ทั้งสองเชื่อมกันได้
+เพราะคุณเริ่มบันทึกจากเหตุการณ์ได้ แต่ยังคงเป็นบันทึกคนละรายการ
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+การประชุมทุกครั้งผูกกับเวิร์กสเปซ เหมือนทุกอย่างอื่นใน Control Center
+การประชุมที่บันทึกในเวิร์กสเปซหนึ่งจะไม่ปรากฏในอีกเวิร์กสเปซเลย
 
-## Where the work happens
+## งานเกิดขึ้นที่ไหน
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+"บนอุปกรณ์" เป็นสัญชาตญาณที่ถูกแต่ใช้คำผิด ไคลเอนต์เก็บเสียงและสตรีมเฟรม
+PCM16 16 kHz ไปยัง **เครื่องที่รัน `cc_server`** โฮสต์นั้นทำงานที่เหลือทั้งหมด:
+เขียนไฟล์ WAV แยกช่องสัญญาณไว้ใต้ `<dataDir>/meetings/<meetingId>/` ถอดเสียงใน
+worker isolate กรองเสียงสะท้อน และแยกผู้พูดย้อนหลัง บนเดสก์ท็อปแบบสแตนด์อโลน
+โฮสต์นั้นคือเครื่องเดียวกัน เมื่อชี้ไปที่เซิร์ฟเวอร์ระยะไกล ก็ไม่ใช่ — ดังนั้น
+"ไม่มีอะไรออกจากแล็ปท็อปของฉัน" จึงจริงเฉพาะเมื่อเซิร์ฟเวอร์คือแล็ปท็อปของคุณ
 
-There is one further exception and it is the important one.
+ยังมีข้อยกเว้นอีกข้อหนึ่ง และมันคือข้อสำคัญ
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[สรุปออกจากโฮสต์]
+ทรานสคริปต์และโน้ตของคุณถูกส่งไปยังผู้ให้บริการโมเดลที่เอเจนต์ผู้สรุปตั้งค่าไว้
+สำหรับผู้ให้บริการคลาวด์รายใดก็ตาม นั่นหมายความว่าทรานสคริปต์ทั้งหมดจะไปยัง
+API ของผู้ให้บริการรายนั้น หากทรานสคริปต์ต้องไม่ออกจากโฮสต์ ให้ชี้เอเจนต์
+ผู้สรุปไปยังเอนด์พอยต์ภายในเครื่อง (Ollama, LM Studio หรือเซิร์ฟเวอร์ภายในเครื่องอื่น)
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+ทุกอย่างก่อนขั้นตอนสรุป — การเก็บเสียง การถอดเสียง การตัดเสียงสะท้อน
+การแยกผู้พูด การจับคู่ลายเสียง — ทำงานบนเซิร์ฟเวอร์โดยไม่มีการเรียกผ่านเครือข่าย
 
-## Which models ship
+## โมเดลที่ติดตั้งมาให้
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+โมเดล **การฝังตัว การแยกผู้พูด และการพูด (ASR)** ถูกบังคับติดตั้งตอนบูตครั้งแรก
+(ข้ามในโหมดเดโม) การแยกผู้พูดและการบันทึกจึงพร้อมใช้โดยไม่ต้องเข้าไปตั้งค่าใดๆ
+ASR ยังคง **เลือกได้** — มีขนาดหลายร้อยเมกะไบต์ และมีสี่บิลด์ในตัวเลือก
+การพูดยังต้องรีสตาร์ตหนึ่งครั้งหลังดาวน์โหลดครั้งแรก เพราะตัวถอดเสียงแปลง
+โมเดลของมันก่อนที่การดึงข้อมูลจะเสร็จ
 
-The four picker entries, differing in size, language coverage and accuracy:
+สี่รายการในตัวเลือก ซึ่งต่างกันที่ขนาด ความครอบคลุมภาษา และความแม่นยำ:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — หลายภาษา เป็นค่าเริ่มต้นที่แนะนำ (~600 MB)
+- Parakeet TDT 0.6B v2 — ภาษาอังกฤษ (~480 MB)
+- Whisper large-v3-turbo — หลายภาษา (~626 MB)
+- Whisper base.en — ภาษาอังกฤษเท่านั้น เป็นค่าเริ่มต้นเดิมขนาดเล็ก (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+โมเดลเป็นอาร์ติแฟกต์เดียวที่เซิร์ฟเวอร์ดึงมาตอนรันไทม์ ไลบรารีเนทีฟทุกตัว
+มาพร้อมในบันเดิล
 
-## How capture works
+## การเก็บเสียงทำงานอย่างไร
 
-A meeting records **two audio channels at once**:
+การประชุมบันทึก **สองช่องสัญญาณเสียงพร้อมกัน**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **คุณ ("me")**: ไมโครโฟนของคุณ
+- **ฝ่ายอื่น ("them")**: เอาต์พุตเสียงของการประชุม เก็บผ่านลูปแบ็กที่ไม่ต้องใช้
+  ไดรเวอร์ — Core Audio process/device taps บน macOS, WASAPI loopback บน
+  Windows, มอนิเตอร์ PipeWire / PulseAudio บน Linux
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+เนื่องจากสองช่องสัญญาณถูกเก็บแยกกัน ทรานสคริปต์จึงระบุผู้พูดได้ตั้งแต่ต้น
+คำของคุณถูกติดแท็ก `me` ทุกคนในสายถูกติดแท็ก `them`
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+เสียงของคุณเองรั่วจากเอาต์พุตระบบกลับเข้าไมโครโฟน และถ้าไม่จัดการก็จะถูกถอดเสียง
+ซ้ำสองครั้ง ตัวกรองสองชั้นหยุดเรื่องนี้ **AEC3 ระดับสัญญาณทำงานกับการบันทึก
+โหมดระยะไกลทุกครั้งและเป็นสิ่งที่จำเป็น** — หากไลบรารี AEC เนทีฟโหลดไม่ได้
+การบันทึกจะปฏิเสธที่จะเริ่ม แทนที่จะสตรีมไมโครโฟนที่ปนเสียงสะท้อนอย่างเงียบๆ
+(โหมดพบปะกันต่อหน้าไม่มีสัญญาณปลายไกลให้ตัดออก AEC จึงเป็นทางผ่านเฉยๆ ในโหมดนั้น)
+เหนือจากนั้น ตัวกรองเสียงสะท้อนระดับข้อความฝั่งโฮสต์ยังทำงานบนทุกแพลตฟอร์ม
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+การประมวลผลไมโครโฟนระดับ OS ทั้งหมดถูกปิดโดยเจตนา การเปิดการตัดเสียงสะท้อน
+หรือออโต้เกนของแพลตฟอร์มเองบน macOS จะสลับไมโครโฟนไปเป็น Voice Processing I/O
+ซึ่งในบิลด์นี้ทำให้ทั้งไมโครโฟน _และ_ ตัวดักเก็บเสียงระบบใช้ไม่ได้
 
-## Transcription and diarization
+## การถอดเสียงและการแยกผู้พูด
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+ขณะที่คุณบันทึก เสียงจะถูกถอดรหัสเป็น **หน้าต่างแบบเลื่อน** — ตัดเมื่อมีช่วงเงียบ
+สั้นๆ ต่อท้าย หรือเมื่อถึงความยาวหน้าต่างสูงสุด — โดยไม่ใช้เธรด UI แต่ละหน้าต่าง
+กลายเป็นส่วนของทรานสคริปต์ที่ติดแท็กผู้พูด พร้อมออฟเซตระดับมิลลิวินาที
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+หน้าต่างที่ไม่เคยสูงเกินเกณฑ์ RMS จะถูกข้าม **โดยไม่ถอดรหัสเลย** เพราะโมเดล
+การพูดจะแสดงความเงียบออกมาเป็นโทเคนที่ไม่ใช่คำพูดแบบหลอนขึ้นมา และการถอดรหัส
+ก็เสีย CPU เปล่า ผลในทางปฏิบัติ: ผู้พูดที่เบามากสม่ำเสมอจะไม่เกิดทรานสคริปต์เลย
+หากมีใครได้ผลลัพธ์ว่างเปล่า ให้ตรวจระดับอินพุตของเขาก่อนจะโทษโมเดล
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+หลังจากคุณหยุด **การแยกผู้พูด** จะทำงานแบบออฟไลน์บนไฟล์บันทึก และแยกช่องสัญญาณ
+ระยะไกลออกเป็นผู้พูดแต่ละคน (`Person 1`, `Person 2`, …) ที่คุณเปลี่ยนชื่อได้
+จำนวนผู้พูดอนุมานจากเกณฑ์การจัดกลุ่ม ไม่ใช่จากจำนวนที่คุณกำหนด — จึงเป็นผลจาก
+เกณฑ์ และผู้พูดที่เบาหรือพูดทับซ้อนอาจถูกรวมเข้ากับคนข้างเคียง ทรานสคริปต์ถูก
+แสดงเป็นบรรทัด `[mm:ss] SPEAKER: text`
 
-## Voice profiles
+## โปรไฟล์เสียง
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+การเปลี่ยนชื่อผู้พูดทำได้มากกว่าติดป้ายให้ทรานสคริปต์ครั้งเดียว Control Center
+บันทึกลายเสียงของผู้พูดเป็น **โปรไฟล์เสียง** ได้ จึงจดจำพวกเขาโดยอัตโนมัติใน
+การประชุมครั้งหน้า เมื่อคุณตั้งชื่อผู้พูดที่แยกไว้ ระบบจะถามว่าต้องการบันทึก
+ลายเสียงหรือไม่ หากบันทึก มันจะถูกผสมเข้าเป็นเซนทรอยด์ที่สะสมต่อเนื่องสำหรับ
+ชื่อนั้น และจับคู่กับผู้พูดใหม่ด้วยความคล้ายโคไซน์ คนเดิมจึงปรากฏพร้อมชื่อของเขา
+ในครั้งถัดไปโดยที่คุณไม่ต้องติดป้ายใหม่
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+โปรไฟล์เสียงผูกกับเวิร์กสเปซและไม่ข้ามขอบเขตเลย จัดการได้ที่
+**การตั้งค่า → เวิร์กสเปซ → การประชุม** การเปลี่ยนชื่อผู้พูดที่เคยบันทึกไว้จะ
+ถอนการลงทะเบียนชื่อเก่าและเสนอให้ลงทะเบียนชื่อใหม่ ส่วนการลบโปรไฟล์จะลบ
+ลายเสียงที่เก็บไว้ แต่ชื่อที่ใช้กับการประชุมที่ผ่านมาแล้วยังคงอยู่
 
-## The summary pipeline
+## ไปป์ไลน์สรุป
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+เมื่อการบันทึกหยุด เซิร์ฟเวอร์จะเผยแพร่[เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)
+`MeetingRecordingStopped` เทมเพลตไปป์ไลน์ **`meeting_summary`** ในตัวจะถูก
+ทริกเกอร์โดยเหตุการณ์นั้น ตัวบันทึกไม่รอผลลัพธ์ การประชุมแค่เปลี่ยนสถานะ
+ตามวงจรชีวิตของมัน:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+เอเจนต์สรุปจะได้รับชื่อเรื่อง โน้ตสดคร่าวๆ ของคุณ และทรานสคริปต์ แล้วคืน
+**JSON แบบมีโครงสร้าง** ว่าจะเขียนส่วนใดบ้างนั้นขึ้นอยู่กับ **เทมเพลตบันทึก
+การประชุมที่ใช้งานอยู่** ของเวิร์กสเปซ (การตั้งค่า → เวิร์กสเปซ → การประชุม)
+เทมเพลตที่ใช้งานมีผลกับสรุปใหม่และสรุปที่รันใหม่ จากนั้นขั้นตอน persist ของ
+ไปป์ไลน์จะเขียน JSON นั้นลงเป็นแถวแยกกัน:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` และ `summary` → โน้ตของการประชุม
+- รายการดำเนินการแต่ละรายการ → แถว `MeetingActionItem` (เนื้อหา ผู้รับผิดชอบ ลิงก์ตั๋วงานแบบไม่บังคับ)
+- การตัดสินใจแต่ละรายการ → แถว `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+รายการดำเนินการและการตัดสินใจ **ไม่เคย** ถูกแกะออกจากมาร์กดาวน์อิสระ แต่มาจาก
+อาร์เรย์แบบมีโครงสร้างของเอเจนต์เท่านั้น หากการรันไม่ให้เอาต์พุตแบบมีโครงสร้าง
+ขั้นตอน persist จะถูกข้ามและทรานสคริปต์ดิบจะถูกเก็บไว้เป็นทางเลือกสำรอง
+คุณจึงไม่สูญเสียบันทึก ไม่มีอะไรในไปป์ไลน์ที่ทำเครื่องหมายการประชุมว่า `done` —
+ตัวประสานตัวเดียวทำหน้าที่นั้นจากเหตุการณ์สิ้นสุดของการรัน
+ขั้นตอนพี่น้องที่ล้มเหลวจึงทิ้งการประชุมที่เขียนค้างไว้ซึ่งดูเหมือนเสร็จแล้วไม่ได้
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[เอเจนต์อ่านการประชุมของคุณไม่ได้]
+ไม่มีเครื่องมือ MCP ด้านการประชุมหรือปฏิทิน เอเจนต์ที่เชื่อมต่อผ่าน
+[MCP](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/) ไม่สามารถแสดงรายการการประชุม อ่าน
+ทรานสคริปต์ หรือเห็นรายการดำเนินการและการตัดสินใจได้ — ข้อมูลนั้นไปถึงไคลเอนต์
+ที่เป็นมนุษย์ผ่าน RPC เท่านั้น ส่วนการตัดสินใจไปถึงเอเจนต์ทางอ้อมในรูปข้อเท็จจริง
+หน่วยความจำในโดเมน `decisions`
 :::
 
-## Where meetings show up
+## การประชุมแสดงที่ไหน
 
-| Surface                | What it shows                                                                         |
+| พื้นผิว                | สิ่งที่แสดง                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | รายการการประชุม พร้อมจำนวนรายการดำเนินการและการตัดสินใจ                              |
+| `/meetings/record`     | HUD การบันทึกสด: โน้ตของคุณด้านหนึ่ง ทรานสคริปต์ที่สตรีมอยู่อีกด้านหนึ่ง                |
+| `/meetings/:meetingId` | รายละเอียดของการประชุม: แท็บโน้ต ทรานสคริปต์ รายการดำเนินการ และการตัดสินใจ            |
+| การตั้งค่า → เวิร์กสเปซ → การประชุม | เทมเพลตบันทึกและโปรไฟล์เสียงที่บันทึกไว้สำหรับเวิร์กสเปซนี้            |
 
-## Platform support
+## การรองรับแพลตฟอร์ม
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+การเก็บเสียงไม่ต้องใช้ไดรเวอร์บนแพลตฟอร์มเดสก์ท็อปทั้งสาม (Core Audio taps
+บน macOS, WASAPI บน Windows, PipeWire บน Linux)
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**ไคลเอนต์เว็บบันทึกได้ด้วย** ซึ่งกรอบแบบเดสก์ท็อปของหน้านี้ในส่วนที่เหลือ
+อาจทำให้มองไม่เห็น: เบราว์เซอร์รับไมโครโฟนของคุณผ่าน `getUserMedia` และเสียง
+ของการประชุมผ่าน `getDisplayMedia` (แชร์หน้าจอ) ดาวน์แซมเปิลเป็น PCM16 16 kHz
+แล้วสตรีมไปยังโฮสต์เดียวกัน มีข้อควรระวังสามข้อตรงนั้น:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- พื้นผิวที่แชร์ **ต้อง** มีแทร็กเสียง Safari, Firefox และการแชร์เต็มจอของ
+  macOS ไม่มีแทร็กเสียง และการบันทึกจะปฏิเสธที่จะเริ่ม
+- ไม่มี AEC3 เนทีฟ มีการขอใช้การตัดเสียงสะท้อนของเบราว์เซอร์เองบนไมโครโฟน
+  ส่วนตัวกรองเสียงสะท้อนระดับข้อความฝั่งโฮสต์ยังทำงานอยู่ HUD แสดงมาตรวัด
+  ระดับอินพุตที่ขับจาก PCM ของไมโครโฟน
+- รันสรุปใหม่และยกเลิกการประมวลผลใช้ได้เฉพาะเดสก์ท็อป
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+การกระทำ **เริ่มบันทึกและลิงก์** ของปฏิทินใช้ได้เฉพาะเดสก์ท็อป และรายงานตรงๆ
+บนเว็บว่าใช้ไม่ได้ แม้ว่ากระบวนการบันทึกของหน้าจอการประชุมเองจะทำงานได้ที่นั่น
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[การลบการประชุมทิ้งไฟล์เสียงไว้]
+การลบการประชุมลบเฉพาะแถวในฐานข้อมูลเท่านั้น ไดเรกทอรีเสียงแยกช่องสัญญาณที่
+เก็บไว้ `<dataDir>/meetings/<meetingId>/` ไม่เคยถูกล้าง — ไม่มีนโยบายเก็บรักษา
+ไม่มีเพดานขนาด และไม่มีการกวาด GC การเรียกคืนดิสก์นั้นเป็นงานที่ต้องทำด้วยมือ
+บนโฮสต์เซิร์ฟเวอร์
 :::
 
-## See also
+## ดูเพิ่มเติม
 
-- [Calendar and scheduling](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/): record a meeting straight from a calendar event
-- [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/): the engine behind `meeting_summary`
-- [Tickets and delegation](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/): link a meeting's action items to tickets
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/)
+- [ปฏิทินและการจัดตาราง](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/): บันทึกการประชุมตรงจากเหตุการณ์ในปฏิทิน
+- [ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/): เอนจินที่อยู่เบื้องหลัง `meeting_summary`
+- [ตั๋วงานและการมอบหมาย](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/): เชื่อมรายการดำเนินการของการประชุมกับตั๋วงาน
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): `MeetingRecordingStopped` และ `MeetingStartingSoon`
+- [บันทึกและสรุปการประชุม](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/)

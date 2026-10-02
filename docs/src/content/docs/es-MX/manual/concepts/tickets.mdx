@@ -1,155 +1,174 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Tickets y delegación
+description: Por qué un ticket registra el trabajo sin despacharlo, cómo se protege la delegación y qué posee y qué no posee el espejo del proveedor.
 slug: es-MX/manual/conceptos/tickets
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Un ticket es la unidad de trabajo que registra Control Center. A propósito es un
+artefacto _tonto_: un título, un cuerpo, un estado, un responsable y un lugar en
+un árbol. No es aquello contra lo que ejecutan los agentes: el trabajo de los
+agentes vive en las conversaciones y la salida estructurada de una ejecución
+vive en el registro de ejecución.
 
-## Assignment records ownership; it dispatches nothing
+## La asignación deja constancia de la titularidad; no despacha nada
 
-This is the single most important thing to get right about tickets.
+Esto es lo más importante que hay que entender bien sobre los tickets.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/es-MX/manual/conceptos/eventos-de-dominio/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Establecer `assignedAgentId` escribe un campo y publica un `TicketAssigned`
+[evento de dominio](/es-MX/manual/conceptos/eventos-de-dominio/). Ese evento es
+una señal de auditoría y notificación y un disparador de pipeline. **Asignar un
+ticket a un agente no inicia ninguna ejecución.** No hay ningún despachador de
+tickets que vigile `assignedAgentId` y despierte a ese agente.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+La excepción es un equipo: cuando se establece `assignedTeamId`,
+`TeamRoutingService` despacha al líder del equipo con el protocolo operativo y
+la lista de miembros.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Si quieres que un agente concreto trabaje en un ticket, se lo pides en una
+conversación, o un paso de pipeline lo despacha, o bien otro agente le delega el
+trabajo. Asignar un ticket a un agente y esperar es lo único que nunca producirá
+trabajo.
 
-## Mirror and overlay
+## Espejo y superposición
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Un ticket puede ser puramente local o estar respaldado por un rastreador externo
+y lleva ambas cosas en una sola fila.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+El **espejo** —proveedor, clave externa, URL, título, descripción, prioridad,
+etiquetas, estado sin procesar y normalizado, marcas de tiempo— es una caché
+cuando el ticket es remoto. El sistema remoto es allí la fuente de la verdad y
+una actualización reescribe el espejo por completo.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+La **superposición** —asignación, delegación, enlace de espacio, padre,
+proyecto, PR vinculadas— es exclusiva de Control Center. El rastreador no sabe
+nada de ella y una actualización nunca la toca.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Esa separación es lo que hace que sincronizar sea seguro: una descarga del
+proveedor puede ser destructiva para el espejo sin llegar a perder nunca los
+metadatos de orquestación que se superponen encima.
 
-## The lifecycle graph binds agents, not you
+## El grafo del ciclo de vida vincula a los agentes, no a ti
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Los estados van de `backlog → open → inProgress → inReview → done`, con
+`blocked` como bucle lateral y `failed` / `cancelled` como los otros estados
+terminales.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+El grafo de transiciones se aplica **solo en la ruta de los agentes y la
+automatización**: las herramientas MCP y los reconciliadores. Una transición
+ilegal allí se registra y se ignora, de modo que un agente confundido no puede
+sacar un ticket hacia atrás de un estado terminal.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Todos los cambios que hace un usuario desde la interfaz pasan `force: true` y
+omiten el grafo por completo. Una persona puede mover un ticket a cualquier
+estado que liste el selector, incluido reabrir uno terminal. El selector no
+ofrece `failed`; los agentes lo establecen con `fail_ticket`. El grafo es una
+barandilla para la automatización, no una regla sobre cómo puede avanzar el
+trabajo.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` es dueño de todas las mutaciones a través de un único
+punto de paso que carga la fila, verifica que pertenezca al espacio de trabajo
+de quien llama y escribe con una `version` esperada, de modo que dos ediciones
+simultáneas no puedan sobrescribirse en silencio.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/es-MX/manual/referencia/ciclo-de-vida-de-tickets/).
+Para ver la tabla completa de estados, las transiciones, la lista de campos y
+los tipos de relación, consulta
+[Ciclo de vida de tickets](/es-MX/manual/referencia/ciclo-de-vida-de-tickets/).
 
-## Provenance: how a ticket came to exist
+## Procedencia: cómo llegó a existir un ticket
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Todos los tickets tienen un `originKind`. La enumeración tiene cinco valores
+—`manual`, `pipelineStep`, `agentDelegation`, `externalSync`, `recovery`—, pero
+hoy solo se escriben dos: `manual` (el valor predeterminado en `createTicket`,
+incluidos los hijos delegados) y `externalSync` (el motor de sincronización, en
+una descarga del proveedor). `TicketWorkflowService.createTicket` no acepta un
+argumento de origen, así que `pipelineStep`, `agentDelegation` y `recovery`
+nunca se escriben en una fila.
 
-## Guarded delegation
+## Delegación protegida
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+La delegación es donde un agente crea trabajo para otro agente y es el punto por
+el que podrían filtrarse privilegios, así que las protecciones viven en el lado
+del servidor, en un punto de paso, y no en las instrucciones del prompt.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` pasa por `TicketWorkflowService.delegateGuarded`, que calcula la
+profundidad y la raíz del hijo a partir de la cadena de padres y luego ejecuta
+las cuatro comprobaciones de `DelegationGuards`: un salto que superaría un
+**límite de profundidad de 3**, un salto de vuelta a un agente que ya está en la
+cadena (**detección de ciclos**), un **techo de autonomía** (el nivel efectivo
+del delegado en el espacio no debe superar el del delegador) y una **envolvente
+de presupuesto** (la delegación imputa el presupuesto de parada estricta
+restante del delegador y no puede acuñar más). El cableado de producción aporta
+ambos puertos de resolución. La autonomía y el presupuesto se omiten cuando no
+se indica `from_agent_id` (un presupuesto ilimitado o sin política también
+pasa). Un rechazo se lanza como una `DelegationRefusedException` cuyo mensaje
+llega literalmente al agente que delega: una denegación ruidosa, nunca una
+operación nula silenciosa.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` es el hermano antiguo, **sin protecciones**: llama
+directamente a `createTicket` y se salta todas las comprobaciones. Es preferible
+`delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+No confundas el límite de profundidad de la delegación (3, en las cadenas de
+`delegate_task`) con el límite de anidamiento de subagentes del arnés integrado
+(2). Son límites distintos de mecanismos distintos.
 
-## Hierarchy, links and projects
+## Jerarquía, enlaces y proyectos
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Las relaciones de padre y subincidencia viven en `tickets.parent_ticket_id` y
+las gestionan `setParent` / `clearParent`. **No** son filas de `ticket_links`,
+así que cualquier cosa que lea las relaciones de un ticket tiene que combinar
+ambas fuentes.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` contiene las aristas direccionales entre tickets que, por lo
+demás, no tienen relación:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Tipo de enlace | Significado                                  |
+| -------------- | -------------------------------------------- |
+| `blocks`       | El origen bloquea al destino                 |
+| `relatesTo`    | Los dos tickets están relacionados (simétrico) |
+| `duplicateOf`  | El origen es un duplicado del destino        |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+Un **proyecto** es una agrupación de tickets con alcance de espacio de trabajo
+en torno a un objetivo común. Los proyectos son exclusivos de Control Center y
+nunca se sincronizan con un proveedor externo.
 
-## Collaborators
+## Colaboradores
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Las filas de `TicketCollaborator` son la forma de vincular más de un principal a
+un ticket, con un rol de `assignee`, `collaborator` o `reviewer`. Las personas y
+los agentes son filas en pie de igualdad —un `principalId` más un
+`collaboratorType`—, sin ningún valor centinela para «el usuario» y sin clave
+externa a ninguna de las dos tablas.
 
-## External sync
+## Sincronización externa
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+El ticket de Control Center es el principal. Eliminar un ticket es **solo
+local**, así que un ticket respaldado por un proveedor que elimines no se
+elimina en el rastreador y puede reaparecer en la siguiente sincronización. Los
+colaboradores y los tickets hijos se eliminan en cascada.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Las credenciales del adaptador se resuelven desde los almacenes de credenciales
+del servidor (una clave de Linear o un token de GitHub pegados en Ajustes se
+recogen en la siguiente solicitud; el entorno solo siembra esos almacenes).
 
-## Tickets and pipelines
+## Tickets y pipelines
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Ningún nodo de pipeline crea, completa ni cancela tickets: la paleta no tiene
+ese paso y el motor no llama a `TicketWorkflowService`. Aun así, un disparador
+de pipeline puede activarse con `TicketAssigned`, `TicketCompleted`,
+`TicketFailed` o `TicketCancelled` (esos cuatro son los eventos de ticket que
+`EventPayloadMapper` realmente asigna). No hay ninguna columna `pipelineRunId`
+en el ticket; el acoplamiento con pipelines vive en el registro de ejecución del
+agente.
 
-## See also
+## Consulta también
 
-- [Pipelines and automation](/es-MX/manual/conceptos/pipelines/): ticket events can trigger a pipeline
-- [Orchestration](/es-MX/manual/conceptos/orquestacion/): where a DAG of sub-tickets comes from
-- [The agent model](/es-MX/manual/conceptos/modelo-de-agentes/): who a ticket is assigned to
-- [Domain events](/es-MX/manual/conceptos/eventos-de-dominio/): the ticket lifecycle events
-- [Ticket lifecycle](/es-MX/manual/referencia/ciclo-de-vida-de-tickets/): statuses, fields, transitions, relations
-- [Create and manage tickets](/es-MX/manual/guias/administrar-tickets/)
-- [Delegate work to agents](/es-MX/manual/guias/delegar-tickets/)
-- [Organize work with projects](/es-MX/manual/guias/proyectos/)
+- [Pipelines y automatización](/es-MX/manual/conceptos/pipelines/): los eventos de ticket pueden disparar un pipeline
+- [Orquestación](/es-MX/manual/conceptos/orquestacion/): de dónde surge un DAG de tickets hijos
+- [El modelo de agentes](/es-MX/manual/conceptos/modelo-de-agentes/): a quién se asigna un ticket
+- [Eventos de dominio](/es-MX/manual/conceptos/eventos-de-dominio/): los eventos del ciclo de vida del ticket
+- [Ciclo de vida de tickets](/es-MX/manual/referencia/ciclo-de-vida-de-tickets/): estados, campos, transiciones, relaciones
+- [Crear y administrar tickets](/es-MX/manual/guias/administrar-tickets/)
+- [Delegar trabajo a agentes](/es-MX/manual/guias/delegar-tickets/)
+- [Organizar el trabajo con proyectos](/es-MX/manual/guias/proyectos/)

@@ -1,104 +1,107 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: Referensi konfigurasi SSO
+description: Setiap kenop, endpoint, operasi, dan kode error masuk tunggal.
 slug: id-ID/panduan-pengguna/referensi/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Semua hal yang dapat dikonfigurasi pada masuk tunggal, di satu tempat. Nilainya
+berada di baris `sso_connections` pada `global.db` (memang dirancang untuk
+seluruh server), diedit melalui **Pengaturan → Server → Single sign-on** atau
+operasi RPC `sso.*`. Baris yang tersimpan adalah satu-satunya sumber kebenaran —
+tidak ada jalur environment `CC_SAML_*` / `CC_OIDC_*` (koneksi yang dapat
+berasal dari dua tempat adalah koneksi yang bisa saja bertentangan dengan layar
+pengaturan).
 
-## Connection fields
+## Bidang koneksi
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Bidang                 | Berlaku untuk | Bawaan          | Arti                                                                                                                                                 |
+| ---------------------- | ------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | keduanya     | nonaktif        | login dapat memakai koneksi ini                                                                                                                      |
+| `idpMetadataXml`       | SAML          | —               | XML `EntityDescriptor` milik IdP (wajib untuk mengaktifkan)                                                                                          |
+| `spEntityId`           | SAML          | `<origin>/saml` | entity ID kami, dipatok saat origin-nya bervariasi                                                                                                   |
+| `emailAttribute`       | SAML          | `email`         | atribut pembawa email; NameID berbentuk email adalah cadangannya                                                                                     |
+| `displayNameAttribute` | SAML          | `displayName`   | atribut nama tampilan                                                                                                                                 |
+| `groupsAttribute`      | SAML          | `groups`        | atribut nama grup                                                                                                                                     |
+| `clockSkewSeconds`     | SAML          | 90              | toleransi pergeseran untuk validasi masa berlaku                                                                                                      |
+| `allowIdpInitiated`    | SAML          | nonaktif        | terima Response yang tidak diminta (tanpa `InResponseTo`)                                                                                            |
+| `wantResponseSigned`   | SAML          | nonaktif        | wajibkan tanda tangan di akar Response (tanda tangan asertion selalu diwajibkan)                                                                      |
+| `issuer`               | OIDC          | —               | URL dasar issuer (wajib untuk mengaktifkan)                                                                                                          |
+| `clientId`             | OIDC          | —               | id klien publik (wajib untuk mengaktifkan)                                                                                                           |
+| `clientSecret`         | OIDC          | —               | hanya untuk klien rahasia; disimpan di berkas rahasia bermode 0600, tidak pernah di basis data — hanya-tulis melalui RPC (`sso.getConfig` melaporkan `clientSecretPresent`) |
+| `groupsClaim`          | OIDC          | `groups`        | claim pembawa nama grup                                                                                                                               |
+| `defaultRole`          | keduanya     | `member`        | peran saat tidak ada grup yang dipetakan — tidak pernah `owner`                                                                                      |
+| `groupRoleMap`         | keduanya     | `{}`            | grup → peran; pemetaan pemilik ditolak saat disimpan                                                                                                  |
+| `autoMember`           | keduanya     | aktif           | tambahkan pengguna secara otomatis ke setiap ruang kerja saat login pertama                                                                          |
+| `allowJit`             | keduanya     | aktif           | sediakan pengguna tak dikenal saat login                                                                                                              |
 
-## Process configuration
+## Konfigurasi proses
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+Koneksi SSO tidak diisi dari environment. Satu flag proses yang tersisa
+berkaitan dengan **penyerahan ke browser**, bukan baris koneksinya:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Variabel / flag                                  | Arti                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | origin yang menjadi pantulan browser oleh callback SSO (kredensial menumpang pada fragmen URL). Tanpa nilai, penyerahannya tetap se-origin. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+URL issuer itu sendiri harus `https` (`http` hanya diterima untuk issuer
+loopback `localhost`, `127.0.0.1`, dan `::1`).
 
-## HTTP endpoints
+## Endpoint HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| Endpoint                                         | Auth                | Tujuan                                                                                                                                                                                                          |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | tidak ada (pengalihan) | mulai login yang diprakarsai SP; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` mengirim postMessage ke tab koneksi yang menunggu (yang menyatakan `client_origin`-nya, dihormati hanya ketika daftar-izin origin mempercayainya) |
+| `POST /saml/acs`                                 | tidak ada (POST dari IdP) | konsumer asertion — memverifikasi, menyediakan, menerbitkan                                                                                                                                                |
+| `GET /saml/metadata`                             | tidak ada           | `EntityDescriptor` SP kami                                                                                                                                                                                       |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | tidak ada           | perjalanan bolak-balik OIDC; `relay=desktop` menyerahkan ke aplikasi, `relay=web-popup` ke tab koneksi yang menunggu (konvensi `client_origin` yang sama)                                                        |
+| `GET /auth/providers`                            | tidak ada, CORS `*` | probe layar koneksi: koneksi SSO yang ditawarkan (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                        |
+| `/scim/v2/Users…`                                | Bearer (token SCIM) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                    |
+| `/scim/v2/Groups`                                | Bearer              | hanya-baca; push grup menjawab 501 secara desain                                                                                                                                                                 |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | dokumen kapabilitas                                                                                                                                                                                              |
 
-## RPC ops
+## Operasi RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Semua operasi `sso.*` berskala server dan dibatasi hanya untuk **pemilik
+server** (operator instalasi, `ServerAuthority.serverOwner`). Memiliki sebuah
+ruang kerja saja tidak cukup; sekadar melakukan pemasangan pun tidak pernah
+memberikannya.
 
-| Op                        | Purpose                                                                                                                                                       |
+| Operasi                   | Tujuan                                                                                                                                                        |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | koneksi tersimpan untuk suatu jenis                                                                                                                           |
+| `sso.saveConfig`          | validasi, simpan, dan terapkan langsung                                                                                                                       |
+| `sso.status`              | flag aktif/terkonfigurasi, keberadaan token SCIM, origin kanonis                                                                                              |
+| `sso.testConnection`      | uji koneksi tanpa perjalanan bolak-balik browser (SAML: parse metadata + bangun AuthnRequest; OIDC: penemuan issuer), dengan nilai di layar yang belum disimpan sebagai opsi |
+| `sso.spMetadata`          | terbitkan `EntityDescriptor` SP untuk sebuah origin                                                                                                           |
+| `sso.setPairingEnabled`   | izinkan/larang pemasangan manual (kode undangan, kunci pemasangan); menolak menonaktifkannya selama belum ada koneksi SSO yang berfungsi mencegah pengguna terkunci di luar |
+| `sso.sessionPolicy`       | baca usia maksimum dan batas waktu menganggur kredensial perangkat instalasi (menit; `0` = tidak disetel)                                                      |
+| `sso.setSessionPolicy`    | setel batas tersebut; ditegakkan saat pemeriksaan perangkat, tidak diumumkan ke klien                                                                          |
+| `sso.scimRegenerateToken` | buat + kembalikan token bearer SCIM (sekali saja)                                                                                                             |
 
-## Validation error codes
+## Kode error validasi
 
-`cc_saml_verify_response` failures carry a stable code:
+Kegagalan `cc_saml_verify_response` membawa kode yang stabil:
 
-| Code                   | Meaning                                                                          |
+| Kode                   | Arti                                                                             |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | tanda tangan hilang/tidak tepercaya/dirusak, atau algoritme/transformasi yang tidak diizinkan |
+| `expired`              | di luar `NotBefore`/`NotOnOrAfter` (melampaui pergeseran)                          |
+| `audience`             | pembatasan audiens tidak menyebut kami                                            |
+| `destination`          | tujuan respons bukan ACS kami                                                     |
+| `request_match`        | `InResponseTo` tidak cocok dengan permintaan yang tertunda, atau tidak diminta padahal tidak diizinkan |
+| `issuer`               | issuer bukan IdP yang dikonfigurasi                                               |
+| `recipient`            | penerima konfirmasi subjek bukan ACS kami                                         |
+| `malformed`            | kegagalan pada tingkat XML/skema                                                  |
+| `status`               | status yang dilaporkan IdP bukan Success                                          |
+| `invalid` / `internal` | apa pun selain itu / kegagalan pada seam                                          |
 
-## Database surfaces
+## Permukaan basis data
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — satu baris per jenis, LINTAS RUANG KERJA
+  MEMANG DIRANCANG DEMIKIAN.
+- `users.sso_subject` + `users.sso_issuer` — penyematan subjek penyedia, unik
+  per `(issuer, subject)` melalui indeks parsial.
+- `users.deactivated_at` — stempel penonaktifan SCIM.
+- Token bearer SCIM dan client secret OIDC berada di berkas rahasia bermode 0600,
+  tidak pernah di basis data.

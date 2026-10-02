@@ -1,137 +1,147 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Vidarebefordra portar från en terminal
+description: Nå en dev-server som startats i en Terminal (VM) eller ett värdskal – från din maskin, från Webbläsare (VM), från Android, i ditt nätverk eller under en dev-domän med HTTPS.
 slug: sv-SE/handbok/how-to-guider/vm-portar
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+En server som du startar i ett samtals terminal publiceras bara för **den
+ytan**. Portpanelen upptäcker lyssnare som den här appen har startat där,
+mappar dem och ger dig en adress för varje plats du kan tänkas nå dem från.
+Två ytor kan båda lyssna på `5173`; deras mappningar blandas aldrig.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Ingenting här öppnar upp maskinen: varje väg skapas av servern, på begäran,
+och dör med terminalen eller stationen.
 
-## See what is listening
+## Se vad som lyssnar
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Öppna samtalets **Terminal (VM)** eller värdskal (i en yta eller på en PR-sida).
+2. Starta din server – `pnpm dev`, `python -m http.server 8000`, vad som helst.
+3. Inom några sekunder får **kontaktikonen** i terminalens övre högra hörn
+   en prick. Klicka på den.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panelen listar varje lyssnande port med processen som äger den, som
+`3000 → 3000`: porten som processen band till till vänster, porten som den
+svarar på lokalt till höger (samma nummer närhelst den var ledig på din
+maskin). Varje rad säger också om `localhost` på skrivbordet, Webbläsare (VM)
+och Android kan nå den.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Upptäckten är avgränsad: en Terminal (VM) avfrågas inuti den gästen; ett
+värdskal avfrågas från den sessionens PTY-processträd. Andra ytor, och andra
+processer på din Mac, listas inte.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Nya portar i **den här** terminalen vidarebefordras automatiskt. Stäng av
+**Vidarebefordra portar automatiskt** i samma panel om du bara vill ha dem du
+lägger till själv.
 
-## Reach it from this computer
+## Nå den från den här datorn
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Använd **Kopiera lokal URL** på raden – `http://localhost:3000`.
+Vidarebefordran lyssnar bara på loopback, så ingenting annat i ditt nätverk
+kan se den.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Om två ytor båda exponerar gästporten `5173` och din maskin redan har
+`127.0.0.1:5173`, behåller den andra ytan gästporten `5173` och får en
+tillfällig lokal port. Kopiera lokal URL använder siffran till höger.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+I ett värdskal finns processen redan på din maskin. Att mappa samma lokala
+port har ingen effekt; väljer du en **annan** lokal port binds en
+loopback-proxy till den du valde.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (eller att binda `0.0.0.0`) gör **inte** att en avskild Webbläsare
+(VM) kan nå en server på Macen. Gästen har sin egen loopback; servern
+planterar en tunnel in i den gästen när fliken Webbläsare finns i **samma
+yta**.
 
-## Reach it from the Browser (VM)
+## Nå den från Webbläsare (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Öppna den avskilda webbläsaren i **samma samtal**. Skriv
+`localhost:<left-hand port>` – numret som processen band till. En ommappning
+(`5173 → 3000`) svarar också på numret till höger i den webbläsaren, så
+Kopiera lokal URL fungerar där också. En agents `browser_use` kan navigera
+till någon av dem. En server i yta A visas aldrig som `localhost:5173` i yta
+B:s webbläsare.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Använd `localhost`, inte en LAN-IP och inte `--host`. Gästen har sin egen
+loopback; tunneln lyssnar där på både IPv4 och IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Sidor som öppnar många anslutningar på en gång (dussintals resurser, en live
+reload-socket) delar samma tunnel. Webbläsare (VM) multiplexar dem över en
+enda persistent exec, så en skur av hämtningar startar inte en process per
+anslutning och slår inte i tidsgränsen som en vit sida.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Inom en yta vinner en vidarebefordran från Terminal (VM) över ett värdskal på
+samma nummer. Mellan ytor finns ingen prioritet – de är åtskilda mappningar.
 
-## Reach it from Android
+## Nå den från Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Öppna den ytans **Android**-flik. Emulatorns `localhost:<port>` vänds då mot
+den här ytans publicerade port (`adb reverse`). En emulator är enhetsglobal:
+ansluter du yta B riktas `:5173` om till B och A:s försvinner. Stäng fliken,
+och de omvända vidarebefordringar som den här stationen lade upp tas bort.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS-simulatorn är redan Macen – ingen omvändning. En fysisk iPhone behöver
+fortfarande en LAN-delning.
 
-## Share it on your network
+## Dela den i ditt nätverk
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Dela på det lokala nätverket** publicerar porten på
+`<server-ip>:<random port>` – användbart för att öppna sidan i telefonen,
+eller när servern körs på en annan maskin.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- LAN-porten tilldelas alltid av operativsystemet, aldrig gästens nummer, så
+  exponeringen är en avsiktlig, synlig adress i stället för en som går att
+  gissa.
+- Den förblir privat (endast loopback) tills du slår om den, och
+  **⋯ → Endast lokalt** tar den av nätverket igen.
 
-## Give it a name — with HTTPS
+## Ge den ett namn – med HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Ange en webbläsardomän (.test)** tilldelar porten en dev-domän som
+`myapp.test`. I Webbläsare (VM) laddar `https://myapp.test` då din server med
+ett giltigt hänglås – användbart för allt som beter sig annorlunda på en
+namngiven origin eller i en säker kontext (cookies, service workers,
+OAuth-callbackar).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domäner måste sluta på `.test` eller `.localhost` – de två toppdomäner som
+  är reserverade för utveckling, så ett dev-namn aldrig kan skugga en riktig
+  webbplats.
+- Domän**namn** är unika på servern; port**nummer** är det inte. Två ytor får
+  båda använda `5173`, men de kan inte båda göra anspråk på `myapp.test`.
+- Certifikatet kommer från en lokal certifikatutfärdare som skapas på din
+  server första gången det behövs. Dess nycklar ligger under serverns
+  datakatalog och hamnar aldrig i någon gäst; den avskilda webbläsaren litar
+  på exakt den enda nyckeln, så TLS mot det riktiga internet valideras
+  fortfarande normalt.
+- Domänen löses **bara inuti Webbläsare (VM)**. Din egen webbläsare på värden
+  använder `localhost:<port>` i stället.
+- Även vanlig `http://myapp.test` fungerar.
 
-## Forward a port by hand
+## Vidarebefordra en port för hand
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Lägg till port** längst ned i panelen mappar en port innan (eller oavsett
+om) något lyssnar på den. En manuell vidarebefordran behåller sin adress
+medan din server startar om – raden visar *lyssnar inte* tills den är tillbaka
+– medan automatiska vidarebefordringar försvinner när deras port gör det. I
+ett värdskal kan du också ange en annan lokal port.
 
-## How it stays contained
+## Hur det hålls avgränsat
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/sv-SE/handbok/koncept/stationer/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/sv-SE/handbok/referens/stationer/#ports-and-dev-domains).
+Portar är nycklade efter arbetsyta och yta. Hypervisorns egen portmappning är
+fast när en maskin startar, så en Terminal (VM) färdas över två smala kanaler
+som servern styr: en i förväg skapad inkommande bana in i gästen som vägrar
+ansluta till någon port som gästen faktiskt inte lyssnar på, och omvända
+tunnlar som servern håller öppna för Webbläsare (VM) och Android. Ett
+värdskal skannar aldrig hela maskinen. Ingen lyssnare skapas någonsin inuti en
+gäst som servern inte själv har satt dit, och allt rivs ned med terminalen
+eller stationen. Designen förklaras i [Stationer och avskilda
+miljöer](/sv-SE/handbok/koncept/stationer/#ports-without-holes); de exakta
+reserverade portarna och domänreglerna finns i
+[stationsreferensen](/sv-SE/handbok/referens/stationer/#ports-and-dev-domains).
 
-## Related
+## Relaterat
 
-- [Give an agent a machine to test on](/sv-SE/handbok/how-to-guider/anvand-stationer/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/sv-SE/handbok/referens/stationer/) — reserved ports, dev TLDs,
-  defaults
+- [Ge en agent en maskin att testa på](/sv-SE/handbok/how-to-guider/anvand-stationer/) – att öppna,
+  övervaka och ta över stationer
+- [Stationsreferens](/sv-SE/handbok/referens/stationer/) – reserverade portar, dev-toppdomäner,
+  standardvärden

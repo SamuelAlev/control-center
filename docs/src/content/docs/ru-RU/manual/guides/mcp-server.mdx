@@ -1,45 +1,49 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Использовать MCP-сервер
+description: Направьте внешний MCP-клиент на сервер инструментов Control Center, задайте Bearer-токен и узнайте, что предоставляет поверхность.
 slug: ru-RU/руководство/практические-руководства/mcp-сервер
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Это руководство показывает, как подключить внешний MCP-клиент — Claude Code,
+редактор, MCP Inspector — к собственному серверу инструментов Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center регистрирует **110** инструментов и предоставляет их по Model
+Context Protocol, версия протокола `2024-11-05`. Целых семейств инструментов,
+которых вы могли бы ожидать, здесь нет: нет инструментов для встреч и
+календаря и нет инструментов для проектов.
 
-## Find the endpoint
+## Найти эндпоинт
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Поверхность MCP использует общий основной слушатель `cc_server`. Отдельного
+порта MCP нет.
 
-| Endpoint | Method   | Purpose                                                  |
+| Эндпоинт | Метод    | Назначение                                               |
 | -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| `/mcp`   | `POST`   | Транспорт Streamable HTTP — именно на нём говорит клиент |
+| `/mcp`   | `DELETE` | Завершить сессию                                         |
+| `/sse`   | `GET`    | Поток уведомлений, отправляемых сервером                 |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Так что локальная установка по умолчанию доступна по адресу
+`http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Откройте **Настройки → Сервер → MCP-серверы**
+2. Посмотрите карточку **MCP-сервер** — она показывает, запущен сервер или
+   остановлен, и порт, который он слушает
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+На свежей установке поверхность включена по умолчанию, поэтому loopback-клиент
+работает без похода в настройки. **Запускать при старте приложения**
+определяет, вернётся ли она после перезапуска; **Запустить** / **Остановить** —
+это команды для текущей сессии, они не меняют эту настройку.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+По умолчанию сервер привязывается к loopback, поэтому эндпоинт доступен только
+с машины, на которой работает `cc_server`, если только вы не запустили его с
+`--bind any`.
 
-## Connect a client
+## Подключить клиент
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Направьте клиент на эндпоинт Streamable HTTP. Точная форма конфигурации — дело
+вашего клиента; URL в любом случае один и тот же.
 
 ```json
 {
@@ -54,41 +58,46 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code не подхватит это из проектного `.mcp.json` — он ставит MCP-серверы
+уровня проекта за запрос на одобрение, на который неинтерактивный `claude -p`
+никогда не отвечает. Передайте конфигурацию явно:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` заставляет Claude использовать только этот файл, чтобы тот
+же сервер не был ещё и обнаружен из проекта и зарегистрирован дважды.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Проверка: попросите клиент перечислить свои инструменты. Вы должны увидеть
+записи `mcp__*`, охватывающие тикеты, пространства, память, граф кода и
+проверку.
 
-## Serve MCP beyond the host
+## Предоставлять MCP за пределами хоста
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. В **Настройки → Сервер → MCP-серверы**, в строке **Токен аутентификации**,
+   нажмите **Задать** и вставьте токен
+2. Передавайте его как `Authorization: Bearer <token>` в каждом запросе
+   `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Поверхность без токена отказывает любому вызывающему не через loopback с кодом
+403. Это осознанный fail-closed: именно токен делает обслуживание вне хоста
+вообще возможным.
 
-Token changes apply to the live surface immediately — no restart.
+Изменения токена применяются к работающей поверхности сразу — без перезапуска.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` принимает токен в строке запроса]
+Поток уведомлений проверяется на токен, как и любой другой маршрут, но
+браузерный `EventSource` не может отправить заголовок `Authorization` —
+поэтому `/sse` принимает токен ещё и как `?token=<token>`. Без него он отвечает
+401.
 :::
 
-## Scope every call to a workspace
+## Привязывать каждый вызов к рабочему пространству
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Каждый инструмент, который затрагивает данные уровня рабочего пространства,
+требует `workspace_id`, и вызов без него отклоняется, а не разрешается
+относительно какого-то «текущего» рабочего пространства:
 
 ```json
 {
@@ -98,56 +107,61 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Этот id — тот, что в URL вашего браузера или приложения:
+`/workspaces/<workspace_id>/…`. Единственные исключения — инструменты, которые
+действительно охватывают несколько рабочих пространств, например
+`list_workspaces` и инструменты ленты новостей — лента новостей ведётся по
+пользователю, а у агента нет собственного пользователя, поэтому такие
+инструменты работают с лентами владельца сервера.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Инструменты уровня репозитория дополнительно проверяют, что репозиторий привязан
+к этому рабочему пространству.
 
-## Know what the surface will refuse
+## Знать, что поверхность отклонит
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/ru-RU/руководство/практические-руководства/настроить-ограничения/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Фильтрация по режиму.** Вызов разрешается на стороне сервера относительно
+  режима пространства вызывающего агента. Агент в режиме только для чтения не
+  может дотянуться до инструмента записи, опустив `space_id` — вместо этого
+  режим определяется по его активному запуску.
+- **Ограничения действий.** Изменяющие инструменты объявляют свои классы
+  эффектов и проходят через ту же политику, что и остальная часть продукта. См.
+  [Настроить ограничения](/ru-RU/руководство/практические-руководства/настроить-ограничения/).
+- **Подтверждение.** Некоторые разрушительные инструменты формируют полезную
+  нагрузку подтверждения, которую нужно одобрить, прежде чем вызов продолжится.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Полный каталог объявляется в `tools/list` без фильтрации на этапе обнаружения —
+внешний MCP-клиент отказывается вызывать инструмент, которого нет в его
+кэшированном списке, поэтому сокрытие инструментов ломает их, а не наводит
+порядок.
 
-## Troubleshooting
+## Устранение неполадок
 
-### The client sees no tools
+### Клиент не видит ни одного инструмента
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Проверьте, что карточка **MCP-сервер** показывает, что сервер запущен
+- Проверьте, что порт совпадает с портом вашего `cc_server`
+- В Claude Code проверьте, что вы передали `--mcp-config` и
+  `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 403 с машины, которая не является сервером
 
-No bearer token is configured. Set one and send it.
+Bearer-токен не настроен. Задайте его и передавайте в запросах.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Вызов инструмента завершается ошибкой «Missing or invalid argument: workspace_id»
 
-Add `workspace_id`. There is no implicit workspace.
+Добавьте `workspace_id`. Неявного рабочего пространства не существует.
 
-### A tool call is refused as unknown
+### Вызов инструмента отклоняется как неизвестный
 
-[MCP tools](/ru-RU/руководство/справка/инструменты-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[Инструменты MCP](/ru-RU/руководство/справка/инструменты-mcp/) перечисляет
+каталог. Вызывайте имя точно так, как оно там указано.
 
-## Related guides
+## Связанные руководства
 
-- [MCP tools](/ru-RU/руководство/справка/инструменты-mcp/)
-- [Configure guardrails](/ru-RU/руководство/практические-руководства/настроить-ограничения/)
-- [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
+- [Инструменты MCP](/ru-RU/руководство/справка/инструменты-mcp/)
+- [Настроить ограничения](/ru-RU/руководство/практические-руководства/настроить-ограничения/)
+- [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)
 
-## Related concepts
+## Связанные понятия
 
-- [Architecture](/ru-RU/руководство/понятия/архитектура/)
+- [Архитектура](/ru-RU/руководство/понятия/архитектура/)

@@ -1,29 +1,31 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Säkerhetskopia, export och import
+description: Ögonblicksbildens struktur, manifestet, varje säkerhetskopieringsåtgärd och överföringsväg, och exakt vilka filer en säkerhetskopia innehåller och inte innehåller.
 slug: sv-SE/handbok/referens/sakerhetskopia
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/); for why persistence is
-split this way, see [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/).
+Allt som Control Center kan kopiera, lämna över eller ta över, och den exakta formen på
+varje artefakt. För att faktiskt ta en säkerhetskopia, se
+[Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/); för varför
+beständigheten är uppdelad så här, se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
 
-## Artifacts
+## Artefakter
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Det finns tre artefakter för databaskopior, med olika omfattning och olika regler för
+borttagning.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Artefakt                     | Skrivs av                    | Form                                  | Omfattar                      |
+| ---------------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
+| **Installationsögonblicksbild** | `server.backupNow`        | En tidsstämplad **katalog**           | Varje databas i installationen |
+| **Säkerhetskopia av arbetsyta** | pipelinen `Workspace backup` | Tidsstämplad katalog med en `.db`   | En arbetsytas databas         |
+| **Arbetsytaexport**          | `workspace.export`           | En enda `.db`-**fil**                 | En arbetsytas databas         |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Alla skrivs med SQLite `VACUUM INTO`, som är säkert mot en levande WAL-databas:
+det tar en lästransaktion, producerar en defragmenterad och transaktionellt konsekvent
+kopia och kräver aldrig att servern stoppas.
 
-## Snapshot layout
+## Ögonblicksbildens struktur
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +34,125 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Strukturen speglar den levande datakatalogen exakt, vilket är det som gör att en
+återställning av en installation blir en tillbakakopiering i stället för en
+översättning. Katalognamnet är UTC-tidsstämpeln med `:` och `.` utbytta mot `-`, så det
+är filsystemssäkert på Windows och sorteras kronologiskt som en vanlig sträng.
 
-Scheduled workspace backups live separately at
+Schemalagda säkerhetskopior av arbetsytor ligger separat under
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+De innehåller inget manifest och ingen `global.db` och är inte
+installationsögonblicksbilder. Veckopipelinens bevarandesteg tar bara bort
+säkerhetskopior från sin egen arbetsyta som är äldre än den konfigurerade åldern
+(30 dagar som standard); manuellt skapade installationsögonblicksbilder roteras
+aldrig av det steget. `server.listBackups` listar bara
+installationsögonblicksbilder, även ofullständiga sådana.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
-| -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| Fält                      | Typ             | Betydelse                                                           |
+| ------------------------- | --------------- | ------------------------------------------------------------------- |
+| `version`                 | int             | Manifestets formatversion. För närvarande `1`                       |
+| `created_at`              | ISO-8601 UTC    | När ögonblicksbilden togs                                           |
+| `global.file`             | string          | Alltid `global.db`                                                  |
+| `global.schema_version`   | int             | `GlobalDatabase`-schemaversionen vid kopieringstillfället           |
+| `global.bytes`            | int             | Storleken på den skrivna `global.db`                                |
+| `workspace_schema_version` | int            | Den `WorkspaceDatabase`-schemaversion som delas av varje arbetsytefil |
+| `workspaces[]`            | array           | En post per fångad arbetsyta                                        |
+| `workspaces[].workspace_id`| string         | Arbetsytan som den här filen innehåller                            |
+| `workspaces[].file`       | string          | Sökväg relativt ögonblicksbildens rot, `<workspaceId>/workspace.db` |
+| `workspaces[].bytes`      | int             | Storleken på den filen                                              |
+| `skipped_workspaces[]`    | array of string | Arbetsytor som säkerhetskopian **inte** kunde fånga                 |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+En arbetsyta hoppas över när den är registrerad men aldrig har skrivits till (så det
+finns ingen fil ännu), eller när dess `VACUUM INTO` misslyckades. Hur som helst
+slutförs ändå ögonblicksbilden, och manifestet namnger det som saknas.
 
-### Completeness
+### Fullständighet
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` rapporterar en `complete`-flagga per ögonblicksbild. Den är falsk
+när manifestet saknas eller inte går att tolka, när `global.db` saknas, eller när
+manifestet namnger en arbetsytefil som inte finns på disken.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+En ofullständig ögonblicksbild listas ändå, för en ögonblicksbild som en operatör inte
+kan se är en ögonblicksbild som operatören tror sig ha. När manifestet inte går att
+läsa faller listningen tillbaka på själva strukturen och rapporterar de
+`<workspaceId>/workspace.db`-filer den hittar – de kan fortfarande tas över var för sig
+via `workspace.import`, även om ögonblicksbilden som helhet inte kan återställa en
+installation.
 
-## What a backup does not contain
+## Vad en säkerhetskopia inte innehåller
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Båda artefakterna är **enbart databaser**. En arbetsytekatalog innehåller mer än sin
+databas, och inget av resten följer med:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Sökväg                              | I en ögonblicksbild? | I en arbetsytaexport?  |
+| ----------------------------------- | -------------------- | ---------------------- |
+| `global.db`                         | Ja                   | Nej                    |
+| `<workspaceId>/workspace.db`        | Ja                   | Ja (den *är* filen)    |
+| `<workspaceId>/blobs/`              | Nej                  | Nej                    |
+| `<workspaceId>/skills/`             | Nej                  | Nej                    |
+| `<workspaceId>/agents/`             | Nej                  | Nej                    |
+| `<workspaceId>/chat_credentials/`   | Nej                  | Nej                    |
+| `<workspaceId>/spaces/<spaceId>/`   | Nej                  | Nej                    |
+| `<workspaceId>/pr_clones/`          | Nej                  | Nej                    |
+| `secrets.json`                      | Nej                  | Nej                    |
+| `models/`                           | Nej                  | Nej                    |
+| `meetings/<meetingId>/`             | Nej                  | Nej                    |
+| `rigs/`                             | Nej                  | Nej                    |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/sv-SE/handbok/referens/chattbrygga/).
+En del av det är umbärligt – `spaces/` innehåller copy-on-write-worktrees som
+återskapas från repona, `pr_clones/` är en cache, `models/` laddas ner på nytt, `rigs/`
+är maskintillstånd. En del är det inte: `blobs/` innehåller inklistrade bilder som
+rader i databasen pekar på, `skills/` och `agents/` innehåller filerna som en agent körs
+med, och `secrets.json` innehåller varje parkopplingsnyckel, leverantörsuppgift och
+SSO-inställning i installationen. Se
+[Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/#copy-backups-off-the-machine)
+för att täcka resten.
+:::note[Chattbottens tokens stannar kvar med avsikt]
+Att `chat_credentials/` ligger bredvid databasen i stället för i den är varför en
+arbetsyta som lämnas till någon annan inte bär några levande bottokens. Se
+[referensen för chattbryggan](/sv-SE/handbok/referens/chattbrygga/).
 :::
 
-## Operations
+## Åtgärder
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+RPC:er för säkerhetskopiering av installationen och export/import av arbetsytor är
+endast för `fullClient`: en parkopplad telefon kan inte utlösa dem. Alla saknas helt –
+inte avvisade, utan strukturellt frånvarande – på en server där ingen port för
+säkerhetskopiering är inkopplad, som demoservern.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Åtgärd               | Typ    | Omfattning | Minsta roll           | Argument      | Returnerar                    |
+| -------------------- | ------ | ---------- | --------------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | mutate | Installation | installationens **ägare** | inga      | `{ok, path}`                  |
+| `server.listBackups` | read   | Installation | installationens **ägare** | inga      | `{backups: [...]}`            |
+| `server.deleteBackup` | mutate | Installation | installationens **ägare** | `name`    | `{ok}`                        |
+| `workspace.export`   | read   | Arbetsyta  | `admin`               | inga          | `{ok, path}`                  |
+| `workspace.import`   | mutate | Arbetsyta  | `owner`               | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | mutate | Installation* | `owner`           | `id`          | registerrad markerad som borttagen |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` saknar omfattning eftersom raden den markerar ligger i det globala
+registret; dess hanterare kontrollerar anroparens medlemskap i den namngivna arbetsytan
+och kräver `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` i varje svar är en sökväg på **servervärden**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[En ögonblicksbild av hela installationen kräver ägare på båda kanalerna]
+`server.backupNow`, `server.listBackups` och `server.deleteBackup` kräver
+installationens **ägare** (`ServerAuthority.serverOwner`), samma grind som
+`GET /backup/snapshot`. En ögonblicksbild fångar varje arbetsytas databas, så
+att vara admin för en arbetsyta räcker inte för att hantera de andra. Borttagning
+accepterar bara det listade tidsstämpelkatalognamnet, inte en godtycklig sökväg
+på servern, och tar bort hela ögonblicksbilden (även ofullständiga sådana).
+Export/import per arbetsyta ligger kvar hos arbetsytans admin/ägare, inte hos
+installationens ägare.
 :::
 
-### `server.listBackups` response
+### Svaret från `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Nyast först, sorterat efter katalognamn (som är tidsstämpeln, så ordningen håller även
+för en ögonblicksbild vars manifest inte kunde läsas).
 
 ```json
 {
@@ -169,99 +176,102 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` utelämnas när manifestet inte kunde läsas. `bytes` på översta nivån är den
+verkliga storleken på disken för hela katalogen, inte manifestets egen summa – frågan
+en operatör som gallrar bland ögonblicksbilder ställer är vad katalogen kostar, inte vad
+säkerhetskopian avsåg att skriva.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Varje `workspaces[].path` är exakt det som `workspace.import` tar som `source_path`. Det
+är avsiktligt: "återställ den här arbetsytan från den här ögonblicksbilden" *är*
+importåtgärden, så de två kan inte glida isär till olika behandlingar av samma fil.
 
-### `workspace.import` validation
+### Validering i `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Innan något ersätts öppnas kandidatfilen skrivskyddat med en kortlivad rå
+SQLite-anslutning, och dess `workspace_meta`-rad läses.
 
-| Condition                                        | Result                                                          |
+| Villkor                                          | Resultat                                                        |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Inte en läsbar SQLite-databas, eller ingen `workspace_meta` | Avvisas. Ingenting rörs                                |
+| Registrerat arbetsyte-id ≠ målet                  | **Tillåts**, loggas. Så här dupliceras en arbetsyta eller återställs under ett nytt id |
+| Registrerat installations-id ≠ den här installationen | **Tillåts**, loggas. Dess parkopplade enheter och användar-id:n tillhör den installationen och löses inte upp här |
+| Ogiltigt arbetsyte-id, eller filen finns inte     | Avvisas                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Vid godkännande stängs målarbetsytans databas och tas bort från hanteraren innan filen
+kopieras över den (en öppen driftanslutning håller filen och dess `-wal`), och öppnas
+sedan igen så att `beforeOpen` installerar om FTS- och synkroniseringstriggarna, varefter
+FTS-indexen byggs om – en importerad fils innehållstabeller är ifyllda men dess index kan
+vara inaktuellt.
 
-## Transfer routes
+## Överföringsvägar
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Varje åtgärd ovan talar i sökvägar på serversidan, vilket bara är ett fullständigt svar
+när servern är din egen maskin. Dessa tre bär själva byten, på samma PSK-signerade kanal
+som medieproxyn och blob-lagret använder. Anroparen signerar en målsträng med sin enhets
+i förväg delade nyckel och skickar signaturen som `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| Väg                     | Metod  | Fråga           | Signerat mål                   | Kräver                  |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Arbetsytans **admin** |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installationens **ägare** |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Arbetsytans **ägare** |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` är ett arbetsyte-id, `n` ett namn på en ögonblicksbildskatalog, `d` det anropande
+enhets-id:t och `s` signaturen. `n` löses upp mot listan över säkerhetskopior i stället
+för att fogas till backups-roten, så vägen kan inte riktas mot en katalog som listningen
+inte skulle ha visat.
 
-| Status | Cause                                                                              |
+| Status | Orsak                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | En obligatorisk frågeparameter saknas, eller så är en uppladdningskropp tom           |
+| `403`  | Okänd eller återkallad enhet, felaktig signatur, eller så saknar anroparen rollen     |
+| `404`  | Ingen port för säkerhetskopiering på den här värden, eller så finns inte den namngivna ögonblicksbilden/arbetsytefilen |
+| `405`  | `/backup/restore` anropad med något annat än `POST`                                  |
+| `413`  | Uppladdningskroppen överstiger 8 GiB, antingen enligt angiven content-length eller enligt antalet faktiskt lästa byten |
+| `500`  | Exporten eller arkiveringen misslyckades på serversidan                               |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Båda hämtningarna svarar med `Cache-Control: no-store` och `Accept-Ranges: none`. Varje
+begäran skapar en **färsk** kopia och raderar den när den har strömmats, så ett
+cachelagrat eller återupptaget svar skulle sammanfoga byten från två olika exporter till
+en fil som ser giltig ut men inte är det.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` returnerar `<name>.zip`, med poster relativa till ögonblicksbildens
+rot så att uppackning återskapar `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db`. Posterna skrivs i sorterad ordning, så två arkiv av samma
+ögonblicksbild är samma arkiv.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` strömmar kroppen direkt till en mellanlagringsfil i stället för att
+buffra den, begränsar den före och under läsningen och raderar den mellanlagrade filen på
+**varje** väg ut, även vid en avvisning.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[En förmedlad anslutning har inget HTTP-ursprung]
+Det förmedlade reläet transporterar RPC-ramar, inte filöverföringar. Allt som talar i
+sökvägar på serversidan fortsätter fungera över det; de tre överföringsvägarna kräver en
+direkt anslutning, och gränssnittet inaktiverar dem med en notis i stället för att
+misslyckas mitt i en hämtning.
 :::
 
-## Paths and limits
+## Sökvägar och gränser
 
-| Thing                          | Value                                                        |
+| Sak                            | Värde                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Ögonblicksbilder               | `<dataDir>/backups/<timestamp>/`                             |
+| Schemalagda säkerhetskopior av arbetsytor | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Arbetsytaexporter              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Mellanlagring för överföringar | `<dataDir>/backups/transfer/` – en arbetsbänk som städas av vägen som skriver till den |
+| Ögonblicksbildens arkivnamn    | `<snapshot directory name>.zip`                              |
+| Övre gräns för uppladdning     | 8 GiB per `POST /backup/restore`                             |
+| Bevarande                      | Installationsögonblicksbilder: manuell borttagning. Säkerhetskopior av arbetsytor: veckopipeline, 30 dagar som standard |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Katalogerna `exports/`, `transfer/` och `workspace-backups/` är inte
+installationsögonblicksbilder och utesluts från `server.listBackups`. Bara den sista
+katalogen har schemalagt bevarande; att radera en installationsögonblicksbild kräver
+installationens ägares uttryckliga åtgärd.
 
-## See also
+## Se även
 
-- [Back up and restore](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/) — the recipes these operations belong to
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/) — why one workspace is one file
-- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/sv-SE/handbok/referens/routkarta/) — where the UI lives
-- [Architecture](/sv-SE/handbok/koncept/arkitektur/) — the client/server split the paths follow
+- [Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/) — recepten som de här åtgärderna hör till
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/) — varför en arbetsyta är en fil
+- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/) — datakatalogen som de här sökvägarna ligger i
+- [Routkarta](/sv-SE/handbok/referens/routkarta/) — var gränssnittet håller till
+- [Arkitektur](/sv-SE/handbok/koncept/arkitektur/) — klient/server-delningen som sökvägarna följer

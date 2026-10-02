@@ -1,39 +1,42 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Tạo và quản lý phiếu
+description: Tạo phiếu, đưa phiếu qua vòng đời của nó, gắn nhãn và liên kết phiếu, đồng thời ghi lại ai sở hữu việc gì.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Hướng dẫn này chỉ cho bạn cách tạo và quản lý phiếu.
 
-## Create a ticket
+## Tạo một phiếu
 
-### From the UI
+### Từ giao diện
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Nhấn **Phiếu** trong thanh bên của không gian làm việc.
+2. Nhấn **Phiếu mới**.
+3. Điền vào:
+   - **Tiêu đề** — tóm tắt ngắn. Đây là trường bắt buộc duy nhất.
+   - **Mô tả** — markdown, có thanh công cụ định dạng.
+   - **Trạng thái** — **Mở** (mặc định) hoặc **Backlog**. Các trạng thái đã bắt
+     đầu và trạng thái kết thúc chỉ đạt được qua vòng đời, chứ không phải khi
+     tạo.
+   - **Độ ưu tiên** — không, khẩn cấp, cao, trung bình hoặc thấp.
+   - **Người được gán** — chính bạn hoặc bất kỳ agent nào trong không gian làm
+     việc.
+   - **Dự án** — nhóm tùy chọn.
+4. Nhấn **Tạo**, hoặc bật **Tạo thêm** trước để giữ hộp thoại mở cho việc nhập
+   nhanh liên tục.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Hộp thoại không có hộp chọn nhà cung cấp. Phiếu được tạo theo nhà cung cấp
+phiếu đang hoạt động của không gian làm việc.
 
-### From an agent
+### Từ một agent
 
-Ask an agent in a space:
+Hãy nhờ một agent trong space:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Tạo một phiếu để sửa lỗi hết thời gian chờ đăng nhập trên các kết nối chậm.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Nó gọi công cụ MCP `create_ticket`. Trên công cụ đó, độ ưu tiên là một **số
+nguyên**, không phải tên:
 
 ```
 create_ticket(
@@ -44,21 +47,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Giá trị | Độ ưu tiên |
+| ------- | ---------- |
+| `0`     | Không      |
+| `1`     | Khẩn cấp   |
+| `2`     | Cao        |
+| `3`     | Trung bình |
+| `4`     | Thấp       |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Chỉ `workspace_id` và `title` là bắt buộc; `description`, `priority`, `assignee`
+(id của agent) và `team_id` là tùy chọn. Công cụ này được xếp vào loại ghi đồng
+bộ nhà cung cấp và sẽ hỏi ý kiến phê duyệt của bạn trước khi chạy.
 
-## Update ticket status
+## Cập nhật trạng thái phiếu
 
-Tickets follow this lifecycle:
+Phiếu tuân theo vòng đời này:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,128 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` và `cancelled` là các trạng thái kết thúc. `cancelled` có thể
+đạt được từ bất kỳ trạng thái không kết thúc nào. `done` và `failed` có thể đạt
+được từ `inProgress` hoặc `inReview`; `open` cũng có thể chuyển thẳng sang
+`blocked`. Hộp chọn trạng thái trong giao diện liệt kê mọi trạng thái trừ
+`failed` — agent đánh dấu trạng thái đó bằng `fail_ticket`.
 
-To change it, use any of:
+Để thay đổi trạng thái, hãy dùng một trong các cách sau:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- hàng **Trạng thái** trong thanh thuộc tính của phiếu,
+- menu con **Trạng thái** trong menu chuột phải của một phiếu trong danh sách,
+- chip **Trạng thái** trên thanh nổi sau khi chọn nhiều phiếu.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Đồ thị vòng đời ràng buộc agent, không ràng buộc bạn]
+Mọi thay đổi trạng thái thực hiện từ giao diện đều được áp đặt xuyên qua, bỏ qua
+hoàn toàn đồ thị — bạn có thể chuyển một phiếu sang bất kỳ trạng thái nào mà hộp
+chọn liệt kê, kể cả mở lại một phiếu `done`, `failed` hoặc `cancelled`. Hộp chọn
+không đưa ra `failed` làm đích. Sơ đồ trên điều chỉnh agent và tự động hóa: một
+chuyển trạng thái không hợp lệ do công cụ MCP hoặc bộ đối soát thử thực hiện sẽ
+bị ghi log và bỏ qua, chứ không được áp dụng.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/).
+Các thay đổi trạng thái phát ra sự kiện miền (`TicketStatusChanged`,
+`TicketCompleted` và những sự kiện khác) có thể kích hoạt quy trình. Xem
+[Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/).
 
-## Assign a ticket
+## Gán một phiếu
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Mở phiếu.
+2. Trong thanh thuộc tính, đặt **Người được gán** — chính bạn, một thành viên
+   khác của không gian làm việc, hoặc một agent.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)).
+:::caution[Gán phiếu không khởi động công việc nào]
+Gán phiếu chỉ ghi nhận quyền sở hữu và không làm gì khác. Nó không tạo space,
+không đổi trạng thái và không điều phối agent nào — `TicketAssigned` là một tín
+hiệu kiểm toán thuần túy, không có bộ điều phối nào đứng sau. Để một agent thực
+sự làm việc, hãy nhắn cho nó trong một space (xem
+[Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Ngoại lệ duy nhất: `TicketAssigned` là một loại sự kiện mà bạn có thể nối một
+trình kích hoạt quy trình vào, nên một mẫu của riêng bạn có thể phản ứng với
+việc gán phiếu.
 :::
 
-## Add labels
+## Thêm nhãn
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Nhãn được áp dụng hàng loạt từ danh sách phiếu, chứ không phải từ một phiếu
+riêng lẻ — thanh thuộc tính không có điều khiển nhãn.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Di chuột qua một hàng trong danh sách phiếu và tích vào hộp kiểm của hàng đó.
+   Tích bao nhiêu hàng tùy ý; một thanh nổi sẽ xuất hiện ngay khi có thứ gì đó
+   được chọn.
+2. Trong thanh đó, mở chip **Nhãn**.
+3. Chọn một nhãn. Nhãn đó được thêm vào mọi phiếu đã chọn mà chưa có nó; các
+   nhãn sẵn có không bao giờ bị gỡ mất. **Xóa nhãn** sẽ gỡ toàn bộ nhãn. Hộp
+   chọn liệt kê những nhãn đã có trên một phiếu nào đó trong không gian làm
+   việc. Agent có thể thêm tên nhãn mới qua `update_ticket` hoặc `tickets.patch`.
 
-## Link tickets
+## Liên kết phiếu
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Các quan hệ nằm trên thẻ **Liên kết** của phiếu trong thanh thuộc tính, hoặc
+sau mục **Liên kết với** trong menu chuột phải của danh sách.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Mở phiếu và tìm thẻ **Liên kết**.
+2. Nhấn nút thêm của thẻ và chọn quan hệ:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Quan hệ             | Ý nghĩa                                 |
+| ------------------- | --------------------------------------- |
+| **Phiếu con của…**  | Phiếu cha của phiếu này là phiếu kia    |
+| **Phiếu cha của…**  | Phiếu kia là phiếu con của phiếu này    |
+| **Bị chặn bởi…**    | Phiếu này bị phiếu kia chặn             |
+| **Đang chặn…**      | Phiếu này chặn phiếu kia                |
+| **Liên quan đến…**  | Đối xứng, không ngụ ý hướng nào         |
+| **Trùng với…**      | Phiếu này là bản trùng của phiếu kia    |
 
-3. Pick the target ticket.
+3. Chọn phiếu đích.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Bị trùng bởi** xuất hiện trên thẻ nhưng không có trong hộp chọn — nó là quan
+hệ nghịch đảo của **Trùng với** và được đặt từ phiếu kia. Mỗi quan hệ được liệt
+kê đều có thể nhấn để mở phiếu được liên kết và có thể gỡ bỏ khi di chuột qua.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Quan hệ cha và phiếu con được lưu trên chính phiếu chứ không phải dưới dạng các
+hàng liên kết, nên xóa một phiếu cha sẽ xóa theo dây chuyền các phiếu con của nó
+(xem bên dưới), còn các liên kết chặn và liên quan thì không.
 
-## Add collaborators
+## Thêm cộng tác viên
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Cộng tác viên là một danh sách trên phiếu — ai tham gia và với vai trò gì.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Mở phiếu.
+2. Nhấn nút thêm người trên thẻ **Thêm cộng tác viên**.
+3. Chọn một agent.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Ba vai trò là **assignee**, **collaborator** (mặc định) và **reviewer**. Hộp
+chọn trong giao diện chỉ liệt kê các agent trong không gian làm việc và luôn ghi
+vai trò mặc định; con người có thể xuất hiện dưới dạng các hàng nhưng không được
+đưa ra trong menu đó. Công cụ MCP `add_ticket_collaborator` nhận một `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/).
+Thêm một cộng tác viên chỉ ghi một hàng và không phát ra sự kiện miền nào; nó
+không cấp quyền truy cập space nào. Để đưa một agent vào một cuộc hội thoại, hãy
+thêm nó làm người tham gia từ tiêu đề space — xem
+[Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/).
 
-## Delete a ticket
+## Xóa một phiếu
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Dùng **Xóa phiếu** ở cuối thanh thuộc tính, trong menu chuột phải, hoặc thao tác
+xóa trên thanh nổi sau khi chọn nhiều phiếu.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Xóa chỉ diễn ra cục bộ]
+Một phiếu đến từ trình theo dõi bên ngoài sẽ không bị xóa ở đó — không nhà cung
+cấp nào hỗ trợ việc đó — nên nó có thể xuất hiện lại trong lần đồng bộ kế tiếp.
+Việc xóa cũng diễn ra theo dây chuyền: các cộng tác viên của phiếu và mọi phiếu
+con đều bị xóa theo.
 :::
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
-- [Organize work with projects](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)
-- [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
-- [Ticket lifecycle reference](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Tổ chức công việc bằng dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/)
+- [Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
+- [Vòng đời phiếu](/vi-VN/so-tay/tham-chieu/vong-doi-phieu/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Tickets](/vi-VN/so-tay/khai-niem/phieu/)
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/)
+- [Phiếu](/vi-VN/so-tay/khai-niem/phieu/)
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/)

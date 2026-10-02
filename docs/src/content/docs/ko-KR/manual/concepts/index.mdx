@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: 개념
+description: Control Center가 어떻게 동작하고 왜 이렇게 만들어졌는지 — 가이드 뒤에 있는 배경 지식.
 slug: ko-KR/매뉴얼/개념
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ko-KR/매뉴얼/사용-가이드/); when you want to look
-something up, go to the [reference](/ko-KR/매뉴얼/레퍼런스/).
+이 페이지들은 **Control Center가 어떻게 동작하고 왜 그런지**를 설명합니다. 무언가를
+이해하기 위한 글이지, 실행하기 위한 글이 아닙니다. 여기에는 따라야 할 절차가
+없습니다. 특정 작업을 완수하려면 [사용 가이드](/ko-KR/매뉴얼/사용-가이드/)로 가고,
+무언가를 찾아보려면 [레퍼런스](/ko-KR/매뉴얼/레퍼런스/)로 가십시오.
 
-Read them in any order. If you are new, the core model is the place to start.
+어떤 순서로 읽어도 됩니다. 처음 접한다면 핵심 모델부터 시작하는 것이 좋습니다.
 
-## Core model
+## 핵심 모델
 
-The four ideas everything else is built on.
+나머지 모든 것이 그 위에 세워지는 네 가지 아이디어.
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/) — what happens between your message and the agent's first token
-- [Modes](/ko-KR/매뉴얼/개념/모드/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ko-KR/매뉴얼/개념/도구-컨텍스트/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ko-KR/매뉴얼/개념/대화-기록/) — persistence, compaction and forking a transcript
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/) — 테넌트 경계, 그리고 그것이 쿼리 규율이 아니라 데이터베이스 레이아웃으로 강제되는 이유
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/) — 에이전트를 이루는 것: 신원, 역할, 스킬, 기능, 어댑터, 모델
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/) — 메시지를 보낸 뒤 에이전트의 첫 토큰이 나오기까지 벌어지는 일
+- [모드](/ko-KR/매뉴얼/개념/모드/) — `chat`, `plan`, `review`, `orchestrate`가 에이전트가 할 수 있는 일을 어떻게 바꾸는지
+- [도구 컨텍스트와 프롬프트 캐싱](/ko-KR/매뉴얼/개념/도구-컨텍스트/) — 에이전트가 왜 도구의 일부만 보는지, 나머지 도구에는 어떻게 접근하는지, 무엇이 제공업체 캐시를 따뜻하게 유지하는지
+- [코드 인텔리전스](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — 코드 그래프, 언어 서버, 구조적 검색, 디버거
+- [대화 기록](/ko-KR/매뉴얼/개념/대화-기록/) — 지속성, 압축, 트랜스크립트 포크
 
-## Safety and control
+## 안전과 제어
 
-What an agent is allowed to touch and who decides.
+에이전트가 무엇을 건드릴 수 있고, 누가 그것을 결정하는지.
 
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/) — what actually constrains an agent run today
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ko-KR/매뉴얼/개념/권한-부여/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ko-KR/매뉴얼/개념/리그/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/) — 오늘날 에이전트 실행을 실제로 제약하는 것
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/) — 모든 변경 동작을 위한 하나의 정책 엔진과 규칙이 결정되는 방식
+- [권한 부여](/ko-KR/매뉴얼/개념/권한-부여/) — 역할, 권한 카탈로그, 감사 기록
+- [리그와 인클로저](/ko-KR/매뉴얼/개념/리그/) — 에이전트가 여러분의 머신 대신 일회용 VM을 받는 이유, 그리고 그 경계가 실제로 무엇인지
 
-## Directing the work
+## 작업 지시
 
-Turning intent into work that gets done.
+의도를 실제로 완수되는 일로 바꾸기.
 
-- [Tickets and delegation](/ko-KR/매뉴얼/개념/티켓/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/) — one goal, one approval, a generated pipeline
-- [AI review](/ko-KR/매뉴얼/개념/ai-리뷰/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ko-KR/매뉴얼/개념/pr-대화/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ko-KR/매뉴얼/개념/메모리와-지식/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ko-KR/매뉴얼/개념/평가와-품질/) — eval suites and the Quality tab
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/) — 플릿 전체가 공유하는 벤더 중립적 작업 단위
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/) — DAG 워크플로, 트리거, 재개 가능한 실행
+- [오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/) — 목표 하나, 승인 하나, 생성된 파이프라인
+- [AI 리뷰](/ko-KR/매뉴얼/개념/ai-리뷰/) — PR이 리뷰된 PR이 되는 과정: 리뷰 스페이스, 동료 합의, 축, 그리고 Ship/Hold/Block 판정
+- [PR 대화](/ko-KR/매뉴얼/개념/pr-대화/) — forge 자체에서 GitHub 멘션이나 `ai-review` 레이블에 답하기
+- [메모리와 지식](/ko-KR/매뉴얼/개념/메모리와-지식/) — 사실, 정책, 그리고 에이전트가 알 수 있는 것
+- [평가와 품질](/ko-KR/매뉴얼/개념/평가와-품질/) — 평가 스위트와 품질 탭
 
-## People and reach
+## 사람과 도달
 
-Working with other humans and reaching the fleet from elsewhere.
+다른 사람과 함께 일하고, 다른 곳에서 플릿에 도달하기.
 
-- [Multiplayer and presence](/ko-KR/매뉴얼/개념/멀티플레이어/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ko-KR/매뉴얼/개념/싱글-사인온/) — SAML and OIDC logins
-- [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ko-KR/매뉴얼/개념/회의/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ko-KR/매뉴얼/개념/캘린더/) — Google Calendar sync and meeting alerts
+- [멀티플레이어와 프레즌스](/ko-KR/매뉴얼/개념/멀티플레이어/) — 사람과 에이전트가 대등한 참여자라는 점, 그리고 접근을 통제하는 것
+- [싱글 사인온](/ko-KR/매뉴얼/개념/싱글-사인온/) — SAML 및 OIDC 로그인
+- [채팅 브리지](/ko-KR/매뉴얼/개념/채팅-브리지/) — Slack 브리지가 왜 외부로 연결하는지, 채팅에서 온 메시지를 무엇이 승인하는지
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/) — 휴대폰이 서버에 도달하는 방식과 그를 둘러싼 보안 모델
+- [회의와 전사](/ko-KR/매뉴얼/개념/회의/) — 기기 내 녹음, 전사, 요약
+- [캘린더와 일정](/ko-KR/매뉴얼/개념/캘린더/) — Google Calendar 동기화와 회의 알림
 
-## Under the hood
+## 내부 구조
 
-The shape of the system itself.
+시스템 자체의 구조.
 
-- [Architecture](/ko-KR/매뉴얼/개념/아키텍처/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/) — the in-process bus features talk over
+- [아키텍처](/ko-KR/매뉴얼/개념/아키텍처/) — 계층화, 공유 커널, 포트와 어댑터
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/) — 데스크톱, 웹, 휴대폰 클라이언트가 하나의 서버와 맺는 관계
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/) — 기능들이 서로 대화하는 프로세스 내부 버스

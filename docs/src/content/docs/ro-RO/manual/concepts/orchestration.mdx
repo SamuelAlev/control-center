@@ -1,113 +1,120 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orchestrare
+description: Cum devine o „cerere mare” un plan pentru toată echipa, pe care îl aprobi o singură dată, apoi un pipeline generat care îl execută.
 slug: ro-RO/manual/concepte/orchestrare
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Un singur agent este bun la un singur lucru. Unele cereri sunt mai mari de atât:
+„cercetează piața pentru X și scrie un document de poziționare”, „livrează
+această funcționalitate de la un capăt la altul”, „auditează acest modul și
+repară ce găsești”. O **orchestrare** este modul în care Control Center le
+tratează: un orchestrator (de obicei agentul tău CEO) propune un plan pentru
+toată echipa, îl aprobi **o singură dată**, iar un materializator determinist îl
+transformă într-un pipeline care face munca.
 
-It sits between the two existing ways of getting work done:
+Se situează între cele două moduri existente de a face munca:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ro-RO/manual/concepte/pipeline-uri/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Când vrei să…                                    | Folosește                                                 |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| Dai o singură sarcină unui singur agent          | Un [mesaj într-un spațiu](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/) |
+| Codifici manual un proces pe care îl știi deja   | Un [șablon de pipeline](/ro-RO/manual/concepte/pipeline-uri/)        |
+| Spui obiectivul și lași echipa să stabilească planul | **O orchestrare**                                         |
 
-## The shape of a proposal
+## Cum arată o propunere
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Când îi dai orchestratorului un obiectiv, acesta returnează un
+**`OrchestrationProposal`** structurat: un plan tipizat pe care aplicația îl poate
+valida și executa, în loc de proză liberă. O propunere are:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ro-RO/manual/concepte/tichete/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Obiectiv**: cererea ta de nivel înalt, reformulată.
+- **Roluri**: cine face munca. Fiecare rol este fie un **agent existent** pe care
+  îl alegi, fie o **angajare nouă** pe care orchestrarea o creează la aprobare.
+- **Sub-tichete**: munca, împărțită într-un DAG de [tichete](/ro-RO/manual/concepte/tichete/).
+- **Cercetare** _(opțional)_: o fază de cercetare care rulează prima și alimentează restul.
+- **Discuție** _(opțional)_: o rundă delimitată în care fiecare rol publică o
+  poziție structurată înainte de începerea muncii.
+- **Sinteză**: pasul final care produce livrabilul.
+- **Buget**: un plafon de cost declarat.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Bugetul este orientativ]
+Plafonul de cost al propunerii este comparat cu totalul estimat al planului și
+semnalizează un plan peste buget în bara de aprobare _înainte_ să aprobi. Nimic
+nu îl citește după ce rularea a pornit, așa că nu oprește și nu face să eșueze o
+orchestrare care depășește bugetul. Politicile de buget pe agent și pe spațiu de
+lucru sunt un mecanism separat și ele sunt cele care opresc efectiv cheltuiala.
 :::
 
-## Where you review it
+## Unde îl revizuiești
 
-Two surfaces show the same orchestration.
+Două suprafețe afișează aceeași orchestrare.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Cardul propunerii** trăiește în conversația care a produs planul. Este un
+singur mesaj care se randează din nou pe tot parcursul ciclului de viață —
+propus, se execută, finalizat — cu acțiunile de aprobare și anulare pe el.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** este editorul: un canvas DAG, un inspector de noduri, un sertar
+de revizii și diff-uri și bara de aprobare care poartă estimarea. Se deschide ca
+un tab de editor direct din acel card. Nu există în mod deliberat un element
+„Planuri” în bara laterală; `/plans` și `/plans/:kind/:id` există ca linkuri
+directe pentru partajare.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Aprobarea este **doar pentru operatori**. Nu există un instrument MCP pentru ea:
+un agent poate propune (`propose_orchestration`), poate trimite un plan
+(`submit_plan`) sau poate instanția un playbook (`run_playbook`), dar doar un om
+aprobă. Reviziile inițiate de agenți sunt în plus limitate ca frecvență printr-o
+perioadă de așteptare de două minute, astfel încât o buclă de replanificare se
+contopește în loc să îți inunde fluxul.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Ce poți schimba înainte de aprobare este exact ce expune inspectorul de noduri:
+schimbi titlul sau rescrii un sub-tichet, schimbi care **rol** îl deține,
+reconfigurezi dependențele lui, editezi schema lui de ieșire sau ștergi nodul
+complet. Nodurile structurale (cercetare, discuție, sinteză) și nodurile care au
+fost deja executate sunt doar în citire. Nu poți fixa un rol pe un anumit agent
+anume și nu poți edita bugetul, din editor.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Doi editori pe un singur plan se rezolvă prin concurență optimistă, nu prin
+fuzionare. Fiecare editare poartă `base_revision` față de care a fost făcută; o
+editare bazată pe o revizie învechită este refuzată cu „planul a avansat”, în loc
+să suprascrie în tăcere munca altcuiva. Nici derularea înapoi nu este o ștergere
+— adaugă propunerea mai veche ca revizie nouă, astfel încât cronologia reviziilor
+doar crește.
 
-## Honest estimates, or none
+## Estimări sincere sau deloc
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Estimarea din bara de aprobare este construită din istoricul real al rulărilor
+finalizate pentru fiecare rol, ca interval intercuartilic (p25–p75). Totalurile de
+cost **însumează** nodurile estimabile; durata este **calea critică** prin DAG, nu
+suma (ramurile paralele se suprapun).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Un nod al cărui rol **nu are istoric de rulări finalizate** raportează
+`sampleSize: 0` și intervale null. Asta se afișează exact așa — necunoscut —,
+niciodată ca o valoare punctuală fabricată, pentru că o estimare în care nu poți
+avea încredere este mai rea decât nicio estimare. Când unele noduri au istoric și
+altele nu, totalul este marcat ca parțial. Raza de impact apare doar când un nod a
+declarat referințe de proveniență `symbol` sau `file`; un nod fără ele rămâne
+„necunoscut” în loc să deducă din proză.
 
-## One approval, then deterministic execution
+## O singură aprobare, apoi execuție deterministă
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ro-RO/manual/concepte/pipeline-uri/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Aceasta este ideea centrală: **agentul planifică; o funcție deterministă
+execută.** Când aprobi, `OrchestrationMaterializer`, o funcție pură, fără LLM și
+fără I/O, transformă propunerea într-un [pipeline](/ro-RO/manual/concepte/pipeline-uri/)
+real. Având aceeași propunere și aceleași roluri rezolvate, produce întotdeauna
+același DAG. Asta contează pentru că pipeline-ul generat moștenește tot ce face
+deja motorul gratuit: suspendare și reluare între reporniri, recuperare după
+crash, totaluri de cost și tokenuri pe rulare și interfața de detalii a rulării.
 
-Approval also creates the scaffolding the work needs:
+Aprobarea creează și structura de suport de care are nevoie munca:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **angajează** orice roluri marcate ca noi (și înregistrează id-urile agenților
+  angajați, astfel încât un crash la mijlocul aprobării să poată relua fără
+  angajări duplicate)
+- o **echipă** care grupează rolurile
+- un **proiect** care înregistrează tichetul părinte
+- **șablonul de pipeline + rularea** care le pune pe toate în mișcare
 
-## The lifecycle
+## Ciclul de viață
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +122,44 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Stare          | Semnificație                                                                     |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | Planul este gata și așteaptă singura ta aprobare inițială                       |
+| `approved`     | L-ai aprobat; materializarea este în curs (angajări, echipă, proiect, pipeline)  |
+| `executing`    | Pipeline-ul generat rulează: sub-tichete, discuție, muncă                       |
+| `synthesizing` | Sub-tichetele sunt gata; pasul de sinteză produce livrabilul                     |
+| `completed`    | Gata: tichetul părinte este marcat ca finalizat, iar livrabilul este publicat în spațiul comun |
+| `failed`       | Materializarea a eșuat sau rularea pipeline-ului generat a eșuat                |
+| `cancelled`    | L-ai anulat                                                                      |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Un număr **de revizie** monoton urmărește propunerea pe măsură ce orchestratorul o
+revizuiește cât timp aceasta este încă `proposed`; aplicația înregistrează ce
+revizie ai aprobat. `propose_orchestration` refuză o revizie odată ce starea nu
+mai este `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+O orchestrare se deschide întotdeauna față de un **tichet părinte** și partajează
+un singur **spațiu** de discuție, astfel încât întregul efort este trasabil până
+la un singur element de lucru, iar echipa vorbește într-o singură cameră.
 
-## What happens when it finishes
+## Ce se întâmplă când se termină
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Un ascultător menținut activ urmărește pipeline-ul generat și mapează starea lui
+terminală înapoi pe orchestrare și pe tichetul părinte, astfel încât finalizarea
+și eșecul apar în locurile pe care le urmărești deja. Funcționalitatea de
+orchestrare nu are nevoie de propriul motor de execuție.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Poți anula o orchestrare oricând; anularea desființează munca în curs.
 
 ::::note
-Orchestration builds on [pipelines](/ro-RO/manual/concepte/pipeline-uri/) and
-[tickets](/ro-RO/manual/concepte/tichete/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orchestrarea se construiește peste [pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/) și
+[tichete](/ro-RO/manual/concepte/tichete/). Este un strat de planificare și
+aprobare deasupra lor, nu un runtime separat.
 ::::
 
-## See also
+## Vezi și
 
-- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/): the parent ticket an orchestration is anchored on
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): the roles an orchestration fills or hires
-- [Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
-- [Work in Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/)
+- [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/): motorul pe care rulează o orchestrare materializată
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/): tichetul părinte pe care este ancorată o orchestrare
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): rolurile pe care o orchestrare le completează sau le angajează
+- [Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
+- [Lucrează în Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/)

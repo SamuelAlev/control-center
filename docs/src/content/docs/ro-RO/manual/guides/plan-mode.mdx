@@ -1,135 +1,150 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Folosește modul plan
+description: Comută un spațiu în modul plan, obține un plan tipizat și aprobă-l pentru a-l transforma în muncă în rulare.
 slug: ro-RO/manual/ghiduri-practice/modul-plan
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Acest ghid îți arată cum să obții un plan structurat de la un agent înainte ca
+acesta să scrie vreun cod.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+În modul plan, agentul cercetează doar pentru citire, iar singurul său livrabil
+este un **plan tipizat**: un graf de dependențe de pași pe care îi aprobi, pe care
+Control Center îl compilează apoi în muncă reală. Folosește-l când vrei să vezi
+amploarea unei modificări, să vezi pașii descompuși sau să afli riscurile și
+dependențele înainte de a se atinge ceva.
 
-## Switch a space into plan mode
+## Comută un spațiu în modul plan
 
-Any of these flips the space's mode and the change is persisted:
+Oricare dintre acestea comută modul spațiului, iar schimbarea este persistată:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Alege **Plan** din lista derulantă de moduri din extrema stângă a barei de
+  instrumente a zonei de compunere
+- Apasă **Shift+Tab**
+- Trimite `/plan`. Un `/plan` simplu doar activează modul; `/plan <request>` îl
+  activează și trimite restul ca mesaj al tău
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` nu călătorește niciodată ca text — el setează modul stocat, care este
+autoritatea pe care o citesc deopotrivă suprafața de instrumente, presetarea de
+guardrail-uri și promptul. Așadar, modul se menține pentru acest tur și pentru
+fiecare tur de după el, până când îl schimbi înapoi.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Modul este stocat pe spațiu, așa că același agent poate fi în modul plan aici și
+în modul agent în altă parte.
 
-## What the agent produces
+## Ce produce agentul
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Cercetează doar pentru citire — memoria, indexul de cod, fișierele
+2. Apelează `submit_plan` **o singură dată**, cu un `goal` plus `nodes`, fiecare
+   purtând o `key` stabilă, un `title`, o `description` și cheile nodurilor de
+   care `dependsOn` (ceea ce permite ca munca independentă să ruleze în paralel)
+3. Se oprește
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Instrumentul validează graful — chei duplicate, dependențe pendinte, cicluri — și
+întoarce încălcări pe care agentul să le corecteze, în loc să accepte un plan
+defect.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Planul apare **în conversație** ca un rând compact care arată obiectivul, starea
+lui și numărul de pași. **Plan Studio** — graful de dependențe, inspectorul per
+nod și estimarea costurilor — se deschide într-o filă alături de conversație:
+apasă **Deschide** pe rând sau pur și simplu așteaptă, pentru că un plan care
+sosește în 30 de secunde cât timp urmărești conversația își deschide singur fila.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Garanția doar-pentru-citire este structurală, dar numai pe harnessul încorporat]
+Harnessul propriu al Control Center își construiește registrul de instrumente al
+agentului pornind de la specificația de suprafață a modului plan, așa că pur și
+simplu nu există niciun instrument de scriere, de editare sau de comandă de
+apelat — restricția nu este o instrucțiune de prompt din care modelul ar putea să
+se scoată vorbind.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Adaptorul Claude Code nu primește o asemenea filtrare: modul ajunge la el ca o
+cerere pe care propriul său runner o poate onora sau nu, iar Control Center vede
+mereu doar apelurile lui `mcp__*`. Insigna de aplicare de lângă lista derulantă
+de moduri apare exact atunci când acesta este cazul.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Agentul îți poate pune întrebări de clarificare]
+Când cererea este ambiguă, un agent în modul plan poate face o pauză și îți poate
+pune până la trei întrebări blocante cu instrumentul `ask_user`. El randează un
+formular în conversație — opțiuni sau text liber — iar rularea se blochează până
+când răspunzi. Instrumentul este de nivel de citire, așa că supraviețuiește
+suprafeței doar-pentru-citire a modului plan și este scutit de învelișul de
+aprobare (un prompt în fața unui prompt eșuează în siguranță atunci când nu este
+conectat niciun aprobator, refuzându-i agentului însuși actul de a întreba).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Are nevoie de un spațiu în care să randeze, așa că o trimitere punctuală fără
+conversație nu îl primește. Dacă pui de la început, în primul tău mesaj,
+amploarea, repo-ul țintă și criteriile de acceptare, este totuși mai rapid decât
+un drum dus-întors.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Proza nu este un livrabil aici. O rulare care se încheie fără să apeleze
+`submit_plan` afișează în conversație o linie vizibilă „Ended without submitting
+a plan (no `submit_plan` call)." și marchează rularea ca având livrabilul
+neîndeplinit. Starea rulării rămâne în mod deliberat _completed_ — asta ține
+neatinse mașinile de stări ale pipeline-urilor și ale tichetelor — așa că
+citește linia, nu insigna de stare.
 
-## Approve the plan
+## Aprobă planul
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Din rândul planului aflat în conversație, apasă **Aprobă și rulează**. Din bara
+de aprobare a Plan Studio, apasă **Aprobă planul** (sau **Respinge** alături;
+aprobarea este dezactivată cât timp graful are o eroare de validare).
 
-Then:
+Apoi:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center compilează planul într-o orchestrare și o materializează —
+   tichetele și rularea. Niciun model nu este implicat în acest pas; el este
+   determinist
+2. Planul se execută ca agentul care l-a scris. Dacă implică pe altcineva este
+   decizia acelui agent la momentul rulării — el poate `delegate_task` un pas
+   către un coleg mai potrivit, în limita plafonului de adâncime al delegării din
+   spațiul de lucru
+3. Obiectivul planului devine **obiectivul conversației**, iar munca rulează **în
+   aceeași conversație**: fiecare pas afișează ce i s-a cerut agentului și
+   transmite în flux turul lui înapoi, așa că îl urmărești (și poți opri un tur)
+   chiar acolo unde ești deja
+4. Rândul obiectivului din panoul lateral **General** al conversației (sub
+   Todo-uri) afișează progresul rulării ca `settled/total` și butonul lui de
+   oprire; Plan Studio arată starea fiecărui nod pe graf și anulează tot de acolo
 
-## Keep working without approving
+## Continuă să lucrezi fără să aprobi
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Dacă preferi să rămâi în această conversație în loc să aprobi planul, agentul
+poate apela `exit_plan_mode`. Aceasta este singura ieșire permisă: deschide o
+cerere de aprobare durabilă legată de conversație și întoarce `pending` — spațiul
+rămâne în modul plan, iar agentul nu trebuie să acționeze. Odată ce cererea este
+aprobată, următorul apel `exit_plan_mode` al agentului comută spațiul din modul
+plan în modul agent și îi deblochează instrumentele care modifică starea. O
+respingere îi permite să deschidă o cerere nouă pentru un plan revizuit.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Ca să ieși din modul plan, schimbă lista derulantă din zona de compunere (sau
+Shift+Tab) ori aprobă planul trimis. `exit_plan_mode` deschide o aprobare
+durabilă decisă cu instrumentul MCP `decide_approval`. Suprapunerea de
+guardrail-uri pentru apelurile de instrumente blocate este o coadă diferită,
+ținută în memorie, și nu transportă cereri de ieșire din modul plan.
 
-## Plan mode in a pipeline step
+## Modul plan într-un pas de pipeline
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Un nod de pipeline `messaging.createSpace` citește modul conversației din câmpul
+**extra** `mode` al configurației nodului — `extras['mode']: 'plan'`. Cheia se
+potrivește exact: orice altă scriere, inclusiv `conversationMode` sau
+`dispatchMode`, este ignorată în tăcere, iar camera revine la valoarea implicită
+a corpului, care este modul **revizuire**, nu chat. Un pas `promptAgent` se
+alătură unei camere pe care nu a creat-o și nu îi schimbă permisiunile.
+Selectorul **Mod de dispatch** din editorul de configurare al nodului
+(`allParallel` / `manager`) este pentru nodurile de dispatch în echipă. Setează
+modul conversației cu `extras['mode']` pe un șablon care deschide spațiul sau pe
+configurația acelui nod, prin API.
 
-## Related guides
+## Ghiduri conexe
 
-- [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
-- [Use spaces](/ro-RO/manual/ghiduri-practice/spatii/)
-- [Work in Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/)
-- [Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
+- [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/)
+- [Lucrează în Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/)
+- [Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
 
-## Related concepts
+## Concepte conexe
 
-- [Modes](/ro-RO/manual/concepte/moduri/)
-- [Orchestration](/ro-RO/manual/concepte/orchestrare/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)
+- [Orchestrare](/ro-RO/manual/concepte/orchestrare/)

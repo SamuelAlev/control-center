@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: 첫 에이전트 디스패치
+description: 에이전트를 만들고 스페이스와 작업을 부여한 다음 실행이 실시간으로 흘러 들어오는 모습을 지켜봅니다.
 slug: ko-KR/매뉴얼/튜토리얼/첫-에이전트
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## 무엇을 만들게 되는가
 
-By the end of this tutorial, you will have:
+이 튜토리얼을 마치면 다음을 갖추게 됩니다.
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- 직접 만들고 구성한 에이전트
+- 당신과 그 에이전트가 대화하는 스페이스
+- 격리된 워크트리에 커밋된 작업과 에이전트의 실행 로그에 남은 행 하나를 갖춘, 완료된 실행 하나
 
-Prerequisites: [Your first workspace](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/) completed, so this workspace has a repo registered and at least one model provider connected.
+사전 준비: [첫 워크스페이스](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/)를 완료해야 합니다. 그래야 이 워크스페이스에 저장소가 등록되어 있고 모델 프로바이더가 하나 이상 연결되어 있습니다.
 
-## Step 1: Create an agent
+## 1단계: 에이전트 만들기
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. **설정 → 워크스페이스 → 에이전트**로 이동합니다.
+2. **새 에이전트**를 클릭합니다. "이름 없는 에이전트"라는 에이전트가 즉시 만들어지고 로스터에서 선택됩니다. 만들기 대화 상자도, 확인할 절차도 없습니다. 그 자리에서 구성하면 됩니다.
+3. **설정** 탭에서 다음을 입력합니다.
+   - **이름**: `alice`처럼 짧고 기억하기 쉬운 값입니다. `@` 뒤에 입력하는 값입니다.
+   - **제목**: 에이전트가 하는 일입니다. 예: "백엔드 엔지니어"
+   - **어댑터**: `Control Center (built-in)`. 이것을 의도적으로 고르세요. 내장 하네스만 실행 중에 조종하고 턴 경계에서 일시 중지할 수 있으며, 서버 호스트에 CLI를 설치할 필요도 없습니다.
+   - **모델**: 연결된 프로바이더가 제공하는 목록에서 고릅니다.
+   - **스킬**: 맞는 것이 있으면 붙입니다. 예: `testing` 또는 `architecture`
+4. **변경 사항 저장**을 누릅니다.
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[어댑터가 없는 에이전트는 내장 루프에서 실행됩니다]
+어댑터 필드가 설정되지 않은 경우, 디스패치는 **Control Center (built-in)**으로 폴백합니다. 서버 내부의 에이전트 루프이므로 호스트에 설치할 것은 없습니다. 그래도 모델은 필요합니다. 모델이 설정되지 않으면 Anthropic에 기본 모델을 요청하는데, Anthropic 계정을 연결했다면 동작하고 그렇지 않으면 `No credential for provider "anthropic"` 오류로 실패합니다. 어찌 됐든 둘 다 명시적으로 설정하세요. 그렇지 않으면 직접 고르지 않은 모델에서 실행하게 됩니다.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**체크포인트.** 로스터의 행에 에이전트 이름과 속이 빈 상태 링이 표시됩니다.
 
-## Step 2: Start a space
+## 2단계: 스페이스 시작하기
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. 사이드바에서 **스페이스** 섹션을 찾아 **+** 버튼을 클릭합니다.
+2. 스페이스에 이름을 지정합니다.
+3. **에이전트 추가**에서 방금 만든 에이전트를 선택합니다.
+4. 워크스페이스에 저장소가 있다면 이 스페이스가 작업할 저장소를 고릅니다.
+5. **만들기**를 클릭합니다.
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+스페이스가 열립니다. Control Center는 백그라운드에서 이 대화를 위해 선택한 저장소의 기록 중 복사 워크트리를 자체 브랜치에 프로비저닝합니다. 소스 체크아웃은 결코 변경되지 않습니다.
 
-## Step 3: Send a task
+## 3단계: 작업 보내기
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+등록한 저장소를 대상으로 구체적이고 작은 작업 하나를 입력합니다. 확인 가능한 결과가 있는 작업이 가장 좋습니다. 테스트 추가, 린트 수정, 심벌 이름 변경 등입니다.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Enter를 누릅니다. 누구도 `@`로 멘션할 필요가 없습니다. 스페이스에 에이전트가 하나뿐이면 평범한 메시지로 깨어납니다. 에이전트가 여러 명인 스페이스에서는 `@name`으로 하나를 고릅니다.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center는 에이전트의 지침, 페르소나, 스킬과 스페이스의 컨텍스트로 프롬프트를 조립한 다음 실행을 디스패치합니다.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**체크포인트.** 컴포저의 보내기 버튼이 중지 버튼으로 바뀌고(이 대화에서 에이전트가 작업 중이라는 뜻입니다) 텍스트가 도착하기 시작합니다.
 
-## Step 4: Watch it work
+## 4단계: 작동하는 모습 지켜보기
 
-The conversation renders the run as it happens:
+대화는 실행이 일어나는 동안 그것을 그대로 렌더링합니다.
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **추론**: 에이전트가 생각하는 내용이 인라인으로 표시됩니다.
+- **도구 호출**: 파일 읽기와 쓰기, 검색, 셸 명령이 각각의 결과와 함께 표시됩니다.
+- **텍스트**: 요약, 설명 그리고 당신에게 하는 질문입니다.
 
-If the agent asks something, answer in the conversation and it resumes.
+에이전트가 무언가를 물으면 대화에서 답하세요. 그러면 이어서 진행합니다.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+실행 자체의 지표와 일시 중지, 재개, 중지 컨트롤을 보려면 스페이스의 일반 패널에 있는 **에이전트** 섹션에서 실행 중인 에이전트를 찾고 **활동 열기**를 선택합니다.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+활동 창에서 상태 배지는 **실행 중**으로 표시되고, 실행이 끝나면 **성공**으로 바뀝니다. 멈추거나 반복되는 실행은 **차단됨**, 오류가 나는 실행은 **실패**로 표시됩니다. 에이전트 레지스트리에서 로스터 링은 첫 실행 전에는 속이 비어 있고, 에이전트가 다시 유휴 상태가 되면 채워집니다.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ko-KR/매뉴얼/개념/가드레일/).
+실행을 제약하는 요소는 다음과 같습니다. 자체 기록 중 복사 워크트리, 실행 시작 시 중개되었다가 종료 시 해지되는 자격 증명, 정리된 환경, 해당 모드가 허용하는 도구 표면, 그리고 액션 가드레일입니다. 브랜치를 푸시하거나 풀 리퀘스트를 여는 것과 같은 효과는 별도로 게이트됩니다. [가드레일](/ko-KR/매뉴얼/개념/가드레일/)을 참고하세요.
 
-## Step 5: Check the result
+## 5단계: 결과 확인하기
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. **설정 → 워크스페이스 → 에이전트**를 열고 에이전트를 선택합니다.
+2. **로그** 탭을 엽니다.
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**체크포인트.** 실행 행 하나가 상태, 소요 시간, 시작 및 종료 시각 그리고 실행에 사용된 어댑터와 함께 표시됩니다.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+에이전트의 변경 사항은 워크트리 안에서 대화의 브랜치에 커밋됩니다. 커밋은 에이전트가 작성자로 기록되며, 당신은 `Co-Authored-By:` 트레일러로 크레딧을 받습니다.
 
-## Getting a pull request
+## 풀 리퀘스트 만들기
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+풀 리퀘스트를 스스로 여는 것은 없습니다. 원한다면 같은 대화에서 요청하세요.
 
-> Push this branch and open a pull request against the default branch.
+> 이 브랜치를 푸시하고 기본 브랜치를 대상으로 풀 리퀘스트를 열어 주세요.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+푸시(`gitPush`)와 PR 생성(`prCreate`)은 둘 다 기본적으로 승인을 요청하므로, 각 작업 전에 확인 절차를 예상해야 합니다. 프롬프트가 뜰 때 연결된 승인자가 없으면 그 작업은 허용되지 않고 거부됩니다. 가드레일은 닫힌 상태로 실패합니다.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR은 에이전트의 이름이 아니라 그 실행이 사용한 토큰의 GitHub 아이덴티티로 열립니다. 개인 토큰을 저장했다면 그것이 곧 당신의 아이덴티티입니다. 에이전트의 작성자 표시는 커밋에 드러납니다.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+직접 열 수도 있습니다. 스페이스의 **소스 제어** 패널에는 대화의 브랜치를 작성 화면으로 넘겨주는 **풀 리퀘스트 만들기** 버튼이 있고, **풀 리퀘스트 → 새 PR**은 같은 화면을 빈 상태로 엽니다. 다음 튜토리얼은 여기서 이어집니다.
 
-## Recap
+## 마무리
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+에이전트를 만들고 어댑터와 모델을 구성했으며, 스페이스와 작업을 부여한 다음 체크아웃은 건드리지 않고 격리된 워크트리에서 실제 실행이 끝나는 모습을 지켜봤습니다.
 
-**Next:** [Review your first pull request](/ko-KR/매뉴얼/튜토리얼/첫-풀-리퀘스트/) to learn the review workflow.
+**다음:** 리뷰 워크플로를 배우려면 [첫 풀 리퀘스트 리뷰](/ko-KR/매뉴얼/튜토리얼/첫-풀-리퀘스트/)를 참고하세요.
 
-For more on agents: [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/). For dispatch details: [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/).
+에이전트에 관한 더 자세한 내용은 [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)을, 디스패치 세부 사항은 [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)를 참고하세요.

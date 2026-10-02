@@ -2,6 +2,7 @@
 title: Chat bridge
 description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
 slug: en-GB/manual/reference/chat-bridge
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
 ## Providers
@@ -28,7 +29,7 @@ The command name is per app (`cc` by default, so `/cc`). An admin can rename it;
 
 Ways to reach an agent:
 
-| Gesture                    | Behavior                                                                                                               |
+| Gesture                    | Behaviour                                                                                                              |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
 | Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
@@ -132,7 +133,7 @@ Streamed and posted cards are different payloads:
 
 Failure handling:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Situation                                    | Behaviour                                                                                                                   |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
 | Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
@@ -178,7 +179,7 @@ Chat products accept `http(s)` in a link and nothing else, so a call to action c
 | Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
 | Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
 | Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorisation                          |
 
 ## Bot profile fields
 
@@ -188,7 +189,7 @@ Chat products accept `http(s)` in a link and nothing else, so a call to action c
 | `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
 | `description`      | ≤ 140 chars |                                                                                                   |
 | `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
+| `command`          | ≤ 32 chars  | Normalised: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
 | `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
 
 An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
@@ -294,7 +295,7 @@ A link is identity resolution, **not** an access grant: membership is re-checked
 
 ## Space kind and message metadata
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behaviour (mirroring, badging, retention) goes through.
 
 Every message the bridge brings in carries a `metadata['chat']` stamp:
 
@@ -314,9 +315,9 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 
 The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
 
-## Relay behavior
+## Relay behaviour
 
-| Behavior                               | Detail                                                                                                         |
+| Behaviour                              | Detail                                                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
 | Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
@@ -331,6 +332,6 @@ The stamp is also the echo guard: the outbound mirror skips any message that car
 
 - [Set up Slack integration](/en-GB/manual/guides/slack-integration/)
 - [Link your Slack account](/en-GB/manual/guides/link-chat-account/)
-- [Customize the chat bot](/en-GB/manual/guides/customise-chat-bot/)
+- [Customise the chat bot](/en-GB/manual/guides/customise-chat-bot/)
 - [Chat bridges](/en-GB/manual/concepts/chat-bridges/)
 - [Guardrails](/en-GB/manual/concepts/guardrails/) for the action classes the ops declare

@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Životní cyklus ticketu
+description: Pole ticketu, stavy, přechody, vazby a průchod mutací.
 slug: cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Stavy ticketu
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Stav         | Uložený řetězec | Popis                                            |
+| ------------ | --------------- | ------------------------------------------------ |
+| `backlog`    | `backlog`       | Zachycený, ještě nezařazený do aktivní fronty   |
+| `open`       | `open`          | Zařazený a připravený k práci, ještě nezahájený |
+| `inProgress` | `inProgress`    | Aktivně se na něm pracuje                        |
+| `blocked`    | `blocked`       | Zahájený, ale zablokovaný něčím vnějším          |
+| `inReview`   | `inReview`      | Práce je hotová a čeká na kontrolu               |
+| `done`       | `done`          | Úspěšně dokončený (koncový)                      |
+| `failed`     | `failed`        | Dokončený s chybou (koncový)                     |
+| `cancelled`  | `cancelled`     | Opuštěný (koncový)                               |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Hodnoty stavů se ukládají v camelCase (`inProgress`, `inReview`), nikdy jako `in_progress`. Null uložená hodnota se parsuje jako `open`; neznámá hodnota vyhodí výjimku a na jiný stav se nepřinutí.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` přijímá aliasy dodané agentem a ignoruje velikost písmen i `-` / `_` / mezeru:
 
-| Status       | Accepted aliases                              |
+| Stav         | Přijímané aliasy                              |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Přechody stavů
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,159 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Tenhle graf váže jen agenty a automatizaci.** `TicketWorkflowService.transitionStatus` ho kontroluje, když je `force` false: nástroje MCP a rekoncileři. Nepovolený přechod se tam zapíše do logu a ignoruje. Každá změna stavu, kterou člověk udělá v rozhraní, posílá `force: true` a graf úplně obejde, takže člověk smí ticket přesunout na jakýkoli stav, který výběr nabízí (všechny stavy kromě `failed`), včetně znovuotevření koncového. Agenti označí `failed` přes `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Stav smí vždy přejít sám na sebe. Koncové stavy nemají odchozí hrany.
 
-| From         | Allowed targets                                      |
+| Z            | Povolené cíle                                        |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (koncový)                                          |
+| `failed`     | — (koncový)                                          |
+| `cancelled`  | — (koncový)                                          |
 
-## Ticket priorities
+## Priority ticketu
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Ukládají se jako celé číslo na nativní stupnici Linear 0–4. Neznámá hodnota se parsuje na `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Priorita | Uloženo jako |
+| -------- | ------------ |
+| `none`   | `0`          |
+| `urgent` | `1`          |
+| `high`   | `2`          |
+| `medium` | `3`          |
+| `low`    | `4`          |
 
-## Ticket providers
+## Poskytovatelé ticketu
 
-An unknown or null stored value parses to `local`.
+Neznámá nebo null hodnota se parsuje na `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Poskytovatel | Stav                                                   |
+| ------------ | ------------------------------------------------------ |
+| `local`      | Celý uložený v databázi pracovního prostoru; výchozí   |
+| `linear`     | Vlastní ho vzdálená strana, místně se zrcadlí          |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Synchronizační adaptéry žijí pod `packages/cc_infra/lib/src/tickets/sync/` pro Linear,
+GitHub Issues, Jira Cloud a ClickUp. GitHub Issues je jen dodavatel synchronizačního
+adaptéru (`vendorId: github`), ne hodnota `TicketProvider`, takže stažený issue
+z GitHub se uloží s `originKind: externalSync` a výchozím
+`provider: local`. Mapování dodavatele žije na `ticket_sync_links`.
 
-## Ticket origin
+## Původ ticketu
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` zapíše `manual`. Stažení od dodavatele zapíše `externalSync`. Delegovaní
+potomci zůstanou `manual`.
 
-| Value          | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| Hodnota        | Význam                                                           |
+| -------------- | ---------------------------------------------------------------- |
+| `manual`       | Výchozí u `createTicket` (řádky člověka, agenta i delegované)    |
+| `externalSync` | Nastaví `TicketSyncEngine` při stažení od dodavatele             |
 
-## Ticket fields
+## Pole ticketu
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Agregát nese na jednom řádku dvě věci. **Zrcadlo** (poskytovatel, klíče, název, popis, priorita, štítky, stavy, časová razítka) je cache vzdáleného poskytovatele a obnovení ho přepíše celé. **Překryv** (přiřazení, delegování, prostor, rodič, projekt, propojené PR) patří jen Control Center a obnovení se ho nedotkne.
 
-| Field                    | Type                       | Description                                                                                |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
-| `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| Pole                     | Typ                        | Popis                                                                                              |
+| ------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `id`                     | `String`                   | UUID v4                                                                                            |
+| `workspaceId`            | `String`                   | Vlastnící pracovní prostor                                                                         |
+| `provider`               | `TicketProvider`           | Backend, který vlastní kanonická data (výchozí `local`)                                            |
+| `externalKey`            | `String?`                  | Nativní klíč poskytovatele (např. `LIN-123`). Místní `createTicket` sem zapíše *samostatné* UUID, ne řádkové `id` |
+| `url`                    | `String?`                  | Webová URL u vzdáleného poskytovatele                                                              |
+| `title`                  | `String`                   | Krátké shrnutí; nesmí být prázdné                                                                  |
+| `description`            | `String?`                  | Delší tělo v Markdownu                                                                             |
+| `priority`               | `TicketPriority`           | Výchozí `none`                                                                                     |
+| `labels`                 | `List<String>`             | Volné štítky                                                                                       |
+| `status`                 | `TicketStatus`             | Kanonický normalizovaný stav                                                                       |
+| `rawStatus`              | `String?`                  | Nativní název stavu u vzdáleného poskytovatele, ponechaný kvůli bezztrátovému zobrazení            |
+| `externalSyncedAt`       | `DateTime?`                | Poslední synchronizace napříč dodavateli; null do první. Mapování po dodavatelích žije v `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Rodič ve stromu delegování a rozpadu                                                               |
+| `projectId`              | `String?`                  | Vlastnící projekt; na vzdálenou stranu se nikdy neposílá                                           |
+| `assignedAgentId`        | `String?`                  | Id přiřazeného principála (jen metadata: přiřazení nic neodešle)                                   |
+| `assigneeType`           | `PrincipalType`            | Jaký druh principála `assignedAgentId` označuje, `user` nebo `agent` (výchozí `agent`)             |
+| `createdByType`          | `PrincipalType?`           | Druh principála, který ticket vytvořil (`user` nebo `agent`); null u starších a systémových řádků  |
+| `createdById`            | `String?`                  | Id principála, který ticket vytvořil                                                               |
+| `assignedTeamId`         | `String?`                  | Přiřazený tým (jen metadata)                                                                       |
+| `delegatedByAgentId`     | `String?`                  | Agent, který tenhle ticket delegoval                                                               |
+| `delegationDepth`        | `int`                      | Hloubka v řetězci delegování; kořen je `0`, kontroluje se proti stropu hloubky                     |
+| `delegationRootTicketId` | `String?`                  | Kořen řetězce delegování; null u kořenového ticketu                                                |
+| `spaceId`                | `String?`                  | Konverzace, ze které ticket vznikl, nebo prostor delegujícího agenta                               |
+| `errorMessage`           | `String?`                  | Nastaví se, když je `status` `failed`                                                              |
+| `linkedPrIds`            | `List<String>`             | Id uzlů PR, ke kterým je ticket propojený                                                          |
+| `metadata`               | `Map<String, dynamic>`     | Volná mapa                                                                                         |
+| `createdAt`              | `DateTime`                 | Čas vytvoření                                                                                      |
+| `startedAt`              | `DateTime?`                | Kdy práce začala                                                                                   |
+| `blockedAt`              | `DateTime?`                | Kdy byl ticket zablokovaný                                                                         |
+| `cancelledAt`            | `DateTime?`                | Kdy byl ticket zrušený                                                                             |
+| `completedAt`            | `DateTime?`                | Kdy se ticket úspěšně dokončil                                                                     |
+| `finishedAt`             | `DateTime?`                | Kdy ticket dosáhl libovolného koncového stavu                                                      |
+| `updatedAt`              | `DateTime`                 | Poslední mutace (obnovení zrcadla, nebo změna překryvu)                                            |
+| `version`                | `int`                      | Čítač optimistické souběžnosti; při každé mutaci se zvýší                                          |
+| `originKind`             | `TicketOriginKind`         | Jak ticket vznikl (výchozí `manual`)                                                               |
+| `collaborators`          | `List<TicketCollaborator>` | Repozitář je doplní na vyžádání                                                                    |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Odvozené: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` a `displayKey` (`externalKey ?? id`: místní tickety proto ukazují samostatné UUID z okamžiku založení, ne řádkové `id`).
 
-## Ticket relations
+## Vazby ticketu
 
-Stored edges are directional rows in `ticket_links`:
+Uložené hrany jsou orientované řádky v `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| Typ           | Uložený řetězec | Význam                      |
+| ------------- | --------------- | --------------------------- |
+| `blocks`      | `blocks`        | Zdroj blokuje cíl           |
+| `relatesTo`   | `relates_to`    | Symetrická vazba            |
+| `duplicateOf` | `duplicate_of`  | Zdroj je duplikát cíle      |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Slovník, kterým mluví rozhraní a `ticket_relation`, je `TicketRelationKind`. Odvozuje se z uložené hrany a z toho, na kterém konci subjekt sedí:
 
-| Kind           | Derived from                                         |
+| Druh           | Odvozeno z                                           |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Řádek `blocks`, kde je subjekt cíl                   |
+| `blocking`     | Řádek `blocks`, kde je subjekt zdroj                 |
+| `relatedTo`    | Řádek `relates_to` (symetrický)                      |
+| `duplicateOf`  | Řádek `duplicate_of`, kde je subjekt zdroj           |
+| `duplicatedBy` | Řádek `duplicate_of`, kde je subjekt cíl             |
+| `subIssueOf`   | `tickets.parent_ticket_id` na subjektu               |
+| `parentOf`     | `tickets.parent_ticket_id` na druhém ticketu         |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Vazby rodiče a podticketu **nejsou** řádky `ticket_links`. Žijí na `tickets.parent_ticket_id`.
 
-## Domain events
+## Doménové události
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Těch osm tříd žije v `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` ani `ExternalTicketWebhookReceived` neexistují.
 
-| Event                     | Fired when                                         |
+| Událost                   | Kdy se publikuje                                   |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | Ticket se vytvoří                                  |
+| `TicketAssigned`          | Ticket se přiřadí principálovi nebo týmu           |
+| `TicketCompleted`         | Práce úspěšně skončí                               |
+| `TicketFailed`            | Práce selže                                        |
+| `TicketCancelled`         | Ticket se zruší                                    |
+| `TicketStatusChanged`     | Jakákoli změna stavu                               |
+| `TicketReassigned`        | Ticket se přeřadí                                  |
+| `TicketDetailsUpdated`    | Změní se název, popis, priorita nebo štítky        |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` je signál pro audit a oznámení a zároveň spouštěč pipeline. Přiřazení agentovi nespustí žádný běh: žádný dispečer ticketů nesleduje `assignedAgentId`. Výjimka je tým: `TeamRoutingService` odešle vedoucího týmu. Přidání spolupracovníka zapíše řádek a nic nepublikuje. Webhook dodavatele se uplatní přes `TicketSyncEngine` a doménová událost u toho nevznikne.
 
-## Mutation chokepoint
+## Průchod mutací
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` vlastní každou mutaci.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Mechanismus                 | Detail                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jediný průchod              | Všechny mutace jdou přes `_mutate`, které načte řádek a před uplatněním zavolá `_assertWorkspace`                                                     |
+| Izolace pracovního prostoru | `_assertWorkspace` vyhodí `WorkspaceMismatchException`, když `workspaceId` načteného řádku nesedí s volajícím                                          |
+| Optimistická souběžnost     | `_mutate` zapisuje s `expectedVersion` nastaveným na `version`, kterou právě přečetlo, a při `ConcurrencyConflictException` to zkusí znovu po načtení čerstvého stavu |
+| Výhradní převzetí           | `tryCheckout` / `releaseCheckout`; druhý agent, který si nárokuje už převzatý ticket, dostane `CheckoutConflictException`                             |
+| Pojistka přechodu           | `canTransitionTo`, uplatní se jen když je `force` false                                                                                               |
 
-## See also
+## Viz také
 
-- [Tickets](/cs-CZ/prirucka/koncepty/tickety/)
-- [Manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/)
-- [Delegate tickets](/cs-CZ/prirucka/navody/delegovani-ticketu/)
-- [Domain events](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/)
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/)
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/)
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Doménové události](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/)

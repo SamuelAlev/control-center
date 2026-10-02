@@ -1,26 +1,26 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: שליחת סוכני סקירה
+description: שלחו סוכני סקירה מתמחים אל בקשת משיכה מתצוגת ה-PR, מכלי MCP או משלב פייפליין.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+המדריך הזה מראה לכם איך לשלוח סוכני סקירה כדי שיסקרו בקשות משיכה.
 
-## From the PR view
+## מתצוגת ה-PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. פתחו את ה-PR ועברו ללשונית **סקירה כללית** שלו
+2. פתחו את תפריט ה-⋯ ובחרו ב**שאל את ה־AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+זה מפעיל את הפייפליין המובנה מראש `pr_review`, שפותח את מרחב הסקירה של ה-PR
+ומפזר את הסוקרים לפי רמת הסקירה של סביבת העבודה — שלושה כברירת מחדל (הסוכנים
+המובנים מראש **qa**, **architect** ו-**engineer**) — ואז נותן לסוכן המוביל לאחד.
+במסלול הזה אתם לא בוחרים את התפקידים. כדי לשלוט אילו תפקידים רצים ואילו קבצים
+כל אחד מהם בודק, השתמשו בכלי ה-MCP או בשלב פייפליין שלמטה.
 
-## Via the `dispatch_reviewers` MCP tool
+## דרך כלי ה-MCP ‏`dispatch_reviewers`
 
-Call it from inside an existing review space:
+קראו לו מתוך מרחב סקירה קיים:
 
 ```
 dispatch_reviewers(
@@ -33,109 +33,102 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+‏`space_id`, `workspace_id` ו-`reviewers` כולם חובה. כל מפרט סוקר מקבל `role`
+ולצדו `scope` אופציונלי מסוג glob לקבצים, ו-`prompt_override` שמחליף את תדריך
+ברירת המחדל. `concurrency` אופציונלי (1–8) מגביל את מספר השליחות המקבילות; כשהוא
+מושמט, חלה ההגדרה `review_concurrency` של סביבת העבודה (ברירת מחדל 3, נקבעת
+ב**הגדרות ← סביבת עבודה ← כללי**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+הכלי חוזר מיד עם הרשימות `dispatched` ו-`unmatched`. כל סוקר שנשלח מתווסף למרחב
+כמשתתף, מוכרז בהודעת מערכת ונשלח עם התדריך שלו. הממצאים נוחתים במרחב הזה
+כהודעות `review_node`.
 
-## From a pipeline step
+## משלב פייפליין
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+פתחו את **הגדרות ← סביבת עבודה ← תבניות פייפליין**, פתחו תבנית, ואז:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. הוסיפו צומת **Reviewer (prompt)** מהפלטה
+2. בחרו את הסוכן לשליחה וכתבו את הנחיית הסוקר, עם מצייני מקום `{{key}}` לפלטים
+   שבמעלה הזרם (למשל `{{repo_local_path}}`, `{{pr_number}}`)
+3. קבעו את מפתח הפלט (ברירת מחדל `reviewer_findings`) כדי ששלבים במורד הזרם
+   יוכלו לקרוא את הממצאים
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+השלב שולח את הסוכן ומושהה עד שההרצה הזו מסתיימת. המנוע אחר כך אוסף את מטען
+ה-`submit_output` של ההרצה אל מצב הפייפליין תחת מפתח הפלט של הצומת. (תיאור
+הפלטה עדיין אומר שהשלב ממתין לקריאה ל-`complete_task` — כלי כזה אינו קיים;
+התעלמו מהמחרוזת.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+פזרו על ידי חיווט כמה צמתי סוקר לאותו שלב במעלה הזרם, ואז אחדו את הפלטים שלהם
+בצומת **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+העורך מחווט מחדש את הטרמינל המוסתר לכל יעד נגיש, כך שצומת שתוסיפו אחרי ה-**Step**
+המובנה מראש עדיין רץ. צומתי פיזור המחווטים לאותו שלב במעלה הזרם רצים במקביל.
 
-## Automatic dispatch on a new PR
+## שליחה אוטומטית עם PR חדש
 
-To have a review pipeline fire by itself:
+כדי שפייפליין סקירה יופעל מעצמו:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. פתחו את התבנית ב**הגדרות ← סביבת עבודה ← תבניות פייפליין**
+2. גררו **PR פורסם** או **PR חיצוני נפתח** מהמקטע **טריגרים** בספריית הצמתים אל
+   הקנבס (או בחרו אותו מאריח הרפאים **הוספת טריגר**)
+3. בחרו את הצומת החדש והדליקו את **מופעל** בחלונית הפרטים שלו, ואז הפעילו את
+   התבנית
 
-Two events matter here and they are not interchangeable:
+שני אירועים חשובים כאן והם אינם ניתנים להחלפה:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| אירוע                  | מופעל כאשר                                                                                                        | מפתחות המטען                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | PR נפתח **דרך Control Center** — משטח יצירת ה-PR, או סוכן שקורא ל-`pr_lifecycle.publish`                          | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | שירות סקר בקשות המשיכה מוצא PR שנפתח ישירות ב-GitHub                                                              | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PR שנפתח ב-github.com לעולם לא מרים `PullRequestPublished`, כך שתבנית שמחווטת רק
+לאירוע הזה לא תראה אותו. שימו לב גם ש-`PullRequestPublished` לא נושא `pr_number` —
+שלב שהסקריפט או ההנחיה שלו מפנים ל-`{{pr_number}}` חייב להיות מוזן
+מ-`ExternalPrDetected`, או מהרצה ידנית שמספקת אותו.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+נקודת ביקורת: אחרי ההפעלה, פתחו את **פייפליינים** וודאו שמופיעה הרצה עבור ה-PR
+התואם הבא. תבנית שנשארת מושבתת גורמת לטריגר שלה לירות אל תוך כלום — המנוע דוחה
+תבנית מושבתת וחוזר בלי להתחיל הרצה.
 
-## How a role is matched to an agent
+## איך תפקיד משויך לסוכן
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+‏`dispatch_reviewers` נותן ניקוד לכל סוכן בסביבת העבודה מול כל תווית תפקיד
+מבוקשת, בלי הבחנה בין אותיות גדולות לקטנות:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| התאמה                              | ניקוד |
+| ---------------------------------- | ----- |
+| מיומנות שמכילה את תווית התפקיד     | +3    |
+| כותרת הסוכן שמכילה את תווית התפקיד | +2    |
+| שם הסוכן שמכיל את תווית התפקיד     | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+הניקוד מצטבר והסכום הגבוה ביותר מנצח (במקרה של תיקו, המועמד הראשון שנמצא). אם אף
+מועמד לא מקבל ניקוד מעל אפס, המפרט חוזר ברשימת ה-`unmatched` של הכלי במקום
+להישלח — כך שתפקיד שאיש אינו מתאים לו מדווח, ואף פעם לא מדולג בשקט.
 
-## The review space
+## מרחב הסקירה
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+ל-PR יש **מרחב סקירה אחד** בדיוק, ולא אחד לכל סוקר. הוא נוצר באופן אידמפוטנטי על
+ידי `pr.ensureSpace`, מקושר ל-PR דרך `ReviewSpaceAssociation` ומוכן מול ה-head ref
+של ה-PR. כל סוקר שנשלח מצטרף למרחב הזה ומפרסם בו את ממצאי ה-`review_node` שלו —
+וזה מה שהופך את הממצאים לברי־השוואה ומאפשר לסוכן המוביל להגיע לקונצנזוס ביניהם.
 
-## Monitor the dispatch
+## מעקב אחר השליחה
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+כל סוקר שנשלח מקבל `AgentRunLog` משלו. עקבו אחר ההתקדמות ב:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **מרחב הסקירה**, שבו הממצאים זורמים בזמן אמת
+- לשונית **סקירה** של ה-PR, שמציגה את שורת המצב של הסקירה ואת ההכרעה
+- **ניטור ← בזמן אמת** (`/workspaces/:id/observability`), רשימת הסוכנים עם סטטוס
+  לכל הרצה, זמן שחלף בזמן אמת, מגירת תמליל ופקד עצירה. אין קיצור מקלדת לכך —
+  הגיעו אליו מתחתית סרגל הצד.
 
-## Related guides
+## מדריכים קשורים
 
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
-- [Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
-- [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/)
+- [סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
+- [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
 
-## Related concepts
+## מושגים קשורים
 
-- [AI review](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/)
-- [Pipelines](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)
+- [סקירת AI](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/)
+- [פייפליינים](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)

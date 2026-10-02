@@ -1,60 +1,61 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Provisioning uživatelů přes SCIM
+description: Nech IdP automaticky zakládat, aktualizovat a deprovisionovat účty Control Center.
 slug: cs-CZ/prirucka/navody/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Tenhle návod použij, když chceš řídit životní cyklus — odchod musí přístup
+odebrat automaticky, nestačí jen zablokovat další přihlášení. SCIM je push
+protokol, který na tohle používají IdP (Okta, Entra ID a další).
 
-## Prerequisites
+## Předpoklady
 
-- SSO already working (the [SSO tutorial](/cs-CZ/prirucka/tutorialy/sso) or the
-  [OIDC guide](/cs-CZ/prirucka/navody/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO už funguje ([tutoriál SSO](/cs-CZ/prirucka/tutorialy/sso/) nebo
+  [návod k OIDC](/cs-CZ/prirucka/navody/sso-oidc/)),
+- **server, na který se IdP dostane přes HTTPS** — volání SCIM jdou z IdP,
+  ne z prohlížeče uživatele. Použij vestavěný tunel
+  (Nastavení → Server → Připojení a stav → Sdílet tento server → Cloudflared/ngrok/Tailscale) nebo veřejnou URL. Server
+  dostupný jen přes WebSocket relé push SCIM nepřijme; JIT provisioning tam
+  pořád funguje, tenhle návod ne.
 
-## Steps
+## Postup
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Otevři **Nastavení → Server → Jednotné přihlášení** → kartu
+   **Provisionování uživatelů (SCIM)**. Karta ukáže endpoint, např.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Stiskni **Vygenerovat token** (nebo **Znovu vygenerovat token**, když už
+   jeden existuje) — bearer token se v dialogu objeví jen jednou a zkopíruje
+   se do schránky. Ulož ho do správce hesel; server si nechá jen kopii
+   ověřitelnou v konstantním čase.
+3. V nastavení provisioningu u IdP zapni SCIM takto:
+   - **Základní URL**: endpoint výše
+   - **Ověření**: `Authorization: Bearer <token>`
+   - **Id uživatele**: `userName` (e-mail) nebo `externalId` — obojí se shoduje
+4. Vyzkoušej to na jednom uživateli: pošli ho z IdP a ověř, že se objeví
+   (vytvoření přes SCIM připne na účet `externalId` poskytovatele, stejné
+   připnutí jako při prvním přihlášení přes SSO).
 
-## What deprovisioning does
+## Co deprovisioning udělá
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Když IdP pošle `active: false` (nebo `DELETE`), SCIM požadavek nejdřív odmítne,
+pokud je účet **vlastník** pracovního prostoru (vlastnictví nejdřív předej).
+Jinak:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. nejdřív se odvolá každý přihlašovací údaj zařízení — živé relace spadnou
+   během sekund,
+2. odebere se každé členství v pracovním prostoru,
+3. účet se označí jako deaktivovaný (už se nepřihlásí, ať IdP později říká
+   cokoli, dokud ho výslovně znovu neaktivuješ).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Řádek uživatele sám zůstane — atribuce u ticketů, zpráv a commitů je trvalá.
+Reaktivace (SCIM `active: true`) obnoví přihlášení, ale **ne** členství: ta
+potřebují novou pozvánku, nebo politiku automatického členství při přihlášení.
 
-## Troubleshooting
+## Řešení problémů
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 u každého volání** — token se změnil; vygeneruj ho znovu a aktualizuj IdP.
+- **Na endpoint se nedá dostat** — tunel neběží, nebo je server jen přes
+  relé. SCIM potřebuje přímé HTTPS; JIT funguje dál bez ohledu na to.
+- **Chyby pushu skupin (501)** — schválně: mapování skupina→role proběhne při
+  přihlášení z atributů skupin SAML/OIDC, ne z natlačených skupin.

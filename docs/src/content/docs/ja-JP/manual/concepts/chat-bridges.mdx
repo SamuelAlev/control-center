@@ -1,249 +1,109 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: チャットブリッジ
+description: Slack インテグレーションが待ち受けるのではなく外向きに接続する理由、チャットから届いたメッセージを実際に認可するもの、そして 1 つのブリッジがあらゆるチャット製品に対応する仕組みを説明します。
 slug: ja-JP/マニュアル/コンセプト/チャットブリッジ
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+チャットブリッジは、外部のチャット製品 — 現時点では Slack — を、Control Center ワークスペースへの第一級の入口にします。ボットにメンションすればエージェントが起動し、Slack スレッドで返信すれば会話が続き、スラッシュコマンドを入力すればチケットが起票されます。その土台にあるのは、デスクトップアプリが使うのと同じスペース、トランスクリプト、チケット、そして帰属です。チャットはワークスペース上の*サーフェス*であり、そのコピーではありません。
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**出荷されているプロバイダーは Slack だけです。** 製品のどこにも Discord、Telegram、Teams、Matrix の実装はありません。この機能は意図的にプロバイダー非依存で書かれています — 2 つ目の製品を追加するのは、1 つの列挙値、1 つのアダプター、1 つのプラグインだけです — が、現時点で「チャット」といえば Slack を指します。
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+これを担う 2 つのサーフェスは、それぞれ別の利用者に属します。ワークスペースを Slack に接続することとボットをカスタマイズすることは、**設定 → ワークスペース → 全般**にある**管理者**の操作です。自分のチャットアカウントを自分の Control Center アイデンティティにリンクすることは、**設定 → ワークスペース → プロフィールと識別情報**にある**メンバー**の操作です。
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+機能全体を形作る決定は 3 つあります。**接続がどちらの方向に張られるか**、**外部から届いたメッセージを何が認可するか**、そして**製品固有の知識をどこに置いてよいか**です。
 
-## Outbound by design
+## 設計上のアウトバウンド
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+ブリッジがプロバイダーからの接続を待ち受けることはありません。Slack へは **Socket Mode** で到達します。サーバーは Slack にソケット URL を要求して外向きに接続し、その接続を通じてメンション、DM、スラッシュコマンドを受け取ります。
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+その帰結こそが要点です。NAT の背後にあるノートパソコン、ドメインを持たない自宅サーバー、ネットワーク間を移動するマシン — そのいずれもが、インバウンドポートもトンネルも TLS 証明書も、変化のたびに更新すべき公開 URL も必要とせずにブリッジを実行できます。守るべき webhook エンドポイントが存在しないのは、そもそも webhook エンドポイントが存在しないからです。Control Center がアプリ定義を組み立てるとき、Socket Mode を表明し、リクエスト URL はすべて取り除きます。両方に設定されたアプリは半分しか動かないアプリになるからです。
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+その代償は、維持し続けるべき接続であり、これはサーバーの役割です。再接続は、30 秒を上限とするジッター付きの指数バックオフで行います。プロバイダー主導のソケットローテーションでは、そのバックオフをエスカレートさせずに再接続します。そして*拒否された資格情報*は終端です — 失効したトークンを永遠に再試行しても得られるのはレート制限だけなので、ブリッジは停止し、プロバイダー自身のエラーを設定画面にそのまま表示しながら、新しいトークンを待ちます。
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+チャットアプリを持たないワークスペースには、まったくコストがかかりません。ソケットもタイマーもトラフィックもありません。そして全体は、サーバーの準備完了バナーが表示された*後に*始まります。応答の遅いチャットアプリが起動を遅らせてはならないからです。
 
-## Membership authorizes, not token possession
+## 認可するのはメンバーシップであり、トークンの所持ではない
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+アプリをインストールした人物は、メッセージを送る人物ではありません。そのため、すべての受信イベントは何かが起こる前に **プリンシパル** に解決され、説明とともにフェイルクローズします。
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **リンクされていないチャットアカウント**には、その書き込み先の Slack スレッドで、リンク方法が伝えられます。
+- **リンク済みだが、そのユーザーがこのワークスペースのメンバーではないアカウント**には、管理者に招待を依頼するよう伝えられます。
+- **読み取り専用のロール**（`viewer`、`guest`）**を持つメンバー**には、そのロールでは作業を開始できないと伝えられます。
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)
-for the membership model this leans on.
+いずれも先には進みません。チャットメッセージが、送信していない人物に帰属されることは決してありません — これにより、監査証跡、プリンシパル単位のレート制限、チケットの報告者が正しさを保てます。ここで依拠しているメンバーシップモデルについては、[マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/)を参照してください。
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+リンクはアイデンティティの解決であり、アクセス権の付与では**ありません**。メンバーシップはイベントごとに再確認されるため、その後削除された人物に属するリンクは、以前の権限ではなく拒否に解決されます。リンクを確立する経路は 2 つあります。メンバーがチャットで入力する、短命で単回使用のコードか、プロバイダーの*検証済み*メールアドレスとの自動照合です — メールによる経路でも、照合されたユーザーがすでにメンバーである必要があるため、たまたまサーバー上にアドレスが存在するだけの部外者は、何にもリンクされません。
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+コードは意図的にメモリ上に保持され、有効期間は 15 分です。永続化すると、消えるはずのもののために、資格情報の形をした耐久性のある行を作ってしまいます。サーバーの再起動で未使用のコードがすべて無効になるのは、退行ではなく正しい動作です — メンバーはもう一度「リンク」を押せばよいのです。
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+拒否は、**メッセージが開いた Slack スレッド内**で、本物の返信として答えます。スレッド内の返信は、返信先のメッセージにバッジを付け、それを必要とするただ一人に届き、しかも「リンクされていません」をチャンネル自体には出しません。メッセージの投稿は、どのプロバイダーも備えている唯一のケイパビリティでもあるため、説明がアプリにない機能に依存することはありません。
 
-## Provenance and the echo problem
+## 来歴とエコー問題
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+双方向にミラーリングするブリッジは、2 つの方向を見分ける仕組みがなければループします。ブリッジが取り込むすべてのメッセージには `metadata['chat']` が刻まれます — プロバイダー、チーム、会話、スレッド、メッセージ、送信者です。外向きのミラーは、その刻印を持つメッセージをスキップします。
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+この単一のルールが、双方向ミラーリングを安全にします。Control Center で入力された人間のメッセージは、リンクされたスレッドへ外向きに中継され（作成者の名前が先頭に付きます）、一方、チャット*から*来たメッセージは入ってきた場所で止まります。
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+外向きに渡るものは意図的に狭く限定されています。エージェントの**回答**は、通常のチャットテキストとして中継されます。短い思考はカードの `Thinking…` 行に表示されることがあります。ツール出力は diff の壁であり、Control Center にとどまります — 切り詰められた返信が指し示す先もそこです。
 
-## A card reports the work; the text is still the message
+## カードは作業を報告し、テキストが依然としてメッセージ
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+プロバイダーがそれを描画する場合、1 つのターンは**1 枚のタスクカード**を伴い、ターンが実行されている間ずっとその場で編集され、説明対象の回答の上に位置します。
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+カードは 1 つのまとまったプランであり、ごちゃ混ぜの段落ではありません。Slack は同じタスク上の `details` と `output` を連結するため、行の詳細（`Thinking…` 上の思考）は 1 回だけ送信され、`output` がストリーミングされることはありません。セットアップは 1 行で、そのタイトルが置き換わります（`Working on it…`、`Cloning …`）。推論が始まると `Thinking…` 行が追加されます。各ツールはそれぞれ独自の行です（`Read lib/main.dart`）。回答はカードの下の通常のテキストです — Slack のプランビューはそれを、タスクに混ぜ込まれたチャンクからではなく、後続の markdown 追記から読み取ります。それ以外は何もありません。ツール出力はなく、短い許可リストにあるツール引数のみです。未知のツールの引数はファイル本文全体になり得ますが、行は 1 行だからです。
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+カードは、ターン*より前*の待ち時間もカバーします。最初のメンションが会話を作成し、その作成はエージェントが作業するすべてのリポジトリをクローンします — 実際のリポジトリではこれが数分かかり、その間エージェントにはまだ何も尋ねられておらず、スレッドからはボットが要求を無視したように見えます。そこでカードは、メンションが受け入れられた瞬間に開き（`Working on it…`）、その後セットアップ行がデスクトップと同じ文言で更新されます — `Cloning acme/widgets…`、`Setting up Reviewer…`、`Starting the agent…` — 続いてエージェントが推論を始めるとすぐに `Thinking…` 行、そしてツールごとに 1 行。1 枚のカード、1 つのメッセージで、「聞こえています」から、下に通常のテキストとして続く回答までです。セットアップが報告されるのは、チャットで誰かがそれを待っている場合だけです。アプリ内で準備中の会話、あるいはサーバー起動時に再開された取り残された会話は、カードなしでプロビジョニングされます。
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+カードは、チャットが読み手に与えられない唯一のもの、つまり返信の背後にある会話への **View in Control Center** リンクを運びます。チャット製品はリンク内で `http(s)` しか受け付けないため、ボタンはこのサーバーが配信する小さなページを指し、そのページがブラウザをデスクトップアプリの `control-center://` リンクへと跳ね返します。このページは何も読み取らず、何も解決しません — URL 内の id はディープリンクへとそのまま渡されるだけで、それ以外のどこにも使われません — また、到達可能な公開 URL を持たないサーバーは、壊れたボタンではなく、単にボタンのないカードを生成します。
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+カードは、ほかのあらゆるものと同じく 1 つのケイパビリティです。カードを持たないプロバイダーは以前とまったく同じに、テキストのみで動作し、呼び出し時にカードを拒否するプロバイダーはストリームを維持します。返信は、それを説明するカードよりも常に優先されるからです。ストリーミングが完全にオフの場合、完成したカードは代わりに、投稿される 1 つのメッセージに載ります。起票されたチケットも同じ扱いです — `/cc ticket` の確認は完成したカードであり、その存在理由は、作成されたばかりのチケットへのリンクです。
 
-## Capabilities are negotiated, then remembered
+## ケイパビリティは交渉され、記憶される
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+チャット製品は描画できるものが異なるため、ブリッジは最も豊かなサーフェスを前提に書かれます — スレッド内でライブに伸びる返信、一時的な「考え中…」ステータス、タイトルのあるスレッド、スラッシュコマンドへの一時的な回答 — そしてケイパビリティを 1 つずつ縮退させます。どれも持たないプロバイダーでも動作します。返信が単に 1 つのメッセージとして届くだけです。
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+ケイパビリティを広告することは、それを約束することではありません。Slack のストリーミング返信には有料プランの機能が必要で、Slack は呼び出し時にしか拒否しません。恒久的と印付けられた拒否は、**その接続の生涯**にわたって記憶されます。ブリッジは要求をやめ、それ以降は返信をまとめて投稿し、設定画面もそれを明示します。「返信のストリーミングが止まった」はログを読まなくても答えられるべきだからです。タスクカードも、Slack がそれを拒否すれば同じように打ち切られます。
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+すべての上限は中継側ではなくプロバイダーに属します。メッセージの上限、ストリームチャンクの上限、ストリームにスレッドアンカーが必要かどうかは、いずれもアダプターが宣言し、長い返信は語の途中ではなく、段落、行、または語の境界で分割されます。
 
-## One bridge, one adapter per product
+## 1 つのブリッジ、製品ごとに 1 つのアダプター
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+製品の形をしたものはすべて、1 つのポートの背後に置かれます。汎用的なコアは markdown、チャット会話、チャットスレッド、メンバーについて知っていますが、Slack のエンベロープ、`mrkdwn`、ゲートウェイインテントについては何も知りません。それを成立させるのは 3 つの部品です。
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **アダプター**は 1 つの製品を正規化します。そのトランスポート、API 呼び出し、テキストコーデック、エンベロープの癖です。Slack のそれらは示唆に富みます — チャンネルでのメンションは 2 回届き（`app_mention` として*かつ* `message` として）、ほとんどのメッセージサブタイプは新しい要求ではなく装飾です。どちらもアダプター内で解決されるため、コアが Slack の二重配信を知ることはありません。
+- **ディスクリプタ**はプロバイダーの公開された形です。どの資格情報が必要か、その形式は何か、ユーザーがそれを見つけるのに役立つ URL はどれか、何ができるか、そしてそのアプリをここから作成または編集できるかどうかです。設定カード、接続ダイアログ、引数の検証はすべてそこから*生成*されます — クライアントはプロバイダーと、フィールド id をキーとするマップを送り返します。
+- **プラグイン**はサーバー側の組み立てです。資格情報がどのように検証済みの接続になるか、アダプターがどのように構築されるか、プロバイダー側のアプリがどのように管理されるかです。
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+つまり、製品を追加するのは 1 つの列挙値、1 つのアダプター、1 つのプラグインだけです。新しい RPC 操作もスキーマ変更もクライアント変更もありません — そしてクライアントは正しくあり続けます。聞いたことのないフィールドでも、サーバーが提供したラベルで描画されるからです。
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+抽象化が上へ漏れ出さないようにする詳細が 2 つあります。プロバイダーに API がないアプリ管理の手順（トークンの生成、アプリのインストール、権限変更後の再インストール）は、**それぞれ独自のリンクを持つ名前付きの手順**として返されるため、セットアップ完了画面は、どのプロバイダーかを知らなくてもそれらを表示できます。そして、ブリッジが書き出すあらゆる説明は、プロバイダーと、アプリが実際に使うコマンドを名指しするので、コマンド名が変わっても 2 つ目のプロバイダーでも、新しい文字列なしで正しく読めます。
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[権限変更後の再インストール]
+ボットの名前、説明、アイコンの編集は即座に反映されます。**権限**の変更には再インストールが必要です。Slack は新しいマニフェストを適用しますが、付与はインストール済みのままの内容に保たれます。編集は、Slack の「Reinstall to Workspace」ページへのリンクを含む残りの手順を返します。
 :::
 
-## Where credentials live
+## 資格情報の保管場所
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+ワークスペースのチャットトークンは、そのワークスペースの**独自のディレクトリ、データベースの隣**に置かれます — `<dataDir>/<workspaceId>/chat_credentials/<provider>.json` にあるプレーンな JSON であり、データベース内ではなく、意図的に OS のキーチェーンにも入れません。後から失われがちな帰結が 2 つあります。ワークスペースを削除するとディレクトリがリンク解除され、トークンも一緒に消えます。また、ワークスペースをエクスポートまたはバックアップすると `workspace.db` がコピーされるため、他人に引き渡したワークスペースが、生きたボットトークンを内部に持ち込むことはありません。このファイルはサーバーホストのファイルシステムの信頼境界を引き継ぎます — データディレクトリへの読み取りアクセスを持つものはボットトークンを読めますが、これはデータベースが置かれているのと同じ境界です。
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+プロバイダーごとに 1 ファイルで、アトミックに、所有者のみが読み書きできる形で書き込まれます。失効したアプリは 1 つのファイルをリンク解除すれば削除され、壊れたファイルの犠牲はすべてのプロバイダーではなく 1 つで済みます。資格情報は接続操作で*入ってくる*だけで、決して外へ出ません — ステータスの読み取りは接続メタデータのみを返します。
 
-## What is deliberately not offered
+## 意図的に提供しないもの
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **構造的なアプリ設定。** トランスポート、スコープ、イベント購読は表明されるものであり、公開されません。設定画面から設定して沈黙させられるアプリは、機能ではなくサポートチケットです。
+- **会話とスラッシュコマンド。** Slack のサーフェスは、メッセージ、スレッド返信、スラッシュコマンドです。
+- **第 2 の信頼できる情報源。** チャットは作業が保存される場所ではありません。Slack のスレッドはスペースであり、返信はトランスクリプトであり、チケットはチケットです — それらはすべてワークスペース内にあり、あらゆるクライアントから到達できます。
 
-## See also
+## 関連情報
 
-- [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): why links and credentials are per workspace
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): what wakes when a mention arrives
-- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/): what `/cc ticket` files
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/ja-JP/マニュアル/チュートリアル/初めてのチャットブリッジ/)
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
-- [Link your Slack account](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
-- [Customize the chat bot](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
-- [PR conversations](/ja-JP/マニュアル/コンセプト/pr-会話/): the same three decisions, made for a forge
+- [マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): ブリッジが解決に用いるプリンシパルとロール
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): リンクと資格情報がワークスペース単位である理由
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): メンションが届いたときに何が起動するか
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/): `/cc ticket` が起票するもの
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): ブリッジがサーバーとクライアントの間のどこに位置するか
+- [Slack をワークスペースにブリッジ](/ja-JP/マニュアル/チュートリアル/初めてのチャットブリッジ/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [Slack アカウントをリンク](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
+- [チャットボットをカスタマイズ](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
+- [PR 会話](/ja-JP/マニュアル/コンセプト/pr-会話/): 同じ 3 つの決定を、コードホスト向けに行ったもの

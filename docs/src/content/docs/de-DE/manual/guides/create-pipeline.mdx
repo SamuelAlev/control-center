@@ -1,241 +1,268 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Eine Pipeline-Vorlage erstellen
+description: Lege im Pipeline-Editor eine DAG-Vorlage an. Füge Knoten hinzu, verbinde sie, deklariere Eingaben und mach sie ausführbar.
 slug: de-DE/handbuch/anleitungen/pipeline-erstellen
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Pipeline-Vorlagen entstehen in den Einstellungen des Arbeitsbereichs. Der Eintrag
+**Pipelines** in der Seitenleiste des Arbeitsbereichs ist die _Warteschlange der
+Läufe_. Die Vorlagenliste liegt woanders, und diese Ansicht hat keine Aktion
+„Vorlage erstellen“.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/de-DE/handbuch/referenz/pipeline-schritte/).
+Was jede Schrittart, jeder Body-Schlüssel und jedes Konfigurationsfeld bedeutet,
+steht in den
+[Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/).
 
-## Create a template
+## Vorlage anlegen
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Geh zu **Einstellungen → Arbeitsbereich → Pipeline-Vorlagen**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Drücke **Neue Vorlage**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Einen Dialog für die ID gibt es nicht. Der Editor öffnet sich sofort auf einem
+angelegten Gerüst namens **Neue Pipeline**, mit einer automatisch vergebenen ID
+(`pipeline_1`, dann `pipeline_2`, …). Klicke auf den Titel in der Kopfzeile, um
+ihn umzubenennen.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Die Zeichenfläche ist nicht leer: ein Eingangsknoten **Trigger**, ein
+Prompt-Agenten-Knoten mit der Bezeichnung **Step** und eine Endmarke, die den
+Lauf abschließt. Die Endmarke wird nicht gezeichnet. Der Editor hängt dieses
+versteckte Ende an jede erreichbare Senke, sodass Arbeit, die du hinter
+**Step** anhängst, trotzdem läuft.
 
-## Add nodes
+## Knoten hinzufügen
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Die Seitenleiste **Knotenbibliothek** sitzt fest links im Editor. Filtere sie
+über das Feld **Knoten suchen** und ziehe einen Eintrag auf die Zeichenfläche.
+Der Knoten landet dort, wo du ihn loslässt, ohne eingehende Verbindung.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palettenknoten                  | Schrittart | Wirkung                                                                                      |
+| ------------------------------- | ---------- | -------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen     | Führt ein Shell-Skript mit Ersetzung von `{{state}}` aus; es wird kein Agent losgeschickt   |
+| **Open conversation**           | listen     | Öffnet den einen sichtbaren Bereich des Laufs und seinen Checkout; Agentenknoten betreten diesen Bereich |
+| **Clone PR branch**             | listen     | Ermittelt den Head-Branch des PR über `gh pr view` und klont ihn ins Laufverzeichnis        |
+| **Post PR comment**             | listen     | Schreibt die zusammengeführten Befunde als GitHub-Review-Kommentar an den PR                |
+| **Reviewer (prompt)**           | listen     | Schickt einen spezialisierten Reviewer-Agenten los; hält an, bis der Agent sein Ergebnis einreicht |
+| **Consolidate (join)**          | join       | Wartet auf mehrere vorgelagerte Zweige und bittet dann einen Agenten, ihre Ausgaben zusammenzuführen |
+| **Custom prompt**               | listen     | Allgemeiner, promptgesteuerter Knoten über den Body `promptAgent`                           |
+| **Post to space**               | listen     | Sendet eine Nachricht an einen Bereich                                                      |
+| **Condition / switch (router)** | router     | Verzweigt den Ablauf nach einem Zustandswert                                                |
+| **If file exists (router)**     | router     | Routet `"true"`, wenn ein Pfad unter dem Klon existiert, sonst `"false"`                    |
+| **Any file exists (OR router)** | router     | Routet `"true"`, wenn irgendein aufgeführter Pfad existiert                                 |
+| **All conditions (AND router)** | router     | Routet `"true"` nur, wenn jeder aufgeführte Pfad existiert                                  |
+| **Team dispatch**               | listen     | Schickt ein ganzes Team los und hält an, bis es fertig ist                                  |
+| **Approval gate**               | listen     | Hält für eine Freigabeentscheidung an                                                       |
+| **For each (map)**              | forEach    | Rendert einen Prompt je Eintrag und schickt den Agenten dann einmal los, mit diesen Prompts aneinandergereiht |
+| **Call sub-pipeline**           | listen     | Führt eine andere Vorlage als verschachtelten Schritt aus                                   |
+| **Clean up worktrees**          | listen     | Entfernt veraltete isolierte Worktrees; deterministisch, es wird kein Agent losgeschickt    |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Die Bibliothek gruppiert sie unter **Ablauf und Logik**, **PR-Review**,
+**Agenten**, **Nachrichten** und **Code**. Eine Gruppe Demo gibt es nicht.
 
-## Wire nodes together
+## Knoten verbinden
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Jeder Arbeitsknoten hat an der rechten Kante einen runden **Ausgabeport**. Ziehe
+von diesem Port auf einen anderen Knoten, um sie zu verbinden. Startauslöser
+funktionieren genauso: jeder hat seinen eigenen Port, sodass eine Leitung von
+**Zeitplan** nicht zugleich von **Manueller Lauf** ausgeht. Drücke **Schritt
+hinzufügen** (`+`) direkt hinter einem Knoten, um danach einen Typ einzufügen.
+Fahre den Mittelpunkt einer bestehenden Kante an und drücke ×, um sie zu
+trennen.
 
-Connections are also edited from the node that _receives_ them:
+Verbindungen bearbeitest du auch am Knoten, der sie _empfängt_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Wähle den nachgelagerten Knoten. Sein Konfigurationspanel öffnet sich rechts.
+2. Scrolle zu **Auslöser von** und tippe den Chip jedes vorgelagerten Knotens
+   an, auf den dieser hören soll. Ein Tipp auf einen ausgewählten Chip entfernt
+   die Verbindung.
+3. Ist ein vorgelagerter Knoten ein Router, erscheint unter den Chips ein Block
+   **Routing-Schlüssel** mit einem Feld **Routing-Schlüssel von &lt;Knoten&gt;**
+   je Router-Kante. Trag den Schlüssel ein, auf den diese Kante feuert: `true`
+   oder `false` bei den Datei-existiert-Routern, oder den Fallnamen bei einer
+   **Verzweigung**.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Jeder Auslöserknoten ist ein Einstiegspunkt. Ein Knoten darf auf mehrere
+Vorgänger hören (fan-in) und mehrere Nachfolger speisen (fan-out), und der
+Graph muss azyklisch bleiben. Der Editor hindert dich nicht daran, einen Zyklus
+zu verdrahten, also prüfe deine Arbeit.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Die Endmarke ist aus der Zeichenfläche herausgefiltert und lässt sich nicht
+auswählen. Der Editor verdrahtet sie bei jeder Änderung des Graphen neu auf
+jede erreichbare Senke, sodass Arbeit hinter dem angelegten **Step** trotzdem
+läuft. Ein leerer Graph (Auslöser ohne nachfolgende Arbeit) führt den Auslöser
+selbst auf, damit ein Lauf sofort endet.
 
-## Configure a node
+## Einen Knoten konfigurieren
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Wähle einen Knoten, um sein Konfigurationspanel zu öffnen. Welche Felder
+erscheinen, hängt vom Body des Knotens ab.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Jeder Knoten hat **Bezeichnung**, **Eingabeschlüssel (kommagetrennt)**
+(Zustandsschlüssel, die zur Ausführung gelesen werden) und unter **Erweitert**
+die Felder **Reduzierer**, **Zeitlimit (ms)**, **Wiederholungsversuche**,
+**Fortfahren, wenn dieser Schritt fehlschlägt** und **Ausgabeschema (JSON)**.
+Knoten der Arten listen und join können ihre **Art** zwischen den beiden
+umschalten.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Ergänzt eine Auswahl **Zu klonende Repositories** (welche Repos des
+Arbeitsbereichs ausgecheckt werden; leer heißt keines), ein Feld **Name des
+Raums** und das Kontrollkästchen **Darin eine Unterhaltung öffnen**. Ist das
+Kontrollkästchen aktiv, benennt **Name der Unterhaltung** den Verlauf, mit dem
+der Bereich sich öffnet. Agentenknoten betreten diesen Bereich und öffnen
+keinen eigenen.
 
-### Prompt agent
+### Prompt-Agent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Ergänzt **Agent** (welcher Agent losgeschickt wird), **Prompt-Vorlage** (mit
+`{{key}}` verweist du auf Eingaben oder Ausgaben vorgelagerter Knoten) und
+**Ausgabeschlüssel**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Zeitlimit (ms)** ist in _Millisekunden_, nicht in Sekunden. `900000` sind
+15 Minuten. `900` gibt dem Schritt 0,9 Sekunden.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Der Unterhaltungsmodus, in dem ein Prompt-Agenten-Knoten läuft, hat am
+Agentenknoten kein Feld im Editor. Er steckt in `extras['mode']` (`chat`,
+`plan` oder `review`) am Knoten **Open conversation**, der den Bereich angelegt
+hat (Vorgabe `review`). Am Agentenschritt gesetzt, wird er ignoriert. Der
+Schlüssel wird exakt verglichen: jede andere Schreibweise wird still ignoriert.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Ergänzt **Bash-Skript**. Felder für das Arbeitsverzeichnis oder die Umgebung
+gibt es nicht, weil beides fest ist:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Jeder Bash-Schritt eines Laufs teilt sich das cwd `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` kommt aus dem Zugangsdatenspeicher, deshalb funktionieren `gh` und
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` ohne weitere Einrichtung.
+- Das Skript wird als das ausführbare Programm `bash` gestartet, deshalb muss `bash` auf
+  dem `PATH` des Server-Hosts liegen. Das gilt es unter Windows zu bedenken.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Ein Router wertet eine Bedingung aus und liefert einen Routing-Schlüssel. Die
+Engine feuert nur die nachgelagerte Kante, deren Routing-Schlüssel passt, und
+markiert die anderen Zweige als übersprungen.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Wählst du einen Router, ersetzt der Bedingungseditor das Feld
+**Ausgabeschlüssel**. Nimm einen der vier Modi:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Datei(en) vorhanden — beliebige** — routet `"true"`, wenn irgendein
+  aufgeführter Pfad existiert.
+- **Dateien vorhanden — alle** — routet `"true"` nur, wenn jeder aufgeführte
+  Pfad existiert.
+- **Vergleich** — vergleicht einen Zustandswert mit einem Literal.
+- **Verzweigung** — routet nach dem Wert eines Zustandsschlüssels, mit einem
+  Standardfall.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Setze danach die passenden Routing-Schlüssel an den ausgehenden Kanten (siehe
+[Knoten verbinden](#knoten-verbinden)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/de-DE/handbuch/referenz/pipeline-schritte/).
+Boolesche Gruppen `and` / `or` / `not` unterstützt der Body, aus diesem
+Formular lassen sie sich aber nicht anlegen. Dafür brauchst du einen von Hand
+geschriebenen Prädikatbaum unter `extras.predicate`. Das vollständige
+Vokabular der Prädikate und Operatoren steht in den
+[Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Keine eigene Konfiguration: er wartet auf alle seine vorgelagerten Schritte.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Das Tor schickt den Genehmiger-Agenten mit dem Prompt des Tors in eine
+versteckte Unterhaltung und hält an. Der Genehmiger holt deine Entscheidung in
+der Unterhaltung ein und reicht sie mit `submit_output` als
+`{ "decision": "approved" | "rejected", "reason": "..." }` ein. Die
+Entscheidung landet unter dem Ausgabeschlüssel (Vorgabe `approval_decision`),
+sodass ein nachgelagerter Router im Modus Verzweigung darauf verzweigen kann.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Setze **Agent** auf den Genehmiger und **Prompt-Vorlage** auf die Frage des
+Tors. Das Tor löst sich über `submit_output` als `{ "decision": "approved" | "rejected",
+"reason": "..." }` auf. Knoten **Reviewer (prompt)** reichen auf demselben Weg
+ein.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Ergänzt **Team-ID** und **Verteilungsmodus**. Die Auswahl bietet genau zwei
+Modi:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — eine Aufgabe je Mitglied, hält an, bis alle fertig sind.
+- `manager` — schickt die Leitung los, die delegiert.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Jeder andere gespeicherte Wert verhält sich wie `allParallel`. Setze
+**Reduzierer** auf `append`, um das Ergebnis jedes Mitglieds als Liste unter
+dem Ausgabeschlüssel zu sammeln.
 
 ### For each and Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** bildet standardmäßig über den Zustandsschlüssel `items` ab
+(`extras.iterableKey` / `extras.itemKey` am Knoten). Es rendert seinen Prompt
+einmal je Eintrag (`{{item}}` als Vorgabe) und schickt den Agenten **einmal**
+los, mit diesen Prompts aneinandergereiht. Eine leere Sammlung endet sofort mit
+einer leeren Liste. Es ist kein paralleler Versand je Eintrag.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** hält an, bis der Kindlauf einen Endzustand erreicht, und
+legt dann den Endzustand des Kindes unter dem Ausgabeschlüssel ab (Vorgabe
+`subflow_result`). Zeige mit `extras.templateId` auf ein Kind. Eine Vorlage
+kann sich nicht selbst aufrufen. Ein fehlgeschlagener oder abgebrochener
+Kindlauf lässt den Elternschritt fehlschlagen, und der folgt dann der
+Wiederholungs- und Fortsetzen-Regel dieses Schritts.
 
-## Declare inputs and allow manual runs
+## Eingaben deklarieren und manuelle Läufe zulassen
 
-Both live behind **Manual run** in the editor header.
+Beides liegt hinter **Manuelle Ausführung** in der Kopfzeile des Editors.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Drücke **Manuelle Ausführung**.
+2. Schalte **Manuelle Ausführung zulassen** ein. Dieser Schalter speichert
+   sofort: er legt die Trigger-Zeile `manual` an oder löscht sie, und genau
+   dadurch erscheint die Vorlage auf der Ausführungsseite.
+3. Setze **Max. parallele Läufe**, wenn du eine Obergrenze willst (leer lassen
+   heißt unbegrenzt). Weitere Starts warten im Zustand `queued`, bis ein Platz
+   frei wird.
+4. Drücke **Eingabe hinzufügen** für jedes Formularfeld, das ein manueller Lauf
+   abfragen soll:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Feld                              | Beschreibung                                                         |
+| --------------------------------- | -------------------------------------------------------------------- |
+| **Schlüssel**                     | Zustandsschlüssel, unter dem der Wert liegt; verweise darauf mit `{{key}}` |
+| **Bezeichnung**                   | Anzeigetext (Vorgabe ist der Schlüssel)                              |
+| **Typ**                           | Text, Mehrzeiliger Text, Zahl, Schalter, Auswahl, Repository         |
+| **Optionen (durch Kommas getrennt)** | Kommagetrennte Auswahlmöglichkeiten, nur bei Auswahl             |
+| **Standardwert**                  | Vorausgefüllter Wert                                                 |
+| **Platzhalter**                   | Hinweistext im leeren Feld                                           |
+| **Hilfetext**                     | Hilfetext unter dem Feld                                             |
+| **Erforderlich**                  | Ob das Formular des Laufs bei einem leeren Wert blockiert            |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Eine Eingabe **Repository** zeigt eine Auswahl über die Repos des
+Arbeitsbereichs und schreibt `repo_id`, `repo_local_path`, `repo_full_name`
+und, wenn das Repo ein GitHub-Remote hat, `repo_owner` und `repo_name` in die
+Nutzlast des Laufs.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Drücke **Speichern** im Dialog. Änderungen an den Eingaben gehen in den
+   Entwurf ein und bleiben erhalten, wenn du die Vorlage speicherst.
 
-## Save and enable
+## Speichern und aktivieren
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/de-DE/handbuch/anleitungen/pipeline-trigger/).
+1. Drücke **Speichern** in der Kopfzeile des Editors. Bis dahin zeigt die
+   Kopfzeile „Nicht gespeicherte Änderungen“.
+2. Geh zurück zu **Einstellungen → Arbeitsbereich → Pipeline-Vorlagen** und
+   prüfe, dass der Schalter in der Zeile der Vorlage an ist. Die Engine startet
+   eine deaktivierte Vorlage nicht, und eine deaktivierte Vorlage erscheint nie
+   auf der Ausführungsseite.
+3. Damit sie automatisch startet, ziehe einen Auslöser aus der Knotenbibliothek
+   auf die Zeichenfläche. Siehe
+   [Pipeline-Trigger einrichten](/de-DE/handbuch/anleitungen/pipeline-trigger/).
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Run a pipeline manually](/de-DE/handbuch/anleitungen/pipeline-ausfuehren/)
-- [Set up pipeline triggers](/de-DE/handbuch/anleitungen/pipeline-trigger/)
-- [Monitor pipeline runs](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/)
-- [Pipeline steps reference](/de-DE/handbuch/referenz/pipeline-schritte/)
+- [Eine Pipeline manuell ausführen](/de-DE/handbuch/anleitungen/pipeline-ausfuehren/)
+- [Pipeline-Trigger einrichten](/de-DE/handbuch/anleitungen/pipeline-trigger/)
+- [Pipeline-Läufe überwachen](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/)
+- [Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Pipelines](/de-DE/handbuch/konzepte/pipelines/)
+- [Pipelines und Automatisierung](/de-DE/handbuch/konzepte/pipelines/)

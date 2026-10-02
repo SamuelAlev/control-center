@@ -1,153 +1,133 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: 领域事件
+description: 为什么各功能通过进程内事件总线通信，而不是相互导入；总线在哪些方面是事实来源、在哪些方面不是；以及哪些事件真正能驱动自动化。
 slug: zh-CN/手册/概念/领域事件
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## 什么是领域事件
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+领域事件是一种解耦机制，让各功能无需直接依赖即可相互通信。功能 A 不再调用功能 B，
+而是由功能 A 发布事件、功能 B 订阅该事件。
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` 是一个进程内的广播式发布/订阅总线。发布方调用 `publish(event)`，
+订阅方消费带类型的 `on<T>()` 流。每个事件都实现 `DomainEvent`，并携带 `occurredAt`。
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**总线运行在 `cc_server` 内部。** 每个发布方和每个存活的订阅方都在其中。没有
+任何客户端能看到这条总线。客户端看到的是服务器重新以 `notifications/*` JSON-RPC
+传输帧发出的一个经过筛选的子集。
 
-## Why a bus at all
+## 为什么需要总线
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+没有事件，每一个跨功能的响应都会变成一次导入。通知链路为了知道何时弹出提示，
+就不得不导入智能体功能、PR 功能、工单和会议——而这些功能反过来又都必须知道
+通知的存在。工单还要导入流水线，好让已完成的工单推进一次运行。依赖图就此缠成
+一个死结，共享内核也不再共享。
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+发布事件打破了这一点。通知链路订阅二十一个事件类，却不导入任何一个引发这些
+事件的功能。流水线触发器调度器订阅整条总线，对 PR、工单或会议一无所知。
+可观测性汇总运行结果，却不介入派发。
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+代价是常见的那种：发布方无法知道有没有人在监听，而一个从未被构造出来的监听者
+会悄无声息地处于惰性状态。`TicketRemoteSyncHandler` 就是常被提及的例子：它已声明、
+有测试覆盖，却从未接入生产环境。
 
-## What the bus is not
+## 总线不是什么
 
-It is worth being precise about one thing the bus does _not_ own.
+有一点总线_并不_负责，值得把话说清楚。
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**审计记录并不是事件流的投影。** 默认情况下，每个变更型 RPC 操作都会被审计——
+`RepoOp.audited` 默认为 true，操作只有显式声明 `audited: false` 才能退出审计，
+而这一个刻意之举就写在操作本身上，一目了然。调度器会在调用成功后直接追加一条
+“谁在何处做了什么”的记录。并不存在 `DomainEventAuditBridge`。
+`ActivityLogPersister` 会从 `ActivityLogged` 事件写入 `activity_log` 记录；那是与
+RPC 审计相互独立的一条数据流。
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+事件总线_确实_是通知和自动化的传输通道，但它不是负责记账的权威记录系统。
 
-## What the bus does drive
+## 总线确实驱动什么
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **通知。** 服务器会把二十一个事件类转成 `notifications/*` 传输帧，写入每个
+  工作区各自持久的推送流，并广播给已连接的会话。如果某个帧的 `workspace_id`
+  指向的会话用户并非其成员的工作区，该帧会在服务器上被丢弃；客户端再把剩余帧
+  过滤为它当前查看的那个工作区。
+- **事件驱动自动化。** 流水线触发器订阅总线，并自动启动匹配的流水线（见下文）。
+- **生命周期响应。** 创建工作区会为其初始化 CEO 与专家智能体、内置流水线模板
+  以及入门评测套件。智能体运行完成后，会恢复挂起的流水线步骤、关闭任务、向目标
+  监督者提供输入、唤醒指定的检查者，还可能重新触发团队负责人。PR 合并或空间被
+  删除会触发工作树垃圾回收。
+- **跨厂商同步。** 一个监听五种工单事件的协调器会把本地工单变更推送到已配置的
+  厂商。
 
-## Event categories
+## 事件分类
 
-Events span the whole product surface. At a high level:
+事件覆盖整个产品面。概括来说：
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **工作区、智能体与仓库**——工作区创建、运行完成、仓库注册、技能更新
+- **PR**——发布、状态变更、合并、审查请求、提及、自己创作的 PR 的跟踪、外部检测到的 PR
+- **消息**——消息、空间与空间预配进度
+- **工单**——创建、分配、改派、详情、状态以及三种终态结果
+- **任务**——针对单次派发运行的有序生命周期帧，便于客户端排序和去重
+- **流水线**——仅有运行的终态事件（已完成、已取消、已失败）
+- **可观测性**——活动日志条目与预算阈值
+- **身份与成员关系**——成员添加、移除、角色变更
+- **日历与会议**——认证过期、会议开始与录制结束
+- **机台**——接管、回收与意外关闭
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+记忆、编排、计划文档、工件、审批、工单同步接收、日历刷新、工作树合并、用户创建、
+邀请与设备吊销都不是领域事件；参见参考页。
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/zh-CN/手册/参考/领域事件/). That page is the
-inventory; this one is the model.
+完整的目录——全部 53 个具体事件类、它们的载荷以及消费这些事件的 24 个订阅方——
+参见[领域事件参考](/zh-CN/手册/参考/领域事件/)。那一页是清单，这一页是模型。
 
-## Live access control rides two different mechanisms
+## 实时访问控制依赖两套不同的机制
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+成员关系和设备事件看起来是对称的，其实并不是，这一点在你推敲“吊销多快生效”时
+很关键。
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**吊销设备确实会终止它的会话。** 服务器监视已配对设备表，只要某台设备离开了
+活跃集合，它对应的任何存活会话都会在数秒内被断开。
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**移除成员并不会关闭套接字。** `WorkspaceMemberRemoved` 会被消费：`LocalRpcServer`
+和 `RemoteRelayHost` 会移除该用户已挂载的工作区订阅，`RemoteEventForwarder` 会使其
+成员关系缓存失效，因此不会再推送该工作区的后续帧。真正拦下下一次 RPC 的仍然是
+角色门槛，它会在**每一次**调用时重新解析成员关系——于是他们的下一个请求会被拒绝，
+提示 "Not a member of this workspace"。对他们尝试做的任何事，效果都是即时的；
+只是这并非靠挂断连接实现。
 
-## Pipeline triggers
+## 流水线触发器
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+流水线触发器订阅领域事件，并自动启动匹配的流水线。`PipelineTriggerDispatcher`
+监听整条总线，然后：
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. 如果事件类型不是它知道如何映射为载荷的类型，就直接短路返回
+2. 在每一个工作区中查找与该事件类型匹配的已启用触发器
+3. 将每个触发器过滤到它自己的工作区，并应用其载荷匹配过滤器
+4. 为每一个通过筛选的触发器启动一次运行
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
-`ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
-`PrMerged`, `MessageReceived`, `TicketAssigned`,
-`TicketCompleted`, `TicketFailed`, `TicketCancelled`,
-`BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+关键约束在第 1 步。总线承载 53 种事件类型；添加触发器选择器只会为以下十四种
+启动运行（`EventPayloadMapper` 的载荷分支）：
+`ExternalPrDetected`、`PullRequestPublished`、`PullRequestStatusChanged`、
+`PrMerged`、`MessageReceived`、`TicketAssigned`、
+`TicketCompleted`、`TicketFailed`、`TicketCancelled`、
+`BudgetThresholdCrossed`、`RepoAdded`、`MeetingRecordingStopped`、`SkillUpdated`
+和 `SpaceDeleted`。除此之外的任何事件都无法启动流水线。
 
-## How a client sees any of this
+## 客户端如何看到这些
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/zh-CN/手册/概念/架构/).
+`RemoteEventForwarder` 把通知类事件转成传输帧，并通过 RPC 推送到已连接的会话，
+在那里由帧映射器将它们转成应用内通知。因此，瘦客户端看到的是服务器事件流的一个
+投影，自身并不承担任何执行——这正是[瘦客户端拆分](/zh-CN/手册/概念/架构/)的全部
+意义所在。
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+不过，并非每个推送的帧都是通知。任务生命周期流和工单改派会实时转发以驱动界面，
+但它们不会被记入通知信息流，也不会弹出任何提示。
 
-## See also
+## 相关概念
 
-- [Pipelines and automation](/zh-CN/手册/概念/流水线/): what a trigger starts
-- [Tickets and delegation](/zh-CN/手册/概念/工单/): assignment to an agent vs a team
-- [Architecture](/zh-CN/手册/概念/架构/): how events fit the dependency rule
-- [Domain events reference](/zh-CN/手册/参考/领域事件/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/)
-- [Configure notifications](/zh-CN/手册/操作指南/通知/)
+- [流水线与自动化](/zh-CN/手册/概念/流水线/)：触发器会启动什么
+- [工单与委派](/zh-CN/手册/概念/工单/)：分配给智能体还是团队
+- [架构](/zh-CN/手册/概念/架构/)：事件如何契合依赖规则
+- [领域事件参考](/zh-CN/手册/参考/领域事件/)：完整目录及其订阅方
+- [设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)
+- [配置通知](/zh-CN/手册/操作指南/通知/)

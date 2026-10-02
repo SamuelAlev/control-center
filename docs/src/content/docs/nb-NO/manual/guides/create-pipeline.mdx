@@ -1,241 +1,252 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Opprett en pipeline-mal
+description: Skriv en DAG-arbeidsflytmal i pipeline-editoren — legg til noder, koble dem sammen, erklær inndata og gjør den kjørbar.
 slug: nb-NO/handbok/slik-gjor-du/opprett-pipeline
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Pipeline-maler lages i innstillingene for arbeidsområdet. Oppføringen
+**Pipelines** i sidepanelet til arbeidsområdet er _kjøringskøen_, ikke
+mallisten — den har ingen «opprett mal»-handling.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/nb-NO/handbok/referanse/pipeline-steg/).
+For hva hver stegtype, kroppsnøkkel og konfigurasjonsfelt betyr, se
+[Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/).
 
-## Create a template
+## Opprett en mal
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Gå til **Innstillinger → Arbeidsområde → Pipeline-maler**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Trykk **Ny mal**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Det finnes ingen id-dialog. Editoren åpnes umiddelbart på et forhåndsutfylt
+skjelett som heter **Ny pipeline**, med en automatisk tildelt id (`pipeline_1`,
+deretter `pipeline_2`, …). Klikk på tittelen i toppteksten for å gi den nytt
+navn.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Lerretet er ikke tomt: en inngangsnode **Trigger**, én promptagentnode merket
+**Step** og en terminal vaktpost som avslutter kjøringen. Vaktposten tegnes
+ikke. Editoren kobler den skjulte terminalen til hver nåbar mottaker, slik at
+arbeid du kobler på etter **Step**, fortsatt kjører.
 
-## Add nodes
+## Legg til noder
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Sidepanelet **Nodebibliotek** ligger permanent til venstre i editoren. Filtrer
+det med boksen **Søk i noder**, og dra en oppføring ut på lerretet — noden
+lander der du slipper den, uten innkommende kobling.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palettenode                    | Stegtype | Hva den gjør                                                                          |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------- |
+| **Bash script**                | listen   | Kjører et skallskript med `{{state}}`-substitusjon; ingen agent sendes ut             |
+| **Open conversation**          | listen   | Åpner kjøringens ene synlige område og utsjekkingen der; agentnoder blir med i rommet |
+| **Clone PR branch**            | listen   | Finner PR-ens head-gren via `gh pr view` og kloner den til kjøringskatalogen          |
+| **Post PR comment**            | listen   | Publiserer samlede funn til PR-en som en GitHub-gjennomgangskommentar                 |
+| **Reviewer (prompt)**          | listen   | Sender ut en spesialisert reviewer-agent; settes på pause til agenten leverer         |
+| **Consolidate (join)**         | join     | Venter på flere oppstrømsgrener og ber deretter en agent slå sammen utdataene deres   |
+| **Custom prompt**              | listen   | Generisk promptstyrt node som rutes gjennom kroppen `promptAgent`                     |
+| **Post to space**              | listen   | Sender en melding til et meldingsområde                                               |
+| **Condition / switch (router)** | router  | Forgrener flyten på en tilstandsverdi                                                 |
+| **If file exists (router)**    | router   | Ruter `"true"` når en sti finnes under klonen, ellers `"false"`                       |
+| **Any file exists (OR router)** | router  | Ruter `"true"` når en av de oppgitte stiene finnes                                    |
+| **All conditions (AND router)** | router  | Ruter `"true"` bare når alle oppgitte stier finnes                                    |
+| **Team dispatch**              | listen   | Sender ut et helt team og settes på pause til det er ferdig                           |
+| **Approval gate**              | listen   | Settes på pause i påvente av en godkjenningsavgjørelse                                |
+| **For each (map)**             | forEach  | Gjengir en prompt per element og sender deretter ut agenten én gang med promptene slått sammen |
+| **Call sub-pipeline**          | listen   | Kjører en annen mal som et nestet steg                                                |
+| **Clean up worktrees**         | listen   | Fjerner foreldede isolerte worktreer; deterministisk, ingen agent sendes ut           |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Biblioteket grupperer disse under **Flyt og logikk**, **PR-gjennomgang**,
+**Agenter**, **Meldinger** og **Kode**. Det finnes ingen Demogruppe.
 
-## Wire nodes together
+## Koble noder sammen
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Hver arbeidsnode har en sirkulær **utgangsport** på høyre kant. Dra fra den
+porten til en annen node for å koble dem sammen. Startutløsere er like: hver av
+dem har sin egen port, så en ledning fra **Tidsplan** går ikke også ut fra
+**Manuell kjøring**. Trykk **Legg til steg** (`+`) rett etter en node for å
+sette inn en type etter den. Hold markøren over midtpunktet på en eksisterende
+kant, og trykk × for å koble den fra.
 
-Connections are also edited from the node that _receives_ them:
+Koblinger redigeres også fra noden som _mottar_ dem:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Velg noden nedstrøms. Konfigurasjonspanelet åpnes til høyre.
+2. Rull til **Triggers from** og trykk på brikken for hver oppstrømsnode denne
+   skal lytte til. Å trykke på en valgt brikke fjerner koblingen.
+3. Hvis en oppstrømsnode er en ruter, vises en blokk **Rutenøkler** under
+   brikkene, med ett felt **Rutenøkkel fra &lt;node&gt;** per ruter-kant. Skriv
+   inn nøkkelen den kanten fyrer på — `true` eller `false` for
+   fil-finnes-ruterne, eller navnet på tilfellet for en bryter.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Hver utløsernode er et inngangspunkt. En node kan lytte til flere
+oppstrømsnoder (fan-in) og føre videre til flere nedstrømsnoder (fan-out), og
+grafen må forbli asyklisk — ingenting i editoren hindrer deg i å koble en
+syklus, så sjekk arbeidet ditt.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Den terminale vaktposten filtreres bort fra lerretet, så den kan ikke velges.
+Editoren kobler den på nytt til hver nåbar mottaker hver gang grafen endres,
+slik at arbeid du kobler på etter den forhåndsplasserte **Step**-noden, fortsatt
+kjører. En tom graf (utløser uten arbeidsefterfølgere) lister opp utløseren
+selv, slik at en kjøring fullføres umiddelbart.
 
-## Configure a node
+## Konfigurer en node
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Velg en node for å åpne konfigurasjonspanelet. Hvilke felt som vises, avhenger
+av nodens kropp.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Hver node har **Etikett**, **Inndatanøkler** (kommaseparerte tilstandsnøkler
+som leses ved kjøring) og, under **Avansert**, **Reducer**, **Tidsavbrudd
+(ms)**, **Nye forsøk**, **Fortsett hvis dette steget feiler** og
+**Utdataskjema**. Lytte- og join-noder kan også bytte **Type** mellom de to.
 
-### Open conversation
+### Åpne samtale
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Legger til velgeren **Arkiv som skal klones** (hvilke repoer i arbeidsområdet
+som skal sjekkes ut; tomt betyr ingen), feltet **Områdenavn** og
+avmerkingsboksen **Åpne en samtale i det**. Når avmerkingsboksen er på, navngir
+**Samtalenavn** strømmen rommet åpnes med. Agentnoder blir med i dette rommet —
+de åpner ikke sitt eget.
 
-### Prompt agent
+### Promptagent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Legger til **Agent** (hvilken agent som skal sendes ut), **Promptmal** (bruk
+`{{key}}` for å referere til inndata eller utdata fra oppstrømsnoder) og
+**Utdatanøkkel**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Tidsavbrudd (ms)** er i _millisekunder_, ikke sekunder — `900000` er
+15 minutter. Oppgir du `900`, får steget 0,9 sekunder.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Samtalemodusen en promptagentnode kjører under, har ikke noe editorfelt på
+agentnoden. Den ligger i `extras['mode']` (`chat`, `plan` eller `review`) på
+**Open conversation**-noden som opprettet rommet (standard `review`). Angir du
+den på et agentsteg, ignoreres den. Nøkkelen matches eksakt: enhver annen
+stavemåte ignoreres i stillhet.
 
-### Bash script
+### Bash-skript
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Legger til **Bash-skript**. Det finnes ingen felt for arbeidskatalog eller
+miljøvariabler, fordi ingen av delene kan konfigureres:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Hvert bash-steg i en kjøring deler arbeidskatalogen `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` injiseres fra lageret for påloggingsinformasjon, så `gh` og
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` fungerer uten oppsett.
+- Skriptet startes som den bokstavelige kjørbare filen `bash`, så `bash` må
+  ligge i `PATH` på serververten. Det er noe å tenke på i Windows.
 
-### Router
+### Ruter
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+En ruter evaluerer en betingelse og returnerer en rutenøkkel; motoren fyrer
+bare den nedstrømskanten hvis rutenøkkel samsvarer, og markerer de andre
+grenene som hoppet over.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Når du velger en ruter, erstattes feltet **Utdatanøkkel** med
+betingelseseditoren. Velg én av de fire modusene:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Fil(er) finnes — hvilken som helst** — ruter `"true"` når en av de oppgitte
+  stiene finnes.
+- **Filer finnes — alle** — ruter `"true"` bare når alle oppgitte stier finnes.
+- **Sammenligning** — sammenligner en tilstandsverdi mot en literal.
+- **Bryter** — ruter på verdien til en tilstandsnøkkel, med et standardtilfelle.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Angi deretter de samsvarende rutenøklene på de utgående kantene (se
+[Koble noder sammen](#koble-noder-sammen)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/nb-NO/handbok/referanse/pipeline-steg/).
+Boolske grupper med `and` / `or` / `not` støttes av kroppen, men kan ikke lages
+fra dette skjemaet — de krever et håndskrevet predikattre under
+`extras.predicate`. Det fullstendige vokabularet for predikater og operatorer
+finnes i [Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/).
 
-### Join
+### Sammenføyning
 
-No configuration of its own: it waits for all of its upstream steps.
+Ingen egen konfigurasjon: den venter på alle oppstrømsstegene sine.
 
-### Approval gate
+### Godkjeningsport
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Porten sender ut godkjenneragenten i en skjult samtale med portens prompt og
+setter seg på pause. Godkjenneren innhenter avgjørelsen din i samtalen og
+leverer den med `submit_output` som
+`{ "decision": "approved" | "rejected", "reason": "..." }`. Avgjørelsen havner
+under utdatanøkkelen (standard `approval_decision`), slik at en bryterruter
+nedstrøms kan forgrene seg på den.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Sett **Agent** til godkjenneren og **Promptmal** til portens spørsmål. Porten
+løses ut gjennom `submit_output` som `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Reviewer (prompt)-noder leverer på samme måte.
 
-### Team dispatch
+### Teamutsending
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Legger til **Team-ID** og **Dispatch-modus**. Velgeren tilbyr nøyaktig to
+moduser:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — én oppgave per medlem, settes på pause til alle er ferdige.
+- `manager` — sender ut lederen, som delegerer.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Enhver annen lagret verdi oppfører seg som `allParallel`. Sett **Reducer** til
+`append` for å samle hvert medlems resultat i en liste under utdatanøkkelen.
 
-### For each and Call sub-pipeline
+### For hver og Kall underpipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For hver** mapper over tilstandsnøkkelen `items` som standard
+(`extras.iterableKey` / `extras.itemKey` på noden). Den gjengir prompten sin én
+gang per element (`{{item}}` som standard) og sender ut agenten **én gang** med
+disse promptene sammenkoblet. En tom samling fullføres umiddelbart med en tom
+liste. Det er ikke én parallell utsending per element.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Kall underpipeline** settes på pause til barnekjøringen når en
+terminaltilstand, og fletter deretter barnets endelige tilstand inn under
+utdatanøkkelen (standard `subflow_result`). Pek den mot et barn med
+`extras.templateId`. En mal kan ikke kalle seg selv; et barn som feiler eller
+avbrytes, får foreldresteget til å feile, og det mater deretter stegets policy
+for nye forsøk og fortsett-ved-feil.
 
-## Declare inputs and allow manual runs
+## Erklær inndata og tillat manuelle kjøringer
 
-Both live behind **Manual run** in the editor header.
+Begge ligger bak **Manuell kjøring** i toppteksten til editoren.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Trykk **Manuell kjøring**.
+2. Slå på **Tillat manuell kjøring**. Denne bryteren lagres umiddelbart — den
+   oppretter (eller sletter) utløserraden `manual` som gjør at malen vises i
+   kjøringsvelgeren.
+3. Angi **Maks parallelle kjøringer** hvis du vil ha en øvre grense (la stå
+   tomt for ubegrenset). Ekstra starter venter i tilstanden `queued` til en
+   plass blir ledig.
+4. Trykk **Legg til inndata** for hvert skjemafelt en manuell kjøring skal
+   samle inn:
 
-| Field             | Description                                                    |
+| Felt              | Beskrivelse                                                    |
 | ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| **Nøkkel**        | Tilstandsnøkkelen verdien lagres under; referer til den som `{{key}}` |
+| **Etikett**       | Visningsetikett (standard er nøkkelen)                         |
+| **Type**          | Tekst, Flerlinjetekst, Tall, Bryter, Velg, Arkiv               |
+| **Alternativer**  | Kommaseparerte valg, bare for Velg                             |
+| **Standardverdi** | Forhåndsutfylt verdi                                           |
+| **Plassholder**   | Vinketekst inne i det tomme feltet                             |
+| **Hjelpetekst**   | Hjelpetekst under feltet                                       |
+| **Påkrevd**       | Om kjøringsskjemaet blokkerer på en tom verdi                  |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+En inndata av typen **Arkiv** viser en velger over arbeidsområdets repoer og
+fyller `repo_id`, `repo_local_path`, `repo_full_name` og — når repoet har en
+GitHub-remote — `repo_owner` og `repo_name` inn i kjøringens nyttelast.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Trykk **Lagre** i dialogen. Endringer i inndata flettes inn i utkastet; de
+   beholdes når du lagrer malen.
 
-## Save and enable
+## Lagre og aktiver
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/).
+1. Trykk **Lagre** i toppteksten til editoren. Toppteksten viser «Ulagrede
+   endringer» til du gjør det.
+2. Gå tilbake til **Innstillinger → Arbeidsområde → Pipeline-maler** og
+   kontroller at bryteren i raden til malen er på. Motoren nekter å starte en
+   deaktivert mal, og en deaktivert mal vises aldri i kjøringsvelgeren.
+3. For å starte den automatisk, dra en utløser fra nodebiblioteket ut på
+   lerretet — se
+   [Sett opp pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/).
 
-## Related guides
+## Relaterte guider
 
-- [Run a pipeline manually](/nb-NO/handbok/slik-gjor-du/kjor-pipeline/)
-- [Set up pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
-- [Monitor pipeline runs](/nb-NO/handbok/slik-gjor-du/overvak-pipelines/)
-- [Pipeline steps reference](/nb-NO/handbok/referanse/pipeline-steg/)
+- [Kjør en pipeline manuelt](/nb-NO/handbok/slik-gjor-du/kjor-pipeline/)
+- [Sett opp pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
+- [Overvåk pipeline-kjøringer](/nb-NO/handbok/slik-gjor-du/overvak-pipelines/)
+- [Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/)
 
-## Related concepts
+## Relaterte konsepter
 
 - [Pipelines](/nb-NO/handbok/konsepter/pipelines/)

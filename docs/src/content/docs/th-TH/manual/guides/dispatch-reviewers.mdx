@@ -1,26 +1,26 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: สั่งงานเอเจนต์รีวิวเวอร์
+description: ส่งเอเจนต์รีวิวเวอร์ผู้เชี่ยวชาญไปที่ PR จากหน้า PR เครื่องมือ MCP หรือขั้นตอนไปป์ไลน์
 slug: th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+คู่มือนี้แสดงวิธีสั่งงานเอเจนต์รีวิวเวอร์ให้รีวิว pull request
 
-## From the PR view
+## จากหน้า PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. เปิด PR แล้วไปที่แท็บ **ภาพรวม** ของมัน
+2. เปิดเมนู ⋯ แล้วเลือก **ถาม AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+การทำเช่นนี้จะเริ่มไปป์ไลน์ `pr_review` ที่มาพร้อมระบบ ซึ่งเปิดสเปซรีวิวของ PR
+และกระจายรีวิวเวอร์ตามระดับรีวิวของเวิร์กสเปซ — ค่าเริ่มต้นคือสามตัว (เอเจนต์
+**qa**, **architect** และ **engineer** ที่มาพร้อมระบบ) — จากนั้นให้เอเจนต์หัวหน้า
+รวบรวมผล เส้นทางนี้คุณไม่ได้เลือกบทบาทเอง หากต้องการควบคุมว่าบทบาทใดจะรัน และ
+แต่ละตัวดูไฟล์ใด ให้ใช้เครื่องมือ MCP หรือขั้นตอนไปป์ไลน์ด้านล่าง
 
-## Via the `dispatch_reviewers` MCP tool
+## ผ่านเครื่องมือ MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+เรียกมันจากภายในสเปซรีวิวที่มีอยู่แล้ว:
 
 ```
 dispatch_reviewers(
@@ -33,109 +33,106 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` และ `reviewers` จำเป็นทั้งหมด สเปกของรีวิวเวอร์แต่ละตัว
+รับ `role` พร้อม `scope` แบบ glob ของไฟล์ (ไม่บังคับ) และ `prompt_override` ที่
+แทนที่บรีฟเริ่มต้น `concurrency` แบบไม่บังคับ (1–8) จำกัดจำนวนการสั่งงานพร้อมกัน
+เมื่อไม่ระบุ การตั้งค่า `review_concurrency` ของเวิร์กสเปซจะมีผล (ค่าเริ่มต้น 3
+ตั้งค่าที่ การตั้งค่า → เวิร์กสเปซ → ทั่วไป)
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+เครื่องมือจะคืนค่ากลับมาทันทีพร้อมรายการ `dispatched` และ `unmatched` รีวิวเวอร์ที่
+ถูกสั่งงานทุกตัวจะถูกเพิ่มเข้าไปในสเปซในฐานะผู้เข้าร่วม ประกาศด้วยข้อความระบบ และ
+สั่งงานพร้อมบรีฟของมัน ข้อค้นพบจะลงเป็นข้อความ `review_node` ในสเปซนั้น
 
-## From a pipeline step
+## จากขั้นตอนไปป์ไลน์
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+เปิด **การตั้งค่า → เวิร์กสเปซ → เทมเพลตไปป์ไลน์** เปิดเทมเพลต จากนั้น:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. เพิ่มโหนด **Reviewer (prompt)** จากพาเลตต์
+2. เลือกเอเจนต์ที่จะสั่งงาน แล้วเขียนพรอมต์ของรีวิวเวอร์ โดยใช้ตัวยึดตำแหน่ง
+   `{{key}}` สำหรับเอาต์พุตต้นทาง (ตัวอย่างเช่น `{{repo_local_path}}`,
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. ตั้งคีย์เอาต์พุต (ค่าเริ่มต้น `reviewer_findings`) เพื่อให้ขั้นตอนปลายทางอ่าน
+   ข้อค้นพบได้
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+ขั้นตอนนี้จะสั่งงานเอเจนต์และพักไว้จนกว่ารันนั้นจะเสร็จ จากนั้นเอนจินจะเก็บเพย์โหลด
+`submit_output` ของรันเข้าสู่สถานะไปป์ไลน์ภายใต้คีย์เอาต์พุตของโหนด (คำอธิบายใน
+พาเลตต์ยังบอกว่าขั้นตอนนี้รอการเรียก `complete_task` — เครื่องมือนั้นไม่มีอยู่จริง
+ไม่ต้องสนใจข้อความนั้น)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+กระจายสาขาโดยเชื่อมโหนดรีวิวเวอร์หลายตัวเข้ากับขั้นตอนต้นทางเดียวกัน แล้วรวม
+เอาต์พุตของพวกมันด้วยโหนด **Consolidate (join)**
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+ตัวแก้ไขจะเชื่อมเซนติเนลปลายทางที่ซ่อนอยู่ใหม่ไปยังโหนดที่เข้าถึงได้ทุกตัว ดังนั้น
+โหนดที่คุณเพิ่มต่อจาก **Step** ที่มีมาให้จึงยังรันอยู่ โหนดที่กระจายสาขาและเชื่อมกับ
+ขั้นตอนต้นทางเดียวกันจะรันขนานกัน
 
-## Automatic dispatch on a new PR
+## การสั่งงานอัตโนมัติเมื่อมี PR ใหม่
 
-To have a review pipeline fire by itself:
+หากต้องการให้ไปป์ไลน์รีวิวเริ่มทำงานเอง:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. เปิดเทมเพลตที่ **การตั้งค่า → เวิร์กสเปซ → เทมเพลตไปป์ไลน์**
+2. ลาก **เผยแพร่ PR** หรือ **เปิด PR ภายนอก** จากส่วนทริกเกอร์ของไลบรารีโหนดมาวาง
+   บนแคนวาส (หรือเลือกจากไทล์จาง **เพิ่มทริกเกอร์**)
+3. เลือกโหนดใหม่ แล้วเปิดสวิตช์ **เปิดใช้** ในตัวตรวจสอบของมัน จากนั้นเปิดใช้งาน
+   เทมเพลต
 
-Two events matter here and they are not interchangeable:
+มีสองเหตุการณ์ที่สำคัญตรงนี้ และสลับกันไม่ได้:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| เหตุการณ์              | เกิดเมื่อ                                                                                                     | คีย์เพย์โหลด                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | PR ถูกเปิด **ผ่าน Control Center** — พื้นผิวการเขียน PR หรือเอเจนต์ที่เรียก `pr_lifecycle.publish`              | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | บริการโพลล์ PR พบ PR ที่เปิดบน GitHub โดยตรง                                                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PR ที่เปิดบน github.com ไม่เคยทำให้เกิด `PullRequestPublished` ดังนั้นเทมเพลตที่
+เชื่อมไว้กับเฉพาะเหตุการณ์นั้นจะไม่เห็นมัน สังเกตด้วยว่า `PullRequestPublished`
+ไม่มี `pr_number` ติดมาด้วย — ขั้นตอนที่สคริปต์หรือพรอมต์อ้างถึง `{{pr_number}}`
+ต้องถูกป้อนด้วย `ExternalPrDetected` หรือด้วยการรันด้วยตนเองที่จัดหาให้
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+จุดตรวจสอบ: หลังจากเปิดใช้งานแล้ว ให้เปิด **ไปป์ไลน์** และยืนยันว่ามีรันปรากฏขึ้น
+สำหรับ PR ที่ตรงเงื่อนไขตัวถัดไป เทมเพลตที่ปล่อยไว้แบบปิดทำให้ทริกเกอร์ของมันยิงไป
+อย่างไร้ผล — เอนจินปฏิเสธเทมเพลตที่ปิดอยู่และคืนค่าโดยไม่เริ่มรัน
 
-## How a role is matched to an agent
+## บทบาทถูกจับคู่กับเอเจนต์อย่างไร
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` ให้คะแนนเอเจนต์ทุกตัวในเวิร์กสเปซเทียบกับป้ายบทบาทที่ขอมาแต่ละ
+รายการ โดยไม่คำนึงถึงตัวพิมพ์เล็กใหญ่:
 
-| Match                                   | Score |
+| ความตรงกัน                              | คะแนน |
 | --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| สกิลที่มีป้ายบทบาทอยู่ด้วย              | +3    |
+| ชื่อเรื่องที่มีป้ายบทบาทอยู่ด้วย        | +2    |
+| ชื่อเอเจนต์ที่มีป้ายบทบาทอยู่ด้วย       | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+คะแนนจะสะสมและตัวที่มีผลรวมสูงสุดชนะ (หากเสมอกัน ใช้ผู้สมัครตัวแรกที่พบ) หากไม่มี
+ผู้สมัครตัวใดได้คะแนนมากกว่าศูนย์ สเปกจะกลับมาในรายการ `unmatched` ของเครื่องมือ
+แทนที่จะถูกสั่งงาน — บทบาทที่ไม่มีใครตรงจึงถูกรายงาน ไม่ถูกข้ามไปเงียบ ๆ
 
-## The review space
+## สเปซรีวิว
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+PR มีสเปซรีวิวเพียง **หนึ่ง** สเปซเท่านั้น ไม่ใช่หนึ่งสเปซต่อรีวิวเวอร์หนึ่งตัว
+มันถูกสร้างแบบ idempotent โดย `pr.ensureSpace` เชื่อมกับ PR ผ่าน
+`ReviewSpaceAssociation` และจัดเตรียมไว้กับ head ref ของ PR รีวิวเวอร์ที่ถูกสั่งงาน
+ทุกตัวจะเข้าร่วมสเปซนั้นและโพสต์ข้อค้นพบ `review_node` ของมันที่นั่น ซึ่งเป็นสิ่งที่
+ทำให้ข้อค้นพบเปรียบเทียบกันได้ และทำให้เอเจนต์หัวหน้าเข้าถึงฉันทามติข้ามข้อค้นพบ
+เหล่านั้นได้
 
-## Monitor the dispatch
+## ติดตามการสั่งงาน
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+รีวิวเวอร์ที่ถูกสั่งงานแต่ละตัวมี `AgentRunLog` ของตัวเอง ติดตามความคืบหน้าได้ที่:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **สเปซรีวิว** ซึ่งข้อค้นพบสตรีมเข้ามาแบบสด
+- แท็บ **รีวิว** ของ PR ซึ่งแสดงแถบสถานะการรีวิวและคำตัดสิน
+- **การสังเกตการณ์ → สด** (`/workspaces/:id/observability`) รายชื่อเอเจนต์พร้อม
+  สถานะต่อรัน เวลาที่ผ่านไปแบบสด ลิ้นชักทรานสคริปต์ และตัวควบคุมสำหรับหยุด
+  ไม่มีทางลัดแป้นพิมพ์สำหรับมัน — เข้าถึงได้จากส่วนท้ายของแถบด้านข้าง
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Use AI-powered review](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/)
-- [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
-- [Set up pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
+- [ใช้รีวิวด้วย AI](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/)
+- [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+- [ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [AI review](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/)
-- [Pipelines](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)
+- [รีวิวด้วย AI](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/)
+- [ไปป์ไลน์](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)

@@ -1,241 +1,260 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: パイプラインテンプレートを作成
+description: パイプラインエディターで DAG ワークフローのテンプレートを作成します。ノードを追加して接続し、入力を宣言して実行可能にします。
 slug: ja-JP/マニュアル/ハウツーガイド/パイプライン作成
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+パイプラインのテンプレートはワークスペース設定で作成します。ワークスペースの
+サイドバーにある **パイプライン** の項目は_実行キュー_であり、テンプレートの
+一覧ではありません。「テンプレートを作成」の操作はそこにはありません。
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ja-JP/マニュアル/リファレンス/パイプラインステップ/).
+各ステップ種別、ボディのキー、設定フィールドの意味については、
+[パイプラインステップのリファレンス](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
+を参照してください。
 
-## Create a template
+## テンプレートを作成
 
-1. Go to **Settings → Workspace → Pipeline templates**
-   (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+1. **設定 → ワークスペース → パイプラインテンプレート**
+   （`/workspaces/<workspace-id>/settings/pipelines`）に移動します。
+2. **新しいテンプレート**を押します。
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+ID のダイアログはありません。エディターは、**新しいパイプライン**という名前の
+用意されたスケルトンで即座に開きます。ID は自動で割り当てられます
+（`pipeline_1`、次に `pipeline_2`、…）。ヘッダーのタイトルをクリックすると、
+名前を変更できます。
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+キャンバスは空白ではありません。**Trigger** の入口ノード、**Step** という
+ラベルのプロンプトエージェントノード 1 つ、そして実行を終わらせる終端
+センチネルがあります。センチネルは描画されません。エディターはこの非表示の
+終端を、到達可能なすべてのシンクに再接続します。そのため、**Step** の後に
+接続した処理も実行されます。
 
-## Add nodes
+## ノードを追加
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+**ノードライブラリ**のサイドバーはエディターの左側に常時表示されます。
+**ノードを検索**ボックスで絞り込み、項目をキャンバスにドラッグします。ノードは
+ドロップした場所に、入力接続なしで配置されます。
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| パレットのノード                | ステップ種別 | 動作                                                                                       |
+| ------------------------------- | ------------ | ------------------------------------------------------------------------------------------ |
+| **Bash script**                 | listen       | `{{state}}` の置換付きでシェルスクリプトを実行します。エージェントはディスパッチされません |
+| **Open conversation**           | listen       | 実行の唯一の可視スペースとそのチェックアウトを開きます。エージェントノードはこの部屋に参加します |
+| **Clone PR branch**             | listen       | `gh pr view` で PR のヘッドブランチを検出し、実行ディレクトリにクローンします              |
+| **Post PR comment**             | listen       | 集約した指摘を GitHub のレビューコメントとして PR に投稿します                             |
+| **Reviewer (prompt)**           | listen       | 専門のレビュアーエージェントをディスパッチし、結果を送信するまで中断します                 |
+| **Consolidate (join)**          | join         | 複数の上流ブランチを待ってから、エージェントにそれらの出力の集約を依頼します               |
+| **Custom prompt**               | listen       | `promptAgent` ボディを経由する汎用のプロンプト駆動ノード                                   |
+| **Post to space**               | listen       | メッセージングスペースにメッセージを送信します                                             |
+| **Condition / switch (router)** | router       | ステートの値でフローを分岐します                                                           |
+| **If file exists (router)**     | router       | クローン配下にパスが存在すれば `"true"`、そうでなければ `"false"` にルーティングします     |
+| **Any file exists (OR router)** | router       | 一覧のいずれかのパスが存在すれば `"true"` にルーティングします                             |
+| **All conditions (AND router)** | router       | 一覧のすべてのパスが存在するときだけ `"true"` にルーティングします                         |
+| **Team dispatch**               | listen       | チーム全体をディスパッチし、完了するまで中断します                                         |
+| **Approval gate**               | listen       | 承認の判断を待って一時停止します                                                           |
+| **For each (map)**              | forEach      | 項目ごとにプロンプトをレンダリングし、それらを連結したプロンプトでエージェントを 1 回だけディスパッチします |
+| **Call sub-pipeline**           | listen       | 別のテンプレートをネストしたステップとして実行します                                       |
+| **Clean up worktrees**          | listen       | 古い隔離ワークツリーを削除します。決定的で、エージェントはディスパッチされません           |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+ライブラリでは、これらが **フローとロジック**、**PR レビュー**、**エージェント**、
+**メッセージング**、**コード**にグループ化されています。Demo グループは
+ありません。
 
-## Wire nodes together
+## ノード同士を接続
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+各ワークノードの右端には円形の**出力ポート**があります。そのポートから別の
+ノードへドラッグすると接続できます。開始トリガーも同じです。それぞれが独自の
+ポートを持つため、**スケジュール**からの配線が**手動実行**からも出ることは
+ありません。ノードのすぐ後ろで**ステップを追加**（`+`）を押すと、その後に
+種別を挿入できます。既存のエッジの中点にカーソルを合わせて × を押すと、
+接続を解除できます。
 
-Connections are also edited from the node that _receives_ them:
+接続は、それ_を受け取る_ノードからも編集できます。
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. 下流のノードを選択します。右側に設定パネルが開きます。
+2. **Triggers from** までスクロールし、このノードがリッスンすべき上流ノード
+   ごとにチップをタップします。選択済みのチップをタップすると接続が解除されます。
+3. 上流ノードがルーターの場合、チップの下に**ルートキー**ブロックが表示され、
+   ルーターのエッジごとに**&lt;node&gt; からのルートキー**フィールドが 1 つ
+   並びます。そのエッジが発火するキー（ファイル存在ルーターなら `true` か
+   `false`、スイッチならケース名）を入力します。
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+各トリガーノードはエントリーポイントです。ノードは複数の上流をリッスンし
+（ファンイン）、複数の下流をフィードできます（ファンアウト）。ただしグラフは
+非巡回である必要があります。エディターには循環を接続させない仕組みはないため、
+自分で確認してください。
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+終端センチネルはキャンバスから除外されているため、選択できません。エディターは
+グラフが変わるたびに、それを到達可能なすべてのシンクに再接続します。そのため、
+用意された **Step** の後に接続した処理も実行されます。空のグラフ（後続の
+ワークがないトリガー）では、トリガー自体が一覧に表示され、実行は即座に
+完了します。
 
-## Configure a node
+## ノードを設定
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+ノードを選択すると設定パネルが開きます。どのフィールドが表示されるかは、
+ノードのボディによって異なります。
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+すべてのノードには**ラベル**、**入力キー**（カンマ区切りのステートキーで、
+実行時に読み取られます）があり、**詳細**の下に**リデューサー**、
+**タイムアウト (ms)**、**再試行回数**、**このステップが失敗しても続行**、
+**出力スキーマ (JSON)**があります。listen と join のノードは、**種別**を
+この 2 つの間で切り替えることもできます。
 
-### Open conversation
+### 会話を開く
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+**クローンするリポジトリ**のピッカー（どのワークスペースリポジトリを
+チェックアウトするか。空ならなし）、**スペース名**、**会話を開く**
+チェックボックスを追加します。このチェックボックスがオンのときは、**会話名**
+フィールドが、部屋が開く際のストリームに名前を付けます。エージェントノードは
+この部屋に参加します。自分で部屋を開くことはありません。
 
-### Prompt agent
+### プロンプトエージェント
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+**エージェント**（ディスパッチするエージェント）、**プロンプトテンプレート**
+（`{{key}}` で入力や上流の出力を参照します）、**出力キー**を追加します。
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**タイムアウト (ms)** の単位は秒ではなく_ミリ秒_です。`900000` は 15 分です。
+`900` を入力すると、ステップには 0.9 秒が与えられます。
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+プロンプトエージェントノードがどの会話モードで実行されるかは、エージェント
+ノードのエディターのフィールドでは設定しません。それは、部屋を作成した
+**Open conversation** ノードの `extras['mode']`（`chat`、`plan`、`review`）で
+渡されます（デフォルトは `review`）。エージェントステップ側で設定しても無視
+されます。キーは完全一致で照合され、それ以外の綴りは黙って無視されます。
 
-### Bash script
+### Bash スクリプト
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+**Bash スクリプト**を追加します。作業ディレクトリや環境のフィールドは
+ありません。どちらも設定できないためです。
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- 1 回の実行におけるすべての bash ステップは、cwd `<cc_root>/pipelines/<runId>/`
+  を共有します。
+- `GITHUB_TOKEN` は資格情報ストアから注入されるため、`gh` や
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` は設定なしで動作します。
+- スクリプトは文字どおり `bash` という実行ファイルとして起動されるため、
+  `bash` がサーバーホストの `PATH` にある必要があります。これは Windows での
+  考慮事項です。
 
-### Router
+### ルーター
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+ルーターは条件を評価してルートキーを返します。エンジンは、ルートキーが一致する
+下流のエッジだけを発火し、他のブランチはスキップ済みとしてマークします。
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+ルーターを選択すると、**出力キー**フィールドが条件エディターに置き換わります。
+4 つのモードから 1 つを選びます。
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **ファイルが存在する（いずれか）** — 一覧のいずれかのパスが存在するときに
+  `"true"` にルーティングします。
+- **ファイルが存在する（すべて）** — 一覧のすべてのパスが存在するときだけ
+  `"true"` にルーティングします。
+- **比較** — ステートの値をリテラルと比較します。
+- **スイッチ** — ステートキーの値でルーティングします。デフォルトケースが
+  あります。
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+次に、出力側のエッジに一致するルートキーを設定します
+（[ノード同士を接続](#ノード同士を接続)を参照）。
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ja-JP/マニュアル/リファレンス/パイプラインステップ/).
+ブール値の `and` / `or` / `not` グループはボディ側でサポートされていますが、
+このフォームからは作成できません。`extras.predicate` に手書きした述語ツリーが
+必要です。述語と演算子の完全な語彙は、
+[パイプラインステップのリファレンス](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
+にあります。
 
-### Join
+### ジョイン
 
-No configuration of its own: it waits for all of its upstream steps.
+独自の設定はありません。すべての上流ステップを待ちます。
 
-### Approval gate
+### 承認ゲート
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+ゲートは、承認者エージェントを、ゲートのプロンプトを持つ非表示の会話に
+ディスパッチして中断します。承認者はその会話であなたの判断を求め、
+`submit_output` で `{ "decision": "approved" | "rejected", "reason": "..." }`
+として送信します。判断は出力キー（デフォルトは `approval_decision`）の下に
+格納されるため、下流のスイッチルーターがそれを基に分岐できます。
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+**エージェント**に承認者を、**プロンプトテンプレート**にゲートの質問を設定
+します。ゲートは `submit_output` を通じて `{ "decision": "approved" |
+"rejected", "reason": "..." }` として解決されます。Reviewer (prompt) ノードも
+同じ方法で送信します。
 
-### Team dispatch
+### チームディスパッチ
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+**チームID**と**ディスパッチモード**を追加します。ピッカーが提供するモードは
+次の 2 つだけです。
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — メンバーごとに 1 つのタスクを実行し、すべて完了するまで
+  中断します。
+- `manager` — リーダーをディスパッチし、リーダーが委任します。
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+その他の値が保存されている場合は `allParallel` として動作します。
+**リデューサー**を `append` に設定すると、各メンバーの結果が出力キーの下に
+リストとして収集されます。
 
-### For each and Call sub-pipeline
+### For each と Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** は、デフォルトでは `items` ステートキーに対してマップします
+（ノード上の `extras.iterableKey` / `extras.itemKey`）。項目ごとにプロンプトを
+1 回レンダリングし（デフォルトは `{{item}}`）、それらのプロンプトを連結して
+エージェントを**1 回**ディスパッチします。空のコレクションは、空のリストで
+即座に完了します。項目ごとに並列ディスパッチするわけではありません。
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** は、子の実行が終端状態に達するまで中断し、その後、
+子の最終ステートを出力キーの下にマージします（デフォルトは
+`subflow_result`）。`extras.templateId` で子を指定します。テンプレートは自分
+自身を呼び出すことはできません。失敗またはキャンセルされた子は親ステップを
+失敗させ、そのステップの再試行ポリシーと失敗時の継続ポリシーが適用されます。
 
-## Declare inputs and allow manual runs
+## 入力を宣言して手動実行を許可
 
-Both live behind **Manual run** in the editor header.
+どちらもエディターのヘッダーにある**手動実行**の背後にあります。
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. **手動実行**を押します。
+2. **手動実行を許可**をオンにします。このスイッチは即座に保存されます。
+   テンプレートを実行ページに表示させる `manual` トリガー行を作成（または
+   削除）します。
+3. 上限を設けたい場合は**最大並列実行数**を設定します（無制限にするには
+   空欄にします）。追加の開始は、枠が空くまで `queued` の状態で待機します。
+4. 手動実行で収集するフォームフィールドごとに**入力を追加**を押します。
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| フィールド                    | 説明                                                             |
+| ----------------------------- | ---------------------------------------------------------------- |
+| **キー**                      | 値が保存されるステートキーです。`{{key}}` として参照します       |
+| **ラベル**                    | 表示ラベル（デフォルトはキー）                                   |
+| **タイプ**                    | テキスト、複数行テキスト、数値、トグル、選択、リポジトリ         |
+| **オプション（カンマ区切り）** | カンマ区切りの選択肢。選択でのみ使用します                       |
+| **デフォルト値**              | あらかじめ入力される値                                           |
+| **プレースホルダー**          | 空のフィールド内に表示されるヒント                               |
+| **ヘルプテキスト**            | フィールドの下に表示される補足                                   |
+| **必須**                      | 実行フォームが空の値でブロックするかどうか                       |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+**リポジトリ**の入力は、ワークスペースのリポジトリを選択するピッカーを表示し、
+`repo_id`、`repo_local_path`、`repo_full_name`、そしてリポジトリに GitHub
+リモートがある場合は `repo_owner` と `repo_name` を実行のペイロードに設定
+します。
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. ダイアログで**保存**を押します。入力の編集は下書きに取り込まれ、テンプレート
+   を保存したときに永続化されます。
 
-## Save and enable
+## 保存して有効化
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/).
+1. エディターのヘッダーで**保存**を押します。保存するまで、ヘッダーには
+   「未保存の変更」と表示されます。
+2. **設定 → ワークスペース → パイプラインテンプレート**に戻り、テンプレートの
+   行のスイッチがオンになっていることを確認します。エンジンは無効なテンプレート
+   の開始を拒否し、無効なテンプレートは実行ページに表示されません。
+3. 自動で開始させるには、ノードライブラリからトリガーをキャンバスにドラッグ
+   します —
+   [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+   を参照してください。
 
-## Related guides
+## 関連ガイド
 
-- [Run a pipeline manually](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)
-- [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
-- [Monitor pipeline runs](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)
-- [Pipeline steps reference](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
+- [パイプラインを手動実行](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+- [パイプライン実行を監視](/ja-JP/マニュアル/ハウツーガイド/パイプライン監視/)
+- [パイプラインステップのリファレンス](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/)
+- [パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)

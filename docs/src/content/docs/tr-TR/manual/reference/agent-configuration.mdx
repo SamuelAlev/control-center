@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Ajan yapılandırması
+description: Ajan varlığındaki her alan ve kullandığı enum'lar.
 slug: tr-TR/kilavuz/referans/ajan-yapilandirmasi
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/).
+Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları ve bayrakları listeler. Uygulamada bir ajan oluşturma ya da düzenlemenin adım adım anlatımı için [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/) sayfasına bakın.
 
-## Agent entity fields
+## Ajan varlığı alanları
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Alan                    | Tür                    | Zorunlu | Açıklama                                                                                                                                                                                      |
+| ----------------------- | ---------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Evet    | Benzersiz ajan tanımlayıcısı                                                                                                                                                                  |
+| `name`                  | `String`               | Evet    | @ ile anmalar için kısa tanımlayıcı                                                                                                                                                           |
+| `title`                 | `String`               | Evet    | İnsan tarafından okunabilir görev unvanı                                                                                                                                                      |
+| `agentMdPath`           | `String`               | Evet    | Ajanın `.md` tanım dosyasının mutlak yolu                                                                                                                                                     |
+| `workspaceId`           | `String`               | Evet    | Sahip çalışma alanı (boş olamaz)                                                                                                                                                              |
+| `reportsTo`             | `String?`              | Hayır   | Üst ajan kimliği                                                                                                                                                                              |
+| `skills`                | `AgentSkills`          | Evet    | Beceri tanımlayıcıları kümesi                                                                                                                                                                 |
+| `persona`               | `String?`              | Hayır   | Serbest metin davranış talimatları                                                                                                                                                            |
+| `systemPrompt`          | `String?`              | Hayır   | Varsayılan sistem istemini geçersiz kılar                                                                                                                                                     |
+| `adapterId`             | `String?`              | Hayır   | Çıkarım adaptörü kimliği                                                                                                                                                                      |
+| `modelId`               | `String?`              | Hayır   | Adaptör içindeki model kimliği                                                                                                                                                                |
+| `strictMode`            | `bool`                 | Hayır   | Varsayılan `false`. Satıra ve ajanın `AGENTS.md` dosyasına yazılır                                                                                                                            |
+| `effort`                | `String?`              | Hayır   | Akıl yürütme düzeyi kimliği (örn. `'low'`, `'xhigh'`), seçilen modelin `thinkingLevels` değerinden alınır                                                                                     |
+| `contextSize`           | `int?`                 | Hayır   | En büyük bağlam penceresi boyutu                                                                                                                                                              |
+| `role`                  | `AgentRole?`           | Hayır   | Ajan rolü                                                                                                                                                                                     |
+| `capabilities`          | `AgentCapabilities?`   | Hayır   | Ajan başına yetenek varsayılanı; null olduğunda gönderimde kullanıcı düzeyi varsayılan geçerli olur ve bir konuşma yine de bunu geçersiz kılabilir                                            |
+| `monthlyBudgetCents`    | `int`                  | Hayır   | Sent cinsinden aylık harcama üst sınırı (varsayılan `0`, sınırsız)                                                                                                                            |
+| `silenceTimeoutMinutes` | `int?`                 | Hayır   | Dakika cinsinden sessizlik zaman aşımı geçersiz kılması; null olmalı ya da 1–240 arasında bulunmalıdır (kurucu tarafından doğrulanır)                                                         |
+| `maxConcurrentTasks`    | `int`                  | Hayır   | Varsayılan `1`. Varlık modelinin bildirdiği kapasite rakamı (çalışan ve kuyruktaki sayımlar bununla karşılaştırılır)                                                                          |
+| `visibility`            | `AgentVisibility`      | Hayır   | Varsayılan `workspace`                                                                                                                                                                        |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Hayır   | Yönetişim durumu (varsayılan `active`). Bütçe katı durdurması tarafından yazılır ve organizasyon şemasında ve varlık listesinde gösterilir. Gönderim, `paused` bir ajandan hâlâ iş kabul eder |
+| `budgetPolicyId`        | `String?`              | Hayır   | Paylaşılan bütçe politikası kimliği; null olduğunda doğrudan `monthlyBudgetCents` uygulanır                                                                                                   |
+| `runtimeProfileId`      | `String?`              | Hayır   | Özel çalışma zamanı profili kimliği                                                                                                                                                           |
+| `createdAt`             | `DateTime`             | Evet    | Oluşturma zaman damgası                                                                                                                                                                       |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` ve `title` ikisi de boş olmamalıdır (kurucu tarafından doğrulanır). Varsayılan
+`monthlyBudgetCents` değeri `0` sınırsız anlamına gelir. `agents.upsert` ile bir üst sınır yazın.
 
 ## AgentRole enum
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| Rol        | Etiket   | Açıklama                        |
+| ---------- | -------- | ------------------------------- |
+| `ceo`      | CEO      | Koordinasyon ve devretme        |
+| `coder`    | Coder    | Kod uygulaması                  |
+| `reviewer` | Reviewer | PR incelemesi ve analiz         |
+| `qa`       | QA       | Test ve kalite güvencesi        |
+| `designer` | Designer | UI/UX uygulaması                |
+| `security` | Security | Güvenlik incelemesi ve denetimi |
+| `devops`   | DevOps   | Altyapı ve dağıtım              |
+| `pm`       | PM       | Ürün yönetimi                   |
+| `general`  | General  | Esnek, çok amaçlı               |
 
 ## AgentVisibility enum
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Değer       | Açıklama                                                         |
+| ----------- | ---------------------------------------------------------------- |
+| `workspace` | Varsayılan; bilinmeyen ve null saklanan değerler buna çözümlenir |
+| `private`   | Oluşturan kullanıcıya özel                                       |
 
 ## AgentLifecycleStatus enum
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Değer      | Açıklama                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| `active`   | Varsayılan. `isDispatchable` yalnızca bu değer için true'dur                                          |
+| `paused`   | Bütçe katı durdurması tarafından ayarlanır. Varlık listesinde gösterilir; gönderim hâlâ iş kabul eder |
+| `archived` | Kullanımdan kaldırıldı ve etkin varlık listelerinden gizlendi                                         |
 
-## AgentCapabilities flags
+## AgentCapabilities bayrakları
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Her gönderimde çözümlenir: ajanın varsayılanı, null olduğunda kullanıcı düzeyi varsayılana geri düşülür ve bunların üzerine konuşma başına bir geçersiz kılma eklenir. Yoklukla uygulanır — kimlik bilgisi aracısı, devre dışı bir yeteneğin kapsadığı şeyi üretmez ya da enjekte etmez.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Bayrak             | Tür    | Varsayılan | Açıklama                                                                                                              |
+| ------------------ | ------ | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false`    | Commit'leri uzak depoya push eder; `canCallGitHubApi` ile birlikte GitHub belirteci enjeksiyonunu denetler            |
+| `canCallGitHubApi` | `bool` | `false`    | api.github.com'u çağırır; `GH_TOKEN` enjeksiyonunu ve GitHub çıkış alan adlarını denetler                             |
+| `canCallTicketing` | `bool` | `false`    | Biletleme sağlayıcısının API'sini çağırır; sağlayıcı API anahtarı enjeksiyonunu ve kendi çıkış alan adlarını denetler |
+| `canAccessNetwork` | `bool` | `true`     | Rastgele giden çıkış. Ayrıca harness'ın `web_fetch` ve `web_search` araçlarını denetler                               |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` dört kurucu varsayılanının tamamıdır. `legacyDefault` (dördü de true) yalnızca yetenekler henüz yokken oluşturulmuş konuşmaları geriye dönük dolduran geçiş tarafından kullanılır. Bozuk ya da boş saklanan bir blob `safeDefault` olarak çözümlenir; eski `canCallLinear` anahtarı `canCallTicketing` olarak okunur.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Değişmez, büyük/küçük harf duyarsız bir beceri tanımlayıcıları kümesi. Gönderimde bu slug'lar ajanın overlay'inde beceri bağlantıları olarak senkronize edilir; ardından harness, bağlı becerilerin frontmatter'ını isteme otomatik yükler.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (türetilmiş)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Saklanmaz. Yedi değer. Bildirim sırası öncelik sırasıdır (`sortPriority`, bir testle sabitlenmiştir) ve kadronun sıraladığı sıra da budur:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| Durum       | `sortPriority` | Koşul                                                                                                                                             |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | Herhangi bir çalıştırma günlüğünün durumu `running`                                                                                               |
+| `blocked`   | 1              | En son çalıştırmanın canlılığı `blocked`, `stalled` veya `looping`                                                                                |
+| `failed`    | 2              | En son çalıştırmanın durumu `error` ya da canlılığı `failed` veya `dead`                                                                          |
+| `queued`    | 3              | Bir çalıştırma gönderilmiş ama yürütülmüyor — aynı ajanın başka bir çalıştırmasının arkasında bekletiliyor ya da yazılmış ama henüz başlatılmamış |
+| `succeeded` | 4              | Çalıştırma başarıyla tamamlandı                                                                                                                   |
+| `idle`      | 5              | Ajan daha önce çalıştı ve uçuşta hiçbir şeyi yok                                                                                                  |
+| `neverRun`  | 6              | Hiç çalıştırma günlüğü yok                                                                                                                        |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` ve `succeeded` **yalnızca çalıştırma başına**dır. Bir ajan için kadro durumunu hesaplayan `deriveAgentLiveState` ikisini de asla üretmez — `neverRun`, `running`, `failed`, `blocked` veya `idle` döndürür.
 
-## See also
+## Ayrıca bakınız
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)

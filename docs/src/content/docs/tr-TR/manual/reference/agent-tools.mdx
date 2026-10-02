@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Yerleşik ajan araçları
+description: Yerleşik harness’ın bir ajana sunduğu araç yüzeyi — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler ve worker kontrolü — her işlem ve argümanıyla birlikte.
 slug: tr-TR/kilavuz/referans/ajan-araclari
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/tr-TR/kilavuz/referans/mcp-araclari/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Bunlar, yerleşik ajan çalışma zamanının doğrudan kaydettiği **sunucuya bağlı** araçlardır — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler, sorular ve worker kontrolü — içeri köprülediği [MCP araçlarının](/tr-TR/kilavuz/referans/mcp-araclari/) ve harness çalışma zamanının genel dosya, arama ve shell araçlarının aksine. MCP kayıt defterinde yer almazlar: harici bir MCP istemcisi onları görmez, çünkü her biri tek bir çalıştırmaya ait canlı bir sunucu tarafı kaynağa bağlıdır — bir dil sunucusu süreci, bir hata ayıklama adaptörü, bir yorumlayıcı.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Buradaki her araç, yalnızca arka kaynağı çalıştırma için bağlanmışsa kaydedilir — bir dil sunucusu ya da hata ayıklama gözetmeni, bir tree-sitter ayrıştırıcısı, bir kernel fabrikası, bir soru portu, bir vibe kadrosu. *Bu checkout* için bir dil sunucusunun ya da hata ayıklama adaptörünün algılanması ayrı ve daha sonraki bir denetimdir (`status` / `adapters`): bu araçlar yüzeyde kalır; böylece ajan tahmin yürütmek yerine neden hiçbir şeyin kullanılamadığını sorabilir.
 
-## Approval tiers
+## Onay kademeleri
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Her araç bir kademe bildirir ve kademe, **hangi yüzeylerin onu gördüğüne** karar verir — yalnızca onay istemi gösterip göstermeyeceğine değil. Plan modu ve salt okunur alt ajanlar `read` ile sınırlandırılır; böylece `write` ya da `exec` kademesindeki bir araç, şemalarında tamamen yer almaz.
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
-
----
-
-## `lsp` — language-server queries
-
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
-
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
-
-| Action            | Arguments                        | Returns                                    |
-| ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
-
-### Diagnostics on write
-
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
-
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
-
-## `lsp_rename` — project-wide rename
-
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
-
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Kademe  | Anlamı                            | Buradaki araçlar                            |
+| ------- | --------------------------------- | ------------------------------------------- |
+| `read`  | Yan etkisi yok                    | `lsp`, `ast_grep`, `ask_user`, beş `vibe_*` |
+| `write` | Dosyaları değiştirir              | `lsp_rename`, `ast_edit`, `resolve`         |
+| `exec`  | Bir süreç başlatır veya denetler  | `debug`, `eval`                             |
 
 ---
 
-## `ast_grep` — structural search
+## `lsp` — dil sunucusu sorguları
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Bir çalıştırmada bir dil sunucusu gözetmeni ve bir çalışma dizini olduğunda kaydedilir. Bir sunucunun gerçekten yanıt verip veremeyeceği, çağrı anında bir **kesişim** olarak algılanır: bir kök belirtecin bulunması *ve* sunucu ikili dosyasının çözümlenmesi gerekir. Tek başına ikisinden biri, sunucunun başlamaması anlamına gelir — `status` bunu söyler — sessiz bir tahmin yerine.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Konumlar `line` ile ve bir `symbol` alt dizesiyle adreslenir, hiçbir zaman sütunla değil. Bir sütun istenen model tahmin yürütür ve yanlış bir tahmin, aynı satırdaki farklı bir sembole çözümlenir — doğru görünen ama başka bir şeyle ilgili bir yanıt. Bir gezinme eyleminde `symbol` alanını atlamak bir hatadır, ilk sütun tahmini değil.
+
+| Eylem             | Argümanlar               | Döndürdüğü                                                                                                 |
+| ----------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `diagnostics`     | `file` (veya `"*"`)      | Hatalar ve uyarılar; `"*"` bunun yerine proje denetleyicisini çalıştırır                                    |
+| `definition`      | `file`, `line`, `symbol` | Sembolün bildirildiği yer                                                                                   |
+| `type_definition` | `file`, `line`, `symbol` | Türünün bildirildiği yer                                                                                    |
+| `implementation`  | `file`, `line`, `symbol` | Somut uygulamalar                                                                                           |
+| `references`      | `file`, `line`, `symbol` | Her kullanım, 50 ile sınırlı                                                                                |
+| `hover`           | `file`, `line`, `symbol` | İmza ve belge yorumu                                                                                        |
+| `symbols`         | `query` veya `file`      | `query` ile çalışma alanı araması (100 ile sınırlı); `file` ile belge sembolleri (200 ile sınırlı)           |
+| `code_actions`    | `file`, `line`, `symbol` | Sunucunun sunduğu hızlı düzeltmeler                                                                         |
+| `status`          | —                        | Hangi sunucuların çalıştığı ve hangi kökler için                                                            |
+| `reload`          | —                        | Bu kök için sunucuyu yeniden başlatır                                                                       |
+
+### Yazma sırasında tanılama iletileri
+
+Asıl kazanç araç değildir. `write`, `edit` ve `apply_patch` **sarmalanır**: yazma işleminden sonra dosya dil sunucusu üzerinden eşitlenip kaydedilir ve araç sonucuna yalnızca **yeni ortaya çıkan** tanılama iletileri katılır. Ajan derlemeyi bozduğunu, bozduğu anda öğrenir; bunu sormayı hatırlamasına gerek kalmaz.
+
+Daha önce bildirilmiş tanılama iletileri, çalıştırma başına bir defter tarafından bastırılır; bu defter önem derecesi, kod ve ileti üzerinden anahtarlanır — konum bilinçli olarak dışarıda bırakılır, böylece yalnızca dört satır aşağı kaymış bir tanılama ileti yeni olarak yeniden bildirilmez.
+
+## `lsp_rename` — proje çapında yeniden adlandırma
+
+Ayrı bir `write` kademesi aracı, tam olarak tek bir nedenden ötürü: görünürlüğe kademe karar verir. Yeniden adlandırmayı `lsp` içine katmak, ya salt okunur bir keşif ajanına depoyu yeniden yazma yeteneği verirdi ya da her `hover` çağrısını bir onay isteminin arkasına koyardı.
+
+| Argüman    | Anlamı                             |
+| ---------- | ---------------------------------- |
+| `file`     | Sembolün bulunduğu yer             |
+| `line`     | 1 tabanlı satır                    |
+| `symbol`   | Onu o satırda tanımlayan alt dize  |
+| `new_name` | Ona ne ad verileceği               |
+
+---
+
+## `ast_grep` — yapısal arama
+
+Kodu metne göre değil **şekle** göre bulur. `$NAME` herhangi bir düğümle eşleşir, `$$$NAME` bir kardeş dizisiyle eşleşir ve `$_` hiçbir şeye bağlanmayan bir joker karakterdir.
+
+Onu, fazladan adımları olan bir regex’ten ziyade gerçek bir eşleştirici yapan özellik şudur: bir desende tekrarlanan bir meta değişkenin aynı metni yakalaması gerekir.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+test ettiği şeyi dispose eden bir koruma koşuluyla eşleşir, başka bir şeyi dispose edenle ise **eşleşmez**.
 
-| Argument      | Meaning                                                     |
-| ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| Argüman       | Anlamı                                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pattern`     | Meta değişkenler içeren bir kod parçası                                                                         |
+| `path`        | Aranacak dosya veya dizin; varsayılanı tüm çalışma alanıdır                                                     |
+| `language`    | Hazır gelen bir gramer kimliği (`dart`, `python`, `rust`, `c`, …). `path` bir dosyayı adlandırdığında çıkarılır |
+| `max_results` | Varsayılan 50                                                                                                   |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Desen, dosyayla aynı gramerle ayrıştırılır]
+Böylece `dispose(x)`, çağrıyı nasıl boşluklandırılmış, sarmalanmış ya da yorumlanmış olursa olsun eşleştirir — ve bir dize sabitinin ya da bir yorumun içindeki aynı karakterlerle hiçbir zaman eşleşmez.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Bir parça çıplak değil, bir iskele içinde ayrıştırılır]
+Dart’ın üst düzeyinde ayrıştırıldığında `dispose(x)` geçerli bir *işlev imzasıdır*. Desen derleyicisi bir bağlam merdiveni dener (deyim, ifade, sınıf üyesi, bildirim) ve parçayı kabul eden ilkini kullanır. Hiçbir bağlamın kabul etmediği bir desen, aranıp sessizce bulunamaz yerine ayrıştırılamaz olarak bildirilir.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — yapısal yeniden yazma, sahnelenmiş
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Aynı eşleştirme, artı meta değişkenlerin yerine geri konulduğu bir `rewrite` şablonu. **Hiçbir şey yazılmaz.** Değişiklik sahnelenir ve sonuç bir `edit_id` adı verir.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
-| ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| Argüman    | Anlamı                                          |
+| ---------- | ----------------------------------------------- |
+| `pattern`  | Neyin eşleştirileceği                           |
+| `rewrite`  | `$NAME` yerine konularak oraya ne yazılacağı    |
+| `path`     | Kapsam; varsayılanı tüm çalışma alanıdır        |
+| `language` | Dil kimliği                                     |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — sahnelenmiş bir değişikliği işleme alma ya da atma
 
-| Argument  | Meaning                          |
-| --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| Argüman   | Anlamı                     |
+| --------- | -------------------------- |
+| `edit_id` | `(proposed)` sonucundan    |
+| `action`  | `accept` ya da `discard`   |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Her dosya, sahneleme anında yakalanan içerikle karşılaştırılır ve **herhangi** bir uyuşmazlık tüm değişikliği reddettirir. Kısmen uygulanmış bir yapısal yeniden yazma, ne eski ne yeni şeklin altında derlenen bir ağaç bırakır.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — bir hata ayıklayıcıyı yürütme
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Bir çalıştırmada bir hata ayıklama oturumu gözetmeni, bir çalışma dizini ve bir konuşma kimliği olduğunda kaydedilir. Bir adaptörün gerçekten başlatılıp başlatılamayacağı, dil sunucusundakiyle aynı kesişim kuralıyla, çağrı anında algılanır (kök belirteci *ve* ikili dosya). `exec` kademesi; paralel çalışmaya uygun değil (bir oturum, çağrılar boyunca durumdur; dolayısıyla `stack` çağrısını geçen bir `continue`, çoktan yer değiştirmiş bir çerçeveyi okur).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`, ilkini sessizce değiştirmek yerine reddedilir.
 
-| Op            | Arguments                     | Notes                                          |
-| ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| İşlem         | Argümanlar                    | Notlar                                                                 |
+| ------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `adapters`    | —                             | Burada hangi adaptörler kullanılabilir ve hangileri neden değil        |
+| `status`      | —                             | Bir oturumun çalışıp çalışmadığı ve nerede durduğu                     |
+| `breakpoints` | `file`, `lines[]`             | Boş `lines`, dosyayı temizler. Başlatmadan **önce** ayarlanabilir      |
+| `launch`      | `program`, `args[]`           | Programı, kesme noktalarınızda durmuş halde başlatır                   |
+| `attach`      | `port`                        | Zaten çalışan bir hata ayıklama hedefine bağlanır                      |
+| `continue`    | `thread_id?`                  | Bir sonraki durma noktasına kadar çalıştırır                           |
+| `pause`       | `thread_id?`                  | Olduğu yerde durdurur                                                  |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Bir adım ilerletir                                          |
+| `threads`     | —                             | İş parçacığı kimlikleri ve adları                                      |
+| `stack`       | `thread_id?`                  | Çerçeveler, 30 ile sınırlı                                             |
+| `scopes`      | `frame_id`                    | Bir çerçevedeki kapsamlar, her biri bir `reference` ile                |
+| `variables`   | `reference`                   | Alt öğeler 50, değerler 400 karakter ile sınırlı                       |
+| `evaluate`    | `expression`, `frame_id?`     | Çerçevenin kendi kapsamında değerlendirilir                            |
+| `output`      | —                             | Hata ayıklama hedefinin stdout/stderr çıktısı, sınırlandırılmış        |
+| `terminate`   | —                             | Oturumu bitirir ve adaptörü sonlandırır                                |
 
-### Adapters
+### Adaptörler
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
+| Kimlik    | Komut                        | Kök belirteçleri                                 |
+| --------- | ---------------------------- | ------------------------------------------------ |
+| `dart`    | `dart debug_adapter`         | `pubspec.yaml`                                   |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   |
+| `delve`   | `dlv dap`                    | `go.mod`                                         |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy`, `$PATH` yerine proje içindeki `.venv/bin` ya da `venv/bin` yolunu tercih eder: `$PATH`’teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, bozuk kod olarak okunan bir hatayla başarısız olur.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — kalıcı yorumlayıcılar
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Değişkenleri, içe aktarmaları ve yüklenen verileri çağrılar arasında yaşamaya devam eden bir Python veya JavaScript hücresi. `exec` kademesi; paralel çalışmaya uygun değil.
 
-| Argument      | Meaning                                          |
-| ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| Argüman       | Anlamı                                             |
+| ------------- | -------------------------------------------------- |
+| `code`        | Hücre                                              |
+| `description` | Gerekli. Transkript etiketi için 5–10 sözcük       |
+| `language`    | `python` (varsayılan) veya `javascript`            |
+| `reset`       | Yorumlayıcıyı atar ve önce temiz bir tane başlatır |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Son ifade, bir notebook’un yaptığı gibi yankılanır.
+- `display()` çalışır, bir pandas frame’i tablo olarak işlenir ve bir matplotlib şekli, **transkriptin gösterdiği bir görüntü** olarak geri döner.
+- İnsanların refleks olarak yazdığı IPython deyimleri — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — düz koda dönüştürülür. `%pip` ayrıca `sys.modules`’u boşaltır; böylece sonraki `import`, az önce kurulmuş olanı görür.
 
-### Calling your own tools from inside a cell
+### Kendi araçlarınızı bir hücrenin içinden çağırma
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Köprü, **harness araç kayıt defterine yeniden girer**; böylece korumalar, onay ve her sarmalayıcı, modelin yaptığı bir çağrıda olduğu gibi birebir uygulanır. Geri döngü soketi yerine kernel’in kendi borusunu kullanır: port yok, secret yok, dışa çıkış kuralı yok.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Hücrenin zaman aşımı bir *hareketsizlik* bütçesidir (varsayılan 5 dakika) ve köprü üzerinden gelen bir çağrı sonuçlanana kadar **askıya alınır**; böylece alt ajanlara dağılan bir hücre, dağıtımın ortasında öldürülmez.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Kernel nerede çalışır]
+Konuşmanın bir enclosure’ı varsa orada, yoksa ana makinede. Bunun için bir enclosure **başlatmaz** — bir rig sekmesinin kendiliğinden başlamasını engelleyen kuralın aynısı.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — insana soru sorma
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+`read` kademesi. Bir çalıştırmanın operatöre bir şey sormasının **tek** yolu. Konuşmada numaralandırılmış bir kart işler ve birisi yanıtlayana, atlayana ya da soru zaman aşımına uğrayana kadar bekler. Soruyu asla bir sohbet iletisi olarak yazmayın — bu, turu bitirir.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argüman           | Anlamı                                                     |
+| ----------------- | ---------------------------------------------------------- |
+| `question`        | Sorulacak şey                                              |
+| `context`         | İsteğe bağlı: neden sorduğunuz ve yanıta neyin bağlı olduğu |
+| `options[]`       | Seçenekler, her biri `{label, description?}`               |
+| `allow_free_text` | Yazılı bir yanıtın kabul edilip edilmeyeceği               |
+| `multi_select`    | Birkaç seçeneğin seçilip seçilemeyeceği                    |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Atlamak başarıdır: belirtilen bir varsayımla ilerleyin ve tekrar sormayın. Zaman aşımı, aynı talimatı taşıyan bir hatadır. İzin istemleri (“bunu yapabilir miyim?”) ayrı bir kapıdır ve konuşmada aynı kart olarak işlenir.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Yalnızca hem bir soru portu hem de bir hedef alan var olduğunda kaydedilir. Bağlı bir insan yokken çağrı, sonsuza kadar bloke olmak yerine **başarısız olur** — bağlı bir onaylayıcı yokken bir koruma `prompt`’unun takındığı varsayılanı ret duruşunun aynısı.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — arka plan worker’larını yönlendirme
 
-Registered only while [vibe mode](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Yalnızca [vibe modu](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/) açıkken kaydedilir. Beşi de `read` kademesindedir: kapı, düzenlemenin gerçekte yapıldığı yer olan worker’ın kendi araçlarında olmalıdır.
 
-| Tool         | Arguments                                | Notes                                       |
+| Araç         | Argümanlar                               | Notlar                                      |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Hemen döner; worker çalışmaya devam eder    |
+| `vibe_send`  | `worker_id`, `message`                   | Brifinge ekler ve yeniden çalıştırır        |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Sonuçlanana kadar bekler                    |
+| `vibe_kill`  | `worker_id`                              | Onu durdurur                                |
+| `vibe_list`  | —                                        | Kademe, durum, geçen süre ve son sonuç      |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier`, `fast` (net bir tanımlamaya sahip mekanik iş) ya da `good` (tasarım, muhakeme veya bir `fast` worker’ın ürettiklerini inceleme) olur.

@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Slack をワークスペースにブリッジする
+description: Slack アプリを作成して接続し、自分のアカウントをリンクして、Slack スレッドでエージェントに応答させます。
 slug: ja-JP/マニュアル/チュートリアル/初めてのチャットブリッジ
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## 作るもの
 
-By the end of this tutorial, you will have:
+このチュートリアルを終えると、次のものが揃っています:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- 自分のワークスペース用に作成された Slack アプリ。適切な権限とイベントはすでに設定済みです
+- Slack と Control Center の間の稼働中の接続
+- 自分の Control Center ユーザーにリンクされた、自分の Slack アカウント
+- Slack スレッドであなたに応答するエージェントと、スラッシュコマンドから起票されたチケット
 
-Prerequisites:
+前提条件:
 
-- [Your first workspace](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/) and [Dispatch your first agent](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [初めてのワークスペース](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/)と[初めてのエージェントをディスパッチ](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/)を完了していること — エージェントのいないワークスペースは Slack メッセージを受信できても、応答する相手がいません
+- ワークスペースの **CEO エージェント**に、**設定 → ワークスペース → エージェント**でアダプターとモデルが設定されていること。ブリッジが起こすのは CEO であり、前のチュートリアルで設定したエージェントではありません。また、アダプターのないエージェントは、Anthropic のデフォルトモデルを使う組み込みループで実行されます。
+- Control Center ワークスペースでの `owner` または `admin` ロール（チャットアプリの接続はワークスペース全体を代表する操作です）
+- Slack ワークスペースでアプリを作成およびインストールする権限
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+ここでは公開アドレスもトンネルもインバウンドポートも必要ありません。Control Center は Socket Mode で Slack へ*外向き*に接続するため、NAT の背後にあるノートパソコンからでも動作します。
 
-## Step 1: Get a Slack app configuration token
+## ステップ 1: Slack アプリの設定トークンを取得する
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+これは手作業で取得しなければならない唯一のシークレットです。これがあると、Control Center がアプリを作成し、後から編集できるようになります。
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. [api.slack.com/apps](https://api.slack.com/apps) を開きます
+2. ページ下部のアプリ設定トークンのセクションまでスクロールします
+3. Slack ワークスペース用のトークンペアを生成します
+4. **リフレッシュ**トークンをコピーします — `xoxe-` で始まります
 
-## Step 2: Let Control Center create the app
+## ステップ 2: Control Center にアプリを作成させる
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Control Center で、**設定 → ワークスペース → 全般**に移動し、**チャットブリッジ**カードを見つけます
+2. **Slack** ブロックで、**アプリを作ってもらう**をクリックします
+3. アプリ設定トークンを貼り付けます
+4. ボットがどのように見えるかを確認します:
+   - **アプリ名**: Slack がアプリを一覧表示するときの名前（例: `Control Center · Acme`）
+   - **ボット名**: メンバーが `@` の後に入力するもの（例: `control-center`）
+   - **簡単な説明**と**ボットの自己紹介**
+   - **スラッシュコマンド**: 既定では `cc` なので、コマンドは `/cc` になります
+   - **ダイレクトメッセージ**: メンバーがボットに DM できるよう、オンのままにします
+5. **アプリを作成**をクリックします
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center はアプリ定義全体 — Socket Mode の有効化、ボットに必要なスコープとイベント購読、スラッシュコマンド、Messages タブ — を組み立て、Slack に作成します。
 
-## Step 3: Finish the two steps only Slack can do
+## ステップ 3: Slack にしかできない 2 つの手順を完了する
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack には、アプリレベルトークンの生成やアプリのインストールを行う API がありません。そのためダイアログは、その両方をリンクとして提示します:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **アプリレベルトークンを生成** — **Basic Information → App-Level Tokens** を開きます。`connections:write` スコープを付けたトークンを作成してコピーします。`xapp-` で始まります
+2. **アプリをインストール** — **Install App** を開きます。ワークスペースにインストールし、次に **Bot User OAuth Token** をコピーします。`xoxb-` で始まります
 
-Keep both values around for the next step.
+次の手順のために、両方の値を手元に控えておきます。
 
-## Step 4: Connect
+## ステップ 4: 接続する
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. ダイアログに戻り、**認証情報を貼り付け**をクリックします
+2. **ボットトークン**（`xoxb-…`）と**アプリレベルトークン**（`xapp-…`）を入力します
+3. **アプリ設定トークン**は空のままにします — ステップ 1 のものはすでに保存されています（Slack がローテーションし、Control Center が新しいものを保存しました）
+4. **接続**をクリックします
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center は、何かを保存する前に Slack でボットトークンを検証し、その後ソケットを開きます。行には、ボットの名前と Slack ワークスペースの名前が **稼働中** タグ付きで表示されます。
 
-## Step 5: Link your own Slack account
+## ステップ 5: 自分の Slack アカウントをリンクする
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+接続はボットを到達可能にしますが、リンクは*あなた*を識別可能にします。Slack のアイデンティティがリンクされるまで、ボットはあなたのメッセージには動きません — アプリをインストールした人物にメッセージを帰属させることは決してありません。
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+リンクは個人の操作なので、ワークスペース全体の接続とは別のページにあります。
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. **設定 → ワークスペース → プロフィールと識別情報**に移動し、**連携済みチャットアカウント**カードを見つけます
+2. **自分のSlackアカウントを連携**をクリックします
+3. 表示されるコマンドをコピーします。たとえば `/cc link K7M2QP` です
+4. Slack で、そのコマンドを DM でボットに送信します
+5. ボットが「連携しました — あなたは …」と答えます
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+コードは単回使用で、15 分で失効します。Slack のメールアドレスが、すでにこのワークスペースのメンバーである Control Center ユーザーと一致する場合、ブリッジは初めて話しかけた時点で自動的にリンクするため、この手順は省略できます。
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+これを済ませる前にボットにメンションすると、ボットは拒否し、その理由を伝えます。3 つの拒否はそれぞれ異なるので、どれが返ってきたかを読み取ってください:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **リンクされていない送信者**: ボットがリンク方法を伝えます。この手順に戻ってください。
+- **リンク済みだが、このワークスペースのメンバーではない**: 管理者に招待を依頼してください。
+- **読み取り専用ロールのメンバー**（`viewer` または `guest`）: ボットはあなたの代理で作業を開始しません。
 
-## Step 6: Put an agent on something
+## ステップ 6: エージェントに作業を任せる
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Slack でボットをチャンネルに招待します: `/invite @control-center`
+2. 実際のリクエストでメンションします:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center api リポジトリのオープンな PR を要約してください
 
-The bridge:
+ブリッジは次のことを行います:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. その Slack スレッド用の Control Center スペースを、Slack チャンネルとあなたのリクエストにちなんだ名前で作成します
+2. ワークスペースの窓口となるエージェント（CEO エージェントがいればそれ、いなければ最初のエージェント）を起こします
+3. エージェントの回答を、書かれたそばから Slack スレッドへストリーミングします
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+続けるには、同じ Slack スレッドで返信します — メンションはもう必要ありません。その Slack スレッドはすでにブリッジされているからです。チャンネルを使う代わりにボットへ DM してもかまいません。DM の会話はそれぞれ独自の Control Center スペースを駆動し、エージェントが作業している間はタイトルと「考え中…」というステータス行が表示されます。
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+ストリーミングには Slack のストリーミング API が必要ですが、すべてのプランにあるわけではありません。アプリがこれを拒否された場合、ブリッジはその接続では以後試行をやめ、代わりに各返信を 1 つのメッセージとして投稿します。その場合、チャットブリッジカードには「このSlackアプリではライブストリーミングがオフです — 返信は1つのメッセージとして届きます。」と表示されます。それ以外はすべて同じように動作します。
 
-## Step 7: File a ticket without leaving Slack
+## ステップ 7: Slack を離れずにチケットを起票する
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+ボットは、起票したチケットのキーを返答します。そのチケットはごく普通のローカルの Control Center チケットで、報告者はあなたであり、エージェントに割り当てる準備ができています。`/cc help` を使うと、このコマンドでできることの一覧が表示されます。
 
-## Recap
+## まとめ
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Control Center から Slack アプリを作成し、外向きのソケットで接続し、Slack のアイデンティティを自分の Control Center ユーザーにリンクし、Slack スレッドからエージェントを動かしました。Slack で起きたことはすべて Control Center にも存在します。Slack スレッドはスペースであり、返信はトランスクリプトであり、チケットはチケットです。
 
-**Next:** [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/).
+**次:** [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)では、手作業の経路、トークンのローテーション、トラブルシューティングを扱います。その土台にあるモデルについては、[チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)を読んでください。

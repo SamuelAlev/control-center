@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Arhitectură
+description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Prezentare generală
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center urmează Clean Architecture orientată pe funcționalități, cu modelul porturi și adaptoare. Baza de cod este organizată în jurul domeniilor de business (funcționalități), cu reguli stricte de dependență impuse de un test automat de arhitectură.
 
-## A thin client over a headless server
+## Un client subțire peste un server headless
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center este o **arhitectură cu client subțire**. Niciun client nu deschide baza de date — un proces headless **`cc_server`** deține datele (un `global.db` mic plus un fișier SQLite pentru fiecare spațiu de lucru, deschis la cerere) și le servește prin RPC peste WebSocket. Aplicația desktop, versiunea web și companionul de telefon sunt toate simple interfețe de randare peste acea unică conexiune RPC.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Desktopul alege cum ajunge la serverul său la prima lansare: **local** (pornește un `cc_server` pe această mașină și comunică prin loopback — varianta implicită) sau **remote** (se conectează la un `cc_server` aflat în altă parte, printr-un WebSocket securizat). Clientul web este întotdeauna remote. Rezolvatorul de pornire (`bootstrap/server_backend.dart`) alege calea înainte ca Riverpod să existe, apoi suprascrie `rpcClientProvider` cu clientul conectat — astfel încât fiecare funcționalitate citește și scrie prin server, nu printr-o bază de date locală.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Stratul RPC în sine este **fără stare**: o sesiune este autentificată, dar nu este legată de un spațiu de lucru. Fiecare apel care ține de un spațiu de lucru își cară propriul `workspace_id` în argumente, iar dispecerul refuză un astfel de apel fără el. Asta permite ca doi clienți de pe același server să aibă spații de lucru active diferite fără un „spațiu de lucru curent” ținut de server cu care să intre în contradicție — și înseamnă că izolarea este impusă la fiecare apel, nu la fiecare conexiune.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/ro-RO/manual/concepte/implementare/) for the full client matrix and what runs where.
+Acesta este un singur **spațiu de lucru Dart** cu lockfile rezolvat, de douăzeci și unu de membri — cincisprezece pachete plus șase aplicații — cu aplicația desktop+web (`control_center`) ca rădăcină a spațiului de lucru. Cele șase aplicații sunt binarul de server headless (`cc_server`), executantul headless de flotă (`cc_worker`), PWA-ul de telefon (`cc_remote`), brokerul releu WebSocket (`cc_signaling_server`), galeria Widgetbook (`cc_gallery`) și gazda publică de demo (`cc_demo_server`). Cele cincisprezece pachete sunt `cc_ui` (sistem de design), `cc_domain` (kernel partajat în Dart pur: entități, obiecte-valoare, porturi, evenimente și stratul de domeniu al fiecărei funcționalități), `cc_harness` (kernelul de agent integrat: o buclă de agent în Dart pur — mesaje, port de furnizor, instrumente, compactare, direcționare, hook-uri, subagenți — fără `dart:io` și fără nicio altă dependență `cc_*`), `cc_harness_runtime` (adaptorul de runtime al harness-ului integrat: furnizori de streaming doar pentru VM, brokeraj de acreditări OAuth/PKCE, depozite de acreditări și setul generic de instrumente — rulează agenți fără niciun CLI extern instalat), `cc_rpc` (transporturi de client), `cc_host` (kernel de server), `cc_data` (repository-uri remote), `cc_persistence` (bază de date pe server), `cc_server_core` (compoziție aplicație-server + runtime de identitate/prezență/flotă/eval-uri), `cc_infra` (adaptoare doar pentru VM), `cc_mcp` (instrumente MCP), `cc_mcp_client` (client pentru servere MCP externe, care le aduce instrumentele în registrul local), `cc_markdown` (motor markdown din depozit), `cc_natives` (nod frunză FFI) și `system_audio_capture`. Vezi [Implementare și clienți](/ro-RO/manual/concepte/implementare/) pentru matricea completă de clienți și ce rulează unde.
 
-## Dependency rule
+## Regula dependențelor
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Stratul de domeniu**: entități, obiecte-valoare, interfețe de repository, porturi și servicii de domeniu în Dart pur. Zero importuri de infrastructură (fără dio, drift sau modele de rețea).
+- **Stratul de prezentare**: ecrane, widgeturi, notifiers. Fără acces direct la drift/DAO/stratul de date; totul trece prin furnizorii Riverpod → repository-uri.
+- **Stratul de infrastructură**: implementări concrete ale porturilor de domeniu și ale interfețelor de repository. Depinde de domeniu, niciodată invers.
 
-## Feature structure
+## Structura funcționalităților
 
-The full feature shape is:
+Structura completă a unei funcționalități este:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Foarte puține funcționalități din `lib/features/` chiar au toate cele patru, iar lipsurile sunt informative, nu accidentale. Kernelul partajat a absorbit `domain/` al fiecărei funcționalități în `cc_domain`, iar clientul subțire nu ține nicio implementare de repository, așa că majoritatea funcționalităților din `lib/` sunt `presentation/` plus `providers/` și nimic altceva. Un director `data/` sau `domain/` care supraviețuiește în client marchează ceva cu adevărat de partea clientului.
 
-Two named exceptions are worth knowing:
+Merită cunoscute două excepții numite:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** conține doar providers. Interfața sa de setări și de stare se află sub `settings/`, iar suprafața de instrumente în sine este un pachet (`cc_mcp`), nu un director de funcționalitate.
+- **`orchestration`** și **`plan_studio`** conțin doar `presentation/` și `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/ro-RO/manual/concepte/guardrail-uri/) for the model.
+Funcționalitatea **`guardrails`** își pune stratul de domeniu în `cc_domain/features/guardrails/`, nu în aplicația rădăcină, pentru că serverul o impune: o regulă asociază un `ActionClass` (sau un `commandPrefix` de shell) unei decizii — `allow`, `prompt` sau `deny` — la un domeniu de aplicare, regulile sunt stocate pentru fiecare spațiu de lucru, iar fiecare acțiune guvernată a unui agent se rezolvă prin lanțul de politici înainte de a rula. Rezolvarea parcurge `space > agent > workspace > mode preset > built-in default` și **primul domeniu de aplicare cu o regulă potrivită decide**; varianta cea mai restrictivă este doar un criteriu de departajare în interiorul unui singur domeniu de aplicare și la combinarea mai multor clase declarate de o acțiune. Suprafața pentru operator este Setări → Spațiu de lucru → Permisiuni agent, la `/workspaces/<id>/settings/workspace/permissions`. Vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) pentru model.
 
-## Shared kernel
+## Kernel partajat
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` conține entități și repository-uri partajate de 3 sau mai multe funcționalități. Este Dart pur, cu zero dependențe de infrastructură, ceea ce permite atât clientului Flutter, cât și binarului de server fără Flutter să importe aceleași definiții:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Entități de bază: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identitate și multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Entități de memorie: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Obiecte-valoare partajate: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Porturi partajate: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Servicii de domeniu: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + tipuri de evenimente (spațiu de lucru/agent, PR/revizuire, mesagerie, tichete, pipeline, orchestrare, memorie, calendar/întâlniri, identitate și apartenență, observabilitate)
 
-## Identity & multiplayer
+## Identitate și multiplayer
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center este multi-utilizator: oamenii și agenții sunt actori de rang egal, unificați de un `Principal`. Un membru al unui spațiu de lucru este un `User` legat de un `Workspace` printr-un `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Apartenența este granița de acces** — nu o cheie de asociere — iar acordurile per repo împiedică apartenența la spațiul de lucru să acorde mai multe privilegii decât forge-ul. Primul utilizator creat pe un server nou deține instalarea; ceilalți se alătură prin invitație sau OIDC. Crearea unui spațiu de lucru îl marchează pe acel utilizator ca `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Colaborarea în timp real folosește **modelul server autoritativ + last-writer-wins (LWW) pe fiecare câmp**, nu un CRDT. Prezența (cine e aici, unde se află, cursoare, tastare, starea live a unui agent și costul rulării) este o **cale efemeră separată, care nu este niciodată persistată**; starea durabilă se bazează pe o coloană vertebrală de mutații optimiste + rebazare pe server + LWW. Oamenii și agenții împart aceeași listă de participanți. Cu un singur operator uman, calea de prezență rămâne inactivă și nu apare nicio interfață de listă — multiplayer nu costă nimic utilizatorul care lucrează singur.
 
-## Ports and adapters
+## Porturi și adaptoare
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Porturile sunt interfețe abstracte din stratul de domeniu. Adaptoarele sunt implementări concrete în infrastructură. Deoarece serverul headless deține datele și trebuie să se compileze fără Flutter, aproape fiecare adaptor este doar pentru VM și se află în `packages/cc_infra/lib/src/`, organizat pe preocupări:
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Locația adaptorului                                                                                         |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (de partea clientului: randează local evenimentele serverului)                     |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp și GitHub Issues sunt adaptoare de sincronizare a tichetelor în `cc_infra/lib/src/tickets/sync/`; tichetele locale se află în baza de date a spațiului de lucru, fără `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (un serviciu de domeniu în Dart pur — nu are nevoie de infrastructură) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Rădăcina de compoziție a aplicației (`di/providers.dart`) leagă porturile de pe client de implementări prin furnizorii Riverpod; serverul își compune adaptoarele în `cc_server_core`.
 
-## State management
+## Gestionarea stării
 
-**Riverpod** for all client state:
+**Riverpod** pentru toată starea clientului:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` și `AsyncNotifier<T>` pentru starea mutabilă
+- `FutureProvider<T>` pentru date asincrone
+- Listele și rândurile live sosesc prin abonamente RPC ca `AsyncValue<List<T>>` — serverul folosește intern Drift `.watch()`; niciun client nu deschide Drift
+- Instrumentele MCP primesc dependențele ca parametri de constructor tipizați, niciodată `Ref`
 
-## Database
+## Baza de date
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), împărțit în două baze de date, ambele în `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — o listă scurtă de tabele cu adevărat globale pentru server: registrul spațiilor de lucru, utilizatori/preferințe/dispozitive asociate, conexiuni SSO, setări de server la nivel de instalare, politici de acțiuni administrate (o limită la nivel de instalare care poate doar înăspri guardrail-urile spațiilor de lucru), fluxul de știri per utilizator, coada flotei (workeri/sarcini/jurnal de plasare), indexul `workspace_routes` dinainte de autentificare și metadatele instalării. Procesul de pornire deschide doar acest fișier, așa că costul pornirii rămâne constant indiferent cât de mult istoric acumulează spațiile de lucru. Adăugarea unui tabel aici este o decizie de izolare pe care un test de tip ratchet te obligă să o argumentezi.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _director_ pentru fiecare spațiu de lucru, care conține un fișier SQLite plus tot ce aparține doar acelui spațiu de lucru, astfel încât worktree-urile unei conversații și fișierele agenților stau lângă baza de date și sunt șterse odată cu ea. Aproape totul se află aici: agenți, spații, tichete, memorie, pipeline-uri, întâlniri, graful de cod, revizuiri, repo-uri. Fișierele se deschid la cerere, la prima atingere, prin `WorkspaceDatabaseManager.of(workspaceId)`, și își plătesc atunci propriul `quick_check`, instalarea FTS/trigger și `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Ambele jumătăți au pornit de la o bază de referință v1 aplatizată — `onCreate` construiește schema actuală — cu pași de migrare adăugați doar atunci când o bază de date deja implementată trebuie dusă mai departe.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Deoarece un spațiu de lucru este un singur fișier, exportul unui spațiu de lucru este o singură instrucțiune `VACUUM INTO` (`workspace.export`), nu un dump tabel cu tabel; `workspace.import` adoptă un astfel de fișier și folosește `workspace_meta` încorporat pentru a distinge propriul fișier readoptat de unul provenit din altă instalare.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Ambele baze de date sunt deținute de `cc_persistence` și deschise doar de `cc_server`; niciun client nu deschide o bază de date — fiecare client citește/scrie prin RPC. Tabelele sunt definite în `packages/cc_persistence/lib/database/tables/`, DAO-urile în `.../daos/`; entitățile de domeniu sunt în Dart pur, separate de clasele de tabel Drift, cu maparea în straturile de date. FTS5 se ocupă de căutarea full-text, iar `sqlite_vector` de embeddinguri, ambele doar pe server; ambele baze de date rulează `PRAGMA foreign_keys=ON` în modul de jurnal WAL.
 
-## Routing
+## Rutare
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, cu un singur fapt care guvernează restul: **fiecare destinație din aplicație are prefixul spațiului de lucru** sub forma `/workspaces/:workspaceId/…`. Id-ul spațiului de lucru din URL este singura sursă de adevăr pentru spațiul de lucru activ — `activeWorkspaceIdProvider` este condus de rută, nu invers — motiv pentru care citirea datelor care țin de un spațiu de lucru în afara unei rute cu prefix nu are de unde să ia id-ul.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- _Funcții_ de construire a rutelor în `router/routes.dart`, fiecare primind id-ul spațiului de lucru ca prim argument, nu constante de tip string
+- Patru rute dinainte de context nu au prefix: `/splash`, `/onboarding`, `/signed-out` și `/workspaces` (selectorul de spații de lucru)
+- `ShellRoute` învelește shell-ul aplicației; acele patru suprafețe se afișează pe tot ecranul, în afara lui
+- Gardă de autentificare: o configurare incompletă duce la `/onboarding`; o configurare completă a cărei acreditare de forge a dispărut duce la `/signed-out`. Complet înseamnă că cel puțin un forge este conectat pentru utilizatorul autentificat și că există cel puțin un spațiu de lucru — nu neapărat GitHub, iar CLI-ul `gh` nu este o metodă de autentificare
+- Poarta de onboarding în `features/auth/providers/`
 
-## Networking (server-side)
+## Rețelistică (pe server)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Tot HTTP-ul extern se află pe server. Clienții nu apelează niciodată direct GitHub, Linear sau Google — ei apelează operațiuni RPC de pe server, iar chiar și conținutul media remote este adus prin endpointul `/proxy/media` al serverului, nu de la originea din amonte.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Clienți **dio** în `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` și `GoogleCalendarApiClient`
+- Injectarea tokenului de autentificare prin interceptori, inclusiv un interceptor Google OAuth per cont în `cc_server_core`, care reîmprospătează tokenurile la 401
+- Toate erorile sunt mapate prin `packages/cc_infra/lib/src/network/error_mapper.dart` → subclase tipizate `AppException` definite în `cc_domain`
 
-## Security
+## Securitate
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Serverul deține acreditările care contează: tokenurile GitHub și de ticketing pentru lansarea agenților, cheile furnizorilor LLM și tokenurile OAuth se află toate în directorul de date al serverului sau în mediul acestuia. Ce mai păstrează keychainul clientului este propria acreditare de dispozitiv și cheia de asociere pentru un server remote.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Secrete în `flutter_secure_storage` (keychain macOS, credential manager Windows, libsecret Linux) — acreditarea de dispozitiv a clientului și cheile de asociere remote, nu tokenurile furnizorilor
+- `shared_preferences` doar pentru preferințe nesensibile (temă, font, aspect)
+- Secretele rămase de la furnizori din instalări mai vechi sunt predate serverului o singură dată de `features/auth/providers/credential_migration.dart`, apoi sunt șterse din keychainul clientului
 
-## Architecture enforcement
+## Aplicarea arhitecturii
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Constrângerile de arhitectură sunt validate de `test/core/architecture_constraints_test.dart`, care eșuează dacă regulile de dependență sunt încălcate.
 
-## Related concepts
+## Concepte conexe
 
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): how isolation is enforced
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): the dispatch flow
-- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/): cross-feature communication
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/): the thin-client server model and the client matrix
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): cum este impusă izolarea
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): fluxul de trimitere
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): comunicarea între funcționalități
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/): modelul de server cu client subțire și matricea de clienți

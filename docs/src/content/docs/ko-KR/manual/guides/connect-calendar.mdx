@@ -1,123 +1,127 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Google Calendar 연결
+description: Google Calendar를 워크스페이스에 연결하고, 여러 계정을 관리하며, 토큰이 만료되면 다시 연결하는 방법을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/캘린더-연결
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ko-KR/매뉴얼/개념/캘린더/) for the full picture.
+이 가이드에서는 Google Calendar를 워크스페이스에 연결하는 방법을 설명합니다.
+연결은 워크스페이스 단위이며, 해당 워크스페이스의 일정을 읽기 전용으로
+Control Center에 동기화합니다. 전체 그림은
+[캘린더와 일정](/ko-KR/매뉴얼/개념/캘린더/)을 참고하세요.
 
-## Connect an account
+## 계정 연결
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. 사이드바에서 **캘린더**를 엽니다.
+2. 캘린더 사이드바에서 **캘린더 계정 추가**를 클릭합니다. (같은 섹션은 **설정 → 워크스페이스 → 프로필 및 신원**의 **Google Calendar** 아래에도 있습니다.)
+3. 인증 방식을 선택합니다:
+   - **Control Center의 Google 앱 사용** — 설정할 것이 없습니다. 빌드에 이 앱이 포함되어 있으면 기본값입니다.
+   - **내 Google Cloud 클라이언트 사용** — 내 프로젝트의 클라이언트 ID와 시크릿을 붙여 넣습니다([자체 Google 클라이언트 사용](#자체-google-클라이언트-사용포크-및-셀프-호스팅) 참조).
+4. **Google Calendar 연결**을 클릭합니다. 대화 상자에 짧은 코드와 Google 기기 페이지로 가는 링크가 표시됩니다.
+5. 모든 기기에서 그 페이지를 열고 코드를 입력한 뒤 요청된 액세스를 승인합니다. 대화 상자는 스스로 닫히고 일정 동기화가 시작됩니다.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+이 교환을 실행하고 그 결과로 얻은 리프레시 토큰을 보관하는 주체는 내 기기가
+아니라 서버입니다. 그래서 코드를 이 앱에서가 아니라 "모든 기기"에서 승인하는
+것입니다.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+계정은 **활성 워크스페이스에만** 연결됩니다. 워크스페이스를 전환하면 그
+워크스페이스의 캘린더가 대신 표시됩니다.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+연결 플로가 요청하는 것은 `calendar.readonly`와 이메일 주소이며, 내장 앱과
+직접 붙여 넣은 클라이언트의 범위는 동일합니다. Control Center는 일정을 읽기만
+하고, Google에서 일정을 만들거나 편집하거나 삭제하거나 초대에 응답하지
+않습니다.
 
-## How syncing works
+## 동기화 방식
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+일정을 소유하는 주체는 **서버**입니다. 서버는 2분마다 모든 워크스페이스의
+연결된 계정을 스윕하고 해당 워크스페이스의 데이터베이스에 일정을 기록합니다.
+클라이언트는 Google과 직접 통신하지 않고, 서버가 기록한 내용을 읽습니다.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+스윕은 증분 방식입니다. 캘린더별 첫 번째 패스는 롤링 윈도(60일 전부터 90일
+후까지)를 가져오고 Google의 동기화 토큰을 저장합니다. 이후 패스는 그 토큰을
+제시하고 변경된 부분만 받으며, 덕분에 2분 주기를 감당할 수 있습니다. 이
+윈도는 24시간마다, 그리고 Google이 토큰을 무효화할 때마다 전체 동기화로
+기준을 다시 잡습니다.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+리프레시 토큰은 서버 측에서 서버의 데이터 디렉터리 아래 `secrets.json`에
+저장되고 소유자 전용 권한(`0600`)으로 기록됩니다 — OS 키체인에 저장되지
+않으며, 클라이언트 기기에 저장되는 일도 없습니다.
 
-## Connect multiple accounts
+## 여러 계정 연결
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+워크스페이스에는 여러 Google 계정을 연결할 수 있습니다(예: 업무용과 개인용).
+계정마다 연결 단계를 반복하세요. 각 계정의 일정은 같은 월 / 주 / 아젠다 보기에
+합쳐집니다. 각 계정은 독립적으로 동기화되고 갱신되며, 개별적으로 연결을 해제할
+수 있습니다.
 
-## Reconnect an expired account
+## 만료된 계정 다시 연결
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Google이 계정의 토큰을 영구적으로 무효화하면(세션이 취소되었거나 오랫동안
+만료된 경우), 동기화가 중단되고 Control Center는 캘린더에 **다시 연결** 배너와
+데스크톱 알림을 표시합니다. **다시 연결**을 클릭하고 새 코드를 승인하면, 다음
+동기화가 성공할 때 배너가 사라집니다.
 
-## Disconnect an account
+## 계정 연결 해제
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+캘린더 사이드바(또는 **설정 → 워크스페이스 → 프로필 및 신원**)에서 해당 계정의
+**연결 해제**를 클릭합니다. 그러면 그 계정의 동기화된 일정이 삭제되고 서버에
+저장된 토큰이 지워집니다.
 
-## Connect from a headless server
+## 헤드리스 서버에서 연결
 
-A server with no GUI attached connects the same account from its own terminal:
+GUI가 연결되지 않은 서버는 자체 터미널에서 같은 계정을 연결합니다:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+코드와 URL을 출력하고 승인을 기다린 뒤, 토큰을 저장하고 다음 스윕에서
+동기화합니다.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+소스에서 빌드한 경우에는 Google 클라이언트가 **포함되지 않으므로** ID와
+시크릿이 필요합니다 — `GOOGLE_OAUTH_CLIENT_ID`와
+`GOOGLE_OAUTH_CLIENT_SECRET`을 설정하세요. `--google-client-id` 플래그는 없습니다
+(알 수 없는 플래그는 무시됩니다). 이 환경 변수 쌍이 없으면 명령은 클라이언트
+없음 오류와 함께 종료됩니다.
 
-## Bring your own Google client (forks and self-hosting)
+## 자체 Google 클라이언트 사용(포크 및 셀프 호스팅)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+릴리스 빌드에는 Google 클라이언트가 포함되어 있으므로 대부분의 사용자는 이
+설정을 건드릴 일이 없습니다. 소스에서 빌드하거나, 자체 서버를 운영하거나, 동의
+화면에 자신의 프로젝트 이름을 표시하려면 자체 클라이언트를 사용하세요.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials)에서 **Google Calendar API**를 사용 설정하고 **OAuth 동의 화면**을 구성하면서 `calendar.readonly`, `openid`, `email` 범위를 추가합니다. 앱이 확인되지 않은 상태에서는 자신을 **테스트 사용자**로 추가합니다. 동의 화면에서 `calendar.events`를 추가해도 RSVP가 활성화되지는 않습니다 — Control Center는 이 범위를 절대 요청하지 않습니다.
+2. 애플리케이션 유형이 **TVs and limited input devices**인 **OAuth 클라이언트 ID**를 만들고 클라이언트 ID와 클라이언트 시크릿을 모두 복사합니다.
+3. 연결할 때마다 지정하거나(대화 상자에서 **내 Google Cloud 클라이언트 사용**을 선택), `GOOGLE_OAUTH_CLIENT_ID`와 `GOOGLE_OAUTH_CLIENT_SECRET`으로 서버 전체에 지정합니다.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+서버 전체에 지정한 ID/시크릿 쌍은 "Control Center의 Google 앱 사용" 옵션의
+뒤쪽을 포함해 모든 곳에서 내장 쌍을 대체합니다. 따라서 자체 서버에서는 그
+옵션이 곧 내 앱입니다.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+클라이언트 시크릿은 서버를 벗어나지 않습니다. 어떤 RPC 응답에도 이 값이 실리지
+않으며, 서버 자체 클라이언트로 연결한 계정에는 ID/시크릿 쌍의 복사본 대신
+마커가 저장됩니다. 따라서 시크릿 교체는 새 값으로 다시 시작하기만 하면 됩니다.
 
-### Troubleshooting
+### 문제 해결
 
-| Symptom                                             | Likely cause                                                                                                                                          |
+| 증상                                                | 가능한 원인                                                                                                                                           |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| 대화 상자에 내장 옵션이 없음                        | 이 빌드에는 Google 클라이언트가 포함되어 있지 않거나(소스 빌드), 서버가 ID/시크릿 쌍의 한쪽만으로 시작되었습니다. ID와 시크릿이 모두 필요합니다       |
+| 플로를 시작할 때 `invalid_scope` 발생               | 해당 Cloud 프로젝트에서 기기 코드 클라이언트에 Calendar가 허용되지 않습니다. 대신 루프백 또는 웹 클라이언트 프로젝트를 사용하세요                     |
+| Google에서 `invalid_client` 반환                    | 클라이언트가 **TVs and limited input devices** 클라이언트가 아니거나, ID와 시크릿이 서로 다른 클라이언트의 것입니다                                    |
+| 승인은 성공했지만 동기화 결과가 비어 있음           | 동의 화면에서 내 계정이 **테스트 사용자**가 아니거나 `calendar.readonly`가 부여되지 않았습니다                                                        |
+| 승인하기 전에 코드가 만료됨                         | 기기 코드는 수명이 짧습니다. 연결을 다시 시작해 새 코드를 받으세요                                                                                    |
+| RSVP에서 "응답을 업데이트할 수 없습니다" 표시       | 예상된 동작입니다. 연결 플로는 `calendar.events`를 요청하지 않습니다                                                                                  |
+| 서버 로그의 리프레시 경고와 함께 동기화가 중단됨    | 해당 계정이 더 이상 구성되지 않은 클라이언트로 연결되었습니다. 계정을 다시 연결하거나 그 클라이언트 ID와 시크릿을 복원하세요                          |
 
-## Related guides
+## 관련 가이드
 
-- [Record and summarize a meeting](/ko-KR/매뉴얼/사용-가이드/회의-녹화/): turn an event into a recording
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [회의 녹화 및 요약](/ko-KR/매뉴얼/사용-가이드/회의-녹화/): 일정을 녹음으로 전환
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): 토큰과 동기화 일정이 있는 위치
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
 
-## Related concepts
+## 관련 개념
 
-- [Calendar and scheduling](/ko-KR/매뉴얼/개념/캘린더/)
+- [캘린더와 일정](/ko-KR/매뉴얼/개념/캘린더/)

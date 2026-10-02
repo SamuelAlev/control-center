@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Başarısız bir testi ajanla ayıklama
+description: Bir ajana kesme noktası koydurun, hata ayıklayıcı altında başlatın ve print deyimleri eklemek yerine gerçek bir yığın çerçevesi okutun.
 slug: tr-TR/kilavuz/nasil-yapilir/basarisiz-testi-ayiklama
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Bu kılavuz, print deyimlerinin açıklamadığı bir başarısızlıkta bir ajanın hata ayıklayıcı kullanmasını nasıl sağlayacağınızı gösterir.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` aracı gerçek bir Debug Adapter Protocol oturumu yürütür. Durdurulmuş bir çerçeve, o ana ilişkin her soruyu bir anda yanıtlar — her yerel değişkeni, her çağıranı ve çerçevenin kendi kapsamında değerlendirilen bir ifadeyi — oysa bir print deyimi yalnızca çalıştırmadan önce sormayı düşündüğünüz soruyu yanıtlar.
 
-## Before you start
+## Başlamadan önce
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Araç yüzeyde kalır; böylece ajan tahmin yürütmek yerine neden hiçbir şeyin kullanılamadığını sorabilir. Bir adaptör ancak şu **ikisi** de geçerli olduğunda gerçekten başlatılabilir:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- checkout'ta bir proje işaretçisi ve
+- adaptörün ikili dosyasının çözümlenmesi.
 
-Ask the agent to check:
+Ajandan şunu denetlemesini isteyin:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Bulduğunu yanıtlar ya da bir adaptörün her iki yarıma da ihtiyaç duyduğunu açıklar.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Dil            | Adaptör                      | İşaretçi                                        | Kurulum                            |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | SDK ile birlikte gelir — yapılacak bir şey yok |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | LLVM ile birlikte gelir            |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python projenin yorumlayıcısını seçer]
+`debugpy`, `$PATH`'ten önce `.venv/bin` veya `venv/bin` içinde aranır. `$PATH`'teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, yanlış yorumlayıcı olarak değil bozuk kod olarak okunan bir hatayla sonuçlanır.
 :::
 
-## Set the breakpoint first, then launch
+## Önce kesme noktasını koyun, sonra başlatın
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Sıra önemlidir ve araç bunu zorunlu kılar: kesme noktaları bir oturum var olmadan **önce** konabilir, çünkü protokolün gerektirdiği sıra budur.
 
-Ask the agent something like:
+Ajandan şuna benzer bir şey isteyin:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart` içindeki `compute` fonksiyonu yanlış değer döndürüyor. `product` değerini atayan satıra bir kesme noktası koy, hata ayıklayıcı altında başlat ve `a` ile `b`'nin gerçekte ne olduğunu söyle.
 
-It will run roughly:
+Kabaca şunları çalıştırır:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Başlatma, nerede durduğunu bildirir:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Bunun yerine programın çıktığını bildirirse]
+Kesme noktası bağlanmadı. Boş bir satır, bir yorum ya da derlemeye dahil edilmeyen bir satır kesme noktası tutamaz. Canlı bir oturuma karşı `breakpoints` çağırmak, koyduklarınızdan kaçının gerçekten yerleştirildiğini bildirir.
 :::
 
-## Read the frame
+## Çerçeveyi okuyun
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Ardından içine doğru ilerleyin:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Alt öğeleri olan bir nesne `[expand: reference N]` bildirir — ama yalnızca arkasında gerçekten bir şey olduğunda; böylece ajanın kullanamayacağı bir genişletme hiçbir zaman sunulmaz.
 
-For anything not visible as a local:
+Yerel değişken olarak görünmeyen her şey için:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Adım adım ilerleyin
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Amacınız                         | Op          |
+| -------------------------------- | ----------- |
+| Sonraki durma noktasına kadar çalıştır | `continue`  |
+| Sonraki satır, aynı çerçeve      | `step_over` |
+| Çağrının içine gir               | `step_in`   |
+| Çağırana doğru çık               | `step_out`  |
+| Çalışan bir programı durdur      | `pause`     |
 
-## Attach to something already running
+## Zaten çalışan bir şeye bağlanma
 
-For a wedged process rather than one you are starting:
+Başlattığınız bir süreç yerine takılıp kalmış bir süreç için:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Bitirme
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Oturumu her zaman sonlandırın. Bir hata ayıklama adaptörü, o sürecin elinde ne varsa — bir port, bir kilit, bir veritabanı bağlantısı — tutan bir **durdurulmuş sürece** sahiptir.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Kontrolünüzden çıkamaz]
+Her oturumun uzatamadığı katı bir TTL'i vardır, konuşma başına tam olarak bir oturum bulunur ve sunucu durduğunda her şey sökülür. İkinci bir `launch`, ilkini değiştirmek yerine reddedilir: birini sonlandırmadan diğerini başlatan bir ajan, neredeyse kesinlikle ilkinin izini kaybetmiştir.
 :::
 
-## Bounded output
+## Sınırlandırılmış çıktı
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Derin bir nesne grafiğinde bir `variables` genişletmesi doğası gereği sınırsızdır — tek bir Flutter widget'ı tüm öğe ağacına ulaşır. Kapsam başına alt öğe sayısı 50, değerler 400 karakter ve yığın çerçeveleri 30 ile sınırlandırılmıştır. Bağlam penceresini dolduran bir araç sonucu, yardım ettiği çalıştırmayı bitiren bir araçtır.
 
-## Related
+## İlgili
 
-- [Code intelligence](/tr-TR/kilavuz/kavramlar/kod-zekasi/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/tr-TR/kilavuz/referans/ajan-araclari/) — every `debug` op and argument
-- [Diagnose an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) — when the problem is the agent, not the code
+- [Kod zekâsı](/tr-TR/kilavuz/kavramlar/kod-zekasi/) — bir hata ayıklayıcının, bir derleyicinin ve bir eşleştiricinin neden farklı soruları yanıtladığı
+- [Yerleşik ajan araçları](/tr-TR/kilavuz/referans/ajan-araclari/) — her `debug` işlemi ve argümanı
+- [Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) — sorun kodda değil de ajandaysa

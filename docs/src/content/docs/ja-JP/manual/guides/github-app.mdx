@@ -1,138 +1,99 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: GitHub App を作成
+description: メンバーがサインインできるように、またバックグラウンド作業が個人ではなく App として実行されるように、サーバー用の GitHub App を登録します。
 slug: ja-JP/マニュアル/ハウツーガイド/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+このガイドでは、サーバーに独自の GitHub アイデンティティを持たせる方法を説明します。所要時間は約 2 分で、作業するのはサーバー所有者だけであり、サーバーごとに 1 回だけ行えば済みます。
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[不要な場合もあります]
+公式ビルドには GitHub の**クライアントID**がすでに同梱されているため、何も登録しなくても [GitHubでサインイン](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/) はそのまま動作します — デバイスフローはクライアントIDだけで認証するので、同梱しても安全です。自分で App を登録するのは、**サーバー**自身に動作してほしい場合（Webhook、PR のポーリング、チケット同期を、個人の資格情報ではなく App のインストール上で実行する場合）、またはソースからビルドする場合です。
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/).
+その後に自分のアカウントを接続する方法については、[GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/) を参照してください。
 
-## Why your server needs its own app
+## サーバーに独自の App が必要な理由
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+1 回の登録からは 2 つの異なる役割が生まれ、その両方を成立させているのが App です:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| 役割                   | 何が応えるか                                | なぜ重要か                                                                                                                                       |
+| ---------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **人がサインインする** | App のクライアントID、デバイスフロー経由で  | サーバー上で、すべてのデバイスで、自分自身の資格情報が得られます。貼り付けたりローテーションしたりするトークンはありません                         |
+| **サーバーが動作する** | App の ID + 秘密鍵 → インストールトークン   | Webhook、PR のポーリング、チケット同期が、誰か 1 人のトークンが有効であり続けることに依存しなくなります                                          |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+この表に**ない**ものに注目してください: クライアントシークレットです。GitHub のデバイスフローは、デバイスコードの要求とトークンのポーリングの両方でクライアントIDだけで認証するため、サインインのために保管すべきシークレットはありません。
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+自分専用の App がなくても、前者はビルドに同梱されたクライアントIDを通じて引き続き機能します。後者はサーバー所有者の資格情報にフォールバックするため、バックグラウンド作業は最初にオンボーディングした人に乗っかります。
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[「Control Center の GitHub App をインストール」ボタンはありません]
+配布型の GitHub App は、全員のサーバーで 1 つのクライアントシークレットと 1 つのインストールを共有することを意味し、そうなると各ワークスペースのリポジトリアクセスが、そのワークスペースの誰も管理していない資格情報を通ることになります。そのため各サーバーが自身の App を持つのです — このガイドが示すのは、そのコストがいかに小さいかということです。
 :::
 
-## Prerequisites
+## 前提条件
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- あなたが**サーバー所有者**であること — `providerApps.*` の操作はこれに制限されており、カードはほかの誰にも表示されません
+- GitHub アカウント、または App を作成できる組織
+- 公開アクセス可能なものは不要: サインインは**デバイスフロー**なので、サーバーには受信ポート、トンネル、コールバックURL、ドメインのいずれも必要ありません
 
-## Register the app
+## App を登録する
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. [github.com/settings/apps/new](https://github.com/settings/apps/new) を開きます（組織の場合: **Settings → Developer settings → GitHub Apps → New GitHub App**）
+2. **GitHub App name** — 任意です。`Control Center (yourname)` で問題ありません。サーバーが作成するコミットやコメントに表示されます
+3. **Homepage URL** — 任意です（例: `https://github.com/your-name`）
+4. **Callback URL** — 空のままにします。デバイスフローには不要です
+5. **Enable Device Flow** にチェックを入れます。サインインが機能するために欠かせない唯一の設定です
+6. Webhook を別途設定しない限り、**Webhook → Active** のチェックを外します
+7. **Repository permissions** で、少なくとも次を付与します:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only（必須）
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write — チケットに GitHub Issues を使う場合、およびボットが PR 会話のコメントを検索する場合（[GitHub PR から Control Center に話しかける](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/) を参照）
+   - **Checks**: Read-only — PR ページの CI 状態表示用
+8. **Where can this GitHub App be installed?** では、適したものを選びます — 個人のサーバーには「Only on this account」が適切です
+9. **Create GitHub App** をクリックします
 
-## Collect the three values
+## 3 つの値を控える
 
-On the app's page, immediately after creation:
+作成直後に、App のページで次の値を控えます:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| 値              | 場所                                                        |
+| --------------- | ----------------------------------------------------------- |
+| **App ID**      | **General** タブの上部付近                                  |
+| **Client ID**   | **General** タブの「Client secrets」の下                    |
+| **Private key** | **Generate a private key** — `.pem` がダウンロードされます  |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+秘密鍵ファイルは 1 回だけダウンロードされ、GitHub が再び表示することはありません。貼り付けるまでは保管しておいてください。新しいものはいつでも生成できます。
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**クライアントシークレット**は省略可能で、得られるものはちょうど 1 つです: 「Expire user authorization tokens」を ON のままにした場合に、8 時間ごとに再サインインを求める代わりに、誰かのトークンを黙って更新するのがこれです。サインイン自体がこれを使うことはありません。
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+より簡単な構成は、この有効期限を OFF にすることです。そうすればシークレットはどこにも必要ありません。ON のままにする場合は、シークレットを生成し、**設定 → サーバー → シングルサインオン**（**プロバイダーアプリ**カード）に貼り付けます — これ用の環境変数はなく、ビルドに埋め込まれることもないため、シークレットはあなたのサーバー上にとどまります。
 
-## Install it on your account
+## 自分のアカウントにインストールする
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+登録されただけでインストールされていない App は、人を認証できても、何も読み取れません。
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. App のページで **Install App** を開きます
+2. 自分のアカウントまたは組織にインストールします
+3. **All repositories** を選ぶか、このサーバーが見るべきリポジトリを選択します
 
-## Paste it into Control Center
+## Control Center に貼り付ける
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. **設定 → サーバー → シングルサインオン**に移動し、**プロバイダーアプリ**カードまでスクロールします
+2. **GitHub** ブロックで各フィールドを設定します:
+   - **アプリID** — 数値の App ID
+   - **秘密鍵** — `.pem` 全体を、`BEGIN` 行と `END` 行も含めて貼り付けます
+   - **クライアントID** — 同じページの値です
+   - **クライアントシークレット** — 生成した場合のみ（トークン更新用）
+3. **テスト**をクリックします
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+鍵は保存された時点で解析されるため、切り詰められた貼り付けや形式の誤った貼り付けは、数時間後のバックグラウンドリクエストで失敗するのではなく、その場で拒否されます。**テスト**はさらに進んで、App がどのアカウントにインストールされているかを GitHub に問い合わせます — 「保存されている」と「機能する」は別の主張であり、何かが動作することを意味するのは後者だけです。
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+チェックポイント: GitHub ブロックに「サーバーが自身として動作でき、人がサインインできます。」と表示され、**設定 → ワークスペース → プロフィールと識別情報 → コードホスティング**の下の **GitHub** の行に **GitHubでサインイン** が表示されるようになります。
 
-## Configure it with environment variables instead
+## 代わりに環境変数で設定する
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+ヘッドレスまたはスクリプトによるインストールでは、サーバーは保存された値がない最初の時点で、環境から各フィールドをシードします:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +101,47 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+これらにコマンドラインフラグはありません — コマンドライン上のシークレットは、ホスト上のすべてのプロセスから `ps` で読めてしまうためです。設定できる場所は環境だけであり、環境はビルドに同梱されたものより優先されます。完全なリストは `.env.template` にあります。
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+ローカル開発では、リポジトリルートの `.env` が同じ値を持ち、デスクトップがそれを起動したサーバーに渡します。そこでは鍵を**1 行**にしてください: `.env` の値は 1 行であり、二重引用符内の `\n` は改行にデコードされます。
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` と `GITHUB_APP_PRIVATE_KEY` は、サンドボックスのトークンブローカーがすでに読み取っているものと同じ名前なので、きめ細かいエージェントトークンを設定済みのホストは、サインイン用のレーンをそのまま利用できます。シードは**フィールドごとに 1 回**行われます — その後は保存された値が優先されるため、設定画面での編集が次の再起動で取り消されることはありません。
 
-## Do the same for Linear
+## Linear でも同じことをする
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear にはデバイスフローがないため、そのサインインはブラウザーの往復となり、コールバックURLが必要です — **プロバイダーアプリ**カードに、登録すべき正確な URL が表示されます。
 
-1. Create an OAuth application at
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new) で OAuth アプリケーションを作成します
+2. **Callback URL** に、カードに表示される URL をそのまま設定します
+3. **クライアントID** と **クライアントシークレット**を Linear ブロックに貼り付けます
+4. 任意でワークスペースの **APIキー** を追加します — これは、誰も依頼していないときにサーバーがチケット同期に使う資格情報です
 
-## Troubleshooting
+## トラブルシューティング
 
-### The sign-in dialog says the provider returned no device code
+### サインインダイアログに、プロバイダーがデバイスコードを返さなかったと表示される
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+App で **Enable Device Flow** がオフになっています。**General** でオンにして、再試行してください。
 
-### Test says the credentials work but the app is not installed anywhere
+### テストで資格情報は機能すると表示されるが、App がどこにもインストールされていない
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+登録とインストールは別の手順です。App のページで **Install App** を開き、インストールしてください。
 
-### Test says the private key could not be read
+### テストで秘密鍵を読み取れないと表示される
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+`-----BEGIN` 行と `-----END` 行も含めて、`.pem` ファイル全体を貼り付けてください。`ed25519` や EC の鍵は使用できません — GitHub App は RSA で署名します。
 
-### A member signed in but sees no repositories
+### メンバーがサインインしたのにリポジトリが表示されない
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+App が、それらを所有するアカウントにインストールされていないか、そのインストールが別のリポジトリを選択しています。本人のサインインは、App が見ることを許可されているものだけを付与します。
 
-## Related guides
+## 関連ガイド
 
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
-- [Talk to Control Center from a GitHub PR](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/)
-- [Connect a code host](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
-- [Manage API keys](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
+- [GitHub PR から Control Center に話しかける](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/)
+- [コードホストを接続](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)
+- [API キーを管理](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)

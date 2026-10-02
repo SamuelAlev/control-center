@@ -1,96 +1,106 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Eszköz párosítása
+description: Párosítsa a telefonját (vagy egy második böngészőt vagy asztali alkalmazást) a Control Center szerverével, hogy távolról is követhesse a flottát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) for how the link
-works and its security model.
+Ez az útmutató megmutatja, hogyan párosíthat egy telefont a Control Centerrel,
+hogy bárhonnan elolvashassa az üzeneteket és a jegyeket, és válaszolhasson
+rájuk. Ugyanez a folyamat párosít egy második böngészőt vagy asztali
+alkalmazást is. A kapcsolat működését és biztonsági modelljét lásd a
+[Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) oldalon.
 
-## Prerequisites
+## Előfeltételek
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Egy asztali vagy webes kliens, amely csatlakozik az Ön szerveréhez, valamint egy beállított munkaterület. A párosítási műveletekhez teljes kliens szükséges, így egy párosított telefon soha nem tud párosítani — vagy visszavonni — egy másik eszközt.
+- A szerver legyen elérhető arról az eszközről, amelyet párosít. Ugyanazon a hálózaton ez magától működik; távolabbról a közvetített relé viszi a forgalmat. Ha a panel QR-kód vagy hitelesítő adatok helyett a **Nem elérhető** választ adja, előbb tegyen elérhetővé egy útvonalat — az alagút bekapcsolása a **Beállítások → Szerver → Kapcsolat és állapot** oldalon (**Szerver megosztása**), vagy a szerver `--public-url` kapcsolója (lásd a [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/) oldalt).
+- Telefon esetén nincs mit telepíteni. A QR-kód a **Remote** webalkalmazást nyitja meg (alapértelmezés szerint a [remote.usectrl.dev](https://remote.usectrl.dev/) címet).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Saját üzemeltetés.** A Remote és a relé-közvetítő nyílt forráskódú ebben a
+repóban: a telefonos alkalmazás (`apps/cc_remote`, egy Flutter webes PWA, amelyet
+telepíthet a Cloudflare Pagesre a `wrangler.jsonc` fájlján keresztül, a
+`docker/cc_remote` nginx image-re vagy bármely HTTPS-t használó statikus hosztra —
+a service workerek és az IndexedDB biztonságos kontextushoz kötöttek) és a relé
+(`apps/cc_signaling_server`, egyetlen állapotmentes Dart bináris, amely nem tárol
+alkalmazásadatot, és soha nem látja a párosítási titkot — csak a végpontok között
+lezárt kereteket továbbítja). A build- és futtatási lépéseket a README-jükben
+találja.
 
-## Step 1: Open the pairing panel
+## 1. lépés: A párosítási panel megnyitása
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Nyissa meg a **Beállítások → Ön → Az Ön eszközei** oldalt. Az **Az Ön
+eszközei** szakasz azokat a klienseket sorolja fel, amelyek ezen a szerveren az
+Ön fiókjához vannak párosítva. (A szerver tulajdonosa a szerver összes eszközét
+látja; mindenki más csak a sajátjait.)
 
-## Step 2: Pair a new client
+## 2. lépés: Új kliens párosítása
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Kattintson az oldalfejlécben az **Új kliens párosítása** elemre, adjon neki egy
+címkét (például „A telefonom"), válassza ki a típust — **Webböngésző**, **Asztali
+alkalmazás** vagy **Telefon** —, majd kattintson a **Párosítás** elemre.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- **Telefon** esetén megjelenik egy QR-kód. Olvassa be a telefon kamerájával, vagy másolja ki a hivatkozást, és nyissa meg bármelyik böngészőben. Ez a Remote alkalmazást az Ön szerverére irányítja, és magával viszi a hitelesítő adatot.
+- **Böngésző** vagy **asztali alkalmazás** esetén inkább másolja be az új kliensbe a megjelenített hivatkozást (vagy az eszköz-ID-t és a párosítási kulcsot). Az egyszer kattintással használható hivatkozást csak akkor kínálja fel, ha webes kliensből párosít, mivel az asztali binárisnak nincs webes originje, amelyből ilyet építhetne.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+A telefonos QR-kód és a `cc_server pair --client-url` paranccsal a parancssorban
+kiírt hivatkozás **különböző hasznos terhet hordoznak, és nem felcserélhetők**: a
+parancssori hivatkozás a webes kliens csatlakozási űrlapját tölti ki, míg ez a
+QR-kód a szerver teljes kapcsolatleíróját és identitás-ujjlenyomatát hozza a
+Remote PWA számára.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+A telefon oldalán a párosítási hivatkozás megnyitása nem párosít csendben. A
+Remote megmutatja a szerver által hirdetett nevet, és megerősítést kér, mielőtt
+bármit tárolna, így egy hamisított hivatkozás nem tudja más szerverére
+eltéríteni az alkalmazást.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[A beolvasott QR-kód azonnal hozzáférést ad]
+Nincs függőben lévő, majd jóváhagyandó lépés: a kiállított eszköz a
+létrehozása pillanatától aktív, és a csatlakozási kapu csak azt ellenőrzi, hogy a
+hitelesítő adat aktív és nem járt le. Kezelje a QR-kódot és a párosítási kulcsot
+jelszóként, és vonjon vissza mindent, amit nem szándékozott kiadni.
 :::
 
-## Manage paired devices
+## A párosított eszközök kezelése
 
-From **Settings → You → Your devices** you can:
+A **Beállítások → Ön → Az Ön eszközei** oldalon a következőket teheti:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Átnevezés** egy eszközön
+- **Visszavonás** egy olyan eszközön, amelyben már nem bízik meg. A visszavonás megsemmisíti a hitelesítő adatát, és másodperceken belül eldobja az élő munkamenetét, így újracsatlakozáskor zártan hibázik
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Egy elveszett vagy lecserélt telefon esetén a visszavonás a helyes lépés. Az
+eszköz szemszögéből nézve azonnali és visszafordíthatatlan.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Az ebből a panelből kiállított hitelesítő adatok időhöz kötöttek: a kiállításuk
+után 30 nappal lejárnak, és a csatlakozási kapu ezt követően zártan elutasítja
+őket. A parancssorban a `cc_server pair` paranccsal kiállított hitelesítő adat
+**egyáltalán nem jár le** — vonja vissza kézzel, amikor a gépet, amelyhez szánta,
+kivonják a használatból.
 
-## Switch workspaces from the phone
+## Munkaterület váltása a telefonról
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Egy párosított telefon az asztali alkalmazástól függetlenül válthat a
+munkaterületek között. A telefon minden hívással együtt elküldi a
+munkaterületet, és a szerver minden egyes hívásnál ellenőrzi az Ön tagságát és
+szerepkörét abban a munkaterületben — így a telefon csak olyan munkaterületeket
+ér el, amelyeknek tagja, és az ottani váltás soha nem változtatja meg azt, amit
+az asztali alkalmazás mutat.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+A telefonos munkamenet emellett egy kis, túlnyomórészt olvasó eszközöket
+tartalmazó engedélylistára korlátozódik: listázhatja és olvashatja a jegyeket,
+ügynököket, tereket, üzeneteket és hírfolyamcikkeket, frissíthet vagy
+hozzárendelhet egy jegyet, üzenetet küldhet egy térben, valamint olvasottként
+vagy mentettként jelölhet meg egy cikket. Minden, ami ezen a halmazon kívül esik,
+elutasításra kerül, mielőtt elérné a szerver diszpécserét.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): make the server reachable in the first place
-- [Connect to a remote server](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/): point a full client at it
-- [Use spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/): what you'll mostly do from the phone
-- [Create and manage tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/): triage from the road
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/): hogy a szerver egyáltalán elérhető legyen
+- [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/): irányítson rá egy teljes klienst
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/): amit többnyire a telefonról fog csinálni
+- [Jegyek létrehozása és kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/): triázsolás útközben
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/)
+- [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/)
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/)

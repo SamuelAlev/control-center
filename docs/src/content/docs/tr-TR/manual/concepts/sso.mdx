@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Tek oturum açma
+description: SAML ve OIDC oturum açmalarının nasıl çalıştığı, neyi doğruladığı ve hesapların nasıl güvende kaldığı.
 slug: tr-TR/kilavuz/kavramlar/tek-oturum-acma
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Tek oturum açma, harici bir kimlik sağlayıcısının (IdP) Control Center
+sunucunuzda kimin oturum açabileceğine karar vermesini sağlar. İki protokol
+desteklenir — SAML 2.0 ve OpenID Connect — ve ikisi de aynı yere varır:
+sonraki tüm aşamalarda bir davetten veya QR eşleştirmesinden ayırt edilemeyen,
+yeni üretilmiş bir cihaz kimlik bilgisi.
 
-## The shape of a login
+## Bir oturum açmanın biçimi
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+SAML oturum açmaları **tarayıcı aracılığıyla** gerçekleşir. IdP sunucunuza
+asla bir bağlantı açmaz; her şeyi kullanıcının tarayıcısı taşır:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,84 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Tarayıcı kurye olduğu için, oturum açmalarda **NAT arkasındaki bir sunucu
+sorunsuz çalışır**: localhost, LAN, Tailscale, VPN veya bir tünel — hepsi iş
+görür; yalnızca kullanıcının tarayıcısı ACS URL'ye ulaşabilmelidir. Telefon
+uzaktan kontrolünün kullandığı WebSocket relay'i HTTP gidiş-dönüşünü
+taşıyamaz; SSO giriş noktalarının her zaman sunucunun HTTP origin'ini
+hedeflemesinin nedeni budur.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect, authorization-code + PKCE gidiş-dönüşüyle aynı biçimi izler;
+claim'ler, issuer'ın token uç noktasından TLS üzerinden okunur; böylece
+tarayıcı, kimlik verisini hiçbir şekilde sağlamaz.
 
-## The adapters
+## Adaptörler
 
-Control Center splits the responsibility deliberately:
+Control Center sorumluluğu bilinçli olarak böler:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| Bileşen | Konum | Üstlendiği |
+| --- | --- | --- |
+| `cc_saml` native | `packages/cc_natives/native/saml/` | XML-DSig doğrulaması, kanonikleştirme, SAML profil doğrulaması — durumsuz bir C ABI arkasında sabitlenmiş saf Rust `saml` crate'ine devredilir |
+| `SamlService` / `OidcService` | `cc_server_core` | oturum açma durumu (bekleyen istek takipçileri, yeniden oynatma tekilleştirmesi), doğrulama politikası ayarları, paylaşılan sağlama çağrısı |
+| `SsoProvisioner` | `cc_server_core` | kullanıcıyı bul ya da oluştur, sağlayıcı subject'ini sabitle, otomatik üye politikası kapsamında üyelikleri ver |
+| `ScimService` | `cc_server_core` | SCIM 2.0 push yüzeyi (sağlama/sağlamadan çıkarma yaşam döngüsü) |
+| `SsoSettingsService` | `cc_server_core` | kaydedilmiş bağlantı satırları, canlı yeniden uygulama, SCIM token'ı |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Kasıtlı olarak **saf Dart bir SAML kripto yedeği yoktur**: elle yazılmış
+XML-DSig/kanonikleştirme, imza sarma güvenlik açıklarının tam olarak yaşadığı
+yerdir; bu yüzden `cc_saml` kütüphanesi eksik olduğunda hem SAML oturum açma
+hem de sunucu önyüklemesi reddedilir. Native, tasarım gereği durumsuzdur —
+istekler arası durum, tek kullanımlık ve kısa ömürlü olarak Dart servislerinde
+yaşar.
 
-## What a login verifies
+## Bir oturum açma neyi doğrular
 
-Inside the verified native and the service, in order:
+Doğrulanan native'in ve servisin içinde, sırasıyla:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. assertion'ın **imzası** (her zaman gereklidir; yanıt zarfınınki
+   yapılandırmaya göre isteğe bağlıdır) — doğrulanan yük, doğrulanan öğeye
+   bağlandığı için yapısal olarak imza sarmaya dirençlidir,
+2. **issuer**, yapılandırılmış IdP ile eşleşir,
+3. **audience** bu hizmet sağlayıcıyı adlandırır,
+4. **destination** bizim ACS URL'imizdir,
+5. `InResponseTo`, yayımladığımız bekleyen bir AuthnRequest ile eşleşir
+   (istem dışı, IdP tarafından başlatılan yanıtlar varsayılan olarak
+   kapalıdır),
+6. **geçerlilik** pencereleri saat kayması (varsayılan 90 sn) içinde kalır ve
+7. **assertion id** daha önce hiç görülmemiştir (yeniden oynatma önbelleği).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Hatalar tipli kodlar olarak döner — signature, expired, audience,
+destination, issuer, request-match — ve uç noktalar genel hatalarla yanıt
+verir; böylece bir saldırgan, sahteciliğin neden başarısız olduğuna dair
+hiçbir şey öğrenemez.
 
-## Accounts and subject pinning
+## Hesaplar ve subject sabitleme
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+İlk SSO oturum açması, sağlayıcının değişmez subject'ini (`issuer` artı SAML
+NameID / OIDC `sub` ya da SCIM externalId) hesaba sabitler. O andan itibaren
+oturum açmayı tanımlayan şey e-posta değil, subject'tir. Başka biri daha sonra
+aynı ya da farklı bir IdP'den aynı e-postayı sunarsa, sabitlenmiş hesap onu
+reddeder. Bir sağlayıcıda geri dönüştürülen bir e-postanın hesap devralmaya
+dönüşmesini engelleyen şey budur.
 
-## Provisioning and deprovisioning
+## Sağlama ve sağlamadan çıkarma
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT sağlama, oturum açma sırasında gerçekleşir (`SsoProvisioner`). SCIM,
+kullanıcı satırında aynı subject'i sabitleyen ayrı bir push yüzeyidir
+(`ScimService`); çalışma alanı üyelikleri vermez. Sağlamadan çıkarma — SCIM
+`active: false` veya `DELETE` — hesap bir çalışma alanı sahibiyse reddeder
+(önce devredin). Aksi hâlde önce her cihaz kimlik bilgisini iptal eder
+(oturumlar, cihaz izleme sayesinde saniyeler içinde düşer), her çalışma alanı
+üyeliğini kaldırır ve hesabı devre dışı olarak damgalar. Kullanıcı satırı
+ayakta kalır: atıf kalıcıdır. Yeniden etkinleştirme oturum açmayı geri getirir
+ama üyelikleri asla yeniden vermez.
 
-## What stays out
+## Neler dışarıda kalır
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Grup→rol eşlemesi oturum açma sırasında** SAML özniteliklerinden / OIDC
+  claim'lerinden yapılır — push edilen SCIM grupları saklanmaz.
+- **Sahip rolüne SSO'dan ulaşılamaz** — ne varsayılan rol olarak ne de bir
+  grup eşlemesi yoluyla.
+- WebSocket relay'i asla bir SSO kanalı değildir; sunucuya yalnızca relay
+  üzerinden ulaşan telefonlar, sunucuya karşı bir tarayıcı gidiş-dönüşünü
+  tamamlayamaz.

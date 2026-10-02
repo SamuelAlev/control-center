@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Sao lưu, xuất và nhập
+description: Bố cục ảnh chụp, manifest, mọi thao tác sao lưu và tuyến truyền tải, cùng chính xác những tệp mà một bản sao lưu có và không chứa.
 slug: vi-VN/so-tay/tham-chieu/sao-luu
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/); for why persistence is
-split this way, see [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
+Mọi thứ Control Center có thể sao chép, chuyển giao hoặc nhận, cùng hình dạng chính
+xác của từng tạo tác. Để thực sự tạo một bản sao lưu, xem
+[Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/); còn vì sao việc lưu trữ
+bền vững lại được tách theo cách này, xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
 
-## Artifacts
+## Tạo tác
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Có ba tạo tác sao chép cơ sở dữ liệu, với phạm vi và chính sách xóa khác nhau.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| Tạo tác                 | Được ghi bởi                 | Hình dạng                             | Bao gồm                       |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **Ảnh chụp bản cài đặt**| `server.backupNow`           | Một **thư mục** có dấu thời gian      | Mọi cơ sở dữ liệu trong bản cài đặt |
+| **Bản sao lưu không gian làm việc** | quy trình `Workspace backup` | Thư mục có dấu thời gian chứa một tệp `.db` | Cơ sở dữ liệu của một không gian làm việc |
+| **Bản xuất không gian làm việc** | `workspace.export`  | Một **tệp** `.db` duy nhất            | Cơ sở dữ liệu của một không gian làm việc |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Tất cả đều được ghi bằng `VACUUM INTO` của SQLite, an toàn với một cơ sở dữ liệu WAL
+đang chạy: nó mở một giao dịch đọc, tạo ra một bản sao đã chống phân mảnh và nhất quán
+về giao dịch, và không bao giờ đòi hỏi phải dừng máy chủ.
 
-## Snapshot layout
+## Bố cục ảnh chụp
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,121 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Bố cục phản chiếu chính xác thư mục dữ liệu đang chạy, và đó là điều khiến việc khôi
+phục một bản cài đặt trở thành sao chép ngược lại chứ không phải một phép dịch. Tên thư
+mục là dấu thời gian UTC với `:` và `.` được thay bằng `-`, nên nó an toàn với hệ thống
+tệp trên Windows và sắp xếp theo trình tự thời gian như một chuỗi thuần.
 
-Scheduled workspace backups live separately at
+Các bản sao lưu không gian làm việc theo lịch nằm riêng tại
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Chúng không bao gồm manifest hay `global.db` và không phải ảnh chụp bản cài đặt.
+Bước lưu trữ của quy trình hằng tuần chỉ xóa các bản sao lưu của chính không gian
+làm việc đó cũ hơn tuổi đã cấu hình (mặc định 30 ngày); các ảnh chụp bản cài đặt
+do người dùng tạo thủ công không bao giờ bị bước đó xoay vòng. `server.listBackups`
+chỉ liệt kê ảnh chụp bản cài đặt, kể cả những ảnh chưa hoàn tất.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| Trường                     | Kiểu            | Ý nghĩa                                                            |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | số nguyên       | Phiên bản định dạng manifest. Hiện tại là `1`                       |
+| `created_at`               | ISO-8601 UTC    | Thời điểm ảnh chụp được thực hiện                                    |
+| `global.file`              | chuỗi           | Luôn là `global.db`                                                 |
+| `global.schema_version`    | số nguyên       | Phiên bản lược đồ `GlobalDatabase` tại thời điểm chụp               |
+| `global.bytes`             | số nguyên       | Kích thước của `global.db` đã ghi                                   |
+| `workspace_schema_version` | số nguyên       | Phiên bản lược đồ `WorkspaceDatabase` dùng chung cho mọi tệp không gian làm việc |
+| `workspaces[]`             | mảng            | Một mục cho mỗi không gian làm việc được chụp                       |
+| `workspaces[].workspace_id`| chuỗi           | Không gian làm việc mà tệp này chứa                                 |
+| `workspaces[].file`        | chuỗi           | Đường dẫn tương đối so với gốc ảnh chụp, `<workspaceId>/workspace.db` |
+| `workspaces[].bytes`       | số nguyên       | Kích thước của tệp đó                                               |
+| `skipped_workspaces[]`     | mảng chuỗi      | Những không gian làm việc mà bản sao lưu **không** chụp được        |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Một không gian làm việc bị bỏ qua khi nó đã được đăng ký nhưng chưa từng được ghi vào
+(nên chưa có tệp), hoặc khi `VACUUM INTO` của nó thất bại. Dù theo cách nào, ảnh chụp
+vẫn hoàn tất và manifest ghi rõ những gì còn thiếu.
 
-### Completeness
+### Tính đầy đủ
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` báo cáo một cờ `complete` cho mỗi ảnh chụp. Cờ này là false khi
+manifest vắng mặt hoặc không phân tích được, khi `global.db` bị thiếu, hoặc khi manifest
+nêu tên một tệp không gian làm việc không có trên đĩa.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Một ảnh chụp chưa hoàn tất vẫn được liệt kê, bởi vì một ảnh chụp mà người vận hành không
+thấy là một ảnh chụp họ tin rằng mình đang có. Khi manifest không đọc được, danh sách lùi
+về chính bố cục thư mục và báo cáo bất kỳ tệp `<workspaceId>/workspace.db` nào nó tìm
+thấy — những tệp đó vẫn có thể được nhận riêng lẻ qua `workspace.import` dù toàn bộ ảnh
+chụp không thể khôi phục một bản cài đặt.
 
-## What a backup does not contain
+## Ảnh chụp không chứa những gì
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Cả hai tạo tác đều **chỉ là cơ sở dữ liệu**. Một thư mục không gian làm việc chứa nhiều
+hơn cơ sở dữ liệu của nó, và không phần nào khác đi kèm:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Đường dẫn                           | Có trong ảnh chụp? | Có trong bản xuất không gian làm việc? |
+| ----------------------------------- | ------------------ | -------------------------------------- |
+| `global.db`                         | Có                 | Không                                  |
+| `<workspaceId>/workspace.db`        | Có                 | Có (nó *chính là* tệp đó)              |
+| `<workspaceId>/blobs/`              | Không              | Không                                  |
+| `<workspaceId>/skills/`             | Không              | Không                                  |
+| `<workspaceId>/agents/`             | Không              | Không                                  |
+| `<workspaceId>/chat_credentials/`   | Không              | Không                                  |
+| `<workspaceId>/spaces/<spaceId>/`   | Không              | Không                                  |
+| `<workspaceId>/pr_clones/`          | Không              | Không                                  |
+| `secrets.json`                      | Không              | Không                                  |
+| `models/`                           | Không              | Không                                  |
+| `meetings/<meetingId>/`             | Không              | Không                                  |
+| `rigs/`                             | Không              | Không                                  |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/vi-VN/so-tay/tham-chieu/cau-chat/).
+Một phần trong đó có thể bỏ đi — `spaces/` chứa các worktree copy-on-write được cấp phát
+lại từ các kho lưu trữ, `pr_clones/` là một bộ nhớ đệm, `models/` tải lại được, `rigs/`
+là trạng thái máy. Một phần thì không: `blobs/` chứa ảnh được dán mà các hàng trong cơ
+sở dữ liệu trỏ tới, `skills/` và `agents/` chứa các tệp mà agent chạy cùng, và
+`secrets.json` chứa mọi khóa ghép nối, thông tin xác thực nhà cung cấp và cài đặt SSO
+trên bản cài đặt. Xem [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#copy-backups-off-the-machine)
+để bao quát phần còn lại.
+:::note[Token chat chủ đích ở lại phía sau]
+`chat_credentials/` nằm cạnh cơ sở dữ liệu thay vì bên trong nó là lý do một không gian
+làm việc được giao cho người khác không mang theo token bot đang hoạt động. Xem
+[tham chiếu cầu chat](/vi-VN/so-tay/tham-chieu/cau-chat/).
 :::
 
-## Operations
+## Các thao tác
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+Các RPC sao lưu của bản cài đặt và thao tác xuất/nhập không gian làm việc chỉ dành cho
+`fullClient`: một điện thoại đã ghép nối không thể kích hoạt chúng. Tất cả đều vắng mặt
+hoàn toàn — không phải bị từ chối, mà thiếu hụt về mặt cấu trúc — trên một máy chủ không
+nối cổng sao lưu, chẳng hạn máy chủ demo.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Thao tác             | Loại   | Phạm vi       | Vai trò tối thiểu | Đối số        | Trả về                        |
+| -------------------- | ------ | ------------- | ----------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | thay đổi | Bản cài đặt | **chủ sở hữu** bản cài đặt | không có | `{ok, path}`           |
+| `server.listBackups` | đọc    | Bản cài đặt   | **chủ sở hữu** bản cài đặt | không có | `{backups: [...]}`   |
+| `server.deleteBackup` | thay đổi | Bản cài đặt | **chủ sở hữu** bản cài đặt | `name` | `{ok}`                |
+| `workspace.export`   | đọc    | Không gian làm việc | `admin`     | không có      | `{ok, path}`                  |
+| `workspace.import`   | thay đổi | Không gian làm việc | `owner`   | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | thay đổi | Bản cài đặt* | `owner`      | `id`          | hàng sổ đăng ký được đánh dấu đã xóa |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` không thuộc phạm vi nào vì hàng mà nó đánh dấu nằm trong sổ đăng ký
+toàn cục; trình xử lý của nó kiểm tra tư cách thành viên của bên gọi trong không gian làm
+việc được nêu tên và yêu cầu `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` trong mọi phản hồi là một đường dẫn trên **máy chủ**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Ảnh chụp toàn bộ bản cài đặt đều yêu cầu chủ sở hữu ở cả hai làn]
+`server.backupNow`, `server.listBackups` và `server.deleteBackup` yêu cầu **chủ sở hữu**
+bản cài đặt (`ServerAuthority.serverOwner`), cùng cổng như `GET /backup/snapshot`. Một
+ảnh chụp nắm mọi cơ sở dữ liệu của không gian làm việc, nên chỉ là quản trị viên của một
+không gian làm việc thì chưa đủ để quản lý những cái khác. Thao tác xóa chỉ chấp nhận tên
+thư mục dấu thời gian có trong danh sách, không phải một đường dẫn máy chủ tùy ý, và xóa
+toàn bộ ảnh chụp (kể cả ảnh chụp chưa hoàn tất). Xuất/nhập theo từng không gian làm việc
+vẫn ở mức quản trị viên/chủ sở hữu không gian làm việc, không phải chủ sở hữu bản cài đặt.
 :::
 
-### `server.listBackups` response
+### Phản hồi của `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Mới nhất trước, sắp xếp theo tên thư mục (chính là dấu thời gian, nên thứ tự vẫn đúng kể
+cả với một ảnh chụp có manifest không đọc được).
 
 ```json
 {
@@ -169,99 +171,99 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` bị lược bỏ khi manifest không đọc được. `bytes` ở cấp cao nhất là kích thước
+thật trên đĩa của toàn bộ thư mục, không phải tổng do manifest tự cộng — câu hỏi mà một
+người vận hành đang dọn bớt ảnh chụp đặt ra là thư mục đó tốn bao nhiêu, chứ không phải
+bản sao lưu định ghi những gì.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Mỗi `workspaces[].path` đúng là thứ mà `workspace.import` nhận làm `source_path`. Đó là
+chủ ý: “khôi phục không gian làm việc này từ ảnh chụp này” *chính là* thao tác nhập, nên
+hai thứ không thể trôi dạt thành những cách xử lý khác nhau cho cùng một tệp.
 
-### `workspace.import` validation
+### Kiểm tra hợp lệ của `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Trước khi bất cứ thứ gì bị thay thế, tệp ứng viên được mở ở chế độ chỉ đọc bằng một kết
+nối SQLite thô tồn tại ngắn, và hàng `workspace_meta` của nó được đọc.
 
-| Condition                                        | Result                                                          |
+| Điều kiện                                        | Kết quả                                                         |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Không phải cơ sở dữ liệu SQLite đọc được, hoặc không có `workspace_meta` | Bị từ chối. Không có gì bị chạm tới        |
+| Id không gian làm việc được ghi ≠ đích            | **Được phép**, có ghi nhật ký. Đây là cách một không gian làm việc được nhân bản hoặc khôi phục dưới một id mới |
+| Id bản cài đặt được ghi ≠ bản cài đặt này         | **Được phép**, có ghi nhật ký. Các thiết bị đã ghép nối và id người dùng của nó thuộc về bản cài đặt đó và sẽ không phân giải được ở đây |
+| Id không gian làm việc không hợp lệ, hoặc tệp không tồn tại | Bị từ chối                                            |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Khi được chấp nhận, cơ sở dữ liệu của không gian làm việc đích được đóng và loại khỏi bộ
+quản lý trước khi tệp được sao chép đè lên nó (một kết nối drift đang mở sẽ giữ tệp và
+`-wal` của nó), rồi được mở lại để `beforeOpen` cài đặt lại các trigger FTS và đồng bộ,
+và các chỉ mục FTS được dựng lại — bảng nội dung của một tệp được nhập thì đã được điền
+nhưng chỉ mục của nó có thể đã cũ.
 
-## Transfer routes
+## Các tuyến truyền tải
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Mọi thao tác ở trên đều nói bằng đường dẫn phía máy chủ, và đó là câu trả lời đầy đủ chỉ
+khi máy chủ chính là máy của bạn. Ba tuyến này mang các byte, trên cùng làn có chữ ký PSK
+mà proxy phương tiện và kho ảnh đang dùng. Bên gọi ký một chuỗi đích bằng khóa chia sẻ
+trước của thiết bị và truyền chữ ký dưới dạng `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| Tuyến                   | Phương thức | Truy vấn        | Đích được ký                   | Yêu cầu                 |
+| ----------------------- | ----------- | --------------- | ------------------------------ | ----------------------- |
+| `/backup/workspace`     | GET         | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **quản trị viên** không gian làm việc |
+| `/backup/snapshot`      | GET         | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **chủ sở hữu** bản cài đặt |
+| `/backup/restore`       | POST        | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **chủ sở hữu** không gian làm việc |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` là id không gian làm việc, `n` là tên thư mục ảnh chụp, `d` là id thiết bị đang gọi,
+`s` là chữ ký. `n` được phân giải dựa trên danh sách sao lưu thay vì được nối thẳng vào
+gốc thư mục sao lưu, nên tuyến không thể bị nhắm vào một thư mục mà danh sách sẽ không
+hiển thị.
 
-| Status | Cause                                                                              |
-| ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| Trạng thái | Nguyên nhân                                                                       |
+| ---------- | --------------------------------------------------------------------------------- |
+| `400`      | Thiếu một tham số truy vấn bắt buộc, hoặc phần thân tải lên rỗng                     |
+| `403`      | Thiết bị không xác định hoặc đã bị thu hồi, chữ ký sai, hoặc bên gọi thiếu vai trò    |
+| `404`      | Máy chủ này không có cổng sao lưu, hoặc ảnh chụp/tệp không gian làm việc được nêu tên không tồn tại |
+| `405`      | `/backup/restore` được gọi với phương thức khác `POST`                              |
+| `413`      | Phần thân tải lên vượt 8 GiB, theo content-length được khai báo hoặc theo số byte thực sự đọc được |
+| `500`      | Thao tác xuất hoặc lưu trữ thất bại phía máy chủ                                     |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Cả hai thao tác tải xuống đều trả về `Cache-Control: no-store` cùng `Accept-Ranges: none`.
+Mỗi yêu cầu tạo ra một bản sao **mới** và xóa nó sau khi truyền xong, nên một phản hồi
+được đệm hoặc tiếp tục sẽ nối các byte từ hai lần xuất khác nhau thành một tệp trông có
+vẻ hợp lệ mà lại không hợp lệ.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` trả về `<name>.zip`, với các mục tương đối so với gốc ảnh chụp để khi
+giải nén tái tạo được `manifest.json` + `global.db` + `<workspaceId>/workspace.db`. Các
+mục được ghi theo thứ tự sắp xếp, nên hai tệp lưu trữ của cùng một ảnh chụp là cùng một
+tệp.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` truyền thẳng phần thân xuống một tệp tạm thay vì đệm nó, đặt giới hạn
+trước và trong khi đọc, và xóa tệp tạm trên **mọi** lối ra kể cả khi bị từ chối.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Kết nối qua relay không có origin HTTP]
+Relay được môi giới truyền các khung RPC, không truyền tệp. Mọi thứ nói bằng đường dẫn
+phía máy chủ vẫn hoạt động qua nó; ba tuyến truyền tải cần kết nối trực tiếp, và giao
+diện vô hiệu hóa chúng kèm một ghi chú thay vì thất bại giữa lúc tải xuống.
 :::
 
-## Paths and limits
+## Đường dẫn và giới hạn
 
-| Thing                          | Value                                                        |
+| Thứ                            | Giá trị                                                      |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Ảnh chụp                       | `<dataDir>/backups/<timestamp>/`                             |
+| Bản sao lưu không gian làm việc theo lịch | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Bản xuất không gian làm việc   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Trung chuyển truyền tải        | `<dataDir>/backups/transfer/` — một bàn làm việc, được dọn bởi chính tuyến ghi vào nó |
+| Tên tệp lưu trữ ảnh chụp       | `<snapshot directory name>.zip`                              |
+| Giới hạn tải lên               | 8 GiB cho mỗi `POST /backup/restore`                         |
+| Lưu trữ                        | Ảnh chụp bản cài đặt: xóa thủ công. Bản sao lưu không gian làm việc: quy trình hằng tuần, mặc định 30 ngày |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Các thư mục `exports/`, `transfer/` và `workspace-backups/` không phải ảnh chụp bản cài
+đặt và bị loại khỏi `server.listBackups`. Chỉ thư mục cuối cùng có lưu trữ theo lịch; việc
+xóa một ảnh chụp bản cài đặt đòi hỏi hành động rõ ràng của chủ sở hữu bản cài đặt.
 
-## See also
+## Xem thêm
 
-- [Back up and restore](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/) — the recipes these operations belong to
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) — why one workspace is one file
-- [`cc_server` CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server/) — the data directory these paths sit in
-- [Route map](/vi-VN/so-tay/tham-chieu/ban-do-tuyen/) — where the UI lives
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/) — the client/server split the paths follow
+- [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/) — các công thức mà những thao tác này thuộc về
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) — vì sao một không gian làm việc là một tệp
+- [CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/) — thư mục dữ liệu mà những đường dẫn này nằm trong
+- [Bản đồ tuyến](/vi-VN/so-tay/tham-chieu/ban-do-tuyen/) — nơi giao diện người dùng nằm
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/) — sự phân tách máy khách/máy chủ mà các đường dẫn tuân theo

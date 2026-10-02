@@ -1,19 +1,21 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Accesso singolo
+description: Come funzionano gli accessi SAML e OIDC, cosa verificano e come restano al sicuro gli account.
 slug: it-IT/manuale/concetti/sso
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+L'accesso singolo consente a un provider di identità esterno (IdP) di
+decidere chi può accedere al tuo server Control Center. Sono supportati due
+protocolli — SAML 2.0 e OpenID Connect — ed entrambi approdano nello stesso
+punto: una credenziale del dispositivo appena coniata, indistinguibile da un
+invito o da un abbinamento tramite QR in ogni passaggio a valle.
 
-## The shape of a login
+## La forma di un accesso
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Gli accessi SAML sono **mediati dal browser**. L'IdP non apre mai una
+connessione verso il tuo server; è il browser dell'utente a trasportare
+tutto:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +28,88 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Poiché è il browser a fare da corriere, per gli accessi **un server dietro
+NAT funziona senza problemi**: localhost, LAN, Tailscale, VPN o un tunnel
+vanno tutti bene — solo il browser dell'utente deve raggiungere l'URL ACS.
+Il relay WebSocket usato dal controllo remoto da telefono non può
+trasportare il round-trip HTTP, ed è per questo che i punti di ingresso SSO
+puntano sempre all'origine HTTP del server.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect segue la stessa forma con un round-trip
+authorization-code + PKCE; i claim vengono letti dall'endpoint del token
+dell'issuer su TLS, quindi il browser non fornisce mai dati di identità.
 
-## The adapters
+## Gli adattatori
 
-Control Center splits the responsibility deliberately:
+Control Center separa le responsabilità in modo deliberato:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| Componente                     | Dove                               | Di cosa si occupa                                                                                                                          |
+| ------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cc_saml` nativo               | `packages/cc_natives/native/saml/` | Verifica XML-DSig, canonicalizzazione, convalida del profilo SAML — delegate al crate `saml` in puro Rust fissato, dietro un'ABI C senza stato |
+| `SamlService` / `OidcService`  | `cc_server_core`                   | stato del login (tracker delle richieste in sospeso, deduplica dei replay), parametri della policy di convalida, la chiamata di provisioning condivisa |
+| `SsoProvisioner`               | `cc_server_core`                   | trova-o-crea l'utente, fissa il subject del provider, concede l'appartenenza secondo la policy di appartenenza automatica                   |
+| `ScimService`                  | `cc_server_core`                   | la superficie push SCIM 2.0 (ciclo di vita di provisioning/deprovisioning)                                                                  |
+| `SsoSettingsService`           | `cc_server_core`                   | le righe delle connessioni salvate, la riapplicazione a caldo, il token SCIM                                                                |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Di proposito **non esiste alcun fallback crittografico SAML in Dart puro**:
+è proprio nell'XML-DSig e nella canonicalizzazione fatti a mano che vivono le
+vulnerabilità di signature wrapping, quindi una libreria `cc_saml` mancante
+rifiuta sia l'accesso SAML sia l'avvio del server. Il nativo è senza stato per
+scelta progettuale — lo stato tra richieste vive nei servizi Dart, monouso e
+di breve durata.
 
-## What a login verifies
+## Cosa verifica un accesso
 
-Inside the verified native and the service, in order:
+All'interno del nativo verificato e del servizio, in ordine:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. la **firma** dell'asserzione (sempre obbligatoria; quella dell'involucro
+   della risposta è opzionale a seconda della configurazione) —
+   strutturalmente resistente al signature wrapping perché il payload
+   convalidato è vincolato all'elemento verificato,
+2. l'**issuer** corrisponde all'IdP configurato,
+3. l'**audience** indica questo service provider,
+4. la **destination** è il nostro URL ACS,
+5. `InResponseTo` corrisponde a una AuthnRequest in sospeso che abbiamo
+   emesso (le risposte non richieste, avviate dall'IdP, sono disattivate per
+   impostazione predefinita),
+6. le finestre di **validità** rientrano nello scostamento dell'orologio
+   (90s predefiniti) e
+7. l'**id dell'asserzione** non è mai stato visto prima (cache dei replay).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Gli errori tornano come codici tipizzati — signature, expired, audience,
+destination, issuer, request-match — e gli endpoint rispondono con errori
+generici, così un attaccante non scopre nulla sul motivo per cui un falso è
+fallito.
 
-## Accounts and subject pinning
+## Account e pinning del subject
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Il primo accesso SSO fissa sull'account il subject immutabile del provider
+(`issuer` più il NameID SAML / il `sub` OIDC, oppure l'externalId SCIM). Da
+quel momento è il subject — non l'email — a identificare l'accesso. Se in
+seguito qualcun altro presenta la stessa email dallo stesso IdP o da un
+altro, l'account con il subject fissato lo rifiuta. È questo che impedisce
+che un'email riciclata presso un provider si trasformi in un furto di
+account.
 
-## Provisioning and deprovisioning
+## Provisioning e deprovisioning
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Il provisioning JIT avviene al momento dell'accesso (`SsoProvisioner`). SCIM
+è una superficie push separata (`ScimService`) che fissa lo stesso subject
+sulla riga dell'utente; non concede l'appartenenza agli spazi di lavoro. Il
+deprovisioning — SCIM `active: false` o `DELETE` — rifiuta se l'account è
+proprietario di uno spazio di lavoro (prima trasferisci la proprietà).
+Altrimenti revoca prima ogni credenziale del dispositivo (le sessioni cadono
+in pochi secondi tramite il watch del dispositivo), rimuove ogni appartenenza
+agli spazi di lavoro e contrassegna l'account come disattivato. La riga
+dell'utente sopravvive: l'attribuzione è permanente. La riattivazione
+ripristina l'accesso ma non riconcede mai le appartenenze.
 
-## What stays out
+## Cosa resta fuori
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **La mappatura gruppo→ruolo avviene all'accesso** a partire dagli attributi
+  SAML / dai claim OIDC — i gruppi inviati via SCIM non vengono memorizzati.
+- **Il ruolo di proprietario non è raggiungibile dall'SSO** — né come ruolo
+  predefinito né tramite una mappatura di gruppo.
+- Il relay WebSocket non è mai un canale SSO; i telefoni che raggiungono il
+  server solo attraverso il relay non possono completare un round-trip del
+  browser verso di esso.

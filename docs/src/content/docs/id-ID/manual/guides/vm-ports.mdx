@@ -1,137 +1,143 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Teruskan port dari terminal
+description: Jangkau server dev yang dijalankan di Terminal (VM) atau shell host — dari mesin Anda, dari Browser (VM), dari Android, di jaringan Anda, atau di bawah domain dev dengan HTTPS.
 slug: id-ID/panduan-pengguna/panduan-praktis/port-vm
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Server yang Anda jalankan di terminal sebuah percakapan hanya dipublikasikan untuk **space itu**. Panel port mendeteksi pendengar yang dijalankan aplikasi ini di sana, memetakannya, dan memberi Anda alamat untuk setiap tempat yang mungkin Anda gunakan untuk menjangkaunya. Dua space dapat sama-sama mendengarkan di `5173`; peta keduanya tidak pernah tercampur.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Tidak ada apa pun di sini yang membuka mesinnya: setiap jalur dibuat oleh server, atas permintaan, dan mati bersama terminal atau rig.
 
-## See what is listening
+## Lihat apa yang sedang mendengarkan
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Buka **Terminal (VM)** percakapan atau shell host (di sebuah space atau di halaman PR).
+2. Jalankan server Anda — `pnpm dev`, `python -m http.server 8000`, apa saja.
+3. Dalam beberapa detik, **ikon plug** di sudut kanan atas terminal
+   akan mendapat titik. Klik ikon itu.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panel ini mencantumkan setiap port yang mendengarkan beserta proses pemiliknya,
+dalam bentuk `3000 → 3000`: port yang diikat proses di sebelah kiri, port yang
+dijawabnya secara lokal di sebelah kanan (nomor yang sama bila port itu bebas di
+mesin Anda). Setiap baris juga menyatakan apakah `localhost` desktop, Browser (VM),
+dan Android dapat menjangkaunya.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Penemuan dibatasi: Terminal (VM) di-polling di dalam sistem tamu itu; shell host
+di-polling dari pohon proses PTY sesi tersebut. Space lain, dan proses lain di
+Mac Anda, tidak dicantumkan.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Port baru di terminal **ini** diteruskan secara otomatis. Matikan
+**Teruskan port otomatis** di panel yang sama jika Anda hanya ingin port yang
+Anda tambahkan sendiri.
 
-## Reach it from this computer
+## Jangkau dari komputer ini
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Gunakan **Salin URL lokal** pada baris itu — `http://localhost:3000`. Penerusan
+ini hanya mendengarkan di loopback, sehingga tidak ada hal lain di jaringan Anda
+yang dapat melihatnya.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Jika dua space sama-sama mengekspos `5173` milik sistem tamu dan mesin Anda sudah
+memakai `127.0.0.1:5173`, space kedua tetap memakai `5173` sistem tamu dan
+mendapat port lokal efemeral. Salin URL memakai nomor di sebelah kanan.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Pada shell host, prosesnya sudah ada di mesin Anda. Memetakan port lokal yang
+sama tidak melakukan apa pun; memilih port lokal yang **berbeda** akan mengikat
+proxy loopback ke port yang Anda pilih.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (atau mengikat `0.0.0.0`) **tidak** membuat Browser (VM) terkurung
+dapat menjangkau server di Mac. Sistem tamu punya loopback sendiri; server
+menanam tunnel ke sistem tamu itu saat tab Browser berada di **space yang sama**.
 
-## Reach it from the Browser (VM)
+## Jangkau dari Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Buka browser terkurung di **percakapan yang sama**. Ketik
+`localhost:<left-hand port>` — nomor yang diikat proses. Pemetaan ulang
+(`5173 → 3000`) juga menjawab di nomor sebelah kanan di browser itu, sehingga
+Salin URL berfungsi di sana juga. `browser_use` milik agen dapat menavigasi ke
+salah satunya. Server di Space A tidak pernah muncul sebagai `localhost:5173`
+di browser Space B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Gunakan `localhost`, bukan IP LAN dan bukan `--host`. Sistem tamu punya
+loopback sendiri; tunnel mendengarkan di sana pada IPv4 maupun IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Halaman yang membuka banyak koneksi sekaligus (puluhan aset, soket live
+reload) berbagi tunnel yang sama itu. Browser (VM) memultipleksnya ke satu
+exec persisten, sehingga semburan permintaan tidak menjadi satu spawn proses
+per koneksi dan tidak habis waktu sebagai halaman putih.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Di dalam satu space, penerusan Terminal (VM) menang atas shell host pada nomor
+yang sama. Di antara space tidak ada prioritas — keduanya peta yang terpisah.
 
-## Reach it from Android
+## Jangkau dari Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Buka tab **Android** space tersebut. `localhost:<port>` milik emulator lalu
+di-reverse ke port yang dipublikasikan space ini (`adb reverse`). Satu emulator
+bersifat global perangkat: menempelkan Space B mengalihkan target `:5173` ke B
+dan melepas milik A. Tutup tabnya dan reverse yang ditanam rig ini akan dihapus.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Simulator iOS sudah merupakan Mac itu sendiri — tanpa reverse. iPhone fisik
+tetap memerlukan berbagi LAN.
 
-## Share it on your network
+## Bagikan di jaringan Anda
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Bagikan di jaringan lokal** mempublikasikan port di
+`<server-ip>:<random port>` — berguna untuk membuka halaman itu di ponsel Anda,
+atau saat server berjalan di mesin lain.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Port LAN selalu ditetapkan oleh OS, bukan nomor sistem tamu, sehingga
+  paparannya adalah alamat yang disengaja dan terlihat, bukan alamat yang bisa
+  ditebak.
+- Port itu tetap privat (hanya loopback) sampai Anda mengaktifkannya, dan
+  **⋯ → Hanya lokal** menariknya kembali dari jaringan.
 
-## Give it a name — with HTTPS
+## Beri nama — dengan HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Atur domain browser (.test)** menetapkan domain dev seperti `myapp.test`
+untuk port itu. Di dalam Browser (VM), `https://myapp.test` lalu memuat server
+Anda dengan gembok yang sah — berguna untuk apa pun yang berperilaku berbeda
+pada origin bernama atau konteks aman (cookie, service worker, callback OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domain harus berakhiran `.test` atau `.localhost` — dua TLD yang dicadangkan
+  untuk pengembangan, sehingga nama dev tidak akan pernah membayangi situs
+  sungguhan.
+- **Nama** domain unik di server; **nomor** port tidak. Dua space boleh
+  sama-sama memakai `5173`, tetapi keduanya tidak dapat sama-sama mengklaim
+  `myapp.test`.
+- Sertifikatnya berasal dari otoritas lokal yang dicetak di server Anda saat
+  pertama kali dibutuhkan. Kuncinya berada di bawah direktori data server dan
+  tidak pernah masuk ke sistem tamu mana pun; browser terkurung hanya
+  memercayai kunci yang satu itu, sehingga TLS ke internet nyata tetap
+  tervalidasi seperti biasa.
+- Domain itu hanya di-resolve **di dalam Browser (VM)**. Browser Anda sendiri
+  di host justru memakai `localhost:<port>`.
+- `http://myapp.test` biasa juga berfungsi.
 
-## Forward a port by hand
+## Teruskan port secara manual
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Tambah port** di bagian bawah panel memetakan port sebelum (atau terlepas
+dari) ada yang mendengarkan di port itu. Penerusan manual mempertahankan
+alamatnya saat server Anda dimulai ulang — barisnya menampilkan *tidak
+mendengarkan* sampai server kembali — sedangkan penerusan otomatis menghilang
+ketika portnya hilang. Pada shell host Anda juga dapat menetapkan port lokal
+yang berbeda.
 
-## How it stays contained
+## Bagaimana semuanya tetap terkurung
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/id-ID/panduan-pengguna/konsep/rigs/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/id-ID/panduan-pengguna/referensi/rigs/#ports-and-dev-domains).
+Port dikunci berdasarkan ruang kerja dan space. Peta port milik hypervisor
+ditetapkan saat mesin boot, sehingga Terminal (VM) menumpang dua kanal sempit
+yang dikendalikan server: satu jalur masuk yang sudah dibuat sebelumnya ke
+sistem tamu yang menolak terhubung ke port yang tidak benar-benar didengarkan
+sistem tamu, dan tunnel balik yang dijaga server tetap terbuka untuk Browser
+(VM) dan Android. Shell host tidak pernah memindai seluruh mesin. Tidak ada
+pendengar yang pernah dibuat di dalam sistem tamu yang tidak diletakkan server
+di sana, dan semuanya dibongkar bersama terminal atau rig. Desainnya dijelaskan
+di [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/#ports-without-holes);
+port yang dicadangkan dan aturan domain yang tepat ada di
+[referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/#ports-and-dev-domains).
 
-## Related
+## Terkait
 
-- [Give an agent a machine to test on](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/id-ID/panduan-pengguna/referensi/rigs/) — reserved ports, dev TLDs,
-  defaults
+- [Berikan agen mesin untuk menguji](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) — membuka,
+  mengamati, dan mengambil alih rig
+- [Referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/) — port yang dicadangkan,
+  TLD dev, nilai default

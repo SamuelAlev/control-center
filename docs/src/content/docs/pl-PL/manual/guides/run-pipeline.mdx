@@ -1,68 +1,75 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Uruchom potok ręcznie
+description: Uruchom potok z selektora uruchomień, wypełnij jego dane wejściowe i przejdź do szczegółów uruchomienia.
 slug: pl-PL/podrecznik/poradniki/uruchamianie-potoku
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/).
+Ten poradnik opisuje ręczne rozpoczęcie uruchomienia. O obserwowaniu uruchomienia,
+odczytywaniu wyników kroków i odzyskiwaniu po błędzie przeczytasz w
+[Monitoruj uruchomienia potoków](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/).
 
-## Start a run
+## Rozpocznij uruchomienie
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Kliknij **Potoki** na pasku bocznym obszaru roboczego.
+2. Naciśnij **Uruchom potok** w nagłówku. Przechodzisz do selektora uruchomień
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Wybierz szablon z lewej szyny. Każda karta pokazuje nazwę szablonu, jego opis
+   oraz informację, czy przyjmuje dane wejściowe.
+4. Wypełnij formularz danych wejściowych po prawej. Pola wymagane blokują przycisk,
+   dopóki nie zostaną wypełnione; szablon bez danych wejściowych informuje o tym
+   wprost.
+5. Naciśnij **Uruchom potok**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Przechodzisz na stronę szczegółów uruchomienia, z aktywną kaskadą czasu i kanwą
+grafu.
 
-## If the rail is empty
+## Jeśli szyna jest pusta
 
-The launcher shows a template only when **both** are true:
+Selektor uruchomień pokazuje szablon tylko wtedy, gdy spełnione są **oba** warunki:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Przełącznik szablonu jest włączony w **Ustawienia → Obszar roboczy → Szablony
+  potoków**.
+- Opcja **Zezwól na ręczne uruchamianie** jest włączona w oknie dialogowym
+  **Ręczne uruchamianie** edytora szablonu — to właśnie ten przełącznik tworzy
+  wyzwalacz `manual`, który odczytuje selektor uruchomień.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Osiem z trzynastu wbudowanych szablonów jest domyślnie wyłączonych:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`,
+`release_notes`, `dep_audit` i `pr_digest`. Silnik odmawia uruchomienia wyłączonego
+szablonu, więc włącz jego przełącznik, zanim zaczniesz go tu szukać.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Na liście szablonów nie ma akcji **Uruchom** dla pojedynczego szablonu, a w edytorze
+nie ma przycisku uruchamiania — selektor uruchomień to jedyny punkt wejścia do
+ręcznego uruchamiania.
 
-## Fill in a repository input
+## Wypełnij dane wejściowe repozytorium
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Dane wejściowe typu **Repozytorium** wyświetlają selektor repozytoriów
+zarejestrowanych w obszarze roboczym. Wybór jednego z nich wypełnia w ładunku
+uruchomienia `repo_id`, `repo_local_path` i `repo_full_name`, a gdy repozytorium ma
+zdalne GitHub — także `repo_owner` i `repo_name`, dzięki czemu dalsze kroki mogą
+odczytać to, czego potrzebują.
 
-## Watch it run
+## Obserwuj uruchomienie
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Strona szczegółów uruchomienia ma trzy części: pasek metadanych (czas rozpoczęcia,
+aktywny czas trwania, postęp kroków, baner niepowodzenia oraz **Ponów** i **Usuń**),
+rozwijaną kaskadę czasu z czasem trwania i kosztem każdego kroku oraz kanwę grafu.
+Wybranie węzła otwiera panel szczegółów tego kroku.
 
-[Monitor pipeline runs](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Monitoruj uruchomienia potoków](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/)
+opisuje to wszystko, w tym jak odczytać wstrzymany krok i co zrobić, gdy któryś
+zawiedzie.
 
-Every run you start from the app is a real one.
+Każde uruchomienie rozpoczęte z aplikacji jest rzeczywistym uruchomieniem.
 
-## Related guides
+## Powiązane poradniki
 
-- [Create a pipeline template](/pl-PL/podrecznik/poradniki/tworzenie-potoku/)
-- [Set up pipeline triggers](/pl-PL/podrecznik/poradniki/wyzwalacze-potokow/)
-- [Monitor pipeline runs](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/)
+- [Utwórz szablon potoku](/pl-PL/podrecznik/poradniki/tworzenie-potoku/)
+- [Skonfiguruj wyzwalacze potoków](/pl-PL/podrecznik/poradniki/wyzwalacze-potokow/)
+- [Monitoruj uruchomienia potoków](/pl-PL/podrecznik/poradniki/monitorowanie-potokow/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Pipelines](/pl-PL/podrecznik/koncepcje/potoki/)
+- [Potoki i automatyzacja](/pl-PL/podrecznik/koncepcje/potoki/)

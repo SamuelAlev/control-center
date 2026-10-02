@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: تهيئة الوكيل
+description: كل حقل في كيان الوكيل والتعدادات التي يستخدمها.
 slug: ar-SA/دليل-المستخدم/مرجع/تهيئة-الوكيل
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/).
+يسرد هذا المرجع كل حقل في كيان الوكيل، مع التعدادات والأعلام التي يستخدمها. للشرح خطوة بخطوة لإنشاء وكيل أو تحريره في التطبيق، انظر [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/).
 
-## Agent entity fields
+## حقول كيان الوكيل
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| الحقل                   | النوع                  | مطلوب | الوصف                                                                                                                                                         |
+| ----------------------- | ---------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | نعم   | معرّف فريد للوكيل                                                                                                                                             |
+| `name`                  | `String`               | نعم   | معرّف قصير للإشارة بـ @                                                                                                                                       |
+| `title`                 | `String`               | نعم   | عنوان الدور بصيغة يقرأها الإنسان                                                                                                                              |
+| `agentMdPath`           | `String`               | نعم   | المسار المطلق لملف تعريف الوكيل بصيغة `.md`                                                                                                                   |
+| `workspaceId`           | `String`               | نعم   | مساحة العمل المالكة (غير فارغة)                                                                                                                               |
+| `reportsTo`             | `String?`              | لا    | معرّف الوكيل الأب                                                                                                                                             |
+| `skills`                | `AgentSkills`          | نعم   | مجموعة معرّفات المهارات                                                                                                                                       |
+| `persona`               | `String?`              | لا    | تعليمات سلوكية بنص حر                                                                                                                                         |
+| `systemPrompt`          | `String?`              | لا    | تجاوز لموجّه النظام الافتراضي                                                                                                                                 |
+| `adapterId`             | `String?`              | لا    | معرّف محوّل الاستدلال                                                                                                                                         |
+| `modelId`               | `String?`              | لا    | معرّف النموذج داخل المحوّل                                                                                                                                    |
+| `strictMode`            | `bool`                 | لا    | الافتراضي `false`. يُكتَب في الصف وفي ملف `AGENTS.md` الخاص بالوكيل                                                                                           |
+| `effort`                | `String?`              | لا    | معرّف مستوى الاستدلال (مثل `'low'` و`'xhigh'`)، ويُؤخذ من `thinkingLevels` للنموذج المختار                                                                    |
+| `contextSize`           | `int?`                 | لا    | الحجم الأقصى لنافذة السياق                                                                                                                                    |
+| `role`                  | `AgentRole?`           | لا    | دور الوكيل                                                                                                                                                    |
+| `capabilities`          | `AgentCapabilities?`   | لا    | افتراضي القدرات لهذا الوكيل؛ إن كانت القيمة فارغة يُطبَّق الافتراضي على مستوى المستخدم عند الإرسال، ويظل بإمكان المحادثة أن تتجاوزه                          |
+| `monthlyBudgetCents`    | `int`                  | لا    | سقف الإنفاق الشهري بالسنت (الافتراضي `0`، أي غير محدود)                                                                                                       |
+| `silenceTimeoutMinutes` | `int?`                 | لا    | تجاوز مهلة الصمت بالدقائق؛ يجب أن يكون فارغًا أو في المدى 1–240 (يؤكّده المُنشئ)                                                                             |
+| `maxConcurrentTasks`    | `int`                  | لا    | الافتراضي `1`. رقم السعة الذي يبلّغ به نموذج الحضور (تُقارَن به أعداد `running` و`queued`)                                                                   |
+| `visibility`            | `AgentVisibility`      | لا    | الافتراضي `workspace`                                                                                                                                         |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | لا    | حالة الحوكمة (الافتراضي `active`). يكتبها الإيقاف الصارم للميزانية، وتُعرَض في الهيكل التنظيمي وكشف الحضور. يظل الإرسال يقبل العمل من وكيل حالته `paused` |
+| `budgetPolicyId`        | `String?`              | لا    | معرّف سياسة الميزانية المشتركة؛ إن كان فارغًا يُطبَّق `monthlyBudgetCents` مباشرة                                                                            |
+| `runtimeProfileId`      | `String?`              | لا    | معرّف ملف تعريف زمن التشغيل المخصّص                                                                                                                           |
+| `createdAt`             | `DateTime`             | نعم   | طابع وقت الإنشاء                                                                                                                                              |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+يجب أن يكون `name` و`title` كلاهما غير فارغ (يؤكّد ذلك المُنشئ). القيمة الافتراضية
+`0` للحقل `monthlyBudgetCents` تعني غير محدود. اكتب سقفًا بـ `agents.upsert`.
 
-## AgentRole enum
+## تعداد AgentRole
 
-| Role       | Label    | Description                      |
+| الدور      | التسمية  | الوصف                            |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | التنسيق والتفويض                 |
+| `coder`    | Coder    | تنفيذ الشفرة                     |
+| `reviewer` | Reviewer | مراجعة طلبات السحب وتحليلها      |
+| `qa`       | QA       | الاختبار وضمان الجودة            |
+| `designer` | Designer | تنفيذ واجهة المستخدم وتجربة الاستخدام |
+| `security` | Security | المراجعة الأمنية والتدقيق        |
+| `devops`   | DevOps   | البنية التحتية والنشر            |
+| `pm`       | PM       | إدارة المنتج                     |
+| `general`  | General  | مرن ومتعدد الأغراض               |
 
-## AgentVisibility enum
+## تعداد AgentVisibility
 
-| Value       | Description                                             |
+| القيمة      | الوصف                                                   |
 | ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| `workspace` | الافتراضي؛ القيم المخزّنة المجهولة والفارغة تُحلَّل إليه |
+| `private`   | خاص بالمستخدم الذي أنشأه                                |
 
-## AgentLifecycleStatus enum
+## تعداد AgentLifecycleStatus
 
-| Value      | Description                                                                           |
+| القيمة     | الوصف                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| `active`   | الافتراضي. `isDispatchable` صحيح لهذه القيمة وحدها                                   |
+| `paused`   | يضبطه الإيقاف الصارم للميزانية. يظهر في كشف الحضور، ويظل الإرسال يقبل العمل         |
+| `archived` | متقاعد ومخفي عن الكشوف النشطة                                                         |
 
-## AgentCapabilities flags
+## أعلام AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+تُحَل عند كل إرسال: افتراضي الوكيل، مع الرجوع إلى الافتراضي على مستوى المستخدم إن كانت القيمة فارغة، وفوق ذلك تجاوز خاص بالمحادثة. تُفرَض بالغياب — وسيط بيانات الاعتماد لا يُصدر ولا يحقن ما تغطّيه قدرة مطفأة.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| العلم              | النوع  | الافتراضي | الوصف                                                                                      |
+| ------------------ | ------ | --------- | ------------------------------------------------------------------------------------------ |
+| `canPushToRepo`    | `bool` | `false`   | دفع الإيداعات إلى البعيد؛ يقيّد حقن رمز GitHub إلى جانب `canCallGitHubApi`                |
+| `canCallGitHubApi` | `bool` | `false`   | استدعاء api.github.com؛ يقيّد حقن `GH_TOKEN` ونطاقات خروج GitHub                          |
+| `canCallTicketing` | `bool` | `false`   | استدعاء واجهة مزوّد التذاكر؛ يقيّد حقن مفتاح واجهة المزوّد ونطاقات خروجه                  |
+| `canAccessNetwork` | `bool` | `true`    | خروج صادر غير مقيّد. يقيّد أيضًا أداتي الإطار المضمّن `web_fetch` و`web_search`           |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` هو افتراضيات المُنشئ الأربع. لا يُستخدم `legacyDefault` (الأربعة كلها صحيحة) إلا في الترحيل الذي عبّأ المحادثات المنشأة قبل وجود القدرات. الكتلة المخزّنة المشوّهة أو الفارغة تُحلَّل إلى `safeDefault`، ويُقرأ المفتاح القديم `canCallLinear` على أنه `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+مجموعة ثابتة من معرّفات المهارات، لا تراعي حالة الأحرف. عند الإرسال تُزامَن هذه المعرّفات وصلات مهارات في تراكب الوكيل، ثم يحمّل الإطار المضمّن البيانات الأمامية للمهارات المربوطة تلقائيًا إلى المطالبة.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (مشتق)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+غير مخزّنة. سبع قيم. ترتيب الإعلان هو ترتيب الأولوية (`sortPriority`، ويثبّته اختبار)، وهو الترتيب الذي يُفرَز به الكشف:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| الحالة      | `sortPriority` | الشرط                                                                                                                |
+| ----------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | أي سجل تشغيل حالته `running`                                                                                         |
+| `blocked`   | 1              | حيوية آخر تشغيل هي `blocked` أو `stalled` أو `looping`                                                              |
+| `failed`    | 2              | حالة آخر تشغيل `error`، أو حيويته `failed` أو `dead`                                                                |
+| `queued`    | 3              | التشغيل مُرسَل لكنه غير قيد التنفيذ — مُرجَأ خلف تشغيل آخر للوكيل نفسه، أو مكتوب ولم يبدأ بعد                       |
+| `succeeded` | 4              | انتهى التشغيل بنجاح                                                                                                  |
+| `idle`      | 5              | الوكيل اشتغل من قبل، وليس لديه عمل جارٍ                                                                              |
+| `neverRun`  | 6              | لا توجد سجلات تشغيل                                                                                                  |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` و`succeeded` **للتشغيل الواحد فقط**. `deriveAgentLiveState` يحسب حالة الكشف لوكيل، ولا ينتج أيًا منهما — يعيد `neverRun` أو `running` أو `failed` أو `blocked` أو `idle`.
 
-## See also
+## انظر أيضًا
 
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/)
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/)
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)

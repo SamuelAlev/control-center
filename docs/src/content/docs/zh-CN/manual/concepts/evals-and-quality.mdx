@@ -1,33 +1,22 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: 评测与质量
+description: 评测套件、创建工作区时预置的入门套件，以及它们在可观测性中的位置。
 slug: zh-CN/手册/概念/评测与质量
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**评测套件**是一种工作区级的任务定义，用于针对某个智能体运行：一段提示词、一个目标智能体与模式、可选的准备步骤、一个带固定 SHA 的可选夹具，以及一组评分器。评分器以确定性检查为先；确定性检查无法表达的内容，交由按 LLM 评分标准评判的评判器覆盖。
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+创建工作区时会预置五个入门套件。它们分别覆盖编排提案、能找出预置缺陷的审查、计划模式保持只读、计划模式产出计划，以及工单往返。预置过程会监听 `WorkspaceCreated`（`workspace.upsert` 或 `workspace.create`），跳过已存在的名称，也不会回填较早的工作区。
 
-## Where they appear
+## 它们出现在哪里
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**可观测性 → 质量**（`/workspaces/<id>/observability`）会列出工作区中的每个套件。
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+通过 `evals.upsertSuite`、`evals.deleteSuite` 和 `evals.watchSuites` 来创建、列出、编辑和删除套件。质量标签页就是这份列表，而这些操作就是编辑器。
 
-## Related concepts
+## 相关概念
 
-- [The agent model](/zh-CN/手册/概念/智能体模型/): the configuration a suite
-  pins
-- [Guardrails](/zh-CN/手册/概念/护栏/): the autonomy dial
-- [Manage costs and budgets](/zh-CN/手册/操作指南/管理成本/): spend recorded
-  alongside a run
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：套件所固定的配置
+- [护栏](/zh-CN/手册/概念/护栏/)：自主程度旋钮
+- [管理成本与预算](/zh-CN/手册/操作指南/管理成本/)：随运行一同记录的花费

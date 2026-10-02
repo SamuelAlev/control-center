@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Bifurcar una conversación
+description: Prueba otro enfoque desde un punto anterior sin perder el que ya tienes y, después, bifurca o exporta lo que quieras conservar.
 slug: es-ES/manual/guias/bifurcar-conversacion
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Esta guía te muestra cómo volver a un punto anterior de una conversación y llevarla a otro sitio sin perder el camino que dejas atrás.
 
-## The one thing worth knowing
+## Lo único que conviene saber
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Ramificar no escribe nada.** Una conversación es un árbol de mensajes con un puntero en el extremo, y volver atrás mueve el puntero. No se elimina nada, no se oculta nada y volver a cambiar es otro movimiento de puntero.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Por eso editar un prompt y volver a ejecutarlo es seguro aquí: la respuesta con la que estabas comparando sigue ahí.
 
-## See the branches
+## Ver las ramas
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+El navegador enumera todos los mensajes, con sangría en cada bifurcación, y marca el camino actual como **En esta rama**. Una conversación en la que nunca se ha bifurcado se muestra como la lista plana de siempre: mirar el navegador no cuesta nada hasta que hay algo que navegar.
 
-Each row offers two actions.
+Cada fila ofrece dos acciones.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| Acción                                 | Efecto                                                            |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| **Continuar desde aquí**               | Mueve el puntero. Tu siguiente mensaje continúa desde ese mensaje. |
+| **Bifurcar en una conversación nueva** | Copia el camino hasta ese mensaje en una conversación nueva.      |
 
-## Branch: try a different approach
+## Ramificar: probar otro enfoque
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Busca el mensaje desde el que quieres volver a empezar, normalmente el último que te convencía.
+3. **Continuar desde aquí.**
+4. Escribe el nuevo prompt.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+La continuación anterior sigue en el árbol; `/tree` mostrará ahora dos caminos desde ese punto y puedes alternar entre ellos libremente.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[El camino que dejaste sigue ahí]
+Ramificar no oculta ni elimina nada. `/tree` enumera todos los caminos, marca el actual como **En esta rama** y es la forma de cambiar de uno a otro.
 :::
 
-## Fork: take it somewhere else
+## Bifurcar: llevarla a otro sitio
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Bifurcar copia el camino en una **conversación nueva** dentro del mismo espacio. Úsalo cuando las dos direcciones vayan a seguir divergiendo y las quieras una al lado de la otra en lugar de ir alternando.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+La copia usa ids de mensaje nuevos. Dos conversaciones que compartieran filas se mostrarían los mensajes posteriores de la otra, que es justo lo que una bifurcación debe evitar.
 
-## Revert versus branch
+## Revertir frente a ramificar
 
-They are different tools and the difference matters.
+Son herramientas distintas y la diferencia importa.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                          | Revertir                                     | Ramificar                    |
+| ------------------------ | -------------------------------------------- | ---------------------------- |
+| Los mensajes posteriores | Se ocultan de la transcripción               | Siguen visibles en `/tree`   |
+| El **worktree**          | Se revierte a la instantánea de ese turno    | No se toca                   |
+| Deshacer                 | **Deshacer reversión** restaura el conjunto  | Mueve el puntero hacia atrás |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Revertir es lo que quieres cuando el agente cambió *archivos* que quieres recuperar. Ramificar es lo que quieres cuando la conversación tomó el camino equivocado pero los archivos están bien.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Revertir también mueve el extremo de rama, así que tu siguiente mensaje continúa desde el lugar correcto y no desde una cola que ya nadie puede ver.
 
-## Take it out of the app
+## Sacarla de la aplicación
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Escribe un **archivo HTML autocontenido**: toda la conversación con tarjetas de herramientas plegables que muestran qué recibió cada llamada y qué devolvió. Sin hoja de estilos, sin scripts y sin servidor de imágenes: funciona desde una memoria USB y seguirá funcionando dentro de cinco años.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Escritorio:** `Documents/ControlCenter/exports/`, con marca de tiempo para que una segunda exportación no sobrescriba la primera.
+- **Web:** una descarga del navegador.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Copia la transcripción al portapapeles como Markdown, con las llamadas a herramientas en bloques plegables. Esta es la que conviene pegar en un issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+El razonamiento se omite a propósito: es el espacio de borrador del modelo, y un informe de error lo lee una persona.
 
-## Related
+## Relacionado
 
-- [Conversation history](/es-ES/manual/conceptos/historial-de-conversacion/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/es-ES/manual/referencia/comandos-slash/) — `/tree`, `/export`, `/dump`
+- [Historial de conversación](/es-ES/manual/conceptos/historial-de-conversacion/) — por qué el árbol es un movimiento de puntero y qué restaura realmente la reanudación
+- [Comandos slash](/es-ES/manual/referencia/comandos-slash/) — `/tree`, `/export`, `/dump`

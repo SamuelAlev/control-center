@@ -1,241 +1,253 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Tạo mẫu quy trình
+description: Soạn một mẫu quy trình DAG trong trình chỉnh sửa quy trình — thêm nút, nối chúng, khai báo đầu vào và làm cho mẫu chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Mẫu quy trình được soạn trong cài đặt không gian làm việc. Mục **Pipelines**
+trên thanh điều hướng phụ của không gian làm việc là _hàng đợi lần chạy_, không
+phải danh sách mẫu — nó không có thao tác "tạo mẫu".
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
+Để biết ý nghĩa của từng loại bước, khóa body và trường cấu hình, hãy xem
+[tham chiếu các bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
 
-## Create a template
+## Tạo một mẫu
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Mở **Cài đặt → Không gian làm việc → Mẫu quy trình**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Nhấn **Mẫu mới**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Không có hộp thoại nhập id. Trình chỉnh sửa mở ra ngay trên một bộ khung được
+gieo sẵn tên là **Quy trình mới**, với id được cấp tự động (`pipeline_1`, rồi
+`pipeline_2`, …). Nhấp vào tiêu đề ở phần đầu để đổi tên nó.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Canvas không trống: một nút đầu vào **Trigger**, một nút agent prompt mang nhãn
+**Step** và một điểm đánh dấu terminal kết thúc lần chạy. Điểm đánh dấu này
+không được vẽ ra. Trình chỉnh sửa nối lại terminal ẩn đó tới mọi nút đích tiếp
+cận được, nên công việc bạn gắn thêm sau **Step** vẫn chạy.
 
-## Add nodes
+## Thêm nút
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Thanh bên **Thư viện nút** nằm cố định ở bên trái trình chỉnh sửa. Lọc nó bằng
+ô **Tìm node** và kéo một mục vào canvas — nút sẽ nằm đúng nơi bạn thả, không
+có kết nối vào.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Nút trong bảng chọn             | Loại bước | Tác dụng                                                                                          |
+| ------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen    | Chạy một script shell có thay thế `{{state}}`; không điều phối agent nào                          |
+| **Open conversation**           | listen    | Mở không gian hiển thị duy nhất của lần chạy cùng bản checkout của nó; các nút agent tham gia phòng này |
+| **Clone PR branch**             | listen    | Phát hiện nhánh đầu của PR qua `gh pr view` và clone nó vào thư mục lần chạy                     |
+| **Post PR comment**             | listen    | Đăng các phát hiện đã tổng hợp lên PR dưới dạng bình luận đánh giá của GitHub                     |
+| **Reviewer (prompt)**           | listen    | Điều phối một agent đánh giá chuyên biệt; tạm dừng cho đến khi agent gửi kết quả của nó           |
+| **Consolidate (join)**          | join      | Chờ vài nhánh thượng nguồn, rồi nhờ một agent tổng hợp đầu ra của chúng                           |
+| **Custom prompt**               | listen    | Nút tổng quát chạy bằng prompt, định tuyến qua body `promptAgent`                                 |
+| **Post to space**               | listen    | Gửi một tin nhắn tới một không gian nhắn tin                                                      |
+| **Condition / switch (router)** | router    | Rẽ nhánh luồng theo một giá trị trạng thái                                                        |
+| **If file exists (router)**     | router    | Định tuyến `"true"` khi một đường dẫn tồn tại dưới bản clone, nếu không thì `"false"`             |
+| **Any file exists (OR router)** | router    | Định tuyến `"true"` khi bất kỳ đường dẫn nào được liệt kê tồn tại                                  |
+| **All conditions (AND router)** | router    | Định tuyến `"true"` chỉ khi mọi đường dẫn được liệt kê đều tồn tại                                |
+| **Team dispatch**               | listen    | Điều phối cả một nhóm và tạm dừng cho đến khi nhóm hoàn tất                                       |
+| **Approval gate**               | listen    | Tạm dừng để chờ quyết định phê duyệt                                                              |
+| **For each (map)**              | forEach   | Kết xuất một prompt cho mỗi mục, rồi điều phối agent một lần với các prompt đó được ghép lại      |
+| **Call sub-pipeline**           | listen    | Chạy một mẫu khác như một bước lồng nhau                                                          |
+| **Clean up worktrees**          | listen    | Gỡ các worktree cách ly cũ; tất định, không điều phối agent nào                                   |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Thư viện nhóm chúng dưới **Luồng & logic**, **Đánh giá PR**, **Agents**,
+**Nhắn tin** và **Code**. Không có nhóm Demo.
 
-## Wire nodes together
+## Nối các nút với nhau
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Mỗi nút công việc có một **cổng đầu ra** hình tròn ở cạnh phải. Kéo từ cổng đó
+sang một nút khác để nối chúng. Các trình kích hoạt khởi đầu cũng vậy: mỗi cái
+sở hữu cổng riêng, nên một dây nối từ **Lịch** sẽ không đồng thời đi ra từ
+**Chạy thủ công**. Nhấn **Thêm bước** (`+`) ngay sau một nút để chèn một loại
+nút vào sau nó. Đưa chuột vào điểm giữa của một cạnh sẵn có và nhấn × để ngắt
+kết nối.
 
-Connections are also edited from the node that _receives_ them:
+Cũng có thể chỉnh sửa kết nối từ chính nút _nhận_ chúng:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Chọn nút hạ nguồn. Bảng cấu hình của nó mở ra ở bên phải.
+2. Cuộn tới **Triggers from** và nhấn vào chip của từng nút thượng nguồn mà nút
+   này cần lắng nghe. Nhấn lại vào một chip đã chọn sẽ gỡ kết nối.
+3. Nếu một nút thượng nguồn là router, một khối **Khóa định tuyến** xuất hiện
+   bên dưới các chip, với một trường **Khóa định tuyến từ &lt;node&gt;** cho mỗi
+   cạnh router. Nhập khóa mà cạnh đó kích hoạt — `true` hoặc `false` cho các
+   router kiểm tra tệp tồn tại, hoặc tên nhánh cho một switch.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Mỗi nút trình kích hoạt là một điểm đầu vào. Một nút có thể lắng nghe nhiều
+thượng nguồn (fan-in) và nuôi nhiều hạ nguồn (fan-out), và đồ thị phải luôn
+không có chu trình — không gì trong trình chỉnh sửa ngăn bạn nối thành một chu
+trình, nên hãy tự kiểm tra.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Điểm đánh dấu terminal bị lọc khỏi canvas nên không thể chọn được. Trình chỉnh
+sửa nối lại nó tới mọi nút đích tiếp cận được mỗi khi đồ thị thay đổi, nên công
+việc bạn gắn thêm sau **Step** được gieo sẵn vẫn chạy. Một đồ thị rỗng (trình
+kích hoạt không có nút công việc kế tiếp) liệt kê chính trình kích hoạt để một
+lần chạy hoàn tất ngay.
 
-## Configure a node
+## Cấu hình một nút
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Chọn một nút để mở bảng cấu hình của nó. Những trường nào xuất hiện phụ thuộc
+vào body của nút.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Mọi nút đều có **Nhãn**, **Khóa đầu vào** (các khóa trạng thái cách nhau bằng
+dấu phẩy, được đọc lúc thực thi) và, trong **Nâng cao**, **Reducer**, **Hết
+thời gian (ms)**, **Số lần thử lại**, **Tiếp tục nếu bước này thất bại** và
+**Lược đồ đầu ra**. Các nút listen và join cũng có thể chuyển **Loại** của
+chúng qua lại giữa hai giá trị đó.
 
-### Open conversation
+### Mở hội thoại
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Thêm một bộ chọn **phạm vi repo** (những repo nào của không gian làm việc sẽ
+được checkout; để trống nghĩa là không có), một **Tên không gian** và một hộp
+kiểm **Mở hội thoại trong đó**. Khi hộp kiểm đó được bật, một trường **Tên hội
+thoại** đặt tên cho stream mà phòng khởi đầu. Các nút agent tham gia phòng này
+— chúng không tự mở phòng riêng.
 
-### Prompt agent
+### Agent prompt
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Thêm **Agent** (agent nào sẽ được điều phối), **Prompt** (dùng `{{key}}` để
+tham chiếu đầu vào hoặc đầu ra thượng nguồn) và **Khóa đầu ra**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Hết thời gian (ms)** tính bằng _mili giây_, không phải giây — `900000` là 15
+phút. Nhập `900` cho bước 0,9 giây.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Chế độ hội thoại mà một nút agent prompt chạy dưới đó không có trường nào trong
+trình chỉnh sửa trên nút agent. Nó nằm trong `extras['mode']` (`chat`, `plan`
+hoặc `review`) trên nút **Open conversation** đã tạo phòng (mặc định `review`).
+Đặt nó trên một bước agent sẽ bị bỏ qua. Khóa này được khớp chính xác: mọi cách
+viết khác đều bị âm thầm bỏ qua.
 
-### Bash script
+### Script bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Thêm **Script bash**. Không có trường thư mục làm việc hay môi trường, vì cả
+hai đều không cấu hình được:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Mọi bước bash trong một lần chạy dùng chung thư mục làm việc
+  `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` được tiêm vào từ kho thông tin xác thực, nên `gh` và
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` hoạt động mà không cần
+  thiết lập.
+- Script được khởi chạy như đúng tệp thực thi `bash`, nên `bash` phải có trong
+  `PATH` của máy chủ. Đây là một lưu ý trên Windows.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Router đánh giá một điều kiện và trả về một khóa định tuyến; engine chỉ kích
+hoạt cạnh hạ nguồn có khóa định tuyến khớp và đánh dấu các nhánh khác là bị bỏ
+qua.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Chọn một router sẽ thay trường **Khóa đầu ra** bằng trình chỉnh sửa điều kiện.
+Chọn một trong bốn chế độ của nó:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Tệp tồn tại — bất kỳ** — định tuyến `"true"` khi bất kỳ đường dẫn nào được
+  liệt kê tồn tại.
+- **Tệp tồn tại — tất cả** — định tuyến `"true"` chỉ khi mọi đường dẫn được
+  liệt kê đều tồn tại.
+- **So sánh** — so sánh một giá trị trạng thái với một giá trị nguyên văn.
+- **Chuyển** — định tuyến theo giá trị của một khóa trạng thái, kèm một nhánh
+  mặc định.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Sau đó đặt các khóa định tuyến tương ứng trên các cạnh đi ra (xem
+[Nối các nút với nhau](#nối-các-nút-với-nhau)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
+Các nhóm boolean `and` / `or` / `not` được body hỗ trợ nhưng không thể tạo từ
+biểu mẫu này — chúng cần một cây vị từ viết tay dưới `extras.predicate`. Toàn
+bộ từ vựng vị từ và toán tử nằm trong
+[tham chiếu các bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Không có cấu hình riêng: nó chờ tất cả các bước thượng nguồn của mình.
 
-### Approval gate
+### Cổng phê duyệt
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Cổng này điều phối agent phê duyệt vào một hội thoại ẩn với prompt của cổng rồi
+tạm dừng. Agent phê duyệt hỏi xin quyết định của bạn trong hội thoại và gửi nó bằng
+`submit_output` dưới dạng `{ "decision": "approved" | "rejected", "reason": "..." }`.
+Quyết định được ghi vào khóa đầu ra (mặc định `approval_decision`), nên một
+router kiểu switch ở hạ nguồn có thể rẽ nhánh theo nó.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Đặt **Agent** là agent phê duyệt và **Prompt** là câu hỏi của cổng. Cổng được
+giải quyết qua `submit_output` dưới dạng `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Các nút Reviewer (prompt) cũng gửi theo cách tương tự.
 
-### Team dispatch
+### Điều phối nhóm
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Thêm **ID nhóm** và **Chế độ điều phối**. Bộ chọn đưa ra đúng hai chế độ:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — một tác vụ cho mỗi thành viên, tạm dừng cho đến khi tất cả
+  hoàn tất.
+- `manager` — điều phối trưởng nhóm, người này sẽ ủy thác lại.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Mọi giá trị được lưu khác đều hành xử như `allParallel`. Đặt **Reducer** thành
+`append` để gom kết quả của từng thành viên vào một danh sách dưới khóa đầu ra.
 
-### For each and Call sub-pipeline
+### For each và Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** mặc định ánh xạ qua khóa trạng thái `items` (`extras.iterableKey` /
+`extras.itemKey` trên nút). Nó kết xuất prompt của mình một lần cho mỗi mục
+(`{{item}}` theo mặc định) và điều phối agent **một lần** với các prompt đó được
+ghép lại. Một tập hợp rỗng hoàn tất ngay với một danh sách rỗng. Đây không phải
+là một lần điều phối song song cho mỗi mục.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** tạm dừng cho đến khi lần chạy con đạt trạng thái kết thúc,
+rồi hợp nhất trạng thái cuối của con vào dưới khóa đầu ra (mặc định
+`subflow_result`). Trỏ nó tới một mẫu con bằng `extras.templateId`. Một mẫu
+không thể tự gọi chính nó; một mẫu con thất bại hoặc bị hủy sẽ làm bước cha thất
+bại, và điều đó lại nuôi chính sách thử lại cùng continue-on-fail của bước đó.
 
-## Declare inputs and allow manual runs
+## Khai báo đầu vào và cho phép chạy thủ công
 
-Both live behind **Manual run** in the editor header.
+Cả hai nằm phía sau **Chạy thủ công** trong phần đầu trình chỉnh sửa.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Nhấn **Chạy thủ công**.
+2. Bật **Cho phép chạy thủ công**. Công tắc này được lưu ngay lập tức — nó tạo
+   (hoặc xóa) hàng trình kích hoạt `manual` khiến mẫu xuất hiện trong trình
+   chọn lần chạy.
+3. Đặt **Số lần chạy song song tối đa** nếu bạn muốn một mức trần (để trống
+   nghĩa là không giới hạn). Các lần khởi chạy thêm sẽ chờ ở trạng thái `queued`
+   cho đến khi có chỗ trống.
+4. Nhấn **Thêm đầu vào** cho mỗi trường biểu mẫu mà một lần chạy thủ công cần
+   thu thập:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Trường                | Mô tả                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| **Khóa**              | Khóa trạng thái mà giá trị được lưu dưới đó; tham chiếu nó bằng `{{key}}`        |
+| **Nhãn**              | Nhãn hiển thị (mặc định là khóa)                                                 |
+| **Loại**              | Văn bản, Văn bản nhiều dòng, Số, Công tắc, Chọn, Repository                      |
+| **Tùy chọn**          | Các lựa chọn cách nhau bằng dấu phẩy, chỉ dành cho Select                        |
+| **Giá trị mặc định**  | Giá trị được điền sẵn                                                            |
+| **Placeholder**       | Văn bản gợi ý bên trong trường trống                                             |
+| **Văn bản trợ giúp**  | Văn bản phụ trợ bên dưới trường                                                   |
+| **Bắt buộc**          | Liệu biểu mẫu chạy có chặn khi giá trị để trống hay không                        |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Một đầu vào **Repository** hiển thị bộ chọn trên các repo của không gian làm
+việc và điền `repo_id`, `repo_local_path`, `repo_full_name` và — khi repo có
+remote GitHub — `repo_owner` cùng `repo_name` vào payload của lần chạy.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Nhấn **Lưu** trong hộp thoại. Các chỉnh sửa đầu vào được gộp vào bản nháp;
+   chúng được giữ lại khi bạn lưu mẫu.
 
-## Save and enable
+## Lưu và bật
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/).
+1. Nhấn **Lưu** ở phần đầu trình chỉnh sửa. Phần đầu hiển thị "Thay đổi chưa
+   lưu" cho đến khi bạn lưu.
+2. Quay lại **Cài đặt → Không gian làm việc → Mẫu quy trình** và kiểm tra công
+   tắc trên hàng của mẫu đang bật. Engine từ chối khởi chạy một mẫu bị tắt và
+   một mẫu bị tắt không bao giờ xuất hiện trong trình chọn lần chạy.
+3. Để tự động khởi chạy nó, hãy kéo một trình kích hoạt từ thư viện nút vào
+   canvas — xem
+   [Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run a pipeline manually](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
-- [Set up pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
-- [Monitor pipeline runs](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
-- [Pipeline steps reference](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/)
+- [Chạy quy trình thủ công](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
+- [Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
+- [Theo dõi lần chạy quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
+- [Tham chiếu các bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Pipelines](/vi-VN/so-tay/khai-niem/quy-trinh/)
+- [Quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/)

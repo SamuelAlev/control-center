@@ -1,123 +1,133 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Conectează un Google Calendar
+description: Conectează Google Calendar la un spațiu de lucru, gestionează mai multe conturi și reconectează când expiră un token.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-calendar
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ro-RO/manual/concepte/calendar/) for the full picture.
+Acest ghid îți arată cum să conectezi Google Calendar la un spațiu de lucru.
+Conectarea este proprie fiecărui spațiu de lucru: sincronizează evenimentele
+acelui spațiu în Control Center, doar în citire. Vezi
+[Calendar și programare](/ro-RO/manual/concepte/calendar/) pentru imaginea
+completă.
 
-## Connect an account
+## Conectează un cont
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Deschide **Calendar** în bara laterală.
+2. Apasă **Adaugă un cont de calendar** în bara laterală a calendarului. (Aceeași secțiune se află în **Setări → Spațiu de lucru → Profil și identitate**, sub **Google Calendar**.)
+3. Alege cum să autorizezi:
+   - **Folosește aplicația Google a Control Center** — nimic de configurat. Aceasta este opțiunea implicită când build-ul tău vine cu una.
+   - **Folosește propriul client Google Cloud** — lipește un id de client și un secret din propriul proiect (vezi [Adu-ți propriul client Google](#adu-ți-propriul-client-google-fork-uri-și-auto-găzduire)).
+4. Apasă **Conectează Google Calendar**. Dialogul afișează un cod scurt și un link către pagina de dispozitiv a Google.
+5. Deschide acea pagină pe orice dispozitiv, introdu codul și aprobă accesul solicitat. Dialogul se închide singur, iar evenimentele tale încep să se sincronizeze.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Serverul, nu dispozitivul tău, rulează acest schimb și păstrează tokenul de
+reîmprospătare rezultat — de aceea codul se aprobă pe „orice dispozitiv", nu în
+această aplicație anume.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Contul este conectat **doar la spațiul de lucru activ**. Schimbă spațiul de lucru
+și vei vedea în schimb calendarele acelui spațiu.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Fluxul de conectare solicită `calendar.readonly` plus adresa ta de e-mail —
+aceleași domenii pentru aplicația integrată și pentru un client pe care îl
+lipești. Control Center citește evenimentele; nu creează, nu editează, nu șterge
+și nu răspunde la invitații pe Google.
 
-## How syncing works
+## Cum funcționează sincronizarea
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**Serverul** deține programul: parcurge conturile conectate ale fiecărui spațiu de
+lucru la fiecare două minute și scrie evenimentele în baza de date a spațiului de
+lucru. Clienții nu vorbesc niciodată cu Google — citesc ce a scris serverul.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Parcurgerea este incrementală. Prima trecere pentru fiecare calendar preia o
+fereastră glisantă (60 de zile în urmă, 90 de zile înainte) și captează tokenul
+de sincronizare al Google; trecerile ulterioare prezintă acel token și primesc
+doar ce s-a schimbat, ceea ce face sustenabilă o cadență de două minute. Fereastra
+este reancorată printr-o sincronizare completă la fiecare 24 de ore și ori de câte
+ori Google invalidează tokenul.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Tokenurile de reîmprospătare stau pe server, în `secrets.json`, în directorul de
+date al serverului, scrise cu acces doar pentru proprietar (`0600`) — nu în
+keychain-ul sistemului de operare și niciodată pe un dispozitiv client.
 
-## Connect multiple accounts
+## Conectează mai multe conturi
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Un spațiu de lucru poate conecta mai multe conturi Google (de exemplu, unul de
+serviciu și unul personal). Repetă pasul de conectare pentru fiecare; evenimentele
+lor se comasează în aceleași vizualizări de lună / săptămână / agendă. Fiecare
+cont se sincronizează și se reîmprospătează independent, iar fiecare poate fi
+deconectat separat.
 
-## Reconnect an expired account
+## Reconectează un cont expirat
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Dacă Google invalidează definitiv tokenul unui cont (o sesiune revocată sau
+expirată de mult timp), sincronizarea se oprește și Control Center afișează un
+banner **Reconectează** pe calendar, plus o notificare pe desktop. Apasă
+**Reconectează** și aprobă un cod nou; bannerul dispare la următoarea sincronizare
+reușită.
 
-## Disconnect an account
+## Deconectează un cont
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Din bara laterală a calendarului (sau **Setări → Spațiu de lucru → Profil și
+identitate**), apasă **Deconectează** pe cont. Aceasta șterge evenimentele
+sincronizate și curăță tokenurile stocate pe server.
 
-## Connect from a headless server
+## Conectează de pe un server headless
 
-A server with no GUI attached connects the same account from its own terminal:
+Un server fără interfață grafică conectează același cont din propriul terminal:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Afișează un cod și un URL, așteaptă aprobarea, apoi stochează tokenurile și
+sincronizează la următoarea parcurgere.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+O construcție din surse nu include **niciun** client Google, așa că id-ul și
+secretul sunt obligatorii — setează `GOOGLE_OAUTH_CLIENT_ID` și
+`GOOGLE_OAUTH_CLIENT_SECRET`. Nu există un flag `--google-client-id` (flag-urile
+necunoscute sunt ignorate). Fără perechea de variabile de mediu, comanda se
+încheie cu o eroare de client lipsă.
 
-## Bring your own Google client (forks and self-hosting)
+## Adu-ți propriul client Google (fork-uri și auto-găzduire)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Build-urile de lansare includ un client Google, așa că majoritatea oamenilor nu
+ating niciodată acest subiect. Adu-ți propriul client dacă construiești din surse,
+rulezi propriul server sau vrei ca ecranul de consimțământ să numească propriul
+proiect.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. În [Google Cloud Console](https://console.cloud.google.com/apis/credentials), activează **Google Calendar API** și configurează **ecranul de consimțământ OAuth**, adăugând domeniile `calendar.readonly`, `openid` și `email`. Cât timp aplicația nu este verificată, adaugă-te ca **utilizator de test**. Adăugarea lui `calendar.events` pe ecranul de consimțământ nu activează RSVP — Control Center nu solicită niciodată acel domeniu.
+2. Creează un **ID client OAuth** cu tipul de aplicație **TVs and limited input devices** și copiază atât id-ul de client, cât și secretul de client.
+3. Furnizează-le fie per conectare (alege **Folosește propriul client Google Cloud** în dialog), fie la nivel de server cu `GOOGLE_OAUTH_CLIENT_ID` și `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+O pereche la nivel de server o înlocuiește pe cea integrată peste tot, inclusiv în
+spatele opțiunii „folosește aplicația Google a Control Center" — așa că pe
+propriul tău server, acea opțiune este aplicația ta.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Secretul de client nu părăsește niciodată serverul: niciun răspuns RPC nu îl
+conține, iar un cont conectat prin clientul propriu al serverului stochează un
+marcaj în loc de o copie a perechii, așa că rotirea lui înseamnă doar o repornire
+cu o valoare nouă.
 
-### Troubleshooting
+### Depanare
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Simptom                                             | Cauză probabilă                                                                                                                                          |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dialogul nu oferă nicio opțiune integrată           | Această construcție nu include niciun client Google (o construcție din surse) sau serverul a fost pornit cu doar o jumătate a perechii. Atât id-ul, cât și secretul sunt obligatorii |
+| `invalid_scope` la pornirea fluxului                | Calendar nu este permis pentru un client cu cod de dispozitiv în acel proiect Cloud. Folosește în schimb un proiect cu client loopback sau web           |
+| `invalid_client` de la Google                       | Clientul nu este un client de tip **TVs and limited input devices** sau id-ul și secretul provin din clienți diferiți                                    |
+| Aprobarea reușește, dar sincronizarea este goală    | Contul tău nu este **utilizator de test** pe ecranul de consimțământ sau `calendar.readonly` nu a fost acordat                                           |
+| Codul expiră înainte să îl aprobi                   | Codurile de dispozitiv sunt de scurtă durată. Pornește din nou conectarea pentru unul nou                                                                |
+| „Nu s-a putut actualiza răspunsul" la un RSVP       | Comportament așteptat: fluxul de conectare nu solicită niciodată `calendar.events`                                                                       |
+| Sincronizarea se oprește cu un avertisment de reîmprospătare în jurnalul serverului | Contul a fost conectat cu un client care nu mai este configurat. Reconectează contul sau restaurează id-ul și secretul acelui client                     |
 
-## Related guides
+## Ghiduri conexe
 
-- [Record and summarize a meeting](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/): turn an event into a recording
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Înregistrează și rezumă o întâlnire](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/): transformă un eveniment într-o înregistrare
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): unde stau tokenurile și programul de sincronizare
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
 
-## Related concepts
+## Concepte conexe
 
-- [Calendar and scheduling](/ro-RO/manual/concepte/calendar/)
+- [Calendar și programare](/ro-RO/manual/concepte/calendar/)

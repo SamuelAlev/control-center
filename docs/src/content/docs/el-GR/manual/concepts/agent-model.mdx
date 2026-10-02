@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Το μοντέλο πρακτόρων
+description: Τι είναι στην πραγματικότητα ένας πράκτορας στο Control Center, ποια από τα πεδία του αλλάζουν τη συμπεριφορά και πώς ο προσαρμογέας στον οποίο εκτελείται καθορίζει τι μπορεί να επιβληθεί.
 slug: el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Τι είναι ένας πράκτορας;
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Ένας πράκτορας είναι ένας δρων με όνομα που διαθέτει περσόνα, σύνολο δεξιοτήτων, προσαρμογέα στον οποίο εκτελείται και σύνολο δυνατοτήτων. Οι πράκτορες είναι δρώντα υποκείμενα με την ίδια έννοια που είναι και οι άνθρωποι: συντάσσουν μηνύματα, έχουν δικά τους εισιτήρια, αφήνουν κριτικές και εμφανίζονται στον ίδιο κατάλογο. Είναι αυτοί που κάνουν τη δουλειά.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Κάθε πράκτορας ανήκει σε ακριβώς έναν χώρο εργασίας. Αυτή είναι μια αυστηρή αναλλοίωτη συνθήκη — το `agent.workspaceId` δεν είναι ποτέ null, ο ίδιος ο χώρος εργασίας του πράκτορα είναι αυτό που καθορίζει σε ποιο αρχείο βάσης δεδομένων καταλήγουν οι εγγραφές του και η δημιουργία πράκτορα χωρίς χώρο εργασίας απορρίπτεται.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Ένας πράκτορας είναι επίσης ένας φάκελος. Ο ορισμός του βρίσκεται στο `agents/<slug>/AGENTS.md` κάτω από τον κατάλογο δεδομένων του χώρου εργασίας, με τις δεξιότητες που κατέχει να συνδέονται συμβολικά στο `agents/<slug>/.agents/skills`. Η εγγραφή στη βάση δεδομένων και το αρχείο γράφονται μαζί. Ο αρχικός εφοδιασμός είναι ασφαλής για επαναλήψεις: αν η εγγραφή του πράκτορα υπάρχει ήδη, τα αρχεία στον δίσκο και οι σύνδεσμοι δεξιοτήτων ξαναγράφονται ούτως ή άλλως. Αυτό που τον καλεί στην παραγωγή είναι η δημιουργία χώρου εργασίας, όχι κάθε εκκίνηση του διακομιστή.
 
-## What an agent carries
+## Τι περιλαμβάνει ένας πράκτορας
 
-| Attribute               | What it does                                                                          |
+| Χαρακτηριστικό          | Τι κάνει                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | Σύντομο αναγνωριστικό σε μορφή slug (`architect`, `qa`). Επίσης αυτό στο οποίο αντιστοιχίζονται τα `@mentions` |
+| `title`                 | Τίτλος εργασίας αναγνώσιμος από άνθρωπο                                                |
+| `persona`               | Προσωπικότητα και οδηγίες συμπεριφοράς σε ελεύθερο κείμενο, που εισάγονται ως ενότητα της προτροπής |
+| `systemPrompt`          | Προαιρετικές πρόσθετες οδηγίες, που εισάγονται ως ενότητα «Οδηγίες πράκτορα» — δεν αντικαθιστούν το υπόλοιπο της συναρμολογημένης προτροπής |
+| `skills`                | Σύνολο ονομάτων δεξιοτήτων χωρίς διάκριση πεζών-κεφαλαίων, που αντικατοπτρίζεται ως σύνδεσμοι δεξιοτήτων στον δίσκο |
+| `adapterId`             | Σε ποιον εκτελεστή αποστέλλεται ο πράκτορας. **Η τιμή null καταλήγει στον ενσωματωμένο βρόχο** |
+| `modelId`               | Ποιο μοντέλο μέσα σε αυτόν τον προσαρμογέα                                             |
+| `effort`                | Επίπεδο συλλογισμού, από το δικό του λεξιλόγιο του επιλεγμένου μοντέλου                |
+| `contextSize`           | Παράκαμψη του παραθύρου πλαισίου                                                       |
+| `capabilities`          | Σημαίες διαπιστευτηρίων και εξόδου, που ελέγχονται κατά την εκκίνηση                   |
+| `silenceTimeoutMinutes` | Παράκαμψη ανά πράκτορα (1–240) για τον φύλακα σιωπής                                  |
+| `reportsTo`             | Αναγνωριστικό γονικού πράκτορα — η αλυσίδα αναφοράς που σχεδιάζει το οργανόγραμμα      |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Όλα αυτά τα επεξεργάζεστε στις Ρυθμίσεις → Χώρος εργασίας → Πράκτορες. Το **Νέος πράκτορας** δημιουργεί έναν ανώνυμο πράκτορα που στη συνέχεια συμπληρώνετε.
 
-## Skills
+## Δεξιότητες
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Οι δεξιότητες είναι ονόματα χωρίς διάκριση πεζών-κεφαλαίων πάνω στην οντότητα του πράκτορα. Με αυτές συμβαίνουν δύο ξεχωριστά πράγματα:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Τα ονόματα παρατίθενται στη συναρμολογημένη προτροπή κάτω από επικεφαλίδα «Δεξιότητες». Αυτό είναι το μόνο που κάνει από μόνο του το σύνολο της οντότητας — δεν υπάρχει βιβλιοθήκη προτροπών ανά δεξιότητα που να βασίζεται σε αυτό.
+- Ο κατάλογος κάθε ονομασμένης δεξιότητας (`skills/<slug>/SKILL.md` στον χώρο εργασίας) συνδέεται στον φάκελο του ίδιου του πράκτορα. Στον ενσωματωμένο μηχανισμό, το frontmatter των συνδεδεμένων δεξιοτήτων φορτώνεται αυτόματα στην προτροπή συστήματος και ο πράκτορας διαβάζει ένα σώμα κατά απαίτηση· πληκτρολογώντας `/skill:<name>` σε μια συνομιλία φορτώνεται αυτό το σώμα ως οδηγία για τη συγκεκριμένη στροφή.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-δεξιοτήτων/).
+Οι δεξιότητες που αντλούνται από έξω περνούν, ανάμεσα στη λήψη και την εγγραφή, από σάρωση της αλυσίδας εφοδιασμού που απορρίπτει όταν δεν είναι βέβαιη — κανένα περιεχόμενο δεξιότητας δεν φτάνει στον δίσκο ή σε προτροπή χωρίς ετυμηγορία. Το «έξω» είναι αποθετήρια GitHub που δηλώνετε τα ίδια ως πηγές δεξιοτήτων: δεν υπάρχει επιμελημένο κατάστημα, οπότε τα μεταδεδομένα του ίδιου του αποθετηρίου (η περιγραφή του, τα αστέρια του, το όνομα της δεξιότητας) είναι αναξιόπιστα δεδομένα προβολής και η ετυμηγορία της σάρωσης είναι το μόνο σήμα ασφάλειας. Μια εγκατάσταση κατεβάζει ολόκληρο τον κατάλογο της δεξιότητας, τον καρφιτσώνει στο commit από το οποίο προήλθε μέσα στο `skills-lock.json` και μια μεταγενέστερη ενημέρωση ξαναπερνά από την πύλη πριν αντικαταστήσει οτιδήποτε. Ο οδηγός βρίσκεται στο [εγκατάσταση και διαχείριση δεξιοτήτων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-δεξιοτήτων/).
 
-### Repo-scoped skills
+### Δεξιότητες ανά αποθετήριο
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Ένα αποθετήριο μπορεί να φέρει δικές του δεξιότητες, σε οποιαδήποτε από τις συμβατικές θέσεις (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Ένας χώρος κάνει checkout σε κάθε συνδεδεμένο αποθετήριο δίπλα-δίπλα κάτω από το `repos/<name>/`, αλλά ένας πράκτορας εργάζεται σε ένα αποθετήριο τη φορά — οπότε φέρει **μόνο τις δεξιότητες εκείνου του αποθετηρίου**, και αυτές αλλάζουν όταν μετακινείται.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Ποιο αποθετήριο είναι ενεργό συνάγεται από τα αρχεία που αγγίζει ο πράκτορας: γράφοντας ένα αρχείο κάτω από το `repos/<name>/` αυτό γίνεται το ενεργό αποθετήριο, ενώ η απλή ανάγνωση από άλλα αποθετήρια όχι, οπότε το κυνήγι ενός συμβόλου σε μια γειτονική υπηρεσία δεν αλλάζει ποτέ το σύνολο εν μέσω μιας εργασίας. Σε έναν χώρο με ένα μόνο αποθετήριο, η απάντηση είναι γνωστή πριν από την πρώτη στροφή.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Ο περιορισμός της εμβέλειας είναι απόφαση προϋπολογισμού πλαισίου. Ο κατάλογος δεξιοτήτων βρίσκεται στην προτροπή σε κάθε στροφή, ενώ τα σώματα όχι, οπότε η παράθεση των δεξιοτήτων όλων των αποθετηρίων ταυτόχρονα κοστίζει tokens συνεχώς — και μια δεξιότητα `testing` από μια υπηρεσία παραπλανά ενεργά όταν η δουλειά γίνεται σε άλλη. Η ίδια λογική εξηγεί γιατί ο κατάλογος ενός πράκτορα περιέχει ένα αποθετήριο, ενώ το πεδίο σύνταξης μηνυμάτων δεν περιορίζεται έτσι: το να ονομάσετε εσείς μια δεξιότητα είναι μία ρητή ενέργεια, οπότε το `/skill:<repo>:<name>` φτάνει σε οποιοδήποτε αποθετήριο του χώρου.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Οι δεξιότητες αποθετηρίου φορτώνονται για **κάθε** προσαρμογέα, όχι μόνο για τον ενσωματωμένο μηχανισμό. Οι δεξιότητες του ενεργού αποθετηρίου υλοποιούνται στον κατάλογο εργασίας του πράκτορα, που είναι η διαδρομή που σαρώνει ήδη το Claude Code· ο ίδιος κατάλογος συντίθεται στο `AGENTS.md` που διαβάζει ο ενσωματωμένος μηχανισμός. Οι δεξιότητες ενός αποθετηρίου περνούν την ίδια σάρωση με αποτυχία-κλεισίματος που περνά και μια εγκατεστημένη δεξιότητα, πριν συμβεί οτιδήποτε από αυτά — ένα αποθετήριο που έχει γίνει checkout είναι κλωνοποιημένο περιεχόμενο και το frontmatter του φτάνει σε μια προτροπή.
 
-## Capabilities
+## Δυνατότητες
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Οι δυνατότητες ελέγχουν τι _παραδίδεται_ σε μια εκτέλεση, όχι τι της επιτρέπει να αγγίξει το σύστημα αρχείων της. Ο μεσίτης διαπιστευτηρίων τις ελέγχει κατά την εκκίνηση: αν μια δυνατότητα είναι απενεργοποιημένη, το αντίστοιχο token απλώς δεν εισάγεται.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Push σε αποθετήριο** — ελέγχει την εισαγωγή του token του GitHub που χρησιμοποιείται για `git push`.
+- **GitHub API** — ελέγχει την εισαγωγή του `GH_TOKEN` και την έξοδο προς το api.github.com.
+- **Εισιτήρια** — ελέγχει το κλειδί API του παρόχου εισιτηρίων και την έξοδο προς τους τομείς του.
+- **Έξοδος δικτύου** — αυθαίρετα αιτήματα προς τα έξω.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Μια εκτέλεση τις αντλεί από την ίδια την εγγραφή του πράκτορα. Όταν ο πράκτορας δεν έχει καμία, εφαρμόζεται ένα σταθερό συντηρητικό προεπιλεγμένο σύνολο: οι τρεις σημαίες διαπιστευτηρίων κλειστές, η έξοδος δικτύου ανοιχτή. Ο διακόπτης «Δικαιώματα sandbox» της φόρμας πράκτορα επιλέγει ανάμεσα σε αυτή την εφεδρική συμπεριφορά και ένα προσαρμοσμένο σύνολο αποθηκευμένο στον πράκτορα.
 
-See [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Δείτε το [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) για το άλλο μισό της ιστορίας, συμπεριλαμβανομένου του τι επιβάλλεται και τι όχι στο επίπεδο του συστήματος αρχείων.
 
-## The adapter decides what can be enforced
+## Ο προσαρμογέας καθορίζει τι μπορεί να επιβληθεί
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Το πεδίο με τις περισσότερες συνέπειες σε έναν πράκτορα είναι ο προσαρμογέας του, γιατί το μέσο μεταφοράς του προσαρμογέα καθορίζει πόση από την πολιτική του Control Center είναι πραγματικά δυνατό να επιβληθεί.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| Μέσο μεταφοράς   | Προσαρμογείς              | Τι επιβάλλει το Control Center                                                                                                                                                                                                                                             |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Ενσωματωμένος μηχανισμός | Control Center (ενσωματωμένο) | Τα πάντα. Η επιφάνεια εργαλείων _χτίζεται_ από τη λειτουργία, οπότε ένα μη επιτρεπτό εργαλείο είναι αόρατο και όχι απλώς απορριπτέο· κάθε κλήση περνά από την πύλη έγκρισης και τους περιορισμούς ενεργειών· το συμβόλαιο ολοκλήρωσης μπορεί να παρακινήσει και στη συνέχεια να αποτύχει μια εκτέλεση που τελειώνει χωρίς το παραδοτέο της |
+| Claude CLI       | Claude Code               | Μόνο τα εργαλεία `mcp__*` που του σερβίρονται. Τα δικά του εργαλεία ανάγνωσης, εγγραφής, επεξεργασίας και κελύφους ζουν στη διεργασία του και εκτελούνται αθέατα — και εκκινείται με `--dangerously-skip-permissions`, γιατί το μη διαδραστικό `claude -p` θα μπλόκαρε διαφορετικά για πάντα στη δική του προτροπή |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Συγκεκριμένα, **μόνο ο ενσωματωμένος μηχανισμός υποστηρίζει υποπράκτορες, καθοδήγηση στη μέση της εκτέλεσης, παύση και συνέχιση (άρα και ανάληψη ελέγχου) και δομική επιβολή λειτουργίας.** Το Claude Code δεν έχει τίποτα από αυτά.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Το sandbox του λειτουργικού συστήματος είναι κατώτατο όριο, όχι επιβολέας λειτουργίας — και δεν το έχει κάθε κεντρικός υπολογιστής]
+Ο πίνακας παραπάνω αφορά το τι μπορεί το Control Center να _δει και να ελέγξει_. Κάτω από αυτό, το `cc_server` τυλίγει το CLI του Claude Code στο sandbox του λειτουργικού συστήματος του κεντρικού υπολογιστή όπου υπάρχει — Seatbelt στο macOS, bubblewrap σε Linux και WSL2 — οπότε ένα αθέατο `rm` ή μια αθέατη εγγραφή εξακολουθεί να περιορίζεται από το λειτουργικό σύστημα. Στα **Windows δεν υπάρχει καθόλου backend** και σε Linux ή WSL2 χωρίς `bwrap` και `socat` ο έλεγχος αναφέρει ότι δεν υπάρχει, οπότε εκεί αυτές οι εκτελέσεις καταφεύγουν σε απολύμανση περιβάλλοντος, μεσιτευμένα διαπιστευτήρια, τους περιορισμούς στις κλήσεις που μπορεί να δει το Control Center και το δικό της worktree της συνομιλίας (copy-on-write όπου παρέχεται το `rift`· `git worktree` στα Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/).
+Αυτό που δεν είναι το sandbox είναι _πύλη_. Περιορίζει πού μπορεί μια διεργασία να διαβάσει, να γράψει και να συνδεθεί — μια λειτουργία μόνο ανάγνωσης το φτάνει, ως bind mounts μόνο ανάγνωσης — αλλά δεν μπορεί να ανακόψει μια κλήση, να εγείρει μια έγκριση ή να σας πει εκ των υστέρων τι προσπάθησε το CLI. Αυτό, μαζί με τις τέσσερις δυνατότητες που αναφέρθηκαν ακριβώς παραπάνω, είναι ακόμη αυτό που έχει ο ενσωματωμένος μηχανισμός και δεν έχουν οι άλλοι. Δείτε το [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Ένας πράκτορας **χωρίς** προσαρμογέα καταλήγει στο **Control Center (ενσωματωμένο)** — τον βρόχο μέσα στον διακομιστή, οπότε δεν υπάρχει CLI προς εγκατάσταση — και το αρχείο καταγραφής εκτέλεσής του γράφει `cc-harness`. Κάθε πράκτορας που τροφοδοτείται αρχικά δημιουργείται χωρίς προσαρμογέα ή μοντέλο, οπότε και οι πέντε πράκτορες ενός νέου χώρου εργασίας εκτελούνται εκεί, στο προεπιλεγμένο μοντέλο της Anthropic, μέχρι να ορίσετε προσαρμογέα και μοντέλο για κάθε πράκτορα. Η επιλογή «προεπιλεγμένος προσαρμογέας» της εισαγωγής είναι προτίμηση της πλευράς του πελάτη που ο διακομιστής δεν διαβάζει ποτέ και δεν εφαρμόζεται αναδρομικά σε πράκτορες που έχουν ήδη δημιουργηθεί.
 
-## Where agents come from
+## Από πού προέρχονται οι πράκτορες
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Τροφοδοτούνται μαζί με τον χώρο εργασίας.** Κάθε χώρος εργασίας — όχι μόνο ο πρώτος — αποκτά έναν CEO και τέσσερις ειδικούς (`qa`, `architect`, `engineer`, `librarian`) που αναφέρονται σε αυτόν, με τρόπο ασφαλή για επαναλήψεις στο παρασκήνιο όταν δημιουργείται ο χώρος εργασίας. Δείτε το [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
+- **Προστίθενται με το χέρι** στις Ρυθμίσεις → Χώρος εργασίας → Πράκτορες. Το να ζητήσετε από έναν πράκτορα να προσλάβει έναν συνάδελφο δεν δημιουργεί εγγραφή· χρησιμοποιήστε αυτή την οθόνη.
 
-## Live state
+## Ζωντανή κατάσταση
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Ένας πράκτορας δεν έχει αποθηκευμένη στήλη κατάστασης. Η ζωντανή κατάστασή του προκύπτει από τα πιο πρόσφατα αρχεία καταγραφής εκτέλεσης κάθε φορά που διαβάζεται:
 
-| State      | Meaning                                                              |
+| Κατάσταση  | Σημασία                                                              |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | Δεν υπάρχει αρχείο καταγραφής εκτέλεσης                               |
+| `running`  | Τουλάχιστον μία εκτέλεση βρίσκεται αυτή τη στιγμή σε εξέλιξη          |
+| `failed`   | Η πιο πρόσφατη εκτέλεση παρουσίασε σφάλμα ή η ζωτικότητά της είναι αποτυχημένη ή νεκρή |
+| `blocked`  | Η ζωτικότητα της πιο πρόσφατης εκτέλεσης είναι μπλοκαρισμένη, κολλημένη ή σε βρόχο |
+| `idle`     | Όλα τα υπόλοιπα — ο πράκτορας έχει εκτελεστεί στο παρελθόν και δεν έχει τίποτα σε εξέλιξη |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Δύο ακόμη καταστάσεις, οι `queued` και `succeeded`, υπάρχουν για μεμονωμένες εκτελέσεις στο δέντρο εκτελέσεων της συνομιλίας· ο κατάλογος δεν τις παράγει ποτέ, γιατί το ότι μια ολοκληρωμένη εκτέλεση είναι πράσινη είναι γεγονός για την εκτέλεση, όχι για τον πράκτορα.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/).
+Ο κατάλογος παρουσίας δείχνει μια παράλληλη, πιο χονδρική εικόνα που συντίθεται στην πλευρά του διακομιστή από ζωντανά συμβάντα εκτέλεσης — σκέψη, εκτέλεση, μπλοκάρισμα σε αναμονή έγκρισης, ολοκλήρωση — και αυτό είναι που κάνει τους πράκτορες να εμφανίζονται δίπλα στους ανθρώπους. Δείτε τη [Συνεργασία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/).
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): what happens when an agent is actually run
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/): what constrains a run today
-- [Agent configuration reference](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/): the full field list
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): τι συμβαίνει όταν ένας πράκτορας εκτελείται πραγματικά
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): η ρύθμιση ανά συνομιλία που διαμορφώνει την επιφάνεια εργαλείων ενός πράκτορα
+- [Συνεργασία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): οι πράκτορες ως δρώντα υποκείμενα, η παρουσία και ο δείκτης αυτονομίας
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/): τι περιορίζει μια εκτέλεση σήμερα
+- [Διαμόρφωση πράκτορα](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/): ο πλήρης κατάλογος πεδίων

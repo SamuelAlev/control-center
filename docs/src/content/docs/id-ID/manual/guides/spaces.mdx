@@ -1,156 +1,164 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Gunakan space
+description: Buat space, atur modenya, kelola peserta dan otonomi, lalu buka percakapan dan thread.
 slug: id-ID/panduan-pengguna/panduan-praktis/space
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Panduan ini menunjukkan cara menggunakan space. **Space** adalah permukaan
+perpesanan di Control Center: sebuah ruangan bercakupan ruang kerja dengan satu
+atau beberapa peserta (Anda dan/atau agen), yang memiliki satu worktree
+copy-on-write untuk setiap repo tempatnya dibuat.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Ruangan berdua dan ruangan banyak agen keduanya hanyalah space, dibedakan hanya
+oleh jumlah pesertanya. Satu-satunya pengecualian adalah space yang dibuka agen
+untuk saling berbicara — lihat [Space antar-agen](#space-antar-agen) di
+bawah.
 
-## Create a space
+## Buat space
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Buka **Ruang**
+2. Klik tombol **+** di samping judul Ruang
+3. Beri **nama** — ini wajib. Nama kosong akan ditolak;
+   dialognya tetap terbuka
+4. Secara opsional, tambahkan agen dari ruang kerja
+5. Jika ruang kerja memiliki repo, pilih repo mana yang worktree-nya disediakan
+   oleh space ini. Semua terpilih secara bawaan; membatalkan centang semua repo
+   akan membuat space tanpa apa pun yang di-checkout
+6. Konfirmasi
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Space bercakupan ruang kerja: Anda hanya melihat agen dari ruang kerja saat ini
+dan sebuah space tidak pernah menampilkan data dari ruang kerja lain.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
+Setiap repo di-checkout di `repos/<name>/` di dalam space. Repo yang menyertakan
+skill agennya sendiri menyumbangkan skill itu ke agen mana pun yang bekerja di
+dalamnya — satu set repo pada satu waktu, berganti seiring agen berpindah. Dari
+composer Anda dapat menjangkau semuanya dengan `/skill:<repo>:<name>`. Lihat
+[Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Permukaannya berada di `/workspaces/<id>/spaces`, dan satu space di
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Atur mode space
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Space baru dimulai dalam mode bawaan. Ubah modenya dari **dropdown mode** di
+sisi paling kiri bilah alat composer — bukan dari dialog pembuatan (yang tidak
+memiliki kolom mode) dan bukan dari header space.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Mode           | Efek                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Agen**       | Akses penuh. Mode bawaan; `chat` secara internal, diberi label "Agen" di dropdown                                |
+| **Rencana**    | Hanya baca dan riset; hasil kerjanya adalah rencana bertipe                                                      |
+| **Orkestrasi** | Baca dan riset plus satu kata kerja `propose_orchestration`; rencana baru berjalan setelah Anda menyetujuinya    |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab mengalihkan antara mode rencana dan mode agen tanpa membuka dropdown.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Mode keempat, **review**, ada tetapi tidak ditawarkan di dropdown — mode itu
+diterapkan secara otomatis pada space tinjauan PR.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Mode disimpan pada space, sehingga agen yang sama bisa berada dalam mode rencana
+di satu space dan mode agen di space lain. Setiap percakapan di dalam sebuah
+space berbagi mode space tersebut.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Perhatikan lencana penegakan]
+Lencana muncul di samping dropdown mode saat agen space tersebut berjalan pada
+adapter yang tidak dapat menegakkan mode yang Anda pilih. Hanya harness bawaan
+Control Center yang memfilter permukaan alat dan menggerbangi setiap panggilan;
+adapter Claude Code dan ACP menerima mode sebagai permintaan yang mungkin
+dipatuhi atau tidak oleh runner-nya. Tidak adanya lencana berarti "tidak ada
+klaim yang dibuat", bukan "terverifikasi aman".
 :::
 
-See [Modes](/id-ID/panduan-pengguna/konsep/mode/) for the full model.
+Lihat [Mode](/id-ID/panduan-pengguna/konsep/mode/) untuk model selengkapnya.
 
-## Manage participants and per-agent autonomy
+## Kelola peserta dan otonomi per agen
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Klik ikon orang di header space untuk membuka **Kelola peserta**. Untuk setiap
+agen yang sudah ada di space, Anda dapat:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Menghapusnya dari space
+- Mengatur **Otonomi**-nya untuk space ini: **Bawaan**, **Hanya usulkan**,
+  **Bertindak dengan persetujuan**, atau **Bertindak bebas**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Tombol otonomi berlaku per (space, agen), sehingga agen yang Anda percayai di
+satu ruangan dapat dibatasi hanya untuk mengusulkan di ruangan lain.
 
-## React to a message
+## Bereaksi terhadap pesan
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Arahkan kursor ke sebuah pesan dan klik ikon senyum untuk membuka palet reaksi.
+Paletnya adalah kumpulan tetap berisi enam reaksi: 👍 👎 🎉 ❤️ 👀 ✅. Tidak ada
+pemilih emoji bebas — mengetuk salah satunya akan mengaktifkan atau
+mematikannya untuk Anda dan chip gabungan muncul di bawah pesan.
 
-## Open a conversation
+## Buka percakapan
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Sebuah space menampung beberapa percakapan sekaligus dan semuanya setara — tidak
+ada yang utama. Sebuah space selalu menyimpan setidaknya satu percakapan aktif:
+Anda tidak dapat mengarsipkan percakapan aktif terakhir, dan membuka space yang
+belum memilikinya akan membuat percakapan tetap tanpa judul.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Percakapan muncul sebagai tab editor, dan sebagai baris bertingkat di bawah space
+di bilah sisi begitu jumlahnya lebih dari satu. **Percakapan baru** berada di
+menu tab baru editor dan membuat percakapan tanpa judul tanpa permintaan
+pemberian judul — model judul menamainya berdasarkan pesan pertama. Gunakan satu
+percakapan untuk menjalankan pekerjaan paralel dengan agen dan worktree yang
+sama.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Setiap percakapan menyimpan riwayat pesannya sendiri dan sesi agennya sendiri
+sambil berbagi worktree dan mode space tersebut. Menutup tab akan
+menyembunyikannya; **Arsipkan percakapan** (baris di bilah sisi atau menu konteks
+tab chat) hanya mengarsipkan percakapan itu.
 
-## Start a thread
+## Mulai thread
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Arahkan kursor ke pesan mana pun dan pilih **Mulai thread**. Tindakan itu membuka
+percakapan yang berjangkar pada pesan tersebut: jangkarnya menyemai konteks agen
+percakapan baru dengan satu baris dan riwayat induknya **tidak** disalin.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Setelah sebuah thread memiliki balasan, pesan yang menjadi pangkalnya
+menumbuhkan baris di bawahnya — wajah orang yang telah berbicara, jumlah
+balasan, dan kapan balasan terakhir masuk. Baris itu adalah jalan masuk kembali:
+mengkliknya akan membuka (atau memfokuskan) tab thread tersebut. Itulah
+satu-satunya jejak yang ditinggalkan sebuah thread di aliran tempatnya
+bercabang, dan itulah alasan baris itu ada.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+Tab sebuah thread diberi judul `Thread: <name>` dan membawa glif cabang, sehingga
+dua tab di space yang sama tidak pernah tertukar.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Thread tidak pernah bersarang — menjangkar ke pesan yang sudah berada di dalam
+sebuah thread akan ditolak. Header percakapan menautkan kembali ke pesan jangkar.
+Menghapus pesan jangkar akan menghapus thread tersebut, dan mengarsipkan
+percakapan induk tidak memblokir thread yang sudah ada.
 
-## Read state
+## Status baca
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Tanda baca bercakupan pada space, bukan pada percakapan: membuka percakapan mana
+pun di space tersebut akan menandai seluruh ruangan sebagai terbaca. Status belum
+dibaca tetap teragregasi di semua percakapan suatu space, termasuk thread. Saat
+percakapan ditampilkan di bawah space, titik belum dibaca berada pada percakapan
+yang memiliki pekerjaan yang belum dilihat, bukan pada baris induknya.
 
-## Agent-to-agent spaces
+## Space antar-agen
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Space yang dibuka agen untuk saling berbicara dikelompokkan secara terpisah di
+bilah sisi di bawah **Agen**, tertutup secara bawaan dan ditampilkan dengan warna
+yang diredupkan. Space ini tidak pernah menambah lencana belum dibaca Anda —
+obrolan agen tidak berisik secara desain, bukan karena pengaturan yang harus Anda
+cari.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Jenis sebuah space adalah salah satu dari lima nilai: `topic` (bawaan untuk apa
+pun yang Anda buat), `agentPeer`, `system` (dikelola pipeline), `pr` (dibuat saat
+permukaan PR memerlukan jangkar worktree dan disembunyikan dari bilah sisi sampai
+memiliki pesan), dan `slack` (dibuat oleh jembatan chat untuk thread Slack atau
+DM bot, dan diperlakukan sebagai percakapan manusia biasa).
 
-## Related guides
+## Panduan terkait
 
-- [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
-- [@-mention agents](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/)
-- [Use plan mode](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/)
+- [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
+- [@-mention agen](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/)
+- [Gunakan mode rencana](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/)
 
-## Related concepts
+## Konsep terkait
 
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
-- [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/): how a Slack thread becomes a space
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)
+- [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/): bagaimana sebuah thread Slack menjadi space

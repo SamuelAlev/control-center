@@ -1,89 +1,207 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Mode
+description: Mengapa sebuah space, bukan agen, yang membawa sebuah mode; apa yang dijamin oleh masing-masing dari keempat mode; dan di mana jaminan itu bersifat struktural alih-alih sekadar berupa prompt.
 slug: id-ID/panduan-pengguna/konsep/mode
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Apa itu mode
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Sebuah mode adalah properti sebuah **space**, yang disimpan sebagai satu kolom
+pada baris space. Setiap percakapan di dalam sebuah space berbagi mode itu,
+termasuk thread — sebuah thread mewarisi mode space-nya seperti percakapan
+lain. Agen yang sama karena itu dapat berada dalam mode berbeda di space
+berbeda pada saat yang sama, dan mengganti mode sebuah space mengubah apa yang
+terjadi pada giliran berikutnya tanpa menyentuh agennya.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Jumlahnya tepat empat: `chat`, `review`, `plan`, `orchestrate`. Enum itu sendiri
+tidak membawa kebijakan apa pun. Semua yang dijamin oleh sebuah mode
+dideklarasikan sekali, dalam sebuah **profil kemampuan**, yang menjadi sumber
+proyeksi setiap lapisan penegakan:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Permukaan alat** — alat mana yang ada sama sekali dalam mode itu,
+   dinyatakan sebagai tingkat persetujuan maksimum, daftar izin, daftar tolak,
+   dan sekumpulan kelas efek yang ditolak.
+2. **Verb keluaran yang diwajibkan** — apa yang harus dipanggil oleh run agar
+   telah menyerahkan sesuatu.
+3. **Kelas efek yang ditolak** — apa yang ditolak mentah-mentah oleh pagar
+   pengaman tindakan.
+4. **Postur worktree** — apakah worktree boleh ditulisi. Ini ditegakkan dengan
+   mencabut alat-alat pemutasi dari permukaan, dan itulah yang membuatnya
+   berlaku di setiap host. Jika host punya sandbox OS, postur yang sama juga
+   mengukir aturan penulisan sistem berkas — mode hanya-baca memasang worktree
+   sebagai hanya-baca — tetapi itu salinan kedua dari jaminan tersebut, bukan
+   yang menjalankan tugasnya.
+5. **Blok prompt sistem** — prakata kemampuan yang _dihasilkan_ dari daftar
+   alat yang benar-benar diwujudkan, plus panduan yang ditulis tangan.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Setiap lapisan penegakan memproyeksikan dari profil tunggal itu, sehingga
+permukaan alat, pagar, postur worktree, dan prompt tidak dapat berselisih.
 
-## The four modes
+## Empat mode
 
-### Chat — displayed as "Agent"
+### Chat — ditampilkan sebagai "Agent"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Mode bawaan dan satu-satunya mode tanpa batasan tambahan: permukaan alat penuh
+hingga tingkat eksekusi, worktree yang dapat ditulisi, tanpa kelas efek yang
+ditolak, dan tanpa kontrak penyelesaian. Gunakan untuk implementasi, perbaikan
+bug, pertanyaan tentang basis kode, dan apa pun yang bersifat ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Perhatikan labelnya: di penyusun pesan, mode ini ditampilkan sebagai
+**"Agent"**, bukan "Chat".
 
-### Plan — read-only, one deliverable
+### Rencana — hanya-baca, satu hasil kerja
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Mode rencana membuat worktree menjadi hanya-baca dan mencabut alat tulis dari
+permukaannya sepenuhnya, sehingga batasannya bersifat struktural, bukan
+sekadar diinstruksikan. Agen membaca, mencari, dan meneliti lalu menyerahkan
+tepat satu hal: panggilan `submit_plan` yang membawa graf dependensi bertipe —
+sebuah tujuan plus node dengan key, judul, deskripsi, dan key node yang menjadi
+dependensi tiap node.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Rencana itu dirender sebagai baris ringkas di percakapan dan membuka Plan
+Studio di tab di sebelahnya. Menyetujuinya mengompilasi graf menjadi sebuah
+orkestrasi, menjalankan pekerjaan yang dihasilkan, dan mengembalikan space
+tempat rencana disusun ke mode agen.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Jika sebuah run mode rencana berakhir tanpa pernah memanggil `submit_plan`,
+loop mula-mula menyisipkan dorongan yang menyatakan bahwa rencana itu belum ada
+sampai panggilan tersebut berhasil. Dorongan itu secara eksplisit mengizinkan
+jalan keluar yang jujur berupa "di sini tidak perlu rencana", karena mode
+rencana adalah pengaturan space dan pertanyaan biasa yang diajukan di dalamnya
+tidak seharusnya memaksakan rencana yang palsu.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/).
+:::note[Kontrak yang tidak terpenuhi bukanlah run yang gagal]
+Run yang berakhir tanpa rencananya tetap dicatat dengan status `completed` —
+prosesnya keluar dengan bersih. Kebenarannya bersandar pada keaktifan run
+(`empty`), keluarga galatnya (`silentRun`), dan ringkasan yang menyebutkan apa
+yang tidak dihasilkan. Lihat [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Ada jalan keluar kedua yang terpisah: `exit_plan_mode`. Itu adalah gerbang
+persetujuan keras, bukan verb keluaran — agen yang memanggilnya alih-alih
+`submit_plan` tidak menyerahkan apa pun. Panggilan pertama membuka persetujuan
+`plan_exit` yang tahan lama dan mengembalikan `pending`, sementara space tetap
+hanya-baca; panggilan berulang tetap `pending` alih-alih membuka gerbang kedua.
+Baru setelah persetujuan diberikan, panggilan berikutnya mengalihkan space ke
+chat. Penolakan memungkinkan agen membuka permintaan baru untuk rencana yang
+direvisi.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Untuk keluar dari mode rencana sendiri, ganti dropdown penyusun pesan (atau
+Shift+Tab). `exit_plan_mode` diputuskan dengan alat MCP `decide_approval`.
+Baris "persetujuan agen" di Kotak masuk adalah hal yang berbeda: prompt
+konfirmasi per giliran dari agen yang sedang berjalan.
 
-### Review — read-only, no contract
+### Tinjauan — hanya-baca, tanpa kontrak
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Mode tinjauan adalah untuk tinjauan PR. Ia membuat worktree menjadi hanya-baca,
+membatasi permukaan alat di bawah tingkat eksekusi, dan menerapkan daftar izin
+yang dikurasi berisi alat tinjauan, tiket, dan komunikasi. Space yang dibuka
+untuk sebuah pull request dibuat dalam mode tinjauan secara otomatis.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Keluaran agen berupa temuan terstruktur — **node tinjauan** — dan, saat sebuah
+tinjauan difinalkan, sebuah **putusan**. Sebuah node membawa jenis (`bug`,
+`suggestion`, `recommendation`, `question`, atau `ticket`), prioritas dari P0
+(menghambat rilis) sampai P3 (bagus kalau ada), keyakinan hasil penilaian
+sendiri, anchor opsional (berkas plus rentang baris; catatan seluas repositori
+tidak punya anchor), dan status siklus hidup yang bergerak dari `open` ke
+`consensusReady` begitu rekan setim — bukan penulisnya — mengonfirmasinya.
+Temuan yang prioritas atau keyakinannya hilang atau di luar rentang dijatuhkan
+di batas baca alih-alih mencemari putusannya.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Putusannya adalah Ship, Hold, atau Block dan putusan itu hanya pernah dibuat
+_lebih_ berat oleh hasil per sumbu yang dilipat ke dalamnya: sumbu bergerbang
+yang gagal memaksa `block` dan sumbu bergerbang yang tidak dapat dijalankan
+memaksa setidaknya `hold`. Ketiadaan bukti tidak pernah menghijaukan sebuah
+gerbang.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Berbeda dari rencana dan orkestrasi, tinjauan **tidak membawa kontrak
+penyelesaian**. Temuan menumpuk melalui `add_review_node` dan diterbitkan oleh
+`finalize_review`, dan keduanya sah-sah saja dipanggil nol kali — agen pipeline
+yang berjalan dalam mode tinjauan mungkin ada di sana justru untuk menuntaskan
+sebuah tiket.
 
-### Orchestrate — read-only, proposes a team
+### Orkestrasi — hanya-baca, mengusulkan tim
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Mode orkestrasi mengubah satu tujuan menjadi rencana satu tim utuh. Seperti
+mode rencana, ia hanya-baca dan tidak dapat menulis berkas; di atas permukaan
+riset ia punya satu verb istimewa, `propose_orchestration`, yang memancarkan
+proposal terstruktur: peran, pohon sub-tiket, langkah sintesis, dan anggaran.
+Prompt hanya menyebut alat yang ada di permukaan, sehingga model tidak
+menghabiskan giliran untuk menarasikan pekerjaan perekrutan atau tiket yang
+tidak dapat dipanggilnya.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/).
+Tidak ada apa pun dalam proposal yang dijalankan sebelum Anda menyetujuinya.
+Saat disetujui, materializer deterministik merekrut para agen, membuat
+tiket-tiketnya dan sebuah proyek, lalu menjalankan pipeline yang dihasilkan.
+Menyetujui adalah hak operator semata: tidak ada alat MCP untuknya, sehingga
+agen dapat mengusulkan tetapi tidak pernah menyetujui rencananya sendiri.
+Proposal ulang yang diprakarsai agen dibatasi lajunya oleh jeda dua menit,
+sehingga perencanaan ulang berturut-turut ditolak dan diminta untuk digabung.
+Lihat [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/).
 
-## Two rules worth knowing
+## Dua aturan yang perlu diketahui
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Verb keluaran milik mode itu sendiri tidak pernah dapat ditolak.** `submit_plan`
+dan `propose_orchestration` dipaku ke dalam permukaan alat dan disetujui lebih
+dulu, melewati filter alat, gerbang persetujuan, dan pagar pengaman tindakan
+sekaligus, sehingga dial otonomi per space tidak dapat membungkam hasil kerja
+sebuah mode. `ask_user` milik harness dipaku karena alasan yang sama: itulah
+cara sebuah run menjangkau operator, jadi menggerbanginya akan membuat run yang
+perlu bertanya menemui jalan buntu. Ia berada di tingkat baca, sehingga setiap
+mode hanya-baca tetap memilikinya, dan ia dibebaskan dari pembungkus
+persetujuan — gerbang di depan sebuah prompt gagal secara tertutup saat tidak
+ada penyetuju yang terhubung, yang justru akan menghalangi agen melakukan
+tindakan bertanya.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Mode hanya-baca tidak menolak akses jaringan atau rahasia.** Kelas efek yang
+ditolak oleh tinjauan, rencana, dan orkestrasi adalah kelas yang mengubah
+dunia: penghapusan berkas, penulisan di luar worktree, commit, push, pembuatan
+dan publikasi PR, penulisan sinkronisasi vendor, pemasangan paket, pemunculan
+proses, mutasi ruang kerja, dan kontrol enclosure. Egress jaringan dan akses
+rahasia memang sengaja dibiarkan pada defaultnya — riset adalah inti dari mode
+hanya-baca.
 
-## Choosing and changing a mode
+## Memilih dan mengganti mode
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Dropdown mode di penyusun pesan menawarkan **tiga** opsi: Agent (chat), Plan,
+dan Orchestrate. `review` **tidak dapat dipilih pengguna** — ia ditetapkan oleh
+sistem saat space tinjauan PR dibuat dan oleh langkah pipeline.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Sebuah node pipeline yang **membuka space** dapat memaku mode ruangan itu
+dengan key `extras['mode']` (`chat`, `review`, atau `plan`). Key tersebut harus
+cocok persis: ejaan lain apa pun — termasuk `orchestrate` — diabaikan diam-diam
+dan ruangan itu mendapat default dari bodinya (`review` pada body
+create-space). Langkah agen bergabung ke ruangan yang tidak dibuatnya dan tidak
+mengubah izinnya.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Resolusinya sendiri sederhana. Dispatcher membaca kolom `mode` milik space;
+pengiriman tanpa space — sebuah one-shot, pemanggilan CLI, atau id space dari
+ruang kerja lain, yang memang tidak ada di berkas basis data ruang kerja ini —
+diselesaikan menjadi `chat`. Mengganti mode berlaku mulai giliran berikutnya.
 
-## Where the guarantee actually holds
+## Di mana jaminannya benar-benar berlaku
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Permukaan alat sebuah mode dibangun dan ditegakkan oleh **harness bawaan**. Ia
+satu-satunya transport yang dapat membuat sebuah alat tidak terlihat alih-alih
+sekadar ditolak, menggerbangi setiap panggilan sebelum berjalan, dan mengamati
+kontrak penyelesaian.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/).
+Pada transport Claude Code, mode non-chat diteruskan sebagai
+`--permission-mode plan`. Claude mematuhinya secara konvensi; alat baca, tulis,
+edit, dan shell miliknya sendiri berjalan tanpa terlihat. Untuk transport itu,
+mode hanyalah panduan, bukan batas Control Center — lihat
+[Model agen](/id-ID/panduan-pengguna/konsep/model-agen/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Daftar izin membatasi alat dengan tingkat tulis ke atas. Tingkat baca harness
+bawaan tetap menjangkau alat yang tidak disebut daftar mana pun; pada Claude
+Code, alat yang dihilangkan dari daftar izin ditolak terlepas dari ada atau
+tidaknya di server.
 
-## Related concepts
+## Konsep terkait
 
-- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/): where the mode is resolved and projected
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): which transports can enforce a mode
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/): what an approved orchestrate proposal does
-- [Use plan mode](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/): the practical walkthrough
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/): di mana mode diselesaikan dan diproyeksikan
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): transport mana yang dapat menegakkan mode
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): kebijakan kelas efek yang menjadi sasaran preset sebuah mode
+- [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/): apa yang dilakukan proposal orkestrasi yang disetujui
+- [Gunakan mode rencana](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/): panduan praktisnya

@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Ajan gönderim yaşam döngüsü
+description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Gönderim nedir
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Bir gönderim, bir ajanın tek bir konuşmada, tek bir adaptör üzerinde yaptığı tek bir çalıştırmadır. Onunla ilgili her şey `cc_server` üzerinde gerçekleşir: istemci bir mesaj gönderir, ardından olayların geri akışını izler. Hiçbir istemcide gönderim yolu yoktur.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Ajanlar altı nedenden dolayı uyandırılır; çalıştırma bunları **uyandırma bağlamı** olarak taşır, böylece ajan _neden_ uyanık olduğunu bilir:
 
-| Wake reason      | Trigger                                                      |
+| Uyandırma nedeni | Tetikleyici                                                  |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Birisi bir alana mesaj gönderdi veya ajanı andı              |
+| `assignment`     | Ajana bir bilet atandı                                       |
+| `pipelineStep`   | Bir pipeline adımı onu gönderdi                              |
+| `childCompleted` | Bir alt bilet tamamlandı                                     |
+| `followUp`       | Zamanlanmış bir takip kalp atışı                             |
+| `recovery`       | Kurtarma yolu bir başarısızlıktan sonra yeniden gönderdi     |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Uyandırma bağlamı, nedene eşlik eden ID'leri taşır — bilet, alan, mesaj, pipeline çalıştırması — ve bunlar ajanın ortamına ve istemine enjekte edilir.
 
-## Prompt assembly
+## İstem birleştirme
 
-The prompt is built in layers, each one a labelled section:
+İstem katmanlar hâlinde kurulur; her katman etiketli bir bölümdür:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Kimlik** — ajanın kendi ID'si, adı ve çalışma alanı ID'si; bu UUID'lerin tam olarak çalışma alanına özel araçlara geçirilmesi için açık bir talimatla birlikte. Çalışma alanı ajana özgüdür, bu yüzden her zaman bulunur.
+- **Araç kataloğu ve kaynak protokolleri**, ardından **çalışma alanı düzeni**.
+- Varsa **sistem istemi geçersiz kılması**, ardından **persona** (role göre parametrelenir) ve **ekip brifingi**.
+- **Beceriler** — ajandaki adlar.
+- Geçerli mod için **yürütme sözleşmesi ve yordamı**.
+- **Uyandırma bağlamı** ve **anma bağlamı**: ajanı kimin çağırdığı ve çevresindeki kadro.
+- **Mod bloğu** — modun yetenek profilinden _ve somutlaşmış araç listesinden_ üretilir, böylece bir istem çalıştırmanın gerçekte sahip olmadığı bir aracı asla adlandıramaz.
+- **Bellek bağlamı** — görev için getirilen olgular.
+- **Konuşma bağlamı** — son alan geçmişi; ajanın yapılandırılmış bağlam boyutundan bağımsız olarak birebir pencere 50.000 karakterle sınırlanır. Daha eski geçmiş atılıp yok edilmez: ajan onu `get_messages` ile talep üzerine getirir ve anlamsal olarak ilgili eski mesajlar yine de ortaya çıkar.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Slash komutları ham kullanıcı metninden ayrıştırılır]
+Katmanlı istem bir bağlam bloğuyla başlar, bu yüzden eğik çizgiyle başlamaz. Komutlar kullanıcının mesajından birebir ayrıştırılır ve ardından katmanlı istemin kuyruğundan çıkarılır; böylece her bağlam katmanı korunur.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Komutlar iki yere dağılmıştır. `/todo` ve `/compact` yazı alanında yakalanır ve kasıtlı olarak hiçbir zaman mesaj olarak kalıcılaştırılmaz ya da ajana gönderilmez — `/compact` kalıcılaştırılsaydı sıkıştırma kesimini bir tur geriye iter ve transkripti kirletirdi. `/plan` her ikisinde de ele alınır: yazı alanı alanın modunu değiştirir; araç yüzeyinin, koruma ön ayarının ve istemin bu turda ve sonraki her turda uyuşmasını sağlayan şey budur. `/goal`, `/loop` ve `/skill:<name>` ise çalıştırmanın kendi içinde ve yalnızca yerleşik harness üzerinde ele alınır — `/goal` ve `/loop` bir maliyet bütçesiyle özerk iş başlatır ve `skill:` önekli bir ad, `SKILL.md` gövdesi turun yönergesi hâline gelen bir beceri olarak aranır. İki sözlüğü ayrı tutan şey ad alanıdır: çıplak bir adı becerilere göre çözmek, `plan` veya `compact` adlı bir becerinin yerleşik komut tarafından kalıcı olarak gölgelenmesi anlamına geliyordu. Yerleşik olmayan çıplak bir ad, ad alanı var olmadan önce yazılmış mesajlar için yine de çözülür. Tanınmayan bir ad ise düz metin olarak geçip gider.
 
-## Worktree provisioning
+## Çalışma ağacı hazırlığı
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Herhangi bir şey çalışmadan önce konuşma kendi çalışma kökünü alır; altında her depo için yalıtılmış, kopyala-üzerine-yaz bir çalışma ağacı bulunur. Varsayılan olarak bu, çalışma alanına bağlı her depodur; bir PR alanı — ya da açık bir seçimle oluşturulmuş bir alan — yalnızca izin listesindekileri hazırlar ve bir PR inceleme konuşması tek deposunu pull request'in head ref'ine sabitlerken diğerleri varsayılan dallarında kalır. Kaynak checkout asla değiştirilmez ve alan silindiğinde konuşma dizininin tamamı geri alınır.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+`rift`'in geldiği her yerde **tek** uygulama kopyala-üzerine-yazdır ve paketle gelen yerel ikiliyle desteklenir. Reflink yapamayan bir dosya sistemi — ya da depodan farklı bir birimdeki veri dizini — geri düşmek yerine hazırlığı başarısız kılar. `git worktree`, kopyala-üzerine-yaz arka ucunun derlenemediği Windows'ta kullanılan arka uçtur ve diğer ana makinelerde sessiz bir gerileme değildir. `rift`'in geldiği bir platformda `rift`'in eksik olması bozuk bir kurulumdur — sunucu sessizce geri düşmek yerine önyüklemeyi reddeder, çünkü sessiz bir geri düşüş bozukluğu sonsuza dek daha yavaş bir yolun arkasında saklar.
 
-## Identity and credentials
+## Kimlik ve kimlik bilgileri
 
-Two identities are resolved per run, before any process launches.
+Her çalıştırmada, herhangi bir süreç başlatılmadan önce iki kimlik çözülür.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git yazarlığı.** Bir ajanın yaptığı commit'ler _ajan olarak_ yazılır — hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` içinde `<Name> (agent) <agentId@agents.control-center.local>` — ve asla bir insan taklit edilmez. Yerel kısım ajanın UUID'sidir, ad slug'ı değil. İsteği yapan insan, ortamda taşınan ve sistem isteminde belirtilen bir `Co-Authored-By:` satırıyla anılır. Çağıranın açıkça belirlediği bir kimlik her ikisini de her zaman yener.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Forge kimliği.** Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca aracının olur — depo kapsamlı bir App kurulum belirteci ya da bunun ortam PAT yedeği — ve asla isteği yapan üyenin kendi sakladığı belirteç olmaz. `actingUserId` PAT yedeğini sınırlar; böylece sunucu sahibi olmayan bir üye sunucunun erişim alanını devralmaz. Ajan ortamına kişisel bir belirteç katmanlanmaz.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Model sağlayıcısı kimlik bilgileri** sabit bir sırayla çözülür ve sıra önemlidir:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. adaptör başına bir ortam geçersiz kılması,
+2. çağıranın ortamı,
+3. sunucunun kimlik bilgisi deposu (bir OAuth belirtecinin süresi dolmak üzereyse yenilenir),
+4. süreç ortamı.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Adaptör başına geçersiz kılma ilk sırada geldiği için uygulamada bağlı bir sağlayıcı hesabını sessizce yener. Bir çalıştırma yanlış hesaba faturalandırılıyorsa ilk bakılacak yer bu geçersiz kılmadır. Sağlayıcı kimlik bilgileri ana makine genelindedir — kurulumdaki her çalışma alanı arasında paylaşılır.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
+Yetenekle kapılanmış belirteçler (GitHub, biletleme) kimlik bilgisi aracısından gelir; aracı yalnızca çalıştırmanın yeteneklerinin izin verdiğini enjekte eder. Bkz. [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/).
 
-## Launch
+## Başlatma
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Çalıştırma, çalışma dizini olarak kendi çalışma ağacıyla ve — Claude Code için — ajanın Control Center'ın araç yüzeyine erişebilmesi amacıyla üretilen bir MCP yapılandırmasıyla başlatılır. ACP ve harness `bash` arındırılmış bir ortam alır; `NoSandboxAdapter` üzerinden çalışan Claude Code ise ana makinenin ortamını devralır.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[İşletim sistemi sandbox'ı bir çalıştırmayı yalnızca ana makinede arka uç olduğunda sarar]
+`cc_server` ana makineyi açılışta bir kez yoklar ve bir arka uç varsa ajan süreçlerini onun içine sarar — macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap. Her iki gönderim dikişi de sarılır, çünkü tek bir tanesini paylaşmazlar: Claude Code CLI sandbox portundan geçer; ACP adaptörleri ve yerleşik harness'ın `bash` aracı sandbox yöneticisinden geçer. Çalıştırmanın korumalı yollarını uygulayan da budur: kayıtlı depo checkout'larınız sandbox içinde her modda yazmaya kapalıdır.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Arka uç olmadığında çalıştırma sandbox içinde **değildir** ve bunu telafi etmek için başka hiçbir şey değişmez. Bu, Windows'ta her zaman böyledir (yerel sarma yok — `microvm`, terminaller ve rig'ler için ayrı, yoklamayla kapılanmış bir yoldur) ve `PATH` üzerinde `bwrap` ile `socat` bulunmayan Linux veya WSL2'de de böyledir. Sunucu hangi durumda olduğunu başlangıç günlük satırında belirtir ve `--sandbox off` bilinçli bir çıkıştır.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Sandbox açık olsa bile iki boşluk ondan sağ çıkar. Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) sunucu süreci içinde çalışır, bu yüzden onları hiçbir profil kısıtlamaz — sınırları, araçların kendi yol hapsinin ve korumaların toplamıdır. Ayrıca Claude Code `--dangerously-skip-permissions` ile başlatılır, yani kendi dosya ve kabuk çağrıları Control Center tarafından kapılanmaz; onların etrafındaki sınır işletim sistemi sandbox'ıdır.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Geri kalan sınırlar her ana makinede geçerlidir, sandbox olsun olmasın: çalıştırmanın kendi çalışma ağacı (`rift`'in geldiği yerde kopyala-üzerine-yaz; Windows'ta `git worktree`), her başlatmada aracılık edilen ve kapatmada iptal edilen yetenekle kapılanmış kimlik bilgileri, birleşik eylem korumaları (başarısız durumda kapalı — onaylayıcı bağlı değilken `prompt` kararı reddedilir) ve konuşmanın modunun izin verdiği araç yüzeyi. ACP ve harness `bash` ortamı hâlâ arındırır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır.
 :::
 
-## Streaming
+## Akış
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Çalıştırma, tipli bir olay dizisini geri akıtır; akış işlemcisi bunları mesaj farkları olarak kalıcılaştırır, transkript segmentlerine katlar ve mesajlaşma olaylarına dönüştürür:
 
-| Event              | What it carries                                                                                                  |
+| Olay               | Taşıdığı bilgi                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | Satır içi gösterilen akıl yürütme çıktısı                                                                        |
+| `text`             | Görünür çıktı                                                                                                    |
+| `toolCall`         | Bir araç çağrısı; ID'si ve yapılandırılmış bağımsız değişkenleriyle                                              |
+| `toolResult`       | Eşleşen sonuç; hata verdiğinde veya kısmi bir akış olduğunda işaretlenir                                         |
+| `usage`            | Bir ölçüm penceresi için token sayıları ve maliyet                                                                |
+| `error`            | Bir hata; adaptör yapılandırılmış bir kod bildirdiyse o kodla birlikte                                           |
+| `sandboxViolation` | İşletim sistemi bir sistem çağrısını reddetti. Yalnızca bir sandbox süreci gerçekten sarıyorsa yayılır — yukarıdaki nota bakın |
+| `debug`            | Çalışma zamanı tanılamaları (başlatma işaretleri, koruma kararları, sözleşme dürtmeleri)                         |
+| `done`             | Çalıştırma bitti                                                                                                 |
 
-## What bounds a run
+## Bir çalıştırmayı ne sınırlar
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Kasıtlı olarak **hiçbir yerde tur tavanı yoktur**. Katı bir yineleme sayısı meşru uzun işleri (geçişler, yayılım temizliği) öldürür ve aşağıdaki korumaların daha erken yakaladığı hiçbir şeyi yakalamaz. Bir çalıştırma şu durumlarda biter:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **model kendi kendine durduğunda**;
+- **bir insan onu durdurduğunda** ya da konuşmayı devraldığında (bu, yerleşik harness'ı bir sonraki temiz tur sınırında duraklatır — güvenli sınırı olmayan bir Claude Code çalıştırması ise bunun yerine durdurulur);
+- **sessizlik gözcüsü tetiklendiğinde.** Eşik boyunca çıktı olmazsa oturum bir `silentRun` hatasıyla sonlandırılır. Varsayılan 15 dakikadır ve ağırlıklı olarak okuma yapılan modlarda (inceleme ve plan) 10'a düşer; bir ajan bunu 1 ile 240 dakika arasında geçersiz kılabilir. Gözcü, bir alt süreç PID'sini bildirdiğinde kurulur, böylece Claude Code CLI'yı kapsar — hiçbir şey başlatmayan yerleşik harness'ı **kapsamaz**;
+- **bir maliyet sınırı devreye girdiğinde** — ama yalnızca özerk komutlar için.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Kısır döngü koruması bir sonlandırıcı değildir: arka arkaya üç özdeş araç çağrısı olduğunda döngü ajanı yaklaşımını değiştirmeye _yönlendirir_.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Normal bir turun maliyet sınırı yoktur]
+Oturum içi maliyet koruması yalnızca `/goal` ve `/loop` için bağlanmıştır; diğer her çalıştırma hiçbir bütçe geçirmez. Bu komutlarda, gözetimsiz tek bir segment varsayılan olarak 500 sent ($5.00) yakabilir; %80'de ajanı katı duruştan önce işi temiz biçimde toparlamaya çağıran yumuşak bir yönlendirme ve segmentler boyunca kalıcı 5000 sent ($50.00) hedef bütçesi vardır. Açıkça verilen bir `/goal --budget` hiçbir zaman bir segmentin tamamı kadar aşılmaz.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Bir araya getirildiğinde, yerleşik harness üzerindeki sıradan etkileşimli bir turun tur tavanı, maliyet sınırı ve sessizlik gözcüsü yoktur. Model durduğunda ya da siz durdurduğunuzda biter. Bu bilinçli bir tercihtir — alternatiflerin hepsi meşru uzun işleri öldürür — ama gözetimsiz etkileşimli bir çalıştırmanın modelin kendi muhakemesinden başka hiçbir şeyle sınırlanmadığı anlamına da gelir.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Çalıştırma sırasında, çalışan bir ajana gönderilen mesaj **yönlendirme** olarak kuyruğa alınır ve bir sonraki tur sınırında boşaltılır; böylece bir çalıştırmayı öldürmeden dürtükleyebilirsiniz. Yönlendirme, duraklatma, alt ajanlar ve tamamlama sözleşmesi yerleşik harness'ın özellikleridir; Claude Code'da bunların hiçbiri yoktur.
 
-## How a run is recorded
+## Çalıştırma nasıl kaydedilir
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Her gönderim bir `AgentRunLog` yazar: başlangıç ve bitiş zamanı, özet, token sayıları ve tahmini maliyet (alt ajanlardan toplanan maliyet dâhil), adaptör ve model, süreç ID'si ve günlük yolu, konuşma ile ait olduğu bilet veya pipeline çalıştırması; ayrıca gerçeğin çoğunu taşıyan iki sınıflandırma alanı.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Durum** kabadır: `pending`, `running`, `completed`, `error`.
+- **Canlılık** daha ince okumadır: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Hata ailesi** hataları işe yarar biçimde gruplar: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` “teslim edildi” anlamına gelmez]
+Bir çalıştırma, modunun gerektirdiği teslimatı üretmeden bittiğinde — `submit_plan`'i hiç çağırmayan bir plan modu çalıştırması, hiç öneri sunmayan bir orkestrasyon çalıştırması — durum `completed` kalır, çünkü süreç temiz biçimde sonlanmıştır. Dürüst sinyal canlılığa (`empty`), hata ailesine (`silentRun`) ve tam olarak neyin üretilmediğini söyleyen bir özete biner. Bu özet korunur: sonlandırma onu modelin son gevezeliğiyle üzerine yazmaz.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Bu bilinçlidir. Durumu ters çevirmek, eksik çıktıyla hiç ilgisi olmayan bilet ve pipeline durum makinelerini hareket ettirirdi. Ayrıca "status: completed" ifadesi tek başına bir çalıştırmanın başarılı olduğu sonucuna varmak için asla yeterli değildir — özeti okuyun.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Çalıştırmayı kapatmak `AgentRunCompleted` olayını yayımlar ve ona çok şey bağlıdır: bildirim çerçevesi ve kalıcı akış girdisi, onu bağlı istemcilere iten canlı iletici, pipeline maliyet toplaması, çalıştırmayı bekleyen bir pipeline adımının sürdürülmesi, arkasındaki bileti tamamlama, bir orkestrasyonu son duruma eşleme, hedef gözetmeninin devam et ya da dur kararı, denetleyici rolü ve çalıştırma sonrası bütçe değerlendirmesi. Varlık listesi ise olayı değil, son çalıştırma günlüklerini izleyerek ayrıca güncellenir.
 
-## Budgets, after the fact
+## Bütçeler, iş bittikten sonra
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Bütçe uygulaması bir _tepkidir_, bir kapı değil. Bir çalıştırma tamamlandığında değerlendirici, ajanın ay başından bugüne harcamasını etkin üst sınırıyla karşılaştırır (varsa bağlı bir bütçe politikası, yoksa ajanın kendi aylık rakamı; sıfır sınırsız demektir). Yumuşak eşiğin aşılması bir uyarı olayı kaydeder; bütçenin tükenmesi katı bir olay kaydeder ve ajanın yaşam döngüsü durumunu organizasyon şemasında `paused` olarak değiştirir. Gönderim o ajandan hâlâ iş kabul eder. Bir `BudgetThresholdCrossed` pipeline tetikleyicisi aynı olaydan takip işi başlatabilir.
 
-## Retry lineage
+## Yeniden deneme soyu
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Her çalıştırma günlüğü yeniden deneme soyu taşıyabilir — bir üst çalıştırma ID'si, bir deneme sayacı ve bir devam özeti. Konuşma çalıştırma ağacı, deneme numarasını sıfırdan farklı olduğunda gösterir. Sohbetten bir "yeniden dene" isteği, yepyeni bir çalıştırma günlüğüyle yeni bir gönderimdir.
 
-## Related concepts
+## İlgili kavramlar
 
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): what the adapter can and cannot enforce
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/): where the tool surface and the completion contract come from
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/): the effect-class policy every gated call passes
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): the isolation story in full
-- [Multiplayer](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): steering, take-over and the autonomy dial
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): what `AgentRunCompleted` sets off
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): adaptörün neleri uygulayıp neleri uygulayamadığı
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/): araç yüzeyinin ve tamamlama sözleşmesinin nereden geldiği
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): kapılanan her çağrının geçtiği etki sınıfı politikası
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): yalıtım hikâyesinin tamamı
+- [Çok oyunculu](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): yönlendirme, devralma ve özerklik kadranı
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `AgentRunCompleted` olayının tetikledikleri

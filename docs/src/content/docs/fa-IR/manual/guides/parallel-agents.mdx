@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: اجرای موازی عامل‌ها
+description: چند عامل را هم‌زمان اعزام کنید و نگذارید کارهایشان به هم بخورد.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+این راهنما نشان می‌دهد چگونه چند عامل را هم‌زمان اجرا کنید بدون آنکه نوشته‌هایشان یکدیگر را بازنویسی کند.
 
-## The unit of isolation is the space, not the agent
+## واحد ایزوله‌سازی فضا است، نه عامل
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+وقتی کار در یک فضا شروع می‌شود، Control Center برای هر مخزن ثبت‌شده زیر ریشهٔ خودِ آن فضا یک checkout کپی‌هنگام‌نوشتن تأمین می‌کند، روی شاخه‌ای برگرفته از قالب شاخهٔ فضای کاری. سپس هر عامل در آن فضا دایرکتوری کاری overlay خودش را می‌گیرد — اما overlayها پوشهٔ `repos/` آن فضا را **به اشتراک** می‌گذارند.
 
-So:
+پس:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- دو عامل در **فضاهای متفاوت** در checkoutهای متفاوت و روی شاخه‌های متفاوت کار می‌کنند. این ایزوله‌سازی واقعی است.
+- دو عامل در **فضای یکسان** در همان checkout و روی همان شاخه کار می‌کنند. مسیرهای overlayشان متفاوت است، پس قفل مسیر اعزام (که اجراها را تنها وقتی پشت‌سرهم می‌کند که دایرکتوری کاری یکسانی درخواست کنند) آن‌ها را هم پشت‌سرهم نمی‌کند. می‌توانند هم‌زمان همان فایل‌ها را بنویسند.
 
-The rule that follows: **one space per parallel task.**
+قاعده‌ای که از این نتیجه می‌آید: **برای هر کار موازی، یک فضا.**
 
-## Run tasks in parallel — separate spaces
+## اجرای موازی کارها — فضاهای جداگانه
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. یک فضا با عامل A باز کنید و کاری به آن بفرستید.
+2. فضای دومی با عامل B باز کنید و کار دیگری به آن بفرستید.
+3. هر دو بی‌درنگ اعزام می‌شوند، هرکدام در checkout فضای خودش و روی شاخهٔ خودش.
 
-This is the recipe to use whenever the agents will be editing files.
+هر وقت قرار باشد عامل‌ها فایل‌ها را ویرایش کنند، دستور کار همین است.
 
-## Work together in one space — several mentions
+## کار مشترک در یک فضا — چند منشن
 
-In a single space, @-mention more than one agent:
+در یک فضای واحد، بیش از یک عامل را @-منشن کنید:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+هر دو عامل موازی اعزام می‌شوند و با برچسب فرستنده در همان فضا جریان می‌یابند. چون checkout فضا را مشترک دارند، این را برای همکاری به کار ببرید — یکی می‌نویسد، یکی می‌خواند، یا دو عامل روی همان درخت استدلال می‌کنند — نه برای دو ویرایش مستقل.
 
-## Fan out from a pipeline
+## گسترش از یک پایپ‌لاین
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+قالب داخلی `pr_review` نمونهٔ همراه یک گسترش است: چند گره بازبین هم‌زمان از یک تریگر بیرون می‌آیند و یک گره **Consolidate (join)** یافته‌هایشان را در یک گزارش جمع می‌کند. آن را از صفحهٔ پایپ‌لاین‌ها اجرا کنید تا هر بازبین موازی اعزام شود.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+ویرایشگر پایپ‌لاین نگهبان پایانی را پنهان می‌کند و وقتی گامی را اضافه یا متصل می‌کنید، آن را طوری دوباره سیم‌کشی می‌کند که منتظر هر مقصد زنده بماند؛ پس شاخه‌هایی که خودتان می‌کشید واقعاً اجرا می‌شوند.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[واگذاری یک تیکت هیچ‌چیز را اعزام نمی‌کند]
+واگذاری یک تیکت به یک عامل، مالکیت را ثبت می‌کند. اعزام‌کنندهٔ تیکت وجود ندارد — `TicketAssigned` یک سیگنال حسابرسی است و هیچ کاری از آن شروع نمی‌شود. تنها استثنا تیکتی است که به یک _تیم_ واگذار شود، که رهبر آن تیم را بیدار می‌کند.
 :::
 
-## Watch them run
+## نظارت بر اجرایشان
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**مشاهده‌پذیری → زنده** (پانویس نوار کنار → مشاهده‌پذیری، سپس زبانهٔ زنده) فهرست عامل‌های این فضای کاری را نشان می‌دهد و هر ثانیه به‌روز می‌شود: وضعیت (در حال اجرا / بیکار / پارک‌شده / سقط‌شده)، اینکه هرکدام چه می‌کند، توکن‌ها و هزینهٔ آخرین اجرایش و یک کنترل کشتن برای فرایند در حال اجرا. با انتخاب یک سطر، کشوی رونوشت زنده باز می‌شود.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**تنظیمات → فضای کاری → عامل‌ها** همان فهرست را با واژگانی متفاوت و توجه‌محور نشان می‌دهد که از تاریخچهٔ اجرای هر عامل مشتق شده است — در حال اجرا، مسدود، ناموفق، بیکار، هرگز اجرا نشده — و طوری مرتب شده که هر چیزی که به توجه نیاز دارد به بالا بیاید. زبانهٔ **گزارش‌ها** در هر عامل تاریخچهٔ اجرای خودش را نگه می‌دارد.
 
-Both surfaces are scoped to the active workspace.
+هر دو سطح به فضای کاری فعال محدودند.
 
-## Handle conflicts
+## رسیدگی به تعارض‌ها
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+در میان فضاها، هر فضا روی شاخهٔ خودش است، پس برخورد هنگام ادغام pull request دوم به‌شکل یک تعارض ادغام معمولی Git خودش را نشان می‌دهد. آن را همان‌طور حل کنید که هر تعارض ادغام دیگری را حل می‌کنید.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+درون یک فضا نه مرز شاخه‌ای هست و نه قفلی: عامل‌ها همان فایل‌ها را زنده می‌نویسند و آن‌که عقب می‌ماند به‌سادگی بازنویسی می‌شود. اگر دیدید می‌خواهید دو عامل در یک فضا ویرایش کنند، کار را به‌جای آن به دو فضا تقسیم کنید.
 
-To reduce collisions either way:
+برای کاهش برخوردها در هر دو حالت:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/).
-- Review and merge each agent's pull request promptly.
+- به هر عامل حوزهٔ متمایزی بدهید — فایل‌های متفاوت، ماژول‌های متفاوت.
+- پیش از اعزام، با گراف کد بررسی کنید که یک تغییر چه چیزهایی را دست می‌زند. [جستجوی کد با گراف کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جستجوی-کد/) را ببینید.
+- pull request هر عامل را بی‌درنگ بازبینی و ادغام کنید.
 
-## Resource considerations
+## ملاحظات منابع
 
-Each running agent costs:
+هر عامل در حال اجرا این هزینه‌ها را دارد:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- یک checkout فضا — تا وقتی کپی‌هنگام‌نوشتن در دسترس است روی دیسک ناچیز؛ روی Windows یک `git worktree`. فایل‌سیستمی که نتواند reflink کند، به‌جای کپی‌کردن، تأمین را شکست می‌دهد.
+- یک فرایند روی میزبان سرور
+- توکن‌های مدل، که به‌ازای هر عامل انباشته می‌شوند
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/) for the two commands that do have one.
+هزینه‌ها در **مشاهده‌پذیری → بینش‌ها** می‌نشینند. توجه کنید که یک نوبت تعاملی معمولی سقف هزینه ندارد؛ برای آن دو فرمانی که سقف دارند [مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/) را ببینید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Build an agent team](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/)
-- [Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
-- [Add repos to a workspace](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [ساخت تیم عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/)
+- [مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
+- [افزودن مخزن به فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)

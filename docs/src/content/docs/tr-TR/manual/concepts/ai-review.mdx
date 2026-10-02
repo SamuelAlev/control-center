@@ -1,225 +1,236 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: YZ incelemesi
+description: Bir pull request nasıl incelenmiş bir hâle gelir — inceleme alanları, inceleme düğümleri ve akran uzlaşması, kohortlar ve eksenler, Ship/Hold/Block kararı ve yayınlamanın neden sizin attığınız bir adım olarak kaldığı.
 slug: tr-TR/kilavuz/kavramlar/yz-incelemesi
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Bir incelemenin biçimi
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+YZ incelemesi, açık bir pull request'e karşı yerleşik `pr_review` pipeline'ının
+tek bir çalıştırmasıdır. Pipeline PR'ın inceleme alanını açar, inceleyici
+ajanları o alanın yalıtılmış checkout'unda diff'i okumak üzere dağıtır, her biri
+bulgularını yapılandırılmış **inceleme düğümleri** olarak kaydeder, bir lider
+ajan bunları bir rehberli anlatımda birleştirir ve bir sonlandırıcı tek bir karar
+hesaplar: **Ship**, **Hold** veya **Block**. Pipeline'ın hiçbir zaman yapmadığı
+şey yayınlamaktır — GitHub'a göndermek, bir insanın attığı ayrı ve bilinçli bir
+adımdır.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Sayfanın geri kalanı parçaları ve neden bu biçimde olduklarını açıklar.
 
-## One review space per PR
+## PR başına tek inceleme alanı
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Bir PR'ın inceleme bağlamı bir mesajlaşma alanıdır — mod `review`, tür `pr` —
+ve pull request'e bir **inceleme alanı ilişkilendirmesi** ile bağlanır.
+İdempotent biçimde oluşturulur: PR sayfası, inceleme pipeline'ı ve sohbet
+yüzeyleri PR'ın _tek_ arka plan alanını aynı kod yolundan çözer; böylece bir
+PR'ı inceleyen bir şablon ile onu açan bir insan, iki farklı odada iki farklı
+checkout'a bakacak şekilde sonuçlanamaz.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Alanın yalıtılmış çalışma ağacında PR, head ref'inde checkout edilmiş olarak
+durur. Tek oda aynı zamanda tek checkout demektir: her inceleyici, çalışma
+alanının kendi kopyasını almak yerine aynı alanda çalışır.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Her inceleyici, o tek alanın içindeki kendi adlı akışına yazar; bulgular düz
+metin yerine `review_node` mesajlarıdır. Sondaki alan geneli toplama bilinçlidir
+— tek bir iş parçacığının bulgularından hesaplanan bir karar, sessizce tek bir
+inceleyici hakkında bir karar olurdu.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+İlişkilendirme bir durum merdiveni taşır — `requested` → `in progress` →
+`awaiting approval` → `completed` — PR'ın İnceleme sekmesinde **GitHub'a
+yayınla** düğmesini kapıya bağlayan şey bu merdivendir.
 
-## Review levels
+## İnceleme düzeyleri
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Bir incelemenin ne kadar derine gideceği, **Ayarlar → Çalışma alanı → Genel**
+altındaki **Çalışma alanı ilkesi** kartında ayarlanan, üç düzeyli bir çalışma
+alanı ilkesidir:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Düzey      | Dağıtılan inceleyiciler                       | Raporlama                                     |
+| ---------- | --------------------------------------------- | --------------------------------------------- |
+| `light`    | Yalnızca mühendis                             | Yalnızca maddi olarak önemli olanlar          |
+| `balanced` | Mühendis, QA, mimar (varsayılan)              | Olağan geçiş                                  |
+| `thorough` | Güvenlik ve performans dahil beşinin tamamı   | Hiçbiri alt sıraya düşürülmez                 |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Düzey aynı anda iki ayarı oynatır: hangi inceleyicilerin dağıtılacağı — bu,
+prompt ifadesiyle değil pipeline şablonunun `runWhen` durum kapılarıyla zorlanır;
+prompt ifadesi yok sayılabilir, bir kapı sayılamaz — ve eşik altı bulguların
+nerede işleneceği. Hiçbir ayar bir bulguyu asla silmez: daha azını raporlayan
+bir düzey yine tam olarak aynı miktarı kaydeder ve kalanları gruplar.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Güvenlik ve performans geçişleri, yeni ajanlar devreye sokmak yerine yerleşik
+mimar ve mühendis ajanlarını yeniden kullanır. Uzmanlık, inceleyicinin
+gönderilirken aldığı brifingdir; eksen başına ayrı bir ajan değildir — eksen
+başına bir ajan, her çalışma alanında ek yetenek sağlamadan beş satır daha
+demek olurdu. İnceleyici seçimi diff'e hiçbir zaman dil veya alan için bakmaz.
 
-## Review nodes: findings as data, not prose
+## İnceleme düğümleri: bulgular düz metin değil, veri
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+`add_review_node` ile kaydedilen bir bulgu, PR üzerinde bir **inceleme düğümü**
+olur — İnceleme sekmesinin görüntülediği, kararın hesaplandığı ve "GitHub'a
+yayınla"nın satır içi yoruma dönüştürdüğü şey budur. Yalnızca düz metin
+döndüren bir inceleyici, başarılı görünen bir pipeline çalıştırması ve boş bir
+inceleme yüzeyi üretir; yükü taşıyan kısım kaydetmektir.
 
-Each node carries:
+Her düğüm şunları taşır:
 
-| Field             | Values                                                                     |
+| Alan              | Değerler                                                                   |
 | ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Tür               | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Öncelik           | P0 (kritik) → P3 (ince ayrıntı)                                             |
+| Triyaj üçlüsü     | kategori (`security`, `stability`, …), önem derecesi, efor                  |
+| Çapa              | Dosya yolu, satır başlangıcı ve bitişi                                      |
+| Düzeltme taşıma   | Önerilen değiştirme satırları, isteğe bağlı bir diff, isteğe bağlı bir düzeltme prompt'u |
+| Güven             | [0, 1] arası bir puan                                                       |
+| Gerekçe           | Bulgudan önce yazılan analiz                                                |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+İki ayrıntı bilinçli birer tercihtir. Tek tıkla GitHub önerisi yalnızca
+inceleyici tam değiştirme satırlarını verdiyse sunulur — bunları birleşik bir
+diff'ten çıkarsamak sessizce yanlış sonuç verir ve yanlış bir çıkarımın tek
+tıkla commit edilmesi, hiç düğme olmamasından kötüdür. Ayrıca `add_review_node` şeması
+`reasoning` alanını bulgudan önce sunar; böylece nesneyi şema sırasına göre
+dolduran bir model analizi önce yazar. Alan isteğe bağlıdır: atlanması düğümü
+reddettirmez. Yükü bozuk olan bir düğüm, incelemeyi kirletmek yerine kaybolur.
 
-## Peer consensus
+## Akran uzlaşması
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Bir düğüm `open` → `consensus-ready` → `resolved` ya da `dismissed` durumlarından
+geçer. Ortadaki adım modelin kalbidir: **bir bulgu ancak bir akran inceleyici
+onayladığında olgunlaşır ve bir ajan kendi bulgusunu asla onaylayamaz.** MCP
+aracı `publish_review_to_github` ve RPC varsayılanı hâlâ yalnızca akran onaylı
+bulguları yayınlar. İnceleme sekmesindeki **GitHub'a yayınla** düğmesi ise kalan
+tüm açık bulguları gönderir.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Kural üç bağımsız yerde zorlanır — onaylama aracı, sonlandırıcı ve yayınlayıcı —
+böylece bunlardan herhangi birindeki hatalı bir çağıran durumunda da ayakta
+kalır. Durum değişikliklerinin tümü tek bir servisten geçer; bir durumun bir
+anlam taşımasını sağlayan da budur: ondan önce iki yarım yol, aynı bulgunun
+çözülüp çözülmediği konusunda anlaşamayabiliyordu.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+İnceleyiciler anlaşamadığında — aynı dosya ve satır, iki ya da daha fazla düzey
+ayrı öncelikler veya biri ona `bug` derken diğerinin `suggestion` demesi — bu
+anlaşmazlık bulgular listesinin üstünde gösterilir. İnceleyicilerin
+görüşlerinin ayrıldığı ve bir insanın muhakemesinin en değerli olduğu yer
+orasıdır.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Bir bulguyu yok saymak ayrıca bellek alanına düşük güvenle yumuşak bir bastırma
+olgusu yazar — tek bir yok sayma bir kural değil, bir tercihtir.
 
-## Cohorts: what the review is grouped around
+## Kohortlar: incelemenin etrafında gruplandığı şey
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+İnceleme hesaplama geçişi, bir PR'ın değişen dosyalarını kod grafiğinden
+türetilen **kohortlar** hâlinde gruplar: değişen dosyalar dokundukları
+sembollere, semboller bağlantılı bileşenlere eşlenir ve kohortlar etki alanına
+göre sıralanır. Bir kohort, düz bir dosya listesi olmak yerine rehberli bir
+okuma sırası, diyagramlar ve içgörüler taşır.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Bunu iki dürüstlük kuralı biçimlendirir. Kohort anahtarları içerikten türetilir
+ve push'lar arasında kararlıdır; böylece bulgular ve inceleme ilerlemesi bir
+rebase veya force-push'ta sahipsiz kalmak yerine ayakta kalır. Depoda kod
+dizini yoksa gruplama düz yollara geri düşer ve bunu söyler — geri düşüş hiçbir
+zaman anlamsal bir güven taklit etmez.
 
-## Review axes and gates
+## İnceleme eksenleri ve kapılar
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+İnceleyicilerin bulgularının yanı sıra bir incelemede **eksen sonuçları**
+birikir: iki türden altı eksen.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Eksen                          | Tür           | Kaynağı                                                 |
+| ------------------------------ | ------------- | ------------------------------------------------------- |
+| `correctness`, `security`      | Token güdümlü | İnceleyicilerin kendi bulguları                         |
+| `testGap`                      | Token güdümlü | İnceleyicilerin bulguları                               |
+| `visual`, `apiContract`        | Deterministik | Token harcamadan hesaplanır                             |
+| `performance`                  | Deterministik | Yalnızca enum — üründe hiçbir şey bir sonuç hesaplamaz  |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Bir eksen kararı `pass`, `warn`, `fail`, `partial` ya da `unavailable` olur — ve
+bir kapıyı yalnızca `pass` veya `warn` açar. `fail`, `partial` ve `unavailable`
+arasındaki ayrım yük taşır: tamamlanamayan ya da hiç çalışamayan kapıya bağlı
+bir eksen, genel kararı geçirmek yerine askıda tutar. **Kanıt yokluğu asla yeşil
+bir kapıya dönüşmez.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Bazı eksenler bilerek tavsiye niteliğindedir. Kohortlardan türetilen test açığı
+ekseni, bağımlılık enjeksiyonu veya fabrika kapsamını göremez — kapsamlı bir
+test paketine sahip dizinlenmemiş bir depo ile hiç testi olmayan bir depo oradan
+bakıldığında aynı görünür, dolayısıyla ikisinden birini iddia etmek yalan
+olurdu; bu eksen kapıya bağlanmadan gösterge panelinde görünür. Token eksenleri
+tavsiye niteliğindedir çünkü kararı zaten bulgu öncelikleri yönlendirir ve
+bunlarla yeniden kapı kurmak çift sayım olurdu.
 
-## The verdict
+## Karar
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+Sonlandırıcı, kararı durumu `open` veya `consensus-ready` olan bulgular üzerinden
+hesaplar:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- güveni ≥ 0.7 olan herhangi bir P0 bulgusu → **Block**
+- aksi halde, herhangi bir P0 (düşük güvenli) veya herhangi bir P1 → **Hold**
+- aksi halde → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Karar, katkıda bulunan güvenlerin yayılımından türetilen bir toplam güven
+taşır — anlaşma onu yükseltir, ayrışma düşürür.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Lider (CEO) ajanın birleştirmesi editoryal bir geçiştir, bulguların yeniden
+listelenmesi değil: elle yazılmış ikinci bir bulgu kopyası, gerçeğinden tam da
+sapacak olan şeydir. Yinelenen bulgular tekrarlanmak yerine alt sıraya
+düşürülür — birkaç inceleyici, bilinçli olarak örtüşen görev alanlarıyla tek bir
+diff'e yönlendirilir; dolayısıyla aynı kusurun sonlandırıcıya üç kez ulaşması
+sistemin çalıştığını, onu üç kez yayınlamak ise sistemin kendi mimarisini
+okuyucunun gelen kutusuna sızdırdığını gösterir. Yeniden incelemede bulguların
+parmak izi alınır ve önceki turla diff'i çıkarılır; yüzeye çıkan şey farktır.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Son olarak eksenler devreye girer ve kararı yalnızca **daha** ağır
+yapabilirler: kapıya bağlı ve başarısız bir eksen Block'u zorlar — bulgular onu
+oyla geçemez — ve tamamlanamayan kapıya bağlı bir eksen en azından Hold'u
+zorlar.
 
-## Publishing stays with you
+## Yayınlama sizde kalır
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Pipeline bilinçli olarak GitHub'a göndermez; yayınlama kullanıcı kapısına
+bağlıdır, böylece bir inceleme asla iki kez yayınlanamaz. **GitHub'a yayınla**
+düğmesine bastığınızda:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Tek bir GitHub incelemesi gönderilir. Zaten çözülmüş veya yok sayılmış
+  bulgular atlanır. Düğme, kalan tüm açık bulguları yayınlar
+  (`selection: all_open`). MCP aracı `publish_review_to_github` ise varsayılan
+  olarak hâlâ yalnızca akran onaylı bulguları kullanır (`consensus`).
+- Bir dosyaya ve satıra çapalanmış bulgular satır içi yorumlara dönüşür; geri
+  kalan her şey özet gövdesine katlanır ve her biri, kaynağın belirsiz kalmaması
+  için bir "— Control Center AI review" alt bilgisi taşır.
+- Çapalar, yayınlama anında PR'ın _güncel_ diff'ine karşı yeniden doğrulanır.
+  Zaten yeniden yazılmış kod üzerine bırakılan bir yorum, bir inceleyicinin
+  bırakabileceği en güven yıkıcı şeydir; GitHub satır içi bir çapayı yine de
+  reddederse, hiçbir şey sessizce düşmesin diye tüm inceleme, her bulgu gövdeye
+  katlanarak yeniden gönderilir.
+- **Block** kararı `REQUEST_CHANGES`; **Hold** `COMMENT`; **Ship** ise düğmeden
+  `APPROVE` olarak gönderilir (`approve_on_ship: true`). MCP aracı, siz
+  `approve_on_ship` vermediğiniz sürece Ship'i `COMMENT` olarak bırakır.
+- İnceleme, sunucunun uygulama kimliği altında yayınlanır. Yayınla'ya kimin
+  bastığı rol kapısı ve denetim günlüğü için kaydedilir; GitHub yazarı o
+  değildir.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/).
+Yayınlama, `prPublish` eylem sınıfını bildirir; bu yüzden koruma darboğazı onu
+diğer tüm değiştirici eylemler gibi kapıya bağlar — varsayılan olarak sorar ve
+bağlı bir onaylayıcı yoksa kapalı yönde başarısız olur. Bkz.
+[Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/).
 
-## What a reviewer may do
+## İnceleyici neler yapabilir
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+İnceleyici ajanlar `review` modunda çalışır: salt okunur bir sandbox ve
+bulguları, yorumları, biletleri ve akran incelemesini kapsayan, özenle seçilmiş
+bir araç izin listesi — ama mutasyon yok. Bir inceleyici, eleştirdiği kodu
+düzeltemez; bir insanın uygulayacağı önerilen bir düzeltmeyi iliştirebilir.
+Modun ret mesajı, yine de eylemde bulunmaya çalışan bir ajana incelemeyi
+sonlandırmasını ve kullanıcının yayınlanan özet üzerinden hareket etmesini
+söyler.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/) — the policy engine that gates publishing
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/) — what `review` mode changes for an agent
-- [Pipelines and automation](/tr-TR/kilavuz/kavramlar/pipelinelar/) — the engine the review runs on
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/) — where the isolated worktree comes from
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) — yayınlamayı kapıya bağlayan ilke motoru
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/) — `review` modunun bir ajan için değiştirdiği şeyler
+- [Pipeline'lar ve otomasyon](/tr-TR/kilavuz/kavramlar/pipelinelar/) — incelemenin üzerinde çalıştığı motor
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/) — yalıtılmış çalışma ağacının nereden geldiği
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Use AI-powered review](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/) — run a review and publish it
-- [Dispatch reviewer agents](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/) — choose the reviewers yourself
-- [Review compute](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/) — cohorts, axes and diffs
+- [YZ destekli inceleme kullanma](/tr-TR/kilavuz/nasil-yapilir/yz-incelemesi/) — bir inceleme çalıştırın ve yayınlayın
+- [İnceleyici ajanları gönderme](/tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme/) — inceleyicileri kendiniz seçin
+- [İnceleme hesaplaması](/tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi/) — kohortlar, eksenler ve diff'ler

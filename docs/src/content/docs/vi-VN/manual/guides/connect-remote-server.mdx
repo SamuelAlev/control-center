@@ -1,109 +1,112 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Kết nối máy chủ từ xa
+description: Trỏ ứng dụng máy tính hoặc máy khách web tới một cc_server đang chạy ở nơi khác và chuyển đổi giữa các máy chủ mà không cần khởi động lại.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Mọi máy khách đều là một lớp dựng giao diện trên một `cc_server` sở hữu dữ liệu.
+Ứng dụng máy tính có thể chạy một máy chủ ngay bên trong chính nó; ứng dụng web tại
+[app.usectrl.dev](https://app.usectrl.dev) thì không, vì một tab trình duyệt không
+thể làm máy chủ. Dù theo cách nào, hướng dẫn này giúp trỏ một máy khách tới một máy
+chủ đang chạy ở nơi khác — một chiếc máy nhỏ, một VM trên đám mây, một máy chủ build.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Một `cc_server` đang chạy. Nếu bạn chưa có, xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
+- Hoặc ba giá trị ghép nối mà máy chủ đã tạo — **URL máy chủ** (`ws://…/rpc` hoặc `wss://…/rpc`), một **id thiết bị** và một **khóa ghép nối** — **hoặc** một **mã mời** dùng một lần từ quản trị viên không gian làm việc. Đổi một mã mời sẽ cấp phát người dùng của bạn, ghi nhận tư cách thành viên và tạo thông tin xác thực của máy khách này thay bạn, nên bạn không bao giờ phải xử lý id thiết bị hay khóa.
 
-### Make sure the server is reachable
+### Đảm bảo có thể truy cập tới máy chủ
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Một máy chủ cục bộ không cần gì cả: `ws://localhost:9030/rpc` hoạt động từ cả ứng
+dụng máy tính lẫn trình duyệt, vì trình duyệt coi loopback là một origin đáng tin cậy.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Một máy chủ trên máy khác thì khác. `app.usectrl.dev` được phục vụ qua HTTPS, nên
+trình duyệt chỉ mở một socket `wss://` với chứng chỉ mà nó đã tin cậy — và bản thân
+`cc_server` cũng từ chối bind một địa chỉ không phải loopback nếu không có TLS ngay
+từ đầu. Hãy cấp cho nó một trong những thứ sau:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- một chứng chỉ trực tiếp, với `--tls-cert` và `--tls-key`
+- một reverse proxy kết thúc TLS ở phía trước, với máy chủ được khởi động `--insecure` (dữ liệu thuần phía sau proxy, chỉ trên mạng tin cậy)
+- một tunnel hoặc VPN cung cấp chứng chỉ — Tailscale, cloudflared, hoặc tương tự. **Cài đặt → Máy chủ → Kết nối & trạng thái** có tùy chọn tunnel tích hợp sẵn dưới mục **Chia sẻ máy chủ này**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Hai thiết lập phía máy chủ rất dễ bị bỏ sót. Khi đứng sau proxy, NAT hoặc tunnel,
+hãy đặt `--public-url` thành địa chỉ mà máy khách thực sự nên gọi tới — nó mặc định
+lấy theo bind cục bộ, nên nếu thiếu, máy khách sẽ thử nhầm máy chủ. Và nếu bạn tự
+lưu trữ bản dựng web của riêng mình, hãy thêm origin của nó vào `--allowed-origins`,
+vốn mặc định chỉ có `https://app.usectrl.dev`; loopback và các máy khách native luôn
+được cho phép.
 
-## Connect the desktop app
+## Kết nối ứng dụng máy tính
 
-On a fresh install:
+Khi cài đặt mới:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Khởi chạy Control Center. Màn hình lần chạy đầu tiên hỏi **Control Center nên chạy như thế nào?**
+2. Thay vì **Chạy trong ứng dụng này**, hãy điền vào các trường kết nối: URL máy chủ, cùng với mã mời hoặc id thiết bị và khóa ghép nối.
+3. Nhấp vào **Kết nối**. Control Center gọi tới máy chủ và đưa bạn đến hộp thư của không gian làm việc.
 
-On a desktop that already runs its own server:
+Trên một ứng dụng máy tính đã chạy máy chủ của riêng nó:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Mở **Cài đặt → Máy chủ → Kết nối & trạng thái**.
+2. Nhấp vào **Thêm máy chủ**. Nhập URL máy chủ (`wss://host:9030/rpc`) cùng mã mời hoặc id thiết bị và khóa ghép nối. Nút ở cuối trường URL sẽ dò tìm các phiên bản `cc_server` trên LAN hoặc tailnet của bạn.
+3. Nhấp vào **Kết nối**, rồi **Chuyển** trên hàng của máy chủ mới.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Việc chuyển đổi diễn ra ngay lập tức: ứng dụng dựng lại quanh phiên mới ngay tại
+chỗ, không cần khởi động lại. Nếu kết nối thất bại, bạn vẫn ở máy chủ hiện tại và
+thấy lỗi. Hàng của máy chủ bạn đang dùng không có thao tác **Chuyển**; máy chủ cục
+bộ là hàng đầu tiên, được gắn nhãn **Chạy trong ứng dụng này**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Sau khi chuyển, ứng dụng máy tính không còn sở hữu cơ sở dữ liệu nào. Mọi màn hình
+đều đọc và ghi qua máy chủ từ xa thông qua WebSocket.
 
-## Connect the web client
+## Kết nối máy khách web
 
-The web build is always remote.
+Bản dựng web luôn ở chế độ từ xa.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Mở [app.usectrl.dev](https://app.usectrl.dev), hoặc bản sao bản dựng web của riêng bạn.
+2. Nhập URL máy chủ cùng mã mời hoặc id thiết bị và khóa ghép nối.
+3. Máy khách gọi tới máy chủ và dựng đúng giao diện mà ứng dụng máy tính dựng.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Nếu URL có chứa một deep link ghép nối, các trường sẽ được điền sẵn. Khóa ghép nối
+nằm trong **fragment** của URL, thứ mà trình duyệt không bao giờ gửi tới máy chủ
+lưu trữ trang, nên máy chủ tĩnh không bao giờ thấy nó.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Nội dung đa phương tiện và bảo mật]
+Nội dung đa phương tiện (ảnh đại diện, ảnh bảng tin, ảnh chụp màn hình PR) được
+proxy qua máy chủ đã kết nối, nên trình duyệt không bao giờ tải trực tiếp từ máy
+chủ thượng nguồn. Chính sách Bảo mật Nội dung theo từng yêu cầu, được đóng dấu từ
+một cookie không nhạy cảm, chỉ cho phép origin của máy chủ đã kết nối.
 :::
 
-### What the browser does not do
+### Những gì trình duyệt không làm
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Máy khách web đọc và ghi trên cùng máy chủ như ứng dụng máy tính, nhưng một vài bề
+mặt cần một cửa sổ native hoặc chính các thiết bị của máy:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- không có thông báo nổi của hệ điều hành, âm thanh thông báo, hay dải banner nền (trung tâm thông báo trong ứng dụng vẫn hoạt động)
+- không có dò tìm máy chủ trên LAN hay tailnet trong hộp thoại **Thêm máy chủ**
+- không có trình đọc bài viết trong ứng dụng — các bài trên bảng tin mở trong tab mới
+- không chạy lại được bản tóm tắt cuộc họp và không hủy được bản tóm tắt đang xử lý
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Hai thứ hoạt động khác đi chứ không phải biến mất. Việc **ghi âm** cuộc họp hoạt
+động trong trình duyệt, thu micrô của bạn cùng một bản chia sẻ màn hình có kèm track
+âm thanh. **Mở trong IDE** cũng hoạt động, nhưng yêu cầu máy chủ khởi chạy trình
+soạn thảo trên màn hình của _máy chủ_, nên nút này tự ẩn khi gặp một máy không giao
+diện không cài trình soạn thảo nào.
 
-## Troubleshooting
+## Khắc phục sự cố
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
+- **Kết nối bị quá thời gian chờ**: máy chủ phải tiếp cận được từ máy khách. Hãy kiểm tra bind (`--bind any`), rằng cổng đang mở và rằng `--public-url` nêu đúng địa chỉ mà máy khách thực sự có thể gọi tới. Trên mạng internet công khai, TLS là bắt buộc — một bind không phải loopback ở dạng thuần sẽ bị từ chối khi khởi động, trừ khi máy chủ được khởi động với `--insecure` phía sau một proxy.
+- **Trình duyệt từ chối kết nối nhưng máy khách native vẫn hoạt động**: origin của trình duyệt không nằm trong danh sách `--allowed-origins` của máy chủ. Mặc định chỉ cho phép `https://app.usectrl.dev` (cùng loopback).
+- **Khóa ghép nối bị từ chối**: chạy lại `cc_server pair` trên máy chủ để xoay khóa của thiết bị đó, rồi nhập khóa mới. Một thiết bị đã bị thu hồi sẽ thấy thông tin xác thực của mình biến mất và bị từ chối truy cập; việc thu hồi cắt một phiên đang hoạt động trong vài giây.
+- **Sai không gian làm việc**: không gian làm việc là một phần của URL (`/workspaces/:workspaceId/…`) và đi kèm mọi lời gọi, nên việc chuyển không gian làm việc trong một máy khách chỉ thay đổi góc nhìn của riêng bạn. Bạn chỉ có thể truy cập những không gian làm việc mà mình là thành viên — bất cứ thứ gì khác đều bị từ chối với "Not a member of this workspace". Xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
-- [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): the phone relay path
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): con đường qua relay điện thoại
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/)
-- [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/)
+- [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)

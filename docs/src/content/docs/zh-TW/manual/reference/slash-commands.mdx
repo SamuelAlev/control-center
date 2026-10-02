@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: 斜線指令
+description: 你可以在輸入框中輸入的每一個指令、它的作用，以及它在哪裡執行。
 slug: zh-TW/手冊/參考/斜線指令
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+在空間的輸入框中輸入的指令。它們依生效位置分成三組，而這個差別很重要：**本機**指令永遠不會以訊息形式傳送，因此既不會出現在逐字稿中，也不會到達任何代理。
 
-| Where it runs | What that means                                                                    |
+| 在哪裡執行 | 代表什麼                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **本機**     | 在用戶端處理（或由用戶端發起的伺服器操作）。該指令永遠不會以訊息形式傳送，因此沒有代理會看到它。 |
+| **旁路**      | 針對這段對話做一次伺服器端模型呼叫。對話不會被改變。 |
+| **派送**  | 為訊息所啟動的那次執行設定一個模式或指示。                            |
 
 ---
 
-## Directing a run
+## 指揮一次執行
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**本機 → 派送。** 為對話啟用計畫模式：一個完全唯讀的工作樹，以及上限為 `read` 的工具面。代理的交付物是一份計畫，而不是一次編輯。單獨一個 `/plan` 只會切換模式，永遠不會以訊息形式傳送；如果附上提示詞，該行其餘的內容就是啟動這次執行的東西。
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**派送。** 啟動一個自主目標，目標監督器會在各個分段之間以及重新啟動後重新派發它。
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+先輸入 `/goal` 再接著文字，會開啟**目標訪談**——這是一段簡短的流程，在草稿湊齊以下全部五項之前拒絕接受它：評估者不需要主觀判斷就能裁定的成功標準、一條確切的驗證指令、嘗試次數上限、範圍邊界，以及停止條件。每一個步驟都提供*略過並按原樣執行*：訪談只是預設做法，而不是一道關卡。
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`、`/goal resume` 與 `/goal drop` 不是斜線指令。暫停、繼續與停止位於側邊欄中這段對話的目標清單上。目標本身的起始旗標有 `--budget <dollars>`、`--max <N>`（執行預算）與 `--days <N>`（截止時間）。觸及成本上限的目標，只能從同一個側邊欄控制項提高該上限來恢復。
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[它究竟為什麼要打斷]
+自主目標是含糊簡報真正昂貴的唯一場合。執行會為一個沒有人定義過「完成」的目標工作好幾個小時，然後按自己的標準回報成功。五個問題，比一次什麼時候「感覺完成了」就算完成的整夜執行更便宜。
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**派送。** 反覆迭代直到完成。接受一個界限：`/loop 10`、`/loop 30m`、`/loop 1h30m`、`/loop 10 minutes fix the tests`。
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+一個*看起來*像限制的記號（以數字或正負號開頭）若解析失敗，就是硬錯誤。普通文字就是普通文字，因此 `/loop keep going until the tests pass` 是一個帶行內提示詞的無界迴圈，而不是一次誤解析。
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/zh-TW/手冊/操作指南/指揮背景工作程序/).
+**派送。** 把工作階段變成一名**指揮者**：它自己的工具會降為 `read` 加上五個工作程序動詞，實際編輯則交由背景工作程序完成。參見[指揮背景工作程序](/zh-TW/手冊/操作指南/指揮背景工作程序/)。
 
-Workers never outlive the mode — exiting kills every one of them.
+工作程序絕不會比這個模式活得更久——退出時會終止其中每一個。
 
 ---
 
-## Managing context
+## 管理情境
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**本機 → 伺服器。** 把較舊的歷史摺疊成一份附有錨點的摘要，並在壓縮後的情境上繼續。沒有面向模型的引數：該指令永遠不會以訊息形式傳送，而壓縮流程也不接受聚焦提示。
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**本機 → 伺服器。****不**加摘要就丟棄沉重的內容：不呼叫模型，每一個字都保留，只把沒有人會再讀一遍的大塊內容清空。
 
-| Target        | Drops                             |
+| 目標        | 丟棄內容                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | 較舊且平淡無事的工具結果（預設） |
+| `images`      | 舊的螢幕擷取畫面，但保留其中的文字 |
+| `all`         | 兩者                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+這就是「我的情境太臃腫，但我又不想摘要」時的逃生出口。
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**本機。** 在專屬的分頁中，為這段對話的代理開啟情境瀏覽器：涵蓋它情境視窗的每一個分段與部分——系統提示、技能、情境檔案、工具結構描述、歷史與圖片——並顯示每一項占用了多少成本，以及它背後的逐字內容。
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+這個分頁以（空間、代理）配對為鍵，因此執行兩次會重新聚焦同一個分頁，而不是把同一份分解堆疊成多份。
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+在擁有**多於一個代理**的空間中，單獨一個 `/context` 會開啟頁首的情境計量器正在讀取的那個視窗——也就是最近在這裡工作過的代理，即訊息位於軌跡最底部的哪一個——而該分頁會標示為 `上下文 · <name>`，藉此說明它屬於誰。要切換到另一個，就指名它：`/context qa`（`@` 是選填的）。輸入的名稱會精確解析，絕不模糊比對：兩個代理持有兩個不同的視窗，因此一次差之毫釐卻開啟了另一個視窗的比對結果，會是對一個你並沒有提出的問題給出看似合理的答案。
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+空間頁首的情境計量器晶片背後也是同一個瀏覽器，而它跟隨的也是同一個代理——指令與該晶片對於這裡的「情境」所指為何，永遠不會產生分歧。
 
 ---
 
-## Asking about the conversation
+## 詢問這段對話
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+這些指令會花費一次模型呼叫，而且**絕不改變對話**。代理下一個真正的回合看到的，與它本來就會看到的完全一樣，而這正是「詢問」的全部價值。
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**旁路。** 為冷啟動接手這項工作的人寫一份交接文件：任務是什麼、已經了解到什麼、還剩下什麼。
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**旁路。** 回答一個關於目前工作進展的問題，而不把問題或答案寫進逐字稿。
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[兩個指令，一套實作]
+兩者形狀相同——拿現有的對話照原樣，就它問一個問題，兩邊都不保存。只實作一次，因此不會各自漂移出兩個不同的「到目前為止的情境」概念。
 :::
 
 ---
 
-## Navigating and exporting
+## 導覽與匯出
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/zh-TW/手冊/操作指南/分支對話/).
+**本機。** 開啟分支導覽器：對話在哪裡分叉、目前位於哪一條路徑，以及如何回到你離開的那一條。參見[分支對話](/zh-TW/手冊/操作指南/分支對話/)。
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**本機。** 把對話寫成一個自成一體的 HTML 檔案——可摺疊的工具卡片，沒有樣式表、沒有指令碼、沒有圖片主機。在桌面版會存到 `Documents/ControlCenter/exports/`，在網頁版則會下載。
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**本機。** 把逐字稿以 markdown 複製到剪貼簿，工具呼叫則放在可摺疊的區塊裡。推理是刻意排除在外的：貼進錯誤回報的逐字稿是要給人讀的。
 
 ---
 
-## Everything else
+## 其他所有指令
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**本機。** 檢視並編輯這段對話持久保存的核取清單。單獨一個 `/todo` 會開啟編輯器。子指令：`append`、`start`、`done`、`drop`（別名 `rm`）、`edit`、`copy`、`export`、`import`。
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**派送。** 套用一個已安裝的技能。技能位於它們自己的 `skill:` 前綴之下，因此與內建指令不共用命名空間——否則，一個名為 `plan` 的技能將永遠無法觸達。
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**派送。** 儲存庫中 `.agents/commands`、`.agent/commands`、`.claude/commands`、`.codex/commands` 或 `.opencode/commands` 底下的任何 markdown 檔案。巢狀的 `foo/bar.md` 也可以透過 `foo:bar` 觸達。
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+範本化：`$1`、`$@`、`$@[start:length]` 與 `$ARGUMENTS`。frontmatter 可以設定 `description`（輸入框自動完成）。`allowed-tools` 與 `model` 會從檔案中解析出來，但使用者指令的呼叫目前只會把引數替換進內文——它們不會改變該次執行的模型或工具面。
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+使用者自行撰寫的指令優先於同名的技能——它是人類刻意呼叫的捷徑，並帶有引數。
 
 ---
 
-## Magic keywords
+## 魔法關鍵字
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+這些不是指令。提示詞中任何位置出現的獨立小寫單字，都會為該回合附加一項隱藏指示。
 
-| Word          | Effect                                                             |
+| 單字          | 效果                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | 該回合使用最高推理力度                              |
+| `orchestrate` | 並行委派互相獨立的工作，並驗證每一個階段        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+比對器刻意對邊界從嚴認定。`orchestrate,` 會符合；`orchestrated`、`orchestrate.ts`、`foo::orchestrate` 與 `orchestrate()` 則不會，而且圍欄程式碼區塊、行內片段與 XML 區段都會先被遮罩。否則，貼上一段堆疊追蹤就會改變代理的行為。
 
 ---

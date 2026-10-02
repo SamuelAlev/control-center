@@ -1,130 +1,140 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Cura le tue notizie
+description: Aggiungi e gestisci feed RSS/Atom, leggi gli articoli con il blocco dei contenuti e sappi che i tuoi feed ti seguono in ogni spazio di lavoro.
 dateModified: 2026-09-19
 slug: it-IT/manuale/guide/notizie
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Questa guida mostra come modellare il feed di notizie: quali fonti recupera,
+come vengono letti gli articoli e a cosa serve il blocco dei contenuti.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Il feed di notizie è per utente, non per spazio di lavoro]
+I feed e gli articoli appartengono all'utente che ha effettuato l'accesso: il tuo
+elenco di feed, lo stato di lettura e i segnalibri ti seguono in ogni spazio di
+lavoro e su ogni dispositivo da cui accedi, e nessun altro utente li vede. I feed
+risiedono nel database globale del server, quindi l'URL `/newsfeed` contiene un id
+di spazio di lavoro solo perché lo fa ogni route interna all'app.
 :::
 
-## Read articles
+## Leggi gli articoli
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Fai clic su **Notizie** nella barra laterale
+2. Passa tra **Tutto**, **Non letti** e **Salvato** con i segmenti della barra
+   degli strumenti
+3. Restringi l'elenco con la casella di ricerca o il selettore delle fonti
+4. Alterna tra la griglia a rivista e l'elenco compatto con i pulsanti di layout
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Aprire un articolo lo segna come letto. Usa **Segna tutte come lette**
+nell'intestazione della pagina — compare solo quando c'è qualcosa di non letto —
+per svuotare l'arretrato in un colpo solo, e il controllo del segnalibro su una
+scheda per salvarne uno per dopo.
 
-The layout choice persists across launches.
+La scelta del layout persiste tra un avvio e l'altro.
 
-## Add a feed
+## Aggiungi un feed
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Apri **Impostazioni → Tu → Notizie** (l'icona delle impostazioni
+   nell'intestazione del feed di notizie ti porta direttamente lì)
+2. Premi **Aggiungi feed**
+3. Compila un **nome** e l'**URL del feed** (RSS o Atom)
+4. Facoltativamente, espandi **Avanzate** e imposta uno **User-Agent**
+   personalizzato — alcuni editori restituiscono una risposta diversa a un client
+   predefinito
+5. Premi **Aggiungi feed**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Verifica: il feed compare nell'elenco **Feed** e i suoi articoli arrivano dopo il
+primo recupero. Un URL già sottoscritto viene rifiutato con «Esiste già un feed
+con questo URL.»
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Al primo utilizzo vengono precaricati quattordici feed per ogni utente: Control
+Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI,
+Import AI, The Pragmatic Engineer, Martin Fowler, Irrational Exuberance di Will
+Larson, The Engineering Manager, Lea Verou e CSS-Tricks.
 
-## Manage feeds
+## Gestisci i feed
 
-Each row in the **Feeds** list gives you three controls:
+Ogni riga dell'elenco **Feed** offre tre controlli:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Controllo           | Effetto                                                                    |
+| ------------------- | -------------------------------------------------------------------------- |
+| Interruttore        | Disattiva il feed. Una riga disattivata è attenuata e non viene più recuperata |
+| Icona di aggiornamento | Recupera subito questo singolo feed                                     |
+| Icona del cestino   | Elimina il feed, dopo una conferma                                         |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Aggiorna tutto** in cima all'elenco recupera ogni feed attivo.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Il sottotitolo di un feed mostra la sua descrizione e quanto tempo fa è stato
+recuperato l'ultima volta; un feed che ha fallito mostra l'errore al suo posto, in
+colore di avviso.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Non c'è alcun comando di modifica — per cambiare il nome, l'URL o lo user agent
+di un feed, eliminalo e aggiungilo di nuovo.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Il recupero avviene interamente sul server: una volta per utente all'avvio (e al
+primo utilizzo per gli account creati in seguito), poi ogni 30 minuti.
 
-## Block ads and trackers in the reader
+## Blocca pubblicità e tracker nel lettore
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. In **Impostazioni → Tu → Notizie**, trova **Preferenze lettore**
+2. Lascia attivo **Apri articoli nell'app** per usare il lettore integrato, oppure
+   disattivalo per affidare gli articoli al browser di sistema
+3. Lascia attivo **Blocca pubblicità, tracker e banner per i cookie**
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Il blocco è attivo per impostazione predefinita. Il lettore integrato esiste solo
+su macOS e Windows: nella build web e su Linux il browser di sistema _è_ il
+lettore e l'articolo si apre lì (in una nuova scheda sul web). Sul web
+l'interruttore del blocco, la scheda **Elenchi di filtri** e la scheda **Siti
+attendibili** sono nascosti.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Il lettore in-app non riformatta l'articolo. Visualizza la pagina dell'editore in
+una webview incorporata e sopprime pubblicità, tracker e banner per i cookie
+usando elenchi di filtri memorizzati nella cache.
 
-### Check or update the filter lists
+### Controlla o aggiorna gli elenchi di filtri
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+La scheda **Elenchi di filtri** mostra quante regole di occultamento dei cookie,
+di occultamento della pubblicità e di blocco di rete sono caricate, oltre ai
+parametri di tracciamento che vengono rimossi e a quando gli elenchi sono stati
+aggiornati l'ultima volta. Premi **Cerca aggiornamenti** per aggiornarli.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Le fonti sono EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, diversi
+elenchi di uBlock Origin e l'elenco dei parametri di tracciamento di uBO. Finché
+un download non riesce, la scheda etichetta gli elenchi come valori predefiniti
+inclusi che non sono mai stati aggiornati — i conteggi delle regole pubblicitarie,
+dei cookie e di rete restano a zero; la rimozione dei parametri di tracciamento
+usa comunque un set predefinito integrato.
 
-### Allowlist a site
+### Consenti un sito
 
-Some sites break under blocking.
+Alcuni siti si rompono con il blocco attivo.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. In **Impostazioni → Tu → Notizie**, vai su **Siti attendibili**
+2. Premi **Aggiungi sito attendibile** e inserisci il dominio
 
-Blocking is skipped there.
+Lì il blocco viene saltato.
 
-## Troubleshooting
+## Risoluzione dei problemi
 
-### A feed I added shows up in another workspace
+### Un feed che ho aggiunto compare in un altro spazio di lavoro
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+È previsto. Il feed di notizie è per utente, non per spazio di lavoro — i tuoi
+feed ti seguono ovunque tu abbia effettuato l'accesso. Vedi l'avvertenza in cima.
 
-### A feed row shows an error instead of a description
+### Una riga di feed mostra un errore al posto della descrizione
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+L'ultimo recupero non è riuscito e la riga mostra il motivo alla lettera. Premi
+l'icona di aggiornamento per riprovare e verifica che l'URL serva ancora RSS o
+Atom. Un editore che rifiuta i client sconosciuti può richiedere uno user agent
+personalizzato, il che significa eliminare il feed e aggiungerlo di nuovo.
 
-### An article page renders badly
+### Una pagina di articolo viene visualizzata male
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Disattiva **Blocca pubblicità, tracker e banner per i cookie** per quel dominio
+tramite **Siti attendibili**, oppure disattiva **Apri articoli nell'app** e
+leggilo nel browser.
 
-## Related guides
+## Guide correlate
 
-- [Configure notifications](/it-IT/manuale/guide/notifiche/)
-- [Triage your inbox](/it-IT/manuale/guide/gestisci-posta-in-arrivo/)
+- [Configura le notifiche](/it-IT/manuale/guide/notifiche/)
+- [Gestisci la posta in arrivo](/it-IT/manuale/guide/gestisci-posta-in-arrivo/)

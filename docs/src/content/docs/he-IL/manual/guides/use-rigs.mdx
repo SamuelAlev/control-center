@@ -1,97 +1,92 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: תנו לסוכן מחשב לבדיקות
+description: תנו לסוכן דפדפן, שולחן עבודה, אמולטור Android או סימולטור iOS חד־פעמיים — בצפייה חיה, עם פקדים שאפשר להשתלט עליהם.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**תחנה** היא מכונה חד־פעמית שסוכן פותח כשהוא צריך פשוט לנסות משהו: לטעון דף,
+ללחוץ דרך אפליקציית שולחן עבודה, להקיש על טלפון. אתם יכולים לצפות בה עובדת
+בזמן אמת, ולהשתלט על הפקדים בכל רגע שתרצו.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+תחנות של מסוף מבודד, דפדפן ושולחן עבודה הן מכונות וירטואליות עם דיסקים
+חד־פעמיים ורשתות מבוקרות בשער. Android ו-iOS הן אמולטורים מנוהלים במארח: מצב
+ההתקן שלהן חד־פעמי, אבל הרשת שלהן הולכת אחרי מארח השרת.
 
-## Set it up once
+## הגדרה פעם אחת
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+תחנות רצות במכונה שמארחת את `cc_server` — אותה מכונה, לא זו שאתם מביטים בה.
+יש חמישה משטחים גלויים למשתמש; משטחי שולחן העבודה והמובייל דורשים הגדרה במארח:
 
-| Surface | Runs on | Setup |
+| משטח | רץ על | הגדרה |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **טרמינל (VM)** | microVM שמאתחל תמונת Ubuntu מוצמדת | אין — התמונה נמשכת אוטומטית בשימוש הראשון |
+| **דפדפן (VM)** | microVM שמאתחל תמונת Debian מוצמדת, עם Chromium, Firefox או WebKit שמותקנים בשימוש הראשון | אין — אותו דבר |
+| **מחשב (VM)** | QEMU עם תמונת שולחן עבודה של Linux שכוללת Chromium, Firefox, WebKit וקו בסיס של CLI בסגנון ראנר מתארח ב-GitHub | התקינו QEMU (`brew install qemu`), ואז **ייבאו** תמונת שולחן עבודה תחת **הגדרות → שרת → תחנות** |
+| **Android** | האמולטור של Google ל-Android | התקינו את Android SDK, צרו AVD והפעילו אותו (להלן) |
+| **סימולטור iOS** | CoreSimulator במארח ה-Mac של השרת | התקינו Xcode ואת סביבת ההרצה המבוקשת של iOS, ואז התקינו את גשר האוטומציה תחת **הגדרות → שרת → תחנות** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+מכונות המסוף והדפדפן מאתחלות מתמונות מוצמדות לפי digest: הבתים המדויקים
+נקבעים מראש, נמשכים פעם אחת באתחול הראשון, ונשמרים במטמון — אחרי האתחול הראשון
+של כל סוג, מכונות מאוחרות יותר מדלגות לגמרי על ההורדה ועולות בתוך שניות.
+**הגדרות → שרת → תחנות** מציג מה השרת שלכם יכול לאתחל וכל מכונה שרצה כעת.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+תמונת שולחן עבודה מותקנת נשארת ניתנת לניהול מאותו עמוד: **ייבא** מחליף אותה
+ב-qcow2 חדש יותר, ו**מחיקה** מסירה אותה כדי שתוכלו להתקין בנייה חדשה.
 
-### Mobile devices are set up differently
+### התקני מובייל מוגדרים אחרת
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+אין תמונה משלנו ל-Android או ל-iOS, וזו אינה השמטה. תמונות המערכת של Android
+מגיעות מ-Android SDK של Google; סביבות ההרצה של iOS מגיעות מ-Xcode. עבור
+Android, התקינו את Android Studio (או את כלי ה-SDK של שורת הפקודה), הוסיפו
+התקן וירטואלי ב**מנהל ההתקנים**, והפעילו אותו. עמוד התחנות אז מדווח ש-Android
+זמין.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+הוא גם אומר לכם בדיוק איזה שלב חסר — אין SDK, אין אמולטור, אין התקן וירטואלי, או
+התקן שפשוט אינו רץ — כי לארבעה מאלה יש ארבעה תיקונים שונים, ורק אחד מהם הוא
+הורדה. אם אתם מפעילים את `cc_server` ממעטפת שאינה רואה את ה-SDK, ייצאו אותו:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+עבור iOS, השרת עצמו חייב לרוץ על macOS עם Xcode וסביבת הרצה של סימולטור iOS
+מותקנת. פתחו את **הגדרות → שרת → תחנות** ולחצו על **התקנת גשר האוטומציה של
+iOS**. השרת מושך את ארטיפקט ה-WebDriverAgent המוצמד ב-checksum, מאמת אותו,
+ומתקין אותו במחסן האוטומציה שבבעלות השרת. אף סימולטור לא עולה במהלך ההגדרה.
 
-## Open a machine
+## פתיחת מכונה
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+מכונות חיות כ**לשוניות**, לצד הצ'אט וה־diff — במרחב או בעמוד בקשת משיכה, באותו
+תפריט `+`, תחת **מכונות**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **מחשב** — שולחן עבודה של Linux עם Chromium, Firefox ו-WebKit
+- **Chromium**, **Firefox** או **WebKit** — דפדפן
+- **Android** — אמולטור ה-Android שרץ
+- **סימולטור iOS** — סימולטור חד־פעמי שנוצר עבור השיחה הזו
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+בחרו אחת ולחצו על **הפעל את המכונה**. הלשונית אומרת באיזה שלב האתחול נמצא
+("Starting the microVM", "Waiting for the guest to come up") במקום פשוט
+להסתובב.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+הלשונית מוגבלת לשיחה, וכך גם כלי הסוכן. לשונית Chromium, Firefox או WebKit
+ו-`browser_use`,‏ Android ו-`mobile_use`, או סימולטור iOS ו-`ios_use` פונים
+לאותה מכונת ברירת מחדל. משבצות ממשק נוספות הן מכונות השוואה נפרדות; כלי הסוכן
+תמיד משתמשים בברירת המחדל.
 
-To build, install and start a Flutter app on Android:
+כדי לבנות, להתקין ולהפעיל אפליקציית Flutter ב-Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+ואז קראו ל-`mobile_use` עם `install_apk` ועם
+`build/app/outputs/flutter-apk/app-debug.apk`, ואחריו `start_app` ושם החבילה של
+Android. `ui_dump`, צילומי מסך וקלט מתפעלים את אותו התקן שמוצג בלשונית
+האנושית. `stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, וקריאות
+`shell` בצורת argv מכסים את שאר מחזור הפיתוח בלי להפעיל מעטפת במארח השרת.
 
-To build, install and start a Flutter app on iOS Simulator:
+כדי לבנות, להתקין ולהפעיל אפליקציית Flutter בסימולטור iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +94,185 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+ואז קראו ל-`ios_use` עם `install_app` ועם ספריית ה-`.app`, ואחריו `start_app`
+ומזהה החבילה שמודפס על ידי `plutil`. כלי ה-iOS חושף גם `stop_app`,
+`uninstall_app`, `open_url`, ופעולת `spawn` בצורת argv לאבחון מקומי בסימולטור.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+תצוגות שולחן העבודה והדפדפן משנות גודל לפי הפאנל. iOS שומרת על גודל הנקודות
+הקבוע של הסימולטור ועוטפת אותו במסגרת. בכל משטח יש עדיין שני ערוצים בלתי
+תלויים: הסוכן מקבל צילומי מסך קטנים וזולים, ואתם מקבלים את התצוגה החיה. מעבר
+בין לשוניות עוצר את הערוץ האנושי, כך שמכונה ברקע לא עולה רוחב פס של תצוגה.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+לשונית תחנה אינה מפעילה מכונה מעצמה, גם לא במהלך שחזור פריסה. הכלל הזה מונע
+מפתיחת האפליקציה לאתחל מכונות וירטואליות או ליצור התקני סימולטור בלי כוונה.
 
-## Drive the machine
+## תפעול המכונה
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+הקנבס פתוח להקלדה ולחיצות בכל עת שאף אחד אחר אינו מחזיק בשליטה בלעדית — או
+כשאתם מחזיקים בה. כל עוד אתם מחזיקים בנעילה, תג הסטטוס מציג **השליטה בידיך**,
+הסוכן עדיין יכול לצלם מסכים, והשרת מסרב לפעולות המשנות שלו בנקודה היחידה שכל
+פעולה עוברת דרכה. כל מה שאתם עושים נרשם על שמכם.
 
-Press **Stop the machine** when you are done.
+לחצו על **עצור את המכונה** כשסיימתם.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+השליטה בלעדית במכוון: שני גורמים שמקלידים באותה מכונה מייצרים קלט שאף אחד מהם
+לא התכוון אליו.
 
-## Move things in and out
+## העברת דברים פנימה והחוצה
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+העתקה והדבקה עובדות בשני הכיוונים על פני קנבס התחנה, וכך גם גרירת קבצים.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**העתקה והדבקה.** לחצו על צירוף ההעתקה מעל הקנבס, וכל מה שהמכונה העתיקה — טקסט,
+תמונה, רשימת קבצים — נוחת בלוח שלכם. הדבקה שולחת את שלכם לכיוון השני ולוחצת
+הדבקה בתוך המכונה. ב-macOS הצירוף הוא ⌘C/⌘V; ⌃C ממשיך להגיע למעטפת של האורח
+כאות ההפסקה. ב-Windows וב-Linux השתמשו ב-⌃C/⌃V — האורח מקבל את אותה הקלדה
+שהיה מקבל ממילא, כך ש-⌃C במסוף של האורח עדיין מפסיק, והלוח שלכם לא נגע.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+שום דבר לא מסונכרן ברקע. סיסמה שאתם מעתיקים במחשב שלכם לא מגיעה לתוך מכונה
+וירטואלית מפני שטיימר הופעל; היא חוצה כשאתם מדביקים.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+הדבקה לתוך תחנה מותרת כברירת מחדל. העתקה מתוך תחנה מבקשת אישור תחילה — אישור
+לעשר דקות, או **לאפשר תמיד** תחת **הגדרות → שרת → תחנות → גישה ללוח**. שני
+הכיוונים בלתי תלויים, והם הולכים אחריכם, לא אחרי סביבת העבודה.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**גרירת קבצים פנימה.** השליכו אותם בכל מקום על הקנבס.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- ב**דפדפן (VM)**, הדף מקבל השלכה *אמיתית* בנקודה שבה שחררתם, כך שאזור העלאה
+  מתנהג בדיוק כפי שהיה מתנהג עם קובץ מקומי.
+- ב**מחשב (VM)**, הקבצים נוחתים ב-`~/Drops` והנתיבים שלהם נכנסים ללוח של
+  המכונה, כך ש-⌃V מדביק אותם במנהל קבצים או בשדה העלאה. מארח אינו יכול לסנתז
+  גרירה אל אפליקציית Linux כלשהי בלי להריץ דמון בעל הרשאות בתוך המכונה
+  הווירטואלית, וזה בדיוק מה שלתחנות אין במכוון — ולכן הודעת הטוסט אומרת לכם לאן
+  הקבצים הגיעו במקום להעמיד פנים שהתרחשה השלכה.
+- ב**מסוף**, הקובץ מועתק פנימה והנתיב שלו מוקלד בשורת הפקודה, מוכן להעברה
+  לפקודה. הדבקת *תמונה* במסוף עושה את אותו הדבר: היא נשמרת במכונה ואתם מקבלים
+  את הנתיב.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**גרירת קבצים החוצה** עובדת מה**מחשב (VM)**. התחילו לגרור קובץ בתוך המכונה,
+הוציאו את הסמן מחוץ לקנבס, והוא הופך לגרירה אמיתית בשולחן העבודה שלכם — השליכו
+אותו ב-Finder או ב-Explorer. העתקת קבצים במנהל הקבצים של המכונה והדבקה בצד שלכם
+עובדת גם היא. ה**דפדפן (VM)** אינו מציע זאת: לדפדפן ללא ממשק גרפי אין מטען גרירה
+לקרוא, ולנחש לפי בחירת הטקסט של הדף היה לחטוף לחיצות רגילות.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+ה**מחשב (VM)** זקוק לתמונה שנבנתה אחרי שתמיכת הלוח נוספה. אם ייבאתם את שלכם
+קודם לכן, בנו אותה מחדש עם `scripts/rigs/build_image.sh`, ואז השתמשו ב**ייבא**
+על התמונה המותקנת כדי להחליף אותה.
 :::
 
-## Terminals inside a rig
+## מסופים בתוך תחנה
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+המסופים במרחב או בעמוד בקשת משיכה יכולים לרוץ בתוך תחנה במקום במכונה של השרת
+עצמו. כשהם רצים כך, הפאנל מציג תג **VM במתחם מבודד**.
 
-What changes:
+מה משתנה:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- שום דבר שאתם מריצים לא מגיע למארח. `rm -rf` שם עולה לכם את התחנה.
+- הרשת דוחה כברירת מחדל. רק מארחים ברשימה המותרת של התחנה נגישים, והכול עובר
+  דרך שער שאוכף אותה.
+- `git push` עדיין עובד. לתחנה אין אישור שמור; היא מבקשת מהשרת אישור קצר-מועד
+  לכל פעולה, והאסימון הזה מבוטל כשהתחנה נסגרת.
 
-What to know:
+מה שכדאי לדעת:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **מסוף מבודד משוחזר ממתין לכם.** כמו לשונית תחנה, מסוף `microvm` שחוזר עם
+  הפריסה שלכם מציג כפתור **פתח את ה־shell** במקום לאתחל את המכונה הווירטואלית
+  שלו עם העלייה. מסוף שרץ במעטפת של המארח עולה תהליך אחד; מסוף מבודד עולה מכונה
+  שלמה.
+- **קבצים שמושלכים על המסוף מוקלדים, לא נפתחים.** השליכו CSV על מסוף מבודד והוא
+  מועתק לתוך המכונה ונתיב האורח שלו מופיע בשורת הפקודה — נתיב המארח היה פקודה
+  שנכשלת שם.
+- **העותק בתחנה הוא עותק.** עץ העבודה שלכם במארח נשאר הקובע. קומיטים שאתם עושים
+  בתוך תחנה נאספים אל `refs/rigs/<id>/*` כשאתם מבקשים — הם לעולם לא מזיזים את
+  הענף שלכם ולא נוגעים בעץ העבודה שלכם.
+- **עבודה שמכוונת למארח עדיין רצה במארח.** אורח Linux אינו יכול לבנות עבור
+  macOS או להריץ `xcodebuild`. בחרו לשם כך במפורש במנוע המקורי; האפליקציה תבקש
+  מכם לאשר במקום לעבור בשקט.
 
-## Ports
+## פורטים
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/).
+הריצו שרת פיתוח בטרמינל (VM) — `pnpm dev` על פורט 3000, נניח — ותוך שניות
+ספורות סמל התקע בפינת המסוף נדלק: הפורט מועבר אל `localhost:3000` במכונה שלכם,
+נגיש ב-`localhost:3000` בתוך הדפדפן (VM), ניתן לשיתוף ברשת שלכם, ואפשר לתת לו
+שם כמו `https://myapp.test`. כל הזרימה — העברה אוטומטית, שיתוף ברשת המקומית,
+דומייני פיתוח עם HTTPS — זוכה למדריך משלה:
+[העברת פורטים ממסוף](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/).
 
-## Custom images
+## תמונות מותאמות אישית
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+סביבת עבודה יכולה לכוון את הטרמינל (VM) ואת הדפדפן (VM) לתמונות משלה — תחת
+**הגדרות → שרת → תחנות → תמונות מותאמות אישית (סביבת עבודה זו)**. שימוש
+אופייני: להרחיב את תמונת ברירת המחדל עם שרשרת הכלים שהפרויקט שלכם צריך, כך שכל
+מסוף עולה מוכן, או לעשות שימוש חוזר בתמונה שהצוות שלכם כבר מפרסם.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+המכונה עדיין מאתחלת בתוך אותו מתחם מבודד: אותו שער תעבורה יוצאת, אותו מתווך
+אישורי גישה, אותו מחזור חיים. רק מנהלי סביבת העבודה יכולים לשנות את ההגדרה,
+מכונות חדשות מאמצות אותה (רצות שומרות על שלהן), וההפניה חייבת להיות תמונת
+registry — נתיבים מקומיים נדחים.
 
-What an image must provide:
+מה תמונה חייבת לספק:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **טרמינל (VM)** — תמונת Linux עם `bash`. היא זקוקה גם ל-`git`, ל-`curl`
+  ול-`socat` — מותקנים מראש, או ניתנים להתקנה בהתנעה הראשונה (כל תמונה מבוססת
+  Debian/Ubuntu מתאימה: הם מותקנים אוטומטית, יחד עם ערכת כלי CLI בסגנון ראנר
+  מתארח ב-GitHub: מהדרים, Python 3, `jq`, כלי ארכיון, `rsync`. סביבות הרצה של
+  שפות כמו Node/Go/Java ו-Docker אינן מותקנות מראש). פורט `7911` של האורח שמור
+  למעביר הפורטים.
+- **דפדפן (VM)** — תמונת Debian/Ubuntu עם `bash` ו-`socat`, ובנוסף קובץ הרצה
+  `chromium`. השרת מפעיל את Chromium בעצמו כ-`chromium --headless=new` ומעביר
+  DevTools מפורט `9223` של האורח אל `9222`. PulseAudio ו-ffmpeg מותקנים בהתנעה
+  הראשונה. אל תבנו `FROM chromedp/headless-shell` — לקובץ ההרצה הזה אין אודיו.
+  העקיפה חלה על תחנות Chromium בלבד; Firefox ו-WebKit מתעלמים ממנה ומאתחלים את
+  תמונת ה-Debian המוצמדת. פורטים `9222`/`9223` של האורח שמורים.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+שתי המלצות: להצמיד את ההפניה לפי digest (`@sha256:…`) כדי שהבתים לא ישתנו מתחת
+לרגליכם, ולאחסן אותה ב-Docker Hub או ב-GitHub Container Registry — מארחי
+ההורדה של ה-registries האלה מתקבלים דרך שער התעבורה היוצאת אוטומטית; אחרים
+עשויים להזדקק לכך שמארחי אספקת התוכן שלהם יהיו נגישים כדי למשוך.
 
-## When a rig goes away
+## כשתחנה נעלמת
 
-Rigs are meant to be temporary:
+תחנות נועדו להיות זמניות:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **חוסר פעילות** — אחרי כ־15 דקות בלי שום פעילות, תחנת דפדפן, שולחן עבודה או
+  מובייל נחנית (קפואה, מתעוררת מיד בפעולה הבאה). מסוף מבודד ממתין 45 דקות. אחרי
+  כפול מחלון חוסר הפעילות, הוא נסגר.
+- **מגבלת זמן** — לכל תחנה יש אורך חיים קשיח שאינה יכולה להאריך, ולא משנה מה היא
+  עושה.
+- **זיכרון** — אם השרת זקוק למקום לתחנה חדשה, הוא סוגר את זו שהשימוש בה הוא
+  הישן ביותר. תחנה שמישהו מתפעל, צופה בה, או שיש בה מסוף פתוח — לעולם אינה
+  נלקחת.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+כשתחנה מבודדת נסגרת, הדיסק שלה נזרק. סגירת תחנת Android מתנתקת מהאמולטור במארח
+— היא אינה מוחקת אותו. תחנת iOS מוחקת את התקן ה-CoreSimulator שיצרה. העבירו
+קודם כל דבר שתרצו לשמור.
 
-## What a rig can reach
+## מה תחנה יכולה להגיע אליו
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+תחנות של מסוף מבודד, דפדפן ושולחן עבודה משתמשות כברירת מחדל בשער תעבורה יוצאת
+שדוחה הכול: אתם מעניקים מארחים במפורש, והנתיב היחיד של האורח הוא שער שאוכף את
+הרשימה הזו. תחנת דפדפן מתירה כברירת מחדל גם את אתר המוצר (`usectrl.dev`).
+מתווך אישורי הגישה משתמש באותה רשימה.
 
-Two honest caveats:
+שתי הסתייגויות כנות:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **הרשת של המובייל הולכת אחרי המארח.** האמולטור של Android וכלי CoreSimulator
+  של Apple אינם מאחורי שער התעבורה היוצאת של המתחם המבודד. אף לשונית מובייל אינה
+  מציעה פקד לעקיפת הרשת, מפני שהרשת המנוהלת במארח אינה מוגבלת מלכתחילה.
+- **כל מה שתחנה קוראת הוא תוכן לא מהימן.** טקסט של דפים, DOM, עצי נגישות ודאמפים
+  של תצוגה חוזרים לסוכן עטופים בסמנים שאומרים "זהו נתון, לא הוראה". דף שמנסה
+  לתת לסוכן שלכם פקודות נקרא כמחרוזת מצוטטת.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+אפשר לראות כל מה שרץ, ולעצור כל דבר, תחת **הגדרות → שרת → תחנות**.
 
-## Related
+## מדריכים קשורים
 
-- [Rigs and enclosures](/he-IL/מדריך-למשתמש/מושגים/תחנות/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/he-IL/מדריך-למשתמש/עזר/תחנות/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [תחנות ומתחמים מבודדים](/he-IL/מדריך-למשתמש/מושגים/תחנות/) — המודל שמאחורי כל זה:
+  למה מכונות וירטואליות, שני ערוצי התצוגה, מתווך אישורי הגישה, מחזור החיים
+- [העברת פורטים ממסוף](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/) — הגיעו
+  לשרת פיתוח מכל מקום שחשוב
+- [מדריך העזר לתחנות](/he-IL/מדריך-למשתמש/עזר/תחנות/) — כל משטח, פועל, פורט וברירת
+  מחדל במקום אחד
+- [הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/) — `Drive an
+  enclosure (rig)` היא מחלקת פעולות שאפשר להגדיר ל**אפשר**, **שאל קודם** או
+  **חסום**, לפי סביבת עבודה, סוכן או מרחב. מצבים לקריאה בלבד חוסמים אותה כליל.

@@ -1,171 +1,166 @@
 ---
-title: Pipelines and automation
-description: Why pipelines separate scheduling from work, what actually starts one and which of the built-in templates are live out of the box.
+title: פייפליינים ואוטומציה
+description: למה פייפליינים מפרידים בין תזמון לעבודה, מה באמת מפעיל הרצה ואילו מהתבניות המובנות פעילות כברירת מחדל.
 slug: he-IL/מדריך-למשתמש/מושגים/פייפליינים
+sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
 ---
 
-Pipelines are the deterministic half of Control Center. An agent decides what to
-say; a pipeline decides what happens next, the same way every time. A pipeline
-is a DAG of steps that can dispatch agents, run scripts, branch on a condition,
-fan out over a collection and pass data between steps — persisted, resumable,
-and costed.
+פייפליינים הם החצי הדטרמיניסטי של Control Center. סוכן מחליט מה
+לומר; פייפליין מחליט מה יקרה בהמשך, באותו אופן בכל פעם. פייפליין
+הוא DAG של שלבים שיכולים לשלוח סוכנים, להריץ סקריפטים, להסתעף לפי תנאי,
+להתפצל על פני אוסף ולהעביר נתונים בין שלבים — נשמר, ניתן לחידוש
+ומתומחר.
 
-They exist for three reasons: to chain a repetitive multi-step process, to
-coordinate several agents in sequence or in parallel and to react to something
-that happened without a human being there.
+הם קיימים משלוש סיבות: לשרשר תהליך רב-שלבי חוזר, לתאם כמה סוכנים
+ברצף או במקביל, ולהגיב למשהו שקרה בלי שאדם היה שם.
 
-## Templates and runs
+## תבניות והרצות
 
-A **template** (`PipelineDefinition`) is the declarative DAG: steps, declared
-inputs and configuration. It lives in the workspace's own database. A **run**
-(`PipelineRun`) is one execution of that template, carrying a mutable state bag,
-cost and token totals and per-step status.
+**תבנית** (`PipelineDefinition`) היא ה-DAG הדקלרטיבי: שלבים, קלטים
+מוצהרים ותצורה. היא מתגוררת במסד הנתונים של סביבת העבודה עצמה. **הרצה**
+(`PipelineRun`) היא ביצוע אחד של אותה תבנית, והיא נושאת מאגר מצב
+ניתן לשינוי, סכומי עלות וטוקנים וסטטוס לכל שלב.
 
-One template has many runs. Runs survive a restart: the engine reloads
-in-flight runs and picks them up where they stopped.
+לתבנית אחת יש הרצות רבות. הרצות שורדות הפעלה מחדש: המנוע טוען מחדש
+הרצות פעילות וממשיך אותן מהמקום שבו נעצרו.
 
-Two backstops deliberately fail the whole run rather than resume a step, because
-resuming would be worse than stopping:
+שני מנגנוני רשת ביטחון מכשילים בכוונה את ההרצה כולה במקום לחדש שלב, מפני
+שחידוש יהיה גרוע מעצירה:
 
-- A step that has been `suspended` longer than `suspendedStepTimeout` (24 hours
-  by default) is waiting on tickets that will never reach a terminal state, so
-  it is failed to free the run. The exemption is `extras['awaitApproval'] ==
-  true` — that is the `orchestration.awaitApproval` partial-approval gate.
-  `human.gate` is not exempt.
-- A step declared `extras: {'idempotent': false}` that was mid-flight when the
-  server stopped may already have applied its side effect (a squash merge, a
-  worktree cleanup). Re-running it could double-apply, so the engine fails it
-  and leaves the retry to you.
+- שלב שנמצא במצב `suspended` יותר מ-`suspendedStepTimeout` (24 שעות
+  כברירת מחדל) ממתין לכרטיסים שלעולם לא יגיעו למצב סופי, ולכן הוא מוכשל
+  כדי לשחרר את ההרצה. הפטור הוא `extras['awaitApproval'] ==
+  true` — זהו שער האישור החלקי `orchestration.awaitApproval`.
+  `human.gate` אינו פטור.
+- שלב שהוצהר עם `extras: {'idempotent': false}` והיה באמצע ריצה כשהשרת
+  נעצר עשוי כבר להחיל את תוצאת הלוואי שלו (מיזוג squash, ניקוי עץ
+  עבודה). הרצה חוזרת שלו עלולה להחיל אותה פעמיים, ולכן המנוע מכשיל אותו
+  ומשאיר את הניסיון החוזר לכם.
 
-## Kind schedules, body works
+## הסוג מתזמן, הגוף עובד
 
-A step has two orthogonal parts and keeping them apart is what lets the engine
-stay small.
+לשלב יש שני חלקים אורתוגונליים, וההפרדה ביניהם היא מה שמאפשר למנוע
+להישאר קטן.
 
-The **kind** (`StepKind`) tells the engine _when_ a step becomes runnable
-relative to its upstream steps — that is the only thing the scheduler needs to
-know. There are six: `trigger`, `listen`, `join`, `router`, `forEach` and
-`terminal`. The **body** (`bodyKey`) is the _work_ the step performs once it is
-scheduled. Bodies are closures registered by key at server startup, so many
-steps of different kinds can share one body: several `listen` steps all running
-`conversation.promptAgent`, for instance.
+ה**סוג** (`StepKind`) אומר למנוע _מתי_ שלב נעשה בר-הרצה ביחס לשלבים
+שבמעלה הזרם — זה הדבר היחיד שהמתזמן צריך לדעת. ישנם שישה: `trigger`, `listen`,
+`join`, `router`, `forEach` ו-`terminal`. ה**גוף** (`bodyKey`) הוא ה_עבודה_
+שהשלב מבצע לאחר שתוזמן. גופים הם סגירות הרשומות לפי מפתח עם עליית השרת, כך
+ששלבים רבים מסוגים שונים יכולים לחלוק גוף אחד: כמה שלבי `listen` שמריצים
+כולם `conversation.promptAgent`, למשל.
 
-Because scheduling semantics live in six kinds, the catalog of behaviours can
-grow without anyone touching the scheduler. See
-[Pipeline steps](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/) for the complete catalog of
-kinds, bodies and their configuration.
+מכיוון שסמנטיקת התזמון חיה בשישה סוגים, קטלוג ההתנהגויות יכול לגדול בלי
+שאף אחד ייגע במתזמן. ראו
+[שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/) לקטלוג המלא של
+סוגים, גופים והתצורה שלהם.
 
-Two consequences of the registry design are worth knowing before you author a
-template by hand:
+שתי השלכות של עיצוב המרשם כדאי להכיר לפני שאתם כותבים תבנית ביד:
 
-- A step whose `bodyKey` is not registered produces a **warning at template
-  load** and then never executes. Nothing fails loudly at runtime. `trigger`
-  and `terminal` steps are exempt from that warning: the trigger still runs the
-  no-op `pipeline.trigger` body so downstream listeners fire; a `terminal` step
-  has no body and is a scheduler sentinel.
-- Keys in a node's `extras` map are **exact-match and silently ignored
-  otherwise**. Only `extras['spaceId']` puts an agent step's work in an existing
-  conversation. `extras['mode']` (`chat` / `plan` / `review`) is read on the
-  node that *opens* the room (`messaging.createSpace`, default `review`) — a
-  later agent step cannot re-permission a conversation it joined. Any other
-  spelling of either key is ignored.
+- שלב שה-`bodyKey` שלו אינו רשום מפיק **אזהרה בעת טעינת התבנית** ואז לעולם
+  אינו מבוצע. שום דבר לא נכשל בקול רם בזמן ריצה. שלבי `trigger`
+  ו-`terminal` פטורים מהאזהרה הזו: הטריגר עדיין מריץ את גוף
+  ה-`pipeline.trigger` שאינו עושה דבר, כדי שמאזינים במורד הזרם יופעלו; שלב
+  `terminal` אינו בעל גוף והוא זקיף של המתזמן.
+- מפתחות במפת ה-`extras` של צומת הם **בהתאמה מדויקת, ואחרת מתעלמים מהם
+  בשקט**. רק `extras['spaceId']` מציב את עבודתו של שלב סוכן בשיחה קיימת.
+  `extras['mode']` (`chat` / `plan` / `review`) נקרא בצומת
+  ש*פותח* את החדר (`messaging.createSpace`, ברירת מחדל `review`) — שלב
+  סוכן מאוחר יותר אינו יכול להעניק מחדש הרשאה לשיחה שהוא הצטרף אליה. כל
+  איות אחר של מי מהמפתחות מתעלמים ממנו.
 
-## State and data flow
+## מצב וזרימת נתונים
 
-Steps do not call each other. They read from and write to a shared state bag on
-the run: a step reads its inputs by key, executes and writes its output back
-under its own `outputKey`. A `StateReducer` merges concurrent writes when
-parallel branches target the same key and a `TemplateRenderer` substitutes
-`{{...}}` placeholders in prompts and scripts from that same state.
+שלבים לא קוראים זה לזה. הם קוראים ממאגר מצב משותף של ההרצה וכותבים אליו:
+שלב קורא את הקלטים שלו לפי מפתח, מבצע, וכותב את הפלט שלו חזרה תחת
+ה-`outputKey` שלו. `StateReducer` ממזג כתיבות מקבילות כשענפים מקבילים
+מכוונים לאותו מפתח, ו-`TemplateRenderer` מחליף מחזיקי מקום `{{...}}`
+בהנחיות ובסקריפטים מאותו מצב.
 
-This is why a pipeline is inspectable after the fact — the state bag is the
-whole story of the run.
+זו הסיבה שפייפליין ניתן לבדיקה בדיעבד — מאגר המצב הוא כל סיפור ההרצה.
 
-## What starts a run
+## מה מפעיל הרצה
 
-`PipelineTrigger` rows declare when a template auto-starts. There are four
-kinds:
+רשומות `PipelineTrigger` מצהירות מתי תבנית מופעלת אוטומטית. ישנם ארבעה
+סוגים:
 
-| Trigger          | Starts a run when                                                                                                         |
+| טריגר            | מפעיל הרצה כאשר                                                                                                            |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Domain event** | A matching [domain event](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) fires — for example `PullRequestPublished` or `TicketAssigned` |
-| **Schedule**     | A cron/interval expression comes due                                                                                      |
-| **Manual**       | You run it by hand; the presence of an enabled manual trigger is what puts the template in the run picker                 |
-| **Webhook**      | An external system POSTs to `/webhooks/<token>` on the server's HTTP port                                                 |
+| **אירוע תחום**   | [אירוע תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) תואם נורה — למשל `PullRequestPublished` או `TicketAssigned`          |
+| **לוח זמנים**    | מגיע מועד של ביטוי cron/מרווח                                                                                              |
+| **ידני**         | אתם מריצים אותו ביד; נוכחותו של טריגר ידני מופעל היא מה שמציג את התבנית בבורר ההרצה                                        |
+| **Webhook**      | מערכת חיצונית שולחת POST אל `/webhooks/<token>` בפורט ה-HTTP של השרת                                                       |
 
-Event triggers are a closed set: 16 event types are known to the dispatcher and
-offered in the picker (`EventPayloadMapper.knownEventTypes`) and nothing else
-can start a pipeline. Fourteen of those 16 have a payload mapping. Two —
-`TicketCreated` and `TicketStatusChanged` — have none, so a trigger on either
-sits enabled and never fires. See
-[Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) for the full list.
+טריגרי אירוע הם קבוצה סגורה: 16 סוגי אירועים מוכרים למפעיל ומוצעים בבורר
+(`EventPayloadMapper.knownEventTypes`), ושום דבר אחר אינו יכול להתחיל
+פייפליין. לארבעה-עשר מתוך 16 האלה יש מיפוי מטען. לשניים —
+`TicketCreated` ו-`TicketStatusChanged` — אין כזה, ולכן טריגר על מי מהם
+נשאר מופעל ולעולם אינו נורה. ראו
+[אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) לרשימה המלאה.
 
-The webhook token doubles as the HMAC secret: the request's
-`X-Hub-Signature-256: sha256=<hex>` header is verified against
-`HMAC-SHA256(body, token)`, unverified deliveries are rejected and not
-replayable and duplicates are dropped by `dedupe_key`. Because trigger rows are
-unique on (workspace, event type, template), a template can hold at most one
-webhook trigger and one trigger per domain event type.
+אסימון ה-webhook משמש גם כסוד ה-HMAC: הכותרת
+`X-Hub-Signature-256: sha256=<hex>` של הבקשה מאומתת מול
+`HMAC-SHA256(body, token)`, משלוחים שאינם מאומתים נדחים ואינם ניתנים
+לשליחה חוזרת, וכפילויות נזרקות על ידי `dedupe_key`. מכיוון שרשומות טריגר
+ייחודיות לפי (סביבת עבודה, סוג אירוע, תבנית), תבנית יכולה להחזיק לכל
+היותר טריגר webhook אחד וטריגר אחד לכל סוג אירוע תחום.
 
-The built-in templates seed their **manual and event triggers enabled**;
-**scheduled triggers seed disabled**, so a recurring sweep is always opt-in.
+התבניות המובנות זורעות את **הטריגרים הידניים וטריגרי האירועים שלהן
+מופעלים**; **טריגרים מתוזמנים נזרעים מושבתים**, כך שסבב חוזר הוא תמיד
+בחירה מפורשת.
 
-## The templates that ship disabled
+## התבניות שמגיעות מושבתות
 
-Thirteen pipeline templates are seeded into every workspace and **eight of them
-ship disabled**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
-`pr_triage`, `pre_merge_gate`, `release_notes`, `dep_audit` and `pr_digest`.
+שלוש-עשרה תבניות פייפליין נזרעות לכל סביבת עבודה, ו**שמונה מהן מגיעות
+מושבתות**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate`, `release_notes`, `dep_audit` ו-`pr_digest`.
 
-This is the part that surprises people. Their triggers are seeded _enabled_, but
-`PipelineEngine.start` refuses a disabled template and returns null — so the
-trigger fires into nothing and no run appears. **The template, not the trigger,
-is the switch.** Enable it at Settings → Workspace → Pipeline templates before expecting
-any of those eight to do anything.
+זה החלק שמפתיע אנשים. הטריגרים שלהן נזרעים _מופעלים_, אבל
+`PipelineEngine.start` מסרב לתבנית מושבתת ומחזיר null — כך שהטריגר נורה
+אל תוך כלום ולא מופיעה שום הרצה. **התבנית, ולא הטריגר, היא המתג.** הפעילו
+אותה במסך הגדרות ← סביבת עבודה ← תבניות פייפליין לפני שתצפו שמי מהשמונה האלה
+יעשה משהו.
 
-Re-seeding a workspace preserves whatever you chose: your `isEnabled` setting
-and your existing trigger rows survive. There is exactly one deliberate
-exception — `pr_merged_cleanup`'s daily schedule is force-enabled even if it was
-previously off, because it is garbage collection. Worktree rows, code-graph
-partitions and copy-on-write copies accumulate without it and that was never
-meant to be a user choice.
+זריעה מחדש של סביבת עבודה משמרת את מה שבחרתם: הגדרת ה-`isEnabled` שלכם
+ורשומות הטריגר הקיימות שורדות. יש חריג מכוון אחד בדיוק — לוח הזמנים היומי
+של `pr_merged_cleanup` מופעל בכוח גם אם היה כבוי קודם, מפני שזהו איסוף
+אשפה. רשומות עצי עבודה, מחיצות של גרף הקוד ועותקים copy-on-write
+מצטברים בלעדיו, וזה מעולם לא נועד להיות בחירה של המשתמש.
 
-One more asymmetry worth knowing: the `pr_review` built-in deliberately no
-longer posts to GitHub. Publishing a review is a separate, user-gated step and
-a pipeline that posted directly would double-publish. `cross_review`,
-`ticket_to_pr` and `pr_triage` do still post a comment straight to GitHub when
-they run.
+עוד א-סימטריה אחת שכדאי להכיר: הפייפליין המובנה `pr_review` כבר לא
+מפרסם ל-GitHub, במכוון. פרסום סקירה הוא שלב נפרד שעובר בשער של משתמש,
+ופייפליין שמפרסם ישירות יפרסם פעמיים. `cross_review`,
+`ticket_to_pr` ו-`pr_triage` עדיין מפרסמים הערה ישירות ל-GitHub כשהם
+רצים.
 
-## What the engine knows
+## מה המנוע יודע
 
-`PipelineEngine` creates the run record, schedules the start node that matches
-the run's event type, and then walks the DAG: as steps complete it evaluates
-downstream triggers, resolves router branches, waits on joins, applies retry
-policies and continue-on-fail, and persists state, cost and errors at every
-step. Edges that leave another start are ignored for that run, so a schedule
-fire does not wait on a manual-only condition.
+`PipelineEngine` יוצר את רשומת ההרצה, מתזמן את צומת ההתחלה שמתאים
+לסוג האירוע של ההרצה, ואז צועד ב-DAG: כששלבים מסתיימים הוא מעריך
+טריגרים במורד הזרם, מכריע ענפי router, ממתין ל-join, מיישם מדיניות ניסיון
+חוזר ו-continue-on-fail, ושומר מצב, עלות ושגיאות בכל שלב. קשתות שיוצאות
+מ-start אחר מתעלמים מהן בהרצה הזו, כך שהפעלה מתוזמנת אינה ממתינה לתנאי
+המיועד להרצה ידנית בלבד.
 
-What it does _not_ know is anything about ticketing, dispatch, GitHub, or
-messaging. Its only extension seam is the `PipelineBodyRegistry`. The bodies
-registered there are what hold `AgentDispatchPort`, `MessagingPort` and their
-siblings — which is why adding a capability to pipelines never means changing
-the scheduler.
+מה שהוא _לא_ יודע הוא שום דבר הקשור לכרטוס, שליחה, GitHub או הודעות. נקודת
+ההרחבה היחידה שלו היא ה-`PipelineBodyRegistry`. הגופים הרשומים שם הם
+שמחזיקים את `AgentDispatchPort`, `MessagingPort` ואחיהם — ולכן הוספת
+יכולת לפייפליינים לעולם אינה מחייבת שינוי של המתזמן.
 
-## Error handling
+## טיפול בשגיאות
 
-A failing step records its error message and moves to `failed`. If the step
-declares `continueOnFail`, downstream steps proceed and the error is stashed in
-the run state; otherwise the run fails. A step with a `StepRetryPolicy` is
-retried first, with linear or exponential backoff, before either of those
-applies.
+שלב שנכשל רושם את הודעת השגיאה שלו ועובר ל-`failed`. אם השלב מצהיר
+`continueOnFail`, שלבי ההמשך ממשיכים והשגיאה נשמרת במצב ההרצה; אחרת
+ההרצה נכשלת. שלב עם `StepRetryPolicy` מנוסה שוב קודם, עם השהיה לינארית
+או מעריכית, לפני שאחד משני אלה חל.
 
-## See also
+## ראו גם
 
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): what an event trigger listens to
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/): a plan you approve, compiled into one of these pipelines
-- [Tickets and delegation](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): what pipeline steps create and complete
-- [Pipeline steps](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/): the complete catalog of kinds, bodies and config
-- [Build your first pipeline](/he-IL/מדריך-למשתמש/מדריכים/הפייפליין-הראשון/)
-- [Create a pipeline template](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
-- [Run a pipeline manually](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
-- [Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
-- [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): למה מאזין טריגר אירוע
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/): תוכנית שאתם מאשרים, שנאספת לאחד מהפייפליינים האלה
+- [כרטיסים והאצלה](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): מה ששלבי פייפליין יוצרים ומשלימים
+- [שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/): הקטלוג המלא של סוגים, גופים ותצורה
+- [בנו את הפייפליין הראשון](/he-IL/מדריך-למשתמש/מדריכים/הפייפליין-הראשון/)
+- [יצירת תבנית פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
+- [הפעלת פייפליין ידנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
+- [מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
+- [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)

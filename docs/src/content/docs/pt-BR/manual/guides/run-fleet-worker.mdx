@@ -1,166 +1,171 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: Executar um worker da frota
+description: Compile, emparelhe e execute o executor headless cc_worker para que ele se registre em um cc_server e apareça no painel da frota.
 slug: pt-BR/manual/guias/executar-worker-da-frota
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+Execute o `cc_worker` em uma máquina ociosa para adicionar capacidade de execução
+à sua frota. Ele é um binário em Dart puro — sem engine do Flutter — que se
+emparelha com um `cc_server`, declara as capacidades do host, envia heartbeats,
+busca tarefas em lease, executa-as e transmite os eventos de processo de volta.
+Ele não detém nenhum estado durável: um supervisor o reinicia e ele se registra
+novamente.
 
-You need a running `cc_server` first — see [Run a headless server](/pt-BR/manual/guias/executar-servidor-headless/).
+Você precisa de um `cc_server` em execução primeiro — consulte [Executar um servidor headless](/pt-BR/manual/guias/executar-servidor-headless/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
+Um worker emparelhado se registra, envia heartbeats e aguarda tarefas em lease.
+Envie trabalho com `fleet.submitJob`. O despacho de agentes nesse servidor não
+passa pela frota; o sinal de sucesso deste guia é o worker aparecendo no painel
+da frota com um heartbeat recente. O worker no próprio processo, registrado na
+inicialização, tem um mapa de executores vazio, então uma tarefa colocada nele
+retorna `No local runner for
 job kind …`.
 
-## Prerequisites
+## Pré-requisitos
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- O [Dart SDK](https://dart.dev/get-dart). Este repositório fixa o SDK dele com [fvm](https://fvm.app), então prefixe os comandos com `fvm`.
+- Este repositório clonado na máquina do worker.
+- Um `cc_server` alcançável (loopback para desenvolvimento, LAN ou remoto para produção).
+- `git` no `PATH` — o worker materializa repos e executa sondagens com `git`.
 
-## Step 1: Build the binary
+## Etapa 1: Compilar o binário
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+Isso produz um pacote autocontido em `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## Etapa 2: Emitir a credencial do worker
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+Um `cc_server` só aceita um worker que apresente um id de dispositivo
+emparelhado e uma chave pré-compartilhada — inclusive um servidor em loopback.
+Emita-os na máquina do **servidor** (`pair` pode rodar com o servidor no ar; o
+novo dispositivo é reconhecido sem reinício):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+Ele imprime um `Device id` e uma `Pairing key` — são esses valores que
+`--device-id` e `--psk` / `--psk-file` / `CC_WORKER_PSK` aceitam.
 
-## Step 3: Start the worker
+## Etapa 3: Iniciar o worker
 
-Against a paired server:
+Com um servidor emparelhado:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+Com um servidor em loopback (ainda emparelhado — o `cc_server` sempre executa o
+handshake de PSK):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| Flag                 | Descrição                                                                                                    | Padrão       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ------------ |
+| `--server <url>`     | URL do cc_server (`ws://`/`wss://`; `http(s)` e um caminho `/rpc` ausente são convertidos). **Obrigatório.** | —            |
+| `--name <name>`      | Nome do worker exibido ao operador.                                                                          | nome do host |
+| `--device-id <id>`   | Id estável de dispositivo emparelhado, também usado como id do worker.                                       | `cc-worker`  |
+| `--psk-file <path>`  | Arquivo cuja primeira linha não vazia é a chave de emparelhamento. Preferido em vez de `--psk`.              | —            |
+| `--psk <key>`        | Chave de emparelhamento na linha de comando. Visível em `ps` e no histórico do shell — o binário avisa.      | —            |
+| `--max-jobs <n>`     | Teto rígido de tarefas que este processo executa simultaneamente (inteiro positivo).                         | `4`          |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+A ordem de resolução da chave é `--psk-file` → `CC_WORKER_PSK` → `--psk`. Omitir
+todas as fontes pula o handshake de autenticação do worker; um `cc_server` de
+verdade então nega a sessão (`auth_denied`) em vez de aceitar um worker não
+autenticado. Flags desconhecidas são erro de uso (`exit 64`) — ao contrário do
+`cc_server`, este binário usa `package:args` e não ignora erros de digitação.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` substitui o diretório de cache de materialização de worktrees
+(padrão: um diretório `cc_worker_cache` sob o diretório temporário do sistema).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+O worker se registra com `fleet.registerWorker`, depois envia heartbeat a cada 20s
+e consulta leases a cada 2s. Ele roda até receber `SIGINT`/`SIGTERM`; coloque-o
+sob systemd ou launchd para que reinicie e se registre novamente após uma falha
+ou reinicialização.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
+:::caution[Não há janela de compatibilidade de protocolo]
+Um worker cuja versão do protocolo de frota difere da do servidor é registrado
+como **incompatível** e nunca recebe um lease, e o próprio `cc_worker` aborta com
 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+to match the server release`. Compile o worker a partir da mesma versão do servidor.
 :::
 
-## Step 4: Verify it in the fleet panel
+## Etapa 4: Verifique-o no painel da frota
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+Abra **Observabilidade** no app de desktop ou web, mude para a aba **Ao vivo** e
+role até o final. **Trabalhadores** lista cada worker registrado com sua
+plataforma, núcleos, chaves de capacidade e último heartbeat; **Trabalhos** lista
+as tarefas distribuídas entre eles.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+Ver o seu worker ali com um heartbeat recente é a confirmação de que o
+emparelhamento e o registro funcionaram.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+No bloco de um worker você pode **Drenar** (concluir as tarefas atuais, não
+aceitar novos leases), **Retomar** um worker em drenagem, **Revogar** a
+credencial dele ou **Remover** a linha.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+As linhas de workers e de tarefas ficam no `global.db` do servidor — o próprio
+worker não grava nada em disco além do cache de materialização.
 
-## What the worker advertises
+## O que o worker anuncia
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+No registro, o worker detecta automaticamente suas capacidades e o agendador
+combina as tarefas com elas. Você não configura nada disso à mão:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **SO e arquitetura** (`macos`/`linux`/`windows`, `arm64`/`x64`) — sondagens exatas, com fallback para `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **Núcleos e RAM** — contagem exata de núcleos; a RAM degrada para `0` quando não é possível sondá-la
+- **`flutter`** — definida quando um SDK do Flutter está acessível (`flutter` puro, depois `fvm flutter`); tarefas de renderização golden exigem essa capacidade
+- **`sandbox`** — `native-macos` no macOS, `native-linux` no Linux. É uma dica de posicionamento, não uma promessa: o worker anuncia o backend que a plataforma dele _tem_, mas não envolve em sandbox as tarefas que executa. Ao contrário do `cc_server`, o `cc_worker` inicia uma tarefa em lease diretamente
+- **`always-on` e `parallel`** — um `cc_worker` dedicado sempre anuncia as duas, portanto é elegível para lotes de avaliação e outra capacidade paralela descartável
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+A detecção é de melhor esforço: tudo o que ela não conseguir sondar degrada para
+um padrão seguro em vez de falhar na inicialização.
 
-## What the worker would execute
+## O que o worker executaria
 
-The lease protocol carries six job kinds:
+O protocolo de lease carrega seis tipos de tarefa:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| Tipo           | O que é                                                |
+| -------------- | ------------------------------------------------------ |
+| `agentRun`     | Uma única execução de agente (despacho)                |
+| `pipelineStep` | A execução de uma etapa de pipeline                    |
+| `codeIndex`    | A construção de um índice de código de um repo         |
+| `goldenRender` | Uma renderização golden visual de UI (exige `flutter`) |
+| `benchmark`    | Uma execução de benchmark de desempenho                |
+| `evalBatch`    | Um lote de avaliação (prefere capacidade `parallel`)   |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+A execução é uma implementação real de streaming de subprocessos, não um runtime
+completo de agente embutido. Quando um lease carrega `repoRemote`, o worker faz
+`git clone --depth 1` em um diretório de cache com chave de remote e SHA, depois
+`git fetch` e `git checkout`. Para `agentRun`, ele executa o comando em
+`CC_JOB_COMMAND` do env do lease no diretório de trabalho, transmitindo stdout e
+stderr de volta como eventos; sem `CC_JOB_COMMAND`, ele ecoa o prompt para que o
+transporte ainda seja exercitado de ponta a ponta. Os outros tipos executam
+pequenos comandos reais (`git rev-parse HEAD`, `git --version`) como sondagens
+honestas. As credenciais com escopo de tarefa no env do lease são injetadas em
+todo subprocesso e nunca gravadas em log.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+Os eventos são agrupados e descarregados a cada 250ms ou a cada 32 eventos; cada
+tarefa termina com um evento done e um relatório de conclusão. O modelo é
+heartbeats mais leases de TTL curto: se um worker perde contato, o lease dele
+expira e o servidor recolhe a tarefa para nova tentativa. Não há estado durável
+no worker nem consenso ou roubo de trabalho entre workers.
 
-## Related guides
+## Guias relacionados
 
-- [Run a headless server](/pt-BR/manual/guias/executar-servidor-headless/)
-- [Connect to a remote server](/pt-BR/manual/guias/conectar-servidor-remoto/)
-- [Pair a device](/pt-BR/manual/guias/emparelhar-dispositivo/)
+- [Executar um servidor headless](/pt-BR/manual/guias/executar-servidor-headless/)
+- [Conectar a um servidor remoto](/pt-BR/manual/guias/conectar-servidor-remoto/)
+- [Emparelhar um dispositivo](/pt-BR/manual/guias/emparelhar-dispositivo/)
 
-## Related concepts
+## Conceitos relacionados
 
-- [Deployment and clients](/pt-BR/manual/conceitos/implantacao/)
+- [Implantação e clientes](/pt-BR/manual/conceitos/implantacao/)

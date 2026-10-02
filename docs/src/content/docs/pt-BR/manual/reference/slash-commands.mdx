@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Comandos slash
+description: Todo comando que você pode digitar no composer, o que ele faz e onde é executado.
 slug: pt-BR/manual/referencia/comandos-slash
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Comandos digitados no composer de um espaço. Eles se dividem em três grupos conforme onde produzem efeito, e a diferença importa: um comando **local** nunca trafega como mensagem, então nem aparece na transcrição nem chega a um agente.
 
-| Where it runs | What that means                                                                    |
+| Onde é executado | O que isso significa                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **Local**     | Tratado no cliente (ou em uma operação de servidor iniciada pelo cliente). O comando nunca trafega como mensagem, então nenhum agente o vê. |
+| **Lateral**      | Uma chamada de modelo no lado do servidor sobre a conversa. A conversa não é alterada. |
+| **Despacho**  | Define um modo ou uma diretiva para a execução que a mensagem inicia.                            |
 
 ---
 
-## Directing a run
+## Dirigir uma execução
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Local → despacho.** Arma o modo plano na conversa: um worktree totalmente somente leitura e uma superfície de ferramentas limitada a `read`. O entregável do agente é um plano, não uma edição. Um `/plan` sozinho apenas alterna o modo e nunca trafega como mensagem; com um prompt, o restante da linha é o que inicia a execução.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Despacho.** Inicia um objetivo autônomo que o supervisor de metas volta a despachar entre segmentos e reinícios.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Digitar `/goal` com texto primeiro abre a **entrevista de objetivo** — uma passagem curta que se recusa a aceitar um rascunho até que ele tenha todos os cinco itens: critérios de sucesso que um avaliador consiga resolver sem julgamento, um comando de verificação exato, um limite de tentativas, limites de escopo e condições de parada. Cada etapa oferece *Ignorar e executar como está*: a entrevista é um padrão, não um portão.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` e `/goal drop` não são comandos slash. Pausar, retomar e parar ficam na lista de metas da conversa, na barra lateral. As flags de inicialização do próprio objetivo são `--budget <dollars>`, `--max <N>` (orçamento de execuções) e `--days <N>` (prazo). Uma meta que atingiu seu teto de custo só é retomada se esse teto for aumentado, no mesmo controle da barra lateral.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Por que ele interrompe, afinal]
+Um objetivo autônomo é o único lugar em que um briefing vago é genuinamente caro. A execução trabalha por horas em um objetivo cujo "pronto" ninguém definiu e depois relata sucesso conforme os próprios critérios. Cinco perguntas custam menos do que uma execução noturna que terminou quando bem entendeu.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Despacho.** Trabalha iterativamente até concluir. Aceita um limite: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Um token que *parece* um limite (começa com um dígito ou um sinal) e não é interpretado é um erro fatal. Prosa é só prosa, então `/loop keep going until the tests pass` é um loop sem limite com um prompt embutido, e não uma interpretação equivocada.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/pt-BR/manual/guias/dirigir-workers-em-segundo-plano/).
+**Despacho.** Transforma a sessão em um **diretor**: as ferramentas da própria sessão caem para `read` mais cinco verbos de worker, e workers em segundo plano fazem as edições. Consulte [Dirigir workers em segundo plano](/pt-BR/manual/guias/dirigir-workers-em-segundo-plano/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Os workers nunca sobrevivem ao modo — sair mata todos eles.
 
 ---
 
-## Managing context
+## Gerenciar o contexto
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Local → servidor.** Dobra o histórico mais antigo em um resumo ancorado e continua no contexto compactado. Sem argumento voltado ao modelo: o comando nunca trafega como mensagem, e a passagem de compactação não recebe uma dica de foco.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Local → servidor.** Descarta conteúdo pesado **sem** resumir: nenhuma chamada de modelo, todas as palavras mantidas, e só é apagado o volume que ninguém ia reler.
 
-| Target        | Drops                             |
+| Alvo        | O que descarta                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Resultados de ferramentas antigos e sem novidades (padrão) |
+| `images`      | Capturas de tela antigas, mantendo o texto delas |
+| `all`         | Os dois                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Esta é a válvula de escape para "meu contexto está inchado, mas eu não quero um resumo".
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Local.** Abre o explorador de contexto do agente desta conversa em uma aba
+própria: cada segmento e cada parte da janela de contexto dele — prompt de
+sistema, skills, arquivos de contexto, esquemas de ferramentas, histórico e
+imagens — com o que cada um está custando e o conteúdo literal por trás dele.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+A aba tem como chave o par (espaço, agente), então executar o comando duas vezes
+refoca uma única aba em vez de empilhar cópias da mesma repartição.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Em um espaço com **mais de um agente**, um `/context` sozinho abre a janela que o
+medidor de contexto do cabeçalho está lendo — o agente que trabalhou aqui por
+último, aquele cuja mensagem está no fim da trilha de mensagens — e a aba é
+rotulada como `Contexto · <name>`, para deixar claro de quem ela é. Nomeie outro para trocar: `/context qa` (o `@` é opcional). Um nome digitado
+é resolvido exatamente, nunca de forma aproximada: dois agentes mantêm duas janelas diferentes, então um
+quase-acerto que abrisse a outra seria uma resposta de aparência plausível para
+uma pergunta que você não fez.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+O mesmo explorador está por trás do chip do medidor de contexto no cabeçalho do espaço, que
+segue esse mesmo agente — o comando e o chip nunca podem discordar sobre o que
+"o contexto" significa aqui.
 
 ---
 
-## Asking about the conversation
+## Perguntar sobre a conversa
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Esses comandos gastam uma chamada de modelo e **nunca mudam a conversa**. O próximo turno real do agente vê exatamente o que veria de qualquer forma, e é nisso que está todo o valor de perguntar.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Lateral.** Escreve um documento de transferência para quem pegar o trabalho do zero: qual é a tarefa, o que foi aprendido e o que falta.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Lateral.** Responde a uma pergunta sobre o trabalho até aqui sem acrescentar a pergunta nem a resposta à transcrição.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Dois comandos, uma implementação]
+Os dois têm o mesmo formato — pegar a conversa como ela está, fazer uma única pergunta sobre ela, não persistir nenhum dos lados. Implementados uma única vez para não divergirem em duas noções diferentes de "o contexto até agora".
 :::
 
 ---
 
-## Navigating and exporting
+## Navegar e exportar
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/pt-BR/manual/guias/branch-de-conversa/).
+**Local.** Abre o navegador de branches: onde a conversa se bifurcou, em qual caminho ela está no momento e como voltar a um que você deixou. Consulte [Criar um branch de uma conversa](/pt-BR/manual/guias/branch-de-conversa/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Local.** Grava a conversa em um arquivo HTML autocontido — cartões de ferramentas recolhíveis, sem folha de estilo, sem script e sem host de imagens. Fica em `Documents/ControlCenter/exports/` no desktop e é baixado na web.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Local.** Copia a transcrição para a área de transferência como markdown, com as chamadas de ferramentas em blocos recolhíveis. O raciocínio é excluído de propósito: uma transcrição colada em um relatório de bug é lida por uma pessoa.
 
 ---
 
-## Everything else
+## Todo o resto
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Local.** Visualiza e edita a lista de tarefas persistida da conversa. Um `/todo` sozinho abre o editor. Subcomandos: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Despacho.** Aplica uma skill instalada. As skills ficam sob o próprio prefixo `skill:`, então não compartilham namespace com os comandos integrados — sem isso, uma skill chamada `plan` ficaria permanentemente inacessível.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Despacho.** Qualquer arquivo markdown sob `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` ou `.opencode/commands` no repo. Um `foo/bar.md` aninhado também é alcançável como `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Templates: `$1`, `$@`, `$@[start:length]` e `$ARGUMENTS`. O frontmatter pode definir `description` (autocomplete do composer). `allowed-tools` e `model` são lidos do arquivo, mas hoje a invocação de um comando de usuário apenas substitui os argumentos no corpo — eles não mudam o modelo nem a superfície de ferramentas da execução.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Um comando escrito pelo usuário tem precedência sobre uma skill de mesmo nome — é um atalho que uma pessoa invocou de propósito, com argumentos.
 
 ---
 
-## Magic keywords
+## Palavras-chave mágicas
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Não são comandos. Uma palavra isolada em minúsculas, em qualquer lugar de um prompt, anexa uma instrução oculta para aquele turno.
 
-| Word          | Effect                                                             |
+| Palavra          | Efeito                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Esforço máximo de raciocínio para o turno                              |
+| `orchestrate` | Delegar trabalho independente em paralelo e verificar cada fase        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+O mecanismo de correspondência é deliberadamente rígido quanto aos limites. `orchestrate,` casa; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` e `orchestrate()` não, e blocos de código cercados, trechos em linha e seções XML são mascarados antes. Sem isso, colar um stack trace mudaria o comportamento do agente.
 
 ---

@@ -1,39 +1,37 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: 创建和管理工单
+description: 创建工单、让它们走完生命周期、为它们添加标签和关联，并记录各项工作的归属。
 slug: zh-CN/手册/操作指南/管理工单
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+本指南介绍如何创建和管理工单。
 
-## Create a ticket
+## 创建工单
 
-### From the UI
+### 通过 UI
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. 在工作区侧边栏中点击**工单**。
+2. 点按**新建工单**。
+3. 填写：
+   - **标题** —— 简短摘要。这是唯一必填的字段。
+   - **描述** —— Markdown 格式，带有格式工具栏。
+   - **状态** —— **待办**（默认）或**待办池**。已启动状态与终态都通过生命周期
+     到达，而不是在创建时设定。
+   - **优先级** —— 无、紧急、高、中或低。
+   - **负责人** —— 你自己，或工作区中的任意智能体。
+   - **项目** —— 可选的分组。
+4. 点按**创建**，或先打开**继续创建**，让对话框保持打开以便连续录入。
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+对话框中没有任何提供方选择器。工单会创建到工作区当前生效的工单提供方上。
 
-### From an agent
+### 通过智能体
 
-Ask an agent in a space:
+在空间中请智能体：
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> 为慢速连接上的登录超时问题创建一张工单。
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+它会调用 `create_ticket` MCP 工具。该工具上的优先级是**整数**，而不是名称：
 
 ```
 create_ticket(
@@ -44,21 +42,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
+| 值  | 优先级 |
 | ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| `0`   | 无     |
+| `1`   | 紧急   |
+| `2`   | 高     |
+| `3`   | 中     |
+| `4`   | 低     |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+只有 `workspace_id` 和 `title` 是必填的；`description`、`priority`、
+`assignee`（智能体 id）和 `team_id` 都是可选的。该工具被归类为厂商同步写入，
+运行前会请求你批准。
 
-## Update ticket status
+## 更新工单状态
 
-Tickets follow this lifecycle:
+工单遵循以下生命周期：
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +66,113 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`、`failed` 和 `cancelled` 是终态。`cancelled` 可以从任何非终态到达。
+`done` 和 `failed` 可以从 `inProgress` 或 `inReview` 到达；`open` 也可以直接
+转到 `blocked`。UI 的状态选择器列出了除 `failed` 之外的每一个状态 —— 该状态
+由智能体通过 `fail_ticket` 设置。
 
-To change it, use any of:
+要更改状态，可以使用以下任一方式：
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- 工单属性栏中的**状态**行，
+- 列表中工单右键菜单里的**状态**子菜单，
+- 多选工单后浮动栏上的**状态**按钮。
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[生命周期图约束的是智能体，而不是你]
+从 UI 发起的每一次状态变更都会被强制执行，完全绕过这张图 —— 你可以把工单移到
+选择器列出的任何状态，包括重新打开一张 `done`、`failed` 或 `cancelled` 的工单。
+选择器不提供 `failed` 作为目标。上面的示意图约束的是智能体和自动化：
+MCP 工具或对账器尝试的非法转换会被记录并忽略，而不会被应用。
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/).
+状态变更会发出领域事件（`TicketStatusChanged`、`TicketCompleted` 等），
+可以触发流水线。参见
+[设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)。
 
-## Assign a ticket
+## 分配工单
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. 打开工单。
+2. 在属性栏中设置**负责人** —— 你自己、另一位工作区成员，或一个智能体。
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)).
+:::caution[分配不会启动任何工作]
+分配只记录归属，别无其他。它不会创建空间、不会更改状态，也不会派发智能体 ——
+`TicketAssigned` 是一个纯粹的审计信号，背后没有任何派发器。要让智能体开始工作，
+请在空间里给它发消息（参见[与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)）。
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+唯一的例外是：`TicketAssigned` 是一种你可以为其挂接流水线触发器的事件类型，
+因此你自己编写的模板可以对分配做出反应。
 :::
 
-## Add labels
+## 添加标签
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+标签是从工单列表中批量添加的，而不是在单张工单上 ——
+属性栏里没有任何标签控件。
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. 将鼠标悬停在工单列表中的某一行上并勾选它的复选框。按需要勾选任意多行；
+   一旦有内容被选中，就会浮现一个浮动栏。
+2. 在该浮动栏中，打开**标签**按钮。
+3. 选择一个标签。它会被添加到每一张尚无该标签的选中工单上；已有标签绝不会被
+   清除。**清除标签**会移除所有标签。该选择器列出的是工作区中已经出现在某张
+   工单上的标签。智能体可以通过 `update_ticket` 或 `tickets.patch` 添加新名称。
 
-## Link tickets
+## 关联工单
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+关联关系位于属性栏中工单的**关联**卡片上，或列表右键菜单的**关联到**之下。
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. 打开工单，找到**关联**卡片。
+2. 点按其添加控件，选择关系：
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| 关系              | 含义                                     |
+| ----------------- | ---------------------------------------- |
+| **子工单属于…**   | 这张工单的父工单是另一张                 |
+| **父工单为…**     | 另一张工单是这张的子工单                 |
+| **被阻塞于…**     | 这张工单被另一张阻塞                     |
+| **阻塞…**         | 这张工单阻塞另一张                       |
+| **关联到…**       | 对称关系，不隐含方向                     |
+| **重复于…**       | 这张工单是另一张的重复项                 |
 
-3. Pick the target ticket.
+3. 选择目标工单。
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**被重复**会出现在卡片中，但不会出现在选择器里 —— 它是**重复于…**的逆向
+关系，要从另一张工单上设置。列出的每个关系都可以点击以打开被关联的工单，
+并可在悬停时移除。
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+父工单和子工单关系保存在工单自身，而不是作为关联行，因此删除一张父工单会级联到
+它的子工单（见下文），而阻塞和关联链接则不会。
 
-## Add collaborators
+## 添加协作者
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+协作者是工单上的一份名册 —— 记录谁参与其中、以什么身份参与。
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. 打开工单。
+2. 点按**添加协作者**卡片上的人形加号控件。
+3. 选择一个智能体。
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+三种角色分别是 **assignee**、**collaborator**（默认）和 **reviewer**。
+UI 中的选择器只列出工作区智能体，并且总是写入默认角色；人员可以作为行出现，
+但不会在该菜单中提供。MCP 的 `add_ticket_collaborator` 工具接受一个 `role`。
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/zh-CN/手册/操作指南/空间/).
+添加协作者会写入一行记录，但不会发布任何领域事件；它也不授予任何空间访问权限。
+要把智能体带进某段对话，请改从空间头部把它添加为参与者 ——
+参见[空间](/zh-CN/手册/操作指南/空间/)。
 
-## Delete a ticket
+## 删除工单
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+使用属性栏底部的**删除工单**、右键菜单，或多选后浮动栏上的删除操作。
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[删除只在本地生效]
+来自外部跟踪器的工单不会在那里被删除 —— 没有提供方支持这一点 ——
+因此它可能在下一次同步时重新出现。删除还会级联：该工单的协作者和任何子工单
+都会一并被删除。
 :::
 
-## Related guides
+## 相关指南
 
-- [Delegate work to agents](/zh-CN/手册/操作指南/委派工单/)
-- [Organize work with projects](/zh-CN/手册/操作指南/项目/)
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [Ticket lifecycle reference](/zh-CN/手册/参考/工单生命周期/)
+- [将工作委派给智能体](/zh-CN/手册/操作指南/委派工单/)
+- [用项目组织工作](/zh-CN/手册/操作指南/项目/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [工单生命周期](/zh-CN/手册/参考/工单生命周期/)
 
-## Related concepts
+## 相关概念
 
-- [Tickets](/zh-CN/手册/概念/工单/)
-- [Domain events](/zh-CN/手册/概念/领域事件/)
+- [工单](/zh-CN/手册/概念/工单/)
+- [领域事件](/zh-CN/手册/概念/领域事件/)

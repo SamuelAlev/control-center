@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: 工具上下文与提示缓存
+description: 为什么只向智能体展示一小部分工具而不是全部工具、它如何触达其余工具，以及让提供方的提示缓存能在一次运行中保持热态的规则。
 slug: zh-CN/手册/概念/工具上下文
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+内置运行框架发出的每一个请求都有两个共同点：工具定义是其中最大的一笔固定开销，而它们几乎都不会被用到。本页说明 Control Center 如何应对这一点，以及为什么答案不是简单地“少发一些工具”。
 
-## The problem is attention, not bytes
+## 问题在于注意力，而非字节
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center 注册了约 126 个工具。若完整发送，这些定义每次请求大约要花费 **23,000 个 token**——这是任何压缩都无法触及的一笔开销，因为工具定义与对话位于请求中相互独立的部分。
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+token 账单是最显而易见的抱怨，而有了提示缓存之后，它也是较小的那一个。真正的开销在于**选择准确率**。已发表的工具调用评测一致表明，当上下文中的工具数量大约在 30–50 个以内时，模型能可靠地选出正确的工具，超过这个范围后表现会逐步变差。公认的原因并非 token 数量，而是**语义重叠**：一旦工具目录中存在若干描述读起来雷同的工具，模型就是在相似的工具之间做选择，而不是在回忆某项能力。
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+在 126 个工具的情况下，智能体在每一轮都远远超出了这个区间——包括那些它只需要读取一个文件的轮次。
 
-## The two-tier surface
+## 两层式工具面
 
-A run is therefore shown two things:
+因此，一次运行会看到两类内容：
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- 一个**常驻**集合——大约二十来个工具，每次请求都附带完整 schema 发送；
+- 其余所有工具的一份**名称索引**，按“Tickets and projects”或“Memory and knowledge”之类的标题分组，整个目录只花费几百个 token。
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+按当前目录测算，这把工具块从 **~23.1k token 缩减到 ~5.0k，约缩小 78%**，并让始终可见的集合落入选择可靠的那个区间。
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/zh-CN/手册/概念/模式) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+常驻集合是运行在*大多数*场景下都会用到的工具：文件与 shell 词汇（`read`、`write`、`edit`、`search`、`bash`…）、发现工具、任务清单、记忆搜索，以及当前[模式](/zh-CN/手册/概念/模式)为产出结果而必须调用的动词。模式自身的输出动词始终常驻——一次运行绝不应该为了找出那个产生其交付物的调用而四处查找。
 
-### Deferred does not mean unavailable
+### 延迟加载不等于不可用
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+这正是让该设计不仅省钱、而且安全的部分。**延迟加载的工具从第一轮起就可以调用。**被扣留的只是它的 schema。
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+智能体在提示中看到了这个名称。如果它直接调用该名称，运行框架会在同一步内加载 schema 并运行该工具——不报错，也不需要往返一次。模型无需知道这个工具曾经被“卸载”过。
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+当智能体知道任务却不知道工具名时，`search_tools` 会接收一段自然语言描述（“assign a ticket to someone”），对本次运行的整个工具面排序，并返回匹配项，*且已加载它们的 schema*，这样下一轮就能直接调用其中之一。如果搜索一无所获，它会明确说明，并建议换个措辞或扩大搜索范围——这是有意为之，因为把空搜索结果理解成“这项能力不存在”的智能体会编造一个替代品，而不是再找一次。
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` 只存在于内置运行框架中。外部 MCP 客户端改用 `search_tool_bm25`，它对同一个索引排序，但只描述匹配项——这些客户端已经从 `tools/list` 收到了全部 schema，因此没有需要加载的东西。
 
-### What deferral never does
+### 延迟加载绝不会做的事
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/zh-CN/手册/概念/护栏) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+延迟加载是在模式的工具过滤器**之后**应用的，绝不会取代它。它隐藏 schema，但无法暴露模式拒绝的工具。被激活的工具仍会像常驻工具一样经过审批提示和[操作护栏](/zh-CN/手册/概念/护栏)，并且工具无法加载一个一开始就不在本次运行工具面上的名称。
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+外部客户端看到的 MCP 工具面**不受**影响。`tools/list` 仍会返回完整目录。早先一次裁剪它的尝试直接弄坏了智能体：MCP 客户端会对照自己缓存的列表校验工具名，对未列出的名称直接拒绝，从不去询问服务器，于是“隐藏但可调用”的工具就成了无法触达的工具。延迟加载存在于运行框架之中，因为在那里，在运行中途加载一个工具是运行框架确实能办到的事。
 
-### Turning it off
+### 关掉它
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/zh-CN/手册/参考/cc-server-cli).
+`--tool-deferral=off`（或 `CC_SERVER_TOOL_DEFERRAL=off`）会让每个被准入的工具重新常驻，产生与延迟加载出现之前服务器所发出的完全相同的请求。参见 [`cc_server` CLI 参考](/zh-CN/手册/参考/cc-server-cli)。
 
-## Prompt caching
+## 提示缓存
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+智能体的工作负载是偏斜的：它们一轮接一轮地发送巨大的提示、收到很小的回答，且每次前缀都相同。提供方会缓存这个前缀，而一次缓存读取的成本大约是新计算的十分之一。因此，缓存命中率是运行框架的首要特性，而非一项优化——在 Anthropic 上它还能换来吞吐量，因为已缓存的 token 不计入每分钟输入限额。
 
-Caching works on an exact prefix match, which yields one governing rule.
+缓存的依据是精确的前缀匹配，由此得出一条支配性规则。
 
-### Never rewrite what was already sent
+### 绝不改写已经发送过的内容
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+任何发生变化的字节都会从该处起使缓存失效。因此运行框架只会**追加**：新消息加在末尾，新激活的工具 schema *追加*在已缓存的工具块之后，而不是合并进其中。正是这种顺序让激活变得廉价——已缓存的前缀保持完全一致，运行只需为刚刚加载的 schema 付费。
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+该循环还会裁剪较早轮次中过期的工具输出，以回收上下文。它会等到可回收的量足够多、值得重写时才动手，因此裁剪是一次罕见的深度重写，而不是持续不断的缓存未命中。
 
-### Where the breakpoints go
+### 断点放在哪里
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+提供方允许的缓存标记数量有限，Control Center 会有意地把它们用在刀刃上：
 
-| Marker                       | Covers                             | Lifetime |
+| 标记                         | 覆盖范围                           | 生命周期 |
 | ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| 最后一个**常驻**工具         | 工具块                             | 1 小时   |
+| 最后一个系统块               | 工具 + 系统提示                    | 1 小时   |
+| 上一轮的尾部                 | 截至上一次请求的历史记录           | 5 分钟   |
+| 当前轮的尾部                 | 完整历史记录                       | 5 分钟   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+最后两个是一对滚动标记，成对出现的原因很微妙：缓存查找会向前回溯有限数量的块，去寻找较早的某个请求存入的内容。一个并行运行许多工具的单轮可能产生的块数超过这个窗口，这时其中一个尾部标记会悄无声息地未命中，请求便按全价付费，而响应中没有任何信息提示这一点。标记出上一次请求停止的确切位置，能让命中成为结构性的，而不是一场竞速。
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+工具加系统的那段前缀采用较长的生命周期，因为它在整个运行中都是恒定的，会被每一次形态相同的运行和子智能体共享，也因为计时从请求*开始*时就启动了——一轮持续流式输出数分钟之后，在下一次请求形成之前就已经耗掉了短窗口的大部分时间。
 
-### Subagents share one prefix
+### 子智能体共享同一个前缀
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+同类型的子智能体会产生逐字节完全相同的提示前缀，因此它们应该读取同一个缓存条目，而不是各自写入自己的条目。但一个条目只有在写入它的那个请求开始响应之后才可读，所以一次性发起的扇出会让每个子智能体都为它们共同共享的前缀支付额外费用。
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+运行框架会让给定形态的第一个子智能体先启动，然后在它开始流式输出的那一刻释放它的同伴。等待是有界的：第一个子智能体慢，代价只是一次缓存命中，而绝不是整个扇出。出于同样的原因，每个子智能体无论其配置如何，都会获得相同的常驻工具集——按配置分别改变它会无谓地切碎共享前缀，因为配置早已决定了该子智能体可以调用什么。
 
-## Watching it work
+## 观察它如何工作
 
-Both halves are observable rather than assumed:
+这两半都是可观察的，而不是假设出来的：
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- 会话上的**上下文浏览器**会报告常驻工具、延迟加载索引，以及每个被扣留的 schema *原本会*花费多少，这些均由真实运行所用的同一代码路径构建。
+- 每次运行都会记录它加载了哪些延迟加载工具以及是什么触发了加载，因此一次一无所获的搜索会作为检索未命中而显现，而不会消失在某个悄悄去做了别的事情的智能体中。
+- 可观测性会把**缓存率**报告为缓存读取量占所处理全部提示 token 的比例（其中包含缓存写入）——一个不断重建自身前缀的运行会得到较低的分数，而不会得到如同从未需要缓存那样的分数。

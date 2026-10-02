@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Een gesprek vertakken
+description: Probeer een andere aanpak vanaf een eerder punt zonder te verliezen wat je al hebt, en tak daarna af of exporteer wat je wilt bewaren.
 slug: nl-NL/handleiding/gidsen/gesprek-vertakken
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Deze gids laat zien hoe je teruggaat naar een eerder punt in een gesprek en het een andere kant op stuurt — terwijl je het pad behoudt dat je verliet.
 
-## The one thing worth knowing
+## Het enige dat je echt moet weten
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Vertakken schrijft niets.** Een gesprek is een boom van berichten met een pointer aan de punt, en teruggaan verplaatst die pointer. Niets wordt verwijderd, niets wordt verborgen, en terugschakelen is weer een pointerverplaatsing.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Daarom is een prompt bewerken en opnieuw uitvoeren hier veilig: het antwoord waarmee je vergeleek staat er nog.
 
-## See the branches
+## De takken bekijken
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+De navigator toont elk bericht, ingesprongen bij elke aftakking, met het huidige pad gemarkeerd als **Op deze tak**. Een gesprek dat nooit is afgetakt, wordt weergegeven als de platte lijst die het altijd al was — de navigator kost niets om naar te kijken tot er iets te navigeren valt.
 
-Each row offers two actions.
+Elke rij biedt twee acties.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| Actie                            | Effect                                                     |
+| -------------------------------- | ---------------------------------------------------------- |
+| **Vanaf hier verdergaan**        | Verplaatst de pointer. Je volgende bericht gaat verder vanaf dat bericht. |
+| **Aftakken naar een nieuw gesprek** | Kopieert het pad tot en met dat bericht naar een nieuw gesprek. |
 
-## Branch: try a different approach
+## Vertakken: probeer een andere aanpak
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Zoek het bericht waar je opnieuw wilt beginnen — meestal het laatste bericht waar je tevreden over was.
+3. **Vanaf hier verdergaan.**
+4. Typ de nieuwe prompt.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Het oude vervolg staat nog in de boom; `/tree` toont nu twee paden vanaf dat punt, en je kunt vrij tussen beide schakelen.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Het pad dat je verliet staat er nog]
+Vertakken verbergt of verwijdert niets. `/tree` toont elk pad, markeert het huidige als **Op deze tak**, en is hoe je schakelt.
 :::
 
-## Fork: take it somewhere else
+## Aftakken: het ergens anders heen brengen
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Aftakken kopieert het pad naar een **nieuw gesprek** in dezelfde ruimte. Gebruik het wanneer de twee richtingen steeds verder uit elkaar lopen en je ze liever naast elkaar hebt dan dat je schakelt.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+De kopie krijgt nieuwe bericht-id's. Twee gesprekken die rijen delen, zouden elkaars latere berichten tonen — precies wat een aftakking hoort te voorkomen.
 
-## Revert versus branch
+## Terugzetten versus vertakken
 
-They are different tools and the difference matters.
+Het zijn verschillende tools en dat verschil is belangrijk.
 
-|                     | Revert                                             | Branch                          |
+|                     | Terugzetten                                        | Vertakken                       |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| De latere berichten | Verborgen in het transcript                         | Nog zichtbaar in `/tree`         |
+| De **worktree**     | Teruggedraaid naar de momentopname van die beurt    | Ongewijzigd                      |
+| Ongedaan maken      | **Terugzetten ongedaan maken** herstelt de batch    | De pointer terugzetten           |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Terugzetten wil je wanneer de agent *bestanden* heeft gewijzigd die je terug wilt. Vertakken wil je wanneer het gesprek de verkeerde kant op ging, maar de bestanden in orde zijn.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Terugzetten verplaatst ook de punt van de tak, zodat je volgende bericht op de juiste plek verdergaat en niet vanaf een staart die niemand meer kan zien.
 
-## Take it out of the app
+## Haal het uit de app
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Schrijft een **op zichzelf staand HTML-bestand**: het hele gesprek met uitklapbare toolkaarten die laten zien wat elke aanroep meekreeg en wat die terugstuurde. Geen stylesheet, geen script, geen imagehost — het werkt vanaf een USB-stick en het werkt nog over vijf jaar.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Desktop-app:** `Documents/ControlCenter/exports/`, met tijdstempel zodat een tweede export de eerste niet overschrijft.
+- **Webbrowser:** een download in de browser.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Kopieert het transcript naar het klembord als markdown, met toolaanroepen in uitklapbare blokken. Deze gebruik je om in een issue te plakken.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Redenering wordt bewust weggelaten: het is de kladruimte van het model, en een bugrapport wordt door een mens gelezen.
 
-## Related
+## Gerelateerd
 
-- [Conversation history](/nl-NL/handleiding/concepten/gespreksgeschiedenis/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/nl-NL/handleiding/referentie/slash-commandos/) — `/tree`, `/export`, `/dump`
+- [Gespreksgeschiedenis](/nl-NL/handleiding/concepten/gespreksgeschiedenis/) — waarom de boom een pointerverplaatsing is, en wat hervatten echt herstelt
+- [Slash-commando’s](/nl-NL/handleiding/referentie/slash-commandos/) — `/tree`, `/export`, `/dump`

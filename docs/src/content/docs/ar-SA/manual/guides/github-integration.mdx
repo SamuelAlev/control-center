@@ -1,166 +1,162 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: إعداد تكامل GitHub
+description: سجّل الدخول إلى GitHub حتى يعمل سطح طلبات السحب وتسجيل المستودعات وتشغيلات الوكلاء.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+يغطي هذا الدليل ما يخص GitHub من الإعداد. GitHub واحد من ثلاثة مضيفين مدعومين
+للشفرة — انظر [ربط مضيف شفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
+لربط GitLab أو Bitbucket، ولكيف تضم مساحة العمل المضيفين معًا.
 
-## Prerequisites
+## المتطلبات
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- حساب GitHub يصل إلى المستودعات التي تريد العمل عليها
+- إما تطبيق GitHub مسجّل لخادمك (انظر
+  [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)) حتى تستطيع **تسجيل الدخول**،
+  **أو** رمز وصول شخصي بصلاحيتَي `repo` و`read:org` للصق
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[بيانات الاعتماد تعيش على الخادم، ومرتبطة بك]
+لا يُخزَّن شيء على الجهاز الذي تكتب عليه. يحتفظ `cc_server` باعتمادك، ومفتاحه
+معرّف مستخدمك، ويستخدمه كل جهاز تسجّل الدخول منه — الحاسوب والويب والهاتف. لا
+يقرؤه عضو آخر على الخادم نفسه، وتسجيل دخوله أمر يفعله بنفسه.
 :::
 
-## Sign in with GitHub
+## تسجيل الدخول عبر GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**تدفق الجهاز**: يعرض GitHub رمزًا قصيرًا، توافق عليه في github.com، ويتلقى
+الخادم الاعتماد — بلا عنوان للرد، وبلا منفذ، وبلا شيء يُكشف. وهو متاح متى كان
+للخادم معرّف عميل، والبناء الرسمي يتضمّنه أصلًا.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. انتقل إلى **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود** (أو الخطوة الأولى
+   من الإعداد الأولي)
+2. في صف **GitHub**، انقر **تسجيل الدخول عبر GitHub**
+3. يعرض حوار رمزًا من ثمانية محارف ويفتح
+   [github.com/login/device](https://github.com/login/device) في متصفحك.
+   وقد نُسخ الرمز إلى الحافظة
+4. الصقه، ووافق على التطبيق، ثم عُد. يتحوّل الصف من تلقاء نفسه إلى
+   «تم تسجيل الدخول باسم ⁨_your-username_⁩.»
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+يمكن إغلاق الحوار وأنت تُتم العمل في المتصفح — يواصل الخادم الاستطلاع حتى تنتهي
+صلاحية الرمز (نحو 15 دقيقة)، فيكتمل تسجيل الدخول.
 
-## Or paste a token
+## أو الصق رمزًا
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+البديل حين لا تطبيق لدى الخادم، أو حين لا يكون التطبيق مثبّتًا على حساب تحتاجه،
+أو حين تفضّل استخدام رمز وصول شخصي.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. انتقل إلى **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود**
+2. في صف **GitHub**، انقر **إضافة رمز وصول**
+3. الصق رمزًا بصلاحيتَي `repo` و`read:org` (كلاسيكي) ثم احفظ. الرمز **دقيق الصلاحيات**
+   يحتاج في المستودع إلى **المحتويات** و**طلبات السحب** (قراءة وكتابة)،
+   وإلى **الفحوصات** و**الإجراءات** (قراءة).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+يُسبَر الرمز لحظة تخزينه، فيستطيع الصف تسمية الحساب الذي يعود إليه. انقر
+**قطع الاتصال** لإزالته.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+نقطة التحقق: يقرأ صف **GitHub** «تم تسجيل الدخول باسم ⁨_your-username_⁩.». لاحقة
+تسمّي المصدر حين لا يكون الاعتماد الذي يجيب اعتمادك — «عبر تطبيق هذا الخادم» أو
+«من البيئة».
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[الأولوية ثابتة]
+الطلب الذي يُقدَّم نيابة عنك يستخدم **اعتمادك** ولا شيء غيره — البيئة اعتماد
+الخادم لا اعتمادك، فلا تنوب عنك. العمل الذي لا إنسان خلفه (خطافات الويب،
+واستطلاع طلبات السحب، ومزامنة التذاكر) يحل هوية تطبيق الخادم أولًا، ثم اعتماد
+مالك الخادم، ثم البيئة.
 :::
 
-## What the integration gives you
+## ما يوفّره التكامل
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| الميزة | كيف |
+| --- | --- |
+| قائمة طلبات السحب وتفاصيلها | واجهة GitHub REST، من الخادم، بهوية التطبيق أو باعتمادك |
+| تشغيلات الفحوصات | واجهة GitHub Checks |
+| نشر المراجعة | خطوة لا يمرّرها إلا المستخدم، وتنشر مراجعتك على طلب السحب |
+| تسجيل المستودع | تُقبل نسخة العمل إذا أشار مستودعها البعيد `origin` إلى github.com — أو إلى gitlab.com / bitbucket.org |
+| وصول الوكيل إلى GitHub | يحقن وسيط بيانات الاعتماد الرمز في `GH_TOKEN` / `GITHUB_TOKEN`، ويقيّده بقدرات الوكيل |
+| تنبيهات الإشعارات | استطلاع من الخادم لصندوق إشعارات GitHub يرفع «تمت الإشارة إليك في طلب سحب» و«تم طلب مراجعة» |
+| ملفات المستخدمين | بطاقات الملف التي تظهر عند التحويم، وتصفية طلبات السحب حسب المؤلف |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+بعض المسارات تستخدم واجهة GraphQL بدل REST حيث هي أقل كلفة — نشاط الفروع في
+منتقي إنشاء طلب السحب، وحالة المراجعة الحية التي تقرّر إن كان إشعار «تم طلب
+مراجعة» ما زال معلّقًا.
 
-## Watch for GitHub outages
+## راقب انقطاعات GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+يعرض شريط العنوان شارة حالة حين يتدهور مزوّد، وتشمل GitHub وClaude وOpenAI
+وKimi. **تبقى مخفية ما دام كل شيء سليمًا** — فظهورها يبلّغ عن العطل، لا عن
+غيابه.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+انقر الشارة لفتح لوحة منبثقة فيها حالة كل مزوّد وزر تحديث. تتجدد الحالات من
+تلقاء نفسها كل دقيقتين.
 
-## Know how agents act on GitHub
+## اعرف كيف يتصرف الوكلاء على GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- لا يحصل الوكيل على رمز GitHub إلا إذا كانت لديه **السماح باستدعاءات GitHub API** أو
+  **السماح بـ ⁨git push⁩**. انظر
+  [تهيئة سياسات البيئة المعزولة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/)
+- الإيداعات التي يصنعها الوكيل تُؤلَّف **باسم الوكيل** — اسم العرض مع
+  ` (agent)`، على عنوان اصطناعي مفتاحه معرّف الوكيل — ولا تُؤلَّف أبدًا باسم
+  إنسان. يُنسَب من طلب العمل بتذييل `Co-Authored-By`
+- إذا ضُبط تطبيق GitHub، يصدر الوسيط لكل إطلاق رموز تثبيت دقيقة الصلاحيات،
+  محصورة بالمستودع، لعمر يقارب الساعة، بدل تسليم رمز واسع. يُحَل التثبيت من
+  **مالك** مستودع التشغيل، فيقتصر تطبيق واحد مثبّت على عدة حسابات على الحساب
+  الذي يمسّه التشغيل. بلا تطبيق، يتلقى الوكلاء رمز البيئة
+- التشغيل الذي يطلبه عضو سجّل دخوله يجري تحت هوية GitHub **لذلك العضو** —
+  يُدمَج اعتماده بعد بيئة الوسيط، فيُنسَب إليه ما يصنعه الوكيل من إيداع أو
+  تعليق نيابة عنه
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The PR list is empty and says GitHub is not connected
+### قائمة طلبات السحب فارغة وتقول إن GitHub غير متصل
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+ليس لديك اعتماد GitHub على هذا الخادم. سجّل الدخول أو الصق رمزًا تحت
+**استضافة الكود**. مستودعات المضيفين الآخرين لا تتأثر — وحدها مستودعات GitHub
+لا تساهم بشيء.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### الصف يعرض «إضافة رمز وصول» ولا يعرض «تسجيل الدخول عبر GitHub»
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): it takes about two minutes
-and only the server owner has to do it, once.
+لا معرّف عميل لدى الخادم — وهذه الحال الطبيعية عند البناء من المصدر، إذ لا
+تُضمَّن بيانات الاعتماد إلا في البناءات الرسمية. انظر
+[إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): يستغرق نحو دقيقتين،
+ولا يفعله إلا مالك الخادم، ومرة واحدة.
 
-### The sign-in dialog says the provider returned no device code
+### يقول حوار تسجيل الدخول إن المزوّد لم يُرجع رمز جهاز
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+تطبيق GitHub موجود، لكن خانة **تدفق الجهاز** مطفأة. فعّلها من إعدادات التطبيق
+(عام ← تدفق الجهاز) ثم أعد المحاولة.
 
-### The row says "via this server's app" when I expected my own account
+### يقول الصف «عبر تطبيق هذا الخادم» وكنت أنتظر حسابي
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+لم تسجّل دخولك، وما تراه هوية تطبيق الخادم وهي تجيب. انقر **تسجيل الدخول عبر GitHub**
+في ذلك الصف.
 
-### A fine-grained PAT shows no merge button or check status
+### رمز دقيق الصلاحيات لا يُظهر زر الدمج ولا حالة الفحوصات
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+يحتاج الرمز إلى **المحتويات** و**طلبات السحب** (قراءة وكتابة)، وإلى
+**الفحوصات** و**الإجراءات** (قراءة). بعد تغيير الأذونات، الصقه مجددًا تحت
+استضافة الكود.
 
-### Adding a repo is rejected
+### رُفضت إضافة مستودع
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/).
+يشترط التسجيل الثلاثة معًا: أن يقع المسار داخل شجرة عمل Git، وأن يكون له مستودع
+بعيد `origin`، وأن يشير ذلك البعيد إلى مضيف شفرة مدعوم (github.com أو
+gitlab.com أو bitbucket.org). انظر
+[إضافة مستودعات إلى مساحة عمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/).
 
-### Everything stops working for a while after heavy use
+### يتوقف كل شيء فترة بعد الاستخدام الكثيف
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+هذا قاطع حد المعدّل. يشير GitHub إلى حدّه الأساسي بـ `403` يحمل
+`x-ratelimit-remaining: 0` ووقت إعادة التعيين؛ وعند رؤية واحد، يفشل العميل ما
+يلي من طلبات محليًا وبلا اتصال بالشبكة إلى أن تنقضي النافذة، فلا يعمّق تكرار
+المحاولة الحد. تُعاد المحاولة عند الأعطال العابرة حتى ثلاث مرات بتراجع أسي، مع
+الالتزام بـ `retry-after`.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)
-- [Connect a code host](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
-- [Manage API keys](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
-- [Add repos to a workspace](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
-- [Review and merge a PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)
+- [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/)
+- [ربط مضيف شفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-مضيف-شفرة/)
+- [إدارة مفاتيح API](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
+- [إضافة مستودعات إلى مساحة عمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إضافة-مستودعات/)
+- [مراجعة طلب سحب ودمجه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/)

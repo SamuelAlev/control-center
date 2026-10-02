@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: สั่งงานเอเจนต์ตัวแรก
+description: สร้างเอเจนต์ ให้สเปซและงานแก่มัน แล้วดูการรันสตรีมกลับมา
 slug: th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะมี:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- เอเจนต์ที่คุณสร้างและกำหนดค่าเอง
+- สเปซที่คุณกับเอเจนต์ตัวนั้นคุยกัน
+- การรันที่เสร็จสมบูรณ์หนึ่งครั้ง พร้อมงานที่คอมมิตไว้ใน worktree ที่แยกโดดเดี่ยว และหนึ่งแถวในบันทึกการรันของเอเจนต์
 
-Prerequisites: [Your first workspace](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/) completed, so this workspace has a repo registered and at least one model provider connected.
+สิ่งที่ต้องมีก่อน: ทำ[เวิร์กสเปซแรกของคุณ](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/) ให้เสร็จก่อน เพื่อให้เวิร์กสเปซนี้มีรีโปที่ลงทะเบียนไว้และมีผู้ให้บริการโมเดลอย่างน้อยหนึ่งรายเชื่อมต่ออยู่
 
-## Step 1: Create an agent
+## ขั้นตอนที่ 1: สร้างเอเจนต์
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → เอเจนต์**
+2. คลิก **เอเจนต์ใหม่** เอเจนต์ที่ชื่อ “เอเจนต์ไม่มีชื่อ” จะถูกสร้างขึ้นทันทีและถูกเลือกไว้ในรายชื่อ — ไม่มีไดอะล็อกการสร้างและไม่มีอะไรต้องยืนยัน คุณกำหนดค่ามันได้ทันทีในหน้านั้น
+3. บนแท็บ **การตั้งค่า** กรอก:
+   - **ชื่อ**: อะไรสั้น ๆ ที่จำง่าย เช่น `alice` นี่คือสิ่งที่คุณพิมพ์หลัง `@`
+   - **ชื่อ**: สิ่งที่มันทำ เช่น “วิศวกรแบ็กเอนด์”
+   - **อะแดปเตอร์**: `Control Center (built-in)` เลือกตัวนี้อย่างตั้งใจ — มีเพียงฮาร์เนสในตัวเท่านั้นที่ชี้นำระหว่างการรันได้ หยุดชั่วคราวที่ขอบเขตเทิร์นได้ และไม่ต้องติดตั้ง CLI ใด ๆ บนโฮสต์ของเซิร์ฟเวอร์
+   - **โมเดล**: เลือกจากรายการที่ผู้ให้บริการที่เชื่อมต่อไว้ให้บริการ
+   - **สกิล**: แนบสกิลใดก็ได้ที่เหมาะสม เช่น `testing` หรือ `architecture`
+4. กด **บันทึกการเปลี่ยนแปลง**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[เอเจนต์ที่ไม่มีอะแดปเตอร์จะรันบนลูปในตัว]
+เมื่อไม่ได้ตั้งค่าฟิลด์อะแดปเตอร์ การสั่งงานจะถอยกลับไปใช้ **Control Center (built-in)** — ลูปเอเจนต์ที่อยู่ภายในเซิร์ฟเวอร์ จึงไม่มีอะไรต้องติดตั้งบนโฮสต์ มันยังต้องมีโมเดล: หากไม่ได้ตั้งไว้เลย มันจะขอค่าเริ่มต้นจาก Anthropic ซึ่งใช้ได้หากคุณเชื่อมต่อบัญชี Anthropic ไว้ และจะล้มเหลวเป็นอย่างอื่นด้วย `No credential for provider "anthropic"` ตั้งค่าทั้งสองอย่างให้ชัดเจนไว้ดีกว่า ไม่อย่างนั้นคุณจะรันบนโมเดลที่คุณไม่ได้เลือก
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**จุดตรวจสอบ** แถวในรายชื่อแสดงชื่อเอเจนต์ของคุณและวงแหวนสถานะกลวง
 
-## Step 2: Start a space
+## ขั้นตอนที่ 2: เริ่มสเปซ
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. ในแถบข้าง หาส่วน **สเปซ** แล้วคลิกปุ่ม **+**
+2. ตั้งชื่อให้สเปซ
+3. ใต้ **เพิ่มเอเจนต์** เลือกเอเจนต์ที่คุณเพิ่งสร้าง
+4. หากเวิร์กสเปซมีรีโปอยู่ ให้เลือกรีโปที่สเปซนี้ควรทำงานด้วย
+5. คลิก **สร้าง**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+สเปซจะเปิดขึ้น เบื้องหลัง Control Center จัดเตรียม worktree แบบ copy-on-write ของรีโปที่เลือกไว้สำหรับบทสนทนานี้ บนแบรนช์ของมันเอง เช็กเอาต์ต้นทางของคุณจะไม่ถูกแก้ไขเลย
 
-## Step 3: Send a task
+## ขั้นตอนที่ 3: ส่งงาน
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+พิมพ์งานเล็ก ๆ ที่เป็นรูปธรรมหนึ่งงานกับรีโปที่คุณลงทะเบียนไว้ งานที่มีผลลัพธ์ตรวจสอบได้จะได้ผลดีที่สุด — เพิ่มเทสต์ แก้ lint เปลี่ยนชื่อสัญลักษณ์
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+กด Enter คุณไม่จำเป็นต้อง `@`-mention ใครเลย: เมื่อมีเอเจนต์ตัวเดียวในสเปซ ข้อความธรรมดาก็ปลุกมันได้ ในสเปซที่มีเอเจนต์หลายตัว `@name` ใช้เลือกตัวหนึ่ง
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center ประกอบพรอมต์จากคำสั่งของเอเจนต์ เพอร์โซนา สกิล และบริบทของสเปซ แล้วจึงสั่งงานการรัน
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**จุดตรวจสอบ** ปุ่มส่งของช่องเขียนข้อความกลายเป็นปุ่มหยุด — มีเอเจนต์กำลังทำงานอยู่ในบทสนทนานี้ — และข้อความเริ่มเข้ามา
 
-## Step 4: Watch it work
+## ขั้นตอนที่ 4: ดูมันทำงาน
 
-The conversation renders the run as it happens:
+บทสนทนาเรนเดอร์การรันขณะที่มันเกิดขึ้น:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **การให้เหตุผล** แสดงแบบอินไลน์ขณะที่เอเจนต์คิด
+- **การเรียกเครื่องมือ**: การอ่านและเขียนไฟล์ การค้นหา คำสั่งเชลล์ แต่ละอย่างพร้อมผลลัพธ์ของมัน
+- **ข้อความ**: สรุป คำอธิบาย และคำถามถึงคุณ
 
-If the agent asks something, answer in the conversation and it resumes.
+หากเอเจนต์ถามอะไร ให้ตอบในบทสนทนา แล้วมันจะทำต่อ
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+สำหรับเมตริกของการรันหนึ่ง ๆ และตัวควบคุมหยุดชั่วคราว ทำต่อ และหยุดของมัน ให้หาเอเจนต์ที่กำลังรันอยู่ในส่วน **เอเจนต์** ของแผงทั่วไปของสเปซ แล้วเลือก **เปิดกิจกรรม**
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+ในแผงกิจกรรม แบดจ์สถานะจะอ่านว่า **กำลังรัน** จากนั้นเป็น **สำเร็จ** เมื่อการรันจบลง การรันที่ชะงักหรือวนซ้ำจะอ่านว่า **ถูกบล็อก** ส่วนการรันที่เกิดข้อผิดพลาดจะอ่านว่า **ล้มเหลว** ในทะเบียนเอเจนต์ วงแหวนในรายชื่อจะเป็นวงกลวงก่อนการรันครั้งแรก และเป็นวงทึบเมื่อเอเจนต์ว่างอีกครั้ง
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/).
+สิ่งที่จำกัดการรัน: worktree แบบ copy-on-write ของมันเอง ข้อมูลรับรองที่จัดหาให้ผ่านโบรกเกอร์ตอนเปิดตัวและถูกเพิกถอนตอนรื้อถอน สภาพแวดล้อมที่ถูกทำให้สะอาด พื้นผิวเครื่องมือที่โหมดของมันอนุญาต และกฎคุมการกระทำ ผลกระทบอย่างการพุชแบรนช์หรือการเปิด pull request จะถูกกั้นแยกต่างหาก — ดู[กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
 
-## Step 5: Check the result
+## ขั้นตอนที่ 5: ตรวจสอบผลลัพธ์
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** แล้วเลือกเอเจนต์ของคุณ
+2. เปิดแท็บ **บันทึก**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**จุดตรวจสอบ** หนึ่งแถวการรัน แสดงสถานะ ระยะเวลา เวลาเริ่มและเวลาสิ้นสุด และอะแดปเตอร์ที่มันรันอยู่
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+การเปลี่ยนแปลงของเอเจนต์ถูกคอมมิตบนแบรนช์ของบทสนทนา ใน worktree ของมัน คอมมิตถูกเขียนในนามของเอเจนต์ โดยให้เครดิตคุณไว้ในส่วนท้าย `Co-Authored-By:`
 
-## Getting a pull request
+## ขอ pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+ไม่มีอะไรเปิด pull request เอง หากคุณต้องการ ให้ขอในบทสนทนาเดียวกัน:
 
-> Push this branch and open a pull request against the default branch.
+> พุชแบรนช์นี้แล้วเปิด pull request เทียบกับแบรนช์เริ่มต้น
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+การพุช (`gitPush`) และการสร้าง PR (`prCreate`) ต่างมีค่าเริ่มต้นเป็นการขออนุมัติจากคุณ จึงควรคาดว่าจะมีการยืนยันก่อนแต่ละอย่าง หากไม่มีผู้อนุมัติเชื่อมต่ออยู่ตอนที่คำขอเกิดขึ้น การกระทำจะถูกปฏิเสธแทนที่จะถูกอนุญาต — กฎคุมจะล้มเหลวแบบปิด
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR จะถูกเปิดภายใต้ตัวตน GitHub ที่การรันนั้นใช้โทเคนของตัวตนนั้น — ของคุณ หากคุณเก็บโทเคนส่วนตัวไว้ — ไม่ใช่ภายใต้ชื่อของเอเจนต์ ความเป็นผู้เขียนของเอเจนต์จะปรากฏบนคอมมิต
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+คุณเปิดมันเองได้เช่นกัน: แผง **การควบคุมซอร์ส** ของสเปซมีปุ่ม **สร้าง pull request** ที่พาแบรนช์ของบทสนทนาเข้าสู่หน้าจอเขียน และ **Pull request → PR ใหม่** เปิดหน้าจอเดียวกันแบบว่างเปล่า นั่นคือจุดที่บทสอนถัดไปเริ่มต้น
 
-## Recap
+## สรุป
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+คุณสร้างเอเจนต์ กำหนดค่าอะแดปเตอร์และโมเดลของมัน ให้สเปซและงานแก่มัน และดูการรันจริงจบลงใน worktree ที่แยกโดดเดี่ยวโดยไม่แตะเช็กเอาต์ของคุณ
 
-**Next:** [Review your first pull request](/th-TH/คู่มือ/บทสอน/pr-แรก/) to learn the review workflow.
+**ถัดไป:** [รีวิว Pull request แรกของคุณ](/th-TH/คู่มือ/บทสอน/pr-แรก/) เพื่อเรียนรู้ขั้นตอนการรีวิว
 
-For more on agents: [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/). For dispatch details: [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/).
+สำหรับข้อมูลเพิ่มเติมเกี่ยวกับเอเจนต์: [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/) สำหรับรายละเอียดการสั่งงาน: [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Pași de pipeline
+description: Referință pentru tipurile de pași de pipeline, cheile de corp ale pașilor, configurația lor și rezultatele pașilor.
 slug: ro-RO/manual/referinta/pasi-pipeline
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Un pas de pipeline are două axe independente:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Tip** (`StepKind`) — cum _programează_ motorul pasul în raport cu trigger-ele sale.
+- **Cheie de corp** (`BuiltInBodyKeys`) — ce closure de corp înregistrat _execută_ munca pasului.
 
-## Step kinds
+## Tipuri de pași
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Definite în `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| Tip        | Semantica de programare                                                                                                                                                                                                                  |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | Punct de intrare obligatoriu — exact unul per șablon, întotdeauna primul nod. Nu face el însuși nicio muncă; ceea ce pornește rularea (manual / eveniment / program) este urmărit separat ca rânduri `PipelineTrigger`. Corpul său este `pipeline.trigger`, un no-op. |
+| `listen`   | Se declanșează când toți pașii sursă (din `StepTrigger.sourceStepIds`) se încheie.                                                                                                                                                       |
+| `join`     | Se declanșează când toți pașii din `waitForStepIds` ajung într-o stare terminală.                                                                                                                                                        |
+| `router`   | Ramificare condiționată — corpul returnează `StepResult.route(key)`, care declanșează doar muchia din aval a cărei `routeKey` se potrivește; ramurile neselectate sunt marcate ca sărite.                                                  |
+| `forEach`  | Programat ca `listen` (se declanșează când toți `sourceStepIds` se încheie). Corpul înregistrat `flow.forEach` este cel care iterează; motorul nu creează câte un pas copil pentru fiecare element.                                        |
+| `terminal` | Santinelă a planificatorului, fără corp. Rularea pipeline-ului se încheie când un pas terminal se termină.                                                                                                                                |
 
-## Step bodies
+## Corpuri de pași
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Closure-uri de corp înregistrate, indexate după constantele din `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Sunt 25, toate enumerate mai jos. Configurația se citește din `PipelineNodeConfig` al pasului (vezi mai jos), dacă nu se specifică altfel; „cheile de stare” se citesc din starea pipeline-ului / payload-ul de trigger în momentul execuției.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Un pas al cărui `bodyKey` nu este înregistrat produce un avertisment la încărcarea șablonului și apoi nu se execută niciodată — nu face rularea să eșueze. Pașii `trigger` și `terminal` sunt exceptați de la acel avertisment: trigger-ul rulează totuși corpul no-op `pipeline.trigger`; un pas `terminal` nu are corp.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Corp no-op al nodului obligatoriu `trigger` — se încheie imediat, ca motorul să se ramifice către ascultătorii din aval. Fără configurație.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Pas shell fără agent (`bash -c`). Marcajele `{{key}}` din script sunt substituite din stare + payload-ul de trigger, cu valori escapate pentru shell.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Câmp de configurare | Descriere                                                          |
+| ------------------- | ------------------------------------------------------------------ |
+| `script`            | Comandă shell de executat (obligatoriu)                            |
+| `outputKey`         | Cheia de stare care primește stdout-ul curățat la ieșirea cu cod 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Rulează cu cwd `<cc_root>/pipelines/<pipelineRunId>/` (partajat de toți pașii bash dintr-o rulare) și cu `GITHUB_TOKEN` în mediu. Scrie de asemenea `<stepId>_runDir` în stare. O ieșire cu cod diferit de zero face pasul să eșueze, cu finalul din stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Nod generic de tip prompt și trimitere: redă promptul, trimite agentul într-o conversație și suspendă până când rularea se încheie. Payload-ul `submit_output` al agentului este colectat în stare sub `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Câmp de configurare        | Descriere                                                     |
+| -------------------------- | ------------------------------------------------------------- |
+| `agentId`                  | UUID-ul agentului din spațiul de lucru care se trimite (obligatoriu) |
+| `prompt`                   | Text de instrucțiune; acceptă substituția `{{key}}` (obligatoriu) |
+| `outputKey`                | Cheia de stare pentru ieșirea colectată                       |
+| `outputSchema`             | Schema JSON pe care trebuie să o respecte ieșirea             |
+| `label`                    | Eticheta afișată pe pânză                                     |
+| `extras.spaceId`           | Conversația existentă în care se lucrează (implicit: una ascunsă) |
+| `extras.conversationTitle` | Fluxul cu nume din interiorul acelui spațiu (opțional)       |
+| `extras.mode`              | Se citește pe nodul care *deschide* camera (`messaging.createSpace`), nu aici. Implicit `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Corp de router — citește `config.extras`, evaluează o condiție și returnează `StepResult.route(key)`. Condițiile **nu** sunt expresii JavaScript; sunt acceptate trei forme de redactare, în ordinea priorității:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Arbore de predicate** (`extras.predicate`) — un arbore boolean care rutează `"true"` / `"false"`. Fiecare nod este o hartă cu un `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — adevărat când oricare dintre căile listate există pe disc; `negate` îl inversează; `recursive` caută și în subdirectoare (sărind peste `.git`, `node_modules`, `build`, `.dart_tool`). Căile relative se rezolvă față de `state[baseKey]` (implicit `repo_local_path`), altfel față de directorul de spațiu de lucru al rulării.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operatorii `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; citește starea pipeline-ului, nu sistemul de fișiere.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — grupuri booleene.
+  - `{"type": "not", "of": <predicate>}` — negație.
+- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; rutează către primul caz pe care valoarea de stare îl conține fără a ține cont de majuscule, altfel către `default`.
+- **Comparație** (`extras.left` / `extras.op` / `extras.right`, la nivel superior, variantă veche) — echivalentă cu un predicat `comparison`, păstrată pentru șabloanele redactate înainte de arbore.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Muchiile care ies din nod poartă un `routeKey` care trebuie să corespundă cheii returnate.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Publică constatările consolidate ca un comentariu de revizuire pe PR, prin clientul GitHub de PR.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Cheie de stare          | Descriere                                    |
+| ----------------------- | -------------------------------------------- |
+| `repo_full_name`        | `owner/repo` (obligatoriu)                   |
+| `pr_number`             | Numărul PR-ului — int sau șir numeric (obligatoriu) |
+| `consolidated_findings` | Corpul comentariului (obligatoriu)           |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Returnează `StepResult.terminal`, cu `comment_review_id` și `commented_at` în stare.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Publică un mesaj într-un spațiu de mesagerie prin `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Cheie de stare | Descriere                                                |
+| -------------- | -------------------------------------------------------- |
+| `space_id`     | Spațiul țintă (obligatoriu)                              |
+| `content`      | Corpul mesajului, citit textual din stare (obligatoriu)  |
 
-Writes `posted_space_id` and `posted_at` to state.
+Scrie `posted_space_id` și `posted_at` în stare.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Trimite o echipă întreagă în loc de un singur agent, apoi suspendă până când rulările membrilor se încheie.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Câmp de configurare                         | Descriere                                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `teamId`                                    | Echipa din spațiul de lucru care se trimite (obligatoriu; exclusivă mutual cu `agentId`)             |
+| `prompt`                                    | Textul obiectivului; acceptă substituția `{{key}}` (obligatoriu)                                     |
+| `dispatchMode`                              | `allParallel` (implicit — o sarcină per membru) sau `manager` (se trimite doar liderul, ca să coordoneze) |
+| `outputKey`                                 | Cheia de stare pentru ieșirile colectate ale membrilor                                               |
+| `outputSchema`, `label`, `extras.spaceId`   | Ca la `conversation.promptAgent`                                                                     |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Poartă de aprobare. Trimite agentul aprobator într-o conversație (modul review), cu promptul porții și un contract de ieșire `{decision, reason}`, apoi suspendă până când aprobatorul trimite prin `submit_output`.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| Câmp de configurare         | Descriere                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `agentId`                   | Agentul aprobator (obligatoriu)                                                    |
+| `prompt`                    | Promptul porții (opțional; când lipsește, se folosește unul implicit)               |
+| `outputKey`                 | Cheia de stare pentru payload-ul `{decision, reason}` colectat                     |
+| `outputSchema`              | Implicit, o schemă de aprobare (`decision`: `approved` / `rejected`, `reason`)     |
+| `label`, `extras.spaceId`   | Ca la `conversation.promptAgent`                                                   |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Poarta se rezolvă doar prin `submit_output`. `BuiltInBodyKeys.humanGate`, biblioteca de tipuri de noduri și textul de prompt al unui șablon inclus numesc toate uneltele MCP `approve_step` și `reject_step`; **niciuna dintre aceste unelte nu există** în vreun pachet sau registru.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Elimină worktree-urile izolate învechite; își alege modul din payload-ul de trigger. Respectă indicatorul `dryRun` al rulării.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Cheie de stare                 | Descriere                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | Eliberează worktree-urile acelui tichet                                               |
+| `repo_full_name` + `pr_number` | Eliberează worktree-ul efemer al editorului de PR                                     |
+| `space_id`                     | Desființează worktree-urile și folderul acelei conversații                            |
+| (niciuna dintre cele de mai sus) | Mătură spațiul de lucru: directoare dispărute, spații moarte, foldere orfane de conversații |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (opțional) primește un șir rezumat.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Mapare / fan-out peste o colecție de stare: redă promptul o dată pentru fiecare element, apoi trimite agentul **o singură dată**, cu acele prompturi concatenate (separator `---`), și suspendă până când acea rulare se încheie. O colecție goală se încheie imediat, cu o listă goală. Nu este o trimitere paralelă per element.
 
-| Config field         | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| Câmp de configurare  | Descriere                                                              |
+| -------------------- | ---------------------------------------------------------------------- |
+| `agentId`            | Agentul de trimis per element (obligatoriu)                            |
+| `prompt`             | Promptul per element; acceptă substituția `{{key}}` (obligatoriu)      |
+| `extras.iterableKey` | Cheia de stare care conține colecția (obligatoriu)                     |
+| `extras.itemKey`     | Cheia la care este legat elementul curent în prompt (implicit `item`)  |
+| `outputKey`          | Cheia de stare pentru ieșirea colectată (o singură trimitere, nu o listă) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Rulează un alt șablon de pipeline ca sub-pas imbricat (sub-pipeline-ul rulează ca rulare copil, cu `parentPipelineRunId` setat). Pasul suspendă până când copilul ajunge într-o stare terminală, apoi starea finală a copilului este fuzionată sub `outputKey`.
 
-| Config field        | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| Câmp de configurare | Descriere                                                              |
+| ------------------- | ---------------------------------------------------------------------- |
+| `extras.templateId` | Șablonul copil de rulat (obligatoriu; un pipeline nu se poate apela pe sine) |
+| `inputKeys`         | Chei de stare copiate în payload-ul de trigger al copilului            |
+| `outputKey`         | Cheia de stare pentru starea finală fuzionată a copilului              |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Indexare tree-sitter în fundal: parcurge un depozit, extrage simboluri/muchii în izolate de worker și le ingeră în graful de cod al spațiului de lucru. Transmite progresul în flux către rândul de rulare al pasului; acceptă dry-run. Tree-sitter și gramaticile sale sunt native obligatorii — o bibliotecă dinamică lipsă înseamnă că serverul nu a pornit niciodată, iar o gramatică ce nu se poate rezolva în timpul rulării face pasul să eșueze, în loc să îl sară.
 
-| State key         | Description                           |
+| Cheie de stare    | Descriere                             |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Depozitul de indexat (obligatoriu)    |
+| `repo_local_path` | Calea locală a checkout-ului (obligatoriu) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Diarizare offline a vorbitorilor. Citește audio păstrat al întâlnirii, îl grupează în vorbitori (`Person 1`, `Person 2`, …), reetichetează segmentele transcrierii și rescrie starea `transcript`; emite de asemenea `diarization_spans` pentru pasul paralel `meeting.updateTranscript`. Trece transcrierea mai departe nealterată când nu s-a păstrat niciun audio sau modelele nu sunt instalate.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Cheie de stare | Descriere                     |
+| -------------- | ----------------------------- |
+| `meeting_id`   | Întâlnirea de diarizat (obligatoriu) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Corpuri deterministe de persistare a rezumatului întâlnirii. Fiecare citește din stare `meeting_id` și payload-ul structurat `meeting_outcome` al pasului de agent (`{summary, enhancedNotes, actionItems[], decisions[]}`) și își scrie partea în propriul tabel — note, elemente de acțiune sau decizii. Rândurile salvate anterior nu sunt niciodată șterse într-o rulare degradată.
 
-### Other built-in bodies
+### Alte corpuri incluse
 
-| Body key                           | Description                                                                                                                                                                              |
+| Cheie de corp                      | Descriere                                                                                                                                                                                |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Recunoaștere a vorbitorilor între întâlniri: potrivește vorbitorii diarizați cu profilurile vocale salvate și aplică automat potrivirile sigure. No-op fără profiluri/embedding-uri.      |
+| `meeting.updateTranscript`         | Aplică etichetele `Person N` din `diarization_spans` și fuzionează fragmentele per fereastră în replici per vorbitor, apoi persistă transcrierea curățată. No-op când diarizarea nu a produs nimic. |
+| `meeting.assemblePlayback`         | Asamblează pista de redare mixată a întâlnirii din fișierele WAV per canal păstrate. No-op când nu s-a păstrat niciun audio.                                                              |
+| `orchestration.markPhase`          | La finalul DAG-ului de lucru, scrie santinele de eșec pentru sub-tichetele fără ieșire și comută orchestrarea în `synthesizing`.                                                          |
+| `orchestration.persistDeliverable` | Scrie ieșirea sintezei în tichetul părinte, îl finalizează, publică livrabilul și marchează orchestrarea ca `completed`.                                                                  |
+| `orchestration.awaitApproval`      | Poartă de aprobare parțială: se încheie imediat când cheia de nod a pasului se află în setul aprobat al orchestrării, altfel suspendă până când o aprobare ulterioară o reia. Acesta este singurul corp care setează `extras.awaitApproval`, ceea ce îl scutește de timeout-ul de 24 de ore pentru pașii suspendați. |
+| `messaging.createSpace`            | Deschide conversația în care lucrează restul șablonului, publicată sub `outputKey` al pasului (corpurile incluse folosesc `pipeline_space_id`). O listă `repoIds` goală nu extrage nimic; `extras['allRepos']` extrage fiecare depozit al spațiului de lucru. `extras['createConversation']` (oprit implicit) deschide și un flux cu nume. Un pas de agent SE ALĂTURĂ unei camere și nu deschide niciodată una, așa că un fan-out fără acest nod eșuează la trimitere — iar cablarea lui o singură dată înseamnă că întregul fan-out partajează un singur checkout, în loc să provizioneze câte unul pentru fiecare. |
+| `prReview.finalize`                | Ultimul pas al șablonului de revizuire PR: sortează nodurile de revizuire acumulate în grupe de consens și calculează verdictul per PR.                                                  |
+| `skills.analyze`                   | Rulează scanarea lanțului de aprovizionare pentru skill-uri peste skill-urile instalate ale unui spațiu de lucru și înregistrează fiecare verdict.                                        |
 
-## Step results
+## Rezultate de pas
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Un corp de pas returnează un `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Toate fabricile acceptă o hartă opțională `mutatedState`, fuzionată în starea pipeline-ului, cu excepția lui `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
-| --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| Fabrică                     | Semnătură                                                       | Descriere                                                                  |
+| --------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Încheiere normală; ascultătorii din aval sunt evaluați                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Încheiere de router; selectează ramura din aval a cărei `routeKey` se potrivește |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Suspendă până când se declanșează un anumit tip de eveniment de domeniu     |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Suspendă până când toate sarcinile listate ajung într-o stare terminală    |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Rularea pipeline-ului s-a încheiat — nu mai urmează pași                   |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Pasul a eșuat cu un mesaj de eroare                                        |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Comportamentul de reîncercare pentru un corp de nod care eșuează (`PipelineNodeConfig.retryPolicy`; null dezactivează reîncercările).
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| Câmp             | Tip      | Descriere                                                                          |
+| ---------------- | -------- | ---------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | Numărul total de încercări, inclusiv prima (3 = 1 încercare + 2 reîncercări); trebuie să fie ≥ 1 |
+| `backoff`        | `String` | `linear` sau `exponential` (implicit)                                              |
+| `initialDelayMs` | `int`    | Întârzierea înainte de prima reîncercare, în milisecunde; întârzierile ulterioare cresc conform `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Configurația per nod, purtată în interiorul definiției pasului (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Atât nodurile incluse, cât și cele personalizate au aceeași formă; fiecare corp citește doar câmpurile care îl interesează.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Câmp             | Tip                     | Descriere                                                                                                                             |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Șablon de prompt cu substituție `{{key}}`                                                                                             |
+| `script`         | `String?`               | Corp de script Bash cu substituție `{{key}}`                                                                                          |
+| `agentId`        | `String?`               | UUID-ul agentului din spațiul de lucru de trimis                                                                                      |
+| `inputKeys`      | `List<String>`          | Chei de stare pe care acest nod le consumă ca intrare                                                                                 |
+| `repoIds`        | `List<String>`          | Depozitele pe care le extrage nodul `messaging.createSpace` (`<repoId>` sau `<repoId>@<branch>`). Gol = niciunul; `extras['allRepos']` = fiecare depozit al spațiului de lucru. Ignorat pe pașii de agent. |
+| `outputKey`      | `String?`               | Cheia de stare sub care se scrie ieșirea acestui nod                                                                                  |
+| `label`          | `String?`               | Eticheta afișată pe pânză (implicit, ID-ul pasului)                                                                                   |
+| `outputSchema`   | `Map<String, dynamic>?` | Schema JSON (subset) pe care trebuie să o respecte valoarea de ieșire                                                                 |
+| `reducer`        | `String?`               | Strategia de fuzionare când ramuri paralele scriu aceeași `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum` sau `override` (implicit) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Politica de reîncercare la eșecul corpului; null = o singură încercare                                                                |
+| `continueOnFail` | `bool`                  | Când este adevărat, un eșec terminal nu face rularea să eșueze; eroarea este pusă deoparte sub `state['_stepErrors'][stepId]`          |
+| `timeoutMs`      | `int?`                  | Timeout în timp real pentru corpul nodului, în milisecunde; null = fără timeout                                                       |
+| `teamId`         | `String?`               | Echipa de trimis (nodurile `team.dispatch`); exclusivă mutual cu `agentId`                                                            |
+| `dispatchMode`   | `String?`               | Modul de execuție al echipei: `allParallel` sau `manager`                                                                             |
+| `extras`         | `Map<String, dynamic>`  | Configurație liberă, specifică corpului (de ex. `iterableKey`, `templateId`, arbori de condiții)                                      |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Accesori derivați: `spaceId` (`extras['spaceId']` — conversația existentă în care se lucrează), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, citit pe nodul care deschide spațiul) și `runWhen` (`extras['runWhen']` — sare peste nod când condiția nu este îndeplinită).
 
-## See also
+## Vezi și
 
-- [Pipelines](/ro-RO/manual/concepte/pipeline-uri/)
-- [Create a pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
-- [Pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
-- [Run a pipeline](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)
+- [Pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/)
+- [Creează un șablon de pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
+- [Trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
+- [Rulează un pipeline](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)

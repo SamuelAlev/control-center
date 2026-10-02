@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: ایجنٹ سے ناکام ٹیسٹ ڈی بگ کریں
+description: ایجنٹ سے بریک پوائنٹ لگوائیں، ڈی بگر کے تحت لانچ کرائیں اور پرنٹ سٹیٹمنٹس شامل کرنے کے بجائے اصل اسٹیک فریم پڑھیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ناکام-ٹیسٹ-ڈی-بگ-کریں
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+یہ گائیڈ دکھاتی ہے کہ ایسے ناکامی پر ایجنٹ سے ڈی بگر استعمال کیسے کرایا جائے جس کی وضاحت پرنٹ سٹیٹمنٹس نہیں کر پا رہے۔
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` ٹول ایک حقیقی Debug Adapter Protocol سیشن چلاتا ہے۔ رکا ہوا فریم اُس لمحے کے ہر سوال کا جواب ایک ہی بار میں دے دیتا ہے — ہر لوکل، ہر کالر، اور فریم کے اپنے اسکوپ میں جانچا گیا ایکسپریشن — جبکہ پرنٹ سٹیٹمنٹ صرف اُسی سوال کا جواب دیتا ہے جو چلانے سے پہلے آپ کو سوچنے میں آیا تھا۔
 
-## Before you start
+## شروع کرنے سے پہلے
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+یہ ٹول سطح پر موجود رہتا ہے تاکہ ایجنٹ اندازہ لگانے کے بجائے پوچھ سکے کہ کچھ بھی قابلِ استعمال کیوں نہیں۔ اڈاپٹر واقعی اُسی وقت شروع ہو سکتا ہے جب یہ **دونوں** باتیں پوری ہوں:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- چیک آؤٹ میں ایک پروجیکٹ مارکر ہو، اور
+- اڈاپٹر کی بائنری حل ہوتی ہو۔
 
-Ask the agent to check:
+ایجنٹ سے جانچنے کو کہیں:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+یہ جو کچھ ملا وہ بتاتا ہے، یا وضاحت کرتا ہے کہ اڈاپٹر کو دونوں حصے درکار ہیں۔
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| زبان           | اڈاپٹر                       | مارکر                                           | انسٹال                            |
+| -------------- | ---------------------------- | ----------------------------------------------- | --------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | SDK کے ساتھ آتا ہے — کرنے کو کچھ نہیں |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`             |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | LLVM کے ساتھ آتا ہے               |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python پروجیکٹ کا انٹرپریٹر منتخب کرتا ہے]
+`debugpy` کو `$PATH` سے پہلے `.venv/bin` یا `venv/bin` میں ڈھونڈا جاتا ہے۔ `$PATH` والا python ایک مختلف ماحول ہوتا ہے، اور غلط والے سے اٹیچ کرنا ایسے انداز میں ناکام ہوتا ہے جو غلط انٹرپریٹر کے بجائے ٹوٹے ہوئے کوڈ جیسا لگتا ہے۔
 :::
 
-## Set the breakpoint first, then launch
+## پہلے بریک پوائنٹ لگائیں، پھر لانچ کریں
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+ترتیب اہمیت رکھتی ہے اور ٹول اسے نافذ کرتا ہے: بریک پوائنٹس سیشن وجود میں آنے سے **پہلے** لگائے جا سکتے ہیں، کیونکہ پروٹوکول اسی ترتیب کا تقاضا کرتا ہے۔
 
-Ask the agent something like:
+ایجنٹ سے کچھ ایسا کہیں:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart` میں `compute` فنکشن غلط ویلیو لوٹاتا ہے۔ جس لائن میں `product` اسائن ہوتا ہے اُس پر بریک پوائنٹ لگائیں، اسے ڈی بگر کے تحت لانچ کریں اور بتائیں کہ `a` اور `b` اصل میں کیا ہیں۔
 
-It will run roughly:
+یہ تقریباً یہ چلائے گا:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+لانچ بتاتا ہے کہ یہ کہاں رکا:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[اگر یہ اس کے بجائے پروگرام کے ختم ہونے کی اطلاع دے]
+بریک پوائنٹ بائنڈ نہیں ہوا۔ خالی لائن، تبصرہ، یا وہ لائن جو بلڈ میں کمپائل ہی نہ ہوئی ہو، بریک پوائنٹ نہیں رکھ سکتی۔ کسی لائیو سیشن کے خلاف `breakpoints` کال کرنے سے پتہ چلتا ہے کہ آپ کے لگائے ہوئے کتنے واقعی رکھے گئے۔
 :::
 
-## Read the frame
+## فریم پڑھیں
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+پھر اس کے اندر چلیں:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+جن آبجیکٹ کے اندر بچے ہوں، وہ `[expand: reference N]` بتاتی ہے — مگر صرف اُس وقت جب واقعی اس کے پیچھے کچھ ہو، چنانچہ ایجنٹ جس ایکسپینشن کو استعمال نہ کر سکے، وہ کبھی پیش نہیں کی جاتی۔
 
-For anything not visible as a local:
+جو چیز بطور لوکل نظر نہ آئے، اُس کے لیے:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## قدم بہ قدم چلیں
 
-| What you want          | Op          |
+| آپ کیا چاہتے ہیں       | آپریشن     |
 | ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| اگلے اسٹاپ تک چلائیں   | `continue`  |
+| اگلی لائن، وہی فریم    | `step_over` |
+| کال کے اندر            | `step_in`   |
+| کالر تک باہر           | `step_out`  |
+| چلتے پروگرام کو روکیں  | `pause`     |
 
-## Attach to something already running
+## پہلے سے چل رہی کسی چیز سے اٹیچ کریں
 
-For a wedged process rather than one you are starting:
+ایسے پروسیس کے لیے جو پھنس گیا ہو، اُس کے بجائے جو آپ شروع کر رہے ہوں:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## اختتام
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+سیشن ہمیشہ ختم کریں۔ ڈی بگ اڈاپٹر ایک **رکے ہوئے پروسیس** کا مالک ہوتا ہے جو وہ سب تھامے ہوتا ہے جو وہ پروسیس تھامے ہوتا ہے — کوئی پورٹ، کوئی لاک، کوئی ڈیٹا بیس کنکشن۔
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[یہ آپ سے بچ کر نہیں بھاگ سکتا]
+ہر سیشن کی ایک سخت TTL ہوتی ہے جسے وہ بڑھا نہیں سکتا، فی گفتگو بالکل ایک سیشن ہوتا ہے، اور سرور رکنے پر سب کچھ ختم کر دیا جاتا ہے۔ دوسری `launch` پہلی کی جگہ لینے کے بجائے مسترد کر دی جاتی ہے: جو ایجنٹ پہلا ختم کیے بغیر دوسرا شروع کرتا ہے، وہ تقریباً یقینی طور پر پہلے کا سراغ کھو چکا ہوتا ہے۔
 :::
 
-## Bounded output
+## محدود آؤٹ پٹ
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+گہرے آبجیکٹ گراف پر `variables` ایکسپینشن فطرتاً بے حد ہوتی ہے — ایک Flutter ویجٹ پورے ایلیمنٹ ٹری تک پہنچ جاتا ہے۔ فی اسکوپ بچوں کی حد 50، ویلیوز کی 400 حروف اور اسٹیک فریمز کی 30 ہے۔ کانٹیکسٹ ونڈو بھر دینے والا ٹول نتیجہ ایسا ٹول ہے جو اُس رَن کو ختم کر دیتا ہے جس کی وہ مدد کر رہا تھا۔
 
-## Related
+## متعلقہ
 
-- [Code intelligence](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — every `debug` op and argument
-- [Diagnose an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/) — when the problem is the agent, not the code
+- [کوڈ انٹیلیجنس](/ur-PK/ہدایت-نامہ/تصورات/کوڈ-انٹیلیجنس/) — ڈی بگر، کمپائلر اور میچر مختلف سوالوں کے جواب کیوں دیتے ہیں
+- [بلٹ اِن ایجنٹ ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — ہر `debug` آپریشن اور آرگیومنٹ
+- [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/) — جب مسئلہ کوڈ کا نہیں، ایجنٹ کا ہو

@@ -1,128 +1,130 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Kalendář a plánování
+description: Jak Control Center na serveru synchronizuje Google Calendar, proč je přihlášení device-code grant a co pokrývá rozsah jen ke čtení.
 slug: cs-CZ/prirucka/koncepty/kalendar
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/cs-CZ/prirucka/koncepty/schuzky/).
+Control Center se připojuje ke Google Calendar, takže máš den vedle flotily.
+Události synchronizuje, ukazuje je v zobrazení měsíce, týdne, dne a agendy,
+upozorní tě, než schůzka začne, a z libovolné události udělá nahranou
+a shrnutou [schůzku](/cs-CZ/prirucka/koncepty/schuzky/).
 
-## What it changes on Google
+## Co se na Google mění
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Skoro nic. Integrace události stáhne a vykreslí. Nevytváří je, neupravuje,
+nemaže ani na pozvánky neodpovídá. Každé připojení přes device code, vestavěné
+i s vlastním klientem, žádá `calendar.readonly` a `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Události se synchronizují do vlastní databáze pracovního prostoru **na
+serveru** (`<dataDir>/<workspaceId>/workspace.db`) a každý klient je vykreslí
+přes RPC. Žádný klient přihlašovací údaje Google nedrží.
 
-## Per-workspace accounts
+## Účty na pracovní prostor
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/cs-CZ/prirucka/koncepty/pracovni-prostory/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Účty kalendáře patří k pracovnímu prostoru, stejně jako všechno ostatní
+v Control Center. Každý [pracovní prostor](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
+si připojí vlastní účet Google (nebo jich několik) a události ani tokeny
+jednoho prostoru nejsou z jiného vidět. Přepnutí pracovního prostoru přepne
+i kalendáře, které vidíš.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Pracovní prostor může připojit **více** účtů Google, třeba pracovní a osobní,
+a jejich události se sloučí do stejných zobrazení.
 
-## Why sign-in is a device code
+## Proč je přihlášení kódem zařízení
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+Bezhlavý `cc_server` nemá prohlížeč, který by zachytil OAuth přesměrování.
+Proto ho nepoužívá: autorizuje se **device-code grantem** (RFC 8628). Server
+ukáže krátký uživatelský kód a adresu Google, schválení uděláš na libovolném
+zařízení s prohlížečem a server se ptá, dokud ho nepotvrdíš. Bezhlavá
+instalace účet připojí právě proto, že nemá koncový bod přesměrování, který
+by musela hostovat.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Než si přineseš vlastní údaje, platí jedno: typ klienta musí být u Google
+"TV and Limited Input devices". Google tomuto typu klienta uděluje jen
+povolenou sadu scopes a projekt, kde Calendar pro tento typ povolený není,
+skončí chybou `invalid_scope` — pak je potřeba loopback nebo webový klient.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Tokeny server neopouštějí. Zapíšou se do `secrets.json` v datovém adresáři
+serveru pod klíčem `google_google:<workspaceId>:<email>`, vedle databází
+a pod stejnou hranicí důvěry souborového systému hostitele. Server přístup
+obnovuje sám a když Google účet trvale zneplatní (zrušená nebo dlouho prošlá
+relace), publikuje `CalendarAuthExpired` a místo tichého selhání ukáže banner
+**Znovu připojit**.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Sestavení ze zdrojů **žádné** údaje Google neobsahuje — client ID a secret
+dodáváš ty. Oficiální vydání mají zapečený veřejný device-code klient, aby
+připojení fungovalo rovnou; server si uloží jen značku, která na něj odkazuje,
+nikdy kopii. `GOOGLE_OAUTH_CLIENT_ID` (a jeho secret) v prostředí má vždy
+přednost před zapečenou dvojicí. Příznak `--google-client-id` záměrně
+neexistuje: neznámé příznaky se ignorují a secret na příkazovém řádku je
+čitelný přes `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
+Jak si rozběhnout vlastní projekt Google, popisuje
+[Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
 
-## Sync
+## Synchronizace
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Server stahuje posuvné okno událostí každého připojeného účtu — každý
+kalendář na účtu, nejen primární — **každé dvě minuty** a navíc na požádání
+(start, připojení, ruční synchronizace). Krátký interval je levný, protože
+průchod je přírůstkový: každý kalendář nese vlastní sync token, takže
+nezměněný kalendář vyjde na jednu téměř prázdnou odpověď místo opětovného
+stažení okna pěti měsíců.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Opakované události rozvine server, takže žádný klient nikdy nerozebírá
+pravidlo opakování. Měsíc mimo aktuální okno se načte až při přechodu na něj.
+Smazané události a ty, které z okna vypadly, další synchronizace odstraní.
 
-## Views
+## Zobrazení
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Zobrazení  | Co ukazuje                                          |
+| ---------- | --------------------------------------------------- |
+| **Měsíc**  | Mřížka celého měsíce (pohání ji balíček `kalender`) |
+| **Týden**  | Události s časem za týden v časové mřížce           |
+| **Den**    | Události s časem za jeden den v časové mřížce       |
+| **Agenda** | Posouvatelný seznam nadcházejících událostí         |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Kalendář otevřeš na `/calendar`; výběr události otevře detail na
+`/calendar/:eventId`. Zvolené zobrazení se uloží do předvoleb daného klienta,
+takže na jiné zařízení se nepřenese.
 
-## Meeting alerts
+## Upozornění na schůzky
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/cs-CZ/prirucka/koncepty/domenove-udalosti/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Plánovač jednou za minutu hledá události, které začínají v nastavitelném
+předstihu, a pošle oznámení **"Schůzka brzy začíná"** (`MeetingStartingSoon`,
+[doménová událost](/cs-CZ/prirucka/koncepty/domenove-udalosti/)). Oznámení nese
+adresu pro připojení, pokud nějaká je, a kliknutí otevře detail události.
+Upozornění se proti `alertedAt` události neopakují, takže stejná schůzka
+neupozorní dvakrát, a to ani po restartu, a událost, jejíž začátek uplynul,
+když byla aplikace zavřená, se znovu nepošle.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Na dva limity se snadno narazí. Plánovač běží **na klientovi na počítači**
+a jen pro pracovní prostor, který máš právě otevřený — prostor, ve kterém
+nejsi, žádné upozornění nezvedne. Webové sestavení navíc nemá žádný kanál
+systémových oznámení, takže nezvedne žádné.
 
-## Record and link
+## Nahrát a propojit
 
-From a calendar event you can start a [meeting recording](/cs-CZ/prirucka/koncepty/schuzky/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Z události v kalendáři můžeš spustit [nahrávání schůzky](/cs-CZ/prirucka/koncepty/schuzky/),
+které převezme název události. Control Center uloží mezi nahrávkou a událostí
+vazbu jedna ku jedné, takže poznámky schůzky a položka kalendáře zůstanou
+spojené a ani jedna funkce na té druhé nezávisí.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Spustit nahrávání a propojit** je jen na počítači. Na webovém klientovi
+akce hlásí, že nahrávání není dostupné — přestože vlastní postup nahrávání
+na obrazovce schůzek v prohlížeči funguje.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agenti tvůj kalendář nečtou]
+Pro kalendář nejsou žádné nástroje MCP. Agent neumí vypsat události, přečíst
+detail události ani za tebe odpovědět na pozvánku; rozhraní `calendar.*` je
+RPC jen pro lidské klienty.
 :::
 
-## See also
+## Viz také
 
-- [Meetings and transcription](/cs-CZ/prirucka/koncepty/schuzky/): what happens after you start a recording
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): why calendar accounts are per-workspace
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
-- [Record and summarize a meeting](/cs-CZ/prirucka/navody/nahravani-schuzky/)
+- [Schůzky a přepis](/cs-CZ/prirucka/koncepty/schuzky/): co se stane, když spustíš nahrávání
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): proč má každý pracovní prostor vlastní účty kalendáře
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): `MeetingStartingSoon` a `CalendarAuthExpired`
+- [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
+- [Nahrajte a shrňte schůzku](/cs-CZ/prirucka/navody/nahravani-schuzky/)

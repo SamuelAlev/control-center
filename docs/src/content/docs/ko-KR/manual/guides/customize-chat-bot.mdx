@@ -1,98 +1,115 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: 채팅 봇 사용자 지정
+description: Control Center에서 봇 이름을 바꾸거나, 봇이 자기 자신에 대해 하는 설명을 고치거나, 슬래시 명령을 변경합니다.
 slug: ko-KR/매뉴얼/사용-가이드/채팅-봇-사용자-지정
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+이 가이드에서는 Control Center를 벗어나지 않고 제공업체 측 봇 앱을 바꾸는 방법을
+설명합니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- 워크스페이스의 `owner` 또는 `admin` 역할
+- **연결된** 제공업체. **봇 맞춤 설정** 행은 워크스페이스가 연결된 뒤에만 나타납니다
+- Control Center가 관리할 수 있는 앱. Slack의 경우 연결에 앱 구성 리프레시 토큰(`xoxe-…`)이 있어야 합니다. 없으면 행이 그 사실을 알리고 비활성 상태로 남습니다
 
-## What you can change
+## 변경할 수 있는 항목
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| 필드                            | 의미                                              | 제한                                                |
+| ------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
+| **앱 이름**                     | 제공업체가 앱을 나열하는 이름                     | 1~35자                                              |
+| **봇 이름 (@ 뒤에 입력하는 이름)** | 멤버가 `@` 뒤에 입력하는 이름                   | 1~80자                                              |
+| **짧은 설명**                   | 제공업체가 보여 주는 한 줄                        | 140자 이하                                          |
+| **봇이 할 수 있다고 말하는 내용** | 봇과의 DM 위에 표시됨                           | 300자 이하                                          |
+| **슬래시 명령**                 | 멤버가 호출하는 명령(슬래시 제외)                 | 소문자, `a–z 0–9 _ -`만 허용, 32자에서 잘림         |
+| **다이렉트 메시지**             | 봇이 DM/에이전트 환경을 노출하는지 여부           | 켜짐 또는 꺼짐                                      |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center는 제공업체를 호출하기 전에 네 개의 텍스트 필드를 검증하므로,
+직접 볼 수 없는 서버가 돌려주는 불투명한 `invalid_manifest` 대신 "the app name
+must be between 1 and 35 characters"라는 메시지를 받습니다. 명령은 거부되지 않고
+정규화됩니다. 앞의 슬래시는 제거되고, 나머지는 소문자로 바뀌며, `a–z 0–9 _ -`
+밖의 문자는 버려지고, 결과가 비면 `cc`로 대체됩니다.
 
-## Edit the bot
+## 봇 편집
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. **설정 → 워크스페이스 → 일반**으로 이동해 **채팅 브리지** 카드까지 스크롤합니다
+2. 제공업체 블록에서 **봇 맞춤 설정**을 클릭합니다
+3. 대화상자는 제공업체에서 다시 읽어 온 앱의 _실시간_ 값으로 열립니다 — 따라서 누군가 Slack 자체 UI에서 한 변경이 곧 시작점이 됩니다
+4. 필요한 내용을 편집하고 저장합니다
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+그 실시간 값을 읽으면 Slack 쪽에서 토큰 회전이 한 번 발생합니다. 그래서 이 행은
+페이지가 로드될 때 자동으로 실행되는 것이 아니라 의도적으로 클릭해야 하는
+항목입니다.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+쓰기는 변경 사항을 앱의 현재 정의 위에 덮어씁니다. Control Center가 모델링하지
+않는 것 — Slack에서 추가한 두 번째 슬래시 명령, 워크플로 단계, 관련 없는 설정 —
+은 그대로 유지됩니다. 스코프와 이벤트는 병합될 뿐, 결코 제거되지 않습니다.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+저장한 뒤 Control Center는 봇의 신원을 다시 읽어, 설정의 이름이 채팅 앱의
+이름과 일치하게 합니다.
 
-## Reinstall when permissions change
+## 권한이 바뀌면 다시 설치
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[권한 변경 후 재설치]
+Slack은 새 앱 정의를 즉시 적용하지만 설치된 권한 부여는 그대로 유지합니다.
+권한 변경을 적용하려면 앱을 다시 설치하세요. 그렇게 할 때까지 브리지는 이전
+권한 부여로 계속 실행됩니다.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+저장으로 권한이 바뀌면 대화상자는 열린 채로 남아 "Slack에서 앱 권한이
+변경되었습니다. 적용하려면 앱을 다시 설치하세요."라고 표시하고, 해당 앱의 Slack
+팀 설치 페이지를 여는 **앱 다시 설치** 버튼을 보여 줍니다. Slack에서는
+**Install App → Reinstall to Workspace**입니다.
 
-## Rename the slash command
+## 슬래시 명령 이름 바꾸기
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+**슬래시 명령**을 바꾸고 저장합니다. 그러면 브리지는 마지막으로 호출된 명령을
+사용해 안내문을 작성하므로, 도움말 텍스트와 연결 안내가 더 이상 존재하지 않는
+명령을 지칭하는 대신 새 이름을 따릅니다.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+이름을 바꿔도 기존의 브리지 스레드는 깨지지 않습니다. 스레드는 명령이 아니라
+대화를 키로 삼기 때문입니다.
 
-## What Control Center will not change
+## Control Center가 바꾸지 않는 항목
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **구조적 설정.** 전송 방식(Socket Mode), 필수 스코프, 이벤트 구독은 제안되는 것이 아니라 강제됩니다. 설정 화면에서 침묵하도록 구성할 수 있는 앱은 기능이 아니라 지원 티켓입니다
+- **봇 아이콘.** 제공업체 자체의 앱 설정에서만 바꿀 수 있으며, 대화상자도 그렇게 안내합니다
+- **제공업체 자체의 기능 마이그레이션.** 이미 Slack의 레거시 어시스턴트 형태를 쓰는 앱은 그대로 유지됩니다. 이 대화상자는 설명을 편집할 뿐, 앱을 마이그레이션하지 않습니다
 
-## Troubleshooting
+## 문제 해결
 
-### There is no Customize bot row at all
+### 봇 맞춤 설정 행이 아예 없습니다
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/).
+워크스페이스가 아직 연결되지 않았습니다. 제공업체 블록에 활성 연결이 표시되어야
+그 행이 나타납니다.
+[Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)을 참고하세요.
 
-### The Customize bot row is disabled
+### 봇 맞춤 설정 행이 비활성화되어 있습니다
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+연결에 앱 관리 자격 증명이 없습니다 — 행의 부제에는 "봇을 수정하려면 Control
+Center에 앱 구성 토큰이 필요합니다. 다시 연결하고 토큰을 포함하세요."라고
+표시됩니다. Slack의 경우 [api.slack.com/apps](https://api.slack.com/apps)에서 앱
+구성 토큰 쌍을 생성하고, 리프레시 토큰을 채워 다시 연결합니다. 손으로 만든
+앱이나 **Slack에서 만들기**로 만든 앱에서는 이것이 정상입니다. Slack은 자기가
+어떤 앱을 만들었는지 결코 알려 주지 않기 때문입니다.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+저장된 연결에 앱 id가 없습니다 — 보통 id가 기록되기 전에 손으로 연결한 앱이
+그렇습니다. 워크스페이스를 다시 연결하거나 Control Center에서 앱을 만드세요.
 
-### The bot's new name has not appeared in chat
+### 봇의 새 이름이 채팅에 나타나지 않았습니다
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+제공업체는 앱 메타데이터를 잠시 캐시합니다. 1분이 지나도 이름이 갱신되지
+않으면, 저장 시 앱을 다시 설치하라는 안내가 있었는지 확인하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
-- [Link your Slack account](/ko-KR/매뉴얼/사용-가이드/채팅-계정-연결/)
-- [Chat bridge](/ko-KR/매뉴얼/레퍼런스/채팅-브리지/)
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- [Slack 계정 연결](/ko-KR/매뉴얼/사용-가이드/채팅-계정-연결/)
+- [채팅 브리지](/ko-KR/매뉴얼/레퍼런스/채팅-브리지/)
 
-## Related concepts
+## 관련 개념
 
-- [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/)
+- [채팅 브리지](/ko-KR/매뉴얼/개념/채팅-브리지/)

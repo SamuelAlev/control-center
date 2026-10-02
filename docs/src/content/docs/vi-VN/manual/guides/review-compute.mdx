@@ -1,132 +1,141 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Tính toán đánh giá (cohort, trục và diff tất định)
+description: Lượt tính toán đánh giá tạo ra những gì ở phía máy chủ — cohort, diff hợp đồng API và diff hình ảnh, cùng các cổng theo từng trục — và cách nó hòa vào tab Đánh giá.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Tab **Đánh giá** của PR là tiến trình trực tiếp của quy trình đánh giá trong lúc
+nó chạy, rồi sau đó là artifact mà nó đã xuất bản, kèm các hành động trên đó. Một
+tab với hai trạng thái, vì chúng là cùng một thứ ở hai thời điểm. Đây không phải
+tab mặc định: một PR không có đánh giá cho đến khi ai đó yêu cầu, nên **Hỏi AI**
+mới là thứ mở nó ra.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+Phía sau tab đó, `cc_server` dựng các cohort theo tệp, chạy các trục tất định và
+phục vụ chúng qua các thao tác RPC `review_studio.*` (`cohorts`, `blastRadius`,
+`cohortImpact`, `ciSignals`, `dependencyDiffs`, `setContractDecision`,
+`approveVisual`, `compute` và các cặp `watch*` tương ứng). Một bố cục được lưu
+trữ vẫn mang tên `pr.reviewStudio` sẽ mở đúng tab Đánh giá này.
 
-On the Review tab:
+Trên tab Đánh giá:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Agent tổng hợp xuất bản một artifact hội thoại thông thường bằng
+  `publish_artifact`, nên tab hiển thị nó qua đúng trình xem artifact mà một
+  bong bóng chat mở ra — không có bản sao nào mang hình dạng đánh giá của hệ
+  thống artifact.
+- Các phát hiện nằm trong một thanh bên cạnh, còn kết luận nằm trên một thanh
+  mảnh phía trên artifact thay vì một tiêu đề bảng điều khiển.
+- Một biểu ngữ lỗi thời xuất hiện khi head của PR đã vượt qua đánh giá.
 
-See [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/) for the flow and
-[Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/) for acting on it.
+Xem [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/) để
+biết luồng và
+[Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+để hành động dựa trên đó.
 
-## Cohorts
+## Cohort
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Cohort nhóm các tệp đã thay đổi của PR thành những nhóm tệp bắt nguồn từ nội
+dung, gồm các tệp thuộc về nhau theo ý nghĩa, được xếp hạng theo mức ảnh hưởng
+để nhóm rủi ro nhất được đọc trước. Chúng được tính lại mỗi khi head SHA thay
+đổi và được thay thế toàn bộ; mỗi cohort có một khóa ổn định qua các lần push,
+nên bản tóm tắt và tiến trình đánh giá vẫn tồn tại qua một lần rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Nếu kho mã chưa được lập chỉ mục mã, cohort sẽ chuyển sang nhóm theo đường dẫn.
+Để lập chỉ mục một kho mã, dùng **Cài đặt → Không gian làm việc → Kho lưu trữ** —
+mỗi hàng kho mã có một hành động **Lập chỉ mục mã** chạy quy trình `index_code`
+và báo tiến trình ngay tại chỗ.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
+Đồ thị mã chỉ phân tích các ngôn ngữ có ngữ pháp đi kèm (Dart, JS/TS, PHP,
 Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+MATLAB, Ada). Một kho mã bằng bất kỳ ngôn ngữ nào khác không bao giờ tạo được
+cohort ngữ nghĩa, dù bạn có lập chỉ mục bao nhiêu lần đi nữa.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Một agent có thể ghi bản tóm tắt markdown cho một cohort bằng
+`set_cohort_summary` và đính kèm một sơ đồ dẫn dắt có cấu trúc bằng
+`add_review_diagram` — một đối tượng có kiểu thuộc dạng tuần tự, quan hệ thực
+thể hoặc máy trạng thái, không bao giờ là văn bản mermaid. Mọi cạnh đều được đối
+chiếu với đồ thị mã thật, và một cạnh mà đồ thị không thể xác nhận sẽ được đánh
+dấu là chưa xác minh thay vì được vẽ ra như sự thật.
 
-## The API-contract axis
+## Trục hợp đồng API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Trục hợp đồng chỉ diff các tệp đặc tả **tường minh**. Nó khớp sáu tên mặc định —
+`openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`, `swagger.yml`,
+`swagger.json` — cùng bất kỳ tệp đã thay đổi nào có tên chứa `openapi` hoặc
+`swagger` và kết thúc bằng `.yaml`, `.yml` hoặc `.json`. Một hợp đồng suy ra từ
+mã handler nằm ngoài phạm vi và lược đồ GraphQL không được diff.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Mỗi thay đổi được phân loại — thêm, bớt và sửa endpoint, tham số, lược đồ và
+phản hồi — và mang một mức nghiêm trọng: **breaking** (bớt endpoint hoặc tham
+số, siết chặt kiểu, thêm tham số bắt buộc), không phá vỡ (mang tính bổ sung),
+hoặc chỉ mang tính thông tin. Một thay đổi bị từ chối sẽ khiến cổng hợp đồng
+thất bại, cũng như một thay đổi breaking còn bỏ ngỏ; breaking nhưng đã được phê
+duyệt thì cảnh báo; không có thay đổi breaking nào thì đạt. Một diff được đánh
+dấu **derived (advisory)** không bao giờ chặn cổng.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Phê duyệt hoặc từ chối một thay đổi là `review_studio.setContractDecision`.
 
-## The visual axis
+## Trục hình ảnh
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Nếu PR thay đổi các thành phần UI trong một kho mã Flutter có ứng dụng Widgetbook,
+lượt tính toán sẽ kết xuất các thành phần đã thay đổi trước và sau thông qua một
+lượt golden `flutter test` không giao diện trong worktree base và head của PR,
+rồi diff các điểm ảnh.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Việc này cần Flutter SDK trên máy chủ]
+Máy chủ thuần Dart không thể kết xuất widget Flutter trong cùng tiến trình, nên
+nó gọi ra ngoài tới `flutter test`. SDK phải được cài trên máy đang chạy
+`cc_server` — không phải trên máy khách của bạn. Nếu không có nó, trục sẽ báo
+**unavailable** với lý do "no Flutter SDK on host". Nó không bao giờ báo một kết
+quả đạt mà nó không giành được.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Các ảnh chụp nhanh được đánh dấu **changed** hoặc **removed** sẽ giữ cổng hình
+ảnh cho đến khi được phê duyệt; các ảnh chụp nhanh **unchanged**, **added** và
+**approved** sẽ mở cổng. Trạng thái không khả dụng có một trong bốn lý do: không
+có Flutter SDK trên máy chủ, không có ứng dụng Widgetbook trong kho mã, không có
+use-case nào kiểm thử được bằng golden, hoặc lỗi harness golden.
 
-Approving an intended change is `review_studio.approveVisual`.
+Phê duyệt một thay đổi có chủ đích là `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Các trục và kết luận
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Trục             | Được điều khiển bởi      |
+| ---------------- | ------------------------ |
+| Tính đúng đắn    | Agent đánh giá (token)   |
+| Bảo mật          | Agent đánh giá (token)   |
+| Lỗ hổng kiểm thử | Agent đánh giá (token)   |
+| Hình ảnh         | Tất định (harness golden) |
+| Hợp đồng API     | Tất định (diff đặc tả)   |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Ba trục dùng token được ghi lại khi một agent chủ trì gọi `finalize_review`; hai
+trục tất định được ghi lại bởi lượt tính toán.
 
-Each axis reports one of:
+Mỗi trục báo cáo một trong các trạng thái sau:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Trạng thái      | Ý nghĩa                                              |
+| --------------- | ---------------------------------------------------- |
+| **Pass**        | Đã chạy, không tìm thấy gì chặn                      |
+| **Warn**        | Đã chạy, có những lo ngại không chặn                 |
+| **Fail**        | Đã chạy, tìm thấy một vấn đề chặn                    |
+| **Partial**     | Đã chạy nhưng không thể hoàn tất; kết quả chưa đầy đủ |
+| **Unavailable** | Hoàn toàn không thể chạy                             |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Chỉ **pass** và **warn** mới mở được một trục có cổng. **Partial** và
+**unavailable** được cố ý tách biệt khỏi **fail** và cả hai đều không mở được
+cổng.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Các trục gộp lại thành **Ship**, **Hold** hoặc **Block**, và chúng chỉ có thể
+khiến kết luận _nghiêm trọng hơn_ — nó không bao giờ bị hạ mức. Một trục có cổng
+mà **thất bại** sẽ buộc **Block**; một trục **partial** hoặc **unavailable**
+buộc ít nhất là **Hold**. Vì vậy một trục chặn mà không thể chạy sẽ _giữ_ kết
+luận: thiếu bằng chứng không bao giờ mở được một cổng.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Kết luận trên tab Đánh giá chính là kết luận mà `finalize_review` đã đăng.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/)
-- [Dispatch reviewer agents](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/)
-- [Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Search code with the code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/)
+- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/)
+- [Điều phối agent đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/)
+- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Tìm mã bằng đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/)

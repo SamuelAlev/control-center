@@ -1,26 +1,27 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: ریویوور ایجنٹس بھیجیں
+description: PR ویو، کسی MCP ٹول یا کسی پائپ لائن مرحلے سے کسی PR پر ماہر ریویوور ایجنٹس بھیجیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+یہ گائیڈ دکھاتی ہے کہ pull requests کے ریویو کے لیے ریویوور ایجنٹس کیسے بھیجے جائیں۔
 
-## From the PR view
+## PR ویو سے
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. PR کھولیں اور اس کا **جائزہ** ٹیب کھولیں
+2. ⋯ اوور فلو مینو کھولیں اور **AI سے پوچھیں** چنیں
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+یہ پہلے سے فراہم کردہ `pr_review` پائپ لائن شروع کرتا ہے، جو PR کا ریویو اسپیس کھولتا ہے
+اور ورک اسپیس کی ریویو سطح کے لیے ریویوورز بھیجتا ہے — بطور ڈیفالٹ تین (پہلے سے
+فراہم کردہ **qa**، **architect** اور **engineer** ایجنٹس) — پھر لیڈ ایجنٹ سے انہیں
+یکجا کراتا ہے۔ اس راستے پر آپ رولز منتخب نہیں کرتے۔ یہ کنٹرول رکھنے کے لیے کہ کون سے
+رولز چلیں اور ہر ایک کون سی فائلیں دیکھے، نیچے دیا گیا MCP ٹول یا پائپ لائن مرحلہ
+استعمال کریں۔
 
-## Via the `dispatch_reviewers` MCP tool
+## `dispatch_reviewers` MCP ٹول کے ذریعے
 
-Call it from inside an existing review space:
+اسے کسی موجودہ ریویو اسپیس کے اندر سے کال کریں:
 
 ```
 dispatch_reviewers(
@@ -33,109 +34,107 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`، `workspace_id` اور `reviewers` تینوں لازمی ہیں۔ ہر ریویوور اسپیک میں ایک
+`role` ہوتا ہے، ساتھ ایک اختیاری فائل-گلوب `scope` اور ایک `prompt_override` جو ڈیفالٹ
+بریف کی جگہ لے لیتا ہے۔ ایک اختیاری `concurrency` (1–8) متوازی ڈسپیچز کو محدود کرتا
+ہے؛ نہ دینے پر ورک اسپیس کی `review_concurrency` سیٹنگ لاگو ہوتی ہے (ڈیفالٹ 3، جو
+ترتیبات → ورک اسپیس → عام پر سیٹ ہوتی ہے)۔
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+ٹول فوراً `dispatched` اور `unmatched` فہرستوں کے ساتھ واپس آ جاتا ہے۔ ہر ڈسپیچ شدہ
+ریویوور اسپیس میں بطور شریک شامل ہوتا ہے، ایک سسٹم پیغام سے اعلان ہوتا ہے اور اپنے
+بریف کے ساتھ ڈسپیچ کیا جاتا ہے۔ نتائج اسی اسپیس میں `review_node` پیغامات کے طور پر
+پہنچتے ہیں۔
 
-## From a pipeline step
+## پائپ لائن مرحلے سے
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+**ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** کھولیں، کوئی ٹیمپلیٹ کھولیں، پھر:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. پیلیٹ سے ایک **Reviewer (prompt)** نوڈ شامل کریں
+2. وہ ایجنٹ منتخب کریں جسے ڈسپیچ کرنا ہے اور ریویوور پرامپٹ لکھیں، اپ اسٹریم آؤٹ پٹس
+   کے لیے `{{key}}` پلیس ہولڈرز استعمال کرتے ہوئے (مثلاً `{{repo_local_path}}`،
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. آؤٹ پٹ کلید سیٹ کریں (ڈیفالٹ `reviewer_findings`) تاکہ آگے کے مراحل نتائج پڑھ
+   سکیں
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+مرحلہ ایجنٹ کو ڈسپیچ کرتا ہے اور اس رن کے مکمل ہونے تک معطل رہتا ہے۔ پھر انجن رن کے
+`submit_output` پے لوڈ کو نوڈ کی آؤٹ پٹ کلید کے تحت پائپ لائن اسٹیٹ میں شامل کر لیتا
+ہے۔ (پیلیٹ کی تفصیل اب بھی کہتی ہے کہ مرحلہ کسی `complete_task` کال کا انتظار کرتا
+ہے — وہ ٹول موجود نہیں؛ اس عبارت کو نظر انداز کریں۔)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+پھیلاؤ کے لیے کئی ریویوور نوڈز کو ایک ہی اپ اسٹریم مرحلے سے جوڑیں، پھر ان کے آؤٹ پٹس
+کو **Consolidate (join)** نوڈ سے یکجا کریں۔
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+ایڈیٹر پوشیدہ ٹرمنل کو ہر قابلِ رسائی سنک سے دوبارہ وائر کر دیتا ہے، اس لیے پہلے سے
+فراہم کردہ **Step** کے بعد شامل کیا گیا نوڈ بھی چلتا ہے۔ ایک ہی اپ اسٹریم مرحلے سے
+جڑے فین آؤٹ نوڈز متوازی چلتے ہیں۔
 
-## Automatic dispatch on a new PR
+## نئے PR پر خودکار ڈسپیچ
 
-To have a review pipeline fire by itself:
+کسی ریویو پائپ لائن کو خود بخود چلانے کے لیے:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. **ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** پر ٹیمپلیٹ کھولیں
+2. نوڈ لائبریری کے ٹرگرز سیکشن سے **PR شائع ہوا** یا **بیرونی PR کھلا** کو کینوس پر
+   گھسیٹیں (یا اسے **ٹرگر شامل کریں** والی گھوسٹ ٹائل سے چنیں)
+3. نیا نوڈ منتخب کریں اور اس کے انسپکٹر میں **فعال** آن کریں، پھر ٹیمپلیٹ فعال کریں
 
-Two events matter here and they are not interchangeable:
+یہاں دو ایونٹس اہم ہیں اور وہ ایک دوسرے کی جگہ نہیں لے سکتے:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| ایونٹ                  | کب چلتا ہے                                                                                                      | پے لوڈ کلیدیں                                                       |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | کوئی PR **Control Center کے ذریعے** کھولا جائے — کمپوز سطح، یا `pr_lifecycle.publish` کال کرنے والا ایجنٹ     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | PR پولنگ سروس کو GitHub پر براہ راست کھلا کوئی PR ملے                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+github.com پر کھلا PR کبھی `PullRequestPublished` نہیں چھوڑتا، اس لیے صرف اسی ایونٹ سے
+جڑا ٹیمپلیٹ اسے نہیں دیکھے گا۔ یہ بھی یاد رکھیں کہ `PullRequestPublished` کوئی
+`pr_number` نہیں رکھتا — جس مرحلے کا اسکرپٹ یا پرامپٹ `{{pr_number}}` کا حوالہ دے، اسے
+`ExternalPrDetected` سے، یا کسی ایسے دستی رن سے جو یہ فراہم کرے، کھلانا ضروری ہے۔
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+چیک پوائنٹ: فعال کرنے کے بعد **پائپ لائنز** کھولیں اور تصدیق کریں کہ اگلے مماثل PR کے
+لیے ایک رن ظاہر ہوتا ہے۔ غیر فعال چھوڑا گیا ٹیمپلیٹ اپنے ٹرگر کو بے نتیجہ چلا دیتا ہے
+— انجن غیر فعال ٹیمپلیٹ مسترد کرتا ہے اور کوئی رن شروع کیے بغیر واپس آ جاتا ہے۔
 
-## How a role is matched to an agent
+## رول کو ایجنٹ سے کیسے ملایا جاتا ہے
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` ورک اسپیس کے ہر ایجنٹ کو ہر مطلوبہ رول لیبل کے خلاف، حروفِ بڑے
+چھوٹے کی تمیز کے بغیر اسکور دیتا ہے:
 
-| Match                                   | Score |
+| مطابقت                                   | اسکور |
 | --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| رول لیبل رکھنے والی مہارت       | +3    |
+| رول لیبل رکھنے والا عنوان       | +2    |
+| رول لیبل رکھنے والا ایجنٹ نام | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+اسکور جمع ہوتے ہیں اور سب سے زیادہ کل جیت جاتا ہے (برابری کی صورت میں پہلا ملا
+امیدوار)۔ اگر کوئی امیدوار صفر سے زیادہ اسکور نہ کرے تو اسپیک ڈسپیچ ہونے کے بجائے ٹول
+کی `unmatched` فہرست میں واپس آ جاتی ہے — چنانچہ جس رول سے کوئی میل نہ کھائے، وہ رپورٹ
+ہوتا ہے، کبھی خاموشی سے چھوڑا نہیں جاتا۔
 
-## The review space
+## ریویو اسپیس
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+کسی PR کا بالکل **ایک** ریویو اسپیس ہوتا ہے، فی ریویوور ایک نہیں۔ یہ `pr.ensureSpace`
+کے ذریعے ایڈمپوٹینٹ انداز میں بنایا جاتا ہے، ایک `ReviewSpaceAssociation` کے ذریعے PR
+سے منسلک ہوتا ہے اور PR کے head ref کے مطابق پروویژن کیا جاتا ہے۔ ہر ڈسپیچ شدہ
+ریویوور اسی اسپیس میں شامل ہوتا ہے اور اپنے `review_node` نتائج وہیں پوسٹ کرتا ہے، اور
+یہی چیز نتائج کو موازنہ کے قابل بناتی ہے اور لیڈ ایجنٹ کو ان پر اتفاقِ رائے تک پہنچنے
+دیتی ہے۔
 
-## Monitor the dispatch
+## ڈسپیچ کی نگرانی کریں
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+ہر ڈسپیچ شدہ ریویوور کو اپنا `AgentRunLog` ملتا ہے۔ پیش رفت یہاں دیکھیں:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **ریویو اسپیس**، جہاں نتائج لائیو آتے رہتے ہیں
+- PR کا **ریویو** ٹیب، جو ریویو اسٹیٹس بار اور فیصلہ دکھاتا ہے
+- **آبزرویبلٹی → لائیو** (`/workspaces/:id/observability`)، ایجنٹ روسٹر جس میں فی رن
+  اسٹیٹس، لائیو گزرا وقت، ٹرانسکرپٹ دراز اور رن ختم کرنے کا کنٹرول ہوتا ہے۔
+  اس کے لیے کوئی کی بورڈ شارٹ کٹ نہیں ہے — اس تک سائیڈبار کے فوٹر سے پہنچیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Use AI-powered review](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/)
-- [Review and merge a PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
-- [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
+- [AI سے چلنے والا ریویو استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/)
+- [PR ریویو اور مرج کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/pr-ریویو-اور-مرج/)
+- [پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [AI review](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/)
-- [Pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
+- [AI ریویو](/ur-PK/ہدایت-نامہ/تصورات/ai-ریویو/)
+- [پائپ لائنز](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)

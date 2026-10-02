@@ -1,109 +1,116 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Uzak bir sunucuya bağlanma
+description: Masaüstü uygulamasını veya web istemcisini başka bir yerde çalışan bir cc_server’a yönlendirin ve sunucular arasında yeniden başlatmadan geçiş yapın.
 slug: tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Her istemci, verilerin sahibi olan bir `cc_server` üzerinde arayüz çizen bir
+katmandır. Masaüstü uygulaması bunu kendi içinde çalıştırabilir;
+[app.usectrl.dev](https://app.usectrl.dev) adresindeki web uygulaması
+çalıştıramaz, çünkü bir tarayıcı sekmesi sunucu barındıramaz. Her iki durumda da
+bu kılavuz, bir istemciyi başka bir yerde çalışan bir sunucuya — küçük bir
+kutuya, bir bulut sanal makinesine, bir derleme sunucusuna — yönlendirir.
 
-## Prerequisites
+## Önkoşullar
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Çalışan bir `cc_server`. Yoksa [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/) sayfasına bakın.
+- Sunucunun ürettiği üç eşleştirme değeri — **sunucu URL’si** (`ws://…/rpc` veya `wss://…/rpc`), bir **cihaz kimliği** ve bir **eşleştirme anahtarı** — **ya da** bir çalışma alanı yöneticisinden alınan tek kullanımlık bir **davet kodu**. Bir daveti kullanmak kullanıcınızı oluşturur, üyeliğinizi kaydeder ve bu istemcinin kimlik bilgisini sizin adınıza üretir; böylece bir cihaz kimliğini ya da anahtarı hiç elle işlemezsiniz.
 
-### Make sure the server is reachable
+### Sunucunun erişilebilir olduğundan emin olun
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Yerel bir sunucu için hiçbir şey gerekmez: `ws://localhost:9030/rpc` hem
+masaüstünden hem de tarayıcıdan çalışır, çünkü tarayıcılar loopback’i güvenilir
+bir kaynak sayar.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Başka bir makinedeki sunucu farklıdır. `app.usectrl.dev` HTTPS üzerinden
+sunulur, bu yüzden tarayıcı yalnızca zaten güvendiği bir sertifikaya sahip bir
+`wss://` soketi açar — üstelik `cc_server` de TLS olmadan loopback dışı bir
+adrese bağlanmayı baştan reddeder. Şunlardan birini sağlayın:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- doğrudan bir sertifika, `--tls-cert` ve `--tls-key` ile
+- önde TLS sonlandıran bir ters proxy, sunucu `--insecure` ile başlatılmış olarak (proxy’nin arkasında düz metin, yalnızca güvenilir bir ağda)
+- sertifikayı sağlayan bir tünel veya VPN — Tailscale, cloudflared ya da benzeri. **Ayarlar → Sunucu → Bağlantı ve durum** içinde, **Bu sunucuyu paylaş** altında yerleşik tünel katılımı bulunur.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Sunucu tarafındaki iki ayarın gözden kaçması kolaydır. Bir proxy, NAT veya
+tünelin arkasında, `--public-url` ayarını istemcilerin gerçekte araması gereken
+adrese ayarlayın — varsayılanı yerel bağlanma adresidir, dolayısıyla bu ayar
+olmadan istemciler yanlış ana makineyi dener. Web paketinin kendi kopyanızı
+barındırıyorsanız, kaynağını `--allowed-origins` listesine ekleyin; bu listenin
+varsayılanı yalnızca `https://app.usectrl.dev`’dur ve loopback ile yerel
+istemcilere her zaman izin verilir.
 
-## Connect the desktop app
+## Masaüstü uygulamasını bağlama
 
-On a fresh install:
+Yeni bir kurulumda:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Control Center’ı başlatın. İlk çalıştırma ekranı **Control Center nasıl çalışsın?** diye sorar.
+2. **Bu uygulamada çalıştır** yerine bağlantı alanlarını doldurun: sunucu URL’si ile birlikte bir davet kodu ya da bir cihaz kimliği ve eşleştirme anahtarı.
+3. **Bağlan**’a tıklayın. Control Center sunucuyu arar ve çalışma alanı gelen kutusunda açılır.
 
-On a desktop that already runs its own server:
+Kendi sunucusunu zaten çalıştıran bir masaüstünde:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. **Ayarlar → Sunucu → Bağlantı ve durum** bölümünü açın.
+2. **Sunucu ekle**’ye tıklayın. Sunucu URL’sini (`wss://host:9030/rpc`) ve bir davet kodunu ya da bir cihaz kimliği ile eşleştirme anahtarını girin. URL alanının son ek düğmesi, LAN’ınızdaki veya tailnet’inizdeki `cc_server` örneklerini keşfeder.
+3. **Bağlan**’a, ardından yeni sunucunun satırındaki **Geç**’e tıklayın.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Geçiş canlıdır: uygulama yeni oturumun çevresinde yerinde yeniden kurulur,
+yeniden başlatma gerekmez. Bağlantı başarısız olursa geçerli sunucuda kalırsınız
+ve hatayı görürsünüz. Üzerinde bulunduğunuz sunucunun satırında **Geç** eylemi
+yoktur; yerel sunucu, **Bu uygulamada çalıştır** etiketiyle ilk satırdır.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Geçiş yapıldıktan sonra masaüstü hiçbir veritabanına sahip olmaz. Her ekran
+okuma ve yazma işlemlerini uzak sunucu üzerinden, bir WebSocket ile yapar.
 
-## Connect the web client
+## Web istemcisini bağlama
 
-The web build is always remote.
+Web yapısı her zaman uzaktır.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. [app.usectrl.dev](https://app.usectrl.dev) adresini ya da web paketinin kendi kopyanızı açın.
+2. Sunucu URL’sini ve bir davet kodunu ya da bir cihaz kimliği ile eşleştirme anahtarını girin.
+3. İstemci sunucuyu arar ve masaüstünün çizdiği aynı arayüzü çizer.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+URL’de bir eşleştirme derin bağlantısı varsa alanlar önceden doldurulur.
+Eşleştirme anahtarı URL’nin **fragment** kısmında taşınır; tarayıcılar bunu
+sayfayı barındıran sunucuya hiçbir zaman göndermez, böylece statik barındırıcı
+anahtarı hiç görmez.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Medya ve güvenlik]
+Medya (avatarlar, akış görselleri, PR ekran görüntüleri) bağlı sunucu üzerinden
+proxy’lenir, böylece tarayıcı hiçbir zaman doğrudan bir üst kaynak ana makineden
+içerik çekmez. Hassas olmayan bir çerezden damgalanan, istek başına bir İçerik
+Güvenliği Politikası yalnızca bağlı sunucunun kaynağına izin verir.
 :::
 
-### What the browser does not do
+### Tarayıcının yapmadıkları
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Web istemcisi masaüstüyle aynı sunucudan okur ve yazar, ancak birkaç yüzey
+yerel bir pencereye ya da makinenin kendi cihazlarına ihtiyaç duyar:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- işletim sistemi bildirim baloncukları, bildirim sesleri veya ortam afiş şeridi yok (uygulama içi bildirim merkezi yine de çalışır)
+- **Sunucu ekle** iletişim kutusunda LAN veya tailnet sunucu keşfi yok
+- uygulama içi makale okuyucu yok — haber akışı makaleleri yeni bir sekmede açılır
+- bir toplantı özetini yeniden çalıştırma ve işlenmekte olan bir özeti iptal etme yok
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+İki tanesi eksik olmak yerine farklı davranır. Toplantı **kaydı** tarayıcıda
+çalışır; mikrofonunuzu ve ses parçası içeren bir ekran paylaşımını yakalar.
+**Düzenleyicide aç** da çalışır, ancak sunucudan düzenleyiciyi _sunucunun_
+ekranında başlatmasını ister; bu yüzden kurulu düzenleyicisi olmayan headless
+bir ana makinede düğme kendini gizler.
 
-## Troubleshooting
+## Sorun giderme
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
+- **Bağlantı zaman aşımına uğruyor**: sunucuya istemciden erişilebilmelidir. Bağlanmayı (`--bind any`), portun açık olduğunu ve `--public-url` ayarının istemcinin gerçekte arayabileceği adresi gösterdiğini denetleyin. Açık internette TLS zorunludur — sunucu bir proxy arkasında `--insecure` ile başlatılmadıysa, düz metin loopback dışı bağlanma başlangıçta reddedilir.
+- **Tarayıcı bağlanmayı reddediyor ama yerel bir istemci çalışıyor**: tarayıcının kaynağı sunucunun `--allowed-origins` listesinde değil. Varsayılan yalnızca `https://app.usectrl.dev` adresine izin verir (artı loopback).
+- **Eşleştirme anahtarı reddedildi**: o cihazın anahtarını döndürmek için sunucuda `cc_server pair` komutunu yeniden çalıştırın, ardından yenisini girin. İptal edilmiş bir cihaz kimlik bilgisinin yok olduğunu görür ve kapalıya düşer; iptal, canlı bir oturumu saniyeler içinde düşürür.
+- **Yanlış çalışma alanı**: çalışma alanı URL’nin bir parçasıdır (`/workspaces/:workspaceId/…`) ve her çağrıyla birlikte taşınır, bu yüzden bir istemcide çalışma alanı değiştirmek yalnızca kendi görünümünüzü değiştirir. Yalnızca üyesi olduğunuz çalışma alanlarına erişebilirsiniz — başka her şey "Not a member of this workspace" ile reddedilir. Bkz. [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
-- [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): the phone relay path
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): telefon aktarıcı yolu
 
-## Related concepts
+## İlgili kavramlar
 
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/)
-- [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/)
+- [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)

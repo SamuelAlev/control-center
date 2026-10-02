@@ -1,98 +1,96 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: 自定义聊天机器人
+description: 重命名机器人、改写它的自我介绍，或直接在 Control Center 中更改它的斜杠命令。
 slug: zh-CN/手册/操作指南/自定义聊天机器人
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+本指南介绍如何在不离开 Control Center 的情况下，重塑提供方一侧的机器人应用。
 
-## Prerequisites
+## 开始之前
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- 在工作区中拥有 `owner` 或 `admin` 角色
+- 一个 **已连接** 的提供方。只有在工作区连接之后，**自定义机器人** 这一行才会出现
+- 一个 Control Center 能够管理的应用。对 Slack 来说，这意味着连接中持有一个应用配置刷新令牌（`xoxe-…`）；如果没有，这一行会说明情况并保持禁用
 
-## What you can change
+## 你可以更改的内容
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| 字段 | 含义 | 限制 |
+| --- | --- | --- |
+| **应用名称** | 提供方列出该应用时使用的名称 | 1–35 个字符 |
+| **机器人名称（成员在 @ 后输入的内容）** | 成员在 `@` 后输入的内容 | 1–80 个字符 |
+| **简短描述** | 提供方显示的一行文字 | 不超过 140 个字符 |
+| **机器人对自己能力的介绍** | 显示在与机器人的私信上方 | 不超过 300 个字符 |
+| **斜杠命令** | 成员调用的命令，不带斜杠 | 转为小写、仅允许 `a–z 0–9 _ -`、超过 32 个字符会被截断 |
+| **私信** | 机器人是否提供私信/智能体体验 | 开启或关闭 |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center 会在调用提供方之前校验这四个文本字段，因此你得到的是“the app name must be between 1 and 35 characters”，而不是从一台你看不见的服务器返回的、含义不明的 `invalid_manifest`。命令不会被拒绝，而是会被规范化：开头的斜杠会被去掉，其余部分转为小写，`a–z 0–9 _ -` 之外的字符会被丢弃，如果结果为空则回退为 `cc`。
 
-## Edit the bot
+## 编辑机器人
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. 前往 **设置 → 工作区 → 通用**，向下滚动到 **聊天桥接** 卡片
+2. 在提供方区块上，点击 **自定义机器人**
+3. 对话框会以从提供方读回的应用_实时_值打开——所以你的起点，是别人可能在 Slack 自己的界面中做过的改动
+4. 按需修改并保存
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+读取这些实时值会在 Slack 一侧产生一次令牌轮换，这正是这一行需要刻意点击、而不是在页面加载时自动执行的原因。
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+写入操作会把你的改动叠加到应用的当前定义之上。任何 Control Center 没有建模的内容——你在 Slack 中额外添加的第二条斜杠命令、一个工作流步骤、一项无关的设置——都会原样保留。权限范围和事件只会被合并进来，绝不会被减去。
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+保存之后，Control Center 会重新读取机器人的身份，使设置中的名称与聊天应用中的名称一致。
 
-## Reinstall when permissions change
+## 权限变更后重新安装
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[权限变更后需重新安装]
+Slack 会立即应用新的应用定义，但已安装的授权仍保持原样。要让权限变更生效，请重新安装
+该应用。在你重新安装之前，桥接会继续使用先前的授权运行。
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+当某次保存改动了权限时，对话框会保持打开并显示“Slack 更改了应用权限。请重新安装应用使其生效”，
+同时提供一个 **重新安装应用** 按钮，用于打开该应用在 Slack 中的团队安装页面。
+在 Slack 中，对应的是 **Install App → Reinstall to Workspace**。
 
-## Rename the slash command
+## 重命名斜杠命令
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+更改 **斜杠命令** 并保存。之后桥接在编写说明时会使用它最后一次被调用时所使用的命令，因此帮助文本和关联说明会跟随重命名，而不会指向一条已不存在的命令。
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+重命名不会破坏已有的桥接话题：话题以对话为键，而不是以命令为键。
 
-## What Control Center will not change
+## Control Center 不会更改的内容
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **结构性设置。** 传输方式（Socket Mode）、必需的权限范围和事件订阅都是强制断言的，不对外开放。一个能从设置界面被配置到彻底沉默的应用，是一张支持工单，而不是一项特性
+- **机器人的图标。** 只有提供方自己的应用设置才能更改它，对话框中也如此说明
+- **提供方自身的功能迁移。** 已经采用 Slack 旧版助理形态的应用会保持原样；这个对话框编辑的是一段描述，它不会迁移应用
 
-## Troubleshooting
+## 故障排查
 
-### There is no Customize bot row at all
+### 完全没有“自定义机器人”这一行
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/).
+工作区尚未连接。只有当提供方区块显示实时连接之后，这一行才会出现。参见
+[设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)。
 
-### The Customize bot row is disabled
+### “自定义机器人”这一行处于禁用状态
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+该连接没有应用管理凭据——这一行的副标题会显示
+“Control Center 需要应用配置 token 才能编辑机器人。请重新连接并提供该 token。”对 Slack
+来说，请在 [api.slack.com/apps](https://api.slack.com/apps) 上生成一对应用配置令牌，
+并带上填写好的刷新令牌重新连接。对于手工构建或通过 **在 Slack 中创建** 创建的应用，
+这是预期情况，因为 Slack 从不会报告它创建的是哪个应用。
 
-### "Control Center does not know which app to edit"
+### “Control Center does not know which app to edit”
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+存储的连接不携带应用 id——通常是在应用 id 被记录之前手工连接的应用。请重新连接工作区，或从 Control Center 创建该应用。
 
-### The bot's new name has not appeared in chat
+### 机器人的新名称尚未出现在聊天中
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+提供方会短暂缓存应用元数据。如果过了一分钟名称仍然是旧的，请检查这次保存是否要求你重新安装该应用。
 
-## Related guides
+## 相关指南
 
-- [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/)
-- [Link your Slack account](/zh-CN/手册/操作指南/关联聊天账号/)
-- [Chat bridge](/zh-CN/手册/参考/聊天桥接/)
+- [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)
+- [关联你的 Slack 账号](/zh-CN/手册/操作指南/关联聊天账号/)
+- [聊天桥接](/zh-CN/手册/参考/聊天桥接/)
 
-## Related concepts
+## 相关概念
 
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/)
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/)

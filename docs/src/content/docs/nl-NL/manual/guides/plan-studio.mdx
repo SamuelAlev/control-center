@@ -1,180 +1,196 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Werken in Plan Studio
+description: Bekijk, bewerk, schat, vergelijk en keur een plan goed in de editor van Plan Studio, en voer geparameteriseerde playbooks uit.
 slug: nl-NL/handleiding/gidsen/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/nl-NL/handleiding/concepten/orkestratie/) and
-[Use plan mode](/nl-NL/handleiding/gidsen/planmodus/).
+Deze gids laat zien hoe je in Plan Studio met plannen werkt. Wat orkestraties en
+plandocumenten zijn, lees je in
+[Orkestratie](/nl-NL/handleiding/concepten/orkestratie/) en
+[Planmodus gebruiken](/nl-NL/handleiding/gidsen/planmodus/).
 
-## Open a plan
+## Een plan openen
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Een plan hoort bij het gesprek dat het heeft opgeleverd, dus daar kom je er
+normaal gesproken bij uit: de rij van het plan in het gesprek heeft een actie
+**Openen** en Plan Studio opent als editortab naast het gesprek.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Er staat geen "Plannen"-item in de zijbalk]
+Dat is bewust, geen vergetelheid. De hub op
+`/workspaces/<workspace-id>/plans` is alleen een routeerbare deeplink, dus zet
+hem bij je bladwijzers als je een vaste lijst wilt.
 :::
 
-The hub lists three sections:
+De hub toont drie secties:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/nl-NL/handleiding/gidsen/planmodus/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Actieve plannen** — orkestraties, de voorgestelde eerst, met hun status,
+  aantal stappen en revisienummer.
+- **Plandocumenten** — plannen die één agent met `submit_plan` heeft ingediend in
+  [planmodus](/nl-NL/handleiding/gidsen/planmodus/), zolang ze voorgesteld of goedgekeurd zijn.
+- **Playbooks** — opgeslagen, geparameteriseerde plansjablonen.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Klik op een kaart om die in Plan Studio te openen. De route is
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, waarbij `kind`
+`orchestration` of `document` is, dus je kunt ook naar één plan deeplinken.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Als je een **orkestratie** hebt geopend, krijg je het bewerkbare canvas, de
+tijdlijn met versies en de goedkeuringsbalk. Als je een **plandocument** hebt
+geopend, wordt dezelfde graaf alleen-lezen weergegeven — plandocumenten zijn
+door agenten geschreven; je beoordeelt, schat en keurt ze goed of wijst ze af, en
+een goedgekeurd document toont de live runstatus per knooppunt uit de orkestratie
+waarin het is gecompileerd.
 
-## Edit the DAG
+## De DAG bewerken
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Bewerkingen zijn mogelijk op een **orkestratie** zolang die `proposed` is. Alle
+canvasbewerkingen gaan via het toetsenbord:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Klik op het canvas en verplaats de selectie met de **pijltoetsen**.
+2. Druk op **n** om een stap toe te voegen. Die verschijnt geselecteerd als
+   "Nieuwe stap"; hernoem hem in de inspecteur aan de rechterkant.
+3. Druk op **e** op de stap die eerst moet draaien en klik vervolgens op de
+   afhankelijke stap (of selecteer die en druk op **Enter**) om een
+   afhankelijkheid te verbinden. Druk op **Esc** om een openstaande verbinding te
+   verbreken.
+4. Druk op **x** om de nieuwste afhankelijkheid van de geselecteerde stap te
+   kappen, of schakel exacte afhankelijkheden in en uit in de
+   afhankelijkhedeneditor van de inspecteur.
+5. Druk op **Delete** om de geselecteerde stap te verwijderen; verwijzingen
+   ernaar worden uit de afhankelijkheden van de overige stappen gehaald.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+In de inspecteur kun je ook de beschrijving, rol en het uitvoerschema van de stap
+bewerken. Bewerkingen worden na een korte pauze automatisch opgeslagen als een
+nieuwe revisie; een validatiefout (te zien in de goedkeuringsbalk) blokkeert het
+opslaan tot je die hebt opgelost.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Alleen werkstappen zijn bewerkbaar. Structurele knooppunten — onderzoek,
+discussie en synthese — zijn alleen-lezen, en dat geldt ook voor elke stap
+waarvan het werk al heeft gedraaid (die is gemarkeerd als "al uitgevoerd", want
+bewerken zou het plan vertakken).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Opslaan gebeurt optimistisch gelijktijdig op de revisie waarmee je bent begonnen.
+Als de orchestrator onder je handen herplant, wordt je opslag geweigerd met "the
+plan moved on" in plaats van samengevoegd of stilzwijgend overschreven; lees de
+huidige revisie opnieuw en doe je bewerking opnieuw. Herplanningen die door een
+agent zijn gestart, zijn zelf beperkt tot één per twee minuten, dus dit blijft
+zeldzaam.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Het canvas kent geen slepen-om-teherpositioneren: de lay-out wordt berekend uit
+de afhankelijkheidsstructuur, dus een stap "verplaatsen" betekent zijn
+afhankelijkheden opnieuw bedraden.
 :::
 
-## Read cost, time and risk estimates
+## Kosten-, tijd- en risicoschattingen lezen
 
-Press **Estimate** in the approval bar.
+Druk op **Schatten** in de goedkeuringsbalk.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Elke stap op het canvas krijgt een badge met een kostenbereik en de
+  steekproefgrootte erachter, of "Nog geen geschiedenis" wanneer de rol van de
+  stap nooit heeft gedraaid. Selecteer een stap voor alle details in de
+  inspecteur: kostenbereik met steekproefgrootte, een duurbereik en een
+  impactstraal (bestanden en symbolen) afgeleid van de herkomst van de stap — of
+  "onbekend" wanneer de stap geen herkomst heeft.
+- De goedkeuringsbalk toont het plantotaal: een algemeen kostenbereik, een
+  duurbereik voor het kritieke pad (parallelle takken overlappen elkaar, dus dit
+  is niet de som) en het budgetplafond wanneer het plan er een instelt.
+- Als alleen sommige stappen geschiedenis hebben, wordt het totaal gemarkeerd als
+  **gedeeltelijk** en dekt het alleen de schatbare stappen. Als de bovengrens van
+  de schatting het budgetplafond overschrijdt, wordt het totaal rood met een
+  waarschuwing "boven budget".
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Schattingen zijn eerlijk of afwezig: een stap waarvan de rol geen geschiedenis
+van voltooide runs heeft, rapporteert een steekproefgrootte van nul zonder enige
+bereiken en wordt als onbekend getoond in plaats van gegokt. Zie "Nog geen
+geschiedenis" als "niemand weet het", niet als "goedkoop".
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/nl-NL/handleiding/gidsen/kosten-beheren/) for controls that actually stop
-spending.
+Het budgetplafond is een weergavevergelijking met deze schatting. Niets handhaaft
+het zodra het plan draait — zie
+[Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/) voor maatregelen die de uitgaven
+daadwerkelijk stoppen.
 
-## Diff a revision against an earlier proposal
+## Een revisie vergelijken met een eerder voorstel
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Elke bewerking en elke herplanning door de orchestrator wordt toegevoegd aan een
+alleen-toevoegende tijdlijn met revisies, te zien in het paneel **Versies** links
+van een orkestratieplan.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Klik op een revisie om die met het huidige voorstel te vergelijken. Zonder
+   selectie vergelijkt het paneel de vorige revisie met de huidige.
+2. Lees de diff in de onderste helft van het paneel: stappen die tussen de twee
+   revisies zijn toegevoegd, verwijderd of gewijzigd.
+3. Als het plan nog `proposed` is, klik je op het terugspoelpictogram bij een
+   revisie om ernaar terug te gaan. Terugspoelen slaat dat voorstel op als een
+   **nieuwe** revisie — er gaat niets verloren.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` en de editor weigeren beide wijzigingen zodra het plan
+niet meer `proposed` is, zodat een lopende run geen herplanning halverwege de
+uitvoering oppikt.
 
-## Approve, reject, or widen a plan
+## Een plan goedkeuren, afwijzen of verbreden
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+In de app is een voorgesteld plan één beslissing, in één keer genomen: **Plan
+goedkeuren** of **Afwijzen** in de goedkeuringsbalk. **Plan goedkeuren** keurt
+altijd elke stap goed — je kunt niet eerst een deelverzameling selecteren.
+Goedkeuren is geblokkeerd zolang het voorstel validatiefouten heeft, die naast de
+knoppen worden getoond.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Goedkeuren is alleen voor operators. Er is geen MCP-tool voor, dus een agent kan
+een plan voorstellen en herzien, maar nooit goedkeuren.
 
-Once an orchestration is executing, the bar changes:
+Zodra een orkestratie wordt uitgevoerd, verandert de balk:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Als een stap halverwege de run is gestopt om iets te vragen, selecteer je die
+  en druk je op **Knooppunt hervatten** om hem te hervatten.
+- Druk op **Selectie goedkeuren** om een _gedeeltelijke_ goedkeuring te verbreden
+  naar de geselecteerde stap plus alles waarvan die transitief afhangt (een stap
+  kan nooit worden goedgekeurd zonder zijn afhankelijkheden). Het element staat
+  bij elke orkestratie op de uitvoeringsbalk; het doet niets wanneer het plan in
+  zijn geheel is goedgekeurd.
+- Druk op **Uitvoering annuleren** om de hele orkestratie te stoppen.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Stappen buiten een gedeeltelijk goedgekeurde verzameling worden als uitgesteld
+weergegeven en draaien niet tot je de verzameling verbreedt.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Gedeeltelijke goedkeuringen kunnen niet in de app ontstaan]
+Een gedeeltelijke goedkeuring bestaat alleen wanneer iets `orchestration.approve`
+via RPC heeft aangeroepen met een expliciete lijst `approved_node_keys`. **Plan
+goedkeuren** in de app keurt altijd elke stap goed. Plandocumenten worden in alle
+gevallen in hun geheel goedgekeurd, dus een document dat wordt uitgevoerd biedt
+alleen **Uitvoering annuleren**.
 :::
 
-## Run a playbook with parameters
+## Een playbook met parameters uitvoeren
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/nl-NL/handleiding/gidsen/pipeline-maken/) instead.
+Een playbook is een opgeslagen plansjabloon met getypeerde `{{param}}`-
+placeholders in het doel, de staptitels, beschrijvingen en prompts. Vervanging
+is letterlijk — er is geen expressietaal; als je logica nodig hebt, gebruik je in
+plaats daarvan een
+[pipeline](/nl-NL/handleiding/gidsen/pipeline-maken/).
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Druk in de sectie **Playbooks** van de hub op **Uitvoeren** bij het playbook
+   (of open het ⌘K-palet en kies het playbook daar).
+2. Vul de parameters in. Enumeratieparameters worden als keuzelijsten
+   weergegeven; repo- en agentparameters nemen een repo- of agentverwijzing;
+   optionele parameters vallen terug op hun standaardwaarde.
+3. Kies het **Anker-ticket** waartegen het plan wordt voorgesteld en bevestig.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Een playbook uitvoeren **stelt alleen een plan voor** — de geïnstantieerde
+orkestratie opent in Plan Studio als `proposed` en er wordt niets uitgevoerd tot
+je het daar goedkeurt. Om een playbook te verwijderen, druk je op het
+prullenbakpictogram op zijn kaart.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/nl-NL/handleiding/referentie/mcp-tools/).
+Agenten maken en voeren playbooks uit met de MCP-tools `create_playbook` en
+`run_playbook`; zie de [MCP-tools-referentie](/nl-NL/handleiding/referentie/mcp-tools/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Use plan mode](/nl-NL/handleiding/gidsen/planmodus/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/nl-NL/handleiding/gidsen/pipeline-maken/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/nl-NL/handleiding/gidsen/pipelines-monitoren/): the engine view of an approved plan
+- [Planmodus gebruiken](/nl-NL/handleiding/gidsen/planmodus/): hoe een agent met `submit_plan` een plandocument maakt
+- [Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/): de levenscyclus met één goedkeuring vanuit het gesprek
+- [Een pipeline-sjabloon maken](/nl-NL/handleiding/gidsen/pipeline-maken/): wanneer je logica nodig hebt die een playbook niet kan uitdrukken
+- [Pipeline-runs monitoren](/nl-NL/handleiding/gidsen/pipelines-monitoren/): de engineweergave van een goedgekeurd plan
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Orchestration](/nl-NL/handleiding/concepten/orkestratie/)
+- [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/)

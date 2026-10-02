@@ -1,95 +1,97 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Slack hesabınızı bağlama
+description: Bir Slack kimliğinin size ait olduğunu kanıtlayın; böylece ajanlar iletileriniz üzerine iş yapar ve emeğiniz size atfedilir.
 slug: tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Bu kılavuz, sohbet kimliğinizi Control Center kullanıcınıza nasıl bağlayacağınızı ve bir bağlantıyı nasıl kaldıracağınızı gösterir.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Her üye bunu, her sohbet sağlayıcısı için bir kez yapar. Bu, uygulamayı bağlamaktan ayrı bir iştir: uygulama bağlantısı botu tüm çalışma alanı için erişilebilir kılar; hesap bağlantısı ise _sizi_ o alanın içinde tanınabilir yapar.
 
-## Why linking is required
+## Hesap bağlama neden zorunlu
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Köprü, bir çalışma alanı üyesine çözümleyemediği bir sohbet hesabı adına işlem yapmayı reddeder. Bu bilinçli bir tercihtir — bir hesap bağlantısı olmadan Slack'ten gelen her iletinin uygulamayı kuran kişiye atfedilmesi gerekirdi; denetim kaydı, principal başına hız sınırları ve bilet açanlar da yanlış kişiyi gösterirdi.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Bağlantısı olmayan bir üye botu etiketlerse, o Slack dizisinde bağlanmanın nasıl yapıldığını açıklayan bir yanıt alır. Hiçbir şey gönderilmez.
 
-## Link with a code
+## Kodla bağlama
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne gidin ve **Bağlı sohbet
+   hesapları** kartına ilerleyin
+2. Slack bloğunda **Slack hesabımı bağla**'ya tıklayın
+3. Gösterdiği komutu kopyalayın, örneğin:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Slack'te bu komutu bota gönderin — en kolay yer bir DM'dir
+5. Bot, artık bağlı olduğunuz Control Center kullanıcısıyla bunu doğrular ve açık bıraktığınız iletişim kutusu aynı anda bunu gösterecek biçimde güncellenir — kapatıp bakmanız gerekmez
 
-The code:
+Kod:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Tek kullanımlıktır ve üretilmesinden **15 dakika** sonra süresi dolar
+- Her zaman _sizin_ için üretilir, asla bir ekip arkadaşınız için değil
+- Elinizde bulunan kodu değiştirir; bu yüzden düğmeye yeniden basmak öncekini geçersiz kılar
+- Yalnızca bellekte tutulur; bu yüzden sunucunun yeniden başlatılması bekleyen kodları geçersiz kılar — düğmeye yeniden basın
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Bilinmeyen, süresi dolmuş veya farklı bir çalışma alanı için üretilmiş bir kod her seferinde aynı, ayırt edilemez biçimde başarısız olur: "that code is not valid (or has expired)".
 
-## Automatic linking by email
+## E-postayla otomatik bağlama
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Slack profilinizde **bu çalışma alanının zaten üyesi olan** bir Control Center kullanıcısıyla eşleşen doğrulanmış bir e-posta varsa, köprü botla ilk konuştuğunuzda sizi bağlar. Kod gerekmez.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+İki yarı da önemlidir: e-posta eşleşmesi kimliği kanıtlar, ama erişimi yalnızca üyelik verir; bu yüzden e-postası tesadüfen sunucuda bulunan bir yabancı hiçbir şeye bağlanmaz. Liste, her bağlantının nasıl kurulduğunu gösterir ("e-postayla eşleşti" veya "kodla bağlandı").
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Otomatik bağlama `users:read.email` kapsamını gerektirir. Bu olmadan Slack adresi paylaşmaz ve tek yol kod akışıdır.
 
-## See who is linked
+## Kimlerin bağlı olduğunu görme
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Liste çalışma alanı yönetimine aittir; bu yüzden yüzeyin diğer yarısında yer
+alır: **Ayarlar → Çalışma alanı → Genel → Sohbet köprüleri → Bağlı hesaplar**. Çalışma
+alanındaki her bağlı üyeyi, her birinin eşlendiği Slack hesabı ve bağlantının nasıl
+kurulduğuyla birlikte listeler.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Kendi durumunuz profil sayfanızdadır: **Slack hesabımı bağla** satırı,
+bağlandığınızda "_your-slack-id_ olarak bağlı" yazar; bağlı değilseniz
+bağlanmanızı söyler.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Liste canlı bir aboneliktir; çünkü değişiklik diğer tarafta gerçekleşir —
+kodu Slack'te siz yazarsınız, dolayısıyla uygulamadan gelen hiçbir istek yanıtı geri
+taşıyamaz.
 
-## Unlink
+## Bağlantıyı kaldırma
 
-Click **Unlink** on a row in the workspace roster.
+Çalışma alanı listesindeki bir satırda **Bağlantıyı kaldır**'a tıklayın.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Herkes kendi bağlantısını kaldırabilir
+- Başka bir üyenin bağlantısını yalnızca bir yönetici kaldırabilir
+- Bağlantıyı kaldırmak, o üye için bekleyen bağlantı kodunu da iptal eder
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Bağlantı kaldırıldıktan sonra o Slack hesabı, yeniden bağlanana kadar ajanları artık yönlendiremez. Var olan alanlar, transkriptler ve biletler özgün atıflarını korur — bağlantıyı kaldırmak geçmişteki işi geri almaz.
 
-## Troubleshooting
+## Sorun giderme
 
-### The bot says I am not a member of this workspace
+### Bot, bu çalışma alanının üyesi olmadığımı söylüyor
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/).
+Slack hesabınız bir Control Center kullanıcısına bağlı, ancak o kullanıcının bu çalışma alanında hiçbir üyeliği yok. Bir yöneticiden sizi davet etmesini isteyin; bkz. [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/).
 
-### The bot says my role is read-only
+### Bot, rolümün salt okunur olduğunu söylüyor
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+`viewer` ve `guest` rolleri iş başlatamaz. Bir yöneticinin rolünüzü `member` veya üstüne yükseltmesi gerekir.
 
-### The slash command is not recognized
+### Slash komutu tanınmıyor
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Slash komutunun Slack'te var olduğunu ve ayarlar iletişim kutusunun size gösterdiği komutu gönderdiğinizi kontrol edin — bir yönetici onu yeniden adlandırmış olabilir; bu durumda iletişim kutusu güncel adı gösterir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
-- [Customize the chat bot](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
-- [Chat bridge](/tr-TR/kilavuz/referans/sohbet-koprusu/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
+- [Sohbet köprüsü](/tr-TR/kilavuz/referans/sohbet-koprusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
-- [Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/)
+- [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
+- [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/)

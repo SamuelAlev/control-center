@@ -1,153 +1,148 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: ڈومین ایونٹس
+description: فیچرز ایک دوسرے کو امپورٹ کرنے کے بجائے ان پروسیس ایونٹ بس کے ذریعے بات کیوں کرتے ہیں، بس کس چیز کا سورس آف ٹروتھ ہے اور کس چیز کا نہیں، اور کون سے ایونٹس واقعی آٹومیشن چلا سکتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## ڈومین ایونٹ کیا ہے
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+ڈومین ایونٹس وہ ڈیکپلنگ میکانزم ہیں جو فیچرز کو براہ راست انحصار کے بغیر ایک دوسرے سے
+بات کرنے دیتے ہیں۔ فیچر A کے فیچر B کو کال کرنے کے بجائے، فیچر A ایک ایونٹ شائع کرتا
+ہے اور فیچر B اُسے سبسکرائب کرتا ہے۔
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` ایک ان پروسیس براڈکاسٹ پبلش/سبسکرائب بس ہے۔ پبلشرز
+`publish(event)` کال کرتے ہیں؛ سبسکرائبرز ایک ٹائپ شدہ `on<T>()` اسٹریم استعمال کرتے
+ہیں۔ ہر ایونٹ `DomainEvent` کو نافذ کرتا ہے اور `occurredAt` ساتھ رکھتا ہے۔
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**بس `cc_server` کے اندر چلتی ہے۔** ہر پبلشر اور ہر زندہ سبسکرائبر وہیں رہتا ہے۔ کوئی
+کلائنٹ اس بس کو نہیں دیکھتا۔ کلائنٹ جو دیکھتا ہے وہ ایک چُنا ہوا ذیلی مجموعہ ہے جسے
+سرور `notifications/*` JSON-RPC فریمز کے طور پر دوبارہ نشر کرتا ہے۔
 
-## Why a bus at all
+## آخر بس کیوں
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+ایونٹس کے بغیر ہر بین فیچر ردِعمل ایک امپورٹ بن جاتا ہے۔ اطلاعات کا راستہ صرف یہ
+جاننے کے لیے کہ ٹوسٹ کب اٹھانا ہے، ایجنٹس فیچر، Pull request فیچر، ٹکٹنگ اور میٹنگز
+کو امپورٹ کرنا پڑتا — اور پھر اُن میں سے ہر ایک کو یہ بھی جاننا پڑتا کہ اطلاعات کا
+وجود ہے۔ ٹکٹنگ پائپ لائنز کو امپورٹ کرتی تاکہ کوئی مکمل شدہ ٹکٹ کسی رن کو آگے بڑھا
+سکے۔ انحصار کا گراف ایک گرہ میں بند ہو جاتا اور مشترکہ کرنل مشترکہ رہنا چھوڑ دیتا۔
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+ایونٹ شائع کرنا اسے توڑ دیتا ہے۔ اطلاعات کا راستہ اکیس ایونٹ کلاسز کو سبسکرائب کرتا
+ہے اور اُن فیچرز میں سے کوئی بھی امپورٹ نہیں کرتا جو اُنہیں اٹھاتے ہیں۔ پائپ لائن
+ٹرگر ڈسپیچر پوری بس کو سبسکرائب کرتا ہے اور pull requests، ٹکٹس یا میٹنگز کے بارے
+میں کچھ نہیں جانتا۔ آبزرویبیلٹی ڈسپیچ کے اندر جھانکے بغیر رن کے نتائج جمع کرتی ہے۔
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+قیمت وہی معمول کی ہے: پبلشر نہیں جان سکتا کہ کوئی سن رہا ہے یا نہیں، اور جو سننے
+والا کبھی بنایا ہی نہ جائے وہ خاموشی سے بے اثر رہتا ہے۔ `TicketRemoteSyncHandler`
+اس کی مستقل مثال ہے: یہ اعلان شدہ ہے، ٹیسٹوں میں ڈھکا ہوا ہے، اور پروڈکشن میں کبھی
+وائر نہیں ہوا۔
 
-## What the bus is not
+## بس کیا نہیں ہے
 
-It is worth being precise about one thing the bus does _not_ own.
+ایک بات کے بارے میں واضح رہنا ضروری ہے، جس کی بس _مالک نہیں_۔
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**آڈٹ ٹریل ایونٹ اسٹریم کا پروجیکشن نہیں ہے۔** ہر تبدیلی کرنے والا RPC آپریشن بطور
+ڈیفالٹ آڈٹ ہوتا ہے — `RepoOp.audited` کی ڈیفالٹ true ہے اور کوئی آپریشن صرف
+`audited: false` کے اعلان سے باہر نکلتا ہے، جو ایک سوچا سمجھا عمل ہے جو آپریشن پر ہی
+نظر آتا ہے۔ ڈسپیچر کامیاب کال کے فوراً بعد "کس نے کیا کیا، کہاں سے" والی قطار شامل
+کرتا ہے۔ کوئی `DomainEventAuditBridge` نہیں ہے۔ `ActivityLogPersister`،
+`ActivityLogged` ایونٹس سے `activity_log` قطاریں لکھتا ہے؛ وہ RPC آڈٹ سے ایک الگ فیڈ
+ہے۔
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+ایونٹ بس اطلاعات اور آٹومیشن کے لیے _ٹرانسپورٹ_ ہے۔ یہ ریکارڈ کا حساب کتاب رکھنے والا
+نظام نہیں ہے۔
 
-## What the bus does drive
+## بس کن چیزوں کو چلاتی ہے
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **اطلاعات۔** اکیس ایونٹ کلاسز کو سرور `notifications/*` وائر فریمز میں بدلتا ہے، ایک
+  پائیدار فی ورک اسپیس فیڈ میں محفوظ کرتا ہے اور منسلک سیشنز کو نشر کرتا ہے۔ جو فریم
+  اپنے `workspace_id` میں ایسا ورک اسپیس بتائے جس کا سیشن صارف رکن نہ ہو، سرور پر ہی
+  گرا دیا جاتا ہے؛ پھر کلائنٹ بقیہ کو اُس ورک اسپیس تک فلٹر کرتا ہے جسے وہ دیکھ رہا ہے۔
+- **ایونٹ پر مبنی آٹومیشن۔** پائپ لائن ٹرگرز بس کو سبسکرائب کرتے ہیں اور مماثل پائپ
+  لائنز خودکار شروع کرتے ہیں (نیچے دیکھیں)۔
+- **لائف سائیکل ردِعمل۔** ورک اسپیس بنانے پر اُس کے CEO اور ماہر ایجنٹس، بلٹ اِن پائپ
+  لائن ٹیمپلیٹس اور ابتدائی ایوال سوٹس بیج کی طرح بچھ جاتے ہیں۔ مکمل شدہ ایجنٹ رن
+  معطل شدہ پائپ لائن قدم دوبارہ شروع کرتا ہے، کوئی ٹاسک بند کرتا ہے، گول سپروائزر کو
+  خوراک دیتا ہے، کسی نامزد چیکر کو جگا سکتا ہے اور کسی ٹیم لیڈر کو دوبارہ متحرک کر
+  سکتا ہے۔ مرج شدہ PR یا حذف شدہ اسپیس worktree گاربیج کلیکشن شروع کرتی ہے۔
+- **کراس وینڈر سنک۔** مقامی ٹکٹ تبدیلیاں ایک کوآرڈینیٹر کے ذریعے کنفیگر شدہ وینڈرز تک
+  بھیجی جاتی ہیں، جو پانچ ٹکٹ ایونٹس سنتا ہے۔
 
-## Event categories
+## ایونٹ کی اقسام
 
-Events span the whole product surface. At a high level:
+ایونٹس پوری پروڈکٹ سطح پر پھیلے ہوئے ہیں۔ موٹے طور پر:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **ورک اسپیسز، ایجنٹس اور ریپوز** — ورک اسپیس کی تخلیق، رن کی تکمیل، ریپو کی رجسٹریشن، مہارتوں کی تازہ کاری
+- **Pull requests** — اشاعت، اسٹیٹس کی تبدیلیاں، مرج، ریویو کی درخواستیں، ذکر، خود لکھے PR کی نگرانی، باہر سے شناخت شدہ PRs
+- **میسجنگ** — پیغامات، اسپیسز اور اسپیس پروویژننگ کی پیش رفت
+- **ٹکٹس** — تخلیق، تفویض، دوبارہ تفویض، تفصیلات، اسٹیٹس اور تین حتمی نتائج
+- **ٹاسکس** — ایک ڈسپیچ شدہ رن کے لیے ترتیب وار لائف سائیکل فریمز، تاکہ کلائنٹس اُنہیں ترتیب دے سکیں اور ڈپلیکیٹ نکال سکیں
+- **پائپ لائنز** — صرف حتمی رن ایونٹس (مکمل، منسوخ، ناکام)
+- **آبزرویبیلٹی** — ایکٹیویٹی لاگ اندراجات اور بجٹ کی حدیں
+- **شناخت اور رکنیت** — رکن شامل ہوا، ہٹا، کردار بدلا
+- **کیلنڈر اور میٹنگز** — auth کی میعاد ختم، میٹنگز کا شروع ہونا اور ریکارڈنگ کا مکمل ہونا
+- **رگز** — ٹیک اوور، ریپ اور غیر متوقع بندش
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+میموری، آرکیسٹریشن، پلان دستاویزات، آرٹی فیکٹس، منظوریاں، ٹکٹ سنک انٹیک، کیلنڈر
+ریفریش، worktree مرج، صارف کی تخلیق، دعوتیں اور ڈیوائس کی منسوخی ڈومین ایونٹس نہیں
+ہیں؛ حوالہ دیکھیں۔
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/). That page is the
-inventory; this one is the model.
+مکمل کیٹلاگ کے لیے — تمام 53 ٹھوس ایونٹ کلاسز، اُن کے پیلوڈز اور اُنہیں استعمال کرنے
+والے 24 سبسکرائبرز — [ڈومین ایونٹس حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/) دیکھیں۔
+وہ صفحہ فہرست ہے؛ یہ صفحہ ماڈل۔
 
-## Live access control rides two different mechanisms
+## لائیو رسائی کنٹرول دو مختلف میکانزم پر چلتا ہے
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+رکنیت اور ڈیوائس ایونٹس دیکھنے میں ہم شکل لگتے ہیں مگر ہیں نہیں، اور یہ اہم ہے اگر آپ
+سوچ رہے ہوں کہ منسوخی کتنی تیزی سے اثر کرتی ہے۔
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**کسی ڈیوائس کی منسوخی اُس کے سیشن واقعی ختم کر دیتی ہے۔** سرور پیئر شدہ ڈیوائس ٹیبل
+پر نظر رکھتا ہے اور جس زندہ سیشن کا ڈیوائس فعال سیٹ سے نکل جائے اُسے سیکنڈوں میں گرا
+دیتا ہے۔
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**کسی رکن کو ہٹانا ساکٹ بند نہیں کرتا۔** `WorkspaceMemberRemoved` استعمال ہوتا ہے:
+`LocalRpcServer` اور `RemoteRelayHost` اُس صارف کی منسلک ورک اسپیس سبسکرپشنز گرا
+دیتے ہیں، اور `RemoteEventForwarder` اپنا رکنیت کیشے باطل کر دیتا ہے تاکہ اُس ورک
+اسپیس کے مزید فریم نہ بھیجے جائیں۔ اگلے RPC کو روکنے والا پھر بھی رول گیٹ ہی ہے، جو
+ہر کال پر رکنیت **دوبارہ** حل کرتا ہے — چنانچہ اُن کی اگلی درخواست
+"Not a member of this workspace" کے ساتھ مسترد ہوتی ہے۔ جو بھی وہ کرنے کی کوشش کریں
+اُس پر اثر فوری ہے؛ بس یہ اُن سے کنکشن ختم کر کے حاصل نہیں کیا جاتا۔
 
-## Pipeline triggers
+## پائپ لائن ٹرگرز
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+پائپ لائن ٹرگرز ڈومین ایونٹس کو سبسکرائب کرتے ہیں اور مماثل پائپ لائنز خودکار شروع
+کرتے ہیں۔ `PipelineTriggerDispatcher` پوری بس سنتا ہے، پھر:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. شارٹ سرکٹ کر دیتا ہے جب تک ایونٹ کی قسم ایسی نہ ہو جسے وہ پیلوڈ پر میپ کرنا جانتا ہو
+2. ہر ورک اسپیس میں اُس ایونٹ قسم سے مماثل فعال ٹرگرز تلاش کرتا ہے
+3. ہر ایک کو اُس کے اپنے ورک اسپیس تک فلٹر کرتا ہے اور اُس کا پیلوڈ میچ فلٹر لاگو کرتا ہے
+4. ہر بچ جانے والے ٹرگر کے لیے ایک رن شروع کرتا ہے
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+اہم پابندی قدم 1 ہے۔ بس 53 اقسام کے ایونٹس رکھتی ہے؛ ٹرگر شامل کرنے والا چناؤ اِن
+چودہ کے لیے رن شروع کرتا ہے (`EventPayloadMapper` کے پیلوڈ برانچز):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+اور `SpaceDeleted`۔ اِن کے سوا کوئی اور چیز پائپ لائن شروع نہیں کر سکتی۔
 
-## How a client sees any of this
+## کلائنٹ یہ سب کیسے دیکھتا ہے
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/).
+`RemoteEventForwarder` نوٹیفکیشن کلاس کے ایونٹس کو وائر فریمز میں ترجمہ کرتا ہے اور
+RPC کے ذریعے منسلک سیشنز تک پہنچاتا ہے، جہاں ایک فریم میپر اُنہیں ایپ کے اندر اطلاعات
+میں بدل دیتا ہے۔ چنانچہ ایک پتلا کلائنٹ سرور کے ایونٹ اسٹریم کا پروجیکشن دیکھتا ہے،
+بغیر کوئی عمل اپنے پاس رکھے — اور
+[پتلے کلائنٹ کی تقسیم](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/) کا پورا مقصد یہی ہے۔
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+تاہم ہر بھیجا گیا فریم اطلاع نہیں ہوتا۔ ٹاسک لائف سائیکل اسٹریم اور ٹکٹ کی دوبارہ
+تفویض UI چلانے کے لیے براہِ راست فارورڈ کیے جاتے ہیں، مگر وہ اطلاعات کی فیڈ میں محفوظ
+نہیں ہوتے اور کوئی ٹوسٹ نہیں اٹھاتے۔
 
-## See also
+## مزید دیکھیں
 
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): what a trigger starts
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): assignment to an agent vs a team
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): how events fit the dependency rule
-- [Domain events reference](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
-- [Configure notifications](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اطلاعات/)
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): ٹرگر کیا شروع کرتا ہے
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): ایجنٹ کو تفویض بمقابلہ ٹیم کو
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): ایونٹس انحصار کے اصول میں کیسے فٹ ہوتے ہیں
+- [ڈومین ایونٹس حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/): مکمل کیٹلاگ اور اُس کے سبسکرائبرز
+- [پائپ لائن ٹرگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
+- [اطلاعات کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اطلاعات/)

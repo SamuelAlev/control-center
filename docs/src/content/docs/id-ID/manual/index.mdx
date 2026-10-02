@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Pengantar
+description: Control Center adalah kokpit untuk pengembangan perangkat lunak multiagen.
 slug: id-ID/panduan-pengguna
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center memberi Anda kendali atas fleet agen pengodean AI. Jalankan agen, saksikan mereka bekerja secara real time, tinjau PR mereka, dan kelola repo, ruang kerja, serta integrasi — dari aplikasi desktop native, browser, atau ponsel Anda.
 
 <div className="docs-start not-content">
-  <LinkButton href="/id-ID/panduan-pengguna/mulai-cepat/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/id-ID/panduan-pengguna/instal/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/id-ID/panduan-pengguna/mulai-cepat/" icon="right-arrow">Mulai cepat</LinkButton>
+  <LinkButton href="/id-ID/panduan-pengguna/instal/" variant="minimal" icon="download">Instal Control Center</LinkButton>
 </div>
 
-## What you can do
+## Yang dapat Anda lakukan
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Kirimi agen pesan**: space adalah cara utama untuk mengemudikan fleet. @-mention sebuah agen dan agen itu dikirim ke worktree copy-on-write miliknya sendiri, sehingga beberapa agen dapat menulis kode dan meninjau secara paralel tanpa menyentuh checkout Anda
+- **Orkestrasi permintaan besar**: beri orkestrator sebuah tujuan, setujui sekali rencana seluruh tim yang dia usulkan, dan [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) yang dihasilkan akan menjalankannya
+- **Tinjau dan gabungkan PR** dengan penampil diff bawaan, komentar inline, dan tinjauan bertenaga AI
+- **Berikan agen mesin sekali pakai**: [rig](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/) adalah VM sekali pakai — browser, desktop, ponsel, atau terminal tertutup — yang dikemudikan agen sementara Anda menonton langsung dan dapat mengambil alih; server dev di dalamnya diteruskan ke `localhost`, browser agen, dan `https://myapp.test`
+- **Otomatiskan alur kerja** dengan pipeline berbasis DAG yang dipicu oleh peristiwa atau jadwal
+- **Kelola pengetahuan** dengan memori, fakta, dan kebijakan yang dicakup ruang kerja
+- **Lacak pekerjaan** dengan tiket, proyek, dan delegasi yang netral vendor
+- **Rekam rapat** dengan pengambilan, transkripsi, dan diarisasi di perangkat, lalu diringkas menjadi catatan, item tindakan, dan keputusan
+- **Lihat hari Anda** dengan sinkronisasi Google Calendar, RSVP, peringatan rapat, dan rekam-dan-tautkan
+- **Ikuti fleet dari ponsel Anda**: pasangkan perangkat dengan server Anda, lalu baca pesan, balas, dan lakukan triase tiket. Ponsel mengambil jalur terbaik yang dapat dijangkau — loopback, LAN, tailnet, atau TLS — dan beralih ke relay tersegel end-to-end yang meneruskan frame yang tidak dapat dibacanya
+- **Kemudikan agen dari Slack**: jembatani ruang kerja ke aplikasi chat dan sebut bot, balas di thread Slack, atau buat tiket dengan perintah slash — melalui koneksi keluar, sehingga tidak perlu endpoint publik
+- **Integrasikan** dengan GitHub, Linear, Slack, Google Calendar, dan lebih dari 100 alat MCP
 
-## You do not have to install it
+## Anda tidak perlu menginstalnya
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Aplikasi yang sama berjalan di browser Anda di
+[app.usectrl.dev](https://app.usectrl.dev), dengan fitur yang sama.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Setiap klien — desktop, web, dan ponsel — adalah perender tipis di atas server headless yang
+memiliki data Anda dan melakukan pekerjaannya. Desktop dapat menjalankan server itu untuk Anda; tab browser
+tidak bisa, sehingga aplikasi web terhubung ke server yang Anda jalankan. Server itu dapat berada di mesin Anda
+sendiri (`ws://localhost:9030`, tidak perlu sertifikat) atau di host jarak jauh yang dapat dijangkau melalui
+TLS, VPN, atau tunnel.
 
-See [Install](/id-ID/panduan-pengguna/instal/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/) for how the three clients relate.
+Lihat [Instal](/id-ID/panduan-pengguna/instal/#use-it-in-your-browser) untuk jalur browser dan
+[Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) untuk memahami hubungan ketiga klien.
 
-## Next steps
+## Langkah berikutnya
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/id-ID/panduan-pengguna/instal/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/id-ID/panduan-pengguna/mulai-cepat/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/id-ID/panduan-pengguna/tutorial/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/id-ID/panduan-pengguna/panduan-praktis/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/id-ID/panduan-pengguna/konsep/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/id-ID/panduan-pengguna/referensi/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Instal" href="/id-ID/panduan-pengguna/instal/" description="Unduhan, persyaratan sistem, dan tempat server berjalan." />
+  <LinkCard title="Mulai cepat" href="/id-ID/panduan-pengguna/mulai-cepat/" description="Jalur lengkap terpendek menuju agen yang bekerja di repo Anda." />
+  <LinkCard title="Tutorial" href="/id-ID/panduan-pengguna/tutorial/" description="Pelajaran yang lebih panjang, berurutan, dimulai dari ruang kerja pertama Anda." />
+  <LinkCard title="Panduan praktis" href="/id-ID/panduan-pengguna/panduan-praktis/" description="Resep untuk satu tugas sekaligus: tambahkan repo, konfigurasikan pagar pengaman, atau pasangkan ponsel Anda." />
+  <LinkCard title="Konsep" href="/id-ID/panduan-pengguna/konsep/" description="Mengapa produk ini bekerja seperti ini, dimulai dari deployment dan klien." />
+  <LinkCard title="Referensi" href="/id-ID/panduan-pengguna/referensi/" description="Tabel lengkap untuk rute, alat MCP, pintasan keyboard, dan peristiwa domain." />
 </div>

@@ -1,164 +1,187 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Beérkezett üzenetek triázsolása
+description: Dolgozzon az egységes Beérkezettel — tisztázza, mi blokkolja, nézze át, mi vár Önre, és kövesse a saját PR-jeit.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Ez az útmutató bemutatja, hogyan dolgozhat a Beérkezettel: ez az az egyetlen
+felület, amely összegyűjt mindent, ami blokkolja Önt, vagy kifejezetten Önt
+kéri — a függőben lévő ügynök-jóváhagyásokat, a sikertelen
+jegyszinkronizálásokat és minden pull requestet, amelyben Ön átnézőként vagy
+szerzőként érintett.
 
-## Open the inbox
+## A Beérkezett megnyitása
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Kattintson az oldalsávon a **Beérkezett** elemre. A jelvénye a függőben lévő
+   ügynök-jóváhagyásokat, a sikertelen szinkronizálásokat és az átnézésére váró
+   nyitott PR-eket számolja.
+2. Vagy nyomja meg a <kbd>⌘K</kbd> kombinációt, és futtassa a **Beérkezett**
+   navigációs parancsot.
+3. Vagy ugorjon közvetlenül a `/workspaces/<workspace-id>/inbox` útvonalra.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Az oldalsáv bejegyzése mindig az élő darabszámot mutatja, így anélkül láthatja,
+ahogy a triázsmunkája gyűlik, hogy megnyitná az oldalt.
 
-## Read severity at a glance
+## A súlyosság leolvasása egy pillantásra
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Fentről lefelé haladva olvassa; a Beérkezett már sürgősség szerint rendezett:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. A rögzített **Figyelmet igényel** sáv a PR-szakaszok felett helyezkedik el.
+   Minden kártyán súlyossági címke van. A regisztrált források (egy ügynök,
+   amely elakadt egy megerősítési kérésnél; egy jegyszinkronizálás, amelynek a
+   szállítói tükre elavult) a **Blokkolva** jelzést adják ki.
+2. A sávon belül a legsürgősebb súlyosság kerül előre; holtverseny esetén az az
+   elem nyer, amelyik a legrégebb óta vár.
+3. A sáv alatt a PR-ek rögzített, az átnézés életciklusát követő szakaszokba
+   csoportosulnak — **Az Ön átnézésére van szükség**, **Visszaküldve Önnek**,
+   **Jóváhagyva**, **Piszkozatok**, **Átnézőkre vár**, **Összefésülés és nemrég
+   összefésülve**, **Szerzőre vár**. A felső szakaszok azok, amelyekhez _Ön_
+   kell; a többi azt mutatja, hol tartanak _az Ön_ PR-jei. **Az Ön átnézésére
+   van szükség** közé azok a PR-ek is beletartoznak, amelyek még egy olyan
+   csapatot kérnek, amelyhez Ön tartozik, azokon a forge-okon, ahol vannak
+   csapatok (a GitHub a csapatot eltávolítja, amint bármelyik csapattárs
+   átnézi).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Egy elem csak akkor kerül be a Beérkezettbe, ha blokkol valamit, vagy
+kifejezetten Önt kéri. Egy üres sáv és üres szakaszlista csak akkor mutatja a
+**Minden elolvasva** üzenetet, ha ez az üresség megbízható.
 
-## One inbox across every forge
+## Egy Beérkezett, minden forge
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Ha a munkaterület több kódhoszton is tart repókat, a Beérkezett egyetlen folyamba
+vonja össze őket — egy GitHub pull request és egy Bitbucket pull request
+ugyanabban a szakaszban áll, idő szerint rendezve, nem szállító szerint
+csoportosítva. A sor `repo #number` metaadata különbözteti meg őket.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+A „saját” **forge-onként** oldódik fel, mert mindegyiken más fiókja van. Egy pull
+request csak akkor számít az Önének, vagy akkor kéri az Ön átnézését, ha
+illeszkedik ahhoz az identitásához, amelyen az adott repó valójában található.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Az a forge, amelyik leállt vagy nincs csatlakoztatva, semmivel sem járul hozzá,
+és a Beérkezett többi részét érintetlenül hagyja — egy hibás kapcsolat soha nem
+üríti ki a teljes listát. Az üres állapot fenntartást nevez meg a **Minden
+elolvasva** helyett, amikor még egyetlen forge-bejelentkezés sincs feloldva
+(**Nem sikerült megerősíteni a GitHub-fiókját** — a szöveg továbbra is a
+GitHubot nevezi meg), amikor a githubstatus.com incidensről számol be, vagy
+amikor a hivatkozott repókat lefedő GitHub App telepítése fel van függesztve.
 
-## Clear the attention strip
+## A figyelmet igénylő sáv feldolgozása
 
-Each strip card has one next action:
+A sáv minden kártyájához egyetlen következő művelet tartozik:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Ha egy kártya függőben lévő ügynökmegerősítés, kattintson az **Átnézés**
+   gombra — annak az ügynöknek a terére kerül, annak függőben lévő
+   megerősítésével. Ott hagyja jóvá vagy utasítsa el (lásd
+   [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)).
+2. Ha egy kártya **A szinkron sikertelen** üzenetet mutat egy szállítóhoz,
+   kattintson a **Megnyitás** gombra — a **Beállítások → Munkaterület →
+   Általános** oldalra kerül, amelynek **Szinkron állapota** kártyája megmutatja
+   az egyes kapcsolatok utolsó szinkronizálását, az egymást követő hibák
+   sorozatát és a legutóbbi eredményt. A Beérkezettben szállítónként csak a
+   legutóbbi hiba jelenik meg, így egy helyreállt szinkronizálás eltünteti a
+   kártyát.
+3. A kártyák maguktól eltűnnek, amint a mögöttes állapot megoldódik (az ügynök
+   választ kap, a szinkronizálás helyreáll) — nincs mit kézzel elvetni.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Ezek körönkénti megerősítések, nem irányítási jóváhagyások]
+Az „ügynök-jóváhagyás” kártya egy futó ügynök, amely megáll, hogy engedélyt
+kérjen egyetlen művelethez, a saját beszélgetésében. Ez más, mint az irányítási
+`Approval` rekord, amelyet az ügynökök a jóváhagyási MCP-eszközökkel hoznak
+létre — azokhoz az alkalmazásban sehol nincs emberi képernyő, és soha nem
+jelennek meg itt.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[A szinkron állapota csak olvasható]
+A kártya a jegyszinkronizálási kapcsolatokról ad jelentést; egy **Szinkronizálás
+most** gombon kívül nem tud kapcsolatot létrehozni, szerkeszteni vagy
+újracsatlakoztatni, és nincs más képernyő sem, amely erre képes lenne. Beállított
+kapcsolat nélkül egyszerűen ezt írja: „Még nincsenek szinkronkapcsolatok”, ezt
+mutatja egy friss munkaterület is.
 :::
 
-## Filter to what is blocking
+## Szűrés arra, ami blokkol
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Nyomja meg az <kbd>f</kbd> billentyűt (amikor nincs szövegmezőre fókuszálva),
+   hogy megnyissa a szűrőmenüt, vagy kattintson az eszköztár szűrőgombjára.
+2. Válassza az állapot, a szerző, az átnézők, a tartalom, a repó
+   tulajdonosa/neve, a dátumtartományok vagy a gyorsan átnézhető jelző bármilyen
+   kombinációját. A menü jellemzőnkénti darabszámai megmutatják, hány beérkezett
+   elemre illeszkedik az egyes beállítások.
+3. Az aktív szűrők címkeként jelennek meg a lista feletti sávban; kattintson egy
+   címke ✕ jelére az adott feltétel elvetéséhez.
+4. A bal oldali sávval ugorhat a szakaszok között — minden bejegyzés az élő
+   darabszámát mutatja, a kiemelés pedig követi a görgetési pozícióját.
+   Kattintson egy szakaszfejlécre azoknak a szakaszoknak az összecsukásához,
+   amelyeket nem triázsol (például **Piszkozatok**, miközben az átnézéseket
+   dolgozza fel).
+5. Kattintson egy oszlopfejlécre (cím, módosítások vagy frissítve) az összes
+   szakasz rendezéséhez; kattintson ismét az aktív oszlopra az irány
+   megfordításához. A megjelenítési beállítások gombja a piszkozatok
+   láthatóságát, a nemrég összefésültek időablakát, a sorok tulajdonságait, a
+   rendezést és a csoportosítást vezérli (a Beérkezett elrendezését csak a szerző
+   szerinti csoportosítás változtatja meg).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Az itteni szűrők függetlenek a PR-várólistától — a Beérkezett szűkítése soha nem
+változtatja meg a várólista szűrőit, és fordítva.
 
-## Act on a PR item
+## Művelet egy PR-elemmel
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/) and
-   [the dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).
+1. Kattintson bármelyik sorra a PR részletei oldal megnyitásához.
+2. Ha a PR **Az Ön átnézésére van szükség** állapotban van, nézze át, és küldje
+   be a döntését — lásd
+   [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/).
+3. Ha a PR **Visszaküldve Önnek** állapotban van (módosítást kértek vagy a CI
+   elhasalt), küldjön javításokat a checkoutból, vagy adja át a folytatást egy
+   ügynöknek.
+4. Ha a PR **Jóváhagyva** állapotban van, fésülje össze a részletei oldalról.
+5. Ha inkább delegálná az átnézést ahelyett, hogy maga végezné el, lásd
+   [Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/) és
+   [az ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Amint a mögöttes állapot megváltozik (beérkezik az átnézése, a PR
+összefésülődik), az osztályozó automatikusan átsorolja a PR-t az új szakaszába.
 
-## Undo a mistaken action
+## Téves művelet visszavonása
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Nyomja meg a <kbd>⌘Z</kbd> kombinációt az utolsó művelet visszavonásához, a
+   <kbd>⌘⇧Z</kbd> kombinációt az ismételt végrehajtásához.
+2. Ha egy szövegmezőre van fókuszálva, a ⌘Z inkább a mező szövegét szerkeszti —
+   kattintson ki a mezőből, hogy egy alkalmazásszintű műveletet
+   visszavonhasson.
 
-## Look up shortcuts in place
+## Billentyűparancsok megtekintése helyben
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/hu-HU/kezikonyv/referencia/billentyuparancsok/).
+Nyomja meg a <kbd>?</kbd> billentyűt (amikor nincs szövegmezőre fókuszálva) a
+billentyűparancs-súgólap megnyitásához. Ez felsorolja az aktuális útvonalon aktív
+összes kötést, beleértve a Beérkezett <kbd>f</kbd> szűrőparancsát is. A teljes
+térkép a [Billentyűparancsok](/hu-HU/kezikonyv/referencia/billentyuparancsok/)
+oldalon található.
 
-## Drive it from the command palette
+## Irányítás a parancspalettáról
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Nyomja meg bárhol a <kbd>⌘K</kbd> kombinációt a parancspaletta
+   megnyitásához.
+2. Írja be, hogy **Beérkezett**, hogy az oldalra ugorjon, vagy írjon be egy
+   PR-címet — a paletta felsorolja az illeszkedő pull requesteket, és megnyitja a
+   kiválasztottat.
+3. Amíg a Beérkezett nyitva van, futtassa a **Hivatkozás másolása erre az
+   oldalra** parancsot, hogy az URL-t megosztásra lemásolja. A parancs az aktuális
+   útvonalat másolja, így csak akkor a Beérkezett URL-je, ha ezen az oldalon van.
 
-## Refresh on demand
+## Frissítés igény szerint
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+A Beérkezett élőben frissül, de ha elavult adatokra gyanakszik, kattintson az
+eszköztár frissítésvezérlőjére — az azonnali, szerveroldali bejárást kényszerít
+ki minden csatlakoztatott forge-on, és újra lekéri az összefésült/átnézett
+rétegeket. Az ikon addig forog, amíg minden lekérés be nem fejeződik.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [Dispatch reviewers](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)

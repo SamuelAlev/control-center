@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: เชื่อม Slack เข้ากับเวิร์กสเปซ
+description: สร้างแอป Slack เชื่อมต่อมัน ลิงก์บัญชีของคุณ แล้วให้เอเจนต์ตอบคุณในเธรด Slack
 slug: th-TH/คู่มือ/บทสอน/สะพานแชทแรก
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะมี:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- แอป Slack ที่สร้างขึ้นสำหรับเวิร์กสเปซของคุณ พร้อมสิทธิ์และเหตุการณ์ที่ตั้งไว้ถูกต้องแล้ว
+- การเชื่อมต่อที่ทำงานอยู่ระหว่าง Slack กับ Control Center
+- บัญชี Slack ของคุณเองที่ลิงก์กับผู้ใช้ Control Center ของคุณ
+- เอเจนต์ที่ตอบคุณในเธรด Slack และตั๋วงานที่เปิดจากคำสั่งสแลช
 
-Prerequisites:
+สิ่งที่ต้องมีก่อน:
 
-- [Your first workspace](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/) and [Dispatch your first agent](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [เวิร์กสเปซแรกของคุณ](/th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก/) และ [สั่งงานเอเจนต์ตัวแรก](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) เสร็จแล้ว — เวิร์กสเปซที่ไม่มีเอเจนต์รับข้อความ Slack ได้ แต่ไม่มีใครตอบมัน
+- **เอเจนต์ CEO** ของเวิร์กสเปซมีอะแดปเตอร์และโมเดลตั้งไว้ที่ **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** สะพานปลุก CEO ไม่ใช่เอเจนต์ที่คุณตั้งค่าไว้ในบทสอนก่อน และเอเจนต์ที่ไม่มีอะแดปเตอร์จะรันบนลูปในตัวด้วยโมเดลเริ่มต้นของ Anthropic
+- บทบาท `owner` หรือ `admin` ในเวิร์กสเปซ Control Center (การเชื่อมต่อแอปแชทพูดแทนเวิร์กสเปซทั้งหมด)
+- สิทธิ์ในการสร้างและติดตั้งแอปในเวิร์กสเปซ Slack ของคุณ
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+ไม่มีอะไรในที่นี้ต้องใช้ที่อยู่สาธารณะ ทันเนล หรือพอร์ตขาเข้า Control Center เชื่อม _ออก_ ไปยัง Slack ผ่าน Socket Mode จึงใช้งานได้จากแล็ปท็อปที่อยู่หลัง NAT
 
-## Step 1: Get a Slack app configuration token
+## ขั้นตอนที่ 1: ขอโทเค็นการตั้งค่าแอป Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+นี่คือความลับเดียวที่คุณต้องไปเอามาด้วยมือ มันทำให้ Control Center สร้างและแก้ไขแอปให้คุณได้ในภายหลัง
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. เปิด [api.slack.com/apps](https://api.slack.com/apps)
+2. เลื่อนลงไปที่ส่วนโทเค็นการตั้งค่าแอปที่ด้านล่างของหน้า
+3. สร้างคู่โทเค็นสำหรับเวิร์กสเปซ Slack ของคุณ
+4. คัดลอกโทเค็น **refresh** — มันเริ่มต้นด้วย `xoxe-`
 
-## Step 2: Let Control Center create the app
+## ขั้นตอนที่ 2: ให้ Control Center สร้างแอป
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. ใน Control Center ไปที่ **การตั้งค่า → เวิร์กสเปซ → ทั่วไป** แล้วหาการ์ด **สะพานแชท**
+2. ในบล็อก **Slack** คลิก **สร้างแอปให้ฉัน**
+3. วางโทเค็นการตั้งค่าแอป
+4. ตรวจดูว่าบอทจะมีหน้าตาอย่างไร:
+   - **ชื่อแอป**: ชื่อที่ Slack แสดงในรายการแอป เช่น `Control Center · Acme`
+   - **ชื่อบอท**: สิ่งที่ผู้คนพิมพ์ตามหลัง `@` เช่น `control-center`
+   - **คำอธิบายสั้น** และ **สิ่งที่บอทบอกว่าทำได้**
+   - **คำสั่งสแลช**: ค่าเริ่มต้นคือ `cc` คำสั่งจึงเป็น `/cc`
+   - **ข้อความตรง**: เปิดไว้เพื่อให้สมาชิกส่งข้อความส่วนตัวถึงบอทได้
+5. คลิก **สร้างแอป**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center ประกอบนิยามแอปทั้งหมดให้ — เปิด Socket Mode พร้อมสโคปของบอทและการสมัครรับเหตุการณ์ที่จำเป็น คำสั่งสแลช และแท็บ Messages — แล้วสร้างมันขึ้นใน Slack
 
-## Step 3: Finish the two steps only Slack can do
+## ขั้นตอนที่ 3: ทำสองขั้นตอนที่มีเพียง Slack เท่านั้นที่ทำได้
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack ไม่มี API สำหรับสร้างโทเค็นระดับแอปหรือติดตั้งแอป ไดอะล็อกจึงยื่นทั้งสองอย่างให้คุณเป็นลิงก์:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **สร้างโทเค็นระดับแอป** — เปิด **Basic Information → App-Level Tokens** สร้างโทเค็นที่มีสโคป `connections:write` แล้วคัดลอกมัน มันเริ่มต้นด้วย `xapp-`
+2. **ติดตั้งแอป** — เปิด **Install App** ติดตั้งลงในเวิร์กสเปซของคุณ แล้วคัดลอก **Bot User OAuth Token** มันเริ่มต้นด้วย `xoxb-`
 
-Keep both values around for the next step.
+เก็บค่าทั้งสองไว้ใช้ในขั้นตอนถัดไป
 
-## Step 4: Connect
+## ขั้นตอนที่ 4: เชื่อมต่อ
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. กลับมาที่ไดอะล็อก คลิก **วางข้อมูลรับรอง**
+2. กรอก **โทเค็นบอท** (`xoxb-…`) และ **โทเค็นระดับแอป** (`xapp-…`)
+3. เว้น **โทเค็นการตั้งค่าแอป** ว่างไว้ — อันจากขั้นตอนที่ 1 ถูกเก็บไว้แล้ว (Slack หมุนเวียนมันใหม่และ Control Center บันทึกอันใหม่ไว้)
+4. คลิก **เชื่อมต่อ**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center ตรวจสอบโทเค็นบอทกับ Slack ก่อนจะเก็บอะไรลงไป แล้วจึงเปิด socket แถวนั้นตอนนี้แสดงชื่อบอทและชื่อเวิร์กสเปซ Slack ของคุณพร้อมแท็ก **สด**
 
-## Step 5: Link your own Slack account
+## ขั้นตอนที่ 5: ลิงก์บัญชี Slack ของคุณเอง
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+การเชื่อมต่อทำให้บอทเข้าถึงได้ ส่วนการลิงก์ทำให้ _คุณ_ ถูกจดจำได้ จนกว่าตัวตน Slack ของคุณจะถูกลิงก์ บอทจะไม่ลงมือกับข้อความของคุณ — มันไม่เคยระบุข้อความว่าเป็นของคนที่ติดตั้งแอป
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+การลิงก์เป็นเรื่องส่วนตัว จึงอยู่คนละหน้ากับการเชื่อมต่อระดับเวิร์กสเปซ
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน** แล้วหาการ์ด **บัญชีแชทที่ลิงก์**
+2. คลิก **ลิงก์บัญชี Slack ของฉัน**
+3. คัดลอกคำสั่งที่มันแสดง เช่น `/cc link K7M2QP`
+4. ใน Slack ส่งคำสั่งนั้นถึงบอททางข้อความส่วนตัว
+5. บอทตอบว่า "ลิงก์แล้ว — คุณคือ …"
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+รหัสนี้ใช้ได้ครั้งเดียวและหมดอายุใน 15 นาที ถ้าอีเมล Slack ของคุณตรงกับผู้ใช้ Control Center ที่เป็นสมาชิกของเวิร์กสเปซนี้อยู่แล้ว สะพานจะลิงก์คุณให้อัตโนมัติในครั้งแรกที่คุณคุยกับมัน และคุณข้ามขั้นตอนนี้ได้
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+ถ้าคุณกล่าวถึงบอทก่อนที่จะทำขั้นนี้เสร็จ มันจะปฏิเสธและบอกเหตุผล การปฏิเสธทั้งสามแบบนั้นต่างกัน อ่านให้ดีว่าคุณเจอแบบไหน:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **ผู้ส่งที่ยังไม่ได้ลิงก์**: บอทจะบอกวิธีลิงก์ให้ กลับมาที่ขั้นตอนนี้
+- **ลิงก์แล้ว แต่ไม่ใช่สมาชิกของเวิร์กสเปซนี้**: ขอให้แอดมินเชิญคุณ
+- **สมาชิกที่มีบทบาทอ่านอย่างเดียว** (viewer หรือ guest): บอทจะไม่เริ่มงานแทนคุณ
 
-## Step 6: Put an agent on something
+## ขั้นตอนที่ 6: มอบงานให้เอเจนต์
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. ใน Slack เชิญบอทเข้าแชนเนล: `/invite @control-center`
+2. กล่าวถึงมันด้วยคำขอจริง ๆ:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center สรุป PR ที่เปิดอยู่บนรีโป api
 
-The bridge:
+สะพานจะ:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. สร้างสเปซ Control Center สำหรับเธรด Slack นั้น ตั้งชื่อตามแชนเนล Slack และคำขอของคุณ
+2. ปลุกเอเจนต์ประตูหน้าของเวิร์กสเปซ (เอเจนต์ CEO เมื่อมี ไม่อย่างนั้นก็เอเจนต์ตัวแรก)
+3. สตรีมคำตอบของเอเจนต์กลับเข้าเธรด Slack ขณะที่มันถูกเขียนขึ้น
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+ตอบกลับในเธรด Slack เดียวกันเพื่อคุยต่อ — ไม่ต้องกล่าวถึงอีก เพราะตอนนี้เธรด Slack เชื่อมผ่านสะพานแล้ว หรือจะส่งข้อความส่วนตัวถึงบอทแทนการใช้แชนเนลก็ได้ บทสนทนาทางข้อความส่วนตัวแต่ละอันขับสเปซ Control Center ของตัวเอง พร้อมชื่อเรื่องและบรรทัดสถานะ "กำลังคิด…" ขณะที่เอเจนต์ทำงาน
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+การสตรีมต้องใช้ API สตรีมของ Slack ซึ่งไม่ใช่ทุกแพ็กเกจที่มี ถ้าแอปของคุณถูกปฏิเสธ สะพานจะหยุดพยายามไปตลอดทั้งการเชื่อมต่อนั้น แล้วโพสต์คำตอบแต่ละอันเป็นข้อความเดียวแทน และการ์ดสะพานแชทจะระบุว่า "สตรีมสดปิดสำหรับแอป Slack นี้ — คำตอบมาเป็นข้อความเดียว" ส่วนอื่น ๆ ทำงานเหมือนเดิม
 
-## Step 7: File a ticket without leaving Slack
+## ขั้นตอนที่ 7: เปิดตั๋วงานโดยไม่ต้องออกจาก Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+บอทตอบด้วยคีย์ของตั๋วงานที่มันเปิดไว้ ตั๋วงานนี้เป็นตั๋วงาน Control Center ภายในเครื่องธรรมดา ๆ ที่คุณเป็นผู้รายงาน พร้อมให้มอบหมายแก่เอเจนต์ `/cc help` แสดงรายการทุกอย่างที่คำสั่งนี้ทำได้
 
-## Recap
+## สรุป
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+คุณสร้างแอป Slack จาก Control Center เชื่อมต่อมันผ่าน socket ขาออก ลิงก์ตัวตน Slack ของคุณกับผู้ใช้ Control Center ของคุณ และขับเอเจนต์จากเธรด Slack ทุกอย่างที่เกิดขึ้นใน Slack มีอยู่ใน Control Center ด้วย: เธรด Slack คือสเปซ คำตอบคือทรานสคริปต์ ตั๋วงานคือตั๋วงาน
 
-**Next:** [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/).
+**ถัดไป:** [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/) ครอบคลุมเส้นทางสร้างแอปด้วยตัวเอง การหมุนเวียนโทเค็น และการแก้ปัญหา สำหรับโมเดลที่อยู่เบื้องหลัง อ่าน [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)

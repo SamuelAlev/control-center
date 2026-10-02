@@ -1,26 +1,22 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: إرسال وكلاء مراجعة
+description: أرسل وكلاء مراجعة متخصصين لمراجعة طلب سحب، من صفحته أو من أداة MCP أو من خطوة في خط الأنابيب.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+يشرح هذا الدليل كيف تُرسل وكلاء مراجعة لمراجعة طلبات السحب.
 
-## From the PR view
+## من صفحة طلب السحب
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. افتح طلب السحب وانتقل إلى لسان **نظرة عامة**
+2. افتح قائمة ⋯ (**مزيد من الإجراءات**) واختر **اسأل الذكاء الاصطناعي**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+يبدأ ذلك خط الأنابيب `pr_review` المُنشأ مع مساحة العمل، فيفتح مساحة مراجعة طلب السحب ويُرسل المراجعين حسب مستوى المراجعة في مساحة العمل — ثلاثة افتراضيًا (الوكلاء المُنشَؤون مع مساحة العمل **qa** و**architect** و**engineer**) — ثم يكلّف الوكيل القائد بالتجميع. لا تختار الأدوار في هذا المسار. للتحكم في الأدوار التي تعمل والملفات التي ينظر إليها كل منها، استخدم أداة MCP أو خطوة خط الأنابيب أدناه.
 
-## Via the `dispatch_reviewers` MCP tool
+## عبر أداة MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+استدعِها من داخل مساحة مراجعة قائمة:
 
 ```
 dispatch_reviewers(
@@ -33,109 +29,74 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id` و`workspace_id` و`reviewers` كلها مطلوبة. يأخذ كل توصيف مراجع `role`، مع `scope` اختياري بنمط glob للملفات، و`prompt_override` يستبدل الموجز الافتراضي. يضع `concurrency` الاختياري (1–8) سقفًا للإرسال المتوازي؛ وإن أُغفل يُطبَّق إعداد `review_concurrency` لمساحة العمل (الافتراضي 3، ويُضبط من **الإعدادات ← مساحة العمل ← عام**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+تعيد الأداة فورًا قائمتين: `dispatched` و`unmatched`. يُضاف كل مراجع أُرسل إلى المساحة مشاركًا، ويُعلَن برسالة نظام، ويُرسَل مع موجزه. تُودَع النتائج على هيئة رسائل `review_node` في تلك المساحة.
 
-## From a pipeline step
+## من خطوة في خط الأنابيب
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+افتح **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب**، وافتح قالبًا، ثم:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. أضف عقدة **مراجع (مطالبة)** من مكتبة العقد
+2. اختر الوكيل الذي يُرسَل واكتب مطالبة المراجع، مستخدمًا عناصر نائبة `{{key}}` لمخرجات الخطوات السابقة (مثل `{{repo_local_path}}` و`{{pr_number}}`)
+3. اضبط مفتاح الإخراج (الافتراضي `reviewer_findings`) حتى تستطيع الخطوات اللاحقة قراءة النتائج
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+تُرسل الخطوة الوكيل وتبقى معلّقة إلى أن ينتهي ذلك التشغيل. ثم يستخرج المحرّك حمولة `submit_output` الخاصة بالتشغيل إلى حالة خط الأنابيب، تحت مفتاح إخراج العقدة. (ما زال وصف العقدة في المكتبة يقول إن الخطوة تنتظر استدعاء `complete_task` — وهذه الأداة غير موجودة؛ تجاهل العبارة.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+للتفرع، اربط عدة عقد مراجع بالخطوة السابقة نفسها، ثم جمّع مخرجاتها بعقدة **تجميع (ضم)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+يعيد المحرّر وصل العقدة الطرفية المخفية بكل عقدة يمكن بلوغها وليس لها مخرج، فتظل العقدة التي تضيفها بعد الخطوة المُنشأة **Step** تعمل. عقد التفرع الموصولة بالخطوة السابقة نفسها تعمل بالتوازي.
 
-## Automatic dispatch on a new PR
+## إرسال تلقائي عند طلب سحب جديد
 
-To have a review pipeline fire by itself:
+لكي ينطلق خط أنابيب المراجعة من تلقاء نفسه:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. افتح القالب من **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب**
+2. اسحب **نُشر PR** أو **فُتح PR خارجي** من قسم المشغّلات في مكتبة العقد إلى اللوحة (أو اختره من البطاقة الشبحية **إضافة مشغّل**)
+3. حدّد العقدة الجديدة وفعّل **ممكّن** في إعدادات العقدة، ثم فعّل القالب
 
-Two events matter here and they are not interchangeable:
+حدثان يهمان هنا، ولا يحل أحدهما محل الآخر:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| الحدث | ينطلق عندما | مفاتيح الحمولة |
+| --- | --- | --- |
+| `PullRequestPublished` | يُفتح طلب سحب **عبر Control Center** — سطح إنشاء طلب السحب، أو وكيل يستدعي `pr_lifecycle.publish` | `pr_id`، `workspace_id`، `repo_owner`، `repo_name` |
+| `ExternalPrDetected` | تجد خدمة استطلاع طلبات السحب طلب سحب فُتح مباشرة على GitHub | `repo_owner`، `repo_name`، `pr_number`، `pr_title`، `author` |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+طلب سحب يُفتح على github.com لا يرفع `PullRequestPublished` أبدًا، فالقالب الموصول بذلك الحدث وحده لن يراه. ولاحظ أيضًا أن `PullRequestPublished` لا يحمل `pr_number` — فالخطوة التي يشير سكربتها أو مطالبتها إلى `{{pr_number}}` لا بد أن تغذّيها `ExternalPrDetected`، أو تشغيل يدوي يوفّر القيمة.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+نقطة التحقّق: بعد التفعيل، افتح **خطوط الأنابيب** وتأكد من ظهور تشغيل لطلب السحب المطابق التالي. قالب يُترك معطّلًا يجعل مشغّله ينطلق في فراغ — يرفض المحرّك القالب المعطّل ويعود من غير أن يبدأ تشغيلًا.
 
-## How a role is matched to an agent
+## مطابقة الدور مع الوكيل
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+يحتسب `dispatch_reviewers` لكل وكيل في مساحة العمل درجة مقابل كل تسمية دور مطلوبة، من غير تمييز بين الحروف الكبيرة والصغيرة:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| المطابقة | الدرجة |
+| --- | --- |
+| مهارة تحتوي تسمية الدور | +3 |
+| لقب يحتوي تسمية الدور | +2 |
+| اسم وكيل يحتوي تسمية الدور | +1 |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+تتراكم الدرجات، ويفوز أعلى مجموع (وعند التعادل يفوز أول مرشح يُعثر عليه). إذا لم تتجاوز درجة أي مرشح الصفر، يعود التوصيف في قائمة `unmatched` الخاصة بالأداة بدل أن يُرسَل — فالدور الذي لا يطابقه أحد يُبلَّغ عنه، ولا يُتخطى في صمت.
 
-## The review space
+## مساحة المراجعة
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+لكل طلب سحب مساحة مراجعة **واحدة** بالضبط، لا مساحة لكل مراجع. يُنشئها `pr.ensureSpace` إنشاءً متماثل الأثر، ويربطها بطلب السحب عبر `ReviewSpaceAssociation`، وتُجهَّز على مرجع head للطلب. ينضم كل مراجع يُرسَل إلى تلك المساحة وينشر فيها نتائج `review_node`، وهذا ما يجعل النتائج قابلة للمقارنة ويتيح للوكيل القائد أن يصل إلى إجماع بينها.
 
-## Monitor the dispatch
+## مراقبة الإرسال
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+يحصل كل مراجع يُرسَل على `AgentRunLog` خاص به. تابع التقدّم في:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **مساحة المراجعة**، حيث تصل النتائج مباشرة
+- لسان **مراجعة** لطلب السحب، ويعرض شريط حالة المراجعة والحكم
+- **قابلية الملاحظة ← مباشر** (`/workspaces/:id/observability`)، كشف الوكلاء مع حالة كل تشغيل، والوقت المنقضي المباشر، ودرج النص، وزر إنهاء الوكيل. لا اختصار لوحة مفاتيح له — تصل إليه من تذييل الشريط الجانبي.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/)
-- [Review and merge a PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
-- [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
+- [استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/)
+- [مراجعة طلب سحب ودمجه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
+- [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [AI review](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/)
-- [Pipelines](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)
+- [مراجعة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)

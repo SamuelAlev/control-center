@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Mulai cepat
+description: Instal Control Center, konfigurasikan satu agen, lalu saksikan agen itu bekerja di repo Anda.
 slug: id-ID/panduan-pengguna/mulai-cepat
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Inilah jalur lengkap terpendek dari nol hingga agen berjalan pada kode Anda sendiri. Ikuti secara berurutan; setiap langkah bergantung pada langkah sebelumnya.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Anda memerlukan Git, akun GitHub, dan salah satu dari ini: akun penyedia model (Anthropic, OpenAI, Codex, Cursor, Kimi Code, atau penyedia mana pun yang memiliki kunci API) atau Claude Code CLI yang sudah terinstal. Selebihnya disiapkan sepanjang proses.
 
-## Step 1: Install and launch
+## Langkah 1: Instal dan luncurkan
 
-Install Control Center as described in [Install](/id-ID/panduan-pengguna/instal/), then open it.
+Instal Control Center seperti dijelaskan di [Instal](/id-ID/panduan-pengguna/instal/), lalu buka.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Saat pertama kali diluncurkan, aplikasi desktop menanyakan **"Bagaimana Control Center harus dijalankan?"** Pilih **Jalankan di aplikasi ini**. Control Center memunculkan `cc_server` headless di mesin ini, yang memiliki data Anda dan mengerjakan semua pekerjaan. Anda tidak pernah melihatnya; layar onboarding yang terbuka sebagai gantinya.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/id-ID/panduan-pengguna/instal/#use-it-in-your-browser) for the browser route.
+:::note[Tidak ingin menginstal apa pun?]
+Aplikasi yang sama berjalan di browser di [app.usectrl.dev](https://app.usectrl.dev) dengan
+fitur yang sama. Namun, tab browser tidak dapat menjadi host server, jadi Anda perlu
+menyediakan satu server — jalankan `cc_server` secara lokal dan hubungkan ke
+`ws://localhost:9030`, atau arahkan ke server di mesin lain. Mulai cepat ini menempuh
+jalur desktop karena tidak memerlukan penyiapan server; lihat
+[Instal](/id-ID/panduan-pengguna/instal/#use-it-in-your-browser) untuk jalur browser.
 :::
 
-## Step 2: Work through onboarding
+## Langkah 2: Selesaikan onboarding
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Onboarding memiliki lima langkah dan dijalankan secara berurutan — tidak ada cara melompatinya.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Hubungkan**: masuk dengan GitHub atau tempelkan token akses pribadi dengan `repo` dan `read:org`. Kredensialnya disimpan di server, terlampir pada akun Anda.
+2. **Ruang kerja**: beri nama ruang kerja pertama Anda dan secara opsional pilih logo. Membuatnya akan menyemai lima agen — seorang CEO plus `qa`, `architect`, `engineer`, dan `librarian` — serta templat pipeline bawaan.
+3. **Sandbox**: mencatat preferensi sandbox. Pilihan mana pun memungkinkan Anda melanjutkan.
+4. **Adapter**: pilih adapter dan model yang seharusnya menjadi default agen. Pilih **Control Center (built-in)**, lalu gunakan pemilih penyedia yang muncul untuk masuk ke penyedia model — daftar model tetap kosong sampai ada penyedia yang terhubung. Menyelesaikan langkah ini juga menempelkan adapter dan model ke agen CEO ruang kerja tersebut.
+5. **Suara (opsional)**: instal model suara di perangkat untuk dikte, atau lewati saja.
 
-Control Center then opens your workspace inbox.
+Control Center kemudian membuka kotak masuk ruang kerja Anda.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/).
+:::note[Apa yang membatasi sebuah run agen]
+Perintah agen dibungkus dalam sandbox native OS host bila tersedia — Seatbelt di macOS, bubblewrap di Linux. Windows tidak memiliki backend, jadi run di sana hanya dibatasi oleh lapisan lainnya: worktree milik percakapan itu sendiri (`git worktree` di Windows; copy-on-write di tempat `rift` tersedia), kredensial yang dijembatani per peluncuran dan dicabut saat teardown, serta pagar pengaman tindakan. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/).
 :::
 
-## Step 3: Add a repository
+## Langkah 3: Tambahkan repositori
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Buka **Pengaturan → Ruang kerja → Repositori** dan klik **Tambah repositori**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+Dialognya menelusuri folder di mesin yang menjalankan server, bukan di klien Anda, dan dialog itu tetap berada di dalam root yang dikonfigurasi untuk diekspos oleh server tersebut (secara default, direktori home penggunanya). Hanya checkout git yang mendapat kotak centang. Centang milik Anda lalu daftarkan.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Sebuah checkout hanya diterima jika berada di dalam work tree git, memiliki remote `origin`, dan remote tersebut menunjuk ke forge yang didukung — github.com, gitlab.com, atau bitbucket.org. Selain itu akan ditolak beserta alasannya.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repo bersifat bercakupan ruang kerja: mendaftarkan checkout di sini menempatkannya di ruang kerja _ini_. Tidak ada langkah penautan terpisah.
 
-## Step 4: Give an agent an adapter and a model
+## Langkah 4: Beri agen adapter dan model
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Buka **Pengaturan → Ruang kerja → Agen**. Pilih agen `engineer` di daftar agen.
 
-On the **Settings** tab, set:
+Pada tab **Pengaturan**, atur:
 
 - **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Model**: pilih salah satu dari penyedia yang Anda hubungkan saat onboarding
 
-Press **Save changes**.
+Tekan **Simpan perubahan**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Dalam praktiknya, langkah ini bukan opsional. Hanya agen CEO yang mewarisi adapter yang dipilih selama onboarding; keempat spesialis dibuat tanpa adapter. Mereka kembali ke **Control Center (built-in)** dengan model default Anthropic, sehingga hanya berjalan jika Anda telah menghubungkan akun Anthropic — dan pada model yang tidak Anda pilih jika memang sudah terhubung.
 
-## Step 5: Send the agent a task
+## Langkah 5: Kirim tugas ke agen
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Di bilah sisi, temukan bagian **Ruang** dan klik tombol **+**.
+2. Beri nama space tersebut, tambahkan agen `engineer` di bawah **Tambah agen**, lalu buat.
+3. Ketik tugas kecil yang konkret terhadap repo yang Anda daftarkan dan tekan Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center menyediakan worktree copy-on-write dari repo ruang kerja untuk percakapan ini, menyusun prompt dari peran, persona, dan skill agen serta konteks space tersebut, lalu mengirimkan run-nya. Checkout sumber Anda tidak pernah tersentuh.
 
-## Step 6: Watch it work
+## Langkah 6: Saksikan agen bekerja
 
-You should see, in order:
+Anda akan melihat, secara berurutan:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Tombol kirim composer berubah menjadi tombol berhenti, karena ada agen yang bekerja di percakapan ini
+- Penalaran agen, panggilan alat, dan teks mengalir ke transkrip
+- Tombol kirim kembali muncul saat run berakhir
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Lalu buka **Pengaturan → Ruang kerja → Agen**, pilih agen tersebut, dan periksa tab **Log**: satu baris run, beserta status, durasi, waktu mulai dan selesai, serta adapter yang digunakannya.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Itulah loop-nya. Semua hal lain di Control Center — tinjauan pull request, pipeline, tiket, rapat, Slack — bergantung padanya.
 
-## Next steps
+## Langkah berikutnya
 
-- [Your first workspace](/id-ID/panduan-pengguna/tutorial/ruang-kerja-pertama/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/id-ID/panduan-pengguna/tutorial/pr-pertama/): take an agent's branch through review and merge
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): what an agent is made of
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/): the rest of the agent form
-- [Run an orchestration](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/): one goal, one approval, a generated pipeline
-- [Pair your phone](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): follow the fleet from anywhere
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/): how the desktop, web and phone clients relate to the server
+- [Ruang kerja pertama Anda](/id-ID/panduan-pengguna/tutorial/ruang-kerja-pertama/): materi yang sama, lebih perlahan, dengan penjelasan model isolasinya
+- [Tinjau pull request pertama Anda](/id-ID/panduan-pengguna/tutorial/pr-pertama/): bawa cabang agen melalui tinjauan dan penggabungan
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): dari apa agen tersusun
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/): sisa formulir agen
+- [Jalankan orkestrasi](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/): satu tujuan, satu persetujuan, pipeline yang dihasilkan
+- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/): ikuti fleet dari mana saja
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/): bagaimana klien desktop, web, dan ponsel berhubungan dengan server

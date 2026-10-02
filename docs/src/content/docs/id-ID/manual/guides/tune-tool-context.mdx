@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Sesuaikan konteks alat agen
+description: Periksa apa yang sebenarnya dikirim sebuah run, ubah alat mana yang dimuat lebih dahulu, dan tentukan apakah pilihan alat yang buruk merupakan kegagalan pengambilan kembali atau masalah prompt.
 slug: id-ID/panduan-pengguna/panduan-praktis/sesuaikan-konteks-alat
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/id-ID/panduan-pengguna/konsep/konteks-alat).
+Panduan ini membahas pekerjaan praktis seputar permukaan alat dua tingkat: melihat apa yang dikirim sebuah run, mengubahnya, dan mendiagnosis agen yang meraih alat yang salah. Untuk alasan di balik cara kerjanya, baca [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
 
-## Look at what a run actually sends
+## Lihat apa yang sebenarnya dikirim sebuah run
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Buka percakapan dan ketuk indikator penggunaan konteks di tajuk percakapan. Indikator itu membangun kembali permukaan persis yang akan dikirim pengiriman berikutnya, tanpa menjalankan apa pun. **Lihat selengkapnya** (atau perintah `/context`) membuka penjelajah konteks lengkap, tempat Anda dapat memeriksa setiap alat.
 
-Two segments matter here:
+Ada dua segmen yang penting di sini:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Definisi alat** dan **MCP & alat dinamis** — himpunan residen, beserta biaya token sebenarnya dari tiap alat.
+- **Alat yang dimuat sesuai permintaan** — indeks yang ditunda. Setiap entri hanya dikenai biaya namanya, karena hanya nama itulah yang dibawa permintaan; membuka salah satunya tetap menampilkan deskripsi dan skema lengkapnya, sehingga Anda dapat melihat berapa biaya yang *akan* ditimbulkannya jika run menariknya masuk.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/id-ID/panduan-pengguna/referensi/cli-cc-server).
+Jika segmen yang ditunda kosong, penundaan dimatikan untuk server ini. Periksa `--tool-deferral` pada [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server).
 
-## Change which tools load up front
+## Ubah alat mana yang dimuat lebih dahulu
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Himpunan residen adalah kebijakan, bukan konfigurasi — himpunan itu berada di `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) dan berlaku untuk setiap run:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/id-ID/panduan-pengguna/konsep/mode) uses on nearly every turn.
+- `residentBuiltins` — kosakata file dan shell.
+- `residentDiscovery` — `search_tools` dan `list_my_tools`. Jangan hapus keduanya; itulah cara agen menjangkau semua alat lainnya.
+- `residentMcpTools` — segelintir alat Control Center yang layak membawa skemanya pada setiap permintaan.
+- Blok per mode, untuk alat yang dipakai [mode](/id-ID/panduan-pengguna/konsep/mode) tertentu pada hampir setiap giliran.
 
-Two rules when editing it:
+Dua aturan saat mengeditnya:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Tambahkan alat hanya jika sebagian besar run memakainya.** Setiap nama membebani skemanya pada setiap permintaan dari setiap run, selamanya. Alat yang penting saat dipakai tetapi jarang secara keseluruhan termasuk ke bagian yang ditunda — agen tetap akan menemukannya.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Gunakan nama asli alat itu.** Nama residen yang tidak cocok dengan alat mana pun tidak berpengaruh sama sekali: tanpa galat, tanpa peringatan, alat itu sekadar ditunda. `test/tooling/resident_tool_names_test.dart` menangkap hal ini dan juga menjaga setiap mode di bawah 40 alat residen, dan itulah inti persoalannya — di luar rentang itu, pemilihan alat terdegradasi secara terukur.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Kata kerja yang diwajibkan dan disematkan milik sebuah mode ditambahkan secara otomatis, jadi Anda tidak perlu mencantumkan kata kerja luaran milik mode itu sendiri.
 
-## Diagnose a bad tool choice
+## Diagnosis pilihan alat yang buruk
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Ketika agen memakai alat yang salah atau mengaku tidak dapat melakukan sesuatu, tentukan mana dari tiga hal berikut yang terjadi.
 
-### 1. Did it look?
+### 1. Apakah agen mencarinya?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Setiap run mencatat alat tertunda yang dimuatnya dan apa yang memicunya — panggilan langsung berdasarkan nama, atau kueri `search_tools`. Buka aliran peristiwa run tersebut (**Pengaturan → Ruang kerja → Agen** → agen → **Log** → **Lihat**) dan cari `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Tidak ada yang tercatat, dan agen menyatakan kemampuannya tidak ada** — agen tidak pernah mencarinya. Itu masalah prompt, bukan masalah pengambilan kembali: indeks yang ditunda ada di prompt sistemnya dengan instruksi untuk tidak menyatakan sebuah kemampuan tidak ada sampai sebuah pencarian kembali dengan hasil kosong.
+- **Sebuah pencarian tercatat, tetapi tidak ada yang dimuat** — kegagalan pengambilan kembali yang sesungguhnya. Lanjut ke langkah 2.
+- **Alat dimuat, tetapi yang salah yang dipakai** — alat yang ditemukannya terlalu mirip. Lanjut ke langkah 3.
 
-### 2. Fix a retrieval miss
+### 2. Perbaiki kegagalan pengambilan kembali
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` mencocokkan nama, deskripsi, dan nama argumen. Kegagalan hampir selalu berarti deskripsinya tidak memuat kata-kata yang dipakai agen.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Tambahkan kata-kata itu. Deskripsi adalah indeks pengambilan kembali, jadi **panjangkan, jangan pangkas** — tulis kosakata yang benar-benar akan diketik operator ("assign", "hand off", "give to"), bukan hanya kata benda internalnya. Memangkas deskripsi untuk menghemat token merugikan Anda baik pada keberhasilan pencarian maupun akurasi pemilihan, dan hampir tidak menghemat apa pun dibandingkan skema.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Jika alat yang tepat ada tetapi peringkatnya rendah, di situlah gunanya argumen `limit`; deskripsi alat itu sendiri memberi tahu agen agar memperluas pencarian yang tampak dekat tetapi meleset.
 
-### 3. Fix look-alike tools
+### 3. Perbaiki alat yang tampak serupa
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Jika dua alat memiliki deskripsi yang akan terbaca sama bagi orang yang belum tahu perbedaannya, model sedang menebak. Gabungkan keduanya menjadi satu alat dengan argumen pembeda.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` dan `ticket_pr_link` mengikuti pola ini: masing-masing menangani penautan dan pelepasan tautan melalui argumen pembeda. Pilihan yang dibuat *di dalam* satu panggilan, dengan konteks permintaan yang lengkap, lebih andal daripada pilihan yang dibuat di antara dua deskripsi yang tampak serupa.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Biarkan alat tetap terpisah ketika masing-masing memerlukan gerbang persetujuan, audit, atau perenderan yang berbeda — itu alasan penggabungan akan merugikan Anda sesuatu yang nyata.
 
-## Check the prompt cache is working
+## Pastikan cache prompt berfungsi
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Tingkat keberhasilan cache muncul di **Observabilitas → Wawasan** sebagai **Tingkat cache**. Percakapan panjang yang sehat berada di angka tinggi; jika angkanya terus rendah, ada sesuatu yang menulis ulang awalannya pada setiap giliran.
 
-Common causes, in order of likelihood:
+Penyebab umum, diurutkan berdasarkan kemungkinannya:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Apa pun yang non-deterministik di bagian awal prompt.** Stempel waktu, id permintaan, atau himpunan yang diiterasi dalam urutan yang berubah-ubah sudah cukup untuk itu.
+- **Perubahan model atau upaya penalaran di tengah percakapan.** Keduanya mengubah awalan. Subagen sangat mudah salah di sini: menjalankan anak pada upaya penalaran yang lebih rendah untuk menghemat uang bisa lebih mahal akibat kehilangan berbagi cache daripada penghematan yang didapat.
+- **Pemadatan yang sering.** Pemadatan menulis ulang riwayat secara sengaja, jadi biayanya nyata; solusinya adalah memadatkan secara jarang dan mendalam, bukan sering dan dangkal.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Menonaktifkan penundaan dengan `--tool-deferral=off` adalah uji A/B yang sah untuk mengisolasi apakah perubahan perilaku berasal dari permukaan dua tingkat. Opsi itu menghasilkan ulang permintaan sebelum penundaan secara persis, jadi jika perilakunya tetap ada saat penundaan dimatikan, permukaannya bukan penyebabnya.

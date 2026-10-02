@@ -1,113 +1,68 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: التنسيق
+description: كيف يتحول «طلب كبير» واحد إلى خطة للفريق كله توافق عليها مرة واحدة، ثم إلى خط أنابيب مُولَّد ينفّذها.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تنسيق
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+الوكيل الواحد يجيد أمرًا واحدًا. بعض الطلبات أكبر من ذلك: «ابحث في سوق X واكتب وثيقة تموضع»، «أنجز هذه الميزة من أولها إلى آخرها»، «دقق هذه الوحدة وأصلح ما تجده». **التنسيق** هو طريقة Control Center في هذه الطلبات: يقترح منسّق (غالبًا وكيل CEO) خطة للفريق كله، توافق عليها **مرة واحدة**، ويحوّلها مُجسِّد حتمي إلى خط أنابيب ينجز العمل.
 
-It sits between the two existing ways of getting work done:
+يقع بين الطريقتين القائمتين لإنجاز العمل:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| عندما تريد… | استخدم |
+| --- | --- |
+| تسليم مهمة واحدة إلى وكيل واحد | [رسالة في مساحة](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) |
+| تدوين عملية تعرفها مسبقًا، يدويًا | [قالب خط أنابيب](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) |
+| قول الهدف وترك الفريق يضع الخطة | **تنسيق** |
 
-## The shape of a proposal
+## شكل المقترح
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+حين تعطي المنسّق هدفًا، يعيد **`OrchestrationProposal`** منظَّمًا: خطة ذات نوع يستطيع التطبيق التحقق منها وتنفيذها، لا نثرًا حرًا. يضم المقترح:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **الهدف**: طلبك عالي المستوى، معادًا صياغته.
+- **الأدوار**: من ينجز العمل. كل دور إما **وكيل قائم** تختاره، أو **تعيين جديد** ينشئه التنسيق عند الموافقة.
+- **التذاكر الفرعية**: العمل، مفككًا إلى DAG من [التذاكر](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/).
+- **البحث** _(اختياري)_: مرحلة بحث تجري أولًا وتغذّي الباقي.
+- **النقاش** _(اختياري)_: جولة محدودة ينشر فيها كل دور موقفًا منظَّمًا قبل بدء العمل.
+- **التجميع**: الخطوة الأخيرة التي تنتج المُخرَج.
+- **الميزانية**: سقف تكلفة معلن.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[الميزانية استرشادية]
+يُقارَن سقف تكلفة المقترح بالمجموع التقديري للخطة، وتُعلَّم الخطة التي تتجاوزه بـ«تجاوز الميزانية» في شريط الموافقة _قبل_ أن توافق. بعد بدء التشغيل لا يُقرأ هذا السقف، فلا يوقف التنسيق الذي يتجاوزه ولا يفشّله. سياسات الميزانية لكل وكيل ولكل مساحة عمل آلية منفصلة، وهي التي توقف الإنفاق فعلًا.
 :::
 
-## Where you review it
+## أين تراجعه
 
-Two surfaces show the same orchestration.
+سطحان يعرضان التنسيق نفسه.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+تعيش **بطاقة المقترح** في المحادثة التي أنتجت الخطة. هي رسالة واحدة تُعاد رسمها طوال دورة الحياة — مقترح، قيد التنفيذ، مكتمل — وعليها إجراء «الموافقة على الخطة» وإجراء «إلغاء التنسيق».
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** هو المحرّر: لوحة DAG، ومفتّش عقدة، ودرج للنسخ والفروق، وشريط موافقة يحمل التقدير. يُفتح لسان محرّر من تلك البطاقة مباشرة. يخلو الشريط الجانبي عمدًا من عنصر «الخطط»؛ و`/plans` و`/plans/:kind/:id` رابطان عميقان للمشاركة.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+الموافقة **للمشغّل وحده**. لا أداة MCP لها: يستطيع الوكيل أن يقترح (`propose_orchestration`)، أو أن يسلّم خطة (`submit_plan`)، أو أن ينشئ تشغيلًا من كتيب تشغيل (`run_playbook`)، ولا يوافق إلا إنسان. وتُقيَّد النسخ التي يبدأها الوكيل أيضًا بمهلة دقيقتين، فتندمج إعادة التخطيط في دفعة واحدة بدل أن تغمر موجزك.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+ما تستطيع تغييره قبل الموافقة هو ما يعرضه مفتّش العقدة: تغيير عنوان تذكرة فرعية أو إعادة كتابة متنها، وتغيير **الدور** الذي يملكها، وإعادة توصيل تبعياتها، وتحرير مخطط مخرجاتها، أو حذف العقدة تمامًا. العقد البنيوية (البحث، والنقاش، والتجميع) والعقد التي نُفّذت بالفعل تبقى للقراءة فقط. ومن المحرّر لا يمكن تثبيت دور على وكيل مسمّى بعينه، ولا تحرير الميزانية.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+محرّران على خطة واحدة يُحسمان بالتزامن المتفائل، من غير دمج. كل تعديل يحمل `base_revision` الذي بُني عليه، ويُرفض التعديل المبني على نسخة قديمة برسالة «تقدّمت الخطة»، ولا يطمس تعديل غيره في صمت. والإرجاع ليس حذفًا — يُلحِق المقترح الأقدم كنسخة جديدة، فالخط الزمني للنسخ يزداد ولا ينقص.
 
-## Honest estimates, or none
+## تقديرات صادقة، أو لا شيء
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+يُبنى التقدير في شريط الموافقة من سجل التشغيلات المكتملة الفعلي لكل دور، كنطاق ربيعي (p25–p75). مجاميع التكلفة **تجمع** العقد التي يمكن تقديرها، والمدة هي **المسار الحرج** عبر DAG لا حاصل الجمع (الفروع المتوازية تتداخل).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+العقدة التي دورها **بلا سجل تشغيلات مكتملة** تُبلغ `sampleSize: 0` ونطاقات null. يُعرض ذلك كما هو — غير معروف — ولا تُختلق قيمة نقطية أبدًا، فتقدير لا تثق به أسوأ من غياب التقدير. إذا كان لبعض العقد سجل ولبعضها لا، يُوسَم المجموع بـ«جزئي». لا يظهر نطاق التأثير إلا إذا أعلنت العقدة إحالات مصدر `symbol` أو `file`، والعقدة من دونهما تبقى «غير معروف»، ولا يُستنتج النطاق من النثر.
 
-## One approval, then deterministic execution
+## موافقة واحدة، ثم تنفيذ حتمي
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+الفكرة الجوهرية: **الوكيل يخطّط، ودالة حتمية تنفّذ.** عند الموافقة يحوّل `OrchestrationMaterializer`، وهي دالة نقية بلا LLM وبلا I/O، المقترح إلى [خط أنابيب](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) حقيقي. مع المقترح نفسه والأدوار المحسومة نفسها ينتج DAG نفسه دائمًا. ولهذا أهميته: خط الأنابيب المُولَّد يرث مجانًا كل ما يفعله المحرّك أصلًا، من تعليق واستئناف عبر إعادة التشغيل، واستعادة التعطل، وتجميعات التكلفة والرموز لكل تشغيل، وواجهة تفاصيل التشغيل.
 
-Approval also creates the scaffolding the work needs:
+وتنشئ الموافقة أيضًا الهيكل الذي يحتاجه العمل:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **تعيين** أي دور معلَّم بأنه جديد (وتُسجَّل معرّفات الوكلاء المعيَّنين حتى يُستأنف بعد تعطل في أثناء الموافقة من غير تعيين مكرر)
+- **فريق** يجمع الأدوار
+- **مشروع** تُسجَّل فيه التذكرة الأم
+- **قالب خط الأنابيب وتشغيله** اللذان يقودان ذلك كله
 
-## The lifecycle
+## دورة الحياة
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +70,34 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| الحالة | المعنى |
+| --- | --- |
+| `proposed` | الخطة جاهزة وتنتظر موافقتك الواحدة قبل البدء |
+| `approved` | وافقت عليها؛ والتجسيد جارٍ (التعيين، والفريق، والمشروع، وخط الأنابيب) |
+| `executing` | خط الأنابيب المُولَّد يعمل: التذاكر الفرعية، والنقاش، والعمل |
+| `synthesizing` | اكتملت التذاكر الفرعية، وخطوة التجميع تنتج المُخرَج |
+| `completed` | تم: تُعلَّم التذكرة الأم مكتملة، ويُنشر المُخرَج في المساحة المشتركة |
+| `failed` | فشل التجسيد، أو فشل تشغيل خط الأنابيب المُولَّد |
+| `cancelled` | ألغيته أنت |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+رقم **نسخة** رتيب يتابع المقترح بينما يعدّله المنسّق وهو ما زال `proposed`، ويسجّل التطبيق النسخة التي وافقت عليها. يرفض `propose_orchestration` أي نسخة جديدة ما إن تخرج الحالة من `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+يُفتح التنسيق دائمًا على **تذكرة أم**، ويشترك في **مساحة** نقاش واحدة، فيُنسب الجهد كله إلى بند عمل واحد ويتحدث الفريق في غرفة واحدة.
 
-## What happens when it finishes
+## ماذا يحدث عند الانتهاء
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+يراقب مستمع مُبقًى حيًا خط الأنابيب المُولَّد، ويرد حالته النهائية إلى التنسيق والتذكرة الأم، فيظهر الإتمام والفشل في المواضع التي تراقبها أصلًا. ميزة التنسيق لا تحتاج محرّك تنفيذ خاصًا بها.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+تستطيع إلغاء التنسيق في أي وقت، والإلغاء يفكك العمل الجاري.
 
 ::::note
-Orchestration builds on [pipelines](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) and
-[tickets](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+يُبنى التنسيق على [خطوط الأنابيب](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) و[التذاكر](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/). هو طبقة تخطيط وموافقة فوقهما، لا بيئة تشغيل منفصلة.
 ::::
 
-## See also
+## انظر أيضًا
 
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): the parent ticket an orchestration is anchored on
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): the roles an orchestration fills or hires
-- [Run an orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
-- [Work in Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): المحرّك الذي يعمل عليه التنسيق بعد تجسيده
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): التذكرة الأم التي يُثبَّت عليها التنسيق
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): الأدوار التي يملؤها التنسيق أو يعيّنها
+- [تشغيل تنسيق](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)
+- [العمل في Plan Studio](/ar-SA/دليل-المستخدم/أدلة-إرشادية/plan-studio/)

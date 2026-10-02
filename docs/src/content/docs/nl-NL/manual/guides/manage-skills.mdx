@@ -1,129 +1,143 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Skills installeren en beheren
+description: Voeg GitHub-repositories toe als skillbronnen, blader door hun catalogi en installeer, werk bij of verwijder skills via de antivirusscanpoort.
 slug: nl-NL/handleiding/gidsen/skills-beheren
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Deze gids laat zien hoe je een werkruimte vult met skills van GitHub: voeg een
+repository als bron toe, installeer de skills die je ervan wilt en houd ze in
+de loop van de tijd actueel.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/nl-NL/handleiding/concepten/agentmodel/); this page stays
-on the doing.
+Wat je vóór je begint moet weten: **een bronrepository is onbetrouwbaar.** De
+naam, beschrijving en het aantal sterren zijn geschreven door wie de repository
+bezit. Het enige veiligheidssignaal dat Control Center vertrouwt, is het
+oordeel van de antivirusscan, waar elke installatie doorheen gaat voordat er
+iets de schijf of een agentprompt bereikt. Wil je de redenering erachter, lees
+dan de [skills-sectie van het agentmodel](/nl-NL/handleiding/concepten/agentmodel/); deze
+pagina blijft bij het doen.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Skills staan onder **Instellingen → Werkruimte → Vaardigheden**
+(`/workspaces/<id>/settings/workspace/skills`). Ze zijn werkruimtegebonden: de
+skills die je hier installeert, horen alleen bij deze werkruimte. De pagina
+heeft twee tabbladen: **Geïnstalleerd** (lokale skills, inclusief een
+**Nieuwe skill**-editor) en **Bronnen** (GitHub-catalogi). Beide schrijfacties
+passeren dezelfde scanpoort.
 
-## Add a skill repository
+## Een skillrepository toevoegen
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Open **Instellingen → Werkruimte → Vaardigheden** en ga naar het tabblad
+   **Bronnen**.
+2. Klik op **Repository toevoegen**.
+3. Plak een GitHub-repository-URL, bijvoorbeeld
+   `https://github.com/anthropics/skills`, en bevestig.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+De server controleert of de repository bestaat en met zijn inloggegevens
+zichtbaar is, en voegt hem daarna toe aan de rail links. Er zit geen
+gecureerde winkel tussen: elke GitHub-repository werkt, wat ook betekent dat je
+de reputatie zelf moet beoordelen — een aantal sterren is een aanwijzing, nooit
+een garantie.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+De skills van een repository zijn de mappen die een `SKILL.md` bevatten (tot
+drie niveaus diep, plus de indeling van de Claude plugin-marketplace
+`plugins/<plugin>/skills/<skill>`, waarbij dependency- en vendorbomen worden
+overgeslagen). Als het raster later zegt dat de repository geen skills heeft,
+dan betekent dat precies dat: geen enkele map erin voldoet aan de
+skillconventie.
 
-## Inspect a skill before installing
+## Een skill bekijken voordat je installeert
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Selecteer een repository in de rail; de skills verschijnen rechts als een
+raster, met daarboven een filterveld dat de catalogus vernauwt op naam,
+beschrijving of slug. Klik op een kaart om de detailweergave te openen. Die
+toont drie dingen:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **De README**, weergegeven als markdown — de `README.md` van de skillmap, of
+  de body van `SKILL.md` als er geen README is.
+- **De scanpreview** — het oordeel (`pass`, `warn` of `quarantine`), de
+  mogelijkheden die de inhoud van de skill opgeeft (shell uitvoeren, bestanden
+  schrijven, netwerktoegang…) en elke bevinding die de scanner heeft
+  vastgelegd.
+- **Het bestandsaantal** — een installatie schrijft de hele map van de skill
+  weg, niet alleen de `SKILL.md`.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+De preview scant exact de bytes die een installatie zou wegschrijven, dus het
+oordeel dat je ziet is het oordeel dat de installatie krijgt; er wordt niets
+achter je rug om opnieuw beoordeeld.
 
-## Install a skill
+## Een skill installeren
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Open de detailweergave van de skill.
+2. Lees het scanordeel. Klik bij een `warn`- of `pass`-oordeel op
+   **Installeren**.
+3. Bij een `quarantine`-oordeel blijft installeren uitgeschakeld tot je
+   **Ik begrijp het risico — toch installeren** aanvinkt. Die override wordt
+   vastgelegd, niet aangenomen.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+De installatie schrijft de map van de skill in de werkruimte, legt een pin
+vast in `skills-lock.json` (bronrepository, pad, de commit waar hij vandaan
+kwam en een contenthash), en de skill wordt beschikbaar voor agenten in de
+werkruimte. Een kaart met **Naam in gebruik** betekent dat een andere skill
+die naam lokaal al bezit — verwijder die eerst.
 
-## Update skills over time
+## Skills in de loop van de tijd bijwerken
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Kaarten van geïnstalleerde skills dragen badges: **Geïnstalleerd**, of
+**Update beschikbaar** wanneer de repository verder is dan de commit die je
+hebt vastgepind. Open de detailweergave en klik op **Bijwerken** om opnieuw op
+te halen op de nieuwe commit. Een update gaat door dezelfde scanpoort als een
+installatie — een skill waarvan de nieuwe versie in quarantaine raakt, wordt
+geweigerd en de versie die je had blijft staan. De hash van de oude versie
+wordt als rollbackreferentie in de lock bewaard.
 
-## Uninstall a skill, remove a repository
+## Een skill verwijderen, een repository verwijderen
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Verwijderen** (op de detailweergave van een geïnstalleerde skill, of
+verwijderen in het tabblad **Geïnstalleerd**) haalt de map van de skill en de
+lockpin samen weg — een verwijderde skill laat niets achter.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Een repository verwijderen** uit de rail verwijdert alleen de catalogus:
+skills die je ervan hebt geïnstalleerd, blijven geïnstalleerd en worden nog
+steeds bijgewerkt, omdat een pin de repository bij naam vastlegt in plaats van
+via een verwijzing naar het bronitem. Voeg de repository weer toe als je er
+opnieuw doorheen wilt bladeren.
 
-## Invoke a skill
+## Een skill aanroepen
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Skills worden aangeroepen onder hun eigen namespace, zodat ze nooit botsen met
+ingebouwde slash-commando’s (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — een skill die in deze werkruimte is geïnstalleerd, of aan
+  de agent is gekoppeld
+- `/skill:<repo>:<name>` — een skill die wordt meegeleverd door een repo die in
+  deze ruimte is uitgecheckt
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Een kale naam die niet ingebouwd is, wordt nog steeds herkend, voor berichten
+die zijn geschreven voordat de namespace bestond. `/skill:plan` is wat een
+skill met de naam `plan` bereikt; `/plan` is altijd de ingebouwde.
 
-## Repo-scoped skills
+## Repo-gebonden skills
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Een uitgecheckte repo kan zijn eigen skills meeleveren, in `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` of `skills/`. Die
+worden **niet** via deze pagina geïnstalleerd. Een agent draagt alleen de
+skills van de repo waarin hij op dat moment werkt; ze wisselen wanneer hij
+verhuist. De composer is niet zo gebonden: `/skill:<repo>:<name>` bereikt elke
+repo in de ruimte.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Reposkills doorlopen dezelfde scan die bij twijfel weigert (`pass` / `warn` /
+`quarantine`) voordat hun frontmatter een prompt bereikt. `warn` wordt
+toegelaten; `quarantine` wordt tegengehouden, zonder override van een operator
+op dat pad.
 
-See [Repo-scoped skills](/nl-NL/handleiding/concepten/agentmodel/#repo-scoped-skills) and
-[Slash commands](/nl-NL/handleiding/referentie/slash-commandos/).
+Zie [Repo-gebonden skills](/nl-NL/handleiding/concepten/agentmodel/#repo-scoped-skills) en
+[Slash-commando’s](/nl-NL/handleiding/referentie/slash-commandos/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
+- [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/)
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/)

@@ -1,95 +1,96 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: اتصال حساب Slack شما
+description: ثابت کنید یک هویت Slack از آنِ شماست تا عامل‌ها روی پیام‌هایتان اقدام کنند و کارتان به شما نسبت داده شود.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-حساب-گفتگو
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+این راهنما نشان می‌دهد چگونه هویت گفتگوی خود را به کاربر Control Center خود پیوند دهید و چگونه یک پیوند را قطع کنید.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+هر عضو این کار را یک‌بار به‌ازای هر ارائه‌دهندهٔ گفتگو انجام می‌دهد. این کار از اتصال برنامه جداست: اتصال، ربات را برای کل فضای کاری قابل‌دسترس می‌کند و پیوند باعث می‌شود _شما_ درون آن شناخته شوید.
 
-## Why linking is required
+## چرا پیوند لازم است
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+پل به‌ازای حساب گفتگویی که به عضوی از فضای کاری نگاشت نمی‌شود، از اقدام خودداری می‌کند. این عمدی است — بدون پیوند، هر پیام از Slack باید به کسی نسبت داده می‌شد که برنامه را نصب کرده است و رد حسابرسی، محدودیت‌های نرخ هر Principal و گزارش‌دهندگان تیکت همگی نام شخص اشتباه را می‌آوردند.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+عضوی که پیوند ندارد و ربات را منشن کند، در همان رشتهٔ Slack پاسخی می‌گیرد که توضیح می‌دهد چگونه پیوند بزند. هیچ‌چیز اعزام نمی‌شود.
 
-## Link with a code
+## پیوند با کد
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. به **تنظیمات → فضای کاری → نمایه و هویت** بروید و تا کارت **حساب‌های گفتگوی
+   پیوندشده** پایین بروید
+2. در بلوک Slack، روی **پیوند حساب Slack من** کلیک کنید
+3. دستوری را که نشان می‌دهد کپی کنید، برای نمونه:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. در Slack، آن دستور را به ربات بفرستید — پیام مستقیم ساده‌ترین جاست
+5. ربات با کاربر Control Center که اکنون به آن پیوند شده‌اید تأیید می‌کند و دیالوگی که باز گذاشته‌اید در همان لحظه به‌روز می‌شود و همین را می‌گوید — لازم نیست آن را ببندید و بروید نگاه کنید
 
-The code:
+این کد:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- یک‌بارمصرف است و **15 دقیقه** پس از صدور منقضی می‌شود
+- همیشه برای _شما_ صادر می‌شود، هرگز برای یک هم‌تیمی
+- هر کدی را که از قبل دارید جایگزین می‌کند، پس فشردن دوبارهٔ دکمه، کد پیشین را باطل می‌کند
+- فقط در حافظه زندگی می‌کند، پس راه‌اندازی دوبارهٔ سرور کدهای باقی‌مانده را باطل می‌کند — دکمه را دوباره بفشارید
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+کدی که ناشناخته، منقضی‌شده یا برای فضای کاری دیگری صادر شده باشد، به همان شکل غیرقابل‌تفکیک شکست می‌خورد: «آن کد معتبر نیست (یا منقضی شده است)».
 
-## Automatic linking by email
+## پیوند خودکار با ایمیل
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+اگر نمایهٔ Slack شما ایمیل تأییدشده‌ای داشته باشد که با کاربری در Control Center مطابقت کند که **از قبل عضو این فضای کاری است**، پل نخستین باری که با آن حرف بزنید شما را پیوند می‌زند. نیازی به کد نیست.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+هر دو نیمه اهمیت دارند: تطبیق ایمیل هویت را اثبات می‌کند، اما تنها عضویت است که دسترسی می‌بخشد، پس غریبه‌ای که ایمیلش تصادفاً روی سرور وجود دارد به هیچ‌چیز پیوند نمی‌خورد. فهرست نشان می‌دهد هر پیوند چگونه ساخته شده است («تطبیق با ایمیل» یا «پیوند با کد»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+پیوند خودکار به اسکوپ `users:read.email` نیاز دارد. بدون آن، Slack نشانی را افشا نمی‌کند و جریان کد تنها راه است.
 
-## See who is linked
+## ببینید چه کسی پیوند شده است
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+فهرست، بخشی از مدیریت فضای کاری است، پس در نیمهٔ دیگر سطح زندگی می‌کند:
+**تنظیمات → فضای کاری → عمومی → پل‌های گفتگو → حساب‌های پیوندشده**. این
+فهرست هر عضو پیوندشدهٔ فضای کاری را، همراه با حساب Slackی که هرکس به آن
+نگاشت می‌شود و اینکه پیوند چگونه ساخته شده است، برمی‌شمارد.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+وضعیت خودتان در صفحهٔ نمایه‌تان است: ردیف **پیوند حساب Slack من** پس از پیوند،
+«پیوند به _your-slack-id_» را می‌خواند و وقتی پیوند ندارید، به شما می‌گوید که
+پیوند بزنید.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+فهرست یک اشتراک زنده است، چون تغییر در آن سو رخ می‌دهد — شما کد را در Slack
+تایپ می‌کنید، پس هیچ درخواستی از سمت برنامه نمی‌تواند پاسخ را برگرداند.
 
-## Unlink
+## قطع پیوند
 
-Click **Unlink** on a row in the workspace roster.
+در فهرست فضای کاری، روی یک ردیف **قطع پیوند** را کلیک کنید.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- هر کسی می‌تواند پیوند خودش را قطع کند
+- فقط یک مدیر می‌تواند پیوند عضو دیگری را قطع کند
+- قطع پیوند، هر کد پیوند باقی‌ماندهٔ آن عضو را نیز باطل می‌کند
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+پس از قطع پیوند، آن حساب Slack تا زمانی که دوباره پیوند نزند نمی‌تواند عامل‌ها را هدایت کند. فضاها، رونوشت‌ها و تیکت‌های موجود، انتساب اصلی خود را نگه می‌دارند — قطع پیوند به معنای پس‌گرفتن کار گذشته نیست.
 
-## Troubleshooting
+## عیب‌یابی
 
-### The bot says I am not a member of this workspace
+### ربات می‌گوید من عضو این فضای کاری نیستم
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/).
+حساب Slack شما به کاربری در Control Center پیوند شده است، اما آن کاربر عضویتی در این فضای کاری ندارد. از یک مدیر بخواهید شما را دعوت کند؛ [چندنفره — هویت، عضویت و حضور(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) را ببینید.
 
-### The bot says my role is read-only
+### ربات می‌گوید نقش من فقط‌خواندنی است
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+نقش‌های `viewer` و `guest` نمی‌توانند کاری را شروع کنند. یک مدیر باید نقش شما را به `member` یا بالاتر ارتقا دهد.
 
-### The slash command is not recognized
+### دستور اسلش شناسایی نمی‌شود
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+بررسی کنید که دستور اسلش در Slack وجود دارد و همان دستوری را می‌فرستید که دیالوگ تنظیمات نشانتان داده است — ممکن است یک مدیر نامش را عوض کرده باشد؛ در آن صورت، دیالوگ نام کنونی را نشان می‌دهد.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
-- [Customize the chat bot](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سفارشیسازی-ربات-گفتگو/)
-- [Chat bridge](/fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو/)
+- [راه‌اندازی یکپارچه‌سازی Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
+- [سفارشی‌سازی ربات گفتگو(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سفارشیسازی-ربات-گفتگو/)
+- [پل گفتگو(/fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)
-- [Multiplayer — identity, membership and presence](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/)
+- [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)
+- [چندنفره — هویت، عضویت و حضور(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/)

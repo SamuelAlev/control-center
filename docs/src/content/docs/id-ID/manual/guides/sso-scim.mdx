@@ -1,60 +1,63 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Sediakan pengguna dengan SCIM
+description: Biarkan IdP Anda membuat, memperbarui, dan melakukan deprovisioning akun Control Center secara otomatis.
 slug: id-ID/panduan-pengguna/panduan-praktis/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Gunakan panduan ini ketika Anda menginginkan kendali atas siklus hidup —
+offboarding harus mencabut akses secara otomatis, bukan sekadar memblokir
+login berikutnya. SCIM adalah protokol push yang dipakai IdP (Okta, Entra ID
+dan lainnya) untuk tepat hal itu.
 
-## Prerequisites
+## Prasyarat
 
-- SSO already working (the [SSO tutorial](/id-ID/panduan-pengguna/tutorial/sso) or the
-  [OIDC guide](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO sudah berfungsi ([tutorial SSO](/id-ID/panduan-pengguna/tutorial/sso) atau
+  [panduan OIDC](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc)),
+- **server yang dapat dijangkau IdP melalui HTTPS** — panggilan SCIM datang
+  dari IdP, bukan dari browser pengguna. Gunakan tunnel bawaan
+  (Pengaturan → Server → Koneksi & status → Bagikan server ini → Cloudflared/ngrok/Tailscale) atau URL publik. Server
+  yang hanya dapat dijangkau melalui relay WebSocket tidak dapat menerima
+  push SCIM; provisioning JIT tetap berfungsi di sana, sedangkan panduan ini
+  tidak.
 
-## Steps
+## Langkah
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Buka **Pengaturan → Server → Single sign-on** → kartu
+   **Penyediaan pengguna (SCIM)**. Kartu itu menampilkan endpoint, misalnya
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Klik **Buat token** (atau **Buat ulang token** jika sudah ada) — bearer
+   token muncul sekali dalam dialog dan disalin ke papan klip. Simpan di
+   pengelola kata sandi Anda; server hanya menyimpan salinan yang dapat
+   diverifikasi dengan waktu konstan.
+3. Di pengaturan provisioning IdP Anda, aktifkan SCIM dengan:
+   - **Base URL**: endpoint di atas
+   - **Autentikasi**: `Authorization: Bearer <token>`
+   - **ID pengguna**: `userName` (email) atau `externalId` — keduanya cocok
+4. Uji dengan satu pengguna: push mereka dari IdP, pastikan mereka muncul
+   (pembuatan SCIM menyematkan `externalId` milik penyedia ke akun itu,
+   penyematan yang sama seperti yang ditetapkan login SSO pertama).
 
-## What deprovisioning does
+## Apa yang dilakukan deprovisioning
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Ketika IdP mengirim `active: false` (atau `DELETE`), SCIM lebih dulu menolak
+jika akun itu **pemilik** ruang kerja (alihkan kepemilikan dulu). Jika tidak:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. setiap kredensial perangkat dicabut lebih dulu — sesi aktif berhenti dalam
+   hitungan detik,
+2. setiap keanggotaan ruang kerja dihapus,
+3. akun ditandai dinonaktifkan (akun itu tidak akan pernah bisa login, apa pun
+   yang IdP katakan kemudian, sampai diaktifkan kembali secara eksplisit).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Baris pengguna itu sendiri tetap ada — atribusi pada tiket, pesan, dan commit
+bersifat permanen. Aktivasi ulang (SCIM `active: true`) memulihkan login tetapi
+**bukan** keanggotaan: itu memerlukan undangan baru atau kebijakan anggota
+otomatis saat login.
 
-## Troubleshooting
+## Pemecahan masalah
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 pada setiap panggilan** — token berubah; buat ulang lalu perbarui IdP.
+- **Endpoint tidak dapat dijangkau** — tunnel sedang mati, atau server hanya
+  relay. SCIM memerlukan HTTPS langsung; JIT tetap berfungsi apa pun itu.
+- **Galat push grup (501)** — memang disengaja: pemetaan grup→peran terjadi
+  saat login dari atribut grup SAML/OIDC, bukan dari grup yang di-push.

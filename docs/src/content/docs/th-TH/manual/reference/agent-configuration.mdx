@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: การตั้งค่าเอเจนต์
+description: ทุกฟิลด์บนเอนทิตีเอเจนต์และอีนัมที่มันใช้
 slug: th-TH/คู่มือ/อ้างอิง/การตั้งค่าเอเจนต์
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/).
+เอกสารอ้างอิงนี้แสดงรายการทุกฟิลด์บนเอนทิตีเอเจนต์ พร้อมทั้งอีนัมและแฟล็กที่มันใช้ สำหรับคำแนะนำแบบทีละขั้นตอนในการสร้างหรือแก้ไขเอเจนต์ในแอป ดู [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
 
-## Agent entity fields
+## ฟิลด์ของเอนทิตีเอเจนต์
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| ฟิลด์ | ชนิด | จำเป็น | คำอธิบาย |
+| ----- | ---- | ------ | -------- |
+| `id` | `String` | ใช่ | ตัวระบุเอเจนต์ที่ไม่ซ้ำกัน |
+| `name` | `String` | ใช่ | ตัวระบุสั้นสำหรับ @-mention |
+| `title` | `String` | ใช่ | ตำแหน่งงานที่มนุษย์อ่านได้ |
+| `agentMdPath` | `String` | ใช่ | พาธแบบสัมบูรณ์ไปยังไฟล์นิยาม `.md` ของเอเจนต์ |
+| `workspaceId` | `String` | ใช่ | เวิร์กสเปซเจ้าของ (ไม่เป็นค่าว่าง) |
+| `reportsTo` | `String?` | ไม่ใช่ | รหัสเอเจนต์แม่ |
+| `skills` | `AgentSkills` | ใช่ | ชุดตัวระบุสกิล |
+| `persona` | `String?` | ไม่ใช่ | คำแนะนำด้านพฤติกรรมแบบข้อความอิสระ |
+| `systemPrompt` | `String?` | ไม่ใช่ | แทนที่พรอมต์ระบบเริ่มต้น |
+| `adapterId` | `String?` | ไม่ใช่ | รหัสอะแดปเตอร์การอนุมาน |
+| `modelId` | `String?` | ไม่ใช่ | รหัสโมเดลภายในอะแดปเตอร์ |
+| `strictMode` | `bool` | ไม่ใช่ | ค่าเริ่มต้น `false` เขียนลงแถวข้อมูลและลง `AGENTS.md` ของเอเจนต์ |
+| `effort` | `String?` | ไม่ใช่ | รหัสระดับการใช้เหตุผล (เช่น `'low'`, `'xhigh'`) ซึ่งดึงมาจาก `thinkingLevels` ของโมเดลที่เลือก |
+| `contextSize` | `int?` | ไม่ใช่ | ขนาดหน้าต่างบริบทสูงสุด |
+| `role` | `AgentRole?` | ไม่ใช่ | บทบาทของเอเจนต์ |
+| `capabilities` | `AgentCapabilities?` | ไม่ใช่ | ค่าเริ่มต้นความสามารถประจำเอเจนต์ เมื่อเป็น null ค่าเริ่มต้นระดับผู้ใช้จะมีผลตอนสั่งงาน และบทสนทนายังเขียนทับได้ |
+| `monthlyBudgetCents` | `int` | ไม่ใช่ | เพดานการใช้จ่ายรายเดือนเป็นเซนต์ (ค่าเริ่มต้น `0` ไม่จำกัด) |
+| `silenceTimeoutMinutes` | `int?` | ไม่ใช่ | การแทนที่การหมดเวลาเงียบเป็นนาที ต้องเป็น null หรืออยู่ในช่วง 1–240 (ตรวจสอบโดยคอนสตรักเตอร์) |
+| `maxConcurrentTasks` | `int` | ไม่ใช่ | ค่าเริ่มต้น `1` ตัวเลขความจุที่โมเดลสถานะออนไลน์รายงาน (จำนวนที่กำลังรันและที่อยู่ในคิวจะถูกนำมาเทียบกับค่านี้) |
+| `visibility` | `AgentVisibility` | ไม่ใช่ | ค่าเริ่มต้น `workspace` |
+| `lifecycleStatus` | `AgentLifecycleStatus` | ไม่ใช่ | สถานะการกำกับดูแล (ค่าเริ่มต้น `active`) ถูกเขียนโดยการหยุดแข็งของงบประมาณ และแสดงบนผังองค์กรและรายชื่อสถานะออนไลน์ การสั่งงานยังคงรับงานจากเอเจนต์ที่ `paused` |
+| `budgetPolicyId` | `String?` | ไม่ใช่ | รหัสนโยบายงบประมาณที่ใช้ร่วมกัน เมื่อเป็น null `monthlyBudgetCents` จะมีผลโดยตรง |
+| `runtimeProfileId` | `String?` | ไม่ใช่ | รหัสโปรไฟล์รันไทม์ที่กำหนดเอง |
+| `createdAt` | `DateTime` | ใช่ | เวลาที่สร้าง |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` และ `title` ต้องไม่ว่างทั้งคู่ (ตรวจสอบโดยคอนสตรักเตอร์) `monthlyBudgetCents`
+ค่าเริ่มต้นที่เป็น `0` หมายถึงไม่จำกัด การกำหนดเพดานทำได้ด้วย `agents.upsert`
 
-## AgentRole enum
+## อีนัม AgentRole
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| บทบาท | ป้าย | คำอธิบาย |
+| ----- | ---- | -------- |
+| `ceo` | CEO | การประสานงานและการมอบหมาย |
+| `coder` | Coder | การลงมือเขียนโค้ด |
+| `reviewer` | Reviewer | การรีวิวและวิเคราะห์ PR |
+| `qa` | QA | การทดสอบและประกันคุณภาพ |
+| `designer` | Designer | การลงมือทำ UI/UX |
+| `security` | Security | การรีวิวและตรวจสอบด้านความปลอดภัย |
+| `devops` | DevOps | โครงสร้างพื้นฐานและการปรับใช้ |
+| `pm` | PM | การจัดการผลิตภัณฑ์ |
+| `general` | General | ยืดหยุ่น ใช้ได้หลากหลาย |
 
-## AgentVisibility enum
+## อีนัม AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| ค่า | คำอธิบาย |
+| --- | -------- |
+| `workspace` | ค่าเริ่มต้น ค่าที่จัดเก็บแบบไม่รู้จักและค่า null จะถูกแปลงมาเป็นค่านี้ |
+| `private` | เป็นส่วนตัวสำหรับผู้ใช้ที่สร้าง |
 
-## AgentLifecycleStatus enum
+## อีนัม AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| ค่า | คำอธิบาย |
+| --- | -------- |
+| `active` | ค่าเริ่มต้น `isDispatchable` เป็นจริงเฉพาะค่านี้ |
+| `paused` | ถูกตั้งโดยการหยุดแข็งของงบประมาณ แสดงบนรายชื่อสถานะออนไลน์ การสั่งงานยังคงรับงาน |
+| `archived` | ปลดระวางและซ่อนจากรายชื่อที่ใช้งานอยู่ |
 
-## AgentCapabilities flags
+## แฟล็ก AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+ถูกตัดสินต่อการสั่งงานแต่ละครั้ง: ใช้ค่าเริ่มต้นของเอเจนต์ ถอยกลับไปใช้ค่าเริ่มต้นระดับผู้ใช้เมื่อเป็น null และมีการเขียนทับรายบทสนทนาซ้อนอยู่ด้านบน บังคับใช้ด้วยการไม่มีอยู่ — ตัวกลางจัดการข้อมูลรับรองเพียงแค่ไม่สร้างหรือฉีดสิ่งที่ความสามารถที่ปิดไว้ครอบคลุมเท่านั้น
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| แฟล็ก | ชนิด | ค่าเริ่มต้น | คำอธิบาย |
+| ----- | ---- | ----------- | -------- |
+| `canPushToRepo` | `bool` | `false` | พุชคอมมิตขึ้นรีโมต ควบคุมการฉีดโทเคน GitHub ควบคู่กับ `canCallGitHubApi` |
+| `canCallGitHubApi` | `bool` | `false` | เรียก api.github.com ควบคุมการฉีด `GH_TOKEN` และโดเมนการส่งออกของ GitHub |
+| `canCallTicketing` | `bool` | `false` | เรียก API ของผู้ให้บริการตั๋วงาน ควบคุมการฉีดคีย์ API ของผู้ให้บริการและโดเมนการส่งออกของมัน |
+| `canAccessNetwork` | `bool` | `true` | การส่งออกขาออกใดก็ได้ ยังควบคุมเครื่องมือ `web_fetch` และ `web_search` ของฮาร์เนสด้วย |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` คือค่าเริ่มต้นจากคอนสตรักเตอร์ทั้งสี่ค่า `legacyDefault` (เป็นจริงทั้งสี่ค่า) ถูกใช้โดยการย้ายข้อมูลที่เติมย้อนหลังให้บทสนทนาที่สร้างขึ้นก่อนที่ความสามารถจะมีอยู่เท่านั้น บล็อบที่จัดเก็บไว้แบบผิดรูปแบบหรือว่างเปล่าจะถูกแปลงเป็น `safeDefault` คีย์เดิม `canCallLinear` จะถูกอ่านเป็น `canCallTicketing`
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+ชุดตัวระบุสกิลที่ไม่เปลี่ยนรูปและไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่ ตอนสั่งงาน slug เหล่านั้นจะถูกซิงค์เป็นลิงก์สกิลในโอเวอร์เลย์ของเอเจนต์ จากนั้นฮาร์เนสจะโหลดฟรอนต์แมตเทอร์ของสกิลที่ลิงก์ไว้เข้าสู่พรอมต์โดยอัตโนมัติ
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (อนุมานได้)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+ไม่ถูกจัดเก็บ มีเจ็ดค่า ลำดับการประกาศคือลำดับความสำคัญ (`sortPriority` ซึ่งถูกตรึงไว้ด้วยเทสต์) และเป็นลำดับที่รายชื่อใช้เรียง:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| สถานะ | `sortPriority` | เงื่อนไข |
+| ----- | -------------- | -------- |
+| `running` | 0 | บันทึกการรันใด ๆ มีสถานะ `running` |
+| `blocked` | 1 | สถานะความมีชีวิตของการรันล่าสุดคือ `blocked`, `stalled` หรือ `looping` |
+| `failed` | 2 | สถานะของการรันล่าสุดคือ `error` หรือสถานะความมีชีวิตของมันคือ `failed` หรือ `dead` |
+| `queued` | 3 | การรันถูกสั่งงานแล้วแต่ยังไม่ทำงาน — จอดรออยู่หลังการรันอีกรายการของเอเจนต์ตัวเดียวกัน หรือถูกเขียนแล้วแต่ยังไม่เริ่ม |
+| `succeeded` | 4 | การรันเสร็จสิ้นอย่างสำเร็จ |
+| `idle` | 5 | เอเจนต์เคยรันมาก่อนและไม่มีอะไรกำลังดำเนินอยู่ |
+| `neverRun` | 6 | ไม่มีบันทึกการรันอยู่เลย |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` และ `succeeded` ใช้ **เฉพาะต่อการรันแต่ละรายการเท่านั้น** `deriveAgentLiveState` ซึ่งคำนวณสถานะรายชื่อของเอเจนต์ ไม่เคยสร้างค่าใดในสองค่านี้เลย — มันคืนค่า `neverRun`, `running`, `failed`, `blocked` หรือ `idle`
 
-## See also
+## ดูเพิ่มเติม
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

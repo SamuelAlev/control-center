@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Ajan oluşturma ve yapılandırma
+description: Bir çalışma alanına ajan ekleyin, ona bir adaptör, model, beceri ve izin verin ve çalıştığını doğrulayın.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-olusturma
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Bu kılavuz, bir çalışma alanına nasıl ajan ekleyeceğinizi ve onu gerçekten çalışana kadar nasıl yapılandıracağınızı gösterir.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Her çalışma alanı beş ajanla birlikte gelir — bir CEO ile `qa`, `architect`, `engineer` ve `librarian` —, bu yüzden genellikle daha hiçbirini yapılandırmadan ajanlarınız olur. Aşağıdaki adımlar hazır gelen bir ajan için de yeni bir ajan için de aynı şekilde geçerlidir.
 
-## Before you start
+## Başlamadan önce
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Bir çalışma alanının içindesiniz. Bütün yüzey **Ayarlar → Çalışma alanı → Ajanlar** (`/settings/workspace/agents`) altında bulunur.
+- Ajanın bir arka uca ihtiyacı olacak. Ya **Ayarlar → Sunucu → Model sağlayıcıları** altından yerleşik harness için bir sağlayıcı bağlayın ya da `cc_server`'ı barındıran makineye Claude Code CLI'yi kurun.
+- Ajanın beceri taşımasını istiyorsanız, önce bunları **Ayarlar → Çalışma alanı → Beceriler** altından kurun. Ajan formu yalnızca çalışma alanında zaten var olan becerileri açıp kapatmanıza izin verir.
 
-## Add the agent
+## Ajanı ekleyin
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. **Ayarlar → Çalışma alanı → Ajanlar** yolunu açın.
+2. **Yeni ajan**'a tıklayın.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Herhangi bir iletişim penceresi ya da rol seçici yoktur. "Adsız ajan" adlı bir ajan hemen oluşturulur ve sağdaki ayrıntı bölmesinde seçili gelir.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Artık soldaki listede "Adsız ajan"ı görmelisiniz; ayrıntı bölmesinin **Ayarlar** sekmesi açık ve **Ad** alanında "Adsız ajan" yazıyor olmalı.
 
-## Name it
+## Ad verin
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Ad** — @ ile anmalarda kullanılan kısa tanımlayıcı, örneğin `alice`. Anma ayrıştırması `@` ve ardından gelen sözcük karakterleriyle eşleşir; bu yüzden tire, nokta veya boşluk içeren bir ad asla anılamaz.
+- **Başlık** — insan tarafından okunabilen etiket, örneğin "Kıdemli geliştirici".
+- **Sistem promptu** — isteğe bağlı ek talimatlar, bir Agent instructions bölümü olarak enjekte edilir; derlenen promptun geri kalanının yerini almaz.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Formun altındaki **Değişiklikleri kaydet**'e tıklayın. Bu sayfadaki her alan o tek düğmeyle kaydedilir.
 
-## Give it an adapter and a model
+## Bir adaptör ve model verin
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**Adaptör** açılır menüsü, sunucu ana makinesinde gerçekten bulunan runner'ları listeler. Yerleşik adaptör her zaman bulunur (sunucunun kendisidir). Claude Code yalnızca CLI'si o ana makinede algılandığında görünür:
 
-| Adapter                   | Backend                                     |
+| Adaptör                   | Arka uç                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | Süreç içi ajan döngüsü — harici CLI yok     |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Modları, yönlendirmeyi, duraklatma/sürdürmeyi, tamamlanma sözleşmelerini ve alt ajanları yalnızca yerleşik adaptör uygular. Claude Code bunların hiçbirini sunmaz. Cursor, Codex ve diğer model sağlayıcıları ayrı runner'lar olarak değil, yerleşik adaptöre bağlanır.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Boş bir adaptör, yerleşik döngü anlamına gelir]
+Adaptörü ayarlanmamış bir ajan **Control Center (built-in)** adaptörüne, yani sunucunun içindeki döngüye gönderilir; böylece ana makineye hiçbir şey kurulması gerekmez. Model de ayarlanmamışsa varsayılanını Anthropic'ten ister; dolayısıyla tamamen ayarsız bir ajan yalnızca bir Anthropic hesabı bağladıysanız çalışır. Hazır gelen uzmanlar ikisiyle birlikte gelmez; kullanmayı düşündüğünüz her ajanda ikisini de ayarlayın.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**Model** açılır menüsü seçtiğiniz adaptöre göre çalışır. Yerleşik adaptörde liste, **Ayarlar → Sunucu → Model sağlayıcıları** altında bağladığınız sağlayıcılardan canlı olarak gelir; bu yüzden kayıtlı kimlik bilgisi olmayan bir sağlayıcı hiç model sağlamaz.
 
-## Add skills
+## Beceri ekleyin
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Beceriler**, bu çalışma alanında kurulu beceri paketleri üzerinde bir çip seçicidir. Bir çipi açıp kapatmak için ona dokunun; onay işareti simgesi seçili olanları belirtir. Çalışma alanında hiç beceri yoksa alan "No skills available. Create skills in Settings → Skills first." şeklinde görünür.
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/tr-TR/kilavuz/kavramlar/ajan-modeli/#repo-scoped-skills).
+Bir deponun kendi becerilerini burada seçmezsiniz. Bunları içeren bir depo (`.agents/skills/`, `.claude/skills/` veya `.opencode/skills/` içinde), o depoda çalışan ajana bunları otomatik olarak kazandırır ve ajan başka bir depoya geçtiğinde de bunlar değişir — bkz. [Depo kapsamlı beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Raporlama zincirini ve personayı ayarlayın
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Bağlı olduğu kişi** — adına göre başka bir ajan seçin. Bu, sayfa başlığındaki **Organizasyon şeması** düğmesinin gösterdiği raporlama ağacını oluşturur. Bir ekip liderinin devrederken kullandığı kadro bu değildir — o, ekibin üyelerinden ve onların becerilerinden gelir.
+- **Persona** — üslubu ve davranışı biçimlendiren serbest metin, örneğin: "Basit ve okunabilir çözümleri tercih eder. Yeni yazılan tüm kodlar için test yazar."
 
-## Tune the run
+## Çalıştırmayı ayarlayın
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Akıl yürütme eforu** — seçenekler seçili modelin kendi yayımladığı düzeylerden gelir: Low / Medium / High; OpenAI tarzı modellerde ayrıca Extra High, Claude tarzı modellerde ise Extra High + Max. Seçili model hiç düşünme düzeyi bildirmiyorsa alan tamamen gizlenir ve modelin kendi varsayılanına döner.
+- **Bağlam penceresi boyutu** — modeli her değiştirdiğinizde modelin bağlam penceresinden önceden doldurulur; model varsayılanı, 200k, 500k ve 1M için tek dokunuşluk çipler bulunur. Modeli seçtikten sonra yazdığınız bir değer, bir sonraki model değişikliğine kadar geçerli olur.
+- **Sessizlik zaman aşımı (dakika)** — bu süre boyunca çıktı vermeyen bir çalıştırmayı sonlandırır. Moda özgü varsayılanı kullanmak için boş bırakın.
 
-## Grant permissions
+## İzinleri verin
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Sandbox izinleri** başlangıçta "Çalışma alanı varsayılanını kullan" olarak gelir. Bunları bu ajan için ayarlamak üzere anahtarı açın ve ardından şunları açıp kapatın:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **git push'a izin ver** — ajanın push yapmak için ihtiyaç duyduğu GitHub belirtecini ortama enjekte eder
+- **GitHub API çağrılarına izin ver** — ajanın PR'ları, issue'ları ve depo meta verilerini okumasını sağlar
+- **Bilet API çağrılarına izin ver** — biletleme sağlayıcısının anahtarını ortama enjekte eder
+- **Genel ağ erişimine izin ver** — yerleşik harness'in `web_fetch` ve `web_search` araçlarını da etkinleştirir
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Her anahtar, çalıştırma başlatılırken kimlik bilgisi broker'ı tarafından denetlenir: kapalı olan bir yetenek, eşleşen belirtecin çalıştırmanın ortamına hiç üretilmeyeceği anlamına gelir.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Çalışma alanı varsayılanı, sunucunun tutucu kümesi anlamına gelir]
+"Çalışma alanı varsayılanını kullan" olarak bırakılan bir ajan, git push, GitHub API ve biletleme **kapalı**, ağ ise **açık** olacak şekilde çalışır. Ayarlar → Sunucu → Tanılama ve gizlilik altında gösterilen yetenek varsayılanları istemci tarafı bir tercihtir. Bir ajanın push yapmasını veya PR açmasını istiyorsanız anahtarı açın ve yetenekleri açıkça verin.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) for the full set of boundaries.
+Bu yetenekler kimlik bilgilerini ve harness araçlarını kapıdan geçirir; bu, işletim sistemi sandbox'ından ayrı bir katmandır. `cc_server`, bulunduğu yerde ajan çalıştırmalarını ana makinenin sandbox'ına sarar — Windows'ta yerel bir arka uç yoktur; Linux ve WSL2 ise `bwrap` ve `socat` gerektirir. Sınırların tamamı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
-## Verify it runs
+## Çalıştığını doğrulayın
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. **Ayarlar → Sunucu → Model sağlayıcıları** yolunu açın ve seçtiğiniz adaptörün "Bulunamadı" yerine kurulu bir sürüm bildirdiğini doğrulayın. Yeniden yoklamak için **Yenile**'ye tıklayın — yoklama, baktığınız makinede değil `cc_server`'ı barındıran makinede çalışır.
+2. Ajanla birlikte bir alan açıp ona bir mesaj gönderin ya da mevcut bir alanda onu @ ile anın.
+3. **Ayarlar → Çalışma alanı → Ajanlar** sayfasına dönün, ajanı seçin ve **Loglar** sekmesini açın. Bir durum rozeti, bir süre, bir başlangıç zamanı ve kullandığı adaptörle birlikte bir çalıştırma görünmelidir. **Görünüm**, o çalıştırmanın olay akışını açar.
 
-If no run appears at all, work through [Run agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/).
+Hiç çalıştırma görünmüyorsa [Bir ajanı tanılama](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) sayfasını baştan sona uygulayın.
 
-## Delete an agent
+## Bir ajanı silme
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Ajanı listede seçin. **Ayarlar** sekmesinde formun altındaki **Tehlikeli bölge**ye ilerleyin ve **Sil**'e tıklayın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run agents in parallel](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
-- [Build an agent team](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/)
-- [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
-- [Run agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
-- [Agent configuration reference](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/)
+- [Ajanları paralel çalıştırma](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
+- [Ajan ekibi kurma](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/)
+- [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
+- [Bir ajanı tanılama](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
+- [Ajan yapılandırması referansı](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)

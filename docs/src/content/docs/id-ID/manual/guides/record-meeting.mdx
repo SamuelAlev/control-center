@@ -1,118 +1,120 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Rekam dan ringkas rapat
+description: Rekam panggilan, dapatkan transkrip, lalu ubah menjadi catatan, item tindakan, dan keputusan.
 slug: id-ID/panduan-pengguna/panduan-praktis/rekam-rapat
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/id-ID/panduan-pengguna/konsep/rapat/) for how it works.
+Panduan ini menunjukkan cara merekam rapat dan mendapatkan tulisan yang dihasilkan AI.
+Lihat [Rapat dan transkripsi](/id-ID/panduan-pengguna/konsep/rapat/) untuk cara kerjanya.
 
-## Before you start
+## Sebelum memulai
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Tunggu model ucapan, lalu mulai ulang server.** Boot normal
+  memasang paksa model ASR yang dipilih (Parakeet TDT 0.6B v3, default
+  multibahasa, sekitar 600 MB) di latar belakang. Server menyelesaikan model
+  **tepat sekali saat boot**, jadi eksekusi pertama masih belum memiliki operasi
+  perekaman sampai Anda memulai ulang. Tanpa model di disk, perekaman gagal dengan
+  `Could not start
+  recording on the host: …`. Untuk memilih build lain, buka **Pengaturan →
+  Server → Model suara & rapat** — itu juga memerlukan mulai ulang.
+- Berikan izin **mikrofon** saat OS meminta pada perekaman pertama.
+- Di **macOS 14.4+**, audio sistem ditangkap dengan tap proses Core Audio — tidak ada driver yang perlu dipasang, tetapi OS meminta sekali lagi izin _perekaman audio_. Itu bukan Perekaman Layar dan tidak pernah menyalakan indikator perekaman layar. Menolaknya membuat permulaan gagal dengan `System-audio capture permission denied.` Di bawah macOS 14.4 tidak ada perekaman audio sistem.
+- Di **Linux**, `parecord` (pulseaudio-utils) atau `pw-record` (pipewire) harus ada di `PATH` — perekaman menjalankan salah satunya terhadap sumber monitor PipeWire/PulseAudio. Tanpa keduanya, permulaan gagal dengan `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Ke mana audio rapat Anda pergi]
+Perekaman, transkripsi, pembatalan gema, dan diarisasi pembicara semuanya berjalan
+di perangkat, tanpa panggilan cloud — tetapi "perangkat" berarti **host `cc_server`**, yang
+merupakan mesin berbeda saat Anda menjalankan server dari jarak jauh. Dan tulisan akhirnya
+adalah eksekusi agen biasa: pipeline `meeting_summary` mengirim transkrip lengkap
+dan catatan kasar Anda ke penyedia model apa pun yang digunakan agen tersebut. Arahkan agen itu
+ke penyedia lokal jika transkrip tidak boleh meninggalkan mesin.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Layar perekaman menyatakan hal ini saat Anda merekam, sehingga keputusannya ada di depan
+Anda sebelum ada transkrip untuk dikirim.
 :::
 
-## Start a recording
+## Mulai merekam
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Buka **Rapat** di bilah sisi.
+2. Klik **Rekam rapat**. HUD perekaman langsung terbuka di `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Perekaman dimulai segera dan menangkap mikrofon Anda plus audio keluaran
+sistem — peserta lainnya. Tidak ada prompt mode dan tidak ada pemilih sumber
+audio: mode mikrofon tunggal tatap muka ada di API tetapi belum memiliki UI saat ini.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Di peramban, alur yang sama berfungsi, dengan satu perbedaan: "audio sistem" adalah
+berbagi layar yang harus menyertakan trek audio. Bagikan tab peramban (atau seluruh
+layar Anda) dan aktifkan "Bagikan audio tab" / "Bagikan audio sistem" di pemilih. Safari
+dan Firefox serta berbagi layar penuh di macOS sering kali tidak dapat menyediakannya.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD menampilkan pengukur level, waktu berjalan, dan transkrip langsung yang terbentuk
+di satu sisi.
 
-## During the meeting
+## Selama rapat
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Tulis catatan kasar** di panel catatan. Catatan disimpan saat Anda mengetik dan diserahkan ke agen peringkas nanti, jadi tuliskan apa pun yang mungkin terlewat oleh transkrip.
+- **Pilih templat catatan** di baris **Templat aktif**. Templat ini membentuk ringkasan rapat ini dan disimpan bersama rekaman, sehingga eksekusi ulang nanti mereproduksi templat yang Anda pilih di sini.
+- **Jeda dan lanjutkan** dengan kontrol jeda. Transkripsi berhenti saat dijeda dan timer membeku.
+- Transkrip mengalir dengan tag pembicara: kata-kata Anda sebagai **Anda**, semua orang dalam panggilan sebagai **Lainnya** — sampai diarisasi memecah Lainnya menjadi `Person 1`, `Person 2`, … yang dapat Anda ganti namanya.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Pembicara yang sangat pelan mungkin tidak ditranskripsi]
+Transkripsi melewati setiap jendela audio yang tidak pernah melewati ambang keheningan,
+tanpa mendekodenya sama sekali. Hal itu mencegah kanal yang senyap membakar CPU untuk
+token non-ucapan hasil halusinasi, tetapi itu juga berarti pembicara yang pelan atau jauh dapat
+tidak menghasilkan transkrip. Periksa pengukur level di awal, bukan di akhir.
 :::
 
-## Stop and summarize
+## Hentikan dan rangkum
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klik **Hentikan & rangkum**.
+2. Control Center langsung membawa Anda ke tampilan detail rapat, yang ditandai **Memproses**: diarisasi memecah kanal jarak jauh menjadi pembicara individual dan pipeline `meeting_summary` menghasilkan tulisan tersebut.
+3. Rapat beralih ke **Selesai** setelah pipeline itu selesai. Anda tidak perlu menunggunya — tampilan detail memperbarui dirinya sendiri.
 
-## Review the writeup
+## Tinjau tulisan
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Detail rapat (`/meetings/:meetingId`) memiliki empat tab:
 
-| Tab              | What's there                                                                    |
+| Tab              | Isinya                                                                    |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **Catatan**        | Ringkasan AI dan catatan yang disempurnakan, dibangun dari catatan kasar Anda + transkrip |
+| **Transkrip**   | Transkrip lengkap dengan tag pembicara dan stempel waktu                              |
+| **Item tindakan** | Tugas yang diekstrak, masing-masing dengan pemilik opsional                                   |
+| **Keputusan**    | Keputusan yang dicatat selama panggilan                                              |
 
-From here you can:
+Dari sini Anda dapat:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Ganti nama pembicara**: ubah `Person 1` menjadi nama asli; ini berlaku di seluruh transkrip.
+- **Centang item tindakan** saat Anda menyelesaikannya.
+- **Buat tiket** dari item tindakan: ini membuat tiket baru yang belum ditugaskan dengan judul item tindakan tersebut dan menautkannya kembali ke baris itu. Tugaskan ke agen dari tiket itu sendiri (lihat [Delegasikan pekerjaan ke agen](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)).
+- **Jalankan ulang ringkasan** untuk proses baru (misalnya setelah mengganti nama pembicara). Ini menggunakan kembali templat yang disimpan saat rapat direkam. Pilih templat aktif di **Pengaturan → Ruang kerja → Rapat**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Mengedit catatan, judul, item tindakan, dan keputusan berfungsi di mana saja.
+**Jalankan ulang ringkasan** dan membatalkan rapat yang sedang diproses hanya tersedia di
+**desktop** — di peramban kedua tombol itu tidak melakukan apa pun.
 
-## Record straight from a calendar event
+## Rekam langsung dari acara kalender
 
-If you've [connected a calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Jika Anda sudah [menghubungkan kalender](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/), Anda dapat melewati
+permulaan manual. Ini hanya tersedia di **desktop**; klien web menolaknya.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Buka acara dari **Kalender**.
+2. Klik **Mulai rekaman & tautkan**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Rekaman diisi dengan judul acara dan ditautkan kembali ke acara itu, sehingga
+catatan dan entri kalender tetap terhubung.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Menghapus rapat tidak menghapus audionya]
+Menghapus rapat menghapus barisnya, tetapi file WAV yang direkam di bawah
+`<dataDir>/meetings/<meetingId>/` tetap ada di disk — tidak ada kebijakan retensi,
+batas ukuran, atau penyapuan pembersihan. Hapus direktori itu sendiri jika audio itu penting.
 :::
 
-## Related guides
+## Panduan terkait
 
-- [Connect a Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
-- [Delegate work to agents](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
+- [Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
+- [Delegasikan pekerjaan ke agen](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
 
-## Related concepts
+## Konsep terkait
 
-- [Meetings and transcription](/id-ID/panduan-pengguna/konsep/rapat/)
+- [Rapat dan transkripsi](/id-ID/panduan-pengguna/konsep/rapat/)

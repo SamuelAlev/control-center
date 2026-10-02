@@ -1,149 +1,165 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Configurer les notifications
+description: Activez ou désactivez des catégories, définissez des heures de silence et un son, et sachez quelles notifications vous parviennent et où.
 slug: fr-CA/manuel/guides/notifications
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Ce guide explique comment configurer les notifications et ce que chaque réglage
+contrôle vraiment.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Les notifications arrivent sur deux surfaces. Le **centre de notifications** — la
+cloche de la barre de titre — lit un fil persistant par espace de travail sur le
+serveur. Les **toasts du système d’exploitation** forment une voie distincte,
+réservée au bureau, alimentée par les trames en direct que pousse le serveur.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[La version web n’affiche aucune notification du système d’exploitation]
+La chaîne de traitement des toasts n’est construite que par l’amorçage du
+bureau. Sur `app.usectrl.dev`, il n’y a ni toasts du système d’exploitation, ni
+sons de notification, ni bannières d’ambiance — la cloche et son historique
+fonctionnent quand même, parce qu’ils lisent le fil du serveur. Le client mobile
+n’a aucune surface de notification.
 :::
 
-## Turn categories on or off
+## Activer ou désactiver des catégories
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Allez dans **Paramètres → Vous → Notifications**
+2. Laissez **Activer les notifications** activé
+3. Activez ou désactivez les catégories voulues. Il y en a exactement seize :
 
-| Category                  | Fires when                                                                 |
+| Catégorie | Se déclenche quand |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Agent terminé | Un agent a terminé une exécution |
+| PR publiée | Un agent a publié une PR |
+| PR fusionnée | Une PR a été fusionnée |
+| Nouveaux messages | Un message est arrivé dans un espace que vous ne regardez pas |
+| Mentionné dans une pull request | Le sondage de notifications de GitHub a vu que vous étiez mentionné sur une PR |
+| Revue demandée | Votre revue a réellement été demandée sur une pull request qui n’est pas un brouillon |
+| Revue obsolète | De nouveaux commits sont arrivés sur une pull request que vous aviez déjà révisée |
+| Prêt à fusionner | Une pull request dont vous êtes l’auteur est devenue fusionnable, ou a cessé de l’être |
+| Décisions de revue | Un réviseur a approuvé, demandé des changements, ou a vu une approbation rejetée |
+| Vérifications | La CI a échoué sur une pull request dont vous êtes l’auteur, ou s’est rétablie |
+| Fils de revue | Quelqu’un a répondu dans un fil où vous êtes, ou l’a résolu |
+| Ticket assigné | Un ticket a été assigné |
+| Statut du ticket modifié | Un ticket a changé de statut |
+| Réunion imminente | Une réunion du calendrier entre dans votre fenêtre d’anticipation |
+| Calendrier déconnecté | Le jeton OAuth d’un calendrier connecté a expiré |
+| Mises à jour des enclos | Un enclos a été repris, récupéré ou a échoué |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Tout ce qui ne figure pas dans cette liste ne peut être ni notifié ni filtré —
+il n’existe pas de catégorie « tout le reste ».
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Ces préférences suivent votre utilisateur d’un appareil à l’autre, de sorte
+qu’un téléphone et un ordinateur portatif restent synchronisés. Le volume est
+l’exception délibérée et reste propre à chaque appareil.
 
-## Set quiet hours
+## Définir les heures de silence
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Sur la même page, activez **Quiet hours**
+2. Saisissez une heure de début et une heure de fin au format `HH:MM` (la plage
+   par défaut est 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Pendant les heures de silence, les notifications non urgentes sont écartées —
+ni mises en file, ni rejouées plus tard.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Deux catégories sont **urgentes** et sont toujours livrées, en contournant les
+heures de silence _et_ le mode focus : **Réunion imminente** et **PR publiée**.
+Une alerte de réunion que vous ne voyez qu’après coup ne vaut rien, et c’est
+précisément la raison.
 
-## Choose a sound
+## Choisir un son
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Faites défiler jusqu’à **Son de notification**
+2. Choisissez l’un des onze sons inclus, ou **Aucun**
+3. Appuyez sur le bouton **Tester** pour l’entendre et réglez le volume avec le
+   curseur
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+L’application joue le son elle-même ; la notification du système d’exploitation
+est livrée silencieusement, de sorte que vous ne l’entendez jamais deux fois.
 
-## Set the meeting lead time
+## Définir le délai d’anticipation des réunions
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Faites défiler jusqu’à **Délai d’alerte**
+2. Choisissez **5**, **10**, **15** ou **30** minutes
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+C’est le délai avant un événement du calendrier auquel la notification
+**Réunion imminente** se déclenche. La valeur par défaut est 5 minutes.
 
-## Know when a notification is suppressed
+## Savoir quand une notification est supprimée
 
-A notification is dropped, silently, when any of these is true:
+Une notification est écartée, en silence, lorsque l’une des conditions suivantes
+est vraie :
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Les notifications sont désactivées globalement, ou leur catégorie l’est
+- Vous êtes déjà sur la route vers laquelle elle vous mènerait — et, pour un
+  message, déjà dans cet espace
+- Le mode focus est actif et la catégorie n’est pas urgente
+- Les heures de silence sont actives et la catégorie n’est pas urgente
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Ces vérifications s’appliquent aux toasts du système d’exploitation. La cloche
+persistante enregistre quand même l’événement.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Deux autres suppressions se trouvent plus en amont, dans ce que le serveur envoie
+du tout :
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Un message d’un autre **humain** où vous n’êtes pas mentionné ne devient jamais
+  une notification
+- Les espaces entre agents sont en sourdine dans la barre latérale, de sorte
+  qu’ils n’incrémentent jamais la pastille de non-lus des humains
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+À l’intérieur d’un espace, il n’y a aucun coin tranquille : chaque conversation
+notifie de la même façon, fils compris. L’état de lecture est propre à l’espace,
+de sorte que les non-lus s’agrègent entre les conversations d’un espace plutôt
+que d’être suivis par conversation.
 
-## Read and clear the notification centre
+## Lire et vider le centre de notifications
 
-1. Click the bell in the title bar
+1. Cliquez sur la cloche de la barre de titre
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Le volet volant montre l’activité récente et relie chaque entrée par un lien
+direct à ce dont elle parle. L’ouvrir ne marque **pas** tout comme lu — utilisez
+**Tout marquer comme lu** dans l’en-tête, ou marquez une seule ligne. L’état de
+lecture suit votre utilisateur d’un appareil à l’autre.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Tout effacer est un filigrane, pas une suppression]
+**Tout effacer** pose un filigrane propre à chaque utilisateur qui masque tout ce
+qui est plus ancien ; les lignes restent. Par ailleurs, chaque espace de travail
+ne conserve que ses **200** lignes de fil les plus récentes, élaguées à mesure
+que de nouvelles arrivent, tandis que la cloche s’abonne aux **50** plus récentes
+et que le volet volant en liste jusqu’à **15**. L’historique au-delà est perdu,
+peu importe l’état de lecture.
 :::
 
-## Troubleshooting
+## Dépannage
 
-### No OS notifications on macOS
+### Aucune notification du système d’exploitation sur macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+L’autorisation est demandée nativement au lancement de l’application. Si vous
+l’avez refusée, réactivez Control Center dans Réglages Système → Notifications ;
+il n’y a aucune invite dans l’application pour la redemander.
 
-### Nothing arrives on the web build
+### Rien n’arrive dans la version web
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+C’est normal — la version web n’a aucune chaîne de traitement de notifications du
+système d’exploitation. Utilisez la cloche.
 
-### The bell badge shows zero but there is clearly new activity
+### La pastille de la cloche indique zéro alors qu’il y a clairement de l’activité nouvelle
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Jusqu’à ce que le flux de marques de lecture se résolve après la connexion, les
+entrées s’affichent comme lues pour éviter une pastille qui clignote puis se
+vide. Tout se stabilise dès que la marque est chargée.
 
-### An agent's run finished but nothing pinged me
+### L’exécution d’un agent s’est terminée sans que rien ne m’avertisse
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Vérifiez que vous n’étiez pas déjà dans l’espace où elle a eu lieu — une route
+active supprime son propre toast du système d’exploitation.
 
-## Related guides
+## Guides connexes
 
-- [Use focus mode and soundscapes](/fr-CA/manuel/guides/mode-focus/)
-- [Triage your inbox](/fr-CA/manuel/guides/trier-boite-de-reception/)
-- [Curate your newsfeed](/fr-CA/manuel/guides/fil-de-nouvelles/)
+- [Utiliser le mode focus et les ambiances sonores](/fr-CA/manuel/guides/mode-focus/)
+- [Trier votre boîte de réception](/fr-CA/manuel/guides/trier-boite-de-reception/)
+- [Organiser votre fil de nouvelles](/fr-CA/manuel/guides/fil-de-nouvelles/)
 
-## Related concepts
+## Concepts connexes
 
-- [Domain events](/fr-CA/manuel/concepts/evenements-de-domaine/)
+- [Événements de domaine](/fr-CA/manuel/concepts/evenements-de-domaine/)

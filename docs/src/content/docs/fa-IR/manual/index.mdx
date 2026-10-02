@@ -1,54 +1,57 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: مقدمه
+description: Control Center کابین خلبان توسعهٔ نرم‌افزار چندعاملی است.
 slug: fa-IR/راهنمای-کاربر
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center فرماندهی ناوگانی از عامل‌های کدنویس هوش مصنوعی را به شما می‌دهد. عامل‌ها را بسازید، کارشان را در زمان واقعی تماشا کنید، PRهایشان را بازبینی کنید و مخزن‌ها، فضاهای کاری و یکپارچه‌سازی‌ها را مدیریت کنید — از یک برنامهٔ رومیزی بومی، یک مرورگر یا تلفن‌تان.
 
 <div className="docs-start not-content">
-  <LinkButton href="/fa-IR/راهنمای-کاربر/شروع-سریع/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/fa-IR/راهنمای-کاربر/نصب/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/fa-IR/راهنمای-کاربر/شروع-سریع/" icon="right-arrow">شروع سریع</LinkButton>
+  <LinkButton href="/fa-IR/راهنمای-کاربر/نصب/" variant="minimal" icon="download">نصب Control Center</LinkButton>
 </div>
 
-## What you can do
+## کارهایی که می‌توانید بکنید
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **به عامل‌ها پیام بدهید**: فضاها راه اصلی هدایت ناوگان‌اند. یک عامل را با @ منشن کنید تا به worktree کپی-در-نوشتن خودش اعزام شود، پس چند عامل می‌توانند به‌صورت موازی کدنویسی و بازبینی کنند بدون آنکه به checkout شما دست بزنند
+- **درخواست‌های بزرگ را ارکستر کنید**: به ارکستراسر یک هدف بدهید، برنامهٔ کل تیم را که پیشنهاد می‌دهد یک‌بار تأیید کنید و یک [پایپ‌لاین(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) تولیدشده آن را اجرا می‌کند
+- **PRها را بازبینی و ادغام کنید** با یک نمایشگر diff توکار، نظرهای درون‌خطی و بازبینی مبتنی بر هوش مصنوعی
+- **به عامل‌ها ماشین‌های یک‌بارمصرف بدهید**: یک [ریگ(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/) یک VM دورانداختنی است — یک مرورگر، یک محیط رومیزی، یک تلفن، یا یک ترمینال محصور — که عامل آن را می‌راند و شما زنده تماشا می‌کنید و می‌توانید کنترل را در دست بگیرید؛ سرورهای توسعهٔ داخل آن به `localhost`، مرورگر خود عامل و `https://myapp.test` فوروارد می‌شوند
+- **گردش‌کارها را خودکار کنید** با پایپ‌لاین‌های مبتنی بر DAG که با رویدادها یا زمان‌بندی‌ها راه‌اندازی می‌شوند
+- **دانش را مدیریت کنید** با حافظه، واقعیت‌ها و سیاست‌های محدود به فضای کاری
+- **کار را ردیابی کنید** با تیکت‌ها، پروژه‌ها و واگذاری مستقل از فروشنده
+- **جلسه‌ها را ضبط کنید** با ضبط، رونویسی و تفکیک گوینده روی دستگاه، و سپس خلاصه‌سازی به یادداشت‌ها، موارد اقدام و تصمیم‌ها
+- **روزتان را ببینید** با همگام‌سازی Google Calendar، RSVP، هشدارهای جلسه و ضبط و پیوند
+- **ناوگان را از تلفن‌تان دنبال کنید**: یک دستگاه را با سرورتان جفت کنید و پیام‌ها را بخوانید، پاسخ دهید و تیکت‌ها را تریاژ کنید. تلفن بهترین مسیری را که به آن دسترسی دارد برمی‌گزیند — loopback، LAN، tailnet یا TLS — و اگر نشد به یک رلهٔ مهروموم‌شدهٔ سرتاسری روی می‌آورد که فریم‌ها را جلو می‌فرستد بی‌آنکه بتواند بخواندشان
+- **عامل‌ها را از Slack هدایت کنید**: یک فضای کاری را به یک برنامهٔ گفتگو پل بزنید و ربات را منشن کنید، در یک رشتهٔ Slack پاسخ دهید، یا با یک دستور اسلش تیکت ثبت کنید — روی یک اتصال رو به بیرون، پس به هیچ نقطهٔ پایانی عمومی نیازی نیست
+- **یکپارچه شوید** با GitHub، Linear، Slack، Google Calendar و بیش از ۱۰۰ ابزار MCP
 
-## You do not have to install it
+## لازم نیست نصبش کنید
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+همان برنامه با همان قابلیت‌ها در مرورگر شما در
+[app.usectrl.dev](https://app.usectrl.dev) اجرا می‌شود.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+هر کلاینت — رومیزی، وب و تلفن — یک رندرکنندهٔ نازک روی یک سرور بدون رابط است که
+مالک داده‌های شماست و کار را انجام می‌دهد. رومیزی می‌تواند آن سرور را برایتان
+راه‌اندازی کند؛ یک زبانهٔ مرورگر نمی‌تواند، پس برنامهٔ وب به سروری که خودتان اجرا
+می‌کنید وصل می‌شود. آن سرور می‌تواند روی ماشین خودتان بنشیند
+(`ws://localhost:9030`، بی‌نیاز به گواهی) یا روی میزبانی راه دور که از راه TLS، یک
+VPN یا یک تونل قابل دسترسی است.
 
-See [Install](/fa-IR/راهنمای-کاربر/نصب/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) for how the three clients relate.
+برای مسیر مرورگر [نصب(/fa-IR/راهنمای-کاربر/نصب/#use-it-in-your-browser) را ببینید و
+برای اینکه این سه کلاینت چه نسبتی با هم دارند
+[استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/) را ببینید.
 
-## Next steps
+## گام‌های بعدی
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/fa-IR/راهنمای-کاربر/نصب/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/fa-IR/راهنمای-کاربر/شروع-سریع/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/fa-IR/راهنمای-کاربر/آموزشها/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/fa-IR/راهنمای-کاربر/راهنماهای-عملی/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/fa-IR/راهنمای-کاربر/مفهومها/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/fa-IR/راهنمای-کاربر/مرجع/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="نصب" href="/fa-IR/راهنمای-کاربر/نصب/" description="دانلودها، نیازمندی‌های سیستم و اینکه سرور کجا اجرا می‌شود." />
+  <LinkCard title="شروع سریع" href="/fa-IR/راهنمای-کاربر/شروع-سریع/" description="کوتاه‌ترین مسیر کامل تا اینکه یک عامل روی مخزن شما کار کند." />
+  <LinkCard title="آموزش‌ها" href="/fa-IR/راهنمای-کاربر/آموزشها/" description="درس‌های بلندتر، به ترتیب، با اولین فضای کاری شما آغاز می‌شود." />
+  <LinkCard title="راهنماهای عملی" href="/fa-IR/راهنمای-کاربر/راهنماهای-عملی/" description="دستورکارهایی برای هر بار یک کار: افزودن مخزن، پیکربندی گاردریل‌ها یا جفت‌کردن تلفن‌تان." />
+  <LinkCard title="مفهوم‌ها" href="/fa-IR/راهنمای-کاربر/مفهومها/" description="چرا محصول این‌گونه کار می‌کند، با استقرار و کلاینت‌ها آغاز می‌شود." />
+  <LinkCard title="مرجع" href="/fa-IR/راهنمای-کاربر/مرجع/" description="جدول‌های کامل مسیرها، ابزارهای MCP، میانبرهای صفحه‌کلید و رویدادهای دامنه." />
 </div>

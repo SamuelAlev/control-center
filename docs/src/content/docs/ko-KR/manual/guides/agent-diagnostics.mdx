@@ -1,109 +1,177 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: 에이전트 진단
+description: 에이전트가 실행을 더 이상 만들어 내지 않을 때 실행 로그, 어댑터 프로브, 서버 상태, 호스트 진단을 차례로 살펴봅니다.
 slug: ko-KR/매뉴얼/사용-가이드/에이전트-진단
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+이 가이드에서는 에이전트가 실행을 만들어 내지 않는 이유를 찾는 방법을 설명합니다.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+위에서 아래로 살펴보세요. 먼저 에이전트 자체의 실행, 다음으로 그 백엔드, 그다음으로
+서버, 마지막으로 호스트입니다.
 
-## 1. Check the agent's run history
+## 1. 에이전트의 실행 기록 확인
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**설정 → 워크스페이스 → 에이전트** → 에이전트 선택 → **로그**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+각 실행에는 상태 배지, 소요 시간(진행 중일 때는 "Running…"), 시작 및 완료 시각,
+PID, 사용한 어댑터가 표시됩니다. **보기**는 그 실행의 원시 이벤트 스트림을 엽니다.
+**중지**는 실행 중인 프로세스를 종료하고 그 실행을 "Killed by user"로 표시합니다.
+헤더의 **실행 중 강제 종료**는 그 에이전트의 진행 중인 모든 실행에 같은 일을 합니다.
 
-Read it like this:
+다음과 같이 읽으면 됩니다:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **실행이 전혀 없음** — 디스패치가 일어나지 않은 것입니다. 컴포저 멘션은 `@`에 단어
+  문자(영문자, 숫자, 밑줄)를 붙인 형태입니다. 해석은 에이전트 이름에 대한 정확 일치
+  또는 접두사 일치이므로, `@code-reviewer`는 `code`로 파싱되며 `code-reviewer`라는
+  이름의 에이전트를 여전히 깨울 수 있습니다. 공백이 든 이름은 하나의 토큰으로 멘션할
+  수 없습니다. 그런 다음 2단계로 넘어갑니다.
+- **오류로 즉시 끝난 실행** — **보기**를 엽니다. 백엔드 실행 실패가 여기에는 프로세스
+  오류로 나타납니다.
+- **"Running…"에 멈춘 실행** — 중지한 다음 설정 탭에서 에이전트의
+  **무응답 제한 시간**을 확인합니다. 설정하지 않은 제한 시간은 모드별 기본값을
+  사용합니다.
+- **유용한 출력 없이 완료된 실행** — 선언한 산출물 없이 끝난 실행도 실행 로그의
+  상태는 `completed`로 남습니다. 정직한 신호는 배지가 아니라 요약 텍스트입니다.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+로그 탭에는 비용이 표시되지 않습니다. 지출은 **옵저버빌리티 → 인사이트**의
+에이전트별 표를 사용하세요.
 
-## 2. Check the agent's backend
+## 2. 에이전트의 백엔드 확인
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**설정 → 서버 → 모델 제공업체** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+**감지된 러너** 목록에는 프로브 결과(설치된 버전, "확인 중…", "찾을 수 없음" 중
+하나)와 함께 해석된 경로, CLI가 발견된 경우 그 기능 칩이 어댑터마다 표시됩니다.
+페이지 헤더의 **새로 고침**을 눌러 다시 프로브하세요.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+프로브는 지금 보고 있는 머신이 아니라 `cc_server`를 호스팅하는 머신에서
+실행됩니다. 웹 클라이언트나 페어링한 기기를 사용 중이라면 "찾을 수 없음"은 서버
+호스트에 CLI가 없다는 뜻입니다.
 
-Two things to confirm:
+확인할 두 가지:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **에이전트에 어댑터가 설정되어 있는지.** 어댑터가 비어 있는 에이전트는
+  **Control Center (built-in)**으로 디스패치되고 실행 로그에 `cc-harness`가
+  기록되므로, 트랜스크립트에 무엇이 실행되었는지 남습니다. 모델도 없으면 Anthropic에
+  기본 모델을 요청하며, Anthropic 계정을 연결하지 않았다면
+  `No credential for provider "anthropic"` 오류로 실패합니다. 시드되는 전문가
+  에이전트는 어댑터 없이 제공됩니다.
+- **내장 어댑터에 모델이 있는지.** 그 모델 목록은 바로 이 페이지의 아래쪽에서 연결한
+  제공업체에서 실시간으로 옵니다. 따라서 저장된 자격 증명이 없는 제공업체는 모델을
+  하나도 제공하지 않습니다.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+어댑터 카탈로그 자체는 고정되어 있습니다. 새 어댑터를 등록할 방법은 없습니다. 여기서
+어댑터별로 바꿀 수 있는 것은 실행 인수와 환경 변수입니다. 자격 증명을 해석할 때
+어댑터별 환경 재정의가 연결된 제공업체 계정을 조용히 앞지른다는 점을 기억하세요.
 
-## 3. Check the server
+## 3. 서버 확인
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**설정 → 서버 → 연결 및 상태** (`/settings/server/connection`)에는 이 클라이언트가
+어느 서버와 통신하는지, 그 서버가 무엇을 보고하는지 표시됩니다.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+헤드리스 서버라면 `GET /healthz`가 클라이언트 없이 같은 정보를 제공합니다. 이
+엔드포인트는 설계상 인증이 필요 없고 CORS에 열려 있습니다:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+서버의 상태, 초 단위 가동 시간, 활성 연결 수, 바인드된 포트, 빌드 버전과 git SHA,
+워크스페이스 스키마 버전, RPC 카탈로그 버전, 서버 id, 이름과 아이덴티티 지문,
+바인드의 비보안 여부, 그리고 `watching` / `indexing` / `pending` 개수를 담은
+`codeGraph` 블록을 반환합니다. 캐시가 트래픽을 처리한 적이 있으면 `caches` 블록도
+포함하며, 데모 서버는 `demo: true`를 덧붙입니다.
 
-Two things worth knowing when a change "works in tests but not in the app":
+변경이 "테스트에서는 되는데 앱에서는 안 될" 때 알아 둘 만한 두 가지:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- 데스크톱은 소스보다 **사전 빌드된** `cc_server` 바이너리를 우선 실행합니다. 새 RPC
+  op나 MCP 도구는 바이너리를 다시 빌드할 때까지 나타나지 않으며, 자식의 git SHA가
+  앱의 것과 다르면 부팅 로그가 경고를 남깁니다.
+- 데스크톱은 20초 안에 준비 배너를 출력하지 않은 스폰한 서버를 종료하고 오류 화면으로
+  전환합니다.
 
-## 4. Check the host
+## 4. 호스트 확인
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**설정 → 서버 → 진단 및 개인정보 보호** (`/settings/server/diagnostics`)는 호스트
+수준 페이지입니다. 여기에는 다음이 있습니다:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **샌드박싱** — 마스터 토글, 감지된 백엔드, 설치 힌트, 기본 기능 토글. 서버에서
+  오는 것은 감지된 백엔드뿐입니다. 아래의 주의를 참고하세요. 초기화 컨트롤은
+  없습니다.
+- **시맨틱 검색** — 온디바이스 임베딩 모델의 수명 주기: 설치됨, 백분율과 함께
+  다운로드 중, 설치되지 않음, 설치 오류. 설치되기 전까지 메모리와 코드 검색은
+  키워드 전용으로 남습니다.
+- **시스템 동작** — 에이전트가 실행되는 동안 컴퓨터를 깨어 있게 유지합니다.
+- **동기화 엔진** — 티켓, 메시징, 노트에 대한 저장소별 킬 스위치. 이들은 전체 스냅샷
+  구독으로 되돌아가는 비상 탈출구이며, 변경은 새 구독에만 영향을 주므로 새로 고침
+  후에야 완전히 반영됩니다.
+- **로그 수준** — 실패를 재현하기 전에 높입니다.
+- **개인정보** — 원시 diff 내용을 에이전트의 모델로 전달할 수 있는지와 충돌 보고서를
+  보내는지 여부.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[이 섹션은 호스트를 보고하며, 그 컨트롤은 클라이언트 측입니다]
+탐지와 강제가 이제 일치합니다. 탐지기가 네이티브 백엔드를 보고하는 곳에서는 그
+호스트의 에이전트 실행이 실제로 그 안에 감싸집니다. 하지만 이 섹션에서 살아 있는
+것은 탐지기뿐입니다. 마스터 토글, 백엔드 선택기, 기본 기능 토글은 여러분의 기기에
+저장된 환경설정이며 서버는 이 중 어느 것도 읽지 않습니다. 서버 자체의 스위치는
+`--sandbox`(`on`이 기본이고 `off`로 옵트아웃)이며, "워크스페이스 기본값 사용"으로
+남겨 둔 에이전트에 대해서는 서버가 보수적인 기본값으로 폴백합니다. git push 없음,
+GitHub API 없음, 티켓팅 키 없음, 네트워크 켜짐입니다.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+따라서 여기에서 나오는 경고는 대응할 가치가 있지만, 에이전트가 실패하는 흔한 원인은
+아닙니다. 서버가 어느 상태인지 확인하려면 시작 로그를 읽으세요. 백엔드 설명과 함께
+`agent sandbox ON`을, 설치 힌트와 함께 `no OS-native agent sandbox on this host`를,
+또는 `agent sandbox DISABLED by --sandbox off`를 출력합니다. `GET /healthz`에는
+샌드박스 필드가 없습니다.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+백엔드가 없는 곳 — Windows는 항상, `bwrap`과 `socat`이 없는 Linux나 WSL2 — 에서는
+실행이 **샌드박스되지 않으며**, 이를 제약하는 것은 대화 자체의 체크아웃, 어떤 자격
+증명이 그 안에 발급될지를 게이트하는 기능, 동작 가드레일, 환경 정리, 그리고 그
+모드가 허용하는 도구 표면입니다.
 :::
 
-## Common failures
+## 자주 발생하는 실패
 
-### The run never starts and the adapter shows "Not found"
+### 실행이 시작되지 않고 어댑터가 "찾을 수 없음"으로 표시됨
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+CLI를 **서버 호스트에** 설치한 다음 모델 제공업체 페이지에서 **새로 고침**을
+누릅니다. 또는 CLI가 필요 없는 내장 어댑터로 에이전트를 전환하고 같은 페이지에서
+제공업체를 연결합니다.
 
-### The agent cannot push or open a pull request
+### 에이전트가 푸시하거나 풀 리퀘스트를 열 수 없음
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+기능이 관문입니다. **설정 → 워크스페이스 → 에이전트** → 에이전트 →
+**샌드박스 권한**을 열고 스위치를 켠 다음 **git push 허용**과
+**GitHub API 호출 허용**을 활성화합니다. 스위치를 "워크스페이스 기본값 사용"으로
+두면 에이전트는 이 중 어느 것도 얻지 못합니다.
 
-### Semantic search returns nothing useful
+### 시맨틱 검색이 유용한 결과를 반환하지 않음
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+**설정 → 서버 → 진단 및 개인정보 보호 → 시맨틱 검색**을 확인합니다. 임베딩 모델이
+설치되기 전까지 검색은 키워드 전용입니다. 모델을 설치하기 전에 작성된 행은
+백필되지 않으므로 그 뒤에도 계속 키워드 전용으로 남습니다.
 
-### The server will not boot at all
+### 서버가 아예 부팅되지 않음
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+네이티브 라이브러리가 필요하며 성능 저하 모드는 없습니다. dylib가 없으면 `cc_server`가
+시작을 거부하고 오류 메시지에 문제가 된 라이브러리 이름을 밝힙니다.
+`scripts/natives/build_natives.sh`로 네이티브를 준비한 뒤 서버 바이너리를 다시
+빌드하세요.
 
-### An action is silently denied
+### 동작이 조용히 거부됨
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+승인자가 연결되지 않은 `prompt` 가드레일 결정은 설계상 거부됩니다. **설정 →
+워크스페이스 → 에이전트 권한**에서 워크스페이스의 규칙을 확인하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/)
-- [Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)
+- [가드레일 구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
 
-## Related concepts
+## 관련 개념
 
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)

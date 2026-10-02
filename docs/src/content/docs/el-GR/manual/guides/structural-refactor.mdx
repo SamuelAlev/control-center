@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Δομική αναδιάρθρωση κώδικα
+description: Αφήστε έναν πράκτορα να βρει και να ξαναγράψει κώδικα με βάση το σχήμα και όχι το κείμενο, και ελέγξτε την αλλαγή πριν εφαρμοστεί.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δομική-αναδιάρθρωση
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Αυτός ο οδηγός δείχνει πώς να κάνετε έναν πράκτορα να πραγματοποιήσει μια ευρεία μηχανική αλλαγή — ένα codemod, μια μαζική μετεγκατάσταση API, ένα μοτίβο που θέλετε να εξαφανιστεί — χρησιμοποιώντας δομική αναζήτηση και επανεγγραφή, με την αλλαγή να προετοιμάζεται για έλεγχο πριν γραφτεί οτιδήποτε.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+Το `ast_grep` αντιστοιχίζει κώδικα με βάση το **σχήμα**. Το `ast_edit` τον επανεγγράφει. Το `resolve` εφαρμόζει ή απορρίπτει τις αλλαγές.
 
-## Before you start
+## Πριν ξεκινήσετε
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Τα δομικά εργαλεία καλύπτουν τις γλώσσες που αναλύει το γράφημα κώδικα: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB και Ada. Χρειάζονται τις γραμματικές του tree-sitter προετοιμασμένες, κάτι που συμβαίνει πάντα σε μια έκδοση που διανέμεται — μια γραμματική που λείπει σταματά τον διακομιστή, αντί να υποβαθμίσει την αναζήτηση.
 
-## Find the shape first
+## Βρείτε πρώτα το σχήμα
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Μην ξαναγράφετε ποτέ κάτι που δεν έχετε κοιτάξει. Ζητήστε από τον πράκτορα να κάνει αναζήτηση:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Βρείτε κάθε σημείο όπου καλούμε `dispose()` σε μια nullable μεταβλητή που μόλις ελέγξαμε για null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Η έξοδος είναι `file:line` μαζί με τον πηγαίο κώδικα που αντιστοιχίστηκε σε κάθε σημείο.
 
-### What the pattern syntax buys you
+### Τι σας προσφέρει η σύνταξη των μοτίβων
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| Στοιχείο   | Αντιστοιχεί σε                                 |
+| ---------- | ---------------------------------------------- |
+| `$NAME`    | Οποιονδήποτε μεμονωμένο κόμβο, καταγεγραμμένο   |
+| `$$$NAME`  | Οποιαδήποτε ακολουθία αδελφών κόμβων — ορίσματα, εντολές |
+| `$_`       | Οτιδήποτε, χωρίς να καταγράφεται με όνομα       |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Αυτό που έχει σημασία: **ένα `$NAME` που επαναλαμβάνεται πρέπει να καταγράφει το ίδιο κείμενο**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+βρίσκει μια προστατευτική συνθήκη που κάνει dispose σε ό,τι εξέτασε. **Δεν** βρίσκει το `if (a != null) b.dispose()` — που συνήθως είναι το σφάλμα που ψάχνατε. Καμία αναζήτηση κειμένου δεν μπορεί να το εκφράσει αυτό.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Δεν μπορεί να αντιστοιχίσει μέσα σε συμβολοσειρά ή σχόλιο]
+Το μοτίβο αναλύεται από την ίδια γραμματική με το αρχείο, οπότε το `dispose(x)` που είναι γραμμένο σε σχόλιο τεκμηρίωσης ή σε λεκτικό συμβολοσειράς δεν είναι κλήση και δεν αντιστοιχίζεται. Γι' αυτόν ακριβώς τον λόγο καταφεύγετε σε αυτό αντί για το `grep`.
 :::
 
-### When the pattern finds nothing
+### Όταν το μοτίβο δεν βρίσκει τίποτα
 
-Two things to try, in order:
+Δύο πράγματα να δοκιμάσετε, με αυτή τη σειρά:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Κάντε το πιο μικρό.** `foo($X)` πριν από το `if (a) { foo($X); }`. Ένα μοτίβο που δεν είναι από μόνο του έγκυρος κώδικας συχνά δεν είναι η δομή που είχατε στο μυαλό σας.
+2. **Δηλώστε τη γλώσσα.** Το `language:` συμπεραίνεται μόνο όταν το `path` δείχνει ένα μεμονωμένο αρχείο.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Ένα μοτίβο που κανένα πλαίσιο ανάλυσης δεν αποδέχεται αναφέρεται ως μη αναλύσιμο — το εργαλείο το λέει, αντί να αναφέρει «καμία αντιστοίχιση» για κάτι που ποτέ δεν διαβαζόταν όπως φαίνεται.
 
-## Rewrite, and look before it lands
+## Επανεγγράψτε, και κοιτάξτε πριν εφαρμοστεί
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Το αποτέλεσμα είναι μια **πρόταση**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Τίποτα δεν βρίσκεται ακόμη στον δίσκο. Διαβάστε τη λίστα, ελέγξτε δύο-τρία από τα σημεία που ανέφερε η αναζήτηση και μετά:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+ή
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Η εφαρμογή είναι όλα ή τίποτα]
+Κάθε αρχείο συγκρίνεται με το περιεχόμενο που καταγράφηκε όταν προετοιμάστηκε η αλλαγή. Αν έστω και ένα από αυτά άλλαξε — ο πράκτορας το επεξεργάστηκε με το χέρι, εκτελέστηκε ένα formatter, ένα πέρασμα διαγνωστικών το ξανάγραψε — η αλλαγή στο **σύνολό** της απορρίπτεται και εγκαταλείπεται. Μια δομική επανεγγραφή που εφαρμόστηκε εν μέρει αφήνει ένα δέντρο που δεν μεταγλωττίζεται ούτε με το παλιό ούτε με το νέο σχήμα.
 
-Re-run the tool against the current files; do not retry the stale id.
+Εκτελέστε ξανά το εργαλείο στα τρέχοντα αρχεία· μην ξαναδοκιμάσετε το παρωχημένο αναγνωριστικό.
 :::
 
-## Check your work with the compiler
+## Ελέγξτε τη δουλειά σας με τον μεταγλωττιστή
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Το νόημα του να το κάνετε αυτό δομικά είναι ότι η αλλαγή είναι ευρεία. Οι ευρείες αλλαγές είναι ακριβώς εκεί όπου μια επανεγγραφή που φαίνεται λογική σπάει έναν τύπο. Ζητήστε διαγνωστικά αφού κάνετε resolve:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+Το `file: "*"` εκτελεί τον δικό του ελεγκτή του έργου (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) αντί για ερώτημα ανά αρχείο — το σωστό είδος ερώτησης μετά από μια αλλαγή που άγγιξε σαράντα αρχεία.
 
-## Worked example: migrating a call
+## Λυμένο παράδειγμα: μετεγκατάσταση μιας κλήσης
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Ας πούμε ότι το `log(msg, level)` γίνεται `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Κοιτάξτε τα αποτελέσματα. Αν κάποια από αυτά είναι ένα *διαφορετικό* `log` με δύο ορίσματα, περιορίστε το μοτίβο ορίζοντας το `path` στον φάκελο που περιέχει αυτό που εννοείτε, αντί να προσπαθήσετε να εκφράσετε τη διαφορά μέσα στο μοτίβο.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Έπειτα `resolve`, μετά `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Πότε να χρησιμοποιήσετε κάτι άλλο
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Κατάσταση                                     | Καλύτερο εργαλείο                    |
+| --------------------------------------------- | ------------------------------------ |
+| Μετονομασία ενός συμβόλου                     | `lsp_rename` — ακολουθεί αναφορές, όχι σχήματα |
+| Εύρεση συμβολοσειράς, σχολίου ή ονόματος αρχείου | `search` (περιεχόμενα) / `search_files` (ονόματα) |
+| «Τι σπάει αν αλλάξω αυτό;»                    | Το [γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) |
+| Γλώσσα που δεν καλύπτουν οι γραμματικές       | `search` μαζί με `edit`              |
 
-## Related
+## Σχετικά
 
-- [Code intelligence](/el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — the full argument list
-- [Search code with the code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) — the symbol and impact side
+- [Νοημοσύνη κώδικα](/el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα/) — γιατί η δομική αντιστοίχιση δεν είναι regex με περισσότερα βήματα
+- [Ενσωματωμένα εργαλεία πράκτορα](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — η πλήρης λίστα ορισμάτων
+- [Αναζήτηση κώδικα με το γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) — η πλευρά των συμβόλων και της επιρροής

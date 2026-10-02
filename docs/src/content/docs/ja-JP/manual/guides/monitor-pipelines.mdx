@@ -1,150 +1,99 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: パイプライン実行を監視
+description: 実行キューを操作し、実行のウォーターフォールとステップパネルを読み、失敗したステップやスタックしたステップから復旧する方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/パイプライン監視
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/).
+このページでは、実行が開始された後のすべてを扱います。実行を見つけること、各ステップが何を行ったかを読むこと、失敗した実行を再び動かすことです。実行を開始するには、[パイプラインを手動実行](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)を参照してください。
 
-## Find a run
+## 実行を探す
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. ワークスペースのサイドバーで**パイプライン**をクリックします。この画面はワークスペースの実行キューであり、すべての実行が新しい順に並びます。
+2. 左のレールで絞り込みます。フィルターはちょうど 3 つあり、それぞれにリアルタイムの件数が表示されます。**すべて**、**実行中**、**失敗**です。
+3. <kbd>↑</kbd>/<kbd>↓</kbd>（または <kbd>j</kbd>/<kbd>k</kbd>）でテーブルを移動し、<kbd>Enter</kbd> を押してフォーカス中の実行を開きます。行をクリックしても同じです。
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+各行には、実行がどのように開始されたかを示すグリフが表示されます（手動なら再生アイコン、コードグラフのウォッチならファイルのグリフ、それ以外は自動トリガー）。ツールチップにはトリガー名（**手動**、**PR が公開**、**ファイル変更**など）が表示され、ウォッチ実行の場合は変更されたファイルも表示されます。その後ろにパイプライン名、ステータスバッジ、アクティブ時間（`queued` の実行ではキューの位置）、この試行が開始されてからの経過時間が続きます。アクティブ時間はアイドル状態の停止と再起動の間隔を除外するため、実際の経過時間ではありません。
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+完了した実行、一時停止した実行、キャンセルされた実行のフィルターはなく、テンプレートごとのフィルター、時間枠、テンプレートごとの実行履歴ビューもありません。あるテンプレートの実行を比較するには、キューを名前で走査することになります。
 
-## Read the run detail
+## 実行の詳細を読む
 
-A run's page has three stacked parts.
+実行のページは 3 つの部分が縦に並んでいます。
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**メタストリップ**には、開始時刻、アクティブ時間、ステップの進捗（「7 ステップ中 3」）、壊れたステップとその理由を示す失敗の概要、そして**再試行**と**削除**のアクションが表示されます。
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**タイミングウォーターフォール**はステップごとに 1 本のバーを表示し、その所要時間と、エージェントステップの場合はセント単位のコストを示します。再試行されたステップは、所要時間の後ろに `×N` という接尾辞が付きます。試行回数が現れるのはこの接尾辞だけです。
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**グラフキャンバス**は、各ノードのライブステータスとともにテンプレートを描画します。ノードを選択すると、そのステップパネルが開きます。
 
-### Run and step statuses
+### 実行とステップのステータス
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| ステータス | 意味 |
+| ---------- | ---- |
+| **保留中** | 作成済みだが、まだ開始されていない |
+| **キュー済み** | 受け入れられたが保留されている。このテンプレートの最大並列数の上限に達しており、ステップの行はまだない |
+| **実行中** | 実行している |
+| **一時停止** | 外部の何かを待っている。正常であり、スタックしているわけではない |
+| **完了** | 正常に終了した |
+| **失敗** | エラーで終了した |
+| **キャンセル済み** | ユーザーまたはシステムによって停止された |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+ステップには、これらのステータスから**キュー済み**を除いたものに加えて、ルーターが取らなかったブランチ（およびその結果到達不能になった子孫）に対する**スキップ済み**があります。
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**一時停止**は、エージェントステップがその生涯の大半を過ごす状態です。ディスパッチされたエージェントまたは承認ゲートが、その作業が完了するまでステップを保持します。エンジンには、再開するのではなく実行全体を失敗させる安全弁が 2 つあります。24 時間を超えて一時停止したステップ（`extras.awaitApproval`（`orchestration.awaitApproval` ボディ）は免除され、`human.gate` は免除されません）と、サーバー停止時に処理中だった非冪等ステップです。
 
-## Inspect a step
+## ステップを調べる
 
-Select a node on the canvas. The step panel shows, in order:
+キャンバス上のノードを選択します。ステップパネルには次の順序で表示されます。
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- ステップが失敗した場合は**エラー**のコールアウト、スキップされた場合は理由を伴う**スキップ済み**のコールアウト。
+- **開始**、**終了**、所要時間。
+- **ブランチ** — 並列ブランチの場合のブランチインデックス。
+- **会話を表示** — ステップが実行された会話にジャンプします。パイプラインの会話はサイドバーから隠されているため、これが唯一の入り口です。
+- **入力**と**出力** — 折りたたみ可能な JSON として。
+- **エージェントのアクティビティ** — ステップがディスパッチしたエージェント実行ごとに 1 つのタイル。そのステータス、概要、所要時間、コストを表示します。
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+エージェントステップの場合、**出力**はエージェントが `submit_output` で送信した構造化ペイロードであり、その散文ではありません。推論トレースは**エージェントのアクティビティ**と、**会話を表示**の背後にある会話にあります。
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+bash ステップの場合、**出力**はスクリプトが終了コード 0 で書き出した、前後の空白を除いた stdout です。終了コードが非ゼロの場合、stderr の末尾をエラーメッセージとしてステップが失敗します。
 
-## Recover a failed run
+## 失敗した実行を復旧する
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. メタストリップの失敗の概要を読みます。そこに失敗したステップが示されています。メッセージはステップパネルの**エラー**コールアウトにあります。
+2. ステップの**入力**を確認します。ステートキーの欠落や綴り間違いが最も一般的な原因です。プロンプトエージェントのステップは即座に失敗し、未解決のプレースホルダーを名指しします。bash ステップはそれらを空文字列としてレンダリングしてそのまま実行するため、通常は 1 ステップ後に表面化します。
+3. エージェントステップの場合は、**会話を表示**を開き、エージェントが実際に行ったことを読みます。
+4. メタストリップの**再試行**を押します。完了したステップとスキップされたステップは出力を保持し、それ以外はすべて削除されて再実行され、実行は実行中に戻ります。所要時間の計測はこの試行のために再スタートします。
 
-Common causes worth checking first:
+まず確認する価値のある一般的な原因:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **タイムアウト** — ステップが**タイムアウト (ms)**を超えました。このフィールドがミリ秒であることを忘れないでください。
+- **スクリプトエラー** — bash コマンドが非ゼロで終了したか、`bash` がサーバーホストの `PATH` にありません。
+- **スキーマ検証** — エージェントの `submit_output` ペイロードがステップの出力スキーマを満たしませんでした。
+- **未解決のプレースホルダー** — プロンプトエージェントのステップが参照した `{{key}}` が上流で一度も書き込まれませんでした。エラーは未解決のすべてのキーを名指しします。
+- **未登録のボディ** — ボディキーが登録されていないステップは、テンプレートの読み込み時に警告を出し、その後は単に決して実行されません。
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[再試行は失敗またはキャンセルされた実行でのみ機能します]
+**再試行**ボタンは、実行が `failed` または `cancelled` のときだけ表示されます。それ以外のステータスでは、エンジンは即座に戻ります。
 :::
 
-## Stop a step that is stuck
+## スタックしたステップを停止する
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+実行中のステップを選択し、ステップパネルのヘッダーにある**実行中を強制終了**ボタンを押します。これによりステップのプロセスが強制終了され、ステップは失敗としてマークされ、したがって実行全体が失敗します。開いている兄弟ブランチもすべて一緒に閉じられます。
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+この画面には実行をキャンセルする操作はありません。`pipeline.cancel` は RPC オペレーションとして存在し、エンジンも実装していますが、パイプライン UI のどこからも呼び出されません。ステップの**実行中を強制終了**、または実行の**削除**だけが、利用できる唯一の停止操作です。
 
-## Track cost
+## コストを追跡する
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+コストはステップごとに、ウォーターフォールの右端の列と、**エージェントのアクティビティ**の下の各タイルに表示されます。詳細ページに実行の合計はなく、実行キューにコスト列もないため、2 つの実行のコストを比較するには、それぞれのステップを合計することになります。
 
-## Related guides
+## 関連ガイド
 
-- [Run a pipeline manually](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)
-- [Create a pipeline template](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
-- [Manage costs](/ja-JP/マニュアル/ハウツーガイド/コスト管理/)
-- [Pipeline steps reference](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
+- [パイプラインを手動実行](/ja-JP/マニュアル/ハウツーガイド/パイプライン実行/)
+- [パイプラインテンプレートを作成](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)
+- [コスト管理](/ja-JP/マニュアル/ハウツーガイド/コスト管理/)
+- [パイプラインステップリファレンス](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/)
+- [パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)

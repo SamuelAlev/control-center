@@ -1,249 +1,109 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: 聊天橋接
+description: 為何 Slack 整合會主動外連而不是被動監聽、究竟是什麼讓來自聊天的訊息獲得授權，以及單一橋接如何服務任何聊天產品。
 slug: zh-TW/手冊/概念/聊天橋接
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+聊天橋接讓外部聊天產品——目前是 Slack——成為進入 Control Center 工作區的一等途徑。提及機器人，代理就會被喚醒；在 Slack 討論串中回覆，對話就會繼續；輸入斜線指令，工單就會開立。底層用的是與桌面應用程式相同的空間、對話紀錄、工單與歸屬。聊天是工作區上的一層_介面_，而不是它的副本。
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**實際隨產品提供的供應商只有 Slack。** 產品中任何地方都沒有 Discord、Telegram、Teams 或 Matrix 的實作。這項功能刻意寫成不感知特定供應商的形式——新增第二個產品只需一個列舉值、一個配接器與一個外掛——但今天「聊天」指的就是 Slack。
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+它由兩個介面呈現，而這兩個介面屬於不同的人。將工作區連線到 Slack、自訂機器人，是**管理員**在 設定 → 工作區 → 一般 之下的操作。將你自己的聊天帳號連結到你的 Control Center 身分，則是**成員**在 設定 → 工作區 → 個人資料與身分 之下的操作。
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+有三個決策塑造了整項功能：**連線往哪個方向發起**、**來自外部的訊息憑什麼獲得授權**，以及**產品專屬的知識允許存放在哪裡**。
 
-## Outbound by design
+## 設計上主動外連
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+橋接從不監聽供應商。Slack 是透過 **Socket Mode** 觸達的：伺服器向 Slack 索取一個通訊端 URL 並主動外連，然後在這條連線上接收提及、私訊與斜線指令。
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+這個結果正是重點。位於 NAT 後方的筆記型電腦、沒有網域的家用伺服器、在不同網路之間移動的機器——全都能執行橋接，既不需要入站連接埠、隧道與 TLS 憑證，也不需要一條在變動時得輪替的公開 URL。沒有 webhook 端點需要保護，因為根本沒有 webhook 端點。Control Center 組裝應用程式定義時會強制指定 Socket Mode 並剔除任何請求 URL，因為同時設定兩者的應用程式，只會是個半殘的應用程式。
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+代價是一條必須維持存活的連線，而這是伺服器的職責：重新連線採用帶抖動的指數退避，上限為 30 秒；由供應商發起的通訊端輪替會直接重新連線，不會讓該退避升級；而_憑證被拒_是終局——永遠重試一個已撤銷的權杖只會換來速率限制，所以橋接會停下來等待新權杖，同時在設定中逐字回報供應商自己的錯誤。
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+沒有聊天應用程式的工作區完全不產生任何成本：沒有通訊端、沒有計時器、沒有流量。而且整件事是在伺服器的就緒橫幅_之後_才啟動，因為一個回應緩慢的聊天應用程式絕不能拖慢開機。
 
-## Membership authorizes, not token possession
+## 成員身分才是授權依據，而非持有權杖
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+安裝應用程式的人並不是傳送訊息的人。因此每個入站事件都會先解析成一個**主體**，之後才會發生任何事，並且會預設拒絕、附上說明：
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **未連結的聊天帳號**會在它發言的那個 Slack 討論串中，收到如何連結的說明。
+- **已連結、但其使用者並非本工作區成員的帳號**會被告知去請管理員發出邀請。
+- **角色為唯讀的成員**（`viewer`、`guest`）會被告知他們的角色無法開始工作。
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/zh-TW/手冊/概念/多人協作/)
-for the membership model this leans on.
+以上情況都不會繼續進行。聊天訊息絕不會被歸屬到不是送出它的人身上——正是這一點讓稽核軌跡、各主體的速率限制與工單報告者保持誠實。這裡所依據的成員資格模型，請見[多人協作 — 身分、成員資格與線上狀態](/zh-TW/手冊/概念/多人協作/)。
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+連結是身分解析，**而非**存取授權。成員資格會在每個事件上重新檢查，因此一個屬於後來已被移除之人的連結，會解析成拒絕，而不是他舊有的權限。建立連結有兩條路徑：成員在聊天中輸入一組短效的一次性代碼，或依供應商_已驗證_的電子郵件自動比對——而電子郵件這條路徑仍然要求被比對到的使用者已經是成員，所以一個地址恰好存在於伺服器上的陌生人，什麼也連結不到。
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+這些代碼刻意保存在記憶體中，存活時間為 15 分鐘。將它持久化，只會為一件本應蒸發的東西造出一列貌似憑證的持久紀錄；而伺服器重新啟動會讓所有尚未使用的代碼失效，這是正確行為，不是退化——成員再按一次「連結」即可。
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+拒絕會**在訊息所開啟的那個 Slack 討論串中**以真正的回覆給出。討論串回覆會標記它所回應的訊息，觸及唯一需要它的那個人，同時仍把「你尚未連結」擋在頻道之外。張貼訊息也是每個供應商都具備的一項能力，因此這段說明永遠不會依賴應用程式可能不具備的功能。
 
-## Provenance and the echo problem
+## 來源與回聲問題
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+雙向鏡像的橋接會陷入迴圈，除非有東西能區分兩個方向。橋接帶進來的每則訊息都會蓋上 `metadata['chat']` 戳記——供應商、團隊、對話、討論串、訊息與傳送者。對外鏡像會跳過任何帶有該戳記的訊息。
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+正是這一條規則讓雙向鏡像變得安全：在 Control Center 中輸入的人類訊息會轉送到已連結的討論串（以作者姓名作為前綴），而_來自_聊天的訊息則會停在它進入的地方。
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+向外傳遞的內容刻意收窄。代理的**回答**會以一般聊天文字轉送。簡短的思考可以出現在卡片的 `Thinking…` 那一列。工具輸出是一整面 diff 牆，留在 Control Center 裡——被截斷的回覆也指向那裡。
 
-## A card reports the work; the text is still the message
+## 卡片回報工作，文字依然是訊息
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+在供應商會渲染它們的地方，一個回合會帶有**一張任務卡片**，在回合執行期間原地編輯，並位於它所說明的回答上方。
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+卡片是一份分組呈現的計畫，而不是一段被擠爛的文字。Slack 會把同一個任務上的 `details` 與 `output` 串接起來，所以一列的 details 只會送出一次（即 `Thinking…` 上的那句思考），而 `output` 從不以串流傳送。設定過程佔一列，其標題會被替換（`Working on it…`、`Cloning …`）。推理會新增一列 `Thinking…`。每個工具各佔一列（`Read lib/main.dart`）。回答是卡片下方的普通文字——Slack 的計畫檢視是從之後附加的一段 markdown 讀到它，而不是從混入任務中的一塊內容讀到。除此之外沒有別的：沒有工具輸出，工具引數也只來自一份很短的允許清單，因為未知工具的引數可能是一整個檔案內容，而一列就只有一行。
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+卡片也涵蓋回合_開始之前_的等待。第一次提及會建立對話，而建立對話會複製代理即將在其中工作的每一個儲存庫——在真實的儲存庫上，這意味著好幾分鐘，期間代理還沒被要求做任何事，討論串看起來就像機器人忽略了這個請求。所以卡片會在提及被接受的那一刻開啟（`Working on it…`），接著那一列設定資訊會以桌面端所顯示的同一批措辭更新——`Cloning acme/widgets…`、`Setting up Reviewer…`、`Starting the agent…`——然後在代理開始推理時出現一列 `Thinking…`，接著每個工具各一列。一張卡片、一則訊息，從「我聽到了」一路到下方作為普通文字的回答。只有在聊天中確實有人等待時，設定過程才會被回報：在應用程式中正在準備的對話，或在伺服器啟動時接續的擱置對話，都會完全不顯示卡片、直接佈建。
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+它帶有聊天唯一無法給讀者的東西：一個 **View in Control Center** 連結，指向回覆背後的對話。聊天產品在連結中只接受 `http(s)`，其他一概不行，所以按鈕指向本伺服器提供的一個小頁面，再由它把瀏覽器轉到桌面應用程式的 `control-center://` 連結。那個頁面什麼都不讀取、什麼都不解析——它 URL 中的那些 id 只會被回寫進一個深層連結，不會用到別的地方——而一部沒有可達公開 URL 的伺服器，只會產生一張沒有按鈕的卡片，而不是一張壞掉的卡片。
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+卡片和其他能力一樣，就是一種能力。沒有卡片的供應商行為與以往完全相同，只有文字；而在呼叫當下拒絕卡片的供應商則保留自己的串流：回覆的優先順序永遠高於描述它的卡片。當串流完全關閉時，已完成的卡片改搭那則唯一送出的訊息。開立工單也獲得同樣的處理——`/cc ticket` 的確認是一張已完成的卡片，它存在的理由就是指向剛剛建立的工單的連結。
 
-## Capabilities are negotiated, then remembered
+## 能力會先協商，再被記住
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+聊天產品能渲染的東西各不相同，所以橋接是照著最豐富的介面來寫——在討論串中即時生長的回答、稍縱即逝的「正在思考…」狀態、有標題的討論串、對斜線指令的臨時應答——然後一次降低一項能力。完全不具備這些能力的供應商依然可用；回覆只會以單一訊息送達。
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+宣告某項能力並不等於承諾它。Slack 的串流回覆需要付費方案中的功能，而 Slack 只在呼叫當下才拒絕。被標記為永久性的拒絕會在**整條連線的生命週期內**被記住：橋接從此不再請求，改為發布完整回覆，設定中也會直白說明，因為「我的回覆不再串流」這種問題應該不必讀日誌就能回答。如果 Slack 拒絕任務卡片，卡片也會以同樣方式被捨棄。
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+每一項上限都屬於供應商，而不屬於轉送層：訊息長度上限、串流分塊上限，以及一條串流是否需要討論串錨點，全都由配接器宣告；而過長的回覆會依段落、行或詞邊界切分，而不會從詞的中間切開。
 
-## One bridge, one adapter per product
+## 一個橋接，每個產品一個配接器
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+一切具有產品形狀的東西都活在一個埠後面。通用核心知道 markdown、聊天對話、聊天討論串與成員；它對 Slack 的事件信封、`mrkdwn` 或 gateway intents 一無所知。讓這套做法成立的有三樣東西：
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **配接器**將一個產品正規化：它的傳輸方式、它的 API 呼叫、它的文字編解碼，以及它的事件信封怪癖。Slack 的怪癖很能說明問題——一則頻道提及會到達兩次（既作為 `app_mention`、_也_作為 `message`），而且大多數訊息子類型只是裝飾，而不是新的請求。兩者都在配接器中解決，所以核心永遠不會知道 Slack 會重複投遞。
+- **描述元**是供應商的公開形狀：它需要哪些憑證、這些憑證的格式是什麼、哪些 URL 能幫使用者找到它們、它能做什麼，以及它的應用程式能否從這裡建立或編輯。設定卡片、連線對話框與引數驗證全都是從它_產生_的——用戶端回傳的是一個供應商，外加一份以欄位 id 為鍵的映射。
+- **外掛**是伺服器端的組合：憑證如何變成一條經驗證的連線、配接器如何被建構，以及供應商端的應用程式如何被管理。
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+所以新增一個產品，就是一個列舉值、一個配接器與一個外掛。沒有新的 RPC 操作、沒有 schema 變更、沒有用戶端變更——而且用戶端始終誠實呈現，因為一個它從未聽過的欄位，仍會帶著伺服器提供的標籤渲染出來。
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+有兩個細節讓這層抽象不至於向上滲漏。供應商沒有 API 可用的應用程式管理步驟（產生權杖、安裝應用程式、權限變更後重新安裝）會以**各自帶有連結的具名步驟**回傳，因此完成設定畫面不需知道自己是哪個供應商，也能顯示它們。而橋接寫出的每一條指示都會點名供應商，以及應用程式實際使用的指令，所以即使指令被改名、或出現了第二個供應商，讀起來依然正確，無需新增任何字串。
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[權限變更後請重新安裝]
+編輯機器人的名稱、描述或圖示會立即生效。**權限**變更則需要重新安裝：Slack 會套用新的 manifest，但授權仍維持在當初安裝時的狀態。這次編輯會回傳一個剩餘步驟，其中帶有指向 Slack「Reinstall to Workspace」頁面的連結。
 :::
 
-## Where credentials live
+## 憑證存放在哪裡
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+工作區的聊天權杖存放在該工作區**自己的目錄中，就在它的資料庫旁邊**——以純 JSON 形式位於 `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`，不放在資料庫裡，而且刻意不放在作業系統鑰匙圈中。有兩個後果日後很容易被忽略：刪除工作區會解除該目錄的連結，其中的權杖也隨之消失；而匯出或備份工作區只會複製 `workspace.db`，所以一個交給別人的工作區裡不會夾帶仍然有效的機器人權杖。該檔案繼承伺服器主機的檔案系統信任邊界——任何能讀取資料目錄的東西都能讀到機器人權杖，這與資料庫所處的邊界相同。
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+每個供應商一個檔案，以原子方式寫入且僅限擁有者：撤銷一個應用程式只需解除一個檔案的連結，而一個損毀的檔案只損失一個供應商，而不是全部。憑證只在連線操作中_進入_，永遠不會再出來——狀態讀取只會回傳連線中繼資料。
 
-## What is deliberately not offered
+## 刻意不提供的東西
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **應用程式的結構性設定。** 傳輸方式、權限範圍與事件訂閱都是強制指定的，不對外開放。一個能從設定畫面被設定到徹底沉默的應用程式，是一張支援工單，而不是一項功能。
+- **對話加上斜線指令，僅此而已。** Slack 介面就是訊息、討論串回覆與斜線指令。
+- **第二個事實來源。** 聊天不是儲存工作的地方。Slack 討論串是一個空間，回覆是一份對話紀錄，工單就是一張工單——它們全都在工作區裡，從每個用戶端都能觸及。
 
-## See also
+## 另請參閱
 
-- [Multiplayer — identity, membership and presence](/zh-TW/手冊/概念/多人協作/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/zh-TW/手冊/概念/工作區/): why links and credentials are per workspace
-- [The agent model](/zh-TW/手冊/概念/代理模型/): what wakes when a mention arrives
-- [Tickets and delegation](/zh-TW/手冊/概念/工單/): what `/cc ticket` files
-- [Architecture](/zh-TW/手冊/概念/架構/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/zh-TW/手冊/教學/第一個聊天橋接/)
-- [Set up Slack integration](/zh-TW/手冊/操作指南/slack-整合/)
-- [Link your Slack account](/zh-TW/手冊/操作指南/連結聊天帳號/)
-- [Customize the chat bot](/zh-TW/手冊/操作指南/自訂聊天機器人/)
-- [PR conversations](/zh-TW/手冊/概念/pr-對話/): the same three decisions, made for a forge
+- [多人協作 — 身分、成員資格與線上狀態](/zh-TW/手冊/概念/多人協作/)：橋接所解析的主體與角色
+- [工作區與隔離](/zh-TW/手冊/概念/工作區/)：為什麼連結與憑證是按工作區劃分
+- [代理模型](/zh-TW/手冊/概念/代理模型/)：提及到達時被喚醒的是什麼
+- [工單與委派](/zh-TW/手冊/概念/工單/)：`/cc ticket` 開立的是什麼
+- [架構](/zh-TW/手冊/概念/架構/)：橋接位於伺服器與用戶端之間的什麼位置
+- [將 Slack 橋接到你的工作區](/zh-TW/手冊/教學/第一個聊天橋接/)
+- [設定 Slack 整合](/zh-TW/手冊/操作指南/slack-整合/)
+- [連結你的 Slack 帳號](/zh-TW/手冊/操作指南/連結聊天帳號/)
+- [自訂聊天機器人](/zh-TW/手冊/操作指南/自訂聊天機器人/)
+- [PR 對話](/zh-TW/手冊/概念/pr-對話/)：為程式碼代管平台所做的同樣三項決策

@@ -1,73 +1,75 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Настроить интеграцию Slack
+description: Подключите приложение Slack к рабочему пространству Control Center, чтобы участники могли управлять агентами из Slack.
 slug: ru-RU/руководство/практические-руководства/интеграция-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+В этом руководстве описано, как подключить Slack к рабочему пространству Control Center — либо позволив Control Center создать приложение, либо собрав его самостоятельно.
 
-For a guided first run, see [Bridge Slack to your workspace](/ru-RU/руководство/учебники/первый-чат-мост/).
+Для первого запуска под руководством см. [Подключите Slack к рабочему пространству](/ru-RU/руководство/учебники/первый-чат-мост/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack — единственный провайдер чата]
+Мост написан без знания о провайдере по своей конструкции — интерфейс,
+управляемый дескриптором, поверх одного адаптера на провайдера — но Slack
+остаётся единственным существующим адаптером. Реализаций для Discord, Telegram,
+Teams или Matrix нет.
 :::
 
-## Prerequisites
+## Предварительные требования
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Роль `owner` или `admin` в рабочем пространстве Control Center — подключение приложения чата меняет настройки рабочего пространства
+- Право создавать и устанавливать приложения в рабочем пространстве Slack
+- Ничего доступного публично: соединение исходящее (Socket Mode), поэтому серверу не нужны входящий порт, туннель или домен
 
-## Three ways to get the app
+## Три способа получить приложение
 
-| Path                | You provide                           | Control Center does                                                                                                        |
+| Способ              | Что предоставляете вы                 | Что делает Control Center                                                                                                  |
 | ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| **Под руководством** | Токен конфигурации приложения (`xoxe-…`) | Создаёт приложение с нужными разрешениями, событиями, Socket Mode и слэш-командой; передаёт вам два шага, для которых у Slack нет API |
+| **Создать в Slack** | Ничего                               | Открывает Slack с той же конфигурацией, уже заполненной; вы выбираете рабочее пространство и подтверждаете               |
+| **Вручную**         | Токены готового приложения            | Проверяет их и подключает                                                                                                  |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/ru-RU/руководство/практические-руководства/настроить-чат-бота/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Только путь под руководством ещё и оставляет приложение _управляемым_ из Control Center — именно это открывает [Настроить чат-бота](/ru-RU/руководство/практические-руководства/настроить-чат-бота/). Приложение, созданное через **Создать в Slack**, можно позже перевести в управляемое, вставив токен конфигурации в диалоге подключения.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Кнопки «установить приложение Slack от Control Center» намеренно нет. Установка распределённого приложения Slack требует общего клиентского секрета (в Slack нет PKCE), а Socket Mode распределяет события приложения случайным образом между его соединениями — поэтому одно общее приложение доставляло бы сообщения вашего рабочего пространства на серверы других людей. Так что каждое рабочее пространство владеет собственным приложением, а эти три пути — о том, как мало работы это от вас требует.
 
-## Option A: let Control Center create the app
+## Вариант A: позволить Control Center создать приложение
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Создайте пару токенов конфигурации приложения на [api.slack.com/apps](https://api.slack.com/apps) и скопируйте токен **обновления** (`xoxe-…`)
+2. В Control Center перейдите в **Настройки → Рабочее пространство → Основные** и прокрутите до карточки **Чат-мосты**
+3. В блоке Slack нажмите **Создать приложение за меня**
+4. Вставьте токен, настройте имя приложения, имя бота, описания и слэш-команду, затем нажмите **Создать приложение**
+5. Выполните два оставшихся шага, которые показывает диалог, — каждый в виде ссылки в Slack:
+   - **Basic Information → App-Level Tokens**: создайте токен с разрешением `connections:write` (`xapp-…`)
+   - **Install App**: установите в рабочее пространство и скопируйте **Bot User OAuth Token** (`xoxb-…`)
+6. Нажмите **Вставить учётные данные** и продолжите с раздела [Подключение](#подключение)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Токен конфигурации обновляется при каждом использовании. Control Center сохраняет обновлённое значение по ходу дела, поэтому вставлять его снова не придётся.
 
-## Option B: create it in Slack, pre-filled
+## Вариант B: создать приложение в Slack, с заполненной конфигурацией
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+То же приложение, без токена конфигурации — Slack открывает собственный экран создания со всем манифестом, уже заполненным.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. В Control Center перейдите в **Настройки → Рабочее пространство → Основные** и прокрутите до карточки **Чат-мосты**
+2. В блоке Slack нажмите **Создать приложение за меня**
+3. Настройте имя приложения, имя бота, описания и слэш-команду — они передаются вместе со ссылкой
+4. Нажмите **Создать в Slack**. Браузер откроет страницу создания приложения Slack с уже заполненной конфигурацией
+5. Выберите рабочее пространство Slack и подтвердите. Разрешения, события, Socket Mode и слэш-команда уже верны
+6. Вернувшись в Control Center, выполните два оставшихся шага, которые показывает диалог:
+   - **Basic Information → App-Level Tokens**: создайте токен с разрешением `connections:write` (`xapp-…`)
+   - **Install App**: установите в рабочее пространство и скопируйте **Bot User OAuth Token** (`xoxb-…`)
+7. Нажмите **Вставить учётные данные** и продолжите с раздела [Подключение](#подключение)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack не сообщает, какое приложение он создал, поэтому Control Center не узнаёт идентификатор приложения, и ссылки на шаге 6 ведут к списку ваших приложений, а не прямо к этому приложению. Для **Настроить бота** нужен токен конфигурации.
 
-## Option C: build the app yourself
+## Вариант C: собрать приложение самостоятельно
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Создайте приложение на [api.slack.com/apps](https://api.slack.com/apps), затем настройте его следующим образом.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: включите его и оставьте пустыми все request URL. Slack отклоняет манифест, который запрашивает одновременно Socket Mode и доставку через вебхуки.
 
-**Bot token scopes** (OAuth & Permissions):
+**Разрешения токена бота** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +83,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Подписки на события** (события бота):
 
 ```text
 app_home_opened
@@ -91,134 +93,138 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+Именно `message.channels` и `message.groups` обеспечивают работу _ответов_ внутри уже подключённого треда Slack. Без них доходит только первое упоминание.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Слэш-команда**: `/cc` (подойдёт любое имя — мост использует ту команду, которой его вызвали последней).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: включите вкладку Messages и оставьте её доступной для записи, чтобы участники могли писать боту в личные сообщения.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Токены**: создайте токен уровня приложения с разрешением `connections:write`, затем установите приложение и скопируйте токен OAuth пользователя-бота.
 
-## Connect
+## Подключение
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Перейдите в **Настройки → Рабочее пространство → Основные** и прокрутите до карточки **Чат-мосты**
+2. В блоке Slack нажмите **Подключить Slack**
+3. Заполните поля:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Поле                                                       | Значение | Где это находится в Slack                                  |
+| ---------------------------------------------------------- | -------- | ---------------------------------------------------------- |
+| **Токен OAuth пользователя-бота**                          | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Токен уровня приложения**                                | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Токен обновления конфигурации приложения** (необязательно) | `xoxe-…` | Пара токенов конфигурации приложения на api.slack.com/apps |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Префикс каждого значения проверяется с обеих сторон до того, как что-либо
+отправится, поэтому значение, вставленное не в то поле, отклоняется в любом
+случае с одной и той же фразой.
 
-4. Click **Connect**
+4. Нажмите **Подключить**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center проверяет токен бота через `auth.test` Slack _перед_ тем, как что-либо сохранить, поэтому опечатка сообщается вам, а не превращается в сокет, который тихо никогда не работает. Токен уровня приложения можно подтвердить только открытием сокета, поэтому неверный токен проявляется мгновением позже как ошибка подключения в той же строке.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Без необязательного токена конфигурации приложения соединение работает нормально — вы просто не можете редактировать бота из Control Center.
 
-## What connecting does
+## Что делает подключение
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Сохраняет учётные данные в собственном каталоге рабочего пространства, рядом с его базой данных, с доступом только для владельца. Они никогда не возвращаются обратно клиенту
+- Открывает для этого рабочего пространства одно соединение Socket Mode и начинает получать упоминания, ответы в тредах Slack, личные сообщения и слэш-команды
+- Заново подготавливает каждый ранее подключённый тред Slack, поэтому переподключение продолжает существующие разговоры, а не оставляет их
+- Ничего не стоит для рабочих пространств без приложения чата: ни сокета, ни таймеров, ни трафика
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Где хранятся токены и почему не в связке ключей]
+Учётные данные бота — это один обычный JSON-файл на провайдера в
+`<dataDir>/<workspaceId>/chat_credentials/`, записываемый атомарно и с доступом
+только для владельца. Это сделано намеренно, а не по недосмотру: удаление
+рабочего пространства отвязывает этот каталог, так что его токены уходят вместе
+с ним, а `workspace.export` и резервные копии копируют `workspace.db` — не
+каталог — поэтому рабочее пространство, которое вы передаёте кому-то другому,
+никогда не несёт внутри действующие токены бота. Следствие: восстановление
+рабочего пространства в другом месте означает, что Slack там нужно подключить
+заново.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Доступ к мосту определяется **членством** в рабочем пространстве, а не
+владением токеном. Аккаунт Slack должен быть привязан к пользователю Control
+Center, который состоит в рабочем пространстве с ролью, дающей право записи.
+Подключение, отключение, настройка под руководством, ссылка настройки и
+настройка бота — всё это доступно только администраторам.
 :::
 
-## Verify
+## Проверка
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+В строке Slack отображается тег состояния: **Онлайн**, **Подключение…**, **Ошибка подключения** (рядом — собственная ошибка Slack) или **Не подключено**. Чтобы проверить всё целиком:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. В Slack пригласите бота в канал: `/invite @your-bot-name`
+2. Упомяните его с запросом
+3. В треде Slack появляется ответ, а в Control Center — соответствующее пространство
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/).
+Затем каждый участник, который хочет пользоваться мостом, привязывает свой аккаунт — см. [Привязать аккаунт Slack](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/).
 
-## What a reply looks like in Slack
+## Как выглядит ответ в Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Над словами, передаваемыми потоком, находится одна сгруппированная карточка со строкой на каждый шаг. Подготовка — это одна строка, заголовок которой меняется с `Working on it…` на `Cloning …`, а затем на `Starting the agent…`. Рассуждение добавляет строку `Thinking…`; когда этот шаг завершается, на ней может появиться короткая мысль. Каждый инструмент — отдельная строка (`Read lib/main.dart`). Ответ приходит как обычный текст под карточкой. Карточка становится завершённой, когда заканчивается ход, и ошибочной, когда запуск упал, был прерван или достиг предела ходов.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Карточка появляется в тот момент, когда бот принимает упоминание — `Working on it…` —, так что тред Slack не молчит, пока рабочее пространство ещё собирается. Ваше первое упоминание в канале Slack создаёт разговор, а тот клонирует репозитории, в которых работает агент, поэтому строка подготовки затем показывает `Cloning acme/widgets…`, потом `Setting up Reviewer…`, потом `Starting the agent…`, а затем строку `Thinking…`, как только агент действительно начинает рассуждать. В большом репозитории первая подготовка занимает время; карточка — это то, по чему видно, что он работает, а не игнорирует вас. Последующие упоминания в том же треде Slack всё ещё начинаются с `Working on it…`, а затем пропускают шаги клонирования, потому что рабочее пространство уже на месте.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Рассуждения в виде стены текста и вывод инструментов никогда не покидают Control Center — мысль в строке `Thinking…` это короткая строка, а не транскрипт. **View in Control Center** на карточке открывает полный разговор в приложении для компьютера — ссылка ведёт на ваш собственный сервер Control Center, который передаёт браузер приложению.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Если по нажатию ничего не происходит, значит сервер, отправивший сообщение, недоступен с машины, на которой вы нажали (например, сервер только с loopback-адресом, открытый с телефона), или Control Center там не запущен. Сервер без доступного адреса отправляет карточку без кнопки, а не кнопку, которая никуда не ведёт.
 
-## Rotate a token
+## Обновить токен
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Вставьте новое значение в диалоге подключения и нажмите **Подключить**. Подключение заменяет то соединение, что работало для этого рабочего пространства, поэтому сокет переустанавливается с новыми учётными данными.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Два обязательных токена должны присутствовать при каждом подключении. Необязательный токен конфигурации приложения сохраняет своё значение, если оставить поле пустым, поэтому обновление токена бота никогда не лишает вас возможности редактировать приложение.
 
-## Disconnect
+## Отключение
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Нажмите **Отключить** в строке Slack (только для администраторов). Сокет закрывается, а учётные данные забываются.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Связи с пространствами и пользователями намеренно сохраняются: повторное подключение того же приложения восстанавливает все подключённые треды Slack. Это строки уровня рабочего пространства, поэтому удаление рабочего пространства всё равно их убирает.
 
-## Troubleshooting
+## Устранение неполадок
 
-### The row says "Connection error"
+### В строке указано «Ошибка подключения»
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Прочитайте ошибку рядом с тегом. Отклонённые учётные данные (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) — это окончательная ошибка: мост перестаёт повторять попытки и ждёт новых токенов, потому что бесконечные повторы с отозванным токеном лишь упираются в ограничение частоты. Вставьте токены заново в диалоге подключения.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Ошибка `missing_scope` означает, что приложение установлено с меньшим набором разрешений, чем нужно мосту. Добавьте недостающее разрешение, переустановите приложение в Slack, затем подключитесь заново.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Всё временное (оборванный сокет, сбой у Slack) переподключается само с экспоненциальной задержкой, ограниченной 30 секундами, и штатная ротация сокетов у Slack эту задержку не увеличивает.
 
-### The bot does not answer a mention
+### Бот не отвечает на упоминание
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Бот в канале?** Slack доставляет сообщения канала только приложениям, которые являются его участниками. Выполните `/invite @your-bot-name`
+- **Ваш аккаунт привязан?** Непривязанный участник получает в этом треде Slack ответ с объяснением, как привязаться. См. [Привязать аккаунт Slack](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/)
+- **Вы участник рабочего пространства с ролью, дающей право записи?** Участникам с `viewer` или `guest` сообщают, что их роль доступна только для чтения. Мост никогда не начинает работу от имени того, кому не может её приписать
+- **В рабочем пространстве есть агенты?** Если агентов нет, сообщение сохраняется, но отвечать на него некому
 
-### It answers in a channel but ignores plain messages
+### Отвечает в канале, но игнорирует обычные сообщения
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Так и задумано. Вне личных сообщений мост реагирует только на сообщение, упоминающее бота, или на ответ внутри треда Slack, которым он уже владеет. Всё остальное — чужие разговоры.
 
-### Replies arrive as one big message instead of streaming
+### Ответы приходят одним большим сообщением вместо потоковой передачи
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+В строке указано: «Потоковая передача для этого приложения Slack выключена — ответы приходят одним сообщением». Потоковые ответы Slack требуют функции Agents & AI Apps на платном тарифе; когда Slack отказывает, мост перестаёт запрашивать её до конца жизни этого соединения и вместо этого публикует ответы целиком. Ничего не теряется — полный транскрипт всегда есть в Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Потоковой передаче также нужен якорь треда Slack, поэтому ответ, которому негде расти в треде Slack, публикуется целиком. Карточка задачи в любом случае приходит: при целом ответе она едет в том же сообщении, уже завершённая.
 
-### The reply has no card above it
+### У ответа нет карточки над ним
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Карточки задач Slack — часть той же новой поверхности Agents & AI Apps, что и потоковая передача, и Slack отказывает только во время вызова. Когда это происходит, Control Center сохраняет ответ и отбрасывает карточку до конца жизни этого соединения — ответ без строки состояния лучше строки состояния без ответа.
 
-### "Control Center needs an app configuration token to edit the bot"
+### «Чтобы изменить бота, Control Center нужен токен конфигурации приложения»
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Строка **Настроить бота** недоступна, потому что у подключения нет токена конфигурации приложения. Это ожидаемо для приложения, созданного вручную или через **Создать в Slack**: Slack так и не сообщил Control Center, что это за приложение. Создайте пару токенов на api.slack.com/apps и подключитесь заново, указав токен обновления.
 
-### A long answer is cut off
+### Длинный ответ обрывается
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack ограничивает одно сообщение 40 000 символами, поэтому мост обрезает на 39 000 и добавляет указатель на Control Center — сокращённый ответ лучше того, который Slack отклонит целиком. Полный текст всегда есть в транскрипте пространства.
 
-## Related guides
+## Связанные руководства
 
-- [Link your Slack account](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/)
-- [Customize the chat bot](/ru-RU/руководство/практические-руководства/настроить-чат-бота/)
-- [Chat bridge](/ru-RU/руководство/справка/чат-мост/)
+- [Привязать аккаунт Slack](/ru-RU/руководство/практические-руководства/привязать-аккаунт-чата/)
+- [Настроить чат-бота](/ru-RU/руководство/практические-руководства/настроить-чат-бота/)
+- [Чат-мост](/ru-RU/руководство/справка/чат-мост/)
 
-## Related concepts
+## Связанные понятия
 
-- [Chat bridges](/ru-RU/руководство/понятия/чат-мосты/)
+- [Чат-мосты](/ru-RU/руководство/понятия/чат-мосты/)

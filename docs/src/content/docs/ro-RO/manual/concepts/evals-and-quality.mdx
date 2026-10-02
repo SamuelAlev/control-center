@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Eval-uri și calitate
+description: Suitele eval, setul de pornire inserat în fiecare spațiu de lucru și unde apar în Observabilitate.
 slug: ro-RO/manual/concepte/eval-uri-si-calitate
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+O **suită eval** este o definiție, la nivelul spațiului de lucru, a unei sarcini
+de rulat împotriva unui agent: un prompt, un agent țintă și un mod, o
+configurare opțională, o fixture opțională cu un SHA fixat și o listă de
+evaluatori. Evaluatorii sunt determiniști în primul rând; un judecător LLM cu
+rubrică acoperă ceea ce verificările respective nu pot exprima.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Cinci suite de pornire sunt inițializate la crearea unui spațiu de lucru. Ele
+acoperă propuneri de orchestrare, o revizuire care găsește un bug plantat, modul
+Plan care rămâne doar-citire, modul Plan care produce un plan și un ciclu
+dus-întors al unui tichet. Inițializarea ascultă `WorkspaceCreated`
+(`workspace.upsert` sau `workspace.create`), ignoră un nume care există deja și
+nu completează retroactiv spațiile de lucru mai vechi.
 
-## Where they appear
+## Unde apar
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observabilitate → Calitate** (`/workspaces/<id>/observability`) listează fiecare
+suită din spațiul de lucru.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Creează, listează, editează și șterge suite prin `evals.upsertSuite`,
+`evals.deleteSuite` și `evals.watchSuites`. Fila Calitate este lista;
+acele operațiuni sunt editorul.
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): the configuration a suite
-  pins
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/): the autonomy dial
-- [Manage costs and budgets](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/): spend recorded
-  alongside a run
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): configurația
+  pe care o fixează o suită
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): cadranul de autonomie
+- [Gestionează costurile și bugetele](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/): cheltuielile
+  înregistrate alături de o rulare

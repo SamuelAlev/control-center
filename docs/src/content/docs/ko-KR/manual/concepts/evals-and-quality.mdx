@@ -1,33 +1,32 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: 평가와 품질
+description: 평가 스위트, 각 워크스페이스에 시드되는 스타터 세트, 그리고 이것들이 옵저버빌리티에 나타나는 위치.
 slug: ko-KR/매뉴얼/개념/평가와-품질
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**평가 스위트**는 에이전트를 상대로 실행할 작업을 워크스페이스 범위에서 정의한
+것입니다. 프롬프트, 대상 에이전트와 모드, 선택적 설정, 고정된 SHA가 있는 선택적
+픽스처, 그리고 채점기 목록으로 이루어집니다. 채점기는 결정적 검사를 우선하며,
+LLM 루브릭 판정자가 그런 검사로 표현할 수 없는 부분을 담당합니다.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+워크스페이스를 만들면 스타터 스위트 다섯 개가 시드됩니다. 이들은 오케스트레이션
+제안, 심어 둔 버그를 찾아내는 리뷰, 읽기 전용을 유지하는 플랜 모드, 플랜을
+산출하는 플랜 모드, 티켓 왕복을 다룹니다. 시딩은 `WorkspaceCreated`
+(`workspace.upsert` 또는 `workspace.create`)를 수신하고, 이미 있는 이름은
+건너뛰며, 기존 워크스페이스를 소급해 채우지는 않습니다.
 
-## Where they appear
+## 표시되는 위치
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**옵저버빌리티 → 품질**(`/workspaces/<id>/observability`)에는 워크스페이스의 각
+스위트가 나열됩니다.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+`evals.upsertSuite`, `evals.deleteSuite`, `evals.watchSuites`로 스위트를 생성하고,
+나열하고, 편집하고, 삭제합니다. 품질 탭이 목록이고, 그 작업들이 편집기입니다.
 
-## Related concepts
+## 관련 개념
 
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): the configuration a suite
-  pins
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/): the autonomy dial
-- [Manage costs and budgets](/ko-KR/매뉴얼/사용-가이드/비용-관리/): spend recorded
-  alongside a run
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 스위트가 고정하는 구성
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/): 자율성 다이얼
+- [비용과 예산 관리](/ko-KR/매뉴얼/사용-가이드/비용-관리/): 실행과 함께 기록되는
+  지출

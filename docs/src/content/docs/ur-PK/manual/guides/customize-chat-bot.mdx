@@ -1,98 +1,90 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: چیٹ بوٹ حسب ضرورت بنائیں
+description: بوٹ کا نام بدلیں، وہ اپنے بارے میں جو کچھ کہتا ہے اُسے نئے الفاظ میں لکھیں، یا Control Center سے اُس کی سلیش کمانڈ تبدیل کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+یہ گائیڈ بتاتی ہے کہ Control Center سے باہر نکلے بغیر فراہم کنندہ کے ہاں کی بوٹ ایپ کو کیسے نئی شکل دی جائے۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- ورک اسپیس میں `owner` یا `admin` کردار
+- ایک **منسلک** فراہم کنندہ۔ **بوٹ حسبِ ضرورت** قطار صرف اُس وقت ظاہر ہوتی ہے جب ورک اسپیس منسلک ہو
+- ایسی ایپ جسے Control Center منظم کر سکے۔ Slack کے لیے اس کا مطلب ہے کہ کنکشن کے پاس ایپ کنفیگریشن کا ریفریش ٹوکن (`xoxe-…`) موجود ہو؛ اگر نہ ہو تو قطار یہی بتاتی ہے اور غیر فعال رہتی ہے
 
-## What you can change
+## آپ کیا تبدیل کر سکتے ہیں
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| فیلڈ | مطلب | حد |
+| --- | --- | --- |
+| **ایپ کا نام** | فراہم کنندہ ایپ کو کیسے فہرست کرتا ہے | 1–35 حروف |
+| **بوٹ نام (اراکین @ کے بعد کیا ٹائپ کریں)** | اراکین `@` کے بعد کیا ٹائپ کرتے ہیں | 1–80 حروف |
+| **مختصر تفصیل** | ایک سطر جو فراہم کنندہ دکھاتا ہے | 140 حروف یا کم |
+| **بوٹ کیا کہتا ہے کہ وہ کر سکتا ہے** | بوٹ کے ساتھ DM کے اوپر دکھایا جاتا ہے | 300 حروف یا کم |
+| **سلیش کمانڈ** | وہ کمانڈ جو اراکین چلاتے ہیں، سلیش کے بغیر | چھوٹے حروف، صرف `a–z 0–9 _ -`، 32 حروف پر کاٹ دی جاتی ہے |
+| **براہِ راست پیغامات** | آیا بوٹ DM/ایجنٹ کا تجربہ سامنے لاتا ہے | فعال یا غیر فعال |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center فراہم کنندہ کو کال کرنے سے پہلے چاروں متنی فیلڈز کی توثیق کرتا ہے، چنانچہ جو سرور آپ دیکھ نہیں سکتے، اُس سے مبہم `invalid_manifest` ملنے کے بجائے آپ کو "the app name must be between 1 and 35 characters" ملتا ہے۔ کمانڈ مسترد نہیں ہوتی بلکہ معمول پر لائی جاتی ہے: شروع کا سلیش ہٹا دیا جاتا ہے، باقی چھوٹے حروف میں بدل دیا جاتا ہے، `a–z 0–9 _ -` سے باہر کا سب کچھ حذف ہو جاتا ہے اور خالی نتیجہ `cc` پر واپس چلا جاتا ہے۔
 
-## Edit the bot
+## بوٹ میں ترمیم کریں
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+2. فراہم کنندہ کے بلاک پر **بوٹ حسبِ ضرورت** پر کلک کریں
+3. ڈائیلاگ ایپ کی _لائیو_ اقدار پر کھلتا ہے، جو فراہم کنندہ سے واپس پڑھی جاتی ہیں — چنانچہ جو تبدیلی کسی نے Slack کے اپنے UI میں کی ہو، آپ اُسی سے شروع کرتے ہیں
+4. جو درکار ہو اُس میں ترمیم کریں اور محفوظ کریں
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+اُن لائیو اقدار کو پڑھنے کی قیمت Slack کی جانب سے ایک ٹوکن روٹیشن ہے، اسی لیے یہ قطار جان بوجھ کر ایک کلک ہے، نہ کہ کوئی ایسی چیز جو صفحہ لوڈ ہوتے ہی خود کرے۔
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+تحریر آپ کی تبدیلیوں کو ایپ کی موجودہ ڈیفینیشن پر اوپر سے چڑھا دیتی ہے۔ جو کچھ Control Center ماڈل نہیں کرتا — Slack میں آپ کا شامل کردہ دوسرا سلیش کمانڈ، کوئی ورک فلو مرحلہ، کوئی غیر متعلقہ ترتیب — وہ اچھوتا رہتا ہے۔ اسکوپس اور ایونٹس شامل کیے جاتے ہیں، کبھی گھٹائے نہیں جاتے۔
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+محفوظ کرنے کے بعد Control Center بوٹ کی شناخت دوبارہ پڑھتا ہے تاکہ ترتیبات میں نام چیٹ ایپ کے نام سے میل کھائے۔
 
-## Reinstall when permissions change
+## اجازتیں بدلنے پر دوبارہ انسٹال کریں
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[اجازت کی تبدیلی کے بعد دوبارہ انسٹال کریں]
+Slack نئی ایپ ڈیفینیشن فوراً لاگو کر دیتا ہے مگر انسٹال شدہ گرانٹ
+جوں کا توں رکھتا ہے۔ اجازت کی تبدیلی کے اثر کے لیے ایپ دوبارہ انسٹال
+کریں۔ جب تک آپ ایسا نہ کریں، برج پچھلی گرانٹ پر چلتا رہتا ہے۔
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+جب کوئی محفوظ کرنا اجازتیں بدل دے تو ڈائیلاگ کھلا رہتا ہے اور کہتا ہے "Slack نے ایپ کی اجازتیں بدل دیں۔ اثر کے لیے ایپ دوبارہ انسٹال کریں"، ساتھ ہی **ایپ دوبارہ انسٹال کریں** بٹن ہوتا ہے جو اُس ایپ کے لیے Slack کا install-on-team صفحہ کھولتا ہے۔ Slack میں یہ **Install App → Reinstall to Workspace** ہے۔
 
-## Rename the slash command
+## سلیش کمانڈ کا نام بدلیں
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+**سلیش کمانڈ** تبدیل کریں اور محفوظ کریں۔ اس کے بعد برج ہدایات اُسی کمانڈ سے لکھتا ہے جس کے ساتھ اُسے آخری بار چلایا گیا تھا، چنانچہ مدد کا متن اور لنک کی ہدایات نام کی تبدیلی کی پیروی کرتی ہیں، بجائے اُس کمانڈ کا نام لینے کے جو اب موجود نہیں۔
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+نام بدلنے سے برج کے موجودہ تھریڈز نہیں ٹوٹتے: تھریڈز کی کلید کمانڈ کے بجائے گفتگو ہوتی ہے۔
 
-## What Control Center will not change
+## Control Center کیا تبدیل نہیں کرے گا
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **ساختی ترتیبات۔** ٹرانسپورٹ (Socket Mode)، مطلوبہ اسکوپس اور ایونٹ سبسکرپشنز لازم ٹھہرائے جاتے ہیں، پیش نہیں کیے جاتے۔ ایسی ایپ جو کسی ترتیبات کی اسکرین سے خاموشی میں دھکیلی جا سکے، وہ فیچر نہیں بلکہ ایک سپورٹ ٹکٹ ہے
+- **بوٹ کا آئیکن۔** اسے صرف فراہم کنندہ کی اپنی ایپ ترتیبات بدل سکتی ہیں اور ڈائیلاگ یہی کہتا ہے
+- **فراہم کنندہ کی اپنی فیچر مائیگریشنز۔** جو ایپ پہلے سے Slack کی پرانی اسسٹنٹ شکل پر ہے وہ اُسی پر رہتی ہے؛ یہ ڈائیلاگ ایک تفصیل میں ترمیم کرتا ہے، کسی ایپ کی مائیگریشن نہیں کرتا
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### There is no Customize bot row at all
+### بوٹ حسبِ ضرورت کی کوئی قطار سرے سے موجود ہی نہیں
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/).
+ورک اسپیس ابھی منسلک نہیں۔ قطار صرف اُس وقت ظاہر ہوتی ہے جب فراہم کنندہ کا بلاک کوئی لائیو کنکشن دکھائے۔ دیکھیں [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)۔
 
-### The Customize bot row is disabled
+### بوٹ حسبِ ضرورت کی قطار غیر فعال ہے
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+کنکشن کے پاس ایپ کے انتظام کے لیے کوئی سند نہیں — قطار کا ذیلی عنوان کہتا ہے "بوٹ ترمیم کے لیے Control Center کو ایپ کنفیگریشن ٹوکن چاہیے۔ دوبارہ منسلک ہوں اور ایک شامل کریں۔" Slack کے لیے [api.slack.com/apps](https://api.slack.com/apps) پر ایپ کنفیگریشن ٹوکن کا جوڑا بنائیں اور ریفریش ٹوکن بھر کر دوبارہ منسلک ہوں۔ یہ ایسی ایپ کے لیے متوقع ہے جو ہاتھ سے بنائی گئی ہو یا **Slack میں بنائیں** کے ذریعے بنائی گئی ہو، کیونکہ Slack کبھی نہیں بتاتا کہ اُس نے کون سی ایپ بنائی۔
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+محفوظ کنکشن میں کوئی App id نہیں ہوتی — عام طور پر ایسی ایپ جو ہاتھ سے جوڑی گئی ہو، اِس سے پہلے کہ کوئی id درج ہو۔ ورک اسپیس دوبارہ منسلک کریں، یا ایپ Control Center سے بنائیں۔
 
-### The bot's new name has not appeared in chat
+### بوٹ کا نیا نام چیٹ میں ظاہر نہیں ہوا
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+فراہم کنندگان ایپ میٹا ڈیٹا کو تھوڑی دیر کیش کرتے ہیں۔ اگر ایک منٹ بعد بھی نام پرانا ہو تو دیکھیں کہ آیا محفوظ کرنے نے آپ سے ایپ دوبارہ انسٹال کرنے کو کہا تھا۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
-- [Link your Slack account](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
-- [Chat bridge](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [اپنا Slack اکاؤنٹ لنک کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
+- [چیٹ برج](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)
+- [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)

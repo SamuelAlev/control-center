@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Các bước quy trình
+description: Tài liệu tham chiếu về các loại bước quy trình, khóa body của bước, cấu hình và kết quả của bước.
 slug: vi-VN/so-tay/tham-chieu/buoc-quy-trinh
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Một bước quy trình có hai trục độc lập:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Kind** (`StepKind`) — cách engine _lập lịch_ bước so với các trình kích hoạt của nó.
+- **Khóa body** (`BuiltInBodyKeys`) — closure body đã đăng ký nào _thực thi_ công việc của bước.
 
-## Step kinds
+## Các loại bước
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Được định nghĩa trong `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| Kind       | Ngữ nghĩa lập lịch                                                                                                                                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`  | Điểm vào bắt buộc — đúng một cái cho mỗi mẫu, luôn là nút đầu tiên. Bản thân nó không làm gì; thứ khởi chạy lần chạy (thủ công / sự kiện / theo lịch) được theo dõi riêng dưới dạng các hàng `PipelineTrigger`. Body của nó là body rỗng `pipeline.trigger`. |
+| `listen`   | Kích hoạt khi mọi bước nguồn (trong `StepTrigger.sourceStepIds`) hoàn tất.                                                                                                                                                                |
+| `join`     | Kích hoạt khi mọi bước trong `waitForStepIds` đạt trạng thái kết thúc.                                                                                                                                                                    |
+| `router`   | Rẽ nhánh có điều kiện — body trả về `StepResult.route(key)`, và chỉ cạnh hạ nguồn có `routeKey` khớp mới được kích hoạt; những nhánh không được chọn bị đánh dấu là bị bỏ qua.                                                             |
+| `forEach`  | Được lập lịch giống `listen` (kích hoạt khi mọi `sourceStepIds` hoàn tất). Chính body `flow.forEach` đã đăng ký mới là thứ lặp; engine không sinh ra một bước con cho mỗi mục.                                                             |
+| `terminal` | Điểm đánh dấu cho bộ lập lịch, không có body. Lần chạy quy trình hoàn tất khi một bước terminal kết thúc.                                                                                                                                  |
 
-## Step bodies
+## Body của bước
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Các closure body được đăng ký theo những hằng số trong `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Có 25 body, tất cả được liệt kê dưới đây. Cấu hình được đọc từ `PipelineNodeConfig` của bước (xem bên dưới) trừ khi có ghi chú khác; "khóa trạng thái" được đọc từ trạng thái quy trình / payload trình kích hoạt tại thời điểm thực thi.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Một bước có `bodyKey` không được đăng ký sẽ tạo cảnh báo lúc nạp mẫu rồi sau đó không bao giờ thực thi — nó không làm lần chạy thất bại. Các bước `trigger` và `terminal` được miễn cảnh báo đó: trigger vẫn chạy body rỗng `pipeline.trigger`; còn bước `terminal` không có body.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Body rỗng của nút `trigger` bắt buộc — hoàn tất ngay để engine tỏa ra các listener hạ nguồn. Không có cấu hình.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Bước shell không cần agent (`bash -c`). Các placeholder `{{key}}` trong script được thay bằng giá trị đã escape cho shell, lấy từ trạng thái + payload trình kích hoạt.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| Trường cấu hình | Mô tả                                                    |
+| --------------- | -------------------------------------------------------- |
+| `script`        | Lệnh shell cần thực thi (bắt buộc)                       |
+| `outputKey`     | Khóa trạng thái nhận stdout đã cắt khoảng trắng khi thoát với mã 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Chạy với cwd `<cc_root>/pipelines/<pipelineRunId>/` (dùng chung cho mọi bước bash trong một lần chạy) và `GITHUB_TOKEN` trong môi trường. Cũng ghi `<stepId>_runDir` vào trạng thái. Thoát với mã khác 0 làm bước thất bại kèm phần đuôi stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Nút tổng quát gửi prompt rồi điều phối: kết xuất prompt, điều phối agent vào một hội thoại rồi tạm dừng cho đến khi lần chạy kết thúc. Payload `submit_output` của agent được thu về trạng thái dưới `outputKey`.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| Trường cấu hình            | Mô tả                                                        |
+| -------------------------- | ------------------------------------------------------------ |
+| `agentId`                  | UUID của agent trong không gian làm việc sẽ được điều phối (bắt buộc) |
+| `prompt`                   | Văn bản hướng dẫn; hỗ trợ thay thế `{{key}}` (bắt buộc)      |
+| `outputKey`                | Khóa trạng thái cho đầu ra đã thu về                         |
+| `outputSchema`             | JSON Schema mà đầu ra phải thỏa mãn                          |
+| `label`                    | Nhãn cho người dùng hiển thị trên canvas                     |
+| `extras.spaceId`           | Hội thoại đã có để làm việc trong đó (mặc định: một hội thoại ẩn) |
+| `extras.conversationTitle` | Stream có tên bên trong space đó (tùy chọn)                  |
+| `extras.mode`              | Được đọc trên nút *mở* phòng (`messaging.createSpace`), không phải ở đây. Mặc định `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Body router — đọc `config.extras`, đánh giá một điều kiện rồi trả về `StepResult.route(key)`. Điều kiện **không phải** biểu thức JavaScript; có ba cách viết được hỗ trợ, theo thứ tự ưu tiên:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Cây vị từ** (`extras.predicate`) — một cây boolean định tuyến `"true"` / `"false"`. Mỗi nút là một map có một `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — đúng khi bất kỳ đường dẫn nào được liệt kê tồn tại trên đĩa; `negate` đảo ngược kết quả; `recursive` cũng tìm trong các thư mục con (bỏ qua `.git`, `node_modules`, `build`, `.dart_tool`). Đường dẫn tương đối được giải dựa trên `state[baseKey]` (mặc định `repo_local_path`), nếu không thì dựa trên thư mục không gian làm việc của từng lần chạy.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — các toán tử `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; đọc trạng thái quy trình chứ không đọc hệ thống tệp.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — các nhóm boolean.
+  - `{"type": "not", "of": <predicate>}` — phủ định.
+- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; định tuyến tới case đầu tiên mà giá trị trạng thái chứa nó (không phân biệt hoa thường), nếu không thì tới `default`.
+- **So sánh** (các khóa cấp cao nhất `extras.left` / `extras.op` / `extras.right` kiểu cũ) — tương đương một vị từ `comparison`, được giữ lại cho những mẫu được viết trước khi có cây vị từ.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Các cạnh đi ra khỏi nút mang một `routeKey` phải khớp với khóa được trả về.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Đăng các phát hiện đã tổng hợp dưới dạng bình luận đánh giá PR qua máy khách PR của GitHub.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Khóa trạng thái         | Mô tả                                          |
+| ----------------------- | ---------------------------------------------- |
+| `repo_full_name`        | `owner/repo` (bắt buộc)                        |
+| `pr_number`             | Số PR — số nguyên hoặc chuỗi số (bắt buộc)     |
+| `consolidated_findings` | Nội dung bình luận (bắt buộc)                  |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Trả về `StepResult.terminal` với `comment_review_id` và `commented_at` trong trạng thái.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Gửi một tin nhắn tới một không gian nhắn tin qua `MessagingPort`.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| Khóa trạng thái | Mô tả                                                          |
+| --------------- | -------------------------------------------------------------- |
+| `space_id`      | Không gian đích (bắt buộc)                                     |
+| `content`       | Nội dung tin nhắn, được đọc nguyên văn từ trạng thái (bắt buộc) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Ghi `posted_space_id` và `posted_at` vào trạng thái.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Điều phối cả một đội thay vì một agent đơn lẻ, rồi tạm dừng cho đến khi các lần chạy của các thành viên kết thúc.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| Trường cấu hình                          | Mô tả                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `teamId`                                 | Đội thuộc không gian làm việc sẽ được điều phối (bắt buộc; loại trừ lẫn nhau với `agentId`)            |
+| `prompt`                                 | Văn bản mục tiêu; hỗ trợ thay thế `{{key}}` (bắt buộc)                                                 |
+| `dispatchMode`                           | `allParallel` (mặc định — một tác vụ cho mỗi thành viên) hoặc `manager` (chỉ điều phối trưởng nhóm để phối hợp) |
+| `outputKey`                              | Khóa trạng thái cho đầu ra đã thu về của các thành viên                                                |
+| `outputSchema`, `label`, `extras.spaceId` | Như đối với `conversation.promptAgent`                                                                 |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Cổng phê duyệt. Điều phối agent phê duyệt vào một hội thoại (chế độ review) với prompt của cổng và một hợp đồng đầu ra `{decision, reason}`, rồi tạm dừng cho đến khi agent phê duyệt gửi kết quả qua `submit_output`.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| Trường cấu hình             | Mô tả                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `agentId`                   | Agent phê duyệt (bắt buộc)                                                       |
+| `prompt`                    | Prompt của cổng (tùy chọn; dùng một giá trị mặc định khi bỏ trống)              |
+| `outputKey`                 | Khóa trạng thái cho payload `{decision, reason}` đã thu về                       |
+| `outputSchema`              | Mặc định là một lược đồ phê duyệt (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId`   | Như đối với `conversation.promptAgent`                                           |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Cổng chỉ được giải quyết qua `submit_output`. `BuiltInBodyKeys.humanGate`, thư viện loại nút và văn bản prompt của một mẫu tích hợp sẵn đều nhắc tới hai công cụ MCP `approve_step` và `reject_step`; **cả hai công cụ này đều không tồn tại** trong bất kỳ package hay registry nào.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Gỡ các worktree cách ly cũ; chọn chế độ của nó từ payload trình kích hoạt. Tuân theo cờ `dryRun` của lần chạy.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| Khóa trạng thái                       | Mô tả                                                                                    |
+| ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `ticket_id`                           | Giải phóng worktree của phiếu đó                                                         |
+| `repo_full_name` + `pr_number`        | Giải phóng worktree tạm thời của trình chỉnh sửa PR                                      |
+| `space_id`                            | Tháo dỡ worktree và thư mục của hội thoại đó                                             |
+| (không có mục nào ở trên)             | Quét toàn không gian làm việc: các thư mục đã biến mất, space đã chết, thư mục hội thoại mồ côi |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (tùy chọn) nhận một chuỗi tóm tắt.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Map / fan-out trên một tập hợp trong trạng thái: kết xuất prompt một lần cho mỗi mục, rồi điều phối agent **một lần** với các prompt đó được ghép lại (ngăn cách bằng `---`) và tạm dừng cho đến khi lần chạy đó kết thúc. Một tập hợp rỗng hoàn tất ngay với một danh sách rỗng. Đây không phải là một lần điều phối song song cho mỗi mục.
 
-| Config field         | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| Trường cấu hình      | Mô tả                                                                 |
+| -------------------- | --------------------------------------------------------------------- |
+| `agentId`            | Agent được điều phối cho mỗi mục (bắt buộc)                           |
+| `prompt`             | Prompt cho mỗi mục; hỗ trợ thay thế `{{key}}` (bắt buộc)              |
+| `extras.iterableKey` | Khóa trạng thái chứa tập hợp (bắt buộc)                               |
+| `extras.itemKey`     | Khóa mà mục hiện tại được gán vào trong prompt (mặc định `item`)      |
+| `outputKey`          | Khóa trạng thái cho đầu ra đã thu về (một lần điều phối, không phải một danh sách) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Chạy một mẫu quy trình khác như một bước con lồng nhau (quy trình con chạy như một lần chạy con với `parentPipelineRunId` được đặt). Bước này tạm dừng cho đến khi con đạt trạng thái kết thúc, rồi trạng thái cuối của con được hợp nhất dưới `outputKey`.
 
-| Config field        | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| Trường cấu hình     | Mô tả                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| `extras.templateId` | Mẫu con cần chạy (bắt buộc; một quy trình không thể tự gọi chính nó)  |
+| `inputKeys`         | Các khóa trạng thái được sao chép vào payload trình kích hoạt của con |
+| `outputKey`         | Khóa trạng thái cho trạng thái cuối đã hợp nhất của con               |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Đánh chỉ mục tree-sitter chạy nền: duyệt một kho mã, trích xuất symbol/cạnh trong các isolate worker rồi nạp chúng vào đồ thị mã của không gian làm việc. Truyền tiến độ vào hàng bước của lần chạy; hỗ trợ chạy thử. Tree-sitter và các grammar của nó là native bắt buộc — thiếu một dylib nghĩa là máy chủ chưa từng khởi động, và một grammar không giải được giữa chừng sẽ làm bước thất bại thay vì bị bỏ qua.
 
-| State key         | Description                           |
-| ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| Khóa trạng thái   | Mô tả                            |
+| ----------------- | -------------------------------- |
+| `repo_id`         | Kho mã cần đánh chỉ mục (bắt buộc) |
+| `repo_local_path` | Đường dẫn cục bộ của bản checkout (bắt buộc) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Phân tách người nói ngoại tuyến. Đọc âm thanh được lưu giữ của cuộc họp, gom cụm thành các người nói (`Person 1`, `Person 2`, …), dán nhãn lại các đoạn phiên âm và ghi lại trạng thái `transcript`; đồng thời phát ra `diarization_spans` cho bước `meeting.updateTranscript` chạy song song. Giữ nguyên phiên âm khi không có âm thanh nào được lưu giữ hoặc khi các mô hình chưa được cài đặt.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| Khóa trạng thái | Mô tả                            |
+| --------------- | -------------------------------- |
+| `meeting_id`    | Cuộc họp cần phân tách người nói (bắt buộc) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Các body lưu bền tóm tắt cuộc họp một cách tất định. Mỗi body đọc `meeting_id` và payload `meeting_outcome` có cấu trúc của bước agent (`{summary, enhancedNotes, actionItems[], decisions[]}`) từ trạng thái rồi ghi phần của mình vào bảng riêng — ghi chú, mục hành động hoặc quyết định. Các hàng đã lưu trước đó không bao giờ bị xóa khi lần chạy suy giảm.
 
-### Other built-in bodies
+### Các body tích hợp sẵn khác
 
-| Body key                           | Description                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| Khóa body                          | Mô tả                                                                                                                                                                                                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meeting.identifySpeakers`         | Nhận dạng người nói xuyên cuộc họp: đối chiếu những người nói đã được phân tách với các hồ sơ giọng nói đã lưu và tự động áp dụng những kết quả khớp đủ tin cậy. Không làm gì khi thiếu hồ sơ/embedding.                                                   |
+| `meeting.updateTranscript`         | Áp dụng các nhãn `Person N` từ `diarization_spans` và hợp nhất các mảnh của từng cửa sổ thành lượt nói theo từng người nói, rồi lưu bền phiên âm đã làm sạch. Không làm gì khi phân tách người nói không tạo ra kết quả nào.                             |
+| `meeting.assemblePlayback`         | Ghép bản âm thanh phát lại đã trộn của cuộc họp từ các tệp WAV theo kênh được lưu giữ. Không làm gì khi không có âm thanh nào được lưu giữ.                                                                                                              |
+| `orchestration.markPhase`          | Ở cuối DAG công việc, ghi các dấu hiệu thất bại cho những phiếu con không có đầu ra và chuyển điều phối sang `synthesizing`.                                                                                                                             |
+| `orchestration.persistDeliverable` | Ghi đầu ra tổng hợp vào phiếu cha, hoàn tất phiếu đó, đăng kết quả bàn giao và đánh dấu điều phối là `completed`.                                                                                                                                        |
+| `orchestration.awaitApproval`      | Cổng phê duyệt một phần: hoàn tất ngay khi khóa nút của bước nằm trong tập đã được phê duyệt của điều phối, nếu không thì tạm dừng cho đến khi một lần phê duyệt sau đó đánh thức nó. Đây là body duy nhất đặt `extras.awaitApproval`, và điều đó giúp nó được miễn thời gian chờ 24 giờ dành cho bước bị tạm dừng. |
+| `messaging.createSpace`            | Mở hội thoại mà phần còn lại của mẫu làm việc trong đó, được công bố dưới `outputKey` của bước (các mẫu tích hợp sẵn dùng `pipeline_space_id`). Danh sách `repoIds` rỗng thì không checkout gì cả; `extras['allRepos']` checkout mọi kho mã của không gian làm việc. `extras['createConversation']` (mặc định tắt) cũng mở một stream có tên. Một bước agent THAM GIA một phòng và không bao giờ tự mở phòng, nên một đợt fan-out thiếu nút này sẽ thất bại lúc điều phối — và nối nó một lần nghĩa là cả đợt fan-out dùng chung một bản checkout thay vì cấp riêng cho từng cái. |
+| `prReview.finalize`                | Bước cuối cùng của mẫu đánh giá PR: sắp xếp các node đánh giá đã tích lũy vào các nhóm đồng thuận và tính kết luận cho từng PR.                                                                                                                          |
+| `skills.analyze`                   | Chạy quét chuỗi cung ứng skill trên các skill đã cài đặt của một không gian làm việc và ghi lại từng phán quyết.                                                                                                                                        |
 
-## Step results
+## Kết quả của bước
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Một body của bước trả về `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Tất cả các factory đều nhận một map `mutatedState` tùy chọn được hợp nhất vào trạng thái quy trình, trừ `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Factory                     | Chữ ký                                                          | Mô tả                                                                     |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Hoàn tất bình thường; các listener hạ nguồn được đánh giá                 |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Hoàn tất kiểu router; chọn nhánh hạ nguồn có `routeKey` khớp              |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Tạm dừng cho đến khi một loại sự kiện miền cụ thể xảy ra                  |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Tạm dừng cho đến khi mọi tác vụ được liệt kê đạt trạng thái kết thúc      |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Lần chạy quy trình đã kết thúc — không còn bước nào nữa                   |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Bước thất bại kèm một thông báo lỗi                                       |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Hành vi thử lại cho body của một nút khi thất bại (`PipelineNodeConfig.retryPolicy`; null tắt việc thử lại).
 
-| Field            | Type     | Description                                                                    |
+| Trường           | Kiểu     | Mô tả                                                                          |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | Tổng số lần thử kể cả lần đầu (3 = 1 lần thử + 2 lần thử lại); phải ≥ 1        |
+| `backoff`        | `String` | `linear` hoặc `exponential` (mặc định)                                         |
+| `initialDelayMs` | `int`    | Độ trễ trước lần thử lại đầu tiên, tính bằng mili giây; các độ trễ sau tăng theo `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Cấu hình theo từng nút được mang bên trong định nghĩa bước (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Cả nút tích hợp sẵn lẫn nút tùy chỉnh đều dùng chung hình dạng này; mỗi body chỉ đọc những trường mà nó quan tâm.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Trường           | Kiểu                    | Mô tả                                                                                                                                 |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Mẫu prompt có thay thế `{{key}}`                                                                                                     |
+| `script`         | `String?`               | Nội dung script bash có thay thế `{{key}}`                                                                                           |
+| `agentId`        | `String?`               | UUID của agent trong không gian làm việc sẽ được điều phối                                                                            |
+| `inputKeys`      | `List<String>`          | Các khóa trạng thái mà nút này dùng làm đầu vào                                                                                       |
+| `repoIds`        | `List<String>`          | Các kho mã mà nút `messaging.createSpace` checkout (`<repoId>` hoặc `<repoId>@<branch>`). Rỗng = không có gì; `extras['allRepos']` = mọi kho mã của không gian làm việc. Bị bỏ qua trên các bước agent. |
+| `outputKey`      | `String?`               | Khóa trạng thái mà đầu ra của nút này được ghi vào                                                                                    |
+| `label`          | `String?`               | Nhãn cho người dùng hiển thị trên canvas (mặc định là ID của bước)                                                                    |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (tập con) mà giá trị đầu ra phải thỏa mãn                                                                                 |
+| `reducer`        | `String?`               | Chiến lược hợp nhất khi các nhánh song song cùng ghi vào một `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, hoặc `override` (mặc định) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Chính sách thử lại khi body thất bại; null = chỉ thử một lần                                                                          |
+| `continueOnFail` | `bool`                  | Khi true, một thất bại kết thúc không làm lần chạy thất bại; lỗi được cất dưới `state['_stepErrors'][stepId]`                          |
+| `timeoutMs`      | `int?`                  | Thời gian chờ theo đồng hồ thực cho body của nút, tính bằng mili giây; null = không có thời gian chờ                                  |
+| `teamId`         | `String?`               | Đội cần điều phối (các nút `team.dispatch`); loại trừ lẫn nhau với `agentId`                                                          |
+| `dispatchMode`   | `String?`               | Chế độ thực thi của đội: `allParallel` hoặc `manager`                                                                                 |
+| `extras`         | `Map<String, dynamic>`  | Cấu hình tự do dành riêng cho body (ví dụ `iterableKey`, `templateId`, cây điều kiện)                                                 |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Các accessor dẫn xuất: `spaceId` (`extras['spaceId']` — hội thoại đã có để làm việc trong đó), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, được đọc trên nút mở phòng) và `runWhen` (`extras['runWhen']` — bỏ qua nút khi điều kiện không được thỏa mãn).
 
-## See also
+## Xem thêm
 
-- [Pipelines](/vi-VN/so-tay/khai-niem/quy-trinh/)
-- [Create a pipeline](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
-- [Pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
-- [Run a pipeline](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
+- [Quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/)
+- [Tạo mẫu quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
+- [Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/)
+- [Chạy quy trình thủ công](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)

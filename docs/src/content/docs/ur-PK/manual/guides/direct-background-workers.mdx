@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: پس منظر کے ورکرز کی ہدایت
+description: vibe موڈ استعمال کریں تاکہ کام خود کرنے کے بجائے آپ کئی ایجنٹس کی ہدایت کریں جو اسے متوازی طور پر انجام دیتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پس-منظر-ورکرز-کی-ہدایت
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+یہ گائیڈ بتاتی ہے کہ کسی گفتگو کو ورکر کی بجائے **ہدایت کار** کے طور پر کیسے چلایا جائے: سیشن پڑھتا اور تصدیق کرتا ہے، اور ترمیم کا کام پس منظر کے ایجنٹ کرتے ہیں۔
 
-## What changes when you type `/vibe`
+## جب آپ `/vibe` ٹائپ کرتے ہیں تو کیا بدلتا ہے
 
-Two things, and only the first is enforced by the machinery:
+دو چیزیں، اور مشینری صرف پہلی کو نافذ کرتی ہے:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **سیشن کے اپنے ٹولز صرف پڑھنے کے لیے رہ جاتے ہیں**، اور ساتھ پانچ ورکر افعال آ جاتے ہیں۔ ریپو پر اثر ڈالنے کا واحد راستہ ورکر ہے، اور یہ جاننے کا واحد طریقہ کہ کیا ہوا، ورکر کے چھوئے گئے فائلوں کو پڑھنا ہے۔
+2. **اسے کہا جاتا ہے کہ وہ ماننے کے بجائے پڑھ کر تصدیق کرے۔** ورکر کی رپورٹ اس کے اپنے کیے کا دعویٰ ہے، اس بات کا ثبوت نہیں کہ کام واقعی ہوا۔
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+پہلی بات بنیادی ہے۔ ایسا ہدایت کار جو اب بھی grep اور edit کر سکتا ہو، دباؤ میں کام خود کرنے لگتا ہے — اور یہی وہ ناکامی ہے جسے روکنے کے لیے یہ نظام موجود ہے۔
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## ورکرز خالی شروع ہوتے ہیں
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+ورکر نے آپ کی گفتگو کبھی نہیں دیکھی اور نہ کبھی دیکھے گا۔ بریف ہی اس کا پورا سیاق و سباق ہے۔
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+یہی چیز اس طرز کو سستا رکھتی ہے — بیس ورکرز، جن میں سے ہر ایک ہدایت کار کی تاریخ رکھتا ہو، ہدایت کار کے سیاق و سباق سے بیس گنا مہنگے پڑیں گے — اور یہی وہ واحد چیز ہے جو بریف لکھنا مشکل بناتی ہے۔ «اب دوسرا بھی کر دو» ہدایت کار کے لیے مکمل ہدایت معلوم ہوتی ہے، مگر ایک نئے سیشن کے لیے بالکل بےمعنی۔
 
-A good brief names files, commands and the definition of done:
+اچھا بریف فائلوں اور کمانڈز کا نام لیتا ہے، اور بتاتا ہے کہ کام مکمل کب مانا جائے گا:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> `lib/features/auth/` میں، `SessionStore.read(key)` کی ہر کال کو `SessionStore.get(key)` سے بدل دیں۔ نیا میتھڈ `Future<String?>` واپس کرتا ہے جبکہ پرانا `String?` واپس کرتا تھا، اس لیے کال کرنے والوں کو `await` درکار ہوگا۔ کام ختم ہونے پر `fvm flutter analyze lib/features/auth` چلائیں اور جو غلطیاں آپ ٹھیک نہ کر سکیں اُن کی رپورٹ دیں۔
 
-## The five verbs
+## پانچ افعال
 
-| Verb         | What it does                                            |
+| فعل         | یہ کیا کرتا ہے                                            |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | ایک بریف پر ورکر شروع کرتا ہے۔ **فوراً واپس آ جاتا ہے۔**     |
+| `vibe_list`  | ہر ایک کا درجہ، حیثیت، گزرا ہوا وقت اور آخری نتیجہ  |
+| `vibe_send`  | ایسے ورکر کے لیے فالو اَپ باری جس نے اپنی باری مکمل کر لی ہو          |
+| `vibe_wait`  | جب تک کوئی ایک ورکر اپنا کام ختم نہ کر دے، رکتا ہے                          |
+| `vibe_kill`  | کسی ایک کو روک دیتا ہے                                                |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+ورکر شروع کرنے کا ڈیزائن ہی یہ ہے کہ وہ فوراً واپس آ جائے اور اپنے مکمل ہونے کا انتظار نہ کرائے۔ ایک ہدایت کار جو ہر بار ورکر شروع کرتے وقت رک جائے، وہ ورکرز کو ایک ایک کر کے چلا رہا ہوتا ہے، جو کہ وہی کام خود کرنے کا ایک سست طریقہ ہے۔ `vibe_wait` صرف اُس وقت استعمال کریں جب کسی مخصوص جواب کے بغیر واقعی آگے نہ بڑھ سکتے ہوں۔
 
-## Two tiers
+## دو درجے
 
-| Tier   | For                                                              |
+| درجہ   | کس لیے                                                              |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | واضح تفصیل والا مکینیکل کام — ترمیمات، نام کی تبدیلیاں، مسودے، کمانڈز چلانا |
+| `good` | ڈیزائن، فیصلہ سازی، یا یہ جانچنا کہ `fast` ورکر نے کیا بنایا       |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+عام انداز یہ ہے کہ `fast` ورکرز کو الگ الگ فائلوں پر پھیلا دیا جائے، پھر ایک `good` ورکر لگایا جائے جو ان کے مجموعی کام کا جائزہ لے۔
 
-## Verifying
+## تصدیق کرنا
 
-This is the part that decides whether the pattern is worth anything.
+یہی وہ حصہ ہے جو طے کرتا ہے کہ اس طرز کی کوئی قیمت ہے یا نہیں۔
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+پھر **اُن فائلوں کو پڑھیں جن کا اس نے نام لیا**۔ ہدایت کار کے پاس `read`، `search`، `lsp` اور `ast_grep` موجود ہیں؛ اِنہیں رکھنے کا پورا مقصد یہی ہے۔ جو ہدایت کار رپورٹ کو من و عن مان لے، وہ محض دوسرے ایجنٹس کی اُمید پرستی کا خلاصہ نگار ہے۔
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+ورکرز کے ایک دور کے بعد `lsp(action: "diagnostics", file: "*")` عام طور پر سب سے تیز واحد جانچ ہوتی ہے۔
 
-## When a worker loses the thread
+## جب کوئی ورکر بھٹک جائے
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+اسے روک دیں اور نیا بریف دیں۔ تازہ، درست شدہ بریف بحث سے سستا پڑتا ہے، اور `vibe_send` صرف ایسے ورکر پر کام کرتا ہے جس نے اپنی باری پہلے ہی مکمل کر لی ہو۔
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## حدود
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **آٹھ بیک وقت ورکرز۔** یہ خرچ کی حد ہے، کوئی تکنیکی حد نہیں: ہر ورکر ایک مکمل ماڈل سیشن ہے، اور جو ہدایت کار بیس پھیلا دے، وہ یہ ٹریک کرنا چھوڑ چکا ہوتا ہے کہ وہ سب کیا کر رہے ہیں۔
+- **کوئی ورکر موڈ سے زیادہ زندہ نہیں رہتا۔** رن ختم ہونے پر ان سب کو روک دیا جاتا ہے اور ٹرانسکرپٹ بتاتا ہے کہ کتنے تھے۔ گفتگو آگے بڑھ جانے کے بعد بھی فائلوں میں ترمیم کرتا رہنے والا پس منظر کا ایجنٹ وہ واحد ناکامی ہے جو یہ نظام ہرگز برداشت نہیں کر سکتا۔
+- **بنیادی طور پر ورکرز عام ذیلی ایجنٹ ہوتے ہیں۔** وہی گہرائی کی حد، وہی گارڈریل پالیسی، وہی رن لاگ چائلڈ۔ vibe صرف یہ بدلتا ہے کہ انہیں کون چلاتا ہے، یہ نہیں کہ انہیں کیا کرنے کی اجازت ہے — چنانچہ ورکر کی write اور exec کالوں پر منظوری کے پرامپٹ پھر بھی آتے ہیں۔
 
-## When not to use it
+## اسے کب استعمال نہ کریں
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/) or an [orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+vibe موڈ ایسے کام کے لیے ہے جو آزاد بریفوں میں بٹ سکتا ہو۔ اگر اگلا قدم پچھلے قدم کے نتیجے پر منحصر ہو، تو آپ [پائپ لائن](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/) یا [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/) بیان کر رہے ہیں، اور یہ دونوں انحصار کو بجا طور پر ظاہر کرتے ہیں، بجائے اس کے کہ ہدایت کار کو `vibe_wait` سے اُن کی نقل کرنی پڑے۔
 
-## Related
+## متعلقہ
 
-- [Run agents in parallel](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/) — the other ways to fan out
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/) — when the work has a shape
-- [Built-in agent tools](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — the verbs and their arguments
+- [ایجنٹس متوازی چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/) — پھیلانے کے دیگر طریقے
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/) — جب کام کی کوئی ساخت ہو
+- [بلٹ اِن ایجنٹ ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — افعال اور اُن کے آرگیومنٹس

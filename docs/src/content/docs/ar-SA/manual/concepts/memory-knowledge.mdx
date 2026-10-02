@@ -1,199 +1,114 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: الذاكرة والمعرفة
+description: كيف يخزّن Control Center معرفة الوكلاء، وما الذي يصل فعلًا إلى مطالبة الوكيل، ولماذا تكون قراءات الذاكرة مفتوحة عند الفشل.
 slug: ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## ما غاية الذاكرة
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+من غير الذاكرة تبدأ كل محادثة مع وكيل من الصفر: يُعاد شرح العُرف نفسه، ويُعاد الجدل في القرار نفسه، ويُعاد استكشاف الطريق المسدود نفسه. الذاكرة مخزن على نطاق مساحة العمل يبقى بعد التشغيلات، وغايتها أن يجد وكيل لاحق المعرفة التي أنتجها وكيل سبقه.
 
-It has three layers and they answer different questions:
+فيها ثلاث طبقات، وكل طبقة تجيب عن سؤال مختلف:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **الحقائق**: ما هو صحيح (عُرف، أو نتيجة، أو قرار).
+2. **السياسات**: ما يجب أن يفعله الوكلاء بشأنه (قاعدة معيارية).
+3. **الذاكرة العاملة**: ما كان وكيل واحد في منتصفه.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+والفرق مهم لأن كل طبقة تصل إلى الوكيل من طريق مختلف. الحقائق تُبحث. السياسات تُدفَع. الذاكرة العاملة خاصة.
 
-## Facts
+## الحقائق
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` وحدة معرفة محصورة بمساحة عمل ونطاق.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| السمة                                       | ما هي                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------- |
+| `domain`                                    | نطاق المعرفة ("conventions" و"decisions" و"codebase")                 |
+| `topic`                                     | وسم قصير للموضوع                                                      |
+| `content`                                   | نص المعرفة                                                            |
+| `confidence`                                | 0.0–1.0، تُبذَر من المنشأ وترتفع مع إعادة الذكر                       |
+| `memoryType`                                | نوع الحقيقة، وهو ما يحدّد منحنى اضمحلالها الزمني                      |
+| `veracity`                                  | كيف عُرفت. يبذر الثقة ويحدّد مقدار الرفع عند كل إعادة ذكر             |
+| `sourceObservationIds`                      | الملاحظات التي أدّت إليها                                             |
+| `supersededBy`                              | الحقيقة الأحدث التي حلّت محلها، إن وُجدت                              |
+| `validUntil`, `recallCount`, `mentionCount` | إشارات انتهاء الصلاحية والاستخدام التي تُستعمل عند الاسترجاع         |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+الصفان الأخيران هما ما يفوته الناس، وهما ما يقرّر _أي_ حقيقة تظهر. يحمل `memoryType` معاملات اضمحلال Weibull لكل نوع، فيخبو الالتزام المحدود بمدة سريعًا بينما لا تخبو حقيقة الملف المستقرة. يسجّل `veracity` المنشأ: تصريح إنسان (الوزن 1.0)، أو استنتاج وكيل (0.7)، أو ناتج أداة (0.5)، أو استيراد (0.6). وهذا الوزن يبذر الثقة التي تبدأ منها الحقيقة.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+لا تُحرَّر الحقائق في موضعها حين تُناقَض. كتابة حقيقة تشغّل كشف التعارض على حقائق النطاق نفسه والموضوع نفسه، وتستبدل الخاسرة، وتسجّل صف تعارض. المقصود سجل التدقيق: تستطيع دائمًا أن ترى ما كان يُعتقَد من قبل، وما الذي حلّ محلّه.
 
-## Policies
+## السياسات
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` قاعدة معيارية مشتقة من الحقائق، محصورة بمساحة عمل ونطاق، ولها علامة نشاط و`requiredRole` اختياري.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+كل سياسة **نشطة** في مساحة العمل تُحقن في **كل** إرسال، بلا تصفية: لا بالنطاق، ولا بالدور، ولا بالمهمة، ولا بالمساحة. يجدر أن تعرف هذا قبل أن تكتب السياسة العشرين، لأن السياسات تزاحم المهمة على نافذة السياق نفسها. ولهذا يكون `requiredRole` على السياسة إرشاديًا: يصف من تُوجَّه إليه القاعدة، ولا يمنع وصولها إلى سائر الوكلاء.
 
-## Domains
+## النطاقات
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+يجمع `MemoryDomain` الحقائق والسياسات داخل مساحة العمل. تمنح النطاقات المعرفة بنية تنظيمية، وهي الوحدة التي تُكتب أذونات الوصول في مقابلها. انظر التنبيه أدناه قبل أن تعامل النطاق حدًّا للسرية.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+يكون النطاق إما على مستوى مساحة العمل كلها (`architecture`) أو محصورًا بمستودع واحد (`repo:<slug>/architecture`). الاسم نفسه في النطاقين مخزنان مستقلان: حقيقة تصح على قاعدة شفرة واحدة لا تكتب فوق الحقيقة التي على مستوى مساحة العمل. يرتّب `search_memory` وتمهيد الإرسال ذاكرة المستودع أولًا حين يعمل الوكيل في ذلك المستودع، ولا يستبعدان الباقي. مرّر `repo` إلى `propose_fact` أو `propose_policy` أو `search_memory` لتكتب في ذلك النطاق أو ترفع رتبته.
 
-## Access control is fail-open for reads
+## التحكم في الوصول مفتوح عند الفشل في القراءة
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+يربط `MemoryAccessGrant` دور وكيل ونطاقًا بأحد مستويات الإذن الثلاثة:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| الإذن   | المعنى                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| `none`  | لا وصول                                                                                         |
+| `read`  | يمكن البحث عن الحقائق واسترجاعها                                                                |
+| `write` | يشترطه `propose_policy`. كتابات الحقائق (`propose_fact` و`supersede_fact`) لا تخضع لبوابة الإذن |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[غياب الإذن يعني قراءة لا رفضًا]
+إذا لم يوجد صف إذن لزوج `(role, domain)`، فالإذن الفعلي **`read`**. القراءات مفتوحة عند الفشل عن قصد. الكتابة الوحيدة التي ترمي استثناءً هي `propose_policy` من غير إذن `write` (`InsufficientMemoryPermission`). وضع محتوى حسّاس في نطاق ذاكرة لا يقيّد من يقرأه، إلا إذا كتبت إذن `none` صراحةً لكل دور لا ينبغي أن يراه.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+ولا واجهة للأذونات في أي موضع من المنتج اليوم. في شاشة الذاكرة علامات تبويب الحقائق والسياسات وشبكة المعرفة، ولا شيء سواها. لا تُبلغ الأذونات إلا عبر عمليات RPC من `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+اللاتماثل مقصود: لين في القراءات، وصارم في كتابة السياسات. الذاكرة أنفع حين تتداول. رفض القراءة ينتج وكيلًا يعرف أقل ويصمت، لا وكيلًا يبلّغ عن مشكلة. رفض كتابة السياسة ظاهر ويمكن تصحيحه، ولهذا يقع الفرض هناك. النطاق الجديد يبذر `write` لكل دور، وتشديده بعد ذلك تعديل عبر RPC فقط، إذ لا واجهة للأذونات.
 
-## Working memory
+## الذاكرة العاملة
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+لكل وكيل `AgentWorkingMemory`: مسودة نص حر مفتاحها مساحة العمل والوكيل. تبقى عبر التشغيلات، وهي خاصة بذلك الوكيل، وتُحقن في مطالبته عند كل إرسال. هنا يسكن «كنت في منتصف إعادة هيكلة المصادقة»، وهي حالة تستحق الحمل إلى التشغيل التالي ولا تستحق الترقية إلى حقيقة دائمة.
 
-## What actually reaches an agent's prompt
+## ما يصل فعلًا إلى مطالبة الوكيل
 
-At dispatch, the memory preamble is assembled from exactly three things:
+عند الإرسال يُجمَّع تمهيد الذاكرة من ثلاثة أشياء بالضبط:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **كل سياسة نشطة في مساحة العمل**، على هيئة أسطر `- [domain] rule`.
+- **الذاكرة العاملة الخاصة بالوكيل**، حرفيًا.
+- **قائمة قصيرة من الحقائق مطابقة بالكلمات المفتاحية** لهذه المهمة: خمس على الأكثر، ضمن ميزانية نحو 1200 حرف، وفقط حين يبلغ وصف المهمة 20 حرفًا على الأقل. المهام الأقصر لا تحصل على أي حقائق.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+القائمة القصيرة بحث FTS وكلمات مفتاحية فقط، والسقف مقصود. تضمين الاستعلام بطيء، ومسار الإرسال هو الموضع الذي يظهر فيه زمن الاستجابة فورًا، فيُبقى المسار الدلالي البطيء خارجه عن قصد. يختم التمهيد بطلب التحقق مما يُعتمد عليه عبر `search_memory`، وهناك يعيش نموذج الاسترجاع الكامل.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+لا تُستشار أذونات الوصول في هذا المسار. ما تجده القائمة القصيرة هو ما يراه الوكيل.
 
-## Recall: one query, four voices
+## الاسترجاع: استعلام واحد وأربعة أصوات
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+لأداة `search_memory` المواجهة للوكيل ثلاثة أوضاع، وهي عمليات بحث مختلفة فعلًا:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`**: FTS5 فقط.
+- **`semantic`**: تُدمَج نتائج BM25 والمتجهات بمقلوب الرتبة.
+- **`hybrid`** (الافتراضي): استرجاع متعدد الأصوات، أربعة أصوات مرتَّبة تُدمَج ثم تُنوَّع.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+الأصوات الأربعة هي المعجمي (FTS)، والدلالي (KNN المتجهي)، والزمني (الحقائق النشطة الأحدث)، والبياني: سير بقفزتين على الحواف العرضية انطلاقًا من أقوى البذور المعجمية والدلالية. الصوت البياني هو سبب وجود الحواف العرضية أصلًا، إذ يُظهر الحقيقة _المتصلة_ بجوابك من غير أن تطابق أي كلمة من كلماتك. تُوزَّن الأصوات حسب نية الاستعلام المصنَّفة (يحمل الدلالي الوزن الأكبر افتراضيًا، ثم البياني والمعجمي، ثم الحداثة)، ويُضرَب تقدير كل مرشح في اضمحلال Weibull الخاص به، وتُنوَّع النتائج بـ MMR حتى لا تزاحم خمس إعادات لصياغة حقيقة واحدة أربع حقائق مختلفة.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[يبقى الاسترجاع الدلالي صامتًا إلى أن يُثبَّت النموذج]
+لا يساهم الصوت المتجهي إلا بعد تنزيل نموذج التضمين على الجهاز. إلى ذلك الحين يعمل الاسترجاع الهجين بثلاثة أصوات، ولا تعبئة رجعية: الحقائق المكتوبة قبل تثبيت النموذج لا تكتسب متجهات أبدًا. إذا فشل تحميل إضافة المتجهات في SQLite نفسها، يتدهور مسار المتجهات أكثر إلى مسح داخل Dart على التضمينات المعبأة. الاسترجاع يبقى مجيبًا، لكن أبطأ.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+بحث الذاكرة على الحاسوب والويب مسار منفصل وأبسط: عملية RPC المسماة `memory_fact.search` تعمل بـ **FTS5 فقط**، لأن العميل الخفيف لا يستطيع إرسال تضمين مع الاستعلام، والمسار الهجين يبقى داخل المضيف. لذا فالترتيب الذي تراه في مستعرض الذاكرة ليس الترتيب الذي يحصل عليه الوكيل من `search_memory`. هذا متوقع وليس خللًا، غير أن «بحثت ولم أجده» في الواجهة ليس دليلًا على أن الوكيل لن يجده.
 
-## Where memory lives and who writes it
+## أين تعيش الذاكرة ومن يكتبها
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+مستعرض الذاكرة في **الإعدادات ← مساحة العمل ← الذاكرة** (`/workspaces/<id>/settings/memory`)، وفيه علامات تبويب الحقائق والسياسات وشبكة المعرفة.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+هنا لاتماثل يفاجئ الناس: **تستطيع تحرير الذاكرة وحذفها، ولا تستطيع إنشاءها.** ليس في علامة تبويب الحقائق ولا في علامة تبويب السياسات زر إضافة. التأليف من جهة الوكيل، عبر `propose_fact` و`propose_policy` (`supersede_fact` أو `supersede_policy` لاستبدالها). يكتب `remember` عنصرًا في الطبقة الساخنة محصورًا بالجلسة، وقد يرقّيه `consolidate_memory` لاحقًا إلى حقيقة. يكتب `record_observation` و`update_my_notes` المسودة الخاصة التي تُحقن عند الإرسال. المستعرض سطح للمراجعة والتصحيح. إذا أردت حقيقة في الذاكرة، فقل ذلك لوكيل.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+عمليتا صيانة أخريان يُستدعيان من الوكيل كذلك، ولا تعملان على جدول: يدمج `consolidate_memory` الحقائق المتراكمة ويشذّبها، ويوفّق `harmonize_memory` المعتقدات التي تباعدت بين الوكلاء. يعرض `list_memory_conflicts` ما سجّله كشف التعارض من قبل. لا شيء يشغّلهما لك على مؤقّت. تُحصَد قرارات الاجتماع في نطاق `decisions` حين تسجّلها خطوة حفظ الاجتماع، وذلك ليس مؤقّتًا على تشغيلات الوكيل المكتملة.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): roles are what grants are written against
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-الذاكرة/): working with memory in practice
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): الأدوار هي ما تُكتب الأذونات في مقابلها
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): الذاكرة على نطاق مساحة العمل، وتعيش في ملف قاعدة بيانات تلك المساحة
+- [إدارة ذاكرة مساحة العمل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-الذاكرة/): العمل بالذاكرة في الممارسة

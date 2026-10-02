@@ -1,96 +1,103 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Привязать устройство
+description: Привяжите телефон (или второй браузер либо приложение для компьютера) к своему серверу Control Center, чтобы следить за флотом удалённо.
 slug: ru-RU/руководство/практические-руководства/привязать-устройство
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ru-RU/руководство/понятия/удалённое-управление/) for how the link
-works and its security model.
+В этом руководстве показано, как привязать телефон к Control Center, чтобы читать
+сообщения и тикеты и отвечать откуда угодно. Тот же порядок действий привязывает
+второй браузер или приложение для компьютера. О том, как работает эта связь и
+какова её модель безопасности, см.
+[Удалённое управление и мобильный клиент](/ru-RU/руководство/понятия/удалённое-управление/).
 
-## Prerequisites
+## Что понадобится
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Подключённый к вашему серверу клиент для компьютера или веб-клиент и настроенное рабочее пространство. Операции привязки требуют полного клиента, поэтому привязанный телефон никогда не сможет привязать — или отозвать — другое устройство.
+- Сервер, доступный с того устройства, которое вы привязываете. В одной сети это работает само собой; извне трафик несёт брокер-реле. Если панель отвечает **Недоступен** вместо QR-кода или учётных данных, сначала опубликуйте путь — включите туннель в разделе **Настройки → Сервер → Подключение и состояние** (**Открыть доступ к серверу**) или задайте флаг `--public-url` сервера (см. [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/)).
+- Для телефона: устанавливать ничего не нужно. QR-код открывает веб-приложение **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) по умолчанию).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Самостоятельный хостинг.** Remote и брокер-реле — открытый исходный код в этом
+репозитории: приложение для телефона (`apps/cc_remote`, веб-PWA на Flutter, которую
+можно развернуть в Cloudflare Pages через её `wrangler.jsonc`, в nginx-образ
+`docker/cc_remote` или на любом статическом хосте с HTTPS — service workers и
+IndexedDB доступны только в защищённом контексте) и реле
+(`apps/cc_signaling_server`, единственный stateless-бинарник на Dart, который не
+хранит данных приложения и никогда не видит секрет сопряжения — оно пересылает
+только кадры, запечатанные сквозным шифрованием). Шаги сборки и запуска — в их
+README.
 
-## Step 1: Open the pairing panel
+## Шаг 1. Откройте панель сопряжения
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Откройте **Настройки → Вы → Ваши устройства**. Раздел **Ваши устройства**
+перечисляет клиентов, привязанных к вашей учётной записи на этом сервере. (Владелец
+сервера видит все устройства на сервере; все остальные — только свои.)
 
-## Step 2: Pair a new client
+## Шаг 2. Привяжите новый клиент
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Нажмите **Привязать новый клиент** в заголовке страницы, задайте название
+(например, «Мой телефон»), выберите тип — **Веб-браузер**, **Приложение для
+компьютера** или **Телефон** — и нажмите **Привязать**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Для **телефона** появится QR-код. Отсканируйте его камерой телефона или скопируйте ссылку и откройте её в любом браузере. Она направляет приложение Remote на ваш сервер и несёт учётные данные.
+- Для **браузера** или **компьютера** вместо этого скопируйте показанную ссылку (или ID устройства и ключ сопряжения) в новый клиент. Ссылка для привязки в одно нажатие предлагается, только когда вы привязываете из веб-клиента: у бинарника для компьютера нет веб-источника, из которого её можно построить.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+QR-код для телефона и ссылка, которую команда `cc_server pair --client-url` выводит
+в CLI, — это **разные полезные нагрузки, и они не взаимозаменяемы**: ссылка из CLI
+заполняет форму подключения веб-клиента, а этот QR-код несёт полный дескриптор
+подключения и отпечаток идентичности сервера для PWA Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+На стороне телефона открытие ссылки для привязки не привязывает устройство молча.
+Remote показывает объявленное имя сервера и просит подтвердить, прежде чем
+что-либо сохранить, поэтому подделанная ссылка не может увести приложение на чужой
+сервер.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Отсканированный QR-код даёт доступ сразу]
+Здесь нет шага «сначала ожидание, потом одобрение»: выпущенное устройство активно с
+момента создания, а барьер подключения проверяет только то, что учётные данные
+активны и не истекли. Относитесь к QR-коду и ключу сопряжения как к паролю и
+отзывайте всё, что вы не собирались передавать.
 :::
 
-## Manage paired devices
+## Управление привязанными устройствами
 
-From **Settings → You → Your devices** you can:
+Из раздела **Настройки → Вы → Ваши устройства** вы можете:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Переименовать** устройство
+- **Отозвать** устройство, которому больше не доверяете. Отзыв уничтожает его учётные данные и в течение нескольких секунд разрывает живую сессию, поэтому при повторном подключении устройство безопасно отказывает
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Отзыв — верный шаг для потерянного или заменённого телефона. Он мгновенный и,
+с точки зрения устройства, необратимый.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Учётные данные, выпущенные с этой панели, ограничены по времени: они истекают через
+30 дней после выпуска, и после этого барьер подключения отклоняет их. Учётные
+данные, выпущенные командой `cc_server pair` в командной строке, **не имеют срока
+действия вообще** — отзовите их вручную, когда машина, для которой они
+предназначались, выводится из эксплуатации.
 
-## Switch workspaces from the phone
+## Переключение рабочих пространств с телефона
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Привязанный телефон может переключаться между рабочими пространствами независимо
+от компьютера. Телефон передаёт рабочее пространство с каждым вызовом, и при каждом
+вызове сервер проверяет ваше членство и роль в этом рабочем пространстве, — поэтому
+телефон добирается только до тех рабочих пространств, где вы состоите, и
+переключение на нём никогда не меняет то, что показано на компьютере.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Кроме того, сессия телефона ограничена небольшим списком разрешённых инструментов,
+преимущественно читающих: она может перечислять и читать тикеты, агентов,
+пространства, сообщения и статьи ленты, а также обновлять или назначать тикет,
+отправлять сообщение в пространстве и отмечать статью прочитанной или сохранённой.
+Всё, что выходит за пределы этого набора, отклоняется до того, как достигнет
+диспетчера сервера.
 
-## Related guides
+## Связанные руководства
 
-- [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/): make the server reachable in the first place
-- [Connect to a remote server](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/): point a full client at it
-- [Use spaces](/ru-RU/руководство/практические-руководства/пространства/): what you'll mostly do from the phone
-- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/): triage from the road
+- [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/): чтобы сервер вообще стал доступен
+- [Подключиться к удалённому серверу](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/): направьте на него полный клиент
+- [Использовать пространства](/ru-RU/руководство/практические-руководства/пространства/): то, чем вы в основном будете заниматься с телефона
+- [Создавать и управлять тикетами](/ru-RU/руководство/практические-руководства/управлять-тикетами/): разбирайте входящие в дороге
 
-## Related concepts
+## Связанные понятия
 
-- [Remote control and mobile](/ru-RU/руководство/понятия/удалённое-управление/)
-- [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/)
+- [Удалённое управление и мобильный клиент](/ru-RU/руководство/понятия/удалённое-управление/)
+- [Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/)

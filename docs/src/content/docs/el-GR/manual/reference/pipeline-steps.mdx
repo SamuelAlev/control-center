@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: Βήματα pipeline
+description: Αναφορά για τα είδη βημάτων pipeline, τα κλειδιά σώματος βήματος, τη διαμόρφωση και τα αποτελέσματά τους.
 slug: el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+Ένα βήμα pipeline έχει δύο ανεξάρτητους άξονες:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **Είδος** (`StepKind`) — πώς ο μηχανισμός _προγραμματίζει_ το βήμα σε σχέση με τα εναύσματά του.
+- **Κλειδί σώματος** (`BuiltInBodyKeys`) — ποιο καταχωρισμένο κλείσιμο σώματος _εκτελεί_ την εργασία του βήματος.
 
-## Step kinds
+## Είδη βημάτων
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+Ορίζονται στο `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| Είδος     | Σημασιολογία προγραμματισμού                                                                                                                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`  | Υποχρεωτικό σημείο εισόδου — ακριβώς ένα ανά πρότυπο, πάντα ο πρώτος κόμβος. Δεν εκτελεί το ίδιο καμία εργασία· το τι ξεκινά την εκτέλεση (χειροκίνητα / γεγονός / χρονοδιάγραμμα) παρακολουθείται ξεχωριστά ως εγγραφές `PipelineTrigger`. Το σώμα του είναι το `pipeline.trigger`, που δεν κάνει τίποτα. |
+| `listen`   | Ενεργοποιείται όταν ολοκληρωθούν όλα τα βήματα προέλευσης (στο `StepTrigger.sourceStepIds`).                                                                                                                                              |
+| `join`     | Ενεργοποιείται όταν όλα τα βήματα στο `waitForStepIds` φτάσουν σε τελική κατάσταση.                                                                                                                                                      |
+| `router`   | Διακλάδωση υπό συνθήκη — το σώμα επιστρέφει `StepResult.route(key)`, που ενεργοποιεί μόνο την κατάντη ακμή της οποίας το `routeKey` ταιριάζει· οι μη επιλεγμένοι κλάδοι σημειώνονται ως παραλειφθέντες.                                  |
+| `forEach`  | Προγραμματίζεται όπως το `listen` (ενεργοποιείται όταν ολοκληρωθούν όλα τα `sourceStepIds`). Το καταχωρισμένο σώμα `flow.forEach` είναι αυτό που επαναλαμβάνει· ο μηχανισμός δεν δημιουργεί ένα θυγατρικό βήμα ανά στοιχείο.             |
+| `terminal` | Φρουρός του χρονοπρογραμματιστή χωρίς σώμα. Η εκτέλεση του pipeline ολοκληρώνεται όταν τελειώσει ένα βήμα terminal.                                                                                                                     |
 
-## Step bodies
+## Σώματα βημάτων
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Καταχωρισμένα κλεισίματα σωμάτων με κλειδί τις σταθερές του `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). Υπάρχουν 25 και παρατίθενται όλα παρακάτω. Η διαμόρφωση διαβάζεται από το `PipelineNodeConfig` του βήματος (δείτε παρακάτω), εκτός αν σημειώνεται κάτι διαφορετικό· τα «κλειδιά κατάστασης» διαβάζονται από την κατάσταση του pipeline / το ωφέλιμο φορτίο του εναύσματος κατά τον χρόνο εκτέλεσης.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+Ένα βήμα του οποίου το `bodyKey` δεν είναι καταχωρισμένο παράγει προειδοποίηση κατά τη φόρτωση του προτύπου και έπειτα δεν εκτελείται ποτέ — δεν αποτυγχάνει την εκτέλεση. Τα βήματα `trigger` και `terminal` εξαιρούνται από αυτή την προειδοποίηση: το έναυσμα εκτελεί και πάλι το σώμα `pipeline.trigger` που δεν κάνει τίποτα· ένα βήμα `terminal` δεν έχει σώμα.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+Σώμα που δεν κάνει τίποτα για τον υποχρεωτικό κόμβο `trigger` — ολοκληρώνεται αμέσως, ώστε ο μηχανισμός να απλωθεί στους κατάντη ακροατές. Καμία διαμόρφωση.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+Βήμα κελύφους χωρίς πράκτορα (`bash -c`). Τα σύμβολα θέσης `{{key}}` στο σενάριο αντικαθίστανται από την κατάσταση + το ωφέλιμο φορτίο του εναύσματος με τιμές διαφυγής κελύφους.
 
-| Config field | Description                                      |
+| Πεδίο διαμόρφωσης | Περιγραφή                                      |
 | ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| `script`     | Εντολή κελύφους προς εκτέλεση (απαιτείται)              |
+| `outputKey`  | Κλειδί κατάστασης που λαμβάνει το stdout χωρίς περιττά κενά, σε έξοδο 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+Εκτελείται με cwd `<cc_root>/pipelines/<pipelineRunId>/` (κοινόχρηστο για όλα τα βήματα bash μιας εκτέλεσης) και με το `GITHUB_TOKEN` στο περιβάλλον. Γράφει επίσης το `<stepId>_runDir` στην κατάσταση. Έξοδος διάφορη του μηδενός αποτυγχάνει το βήμα με την ουρά του stderr.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+Γενικός κόμβος προτροπής και αποστολής: αποδίδει την προτροπή, αποστέλλει τον πράκτορα σε μια συνομιλία και αναστέλλεται μέχρι να ολοκληρωθεί η εκτέλεση. Το ωφέλιμο φορτίο `submit_output` του πράκτορα συλλέγεται στην κατάσταση κάτω από το `outputKey`.
 
-| Config field       | Description                                                  |
+| Πεδίο διαμόρφωσης       | Περιγραφή                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| `agentId`          | UUID πράκτορα με εμβέλεια χώρου εργασίας προς αποστολή (απαιτείται)           |
+| `prompt`           | Κείμενο οδηγίας· υποστηρίζει αντικατάσταση `{{key}}` (απαιτείται) |
+| `outputKey`        | Κλειδί κατάστασης για τη συλλεγμένη έξοδο                           |
+| `outputSchema`     | JSON Schema που πρέπει να ικανοποιεί η έξοδος                          |
+| `label`            | Ετικέτα εμφάνισης στον καμβά                              |
+| `extras.spaceId`   | Υπάρχουσα συνομιλία στην οποία θα εργαστεί (προεπιλογή: μια κρυφή)     |
+| `extras.conversationTitle` | Ονομασμένη ροή μέσα σε αυτόν τον χώρο (προαιρετικά)             |
+| `extras.mode`      | Διαβάζεται στον κόμβο που *ανοίγει* το δωμάτιο (`messaging.createSpace`), όχι εδώ. Προεπιλογή `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Σώμα δρομολογητή — διαβάζει το `config.extras`, αξιολογεί μια συνθήκη και επιστρέφει `StepResult.route(key)`. Οι συνθήκες **δεν** είναι εκφράσεις JavaScript· υποστηρίζονται τρεις μορφές σύνταξης, με σειρά προτεραιότητας:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **Δέντρο κατηγορημάτων** (`extras.predicate`) — ένα λογικό δέντρο που δρομολογεί `"true"` / `"false"`. Κάθε κόμβος είναι ένας χάρτης με ένα `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — αληθές όταν οποιαδήποτε από τις δηλωμένες διαδρομές υπάρχει στον δίσκο· το `negate` το αντιστρέφει· το `recursive` αναζητά και σε υποφακέλους (παραλείποντας τα `.git`, `node_modules`, `build`, `.dart_tool`). Οι σχετικές διαδρομές επιλύονται έναντι του `state[baseKey]` (προεπιλογή `repo_local_path`), αλλιώς έναντι του καταλόγου χώρου εργασίας ανά εκτέλεση.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — τελεστές `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`· διαβάζει την κατάσταση του pipeline, όχι το σύστημα αρχείων.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — λογικές ομάδες.
+  - `{"type": "not", "of": <predicate>}` — άρνηση.
+- **Διακόπτης** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`· δρομολογεί στην πρώτη περίπτωση που περιέχει η τιμή κατάστασης χωρίς διάκριση πεζών-κεφαλαίων, αλλιώς στο `default`.
+- **Σύγκριση** (παλαιού τύπου κλειδιά κορυφαίου επιπέδου `extras.left` / `extras.op` / `extras.right`) — ισοδύναμη με κατηγόρημα `comparison`, διατηρημένη για πρότυπα που συντάχθηκαν πριν από το δέντρο.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+Οι ακμές που ξεκινούν από τον κόμβο φέρουν ένα `routeKey` που πρέπει να ταιριάζει με το κλειδί που επιστρέφεται.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Δημοσιεύει τα ενοποιημένα ευρήματα ως σχόλιο ελέγχου PR μέσω του πελάτη PR του GitHub.
 
-| State key                 | Description                                  |
+| Κλειδί κατάστασης                 | Περιγραφή                                  |
 | ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| `repo_full_name`          | `owner/repo` (απαιτείται)                      |
+| `pr_number`               | Αριθμός PR — ακέραιος ή αριθμητική συμβολοσειρά (απαιτείται) |
+| `consolidated_findings`   | Σώμα σχολίου (απαιτείται)                      |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+Επιστρέφει `StepResult.terminal` με τα `comment_review_id` και `commented_at` στην κατάσταση.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+Αναρτά ένα μήνυμα σε έναν χώρο μηνυμάτων μέσω του `MessagingPort`.
 
-| State key   | Description                                       |
+| Κλειδί κατάστασης   | Περιγραφή                                       |
 | ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| `space_id`  | Χώρος προορισμού (απαιτείται)                           |
+| `content`   | Σώμα μηνύματος, διαβάζεται αυτολεξεί από την κατάσταση (απαιτείται) |
 
-Writes `posted_space_id` and `posted_at` to state.
+Γράφει τα `posted_space_id` και `posted_at` στην κατάσταση.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+Αποστέλλει ολόκληρη ομάδα αντί για έναν μόνο πράκτορα και έπειτα αναστέλλεται μέχρι να ολοκληρωθούν οι εκτελέσεις των μελών.
 
-| Config field                                | Description                                                                                         |
+| Πεδίο διαμόρφωσης                                | Περιγραφή                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| `teamId`                                    | Ομάδα με εμβέλεια χώρου εργασίας προς αποστολή (απαιτείται· αμοιβαία αποκλειόμενη με το `agentId`)                     |
+| `prompt`                                    | Κείμενο στόχου· υποστηρίζει αντικατάσταση `{{key}}` (απαιτείται)                                               |
+| `dispatchMode`                              | `allParallel` (προεπιλογή — μία εργασία ανά μέλος) ή `manager` (αποστολή μόνο του επικεφαλής για συντονισμό) |
+| `outputKey`                                 | Κλειδί κατάστασης για τις συλλεγμένες εξόδους των μελών                                                          |
+| `outputSchema`, `label`, `extras.spaceId` | Όπως για το `conversation.promptAgent`                                                                       |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+Πύλη έγκρισης. Αποστέλλει τον πράκτορα που εγκρίνει σε μια συνομιλία (λειτουργία review) με την προτροπή της πύλης και ένα συμβόλαιο εξόδου `{decision, reason}` και έπειτα αναστέλλεται μέχρι ο εγκρίνων να υποβάλει μέσω του `submit_output`.
 
-| Config field                | Description                                                                    |
+| Πεδίο διαμόρφωσης                | Περιγραφή                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | Ο πράκτορας που εγκρίνει (απαιτείται)                                                  |
+| `prompt`                    | Προτροπή της πύλης (προαιρετικά· όταν λείπει, χρησιμοποιείται προεπιλεγμένη)                          |
+| `outputKey`                 | Κλειδί κατάστασης για το συλλεγμένο ωφέλιμο φορτίο `{decision, reason}`                       |
+| `outputSchema`              | Προεπιλέγεται σχήμα έγκρισης (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId` | Όπως για το `conversation.promptAgent`                                                  |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+Η πύλη επιλύεται μόνο μέσω του `submit_output`. Το `BuiltInBodyKeys.humanGate`, η βιβλιοθήκη τύπων κόμβων και το κείμενο προτροπής ενός ενσωματωμένου προτύπου αναφέρουν τα εργαλεία MCP `approve_step` και `reject_step`· **κανένα από τα δύο εργαλεία δεν υπάρχει** σε κανένα πακέτο ή μητρώο.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Αφαιρεί παρωχημένα απομονωμένα worktree· επιλέγει τη λειτουργία του από το ωφέλιμο φορτίο του εναύσματος. Σέβεται τη σημαία `dryRun` της εκτέλεσης.
 
-| State key                     | Description                                                                           |
+| Κλειδί κατάστασης                     | Περιγραφή                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| `ticket_id`                   | Απελευθερώνει τα worktree αυτού του εισιτηρίου                                                       |
+| `repo_full_name` + `pr_number` | Απελευθερώνει το εφήμερο worktree του συντάκτη PR                                             |
+| `space_id`                    | Καταστρέφει τα worktree και τον φάκελο αυτής της συνομιλίας                                    |
+| (κανένα από τα παραπάνω)           | Σαρώνει τον χώρο εργασίας: καταλόγους που εξαφανίστηκαν, νεκρούς χώρους, ορφανούς φακέλους συνομιλιών |
 
-`outputKey` (optional) receives a summary string.
+Το `outputKey` (προαιρετικά) λαμβάνει μια συμβολοσειρά σύνοψης.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+Αντιστοίχιση / άπλωμα πάνω σε μια συλλογή κατάστασης: αποδίδει την προτροπή μία φορά ανά στοιχείο και έπειτα αποστέλλει τον πράκτορα **μία φορά** με αυτές τις προτροπές συνενωμένες (διαχωριστικά `---`) και αναστέλλεται μέχρι να ολοκληρωθεί αυτή η εκτέλεση. Μια κενή συλλογή ολοκληρώνεται αμέσως με κενή λίστα. Δεν είναι μία παράλληλη αποστολή ανά στοιχείο.
 
-| Config field         | Description                                                     |
+| Πεδίο διαμόρφωσης         | Περιγραφή                                                     |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | Πράκτορας προς αποστολή ανά στοιχείο (απαιτείται)                           |
+| `prompt`             | Προτροπή ανά στοιχείο· υποστηρίζει αντικατάσταση `{{key}}` (απαιτείται)     |
+| `extras.iterableKey` | Κλειδί κατάστασης που περιέχει τη συλλογή (απαιτείται)                     |
+| `extras.itemKey`     | Κλειδί στο οποίο είναι δεσμευμένο το τρέχον στοιχείο στην προτροπή (προεπιλογή `item`) |
+| `outputKey`          | Κλειδί κατάστασης για τη συλλεγμένη έξοδο (μία αποστολή, όχι λίστα) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+Εκτελεί άλλο πρότυπο pipeline ως ένθετο υπο-βήμα (το υπο-pipeline εκτελείται ως θυγατρική εκτέλεση με ορισμένο το `parentPipelineRunId`). Το βήμα αναστέλλεται μέχρι το θυγατρικό να φτάσει σε τελική κατάσταση και έπειτα η τελική κατάσταση του θυγατρικού συγχωνεύεται κάτω από το `outputKey`.
 
-| Config field        | Description                                                     |
+| Πεδίο διαμόρφωσης        | Περιγραφή                                                     |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | Θυγατρικό πρότυπο προς εκτέλεση (απαιτείται· ένα pipeline δεν μπορεί να καλέσει τον εαυτό του) |
+| `inputKeys`         | Κλειδιά κατάστασης που αντιγράφονται στο ωφέλιμο φορτίο του εναύσματος του θυγατρικού              |
+| `outputKey`         | Κλειδί κατάστασης για τη συγχωνευμένη τελική κατάσταση του θυγατρικού                    |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+Ευρετηρίαση tree-sitter στο παρασκήνιο: διατρέχει ένα αποθετήριο, εξάγει σύμβολα/ακμές σε isolates εργατών και τα ενσωματώνει στο γράφημα κώδικα του χώρου εργασίας. Μεταδίδει την πρόοδο στη γραμμή εκτέλεσης του βήματος· υποστηρίζει dry-run. Το tree-sitter και οι γραμματικές του είναι απαιτούμενα native — ένα dylib που λείπει σημαίνει ότι ο διακομιστής δεν ξεκίνησε ποτέ, και μια γραμματική που αποτυγχάνει να επιλυθεί στη μέση της εκτέλεσης αποτυγχάνει το βήμα αντί να το παραλείψει.
 
-| State key         | Description                           |
+| Κλειδί κατάστασης         | Περιγραφή                           |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | Αποθετήριο προς ευρετηρίαση (απαιτείται)              |
+| `repo_local_path` | Τοπική διαδρομή του checkout (απαιτείται) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Διαχωρισμός ομιλητών εκτός σύνδεσης. Διαβάζει τον διατηρημένο ήχο της σύσκεψης, τον ομαδοποιεί σε ομιλητές (`Person 1`, `Person 2`, …), επαναεπισημαίνει τα τμήματα της μεταγραφής και ξαναγράφει την κατάσταση `transcript`· εκπέμπει επίσης το `diarization_spans` για το παράλληλο βήμα `meeting.updateTranscript`. Περνά τη μεταγραφή αμετάβλητη όταν δεν έχει διατηρηθεί ήχος ή όταν τα μοντέλα δεν είναι εγκατεστημένα.
 
-| State key     | Description                   |
+| Κλειδί κατάστασης     | Περιγραφή                   |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | Σύσκεψη προς διαχωρισμό ομιλητών (απαιτείται) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Ντετερμινιστικά σώματα αποθήκευσης της σύνοψης σύσκεψης. Καθένα διαβάζει το `meeting_id` και το δομημένο ωφέλιμο φορτίο `meeting_outcome` του βήματος πράκτορα (`{summary, enhancedNotes, actionItems[], decisions[]}`) από την κατάσταση και γράφει το δικό του μέρος στον δικό του πίνακα — σημειώσεις, στοιχεία ενέργειας ή αποφάσεις. Οι ήδη αποθηκευμένες εγγραφές δεν διαγράφονται ποτέ σε υποβαθμισμένη εκτέλεση.
 
-### Other built-in bodies
+### Άλλα ενσωματωμένα σώματα
 
-| Body key                           | Description                                                                                                                                                                              |
+| Κλειδί σώματος                           | Περιγραφή                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | Αναγνώριση ομιλητών μεταξύ συσκέψεων: αντιστοιχίζει τους ομιλητές που προέκυψαν από τον διαχωρισμό με αποθηκευμένα προφίλ φωνής και εφαρμόζει αυτόματα τις βέβαιες αντιστοιχίσεις. Δεν κάνει τίποτα χωρίς προφίλ/embeddings.                         |
+| `meeting.updateTranscript`         | Εφαρμόζει τις ετικέτες `Person N` από το `diarization_spans` και συγχωνεύει τα θραύσματα ανά παράθυρο σε σειρές ανά ομιλητή, έπειτα αποθηκεύει τη μεταγραφή που καθαρίστηκε. Δεν κάνει τίποτα όταν ο διαχωρισμός δεν παρήγαγε αποτέλεσμα. |
+| `meeting.assemblePlayback`         | Συνθέτει το μιξαρισμένο κομμάτι αναπαραγωγής της σύσκεψης από τα διατηρημένα WAV ανά κανάλι. Δεν κάνει τίποτα όταν δεν έχει διατηρηθεί ήχος.                                                                           |
+| `orchestration.markPhase`          | Στο τέλος του DAG εργασίας, γράφει φρουρούς αποτυχίας για υπο-εισιτήρια χωρίς έξοδο και γυρίζει την ενορχήστρωση σε `synthesizing`.                                                       |
+| `orchestration.persistDeliverable` | Γράφει την έξοδο της σύνθεσης στο γονικό εισιτήριο, το ολοκληρώνει, αναρτά το παραδοτέο και σημειώνει την ενορχήστρωση ως `completed`.                                                           |
+| `orchestration.awaitApproval`      | Πύλη μερικής έγκρισης: ολοκληρώνεται αμέσως όταν το κλειδί κόμβου του βήματος βρίσκεται στο εγκεκριμένο σύνολο της ενορχήστρωσης, αλλιώς αναστέλλεται μέχρι να το συνεχίσει μεταγενέστερη έγκριση. Είναι το μόνο σώμα που ορίζει το `extras.awaitApproval`, το οποίο το εξαιρεί από το χρονικό όριο 24 ωρών των βημάτων σε αναστολή. |
+| `messaging.createSpace`            | Ανοίγει τη συνομιλία στην οποία εργάζεται το υπόλοιπο πρότυπο, δημοσιευμένη κάτω από το `outputKey` του βήματος (τα ενσωματωμένα χρησιμοποιούν το `pipeline_space_id`). Μια κενή λίστα `repoIds` δεν κάνει checkout τίποτα· το `extras['allRepos']` κάνει checkout κάθε αποθετήριο του χώρου εργασίας. Το `extras['createConversation']` (απενεργοποιημένο από προεπιλογή) ανοίγει επίσης μια ονομασμένη ροή. Ένα βήμα πράκτορα ΜΠΑΙΝΕΙ σε ένα δωμάτιο και δεν ανοίγει ποτέ δικό του, οπότε ένα άπλωμα χωρίς αυτόν τον κόμβο αποτυγχάνει κατά την αποστολή — και αν τον συνδέσετε μία φορά, όλο το άπλωμα μοιράζεται ένα checkout αντί να προμηθεύεται από ένα για τον καθένα. |
+| `prReview.finalize`                | Το τελευταίο βήμα του προτύπου ελέγχου PR: ταξινομεί τους συσσωρευμένους κόμβους ελέγχου σε κάδους συναίνεσης και υπολογίζει την ετυμηγορία ανά PR.                                                     |
+| `skills.analyze`                   | Εκτελεί τη σάρωση εφοδιαστικής αλυσίδας των δεξιοτήτων για τις εγκατεστημένες δεξιότητες ενός χώρου εργασίας και καταγράφει κάθε ετυμηγορία.                                                                                          |
 
-## Step results
+## Αποτελέσματα βημάτων
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+Ένα σώμα βήματος επιστρέφει ένα `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). Όλες οι μέθοδοι κατασκευής δέχονται προαιρετικό χάρτη `mutatedState` που συγχωνεύεται στην κατάσταση του pipeline, εκτός από το `failed`.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| Μέθοδος κατασκευής                     | Υπογραφή                                                       | Περιγραφή                                                               |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | Κανονική ολοκλήρωση· οι κατάντη ακροατές αξιολογούνται                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Ολοκλήρωση δρομολογητή· επιλέγει τον κατάντη κλάδο του οποίου το `routeKey` ταιριάζει |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Παύση μέχρι να ενεργοποιηθεί ένας συγκεκριμένος τύπος γεγονότος τομέα                            |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Παύση μέχρι όλες οι δηλωμένες εργασίες να φτάσουν σε τελική κατάσταση                         |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | Η εκτέλεση του pipeline ολοκληρώθηκε — δεν υπάρχουν άλλα βήματα                              |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | Το βήμα απέτυχε με μήνυμα σφάλματος                                     |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+Συμπεριφορά επανάληψης για σώμα κόμβου που αποτυγχάνει (`PipelineNodeConfig.retryPolicy`· η τιμή null απενεργοποιεί τις επαναλήψεις).
 
-| Field            | Type     | Description                                                                    |
+| Πεδίο            | Τύπος     | Περιγραφή                                                                    |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | Συνολικές προσπάθειες, μαζί με την πρώτη (3 = 1 προσπάθεια + 2 επαναλήψεις)· πρέπει να είναι ≥ 1        |
+| `backoff`        | `String` | `linear` ή `exponential` (προεπιλογή)                                            |
+| `initialDelayMs` | `int`    | Καθυστέρηση πριν από την πρώτη επανάληψη, σε χιλιοστά του δευτερολέπτου· οι επόμενες καθυστερήσεις αυξάνονται κατά το `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+Διαμόρφωση ανά κόμβο που μεταφέρεται μέσα στον ορισμό του βήματος (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Τόσο οι ενσωματωμένοι όσο και οι προσαρμοσμένοι κόμβοι μοιράζονται αυτό το σχήμα· κάθε σώμα διαβάζει μόνο τα πεδία που το αφορούν.
 
-| Field            | Type                    | Description                                                                                                                           |
+| Πεδίο            | Τύπος                    | Περιγραφή                                                                                                                           |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | Πρότυπο προτροπής με αντικατάσταση `{{key}}`                                                                                           |
+| `script`         | `String?`               | Σώμα σεναρίου Bash με αντικατάσταση `{{key}}`                                                                                          |
+| `agentId`        | `String?`               | UUID πράκτορα με εμβέλεια χώρου εργασίας προς αποστολή                                                                                               |
+| `inputKeys`      | `List<String>`          | Κλειδιά κατάστασης που καταναλώνει ως είσοδο αυτός ο κόμβος                                                                                |
+| `repoIds`        | `List<String>`          | Αποθετήρια που κάνει checkout ο κόμβος `messaging.createSpace` (`<repoId>` ή `<repoId>@<branch>`). Κενό = κανένα· `extras['allRepos']` = κάθε αποθετήριο του χώρου εργασίας. Αγνοείται σε βήματα πράκτορα. |
+| `outputKey`      | `String?`               | Κλειδί κατάστασης κάτω από το οποίο γράφεται η έξοδος αυτού του κόμβου                                                                                         |
+| `label`          | `String?`               | Ετικέτα εμφάνισης στον καμβά (προεπιλογή το αναγνωριστικό του βήματος)                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (υποσύνολο) που πρέπει να ικανοποιεί η τιμή εξόδου                                                                                    |
+| `reducer`        | `String?`               | Στρατηγική συγχώνευσης όταν παράλληλοι κλάδοι γράφουν στο ίδιο `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum` ή `override` (προεπιλογή) |
+| `retryPolicy`    | `StepRetryPolicy?`      | Πολιτική επανάληψης σε αποτυχία του σώματος· null = μία μόνο προσπάθεια                                                                                   |
+| `continueOnFail` | `bool`                  | Όταν είναι true, μια τελική αποτυχία δεν αποτυγχάνει την εκτέλεση· το σφάλμα αποθηκεύεται κάτω από το `state['_stepErrors'][stepId]`                        |
+| `timeoutMs`      | `int?`                  | Χρονικό όριο πραγματικού χρόνου για το σώμα του κόμβου, σε χιλιοστά του δευτερολέπτου· null = χωρίς χρονικό όριο                                                               |
+| `teamId`         | `String?`               | Ομάδα προς αποστολή (κόμβοι `team.dispatch`)· αμοιβαία αποκλειόμενη με το `agentId`                                                           |
+| `dispatchMode`   | `String?`               | Λειτουργία εκτέλεσης ομάδας: `allParallel` ή `manager`                                                                                       |
+| `extras`         | `Map<String, dynamic>`  | Διαμόρφωση ελεύθερης μορφής ειδική για το σώμα (π.χ. `iterableKey`, `templateId`, δέντρα συνθηκών)                                                    |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+Παράγωγοι προσπελαστές: `spaceId` (`extras['spaceId']` — υπάρχουσα συνομιλία στην οποία θα εργαστεί), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, διαβάζεται στον κόμβο που ανοίγει τον χώρο) και `runWhen` (`extras['runWhen']` — παράλειψη του κόμβου όταν δεν πληρούται).
 
-## See also
+## Δείτε επίσης
 
-- [Pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
-- [Create a pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
-- [Pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
-- [Run a pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
+- [Δημιουργία προτύπου pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
+- [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
+- [Χειροκίνητη εκτέλεση pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)

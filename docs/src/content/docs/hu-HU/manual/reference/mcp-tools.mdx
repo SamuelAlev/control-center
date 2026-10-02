@@ -1,310 +1,315 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP-eszközök
+description: A cc_server által regisztrált MCP-eszközök teljes katalógusa, eszközcsaládonként.
 slug: hu-HU/kezikonyv/referencia/mcp-eszkozok
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek dinamikus rétegként hidazhatók be ugyanebbe a regiszterbe.
 
-## Registry size
+## A regiszter mérete
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Mérőszám | Darabszám |
+| --- | --- |
+| A `cc_server` által regisztrált eszközök | 110 |
+| A `packages/cc_mcp` csomagból | 108 |
+| A `packages/cc_mcp_client` csomagból (eszközfelfedezés) | 2 |
+| Az alapregiszterben regisztrálva (`server_mcp_registry.dart`) | 63 |
+| Indítás után regisztrálva, ahogy a szolgáltatásaik elindulnak (`cc_server_runtime.dart`) | 47 |
+| Az alapregiszter 63 eszközéből kódgráfrepozitóriumtól függő | 5 |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Az öt kódgráf-eszköz csak akkor kerül regisztrálásra, ha a gazdagép kódgráfrepozitóriumot ad át a `buildServerMcpRegistry` számára. A `cc_server` mindig átad egyet, így mind a 110 eszköz aktív a szállított binárisban.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+A teljes regiszter megjelenik a `tools/list` válaszában, felfedezési kapuzás nélkül. A jegy módosításai típusos eszközök.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[A külső kliensek mindig a teljes katalógust látják]
+A `tools/list` soha nem csonkul. Az MCP-kliensek az eszközneveket a lista saját gyorsítótárazott példányához ellenőrzik, és a szervertől való kérdezés nélkül elutasítanak mindent, ami nem szerepel benne, így az ott elrejtett eszköz nem csupán csendes, hanem elérhetetlen.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
+A **beépített harness** más: kérésenként csak a definíciók egy állandó részhalmazát tölti be, a többit pedig az első használatkor húzza be, ami harness oldali viselkedés, és nem változtatja meg ezt a regisztert. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Minden eszközosztály regisztrálva van]
+A `packages/cc_mcp/lib/src/tools/` alatti forrásfájl egy olyan eszköz, amelyet egy
+ügynök meghívhat. A `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+megbuktatja a buildet, ha egy új eszközosztályt semmi sem példányosít.
 :::
 
-## Common parameters
+## Közös paraméterek
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Kötelező** minden olyan eszközön, amely munkaterület-hatókörű adatokat érint. A hiányzó vagy érvénytelen `workspace_id` egyértelmű hibát ad vissza, és a célszervezet munkaterületével nem egyező érték elutasításra kerül, nem pedig csendben figyelmen kívül marad. Hagyja el a valóban globális eszközökön: a `list_workspaces` és a hat hírfolyam-eszköz (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`) esetében, amelyek a szervertulajdonos felhasználónkénti hírfolyamlistáját használják. A felfedező eszközök (`search_tool_bm25`, `list_my_tools`) opcionálisan fogadják, hogy a hívhatóságot beszélgetésmód szerint tudják besorolni. Amikor egy ügynököt a szerver indít, a munkaterület szerveroldalon kényszerített, így az ügynök nem érhet el egy másik munkaterületet idegen azonosító átadásával.
 
-## Tool discovery
+## Eszközfelfedezés
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Mindkettő a `cc_mcp_client` csomagból származik, nem a `cc_mcp`-ből, és mindkettő figyelembe veszi a módőrt, így azt jelentik, ami az _aktuális_ beszélgetésmódban hívható.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Eszköz | Leírás |
+| --- | --- |
+| `search_tool_bm25` | Kulcsszó alapján keres az eszközkatalógusban; visszaadja a találó eszközöket, azok argumentumsémáit, valamint azt, hogy épp hívhatók-e |
+| `list_my_tools` | Felsorolja az ebben a beszélgetésben épp hívható eszközöket, a módja szerint szűrve |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Egy harmadik felfedező eszköz, a **`search_tools`** kizárólag a beépített harnessen belül létezik, és nem része ennek az MCP-regiszternek. A futtatás saját eszközfelületét rangsorolja, és a `search_tool_bm25`-tól eltérően **betölti** a megtalált eszközök sémáit, hogy az ügynök a következő körében meghívhassa a találatot. A harnessen futó ügynököknek ezt érdemes előnyben részesíteniük; az MCP-klienseknek a `search_tool_bm25` áll rendelkezésére.
 
-## Agent tools
+## Ügynökeszközök
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_agents` | Felsorolja egy munkaterület regisztrált ügynökeit |
 
-## Agent peer messaging and delegation
+## Ügynökök közötti üzenetváltás és delegálás
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Az ügynökök tereken keresztül beszélnek egymással (tartósak, a névsorban láthatók). Az `ask_agent` kérés/válasz, kötelező időtúllépéssel; a `delegate_task`-et szerveroldalon mélységkorlát, ciklusfelismerés, költségvetési keret és autonómiaplafon őrzi.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| Eszköz | Leírás |
+| --- | --- |
+| `send_to_agent` | Egyirányú üzenetet küld egy másik ügynöknek, `to_agent_id` vagy pontos `to_agent_name` alapján címezve |
+| `ask_agent` | Kérdést tesz fel egy másik ügynöknek, és megvárja a válaszát, vagy időtúllépésbe fut |
+| `delegate_task` | Egy feladatot követett gyermekjegyként delegál egy másik ügynöknek |
+| `consult_agent` | A készségek alapján legjobban illeszkedő szakértőt adja a térhez, és egy fókuszált eligazítással indítja el |
+| `todo_read` | Elolvassa e beszélgetés elmentett feladatlistáját |
 
-## Skill tools
+## Készségeszközök
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Minden telepítés és frissítés egy fail-closed vizsgálati kapun halad át, mielőtt bármilyen készségtartalom a lemezre vagy egy ügynök promptjába kerülne.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_skills` | Felsorolja a munkaterületen elérhető készség-slugokat |
+| `create_skill` | Új készséget hoz létre markdown-tartalomból |
+| `install_skill` | Telepíti egy készség teljes könyvtárát egy GitHub-repozitóriumból, rögzített refről |
+| `update_skill` | Egy telepített GitHub-készséget frissít új refre, újravizsgálva és újrarögzítve |
+| `list_skill_updates` | Felsorolja az újabb verzióval elérhető készségeket |
+| `verify_skills` | Ellenőrzi a rögzített készségeket a lemezen lévő tartalomkivonataikkal szemben |
+| `pin_skill` | Egy meglévő, lemezen lévő készséget bekivonatol a `skills-lock.json` fájlba |
 
-## Plan, playbook and artifact tools
+## Terv-, playbook- és artefaktumeszközök
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| Eszköz | Leírás |
+| --- | --- |
+| `submit_plan` | A tervmód kimeneti szerződése: egy típusos `PlanDocument` kibocsátása, amely a Plan Studióban nyílik meg |
+| `create_playbook` | Elmenti a tervet elnevezett, verziózott sablonként, típusos `{{param}}` helyőrzőkkel |
+| `run_playbook` | Paraméterértékekkel példányosít egy playbookot, olyan tervet előállítva, amelyet az operátor jóváhagy |
+| `publish_artifact` | Típusos blokkok (markdown, táblázat, diagram, mermaid, kód, JSON) rendezett listáját teszi közzé, amely a kliensben natívan jelenik meg |
+| `revise_artifact` | Lecseréli egy közzétett artefaktum tartalmát |
+| `list_artifacts` | Felsorolja a munkaterület artefaktumait |
+| `get_artifact` | Elolvas egy artefaktumot |
+| `complete_goal` | Elértnek nyilvánítja a beszélgetés aktív, tartós célját (amelyet a `/goal` vagy a `/loop` indított) |
 
-## Workspace tools
+## Munkaterület-eszközök
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_workspaces` | Felsorolja az összes munkaterületet azonosítóikkal és neveikkel (globális; nincs `workspace_id`) |
 
-## Repo tools
+## Repó-eszközök
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_repos` | Felsorolja a munkaterületen regisztrált repókat. Az ügynök hívók a beszélgetésük elszigetelt, copy-on-write worktree-útvonalait kapják, soha nem az eredeti checkoutokat |
 
-## Messaging tools
+## Üzenetküldő eszközök
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_spaces` | Felsorolja a munkaterület üzenetküldő tereit |
+| `get_messages` | Üzeneteket kér le egy térből |
+| `send_message` | Üzenetet küld egy térbe névvel ellátott feladó ügynökként |
+| `get_space_notes` | Elolvassa egy tér megosztott átadási dokumentumát |
+| `update_space_notes` | Lecseréli egy tér megosztott átadási dokumentumát |
+| `todo_write` | Egyetlen hívásban lecseréli e beszélgetés feladatlistáját (a teljes listát adja át) |
 
-## Review tools
+## Átnéző eszközök
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Eszköz | Leírás |
+| --- | --- |
+| `start_ai_review` | Elindítja egy PR MI-átnézését: kiszámítja az átnézési területeket, szakértő átnézőket oszt ki a PR terébe, megírja a bejárást, és véglegesít |
+| `add_review_node` | Strukturált átnézési megállapítást (fájl, sor, P0–P3 prioritás) ad egy átnézési térhez |
+| `confirm_review_node` | Megerősíti egy társ megállapítását; a szerző nem erősítheti meg saját magát |
+| `resolve_review_node` | Javítottnak jelöl egy megállapítást, miután a módosítást ténylegesen elvégezte; nyomot posztol az átnézési térbe |
+| `dismiss_review_node` | Elutasít egy nem alkalmazható megállapítást; elnyomási tényt rögzít, hogy az átnézők ne jelöljék meg újra |
+| `request_peer_review` | Megkér egy másik átnéző ügynököt, hogy nézzen rá még egyszer egy megállapításra |
+| `dispatch_reviewers` | Az illeszkedő átnéző ügynököket egyidejűleg egy átnézési térbe indítja |
+| `submit_reviewer_verdict` | Átnézőnkénti ship/hold/block ítéletet posztol, megbízhatósággal és magyarázattal |
+| `finalize_review` | Kiszámítja a csomópontonkénti konszenzust és a PR-enkénti ítéletet, majd lezárja az átnézést |
+| `set_cohort_summary` | Beállítja egy átnézési kohorsz köznyelvi összefoglalóját |
+| `add_review_diagram` | Strukturált, gráffal ellenőrzött diagramot (`sequence`, `entityRelation`, `stateMachine`) csatol egy kohorszhoz |
+| `publish_review_to_github` | Közzéteszi a véglegesített átnézést a GitHubon soron belüli hozzászólásokként és egy összefoglaló törzzsel |
 
-## Memory tools
+## Memóriaeszközök
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Eszköz | Leírás |
+| --- | --- |
+| `search_memory` | Tényeket és szabályzatokat keres (kulcsszó, szemantikus vagy hibrid — a hibrid az alapértelmezett) |
+| `propose_fact` | Rövid markdown-tényt tárol egy domainben |
+| `supersede_fact` | Egy tényt egy másik által felváltottnak jelöl |
+| `propose_policy` | Normatív szabályt tárol egy domainben (írási jogosultságot igényel rajta) |
+| `supersede_policy` | Visszavon egy szabályzatot — inaktívnak jelöli, miközben az auditáláshoz megőrzi |
+| `list_policies` | Felsorolja az aktív szabályzatokat, opcionálisan domain szerint szűrve |
+| `list_memory_domains` | Felsorolja a munkaterület memóriadomainjeit a tény- és szabályzatszámokkal |
+| `record_observation` | Nyers megfigyelést rögzít az ügynök munkamemóriájába |
+| `get_my_notes` | Elolvassa a hívó ügynök munkamemória-jegyzetfüzetét |
+| `update_my_notes` | Frissíti a hívó ügynök munkamemória-jegyzetfüzetét |
+| `remember` | Jegyzetet ad az ügynök forró munkamemóriájához erre a munkamenetre (TTL-lel és darabszámmal korlátozva) |
+| `consolidate_memory` | Konszolidációs („alvási”) menetet futtat: kiüríti a lejárt forró elemeket, a tartósakat hosszú távú tényekké göngyölíti |
+| `harmonize_memory` | Ügynökök közötti hiedelem-összehangolást (SHMR) futtat, és megjelöli az ellentmondásokat |
+| `list_memory_conflicts` | Felsorolja a felderített ellentmondásokat és azt, hogy mindegyiket hogyan oldották fel |
 
-## Governance tools
+## Irányítási eszközök
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Eszköz | Leírás |
+| --- | --- |
+| `create_goal` | Szervezeti célt hoz létre (vállalat, csapat, ügynök vagy feladat szintjén) |
+| `list_goals` | Felsorolja a célokat szinttel, állapottal és összesített haladással |
+| `update_goal_progress` | Beállítja egy cél haladását |
+| `create_approval` | Testületi jóváhagyást nyit egy felügyelt művelethez (terv elhagyása, összefésülés, kiadás, felvétel, egyéni) |
+| `list_approvals` | Felsorolja a jóváhagyásokat, opcionálisan állapot szerint szűrve |
+| `decide_approval` | Döntést rögzít: jóváhagyás, elutasítás, átdolgozás kérése vagy újrabeküldés |
+| `comment_approval` | Hozzászól egy testületi jóváhagyáshoz |
+| `exit_plan_mode` | Megnyit (és jóváhagyás után felhasznál) egy `plan_exit` jóváhagyást, amely a beszélgetést kilépteti a tervmódból |
+| `agent_heartbeat` | Jelenti az életjelet (aktív, tétlen, elakadt); az elnémulás a futásidejű állapotot először nemrég elveszett, majd offline értékre váltja |
+| `list_runtime_health` | Felsorolja az egyes ügynökök futásidejű állapotát |
+| `list_agent_presence` | Felsorolja az egyes ügynökök jelenlétét (állapot, életciklus, futó és sorban álló darabszám, kapacitás) |
+| `get_org_chart` | Elolvassa a jelentési fát, a gyökérben a vezérigazgatóval, `reports_to` szerint beágyazva |
+| `create_work_product` | Jegyhez csatolt, tartós leszállítandót hoz létre |
+| `save_work_product_revision` | Új revíziót ment; adja át a `base_revision_id` értéket, hogy egy egyidejű szerkesztés esetén elutasításra kerüljön |
+| `list_work_products` | Felsorolja a munkatermékeket, opcionálisan egyetlen jegyre szűrve |
+| `get_work_product` | Elolvas egy munkaterméket a revíziótörténetével |
+| `create_runtime_profile` | Újrafelhasználható futásidejű profilt definiál (protokollcsalád, CLI-parancs, rögzített indítási argumentumok) |
+| `list_runtime_profiles` | Felsorolja a munkaterület futásidejű profiljait |
 
-## Code graph tools
+## Kódgráf-eszközök
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Csak akkor regisztrálva, ha a gazdagép kódgráfrepozitóriumot biztosít. Az index a szállított nyelvtankészletet fedi (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); bármely más nyelv szimbólumai nincsenek benne.
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| Eszköz | Leírás |
+| --- | --- |
+| `search_code` | Név, szignatúra és dokumentációs komment alapján keres az indexelt szimbólumok között (hibrid BM25 + szemantikus) |
+| `code_symbol` | Pontos név alapján keres szimbólumokat; `file:line` és szignatúra értékkel tér vissza |
+| `code_callers` | Felsorolja azokat a szimbólumokat, amelyek egy szimbólumot hívnak vagy tőle függnek (bejövő élek) |
+| `code_callees` | Felsorolja azokat a szimbólumokat, amelyeket egy szimbólum hív vagy amelyektől függ (kimenő élek) |
+| `code_impact` | Kiszámítja egy szimbólum tranzitív hatássugarát egy adott mélységig |
 
-## Ticketing tools
+## Jegyeszközök
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| Eszköz | Leírás |
+| --- | --- |
+| `create_ticket` | Jegyet hoz létre a beállított szolgáltatónál |
+| `get_ticket` | Lekér egy jegyet azonosító alapján |
+| `list_tickets` | Felsorolja a jegyeket, opcionálisan állapot vagy hozzárendelt szerint szűrve |
+| `update_ticket` | Frissíti az állapotot, címet, leírást, prioritást vagy címkéket (az állapot elfogad olyan aliasokat, mint az `in_progress` / `completed`) |
+| `assign_ticket` | Egy jegyet egy ügynökhöz és/vagy csapathoz rendel |
+| `reassign_ticket` | Egy jegyet egy másik ügynökhöz rendel át |
+| `add_ticket_collaborator` | Meghív egy ügynököt, hogy működjön közre egy jegyen (a térhez adva) |
+| `comment_on_ticket` | Hozzászól egy jegyhez |
+| `close_ticket` | Lezár egy jegyet (késznek jelöli) opcionális kimenettel |
+| `fail_ticket` | Sikertelennek jelöl egy jegyet egy hibaüzenettel |
+| `delegate_ticket` | Egy jegyet egy ügynöknek delegál, követett jegyet létrehozva |
+| `ticket_pr_link` | Összekapcsol vagy szétválaszt egy jegyet és egy pull requestet a PR-csomópont azonosítója alapján (`action`: `link` \| `unlink`) |
+| `ticket_relation` | Hozzáad vagy eltávolít egy kapcsolatot két jegy között — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations` | Felsorolja egy jegy szülőjét, aljegyeit és függőségi kapcsolatait |
 
-## Team and pipeline tools
+## Csapat- és pipeline-eszközök
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Eszköz | Leírás |
+| --- | --- |
+| `record_team_activity` | Egy csapatvezető aktivitásbejegyzését rögzíti egy jegyhez |
+| `preview_trigger` | Próbafuttatásban megmutatja, hogy egy feltételezett esemény mely pipeline-futtatásokat indítaná el, anélkül hogy bármit véglegesítene |
+| `submit_output` | Beküldi a strukturált kimeneti terhelést a hívó aktuális pipeline-futtatásához; a futtatás deklarált kimeneti sémájához ellenőrizve |
 
-## Orchestration tools
+## Orchestrációs eszközök
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Eszköz | Leírás |
+| --- | --- |
+| `propose_orchestration` | Strukturált, többügynökös orchestrációs tervet bocsát ki egy előzetes jóváhagyáshoz; érvényesít, és visszaadja az esetleges szabálysértéseket |
 
-## Newsfeed tools
+## Hírfolyameszközök
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| Eszköz | Leírás |
+| --- | --- |
+| `list_feeds` | Felsorolja a regisztrált RSS/Atom-hírfolyamokat |
+| `list_articles` | Felsorolja a cikkeket, opcionálisan hírfolyam, olvasatlan vagy elmentett szerint szűrve |
+| `get_article` | Lekér egy cikket |
+| `set_article_read` | Olvasottnak vagy olvasatlannak jelöl egy cikket |
+| `set_article_saved` | Elment vagy visszavonja egy cikk mentését |
+| `refresh_feeds` | Azonnal újra lekéri az összes engedélyezett hírfolyamot |
 
-## Enclosure (rig) tools
+## Elszigetelt környezet (állomás) eszközök
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/hu-HU/kezikonyv/fogalmak/korlatok/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/hu-HU/kezikonyv/referencia/allomasok/#action-verbs).
+Eldobható gépeket vezérel — egy elszigetelt böngészőt vagy Linux asztali
+környezetet, egy Android-emulátort vagy egy iOS Simulatort — egy futtatás
+belsejéből. Indítás után, feltétel nélkül regisztrálva: hogy egy gép ténylegesen
+el tud-e indulni, az próbakérdés, amelyre az eszközök hívásonként válaszolnak.
+Egy beszélgetésben az ismételt hívások egyetlen gépet használnak újra; a
+képernyőképek képtartalomként térnek vissza, eredményenként egyetlen kép
+keretével, a kinyert oldal-/felhasználóifelület-tartalom pedig nem megbízható
+adatként van elkerítve. A négy használati eszköz a `rig_close`-szal együtt az
+`enclosureControl` [műveletosztályt](/hu-HU/kezikonyv/fogalmak/korlatok/)
+deklarálja (a használati eszközök a `networkEgress` és a `processSpawn`
+osztályt is deklarálják; a `mobile_use` és az `ios_use` a `packageInstall`
+osztályt is), így a csak olvasható módok megtagadják őket. A `rig_list` semmit
+sem deklarál — csak munkaterület-állapotot olvas. A felületenkénti teljes
+igekészletet az [állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/#action-verbs)
+tartalmazza.
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Eszköz | Leírás |
+| --- | --- |
+| `computer_use` | Linux asztali környezetet vezérel egy elszigetelt VM-ben: mozgatás, kattintás, húzás, görgetés, gépelés, átméretezés, vágólap, képernyőkép |
+| `browser_use` | Fejetlen Chromiumot, Firefoxot vagy WebKitet vezérel (`engine`): navigálás, kattintás, kitöltés, kinyerés (a11y/DOM/console), vágólap, képernyőkép |
+| `mobile_use` | Androidot vezérel ADB-n keresztül: vizsgálat/bevitel, képernyőképek, alkalmazások telepítése/indítása/leállítása/visszaállítása/eltávolítása, deep linkek és argv alakú eszközparancsok |
+| `ios_use` | iOS Simulatort vezérel WebDriverAgent/CoreSimulatoron keresztül: vizsgálat/bevitel, képernyőképek, alkalmazások telepítése/indítása/leállítása/eltávolítása, deep linkek és argv alakú szimulátorfolyamatok |
+| `rig_list` | Felsorolja egy munkaterület állomásait felülettel, állapottal, kijelzőmérettel és vezérlővel |
+| `rig_close` | Megsemmisít egy állomást, és elveti a birtokolt gépállapotát |
 
-## Not exposed over MCP
+## Ami nincs MCP-n keresztül kitéve
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/hu-HU/kezikonyv/fogalmak/megbeszelesek/), not as a tool an agent can call.
+A naptárhoz és a megbeszélésekhez nem tartoznak MCP-eszközök. Az ügynökök nem olvashatják a naptárát, megbeszéléseit, átiratait, teendőit vagy döntéseit. A teendőket és döntéseket előállító összefoglaló a beépített [`meeting_summary` pipeline](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) formájában fut, nem pedig olyan eszközként, amelyet egy ügynök meghívhat.
 
-## Tool gating by mode
+## Eszközkapuzás mód szerint
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+A kapuzás egyetlen táblából (`ModeToolPolicy`) kétszer érvényesül: egyszer az MCP-diszpécserben a Claude Code adapterhez, egyszer pedig a beépített harness regiszterében. Egy blokkolt hívás visszaadja az okot.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| Mód | Eszközfelület |
+| --- | --- |
+| `chat` | Minden regisztrált eszköz; nincs engedélyezési lista |
+| `plan` | Válogatott engedélyezési lista. Nincsenek worktree-írások és nincsenek `create` / `assign` / `delegate` jegyigék, de a memória, az artefaktumok, a feladatlisták, a `submit_plan`, az `exit_plan_mode`, valamint az indított jegy jegybefejező igéi engedélyezettek |
+| `review` | Válogatott engedélyezési lista: átnézési részvétel, kommunikáció, csak olvasható kontextuslekérdezők és a teljes jegyigekészlet, beleértve a `create_ticket` és az `assign_ticket` igét |
+| `orchestrate` | Válogatott engedélyezési lista: kutató és olvasó eszközök, valamint a `propose_orchestration`, a `create_playbook` és a `run_playbook`. A felvétel, a felbontás és a jegy befejezése determinisztikusan, jóváhagyás után történik, soha nem futás közben |
 
-Permitted in every mode regardless of allow-list:
+Minden módban engedélyezett, az engedélyezési listától függetlenül:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Halmaz | Eszközök |
+| --- | --- |
+| Memória és artefaktumok | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Kódgráf | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact` |
+| Futtatásmechanika | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read` |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Az, hogy valami szerepel egy engedélyezési listán, még nem teszi hívhatóvá az eszközt, és ez fordítva is igaz: az operátorkérdés képessége egy **harness**-eszköz (`ask_user`), így az soha nem jelenik meg ebben az MCP-katalógusban.
 
-## Approval-gated tools
+## Jóváhagyáshoz kötött eszközök
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Egy eszköz deklarálhatja a `requiresApproval` tulajdonságot. A diszpécser ilyenkor egy `ApprovalPayload` objektumot épít, és azt a `ConfirmationPort`-on keresztül a felszínre hozza, mielőtt az eszköz lefutna; a `cc_server` beköti ezt a portot, így a kapu éles.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Az ezt deklaráló regisztrált eszközök: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/).
+Ettől függetlenül az egységes műveleti korlátok kapuzzák minden olyan eszközt, amely nem üres `ActionClass`-halmazt deklarál. Egy `prompt` döntés, amelyhez nincs csatlakoztatva jóváhagyó, elutasításra kerül. Lásd: [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/).
 
-## Capabilities with no tool behind them
+## Képességek, amelyek mögött nincs eszköz
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Nem minden képesség érhető el ügynök számára a termékben. Ezekhez egyáltalán nem
+tartozik eszköz, így egy máshol hivatkozott név az "unknown tool" értékkel tér vissza:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Képesség | Hol él helyette |
+| --- | --- |
+| Ügynök felvétele, elbocsátása vagy szerkesztése | Az Ügynökök felülete. Nincs `hire_agent` / `fire_agent` / `update_agent` eszköz |
+| Munkaterület létrehozása | `workspace.upsert` RPC-n keresztül, amely feltölti és bélyegzi a tulajdonviszonyt |
+| Projektek (létrehozás / listázás / frissítés / besorolás) | A Jegyek felülete. A projektek operátori felület — lásd: [Projektek](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/) |
+| Blokkoló kérdés feltevése az operátornak | A **harness** `ask_user` eszköze, nem az MCP. Egy űrlapot jelenít meg a beszélgetésben, és a válaszig blokkol |
+| Ügynökönkénti diagnosztika | Semmi. Nincs `doctor` — lásd: [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/) |
+| Naptár és megbeszélések | RPC, kizárólag emberi kliensek számára (lásd fentebb) |
 
-## See also
+## Lásd még
 
-- [Use Control Center as an MCP server](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/)
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/)
+- [A Control Center használata MCP-szerverként](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/)

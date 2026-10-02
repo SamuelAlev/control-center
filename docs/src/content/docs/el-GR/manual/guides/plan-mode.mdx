@@ -1,135 +1,154 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Χρήση λειτουργίας σχεδίου
+description: Μεταβείτε με έναν χώρο σε λειτουργία σχεδίου, πάρτε ένα τυποποιημένο σχέδιο και εγκρίνετέ το ώστε να γίνει εκτελούμενη εργασία.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Αυτός ο οδηγός δείχνει πώς να πάρετε ένα δομημένο σχέδιο από έναν πράκτορα προτού
+γράψει κώδικα.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+Στη λειτουργία σχεδίου ο πράκτορας ερευνά μόνο για ανάγνωση και το μοναδικό
+παραδοτέο του είναι ένα **τυποποιημένο σχέδιο**: ένα γράφημα εξαρτήσεων με βήματα
+που εγκρίνετε και το οποίο το Control Center μεταγλωττίζει μετά σε πραγματική
+εργασία. Χρησιμοποιήστε τη όταν θέλετε να δείτε το εύρος μιας αλλαγής, να πάρετε
+τα βήματα αναλυμένα ή να κατονομαστούν οι κίνδυνοι και οι εξαρτήσεις προτού
+αγγιχτεί οτιδήποτε.
 
-## Switch a space into plan mode
+## Μετάβαση χώρου σε λειτουργία σχεδίου
 
-Any of these flips the space's mode and the change is persisted:
+Οποιοδήποτε από τα παρακάτω αλλάζει τη λειτουργία του χώρου και η αλλαγή
+αποθηκεύεται:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Επιλέξτε **Σχέδιο** από το αναπτυσσόμενο μενού λειτουργίας στο άκρο αριστερά
+  της γραμμής εργαλείων του πεδίου σύνταξης
+- Πατήστε **Shift+Tab**
+- Στείλτε `/plan`. Ένα σκέτο `/plan` απλώς οπλίζει τη λειτουργία· το
+  `/plan <request>` την οπλίζει και στέλνει τα υπόλοιπα ως μήνυμά σας
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+Το `/plan` δεν ταξιδεύει ποτέ ως κείμενο — ορίζει την αποθηκευμένη λειτουργία, που
+είναι η αρχή στην οποία ανατρέχουν η επιφάνεια εργαλείων, το προκαθορισμένο σύνολο
+του φύλακα και η προτροπή. Έτσι η λειτουργία ισχύει για αυτή τη στροφή και για κάθε
+επόμενή της, μέχρι να την αλλάξετε ξανά.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Η λειτουργία αποθηκεύεται στον χώρο, οπότε ο ίδιος πράκτορας μπορεί να βρίσκεται σε
+λειτουργία σχεδίου εδώ και σε λειτουργία πράκτορα αλλού.
 
-## What the agent produces
+## Τι παράγει ο πράκτορας
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Ερευνά μόνο για ανάγνωση — μνήμη, το ευρετήριο κώδικα, αρχεία
+2. Καλεί το `submit_plan` **μία φορά**, με έναν `goal` και `nodes`, που το καθένα
+   φέρει ένα σταθερό `key`, ένα `title`, μια `description` και τα κλειδιά των κόμβων
+   από τους οποίους εξαρτάται (`dependsOn`) — αυτό ακριβώς επιτρέπει στην ανεξάρτητη
+   εργασία να εκτελείται παράλληλα
+3. Σταματά
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Το εργαλείο επικυρώνει το γράφημα — διπλά κλειδιά, κρεμάμενες εξαρτήσεις, κύκλους —
+και επιστρέφει παραβάσεις για να τις διορθώσει ο πράκτορας αντί να δεχτεί ένα
+χαλασμένο σχέδιο.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Το σχέδιο εμφανίζεται **στη συνομιλία** ως συμπαγής γραμμή που δείχνει τον στόχο, την
+κατάστασή του και τον αριθμό βημάτων. Το **Plan Studio** — το γράφημα εξαρτήσεων, ο
+επιθεωρητής ανά κόμβο και η εκτίμηση κόστους — ανοίγει ως καρτέλα δίπλα στη
+συνομιλία: πατήστε **Άνοιγμα** στη γραμμή ή απλώς περιμένετε, γιατί ένα σχέδιο που
+φτάνει μέσα σε 30 δευτερόλεπτα ενώ παρακολουθείτε τη συνομιλία ανοίγει μόνο του την
+καρτέλα του.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Η εγγύηση μόνο ανάγνωσης είναι δομική, αλλά μόνο στον ενσωματωμένο μηχανισμό]
+Ο δικός του μηχανισμός του Control Center χτίζει το μητρώο εργαλείων του πράκτορα
+από την προδιαγραφή επιφάνειας της λειτουργίας σχεδίου, οπότε απλώς δεν υπάρχει
+εργαλείο εγγραφής, επεξεργασίας ή εντολών για να καλέσει — ο περιορισμός δεν είναι
+οδηγία προτροπής από την οποία το μοντέλο θα μπορούσε να ξεγλιστρήσει με λόγια.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Ο προσαρμογέας Claude Code δεν έχει τέτοιο φιλτράρισμα: η λειτουργία φτάνει σε αυτόν
+ως αίτημα που ο δικός του εκτελεστής μπορεί ή όχι να σεβαστεί, και το Control Center
+βλέπει μόνο τις κλήσεις `mcp__*` του. Το ένδειγμα επιβολής δίπλα στο αναπτυσσόμενο
+μενού λειτουργίας εμφανίζεται ακριβώς όταν συμβαίνει αυτό.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Ο πράκτορας μπορεί να σας κάνει διευκρινιστικές ερωτήσεις]
+Όταν το αίτημα είναι αμφίσημο, ένας πράκτορας σχεδίου μπορεί να κάνει παύση και να
+σας θέσει έως τρεις ερωτήσεις που μπλοκάρουν, με το εργαλείο `ask_user`. Αποδίδει μια
+φόρμα μέσα στη συνομιλία — επιλογές ή ελεύθερο κείμενο — και η εκτέλεση μπλοκάρει
+μέχρι να απαντήσετε. Το εργαλείο είναι βαθμίδας ανάγνωσης, οπότε επιβιώνει στην
+επιφάνεια μόνο ανάγνωσης της λειτουργίας σχεδίου, και εξαιρείται από το περίβλημα
+έγκρισης (μια προτροπή μπροστά από μια προτροπή θα απέτυχε κλειστά χωρίς συνδεδεμένο
+εγκριτή, στερώντας από τον πράκτορα την ίδια την πράξη της ερώτησης).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Χρειάζεται έναν χώρο για να αποδοθεί, οπότε μια μεμονωμένη αποστολή χωρίς συνομιλία
+δεν το έχει. Το να βάλετε εξαρχής το εύρος, το αποθετήριο-στόχο και τα κριτήρια
+αποδοχής στο πρώτο σας μήνυμα είναι πάντως ταχύτερο από μια ανταλλαγή.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Η πεζογραφία δεν είναι παραδοτέο εδώ. Μια εκτέλεση που τελειώνει χωρίς να καλέσει το
+`submit_plan` αναρτά μια ορατή γραμμή "Ended without submitting a plan (no
+`submit_plan` call)." στη συνομιλία και σηματοδοτεί την εκτέλεση ως απούσα το
+παραδοτέο της. Η κατάσταση της εκτέλεσης παραμένει σκόπιμα _completed_ — αυτό αφήνει
+ανέπαφες τις μηχανές καταστάσεων των pipeline και των εισιτηρίων — οπότε διαβάστε τη
+γραμμή, όχι το σήμα κατάστασης.
 
-## Approve the plan
+## Έγκριση του σχεδίου
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Από τη γραμμή του σχεδίου στη συνομιλία, πατήστε **Έγκριση και εκτέλεση**. Από τη
+γραμμή έγκρισης του Plan Studio, πατήστε **Έγκριση σχεδίου** (ή **Απόρριψη** δίπλα
+της· η έγκριση είναι ανενεργή όσο το γράφημα έχει σφάλμα επικύρωσης).
 
-Then:
+Στη συνέχεια:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Το Control Center μεταγλωττίζει το σχέδιο σε μια ενορχήστρωση και την υλοποιεί —
+   τα εισιτήρια και την εκτέλεση. Κανένα μοντέλο δεν εμπλέκεται σε αυτό το βήμα·
+   είναι ντετερμινιστικό
+2. Το σχέδιο εκτελείται ως ο πράκτορας που το έγραψε. Το αν θα μπει κάποιος άλλος
+   είναι απόφαση εκείνου του πράκτορα κατά την εκτέλεση — μπορεί να αναθέσει ένα
+   βήμα σε έναν καταλληλότερο συνεργάτη με `delegate_task`, εντός του ορίου βάθους
+   ανάθεσης του χώρου εργασίας
+3. Ο στόχος του σχεδίου γίνεται **ο στόχος της συνομιλίας** και η εργασία εκτελείται
+   **στην ίδια εκείνη συνομιλία**: κάθε βήμα αναρτά τι ζητήθηκε από τον πράκτορα και
+   μεταδίδει τη στροφή του πίσω, ώστε να την παρακολουθείτε (και να μπορείτε να
+   σταματήσετε μια στροφή) εκεί που βρίσκεστε ήδη
+4. Η γραμμή στόχου στον πλαϊνό πίνακα **Γενικά** της συνομιλίας (κάτω από τις
+   **Εκκρεμότητες**) φέρει την πρόοδο της εκτέλεσης ως `settled/total` και το κουμπί
+   διακοπής της· το Plan Studio δείχνει την κατάσταση ανά κόμβο στο γράφημα και
+   επιτρέπει ακύρωση και εκεί
 
-## Keep working without approving
+## Συνέχεια εργασίας χωρίς έγκριση
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Αν προτιμάτε να μείνετε σε αυτή τη συνομιλία αντί να εγκρίνετε το σχέδιο, ο
+πράκτορας μπορεί να καλέσει το `exit_plan_mode`. Αυτή είναι η μόνη εγκεκριμένη έξοδος:
+ανοίγει ένα διαρκές αίτημα έγκρισης συνδεδεμένο με τη συνομιλία και επιστρέφει
+`pending` — ο χώρος παραμένει σε λειτουργία σχεδίου και ο πράκτορας δεν πρέπει να
+ενεργήσει. Μόλις εγκριθεί το αίτημα, η επόμενη κλήση `exit_plan_mode` του πράκτορα
+γυρίζει τον χώρο από λειτουργία σχεδίου σε λειτουργία πράκτορα και ξεκλειδώνει τα
+εργαλεία μετάλλαξής του. Μια απόρριψη τού επιτρέπει να ανοίξει νέο αίτημα για
+αναθεωρημένο σχέδιο.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Για να βγείτε από τη λειτουργία σχεδίου, αλλάξτε το αναπτυσσόμενο μενού του πεδίου
+σύνταξης (ή πατήστε Shift+Tab) ή εγκρίνετε το υποβληθέν σχέδιο. Το `exit_plan_mode`
+ανοίγει μια διαρκή έγκριση που αποφασίζεται με το εργαλείο MCP `decide_approval`. Η
+επικάλυψη περιορισμών για μπλοκαρισμένες κλήσεις εργαλείων είναι διαφορετική, ουρά
+στη μνήμη, και δεν μεταφέρει αιτήματα εξόδου από σχέδιο.
 
-## Plan mode in a pipeline step
+## Λειτουργία σχεδίου σε βήμα pipeline
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Ένας κόμβος pipeline `messaging.createSpace` διαβάζει τη λειτουργία συνομιλίας από το
+**extra** `mode` της διαμόρφωσης του κόμβου — `extras['mode']: 'plan'`. Το κλειδί
+απαιτεί ακριβή αντιστοίχιση: οποιαδήποτε άλλη γραφή, συμπεριλαμβανομένων των
+`conversationMode` ή `dispatchMode`, αγνοείται σιωπηλά και το δωμάτιο πέφτει στην
+προεπιλογή του σώματος, που είναι λειτουργία **ανασκόπησης**, όχι συνομιλίας. Ένα
+βήμα `promptAgent` μπαίνει σε δωμάτιο που δεν δημιούργησε και δεν επαναρυθμίζει τα
+δικαιώματά του. Το αναπτυσσόμενο στοιχείο **Λειτουργία αποστολής** (`allParallel` /
+`manager`) του επεξεργαστή διαμόρφωσης κόμβου προορίζεται για κόμβους αποστολής
+ομάδας. Ορίστε τη λειτουργία συνομιλίας με το `extras['mode']` σε ένα πρότυπο που
+ανοίγει τον χώρο ή στη διαμόρφωση εκείνου του κόμβου μέσω του API.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
-- [Use spaces](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/)
-- [Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/)
-- [Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
+- [Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
+- [Χρήση χώρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/)
+- [Εργασία στο Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/)
+- [Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)

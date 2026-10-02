@@ -1,162 +1,151 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: 备份与恢复
+description: 为整个安装创建快照，在机器之间迁移工作区，恢复单个或全部工作区，并把副本保存在别处。
 slug: zh-CN/手册/操作指南/备份与恢复
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/zh-CN/手册/参考/备份/).
+本指南涵盖人们实际用备份做的五件事：创建备份、取回副本、迁移工作区、恢复备份，以及把副本保存在机器之外。关于每种产物和每项操作的确切形态，请参阅
+[备份参考](/zh-CN/手册/参考/备份/)。
 
-Everything here lives at **Settings → Server → Backup & restore**.
+本节所有内容都位于**设置 → 服务器 → 备份与恢复**。
 
-## Prerequisites
+## 前提条件
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- 一个**完整客户端**——桌面应用或 Web 应用。已配对的手机按设计无法触发其中任何操作。
+- 要创建、列出、下载或删除**安装快照**：需要该安装的**所有者**。
+- 针对单个工作区的操作：导出需要该工作区的**管理员**，导入或删除需要**所有者**。
+- 下载和上传：需要与服务器的**直接**连接。中转中继承载的是 RPC 帧，而不是文件传输；当你处于中继连接时，传输控件会自动禁用并显示一条说明。
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[安装快照需手动创建]
+**立即备份**仍然仅在收到请求时才创建整个安装的快照。内置的
+**Workspace backup** 流水线则可以每周备份一次工作区数据库，
+并删除该工作区超过 30 天的备份。它不会复制 `global.db`、
+其他工作区或数据库旁边的文件。请单独保留机器之外的副本。
 :::
 
-## What a backup covers
+## 备份涵盖的内容
 
-Both artifacts are **databases only**:
+这两种产物都**只包含数据库**：
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **安装快照**是一个带时间戳的目录：`manifest.json`、`global.db`，以及每个工作区一个 `<workspaceId>/workspace.db`。
+- **工作区导出**就是那单个 `workspace.db` 文件。
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/zh-CN/手册/参考/备份/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+两者都不包含数据目录的其余部分：`secrets.json`（配对密钥、提供方
+凭据、SSO）、工作区的 `blobs/`（粘贴到消息中的图片）、`skills/`、
+`agents/`、`chat_credentials/`、录制的会议音频或机台镜像。其中有些
+可以舍弃，有些则不能——
+[完整表格见参考](/zh-CN/手册/参考/备份/#what-a-backup-does-not-contain)，
+而涵盖这些内容正是[机器之外一节](#将备份复制到机器之外)的目的。
 
-## Take a snapshot of the whole install
+## 为整个安装创建快照
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. 打开**设置 → 服务器 → 备份与恢复**。
+2. 在**安装快照**下，点击**立即备份**。
+3. 提示条会显示在服务器主机上写入的目录。新快照会出现在列表顶部。
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+整个过程服务器始终保持运行。每个文件都用 `VACUUM INTO` 写入，它对运行中的数据库
+是一致的，因此无需维护窗口，也不必停止智能体。
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+列表中的每一行都会显示时间戳、磁盘上的大小、捕获了多少个工作区，以及该快照是
+**完成**还是**未完成**。未完成意味着清单缺失，或引用了不存在的文件——
+备份被崩溃或磁盘写满中断。这些仍然会被特意列出：看不见的快照，就是你以为自己
+拥有的快照。未完成的快照无法恢复整个安装，但它确实包含的工作区文件仍可逐个采用。
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+某一行也可能显示 **_n_ 个工作区未捕获**。这表示该工作区已注册但从未写入
+（还没有文件），或其副本复制失败——请检查服务器日志。
 
-## Schedule workspace backups and retention
+## 安排工作区备份与保留策略
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+打开该工作区的**设置 → 流水线 → 流水线模板**，找到
+**Workspace backup**。其已启用的计划在每周日 03:00 UTC 运行：
+**Back up workspace**，接着是 **Delete backups older than**（默认
+30 天）。第二个节点仅在备份成功后运行。你可以修改节点上的保留天数，或停用
+该计划。如果服务器在计划时间处于离线状态，它恢复后会补跑一次，而不会把
+错过的每一周都重放一遍。
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+工作区备份存放在服务器上的
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`。保留
+节点只删除此工作区的旧备份；它绝不会删除安装快照或其他工作区的备份。这些
+文件只包含数据库。若要在机器之外保留，请单独复制它们。
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+这些备份与**安装快照**列表相互独立。要恢复其中之一，
+请使用**工作区数据 → 导入**，并填入该备份在服务器端的 `workspace.db`
+路径。导入会替换该工作区当前的数据库，因此如果之后可能需要撤销恢复，请先将其
+导出。
 
-## Delete an install snapshot
+## 删除安装快照
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+在**安装快照**下，展开该快照（包括未完成的快照），
+并使用危险区域中的**删除快照**。确认其名称。整个
+快照目录会从服务器上永久移除；如果需要保留副本，请先下载。工作区备份
+流水线绝不会删除这些快照。
 
-## Collect a copy on your own machine
+## 在自己的机器上取回副本
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+页面上显示的路径位于运行 `cc_server` 的机器上。如果那不是你正在使用的机器，
+请使用**下载**按钮：
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- 在**工作区数据**下每个**工作区**旁的**下载**，用于获取一个 `.db` 文件。
+- 在**安装快照**下每个**快照**旁的**下载**，用于获取整个快照的 `.zip`。
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+在桌面端，你可以选择文件的保存位置，提示条会显示该位置；在 Web 端，它会进入
+浏览器的下载目录。两种方式都会以字节为单位报告进度，因为这两类负载都可能达到
+数 GB。
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+两者都会在按下按钮的那一刻生成一份全新副本，流式传输，并在之后删除服务器上的
+副本——下载并不是“取回导出按钮先前生成的文件”。
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+解压快照归档会精确还原快照的目录结构，正因如此，恢复它就只是把内容复制回去。
 
-## Move a workspace to another install
+## 将工作区迁移到另一个安装
 
-One workspace is one database file, so handing it over is a file operation.
+一个工作区就是一个数据库文件，因此移交它就是一次文件操作。
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. 在**源**服务器上，进入**设置 → 服务器 → 备份与恢复 → 工作区数据**，展开该工作区并点击**下载**。
+2. 在**目标**服务器上，创建（或选择）接收它的工作区。
+3. 展开该工作区，在**从此设备恢复**下点击**选择文件并上传**。选择你下载的 `.db` 文件。
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+如果两台服务器都是你正在使用的这台机器，**保存到服务器**加
+**导入** → **选择文件**也能达到相同效果，且无需往返传输；导入
+对话框中的路径在服务器主机上解析。
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[导入会替换所有内容]
+导入会覆盖目标工作区当前持有的所有内容，且无法撤销。如果其中有任何你可能想找回的
+内容，请先导出目标。
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+有两种情况会被允许并记录日志，而不是被拒绝：导入的文件所记录的
+workspace id 与目标不同（这正是复制工作区或以新 id 恢复它的方式），以及导入
+来自**另一个安装**的文件。在后一种情况下，该文件已配对的设备与用户 id 属于它
+来源的那个安装，无法在这个安装上解析——工作区自身的数据完好无损，但采用之后请
+重新检查成员关系。
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+聊天机器人令牌存放在数据库旁边，而不是其中，因此你交给别人的工作区不携带任何
+有效凭据。接收方的安装会重新连接自己的凭据。
 
-## Restore one workspace from a snapshot
+## 从快照恢复单个工作区
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. 在**安装快照**下，展开你想要的那个快照。
+2. 找到该工作区所在的行，点击**恢复**。
+3. 确认。该工作区自拍摄快照以来的所有操作都会丢失。
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+这与导入是同一项操作，只是指向快照中该工作区文件的副本——这是有意为之，这样
+就不会有第二套机制对同一个文件做出不同处理。
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+某一行可能显示**已不在此服务器上**，且**恢复**被禁用：该快照
+包含一个此安装已不再拥有的工作区。请手动把它恢复回来——创建一个工作区，
+然后在**工作区数据**下从
+`<snapshot path>/<old workspace id>/workspace.db` 导入到其中。展开的快照会在
+一个可复制的字段中显示它自己的**服务器上的路径**，而该行的标题就是旧的
+工作区 id，因此该路径的两半都在你眼前。
 
-## Restore a whole install
+## 恢复整个安装
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+对此没有按钮，也不应该有：它会替换正在运行的服务器所持有的数据库。
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **停止 `cc_server`。** 如果你运行的是带内嵌服务器的桌面应用，请退出该应用。
+2. 将快照的内容复制到数据目录之上。快照的目录结构与实时目录一致，因此这就是一次普通复制：
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +160,22 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. 删除任何紧挨着你所替换数据库的 `-wal` 和 `-shm` 文件。它们属于旧文件，与恢复后的数据库放在一起的过期文件会带来损坏风险。
+4. 再次启动服务器。
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+快照不包含 `secrets.json`，因此恢复到**全新**主机的安装会保留数据，但不保留
+其凭据：已配对的设备、提供方令牌和 SSO 设置都必须重新建立，或从你保存该文件的
+地方恢复。恢复到同一主机时，`secrets.json` 从未丢失，一切都会保留。
 
-## Copy backups off the machine
+## 将备份复制到机器之外
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+与所复制的数据库位于同一块磁盘上的快照，能让你免受一次糟糕导入的影响，却挡不住
+磁盘故障。Control Center 不会把副本发送到任何地方，所以这部分得靠你自己。
 
-### Sync the snapshots
+### 同步快照
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+快照一旦写入便不可变，并以时间戳命名，因此任何同步工具都能很好地处理它们。
+排除 `transfer/`，它是进行中下载和上传的工作台：
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +192,21 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` 会把你在本地的清理镜像到远端。如果你希望远端比主机保留更长时间的快照，
+就去掉它。
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[切勿直接同步实时数据库]
+在服务器运行时，不要把 rsync、`aws s3 sync` 或文件级备份代理指向 `global.db` 或
+`<workspaceId>/workspace.db`。实时 SQLite 数据库有一个 `-wal` 附属文件，而逐文件
+复制会在不同时刻捕获这两者——结果是一个往往能打开、却静默丢失了近期写入的文件，
+或者根本无法打开。请复制**快照**（它是在读事务下写入的），或按下文所述用
+`VACUUM INTO` 创建一个。
 :::
 
-### Include what a snapshot leaves out
+### 包含快照遗漏的内容
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+为了能够重建整个安装而不只是它的数据，也要复制以下内容。它们是
+普通文件，在服务器运行时复制是安全的：
 
 ```bash
 rsync -a \
@@ -234,20 +221,19 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` 的权限是 `0600`，保存着该安装上的每一个配对密钥、提供方凭据和
+SSO 设置。它落到哪里，哪里就必须至少与服务器主机同样受保护——
+静态加密，而且不是任何他人都能读取的存储桶。
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+跳过 `spaces/`（写时复制工作树，会从你的仓库重新预配）、`pr_clones/`
+（缓存）、`models/`（会重新下载）、`media_cache/` 和 `rigs/`（机器状态，
+且体积大）。如果你保留会议，`meetings/` 下录制的会议音频值得一并纳入。
 
-### Schedule a whole-install snapshot outside the app
+### 在应用之外安排整个安装的快照
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+内置流水线只备份一个工作区。对于无人值守的**整个安装**快照，
+没有 CLI 子命令，而且快照 RPC 需要一个配对且为该安装所有者的完整
+客户端。主机侧的定时器可以对实时数据库使用 `VACUUM INTO`：
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +252,17 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+以拥有数据目录的同一用户身份，通过 cron 或 systemd 定时器运行它，之后把
+`DEST` 同步到主机之外。`VACUUM INTO` 需要 SQLite 3.27 或更高版本。
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+把它写到 `<dataDir>/backups/` 的**外部**。那里的手工目录没有
+`manifest.json`，因此应用会把它列为未完成的快照，列表也就不再是服务器
+自身产物的如实记录。
 
-### Prune old whole-install snapshots
+### 清理旧的整个安装快照
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+你可以在应用中删除单个安装快照。对于主机侧的保留
+策略，请让工作区备份目录与安装快照保持分离：
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +270,48 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+在加上 `-exec` 之前，先检查一次 `-print` 运行的输出。保留不止一份：你
+要防范的故障往往是“最近一次备份也存在同样的问题”。
 
-## Check that a backup is good
+## 检查备份是否完好
 
-A backup nobody has restored is a hypothesis.
+一份从未被恢复过的备份只是一个假设。
 
-Cheap check — the file opens and its pages are intact:
+低成本检查——文件能打开，且其页面完好：
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+真正的检查——采用它。在一个非生产安装上创建一个临时工作区，把一份
+工作区文件导入其中，然后看看你期望的空间、工单和消息是否都在那里。这会走一遍
+真实恢复所走的同一条路径，包括 FTS 重建，
+而它是唯一能告诉你备份可恢复、而不只是可读取的检查。
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+在配置备份时做一次，之后每当更改它们的存储位置时再做一次。
 
-## Troubleshooting
+## 故障排查
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| 现象                                                                  | 原因与修复                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| 下载和上传控件被禁用，并显示一条关于中继的说明      | 你正通过中继连接到服务器，而中继不承载文件传输。请改为直接连接                          |
+| “服务器拒绝了”                                                     | 角色问题。创建或列出安装快照需要该安装的运营者。下载工作区需要管理员，恢复工作区需要所有者，获取整个快照 zip 需要该安装的运营者 |
+| “此服务器没有备份接口”                                      | 该主机未接上备份端口——这是一个演示服务器。这些操作是缺席的，而不是被拒绝                          |
+| “文件大于服务器接受的上限”                             | 上传上限为 8 GiB。请把文件放到服务器主机上，改用**导入** → **选择文件**                 |
+| 导入被拒绝：不是 Control Center 工作区数据库                  | 该文件没有 `workspace_meta` 行——它不是工作区导出，或者已被截断。没有任何内容被替换             |
+| 快照被列为**未完成**                                      | 其清单缺失或引用了不存在的文件。请重新创建一份；在此期间可以从中逐个采用工作区文件 |
+| 一份快照提示有工作区未被捕获                             | 那些工作区从未被写入，或其复制失败了。请检查服务器日志                                  |
+| 恢复后的安装没有代码托管或 SSO 凭据                       | `secrets.json` 不在快照中。请从你保存它的地方恢复它，或重新连接提供方                     |
+| 恢复后的工作区缺少粘贴的图片                            | Blob 位于数据库旁边，而不是其中。请一并复制 `<workspaceId>/blobs/`                                     |
 
-## Related guides
+## 相关指南
 
-- [Run a headless server](/zh-CN/手册/操作指南/运行无界面服务器/): where the data directory comes from
-- [Connect to a remote server](/zh-CN/手册/操作指南/连接远程服务器/): direct versus relayed connections
-- [Pair a device](/zh-CN/手册/操作指南/配对设备/): the credential the transfer routes sign with
+- [运行无界面服务器](/zh-CN/手册/操作指南/运行无界面服务器/)：数据目录从何而来
+- [连接到远程服务器](/zh-CN/手册/操作指南/连接远程服务器/)：直接连接与中继连接
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)：传输路由用于签名的凭据
 
-## Related concepts and reference
+## 相关概念与参考
 
-- [Backup, export and import](/zh-CN/手册/参考/备份/): every operation, route, field and limit
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/): why one workspace is one file
-- [`cc_server` CLI](/zh-CN/手册/参考/cc-server-cli/): the data directory layout
+- [备份、导出与导入](/zh-CN/手册/参考/备份/)：每项操作、路由、字段和限制
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)：为什么一个工作区就是一个文件
+- [`cc_server` CLI](/zh-CN/手册/参考/cc-server-cli/)：数据目录的布局

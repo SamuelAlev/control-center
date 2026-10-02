@@ -1,241 +1,246 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: ایجاد قالب پایپ‌لاین
+description: یک قالب گردش‌کار DAG را در ویرایشگر پایپ‌لاین بنویسید — گره اضافه کنید، آن‌ها را به هم وصل کنید، ورودی‌ها را اعلام کنید و آن را قابل‌اجرا کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+قالب‌های پایپ‌لاین در تنظیمات فضای کاری ساخته می‌شوند. ورودی **پایپ‌لاین‌ها**
+در نوار کناری فضای کاری همان _صف اجرا_ است، نه فهرست قالب‌ها — هیچ کنشی برای
+«ایجاد قالب» ندارد.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/).
+برای اینکه هر نوع گام، هر کلید بدنه و هر فیلد پیکربندی چه معنایی دارد، به
+[مرجع گام‌های پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/) نگاه کنید.
 
-## Create a template
+## ایجاد قالب
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. به **تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** بروید
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. **قالب جدید** را بزنید.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+دیالوگی برای شناسه وجود ندارد. ویرایشگر بی‌درنگ روی یک اسکلت اولیه به نام
+**پایپ‌لاین جدید** باز می‌شود، با شناسه‌ای که خودکار تخصیص می‌یابد (`pipeline_1`،
+سپس `pipeline_2`، …). روی عنوان در سرصفحه کلیک کنید تا نامش را عوض کنید.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+بوم خالی نیست: یک گرهٔ ورودی **Trigger**، یک گرهٔ عامل پرامپت با برچسب **Step**
+و یک نشانگر پایانی که اجرا را تمام می‌کند. این نشانگر رسم نمی‌شود. ویرایشگر آن
+پایانهٔ پنهان را به هر مقصد قابل‌دسترس دوباره سیم‌کشی می‌کند، پس کاری که بعد از
+**Step** وصل می‌کنید هم اجرا می‌شود.
 
-## Add nodes
+## افزودن گره
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+نوار کناری **کتابخانهٔ گره** همیشه سمت چپ ویرایشگر می‌نشیند. آن را با جعبهٔ
+**جستجوی گره‌ها** فیلتر کنید و یک مورد را روی بوم بکشید — گره همان‌جا که
+رهایش کنید می‌نشیند، بدون اتصال ورودی.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| گرهٔ پالت | نوع گام | کارش |
+| --- | --- | --- |
+| **اسکریپت Bash** | listen | یک اسکریپت پوسته با جای‌گذاری `{{state}}` اجرا می‌کند؛ هیچ عاملی اعزام نمی‌شود |
+| **باز کردن گفتگو** | listen | تنها فضای دیدنی اجرا و checkout آن را باز می‌کند؛ گره‌های عامل به این اتاق می‌پیوندند |
+| **کلون شاخهٔ PR** | listen | شاخهٔ سر PR را با `gh pr view` پیدا می‌کند و آن را در پوشهٔ اجرا کلون می‌کند |
+| **ارسال دیدگاه روی PR** | listen | یافته‌های تجمیع‌شده را به‌صورت یک دیدگاه بازبینی GitHub روی PR می‌گذارد |
+| **بازبین (پرامپت)** | listen | یک عامل بازبین متخصص اعزام می‌کند؛ تا تحویل نتیجه توسط عامل معلق می‌ماند |
+| **تجمیع (join)** | join | منتظر چند شاخهٔ بالادست می‌ماند، سپس از یک عامل می‌خواهد خروجی‌هایشان را تجمیع کند |
+| **پرامپت سفارشی** | listen | گرهٔ عمومی پرامپت‌محور که از بدنهٔ `promptAgent` عبور می‌کند |
+| **ارسال به فضا** | listen | پیامی به یک فضای پیام‌رسانی می‌فرستد |
+| **شرط / سوییچ (router)** | router | جریان را بر پایهٔ یک مقدار حالت شاخه‌شاخه می‌کند |
+| **اگر فایل وجود دارد (router)** | router | وقتی مسیری زیر کلون وجود دارد `"true"` و در غیر این صورت `"false"` را مسیر می‌دهد |
+| **وجود هر فایل (router با OR)** | router | وقتی هر یک از مسیرهای فهرست‌شده وجود دارد `"true"` را مسیر می‌دهد |
+| **همهٔ شرط‌ها (router با AND)** | router | فقط وقتی همهٔ مسیرهای فهرست‌شده وجود دارند `"true"` را مسیر می‌دهد |
+| **اعزام تیم** | listen | یک تیم کامل اعزام می‌کند و تا پایان کارش معلق می‌ماند |
+| **دروازهٔ تأیید** | listen | برای گرفتن تصمیم تأیید مکث می‌کند |
+| **برای هر (map)** | forEach | برای هر آیتم یک پرامپت می‌سازد، سپس عامل را یک‌بار با این پرامپت‌های به‌هم‌پیوسته اعزام می‌کند |
+| **فراخوانی پایپ‌لاین فرعی** | listen | قالب دیگری را به‌عنوان یک گام تودرتو اجرا می‌کند |
+| **پاک‌سازی worktreeها** | listen | worktreeهای ایزولهٔ قدیمی را پاک می‌کند؛ قطعی، بدون اعزام هیچ عاملی |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+کتابخانه این‌ها را زیر **جریان و منطق**، **بازبینی PR**، **عامل‌ها**،
+**پیام‌رسانی** و **کد** دسته‌بندی می‌کند. گروهی به نام Demo وجود ندارد.
 
-## Wire nodes together
+## اتصال گره‌ها به هم
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+هر گره کار روی لبهٔ راستش یک **درگاه خروجی** دایره‌ای دارد. از آن درگاه به گرهٔ
+دیگری بکشید تا به هم وصل شوند. تریگرهای شروع هم همین‌طور هستند: هر کدام درگاه
+خودش را دارد، پس سیمی که از **زمان‌بندی** بیرون می‌آید از **اجرای دستی** هم
+بیرون نمی‌آید. برای درج یک نوع بعد از یک گره، **افزودن گام** (`+`) را کمی بعد
+از آن بزنید. نشانگر را روی نقطهٔ میانی یک یال موجود نگه دارید و × را بزنید تا
+اتصال قطع شود.
 
-Connections are also edited from the node that _receives_ them:
+اتصال‌ها از گره‌ای هم که آن‌ها را _دریافت می‌کند_ ویرایش می‌شوند:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. گره پایین‌دست را انتخاب کنید. پنل پیکربندی‌اش در سمت راست باز می‌شود.
+2. تا **تریگرها از** پایین بروید و برای هر گره بالادستی که این گره باید به آن
+   گوش بدهد، تراشه‌اش را بزنید. زدن یک تراشهٔ انتخاب‌شده اتصال را برمی‌دارد.
+3. اگر گره بالادست یک مسیریاب باشد، زیر تراشه‌ها بلوکی به نام **کلیدهای مسیر**
+   پیدا می‌شود، با یک فیلد **کلید مسیر از &lt;node&gt;** برای هر یال مسیریاب.
+   کلیدی را که آن یال با آن فعال می‌شود وارد کنید — برای مسیریاب‌های «فایل
+   وجود دارد» مقدار `true` یا `false`، یا نام حالت برای یک سوییچ.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+هر گره تریگر یک نقطهٔ ورود است. یک گره می‌تواند به چند بالادست گوش بدهد
+(fan-in) و چند پایین‌دست را تغذیه کند (fan-out)، و گراف باید بدون حلقه بماند —
+هیچ چیز در ویرایشگر جلوی سیم‌کشی یک حلقه را نمی‌گیرد، پس کارتان را بررسی کنید.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+نشانگر پایانی از بوم فیلتر شده است، پس نمی‌توان انتخابش کرد. ویرایشگر هر بار
+که گراف تغییر می‌کند آن را به هر مقصد قابل‌دسترس دوباره سیم‌کشی می‌کند، پس
+کاری که بعد از **Step** اولیه وصل می‌کنید هم اجرا می‌شود. یک گراف خالی (تریگری
+بدون جانشین کاری) خود تریگر را فهرست می‌کند تا اجرا بی‌درنگ کامل شود.
 
-## Configure a node
+## پیکربندی یک گره
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+یک گره را انتخاب کنید تا پنل پیکربندی‌اش باز شود. اینکه چه فیلدهایی ظاهر شوند
+به بدنهٔ گره بستگی دارد.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+هر گره **برچسب**، **کلیدهای ورودی (جدا با ویرگول)** (کلیدهای حالتی که هنگام
+اجرا خوانده می‌شوند) دارد و زیر **پیشرفته**: **کاهنده**، **مهلت (ms)**،
+**تعداد تلاش مجدد**، **ادامه اگر این گام ناموفق شد** و **شِمای خروجی (JSON)**.
+گره‌های listen و join هم می‌توانند **نوع** خود را بین این دو عوض کنند.
 
-### Open conversation
+### باز کردن گفتگو
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+یک گزینندهٔ **مخزن‌ها برای کلون** اضافه می‌کند (کدام مخزن‌های فضای کاری checkout
+شوند؛ خالی یعنی هیچ‌کدام)، یک **نام فضا** و یک کادر انتخاب **باز کردن گفتگو در
+آن**. وقتی این کادر روشن باشد، فیلد **نام گفتگو** نام جریانی را می‌دهد که اتاق
+با آن باز می‌شود. گره‌های عامل به این اتاق می‌پیوندند — خودشان اتاقی باز نمی‌کنند.
 
-### Prompt agent
+### عامل پرامپت
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+**عامل** را اضافه می‌کند (کدام عامل اعزام شود)، **قالب پرامپت** را (با `{{key}}`
+به ورودی‌ها یا خروجی‌های بالادست ارجاع دهید) و **کلید خروجی** را.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**مهلت (ms)** بر حسب _میلی‌ثانیه_ است، نه ثانیه — `900000` یعنی 15 دقیقه. اگر
+`900` وارد کنید، گام 0.9 ثانیه فرصت دارد.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+حالت گفتگویی که یک گرهٔ عامل پرامپت زیر آن اجرا می‌شود، فیلدی در ویرایشگر روی
+گرهٔ عامل ندارد. این حالت روی گرهٔ **باز کردن گفتگو** که اتاق را ساخته، در
+`extras['mode']` (`chat`، `plan` یا `review`) می‌نشیند (پیش‌فرض `review`). تنظیم
+آن روی یک گام عامل نادیده گرفته می‌شود. این کلید دقیقاً مطابقت داده می‌شود: هر
+املای دیگری بی‌صدا نادیده گرفته می‌شود.
 
-### Bash script
+### اسکریپت Bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+**اسکریپت Bash** را اضافه می‌کند. هیچ فیلدی برای پوشهٔ کاری یا محیط وجود ندارد،
+چون هیچ‌کدام قابل پیکربندی نیستند:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- هر گام bash در یک اجرا همان cwd یعنی `<cc_root>/pipelines/<runId>/` را به
+  اشتراک می‌گذارد.
+- `GITHUB_TOKEN` از مخزن اعتبارنامه‌ها تزریق می‌شود، پس `gh` و
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` بدون هیچ تنظیمی کار
+  می‌کنند.
+- اسکریپت به‌عنوان فایل اجرایی حرفی `bash` اجرا می‌شود، پس `bash` باید روی
+  `PATH` میزبان سرور باشد. این نکته‌ای است که در Windows باید در نظر بگیرید.
 
-### Router
+### مسیریاب
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+یک مسیریاب شرطی را ارزیابی می‌کند و یک کلید مسیر برمی‌گرداند؛ موتور فقط یال
+پایین‌دستی را فعال می‌کند که کلید مسیرش مطابقت دارد و بقیهٔ شاخه‌ها را ردشده
+علامت می‌زند.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+انتخاب یک مسیریاب، فیلد **کلید خروجی** را با ویرایشگر شرط جایگزین می‌کند. یکی
+از چهار حالتش را انتخاب کنید:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **فایل(ها) وجود دارند — هر کدام** — وقتی هر یک از مسیرهای فهرست‌شده وجود
+  دارد `"true"` را مسیر می‌دهد.
+- **فایل‌ها وجود دارند — همه** — فقط وقتی همهٔ مسیرهای فهرست‌شده وجود دارند
+  `"true"` را مسیر می‌دهد.
+- **مقایسه** — یک مقدار حالت را با یک مقدار ثابت مقایسه می‌کند.
+- **سوییچ** — بر پایهٔ مقدار یک کلید حالت مسیر می‌دهد، با یک حالت پیش‌فرض.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+سپس کلیدهای مسیر متناظر را روی یال‌های خروجی تنظیم کنید (به
+[اتصال گره‌ها به هم](#اتصال-گرهها-به-هم) نگاه کنید).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/).
+گروه‌های منطقی `and` / `or` / `not` را بدنه پشتیبانی می‌کند، اما از این فرم
+نمی‌توان ساختشان — به یک درخت محمول دست‌نویس زیر `extras.predicate` نیاز
+دارند. واژگان کامل محمول‌ها و عملگرها در
+[مرجع گام‌های پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/) آمده است.
 
-### Join
+### پیوستن
 
-No configuration of its own: it waits for all of its upstream steps.
+پیکربندی خودش را ندارد: منتظر همهٔ گام‌های بالادستش می‌ماند.
 
-### Approval gate
+### دروازهٔ تأیید
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+دروازه، عامل تأییدکننده را با پرامپت دروازه به یک گفتگوی پنهان اعزام می‌کند و
+معلق می‌ماند. تأییدکننده در همان گفتگو تصمیم شما را می‌پرسد و آن را با
+`submit_output` به شکل `{ "decision": "approved" | "rejected", "reason": "..." }`
+تحویل می‌دهد. تصمیم زیر کلید خروجی می‌نشیند (پیش‌فرض `approval_decision`)، پس
+یک مسیریاب سوییچ در پایین‌دست می‌تواند بر پایهٔ آن شاخه بزند.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+**عامل** را روی تأییدکننده و **قالب پرامپت** را روی پرسش دروازه بگذارید. دروازه
+از طریق `submit_output` به شکل `{ "decision": "approved" | "rejected",
+"reason": "..." }` حل می‌شود. گره‌های **بازبین (پرامپت)** هم همین‌طور تحویل
+می‌دهند.
 
-### Team dispatch
+### اعزام تیم
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+**شناسهٔ تیم** و **حالت اعزام** را اضافه می‌کند. گزیننده دقیقاً دو حالت پیش
+می‌گذارد:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — یک وظیفه برای هر عضو، تا کامل شدن همه معلق می‌ماند.
+- `manager` — رهبر را اعزام می‌کند و او کارها را واگذار می‌کند.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+هر مقدار ذخیره‌شدهٔ دیگری مثل `allParallel` رفتار می‌کند. **کاهنده** را روی
+`append` بگذارید تا نتیجهٔ هر عضو به‌صورت فهرستی زیر کلید خروجی جمع شود.
 
-### For each and Call sub-pipeline
+### برای هر و فراخوانی پایپ‌لاین فرعی
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**برای هر** به‌صورت پیش‌فرض روی کلید حالت `items` نگاشت می‌کند
+(`extras.iterableKey` / `extras.itemKey` روی گره). پرامپتش را یک‌بار برای هر
+آیتم می‌سازد (`{{item}}` به‌صورت پیش‌فرض) و عامل را **یک‌بار** با این
+پرامپت‌های به‌هم‌پیوسته اعزام می‌کند. یک مجموعهٔ خالی بی‌درنگ با فهرستی خالی
+کامل می‌شود. این یک اعزام موازی برای هر آیتم نیست.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**فراخوانی پایپ‌لاین فرعی** تا رسیدن اجرای فرزند به یک وضعیت پایانی معلق
+می‌ماند، سپس حالت نهایی فرزند را زیر کلید خروجی ادغام می‌کند (پیش‌فرض
+`subflow_result`). با `extras.templateId` آن را به یک فرزند اشاره بدهید. یک
+قالب نمی‌تواند خودش را صدا بزند؛ فرزند ناموفق یا لغوشده، گام والد را ناموفق
+می‌کند و آن گام هم به سیاست تلاش مجدد و ادامه در صورت شکست خودش سپرده می‌شود.
 
-## Declare inputs and allow manual runs
+## اعلام ورودی‌ها و اجازهٔ اجرای دستی
 
-Both live behind **Manual run** in the editor header.
+هر دو پشت **اجرای دستی** در سرصفحهٔ ویرایشگر قرار دارند.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. **اجرای دستی** را بزنید.
+2. **اجازهٔ اجرای دستی** را روشن کنید. این کلید بی‌درنگ ذخیره می‌شود — ردیف
+   تریگر `manual` را می‌سازد (یا حذف می‌کند) که قالب را در صفحهٔ اجرا نشان
+   می‌دهد.
+3. اگر سقف می‌خواهید **حداکثر اجراهای موازی** را تنظیم کنید (برای نامحدود خالی
+   بگذارید). شروع‌های اضافه در وضعیت `queued` می‌مانند تا جایی آزاد شود.
+4. برای هر فیلدی که یک اجرای دستی باید جمع کند، **افزودن ورودی** را بزنید:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| فیلد | توضیح |
+| --- | --- |
+| **کلید** | کلید حالتی که مقدار زیر آن ذخیره می‌شود؛ با `{{key}}` به آن ارجاع دهید |
+| **برچسب** | برچسب نمایشی (پیش‌فرض همان کلید) |
+| **نوع** | متن، متن چندخطی، عدد، کلید، انتخاب، مخزن |
+| **گزینه‌ها** | گزینه‌های جداشده با ویرگول، فقط برای انتخاب |
+| **مقدار پیش‌فرض** | مقدار پیش‌پرشده |
+| **نگه‌دار متن** | متن راهنمای داخل فیلد خالی |
+| **متن راهنما** | متن کمکی زیر فیلد |
+| **الزامی** | اینکه فرم اجرا با مقدار خالی متوقف شود یا نه |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+یک ورودی **مخزن** گزیننده‌ای روی مخزن‌های فضای کاری نمایش می‌دهد و `repo_id`،
+`repo_local_path`، `repo_full_name` و — وقتی مخزن یک ریموت GitHub دارد —
+`repo_owner` و `repo_name` را در بار دادهٔ اجرا می‌گذارد.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. در دیالوگ **ذخیره** را بزنید. ویرایش‌های ورودی در پیش‌نویس ادغام می‌شوند و
+   وقتی قالب را ذخیره کنید ماندگار می‌مانند.
 
-## Save and enable
+## ذخیره و فعال‌سازی
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/).
+1. در سرصفحهٔ ویرایشگر **ذخیره** را بزنید. تا آن موقع سرصفحه «تغییرات
+   ذخیره‌نشده» را نشان می‌دهد.
+2. به **تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** برگردید و بررسی کنید که
+   کلید ردیف قالب روشن باشد. موتور از شروع یک قالب غیرفعال سر باز می‌زند و یک
+   قالب غیرفعال هرگز در صفحهٔ اجرا ظاهر نمی‌شود.
+3. برای شروع خودکار آن، یک تریگر را از کتابخانهٔ گره روی بوم بکشید — به
+   [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/) نگاه کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run a pipeline manually](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/)
-- [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
-- [Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
-- [Pipeline steps reference](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/)
+- [اجرای دستی یک پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/)
+- [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+- [نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
+- [مرجع گام‌های پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Pipelines](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)

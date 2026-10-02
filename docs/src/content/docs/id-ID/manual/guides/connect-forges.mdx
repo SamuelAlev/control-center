@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Hubungkan host kode
+description: Hubungkan GitHub, GitLab, atau Bitbucket agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi — satu ruang kerja dapat memakai ketiganya.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center bekerja dengan tiga host kode, yang disebut **forge** di seluruh aplikasi: **GitHub**, **GitLab**, dan **Bitbucket Cloud**. Tidak ada yang menjadi default. Hubungkan satu dan semuanya berfungsi; hubungkan beberapa dan satu ruang kerja dapat memuat repo dari semuanya sekaligus.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Forge adalah properti setiap **repo**, dibaca dari remote `origin`-nya saat Anda mendaftarkannya. Anda tidak pernah memilihnya, dan tidak ada pengaturan per ruang kerja yang bisa salah.
 
-## Connect a forge
+## Hubungkan forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Buka **Pengaturan → Ruang kerja → Profil & identitas** (`/settings/workspace/profile`).
+2. Temukan kartu **Hosting kode**. Setiap forge yang didukung tercantum, terhubung atau tidak.
+3. Tekan **Masuk dengan …** jika barisnya menyediakannya, atau **Tambah token** lalu tempelkan salah satu.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Masuk** muncul untuk forge yang aplikasinya sudah terdaftar di server Anda — saat ini yaitu GitHub, melalui device flow (lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)). Selebihnya adalah token yang ditempel, yaitu pilihan yang jujur alih-alih tombol yang tidak dapat menyelesaikan prosesnya.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Apa pun caranya, kredensial itu **milik Anda dan berada di server**, dikunci berdasarkan id pengguna Anda: tidak ada token yang disimpan di mesin tempat Anda mengetiknya, setiap perangkat tempat Anda masuk memakai token yang sama, dan anggota lain tidak dapat membacanya. Kredensial berlaku pada **permintaan berikutnya** — tidak ada yang perlu dimulai ulang, dan memutuskan koneksi langsung menghentikan pengirimannya.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Setiap baris memberi tahu dari mana kredensialnya berasal, karena itulah perbedaan antara "token saya tidak berfungsi" dan "token lain yang menjawab":
 
-| Subtitle                         | Meaning                                                            |
+| Subjudul                         | Arti                                                               |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Masuk sebagai octocat`          | Kredensial Anda sendiri yang dipakai                               |
+| `Masuk sebagai octocat · lewat aplikasi server ini` | Identitas aplikasi server yang menjawab — Anda belum masuk |
+| `Masuk sebagai octocat · dari environment` | Variabel environment server yang menjawab, bukan kredensial Anda |
+| `Tidak terhubung`                | Anda tidak punya kredensial untuk forge ini                        |
 
-### What token each forge wants
+### Token apa yang dibutuhkan setiap forge
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Forge         | Token                                                     | Tempat membuatnya                                         |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
 | **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitLab**    | Token akses pribadi dengan `api`                          | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Token API Atlassian, plus email akun Anda                 | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket mengautentikasi dengan **email akun sebagai nama pengguna** dan token sebagai kata sandi. Setel `BITBUCKET_EMAIL` di environment server agar ia tahu email mana yang dipasangkan dengan token itu.
 
-### Or use the environment
+### Atau gunakan environment
 
-For a headless or CI install, the server reads these:
+Untuk instalasi headless atau CI, server membaca ini:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, lalu `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, lalu `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, lalu `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Ini adalah kredensial **server**, bukan milik Anda, dan perbedaannya krusial: permintaan yang dibuat atas nama Anda memakai kredensial Anda dan tidak yang lain, sehingga environment tidak pernah diam-diam menggantikan Anda. Pekerjaan tanpa manusia di baliknya — webhook, polling PR, sinkronisasi tiket — menyelesaikan identitas aplikasi server terlebih dahulu, lalu kredensial pemilik server, lalu environment. Urutannya tetap sehingga "saya sudah masuk dan tidak ada yang berubah" tidak pernah menjadi hasil yang didukung.
 
-## You are a different person on each forge
+## Anda adalah orang yang berbeda di setiap forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Manusia yang sama adalah `octocat` di GitHub dan seseorang yang sama sekali berbeda di GitLab. Control Center menyelesaikan identitas Anda **per forge** dan memakai yang tepat untuk setiap repo, dan itulah yang membuat "perlu tinjauan saya", "dibuat oleh saya", serta "Anda menyetujui ini" benar di ruang kerja campuran.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Jika identitas sebuah forge belum diselesaikan, repo-nya tidak menyumbang apa pun ke kotak masuk alih-alih mencocokkan semuanya. Kotak masuk menyatakannya alih-alih mengklaim Anda sudah menangani semuanya.
 
-## One inbox, every forge
+## Satu kotak masuk untuk semua forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Kotak masuk dan antrean PR menyebar ke setiap forge yang ada di ruang kerja dan menggabungkan hasilnya menjadi satu aliran — pull request GitHub dan pull request Bitbucket berdampingan, diurutkan berdasarkan waktu alih-alih dikelompokkan menurut vendor.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Kegagalan bersifat terisolasi. Forge yang sedang down, terkena batas laju, atau tidak terhubung tidak menyumbang apa pun dan membiarkan yang lain tidak tersentuh; ia tidak pernah mengosongkan seluruh kotak masuk. Repo-nya sendiri tetap menampilkan status terakhir yang diketahui sampai ia pulih.
 
-## What each forge can do
+## Apa yang dapat dilakukan setiap forge
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Setiap forge mendukung alur intinya: menampilkan daftar dan membuka pull request, membaca diff, berkomentar inline dan di tingkat teratas, meninjau, menggabungkan, dan menutup. Di luar itu, mereka benar-benar berbeda, dan Control Center menyembunyikan apa yang tidak dapat dilakukan sebuah forge alih-alih menampilkan kontrol yang gagal secara senyap.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Kemampuan                         | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Tinjauan berkelompok (tertunda)   |   ✓    |   ✓    |     —     |
+| Minta perubahan                   |   ✓    |   ✓    |     ✓     |
+| Status "dilihat" per file tersinkron |   ✓    |   —    |     —     |
+| Reaksi emoji                      |   ✓    |   ✓    |     —     |
+| Peninjau tim / grup               |   ✓    |   ✓    |     —     |
+| Peninjau yang disarankan          |   ✓    |   —    |     ✓     |
+| Hasil CI pada PR                  |   ✓    |   ✓    |     ✓     |
+| Telusuri langkah/log pekerjaan CI |   ✓    |   ✓    |     —     |
+| Pull request bertumpuk            |   ✓    |   —    |     —     |
+| Templat deskripsi PR              |   ✓    |   ✓    |     —     |
+| Polling notifikasi                |   ✓    |   —    |     —     |
+| Profil pengguna yang kaya         |   ✓    |   ✓    |     —     |
+| Ref head PR sisi server           |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Ketika suatu kemampuan tidak ada, fitur tersebut terdegradasi secara jujur:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Status dilihat** tetap berfungsi, tetapi hanya di perangkat tempat Anda menetapkannya.
+- **Tinjauan berkelompok** di Bitbucket diposting komentar demi komentar, sehingga peninjau melihatnya datang satu per satu alih-alih sekaligus.
+- **Tidak adanya ref head PR** di Bitbucket berarti melakukan checkout pull request akan mengambil cabang sumbernya berdasarkan nama, yang gagal setelah cabang itu dihapus.
 
-## Vocabulary
+## Istilah
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab menyebut pull request sebagai **merge request**. Control Center menyebut "pull request" di seluruh modelnya sendiri, dan memakai istilah milik setiap forge saat membicarakan forge tersebut.
 
-## Troubleshooting
+## Pemecahan masalah
 
-### The PR list is empty and says a forge is not connected
+### Daftar PR kosong dan menyatakan sebuah forge tidak terhubung
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Anda tidak punya kredensial untuk forge itu. Masuk atau tempelkan token di **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**. Repo di forge lain tidak terpengaruh.
 
-### I connected a forge but its repos still show nothing
+### Saya menghubungkan sebuah forge tetapi repo-nya masih tidak menampilkan apa pun
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Periksa subjudul barisnya. Jika tertulis "lewat aplikasi server ini" atau "dari environment", kredensial yang menjawab berbeda dari yang Anda harapkan — kredensial Anda sendiri yang menang untuk apa pun yang Anda minta, jadi jika tertulis sebaliknya, milik Anda tidak tersimpan.
 
-### A repo will not register
+### Repo tidak dapat didaftarkan
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+Pendaftaran membutuhkan ketiganya: path berada di dalam git work tree, memiliki remote `origin`, dan remote itu menunjuk ke github.com, gitlab.com, atau bitbucket.org. Lihat [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
 
-### Everything stops working for a while after heavy use
+### Semuanya berhenti berfungsi sementara setelah penggunaan berat
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Itulah circuit breaker batas laju. Forge yang memberi sinyal batas utamanya membuat klien menggagalkan permintaan berikutnya secara lokal, tanpa panggilan jaringan, sampai jendelanya berlalu — sehingga badai percobaan ulang tidak dapat memperdalam batas tersebut. Kegagalan sementara dicoba ulang dengan backoff eksponensial.
 
-## Related guides
+## Panduan terkait
 
-- [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
-- [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-- [Review and merge a PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
-- [Triage the inbox](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)
+- [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
+- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Tinjau dan gabungkan PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
+- [Triage kotak masuk](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)

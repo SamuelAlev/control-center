@@ -1,156 +1,158 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: 스페이스 사용
+description: 스페이스를 만들고, 모드를 설정하고, 참가자와 자율성을 관리하고, 대화와 스레드를 엽니다.
 slug: ko-KR/매뉴얼/사용-가이드/스페이스
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+이 가이드에서는 스페이스를 사용하는 방법을 설명합니다. **스페이스**는 Control
+Center의 메시징 표면입니다. 즉 하나 이상의 참가자(본인 및/또는 에이전트)를 지닌
+워크스페이스 범위의 방이며, 만들어질 때 지정한 저장소마다 쓰기 시 복사 워크트리
+하나를 소유합니다.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+일대일 방과 여러 에이전트가 있는 방은 모두 그냥 스페이스이고, 참가자가 몇
+명인지로만 구분됩니다. 유일한 예외는 에이전트가 서로 대화하려고 여는
+스페이스입니다 — 아래의 [에이전트 간 스페이스](#에이전트-간-스페이스)를
+참고하세요.
 
-## Create a space
+## 스페이스 만들기
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. **스페이스**로 이동합니다
+2. 스페이스 제목 옆의 **+** 버튼을 클릭합니다
+3. **이름**을 지정합니다 — 필수입니다. 빈 이름은 거부되며 대화 상자는 열린
+   상태로 유지됩니다
+4. 선택 사항으로 워크스페이스의 에이전트를 추가합니다
+5. 워크스페이스에 저장소가 하나라도 있으면 이 스페이스가 어느 저장소의
+   워크트리를 프로비저닝할지 고릅니다. 기본값은 전부 선택이며, 모든 저장소를
+   선택 해제하면 아무것도 체크아웃되지 않은 스페이스가 만들어집니다
+6. 확인합니다
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+스페이스는 워크스페이스 범위입니다. 현재 워크스페이스의 에이전트만 보이고,
+스페이스는 다른 워크스페이스의 데이터를 절대 드러내지 않습니다.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills).
+저장소는 각각 스페이스 안의 `repos/<name>/`에 체크아웃됩니다. 자체 에이전트
+스킬을 제공하는 저장소는 그 안에서 작업하는 에이전트에게 스킬을 제공합니다 — 한
+번에 한 저장소의 스킬 집합이 적용되며, 에이전트가 옮겨 가면 함께 바뀝니다.
+작성기에서 `/skill:<repo>:<name>`으로 어느 것이든 사용할 수 있습니다.
+[저장소 범위 스킬](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills)을
+참고하세요.
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+이 표면은 `/workspaces/<id>/spaces`에 있고, 개별 스페이스는
+`/workspaces/<id>/spaces/<spaceId>`에 있습니다.
 
-## Set the space's mode
+## 스페이스의 모드 설정
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+새 스페이스는 기본 모드로 시작합니다. 모드는 작성기 도구 모음의 가장 왼쪽에 있는
+**모드 드롭다운**에서 바꿉니다 — 모드 필드가 없는 만들기 대화 상자나 스페이스
+헤더에서 바꾸는 것이 아닙니다.
 
-| Mode            | Effect                                                                                                |
+| 모드            | 효과                                                                                                  |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **Agent**       | 전체 접근 권한입니다. 기본값이며, 내부적으로는 `chat`이고 드롭다운에는 "Agent"로 표시됩니다           |
+| **Plan**        | 읽기와 조사만 가능합니다. 산출물은 타입이 지정된 플랜입니다                                          |
+| **Orchestrate** | 읽기와 조사에 더해 단일 `propose_orchestration` 동사가 허용됩니다. 플랜은 승인한 뒤에만 실행됩니다     |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab은 드롭다운을 열지 않고 플랜 모드와 에이전트 모드를 전환합니다.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+네 번째 모드인 **리뷰**도 존재하지만 드롭다운에는 제공되지 않습니다 — PR 리뷰
+스페이스에 자동으로 적용됩니다.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+모드는 스페이스에 저장되므로, 같은 에이전트가 한 스페이스에서는 플랜 모드, 다른
+스페이스에서는 에이전트 모드일 수 있습니다. 스페이스 안의 모든 대화는 그
+스페이스의 모드를 공유합니다.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[강제 적용 배지를 확인하세요]
+스페이스의 에이전트가 선택한 모드를 강제할 수 없는 어댑터에서 실행되면 모드
+드롭다운 옆에 배지가 나타납니다. 도구 표면을 필터링하고 모든 호출을 게이트하는
+것은 내장 Control Center 하네스뿐입니다. Claude Code와 ACP 어댑터는 모드를
+요청으로 받을 뿐이며, 그 러너가 이를 따를지는 보장되지 않습니다. 배지가 없다는
+것은 "아무런 주장도 하지 않음"이지 "안전이 검증됨"이 아닙니다.
 :::
 
-See [Modes](/ko-KR/매뉴얼/개념/모드/) for the full model.
+전체 모델은 [모드](/ko-KR/매뉴얼/개념/모드/)를 참고하세요.
 
-## Manage participants and per-agent autonomy
+## 참가자와 에이전트별 자율성 관리
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+스페이스 헤더의 사람 아이콘을 클릭하면 **참가자 관리**가 열립니다. 이미
+스페이스에 있는 에이전트마다 다음을 할 수 있습니다:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- 스페이스에서 제거합니다
+- 이 스페이스에서의 **자율성**을 설정합니다: **기본값**, **제안만**, **승인 후
+  실행**, **자유롭게 실행**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+자율성 다이얼은 (스페이스, 에이전트) 단위로 적용되므로, 한 방에서 신뢰하는
+에이전트를 다른 방에서는 제안만 하도록 묶어 둘 수 있습니다.
 
-## React to a message
+## 메시지에 리액션 달기
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+메시지에 마우스를 올리고 웃는 얼굴 아이콘을 클릭하면 리액션 팔레트가 열립니다.
+여섯 개로 고정된 집합입니다: 👍 👎 🎉 ❤️ 👀 ✅. 자유로운 이모지 선택기는
+없습니다 — 하나를 누르면 본인 몫으로 토글되고, 집계된 칩이 메시지 아래에
+나타납니다.
 
-## Open a conversation
+## 대화 열기
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+스페이스는 여러 대화를 동시에 호스팅하며, 이들은 서로 대등합니다 — 주된 대화는
+없습니다. 스페이스는 언제나 살아 있는 대화를 최소 하나 유지합니다. 마지막 활성
+대화는 보관할 수 없고, 아직 대화가 없는 스페이스를 열면 제목 없는 상시 대화가
+만들어집니다.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+대화는 에디터 탭으로 나타나며, 둘 이상이면 사이드바의 스페이스 아래에 중첩된
+행으로도 나타납니다. **새 대화**는 에디터의 새 탭 메뉴에 있으며, 제목 입력을
+요구하지 않고 제목 없는 대화를 만듭니다 — 제목 모델이 첫 메시지를 보고 이름을
+붙입니다. 같은 에이전트와 워크트리로 병렬 작업을 돌릴 때 사용하세요.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+각 대화는 자신의 메시지 기록과 에이전트 세션을 유지하면서 스페이스의 워크트리와
+모드는 공유합니다. 탭을 닫으면 숨겨질 뿐이며, **대화 보관**(사이드바 행 또는 채팅
+탭의 컨텍스트 메뉴)은 그 대화만 보관합니다.
 
-## Start a thread
+## 스레드 시작
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+아무 메시지에 마우스를 올리고 **스레드 시작**을 선택합니다. 그러면 그 메시지에
+고정된 대화가 열립니다: 고정 지점은 한 줄로 새 대화의 에이전트 컨텍스트를
+시드하고, 부모의 기록은 **복사되지 않습니다**.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+스레드에 답글이 달리면, 그 스레드가 매달린 메시지 아래에 행이 하나 생깁니다 —
+발언한 사람들의 얼굴, 답글 수, 마지막 답글이 도착한 시각입니다. 그 행이 다시
+들어가는 길입니다. 클릭하면 스레드의 탭이 열리거나 포커스됩니다. 스레드가 갈라져
+나온 스트림에 남기는 유일한 흔적이 바로 이것이며, 그래서 이 행이 있습니다.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+스레드의 탭 제목은 `Thread: <name>`이고 분기 글리프를 달고 있어서, 같은
+스페이스의 두 탭이 서로 혼동되지 않습니다.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+스레드는 결코 중첩되지 않습니다 — 이미 스레드 안에 있는 메시지에 고정하려 하면
+거부됩니다. 대화 헤더는 고정 지점 메시지로 되돌아가는 링크를 제공합니다. 고정
+지점 메시지를 삭제하면 스레드도 삭제되고, 부모 대화를 보관해도 기존 스레드는
+막히지 않습니다.
 
-## Read state
+## 읽음 상태
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+읽음 표시는 대화가 아니라 스페이스 범위입니다. 스페이스의 어느 대화를 열어도 방
+전체가 읽음 처리됩니다. 읽지 않음은 스레드를 포함해 스페이스의 모든 대화에 걸쳐
+집계됩니다. 대화가 스페이스 아래에 나열될 때, 읽지 않음 점은 부모 행이 아니라
+아직 보지 않은 작업이 있는 대화에 붙습니다.
 
-## Agent-to-agent spaces
+## 에이전트 간 스페이스
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+에이전트가 서로 대화하려고 여는 스페이스는 사이드바에서 **에이전트** 아래에 별도
+섹션으로 묶이며, 기본적으로 접혀 있고 흐리게 렌더링됩니다. 이들은 읽지 않음
+배지를 올리지 않습니다 — 에이전트의 잡담은 설정을 찾아 꺼야 조용해지는 것이
+아니라 구조적으로 조용합니다.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+스페이스의 종류는 다섯 값 중 하나입니다: `topic`(직접 만드는 모든 스페이스의
+기본값), `agentPeer`, `system`(파이프라인이 관리), `pr`(PR 표면에 워크트리
+앵커가 필요할 때 만들어지고, 메시지가 생기기 전까지 사이드바에서 숨겨짐),
+`slack`(Slack 스레드나 봇 DM을 위해 채팅 브리지가 만들며, 평범한 사람 대화로
+취급됨).
 
-## Related guides
+## 관련 가이드
 
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [@-mention agents](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/)
-- [Use plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [에이전트 @멘션](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/)
+- [플랜 모드 사용](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)
 
-## Related concepts
+## 관련 개념
 
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
-- [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/): how a Slack thread becomes a space
+- [모드](/ko-KR/매뉴얼/개념/모드/)
+- [채팅 브리지](/ko-KR/매뉴얼/개념/채팅-브리지/): Slack 스레드가 어떻게
+  스페이스가 되는지

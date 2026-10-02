@@ -1,153 +1,160 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Peristiwa domain
+description: Mengapa fitur-fitur berbicara melalui bus peristiwa dalam proses alih-alih saling mengimpor, untuk apa bus ini menjadi sumber kebenaran dan untuk apa tidak, serta peristiwa mana yang benar-benar dapat menggerakkan otomatisasi.
 slug: id-ID/panduan-pengguna/konsep/peristiwa-domain
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Apa itu peristiwa domain
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Peristiwa domain adalah mekanisme pemisahan yang memungkinkan fitur-fitur
+berkomunikasi tanpa ketergantungan langsung. Alih-alih fitur A memanggil fitur B,
+fitur A menerbitkan sebuah peristiwa dan fitur B berlangganan padanya.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` adalah bus publish/subscribe siaran dalam proses. Penerbit
+memanggil `publish(event)`; pelanggan mengonsumsi aliran `on<T>()` yang bertipe.
+Setiap peristiwa mengimplementasikan `DomainEvent` dan membawa `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Bus ini berjalan di dalam `cc_server`.** Setiap penerbit dan setiap pelanggan
+yang aktif berada di sana. Tidak ada klien yang melihat bus ini. Yang dilihat
+klien adalah subset terkurasi yang dikirim ulang server sebagai frame JSON-RPC
+`notifications/*`.
 
-## Why a bus at all
+## Mengapa perlu bus sama sekali
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Tanpa peristiwa, setiap reaksi antarfitur adalah sebuah impor. Jalur notifikasi
+harus mengimpor fitur agen, fitur pull request, fitur tiket, dan rapat hanya
+untuk mengetahui kapan harus memunculkan toast — dan masing-masing dari mereka
+kemudian harus tahu bahwa notifikasi itu ada. Fitur tiket harus mengimpor
+pipeline agar tiket yang selesai dapat memajukan sebuah run. Graf ketergantungan
+menutup menjadi sebuah simpul, dan kernel bersama berhenti menjadi bersama.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Menerbitkan peristiwa memutus hal itu. Jalur notifikasi berlangganan dua puluh
+satu kelas peristiwa dan tidak mengimpor satu pun fitur yang memunculkannya.
+Dispatcher pemicu pipeline berlangganan seluruh bus dan tidak tahu apa-apa
+tentang pull request, tiket, atau rapat. Observabilitas mengagregasi hasil run
+tanpa menjangkau sampai ke dispatch.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Biayanya adalah yang biasa: penerbit tidak dapat mengetahui apakah ada yang
+mendengarkan, dan pendengar yang tidak pernah dikonstruksi akan pasif secara
+diam-diam. `TicketRemoteSyncHandler`
+adalah contoh tetapnya: ia dideklarasikan, dicakup oleh pengujian, dan tidak
+pernah dirangkai di produksi.
 
-## What the bus is not
+## Apa yang bukan bus
 
-It is worth being precise about one thing the bus does _not_ own.
+Ada baiknya kita tepat mengenai satu hal yang _tidak_ dimiliki oleh bus ini.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Jejak audit bukanlah proyeksi dari aliran peristiwa.** Setiap operasi RPC yang
+memutasi diaudit secara default — `RepoOp.audited` bernilai true secara default dan
+sebuah operasi hanya menolaknya dengan mendeklarasikan `audited: false`, tindakan
+sengaja yang terlihat pada operasi itu sendiri. Dispatcher menambahkan baris "siapa
+melakukan apa, dari mana" tepat setelah panggilan berhasil. Tidak ada
+`DomainEventAuditBridge`.
+`ActivityLogPersister` menulis baris `activity_log` dari peristiwa `ActivityLogged`;
+itu adalah feed yang terpisah dari audit RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Bus peristiwa _adalah_ transport untuk notifikasi dan untuk otomatisasi. Ia bukan
+sistem pembukuan yang menjadi catatan resmi.
 
-## What the bus does drive
+## Apa yang digerakkan oleh bus
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Notifikasi.** Dua puluh satu kelas peristiwa diubah menjadi frame
+  `notifications/*` oleh server, direkam ke dalam feed per ruang kerja yang tahan
+  lama dan disiarkan ke sesi yang terhubung. Frame yang `workspace_id`-nya menyebut
+  ruang kerja yang pengguna sesinya bukan anggotanya akan dibuang di server; klien
+  kemudian memfilter sisanya ke ruang kerja yang sedang dilihatnya.
+- **Otomatisasi berbasis peristiwa.** Pemicu pipeline berlangganan bus dan
+  memulai otomatis pipeline yang cocok (lihat di bawah).
+- **Reaksi siklus hidup.** Membuat ruang kerja akan menyemai agen CEO dan agen
+  spesialisnya, templat pipeline bawaan, dan suite eval pemula. Run agen yang
+  selesai melanjutkan langkah pipeline yang dijeda, menutup tugas, memberi masukan
+  ke supervisor tujuan, dapat membangunkan pemeriksa bernama, dan dapat memicu
+  ulang pemimpin tim. PR yang digabungkan atau space yang dihapus memicu
+  pengumpulan sampah worktree.
+- **Sinkronisasi lintas vendor.** Perubahan tiket lokal didorong keluar ke vendor
+  yang dikonfigurasi oleh koordinator yang mendengarkan lima peristiwa tiket.
 
-## Event categories
+## Kategori peristiwa
 
-Events span the whole product surface. At a high level:
+Peristiwa mencakup seluruh permukaan produk. Secara umum:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Ruang kerja, agen, dan repo** — pembuatan ruang kerja, penyelesaian run, pendaftaran repo, pembaruan skill
+- **Pull request** — penerbitan, perubahan status, penggabungan, permintaan tinjauan, penyebutan, pemantauan PR yang Anda tulis, PR yang terdeteksi dari luar
+- **Pesan** — pesan, space, dan kemajuan penyediaan space
+- **Tiket** — pembuatan, penugasan, penugasan ulang, detail, status, dan tiga hasil akhir
+- **Tugas** — frame siklus hidup berurutan untuk satu run yang dikirim, agar klien dapat mengurutkan dan menghilangkan duplikatnya
+- **Pipeline** — hanya peristiwa run terminal (selesai, dibatalkan, gagal)
+- **Observabilitas** — entri log aktivitas dan ambang batas anggaran
+- **Identitas dan keanggotaan** — anggota ditambahkan, dihapus, peran diubah
+- **Kalender dan rapat** — kedaluwarsa autentikasi, rapat dimulai dan perekaman selesai
+- **Rig** — pengambilalihan, reap, dan penutupan tak terduga
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Memori, orkestrasi, dokumen rencana, artefak, persetujuan, penerimaan sinkronisasi
+tiket, penyegaran kalender, penggabungan worktree, pembuatan pengguna, undangan,
+dan pencabutan perangkat bukanlah peristiwa domain; lihat referensi.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/id-ID/panduan-pengguna/referensi/peristiwa-domain/). That page is the
-inventory; this one is the model.
+Untuk katalog lengkapnya — seluruh 53 kelas peristiwa konkret, payload-nya, dan
+24 pelanggan yang mengonsumsinya — lihat
+[Referensi peristiwa domain](/id-ID/panduan-pengguna/referensi/peristiwa-domain/). Halaman itu
+adalah inventarisnya; halaman ini adalah modelnya.
 
-## Live access control rides two different mechanisms
+## Kontrol akses langsung menempuh dua mekanisme berbeda
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Peristiwa keanggotaan dan perangkat terlihat simetris, padahal tidak, dan hal ini
+penting jika Anda bernalar tentang seberapa cepat pencabutan berlaku.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Mencabut perangkat memang mengakhiri sesinya.** Server mengawasi tabel perangkat
+yang dipasangkan dan menjatuhkan setiap sesi aktif yang perangkatnya keluar dari
+himpunan aktif, dalam hitungan detik.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Menghapus anggota tidak menutup soket.** `WorkspaceMemberRemoved` dikonsumsi:
+`LocalRpcServer` dan `RemoteRelayHost` menjatuhkan langganan ruang kerja pengguna
+tersebut yang terpasang, dan `RemoteEventForwarder` membatalkan cache
+keanggotaannya sehingga frame berikutnya untuk ruang kerja itu tidak lagi
+didorong. Yang menolak RPC berikutnya tetap gerbang peran, yang menyelesaikan
+ulang keanggotaan pada **setiap** panggilan — sehingga permintaan berikutnya
+ditolak dengan "Not a member of this workspace". Efeknya langsung terasa untuk
+apa pun yang mereka coba lakukan; hanya saja efek itu tidak dicapai dengan
+memutus koneksi mereka.
 
-## Pipeline triggers
+## Pemicu pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Pemicu pipeline berlangganan peristiwa domain dan memulai otomatis pipeline yang
+cocok. `PipelineTriggerDispatcher` mendengarkan seluruh bus, lalu:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Memutus lebih awal kecuali tipe peristiwa tersebut termasuk yang dapat dipetakannya ke payload
+2. Mencari pemicu yang aktif yang cocok dengan tipe peristiwa itu, di setiap ruang kerja
+3. Memfilter masing-masing ke ruang kerjanya sendiri dan menerapkan filter kecocokan payload-nya
+4. Memulai run untuk setiap pemicu yang bertahan
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Batasan pentingnya adalah langkah 1. Bus membawa 53 tipe peristiwa; pemilih
+tambah pemicu memulai run untuk empat belas ini (cabang payload
+`EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+dan `SpaceDeleted`. Tidak ada yang lain yang dapat memulai pipeline.
 
-## How a client sees any of this
+## Bagaimana klien melihat semua ini
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/id-ID/panduan-pengguna/konsep/arsitektur/).
+`RemoteEventForwarder` menerjemahkan peristiwa kelas notifikasi menjadi frame dan
+mendorongnya melalui RPC ke sesi yang terhubung, di mana pemeta frame mengubahnya
+menjadi notifikasi dalam aplikasi. Klien tipis karenanya melihat proyeksi dari
+aliran peristiwa server tanpa memiliki eksekusi apa pun — itulah inti dari
+[pemisahan klien tipis](/id-ID/panduan-pengguna/konsep/arsitektur/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Namun, tidak setiap frame yang didorong adalah notifikasi. Aliran siklus hidup
+tugas dan penugasan ulang tiket diteruskan secara langsung untuk menggerakkan UI,
+tetapi keduanya tidak direkam ke dalam feed notifikasi dan tidak memunculkan
+toast.
 
-## See also
+## Lihat juga
 
-- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/): what a trigger starts
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/): assignment to an agent vs a team
-- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/): how events fit the dependency rule
-- [Domain events reference](/id-ID/panduan-pengguna/referensi/peristiwa-domain/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/)
-- [Configure notifications](/id-ID/panduan-pengguna/panduan-praktis/notifikasi/)
+- [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/): apa yang dimulai oleh pemicu
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/): penugasan ke agen vs. ke tim
+- [Arsitektur](/id-ID/panduan-pengguna/konsep/arsitektur/): bagaimana peristiwa cocok dengan aturan ketergantungan
+- [Referensi peristiwa domain](/id-ID/panduan-pengguna/referensi/peristiwa-domain/): katalog lengkap dan pelanggannya
+- [Siapkan pemicu pipeline](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/)
+- [Konfigurasi notifikasi](/id-ID/panduan-pengguna/panduan-praktis/notifikasi/)

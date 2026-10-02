@@ -1,37 +1,35 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: 儲存庫指令碼
+description: 依每個儲存庫設定的設定與封存指令碼，會在空間的工作樹上執行。
 slug: zh-TW/手冊/操作指南/儲存庫指令碼
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+儲存庫指令碼是你依每個儲存庫設定的 shell 指令碼（**設定 → 存放庫 → 儲存庫資料列上的終端機圖示**），
+Control Center 的伺服器會對該儲存庫的**某個空間的工作樹**執行它們——也就是代理工作所在的隔離簽出，
+位於 `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`。
 
-There are two kinds:
+這些指令碼有兩種：
 
-| Script | When it runs | Use it for |
+| 指令碼 | 執行時機 | 用途 |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **設定** | 為某個空間佈建工作樹後立即執行 | 安裝相依套件、產生檔案、複製 `.env` |
+| **封存** | 工作樹即將被銷毀或垃圾回收之前 | 清理工作樹之外的資源（docker 網路、通道、外部狀態） |
 
-## Where scripts run
+## 指令碼的執行位置
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+兩種指令碼都透過 `bash -lc` 執行（登入 shell，因此以 Homebrew 或 nvm 安裝的工具會在
+`PATH` 上），並以**工作樹做為工作目錄**，且會設定下列環境變數：
 
-| Variable | Value |
+| 變數 | 值 |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | 工作樹（指令碼的 cwd） |
+| `CC_ROOT_PATH` | 已註冊的來源儲存庫——你自己的簽出 |
+| `CC_SPACE_ID` | 工作樹所屬的空間 |
+| `CC_SPACE_NAME` | 空間的顯示名稱 |
+| `CC_REPO_NAME` | 儲存庫的顯示名稱 |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+例如，一個會安裝相依套件並帶入儲存庫中被 git 忽略的 `.env` 的設定指令碼：
 
 ```bash
 pnpm install
@@ -39,28 +37,24 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## 失敗行為
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- **設定**指令碼若以非零狀態結束（或超過 5 分鐘逾時），會使該空間的佈建失敗：該空間會
+  顯示失敗狀態並提供重試，且該次執行的輸出尾端會被記錄下來。重試會從乾淨的工作樹佈
+  建，並再次執行指令碼——請把設定指令碼寫成在部分安裝後重新執行仍能運作（套件管理器
+  本來就是這種行為）。
+- **封存**指令碼是盡力而為：失敗（或其 2 分鐘逾時）會被記錄，但**絕不會阻擋刪除**。封存
+  會在無人能回應提示的 GC 路徑上執行（空間已刪除、PR 已合併、排程清理）。
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+設定只會在**全新**的工作樹上執行：把代理重新派送到已預熱的空間會重用既有的簽出，不會
+再次付出安裝成本。
 
-## Run history
+## 執行記錄
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+每一次執行都會記錄其狀態、持續時間、結束代碼，以及有長度上限的輸出尾端，並顯示在
+同一個設定對話框的「最近的執行」之下（`repos.watchScriptRuns` 訂閱會即時串流這些資料）。
 
-## Permissions
+## 權限
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+指令碼是**伺服器**執行的 shell，因此只有工作區管理員能撰寫，並受到 `processSpawn` 動作類別
+把關——這道護欄網與所有其他會產生處理序的作業所受到的把關完全相同。

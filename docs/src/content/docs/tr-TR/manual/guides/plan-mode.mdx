@@ -1,135 +1,140 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Plan modunu kullanma
+description: Bir alanı plan moduna geçirin, tipli bir plan alın ve onu çalışan işe onaylayın.
 slug: tr-TR/kilavuz/nasil-yapilir/plan-modu
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Bu kılavuz, bir ajan daha hiç kod yazmadan ondan yapılandırılmış bir plan almayı
+gösterir.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+Plan modunda ajan salt okunur biçimde araştırır ve tek teslimatı **tipli bir
+plan**dır: onayladığınız adımlardan oluşan bir bağımlılık grafiği; Control Center
+bunu daha sonra gerçek işe derler. Bir değişikliğin kapsamını görmek, adımların
+bölünmesini sağlamak ya da herhangi bir şeye dokunulmadan önce risklerin ve
+bağımlılıkların adlandırılmasını istediğinizde bunu kullanın.
 
-## Switch a space into plan mode
+## Bir alanı plan moduna geçirme
 
-Any of these flips the space's mode and the change is persisted:
+Aşağıdakilerden herhangi biri alanın modunu değiştirir ve değişiklik kalıcı olarak
+saklanır:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- İleti alanı araç çubuğunun en solundaki mod açılır menüsünden **Plan**'ı seçin
+- **Shift+Tab** tuşlarına basın
+- `/plan` gönderin. Tek başına `/plan` yalnızca modu hazırlar; `/plan <request>` modu
+  hazırlar ve geri kalanını iletiniz olarak gönderir
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` hiçbir zaman metin olarak iletilmez — saklanan modu ayarlar; araç yüzeyinin,
+koruyucu ön ayarının ve istemin hepsinin temel aldığı yetkili kaynak budur. Böylece
+mod bu tur ve siz onu geri değiştirene kadar sonraki her tur için geçerli kalır.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Mod alanda saklanır; dolayısıyla aynı ajan burada plan modunda, başka bir yerde ise
+ajan modunda olabilir.
 
-## What the agent produces
+## Ajanın ne ürettiği
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Salt okunur biçimde araştırır — bellek, kod dizini, dosyalar
+2. `submit_plan`'ı **bir kez** çağırır; bir `goal` ile birlikte, her biri kararlı bir
+   `key`, bir `title`, bir `description` ve `dependsOn` ile bağlandığı düğüm
+   anahtarlarını taşıyan `nodes` gönderir (bağımsız işlerin paralel çalışmasını
+   sağlayan şey budur)
+3. Durur
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Araç grafiği doğrular — yinelenen anahtarlar, sarkan bağımlılıklar, döngüler — ve
+bozuk bir planı kabul etmek yerine düzeltmesi için ajana ihlalleri döndürür.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Plan, **konuşmanın içinde** hedefi, durumunu ve adım sayısını gösteren kompakt bir
+satır olarak görünür. **Plan Studio** — bağımlılık grafiği, düğüm başına denetçi ve
+maliyet tahmini — konuşmanın yanında bir sekme olarak açılır: satırdaki **Aç**
+düğmesine basın ya da yalnızca bekleyin; çünkü siz konuşmayı izlerken 30 saniye
+içinde gelen bir plan sekmesini kendisi açar.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Salt okunurluk garantisi yapısaldır, ancak yalnızca yerleşik harness üzerinde geçerlidir]
+Control Center'ın kendi harness'i ajanın araç kaydını plan modunun yüzey
+belirtiminden oluşturur; dolayısıyla çağrılabilecek bir yazma, düzenleme veya komut
+aracı hiç yoktur — kısıtlama, modelin konuşarak kendini kurtarabileceği bir istem
+talimatı değildir.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code adaptörü böyle bir süzgeç almaz: mod ona, kendi runner'ının uyup
+uymayacağı bir istek olarak ulaşır ve Control Center ondan yalnızca `mcp__*`
+çağrılarını görür. Mod açılır menüsünün yanındaki uygulama rozeti tam da durum böyle
+olduğunda görünür.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Ajan sizden açıklayıcı sorular isteyebilir]
+İstek belirsiz olduğunda bir plan ajanı duraklayıp `ask_user` aracıyla size en fazla
+üç engelleyici soru sorabilir. Konuşmada bir form oluşturur — seçenekler ya da
+serbest metin — ve çalıştırma siz yanıtlayana kadar engellenir. Araç okuma
+kademesindedir; dolayısıyla plan modunun salt okunur yüzeyinde ayakta kalır ve onay
+sarmalayıcısından muaftır (bir istemin önüne konan bir istem, bağlı bir onaylayıcı
+olmadığında kapalı olarak başarısız olur ve ajanı sorma eyleminden yoksun bırakır).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+İçine çizilecek bir alana ihtiyaç duyar; dolayısıyla konuşması olmayan tek seferlik
+bir gönderim bunu elde edemez. Kapsamı, hedef depoyu ve kabul ölçütlerini ilk
+iletinizde önden vermek yine de gidiş dönüşten daha hızlıdır.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Burada düzyazı bir teslimat değildir. `submit_plan` çağırmadan sona eren bir
+çalıştırma, konuşmada görünür bir "Ended without submitting a plan (no
+`submit_plan` call)." satırı yayımlar ve çalıştırmayı teslimatını kaçırmış olarak
+işaretler. Çalıştırmanın durumu bilinçli olarak _completed_ kalır — bu, pipeline ve
+bilet durum makinelerini dokunulmamış tutar — dolayısıyla durum rozetini değil, o
+satırı okuyun.
 
-## Approve the plan
+## Planı onaylama
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Konuşmadaki plan satırından **Onayla ve çalıştır**'a basın. Plan Studio'nun onay
+çubuğundan **Planı onayla**'ya (ya da yanındaki **Reddet**'e; grafikte bir doğrulama
+hatası varken onay devre dışıdır) basın.
 
-Then:
+Sonra:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center planı bir orkestrasyona derler ve somutlaştırır — biletler ve
+   çalıştırma. Bu adımda hiçbir model yer almaz; süreç deterministiktir
+2. Plan, onu yazan ajan olarak yürütülür. Başka birini işe katıp katmamak o ajanın
+   çalışma zamanındaki kararıdır — bir adımı, çalışma alanının devretme derinliği üst
+   sınırı içinde daha uygun bir ekip arkadaşına `delegate_task` ile devredebilir
+3. Planın hedefi **konuşmanın hedefi** olur ve iş **aynı konuşmada** yürür: her adım
+   ajanın ne yapmasının istendiğini yayımlar ve turunu geri akıtır; böylece onu zaten
+   bulunduğunuz yerden izlersiniz (ve bir turu durdurabilirsiniz)
+4. Konuşmanın **Genel** yan panelindeki (Yapılacaklar'ın altında) hedef satırı,
+   çalıştırmanın ilerlemesini `settled/total` biçiminde ve durdurma düğmesini taşır;
+   Plan Studio grafikte düğüm başına durumu gösterir ve iptali orada da yapar
 
-## Keep working without approving
+## Onaylamadan çalışmaya devam etme
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Planı onaylamak yerine bu konuşmada kalmayı tercih ediyorsanız ajan `exit_plan_mode`
+çağırabilir. İzin verilen tek çıkış budur: konuşmaya bağlı kalıcı bir onay isteği açar
+ve `pending` döndürür — alan plan modunda kalır ve ajan eylemde bulunmamalıdır. İstek
+onaylandığında ajanın bir sonraki `exit_plan_mode` çağrısı alanı plan modundan ajan
+moduna çevirir ve değişiklik yapan araçlarının kilidini açar. Bir ret, revize edilmiş
+bir plan için yeni bir istek açmasına izin verir.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Plan modundan çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) değiştirin
+ya da gönderilen planı onaylayın. `exit_plan_mode`, kararı `decide_approval` MCP
+aracıyla verilen kalıcı bir onay açar. Engellenen araç çağrıları için koruma katmanı
+farklı, bellekte tutulan bir kuyruktur ve plan çıkış isteklerini taşımaz.
 
-## Plan mode in a pipeline step
+## Bir pipeline adımında plan modu
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Bir `messaging.createSpace` pipeline düğümü, konuşma modunu düğüm yapılandırmasının
+`mode` **extra** alanından okur — `extras['mode']: 'plan'`. Anahtar tam eşleşmelidir:
+`conversationMode` veya `dispatchMode` dahil başka herhangi bir yazım sessizce yok
+sayılır ve oda gövdenin varsayılanına düşer; bu, sohbet değil **inceleme** modudur.
+Bir `promptAgent` adımı, kendi oluşturmadığı bir odaya katılır ve odaya yeniden izin
+vermez. Düğüm yapılandırması düzenleyicisindeki **Gönderim kipi** seçimi
+(`allParallel` / `manager`) ekip gönderim düğümleri içindir. Konuşma modunu, alanı
+açan bir şablonda `extras['mode']` ile ya da API üzerinden o düğümün
+yapılandırmasında ayarlayın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Chat with an agent](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
-- [Use spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/)
-- [Work in Plan Studio](/tr-TR/kilavuz/nasil-yapilir/plan-studio/)
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
+- [Bir ajanla sohbet etme](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
+- [Alanları kullanma](/tr-TR/kilavuz/nasil-yapilir/alanlar/)
+- [Plan Studio'da çalışma](/tr-TR/kilavuz/nasil-yapilir/plan-studio/)
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/)

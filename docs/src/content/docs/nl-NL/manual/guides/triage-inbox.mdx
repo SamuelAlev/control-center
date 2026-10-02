@@ -1,164 +1,179 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Je postvak in triëren
+description: Werk het uniforme postvak af — ruim op wat je blokkeert, beoordeel wat op je wacht en volg je eigen PR's.
 slug: nl-NL/handleiding/gidsen/postvak-in-trieren
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Deze gids laat zien hoe je het postvak afwerkt: het enige oppervlak dat alles
+verzamelt wat jou blokkeert of expliciet om jou vraagt — openstaande
+agentgoedkeuringen, mislukte ticketsynchronisaties en elke pull request waarbij
+je als reviewer of auteur betrokken bent.
 
-## Open the inbox
+## Het postvak openen
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Klik op **Postvak in** in de sidebar. De badge telt openstaande
+   agentgoedkeuringen, mislukte synchronisaties en open PR's die op jouw review
+   wachten.
+2. Of druk op <kbd>⌘K</kbd> en voer het navigatiecommando **Postvak in** uit.
+3. Of maak rechtstreeks een deep link naar `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+De vermelding in de sidebar toont altijd de live telling, zodat je ziet hoe
+triagewerk zich opstapelt zonder de pagina te openen.
 
-## Read severity at a glance
+## Ernst in één oogopslag aflezen
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Scan van boven naar beneden; het postvak is al op urgentie geordend:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. De vastgezette strook **Vraagt je aandacht** staat boven de PR-secties. Elke
+   kaart draagt een ernstchip. Geregistreerde bronnen (een agent die vastzit op
+   een bevestigingsprompt, een ticketsynchronisatie waarvan de
+   leveranciersspiegel verouderd is) geven **Geblokkeerd** af.
+2. Binnen de strook komt de hoogste ernst eerst; bij een gelijke stand gaat het
+   item dat het langst wacht voor.
+3. Onder de strook worden PR's gegroepeerd in vaste secties van de
+   review-levenscyclus — **Wacht op jouw review**, **Terug naar jou**,
+   **Goedgekeurd**, **Concepten**, **Wacht op reviewers**, **Bezig met mergen en
+   recent gemerged**, **Wacht op de auteur**. De bovenste secties zijn wat _jou_
+   nodig heeft; de rest laat zien waar _jouw_ PR's staan. **Wacht op jouw
+   review** bevat ook PR's die nog om een team vragen waar je deel van uitmaakt,
+   op forges die dat ondersteunen (GitHub laat het team vallen zodra een
+   teamgenoot een review indient).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Een item belandt alleen in het postvak wanneer het iets blokkeert of jou
+expliciet opvraagt. Een lege strook plus een lege sectielijst toont alleen
+**Je bent helemaal bij** wanneer die leegte betrouwbaar is.
 
-## One inbox across every forge
+## Één postvak, elke forge
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Als de werkruimte repo's op meer dan één codehost heeft, voegt het postvak ze
+samen tot één stroom — een GitHub-pull request en een Bitbucket-pull request
+staan in dezelfde sectie, geordend op tijd in plaats van gegroepeerd per
+leverancier. De meta `repo #number` in de rij is wat ze onderscheidt.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+Of iets van jou is, wordt **per forge** bepaald, want je bent op elke forge een
+ander account. Een pull request geldt alleen als van jou, of als een verzoek om
+jouw review, wanneer hij overeenkomt met je identiteit op de forge waar die repo
+daadwerkelijk staat.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Een forge die platligt of niet verbonden is, draagt niets bij en laat de rest van
+het postvak intact — één kapotte verbinding maakt nooit de hele lijst leeg. De
+lege toestand noemt een voorbehoud in plaats van **Je bent helemaal bij** wanneer
+elke forge-login nog niet is bepaald (**Kon je GitHub-account niet bevestigen** —
+de tekst noemt nog steeds GitHub), wanneer githubstatus.com een incident meldt,
+of wanneer een installatie van de GitHub App die gekoppelde repo's dekt, is
+opgeschort.
 
-## Clear the attention strip
+## De aandachtstrook wegwerken
 
-Each strip card has one next action:
+Elke kaart in de strook heeft één vervolgactie:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Als een kaart een openstaande agentbevestiging is, klik dan op **Beoordelen** —
+   je komt uit in de ruimte van die agent met zijn openstaande bevestiging. Keur
+   daar goed of wijs af (zie
+   [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)).
+2. Als een kaart **Synchronisatie mislukt** zegt voor een leverancier, klik dan
+   op **Openen** — je komt uit op **Instellingen → Werkruimte → Algemeen**,
+   waarvan de kaart **Synchronisatiestatus** de laatste synchronisatie van elke
+   verbinding toont, plus de reeks opeenvolgende fouten en de laatste uitkomst.
+   Alleen de laatste fout per leverancier verschijnt in het postvak, dus een
+   herstelde synchronisatie wist de kaart.
+3. Kaarten verdwijnen vanzelf zodra de onderliggende toestand is opgelost (de
+   agent heeft antwoord gekregen, de synchronisatie herstelt) — er is niets om
+   handmatig weg te klikken.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Dit zijn bevestigingen per beurt, geen governance-goedkeuringen]
+Een kaart voor een “agentgoedkeuring” is een draaiende agent die even pauzeert om
+toestemming te vragen voor één actie, in zijn eigen gesprek. Dat is iets anders
+dan het governance-record `Approval` dat agenten met de MCP-tools voor
+goedkeuringen aanmaken — die hebben nergens in de app een scherm voor mensen en
+verschijnen hier nooit.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Synchronisatiestatus is alleen-lezen]
+De kaart rapporteert over verbindingen voor ticketsynchronisatie; afgezien van een
+knop **Nu synchroniseren** kan hij er geen aanmaken, bewerken of opnieuw
+verbinden, en er is geen ander scherm dat dat wel kan. Zonder geconfigureerde
+verbinding staat er simpelweg “Nog geen synchronisatieverbindingen”, wat een
+verse werkruimte toont.
 :::
 
-## Filter to what is blocking
+## Filteren op wat blokkeert
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Druk op <kbd>f</kbd> (zonder dat een tekstveld focus heeft) om het filtermenu
+   te openen, of klik op de filterknop in de werkbalk.
+2. Kies een willekeurige combinatie van status, auteur, reviewers, inhoud,
+   repo-eigenaar/naam, datumvensters of snel te reviewen. De facettellingen in
+   het menu tonen op hoeveel postvakitems elke optie past.
+3. Actieve filters verschijnen als chips in de balk boven de lijst; klik op de ✕
+   van een chip om dat criterium te laten vallen.
+4. Gebruik de linkerrail om tussen secties te springen — elke vermelding toont
+   zijn live telling en de markering volgt je scrollpositie. Klik op een
+   sectiekop om secties die je niet trieert in te klappen (bijvoorbeeld
+   **Concepten** terwijl je reviews wegwerkt).
+5. Klik op een kolomkop (titel, wijzigingen of bijgewerkt) om elke sectie te
+   sorteren; klik nogmaals op de actieve kolom om de richting om te draaien. De
+   knop voor weergaveopties regelt de zichtbaarheid van concepten, het venster
+   voor recent gemerged, rij-eigenschappen, ordening en groepering (alleen
+   groeperen op auteur verandert de indeling van het postvak).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Filters hier staan los van de PR-wachtrij — het postvak verfijnen verandert nooit
+de filters van de wachtrij en andersom.
 
-## Act on a PR item
+## Actie ondernemen op een PR-item
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/nl-NL/handleiding/gidsen/reviewers-starten/) and
-   [the dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).
+1. Klik op een willekeurige rij om de PR-detailpagina te openen.
+2. Staat de PR in **Wacht op jouw review**, review hem dan en dien je beslissing
+   in — zie
+   [Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/).
+3. Staat de PR in **Terug naar jou** (wijzigingen gevraagd of CI mislukt), push
+   dan fixes vanaf je checkout of geef de follow-up aan een agent.
+4. Staat de PR in **Goedgekeurd**, merge hem dan vanaf de detailpagina.
+5. Wil je een review liever delegeren dan zelf doen, zie
+   [Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/) en
+   [de levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Zodra de onderliggende toestand verandert (je review komt binnen, de PR wordt
+gemerged), zet de classificator de PR automatisch in zijn nieuwe sectie.
 
-## Undo a mistaken action
+## Een verkeerde actie ongedaan maken
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Druk op <kbd>⌘Z</kbd> om de laatste actie ongedaan te maken, op
+   <kbd>⌘⇧Z</kbd> om hem opnieuw uit te voeren.
+2. Als een tekstveld focus heeft, bewerkt ⌘Z in plaats daarvan de tekst in het
+   veld — klik eerst buiten het veld om een actie op appniveau ongedaan te maken.
 
-## Look up shortcuts in place
+## Sneltoetsen ter plekke opzoeken
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/nl-NL/handleiding/referentie/sneltoetsen/).
+Druk op <kbd>?</kbd> (zonder dat een tekstveld focus heeft) om het
+sneltoetsenoverzicht te openen. Het somt elke binding op die actief is op de
+huidige route, inclusief de filtersneltoets <kbd>f</kbd> van het postvak. De
+volledige kaart staat in de
+[referentiegids voor sneltoetsen](/nl-NL/handleiding/referentie/sneltoetsen/).
 
-## Drive it from the command palette
+## Het aansturen vanuit het commandopalet
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Druk waar dan ook op <kbd>⌘K</kbd> om het commandopalet te openen.
+2. Typ **Postvak in** om naar de pagina te springen, of typ een PR-titel — het
+   palet toont overeenkomende pull requests en opent degene die je kiest.
+3. Voer, terwijl het postvak open is, **Link naar deze pagina kopiëren** uit om
+   die URL te kopiëren voor het delen. Het commando kopieert de huidige route,
+   dus het is alleen de postvak-URL wanneer je op deze pagina bent.
 
-## Refresh on demand
+## Verversen op verzoek
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Het postvak werkt live bij, maar als je vermoedt dat de gegevens verouderd zijn,
+klik dan op de verversknop in de werkbalk — die forceert onmiddellijk een
+doorloop aan de serverkant over elke verbonden forge en haalt de overlays voor
+gemergede en gereviewde items opnieuw op. Het pictogram draait tot elke fetch is
+afgerond.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
-- [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
-- [Dispatch reviewers](/nl-NL/handleiding/gidsen/reviewers-starten/)
+- [Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
+- [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
+- [Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
+- [De levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)

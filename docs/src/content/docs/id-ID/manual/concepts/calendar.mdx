@@ -1,128 +1,140 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Kalender dan penjadwalan
+description: Cara Control Center menyinkronkan Google Calendar di server, mengapa proses masuk berupa hibah kode perangkat dan apa saja yang dicakup lingkup hanya-baca.
 slug: id-ID/panduan-pengguna/konsep/kalender
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/id-ID/panduan-pengguna/konsep/rapat/).
+Control Center terhubung ke Google Calendar agar hari Anda berdampingan dengan
+armada Anda. Ia menyinkronkan acara Anda, menampilkannya dalam tampilan bulan,
+minggu, hari dan agenda, memperingatkan Anda sebelum rapat dimulai dan mengubah
+acara apa pun menjadi [rapat](/id-ID/panduan-pengguna/konsep/rapat/) yang
+direkam dan diringkas.
 
-## What it changes on Google
+## Apa yang diubahnya di Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Hampir tidak ada. Integrasi ini menarik acara masuk lalu merendernya. Ia tidak
+membuat, mengubah, menghapus, atau menanggapi undangan. Setiap koneksi kode
+perangkat, baik bawaan maupun milik Anda sendiri, meminta `calendar.readonly`
+plus `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Acara disinkronkan ke basis data milik ruang kerja itu sendiri **di server**
+(`<dataDir>/<workspaceId>/workspace.db`) dan dirender oleh setiap klien melalui
+RPC. Tidak ada klien yang memegang kredensial Google.
 
-## Per-workspace accounts
+## Akun per ruang kerja
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/id-ID/panduan-pengguna/konsep/ruang-kerja/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Akun kalender dibatasi per ruang kerja, seperti semua hal lain di Control
+Center. Setiap [ruang kerja](/id-ID/panduan-pengguna/konsep/ruang-kerja/)
+menghubungkan akun Google-nya sendiri (atau beberapa akun) dan acara serta token
+satu ruang kerja tidak pernah terlihat dari ruang kerja lain. Berpindah ruang
+kerja berarti berpindah kalender yang Anda lihat.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Sebuah ruang kerja dapat menghubungkan **beberapa** akun Google, misalnya akun
+kantor dan akun pribadi, dan acara keduanya digabungkan ke tampilan yang sama.
 
-## Why sign-in is a device code
+## Mengapa proses masuk memakai kode perangkat
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` headless tidak punya peramban untuk menangkap pengalihan OAuth.
+Karena itu ia tidak memakainya: ia mengotorisasi dengan **hibah kode perangkat**
+(RFC 8628). Server menampilkan kode pengguna yang pendek dan URL Google, Anda
+menyetujuinya di perangkat mana pun yang memiliki peramban dan server melakukan
+polling sampai Anda menyetujuinya. Instalasi headless dapat menghubungkan akun
+justru karena tidak ada endpoint pengalihan yang perlu dihosting.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Konsekuensi yang perlu Anda ketahui sebelum membawa kredensial sendiri: jenis
+klien harus "TV and Limited Input devices" milik Google. Google hanya memberikan
+sekumpulan scope yang ada di daftar izin kepada jenis klien itu dan proyek yang
+tidak mengizinkan Calendar untuknya akan gagal dengan `invalid_scope` — Anda
+malah memerlukan klien loopback atau web sebagai gantinya.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Token tidak pernah meninggalkan server. Token ditulis ke `secrets.json` milik
+server di direktori datanya, dengan kunci `google_google:<workspaceId>:<email>`,
+berdampingan dengan basis data dan di bawah batas kepercayaan sistem berkas host
+yang sama. Server menyegarkan akses secara otomatis dan, ketika Google
+membatalkan sebuah akun secara permanen (sesi yang dicabut atau sudah lama
+kedaluwarsa), ia menerbitkan `CalendarAuthExpired` dan menampilkan banner
+**hubungkan ulang** alih-alih gagal secara diam-diam.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Build dari sumber sama sekali **tidak** menyertakan kredensial Google — Anda
+memasok client id dan secret milik Anda sendiri. Build rilis resmi menyematkan
+klien kode perangkat non-konfidensial agar alur koneksi langsung berfungsi;
+server hanya menyimpan penanda yang merujuknya, tidak pernah salinannya.
+`GOOGLE_OAUTH_CLIENT_ID` (beserta secret-nya) di lingkungan selalu diutamakan
+di atas pasangan yang disematkan. Sengaja tidak ada flag `--google-client-id`:
+flag yang tidak dikenal akan diabaikan, dan secret pada baris perintah dapat
+dibaca melalui `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/).
+Untuk menjalankan proyek Google Anda sendiri, lihat
+[Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/).
 
-## Sync
+## Sinkronisasi
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Server menarik jendela bergulir berisi acara setiap akun yang terhubung — setiap
+kalender pada akun itu, bukan hanya kalender utama — **setiap dua menit**, plus
+saat diminta (mulai, menghubungkan, penyegaran manual). Irama yang singkat ini
+terjangkau karena penyapuannya bersifat inkremental: setiap kalender membawa
+token sinkronisasinya sendiri, sehingga kalender yang tidak berubah hanya
+memerlukan satu respons yang hampir kosong alih-alih mengambil ulang jendela
+lima bulan.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Acara berulang dijabarkan di sisi server, sehingga tidak ada klien yang mengurai
+aturan pengulangan. Menavigasi ke bulan di luar jendela saat ini memuat rentang
+itu hanya saat dibutuhkan. Acara yang dihapus atau dipindahkan ke luar rentang
+direkonsiliasi pada sinkronisasi berikutnya.
 
-## Views
+## Tampilan
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Tampilan   | Isinya                                                          |
+| ---------- | --------------------------------------------------------------- |
+| **Bulan**  | Kisi sebulan penuh (ditenagai oleh paket `kalender`)            |
+| **Minggu** | Acara berjadwal seminggu dalam kisi waktu                       |
+| **Hari**   | Acara berjadwal satu hari dalam kisi waktu                      |
+| **Agenda** | Daftar acara mendatang yang dapat digulir                       |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Buka kalender di `/calendar`; memilih acara akan membuka detailnya di
+`/calendar/:eventId`. Tampilan yang Anda pilih disimpan di preferensi klien itu
+sendiri, jadi ia tidak mengikuti Anda ke perangkat lain.
 
-## Meeting alerts
+## Peringatan rapat
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Penjadwal per menit memindai acara yang mulai dalam jendela pendahulu yang dapat
+dikonfigurasi dan memicu notifikasi **"rapat segera dimulai"** (sebuah
+[peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)
+`MeetingStartingSoon`). Notifikasi membawa URL bergabung bila ada dan
+mengkliknya akan membuka detail acara. Peringatan dideduplikasi terhadap
+`alertedAt` milik acara, sehingga rapat yang sama tidak pernah memberi peringatan
+dua kali, bahkan setelah mulai ulang, dan acara yang waktu mulainya sudah lewat
+saat aplikasi ditutup tidak pernah diputar ulang.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Ada dua batas yang mudah membuat Anda keliru. Penjadwal berjalan **di sisi klien
+pada desktop** dan hanya untuk ruang kerja yang sedang Anda buka — ruang kerja
+yang tidak Anda buka tidak memunculkan peringatan. Dan build web sama sekali
+tidak memiliki pipeline notifikasi OS, jadi ia juga tidak memunculkan
+peringatan.
 
-## Record and link
+## Rekam dan tautkan
 
-From a calendar event you can start a [meeting recording](/id-ID/panduan-pengguna/konsep/rapat/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Dari acara kalender Anda dapat memulai
+[rekaman rapat](/id-ID/panduan-pengguna/konsep/rapat/) yang diisi dengan judul
+acara. Control Center menyimpan tautan satu-ke-satu antara rekaman dan acara,
+sehingga catatan rapat dan entri kalender tetap terhubung tanpa salah satu
+fitur bergantung pada yang lain.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Mulai rekaman & tautkan** hanya tersedia di desktop. Pada klien web, tindakan
+itu melaporkan bahwa perekaman tidak tersedia — padahal alur perekaman di layar
+rapat sendiri memang berfungsi di peramban.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agen tidak dapat membaca kalender Anda]
+Tidak ada alat MCP kalender. Agen tidak dapat mencantumkan acara, membaca detail
+acara, atau melakukan RSVP atas nama Anda; permukaan `calendar.*` hanya berupa
+RPC untuk klien manusia.
 :::
 
-## See also
+## Lihat juga
 
-- [Meetings and transcription](/id-ID/panduan-pengguna/konsep/rapat/): what happens after you start a recording
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/): why calendar accounts are per-workspace
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
-- [Record and summarize a meeting](/id-ID/panduan-pengguna/panduan-praktis/rekam-rapat/)
+- [Rapat dan transkripsi](/id-ID/panduan-pengguna/konsep/rapat/): apa yang terjadi setelah Anda memulai rekaman
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/): mengapa akun kalender bersifat per ruang kerja
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): `MeetingStartingSoon` dan `CalendarAuthExpired`
+- [Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
+- [Rekam dan ringkas rapat](/id-ID/panduan-pengguna/panduan-praktis/rekam-rapat/)

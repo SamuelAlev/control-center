@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: Γεγονότα τομέα
+description: Πλήρης κατάλογος των 53 γεγονότων τομέα, των φορτίων τους και των συνδρομητών στην πλευρά του διακομιστή που τα καταναλώνουν.
 slug: el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## Δίαυλος γεγονότων
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+Ο `DomainEventBus` είναι ένας ενδοδιεργασιακός δίαυλος δημοσίευσης/συνδρομής με εκπομπή. Οι εκδότες καλούν `publish(event)`· οι συνδρομητές καταναλώνουν μια ροή `on<T>()` με τύπο. Κάθε γεγονός υλοποιεί το `DomainEvent` και φέρει `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**Ο δίαυλος εκτελείται μέσα στο `cc_server`.** Κάθε εκδότης και κάθε ενεργός συνδρομητής βρίσκεται εκεί. Κανένας πελάτης δεν βλέπει αυτόν τον δίαυλο — ο διακομιστής προωθεί ένα επιμελημένο υποσύνολο ως πλαίσια JSON-RPC `notifications/*`, φιλτραρισμένα ανά συνδρομητή με βάση την ιδιότητα μέλους στον χώρο εργασίας.
 
-| Measure                                                     | Count                                       |
+| Μέτρηση                                                     | Αριθμός                                       |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| Συγκεκριμένες κλάσεις γεγονότων                             | 53                                          |
+| Αρχεία προέλευσης (`packages/cc_domain/lib/core/domain/events/`) | 14 (συν το `domain_event_bus.dart`)           |
+| Αφηρημένες βάσεις που δεν δημοσιεύονται ποτέ απευθείας      | 1 (`TaskLifecycleEvent`, μια σφραγισμένη ιεραρχία) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Κάθε γεγονός στον παρακάτω κατάλογο ζει σε εκείνον τον έναν κατάλογο· δεν υπάρχουν γεγονότα τομέα δηλωμένα αλλού.
 
-## Workspace, agent and repo events
+## Γεγονότα χώρου εργασίας, πράκτορα και αποθετηρίου
 
-| Event               | Payload                                                | Fired when                                              |
+| Γεγονός             | Φορτίο                                                 | Ενεργοποιείται όταν                                     |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | Δημιουργείται χώρος εργασίας                            |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ο πράκτορας ολοκληρώνει μια εκτέλεση (επιτυχία ή αποτυχία) |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Καταχωρίζεται ένα αποθετήριο· ενεργοποιεί ευρετηρίαση κώδικα στο παρασκήνιο |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Μια δεξιότητα εγκαθίσταται ή ενημερώνεται, φέροντας το πόρισμα σάρωσης της αλυσίδας εφοδιασμού της |
 
-## PR and review events
+## Γεγονότα PR και ανασκόπησης
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+Το πρώτο μπλοκ είναι ο κύκλος ζωής του ίδιου του PR. Το δεύτερο είναι η **παρακολούθηση PR που συντάξατε**: σήματα για ένα PR που ανοίξατε *εσείς*, καθένα από τα οποία φέρει `forUserId`, ώστε ο περιοδικός έλεγχος να τα δρομολογεί στο πρόσωπο που αφορούν αντί να τα εκπέμπει σε όλους.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| Γεγονός                    | Φορτίο                                                                   | Ενεργοποιείται όταν                                                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Ο πράκτορας ανοίγει ένα PR                                                                                                          |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR συγχωνεύτηκε/έκλεισε/άνοιξε/ξανάνοιξε/εγκρίθηκε                                                                                  |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | Το PR συγχωνεύεται — ένα στενό σήμα μόνο για συγχώνευση, που διατηρείται για αναλυτικά στοιχεία/ειδοποιήσεις                        |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Το GitHub ζητά την ανασκόπηση του χρήστη του διακομιστή (περιοδικός έλεγχος ειδοποιήσεων, `review_requested`)                        |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Ο χρήστης του διακομιστή αναφέρεται σε ένα PR (περιοδικός έλεγχος ειδοποιήσεων, `mention`)                                          |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | Ένα εξωτερικά παρακολουθούμενο PR (χωρίς πράκτορα) συγχωνεύτηκε, εντοπισμένο από τον περιοδικό έλεγχο ειδοποιήσεων του GitHub· αντιστοιχίζεται στην κατηγορία ειδοποίησης `prMerged` |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | PR χωρίς πράκτορα που βρέθηκε μέσω περιοδικού ελέγχου — μόνο για pipeline (τροφοδοτεί το `external_pr_welcome`), δεν εγείρει ειδοποίηση |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | Το head SHA του PR μετακινήθηκε — ο συντάκτης έκανε push                                                       |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | Μια ολοκληρωμένη ανασκόπηση με AI δεν περιγράφει πλέον το PR που ανασκόπησε. Ενεργοποιείται μόνο όταν υπάρχει ανασκόπηση για την αντικατασταθείσα υποβολή, ώστε να παραμένει σήμα και όχι ειδοποίηση σε κάθε push |
 
-### The authored-PR watch
+### Η παρακολούθηση PR που συντάξατε
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+Και τα έξι φέρουν `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` και ένα προαιρετικό `forUserId`.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| Γεγονός                   | Πρόσθετο φορτίο                                                                      | Ενεργοποιείται όταν                                                              |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | Ένα PR που συντάξατε έγινε συγχωνεύσιμο ή έπαψε να είναι                       |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | Κάποιος ενέκρινε, ζήτησε αλλαγές ή είδε την έγκρισή του να ακυρώνεται          |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | Το CI έγινε κόκκινο ή ανέκαμψε                                                 |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Κάποιος σας ανέφερε σε σχόλιο PR ή σε σχόλιο ανασκόπησης                   |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Κάποιος απάντησε σε νήμα ανασκόπησης στο οποίο συμμετέχετε                     |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Κάποιος έκλεισε νήμα ανασκόπησης στο οποίο συμμετέχετε                         |
 
-## Messaging events
+## Γεγονότα μηνυμάτων
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| Γεγονός                    | Φορτίο                                                                                                                       | Ενεργοποιείται όταν                                                                                                                                                                            |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | Φτάνει νέο μήνυμα                                                                                                                                                        |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                     | Δημιουργείται χώρος                                                                                                                                                                          |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                     | Διαγράφεται χώρος                                                                                                                                                                            |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                  | Ο χώρος εργασίας του χώρου εισέρχεται σε παροχή, φτάνει σε ένα βήμα (κλωνοποίηση αποθετηρίου, checkout PR, ρύθμιση πράκτορα) ή μεταπίπτει σε έτοιμο/αποτυχημένο — η γέφυρα συνομιλίας το αφηγείται στην κάρτα εργασίας της |
 
-## Ticketing events
+## Γεγονότα εισιτηρίων
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| Γεγονός                | Φορτίο                                                                                                                       | Ενεργοποιείται όταν                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Δημιουργείται εισιτήριο                    |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Το εισιτήριο ανατίθεται σε υποκείμενο ή ομάδα |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | Η εργασία ολοκληρώνεται (τελικό)           |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Ο πράκτορας αποτυγχάνει (τελικό)           |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | Το εισιτήριο ακυρώνεται (τελικό)           |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Οποιαδήποτε αλλαγή κατάστασης              |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Το εισιτήριο ανατίθεται εκ νέου            |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Αλλάζει ο τίτλος, η περιγραφή ή η προτεραιότητα |
 
-## Task lifecycle events
+## Γεγονότα κύκλου ζωής εργασίας
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+Η ενοποιημένη ροή κύκλου ζωής εργασιών — μία αποσταλμένη εκτέλεση πράκτορα, κλειδωμένη με το αναγνωριστικό του αρχείου καταγραφής εκτέλεσής της. Κάθε γεγονός φέρει `taskId`, ένα μονοτονικό `seq` ανά εργασία, `workspaceId?`, `agentId?` και μια `phase`· οι παρακάτω γραμμές παραθέτουν μόνο τα πρόσθετα πεδία.
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| Γεγονός                     | Φορτίο                       | Ενεργοποιείται όταν                                                                              |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | Η εργασία παραδίδεται σε ένα backend για εκτέλεση                                                |
+| `TaskRunning`               | —                             | Η εργασία άρχισε να παράγει έξοδο                                                                |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Η εργασία σταθμεύει — μια άλλη εργασία κατέχει το κλείδωμα διαδρομής στον δίσκο που της χρειάζεται |
+| `TaskProgress`              | `note?`                       | Σημείο ελέγχου προόδου στα μισά της εκτέλεσης                                                    |
+| `TaskMessage`               | `messageType`, `content`      | Μήνυμα σε ροή (text/thinking/tool_use/tool_result/error)· αναφέρεται στη φάση `progress`         |
+| `TaskCompleted`             | `summary?`                    | Η εργασία ολοκληρώθηκε με επιτυχία                                                               |
+| `TaskFailed`                | `errorMessage`                | Η εργασία ολοκληρώθηκε με σφάλμα                                                                 |
+| `TaskCancelled`             | —                             | Η εργασία ακυρώθηκε πριν ολοκληρωθεί                                                             |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+Το enum `TaskPhase` έχει επίσης ένα μέλος `queued`, αλλά τίποτα δεν δημοσιεύει γεγονός ουράς — δεν υπάρχει κλάση `TaskQueued`. Το πρώτο παρατηρήσιμο πλαίσιο μιας εργασίας είναι το `TaskDispatched`.
 
-## Pipeline events
+## Γεγονότα pipeline
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| Γεγονός                | Φορτίο                                       | Ενεργοποιείται όταν                                                          |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Η εκτέλεση ολοκληρώνεται                                                    |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Η εκτέλεση ακυρώνεται (από τον χρήστη ή το σύστημα) — μια σκόπιμη διακοπή, όχι σφάλμα |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Η εκτέλεση αποτυγχάνει                                        |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+Δημοσιεύονται μόνο τελικές μεταβάσεις. Δεν υπάρχει `PipelineRunStarted` ούτε γεγονός ανά βήμα: η πρόοδος ενός βήματος φτάνει στους πελάτες μέσα από τις δικές του γραμμές της εκτέλεσης και τη ροή κύκλου ζωής εργασίας όποιου πράκτορα απέστειλε, όχι μέσω του διαύλου.
 
-## Observability events
+## Γεγονότα παρατηρησιμότητας
 
-| Event                    | Payload                                                                                                  | Fired when                |
+| Γεγονός                  | Φορτίο                                                                                                   | Ενεργοποιείται όταν       |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Δημιουργήθηκε καταχώριση στο ίχνος ελέγχου |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Η δαπάνη υπερβαίνει το όριο |
 
-## Identity and membership events
+## Γεγονότα ταυτότητας και ιδιότητας μέλους
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| Γεγονός                      | Φορτίο                          | Ενεργοποιείται όταν                                                                                        |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | Ένας χρήστης μπαίνει σε έναν χώρο εργασίας (εξαργύρωση πρόσκλησης ή προσθήκη από διαχειριστή)             |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | Ένα μέλος αφαιρείται — οι ζωντανές συνεδρίες αυτού του χρήστη με εύρος τον χώρο εργασίας πρέπει να επανελέγξουν αμέσως την πρόσβαση |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | Ο ρόλος ενός μέλους αλλάζει                                                                               |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+Η ιδιότητα μέλους είναι ολόκληρη η επιφάνεια ταυτότητας στον δίαυλο. Η δημιουργία χρήστη και η ανάκληση συσκευής συμβαίνουν, αλλά δεν δημοσιεύονται ως γεγονότα τομέα — η ανάκληση επιβάλλεται απευθείας στις ζωντανές συνεδρίες αντί να δρομολογείται μέσω του διαύλου.
 
-## Calendar and meeting events
+## Γεγονότα ημερολογίου και συσκέψεων
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| Γεγονός                   | Φορτίο                                                                                 | Ενεργοποιείται όταν                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | Το OAuth refresh token ενός συνδεδεμένου λογαριασμού είναι μόνιμα άκυρο (δημοσιεύεται μία φορά ανά επεισόδιο αποσύνδεσης) |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | Ένα γεγονός ημερολογίου ξεκινά εντός του διαμορφωμένου χρονικού περιθωρίου                                  |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | Μια καταγραφή σύσκεψης ολοκληρώνεται και ενεργοποιεί το ενσωματωμένο pipeline `meeting_summary`             |
 
-## Rig events
+## Γεγονότα σταθμών
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| Γεγονός             | Φορτίο                                       | Ενεργοποιείται όταν                                                                                                                 |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | Ένας σταθμός χάθηκε, με τον λόγο κλεισίματός του· οι καταναλωτές δρουν μόνο στο `backendFailure` — κάθε άλλος λόγος είναι ζητημένος ή συνοδεύεται από ένα `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | Ένας άνθρωπος πήρε αποκλειστικό έλεγχο ενός σταθμού ή τον επέστρεψε (`controller` null κατά την απελευθέρωση — το γεγονός δεν καταγράφει ποιος άφησε) |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | Το σύστημα ανέκτησε μια μηχανή: αδράνεια, TTL ή αποβολή λόγω πίεσης μνήμης (αναφέρεται ως `idleTimeout`), μαζί με τον πράκτορα που την οδηγούσε |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+Το **άνοιγμα** ενός σταθμού δεν είναι γεγονός. Η εκκίνηση ολοκληρώνεται και η γραμμή του σταθμού μεταπίπτει σε έτοιμος· τίποτα δεν δημοσιεύεται, οπότε δεν υπάρχει `RigOpened` για να εγγραφείτε.
 
-## Subdomains with no events at all
+## Υποτομείς χωρίς κανένα γεγονός
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+Αρκετά υποσυστήματα που από έξω φαίνονται καθοδηγούμενα από γεγονότα δεν είναι. Παρατίθενται εδώ επειδή η απουσία τους είναι σχεδιαστική απόφαση που αξίζει να γνωρίζετε πριν αρχίσετε να ψάχνετε για άγκιστρο:
 
-| Subdomain           | How state moves instead                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| Υποτομέας         | Πώς κινείται αντ' αυτού η κατάσταση                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Μνήμη             | Τα `record_memory_fact` και τα συναφή γράφουν και επιστρέφουν· η ανάκληση διαβάζει. Τίποτα δεν δημοσιεύει όταν δημιουργείται ένα γεγονός ή μια σύγκρουση |
+| Ενορχήστρωση      | Η πρόταση, η έγκρισή της και η παραγόμενη εκτέλεση pipeline είναι γραμμές και κλήσεις RPC              |
+| Έγγραφα σχεδίου   | Το `submit_plan` γράφει μια αναθεώρηση· η έγκριση υλοποιεί μια ενορχήστρωση. Κανένα από τα δύο δεν ανακοινώνεται |
+| Τεχνουργήματα     | Τα `publish_artifact` / `revise_artifact` γράφουν αναθεωρήσεις απευθείας                                |
+| Εγκρίσεις         | Η κλιμάκωση χειρίζεται μέσα στην υπηρεσία ροής εγκρίσεων                                                |
+| Συγχρονισμός εισιτηρίων | Ο συντονιστής προμηθευτών εγγράφεται στα παραπάνω γεγονότα εισιτηρίων· τα εισερχόμενα webhooks εφαρμόζονται απευθείας |
+| Ανανέωση ημερολογίου | Ένας συγχρονισμός εισάγει ή ενημερώνει γεγονότα και ο πελάτης ξαναδιαβάζει· δεν υπάρχει εκπομπή ανανέωσης |
+| Συγχωνεύσεις worktree | Καταγράφονται στο `worktree_merge_log` και διαβάζονται από εκεί                                        |
 
-## Subscribers
+## Συνδρομητές
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+Κάθε συνδρομητής παρακάτω κατασκευάζεται μέσα στο `runCcServer` (ή σε μια υπηρεσία που αυτό χτίζει). Δεν υπάρχει συνδρομητής στην πλευρά του πελάτη.
 
-| Subscriber                          | Events it consumes                                                                                   |
+| Συνδρομητής                         | Γεγονότα που καταναλώνει                                                                             |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| Αρχικός εφοδιασμός σουίτας αξιολόγησης (ενσωματωμένος) | `WorkspaceCreated`                                                                   |
+| Παροχή χώρου συνομιλίας (ενσωματωμένη) | `SpaceCreated`                                                                                    |
+| `PipelineTriggerDispatcher`         | Κάθε `DomainEvent`· κάθε ενεργοποιημένος ενεργοποιητής φιλτράρει για τον δικό του τύπο               |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (μόνο εκτελέσεις `meeting_summary`) |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — εγχέει μια ειδοποίηση σε απλή γλώσσα στη λωρίδα καθοδήγησης του πράκτορα που οδηγεί |
+| `StaleReviewWatcher`                | `PrHeadChanged` — δημοσιεύει `ReviewBecameStale` μόνο όταν υπάρχει ολοκληρωμένη ανασκόπηση για την αντικατασταθείσα υποβολή |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted` — εξερχόμενες απαντήσεις συνομιλίας PR                                           |
+| `NotificationFeedRecorder`          | Τα είκοσι ένα γεγονότα κλάσης ειδοποιήσεων παρακάτω                                                  |
+| `RemoteEventForwarder`              | Αυτά τα είκοσι ένα συν το `TicketReassigned` και κάθε `TaskLifecycleEvent`. Τα τρία γεγονότα ιδιότητας μέλους ακυρώνουν μόνο την προσωρινή μνήμη ιδιότητας μέλους ανά χώρο εργασίας· δεν προωθούνται ως πλαίσια |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — απορρίπτει τις συνδεδεμένες συνδρομές χώρου εργασίας αυτού του χρήστη· η υποδοχή παραμένει ανοιχτή |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+Το `TicketAssigned` είναι σήμα ελέγχου και ειδοποίησης και ενεργοποιητής pipeline. Η ανάθεση σε έναν πράκτορα καταγράφει την κυριότητα και δεν ξεκινά καμία εκτέλεση — δεν υπάρχει αποστολέας εισιτηρίων. Η ανάθεση σε ομάδα (όταν έχει οριστεί το `assignedTeamId`) είναι η εξαίρεση: το `TeamRoutingService` αποστέλλει τον ηγέτη της ομάδας.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+Ο `TicketRemoteSyncHandler` δηλώνεται αλλά δεν κατασκευάζεται ποτέ σε κώδικα παραγωγής, οπότε δεν εγγράφεται σε τίποτα σήμερα. Ο `NotificationEventMapper` στην πλευρά του πελάτη κατασκευάζεται μόνο στο δικό του τεστ — είναι το υπόλειμμα της ενδοδιεργασιακής διαδρομής από πριν από τον διαχωρισμό πελάτη/διακομιστή. Τα ζωντανά αναδυόμενα μηνύματα προέρχονται από τα πλαίσια δικτύου παρακάτω.
 
-## Notification mapping
+## Αντιστοίχιση ειδοποιήσεων
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+Στον διακομιστή, οι `NotificationFeedRecorder` και `RemoteEventForwarder` μετατρέπουν αυτά τα γεγονότα σε πλαίσια δικτύου `notifications/*` (`notification_wire.dart`). Στον πελάτη, ο `RpcNotificationMapper` → `mapNotificationFrame` μετατρέπει ένα πλαίσιο σε `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+Υπάρχουν ακριβώς **δεκαέξι** κατηγορίες ειδοποιήσεων. Αρκετά γεγονότα αντιστοιχίζονται σε περισσότερες από μία μεθόδους δικτύου, επειδή το πλαίσιο μεταφέρει τη μετάβαση (αποτυχία έναντι ανάκτησης) ενώ η κατηγορία μεταφέρει την ερώτηση («τι κάνει το CI;»).
 
-| Category               | Source event              | Wire method                                                            |
+| Κατηγορία              | Γεγονός προέλευσης        | Μέθοδος δικτύου                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,17 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+Το πλαίσιο ανάληψης σταθμού δεν παραδίδεται πίσω σε όποιον πήρε το τιμόνι, μια
+απελευθέρωση είναι χωρίς φίλτρο (το γεγονός δεν καταγράφει ποιος άφησε) και μόνο
+ένα κλείσιμο `backendFailure` παράγει πλαίσιο `rig_closed` — οι άλλοι λόγοι
+είτε είναι ζητημένοι είτε καλύπτονται ήδη από το πλαίσιο περισυλλογής.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+Οι πέντε κατηγορίες PR που συντάξατε φέρουν `forUserId`, οπότε φτάνουν στον συντάκτη και όχι σε όλους στον χώρο εργασίας.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+Ο `RemoteEventForwarder` προωθεί επιπλέον το `TicketReassigned` ως `notifications/ticket_reassigned` και κάθε `TaskLifecycleEvent` ως `notifications/task_<phase>`. Κανένα από τα δύο δεν αντιστοιχίζεται σε κατηγορία ειδοποίησης — τροφοδοτούν ζωντανή διεπαφή χρήστη, όχι το κέντρο ειδοποιήσεων. Τα γεγονότα ιδιότητας μέλους δεν προωθούνται ως πλαίσια: ακυρώνουν την προσωρινή μνήμη του προωθητή και οι οικοδεσπότες συνεδριών απορρίπτουν τις συνδρομές χώρου εργασίας του μέλους που αφαιρέθηκε.
 
-## See also
+## Δείτε επίσης
 
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)
-- [Pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
-- [Notifications](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)
+- [Ενεργοποιητές pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
+- [Ειδοποιήσεις](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)

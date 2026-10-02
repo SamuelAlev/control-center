@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: מפת נתיבים
+description: כל נתיב ש-Control Center רושם, עם המסך ופרמטרי השאילתה שלו.
 slug: he-IL/מדריך-למשתמש/עזר/מפת-נתיבים
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## מסגרת היישום
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+מסגרת היישום (`ControlCenterLayout`) עוטפת כל נתיב בתוך סביבת עבודה דרך `ShellRoute`. **כל יעד בתוך המסגרת מקבל קידומת של סביבת עבודה — `/workspaces/:workspaceId/…` — ומזהה סביבת העבודה בכתובת הוא מקור האמת היחיד לסביבת העבודה הפעילה.** רק המשטחים שאינם תלויים בהקשר הם בלי קידומת: `/splash`, `/onboarding`, `/signed-out` ובורר `/workspaces` החשוף, כולם במסך מלא ומחוץ למסגרת.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+שער הקליטה נחשב שלם عندما מחובר לפחות מארח קוד אחד **עבור המשתמש המחובר** ולפחות סביבת עבודה אחת קיימת.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+פרטי התחברות חסרים והגדרה חסרה הם שני מסכים שונים, והמבחין ביניהם הוא `users.onboarding_finished_at` הנקרא מ־`identity.me` של הקורא עצמו — ולעולם לא "קיימות סביבות עבודה", שכן הנחה זו שגויה ברגע שמישהו מוזמן לסביבת עבודה שהוא מעולם לא יצר. כשאין מארח קוד מחובר, חשבון שהשלים את הקליטה עובר ל־`/signed-out` כדי לאמת את זהותו מחדש; חשבון שלא השלים אותה עובר ל־`/onboarding`. כל עוד הדגל אינו ידוע, השומר מחזיק במסך האתחול במקום לנחש, מפני שהוא לעולם אינו מפנה חזרה החוצה מהקליטה.
 
-## Unprefixed routes
+## נתיבים ללא קידומת
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| נתיב                     | מסך                                            |
+| ------------------------ | ---------------------------------------------- |
+| `/splash`                | מסך האתחול שקובע את שער הקליטה                   |
+| `/onboarding`            | חיבור מארח קוד, יצירה או הצטרפות לסביבת עבודה, ארגז חול, מתאם ברירת מחדל ואז קול. שלב סביבת העבודה מדולג כשהחשבון כבר שייך לאחת |
+| `/signed-out`            | אימות מחדש: אותה כרטיסיית חיבורי מארחי קוד שההגדרות מציגות, בלי סרגל שלבים ובלי כפתור המשך — הנתב יוצא ממנה מעצמו ברגע שמארח קוד מדווח |
+| `/workspaces`            | רשימת סביבות עבודה ובורר                        |
+| `/workspaces/:workspaceId` | מפנה אל `/workspaces/:workspaceId/inbox`     |
 
-## Workspace routes
+## נתיבי סביבת עבודה
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+הנתיבים שלהלן משמיטים את הקידומת `/workspaces/:workspaceId`.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| נתיב                                     | פרמטרי שאילתה                             | מסך                                                                                                                                                                      |
+| ----------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/inbox`                                  | —                                         | דואר נכנס מאוחד: בקשות משיכה מסווגות לפי מחזור חיי הסקירה, וגם עבודה שאינה בקשת משיכה וחוסמת את המפעיל. נתיב הנחיתה שאחרי השומר; `/workspaces/:workspaceId` חשוף מפנה לכאן |
+| `/spaces`                                 | —                                         | משטח מרחבים, בלי מרחב נבחר                                                                                                                                                 |
+| `/spaces/:spaceId`                        | `?m=<messageId>`, `?tab=<key>`            | מרחב אחד; `m` יוצר קישור ישיר להודעה והוא נצרך פעם אחת עם הפתיחה                                                                                                          |
+| `/tickets`                                | —                                         | לוח כרטיסים                                                                                                                                                              |
+| `/tickets/:ticketId`                      | —                                         | כרטיס במתכונת אב־פרטים                                                                                                                                                    |
+| `/projects/:projectId`                    | —                                         | סקירת פרויקט                                                                                                                                                             |
+| `/pull-requests`                          | `?repo=<owner/name>`                      | רשימת בקשות משיכה; `repo` בוחר את המאגר הזה בסרגל השמאלי                                                                                                                  |
+| `/pull-requests/compose`                  | `?space=<spaceId>`                        | כתיבת בקשת משיכה חדשה; `space` מציין את המרחב שעץ העבודה המבודד שלו מספק את הענף                                                                                          |
+| `/pull-requests/:owner/:repo/:prNumber`   | `?tab=<key>`, `?comment=<id>`             | פרטי בקשת משיכה עם מציג הבדלים; `comment` הוא מזהה ה-REST המספרי של תגובה אחת                                                                                              |
+| `/pipelines`                              | —                                         | רשימת הרצות פייפליין                                                                                                                                                     |
+| `/pipelines/run`                          | `?templateId=<id>`                        | משגר להפעלה ידנית                                                                                                                                                         |
+| `/pipelines/:runId`                       | —                                         | פרטי הרצת פייפליין (ציר זמן של שלבים)                                                                                                                                     |
+| `/plans`                                  | —                                         | מרכז Plan Studio: תוכניות פעילות, מסמכי תוכנית ופלייבוקים                                                                                                                  |
+| `/plans/:kind/:id`                        | —                                         | Plan Studio לתוכנית אחת; `kind` הוא `orchestration` או `document`                                                                                                         |
+| `/meetings`                               | —                                         | רשימת פגישות                                                                                                                                                             |
+| `/meetings/record`                        | —                                         | מסך הקלטת פגישה בזמן אמת                                                                                                                                                  |
+| `/meetings/:meetingId`                    | —                                         | פרטי פגישה: הערות, תמלול, משימות לביצוע והחלטות                                                                                                                            |
+| `/calendar`                               | —                                         | לוח שנה: תצוגות חודש, שבוע וסדר יום                                                                                                                                       |
+| `/calendar/:eventId`                      | —                                         | פרטי אירוע בלוח השנה (נתיב אחים; חולק את מפתח העמוד של לוח השנה)                                                                                                          |
+| `/newsfeed`                               | —                                         | רשימת עדכוני חדשות                                                                                                                                                       |
+| `/newsfeed/article/:articleId`            | —                                         | קורא מאמרים                                                                                                                                                              |
+| `/observability`                          | —                                         | מרכז הניטור: לשוניות שימוש, תובנות, בזמן אמת ואיכות מעל זרם יומני ההרצה של סביבת העבודה. ברירת המחדל היא לשונית השימוש                                                     |
+| `/users/:login`                           | —                                         | פרופיל משתמש ב-GitHub                                                                                                                                                    |
+| `/teams/:organization/:slug`              | —                                         | פרופיל צוות בארגון GitHub                                                                                                                                                 |
+| `/api-keys`                               | —                                         | ניהול מפתחות API. **אין נקודת כניסה בניווט** — נגיש רק דרך כתובת URL                                                                                                       |
+| `/settings/…`                             | —                                         | מסכי הגדרות (להלן)                                                                                                                                                        |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+לשיחות ולשרשורים **אין נתיב משלהם** — שרשור הוא שיחה בתוך `/spaces/:spaceId`, שנפתחת כלשונית עורך ולא ממוענת דרך כתובת URL.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+אין **נתיב `/dashboard`** ואין מסך לוח בקרה. משטח הניתוח הוא `/observability`, שאליו מגיעים מתחתית סרגל הצד.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+אין **פריט "תוכניות" בסרגל הצד**. Plan Studio נפתח כלשונית עורך משורת התוכנית שבשיחה שיצרה אותה; `/plans` ו־`/plans/:kind/:id` הם קישורים ישירים.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+ל־`/observability` ול־`/pull-requests/compose` אין רשומה במרשם כותרות הנתיבים או במרשם נתיבי הניווט, ולכן שניהם מציגים את שם האפליקציה בלבד בכותרת החלון ובלי נתיב ניווט.
 
-## Settings routes
+## נתיבי הגדרות
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` מפנה אל `/settings/you/appearance`. כפתור ההגדרות בסרגל הצד וגם `Cmd/Ctrl + ,` מובילים שניהם אל `/settings/you/appearance`.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+נתיבי ההגדרות מסווגים לפי **היקף** — `you/`, `workspace/`, `server/` — מפני שהמקטע מציין על מי משפיע השינוי. שני נתיבים קדמו לסיווג הזה ואינם מסווגים בכתובת: `/settings/memory` ו־`/settings/pipelines`.
 
-### You
+### אישי
 
-| Path                          | Screen                                                                     |
+| נתיב                          | מסך                                                                        |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | ערכת נושא, שפה, טיפוגרפיה וערכת נושא לעורך (דף הנחיתה של ההגדרות)          |
+| `/settings/you/notifications` | מתגים לפי אירוע ושעות שקט                                                   |
+| `/settings/you/keybindings`   | עיון בקיצורי מקלדת (לקריאה בלבד)                                             |
+| `/settings/you/audio`         | מיקרופון, הכתבה, זיהוי פגישות ופלט הנוף הצלילי                               |
+| `/settings/you/devices`       | טלפונים משויכים ושליטה מרחוק                                                |
+| `/settings/you/newsfeed`      | ניהול הפיד: מקורות, רענון ומצב קריאה                                        |
 
-### Workspace
+### סביבת עבודה
 
-| Path                               | Screen                                                                                              |
+| נתיב                               | מסך                                                                                                 |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | פרופיל וזהות בסביבת עבודה זו: שם, מחבר git, אחסון קוד ולוח שנה |
+| `/settings/workspace/general`      | שם, לוגו, דפוסי סודות, מקביליות סקירות, שמות ענפים, תקינות הסנכרון, גשרי צ'אט ואזור מסוכן |
+| `/settings/workspace/meetings`     | תבניות הערות לפגישות ופרופילי קול שמורים                                                            |
+| `/settings/workspace/members`      | רשימת חברים, הזמנות ויומן ביקורת. יומן הביקורת נחלק לעמודים עם `?cursor=` אופציונלי                   |
+| `/settings/workspace/repositories` | מאגרים הרשומים בסביבת עבודה זו                                                                      |
+| `/settings/workspace/agents`       | זהויות סוכנים רשומות                                                                                |
+| `/settings/workspace/skills`       | הגדרת מיומנויות                                                                                     |
+| `/settings/memory`                 | זיכרון סביבת העבודה: עובדות, כללי מדיניות וגרף ידע                                                  |
+| `/settings/workspace/permissions`  | הרשאות סוכנים: מטריצת מעקות בטיחות ובדיקת מה־אם                                                     |
+| `/settings/pipelines`              | תבניות פייפליין                                                                                     |
+| `/settings/pipelines/:templateId`  | עורך תבניות פייפליין (משטח גרירה ושחרור)                                                            |
 
-### Server
+### שרת
 
-| Path                           | Screen                                                                                |
+| נתיב                           | מסך                                                                                   |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | חיבור וסטטוס                                                                          |
+| `/settings/server/sso`         | כניסה מאוחדת (SAML, OIDC, הקצאת משתמשים עם SCIM)                                      |
+| `/settings/server/providers`   | ספקי מודלים ומתאמים                                                                    |
+| `/settings/server/mcp`         | שרתי MCP מובנים וחיצוניים                                                             |
+| `/settings/server/voice`       | מודלי קול ופגישות (ASR, הפרדת דוברים)                                                 |
+| `/settings/server/rigs`        | תחנות: מה המארח הזה יכול להפעיל, תמונות בסיס, תמונות מותאמות אישית ומכונות שרצות      |
+| `/settings/server/sandbox`     | ארגז חול: הרשאות הפעלה — תוכניות שסוכנים רשאים להריץ מעותק העבודה שלהם של המאגרים שלכם |
+| `/settings/server/diagnostics` | אבחון ופרטיות: ארגז חול, הטמעות, מנוע סנכרון, רישום לוגים ודיווחי קריסות              |
+| `/settings/server/backup`      | גיבוי ושחזור: תמונות מצב של ההתקנה, ייצוא לכל סביבת עבודה, ייבוא ומחיקה                |
+| `/settings/server/about`       | אודות ועדכונים                                                                        |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`kSettingsNav` ב־`lib/features/settings/settings_nav.dart` הוא מקור האמת היחיד לרשימה הזו. `settings_nav_test.dart` מקבע מזהים ייחודיים, נתיבים ייחודיים, סדר J/K שטוח ואת שלושת ההיקפים. הוא אינו עובר על כל `GoRoute` רשום.
 
-## Route configuration
+## תצורת הנתיבים
 
-| Concern             | File                                                    |
+| נושא             | קובץ                                                    |
 | ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| נתב                | `lib/router/app_router.dart`                            |
+| בוני נתיבים        | `lib/router/routes.dart`                                |
+| שומרי אימות        | `lib/router/guards.dart`                                |
+| שער הקליטה         | `lib/features/auth/providers/onboarding_providers.dart` |
+| ניווט ההגדרות      | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## ראו גם
 
-- [Workspaces](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/)
-- [Keyboard shortcuts](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/)
+- [סביבות עבודה](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/)
+- [קיצורי מקלדת](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/)

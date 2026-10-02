@@ -1,192 +1,194 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: Sandbox arka uçları
+description: Sandbox arka uçları, nerede uygulandıkları ve sandbox çalışma zamanının kullandığı her değer nesnesi.
 slug: tr-TR/kilavuz/referans/sandbox-arka-uclari
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[Bir çalıştırmanın sandbox'a alınıp alınmadığı ana makineye bağlıdır]
+`cc_server` ana makineyi açılışta bir kez yoklar ve yoklama kullanılabilir bir arka uç bildirdiğinde ve `--sandbox` `off` olmadığında ajan gönderimini yerel arka uca sarar. Her iki gönderim ek noktası da sarılır: Claude Code CLI sandbox portu üzerinden, ACP ile yerleşik harness `bash` aracı ise sandbox yöneticisi üzerinden.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/tr-TR/kilavuz/kavramlar/korumalar/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+Yoklamanın bir arka uç bildirmediği yerlerde — **her zaman Windows** ve `bwrap` ile `socat` bulunmayan Linux ya da WSL2 — ajan çalıştırmaları sandbox'a **alınmaz**. ACP ve harness `bash` aracı yine de ortam arındırmasıyla başlatılır; Claude Code `NoSandboxAdapter` üzerinden gider ve ana makinenin ortamını devralır. Geriye kalan sınırlar şunlardır: çalıştırmanın kendi çalışma ağacı (`rift`in bulunduğu yerde copy-on-write; Windows'ta `git worktree`), başlatma başına broker'la verilip kapatmada iptal edilen yetenek kapılı kimlik bilgileri, moda özgü komut politikası, birleşik [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) (başarısızlıkta kapalı), ACP ile harness `bash` yollarındaki ortam arındırması ve modun izin verdiği araç yüzeyi.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) her ana makinede sandbox'ın dışındadır: sunucu sürecinde çalışırlar, dolayısıyla yalnızca `bash` sarılır.
 :::
 
-## Backend overview
+## Arka uçlara genel bakış
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
-| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/tr-TR/kilavuz/kavramlar/rigler/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| Arka uç    | Değer     | Platform                                      | Kullanılabilirlik                                                                                                                                                 |
+| ---------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kapalı VM  | `microvm` | macOS, Linux, Windows (microVM hipervizörü)   | microVM çalışma zamanındaki yoklamaya bağlıdır; etkileşimli terminaller için geçerlidir — kabuk ana makinede değil, bir [rig](/tr-TR/kilavuz/kavramlar/rigler/) içinde çalışır |
+| Yerel      | `native`  | macOS (Seatbelt), Linux ve WSL2 (bubblewrap)  | Açılışta yoklanır; Linux, bubblewrap'in uygulayamadığı dosya adı glob'uyla yazma retlerini gerektiren bir çalıştırmayı reddeder |
+| Yalıtım yok | `none`   | Tümü                                          | Ayrıştırma varsayılanı, terminalin varsayılanı ve kullanılabilir bir arka uç olmadığında ya da `--sandbox off` ayarlandığında geri düşülen değer |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName`, null ya da tanınmayan bir saklı değer için `none` döndürür. Saklı bir `"docker"` değeri `native` ile eşlenir.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/tr-TR/kilavuz/referans/rigler/).
+**`microvm`, çekirdek sınırı olan tek arka uçtur** — iş yükü gerçekten ana
+makinede çalışmaz. Hiçbir yönde sessiz bir geri düşüş değildir: bir VM
+başlatamayan bir ana makinede açıkça istendiğinde yüksek sesle başarısız olur
+("VM istedim ve dizüstü bilgisayarımı aldım", kapalı ortamın göze alamayacağı
+tek bozulmadır) ve yalnızca *belirtilmemiş bir varsayılan* `native`e iner;
+günlüğe de bunu söyleyen bir satır düşer. Oturumun gerçek arka ucu istemciye
+bildirilir ve rozetle gösterilir, böylece bir terminal ana makinede çalışırken
+asla kapalı olduğunu iddia edemez. VM'nin kendi yaşam döngüsü, imajları ve
+çıkışı [rig'ler referansında](/tr-TR/kilavuz/referans/rigler/) ele alınır.
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows'ta yerel sandbox yoktur.** `NativeSandboxAdapter.probe`, macOS ya da Linux/WSL2 olmayan her ana makinede `available: false` döndürür. Bu nedenle Windows'ta ajan gönderimi `none` kullanır. `microvm` arka ucu ayrıdır: microVM çalışma zamanındaki yoklamaya bağlıdır ve ana makinede `bash` sarmak için değil, etkileşimli terminaller ile rig'ler için geçerlidir.
 
-## Probe results
+## Yoklama sonuçları
 
-The probe is what gates enforcement. It runs once, at server boot.
+Kapılamayı yapan şey yoklamadır. Bir kez, sunucu açılışında çalışır.
 
-| Host                                   | `available` | Note / hint                                                               |
-| -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| Ana makine                                   | `available` | Not / ipucu                                                                             |
+| -------------------------------------------- | ----------- | --------------------------------------------------------------------------------------- |
+| macOS                                        | `true`      | `sandbox-exec` (Seatbelt) — ad alanı yalıtımı, çekirdek sınırı yok                      |
+| `bwrap` ve `socat` bulunan Linux ya da WSL2  | `true`      | bubblewrap — ad alanı yalıtımı, çekirdek sınırı yok                                     |
+| Linux ya da WSL2 ve iki araçtan biri eksik   | `false`     | `requiresInstall: true`, eksik paketleri adlandıran bir kurulum ipucuyla                |
+| Diğer tüm platformlar                        | `false`     | Yerel sandbox bu platformda sunulmaz                                                    |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Sunucu sonucu tek bir başlangıç satırına yazar: `agent sandbox ON` artı not, `no OS-native agent sandbox on this host` artı ipucu ya da `agent sandbox DISABLED by --sandbox off`. `GET /healthz` bir sandbox alanı taşımaz.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX`, `on` (varsayılan) ya da `off` kabul eder. Bu bir devre dışı bırakma seçeneğidir, etkinleştirme değil: `on` "ana makine bir arka uç sunduğunda sar" demektir, asla "bir tane şart koş" değil.
 
-## Native backend
+## Yerel arka uç
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Apple'ın Seatbelt sandbox mekanizmasını kullanır (macOS App Sandbox'ın da kullandığı sistemin aynısı).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+Üretilen profil **varsayılan olarak izin vericidir** (`(allow default)`) ve retleri oyar; çünkü tamamen varsayılan olarak reddeden bir profil etkileşimli bir kabuğu kullanılamaz hâle getirir — numaralandırılacak çok fazla dyld, XPC ve Mach çağrısı vardır. Bunun pratik sonucu, bir ajanın ana makinenin çoğunu yine de okuyabilmesidir; kayıtlı çalışma kopyalarınız görünmezlikle değil, açık yazma ve yeniden adlandırma retleriyle korunur.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **Dosya sistemi okumaları**: gizli yollar için reddedilir (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` ve okuma-reddi kümesinin geri kalanı)
+- **Dosya sistemi yazmaları**: redde sıfırlanır, ardından açık alt yol izinleri eklenir; zorunlu red yolları (kabuk rc dosyaları, `.git/hooks`, Claude yapılandırması, korunan çalışma kopyaları) yazılabilir bir kökün içinde bile engellenir. `file-write-unlink` reddedilen her yol ve onun üstleri için reddedilir, böylece bir yeniden adlandırma yazma reddini atlayamaz
+- **Süreç**: `process-exec`, her zaman tehlikeli ikilileri reddeder; ayrıca yazılabilir bir dizinden herhangi bir şeyin yürütülmesini engeller
+- **Ağ**: süreç içi proxy portları artı DNS ile kısıtlanır — loopback'e toptan izin verilmez ve Unix soketlerine izin verilmez. Proxy'ler oturum başına alan adı izin listesini uygular (bkz. [Ağ çıkışı](#ağ-çıkışı))
+- **Yapılandırma**: profiller her başlatmada `SandboxSpec` üzerinden üretilir
 
-Requirements:
+Gereksinimler:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), her macOS kurulumunun parçası — ek araç gerekmez
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+Mount ve PID ad alanları oluşturmak için bubblewrap (`bwrap`) kullanır.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **Dosya sistemi**: yalnızca bağlanan yolların görünür olduğu bir mount ad alanı oluşturur
+- **Ağ**: paylaşılmayan bir ağ ad alanında çalışır; trafik ana makine proxy'lerine `socat` Unix soket köprüleri üzerinden ulaşır
+- **Süreç**: PID ad alanı yalıtımı
 
-Requirements:
+Gereksinimler:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- `bubblewrap` ve `socat` kurulu olmalı (Debian/Ubuntu'da `sudo apt-get install bubblewrap socat`)
+- Çekirdek ad alanı desteği (modern Linux'ta standart)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap var olan bir yolu gölgeleyebilir ama yazılabilir bir bind içinde *yeni*
+bir `.env`, `*.key` veya `*.pem` dosyasını yasaklayamaz. Standart gönderim
+politikası bu dosya adı glob'uyla yazma retlerini gerektirir, dolayısıyla yerel
+ajan gönderimi şu anda **yoklama bubblewrap'i bulsa bile Linux/WSL2'de
+başarısızlıkta kapalı davranır**. Sessizce daha zayıf bir politikayla çalışmaz.
+Linux'ta yerel gönderimi geri getirmek için oluşturma zamanında dosya adı
+kuralları olan bir arka uç gerekir. Sandbox'ı devre dışı bırakmak, eşdeğer bir
+geçici çözüm değil, açık bir kısıtlamasız devre dışı bırakmadır.
 
-## None backend
+## Yalıtımsız arka uç
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+Sandbox yok. Süreç doğrudan ana makinede, ana makinenin dosya sistemi, ağ ve süreç erişimiyle çalışır. ACP ve harness `bash` aracı yine de ortam arındırmasını ve komut politikasını alır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır. Kullanılabilir bir arka ucu olmayan ya da `--sandbox off` ayarlanmış bir ana makinede ajan gönderiminin geri düştüğü yer burasıdır ve bir istemci `none` adını verdiğinde terminalin varsayılanı budur.
 
-## Server-hosted terminal
+## Sunucuda barındırılan terminal
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+Terminal, gönderim yoklamasıyla değil, kendi koşullarıyla sandbox'a alınır. `TerminalSessionService`'in `defaultBackend` değeri `none`dır ve `cc_server` bunu geçersiz kılmaz; dolayısıyla bir terminal oturumu, istemci açıkça `native` istemedikçe ana makine kabuğunu çalıştırır — masaüstünün terminal paneli istemez.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+`native` istendiğinde kabuk, `SandboxManager` üzerinden sabit bir terminal profiliyle sarılır: `$HOME` ve oturumun çalışma dizini yazılabilirdir, ağ açıktır ve `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ile `~/Library/Keychains` okumaya kapalıdır. Yetenek kapılaması geçerli değildir — o bir gönderim meselesidir. Sarmalama desteklenmiyorsa oturum, ana makine kabuğu PTY'sinde yerel bir rozet göstermek yerine başarısız olur.
 
-## Network egress
+## Ağ çıkışı
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+Bir sandbox başlatıldığında, dışa giden ağ erişimi çekirdek güvenlik duvarı kurallarıyla değil, süreç içi proxy'lerle uygulanır. Kullanılabilir arka ucu olmayan bir ana makinede bunların hiçbiri geçerli değildir ve başlatılan bir süreç ağa tam olarak sunucu kullanıcısının erişeceği gibi erişir.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- Sandbox çalışma zamanı, `cc_server` sürecinin içinde `127.0.0.1` üzerinde bir HTTP/HTTPS proxy ve bir SOCKS5 proxy çalıştırır, **kısıtlı oturum başına bir çift** (`http_proxy.dart`, `socks_proxy.dart`). Eşzamanlı çalıştırmalar bir çifti paylaşmaz.
+- Sandbox'a alınmış süreçler proxy ortam değişkenlerini alır (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP proxy'si, `ALL_PROXY` → SOCKS proxy'si; `GIT_SSH_COMMAND`, SSH üzerinden git'i SOCKS proxy'sinden geçirir). Linux'ta ağ ad alanı paylaşılmaz, dolayısıyla çıkışın tek yolu proxy'lerdir; macOS'ta sandbox ana makinenin loopback'ini paylaşır ve onlarla doğrudan konuşur.
+- Her bağlantının hedef ana makinesi oturumun alan adı izin listesiyle eşleştirilir; başka her şey reddedilir. Her birinde tam olarak bir `*` bulunan iki joker biçim vardır: baştaki `*.example.com` her alt alan adıyla (`a.b.example.com` dahil) eşleşir ama kök alanın kendisiyle eşleşmez; ortada etiket bulunan `bedrock.*.amazonaws.com` tam olarak bir etiketle eşleşir (`bedrock.us-east-1.amazonaws.com`, `bedrock.evil.attacker.amazonaws.com` değil).
+- İzin listesi oturum başına, özenle seçilmiş temelden (`kBaselineAllowedDomains`: LLM sağlayıcıları, Git barındırma, paket kayıt defterleri), ajanın GitHub ya da push yeteneği varsa GitHub alan adlarından ve `SandboxSpec.egressAllowlist` değerinden çözülür. Çözümleyici, ajan biletleme çağırabildiğinde biletleme sağlayıcısı alan adlarını da kabul eder, ama gönderim yolu bu listeyi (ya da ek `egressAllowlist` girdilerini) asla geçirmez; dolayısıyla pratikte her çalıştırma temeli artı yeteneklerinin kazandırdığı GitHub alan adlarını alır.
+- Sabit bir ret listesi (`kBaselineDeniedDomains`: bulut meta veri uç noktaları, telemetri hedefleri) tüm izinlerin önüne geçer.
+- `networkEnabled: false` (ya da ağ yeteneği olmayan bir ajan) oturum başına proxy'leri yine de başlatır, ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+`SandboxPort.launch` işlevine geçirilen belirtim:
 
-| Field             | Type                                        | Description                                                                                                                                 |
-| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| Alan              | Tür                                         | Açıklama                                                                                                                                                |
+| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionId`       | `String`                                    | Kararlı oturum tanımlayıcısı (genellikle alan kimliği)                                                                                                   |
+| `workspaceId`     | `String`                                    | Sahip olan çalışma alanının kimliği                                                                                                                     |
+| `agentId`         | `String?`                                   | Sandbox'a bağlı olan ajan, varsa                                                                                                                        |
+| `bindMounts`      | `List<SandboxBindMount>`                    | Ana makine→misafir mount'lar; sandbox yalnızca burada listelenen ana makine yollarını görür                                                              |
+| `networkEnabled`  | `bool` (varsayılan `true`)                  | Ajanın ağ yeteneğiyle birleştirilir. Kapalıyken oturum başına proxy'ler yine başlar ama izin listesi boştur, dolayısıyla her dışa giden bağlantı reddedilir |
+| `egressAllowlist` | `List<String>` (varsayılan `[]`)            | Ek izinli çıkış alan adları; joker karakterler desteklenir (`*.example.com`, ayrıca ortada tek etiketli biçim). Gönderim bunu asla doldurmaz, dolayısıyla sarılmış bir çalıştırma özenle seçilmiş temeli artı yeteneklerinin kazandırdığı GitHub alan adlarını alır |
+| `guestWorkdir`    | `String?`                                   | Sandbox içindeki varsayılan çalışma dizini; tek tek `exec` çağrıları bunu geçersiz kılabilir                                                              |
+| `mode`            | `Mode` (varsayılan `chat`)                  | Dosya sistemi yazma kurallarını oyar: `chat` bind mount'ları yazılabilir tutar; `review`, `plan` ve `orchestrate` salt okunurdur                          |
+| `capabilities`    | `AgentCapabilities` (varsayılan `safeDefault`) | Ağın açık/kapalı kararını ve GitHub çıkış alan adlarını türetir. Biletleme alan adları, gönderim yolunun asla sağlamadığı bir çözümleyici argümanıdır     |
+| `protectedPaths`  | `List<String>` (varsayılan `[]`)            | Sandbox içinde hiçbir modda yazılabilir olmaması gereken ana makine yolları                                                                              |
+| `runnerStateDirs` | `List<String>` (varsayılan `[]`)            | Runner'ın kendi durumunu tuttuğu, her modda yazılabilir ana makine dizinleri (Control Center tarafından yönetilen bir `CLAUDE_CONFIG_DIR` şu anki örnektir) |
+| `execGrantRoots`  | `List<String>` (varsayılan `[]`)            | macOS'ta yazılabilir dizin exec engelini yeniden açan, operatör onaylı dizin ağaçları. Linux bunları yok sayar — bwrap'te yeniden açılacak bir `$HOME` exec engeli yoktur |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths`, gönderim başına çalışma alanının depolarından çözülen, kayıtlı orijinal depo çalışma kopyalarını tutar. Ajanlar yalnızca konuşma başına copy-on-write çalışma ağaçlarında çalışır, dolayısıyla orijinaller sandbox'ın içinden asla yazılabilir olmamalıdır — macOS'ta Seatbelt'in toptan `$HOME` yazma izni onları aksi hâlde `bash` üzerinden yazılabilir bırakırdı. Her modda, `chat` dahil, gizli bilgilerin yazma-reddi kümesine katılırlar.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+Her okuma-reddi ve yazma-reddi yolu hem düz yazımıyla hem de sembolik bağdan çözülmüş yazımıyla yayımlanır. Çekirdek bir ret kuralını çözülmüş yola göre eşleştirir, dolayısıyla sembolik bağlı bir yola yazılmış bir kural asla tetiklenmez — ve macOS'ta bu, sıra dışı olan değil olağan durumdur; çünkü `/tmp` `/private/tmp`ye, `/var/folders/…` ise `/private/var/folders/…`ye çözülür. `*` veya `?` içeren girdiler glob olarak ele alınır ve olduğu gibi bırakılır; çözülemeyen bir yol yazıldığı gibi korunur.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| Alan        | Tür                      | Açıklama                                                                                                |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | Ana makinedeki mutlak yol                                                                               |
+| `guestPath` | `String`                 | Sandbox içindeki yol (yerel sandbox'ta bu `hostPath`e eşittir; adaptör simetrisi için korunur)          |
+| `readOnly`  | `bool` (varsayılan `false`) | Doğru olduğunda salt okunur bağlanır                                                                  |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+`SandboxPort.launch` tarafından döndürülür:
 
-| Field       | Type                   | Description                                                              |
+| Alan        | Tür                    | Açıklama                                                                 |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | Oturum tanımlayıcısı                                                     |
+| `backend`   | `SandboxBackend`       | Hangi arka ucun çalıştığı                                                |
+| `state`     | `SandboxState`         | Yaşam döngüsü durumu                                                     |
+| `error`     | `Object?`              | `state` değeri `error` olduğunda ayarlanır                               |
+| `details`   | `Map<String, Object?>` | Adaptöre özel kayıt tutma (çalışma dizini, PID, profil yolu vb.)         |
 
 ### SandboxState
 
-| State       | Description                                 |
-| ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| Durum       | Açıklama                                          |
+| ----------- | ------------------------------------------------- |
+| `created`   | Belirtim oluşturuldu ama VM henüz başlatılmadı    |
+| `warm`      | Çalışıyor ve komut yürütmeye hazır                |
+| `active`    | Şu anda bir komut yürütüyor                       |
+| `suspended` | RAM tasarrufu için duraklatıldı / diske kontrol noktası olarak yazıldı |
+| `destroyed` | Yıkıldı; tutamaç artık geçerli değil              |
+| `error`     | Başlatma başarısız — bkz. `SandboxHandle.error`  |
 
-## Sandbox events
+## Sandbox olayları
 
-| Event type  | Description                                                  |
+| Olay türü   | Açıklama                                                     |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout`    | Sandbox'tan standart çıktı                                   |
+| `stderr`    | Sandbox'tan standart hata                                    |
+| `exit`      | Sandbox süreci çıktı (`exitCode` taşır)                      |
+| `starting`  | Sandbox başlatılıyor                                         |
+| `ready`     | Sandbox exec çağrılarını kabul etmeye hazır                  |
+| `killed`    | Süreç ana makine tarafından öldürüldü (OOM, zaman aşımı, elle durdurma) |
+| `violation` | Bir sandbox politikası ihlal edildi (bir `SandboxViolation` taşır) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
-| --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| Alan                  | Tür       | Açıklama                                                             |
+| --------------------- | --------- | -------------------------------------------------------------------- |
+| `action`              | `String`  | Reddedilen fiil (örn. `file-read*`, `network-outbound`)              |
+| `target`              | `String`  | Reddedilen işlemin hedefi olan yol ya da ana makine                  |
+| `suggestedCapability` | `String?` | Bu eyleme izin verecek yetenek bayrağı (örn. `canCallGitHubApi`)     |
+| `raw`                 | `String?` | Ham günlük satırı, hata ayıklama için kullanışlı                     |
 
-## See also
+## İlgili konular
 
-- [Sandbox security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
-- [Sandbox policies](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/)
-- [cc_server CLI](/tr-TR/kilavuz/referans/cc-server-cli/): the `--sandbox` flag
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
+- [Sandbox politikaları](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/)
+- [cc_server CLI](/tr-TR/kilavuz/referans/cc-server-cli/): `--sandbox` bayrağı

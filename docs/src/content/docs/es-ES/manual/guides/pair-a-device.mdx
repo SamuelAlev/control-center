@@ -1,96 +1,106 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Emparejar un dispositivo
+description: Empareja tu teléfono (o un segundo navegador o escritorio) con tu servidor de Control Center para poder seguir la flota en remoto.
 slug: es-ES/manual/guias/emparejar-dispositivo
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/es-ES/manual/conceptos/control-remoto/) for how the link
-works and its security model.
+Esta guía te muestra cómo emparejar un teléfono con Control Center, para que
+puedas leer mensajes y tickets y responder desde cualquier sitio. El mismo flujo
+sirve para emparejar un segundo navegador o una app de escritorio. Consulta
+[Control remoto y móvil](/es-ES/manual/conceptos/control-remoto/) para saber cómo
+funciona el enlace y cuál es su modelo de seguridad.
 
-## Prerequisites
+## Requisitos previos
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/es-ES/manual/guias/ejecutar-servidor-headless/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Un cliente de escritorio o web conectado a tu servidor y un espacio de trabajo configurado. Las operaciones de emparejamiento requieren un cliente completo, así que un teléfono emparejado nunca puede emparejar —ni revocar— otro dispositivo.
+- Que se pueda llegar al servidor desde el dispositivo que estás emparejando. En la misma red funciona sin más; desde más lejos, es el relé intermediado el que lleva el tráfico. Si el panel responde **No accesible** en lugar de un QR o unas credenciales, publica antes una ruta: la activación opcional del túnel en **Ajustes → Servidor → Conexión y estado** (**Compartir este servidor**), o el `--public-url` del servidor (consulta [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/)).
+- Para un teléfono: no hay nada que instalar. El QR abre la app web **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) de forma predeterminada).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Autoalojamiento.** Remote y el broker del relé son de código abierto en este
+repositorio: la app del teléfono (`apps/cc_remote`, una PWA de Flutter web que
+puedes desplegar en Cloudflare Pages mediante su `wrangler.jsonc`, en la imagen
+nginx `docker/cc_remote`, o en cualquier host estático con HTTPS —los service
+workers y IndexedDB solo están disponibles en contextos seguros—) y el relé
+(`apps/cc_signaling_server`, un único binario de Dart sin estado que no guarda
+datos de la app y nunca ve el secreto de emparejamiento: solo reenvía tramas
+selladas de extremo a extremo). Consulta sus README para los pasos de compilación
+y ejecución.
 
-## Step 1: Open the pairing panel
+## Paso 1: Abrir el panel de emparejamiento
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Abre **Ajustes → Tú → Tus dispositivos**. La sección **Tus dispositivos**
+enumera los clientes emparejados con tu cuenta en este servidor. (El propietario
+del servidor ve todos los dispositivos del servidor; los demás solo ven los
+suyos).
 
-## Step 2: Pair a new client
+## Paso 2: Vincular un nuevo cliente
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Haz clic en **Vincular un nuevo cliente** en la cabecera de la página, ponle una
+etiqueta (por ejemplo, «Mi teléfono»), elige el tipo —**Navegador web**,
+**Aplicación de escritorio** o **Teléfono**— y haz clic en **Vincular**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Para un **teléfono**, aparece un código QR. Escanéalo con la cámara del teléfono, o copia el enlace y ábrelo en cualquier navegador. Apunta la app Remote a tu servidor y lleva la credencial.
+- Para un **navegador** o un **escritorio**, copia el enlace que se muestra (o el id de dispositivo y la clave de emparejamiento) en el nuevo cliente. El enlace de un solo toque solo se ofrece cuando emparejas desde el cliente web, ya que un binario de escritorio no tiene un origen web desde el que construirlo.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+El QR para teléfono y el enlace que `cc_server pair --client-url` imprime en la
+CLI son **cargas útiles distintas y no son intercambiables**: el enlace de la CLI
+rellena el formulario de conexión del cliente web, mientras que este QR lleva el
+descriptor de conexión completo del servidor y la huella de identidad para la PWA
+Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+En el lado del teléfono, abrir un enlace de emparejamiento no empareja en
+silencio. Remote muestra el nombre anunciado del servidor y te pide que confirmes
+antes de guardar nada, así que un enlace falsificado no puede secuestrar la app
+para llevarla al servidor de otra persona.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Un QR escaneado concede acceso de inmediato]
+No hay ningún paso de pendiente-y-luego-aprobar: un dispositivo generado está
+activo desde el momento en que se crea y la barrera de conexión solo comprueba
+que la credencial esté activa y no haya caducado. Trata el QR y la clave de
+emparejamiento como una contraseña y revoca todo lo que no tuvieras intención de
+entregar.
 :::
 
-## Manage paired devices
+## Gestionar dispositivos emparejados
 
-From **Settings → You → Your devices** you can:
+Desde **Ajustes → Tú → Tus dispositivos** puedes:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Cambiar nombre** a un dispositivo
+- **Revocar** un dispositivo en el que ya no confías. Revocar destruye su credencial y corta su sesión activa en cuestión de segundos, así que falla en cerrado al reconectarse
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Revocar es lo correcto para un teléfono perdido o sustituido. Es inmediato e
+irreversible desde la perspectiva del dispositivo.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Las credenciales generadas desde este panel tienen un límite de tiempo: caducan
+30 días después de emitirse y, a partir de ahí, la barrera de conexión las
+rechaza (falla en cerrado). Una credencial generada con `cc_server pair` en la
+línea de comandos **no caduca en absoluto**: revócala a mano cuando se retire la
+máquina para la que era.
 
-## Switch workspaces from the phone
+## Cambiar de espacio de trabajo desde el teléfono
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Un teléfono emparejado puede cambiar de espacio de trabajo con independencia del
+escritorio. El teléfono envía el espacio de trabajo en cada llamada y el servidor
+comprueba en cada una tu pertenencia y tu rol en ese espacio de trabajo, así que
+el teléfono solo llega a los espacios de trabajo de los que eres miembro y
+cambiar allí nunca altera lo que muestra el escritorio.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Además, una sesión de teléfono está restringida a una pequeña lista de permitidos
+de herramientas con mucha lectura: puede listar y leer tickets, agentes,
+espacios, mensajes y artículos del feed, y puede actualizar o asignar un ticket,
+enviar un mensaje en un espacio y marcar un artículo como leído o guardado. Todo
+lo que quede fuera de ese conjunto se rechaza antes de llegar al despachador del
+servidor.
 
-## Related guides
+## Guías relacionadas
 
-- [Run a headless server](/es-ES/manual/guias/ejecutar-servidor-headless/): make the server reachable in the first place
-- [Connect to a remote server](/es-ES/manual/guias/conectar-servidor-remoto/): point a full client at it
-- [Use spaces](/es-ES/manual/guias/espacios/): what you'll mostly do from the phone
-- [Create and manage tickets](/es-ES/manual/guias/gestionar-tickets/): triage from the road
+- [Ejecutar un servidor headless](/es-ES/manual/guias/ejecutar-servidor-headless/): haz que se pueda llegar al servidor, para empezar
+- [Conectar a un servidor remoto](/es-ES/manual/guias/conectar-servidor-remoto/): apunta a él un cliente completo
+- [Usar espacios](/es-ES/manual/guias/espacios/): lo que harás sobre todo desde el teléfono
+- [Crear y gestionar tickets](/es-ES/manual/guias/gestionar-tickets/): tria mientras vas de camino
 
-## Related concepts
+## Conceptos relacionados
 
-- [Remote control and mobile](/es-ES/manual/conceptos/control-remoto/)
-- [Deployment and clients](/es-ES/manual/conceptos/despliegue/)
+- [Control remoto y móvil](/es-ES/manual/conceptos/control-remoto/)
+- [Despliegue y clientes](/es-ES/manual/conceptos/despliegue/)

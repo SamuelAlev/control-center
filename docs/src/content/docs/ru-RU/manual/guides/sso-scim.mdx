@@ -1,60 +1,66 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Настроить пользователей через SCIM
+description: Позвольте вашему IdP автоматически создавать, обновлять и отзывать учётные записи Control Center.
 slug: ru-RU/руководство/практические-руководства/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Обратитесь к этому руководству, когда вам нужен контроль жизненного цикла:
+при увольнении доступ должен отзываться автоматически, а не просто блокировать
+будущие входы. SCIM — это протокол, с помощью которого IdP (Okta, Entra ID и
+другие) передают такие изменения по своей инициативе, и именно для этого он и
+предназначен.
 
-## Prerequisites
+## Предварительные требования
 
-- SSO already working (the [SSO tutorial](/ru-RU/руководство/учебники/sso) or the
-  [OIDC guide](/ru-RU/руководство/практические-руководства/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- единый вход уже работает ([учебник по SSO](/ru-RU/руководство/учебники/sso) или
+  [руководство по OIDC](/ru-RU/руководство/практические-руководства/sso-oidc)),
+- **сервер, доступный IdP по HTTPS** — вызовы SCIM исходят от IdP, а не из
+  браузера пользователя. Используйте встроенный туннель
+  (**Настройки → Сервер → Подключение и состояние → Открыть доступ к серверу → Cloudflared/ngrok/Tailscale**) или публичный URL. Сервер,
+  доступный только через ретранслятор WebSocket, не может принимать push-вызовы
+  SCIM; JIT-подготовка там по-прежнему работает, а это руководство — нет.
 
-## Steps
+## Шаги
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Откройте **Настройки → Сервер → Единый вход** → карточку
+   **Подготовка пользователей (SCIM)**. Карточка показывает эндпоинт, например
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. Нажмите **Создать токен** (или **Перевыпустить токен**, если он уже
+   есть) — bearer-токен показывается один раз в диалоге и копируется в буфер
+   обмена. Сохраните его в менеджере паролей; сервер хранит только копию,
+   допускающую сравнение за постоянное время.
+3. В настройках подготовки пользователей вашего IdP включите SCIM со следующими
+   параметрами:
+   - **Base URL**: эндпоинт, указанный выше
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (email) или `externalId` — подходят оба
+4. Проверьте на одном пользователе: отправьте его из IdP и убедитесь, что он
+   появился (при создании через SCIM `externalId` провайдера привязывается к
+   учётной записи — та же привязка, которую задаёт первый вход через SSO).
 
-## What deprovisioning does
+## Что делает отзыв доступа
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Когда IdP отправляет `active: false` (или `DELETE`), SCIM сначала отказывает,
+если учётная запись — **владелец** рабочего пространства (сначала передайте
+владение). В остальных случаях:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. сначала отзываются учётные данные всех устройств — активные сессии обрываются
+   за секунды,
+2. удаляется участие во всех рабочих пространствах,
+3. учётная запись помечается как деактивированная (она больше не сможет войти,
+   что бы IdP ни говорил позже, пока её явно не активируют снова).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Сама запись пользователя сохраняется — авторство тикетов, сообщений и коммитов
+неизменно. Повторная активация (SCIM `active: true`) восстанавливает вход, но
+**не** участие в рабочих пространствах: для него нужно новое приглашение или
+политика автоматического добавления участников при входе.
 
-## Troubleshooting
+## Устранение неполадок
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 при каждом вызове** — токен изменился; перевыпустите его и обновите IdP.
+- **Эндпоинт недоступен** — туннель не работает или сервер доступен только через
+  ретранслятор. SCIM требуется прямой HTTPS; JIT-подготовка работает в любом случае.
+- **Ошибки при передаче групп (501)** — это сделано намеренно: сопоставление
+  группа→роль выполняется при входе по атрибутам групп SAML/OIDC, а не по
+  переданным группам.

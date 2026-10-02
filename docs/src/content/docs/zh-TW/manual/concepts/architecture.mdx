@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: 架構
+description: Control Center 如何以精簡用戶端伺服器模型、以功能為先的整潔架構，以及埠與配接器來組織。
 dateModified: 2026-09-19
 slug: zh-TW/手冊/概念/架構
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## 概述
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center 遵循以功能為先的整潔架構，並採用埠與配接器模式。程式碼庫圍繞業務領域（功能）組織，並由自動化架構測試強制執行嚴格的相依性規則。
 
-## A thin client over a headless server
+## 無介面伺服器之上的精簡用戶端
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center 採用**精簡用戶端架構**。沒有任何用戶端會開啟資料庫——資料由無介面的 **`cc_server`** 程序持有（一個很小的 `global.db`，加上每個工作區一個 SQLite 檔案，採延遲開啟），並透過 WebSocket RPC 對外提供。桌面應用程式、網頁版與手機伴侶端，全都只是那條單一 RPC 連線之上的呈現端。
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+桌面端在首次啟動時選擇要以何種方式連上伺服器：**本機**（在這台機器上啟動 `cc_server` 並透過回送介面通訊——這是預設）或**遠端**（透過安全的 WebSocket 撥接別處的 `cc_server`）。網頁用戶端一律為遠端。啟動解析器（`bootstrap/server_backend.dart`）會在 Riverpod 存在之前決定走哪條路徑，接著以已連線的用戶端覆寫 `rpcClientProvider`——因此每個功能都透過伺服器讀寫，而不是本機資料庫。
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+RPC 層本身是**無狀態的**：工作階段經過驗證，但不會繫結至任何工作區。每個以工作區為範圍的呼叫都會在自己的引數中攜帶 `workspace_id`，缺少它時派送器會拒絕該呼叫。這正是同一個伺服器上的兩個用戶端能各自持有不同使用中工作區的原因，而不需要由伺服器保存一個會產生歧見的「目前工作區」——也意味著隔離是逐呼叫強制執行，而不是逐連線。
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/zh-TW/手冊/概念/部署/) for the full client matrix and what runs where.
+這是一個採單一已解析鎖定檔的 **Dart 工作區**，有二十一個成員——十五個套件加六個應用程式——並以桌面加網頁的應用程式（`control_center`）作為工作區根。這六個應用程式分別是無介面伺服器二進位檔（`cc_server`）、無介面機群執行器（`cc_worker`）、手機 PWA（`cc_remote`）、WebSocket 中繼代理（`cc_signaling_server`）、Widgetbook 展示庫（`cc_gallery`）以及公開示範主機（`cc_demo_server`）。這十五個套件是 `cc_ui`（設計系統）、`cc_domain`（純 Dart 共享核心：實體、值物件、埠、事件，以及每個功能的領域層）、`cc_harness`（內建代理核心：一個純 Dart 代理迴圈——訊息、供應商埠、工具、壓縮、引導、勾點、子代理——不依賴 `dart:io`，也沒有其他 `cc_*` 相依性）、`cc_harness_runtime`（內建 harness 執行階段配接器：僅限 VM 的串流供應商、OAuth/PKCE 憑證仲介、憑證儲存區與通用工具集——在未安裝任何外部 CLI 的情況下也能執行代理）、`cc_rpc`（用戶端傳輸）、`cc_host`（伺服器核心）、`cc_data`（遠端儲存庫）、`cc_persistence`（伺服器端資料庫）、`cc_server_core`（應用程式伺服器組合 + 身分/線上狀態/機群/評測執行階段）、`cc_infra`（僅限 VM 的配接器）、`cc_mcp`（MCP 工具）、`cc_mcp_client`（外部 MCP 伺服器的用戶端，將其工具橋接進本機登錄）、`cc_markdown`（儲存庫內建的 Markdown 引擎）、`cc_natives`（FFI 葉節點）以及 `system_audio_capture`。完整的用戶端矩陣與各元件執行位置，請參閱[部署與用戶端](/zh-TW/手冊/概念/部署/)。
 
-## Dependency rule
+## 相依性規則
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **領域層**：純 Dart 的實體、值物件、儲存庫介面、埠與領域服務。對基礎設施的匯入為零（不使用 dio、drift 或網路模型）。
+- **呈現層**：畫面、widget、notifier。不得直接存取 drift/DAO/資料層；一切都經過 Riverpod provider → 儲存庫。
+- **基礎設施層**：領域埠與儲存庫介面的具體實作。相依於領域層，絕不反向相依。
 
-## Feature structure
+## 功能結構
 
-The full feature shape is:
+功能的完整形態如下：
 
 ```
 feature_name/
@@ -41,36 +42,36 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+`lib/features/` 底下真正同時具備這四個目錄的功能極少，而這些缺口多半帶有資訊，並非偶然。共享核心已將每個功能的 `domain/` 收進 `cc_domain`，而精簡用戶端不持有任何儲存庫實作，因此 `lib/` 底下多數功能只有 `presentation/` 加 `providers/`，別無其他。若用戶端中仍留有 `data/` 或 `domain/` 目錄，代表那確實是屬於用戶端的東西。
 
-Two named exceptions are worth knowing:
+有兩個具名例外值得一提：
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** 只有 providers。它的設定與狀態介面位於 `settings/` 底下，而工具介面本身是一個套件（`cc_mcp`），不是功能資料夾。
+- **`orchestration`** 與 **`plan_studio`** 只有 `presentation/` 與 `providers/`。
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/zh-TW/手冊/概念/護欄/) for the model.
+**`guardrails`** 功能將其領域層放在 `cc_domain/features/guardrails/`，而非根應用程式，因為護欄是由伺服器強制執行：規則會在某個範圍內把 `ActionClass`（或 shell 的 `commandPrefix`）對應到一項決策——`allow`、`prompt` 或 `deny`；規則依工作區儲存，而每個受控管的代理動作在執行前，都會先經過政策鏈解析。解析順序為 `space > agent > workspace > mode preset > built-in default`，而且**由第一個具有相符規則的範圍做出決定**；最嚴格只在單一範圍內，以及合併某個動作所宣告的多個類別時，才作為決勝依據。操作者面對的介面是設定 → 工作區 → 代理權限，位於 `/workspaces/<id>/settings/workspace/permissions`。模型說明請參閱[護欄](/zh-TW/手冊/概念/護欄/)。
 
-## Shared kernel
+## 共享核心
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` 放置由 3 個以上功能共用的實體與儲存庫。它是零基礎設施相依性的純 Dart，這正是讓 Flutter 用戶端與不含 Flutter 的伺服器二進位檔都能匯入同一組定義的原因：
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- 核心實體：`Agent`、`AgentRunLog`、`Workspace`、`Repo`、`ReviewSpaceAssociation`
+- 身分與多人協作：`User`、`Principal`（sealed `UserPrincipal` | `AgentPrincipal`）、`WorkspaceMember`、`WorkspaceRole`
+- 記憶實體：`MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
+- 共用的值物件：`AgentCapabilities`、`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
+- 共用的埠：`SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
+- 領域服務：`MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
+- `DomainEventBus` + 事件類型（工作區/代理、PR/審查、訊息、工單、管線、編排、記憶、日曆/會議、身分與成員資格、可觀測性）
 
-## Identity & multiplayer
+## 身分與多人協作
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center 是多人使用的：人類與代理是地位對等的行為者，由 `Principal` 統一代表。工作區成員是在某個 `WorkspaceRole`（`owner`/`admin`/`member`/`viewer`/`guest`）上繫結至某個 `Workspace` 的 `User`。**成員資格才是存取邊界**——不是配對金鑰——而依儲存庫授予的權限，可避免工作區成員資格帶來超出程式碼代管的權限。在全新伺服器上建立的第一位使用者擁有整個安裝；其他人透過邀請或 OIDC 加入。建立工作區時，會將該使用者標記為 `owner`。
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+即時協作採用**權威伺服器 + 逐欄位後寫入者勝（LWW）**，而不是 CRDT。線上狀態（誰在線上、人在哪裡、游標、輸入中、代理的即時狀態與執行成本）是一條獨立的**暫時性通道，永不持久化**；持久狀態則由樂觀變更 + 伺服器重定基底 + LWW 的主幹承載。人類與代理共用同一份名冊。只有一位人類操作者時，線上狀態通道會閒置，也不會出現任何名冊介面元素——多人功能對單人使用者毫無成本。
 
-## Ports and adapters
+## 埠與配接器
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+埠是領域層中的抽象介面。配接器是基礎設施中的具體實作。由於無介面伺服器擁有資料，而且必須能在不含 Flutter 的情況下建置，幾乎所有配接器都僅適用於 VM，並依關注點整理在 `packages/cc_infra/lib/src/` 底下：
 
 | Port                   | Adapter location                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -78,68 +79,68 @@ Ports are abstract interfaces in the domain layer. Adapters are concrete impleme
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/`（用戶端：在本機呈現伺服器事件）                                      |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`)。Jira、ClickUp 與 GitHub Issues 是 `cc_infra/lib/src/tickets/sync/` 中的工單同步配接器；本機工單則存在工作區資料庫中，沒有 `TicketProviderPort`。 |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/`（純 Dart 領域服務——不需要任何基礎設施） |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+應用程式的組合根（`di/providers.dart`）會透過 Riverpod provider 將用戶端埠繫結到實作；伺服器則在 `cc_server_core` 中組合其配接器。
 
-## State management
+## 狀態管理
 
-**Riverpod** for all client state:
+所有用戶端狀態都使用 **Riverpod**：
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` 與 `AsyncNotifier<T>` 用於可變狀態
+- `FutureProvider<T>` 用於非同步資料
+- 清單與即時資料列會以 `AsyncValue<List<T>>` 的形式透過 RPC 訂閱送達——伺服器內部使用 Drift 的 `.watch()`；沒有任何用戶端會開啟 Drift
+- MCP 工具以具型別的建構函式參數接收相依項目，絕不接收 `Ref`
 
-## Database
+## 資料庫
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift**（SQLite）分成兩個資料庫，都位於 `cc_persistence`：
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`**（`<dataDir>/global.db`）——一份真正屬於整個伺服器的資料表清單：工作區登錄、使用者/偏好設定/已配對裝置、SSO 連線、安裝範圍的伺服器設定、受管理的動作原則（安裝範圍的夾制，只能收緊工作區護欄）、每位使用者的新聞動態、機群佇列（worker/工作/放置記錄）、驗證前的 `workspace_routes` 索引，以及安裝中介資料。開機時只會開啟這個檔案，因此無論工作區累積多少歷史，啟動成本都維持不變。在這裡新增資料表是一項隔離決策，棘輪測試會強迫你為此提出理由。
+- **`WorkspaceDatabase`**（`<dataDir>/<workspaceId>/workspace.db`）——每個工作區一個_目錄_，裡面放一個 SQLite 檔案，以及所有只屬於該工作區的其他內容，因此對話的工作樹與代理檔案會與資料庫並存，並隨它一起刪除。幾乎所有東西都住在這裡：代理、空間、工單、記憶、管線、會議、程式碼圖、審查、儲存庫。檔案會在第一次接觸時透過 `WorkspaceDatabaseManager.of(workspaceId)` 延遲開啟，並於此時自行支付 `quick_check`、FTS/觸發程序安裝與 `vector_init` 的成本。
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+這兩半都是從壓平的 v1 基準開始——由 `onCreate` 建出目前的結構定義——只有在已部署的資料庫必須往前帶時，才會附加移轉步驟。
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+由於一個工作區就是一個檔案，匯出工作區只需單一 `VACUUM INTO` 陳述式（`workspace.export`），而不是逐表傾印；`workspace.import` 會採用這樣的檔案，並利用內嵌的 `workspace_meta` 分辨這是重新採用自己的檔案，還是來自另一次安裝的檔案。
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+兩個資料庫都歸 `cc_persistence` 所有，且只由 `cc_server` 開啟；沒有任何用戶端會開啟資料庫——每個用戶端都透過 RPC 讀寫。資料表定義在 `packages/cc_persistence/lib/database/tables/`，DAO 則在 `.../daos/`；領域實體是純 Dart，與 Drift 資料表類別分開，對應轉換則位於資料層。FTS5 負責全文檢索，`sqlite_vector` 負責嵌入向量，兩者都僅限伺服器端；兩個資料庫都在 WAL 日誌模式下執行 `PRAGMA foreign_keys=ON`。
 
-## Routing
+## 路由
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**，而有一項事實主導其餘一切：**應用程式內的每個目的地都帶有工作區前置路徑**，形式為 `/workspaces/:workspaceId/…`。URL 中的工作區 id 是使用中工作區的唯一真實來源——`activeWorkspaceIdProvider` 是由路由驅動，而不是反過來——這也是為什麼在前置路徑之外讀取以工作區為範圍的資料時，無從取得其 id。
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- 路由建構_函式_位於 `router/routes.dart`，每個都以工作區 id 作為第一個引數，而不是字串常數
+- 四個情境之前的路由不帶前置路徑：`/splash`、`/onboarding`、`/signed-out` 與 `/workspaces`（選擇器）
+- `ShellRoute` 包住應用程式外殼；那四個介面則在其外部以全螢幕呈現
+- 驗證守衛：未完成設定的會被導向 `/onboarding`；設定已完成、但程式碼代管憑證已消失的，則會被導向 `/signed-out`。完成是指已登入的使用者至少連接了一個程式碼代管服務，且至少存在一個工作區——不特定是 GitHub，而且 `gh` CLI 不是一種驗證方式
+- 入門引導的閘門位於 `features/auth/providers/`
 
-## Networking (server-side)
+## 網路（伺服器端）
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+所有對外的 HTTP 都位於伺服器。用戶端絕不直接連上 GitHub、Linear 或 Google——它們呼叫伺服器 RPC 操作，甚至遠端媒體也是透過伺服器的 `/proxy/media` 端點取得，而不是向上游來源取得。
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- `packages/cc_infra/lib/src/` 中的 **dio** 用戶端：`GitHubApiClient`、`GitHubPrClient`、`GitHubContentClient`、`GitHubGraphQLClient`、`GitLabApiClient`、`BitbucketApiClient`、`LinearGraphQlClient` 與 `GoogleCalendarApiClient`
+- 透過攔截器注入驗證權杖，其中包括 `cc_server_core` 中會於 401 時重新整理權杖的個別帳號 Google OAuth 攔截器
+- 所有錯誤都會經過 `packages/cc_infra/lib/src/network/error_mapper.dart` 對應 → 對應到 `cc_domain` 中定義的具型別 `AppException` 子類別
 
-## Security
+## 安全性
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+伺服器持有真正重要的憑證：用於啟動代理的 GitHub 與工單服務權杖、LLM 供應商金鑰，以及 OAuth 權杖，全都位於伺服器資料目錄或其環境中。用戶端鑰匙圈仍保管的，是它自己的裝置憑證，以及用來連線遠端伺服器的配對金鑰。
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- 機密存放於 `flutter_secure_storage`（macOS 鑰匙圈、Windows 認證管理員、Linux libsecret）——即用戶端的裝置憑證與遠端配對金鑰，而非供應商權杖
+- `shared_preferences` 僅用於非敏感的偏好設定（佈景主題、字型、版面配置）
+- 較舊安裝留下的供應商機密，會由 `features/auth/providers/credential_migration.dart` 一次性交給伺服器，然後從用戶端鑰匙圈刪除
 
-## Architecture enforcement
+## 架構強制執行
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+架構限制由 `test/core/architecture_constraints_test.dart` 驗證，若違反相依性規則就會失敗。
 
-## Related concepts
+## 相關概念
 
-- [Workspaces and isolation](/zh-TW/手冊/概念/工作區/): how isolation is enforced
-- [Agent dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/): the dispatch flow
-- [Domain events](/zh-TW/手冊/概念/領域事件/): cross-feature communication
-- [Deployment and clients](/zh-TW/手冊/概念/部署/): the thin-client server model and the client matrix
+- [工作區與隔離](/zh-TW/手冊/概念/工作區/)：隔離如何強制執行
+- [代理派送生命週期](/zh-TW/手冊/概念/派送生命週期/)：派送流程
+- [領域事件](/zh-TW/手冊/概念/領域事件/)：跨功能通訊
+- [部署與用戶端](/zh-TW/手冊/概念/部署/)：精簡用戶端伺服器模型與用戶端矩陣

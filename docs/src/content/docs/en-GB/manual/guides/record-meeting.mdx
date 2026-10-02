@@ -1,10 +1,11 @@
 ---
-title: Record and summarize a meeting
+title: Record and summarise a meeting
 description: Record a call, get a transcript and turn it into notes, action items and decisions.
 slug: en-GB/manual/guides/record-meeting
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
+This guide shows you how to record a meeting and get an AI-generated write-up.
 See [Meetings and transcription](/en-GB/manual/concepts/meetings/) for how it works.
 
 ## Before you start
@@ -21,9 +22,9 @@ See [Meetings and transcription](/en-GB/manual/concepts/meetings/) for how it wo
 - On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
 
 :::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
+Capture, transcription, echo cancellation and speaker diarisation all run
 on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
+is a different machine when you run the server remotely. And the final write-up is
 an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
 and your rough notes to whatever model provider that agent uses. Point that agent
 at a local provider if the transcript must not leave the machine.
@@ -54,7 +55,7 @@ on one side.
 - **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
 - **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
 - **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarisation splits Others into `Person 1`, `Person 2`, … which you can rename.
 
 :::note[A very quiet speaker may not be transcribed]
 Transcription skips any audio window that never rose above a silence threshold,
@@ -63,13 +64,13 @@ hallucinated non-speech tokens, but it also means a faint or distant speaker can
 produce no transcript. Check the level meter early rather than at the end.
 :::
 
-## Stop and summarize
+## Stop and summarise
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
+1. Click **Stop & summarise**.
+2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarisation splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the write-up.
 3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
 
-## Review the writeup
+## Review the write-up
 
 The meeting detail (`/meetings/:meetingId`) has four tabs:
 

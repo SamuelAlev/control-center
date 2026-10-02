@@ -1,152 +1,165 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Skonfiguruj guardraile
+description: Ustaw reguły zezwalania, pytania i odmowy dla akcji agentów, przetestuj je sondą A co jeśli? i dostrój autonomię w każdej przestrzeni.
 slug: pl-PL/podrecznik/poradniki/konfiguracja-guardraili
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Ten poradnik pokazuje, jak skonfigurować guardraile: reguły, które decydują, czy
+akcja agenta zostanie wykonana, czy najpierw poprosi o zatwierdzenie, czy
+zostanie odrzucona.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Guardraile obejmują trzynaście klas efektów, które deklaruje każde narzędzie
+zmieniające stan. Są egzekwowane po stronie serwera w momencie wywołania
+narzędzia, nigdy przez instrukcję w prompcie.
 
-## Set a decision for an action class
+## Ustaw decyzję dla klasy akcji
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Przejdź do **Ustawienia → Obszar roboczy → Uprawnienia agentów**
+2. Wybierz zakres przełącznikiem segmentowym: **Obszar roboczy**, **Agent**
+   (następnie wybierz agenta) lub **Przestrzeń** (następnie wybierz przestrzeń)
+3. W wierszu danej klasy akcji wybierz **Zezwól**, **Zapytaj najpierw** lub
+   **Odmów**
+4. Aby usunąć ustawioną regułę, naciśnij przycisk resetowania, który pojawia
+   się na końcu tego wiersza (**Przywróć odziedziczone**) — decyzja wróci do
+   szerszego zakresu
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Każdy wiersz pokazuje obowiązującą decyzję jako znacznik statusu oraz plakietkę
+z informacją, skąd pochodzi: **Ten zakres**, **Odziedziczone** lub **Wbudowana
+wartość domyślna**. Macierz rozstrzyga w trybie Agent (`chat`), więc **Preset
+trybu** nigdy się tu nie pojawia — aby zobaczyć tę warstwę, użyj sondy
+A co jeśli? z wybranym trybem tylko do odczytu.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Zapisanie reguły wymaga roli `admin`. Odczytywanie macierzy już nie.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Punkt kontrolny: ustaw **Push do zdalnego repozytorium** na **Odmów** w zakresie
+obszaru roboczego, a następnie uruchom poniższą sondę A co jeśli? dla
+`git push origin main`. Wynik to `deny` ze źródłem `workspace`.
 
-## Understand how a decision is resolved
+## Zrozum, jak rozstrzygana jest decyzja
 
-Resolution is **specificity first, then restrictiveness**:
+Rozstrzyganie działa według zasady **najpierw szczegółowość, potem
+restrykcyjność**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Reguły **przestrzeni**, potem agenta, potem obszaru roboczego. Decyduje
+   pierwszy zakres z pasującą regułą i rozstrzyganie się zatrzymuje
+2. Jeśli żadna reguła nie pasuje, stosowany jest **preset trybu** — tryb tylko
+   do odczytu (plan, przegląd, orkiestracja) odrzuca jedenaście z trzynastu klas
+3. Jeśli tryb nic nie mówi, stosowana jest **wbudowana wartość domyślna**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+W obrębie jednego zakresu reguła dotycząca polecenia rozstrzyga według
+najdłuższego pasującego prefiksu, a równie szczegółowy konflikt rozstrzyga się
+**najbardziej restrykcyjnie** — odmowa wygrywa z zapytaniem najpierw, a
+zapytanie najpierw z zezwoleniem. Akcja deklarująca kilka klas rozstrzyga każdą
+z nich niezależnie, a potem łączy je najbardziej restrykcyjnie.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Zezwolenie nie wygrywa z odmową]
+Węższa reguła wygrywa na szczegółowości, a remis rozstrzyga restrykcyjność —
+dlatego **Zezwól** w zakresie obszaru roboczego nie nadpisuje **Odmów** w żadnym
+innym miejscu.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Decyzja **Zapytaj najpierw** wyświetla jedną prośbę o zatwierdzenie obejmującą
+wszystkie klasy, które rozstrzygnięto na `prompt`. **Gdy nie podłączono żadnej
+osoby zatwierdzającej, następuje odmowa** — dotyczy to zarówno poleceń powłoki,
+jak i wywołań narzędzi harnessu. To celowe: uruchomienie bez kontroli jest
+gorsze od odrzuconego.
 
-### Action classes and built-in defaults
+### Klasy akcji i wbudowane wartości domyślne
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Klasa akcji                          | Wbudowana wartość domyślna |
+| ------------------------------------ | -------------------------- |
+| Usunięcie pliku                      | Zapytaj najpierw           |
+| Zapis poza drzewem roboczym          | Zezwól                     |
+| Utworzenie commita                   | Zezwól                     |
+| Push do zdalnego repozytorium        | Zapytaj najpierw           |
+| Otwarcie pull requesta               | Zapytaj najpierw           |
+| Opublikowanie recenzji lub scalenie  | Zapytaj najpierw           |
+| Zapis do zewnętrznego trackera       | Zapytaj najpierw           |
+| Dostęp do sieci                      | Zezwól                     |
+| Odczyt sekretu                       | Zezwól                     |
+| Instalacja pakietu                   | Zezwól                     |
+| Uruchomienie procesu                 | Zezwól                     |
+| Zmiana struktury obszaru roboczego   | Zezwól                     |
+| Sterowanie rigiem                    | Zezwól                     |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Taksonomia jest zamknięta. Nowe narzędzie, które trafi do wydania bez
+zadeklarowania swoich klas, oblewa test zapadkowy w CI, więc nic nie pojawia się
+z po cichu pustym zbiorem efektów.
 
-## Test a rule with the what-if probe
+## Przetestuj regułę sondą A co jeśli?
 
-Before changing a rule, check how the current policy already resolves it.
+Zanim zmienisz regułę, sprawdź, jak rozstrzyga ją już obecna polityka.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Na tej samej stronie przewiń do **A co jeśli?**
+2. Wybierz **Akcję** (jedną z trzynastu klas)
+3. Opcjonalnie wypełnij pola **Polecenie** (na przykład `git push origin main`),
+   **Agent**, **Przestrzeń** i **Tryb**
+4. Odczytaj wynik: decyzję, powód i **Źródło:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+Sonda uruchamia ten sam mechanizm rozstrzygający, którego używa ścieżka
+egzekwowania, na bieżących regułach, więc odpowiedź jest dokładna. Jeśli wynik
+jest zaskakujący, zmień regułę w macierzy powyżej i uruchom sondę ponownie.
 
-## Set a space's autonomy dial
+## Ustaw suwak autonomii przestrzeni
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Suwak działa osobno dla każdego agenta w każdej przestrzeni i nakłada się na
+reguły, a nie zastępuje ich.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Otwórz przestrzeń
+2. Otwórz **Zarządzaj uczestnikami** z nagłówka przestrzeni
+3. W obszarze **Autonomia** w wierszu agenta wybierz poziom:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Poziom                     | Efekt                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Domyślnie**              | Brak ustawienia dla przestrzeni — działa jak **Działa po zatwierdzeniu**                                          |
+| **Tylko propozycje**       | Każde narzędzie objęte bramką jest odrzucane od razu, a agent dostaje komunikat, aby zamiast tego zaproponował akcję |
+| **Działa po zatwierdzeniu** | Ryzykowne akcje trafiają do domyślnie odrzucającej bramki zatwierdzeń                                             |
+| **Działa swobodnie**       | Wstępnie zatwierdza wszystko, co nie zostało rozstrzygnięte jako twarda odmowa                                    |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Działa swobodnie pochłania każdą prośbę]
+W trybie **Działa swobodnie** decyzja **Zapytaj najpierw** jest udzielana bez
+pytania o zgodę. Blokuje jeszcze tylko `deny` — z reguły, z presetu trybu albo
+z wbudowanej wartości domyślnej. Sięgaj po niego, gdy obserwujesz przestrzeń, a
+nie jako domyślne ustawienie.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Suwak obejmuje tylko wbudowany harness. Adapter Claude Code uruchamia własne
+narzędzia poza tą bramką.
 
-## Know where guardrails do not reach
+## Wiedz, gdzie guardraile nie docierają
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Tabela **Gdzie reguły są egzekwowane** na dole tej samej strony to wersja tego
+zestawienia w aplikacji: dla każdej klasy efektów mówi, czy dany runner
+przechwytuje ją na bramce reguł, pozostawia sandboxowi, czy nie potrafi jej
+przechwycić wcale.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/pl-PL/podrecznik/poradniki/polityki-sandboxa/).
+- **Adapter Claude Code** nie jest objęty bramką w przypadku własnych wywołań
+  narzędzi. Claude Code jest uruchamiany z `--dangerously-skip-permissions`,
+  więc jego wywołania odczytu, zapisu, edycji i bash nigdy nie przechodzą przez
+  guard. Bramką objęte są natomiast powierzchnia narzędzi MCP, do której ten
+  adapter kieruje wywołania, oraz polecenie powłoki, które Control Center
+  uruchamia, aby go wystartować.
+- **Własny czasownik wyjściowy trybu** (`submit_plan`, `propose_orchestration`)
+  jest przypięty i nigdy nie można go odrzucić — w przeciwnym razie tryb byłby
+  strukturalnie niezdolny do wytworzenia swojego jedynego rezultatu.
+- **To, czy sandbox wzmacnia te reguły, zależy od hosta.** Tam, gdzie
+  `cc_server` znajdzie backend, opakowuje CLI Claude Code oraz narzędzie `bash`
+  harnessu, więc reguła, której nie napisałeś, i tak ma pod sobą podłogę
+  systemu operacyjnego. W systemie **Windows** nie ma żadnej, a w systemie Linux
+  lub WSL2 bez `bwrap` i `socat` też nie — tam guardraile wraz z powierzchnią
+  narzędzi trybu stanowią całe egzekwowanie, a nie jego drugą linię. Sprawdź,
+  w którym przypadku jesteś, w
+  [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/).
 
-## Related guides
+## Powiązane poradniki
 
-- [Configure sandbox policies](/pl-PL/podrecznik/poradniki/polityki-sandboxa/)
-- [Create and configure an agent](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
-- [Manage adapters and models](/pl-PL/podrecznik/poradniki/adaptery/)
+- [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/)
+- [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
+- [Zarządzaj adapterami i modelami](/pl-PL/podrecznik/poradniki/adaptery/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Guardrails — one policy for every mutating action](/pl-PL/podrecznik/koncepcje/guardraile/)
-- [Modes](/pl-PL/podrecznik/koncepcje/tryby/)
-- [Sandbox and security](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/)
+- [Guardraile — jedna polityka dla każdej akcji zmieniającej stan](/pl-PL/podrecznik/koncepcje/guardraile/)
+- [Tryby](/pl-PL/podrecznik/koncepcje/tryby/)
+- [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/)

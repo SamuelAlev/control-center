@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Hantera kostnader
+description: Se vad dina agenter gör av med, sätt ett tak för en autonom körning och minska tokenanvändningen.
 slug: sv-SE/handbok/how-to-guider/hantera-kostnader
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Den här guiden visar hur du ser vad agentkörningar kostar och hur du sätter ett tak för en autonom körning.
 
-## How costs are recorded
+## Så registreras kostnader
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Varje agentkörning skriver en körningslogg med sina indatatokens, utdatatokens, resonemangstokens, cachelästa och cacheskrivna tokens, en uppskattad kostnad i cent och kostnaden för eventuella subagenter som körningen startade.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Prissättningen kommer från katalogen models.dev, som bara används för att berika modellistan med pris och kontextfönster – aldrig som källa för modell-id:n. En modell som katalogen inte kan prissätta registreras som **$0**, och körningar utan kostnad utesluts från sammanställningen **Användning och kostnad**. En lokal Ollama-modell visar därför ingen utgift alls, även om dess tokenantal fortfarande registreras. Ett abonnemang med fast pris (kimi-code, en Claude-prenumeration) fungerar bara på samma sätt när katalogen saknar pris för den modell som betjänade körningen; om den har ett pris uppskattas körningen ändå efter de priserna. Under en reservkedja prissätts körningen efter den modell som faktiskt betjänade den, inte den som begärdes.
 
-## See what you are spending
+## Se vad du gör av med
 
-### Observability → Insights
+### Observability → Insikter
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Du når den via sidofältets sidfot → **Observability**. Fliken **Användning** öppnas först (totala tokens sedan start); växla till **Insikter** – den andra fliken – för den huvudsakliga kostnadsvyn:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- En tidsväljare: senaste 24 timmarna, senaste 7 dagarna, senaste 30 dagarna eller all tid
+- Fasetterade filter över agent, modell, status och roll, som chips du kan ta bort
+- En KPI-rad: totalt antal körningar, total kostnad, felfrekvens, cachefrekvens, tokens per sekund, genomsnittlig latens och tid till första token, var och en med en förändring mot föregående period (dold vid ”All tid”)
+- Diagram för aktivitet och kostnad, plus en uppdelning av **kostnad per roll** som fördelar utgifterna mellan huvudagenten, dess subagenter och dess rådgivare
+- En tabell per agent sorterad efter kostnad, med de tio främsta och en växel för att visa alla. Om du trycker på en rad filtreras alla andra vyer till den agenten
+- Den detaljerade körningsloggen, som dockar en transkriptpanel för en vald körning
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[”All tid” är inte all tid]
+Körningsflödet prenumererar på de 2 000 senaste körningsloggarna i alla arbetsytor och filtrerar sedan till den aktiva. På en upptagen server med många arbetsytor faller äldre historik för en tystlåten arbetsyta utanför det fönstret.
 :::
 
-### Settings → Server → Model providers
+### Inställningar → Server → Modellleverantörer
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+Kortet **Användning och kostnad** på den här sidan visar de senaste sju dagarnas observerade utgifter som en enda dollarsiffra, med en uppdelning per leverantör och, när en leverantör publicerar en sådan, hur lång tid det är kvar till nästa kvotfönster börjar om.
 
-### A single agent's runs
+### En enskild agents körningar
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Inställningar → Arbetsyta → Agenter** → välj en agent → **Loggar** listar dess körningar med status, varaktighet, start- och sluttider, PID och adapter. Den här fliken visar **inte** kostnad – använd tabellen per agent i Observability → Insikter för det.
 
-## Cap an autonomous run
+## Sätt ett kostnadstak för en autonom körning
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Två slash-kommandon, som skrivs i en ytas meddelandefält, är de enda körningarna med ett kostnadstak:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Varje segment av en `/goal`- eller `/loop`-körning stoppar när dess prissatta utgift når **500 cent ($5.00)**. Vid 80 % av det styr loopen först modellen att varva ner och lämna en ren överlämning, så att den inte dör mitt i en uppgift.
+- Ett helt hållbart mål har ett tak på **5 000 cent ($50.00)** om du inte anger `--budget <dollars>`. Målövervakaren trär in målens _återstående_ budget i varje segment, så en uttrycklig budget överskrids aldrig med ett helt segment.
+- `--days N` lägger till en absolut tidsfrist och `--max N` ett tak för antalet körningar. Båda är valfria; utan dem begränsas målet bara av kostnaden.
+- Ett mål som når sin gräns stannar vid `budgetExhausted` och kan bara återupptas genom att höja budgeten.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Eftersom taket är prissatt når en modell som katalogen inte kan prissätta det aldrig. En sådan körning begränsas i stället av doom-loop-skyddet mot upprepningar, av att målövervakaren ger upp efter tre misslyckanden i följd – och av dig.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Ett meddelande i en yta, en @-nämning eller ett pipelinesteg har inget kostnadstak. Körningen tar slut när modellen stannar, när du stoppar den eller när doom-loop-skyddet styr om den.
 
-## Cut token use
+## Minska tokenanvändningen
 
-### Compact a long conversation
+### Komprimera ett långt samtal
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Skriv `/compact` i ytans meddelandefält. Kommandot fångas upp på klientsidan och hamnar aldrig i transkriptet; servern fogar samman äldre historik till en förankrad sammanfattning och samtalet fortsätter på den komprimerade kontexten.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+Komprimering nekas medan en agent är mitt i en tur och när det inte finns något tillräckligt gammalt att foga samman. Den inbyggda harnessen komprimerar också på egen hand när historiken närmar sig modellens kontextfönster.
 
-### Choose the effort level deliberately
+### Välj resonemangsinsats medvetet
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+En agents **Resonemangsinsats** (Inställningar → Arbetsyta → Agenter) erbjuder de nivåer som den valda modellen publicerar. Högre nivåer gör av med fler resonemangstokens. Spara de högsta nivåerna till arbete som behöver dem.
 
-### Choose the model per agent
+### Välj modell per agent
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+Modell är ett fält per agent, så en formaterings- eller triageagent kan köra på en billig modell medan en arkitekturagent kör på en dyr. Filtrera tabellen per agent i Observability → Insikter efter modell för att se vilken kombination som faktiskt kostar dig pengar.
 
-### Look for runs with outsized token counts
+### Leta efter körningar med orimligt stora tokenantal
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Öppna körningsloggen i Insikter (de 50 senaste filtrerade körningarna) och transkriptpanelen på allt ovanligt. De vanligaste orsakerna är en alltför lång systemprompt eller persona, kontext som borde ha komprimerats och en uppgift som borde ha varit flera mindre.
 
-## What happens if a budget is set out of band
+## Vad som händer om en budget sätts utanför det vanliga flödet
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+För fullständighetens skull: om `monthlyBudgetCents` eller en budgetpolicy skrivs direkt till en agentrad:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Budgetar utvärderas **efter** att en körning har slutförts, inte före dispatch. En lyssnare på körningsslut jämför agentens utgifter sedan månadens början mot dess tak.
+- När den mjuka tröskeln passeras (80 % som standard) registreras en varningsincident och en `BudgetThresholdCrossed`-händelse utlöses, som du kan hänga en pipelinetrigger på.
+- När budgeten tar slut registreras en hård incident, samma händelse utlöses och agentens livscykelstatus flippar till `paused`.
+- Spärren före dispatch finns, men den används bara av städaren för föräldralösa körningar och avstämningen av strandsatta ärenden när återhämtning schemaläggs – en vanlig dispatch når den aldrig och inget i dispatchvägen kontrollerar den pausade statusen. Den enda synliga signalen är livscykelmärket i organisationsschemat.
 
-## Related guides
+## Relaterade guider
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Manage adapters and models](/sv-SE/handbok/how-to-guider/adapters/)
-- [Run agent diagnostics](/sv-SE/handbok/how-to-guider/felsok-agent/)
-- [Agent configuration reference](/sv-SE/handbok/referens/agentkonfiguration/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Hantera adapters och modeller](/sv-SE/handbok/how-to-guider/adapters/)
+- [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
+- [Agentkonfiguration](/sv-SE/handbok/referens/agentkonfiguration/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)

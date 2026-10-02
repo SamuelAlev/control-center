@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Понятия
+description: Как устроен Control Center и почему он сделан именно так — материал для понимания, лежащий в основе руководств.
 slug: ru-RU/руководство/понятия
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ru-RU/руководство/практические-руководства/); when you want to look
-something up, go to the [reference](/ru-RU/руководство/справка/).
+Эти страницы объясняют, **как устроен Control Center и почему**. Они нужны для понимания,
+а не для действий: ни одна из них не является пошаговой инструкцией. Когда нужно выполнить
+конкретную задачу, перейдите к [практическим руководствам](/ru-RU/руководство/практические-руководства/); когда нужно
+что-то найти — к [справке](/ru-RU/руководство/справка/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Читайте их в любом порядке. Если вы здесь впервые, начните с базовой модели.
 
-## Core model
+## Базовая модель
 
-The four ideas everything else is built on.
+Четыре идеи, на которых построено всё остальное.
 
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ru-RU/руководство/понятия/модель-агента/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/) — what happens between your message and the agent's first token
-- [Modes](/ru-RU/руководство/понятия/режимы/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ru-RU/руководство/понятия/контекст-инструментов/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ru-RU/руководство/понятия/интеллект-кода/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ru-RU/руководство/понятия/история-разговоров/) — persistence, compaction and forking a transcript
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/) — граница тенанта и почему её обеспечивает схема базы данных, а не дисциплина запросов
+- [Модель агента](/ru-RU/руководство/понятия/модель-агента/) — из чего состоит агент: идентичность, роль, навыки, возможности, адаптер и модель
+- [Жизненный цикл запуска агента](/ru-RU/руководство/понятия/жизненный-цикл-запуска/) — что происходит между вашим сообщением и первым токеном агента
+- [Режимы](/ru-RU/руководство/понятия/режимы/) — как `chat`, `plan`, `review` и `orchestrate` меняют то, что агенту разрешено делать
+- [Контекст инструментов и кэш промптов](/ru-RU/руководство/понятия/контекст-инструментов/) — почему агент видит лишь часть своих инструментов, как он добирается до остальных и что поддерживает кэш провайдера в тёплом состоянии
+- [Интеллект кода](/ru-RU/руководство/понятия/интеллект-кода/) — граф кода, языковой сервер, структурный поиск и отладчик
+- [История разговоров](/ru-RU/руководство/понятия/история-разговоров/) — сохранение, сжатие и форк транскрипта
 
-## Safety and control
+## Безопасность и контроль
 
-What an agent is allowed to touch and who decides.
+К чему агенту разрешено прикасаться и кто это решает.
 
-- [Sandbox and security](/ru-RU/руководство/понятия/песочница-и-безопасность/) — what actually constrains an agent run today
-- [Guardrails](/ru-RU/руководство/понятия/ограничения/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ru-RU/руководство/понятия/авторизация/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ru-RU/руководство/понятия/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Песочница и безопасность](/ru-RU/руководство/понятия/песочница-и-безопасность/) — что сегодня реально ограничивает запуск агента
+- [Ограничения](/ru-RU/руководство/понятия/ограничения/) — единый движок политик для каждого изменяющего действия и как разрешается правило
+- [Авторизация](/ru-RU/руководство/понятия/авторизация/) — роли, каталог разрешений и журнал аудита
+- [Rigs и изолированные среды](/ru-RU/руководство/понятия/rigs/) — почему агенты получают одноразовые ВМ вместо вашей машины и где на самом деле проходит граница
 
-## Directing the work
+## Направление работы
 
-Turning intent into work that gets done.
+Превращение намерения в выполненную работу.
 
-- [Tickets and delegation](/ru-RU/руководство/понятия/тикеты/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ru-RU/руководство/понятия/конвейеры/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ru-RU/руководство/понятия/оркестрация/) — one goal, one approval, a generated pipeline
-- [AI review](/ru-RU/руководство/понятия/ии-проверка/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ru-RU/руководство/понятия/разговоры-в-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ru-RU/руководство/понятия/память-и-знания/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ru-RU/руководство/понятия/eval-и-качество/) — eval suites and the Quality tab
+- [Тикеты и делегирование](/ru-RU/руководство/понятия/тикеты/) — не зависящая от вендора единица работы, общая для всего флота
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/) — DAG-воркфлоу, триггеры и возобновляемые запуски
+- [Оркестрация](/ru-RU/руководство/понятия/оркестрация/) — одна цель, одно одобрение, сгенерированный конвейер
+- [ИИ-проверка](/ru-RU/руководство/понятия/ии-проверка/) — как PR становится проверенным: пространства проверки, консенсус ревьюеров, оси и вердикт Ship/Hold/Block
+- [Разговоры в PR](/ru-RU/руководство/понятия/разговоры-в-pr/) — ответ на упоминание в GitHub или метку `ai-review` прямо из хоста кода
+- [Память и знания](/ru-RU/руководство/понятия/память-и-знания/) — факты, политики и то, что агенту разрешено знать
+- [Eval и качество](/ru-RU/руководство/понятия/eval-и-качество/) — наборы eval и вкладка «Качество»
 
-## People and reach
+## Люди и охват
 
-Working with other humans and reaching the fleet from elsewhere.
+Работа с другими людьми и доступ к флоту откуда угодно.
 
-- [Multiplayer and presence](/ru-RU/руководство/понятия/совместная-работа/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ru-RU/руководство/понятия/единый-вход/) — SAML and OIDC logins
-- [Chat bridges](/ru-RU/руководство/понятия/чат-мосты/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ru-RU/руководство/понятия/удалённое-управление/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ru-RU/руководство/понятия/встречи/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ru-RU/руководство/понятия/календарь/) — Google Calendar sync and meeting alerts
+- [Совместная работа и присутствие](/ru-RU/руководство/понятия/совместная-работа/) — люди и агенты как равноправные участники и что ограничивает доступ
+- [Единый вход](/ru-RU/руководство/понятия/единый-вход/) — входы через SAML и OIDC
+- [Чат-мосты](/ru-RU/руководство/понятия/чат-мосты/) — почему мост Slack устанавливает исходящее соединение и что авторизует сообщение из чата
+- [Удалённое управление и мобильный клиент](/ru-RU/руководство/понятия/удалённое-управление/) — как телефон подключается к вашему серверу и какая модель безопасности его окружает
+- [Встречи и транскрипция](/ru-RU/руководство/понятия/встречи/) — запись на устройстве, транскрипция и создание сводок
+- [Календарь и планирование](/ru-RU/руководство/понятия/календарь/) — синхронизация с Google Calendar и оповещения о встречах
 
-## Under the hood
+## Под капотом
 
-The shape of the system itself.
+Устройство самой системы.
 
-- [Architecture](/ru-RU/руководство/понятия/архитектура/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/) — the in-process bus features talk over
+- [Архитектура](/ru-RU/руководство/понятия/архитектура/) — слои, общее ядро, порты и адаптеры
+- [Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/) — как настольный, веб- и мобильный клиенты соотносятся с одним сервером
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/) — внутрипроцессная шина, по которой общаются функции

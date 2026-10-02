@@ -1,310 +1,311 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: เครื่องมือ MCP
+description: แค็ตตาล็อกฉบับสมบูรณ์ของเครื่องมือ MCP ที่ cc_server ลงทะเบียนไว้ แยกตามกลุ่ม
 slug: th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` เป็นโฮสต์ของรีจิสทรีเครื่องมือ MCP (JSON-RPC 2.0) หนึ่งเดียว ให้บริการบนพอร์ตหลักของเซิร์ฟเวอร์ (ค่าเริ่มต้น `9030`) ที่ `POST /mcp` และ `GET /sse` เวอร์ชันโปรโตคอล `2024-11-05` ไคลเอนต์ทุกตัวเข้าถึงรีจิสทรีเดียวกัน: เดสก์ท็อป บิลด์เว็บ ไคลเอนต์ MCP ภายนอก และรันไทม์เอเจนต์ในตัว เซิร์ฟเวอร์ MCP ภายนอกเชื่อมเข้ารีจิสทรีเดียวกันได้ในฐานะเลเยอร์ไดนามิก
 
-## Registry size
+## ขนาดของรีจิสทรี
 
-| Measure                                                                   | Count |
+| ตัววัด                                                                       | จำนวน |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| เครื่องมือที่ `cc_server` ลงทะเบียนไว้                                        | 110   |
+| จาก `packages/cc_mcp`                                                     | 108   |
+| จาก `packages/cc_mcp_client` (การค้นหาเครื่องมือ)                          | 2     |
+| ลงทะเบียนในรีจิสทรีฐาน (`server_mcp_registry.dart`)                        | 63    |
+| ลงทะเบียนหลังบูตเมื่อบริการต่าง ๆ พร้อมใช้งาน (`cc_server_runtime.dart`)      | 47    |
+| ใน 63 รายการของรีจิสทรีฐาน เป็นเงื่อนไขกับรีโพกราฟโค้ด                        | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+เครื่องมือกราฟโค้ดทั้งห้าตัวจะลงทะเบียนก็ต่อเมื่อโฮสต์ส่งรีโพกราฟโค้ดให้ `buildServerMcpRegistry` เท่านั้น `cc_server` ส่งให้เสมอ ทั้ง 110 รายการจึงทำงานอยู่ในไบนารีที่จัดส่ง
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+รีจิสทรีทั้งหมดถูกประกาศใน `tools/list` โดยไม่มีการกั้นการค้นหา การแก้ไขตั๋วงานเป็นเครื่องมือแบบมีชนิด
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[ไคลเอนต์ภายนอกเห็นแค็ตตาล็อกทั้งหมดเสมอ]
+`tools/list` ไม่เคยถูกตัดทอน ไคลเอนต์ MCP ตรวจสอบชื่อเครื่องมือเทียบกับสำเนาแคชของตัวเองของรายการนั้น และปฏิเสธทุกอย่างที่ไม่อยู่ในรายการโดยไม่ถามเซิร์ฟเวอร์ เครื่องมือที่ซ่อนไว้ตรงนั้นจึงเข้าถึงไม่ได้ แทนที่จะแค่ไม่ส่งเสียง
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ).
+**ฮาร์เนสในตัว** ต่างออกไป: มันโหลดเฉพาะชุดคำจำกัดความ**ประจำ**บางส่วนต่อคำขอ แล้วดึงที่เหลือเข้ามาเมื่อใช้งานครั้งแรก ซึ่งเป็นพฤติกรรมฝั่งฮาร์เนสและไม่เปลี่ยนรีจิสทรีนี้ ดู[บริบทเครื่องมือและการแคชพรอมต์](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ)
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[คลาสเครื่องมือทุกคลาสถูกลงทะเบียน]
+ไฟล์ซอร์สใต้ `packages/cc_mcp/lib/src/tools/` คือเครื่องมือที่เอเจนต์เรียกได้
+`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+ทำให้บิลด์ล้มเหลวหากมีคลาสเครื่องมือใหม่ที่ไม่มีใครสร้างขึ้นมา
 :::
 
-## Common parameters
+## พารามิเตอร์ทั่วไป
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**จำเป็น** สำหรับทุกเครื่องมือที่แตะข้อมูลในขอบเขตเวิร์กสเปซ `workspace_id` ที่หายไปหรือไม่ถูกต้องจะคืนข้อผิดพลาดที่ระบุชัดเจน และค่าที่ไม่ตรงกับเวิร์กสเปซของเอนทิตีเป้าหมายจะถูกปฏิเสธแทนที่จะถูกเพิกเฉยเงียบ ๆ ละเว้นมันสำหรับเครื่องมือระดับโลกจริง ๆ: `list_workspaces` และเครื่องมือฟีดข่าวทั้งหก (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`) ซึ่งใช้รายการฟีดรายผู้ใช้ของเจ้าของเซิร์ฟเวอร์ เครื่องมือค้นหา (`search_tool_bm25`, `list_my_tools`) รับมันเป็นทางเลือก เพื่อให้จำแนกได้ว่าเรียกใช้ได้หรือไม่ตามโหมดการสนทนา เมื่อเซิร์ฟเวอร์สั่งงานเอเจนต์ เวิร์กสเปซจะถูกบังคับฝั่งเซิร์ฟเวอร์ เอเจนต์จึงเข้าถึงเวิร์กสเปซอื่นไม่ได้ด้วยการส่ง id แปลกปลอมเข้ามา
 
-## Tool discovery
+## การค้นหาเครื่องมือ
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+ทั้งสองตัวมาจาก `cc_mcp_client` ไม่ใช่ `cc_mcp` และทั้งคู่ปรึกษาตัวเฝ้าโหมด จึงรายงานว่าอะไรเรียกได้ในโหมดการสนทนา_ปัจจุบัน_
 
-| Tool               | Description                                                                                                                 |
+| เครื่องมือ | คำอธิบาย                                                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | ค้นหาแค็ตตาล็อกเครื่องมือด้วยคำค้น; คืนเครื่องมือที่ตรง สคีมาอาร์กิวเมนต์ของแต่ละตัว และว่าแต่ละตัวเรียกได้ในขณะนี้หรือไม่ |
+| `list_my_tools`    | แสดงเครื่องมือที่เรียกได้ในขณะนี้ในการสนทนานี้ กรองตามโหมดของมัน                                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+เครื่องมือค้นหาตัวที่สาม **`search_tools`** มีอยู่เฉพาะภายในฮาร์เนสในตัว และไม่ได้เป็นส่วนหนึ่งของรีจิสทรี MCP นี้ มันจัดอันดับพื้นผิวเครื่องมือของการรันเอง และต่างจาก `search_tool_bm25` ตรงที่มัน**โหลด**สคีมาของสิ่งที่พบ เพื่อให้เอเจนต์เรียกตัวที่ตรงได้ในเทิร์นถัดไป เอเจนต์บนฮาร์เนสควรใช้ตัวนี้ ส่วนไคลเอนต์ MCP มี `search_tool_bm25`
 
-## Agent tools
+## เครื่องมือเอเจนต์
 
-| Tool          | Description                               |
+| เครื่องมือ          | คำอธิบาย                               |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | แสดงเอเจนต์ที่ลงทะเบียนไว้ในเวิร์กสเปซ |
 
-## Agent peer messaging and delegation
+## การส่งข้อความและการมอบงานระหว่างเอเจนต์
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+เอเจนต์คุยกันผ่านสเปซ (ถาวร มองเห็นได้ในรายชื่อ) `ask_agent` เป็นแบบคำขอ/ตอบกลับที่มีการหมดเวลาแบบบังคับ ส่วน `delegate_task` ถูกป้องกันฝั่งเซิร์ฟเวอร์ด้วยเพดานความลึก การตรวจจับวงจร กรอบงบประมาณ และเพดานความเป็นอิสระ
 
-| Tool            | Description                                                                                    |
+| เครื่องมือ            | คำอธิบาย                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | ส่งข้อความทางเดียวไปยังเอเจนต์อื่น โดยระบุด้วย `to_agent_id` หรือ `to_agent_name` ที่ตรงเป๊ะ   |
+| `ask_agent`     | ถามคำถามกับเอเจนต์อื่นและรอคำตอบ หรือหมดเวลา                               |
+| `delegate_task` | มอบงานให้เอเจนต์อื่นในรูปตั๋วงานลูกที่ติดตามได้                                     |
+| `consult_agent` | เพิ่มผู้เชี่ยวชาญที่ตรงที่สุดตามสกิลเข้าสเปซ แล้วสั่งงานด้วยบรีฟที่เจาะจง |
+| `todo_read`     | อ่านรายการสิ่งที่ต้องทำที่บันทึกไว้ของบทสนทนานี้                                              |
 
-## Skill tools
+## เครื่องมือสกิล
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+การติดตั้งและการอัปเดตทุกครั้งผ่านด่านสแกนแบบล้มเหลวปลอดภัย ก่อนที่เนื้อหาสกิลใดจะถึงดิสก์หรือพรอมต์ของเอเจนต์
 
-| Tool                 | Description                                                               |
+| เครื่องมือ                 | คำอธิบาย                                                               |
 | -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| `list_skills`        | แสดง slug ของสกิลที่มีในเวิร์กสเปซ                             |
+| `create_skill`       | สร้างสกิลใหม่จากเนื้อหา markdown                                  |
+| `install_skill`      | ติดตั้งไดเรกทอรีทั้งหมดของสกิลจากรีโพสิทอรี GitHub ที่ ref ปักหมุดไว้ |
+| `update_skill`       | อัปเดตสกิล GitHub ที่ติดตั้งแล้วไปยัง ref ใหม่ พร้อมสแกนและปักหมุดใหม่ |
+| `list_skill_updates` | แสดงสกิลที่มีเวอร์ชันใหม่กว่าให้ใช้                                |
+| `verify_skills`      | ตรวจสอบสกิลที่ล็อกไว้เทียบกับแฮชเนื้อหาบนดิสก์ของมัน                 |
+| `pin_skill`          | แฮชสกิลที่มีอยู่บนดิสก์เข้าสู่ `skills-lock.json`                    |
 
-## Plan, playbook and artifact tools
+## เครื่องมือแผน เพลย์บุ๊ก และอาร์ติแฟกต์
 
-| Tool               | Description                                                                                                           |
+| เครื่องมือ               | คำอธิบาย                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | สัญญาผลลัพธ์ของโหมดแผน: ส่ง `PlanDocument` แบบมีชนิดที่เปิดใน Plan Studio                                    |
+| `create_playbook`  | บันทึกแผนเป็นเทมเพลตที่มีชื่อและมีเวอร์ชัน พร้อมตัวยึดตำแหน่ง `{{param}}` แบบมีชนิด                                        |
+| `run_playbook`     | สร้างอินสแตนซ์ของเพลย์บุ๊กด้วยค่าพารามิเตอร์ เกิดเป็นแผนที่โอเปอเรเตอร์อนุมัติ                                  |
+| `publish_artifact` | เผยแพร่รายการบล็อกแบบมีชนิดที่เรียงลำดับ (markdown, table, chart, mermaid, code, JSON) ซึ่งเรนเดอร์เนทีฟในไคลเอนต์ |
+| `revise_artifact`  | แทนที่เนื้อหาของอาร์ติแฟกต์ที่เผยแพร่แล้ว                                                                                |
+| `list_artifacts`   | แสดงอาร์ติแฟกต์ของเวิร์กสเปซ                                                                                        |
+| `get_artifact`     | อ่านอาร์ติแฟกต์หนึ่งรายการ                                                                                                     |
+| `complete_goal`    | ประกาศว่าเป้าหมายถาวรที่ใช้งานอยู่ของบทสนทนา (เริ่มด้วย `/goal` หรือ `/loop`) บรรลุแล้ว                             |
 
-## Workspace tools
+## เครื่องมือเวิร์กสเปซ
 
-| Tool              | Description                                                              |
+| เครื่องมือ              | คำอธิบาย                                                              |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | แสดงเวิร์กสเปซทั้งหมดพร้อม id และชื่อ (ระดับโลก; ไม่มี `workspace_id`) |
 
-## Repo tools
+## เครื่องมือรีโป
 
-| Tool         | Description                                                                                                                                              |
+| เครื่องมือ         | คำอธิบาย                                                                                                                                              |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | แสดงรีโปที่ลงทะเบียนไว้ในเวิร์กสเปซ ผู้เรียกที่เป็นเอเจนต์จะได้รับเส้นทาง worktree แบบ copy-on-write ที่แยกออกจากกันของบทสนทนาของมัน ไม่ใช่เช็กเอาต์ต้นฉบับ |
 
-## Messaging tools
+## เครื่องมือส่งข้อความ
 
-| Tool                   | Description                                                                 |
+| เครื่องมือ                   | คำอธิบาย                                                                 |
 | ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| `list_spaces`        | แสดงสเปซส่งข้อความในเวิร์กสเปซ                                  |
+| `get_messages` | ดึงข้อความจากสเปซ                                               |
+| `send_message` | ส่งข้อความไปยังสเปซในนามของเอเจนต์ผู้ส่งที่มีชื่อ                         |
+| `get_space_notes`    | อ่านเอกสารส่งต่องานที่ใช้ร่วมกันของสเปซ                                    |
+| `update_space_notes` | แทนที่เอกสารส่งต่องานที่ใช้ร่วมกันของสเปซ                                 |
+| `todo_write`           | แทนที่รายการสิ่งที่ต้องทำของบทสนทนานี้ในครั้งเดียว (ส่งรายการทั้งหมด) |
 
-## Review tools
+## เครื่องมือรีวิว
 
-| Tool                       | Description                                                                                            |
+| เครื่องมือ                       | คำอธิบาย                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| `start_ai_review`          | เริ่มรีวิวด้วย AI สำหรับ PR: คำนวณพื้นที่รีวิว กระจายรีวิวเวอร์ผู้เชี่ยวชาญเข้าสเปซรีวิว เขียนคำอธิบายแบบพาไล่ดู และปิดท้าย |
+| `add_review_node`          | เพิ่มข้อค้นพบการรีวิวแบบมีโครงสร้าง (ไฟล์ บรรทัด ลำดับความสำคัญ P0–P3) ลงในสเปซรีวิว                       |
+| `confirm_review_node`      | ยืนยันข้อค้นพบของเพื่อนร่วมงาน; ผู้เขียนยืนยันข้อค้นพบของตัวเองไม่ได้                                               |
+| `resolve_review_node`      | ทำเครื่องหมายว่าข้อค้นพบได้รับการแก้ไขแล้วหลังจากลงมือเปลี่ยนแปลงจริง; โพสต์ร่องรอยเข้าสเปซรีวิว              |
+| `dismiss_review_node`      | ปิดข้อค้นพบที่ไม่เกี่ยวข้อง; บันทึกข้อเท็จจริงการระงับเพื่อให้รีวิวเวอร์หยุดตั้งธงซ้ำ                          |
+| `request_peer_review`      | ขอให้เอเจนต์รีวิวเวอร์อีกตัวช่วยดูข้อค้นพบเป็นรอบที่สอง                                              |
+| `dispatch_reviewers`       | กระจายเอเจนต์รีวิวเวอร์ที่จับคู่ได้เข้าสเปซรีวิวแบบพร้อมกัน                                   |
+| `submit_reviewer_verdict`  | โพสต์คำตัดสิน ship/hold/block ต่อรีวิวเวอร์หนึ่งราย พร้อมความเชื่อมั่นและคำอธิบาย                         |
+| `finalize_review`          | คำนวณฉันทามติต่อโหนดและคำตัดสินต่อ PR แล้วปิดรีวิว                                 |
+| `set_cohort_summary`       | ตั้งสรุปภาษาธรรมชาติของ cohort รีวิวหนึ่งอัน                                                           |
+| `add_review_diagram`       | แนบแผนภาพที่มีโครงสร้างและผ่านการตรวจสอบด้วยกราฟ (`sequence`, `entityRelation`, `stateMachine`) เข้ากับ cohort |
+| `publish_review_to_github` | เผยแพร่รีวิวที่ปิดท้ายแล้วไปยัง GitHub เป็นความเห็นแบบอินไลน์พร้อมเนื้อความสรุป                          |
 
-## Memory tools
+## เครื่องมือหน่วยความจำ
 
-| Tool                    | Description                                                                                         |
+| เครื่องมือ                    | คำอธิบาย                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| `search_memory`         | ค้นหาข้อเท็จจริงและนโยบาย (คำค้น ความหมาย หรือแบบผสม — ค่าเริ่มต้นคือแบบผสม)                    |
+| `propose_fact`          | เก็บข้อเท็จจริง markdown สั้น ๆ ไว้ในโดเมน                                                             |
+| `supersede_fact`        | ทำเครื่องหมายว่าข้อเท็จจริงหนึ่งถูกแทนที่ด้วยอีกอัน                                                                   |
+| `propose_policy`        | เก็บกฎเชิงบรรทัดฐานไว้ในโดเมน (ต้องมีสิทธิ์เขียนในโดเมนนั้น)                                |
+| `supersede_policy`      | ปลดระวางนโยบาย — ทำเครื่องหมายว่าไม่ทำงานอยู่ แต่ยังเก็บไว้เพื่อการตรวจสอบ                                      |
+| `list_policies`         | แสดงนโยบายที่ทำงานอยู่ กรองตามโดเมนได้ตามต้องการ                                                 |
+| `list_memory_domains`   | แสดงโดเมนหน่วยความจำของเวิร์กสเปซพร้อมจำนวนข้อเท็จจริงและนโยบาย                                     |
+| `record_observation`    | บันทึกข้อสังเกตดิบเข้าสู่หน่วยความจำใช้งานของเอเจนต์                                            |
+| `get_my_notes`          | อ่านสมุดจดชั่วคราวในหน่วยความจำใช้งานของเอเจนต์ผู้เรียก                                                  |
+| `update_my_notes`       | อัปเดตสมุดจดชั่วคราวในหน่วยความจำใช้งานของเอเจนต์ผู้เรียก                                                |
+| `remember`              | เพิ่มบันทึกลงหน่วยความจำใช้งานร้อนของเอเจนต์สำหรับเซสชันนี้ (จำกัดด้วย TTL และจำนวน)              |
+| `consolidate_memory`    | รันรอบการรวม ("sleep"): ลบรายการร้อนที่หมดอายุออก และม้วนรายการถาวรเข้าข้อเท็จจริงระยะยาว |
+| `harmonize_memory`      | รันการประสานความเชื่อข้ามเอเจนต์ (SHMR) และตั้งธงความขัดแย้ง                                 |
+| `list_memory_conflicts` | แสดงความขัดแย้งที่ตรวจพบและวิธีแก้ไขแต่ละรายการ                                              |
 
-## Governance tools
+## เครื่องมือการกำกับดูแล
 
-| Tool                         | Description                                                                                           |
+| เครื่องมือ                         | คำอธิบาย                                                                                           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | สร้างเป้าหมายระดับองค์กร (ระดับบริษัท ทีม เอเจนต์ หรืองาน)                                   |
+| `list_goals`                 | แสดงเป้าหมายพร้อมระดับ สถานะ และความคืบหน้าที่รวมแล้ว                                                 |
+| `update_goal_progress`       | ตั้งค่าความคืบหน้าของเป้าหมาย                                                                                 |
+| `create_approval`            | เปิดการอนุมัติระดับบอร์ดสำหรับการกระทำที่อยู่ภายใต้การกำกับ (ออกจากโหมดแผน รวม รีลีส จ้าง กำหนดเอง)                 |
+| `list_approvals`             | แสดงการอนุมัติ กรองตามสถานะได้ตามต้องการ                                                         |
+| `decide_approval`            | บันทึกคำตัดสิน: อนุมัติ ปฏิเสธ ขอให้แก้ไข หรือส่งใหม่                                     |
+| `comment_approval`           | แสดงความเห็นต่อการอนุมัติระดับบอร์ด                                                                           |
+| `exit_plan_mode`             | เปิด (และเมื่ออนุมัติแล้ว ก็ใช้ไป) การอนุมัติ `plan_exit` ซึ่งพลิกบทสนทนาออกจากโหมดแผน |
+| `agent_heartbeat`            | รายงานความมีชีวิต (ทำงานอยู่ ว่าง ติดขัด); การเงียบไปจะพลิกสุขภาพรันไทม์เป็นเพิ่งขาดการติดต่อ แล้วเป็นออฟไลน์ |
+| `list_runtime_health`        | แสดงสุขภาพรันไทม์ของเอเจนต์แต่ละตัว                                                                      |
+| `list_agent_presence`        | แสดงสถานะออนไลน์ของเอเจนต์แต่ละตัว (สุขภาพ วงจรชีวิต จำนวนที่กำลังรันและอยู่ในคิว ความจุ)                   |
+| `get_org_chart`              | อ่านต้นไม้การรายงาน โดยมี CEO อยู่ที่ราก ซ้อนกันตาม `reports_to`                                      |
+| `create_work_product`        | สร้างผลงานถาวรที่แนบกับตั๋วงาน                                                     |
+| `save_work_product_revision` | บันทึกการแก้ไขใหม่; ส่ง `base_revision_id` เพื่อให้ถูกปฏิเสธเมื่อมีการแก้ไขพร้อมกัน                      |
+| `list_work_products`         | แสดงผลงาน กรองให้เหลือตั๋วงานเดียวได้ตามต้องการ                                                 |
+| `get_work_product`           | อ่านผลงานพร้อมประวัติการแก้ไข                                                         |
+| `create_runtime_profile`     | กำหนดโปรไฟล์รันไทม์ที่ใช้ซ้ำได้ (ตระกูลโปรโตคอล คำสั่ง CLI อาร์กิวเมนต์เรียกใช้แบบตายตัว)              |
+| `list_runtime_profiles`      | แสดงโปรไฟล์รันไทม์ของเวิร์กสเปซ                                                                 |
 
-## Code graph tools
+## เครื่องมือกราฟโค้ด
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+ลงทะเบียนก็ต่อเมื่อโฮสต์มีรีโพกราฟโค้ด ดัชนีครอบคลุมชุดไวยากรณ์ที่จัดส่ง (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); สัญลักษณ์ในภาษาอื่นจะไม่มีอยู่
 
-| Tool           | Description                                                                        |
+| เครื่องมือ           | คำอธิบาย                                                                        |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | ค้นหาสัญลักษณ์ที่จัดดัชนีแล้วตามชื่อ ลายเซ็น และคอมเมนต์เอกสาร (BM25 + ความหมายแบบผสม) |
+| `code_symbol`  | ค้นหาสัญลักษณ์ตามชื่อที่ตรงเป๊ะ; คืน `file:line` และลายเซ็น                   |
+| `code_callers` | แสดงสัญลักษณ์ที่เรียกหรือพึ่งพาสัญลักษณ์หนึ่ง (เส้นเชื่อมขาเข้า)                  |
+| `code_callees` | แสดงสัญลักษณ์ที่สัญลักษณ์หนึ่งเรียกหรือพึ่งพา (เส้นเชื่อมขาออก)                     |
+| `code_impact`  | คำนวณรัศมีผลกระทบแบบส่งผ่านของสัญลักษณ์ ถึงระดับความลึกหนึ่ง                       |
 
-## Ticketing tools
+## เครื่องมือตั๋วงาน
 
-| Tool                      | Description                                                                                                                  |
+| เครื่องมือ                      | คำอธิบาย                                                                                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | สร้างตั๋วงานบนผู้ให้บริการที่กำหนดค่าไว้                                                                                   |
+| `get_ticket`              | ดึงตั๋วงานหนึ่งใบตาม id                                                                                                       |
+| `list_tickets`            | แสดงตั๋วงาน กรองตามสถานะหรือผู้รับมอบหมายได้ตามต้องการ                                                                      |
+| `update_ticket`           | อัปเดตสถานะ ชื่อ คำอธิบาย ลำดับความสำคัญ หรือป้ายกำกับ (สถานะรับนามแฝงเช่น `in_progress` / `completed`)          |
+| `assign_ticket`           | มอบหมายตั๋วงานให้เอเจนต์และ/หรือทีม                                                                                      |
+| `reassign_ticket`         | มอบหมายตั๋วงานใหม่ให้เอเจนต์ตัวอื่น                                                                                       |
+| `add_ticket_collaborator` | เชิญเอเจนต์มาร่วมงานบนตั๋วงาน (เพิ่มเข้าสเปซของตั๋วงานนั้น)                                                            |
+| `comment_on_ticket`       | แสดงความเห็นบนตั๋วงาน                                                                                                          |
+| `close_ticket`            | ปิดตั๋วงาน (ทำเครื่องหมายว่าเสร็จ) พร้อมผลลัพธ์ได้ตามต้องการ                                                                          |
+| `fail_ticket`             | ทำเครื่องหมายว่าตั๋วงานล้มเหลว พร้อมข้อความข้อผิดพลาด                                                                                   |
+| `delegate_ticket`         | มอบหมายตั๋วงานให้เอเจนต์ โดยสร้างตั๋วงานที่ติดตามได้                                                                     |
+| `ticket_pr_link`          | เชื่อมหรือยกเลิกการเชื่อมตั๋วงานกับ pull request ด้วย PR node id (`action`: `link` \| `unlink`)                                      |
+| `ticket_relation`         | เพิ่มหรือลบความสัมพันธ์ระหว่างตั๋วงานสองใบ — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | แสดงตั๋วงานแม่ ตั๋วงานย่อย และลิงก์การพึ่งพาของตั๋วงานหนึ่งใบ                                                                      |
 
-## Team and pipeline tools
+## เครื่องมือทีมและไปป์ไลน์
 
-| Tool                   | Description                                                                                                                    |
+| เครื่องมือ                   | คำอธิบาย                                                                                                                    |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| `record_team_activity` | บันทึกรายการกิจกรรมของหัวหน้าทีมเทียบกับตั๋วงาน                                                                         |
+| `preview_trigger`      | ลองรันแบบแห้งว่าเหตุการณ์สมมติหนึ่งจะเริ่มการรันไปป์ไลน์ใด โดยไม่คอมมิตสิ่งใด                                               |
+| `submit_output`        | ส่งเพย์โหลดผลลัพธ์แบบมีโครงสร้างสำหรับรันไปป์ไลน์ปัจจุบันของผู้เรียก; ตรวจสอบเทียบกับสคีมาผลลัพธ์ที่ประกาศไว้ของการรันนั้น |
 
-## Orchestration tools
+## เครื่องมือการประสานงาน
 
-| Tool                    | Description                                                                                                     |
+| เครื่องมือ                    | คำอธิบาย                                                                                                     |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| `propose_orchestration` | ส่งแผนการประสานงานแบบหลายเอเจนต์ที่มีโครงสร้างเพื่อขออนุมัติล่วงหน้าครั้งเดียว; ตรวจสอบและคืนการละเมิดใด ๆ ที่พบ |
 
-## Newsfeed tools
+## เครื่องมือฟีดข่าว
 
-| Tool                | Description                                                  |
+| เครื่องมือ                | คำอธิบาย                                                  |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | แสดงฟีด RSS/Atom ที่ลงทะเบียนไว้                           |
+| `list_articles`     | แสดงบทความ กรองตามฟีด ที่ยังไม่อ่าน หรือที่บันทึกไว้ได้ตามต้องการ |
+| `get_article`       | ดึงบทความหนึ่งรายการ                                            |
+| `set_article_read`  | ทำเครื่องหมายบทความว่าอ่านแล้วหรือยังไม่อ่าน                               |
+| `set_article_saved` | บันทึกหรือยกเลิกการบันทึกบทความ                                    |
+| `refresh_feeds`     | ดึงฟีดที่เปิดใช้ทั้งหมดใหม่ทันที                              |
 
-## Enclosure (rig) tools
+## เครื่องมือเอนโคลเจอร์ (ริก)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/th-TH/คู่มือ/อ้างอิง/ริก/#action-verbs).
+ขับเครื่องแบบใช้แล้วทิ้ง — เบราว์เซอร์หรือเดสก์ท็อป Linux ที่ถูกปิดล้อม
+เอมูเลเตอร์ Android หรือ iOS Simulator — จากภายในรัน ลงทะเบียนหลังบูต
+แบบไม่มีเงื่อนไข: ว่าเครื่องจะบูตได้จริงหรือไม่เป็นคำถามเชิงตรวจสอบที่
+เครื่องมือตอบเป็นรายการเรียก การเรียกซ้ำ ๆ ในบทสนทนาเดียวกันใช้เครื่องเดิมร่วมกัน;
+สกรีนช็อตส่งกลับมาเป็นเนื้อหารูปภาพโดยมีงบหนึ่งภาพต่อผลลัพธ์ และ
+เนื้อหาหน้าเว็บ/UI ที่สกัดออกมาถูกกั้นไว้เป็นข้อมูลที่ไม่น่าเชื่อถือ เครื่องมือใช้งานสี่ตัวบวก
+`rig_close` ประกาศ[คลาสการกระทำ](/th-TH/คู่มือ/แนวคิด/กฎคุม/) `enclosureControl`
+(เครื่องมือใช้งานยังประกาศ `networkEgress` และ `processSpawn` ด้วย; `mobile_use` และ
+`ios_use` ยังประกาศ `packageInstall` ด้วย) โหมดอ่านอย่างเดียวจึงปฏิเสธเครื่องมือเหล่านี้ `rig_list`
+ไม่ประกาศคลาสใดเลย — มันอ่านสถานะเวิร์กสเปซเท่านั้น คำศัพท์คำกริยาทั้งหมดต่อพื้นผิวอยู่ใน
+[เอกสารอ้างอิงริก](/th-TH/คู่มือ/อ้างอิง/ริก/#action-verbs)
 
-| Tool           | Description                                                                                     |
+| เครื่องมือ           | คำอธิบาย                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| `computer_use` | ขับเดสก์ท็อป Linux ใน VM ที่ปิดล้อม: เลื่อน คลิก ลาก เลื่อนดู พิมพ์ ปรับขนาด คลิปบอร์ด สกรีนช็อต |
+| `browser_use`  | ขับ Chromium, Firefox หรือ WebKit แบบไม่มีหน้าจอ (`engine`): นำทาง คลิก กรอก สกัด (a11y/DOM/console) คลิปบอร์ด สกรีนช็อต |
+| `mobile_use`   | ขับ Android ผ่าน ADB: ตรวจสอบ/ป้อนข้อมูล สกรีนช็อต ติดตั้ง/เริ่ม/หยุด/รีเซ็ต/ถอนการติดตั้งแอป deep link และคำสั่งอุปกรณ์รูป argv |
+| `ios_use`      | ขับ iOS Simulator ผ่าน WebDriverAgent/CoreSimulator: ตรวจสอบ/ป้อนข้อมูล สกรีนช็อต ติดตั้ง/เริ่ม/หยุด/ถอนการติดตั้งแอป deep link และโปรเซสจำลองรูป argv |
+| `rig_list`     | แสดงริกของเวิร์กสเปซพร้อมพื้นผิว สถานะ ขนาดจอ และตัวควบคุม |
+| `rig_close`    | ทำลายริกและทิ้งสถานะเครื่องที่เป็นของมัน |
 
-## Not exposed over MCP
+## สิ่งที่ไม่เปิดให้เข้าถึงผ่าน MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/th-TH/คู่มือ/แนวคิด/การประชุม/), not as a tool an agent can call.
+ปฏิทินและการประชุมไม่มีเครื่องมือ MCP เอเจนต์อ่านปฏิทิน การประชุม ถอดเสียง รายการสิ่งที่ต้องทำ หรือคำตัดสินของคุณไม่ได้ สรุปที่ผลิตรายการสิ่งที่ต้องทำและคำตัดสินรันเป็น[ไปป์ไลน์ `meeting_summary`](/th-TH/คู่มือ/แนวคิด/การประชุม/) ในตัว ไม่ใช่เครื่องมือที่เอเจนต์เรียกได้
 
-## Tool gating by mode
+## การกั้นเครื่องมือตามโหมด
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+การกั้นถูกบังคับใช้สองครั้งจากตารางเดียว (`ModeToolPolicy`): ครั้งหนึ่งในตัวจัดส่ง MCP สำหรับอะแดปเตอร์ Claude Code และอีกครั้งในรีจิสทรีของฮาร์เนสในตัว การเรียกที่ถูกกั้นจะคืนเหตุผล
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| โหมด          | พื้นผิวเครื่องมือ                                                                                                                                                                                                                        |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | เครื่องมือที่ลงทะเบียนไว้ทุกตัว; ไม่มีรายการที่อนุญาต                                                                                                                                                                                                |
+| `plan`        | รายการที่อนุญาตที่คัดสรรไว้ ไม่มีการเขียน worktree และไม่มีคำกริยาตั๋วงาน `create` / `assign` / `delegate` แต่หน่วยความจำ อาร์ติแฟกต์ รายการสิ่งที่ต้องทำ `submit_plan`, `exit_plan_mode` และคำกริยาการปิดตั๋วงานบนตั๋วงานที่ถูกสั่งงานได้รับอนุญาต |
+| `review`      | รายการที่อนุญาตที่คัดสรรไว้: การมีส่วนร่วมในรีวิว การสื่อสาร ตัวดึงบริบทแบบอ่านอย่างเดียว และชุดคำกริยาตั๋วงานทั้งหมดรวมถึง `create_ticket` และ `assign_ticket`                                                                    |
+| `orchestrate` | รายการที่อนุญาตที่คัดสรรไว้: เครื่องมือค้นคว้าและอ่าน บวก `propose_orchestration`, `create_playbook` และ `run_playbook` การจ้าง การแบ่งงานย่อย และการปิดตั๋วงานเกิดขึ้นแบบกำหนดแน่นอนหลังการอนุมัติ ไม่เคยเกิดขึ้นกลางรัน                |
 
-Permitted in every mode regardless of allow-list:
+อนุญาตในทุกโหมดโดยไม่สนใจรายการที่อนุญาต:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| ชุด                  | เครื่องมือ                                                                                                                                                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| หน่วยความจำและอาร์ติแฟกต์ | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| กราฟโค้ด           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| กลไกการรัน        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+การอยู่ในรายการที่อนุญาตไม่ได้ทำให้เครื่องมือเรียกได้ และกลับกันก็เช่นกัน: ความสามารถในการถามโอเปอเรเตอร์เป็นเครื่องมือของ **ฮาร์เนส** (`ask_user`) จึงไม่ปรากฏในแค็ตตาล็อก MCP นี้เลย
 
-## Approval-gated tools
+## เครื่องมือที่กั้นด้วยการอนุมัติ
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+เครื่องมืออาจประกาศ `requiresApproval` ได้ จากนั้นตัวจัดส่งจะสร้าง `ApprovalPayload` และแสดงมันผ่าน `ConfirmationPort` ก่อนที่เครื่องมือจะรัน; `cc_server` ต่อพอร์ตนั้นไว้ ด่านจึงทำงานจริง
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+เครื่องมือที่ลงทะเบียนไว้ซึ่งประกาศมัน: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/).
+โดยเป็นอิสระจากกัน กฎคุมการกระทำแบบรวมจะกั้นเครื่องมือใดก็ตามที่ประกาศชุด `ActionClass` ที่ไม่ว่าง คำตัดสิน `prompt` ที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะถูกปฏิเสธ ดู[กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
 
-## Capabilities with no tool behind them
+## ความสามารถที่ไม่มีเครื่องมือรองรับ
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+ไม่ใช่ทุกความสามารถในผลิตภัณฑ์ที่เอเจนต์เข้าถึงได้ สิ่งเหล่านี้ไม่มีเครื่องมือ
+เลย ชื่อที่คุณอาจเคยเห็นอ้างถึงที่อื่นจึงคืนค่า "unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
+| ความสามารถ                             | ที่อยู่จริงของมัน                                                                       |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| การจ้าง การไล่ออก หรือการแก้ไขเอเจนต์      | UI ของเอเจนต์ ไม่มีเครื่องมือ `hire_agent` / `fire_agent` / `update_agent`                 |
+| การสร้างเวิร์กสเปซ                    | `workspace.upsert` ผ่าน RPC ซึ่งเพาะข้อมูลเริ่มต้นและประทับความเป็นเจ้าของ                                  |
+| โปรเจกต์ (สร้าง / แสดงรายการ / อัปเดต / ผูกไฟล์) | UI ของตั๋วงาน โปรเจกต์เป็นพื้นผิวสำหรับโอเปอเรเตอร์ — ดู[โปรเจกต์](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)     |
+| การถามคำถามแบบบล็อกกับโอเปอเรเตอร์ | เครื่องมือ `ask_user` ของ **ฮาร์เนส** ไม่ใช่ MCP มันเรนเดอร์ฟอร์มในบทสนทนาและบล็อกรอคำตอบ  |
+| การวินิจฉัยรายเอเจนต์                   | ไม่มีเลย ไม่มี `doctor` — ดู[การวินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)      |
+| ปฏิทินและการประชุม                   | RPC สำหรับไคลเอนต์มนุษย์เท่านั้น (ดูด้านบน)                                                          |
 
-## See also
+## ดูเพิ่มเติม
 
-- [Use Control Center as an MCP server](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
+- [ใช้ Control Center เป็นเซิร์ฟเวอร์ MCP](/th-TH/คู่มือ/วิธีทำ/เซิร์ฟเวอร์-mcp/)
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)

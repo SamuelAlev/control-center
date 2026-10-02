@@ -1,31 +1,34 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Einen Headless-Server betreiben
+description: Betreibe das Headless-Binary cc_server oder sein Docker-Image, kopple einen Client daran und konfiguriere ihn über die vollständige Oberfläche aus CLI-Flags und Umgebungsvariablen.
 dateModified: 2026-09-10
 slug: de-DE/handbuch/anleitungen/headless-server-betreiben
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Lass `cc_server` auf einer Maschine laufen, die an bleibt, und verbinde dich
+dann vom Desktop, aus einem Browser oder vom Telefon aus. Der Server ist ein
+natives Binary in reinem Dart, ohne Flutter-Engine, und läuft deshalb headless
+unter macOS, Linux oder Windows. Ihm gehört die Datenbank, er führt die Agenten
+aus und tätigt jeden externen API-Aufruf. Die Clients zeichnen nur.
 
-## Run in Docker (prebuilt images)
+## In Docker betreiben (vorgefertigte Images)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Jedes Release veröffentlicht einen selbst gehosteten Stack aus vier
+GHCR-Images — das Backend, die beiden statischen Thin Clients und das optionale
+Kopplungs-Relay — plus ein separates Image `cc-server-demo` für den öffentlichen
+Demo-Host. Eine selbst gehostete Installation braucht kein ausgechecktes
+Quell-Repository. Pinne einen Versions-Tag
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) oder nimm `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| Image                                             | Was es ist                                      | Veröffentlicht   |
+| ------------------------------------------------- | ----------------------------------------------- | ---------------- |
+| `ghcr.io/samuelalev/cc-server`                    | Das Backend: Datenbank, Agenten, MCP, Webhooks  | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Der Web-Client (statisches nginx)               | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | Die Telefon-Begleit-PWA (statisches nginx)      | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Das WebRTC-Kopplungs-Relay (optional)           | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+Der ganze Stack als Compose-Datei:
 
 ```yaml
 services:
@@ -51,91 +54,102 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Was du wissen solltest, bevor du davon etwas über Loopback hinaus erreichbar
+machst:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Das Image `cc-server` bringt `CC_SERVER_INSECURE=1` mit** (es muss `0.0.0.0`
+  binden, damit Verkehr über veröffentlichte Ports ankommt). Das ist nur hinter
+  einem TLS-terminierenden Reverse-Proxy sicher — Caddy, Traefik, nginx oder ein
+  Cloudflare Tunnel — in einem vertrauenswürdigen Netz. Um TLS stattdessen im
+  Prozess zu terminieren, häng ein Zertifikat ein und setze `CC_SERVER_TLS_CERT`
+  / `CC_SERVER_TLS_KEY` (und nimm danach `CC_SERVER_INSECURE` weg). Alles lässt
+  sich mit `docker run -e …` oder dem Compose-Block `environment:` überschreiben.
+- **Nur `/data` hält Zustand.** Die SQLite-Datenbanken, die Geheimnisse
+  gekoppelter Geräte, heruntergeladene Modelle und das Audio der Besprechungen
+  liegen alle im Volume. Sichere es, dann ist der Container austauschbar.
+- **Kopple einen Client aus dem Image heraus**, bevor die erste Verbindung
+  steht. Das ist das Container-Gegenstück zu
+  [Schritt 3](#schritt-3-einen-client-vor-dem-ersten-start-koppeln):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Die beiden Client-Images sind statische nginx-Hosts.** Zur Laufzeit ist
+  nichts zu konfigurieren. Das Verbindungsformular jedes Clients nimmt deine
+  Server-URL, die Geräte-ID und den Kopplungsschlüssel. Das
+  Signalisierungs-Relay braucht ebenfalls nur seinen Port (`SIGNALING_HOST` /
+  `SIGNALING_PORT` lassen sich überschreiben). Es ist zustandslos, hält keine
+  Geheimnisse und ist ein **Rückfall**: Ein Telefon nimmt Loopback, LAN, Tailnet
+  oder einen direkten `wss://`-Weg, sobald einer erreichbar ist, und fällt nur
+  auf das Relay zurück, wenn keiner es ist. Lass es weg, wenn deine Clients den
+  Server immer direkt erreichen.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Der Rest dieser Anleitung baut den Server aus dem Quellcode. Die Flags und das
+Verhalten, die sie behandelt, sind dieselben, die die Umgebungsvariablen des
+Images setzen.
 
-## Prerequisites
+## Voraussetzungen
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- Das [Dart SDK](https://dart.dev/get-dart). Dieses Repo pinnt sein SDK mit [fvm](https://fvm.app), deshalb stellst du jedem Befehl `fvm` voran.
+- Dieses Repository, ausgecheckt.
+- Die native Toolchain, die das Bereitstellungs-Skript braucht — Rust/`cargo`, dazu `meson`, `ninja`, `pkg-config`, `git` und ein C++-Compiler. Jedes Build-Skript nennt, was es nicht findet, und wie du es installierst.
+- Ein erreichbarer Host: Loopback für den lokalen Gebrauch, oder eine LAN- oder öffentliche Adresse mit TLS für entfernte Clients.
 
-## Step 1: Stage the native libraries
+## Schritt 1: Die nativen Bibliotheken bereitstellen
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Die nativen Bibliotheken sind **erforderlich**. Einen eingeschränkten Modus
+gibt es nicht. Baue sie vom Wurzelverzeichnis des Repos aus, bevor du
+irgendetwas anderes tust:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Das baut `rift`, `fff`, tree-sitter samt Grammatiken, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` und das SAML-Native nach
+`build/natives/`. Der Build-Hook von `cc_server` schreibt, was dort
+bereitliegt, erneut ins Bundle. Überspringst du diesen Schritt, schlägt der
+Build entweder sofort fehl, oder es entsteht — mit dem Ausweg unten — eine
+Binärdatei, deren Startprüfung den Start verweigert und die fehlende
+Bibliothek nennt.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Ausweg nur zum Kompilieren]
+Eine leere Datei `.cc_natives_allow_missing` im Wurzelverzeichnis des Repos
+stuft den Build-Fehler fehlender nativer Bibliotheken zu einer Warnung herab.
+Sie dient der Syntaxprüfung eines frischen Klons. Ein so gebauter Server
+startet nicht. Es muss eine **Datei** sein. Der Runner des Build-Hooks reicht
+die Umgebung des Aufrufers nicht weiter, eine Umgebungsvariable wird also
+ignoriert.
 :::
 
-## Step 2: Build the binary
+## Schritt 2: Die Binärdatei bauen
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
+Das Bundle legt `libsqlite3` und die bereitgestellten nativen Bibliotheken
+neben die Binärdatei. System-SQLite und eine Flutter-Engine brauchst du nicht.
+Die ausführbare Datei liegt unter
 `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Schritt 3: Einen Client vor dem ersten Start koppeln
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Ein frisches Datenverzeichnis hat kein gekoppeltes Gerät und keinen vorab
+geteilten Schlüssel, deshalb lässt sich die Abfrage des Kopplungsschlüssels im
+Client noch nicht erfüllen. Stell einen mit dem Unterbefehl `pair` aus. Er
+schreibt `global.db` und `secrets.json` direkt. Ein Server, der dieses
+Datenverzeichnis schon bedient, nimmt das neue Gerät ohne Neustart auf:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Er gibt drei Werte aus, die du in das Verbindungsformular eines Clients
+einfügst:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +158,49 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Nützliche Flags: `--device` (Vorgabe `web-client`; die ID wählt auch die
+Geräteklasse — `desktop`, `ios`, `android`, alles andere ist ein Web-Client),
+`--label` (Vorgabe ist der Plattformname plus der Hostname dieser Maschine),
+`--host` (der Host, der in der URL steht, weil Loopback von einer anderen
+Maschine aus nicht erreichbar ist) und `--client-url`. Ein erneutes `pair`
+rotiert den Schlüssel dieses Geräts und beendet seine laufenden Sitzungen. Die
+Kopplung legt nie einen Arbeitsbereich an. Das Onboarding des Clients, der sich
+verbindet, benennt den ersten und legt ihn an.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Mit `--client-url` gibt er zusätzlich einen QR aus, den du im Terminal scannen
+kannst. Er öffnet den Web-Client schon ausgefüllt:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/de-DE/handbuch/anleitungen/geraet-koppeln/).
+:::caution[Dieser QR ist nicht der Telefon-QR]
+`--client-url` baut einen Link für den **Web-Client**: Server-URL, Geräte-ID
+und Schlüssel im URL-Fragment. Die Telefon-App **Remote** erwartet einen
+anderen Payload, den vollständigen Verbindungsdeskriptor des Servers plus ein
+Ablaufdatum, ausgestellt unter **Einstellungen → Du → Deine Geräte** in einem
+laufenden Client. Die beiden lassen sich nicht gegeneinander austauschen. Siehe
+[Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+Eine Zugangsberechtigung von `cc_server pair` hat **kein Ablaufdatum**. Eine
+in der App ausgestellte läuft immer nach 30 Tagen ab. Widerrufe ein über die
+CLI ausgestelltes Gerät unter **Einstellungen → Du → Deine Geräte**, sobald du
+es nicht mehr brauchst.
 
-## Step 4: Start the server
+## Schritt 4: Den Server starten
 
-On loopback — the default and all you need for a client on the same machine:
+Auf Loopback, der Vorgabe und allem, was ein Client auf derselben Maschine
+braucht:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Um ihn von einer anderen Maschine zu erreichen, binde jede Schnittstelle. Ein
+Bind außerhalb von Loopback ohne TLS wird **beim Start abgelehnt** (`Refusing to bind non-loopback address …
+without TLS`). Gib ihm deshalb ein Zertifikat:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +208,46 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Oder terminiere TLS in einem Reverse-Proxy in einem vertrauenswürdigen
+privaten Netz und gib dahinter einen Klartext-Bind frei:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` wird ignoriert, wenn `--tls-cert` und `--tls-key` beide gesetzt
+sind. TLS gewinnt immer. Der Server gibt den Klartext-Zustand als
+`insecure: true` in `GET /healthz` bekannt, und Clients kennzeichnen so eine
+Verbindung mit **Unsicher**.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Der Server läuft, bis `SIGINT` oder `SIGTERM` kommt, und fährt dann sauber
+herunter.
 
-## Step 5: Connect a client
+## Schritt 5: Einen Client verbinden
 
-Point a client at the server URL and pairing key from step 3:
+Richte einen Client auf die Server-URL und den Kopplungsschlüssel aus Schritt 3
+aus:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/de-DE/handbuch/anleitungen/remote-server-verbinden/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/de-DE/handbuch/anleitungen/geraet-koppeln/).
+- **Desktop-App**: Auf dem Bildschirm beim ersten Start (**Wie soll Control Center laufen?**) füllst du die Verbindungsfelder aus, statt **In dieser App ausführen** zu wählen, oder du fügst den Server später unter **Einstellungen → Server → Verbindung und Status** hinzu. Siehe [Mit einem Remote-Server verbinden](/de-DE/handbuch/anleitungen/remote-server-verbinden/).
+- **Web-Client**: Öffne [app.usectrl.dev](https://app.usectrl.dev) (oder deine eigene Kopie des Web-Builds) und gib Server-URL, Geräte-ID und Kopplungsschlüssel ein.
+- **Telefon**: Kopple die App **Remote** von einem laufenden Client aus. Siehe [Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server liefert kein Web-Bundle aus]
+Ein eigenständiger `cc_server` hängt nie ein Web-Wurzelverzeichnis ein,
+deshalb antwortet `GET /` mit 404. Der Web-Client wird getrennt gehostet. Nimm
+`app.usectrl.dev`, oder hoste den Web-Build selbst auf einem beliebigen
+statischen HTTPS-Host (das Image `cc-webapp` oben ist genau das). Eine
+Browser-Origin außer Loopback muss in `--allowed-origins` stehen, sonst wird
+das WebSocket-Upgrade nach `/rpc` abgelehnt. Die Vorgabeliste ist
+`https://app.usectrl.dev`, und `localhost` sowie `127.0.0.1` sind immer
+erlaubt.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Schritt 6: Einen Google Calendar verbinden (optional)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Um den Kalender eines Arbeitsbereichs ohne angeschlossene Oberfläche zu
+synchronisieren, nutze den Gerätecode-Ablauf:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +255,71 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/de-DE/handbuch/anleitungen/kalender-verbinden/).
+Er gibt einen Code und eine URL aus, die du auf einem anderen Gerät
+genehmigst, speichert das Refresh-Token serverseitig und beendet sich. Ein
+Build aus dem Quellcode bringt keinen Google-Client mit, deshalb sind die
+Umgebungsvariablen für ID und Secret erforderlich. Ein Flag
+`--google-client-id` gibt es nicht. Siehe
+[Einen Google Calendar verbinden](/de-DE/handbuch/anleitungen/kalender-verbinden/).
 
-## Configuration
+## Konfiguration
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/de-DE/handbuch/referenz/cc-server-cli/).
+Die Flags oben sind die, die eine erste Einrichtung braucht. Die vollständige
+Oberfläche, 23 Paare aus Flag und Umgebungsvariable, die vier Unterbefehle und
+der Aufbau des Datenverzeichnisses, steht in der
+[`cc_server`-CLI-Referenz](/de-DE/handbuch/referenz/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Unbekannte Flags werden stillschweigend ignoriert]
+Der Argument-Parser ist von Hand geschrieben und überspringt alles, was er
+nicht erkennt. Ein Tippfehler (`--tls-key-file`, `--bindany`) erzeugt also
+keinen Fehler, und der Server startet einfach mit der Vorgabe. Sieh in die
+Zeilen des Startlogs, wenn ein Flag keine Wirkung zu haben scheint.
 :::
 
-The four you are most likely to need:
+Die vier, die du am ehesten brauchst:
 
-| Flag           | Default                              | Meaning                                                                                          |
-| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| Flag           | Vorgabe                                                          | Bedeutung                                                                                            |
+| -------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--data-dir`   | das anwendungsbezogene Datenverzeichnis des Betriebssystems je Benutzer | Datenbanken, Geheimnisse, Modelle und zwischengespeicherte Medien                               |
+| `--port`       | `9030`                                                           | TCP-Port (`0` = ephemer)                                                                             |
+| `--bind`       | `loopback`                                                       | `loopback`, oder `any` für jede Schnittstelle (braucht TLS oder `--insecure`)                       |
+| `--public-url` | aus dem Bind abgeleitet                                          | Die RPC-URL, die gekoppelten Clients bekannt gegeben wird. **Setze sie hinter einem Proxy, NAT oder Tunnel ausdrücklich** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Das Vorgabe-Datenverzeichnis ist `~/Library/Application Support/control-center`
+unter macOS, `%APPDATA%\control-center` unter Windows und
+`$XDG_DATA_HOME/control-center` (sonst `~/.local/share/control-center`) auf den
+übrigen Systemen. Ein auf das Arbeitsverzeichnis bezogenes `.cc_server` wird
+nur genutzt, wenn sich kein Home- oder Anwendungsdatenverzeichnis auflösen
+lässt.
 
-## What the server serves
+## Was der Server ausliefert
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` ist die ganze Produktoberfläche: der Datenweg für Repo-RPC und die
+Abonnements, der MCP-Werkzeug-Endpunkt unter `POST /mcp` und `GET /sse` auf
+demselben Port, eingehende Webhooks, die Proxys für Medien und Schriften, die
+Callbacks für Single Sign-on, das Lease-Protokoll der Fleet, serverseitiges
+Abrufen von RSS im 30-Minuten-Takt und die Vektorsuche (die Erweiterung
+`sqlite_vector` ist als prozessweite Auto-Extension registriert und fällt nur
+dort auf reine Volltextsuche zurück, wo die Erweiterung fehlt).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Der Dispatcher ist **zustandslos**. Eine Sitzung bindet keinen Arbeitsbereich.
+Jeder arbeitsbereichsbezogene Aufruf trägt seine eigene `workspace_id`, und
+über den Zugriff entscheiden Mitgliedschaft und Rolle des Aufrufers im
+Arbeitsbereich. Ein Kopplungsschlüssel allein reicht dafür nicht.
 
-Two things to know before you expose the port beyond loopback:
+Zwei Dinge, bevor du den Port über Loopback hinaus öffnest:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP bleibt außerhalb des Hosts fail-closed.** Eine Oberfläche ohne Token antwortet nur auf Loopback. `any` zu binden erweitert sie nicht. Eine Anfrage von außerhalb des Hosts wird abgelehnt mit "MCP requires a bearer token to answer non-loopback clients", bis du eines konfigurierst (`mcp.setToken` oder **Einstellungen → Server → MCP-Server**).
+- **`GET /healthz` ist absichtlich ohne Authentifizierung**, mit Wildcard-CORS, und veröffentlicht ID, Name, Identitätsfingerabdruck und Build-Version des Servers. Clients brauchen den Fingerabdruck, um den Server zu pinnen. Das ist so gewollt, und jeder erreichbare `cc_server` gibt genau das jedem, der fragt.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Connect to a remote server](/de-DE/handbuch/anleitungen/remote-server-verbinden/)
-- [Pair a device](/de-DE/handbuch/anleitungen/geraet-koppeln/)
-- [Run a fleet worker](/de-DE/handbuch/anleitungen/fleet-worker-betreiben/)
-- [Connect a Google Calendar](/de-DE/handbuch/anleitungen/kalender-verbinden/)
+- [Mit einem Remote-Server verbinden](/de-DE/handbuch/anleitungen/remote-server-verbinden/)
+- [Ein Gerät koppeln](/de-DE/handbuch/anleitungen/geraet-koppeln/)
+- [Einen Fleet-Worker betreiben](/de-DE/handbuch/anleitungen/fleet-worker-betreiben/)
+- [Einen Google Calendar verbinden](/de-DE/handbuch/anleitungen/kalender-verbinden/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Deployment and clients](/de-DE/handbuch/konzepte/bereitstellung/)
-- [Remote control and mobile](/de-DE/handbuch/konzepte/fernsteuerung/)
+- [Bereitstellung und Clients](/de-DE/handbuch/konzepte/bereitstellung/)
+- [Fernsteuerung und Mobil](/de-DE/handbuch/konzepte/fernsteuerung/)

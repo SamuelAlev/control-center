@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: اپنا پہلا pull request ریویو کریں
+description: ورک بینچ میں PR کھولیں، ڈف پڑھیں، تبصرہ کریں، منظور کریں اور مرج کریں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اِس ٹیوٹوریل کے اختتام تک، آپ کے پاس یہ ہوگا:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Control Center کے PR ورک بینچ میں ایک pull request کھولی ہوگی
+- اُس کا ڈف پڑھا ہوگا اور ایک اِن لائن تبصرہ چھوڑا ہوگا
+- ایک ریویو فیصلہ جمع کرایا ہوگا
+- PR مرج کیا ہوگا
 
-Prerequisites: [Dispatch your first agent](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+پیشگی شرائط: [اپنا پہلا ایجنٹ بھیجیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) مکمل ہو، اور اِس ورک اسپیس میں رجسٹر شدہ کسی ریپو پر ایک کھلا pull request موجود ہو۔ ریویو کے مراحل کے لیے ایسا PR چنیں جو آپ نے خود نہ کھولا ہو — **ریویو** بٹن آپ کے اپنے PRs پر چھپا رہتا ہے۔ آپ کے لکھے ہوئے PR پر مرج پھر بھی کام کرتا ہے۔
 
-## Step 1: Open the pull request
+## مرحلہ 1: pull request کھولیں
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. سائیڈبار میں **Pull requests** پر کلک کریں
+2. اپنا PR ڈھونڈ کر اُس پر کلک کریں
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**چیک پوائنٹ۔** PR ایک ٹیبز والے ورک بینچ کی صورت میں کھلتا ہے — جائزہ، Diff، سورس کنٹرول، چیٹ، ایکشنز — جو **جائزہ** پر مرکوز ہوتا ہے: عنوان اور ایکشنز، تفصیل اور ایکٹیویٹی ٹائم لائن، اور ایک سائیڈبار جس میں اسٹیٹس، ریویوورز، تفویض شدہ افراد، چیکس اور تبدیل شدہ فائلیں ہوتی ہیں۔ وہاں کسی فائل پر کلک کرنا Diff ٹیب میں اُسی فائل پر پہنچا دیتا ہے۔ **PR ریویو** ٹیب اُس وقت تک نہیں کھلتا جب تک کوئی AI ریویو کی درخواست نہ کرے۔
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[خالی قطار جس میں "GitHub جوڑیں" کا پرامپٹ ہو]
+یہ حالت بتاتی ہے کہ _سرور_ کے پاس کوئی GitHub ٹوکن نہیں ہے — آپ کے کلائنٹ کے پاس کبھی نہیں ہوتا۔ **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** کے تحت ایک ٹوکن سیٹ کریں، پھر فہرست ریفریش کریں۔
 :::
 
-## Step 2: Read the diff
+## مرحلہ 2: ڈف پڑھیں
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+**Diff** ٹیب کھولیں۔ بائیں طرف ایک سمیٹنے والا فائل ٹری ہوتا ہے اور ڈف کے اوپر والی پٹی میں ایک کمیٹ-رینج سلیکٹر ہوتا ہے — جس سے ڈف کو ایک کمیٹ یا اُن کے ایک دورانیے تک محدود کیا جا سکتا ہے — نیز فائلوں کی تعداد اور اضافوں اور حذفوں کی جاری گنتی۔
 
-The settings button in the diff toolbar controls how it renders:
+ڈف ٹول بار میں سیٹنگز کا بٹن کنٹرول کرتا ہے کہ یہ کیسے رینڈر ہو:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- **تقسیم** یا **یکجا** ویو
+- **لائنیں لپیٹیں** یا لمبی لائنیں اسکرول کریں
+- **کوڈ فونٹ لیگیچرز**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/).
+بڑے ڈف میں اپنی پیش رفت دیکھنے کے لیے کسی فائل کو دیکھی گئی کے طور پر نشان زد کریں۔ کی بورڈ نیویگیشن [کی بورڈ شارٹ کٹس](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/) میں ہے۔
 
-## Step 3: Leave an inline comment
+## مرحلہ 3: اِن لائن تبصرہ چھوڑیں
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. ڈف کی کسی لائن پر ہوور کریں — گٹر میں ایک چھوٹی `+` گولی ظاہر ہوتی ہے
+2. اُس لائن پر تبصرہ کرنے کے لیے اُس پر کلک کریں، یا کسی دورانیے کے انتخاب کے لیے پہلے اُسے عمودی طور پر ڈریگ کریں
+3. اپنا فیڈبیک لکھیں۔ کمپوزر دو جمع کرانے پیش کرتا ہے:
+   - **ریویو شروع کریں** (یا **ریویو میں شامل کریں** اگر کوئی ریویو پہلے سے جاری ہو) تبصرے کو قطار میں لگاتا ہے۔ تھریڈ **زیرِ التوا ریویو** دکھاتا ہے جب تک آپ مرحلے 4 میں کوئی فیصلہ جمع نہ کرائیں۔
+   - **اکیلا تبصرہ شامل کریں** اُسے فوراً GitHub پر پوسٹ کر دیتا ہے۔ تھریڈ **پوسٹ ہو رہا ہے…** دکھاتا ہے، پھر **سنک شدہ**، اور پوسٹ ناکام ہونے پر دوبارہ کوشش کی پیشکش کرتا ہے۔
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+اِس ٹیوٹوریل کے لیے **ریویو شروع کریں** استعمال کریں تاکہ تبصرہ فیصلے کے ساتھ چلا جائے۔
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[قطار میں لگا تبصرہ ابھی GitHub پر نہیں ہے]
+**ریویو شروع کریں** / **ریویو میں شامل کریں** تبصرے کو مقامی طور پر روکے رکھتے ہیں جب تک آپ کوئی فیصلہ جمع نہ کرائیں۔ صرف **اکیلا تبصرہ شامل کریں** فوراً پوسٹ کرتا ہے۔ مرحلے 4 میں لکھی گئی ریویو _باڈی_ ایک الگ مسودہ ہے۔
 :::
 
-## Step 4: Submit a review
+## مرحلہ 4: ریویو جمع کرائیں
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. جائزہ کی ایکشن قطار میں **ریویو** پر کلک کریں — یہی بٹن Diff ٹیب کے ٹول بار میں بھی ہوتا ہے۔ یہ اُن PRs پر چھپا رہتا ہے جو آپ نے خود لکھے ہوں اور کسی بند یا مرج شدہ PR پر بھی۔
+2. کمپوزر میں خلاصہ لکھیں۔ وہ خود بخود ایک مسودے کے طور پر محفوظ ہو جاتا ہے، چنانچہ آپ اوورلے بند کر کے واپس آ سکتے ہیں۔
+3. کوئی فیصلہ چنیں:
+   - **تبدیلیاں مانگیں**
+   - **تبصرہ**
+   - **منظور کریں**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+فیصلہ _خود_ بٹن ہے۔ **منظور کریں** یا **تبدیلیاں مانگیں** کے بعد بٹن اپنا لیبل بدل کر **منظور** یا **مانگی گئی تبدیلیاں** کر لیتا ہے۔ **تبصرہ** کا فیصلہ بٹن پر **ریویو** کا لیبل برقرار رکھتا ہے۔
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**چیک پوائنٹ۔** اگر آپ نے اُن دو میں سے کوئی ایک چنا تو بٹن "منظور" یا "مانگی گئی تبدیلیاں" پڑھتا ہے۔
 
-## Step 5: Merge
+## مرحلہ 5: مرج
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+**مرج** بٹن اُس وقت موجود ہوتا ہے جب GitHub PR کو قابلِ مرج بتائے — یہ آپ کی اپنی منظوری پر مشروط نہیں۔ اُس کا رنگ اجازت کے بجائے تیاری بتاتا ہے: بنیادی جب مطلوبہ منظوریاں اور چیکس سبز ہوں، ثانوی جب کوئی چیک ابھی چل رہا ہو، اور تباہ کن جب کسی درخواست کردہ ریویوور نے منظوری نہ دی ہو یا کوئی چیک ناکام ہو رہا ہو۔
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. **مرج** پر کلک کریں
+2. کوئی طریقہ چنیں: **Squash and merge**، **مرج کمیٹ بنائیں**، یا **Rebase and merge**
+3. پہلے دو کے لیے، پہلے سے بھرے کمیٹ عنوان اور پیغام میں ترمیم کریں
+4. تصدیق کریں
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+کوئی بھی باقی مسئلہ — "چیکس ناکام"، "کچھ ریویوز زیرِ التوا ہیں" — آپ کے تصدیق کرنے سے پہلے فلائی آؤٹ میں درج ہوتا ہے۔
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[مرج کرنا ناقابلِ واپسی ہے]
+مرج کرنا GitHub پر کمیٹس پش کرتا ہے۔ یہ کبھی Control Center کے undo اسٹیک میں داخل نہیں ہوتا اور یہاں سے واپس نہیں کیا جا سکتا۔
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/) for what else listens.
+مرج کرنے کے بعد ایک `PrMerged` ڈومین ایونٹ چلتا ہے؛ اینالیٹکس اور اطلاعات اُسے استعمال کرتی ہیں۔ یہ اور کون سنتا ہے، [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/) میں دیکھیں۔
 
-## Reviewing with AI
+## AI کے ساتھ ریویو
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center کسی کھلے PR پر ایک ریویوور پائپ لائن لگا سکتا ہے، مگر صرف اُس وقت جب آپ کہیں: `pr_review` ٹیمپلیٹ میں صرف ایک دستی ٹریگر ہے اور کچھ نہیں۔
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. جائزہ کی ایکشن قطار میں اوور فلو مینو کھولیں اور **AI سے پوچھیں** چنیں۔ Control Center رن شروع کرتا ہے اور **PR ریویو** ٹیب کھول دیتا ہے، تاکہ آپ اسپیشلسٹس کو کام کرتے دیکھ سکیں۔
+2. ریویوور ایجنٹس اپنے نتائج PR کی اسپیس میں ریویو نوڈز کے طور پر درج کرتے ہیں؛ ایک آخری قدم اُنہیں یکجا کر کے ایک رپورٹ بناتا ہے۔
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/).
+یہ پائپ لائن جان بوجھ کر GitHub پر پوسٹ نہیں کرتی — یکجا کرنے کے بعد ختم ہو جاتی ہے۔ اشاعت ایک الگ قدم ہے جو آپ خود اٹھاتے ہیں، **PR ریویو** ٹیب پر **GitHub پر شائع کریں** بٹن کے ساتھ۔ [AI سے چلنے والا ریویو استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/) دیکھیں۔
 
-## Recap
+## خلاصہ
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+آپ نے ورک بینچ میں ایک PR کھولا، سنٹیکس ہائی لائٹنگ کے ساتھ ڈف پڑھا، ایک اِن لائن تبصرہ چھوڑا، ایک فیصلہ جمع کرایا اور مرج کیا — ایپ سے باہر نکلے بغیر۔
 
-**Next:** [Build your first pipeline](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلی-پائپ-لائن/) to automate multi-step workflows.
+**اگلا:** کثیر المراحل ورک فلو خودکار بنانے کے لیے [اپنی پہلی پائپ لائن بنائیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلی-پائپ-لائن/)۔

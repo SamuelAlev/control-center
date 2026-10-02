@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Evaly a kvalita
+description: Sady eval, startovní sada založená v každém pracovním prostoru a kde se objeví v Observabilitě.
 slug: cs-CZ/prirucka/koncepty/evaly-a-kvalita
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**Sada eval** je definice úlohy vázaná na pracovní prostor, která se spouští na
+agentovi: prompt, cílový agent a režim, volitelná příprava, volitelná fixture
+s připnutým SHA a seznam hodnotitelů. Nejdřív přijdou determinističtí
+hodnotitelé; soudce podle rubriky LLM pokryje to, co tyto kontroly neumějí
+vyjádřit.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Pět startovních sad se založí při vytvoření pracovního prostoru. Pokrývají
+návrhy orchestrace, revizi, která najde zasetou chybu, setrvání režimu plánu
+jen u čtení, vytvoření plánu v režimu plánu a cestu ticketu tam a zpět.
+Zakládání naslouchá `WorkspaceCreated` (`workspace.upsert` nebo
+`workspace.create`), přeskočí název, který už existuje, a starší pracovní
+prostory zpětně nedoplní.
 
-## Where they appear
+## Kde se objeví
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observabilita → Kvalita** (`/workspaces/<id>/observability`) vypíše každou
+sadu v pracovním prostoru.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Sady se vytvářejí, vypisují, upravují a mažou přes `evals.upsertSuite`,
+`evals.deleteSuite` a `evals.watchSuites`. Záložka Kvalita je seznam; ty
+operace jsou editor.
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): the configuration a suite
-  pins
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/): the autonomy dial
-- [Manage costs and budgets](/cs-CZ/prirucka/navody/sprava-nakladu/): spend recorded
-  alongside a run
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): konfigurace, kterou sada
+  připne
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): ovladač autonomie
+- [Spravujte náklady a rozpočty](/cs-CZ/prirucka/navody/sprava-nakladu/): výdaje
+  zaznamenané spolu s během

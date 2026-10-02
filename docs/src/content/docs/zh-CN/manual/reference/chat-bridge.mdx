@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: 聊天桥接
+description: 聊天桥接的提供方、命令、凭据、能力、RPC 操作与存储。
 slug: zh-CN/手册/参考/聊天桥接
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## 提供方
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| 提供方 | 线上值 | 传输方式                   | 空间类型 |
+| ------ | ------ | -------------------------- | -------- |
+| Slack  | `slack` | Socket Mode（出站 WSS）    | `slack`  |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack 是唯一的提供方。** `ChatProvider` 是单值枚举，`cc_server` 只注册一个插件。schema、每一次查找和每一个唯一索引都以 `provider` 为键，因此 id 永不跨提供方，而增加一个提供方只是一次纯服务器端的改动。
 
-One provider-side app per **workspace × provider**.
+每个**工作区 × 提供方**对应一个提供方侧应用。
 
-## Chat commands
+## 聊天命令
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+命令名称按应用而定（默认为 `cc`，因此是 `/cc`）。管理员可以重命名它；此后桥接会使用它最后一次被调用时所用的名称。
 
-| Command                               | Effect                                                        |
-| ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| 命令                                  | 效果                                          |
+| ------------------------------------- | --------------------------------------------- |
+| `/cc help`（或不带任何动词的 `/cc`）  | 列出机器人能做什么                            |
+| `/cc link <code>`                     | 兑换一次性代码，并关联发送者的聊天身份        |
+| `/cc ticket <title>`                  | 登记一张由已关联成员报告的本地工单            |
+| `/cc ticket <title> \| <description>` | 同上，以第一个 `\|` 之后的所有内容作为描述     |
+| 未知动词                              | 报告该未知动词，并附上帮助文本                |
 
-Ways to reach an agent:
+触达智能体的方式：
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| 动作                           | 行为                                                                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 在频道中 `@bot …`              | 打开一个 Slack 话题和一个对应的 Control Center 空间；智能体在 Slack 话题中回复                                         |
+| 在已桥接的 Slack 话题中回复    | 继续同一个 Control Center 空间——无需 @ 提及                                                                            |
+| 频道中的普通消息               | 被忽略（既未发给机器人，也不在已桥接的 Slack 话题中）                                                                  |
+| 给机器人发私信                 | 每个私信会话对应一个 Control Center 空间；在智能体工作期间设置 Slack 话题标题和“正在思考…”状态                         |
 
-## Credential fields (Slack)
+## 凭据字段（Slack）
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+由提供方描述符声明；连接对话框正由它生成，提交内容也由它校验。
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| 字段 id              | 标签                            | 必需 | 前缀    | 所在位置                                                        |
+| -------------------- | ------------------------------- | ---- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Bot user OAuth token            | 是   | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | App-level token                 | 是   | `xapp-` | Basic Information → App-Level Tokens，权限范围 `connections:write` |
+| `configRefreshToken` | App configuration refresh token | 否   | `xoxe`  | api.slack.com/apps 上的 App configuration tokens                |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` 是应用管理凭据：没有它，连接仍可工作，但无法从 Control Center 创建或编辑机器人。它每次使用都会轮换，轮换后的值会立即存储。
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+值会被去除首尾空白，未声明的键会被丢弃，前缀不匹配会被拒绝，且客户端与服务器返回同一句话。每次连接都必须提供必需字段；可选字段留空则保留已存储的值。
 
-## Slack app requirements
+## Slack 应用要求
 
-Bot token scopes:
+机器人 token 权限范围：
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+机器人事件订阅：
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Control Center 在创建或编辑应用时强制断言的结构性设置：已启用 Socket Mode、没有请求 URL、Messages 标签页已启用且可写、机器人 `always_online`、所需的权限范围和事件被合并进应用已有的内容（绝不减去），以及一条斜杠命令，其描述为 `File a ticket or link your Control Center account`——这是在导出的 manifest 中识别 Control Center 自有命令的标记。
 
-## Connection states
+## 连接状态
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| 状态     | 线上值         | 含义                                             |
+| -------- | -------------- | ------------------------------------------------ |
+| 未连接   | `disconnected` | 此工作区 × 提供方未存储任何凭据                   |
+| 连接中…  | `connecting`   | 凭据已存储，传输正在拨号或重新拨号               |
+| 在线     | `connected`    | 传输已建立并正在接收事件                         |
+| 连接错误 | `error`        | 已存储但失败；提供方自身的错误会一并显示         |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+重连采用带抖动的指数退避，上限为 30 秒。由提供方发起的套接字轮换会立即重连，不会抬高退避。被拒绝的凭据（`invalid_auth`、`not_authed`、`token_revoked`、`account_inactive`、`token_expired`、`invalid_app_id`）或缺少权限范围是终态：桥接会停止重试，直到有新凭据到达。
 
-## Provider capabilities (Slack)
+## 提供方能力（Slack）
 
-The bridge is written against the richest surface and degrades per capability.
+桥接是照着最丰富的功能面编写的，并逐项能力降级。
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| 能力                      | Slack  | 缺失时的效果                                                                                   |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | 是     | 整条回复在结束时一次性发出                                                                     |
+| `streamingRequiresThread` | 是     | 没有话题锚点的回复目标只会发送完整回复                                                         |
+| `ephemeralMessages`       | 是     | 没有可用回复句柄的斜杠命令应答会被丢弃（拒绝始终在话题内发出）                                 |
+| `threadStatus`            | 是     | 没有短暂的“正在思考…”状态行                                                                    |
+| `threadTitle`             | 是     | 聊天话题保留其默认标题                                                                         |
+| `slashCommands`           | 是     | 没有 `/cc` 界面                                                                                |
+| `taskCards`               | 是     | 仅文本——回复上方没有卡片，也没有“View in Control Center”链接                                   |
+| `maxMessageLength`        | 39,000 | 较长的回复会被截断，并给出指向 Control Center 的提示                                           |
+| `maxStreamChunkLength`    | 3,800  | 追加内容会按段落、行或空格边界切分                                                             |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+声明流式输出并不等于承诺流式输出：Slack 的流式输出需要付费套餐中的 Agents & AI Apps 功能。调用时被拒绝（`streaming_not_supported`、`feature_not_enabled`、`paid_only`、……）会**在整条连接的生命周期内**被记住，并以 `streamingAvailable: false` 的形式呈现。Slack 的任务卡片与同一次调用绑定，因此，如果一个 Slack 拒绝了卡片的显示模式，它会保留自己的流，只在整条连接的生命周期内失去一次卡片。
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+流还必须指明它是为哪位读者打开的。Slack 要求同时提供接收者用户及其团队，才能在**频道**中打开流（私信则不需要），否则会以 `missing_recipient_user_id` / `missing_recipient_team_id` 拒绝——这是每次调用都会发生的拒绝，因此桥接会继续尝试，与此同时该轮次会以一条已发布的回复形式到达。接收者就是发起提问的人，取自入站消息（取其团队，而非应用的团队，这样 Slack Connect 频道才能正确解析）。对于没有人从聊天中发起的轮次——即在 Control Center 中针对一个已桥接对话启动的工作——接收者就是通过自身关联创建了该桥接的成员；如果此人此后取消了聊天账号的关联，该轮次就会整体发布，而不是流式发送。
 
-## Task cards
+## 任务卡片
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+每个智能体轮次一张分组卡片（`task_display_mode: plan`），每个步骤一行。每一行是一次 `task_update`，包含 `id` + `title` + `status`，并在思考就绪时附上一次性的 `details`。相同 id 的 `details` 和 `output` 会无分隔符地拼接，因此 `details` 只发送一次，而 `output` 从不以流式发送。计划的标题就是请求；回答则是之后单独追加的一段内容，携带一个 `markdown_text` 分块。
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| 部分     | 内容                                                                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 计划标题 | 所提的请求                                                                                                                                                    |
+| 初始化行 | `Working on it…`，然后 `Cloning …`，再然后 `Starting the agent…`——同一行，标题被替换                                                                            |
+| 思考行   | `Thinking…`，在智能体开始推理时添加；思考内容是这一行的 `details`，在推理结束时发送一次                                                                          |
+| 工具行   | 每个工具一行（`Bash which swift`），id 唯一，因此彼此并排                                                                                                       |
+| 状态     | 该行运行期间为进行中；当下一行开始或轮次结束时为完成；失败、中断和达到轮次上限时为错误                                                                          |
+| 行动号召 | 轮次结束时作为末尾行出现的 `View in Control Center`——工作仍在进行时不出现，服务器没有可达公网 URL 时也不出现                                                   |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+卡片从不承载：工具输出、白名单之外的参数，或任何从数据库读取的内容。推理文本仅是 `Thinking…` 行的 details（上限 256 个字符），而不是消息正文。不会重新发送一张说不出新内容的卡片。提及会立即打开流，以免 Slack 话题陷入沉默；如果随后的轮次完全没有产生文本，就会用一条简短说明结束同一张卡片，而不是再发一条消息。在一个从未打开过流（没有卡片，或流式输出已被拒绝）的空间上，无文字的轮次仍会发出一条消息，携带已完成的卡片和那条说明。
 
-Streamed and posted cards are different payloads:
+流式发送的卡片与发布的卡片是两种不同的载荷：
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| 形式     | 形态                                                | 文本                                             |
+| -------- | --------------------------------------------------- | ------------------------------------------------ |
+| 流式发送 | `plan_update` 加上以 `id` 为键的 `task_update` 分块 | 纯字符串，每块上限 256 个字符                    |
+| 发布     | 一个 `plan` 块，包裹以 `task_id` 为键的 `task_card` | 富文本                                           |
 
-Failure handling:
+失败处理：
 
-| Situation                                    | Behavior                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| 情况                                        | 行为                                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 提供方在追加时拒绝卡片                      | 该追加会立即在不带卡片的情况下重试；文本仍实时到达，而在整条连接的生命周期内卡片都被放弃                                     |
+| 提供方也拒绝了文本                          | 流被关闭，回复整体发布                                                                                                      |
+| 流在部分回复已到达后中断                    | 流被关闭，且不会重新发布任何内容                                                                                            |
 
-See [Chat bridges](/zh-CN/手册/概念/聊天桥接/) for why the payload is split this way.
+关于载荷为何这样拆分，参见[聊天桥接](/zh-CN/手册/概念/聊天桥接/)。
 
-### Setup, before there is a turn
+### 轮次开始之前的初始化
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+卡片在提及被接受时打开，此时尚未克隆、也尚未产生第一个 token；随后的轮次沿用同一张卡片和同一条流。之后的叙述来自领域事件总线上的 `SpaceProvisioningChanged`——与桌面端预配横幅从空间行上读到的进展完全相同。
 
-| Provisioning state          | Narration                                                      |
-| --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
-| `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
-| `failed`                    | `Workspace setup failed — details are in Control Center.`      |
-| `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
+| 预配状态                    | 叙述                                                            |
+| --------------------------- | --------------------------------------------------------------- |
+| 提及已被接受                | `Working on it…`                                                |
+| 步骤 `repo`                 | `Cloning <repo>…`                                               |
+| 步骤 `prCheckout`           | `Checking out the pull request in <repo>…`                      |
+| 步骤 `script`               | `Running the setup script for <repo>…`                          |
+| 步骤 `agent`                | `Setting up <agent>…`                                           |
+| `provisioning`，尚无步骤    | `Preparing the workspace…`                                      |
+| `ready`                     | `Starting the agent…`                                           |
+| 智能体正在推理              | `Thinking…`                                                     |
+| `failed`                    | `Workspace setup failed — details are in Control Center.`       |
+| `cancelled`                 | `Workspace setup was stopped — details are in Control Center.`  |
 
-Setup narration requires all four conditions:
+初始化叙述需要同时满足以下四个条件：
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| 条件                                       |
+| ------------------------------------------ |
+| 提供方能够渲染卡片                         |
+| 此连接上流式输出可用                       |
+| 该空间有一个正在进行中的聊天请求           |
+| 该处尚无卡片正在报告某个轮次               |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+请求会一直处于进行中，直到某个轮次开始或设置失败。若 `ready` 事件发生时没有卡片已打开，说明这是一个已预热的空间，会被保持静默；而聊天中无人等待的预配——在应用里打开的对话，或在启动时恢复的滞留对话——完全不产生卡片。
 
-## The `/open` bounce page
+## `/open` 跳转页
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+聊天产品在链接中只接受 `http(s)`，别的都不行，因此行动号召不能直接写出桌面应用的 scheme。
 
-| Property   | Value                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| 属性   | 值                                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 路由   | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| 来源   | 由服务器的公网 URL 推导（`ws` → `http`，`wss` → `https`）；回环地址会保留                                                                   |
+| 响应   | 一个很小的 no-store HTML 页面，会跳转到 `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>`，并显示一个手动按钮              |
+| 校验   | id 必须匹配 `[A-Za-z0-9_.-]{1,128}`；其他任何情况都是 404                                                                                    |
+| 访问   | 公开且惰性——它不读取任何数据库，因此不是存在性判定的依据；授权由它打开的应用负责                                                            |
 
-## Bot profile fields
+## 机器人资料字段
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| 字段               | 限制            | 说明                                                                                              |
+| ------------------ | --------------- | ------------------------------------------------------------------------------------------------- |
+| `appName`          | 1–35 个字符     | 默认为 `Control Center · <workspace name>`                                                        |
+| `botDisplayName`   | 1–80 个字符     | 默认为 `control-center`                                                                           |
+| `description`      | 不超过 140 个字符 |                                                                                                   |
+| `agentDescription` | 不超过 300 个字符 | 显示在与机器人的私信上方                                                                          |
+| `command`          | 不超过 32 个字符  | 规范化：去掉开头的斜杠、转为小写、移除 `[^a-z0-9_-]`、为空则回退为 `cc`                           |
+| `agentEnabled`     | —               | 是否开放私信/智能体体验                                                                           |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+空输入框意味着“保持原样”，而不是“清空”。这些限制来自 Slack，是被建模产品中最严格的一套。
 
-## Link codes
+## 关联代码
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| 属性     | 值                                                                                        |
+| -------- | ----------------------------------------------------------------------------------------- |
+| 长度     | 6 个字符                                                                                  |
+| 字母表   | `23456789ABCDEFGHJKLMNPQRSTVWXYZ`（不含 `0`/`O`、`1`/`I`、`U`）                          |
+| 有效期   | 15 分钟                                                                                   |
+| 使用次数 | 一次                                                                                      |
+| 存储     | 内存中——服务器重启会使尚未使用的代码失效                                                  |
+| 范围     | 一个工作区和一个提供方；生成新代码会使该成员之前的代码失效                                |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+兑换时按不区分大小写匹配。未知、已过期、属于其他工作区和来自错误提供方的代码，都会故意以完全相同的方式失败。
 
-## Link methods
+## 关联方式
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| 方式 | 线上值  | 如何                                                                              |
+| ---- | ------- | --------------------------------------------------------------------------------- |
+| 代码 | `code`  | 成员兑换了 `/cc link <code>`                                                      |
+| 邮箱 | `email` | 提供方已验证的邮箱匹配到一位已是工作区成员的用户                                  |
 
-## RPC operations
+## RPC 操作
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+全部以工作区为范围。服务器是无状态的，因此每次调用都在 args 中携带自己的 `workspace_id`；调度器会在打开任何数据库之前拒绝省略它的工作区范围操作。凭据只_进去_——状态读取从不返回它们。
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| 操作                    | 类型        | 最低角色                                       | 操作类别                        |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | 对自己为 `member`，对任何其他人则为 `admin`     | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+读操作从其类型继承 `guest` 下限；没有显式下限的变更操作需要 `member`。
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` 根据机器人资料拼装出提供方的应用创建 URL。它不声明任何操作类别，因为它不读取任何密钥、也不发起任何拨号——唯一的请求由用户自己的浏览器发出。
 
-One reactive query completes the surface:
+一个响应式查询补全了整个接口：
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| 查询                  | 类型  | 发出                                                          |
+| --------------------- | ----- | ------------------------------------------------------------- |
+| `chat.watchUserLinks` | watch | 名册，每当有关联建立或移除时重新推送                          |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+它之所以存在，是因为关联发生在_另一_端：成员把一次性代码输入到机器人里，因此客户端的任何响应都无法把结果带回来。设置中的名册和打开的“关联我的账号”对话框都跟随它，一旦成员自己的关联建立，对话框就会切换为确认状态。
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` 始终为调用者自己的身份生成一个代码。`chat.updateBotProfile` 仅当还有剩余步骤时（通常是重新安装）才返回 `remaining_step`；没有该字段意味着修改已生效。
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` 为每个提供的提供方返回一个条目——描述符，以及在有连接状态时的连接状态。设置界面渲染的一切都来自该载荷，这正是增加一个提供方只是一次纯服务器端改动的原因。
 
-## Storage
+## 存储
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| 内容               | 位置                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| 连接凭据           | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| 未完成的引导式设置 | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| 旧版 Slack 文件    | `<dataDir>/<workspaceId>/slack_credentials.json` 和 `slack_app_setup.json`，读取一次并原地迁移                |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+凭据存放在工作区数据库的旁边，而不是里面：删除工作区会带走它的聊天 token，而 `workspace.export` 或备份只复制 `workspace.db`——因此交给别人的工作区不会夹带仍然有效的机器人 token。写入是原子的（临时文件加重命名），并被收紧为仅属主可访问。
 
-## Database tables
+## 数据库表
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+两者都存放在工作区数据库中，该数据库带有一份被压缩的 v1 基线——因此跨工作区的读取根本无法编译。
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links`——一个外部对话 ↔ 一个 Control Center 空间：
 
-| Column                                                 | Notes                                                                      |
-| ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
-| `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
-| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
-| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+| 列                                                     | 说明                                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `id`                                                   | UUID v4                                                                           |
+| `workspace_id`                                         | 工作区范围                                                                        |
+| `provider`                                             | `ChatProvider.wire`                                                               |
+| `external_team_id`                                     | Slack 团队 `T…`，对没有该概念的提供方为空                                          |
+| `external_channel_id`                                  | Slack 频道 `C…`、群组 `G…`、私信 `D…`                                              |
+| `external_thread_id`                                   | Slack 话题锚点；当整个对话就是锚点时（机器人私信）为 null                          |
+| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                         |
+| `created_by_user_id`、`created_at`、`last_activity_at` |                                                                                   |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+在 `(workspace_id, provider, external_channel_id, external_thread_id)` 上唯一，并用一个部分索引对 null 话题 id 施加同样的约束（SQLite 把 NULL 视为彼此不同）。
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links`——一个外部成员 ↔ 一个 Control Center 用户：
 
-| Column                                 | Notes                                           |
-| -------------------------------------- | ----------------------------------------------- |
-| `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
-| `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
-| `linked_at`                            |                                                 |
+| 列                                     | 说明                                             |
+| -------------------------------------- | ------------------------------------------------ |
+| `id`                                   | UUID v4                                          |
+| `workspace_id`                         | 工作区范围                                       |
+| `provider`                             | `ChatProvider.wire`                              |
+| `external_team_id`、`external_user_id` | Slack 成员 `U…`                                  |
+| `user_id`                              | Control Center 用户（全局，因此没有外键）        |
+| `method`                               | `code` 或 `email`                                |
+| `linked_at`                            |                                                  |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+在 `(workspace_id, provider, external_team_id, external_user_id)` 和 `(workspace_id, provider, user_id)` 上唯一——两个方向的归属都是单值的，而同一个人可以在多个提供方上建立关联。
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+关联是身份解析，而**不是**访问授权：成员身份会在每个入站事件上重新检查，因此指向一个后来已被移除之人的关联会解析为一次拒绝。
 
-## Space kind and message metadata
+## 空间类型与消息元数据
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+桥接空间创建时使用提供方的 `SpaceKind`（`slack`）。它的行为与面向普通人类的空间一样——像 `topic` 一样发出通知和分区——而 `isExternalChat` 是每种行为（镜像、徽标、保留）都要经过的检查。
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+桥接带进来的每条消息都带有一个 `metadata['chat']` 标记：
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+这个标记同时也是回声防护：出站镜像会跳过任何带有该标记的消息，正是这一点阻止了入站聊天消息被直接原样发回去。
 
-## Relay behavior
+## 转发行为
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| 行为                                | 细节                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 向外转发的内容                      | 仅智能体的**文本**，加上任务卡片的状态行。推理文本和工具输出留在 Control Center 中                               |
+| 流式输出节奏                        | 轮次运行期间限制为每秒刷新一次；卡片和它所解释的文本在同一次调用中传输                                          |
+| 在 Control Center 中输入的人类消息  | 镜像到已关联的话题，并以作者的显示名称作为前缀                                                                  |
+| 空轮次                              | 以一条简短说明报告（运行失败、被中断，或在其轮次上限处停止），而不是沉默                                        |
+| 去重                                | 以提供方自己的事件 id 为键；记住最近 512 条                                                                     |
+| 入口智能体                          | 新的已桥接对话会唤醒工作区的 CEO 智能体，若没有则唤醒其第一个智能体，再没有则谁都不唤醒                          |
+| 空间命名                            | Slack 频道话题为 `#channel · <request>`，私信为 `Slack DM · <request>`，标题上限为 48 个字符                    |
+| 故障隔离                            | 单个坏事件绝不会让桥接宕机；连接会继续服务其他所有对话                                                          |
 
-## See also
+## 另请参阅
 
-- [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/)
-- [Link your Slack account](/zh-CN/手册/操作指南/关联聊天账号/)
-- [Customize the chat bot](/zh-CN/手册/操作指南/自定义聊天机器人/)
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/)
-- [Guardrails](/zh-CN/手册/概念/护栏/) for the action classes the ops declare
+- [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)
+- [关联你的 Slack 账号](/zh-CN/手册/操作指南/关联聊天账号/)
+- [自定义聊天机器人](/zh-CN/手册/操作指南/自定义聊天机器人/)
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/)
+- [护栏](/zh-CN/手册/概念/护栏/)——了解这些操作声明的操作类别

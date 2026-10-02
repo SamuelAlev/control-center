@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: 첫 풀 리퀘스트 리뷰
+description: 워크벤치에서 PR을 열고, diff를 읽고, 댓글을 남기고, 승인하고 병합합니다.
 slug: ko-KR/매뉴얼/튜토리얼/첫-풀-리퀘스트
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## 만들게 될 것
 
-By the end of this tutorial, you will have:
+이 튜토리얼을 마치면 다음을 갖추게 됩니다.
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Control Center의 PR 워크벤치에서 풀 리퀘스트를 연 경험
+- 그 diff를 읽고 인라인 댓글을 남긴 경험
+- 리뷰 판정을 제출한 경험
+- PR을 병합한 경험
 
-Prerequisites: [Dispatch your first agent](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+사전 준비: [첫 에이전트 디스패치](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/)를 완료해야 하고, 이 워크스페이스에 등록된 리포지토리에 열려 있는 풀 리퀘스트가 하나 있어야 합니다. 리뷰 단계를 연습하려면 직접 열지 않은 PR을 고르세요. **리뷰** 버튼은 자신이 올린 PR에서는 숨겨집니다. 병합은 자신이 작성한 PR에서도 그대로 동작합니다.
 
-## Step 1: Open the pull request
+## 1단계: 풀 리퀘스트 열기
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. 사이드바에서 **풀 리퀘스트**를 클릭합니다
+2. 자신의 PR을 찾아 클릭합니다
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**체크포인트.** PR은 탭으로 이루어진 워크벤치로 열립니다 — 개요, Diff, 소스 제어, 채팅, 작업 — 그리고 **개요**에 초점이 맞춰집니다. 여기에는 제목과 작업, 설명과 활동 타임라인, 그리고 상태, 리뷰어, 담당자, 검사, 변경된 파일이 담긴 사이드바가 있습니다. 여기서 파일을 클릭하면 Diff 탭의 그 파일로 이동합니다. **PR 리뷰** 탭은 누군가 AI 리뷰를 요청하기 전까지는 열리지 않습니다.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[대기열이 비어 있고 "GitHub 연결" 프롬프트가 표시되는 경우]
+이 상태는 _서버_ 가 GitHub 토큰을 갖고 있지 않다는 뜻입니다. 클라이언트는 결코 토큰을 갖지 않습니다. **설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅**에서 토큰을 설정한 다음 목록을 새로 고치세요.
 :::
 
-## Step 2: Read the diff
+## 2단계: diff 읽기
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+**Diff** 탭을 엽니다. 왼쪽에는 접을 수 있는 파일 트리가 있고, diff 위의 띠에는 커밋 범위 선택기 — diff를 커밋 하나나 여러 커밋에 걸친 범위로 좁힙니다 — 와 파일 수, 그리고 계속 집계되는 추가 및 삭제 줄 수가 표시됩니다.
 
-The settings button in the diff toolbar controls how it renders:
+diff 도구 모음의 설정 버튼은 렌더링 방식을 제어합니다.
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- **분할** 또는 **통합** 보기
+- **줄 바꿈** 또는 긴 줄 스크롤
+- **코드 글꼴 합자**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/).
+큰 diff에서 진행 상황을 추적하려면 파일을 확인으로 표시하세요. 키보드 탐색은 [키보드 단축키](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)에 있습니다.
 
-## Step 3: Leave an inline comment
+## 3단계: 인라인 댓글 남기기
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. diff에서 줄 위로 마우스를 올리면 여백에 작은 `+` 알약이 나타납니다
+2. 그것을 클릭하면 그 줄에 댓글이 달리고, 먼저 세로로 끌면 범위를 선택할 수 있습니다
+3. 피드백을 입력합니다. 작성기는 두 가지 제출 방식을 제공합니다.
+   - **리뷰 시작**(이미 진행 중인 리뷰가 있으면 **리뷰에 추가**)은 댓글을 대기열에 넣습니다. 4단계에서 판정을 제출할 때까지 스레드에는 **대기 중인 리뷰**가 표시됩니다.
+   - **댓글만 추가**는 곧바로 GitHub에 게시합니다. 스레드에는 **게시하는 중…**, 그다음 **동기화됨**이 표시되고, 게시에 실패하면 재시도할 수 있습니다.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+이 튜토리얼에서는 댓글이 판정과 함께 나가도록 **리뷰 시작**을 사용합니다.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[대기 중인 댓글은 아직 GitHub에 없습니다]
+**리뷰 시작** / **리뷰에 추가**는 판정을 제출할 때까지 댓글을 로컬에 보관합니다. **댓글만 추가**만 즉시 게시합니다. 4단계에서 작성하는 리뷰 _본문_은 별도의 초안입니다.
 :::
 
-## Step 4: Submit a review
+## 4단계: 리뷰 제출하기
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. 개요 탭의 작업 행에서 **리뷰**를 클릭합니다 — 같은 버튼이 Diff 탭의 도구 모음에도 있습니다. 자신이 작성한 PR과 닫히거나 병합된 PR에서는 숨겨집니다.
+2. 작성기에 요약을 작성합니다. 초안으로 자동 저장되므로, 오버레이를 닫았다가 다시 돌아올 수 있습니다.
+3. 판정을 고릅니다.
+   - **변경 요청**
+   - **댓글**
+   - **승인**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+판정은 곧 버튼입니다. **승인** 또는 **변경 요청** 후에는 버튼 레이블이 **승인됨** 또는 **변경 요청함**으로 바뀝니다. **댓글** 판정은 레이블을 **리뷰**로 남겨 둡니다.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**체크포인트.** 이 둘 중 하나를 골랐다면 버튼에 "승인됨" 또는 "변경 요청함"이 표시됩니다.
 
-## Step 5: Merge
+## 5단계: 병합하기
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+**병합** 버튼은 GitHub이 PR을 병합 가능하다고 보고할 때마다 표시됩니다 — 자신의 승인 여부로 제한되지 않습니다. 버튼의 색은 권한이 아니라 준비도를 알려 줍니다. 필수 승인과 검사가 모두 통과했으면 primary, 검사가 아직 실행 중이면 secondary, 요청한 리뷰어가 승인하지 않았거나 검사가 실패했으면 destructive입니다.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. **병합**을 클릭합니다
+2. 방법을 고릅니다: **스쿼시 후 병합**, **병합 커밋 만들기**, **리베이스 후 병합**
+3. 앞의 두 방법은 미리 채워진 커밋 제목과 메시지를 편집합니다
+4. 확인합니다
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+남아 있는 문제 — "검사 실패", "일부 리뷰가 대기 중입니다" — 는 확인하기 전에 플라이아웃에 나열됩니다.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[병합은 되돌릴 수 없습니다]
+병합은 커밋을 GitHub으로 푸시합니다. 병합은 Control Center의 실행 취소 스택에 결코 들어가지 않으며 여기서는 되돌릴 수 없습니다.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/ko-KR/매뉴얼/레퍼런스/도메인-이벤트/) for what else listens.
+병합한 뒤에는 `PrMerged` 도메인 이벤트가 발생하고, 분석과 알림이 이를 소비합니다. 그 밖에 누가 수신하는지는 [도메인 이벤트](/ko-KR/매뉴얼/레퍼런스/도메인-이벤트/)를 참고하세요.
 
-## Reviewing with AI
+## AI로 리뷰하기
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center는 열려 있는 PR에 리뷰어 파이프라인을 걸 수 있지만, 요청할 때만 그렇게 합니다. `pr_review` 템플릿에는 수동 트리거 외에 다른 것이 없습니다.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. 개요 탭의 작업 행에서 오버플로 메뉴를 열고 **AI에게 물어보기**를 고릅니다. Control Center가 실행을 시작하고 **PR 리뷰** 탭을 열어 주므로, 전문가들이 일하는 모습을 지켜볼 수 있습니다.
+2. 리뷰어 에이전트는 발견 사항을 PR의 스페이스에 리뷰 노드로 기록하며, 마지막 단계가 이를 하나의 보고서로 통합합니다.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/).
+이 파이프라인은 의도적으로 GitHub에 게시하지 않습니다 — 통합을 마치면 끝납니다. 게시는 **PR 리뷰** 탭의 **GitHub에 게시** 버튼으로 직접 밟는 별도의 단계입니다. [AI 기반 리뷰 사용](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)을 참고하세요.
 
-## Recap
+## 요약
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+앱을 벗어나지 않고 워크벤치에서 PR을 열고, 구문 강조가 적용된 diff를 읽고, 인라인 댓글을 남기고, 판정을 제출하고 병합했습니다.
 
-**Next:** [Build your first pipeline](/ko-KR/매뉴얼/튜토리얼/첫-파이프라인/) to automate multi-step workflows.
+**다음:** 여러 단계로 이루어진 워크플로를 자동화하려면 [첫 파이프라인 만들기](/ko-KR/매뉴얼/튜토리얼/첫-파이프라인/)를 참고하세요.

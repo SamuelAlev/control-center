@@ -2,6 +2,7 @@
 title: Route map
 description: Every route Control Center registers, with its screen and query parameters.
 slug: en-GB/manual/reference/route-map
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
 ## App shell
@@ -51,7 +52,7 @@ Paths below omit the `/workspaces/:workspaceId` prefix.
 | `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
 | `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
 | `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
+| `/teams/:organization/:slug`            | —                                         | GitHub organisation team profile                                                                                                                                         |
 | `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
 | `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
 
@@ -104,7 +105,7 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 | `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
 | `/settings/server/providers`   | Model providers and adapters                                                          |
 | `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
+| `/settings/server/voice`       | Voice and meeting models (ASR, diarisation)                                           |
 | `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
 | `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
 | `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |

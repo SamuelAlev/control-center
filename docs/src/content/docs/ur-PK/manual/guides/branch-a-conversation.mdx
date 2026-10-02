@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: گفتگو کی شاخ بنائیں
+description: پہلے کے کسی نقطے سے کوئی مختلف طریقہ آزمائیں، بغیر اپنے موجودہ طریقے کو کھوئے، پھر جو رکھنا چاہیں اُسے فورک یا ایکسپورٹ کر دیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گفتگو-کی-شاخ
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+یہ گائیڈ دکھاتی ہے کہ گفتگو کے پہلے کے کسی نقطے پر واپس جا کر اُسے کسی اور سمت لے جانا کیسے ممکن ہے — اور ساتھ ہی جو راستہ آپ نے چھوڑا وہ بھی برقرار رہے۔
 
-## The one thing worth knowing
+## ایک بات جو جاننے کے قابل ہے
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**شاخ بنانا کچھ نہیں لکھتا۔** گفتگو پیغامات کا ایک درخت ہے جس کی نوک پر ایک پوائنٹر ہوتا ہے، اور واپس جانا اُسی پوائنٹر کو ہلاتا ہے۔ نہ کچھ حذف ہوتا ہے، نہ کچھ چھپتا ہے، اور واپس بدلنا ایک اور پوائنٹر حرکت ہے۔
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+اسی لیے یہاں پرامپٹ میں ترمیم کر کے دوبارہ چلانا محفوظ ہے: جس جواب سے آپ موازنہ کر رہے تھے وہ اب بھی موجود ہے۔
 
-## See the branches
+## شاخیں دیکھیں
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+نیویگیٹر ہر پیغام کی فہرست دیتا ہے، ہر فورک پر انڈینٹ کر کے، اور موجودہ راستے پر **اس برانچ پر** کا نشان لگا ہوتا ہے۔ جس گفتگو میں کبھی فورک نہ ہوا ہو وہ ویسی ہی سیدھی فہرست دکھائی دیتی ہے جیسی وہ ہمیشہ رہی — جب تک نیویگیٹ کرنے کو کچھ نہ ہو، نیویگیٹر دیکھنے میں کچھ نہیں لیتا۔
 
-Each row offers two actions.
+ہر قطار دو ایکشن پیش کرتی ہے۔
 
-| Action                          | Effect                                                    |
+| ایکشن                          | اثر                                                    |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **یہاں سے جاری رکھیں**          | پوائنٹر کو ہلاتا ہے۔ آپ کا اگلا پیغام اُسی پیغام سے جاری رہتا ہے۔ |
+| **نئی گفتگو میں فورک کریں** | اُس پیغام تک کا راستہ ایک نئی گفتگو میں کاپی کرتا ہے۔ |
 
-## Branch: try a different approach
+## شاخ: مختلف طریقہ آزمائیں
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. وہ پیغام ڈھونڈیں جہاں سے آپ دوبارہ شروع کرنا چاہتے ہیں — عام طور پر وہی آخری پیغام جس پر آپ مطمئن تھے۔
+3. **یہاں سے جاری رکھیں۔**
+4. نیا پرامپٹ ٹائپ کریں۔
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+پرانا سلسلہ اب بھی درخت میں موجود ہے؛ `/tree` اب اُس نقطے سے دو راستے دکھائے گا، اور آپ اُن کے درمیان آزادی سے بدل سکتے ہیں۔
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[جو راستہ آپ نے چھوڑا وہ اب بھی موجود ہے]
+شاخ بنانا کچھ نہیں چھپاتا اور نہ کچھ حذف کرتا ہے۔ `/tree` ہر راستے کی فہرست دیتا ہے، موجودہ پر **اس برانچ پر** کا نشان لگاتا ہے، اور بدلنے کا ذریعہ یہی ہے۔
 :::
 
-## Fork: take it somewhere else
+## فورک: اُسے کہیں اور لے جائیں
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+فورک کرنا راستے کو اُسی اسپیس میں ایک **نئی گفتگو** میں کاپی کرتا ہے۔ اِسے اُس وقت استعمال کریں جب دونوں سمتیں آگے بھی الگ الگ ہوتی رہیں گی اور آپ بدلنے کے بجائے اُنہیں ساتھ ساتھ رکھنا چاہتے ہوں۔
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+کاپی میں پیغامات کی نئی ids ہوتی ہیں۔ اگر دو گفتگوئیں ایک ہی قطاریں سانجھا کرتیں تو ایک دوسری کے بعد والے پیغامات دکھانے لگتیں، اور فورک کو روکنا بالکل یہی چیز ہے۔
 
-## Revert versus branch
+## واپس کرنا بمقابلہ شاخ بنانا
 
-They are different tools and the difference matters.
+یہ دو مختلف اوزار ہیں اور یہ فرق اہم ہے۔
 
-|                     | Revert                                             | Branch                          |
+|                     | واپس کرنا                                             | شاخ بنانا                          |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| بعد والے پیغامات  | ٹرانسکرپٹ سے چھپ جاتے ہیں                          | `/tree` میں اب بھی نظر آتے ہیں         |
+| **worktree**    | اُس باری کے اسنیپ شاٹ تک واپس کر دیا جاتا ہے                 | بغیر تبدیلی                        |
+| انڈو                | **واپسی انڈو کریں** بیچ بحال کر دیتا ہے                  | پوائنٹر واپس ہلاتا ہے            |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+واپس کرنا اُس وقت چاہیے جب ایجنٹ نے ایسی *فائلیں* بدلی ہوں جو آپ واپس چاہتے ہیں۔ شاخ اُس وقت چاہیے جب گفتگو غلط سمت چلی گئی ہو مگر فائلیں ٹھیک ہوں۔
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+واپس کرنا شاخ کی نوک کو بھی ہلاتا ہے، اس لیے آپ کا اگلا پیغام صحیح جگہ سے جاری ہوتا ہے، نہ کہ ایسی دُم سے جو اب کوئی نہیں دیکھ سکتا۔
 
-## Take it out of the app
+## اِسے ایپ سے باہر نکالیں
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+ایک **خود مکمل HTML فائل** لکھتا ہے: پوری گفتگو، ساتھ میں سمیٹنے کے قابل ٹول کارڈز جو دکھاتے ہیں کہ ہر کال کو کیا دیا گیا اور اُس نے کیا واپس کیا۔ کوئی اسٹائل شیٹ نہیں، کوئی اسکرپٹ نہیں، کوئی امیج ہوسٹ نہیں — یہ USB اسٹک سے چلتی ہے اور پانچ سال بعد بھی چلے گی۔
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **ڈیسک ٹاپ:** `Documents/ControlCenter/exports/`، ٹائم سٹیمپ کے ساتھ تاکہ دوسرا ایکسپورٹ پہلے والے کو نہ لکھ مارے۔
+- **ویب:** براؤزر ڈاؤن لوڈ۔
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+ٹرانسکرپٹ کو کلپ بورڈ پر markdown کے طور پر کاپی کرتا ہے، ٹول کالز سمیٹنے کے قابل بلاکس میں۔ کسی issue میں پیسٹ کرنے کے لیے یہی والا ہے۔
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+استدلال جان بوجھ کر شامل نہیں کیا جاتا: یہ ماڈل کی عارضی جگہ ہے، اور بگ رپورٹ کوئی شخص پڑھتا ہے۔
 
-## Related
+## مزید دیکھیں
 
-- [Conversation history](/ur-PK/ہدایت-نامہ/تصورات/گفتگو-کی-تاریخ/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/) — `/tree`, `/export`, `/dump`
+- [گفتگو کی تاریخ](/ur-PK/ہدایت-نامہ/تصورات/گفتگو-کی-تاریخ/) — درخت ایک پوائنٹر حرکت کیوں ہے، اور دوبارہ شروع کرنا اصل میں کیا بحال کرتا ہے
+- [سلیش کمانڈز](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/) — `/tree`، `/export`، `/dump`

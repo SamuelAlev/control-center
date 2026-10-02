@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Ciclul de viață al trimiterii agenților
+description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Ce este o trimitere
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+O trimitere este o rulare a unui agent, într-o conversație, pe un adaptor. Tot ce ține de ea se întâmplă pe `cc_server`: clientul trimite un mesaj și apoi urmărește cum vin evenimentele înapoi. Nu există nicio cale de trimitere în vreun client.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Agenții sunt treziți din șase motive, pe care rularea le poartă drept **context de trezire**, ca agentul să știe _de ce_ este treaz:
 
-| Wake reason      | Trigger                                                      |
+| Motiv de trezire | Declanșator                                                  |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Cineva a trimis un mesaj într-un spațiu sau a menționat agentul |
+| `assignment`     | Un tichet a fost atribuit agentului                          |
+| `pipelineStep`   | Un pas de pipeline l-a trimis                                |
+| `childCompleted` | Un tichet copil s-a terminat                                 |
+| `followUp`       | Un puls de urmărire programat                                |
+| `recovery`       | Calea de recuperare a retrimis după o eroare                 |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Contextul de trezire poartă identificatorii care însoțesc motivul — tichet, spațiu, mesaj, rulare de pipeline — iar aceștia sunt injectați în mediul și în promptul agentului.
 
-## Prompt assembly
+## Asamblarea promptului
 
-The prompt is built in layers, each one a labelled section:
+Promptul este construit pe straturi, fiecare fiind o secțiune etichetată:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identitate** — id-ul, numele și id-ul spațiului de lucru ale agentului, cu instrucțiunea explicită de a transmite acele UUID-uri exacte instrumentelor limitate la spațiul de lucru. Spațiul de lucru este intrinsec agentului, așa că este mereu prezent.
+- **Catalogul de instrumente și protocoalele de resurse**, apoi **structura spațiului de lucru**.
+- **Suprascrierea promptului de sistem**, dacă agentul are una, apoi **persona** (parametrizată după rol) și **prezentarea echipei**.
+- **Skill-urile** — numele atașate agentului.
+- **Contractul de execuție și procedura** pentru modul curent.
+- **Contextul de trezire** și **contextul de mențiune**: cine a convocat agentul și lista celor din jurul lui.
+- **Blocul de mod** — generat din profilul de capabilități al modului _și din lista lui de instrumente materializate_, așa că un prompt nu poate numi niciodată un instrument pe care rularea nu îl are de fapt.
+- **Contextul de memorie** — fapte recuperate pentru sarcină.
+- **Contextul conversației** — istoricul recent al spațiului, plafonat la o fereastră verbatim de 50.000 de caractere, indiferent de dimensiunea contextului configurată pentru agent. Istoricul mai vechi nu este eliminat: agentul îl recuperează la cerere cu `get_messages`, iar mesajele mai vechi relevante semantic ies în continuare la suprafață.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Comenzile slash sunt analizate din textul brut al utilizatorului]
+Promptul pe straturi începe cu un bloc de context, deci nu începe cu un slash. Comenzile sunt analizate verbatim din mesajul utilizatorului și apoi eliminate din coada promptului pe straturi, ca fiecare strat de context să supraviețuiască.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Comenzile sunt împărțite în două locuri. `/todo` și `/compact` sunt interceptate în composer și, în mod deliberat, nu sunt niciodată salvate ca mesaje și nici trimise agentului — salvarea `/compact` ar împinge tăietura de compactare înapoi cu un tur și ar polua transcrierea. `/plan` este gestionată în ambele: composerul comută modul spațiului, ceea ce face ca suprafața de instrumente, presetarea de guardrail-uri și promptul să fie de acord pentru acest tur și pentru fiecare tur de după el. `/goal`, `/loop` și `/skill:<name>` sunt gestionate în interiorul rulării înseși și doar pe harnessul încorporat — `/goal` și `/loop` pornesc muncă autonomă cu un buget de cost, iar un nume prefixat cu `skill:` este căutat ca skill al cărui corp din `SKILL.md` devine directiva turului. Spațiul de nume este cel care ține cele două vocabularuri separate: rezolvarea unui nume simplu împotriva skill-urilor însemna că un skill numit `plan` sau `compact` era umbrit permanent de cel încorporat. Un nume simplu care nu este încorporat se rezolvă în continuare, pentru mesajele scrise înainte să existe spațiul de nume. Un nume nerecunoscut pur și simplu trece mai departe ca text simplu.
 
-## Worktree provisioning
+## Provisionarea worktree-ului
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Înainte ca ceva să ruleze, conversația primește propria rădăcină de lucru, cu un worktree izolat copy-on-write pentru fiecare repo dedesubt. Implicit, aceasta înseamnă fiecare repo legat de spațiul de lucru; un spațiu PR — sau un spațiu creat cu o selecție explicită — provisionează doar repo-urile din lista permisă, iar o conversație de revizuire PR fixează singurul ei repo pe head ref-ul pull request-ului, în timp ce celelalte rămân pe ramura lor implicită. Checkout-ul sursă nu este niciodată modificat, iar întregul director al conversației este recuperat când spațiul este șters.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write este **singura** implementare oriunde `rift` este livrat, susținută de binarul nativ inclus. Un sistem de fișiere care nu poate face reflink — sau un director de date aflat pe alt volum decât repo-ul — face ca provisionarea să eșueze, în loc să revină la altă variantă. `git worktree` este backendul pe Windows, unde nu există niciun backend copy-on-write de construit, și nu este o degradare silențioasă pe alte gazde. Un `rift` lipsă pe o platformă care îl livrează înseamnă o instalare defectă — serverul refuză să pornească în loc să revină silențios, pentru că o revenire silențioasă ascunde defectul în spatele unei căi mai lente pentru totdeauna.
 
-## Identity and credentials
+## Identitate și date de autentificare
 
-Two identities are resolved per run, before any process launches.
+Două identități sunt rezolvate pentru fiecare rulare, înainte de lansarea oricărui proces.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Paternitatea Git.** Commit-urile făcute de un agent sunt scrise _ca agentul_ — `<Name> (agent) <agentId@agents.control-center.local>` atât în `GIT_AUTHOR_*`, cât și în `GIT_COMMITTER_*` — fără a se da vreodată drept o persoană. Partea locală este UUID-ul agentului, nu slug-ul numelui lui. Persoanei care a solicitat i se acordă credit printr-un trailer `Co-Authored-By:`, purtat în mediu și indicat în promptul de sistem. O identitate stabilită explicit de apelant câștigă mereu în fața ambelor.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Identitatea pe hostul de cod.** Datele de autentificare GitHub ale rulării sunt mereu doar ale brokerului — un token de instalare App limitat la depozit sau revenirea lui la PAT din mediu — niciodată tokenul stocat al membrului care solicită. `actingUserId` limitează revenirea la PAT, astfel încât un membru care nu este proprietarul serverului să nu moștenească anvergura serverului; nu suprapune un token personal peste mediul agentului.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Datele de autentificare ale furnizorului de model** se rezolvă într-o ordine fixă, iar ordinea contează:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. o suprascriere de mediu per adaptor,
+2. mediul apelantului,
+3. depozitul de date de autentificare al serverului (reîmprospătând un token OAuth dacă este aproape de expirare),
+4. mediul procesului.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Deoarece suprascrierea per adaptor vine prima, ea învinge în mod silențios un cont de furnizor conectat în aplicație. Dacă o rulare facturează pe contul greșit, acea suprascriere este primul loc de căutat. Datele de autentificare ale furnizorului sunt globale la nivel de gazdă — partajate între toate spațiile de lucru de pe instalare.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/ro-RO/manual/concepte/modelul-agentilor/).
+Tokenurile limitate de capabilități (GitHub, tichete) vin de la brokerul de date de autentificare, care injectează doar ce permit capabilitățile rulării. Vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
 
-## Launch
+## Lansare
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Rularea este pornită cu worktree-ul ei ca director de lucru și — pentru Claude Code — cu o configurație MCP generată, ca agentul să poată ajunge la suprafața de instrumente a Control Center. ACP și `bash` din harness primesc un mediu sanitizat; Claude Code prin `NoSandboxAdapter` moștenește mediul gazdă.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Sandbox-ul de sistem învelește o rulare doar acolo unde gazda are un backend]
+`cc_server` sondează gazda o dată la pornire și, când un backend este disponibil, învelește procesele agentului în el — Seatbelt pe macOS, bubblewrap pe Linux și WSL2. Ambele cusături de trimitere sunt învelite, pentru că nu împart una singură: CLI-ul Claude Code trece prin portul de sandbox; adaptoarele ACP și instrumentul `bash` al harnessului încorporat trec prin managerul de sandbox. Tot el este cel care aplică și căile protejate ale rulării: checkout-urile de repo înregistrate sunt cu scriere interzisă în interiorul sandbox-ului, în orice mod.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Acolo unde nu există backend, rularea **nu** este pusă în sandbox și nimic altceva nu se schimbă pentru a compensa. Asta înseamnă Windows mereu (fără înveliș nativ — `microvm` este o cale separată, condiționată de sondare, pentru terminale și stații) și Linux sau WSL2 fără `bwrap` și `socat` în `PATH`. Serverul indică în ce stare se află pe linia lui de jurnal de pornire, iar `--sandbox off` renunță în mod deliberat.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Două lacune supraviețuiesc sandbox-ului chiar și acolo unde acesta este activ. Instrumentele de fișiere în proces ale harnessului (read, write, edit, apply patch, search, find, search_files) rulează în interiorul procesului serverului, așa că niciun profil nu le constrânge — limita lor este confinarea de cale proprie instrumentelor plus guardrail-urile. Iar Claude Code este lansat cu `--dangerously-skip-permissions`, așa că propriile lui apeluri de fișiere și de shell nu sunt controlate de Control Center; sandbox-ul de sistem este granița din jurul lor.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Limitele rămase se aplică pe orice gazdă, cu sau fără sandbox: worktree-ul propriu al rulării (copy-on-write acolo unde `rift` este livrat; `git worktree` pe Windows), date de autentificare limitate de capabilități, intermediate per lansare și revocate la desființare, guardrail-urile unificate de acțiune (cu eșec închis — o decizie `prompt` fără niciun aprobator conectat este refuzată) și suprafața de instrumente pe care o permite modul conversației. ACP și `bash` din harness tot sanitizează mediul; Claude Code prin `NoSandboxAdapter` moștenește mediul gazdă.
 :::
 
-## Streaming
+## Transmiterea în flux
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Rularea transmite înapoi o secvență tipizată de evenimente, pe care procesorul de flux o persistă ca delta-uri de mesaje, o pliază în segmente de transcriere și o transformă în evenimente de mesagerie:
 
-| Event              | What it carries                                                                                                  |
+| Eveniment          | Ce transportă                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | Ieșire de raționament, redată inline                                                                             |
+| `text`             | Ieșire vizibilă                                                                                                  |
+| `toolCall`         | O invocare de instrument, cu id-ul și argumentele ei structurate                                                 |
+| `toolResult`       | Rezultatul corespunzător, marcat când a eșuat sau este un flux parțial                                           |
+| `usage`            | Număr de tokeni și cost pentru o fereastră de măsurare                                                           |
+| `error`            | O eroare, cu codul structurat al adaptorului când acesta a raportat unul                                         |
+| `sandboxViolation` | Sistemul de operare a refuzat un apel de sistem. Emis doar acolo unde un sandbox învelește efectiv procesul — vezi nota de mai sus |
+| `debug`            | Diagnostice de rulare (marcaje de lansare, decizii de gardă, îndemnuri de contract)                              |
+| `done`             | Rularea s-a terminat                                                                                             |
 
-## What bounds a run
+## Ce limitează o rulare
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Nu există în mod deliberat **niciun plafon de tururi nicăieri**. Un număr fix de iterații ucide munca lungă legitimă (migrări, curățare de tip fan-out) și nu prinde nimic ce gardurile de mai jos nu prind mai devreme. O rulare se termină când:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **modelul se oprește** de la sine;
+- **un om o oprește** sau preia conversația (ceea ce pune pe pauză harnessul încorporat la următoarea limită de tur curată — o rulare Claude Code, care nu are o limită sigură, este oprită în schimb);
+- **se declanșează supraveghetorul de tăcere.** Fără nicio ieșire pe durata pragului, iar sesiunea este terminată cu o eroare `silentRun`. Valoarea implicită este de 15 minute, coborând la 10 în modurile predominant de citire (revizuire și plan); un agent o poate suprascrie între 1 și 240 de minute. Supraveghetorul este armat când un proces copil își raportează PID-ul, așa că acoperă CLI-ul Claude Code — **nu** harnessul încorporat, care nu generează niciun proces;
+- **intervine un plafon de cost** — dar doar pentru comenzile autonome.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Gardul împotriva buclei fatale nu este un terminator: trei apeluri identice de instrument la rând și bucla _direcționează_ agentul să schimbe abordarea.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Un tur normal nu are plafon de cost]
+Gardul de cost din sesiune este conectat doar pentru `/goal` și `/loop`; orice altă rulare nu primește niciun buget. Pentru acele comenzi, un segment nesupravegheat poate consuma implicit 500 de cenți (5,00 $), cu un îndemn soft la 80% care cere agentului să încheie curat înainte de oprirea dură și cu un buget de obiectiv durabil de 5.000 de cenți (50,00 $) de-a lungul segmentelor. Un `/goal --budget` explicit nu este niciodată depășit cu un segment întreg.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Puse împreună, un tur interactiv obișnuit pe harnessul încorporat nu are plafon de tururi, plafon de cost sau supraveghetor de tăcere. Se termină când modelul se oprește sau când îl oprești tu. Acesta este un compromis deliberat — alternativele ucid toate munca lungă legitimă — dar înseamnă că o rulare interactivă nesupravegheată nu este limitată de nimic altceva decât de judecata modelului însuși.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+La mijlocul rulării, un mesaj trimis unui agent aflat în rulare este pus în coadă ca **direcționare** și consumat la următoarea limită de tur, așa că poți îndrepta o rulare fără să o omori. Direcționarea, pauzarea, subagenții și contractul de finalizare sunt funcții ale harnessului încorporat; Claude Code nu are niciuna dintre ele.
 
-## How a run is recorded
+## Cum este înregistrată o rulare
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Fiecare trimitere scrie un `AgentRunLog`: ora de început și de sfârșit, rezumat, număr de tokeni și cost estimat (inclusiv costul cumulat din subagenți), adaptor și model, id de proces și cale de jurnal, conversația și orice tichet sau rulare de pipeline din care face parte, plus două câmpuri de clasificare care poartă cea mai mare parte a adevărului.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Starea** este grosieră: `pending`, `running`, `completed`, `error`.
+- **Vitalitatea** este citirea mai fină: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Familia de erori** grupează util eșecurile: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` nu înseamnă „livrat”]
+Când o rulare se termină fără livrabilul cerut de modul ei — o rulare în modul plan care nu a apelat niciodată `submit_plan`, o rulare de orchestrare care nu a propus niciodată — starea rămâne `completed`, pentru că procesul chiar s-a încheiat curat. Semnalul onest stă pe vitalitate (`empty`), pe familia de erori (`silentRun`) și pe un rezumat care spune exact ce nu a fost produs. Acel rezumat este protejat: finalizarea nu îl va suprascrie cu ultima pălăvrăgeală a modelului.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Acest lucru este deliberat. Schimbarea stării ar mișca mașini de stări de tichete și pipeline-uri care nu au nimic de-a face cu artefactul lipsă. Înseamnă și că „stare: completed” singur nu este niciodată suficient pentru a concluziona că o rulare a reușit — citește rezumatul.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Închiderea rulării publică `AgentRunCompleted` și multe depind de el: cadrul de notificare și intrarea lui durabilă în flux, forwarderul live care îl împinge către clienții conectați, cumulul de cost al pipeline-ului, reluarea unui pas de pipeline care aștepta rularea, finalizarea tichetului suport, maparea unei orchestrări către o stare terminală, decizia de continuare sau oprire a supraveghetorului de obiective, rolul de verificator și evaluarea bugetului de după rulare. Lista de prezență urmează separat, urmărind jurnalele de rulare recente, nu evenimentul.
 
-## Budgets, after the fact
+## Bugete, după fapt
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Aplicarea bugetului este o _reacție_, nu o poartă. Când o rulare se încheie, evaluatorul compară cheltuiala agentului de la începutul lunii cu plafonul lui efectiv (o politică de buget legată, dacă există, altfel cifra lunară proprie a agentului; zero înseamnă nelimitat). Depășirea pragului soft înregistrează un incident de avertizare; epuizarea bugetului înregistrează un incident sever și comută starea ciclului de viață al agentului în `paused` pe organigramă. Trimiterea acceptă în continuare lucru de la acel agent. Un trigger de pipeline `BudgetThresholdCrossed` poate porni muncă de continuare din același eveniment.
 
-## Retry lineage
+## Descendența reîncercărilor
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Fiecare jurnal de rulare poate purta descendența reîncercărilor — un id de rulare părinte, un contor de încercări și un rezumat de continuare. Arborele de rulări al conversației afișează numărul încercării când acesta este diferit de zero. Un „mai încearcă” din chat este o trimitere nouă, cu un jurnal de rulare nou.
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): what the adapter can and cannot enforce
-- [Modes](/ro-RO/manual/concepte/moduri/): where the tool surface and the completion contract come from
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/): the effect-class policy every gated call passes
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/): the isolation story in full
-- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): steering, take-over and the autonomy dial
-- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/): what `AgentRunCompleted` sets off
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): ce poate și ce nu poate impune adaptorul
+- [Moduri](/ro-RO/manual/concepte/moduri/): de unde vin suprafața de instrumente și contractul de finalizare
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): politica de clase de efect prin care trece fiecare apel controlat
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/): povestea izolării, în întregime
+- [Multiplayer](/ro-RO/manual/concepte/multiplayer/): direcționare, preluare și cadranul de autonomie
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): ce declanșează `AgentRunCompleted`

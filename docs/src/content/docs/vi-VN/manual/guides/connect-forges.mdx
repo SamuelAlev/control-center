@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Kết nối máy chủ mã
+description: Kết nối GitHub, GitLab hoặc Bitbucket để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động — một không gian làm việc có thể dùng cả ba.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center làm việc với ba máy chủ mã, được gọi là **forge** xuyên suốt ứng dụng: **GitHub**, **GitLab** và **Bitbucket Cloud**. Không máy chủ nào là mặc định. Kết nối một cái là mọi thứ hoạt động; kết nối nhiều cái thì một không gian làm việc duy nhất có thể chứa kho mã từ tất cả cùng lúc.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Máy chủ mã là thuộc tính của từng **kho mã**, được đọc từ remote `origin` khi bạn đăng ký kho mã đó. Bạn không bao giờ phải chọn, và không có cài đặt nào theo từng không gian làm việc để làm sai.
 
-## Connect a forge
+## Kết nối một máy chủ mã
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** (`/settings/workspace/profile`).
+2. Tìm thẻ **Lưu trữ mã**. Mọi máy chủ mã được hỗ trợ đều được liệt kê, dù đã kết nối hay chưa.
+3. Nhấn **Đăng nhập với …** nếu hàng đó có nút này, hoặc **Thêm token** rồi dán một token vào.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Đăng nhập** xuất hiện với máy chủ mã mà máy chủ của bạn đã đăng ký ứng dụng — hiện nay là GitHub, qua luồng thiết bị (xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)). Mọi trường hợp còn lại là dán token, một cách thể hiện thành thật thay vì một nút bấm không thể hoàn tất.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Dù theo cách nào, thông tin xác thực **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn: không token nào được lưu trên máy mà bạn đã nhập nó, mọi thiết bị bạn đăng nhập đều dùng cùng một token, và không thành viên nào khác đọc được nó. Nó có hiệu lực ngay ở **yêu cầu kế tiếp** — không có gì phải khởi động lại, và việc ngắt kết nối sẽ dừng gửi nó ngay lập tức.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Mỗi hàng cho biết thông tin xác thực của nó đến từ đâu, vì đó là khác biệt giữa “token của tôi không hoạt động” và “một token khác đang trả lời”:
 
-| Subtitle                         | Meaning                                                            |
+| Dòng phụ                         | Ý nghĩa                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Đã đăng nhập với tên octocat`           | Thông tin xác thực của chính bạn đang được dùng                     |
+| `Đã đăng nhập với tên octocat · qua ứng dụng của máy chủ này` | Danh tính ứng dụng của máy chủ đang trả lời — bạn chưa đăng nhập |
+| `Đã đăng nhập với tên octocat · từ môi trường` | Một biến môi trường của máy chủ đang trả lời, không phải thông tin xác thực của bạn |
+| `Chưa kết nối`                  | Bạn chưa có thông tin xác thực cho máy chủ mã này                   |
 
-### What token each forge wants
+### Mỗi máy chủ mã cần loại token nào
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Máy chủ mã         | Token                                                     | Nơi tạo                                                   |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Loại Classic: `repo` và `read:org`. Loại Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Một personal access token có `api`                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Một token API của Atlassian, kèm email tài khoản của bạn  | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket xác thực bằng **email tài khoản của bạn làm tên người dùng** và token làm mật khẩu. Đặt `BITBUCKET_EMAIL` trong môi trường máy chủ để nó biết ghép token với email nào.
 
-### Or use the environment
+### Hoặc dùng môi trường
 
-For a headless or CI install, the server reads these:
+Với bản cài không giao diện hoặc chạy CI, máy chủ đọc các biến sau:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, rồi `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, rồi `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, rồi `BITBUCKET_TOKEN` (kèm `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Đây là thông tin xác thực **của máy chủ**, không phải của bạn, và sự phân biệt này mang tính quyết định: một yêu cầu thực hiện thay mặt bạn chỉ dùng thông tin xác thực của bạn và không dùng gì khác, nên môi trường không bao giờ âm thầm đứng ra thay bạn. Công việc không có người đứng sau — webhook, thăm dò PR, đồng bộ phiếu — phân giải danh tính ứng dụng của máy chủ trước, rồi đến thông tin xác thực của chủ máy chủ, rồi đến môi trường. Thứ tự này cố định để “tôi đã đăng nhập mà không có gì thay đổi” không bao giờ là một kết quả được hỗ trợ.
 
-## You are a different person on each forge
+## Bạn là một người khác trên mỗi máy chủ mã
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Cùng một người là `octocat` trên GitHub và là một cái tên hoàn toàn khác trên GitLab. Control Center phân giải danh tính của bạn **theo từng máy chủ mã** và dùng đúng danh tính cho từng kho mã, nhờ đó “cần tôi đánh giá”, “do tôi tạo” và “bạn đã phê duyệt cái này” đúng trong một không gian làm việc hỗn hợp.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Nếu danh tính của một máy chủ mã chưa được phân giải, các kho mã của nó không đóng góp gì vào hộp thư thay vì khớp với mọi thứ. Hộp thư nói rõ điều đó thay vì tuyên bố rằng bạn đã xử lý hết.
 
-## One inbox, every forge
+## Một hộp thư, mọi máy chủ mã
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Hộp thư và hàng đợi PR trải rộng ra mọi máy chủ mã có mặt trong không gian làm việc rồi hợp nhất kết quả thành một dòng duy nhất — một pull request GitHub và một pull request Bitbucket nằm cạnh nhau, sắp theo thời gian thay vì nhóm theo nhà cung cấp.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Các lỗi được cô lập. Một máy chủ mã bị sập, bị giới hạn tốc độ hoặc chưa kết nối thì không đóng góp gì và không đụng đến những cái khác; nó không bao giờ làm trống toàn bộ hộp thư. Các kho mã của riêng nó vẫn hiển thị trạng thái biết được gần nhất cho đến khi nó hoạt động trở lại.
 
-## What each forge can do
+## Mỗi máy chủ mã làm được gì
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Mọi máy chủ mã đều hỗ trợ vòng lặp cốt lõi: liệt kê và mở pull request, đọc diff, bình luận theo dòng và ở cấp cao nhất, đánh giá, hợp nhất và đóng. Ngoài phạm vi đó, chúng thực sự khác nhau, và Control Center ẩn đi những gì một máy chủ mã không làm được thay vì hiển thị một điều khiển âm thầm thất bại.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Khả năng                        | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Đánh giá theo lô (đang chờ)         |   ✓    |   ✓    |     —     |
+| Yêu cầu thay đổi                   |   ✓    |   ✓    |     ✓     |
+| Trạng thái “đã xem” theo từng tệp được đồng bộ    |   ✓    |   —    |     —     |
+| Biểu cảm emoji                   |   ✓    |   ✓    |     —     |
+| Người đánh giá theo đội / nhóm            |   ✓    |   ✓    |     —     |
+| Người đánh giá được gợi ý               |   ✓    |   —    |     ✓     |
+| Kết quả CI trên một PR                |   ✓    |   ✓    |     ✓     |
+| Đi sâu vào các bước/nhật ký của một job CI  |   ✓    |   ✓    |     —     |
+| Pull request xếp chồng             |   ✓    |   —    |     —     |
+| Mẫu mô tả PR          |   ✓    |   ✓    |     —     |
+| Thăm dò thông báo              |   ✓    |   —    |     —     |
+| Hồ sơ người dùng phong phú            |   ✓    |   ✓    |     —     |
+| PR head ref phía máy chủ           |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Khi thiếu một khả năng, tính năng sẽ suy giảm một cách trung thực:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Trạng thái đã xem** vẫn hoạt động, nhưng chỉ trên thiết bị mà bạn đã đặt nó.
+- **Đánh giá theo lô** trên Bitbucket đăng từng bình luận một, nên người đánh giá thấy chúng đến riêng lẻ thay vì cùng một lúc.
+- **Không có PR head ref** trên Bitbucket nghĩa là khi checkout một pull request, hệ thống tìm nhánh nguồn của nó theo tên, và việc này thất bại khi nhánh đó đã bị xóa.
 
-## Vocabulary
+## Thuật ngữ
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab gọi pull request là **merge request**. Control Center dùng “pull request” xuyên suốt mô hình của mình, và dùng đúng danh từ của từng máy chủ mã khi nói về máy chủ mã đó.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The PR list is empty and says a forge is not connected
+### Danh sách PR trống và báo rằng một máy chủ mã chưa được kết nối
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Bạn chưa có thông tin xác thực cho máy chủ mã đó. Hãy đăng nhập hoặc dán token trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**. Các kho mã của những máy chủ mã khác không bị ảnh hưởng.
 
-### I connected a forge but its repos still show nothing
+### Tôi đã kết nối một máy chủ mã nhưng các kho mã của nó vẫn không hiện gì
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Hãy kiểm tra dòng phụ của hàng. Nếu nó ghi “qua ứng dụng của máy chủ này” hoặc “từ môi trường”, thì một thông tin xác thực khác đang trả lời chứ không phải cái bạn mong đợi — thông tin xác thực của bạn luôn thắng với mọi thứ bạn yêu cầu, nên nếu dòng phụ ghi khác thì cái của bạn chưa được lưu.
 
-### A repo will not register
+### Một kho mã không đăng ký được
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+Việc đăng ký cần cả ba điều kiện: đường dẫn nằm trong một worktree git, nó có remote `origin`, và remote đó trỏ tới github.com, gitlab.com hoặc bitbucket.org. Xem [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
 
-### Everything stops working for a while after heavy use
+### Mọi thứ ngừng hoạt động một lúc sau khi dùng nhiều
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Đó là cầu dao ngắt mạch của giới hạn tốc độ. Khi một máy chủ mã báo đã chạm giới hạn chính, máy khách sẽ cho các yêu cầu tiếp theo thất bại ngay tại chỗ, không gọi mạng, cho đến khi hết cửa sổ thời gian — nhờ vậy một cơn bão thử lại không thể làm giới hạn sâu thêm. Các lỗi tạm thời được thử lại với backoff lũy thừa.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-- [Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Triage the inbox](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)
+- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Phân loại hộp thư](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)

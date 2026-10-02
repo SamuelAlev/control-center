@@ -1,135 +1,138 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Používejte režim plánu
+description: Přepni prostor do režimu Plan, získej typovaný plán a schválením ho spusť jako práci.
 slug: cs-CZ/prirucka/navody/rezim-planu
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Tenhle návod ukáže, jak z agenta dostat strukturovaný plán, než napíše
+jakýkoli kód.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+V režimu Plan agent zkoumá jen pro čtení a jediným výstupem je **typovaný
+plán**: graf závislostí kroků, který schválíš a Control Center ho pak zkompiluje
+do skutečné práce. Použij ho, když chceš vidět rozsah změny, mít kroky
+rozložené, nebo mít rizika a závislosti pojmenované, než se na cokoli sáhne.
 
-## Switch a space into plan mode
+## Přepni prostor do režimu Plan
 
-Any of these flips the space's mode and the change is persisted:
+Každá z těchto možností přepne režim prostoru a změna se uloží:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Vyber **Plan** v rozbalovací nabídce režimu úplně vlevo na liště composeru
+- Stiskni **Shift+Tab**
+- Pošli `/plan`. Holé `/plan` režim jen zapne; `/plan <request>` ho zapne a
+  zbytek pošle jako tvou zprávu
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` nikdy neputuje jako text. Nastaví uložený režim a právě podle něj se
+řídí plocha nástrojů, preset strážce i prompt. Režim proto platí pro tenhle
+tah i pro každý další, dokud ho nepřepneš zpátky.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Režim je uložený na prostoru, takže stejný agent může být tady v režimu Plan
+a jinde v režimu agenta.
 
-## What the agent produces
+## Co agent doručí
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Zkoumá jen pro čtení: paměť, index kódu, soubory
+2. Zavolá `submit_plan` **jednou**, s `goal` a `nodes`. Každý uzel nese
+   stabilní `key`, `title`, `description` a klíče uzlů, na kterých `dependsOn`
+   (právě to nechá nezávislou práci běžet paralelně)
+3. Zastaví se
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Nástroj graf ověří (duplicitní klíče, visící závislosti, cykly) a vrátí
+porušení, která má agent opravit, místo aby přijal rozbitý plán.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Plán se objeví **v konverzaci** jako kompaktní řádek s cílem, jeho stavem
+a počtem kroků. **Plan Studio** (graf závislostí, inspektor jednotlivých uzlů
+a odhad nákladů) se otevře jako záložka vedle konverzace: na řádku stiskni
+**Otevřít**, nebo jen počkej. Plán, který dorazí do 30 sekund, zatímco
+konverzaci sleduješ, si záložku otevře sám.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Záruka jen pro čtení je strukturální a platí jen u vestavěného harnessu]
+Vlastní harness Control Center sestaví registr nástrojů agenta ze specifikace
+plochy režimu Plan, takže nástroj na zápis, úpravu nebo příkaz, který by šlo
+zavolat, prostě neexistuje. Omezení není pokyn v promptu, ze kterého by se
+model uměl vykroutit.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Adaptér Claude Code takové filtrování nedostane: režim k němu dorazí jako
+žádost, kterou jeho vlastní runner může a nemusí dodržet, a Control Center
+z něj vidí jen volání `mcp__*`. Odznak vynucení vedle rozbalovací nabídky
+režimu se objeví právě v tomhle případě.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Agent se tě může zeptat na upřesnění]
+Když je zadání nejednoznačné, agent v režimu Plan se umí zastavit a položit
+až tři blokující otázky nástrojem `ask_user`. V konverzaci vykreslí formulář
+(možnosti, nebo volný text) a běh stojí, dokud neodpovíš. Nástroj je na úrovni
+čtení, takže ho plocha jen pro čtení v režimu Plan nechá, a je vyňatý z obalu
+schválení (výzva před výzvou by bez připojeného schvalovatele selhala uzavřeně
+a agentovi upřela samotné zeptání).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Potřebuje prostor, kam se vykreslí, takže ho one-shot odeslání bez konverzace
+nedostane. Když rozsah, cílový repozitář a kritéria přijetí napíšeš už do
+první zprávy, je to pořád rychlejší než kolečko otázek a odpovědí.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Próza tady výstupem není. Běh, který skončí bez volání `submit_plan`, vloží
+do konverzace viditelný řádek „Ended without submitting a plan (no `submit_plan` call).“
+a běh označí, že výstup nedodal. Stav běhu schválně zůstane _completed_. Tím
+se nesáhne na stavové automaty pipeline ani ticketů, takže čti ten řádek, ne
+odznak stavu.
 
-## Approve the plan
+## Schval plán
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Na řádku plánu v konverzaci stiskni **Schválit a spustit**. Na liště schválení
+v Plan Studio stiskni **Schválit plán** (vedle je **Odmítnout**; schválení je
+vypnuté, dokud má graf chybu ověření).
 
-Then:
+Pak:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center plán zkompiluje do orchetrace a zmaterializuje ho, tedy
+   tickety a běh. V tomhle kroku se nevolá žádný model. Je deterministický
+2. Plán běží jako agent, který ho napsal. Jestli přizve někoho dalšího,
+   rozhodne ten agent až za běhu: krok může přes `delegate_task` předat
+   vhodnějšímu kolegovi, v rámci stropu hloubky delegace pracovního prostoru
+3. Cíl plánu se stane **cílem konverzace** a práce běží **v téže
+   konverzaci**: každý krok vloží zadání, které agent dostal, a streamuje jeho
+   tah zpátky, takže ji sleduješ (a tah umíš zastavit) tam, kde už jsi
+4. Řádek cíle v postranním panelu **Obecné** u konverzace (pod Úkoly) nese
+   postup běhu jako `settled/total` a tlačítko **Zastavit**. Plan Studio
+   ukazuje na grafu stav jednotlivých uzlů a zrušit jde i odtud
 
-## Keep working without approving
+## Pokračuj bez schválení
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Když chceš v téhle konverzaci zůstat a plán neschvalovat, agent může zavolat
+`exit_plan_mode`. Je to jediný povolený odchod: otevře trvalou žádost
+o schválení navázanou na konverzaci a vrátí `pending`. Prostor zůstane
+v režimu Plan a agent nesmí jednat. Jakmile je žádost schválená, další
+volání `exit_plan_mode` přepne prostor z režimu Plan do režimu agenta
+a odemkne mu měnící nástroje. Odmítnutí mu dovolí otevřít novou žádost
+k upravenému plánu.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Z režimu Plan odejdeš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab),
+nebo tím, že schválíš odeslaný plán. `exit_plan_mode` otevře trvalé schválení,
+o kterém rozhodne nástroj MCP `decide_approval`. Překryv guardrailů pro
+zablokovaná volání nástrojů je jiná fronta, jen v paměti, a žádosti o odchod
+z režimu Plan nenosí.
 
-## Plan mode in a pipeline step
+## Režim Plan v kroku pipeline
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Uzel pipeline `messaging.createSpace` čte režim konverzace z **extra** `mode`
+v konfiguraci uzlu: `extras['mode']: 'plan'`. Shoda klíče je přesná. Jakékoli
+jiné znění, včetně `conversationMode` nebo `dispatchMode`, se potichu
+ignoruje a prostor spadne na výchozí hodnotu těla, což je režim **review**,
+ne chat. Krok `promptAgent` vstoupí do prostoru, který nezaložil, a oprávnění
+mu znovu nenastaví. Výběr **Režim dispatch** v editoru konfigurace uzlu
+(`allParallel` / `manager`) patří uzlům týmového odeslání. Režim konverzace
+nastav pomocí `extras['mode']` na šabloně, která prostor otevírá, nebo na
+konfiguraci toho uzlu přes API.
 
-## Related guides
+## Související návody
 
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Use spaces](/cs-CZ/prirucka/navody/prostory/)
-- [Work in Plan Studio](/cs-CZ/prirucka/navody/plan-studio/)
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Používejte prostory](/cs-CZ/prirucka/navody/prostory/)
+- [Pracujte v Plan Studio](/cs-CZ/prirucka/navody/plan-studio/)
+- [Spusťte orchestaci](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
 
-## Related concepts
+## Související koncepty
 
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/)

@@ -1,241 +1,263 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Bir pipeline şablonu oluşturma
+description: Pipeline düzenleyicisinde bir DAG iş akışı şablonu yazın — düğümler ekleyin, onları bağlayın, girdileri bildirin ve çalıştırılabilir hale getirin.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Pipeline şablonları çalışma alanı ayarlarında yazılır. Çalışma alanı kenar
+çubuğundaki **Pipelines** girdisi _çalıştırma kuyruğudur_, şablon listesi
+değildir — orada “şablon oluştur” diye bir eylem yoktur.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/tr-TR/kilavuz/referans/pipeline-adimlari/).
+Her adım türünün, gövde anahtarının ve yapılandırma alanının ne anlama geldiği
+için [pipeline adımları referansına](/tr-TR/kilavuz/referans/pipeline-adimlari/)
+bakın.
 
-## Create a template
+## Şablon oluşturma
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. **Ayarlar → Çalışma alanı → Pipeline şablonları** sayfasına gidin
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. **Yeni şablon**’a basın.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Kimlik soran bir iletişim kutusu yoktur. Düzenleyici hemen, **Yeni pipeline**
+adlı tohumlanmış bir iskelet üzerinde otomatik atanmış bir kimlikle
+(`pipeline_1`, sonra `pipeline_2`, …) açılır. Yeniden adlandırmak için üst
+bilgideki başlığa tıklayın.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Tuval boş değildir: bir **Trigger** giriş düğümü, **Step** etiketli bir prompt
+ajanı düğümü ve çalıştırmayı bitiren bir terminal nöbetçisi vardır. Nöbetçi
+çizilmez. Düzenleyici bu gizli terminali ulaşılabilir her çıkışsız düğüme
+yeniden bağlar; böylece **Step**’ten sonra eklediğiniz iş yine çalışır.
 
-## Add nodes
+## Düğüm ekleme
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+**Düğüm kitaplığı** kenar çubuğu düzenleyicinin solunda kalıcı olarak durur.
+Onu **Düğüm ara** kutusuyla filtreleyin ve bir girdiyi tuvale sürükleyin — düğüm,
+bıraktığınız yere ve hiçbir gelen bağlantısı olmadan yerleşir.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palet düğümü                    | Adım türü | Ne yapar                                                                                                          |
+| ------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Bash betiği**                 | listen    | Bir kabuk betiğini `{{state}}` yerine koyarak çalıştırır; hiçbir ajan gönderilmez                                 |
+| **Konuşma aç**                  | listen    | Çalıştırmanın tek görünür alanını ve onun checkout’unu açar; ajan düğümleri bu odaya katılır                     |
+| **PR dalını klonla**            | listen    | PR baş dalını `gh pr view` ile bulur ve çalıştırma dizinine klonlar                                               |
+| **PR yorumu gönder**            | listen    | Birleştirilmiş bulguları PR’a GitHub inceleme yorumu olarak gönderir                                              |
+| **İnceleyici (prompt)**         | listen    | Uzman bir inceleyici ajanı gönderir; ajan sonucunu gönderene kadar askıda kalır                                  |
+| **Birleştir (join)**            | join      | Birkaç üst dalı bekler, ardından bir ajandan çıktılarını birleştirmesini ister                                   |
+| **Özel prompt**                 | listen    | `promptAgent` gövdesi üzerinden yönlendirilen, prompt güdümlü genel düğüm                                         |
+| **Alana gönder**                | listen    | Bir mesajlaşma alanına ileti gönderir                                                                             |
+| **Koşul / switch (router)**     | router    | Akışı bir durum değerine göre dallandırır                                                                         |
+| **Dosya varsa (router)**        | router    | Klon altında bir yol varsa `"true"`, yoksa `"false"` yönlendirir                                                  |
+| **Herhangi bir dosya varsa (VEYA router)** | router    | Listelenen yollardan herhangi biri varsa `"true"` yönlendirir                                          |
+| **Tüm koşullar (VE router)**    | router    | Yalnızca listelenen her yol varsa `"true"` yönlendirir                                                            |
+| **Takım gönderimi**             | listen    | Bütün bir takımı gönderir ve takım bitene kadar askıda kalır                                                      |
+| **Onay kapısı**                 | listen    | Bir onay kararı için duraklar                                                                                     |
+| **Her öğe için (map)**          | forEach   | Her öğe için bir prompt oluşturur, ardından ajanı bu promptlar birleştirilmiş halde bir kez gönderir             |
+| **Alt pipeline çağır**          | listen    | Başka bir şablonu iç içe adım olarak çalıştırır                                                                   |
+| **Çalışma ağaçlarını temizle**  | listen    | Bayat yalıtılmış çalışma ağaçlarını kaldırır; deterministiktir, ajan gönderilmez                                  |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Kitaplık bunları **Akış ve mantık**, **PR incelemesi**, **Ajanlar**,
+**Mesajlaşma** ve **Kod** başlıkları altında gruplar. Demo grubu yoktur.
 
-## Wire nodes together
+## Düğümleri birbirine bağlama
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Her iş düğümünün sağ kenarında yuvarlak bir **çıktı bağlantı noktası** vardır.
+Bağlamak için o noktadan başka bir düğüme sürükleyin. Başlatma tetikleyicileri
+de aynıdır: her biri kendi bağlantı noktasına sahiptir, dolayısıyla
+**Zamanlama**’dan gelen bir kablo **Elle çalıştırma**’dan da çıkmaz. Bir düğümün
+hemen ardına bir tür eklemek için **Adım ekle**’ye (`+`) basın. Mevcut bir
+kenarın orta noktasının üzerine gelin ve bağlantıyı kesmek için × işaretine
+basın.
 
-Connections are also edited from the node that _receives_ them:
+Bağlantılar, bunları _alan_ düğümden de düzenlenir:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Alt düğümü seçin. Yapılandırma paneli sağda açılır.
+2. **Gelen tetikleyiciler** bölümüne kaydırın ve bu düğümün dinlemesi gereken her
+   üst düğümün çipine dokunun. Seçili bir çipe yeniden dokunmak bağlantıyı
+   kaldırır.
+3. Bir üst düğüm router ise, çiplerin altında her router kenarı için bir
+   **&lt;node&gt; kaynağından rota anahtarı** alanı bulunan bir **Rota
+   anahtarları** bloğu görünür. O kenarın tetiklendiği anahtarı girin — dosya
+   varlığı router’ları için `true` veya `false`, bir switch içinse durum adı.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Her tetikleyici düğüm bir giriş noktasıdır. Bir düğüm birkaç üst düğümü
+dinleyebilir (fan-in) ve birkaç alt düğümü besleyebilir (fan-out); grafik
+döngüsüz kalmalıdır — düzenleyicide sizi bir döngü bağlamaktan alıkoyan hiçbir
+şey yoktur, bu yüzden işinizi kontrol edin.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Terminal nöbetçisi tuvalden filtrelenir, bu yüzden seçilemez. Düzenleyici, grafik
+her değiştiğinde onu ulaşılabilir her çıkışsız düğüme yeniden bağlar; böylece
+tohumlanmış **Step**’ten sonra eklediğiniz iş yine çalışır. Boş bir grafik
+(ardılı iş olmayan bir tetikleyici) tetikleyicinin kendisini listeler, böylece
+çalıştırma hemen tamamlanır.
 
-## Configure a node
+## Düğüm yapılandırma
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Yapılandırma panelini açmak için bir düğüm seçin. Hangi alanların görüneceği
+düğümün gövdesine bağlıdır.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Her düğümde **Etiket**, **Girdi anahtarları** (yürütme anında okunan virgülle
+ayrılmış durum anahtarları) ve **Gelişmiş** altında **Reducer**,
+**Zaman aşımı (ms)**, **Yeniden deneme sayısı**, **Bu adım başarısız olsa da
+devam et** ve **Çıktı şeması** bulunur. Listen ve join düğümleri ayrıca
+**Tür**’lerini bu ikisi arasında değiştirebilir.
 
-### Open conversation
+### Konuşma aç
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Bir **depo kapsamı** seçici (çalışma alanının hangi depolarının checkout
+edileceği; boş, hiçbiri anlamına gelir), bir **Alan adı** ve bir **İçinde bir
+konuşma aç** onay kutusu ekler. Bu onay kutusu açıkken bir **Konuşma adı** alanı,
+odanın açıldığı akışa ad verir. Ajan düğümleri bu odaya katılır — kendileri bir
+oda açmaz.
 
-### Prompt agent
+### Prompt ajanı
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+**Ajan** (hangi ajanın gönderileceği), **Prompt** (girdilere veya üst adım
+çıktılarına başvurmak için `{{key}}` kullanın) ve **Çıktı anahtarı** ekler.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Zaman aşımı (ms)** saniye değil, _milisaniye_ cinsindendir — `900000` 15
+dakikadır. `900` girmek adıma 0,9 saniye verir.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Bir prompt ajanı düğümünün altında çalıştığı konuşma modunun ajan düğümünde
+hiçbir düzenleyici alanı yoktur. Bu mod, odayı oluşturan **Konuşma aç**
+düğümündeki `extras['mode']` (`chat`, `plan` veya `review`) üzerinden taşınır
+(varsayılan `review`). Bunu bir ajan adımında ayarlamak yok sayılır. Anahtar tam
+olarak eşleştirilir: başka her yazım sessizce yok sayılır.
 
-### Bash script
+### Bash betiği
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+**Betik** ekler. Ne çalışma dizini ne de ortam alanı vardır, çünkü ikisi de
+yapılandırılamaz:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Bir çalıştırmadaki her bash adımı aynı cwd’yi paylaşır:
+  `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN`, kimlik bilgisi deposundan enjekte edilir; böylece `gh` ve
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` ek bir kurulum olmadan
+  çalışır.
+- Betik, birebir `bash` yürütülebilir dosyası olarak başlatılır; bu yüzden
+  `bash`, sunucu ana makinesinin `PATH`’inde olmalıdır. Bu, Windows’a özgü bir
+  husustur.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Router bir koşulu değerlendirir ve bir rota anahtarı döndürür; motor yalnızca
+rota anahtarı eşleşen alt kenarı tetikler ve diğer dalları atlandı olarak
+işaretler.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Bir router seçmek, **Çıktı anahtarı** alanının yerine koşul düzenleyicisini
+koyar. Dört modundan birini seçin:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Dosya(lar) var — herhangi biri** — listelenen yollardan herhangi biri varsa
+  `"true"` yönlendirir.
+- **Dosyalar var — tümü** — yalnızca listelenen her yol varsa `"true"`
+  yönlendirir.
+- **Karşılaştırma** — bir durum değerini bir sabitle karşılaştırır.
+- **Switch** — varsayılan bir durumla birlikte bir durum anahtarının değerine
+  göre yönlendirir.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Ardından, giden kenarlarda eşleşen rota anahtarlarını ayarlayın (bkz.
+[Düğümleri birbirine bağlama](#düğümleri-birbirine-bağlama)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/tr-TR/kilavuz/referans/pipeline-adimlari/).
+Boolean `and` / `or` / `not` grupları gövde tarafından desteklenir, ancak bu
+formdan yazılamaz — `extras.predicate` altında elle yazılmış bir yüklem ağacı
+gerektirirler. Yüklem ve operatör sözlüğünün tamamı
+[pipeline adımları referansında](/tr-TR/kilavuz/referans/pipeline-adimlari/)
+bulunur.
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Kendine ait bir yapılandırması yoktur: tüm üst adımlarını bekler.
 
-### Approval gate
+### Onay kapısı
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Kapı, onaylayıcı ajanı kapı prompt’uyla gizli bir konuşmaya gönderir ve askıda
+kalır. Onaylayıcı, konuşmada kararınızı ister ve bunu `submit_output` ile
+`{ "decision": "approved" | "rejected", "reason": "..." }` biçiminde gönderir.
+Karar, çıktı anahtarının altına düşer (varsayılan `approval_decision`), böylece
+alt taraftaki bir switch router buna göre dallanabilir.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+**Ajan** alanını onaylayıcıya, **Prompt** alanını da kapı sorusuna ayarlayın.
+Kapı, `submit_output` üzerinden `{ "decision": "approved" | "rejected",
+"reason": "..." }` biçiminde sonuçlanır. İnceleyici (prompt) düğümleri de aynı
+şekilde gönderir.
 
-### Team dispatch
+### Takım gönderimi
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+**Takım kimliği** ve **Gönderim kipi** ekler. Seçici tam olarak iki kip sunar:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — üye başına bir görev; tümü tamamlanana kadar askıda kalır.
+- `manager` — lideri gönderir; lider de işi devreder.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Saklanan başka herhangi bir değer `allParallel` gibi davranır. Her üyenin
+sonucunu çıktı anahtarı altında bir listede toplamak için **Reducer**’ı `append`
+yapın.
 
-### For each and Call sub-pipeline
+### Her öğe için ve alt pipeline çağırma
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**Her öğe için**, varsayılan olarak `items` durum anahtarı üzerinde eşler
+(düğümde `extras.iterableKey` / `extras.itemKey`). Prompt’unu her öğe için bir
+kez oluşturur (varsayılan olarak `{{item}}`) ve ajanı, bu promptlar
+birleştirilmiş halde **bir kez** gönderir. Boş bir koleksiyon hemen boş bir
+listeyle tamamlanır. Öğe başına bir paralel gönderim değildir.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Alt pipeline çağır**, alt çalıştırma terminal bir duruma ulaşana kadar askıda
+kalır, ardından alt çalıştırmanın son durumunu çıktı anahtarı altında birleştirir
+(varsayılan `subflow_result`). Onu `extras.templateId` ile bir alt şablona
+yöneltin. Bir şablon kendini çağıramaz; başarısız olan veya iptal edilen bir alt
+çalıştırma üst adımı başarısız kılar, bu da o adımın yeniden deneme ve
+başarısızlıkta devam politikasını besler.
 
-## Declare inputs and allow manual runs
+## Girdileri bildirme ve elle çalıştırmalara izin verme
 
-Both live behind **Manual run** in the editor header.
+İkisi de düzenleyicinin üst bilgisindeki **Manuel çalıştırma**’nın arkasındadır.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. **Manuel çalıştırma**’ya basın.
+2. **Manuel çalıştırmaya izin ver** anahtarını açın. Bu anahtar hemen kalıcı olur
+   — şablonun çalıştırma başlatıcısında görünmesini sağlayan `manual` tetikleyici
+   satırını oluşturur (veya siler).
+3. Bir üst sınır istiyorsanız **Maks. paralel çalıştırma** değerini ayarlayın
+   (sınırsız için boş bırakın). Fazladan başlatmalar, bir yer boşalana kadar
+   `queued` durumunda bekler.
+4. Elle bir çalıştırmanın toplaması gereken her form alanı için **Girdi ekle**’ye
+   basın:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Alan              | Açıklama                                                             |
+| ----------------- | -------------------------------------------------------------------- |
+| **Anahtar**       | Değerin saklandığı durum anahtarı; ona `{{key}}` ile başvurun        |
+| **Etiket**        | Görünen etiket (varsayılan olarak anahtar)                            |
+| **Tür**           | Metin, Çok satırlı metin, Sayı, Geçiş, Seçim, Repository              |
+| **Seçenekler**    | Virgülle ayrılmış seçenekler; yalnızca Seçim için                     |
+| **Varsayılan değer** | Önceden doldurulmuş değer                                         |
+| **Yer tutucu**    | Boş alanın içindeki ipucu metni                                       |
+| **Yardım metni**  | Alanın altındaki yardımcı metin                                       |
+| **Zorunlu**       | Çalıştırma formunun boş bir değerde engelleyip engellemeyeceği        |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Bir **Repository** girdisi, çalışma alanının depoları üzerinde bir seçici
+oluşturur ve `repo_id`, `repo_local_path`, `repo_full_name` ile — deponun bir
+GitHub uzak deposu varsa — `repo_owner` ve `repo_name` değerlerini çalıştırma
+yüküne doldurur.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. İletişim kutusunda **Kaydet**’e basın. Girdi düzenlemeleri taslağa katılır;
+   şablonu kaydettiğinizde kalıcı olur.
 
-## Save and enable
+## Kaydetme ve etkinleştirme
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/).
+1. Düzenleyicinin üst bilgisinde **Kaydet**’e basın. Siz bunu yapana kadar üst
+   bilgide “Kaydedilmemiş değişiklikler” yazar.
+2. **Ayarlar → Çalışma alanı → Pipeline şablonları** sayfasına dönün ve şablonun
+   satırındaki anahtarın açık olduğunu kontrol edin. Motor, devre dışı bir
+   şablonu başlatmayı reddeder ve devre dışı bir şablon çalıştırma başlatıcısında
+   asla görünmez.
+3. Otomatik başlatmak için düğüm kitaplığından bir tetikleyiciyi tuvale
+   sürükleyin — bkz.
+   [Pipeline tetikleyicilerini kurma](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/).
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run a pipeline manually](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
-- [Set up pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
-- [Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
-- [Pipeline steps reference](/tr-TR/kilavuz/referans/pipeline-adimlari/)
+- [Bir pipeline’ı elle çalıştırma](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
+- [Pipeline tetikleyicilerini kurma](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
+- [Pipeline çalıştırmalarını izleme](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
+- [Pipeline adımları referansı](/tr-TR/kilavuz/referans/pipeline-adimlari/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/)
+- [Pipeline’lar](/tr-TR/kilavuz/kavramlar/pipelinelar/)

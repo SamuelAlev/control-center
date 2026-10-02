@@ -1,185 +1,196 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Использовать режим фокуса и звуковые пейзажи
+description: Запустите сессию фокуса с таймером, плавающей пилюлей обратного отсчёта и подавленными уведомлениями и настройте адаптивный звуковой пейзаж, который играет под ней.
 dateModified: 2026-08-17
 slug: ru-RU/руководство/практические-руководства/режим-фокуса
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+В этом руководстве показано, как запустить сессию фокуса: блок с таймером, во
+время которого Control Center подавляет несрочные уведомления и выводит
+плавающую пилюлю обратного отсчёта поверх остальных ваших окон. Здесь же описан
+звуковой пейзаж, который (по умолчанию) играет под ней, — бесконечная
+эмбиент-дорожка, которую ваш сервер синтезирует в реальном времени по
+выбранному настроению, погоде на улице и времени суток.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Сессия фокуса — функция уровня оболочки. Она не привязана ни к одному столпу —
+не меняет раскладку, не скрывает боковую панель и не затрагивает поверхность
+проверки PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Только в десктопном приложении]
+Плавающая пилюля и открепляемый мини-плеер звукового пейзажа — это нативные
+окна-соседи, которые создаёт только загрузчик десктопного приложения. В
+веб-сборке по адресу `app.usectrl.dev` нет ни того, ни другого и нет конвейера
+уведомлений ОС, поэтому сессии фокуса там нечего показывать и нечего подавлять.
+Панель звукового пейзажа и воспроизведение работают везде, где вы подключаетесь
+к серверу.
 :::
 
-## Start a focus session
+## Начать сессию фокуса
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Нажмите значок фокуса справа в строке заголовка (подсказка **Начать сессию
+   фокуса**)
+2. В диалоге введите необязательную **Цель** — то, над чем вы работаете
+3. Выберите **Длительность**: 25m, 50m, 1h, 1h 30m или 2h. По умолчанию — 50m,
+   и ваш последний выбор запоминается
+4. Нажмите **Начать**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Проверка: кнопка в строке заголовка заменяется акцентным чипом с числом
+оставшихся минут, плавающая пилюля появляется поверх остальных окон, а при
+включённом **Включать в режиме фокуса** начинает играть звуковой пейзаж.
 
-Two other entry points reach the same session:
+К той же сессии ведут ещё два входа:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** открывает тот же диалог.
+- **⌘⇧⌥F** немедленно запускает сессию с запомненной длительностью и без цели —
+  диалог пропускается. Повторное нажатие завершает сессию.
 
-## Read the floating pill
+## Что показывает плавающая пилюля
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Пилюля — небольшое окно без рамки, которое можно перетащить куда угодно. Оно
+показывает:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- живой индикатор присутствия и оставшееся время в формате `mm:ss`
+- вашу цель или «Focus session», если вы её не задали
+- тонкую полосу прогресса вдоль нижнего края
 
-Hover it to reveal two actions:
+Наведите на неё курсор, чтобы появились два действия:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — останавливает обратный отсчёт. Пауза действует только
+  в пилюле; сама сессия остаётся активной.
+- **Complete** — завершает сессию.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Пилюля всегда придерживается тёмной палитры, какую бы тему ни использовало
+главное окно, потому что она плавает поверх произвольного содержимого рабочего
+стола.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Если вы закроете пилюлю из строки заголовка, сессия продолжит идти. Нажмите
+кнопку «картинка в картинке» рядом с чипом фокуса (подсказка **Свернуть на
+панель**), чтобы вернуть её.
 
-## Know what gets suppressed
+## Что подавляется
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Пока сессия активна, Control Center отбрасывает все уведомления, кроме двух
+категорий, которые доставляются всегда:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Встреча скоро начнётся** — предупреждение о встрече, которое вы видите
+  задним числом, бесполезно
+- **PR опубликован**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Всё остальное молча подавляется на всю сессию — ни звука, ни тоста ОС.
+Подавленные уведомления не ставятся в очередь на потом.
 
-## Play a soundscape
+## Включить звуковой пейзаж
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Нажмите значок динамика справа в строке заголовка (подсказка **Звуковые
+   пейзажи**), чтобы открыть панель
+2. Выберите **Настроение** — **Концентрация**, **Подъём**, **Расслабление** или
+   **Сон**
+3. Нажмите **Играть**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Проверка: карточка **Сейчас играет** называет текущую сцену — погоду в месте
+расположения рабочего пространства, температуру в °C и метку местоположения.
+Пока на ней написано «Настраиваем атмосферу…», сцена ещё определяется.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Дорожка — не цикл. Ваш сервер синтезирует её непрерывно из настроения, погоды в
+реальном времени в месте расположения рабочего пространства и времени суток.
+Дождь звучит ярко и оживлённо, гроза — громко и с порывами, туман — приглушённо;
+ночь темнее и с большей реверберацией, чем полдень. Настроение задаёт словарь:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Настроение   | Звук                                                                        |
+| ------------ | --------------------------------------------------------------------------- |
+| Концентрация | Мягкая, бодрая атмосфера с низким пульсом — чтобы звучать под работой       |
+| Подъём       | Лёгкая мелодия с мягким пульсом — когда работа кажется тяжёлой              |
+| Расслабление | Более тёплые и консонансные пэды, без ритма                                 |
+| Сон          | Низкие дроны почти без событий, глубокая реверберация                      |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Переключение настроения во время воспроизведения передаёт воспроизведение
+новому настроению, не останавливая его.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Панель также доступна из ⌘K в категории **Focus**, рядом с самой сессией фокуса.
 
-## Shape the sound
+## Настроить звук
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Тембр** (Концентрация, Подъём и Расслабление) — квадратная площадка с
+  перетаскиваемым маркером. По горизонтали — от **Мягкий** до **Энергичный**
+  (сколько всего происходит), по вертикали — от **Космический** до **Яркий**
+  (насколько открыто звучит). Двойное нажатие возвращает площадку к нейтральному
+  центру; стрелки слегка сдвигают маркер. Ваш тембр запоминается для каждого
+  настроения, а изменения плавно вливаются в текущий микс — поток никогда не
+  перезапускается. Настроение **Сон** намеренно не поддаётся настройке.
+- **Громкость** — ползунок от 0 до 100 %, по умолчанию 60 %. Она отделена от
+  системной громкости и запоминается.
+- **Местоположение** — определяется автоматически из рабочего пространства.
+  Нажмите **Обновить погоду**, чтобы заново получить сцену.
 
-## Pop out the mini player
+## Вынести мини-плеер
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Пока играет звук, в строке заголовка появляется вторая кнопка (подсказка
+**Вынести плеер**). Она выводит небольшой мини-HUD всегда поверх остальных окон
+с воспроизведением и паузой, значком погоды, названием сцены и кнопкой
+**Вернуться в приложение** — удобно, когда из-за сессии фокуса вы оказались в
+совсем другом приложении.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Пауза из мини-плеера не закрывает его; убирает его только его кнопка закрытия
+(или выход из приложения).
 
-## Run them together
+## Использовать их вместе
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Две функции связаны одним переключателем в панели звукового пейзажа:
+**Включать в режиме фокуса**, по умолчанию включён.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Начало сессии фокуса запускает звуковой пейзаж, если ничего ещё не играет.
+- Завершение сессии — каким бы оно ни было, включая истечение таймера, —
+  останавливает его, даже если вы запустили звуковой пейзаж вручную.
 
-Turn the switch off to keep the two independent.
+Выключите переключатель, чтобы они стали независимыми.
 
-## End a session
+## Завершить сессию
 
-Any one of these ends it:
+Любое из этих действий завершает её:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Нажмите чип фокуса в строке заголовка (подсказка **Режим фокуса активен —
+  нажмите, чтобы завершить**)
+- Нажмите **Complete** в пилюле
+- Нажмите **⌘⇧⌥F**
+- Выберите **Exit focus mode** в ⌘K
+- Дайте таймеру истечь — при нуле сессия завершается автоматически
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Пилюля закрывается, уведомления немедленно возобновляются, а звуковой пейзаж
+останавливается.
 
-## Understand what does not persist
+## Что не сохраняется
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Сессия живёт ровно один запуск приложения. Закройте и снова откройте Control
+Center — вы начнёте неактивными со сброшенным таймером, даже если сессия была в
+разгаре: ни восстановления после сбоя, ни истории сессий нет.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Переносятся только две вещи: предпочитаемая длительность и флаг блокировки
+уведомлений. Цель, прошедшее время и открытое состояние пилюли — нет.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Воспроизведение столь же недолговечно — при запуске звуковой пейзаж всегда
+остановлен. Ваше настроение, громкость и тембры по настроениям сохраняются; сам
+поток никогда не возобновляется сам.
 
-## Troubleshooting
+## Решение проблем
 
-### The tune pad is missing
+### Площадка настройки отсутствует
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Вы выбрали настроение **Сон**, которое намеренно не поддаётся настройке.
+Переключитесь на **Концентрация** или **Расслабление**, чтобы вернуть площадку.
 
-### Nothing plays after restarting the app
+### После перезапуска приложения ничего не играет
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Так и задумано — при запуске приложения воспроизведение всегда остановлено.
+Откройте панель и снова нажмите **Играть**. Если звук всё равно не появляется,
+проверьте ползунок громкости в панели: он отделён от системной громкости.
 
-### The weather or temperature looks wrong
+### Погода или температура выглядят неверно
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Сцена следует за местоположением активного рабочего пространства. Нажмите
+**Обновить погоду** в панели, чтобы заново её получить.
 
-## Related guides
+## Связанные руководства
 
-- [Configure notifications](/ru-RU/руководство/практические-руководства/уведомления/)
-- [Keyboard shortcuts](/ru-RU/руководство/справка/горячие-клавиши/)
+- [Настроить уведомления](/ru-RU/руководство/практические-руководства/уведомления/)
+- [Горячие клавиши](/ru-RU/руководство/справка/горячие-клавиши/)

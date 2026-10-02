@@ -1,310 +1,315 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: Εργαλεία MCP
+description: Πλήρης κατάλογος των εργαλείων MCP που καταχωρίζει το cc_server, ανά οικογένεια.
 slug: el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+Το `cc_server` φιλοξενεί ένα μητρώο εργαλείων MCP (JSON-RPC 2.0), που εξυπηρετείται στην κύρια θύρα του διακομιστή (προεπιλογή `9030`) στα `POST /mcp` και `GET /sse`, με έκδοση πρωτοκόλλου `2024-11-05`. Κάθε πελάτης φτάνει στο ίδιο μητρώο: η εφαρμογή για υπολογιστή, η έκδοση για web, οι εξωτερικοί πελάτες MCP και ο ενσωματωμένος runtime πράκτορα. Εξωτερικοί διακομιστές MCP μπορούν να γεφυρωθούν στο ίδιο μητρώο ως δυναμικό επίπεδο.
 
-## Registry size
+## Μέγεθος μητρώου
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Μέτρηση                                                                                              | Πλήθος |
+| ---------------------------------------------------------------------------------------------------- | ------ |
+| Εργαλεία που καταχωρίζει το `cc_server`                                                              | 110    |
+| Από το `packages/cc_mcp`                                                                             | 108    |
+| Από το `packages/cc_mcp_client` (ανακάλυψη εργαλείων)                                                | 2      |
+| Καταχωρισμένα στο βασικό μητρώο (`server_mcp_registry.dart`)                                         | 63     |
+| Καταχωρισμένα μετά την εκκίνηση, καθώς ενεργοποιούνται οι υπηρεσίες τους (`cc_server_runtime.dart`)  | 47     |
+| Από τα 63 του βασικού μητρώου, υπό συνθήκη ύπαρξης αποθετηρίου γραφήματος κώδικα                     | 5      |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Τα πέντε εργαλεία γραφήματος κώδικα καταχωρίζονται μόνο όταν ο ξενιστής περνά αποθετήριο γραφήματος κώδικα στο `buildServerMcpRegistry`. Το `cc_server` περνά πάντα ένα, οπότε και τα 110 είναι ενεργά στο δυαδικό που διανέμεται.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Το πλήρες μητρώο ανακοινώνεται στο `tools/list` χωρίς φραγή ανακάλυψης. Οι επεξεργασίες εισιτηρίων είναι τυποποιημένα εργαλεία.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Οι εξωτερικοί πελάτες βλέπουν πάντα ολόκληρο τον κατάλογο]
+Το `tools/list` δεν περικόπτεται ποτέ. Οι πελάτες MCP επικυρώνουν τα ονόματα εργαλείων με βάση το δικό τους αντίγραφο αυτής της λίστας στην προσωρινή μνήμη και απορρίπτουν καθετί που δεν περιλαμβάνεται χωρίς να ρωτήσουν τον διακομιστή, οπότε ένα εργαλείο κρυμμένο εκεί είναι απρόσιτο και όχι απλώς αθόρυβο.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
+Ο **ενσωματωμένος μηχανισμός** είναι διαφορετικός: φορτώνει μόνο ένα μόνιμο υποσύνολο ορισμών ανά αίτημα και τραβά τα υπόλοιπα με την πρώτη χρήση, πράγμα που είναι συμπεριφορά της πλευράς του μηχανισμού και δεν αλλάζει αυτό το μητρώο. Δείτε [Πλαίσιο εργαλείων και προσωρινή αποθήκευση προτροπών](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Κάθε κλάση εργαλείου καταχωρίζεται]
+Ένα αρχείο πηγαίου κώδικα στο `packages/cc_mcp/lib/src/tools/` είναι ένα εργαλείο που
+μπορεί να καλέσει ένας πράκτορας. Το `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+σπάει το build αν μια νέα κλάση εργαλείου δεν κατασκευάζεται από τίποτα.
 :::
 
-## Common parameters
+## Κοινές παράμετροι
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Απαιτείται** σε κάθε εργαλείο που αγγίζει δεδομένα εμβέλειας χώρου εργασίας. Ένα απόν ή μη έγκυρο `workspace_id` επιστρέφει ρητό σφάλμα, και μια τιμή που δεν ταιριάζει με τον χώρο εργασίας της οντότητας-στόχου απορρίπτεται αντί να αγνοηθεί σιωπηλά. Παραλείψτε το στα πραγματικά καθολικά εργαλεία: το `list_workspaces` και τα έξι εργαλεία ροής ειδήσεων (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), που βασίζονται στη λίστα ροών ανά χρήστη του ιδιοκτήτη του διακομιστή. Τα εργαλεία ανακάλυψης (`search_tool_bm25`, `list_my_tools`) το παίρνουν προαιρετικά, ώστε να μπορούν να χαρακτηρίσουν τη δυνατότητα κλήσης ανά λειτουργία συνομιλίας. Όταν ο διακομιστής αποστέλλει έναν πράκτορα, ο χώρος εργασίας επιβάλλεται στην πλευρά του διακομιστή, οπότε ο πράκτορας δεν μπορεί να φτάσει σε άλλον χώρο εργασίας περνώντας ένα ξένο id.
 
-## Tool discovery
+## Ανακάλυψη εργαλείων
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Και τα δύο προέρχονται από το `cc_mcp_client`, όχι από το `cc_mcp`, και και τα δύο συμβουλεύονται τον φύλακα λειτουργίας, ώστε να αναφέρουν τι είναι καλούμενο στην _τρέχουσα_ λειτουργία συνομιλίας.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Εργαλείο           | Περιγραφή                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | Αναζητά στον κατάλογο εργαλείων με λέξη-κλειδί· επιστρέφει τα εργαλεία που ταιριάζουν, τα σχήματα ορισμάτων τους και αν το καθένα είναι καλούμενο αυτή τη στιγμή |
+| `list_my_tools`    | Παραθέτει τα εργαλεία που είναι καλούμενα αυτή τη στιγμή σε αυτή τη συνομιλία, φιλτραρισμένα κατά τη λειτουργία της                    |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Ένα τρίτο εργαλείο ανακάλυψης, το **`search_tools`**, υπάρχει μόνο μέσα στον ενσωματωμένο μηχανισμό και δεν αποτελεί μέρος αυτού του μητρώου MCP. Κατατάσσει την επιφάνεια εργαλείων της ίδιας της εκτέλεσης και, σε αντίθεση με το `search_tool_bm25`, **φορτώνει** τα σχήματα όσων βρίσκει, ώστε ο πράκτορας να μπορεί να καλέσει ένα ταίριασμα στην επόμενη στροφή του. Οι πράκτορες στον μηχανισμό καλό είναι να το προτιμούν· οι πελάτες MCP έχουν το `search_tool_bm25`.
 
-## Agent tools
+## Εργαλεία πράκτορα
 
-| Tool          | Description                               |
+| Εργαλείο      | Περιγραφή                                 |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | Παραθέτει τους καταχωρισμένους πράκτορες σε έναν χώρο εργασίας |
 
-## Agent peer messaging and delegation
+## Ανταλλαγή μηνυμάτων και ανάθεση μεταξύ ομότιμων πρακτόρων
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Οι πράκτορες μιλούν μεταξύ τους μέσω χώρων (διαρκών, ορατών στον κατάλογο συμμετεχόντων). Το `ask_agent` είναι ερώτηση/απάντηση με υποχρεωτικό χρονικό όριο· το `delegate_task` φυλάσσεται στην πλευρά του διακομιστή από ανώτατο όριο βάθους, ανίχνευση κύκλων, πλαίσιο προϋπολογισμού και ανώτατο όριο αυτονομίας.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| Εργαλείο        | Περιγραφή                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| `send_to_agent` | Στέλνει μονόδρομο μήνυμα σε άλλον πράκτορα, με διεύθυνση μέσω `to_agent_id` ή ακριβούς `to_agent_name` |
+| `ask_agent`     | Ρωτά άλλον πράκτορα και περιμένει την απάντησή του ή λήγει ο χρόνος                            |
+| `delegate_task` | Αναθέτει μια εργασία σε άλλον πράκτορα ως παρακολουθούμενο θυγατρικό εισιτήριο                  |
+| `consult_agent` | Προσθέτει στον χώρο τον ειδικό που ταιριάζει καλύτερα με βάση τις δεξιότητες και τον αποστέλλει με μια εστιασμένη οδηγία |
+| `todo_read`     | Διαβάζει την αποθηκευμένη λίστα ελέγχου εργασιών αυτής της συνομιλίας                            |
 
-## Skill tools
+## Εργαλεία δεξιοτήτων
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Κάθε εγκατάσταση και ενημέρωση περνά από πύλη σάρωσης με ασφαλή αποτυχία προτού φτάσει οποιοδήποτε περιεχόμενο δεξιότητας στον δίσκο ή σε προτροπή πράκτορα.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Εργαλείο             | Περιγραφή                                                                     |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `list_skills`        | Παραθέτει τα slugs των δεξιοτήτων που είναι διαθέσιμα σε έναν χώρο εργασίας    |
+| `create_skill`       | Δημιουργεί νέα δεξιότητα από περιεχόμενο markdown                              |
+| `install_skill`      | Εγκαθιστά ολόκληρο τον κατάλογο μιας δεξιότητας από αποθετήριο GitHub σε καρφιτσωμένη αναφορά |
+| `update_skill`       | Ενημερώνει μια εγκατεστημένη δεξιότητα GitHub σε νέα αναφορά, με νέα σάρωση και νέο καρφίτσωμα |
+| `list_skill_updates` | Παραθέτει τις δεξιότητες για τις οποίες υπάρχει νεότερη έκδοση                  |
+| `verify_skills`      | Επαληθεύει τις κλειδωμένες δεξιότητες ως προς τους κατακερματισμούς περιεχομένου τους στον δίσκο |
+| `pin_skill`          | Κατακερματίζει μια υπάρχουσα δεξιότητα στον δίσκο στο `skills-lock.json`        |
 
-## Plan, playbook and artifact tools
+## Εργαλεία σχεδίου, playbook και τεχνουργημάτων
 
-| Tool               | Description                                                                                                           |
+| Εργαλείο           | Περιγραφή                                                                                                             |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | Το συμβόλαιο εξόδου της λειτουργίας σχεδίου: εκπέμπει ένα τυποποιημένο `PlanDocument` που ανοίγει στο Plan Studio     |
+| `create_playbook`  | Αποθηκεύει ένα σχέδιο ως επώνυμο, εκδοσιακά διαχειριζόμενο πρότυπο με τυποποιημένα σύμβολα `{{param}}`                 |
+| `run_playbook`     | Δημιουργεί στιγμιότυπο ενός playbook με τιμές παραμέτρων, παράγοντας ένα σχέδιο που εγκρίνει ο χειριστής              |
+| `publish_artifact` | Δημοσιεύει μια διατεταγμένη λίστα τυποποιημένων μπλοκ (markdown, table, chart, mermaid, code, JSON) που αποδίδονται εγγενώς στον πελάτη |
+| `revise_artifact`  | Αντικαθιστά το περιεχόμενο ενός δημοσιευμένου τεχνουργήματος                                                           |
+| `list_artifacts`   | Παραθέτει τα τεχνουργήματα του χώρου εργασίας                                                                          |
+| `get_artifact`     | Διαβάζει ένα τεχνούργημα                                                                                              |
+| `complete_goal`    | Δηλώνει ότι ο ενεργός διαρκής στόχος της συνομιλίας (που ξεκίνησε με `/goal` ή `/loop`) έχει επιτευχθεί               |
 
-## Workspace tools
+## Εργαλεία χώρου εργασίας
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Εργαλείο          | Περιγραφή                                                                  |
+| ----------------- | -------------------------------------------------------------------------- |
+| `list_workspaces` | Παραθέτει όλους τους χώρους εργασίας με τα ids και τα ονόματά τους (καθολικό· χωρίς `workspace_id`) |
 
-## Repo tools
+## Εργαλεία αποθετηρίων
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Εργαλείο     | Περιγραφή                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `list_repos` | Παραθέτει τα αποθετήρια που είναι καταχωρισμένα σε έναν χώρο εργασίας. Όσοι πράκτορες τα καλούν λαμβάνουν τις απομονωμένες διαδρομές worktree copy-on-write της συνομιλίας τους, ποτέ τα αρχικά checkout |
 
-## Messaging tools
+## Εργαλεία μηνυμάτων
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Εργαλείο             | Περιγραφή                                                                   |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_spaces`        | Παραθέτει τους χώρους μηνυμάτων σε έναν χώρο εργασίας                        |
+| `get_messages`       | Ανακτά μηνύματα από έναν χώρο                                               |
+| `send_message`       | Στέλνει μήνυμα σε έναν χώρο ως επώνυμος πράκτορας αποστολέας                 |
+| `get_space_notes`    | Διαβάζει το κοινόχρηστο έγγραφο παράδοσης ενός χώρου                         |
+| `update_space_notes` | Αντικαθιστά το κοινόχρηστο έγγραφο παράδοσης ενός χώρου                      |
+| `todo_write`         | Αντικαθιστά τη λίστα ελέγχου εργασιών αυτής της συνομιλίας σε μία κλήση (περάστε ολόκληρη τη λίστα) |
 
-## Review tools
+## Εργαλεία ελέγχου
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Εργαλείο                   | Περιγραφή                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | Ξεκινά τον έλεγχο με AI για ένα PR: υπολογίζει τις περιοχές ελέγχου, διασπείρει εξειδικευμένους ελεγκτές στον χώρο του PR, συντάσσει την καθοδηγούμενη περιήγηση και οριστικοποιεί |
+| `add_review_node`          | Προσθέτει ένα δομημένο εύρημα ελέγχου (αρχείο, γραμμή, προτεραιότητα P0–P3) σε έναν χώρο ελέγχου               |
+| `confirm_review_node`      | Επιβεβαιώνει το εύρημα ενός ομότιμου· ο συντάκτης δεν μπορεί να αυτοεπιβεβαιωθεί                               |
+| `resolve_review_node`      | Σημειώνει ένα εύρημα ως διορθωμένο αφού όντως γίνει η αλλαγή· αναρτά ένα ίχνος στον χώρο ελέγχου                |
+| `dismiss_review_node`      | Απορρίπτει ένα εύρημα που δεν εφαρμόζεται· καταγράφει ένα γεγονός καταστολής, ώστε οι ελεγκτές να σταματήσουν να το επισημαίνουν ξανά |
+| `request_peer_review`      | Ζητά από άλλον πράκτορα ελεγκτή μια δεύτερη ματιά σε ένα εύρημα                                               |
+| `dispatch_reviewers`       | Αποστέλλει τους πράκτορες ελεγκτές που ταιριάζουν σε έναν χώρο ελέγχου, ταυτόχρονα                             |
+| `submit_reviewer_verdict`  | Αναρτά ετυμηγορία ship/hold/block ανά ελεγκτή με βεβαιότητα και εξήγηση                                        |
+| `finalize_review`          | Υπολογίζει τη συναίνεση ανά κόμβο και την ετυμηγορία ανά PR και κλείνει τον έλεγχο                             |
+| `set_cohort_summary`       | Ορίζει τη σύνοψη σε απλή γλώσσα μιας κοόρτας ελέγχου                                                          |
+| `add_review_diagram`       | Επισυνάπτει ένα δομημένο, επαληθευμένο από το γράφημα διάγραμμα (`sequence`, `entityRelation`, `stateMachine`) σε μια κοόρτα |
+| `publish_review_to_github` | Δημοσιεύει τον οριστικοποιημένο έλεγχο στο GitHub ως ενσωματωμένα σχόλια συν ένα σώμα σύνοψης                  |
 
-## Memory tools
+## Εργαλεία μνήμης
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Εργαλείο                | Περιγραφή                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| `search_memory`         | Αναζητά γεγονότα και πολιτικές (λέξη-κλειδί, σημασιολογική ή υβριδική — η υβριδική είναι η προεπιλογή)  |
+| `propose_fact`          | Αποθηκεύει ένα σύντομο γεγονός markdown σε έναν τομέα                                                  |
+| `supersede_fact`        | Σημειώνει ένα γεγονός ως αντικατασταθέν από άλλο                                                       |
+| `propose_policy`        | Αποθηκεύει έναν κανονιστικό κανόνα σε έναν τομέα (απαιτεί δικαίωμα εγγραφής σε αυτόν)                  |
+| `supersede_policy`      | Αποσύρει μια πολιτική — τη σημειώνει ως ανενεργή διατηρώντας την για έλεγχο                            |
+| `list_policies`         | Παραθέτει τις ενεργές πολιτικές, προαιρετικά φιλτραρισμένες κατά τομέα                                 |
+| `list_memory_domains`   | Παραθέτει τους τομείς μνήμης του χώρου εργασίας με πλήθη γεγονότων και πολιτικών                        |
+| `record_observation`    | Καταγράφει μια ακατέργαστη παρατήρηση στη μνήμη εργασίας του πράκτορα                                  |
+| `get_my_notes`          | Διαβάζει το πρόχειρο μνήμης εργασίας του καλούντος πράκτορα                                            |
+| `update_my_notes`       | Ενημερώνει το πρόχειρο μνήμης εργασίας του καλούντος πράκτορα                                          |
+| `remember`              | Προσθέτει μια σημείωση στη θερμή μνήμη εργασίας του πράκτορα για αυτή τη συνεδρία (με όρια TTL και πλήθους) |
+| `consolidate_memory`    | Εκτελεί ένα πέρασμα συγκέντρωσης («ύπνου»): εκδιώκει τα ληγμένα θερμά στοιχεία, κυλά τα διαρκή σε μακροπρόθεσμα γεγονότα |
+| `harmonize_memory`      | Εκτελεί εναρμόνιση πεποιθήσεων μεταξύ πρακτόρων (SHMR) και επισημαίνει αντιφάσεις                      |
+| `list_memory_conflicts` | Παραθέτει τις ανιχνευμένες αντιφάσεις και το πώς επιλύθηκε καθεμιά                                    |
 
-## Governance tools
+## Εργαλεία διακυβέρνησης
 
-| Tool                         | Description                                                                                           |
+| Εργαλείο                     | Περιγραφή                                                                                             |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | Δημιουργεί οργανωτικό στόχο (επίπεδο εταιρείας, ομάδας, πράκτορα ή εργασίας)                          |
+| `list_goals`                 | Παραθέτει στόχους με επίπεδο, κατάσταση και συγκεντρωτική πρόοδο                                      |
+| `update_goal_progress`       | Ορίζει την πρόοδο ενός στόχου                                                                          |
+| `create_approval`            | Ανοίγει έγκριση διακυβέρνησης για ελεγχόμενη ενέργεια (έξοδος σχεδίου, συγχώνευση, κυκλοφορία, πρόσληψη, προσαρμοσμένη) |
+| `list_approvals`             | Παραθέτει εγκρίσεις, προαιρετικά φιλτραρισμένες κατά κατάσταση                                        |
+| `decide_approval`            | Καταγράφει μια απόφαση: έγκριση, απόρριψη, αίτημα αναθεώρησης ή νέα υποβολή                            |
+| `comment_approval`           | Σχολιάζει μια έγκριση διακυβέρνησης                                                                    |
+| `exit_plan_mode`             | Ανοίγει (και, μόλις εγκριθεί, καταναλώνει) μια έγκριση `plan_exit`, βγάζοντας τη συνομιλία από τη λειτουργία σχεδίου |
+| `agent_heartbeat`            | Αναφέρει ζωτικότητα (ζωντανός, αδρανής, κολλημένος)· η σιωπή μετατρέπει την υγεία του runtime σε recently-lost και μετά σε offline |
+| `list_runtime_health`        | Παραθέτει την υγεία του runtime κάθε πράκτορα                                                         |
+| `list_agent_presence`        | Παραθέτει την παρουσία κάθε πράκτορα (υγεία, κύκλος ζωής, πλήθη σε εκτέλεση και σε ουρά, χωρητικότητα)  |
+| `get_org_chart`              | Διαβάζει το δέντρο αναφορών, με τον CEO στη ρίζα, ένθετο κατά `reports_to`                             |
+| `create_work_product`        | Δημιουργεί ένα διαρκές παραδοτέο συνδεδεμένο με εισιτήριο                                              |
+| `save_work_product_revision` | Αποθηκεύει νέα αναθεώρηση· περάστε `base_revision_id` για να απορριφθείτε σε ταυτόχρονη επεξεργασία    |
+| `list_work_products`         | Παραθέτει προϊόντα εργασίας, προαιρετικά φιλτραρισμένα σε ένα εισιτήριο                                |
+| `get_work_product`           | Διαβάζει ένα προϊόν εργασίας με το ιστορικό αναθεωρήσεών του                                           |
+| `create_runtime_profile`     | Ορίζει ένα επαναχρησιμοποιήσιμο προφίλ runtime (οικογένεια πρωτοκόλλου, εντολή CLI, σταθερά ορίσματα εκκίνησης) |
+| `list_runtime_profiles`      | Παραθέτει τα προφίλ runtime του χώρου εργασίας                                                        |
 
-## Code graph tools
+## Εργαλεία γραφήματος κώδικα
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Καταχωρίζονται μόνο όταν ο ξενιστής παρέχει αποθετήριο γραφήματος κώδικα. Το ευρετήριο καλύπτει το σύνολο γραμματικών που διανέμεται (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada)· σύμβολα σε οποιαδήποτε άλλη γλώσσα δεν υπάρχουν.
 
-| Tool           | Description                                                                        |
+| Εργαλείο       | Περιγραφή                                                                          |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Αναζητά στα ευρετηριασμένα σύμβολα κατά όνομα, υπογραφή και σχόλιο τεκμηρίωσης (υβριδική BM25 + σημασιολογική) |
+| `code_symbol`  | Αναζητά σύμβολα κατά ακριβές όνομα· επιστρέφει `file:line` και υπογραφή             |
+| `code_callers` | Παραθέτει τα σύμβολα που καλούν ή εξαρτώνται από ένα σύμβολο (εισερχόμενες ακμές)   |
+| `code_callees` | Παραθέτει τα σύμβολα που καλεί ή από τα οποία εξαρτάται ένα σύμβολο (εξερχόμενες ακμές) |
+| `code_impact`  | Υπολογίζει τη μεταβατική ακτίνα επίπτωσης ενός συμβόλου, μέχρι ένα βάθος            |
 
-## Ticketing tools
+## Εργαλεία εισιτηρίων
 
-| Tool                      | Description                                                                                                                  |
+| Εργαλείο                  | Περιγραφή                                                                                                                    |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | Δημιουργεί εισιτήριο στον διαμορφωμένο πάροχο                                                                                 |
+| `get_ticket`              | Ανακτά ένα εισιτήριο κατά id                                                                                                 |
+| `list_tickets`            | Παραθέτει εισιτήρια, προαιρετικά φιλτραρισμένα κατά κατάσταση ή ανατεθειμένο                                                   |
+| `update_ticket`           | Ενημερώνει κατάσταση, τίτλο, περιγραφή, προτεραιότητα ή ετικέτες (η κατάσταση δέχεται ψευδώνυμα όπως `in_progress` / `completed`) |
+| `assign_ticket`           | Αναθέτει ένα εισιτήριο σε πράκτορα ή/και ομάδα                                                                                |
+| `reassign_ticket`         | Αναθέτει ξανά ένα εισιτήριο σε διαφορετικό πράκτορα                                                                           |
+| `add_ticket_collaborator` | Προσκαλεί έναν πράκτορα να συνεργαστεί σε ένα εισιτήριο (προστίθεται στον χώρο του)                                          |
+| `comment_on_ticket`       | Σχολιάζει ένα εισιτήριο                                                                                                      |
+| `close_ticket`            | Κλείνει ένα εισιτήριο (το σημειώνει ως ολοκληρωμένο) με προαιρετική έξοδο                                                      |
+| `fail_ticket`             | Σημειώνει ένα εισιτήριο ως αποτυχημένο με μήνυμα σφάλματος                                                                    |
+| `delegate_ticket`         | Αναθέτει ένα εισιτήριο σε πράκτορα, δημιουργώντας παρακολουθούμενο εισιτήριο                                                  |
+| `ticket_pr_link`          | Συνδέει ή αποσυνδέει ένα εισιτήριο και ένα pull request με το αναγνωριστικό κόμβου του PR (`action`: `link` \| `unlink`)       |
+| `ticket_relation`         | Προσθέτει ή αφαιρεί σχέση μεταξύ δύο εισιτηρίων — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Παραθέτει τον γονικό, τα υποεισιτήρια και τους συνδέσμους εξάρτησης ενός εισιτηρίου                                          |
 
-## Team and pipeline tools
+## Εργαλεία ομάδας και pipeline
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Εργαλείο               | Περιγραφή                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | Καταγράφει μια καταχώριση δραστηριότητας του επικεφαλής ομάδας σε ένα εισιτήριο                                                  |
+| `preview_trigger`      | Δοκιμαστική εκτέλεση του ποιες εκτελέσεις pipeline θα ξεκινούσε ένα υποθετικό συμβάν, χωρίς να δεσμεύσει τίποτα                    |
+| `submit_output`        | Υποβάλλει το δομημένο φορτίο εξόδου για την τρέχουσα εκτέλεση pipeline του καλούντος· επικυρώνεται ως προς το δηλωμένο σχήμα εξόδου της εκτέλεσης |
 
-## Orchestration tools
+## Εργαλεία ενορχήστρωσης
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Εργαλείο                | Περιγραφή                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | Εκπέμπει ένα δομημένο σχέδιο ενορχήστρωσης πολλών πρακτόρων για μία εκ των προτέρων έγκριση· επικυρώνει και επιστρέφει τυχόν παραβάσεις |
 
-## Newsfeed tools
+## Εργαλεία ροής ειδήσεων
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| Εργαλείο            | Περιγραφή                                                      |
+| ------------------- | -------------------------------------------------------------- |
+| `list_feeds`        | Παραθέτει τις καταχωρισμένες ροές RSS/Atom                     |
+| `list_articles`     | Παραθέτει άρθρα, προαιρετικά φιλτραρισμένα κατά ροή, μη αναγνωσμένα ή αποθηκευμένα |
+| `get_article`       | Ανακτά ένα άρθρο                                                |
+| `set_article_read`  | Σημειώνει ένα άρθρο ως αναγνωσμένο ή μη αναγνωσμένο             |
+| `set_article_saved` | Αποθηκεύει ή αφαιρεί από τα αποθηκευμένα ένα άρθρο              |
+| `refresh_feeds`     | Ανακτά ξανά τώρα κάθε ενεργοποιημένη ροή                        |
 
-## Enclosure (rig) tools
+## Εργαλεία περιβλήματος (σταθμών)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/#action-verbs).
+Οδηγήστε αναλώσιμες μηχανές — ένα περίκλειστο πρόγραμμα περιήγησης ή επιφάνεια
+εργασίας Linux, έναν εξομοιωτή Android ή έναν Προσομοιωτή iOS — μέσα από μια
+εκτέλεση. Καταχωρίζονται μετά την εκκίνηση, άνευ όρων: το αν μια μηχανή μπορεί
+όντος να εκκινήσει είναι ερώτημα ανίχνευσης που τα εργαλεία απαντούν ανά κλήση.
+Επαναλαμβανόμενες κλήσεις σε μία συνομιλία επαναχρησιμοποιούν μία μηχανή· τα
+στιγμιότυπα οθόνης επιστρέφουν ως περιεχόμενο εικόνας με προϋπολογισμό μίας
+εικόνας ανά αποτέλεσμα, και το εξαγόμενο περιεχόμενο σελίδας/UI περιφράσσεται ως
+μη αξιόπιστα δεδομένα. Τα τέσσερα εργαλεία χρήσης συν το `rig_close` δηλώνουν το
+`enclosureControl` ως [κλάση ενεργειών](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
+(τα εργαλεία χρήσης δηλώνουν επίσης `networkEgress` και `processSpawn`· τα
+`mobile_use` και `ios_use` δηλώνουν επίσης `packageInstall`), οπότε οι λειτουργίες
+μόνο για ανάγνωση τα αρνούνται. Το `rig_list` δεν δηλώνει καμία — διαβάζει μόνο
+την κατάσταση του χώρου εργασίας. Το πλήρες λεξιλόγιο ρημάτων ανά επιφάνεια
+βρίσκεται στην [αναφορά σταθμών](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/#action-verbs).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Εργαλείο       | Περιγραφή                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `computer_use` | Οδηγεί μια επιφάνεια εργασίας Linux σε περίκλειστη VM: μετακίνηση, κλικ, σύρσιμο, κύλιση, πληκτρολόγηση, αλλαγή μεγέθους, πρόχειρο, στιγμιότυπο οθόνης |
+| `browser_use`  | Οδηγεί ένα headless Chromium, Firefox ή WebKit (`engine`): πλοήγηση, κλικ, συμπλήρωση, εξαγωγή (a11y/DOM/κονσόλα), πρόχειρο, στιγμιότυπο οθόνης |
+| `mobile_use`   | Οδηγεί το Android μέσω ADB: επιθεώρηση/είσοδος, στιγμιότυπα οθόνης, εγκατάσταση/εκκίνηση/διακοπή/επαναφορά/απεγκατάσταση εφαρμογών, βαθείς σύνδεσμοι και εντολές συσκευής σε μορφή argv |
+| `ios_use`      | Οδηγεί τον Προσομοιωτή iOS μέσω WebDriverAgent/CoreSimulator: επιθεώρηση/είσοδος, στιγμιότυπα οθόνης, εγκατάσταση/εκκίνηση/διακοπή/απεγκατάσταση εφαρμογών, βαθείς σύνδεσμοι και διεργασίες προσομοιωτή σε μορφή argv |
+| `rig_list`     | Παραθέτει τους σταθμούς ενός χώρου εργασίας με επιφάνεια, κατάσταση, μέγεθος οθόνης και ελεγκτή |
+| `rig_close`    | Καταστρέφει έναν σταθμό και απορρίπτει την κατάσταση της μηχανής που του ανήκει                  |
 
-## Not exposed over MCP
+## Όσα δεν εκτίθενται μέσω MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/), not as a tool an agent can call.
+Το ημερολόγιο και οι συσκέψεις δεν έχουν εργαλεία MCP. Οι πράκτορες δεν μπορούν να διαβάσουν το ημερολόγιό σας, τις συσκέψεις, τις απομαγνητοφωνήσεις, τα στοιχεία ενέργειας ή τις αποφάσεις σας. Η σύνοψη που παράγει στοιχεία ενέργειας και αποφάσεις εκτελείται ως το ενσωματωμένο [pipeline `meeting_summary`](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/), όχι ως εργαλείο που μπορεί να καλέσει ένας πράκτορας.
 
-## Tool gating by mode
+## Περιορισμός εργαλείων ανά λειτουργία
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Ο περιορισμός επιβάλλεται δύο φορές από έναν πίνακα (`ModeToolPolicy`): μία στον αποστολέα MCP για τον προσαρμογέα Claude Code και μία στο μητρώο του ενσωματωμένου μηχανισμού. Μια αποκλεισμένη κλήση επιστρέφει τον λόγο.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| Λειτουργία    | Επιφάνεια εργαλείων                                                                                                                                                                                                                    |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat`        | Κάθε καταχωρισμένο εργαλείο· χωρίς λίστα επιτρεπόμενων                                                                                                                                                                                  |
+| `plan`        | Μια επιμελημένη λίστα επιτρεπόμενων. Χωρίς εγγραφές στο worktree και χωρίς τα ρήματα εισιτηρίων `create` / `assign` / `delegate`, αλλά επιτρέπονται η μνήμη, τα τεχνουργήματα, οι λίστες εργασιών, το `submit_plan`, το `exit_plan_mode` και τα ρήματα ολοκλήρωσης εισιτηρίου στο εισιτήριο που έχει αποσταλεί |
+| `review`      | Μια επιμελημένη λίστα επιτρεπόμενων: συμμετοχή σε έλεγχο, επικοινωνία, ανακτήσεις πλαισίου μόνο για ανάγνωση και το πλήρες σύνολο ρημάτων εισιτηρίων, συμπεριλαμβανομένων των `create_ticket` και `assign_ticket`                         |
+| `orchestrate` | Μια επιμελημένη λίστα επιτρεπόμενων: εργαλεία έρευνας και ανάγνωσης συν τα `propose_orchestration`, `create_playbook` και `run_playbook`. Η πρόσληψη, η αποσύνθεση και η ολοκλήρωση εισιτηρίων συμβαίνουν ντετερμινιστικά μετά την έγκριση, ποτέ στη μέση της εκτέλεσης |
 
-Permitted in every mode regardless of allow-list:
+Επιτρέπονται σε κάθε λειτουργία ανεξάρτητα από τη λίστα επιτρεπόμενων:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Σύνολο                  | Εργαλεία                                                                                                                                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Μνήμη και τεχνουργήματα | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Γράφημα κώδικα          | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Μηχανική εκτέλεσης      | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Το να βρίσκεται ένα εργαλείο σε λίστα επιτρεπόμενων δεν το κάνει καλούμενο, και ισχύει και το αντίστροφο: η δυνατότητα υποβολής ερώτησης στον χειριστή είναι εργαλείο του **μηχανισμού** (`ask_user`), οπότε δεν εμφανίζεται καθόλου σε αυτόν τον κατάλογο MCP.
 
-## Approval-gated tools
+## Εργαλεία με πύλη έγκρισης
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Ένα εργαλείο μπορεί να δηλώνει `requiresApproval`. Τότε ο αποστολέας χτίζει ένα `ApprovalPayload` και το προβάλλει μέσω του `ConfirmationPort` πριν εκτελεστεί το εργαλείο· το `cc_server` συνδέει αυτή τη θύρα, οπότε η πύλη είναι ενεργή.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Τα καταχωρισμένα εργαλεία που το δηλώνουν: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/).
+Ανεξάρτητα, οι ενοποιημένοι περιορισμοί ενεργειών βάζουν σε πύλη κάθε εργαλείο που δηλώνει μη κενό σύνολο `ActionClass`. Μια απόφαση `prompt` χωρίς συνδεδεμένο εγκρίνοντα απορρίπτεται. Δείτε [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/).
 
-## Capabilities with no tool behind them
+## Δυνατότητες χωρίς εργαλείο πίσω τους
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Δεν είναι κάθε δυνατότητα του προϊόντος προσβάσιμη από πράκτορα. Αυτές δεν έχουν
+καθόλου εργαλείο, οπότε ένα όνομα που ίσως έχετε δει να αναφέρεται αλλού
+επιστρέφει «άγνωστο εργαλείο»:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Δυνατότητα                                | Πού ζει αντ' αυτού                                                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Πρόσληψη, απόλυση ή επεξεργασία πράκτορα  | Το UI των πρακτόρων. Δεν υπάρχει εργαλείο `hire_agent` / `fire_agent` / `update_agent`                            |
+| Δημιουργία χώρου εργασίας                 | `workspace.upsert` μέσω RPC, που αρχικοποιεί και σφραγίζει την κυριότητα                                           |
+| Έργα (δημιουργία / λίστα / ενημέρωση / καταχώριση) | Το UI των εισιτηρίων. Τα έργα είναι επιφάνεια χειριστή — δείτε [Οργάνωση εργασίας με έργα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/) |
+| Υποβολή αποκλειστικής ερώτησης στον χειριστή | Το εργαλείο `ask_user` του **μηχανισμού**, όχι το MCP. Αποδίδει μια φόρμα στη συνομιλία και μπλοκάρει μέχρι την απάντηση |
+| Διαγνωστικά ανά πράκτορα                  | Τίποτα. Δεν υπάρχει `doctor` — δείτε [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)      |
+| Ημερολόγιο και συσκέψεις                  | RPC μόνο για ανθρώπινους πελάτες (δείτε παραπάνω)                                                                  |
 
-## See also
+## Δείτε επίσης
 
-- [Use Control Center as an MCP server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
+- [Χρήση του διακομιστή MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)

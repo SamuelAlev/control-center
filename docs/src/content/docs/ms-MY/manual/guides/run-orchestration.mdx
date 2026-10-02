@@ -1,126 +1,137 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Jalankan orkestrasi
+description: Minta rancangan daripada orkestrator, semak dan suntingnya dalam Plan Studio, luluskannya sekali dan biarkan pipeline yang dijana melakukan kerja itu.
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/) for how it works.
+Panduan ini menunjukkan cara mengubah satu matlamat besar menjadi rancangan
+seluruh pasukan yang berjalan sendiri. Lihat
+[Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/) untuk cara ia berfungsi.
 
-## When to use an orchestration
+## Bila hendak menggunakan orkestrasi
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/); for a process you can spell out by
-hand, build a [pipeline template](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/).
+Pilih orkestrasi apabila permintaan itu lebih besar daripada satu ejen dan anda
+belum tahu langkah tepatnya. Untuk satu tugas, hantar mesej kepada ejen dalam
+[ruang](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/); untuk proses yang boleh anda
+tulis sendiri, bina [templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/).
 
-## Step 1: Ask for the plan
+## Langkah 1: Minta rancangan
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Buka (atau cipta) satu ruang dan satu **tiket sauh**. Setiap cadangan
+   memerlukan satu (`propose_orchestration` menerima `ticket_id`); ruang yang
+   dikongsi datang daripada tiket itu.
+2. Secara pilihan, tukar menu lungsur modus penggubah kepada **Orkestrakan**.
+   Modus itu mengecilkan ejen kepada membaca dan mencadangkan sahaja — memori,
+   graf kod, bacaan repo dan tiket, `propose_orchestration`, dan alat playbook —
+   jadi ia tidak boleh mula menulis kod daripada merancang.
+3. @-sebut orkestrator anda (biasanya ejen CEO) dan nyatakan matlamatnya dalam
+   bahasa biasa:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Kaji landskap persaingan untuk perakam mesyuarat yang mengutamakan luar
+> talian dan tulis dokumen kedudukan satu halaman.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orkestrator menjawab dengan kad **cadangan** berstruktur dalam ruang itu:
+peranan yang diperlukannya, kerja yang dipecahkan kepada sub-tiket, fasa kajian
+dan perbincangan pilihan, langkah sintesis yang menghasilkan dapatan dan satu
+bajet.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Kerana cadangan ialah objek bertipe, aplikasi mengesahkannya (peranan yang
+terbentuk dengan betul, skema output yang diisytiharkan, DAG tanpa kitaran)
+sebelum apa-apa dijalankan. Cadangan yang gagal pengesahan tidak boleh
+diluluskan.
 
-## Step 2: Review and edit the proposal
+## Langkah 2: Semak dan sunting cadangan
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Kad dalam sembang itu menawarkan tiga tindakan: **Luluskan rancangan**, **Tolak**
+dan **Buka** — yang membuka rancangan itu dalam Plan Studio sebagai tab editor.
+Kad itu sendiri tidak boleh disunting.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Untuk mengubah apa-apa, tekan **Buka** dan bekerja dalam pemeriksa di sebelah
+kanan:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Tajuk**, **perihalan**, **peranan**, **kebergantungan** dan **skema output**
+  bagi mana-mana langkah kerja. Peranan di sini bermaksud kunci peranan sedia
+  ada dalam rancangan yang memiliki langkah itu — anda tidak boleh menyematkan
+  peranan kepada ejen bernama atau menyunting senarai pengambilan daripada
+  pemeriksa, dan anda tidak boleh menyunting bajet.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Dua perkara bersifat baca sahaja: nod struktur (kajian, perbincangan, sintesis)
+dan mana-mana nod yang kerjanya sudah pun dijalankan. Penyuntingan hanya boleh
+dilakukan selagi orkestrasi masih `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/) for the full editor.
+Tekan **Anggar** pada bar kelulusan untuk julat kos, tempoh dan jejari letupan
+sebelum anda meluluskan. Lihat
+[Bekerja dalam Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/) untuk editor penuh.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/).
+:::note[Bajet bukan had perbelanjaan]
+Bajet sesuatu cadangan dibandingkan dengan _anggaran_ pada bar kelulusan:
+apabila hujung tinggi anggaran melebihi bajet itu, jumlahnya bertukar merah
+dengan amaran melebihi bajet. Tiada apa-apa menyemak perbelanjaan semasa
+rancangan dilaksanakan, jadi ia tidak akan menghentikan atau menggagalkan
+sesuatu larian. Untuk hentian perbelanjaan yang sebenar, gunakan polisi bajet
+setiap ejen — lihat [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/).
 :::
 
-## Step 3: Approve
+## Langkah 3: Luluskan
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Luluskan rancangan itu, daripada kad sembang atau daripada bar kelulusan Plan
+Studio. **Inilah satu-satunya keputusan yang anda buat.** Meluluskan adalah
+khusus pengendali — tiada alat MCP untuknya, jadi ejen boleh mencadangkan dan
+menyemak semula tetapi tidak pernah meluluskan rancangannya sendiri.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ms-MY/manual-pengguna/konsep/pipeline/) and creates the
-scaffolding:
+Dari sini, satu pematerial deterministik (fungsi tulen, tanpa LLM) menukar
+cadangan itu menjadi [pipeline](/ms-MY/manual-pengguna/konsep/pipeline/) sebenar dan mencipta
+perancah:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- mengambil mana-mana peranan baharu (dan merekodkan id ejen yang diambil supaya
+  ranap di pertengahan kelulusan boleh disambung semula tanpa pengambilan
+  berganda)
+- mengelompokkan peranan itu menjadi satu **pasukan**
+- mencipta satu **projek** dan memfailkan tiket induk di bawahnya
+- memulakan **larian pipeline** yang memandu semuanya
 
-The status moves to `approved`, then `executing`.
+Status bergerak ke `approved`, kemudian `executing`.
 
-## Step 4: Watch it run
+## Langkah 4: Perhatikan ia berjalan
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Sub-tiket dilaksanakan sebagai langkah pipeline; jika anda mengaktifkan pusingan
+perbincangan, setiap peranan menyiarkan pendirian dahulu. Kemajuan muncul di
+tempat yang anda sudah lihat:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
-- the **project** the parent ticket was filed under
+- **tiket induk** tempat orkestrasi dipautkan
+- **ruang** kongsi tempat pasukan berbual, di mana baris rancangan menjejaki
+  keadaan setiap nod
+- butiran **larian pipeline**, dengan waterfall pemasaannya yang biasa dan kos
+  setiap langkah — lihat
+  [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/)
+- **projek** tempat tiket induk difailkan
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Sebaik sahaja sub-tiket selesai, status bergerak ke `synthesizing` dan langkah
+sintesis menghasilkan dapatan. Teks itu disiarkan dalam ruang kongsi dan tiket
+induk ditanda lengkap, kemudian `completed`.
 
-## Stop it early
+## Hentikannya lebih awal
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Tekan **Batal orkestrasi** pada kad dalam sembang, atau **Batal larian** pada
+bar kelulusan Plan Studio. Pembatalan meruntuhkan kerja yang sedang berjalan.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Sesuatu orkestrasi gagal apabila pematerialan gagal, atau apabila larian
+pipeline yang dijananya gagal (kajian, perbincangan, sintesis atau persist —
+langkah-langkah itu tidak diteruskan apabila gagal). Langkah **kerja** yang
+dijana sentiasa diteruskan apabila gagal, jadi satu sub-tiket yang gagal tidak
+menggagalkan larian itu. Tiada laluan kegagalan melebihi bajet dan tiada ambang
+"setiap sub-tiket gagal".
 
-## Related guides
+## Panduan berkaitan
 
-- [Work in Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ms-MY/manual-pengguna/panduan-cara/projek/): where the parent ticket is filed
-- [Monitor pipeline runs](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen/): the roles an orchestration fills or hires
+- [Bekerja dalam Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/): sunting, anggar, diff dan luluskan rancangan
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/): tiket induk tempat sesuatu orkestrasi dipautkan
+- [Susun kerja dengan projek](/ms-MY/manual-pengguna/panduan-cara/projek/): tempat tiket induk difailkan
+- [Pantau larian pipeline](/ms-MY/manual-pengguna/panduan-cara/pantau-pipeline/): rupa orkestrasi yang dimaterialkan dalam enjin
+- [Bina pasukan ejen](/ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen/): peranan yang diisi atau diambil oleh sesuatu orkestrasi
 
-## Related concepts
+## Konsep berkaitan
 
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/)
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/)
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/)
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/)

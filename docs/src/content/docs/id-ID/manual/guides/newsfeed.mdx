@@ -1,130 +1,136 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Kurasi umpan berita Anda
+description: Tambahkan dan kelola feed RSS/Atom, baca artikel dengan pemblokiran konten, dan ketahui bahwa feed Anda mengikuti Anda di setiap ruang kerja.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/panduan-praktis/umpan-berita
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Panduan ini menunjukkan cara Anda membentuk umpan berita: sumber apa saja yang
+ditariknya, bagaimana artikel dibaca, dan apa yang dilakukan pemblokiran konten.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Umpan berita bersifat per pengguna, bukan per ruang kerja]
+Feed dan artikel adalah milik pengguna yang sedang masuk: daftar feed, status
+baca, dan bookmark Anda mengikuti Anda ke setiap ruang kerja dan ke setiap
+perangkat tempat Anda masuk, dan tidak ada pengguna lain yang melihatnya. Feed
+tersimpan di basis data global server, jadi URL `/newsfeed` membawa id ruang
+kerja hanya karena setiap rute dalam aplikasi memang begitu.
 :::
 
-## Read articles
+## Membaca artikel
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Klik **Umpan berita** di bilah sisi
+2. Beralih antara **Semua**, **Belum dibaca**, dan **Disimpan** dengan segmen di bilah alat
+3. Persempit daftar dengan kotak pencarian atau pemilih sumber
+4. Beralih antara kisi majalah dan daftar padat dengan tombol tata letak
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Membuka artikel akan menandainya sudah dibaca. Gunakan **Tandai semua sudah dibaca** di
+tajuk halaman — tombol ini muncul hanya selama ada yang belum dibaca — untuk
+membersihkan tumpukan sekaligus, dan kontrol bookmark pada kartu untuk
+menyimpannya nanti.
 
-The layout choice persists across launches.
+Pilihan tata letak tetap tersimpan antar peluncuran.
 
-## Add a feed
+## Menambahkan feed
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Buka **Pengaturan → Anda → Umpan berita** (ikon pengaturan di tajuk umpan
+   berita langsung menuju ke sana)
+2. Tekan **Tambah feed**
+3. Isi **nama** dan **URL feed** (RSS atau Atom)
+4. Secara opsional bentangkan **Lanjutan** dan atur **User-Agent** khusus —
+   sebagian penerbit memberi respons berbeda untuk klien default
+5. Tekan **Tambah feed**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Titik periksa: feed muncul di daftar **Feed** dan artikelnya masuk setelah
+pengambilan pertama. URL yang sudah berlangganan akan ditolak dengan "Feed
+dengan URL ini sudah ada."
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Empat belas feed disemai untuk setiap pengguna pada penggunaan pertama: Control
+Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI,
+Import AI, The Pragmatic Engineer, Martin Fowler, Irrational Exuberance milik
+Will Larson, The Engineering Manager, Lea Verou, dan CSS-Tricks.
 
-## Manage feeds
+## Mengelola feed
 
-Each row in the **Feeds** list gives you three controls:
+Setiap baris di daftar **Feed** memberi Anda tiga kontrol:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Kontrol       | Efek                                                                         |
+| ------------- | ---------------------------------------------------------------------------- |
+| Sakelar       | Nonaktifkan feed. Baris yang dinonaktifkan diredupkan dan tidak lagi diambil |
+| Ikon segarkan | Ambil feed yang ini sekarang                                                  |
+| Ikon sampah   | Hapus feed, setelah konfirmasi                                                |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Segarkan semua** di bagian atas daftar akan mengambil setiap feed yang aktif.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Subjudul feed menampilkan deskripsinya dan berapa lama sejak terakhir diambil;
+feed yang gagal menampilkan galat di tempatnya, dengan warna peringatan.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Tidak ada sarana penyuntingan — untuk mengubah nama, URL, atau user agent feed,
+hapus lalu tambahkan lagi.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Pengambilan berjalan sepenuhnya di server: sekali per pengguna saat booting (dan
+pada penggunaan pertama untuk akun yang dibuat belakangan), lalu setiap 30
+menit.
 
-## Block ads and trackers in the reader
+## Memblokir iklan dan pelacak di pembaca
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Di Pengaturan → Anda → Umpan berita, temukan **Preferensi pembaca**
+2. Biarkan **Buka artikel di aplikasi** aktif untuk memakai pembaca bawaan, atau
+   nonaktifkan untuk menyerahkan artikel ke peramban sistem Anda
+3. Biarkan **Blokir iklan, pelacak & banner cookie** aktif
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Pemblokiran aktif secara default. Pembaca tersemat hanya tersedia di macOS dan
+Windows: pada build web dan di Linux peramban sistem _adalah_ pembacanya dan
+artikel terbuka di sana (tab baru di web). Di web, tombol pemblokiran, kartu
+**Filter daftar** dan kartu **Situs tepercaya** disembunyikan.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Pembaca dalam aplikasi tidak memformat ulang artikel. Pembaca merender halaman
+penerbit di webview tersemat dan menekan iklan, pelacak, dan banner cookie
+menggunakan daftar filter yang di-cache.
 
-### Check or update the filter lists
+### Memeriksa atau memperbarui daftar filter
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Kartu **Filter daftar** menunjukkan berapa banyak aturan penyembunyi cookie,
+penyembunyi iklan, dan pemblokir jaringan yang dimuat, plus parameter pelacak
+yang dihapusnya dan kapan daftar terakhir diperbarui. Tekan **Periksa
+pembaruan** untuk menyegarkannya.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Sumbernya adalah EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster,
+beberapa daftar uBlock Origin, dan daftar parameter pelacak uBO. Sampai ada
+unduhan yang berhasil, kartu tersebut melabeli daftar sebagai default bawaan
+yang tidak pernah diperbarui — jumlah aturan iklan, cookie, dan jaringan tetap
+nol; penghapusan parameter pelacak tetap memakai set default bawaan.
 
-### Allowlist a site
+### Memasukkan situs ke daftar izin
 
-Some sites break under blocking.
+Sebagian situs rusak saat pemblokiran aktif.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Di Pengaturan → Anda → Umpan berita, buka **Situs tepercaya**
+2. Tekan **Tambahkan situs tepercaya** dan masukkan domainnya
 
-Blocking is skipped there.
+Pemblokiran dilewati di sana.
 
-## Troubleshooting
+## Pemecahan masalah
 
-### A feed I added shows up in another workspace
+### Feed yang saya tambahkan muncul di ruang kerja lain
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Memang begitu. Umpan berita bersifat per pengguna, bukan per ruang kerja — feed
+Anda mengikuti Anda ke mana pun Anda masuk. Lihat peringatan di bagian atas.
 
-### A feed row shows an error instead of a description
+### Baris feed menampilkan galat, bukan deskripsi
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Pengambilan terakhir gagal dan baris tersebut menampilkan alasannya apa adanya.
+Tekan ikon segarkan untuk mencoba lagi dan periksa apakah URL-nya masih
+menyajikan RSS atau Atom. Penerbit yang menolak klien tak dikenal mungkin butuh
+user agent khusus, yang berarti menghapus feed lalu menambahkannya lagi.
 
-### An article page renders badly
+### Halaman artikel tampil buruk
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Nonaktifkan **Blokir iklan, pelacak & banner cookie** untuk domain itu lewat
+**Situs tepercaya**, atau nonaktifkan **Buka artikel di aplikasi** dan bacalah di
+peramban Anda.
 
-## Related guides
+## Panduan terkait
 
-- [Configure notifications](/id-ID/panduan-pengguna/panduan-praktis/notifikasi/)
-- [Triage your inbox](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)
+- [Konfigurasi notifikasi](/id-ID/panduan-pengguna/panduan-praktis/notifikasi/)
+- [Triage kotak masuk](/id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk/)

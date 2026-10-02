@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: شروع سریع
+description: Control Center را نصب کنید، یک عامل را پیکربندی کنید و ببینید چگونه روی مخزن شما کار می‌کند.
 slug: fa-IR/راهنمای-کاربر/شروع-سریع
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+این کوتاه‌ترین مسیر کامل است؛ از هیچ تا عاملی که روی کد خودتان در حال اجراست. به ترتیب دنبالش کنید؛ هر گام به گام پیش از خود وابسته است.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+به Git، یک حساب GitHub و نیز یا یک حساب ارائه‌دهندهٔ مدل (Anthropic، OpenAI، Codex، Cursor، Kimi Code یا هر ارائه‌دهنده‌ای با کلید API) نیاز دارید، یا اینکه CLI مربوط به Claude Code از قبل نصب شده باشد. بقیهٔ چیزها در همین مسیر آماده می‌شوند.
 
-## Step 1: Install and launch
+## گام ۱: نصب و اجرا
 
-Install Control Center as described in [Install](/fa-IR/راهنمای-کاربر/نصب/), then open it.
+Control Center را همان‌طور که در [نصب(/fa-IR/راهنمای-کاربر/نصب/) توضیح داده شده نصب کنید، سپس آن را باز کنید.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+در نخستین اجرا، نسخهٔ رومیزی می‌پرسد **«Control Center چطور اجرا شود؟»**. **اجرا در این برنامه** را انتخاب کنید. Control Center یک `cc_server` بدون رابط روی همین ماشین راه می‌اندازد که مالک داده‌های شماست و همهٔ کار را انجام می‌دهد. هرگز آن را نمی‌بینید؛ به‌جایش صفحهٔ راه‌اندازی اولیه باز می‌شود.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/fa-IR/راهنمای-کاربر/نصب/#use-it-in-your-browser) for the browser route.
+:::note[ترجیح می‌دهید چیزی نصب نکنید؟]
+همان برنامه با همان قابلیت‌ها در مرورگر و در [app.usectrl.dev](https://app.usectrl.dev) اجرا
+می‌شود. اما یک زبانهٔ مرورگر نمی‌تواند میزبان سرور باشد، پس خودتان یکی فراهم می‌کنید — `cc_server`
+را محلی اجرا کنید و به `ws://localhost:9030` وصل شوید، یا آن را به سروری روی ماشینی دیگر اشاره
+دهید. این شروع سریع مسیر رومیزی را می‌گیرد چون به هیچ راه‌اندازی سروری نیاز ندارد؛ برای مسیر
+مرورگر [نصب(/fa-IR/راهنمای-کاربر/نصب/#use-it-in-your-browser) را ببینید.
 :::
 
-## Step 2: Work through onboarding
+## گام ۲: از راه‌اندازی اولیه بگذرید
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+راه‌اندازی اولیه پنج گام دارد که به ترتیب اجرا می‌شوند — جلوتر پریدن ممکن نیست.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **اتصال**: با GitHub وارد شوید یا یک رمز دسترسی شخصی با `repo` و `read:org` جای‌گذاری کنید. اعتبارنامه روی سرور ذخیره می‌شود و به حساب شما پیوند می‌خورد.
+2. **فضای کاری**: نخستین فضای کاری‌تان را نام‌گذاری کنید و به دلخواه یک لوگو انتخاب کنید. ساخت آن پنج عامل می‌کارد — یک CEO به‌همراه `qa`، `architect`، `engineer` و `librarian` — و همچنین قالب‌های پایپ‌لاین داخلی را.
+3. **سندباکس**: یک ترجیح سندباکس را ثبت می‌کند. هر کدام را انتخاب کنید، می‌توانید ادامه دهید.
+4. **آداپتور**: آداپتور و مدلی را انتخاب کنید که پیش‌فرض عامل‌ها باشد. **Control Center (built-in)** را انتخاب کنید، سپس از انتخاب‌گر ارائه‌دهنده‌ای که ظاهر می‌شود برای ورود به یک ارائه‌دهندهٔ مدل استفاده کنید — فهرست مدل تا وقتی یکی وصل نشود خالی می‌ماند. تمام کردن این گام، آداپتور و مدل را روی عامل CEO فضای کاری هم ثبت می‌کند.
+5. **صدا (اختیاری)**: برای دیکته یک مدل گفتار روی دستگاه نصب کنید، یا از آن بگذرید.
 
-Control Center then opens your workspace inbox.
+سپس Control Center صندوق ورودی فضای کاری‌تان را باز می‌کند.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/).
+:::note[چه چیزی یک اجرای عامل را محدود می‌کند]
+فرمان‌های عامل، وقتی یکی در دسترس باشد، در سندباکس بومی سیستم‌عامل میزبان پیچیده می‌شوند — Seatbelt روی macOS و bubblewrap روی Linux. ویندوز هیچ بک‌اندی ندارد، پس اجراها در آنجا فقط با لایه‌های دیگر محدود می‌شوند: worktree خودِ گفتگو (`git worktree` روی ویندوز؛ کپی-در-نوشتن جایی که `rift` عرضه می‌شود)، اعتبارنامه‌هایی که برای هر اجرا واسطه‌گری و هنگام برچیدن آزاد می‌شوند، و گاردریل‌های کنش. [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) را ببینید.
 :::
 
-## Step 3: Add a repository
+## گام ۳: افزودن یک مخزن
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+به **تنظیمات → فضای کاری → مخزن‌ها** بروید و روی **افزودن مخزن** کلیک کنید.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+این پنجره پوشه‌های ماشینی را مرور می‌کند که سرور روی آن اجرا می‌شود، نه کلاینت شما؛ و درون ریشه‌هایی می‌ماند که آن سرور برای نمایش پیکربندی شده است (به‌طور پیش‌فرض پوشهٔ خانهٔ کاربرش). فقط checkoutهای git کادر انتخاب می‌گیرند. مال خودتان را تیک بزنید و ثبتش کنید.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+یک checkout تنها وقتی پذیرفته می‌شود که درون یک git work tree باشد، یک ریموت `origin` داشته باشد و آن ریموت به یک میزبان کد پشتیبانی‌شده اشاره کند — github.com، gitlab.com یا bitbucket.org. هر چیز دیگری با ذکر دلیل رد می‌شود.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+مخزن‌ها محدود به فضای کاری‌اند: ثبت یک checkout در اینجا آن را در _همین_ فضای کاری می‌گذارد. هیچ گام پیوندزدن جداگانه‌ای وجود ندارد.
 
-## Step 4: Give an agent an adapter and a model
+## گام ۴: به یک عامل آداپتور و مدل بدهید
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+به **تنظیمات → فضای کاری → عامل‌ها** بروید. عامل `engineer` را در فهرست عامل‌ها انتخاب کنید.
 
-On the **Settings** tab, set:
+در زبانهٔ **تنظیمات**، این موارد را تعیین کنید:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **آداپتور**: `Control Center (built-in)`
+- **مدل**: یکی از ارائه‌دهنده‌ای که در راه‌اندازی اولیه وصل کردید انتخاب کنید
 
-Press **Save changes**.
+روی **ذخیرهٔ تغییرات** بزنید.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+این گام در عمل اختیاری نیست. تنها عامل CEO آداپتور انتخاب‌شده در راه‌اندازی اولیه را به ارث می‌برد؛ چهار متخصص بدون آن ساخته می‌شوند. آن‌ها به **Control Center (built-in)** با مدل پیش‌فرض Anthropic برمی‌گردند، پس تنها وقتی اجرا می‌شوند که حساب Anthropic را وصل کرده باشید — و اگر وصل کرده باشید، روی مدلی که خودتان انتخابش نکرده‌اید.
 
-## Step 5: Send the agent a task
+## گام ۵: یک کار به عامل بفرستید
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. در نوار کناری، بخش **فضاها** را پیدا کنید و روی دکمهٔ **+** کلیک کنید.
+2. فضا را نام‌گذاری کنید، عامل `engineer` را زیر **افزودن عامل‌ها** اضافه کنید و آن را بسازید.
+3. یک کار مشخص و کوچک روی مخزنی که ثبت کردید بنویسید و Enter را فشار دهید.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center برای این گفتگو یک worktree کپی-در-نوشتن از مخزن‌های فضای کاری فراهم می‌کند، پرامپتی از نقش، پرسونا، مهارت‌ها و بافت فضای عامل می‌سازد و اجرا را اعزام می‌کند. هرگز به checkout منبع شما دست زده نمی‌شود.
 
-## Step 6: Watch it work
+## گام ۶: تماشا کنید که کار می‌کند
 
-You should see, in order:
+باید به ترتیب این‌ها را ببینید:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- دکمهٔ ارسال ویرایشگر پیام به دکمهٔ توقف تبدیل شود، چون یک عامل در این گفتگو مشغول کار است
+- استدلال، فراخوانی‌های ابزار و متن عامل که به‌صورت جاری در رونوشت می‌آیند
+- بازگشت دکمهٔ ارسال وقتی اجرا تمام می‌شود
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+سپس **تنظیمات → فضای کاری → عامل‌ها** را باز کنید، عامل را انتخاب کنید و زبانهٔ **گزارش‌ها** را ببینید: یک سطر اجرا، با وضعیت، مدت، زمان‌های شروع و پایان و آداپتوری که روی آن اجرا شده است.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+این همان حلقه است. هر چیز دیگری در Control Center — بازبینی pull request، پایپ‌لاین‌ها، تیکت‌ها، جلسه‌ها، Slack — از آن آویزان است.
 
-## Next steps
+## گام‌های بعدی
 
-- [Your first workspace](/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/fa-IR/راهنمای-کاربر/آموزشها/اولین-pr/): take an agent's branch through review and merge
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): what an agent is made of
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/): the rest of the agent form
-- [Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/): one goal, one approval, a generated pipeline
-- [Pair your phone](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): follow the fleet from anywhere
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/): how the desktop, web and phone clients relate to the server
+- [اولین فضای کاری شما(/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/): همان مسیر، کندتر، با توضیح مدل ایزوله‌سازی
+- [اولین pull request را بازبینی کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-pr/): شاخهٔ یک عامل را از بازبینی تا ادغام ببرید
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): یک عامل از چه ساخته شده است
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/): بقیهٔ فرم عامل
+- [اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/): یک هدف، یک تأیید، یک پایپ‌لاین تولیدشده
+- [جفت‌کردن تلفن‌تان(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/): ناوگان را از هر جا دنبال کنید
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/): کلاینت‌های رومیزی، وب و تلفن چه نسبتی با سرور دارند

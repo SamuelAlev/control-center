@@ -1,149 +1,157 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Konfigurera aviseringar
+description: Slå på eller av kategorier, ställ in tysta timmar och ett ljud och få veta vilka aviseringar som når dig var.
 slug: sv-SE/handbok/how-to-guider/aviseringar
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Den här guiden visar hur du konfigurerar aviseringar och vad varje inställning
+egentligen styr.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Aviseringar kommer in på två ytor. **Aviseringscentralen** — klockan i
+titelraden — läser en beständig ström per arbetsyta på servern. **OS-toastar** är
+en separat väg som bara finns på skrivbordet och som fylls av live-ramar som
+servern skickar.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Webbversionen visar inga OS-aviseringar]
+Toast-pipelinen byggs bara av skrivbordsuppstarten. På `app.usectrl.dev` finns
+inga OS-toastar, inga aviseringsljud och inga bannrar i bakgrunden — klockan och
+dess historik fungerar fortfarande, eftersom de läser strömmen på servern.
+Telefonklienten har ingen aviseringsyta alls.
 :::
 
-## Turn categories on or off
+## Slå på eller av kategorier
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Gå till **Inställningar → Du → Aviseringar**
+2. Låt **Aktivera aviseringar** vara på
+3. Slå på eller av de kategorier du vill ha. Det finns exakt sexton:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Kategori                       | Utlöses när                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------- |
+| Agenten är klar                | En agent avslutade en körning                                                     |
+| PR publicerad                  | En agent publicerade en PR                                                        |
+| PR sammanslagen                | En PR slogs samman                                                                |
+| Nya meddelanden                | Ett meddelande kom in i en yta du inte tittar på                                  |
+| Omnämnd i pull request         | GitHubs aviseringsavsökning såg att du nämndes i en PR                            |
+| Granskning begärd              | Din granskning begärdes faktiskt på en PR som inte är ett utkast                  |
+| Granskning inaktuell           | Nya commits landade på en pull request som du redan har granskat                  |
+| Redo att slå samman            | En pull request som du har skrivit blev sammanslagningsbar, eller slutade vara det |
+| Granskningsbeslut              | En granskare godkände, begärde ändringar eller fick ett godkännande avvisat       |
+| Kontroller                     | CI misslyckades på en pull request som du har skrivit, eller återhämtade sig      |
+| Granskningstrådar              | Någon svarade i eller löste en tråd som du är med i                               |
+| Ärende tilldelat               | Ett ärende tilldelades                                                             |
+| Ärendestatus ändrad            | Ett ärende bytte status                                                            |
+| Mötet börjar snart             | Ett kalendermöte ligger inom ditt förvarningsfönster                              |
+| Kalender frånkopplad           | En ansluten kalenders OAuth-token gick ut                                          |
+| Uppdateringar av avskild miljö | En avskild miljö övertogs, återtogs eller misslyckades                            |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Allt utanför den här listan går varken att avisera om eller filtrera — det finns
+ingen kategori för ”allt annat”.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Dessa inställningar följer din användare mellan enheter, så en telefon och en
+bärbar dator håller sig i takt. Volymen är det medvetna undantaget och hålls per
+enhet.
 
-## Set quiet hours
+## Ställ in tysta timmar
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. På samma sida slår du på **Quiet hours**
+2. Skriv in en start- och en sluttid i `HH:MM` (standardfönstret är 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Under tysta timmar tappas icke-brådskande aviseringar bort — de köas inte upp och
+spelas inte upp senare.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Två kategorier är **brådskande** och levereras alltid, och kringgår tysta timmar
+_och_ fokusläge: **Mötet börjar snart** och **PR publicerad**. En mötesavisering
+som du först ser i efterhand är värdelös, och det är därför.
 
-## Choose a sound
+## Välj ett ljud
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Rulla till **Aviseringsljud**
+2. Välj ett av de elva medföljande ljuden, eller **Inget**
+3. Tryck på testknappen för att höra det och ställ in volymen med reglaget
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Appen spelar upp ljudet själv; OS-aviseringen levereras tyst så att du aldrig
+hör den två gånger.
 
-## Set the meeting lead time
+## Ställ in förvarningstiden för möten
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Rulla till **Förvarningstid**
+2. Välj **5**, **10**, **15** eller **30** minuter
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Det är så långt före en kalenderhändelse som aviseringen **Mötet börjar snart**
+utlöses. Standard är 5 minuter.
 
-## Know when a notification is suppressed
+## Se när en avisering undertrycks
 
-A notification is dropped, silently, when any of these is true:
+En avisering tappas bort, tyst, när något av följande stämmer:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Aviseringar är avstängda globalt, eller så är kategorin avstängd
+- Du är redan på den rutt den skulle ta dig till — och, för ett meddelande, redan
+  i den ytan
+- Fokusläge är aktivt och kategorin är inte brådskande
+- Tysta timmar är aktiva och kategorin är inte brådskande
 
-Those checks apply to OS toasts. The durable bell still records the event.
+De kontrollerna gäller OS-toastar. Den beständiga klockan registrerar fortfarande
+händelsen.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Ytterligare två undertryckningar finns längre uppströms, i vad servern
+överhuvudtaget skickar:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Ett meddelande från en annan **människa** där du inte nämns blir aldrig en
+  avisering
+- Ytor mellan agenter är dämpade i sidopanelen, så de höjer aldrig människans
+  oläst-badge
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Inom en yta finns ingen tyst vrå: varje samtal aviserar lika mycket, trådar
+inräknade. Lässtatus gäller per yta, så olästa summeras över en ytas samtal i
+stället för att spåras per samtal.
 
-## Read and clear the notification centre
+## Läs och rensa aviseringscentralen
 
-1. Click the bell in the title bar
+1. Klicka på klockan i titelraden
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Popovern visar senaste aktiviteten och djuplänkar varje post till det den handlar
+om. Att öppna den markerar **inte** allt som läst — använd **Markera alla som
+lästa** i sidhuvudet, eller markera en enstaka rad. Lässtatus följer din användare
+mellan enheter.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Rensa alla är ett vattenmärke, inte en borttagning]
+**Rensa alla** sätter ett vattenmärke per användare som döljer allt äldre; raderna
+ligger kvar. Dessutom behåller varje arbetsyta bara sina **200** senaste rader i
+flödet, som rensas bort i takt med att nya kommer in, medan klockan prenumererar
+på de **50** nyaste och popovern visar upp till **15** av dem. Historik bortom det
+är borta oavsett lässtatus.
 :::
 
-## Troubleshooting
+## Felsökning
 
-### No OS notifications on macOS
+### Inga OS-aviseringar på macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Behörighet begärs nativt när appen startar. Om du nekade den återaktiverar du
+Control Center under Systeminställningar → Aviseringar; det finns ingen
+uppmaning i appen för att utlösa den igen.
 
-### Nothing arrives on the web build
+### Ingenting kommer fram i webbversionen
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Väntat — webbversionen har ingen pipeline för OS-aviseringar. Använd klockan.
 
-### The bell badge shows zero but there is clearly new activity
+### Klockans badge visar noll men det finns helt klart ny aktivitet
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Tills strömmen för läsmarkeringar har lösts efter anslutningen visas posterna som
+lästa, för att undvika en badge som blinkar och sedan töms. Det stabiliseras så
+snart markeringen har laddats.
 
-### An agent's run finished but nothing pinged me
+### En agents körning blev klar men inget pingade mig
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Kontrollera att du inte redan var i ytan där det hände — en aktiv rutt
+undertrycker sin egen OS-toast.
 
-## Related guides
+## Relaterade guider
 
-- [Use focus mode and soundscapes](/sv-SE/handbok/how-to-guider/fokuslage/)
-- [Triage your inbox](/sv-SE/handbok/how-to-guider/triagea-inkorg/)
-- [Curate your newsfeed](/sv-SE/handbok/how-to-guider/nyhetsflode/)
+- [Använd fokusläge och ljudlandskap](/sv-SE/handbok/how-to-guider/fokuslage/)
+- [Triagea din inkorg](/sv-SE/handbok/how-to-guider/triagea-inkorg/)
+- [Kurera ditt nyhetsflöde](/sv-SE/handbok/how-to-guider/nyhetsflode/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/)
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/)

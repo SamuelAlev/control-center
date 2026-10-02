@@ -1,149 +1,162 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Konfigurasikan pemberitahuan
+description: Hidupkan atau matikan kategori, tetapkan waktu senyap dan bunyi, serta ketahui pemberitahuan mana yang sampai kepada anda dan di mana.
 slug: ms-MY/manual-pengguna/panduan-cara/pemberitahuan
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Panduan ini menunjukkan cara mengkonfigurasi pemberitahuan dan perkara yang
+sebenarnya dikawal oleh setiap tetapan.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Pemberitahuan tiba pada dua permukaan. **pusat pemberitahuan** — loceng di bar
+tajuk — membaca suapan tahan lama bagi setiap ruang kerja pada pelayan. **Toast
+OS** ialah laluan berasingan yang hanya ada pada desktop, disuap oleh bingkai
+langsung yang ditolak dari pelayan.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Binaan web tidak menunjukkan pemberitahuan OS]
+Pipeline toast dibina hanya oleh bootstrap desktop. Pada `app.usectrl.dev` tiada
+toast OS, tiada bunyi pemberitahuan dan tiada sepanduk ambien — loceng dan
+riwayatnya masih berfungsi, kerana ia membaca suapan pelayan. Klien telefon
+langsung tiada permukaan pemberitahuan.
 :::
 
-## Turn categories on or off
+## Hidupkan atau matikan kategori
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Pergi ke **Tetapan → Anda → Pemberitahuan**
+2. Biarkan **Dayakan pemberitahuan** dalam keadaan hidup
+3. Hidupkan kategori yang anda mahu. Jumlahnya tepat enam belas:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Kategori                   | Dicetuskan apabila                                                          |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Ejen selesai               | Ejen menyelesaikan satu larian                                             |
+| PR diterbitkan             | Ejen menerbitkan satu PR                                                   |
+| PR dicantum                | Satu PR telah dicantum                                                     |
+| Mesej baharu               | Mesej tiba di ruang yang sedang tidak anda lihat                           |
+| Disebut dalam pull request | Pengundian pemberitahuan GitHub melihat anda disebut pada satu PR          |
+| Semakan diminta            | Semakan anda benar-benar diminta pada PR yang bukan draf                   |
+| Semakan lapuk              | Commit baharu masuk ke pull request yang sudah anda semak                  |
+| Sedia untuk dicantum       | Pull request yang anda tulis menjadi boleh dicantum, atau tidak lagi       |
+| Keputusan semakan          | Penyemak meluluskan, meminta perubahan, atau kelulusannya ditolak         |
+| Semakan                    | CI gagal pada pull request yang anda tulis, atau pulih semula              |
+| Benang semakan             | Seseorang membalas atau menyelesaikan benang yang anda sertai              |
+| Tiket ditugaskan           | Satu tiket telah ditugaskan                                                |
+| Status tiket berubah       | Satu tiket menukar status                                                  |
+| Mesyuarat akan bermula tidak lama lagi | Mesyuarat kalendar berada dalam tetingkap amaran awal anda    |
+| Kalendar terputus          | Token OAuth kalendar yang bersambung telah tamat tempoh                    |
+| Kemas kini persekitaran terasing | Persekitaran terasing telah diambil alih, dituntut semula atau gagal |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Apa-apa di luar senarai ini tidak boleh dimaklumkan atau ditapis — tiada
+kategori "segala-galanya yang lain".
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Keutamaan ini mengikut pengguna anda merentas peranti, jadi telefon dan komputer
+riba kekal selaras. Kelantangan ialah pengecualian yang disengajakan dan kekal
+bagi setiap peranti.
 
-## Set quiet hours
+## Tetapkan waktu senyap
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Pada halaman yang sama, hidupkan **Quiet hours**
+2. Taip waktu mula dan waktu tamat dalam `HH:MM` (tetingkap lalai ialah
+   22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Semasa waktu senyap, pemberitahuan yang tidak mendesak digugurkan — bukan
+diletakkan dalam baris gilir lalu dimainkan semula kemudian.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Dua kategori bersifat **mendesak** dan sentiasa dihantar, memintas waktu senyap
+_dan_ modus fokus: **Mesyuarat akan bermula tidak lama lagi** dan **PR
+diterbitkan**. Amaran mesyuarat yang anda lihat hanya selepasnya tidak bernilai,
+dan itulah sebabnya.
 
-## Choose a sound
+## Pilih bunyi
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Tatal ke **Bunyi pemberitahuan**
+2. Pilih salah satu daripada sebelas bunyi terbina, atau **Tiada**
+3. Tekan butang ujian untuk mendengarnya dan tetapkan kelantangan dengan
+   penggelongsor
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Aplikasi memainkan bunyinya sendiri; pemberitahuan OS dihantar secara senyap
+supaya anda tidak mendengarnya dua kali.
 
-## Set the meeting lead time
+## Tetapkan masa amaran awal mesyuarat
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Tatal ke **Masa amaran awal**
+2. Pilih **5**, **10**, **15** atau **30** minit
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Itulah tempoh lebih awal sebelum acara kalendar yang mencetuskan pemberitahuan
+**Mesyuarat akan bermula tidak lama lagi**. Lalainya ialah 5 minit.
 
-## Know when a notification is suppressed
+## Ketahui bila pemberitahuan ditahan
 
-A notification is dropped, silently, when any of these is true:
+Pemberitahuan digugurkan, secara senyap, apabila mana-mana perkara ini benar:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Pemberitahuan dimatikan secara global, atau kategorinya dimatikan
+- Anda sudah berada pada laluan yang akan ditujunya — dan, bagi sesuatu mesej,
+  sudah berada dalam ruang itu
+- Modus fokus aktif dan kategorinya tidak mendesak
+- Waktu senyap aktif dan kategorinya tidak mendesak
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Pemeriksaan itu terpakai pada toast OS. Loceng tahan lama masih merekodkan
+peristiwa itu.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Dua lagi sebab pemberitahuan ditahan terletak lebih awal dalam rantaian, iaitu
+pada apa yang dihantar oleh pelayan sama sekali:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Mesej daripada **manusia** lain yang tidak menyebut anda tidak pernah menjadi
+  pemberitahuan
+- Ruang antara ejen dibisukan dalam bar sisi, jadi ia tidak pernah menambah
+  lencana belum dibaca untuk manusia
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Dalam sesuatu ruang tiada sudut yang sunyi: setiap perbualan memberi pemberitahuan
+secara sama rata, termasuk benang. Status baca terikat pada ruang, jadi bilangan
+belum dibaca terhimpun merentas semua perbualan sesuatu ruang dan bukan dijejaki
+bagi setiap perbualan.
 
-## Read and clear the notification centre
+## Baca dan kosongkan pusat pemberitahuan
 
-1. Click the bell in the title bar
+1. Klik loceng di bar tajuk
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Popover memaparkan aktiviti terkini, memautkan setiap entri secara terus kepada
+perkara yang berkaitannya. Membukanya **tidak** menandakan semuanya sudah
+dibaca — gunakan **Tanda semua sebagai dibaca** pada pengepala, atau tandakan
+satu baris sahaja. Status baca mengikut pengguna anda merentas peranti.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Kosongkan semua ialah tanda air, bukan pemadaman]
+**Kosongkan semua** mengecap tanda air bagi setiap pengguna yang menyembunyikan
+semua yang lebih lama; barisnya kekal. Secara berasingan, setiap ruang kerja
+hanya menyimpan **200** baris suapan terbaharunya, dipangkas apabila baris baharu
+tiba, manakala loceng melanggan **50** baris terbaharu dan popover menyenaraikan
+sehingga **15** daripadanya. Riwayat sebelum itu hilang tanpa mengira status
+baca.
 :::
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### No OS notifications on macOS
+### Tiada pemberitahuan OS pada macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Kebenaran diminta secara natif apabila aplikasi dilancarkan. Jika anda
+menolaknya, dayakan semula Control Center di bawah Tetapan Sistem →
+Pemberitahuan; tiada gesaan dalam aplikasi untuk mencetuskannya semula.
 
-### Nothing arrives on the web build
+### Tiada apa-apa yang tiba pada binaan web
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Dijangka — binaan web tiada pipeline pemberitahuan OS. Gunakan loceng.
 
-### The bell badge shows zero but there is clearly new activity
+### Lencana loceng menunjukkan sifar tetapi jelas ada aktiviti baharu
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Sehingga aliran tanda baca selesai selepas bersambung, entri dipaparkan sebagai
+sudah dibaca untuk mengelakkan lencana yang berkelip lalu kosong. Keadaannya
+stabil sebaik sahaja tanda itu dimuatkan.
 
-### An agent's run finished but nothing pinged me
+### Larian ejen selesai tetapi tiada apa-apa memberitahu saya
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Periksa sama ada anda tidak sudah berada dalam ruang tempatnya berlaku — laluan
+yang aktif menahan toast OS-nya sendiri.
 
-## Related guides
+## Panduan berkaitan
 
-- [Use focus mode and soundscapes](/ms-MY/manual-pengguna/panduan-cara/modus-fokus/)
-- [Triage your inbox](/ms-MY/manual-pengguna/panduan-cara/triage-peti-masuk/)
-- [Curate your newsfeed](/ms-MY/manual-pengguna/panduan-cara/suapan-berita/)
+- [Gunakan modus fokus dan landskap bunyi](/ms-MY/manual-pengguna/panduan-cara/modus-fokus/)
+- [Triage peti masuk anda](/ms-MY/manual-pengguna/panduan-cara/triage-peti-masuk/)
+- [Kurasi suapan berita anda](/ms-MY/manual-pengguna/panduan-cara/suapan-berita/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/)
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/)

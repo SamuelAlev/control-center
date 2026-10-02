@@ -1,113 +1,68 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orchestráció
+description: Hogyan lesz egy „nagy kérésből” az egész csapatot mozgósító terv, amelyet egyszer hagy jóvá, majd egy generált pipeline hajtja végre.
 slug: hu-HU/kezikonyv/fogalmak/orchestracio
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Egyetlen ügynök egyetlen dologban jó. Vannak azonban ennél nagyobb kérések: „kutassa fel az X piacát, és írjon pozicionálási dokumentumot”, „szállítsa le ezt a funkciót elejétől a végéig”, „vizsgálja át ezt a modult, és javítsa, amit talál”. Az **orchestráció** az, ahogy a Control Center ezeket kezeli: egy orchestrátor (rendszerint az Ön CEO-ügynöke) egy egész csapatot érintő tervet javasol, amelyet **egyszer** hagy jóvá, és amelyből egy determinisztikus materializáló olyan pipeline-t készít, amely elvégzi a munkát.
 
-It sits between the two existing ways of getting work done:
+A munka elvégzésének két meglévő módja közé ékelődik:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) |
-| Encode a process you already know, by hand        | A [pipeline template](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Amikor ezt szeretné…                                  | Használja                                                  |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
+| Egy feladatot adna át egyetlen ügynöknek             | Egy [üzenetet egy térben](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) |
+| Kézzel kódolná azt a folyamatot, amelyet már ismer    | Egy [pipeline-sablont](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) |
+| Megmondaná a célt, és a csapatra bízná a tervet       | **Egy orchestrációt**                                      |
 
-## The shape of a proposal
+## A javaslat felépítése
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Amikor megad egy célt az orchestrátornak, az egy strukturált **`OrchestrationProposal`**-t ad vissza: egy típusos tervet, amelyet az alkalmazás validálni és végrehajtani tud, nem szabad szöveges leírást. Egy javaslat a következőket tartalmazza:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/hu-HU/kezikonyv/fogalmak/jegyek/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Cél**: a magas szintű kérése, újrafogalmazva.
+- **Szerepek**: kik végzik a munkát. Minden szerep vagy egy Ön által kiválasztott **meglévő ügynök**, vagy egy **új felvétel**, amelyet az orchestráció a jóváhagyáskor hoz létre.
+- **Aljegyek**: a munka, [jegyek](/hu-HU/kezikonyv/fogalmak/jegyek/) DAG-jára bontva.
+- **Kutatás** _(opcionális)_: egy kutatási fázis, amely elsőként fut le, és táplálja a többit.
+- **Megbeszélés** _(opcionális)_: egy körülhatárolt kör, amelyben minden szerep strukturált álláspontot tesz közzé, mielőtt a munka elkezdődik.
+- **Összegzés**: a záró lépés, amely előállítja a szállítandót.
+- **Költségvetés**: egy megadott költségplafon.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[A költségvetés csak tájékoztató jellegű]
+A javaslat költségplafonját a rendszer a terv becsült összértékéhez hasonlítja, és a jóváhagyási sávban jelzi a keret túllépését _még a jóváhagyás előtt_. A futtatás megkezdése után azonban már semmi sem olvassa, így nem állítja le és nem buktatja meg a keretet túllépő orchestrációt. Az ügynökönkénti és munkaterületenkénti költségvetési szabályzatok külön mechanizmust alkotnak, és valójában ezek függesztik fel a költést.
 :::
 
-## Where you review it
+## Hol nézheti át
 
-Two surfaces show the same orchestration.
+Két felület mutatja ugyanazt az orchestrációt.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+A **javaslatkártya** abban a beszélgetésben él, amely a tervet létrehozta. Egyetlen üzenet, amely az egész életcikluson át újrarenderelődik — javasolt, végrehajtás, befejezve —, rajta a jóváhagyás és a megszakítás műveletével.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+A **Plan Studio** maga a szerkesztő: DAG-vászon, csomópontvizsgáló, revízió- és diff-fiók, valamint a becslést hordozó jóváhagyási sáv. Közvetlenül abból a kártyából nyílik meg szerkesztőfülként. Az oldalsávban szándékosan nincs „Tervek” elem; a `/plans` és a `/plans/:kind/:id` megosztási célú mélyhivatkozásként létezik.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+A jóváhagyás **kizárólag operátori művelet**. Erre nincs MCP-eszköz: egy ügynök javasolhat (`propose_orchestration`), tervet nyújthat be (`submit_plan`) vagy playbookot példányosíthat (`run_playbook`), de jóváhagyni csak ember tud. Az ügynök által kezdeményezett revíziókat emellett egy kétperces várakozási idő is korlátozza, így az újraütemező ciklus összeolvad, ahelyett hogy elárasztaná a hírfolyamát.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+A jóváhagyás előtt annyit módosíthat, amennyit a csomópontvizsgáló felfed: átcímezheti vagy átírhatja az aljegyet, megváltoztathatja, melyik **szerep** birtokolja, átkötözheti a függőségeit, szerkesztheti a kimeneti sémáját, vagy egyenesen törölheti a csomópontot. A strukturális csomópontok (kutatás, megbeszélés, összegzés) és a már végrehajtott csomópontok csak olvashatók. A szerkesztőből nem rendelhet egy szerepet konkrét, névvel ellátott ügynökhöz, és a költségvetést sem szerkesztheti.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Ha két szerkesztő dolgozik egy terven, azt optimalista párhuzamosság-kezelés oldja fel, nem összefésülés. Minden szerkesztés magával hozza a `base_revision` értéket, amelyre készült; az elavult revízióra épülő szerkesztést a rendszer „a terv közben továbbhaladt” üzenettel utasítja el, ahelyett hogy csendben felülírná valaki másét. A visszatekerés sem törlés — a régebbi javaslatot új revízióként fűzi hozzá, így a revíziók idővonala csak növekszik.
 
-## Honest estimates, or none
+## Őszinte becslések — vagy egy sem
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+A jóváhagyási sávon látható becslés szerepenként a valós, befejezett futások előzményeiből épül fel, interkvartilis (p25–p75) sávként. A költségösszegek az egyes becsülhető csomópontokat **összegzik**; az időtartam a DAG-on át vezető **kritikus út**, nem pedig az összeg (a párhuzamos ágak átfedésben vannak).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Az a csomópont, amelynek szerepéhez **nincs befejezett futási előzmény**, `sampleSize: 0` értéket és null tartományokat jelent. Ez pontosan így is jelenik meg — ismeretlenként —, soha nem kitalált pontértékként, mert egy megbízhatatlan becslés rosszabb, mint a becslés hiánya. Ha egyes csomópontoknak van előzményük, másoknak nincs, az összesítés részlegesnek jelölődik. A hatósugár csak akkor jelenik meg, ha egy csomópont `symbol` vagy `file` származási hivatkozásokat deklarált; az ilyenekkel nem rendelkező csomópont „ismeretlen” marad, ahelyett hogy a szövegből következtetne.
 
-## One approval, then deterministic execution
+## Egy jóváhagyás, majd determinisztikus végrehajtás
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/hu-HU/kezikonyv/fogalmak/pipeline-ok/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Ez a lényegi gondolat: **az ügynök tervez, egy determinisztikus függvény hajt végre.** Amikor jóváhagyja, az `OrchestrationMaterializer`, egy LLM és I/O nélküli tiszta függvény, valódi [pipeline-ná](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) alakítja a javaslatot. Ugyanabból a javaslatból és ugyanazokból a feloldott szerepekből mindig ugyanazt a DAG-ot állítja elő. Ez azért fontos, mert a generált pipeline mindent örököl, amit a motor már ingyen nyújt: felfüggesztés és folytatás újraindítások között, összeomlás utáni helyreállítás, futásonkénti költség- és token-összesítések, valamint a futásrészletek felülete.
 
-Approval also creates the scaffolding the work needs:
+A jóváhagyás emellett létrehozza a munkához szükséges állványzatot:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **felveszi** az újként megjelölt szerepeket (és rögzíti a felvett ügynökök azonosítóit, hogy egy jóváhagyás közbeni összeomlás ismétlődő felvételek nélkül folytatódhasson)
+- egy **csapat**, amely a szerepeket csoportosítja
+- egy **projekt**, amely a szülőjegyet iktatja
+- a **pipeline-sablon + futtatás**, amely mindezt vezérli
 
-## The lifecycle
+## Az életciklus
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +70,36 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Állapot        | Jelentés                                                                         |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | A terv készen áll, és az egyszeri, előzetes jóváhagyására vár                     |
+| `approved`     | Jóváhagyta; a materializálás folyamatban van (felvételek, csapat, projekt, pipeline) |
+| `executing`    | A generált pipeline fut: aljegyek, megbeszélés, munka                            |
+| `synthesizing` | Az aljegyek elkészültek; az összegzés lépése állítja elő a szállítandót          |
+| `completed`    | Kész: a szülőjegy befejezettként van megjelölve, a szállítandó pedig a közös térben jelenik meg |
+| `failed`       | A materializálás sikertelen, vagy a generált pipeline futtatása bukott meg       |
+| `cancelled`    | Ön megszakította                                                                 |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Egy monoton **revíziószám** követi a javaslatot, ahogy az orchestrátor módosítja, amíg az még `proposed` állapotban van; az alkalmazás rögzíti, melyik revíziót hagyta jóvá. A `propose_orchestration` elutasítja a további revíziókat, amint az állapot már nem `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Az orchestráció mindig egy **szülőjegyre** horgonyozva nyílik meg, és egyetlen beszélgetési **téren** osztozik, így a teljes erőfeszítés egyetlen munkaelemig visszakövethető, a csapat pedig egy szobában beszél.
 
-## What happens when it finishes
+## Mi történik, amikor befejeződik
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Egy életben tartott figyelő kíséri a generált pipeline-t, és annak végállapotát visszavezeti az orchestrációra és a szülőjegyre, így a befejezés és a hiba ott jelenik meg, ahol egyébként is nézi a dolgokat. Az orchestráció funkciónak nincs szüksége saját végrehajtómotorra.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Az orchestrációt bármikor megszakíthatja; a megszakítás lebontja a folyamatban lévő munkát.
 
 ::::note
-Orchestration builds on [pipelines](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) and
-[tickets](/hu-HU/kezikonyv/fogalmak/jegyek/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Az orchestráció a [pipeline-okra](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) és
+a [jegyekre](/hu-HU/kezikonyv/fogalmak/jegyek/) épül. Tervezési és jóváhagyási réteg
+ezek fölött, nem külön futókörnyezet.
 ::::
 
-## See also
+## Lásd még
 
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/): the parent ticket an orchestration is anchored on
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): the roles an orchestration fills or hires
-- [Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
-- [Work in Plan Studio](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/)
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/): a motor, amelyen a materializált orchestráció fut
+- [Jegyek és delegálás](/hu-HU/kezikonyv/fogalmak/jegyek/): a szülőjegy, amelyre az orchestráció horgonyzódik
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): a szerepek, amelyeket az orchestráció betölt vagy felvesz
+- [Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
+- [Munka a Plan Studióban](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/)

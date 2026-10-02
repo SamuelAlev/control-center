@@ -1,33 +1,34 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: ایوالز اور معیار
+description: ایول سوٹس، ہر ورک اسپیس میں بیج ہونے والا اسٹارٹر سیٹ اور آبزرویبلٹی میں اُن کا مقام۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ایوالز-اور-معیار
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**ایول سوٹ** کسی ایجنٹ کے خلاف چلانے والے کام کی ورک اسپیس تک محدود تعریف ہے: ایک
+پرامپٹ، ایک ہدف ایجنٹ اور موڈ، اختیاری سیٹ اپ، پن شدہ SHA کے ساتھ اختیاری فکسچر اور
+گرےڈرز کی فہرست۔ گرےڈرز پہلے ڈٹرمینسٹک ہوتے ہیں؛ ایک LLM-روبرک جج وہ کچھ محیط ہوتا
+ہے جو وہ جانچیں بیان نہیں کر سکتیں۔
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+ورک اسپیس بننے پر پانچ اسٹارٹر سوٹ بیج ہوتے ہیں۔ یہ آرکیسٹریشن تجاویز، ایسا ریویو جو
+بیج شدہ بگ ڈھونڈ لے، پلان موڈ کا صرف پڑھنے تک محدود رہنا، پلان موڈ کا پلان بنانا اور
+ٹکٹ کے مکمل چکر کا احاطہ کرتے ہیں۔ بیج ہونا `WorkspaceCreated` کی سنتا ہے
+(`workspace.upsert` یا `workspace.create`)، پہلے سے موجود نام چھوڑ دیتا ہے اور پرانے
+ورک اسپیسز کو بیک فل نہیں کرتا۔
 
-## Where they appear
+## یہ کہاں ظاہر ہوتے ہیں
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**آبزرویبلٹی → معیار** (`/workspaces/<id>/observability`) ورک اسپیس میں ہر سوٹ کی
+فہرست دکھاتا ہے۔
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+سوٹس بنائیں، فہرست دیکھیں، ترمیم کریں اور حذف کریں `evals.upsertSuite`،
+`evals.deleteSuite` اور `evals.watchSuites` کے ذریعے۔ معیار ٹیب وہ فہرست ہے؛ یہ
+آپریشنز ایڈیٹر ہیں۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): the configuration a suite
-  pins
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): the autonomy dial
-- [Manage costs and budgets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/): spend recorded
-  alongside a run
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): وہ کنفیگریشن جسے سوٹ
+  پن کرتا ہے
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): خود مختاری کا ڈائل
+- [اخراجات اور بجٹ منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/): رن کے ساتھ
+  ریکارڈ ہونے والا خرچ

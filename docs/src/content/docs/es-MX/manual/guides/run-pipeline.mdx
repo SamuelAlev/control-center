@@ -1,68 +1,74 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Ejecutar un pipeline manualmente
+description: Inicia una ejecución de pipeline desde el lanzador, llena sus entradas y llega al detalle de la ejecución.
 slug: es-MX/manual/guias/ejecutar-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/es-MX/manual/guias/monitorear-pipelines/).
+Esta guía explica cómo iniciar una ejecución a mano. Para observar una, leer la
+salida de los pasos y recuperarte de un fallo, consulta
+[Monitorear ejecuciones de pipeline](/es-MX/manual/guias/monitorear-pipelines/).
 
-## Start a run
+## Iniciar una ejecución
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Haz clic en **Pipelines** en la barra lateral del espacio de trabajo.
+2. Presiona **Ejecutar pipeline** en el encabezado. Llegas al lanzador
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Elige una plantilla de la barra lateral izquierda. Cada tarjeta muestra el
+   nombre de la plantilla, su descripción y si admite entradas.
+4. Llena el formulario de entradas a la derecha. Los campos obligatorios
+   bloquean el botón hasta que tengan un valor; una plantilla sin entradas lo
+   indica.
+5. Presiona **Ejecutar pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Llegas a la página de detalle de la ejecución, con la cascada de tiempos y el
+lienzo del grafo en vivo.
 
-## If the rail is empty
+## Si la barra lateral está vacía
 
-The launcher shows a template only when **both** are true:
+El lanzador solo muestra una plantilla cuando se cumplen **las dos** condiciones:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- El interruptor de la plantilla está activado en **Ajustes → Espacio de trabajo → Plantillas de pipeline**.
+- **Permitir ejecución manual** está activado en el diálogo **Ejecución manual**
+  del editor de plantillas: ese interruptor es el que crea el disparador
+  `manual` que lee el lanzador.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+Ocho de las trece plantillas integradas vienen desactivadas: `external_pr_welcome`,
 `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+`dep_audit` y `pr_digest`. El motor se niega a iniciar una plantilla desactivada,
+así que activa su interruptor antes de buscarla aquí.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+No hay ninguna acción **Ejecutar** por plantilla en la lista de plantillas ni un
+botón de ejecución dentro del editor: el lanzador es el único punto de entrada
+manual.
 
-## Fill in a repository input
+## Llenar una entrada de repositorio
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Una entrada de tipo **Repositorio** muestra un selector sobre los repos
+registrados del espacio de trabajo. Al elegir uno se llenan `repo_id`,
+`repo_local_path`, `repo_full_name` y —cuando el repo tiene un remoto de
+GitHub— `repo_owner` y `repo_name` en la carga útil de la ejecución, para que los
+pasos posteriores lean el que necesiten.
 
-## Watch it run
+## Ver cómo se ejecuta
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+La página de detalle de la ejecución tiene tres partes: una franja de metadatos
+(hora de inicio, duración activa, progreso de los pasos, un aviso de fallo,
+**Reintentar** y **Eliminar**), una cascada de tiempos plegable con la duración y
+el costo por paso, y el lienzo del grafo. Al seleccionar un nodo se abre el panel
+de detalle de ese paso.
 
-[Monitor pipeline runs](/es-MX/manual/guias/monitorear-pipelines/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Monitorear ejecuciones de pipeline](/es-MX/manual/guias/monitorear-pipelines/)
+lo cubre todo, incluido cómo leer un paso suspendido y qué hacer cuando uno falla.
 
-Every run you start from the app is a real one.
+Toda ejecución que inicies desde la aplicación es real.
 
-## Related guides
+## Guías relacionadas
 
-- [Create a pipeline template](/es-MX/manual/guias/crear-pipeline/)
-- [Set up pipeline triggers](/es-MX/manual/guias/disparadores-de-pipeline/)
-- [Monitor pipeline runs](/es-MX/manual/guias/monitorear-pipelines/)
+- [Crear una plantilla de pipeline](/es-MX/manual/guias/crear-pipeline/)
+- [Configurar disparadores de pipeline](/es-MX/manual/guias/disparadores-de-pipeline/)
+- [Monitorear ejecuciones de pipeline](/es-MX/manual/guias/monitorear-pipelines/)
 
-## Related concepts
+## Conceptos relacionados
 
 - [Pipelines](/es-MX/manual/conceptos/pipelines/)

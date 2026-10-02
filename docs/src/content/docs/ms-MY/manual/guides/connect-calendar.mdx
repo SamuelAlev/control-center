@@ -1,123 +1,132 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Sambungkan Google Calendar
+description: Sambungkan Google Calendar ke ruang kerja, urus berbilang akaun dan sambung semula apabila token luput.
 slug: ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ms-MY/manual-pengguna/konsep/kalendar/) for the full picture.
+Panduan ini menunjukkan cara menyambungkan Google Calendar ke ruang kerja.
+Sifatnya bagi setiap ruang kerja: ia menyegerakkan acara ruang kerja itu ke
+Control Center, baca sahaja. Lihat
+[Kalendar dan penjadualan](/ms-MY/manual-pengguna/konsep/kalendar/) untuk
+gambaran penuh.
 
-## Connect an account
+## Sambungkan akaun
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Buka **Kalendar** dalam bar sisi.
+2. Klik **Tambah akaun kalendar** dalam bar sisi kalendar. (Bahagian yang sama juga terletak di **Tetapan → Ruang kerja → Profil & identiti**, di bawah **Google Calendar**.)
+3. Pilih cara untuk memberi kebenaran:
+   - **Gunakan apl Google Control Center** — tiada apa yang perlu disediakan. Ini lalai apabila binaan anda menyertakannya.
+   - **Gunakan klien Google Cloud saya sendiri** — tampal id klien dan rahsia daripada projek anda sendiri (lihat [Bawa klien Google anda sendiri](#bawa-klien-google-anda-sendiri-fork-dan-self-hosting)).
+4. Klik **Sambung Google Calendar**. Dialog menunjukkan kod pendek dan pautan ke halaman peranti Google.
+5. Buka halaman itu pada mana-mana peranti, masukkan kod itu dan luluskan akses yang diminta. Dialog itu tertutup sendiri dan acara anda mula disegerakkan.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Pelayan, bukan peranti anda, yang menjalankan pertukaran ini dan menyimpan
+token penyegaran yang terhasil — itulah sebabnya kod itu diluluskan pada
+"mana-mana peranti" dan bukan dalam apl ini secara khusus.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Akaun itu disambungkan **hanya pada ruang kerja aktif**. Tukar ruang kerja dan
+anda akan melihat kalendar ruang kerja itu sebaliknya.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Aliran sambungan meminta `calendar.readonly` serta e-mel anda — skop yang sama
+untuk apl terbina dalam dan untuk klien yang anda tampal. Control Center membaca
+acara; ia tidak mencipta, menyunting, memadam atau menjawab jemputan pada Google.
 
-## How syncing works
+## Bagaimana penyegerakan berfungsi
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**Pelayan** yang memiliki jadual itu: ia menyapu akaun bersambung setiap ruang
+kerja setiap dua minit dan menulis acara itu ke dalam pangkalan data ruang kerja.
+Klien tidak pernah bercakap dengan Google — klien membaca apa yang ditulis oleh
+pelayan.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Sapuan itu bersifat inkremental. Lintasan pertama bagi setiap kalendar mengambil
+tetingkap bergolek (60 hari ke belakang, 90 hari ke hadapan) dan menangkap token
+segerak Google; lintasan seterusnya membentangkan token itu dan hanya menerima
+apa yang berubah, dan itulah yang menjadikan irama dua minit ini berpatutan.
+Tetingkap itu ditambat semula dengan penyegerakan penuh setiap 24 jam dan setiap
+kali Google membatalkan token itu.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Token penyegaran hidup di sisi pelayan dalam `secrets.json` di bawah direktori
+data pelayan, ditulis untuk pemilik sahaja (`0600`) — bukan dalam keychain OS dan
+tidak pernah pada peranti klien.
 
-## Connect multiple accounts
+## Sambungkan berbilang akaun
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Satu ruang kerja boleh menyambungkan beberapa akaun Google (contohnya kerja dan
+peribadi). Ulangi langkah sambungan untuk setiap satu; acara mereka digabungkan
+ke dalam paparan bulan / minggu / agenda yang sama. Setiap akaun menyegerak dan
+menyegar secara berasingan dan setiap satu boleh diputuskan sendiri.
 
-## Reconnect an expired account
+## Sambung semula akaun yang luput
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Jika Google membatalkan token sesuatu akaun secara kekal (sesi yang ditarik balik
+atau lama luput), penyegerakan berhenti dan Control Center memaparkan banner
+**Sambung semula** pada kalendar, serta pemberitahuan desktop. Klik **Sambung
+semula** dan luluskan kod baharu; banner itu hilang pada penyegerakan berjaya
+yang seterusnya.
 
-## Disconnect an account
+## Putuskan akaun
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Dari bar sisi kalendar (atau **Tetapan → Ruang kerja → Profil & identiti**),
+klik **Putuskan** pada akaun itu. Ini memadamkan acara yang disegerakkannya dan
+membersihkan token tersimpannya pada pelayan.
 
-## Connect from a headless server
+## Sambung dari pelayan tanpa kepala
 
-A server with no GUI attached connects the same account from its own terminal:
+Pelayan tanpa GUI yang dipasang menyambungkan akaun yang sama dari terminalnya
+sendiri:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Ia mencetak kod dan URL, menunggu kelulusan, kemudian menyimpan token dan
+menyegerak pada sapuan seterusnya.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Binaan daripada sumber **tidak** menyertakan klien Google, jadi id dan rahsia itu
+diperlukan — tetapkan `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
+Tiada bendera `--google-client-id` (bendera yang tidak dikenali diabaikan). Tanpa
+pasangan persekitaran itu, arahan ini keluar dengan ralat klien tiada.
 
-## Bring your own Google client (forks and self-hosting)
+## Bawa klien Google anda sendiri (fork dan self-hosting)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Binaan keluaran menyertakan klien Google, jadi kebanyakan orang tidak pernah
+menyentuh perkara ini. Bawa klien anda sendiri jika anda membina daripada sumber,
+menjalankan pelayan sendiri atau mahu skrin persetujuan menamakan projek anda
+sendiri.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Dalam [Google Cloud Console](https://console.cloud.google.com/apis/credentials), dayakan **Google Calendar API** dan konfigurasikan **skrin persetujuan OAuth**, sambil menambah skop `calendar.readonly`, `openid` dan `email`. Selagi apl belum disahkan, tambah diri anda sebagai **pengguna ujian**. Menambah `calendar.events` pada skrin persetujuan tidak mendayakan RSVP — Control Center tidak pernah meminta skop itu.
+2. Cipta **ID klien OAuth** dengan jenis aplikasi **TVs and limited input devices** dan salin kedua-dua id klien dan rahsia klien.
+3. Bekalkan kedua-duanya sama ada bagi setiap sambungan (pilih **Gunakan klien Google Cloud saya sendiri** dalam dialog) atau untuk seluruh pelayan dengan `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Pasangan untuk seluruh pelayan menggantikan pasangan terbina dalam di semua
+tempat, termasuk di sebalik pilihan "gunakan apl Google Control Center" — jadi
+pada pelayan anda sendiri, pilihan itu ialah apl anda.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Rahsia klien tidak pernah meninggalkan pelayan: tiada respons RPC yang
+membawanya dan akaun yang disambungkan melalui klien pelayan itu sendiri
+menyimpan penanda dan bukan salinan pasangan itu, jadi memutarkannya hanyalah
+soal memulakan semula dengan nilai baharu.
 
-### Troubleshooting
+### Penyelesaian masalah
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Gejala                                                   | Punca kemungkinan                                                                                                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dialog tidak menawarkan pilihan terbina dalam            | Binaan ini tidak menyertakan klien Google (binaan sumber), atau pelayan dimulakan dengan hanya separuh daripada pasangan itu. Kedua-dua id dan rahsia diperlukan                        |
+| `invalid_scope` semasa memulakan aliran                  | Calendar tidak dibenarkan untuk klien kod peranti dalam projek Cloud itu. Gunakan projek klien loopback atau web sebaliknya                                                            |
+| `invalid_client` daripada Google                          | Klien itu bukan klien **TVs and limited input devices**, atau id dan rahsia itu daripada klien yang berbeza                                                                            |
+| Kelulusan berjaya tetapi penyegerakan kosong             | Akaun anda bukan **pengguna ujian** pada skrin persetujuan, atau `calendar.readonly` tidak diberikan                                                                                   |
+| Kod luput sebelum anda meluluskannya                     | Kod peranti berumur pendek. Mulakan sambungan semula untuk mendapatkan kod baharu                                                                                                       |
+| "Tidak dapat mengemas kini jawapan anda" pada RSVP       | Dijangka: aliran sambungan tidak pernah meminta `calendar.events`                                                                                                                       |
+| Penyegerakan berhenti dengan amaran penyegaran dalam log pelayan | Akaun itu disambungkan dengan klien yang tidak lagi dikonfigurasikan. Sambung semula akaun itu, atau pulihkan id dan rahsia klien itu                                          |
 
-## Related guides
+## Panduan berkaitan
 
-- [Record and summarize a meeting](/ms-MY/manual-pengguna/panduan-cara/rakam-mesyuarat/): turn an event into a recording
-- [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
+- [Rakam dan ringkaskan mesyuarat](/ms-MY/manual-pengguna/panduan-cara/rakam-mesyuarat/): tukar acara menjadi rakaman
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): tempat token dan jadual penyegerakan berada
+- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Calendar and scheduling](/ms-MY/manual-pengguna/konsep/kalendar/)
+- [Kalendar dan penjadualan](/ms-MY/manual-pengguna/konsep/kalendar/)

@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Beépített ügynökeszközök
+description: Az az eszközfelület, amelyet a beépített harness ad egy ügynöknek – nyelvi szerver, strukturális keresés, hibakereső, kernelek és worker-vezérlés –, minden művelettel és annak argumentumaival.
 slug: hu-HU/kezikonyv/referencia/ugynokeszkozok
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Ezek azok a **szerverhez kötött** eszközök, amelyeket a beépített ügynök-futtatókörnyezet közvetlenül regisztrál – nyelvi szerver, strukturális keresés, hibakereső, kernelek, kérdések és worker-vezérlés –, szemben az általa behidalazott [MCP-eszközökkel](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) és a harness futtatókörnyezetéből származó általános fájl-, kereső- és shelleszközökkel. Ezek nincsenek benne az MCP-jegyzékben: egy külső MCP-kliens nem látja őket, mert mindegyik egy élő szerveroldali erőforráshoz van kötve – egy nyelviszerver-folyamathoz, egy hibakereső adapterhez, egy értelmezőhöz –, amely egyetlen futtatáshoz tartozik.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Az itteni eszközök csak akkor kerülnek regisztrálásra, ha a mögöttes erőforrásuk be van kötve a futtatáshoz – egy nyelviszerver- vagy hibakereső-felügyelő, egy tree-sitter-parser, egy kernelgyár, egy kérdésport, egy vibe-névsor. Az, hogy *ebben a checkoutban* észlelhető-e nyelvi szerver vagy hibakereső adapter, külön, későbbi ellenőrzés (`status` / `adapters`): ezek az eszközök a felületen maradnak, hogy az ügynök megkérdezhesse, miért nem használható semmi, ahelyett hogy találgatna.
 
-## Approval tiers
+## Jóváhagyási szintek
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Minden eszköz deklarál egy szintet, és a szint dönti el, **mely felületek látják** – nem csupán azt, hogy kér-e jóváhagyást. A tervmód és a csak olvasható alügynökök a `read` szintre vannak korlátozva, így egy `write` vagy `exec` szintű eszköz teljesen hiányzik a sémájukból.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Szint   | Jelentés                               | Eszközök itt                                       |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Nincs mellékhatás                      | `lsp`, `ast_grep`, `ask_user`, az öt `vibe_*`      |
+| `write` | Fájlokat módosít                       | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Elindít vagy vezérel egy folyamatot     | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` – nyelviszerver-lekérdezések
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Akkor kerül regisztrálásra, ha a futtatásnak van nyelviszerver-felügyelője és munkakönyvtára. Az, hogy egy szerver valóban tud-e válaszolni, híváskor derül ki, **metszetként**: lennie kell gyökérjelölőnek, *és* fel kell oldódnia a szerver binárisának. Bármelyik önmagában azt jelenti, hogy nem indul szerver – a `status` ezt megmondja –, ahelyett hogy csendben találgatna.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+A pozíciókat `line` és egy `symbol` részstring címzi meg, soha nem oszlop. Egy oszlopra kért modell találgat, és egy rossz találgatás ugyanazon a soron egy másik szimbólumra oldódik fel – egy válasz, amely helyesnek látszik, és valami másról szól. A `symbol` elhagyása egy navigációs műveletnél hiba, nem pedig az első oszlopra vonatkozó tipp.
 
-| Action            | Arguments                        | Returns                                    |
+| Művelet           | Argumentumok                     | Visszatérés                                |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (vagy `"*"`)              | Hibák és figyelmeztetések; a `"*"` helyette a projektellenőrzőt futtatja |
+| `definition`      | `file`, `line`, `symbol`         | Hol van deklarálva a szimbólum             |
+| `type_definition` | `file`, `line`, `symbol`         | Hol van deklarálva a típusa                |
+| `implementation`  | `file`, `line`, `symbol`         | Konkrét implementációk                     |
+| `references`      | `file`, `line`, `symbol`         | Minden használat, 50-re korlátozva         |
+| `hover`           | `file`, `line`, `symbol`         | Szignatúra és dokumentációs megjegyzés     |
+| `symbols`         | `query` vagy `file`              | Munkaterületi keresés `query`-vel (100-ra korlátozva); dokumentumszimbólumok `file`-lal (200-ra korlátozva) |
+| `code_actions`    | `file`, `line`, `symbol`         | A szerver által felkínált gyorsjavítások   |
+| `status`          | —                                | Mely szerverek futnak, és mely gyökerekhez |
+| `reload`          | —                                | Újraindítja a szervert ehhez a gyökérhez   |
 
-### Diagnostics on write
+### Diagnosztika íráskor
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+A haszon nem maga az eszköz. A `write`, az `edit` és az `apply_patch` **be van csomagolva**: az írás után a fájl szinkronizálódik és mentődik a nyelvi szerveren keresztül, és csak az **újonnan bevezetett** diagnosztikák kerülnek be az eszköz eredményébe. Az ügynök abban a pillanatban megtudja, hogy eltörte a buildet, amikor eltörte, anélkül hogy emlékeznie kellene rá, hogy megkérdezze.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+A már jelentett diagnosztikákat egy futásonkénti nyilvántartás nyomja el, amely súlyosság, kód és üzenet szerint indexelt – a pozíció szándékosan kimarad, így az a diagnosztika, amely csak négy sorral lejjebb került, nem jelenik meg újként.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` – projekt szintű átnevezés
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Külön, `write` szintű eszköz, pontosan egy okból: a szint dönti el a láthatóságot. Ha az átnevezést az `lsp`-be olvasztanánk, az vagy egy csak olvasható felfedezőnek adná a repó átírásának képességét, vagy minden `hover` mögé jóváhagyási kérést tenne.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argumentum | Jelentés                                    |
+| ---------- | ------------------------------------------ |
+| `file`     | Hol van a szimbólum                        |
+| `line`     | 1-től indexelt sor                         |
+| `symbol`   | Az adott soron azonosító részstring        |
+| `new_name` | Minek nevezzük                             |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` – strukturális keresés
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+**Alak** alapján talál meg kódot, nem szöveg alapján. A `$NAME` bármely csomópontra illeszkedik, a `$$$NAME` testvérek egy sorozatára, a `$_` pedig egy helyettesítő, amely semmit sem köt meg.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Az a tulajdonság, amely illesztővé teszi, és nem csupán egy plusz lépésekkel felcicomázott regexszé: egy mintában megismételt metaváltozónak ugyanazt a szöveget kell elkapnia.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+egy olyan őrfeltételre illeszkedik, amely azt szabadítja fel, amit vizsgált, és **nem** illeszkedik arra, amely valami mást szabadít fel.
 
-| Argument      | Meaning                                                     |
+| Argumentum    | Jelentés                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Metaváltozókat tartalmazó kódrészlet                        |
+| `path`        | Keresendő fájl vagy könyvtár; alapértelmezésben a teljes munkaterület |
+| `language`    | Egy szállított nyelvtan azonosítója (`dart`, `python`, `rust`, `c`, …). Kikövetkeztetve, amikor a `path` fájlt nevez meg |
+| `max_results` | Alapértelmezés: 50                                          |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[A mintát ugyanaz a nyelvtan dolgozza fel, mint a fájlt]
+Így a `dispose(x)` megtalálja a hívást, akárhogyan van tagolva, tördelve vagy megjegyzésekkel körbevéve – és soha nem illeszti ugyanezeket a karaktereket egy sztringliterálon vagy megjegyzésen belül.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[A töredék vázban, nem csupaszon kerül feldolgozásra]
+A Dart felső szintjén feldolgozott `dispose(x)` egy érvényes *függvényszignatúra*. A mintafordító a környezetek egy létráját próbálja ki (utasítás, kifejezés, osztálytag, deklaráció), és az elsőt használja, amely elfogadja a töredéket. Egy mintát, amelyet egyetlen környezet sem fogad el, feldolgozhatatlanként jelentenek, ahelyett hogy keresnének, és csendben nem találnák meg.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` – strukturális átírás, előkészítve
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Ugyanaz az illesztés, plusz egy `rewrite` sablon, amelybe a metaváltozók visszahelyettesítődnek. **Semmi sem íródik ki.** A változtatás előkészítésre kerül, és az eredmény megnevez egy `edit_id`-t.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Argumentum | Jelentés                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Mit kell illeszteni                                 |
+| `rewrite`  | Mit tegyen a helyére, `$NAME` behelyettesítve       |
+| `path`     | Hatókör; alapértelmezésben a teljes munkaterület     |
+| `language` | Nyelvazonosító                                      |
 
-## `resolve` — commit or discard a staged change
+## `resolve` – egy előkészített változtatás véglegesítése vagy elvetése
 
-| Argument  | Meaning                          |
-| --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| Argumentum | Jelentés                          |
+| ---------- | -------------------------------- |
+| `edit_id`  | A `(proposed)` eredményből        |
+| `action`   | `accept` vagy `discard`           |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Minden fájlt az előkészítéskor rögzített tartalomhoz hasonlítanak össze, és **bármilyen** eltérés visszautasítja a teljes változtatást. A részben alkalmazott strukturális átírás olyan fát hagy maga után, amely sem a régi, sem az új alak szerint nem fordul le.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` – hibakereső vezérlése
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Akkor kerül regisztrálásra, ha a futtatásnak van hibakeresési munkamenet-felügyelője, munkakönyvtára és beszélgetésazonosítója. Az, hogy egy adapter valóban el tud-e indulni, híváskor derül ki, ugyanazzal a metszetszabállyal, mint a nyelvi szervernél (gyökérjelölő *és* bináris). `exec` szint; párhuzamosan nem biztonságos (a munkamenet hívásokon átívelő állapot, így a `continue`, amely megelőzné a `stack`-et, egy már elmozdult keretet olvasna).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Beszélgetésenként egy munkamenet, kemény TTL-lel (30 perc). Egy második `launch` visszautasításra kerül, ahelyett hogy csendben lecserélné az elsőt.
 
-| Op            | Arguments                     | Notes                                          |
+| Művelet       | Argumentumok                  | Megjegyzések                                   |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Mely adapterek használhatók itt, és miért nem   |
+| `status`      | —                             | Fut-e munkamenet, és hol állt meg              |
+| `breakpoints` | `file`, `lines[]`             | Az üres `lines` törli a fájlt. **Indítás előtt** is beállítható |
+| `launch`      | `program`, `args[]`           | Elindítja a programot, a töréspontjainál megállva |
+| `attach`      | `port`                        | Csatlakozik egy már futó, hibakeresett folyamathoz |
+| `continue`    | `thread_id?`                  | A következő megállásig fut                    |
+| `pause`       | `thread_id?`                  | Megállítja ott, ahol éppen van                 |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Egy lépéssel mozdít                  |
+| `threads`     | —                             | Szálazonosítók és -nevek                       |
+| `stack`       | `thread_id?`                  | Keretek, 30-ra korlátozva                      |
+| `scopes`      | `frame_id`                    | Hatókörök egy kereten, mindegyikhez egy `reference` |
+| `variables`   | `reference`                   | Gyermekek, 50-re korlátozva, az értékek 400 karakterre korlátozva |
+| `evaluate`    | `expression`, `frame_id?`     | A keret saját hatókörében kiértékelve           |
+| `output`      | —                             | A hibakeresett folyamat stdout/stderr kimenete, korlátozott |
+| `terminate`   | —                             | Lezárja a munkamenetet, és leállítja az adaptert |
 
-### Adapters
+### Adapterek
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Parancs                    | Gyökérjelölők                                   |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+A `debugpy` a projekt helyi `.venv/bin` vagy `venv/bin` könyvtárát előnyben részesíti a `$PATH`-tal szemben: egy `$PATH`-beli python más környezet, és a rosszból való csatlakozás úgy hibázik, mintha a kód lenne hibás.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` – tartós értelmezők
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Egy Python- vagy JavaScript-cella, amelynek változói, importjai és betöltött adatai megmaradnak a hívások között. `exec` szint; párhuzamosan nem biztonságos.
 
-| Argument      | Meaning                                          |
+| Argumentum    | Jelentés                                          |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | A cella                                          |
+| `description` | Kötelező. 5–10 szó az átirat címkéjéhez          |
+| `language`    | `python` (alapértelmezés) vagy `javascript`      |
+| `reset`       | Eldobja az értelmezőt, és először tisztán indít  |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Az utolsó kifejezés ugyanúgy visszhangzik, ahogy egy notebook teszi.
+- A `display()` működik, a pandas frame táblázatként renderelődik, és egy matplotlib ábra egy **képként jön vissza, amelyet az átirat megjelenít**.
+- Azokat az IPython-idómákat, amelyeket az ember reflexből beír – `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` –, egyszerű kódra írják át. A `%pip` emellett kiüríti a `sys.modules`-t, így a következő `import` látja, mit telepítettek éppen.
 
-### Calling your own tools from inside a cell
+### Saját eszközök hívása a cellán belülről
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+A híd **visszalép a harness eszközregiszterébe**, így a korlátok, a jóváhagyás és minden burkoló pontosan úgy érvényesül, ahogy egy modell által kiadott hívásnál. A kernel saját csövén utazik, nem egy loopback-socketen: nincs port, nincs titok, nincs kimenőforgalmi szabály.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+A cella időtúllépése egy *tétlenségi* keret (alapértelmezés: 5 perc), és **felfüggesztésre kerül**, amíg egy hídon átmenő hívás függőben van, így az a cella, amely alügynökökre ágazik szét, nem kerül leállításra a szétágazás közben.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Hol fut a kernel]
+A beszélgetés elszigetelt környezetében, ha van neki ilyen, egyébként a gazdagépen. Ehhez nem indít elszigetelt környezetet – ugyanaz a szabály, amely megakadályozza, hogy egy állomásfül automatikusan elinduljon.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` – kérdés feltevése egy embernek
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+`read` szint. A futtatás **egyetlen** módja arra, hogy bármit kérdezzen az üzemeltetőtől. Számozott kártyát jelenít meg a beszélgetésben, és blokkol, amíg valaki nem válaszol, nem hagyja ki, vagy a kérdés le nem jár. Soha ne írja a kérdést csevegőüzenetként – az lezárja a kört.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argumentum        | Jelentés                                    |
+| ----------------- | ------------------------------------------ |
+| `question`        | Mit kérdezzen                              |
+| `context`         | Opcionális: miért kérdez, és mi függ a választól |
+| `options[]`       | Választási lehetőségek, mindegyik `{label, description?}` |
+| `allow_free_text` | Elfogadható-e beírt válasz                 |
+| `multi_select`    | Több lehetőség is kiválasztható-e          |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+A kihagyás siker: haladjon tovább egy kimondott feltevéssel, és ne kérdezzen újra. Az időtúllépés hiba, ugyanezzel az utasítással. Az engedélykérések („megtehetem ezt?”) külön kapu, és ugyanolyan kártyaként jelennek meg a beszélgetésben.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Csak akkor kerül regisztrálásra, ha egyszerre létezik kérdésport és cél-tér. Ha nincs ember csatlakoztatva, a hívás **meghiúsul**, ahelyett hogy örökre blokkolna – ugyanaz a zárt hibamódú tartás, amelyet egy korlát `prompt` vesz fel, ha nincs jóváhagyó csatlakoztatva.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` – háttér-workerek irányítása
 
-Registered only while [vibe mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Csak akkor kerül regisztrálásra, amíg a [vibe mód](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/) be van kapcsolva. Mind az öt `read` szintű: a kapu a worker eszközein van, ahol a szerkesztés valóban történik.
 
-| Tool         | Arguments                                | Notes                                       |
+| Eszköz       | Argumentumok                             | Megjegyzések                                |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Azonnal visszatér; a worker tovább fut      |
+| `vibe_send`  | `worker_id`, `message`                   | Hozzáfűz a feladatkiíráshoz, és újrafuttat  |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blokkol, amíg meg nem nyugszik              |
+| `vibe_kill`  | `worker_id`                              | Leállítja                                   |
+| `vibe_list`  | —                                        | Szint, állapot, eltelt idő és utolsó eredmény |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+A `tier` értéke `fast` (mechanikus munka világos specifikációval) vagy `good` (tervezés, mérlegelés, vagy egy `fast` worker kimenetének átnézése).

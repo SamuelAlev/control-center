@@ -1,98 +1,99 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Tùy chỉnh chatbot
+description: Đổi tên bot, viết lại nội dung bot giới thiệu về mình, hoặc đổi lệnh slash của bot ngay từ Control Center.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Hướng dẫn này cho bạn cách định hình lại app bot phía nhà cung cấp mà không cần rời khỏi Control Center.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Vai trò `owner` hoặc `admin` trong không gian làm việc
+- Một nhà cung cấp đã **kết nối**. Dòng **Tùy chỉnh bot** chỉ xuất hiện sau khi không gian làm việc được kết nối
+- Một app mà Control Center có thể quản lý. Với Slack, nghĩa là kết nối giữ token làm mới cấu hình app (`xoxe-…`); nếu không, dòng này sẽ báo như vậy và tiếp tục bị vô hiệu hóa
 
-## What you can change
+## Những gì bạn có thể thay đổi
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Trường                | Ý nghĩa                                        | Giới hạn                                                   |
+| --------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| **Tên app**           | Cách nhà cung cấp liệt kê app                  | 1–35 ký tự                                                 |
+| **Tên hiển thị của bot** | Thành viên gõ gì sau `@`                    | 1–80 ký tự                                                 |
+| **Mô tả**             | Một dòng mà nhà cung cấp hiển thị               | 140 ký tự hoặc ít hơn                                      |
+| **Mô tả agent**       | Hiển thị phía trên một DM với bot              | 300 ký tự hoặc ít hơn                                      |
+| **Lệnh slash**        | Lệnh mà thành viên gọi, không kèm dấu gạch chéo | Chuyển thành chữ thường, chỉ `a–z 0–9 _ -`, cắt ở 32 ký tự |
+| **Tin nhắn trực tiếp** | Bot có bật trải nghiệm DM/agent hay không     | Bật hoặc tắt                                               |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center kiểm tra bốn trường văn bản trước khi gọi nhà cung cấp, nên bạn nhận được "the app name must be between 1 and 35 characters" thay vì một `invalid_manifest` mù mờ từ máy chủ mà bạn không nhìn thấy. Lệnh không bị từ chối mà được chuẩn hóa: dấu gạch chéo ở đầu bị bỏ, phần còn lại chuyển thành chữ thường, mọi ký tự ngoài `a–z 0–9 _ -` bị loại bỏ và kết quả rỗng sẽ quay về `cc`.
 
-## Edit the bot
+## Chỉnh sửa bot
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+2. Trên khối nhà cung cấp, nhấp vào **Tùy chỉnh bot**
+3. Hộp thoại mở ra với các giá trị _trực tiếp_ của app, đọc lại từ nhà cung cấp — nên thay đổi mà ai đó đã thực hiện ngay trong giao diện của Slack chính là điểm bạn bắt đầu
+4. Chỉnh sửa những gì bạn cần rồi lưu
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Việc đọc các giá trị trực tiếp đó tốn một lần xoay token về phía Slack, đó là lý do dòng này cần một cú nhấp có chủ đích thay vì được trang tự đọc khi tải.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Thao tác ghi sẽ phủ các thay đổi của bạn lên định nghĩa hiện tại của app. Bất cứ thứ gì Control Center không mô hình hóa — một lệnh slash thứ hai bạn thêm trong Slack, một bước workflow, một cài đặt không liên quan — đều được giữ nguyên vẹn. Các scope và sự kiện được hợp nhất vào, không bao giờ bị bớt đi.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Sau khi lưu, Control Center đọc lại danh tính của bot để tên trong cài đặt khớp với tên trong app chat.
 
-## Reinstall when permissions change
+## Cài lại khi quyền thay đổi
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Cài lại sau khi thay đổi quyền]
+Slack áp dụng định nghĩa app mới ngay lập tức nhưng giữ nguyên quyền đã cài đặt
+như cũ. Hãy cài lại app để thay đổi quyền có hiệu lực. Cầu nối vẫn chạy trên
+quyền trước đó cho đến khi bạn làm vậy.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Khi một lần lưu làm thay đổi quyền, hộp thoại vẫn mở và hiển thị "Slack đã thay
+đổi quyền của app. Cài lại app để các quyền có hiệu lực", kèm nút
+**Cài lại app** mở trang cài đặt app đó vào nhóm Slack. Trong Slack, đó là
+**Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Đổi tên lệnh slash
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Thay đổi **Lệnh slash** rồi lưu. Cầu nối sau đó viết hướng dẫn bằng lệnh mà nó được gọi lần cuối, nên văn bản trợ giúp và hướng dẫn liên kết đi theo tên mới thay vì nêu một lệnh không còn tồn tại.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Đổi tên không làm hỏng các luồng đã nối từ trước: luồng được khóa theo hội thoại, không theo lệnh.
 
-## What Control Center will not change
+## Những gì Control Center sẽ không thay đổi
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Cài đặt mang tính cấu trúc.** Transport (Socket Mode), các scope bắt buộc và các đăng ký sự kiện đều được áp đặt, không phải để tùy chọn. Một app có thể bị cấu hình đến mức im lặng từ màn hình cài đặt là một phiếu hỗ trợ, không phải một tính năng
+- **Biểu tượng của bot.** Chỉ cài đặt app của chính nhà cung cấp mới đổi được nó và hộp thoại nói rõ điều đó
+- **Các đợt chuyển đổi tính năng của chính nhà cung cấp.** Một app đã ở dạng trợ lý cũ của Slack sẽ giữ nguyên dạng đó; hộp thoại này chỉnh sửa phần mô tả, chứ không chuyển đổi app
 
-## Troubleshooting
+## Xử lý sự cố
 
-### There is no Customize bot row at all
+### Không có dòng Tùy chỉnh bot nào cả
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/).
+Không gian làm việc chưa được kết nối. Dòng này chỉ xuất hiện khi khối nhà cung
+cấp hiển thị một kết nối đang hoạt động. Xem [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/).
 
-### The Customize bot row is disabled
+### Dòng Tùy chỉnh bot bị vô hiệu hóa
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Kết nối không có thông tin xác thực để quản lý app — phụ đề của dòng ghi
+"Control Center cần token cấu hình app để chỉnh bot. Kết nối lại và kèm theo token."
+Với Slack, hãy tạo một cặp token cấu hình app trên
+[api.slack.com/apps](https://api.slack.com/apps) và kết nối lại với token làm mới
+đã được điền. Đây là điều bình thường với một app được dựng thủ công hoặc tạo qua
+**Tạo trên Slack**, vì Slack không bao giờ báo app nào nó đã tạo.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Kết nối đã lưu không mang app id — thường là app được kết nối thủ công trước khi id được ghi lại. Hãy kết nối lại không gian làm việc, hoặc tạo app từ Control Center.
 
-### The bot's new name has not appeared in chat
+### Tên mới của bot chưa xuất hiện trong chat
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Các nhà cung cấp lưu đệm metadata của app trong chốc lát. Nếu sau một phút tên vẫn cũ, hãy kiểm tra xem lần lưu có yêu cầu bạn cài lại app hay không.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
-- [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
-- [Chat bridge](/vi-VN/so-tay/tham-chieu/cau-chat/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
+- [Cầu chat](/vi-VN/so-tay/tham-chieu/cau-chat/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/)
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/)

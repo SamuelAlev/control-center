@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: คำสั่งสแลช
+description: ทุกคำสั่งที่พิมพ์ได้ในคอมโพเซอร์ มันทำอะไร และรันที่ไหน
 slug: th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+คำสั่งที่พิมพ์ในคอมโพเซอร์ของสเปซหนึ่ง ๆ มันแบ่งเป็นสามกลุ่มตามว่าออกฤทธิ์ที่ไหน และความต่างนี้สำคัญ: คำสั่ง **ในเครื่อง** ไม่เคยเดินทางเป็นข้อความ จึงไม่ปรากฏในทรานสคริปต์และไปไม่ถึงเอเจนต์
 
-| Where it runs | What that means                                                                    |
+| รันที่ไหน   | ความหมาย                                                                          |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **ในเครื่อง**   | จัดการในไคลเอนต์ (หรือปฏิบัติการฝั่งเซิร์ฟเวอร์ที่ไคลเอนต์เป็นผู้เริ่ม) คำสั่งไม่เคยเดินทางเป็นข้อความ เอเจนต์จึงไม่เห็น |
+| **ด้านข้าง**    | การเรียกโมเดลฝั่งเซิร์ฟเวอร์หนึ่งครั้งเกี่ยวกับบทสนทนา บทสนทนาไม่ถูกเปลี่ยนแปลง |
+| **สั่งงาน**     | กำหนดโหมดหรือคำกำกับสำหรับการรันที่ข้อความนั้นเริ่ม                          |
 
 ---
 
-## Directing a run
+## กำกับการรัน
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**ในเครื่อง → สั่งงาน** ติดอาวุธโหมดแผนให้บทสนทนา: worktree ที่อ่านอย่างเดียวเต็มรูปแบบ และพื้นผิวเครื่องมือที่จำกัดไว้เพียง `read` สิ่งที่เอเจนต์ต้องส่งมอบคือแผน ไม่ใช่การแก้ไข `/plan` เปล่า ๆ แค่สลับโหมดและไม่เคยเดินทางเป็นข้อความ เมื่อมีพร้อมต์ ส่วนที่เหลือของบรรทัดคือสิ่งที่เริ่มการรัน
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**สั่งงาน** เริ่มวัตถุประสงค์แบบอิสระที่ผู้ดูแลเป้าหมายสั่งงานใหม่ข้ามเซกเมนต์และการรีสตาร์ต
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+การพิมพ์ `/goal` พร้อมข้อความก่อนจะเปิด **การสัมภาษณ์วัตถุประสงค์** — ช่วงสั้น ๆ ที่ไม่ยอมรับฉบับร่างจนกว่าจะครบทั้งห้าอย่าง: เกณฑ์ความสำเร็จที่ผู้ประเมินตัดสินได้โดยไม่ต้องใช้ดุลพินิจ คำสั่งตรวจสอบที่แน่นอน เพดานจำนวนครั้งที่ลอง ขอบเขตงาน และเงื่อนไขการหยุด ทุกขั้นมี *ข้ามและรันตามที่เขียน* ให้เลือก: การสัมภาษณ์เป็นค่าเริ่มต้น ไม่ใช่ประตูคัดกรอง
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` และ `/goal drop` ไม่ใช่คำสั่งสแลช การหยุดชั่วคราว การทำต่อ และการหยุด อยู่ในรายการเป้าหมายของบทสนทนาในแถบข้าง แฟล็กตอนเริ่มบนวัตถุประสงค์เองคือ `--budget <dollars>`, `--max <N>` (งบการรัน) และ `--days <N>` (กำหนดเส้นตาย) เป้าหมายที่ชนเพดานค่าใช้จ่ายจะกลับมาทำงานต่อได้เพียงโดยยกเพดานนั้นขึ้น จากตัวควบคุมเดียวกันในแถบข้าง
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[ทำไมมันจึงขัดจังหวะเลย]
+เป้าหมายแบบอิสระเป็นที่เดียวที่บรีฟคลุมเครือแพงจริง ๆ การรันทำงานเป็นชั่วโมงกับวัตถุประสงค์ที่ไม่มีใครนิยามคำว่า “เสร็จ” ไว้ แล้วรายงานความสำเร็จตามเกณฑ์ของตัวเอง ห้าคำถามถูกกว่าการรันข้ามคืนหนึ่งครั้งที่จบลงเมื่อไหร่ก็ตามที่มันรู้สึกว่าจบแล้ว
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**สั่งงาน** ทำงานวนซ้ำจนเสร็จ รับขอบเขตได้: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+โทเค็นที่*ดูเหมือน*เป็นขีดจำกัด (ขึ้นต้นด้วยตัวเลขหรือเครื่องหมาย) แล้วแยกวิเคราะห์ไม่สำเร็จจะกลายเป็นข้อผิดพลาดร้ายแรง ข้อความธรรมดาก็เป็นแค่ข้อความ `/loop keep going until the tests pass` จึงเป็นการวนซ้ำแบบไม่มีขอบเขตพร้อมพร้อมต์ในบรรทัดเดียวกัน ไม่ใช่การแยกวิเคราะห์ผิด
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/th-TH/คู่มือ/วิธีทำ/กำกับวอร์กเกอร์พื้นหลัง/).
+**สั่งงาน** เปลี่ยนเซสชันให้เป็น **ผู้กำกับ**: เครื่องมือของตัวมันเองลดลงเหลือ `read` บวกกับคำสั่งของวอร์กเกอร์อีกห้าคำ และวอร์กเกอร์พื้นหลังเป็นฝ่ายแก้ไข ดู [กำกับวอร์กเกอร์พื้นหลัง](/th-TH/คู่มือ/วิธีทำ/กำกับวอร์กเกอร์พื้นหลัง/)
 
-Workers never outlive the mode — exiting kills every one of them.
+วอร์กเกอร์ไม่เคยอยู่รอดเกินโหมด — การออกจากโหมดฆ่ามันทุกตัว
 
 ---
 
-## Managing context
+## การจัดการบริบท
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**ในเครื่อง → เซิร์ฟเวอร์** พับประวัติเก่าให้เป็นบทสรุปที่มีจุดยึด แล้วทำต่อบนบริบทที่ถูกบีบอัด ไม่มีอาร์กิวเมนต์ที่ส่งถึงโมเดล: คำสั่งไม่เคยเดินทางเป็นข้อความ และรอบการบีบอัดไม่รับคำใบ้เรื่องโฟกัส
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**ในเครื่อง → เซิร์ฟเวอร์** ทิ้งเนื้อหาหนัก ๆ **โดยไม่** สรุป: ไม่มีการเรียกโมเดล ทุกคำยังอยู่ มีเพียงส่วนที่หนาเกินกว่าจะมีใครกลับมาอ่านซ้ำเท่านั้นที่ถูกปิดให้ว่าง
 
-| Target        | Drops                             |
+| เป้าหมาย      | สิ่งที่ทิ้ง                        |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | ผลลัพธ์เครื่องมือเก่าที่ไม่มีเหตุการณ์อะไรเกิดขึ้น (ค่าเริ่มต้น) |
+| `images`      | สกรีนช็อตเก่า โดยเก็บข้อความของมันไว้ |
+| `all`         | ทั้งสองอย่าง                       |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+นี่คือทางออกสำหรับ “บริบทของฉันอ้วนไปแล้ว แต่ฉันไม่อยากได้บทสรุป”
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**ในเครื่อง** เปิดตัวสำรวจบริบทของเอเจนต์ในบทสนทนานี้ในแท็บของตัวเอง: ทุกเซกเมนต์และทุกส่วนของหน้าต่างบริบทของมัน — พรอมต์ระบบ สกิล ไฟล์บริบท สคีมาเครื่องมือ ประวัติ และรูปภาพ — พร้อมว่าส่วนไหนกินไปเท่าไรและเนื้อหาต้นฉบับที่อยู่เบื้องหลัง
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+แท็บนี้ผูกกับคู่ (สเปซ, เอเจนต์) ดังนั้นการรันมันสองครั้งจะโฟกัสแท็บเดิมแทนที่จะซ้อนสำเนาของรายละเอียดเดียวกัน
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+ในสเปซที่มี **เอเจนต์มากกว่าหนึ่งตัว** `/context` เปล่า ๆ จะเปิดหน้าต่างที่มิเตอร์บริบทบนส่วนหัวกำลังอ่านอยู่ — เอเจนต์ตัวที่ทำงานล่าสุดที่นี่ ซึ่งก็คือตัวที่ข้อความของมันอยู่ล่างสุดของสายการสนทนา — และแท็บจะมีป้ายว่า `Context · <name>` เพื่อบอกว่ามันเป็นของใคร ระบุชื่อตัวอื่นเพื่อสลับ: `/context qa` (เครื่องหมาย `@` ไม่จำเป็น) ชื่อที่พิมพ์จะจับคู่แบบตรงตัวเสมอ ไม่ใช่แบบคลุมเครือ: เอเจนต์สองตัวถือหน้าต่างคนละบาน การเปิดผิดตัวเพราะชื่อใกล้เคียงจึงกลายเป็นคำตอบที่ดูสมเหตุสมผลให้กับคำถามที่คุณไม่ได้ถาม
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+ตัวสำรวจเดียวกันนี้อยู่เบื้องหลังชิปมิเตอร์บริบทในส่วนหัวของสเปซ ซึ่งตามเอเจนต์ตัวเดียวกันนั้น คำสั่งกับชิปจึงขัดแย้งกันไม่ได้ว่าที่นี่ “บริบท” หมายถึงอะไร
 
 ---
 
-## Asking about the conversation
+## การถามเกี่ยวกับบทสนทนา
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+คำสั่งเหล่านี้ใช้การเรียกโมเดลหนึ่งครั้งและ**ไม่เปลี่ยนบทสนทนาเลย** เทิร์นจริงครั้งถัดไปของเอเจนต์จะเห็นสิ่งที่มันจะเห็นอยู่ดี ซึ่งนั่นคือคุณค่าทั้งหมดของการถาม
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**ด้านข้าง** เขียนเอกสารส่งต่อสำหรับคนที่มารับงานช่วงต่อโดยไม่รู้อะไรมาก่อน: งานคืออะไร เรียนรู้อะไรไปแล้ว และเหลืออะไร
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**ด้านข้าง** ตอบคำถามเกี่ยวกับงานที่ทำไปแล้ว โดยไม่เพิ่มทั้งคำถามและคำตอบลงในทรานสคริปต์
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[สองคำสั่ง หนึ่งการทำงาน]
+ทั้งคู่มีรูปแบบเดียวกัน — หยิบบทสนทนาตามที่เป็นอยู่ ถามคำถามหนึ่งข้อเกี่ยวกับมัน และไม่บันทึกฝั่งใดฝั่งหนึ่งไว้ ใช้งานร่วมกันครั้งเดียวเพื่อไม่ให้มันแยกออกเป็นสองนิยามของ “บริบทที่ผ่านมา” ที่ต่างกัน
 :::
 
 ---
 
-## Navigating and exporting
+## การนำทางและการส่งออก
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/th-TH/คู่มือ/วิธีทำ/แยกสาขาการสนทนา/).
+**ในเครื่อง** เปิดตัวนำทางสาขา: บทสนทนาแยกสาขาที่ไหน ตอนนี้อยู่บนเส้นทางใด และจะกลับไปยังสาขาที่คุณทิ้งไว้ได้อย่างไร ดู [แยกสาขาการสนทนา](/th-TH/คู่มือ/วิธีทำ/แยกสาขาการสนทนา/)
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**ในเครื่อง** เขียนบทสนทนาลงไฟล์ HTML ที่สมบูรณ์ในตัวเอง — การ์ดเครื่องมือที่พับเก็บได้ ไม่มีสไตล์ชีต ไม่มีสคริปต์ และไม่ต้องพึ่งโฮสต์รูปภาพ ไฟล์จะไปอยู่ใน `Documents/ControlCenter/exports/` บนเดสก์ท็อป และดาวน์โหลดบนเว็บ
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**ในเครื่อง** คัดลอกทรานสคริปต์ไปยังคลิปบอร์ดเป็นมาร์กดาวน์ โดยการเรียกเครื่องมืออยู่ในบล็อกที่พับเก็บได้ ส่วนการคิดวิเคราะห์ถูกตัดออกโดยเจตนา: ทรานสคริปต์ที่วางลงในรายงานบั๊กมีคนอ่าน
 
 ---
 
-## Everything else
+## ทุกอย่างอื่น
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**ในเครื่อง** ดูและแก้ไขรายการสิ่งที่ต้องทำที่บันทึกไว้ของบทสนทนา `/todo` เปล่า ๆ เปิดตัวแก้ไข คำสั่งย่อย: `append`, `start`, `done`, `drop` (นามแฝง `rm`), `edit`, `copy`, `export`, `import`
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**สั่งงาน** ใช้สกิลที่ติดตั้งไว้ สกิลอยู่ภายใต้คำนำหน้า `skill:` ของตัวเอง จึงไม่ใช้เนมสเปซร่วมกับคำสั่งในตัว — ถ้าไม่มีแบบนั้น สกิลชื่อ `plan` จะเข้าถึงไม่ได้เลยตลอดไป
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**สั่งงาน** ไฟล์มาร์กดาวน์ใด ๆ ภายใต้ `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` หรือ `.opencode/commands` ในรีโป ไฟล์ซ้อนอย่าง `foo/bar.md` ก็เรียกถึงได้ด้วยชื่อ `foo:bar` เช่นกัน
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+การทำเทมเพลต: `$1`, `$@`, `$@[start:length]` และ `$ARGUMENTS` frontmatter อาจกำหนด `description` (การเติมข้อความอัตโนมัติของคอมโพเซอร์) ได้ `allowed-tools` และ `model` ถูกอ่านจากไฟล์ แต่การเรียกคำสั่งของผู้ใช้ตอนนี้เพียงแทนที่อาร์กิวเมนต์ลงในเนื้อหาเท่านั้น — มันไม่เปลี่ยนโมเดลหรือพื้นผิวเครื่องมือของการรัน
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+คำสั่งที่ผู้ใช้เขียนเองชนะสกิลที่ชื่อเดียวกัน — มันคือทางลัดที่มนุษย์ตั้งใจเรียกใช้พร้อมอาร์กิวเมนต์
 
 ---
 
-## Magic keywords
+## คีย์เวิร์ดวิเศษ
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+ไม่ใช่คำสั่ง คำพิมพ์เล็กที่ยืนโดด ๆ ที่ไหนก็ได้ในพร้อมต์จะแนบคำสั่งที่ซ่อนอยู่สำหรับเทิร์นนั้น
 
-| Word          | Effect                                                             |
+| คำ            | ผล                                                                 |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | ความพยายามในการคิดสูงสุดสำหรับเทิร์นนั้น                          |
+| `orchestrate` | มอบงานอิสระให้ทำขนานกันและตรวจสอบแต่ละช่วง                          |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+ตัวจับคู่เข้มงวดกับขอบเขตคำโดยเจตนา `orchestrate,` จับคู่ได้ แต่ `orchestrated`, `orchestrate.ts`, `foo::orchestrate` และ `orchestrate()` ไม่จับคู่ และบล็อกโค้ดที่มีรั้ว ช่วงข้อความในบรรทัด และส่วน XML จะถูกปิดบังไว้ก่อน ถ้าไม่ทำเช่นนั้น การวางสแต็กเทรซก็จะเปลี่ยนพฤติกรรมของเอเจนต์
 
 ---

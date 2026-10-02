@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Arahkan pekerja latar belakang
+description: Gunakan mode vibe untuk berhenti mengerjakan sendiri pekerjaannya dan mulai mengarahkan beberapa agen yang mengerjakannya secara paralel.
 slug: id-ID/panduan-pengguna/panduan-praktis/arahkan-pekerja-latar-belakang
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Panduan ini menunjukkan cara menjalankan sebuah percakapan sebagai **pengarah**, bukan sebagai pekerja: sesi membaca dan memverifikasi, sementara agen-agen latar belakang yang melakukan penyuntingan.
 
-## What changes when you type `/vibe`
+## Apa yang berubah saat Anda mengetik `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Ada dua hal, dan hanya yang pertama yang ditegakkan oleh mekanismenya:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Alat milik sesi itu sendiri turun menjadi hanya-baca**, ditambah lima verb pekerja. Satu-satunya cara sesi memengaruhi repo adalah melalui seorang pekerja, dan satu-satunya cara sesi mengetahui apa yang terjadi adalah dengan membaca berkas yang disentuh pekerja.
+2. **Sesi diberi tahu untuk memverifikasi dengan membaca, bukan dengan mempercayai.** Laporan seorang pekerja adalah klaim tentang apa yang dikerjakannya, bukan bukti bahwa pekerjaan itu berhasil.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Yang pertama adalah yang menanggung beban. Pengarah yang masih bisa menjalankan grep dan menyunting akan mengerjakan sendiri pekerjaan itu saat tertekan, dan itulah mode kegagalan yang ingin dicegah oleh mekanisme ini.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Pekerja dimulai dalam keadaan kosong
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Seorang pekerja belum pernah melihat percakapan Anda dan tidak akan pernah. Instruksi adalah seluruh konteksnya.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Itulah yang membuat pola ini murah — dua puluh pekerja yang masing-masing memegang riwayat pengarah akan memakan konteks dua puluh kali lipat konteks pengarah — dan itu juga satu hal yang membuat instruksi sulit ditulis. "Sekarang kerjakan yang satu lagi juga" terbaca sebagai perintah yang lengkap bagi pengarah dan tidak berarti apa-apa bagi sesi yang baru.
 
-A good brief names files, commands and the definition of done:
+Instruksi yang baik menyebutkan berkas, perintah, dan definisi selesai:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> Di dalam `lib/features/auth/`, ganti setiap pemanggilan `SessionStore.read(key)` dengan `SessionStore.get(key)`. Metode baru mengembalikan `Future<String?>` sedangkan metode lama mengembalikan `String?`, sehingga pemanggilnya memerlukan `await`. Jalankan `fvm flutter analyze lib/features/auth` setelah selesai dan laporkan galat apa pun yang tidak dapat Anda perbaiki.
 
-## The five verbs
+## Lima verb
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| Verb | Apa fungsinya |
+| ---- | ------------- |
+| `vibe_spawn` | Memulai seorang pekerja berdasarkan sebuah instruksi. **Langsung kembali.** |
+| `vibe_list` | Tingkat, status, waktu berlalu, dan hasil terakhir untuk semua pekerja |
+| `vibe_send` | Giliran lanjutan untuk pekerja yang sudah selesai |
+| `vibe_wait` | Memblokir sampai satu pekerja selesai |
+| `vibe_kill` | Menghentikan satu pekerja |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Peluncuran bersifat asinkron karena desainnya memang begitu. Pengarah yang memblokir pada setiap peluncuran menjalankan pekerja satu per satu, yang merupakan cara lebih lambat untuk melakukan apa yang sudah dikerjakannya sendiri. Gunakan `vibe_wait` hanya saat Anda benar-benar tidak dapat melanjutkan tanpa jawaban tertentu.
 
-## Two tiers
+## Dua tingkat
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| Tingkat | Untuk |
+| ------- | ----- |
+| `fast` | Pekerjaan mekanis dengan spesifikasi yang jelas — penyuntingan, penggantian nama, draf, eksekusi perintah |
+| `good` | Desain, pertimbangan, atau peninjauan atas apa yang dihasilkan pekerja `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Pola yang umum adalah menyebarkan beberapa pekerja `fast` ke berkas-berkas yang independen, lalu meluncurkan satu pekerja `good` untuk meninjau apa yang mereka kerjakan bersama.
 
-## Verifying
+## Memverifikasi
 
-This is the part that decides whether the pattern is worth anything.
+Bagian inilah yang menentukan apakah pola ini berguna sama sekali.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Lalu **bacalah berkas yang disebutkannya**. Pengarah memiliki `read`, `search`, `lsp`, dan `ast_grep`; itulah inti dari mempertahankannya. Pengarah yang menelan laporan itu mentah-mentah hanyalah peringkas optimisme agen-agen lain.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` setelah satu putaran pekerja biasanya adalah pemeriksaan tunggal yang tercepat.
 
-## When a worker loses the thread
+## Saat pekerja kehilangan jejak
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Matikan dan tulis instruksi baru. Instruksi baru yang sudah diperbaiki lebih murah daripada berdebat, dan `vibe_send` hanya berfungsi pada pekerja yang sudah menyelesaikan gilirannya.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Batasan
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Delapan pekerja serentak.** Ini plafon pengeluaran, bukan batas teknis: masing-masing adalah sesi model yang utuh, dan pengarah yang menyebarkan dua puluh pekerja sudah berhenti memantau apa yang sedang dilakukan semuanya.
+- **Tidak ada pekerja yang hidup lebih lama daripada modenya.** Saat run berakhir, semuanya dihentikan dan transkrip menyebutkan berapa jumlahnya. Agen latar belakang yang masih menyunting berkas setelah percakapan beralih ke hal lain adalah satu kegagalan yang tidak boleh terjadi di sini.
+- **Di balik layar, pekerja adalah subagen biasa.** Batas kedalaman yang sama, kebijakan pagar pengaman yang sama, anak log run yang sama. Vibe mengubah siapa yang mengemudikannya, bukan apa yang boleh mereka lakukan — jadi prompt persetujuan tetap muncul untuk panggilan tulis dan exec milik pekerja.
 
-## When not to use it
+## Kapan tidak menggunakannya
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/) or an [orchestration](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Mode vibe ditujukan untuk pekerjaan yang terurai menjadi instruksi-instruksi yang independen. Jika langkah berikutnya bergantung pada keluaran langkah sebelumnya, Anda sedang mendeskripsikan [pipeline](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/) atau [orkestrasi](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/), dan keduanya mengungkapkan dependensi dengan benar alih-alih membuat pengarah menyimulasikannya dengan `vibe_wait`.
 
-## Related
+## Terkait
 
-- [Run agents in parallel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/) — the other ways to fan out
-- [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/) — when the work has a shape
-- [Built-in agent tools](/id-ID/panduan-pengguna/referensi/alat-agen/) — the verbs and their arguments
+- [Jalankan agen secara paralel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/) — cara-cara lain untuk menyebarkan pekerjaan
+- [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/) — saat pekerjaan memiliki bentuk
+- [Alat agen bawaan](/id-ID/panduan-pengguna/referensi/alat-agen/) — verb beserta argumennya

@@ -1,225 +1,244 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: Semakan AI
+description: Bagaimana satu pull request menjadi pull request yang telah disemak — ruang semakan, nod semakan dan konsensus rakan sebaya, kohort dan paksi, keputusan Ship/Hold/Block, dan sebab penerbitan kekal sebagai langkah yang anda ambil.
 slug: ms-MY/manual-pengguna/konsep/semakan-ai
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Bentuk satu semakan
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Semakan AI ialah satu larian pipeline `pr_review` bawaan terhadap satu pull
+request yang terbuka. Pipeline itu membuka ruang semakan PR berkenaan,
+menyebarkan ejen penyemak untuk membaca diff dalam checkout terasing ruang
+tersebut, masing-masing mencatat penemuannya sebagai **nod semakan** berstruktur,
+seorang ejen ketua mengkonsolidasikannya menjadi penerangan berpandu, dan
+pengakhir mengira satu keputusan: **Ship**, **Hold** atau **Block**. Apa yang
+tidak pernah dilakukan oleh pipeline ialah menerbitkan — menyiarkan ke GitHub
+ialah langkah berasingan yang disengajakan, yang dilakukan oleh manusia.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Selebihnya halaman ini menerangkan bahagian-bahagiannya dan mengapa ia dibentuk
+sebegini.
 
-## One review space per PR
+## Satu ruang semakan bagi setiap PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Konteks semakan sesuatu PR ialah ruang pemesejan — modus `review`, jenis `pr` —
+yang dipautkan kepada pull request itu oleh **perkaitan ruang semakan**. Ia
+dicipta secara idempoten: halaman PR, pipeline semakan dan permukaan sembang
+semuanya menyelesaikan _satu_ ruang penyokong PR itu melalui laluan kod yang
+sama, jadi templat yang menyemak sesuatu PR dan manusia yang membukanya tidak
+akan pernah berakhir di dua bilik berbeza sambil melihat dua checkout berbeza.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Worktree terasing ruang itu mempunyai PR yang di-checkout pada ref head-nya. Satu
+bilik juga bermakna satu checkout: setiap penyemak bekerja dalam ruang yang sama
+dan bukan masing-masing mendapat klon ruang kerjanya sendiri.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Setiap penyemak menyiarkan ke strim bernamanya sendiri di dalam satu ruang itu,
+dan penemuan ialah mesej `review_node` dan bukan prosa biasa. Pengumpulan
+seluruh ruang pada akhirnya bersifat sengaja — keputusan yang dikira daripada
+penemuan satu utas akan secara senyap menjadi keputusan tentang seorang penyemak
+sahaja.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Perkaitan itu membawa tangga status — `requested` → `in progress` →
+`awaiting approval` → `completed` — dan itulah yang mengawal **Terbitkan ke
+GitHub** pada tab Semakan PR berkenaan.
 
-## Review levels
+## Tahap semakan
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Sejauh mana sesuatu semakan pergi ialah polisi ruang kerja dengan tiga tahap,
+yang ditetapkan di **Tetapan → Ruang kerja → Umum**, pada kad **Polisi ruang
+kerja**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| Tahap       | Penyemak yang disebar                         | Pelaporan                                     |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | Jurutera sahaja                               | Hanya apa yang benar-benar penting            |
+| `balanced`  | Jurutera, QA, arkitek (lalai)                 | Pemeriksaan tetap                             |
+| `thorough`  | Kelima-limanya, termasuk keselamatan dan prestasi | Tiada yang diturunkan                     |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Tahap itu menggerakkan dua dail sekali gus: penyemak mana yang disebar, yang
+dikuatkuasakan oleh pintu keadaan `runWhen` templat pipeline dan bukan oleh
+rumusan prompt — rumusan prompt boleh diabaikan, pintu tidak — dan di mana
+penemuan bawah ambang dipaparkan. Kedua-dua dail itu tidak pernah memadam
+penemuan: tahap yang melaporkan lebih sedikit tetap mencatat sebanyak yang sama
+dan mengelompokkan selebihnya.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Pemeriksaan keselamatan dan prestasi menggunakan semula ejen arkitek dan
+jurutera bawaan dan bukan memperkenalkan ejen baharu. Kepakaran itu terletak
+pada taklimat yang dibawa penyemak semasa dihantar, bukan pada ejen berasingan
+bagi setiap paksi — satu ejen bagi setiap paksi bermakna lima baris tambahan
+dalam setiap ruang kerja tanpa keupayaan tambahan. Pemilihan penyemak tidak
+pernah memeriksa diff dari segi bahasa atau domain.
 
-## Review nodes: findings as data, not prose
+## Nod semakan: penemuan sebagai data, bukan prosa
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Penemuan yang dicatat dengan `add_review_node` menjadi **nod semakan** pada PR —
+inilah yang dipaparkan oleh tab Semakan, yang menjadi asas pengiraan keputusan,
+dan yang diubah oleh "Terbitkan ke GitHub" menjadi komen sebaris. Penyemak yang
+hanya mengembalikan prosa menghasilkan larian pipeline yang kelihatan berjaya
+dan permukaan semakan yang kosong; pencatatan itulah bahagian yang menanggung
+beban.
 
-Each node carries:
+Setiap nod membawa:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Medan               | Nilai                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Jenis               | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Keutamaan           | P0 (kritikal) → P3 (perkara kecil)                                          |
+| Tiga serangkai triaj | kategori (`security`, `stability`, …), keterukan, usaha                    |
+| Sauh                 | Laluan fail, baris mula dan akhir                                          |
+| Pembawaan pembetulan | Baris penggantian yang dicadangkan, diff pilihan, prompt pembetulan pilihan |
+| Keyakinan           | Skor [0, 1]                                                                 |
+| Penaakulan          | Analisis, yang ditulis sebelum penemuan                                     |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Dua perincian bersifat sengaja. Cadangan GitHub sekali klik hanya ditawarkan
+apabila penyemak menyediakan baris penggantian yang tepat — menyimpulkannya
+daripada diff bersatu akan tersilap secara senyap, dan commit sekali klik
+daripada simpulan yang salah lebih buruk daripada tiada butang langsung. Dan
+skema `add_review_node` meletakkan `reasoning` sebelum penemuan, jadi model yang
+mengisi objek mengikut urutan skema akan menulis analisis dahulu. Medan itu
+pilihan: meninggalkannya tidak menolak nod berkenaan. Nod yang muatannya cacat
+akan hilang dan bukan mencemarkan semakan.
 
-## Peer consensus
+## Konsensus rakan sebaya
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Sesuatu nod bergerak melalui `open` → `consensus-ready` → `resolved` atau
+`dismissed`. Langkah tengah itu ialah nadi model ini: **sesuatu penemuan hanya
+naik taraf apabila penyemak rakan sebaya mengesahkannya, dan ejen tidak pernah
+boleh mengesahkan penemuannya sendiri.** Alat MCP `publish_review_to_github` dan
+nilai lalai RPC masih menerbitkan penemuan yang disahkan rakan sebaya sahaja.
+Sebaliknya, butang **Terbitkan ke GitHub** pada tab Semakan menghantar setiap
+penemuan terbuka yang tinggal.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Peraturan itu dikuatkuasakan di tiga tempat yang bebas — alat pengesahan,
+pengakhir dan penerbit — jadi ia bertahan walaupun terdapat pemanggil bermasalah
+di mana-mana satu daripadanya. Semua perubahan status melalui satu perkhidmatan,
+dan itulah yang menjadikan sesuatu status bermakna: sebelum itu, dua laluan
+separuh boleh berselisih tentang sama ada penemuan yang sama telah diselesaikan.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Apabila penyemak berselisih — fail dan baris yang sama, keutamaan yang terpisah
+dua tahap atau lebih, atau seorang menyebutnya `bug` manakala yang lain
+menyebutnya `suggestion` — perselisihan itu dipaparkan di atas senarai penemuan.
+Di situlah pendapat penyemak menyimpang dan pertimbangan manusia paling bernilai.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Menutup sesuatu penemuan juga menulis fakta penindasan lembut ke dalam domain
+memori, pada keyakinan rendah — satu penutupan ialah keutamaan, bukan peraturan.
 
-## Cohorts: what the review is grouped around
+## Kohort: asas pengelompokan semakan
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Laluan pengiraan semakan mengelompokkan fail yang berubah dalam sesuatu PR kepada
+**kohort** yang diterbitkan daripada graf kod: fail yang berubah dipetakan kepada
+simbol yang disentuhnya, simbol kepada komponen yang bersambung, dan kohort itu
+disusun mengikut jejari letupan. Sesuatu kohort membawa urutan bacaan berpandu,
+gambar rajah dan cerapan, bukan sekadar senarai fail yang rata.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Dua peraturan kejujuran membentuk perkara ini. Kunci kohort diterbitkan daripada
+kandungan dan stabil merentas push, jadi penemuan dan kemajuan semakan bertahan
+melalui rebase atau force-push dan bukan menjadi yatim. Dan apabila repo tiada
+indeks kod, pengelompokan kembali kepada laluan biasa dan menyatakannya —
+perlakuan sandaran itu tidak pernah memalsukan keyakinan semantik.
 
-## Review axes and gates
+## Paksi dan pintu semakan
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Di samping penemuan penyemak, sesuatu semakan mengumpul **hasil paksi**: enam
+paksi, daripada dua jenis.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Paksi                         | Jenis         | Diambil daripada                     |
+| ----------------------------- | ------------- | ------------------------------------ |
+| `correctness`, `security`     | Dipacu token  | Penemuan penyemak sendiri            |
+| `testGap`                     | Dipacu token  | Penemuan penyemak                    |
+| `visual`, `apiContract`       | Deterministik | Dikira tanpa membelanjakan token     |
+| `performance`                 | Deterministik | Hanya enum — tiada apa-apa dalam produk yang mengira hasilnya |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Keputusan paksi ialah `pass`, `warn`, `fail`, `partial` atau `unavailable` — dan
+hanya `pass` atau `warn` yang melepasi pintu. Perbezaan antara `fail`, `partial`
+dan `unavailable` amat menentukan: paksi berpintu yang tidak dapat diselesaikan
+atau tidak dapat dijalankan langsung menahan keputusan keseluruhan dan bukan
+meloloskannya. **Ketiadaan bukti tidak pernah bertukar menjadi pintu hijau.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Sesetengah paksi bersifat nasihat dengan sengaja. Paksi jurang ujian yang
+diterbitkan daripada kohort tidak dapat melihat liputan suntikan kebergantungan
+atau factory — repo tanpa indeks dengan suite menyeluruh dan repo tanpa ujian
+langsung kelihatan serupa dari situ, jadi mendakwa salah satu daripadanya ialah
+satu pembohongan; ia muncul dalam papan pemuka tanpa mengawal keputusan. Paksi
+token bersifat nasihat kerana keutamaan penemuan sudah menentukan keputusan, dan
+mengawal semula berdasarkan paksi itu akan mengira dua kali.
 
-## The verdict
+## Keputusan
 
-The finalizer computes the verdict over the findings with status `open` or
+Pengakhir mengira keputusan berdasarkan penemuan yang berstatus `open` atau
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- sebarang penemuan P0 dengan keyakinan ≥ 0.7 → **Block**
+- jika tidak, sebarang P0 (keyakinan rendah) atau sebarang P1 → **Hold**
+- jika tidak → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Keputusan itu membawa keyakinan agregat yang diterbitkan daripada sebaran
+keyakinan yang menyumbang — persetujuan menaikkannya, perbezaan menurunkannya.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Konsolidasi ejen ketua (CEO) ialah satu laluan editorial, bukan penyenaraian
+semula: salinan kedua penemuan yang ditulis dengan tangan itulah yang akan
+menyimpang daripada yang sebenar. Penemuan pendua diturunkan pangkat dan bukan
+diulang — beberapa penyemak diarahkan kepada satu diff dengan bidang tugas yang
+sengaja bertindih, jadi kecacatan yang sama sampai kepada pengakhir tiga kali
+bermakna sistem berfungsi; menerbitkannya tiga kali bermakna sistem membocorkan
+seni bina sendiri ke dalam peti masuk pembaca. Pada semakan semula, penemuan
+dijejak cap jari dan di-diff terhadap pusingan sebelumnya, jadi perbezaan itulah
+yang muncul ke permukaan.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Akhirnya paksi dilipat masuk, dan ia hanya boleh menjadikan keputusan **lebih**
+berat: paksi gagal yang berpintu memaksa Block — ia tidak boleh dikalahkan
+melalui undian penemuan — dan paksi berpintu yang tidak dapat diselesaikan
+memaksa sekurang-kurangnya Hold.
 
-## Publishing stays with you
+## Penerbitan kekal di tangan anda
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Pipeline sengaja tidak menyiarkan ke GitHub; penerbitan dikawal oleh pengguna
+supaya sesuatu semakan tidak pernah diterbitkan dua kali. Apabila anda menekan
+**Terbitkan ke GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Satu semakan GitHub diserahkan. Penemuan yang sudah diselesaikan atau ditutup
+  dilangkau. Butang itu menerbitkan setiap penemuan terbuka yang tinggal
+  (`selection: all_open`). Alat MCP `publish_review_to_github` masih secara lalai
+  hanya menerbitkan penemuan yang disahkan rakan sebaya (`consensus`).
+- Penemuan yang bersauh pada fail dan baris menjadi komen sebaris; semua yang
+  lain dilipat ke dalam badan ringkasan, masing-masing membawa pengaki
+  "— Control Center AI review" supaya sumbernya tidak kabur.
+- Sauh disemak semula terhadap diff _semasa_ PR pada masa penerbitan. Komen pada
+  kod yang sudah ditulis semula ialah perkara paling merosakkan kepercayaan yang
+  boleh ditinggalkan oleh penyemak; jika GitHub tetap menolak sauh sebaris,
+  seluruh semakan dihantar semula dengan setiap penemuan dilipat ke dalam badan
+  supaya tiada apa-apa digugurkan secara senyap.
+- Keputusan **Block** diserahkan sebagai `REQUEST_CHANGES`; **Hold** sebagai
+  `COMMENT`; **Ship** sebagai `APPROVE` daripada butang itu
+  (`approve_on_ship: true`). Alat MCP membiarkan Ship sebagai `COMMENT`
+  melainkan anda menghantar `approve_on_ship`.
+- Semakan disiarkan di bawah identiti aplikasi pelayan. Siapa yang menekan
+  Terbitkan direkodkan untuk pintu peranan dan log audit; ia bukan penulis
+  GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/).
+Penerbitan mengisytiharkan kelas tindakan `prPublish`, jadi titik kawalan
+guardrail mengawalnya seperti sebarang tindakan yang mengubah keadaan — ia
+meminta persetujuan secara lalai dan gagal tertutup apabila tiada pelulus
+disambungkan. Lihat [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/).
 
-## What a reviewer may do
+## Apa yang boleh dilakukan oleh penyemak
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Ejen penyemak berjalan dalam modus `review`: kotak pasir baca sahaja dan senarai
+kebenaran alat yang dikurasi yang merangkumi penemuan, ulasan, tiket dan semakan
+rakan sebaya — tetapi tiada sebarang pengubahan. Penyemak tidak boleh membaiki
+kod yang dikritiknya; ia boleh melampirkan pembetulan yang dicadangkan untuk
+diterapkan oleh manusia. Mesej penolakan modus itu memberitahu ejen yang masih
+cuba bertindak supaya mengakhiri semakan dan membiarkan pengguna bertindak atas
+ringkasan yang diterbitkan.
 
-## Related concepts
+## Konsep berkaitan
 
-- [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/) — the policy engine that gates publishing
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/) — what `review` mode changes for an agent
-- [Pipelines and automation](/ms-MY/manual-pengguna/konsep/pipeline/) — the engine the review runs on
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/) — where the isolated worktree comes from
+- [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) — enjin polisi yang mengawal penerbitan
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/) — apa yang diubah oleh modus `review` bagi ejen
+- [Pipeline dan automasi](/ms-MY/manual-pengguna/konsep/pipeline/) — enjin yang menjalankan semakan
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/) — dari mana worktree terasing berasal
 
-## Related guides
+## Panduan berkaitan
 
-- [Use AI-powered review](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/) — run a review and publish it
-- [Dispatch reviewer agents](/ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak/) — choose the reviewers yourself
-- [Review compute](/ms-MY/manual-pengguna/panduan-cara/pengiraan-semakan/) — cohorts, axes and diffs
+- [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/) — jalankan semakan dan terbitkannya
+- [Hantar ejen penyemak](/ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak/) — pilih penyemak sendiri
+- [Pengiraan semakan](/ms-MY/manual-pengguna/panduan-cara/pengiraan-semakan/) — kohort, paksi dan diff

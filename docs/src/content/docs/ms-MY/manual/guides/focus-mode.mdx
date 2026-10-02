@@ -1,185 +1,198 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Gunakan modus fokus dan landskap bunyi
+description: Jalankan sesi fokus bermasa dengan pil kira detik terapung dan pemberitahuan yang disenyapkan, serta bentuk landskap bunyi adaptif yang dimainkan di bawahnya.
 dateModified: 2026-08-17
 slug: ms-MY/manual-pengguna/panduan-cara/modus-fokus
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Panduan ini menunjukkan cara menjalankan sesi fokus: blok bermasa yang
+sepanjang tempohnya Control Center menyenyapkan pemberitahuan yang tidak mendesak
+dan mengapungkan pil kira detik di atas tetingkap anda yang lain. Ia juga
+merangkumi landskap bunyi yang (secara lalai) dimainkan di bawahnya — trek ambien
+tanpa henti yang disintesis secara langsung oleh pelayan anda, dibentuk oleh mood
+yang anda pilih, cuaca di luar dan waktu dalam sehari.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Sesi fokus ialah ciri peringkat shell. Ia tidak terikat pada mana-mana pilar — ia
+tidak mengubah susun atur, menyembunyikan bar sisi atau mengubah permukaan
+semakan PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Untuk desktop sahaja]
+Pil terapung dan pemain mini yang boleh dikeluarkan bagi landskap bunyi ialah
+tetingkap native bersaudara, yang dipasang hanya oleh bootstrap desktop. Binaan
+web di `app.usectrl.dev` tiada kedua-duanya, dan tiada pipeline pemberitahuan OS,
+jadi sesi fokus tiada apa-apa untuk ditunjukkan atau disenyapkan di sana. Panel
+landskap bunyi dan main baliknya berfungsi di mana-mana sahaja anda menyambung ke
+pelayan.
 :::
 
-## Start a focus session
+## Mulakan sesi fokus
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Klik ikon fokus di sebelah kanan bar tajuk (tooltip **Mula sesi fokus**)
+2. Dalam dialog, taipkan **Matlamat** pilihan anda — apa yang anda sedang kerjakan
+3. Pilih **Tempoh**: 25m, 50m, 1h, 1h 30m atau 2h. Lalai ialah 50m dan pilihan
+   terakhir anda diingati
+4. Tekan **Mula**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Titik pemeriksaan: butang bar tajuk digantikan dengan chip aksen yang menunjukkan
+baki minit, pil terapung muncul di atas tetingkap anda yang lain dan — dengan
+**Mula dengan modus fokus** dihidupkan — landskap bunyi mula dimainkan.
 
-Two other entry points reach the same session:
+Dua titik masuk lain menuju ke sesi yang sama:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Mula sesi fokus** membuka dialog yang sama.
+- **⌘⇧⌥F** memulakan sesi dengan serta-merta menggunakan tempoh yang diingati dan
+  tanpa matlamat — ia melangkau dialog. Menekannya sekali lagi menamatkan sesi.
 
-## Read the floating pill
+## Baca pil terapung
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Pil ialah tetingkap kecil tanpa bingkai yang boleh anda seret ke mana-mana. Ia
+menunjukkan:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Titik kehadiran aktif dan baki masa sebagai `mm:ss`
+- Matlamat anda, atau "Sesi fokus" apabila anda tidak menetapkannya
+- Bar kemajuan nipis di sepanjang tepi bawah
 
-Hover it to reveal two actions:
+Lalukan kursor di atasnya untuk mendedahkan dua tindakan:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Jeda** / **Sambung semula** — menghentikan kira detik. Penjedaan adalah
+  setempat pada pil; sesi itu sendiri kekal aktif.
+- **Selesaikan** — menamatkan sesi.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Pil sentiasa menggunakan palet gelap walau apa pun tema yang digunakan oleh
+tetingkap utama, kerana ia terapung di atas kandungan desktop sewenang-wenangnya.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Jika anda menutup pil dari bar tajuk, sesi terus berjalan. Tekan butang gambar
+dalam gambar di sebelah chip fokus (tooltip **Minimumkan ke bar**) untuk
+membawanya kembali.
 
-## Know what gets suppressed
+## Ketahui apa yang disenyapkan
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Semasa sesi aktif, Control Center menggugurkan setiap pemberitahuan kecuali dua
+kategori, yang sentiasa dihantar:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Mesyuarat akan bermula tidak lama lagi** — pemberitahuan mesyuarat yang anda
+  lihat selepas kejadian itu tidak berguna
+- **PR diterbitkan**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Semua yang lain disenyapkan secara senyap sepanjang sesi — tiada bunyi, tiada
+toast OS. Pemberitahuan yang disenyapkan tidak dimasukkan ke dalam baris gilir
+untuk dihantar kemudian.
 
-## Play a soundscape
+## Mainkan landskap bunyi
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Klik ikon pembesar suara di sebelah kanan bar tajuk (tooltip **Landskap
+   bunyi**) untuk membuka panel
+2. Pilih **Mood** — **Fokus**, **Bangkit**, **Rehat** atau **Tidur**
+3. Tekan **Main**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Titik pemeriksaan: kad **Sedang dimainkan** menamakan adegan semasa — cuaca di
+lokasi ruang kerja anda, suhu dalam °C dan label lokasi. Semasa ia masih tertulis
+"Melaraskan suasana…" adegan itu masih sedang diselesaikan.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Trek ini bukan gelung. Pelayan anda menyintesisnya secara berterusan daripada
+mood, cuaca langsung di lokasi ruang kerja dan waktu dalam sehari. Hujan
+kedengaran cerah dan sibuk, ribut kuat dan bertiup kencang, kabus teredam; malam
+lebih gelap dan lebih bergema daripada tengah hari. Mood menetapkan
+perbendaharaan katanya:
 
-| Mood   | Sound                                                                                  |
+| Mood   | Bunyi                                                                                  |
 | ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Fokus  | Ambien yang lembut dan berwaspada dengan denyutan rendah — dimaksudkan untuk mengiringi kerja |
+| Bangkit | Melodi yang rancak dengan denyutan lembut — untuk saat kerja terasa berat            |
+| Rehat  | Pad yang lebih hangat dan lebih konsonan, tanpa rentak                                 |
+| Tidur  | Drone rendah dengan hampir tiada peristiwa, reverb yang dalam                          |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Menukar mood semasa main balik menyerahkan main balik kepada mood baharu tanpa
+berhenti.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Panel ini juga boleh dicapai dari ⌘K di bawah kategori **Fokus**, di sebelah sesi
+fokus itu sendiri.
 
-## Shape the sound
+## Bentukkan bunyi
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Laraskan** (Fokus, Bangkit dan Rehat) — pad segi empat sama dengan cakera
+  yang boleh diseret. Paksi mendatar ialah **Lembut** hingga **Bertenaga**
+  (seberapa banyak yang berlaku), paksi menegak ialah **Luas** hingga **Cerah**
+  (betapa terbukanya bunyi itu). Ketik dua kali pada pad untuk menetapkan semula ke
+  pusat neutral; kekunci anak panah menggerakkan cakera itu. Larasan anda diingati
+  bagi setiap mood, dan pelarasan meluncur masuk ke dalam campuran yang sedang
+  berjalan — strim tidak pernah bermula semula. Mood Tidur memang tidak boleh
+  dilaraskan secara reka bentuk.
+- **Volum** — penggelongsor dari 0 hingga 100%, lalai 60%. Ia berasingan daripada
+  volum sistem dan diingati.
+- **Lokasi** — dikesan secara automatik daripada ruang kerja. Tekan **Muat
+  semula cuaca** untuk mengambil semula adegan itu.
 
-## Pop out the mini player
+## Keluarkan pemain mini
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Semasa audio dimainkan, bar tajuk menambah butang kedua (tooltip **Keluarkan
+pemain**). Ia mengapungkan HUD kecil yang sentiasa berada di atas dengan
+main/jeda, glif cuaca, nama adegan dan butang **Kembali ke apl** — berguna
+apabila sesi fokus membuat anda berada sepenuhnya dalam aplikasi lain.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Menjeda daripada pemain mini tidak menutupnya; hanya butang tutupnya (atau
+keluar daripada aplikasi) yang menyingkirkannya.
 
-## Run them together
+## Jalankan kedua-duanya bersama
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Kedua-dua ciri ini digandingkan oleh satu suis dalam panel landskap bunyi: **Mula
+dengan modus fokus**, dihidupkan secara lalai.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Memulakan sesi fokus akan memulakan landskap bunyi jika tiada apa-apa yang
+  sedang dimainkan.
+- Menamatkan sesi — walau apa pun cara ia tamat, termasuk apabila pemasa habis
+  masa — menghentikannya, walaupun anda memulakan landskap bunyi secara manual.
 
-Turn the switch off to keep the two independent.
+Matikan suis itu untuk membiarkan kedua-duanya bebas.
 
-## End a session
+## Tamatkan sesi
 
-Any one of these ends it:
+Mana-mana satu daripada ini akan menamatkannya:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Klik chip fokus dalam bar tajuk (tooltip **Modus fokus aktif — ketik untuk
+  tamatkan**)
+- Tekan **Selesaikan** pada pil
+- Tekan **⌘⇧⌥F**
+- Pilih **Keluar daripada modus fokus** dalam ⌘K
+- Biarkan pemasa habis masa — sesi selesai secara automatik pada sifar
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Pil ditutup, pemberitahuan bersambung semula serta-merta dan landskap bunyi
+berhenti.
 
-## Understand what does not persist
+## Fahami apa yang tidak kekal
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Sesi wujud untuk tepat satu larian aplikasi sahaja. Keluar dan buka semula Control
+Center, dan anda bermula dalam keadaan tidak aktif dengan pemasa yang ditetapkan
+semula, walaupun di pertengahan sesi — tiada pemulihan selepas ranap dan tiada
+sejarah sesi.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Hanya dua perkara yang terbawa: tempoh pilihan anda dan bendera sekat
+pemberitahuan. Matlamat, masa yang telah berlalu dan keadaan terbuka pil tidak.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Main balik juga sama tidak kekal — landskap bunyi sentiasa dihentikan semasa
+pelancaran. Mood, volum dan larasan bagi setiap mood anda kekal; strim itu sendiri
+tidak pernah menyambung semula dengan sendirinya.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### The tune pad is missing
+### Pad larasan tiada
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Anda berada pada mood Tidur, yang memang sengaja tidak boleh dilaraskan. Tukar ke
+Fokus atau Rehat untuk mendapatkan semula pad itu.
 
-### Nothing plays after restarting the app
+### Tiada apa yang dimainkan selepas memulakan semula aplikasi
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Memang begitu reka bentuknya — main balik sentiasa dihentikan semasa pelancaran
+aplikasi. Buka panel dan tekan **Main** semula. Jika ia masih senyap, periksa
+penggelongsor volum panel, yang berasingan daripada volum sistem.
 
-### The weather or temperature looks wrong
+### Cuaca atau suhu kelihatan salah
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Adegan mengikuti lokasi ruang kerja yang aktif. Tekan **Muat semula cuaca** dalam
+panel untuk mengambil semula adegan itu.
 
-## Related guides
+## Panduan berkaitan
 
-- [Configure notifications](/ms-MY/manual-pengguna/panduan-cara/pemberitahuan/)
-- [Keyboard shortcuts](/ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci/)
+- [Konfigurasikan pemberitahuan](/ms-MY/manual-pengguna/panduan-cara/pemberitahuan/)
+- [Pintasan papan kekunci](/ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci/)

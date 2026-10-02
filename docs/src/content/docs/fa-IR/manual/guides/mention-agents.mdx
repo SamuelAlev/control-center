@@ -1,121 +1,127 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "منشن کردن عامل‌ها با @"
+description: عامل‌ها را در یک فضا منشن کنید تا اعزام شوند و هم‌تیمی‌ها را تا باخبر شوند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/منشن-عاملها
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+این راهنما نشان می‌دهد چگونه در یک فضا عامل‌ها و هم‌تیمی‌ها را با @ منشن کنید.
 
-## Mention an agent
+## منشن کردن یک عامل
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+در ویرایشگر پیام `@` را تایپ کنید و از میان تکمیل خودکار یک عامل انتخاب کنید، یا
+نام را خودتان بنویسید:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+عاملِ منشن‌شده، اگر از قبل مشارکت‌کنندهٔ فضا نباشد، به‌عنوان مشارکت‌کننده به فضا
+افزوده می‌شود و با بافت و حالت همان فضا اعزام می‌گردد. مشارکت‌کنندگانی که منشن
+نشده‌اند پیام را می‌بینند اما اعزام نمی‌شوند.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+اگر پیامی بفرستید که هیچ منشنی از عامل در آن نباشد، Control Center خودش
+پاسخ‌دهنده را انتخاب می‌کند: عاملی که آخرین بار در گفتگو صحبت کرده است؛ در غیر
+این صورت مالک گفتگو، اگر داشته باشد؛ در غیر این صورت نخستین عامل سطح‌بالا میان
+مشارکت‌کنندگان فضا. در فضایی با یک عامل، این همیشه همان عامل یکتاست.
 
-## Know how a name is matched
+## نام چگونه تطبیق داده می‌شود
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+توکن منشن **بدون توجه به بزرگی و کوچکی حروف** و بر پایهٔ **نام دقیق یا پیشوند**
+تطبیق داده می‌شود. بنابراین `@arch` به عاملی با نام `architect` می‌رسد و `@Alice`
+به `alice`.
 
-Two consequences worth planning around:
+دو پیامد که ارزش برنامه‌ریزی دارند:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **توکن کوتاه خطا نیست.** اگر دو عامل پیشوند مشترکی داشته باشند، نخستین موردی
+  که پیدا شود برنده است و اینکه کدام‌یک باشد به ترتیب بستگی دارد — نه به هیچ
+  قاعدهٔ تساوی‌شکن. هر جا نام‌ها هم‌پوشانی دارند، نام کامل را به کار ببرید.
+- **فقط حروف، رقم‌ها و زیرخط‌ها بخشی از توکن‌اند.** تجزیه‌گر `@(\w+)` را تطبیق
+  می‌دهد، پس `@code-reviewer` به‌عنوان توکن `code` خوانده می‌شود و `@my agent`
+  به‌عنوان `my`. عاملی که نامش خط تیره، نقطه یا فاصله داشته باشد نمی‌تواند
+  به‌شکلی قابل‌اتکا منشن شود — از جمله از راه تکمیل خودکار، که نام را به‌صورت
+  متن ساده درج می‌کند. عامل‌ها را با یک واژه یا با زیرخط نام‌گذاری کنید.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+منشن‌ها پیش از رسیدن متن به عامل از آن حذف می‌شوند. پس پیامی که _تنها_ منشن باشد
+(`@alice`) چیزی اعزام نمی‌کند — چیزی برای انجام دادن به آن بدهید.
 
-## Mention several agents at once
+## منشن کردن چند عامل هم‌زمان
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+هر دو عامل به‌صورت موازی در همان گفتگو اعزام می‌شوند و هر دو پیام کامل را دریافت
+می‌کنند.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+آن‌ها همچنین **worktreeهای همان فضا را به اشتراک می‌گذارند**. worktreeهای مخزن
+به‌ازای هر فضا آماده می‌شوند، نه به‌ازای هر عامل؛ هر عامل دایرکتوری کاری لایه‌ای
+خودش را برای `AGENTS.md`، مهارت‌ها و پیکربندی‌اش می‌گیرد و مخزن‌های مشترک با
+دسترسی خواندن-نوشتن به آن پیوند می‌خورند. پس دو عاملی که با هم منشن شده‌اند
+می‌توانند ویرایش‌های یکدیگر را ببینند — و با آن‌ها برخورد کنند.
 
-## Mention a teammate
+## منشن کردن یک هم‌تیمی
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+هر `@token`ی که با هیچ عاملی تطبیق پیدا نکند، در برابر اعضای انسانی فضای کاری و
+بر پایهٔ شناسهٔ کاربری، با همان قاعدهٔ نام دقیق یا پیشوند و بدون توجه به بزرگی و
+کوچکی حروف آزموده می‌شود.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+منشنی که به یک انسان تبدیل شود **چیزی اعزام نمی‌کند**. صرفاً سوار بر فرادادهٔ پیام
+است تا مسیریاب اعلان بتواند به آن شخص خبر دهد.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+نام عامل‌ها همیشه نخست آزموده می‌شود و توکنی که عاملی آن را تصاحب کرده باشد هرگز
+به فهرست اعضا عرضه نمی‌شود — هر `@word` تنها می‌تواند به یک principal تبدیل شود.
 
-## What the agent receives
+## آنچه عامل دریافت می‌کند
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+عاملی که اعزام می‌شود در پرامپتش یک بلوک «Summons» می‌گیرد که نام کسی را که او را
+فراخوانده ذکر می‌کند و فهرست اعضای فضا را می‌آورد — عامل‌های دیگر (برچسب‌خورده به
+سطح‌بالا یا زیردست) و اعضای انسانی — تا بداند می‌تواند کار را به چه کسی واگذار
+کند. این بلوک همچنین به او می‌گوید که منشن کردن عامل دیگر در پاسخش آن عامل را
+بیدار می‌کند و منشن کردن خودش نادیده گرفته می‌شود.
 
-## When an agent mentions an agent
+## وقتی یک عامل عامل دیگری را منشن می‌کند
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+هر عامل می‌تواند در پاسخ خودش کار را واگذار کند. وقتی یک نوبت **تمیز به پایان
+می‌رسد**، منشن‌های متنش حل می‌شوند و آن عامل‌ها به فضا افزوده و به همان گفتگو
+اعزام می‌شوند، و نوبتِ منشن‌کننده به‌عنوان پرامپتشان به کار می‌رود. نوبتی که
+شکست خورده یا قطع شده باشد کسی را بیدار نمی‌کند — در میانهٔ فکر کردن متوقف شده
+است.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+این قاعده‌ها عمداً سخت‌گیرانه‌تر از قاعده‌های ویرایشگر پیام‌اند، چون کسی ناظر نیست
+تا حدس اشتباه را تصحیح کند:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **فقط نام‌های دقیق.** بدون تطبیق پیشوند. وقتی انسان `@arch` را تایپ می‌کند به
+  `architect` می‌رسد؛ از سوی یک عامل به هیچ‌کس نمی‌رسد. نامی که با دو عامل تطبیق
+  پیدا کند هم به هیچ‌کس نمی‌رسد.
+- **کد نثر نیست.** منشن‌های درون بلوک‌های حصاردار یا `` `backticks` `` نادیده
+  گرفته می‌شوند، پس نقل کردن یک حاشیه‌نویسی `@Override` یا
+  `pip install foo@1.2` بی‌خطر است. حصارِ بسته‌نشده هر چیزی را که پس از آن بیاید
+  بی‌اثر می‌کند.
+- **`@`ی که به توکن پیشین چسبیده باشد منشن نیست** — `sam@host.com`،
+  `pkg/@scope` و `node@20` به هیچ‌کس تبدیل نمی‌شوند.
+- **خط تیره‌ها حفظ می‌شوند**، پس `@code-reviewer` به‌عنوان خودش تبدیل می‌شود، نه
+  به‌عنوان توکن `code`.
+- **حداکثر سه عامل در هر نوبت.** عاملی که در یک خلاصه شش هم‌تیمی را نام می‌برد در
+  حال فهرست کردن‌شان است، نه فراخواندن‌شان.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+زنجیرهٔ بیدارسازی همانند واگذاری محدود می‌شود: **عمق ۳**، و عاملی که از قبل در
+زنجیره باشد نمی‌تواند دوباره به‌وسیلهٔ آن بیدار شود (بدون `A → B → A`). برای هر
+جفت مرتب نیز در سراسر زنجیره‌ها محدودیت نرخ اعمال می‌شود. بیدارسازیِ ردشده یک
+پیام سیستمی در گفتگو می‌گذارد که می‌گوید کدام منشن تحویل نشد و چرا — نامِ
+حل‌نشده چنین پیامی نمی‌گذارد، چون در غیر این صورت هر `@`ی در یک جمله خودش را
+روایت می‌کرد.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+برای واگذاری‌ای که نباید به نثر وابسته باشد — یک درخواست/پاسخ، یا رسیدن به عاملی
+بیرون از فضا — به‌جای آن از ابزارهای `send_to_agent`، `ask_agent` و
+`delegate_task` استفاده کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
-- [Use spaces](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/)
-- [Run agents in parallel](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
+- [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+- [استفاده از فضاها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/)
+- [اجرای موازی عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)

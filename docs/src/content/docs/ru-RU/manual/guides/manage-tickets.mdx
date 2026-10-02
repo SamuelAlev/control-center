@@ -1,39 +1,42 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Создавать и управлять тикетами
+description: Создавайте тикеты, проводите их по жизненному циклу, ставьте метки и связи и фиксируйте, кому что принадлежит.
 slug: ru-RU/руководство/практические-руководства/управлять-тикетами
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Это руководство показывает, как создавать тикеты и управлять ими.
 
-## Create a ticket
+## Создать тикет
 
-### From the UI
+### Из интерфейса
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Нажмите **Тикеты** в боковой панели рабочего пространства.
+2. Нажмите **Новый тикет**.
+3. Заполните:
+   - **Название** — краткое описание. Это единственное обязательное поле.
+   - **Описание** — markdown, с панелью форматирования.
+   - **Статус** — **К выполнению** (по умолчанию) или **Бэклог**. Начатые и
+     терминальные состояния достигаются через жизненный цикл, а не при
+     создании.
+   - **Приоритет** — нет, срочный, высокий, средний или низкий.
+   - **Исполнитель** — вы сами или любой агент в рабочем пространстве.
+   - **Проект** — необязательная группировка.
+4. Нажмите **Создать** или сначала включите **Создать ещё**, чтобы диалог
+   остался открытым для быстрого ввода.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+В диалоге нет выбора провайдера. Тикет создаётся в активном провайдере тикетов
+рабочего пространства.
 
-### From an agent
+### Через агента
 
-Ask an agent in a space:
+Попросите агента в пространстве:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Создай тикет на исправление проблемы с тайм-аутом входа при медленном
+> соединении.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Он вызывает инструмент MCP `create_ticket`. Приоритет в этом инструменте —
+**целое число**, а не название:
 
 ```
 create_ticket(
@@ -44,21 +47,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Значение | Приоритет |
+| -------- | --------- |
+| `0`   | Нет     |
+| `1`   | Срочный   |
+| `2`   | Высокий   |
+| `3`   | Средний   |
+| `4`   | Низкий      |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Обязательны только `workspace_id` и `title`; `description`, `priority`,
+`assignee` (идентификатор агента) и `team_id` необязательны. Инструмент
+отнесён к классу записи синхронизации с вендором и запрашивает ваше
+подтверждение перед запуском.
 
-## Update ticket status
+## Изменить статус тикета
 
-Tickets follow this lifecycle:
+Тикеты проходят такой жизненный цикл:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +72,131 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` и `cancelled` — терминальные. `cancelled` достижим из любого
+нетерминального статуса. `done` и `failed` достижимы из `inProgress` или
+`inReview`; `open` также может перейти напрямую в `blocked`. Селектор статуса
+в интерфейсе перечисляет все статусы, кроме `failed`, — агенты ставят его
+через `fail_ticket`.
 
-To change it, use any of:
+Чтобы изменить статус, используйте любой из способов:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- строку **Статус** в панели свойств тикета,
+- подменю **Статус** в контекстном меню тикета в списке,
+- чип **Статус** на плавающей панели после выбора нескольких тикетов.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Граф жизненного цикла обязателен для агентов, а не для вас]
+Любое изменение статуса из интерфейса применяется принудительно и полностью
+обходит граф — вы можете перевести тикет в любой статус из списка селектора, в
+том числе открыть заново `done`, `failed` или `cancelled`. Селектор не
+предлагает `failed` как целевой статус. Диаграмма выше управляет агентами и
+автоматизацией: недопустимый переход, предпринятый инструментом MCP или
+реконсилером, логируется и игнорируется, а не применяется.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/).
+Изменения статуса порождают доменные события (`TicketStatusChanged`,
+`TicketCompleted` и другие), которые могут запускать конвейеры. См.
+[Настроить триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/).
 
-## Assign a ticket
+## Назначить тикет
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Откройте тикет.
+2. В панели свойств задайте **Исполнитель** — себя, другого участника рабочего
+   пространства или агента.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)).
+:::caution[Назначение не запускает никакой работы]
+Назначение фиксирует владение и ничего больше. Оно не создаёт пространство, не
+меняет статус и не запускает агента — `TicketAssigned` — это чистый сигнал
+аудита, за которым нет диспетчера. Чтобы агент начал работу, напишите ему в
+пространстве (см. [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Единственное исключение: `TicketAssigned` — это тип события, к которому можно
+привязать триггер конвейера, поэтому ваш собственный шаблон может реагировать
+на назначение.
 :::
 
-## Add labels
+## Добавить метки
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Метки ставятся массово из списка тикетов, а не из отдельного тикета — в панели
+свойств нет элемента управления для меток.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Наведите курсор на строку в списке тикетов и отметьте её флажок. Отметьте
+   столько, сколько нужно; как только что-то выбрано, появляется плавающая
+   панель.
+2. На этой панели откройте чип **Метки**.
+3. Выберите метку. Она добавляется ко всем выбранным тикетам, у которых её
+   нет; существующие метки никогда не стираются. **Очистить метки** удаляет их
+   все. Селектор перечисляет метки, которые уже есть на тикетах рабочего
+   пространства. Агенты могут добавить новое имя через `update_ticket` или
+   `tickets.patch`.
 
-## Link tickets
+## Связать тикеты
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Связи находятся на карточке **Связи** в панели свойств тикета или за пунктом
+**Связать с** в контекстном меню списка.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Откройте тикет и найдите карточку **Связи**.
+2. Нажмите её элемент добавления и выберите связь:
 
-| Relation          | Meaning                                 |
+| Связь             | Значение                                |
 | ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| **Подтикет для…** | Родитель этого тикета — другой          |
+| **Родитель для…** | Другой тикет — дочерний для этого       |
+| **Блокируется…**  | Этот тикет блокируется другим           |
+| **Блокирует…**    | Этот тикет блокирует другой             |
+| **Связано с…**    | Симметрично, направление не подразумевается |
+| **Дубликат…**     | Этот тикет дублирует другой             |
 
-3. Pick the target ticket.
+3. Выберите целевой тикет.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Дублируется** отображается в карточке, но отсутствует в селекторе — это
+обратная сторона **Дубликат…**, и она задаётся со стороны другого тикета.
+Каждую из перечисленных связей можно нажать, чтобы открыть связанный тикет, и
+удалить при наведении.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Связи «родитель — подтикет» хранятся в самом тикете, а не как строки связей,
+поэтому удаление родителя каскадно удаляет его дочерние тикеты (см. ниже), а
+блокирующие и связанные ссылки — нет.
 
-## Add collaborators
+## Добавить соисполнителей
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Соисполнители — это список на тикете: кто в нём задействован и в каком
+качестве.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Откройте тикет.
+2. Нажмите элемент с человечком и плюсом на карточке **Добавить участника**.
+3. Выберите агента.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Есть три роли: **исполнитель**, **соисполнитель** (по умолчанию) и
+**ревьюер**. Селектор в интерфейсе перечисляет только агентов рабочего
+пространства и всегда записывает роль по умолчанию; люди могут отображаться
+как строки, но в этом меню не предлагаются. Инструмент MCP
+`add_ticket_collaborator` принимает `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ru-RU/руководство/практические-руководства/пространства/).
+Добавление соисполнителя записывает строку и не публикует доменное событие;
+оно не даёт доступа к пространству. Чтобы ввести агента в разговор, добавьте
+его как участника из заголовка пространства — см.
+[Использовать пространства](/ru-RU/руководство/практические-руководства/пространства/).
 
-## Delete a ticket
+## Удалить тикет
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Используйте **Удалить тикет** внизу панели свойств, в контекстном меню или
+действие удаления на плавающей панели после выбора нескольких тикетов.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Удаление происходит только локально]
+Тикет, пришедший из внешнего трекера, там не удаляется — ни один провайдер это
+не поддерживает, — поэтому он может появиться снова при следующей
+синхронизации. Удаление также каскадно: вместе с тикетом удаляются его
+соисполнители и все дочерние тикеты.
 :::
 
-## Related guides
+## Связанные руководства
 
-- [Delegate work to agents](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
-- [Organize work with projects](/ru-RU/руководство/практические-руководства/проекты/)
-- [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
-- [Ticket lifecycle reference](/ru-RU/руководство/справка/жизненный-цикл-тикета/)
+- [Делегировать работу агентам](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
+- [Организовать работу через проекты](/ru-RU/руководство/практические-руководства/проекты/)
+- [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
+- [Справка по жизненному циклу тикета](/ru-RU/руководство/справка/жизненный-цикл-тикета/)
 
-## Related concepts
+## Связанные понятия
 
-- [Tickets](/ru-RU/руководство/понятия/тикеты/)
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/)
+- [Тикеты](/ru-RU/руководство/понятия/тикеты/)
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/)

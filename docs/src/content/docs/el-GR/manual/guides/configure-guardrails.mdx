@@ -1,152 +1,171 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Ρύθμιση περιορισμών
+description: Ορίστε κανόνες αποδοχής, ερώτησης πρώτα και απόρριψης για ενέργειες πρακτόρων, δοκιμάστε τους με τον έλεγχο «Τι θα γίνει;» και ρυθμίστε την αυτονομία ανά χώρο.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Αυτός ο οδηγός δείχνει πώς να ρυθμίσετε τους περιορισμούς: τους κανόνες που
+αποφασίζουν αν μια ενέργεια πράκτορα θα εκτελεστεί, θα ζητήσει πρώτα έγκριση ή
+θα απορριφθεί.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Οι περιορισμοί καλύπτουν τις δεκατρείς κατηγορίες επιδράσεων που δηλώνει κάθε
+εργαλείο που μεταβάλλει κατάσταση. Επιβάλλονται στην πλευρά του διακομιστή, τη
+στιγμή που καλείται το εργαλείο, ποτέ μέσω οδηγίας σε μια προτροπή.
 
-## Set a decision for an action class
+## Ορίστε μια απόφαση για μια κατηγορία ενέργειας
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Δικαιώματα πρακτόρων**
+2. Επιλέξτε πεδίο εφαρμογής με τον τμηματικό διακόπτη: **Χώρος εργασίας**,
+   **Πράκτορας** (έπειτα επιλέξτε τον πράκτορα) ή **Χώρος** (έπειτα επιλέξτε τον
+   χώρο)
+3. Στη γραμμή της κατηγορίας ενέργειας, επιλέξτε **Αποδοχή**, **Ερώτηση πρώτα** ή
+   **Απόρριψη**
+4. Για να καταργήσετε έναν κανόνα που ορίσατε, πατήστε το κουμπί επαναφοράς που
+   εμφανίζεται στο τέλος αυτής της γραμμής (**Επαναφορά στο κληρονομημένο**) — η
+   απόφαση επιστρέφει στο ευρύτερο πεδίο εφαρμογής
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Κάθε γραμμή εμφανίζει την ισχύουσα απόφαση ως ετικέτα κατάστασης και ένα σήμα
+για την προέλευσή της: **Αυτό το πεδίο**, **Κληρονομημένο** ή **Ενσωματωμένη
+προεπιλογή**. Ο πίνακας επιλύεται στη λειτουργία **Πράκτορας** (`chat`), οπότε το
+**Προκαθορισμένο λειτουργίας** δεν εμφανίζεται ποτέ εδώ — χρησιμοποιήστε τον
+έλεγχο «Τι θα γίνει;» με επιλεγμένη λειτουργία μόνο ανάγνωσης για να δείτε αυτό το
+επίπεδο.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Η σύνταξη ενός κανόνα απαιτεί τον ρόλο `admin`. Η ανάγνωση του πίνακα δεν τον
+απαιτεί.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Σημείο ελέγχου: ορίστε το **Push σε απομακρυσμένο** σε **Απόρριψη** στο πεδίο
+εφαρμογής του χώρου εργασίας και έπειτα εκτελέστε τον έλεγχο «Τι θα γίνει;»
+παρακάτω για την εντολή `git push origin main`. Το αποτέλεσμα εμφανίζει `deny` με
+πηγή `workspace`.
 
-## Understand how a decision is resolved
+## Κατανοήστε πώς επιλύεται μια απόφαση
 
-Resolution is **specificity first, then restrictiveness**:
+Η επίλυση γίνεται **πρώτα με ειδικότητα και έπειτα με περιοριστικότητα**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Κανόνες **Χώρου**, έπειτα **πράκτορα**, έπειτα **χώρου εργασίας**. Το πρώτο
+   πεδίο εφαρμογής με κανόνα που ταιριάζει αποφασίζει και η επίλυση σταματά
+2. Αν δεν ταιριάζει κανένας κανόνας, εφαρμόζεται το **προκαθορισμένο λειτουργίας**
+   — μια λειτουργία μόνο ανάγνωσης (σχέδιο, ανασκόπηση, ενορχήστρωση) απορρίπτει
+   έντεκα από τις δεκατρείς κατηγορίες
+3. Αν η λειτουργία δεν έχει τίποτα να πει, εφαρμόζεται η **ενσωματωμένη
+   προεπιλογή**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Μέσα σε ένα μόνο πεδίο εφαρμογής, ένας κανόνας εντολής επιλύεται με το
+μεγαλύτερο ταιριαστό πρόθεμα και μια εξίσου ειδική σύγκρουση επιλύεται με τον
+**πιο περιοριστικό** τρόπο — η απόρριψη υπερισχύει της ερώτησης πρώτα, που
+υπερισχύει της αποδοχής. Μια ενέργεια που δηλώνει πολλές κατηγορίες επιλύει
+καθεμία ανεξάρτητα και έπειτα τις συνδυάζει με τον πιο περιοριστικό τρόπο.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Η αποδοχή δεν υπερισχύει της απόρριψης]
+Ένας στενότερος κανόνας υπερισχύει λόγω ειδικότητας και μια ισοπαλία λύνεται με
+βάση την περιοριστικότητα — άρα μια **Αποδοχή** στο πεδίο εφαρμογής του χώρου
+εργασίας δεν υπερισχύει μιας **Απόρριψης** πουθενά.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Μια απόφαση **Ερώτηση πρώτα** εμφανίζει μία προτροπή έγκρισης που καλύπτει κάθε
+κατηγορία που επιλύθηκε σε `prompt`. **Χωρίς συνδεδεμένο εγκριτή απορρίπτεται**,
+τόσο για εντολές shell όσο και για κλήσεις εργαλείων του harness. Αυτό είναι
+σκόπιμο: μια εκτέλεση χωρίς έλεγχο είναι χειρότερη από μια απορριφθείσα.
 
-### Action classes and built-in defaults
+### Κατηγορίες ενεργειών και ενσωματωμένες προεπιλογές
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Κατηγορία ενέργειας                              | Ενσωματωμένη προεπιλογή |
+| ------------------------------------------------ | ----------------------- |
+| Διαγραφή αρχείου                                 | Ερώτηση πρώτα           |
+| Εγγραφή εκτός του worktree                       | Αποδοχή                 |
+| Δημιουργία commit                                | Αποδοχή                 |
+| Push σε απομακρυσμένο                            | Ερώτηση πρώτα           |
+| Άνοιγμα pull request                             | Ερώτηση πρώτα           |
+| Δημοσίευση ανασκόπησης ή συγχώνευση              | Ερώτηση πρώτα           |
+| Εγγραφή σε εξωτερικό tracker                     | Ερώτηση πρώτα           |
+| Πρόσβαση στο δίκτυο                              | Αποδοχή                 |
+| Ανάγνωση μυστικού                                | Αποδοχή                 |
+| Εγκατάσταση πακέτου                              | Αποδοχή                 |
+| Εκτέλεση διεργασίας                              | Αποδοχή                 |
+| Αλλαγή δομής χώρου εργασίας                      | Αποδοχή                 |
+| Έλεγχος απομονωμένου περιβάλλοντος (σταθμός)     | Αποδοχή                 |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Η ταξινομία είναι κλειστή. Ένα νέο εργαλείο που κυκλοφορεί χωρίς να δηλώνει τις
+κατηγορίες του αποτυγχάνει σε ένα τεστ καστάνιας στο CI, ώστε τίποτα να μην
+φτάνει με σιωπηλά κενό σύνολο επιδράσεων.
 
-## Test a rule with the what-if probe
+## Δοκιμάστε έναν κανόνα με τον έλεγχο «Τι θα γίνει;»
 
-Before changing a rule, check how the current policy already resolves it.
+Πριν αλλάξετε έναν κανόνα, ελέγξτε πώς τον επιλύει ήδη η τρέχουσα πολιτική.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Στην ίδια σελίδα, μεταβείτε στο **Τι θα γίνει;**
+2. Επιλέξτε μια **Ενέργεια** (μία από τις δεκατρείς κατηγορίες)
+3. Προαιρετικά συμπληρώστε **Εντολή** (για παράδειγμα `git push origin main`),
+   **Πράκτορας**, **Χώρος** και **Λειτουργία**
+4. Διαβάστε το αποτέλεσμα: την απόφαση, τον λόγο και την **Πηγή:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+Ο έλεγχος εκτελεί τον ίδιο επιλυτή που χρησιμοποιεί η διαδρομή επιβολής, πάνω
+στους ενεργούς κανόνες σας, οπότε η απάντηση είναι ακριβής. Αν σας εκπλήξει,
+αλλάξτε έναν κανόνα στον πίνακα παραπάνω και ελέγξτε ξανά.
 
-## Set a space's autonomy dial
+## Ρυθμίστε το κουμπί αυτονομίας ενός χώρου
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Το κουμπί ισχύει ανά πράκτορα και ανά χώρο και συνδυάζεται με τους κανόνες αντί
+να τους αντικαθιστά.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Ανοίξτε τον χώρο
+2. Ανοίξτε τη **Διαχείριση συμμετεχόντων** από την κεφαλίδα του χώρου
+3. Στην **Αυτονομία**, στη γραμμή του πράκτορα, επιλέξτε ένα επίπεδο:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Επίπεδο               | Επίδραση                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Προεπιλογή**        | Καμία ρύθμιση χώρου — συμπεριφέρεται ως **Ενέργεια με έγκριση**                                                 |
+| **Μόνο πρόταση**      | Κάθε ελεγχόμενο εργαλείο απορρίπτεται ευθέως, με μήνυμα που λέει στον πράκτορα να προτείνει την ενέργεια αντ’ αυτού |
+| **Ενέργεια με έγκριση** | Οι ριψοκίνδυνες ενέργειες προσκρούουν στην πύλη έγκρισης που αποτυγχάνει κλειστή                                |
+| **Ελεύθερη ενέργεια** | Προεγκρίνει οτιδήποτε δεν επιλύθηκε σε σκληρή απόρριψη                                                          |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Η ελεύθερη ενέργεια καταπίνει κάθε προτροπή]
+Με την **Ελεύθερη ενέργεια**, μια απόφαση **Ερώτηση πρώτα** εγκρίνεται χωρίς να
+σας ρωτήσει. Μόνο ένα `deny` — από κανόνα, από το προκαθορισμένο λειτουργίας ή
+από ενσωματωμένη προεπιλογή — εξακολουθεί να μπλοκάρει. Καταφύγετε σε αυτήν όταν
+παρακολουθείτε τον χώρο, όχι ως προεπιλογή.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Το κουμπί φτάνει μόνο στο ενσωματωμένο harness. Ο προσαρμογέας Claude Code
+εκτελεί τα δικά του εργαλεία εκτός αυτής της πύλης.
 
-## Know where guardrails do not reach
+## Μάθετε πού δεν φτάνουν οι περιορισμοί
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Ο πίνακας **Πού εφαρμόζονται οι κανόνες** στο κάτω μέρος της ίδιας σελίδας είναι
+η έκδοση αυτού μέσα στην εφαρμογή: ανά κατηγορία επίδρασης, δηλώνει αν κάθε
+εκτελεστής την πιάνει στην πύλη πολιτικής, την αφήνει στο sandbox ή δεν μπορεί να
+την αναχαιτίσει καθόλου.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/).
+- **Ο προσαρμογέας Claude Code** δεν ελέγχεται ως προς τις δικές του κλήσεις
+  εργαλείων. Το Claude Code εκκινείται με `--dangerously-skip-permissions`, οπότε
+  οι κλήσεις ανάγνωσης, εγγραφής, επεξεργασίας και bash δεν περνούν ποτέ από τον
+  φρουρό. Αυτό που ελέγχεται για αυτόν τον προσαρμογέα είναι η επιφάνεια εργαλείων
+  MCP στην οποία καλεί πίσω και η εντολή shell που εκκινεί το Control Center για
+  να το ξεκινήσει.
+- **Το ρήμα εξόδου της ίδιας της λειτουργίας** (`submit_plan`,
+  `propose_orchestration`) είναι καρφιτσωμένο και δεν μπορεί ποτέ να απορριφθεί —
+  αλλιώς μια λειτουργία θα ήταν δομικά ανίκανη να παραγάγει το μοναδικό παραδοτέο
+  της.
+- **Το αν το sandbox ενισχύει αυτούς τους κανόνες εξαρτάται από τον κεντρικό
+  υπολογιστή.** Όπου το `cc_server` βρίσκει ένα backend, περιτυλίγει το CLI του
+  Claude Code και το εργαλείο `bash` του harness, ώστε ένας κανόνας που δεν
+  γράψατε εσείς να έχει ακόμη ένα κατώτατο όριο του λειτουργικού συστήματος από
+  κάτω του. Στα **Windows δεν υπάρχει κανένα** και σε Linux ή WSL2 χωρίς `bwrap`
+  και `socat` επίσης δεν υπάρχει κανένα — εκεί, οι περιορισμοί μαζί με την
+  επιφάνεια εργαλείων της λειτουργίας αποτελούν ολόκληρη την επιβολή, όχι μια
+  δεύτερη γραμμή της. Ελέγξτε σε ποια περίπτωση βρίσκεστε με τη
+  [Ρύθμιση πολιτικών sandbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Configure sandbox policies](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/)
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+- [Ρύθμιση πολιτικών sandbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Guardrails — one policy for every mutating action](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
+- [Περιορισμοί — μία πολιτική για κάθε ενέργεια που μεταβάλλει κατάσταση](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)

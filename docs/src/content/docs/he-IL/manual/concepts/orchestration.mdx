@@ -1,113 +1,104 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: תזמור
+description: איך "בקשה גדולה" אחת הופכת לתוכנית של צוות שלם שאתם מאשרים פעם אחת, ואז לפייפליין שנוצר שמריץ אותה.
 slug: he-IL/מדריך-למשתמש/מושגים/תזמור
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+סוכן בודד טוב בדבר אחד. יש בקשות גדולות מזה: "חקרו את השוק של X וכתבו מסמך
+מיצוב", "השלימו את התכונה הזו מקצה לקצה", "בקרו את המודול הזה ותקנו את מה
+שמצאתם". **תזמור** הוא הדרך שבה Control Center מתמודד עם אלה: מתזמר (בדרך כלל
+סוכן ה-CEO שלכם) מציע תוכנית של צוות שלם, אתם מאשרים אותה **פעם אחת** ומממש
+דטרמיניסטי הופך אותה לפייפליין שעושה את העבודה.
 
-It sits between the two existing ways of getting work done:
+הוא יושב בין שתי הדרכים הקיימות לבצע עבודה:
 
-| When you want to…                                 | Use                                                       |
+| כשאתם רוצים ל…                                   | השתמשו                                                     |
 | ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) |
-| Encode a process you already know, by hand        | A [pipeline template](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| למסור משימה אחת לסוכן אחד                          | [הודעה במרחב](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) |
+| לקבוע תהליך שאתם כבר מכירים, ביד                   | [תבנית פייפליין](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)        |
+| לנסח את המטרה ולתת לצוות להבין את התוכנית          | **תזמור**                                                  |
 
-## The shape of a proposal
+## הצורה של הצעה
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+כשאתם נותנים למתזמר מטרה, הוא מחזיר **`OrchestrationProposal`** מובנה: תוכנית
+טיפוסית שהאפליקציה יכולה לאמת ולהריץ, ולא פרוזה חופשית. להצעה יש:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **מטרה**: הבקשה שלכם ברמה גבוהה, מנוסחת מחדש.
+- **תפקידים**: מי עושה את העבודה. כל תפקיד הוא או **סוכן קיים** שאתם בוחרים,
+  או **מגויס חדש** שהתזמור יוצר עם האישור.
+- **תת־כרטיסים**: העבודה, מפורקת ל-DAG של [כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/).
+- **מחקר** _(אופציונלי)_: שלב מחקר שרץ ראשון ומזין את השאר.
+- **דיון** _(אופציונלי)_: סבב מוגבל שבו כל תפקיד מפרסם עמדה מובנית לפני
+  שהעבודה מתחילה.
+- **סינתזה**: השלב האחרון שמפיק את התוצר.
+- **תקציב**: תקרת עלות מוצהרת.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[התקציב מייעץ בלבד]
+תקרת העלות של ההצעה מושווית מול הסכום המשוער של התוכנית ומסמנת תוכנית בחריגת
+תקציב בסרגל האישור _לפני_ שאתם מאשרים. שום דבר לא קורא אותה לאחר שההרצה החלה,
+כך שהיא אינה עוצרת או מכשילה תזמור שחורג. מדיניויות תקציב לפי סוכן ולפי סביבת
+עבודה הן מנגנון נפרד והן מה שבאמת עוצר הוצאה.
 :::
 
-## Where you review it
+## איפה סוקרים אותה
 
-Two surfaces show the same orchestration.
+שני משטחים מציגים את אותו תזמור.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**כרטיס ההצעה** נמצא בשיחה שהפיקה את התוכנית. זו הודעה אחת שמתרנדרת מחדש לאורך
+כל מחזור החיים — מוצע, מבוצע, הושלם — עם פעולות האישור והביטול שעליה.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** הוא העורך: קנבס DAG, לוח הצומת, מגירת גרסאות והבדלים וסרגל
+האישור שנושא את האומדן. הוא נפתח כלשונית עורך ישירות מאותו כרטיס. במכוון אין
+פריט "תוכניות" בסרגל הצד; `/plans` ו־`/plans/:kind/:id` קיימים כקישורים
+ישירים לשיתוף.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+האישור הוא **למפעיל בלבד**. אין כלי MCP לכך: סוכן יכול להציע
+(`propose_orchestration`), להגיש תוכנית (`submit_plan`) או להריץ פלייבוק
+(`run_playbook`), אבל רק אדם מאשר. גרסאות שיזם סוכן מוגבלות בנוסף בקצב על ידי
+השהיה של שתי דקות, כך שלולאת תכנון מחדש מתמזגת במקום להציף את הפיד שלכם.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+מה שאפשר לשנות לפני האישור הוא מה שלוח הצומת חושף: לשנות את כותרתו או לנסח
+מחדש תת־כרטיס, לשנות איזה **תפקיד** הבעלים שלו, לחבר מחדש את התלויות שלו,
+לערוך את סכמת הפלט שלו, או למחוק את הצומת כליל. צמתים מבניים (מחקר, דיון,
+סינתזה) וצמתים שכבר בוצעו הם לקריאה בלבד. אי אפשר להצמיד תפקיד לסוכן ספציפי
+בשמו, ואי אפשר לערוך את התקציב מהעורך.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+מקרה של שני עורכים על תוכנית אחת נפתר בבקרת מקביליות אופטימית, לא במיזוג. כל עריכה
+נושאת את ה־`base_revision` שמולו היא נעשתה; עריכה שמבוססת על גרסה מיושנת נדחית
+עם "התוכנית המשיכה הלאה" במקום לדרוס בשקט את זו של מישהו אחר. שחזור לאחור אינו
+מחיקה — הוא מצרף את ההצעה הישנה כגרסה חדשה, כך שציר הזמן של הגרסאות רק גדל.
 
-## Honest estimates, or none
+## אומדנים כנים, או כלום
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+האומדן בסרגל האישור נבנה מהיסטוריית הרצות שהושלמו בפועל עבור כל תפקיד, כטווח
+בין־רבעוני (p25–p75). סכומי העלות **מסכמים** את הצמתים הניתנים לאומדן; המשך הוא
+**המסלול הקריטי** דרך ה-DAG ולא הסכום (ענפים מקבילים חופפים).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+צומת שלתפקיד שלו **אין היסטוריית הרצות שהושלמו** מדווח `sampleSize: 0` וטווחי
+null. זה מוצג בדיוק כך — לא ידוע — ולעולם לא כערך נקודתי מומצא, כי אומדן שאי
+אפשר לסמוך עליו גרוע מאין אומדן. כשלחלק מהצמתים יש היסטוריה ולחלק אין, הסכום
+מסומן כחלקי. רדיוס הפגיעה מופיע רק כשצומת הצהיר על הפניות מקור מסוג `symbol`
+או `file`; צומת בלעדיהן נשאר "לא ידוע" במקום להסיק מפרוזה.
 
-## One approval, then deterministic execution
+## אישור אחד, ואז הרצה דטרמיניסטית
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+זה הרעיון המרכזי: **הסוכן מתכנן; פונקציה דטרמיניסטית מבצעת.** כשאתם מאשרים,
+ה־`OrchestrationMaterializer`, פונקציה טהורה בלי LLM ובלי I/O, ממיר את ההצעה
+ל[פייפליין](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) אמיתי. בהינתן אותה הצעה
+ואותם תפקידים שנפתרו, הוא תמיד מפיק את אותו DAG. זה חשוב כי הפייפליין שנוצר
+יורש הכול שהמנוע כבר עושה בחינם: השהיה וחידוש על פני אתחולים, שחזור מקריסה,
+צבירות עלות ואסימונים לפי הרצה וממשק פירוט ההרצה.
 
-Approval also creates the scaffolding the work needs:
+האישור גם יוצר את התשתית שהעבודה צריכה:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **מגייס** כל תפקיד שמסומן כחדש (ורושם את מזהי הסוכנים המגויסים כדי שקריסה
+  באמצע האישור תוכל לחדש בלי גיוסים כפולים)
+- **צוות** שמקבץ את התפקידים
+- **פרויקט** שמשייך את כרטיס האב
+- **תבנית הפייפליין + ההרצה** שמניעה את הכול
 
-## The lifecycle
+## מחזור החיים
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +106,41 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| סטטוס          | משמעות                                                                          |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | התוכנית מוכנה וממתינה לאישור החד־פעמי שלכם                                        |
+| `approved`     | אישרתם אותה; המימוש בעיצומו (גיוסים, צוות, פרויקט, פייפליין)                      |
+| `executing`    | הפייפליין שנוצר רץ: תת־כרטיסים, דיון, עבודה                                        |
+| `synthesizing` | תת־הכרטיסים הסתיימו; שלב הסינתזה מפיק את התוצר                                     |
+| `completed`    | הסתיים: כרטיס האב מסומן כהושלם והתוצר מתפרסם במרחב המשותף                         |
+| `failed`       | המימוש נכשל, או שהרצת הפייפליין שנוצרה נכשלה                                     |
+| `cancelled`    | ביטלתם אותה                                                                      |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+מספר **גרסה** מונוטוני עוקב אחרי ההצעה כשהמתזמר מתקן אותה בעודה `proposed`;
+האפליקציה רושמת איזו גרסה אישרתם. `propose_orchestration` מסרב לגרסה ברגע
+שהסטטוס אינו עוד `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+תזמור תמיד נפתח מול **כרטיס אב** ומשתף **מרחב** דיון אחד, כך שכל המאמץ ניתן
+לאיתור לפריט עבודה יחיד והצוות מדבר בחדר אחד.
 
-## What happens when it finishes
+## מה קורה כשהוא מסתיים
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+מאזין שנשמר חי צופה בפייפליין שנוצר וממפה את מצב הסיום שלו בחזרה אל התזמור ואל
+כרטיס האב, כך שההשלמה והכשל מופיעים במקומות שאתם כבר עוקבים אחריהם. תכונת
+התזמור אינה זקוקה למנוע הרצה משלה.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+אפשר לבטל תזמור בכל עת; הביטול מפרק את העבודה שבאוויר.
 
 ::::note
-Orchestration builds on [pipelines](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) and
-[tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+התזמור נבנה על [פייפליינים](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) ו
+[כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/). זהו רובד תכנון ואישור מעליהם
+ולא סביבת הרצה נפרדת.
 ::::
 
-## See also
+## ראו גם
 
-- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): the parent ticket an orchestration is anchored on
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): the roles an orchestration fills or hires
-- [Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
-- [Work in Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/)
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/): המנוע שתזמור ממומש רץ עליו
+- [כרטיסים והאצלה](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): כרטיס האב שהתזמור מעוגן עליו
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): התפקידים שהתזמור ממלא או מגייס
+- [הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
+- [עבודה ב־Plan Studio](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/plan-studio/)

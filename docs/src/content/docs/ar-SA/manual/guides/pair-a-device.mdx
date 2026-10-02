@@ -1,96 +1,93 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: اقتران جهاز
+description: اقرن هاتفك (أو متصفحًا آخر أو حاسوبًا آخر) بخادم Control Center حتى تتابع الأسطول عن بُعد.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) for how the link
-works and its security model.
+يشرح هذا الدليل كيف تقرن هاتفًا بـ Control Center حتى تقرأ الرسائل والتذاكر
+وترد من أي مكان. المسار نفسه يقرن متصفحًا ثانيًا أو تطبيق حاسوب. انظر
+[التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) لمعرفة كيف يعمل
+الرابط ونموذج أمانه.
 
-## Prerequisites
+## المتطلبات
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- عميل حاسوب أو ويب متصل بخادمك، ومساحة عمل مُعدّة. عمليات الاقتران تشترط عميلًا كاملًا، فالهاتف المقترن لا يستطيع أبدًا أن يقرن جهازًا آخر — ولا أن يبطله.
+- خادم يمكن بلوغه من الجهاز الذي تقرنه. على الشبكة نفسها يعمل الأمر مباشرة، ومن مسافة أبعد يحمل المرحّل بوساطة وسيط الحركة. إن أجابت اللوحة بـ **غير قابل للوصول** بدل رمز QR أو بيانات اعتماد، انشر مسارًا أولًا — خيار تفعيل النفق في **الإعدادات ← الخادم ← الاتصال والحالة** (**مشاركة هذا الخادم**)، أو `--public-url` على الخادم (انظر [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)).
+- للهاتف: لا شيء يُثبَّت. يفتح رمز QR تطبيق الويب **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) افتراضيًا).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**استضافة ذاتية.** Remote ووسيط المرحّل كلاهما مفتوح المصدر في هذا المستودع:
+تطبيق الهاتف (`apps/cc_remote`، تطبيق ويب تقدّمي بـ Flutter تنشره على
+Cloudflare Pages عبر `wrangler.jsonc`، أو إلى صورة nginx في `docker/cc_remote`،
+أو إلى أي مضيف ثابت عبر HTTPS — عمال الخدمة وIndexedDB لا يعملان إلا في سياق
+آمن) والمرحّل (`apps/cc_signaling_server`، ثنائي Dart واحد بلا حالة لا يحتفظ
+ببيانات التطبيق ولا يرى سر الاقتران — ولا يمرّر إلا إطارات مختومة طرفًا لطرف).
+انظر ملفي README لديهما لخطوات البناء والتشغيل.
 
-## Step 1: Open the pairing panel
+## الخطوة 1: افتح لوحة الاقتران
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+افتح **الإعدادات ← أنت ← أجهزتك**. يسرد قسم **أجهزتك** العملاء
+المقترنين بحسابك على هذا الخادم. (يرى مالك الخادم كل جهاز على الخادم، ولا يرى
+سواه إلا أجهزته.)
 
-## Step 2: Pair a new client
+## الخطوة 2: اقترن بعميل جديد
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+انقر **اقتران عميل جديد** في ترويسة الصفحة، وسمِّه (مثال: «هاتفي»)، واختر
+النوع — **متصفح ويب** أو **تطبيق سطح المكتب** أو **هاتف** — ثم انقر **اقتران**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- مع **هاتف** يظهر رمز QR. امسحه بكاميرا الهاتف، أو انسخ الرابط وافتحه في أي متصفح. يوجّه تطبيق Remote إلى خادمك ويحمل بيانات الاعتماد.
+- مع **متصفح** أو **حاسوب**، انسخ الرابط الظاهر (أو معرّف الجهاز ومفتاح الاقتران) إلى العميل الجديد بدل ذلك. لا يُعرض رابط النقرة الواحدة إلا حين تقترن من عميل الويب، لأن ثنائي الحاسوب بلا أصل ويب يُبنى الرابط منه.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+رمز QR للهاتف والرابط الذي يطبعه `cc_server pair --client-url` على سطر الأوامر
+**حمولتان مختلفتان وغير قابلتين للتبادل**: يملأ رابط سطر الأوامر نموذج اتصال
+عميل الويب، بينما يحمل رمز QR هذا واصف اتصال الخادم كاملًا وبصمة هويته لتطبيق
+Remote بوصفه PWA.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+من جهة الهاتف، فتح رابط اقتران لا يُتم الاقتران بصمت. يعرض Remote الاسم المُعلَن
+للخادم ويطلب تأكيدك قبل أن يخزّن شيئًا، فلا يستطيع رابط مزوّر أن يختطف التطبيق
+إلى خادم شخص آخر.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[مسح رمز QR يمنح الوصول فورًا]
+ليست هناك خطوة انتظار ثم موافقة: الجهاز المصكوك نشط منذ لحظة إنشائه، ولا تفحص
+بوابة الاتصال إلا أن تكون بيانات الاعتماد نشطة وغير منتهية. عامل رمز QR ومفتاح
+الاقتران معاملة كلمة المرور، وأبطل أي شيء لم تقصد تسليمه.
 :::
 
-## Manage paired devices
+## إدارة الأجهزة المقترنة
 
-From **Settings → You → Your devices** you can:
+من **الإعدادات ← أنت ← أجهزتك** تستطيع:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **إعادة تسمية** جهاز
+- **إبطال** جهاز لم تعد تثق به. يدمّر الإبطال بيانات اعتماده ويُسقط جلسته الحية خلال ثوانٍ، فيفشل مغلقًا عند إعادة الاتصال
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+الإبطال هو التصرف الصحيح لهاتف ضاع أو استُبدل. هو فوري، ولا رجعة فيه من جهة
+الجهاز.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+بيانات الاعتماد المصكوكة من هذه اللوحة محدودة المدة: تنتهي بعد 30 يومًا من
+إصدارها، وبعد ذلك تفشلها بوابة الاتصال مغلقة. بيانات الاعتماد المصكوكة بـ
+`cc_server pair` من سطر الأوامر **بلا انتهاء أصلًا** — أبطلها يدويًا حين
+تُستغنى عن الآلة التي صُكّت لها.
 
-## Switch workspaces from the phone
+## تبديل مساحات العمل من الهاتف
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+يستطيع الهاتف المقترن التبديل بين مساحات العمل بمعزل عن الحاسوب. يرسل الهاتف
+مساحة العمل مع كل استدعاء، ويفحص الخادم عضويتك ودورك في تلك المساحة في كل
+مرة — فلا يبلغ الهاتف إلا مساحات العمل التي أنت عضو فيها، ولا يغيّر هذا
+التبديل ما يعرضه الحاسوب.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+جلسة الهاتف مقيّدة أيضًا بقائمة سماح صغيرة من أدوات يغلب عليها القراءة: تستطيع
+سرد التذاكر والوكلاء والمساحات والرسائل ومقالات موجز الأخبار وقراءتها، وتستطيع
+تحديث تذكرة أو إسنادها، وإرسال رسالة في مساحة، وتعليم مقالة مقروءة أو محفوظة.
+كل ما خرج عن هذه المجموعة يُرفض قبل أن يبلغ موزّع الخادم.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): make the server reachable in the first place
-- [Connect to a remote server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/): point a full client at it
-- [Use spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/): what you'll mostly do from the phone
-- [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/): triage from the road
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): اجعل الخادم قابلًا للبلوغ من الأساس
+- [الاتصال بخادم بعيد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/): وجّه إليه عميلًا كاملًا
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/): ما ستفعله من الهاتف في الأغلب
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/): الفرز وأنت في الطريق
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/)
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)
+- [التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/)
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)

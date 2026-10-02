@@ -1,94 +1,104 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Arbeit mit Projekten organisieren
+description: Fasse Tickets über die Seitenleiste zu Projekten zusammen, verfolge den Fortschritt und archiviere ein Projekt, wenn die Arbeit fertig ist.
 slug: de-DE/handbuch/anleitungen/projekte
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Ein Projekt ist eine an den Arbeitsbereich gebundene Gruppierung von Tickets
+auf ein gemeinsames Ziel hin. Projekte gibt es nur in Control Center — sie
+werden nie mit einem externen Anbieter wie Linear synchronisiert.
 
-## Create a project
+## Ein Projekt anlegen
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Klappe die Gruppe **Tickets** in der Seitenleiste des Arbeitsbereichs auf.
+   Sie listet **Alle Tickets**, je eine Zeile pro nicht archiviertem Projekt
+   und danach **Neues Projekt**.
+2. Klicke auf **Neues Projekt**.
+3. Trag **Projektname** ein, optional eine **Beschreibung**, und wähle eine
+   **Farbe**.
+4. Drücke **Projekt erstellen**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Die Übersicht des neuen Projekts öffnet sich, und das Projekt erscheint als
+Zeile unter **Tickets**.
 
-## Add tickets to a project
+## Tickets einem Projekt hinzufügen
 
-Project is a single-ticket field, set in either of two places:
+Projekt ist ein Feld am einzelnen Ticket. Du setzt es an einer von zwei
+Stellen:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Öffne das Ticket und setze **Projekt** in der Leiste **Eigenschaften**.
+- Öffne mit Rechtsklick auf das Ticket in der Liste das Untermenü **Projekt**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Die Auswahl in der Leiste **Eigenschaften** bietet auch **Neues Projekt**,
+damit du ein Ticket einem Projekt zuordnen kannst, das du gerade anlegst.
+**Kein Projekt** leert das Feld.
 
-A ticket belongs to at most one project.
+Ein Ticket gehört höchstens einem Projekt.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Projekt ist keine Sammelaktion]
+Die schwebende Leiste, die bei der Auswahl mehrerer Tickets erscheint, deckt
+Status, Priorität, Zugewiesen an, Labels und Löschen ab. Einen Projekt-Chip
+hat sie nicht, also ordnest du viele Tickets einzeln zu.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Du kannst auch vom Projekt aus starten: **Neues Ticket** in der
+Projektübersicht legt ein Ticket an und ordnet es dort zu.
 
-## Read project progress
+## Den Projektfortschritt lesen
 
-Open a project from its sidebar row, or go to
+Öffne ein Projekt über seine Zeile in der Seitenleiste, oder geh zu
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Die Übersicht zeigt das Symbol und den Namen des Projekts, ein Status-Badge,
+die Beschreibung und einen Fortschrittsbalken, der zeigt, wie viele von allen
+Tickets erledigt sind. Darunter sind die Tickets des Projekts nach Status
+gruppiert.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Mehr fasst die Übersicht nicht zusammen: keine Aufschlüsselung nach
+Zugewiesenen und keine Verteilung der Prioritäten. Dafür filterst du die
+Ticketliste.
 
-## Change project status
+## Den Projektstatus ändern
 
-Projects have three states:
+Projekte haben drei Zustände:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Status            | Bedeutung                   |
+| ----------------- | --------------------------- |
+| **Aktiv**         | Die Arbeit läuft            |
+| **Abgeschlossen** | Die ganze Arbeit ist fertig |
+| **Archiviert**    | Nur zur Nachschau           |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Nutze das Menü **⋯** in der Kopfzeile des Projekts. Es bietet **Projekt
+bearbeiten**, **Als abgeschlossen markieren** / **Als aktiv markieren**,
+**Archivieren** / **Wiederherstellen** und **Projekt löschen**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Archivieren blendet das Projekt aus der Liste in der Seitenleiste und aus den
+Auswahlen am Ticket aus. Das lässt sich rückgängig machen —
+**Wiederherstellen** setzt das Projekt wieder auf **Aktiv** —, solange es
+archiviert ist, erreichst du es aber nur über die URL.
 
-## Projects created for you
+## Projekte, die für dich entstehen
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/).
+Gibst du eine Orchestrierung frei, entsteht ein Projekt, und das übergeordnete
+Ticket wird darunter eingeordnet, zusammen mit allem, was du von Hand
+zugeordnet hast. Erzeugte Arbeitseinheiten sind Pipeline-Schritte, keine
+Ticketzeilen, deshalb erscheinen sie nicht auf dem Projektboard. Das ist der
+einzige automatische Weg: Kein Pipeline-Knoten legt Tickets an, also kann
+eine Pipeline ein Projekt nicht füllen. Siehe
+[Eine Orchestrierung ausführen](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Projekte sind eine Bedienoberfläche]
+Projekte legst, listest, aktualisierst und löschst du in der App. Agenten
+haben keine Projekt-Werkzeuge.
+:::
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Create and manage tickets](/de-DE/handbuch/anleitungen/tickets-verwalten/)
-- [Delegate work to agents](/de-DE/handbuch/anleitungen/tickets-delegieren/)
-- [Run an orchestration](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/)
+- [Tickets erstellen und verwalten](/de-DE/handbuch/anleitungen/tickets-verwalten/)
+- [Arbeit an Agenten delegieren](/de-DE/handbuch/anleitungen/tickets-delegieren/)
+- [Eine Orchestrierung ausführen](/de-DE/handbuch/anleitungen/orchestrierung-ausfuehren/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Tickets](/de-DE/handbuch/konzepte/tickets/)
+- [Tickets und Delegation](/de-DE/handbuch/konzepte/tickets/)

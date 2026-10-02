@@ -1,121 +1,125 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: ایجنٹس کا @-ذکر کریں
+description: کسی اسپیس میں ایجنٹس کا ذکر کریں تاکہ اُنہیں ڈسپیچ کیا جائے، اور ساتھیوں کا تاکہ اُنہیں اطلاع دی جائے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+یہ گائیڈ دکھاتی ہے کہ کسی اسپیس میں ایجنٹس اور ساتھیوں کا @-ذکر کیسے کریں۔
 
-## Mention an agent
+## ایجنٹ کا ذکر کریں
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+کمپوزر میں `@` ٹائپ کریں اور آٹو کمپلیٹ سے کوئی ایجنٹ چنیں، یا نام خود ٹائپ
+کریں:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+ذکر کردہ ایجنٹ، اگر پہلے سے اسپیس کا شریک نہ ہو تو اُسے اسپیس میں بطور شریک شامل
+کر دیا جاتا ہے اور اُس اسپیس کے کانٹیکسٹ اور موڈ کے ساتھ ڈسپیچ ہوتا ہے۔ جن شرکا کا
+ذکر نہیں ہوا وہ پیغام دیکھتے ہیں مگر ڈسپیچ نہیں ہوتے۔
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+اگر آپ بغیر کسی ایجنٹ کے ذکر کے پیغام بھیجیں تو Control Center خود جواب دینے والا
+چن لیتا ہے: وہ ایجنٹ جس نے گفتگو میں سب سے آخر میں بات کی ہو؛ ورنہ گفتگو کا مالک،
+اگر کوئی ہو؛ ورنہ اسپیس کے شرکا میں سے پہلا ٹاپ لیول ایجنٹ۔ ایک ایجنٹ والی اسپیس میں
+یہ ہمیشہ وہی واحد ایجنٹ ہوتا ہے۔
 
-## Know how a name is matched
+## جانیں کہ نام کیسے میچ ہوتا ہے
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+ذکر کا ٹوکن **حروف کے بڑے یا چھوٹے ہونے سے قطع نظر**، **بالکل پورے نام یا پریفکس** سے
+میچ ہوتا ہے۔ چنانچہ `@arch` نام کے ایجنٹ `architect` تک پہنچتا ہے اور `@Alice` ایجنٹ
+`alice` تک۔
 
-Two consequences worth planning around:
+دو نتائج جن کا منصوبہ بناتے وقت خیال رکھنا چاہیے:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **مختصر ٹوکن کوئی خرابی نہیں۔** اگر دو ایجنٹس ایک ہی پریفکس رکھتے ہوں تو جو پہلے
+  مل جائے وہی جیتتا ہے، اور یہ کون ہوگا یہ ترتیب پر منحصر ہے — کسی ٹائی بریک قاعدے پر
+  نہیں۔ جب بھی نام ایک جیسے ہوں، پورا نام استعمال کریں۔
+- **ٹوکن کا حصہ صرف حروف، ہندسے اور انڈر اسکور ہوتے ہیں۔** پارسر `@(\w+)` سے میچ
+  کرتا ہے، چنانچہ `@code-reviewer` کو ٹوکن `code` پڑھا جاتا ہے اور `@my agent` کو
+  `my`۔ جس ایجنٹ کے نام میں ہائفن، ڈاٹ یا خلا ہو، اُس کا قابلِ اعتماد ذکر ممکن نہیں —
+  بشمول آٹو کمپلیٹ کے، جو نام کو سادہ متن کے طور پر داخل کرتا ہے۔ ایجنٹس کے نام ایک
+  ہی لفظ میں رکھیں، یا انڈر اسکور کے ساتھ۔
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+ٹیکسٹ کے ایجنٹ تک پہنچنے سے پہلے ذکر اُس سے ہٹا دیے جاتے ہیں۔ چنانچہ جو پیغام _صرف_
+ذکر ہو (`@alice`) وہ کچھ بھی ڈسپیچ نہیں کرتا — اُسے کوئی کام دیں۔
 
-## Mention several agents at once
+## ایک ساتھ کئی ایجنٹس کا ذکر کریں
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+دونوں ایجنٹس متوازی طور پر اسی گفتگو میں ڈسپیچ ہوتے ہیں اور دونوں کو پورا پیغام ملتا
+ہے۔
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+وہ **اُس اسپیس کے ورک ٹریز بھی شیئر کرتے ہیں**۔ ریپو ورک ٹریز فی اسپیس تیار ہوتے ہیں،
+فی ایجنٹ نہیں؛ ہر ایجنٹ کو اپنے `AGENTS.md`، مہارتوں اور کنفیگ کے لیے اپنی الگ اوورلے
+ورکنگ ڈائریکٹری ملتی ہے، جبکہ مشترکہ ریپوز ریڈ-رائٹ لنک ہوتے ہیں۔ چنانچہ ایک ساتھ ذکر
+کیے گئے دو ایجنٹس ایک دوسرے کی ترمیمات دیکھ سکتے ہیں — اور اُن سے ٹکرا بھی سکتے
+ہیں۔
 
-## Mention a teammate
+## ساتھی کا ذکر کریں
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+جو بھی `@token` کسی ایجنٹ سے میچ نہ ہو، اُسے ورک اسپیس کے انسانی اراکین کے خلاف اُن
+کے ہینڈل سے آزمایا جاتا ہے — وہی حروف کے بڑے یا چھوٹے ہونے سے قطع نظر پورے نام یا
+پریفکس کا قاعدہ۔
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+حل ہو جانے والا انسانی ذکر **کچھ بھی ڈسپیچ نہیں کرتا**۔ یہ خالصتاً پیغام کے میٹا ڈیٹا
+پر سفر کرتا ہے تاکہ اطلاعات کا روٹر اُس شخص کو پنگ کر سکے۔
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+ایجنٹس کے نام ہمیشہ پہلے آزمائے جاتے ہیں اور جو ٹوکن کسی ایجنٹ نے لے لیا ہو وہ کبھی
+اراکین کی فہرست کو نہیں دیا جاتا — ایک `@word` صرف ایک ہی پرنسپل تک حل ہو سکتا ہے۔
 
-## What the agent receives
+## ایجنٹ کو کیا ملتا ہے
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+ڈسپیچ کیا گیا ایجنٹ اپنے پرامپٹ میں ایک "Summons" بلاک پاتا ہے، جس میں لکھا ہوتا ہے
+کہ اُسے کس نے بلایا اور اسپیس کا روسٹر درج ہوتا ہے — باقی ایجنٹس (ٹاپ لیول یا ذیلی کے
+طور پر نشان زد) اور انسانی اراکین — تاکہ اُسے معلوم ہو کہ وہ کس کو کام حوالے کر سکتا
+ہے۔ یہ بلاک اُسے یہ بھی بتاتا ہے کہ اپنے جواب میں کسی دوسرے ایجنٹ کا ذکر اُس ایجنٹ کو
+جگا دیتا ہے، اور خود اپنا ذکر نظر انداز کر دیا جاتا ہے۔
 
-## When an agent mentions an agent
+## جب کوئی ایجنٹ کسی ایجنٹ کا ذکر کرے
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+ایجنٹ اپنے ہی جواب میں کام حوالے کر سکتا ہے۔ جب کوئی ٹرن **بغیر کسی خرابی کے مکمل**
+ہوتا ہے تو اُس کے متن میں موجود ذکر حل کیے جاتے ہیں اور وہ ایجنٹس اسپیس میں شامل کر کے
+اسی گفتگو میں ڈسپیچ کر دیے جاتے ہیں، اور ذکر کرنے والا ٹرن اُن کا پرامپٹ بنتا ہے۔ جو
+ٹرن ناکام ہوا یا درمیان میں رک گیا، وہ کسی کو نہیں جگاتا — وہ سوچ کے بیچ میں رک گیا
+تھا۔
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+قواعد جان بوجھ کر کمپوزر کے قواعد سے زیادہ سخت ہیں، کیونکہ غلط اندازے کو درست کرنے
+کے لیے کوئی دیکھ ہی نہیں رہا:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **صرف پورے نام۔** کوئی پریفکس میچ نہیں۔ جب کوئی انسان `@arch` ٹائپ کرے تو یہ
+  `architect` تک پہنچتا ہے؛ کسی ایجنٹ کی طرف سے یہ کسی تک نہیں پہنچتا۔ جو نام دو
+  ایجنٹس سے میچ ہو وہ بھی کسی تک نہیں پہنچتا۔
+- **کوڈ نثر نہیں ہے۔** فینسڈ بلاکس یا `` `backticks` `` کے اندر موجود ذکر نظر انداز کر
+  دیے جاتے ہیں، چنانچہ `@Override` اینوٹیشن یا `pip install foo@1.2` نقل کرنا محفوظ
+  ہے۔ جو فینس بند ہی نہ ہو، وہ اپنے بعد کا سارا کچھ خالی کر دیتا ہے۔
+- **پچھلے ٹوکن سے چپکا ہوا `@` ذکر نہیں ہوتا** — `sam@host.com`، `pkg/@scope` اور
+  `node@20` کسی تک حل نہیں ہوتے۔
+- **ہائفن برقرار رہتے ہیں**، چنانچہ `@code-reviewer` ٹوکن `code` کے بجائے خود اپنے
+  طور پر حل ہوتا ہے۔
+- **فی ٹرن زیادہ سے زیادہ تین ایجنٹس۔** کوئی ایجنٹ خلاصے میں چھ ساتھیوں کی فہرست بنا
+  رہا ہو تو وہ اُنہیں گنوا رہا ہے، بلا رہا نہیں۔
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+ویک چین اُسی طرح محدود ہوتی ہے جیسے تفویض محدود ہوتی ہے: **گہرائی 3**، اور جو ایجنٹ
+پہلے سے چین میں ہو اُسے یہ دوبارہ نہیں جگا سکتی (کوئی `A → B → A` نہیں)۔ ترتیب والا
+جوڑا بھی چینز کے پار ریٹ لمٹ ہوتا ہے۔ مسترد شدہ ویک گفتگو میں ایک سسٹم پیغام چھوڑتی
+ہے جس میں لکھا ہوتا ہے کہ کون سا ذکر نہیں پہنچایا گیا اور کیوں — غیر حل شدہ نام ایسا
+نہیں کرتا، ورنہ جملے میں موجود کوئی بھی `@` اپنی ہی کہانی سنانے لگے۔
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+جس حوالگی کو نثر پر انحصار نہ کرنا ہو — کوئی درخواست/جواب، یا اسپیس سے باہر کسی ایجنٹ
+تک پہنچنا — اُس کے لیے بجائے اس کے `send_to_agent`، `ask_agent` اور `delegate_task`
+ٹولز استعمال کریں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [Use spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
-- [Run agents in parallel](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
+- [ایجنٹس متوازی چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)

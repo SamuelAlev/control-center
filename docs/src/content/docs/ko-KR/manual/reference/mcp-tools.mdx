@@ -1,310 +1,313 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP 도구
+description: cc_server가 등록하는 MCP 도구를 패밀리별로 정리한 전체 카탈로그입니다.
 slug: ko-KR/매뉴얼/레퍼런스/mcp-도구
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server`는 하나의 MCP(JSON-RPC 2.0) 도구 레지스트리를 호스팅하며, 메인 서버 포트(기본값 `9030`)에서 `POST /mcp`와 `GET /sse`로 제공되고 프로토콜 버전은 `2024-11-05`입니다. 데스크톱, 웹 빌드, 외부 MCP 클라이언트, 내장 에이전트 런타임 등 모든 클라이언트가 같은 레지스트리에 도달합니다. 외부 MCP 서버는 동적 계층으로서 같은 레지스트리에 브리지될 수 있습니다.
 
-## Registry size
+## 레지스트리 규모
 
-| Measure                                                                   | Count |
+| 항목                                                                      | 개수 |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| `cc_server`가 등록하는 도구                                               | 110   |
+| `packages/cc_mcp`에서                                                    | 108   |
+| `packages/cc_mcp_client`에서(도구 탐색)                                   | 2     |
+| 기본 레지스트리에 등록됨(`server_mcp_registry.dart`)                      | 63    |
+| 부팅 후 서비스가 올라오면서 등록됨(`cc_server_runtime.dart`)              | 47    |
+| 기본 레지스트리 63개 중 코드 그래프 저장소에 조건부인 것                  | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+다섯 개의 코드 그래프 도구는 호스트가 `buildServerMcpRegistry`에 코드 그래프 저장소를 넘길 때만 등록됩니다. `cc_server`는 항상 하나를 넘기므로, 배포된 바이너리에서는 110개가 모두 살아 있습니다.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+전체 레지스트리는 검색 게이팅 없이 `tools/list`에 게시됩니다. 티켓 편집은 타입이 지정된 도구입니다.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[외부 클라이언트는 항상 전체 카탈로그를 봅니다]
+`tools/list`는 결코 줄어들지 않습니다. MCP 클라이언트는 도구 이름을 자체 캐시된 목록 사본과 대조해 검증하고, 서버에 묻지도 않은 채 목록에 없는 것은 무엇이든 거부합니다. 따라서 거기서 숨겨진 도구는 조용한 것이 아니라 도달할 수 없는 상태입니다.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ko-KR/매뉴얼/개념/도구-컨텍스트).
+**내장 하네스**는 다릅니다. 요청마다 정의의 상주 부분집합만 적재하고 나머지는 처음 사용할 때 가져오는데, 이는 하네스 측 동작이며 이 레지스트리를 바꾸지 않습니다. [도구 컨텍스트와 프롬프트 캐싱](/ko-KR/매뉴얼/개념/도구-컨텍스트)을 참고하십시오.
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[모든 도구 클래스가 등록됩니다]
+`packages/cc_mcp/lib/src/tools/` 아래의 소스 파일은 에이전트가 호출할 수
+있는 도구입니다. 새 도구 클래스가 아무 데서도 생성되지 않으면
+`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`가
+빌드를 실패시킵니다.
 :::
 
-## Common parameters
+## 공통 매개변수
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+워크스페이스 범위 데이터를 다루는 모든 도구에서 **필수**입니다. `workspace_id`가 없거나 유효하지 않으면 명시적인 오류가 반환되고, 대상 엔터티의 워크스페이스와 일치하지 않는 값은 조용히 무시되지 않고 거부됩니다. 진정으로 전역인 도구, 즉 `list_workspaces`와 여섯 개의 뉴스피드 도구(`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`)에서는 생략하십시오. 이들은 서버 소유자의 사용자별 피드 목록을 사용합니다. 탐색 도구(`search_tool_bm25`, `list_my_tools`)는 대화 모드별로 호출 가능성을 분류할 수 있도록 이 값을 선택적으로 받습니다. 서버가 에이전트를 디스패치할 때는 워크스페이스가 서버 측에서 강제되므로, 에이전트가 외부 id를 넘겨 다른 워크스페이스에 도달할 수 없습니다.
 
-## Tool discovery
+## 도구 탐색
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+둘 다 `cc_mcp`가 아니라 `cc_mcp_client`에서 오며, 둘 다 모드 가드를 참조하므로 _현재_ 대화 모드에서 호출 가능한 것을 보고합니다.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| 도구               | 설명                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | 키워드로 도구 카탈로그를 검색하고, 일치하는 도구와 그 인자 스키마, 그리고 각각이 지금 호출 가능한지 여부를 반환합니다        |
+| `list_my_tools`    | 이 대화에서 지금 호출 가능한 도구를 해당 모드로 필터링해 나열합니다                                                          |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+세 번째 탐색 도구인 **`search_tools`**는 내장 하네스 안에만 존재하며 이 MCP 레지스트리의 일부가 아닙니다. 이것은 실행 자체의 도구 표면의 순위를 매기고, `search_tool_bm25`와 달리 찾아낸 것의 스키마를 **적재**하므로 에이전트가 다음 턴에 일치 항목을 호출할 수 있습니다. 하네스의 에이전트는 이것을 우선해야 하며, MCP 클라이언트에게는 `search_tool_bm25`가 있습니다.
 
-## Agent tools
+## 에이전트 도구
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| 도구          | 설명                                  |
+| ------------- | ------------------------------------- |
+| `list_agents` | 워크스페이스에 등록된 에이전트를 나열합니다 |
 
-## Agent peer messaging and delegation
+## 에이전트 간 메시징과 위임
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+에이전트는 스페이스를 통해 서로 대화합니다(영속적이며 로스터에 표시됨). `ask_agent`는 필수 타임아웃이 있는 요청/응답이고, `delegate_task`는 깊이 상한, 순환 감지, 예산 봉투, 자율성 상한으로 서버 측에서 보호됩니다.
 
-| Tool            | Description                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| 도구            | 설명                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `send_to_agent` | `to_agent_id` 또는 정확한 `to_agent_name`으로 지정해 다른 에이전트에 일방향 메시지를 보냅니다   |
+| `ask_agent`     | 다른 에이전트에 질문하고 답변을 기다리거나 타임아웃됩니다                                        |
+| `delegate_task` | 작업을 추적되는 자식 티켓으로 다른 에이전트에 위임합니다                                          |
+| `consult_agent` | 스킬 기준으로 가장 잘 맞는 전문가를 스페이스에 추가하고 집중된 브리프로 디스패치합니다          |
+| `todo_read`     | 이 대화의 영속 작업 체크리스트를 읽습니다                                                        |
 
-## Skill tools
+## 스킬 도구
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+모든 설치와 업데이트는 스킬 콘텐츠가 디스크나 에이전트 프롬프트에 도달하기 전에 실패 시 닫히는 검사 관문을 통과합니다.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| 도구                 | 설명                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `list_skills`        | 워크스페이스에서 사용할 수 있는 스킬 슬러그를 나열합니다                     |
+| `create_skill`       | 마크다운 콘텐츠로 새 스킬을 생성합니다                                       |
+| `install_skill`      | 핀으로 고정한 ref에서 GitHub 저장소의 스킬 디렉터리 전체를 설치합니다        |
+| `update_skill`       | 설치된 GitHub 스킬을 새 ref로 업데이트하며, 다시 검사하고 핀을 다시 고정합니다 |
+| `list_skill_updates` | 더 새 버전을 사용할 수 있는 스킬을 나열합니다                                |
+| `verify_skills`      | 잠긴 스킬을 디스크상의 콘텐츠 해시와 대조해 검증합니다                        |
+| `pin_skill`          | 디스크에 있는 기존 스킬을 해시해 `skills-lock.json`에 기록합니다            |
 
-## Plan, playbook and artifact tools
+## 플랜, 플레이북, 아티팩트 도구
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| 도구               | 설명                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `submit_plan`      | 플랜 모드의 출력 계약: 플랜 스튜디오에서 열리는 타입이 지정된 `PlanDocument`를 내보냅니다                                  |
+| `create_playbook`  | 플랜을 타입이 지정된 `{{param}}` 자리 표시자가 있는 이름 붙은 버전 관리 템플릿으로 저장합니다                              |
+| `run_playbook`     | 매개변수 값으로 플레이북을 인스턴스화해 운영자가 승인하는 플랜을 만듭니다                                                   |
+| `publish_artifact` | 클라이언트에서 네이티브로 렌더링되는 타입이 지정된 블록(마크다운, 표, 차트, mermaid, 코드, JSON)의 순서 있는 목록을 게시합니다 |
+| `revise_artifact`  | 게시된 아티팩트의 콘텐츠를 교체합니다                                                                                       |
+| `list_artifacts`   | 워크스페이스의 아티팩트를 나열합니다                                                                                        |
+| `get_artifact`     | 아티팩트 하나를 읽습니다                                                                                                    |
+| `complete_goal`    | 대화의 활성 영속 목표(`/goal` 또는 `/loop`로 시작됨)가 달성되었음을 선언합니다                                             |
 
-## Workspace tools
+## 워크스페이스 도구
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| 도구              | 설명                                                                          |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `list_workspaces` | 모든 워크스페이스를 id와 이름과 함께 나열합니다(전역, `workspace_id` 없음)     |
 
-## Repo tools
+## 저장소 도구
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| 도구         | 설명                                                                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | 워크스페이스에 등록된 저장소를 나열합니다. 에이전트 호출자는 원본 체크아웃이 아니라 자신의 대화에 격리된 copy-on-write 워크트리 경로를 받습니다                |
 
-## Messaging tools
+## 메시징 도구
 
-| Tool                   | Description                                                                 |
+| 도구                   | 설명                                                                       |
 | ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| `list_spaces`          | 워크스페이스의 메시징 스페이스를 나열합니다                                |
+| `get_messages`         | 스페이스에서 메시지를 가져옵니다                                            |
+| `send_message`         | 지정된 발신 에이전트로서 스페이스에 메시지를 보냅니다                       |
+| `get_space_notes`      | 스페이스의 공유 핸드오프 문서를 읽습니다                                     |
+| `update_space_notes`   | 스페이스의 공유 핸드오프 문서를 교체합니다                                   |
+| `todo_write`           | 한 번의 호출로 이 대화의 작업 체크리스트를 교체합니다(전체 목록을 넘기십시오) |
 
-## Review tools
+## 리뷰 도구
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| 도구                       | 설명                                                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | PR의 AI 리뷰를 시작합니다: 리뷰 영역을 계산하고, 전문 리뷰어를 PR 스페이스로 팬아웃하고, 워크스루를 작성하고, 파이널라이즈합니다 |
+| `add_review_node`          | 리뷰 스페이스에 구조화된 리뷰 발견 사항(파일, 줄, P0–P3 우선순위)을 추가합니다                                                |
+| `confirm_review_node`      | 동료의 발견 사항을 확인합니다. 작성자는 스스로 확인할 수 없습니다                                                             |
+| `resolve_review_node`      | 실제로 변경을 가한 뒤 발견 사항을 수정됨으로 표시하고, 리뷰 스페이스에 흔적을 게시합니다                                      |
+| `dismiss_review_node`      | 적용되지 않는 발견 사항을 기각하고, 리뷰어가 다시 지적하지 않도록 억제 사실을 기록합니다                                     |
+| `request_peer_review`      | 다른 리뷰어 에이전트에 발견 사항을 한 번 더 봐 달라고 요청합니다                                                              |
+| `dispatch_reviewers`       | 일치하는 리뷰어 에이전트를 리뷰 스페이스로 동시에 디스패치합니다                                                              |
+| `submit_reviewer_verdict`  | 리뷰어별 ship/hold/block 판정을 신뢰도와 설명과 함께 게시합니다                                                               |
+| `finalize_review`          | 노드별 합의와 PR별 판정을 계산하고 리뷰를 닫습니다                                                                            |
+| `set_cohort_summary`       | 리뷰 코호트의 쉬운 말 요약을 설정합니다                                                                                       |
+| `add_review_diagram`       | 구조화되어 그래프로 검증된 다이어그램(`sequence`, `entityRelation`, `stateMachine`)을 코호트에 첨부합니다                     |
+| `publish_review_to_github` | 파이널라이즈된 리뷰를 인라인 댓글과 요약 본문으로 GitHub에 게시합니다                                                         |
 
-## Memory tools
+## 메모리 도구
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| 도구                    | 설명                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `search_memory`         | 팩트와 정책을 검색합니다(키워드, 의미, 하이브리드 — 기본값은 하이브리드)                                   |
+| `propose_fact`          | 도메인에 짧은 마크다운 팩트를 저장합니다                                                                  |
+| `supersede_fact`        | 팩트를 다른 팩트로 대체되었음으로 표시합니다                                                              |
+| `propose_policy`        | 도메인에 규범적 규칙을 저장합니다(해당 도메인에 대한 쓰기 권한 필요)                                       |
+| `supersede_policy`      | 정책을 폐기합니다. 감사를 위해 보관하면서 비활성으로 표시합니다                                          |
+| `list_policies`         | 활성 정책을 나열하며, 선택적으로 도메인으로 필터링합니다                                                  |
+| `list_memory_domains`   | 워크스페이스의 메모리 도메인을 팩트와 정책 개수와 함께 나열합니다                                         |
+| `record_observation`    | 에이전트의 워킹 메모리에 원시 관찰을 기록합니다                                                           |
+| `get_my_notes`          | 호출한 에이전트의 워킹 메모리 스크래치패드를 읽습니다                                                     |
+| `update_my_notes`       | 호출한 에이전트의 워킹 메모리 스크래치패드를 업데이트합니다                                               |
+| `remember`              | 이 세션 동안 에이전트의 핫 워킹 메모리에 노트를 추가합니다(TTL과 개수로 제한됨)                             |
+| `consolidate_memory`    | 통합("수면") 패스를 실행합니다. 만료된 핫 항목을 제거하고, 지속되는 항목을 장기 팩트로 승격합니다          |
+| `harmonize_memory`      | 에이전트 간 신념 조화(SHMR)를 실행하고 모순을 표시합니다                                                  |
+| `list_memory_conflicts` | 감지된 모순과 각각이 어떻게 해결되었는지 나열합니다                                                       |
 
-## Governance tools
+## 거버넌스 도구
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| 도구                         | 설명                                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `create_goal`                | 조직 목표를 생성합니다(회사, 팀, 에이전트 또는 작업 수준)                                                |
+| `list_goals`                 | 목표를 수준, 상태, 집계된 진행률과 함께 나열합니다                                                       |
+| `update_goal_progress`       | 목표의 진행률을 설정합니다                                                                               |
+| `create_approval`            | 거버넌스 대상 작업(플랜 종료, 병합, 릴리스, 채용, 사용자 지정)에 대한 보드 승인을 엽니다                  |
+| `list_approvals`             | 승인을 나열하며, 선택적으로 상태로 필터링합니다                                                          |
+| `decide_approval`            | 결정을 기록합니다: 승인, 거부, 수정 요청 또는 다시 제출                                                  |
+| `comment_approval`           | 보드 승인에 댓글을 답니다                                                                                |
+| `exit_plan_mode`             | `plan_exit` 승인을 열고(승인되면 소비하여) 대화를 플랜 모드 밖으로 전환합니다                             |
+| `agent_heartbeat`            | 생존 상태(활성, 유휴, 멈춤)를 보고합니다. 조용해지면 런타임 상태가 최근 손실로, 그다음 오프라인으로 바뀝니다 |
+| `list_runtime_health`        | 각 에이전트의 런타임 상태를 나열합니다                                                                   |
+| `list_agent_presence`        | 각 에이전트의 프레즌스를 나열합니다(상태, 수명주기, 실행 중 및 대기 중 개수, 용량)                        |
+| `get_org_chart`              | 보고 트리를 읽습니다. CEO가 루트이고 `reports_to`로 중첩됩니다                                           |
+| `create_work_product`        | 티켓에 연결된 지속적 산출물을 생성합니다                                                                 |
+| `save_work_product_revision` | 새 리비전을 저장합니다. `base_revision_id`를 넘기면 동시 편집 시 거부됩니다                               |
+| `list_work_products`         | 작업 산출물을 나열하며, 선택적으로 하나의 티켓으로 필터링합니다                                           |
+| `get_work_product`           | 작업 산출물을 리비전 기록과 함께 읽습니다                                                                |
+| `create_runtime_profile`     | 재사용 가능한 런타임 프로필을 정의합니다(프로토콜 패밀리, CLI 명령, 고정 실행 인자)                       |
+| `list_runtime_profiles`      | 워크스페이스의 런타임 프로필을 나열합니다                                                                |
 
-## Code graph tools
+## 코드 그래프 도구
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+호스트가 코드 그래프 저장소를 제공할 때만 등록됩니다. 인덱스는 배포된 문법 집합(Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada)을 포함하며, 그 밖의 언어로 된 심볼은 들어 있지 않습니다.
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| 도구           | 설명                                                                                |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `search_code`  | 이름, 시그니처, 문서 주석으로 인덱싱된 심볼을 검색합니다(하이브리드 BM25 + 의미 기반) |
+| `code_symbol`  | 정확한 이름으로 심볼을 조회하고 `file:line`과 시그니처를 반환합니다                   |
+| `code_callers` | 어떤 심볼을 호출하거나 의존하는 심볼을 나열합니다(들어오는 간선)                      |
+| `code_callees` | 어떤 심볼이 호출하거나 의존하는 심볼을 나열합니다(나가는 간선)                        |
+| `code_impact`  | 심볼의 전이적 영향 반경을 특정 깊이까지 계산합니다                                    |
 
-## Ticketing tools
+## 티켓팅 도구
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| 도구                      | 설명                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `create_ticket`           | 구성된 제공자에 티켓을 생성합니다                                                                                              |
+| `get_ticket`              | id로 티켓 하나를 가져옵니다                                                                                                    |
+| `list_tickets`            | 티켓을 나열하며, 선택적으로 상태나 담당자로 필터링합니다                                                                       |
+| `update_ticket`           | 상태, 제목, 설명, 우선순위 또는 레이블을 업데이트합니다(상태는 `in_progress` / `completed` 같은 별칭을 받습니다)                |
+| `assign_ticket`           | 티켓을 에이전트 및/또는 팀에 할당합니다                                                                                        |
+| `reassign_ticket`         | 티켓을 다른 에이전트에 재할당합니다                                                                                            |
+| `add_ticket_collaborator` | 에이전트를 티켓 협업자로 초대합니다(해당 스페이스에 추가됨)                                                                    |
+| `comment_on_ticket`       | 티켓에 댓글을 답니다                                                                                                           |
+| `close_ticket`            | 티켓을 닫습니다(완료로 표시). 선택적 출력을 받습니다                                                                           |
+| `fail_ticket`             | 오류 메시지와 함께 티켓을 실패로 표시합니다                                                                                    |
+| `delegate_ticket`         | 티켓을 에이전트에 위임하고 추적되는 티켓을 생성합니다                                                                          |
+| `ticket_pr_link`          | PR 노드 id로 티켓과 풀 리퀘스트를 연결하거나 연결 해제합니다(`action`: `link` \| `unlink`)                                      |
+| `ticket_relation`         | 두 티켓 사이의 관계를 추가하거나 제거합니다 — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | 티켓의 부모, 하위 이슈, 의존성 링크를 나열합니다                                                                               |
 
-## Team and pipeline tools
+## 팀과 파이프라인 도구
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| 도구                   | 설명                                                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | 팀 리더의 활동 항목을 티켓에 대해 기록합니다                                                                                                   |
+| `preview_trigger`      | 가상의 이벤트가 시작할 파이프라인 실행을 아무것도 커밋하지 않고 예행 실행합니다                                                               |
+| `submit_output`        | 호출자의 현재 파이프라인 실행에 대한 구조화된 출력 페이로드를 제출합니다. 실행이 선언한 출력 스키마에 따라 검증됩니다                         |
 
-## Orchestration tools
+## 오케스트레이션 도구
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| 도구                    | 설명                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `propose_orchestration` | 한 번의 사전 승인을 위한 구조화된 다중 에이전트 오케스트레이션 플랜을 내보냅니다. 위반 사항을 검증해 반환합니다          |
 
-## Newsfeed tools
+## 뉴스피드 도구
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| 도구                | 설명                                                          |
+| ------------------- | -------------------------------------------------------------- |
+| `list_feeds`        | 등록된 RSS/Atom 피드를 나열합니다                              |
+| `list_articles`     | 아티클을 나열하며, 선택적으로 피드, 읽지 않음 또는 저장됨으로 필터링합니다 |
+| `get_article`       | 아티클 하나를 가져옵니다                                       |
+| `set_article_read`  | 아티클을 읽음 또는 읽지 않음으로 표시합니다                    |
+| `set_article_saved` | 아티클을 저장하거나 저장 해제합니다                            |
+| `refresh_feeds`     | 활성화된 모든 피드를 지금 다시 가져옵니다                      |
 
-## Enclosure (rig) tools
+## 인클로저(리그) 도구
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ko-KR/매뉴얼/개념/가드레일/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ko-KR/매뉴얼/레퍼런스/리그/#action-verbs).
+실행 안에서 일회용 머신 — 인클로저 안의 브라우저나 Linux 데스크톱, Android
+에뮬레이터 또는 iOS 시뮬레이터 — 을 조작합니다. 부팅 후 무조건 등록됩니다.
+머신이 실제로 부팅될 수 있는지는 도구가 호출마다 답하는 프로브 질문입니다.
+한 대화에서 반복 호출하면 하나의 머신을 재사용하며, 스크린샷은 결과당 한 장의
+이미지 예산으로 이미지 콘텐츠로 반환되고, 추출된 페이지/UI 콘텐츠는 신뢰할 수
+없는 데이터로 격리됩니다. 네 개의 사용 도구와 `rig_close`는 `enclosureControl`
+[액션 클래스](/ko-KR/매뉴얼/개념/가드레일/)를 선언하므로(사용 도구는
+`networkEgress`와 `processSpawn`도 선언하고, `mobile_use`와 `ios_use`는
+`packageInstall`도 선언합니다), 읽기 전용 모드에서는 이들을 거부합니다.
+`rig_list`는 아무것도 선언하지 않으며, 워크스페이스 상태만 읽습니다. 표면별
+전체 동사 어휘는 [리그 레퍼런스](/ko-KR/매뉴얼/레퍼런스/리그/#action-verbs)에
+있습니다.
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| 도구           | 설명                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| `computer_use` | 인클로저 VM의 Linux 데스크톱을 조작합니다: 이동, 클릭, 드래그, 스크롤, 입력, 크기 조정, 클립보드, 스크린샷 |
+| `browser_use`  | 헤드리스 Chromium, Firefox 또는 WebKit(`engine`)을 조작합니다: 탐색, 클릭, 채우기, 추출(a11y/DOM/콘솔), 클립보드, 스크린샷 |
+| `mobile_use`   | ADB로 Android를 조작합니다: 검사/입력, 스크린샷, 앱 설치/시작/중지/초기화/설치 해제, 딥 링크, argv 형태의 기기 명령 |
+| `ios_use`      | WebDriverAgent/CoreSimulator를 통해 iOS 시뮬레이터를 조작합니다: 검사/입력, 스크린샷, 앱 설치/시작/중지/설치 해제, 딥 링크, argv 형태의 시뮬레이터 프로세스 |
+| `rig_list`     | 워크스페이스의 리그를 표면, 상태, 디스플레이 크기, 컨트롤러와 함께 나열합니다                          |
+| `rig_close`    | 리그를 파괴하고 그 리그가 소유한 머신 상태를 버립니다                                                   |
 
-## Not exposed over MCP
+## MCP로 노출되지 않는 것
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ko-KR/매뉴얼/개념/회의/), not as a tool an agent can call.
+캘린더와 회의에는 MCP 도구가 없습니다. 에이전트는 여러분의 캘린더, 회의, 전사, 실행 항목, 결정을 읽을 수 없습니다. 실행 항목과 결정을 만들어 내는 요약은 에이전트가 호출할 수 있는 도구가 아니라 내장 [`meeting_summary` 파이프라인](/ko-KR/매뉴얼/개념/회의/)으로 실행됩니다.
 
-## Tool gating by mode
+## 모드별 도구 게이팅
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+게이팅은 하나의 표(`ModeToolPolicy`)에서 두 번 적용됩니다. Claude Code 어댑터의 MCP 디스패처에서 한 번, 내장 하네스 레지스트리에서 한 번입니다. 차단된 호출은 그 이유를 반환합니다.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| 모드          | 도구 표면                                                                                                                                                                                                                              |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat`        | 등록된 모든 도구, 허용 목록 없음                                                                                                                                                                                                      |
+| `plan`        | 선별된 허용 목록입니다. 워크트리 쓰기와 `create` / `assign` / `delegate` 티켓 동사는 허용되지 않지만, 메모리, 아티팩트, 할 일, `submit_plan`, `exit_plan_mode`, 그리고 디스패치된 티켓의 티켓 완료 동사는 허용됩니다                    |
+| `review`      | 선별된 허용 목록입니다: 리뷰 참여, 커뮤니케이션, 읽기 전용 컨텍스트 페처, 그리고 `create_ticket`과 `assign_ticket`을 포함한 전체 티켓 동사 집합                                                                                          |
+| `orchestrate` | 선별된 허용 목록입니다: 조사 및 읽기 도구와 `propose_orchestration`, `create_playbook`, `run_playbook`. 채용, 분해, 티켓 완료는 승인 후 결정적으로 일어나며 결코 실행 도중에 일어나지 않습니다                                         |
 
-Permitted in every mode regardless of allow-list:
+허용 목록과 무관하게 모든 모드에서 허용되는 것:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| 집합             | 도구                                                                                                                                                                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 메모리와 아티팩트 | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| 코드 그래프       | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                     |
+| 실행 역학         | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                  |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+허용 목록에 있다고 해서 도구가 호출 가능해지는 것은 아니며, 반대도 마찬가지입니다. 운영자에게 묻는 기능은 **하네스** 도구(`ask_user`)이므로 이 MCP 카탈로그에는 아예 나타나지 않습니다.
 
-## Approval-gated tools
+## 승인이 필요한 도구
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+도구는 `requiresApproval`을 선언할 수 있습니다. 그러면 디스패처가 `ApprovalPayload`를 만들어 도구가 실행되기 전에 `ConfirmationPort`로 표면화합니다. `cc_server`가 그 포트를 연결하므로 관문이 살아 있습니다.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+이를 선언한 등록 도구: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ko-KR/매뉴얼/개념/가드레일/).
+이와 별개로, 통합 액션 가드레일은 비어 있지 않은 `ActionClass` 집합을 선언하는 모든 도구를 게이팅합니다. 승인자가 연결되지 않은 `prompt` 결정은 거부됩니다. [가드레일](/ko-KR/매뉴얼/개념/가드레일/)을 참고하십시오.
 
-## Capabilities with no tool behind them
+## 뒤에 도구가 없는 기능
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+제품의 모든 기능을 에이전트가 도달할 수 있는 것은 아닙니다. 다음은 도구가
+아예 없으므로, 다른 곳에서 참조된 것을 본 이름은 "unknown tool"을 반환합니다:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ko-KR/매뉴얼/사용-가이드/프로젝트/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| 기능                             | 대신 어디에 있는가                                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 에이전트 채용, 해고, 편집        | 에이전트 UI. `hire_agent` / `fire_agent` / `update_agent` 도구는 없습니다                                     |
+| 워크스페이스 생성                | RPC를 통한 `workspace.upsert`. 소유권을 시드하고 각인합니다                                                    |
+| 프로젝트(생성 / 나열 / 업데이트 / 파일링) | 티켓 UI. 프로젝트는 운영자 표면입니다 — [프로젝트](/ko-KR/매뉴얼/사용-가이드/프로젝트/)를 참고하십시오            |
+| 운영자에게 차단 질문하기         | MCP가 아니라 **하네스** `ask_user` 도구입니다. 대화에 양식을 렌더링하고 답변을 기다리며 차단합니다              |
+| 에이전트별 진단                  | 없습니다. `doctor`가 없습니다 — [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)을 참고하십시오         |
+| 캘린더와 회의                    | 사람 클라이언트 전용 RPC(위 참조)                                                                              |
 
-## See also
+## 같이 보기
 
-- [Use Control Center as an MCP server](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/)
+- [Control Center를 MCP 서버로 사용](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/)

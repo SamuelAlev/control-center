@@ -1,216 +1,253 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Συνεργασία — ταυτότητα, συμμετοχή και παρουσία
+description: Πώς το Control Center μοντελοποιεί ανθρώπους και πράκτορες ως ισότιμους συμμετέχοντες, τι πραγματικά ελέγχει την πρόσβαση σε έναν χώρο εργασίας και γιατί η ζωντανή επίγνωση και τα κοινόχρηστα αρχεία ταξιδεύουν σε δύο διαφορετικές λωρίδες.
 slug: el-GR/εγχειρίδιο/έννοιες/συνεργασία
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Το Control Center λειτουργεί για έναν μόνο χειριστή, αλλά το μοντέλο από κάτω
+είναι πολυ-δρωντικό από την αρχή. Άνθρωποι και πράκτορες ανταλλάσσουν
+μηνύματα στους ίδιους χώρους, επεξεργάζονται τα ίδια εισιτήρια και
+εμφανίζονται στον ίδιο κατάλογο. Το να γίνει αυτό ασφαλές και κατανοητό
+ανάγεται σε τρεις αποφάσεις: **ποιος μετράει ως δρων**, **τι ελέγχει την
+πρόσβαση** και **ποια κατάσταση μοιράζεται ανθεκτικά και ποια απλώς
+μεταδίδεται ζωντανά**.
 
-## Principals: users and agents are co-equal actors
+## Εντολείς: χρήστες και πράκτορες είναι ισότιμοι δρώντες
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Ό,τι καταγράφει «ποιος το έκανε αυτό» — μηνύματα, εισιτήρια, κριτικές,
+πλάνα, αρχεία καταγραφής εκτελέσεων, καταχωρίσεις ελέγχου — περνά από έναν
+**εντολέα**, μια σφραγισμένη ένωση των `UserPrincipal` και `AgentPrincipal`
+με συμπαγή μορφή μετάδοσης (`user:<id>` / `agent:<id>`). Η απόδοση δεν
+συμπτύσσει ποτέ N ανθρώπους (ή N πράκτορες) σε έναν λογαριασμό-φρουρό, οπότε
+μια κριτική που άφησε ένας πράκτορας και μια κριτική που άφησε ένας άνθρωπος
+ξεχωρίζουν παντού όπου εμφανίζονται.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Επειδή ο εντολέας είναι η μονάδα ταυτότητας, είναι και η μονάδα περιορισμού:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Τα όρια ρυθμού είναι ανά εντολέα, όχι ανά συνεδρία.** Ο φύλακας
+  κατάκλυσης για τις απομακρυσμένες κλήσεις εργαλείων υπολογίζει ανά χρήστη,
+  όχι ανά σύνδεση: όλες οι συσκευές ενός μέλους αντλούν από ένα κοινό
+  κυλιόμενο παράθυρο (120 κλήσεις το λεπτό, από τις οποίες το πολύ 30
+  επιτρέπεται να μεταβάλλουν), οπότε το άνοιγμα τριών συσκευών δεν
+  τριπλασιάζει το όριο κανενός και ένα θορυβώδες μέλος δεν μπορεί να στερήσει
+  το όριο από τα υπόλοιπα.
+- **Η αναίρεση είναι ανά εντολέα.** Το ημερολόγιο ενεργειών κάθε πελάτη
+  καταγράφει μόνο τις μεταβολές που εκτέλεσε _ο δικός του_ εντολέας. Μπορείτε
+  να αναιρέσετε με ⌘Z τη δική σας επεξεργασία εισιτηρίου· δεν μπορείτε να
+  αναιρέσετε του συνεργάτη σας — μέχρι να τη δείτε, η ανθεκτική λωρίδα την
+  έχει ήδη επιλύσει (δείτε παρακάτω).
 
-## Membership is the access boundary — not the pairing key
+## Η συμμετοχή είναι το όριο πρόσβασης — όχι το κλειδί σύζευξης
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Δύο ξεχωριστά διαπιστευτήρια απαντούν σε δύο ξεχωριστές ερωτήσεις. Το **κλειδί
+σύζευξης** (δείτε το
+[Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/))
+πιστοποιεί μια _συσκευή_ στον διακομιστή. Η **συμμετοχή** εξουσιοδοτεί τον
+χρήστη αυτής της συσκευής να ενεργεί μέσα σε έναν _χώρο εργασίας_. Μια
+συζευγμένη συσκευή της οποίας ο χρήστης δεν έχει συμμετοχή σε έναν χώρο
+εργασίας δεν μπορεί ούτε να τον διαβάσει ούτε να τον μεταβάλει.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Η συμμετοχή είναι μία γραμμή ανά (χώρο εργασίας, χρήστη), αποθηκευμένη **στο
+δικό του αρχείο βάσης δεδομένων κάθε χώρου εργασίας** — οπότε το «ποιος
+βρίσκεται σε αυτόν τον χώρο εργασίας;» είναι μια συνηθισμένη ανάγνωση
+περιορισμένης εμβέλειας, ενώ η αντίστροφη ερώτηση, «σε ποιους χώρους εργασίας
+βρίσκομαι;», απλώνεται αναγκαστικά σε πολλά αρχεία και είναι μία από τις λίγες
+επιτρεπόμενες διανομές μεταξύ χώρων εργασίας. Είναι αυτό που εκτελεί ο
+επιλογέας χώρου εργασίας πριν επιλεγεί οποιοσδήποτε χώρος εργασίας.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Κάθε γραμμή φέρει έναν ρόλο από μια πενταβάθμια κλίμακα με σειρά ιεραρχίας:
 
-| Role     | May                                                                                                        |
+| Ρόλος    | Επιτρέπεται                                                                                                |
 | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| `owner`  | Πλήρης έλεγχος, συμπεριλαμβανομένης της διαγραφής του χώρου εργασίας· ακριβώς ένας ανά χώρο εργασίας       |
+| `admin`  | Διαχείριση μελών, προσκλήσεων, ρυθμίσεων, καταστροφικών λειτουργιών                                         |
+| `member` | Καθημερινή ανάγνωση-εγγραφή: μηνύματα, εισιτήρια, εκτελέσεις πρακτόρων                                     |
+| `viewer` | Μόνο ανάγνωση σε όλο τον χώρο εργασίας· τα globs εξαίρεσης μυστικών κρύβουν τις αντίστοιχες διαδρομές σε επιφάνειες που φέρουν κώδικα |
+| `guest`  | Ίδιο κατώτατο όριο μόνο-ανάγνωσης με τον θεατή, στον χαμηλότερο βαθμό της κλίμακας                         |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Κάθε απόφαση πρόσβασης ανάγεται στο «είναι ο ρόλος του καλούντος τουλάχιστον
+X». Το κατώτατο όριο προκύπτει από το είδος της λειτουργίας, εκτός αν αυτή
+δηλώνει κάποιο ρητά: μια ανάγνωση απαιτεί `guest`, μια μεταβολή απαιτεί
+`member`, μια καταστροφική λειτουργία απαιτεί `admin`. Τα ACL ανά αντικείμενο
+πέρα από τις παραχωρήσεις ανά αποθετήριο παρακάτω μένουν σκόπιμα εκτός πεδίου.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Οι προσκλήσεις** είναι ο τρόπος με τον οποίο απονέμεται η συμμετοχή, από τις
+Ρυθμίσεις → Χώρος εργασίας → Μέλη. Ένας διαχειριστής εκδίδει έναν κωδικό μίας
+χρήσης (ως σύνδεσμο ή QR) που λήγει μετά από επτά ημέρες προεπιλεγμένα· ο
+διακομιστής αποθηκεύει μόνο το hash SHA-256 του κωδικού και ο ίδιος ο κωδικός
+εμφανίζεται ακριβώς μία φορά. Η εξαργύρωσή του δημιουργεί τον χρήστη επιτόπου
+(JIT), καταγράφει τη συμμετοχή στον ρόλο της πρόσκλησης (ποτέ `owner` — η
+κυριότητα μεταβιβάζεται ρητά, δεν απονέμεται ποτέ με πρόσκληση) και παραδίδει
+τη σκυτάλη στη σύζευξη συσκευής. Τα διαπιστευτήρια συσκευής που εκδίδονται
+μετά τη σύζευξη έχουν το ίδιο χρονικό όριο των 30 ημερών, οπότε μια σύζευξη
+δεν είναι μόνιμο κλειδί.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Οι παραχωρήσεις ανά αποθετήριο** βρίσκονται κάτω από τη συμμετοχή. Επειδή ο
+διακομιστής κρατά πλήρη checkouts, η συμμετοχή στον χώρο εργασίας από μόνη της
+δεν πρέπει ποτέ να υπερέχει σε δικαιώματα από το forge: κάθε επιφάνεια που
+φέρει κώδικα — αρχεία, diffs, κριτική PR, αναζήτηση κώδικα — ελέγχει την
+παραχώρηση του μέλους σε _αυτό_ το αποθετήριο. Οι παραχωρήσεις είναι ανά
+(χώρο εργασίας, χρήστη, αποθετήριο) και κατατάσσονται `none` → `read` →
+`review` → `write`, όπου `write` σημαίνει να κατευθύνεις εκτελέσεις πρακτόρων
+που γράφουν στο αποθετήριο. Η απουσία γραμμής σημαίνει `none`· οι κάτοχοι και
+οι διαχειριστές έχουν σιωπηρά `write` σε κάθε συνδεδεμένο αποθετήριο και δεν
+φέρουν καθόλου γραμμές.
 
-## Two lanes of collaboration state
+## Δύο λωρίδες κατάστασης συνεργασίας
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Το Control Center χωρίζει την κοινόχρηστη κατάσταση σε δύο λωρίδες με
+αντίθετους κανόνες ανθεκτικότητας, γιατί τα δύο είδη κατάστασης αποτυγχάνουν
+με αντίθετους τρόπους.
 
-### The ephemeral presence lane
+### Η εφήμερη λωρίδα παρουσίας
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Η παρουσία — ποιος είναι σε σύνδεση, πού βρίσκεται, τι πληκτρολογεί, τι κάνει
+ένας πράκτορας αυτή τη στιγμή — είναι άχρηστη τη στιγμή που θα απαρχαιωθεί. Αν
+αποθηκευόταν, κάθε επανασύνδεση θα έπρεπε να συμβιβάσει το «η βάση δεδομένων
+λέει ότι ο Σαμ επεξεργάζεται αυτό το εισιτήριο» με την πραγματικότητα. Γι'
+αυτό η παρουσία **δεν γράφεται ποτέ στη βάση δεδομένων**. Ζει σε έναν **κόμβο
+παρουσίας** στη μνήμη του διακομιστή: οι πελάτες δημοσιεύουν με
+`presence.update`, οι ομότιμοι εγγράφονται με `presence.watch` και οι
+καταχωρίσεις λήγουν αυτόματα μετά από τρεις χαμένους παλμούς (οι παλμοί
+στέλνονται κάθε 10 δευτερόλεπτα· ο κόμβος καθαρίζει κάθε 5). Δεν υπάρχει
+τίποτα να συμβιβαστεί — μόνο να αφεθεί να λήξει.
 
-Two properties keep the lane trustworthy:
+Δύο ιδιότητες κρατούν τη λωρίδα αξιόπιστη:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Η ταυτότητα προέρχεται από τη συνεδρία, ποτέ από ορίσματα του πελάτη.** Ο
+  διακομιστής αντιστοιχίζει τη διαπιστευμένη συσκευή της σύνδεσης σε ένα
+  αναγνωριστικό χρήστη· ένας πελάτης μπορεί μόνο να ενημερώνει τη δική του
+  παρουσία, οπότε κανείς δεν μπορεί να πλαστογραφήσει την κατάσταση ή τη θέση
+  άλλου συμμετέχοντα. Μια ρητή ενημέρωση `offline` (αποσύνδεση ή ο διακόπτης
+  αορατότητας) αφαιρεί την καταχώριση αμέσως.
+- **Ο κατάλογος περνά από κόμβο του διακομιστή.** Οι ομότιμοι δεν
+  ανταλλάσσουν ποτέ παρουσία απευθείας, οπότε κάθε συμμετέχων βλέπει τον ίδιο
+  κατάλογο ανεξάρτητα από την τοπολογία. Οι πράκτορες δεν έχουν πελάτη, οπότε
+  ο διακομιστής _συνθέτει_ τις καταχωρίσεις τους από τη ζωντανή κατάσταση των
+  εκτελέσεων — σκέψη, εκτέλεση, μπλοκάρισμα σε πύλη έγκρισης, ολοκλήρωση — με
+  μία αντιπροσωπευτική εκτέλεση να καθορίζει την κατάσταση και τη θέση ενός
+  πράκτορα, ώστε οι ταυτόχρονες εκτελέσεις να μην κάνουν τον κατάλογο να
+  πηγαινοέρχεται.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Η διανομή είναι κλιμακωτή ανά καταναλωτή: το desktop και το web κινούνται σε
+πλήρη βαθμίδα (το πολύ μία εκπομπή καταλόγου ανά 100 ms), το τηλέφωνο σε
+βαθμίδα σύνοψης (ανά 500 ms), ώστε οι ενημερώσεις με ρυθμό κέρσορα να μην
+λιώσουν την PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+Η **θέση** ενός συμμετέχοντα — πού βρίσκεται αυτή τη στιγμή, μέχρι και το
+τεκμήριο — είναι μια σφραγισμένη ένωση: `Space`, `File` (αποθετήριο + διαδρομή
++ προαιρετική γραμμή), `Pr`, `Ticket`, `PlanNode`. Δεν έχει κάθε θέση πού να σε
+πάει: δεν υπάρχει διαδρομή προβολής αρχείου, οπότε μια θέση `File` αποδίδεται
+ως ετικέτα και όχι ως προορισμός. Η λωρίδα μεταφέρει επίσης **ήπιες
+διεκδικήσεις** («Ο Σαμ επεξεργάζεται αυτό το εισιτήριο», «ένας πράκτορας
+κατέχει αυτό το worktree»): _ορατότητα_ σύγκρουσης, όχι κλειδώματα. Οι άγνωστοι
+τύποι θέσης αναλύονται σε null, οπότε ένας παλιός πελάτης απλώς δεν αποδίδει
+ό,τι δεν καταλαβαίνει.
 
-### The durable shared lane
+### Η ανθεκτική κοινόχρηστη λωρίδα
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Οι εγγραφές που πρέπει να επιβιώσουν — εισιτήρια, το κοινόχρηστο έγγραφο
+Σημειώσεων του χώρου, μηνύματα — ακολουθούν τον αντίθετο δρόμο: αυθεντικές,
+διατεταγμένες και αποθηκευμένες. Οι ταυτόχρονες επεξεργασίες επιλύονται με
+**νίκη του τελευταίου συγγραφέα κατά τη σειρά παραλαβής του διακομιστή**, ποτέ
+με τα ρολόγια των πελατών. Η επίλυση είναι σκόπιμα λεπτομερής: οι
+επεξεργασίες εισιτηρίων γίνονται _ανά στήλη_, οπότε δύο άτομα που
+επεξεργάζονται διαφορετικά πεδία του ίδιου εισιτηρίου καταγράφονται και τα δύο
+και κανένα δεν πατάει το άλλο (οι μεταβάσεις ροών εργασίας διατηρούν αντ'
+αυτού αισιόδοξο κλείδωμα)· το έγγραφο Σημειώσεων του χώρου είναι μία στήλη,
+οπότε ολόκληρο το έγγραφο είναι LWW, με τις ήπιες διεκδικήσεις στη λωρίδα
+παρουσίας να κάνουν την ταυτόχρονη επεξεργασία ορατή αντί για κλειδωμένη. Δεν
+είναι σκόπιμα CRDT — το βάρος της απόδειξης πέφτει στο CRDT, και η LWW κατά
+σειρά παραλαβής μαζί με τις ορατές διεκδικήσεις καλύπτει τα πραγματικά μοτίβα
+συνεργασίας.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+«Τελευταίος συγγραφέας» σημαίνει **σειρά παραλαβής από τον διακομιστή**, ποτέ
+ρολόι πελάτη — ένας φορητός υπολογιστής με λανθασμένη ώρα δεν μπορεί να
+κερδίσει μια επεξεργασία που έχασε. Πίσω από την ανθεκτική λωρίδα βρίσκεται η
+**τροφοδοσία συγχρονισμού**: τα triggers της SQLite προσθέτουν κάθε μεταβολή σε
+ένα αρχείο καταγραφής αλλαγών ανά χώρο εργασίας _μέσα στη συναλλαγή εγγραφής_,
+δεσμεύοντας έναν μονότονο αύξοντα αριθμό ανά χώρο εργασίας στην ίδια συναλλαγή
+με την ίδια τη μεταβολή. Μια υπηρεσία του διακομιστή παρακολουθεί αυτό το
+αρχείο καταγραφής και το μετατρέπει σε πλαίσια δέλτα με εκδόσεις, κατά σειρά
+αριθμού. Οι πελάτες εξελίσσονται από πλήρη snapshots σε δέλτα· ένα κενό στη
+σειρά γυρίζει αυτή την αποθήκη πίσω σε λειτουργία snapshot αντί να εφαρμόσει
+λανθασμένα πλαίσια.
 
-## Follow, steer, take over, hand back
+## Παρακολούθηση, καθοδήγηση, ανάληψη, επιστροφή
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Η λωρίδα παρουσίας δεν είναι απλώς ένας κατάλογος — τροφοδοτεί τα ρήματα της
+συνεργασίας:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Λειτουργία παρακολούθησης.** Κάντε κλικ σε έναν συμμετέχοντα και ο πελάτης
+  σας ακολουθεί τη θέση του, πλοηγούμενος όπως πλοηγείται εκείνος. Η
+  παρακολούθηση ισχύει «μέχρι να ενεργήσετε»: τη στιγμή που θα πλοηγηθείτε με
+  δική σας πρωτοβουλία, αποσυνδέεται. Ένα banner που μπορείτε να κλείσετε σάς
+  ενημερώνει όταν ένας άλλος συμμετέχων παρουσιάζει έναν χώρο στον οποίο
+  βρίσκεστε.
+- **Καθοδήγηση.** Ένα μήνυμα προς έναν πράκτορα που εκτελείται μπαίνει σε ουρά
+  ως καθοδήγηση· ο πράκτορας το ξαναδιαβάζει πριν συνεχίσει στην επόμενη
+  στροφή του, οπότε μπορείτε να διορθώσετε μια εκτέλεση εν κινήσει χωρίς να τη
+  σκοτώσετε.
+- **Ανάληψη.** Η ανάληψη του ελέγχου μιας συνομιλίας παγώνει κάθε ενεργή
+  εκτέλεση στο επόμενο καθαρό όριο στροφής της (μια εκτέλεση του Claude Code,
+  που δεν έχει ασφαλές όριο, σταματά) πίσω από ένα snapshot git ανά στροφή,
+  ώστε η ανάληψη να είναι αναστρέψιμη. Ένας ανθεκτικός δείκτης μπλοκάρει νέες
+  αποστολές στον χώρο και επιβιώνει από επανεκκίνηση του διακομιστή — ο
+  διακομιστής δεν συνεχίζει ποτέ αυτόματα μέσα σε μια μισοτελειωμένη
+  επεξεργασία ανθρώπου. Ένας ζωντανός συντάκτης ανά worktree είναι ήπια
+  διεκδίκηση: μια δεύτερη ανάληψη είναι ορατή και απορρίπτεται, δεν
+  συγχωνεύεται σιωπηλά.
+- **Επιστροφή.** Η επιστροφή του ελέγχου δημοσιεύει στον χώρο μια δομημένη
+  σύνοψη diff του worktree, τη βάζει σε ουρά ως καθοδήγηση για τις παγωμένες
+  εκτελέσεις, τις συνεχίζει και καθαρίζει τον δείκτη.
 
-## The autonomy dial
+## Ο δείκτης αυτονομίας
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Η καθοδήγηση και η ανάληψη είναι εκ των υστέρων παρεμβάσεις. Ο **δείκτης
+αυτονομίας** είναι η μόνιμη ρύθμιση: ανά χώρο, ανά πράκτορα, ορίζεται από την
+κεφαλίδα του χώρου και αποφασίζει τι συμβαίνει όταν ένας πράκτορας φτάνει σε
+μια ενέργεια πίσω από πύλη.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Επίπεδο             | Τιμή μετάδοσης    | Επίδραση σε κλήση εργαλείου πίσω από πύλη                                                                     |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Μόνο πρόταση        | `proposeOnly`     | Απορρίπτεται ευθέως, με αιτιολογία που ο πράκτορας καλείται να μεταφέρει — μπορεί να περιγράψει την ενέργεια αλλά όχι να την εκτελέσει |
+| Ενέργεια με έγκριση | `actWithApproval` | Η πύλη έγκρισης με αποτυχία-κλεισίματος: μία επιβεβαίωση εμφανίζεται σε συνδεδεμένο χειριστή και χωρίς εγκρίνοντα η απάντηση είναι απόρριψη |
+| Ελεύθερη ενέργεια   | `actFreely`       | Προεγκεκριμένη, εκτός από τις περιπτώσεις όπου εφαρμόζεται σκληρός κανόνας `deny` των περιορισμών — ένας κανόνας deny κερδίζει πάντα |
+| (χωρίς τιμή)        | `null`            | Ίδιο με την ενέργεια με έγκριση: η προεπιλογή του διακομιστή                                                   |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Δύο πράγματα βρίσκονται έξω από τον δείκτη και προς τις δύο κατευθύνσεις. Το
+ίδιο το ρήμα εξόδου μιας λειτουργίας είναι καρφιτσωμένο και δεν μπορεί ποτέ να
+απορριφθεί, ό,τι κι αν λέει ο δείκτης — η λειτουργία ενορχήστρωσης ήταν κάποτε
+δομικά ανίκανη να εκπέμψει το μοναδικό παραδοτέο της, επειδή ένα προκαθορισμένο
+λειτουργίας απέρριπτε την κλάση εφέ που δηλώνει αυτό το ρήμα. Και ένα σκληρό
+`deny` από τους περιορισμούς ενεργειών δεν μπορεί να παρακαμφθεί από το
+`actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
+:::note[Ο δείκτης αφορά μόνο τον ενσωματωμένο μηχανισμό]
+Τον συμβουλεύεται το callback έγκρισης του βρόχου του ενσωματωμένου μηχανισμού.
+Ένας πράκτορας που εκτελείται στον προσαρμογέα Claude Code κάνει τις δικές του
+κλήσεις εργαλείων μέσα στη δική του διεργασία, όπου το Control Center δεν έχει
+τίποτα να ελέγξει — δείτε το
+[Μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
 :::
 
-## Solo zero-regression
+## Μηδενική παλινδρόμηση σε ατομική χρήση
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Όλα αυτά είναι προσθετικά. Η ροή εργασίας ενός μεμονωμένου χειριστή παραμένει
+αμετάβλητη: με έναν άνθρωπο και χωρίς πράκτορες ο κόμβος παρουσίας δεν έχει
+τίποτα να μεταδώσει, οπότε η λωρίδα εκπέμπει το αρχικό snapshot της και μετά
+αδρανεί με μηδενική κίνηση· ο μηχανισμός LWW και συγχρονισμού είναι η ίδια
+διαδρομή ενός μόνο συγγραφέα που ήταν πάντα· και το κλειδί σύζευξης παραμένει
+το διαπιστευτήριο συσκευής που ήταν πάντα. Η συμμετοχή είναι ήδη το όριο
+πρόσβασης — με έναν άνθρωπο υπάρχει μία μόνο γραμμή κατόχου και κανένα
+στοιχείο διεπαφής καταλόγου.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): the boundary membership enforces
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/): the pairing key and device credential side of identity
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): the agent half of the principal union
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): the runs that steering and take-over pause and resume
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): the effect-class policy the autonomy dial composes with
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): the bus that live updates ride
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): το όριο που επιβάλλει η συμμετοχή
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/): η πλευρά του κλειδιού σύζευξης και του διαπιστευτηρίου συσκευής στην ταυτότητα
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): το μισό των πρακτόρων στην ένωση του εντολέα
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): οι εκτελέσεις που η καθοδήγηση και η ανάληψη παγώνουν και συνεχίζουν
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): η πολιτική κλάσεων εφέ με την οποία συνθέτεται ο δείκτης αυτονομίας
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): το bus πάνω στο οποίο ταξιδεύουν οι ζωντανές ενημερώσεις

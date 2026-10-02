@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: エージェントで失敗テストをデバッグ
+description: print 文を追加する代わりに、エージェントにブレークポイントを設定させ、デバッガーで起動して実際のスタックフレームを読ませます。
 slug: ja-JP/マニュアル/ハウツーガイド/失敗テストのデバッグ
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+このガイドでは、print 文では説明のつかない失敗に対して、エージェントにデバッガーを使わせる方法を説明します。
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` ツールは実際の Debug Adapter Protocol セッションを操作します。停止したフレームは、その瞬間に関するあらゆる問い——すべてのローカル変数、すべての呼び出し元、フレーム自身のスコープで評価した式——に一度に答えます。一方、print 文が答えるのは、実行前にあなたが尋ねようと思った問いだけです。
 
-## Before you start
+## はじめる前に
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+このツールは表面に出たままにするので、エージェントはなぜ何も使えないのかを推測せずに尋ねることができます。アダプターが実際に起動できるのは、次の**両方**が満たされたときだけです:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- チェックアウトにプロジェクトのマーカーがあること
+- アダプターのバイナリが解決できること
 
-Ask the agent to check:
+エージェントに次の確認を依頼します:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+見つかったものを返すか、アダプターには両方の条件が必要だと説明します。
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| 言語           | アダプター                   | マーカー                                        | インストール                       |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | SDK に同梱 — 作業は不要             |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | LLVM に同梱                        |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python はプロジェクトのインタープリターを選ぶ]
+`debugpy` は `$PATH` より前に `.venv/bin` または `venv/bin` から探されます。`$PATH` 上の python は別の環境であり、間違ったほうからアタッチすると、間違ったインタープリターであるというよりも壊れたコードのように見える形で失敗します。
 :::
 
-## Set the breakpoint first, then launch
+## まずブレークポイントを設定し、それから起動する
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+順序が重要で、ツールがそれを強制します。ブレークポイントはセッションが存在する**前に**設定できます。プロトコルが要求する順序がそれだからです。
 
-Ask the agent something like:
+エージェントに次のように依頼します:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart` の `compute` 関数が誤った値を返します。`product` を代入している行にブレークポイントを設定し、デバッガーで起動して、`a` と `b` が実際に何なのかを教えてください。
 
-It will run roughly:
+エージェントはおおよそ次のように実行します:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+起動は停止した場所を報告します:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[代わりにプログラムの終了を報告した場合]
+ブレークポイントがバインドされませんでした。空行、コメント、ビルドにコンパイルされていない行にはブレークポイントを置けません。稼働中のセッションに対して `breakpoints` を呼び出すと、設定したうち何個が実際に置かれたかが報告されます。
 :::
 
-## Read the frame
+## フレームを読む
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+次にその中へ進みます:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+子を持つオブジェクトは `[expand: reference N]` を報告します。ただし、その背後に本当に何かがある場合だけで、エージェントが使えない展開が提示されることはありません。
 
-For anything not visible as a local:
+ローカル変数として見えないものについては:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## ステップ実行
 
-| What you want          | Op          |
+| やりたいこと                   | 操作        |
 | ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| 次の停止位置まで実行   | `continue`  |
+| 同じフレームで次の行   | `step_over` |
+| 呼び出しの中へ         | `step_in`   |
+| 呼び出し元へ出る       | `step_out`  |
+| 実行中のプログラムを停止 | `pause`     |
 
-## Attach to something already running
+## すでに実行中のものにアタッチする
 
-For a wedged process rather than one you are starting:
+これから起動するプロセスではなく、ハングしたプロセスに対して:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## 終了
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+セッションは必ず終了してください。デバッグアダプターは**停止したプロセス**を所有し、そのプロセスが保持しているもの——ポート、ロック、データベース接続——を握ったままになります。
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[ツールが暴走することはありません]
+すべてのセッションには延長できない厳格な TTL があり、会話ごとにちょうど1つで、サーバーが停止するとすべてが破棄されます。2回目の `launch` は最初のものを置き換えるのではなく拒否されます。一方を終了せずにもう一方を開始するエージェントは、ほぼ確実に最初のものを見失っています。
 :::
 
-## Bounded output
+## 出力の上限
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+深いオブジェクトグラフに対する `variables` の展開は、本質的に上限がありません。Flutter のウィジェット1つで要素ツリー全体に到達します。スコープごとの子は50、値は400文字、スタックフレームは30に制限されます。コンテキストウィンドウを埋め尽くすツール結果は、手助けしていた実行を終わらせるツールです。
 
-## Related
+## 関連
 
-- [Code intelligence](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ja-JP/マニュアル/リファレンス/エージェントツール/) — every `debug` op and argument
-- [Diagnose an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/) — when the problem is the agent, not the code
+- [コードインテリジェンス](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — デバッガー、コンパイラー、マッチャーがそれぞれ異なる問いに答える理由
+- [内蔵エージェントツール](/ja-JP/マニュアル/リファレンス/エージェントツール/) — `debug` のすべての op と引数
+- [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/) — 問題がコードではなくエージェントにある場合

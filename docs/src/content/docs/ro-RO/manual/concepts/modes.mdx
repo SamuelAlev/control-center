@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Moduri
+description: De ce un spațiu, nu un agent, poartă un mod; ce garantează fiecare dintre cele patru moduri; și unde acea garanție este structurală, nu doar sugerată prin prompt.
 slug: ro-RO/manual/concepte/moduri
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Ce este un mod
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Un mod este o proprietate a unui **spațiu**, stocată ca o singură coloană pe rândul spațiului. Fiecare conversație din interiorul unui spațiu îl împărtășește, inclusiv firele — un fir moștenește modul spațiului său ca orice altă conversație. Același agent poate așadar să fie în moduri diferite în spații diferite în același timp, iar schimbarea modului unui spațiu schimbă ce se întâmplă la următorul tur fără să atingă agentul.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Există exact patru: `chat`, `review`, `plan`, `orchestrate`. Enumerarea în sine nu poartă nicio politică. Tot ce garantează un mod este declarat o singură dată, într-un **profil de capabilități**, din care proiectează fiecare strat de aplicare:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Suprafața de instrumente** — ce instrumente există de fapt în acel mod, exprimate ca un nivel maxim de aprobare, o listă de permisiuni, o listă de interdicții și un set de clase de efecte refuzate.
+2. **Verb de ieșire obligatoriu** — ce trebuie să apeleze rularea ca să fi livrat ceva.
+3. **Clase de efecte interzise** — ce refuză categoric garda de acțiuni.
+4. **Postura worktree-ului** — dacă worktree-ul poate fi scris. Aceasta este aplicată prin eliminarea din suprafață a instrumentelor care modifică starea, ceea ce face ca ea să se respecte pe orice gazdă. Acolo unde gazda are un sandbox la nivel de sistem de operare, aceeași postură decupează și regulile de scriere în sistemul de fișiere — un mod doar pentru citire montează worktree-ul doar pentru citire — dar aceea este o a doua copie a garanției, nu cea care face treaba.
+5. **Bloc de prompt de sistem** — un preambul de capabilități _generat_, derivat din lista reală de instrumente materializate, plus îndrumări scrise manual.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Fiecare strat de aplicare proiectează din acel singur profil, așa că suprafața de instrumente, garda, postura worktree-ului și promptul nu se pot contrazice.
 
-## The four modes
+## Cele patru moduri
 
-### Chat — displayed as "Agent"
+### Chat — afișat ca „Agent"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Modul implicit și singurul fără constrângeri suplimentare: suprafața completă de instrumente până la nivelul de execuție, un worktree care poate fi scris, nicio clasă de efecte interzisă și niciun contract de finalizare. Folosește-l pentru implementare, corectarea erorilor, întrebări despre baza de cod și orice lucru ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Reține eticheta: în zona de compunere, modul este afișat ca **„Agent"**, nu „Chat".
 
-### Plan — read-only, one deliverable
+### Plan — doar pentru citire, un singur livrabil
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Modul plan face worktree-ul doar pentru citire și elimină complet din suprafață instrumentele de scriere, așa că restricția este structurală, nu enunțată. Agentul citește, caută și cercetează și livrează exact un singur lucru: un apel `submit_plan` care poartă un graf de dependențe tipizat — un obiectiv plus noduri cu chei, titluri, descrieri și cheile nodurilor de care depinde fiecare.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Planul se afișează ca un rând compact în conversație și deschide Plan Studio într-o filă alături. Aprobarea lui compilează graful într-o orchestrare, rulează munca generată și readuce spațiul de autorat în modul agent.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Dacă o rulare în modul plan se încheie fără să apeleze vreodată `submit_plan`, bucla injectează mai întâi un îndemn care spune că planul nu există până când acel apel nu reușește. Îndemnul autorizează explicit o ieșire onestă de tipul „aici nu este nevoie de niciun plan", pentru că modul plan este o setare a spațiului, iar o simplă întrebare adresată în el nu ar trebui să impună un plan fals.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/).
+:::note[Un contract neîndeplinit nu este o rulare eșuată]
+O rulare care se încheie fără planul ei este totuși înregistrată cu starea `completed` — procesul s-a încheiat curat. Adevărul se sprijină pe vitalitatea rulării (`empty`), pe familia de erori (`silentRun`) și pe un rezumat care numește ce nu a fost produs. Vezi [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Există o a doua cale de ieșire, separată: `exit_plan_mode`. Este o poartă strictă de aprobare, nu un verb de ieșire — un agent care o apelează în loc de `submit_plan` nu a livrat nimic. Primul apel deschide o aprobare durabilă `plan_exit` și returnează `pending`, iar spațiul rămâne doar pentru citire; apelurile repetate rămân `pending` în loc să deschidă o a doua poartă. Abia după ce aprobarea este acordată, un apel ulterior readuce spațiul pe chat. O respingere îi permite agentului să deschidă o cerere nouă pentru un plan revizuit.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Ca să ieși singur din modul plan, schimbă lista derulantă din zona de compunere (sau Shift+Tab). `exit_plan_mode` se decide cu instrumentul MCP `decide_approval`. Rândurile „aprobare agent" din Inbox sunt altceva: solicitări de confirmare pentru fiecare tur, venite de la un agent care rulează.
 
-### Review — read-only, no contract
+### Revizuire — doar pentru citire, fără contract
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Modul revizuire este pentru revizuirea PR-urilor. Face worktree-ul doar pentru citire, plafonează suprafața de instrumente sub nivelul de execuție și aplică o listă de permisiuni atent selectată, cu instrumente de revizuire, de tichete și de comunicare. Un spațiu deschis pentru un pull request este creat automat în modul revizuire.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Rezultatul agentului constă în constatări structurate — **noduri de revizuire** — și, când o revizuire este finalizată, un **verdict**. Un nod poartă un tip (`bug`, `suggestion`, `recommendation`, `question` sau `ticket`), o prioritate de la P0 (blochează lansarea) la P3 (ar fi bine să existe), un nivel de încredere autoevaluat, o ancoră opțională (un fișier plus un interval de linii; notițele valabile pentru tot depozitul nu au niciuna) și o stare de ciclu de viață care trece de la `open` la `consensusReady` odată ce un coleg — niciodată autorul — o confirmă. O constatare a cărei prioritate sau încredere lipsește ori este în afara intervalului este eliminată la granița de citire, în loc să polueze verdictul.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Verdictul este ship, hold sau block și este făcut doar _mai_ sever de rezultatele pe axe incluse în el: o axă cu poartă care a eșuat forțează `block`, iar o axă cu poartă care nu a putut rula forțează cel puțin `hold`. Absența dovezilor nu face niciodată o poartă verde.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Spre deosebire de plan și orchestrare, revizuirea nu poartă **niciun contract de finalizare**. Constatările se acumulează prin `add_review_node` și sunt publicate prin `finalize_review`, iar ambele pot fi apelate, în mod legitim, de zero ori — un agent de pipeline care rulează în modul revizuire poate fi acolo tocmai ca să ducă la capăt un tichet.
 
-### Orchestrate — read-only, proposes a team
+### Orchestrare — doar pentru citire, propune o echipă
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Modul orchestrare transformă un singur obiectiv într-un plan pentru o echipă întreagă. Ca și modul plan, este doar pentru citire și nu poate scrie fișiere; peste suprafața de cercetare are un singur verb privilegiat, `propose_orchestration`, care emite o propunere structurată: roluri, un arbore de subtichete, un pas de sinteză și un buget. Promptul numește doar instrumentele aflate pe suprafață, așa că modelul nu își consumă tururile povestind despre angajări sau muncă de tichete pe care nu le poate apela.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/ro-RO/manual/concepte/orchestrare/).
+Nimic din propunere nu se execută până când nu o aprobi. La aprobare, un materializator determinist angajează agenții, creează tichetele și un proiect și rulează un pipeline generat. Aprobarea este exclusiv a operatorului: nu există niciun instrument MCP pentru ea, așa că un agent poate propune, dar nu-și poate aproba niciodată propriul plan. Reproplerile inițiate de agent sunt limitate ca frecvență printr-o perioadă de răcire de două minute, așa că replanificările consecutive sunt refuzate și li se spune să le grupeze. Vezi [Orchestrare](/ro-RO/manual/concepte/orchestrare/).
 
-## Two rules worth knowing
+## Două reguli care merită știute
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Verb-ul de ieșire al unui mod nu poate fi refuzat niciodată.** `submit_plan` și `propose_orchestration` sunt fixate în suprafața de instrumente și preaprobate dincolo de filtrul de instrumente, de poarta de aprobare și de garda de acțiuni deopotrivă, așa că setarea de autonomie proprie spațiului nu poate reduce la tăcere livrabilul unui mod. Instrumentul `ask_user` al harness-ului este fixat din același motiv: el _este_ modalitatea prin care o rulare ajunge la operator, așa că blocarea lui ar duce la un interblocaj al unei rulări care trebuie să întrebe ceva. Este de nivel de citire, așa că fiecare mod doar pentru citire îl păstrează, și este scutit de învelișul de aprobare — un prompt în fața unui prompt eșuează în siguranță atunci când nu este conectat niciun aprobator, ceea ce i-ar refuza unui agent însuși actul de a întreba.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Modurile doar pentru citire nu interzic accesul la rețea sau la secrete.** Clasele de efecte pe care le refuză revizuirea, planul și orchestrarea sunt cele care schimbă lumea: ștergerea fișierelor, scrierile în afara worktree-ului, commit-urile, push-urile, crearea și publicarea de PR-uri, scrierile de sincronizare către furnizori, instalarea de pachete, pornirea de procese, modificarea structurii spațiului de lucru și controlul mediilor izolate. Ieșirea în rețea și accesul la secrete rămân intenționat la valorile lor implicite — cercetarea este însuși scopul unui mod doar pentru citire.
 
-## Choosing and changing a mode
+## Alegerea și schimbarea unui mod
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Lista derulantă de moduri din zona de compunere oferă **trei** opțiuni: Agent (chat), Plan și Orchestrează. `review` **nu poate fi selectat de utilizator** — este setat de sistem când se creează un spațiu de revizuire PR și de pașii de pipeline.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Un nod de pipeline care **deschide un spațiu** poate fixa modul acelei camere printr-o cheie `extras['mode']` (`chat`, `review` sau `plan`). Cheia se potrivește exact: orice altă scriere — inclusiv `orchestrate` — este ignorată în tăcere, iar camera primește valoarea implicită a corpului (`review` în corpul create-space). Un pas de agent se alătură unei camere pe care nu a creat-o și nu îi schimbă permisiunile.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Rezolvarea în sine este simplă. Dispecerul citește coloana `mode` a spațiului; o trimitere fără spațiu — o execuție punctuală, o invocare din CLI sau un id de spațiu din alt spațiu de lucru, care pur și simplu nu se află în fișierul bazei de date al acestui spațiu de lucru — se rezolvă la `chat`. Schimbarea modului intră în vigoare de la următorul tur.
 
-## Where the guarantee actually holds
+## Unde se susține de fapt garanția
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Suprafața de instrumente a unui mod este construită și aplicată de **harness-ul integrat**. Este singurul transport care poate face un instrument invizibil, nu doar refuzat, care poate pune o poartă în fața fiecărui apel înainte ca acesta să ruleze și care poate observa un contract de finalizare.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/ro-RO/manual/concepte/modelul-agentilor/).
+Pe transportul Claude Code, un mod care nu este chat este transmis ca `--permission-mode plan`. Claude respectă acest lucru prin convenție; propriile sale instrumente de citire, scriere, editare și shell rulează fără să fie văzute. Pentru acel transport, modul este o îndrumare, nu o graniță a Control Center — vezi [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Listele de permisiuni restricționează instrumentele de nivel de scriere și peste. Nivelul de citire al harness-ului integrat ajunge totuși la instrumente pe care nu le numește nicio listă; pe Claude Code, un instrument omis de lista de permisiuni este refuzat indiferent dacă serverul îl are sau nu.
 
-## Related concepts
+## Concepte conexe
 
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): where the mode is resolved and projected
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): which transports can enforce a mode
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/ro-RO/manual/concepte/orchestrare/): what an approved orchestrate proposal does
-- [Use plan mode](/ro-RO/manual/ghiduri-practice/modul-plan/): the practical walkthrough
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): unde este rezolvat și proiectat modul
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): ce transporturi pot aplica un mod
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): politica claselor de efecte în care se varsă presetarea unui mod
+- [Orchestrare](/ro-RO/manual/concepte/orchestrare/): ce face o propunere de orchestrare aprobată
+- [Folosește modul plan](/ro-RO/manual/ghiduri-practice/modul-plan/): ghidul practic pas cu pas

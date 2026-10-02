@@ -1,29 +1,32 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Backup, export și import
+description: Structura snapshot-urilor, manifestul, fiecare operațiune de backup și rută de transfer și exact ce fișiere conține și ce fișiere nu conține un backup.
 slug: ro-RO/manual/referinta/backup
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/); for why persistence is
-split this way, see [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/).
+Tot ce poate Control Center să copieze, să predea sau să adopte, și forma exactă a fiecărui
+artefact. Pentru a face efectiv un backup, vezi
+[Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/); pentru motivul
+pentru care persistența este împărțită astfel, vezi
+[Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
 
-## Artifacts
+## Artefacte
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Există trei artefacte de copiere a bazei de date, cu sfere de aplicare și politici de
+ștergere diferite.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Artefact                     | Scris de                     | Formă                                 | Acoperă                        |
+| ---------------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
+| **Snapshot de instalare**    | `server.backupNow`           | Un **director** cu marcă de timp      | Fiecare bază de date din instalare |
+| **Backup de spațiu de lucru**| pipeline-ul `Workspace backup` | Director cu marcă de timp cu un `.db` | Baza de date a unui spațiu de lucru |
+| **Export de spațiu de lucru**| `workspace.export`           | Un singur **fișier** `.db`            | Baza de date a unui spațiu de lucru |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Toate sunt scrise cu SQLite `VACUUM INTO`, care este sigur față de o bază de date WAL
+activă: ia o tranzacție de citire, produce o copie defragmentată și consistentă
+tranzacțional și nu necesită niciodată oprirea serverului.
 
-## Snapshot layout
+## Structura snapshot-ului
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +35,124 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Structura oglindește exact directorul de date activ, ceea ce face ca restaurarea unei
+instalări să fie o simplă copiere la loc, nu o translație. Numele directorului este marca
+de timp UTC cu `:` și `.` înlocuite cu `-`, deci este sigur pentru sistemul de fișiere pe
+Windows și se sortează cronologic ca un șir simplu.
 
-Scheduled workspace backups live separately at
+Backup-urile programate de spațiu de lucru se află separat la
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Ele nu includ un manifest sau `global.db` și nu sunt snapshot-uri de instalare.
+Pasul de retenție al pipeline-ului săptămânal elimină doar backup-urile propriului
+spațiu de lucru mai vechi decât vârsta configurată (30 de zile implicit);
+snapshot-urile de instalare create manual nu sunt niciodată rotite de acel pas.
+`server.listBackups` listează doar snapshot-uri de instalare, inclusiv pe cele
+incomplete.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
-| -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| Câmp                       | Tip             | Semnificație                                                              |
+| -------------------------- | --------------- | ------------------------------------------------------------------------- |
+| `version`                  | int             | Versiunea formatului manifestului. În prezent `1`                          |
+| `created_at`               | ISO-8601 UTC    | Când a fost făcut snapshot-ul                                              |
+| `global.file`              | string          | Mereu `global.db`                                                          |
+| `global.schema_version`    | int             | Versiunea schemei `GlobalDatabase` la momentul capturii                    |
+| `global.bytes`             | int             | Dimensiunea fișierului `global.db` scris                                   |
+| `workspace_schema_version` | int             | Versiunea schemei `WorkspaceDatabase` partajată de fiecare fișier de spațiu de lucru |
+| `workspaces[]`             | array           | O intrare pentru fiecare spațiu de lucru capturat                          |
+| `workspaces[].workspace_id`| string          | Spațiul de lucru pe care îl conține acest fișier                           |
+| `workspaces[].file`        | string          | Cale relativă la rădăcina snapshot-ului, `<workspaceId>/workspace.db`      |
+| `workspaces[].bytes`       | int             | Dimensiunea acelui fișier                                                  |
+| `skipped_workspaces[]`     | array of string | Spații de lucru pe care backup-ul **nu** le-a putut captura                |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Un spațiu de lucru este omis când este înregistrat, dar nu s-a scris niciodată în el (deci
+nu există încă niciun fișier), sau când `VACUUM INTO` al lui a eșuat. În ambele cazuri,
+snapshot-ul se finalizează totuși, iar manifestul numește ce lipsește.
 
-### Completeness
+### Completitudine
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` raportează un indicator `complete` pentru fiecare snapshot. Acesta
+este fals când manifestul lipsește sau nu poate fi analizat, când `global.db` lipsește sau
+când manifestul numește un fișier de spațiu de lucru care nu este pe disc.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Un snapshot incomplet este totuși listat, pentru că un snapshot pe care un operator nu îl
+vede este un snapshot despre care crede că îl are. Când manifestul nu poate fi citit,
+listarea se bazează pe structura propriu-zisă și raportează orice fișiere
+`<workspaceId>/workspace.db` găsește — acelea rămân adoptabile individual prin
+`workspace.import`, chiar dacă snapshot-ul în ansamblu nu poate restaura o instalare.
 
-## What a backup does not contain
+## Ce nu conține un backup
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Ambele artefacte sunt **doar baze de date**. Un director de spațiu de lucru conține mai
+mult decât baza lui de date, iar nimic din rest nu călătorește:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Cale                                | Într-un snapshot? | Într-un export de spațiu de lucru? |
+| ----------------------------------- | ----------------- | ---------------------------------- |
+| `global.db`                         | Da                | Nu                                 |
+| `<workspaceId>/workspace.db`        | Da                | Da (chiar *este* fișierul)         |
+| `<workspaceId>/blobs/`              | Nu                | Nu                                 |
+| `<workspaceId>/skills/`             | Nu                | Nu                                 |
+| `<workspaceId>/agents/`             | Nu                | Nu                                 |
+| `<workspaceId>/chat_credentials/`   | Nu                | Nu                                 |
+| `<workspaceId>/spaces/<spaceId>/`   | Nu                | Nu                                 |
+| `<workspaceId>/pr_clones/`          | Nu                | Nu                                 |
+| `secrets.json`                      | Nu                | Nu                                 |
+| `models/`                           | Nu                | Nu                                 |
+| `meetings/<meetingId>/`             | Nu                | Nu                                 |
+| `rigs/`                             | Nu                | Nu                                 |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/ro-RO/manual/referinta/punte-de-chat/).
+O parte din asta este de unică folosință — `spaces/` conține worktree-uri copy-on-write
+care sunt reprovisionate din repo-uri, `pr_clones/` este un cache, `models/` se descarcă
+din nou, `rigs/` este stare de mașină. O parte nu este: `blobs/` conține imaginile lipite
+spre care indică rânduri din baza de date, `skills/` și `agents/` conțin fișierele cu care
+rulează un agent, iar `secrets.json` conține fiecare cheie de asociere, acreditare de
+provider și setare SSO din instalare. Vezi
+[Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/#copy-backups-off-the-machine)
+pentru acoperirea restului.
+:::note[Token-urile de chat rămân deliberat pe dinafară]
+Faptul că `chat_credentials/` stă lângă baza de date, nu în ea, este motivul pentru care
+un spațiu de lucru predat altcuiva nu conține token-uri de bot active. Vezi
+[referința pentru puntea de chat](/ro-RO/manual/referinta/punte-de-chat/).
 :::
 
-## Operations
+## Operațiuni
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+RPC-urile de backup la nivel de instalare și exportul/importul de spațiu de lucru sunt
+numai pentru `fullClient`: un telefon asociat nu le poate declanșa. Toate lipsesc complet
+— nu sunt refuzate, lipsesc structural — pe un server fără un port de backup configurat,
+cum este serverul demo.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Op                   | Tip         | Sferă          | Rol minim             | Argumente     | Returnează                    |
+| -------------------- | ----------- | -------------- | --------------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | modificare  | Instalare      | **proprietar** al instalării | niciunul | `{ok, path}`             |
+| `server.listBackups` | citire      | Instalare      | **proprietar** al instalării | niciunul | `{backups: [...]}`       |
+| `server.deleteBackup` | modificare | Instalare      | **proprietar** al instalării | `name`  | `{ok}`                        |
+| `workspace.export`   | citire      | Spațiu de lucru | `admin`              | niciunul      | `{ok, path}`                  |
+| `workspace.import`   | modificare  | Spațiu de lucru | `owner`              | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | modificare  | Instalare*     | `owner`              | `id`          | rând de registru marcat ca șters |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` nu are sferă pentru că rândul pe care îl marchează trăiește în
+registrul global; handler-ul lui verifică apartenența apelantului la spațiul de lucru
+numit și cere `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` din fiecare răspuns este o cale pe **hostul serverului**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Un snapshot al întregii instalări este restricționat la proprietar pe ambele canale]
+`server.backupNow`, `server.listBackups` și `server.deleteBackup` cer **proprietarul**
+instalării (`ServerAuthority.serverOwner`), aceeași poartă ca `GET /backup/snapshot`. Un
+snapshot capturează baza de date a fiecărui spațiu de lucru, așa că a fi admin al unui
+spațiu de lucru nu este suficient pentru a le administra pe celelalte. Ștergerea acceptă
+doar numele directorului cu marcă de timp din listă, nu o cale arbitrară de server, și
+elimină întregul snapshot (inclusiv snapshot-urile incomplete). Exportul/importul per
+spațiu de lucru rămân la adminul/proprietarul spațiului de lucru, nu la proprietarul
+instalării.
 :::
 
-### `server.listBackups` response
+### Răspunsul `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Cel mai nou primul, sortate după numele directorului (care este marca de timp, deci ordinea
+se păstrează chiar și pentru un snapshot al cărui manifest nu a putut fi citit).
 
 ```json
 {
@@ -169,99 +176,104 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` este omis când manifestul nu a putut fi citit. `bytes` de la nivelul superior
+este dimensiunea reală pe disc a întregului director, nu suma din manifest — întrebarea pe
+care o pune un operator care curăță snapshot-uri este cât costă directorul, nu ce
+intenționa backup-ul să scrie.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Fiecare `workspaces[].path` este exact ce ia `workspace.import` ca `source_path`. Acest
+lucru este deliberat: „restaurează acest spațiu de lucru din acest snapshot” *este*
+operațiunea de import, așa că cele două nu pot ajunge la tratamente diferite ale aceluiași
+fișier.
 
-### `workspace.import` validation
+### Validarea `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Înainte de a se înlocui ceva, fișierul candidat este deschis doar-pentru-citire cu o
+conexiune SQLite brută de scurtă durată, iar rândul lui `workspace_meta` este citit.
 
-| Condition                                        | Result                                                          |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Condiție                                          | Rezultat                                                        |
+| ------------------------------------------------- | --------------------------------------------------------------- |
+| Nu este o bază de date SQLite care poate fi citită sau nu are `workspace_meta` | Refuzat. Nu se atinge nimic |
+| Id-ul de spațiu de lucru înregistrat ≠ cel al țintei | **Permis**, înregistrat în jurnal. Așa se duplică un spațiu de lucru sau se restaurează sub un id nou |
+| Id-ul de instalare înregistrat ≠ această instalare | **Permis**, înregistrat în jurnal. Dispozitivele asociate și id-urile de utilizator ale lui aparțin acelei instalări și nu se vor rezolva aici |
+| Id de spațiu de lucru invalid sau fișierul nu există | Refuzat                                                       |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+La acceptare, baza de date a spațiului de lucru țintă este închisă și eliminată din manager
+înainte ca fișierul să fie copiat peste ea (o conexiune drift deschisă ține fișierul și
+`-wal`-ul lui), apoi redeschisă, astfel încât `beforeOpen` reinstalează trigger-ele FTS și
+de sincronizare, iar indecșii FTS sunt reconstruiți — tabelele de conținut ale unui fișier
+importat sunt populate, dar indexul lui poate fi învechit.
 
-## Transfer routes
+## Rute de transfer
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Fiecare operațiune de mai sus vorbește în căi de pe partea de server, ceea ce este un
+răspuns complet doar când serverul este propria ta mașină. Aceste trei transportă octeții,
+pe același canal semnat cu PSK pe care îl folosesc proxy-ul de media și depozitul de
+blob-uri. Apelantul semnează un șir țintă cu cheia pre-partajată a dispozitivului său și
+trece semnătura ca `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| Rută                    | Metodă | Interogare      | Țintă semnată                  | Necesită                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** al spațiului de lucru |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietar** al instalării |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietar** al spațiului de lucru |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` este un id de spațiu de lucru, `n` un nume de director de snapshot, `d` id-ul
+dispozitivului apelant, `s` semnătura. `n` este rezolvat față de listarea backup-urilor,
+nu concatenat la rădăcina backup-urilor, așa că ruta nu poate fi îndreptată spre un
+director pe care listarea nu l-ar fi arătat.
 
-| Status | Cause                                                                              |
-| ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| Status | Cauză                                                                              |
+| ------ | ---------------------------------------------------------------------------------- |
+| `400`  | Lipsește un parametru de interogare obligatoriu sau corpul unui upload este gol      |
+| `403`  | Dispozitiv necunoscut sau revocat, semnătură greșită sau apelantul nu are rolul      |
+| `404`  | Nu există un port de backup pe acest host sau fișierul de snapshot/spațiu de lucru numit nu există |
+| `405`  | `/backup/restore` apelat cu orice altceva decât `POST`                               |
+| `413`  | Corpul upload-ului depășește 8 GiB, după content-length declarat sau după octeții citiți efectiv |
+| `500`  | Exportul sau arhivarea a eșuat pe partea de server                                   |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Ambele descărcări răspund cu `Cache-Control: no-store` și `Accept-Ranges: none`. Fiecare
+cerere creează o copie **proaspătă** și o șterge după ce a fost transmisă în flux, așa că
+un răspuns din cache sau reluat ar îmbina octeți din două exporturi diferite într-un
+singur fișier care pare valid și nu este.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` returnează `<name>.zip`, cu intrări relative la rădăcina snapshot-ului,
+astfel încât dezarhivarea reproduce `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db`. Intrările sunt scrise în ordine sortată, așa că două arhive
+ale aceluiași snapshot sunt aceeași arhivă.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` transmite corpul direct într-un fișier de pregătire, în loc să îl pună
+în buffer, îl limitează înainte și în timpul citirii și șterge fișierul pregătit pe
+**fiecare** cale de ieșire, inclusiv la un refuz.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[O conexiune retransmisă prin releu nu are origine HTTP]
+Releul intermediat transportă cadre RPC, nu transferuri de fișiere. Tot ce vorbește în căi
+de pe partea de server continuă să funcționeze prin el; cele trei rute de transfer au
+nevoie de o conexiune directă, iar interfața le dezactivează cu o notă, în loc să eșueze la
+mijlocul descărcării.
 :::
 
-## Paths and limits
+## Căi și limite
 
-| Thing                          | Value                                                        |
+| Element                        | Valoare                                                      |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Snapshot-uri                   | `<dataDir>/backups/<timestamp>/`                             |
+| Backup-uri programate de spațiu de lucru | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Exporturi de spațiu de lucru   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Pregătire pentru transfer      | `<dataDir>/backups/transfer/` — un atelier, curățat de ruta care îl scrie |
+| Numele arhivei de snapshot     | `<snapshot directory name>.zip`                              |
+| Plafon de upload               | 8 GiB per `POST /backup/restore`                             |
+| Retenție                       | Snapshot-uri de instalare: ștergere manuală. Backup-uri de spațiu de lucru: pipeline săptămânal, 30 de zile implicit |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Directoarele `exports/`, `transfer/` și `workspace-backups/` nu sunt snapshot-uri de
+instalare și sunt excluse din `server.listBackups`. Doar ultimul director are retenție
+programată; ștergerea unui snapshot de instalare necesită acțiunea explicită a
+proprietarului instalării.
 
-## See also
+## Vezi și
 
-- [Back up and restore](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/) — the recipes these operations belong to
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/) — why one workspace is one file
-- [`cc_server` CLI](/ro-RO/manual/referinta/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/ro-RO/manual/referinta/harta-de-rute/) — where the UI lives
-- [Architecture](/ro-RO/manual/concepte/arhitectura/) — the client/server split the paths follow
+- [Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/) — rețetele cărora le aparțin aceste operațiuni
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/) — de ce un spațiu de lucru este un fișier
+- [CLI `cc_server`](/ro-RO/manual/referinta/cc-server-cli/) — directorul de date în care se află aceste căi
+- [Hartă de rute](/ro-RO/manual/referinta/harta-de-rute/) — unde se află interfața
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/) — separarea client/server pe care o urmează aceste căi

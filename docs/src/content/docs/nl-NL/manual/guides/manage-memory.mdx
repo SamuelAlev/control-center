@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Werkruimtegeheugen beheren
+description: Controleer, corrigeer en snoei in de feiten en beleidsregels die agenten in een werkruimte hebben geschreven.
 slug: nl-NL/handleiding/gidsen/geheugen-beheren
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Deze gids laat zien hoe je met de kennisopslag van een werkruimte werkt.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Het belangrijkste om te weten voordat je begint: **de geheugen-UI is een controleoppervlak, niet een plek om te schrijven.** Feiten en beleidsregels worden door agenten geschreven — via `propose_fact` en `propose_policy`, met `supersede_fact` en `supersede_policy` om ze te vervangen. `remember` schrijft een aan de sessie gebonden hot-tier-item dat `consolidate_memory` later tot een feit kan promoveren. Beslissingen uit opgenomen vergaderingen worden geoogst in het domein `decisions`; bij voltooide agentruns is er geen oogst. Wat je hier doet, is lezen wat ze hebben geschreven, het corrigeren, het deactiveren of het verwijderen.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Geheugen staat onder **Instellingen → Werkruimte → Geheugen** (`/workspaces/<id>/settings/memory`). Het is geen bestemming op het hoogste niveau in de zijbalk.
 
-## The three tabs
+## De drie tabbladen
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+De pagina heeft precies drie tabbladen. Feiten en Beleid tonen een live aantal; de grafiek niet:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Feiten** — elk feit in de werkruimte, met een telling van de feiten die niet zijn vervangen
+- **Beleid** — normatieve regels gegroepeerd per domein, met een telling van de actieve
+- **Kennisgrafiek** — een interactief canvas van domeinen, onderwerpen, feiten en beleidsregels
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domeinen zijn niet iets wat je aanmaakt. Een domein ontstaat wanneer een agent het eerste feit of de eerste beleidsregel erin schrijft; er is nergens in de UI een bediening om een domein aan te maken.
 
-## Review and correct a fact
+## Een feit controleren en corrigeren
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Open het tabblad **Feiten**.
+2. Gebruik het zoekvak om de lijst te verfijnen. Het is een eenvoudig substringfilter over het domein, het onderwerp en de inhoud van elk feit — geen trefwoordenindex, geen rangschikking.
+3. Gebruik het bereikfilter om alle bereiken te tonen, alleen werkruimtebrede feiten, of de feiten van één repository.
+4. Gebruik de sorteerschakelaar om te ordenen op recentheid of op betrouwbaarheid.
+5. Klik op de bewerkingsbediening van een feit.
 
-The edit dialog lets you change:
+In het bewerkingsdialoogvenster kun je het volgende wijzigen:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domein** — een feit tussen domeinen verplaatsen
+- **Onderwerp** — het korte label
+- **Inhoud** — de kennistekst
+- **Betrouwbaarheid** — een schuifregelaar in stappen van 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Sla op om het terug te schrijven. Er is geen knop **Feit toevoegen**; het dialoogvenster opent alleen op een bestaande rij.
 
-## See superseded facts
+## Vervangen feiten bekijken
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Het tabblad Feiten heeft een schakelaar **Vervangen tonen**. Vervangen feiten zijn standaard verborgen en worden door die schakelaar onthuld; daar leeft het auditspoor — vervangen verwijdert nooit.
 
-## Delete a fact
+## Een feit verwijderen
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Gebruik de verwijderingsbediening van een feit en bevestig. Dit is een echte verwijdering, geen vervanging: gebruik het voor feiten die simpelweg verkeerd waren om vast te leggen, en laat agenten feiten vervangen waarvan de _inhoud_ inmiddels is veranderd.
 
-## Manage policies
+## Beleidsregels beheren
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Het tabblad **Beleid** groepeert actieve beleidsregels per domein en zet inactieve in een sectie achteraan. Per beleidsregel kun je:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- Die **bewerken**
+- Die **verwijderen**
+- Die **deactiveren** / **activeren** — de omkeerbare optie en meestal de juiste. Alleen actieve beleidsregels bereiken de prompts van agenten.
 
-As with facts, there is no create control.
+Net als bij feiten is er geen bediening om iets aan te maken.
 
-## Explore the knowledge graph
+## De kennisgrafiek verkennen
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Het tabblad **Kennisgrafiek** toont domeinen, onderwerpen, feiten en beleidsregels als een navigeerbaar canvas van knooppunten — pannen, zoomen, knooppunten slepen. Als je op een knooppunt tikt, opent het detailpaneel, van waaruit dezelfde bewerkingsdialoogvensters bereikbaar zijn. Het is de snelste manier om te zien welke domeinen daadwerkelijk gevuld zijn.
 
-## Edit an agent's working memory
+## Het werkgeheugen van een agent bewerken
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Werkgeheugen is een privékladblok per agent, dat bij een dispatch in zijn prompt wordt geïnjecteerd. Agenten schrijven het zelf met `record_observation` en `update_my_notes`, maar je kunt het rechtstreeks lezen en bewerken:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Instellingen → Werkruimte → Agenten** → selecteer de agent → het tabblad **Geheugen**.
 
-## Access grants
+## Toegangsverleningen
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Toegangsverleningen voor geheugen koppelen de rol van een agent aan een machtiging (`none`, `read`, `write`) per domein. Schrijf ze met de `memory_access_grant.*`-operaties.
 
-Two things to understand about how they resolve:
+Twee dingen zijn belangrijk om te begrijpen over hoe ze uitpakken:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Lezen is fail-open.** Zonder toegangsverleningsrij voor een combinatie van (rol, domein) is de effectieve machtiging `read`. De enige schrijfactie die een fout gooit zonder `write`, is `propose_policy`. Het schrijven van feiten is niet aan een toegangsverlening gebonden.
+- **Toegangsverleningen hebben de rol van de agent als sleutel.** Tools voor het voorstellen stellen een ontbrekende `agent_role` standaard in op `general`. Een toegangsverlening die voor een andere rol is geschreven, bindt die agenten niet; een `general`-verlening wel.
 
-## Search is not the same everywhere
+## Zoeken is niet overal hetzelfde
 
-Three different things are called "memory search" and they do not agree:
+Drie verschillende dingen heten "geheugen zoeken" en ze komen niet overeen:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Waar                                | Wat het doet                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Het zoekvak van het tabblad Feiten  | Substringfilter over de feiten die al in de client zijn geladen                                                   |
+| De RPC-operatie `memory_fact.search` | Alleen FTS5-trefwoordzoekopdracht — een thin client kan geen query-embedding meesturen, dus hybride zoeken blijft intern op de host |
+| De tool `search_memory` aan de agentkant | `keyword`, `semantic` of `hybrid` (de standaard). Hybride voegt vier stemmen samen: lexicaal, semantisch, temporeel en grafisch |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Een agent en de geheugenpagina rangschikken dezelfde query dus niet op dezelfde manier. Als je wilt nagaan wat een agent zich daadwerkelijk kan herinneren, vraag het dan aan de agent.
 
 ## Embeddings
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Feiten krijgen **op het moment van schrijven** een embedding, en alleen wanneer het embeddingmodel op het apparaat is geïnstalleerd. Controleer de status onder **Instellingen → Server → Diagnose en privacy → Semantisch zoeken**. Installeer het model voordat agenten geheugen beginnen te schrijven, als je semantisch ophalen wilt.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
-- [Use the MCP server](/nl-NL/handleiding/gidsen/mcp-server/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
+- [De MCP-server gebruiken](/nl-NL/handleiding/gidsen/mcp-server/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Memory and knowledge](/nl-NL/handleiding/concepten/geheugen-en-kennis/)
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/)
+- [Geheugen en kennis](/nl-NL/handleiding/concepten/geheugen-en-kennis/)
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/)

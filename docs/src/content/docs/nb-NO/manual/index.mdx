@@ -1,54 +1,56 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Introduksjon
+description: Control Center er cockpiten for programvareutvikling med flere agenter.
 slug: nb-NO/handbok
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center gir deg kommandoen over en flåte av AI-kodeagenter. Send ut agenter, følg dem arbeide i sanntid, gå gjennom PR-ene deres og administrer repoer, arbeidsområder og integrasjoner — fra en innebygd skrivebordsapp, en nettleser eller telefonen din.
 
 <div className="docs-start not-content">
-  <LinkButton href="/nb-NO/handbok/hurtigstart/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/nb-NO/handbok/installer/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/nb-NO/handbok/hurtigstart/" icon="right-arrow">Hurtigstart</LinkButton>
+  <LinkButton href="/nb-NO/handbok/installer/" variant="minimal" icon="download">Installer Control Center</LinkButton>
 </div>
 
-## What you can do
+## Hva du kan gjøre
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/nb-NO/handbok/konsepter/pipelines/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Send meldinger til agenter**: områder er den viktigste måten å styre flåten på. @-nevn en agent, og den sendes ut i sitt eget copy-on-write-worktree, slik at flere kan kode og gjennomgå parallelt uten å røre arbeidskopien din
+- **Orkestrer de store oppgavene**: gi orkestratoren et mål, godkjenn planen for hele teamet den foreslår én gang, og en generert [pipeline](/nb-NO/handbok/konsepter/pipelines/) kjører den
+- **Gå gjennom og slå sammen PR-er** med en innebygd diff-visning, innebygde kommentarer og AI-drevet gjennomgang
+- **Gi agenter engangsmaskiner**: en [stasjon](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/) er en VM bygget for å kastes — en nettleser, et skrivebord, en telefon eller en inngjerdet terminal — som agenten styrer mens du følger med i sanntid og kan overta; utviklingsservere inne i den videresendes til `localhost`, agentens nettleser og `https://myapp.test`
+- **Automatiser arbeidsflyter** med DAG-baserte pipelines som utløses av hendelser eller tidsplaner
+- **Administrer kunnskap** med minne, fakta og policyer avgrenset til arbeidsområdet
+- **Følg arbeidet** med leverandørnøytrale saker, prosjekter og delegering
+- **Ta opp møter** med opptak, transkripsjon og diarisering på enheten, som deretter oppsummeres til notater, tiltak og beslutninger
+- **Se dagen din** med synkronisering mot Google Calendar, RSVP, møtevarsler og ta opp og knytt
+- **Følg flåten fra telefonen**: par en enhet med serveren din og les meldinger, svar og prioriter saker. Telefonen velger den beste veien den kan nå — loopback, LAN, tailnet eller TLS — og faller tilbake på et ende-til-ende-forseglet relé som videresender rammer det ikke kan lese
+- **Styr agenter fra Slack**: koble et arbeidsområde til en chatteapp og nevn boten, svar i en Slack-tråd eller opprett en sak med en skråstrekkommando — over en utgående tilkobling, så det ikke trengs noe offentlig endepunkt
+- **Integrer** med GitHub, Linear, Slack, Google Calendar og over 100 MCP-verktøy
 
-## You do not have to install it
+## Du trenger ikke å installere det
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Den samme appen kjører i nettleseren din på
+[app.usectrl.dev](https://app.usectrl.dev), med de samme funksjonene.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Hver klient — skrivebord, nett og telefon — er en tynn renderer over en headless
+server som eier dataene dine og gjør arbeidet. Skrivebordsappen kan starte den
+serveren for deg; en nettleserfane kan ikke, så nettappen kobler seg til en du
+kjører selv. Den serveren kan ligge på din egen maskin (`ws://localhost:9030`,
+uten behov for sertifikat) eller på en ekstern vert som nås over TLS, et VPN
+eller en tunnel.
 
-See [Install](/nb-NO/handbok/installer/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/nb-NO/handbok/konsepter/drift/) for how the three clients relate.
+Se [Installer](/nb-NO/handbok/installer/#use-it-in-your-browser) for nettleserveien og
+[Drift og klienter](/nb-NO/handbok/konsepter/drift/) for hvordan de tre klientene henger sammen.
 
-## Next steps
+## Neste steg
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/nb-NO/handbok/installer/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/nb-NO/handbok/hurtigstart/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/nb-NO/handbok/veiledninger/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/nb-NO/handbok/slik-gjor-du/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/nb-NO/handbok/konsepter/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/nb-NO/handbok/referanse/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Installer" href="/nb-NO/handbok/installer/" description="Nedlastinger, systemkrav og hvor serveren kjører." />
+  <LinkCard title="Hurtigstart" href="/nb-NO/handbok/hurtigstart/" description="Den korteste komplette veien til en agent som jobber i repoet ditt." />
+  <LinkCard title="Veiledninger" href="/nb-NO/handbok/veiledninger/" description="Lengre leksjoner, i rekkefølge, med utgangspunkt i ditt første arbeidsområde." />
+  <LinkCard title="Slik gjør du" href="/nb-NO/handbok/slik-gjor-du/" description="Oppskrifter for én oppgave om gangen: legg til repoer, konfigurer tillatelsesregler eller par telefonen din." />
+  <LinkCard title="Konsepter" href="/nb-NO/handbok/konsepter/" description="Hvorfor produktet virker slik det gjør, med utgangspunkt i drift og klienter." />
+  <LinkCard title="Referanse" href="/nb-NO/handbok/referanse/" description="Komplette tabeller for ruter, MCP-verktøy, tastatursnarveier og domenehendelser." />
 </div>

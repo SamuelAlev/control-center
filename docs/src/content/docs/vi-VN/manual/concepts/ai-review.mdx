@@ -1,225 +1,237 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: Đánh giá bằng AI
+description: Cách một pull request trở thành một bản đã được đánh giá — space đánh giá, node đánh giá và đồng thuận ngang hàng, cohort và trục, kết luận Ship/Hold/Block, và vì sao xuất bản vẫn là bước do bạn thực hiện.
 slug: vi-VN/so-tay/khai-niem/danh-gia-ai
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Hình dạng của một lượt đánh giá
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Một lượt đánh giá AI là một lần chạy quy trình `pr_review` có sẵn trên một pull
+request đang mở. Quy trình mở space đánh giá của PR, triển khai các agent đánh
+giá để đọc diff trong bản checkout cách ly của space đó, mỗi agent ghi nhận
+phát hiện của mình dưới dạng **node đánh giá** có cấu trúc, một agent chủ trì
+hợp nhất chúng thành một bản dẫn dắt, và bộ hoàn thiện tính ra một kết luận duy
+nhất: **Ship**, **Hold** hoặc **Block**. Điều quy trình không bao giờ làm là
+xuất bản — đăng lên GitHub là một bước riêng, có chủ đích, do con người thực
+hiện.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Phần còn lại của trang này giải thích các thành phần và lý do chúng được định
+hình như vậy.
 
-## One review space per PR
+## Mỗi PR một space đánh giá
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Ngữ cảnh đánh giá của một PR là một space nhắn tin — chế độ `review`, loại
+`pr` — được nối với pull request bằng một **liên kết space đánh giá**. Space
+được tạo theo cách idempotent: trang PR, quy trình đánh giá và các bề mặt chat
+đều phân giải _một_ space nền tảng của PR qua cùng một đường mã, nên một mẫu
+đánh giá PR và một người mở nó không bao giờ có thể rơi vào hai phòng khác nhau
+mà nhìn hai bản checkout khác nhau.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Worktree cách ly của space có PR được checkout tại head ref của nó. Một phòng
+cũng có nghĩa là một bản checkout: mọi người đánh giá làm việc trong cùng một
+space thay vì mỗi người nhận một bản sao riêng của không gian làm việc.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Mỗi người đánh giá đăng vào luồng có tên riêng của mình trong space duy nhất
+đó, và các phát hiện là thông điệp `review_node` chứ không phải văn xuôi đơn
+thuần. Việc gom toàn space ở cuối là có chủ đích — một kết luận tính từ phát
+hiện của một luồng sẽ âm thầm trở thành kết luận về một người đánh giá.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Liên kết này mang một thang trạng thái — `requested` → `in progress` →
+`awaiting approval` → `completed` — chính là thứ kiểm soát nút **Xuất bản lên
+GitHub** trên tab Đánh giá của PR.
 
-## Review levels
+## Mức đánh giá
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Độ sâu của một lượt đánh giá là một chính sách không gian làm việc với ba mức,
+đặt tại **Cài đặt → Không gian làm việc → Chung**, trên thẻ **Chính sách không
+gian làm việc**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Mức        | Các agent đánh giá được triển khai            | Phạm vi báo cáo                                |
+| ---------- | --------------------------------------------- | ---------------------------------------------- |
+| `light`    | Chỉ kỹ sư                                     | Chỉ những gì thực sự quan trọng                |
+| `balanced` | Kỹ sư, QA, kiến trúc sư (mặc định)            | Lượt đánh giá tiêu chuẩn                       |
+| `thorough` | Cả năm, gồm bảo mật và hiệu năng              | Không hạ mức phát hiện nào                     |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Mức này điều khiển hai núm cùng lúc: những người đánh giá nào được triển khai,
+được thi hành bằng cổng trạng thái `runWhen` của mẫu quy trình chứ không phải
+bằng câu chữ trong prompt — câu chữ trong prompt có thể bị bỏ qua, còn cổng thì
+không — và nơi các phát hiện dưới ngưỡng được hiển thị. Không núm nào xóa phát
+hiện: một mức báo cáo ít hơn vẫn ghi nhận đúng ngần ấy phát hiện rồi gom phần
+còn lại.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Các lượt kiểm tra bảo mật và hiệu năng tái dùng chính các agent kiến trúc sư và
+kỹ sư có sẵn thay vì thêm agent mới. Tính chuyên biệt nằm ở bản giao việc mà
+người đánh giá nhận được, không phải một agent riêng cho mỗi trục — một agent
+cho mỗi trục sẽ là thêm năm dòng trong mọi không gian làm việc mà chẳng thêm
+năng lực nào. Việc chọn người đánh giá không bao giờ soi diff để tìm ngôn ngữ
+hay lĩnh vực.
 
-## Review nodes: findings as data, not prose
+## Node đánh giá: phát hiện là dữ liệu, không phải văn xuôi
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Một phát hiện được ghi bằng `add_review_node` trở thành một **node đánh giá**
+trên PR — đây là thứ tab Đánh giá hiển thị, là thứ mà kết luận được tính từ đó,
+và là thứ mà “Xuất bản lên GitHub” biến thành bình luận nội tuyến. Một người
+đánh giá chỉ trả về văn xuôi sẽ tạo ra một lần chạy quy trình trông thì thành
+công và một bề mặt đánh giá trống rỗng; việc ghi nhận mới là phần chịu lực.
 
-Each node carries:
+Mỗi node mang:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Trường           | Giá trị                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| Loại             | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                  |
+| Mức ưu tiên      | P0 (nghiêm trọng) → P3 (nhỏ nhặt)                                           |
+| Bộ ba phân loại  | danh mục (`security`, `stability`, …), mức độ nghiêm trọng, công sức        |
+| Điểm neo         | Đường dẫn tệp, dòng bắt đầu và kết thúc                                     |
+| Bản sửa kèm theo | Các dòng thay thế được đề xuất, một diff tùy chọn, một prompt sửa tùy chọn |
+| Độ tin cậy       | Điểm trong [0, 1]                                                           |
+| Lập luận         | Phần phân tích, được viết trước phát hiện                                   |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Hai chi tiết là có chủ đích. Gợi ý GitHub một cú nhấp chỉ được đưa ra khi người
+đánh giá cung cấp các dòng thay thế chính xác — suy ra chúng từ một diff hợp
+nhất sẽ sai một cách âm thầm, và một cú nhấp commit một suy luận sai còn tệ hơn
+là không có nút nào. Và lược đồ `add_review_node` trình bày `reasoning` trước
+phát hiện, nên một mô hình điền đối tượng theo thứ tự lược đồ sẽ viết phần phân
+tích trước. Trường này là tùy chọn: bỏ qua nó không làm node bị từ chối. Một
+node có payload sai định dạng sẽ biến mất thay vì làm bẩn lượt đánh giá.
 
-## Peer consensus
+## Đồng thuận ngang hàng
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Một node đi qua `open` → `consensus-ready` → `resolved` hoặc `dismissed`. Bước
+giữa là trái tim của mô hình: **một phát hiện chỉ được nâng cấp khi một người
+đánh giá ngang hàng xác nhận nó, và một agent không bao giờ có thể xác nhận phát
+hiện của chính mình.** Công cụ MCP `publish_review_to_github` và mặc định của
+RPC vẫn chỉ xuất bản các phát hiện đã được xác nhận ngang hàng. Nút **Xuất bản
+lên GitHub** trên tab Đánh giá thì gửi mọi phát hiện đang mở còn lại.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Quy tắc được thi hành ở ba nơi độc lập — công cụ xác nhận, bộ hoàn thiện và bộ
+xuất bản — nên nó vẫn đứng vững dù một trong số đó có lỗi. Mọi thay đổi trạng
+thái đều đi qua một dịch vụ duy nhất, và đó là điều khiến một trạng thái có ý
+nghĩa: trước đó, hai nửa đường đi có thể bất đồng về việc cùng một phát hiện đã
+được xử lý hay chưa.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Khi những người đánh giá bất đồng — cùng tệp và dòng, mức ưu tiên lệch nhau từ
+hai bậc trở lên, hoặc một người gọi đó là `bug` còn người kia gọi là
+`suggestion` — sự bất đồng được đưa lên trên danh sách phát hiện. Đó là nơi ý
+kiến của những người đánh giá rẽ khác nhau và phán đoán của con người có giá
+trị nhất.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Bỏ qua một phát hiện cũng ghi một dữ kiện ức chế mềm vào miền bộ nhớ, ở độ tin
+cậy thấp — một lần bỏ qua là một sở thích, không phải một quy tắc.
 
-## Cohorts: what the review is grouped around
+## Cohort: thứ mà lượt đánh giá được gom quanh
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Lượt tính toán đánh giá gom các tệp đã đổi của một PR thành các **cohort** suy
+ra từ đồ thị mã: tệp đã đổi ánh xạ tới các ký hiệu mà chúng chạm tới, ký hiệu
+tới các thành phần được nối, và các cohort được xếp hạng theo phạm vi ảnh
+hưởng. Mỗi cohort mang một thứ tự đọc có dẫn dắt, sơ đồ và thông tin chi tiết
+chứ không phải một danh sách tệp phẳng.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Hai quy tắc trung thực định hình điều này. Khóa cohort được suy ra từ nội dung
+và ổn định qua các lần push, nên phát hiện và tiến độ đánh giá sống sót qua một
+lần rebase hay force-push thay vì bị mồ côi. Và khi kho mã chưa có chỉ mục mã,
+việc gom nhóm lùi về đường dẫn thuần và nói rõ điều đó — đường lùi không bao
+giờ giả tạo sự tự tin ngữ nghĩa.
 
-## Review axes and gates
+## Trục đánh giá và cổng
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Song song với phát hiện của những người đánh giá, một lượt đánh giá tích lũy
+**kết quả trục**: sáu trục, thuộc hai loại.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Trục                      | Loại       | Lấy từ                                        |
+| ------------------------- | ---------- | --------------------------------------------- |
+| `correctness`, `security` | Dùng token | Phát hiện của chính những người đánh giá      |
+| `testGap`                 | Dùng token | Phát hiện của những người đánh giá            |
+| `visual`, `apiContract`   | Tất định   | Được tính mà không tốn token                  |
+| `performance`             | Tất định   | Chỉ có enum — không gì trong sản phẩm tính ra kết quả |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Kết luận của một trục là `pass`, `warn`, `fail`, `partial` hoặc `unavailable` —
+và chỉ `pass` hoặc `warn` mới mở được cổng. Sự khác biệt giữa `fail`, `partial`
+và `unavailable` là phần chịu lực: một trục có cổng nhưng không thể hoàn tất
+hoặc hoàn toàn không chạy được sẽ giữ kết luận tổng lại thay vì cho qua.
+**Thiếu bằng chứng không bao giờ biến thành một cổng xanh.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Một số trục cố ý chỉ mang tính tham khảo. Trục khoảng trống kiểm thử suy ra từ
+cohort không thể thấy được mức bao phủ của dependency injection hay factory —
+một kho mã chưa được lập chỉ mục có bộ kiểm thử kỹ lưỡng và một kho mã không có
+kiểm thử nào trông giống hệt nhau từ đó, nên khẳng định bên nào cũng sẽ là nói
+dối; trục này hiện trên bảng điều khiển mà không chặn cổng. Các trục dùng token
+chỉ mang tính tham khảo vì mức ưu tiên của phát hiện đã dẫn dắt kết luận, và
+đặt cổng lại dựa trên chúng sẽ là tính trùng hai lần.
 
-## The verdict
+## Kết luận
 
-The finalizer computes the verdict over the findings with status `open` or
+Bộ hoàn thiện tính kết luận dựa trên các phát hiện có trạng thái `open` hoặc
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- phát hiện P0 nào có độ tin cậy ≥ 0.7 → **Block**
+- nếu không, bất kỳ P0 (độ tin cậy thấp) hoặc bất kỳ P1 nào → **Hold**
+- còn lại → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Kết luận mang một độ tin cậy tổng hợp suy ra từ độ phân tán của các độ tin cậy
+góp phần — đồng thuận làm tăng nó, khác biệt làm giảm nó.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Việc hợp nhất của agent chủ trì (CEO) là một lượt biên tập, không phải liệt kê
+lại: một bản sao thứ hai do tay người viết chính là thứ lệch khỏi bản thật. Các
+phát hiện trùng lặp bị hạ mức thay vì lặp lại — nhiều người đánh giá cùng được
+trỏ vào một diff với phạm vi phụ trách cố ý chồng lấn, nên cùng một khiếm khuyết
+đến tay bộ hoàn thiện ba lần nghĩa là hệ thống đang chạy đúng; xuất bản nó ba
+lần mới là hệ thống đang rò rỉ kiến trúc của chính nó vào hộp thư của người đọc.
+Ở một lượt đánh giá lại, các phát hiện được lấy dấu vân tay và đối chiếu khác
+biệt với vòng trước, nên phần chênh lệch mới là thứ hiện ra.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Cuối cùng các trục được gộp vào, và chúng chỉ có thể khiến kết luận **nghiêm
+trọng hơn**: một trục có cổng bị lỗi buộc phải Block — nó không thể bị các phát
+hiện ghi đè — và một trục có cổng không thể hoàn tất buộc ít nhất là Hold.
 
-## Publishing stays with you
+## Xuất bản vẫn thuộc về bạn
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Quy trình cố ý không đăng lên GitHub; việc xuất bản do người dùng quyết định để
+một lượt đánh giá không bao giờ xuất bản trùng. Khi bạn nhấn **Xuất bản lên
+GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Một lượt đánh giá GitHub được gửi đi. Các phát hiện đã được xử lý hoặc bỏ qua
+  sẽ bị bỏ qua. Nút này xuất bản mọi phát hiện đang mở còn lại
+  (`selection: all_open`). Công cụ MCP `publish_review_to_github` vẫn mặc định
+  chỉ với các phát hiện đã được xác nhận ngang hàng (`consensus`).
+- Các phát hiện neo vào một tệp và dòng trở thành bình luận nội tuyến; mọi thứ
+  khác gộp vào phần thân tóm tắt, mỗi mục mang một chân trang “— Control Center
+  AI review” để nguồn không còn mơ hồ.
+- Các điểm neo được xác minh lại dựa trên diff _hiện tại_ của PR vào lúc xuất
+  bản. Một bình luận trên đoạn mã đã bị viết lại là thứ phá hủy lòng tin mạnh
+  nhất mà một người đánh giá có thể để lại; nếu GitHub vẫn từ chối một điểm neo
+  nội tuyến, toàn bộ lượt đánh giá sẽ được gửi lại với mọi phát hiện gộp vào
+  phần thân để không thứ gì bị âm thầm bỏ đi.
+- Kết luận **Block** được gửi dưới dạng `REQUEST_CHANGES`; **Hold** là
+  `COMMENT`; **Ship** là `APPROVE` khi bấm nút (`approve_on_ship: true`). Công
+  cụ MCP để Ship là `COMMENT` trừ khi bạn truyền `approve_on_ship`.
+- Lượt đánh giá được đăng dưới danh tính ứng dụng của máy chủ. Ai đã nhấn Xuất
+  bản được ghi lại cho cổng vai trò và nhật ký kiểm tra; người đó không phải tác
+  giả trên GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/).
+Xuất bản khai báo lớp hành động `prPublish`, nên điểm chặn của rào chắn kiểm
+soát nó như mọi hành động thay đổi dữ liệu — nó hỏi trước theo mặc định và từ
+chối khi không có người phê duyệt nào được kết nối. Xem
+[Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/).
 
-## What a reviewer may do
+## Người đánh giá được làm gì
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Các agent đánh giá chạy ở chế độ `review`: một sandbox chỉ đọc và một danh sách
+công cụ được phép chọn lọc gồm phát hiện, bình luận, phiếu và đánh giá ngang
+hàng — nhưng không được thay đổi gì. Một người đánh giá không thể sửa đoạn mã mà
+nó phê bình; nó có thể đính kèm một bản sửa đề xuất để con người áp dụng. Thông
+báo từ chối của chế độ này bảo một agent cố hành động bất chấp rằng hãy hoàn tất
+lượt đánh giá và để người dùng xử lý bản tóm tắt đã xuất bản.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) — the policy engine that gates publishing
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/) — what `review` mode changes for an agent
-- [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/) — the engine the review runs on
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/) — where the isolated worktree comes from
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) — công cụ chính sách kiểm soát việc xuất bản
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/) — chế độ `review` thay đổi điều gì ở một agent
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/) — công cụ mà lượt đánh giá chạy trên đó
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/) — worktree cách ly đến từ đâu
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Use AI-powered review](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/) — run a review and publish it
-- [Dispatch reviewer agents](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/) — choose the reviewers yourself
-- [Review compute](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/) — cohorts, axes and diffs
+- [Dùng đánh giá hỗ trợ AI](/vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai/) — chạy một lượt đánh giá và xuất bản nó
+- [Điều phối agent đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/) — tự bạn chọn những người đánh giá
+- [Tính toán đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/) — cohort, trục và diff

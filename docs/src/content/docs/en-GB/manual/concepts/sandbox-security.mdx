@@ -2,6 +2,7 @@
 title: Sandbox and security
 description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
 slug: en-GB/manual/concepts/sandbox-security
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
 :::note[Where the OS sandbox does and does not reach]
@@ -12,7 +13,7 @@ backend exists — Windows, or a Linux box missing those tools — runs fall bac
 to the other boundaries below and the server says so in its startup log.
 `--sandbox off` turns it off deliberately.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Two gaps survive the sandbox and are worth bearing in mind:
 
 - The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
   `apply_patch`, `search`, `find`, `search_files`) run inside the server
@@ -71,7 +72,7 @@ the worktree pointing out of it is resolved and refused too. This is why an
 agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
 
 **The mode's tool surface.** A conversation's [mode](/en-GB/manual/concepts/modes/)
-decides which tools are materialized for the run at all. In the read-only modes
+decides which tools are materialised for the run at all. In the read-only modes
 (`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
 registry and the shell command policy for those modes denies every mutating
 command outright — `git commit`, `git push`, `npm install`, `docker` and the
@@ -84,7 +85,7 @@ prompt, or deny before the call runs. A `prompt` with no approver connected
 resolves to _denied_ — a question nobody can answer is never a yes. See
 [Guardrails](/en-GB/manual/concepts/guardrails/) for the resolution model.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
+**Capability-gated credentials and a sanitised environment.** Credentials are
 minted per launch from the conversation's capability flags and revoked when the
 run ends. ACP, harness `bash` and Claude Code under the native wrap get an
 environment stripped of the dynamic-linker and interpreter injection vectors
@@ -101,7 +102,7 @@ described above and that check is therefore load-bearing rather than a second
 line of defence.
 
 The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
+against the mode's command policy and then spawned with a sanitised environment
 and the worktree as its working directory. Where a backend exists that spawn is
 wrapped, so the sandbox is what stops a shell command from writing outside the
 worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
@@ -162,7 +163,7 @@ one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
 Feeding only one would leave the others spawning unwrapped, which is what used
 to happen. On a host with no backend, or under `--sandbox off`, they all spawn
 unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
+and harness `bash` still sanitise the environment; Claude Code through
 `NoSandboxAdapter` inherits the host environment.
 
 One surface deliberately opts out: the server-hosted terminal accepts a backend

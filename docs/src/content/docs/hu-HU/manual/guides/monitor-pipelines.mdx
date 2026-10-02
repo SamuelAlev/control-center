@@ -1,150 +1,165 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Pipeline-futtatások figyelése
+description: A futtatási várólista kezelése, egy futtatás vízesés- és lépéspaneljének elolvasása, valamint egy sikertelen vagy elakadt lépés helyreállítása.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/).
+Ez az oldal mindarról szól, ami egy futtatás elindulása után következik:
+megkeresni a futtatást, elolvasni, mit tett az egyes lépések, és újraindítani egy
+sikertelen futtatást. Az elindításukhoz lásd:
+[Pipeline kézi futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/).
 
-## Find a run
+## Futtatás megkeresése
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Kattintson a **Pipeline-ok** elemre a munkaterület oldalsávjában. A képernyő a
+   munkaterület futtatási várólistája — minden futtatás, a legújabbal kezdve.
+2. A bal oldali sávval szűrhet. Pontosan három szűrő van, mindegyik élő
+   számlálóval: **Mind**, **Fut**, **Sikertelen**.
+3. Járja be a táblázatot a <kbd>↑</kbd>/<kbd>↓</kbd> (vagy <kbd>j</kbd>/<kbd>k</kbd>)
+   billentyűkkel, és nyomja meg az <kbd>Enter</kbd> billentyűt a kijelölt futtatás
+   megnyitásához. Egy sorra kattintva ugyanez történik.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Minden sor egy jellel mutatja, hogyan indult a futtatás (lejátszás a kézi
+indításhoz; fájljel a kódgráf-figyeléshez; egyébként az automatikus
+eseményindító). Az elemleírás megnevezi az eseményindítót — **Kézi**, **PR
+közzétéve**, **Fájlváltozás** és így tovább —, egy figyelési futtatásnál pedig
+azt is, mely fájlok változtak. Ezután a pipeline neve, egy állapotjelvény, az
+aktív időtartam (vagy egy `queued` futtatás esetén a várólistán elfoglalt hely),
+és hogy mennyi ideje indult el ez a kísérlet. Az aktív időtartamból kimaradnak a
+tétlen leállási és újraindítási hézagok, tehát nem a valós időbeli hosszt adja
+meg.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Nincs szűrő a befejezett, felfüggesztett vagy megszakított futtatásokra, nincs
+sablononkénti szűrő, nincs időablak, és nincs sablononkénti futtatási előzmény
+nézet sem. Egy sablon futtatásainak összehasonlításához a neve után kell
+átfésülni a várólistát.
 
-## Read the run detail
+## A futtatás részleteinek elolvasása
 
-A run's page has three stacked parts.
+Egy futtatás oldala három egymásra helyezett részből áll.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**A metaadatsáv** tartalmazza a kezdési időt, az aktív időtartamot, a lépések
+haladását („3 / 7 lépés”), a sikertelenség összegzését, amely megnevezi, melyik
+lépés tört el és miért, valamint az **Újrapróbálás** és **Törlés** műveleteket.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Az időzítési vízesés** lépésenként egy sávot ad, annak időtartamával és —
+ügynöklépéseknél — centben kifejezett költségével. Egy újrapróbált lépés az
+időtartama után `×N` utótagot mutat; a kísérletek száma csak itt jelenik meg.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**A gráfvászon** a sablont rajzolja ki az egyes csomópontok élő állapotával.
+Egy csomópont kijelölése megnyitja annak lépéspaneljét.
 
-### Run and step statuses
+### Futtatás- és lépésállapotok
 
-| Status        | Meaning                                           |
+| Állapot       | Jelentés                                          |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **Függőben**  | Létrehozva, még nem indult el                     |
+| **Várólistán** | Felvéve, de várakozik: a sablon max. párhuzamossági korlátja betelt; még nincsenek lépéssorok |
+| **Fut**       | Végrehajtás alatt                                 |
+| **Felfüggesztve** | Valami külső dologra vár — normális, nem elakadt |
+| **Befejezve** | Sikeresen befejeződött                            |
+| **Sikertelen** | Hibával zárult                                   |
+| **Megszakítva** | Egy felhasználó vagy a rendszer állította le     |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+A lépéseknél ugyanezek az állapotok vannak a **Várólistán** nélkül, plusz a
+**Kihagyva** állapot, egy olyan ág esetében, amelyet egy router nem vett
+igénybe (és annak mára elérhetetlen leszármazottai esetében).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+A **Felfüggesztve** az az állapot, amelyben egy ügynöklépés az élete nagy részét
+tölti: egy elindított ügynök vagy egy jóváhagyási kapu tartja a lépést, amíg a
+munkája be nem fejeződik. A motor két védőintézkedése az egész futtatást
+buktatja el a folytatás helyett: a 24 óránál tovább felfüggesztett lépés
+(`extras.awaitApproval` — az `orchestration.awaitApproval` törzs — kivétel;
+a `human.gate` nem az), valamint az a nem idempotens lépés, amely éppen menet
+közben volt, amikor a szerver leállt.
 
-## Inspect a step
+## Egy lépés vizsgálata
 
-Select a node on the canvas. The step panel shows, in order:
+Jelöljön ki egy csomópontot a vásznon. A lépéspanel sorrendben a következőket
+mutatja:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Egy **Hiba** kiemelt doboz, ha a lépés sikertelen volt, vagy egy **Kihagyva**
+  kiemelt doboz az indoklással, ha kihagyták.
+- **Elindítva**, **Befejezve** és az időtartam.
+- **Ág** — az ág indexe, párhuzamos ágakhoz.
+- **Beszélgetés megtekintése** — arra a beszélgetésre ugrik, amelyben a lépés
+  futott. A pipeline-beszélgetések rejtve vannak az oldalsávban, így ez az
+  egyetlen mód a belépésre.
+- **Bemenet** és **Kimenet**, összecsukható JSON-ként.
+- **Ügynöktevékenység** — egy csempe a lépés által indított minden
+  ügynökfuttatáshoz, annak állapotával, összegzésével, időtartamával és
+  költségével.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Ügynöklépésnél a **Kimenet** az a strukturált payload, amelyet az ügynök a
+`submit_output` hívással beküldött, nem a prózai szövege. A gondolatmenet az
+**Ügynöktevékenység** alatt és a **Beszélgetés megtekintése** mögötti
+beszélgetésben érhető el.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Bash-lépésnél a **Kimenet** a szkript által 0-s kilépéssel kiírt, levágott
+stdout. A nem nulla kilépés a lépést a stderr végével mint hibaüzenettel
+buktatja el.
 
-## Recover a failed run
+## Sikertelen futtatás helyreállítása
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Olvassa el a sikertelenség összegzését a metaadatsávon; az megnevezi a hibás
+   lépést. A lépéspanel **Hiba** kiemelt dobozában van az üzenet.
+2. Ellenőrizze a lépés **Bemenet** mezőjét — a leggyakoribb ok egy hiányzó vagy
+   elgépelt állapotkulcs. A prompt-agent lépés azonnal elbukik, és megnevezi a
+   feloldatlan helyőrzőket; a bash-lépés üres sztringként jeleníti meg őket, és
+   mégis lefut, ami általában egy lépéssel később jelentkezik.
+3. Ügynöklépésnél nyissa meg a **Beszélgetés megtekintése** elemet, és olvassa
+   el, mit tett valójában az ügynök.
+4. Nyomja meg az **Újrapróbálás** gombot a metaadatsávon. A befejezett és
+   kihagyott lépések megtartják a kimeneteiket; minden más törlődik és újra
+   végrehajtódik, a futtatás pedig visszavált futóra. Az időtartam-számláló erre
+   a kísérletre újraindul.
 
-Common causes worth checking first:
+A leggyakrabban ellenőrizendő okok:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Időtúllépés** — a lépés túllépte az **Időtúllépés (ms)** értéket. Ne feledje,
+  a mező ezredmásodpercben van.
+- **Szkripthiba** — a bash-parancs nem nulla kóddal lépett ki, vagy a `bash`
+  nincs benne a szerverkiszolgáló `PATH`-jában.
+- **Sémavalidáció** — az ügynök `submit_output` payloadja nem felelt meg a lépés
+  kimeneti sémájának.
+- **Feloldatlan helyőrző** — egy `{{key}}`, amelyre egy prompt-agent lépés
+  hivatkozott, feljebb soha nem íródott ki. A hiba minden feloldatlan kulcsot
+  megnevez.
+- **Regisztrálatlan törzs** — az a lépés, amelynek törzskulcsa nincs regisztrálva,
+  figyelmeztet a sablon betöltésekor, majd egyszerűen soha nem hajtódik végre.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Az Újrapróbálás csak sikertelen vagy megszakított futtatásnál működik]
+Az **Újrapróbálás** gomb csak akkor jelenik meg, ha a futtatás `failed` vagy
+`cancelled` állapotú. A motor minden más állapotnál azonnal visszatér.
 :::
 
-## Stop a step that is stuck
+## Elakadt lépés leállítása
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Jelölje ki a futó lépést, és nyomja meg a **Futó leállítása** gombot a lépéspanel
+fejlécében. Ez megöli a lépés folyamatát, sikertelennek jelöli a lépést, és
+ezáltal az egész futtatás sikertelen lesz — minden nyitott testvérág vele együtt
+zárul le.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Ezen a képernyőn nincs futtatás megszakítására szolgáló vezérlő. A
+`pipeline.cancel` létezik RPC-műveletként, és a motor megvalósítja, de a
+pipeline-ok felületén semmi nem hívja meg; az egyetlen elérhető leállítási mód
+egy lépésen a **Futó leállítása**, vagy a futtatáson a **Törlés**.
 
-## Track cost
+## Költség követése
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+A költség lépésenként jelenik meg, a vízesés jobb oldali oszlopában és az
+**Ügynöktevékenység** alatti összes csempén. A részletező oldalon nincs
+futtatási összesítés, és a futtatási várólistában sincs költségoszlop, így két
+futtatás költségének összehasonlításához össze kell adni a lépéseiket.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a pipeline manually](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)
-- [Create a pipeline template](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/)
-- [Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
-- [Pipeline steps reference](/hu-HU/kezikonyv/referencia/pipeline-lepesek/)
+- [Pipeline kézi futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)
+- [Pipeline-sablon létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/)
+- [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
+- [Pipeline-lépések referenciája](/hu-HU/kezikonyv/referencia/pipeline-lepesek/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Pipelines](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)
+- [Pipeline-ok](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)

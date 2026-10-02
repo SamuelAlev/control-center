@@ -1,68 +1,67 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: הפעלת פייפליין ידנית
+description: התחילו הרצת פייפליין מבורר ההרצה, מלאו את הקלטים שלה והגיעו לדף פרטי ההרצה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/).
+מדריך זה מכסה התחלה של הרצה ביד. כדי לעקוב אחרי הרצה, לקרוא את פלט
+השלבים ולהתאושש מכשל, ראו
+[מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/).
 
-## Start a run
+## התחלת הרצה
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. לחצו על **פייפליינים** בסרגל הצד של סביבת העבודה.
+2. לחצו על **הרצת פייפליין** בכותרת. אתם נוחתים על בורר ההרצה
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. בחרו תבנית מהמסילה השמאלית. כל כרטיס מציג את שם התבנית, את התיאור שלה
+   ואם היא מקבלת קלטים.
+4. מלאו את טופס הקלט מימין. שדות חובה חוסמים את הכפתור עד שיש בהם ערך;
+   תבנית בלי קלטים אומרת זאת במפורש.
+5. לחצו על **הרצת פייפליין**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+אתם נוחתים בדף הפרטים של ההרצה, עם מפל הזמנים וקנבס הגרף פעילים.
 
-## If the rail is empty
+## אם המסילה ריקה
 
-The launcher shows a template only when **both** are true:
+בורר ההרצה מציג תבנית רק כאשר **שני** התנאים האלה מתקיימים:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- המתג של התבנית דלוק ב**הגדרות ← סביבת עבודה ← תבניות פייפליין**.
+- **התרת הרצה ידנית** דלוק בתיבת הדו־שיח **הרצה ידנית** של עורך התבנית —
+  המתג הזה הוא שיוצר את טריגר ה-`manual` שבורר ההרצה קורא.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+שמונה מבין שלוש־עשרה התבניות המובנות מגיעות מושבתות: `external_pr_welcome`,
 `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+`dep_audit` ו-`pr_digest`. המנוע מסרב להתחיל תבנית מושבתת, לכן הדליקו את
+המתג שלה לפני שתחפשו אותה כאן.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+אין פעולת **הרצה** לכל תבנית ברשימת התבניות ואין כפתור הרצה בתוך העורך —
+בורר ההרצה הוא נקודת הכניסה הידנית היחידה.
 
-## Fill in a repository input
+## מילוי קלט של מאגר
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+קלט מסוג **מאגר** מציג בורר מעל המאגרים הרשומים בסביבת העבודה. בחירה של מאגר
+מאכלסת את `repo_id`, `repo_local_path`, `repo_full_name` ואת — כשהמאגר מחזיק
+remote של GitHub — `repo_owner` ו-`repo_name` במטען ההרצה, כך ששלבי ההמשך
+יכולים לקרוא את אלה שהם זקוקים להם.
 
-## Watch it run
+## צפייה בהרצה
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+לדף פרטי ההרצה יש שלושה חלקים: רצועת מטא (זמן התחלה, משך פעילות, התקדמות
+השלבים, באנר כשל, **נסה שוב** ו**מחיקה**), מפל זמנים שאפשר לכווץ עם משך ועלות
+לכל שלב, וקנבס הגרף. בחירת צומת פותחת את לוח הפרטים של אותו שלב.
 
-[Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/) מכסה את כל זה,
+כולל איך לקרוא שלב מושהה ומה לעשות כששלב נכשל.
 
-Every run you start from the app is a real one.
+כל הרצה שאתם מתחילים מהאפליקציה היא הרצה אמיתית.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create a pipeline template](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
-- [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
-- [Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
+- [יצירת תבנית פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
+- [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
+- [מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Pipelines](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)

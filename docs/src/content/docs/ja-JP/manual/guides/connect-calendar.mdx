@@ -1,123 +1,91 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Google Calendar を接続
+description: Google Calendar をワークスペースに接続し、複数のアカウントを管理し、トークンが期限切れになったときに再接続する方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/カレンダー接続
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ja-JP/マニュアル/コンセプト/カレンダー/) for the full picture.
+このガイドでは、Google Calendar をワークスペースに接続する方法を説明します。接続はワークスペース単位で、そのワークスペースの予定を読み取り専用で Control Center に同期します。全体像は[カレンダーとスケジュール](/ja-JP/マニュアル/コンセプト/カレンダー/)を参照してください。
 
-## Connect an account
+## アカウントを接続する
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. サイドバーで**カレンダー**を開きます。
+2. カレンダーのサイドバーで**カレンダーアカウントを追加**をクリックします。（同じセクションは**設定 → ワークスペース → プロフィールと識別情報**の**Google Calendar**の下にもあります。）
+3. 認可の方法を選びます:
+   - **Control CenterのGoogleアプリを使用** — 設定は何も要りません。ビルドにこれが同梱されている場合の既定です。
+   - **自分のGoogle Cloudクライアントを使用** — 自分のプロジェクトのクライアント ID とシークレットを貼り付けます（[独自の Google クライアントを持ち込む](#独自の-google-クライアントを持ち込むフォークとセルフホスティング)を参照）。
+4. **Googleカレンダーを接続**をクリックします。ダイアログには短いコードと Google のデバイスページへのリンクが表示されます。
+5. 任意のデバイスでそのページを開き、コードを入力して、要求されたアクセスを承認します。ダイアログは自動的に閉じ、予定の同期が始まります。
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+このやり取りを実行し、そこで得られるリフレッシュトークンを保持するのは、あなたのデバイスではなくサーバーです。だからこそコードは、このアプリ上ではなく「任意のデバイス」で承認するのです。
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+アカウントが接続されるのは**アクティブなワークスペースだけ**です。ワークスペースを切り替えると、そのワークスペースのカレンダーが表示されます。
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+接続フローが要求するのは `calendar.readonly` とあなたのメールアドレスで、組み込みアプリでも貼り付けたクライアントでもスコープは同じです。Control Center は予定を読み取るだけで、Google 側で予定を作成、編集、削除したり、招待に返信したりすることはありません。
 
-## How syncing works
+## 同期の仕組み
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+スケジュールを所有するのは**サーバー**です。2 分ごとに各ワークスペースの接続済みアカウントをスイープし、予定をそのワークスペースのデータベースに書き込みます。クライアントが Google と通信することは決してなく、サーバーが書き込んだ内容を読み取るだけです。
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+スイープは増分式です。カレンダーごとの最初のパスでローリングウィンドウ（60 日前から 90 日先まで）を取得し、Google の同期トークンを取り込みます。以降のパスはそのトークンを提示し、変更された分だけを受け取ります。これが 2 分間隔を許容できるようにしています。ウィンドウは 24 時間ごと、および Google がトークンを無効化するたびに、完全同期によって基準を取り直します。
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+リフレッシュトークンは、サーバーのデータディレクトリ配下にある `secrets.json` にサーバー側で保存され、所有者のみが読める権限（`0600`）で書き込まれます。OS のキーチェーンには置かれず、クライアントデバイス上に置かれることもありません。
 
-## Connect multiple accounts
+## 複数のアカウントを接続する
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+1 つのワークスペースには複数の Google アカウントを接続できます（たとえば仕事用と個人用）。それぞれについて接続の手順を繰り返します。予定は同じ月 / 週 / アジェンダの各ビューにマージされます。各アカウントは独立して同期・更新され、個別に切断できます。
 
-## Reconnect an expired account
+## 期限切れのアカウントを再接続する
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Google がアカウントのトークンを恒久的に無効化した場合（セッションが取り消されたか、長期間失効した場合）、同期が停止し、Control Center はカレンダーに**再接続**バナーとデスクトップ通知を表示します。**再接続**をクリックして新しいコードを承認すると、次に同期が成功した時点でバナーが消えます。
 
-## Disconnect an account
+## アカウントを切断する
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+カレンダーのサイドバー（または**設定 → ワークスペース → プロフィールと識別情報**）で、そのアカウントの**切断**をクリックします。これにより、同期済みの予定が削除され、サーバーに保存されたトークンが消去されます。
 
-## Connect from a headless server
+## ヘッドレスサーバーから接続する
 
-A server with no GUI attached connects the same account from its own terminal:
+GUI が接続されていないサーバーでは、同じアカウントをサーバー自身のターミナルから接続します:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+コードと URL を表示し、承認を待ってからトークンを保存し、次のスイープで同期します。
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+ソースからのビルドには Google クライアントが**同梱されていません**。そのため ID とシークレットが必須です — `GOOGLE_OAUTH_CLIENT_ID` と `GOOGLE_OAUTH_CLIENT_SECRET` を設定してください。`--google-client-id` フラグはありません（不明なフラグは無視されます）。この環境変数のペアがないと、コマンドはクライアントが見つからないというエラーで終了します。
 
-## Bring your own Google client (forks and self-hosting)
+## 独自の Google クライアントを持ち込む（フォークとセルフホスティング）
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+リリースビルドには Google クライアントが同梱されているため、ほとんどの人はこれに触れることはありません。ソースからビルドする場合、自分のサーバーを運用する場合、または同意画面に自分のプロジェクトの名前を出したい場合には、独自のクライアントを持ち込みます。
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials)で**Google Calendar API**を有効にし、**OAuth 同意画面**を構成して、`calendar.readonly`、`openid`、`email` の各スコープを追加します。アプリが未確認の間は、自分を**テストユーザー**として追加します。同意画面で `calendar.events` を追加しても RSVP は有効になりません — Control Center がこのスコープを要求することは決してありません。
+2. アプリケーションの種類が**TVs and limited input devices**の**OAuth クライアント ID**を作成し、クライアント ID とクライアントシークレットの両方をコピーします。
+3. 接続ごとに指定するか（ダイアログで**自分のGoogle Cloudクライアントを使用**を選びます）、サーバー全体に対して `GOOGLE_OAUTH_CLIENT_ID` と `GOOGLE_OAUTH_CLIENT_SECRET` で指定します。
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+サーバー全体のペアは、組み込みのペアをあらゆる場所で置き換えます。それは「Control CenterのGoogleアプリを使用」オプションの背後でも同じなので、自分のサーバーではそのオプションは自分のアプリを指します。
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+クライアントシークレットがサーバーから外に出ることはありません。どの RPC 応答にも含まれず、サーバー自身のクライアントを通じて接続したアカウントが保存するのはペアのコピーではなくマーカーなので、ローテーションは新しい値で再起動するだけで済みます。
 
-### Troubleshooting
+### トラブルシューティング
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| 症状                                                       | 考えられる原因                                                                                                                                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ダイアログに組み込みのオプションが表示されない             | このビルドには Google クライアントが同梱されていない（ソースビルド）か、サーバーがペアの片方だけで起動されています。ID とシークレットの両方が必要です                                   |
+| フローの開始時に `invalid_scope` が出る                    | その Cloud プロジェクトでは、デバイスコードクライアントに Calendar が許可されていません。代わりにループバックまたは Web クライアントのプロジェクトを使用してください                  |
+| Google から `invalid_client` が返る                        | クライアントが**TVs and limited input devices**クライアントではないか、ID とシークレットが別々のクライアントのものです                                                               |
+| 承認は成功するが同期が空になる                             | 同意画面で自分のアカウントが**テストユーザー**になっていないか、`calendar.readonly` が付与されていません                                                                               |
+| 承認する前にコードが期限切れになる                         | デバイスコードの有効期間は短いものです。接続をやり直して新しいコードを取得してください                                                                                                 |
+| RSVP で「回答を更新できませんでした」と表示される          | 想定どおりです。接続フローは `calendar.events` を要求しません                                                                                                                          |
+| サーバーログのリフレッシュ警告とともに同期が停止する       | そのアカウントは、現在は構成されていないクライアントで接続されています。アカウントを再接続するか、そのクライアント ID とシークレットを復元してください                               |
 
-## Related guides
+## 関連するガイド
 
-- [Record and summarize a meeting](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/): turn an event into a recording
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
+- [ミーティングを録画して要約](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/): 予定を録音に変える
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): トークンと同期スケジュールがどこにあるか
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Calendar and scheduling](/ja-JP/マニュアル/コンセプト/カレンダー/)
+- [カレンダーとスケジュール](/ja-JP/マニュアル/コンセプト/カレンダー/)

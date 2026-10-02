@@ -1,34 +1,37 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Sett opp Linear-integrasjon
+description: Lagre en Linear API-nøkkel på serveren slik at agenter kan kalle Linear, og velg Linear som saksleverandør for nye saker.
 slug: nb-NO/handbok/slik-gjor-du/linear-integrasjon
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/nb-NO/handbok/slik-gjor-du/administrer-saker/).
+Lim inn en Linear API-nøkkel på serveren knyttet til brukeren din, på samme måte
+som du kobler til en kodevert. Saker, prosjekter, lenker, samarbeidspartnere,
+delegering og tildeling fungerer alle mot Control Centers egen database, uten at
+noen ekstern tjeneste er nødvendig — se
+[Opprett og administrer saker](/nb-NO/handbok/slik-gjor-du/administrer-saker/).
 
-## Store your Linear key
+## Lagre Linear-nøkkelen din
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**API-nøkkel for saker** ligger under **Innstillinger → Arbeidsområde →
+Generelt**, på Saker-kortet. Den lagrer nøkkelen på serveren knyttet til
+bruker-id-en din. Serverens egen nøkkel for uovervåket arbeid kommer fra
+`LINEAR_API_KEY` eller kortet **Leverandørapper**, og injiseres som
+`TICKETING_API_KEY` bare når den agenten har kapasiteten **Tillat API-kall for
+saker**.
 
-## Stamp new tickets as Linear
+## Stempl nye saker som Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Saksleverandør** (første steg i onboarding, og
+`/workspaces/<workspaceId>/api-keys`) tilbyr `local` og `linear`. Velger du
+`linear`, blir saker du oppretter fra da av stemplet med `provider: linear`.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Create and manage tickets](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-- [Manage API keys](/nb-NO/handbok/slik-gjor-du/api-nokler/)
+- [Opprett og administrer saker](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Administrer API-nøkler](/nb-NO/handbok/slik-gjor-du/api-nokler/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Tickets and delegation](/nb-NO/handbok/konsepter/saker/)
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/)

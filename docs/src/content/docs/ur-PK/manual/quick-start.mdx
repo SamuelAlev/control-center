@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: فوری آغاز
+description: Control Center انسٹال کریں، ایک ایجنٹ کنفیگر کریں اور اسے اپنے ریپو پر کام کرتے دیکھیں۔
 slug: ur-PK/ہدایت-نامہ/فوری-آغاز
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+یہ کچھ نہ ہونے سے لے کر آپ کے اپنے کوڈ پر چلتے ایجنٹ تک کا مختصر ترین مکمل راستہ ہے۔ اسے ترتیب سے پورا کریں؛ ہر قدم اپنے سے پہلے والے قدم پر منحصر ہے۔
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+آپ کے پاس Git، ایک GitHub اکاؤنٹ، اور ساتھ ہی یا تو ماڈل فراہم کنندہ کا اکاؤنٹ (Anthropic، OpenAI، Codex، Cursor، Kimi Code، یا API کلید والا کوئی بھی فراہم کنندہ) یا پہلے سے انسٹال شدہ Claude Code CLI ہونا چاہیے۔ باقی سب کچھ راستے میں ہی ترتیب پا جاتا ہے۔
 
-## Step 1: Install and launch
+## مرحلہ 1: انسٹال کریں اور لانچ کریں
 
-Install Control Center as described in [Install](/ur-PK/ہدایت-نامہ/انسٹال/), then open it.
+[انسٹال](/ur-PK/ہدایت-نامہ/انسٹال/) میں بتائے گئے طریقے سے Control Center انسٹال کریں، پھر اسے کھولیں۔
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+پہلی بار لانچ کرنے پر ڈیسک ٹاپ پوچھتا ہے **"Control Center کیسے چلے؟"**۔ **اس ایپ میں چلائیں** چنیں۔ Control Center اِس مشین پر ایک ہیڈلیس `cc_server` لانچ کر دیتا ہے، جو آپ کا ڈیٹا رکھتا ہے اور سارا کام کرتا ہے۔ آپ اسے کبھی نہیں دیکھتے؛ اس کے بجائے آن بورڈنگ اسکرین کھل جاتی ہے۔
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/ur-PK/ہدایت-نامہ/انسٹال/#use-it-in-your-browser) for the browser route.
+:::note[کیا کچھ انسٹال کرنا نہیں چاہتے؟]
+وہی ایپ براؤزر میں [app.usectrl.dev](https://app.usectrl.dev) پر بھی اِنہی
+خصوصیات کے ساتھ چلتی ہے۔ مگر ایک براؤزر ٹیب سرور کی میزبانی نہیں کر سکتا، اس لیے
+سرور آپ کو مہیا کرنا ہوگا — `cc_server` مقامی طور پر چلائیں اور `ws://localhost:9030`
+سے جڑیں، یا اسے کسی دوسری مشین کے سرور کی طرف اشارہ کریں۔ یہ فوری آغاز ڈیسک ٹاپ
+راستہ لیتا ہے کیونکہ اسے سرور کی کسی ترتیب کی ضرورت نہیں؛ براؤزر راستے کے لیے
+[انسٹال](/ur-PK/ہدایت-نامہ/انسٹال/#use-it-in-your-browser) دیکھیں۔
 :::
 
-## Step 2: Work through onboarding
+## مرحلہ 2: آن بورڈنگ سے گزریں
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+آن بورڈنگ کے پانچ مراحل ہیں اور وہ ترتیب سے چلتے ہیں — آگے چھوڑ کر جانے کا کوئی راستہ نہیں۔
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **منسلک کریں**: GitHub سے سائن اِن کریں یا `repo` اور `read:org` والا پرسنل ایکسیس ٹوکن پیسٹ کریں۔ یہ کریڈنشل سرور پر محفوظ ہوتا ہے اور آپ کے اکاؤنٹ سے منسلک ہوتا ہے۔
+2. **ورک اسپیس**: اپنے پہلے ورک اسپیس کا نام رکھیں اور اختیاری طور پر کوئی لوگو چنیں۔ اسے بنانے پر پانچ ایجنٹ — ایک CEO کے علاوہ `qa`، `architect`، `engineer` اور `librarian` — اور بلٹ اِن پائپ لائن ٹیمپلیٹس شامل ہو جاتے ہیں۔
+3. **سینڈ باکس**: سینڈ باکسنگ کی ترجیح ریکارڈ کرتا ہے۔ کوئی بھی انتخاب آپ کو آگے بڑھنے دیتا ہے۔
+4. **اڈاپٹر**: وہ اڈاپٹر اور ماڈل چنیں جو ایجنٹس کے لیے ڈیفالٹ ہونے چاہئیں۔ **Control Center (built-in)** چنیں، پھر جو فراہم کنندہ پکر ظاہر ہو اُس سے کسی ماڈل فراہم کنندہ میں سائن اِن کریں — جب تک کوئی منسلک نہ ہو، ماڈل کی فہرست خالی رہتی ہے۔ یہ مرحلہ مکمل کرنے پر اڈاپٹر اور ماڈل ورک اسپیس کے CEO ایجنٹ پر بھی لگ جاتے ہیں۔
+5. **آواز (اختیاری)**: ڈکٹیشن کے لیے آن ڈیوائس اسپیچ ماڈل انسٹال کریں، یا اسے چھوڑ دیں۔
 
-Control Center then opens your workspace inbox.
+اس کے بعد Control Center آپ کے ورک اسپیس کا ان باکس کھولتا ہے۔
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/).
+:::note[ایجنٹ کے رن کی حدیں کیا طے کرتی ہیں]
+دستیاب ہونے پر ایجنٹ کی کمانڈز کو ہوسٹ کے OS-نیٹو سینڈ باکس میں لپیٹ دیا جاتا ہے — macOS پر Seatbelt، Linux پر bubblewrap۔ Windows کا کوئی بیک اینڈ نہیں، چنانچہ وہاں رنز صرف باقی پرتوں سے محدود رہتے ہیں: خود گفتگو کا ورک ٹری (Windows پر `git worktree`؛ جہاں `rift` موجود ہو وہاں copy-on-write)، ہر لانچ پر بروکر کیے جانے والے اور ٹیئر ڈاؤن پر منسوخ ہو جانے والے کریڈنشلز، اور ایکشن گارڈریلز۔ دیکھیں [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)۔
 :::
 
-## Step 3: Add a repository
+## مرحلہ 3: ایک ریپوزٹری شامل کریں
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+**ترتیبات → ورک اسپیس → ریپوزٹریز** پر جائیں اور **ریپوزٹری شامل کریں** پر کلک کریں۔
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+یہ ڈائیلاگ اُن فولڈرز کو براؤز کرتا ہے جو سرور چلا رہی مشین پر ہیں، آپ کے کلائنٹ پر نہیں، اور وہ اُنہی روٹس کے اندر رہتا ہے جنہیں ظاہر کرنے کے لیے سرور کنفیگر کیا گیا ہو (ڈیفالٹ میں اس کے صارف کی ہوم ڈائریکٹری)۔ چیک باکس صرف git چیک آؤٹس کو ملتا ہے۔ اپنے چیک آؤٹ پر نشان لگائیں اور اسے رجسٹر کریں۔
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+کوئی چیک آؤٹ صرف اُس صورت قبول کیا جاتا ہے جب وہ کسی git ورک ٹری کے اندر ہو، اس کا `origin` ریموٹ موجود ہو اور وہ ریموٹ کسی معاون forge کی طرف اشارہ کرے — github.com، gitlab.com یا bitbucket.org۔ باقی سب کچھ وجہ کے ساتھ مسترد کر دیا جاتا ہے۔
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+ریپوز ورک اسپیس کے دائرے میں ہوتے ہیں: یہاں کوئی چیک آؤٹ رجسٹر کرنے سے وہ _اِسی_ ورک اسپیس میں آ جاتا ہے۔ لنک کرنے کا کوئی الگ مرحلہ نہیں۔
 
-## Step 4: Give an agent an adapter and a model
+## مرحلہ 4: ایجنٹ کو اڈاپٹر اور ماڈل دیں
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+**ترتیبات → ورک اسپیس → ایجنٹس** پر جائیں۔ روسٹر میں `engineer` ایجنٹ منتخب کریں۔
 
-On the **Settings** tab, set:
+**ترتیبات** ٹیب پر، یہ مقرر کریں:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **اڈاپٹر**: `Control Center (built-in)`
+- **ماڈل**: آن بورڈنگ میں جو فراہم کنندہ آپ نے منسلک کیا، اُس سے کوئی ایک چنیں
 
-Press **Save changes**.
+**تبدیلیاں محفوظ کریں** دبائیں۔
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+عملی طور پر یہ مرحلہ اختیاری نہیں۔ آن بورڈنگ کے دوران چنا گیا اڈاپٹر صرف CEO ایجنٹ کو وراثت میں ملتا ہے؛ باقی چار ماہرین اڈاپٹر کے بغیر بنائے جاتے ہیں۔ وہ Anthropic کے ڈیفالٹ ماڈل کے ساتھ **Control Center (built-in)** پر واپس چلے جاتے ہیں، اس لیے وہ صرف اُس وقت چلتے ہیں جب آپ نے Anthropic اکاؤنٹ منسلک کیا ہو — اور اگر کیا ہو تو اُس ماڈل پر چلتے ہیں جو آپ نے نہیں چنا۔
 
-## Step 5: Send the agent a task
+## مرحلہ 5: ایجنٹ کو کام بھیجیں
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. سائیڈبار میں **اسپیسز** سیکشن تلاش کریں اور **+** بٹن پر کلک کریں۔
+2. اسپیس کا نام رکھیں، **ایجنٹس شامل کریں** کے تحت `engineer` ایجنٹ شامل کریں اور اسے بنا دیں۔
+3. آپ نے جو ریپو رجسٹر کیا، اُس کے حوالے سے کوئی ٹھوس، چھوٹا کام ٹائپ کریں اور Enter دبائیں۔
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center اِس گفتگو کے لیے ورک اسپیس کے ریپوز کا copy-on-write ورک ٹری تیار کرتا ہے، ایجنٹ کے رول، شخصیت، مہارتوں اور اسپیس کے کانٹیکسٹ سے ایک پرامپٹ جوڑتا ہے اور رن ڈسپیچ کر دیتا ہے۔ آپ کے سورس چیک آؤٹ کو کبھی ہاتھ نہیں لگایا جاتا۔
 
-## Step 6: Watch it work
+## مرحلہ 6: اسے کام کرتے دیکھیں
 
-You should see, in order:
+آپ کو ترتیب سے یہ نظر آنا چاہیے:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- کمپوزر کا بھیجنے والا بٹن ایک روکیں بٹن میں بدل جاتا ہے، کیونکہ اِس گفتگو میں ایک ایجنٹ کام کر رہا ہے
+- ایجنٹ کا استدلال، ٹول کالز اور متن ٹرانسکرپٹ میں اسٹریم ہوتے ہوئے
+- رن ختم ہونے پر بھیجنے والا بٹن واپس آ جاتا ہے
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+پھر **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں، ایجنٹ منتخب کریں اور **لاگز** ٹیب دیکھیں: ایک رن کی قطار، جس میں اس کی اسٹیٹس، مدت، شروع اور اختتام کے اوقات اور وہ اڈاپٹر شامل ہو جس پر وہ چلا۔
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+یہی وہ چکر ہے۔ Control Center میں باقی سب کچھ — pull-request ریویو، پائپ لائنز، ٹکٹس، میٹنگز، Slack — اسی سے وابستہ ہے۔
 
-## Next steps
+## آگے کے مراحل
 
-- [Your first workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-pr/): take an agent's branch through review and merge
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): what an agent is made of
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/): the rest of the agent form
-- [Run an orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/): one goal, one approval, a generated pipeline
-- [Pair your phone](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): follow the fleet from anywhere
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/): how the desktop, web and phone clients relate to the server
+- [آپ کا پہلا ورک اسپیس](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/): وہی مواد، مگر سہولت سے، اور تنہائی کا ماڈل بھی سمجھایا گیا
+- [اپنا پہلا pull request ریویو کریں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-pr/): کسی ایجنٹ کی برانچ کو ریویو اور مرج سے گزارنا
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): ایجنٹ کن اجزاء سے بنتا ہے
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/): ایجنٹ فارم کا باقی حصہ
+- [آرکیسٹریشن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/): ایک ہدف، ایک منظوری، ایک تیار شدہ پائپ لائن
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): کہیں سے بھی فلیٹ کی پیروی کریں
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/): ڈیسک ٹاپ، ویب اور فون کلائنٹس کا سرور سے تعلق

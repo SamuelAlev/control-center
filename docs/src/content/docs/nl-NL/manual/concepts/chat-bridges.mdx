@@ -1,249 +1,276 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Chatbruggen
+description: Waarom de Slack-integratie zelf verbinding maakt naar buiten in plaats van te luisteren, wat een bericht dat uit de chat komt nu echt autoriseert en hoe één brug elk chatproduct bedient.
 slug: nl-NL/handleiding/concepten/chatbruggen
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Een chatbrug maakt van een extern chatproduct — vandaag Slack — een eersteklas
+manier om een Control Center-werkruimte binnen te komen. Noem de bot en een
+agent wordt wakker; antwoord in de Slack-thread en het gesprek gaat verder; typ
+een slash-commando en er wordt een ticket aangemaakt. Daaronder dezelfde
+ruimtes, transcripten, tickets en attributie die de desktopapp gebruikt. Chat is
+een _oppervlak_ op de werkruimte, geen kopie ervan.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack is de enige provider die wordt meegeleverd.** Nergens in het product zit
+een implementatie van Discord, Telegram, Teams of Matrix. De functie is
+bewust providerblind geschreven — een tweede product toevoegen is één
+enumwaarde, één adapter en één plugin — maar vandaag betekent “chat” Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Twee oppervlakken dekken het geheel en ze horen bij verschillende mensen. Een
+werkruimte aan Slack koppelen en de bot aanpassen zijn **beheerdersacties** onder
+Instellingen → Werkruimte → Algemeen. Je eigen chataccount aan je Control
+Center-identiteit koppelen is een **ledenactie** onder Instellingen → Werkruimte
+→ Profiel en identiteit.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Drie beslissingen bepalen de hele functie: **welke richting de verbinding op
+gaat**, **wat een bericht dat van buitenaf binnenkomt autoriseert** en **waar de
+productspecifieke kennis mag wonen**.
 
-## Outbound by design
+## Bewust naar buiten gericht
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+De brug luistert nooit naar de provider. Slack wordt bereikt via **Socket
+Mode**: de server vraagt Slack om een socket-URL en maakt zelf verbinding naar
+buiten, en ontvangt daarna vermeldingen, DM's en slash-commando's over die
+verbinding.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Dat gevolg is juist de bedoeling. Een laptop achter NAT, een thuisserver zonder
+domein, een machine die tussen netwerken wisselt — ze kunnen allemaal de brug
+draaien zonder inkomende poort, zonder tunnel, zonder TLS-certificaat en zonder
+openbare URL die je moet bijwerken wanneer hij verandert. Er is geen
+webhook-endpoint om te beveiligen, want er is geen webhook-endpoint. Wanneer
+Control Center de app-definitie samenstelt, dwingt het Socket Mode af en haalt
+het een eventuele request-URL eruit, want een app die voor beide is
+geconfigureerd, is een app die half werkt.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+De prijs is een verbinding die in leven moet blijven, en dat is de taak van de
+server: opnieuw verbinden gaat met exponentiële backoff en jitter, afgetopt op 30
+seconden, een door de provider gestarte socketrotatie maakt opnieuw verbinding
+zonder die backoff op te voeren en een _geweigerd inloggegeven_ is definitief —
+een ingetrokken token voor altijd blijven proberen levert alleen maar een
+snelheidslimiet op, dus de brug stopt en wacht op nieuwe tokens, terwijl de
+foutmelding van de provider zelf woordelijk in de instellingen wordt gemeld.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Een werkruimte zonder chat-app kost helemaal niets: geen socket, geen timers,
+geen verkeer. En het geheel start _nadat_ de server zijn gereedmelding heeft
+gegeven, want een chat-app die traag antwoordt mag het opstarten nooit
+vertragen.
 
-## Membership authorizes, not token possession
+## Lidmaatschap autoriseert, niet het bezit van een token
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Wie de app heeft geïnstalleerd is niet wie het bericht stuurt. Daarom wordt elk
+inkomend event omgezet naar een **Principal** voordat er iets gebeurt, en bij
+twijfel weigert het systeem met een uitleg:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Een niet-gekoppeld chataccount** krijgt in de Slack-thread waarin het
+  schreef te horen hoe het moet koppelen.
+- **Een gekoppeld account waarvan de gebruiker geen lid is** van deze werkruimte
+  krijgt te horen dat hij een beheerder om een uitnodiging moet vragen.
+- **Een lid met een alleen-lezen rol** (`viewer`, `guest`) hoort dat zijn rol
+  geen werk kan starten.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/)
-for the membership model this leans on.
+Geen van deze gevallen gaat verder. Een chatbericht wordt nooit toegeschreven
+aan iemand die het niet heeft gestuurd — dat houdt het auditlogboek, de
+snelheidslimieten per principal en de melders van tickets eerlijk. Zie
+[Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/)
+voor het lidmaatschapmodel waarop dit leunt.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Koppelen is identiteitsherleiding, **geen** toegangsverlening. Het lidmaatschap
+wordt bij elk event opnieuw gecontroleerd, dus een koppeling van iemand die
+inmiddels is verwijderd leidt tot een weigering en niet tot zijn oude rechten.
+Er zijn twee manieren om een koppeling tot stand te brengen: een kortlevende
+code voor eenmalig gebruik die het lid in de chat typt, of een automatische
+match op het _geverifieerde_ e-mailadres van de provider — en die e-mailroute
+vereist nog steeds dat de gematchte gebruiker al lid is, dus een vreemde wiens
+adres toevallig op de server bestaat koppelt aan niets.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+De codes worden bewust in het geheugen gehouden, met een levensduur van 15
+minuten. Ze opslaan zou een blijvende rij in de vorm van een inloggegeven
+opleveren voor iets dat hoort te verdampen, en dat een herstart van de server
+elke openstaande code ongeldig maakt is het juiste gedrag, geen regressie — het
+lid drukt gewoon weer op “koppelen”.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Een weigering wordt **in de Slack-thread die het bericht opende** beantwoord,
+als een echt antwoord. Een antwoord in een thread voorziet het bericht waarop
+het reageert van een badge, bereikt precies de persoon die het nodig heeft en
+houdt “je bent niet gekoppeld” toch buiten het kanaal zelf. Een bericht
+plaatsen is bovendien de enige capaciteit die elke provider heeft, dus de uitleg
+hangt nooit af van een functie die de app misschien niet heeft.
 
-## Provenance and the echo problem
+## Herkomst en het echoprobleem
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Een brug die beide kanten op spiegelt raakt in een lus, tenzij iets de twee
+richtingen uit elkaar houdt. Elk bericht dat de brug binnenbrengt krijgt een
+stempel `metadata['chat']` — provider, team, gesprek, thread, bericht en
+afzender. De uitgaande spiegel slaat elk bericht met dat stempel over.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Die ene regel maakt tweerichtingsspiegeling veilig: een menselijk bericht dat in
+Control Center wordt getypt gaat naar de gekoppelde thread (met de naam van de
+auteur ervoor), terwijl een bericht dat _uit_ de chat kwam stopt waar het
+binnenkwam.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Wat naar buiten gaat is bewust smal. Het **antwoord** van de agent wordt
+doorgegeven als gewone chattekst. Een korte gedachte kan op de regel
+`Thinking…` van de kaart verschijnen. Tool-uitvoer is een muur van diffs en
+blijft in Control Center, en daar wijst ook een afgekapt antwoord naartoe.
 
-## A card reports the work; the text is still the message
+## Een kaart rapporteert het werk; de tekst blijft het bericht
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Waar de provider ze kan weergeven draagt een beurt **één taakkaart**, die ter
+plaatse wordt bewerkt zolang de beurt loopt en boven het antwoord staat dat hij
+toelicht.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+De kaart is één gegroepeerd plan, geen tot moes gemaakte alinea. Slack plakt
+`details` en `output` van dezelfde taak aan elkaar, dus de details van een regel
+worden één keer verstuurd (de gedachte op `Thinking…`) en `output` wordt nooit
+gestreamd. De voorbereiding is één regel waarvan de titel wordt vervangen
+(`Working on it…`, `Cloning …`). Redeneren voegt een regel `Thinking…` toe. Elke
+tool krijgt zijn eigen regel (`Read lib/main.dart`). Het antwoord is gewone tekst
+onder de kaart — de planweergave van Slack leest die uit een latere
+markdown-append, niet uit een brok dat tussen de taken is gemengd. Niets anders:
+geen tool-uitvoer en slechts één tool-argument uit een korte allowlist, want de
+argumenten van een onbekende tool kunnen een complete bestandsinhoud zijn en
+een regel is maar één regel.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+De kaart dekt ook het wachten _vóór_ de beurt. Een eerste vermelding maakt het
+gesprek aan, en dat aanmaken kloont elke repo waarin de agent gaat werken — wat
+bij een echte repository minuten duurt waarin de agent nog niets is gevraagd en
+de thread eruitziet alsof de bot het verzoek heeft genegeerd. Daarom opent de
+kaart op het moment dat de vermelding wordt geaccepteerd (`Working on it…`) en
+werkt die voorbereidingsregel daarna bij met dezelfde woorden die de desktop
+toont — `Cloning acme/widgets…`, `Setting up Reviewer…`, `Starting the
+agent…` —, dan een regel `Thinking…` zodra de agent begint te redeneren, en
+daarna een regel per tool. Eén kaart, één bericht, van “ik heb je gehoord” tot
+en met het antwoord als gewone tekst eronder. Voorbereiding wordt alleen gemeld
+waar iemand in de chat erop wacht: een gesprek dat in de app wordt klaargezet,
+of een achtergebleven gesprek dat bij het opstarten van de server wordt hervat,
+wordt ingericht zonder enige kaart.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Hij draagt het enige dat de chat de lezer niet kan geven: een **View in Control
+Center**-link naar het gesprek achter het antwoord. Chatproducten accepteren in
+een link alleen `http(s)` en niets anders, dus de knop wijst naar een kleine
+pagina die deze server aanbiedt en die de browser doorstuurt naar de
+`control-center://`-link van de desktopapp. Die pagina leest niets en herleidt
+niets — de id's in zijn URL worden in een deeplink herhaald en nergens anders —
+en een server zonder bereikbare openbare URL levert simpelweg een kaart zonder
+knop op in plaats van een kapotte.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Kaarten zijn een capaciteit als elke andere. Een provider zonder kaarten
+gedraagt zich precies zoals voorheen, alleen tekst, en een provider die er op
+het moment van de aanroep een weigert houdt zijn stream: het antwoord gaat
+altijd vóór op de kaart die het beschrijft. Staat streamen helemaal uit, dan
+lift de voltooide kaart mee op het ene geplaatste bericht. Een aangemaakt ticket
+krijgt dezelfde behandeling — de bevestiging van `/cc ticket` is een voltooide
+kaart waarvan het bestaansrecht de link naar het zojuist aangemaakte ticket is.
 
-## Capabilities are negotiated, then remembered
+## Capaciteiten worden onderhandeld en daarna onthouden
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Chatproducten verschillen in wat ze kunnen weergeven, dus de brug is geschreven
+tegen het rijkste oppervlak — een antwoord dat live meegroeit in een thread, een
+tijdelijke status “is thinking…”, een thread met een titel, een vluchtig
+antwoord op een slash-commando — en schaalt telkens één capaciteit terug. Een
+provider zonder dit alles werkt nog steeds; antwoorden komen dan gewoon binnen
+als één bericht.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Een capaciteit adverteren is die nog niet beloven. De streamende antwoorden van
+Slack vereisen een functie uit een betaald abonnement en Slack weigert pas op
+het moment van de aanroep. Een weigering die als permanent is gemarkeerd wordt
+**voor de hele levensduur van de verbinding** onthouden: de brug vraagt het niet
+meer en plaatst vanaf dat moment hele antwoorden, en de instellingen zeggen dat
+ronduit, want “mijn antwoorden streamen niet meer” moet te beantwoorden zijn
+zonder een logboek te lezen. Taakkaarten worden op dezelfde manier geschrapt als
+Slack er een weigert.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Elke limiet hoort bij de provider en niet bij het doorgeefluik: het maximum voor
+berichten, het maximum voor streamchunks en of een stream een thread-anker nodig
+heeft worden allemaal door de adapter gedeclareerd, en een lang antwoord wordt
+gesplitst op een alinea-, regel- of woordgrens en niet midden in een woord.
 
-## One bridge, one adapter per product
+## Eén brug, één adapter per product
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Alles wat de vorm van een product heeft, woont achter een poort. De generieke
+kern kent markdown, chatgesprekken, chatthreads en leden; hij weet niets van
+Slack-enveloppen, `mrkdwn` of gateway-intents. Drie onderdelen maken dat
+mogelijk:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **De adapter** normaliseert één product: zijn transport, zijn API-aanroepen,
+  zijn tekstcodec en zijn eigenaardigheden in enveloppen. Die van Slack zijn
+  leerzaam — een kanaalvermelding komt twee keer binnen (als `app_mention` _en_
+  als `message`) en de meeste berichtsubtypen zijn franje in plaats van nieuwe
+  verzoeken. Beide worden in de adapter opgelost, zodat de kern nooit leert dat
+  Slack dubbel bezorgt.
+- **De descriptor** is de publieke vorm van de provider: welke inloggegevens hij
+  nodig heeft, wat hun formaten zijn, welke URL's een gebruiker helpen ze te
+  vinden, wat hij kan en of zijn app van hieruit kan worden aangemaakt of
+  bewerkt. De instellingenkaart, het verbindingsdialoogvenster en de
+  argumentvalidatie worden er allemaal _gegenereerd_ uit — de client stuurt een
+  provider terug plus een map met veld-id's als sleutels.
+- **De plugin** is de samenstelling aan de serverkant: hoe inloggegevens een
+  geverifieerde verbinding worden, hoe een adapter wordt gebouwd en hoe de app
+  aan de providerkant wordt beheerd.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Een product toevoegen is dus één enumwaarde, één adapter en één plugin. Geen
+nieuwe RPC-operatie, geen schemawijziging, geen clientwijziging — en de client
+blijft eerlijk, want een veld waarvan hij nog nooit heeft gehoord wordt nog
+steeds weergegeven met het label dat de server heeft aangeleverd.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Twee details voorkomen dat de abstractie naar boven lekt. De stappen voor
+app-beheer waarvoor een provider geen API heeft (een token genereren, de app
+installeren, opnieuw installeren na een rechtenwijziging) worden teruggegeven
+als **benoemde stappen met hun eigen links**, zodat het scherm voor het afronden
+van de installatie ze toont zonder te weten welke provider het is. En elke
+instructie die de brug schrijft noemt de provider en het commando dat de app
+daadwerkelijk gebruikt, zodat een hernoemd commando of een tweede provider
+correct leest zonder nieuwe tekst.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Opnieuw installeren na een rechtenwijziging]
+Het bewerken van de naam, de beschrijving of het pictogram van de bot werkt
+onmiddellijk door. Een wijziging van de **rechten** vereist opnieuw installeren:
+Slack past het nieuwe manifest toe, maar houdt de autorisatie op wat was
+geïnstalleerd. De bewerking geeft een resterende stap terug met een link naar de
+pagina “Reinstall to Workspace” van Slack.
 :::
 
-## Where credentials live
+## Waar inloggegevens staan
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+De chattokens van een werkruimte staan in de **eigen map van die werkruimte,
+naast zijn database** — als platte JSON in
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, niet in de database
+en bewust niet in de sleutelhanger van het besturingssysteem. Twee gevolgen
+raak je later makkelijk kwijt: het verwijderen van een werkruimte ontkoppelt de
+map en de tokens verdwijnen mee, en het exporteren of back-uppen van een
+werkruimte kopieert `workspace.db`, dus een werkruimte die je aan iemand anders
+geeft, bevat geen levende bottokens. Het bestand erft de vertrouwensgrens van het
+bestandssysteem van de serverhost — alles met leestoegang tot de gegevensmap kan
+een bottoken lezen, dezelfde grens waarbinnen de databases zich bevinden.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Eén bestand per provider, atomair weggeschreven en alleen toegankelijk voor de
+eigenaar: een ingetrokken app verwijder je door één bestand te ontkoppelen, en
+een beschadigd bestand kost één provider in plaats van allemaal. Inloggegevens
+komen _naar binnen_ via de verbindingsoperatie en gaan er nooit meer uit —
+statusuitlezingen antwoorden alleen met verbindingsmetadata.
 
-## What is deliberately not offered
+## Wat bewust niet wordt aangeboden
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Structurele app-instellingen.** Het transport, de scopes en de
+  gebeurtenisabonnementen worden afgedwongen, niet blootgesteld. Een app die je
+  vanaf een instellingenscherm tot stilte kunt configureren is een supportticket,
+  geen functie.
+- **Gesprekken én slash-commando's.** Het Slack-oppervlak bestaat uit berichten,
+  antwoorden in threads en slash-commando's.
+- **Een tweede bron van waarheid.** Chat is geen plek waar werk wordt
+  opgeslagen. De Slack-thread is een ruimte, het antwoord is een transcript, het
+  ticket is een ticket — allemaal in de werkruimte, bereikbaar vanaf elke client.
 
-## See also
+## Zie ook
 
-- [Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/): why links and credentials are per workspace
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): what wakes when a mention arrives
-- [Tickets and delegation](/nl-NL/handleiding/concepten/tickets/): what `/cc ticket` files
-- [Architecture](/nl-NL/handleiding/concepten/architectuur/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/nl-NL/handleiding/zelfstudies/eerste-chatbrug/)
-- [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/)
-- [Link your Slack account](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
-- [Customize the chat bot](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
-- [PR conversations](/nl-NL/handleiding/concepten/pr-gesprekken/): the same three decisions, made for a forge
+- [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/): de principals en rollen waarlangs de brug herleidt
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/): waarom koppelingen en inloggegevens per werkruimte gelden
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): wat er wakker wordt als er een vermelding binnenkomt
+- [Tickets en delegatie](/nl-NL/handleiding/concepten/tickets/): wat `/cc ticket` aanmaakt
+- [Architectuur](/nl-NL/handleiding/concepten/architectuur/): waar de brug zit tussen server en clients
+- [Slack koppelen aan je werkruimte](/nl-NL/handleiding/zelfstudies/eerste-chatbrug/)
+- [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)
+- [Je Slack-account koppelen](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
+- [De chatbot aanpassen](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
+- [PR-gesprekken](/nl-NL/handleiding/concepten/pr-gesprekken/): dezelfde drie beslissingen, genomen voor een forge

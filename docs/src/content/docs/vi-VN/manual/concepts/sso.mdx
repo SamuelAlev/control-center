@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Đăng nhập một lần
+description: Cách đăng nhập bằng SAML và OIDC hoạt động, chúng xác minh những gì và tài khoản được giữ an toàn ra sao.
 slug: vi-VN/so-tay/khai-niem/dang-nhap-mot-lan
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Đăng nhập một lần cho phép một nhà cung cấp danh tính (IdP) bên ngoài quyết định
+ai được phép đăng nhập vào máy chủ Control Center của bạn. Có hai giao thức được
+hỗ trợ — SAML 2.0 và OpenID Connect — và cả hai đều dẫn tới cùng một đích: một
+thông tin xác thực thiết bị vừa mới được tạo, không thể phân biệt với một lời
+mời hay một lần ghép nối bằng mã QR ở mọi bước phía sau.
 
-## The shape of a login
+## Hình dạng của một lần đăng nhập
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Đăng nhập SAML diễn ra **qua trình duyệt**. IdP không bao giờ mở một kết nối tới
+máy chủ của bạn; trình duyệt của người dùng mang theo mọi thứ:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,83 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Vì trình duyệt đóng vai người đưa thư, **một máy chủ nằm sau NAT vẫn hoạt động
+tốt** cho việc đăng nhập: localhost, LAN, Tailscale, VPN hay một tunnel đều dùng
+được — chỉ trình duyệt của người dùng mới cần tiếp cận được URL ACS. Relay
+WebSocket mà tính năng điều khiển từ xa trên điện thoại dùng không thể chuyên
+chở vòng khứ hồi HTTP, và đó là lý do các điểm vào SSO luôn nhắm tới origin HTTP
+của máy chủ.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect theo cùng hình dạng đó với một vòng authorization-code + PKCE;
+các claim được đọc từ endpoint token của bên phát hành qua TLS, nên trình duyệt
+không bao giờ cung cấp dữ liệu danh tính.
 
-## The adapters
+## Các adapter
 
-Control Center splits the responsibility deliberately:
+Control Center phân chia trách nhiệm một cách có chủ đích:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| Thành phần                    | Vị trí                             | Phụ trách                                                                                                                                  |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| `cc_saml` native              | `packages/cc_natives/native/saml/` | Xác minh XML-DSig, chuẩn hóa, kiểm tra hồ sơ SAML — được giao cho crate `saml` thuần Rust đã ghim phiên bản, nằm sau một ABI C không trạng thái |
+| `SamlService` / `OidcService` | `cc_server_core`                   | trạng thái đăng nhập (bộ theo dõi yêu cầu đang chờ, khử trùng lặp khi phát lại), các tham số điều chỉnh chính sách xác minh, lời gọi cấp phát dùng chung |
+| `SsoProvisioner`              | `cc_server_core`                   | tìm hoặc tạo người dùng, ghim chủ thể của nhà cung cấp, cấp tư cách thành viên theo chính sách tự động kết nạp thành viên                    |
+| `ScimService`                 | `cc_server_core`                   | bề mặt đẩy SCIM 2.0 (vòng đời cấp phát/hủy cấp phát)                                                                                       |
+| `SsoSettingsService`          | `cc_server_core`                   | các dòng kết nối đã lưu, việc áp dụng lại trực tiếp, token SCIM                                                                            |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Cố ý **không có phương án dự phòng mã hóa SAML thuần Dart**: việc tự tay viết
+XML-DSig/chuẩn hóa chính là nơi các lỗ hổng bọc chữ ký trú ngụ, nên khi thiếu
+thư viện `cc_saml`, cả đăng nhập SAML lẫn quá trình khởi động máy chủ đều bị từ
+chối. Native này không trạng thái theo thiết kế — trạng thái xuyên yêu cầu nằm
+trong các service Dart, dùng một lần và tồn tại trong thời gian ngắn.
 
-## What a login verifies
+## Một lần đăng nhập xác minh những gì
 
-Inside the verified native and the service, in order:
+Bên trong native đã được xác minh và service, theo thứ tự:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **chữ ký** của khẳng định (luôn bắt buộc; chữ ký của phong bì phản hồi là tùy
+   chọn theo cấu hình) — có khả năng chống bọc chữ ký về mặt cấu trúc vì dữ liệu
+   đã được kiểm tra hợp lệ được gắn với phần tử đã xác minh,
+2. **bên phát hành** khớp với IdP đã cấu hình,
+3. **đối tượng** nêu tên nhà cung cấp dịch vụ này,
+4. **đích đến** là URL ACS của chúng ta,
+5. `InResponseTo` khớp với một AuthnRequest đang chờ mà chúng ta đã phát đi (các
+   phản hồi không được yêu cầu, do IdP khởi tạo, mặc định bị tắt),
+6. các cửa sổ **thời hạn hiệu lực** nằm trong độ lệch đồng hồ (mặc định 90 giây)
+   và
+7. **id khẳng định** chưa từng xuất hiện trước đó (bộ nhớ đệm chống phát lại).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Các lỗi trả về dưới dạng mã có kiểu — signature, expired, audience, destination,
+issuer, request-match — và các endpoint trả lời bằng lỗi chung chung, nên kẻ
+tấn công không biết được vì sao một bản giả mạo thất bại.
 
-## Accounts and subject pinning
+## Tài khoản và việc ghim chủ thể
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+Lần đăng nhập SSO đầu tiên ghim chủ thể bất biến của nhà cung cấp (`issuer` cùng
+với SAML NameID / OIDC `sub`, hoặc externalId của SCIM) vào tài khoản. Từ đó trở
+đi, chủ thể — chứ không phải email — là thứ nhận diện lần đăng nhập. Nếu sau này
+người khác trình ra cùng email đó từ chính IdP ấy hoặc một IdP khác, tài khoản
+đã ghim sẽ từ chối họ. Đây là điều ngăn một email được tái sử dụng tại nhà cung
+cấp biến thành việc chiếm đoạt tài khoản.
 
-## Provisioning and deprovisioning
+## Cấp phát và hủy cấp phát
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+Việc cấp phát JIT diễn ra ngay lúc đăng nhập (`SsoProvisioner`). SCIM là một bề
+mặt đẩy riêng (`ScimService`), ghim cùng chủ thể đó lên dòng người dùng; nó
+không cấp tư cách thành viên không gian làm việc. Việc hủy cấp phát — SCIM
+`active: false` hoặc `DELETE` — bị từ chối nếu tài khoản là chủ sở hữu không
+gian làm việc (hãy chuyển giao trước). Nếu không, trước tiên nó thu hồi mọi
+thông tin xác thực thiết bị (các phiên biến mất trong vài giây nhờ cơ chế theo
+dõi thiết bị), gỡ bỏ mọi tư cách thành viên không gian làm việc và đánh dấu tài
+khoản là đã vô hiệu hóa. Dòng người dùng vẫn tồn tại: quy kết là vĩnh viễn.
+Việc kích hoạt lại khôi phục đăng nhập nhưng không bao giờ cấp lại tư cách
+thành viên.
 
-## What stays out
+## Những gì nằm ngoài
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Việc ánh xạ nhóm→vai trò diễn ra lúc đăng nhập** từ các thuộc tính SAML /
+  claim OIDC — các nhóm đẩy qua SCIM không được lưu lại.
+- **Không thể chạm tới vai trò chủ sở hữu từ SSO** — dù là vai trò mặc định hay
+  thông qua một ánh xạ nhóm.
+- Relay WebSocket không bao giờ là một kênh SSO; những chiếc điện thoại chỉ tiếp
+  cận được máy chủ qua relay thì không thể hoàn tất một vòng khứ hồi trình duyệt
+  với nó.

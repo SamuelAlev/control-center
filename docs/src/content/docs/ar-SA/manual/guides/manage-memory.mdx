@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: إدارة ذاكرة مساحة العمل
+description: راجع الحقائق والسياسات التي كتبها الوكلاء في مساحة العمل، وصحّحها، واشذبها.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-الذاكرة
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+يبيّن هذا الدليل كيف تتعامل مع مخزن معرفة مساحة العمل.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+قبل أن تبدأ، اعرف أن **واجهة الذاكرة سطح للمراجعة لا للتأليف.** يكتب الوكلاء الحقائق والسياسات عبر `propose_fact` و`propose_policy`، ويستبدلونها عبر `supersede_fact` و`supersede_policy`. يكتب `remember` عنصرًا في الطبقة الساخنة محصورًا بالجلسة، وقد يرقّيه `consolidate_memory` لاحقًا إلى حقيقة. تُحصَد قرارات الاجتماع المسجّلة في نطاق `decisions`، ولا يُحصَد شيء عند اكتمال تشغيلات الوكيل. عملك هنا أن تقرأ ما كتبوه، أو تصحّحه، أو تلغي تفعيله، أو تحذفه.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+تجد الذاكرة في **الإعدادات ← مساحة العمل ← الذاكرة** (`/workspaces/<id>/settings/memory`). ليست بندًا في المستوى الأعلى من الشريط الجانبي.
 
-## The three tabs
+## علامات التبويب الثلاث
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+في الصفحة ثلاث علامات تبويب بالضبط. تعرض الحقائق والسياسات عددًا حيًا، والشبكة لا تعرض عددًا:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **الحقائق**: كل حقيقة في مساحة العمل، مع عدد الحقائق التي لم تُستبدَل
+- **السياسات**: قواعد معيارية مجمّعة حسب النطاق، مع عدد النشطة منها
+- **شبكة المعرفة**: لوحة تفاعلية للنطاقات والموضوعات والحقائق والسياسات
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+النطاق ليس شيئًا تنشئه. يظهر النطاق حين يكتب وكيل أول حقيقة أو أول سياسة فيه، ولا عنصر لإنشاء نطاق في أي موضع من الواجهة.
 
-## Review and correct a fact
+## مراجعة حقيقة وتصحيحها
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. افتح علامة تبويب **الحقائق**.
+2. استخدم مربع البحث لتضييق القائمة. هو مرشّح يطابق النص جزئيًا في نطاق كل حقيقة وموضوعها ومحتواها، بلا فهرس كلمات مفتاحية وبلا ترتيب حسب الصلة.
+3. استخدم «تصفية حسب النطاق» لعرض كل النطاقات، أو الحقائق على مستوى مساحة العمل وحدها، أو حقائق مستودع واحد.
+4. استخدم مبدّل الترتيب للاختيار بين الأحدث والثقة.
+5. انقر عنصر التحرير في صف الحقيقة.
 
-The edit dialog lets you change:
+يتيح حوار التحرير تغيير ما يلي:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **النطاق**: نقل الحقيقة بين النطاقات
+- **الموضوع**: وسمها القصير
+- **المحتوى**: نص المعرفة
+- **الثقة**: منزلق بخطوات 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+احفظ ليُكتب التعديل. لا زر **إضافة حقيقة**، والحوار لا يُفتح إلا على صف موجود.
 
-## See superseded facts
+## عرض الحقائق المستبدَلة
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+في علامة تبويب الحقائق مفتاح **عرض المستبدَلة**. الحقائق المستبدَلة مخفية افتراضيًا، ويُظهرها هذا المفتاح، وفيه سجل التدقيق، لأن الاستبدال لا يحذف.
 
-## Delete a fact
+## حذف حقيقة
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+استخدم عنصر الحذف في صف الحقيقة وأكّد. هذا حذف حقيقي لا استبدال: استعمله للحقائق التي كان تسجيلها خطأ من الأصل، ودع الوكلاء يستبدلون الحقائق التي انتقل _محتواها_.
 
-## Manage policies
+## إدارة السياسات
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+تجمّع علامة تبويب **السياسات** السياسات النشطة حسب النطاق، وتنزل غير النشطة إلى قسم **غير نشطة** في أسفل الصفحة. لكل سياسة:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **تحرير**
+- **حذف**
+- **إلغاء التفعيل** / **تفعيل**: الخيار القابل للتراجع، وعادةً هو الصحيح. لا تصل إلى مطالبات الوكيل إلا السياسات النشطة.
 
-As with facts, there is no create control.
+وكما في الحقائق، لا عنصر إنشاء.
 
-## Explore the knowledge graph
+## استكشاف شبكة المعرفة
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+تعرض علامة تبويب **شبكة المعرفة** النطاقات والموضوعات والحقائق والسياسات في لوحة عقد يمكن التنقّل فيها: إزاحة اللوحة، وتكبيرها، وسحب العقد. النقر على عقدة يفتح ورقة تفاصيلها، ومنها تصل إلى حوارات التحرير نفسها. وهي أسرع سبيل لمعرفة النطاقات التي فيها محتوى فعلًا.
 
-## Edit an agent's working memory
+## تحرير الذاكرة العاملة لوكيل
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+الذاكرة العاملة مسودة خاصة لكل وكيل، تُحقن في مطالبته عند الإرسال. يكتبها الوكلاء بأنفسهم بـ `record_observation` و`update_my_notes`، وتستطيع قراءتها وتحريرها مباشرة:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**الإعدادات ← مساحة العمل ← الوكلاء** ← اختر الوكيل ← علامة تبويب **الذاكرة**.
 
-## Access grants
+## أذونات الوصول
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+تربط أذونات الوصول إلى الذاكرة دور الوكيل بإذن (`none`، `read`، `write`) لكل نطاق. تُكتب بعمليات `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+أمران في طريقة تحديد الإذن:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **القراءات مفتوحة عند الفشل.** إن لم يوجد صف إذن لزوج (role, domain)، فالإذن الفعلي `read`. الكتابة الوحيدة التي ترمي استثناءً من غير `write` هي `propose_policy`. كتابات الحقائق لا تخضع لبوابة الإذن.
+- **مفتاح الأذونات هو دور الوكيل.** إذا غاب `agent_role`، ضبطته أدوات الاقتراح على `general` افتراضيًا. إذن مكتوب لدور آخر لا ينطبق على هؤلاء الوكلاء، وينطبق عليهم إذن `general`.
 
-## Search is not the same everywhere
+## البحث ليس واحدًا في كل موضع
 
-Three different things are called "memory search" and they do not agree:
+ثلاثة أشياء مختلفة تُسمّى «بحث الذاكرة»، ولا تتفق فيما بينها:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| أين                                | ماذا يفعل                                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| مربع البحث في علامة تبويب الحقائق  | مرشّح مطابقة جزئية على الحقائق المحمّلة في العميل أصلًا                                                         |
+| عملية RPC `memory_fact.search`     | بحث كلمات مفتاحية بـ FTS5 فقط، فالعميل الخفيف لا يستطيع إرسال تضمين مع الاستعلام، ويبقى البحث الهجين داخل المضيف |
+| أداة `search_memory` من جهة الوكيل | `keyword` أو `semantic` أو `hybrid` (الافتراضي). يدمج الهجين أربعة أصوات: المعجمي، والدلالي، والزمني، والبياني   |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+لذا لن يرتّب الوكيل وصفحة الذاكرة الاستعلام نفسه ترتيبًا واحدًا. إذا أردت أن تتحقق مما يسترجعه الوكيل فعلًا، فاسأله.
 
-## Embeddings
+## التضمينات
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+تُضمَّن الحقائق **عند الكتابة**، ولا يحدث ذلك إلا بعد تثبيت نموذج التضمين على الجهاز. افحص حالته في **الإعدادات ← الخادم ← التشخيص والخصوصية ← البحث الدلالي**. ثبّت النموذج قبل أن يبدأ الوكلاء كتابة الذاكرة إذا أردت استرجاعًا دلاليًا.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
-- [Use the MCP server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [استخدام خادم MCP](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Memory and knowledge](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/)
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/)
+- [الذاكرة والمعرفة](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/)
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/)

@@ -1,137 +1,92 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: 從終端機轉送連接埠
+description: 連上在終端機 (VM) 或主機 shell 中啟動的開發伺服器——可從你的機器、從瀏覽器 (VM)、從 Android、從你的網路，或在帶 HTTPS 的開發網域下。
 slug: zh-TW/手冊/操作指南/vm-連接埠
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+你在對話終端機中啟動的伺服器，只會發佈給**該空間**。連接埠面板會注意到本應用程式在該處啟動的監聽程式、將它們建立對應，並為你可能想連上的每個地方提供一個位址。兩個空間可以各自在 `5173` 上監聽；它們的對應永遠不會混在一起。
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+這裡沒有任何機制會把機器對外開放：每一條路徑都是由伺服器應要求建立，並隨著終端機或機台一起消滅。
 
-## See what is listening
+## 查看正在監聽的內容
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. 開啟對話的**終端機 (VM)** 或主機 shell（在空間中或 PR 頁面上）。
+2. 啟動你的伺服器——`pnpm dev`、`python -m http.server 8000`，任何都可以。
+3. 幾秒內，終端機右上角的**插頭圖示**就會出現一個圓點。點擊它。
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+面板會列出每個正在監聽的連接埠及其所屬的處理程序，格式為
+`3000 → 3000`：左邊是處理程序繫結的連接埠，右邊是它在本機回應的
+連接埠（只要該號碼在你的機器上沒被占用，就會是同一個數字）。每一列
+也會註明桌面的 `localhost`、瀏覽器 (VM) 與 Android 能否連上。
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+探索是受侷限的：終端機 (VM) 是在該客體內輪詢；主機 shell 則是從該工作階段的 PTY 處理程序樹輪詢。其他空間，以及你 Mac 上的其他處理程序，都不會被列出。
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+**這個**終端機中的新連接埠會自動轉送。如果你只想保留自己新增的連接埠，請在同一個面板中關閉**自動轉送連接埠**。
 
-## Reach it from this computer
+## 從這台電腦連上
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+在該列上使用**複製本機 URL**——`http://localhost:3000`。轉送只會接聽回送位址，因此你網路上的其他東西都看不到它。
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+如果兩個空間都公開客體的 `5173`，而你的機器已經占用 `127.0.0.1:5173`，第二個空間會保留客體的 `5173`，並取得一個臨時的本機連接埠。複製 URL 會使用右邊的號碼。
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+在主機 shell 上，處理程序本來就在你的機器上。對應到相同的本機連接埠不會有任何作用；選擇**不同的**本機連接埠時，則會把一個回送代理繫結到你選的那一個。
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host`（或繫結 `0.0.0.0`）**不會**讓封閉的瀏覽器 (VM) 能夠連上 Mac 上的伺服器。客體有自己的回送；當瀏覽器分頁位於**同一個空間**時，伺服器會打通一條隧道進入該客體。
 
-## Reach it from the Browser (VM)
+## 從瀏覽器 (VM) 連上
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+在**同一個對話**中開啟封閉瀏覽器。輸入
+`localhost:<left-hand port>`——也就是處理程序繫結的號碼。重新對應
+（`5173 → 3000`）在該瀏覽器中同樣會以右邊的號碼回應，因此複製 URL
+在那裡也能用。代理的 `browser_use` 可以導覽到其中任一者。
+空間 A 的伺服器永遠不會以 `localhost:5173` 出現在空間 B 的瀏覽器中。
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+請使用 `localhost`，不要用區域網路 IP，也不要用 `--host`。客體有自己的回送；隧道會在那裡同時接聽 IPv4 與 IPv6。
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+一次開啟許多連線的頁面（數十個資源、一個即時重新載入的通訊端）會共用同一條隧道。瀏覽器 (VM) 會把它們多工到同一個常駐 exec 上，因此突然湧入的大量抓取不會變成每個連線生成一個處理程序，也不會逾時而變成一片空白頁面。
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+在同一個空間內，若號碼相同，終端機 (VM) 的轉送優先於主機 shell。跨空間則沒有優先順序——它們是各自獨立的對應。
 
-## Reach it from Android
+## 從 Android 連上
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+開啟該空間的 **Android** 分頁。模擬器的 `localhost:<port>` 接著會反向對應到這個空間發佈的連接埠（`adb reverse`）。一台模擬器是裝置全域的：連接空間 B 會把 `:5173` 改指向 B，並丟掉 A 的。關閉分頁後，這台機台所建立的反向對應就會被移除。
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS 模擬器本身就是 Mac——不需要反向對應。實體 iPhone 則仍需要區域網路分享。
 
-## Share it on your network
+## 在網路上分享
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → 在區域網路分享**會在
+`<server-ip>:<random port>` 發佈該連接埠——適合在手機上開啟頁面，或在伺服器執行於另一台機器時使用。
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- 區域網路連接埠一律由作業系統指派，永遠不會是客體的號碼，因此對外曝露的是一個刻意且可見的位址，而不是可被猜到的位址。
+- 在你切換之前，它會保持私密（僅限回送），而 **⋯ → 僅本機**會將它從網路上收回。
 
-## Give it a name — with HTTPS
+## 給它一個名稱——搭配 HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → 設定瀏覽器網域（.test）**會為該連接埠指派一個開發網域，例如
+`myapp.test`。在瀏覽器 (VM) 內，`https://myapp.test` 便會以有效的鎖頭載入你的伺服器——對於任何在具名來源或安全情境下行為不同的東西（cookie、Service Worker、OAuth 回呼）都很有用。
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- 網域必須以 `.test` 或 `.localhost` 結尾——這是保留給開發用的兩個頂級網域，因此開發名稱永遠無法遮蔽真實網站。
+- 網域**名稱**在伺服器上是唯一的；連接埠**號碼**則不是。兩個空間可以都使用 `5173`，但不能都佔用 `myapp.test`。
+- 憑證來自你的伺服器在第一次需要時所簽發的本機憑證授權單位。其金鑰存放在伺服器的資料目錄下，永遠不會進入任何客體；封閉瀏覽器只信任這一把金鑰，因此連往真實網際網路的 TLS 仍會正常驗證。
+- 該網域**只在瀏覽器 (VM) 內**解析。你自己在主機上的瀏覽器則改用 `localhost:<port>`。
+- 單純的 `http://myapp.test` 也可以運作。
 
-## Forward a port by hand
+## 手動轉送連接埠
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+面板底部的**新增連接埠**可在任何東西開始監聽**之前**（或不論是否有東西在監聽）就先把連接埠對應好。手動轉送會在伺服器重新啟動期間保留其位址——該列會顯示*未在監聽*，直到伺服器回來——而自動轉送則會在連接埠消失時一併消失。在主機 shell 上，你也可以設定不同的本機連接埠。
 
-## How it stays contained
+## 如何保持受侷限
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/zh-TW/手冊/概念/機台/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/zh-TW/手冊/參考/機台/#ports-and-dev-domains).
+連接埠以工作區與空間為索引鍵。Hypervisor 自己的連接埠對應在機器開機時就固定了，因此終端機 (VM) 只能走兩條由伺服器控制的狹窄通道：一條預先建立、通往客體的入站通道，它會拒絕連線到客體實際上並未監聽的任何連接埠；以及伺服器為瀏覽器 (VM) 與 Android 保持開啟的反向隧道。主機 shell 永遠不會掃描整台機器。客體內永遠不會建立伺服器沒有放進去的監聽程式，而一切也會隨著終端機或機台一起拆除。這套設計說明於
+[機台與隔離艙](/zh-TW/手冊/概念/機台/#ports-without-holes)；
+確切的保留連接埠與網域規則請見
+[機台參考](/zh-TW/手冊/參考/機台/#ports-and-dev-domains)。
 
-## Related
+## 相關
 
-- [Give an agent a machine to test on](/zh-TW/手冊/操作指南/使用機台/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/zh-TW/手冊/參考/機台/) — reserved ports, dev TLDs,
-  defaults
+- [給代理一台用於測試的機器](/zh-TW/手冊/操作指南/使用機台/)——開啟、
+  觀看與接管機台
+- [機台參考](/zh-TW/手冊/參考/機台/)——保留的連接埠、開發頂級網域、
+  預設值

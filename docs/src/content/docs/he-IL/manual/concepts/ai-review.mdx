@@ -1,225 +1,128 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: סקירת AI
+description: איך בקשת משיכה הופכת לבקשה שנסקרה — מרחבי סקירה, צמתי סקירה וקונצנזוס עמיתים, קבוצות וצירים, הכרעת Ship/Hold/Block, ולמה הפרסום נשאר צעד שאתם עושים.
 slug: he-IL/מדריך-למשתמש/מושגים/סקירת-ai
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## הצורה של סקירה
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+סקירת AI היא הרצה אחת של הפייפליין המובנה `pr_review` על בקשת משיכה פתוחה אחת. הפייפליין פותח את מרחב הסקירה של ה-PR, מפזר סוכני סקירה שקוראים את ה-diff בצ׳קאאוט המבודד של אותו מרחב, כל אחד מהם רושם את ממצאיו כ**צמתי סקירה** מובנים, סוכן מוביל מאחד אותם לסיור מודרך, ומסיים מחשב הכרעה אחת: **Ship**, **Hold** או **Block**. מה שהפייפליין אף פעם לא עושה הוא לפרסם — פרסום ל-GitHub הוא צעד נפרד ומכוון שאדם עושה.
 
-The rest of this page explains the pieces and why they are shaped this way.
+שאר העמוד הזה מסביר את החלקים ולמה הם מעוצבים כך.
 
-## One review space per PR
+## מרחב סקירה אחד לכל PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+הקשר הסקירה של PR הוא מרחב הודעות — במצב `review` ובסוג `pr` — שמקושר לבקשת המשיכה באמצעות **שיוך מרחב סקירה**. הוא נוצר באופן אידמפוטנטי: עמוד ה-PR, פייפליין הסקירה ומשטחי הצ׳אט כולם מפענחים את מרחב הבסיס ה_אחד_ של ה-PR דרך אותו מסלול קוד, כך שתבנית שסוקרת PR ואדם שפותח אותו לעולם לא יגיעו לשני חדרים שונים שמסתכלים על שני צ׳קאאוטים שונים.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+עץ העבודה המבודד של המרחב מכיל את ה-PR ב-head ref שלו. חדר אחד פירושו גם צ׳קאאוט אחד: כל סוקר עובד באותו מרחב במקום שכל אחד יקבל שכפול משלו של סביבת העבודה.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+כל סוקר מפרסם לזרם הנקוב שלו בתוך אותו מרחב, והממצאים הם הודעות `review_node` ולא פרוזה רגילה. האיסוף ברמת המרחב בסוף הוא מכוון — הכרעה שמחושבת מממצאים של שרשור אחד תהיה בשקט הכרעה על סוקר אחד.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+השיוך נושא סולם סטטוסים — `requested` ← `in progress` ← `awaiting approval` ← `completed` — וזה מה שמשער את **Publish to GitHub** בלשונית הסקירה של ה-PR.
 
-## Review levels
+## רמות סקירה
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+כמה עמוקה הסקירה היא מדיניות של סביבת עבודה עם שלוש רמות, שנקבעת ב**הגדרות ← סביבת עבודה ← כללי**, בכרטיס **מדיניות סביבת העבודה**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| רמה        | סוקרים שמתפצלים                              | דיווח                                        |
+| ---------- | -------------------------------------------- | -------------------------------------------- |
+| `light`    | מהנדס בלבד                                   | רק מה שמהותי                                 |
+| `balanced` | מהנדס, QA, ארכיטקט (ברירת המחדל)             | המעבר הקבוע                                  |
+| `thorough` | כל החמישה, כולל אבטחה וביצועים                | שום דבר לא מדורג מטה                         |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+הרמה מזיזה שני מחוגים בבת אחת: אילו סוקרים מתפצלים, נאכף על ידי שערי המצב `runWhen` של תבנית הפייפליין ולא על ידי ניסוח ההנחיה — ניסוח הנחיה אפשר להתעלם ממנו, משער אי אפשר — ואיפה ממצאים מתחת לסף מוצגים. אף אחד מהמחוגים לא מוחק ממצא: רמה שמדווחת פחות עדיין רושמת בדיוק אותו דבר ומקבצת את השאר.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+מעברי האבטחה והביצועים עושים שימוש חוזר בסוכני הארכיטקט והמהנדס המובנים מראש ולא מציגים סוכנים חדשים. ההתמחות היא התדריך שאיתו נשלח הסוקר, ולא סוכן נפרד לכל ציר — סוכן לכל ציר יהיה עוד חמש שורות בכל סביבת עבודה בלי יכולת נוספת. בחירת הסוקרים לעולם לא בוחנת את ה-diff לפי שפה או תחום.
 
-## Review nodes: findings as data, not prose
+## צמתי סקירה: ממצאים כנתונים, לא כפרוזה
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+ממצא שנרשם עם `add_review_node` הופך ל**צומת סקירה** על ה-PR — זה מה שלשונית הסקירה מציגה, זה מה שממנו מחושבת ההכרעה, וזה מה ש"Publish to GitHub" הופך להערה מוטבעת. סוקר שמחזיר רק פרוזה מייצר הרצת פייפליין שנראית מוצלחת ומשטח סקירה ריק; הרישום הוא החלק הנושא.
 
-Each node carries:
+כל צומת נושא:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| שדה           | ערכים                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| סוג           | `bug`, `suggestion`, `recommendation`, `question`, `ticket`               |
+| עדיפות        | P0 (קריטי) ← P3 (זוטר)                                                   |
+| שלשת הטריאז'  | קטגוריה (`security`, `stability`, …), חומרה, מאמץ                         |
+| עוגן          | נתיב הקובץ, שורת ההתחלה והסיום                                            |
+| נשיאת התיקון  | שורות החלפה מוצעות, diff אופציונלי, הנחיית תיקון אופציונלית               |
+| ביטחון        | ציון [0, 1]                                                              |
+| הנמקה         | הניתוח, שנכתב לפני הממצא                                                 |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+שני פרטים הם מכוונים. הצעת GitHub בלחיצה אחת מוצעת רק כשהסוקר סיפק שורות החלפה מדויקות — הסקתן מ-diff מאוחד משתבשת בשקט, ו-commit בלחיצה אחת של הסקה שגויה גרוע מלא להציג כפתור בכלל. והסכמה של `add_review_node` מציגה את `reasoning` לפני הממצא, כך שמודל שממלא את האובייקט לפי סדר הסכמה כותב את הניתוח קודם. השדה אופציונלי: השמטתו לא דוחה את הצומת. צומת שהמטען שלו שגוי נעלם במקום לזהם את הסקירה.
 
-## Peer consensus
+## קונצנזוס עמיתים
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+צומת עובר דרך `open` ← `consensus-ready` ← `resolved` או `dismissed`. הצעד האמצעי הוא לב המודל: **ממצא מסיים את דרכו רק כשסוקר עמית מאשר אותו, וסוכן לעולם לא יכול לאשר ממצא משלו.** כלי ה-MCP ‏`publish_review_to_github` וברירת המחדל של ה-RPC עדיין מפרסמים ממצאים שאושרו על ידי עמיתים בלבד. לעומת זאת, הכפתור **Publish to GitHub** בלשונית הסקירה שולח כל ממצא פתוח שנותר.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+הכלל נאכף בשלושה מקומות בלתי תלויים — כלי האישור, מסיים הסקירה והמפרסם — כך שהוא שורד קורא פגום בכל אחד מהם. כל שינויי הסטטוס עוברים דרך שירות אחד, וזה מה שנותן לסטטוס משמעות: לפני כן, שני מסלולים חלקיים יכלו לחלוק על השאלה אם אותו ממצא נפתר.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+כשסוקרים חולקים — אותו קובץ ואותה שורה, עדיפויות במרחק שתי רמות או יותר, או שאחד קורא לזה `bug` והאחר קורא לזה `suggestion` — אי־ההסכמה מוצגת מעל רשימת הממצאים. שם דעות הסוקרים נפרדות ושם שיקול הדעת של האדם שווה ביותר.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+דחייה של ממצא גם כותבת עובדת דיכוי רכה לתוך תחום הזיכרון, בביטחון נמוך — דחייה אחת היא העדפה, לא כלל.
 
-## Cohorts: what the review is grouped around
+## קבוצות: מה שסביבו מקובצת הסקירה
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+מעבר חישוב הסקירה מקבץ את הקבצים שהשתנו ב-PR ל**קבוצות** הנגזרות מגרף הקוד: קבצים שהשתנו ממופים לסמלים שהם נוגעים בהם, סמלים לרכיבים מחוברים, והקבוצות מדורגות לפי רדיוס ההשפעה. קבוצה נושאת סדר קריאה מודרך, תרשימים ותובנות ולא רשימת קבצים שטוחה.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+שני כללי יושרה מעצבים את זה. מפתחות הקבוצות נגזרים מהתוכן ויציבים לאורך דחיפות, כך שממצאים והתקדמות הסקירה שורדים ריבייס או דחיפה כפויה במקום להפוך ליתומים. וכשללמאגר אין אינדקס קוד, הקיבוץ נופל חזרה לנתיבים פשוטים ואומר זאת — הנפילה לאחור לעולם לא מזייפת ביטחון סמנטי.
 
-## Review axes and gates
+## צירי סקירה ושערים
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+לצד ממצאי הסוקרים, סקירה צוברת **תוצאות ציר**: שישה צירים, משני סוגים.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| ציר                       | סוג           | נגזר מ                              |
+| ------------------------- | ------------- | ----------------------------------- |
+| `correctness`, `security` | מונחה טוקנים  | הממצאים של הסוקרים עצמם             |
+| `testGap`                 | מונחה טוקנים  | הממצאים של הסוקרים                  |
+| `visual`, `apiContract`   | דטרמיניסטי    | מחושב בלי להוציא טוקנים             |
+| `performance`             | דטרמיניסטי    | ספירה בלבד — שום דבר במוצר לא מחשב תוצאה |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+הכרעת ציר היא `pass`, `warn`, `fail`, `partial` או `unavailable` — ורק `pass` או `warn` פותחים שער. ההבחנה בין `fail`, `partial` ו-`unavailable` נושאת משקל: ציר משעור שלא הצליח להשלים או שלא הצליח לרוץ בכלל מחזיק את ההכרעה הכוללת במקום להעביר אותה. **היעדר ראיה לעולם לא הופך לשער ירוק.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+חלק מהצירים מייעצים בכוונה. ציר פער הבדיקות הנגזר מהקבוצות לא יכול לראות כיסוי של הזרקת תלויות או מפעלים — מאגר בלי אינדקס עם חבילת בדיקות יסודית ומאגר בלי בדיקות בכלל נראים משם זהים, כך שלטעון אחרת יהיה שקר; הוא מוצג בלוח המחוונים בלי לשער. צירי הטוקנים מייעצים מפני שעדיפויות הממצאים כבר מניעות את ההכרעה, ושיעור חוזר עליהם יהיה ספירה כפולה.
 
-## The verdict
+## ההכרעה
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+מסיים הסקירה מחשב את ההכרעה על הממצאים בסטטוס `open` או `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- כל ממצא P0 עם ביטחון ≥ 0.7 ← **Block**
+- אחרת, כל P0 (ביטחון נמוך) או כל P1 ← **Hold**
+- אחרת ← **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+ההכרעה נושאת ביטחון מצטבר הנגזר מהפיזור של רמות הביטחון התורמות — הסכמה מעלה אותו, חילוקי דעות מורידים אותו.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+האיחוד של הסוכן המוביל (CEO) הוא מעבר עריכתי, לא רישום מחדש: העתק שני בכתב יד של הממצאים הוא בדיוק מה שסוטה מהממצא האמיתי. ממצאים כפולים מדורגים מטה ולא מוצגים שוב — כמה סוקרים מופנים לאותו diff עם תחומי אחריות חופפים בכוונה, כך שאותו פגם שמגיע למסיים שלוש פעמים הוא המערכת עובדת; פרסומו שלוש פעמים הוא המערכת שמדליפה את הארכיטקטורה של עצמה לתיבת הדואר הנכנס של הקורא. בסקירה חוזרת, ממצאים מקבלים טביעת אצבע ומושווים מול הסבב הקודם, כך שהשינוי הוא מה שמוצג.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+לבסוף הצירים נכנסים לתמונה, והם יכולים רק להפוך את ההכרעה ל**חמורה יותר**: ציר משעור שנכשל כופה Block — אי אפשר לגבור עליו בהצבעה של ממצאים — וציר משעור שלא הצליח להשלים כופה לפחות Hold.
 
-## Publishing stays with you
+## הפרסום נשאר בידיכם
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+הפייפליין בכוונה לא מפרסם ל-GitHub; הפרסום מותנה באישור משתמש כך שסקירה לעולם לא תפורסם פעמיים. כשאתם לוחצים על **Publish to GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- נשלחת סקירת GitHub אחת. ממצאים שכבר נפתרו או נדחו מדולגים. הכפתור מפרסם כל ממצא פתוח שנותר (`selection: all_open`). כלי ה-MCP ‏`publish_review_to_github` עדיין מגיע כברירת מחדל לממצאים שאושרו על ידי עמיתים בלבד (`consensus`).
+- ממצאים המעוגנים לקובץ ולשורה הופכים להערות מוטבעות; כל השאר נכנס לגוף הסיכום, כל אחד עם כותרת תחתונה "— Control Center AI review" כך שהמקור חד־משמעי.
+- עוגנים נבדקים מחדש מול ה-diff ה_נוכחי_ של ה-PR בזמן הפרסום. הערה על קוד שכבר נכתב מחדש היא הדבר שהכי הורס אמון שסוקר יכול להשאיר; אם GitHub בכל זאת דוחה עוגן מוטבע, הסקירה כולה נשלחת מחדש כשכל ממצא מקופל לגוף, כך ששום דבר לא נשמט בשקט.
+- הכרעת **Block** נשלחת כ-`REQUEST_CHANGES`; **Hold** כ-`COMMENT`; **Ship** כ-`APPROVE` מהכפתור (`approve_on_ship: true`). כלי ה-MCP משאיר את Ship כ-`COMMENT` אלא אם תעבירו `approve_on_ship`.
+- הסקירה מתפרסמת תחת זהות האפליקציה של השרת. מי לחץ על Publish נרשם עבור שער התפקיד ויומן הביקורת; הוא אינו מחבר ה-GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
+פרסום מצהיר על מחלקת הפעולה `prPublish`, כך שנקודת החנק של מעקות הבטיחות משערת אותו כמו כל פעולה משנה מצב — הוא מבקש אישור כברירת מחדל, וכשאין מאשר מחובר הוא נכשל בבטחה ומונע את הפעולה. ראו [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
 
-## What a reviewer may do
+## מה סוקר רשאי לעשות
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+סוכני סקירה פועלים במצב `review`: ארגז חול לקריאה בלבד ורשימת היתר מצומצמת של כלים שמכסה ממצאים, פרשנות, כרטיסים וסקירת עמיתים — אבל בלי שינויים. סוקר לא יכול לתקן את הקוד שהוא מבקר; הוא יכול לצרף תיקון מוצע שאדם מחיל. הודעת הסירוב של המצב אומרת לסוכן שמנסה לפעול בכל זאת לסיים את הסקירה ולתת למשתמש לפעול על הסיכום שפורסם.
 
-## Related concepts
+## מושגים קשורים
 
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) — the policy engine that gates publishing
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/) — what `review` mode changes for an agent
-- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) — the engine the review runs on
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) — where the isolated worktree comes from
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) — מנוע המדיניות שמשער את הפרסום
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/) — מה מצב `review` משנה עבור סוכן
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) — המנוע שהסקירה רצה עליו
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) — מהיכן מגיע עץ העבודה המבודד
 
-## Related guides
+## מדריכים קשורים
 
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) — run a review and publish it
-- [Dispatch reviewer agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/) — choose the reviewers yourself
-- [Review compute](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/) — cohorts, axes and diffs
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/) — הריצו סקירה ופרסמו אותה
+- [שליחת סוכני סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה/) — בחרו את הסוקרים בעצמכם
+- [חישוב סקירה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חישוב-סקירה/) — קבוצות, צירים ו-diffs

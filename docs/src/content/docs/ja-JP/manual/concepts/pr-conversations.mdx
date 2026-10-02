@@ -1,134 +1,66 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: PR 会話
+description: Webhook なしで GitHub の PR コメントがどのようにエージェントのターンになるのか、何が作者を認可するのか、そして会話の各側が誰に帰属されるのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/pr-会話
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/ja-JP/マニュアル/コンセプト/チャットブリッジ/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+プルリクエストは、もともとコードについての会話が行われる場所です。PR 会話は、[チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)が Slack をそうするのと同じように、そこを Control Center ワークスペース上のサーフェスにします。PR 上でサーバーの GitHub App ボットを @メンションする、そのレビュースレッドの中で返信する、あるいは `ai-review` ラベルを付けると、作業はその PR のレビュースペースで行われます — アプリ内で入力したものと同じ帰属とガードレールのもとで。コメントはメンバーシップによっても制限されますが、ラベルはそうではありません。作者が存在しないからです。ボットの回答は、質問が投げかけられたレーンで、GitHub 上に返ってきます。
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+この機能を形づくる判断は 3 つあり、いずれもチャットブリッジがチャットに対して下したものと同じ判断を、コードホスト向けに言い直したものです。**接続がどちらの方向に張られるか**、**外部から届いたコメントを何が認可するか**、そして**どちらの側が誰に帰属されるか**です。
 
-## Polling is the transport
+## ポーリングがトランスポート
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+GitHub がアプリに対して提供する唯一のプッシュチャネルは Webhook であり、Webhook には受信用 URL が必要です — このサーフェスが意図的に決して要求しない、まさにそのものです。そこで検出はスイープで行います。1 分おきほどに、アプリのインストールごとに 1 つの別名検索が GitHub に対して、ボット（またはその短縮スラッグ）に言及している PR とレビューラベルが付いたオープン PR を問い合わせ、すでにレビュースペースを持つ PR はコメントスレッドを読み取り、すべては前回のスイープで見たものとコメント id で差分比較されます。
 
-The design consequences are worth naming:
+設計上の帰結には名前を付けておく価値があります。
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **レイテンシはイベントではなく、スイープ間隔です。** 👀 の確認リアクションは 1 分ほどで付きます。緊急のものがこれに依存することはありません。
+- **コメントごとにちょうど 1 回。** コメント id は GitHub 全体で一意です。各 id は、対象として分類された瞬間、何かが作用するよりも前に記録されます。クラッシュによって失われうるのはコメントの処理であって、二重に発火することはありません。
+- **オフライン中の時間は再生されるのではなく、取り戻されます。** 既読セットは永続化されるため、再起動すると停止中に届いたものが配信されます。唯一の例外は最初のスイープです。差分を取る記憶がないため、未処理のものはすべて黙って記録されます — このサーバーが存在する前に 20 件の PR にラベルを付けたオペレーターが、戻ってきたら 20 件のレビューが走っていた、ということになってはなりません。
+- **ラベルはイベントではなく、集合です。** 検索が報告するのはラベルの_存在_であるため、ラベルが付いた PR が発火するのはただ一度きりです。ラベルを外してから付け直してもスイープには見えません。再実行の経路はメンションです。
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+検索はインストールアカウントごとに、そのオーナー自身のクライアントで 1 回実行されます。インストールトークンには自分のインストールのリポジトリしか見えないためです — サーバー全体で 1 つの資格情報を使うと、アプリの他のインストール配下の PR をすべて黙って見落とすことになります。
 
-## Membership authorizes, not the comment
+## 認可するのはメンバーシップであり、コメントではない
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+PR コメントが運んでくるのは、作者のログイン名程度のものです — 証明されるまでは未認証の外部アイデンティティです。ボットはそれを、ワークスペースのメンバーと接続済み GitHub アカウントの逆引きインデックスに照らして解決します。このインデックスは TTL で再構築されます。サーバーの稼働中にも人がサインインしたり招待されたりするからです。
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+フェイルクローズドははしごのような形をとり、どの段も、拒否したそのスレッドの中で答えます。
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **未知のログイン名** — リンクされていないか、このワークスペースのメンバーでない人によってリンクされている — には、サインインして自分が所属していることを確認するよう伝えます
+- **読み取り専用のメンバー**（`viewer` または `guest`）には、そのロールでは作業を開始できないと伝えます
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+2 つの未知ログインのケースは 1 つの返信を共有します。逆引きインデックスが返すのは_この_ワークスペースのメンバーだけなので、リンクされていないアカウントと、リンク済みだが非メンバーであるアカウントは同じ「該当なし」です。いずれも先へは進みません。コメントが送信者以外の誰かに帰属されることはなく、部外者の言葉が、その人が見られないワークスペースに入り込むこともありません。
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+`ai-review` ラベルには解決すべき作者がいないため、このはしごを登りません。これを付けると、すでにそのリポジトリをリンクしているワークスペースでレビューが開始されます。
 
-## Two identities, on purpose
+## 意図的に 2 つのアイデンティティ
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+会話の各側は異なるアイデンティティを持ち、その違いこそがこの機能です。
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **GitHub 上では、ボットはサーバーです。** ブリッジが投稿するすべてのコメント、リアクション、返信は、アプリのインストールトークンで行われます。誰もクライアントで何かをクリックしていないので、誰かのアカウントを借りることはありません — Webhook とポーリングを人の資格情報から切り離しているのと同じルールです。
+- **スペース内では、問いかけはあなたのものです。** メッセージは、作者が解決されたメンバーに帰属され、エージェント実行はその人の代理として実行されます。コミットにはその人が共作者として入り、スペースの自律度とアクションガードレールは、アプリ内で入力したメッセージとまったく同じように適用されます。実行からのコードホストへの書き込みは、上の箇条書きと同じルールで、あくまでアプリとして送出され、メンバーの個人トークンでは行われません。
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+レビューの指摘事項を GitHub に公開するかどうかは、Control Center で人が下す判断のままです。メンションはレビューを_開始_できますが、公開するのは人間だけです。
 
-## The loop guard, and the short name
+## ループガードと短縮名
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+ボットアカウントが作成したものはすべて、どのゲートが走るよりも前に捨てられます — 具体的には自分たちのもの、そして `[bot]` サフィックスを持つすべてです。これにより、別のアプリのレビューボットがこちらのボットを呼び覚ますこともできません。これがなければ、ボット自身の回答が新しいコメントとして届き、永遠に再トリガーし続けることになります。
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+`[bot]` サフィックスは、短縮形が存在する理由でもあります。GitHub はアプリアカウントのログイン名を `<slug>[bot]` に固定し、そのオートコンプリートを提供せず、`@slug` をアプリに解決することもありません — そのため、素のスラッグを受け入れるかどうかは_私たちの_マッチャーの判断であり、それを見つけるには GitHub のメンションインデックスではなく、生のコメント**本文**検索レーンが必要です。このコストは滑らかにされるのではなく、明示されます。アプリのスラッグと同じ文字列を持つ人間のユーザーは、自分自身を短縮形でメンションするたびにボットに話しかけることになります。アプリ名が特徴的であれば、この衝突は仮定の話にとどまります。
 
-## What is deliberately not offered
+## 意図的に提供しないもの
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **自動公開はしません。** 指摘事項はレビュースペースに届き、GitHub への公開は別の、人間による操作です
+- **曖昧なアイデンティティはしません。** 作者はちょうど 1 人のメンバーに解決されるか、拒否されます — 推測による帰属はありません
+- **GitHub App の Webhook は使いません。** このサーフェスは Webhook を一切登録しないため、PR コメント用に公開する受信用 URL はありません。他の製品 Webhook（パイプライン、チケット同期）は、別の任意の設定です。
 
-## See also
+## 関連項目
 
-- [Talk to Control Center from a GitHub PR](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/):
-  the how-to for all of this
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/):
-  the principals and roles a login resolves through
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/): the pipeline a mention
-  or label starts
+- [GitHub PR から Control Center に話しかける](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/): これらすべてのハウツー
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/): 同じ 3 つの判断をチャット向けに下したもの
+- [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/): ボットのアイデンティティがどこから来るか
+- [マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): ログインの解決が通るプリンシパルとロール
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): 応答するエージェントに許可されること
+- [AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/): メンションやラベルが開始するパイプライン

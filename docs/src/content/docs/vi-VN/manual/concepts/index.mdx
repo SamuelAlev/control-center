@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Khái niệm
+description: Cách Control Center hoạt động và lý do hệ thống được xây dựng như vậy — phần kiến thức nền đằng sau các hướng dẫn.
 slug: vi-VN/so-tay/khai-niem
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/vi-VN/so-tay/huong-dan-thuc-hanh/); when you want to look
-something up, go to the [reference](/vi-VN/so-tay/tham-chieu/).
+Những trang này giải thích **cách Control Center hoạt động và lý do tại sao**. Chúng dành cho việc tìm hiểu,
+không phải để làm theo: không có trang nào ở đây là một quy trình cần thực hiện. Khi bạn muốn hoàn thành một
+tác vụ cụ thể, hãy đến [hướng dẫn thực hành](/vi-VN/so-tay/huong-dan-thuc-hanh/); khi bạn muốn tra cứu điều gì đó,
+hãy đến [tham chiếu](/vi-VN/so-tay/tham-chieu/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Bạn có thể đọc chúng theo thứ tự bất kỳ. Nếu bạn là người mới, mô hình cốt lõi là nơi nên bắt đầu.
 
-## Core model
+## Mô hình cốt lõi
 
-The four ideas everything else is built on.
+Bốn ý tưởng mà mọi thứ khác đều được xây dựng dựa trên.
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/) — what happens between your message and the agent's first token
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/vi-VN/so-tay/khai-niem/tri-tue-ma-nguon/) — the code graph, language server, structural search and debugger
-- [Conversation history](/vi-VN/so-tay/khai-niem/lich-su-hoi-thoai/) — persistence, compaction and forking a transcript
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/) — ranh giới tenant và lý do nó được thực thi bằng bố cục cơ sở dữ liệu thay vì bằng kỷ luật truy vấn
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/) — một agent được cấu thành từ những gì: danh tính, vai trò, skill, khả năng, adapter và mô hình
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/) — điều gì diễn ra giữa tin nhắn của bạn và token đầu tiên của agent
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/) — cách `chat`, `plan`, `review` và `orchestrate` thay đổi những gì agent được phép làm
+- [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/) — vì sao agent chỉ thấy một tập con công cụ của mình, cách nó tiếp cận phần còn lại và điều gì giữ cho bộ nhớ đệm của nhà cung cấp luôn ấm
+- [Trí tuệ mã nguồn](/vi-VN/so-tay/khai-niem/tri-tue-ma-nguon/) — đồ thị mã, máy chủ ngôn ngữ, tìm kiếm theo cấu trúc và trình gỡ lỗi
+- [Lịch sử hội thoại](/vi-VN/so-tay/khai-niem/lich-su-hoi-thoai/) — lưu trữ, nén và tách nhánh bản ghi hội thoại
 
-## Safety and control
+## An toàn và kiểm soát
 
-What an agent is allowed to touch and who decides.
+Những gì agent được phép chạm vào và ai là người quyết định.
 
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) — what actually constrains an agent run today
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/vi-VN/so-tay/khai-niem/uy-quyen/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/vi-VN/so-tay/khai-niem/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) — điều thực sự giới hạn một lần chạy agent hiện nay
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) — một engine chính sách cho mọi hành động thay đổi dữ liệu và cách một quy tắc được phân giải
+- [Ủy quyền](/vi-VN/so-tay/khai-niem/uy-quyen/) — vai trò, danh mục quyền và nhật ký kiểm toán
+- [Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/) — vì sao agent nhận được máy ảo dùng một lần thay vì máy của bạn, và ranh giới thực sự là gì
 
-## Directing the work
+## Điều hướng công việc
 
-Turning intent into work that gets done.
+Biến ý định thành công việc được hoàn thành.
 
-- [Tickets and delegation](/vi-VN/so-tay/khai-niem/phieu/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/) — one goal, one approval, a generated pipeline
-- [AI review](/vi-VN/so-tay/khai-niem/danh-gia-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/vi-VN/so-tay/khai-niem/hoi-thoai-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong/) — eval suites and the Quality tab
+- [Phiếu và ủy thác](/vi-VN/so-tay/khai-niem/phieu/) — đơn vị công việc không phụ thuộc nhà cung cấp mà cả đội máy cùng chia sẻ
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/) — quy trình DAG, trình kích hoạt và các lần chạy có thể tiếp tục
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/) — một mục tiêu, một phê duyệt, một quy trình được tạo
+- [Đánh giá bằng AI](/vi-VN/so-tay/khai-niem/danh-gia-ai/) — cách một PR trở thành PR đã được đánh giá: không gian đánh giá, đồng thuận giữa các agent ngang hàng, các trục và phán quyết Ship/Hold/Block
+- [Hội thoại PR](/vi-VN/so-tay/khai-niem/hoi-thoai-pr/) — trả lời một lượt nhắc đến trên GitHub hoặc nhãn `ai-review` ngay từ chính máy chủ mã
+- [Bộ nhớ và tri thức](/vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc/) — dữ kiện, chính sách và những gì agent được phép biết
+- [Đánh giá và chất lượng](/vi-VN/so-tay/khai-niem/danh-gia-va-chat-luong/) — bộ đánh giá và tab Chất lượng
 
-## People and reach
+## Con người và phạm vi tiếp cận
 
-Working with other humans and reaching the fleet from elsewhere.
+Làm việc với những người khác và tiếp cận đội máy từ nơi khác.
 
-- [Multiplayer and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/vi-VN/so-tay/khai-niem/dang-nhap-mot-lan/) — SAML and OIDC logins
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/vi-VN/so-tay/khai-niem/cuoc-hop/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/vi-VN/so-tay/khai-niem/lich/) — Google Calendar sync and meeting alerts
+- [Đa người dùng và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/) — con người và agent là những người tham gia bình đẳng, và điều gì kiểm soát quyền truy cập
+- [Đăng nhập một lần](/vi-VN/so-tay/khai-niem/dang-nhap-mot-lan/) — đăng nhập bằng SAML và OIDC
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/) — vì sao cầu Slack chủ động gọi ra ngoài và điều gì cấp quyền cho một tin nhắn từ chat
+- [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/) — cách điện thoại tiếp cận máy chủ của bạn và mô hình bảo mật xung quanh nó
+- [Cuộc họp và phiên âm](/vi-VN/so-tay/khai-niem/cuoc-hop/) — ghi âm ngay trên thiết bị, phiên âm và tóm tắt
+- [Lịch và lên lịch](/vi-VN/so-tay/khai-niem/lich/) — đồng bộ Google Calendar và nhắc nhở cuộc họp
 
-## Under the hood
+## Bên trong hệ thống
 
-The shape of the system itself.
+Hình hài của chính hệ thống.
 
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/) — the in-process bus features talk over
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/) — phân lớp, kernel dùng chung, cổng và adapter
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) — cách các máy khách desktop, web và điện thoại liên hệ với một máy chủ
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) — bus trong cùng tiến trình mà các tính năng dùng để trao đổi

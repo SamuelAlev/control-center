@@ -1,97 +1,103 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Cho agent một máy để kiểm thử
+description: Cho agent một trình duyệt, desktop, trình giả lập Android hoặc Trình mô phỏng iOS dùng một lần — xem trực tiếp, kèm quyền điều khiển bạn có thể tiếp quản.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+Một **rig** là một cỗ máy dùng một lần mà agent mở ra khi cần thực sự thử một
+việc gì đó: tải một trang, nhấp qua một ứng dụng desktop, chạm khắp một chiếc
+điện thoại. Bạn có thể xem nó làm việc theo thời gian thực, và giành quyền điều
+khiển bất cứ lúc nào bạn muốn.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Các rig terminal khép kín, trình duyệt và desktop là VM với đĩa dùng một lần và
+mạng có cổng kiểm soát. Android và iOS là những trình giả lập do máy chủ quản
+lý: trạng thái thiết bị của chúng dùng một lần, nhưng mạng của chúng đi theo máy
+chủ lưu trữ.
 
-## Set it up once
+## Thiết lập một lần
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Rig chạy trên máy đang chạy `cc_server` — chính máy đó, không phải máy bạn đang
+nhìn. Có năm bề mặt dành cho người dùng; các bề mặt desktop và di động cần thiết
+lập trên máy chủ:
 
-| Surface | Runs on | Setup |
+| Bề mặt | Chạy trên | Thiết lập |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | Một microVM khởi động từ image Ubuntu được ghim | Không — image được tải tự động trong lần dùng đầu tiên |
+| **Browser (VM)** | Một microVM khởi động từ image Debian được ghim, với Chromium, Firefox hoặc WebKit được cài trong lần dùng đầu tiên | Không — tương tự |
+| **Máy tính (VM)** | QEMU với image desktop Linux có sẵn Chromium, Firefox, WebKit và bộ CLI nền tảng kiểu runner do GitHub vận hành | Cài QEMU (`brew install qemu`), rồi **Nhập** một image desktop trong **Cài đặt → Máy chủ → Rigs** |
+| **Android** | Trình giả lập Android của Google | Cài Android SDK, tạo một AVD và khởi động nó (bên dưới) |
+| **Trình mô phỏng iOS** | CoreSimulator trên máy Mac chạy máy chủ | Cài Xcode và runtime Trình mô phỏng iOS được yêu cầu, rồi cài cầu nối tự động hóa trong **Cài đặt → Máy chủ → Rigs** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Các cỗ máy terminal và trình duyệt khởi động từ image được ghim theo digest: các
+byte chính xác được chỉ định trước, chỉ tải một lần trong lần khởi động đầu và
+được lưu vào bộ nhớ đệm — sau lần khởi động đầu của mỗi loại, những cỗ máy về sau
+bỏ qua toàn bộ phần tải xuống và khởi động trong vài giây. **Cài đặt → Máy chủ →
+Rigs** hiển thị những gì máy chủ của bạn có thể khởi động và mọi cỗ máy đang chạy
+ngay lúc này.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Một image desktop đã cài vẫn quản lý được từ cùng trang đó: **Nhập** thay thế nó
+bằng một tệp qcow2 mới hơn, còn **Xóa** gỡ nó để bạn có thể cài một bản dựng mới.
 
-### Mobile devices are set up differently
+### Thiết bị di động được thiết lập theo cách khác
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Không có image nào của chúng tôi cho Android hay iOS, và đó không phải là một
+thiếu sót. Image hệ thống Android đến từ SDK của Google; runtime iOS đến từ
+Xcode. Với Android, hãy cài Android Studio (hoặc bộ công cụ SDK dòng lệnh), thêm
+một thiết bị ảo trong **Device Manager**, rồi khởi động nó. Trang Rigs sau đó báo
+Android là khả dụng.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Trang đó cũng cho bạn biết chính xác bước nào bạn đang thiếu — không có SDK,
+không có trình giả lập, không có thiết bị ảo, hay một thiết bị đơn giản là chưa
+chạy — vì bốn trường hợp đó có bốn cách khắc phục khác nhau và chỉ một trong số
+đó là tải xuống. Nếu bạn khởi động `cc_server` từ một shell không thấy được SDK,
+hãy export nó:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Với iOS, bản thân máy chủ phải chạy trên macOS với Xcode và một runtime Trình mô
+phỏng iOS đã cài. Mở **Cài đặt → Máy chủ → Rigs** và nhấn **Cài đặt cầu nối tự
+động hóa iOS**. Máy chủ tải artifact WebDriverAgent được ghim theo checksum, xác
+minh nó, rồi cài vào kho tự động hóa thuộc sở hữu máy chủ. Không có trình mô
+phỏng nào khởi động trong quá trình thiết lập.
 
-## Open a machine
+## Mở một cỗ máy
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Các cỗ máy tồn tại dưới dạng **tab**, bên cạnh chat và diff — trong một space
+hoặc trên trang PR, trong cùng menu `+`, dưới mục **Máy**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Máy tính** — một desktop Linux với Chromium, Firefox và WebKit
+- **Chromium**, **Firefox** hoặc **WebKit** — một trình duyệt
+- **Android** — trình giả lập Android đang chạy
+- **Trình mô phỏng iOS** — một trình mô phỏng dùng một lần được tạo cho cuộc hội
+  thoại này
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Chọn một mục và nhấn **Khởi động máy**. Tab cho biết quá trình khởi động đang ở
+giai đoạn nào (“Starting the microVM”, “Waiting for the guest to come up”) thay
+vì chỉ quay vòng.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Tab được giới hạn theo cuộc hội thoại, và công cụ agent cũng vậy. Một tab
+Chromium, Firefox hoặc WebKit và `browser_use`, Android và `mobile_use`, hay
+Trình mô phỏng iOS và `ios_use` đều trỏ tới cùng một cỗ máy mặc định. Các ô giao
+diện bổ sung là những cỗ máy so sánh riêng; công cụ agent luôn dùng cỗ máy mặc
+định.
 
-To build, install and start a Flutter app on Android:
+Để build, cài đặt và khởi động một ứng dụng Flutter trên Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Sau đó gọi `mobile_use` với `install_apk` và
+`build/app/outputs/flutter-apk/app-debug.apk`, rồi tiếp theo là `start_app` và
+tên gói Android. `ui_dump`, ảnh chụp màn hình và thao tác nhập đều điều khiển
+đúng thiết bị đang hiển thị trong tab dành cho người. `stop_app`,
+`clear_app_data`, `uninstall_app`, `open_url`, và các lời gọi `shell` dạng argv
+bao trùm phần còn lại của vòng phát triển mà không cần gọi shell trên máy chủ.
 
-To build, install and start a Flutter app on iOS Simulator:
+Để build, cài đặt và khởi động một ứng dụng Flutter trên Trình mô phỏng iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +105,212 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Sau đó gọi `ios_use` với `install_app` và thư mục `.app`, rồi tiếp theo là
+`start_app` và bundle identifier do `plutil` in ra.
+Công cụ iOS cũng cung cấp `stop_app`, `uninstall_app`, `open_url`, và một hành
+động `spawn` dạng argv cho việc chẩn đoán cục bộ trong trình mô phỏng.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Màn hình desktop và trình duyệt tự thay đổi kích thước theo bảng điều khiển. iOS
+giữ nguyên kích thước point cố định của trình mô phỏng và thêm viền đen quanh nó.
+Mọi bề mặt vẫn có hai làn độc lập: agent nhận ảnh chụp nhỏ, rẻ, còn bạn nhận
+khung hình trực tiếp. Chuyển tab sẽ dừng luồng dành cho người, nên một cỗ máy
+chạy nền không tốn băng thông hiển thị.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Một tab rig không tự khởi động cỗ máy, kể cả trong lúc khôi phục bố cục. Quy tắc
+đó ngăn một lần mở ứng dụng vô tình khởi động VM hay tạo thiết bị mô phỏng.
 
-## Drive the machine
+## Điều khiển cỗ máy
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Canvas là của bạn để gõ và nhấp vào bất cứ khi nào không ai khác đang giữ quyền
+điều khiển độc quyền — hoặc khi chính bạn giữ quyền đó. Trong lúc bạn giữ khóa
+đó, thẻ trạng thái hiển thị **Bạn đang điều khiển**, agent vẫn có thể chụp màn
+hình, và máy chủ từ chối các hành động làm thay đổi dữ liệu của nó tại điểm nghẽn
+duy nhất mà mọi hành động đều đi qua. Mọi việc bạn làm đều được ghi lại dưới tên
+bạn.
 
-Press **Stop the machine** when you are done.
+Nhấn **Dừng máy** khi bạn xong việc.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Quyền điều khiển là độc quyền có chủ đích: hai chủ thể cùng gõ vào một cỗ máy sẽ
+tạo ra thao tác nhập mà cả hai đều không hề muốn.
 
-## Move things in and out
+## Đưa nội dung vào và ra
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Sao chép và dán hoạt động theo cả hai chiều trên canvas của rig, và việc kéo tệp
+cũng vậy.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Sao chép và dán.** Nhấn tổ hợp sao chép khi đang ở trên canvas và bất cứ thứ gì
+cỗ máy đã sao chép — văn bản, một hình ảnh, một danh sách tệp — sẽ được đặt vào
+bảng nhớ tạm của bạn. Dán sẽ gửi nội dung của bạn theo chiều ngược lại và nhấn
+dán bên trong cỗ máy. Trên macOS, tổ hợp là ⌘C/⌘V; ⌃C vẫn tới được shell của hệ
+thống khách dưới dạng tín hiệu ngắt. Trên Windows và Linux, dùng ⌃C/⌃V — hệ thống
+khách nhận đúng phím bấm mà nó vẫn nhận, nên ⌃C trong terminal của hệ thống khách
+vẫn ngắt và bảng nhớ tạm của bạn không bị đụng tới.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Không có gì đồng bộ ngầm. Một mật khẩu bạn sao chép trên máy của mình không tự
+xuất hiện bên trong VM chỉ vì một bộ hẹn giờ kích hoạt; nó chỉ đi qua khi bạn dán.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Dán vào một rig được phép theo mặc định. Sao chép ra khỏi một rig sẽ hỏi trước —
+một quyền cấp trong mười phút, hoặc **Luôn cho phép** trong **Cài đặt → Máy chủ
+→ Rigs → Quyền truy cập bảng nhớ tạm**. Hai chiều độc lập với nhau, và chúng đi
+theo bạn, chứ không theo không gian làm việc.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Kéo tệp vào.** Thả chúng vào bất cứ đâu trên canvas.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- Trên **Browser (VM)**, trang nhận một cú thả *thật* tại đúng điểm bạn thả, nên
+  một vùng tải lên hoạt động y hệt như với tệp cục bộ.
+- Trên **Máy tính (VM)**, các tệp nằm trong `~/Drops` và đường dẫn của chúng được
+  đặt vào bảng nhớ tạm của cỗ máy, nên ⌃V sẽ dán chúng vào trình quản lý tệp hay
+  một trường tải lên. Máy chủ không thể tạo giả một thao tác kéo vào một ứng dụng
+  Linux bất kỳ mà không chạy một daemon đặc quyền bên trong VM, thứ mà rig cố ý
+  không có — nên thông báo sẽ cho bạn biết các tệp đã đi đâu thay vì giả vờ rằng
+  một cú thả đã xảy ra.
+- Trên một **terminal**, tệp được sao chép vào và đường dẫn của nó được gõ tại
+  dấu nhắc, sẵn sàng để truyền cho một lệnh. Dán một *hình ảnh* vào terminal cũng
+  làm điều tương tự: nó được lưu trong cỗ máy và bạn nhận đường dẫn.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Kéo tệp ra** hoạt động từ Máy tính (VM). Bắt đầu kéo một tệp bên trong cỗ máy,
+đưa con trỏ ra khỏi canvas, và nó trở thành một thao tác kéo thật trên desktop của
+bạn — thả nó vào Finder hoặc Explorer. Sao chép tệp trong trình quản lý tệp của
+cỗ máy rồi dán ở phía bạn cũng hoạt động. Browser (VM) không cung cấp tính năng
+này: một trình duyệt không giao diện không có payload kéo thả để đọc, và việc
+đoán từ vùng chọn văn bản của trang sẽ chiếm mất những cú nhấp thông thường.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Máy tính (VM) cần một image được dựng sau khi tính năng bảng nhớ tạm ra mắt. Nếu
+bạn đã nhập image của mình từ trước, hãy dựng lại nó bằng
+`scripts/rigs/build_image.sh`, rồi dùng **Nhập** trên image đã cài để thay thế.
 :::
 
-## Terminals inside a rig
+## Terminal bên trong một rig
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Các terminal trong một space hoặc trên một trang PR có thể chạy bên trong một rig
+thay vì trên chính máy của máy chủ. Khi làm vậy, bảng điều khiển hiển thị huy
+hiệu **VM khép kín**.
 
-What changes:
+Những gì thay đổi:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Không gì bạn chạy chạm tới máy chủ. Một lệnh `rm -rf` trong đó sẽ khiến bạn mất
+  luôn rig của mình.
+- Mạng từ chối theo mặc định. Chỉ những host trong danh sách máy chủ được phép
+  của rig mới truy cập được, và mọi thứ đều đi qua một cổng thực thi danh sách
+  đó.
+- `git push` vẫn hoạt động. Rig không lưu thông tin xác thực nào; nó hỏi máy chủ
+  một token ngắn hạn cho từng thao tác, và token đó bị thu hồi khi rig đóng.
 
-What to know:
+Những gì cần biết:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Một terminal khép kín được khôi phục sẽ chờ bạn.** Giống như một tab rig, một
+  terminal `microvm` quay trở lại cùng bố cục của bạn sẽ hiển thị nút **Mở shell**
+  thay vì khởi động VM ngay khi mở. Một terminal shell máy chủ tốn một tiến trình;
+  một terminal khép kín tốn cả một cỗ máy.
+- **Tệp thả lên terminal được gõ, chứ không được mở.** Thả một tệp CSV lên một
+  terminal khép kín thì nó được sao chép vào cỗ máy và đường dẫn trong hệ thống
+  khách xuất hiện tại dấu nhắc — còn đường dẫn trên máy chủ sẽ là một lệnh thất
+  bại ở đó.
+- **Bản sao trong rig chỉ là một bản sao.** Cây làm việc của bạn trên máy chủ vẫn
+  là nguồn có thẩm quyền. Những commit bạn tạo bên trong một rig được mang trở
+  lại `refs/rigs/<id>/*` khi bạn yêu cầu — chúng không bao giờ dịch chuyển nhánh
+  của bạn hay chạm vào cây làm việc của bạn.
+- **Công việc nhắm đích máy chủ vẫn chạy trên máy chủ.** Một hệ thống khách Linux
+  không thể build cho macOS hay chạy `xcodebuild`. Hãy chọn backend native một
+  cách tường minh cho việc đó; ứng dụng sẽ yêu cầu bạn xác nhận thay vì âm thầm
+  chuyển.
 
-## Ports
+## Cổng
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm/).
+Chạy một máy chủ dev trong Terminal (VM) — ví dụ `pnpm dev` trên cổng 3000 — và
+trong vài giây, biểu tượng phích cắm ở góc terminal sẽ sáng lên: cổng được chuyển
+tiếp tới `localhost:3000` trên máy của bạn, truy cập được tại `localhost:3000`
+bên trong Browser (VM), chia sẻ được trên mạng của bạn, và có thể đặt tên thành
+`https://myapp.test`. Toàn bộ luồng — tự động chuyển tiếp, chia sẻ qua LAN, tên
+miền dev với HTTPS — có hướng dẫn riêng:
+[Chuyển tiếp cổng từ terminal](/vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm/).
 
-## Custom images
+## Image tùy chỉnh
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Một không gian làm việc có thể trỏ Terminal (VM) và Browser (VM) tới image riêng
+của nó — trong **Cài đặt → Máy chủ → Rigs → Image tùy chỉnh (không gian làm việc
+này)**. Cách dùng điển hình: mở rộng image mặc định bằng bộ công cụ mà dự án của
+bạn cần để mọi terminal khởi động trong trạng thái sẵn sàng, hoặc tái sử dụng một
+image mà nhóm bạn đã phát hành.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Cỗ máy vẫn khởi động bên trong cùng môi trường cách ly: cùng cổng egress, cùng
+broker thông tin xác thực, cùng vòng đời. Chỉ quản trị viên không gian làm việc
+mới thay đổi được cài đặt này, máy mới sẽ nhận nó (máy đang chạy giữ nguyên), và
+tham chiếu phải là một image từ registry — đường dẫn cục bộ bị từ chối.
 
-What an image must provide:
+Một image phải cung cấp những gì:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — một image Linux có `bash`. Nó cũng cần `git`, `curl` và
+  `socat` — hoặc cài sẵn, hoặc cài được trong lần khởi động đầu (mọi image dựa
+  trên Debian/Ubuntu đều dùng được: chúng được cài tự động, cùng với một bộ công
+  cụ CLI kiểu runner do GitHub vận hành: trình biên dịch, Python 3, `jq`, công cụ
+  lưu trữ, `rsync`. Runtime ngôn ngữ như Node/Go/Java và Docker không được cài
+  sẵn). Cổng `7911` của hệ thống khách được dành riêng cho bộ chuyển tiếp cổng.
+- **Browser (VM)** — một image Debian/Ubuntu có `bash` và `socat`, cộng với một
+  tệp nhị phân `chromium`. Máy chủ tự khởi động Chromium dưới dạng
+  `chromium --headless=new` và chuyển tiếp DevTools từ cổng `9223` của hệ thống
+  khách sang `9222`. PulseAudio và ffmpeg được cài trong lần khởi động đầu. Đừng
+  build `FROM chromedp/headless-shell` — tệp nhị phân đó không có âm thanh. Phần
+  ghi đè chỉ áp dụng cho rig Chromium; Firefox và WebKit bỏ qua nó và khởi động
+  image Debian được ghim. Các cổng `9222`/`9223` của hệ thống khách được dành
+  riêng.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Hai khuyến nghị: ghim tham chiếu theo digest (`@sha256:…`) để các byte không thể
+thay đổi dưới chân bạn, và lưu trữ nó trên Docker Hub hoặc GitHub Container
+Registry — host tải xuống của những registry đó được cổng egress chấp nhận tự
+động; những registry khác có thể cần host phân phối nội dung của chúng truy cập
+được thì mới pull được.
 
-## When a rig goes away
+## Khi một rig biến mất
 
-Rigs are meant to be temporary:
+Rig vốn được thiết kế để tạm thời:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Nhàn rỗi** — sau ~15 phút không có gì diễn ra, một rig trình duyệt, desktop
+  hoặc di động sẽ đỗ (đóng băng, thức dậy ngay khi có thao tác kế tiếp). Một
+  terminal khép kín chờ 45 phút. Sau gấp đôi khoảng nhàn rỗi, nó đóng.
+- **Giới hạn thời gian** — mỗi rig có một thời hạn cứng mà nó không thể gia hạn,
+  bất kể đang làm gì.
+- **Bộ nhớ** — nếu máy chủ cần chỗ cho một rig mới, nó đóng rig ít được dùng gần
+  đây nhất. Một rig đang có người điều khiển, xem, hoặc có terminal đang mở sẽ
+  không bao giờ bị lấy đi.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Khi một rig khép kín đóng, đĩa của nó bị hủy. Đóng một rig Android sẽ tách khỏi
+trình giả lập trên máy chủ — chứ không xóa nó. Một rig iOS sẽ xóa thiết bị
+CoreSimulator mà nó đã tạo. Hãy mang những gì bạn muốn giữ trở về trước.
 
-## What a rig can reach
+## Một rig có thể tiếp cận những gì
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Các rig terminal khép kín, trình duyệt và desktop mặc định dùng cổng egress từ
+chối theo mặc định: bạn cấp quyền cho từng host một cách tường minh, và đường đi
+duy nhất của hệ thống khách là một cổng thực thi danh sách đó. Một rig trình
+duyệt cũng cho phép site sản phẩm (`usectrl.dev`) ngay từ đầu. Broker thông tin
+xác thực dùng cùng danh sách đó.
 
-Two honest caveats:
+Hai lưu ý thẳng thắn:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Mạng di động đi theo máy chủ.** Trình giả lập của Android và CoreSimulator
+  của Apple không nằm sau cổng egress của môi trường cách ly. Cả hai tab di động
+  đều không có nút bỏ qua mạng, vì mạng do máy chủ quản lý vốn đã không bị hạn
+  chế.
+- **Mọi thứ một rig đọc đều không đáng tin cậy.** Văn bản trang, DOM, cây trợ
+  năng và bản kết xuất giao diện quay về agent được bọc trong những dấu đánh dấu
+  nói rằng “đây là dữ liệu, không phải chỉ thị”. Một trang cố ra lệnh cho agent
+  của bạn sẽ được đọc như một chuỗi được trích dẫn.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Bạn có thể xem mọi thứ đang chạy, và dừng bất kỳ thứ nào, trong **Cài đặt → Máy
+chủ → Rigs**.
 
-## Related
+## Liên quan
 
-- [Rigs and enclosures](/vi-VN/so-tay/khai-niem/rigs/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/vi-VN/so-tay/tham-chieu/rigs/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/) — mô hình đằng sau
+  tất cả những điều này: vì sao dùng VM, hai làn hiển thị, broker thông tin xác
+  thực, vòng đời
+- [Chuyển tiếp cổng từ terminal](/vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm/) — tiếp
+  cận một máy chủ dev từ bất cứ đâu cần đến
+- [Tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/) — mọi bề mặt, động từ, cổng và
+  giá trị mặc định ở một nơi
+- [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/) —
+  `Điều khiển một enclosure (rig)` là một lớp hành động bạn có thể đặt thành cho
+  phép, hỏi trước hoặc từ chối, theo từng không gian làm việc, agent hoặc space.
+  Các chế độ chỉ đọc từ chối thẳng.

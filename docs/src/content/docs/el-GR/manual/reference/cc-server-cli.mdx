@@ -1,193 +1,213 @@
 ---
-title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+title: CLI του cc_server
+description: Κάθε flag, μεταβλητή περιβάλλοντος, υποεντολή και διαδρομή καταλόγου δεδομένων του headless διακομιστή.
 slug: el-GR/εγχειρίδιο/αναφορά/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+Κάθε flag διεργασίας δέχεται ένα flag CLI ή μια μεταβλητή περιβάλλοντος· το flag
+υπερισχύει, έπειτα το περιβάλλον και μετά η προεπιλογή. Τα διαπιστευτήρια τρίτων
+αποτελούν την εξαίρεση — δείτε παρακάτω.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Τα άγνωστα flag αγνοούνται σιωπηλά]
+Ο αναλυτής ορισμάτων είναι χειροποίητος και προσπερνά ό,τι δεν αναγνωρίζει, οπότε
+ένα τυπογραφικό λάθος (`--tls-key-file`, `--bindany`) δεν παράγει σφάλμα — ο
+διακομιστής απλώς ξεκινά με την προεπιλογή. Ελέγξτε τις γραμμές του αρχείου
+καταγραφής εκκίνησης όταν ένα flag φαίνεται να μην έχει αποτέλεσμα.
 :::
 
-## Core
+## Βασικά
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| Flag            | Μεταβλητή              | Προεπιλογή                                       | Σημασία                                                                                                        |
 | --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | ο κατάλογος δεδομένων εφαρμογών ανά χρήστη του λειτουργικού συστήματος (δείτε παρακάτω) | Βάσεις δεδομένων, μυστικά, μοντέλα και προσωρινά αποθηκευμένα πολυμέσα                                          |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | Θύρα TCP (`0` = εφήμερη)                                                                                       |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, ή `any`/`all`/`0.0.0.0` για κάθε διεπαφή (απαιτεί TLS ή `--insecure`)                              |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | ο αρχικός κατάλογος του χρήστη του διακομιστή    | Βασικοί κατάλογοι χωρισμένοι με κόμμα, στους οποίους ένας πελάτης μπορεί να περιηγηθεί κατά την καταχώριση ενός αποθετηρίου. Η περιήγηση πάνω από μια ρίζα απορρίπτεται |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning` ή `error`. Οι γραμμές εκκίνησης/ετοιμότητας εκτυπώνονται πάντα                      |
+| `--server-name` | `CC_SERVER_NAME`       | το όνομα κεντρικού υπολογιστή του μηχανήματος    | Όνομα που εμφανίζεται σε επιλογείς, στην ανακάλυψη και στις επιφάνειες σύζευξης                               |
 
-## Reachability and TLS
+## Προσβασιμότητα και TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
+| Flag                | Μεταβλητή                   | Προεπιλογή                    | Σημασία                                                                                                                                                      |
 | ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | μη ορισμένο                   | Αλυσίδα πιστοποιητικών PEM. Εξυπηρετεί `wss://` εντός της διεργασίας όταν οριστεί μαζί με το κλειδί                                                          |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | μη ορισμένο                   | Ιδιωτικό κλειδί PEM που αντιστοιχεί στο πιστοποιητικό                                                                                                        |
+| `--insecure`        | `CC_SERVER_INSECURE`        | ανενεργό                      | Να επιτρέπεται δέσμευση εκτός loopback χωρίς κρυπτογράφηση. Μόνο πίσω από proxy τερματισμού TLS σε αξιόπιστο δίκτυο· αγνοείται όταν έχει ρυθμιστεί TLS       |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | προκύπτει από τη δέσμευση     | Το URL RPC που διαφημίζει αυτός ο διακομιστής σε συζευγμένους πελάτες. **Ορίστε το ρητά πίσω από proxy, NAT ή σήραγγα** — η προεπιλεγμένη τιμή είναι μόνο μια εικασία για την τοπική δέσμευση |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Προελεύσεις προγράμματος περιήγησης χωρισμένες με κόμμα, που επιτρέπεται να καλούν το `/rpc` από άλλη προέλευση. Το loopback και οι εγγενείς πελάτες επιτρέπονται πάντα |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | μη ορισμένο                   | Προέλευση του φιλοξενούμενου πελάτη web, στην οποία επιστρέφουν οι επιστροφές κλήσεων ενιαίας σύνδεσης                                                       |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | Ο μεσίτης αναμετάδοσης στον οποίο συνδέεται αυτός ο διακομιστής, ώστε ένα τηλέφωνο να μπορεί να τον προσεγγίσει χωρίς άμεση διαδρομή                          |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | Διαφήμιση στο LAN: `auto` (μόνο όταν η δέσμευση ξεπερνά το loopback), `on`, `off`. Η ανακάλυψη διαφημίζει μόνο την ύπαρξη — η συμμετοχή εξακολουθεί να απαιτεί σύζευξη |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Πάροχος διαχειριζόμενης σήραγγας: `off`, `cloudflared`, `ngrok`, `tailscale`. Η δημόσια έκθεση είναι προαιρετική                                             |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | επιλύεται από το `PATH`       | Ρητή διαδρομή του εκτελέσιμου της σήραγγας                                                                                                                   |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | μη ορισμένο                   | Το αναμενόμενο SHA-256 αυτού του εκτελέσιμου, που επαληθεύεται πριν από κάθε εκκίνηση                                                                        |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | κενό                          | Πρόσθετα ορίσματα χωρισμένα με κόμμα για την κλήση της σήραγγας                                                                                              |
 
-## Indexing and third-party credentials
+## Ευρετηρίαση και διαπιστευτήρια τρίτων
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
+| Flag                     | Μεταβλητή                       | Προεπιλογή                            | Σημασία                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Αν οι εκτελέσεις πρακτόρων περιτυλίγονται στο εγγενές sandbox του λειτουργικού συστήματος του ξενιστή όταν υπάρχει διαθέσιμο. Εξαίρεση, όχι ενεργοποίηση — δείτε παρακάτω |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Διακόπτης πεδίου για την ευρετηρίαση του γραφήματος κώδικα στο παρασκήνιο. Το `off` κάνει καθαρή εκκίνηση χωρίς επαναδόμηση  |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Δευτερόλεπτα αναμονής της πρώτης σάρωσης του ευρετηρίου μετά το μήνυμα ετοιμότητας (περιορίζεται σε 0–300)                   |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Αν οι εκτελέσεις του μηχανισμού στέλνουν ένα μικρό μόνιμο σύνολο εργαλείων συν ένα ευρετήριο ονομάτων, φορτώνοντας τα υπόλοιπα κατά την πρώτη χρήση. Δείτε παρακάτω |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Δευτερόλεπτα που μια εκτέλεση σταθμεύει περιμένοντας έναν άνθρωπο να διορθώσει ένα διαπιστευτήριο που δεν μπορεί να την εξυπηρετήσει (περιορίζεται σε 0–3600). Δείτε παρακάτω |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+Μια κενή τιμή για ένα διαπιστευτήριο διαβάζεται ως μη ορισμένη, οπότε ισχύει
+ακόμη η ενσωματωμένη εφεδρική τιμή. Μια δομή από τον πηγαίο κώδικα δεν φέρει
+καθόλου ενσωματωμένα διαπιστευτήρια.
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Το Google Calendar και ο επιλογέας GIF του Klipy είναι **μόνο μέσω
+περιβάλλοντος** — δεν υπάρχει flag `--google-client-id` / `--klipy-app-key` (τα
+άγνωστα flag αγνοούνται). Ορίστε τα `GOOGLE_OAUTH_CLIENT_ID` +
+`GOOGLE_OAUTH_CLIENT_SECRET` και `KLIPY_APP_KEY` στο περιβάλλον (ή σε ένα `.env`
+δίπλα στον διακομιστή). Μια κενή τιμή απενεργοποιεί αυτή τη δυνατότητα αντί να
+αποτύχει η εκκίνηση.
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+Ο διακομιστής ανιχνεύει τον ξενιστή μία φορά κατά την εκκίνηση και περιτυλίγει
+την εκτέλεση εντολών του πράκτορα στο εγγενές sandbox του λειτουργικού συστήματος
+όταν υπάρχει διαθέσιμο backend: `sandbox-exec` (Seatbelt) στο macOS, `bwrap` μαζί
+με `socat` στο Linux και στο WSL2. Όπου δεν υπάρχει κανένα — στα Windows, ή σε
+ξενιστή Linux που του λείπουν αυτά τα εργαλεία — οι εκτελέσεις καταφεύγουν στην
+εξυγίανση του περιβάλλοντος, στην πολιτική εντολών και στους περιορισμούς
+ενεργειών, και το αρχείο καταγραφής εκκίνησης λέει ποια κατάσταση ισχύει.
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+Το `--sandbox off` είναι ο διακόπτης πεδίου για την περίπτωση που η ανίχνευση δεν
+μπορεί να δει: έναν ξενιστή όπου το ίδιο το προφίλ sandbox συμπεριφέρεται
+λανθασμένα. Δεν χρειάζεται επαναδόμηση και ο διακομιστής καταγράφει μια
+προειδοποίηση για όλη τη διάρκεια ζωής της διεργασίας, ώστε η κατάσταση να μην
+είναι ποτέ σιωπηλή.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
+Οι εκτελέσεις του ενσωματωμένου μηχανισμού στέλνουν ένα μικρό μόνιμο σύνολο
+ορισμών εργαλείων συν ένα ευρετήριο μόνο με ονόματα για τα υπόλοιπα, τα οποία
+φορτώνουν τα σχήματά τους την πρώτη φορά που χρησιμοποιούνται. Αυτό κόβει το
+μπλοκ των εργαλείων κατά περίπου 78% και κρατά το πάντα ορατό σύνολο μέσα στο
+εύρος όπου τα μοντέλα επιλέγουν εργαλεία αξιόπιστα. Τα αναβαλλόμενα εργαλεία
+παραμένουν καλούμενα με το όνομά τους καθ' όλη τη διάρκεια, και το `search_tools`
+τα βρίσκει με βάση την πρόθεση. Δείτε το [Πλαίσιο εργαλείων και προσωρινή
+αποθήκευση προτροπών](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+Το `--tool-deferral off` κάνει κάθε εργαλείο που έχει γίνει δεκτό και πάλι μόνιμο,
+αναπαράγοντας τα αιτήματα που έκανε ο διακομιστής πριν υπάρξει η αναβολή. Είναι ο
+διακόπτης για ένα μοντέλο που χειρίζεται άσχημα την επιφάνεια των δύο επιπέδων —
+ένα flag αντί για επαναδόμηση. Επηρεάζει μόνο τον ενσωματωμένο μηχανισμό· το
+`tools/list` του MCP που βλέπουν οι εξωτερικοί πελάτες είναι πάντα ο πλήρης
+κατάλογος.
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+Μια εκτέλεση της οποίας το διαπιστευτήριο παρόχου λείπει ή έχει εξαντληθεί
+**σταθμεύει** αντί να αποτύχει: ο χειριστής λαμβάνει μια προτροπή να το διορθώσει
+και η εκτέλεση συνεχίζεται αν το κάνει. Η προεπιλεγμένη προθεσμία είναι 900
+δευτερόλεπτα (15 λεπτά), με περιορισμό 0–3600.
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+Η προθεσμία είναι σκόπιμα πολύ μεγαλύτερη από αυτήν της προτροπής έγκρισης: μια
+έγκριση είναι μια απόφαση που παίρνει κάποιος σε δευτερόλεπτα, ενώ η διόρθωση ενός
+διαπιστευτηρίου σημαίνει άνοιγμα τερματικού, σύνδεση και επιστροφή. Το ανώτατο
+όριο είναι αυτό που εμποδίζει μια εκτέλεση χωρίς επιτήρηση — ένα βήμα pipeline,
+ένα έναυσμα cron, ένα webhook — να περιμένει κάποιον που κοιμάται. Όταν λήξει, η
+εκτέλεση αποτυγχάνει με το μήνυμα με το οποίο θα αποτύγχανε ούτως ή άλλως.
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+Το `--credential-gate=0` είναι ο διακόπτης: τίποτα δεν σταθμεύει ποτέ και ένα κακό
+διαπιστευτήριο τερματίζει τη στροφή ακριβώς όπως έκανε πριν υπάρξει η πύλη.
 
-## Subcommands
+## Υποεντολές
 
-| Command                                       | What it does                                                                                        |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| Εντολή                                        | Τι κάνει                                                                                              |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `cc_server`                                   | Εκτελεί τον διακομιστή μέχρι `SIGINT`/`SIGTERM`                                                        |
+| `cc_server pair`                              | Προμηθεύει μια συσκευή και εκτυπώνει το id και το κλειδί σύζευξής της. Ασφαλές απέναντι σε έναν κατάλογο δεδομένων που ένας διακομιστής τον εξυπηρετεί ήδη — ο ενεργός διακομιστής παραλαμβάνει τη συσκευή χωρίς επανεκκίνηση |
+| `cc_server calendar connect --workspace <id>` | Συνδέει έναν λογαριασμό Google σε έναν χώρο εργασίας μέσω της ροής κωδικού συσκευής και μετά εξέρχεται  |
+| `cc_server update`                            | Ελέγχει, κατεβάζει και επαληθεύει μια νεότερη αυτόνομη έκδοση                                          |
+| `cc_server --version`                         | Εκτυπώνει την έκδοση της δομής και το SHA του git — την ίδια ταυτότητα που διαφημίζουν το `/healthz` και η χειραψία RPC |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| Flag           | Προεπιλογή                                                | Σημασία                                                                                                                                                              |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | Το id της συσκευής. Η πλατφόρμα συνάγεται από αυτό, οπότε το `--device desktop` δημιουργεί μια γραμμή υπολογιστή και το `--device ios`/`android` μια γραμμή τηλεφώνου· οτιδήποτε άλλο αντιμετωπίζεται ως web |
+| `--label`      | όνομα πλατφόρμας συν το όνομα κεντρικού υπολογιστή αυτού του μηχανήματος | Εμφανιζόμενο όνομα στη λίστα συσκευών                                                                                                                   |
+| `--host`       | `localhost`, ή `<this-host>` όταν η δέσμευση γίνεται σε κάθε διεπαφή | Κεντρικός υπολογιστής που θα ενσωματωθεί στο εκτυπωμένο URL. Ορίστε το στη διεύθυνση IP του LAN ή στον κεντρικό υπολογιστή της σήραγγας που θα καλέσει πραγματικά ένας πελάτης |
+| `--client-url` | μη ορισμένο                                               | Προέλευση του φιλοξενούμενου πελάτη **web**. Προσθέτει έναν σαρώσιμο σύνδεσμο βαθιάς σύνδεσης και ένα QR στο τερματικό                                              |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+Το `pair` δέχεται επίσης τα βασικά flag `--data-dir`, `--port` και `--bind`: αυτά
+επιλέγουν τον κατάλογο δεδομένων στον οποίο θα γίνει η εγγραφή και διαμορφώνουν το
+εκτυπωμένο URL του διακομιστή (`ws` στο loopback, `wss` με `--bind any`). Η
+επανεκτέλεση του `pair` για το ίδιο `--device` εναλλάσσει το κλειδί του και
+αποσπά τις ζωντανές συνεδρίες αυτής της συσκευής. Ένα διαπιστευτήριο που παράγεται
+εδώ **δεν λήγει**, σε αντίθεση με τις 30 ημέρες που ορίζει μια σύζευξη εντός της
+εφαρμογής.
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
+:::caution[Το QR του `--client-url` δεν είναι το QR του τηλεφώνου]
+Το `pair --client-url` συμπληρώνει τη φόρμα σύνδεσης του πελάτη **web** (URL
+διακομιστή, id συσκευής και κλειδί στο τμήμα του URL). Το τηλέφωνο συζεύγνυται με
+ένα διαφορετικό φορτίο που παράγεται από τον πίνακα σύζευξης εντός της εφαρμογής
+— τον πλήρη περιγραφέα σύνδεσης του διακομιστή συν μια λήξη. Τα δύο δεν είναι
+εναλλάξιμα — δείτε τη [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/).
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+Το `--apply` αντικαθιστά την εγκατάσταση· απορρίπτεται όσο ένας διακομιστής
+εξακολουθεί να απαντά στη ρυθμισμένη θύρα, εκτός αν περάσετε το `--force`. Το
+`--allow-downgrade` επιτρέπει μια παλαιότερη έκδοση.
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+Η εντολή αρνείται κατηγορηματικά, με εξήγηση αντί για σφάλμα, για εγκαταστάσεις
+που δεν της ανήκουν:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| Περιβάλλον                                | Ανιχνεύεται από                             | Τι λέει                                                     |
+| ----------------------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| Ο ενσωματωμένος διακομιστής της εφαρμογής υπολογιστή | `CC_EMBEDDED=1` ή `CC_BOOTSTRAP_DEVICE_ID` | Ενημερώστε αντ' αυτού την εφαρμογή — ο εγκαταστάτης αλλάζει ολόκληρο το δέντρο |
+| Ένα αντίγραφο πηγαίου κώδικα για `dart run` | η διαδρομή του σεναρίου τελειώνει σε `.dart` | Ενημερώστε το με git                                        |
+| Docker                                    | δείκτες container                           | Κατεβάστε ένα νεότερο image                                 |
 
-## Process lifecycle
+## Κύκλος ζωής διεργασίας
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+Ο `cc_server` εκτελείται μέχρι `SIGINT` / `SIGTERM`. Μια επιπλέον μεταβλητή
+περιβάλλοντος το διέπει, και τη θέτει η εφαρμογή υπολογιστή και όχι εσείς:
 
-| Variable                 | Effect                                                                                                                                     |
+| Μεταβλητή                | Επίδραση                                                                                                                                     |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| `CC_EXIT_WITH_PARENT=1`  | Ο διακομιστής εξέρχεται όταν εξέλθει η γονική του διεργασία, κάτι που ανιχνεύεται από το κλείσιμο του άκρου εγγραφής της διοχέτευσης stdin της γονικής διεργασίας. Η εφαρμογή υπολογιστή το θέτει ώστε μια εφαρμογή που καταρρέει να μην αφήνει ποτέ έναν ορφανό διακομιστή να κρατά τον κατάλογο δεδομένων |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+Ορίστε το μόνοι σας μόνο αν επιτηρείτε τον `cc_server` ως θυγατρική διεργασία και
+θέλετε την ίδια εγγύηση.
 
-## Data directory layout
+## Διάταξη καταλόγου δεδομένων
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+Ο προεπιλεγμένος κατάλογος δεδομένων είναι `~/Library/Application Support/control-center`
+στο macOS, `%APPDATA%\control-center` στα Windows και `$XDG_DATA_HOME/control-center`
+(αλλιώς `~/.local/share/control-center`) αλλού. Ένας `.cc_server` σχετικός με τον
+τρέχοντα κατάλογο εργασίας χρησιμοποιείται μόνο όταν δεν επιλύεται κανένας
+αρχικός κατάλογος ή κατάλογος δεδομένων εφαρμογών.
 
-| Path                              | Contents                                                                        |
+| Διαδρομή                          | Περιεχόμενα                                                                     |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | Το μητρώο χώρων εργασίας, οι χρήστες, οι συζευγμένες συσκευές, η ροή ειδήσεων και η ουρά του στόλου |
+| `<workspaceId>/workspace.db`      | Μία βάση δεδομένων ανά χώρο εργασίας — πράκτορες, χώροι, εισιτήρια, μνήμη, το γράφημα κώδικα |
+| `<workspaceId>/chat_credentials/` | Token του chat bot, σε απλό JSON, ώστε να συνοδεύουν τον χώρο εργασίας          |
+| `secrets.json`                    | Κλειδιά σύζευξης, η ταυτότητα εφαρμογής του παρόχου, token ανά χρήστη και Google, SSO (`0600`) |
+| `backups/<timestamp>/`            | Ένα στιγμιότυπο εγκατάστασης — `manifest.json`, `global.db` και ένα αντίγραφο κάθε χώρου εργασίας |
+| `backups/exports/`                | Εξαγωγές μεμονωμένου χώρου εργασίας, `<workspaceId>-<timestamp>.db`             |
+| `backups/transfer/`               | Προσωρινός χώρος για λήψεις και μεταφορτώσεις αντιγράφων ασφαλείας· καθαρίζεται από τη διαδρομή που τον γράφει |
+| `models/`                         | Μοντέλα ενσωμάτωσης, διαχωρισμού ομιλητών και ομιλίας στη συσκευή               |
+| `meetings/<meetingId>/`           | Διατηρούμενος ήχος σύσκεψης                                                     |
+| `rigs/images/`                    | Εισαγόμενες εικόνες δίσκου σταθμών (η επιφάνεια υπολογιστή του QEMU)            |
+| `rigs/smolvm/<rigId>/`            | Κατάσταση χρόνου εκτέλεσης microVM ανά σταθμό (το μυστικό του μεσίτη, `0600`)   |
+| `rigs/smolvm-packs/`              | Προεξαγμένα πακέτα μηχανημάτων — η cache που κάνει γρήγορες τις επαναλαμβανόμενες εκκινήσεις σταθμών |
+| `rigs/tls/`                       | Η αρχή πιστοποιητικών του τομέα ανάπτυξης για HTTPS των σταθμών (κλειδιά `0600`) |
+| `rigs/run/<rigId>/`               | Επικαλύψεις QEMU, εικόνες εκκίνησης και κλειδιά ανά VM (`0600`)                 |
 
-## See also
+## Δείτε επίσης
 
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/) — the setup recipe these flags belong to
-- [Run a fleet worker](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/) — copying this directory somewhere safe
-- [Backup, export and import](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/) — pointing a client at one
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) — why the server owns everything
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/) — η συνταγή εγκατάστασης στην οποία ανήκουν αυτά τα flag
+- [Εκτέλεση εργάτη στόλου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/) — το ξεχωριστό εκτελέσιμο `cc_worker` που καταχωρίζεται σε αυτόν τον διακομιστή
+- [Αντίγραφο ασφαλείας και επαναφορά](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αντίγραφο-ασφαλείας-και-επαναφορά/) — αντιγραφή αυτού του καταλόγου κάπου ασφαλώς
+- [Αντίγραφο ασφαλείας, εξαγωγή και εισαγωγή](/el-GR/εγχειρίδιο/αναφορά/αντίγραφα-ασφαλείας/) — η διάταξη των στιγμιοτύπων και κάθε λειτουργία αντιγράφου ασφαλείας
+- [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/) — κατευθύνοντας έναν πελάτη σε έναν από αυτούς
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) — γιατί ο διακομιστής κατέχει τα πάντα

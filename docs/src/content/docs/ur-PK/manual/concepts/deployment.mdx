@@ -1,239 +1,243 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: ڈیپلائمنٹ اور کلائنٹس
+description: Control Center کا تھن کلائنٹ آرکیٹیکچر ایک ہیڈلیس سرور کو اُس کے ڈیسک ٹاپ، ویب اور موبائل کلائنٹس سے کیسے الگ کرتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center کوئی ایک پروگرام نہیں ہے۔ یہ ایک **تھن کلائنٹ آرکیٹیکچر** ہے: ایک
+ہیڈلیس سرور جو آپ کے ڈیٹا کا مالک ہے، اور کلائنٹس کا ایک مجموعہ جو اُس سے ایک
+ہی RPC کنکشن پر ایک انٹرفیس رینڈر کرتا ہے۔ اِس تقسیم کو سمجھنا واضح کرتا ہے کہ
+کچھ چیزیں وہاں کیوں چلتی ہیں جہاں چلتی ہیں، اور ہر کلائنٹ کس چیز تک پہنچ سکتا ہے
+اور کس تک نہیں۔
 
-## The server owns the data
+## سرور ڈیٹا کا مالک ہے
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+**`cc_server`** نامی ایک پروسیس ڈیٹا بیسز اپنے پاس رکھتا ہے — سرور بھر کی حالت
+کے لیے ایک چھوٹا `global.db` اور ہر [ورک اسپیس](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)
+کے لیے ایک SQLite فائل، جو حسبِ ضرورت کھولی جاتی ہے — اور طویل المدتی کام چلاتا
+ہے: پائپ لائن انجنز، ری کنسلرز، MCP ٹول سطح اور آرکیسٹریشن لسنر۔ جو کچھ بھی کسی
+ونڈو سے زیادہ جینا چاہیے، یا جو دو کلائنٹس کو یکساں طور پر دکھائی دینا چاہیے، وہیں
+رہتا ہے۔
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+کوئی کلائنٹ خود کوئی ڈیٹا بیس فائل نہیں کھولتا۔ اِس کے بجائے ہر کلائنٹ ایک
+**`RemoteRpcClient`** رکھتا ہے اور اُسی پر ریپو آپریشنز اور سبسکرپشنز جاری کرتا
+ہے۔ سرور کنکشن کی توثیق ایک پیئر شدہ ڈیوائس کی پری شیئرڈ کلید کے خلاف کرتا ہے —
+اور پھر کنکشن کی پرواہ کرنا چھوڑ دیتا ہے۔ **ایک سیشن کسی ورک اسپیس سے بندھا نہیں
+ہوتا۔** ڈسپیچر اسٹیٹ لیس ہے: ہر ورک اسپیس کے دائرے والی کال اپنے آرگیومنٹس میں
+اپنا `workspace_id` ساتھ رکھتی ہے، اور جو کال اِسے چھوڑ دے، رد کر دی جاتی ہے۔
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+یہ جان بوجھ کر ایسا ہے اور اسی چیز کی بدولت ایک ہی سرور پر دو کلائنٹس مختلف
+ورک اسپیسز میں بیٹھ سکتے ہیں، بغیر اِس کے کہ سرور کے پاس کوئی ”موجودہ ورک اسپیس“
+ہو جس پر اُن کا اختلاف ہو۔ اِس کے بجائے تنہائی فی کال نافذ کی جاتی ہے، چار مراحل
+میں:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. آپریشن خود بتاتا ہے کہ اُس کا دائرہ ورک اسپیس ہے یا نہیں؛ اگر ہے اور
+   `workspace_id` نہ آیا، تو کال رد کر دی جاتی ہے۔
+2. بتائی گئی id ایک **رجسٹر شدہ** ورک اسپیس ہونی چاہیے، جس کی جانچ ڈیٹا بیس
+   کھلنے سے پہلے ہوتی ہے — ورنہ ایک نامعلوم id ہر درخواست پر ایک خالی بھوت
+   `workspace.db` بنا ڈالے گی۔ نہ ملنا ایک ناٹ-فاؤنڈ ہے۔
+3. کال کرنے والے کا `WorkspaceRole` آپریشن کی کم سے کم حد پورا کرنا ضروری ہے، جو
+   اُس کی قسم سے طے ہوتی ہے: پڑھنے کے لیے مہمان، تبدیلی کے لیے رکن، تباہ کن کے
+   لیے ایڈمن۔
+4. جو آپریشن ریپو کا مواد سامنے لاتا ہے، اُس کے لیے اضافی طور پر اُس سطح پر فی
+   ریپو گرانٹ درکار ہے جو وہ خود بتاتا ہے — `none` / `read` / `review` / `write` — تاکہ
+   ورک اسپیس کی رکنیت کبھی خاموشی سے forge کے اختیارات سے آگے نہ بڑھے۔
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+اصل بات یہ ہے: **رسائی کی حد پیئرنگ کلید رکھنا نہیں؛ رکنیت ہے۔**
 
-## Why split it this way
+## یہ تقسیم اِس طرح کیوں؟
 
-Three pressures pushed toward a server:
+تین دباؤ نے اِسے سرور کی طرف دھکیلا:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **سچائی کا ایک ہی ماخذ۔** ایک ڈیسک ٹاپ اور ایک فون، یا ایک لیپ ٹاپ اور ایک
+   ڈیسک ٹاپ، کو ایک ہی فلیٹ حالت نظر آنی چاہیے۔ اگر ہر ایک کا اپنا ڈیٹا بیس ہوتا
+   تو وہ بکھر جاتے۔ ایک ہی سرور کا مطلب ہے کہ ہر کلائنٹ وہی زندہ ڈیٹا پڑھتا ہے۔
+2. **ویب خود کفالت نہیں کر سکتی۔** ایک براؤزر نہ کوئی ذیلی پروسیس شروع کر سکتا ہے
+   اور نہ کوئی مقامی فائل کھول سکتا ہے، لہٰذا ویب بلڈ کبھی ڈیٹا بیس کا مالک نہیں
+   ہو سکتا اور نہ کوئی ایجنٹ چلا سکتا ہے۔ اُسے ایسے سرور سے بات کرنی پڑتی ہے جو
+   یہ کرتا ہو۔ ایک دوسرا، صرف ویب کے لیے ڈیٹا راستہ بنانے کے بجائے ڈیسک ٹاپ کو
+   اُسی راستے پر لے آیا گیا۔
+3. **ہیڈلیس آپریشن۔** ایک ایسا سرور جسے آپ چھوٹے سے باکس پر چلا سکیں — جس تک
+   ٹرین میں فون سے یا کہیں سے بھی براؤزر کے ذریعے رسائی ہو — اُس GUI سے زیادہ
+   کارآمد ہے جسے آپ کو کھلا چھوڑنا پڑے۔
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+اس کا نقصان یہ ہے کہ اب سرور ایک انحصار بن جاتا ہے: اگر وہ چل نہ رہا ہو تو کچھ
+بھی کام نہیں کرتا۔ ڈیسک ٹاپ کا ڈیفالٹ جواب یہ ہے کہ وہ **خود ایک سرور شروع کر
+دیتا ہے**۔
 
-## The clients
+## کلائنٹس
 
-Five clients reach the server, each with a different shape and trust profile.
+پانچ کلائنٹس سرور تک پہنچتے ہیں، ہر ایک کی ساخت اور اعتماد کا پروفائل مختلف ہے۔
 
-### Desktop app
+### ڈیسک ٹاپ ایپ
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter ڈیسک ٹاپ ایپلیکیشن (macOS، Windows، Linux) مکمل کلائنٹ ہے۔ پہلی بار
+چلنے پر یہ پوچھتی ہے کہ اُسے کیسے چلنا چاہیے، اور پھر انتخاب یاد رکھتی ہے:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **مقامی**: اِس مشین پر ایک `cc_server` شروع کریں اور اُس کی نگرانی کریں — ڈیفالٹ،
+  خود مکتفی، واحد صارف سیٹ اپ۔ ڈیسک ٹاپ سرور لانچ کرتا ہے، جو app-support root کے
+  تحت ڈیٹا بیس کا مالک ہوتا ہے اور لوپ بیک پر اُس سے بات کرتا ہے۔
+- **ریموٹ**: کہیں اور چل رہے `cc_server` سے ایک محفوظ WebSocket پر جڑیں۔ ڈیٹا
+  اُسی سرور پر رہتا ہے؛ یہ ڈیسک ٹاپ صرف ایک رینڈرر ہے۔
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+دونوں صورتوں میں بننے والا RPC کلائنٹ ایپ کے ڈیٹا پرووائیڈر کو اوور رائیڈ کرتا
+ہے، لہٰذا پوری UI — ہر اسکرین، ہر فیچر — سرور کے ذریعے پڑھتی اور لکھتی ہے۔ ڈیسک
+ٹاپ کبھی ڈیٹا بیس فائل کو براہِ راست نہیں چھوتا۔
 
-### Web client
+### ویب کلائنٹ
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+ویب بلڈ وہی Flutter ایپ ہے جو براؤزر میں چلنے کے لیے کمپائل کی گئی ہو، اور
+[app.usectrl.dev](https://app.usectrl.dev) پر میزبانی کی جاتی ہے تاکہ انسٹال کرنے
+کی ضرورت نہ رہے۔ براؤزر کوئی ذیلی پروسیس شروع نہیں کر سکتا، لہٰذا ویب کلائنٹ
+**ہمیشہ** ریموٹ ہوتا ہے: یہ `wss://` پر ایک `cc_server` کو ڈائل کرتا ہے اور مکمل
+ڈیسک ٹاپ انٹرفیس رینڈر کرتا ہے۔ جڑنے کے بعد یہ اُسی فلیٹ کے سامنے وہی اسکرینیں
+دکھاتا ہے، کیونکہ یہ وہی کوڈ ہے جو اُسی RPC پر چلتا ہے۔ خلا صرف چند اُن جگہوں پر
+ہیں جہاں کوئی نیٹو صلاحیت درکار ہوتی ہے جو براؤزر میں نہیں ہوتی — نیچے دی گئی
+میٹنگ کیپچر کوالٹی لیئر سب سے بڑی ہے اور OS اطلاعات دوسری۔
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+اسی لیے ”ڈاؤن لوڈ کی ضرورت نہیں“ اور ”سرور کی ضرورت نہیں“ دو الگ دعوے ہیں۔ ویب
+کلائنٹ انسٹال کی ضرورت ختم کرتا ہے؛ سرور ختم نہیں کرتا۔ جس سے یہ جڑتا ہے وہ اُسی
+لیپ ٹاپ پر ایک `cc_server` ہو سکتا ہے — `ws://localhost:9030`، جس کے لیے کسی
+سرٹیفکیٹ کی ضرورت نہیں کیونکہ براؤزر لوپ بیک کو قابلِ اعتماد سمجھتے ہیں — یا کسی
+دوسری مشین پر، جس تک `wss://` کے ذریعے ایسے سرٹیفکیٹ کے ساتھ پہنچا جا سکتا ہو
+جس پر براؤزر بھروسا کرے۔ `cc_server` TLS کے بغیر غیر لوپ بیک ایڈریس بائنڈ کرنے سے
+انکار کرتا ہے، لہٰذا ریموٹ سرور کا مطلب ہے یا تو اُس کا اپنا سرٹیفکیٹ، یا TLS
+ختم کرنے والا پراکسی، یا کوئی ٹنل یا VPN جو ایک مہیا کرے۔
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+بنڈل خود اُس سرور سے الگ میزبانی کیا جاتا ہے جس سے وہ بات کرتا ہے۔ اکیلا
+`cc_server` RPC اینڈ پوائنٹ، MCP سطح اور اُس کے پراکسیز پیش کرتا ہے، مگر ویب بنڈل
+**نہیں** — سرور میں اسٹیٹک فائل کا راستہ موجود ہے لیکن اسٹینڈ اَلون بائنری پر کوئی
+ویب روٹ کنفیگر نہیں، لہٰذا `/` پر پیش کرنے کے لیے اُس کے پاس کچھ نہیں ہوتا۔ شائع
+شدہ `cc-webapp` کنٹینر امیج ہی بنڈل کی میزبانی کرتی ہے اور `scripts/build_web.sh`
+اُسے بناتا ہے۔ سرور براؤزر اوریجنز صرف اپنی `--allowed-origins` فہرست پر قبول
+کرتا ہے، جس کا ڈیفالٹ `https://app.usectrl.dev` ہے، لہٰذا بنڈل کی خود میزبانی کا
+مطلب ہے کہ اُس کا اوریجن شامل کیا جائے۔
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+میڈیا (اوتار، فیڈ کی تصاویر، PR اسکرین شاٹس) اپ اسٹریم ہوسٹس کو براہِ راست ہٹ کرنے
+کے بجائے سرور کے پراکسی اینڈ پوائنٹ سے گزرتا ہے، لہٰذا براؤزر کبھی کسی من مانے
+اوریجن سے ڈیٹا نہیں لاتا۔ ڈیپلائے شدہ کلائنٹ فی درخواست ایک غیر حساس کوکی سے
+Content-Security Policy لگاتا ہے تاکہ صرف جڑے ہوئے سرور کا اوریجن اجازت یافتہ ہو۔
 
-### Phone companion (cc_remote)
+### فون کمپینین (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**ریموٹ** ایپ ایک الگ، ہلکا پھلکا کلائنٹ ہے — [remote.usectrl.dev](https://remote.usectrl.dev/)
+پر ایک Flutter ویب PWA۔ یہ جان بوجھ کر مکمل ایپ **نہیں** ہے۔ یہ ایک بروکر شدہ،
+اینڈ ٹو اینڈ سیل شدہ WebSocket ریلے پر پیئر ہوتی ہے اور ٹول سطح کے زیادہ تر پڑھنے
+والے حصے سے بات کرتی ہے: ٹکٹس، پیغامات اور نیوز فیڈ پڑھنا؛ جواب بھیجنا یا ٹکٹ اپ
+ڈیٹ کرنا۔
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) for the full
-security model.
+ایک فون مقامی ایجنٹ سے **کم تر مراعات یافتہ پرنسپل** ہوتا ہے۔ ڈیفالٹ-ڈینی ٹول
+پالیسی، ہر فریم کو سیل کرنے والی پری شیئرڈ کلید، ایک سیشن کیپیبلٹی جو مراعات یافتہ
+آپریشنز (مثلاً پیئرنگ) کو کمپینین کلائنٹ سے باہر رکھتی ہے، اوپر بیان کردہ فی کال
+کردار اور ریپو گرانٹ جانچیں اور ریٹ لمٹنگ — یہ سب مل کر ایک منظور شدہ (یا لیک ہو
+جانے والی) پیئرنگ کو مکمل ریموٹ کنٹرول بننے سے روکتے ہیں۔ مکمل سیکیورٹی ماڈل کے
+لیے [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) دیکھیں۔
 
-### MCP clients
+### MCP کلائنٹس
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/) and the
-[MCP tools reference](/ur-PK/ہدایت-نامہ/حوالہ/mcp-ٹولز/).
+بیرونی ٹولز — ایڈیٹرز، دوسرے ایجنٹس، CLIs — جو Model Context Protocol بولتے ہیں،
+سرور کی MCP سطح سے جڑتے ہیں اور ٹائپ شدہ ٹول رجسٹری استعمال کرتے ہیں۔ یہ
+پروگرامیٹک انٹیگریشن کا راستہ ہے؛ یہ کوئی GUI نہیں۔
+[MCP سرور استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/) اور
+[MCP ٹولز کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/mcp-ٹولز/) دیکھیں۔
 
-### Fleet executors (cc_worker)
+### فلیٹ ایگزیکیوٹرز (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+ایک **`cc_worker`** ایک ہیڈلیس pure-Dart بائنری ہے جو ایک `cc_server` سے پیئر ہوتی
+ہے، اپنی میزبان مشین کی صلاحیتیں ظاہر کرتی ہے اور چلانے کے لیے لیز پر لیے گئے
+جابز کھینچتی ہے۔ یہ پروسیس ایونٹس واپس اُسی RPC پر اسٹریم کرتی ہے اور **کوئی
+پائیدار حالت** نہیں رکھتی: نہ ڈیٹا بیس، نہ تصدیق، نہ منظوریاں، نہ بجٹ — یہ سب
+`cc_server` سے کبھی باہر نہیں جاتے۔ ایک ورکر ایک عضو ہے، دوسرا دماغ نہیں۔ ایک
+بااختیار سرور، N گونگے اعضاء؛ نہ کوئی اتفاقِ رائے، نہ worker-to-worker ٹریفک۔
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+لیز پر عمل درآمد پھر بھی صرف لیز کی پلمبنگ ہے۔ `agentRun` واحد قسم ہے جو حقیقی
+کمانڈ چلاتی ہے (`CC_JOB_COMMAND`، یا اگر کوئی فراہم نہ کی گئی ہو تو ایک باز گشت
+شدہ پرامپٹ)۔ `pipelineStep`، `codeIndex`، `goldenRender`، `benchmark` اور
+`evalBatch` فی الوقت `git --version` / `rev-parse HEAD` سے پروب کرتی ہیں تاکہ
+اسٹریمنگ راستہ آزمایا جائے، بغیر یہ ظاہر کیے کہ وہ جابز واقعی چلے۔
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+یہ جو کچھ ظاہر کرتی ہے وہ ہے: آپریٹنگ سسٹم، CPU آرکیٹیکچر، کورز کی تعداد، RAM،
+کہ Flutter SDK قابلِ رسائی ہے یا نہیں، اور میزبان کے پاس کون سے سینڈ باکس بیک
+اینڈز ہیں (Windows پر کوئی نہیں)۔ ایک مختص ورکر ہمیشہ `alwaysOn` اور
+`acceptsParallel` بھی ظاہر کرتی ہے، اور pin → prefer → spill شیڈیولر اُنہی کے مطابق
+جابز رکھتا ہے۔ کوئی GPU یا ML پروب نہیں ہے۔
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+اکیلا ڈیسک ٹاپ اِن میں سے کچھ محسوس نہیں کرتا، کیونکہ عام ڈسپیچ فلیٹ سے ہو کر گزرتا
+ہی نہیں۔ سرور میزبان کے لیے ایک مضمر in-process ورکر رجسٹرڈ _ضرور_ ہے، مگر یہ
+ایک رجسٹریشن سیون ہے جس میں کوئی رنر جڑا نہیں — مقامی ورکر پر واقعی رکھا گیا جاب
+چلنے کے بجائے ناکام ہوتا ہے۔ آج لیز پر لیے گئے جابز صرف ایک حقیقی `cc_worker` ہی
+چلاتی ہے۔
 
-## What runs where
+## کہاں کیا چلتا ہے
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| شعبہ                                           | سرور (`cc_server`)   | فلیٹ ایگزیکیوٹر (`cc_worker`) | ڈیسک ٹاپ کلائنٹ | ویب / فون کلائنٹ                |
+| ---------------------------------------------- | -------------------- | ----------------------------- | --------------- | ------------------------------- |
+| ڈیٹا بیسز (Drift/SQLite)                       | اِن کا مالک           | —                             | —               | —                               |
+| تصدیق، منظوریاں، بجٹ، شناخت                     | اِس کا مالک           | —                             | —               | —                               |
+| پائپ لائنز، ری کنسلرز، آرکیسٹریشن لسنر         | اِنہیں چلاتا ہے       | —                             | —               | —                               |
+| MCP ٹول سطح                                    | اِسے پیش کرتا ہے      | —                             | —               | —                               |
+| ایجنٹ کا عمل درآمد                             | اِسے چلاتا ہے (یا لیز پر دیتا ہے) | لیز پر لیے جابز چلاتا ہے | —          | —                               |
+| UI رینڈرنگ                                     | —                    | —                             | مکمل            | مکمل (ویب) / زیادہ تر پڑھنے والا (فون) |
+| میٹنگ کیپچر (مائک + میٹنگ آڈیو)                 | —                    | —                             | نیٹو کیپچر       | صرف ویب، اسکرین شیئر آڈیو کے ذریعے |
+| کیلنڈر OAuth (Google)                          | ٹوکنز رکھتا ہے        | —                             | —               | —                               |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
-for what bounds a run in each case.
+یہ دونوں ٹیئرز ایک جیسا سینڈ باکسنگ نہیں کرتے۔ `cc_server` جو رنز خود چلاتا ہے
+اُنہیں میزبان کے OS سینڈ باکس میں لپیٹتا ہے جہاں کوئی بیک اینڈ موجود ہو — macOS پر
+Seatbelt، Linux اور WSL2 پر bubblewrap — اور Windows پر یا `bwrap` اور `socat` کے
+بغیر دیگر حدود پر واپس چلا جاتا ہے۔ **`cc_worker` بالکل سینڈ باکس نہیں کرتا۔** یہ
+ایک `sandbox` کیپیبلٹی ظاہر کرتا ہے تاکہ سرور جابز کو پلیٹ فارم کے مطابق رکھ
+سکے، مگر ورکر میں کوئی چیز ایسا سینڈ باکس لاگو نہیں کرتی: لیز پر لیا گیا جاب
+براہِ راست پیدا ہوتا ہے، جس کی حدیں لیز کا ماحول اور اُسے دیا گیا worktree طے
+کرتے ہیں۔ لہٰذا کام لیز پر دینا عمل درآمد کو سینڈ باکس سے باہر لے جاتا ہے، چاہے
+میزبان میں سینڈ باکس موجود ہو۔ ہر صورت میں کسی رن کی حدود کیا ہوتی ہیں، اِس کے
+لیے [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) دیکھیں۔
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+میٹنگ کیپچر کلائنٹ پر ہوتا ہے کیونکہ اُسے مائکروفون اور میٹنگ کی آڈیو درکار ہوتی
+ہے — الماری میں رکھا سرور آپ کی کال ریکارڈ نہیں کر سکتا۔ پھر ریکارڈنگ کا خلاصہ
+سرور کی پائپ لائن کرتی ہے اور نوٹس وہاں محفوظ ہوتے ہیں جہاں سے ہر کلائنٹ اُنہیں
+پڑھ سکے۔
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+ویب کلائنٹ بھی ریکارڈ کرتا ہے، جسے ٹیبل کی شکل مبہم کر سکتی ہے: یہ براؤزر میں
+مائکروفون کے ساتھ ایک اسکرین شیئر آڈیو ٹریک بھی لیتا ہے اور 16 kHz PCM سرور کو
+اسٹریم کرتا ہے۔ اُسے اُس آڈیو ٹریک کی _لازماً_ ضرورت ہوتی ہے، لہٰذا جہاں براؤزر
+وہ فراہم نہ کرے وہاں یہ واضح طور پر ناکام ہو جاتا ہے۔ اصل میں صرف ڈیسک ٹاپ پر
+دستیاب چیز کیپچر کے گرد کوالٹی لیئر ہے — نیٹو پروسیسر کے ذریعے سگنل کی سطح پر
+ایکو کینسلیشن، اِن پٹ لیول میٹر اور ڈیڈ-مائک انتباہ، خلاصہ دوبارہ چلانا،
+پراسیسنگ روکنا اور کیلنڈر کی ریکارڈ اور لنک کارروائی۔
 
-## Pairing and trust
+## پیئرنگ اور اعتماد
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+ہر کلائنٹ اپنی شناخت ایک بار فراہم کی گئی **پری شیئرڈ کلید** سے ثابت کرتا ہے:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- مقامی موڈ میں ڈیسک ٹاپ ہر بوٹ پر ایک نئی کلید بناتا ہے اور اُسے ماحول کے ذریعے
+  شروع کیے گئے سرور کو دیتا ہے، لہٰذا ڈیسک ٹاپ پر کوئی راز
+  محفوظ نہیں رہتا۔
+- ریموٹ کلائنٹس (ڈیسک ٹاپ ریموٹ، ویب، فون) وہ کلید استعمال کرتے ہیں جو سرور کی
+  `pair` کمانڈ بناتی ہے اور OS کی چین میں محفوظ ہوتی ہے (یا فون پر مقامی طور پر)۔
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+منسوخی **بروقت** ہوتی ہے، سست نہیں۔ سرور اپنی پیئر شدہ ڈیوائسز کی ٹیبل پر نظر
+رکھتا ہے اور جس کھلے سیشن کا ڈیوائس فعال سیٹ سے نکل جائے، اُسے سیکنڈوں میں گرا
+دیتا ہے — براہِ راست WebSocket راستے پر اور ریلے راستے پر یکساں۔ کسی ڈیوائس کو
+کاٹنے کے لیے آپ کو اُس کے دوبارہ جڑنے کا انتظار نہیں کرنا پڑتا۔
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+کلید کبھی ایسے URL سے نہیں گزرتی جسے کوئی اسٹیٹک ہوسٹ دیکھ سکے۔ جب یہ لنک کے
+ذریعے آتی ہے — فون پر یا براؤزر میں — تو یہ **URL فریگمنٹ** میں سوار ہوتی ہے،
+یعنی `#` کے بعد والے حصے میں، جسے براؤزر صفحے کی میزبانی کرنے والے سرور کو کبھی
+نہیں بھیجتا۔ یہی وہ اصول ہے جو یاد رکھنے کے قابل ہے اور یہ دونوں پر لاگو ہوتا
+ہے۔ ویب کلائنٹ کے دو اور داخلی دروازے ہیں: کنیکٹ فارم، جہاں آپ سرور اور کلید
+براہِ راست پیسٹ کرتے ہیں، اور ایک انوائٹ کوڈ، جسے یہ ایک ایسی اسناد کے بدلے چھڑا
+لیتا ہے جو صرف اُس براؤزر کے لیے بنائی گئی ہو۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/): the phone pairing and security model
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): ہر RPC کال اپنا workspace id کیوں ساتھ رکھتی ہے اور ڈیٹا بیس کی تقسیم تنہائی کو ساختی کیسے بناتی ہے
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): کوڈ بیس سرور اور اُس کے کلائنٹس کے گرد کیسے ترتیب دیا گیا ہے
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/): فون کی پیئرنگ اور سیکیورٹی ماڈل
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): start `cc_server` and pair a client
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): point the desktop or web client at a server elsewhere
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/): add a `cc_worker` that pulls leased jobs
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): `cc_server` شروع کریں اور ایک کلائنٹ پیئر کریں
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): ڈیسک ٹاپ یا ویب کلائنٹ کو کہیں اور کے سرور کی طرف لگائیں
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): فون، دوسرا براؤزر یا کوئی اور ڈیسک ٹاپ شامل کریں
+- [فلیٹ ورکر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/): ایک `cc_worker` شامل کریں جو لیز پر لیے جابز کھینچتی ہے

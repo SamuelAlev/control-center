@@ -1,130 +1,134 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Spravujte kanál novinek
+description: Přidávej a spravuj kanály RSS/Atom, čti články s blokováním obsahu a počítej s tím, že tě kanály doprovázejí do každého pracovního prostoru.
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/navody/kanal-novinek
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Tenhle návod ukazuje, jak kanál novinek poskládat: které zdroje stahuje, jak se
+čtou články a co dělá blokování obsahu.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Kanál novinek patří uživateli, ne pracovnímu prostoru]
+Kanály a články patří přihlášenému uživateli: seznam kanálů, stav přečtení a
+záložky tě doprovázejí do každého pracovního prostoru i na každé zařízení, ze
+kterého se přihlásíš, a nikdo jiný je nevidí. Kanály jsou v globální databázi
+serveru, takže URL `/newsfeed` nese id pracovního prostoru jen proto, že ho
+nese každá trasa v aplikaci.
 :::
 
-## Read articles
+## Čti články
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. V postranním panelu klikni na **Kanál novinek**
+2. Segmenty panelu nástrojů přepínej mezi **Vše**, **Nepřečtené** a **Uložené**
+3. Seznam zuž vyhledávacím polem nebo výběrem zdroje
+4. Tlačítky rozložení přepínej mezi časopisovou mřížkou a hustým seznamem
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Otevření článku ho označí jako přečtený. **Označit vše jako přečtené** v záhlaví
+stránky — ukáže se jen tehdy, když je něco nepřečtené — vyčistí zbytek jedním
+tahem a ovládání záložky na kartě uloží článek na později.
 
-The layout choice persists across launches.
+Zvolené rozložení se pamatuje mezi spuštěními.
 
-## Add a feed
+## Přidej kanál
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Otevři **Nastavení → Vy → Kanál novinek** (ikona nastavení v záhlaví kanálu
+   novinek vede rovnou tam)
+2. Stiskni **Přidat kanál**
+3. Vyplň **Název** a **URL kanálu** (RSS nebo Atom)
+4. Volitelně rozbal **Pokročilé** a nastav vlastní **User-Agent** — někteří
+   vydavatelé na výchozího klienta odpoví jinak
+5. Stiskni **Přidat kanál**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Kontrolní bod: kanál se objeví v seznamu **Kanály** a jeho články dorazí po
+prvním stažení. URL, kterou už odebíráš, se odmítne hláškou „Kanál s touto URL
+už existuje.“
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Při prvním použití se každému uživateli založí čtrnáct kanálů: Control Center,
+The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import
+AI, The Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance,
+The Engineering Manager, Lea Verou a CSS-Tricks.
 
-## Manage feeds
+## Spravuj kanály
 
-Each row in the **Feeds** list gives you three controls:
+Každý řádek v seznamu **Kanály** má tři ovládací prvky:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Ovládání       | Účinek                                                   |
+| -------------- | -------------------------------------------------------- |
+| Přepínač       | Vypne kanál. Vypnutý řádek je ztlumený a už se nestahuje |
+| Ikona obnovení | Stáhne právě tenhle kanál hned                           |
+| Ikona koše     | Smaže kanál, po potvrzení                                |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Obnovit vše** nahoře v seznamu stáhne každý zapnutý kanál.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Podtitulek kanálu ukazuje popis a jak je to dlouho od posledního stažení; když
+stažení selhalo, je na tom místě chyba, varovnou barvou.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Kanál nejde upravit — když chceš změnit název, URL nebo User-Agent, smaž ho a
+přidej znovu.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Stahování běží celé na serveru: jednou na uživatele při startu (a při prvním
+použití u účtů založených později), pak každých 30 minut.
 
-## Block ads and trackers in the reader
+## Blokuj reklamy a trackery ve čtečce
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. V Nastavení → Vy → Kanál novinek najdi **Předvolby čtečky**
+2. Nech zapnuté **Otevírat články v aplikaci**, aby se použila vestavěná
+   čtečka, nebo to vypni a články předej systémovému prohlížeči
+3. Nech zapnuté **Blokovat reklamy, trackery a cookie bannery**
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Blokování je ve výchozím stavu zapnuté. Vestavěná čtečka je jen pro macOS a
+Windows: ve webovém sestavení a na Linuxu systémový prohlížeč _je_ čtečka a
+článek se otevře v něm (na webu v nové kartě). Na webu se nezobrazují přepínač
+blokování, karta **Seznamy filtrů** ani karta **Důvěryhodné weby**.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Čtečka v aplikaci článek nepřeformátuje. Vykreslí stránku vydavatele ve
+vestavěném webview a pomocí seznamů filtrů v mezipaměti potlačí reklamy,
+trackery a cookie bannery.
 
-### Check or update the filter lists
+### Zkontroluj nebo aktualizuj seznamy filtrů
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Karta **Seznamy filtrů** ukazuje, kolik je načtených pravidel pro skrývání
+cookies, skrývání reklam a blokování sítě, plus sledovací parametry, které
+odstraňuje, a kdy se seznamy naposledy aktualizovaly. Stiskni **Zkontrolovat
+aktualizace**, ať se obnoví.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Zdroje jsou EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, několik
+seznamů uBlock Origin a seznam sledovacích parametrů uBO. Dokud se stažení
+nepovede, karta seznamy označí jako „Balené výchozí — nikdy neaktualizováno“ —
+počty pravidel pro reklamy, cookies a síť zůstávají na nule; odstraňování
+sledovacích parametrů pořád používá vestavěnou výchozí sadu.
 
-### Allowlist a site
+### Přidej důvěryhodný web
 
-Some sites break under blocking.
+Některé weby se pod blokováním rozbijí.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. V Nastavení → Vy → Kanál novinek jdi na **Důvěryhodné weby**
+2. Stiskni **Přidat důvěryhodný web** a zadej doménu
 
-Blocking is skipped there.
+Tam se blokování přeskočí.
 
-## Troubleshooting
+## Řešení problémů
 
-### A feed I added shows up in another workspace
+### Kanál, který jsem přidal, se objeví v jiném pracovním prostoru
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Tak to má být. Kanál novinek patří uživateli, ne pracovnímu prostoru — kanály
+tě doprovázejí všude, kde jsi přihlášený. Viz upozornění nahoře.
 
-### A feed row shows an error instead of a description
+### Řádek kanálu ukazuje chybu místo popisu
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Poslední stažení selhalo a řádek ukáže důvod doslova. Stiskni ikonu obnovení,
+ať to zkusí znovu, a ověř, že URL pořád vrací RSS nebo Atom. Vydavatel, který
+odmítá neznámé klienty, může chtít vlastní User-Agent, a to znamená kanál
+smazat a přidat znovu.
 
-### An article page renders badly
+### Stránka článku se vykreslí špatně
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+U té domény vypni **Blokovat reklamy, trackery a cookie bannery** přes
+**Důvěryhodné weby**, nebo vypni **Otevírat články v aplikaci** a čti článek
+v prohlížeči.
 
-## Related guides
+## Související návody
 
-- [Configure notifications](/cs-CZ/prirucka/navody/oznameni/)
-- [Triage your inbox](/cs-CZ/prirucka/navody/trideni-dorucene-posty/)
+- [Nastavte oznámení](/cs-CZ/prirucka/navody/oznameni/)
+- [Třídění doručené pošty](/cs-CZ/prirucka/navody/trideni-dorucene-posty/)

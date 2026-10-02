@@ -1,131 +1,131 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Delegujte práci agentům
+description: Předáš ticket agentovi v konverzaci a necháš agenty delegovat si podúkoly pod stropem hloubky a detekcí cyklu.
 slug: cs-CZ/prirucka/navody/delegovani-ticketu
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Tenhle návod popisuje, jak práci předat agentovi, a co se stane, když si ji
+agenti předávají mezi sebou.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Přiřazení ticketu agentovi nic neodešle]
+Pro přiřazeného agenta žádný dispečer ticketů není. Přiřazení zapíše
+vlastnictví a nic víc: nevznikne prostor, nezmění se stav a nespustí se agent.
+Výjimka je ticket přiřazený **týmu**, který probudí vedoucího toho týmu. Práce
+pro jmenovitě přiřazeného agenta žije v konverzacích, takže ji začneš tam.
 :::
 
-## Hand a ticket to an agent
+## Předej ticket agentovi
 
-1. [Create the ticket](/cs-CZ/prirucka/navody/sprava-ticketu/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Založ ticket](/cs-CZ/prirucka/navody/sprava-ticketu/) s názvem a popisem
+   dost přesným na to, aby se z něj dalo pracovat.
+2. Nastav **Přiřazený** na agenta, ať je vlastnictví v záznamu.
+3. Otevři (nebo založ) prostor a toho agenta zmiň přes @.
+4. V zprávě odkaž na ticket zmínkou `#`. Composer doplňuje tickety pracovního
+   prostoru. A napiš, co se má udělat.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agent práci vezme z konverzace. Průběh se do toho prostoru vypisuje živě.
 
-## What the agent receives
+## Co agent dostane
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Tvoji zprávu, včetně zmínky ticketu, kterou jsi přidal.
+- Prostor, ve kterém pracuje a podává zprávu.
+- Izolovaný worktree z repozitářů propojených s pracovním prostorem.
+- **Režim** prostoru, který řídí plochu nástrojů běhu.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/cs-CZ/prirucka/koncepty/rezimy/).
+Režim je vlastnost prostoru, ne ticketu. Ticket režim nemá. Jeden agent proto
+může být v jednom prostoru v `chat` a v jiném v `plan`. Vybereš ho v
+rozbalovací nabídce režimu v composeru (**Agent**, **Plán** nebo
+**Orchestrace**); `review` nastavují prostory kontroly PR a vybrat nejde.
+Viz [Režimy](/cs-CZ/prirucka/koncepty/rezimy/).
 
-## Require a structured result
+## Vyžaduj strukturovaný výsledek
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Výstupní kontrakt se deklaruje na odeslání, ne na ticketu:
+`expected_output_schema` plus `output_contract_mode` (výchozí je strict).
+Agent ho splní voláním `submit_output`, které payload ověří proti schématu a
+nevyhovující odmítne.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Přijatý výstup i každé odmítnutí skončí na **záznamu běhu agenta**. Vlastní
+stav ticketu se tím nemění: nesplněný kontrakt ticket neoznačí jako
+neúspěšný.
 
-## Monitor progress
+## Sleduj postup
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Prostor** — živá aktivita agenta, hlavní pohled.
+- **Ticket** — jeho stav, tak jak ho nastaví ten, kdo ho posune.
+- **Observabilita → Živé** (`/workspaces/<workspace-id>/observability`) — živá
+  sestava agentů.
+- **Observabilita → Přehledy** — záznam běhu, s nákladem a dobou trvání.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Nástěnka tu není. Holá URL pracovního prostoru přesměruje na doručenou poštu.
 
-## Let agents delegate to each other
+## Nech agenty delegovat mezi sebou
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Agent, který narazí na dílčí problém, deleguje nástrojem MCP `delegate_task`.
+Založí podticket přiřazený jinému agentovi a když předáš `parent_ticket_id`,
+zapíše řetězec, aby ho pojistky viděly.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Dvě strukturální pojistky běží vždy v kontrolním bodě ticketů, nikdy podle
+pokynu v promptu:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Strop hloubky** — řetězec hlubší než 3 skoky se odmítne.
+- **Detekce cyklu** — skok zpět k agentovi, který už v řetězci je, se odmítne.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Když předáš `from_agent_id`, běží další dvě pojistky (produkce porty resolverů
+dodává vždy):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Strop autonomie** — účinná úroveň delegáta v prostoru nesmí přesáhnout
+  úroveň toho, kdo deleguje.
+- **Obálka rozpočtu** — delegování se účtuje ze zbývajícího rozpočtu do
+  tvrdého zastavení toho, kdo deleguje, a další rozpočet nevyrobí. Bez
+  politiky, nebo s neomezenou politikou, kontrola projde.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Odmítnutí je hlasité: nástroj vrátí důvod pojistky doslova, takže delegující
+agent vidí přesně proč. Pole `delegatedByAgentId` zapíše, kdo delegoval, a
+složí strom delegování.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` přeskočí všechny pojistky]
+Starší nástroj `delegate_ticket` je pořád registrovaný a volá `createTicket`
+přímo: žádný strop hloubky, žádná kontrola cyklu, žádný strop autonomie, žádná
+obálka rozpočtu. Používej `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Strop hloubky delegování 3 je jiný limit než strop zanoření podagentů ve
+vestavěném harnessu, který je 2. Jeden omezuje tickety mezi agenty, druhý
+omezuje podagenty uvnitř jednoho běhu.
 
-## Put several agents on one ticket
+## Dej na jeden ticket víc agentů
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Přidej je na ticket jako **spolupracovníky** (role: assignee, collaborator,
+reviewer). To je sestava, záznam toho, kdo je zapojený, a sama o sobě nic
+neuděluje.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/cs-CZ/prirucka/navody/prostory/).
+Aby agenti opravdu byli v jedné konverzaci, přidej je jako účastníky ze
+záhlaví prostoru. Pak se tam můžou navzájem zmiňovat přes @. Viz
+[Prostory](/cs-CZ/prirucka/navody/prostory/).
 
-## Automated ticket creation
+## Automatické zakládání ticketů
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Žádný uzel v paletě pipeline tickety nezakládá, takže pipeline neumí práci
+rozvětvit do přiřazených ticketů.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/).
+Cesta, která existuje, je orchestace: schválení návrhu založí projekt a tým,
+zkompiluje DAG podticketů z návrhu do **šablony pipeline** (jeden krok
+`promptAgent` na každý podticket, ne řádek `Ticket` pro každý) a ten běh
+spustí. Viz
+[Spusťte orchestaci](/cs-CZ/prirucka/navody/spusteni-orchestrace/).
 
-## Related guides
+## Související návody
 
-- [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/)
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
-- [Organize work with projects](/cs-CZ/prirucka/navody/projekty/)
-- [Ticket lifecycle reference](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/)
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Spusťte orchestaci](/cs-CZ/prirucka/navody/spusteni-orchestrace/)
+- [Organizujte práci v projektech](/cs-CZ/prirucka/navody/projekty/)
+- [Životní cyklus ticketu](/cs-CZ/prirucka/referencni-prirucka/zivotni-cyklus-ticketu/)
 
-## Related concepts
+## Související koncepty
 
-- [Tickets](/cs-CZ/prirucka/koncepty/tickety/)
-- [Dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/)
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)

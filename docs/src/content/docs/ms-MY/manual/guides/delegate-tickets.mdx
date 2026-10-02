@@ -1,131 +1,140 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Wakilkan kerja kepada ejen
+description: Serahkan tiket kepada ejen dalam perbualan dan biarkan ejen mewakilkan sub-tugas antara satu sama lain di bawah pengawal kedalaman dan kitaran.
 slug: ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Panduan ini merangkumi cara melepaskan kerja daripada tangan anda kepada ejen
+dan apa yang berlaku apabila ejen memindahkan kerja sesama sendiri.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Menugaskan tiket kepada ejen tidak mencetuskan penghantaran]
+Tiada penghantar tiket bagi penerima tugasan ejen. Penugasan merekod pemilikan
+dan tidak lebih daripada itu — tiada ruang dicipta, tiada status berubah, tiada
+ejen bermula. Pengecualiannya ialah tiket yang ditugaskan kepada **pasukan**,
+yang membangunkan ketua pasukan itu. Kerja ejen bagi penerima tugasan bernama
+hidup dalam perbualan, jadi di situlah anda memulakannya.
 :::
 
-## Hand a ticket to an agent
+## Serahkan tiket kepada ejen
 
-1. [Create the ticket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Cipta tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/) dengan tajuk dan
+   perihalan yang cukup tepat untuk dijadikan asas kerja.
+2. Tetapkan **Penerima tugasan** tiket itu kepada ejen, supaya pemilikan
+   direkodkan.
+3. Buka (atau cipta) ruang dan @-sebut ejen itu.
+4. Rujuk tiket itu dengan sebutan `#` dalam mesej anda — komposer melengkapkan
+   tiket ruang kerja secara automatik — dan nyatakan apa yang anda mahu
+   dilakukan.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Ejen mengambil kerja itu daripada perbualan. Kemajuannya distrim ke dalam ruang
+itu.
 
-## What the agent receives
+## Apa yang diterima oleh ejen
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Mesej anda, termasuk rujukan tiket yang anda tandakan.
+- Ruang untuk bekerja dan melaporkan.
+- Worktree terasing daripada repo yang dipautkan pada ruang kerja.
+- **Modus** ruang itu, yang mengawal permukaan alat larian.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ms-MY/manual-pengguna/konsep/modus/).
+Modus ialah sifat bagi ruang, bukan tiket — tiket tiada modus. Jadi satu ejen
+boleh berada dalam `chat` di satu ruang dan `plan` di ruang yang lain. Pilihnya
+daripada menu lungsur modus komposer (**Ejen**, **Rancang** atau
+**Orkestrakan**); `review` ditetapkan oleh ruang semakan PR dan tidak boleh
+dipilih. Lihat [Modus](/ms-MY/manual-pengguna/konsep/modus/).
 
-## Require a structured result
+## Perlukan hasil berstruktur
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Kontrak output diisytiharkan pada penghantaran, bukan pada tiket:
+`expected_output_schema` serta `output_contract_mode` (ketat secara lalai).
+Ejen memenuhinya dengan memanggil `submit_output`, yang mengesahkan muatan
+terhadap skema dan menolak muatan yang tidak mematuhinya.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Output yang diterima dan sebarang penolakan kedua-duanya masuk ke **log larian
+ejen**. Status tiket sendiri tidak terjejas oleh ini — kontrak yang gagal tidak
+menggagalkan tiket.
 
-## Monitor progress
+## Pantau kemajuan
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Ruang itu** — aktiviti ejen secara langsung, paparan utama.
+- **Tiket itu** — statusnya, seperti yang ditetapkan oleh sesiapa yang
+  menggerakkannya.
+- **Kebolehcerapan → Langsung** (`/workspaces/<workspace-id>/observability`) —
+  senarai ejen secara langsung.
+- **Kebolehcerapan → Wawasan** — log larian, dengan kos dan tempoh.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Tiada skrin papan pemuka; URL ruang kerja kosong mengalihkan ke peti masuk.
 
-## Let agents delegate to each other
+## Biarkan ejen mewakilkan antara satu sama lain
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Ejen yang menemui sub-masalah mewakilkan dengan alat MCP `delegate_task`. Ia
+mencipta tiket anak yang ditugaskan kepada ejen lain dan — apabila anda
+memberikan `parent_ticket_id` — merekod rantaian itu supaya pengawal dapat
+melihatnya.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Dua pengawal struktur sentiasa berjalan di titik tunggal penetapan tiket, tidak
+pernah melalui arahan prompt:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Had kedalaman** — rantaian yang lebih dalam daripada 3 lompatan ditolak.
+- **Pengesanan kitaran** — lompatan kembali kepada ejen yang sudah berada dalam
+  rantaian ditolak.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Apabila anda memberikan `from_agent_id`, dua lagi pengawal berjalan (pengeluaran
+sentiasa membekalkan port penyelesai):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Siling autonomi** — tahap berkesan ejen yang diwakilkan dalam ruang tidak
+  boleh melebihi tahap ejen yang mewakilkan.
+- **Sampul bajet** — perwakilan mengebilkan baki bajet hentian keras ejen yang
+  mewakilkan dan tidak boleh mencipta lebih. Tiada polisi, atau polisi tanpa
+  had, akan lulus.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Penolakan bersifat lantang: alat itu memulangkan sebab pengawal secara verbatim,
+jadi ejen yang mewakilkan melihat dengan tepat mengapa. Medan
+`delegatedByAgentId` merekodkan siapa yang mewakilkan, membentuk pokok
+perwakilan.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` melangkau setiap pengawal]
+Alat `delegate_ticket` yang lebih lama masih didaftarkan dan memanggil
+`createTicket` secara langsung — tiada had kedalaman, tiada semakan kitaran,
+tiada siling autonomi, tiada sampul bajet. Utamakan `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Had kedalaman perwakilan 3 ini berbeza daripada had bersarang subejen harness
+terbina, iaitu 2 — satu mengehadkan tiket antara ejen, satu lagi mengehadkan
+subejen dalam satu larian.
 
-## Put several agents on one ticket
+## Letakkan beberapa ejen pada satu tiket
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Tambah mereka sebagai **rakan kolaborasi** pada tiket (peranan: penerima
+tugasan, rakan kolaborasi, penyemak). Itu hanyalah senarai — rekod siapa yang
+terlibat — dan tidak memberikan apa-apa dengan sendirinya.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ms-MY/manual-pengguna/panduan-cara/ruang/).
+Untuk benar-benar meletakkan ejen dalam perbualan yang sama, tambah mereka
+sebagai peserta daripada pengepala ruang. Mereka kemudiannya boleh @-sebut
+antara satu sama lain di sana. Lihat
+[Ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/).
 
-## Automated ticket creation
+## Penciptaan tiket secara automatik
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Tiada nod dalam palet pipeline mencipta tiket, jadi pipeline tidak boleh
+menyebarkan kerja sebagai tiket yang ditugaskan.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/).
+Laluan yang ada ialah orkestrasi: meluluskan cadangan mencipta projek dan
+pasukan, menyusun DAG sub-tiket cadangan itu menjadi **templat pipeline** (satu
+langkah `promptAgent` bagi setiap sub-tiket, bukan satu baris `Ticket` setiap
+satu) dan memulakan larian itu. Lihat
+[Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/).
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
-- [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
-- [Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
-- [Organize work with projects](/ms-MY/manual-pengguna/panduan-cara/projek/)
-- [Ticket lifecycle reference](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/)
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
+- [Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
+- [Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
+- [Susun kerja dengan projek](/ms-MY/manual-pengguna/panduan-cara/projek/)
+- [Rujukan kitaran hayat tiket](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Tickets](/ms-MY/manual-pengguna/konsep/tiket/)
-- [Dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/)
+- [Tiket](/ms-MY/manual-pengguna/konsep/tiket/)
+- [Kitaran hayat penghantaran](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/)

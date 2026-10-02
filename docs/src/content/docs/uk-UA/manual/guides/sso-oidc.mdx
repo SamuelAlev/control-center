@@ -1,95 +1,103 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Підключити провайдер OpenID Connect
+description: Під’єднайте будь-якого видавця OIDC — Pocket ID, Keycloak, Auth0, Zitadel — до входу в Control Center.
 slug: uk-UA/керівництво/практичні-посібники/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Скористайтеся цим посібником, якщо ваш провайдер ідентичності розмовляє
+**OpenID Connect**, а не SAML. Працює будь-який видавець, сертифікований для
+OIDC, — Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace та інші
+проходять ті самі кроки; відрізняється лише місце, де ваш провайдер показує
+ці значення.
 
-## Prerequisites
+## Передумови
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- провайдер OIDC, у якому ви можете створити клієнт, — занотуйте його
+  **ідентифікатор клієнта** та **URL видавця** (базу, під якою розміщено
+  документ `.well-known/openid-configuration`), а також **секрет клієнта**,
+  якщо клієнт конфіденційного типу (публічні PKCE-клієнти його не мають),
+- сервер Control Center, яким ви адмініструєте (**власник сервера**).
 
-## Steps
+## Кроки
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Відкрийте **Налаштування → Сервер → Єдиний вхід** і перемкніться на
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Заповніть **URL видавця**, **Ідентифікатор клієнта** і **Секрет клієнта
+   (необов'язково)**, якщо провайдер його видав. Control Center виявляє
+   кінцеві точки зі стандартного discovery-документа видавця — жодного
+   налаштування під конкретного провайдера.
+3. У провайдера зареєструйте для цього клієнта редірект
+   `https://<your-server>/oidc/callback`.
+4. Якщо ваші групи містяться в клеймі, відмінному від `groups`, задайте
+   назву **Клейм груп**; за бажанням зіставте групи з ролями (SSO ніколи не
+   може надати роль власника).
+5. Виберіть політику членства (автоматично додавати до кожного робочого
+   простору або вимагати запрошення для кожного робочого простору), увімкніть
+   **Використовувати OpenID Connect для входу** і натисніть **Зберегти
+   з'єднання**.
+6. Натисніть **Перевірити з'єднання** — сервер отримує discovery-документ
+   видавця й підтверджує його кінцеві точки, тож зелене спливаюче сповіщення
+   означає, що працює все, крім обміну через браузер. Щоб перевірити ще й
+   реєстрацію клієнта, скористайтеся [інструментом перевірки
+   нижче](#перевірте-свою-конфігурацію-на-цій-сторінці).
+7. Виконайте вхід: екран підключення у вебверсії показує **Увійти через
+   OpenID Connect**, або відкрийте `https://<your-server>/oidc/login`
+   напряму.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Твердження (email, ім’я, групи) ваш сервер читає з кінцевої точки токенів
+видавця через TLS — браузер їх ніколи не надає, тож локальної перевірки
+підпису JWT не задіяно. Клієнту має бути дозволено запитувати область
+`openid profile email` — саме її й просить Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Оскільки єдине, що автентифікує твердження, — це канал TLS, URL видавця має
+бути **https**: видавець у відкритому тексті дав би будь-якому зловмиснику на
+шляху змогу масово підробляти ідентичності. `http` приймається лише для
+видавців на loopback (`localhost`, `127.0.0.1`, `::1`) і тільки для локальної
+розробки.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Публічний клієнт чи конфіденційний клієнт?]
+Типова — і рекомендована — форма — це **публічний клієнт**, що використовує
+потік коду авторизації з **PKCE** (RFC 7636): одноразовий верифікатор коду,
+який зберігає сервер, замінює секрет, а обмін токенів прив’язано до запиту
+авторизації, що його розпочав. Секрету, який міг би витекти, немає, а
+викрадений код авторизації марний без верифікатора. Деякі провайдери
+називають цей тип клієнта «SPA» або «native» під час створення.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Якщо ж ваш провайдер видав **конфіденційний** клієнт, позначте клієнт як
+публічний у провайдера (PKCE залишається ввімкненим в обох випадках) або
+вставте секрет клієнта в поле **Секрет клієнта (необов'язково)** цього
+з’єднання. Секрет зберігається у файлі секретів сервера з правами 0600
+(ніколи в базі даних), надсилається до кінцевої точки токенів як
+`client_secret_post` і ніколи не повертається через RPC; якщо залишити поле
+порожнім під час збереження, збережений секрет залишиться чинним. Коли вхід
+не вдається на етапі обміну токенів, журнал сервера називає власну помилку
+провайдера (`invalid_client` майже завжди означає, що секрет відсутній або
+хибний).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/uk-UA/керівництво/практичні-посібники/sso-scim).
+:::note[Досяжність]
+Сам вхід опосередковує браузер: видавець лише повертає браузер користувача на
+`/oidc/callback`, а ваш сервер робить вихідний HTTPS-виклик до кінцевої точки
+токенів — вхідне з’єднання від видавця не потрібне, тож сервер за NAT
+працює, доки браузери користувачів можуть до нього дістатися (LAN, VPN,
+Tailscale або тунель). **Виняток — підготовка через SCIM**: IdP звертається
+до вашого сервера напряму, що вимагає тунелю або публічної URL-адреси — див.
+[налаштування користувачів через
+SCIM](/uk-UA/керівництво/практичні-посібники/sso-scim).
 :::
 
-## Check your configuration from this page
+## Перевірте свою конфігурацію на цій сторінці
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Інструмент перевірки нижче працює у вашому браузері. Він отримує
+discovery-документ вашого видавця напряму, тож цей сайт його ніколи не
+бачить, і застосовує правила сервера: видавець на https, що відповідає
+документові, кінцеві точки на власному джерелі видавця, PKCE S256 і метод
+автентифікації токенів, потрібний вашому типу клієнта. Маючи ідентифікатор
+клієнта й адресу сервера, він може відкрити тестовий вхід, який показує, чи
+зареєстровано клієнт і його redirect URI. Секрет клієнта він ніколи не
+запитує.
 
 <SsoCheck kind="oidc" />

@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: "Ciclo de vida del despacho de agentes"
+description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-ES/manual/conceptos/ciclo-de-vida-del-despacho
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Qué es un despacho
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Un despacho es una ejecución de un agente, en una conversación y sobre un adaptador. Todo lo relativo a él ocurre en `cc_server`: el cliente envía un mensaje y después observa cómo llegan los eventos en flujo. Ningún cliente tiene una ruta de despacho.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Los agentes se despiertan por seis motivos, que la ejecución lleva consigo como su **contexto de activación** para que el agente sepa _por qué_ está activo:
 
-| Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| Motivo de la activación | Desencadenante                                       |
+| ----------------------- | ---------------------------------------------------- |
+| `userMessage`           | Alguien envió un mensaje en un espacio o mencionó al agente |
+| `assignment`            | Se asignó un ticket al agente                        |
+| `pipelineStep`          | Un paso de un pipeline lo despachó                   |
+| `childCompleted`        | Un ticket hijo terminó                               |
+| `followUp`              | Un latido de seguimiento programado                  |
+| `recovery`              | La ruta de recuperación volvió a despachar tras un fallo |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+El contexto de activación lleva los identificadores que acompañan al motivo (ticket, espacio, mensaje, ejecución de pipeline) y se inyectan en el entorno y el prompt del agente.
 
-## Prompt assembly
+## Montaje del prompt
 
-The prompt is built in layers, each one a labelled section:
+El prompt se construye por capas, y cada una es una sección etiquetada:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identidad**: el id propio del agente, su nombre y el id del espacio de trabajo, con una instrucción explícita de pasar esos UUID exactos a las herramientas con alcance de espacio de trabajo. El espacio de trabajo es intrínseco al agente, así que siempre está presente.
+- **Catálogo de herramientas y protocolos de recursos**, y después la **estructura del espacio de trabajo**.
+- **Anulación del prompt de sistema**, si el agente tiene una, y después la **persona** (parametrizada por rol) y el **informe del equipo**.
+- **Skills**: los nombres configurados en el agente.
+- **Contrato de ejecución y procedimiento** del modo actual.
+- **Contexto de activación** y **contexto de mención**: quién convocó al agente y el conjunto de participantes que lo rodea.
+- **Bloque de modo**: se genera a partir del perfil de capacidades del modo _y de su lista de herramientas materializada_, así que un prompt nunca puede nombrar una herramienta que la ejecución no tenga realmente.
+- **Contexto de memoria**: hechos recuperados para la tarea.
+- **Contexto de conversación**: el historial reciente del espacio, limitado a una ventana literal de 50.000 caracteres, independientemente del tamaño de contexto configurado para el agente. El historial más antiguo no se descarta: el agente lo recupera a petición con `get_messages`, y los mensajes antiguos semánticamente relevantes siguen apareciendo.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Los comandos slash se analizan a partir del texto sin procesar del usuario]
+El prompt por capas comienza con un bloque de contexto, así que no empieza con una barra. Los comandos se analizan literalmente a partir del mensaje del usuario y después se recortan de la cola del prompt por capas para que todas las capas de contexto sobrevivan.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Los comandos se reparten entre dos sitios. `/todo` y `/compact` se interceptan en el compositor y nunca se persisten deliberadamente como mensajes ni se envían al agente; persistir `/compact` retrasaría un turno el corte de compactación y ensuciaría la transcripción. `/plan` se trata en ambos: el compositor cambia el modo del espacio, que es lo que hace que la superficie de herramientas, el preajuste de las barandillas y el prompt concuerden en este turno y en todos los siguientes. `/goal`, `/loop` y `/skill:<name>` se gestionan dentro de la propia ejecución y solo en el arnés integrado: `/goal` y `/loop` inician trabajo autónomo con un presupuesto de coste, y un nombre con el prefijo `skill:` se busca como una skill cuyo cuerpo `SKILL.md` se convierte en la directiva del turno. El espacio de nombres es lo que mantiene separados ambos vocabularios: resolver un nombre sin prefijo contra las skills hacía que una skill llamada `plan` o `compact` quedara permanentemente eclipsada por la integrada. Un nombre sin prefijo que no sea integrado todavía se resuelve, para los mensajes escritos antes de que existiera el espacio de nombres. Un nombre no reconocido simplemente pasa como texto sin formato.
 
-## Worktree provisioning
+## Aprovisionamiento del worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Antes de que se ejecute nada, la conversación obtiene su propia raíz de trabajo, con un worktree aislado con copy-on-write por repositorio debajo de ella. De forma predeterminada, eso es cada repositorio vinculado al espacio de trabajo; un espacio de PR (o un espacio creado con una selección explícita) aprovisiona solo los incluidos en la lista de permitidos, y una conversación de revisión de PR fija su único repositorio a la ref head de la pull request mientras los demás se quedan en su rama predeterminada. El checkout de origen nunca se modifica y todo el directorio de la conversación se recupera cuando se elimina el espacio.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+El copy-on-write es la **única** implementación allí donde se distribuye `rift`, respaldada por el binario nativo incluido. Un sistema de archivos que no puede hacer reflink (o un directorio de datos en un volumen distinto al del repositorio) hace que el aprovisionamiento falle en lugar de recurrir a una alternativa. `git worktree` es el backend en Windows, donde no hay ningún backend de copy-on-write que construir, y no es una degradación silenciosa en otras máquinas. Que falte `rift` en una plataforma donde se distribuye es una instalación rota: el servidor se niega a arrancar en lugar de recurrir a una alternativa en silencio, porque una alternativa silenciosa esconde la avería detrás de una ruta más lenta para siempre.
 
-## Identity and credentials
+## Identidad y credenciales
 
-Two identities are resolved per run, before any process launches.
+Se resuelven dos identidades por ejecución, antes de que se lance ningún proceso.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Autoría de Git.** Los commits que hace un agente se firman _como el agente_ (`<Name> (agent) <agentId@agents.control-center.local>` tanto en `GIT_AUTHOR_*` como en `GIT_COMMITTER_*`), nunca suplantando a una persona. La parte local es el UUID del agente, no el slug de su nombre. La persona solicitante recibe crédito mediante un trailer `Co-Authored-By:`, que se transporta en el entorno y se indica en el prompt de sistema. Una identidad explícita definida por el llamador siempre prevalece sobre ambas.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Identidad ante el host de código.** La credencial de GitHub de la ejecución es siempre la del bróker (un token de instalación de la App con alcance de repositorio, o su alternativa PAT del entorno), nunca el token propio almacenado de la persona solicitante. `actingUserId` delimita la alternativa PAT para que una persona que no sea la propietaria del servidor no herede su alcance; no superpone un token personal al entorno del agente.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Las credenciales de los proveedores de modelos** se resuelven en un orden fijo, y el orden importa:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. una anulación del entorno por adaptador,
+2. el entorno del llamador,
+3. el almacén de credenciales del servidor (renovando un token OAuth si está cerca de caducar),
+4. el entorno del proceso.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Como la anulación por adaptador va primero, gana en silencio a una cuenta de proveedor conectada en la aplicación. Si una ejecución está facturando a la cuenta equivocada, esa anulación es el primer sitio donde mirar. Las credenciales de los proveedores son globales a la máquina: se comparten entre todos los espacios de trabajo de la instalación.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/es-ES/manual/conceptos/modelo-de-agentes/).
+Los tokens restringidos por capacidades (GitHub, tickets) vienen del bróker de credenciales, que solo inyecta lo que permiten las capacidades de la ejecución. Consulta [El modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/).
 
-## Launch
+## Lanzamiento
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+La ejecución se lanza con su worktree como directorio de trabajo y, en el caso de Claude Code, con una configuración de MCP generada para que el agente pueda llegar a la superficie de herramientas de Control Center. ACP y el `bash` del arnés reciben un entorno saneado; Claude Code a través de `NoSandboxAdapter` hereda el entorno de la máquina.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[El entorno aislado del sistema operativo envuelve una ejecución solo donde la máquina tiene un backend]
+`cc_server` sondea la máquina una vez al arrancar y, cuando hay un backend disponible, envuelve en él los procesos de agente: Seatbelt en macOS y bubblewrap en Linux y WSL2. Ambas costuras de despacho están envueltas, porque no comparten una sola: la CLI de Claude Code pasa por el puerto del entorno aislado; los adaptadores ACP y la herramienta `bash` del arnés integrado pasan por el gestor del entorno aislado. También es lo que aplica las rutas protegidas de la ejecución: tus checkouts de repositorios registrados tienen la escritura denegada dentro del entorno aislado, en todos los modos.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Donde no hay backend, la ejecución **no** está aislada y nada más cambia para compensarlo. Eso significa Windows siempre (sin envoltura nativa; `microvm` es una ruta aparte, condicionada por el sondeo, para terminales y rigs) y Linux o WSL2 sin `bwrap` y `socat` en el `PATH`. El servidor indica en qué estado se encuentra en su línea de registro de arranque, y `--sandbox off` permite renunciar a él de forma deliberada.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Dos lagunas sobreviven al entorno aislado incluso donde está activo. Las herramientas de archivos en proceso del arnés (read, write, edit, apply patch, search, find, search_files) se ejecutan dentro del proceso del servidor, así que ningún perfil las restringe: su límite es el propio confinamiento de rutas de las herramientas más las barandillas. Y Claude Code se lanza con `--dangerously-skip-permissions`, así que sus propias llamadas a archivos y de shell no quedan condicionadas por Control Center; el entorno aislado del sistema operativo es la frontera a su alrededor.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Los límites restantes se aplican en todas las máquinas, haya entorno aislado o no: el worktree propio de la ejecución (copy-on-write donde se distribuye `rift`; `git worktree` en Windows), las credenciales restringidas por capacidades que el bróker emite en cada lanzamiento y revoca al desmontar, las barandillas unificadas de acciones (con cierre de seguridad: una decisión `prompt` sin ningún aprobador conectado se deniega) y la superficie de herramientas que permite el modo de la conversación. ACP y el `bash` del arnés siguen saneando el entorno; Claude Code a través de `NoSandboxAdapter` hereda el entorno de la máquina.
 :::
 
-## Streaming
+## Flujo de eventos
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+La ejecución devuelve un flujo de eventos tipados, que el procesador de flujo persiste como deltas de mensajes, pliega en segmentos de transcripción y convierte en eventos de mensajería:
 
-| Event              | What it carries                                                                                                  |
+| Evento             | Qué transporta                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | Salida de razonamiento, representada en línea                                                                   |
+| `text`             | Salida visible                                                                                                   |
+| `toolCall`         | Una invocación de herramienta, con su id y argumentos estructurados                                              |
+| `toolResult`       | El resultado correspondiente, marcado cuando dio error o es un flujo parcial                                     |
+| `usage`            | Recuentos de tokens y coste para una ventana de medición                                                         |
+| `error`            | Un error, con el código estructurado del adaptador cuando este lo comunicó                                       |
+| `sandboxViolation` | El sistema operativo denegó una llamada al sistema. Solo se emite donde un entorno aislado envuelve realmente el proceso; consulta la nota anterior |
+| `debug`            | Diagnóstico en tiempo de ejecución (marcadores de lanzamiento, decisiones de las barandillas, avisos del contrato) |
+| `done`             | La ejecución terminó                                                                                             |
 
-## What bounds a run
+## Qué delimita una ejecución
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Deliberadamente **no hay ningún techo de turnos en ningún sitio**. Un recuento fijo de iteraciones mata trabajo largo legítimo (migraciones, limpieza tras un fan-out) y no captura nada que las protecciones de abajo no capturen antes. Una ejecución termina cuando:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **el modelo se detiene** por sí solo;
+- **una persona la detiene** o toma el control de la conversación (lo que pausa el arnés integrado en su siguiente límite de turno limpio; en su lugar, una ejecución de Claude Code, que no tiene un límite seguro, se detiene);
+- **salta el vigilante de silencio.** Si no hay salida durante el umbral, la sesión se termina con un fallo `silentRun`. El valor predeterminado son 15 minutos, que bajan a 10 en los modos predominantemente de lectura (revisión y plan); un agente puede anularlo entre 1 y 240 minutos. El vigilante se arma cuando un proceso hijo informa de su PID, así que cubre la CLI de Claude Code, **no** el arnés integrado, que no lanza nada;
+- **actúa un tope de coste**, pero solo para los comandos autónomos.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+La protección contra bucles infinitos no es un terminador: tras tres llamadas idénticas a herramientas seguidas, el bucle _orienta_ al agente para que cambie de enfoque.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Un turno normal no tiene tope de coste]
+La protección de coste dentro de la sesión solo está conectada para `/goal` y `/loop`; cualquier otra ejecución no pasa presupuesto alguno. Para esos comandos, un segmento sin supervisión puede consumir 500 céntimos (5,00 $) de forma predeterminada, con una orientación suave al 80 % que pide al agente que cierre limpiamente antes de la parada dura, y un presupuesto de objetivo duradero de 5000 céntimos (50,00 $) entre segmentos. Un `/goal --budget` explícito nunca se supera en un segmento entero.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+En conjunto, un turno interactivo normal en el arnés integrado no tiene techo de turnos, ni tope de coste, ni vigilante de silencio. Termina cuando el modelo se detiene o cuando lo detienes tú. Es una contrapartida deliberada (las alternativas matan trabajo largo legítimo), pero sí significa que una ejecución interactiva sin supervisión no está limitada por nada salvo el propio criterio del modelo.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+A mitad de ejecución, un mensaje enviado a un agente en marcha se pone en cola como **orientación** y se consume en el siguiente límite de turno, así que puedes reconducir una ejecución sin matarla. La orientación, la pausa, los subagentes y el contrato de finalización son características del arnés integrado; Claude Code no tiene ninguna de ellas.
 
-## How a run is recorded
+## Cómo se registra una ejecución
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Cada despacho escribe un `AgentRunLog`: hora de inicio y de fin, resumen, recuentos de tokens y coste estimado (incluido el coste acumulado de los subagentes), adaptador y modelo, id de proceso y ruta del log, la conversación y cualquier ticket o ejecución de pipeline a la que pertenezca, además de dos campos de clasificación que concentran la mayor parte de la verdad.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Estado** es grueso: `pending`, `running`, `completed`, `error`.
+- **Vitalidad** es la lectura más fina: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Familia de errores** agrupa los fallos de forma útil: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` no significa «entregado»]
+Cuando una ejecución termina sin el entregable que exigía su modo (una ejecución en modo plan que nunca llamó a `submit_plan`, una ejecución de orquestación que nunca propuso nada), el estado sigue siendo `completed`, porque el proceso sí salió limpiamente. La señal honesta va en la vitalidad (`empty`), la familia de errores (`silentRun`) y un resumen que dice exactamente qué no se produjo. Ese resumen está protegido: la finalización no lo sobrescribirá con la última cháchara del modelo.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Esto es deliberado. Cambiar el estado movería máquinas de estados de tickets y pipelines que no tienen nada que ver con el artefacto ausente. También significa que «status: completed» por sí solo nunca basta para concluir que una ejecución tuvo éxito: lee el resumen.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Cerrar la ejecución publica `AgentRunCompleted`, y de él cuelgan muchas cosas: el marco de notificación y su entrada duradera en el feed, el reenviador en vivo que lo empuja a los clientes conectados, la acumulación de costes del pipeline, la reanudación de un paso de pipeline que esperaba a la ejecución, la finalización del ticket de respaldo, la asignación de una orquestación a un estado terminal, la decisión de continuar o detenerse del supervisor de objetivos, el rol de verificador y la evaluación de presupuesto posterior a la ejecución. La lista de presencia llega aparte, observando los registros de ejecución recientes en lugar del evento.
 
-## Budgets, after the fact
+## Presupuestos, a posteriori
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+La aplicación del presupuesto es una _reacción_, no una puerta. Cuando una ejecución termina, el evaluador compara el gasto del agente en lo que va de mes con su techo efectivo (una política de presupuesto vinculada, si existe; si no, la cifra mensual propia del agente; cero significa ilimitado). Cruzar el umbral suave registra un incidente de advertencia; agotar el presupuesto registra un incidente grave y cambia el estado del ciclo de vida del agente a `paused` en el organigrama. El despacho sigue aceptando trabajo de ese agente. Un disparador de pipeline `BudgetThresholdCrossed` puede iniciar trabajo de seguimiento a partir del mismo evento.
 
-## Retry lineage
+## Linaje de reintentos
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Cada registro de ejecución puede llevar un linaje de reintentos: un id de ejecución padre, un contador de intentos y un resumen de continuación. El árbol de ejecuciones de la conversación muestra el número de intento cuando no es cero. Un reintento desde el chat es un despacho nuevo con un registro de ejecución nuevo.
 
-## Related concepts
+## Conceptos relacionados
 
-- [The agent model](/es-ES/manual/conceptos/modelo-de-agentes/): what the adapter can and cannot enforce
-- [Modes](/es-ES/manual/conceptos/modos/): where the tool surface and the completion contract come from
-- [Guardrails](/es-ES/manual/conceptos/barandillas/): the effect-class policy every gated call passes
-- [Sandbox and security](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): the isolation story in full
-- [Multiplayer](/es-ES/manual/conceptos/multijugador/): steering, take-over and the autonomy dial
-- [Domain events](/es-ES/manual/conceptos/eventos-de-dominio/): what `AgentRunCompleted` sets off
+- [El modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/): qué puede y qué no puede imponer el adaptador
+- [Modos](/es-ES/manual/conceptos/modos/): de dónde vienen la superficie de herramientas y el contrato de finalización
+- [Barandillas](/es-ES/manual/conceptos/barandillas/): la política de clases de efecto por la que pasa toda llamada condicionada
+- [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): el relato completo del aislamiento
+- [Multijugador](/es-ES/manual/conceptos/multijugador/): la orientación, la toma de control y el dial de autonomía
+- [Eventos de dominio](/es-ES/manual/conceptos/eventos-de-dominio/): qué desencadena `AgentRunCompleted`

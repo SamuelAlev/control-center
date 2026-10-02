@@ -1,207 +1,221 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Controle remoto e mobile
+description: Como o celular alcança o seu servidor por um relay intermediado e selado de ponta a ponta, em vez de um link ponto a ponto, e o modelo de acesso em camadas que mantém esse alcance estreito.
 slug: pt-BR/manual/conceitos/controle-remoto
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+O Control Center é um app de desktop, mas o trabalho que ele acompanha não para
+quando você se afasta da mesa. O **controle remoto** emparelha o seu celular com
+o seu `cc_server`, usando o **[Remote](https://remote.usectrl.dev/)**, o app
+complementar em remote.usectrl.dev, para você acompanhar a frota de lá: ler
+mensagens e tickets, responder a um agente, triar o seu feed de notícias, sem que
+o áudio, a transcrição, o código-fonte ou as credenciais que vivem no servidor
+jamais saiam dele.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Pense nele como um companheiro predominantemente de leitura para o deck. Ele não
+foi feito para substituir o cliente de desktop completo.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/pt-BR/manual/conceitos/implantacao/) for how the two differ.
+:::note[Dois caminhos remotos diferentes]
+O companheiro de celular se emparelha com um `cc_server` por um **relay
+WebSocket intermediado** que transporta frames JSON-RPC selados de ponta a ponta.
+A **build web** completa (e um desktop apontado para um servidor remoto) é o
+outro caminho remoto; ela disca para o `cc_server` por WebSocket e renderiza o
+app completo. Consulte
+[Implantação e clientes](/pt-BR/manual/conceitos/implantacao/) para ver como os
+dois diferem.
 :::
 
-## Transport
+## Transporte
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+O celular alcança o `cc_server` por um WebSocket: ou uma conexão direta
+(loopback, LAN, tailnet ou `wss://`), ou uma sala com entrada por convite em um
+broker de sinalização que repassa frames selados. Não há canal de dados ponto a
+ponto.
 
-## What the phone can do
+## O que o celular pode fazer
 
-The paired phone reaches a small, intentional slice of the server's surface:
+O celular emparelhado alcança uma fatia pequena e intencional da superfície do
+servidor:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Ler** tickets, agentes, espaços e as mensagens deles, e o seu feed de
+  notícias
+- **Responder**: enviar uma mensagem em um espaço, atualizar ou atribuir um
+  ticket, marcar um artigo como lido ou salvo
+- **Executar um playbook**: instanciar um modelo de plano salvo com os seus
+  parâmetros. Isso apenas _propõe_ um plano; nada é executado nem gasta até que
+  um operador o aprove no Plan Studio, em um cliente completo
+- **Trocar de espaço de trabalho**, pelo seletor do próprio celular
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Isso é praticamente tudo. Um celular é um **principal com menos privilégios** do
+que um cliente completo. Ele não pode criar processos, gastar orçamento de LLM,
+fazer push para o GitHub nem criar espaços de trabalho. Consulte
+[o modelo de acesso](#o-modelo-de-acesso) para ver como isso é imposto, e não
+apenas pretendido.
 
-## How the link is built
+## Como o link é construído
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+A conexão viaja por um **relay intermediado**: o servidor entra como proprietário
+em uma sala com entrada por convite em um broker `wss://`, e cada cliente
+emparelhado — desktop, web, celular — entra na mesma sala com um token de admissão
+de prazo limitado. Três peças se juntam:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Peça                          | Papel                                                                                                                                                                                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (app de celular)**   | O app web complementar, hospedado por padrão em `remote.usectrl.dev`, ou auto-hospedado. Carrega em um navegador e guarda o registro de emparelhamento no IndexedDB.                                                                                    |
+| **Broker de relay**           | Um relay `wss://` sem estado (`cc_signaling_server`) que hospeda salas de N vias. Ele transporta **apenas frames opacos**: cada payload é selado de ponta a ponta entre o celular e o servidor, então o broker nunca vê dados do app nem o segredo de emparelhamento, e nunca interpreta o que repassa. |
+| **`cc_server`**               | O proprietário da sala. Ele responde às chamadas do celular pelo mesmo dispatcher que todos os outros clientes usam.                                                                                                                                    |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Uma oferta de emparelhamento carrega um **descritor de conexão** que lista todos
+os caminhos até o servidor (LAN, tailnet, `wss://` público, relay) mais a sua
+impressão digital de identidade. O resolvedor do celular escolhe o melhor caminho
+alcançável e fixa a impressão digital na primeira conexão (TOFU); o relay garante
+a conectividade mesmo quando não existe caminho direto, sem nunca conseguir ler o
+tráfego.
 
-## What the pairing payload is
+## O que é o payload de emparelhamento
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/pt-BR/manual/guias/emparelhar-dispositivo/) for the procedure. The anatomy is
-what matters here.
+O emparelhamento é emitido pelo app e entregue como um deep link; consulte
+[Emparelhar um dispositivo](/pt-BR/manual/guias/emparelhar-dispositivo/) para ver
+o procedimento. O que importa aqui é a anatomia.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+O payload viaja no **fragmento** da URL, a parte depois de `#` que os navegadores
+nunca enviam ao servidor, então o host HTTPS da PWA nunca o vê. Ele carrega tudo
+de que o celular precisa para alcançar o servidor e provar quem é: o descritor de
+conexão (todos os caminhos mais a impressão digital de identidade), um id de
+dispositivo recém-emitido, uma chave pré-compartilhada de 32 bytes e um carimbo de
+validade. O celular o decodifica, guarda um registro de emparelhamento localmente
+e remove o fragmento, para que o segredo saia da URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Há dois formatos de payload e eles **não são intercambiáveis**. O QR de celular
+emitido pelo painel de emparelhamento do app é o `PairingPayload` v2 acima,
+apontado para o host da PWA Remote. `cc_server pair --client-url` emite um link v1
+diferente e mais antigo (`{s, i, k}` — URL do servidor, id do dispositivo, chave),
+destinado apenas ao cliente **web**.
 
-They also differ in lifetime, which is easy to get wrong:
+Eles também diferem no tempo de vida, o que é fácil de errar:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Emitido por                                      | Validade da credencial                |
+| ------------------------------------------------ | ------------------------------------- |
+| Painel de emparelhamento do app (`pairing.mint`) | 30 dias, sempre                       |
+| `cc_server pair` na linha de comando             | **Nenhuma** — a credencial não expira |
 
-## The access model
+## O modelo de acesso
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Um dispositivo emparelhado é **autenticado, mas não confiável**. Vários portões
+independentes impedem que um emparelhamento aprovado (ou vazado) se torne
+controle total do servidor.
 
-### 1. Membership, not pairing, is the boundary
+### 1. A associação, não o emparelhamento, é a fronteira
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Uma chave de emparelhamento válida prova _qual dispositivo_ você é. O que você
+pode ler ou alterar é decidido pelo seu **papel no espaço de trabalho**, resolvido
+de novo a cada chamada, e por concessões por repo em tudo que expõe conteúdo de
+repo. Um dispositivo que tem uma chave perfeitamente válida, mas pertence a um
+usuário que não é membro do espaço de trabalho informado, é recusado com
+“Not a member of this workspace”.
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+O papel mínimo exigido é derivado do tipo da operação, a menos que ela declare o
+seu próprio: leituras exigem `guest`, mutações exigem `member`, operações
+destrutivas exigem `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Um celular é um nível de sessão inferior
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Além da verificação de papel, uma sessão de celular tem uma capacidade menor do
+que uma sessão de desktop ou web. Operações declaradas como exclusivas de cliente
+completo são recusadas para um celular antes que o handler seja executado, por
+mais privilegiado que seja o usuário por trás dele: emitir, listar, renomear e
+revogar emparelhamentos de dispositivos; ler e definir a conectividade do túnel;
+backup do servidor e exportação/importação de espaços de trabalho; detecção e
+encerramento de processos; sondagens de adaptadores; configurações do servidor;
+administração de SSO; controle da frota; e assumir o controle de um agente em
+execução ou devolvê-lo.
 
-### 3. A default-deny tool allow-list
+### 3. Uma lista de permissão de ferramentas com negação por padrão
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Para a superfície de ferramentas MCP especificamente (`tools/call`), uma lista de
+permissão com negação por padrão determina quais ferramentas o celular pode
+invocar. Tudo que não estiver na lista é rejeitado antes de ser executado. A lista
+é pesada em leitura e observação, mais um punhado de escritas **somente locais** —
+uma mensagem, uma atualização de ticket, um sinalizador de artigo — que não gastam
+orçamento de LLM, não criam processo algum nem tocam em nenhum sistema externo.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Negados, por exemplo: consultar um agente, iniciar uma revisão com IA, encerrar um
+agente, publicar uma revisão no GitHub, contratar ou demitir agentes, criar um
+espaço de trabalho.
 
-### 4. Per-call workspace scoping
+### 4. Escopo de espaço de trabalho por chamada
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/pt-BR/manual/conceitos/espacos-de-trabalho/) invariant the rest of the
-product enforces.
+O servidor **não** mantém um “espaço de trabalho atual”. Ele é sem estado por
+design: toda chamada com escopo de espaço de trabalho precisa informar o
+`workspace_id` de destino nos seus argumentos, e o dispatcher recusa a chamada de
+imediato quando ele falta ou nomeia um espaço de trabalho que o servidor não tem
+registrado — antes que qualquer coisa abra um banco de dados. Um celular,
+portanto, nunca pode herdar nem derivar para o escopo de outro cliente, e nomear
+um espaço de trabalho alheio também não ajuda, porque a verificação de associação
+do portão 1 continua valendo. Esse é o mesmo invariante de
+[isolamento de espaço de trabalho](/pt-BR/manual/conceitos/espacos-de-trabalho/)
+que o resto do produto aplica.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Frames selados de ponta a ponta com a chave pré-compartilhada
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Cada frame entre o celular e o servidor é selado com a chave de emparelhamento; o
+token de admissão só coloca um cliente na sala, ele não descriptografa nada. O
+broker repassa texto cifrado e nunca vê a chave. Um dispositivo revogado encontra
+a sua credencial já removida, por isso **falha fechado** ao reconectar.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Uma credencial emitida pelo app tem prazo limitado de 30 dias; passado isso, o
+portão de conexão a rejeita e o celular precisa emparelhar de novo. A revogação é
+imediata: o servidor observa a tabela de dispositivos e derruba as sessões abertas
+de um dispositivo revogado em segundos, em vez de esperar a próxima conexão dele.
 
-### 6. Rate limiting per principal
+### 6. Limitação de taxa por principal
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Um limitador de janela deslizante limita o tráfego de ferramentas remotas a 120
+chamadas por minuto, com um subteto mais apertado de 30 por minuto para os verbos
+de mutação. O orçamento pertence ao **principal, não à sessão**: três dispositivos
+seus consomem uma única cota, então um cliente sequestrado não compra folga
+abrindo mais sessões, e um membro ruidoso não deixa os demais sem cota.
 
-### 7. A broker that learns nothing
+### 7. Um broker que não fica sabendo de nada
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+O broker de relay é deliberadamente burro: ele hospeda salas, repassa frames
+selados e não guarda contas, dados do app nem chaves. As salas têm entrada por
+convite e são transitórias. Os dados do app, o áudio, a transcrição, o
+código-fonte e as credenciais ficam todos no servidor.
 
-## Live updates
+## Atualizações ao vivo
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Depois de emparelhado, o celular recebe **atualizações ao vivo** como frames de
+notificação — novas mensagens de agentes, tickets atribuídos a você, mudanças de
+status — espelhando as notificações do próprio desktop. O servidor transmite esses
+frames a todas as sessões conectadas, e o filtro de espaço de trabalho é aplicado
+no lado do cliente, então o que você vê tem por escopo o espaço de trabalho que
+está olhando.
 
-## Where it lives
+## Onde ele fica
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Superfície                                                                                      | O que mostra                                                                                                                |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Configurações → Você → Seus dispositivos** (`/workspaces/:workspaceId/settings/you/devices`) | Clientes emparelhados com status ao vivo, além de **Emparelhar um novo cliente** (navegador web, app de desktop ou celular) e revogar |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+O mesmo painel emite emparelhamentos para um segundo navegador ou app de desktop,
+não apenas para celulares — o fluxo é idêntico, só o deep link muda.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+O controle remoto fica do lado do servidor e **não** é exposto por MCP. O celular
+fala com o dispatcher do próprio servidor pelo relay; ele não é um cliente MCP de
+um servidor externo.
 ::::
 
-## See also
+## Veja também
 
-- [Workspaces and isolation](/pt-BR/manual/conceitos/espacos-de-trabalho/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/pt-BR/manual/conceitos/multijogador/): roles, membership and repo grants
-- [Deployment and clients](/pt-BR/manual/conceitos/implantacao/): where remote control sits among the client tiers
-- [Architecture](/pt-BR/manual/conceitos/arquitetura/): where remote control sits in the stack
-- [Pair a device](/pt-BR/manual/guias/emparelhar-dispositivo/)
+- [Espaços de trabalho e isolamento](/pt-BR/manual/conceitos/espacos-de-trabalho/): o escopo por chamada em que isto se apoia
+- [Multijogador — identidade, associação e presença](/pt-BR/manual/conceitos/multijogador/): papéis, associação e concessões por repo
+- [Implantação e clientes](/pt-BR/manual/conceitos/implantacao/): onde o controle remoto se situa entre os níveis de cliente
+- [Arquitetura](/pt-BR/manual/conceitos/arquitetura/): onde o controle remoto se situa na pilha
+- [Emparelhar um dispositivo](/pt-BR/manual/guias/emparelhar-dispositivo/)

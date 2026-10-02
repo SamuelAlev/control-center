@@ -1,95 +1,99 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: اتصال ارائه‌دهندهٔ OpenID Connect
+description: هر صادرکنندهٔ OIDC — Pocket ID، Keycloak، Auth0، Zitadel — را به ورود Control Center وصل کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+از این راهنما استفاده کنید وقتی ارائه‌دهندهٔ هویت شما به‌جای SAML از
+**OpenID Connect** حرف می‌زند. هر صادرکنندهٔ دارای گواهی OIDC کار می‌کند —
+Pocket ID، Keycloak، Auth0، Zitadel، Google Workspace و دیگران همه همین
+گام‌ها را دنبال می‌کنند؛ تنها جایی که ارائه‌دهندهٔ شما این مقدارها را نشان
+می‌دهد متفاوت است.
 
-## Prerequisites
+## پیش‌نیازها
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- یک ارائه‌دهندهٔ OIDC که بتوانید در آن کلاینتی بسازید — **شناسهٔ کلاینت**
+  و **URL صادرکننده** آن را یادداشت کنید (پایه‌ای که سند
+  `.well-known/openid-configuration` زیر آن قرار دارد)، به‌همراه **راز
+  کلاینت** آن وقتی کلاینت از نوع محرمانه است (کلاینت‌های عمومی PKCE رازی
+  ندارند)،
+- یک سرور Control Center که خودتان اداره می‌کنید (**مالک سرور**).
 
-## Steps
+## گام‌ها
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. **تنظیمات → سرور → ورود یکپارچه** را باز کنید و به
+   **OpenID Connect** سوئیچ کنید.
+2. **URL صادرکننده** و **شناسهٔ کلاینت** و **راز کلاینت (اختیاری)** را پر
+   کنید — اگر ارائه‌دهنده یکی صادر کرده باشد. Control Center نقطه‌های پایانی
+   را از سند کشف استاندارد صادرکننده پیدا می‌کند — بدون پیکربندی مخصوص هر
+   ارائه‌دهنده.
+3. نزد خود ارائه‌دهنده، نشانی بازگشت
+   `https://<your-server>/oidc/callback` را روی آن کلاینت ثبت کنید.
+4. اگر گروه‌های شما زیر ادعایی غیر از `groups` قرار دارند، نام
+   **ادعای گروه‌ها** را تنظیم کنید؛ اگر خواستید گروه‌ها را به نقش‌ها نگاشت
+   کنید (SSO هرگز نمی‌تواند نقش مالک را بدهد).
+5. سیاست عضویت را انتخاب کنید (افزودن خودکار به همهٔ فضاهای کاری، یا نیاز
+   به دعوت برای هر فضای کاری)، **استفاده از OpenID Connect برای ورود** را
+   روشن کنید و **ذخیرهٔ اتصال** را بزنید.
+6. **آزمایش اتصال** را بزنید — سرور سند کشف صادرکننده را می‌گیرد و
+   نقطه‌های پایانی‌اش را تأیید می‌کند، پس یک توست سبز یعنی همه‌چیز جز
+   رفت‌وبرگشت مرورگر کار می‌کند. برای بررسی ثبت کلاینت هم، از
+   [بررسی‌کنندهٔ پایین](#پیکربندی-خود-را-از-همین-صفحه-بررسی-کنید) استفاده کنید.
+7. یک ورود انجام دهید: صفحهٔ اتصال وب **ورود با OpenID Connect** را نشان
+   می‌دهد، یا مستقیماً `https://<your-server>/oidc/login` را باز کنید.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+ادعاها (ایمیل، نام، گروه‌ها) توسط سرور شما روی TLS از نقطهٔ پایانی توکن
+صادرکننده خوانده می‌شوند — مرورگر هرگز آن‌ها را تأمین نمی‌کند، پس هیچ
+تأیید امضای JWT محلی در کار نیست. کلاینت باید اجازه داشته باشد دامنهٔ
+`openid profile email` را درخواست کند، که دقیقاً همان چیزی است که
+Control Center می‌خواهد.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+چون آن کانال TLS تنها چیزی است که ادعاها را احراز می‌کند، URL صادرکننده
+باید **https** باشد — صادرکنندهٔ متن‌روشن به هر مهاجم میان‌مسیری اجازه
+می‌دهد هویت‌ها را یکجا جعل کند. `http` فقط برای صادرکننده‌های لوپ‌بک
+(`localhost`، `127.0.0.1`، `::1`) و برای توسعهٔ محلی پذیرفته می‌شود.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[کلاینت عمومی یا کلاینت محرمانه؟]
+شکل پیش‌فرض — و توصیه‌شده — یک **کلاینت عمومی** است که از جریان
+authorization code با **PKCE** (RFC 7636) استفاده می‌کند: تأییدکنندهٔ کد
+یک‌بارمصرفی که سرور نگه می‌دارد جای راز را می‌گیرد و تبادل توکن به همان
+درخواست مجوزی که آن را آغاز کرده گره می‌خورد. رازی برای لو رفتن وجود
+ندارد و یک authorization code دزدیده‌شده بدون آن تأییدکننده بی‌فایده است.
+بعضی ارائه‌دهنده‌ها هنگام ساخت، این نوع کلاینت را «SPA» یا «native»
+می‌نامند.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+اگر ارائه‌دهندهٔ شما به‌جایش یک کلاینت **محرمانه** صادر کرده، یا کلاینت
+را نزد ارائه‌دهنده عمومی علامت بزنید (PKCE در هر دو حالت روشن می‌ماند)، یا
+راز کلاینت را در فیلد **راز کلاینت (اختیاری)** اتصال جای‌گذاری کنید. راز
+در فایل رازهای 0600 سرور ذخیره می‌شود (هرگز در پایگاه‌داده)، به‌صورت
+`client_secret_post` به نقطهٔ پایانی توکن فرستاده می‌شود و هرگز روی RPC
+برگردانده نمی‌شود؛ خالی گذاشتن فیلد هنگام ذخیره، راز ذخیره‌شده را نگه
+می‌دارد. وقتی ورودی در مرحلهٔ تبادل توکن شکست می‌خورد، لاگ سرور خطای خود
+ارائه‌دهنده را نام می‌برد (`invalid_client` تقریباً همیشه یعنی راز گم شده
+یا غلط است).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/sso-scim).
+:::note[دسترس‌پذیری]
+خودِ ورود از طریق مرورگر انجام می‌شود: صادرکننده فقط مرورگر کاربر را به
+`/oidc/callback` بازمی‌گرداند و سرور شما یک فراخوانی HTTPS خروجی به
+نقطهٔ پایانی توکن می‌زند — هیچ اتصال ورودی از سوی صادرکننده لازم نیست، پس
+سروری پشت NAT تا وقتی مرورگر کاربران به آن برسد کار می‌کند (LAN، VPN،
+Tailscale یا یک تونل). **تأمین SCIM استثناست**: IdP مستقیماً به سرور شما
+زنگ می‌زند که به تونل یا URL عمومی نیاز دارد — به
+[تأمین کاربران با SCIM(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/sso-scim) نگاه کنید.
 :::
 
-## Check your configuration from this page
+## پیکربندی خود را از همین صفحه بررسی کنید
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+بررسی‌کنندهٔ زیر در مرورگر شما اجرا می‌شود. سند کشف صادرکنندهٔ شما را
+مستقیماً می‌گیرد، پس این سایت هرگز آن را نمی‌بیند، و قواعد سرور را اعمال
+می‌کند: صادرکنندهٔ https که با سند مطابقت دارد، نقطه‌های پایانی روی مبدأ
+خود صادرکننده، PKCE با S256 و روش احراز هویت توکنی که نوع کلاینت شما لازم
+دارد. با یک شناسهٔ کلاینت و نشانی سرور، می‌تواند یک ورود آزمایشی باز کند
+که نشان می‌دهد کلاینت و URI بازگشتش ثبت شده‌اند یا نه. هیچ‌وقت راز کلاینت
+را نمی‌خواهد.
 
 <SsoCheck kind="oidc" />

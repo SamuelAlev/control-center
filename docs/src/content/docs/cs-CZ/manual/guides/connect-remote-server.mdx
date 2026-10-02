@@ -1,109 +1,110 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Připojte se ke vzdálenému serveru
+description: Namiř aplikaci pro počítač nebo webového klienta na cc_server, který běží jinde, a přepínej mezi servery bez restartu.
 slug: cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Každý klient jen vykresluje `cc_server`, který vlastní data. Desktop si umí
+jeden spustit sám v sobě; webová aplikace na
+[app.usectrl.dev](https://app.usectrl.dev) to neumí, protože karta prohlížeče
+server hostovat neumí. Tenhle návod v obou případech namíří klienta na server,
+který běží jinde: malý stroj, cloudové VM, sestavovací server.
 
-## Prerequisites
+## Než začneš
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Běžící `cc_server`. Když žádný nemáš, viz [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
+- Buď tři párovací hodnoty, které server vydal, **URL serveru** (`ws://…/rpc` nebo `wss://…/rpc`), **ID zařízení** a **párovací klíč**, nebo jednorázový **kód pozvánky** od správce pracovního prostoru. Uplatnění pozvánky ti založí uživatele, zapíše členství a vydá pověření pro tohoto klienta, takže ID zařízení ani klíč do ruky nedostaneš.
 
-### Make sure the server is reachable
+### Ověř, že je server dosažitelný
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Místní server nepotřebuje nic: `ws://localhost:9030/rpc` funguje z desktopu i
+z prohlížeče, protože prohlížeče berou loopback jako důvěryhodný origin.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Server na jiném stroji je jinak. `app.usectrl.dev` se servíruje přes HTTPS,
+takže prohlížeč otevře jen socket `wss://` s certifikátem, kterému už důvěřuje,
+a `cc_server` odmítne naslouchat na adrese mimo loopback bez TLS. Dej mu jedno z:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- certifikát přímo, přes `--tls-cert` a `--tls-key`
+- reverzní proxy před ním, která ukončuje TLS, a server spuštěný s `--insecure` (nešifrovaně za proxy, jen v důvěryhodné síti)
+- tunel nebo VPN, která certifikát dodá: Tailscale, cloudflared nebo podobné. **Nastavení → Server → Připojení a stav** má vestavěné zapnutí tunelu pod **Sdílet tento server**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Dvě nastavení na straně serveru se snadno přehlédnou. Za proxy, NAT nebo tunelem
+nastav `--public-url` na adresu, na kterou se mají klienti skutečně připojit.
+Výchozí hodnota je místní bind, takže bez ní klienti míří na špatného hostitele.
+A když hostuješ vlastní kopii webového sestavení, přidej její origin do
+`--allowed-origins`. Výchozí seznam je jen `https://app.usectrl.dev`; loopback
+a nativní klienti jsou povolení vždy.
 
-## Connect the desktop app
+## Připoj aplikaci pro počítač
 
-On a fresh install:
+Po nové instalaci:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Spusť Control Center. Obrazovka prvního spuštění se ptá **Jak má Control Center běžet?**
+2. Místo **Spustit v této aplikaci** vyplň pole připojení: URL serveru a buď kód pozvánky, nebo ID zařízení a párovací klíč.
+3. Klikni na **Připojit**. Control Center se připojí k serveru a otevře doručenou poštu pracovního prostoru.
 
-On a desktop that already runs its own server:
+Na desktopu, který už svůj server spouští:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Otevři **Nastavení → Server → Připojení a stav**.
+2. Klikni na **Přidat server**. Zadej URL serveru (`wss://host:9030/rpc`) a buď kód pozvánky, nebo ID zařízení a párovací klíč. Tlačítko na konci pole URL najde instance `cc_server` v LAN nebo tailnetu.
+3. Klikni na **Připojit** a pak na **Přepnout** na řádku nového serveru.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Přepnutí proběhne za běhu: aplikace se na místě přestaví kolem nové relace a
+restart nepotřebuje. Když připojení selže, zůstaneš na aktuálním serveru a
+uvidíš chybu. Řádek serveru, na kterém právě jsi, akci **Přepnout** nemá;
+místní server je první řádek a nese popisek **Spustit v této aplikaci**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Po přepnutí desktop žádnou databázi nevlastní. Každá obrazovka čte a zapisuje
+přes vzdálený server po WebSocketu.
 
-## Connect the web client
+## Připoj webového klienta
 
-The web build is always remote.
+Webové sestavení je vždy vzdálené.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Otevři [app.usectrl.dev](https://app.usectrl.dev), nebo vlastní kopii webového sestavení.
+2. Zadej URL serveru a buď kód pozvánky, nebo ID zařízení a párovací klíč.
+3. Klient se připojí k serveru a vykreslí totéž rozhraní jako desktop.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Když je v URL odkaz na párování, pole jsou předvyplněná. Párovací klíč se veze
+ve **fragmentu** URL, který prohlížeč nikdy nepošle serveru hostujícímu
+stránku, takže ho statický hostitel neuvidí.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Média a zabezpečení]
+Média (avatary, obrázky kanálu, snímky PR) jdou přes proxy připojeného
+serveru, takže prohlížeč nikdy nenačítá upstream hostitele přímo. Content-Security
+Policy se pro každý požadavek otiskne z necitlivé cookie a povolí jen origin
+připojeného serveru.
 :::
 
-### What the browser does not do
+### Co prohlížeč nedělá
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Webový klient čte a zapisuje tentýž server jako desktop, ale pár ploch
+potřebuje nativní okno nebo zařízení samotného stroje:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- žádné systémové toasty oznámení, žádné zvuky oznámení ani lišta okolních bannerů (oznámení v aplikaci pořád fungují)
+- žádné hledání serverů v LAN ani v tailnetu v dialogu **Přidat server**
+- žádná čtečka článků v aplikaci. Články kanálu novinek se otevřou v nové kartě
+- souhrn schůzky znovu nespustíš a ten, který se zpracovává, nezrušíš
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Dvě věci fungují, jen jinak. **Nahrávání** schůzky v prohlížeči funguje: bere
+mikrofon a sdílení obrazovky se zvukovou stopou. **Otevřít v IDE** funguje
+taky, ale požádá server, aby editor spustil na displeji _serveru_. Tlačítko se
+proto schová, když je hostitel bez rozhraní a nemá nainstalovaný žádný editor.
 
-## Troubleshooting
+## Řešení problémů
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
+- **Spojení vyprší**: server musí být z klienta dosažitelný. Zkontroluj bind (`--bind any`), že je port otevřený a že `--public-url` jmenuje adresu, na kterou se klient skutečně připojí. Přes otevřený internet je TLS povinné. Nešifrovaný bind mimo loopback se při startu odmítne, pokud server nebyl spuštěný s `--insecure` za proxy.
+- **Prohlížeč se odmítne připojit, ale nativní klient funguje**: origin prohlížeče není na seznamu `--allowed-origins` serveru. Výchozí povoluje jen `https://app.usectrl.dev` (a k tomu loopback).
+- **Párovací klíč odmítnut**: na serveru znovu spusť `cc_server pair`, ať se klíč toho zařízení obmění, a zadej nový. Odvolané zařízení najde pověření pryč a přístup se zavře. Odvolání shodí živou relaci do několika sekund.
+- **Špatný pracovní prostor**: pracovní prostor je součást URL (`/workspaces/:workspaceId/…`) a jede s každým voláním, takže přepnutí pracovního prostoru v jednom klientovi změní jen tvůj pohled. Dosáhneš jen na pracovní prostory, ve kterých jsi členem. Všechno ostatní se odmítne textem "Not a member of this workspace". Viz [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
 
-## Related guides
+## Související návody
 
-- [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/): the phone relay path
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/)
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): cesta telefonního relé
 
-## Related concepts
+## Související koncepty
 
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/)
-- [Remote control and mobile](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/)
+- [Vzdálené ovládání a mobil](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)

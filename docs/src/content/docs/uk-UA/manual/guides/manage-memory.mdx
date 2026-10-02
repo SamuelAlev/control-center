@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Керувати пам’яттю робочого простору
+description: Переглядайте, виправляйте та вичищайте факти й політики, які агенти записали в робочий простір.
 slug: uk-UA/керівництво/практичні-посібники/керувати-памʼяттю
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Цей посібник показує, як працювати зі сховищем знань робочого простору.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Важливо знати перед початком: **інтерфейс пам’яті — це поверхня перегляду, а не авторства.** Факти й політики пишуть агенти — через `propose_fact` і `propose_policy`, а для заміни — через `supersede_fact` і `supersede_policy`. `remember` записує елемент гарячого рівня, обмежений сеансом, який `consolidate_memory` згодом може піднести до факту. Рішення із записаних зустрічей збираються в домен `decisions`; на завершених запусках агентів такого збору немає. Усе, що ви робите тут, — це читаєте те, що вони написали, виправляєте, деактивуєте або видаляєте.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Пам’ять живе за адресою **Налаштування → Робочий простір → Пам’ять** (`/workspaces/<id>/settings/memory`). Це не пункт верхнього рівня на бічній панелі.
 
-## The three tabs
+## Три вкладки
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+На сторінці рівно три вкладки. Факти й Політики показують актуальну кількість наживо; граф — ні:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Факти** — кожен факт робочого простору, з лічильником тих, які не замінено
+- **Політики** — нормативні правила, згруповані за доменами, з лічильником активних
+- **Граф знань** — інтерактивне полотно з доменів, тем, фактів і політик
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Домени не створюють вручну. Домен з’являється, коли агент записує в нього перший факт або політику; у жодному місці інтерфейсу немає елемента для створення домену.
 
-## Review and correct a fact
+## Переглянути й виправити факт
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Відкрийте вкладку **Факти**.
+2. Скористайтеся полем пошуку, щоб звузити список. Це звичайний фільтр за підрядком по домену, темі й вмісту кожного факту — без індексу ключових слів і без ранжування.
+3. Скористайтеся фільтром областей, щоб показати всі області, лише факти на весь робочий простір або факти одного репозиторію.
+4. Скористайтеся перемикачем сортування, щоб упорядкувати за свіжістю або за впевненістю.
+5. Натисніть елемент редагування факту.
 
-The edit dialog lets you change:
+У діалозі редагування можна змінити:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Домен** — перенесення факту між доменами
+- **Тема** — її коротка назва
+- **Вміст** — текст знання
+- **Упевненість** — повзунок із кроком 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Натисніть **Зберегти**, щоб записати зміни назад. Кнопки **Додати факт** немає; діалог відкривається лише для наявного рядка.
 
-## See superseded facts
+## Переглянути замінені факти
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+На вкладці **Факти** є перемикач **Показувати замінені**. Замінені факти приховані за замовчуванням і показуються цим перемикачем; саме тут живе журнал аудиту — заміщення ніколи не видаляє.
 
-## Delete a fact
+## Видалити факт
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Скористайтеся елементом видалення факту й підтвердьте. Це справжнє видалення, а не заміщення: вдавайтеся до нього для фактів, які просто не варто було записувати, а факти, чий _вміст_ змінився, хай заміщують агенти.
 
-## Manage policies
+## Керувати політиками
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Вкладка **Політики** групує активні політики за доменами, а неактивні виносить в окремий розділ унизу. Для кожної політики можна:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Редагувати** її
+- **Видалити** її
+- **Деактивувати** / **Активувати** її — оборотний варіант, і зазвичай саме він правильний. До промптів агентів потрапляють лише активні політики.
 
-As with facts, there is no create control.
+Як і у випадку з фактами, елемента створення немає.
 
-## Explore the knowledge graph
+## Дослідити граф знань
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Вкладка **Граф знань** розкладає домени, теми, факти й політики як полотно вузлів, яким можна навігувати, — пересування, масштабування, перетягування вузлів. Дотик до вузла відкриває панель подробиць, з якої доступні ті самі діалоги редагування. Це найшвидший спосіб побачити, які домени справді наповнені.
 
-## Edit an agent's working memory
+## Редагувати робочу пам’ять агента
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Робоча пам’ять — це приватна чернетка кожного агента, яка вставляється в його промпт під час диспетчеризації. Агенти пишуть її самі через `record_observation` і `update_my_notes`, але ви можете читати й редагувати її безпосередньо:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Налаштування → Робочий простір → Агенти** → виберіть агента → вкладка **Пам’ять**.
 
-## Access grants
+## Дозволи доступу
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Дозволи доступу до пам’яті зіставляють роль агента з дозволом (`none`, `read`, `write`) для кожного домену. Записують їх операціями `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Дві речі, які варто розуміти про те, як вони діють:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Читання відкриті за замовчуванням.** Якщо для пари (роль, домен) немає рядка дозволу, чинний дозвіл — `read`. Єдиний запис, який спричиняє помилку без `write`, — це `propose_policy`. Запис фактів не потребує дозволу.
+- **Дозволи прив’язані до ролі агента.** Інструменти пропонування підставляють `general` за замовчуванням, якщо `agent_role` відсутня. Дозвіл, записаний для іншої ролі, на цих агентів не поширюється; дозвіл для `general` — поширюється.
 
-## Search is not the same everywhere
+## Пошук не скрізь однаковий
 
-Three different things are called "memory search" and they do not agree:
+Три різні речі називають «пошуком у пам’яті», і вони не збігаються:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Де                                | Що це робить                                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Поле пошуку на вкладці **Факти**  | Фільтр за підрядком по фактах, уже завантажених у клієнт                                                      |
+| RPC-операція `memory_fact.search` | Лише пошук за ключовими словами через FTS5 — тонкий клієнт не може надіслати вектор запиту, тож гібридний пошук залишається внутрішнім для хоста |
+| Інструмент `search_memory` на боці агента | `keyword`, `semantic` або `hybrid` (типовий). Гібридний поєднує чотири голоси: лексичний, семантичний, часовий і графовий |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Тож агент і сторінка пам’яті ранжуватимуть той самий запит по-різному. Якщо перевіряєте, що агент насправді може пригадати, — спитайте агента.
 
-## Embeddings
+## Векторні подання
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Факти отримують вектор **під час запису** і лише тоді, коли встановлено локальну модель векторних подань. Перевірте її стан у **Налаштування → Сервер → Діагностика та приватність → Семантичний пошук**. Якщо вам потрібне семантичне пригадування, встановіть модель до того, як агенти почнуть писати в пам’ять.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/)
-- [Use the MCP server](/uk-UA/керівництво/практичні-посібники/mcp-сервер/)
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/)
+- [Використовувати MCP-сервер](/uk-UA/керівництво/практичні-посібники/mcp-сервер/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Memory and knowledge](/uk-UA/керівництво/поняття/памʼять-і-знання/)
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/)
+- [Пам’ять і знання](/uk-UA/керівництво/поняття/памʼять-і-знання/)
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/)

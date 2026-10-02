@@ -1,164 +1,99 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: 받은편지함 분류하기
+description: 통합 받은편지함을 다루는 방법 — 나를 막는 항목을 정리하고, 나를 기다리는 항목을 검토하고, 내 PR을 추적합니다.
 slug: ko-KR/매뉴얼/사용-가이드/받은편지함-분류
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+이 가이드에서는 받은편지함을 다루는 방법을 설명합니다. 받은편지함은 나를 막거나 나를 명시적으로 요청하는 모든 항목, 즉 대기 중인 에이전트 승인, 실패한 티켓 동기화, 그리고 나를 리뷰어나 작성자로 포함하는 모든 풀 리퀘스트를 한곳에 모으는 유일한 화면입니다.
 
-## Open the inbox
+## 받은편지함 열기
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. 사이드바에서 **받은편지함**을 클릭합니다. 배지에는 대기 중인 에이전트 승인, 실패한 동기화, 리뷰를 기다리는 열린 PR의 수가 표시됩니다.
+2. 또는 <kbd>⌘K</kbd>를 누르고 **받은편지함** 탐색 명령을 실행합니다.
+3. 또는 `/workspaces/<workspace-id>/inbox`로 바로 딥링크합니다.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+사이드바 항목에는 항상 실시간 개수가 표시되므로, 페이지를 열지 않고도 분류할 작업이 쌓이는 것을 볼 수 있습니다.
 
-## Read severity at a glance
+## 심각도를 한눈에 파악하기
 
-Scan top to bottom; the inbox is already ordered by urgency:
+위에서 아래로 훑어보세요. 받은편지함은 이미 긴급도 순으로 정렬되어 있습니다.
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. 고정된 **확인이 필요합니다** 스트립이 PR 섹션 위에 자리합니다. 모든 카드에는 심각도 칩이 붙습니다. 등록된 소스(확인 프롬프트에 멈춘 에이전트, 공급업체 미러가 오래된 티켓 동기화)는 **차단됨**을 표시합니다.
+2. 스트립 안에서는 가장 긴급한 심각도가 먼저 오고, 동률이면 가장 오래 기다린 항목이 앞섭니다.
+3. 스트립 아래에서 PR은 고정된 리뷰 수명주기 섹션, 즉 **리뷰가 필요합니다**, **나에게 돌아옴**, **승인됨**, **초안**, **리뷰어 대기 중**, **병합 중 및 최근 병합됨**, **작성자 대기 중**으로 묶입니다. 위쪽 섹션은 _나에게_ 필요한 것이고, 나머지는 _내_ PR이 어디에 있는지를 보여 줍니다. **리뷰가 필요합니다**에는 팀 리뷰가 있는 forge에서 내가 속한 팀을 아직 요청 중인 PR도 포함됩니다(GitHub은 팀원 중 한 명이라도 리뷰하면 팀 요청을 제거합니다).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+항목은 무언가를 막거나 나를 명시적으로 요청할 때만 받은편지함에 들어옵니다. 스트립과 섹션 목록이 모두 비어 있을 때 **모두 확인했습니다**를 표시하는 것은 그 비어 있음이 믿을 만할 때뿐입니다.
 
-## One inbox across every forge
+## 모든 forge에 걸친 하나의 받은편지함
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+워크스페이스에 둘 이상의 코드 호스트에 있는 저장소가 있으면, 받은편지함은 이들을 하나의 흐름으로 병합합니다. GitHub 풀 리퀘스트와 Bitbucket 풀 리퀘스트가 공급업체별로 묶이지 않고 시간순으로 같은 섹션에 놓입니다. 행의 `repo #number` 메타 정보가 이들을 구분해 줍니다.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+"내 것"은 **forge별로** 해석됩니다. forge마다 다른 계정이기 때문입니다. 풀 리퀘스트가 내 것이거나 내 리뷰를 요청하는 것으로 간주되는 것은, 해당 저장소가 실제로 있는 forge에서 내 아이덴티티와 일치할 때뿐입니다.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+중단되었거나 연결되지 않은 forge는 아무것도 제공하지 않고 나머지 받은편지함을 그대로 둡니다. 연결 하나가 끊겼다고 해서 목록 전체가 비는 일은 없습니다. 모든 forge 로그인이 아직 해석되지 않았거나(**GitHub 계정을 확인할 수 없습니다** — 문구는 여전히 GitHub을 지칭합니다), githubstatus.com이 장애를 보고하거나, 연결된 저장소를 포함하는 GitHub App 설치가 일시 중단된 경우에는 빈 상태가 **모두 확인했습니다** 대신 주의 사항을 알려 줍니다.
 
-## Clear the attention strip
+## 주의 스트립 정리하기
 
-Each strip card has one next action:
+각 스트립 카드에는 하나의 다음 동작이 있습니다.
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. 카드가 대기 중인 에이전트 확인이면 **검토**를 클릭합니다. 그러면 대기 중인 확인과 함께 해당 에이전트의 스페이스로 이동합니다. 거기서 승인하거나 거부합니다([에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/) 참고).
+2. 카드에 공급업체에 대한 **동기화 실패**가 표시되면 **열기**를 클릭합니다. 그러면 **설정 → 워크스페이스 → 일반**으로 이동하고, 여기의 **동기화 상태** 카드에 각 연결의 마지막 동기화, 연속 실패 횟수, 최근 결과가 표시됩니다. 받은편지함에는 공급업체별 최신 실패만 나타나므로, 동기화가 복구되면 카드가 지워집니다.
+3. 카드는 근본 상태가 해결되면(에이전트가 응답을 받거나 동기화가 복구되면) 스스로 사라집니다. 수동으로 닫을 것은 없습니다.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[이는 턴 단위 확인이며 거버넌스 승인이 아닙니다]
+"에이전트 승인" 카드는 실행 중인 에이전트가 자신의 대화에서 한 동작에 대한 권한을 요청하려고 잠시 멈춘 것입니다. 이는 에이전트가 승인 MCP 도구로 만드는 거버넌스 `Approval` 레코드와는 다른 것입니다. 후자는 앱 어디에도 사람이 보는 화면이 없고 여기에도 나타나지 않습니다.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[동기화 상태는 읽기 전용입니다]
+이 카드는 티켓 동기화 연결에 대해 보고합니다. **지금 동기화** 버튼 외에는 연결을 만들거나 편집하거나 다시 연결할 수 없고, 그럴 수 있는 다른 화면도 없습니다. 연결이 구성되지 않았으면 단순히 "동기화 연결이 아직 없습니다"라고 표시되며, 이는 새 워크스페이스가 보여 주는 내용입니다.
 :::
 
-## Filter to what is blocking
+## 막고 있는 항목으로 필터링하기
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. 텍스트 필드에 포커스가 없을 때 <kbd>f</kbd>를 눌러 필터 메뉴를 열거나, 도구 모음에서 필터 버튼을 클릭합니다.
+2. 상태, 작성자, 리뷰어, 내용, 저장소 소유자/이름, 날짜 범위, 빠르게 리뷰 가능 중에서 원하는 조합을 고릅니다. 메뉴의 패싯 개수는 각 옵션이 일치하는 받은편지함 항목 수를 보여 줍니다.
+3. 활성 필터는 목록 위 막대에 칩으로 나타납니다. 칩의 ✕를 클릭하면 그 조건이 해제됩니다.
+4. 왼쪽 레일을 사용해 섹션 사이를 이동합니다. 각 항목에는 실시간 개수가 표시되고, 강조 표시는 스크롤 위치를 따라갑니다. 분류하지 않는 섹션(예를 들어 리뷰를 처리하는 동안의 **초안**)은 섹션 헤더를 클릭해 접습니다.
+5. 열 헤더(제목, 변경 사항, 업데이트됨)를 클릭하면 모든 섹션이 정렬됩니다. 활성 열을 다시 클릭하면 정렬 방향이 바뀝니다. 표시 옵션 버튼은 초안 표시 여부, 최근 병합 범위, 행 속성, 정렬 순서, 그룹화를 제어합니다(작성자별 그룹화만 받은편지함 레이아웃을 바꿉니다).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+여기의 필터는 PR 큐와 독립적입니다. 받은편지함을 좁혀도 큐의 필터는 바뀌지 않고, 그 반대도 마찬가지입니다.
 
-## Act on a PR item
+## PR 항목 처리하기
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/) and
-   [the dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/).
+1. 아무 행이나 클릭해 PR 상세 페이지를 엽니다.
+2. PR이 **리뷰가 필요합니다**에 있으면 리뷰하고 결정을 제출합니다. [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)을 참고하세요.
+3. PR이 **나에게 돌아옴**(변경 요청됨 또는 CI 실패)에 있으면 체크아웃에서 수정 사항을 푸시하거나 후속 작업을 에이전트에 맡깁니다.
+4. PR이 **승인됨**에 있으면 상세 페이지에서 병합합니다.
+5. 직접 하기보다 리뷰를 위임하고 싶으면 [리뷰어 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)와 [디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)를 참고하세요.
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+근본 상태가 바뀌면(리뷰가 반영되거나 PR이 병합되면) 분류기가 PR을 새 섹션으로 자동으로 다시 배치합니다.
 
-## Undo a mistaken action
+## 잘못한 동작 취소하기
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. <kbd>⌘Z</kbd>를 눌러 마지막 동작을 취소하고, <kbd>⌘⇧Z</kbd>를 눌러 다시 실행합니다.
+2. 텍스트 필드에 포커스가 있으면 ⌘Z는 대신 필드의 텍스트를 편집합니다. 앱 수준 동작을 취소하려면 먼저 필드 밖을 클릭하세요.
 
-## Look up shortcuts in place
+## 제자리에서 단축키 찾아보기
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/).
+텍스트 필드에 포커스가 없을 때 <kbd>?</kbd>를 누르면 키보드 단축키 시트가 열립니다. 여기에는 받은편지함의 <kbd>f</kbd> 필터 단축키를 포함해 현재 라우트에서 활성인 모든 바인딩이 나열됩니다. 전체 목록은 [키보드 단축키 레퍼런스](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)에 있습니다.
 
-## Drive it from the command palette
+## 커맨드 팔레트에서 조작하기
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. 아무 곳에서나 <kbd>⌘K</kbd>를 눌러 커맨드 팔레트를 엽니다.
+2. **받은편지함**을 입력해 페이지로 이동하거나 PR 제목을 입력합니다. 팔레트가 일치하는 풀 리퀘스트를 나열하고 선택한 것을 엽니다.
+3. 받은편지함이 열려 있을 때 **이 페이지 링크 복사**를 실행해 해당 URL을 복사해 공유합니다. 이 명령은 현재 라우트를 복사하므로, 받은편지함 URL이 되는 것은 이 페이지에 있을 때뿐입니다.
 
-## Refresh on demand
+## 필요할 때 새로 고치기
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+받은편지함은 실시간으로 업데이트되지만, 데이터가 오래되었다고 의심되면 도구 모음의 새로 고침 컨트롤을 클릭하세요. 그러면 연결된 모든 forge를 서버 측에서 즉시 훑고 병합/리뷰 오버레이를 다시 가져옵니다. 아이콘은 모든 가져오기가 끝날 때까지 회전합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [Dispatch reviewers](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
+- [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [리뷰어 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
 
-## Related concepts
+## 관련 개념
 
-- [Dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)

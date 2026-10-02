@@ -1,126 +1,141 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Orchestráció futtatása
+description: Kérjen tervet az orchestrátortól, nézze át és szerkessze a Plan Studióban, hagyja jóvá egyszer, és bízza a munkát egy generált pipeline-ra.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/) for how it works.
+Ez az útmutató bemutatja, hogyan alakíthat egyetlen nagy célt egy egész csapatot
+mozgósító, önmagát futtató tervvé. A működéséről lásd:
+[Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/).
 
-## When to use an orchestration
+## Mikor érdemes orchestrációt használni
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/); for a process you can spell out by
-hand, build a [pipeline template](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/).
+Akkor forduljon orchestrációhoz, ha a kérés nagyobb annál, amit egyetlen ügynök
+elvégez, és még nem ismeri a pontos lépéseket. Egyetlen feladathoz üzenjen egy
+ügynöknek egy
+[térben](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/); ha viszont a folyamatot kézzel is fel
+tudja sorolni, építsen egy
+[pipeline-sablont](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/).
 
-## Step 1: Ask for the plan
+## 1. lépés: Kérje el a tervet
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Nyisson meg (vagy hozzon létre) egy teret és egy **horgonyjegyet**. Minden
+   javaslathoz kötelező egy (`propose_orchestration` `ticket_id` paraméterrel);
+   a közös tér ebből a jegyből származik.
+2. Igény szerint állítsa az üzenetszerkesztő módválasztóját **Orchestrálás**
+   módra. Ez a mód az olvasásra és a javaslattételre szűkíti az ügynököt —
+   memória, a kódgráf, repó- és jegyolvasás, `propose_orchestration` és a
+   playbook-eszközök —, így nem kezdhet bele kódírásba a tervezés helyett.
+3. @-említse az orchestrátorát (rendszerint a CEO-ügynököt), és fogalmazza meg a
+   célt közérthetően:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Kutassa fel egy offline-first megbeszélésrögzítő versenykörnyezetét, és
+> írjon egyoldalas pozicionálási dokumentumot.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Az orchestrátor egy strukturált **javaslatkártyával** válaszol a térben: a
+szükséges szerepekkel, a munkával aljegyekre bontva, egy opcionális kutatási és
+megbeszélési szakasszal, egy összegzési lépéssel, amely előállítja a
+szállítandót, valamint egy költségvetéssel.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Mivel a javaslat típusos objektum, az alkalmazás még azelőtt validálja (jól
+formált szerepek, deklarált kimeneti sémák, körmentes DAG), hogy bármi
+elindulna. A validáláson elbukó javaslat nem hagyható jóvá.
 
-## Step 2: Review and edit the proposal
+## 2. lépés: Nézze át és szerkessze a javaslatot
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+A beszélgetésben megjelenő kártya három műveletet kínál: **Terv jóváhagyása**,
+**Elutasítás** és **Megnyitás** — ez utóbbi szerkesztőfülként nyitja meg a tervet
+a Plan Studióban. Maga a kártya nem szerkeszthető.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Ha bármit módosítani szeretne, nyomja meg a **Megnyitás** gombot, és dolgozzon a
+jobb oldali vizsgálópanelen:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- Bármely munkalépés **címe**, **leírása**, **szerepe**, **függőségei** és
+  **kimeneti sémája**. A szerep itt azt jelenti, hogy a terv meglévő szerepei
+  közül melyik birtokolja a lépést — a vizsgálóból nem rendelhet szerepet
+  névvel ellátott ügynökhöz, és nem szerkesztheti a felvételi listát sem; a
+  költségvetést szintén nem módosíthatja.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Két dolog csak olvasható: a strukturális csomópontok (kutatás, megbeszélés,
+összegzés), valamint minden olyan csomópont, amelynek a munkája már lefutott.
+Szerkesztés csak addig lehetséges, amíg az orchestráció `proposed` állapotban
+van.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/) for the full editor.
+A véglegesítés előtt nyomja meg a **Becslés** gombot a jóváhagyási sávon a
+költség-, időtartam- és hatósugártartományokért. A teljes szerkesztőt lásd:
+[Munka a Plan Studióban](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/).
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/).
+:::note[A költségvetés nem költési korlát]
+A javaslat költségvetését a rendszer a jóváhagyási sávon látható _becsléshez_
+hasonlítja: ha a becslés felső értéke meghaladja, a végösszeg pirosra vált, és
+túlköltség-figyelmeztetés jelenik meg. A terv végrehajtása közben semmi sem
+ellenőrzi a költést, így ez nem állítja le és nem buktatja meg a futtatást.
+Tényleges költéskorláthoz használjon ügynökönkénti költségvetési szabályzatokat —
+lásd: [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/).
 :::
 
-## Step 3: Approve
+## 3. lépés: Hagyja jóvá
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Hagyja jóvá a tervet a beszélgetés kártyájáról vagy a Plan Studio jóváhagyási
+sávjáról. **Ez az egyetlen döntés, amelyet meghoz.** A jóváhagyás kizárólag
+operátori művelet — erre nincs MCP-eszköz, így egy ügynök javasolhat és
+módosíthat, de soha nem hagyhatja jóvá a saját tervét.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) and creates the
-scaffolding:
+Innentől egy determinisztikus materializáló (tiszta függvény, LLM nélkül) valódi
+[pipeline-ná](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) alakítja a javaslatot, és
+létrehozza az állványzatot:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- felveszi az esetleges új szerepeket (és rögzíti a felvett ügynökök azonosítóit,
+  hogy egy jóváhagyás közbeni összeomlás ismétlődő felvételek nélkül
+  folytatódhasson)
+- a szerepeket egy **csapatba** csoportosítja
+- létrehoz egy **projektet**, és alá iktatja a szülőjegyet
+- elindítja a **pipeline-futtatást**, amely mindezt vezérli
 
-The status moves to `approved`, then `executing`.
+Az állapot `approved`, majd `executing` értékre vált.
 
-## Step 4: Watch it run
+## 4. lépés: Kövesse figyelemmel a futást
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Az aljegyek pipeline-lépésként hajtódnak végre; ha engedélyezett megbeszélési
+kört, először minden szerep közzéteszi az álláspontját. A haladás ott jelenik
+meg, ahol egyébként is nézi a dolgokat:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/)
-- the **project** the parent ticket was filed under
+- a **szülőjegy**, amelyre az orchestráció horgonyzódott
+- a közös **tér**, amelyben a csapat beszél, és ahol a terv sora követi az egyes
+  csomópontok állapotát
+- a **pipeline-futtatás** részletei, a szokásos vízesésábrával és a
+  lépésenkénti költséggel — lásd:
+  [Pipeline-futtatások figyelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/)
+- a **projekt**, amely alá a szülőjegy be lett iktatva
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Amint az aljegyek elkészültek, az állapot `synthesizing` értékre vált, és az
+összegzési lépés előállítja a szállítandót. Az a szöveg a közös térben jelenik
+meg, a szülőjegy pedig befejezettként jelölődik meg, majd az állapot `completed`
+lesz.
 
-## Stop it early
+## Állítsa le idő előtt
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Nyomja meg az **Orchestráció megszakítása** gombot a beszélgetés kártyáján,
+vagy a **Futtatás megszakítása** gombot a Plan Studio jóváhagyási sávján. A
+megszakítás lebontja a folyamatban lévő munkát.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Az orchestráció akkor bukik meg, ha a materializálás sikertelen, vagy ha a
+generált pipeline futtatása bukik meg (kutatás, megbeszélés, összegzés vagy
+persist — ezek a lépések nem folytatódnak hiba esetén). A generált
+**munka**lépések viszont mindig folytatódnak hiba esetén, így egyetlen sikertelen
+aljegy miatt nem bukik meg a futtatás. Nincs költségvetés-túllépési hibaág, és
+nincs „minden aljegy megbukott” küszöb sem.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Work in Plan Studio](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/): where the parent ticket is filed
-- [Monitor pipeline runs](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese/): the roles an orchestration fills or hires
+- [Munka a Plan Studióban](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/): a terv szerkesztése, becslése, diffelése és jóváhagyása
+- [Jegyek létrehozása és kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/): a szülőjegy, amelyre egy orchestráció horgonyzódik
+- [Munka szervezése projektekkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/): ahová a szülőjegy be van iktatva
+- [Pipeline-futtatások figyelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/): hogyan néz ki egy materializált orchestráció a motorban
+- [Ügynökcsapat felépítése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese/): a szerepek, amelyeket egy orchestráció betölt vagy felvesz
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/)
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)

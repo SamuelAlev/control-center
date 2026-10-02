@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: チケットの作成と管理
+description: チケットを作成し、ライフサイクルを通して進め、ラベル付けとリンクを行い、誰が何を所有するかを記録します。
 slug: ja-JP/マニュアル/ハウツーガイド/チケット管理
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+このガイドでは、チケットの作成と管理の方法を説明します。
 
-## Create a ticket
+## チケットを作成する
 
-### From the UI
+### UI から
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. ワークスペースのサイドバーで**チケット**をクリックします。
+2. **新規チケット**を押します。
+3. 次の項目を入力します:
+   - **タイトル** — 短い要約。唯一の必須フィールドです。
+   - **説明** — Markdown。書式設定ツールバーが付いています。
+   - **ステータス** — **未着手**（既定）または**バックログ**。着手済みの状態と
+     終端の状態には、作成時ではなくライフサイクルを通じて到達します。
+   - **優先度** — なし、緊急、高、中、低。
+   - **担当者** — 自分自身、またはワークスペース内の任意のエージェント。
+   - **プロジェクト** — 任意のグループ化。
+4. **作成**を押します。または、先に**続けて作成**をオンにすると、ダイアログが
+   開いたままになり、続けて入力できます。
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+ダイアログにプロバイダーのピッカーはありません。チケットは、ワークスペースで
+有効なチケットプロバイダーに対して作成されます。
 
-### From an agent
+### エージェントから
 
-Ask an agent in a space:
+スペース内のエージェントに依頼します:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> 遅い回線でのログインタイムアウト問題を修正するチケットを作成してください。
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+エージェントは `create_ticket` MCP ツールを呼び出します。このツールの優先度は
+名前ではなく**整数**です:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| 値  | 優先度 |
+| --- | ------ |
+| `0` | なし   |
+| `1` | 緊急   |
+| `2` | 高     |
+| `3` | 中     |
+| `4` | 低     |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+必須なのは `workspace_id` と `title` だけです。`description`、`priority`、
+`assignee`（エージェント id）、`team_id` は任意です。このツールはベンダー同期の
+書き込みとして分類され、実行前に承認を求めます。
 
-## Update ticket status
+## チケットのステータスを更新する
 
-Tickets follow this lifecycle:
+チケットは次のライフサイクルに従います:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,128 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`、`failed`、`cancelled` は終端です。`cancelled` には、終端以外の任意の
+ステータスから到達できます。`done` と `failed` には `inProgress` または
+`inReview` から到達できます。また `open` は `blocked` へ直接移動することも
+できます。UI のステータスピッカーには、`failed` を除くすべてのステータスが
+並びます — エージェントはそれを `fail_ticket` で設定します。
 
-To change it, use any of:
+変更するには、次のいずれかを使います:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- チケットのプロパティパネルにある**ステータス**行、
+- リスト内のチケットの右クリックメニューにある**ステータス**サブメニュー、
+- チケットを複数選択した後のフローティングバーにある**ステータス**チップ。
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[ライフサイクルグラフが縛るのはエージェントであり、あなたではありません]
+UI から行われるすべてのステータス変更は、グラフを完全に迂回して強制適用
+されます — ピッカーに並ぶ任意のステータスへチケットを移動でき、`done`、
+`failed`、`cancelled` のチケットを再び開くこともできます。ピッカーは `failed`
+を移動先として提示しません。上の図が統制するのはエージェントと自動化です。
+MCP ツールやリコンサイラーが試みた不正な遷移は、適用されず、ログに記録されて
+無視されます。
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/).
+ステータスの変更は、パイプラインをトリガーできるドメインイベント
+（`TicketStatusChanged`、`TicketCompleted` など）を発行します。
+[パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+を参照してください。
 
-## Assign a ticket
+## チケットを割り当てる
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. チケットを開きます。
+2. プロパティパネルで**担当者**を設定します — 自分自身、別のワークスペース
+   メンバー、またはエージェントです。
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)).
+:::caution[割り当てても作業は何も始まりません]
+割り当ては所有権を記録するだけで、それ以外は何もしません。スペースを作成せず、
+ステータスも変更せず、エージェントもディスパッチしません — `TicketAssigned` は
+ディスパッチャーを一切伴わない、純粋な監査シグナルです。エージェントに作業させる
+には、スペース内でそのエージェントにメッセージを送ります
+（[エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+を参照）。
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+唯一の例外は、`TicketAssigned` がパイプライントリガーを接続できるイベント種別で
+あることです。そのため、独自のテンプレートが割り当てに反応できます。
 :::
 
-## Add labels
+## ラベルを追加する
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+ラベルは、単一のチケットからではなく、チケットリストから一括で適用します —
+プロパティパネルにラベルの操作はありません。
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. チケットリストの行にカーソルを合わせ、そのチェックボックスをオンにします。
+   必要な数だけオンにします。何かが選択されるとフローティングバーが表示されます。
+2. そのバーで**ラベル**チップを開きます。
+3. ラベルを選びます。選択したすべてのチケットのうち、そのラベルを持たないものに
+   追加されます。既存のラベルが消えることはありません。**ラベルをクリア**は
+   すべてのラベルを削除します。ピッカーには、ワークスペース内のチケットにすでに
+   付いているラベルが並びます。エージェントは `update_ticket` または
+   `tickets.patch` を通じて新しい名前を追加できます。
 
-## Link tickets
+## チケットをリンクする
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+関連は、プロパティパネルのチケットの**関連**カード、またはリストの右クリック
+メニューの**関連付ける**にあります。
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. チケットを開き、**関連**カードを見つけます。
+2. その追加コントロールを押し、関連の種類を選びます:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| 関連                      | 意味                                               |
+| ------------------------- | -------------------------------------------------- |
+| **…のサブイシュー**       | このチケットの親はもう一方のチケットです           |
+| **…の親**                 | もう一方のチケットはこのチケットの子です           |
+| **…にブロックされている** | このチケットはもう一方によってブロックされています |
+| **…をブロック中**         | このチケットはもう一方をブロックしています         |
+| **…に関連**               | 対称であり、方向は含みません                       |
+| **…の重複**               | このチケットはもう一方の重複です                   |
 
-3. Pick the target ticket.
+3. 対象のチケットを選びます。
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**重複先**はカードには表示されますが、ピッカーには表示されません — これは
+**…の重複**の逆であり、もう一方のチケットから設定します。一覧に表示される各関連は
+クリックするとリンクされたチケットが開き、ホバーすると削除できます。
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+親とサブイシューの関連は、リンク行としてではなくチケット自体に保存されるため、
+親を削除するとその子にカスケードします（後述）が、ブロックと関連のリンクは
+カスケードしません。
 
-## Add collaborators
+## コラボレーターを追加する
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+コラボレーターはチケット上の名簿です — 誰が、どの立場で関わっているかです。
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. チケットを開きます。
+2. **コラボレーターを追加**カードにある人物追加のコントロールを押します。
+3. エージェントを選びます。
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+3 つのロールは**担当者**、**コラボレーター**（既定）、**レビュアー**です。
+UI のピッカーにはワークスペースのエージェントだけが並び、常に既定のロールを
+書き込みます。人間は行として表示されることはありますが、このメニューには並び
+ません。MCP の `add_ticket_collaborator` ツールは `role` を受け取ります。
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ja-JP/マニュアル/ハウツーガイド/スペース/).
+コラボレーターを追加すると行が書き込まれますが、ドメインイベントは発行されず、
+スペースへのアクセス権も付与しません。エージェントを会話に参加させるには、
+代わりにスペースのヘッダーから参加者として追加します —
+[スペース](/ja-JP/マニュアル/ハウツーガイド/スペース/)を参照してください。
 
-## Delete a ticket
+## チケットを削除する
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+プロパティパネルの下部にある**チケットを削除**、右クリックメニュー、または複数
+選択後のフローティングバーの削除アクションを使います。
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[削除はローカルに限られます]
+外部トラッカーから取り込まれたチケットは、そちらでは削除されません — どの
+プロバイダーも対応していないため、次回の同期で再び現れることがあります。削除は
+カスケードもします。チケットのコラボレーターと子チケットも一緒に削除されます。
 :::
 
-## Related guides
+## 関連ガイド
 
-- [Delegate work to agents](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
-- [Organize work with projects](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)
-- [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
-- [Ticket lifecycle reference](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/)
+- [エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
+- [プロジェクトで作業を整理](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)
+- [エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+- [チケットのライフサイクル リファレンス](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Tickets](/ja-JP/マニュアル/コンセプト/チケット/)
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/)
+- [チケット](/ja-JP/マニュアル/コンセプト/チケット/)
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/)

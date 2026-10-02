@@ -1,152 +1,157 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: AI レビューを使う
+description: PR で pr_review パイプラインを実行し、指摘と判定を読み、そのレビューを GitHub に公開します。
 slug: ja-JP/マニュアル/ハウツーガイド/ai-レビュー
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+このガイドでは、レビュアーエージェントにプルリクエストをレビューさせ、その結果を
+GitHub に公開する方法を説明します。
 
-## Start an AI review
+## AI レビューを開始する
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. PR を開き、**概要**タブに移動します
+2. アクション行の ⋯ オーバーフローメニューを開き、**AIに質問**を選択します
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+この項目は PR がオープンの間だけ表示されます — マージ前のアクションです。同じ
+ボタンは、レビューがまだ存在しない**レビュー**タブの空の状態でも **AIに質問** と
+して提供されます。
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center はシード済みの `pr_review` パイプラインを開始し、その様子を確認
+できるように PR の**レビュー**タブを開きます。パイプラインは次のことを行います：
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. PR 自身のレビュースペースを開きます。その隔離されたワークツリーには、ヘッド
+   時点の PR がチェックアウトされています
+2. ワークスペースのレビューレベルに応じてレビュアーをファンアウトします —
+   デフォルトでは 3 名（シード済みの **qa**、**architect**、**engineer**
+   エージェントを並列で）。言語やドメインの検出は行いません
+3. リード（CEO）エージェントに、それらの指摘をウォークスルーへ統合させます
+4. ファイナライズします：指摘をコンセンサスのバケットに分類し、判定を算出します。
+   関連付けが `awaiting approval` に達すると、**レビュー**タブに
+   **GitHubに公開** が表示されます
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+レビューがどれだけ深く進むかは、ワークスペースの**レビューレベル** —
+`light`（レビュアー 1 名）、`balanced`（3 名、デフォルト）、`thorough`
+（5 名全員、セキュリティとパフォーマンスのスペシャリストを追加）— で決まり、
+**設定 → ワークスペース → 全般**の**ワークスペースポリシー**カードで設定します。
+軽いレベルでも登録される指摘の数はまったく同じで、前面に報告される数が少なくなる
+だけです。
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ja-JP/マニュアル/コンセプト/ai-レビュー/) for how the pieces fit together.
+すべてのレビュアーは PR の単一のレビュースペースに投稿し、それによって彼らの指摘が
+比較可能になります。各部がどのように組み合わさるかは
+[AI レビュー](/ja-JP/マニュアル/コンセプト/ai-レビュー/)を参照してください。
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/).
+`pr_review` には手動トリガーしか用意されていません。公開されたすべての PR で発火
+させるには、自分でトリガーを追加します — 詳しくは
+[レビュアーエージェントをディスパッチ](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)を参照してください。GitHub
+側から開始することもでき、パイプライントリガーは不要です：PR でサーバーのボットに
+メンションするか、`ai-review` ラベルを追加します — 詳しくは
+[GitHub PR から Control Center に話しかける](/ja-JP/マニュアル/ハウツーガイド/github-pr-会話/)を参照してください。
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+このプルリクエストではレビューがすでに実行中だとトーストに表示された場合、すでに
+1 つ進行中です。**レビュー**タブにとどまるか、**パイプライン**を開いて見つけて
+ください。
 
-## Read the findings
+## 指摘を読む
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+レビュアーは指摘を、レビュースペース内の**レビューノード**として記録します。各
+ノードは次を保持します：
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| フィールド     | 説明                                                                    |
+| -------------- | ----------------------------------------------------------------------- |
+| 種別           | `bug`、`suggestion`、`recommendation`、`question`、`ticket`             |
+| 優先度         | P0（重大）→ P3（些細な指摘）                                            |
+| カテゴリ       | `security`、`stability`、`data_integrity`、`correctness`、`performance`、`maintainability` |
+| ファイルと行   | 指摘がアンカーされている位置                                            |
+| 元のコード     | 指摘の対象となるコード                                                  |
+| 提案コード     | 提案された修正                                                          |
+| 確信度         | レビュアーがどれだけ確信しているか                                      |
+| ステータス     | `open` → `consensus-ready` → `resolved` または `dismissed`              |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+指摘は、_ピア_のレビュアーが確認して初めて **consensus-ready** に達します。
+エージェントは自分の指摘を確認できないため、単独のレビュアーの意見がそれだけで
+昇格することはありません。
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/) for what the pass produces.
+**レビュー**タブには、統合エージェントが公開した成果物の隣に、種別とステータスで
+絞り込める指摘リストが表示され、却下済みの指摘を表示するトグルも付いています。
+決定論的なビュー — コホート、多次元ダッシュボード、コントラクト diff とビジュアル
+diff — はサーバー側で算出されますが、アプリに表示面はありません。このパスが何を
+生み出すかは
+[レビューコンピュート](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)を参照してください。
 
-## Check the disagreements panel
+## 不一致パネルを確認する
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+2 人のレビュアーが同じファイルと行に指摘をアンカーしながら、その評価が大きく異なる
+場合 — 優先度が 2 レベル以上離れている、あるいは一方が `bug` と呼び、もう一方が
+`suggestion` と呼んでいる場合 —、指摘リストの上に不一致パネルが表示されます。まず
+それらを読んでください：そこがレビュアーの意見の分かれる場所であり、あなたの判断が
+最も価値を持つ場所です。
 
-## Read the verdict
+## 判定を読む
 
-When the lead agent finalizes, it computes a **verdict**:
+リードエージェントがファイナライズすると、**判定**を算出します：
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| 判定      | 意味                                     |
+| --------- | ---------------------------------------- |
+| **Ship**  | ブロックするものは見つからなかった       |
+| **Hold**  | マージ前に対処すべき問題がある           |
+| **Block** | 修正しなければならない重大な問題がある   |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+判定は、集約確信度スコアと優先度ごとの指摘件数を伴います。
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+その後レビューの軸が合流し、軸は判定を**より**厳しくすることしかできません。
+ゲート対象の軸が失敗すれば **Block** が強制され、ゲート対象の軸が完了できなかった
+（`partial`）場合、またはまったく実行できなかった（`unavailable`）場合は、
+少なくとも **Hold** が強制されます。証拠がないことは、決してゲートをクリアしません。
 
-## Publish the review to GitHub
+## レビューを GitHub に公開する
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+公開は、意図的にユーザーがゲートする別個のステップです。`pr_review` パイプラインは
+レビューを Control Center 内にとどめ、GitHub には投稿しません。
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. **レビュー**タブで、**GitHubに公開**が表示されるまで待ちます
+2. **GitHubに公開**を押します
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center は **1 つ**の GitHub レビューを送信します。すでに解決済みまたは
+却下済みの指摘はスキップされます。このボタンは残っているすべてのオープンな指摘を
+含み、**Ship** の場合は `APPROVE` を送信します。（MCP ツール
+`publish_review_to_github` は今もピアが確認した指摘のみをデフォルトとし、
+`approve_on_ship` を渡さない限り承認しません。）ファイルと行のアンカーを持つ指摘は
+インラインコメントになり、それ以外はすべてサマリー本文にまとめられ、それぞれに
+「— Control Center AI review」というフッターが付くため、出所が曖昧になりません。
+**Block** の判定は `REQUEST_CHANGES` として、**Hold** は `COMMENT` として、
+**Ship** はこのボタンから `APPROVE` として送信されます。その後トーストに
+**公開済み** と表示されます。レビューはサーバーのアプリ ID で投稿されます。
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+行が diff の一部でないために GitHub がインラインアンカーを拒否した場合、レビュー
+全体が、すべての指摘を本文に畳み込んだ形で再送されるため、何も黙って落とされません。
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[公開はガードレールでゲートされる]
+`pr_review.publishReview` は `prPublish` アクションクラスを宣言し、ガードレールの
+チョークポイントを通って実行されます。解決された決定が `prompt` で、承認者が接続
+されていない場合、公開は拒否されます — ガードレールはフェイルクローズします。無人で
+実行したい場合は、設定 → ワークスペース → エージェントの権限で明示的なルールを設定
+してください。
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+他の組み込みパイプラインは GitHub に直接投稿します：`cross_review`、`pr_triage`、
+`ticket_to_pr`、`pre_merge_gate` はいずれもコメントステップで終わります。
+`pr_review` だけが、その出力をあなたのために保留します。
 
-## Dispatch reviewers yourself
+## レビュアーを自分でディスパッチする
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/).
+どのロールが PR をレビューするか、各ロールがどのファイルを見るかを制御するには、
+既存のレビュースペース内で `dispatch_reviewers` MCP ツールを使うか、パイプラインに
+レビュアーノードを追加します。どちらの方法も、ツールの正確なシグネチャとともに
+[レビュアーエージェントをディスパッチ](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)に記載されています。
 
-## Related guides
+## 関連するガイド
 
-- [Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
-- [Dispatch reviewer agents](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)
-- [Review compute (cohorts and axes)](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)
+- [PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
+- [レビュアーエージェントをディスパッチ](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)
+- [レビューコンピュート（コホートと軸）](/ja-JP/マニュアル/ハウツーガイド/レビューコンピュート/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [AI review](/ja-JP/マニュアル/コンセプト/ai-レビュー/)
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/)
+- [AI レビュー](/ja-JP/マニュアル/コンセプト/ai-レビュー/)
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)

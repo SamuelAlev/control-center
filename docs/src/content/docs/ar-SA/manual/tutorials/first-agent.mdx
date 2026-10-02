@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: أرسل وكيلك الأول
+description: أنشئ وكيلًا، وأعطه مساحة ومهمة، وشاهد التشغيل يتدفق عائدًا.
 slug: ar-SA/دليل-المستخدم/دروس/أول-وكيل
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## ما الذي ستبنيه
 
-By the end of this tutorial, you will have:
+في نهاية هذا الدرس يكون لديك:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- وكيل أنشأته وهيّأته بنفسك
+- مساحة تتحدث فيها أنت وذلك الوكيل
+- تشغيل واحد مكتمل، فيه عمل مُودَع في شجرة عمل معزولة وصف في سجل تشغيل الوكيل
 
-Prerequisites: [Your first workspace](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/) completed, so this workspace has a repo registered and at least one model provider connected.
+المتطلبات: إتمام [مساحة عملك الأولى](/ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل/)، حتى تضم مساحة العمل هذه مستودعًا مسجّلًا ومزوّد نماذج واحدًا على الأقل مربوطًا.
 
-## Step 1: Create an agent
+## الخطوة 1: إنشاء وكيل
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. انتقل إلى **الإعدادات ← مساحة العمل ← الوكلاء**
+2. انقر **وكيل جديد**. يُنشأ فورًا وكيل باسم «وكيل بلا اسم» ويُحدَّد في الكشف — لا حوار إنشاء ولا شيء لتأكيده. تهيّئه في مكانه.
+3. في علامة تبويب **الإعدادات**، املأ:
+   - **الاسم**: شيء قصير يسهل تذكّره، مثل `alice`. هذا ما تكتبه بعد `@`.
+   - **العنوان**: ما يفعله، مثل «مهندس خلفية»
+   - **المحوّل**: `Control Center (built-in)`. اختره عمدًا — الإطار المضمّن وحده يمكن توجيهه في أثناء التشغيل وإيقافه مؤقتًا عند حد الجولة، ولا يحتاج سطر أوامر مثبّتًا على مضيف الخادم.
+   - **النموذج**: اختر من القائمة التي يقدّمها المزوّد المربوط
+   - **المهارات**: أرفق ما يناسب، مثل `testing` أو `architecture`
+4. اضغط **حفظ التغييرات**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[الوكيل بلا محوّل يعمل على الحلقة المضمّنة]
+حين لا يُضبط حقل المحوّل، يرجع الإرسال إلى **Control Center (built-in)** — حلقة الوكيل داخل الخادم، فلا شيء يلزم تثبيته على المضيف. ما زال يحتاج نموذجًا: إن غاب النموذج طلب من Anthropic افتراضه، وينجح ذلك إذا ربطت حساب Anthropic، وإلا يفشل مع `No credential for provider "anthropic"`. اضبط الاثنين صراحة على أي حال، وإلا فستعمل على نموذج لم تختره.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**نقطة التحقق.** يعرض صف الكشف اسم وكيلك وحلقة حالة مجوّفة.
 
-## Step 2: Start a space
+## الخطوة 2: بدء مساحة
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. في الشريط الجانبي، اعثر على قسم **المساحات** وانقر زر **+**
+2. أعطِ المساحة اسمًا
+3. تحت **إضافة وكلاء**، اختر الوكيل الذي أنشأته للتو
+4. إن وُجد في مساحة العمل أي مستودع، اختر ما يُفترض أن تعمل عليه هذه المساحة
+5. انقر **إنشاء**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+تُفتح المساحة. يجهّز Control Center في الخلفية شجرة عمل بالنسخ عند الكتابة للمستودعات المختارة لهذه المحادثة، على فرع خاص بها. لا تُعدَّل نسخة المصدر لديك أبدًا.
 
-## Step 3: Send a task
+## الخطوة 3: إرسال مهمة
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+اكتب مهمة واحدة صغيرة ومحددة على المستودع الذي سجّلته. الأفضل ما له نتيجة يمكن التحقق منها — أضف اختبارًا، أو أصلح مشكلة lint، أو أعد تسمية رمز.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+اضغط Enter. لا حاجة إلى الإشارة إلى أحد بـ `@`: مع وكيل واحد في المساحة، توقظ الرسالة العادية الوكيل. في مساحة تضم عدة وكلاء، يختار `@name` واحدًا.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+يجمّع Control Center المطالبة من تعليمات الوكيل وشخصيته ومهاراته وسياق المساحة، ثم يُرسِل التشغيل.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**نقطة التحقق.** يتحوّل زر الإرسال في حقل الكتابة إلى زر إيقاف — وكيل يعمل في هذه المحادثة — ويبدأ النص بالوصول.
 
-## Step 4: Watch it work
+## الخطوة 4: شاهد العمل
 
-The conversation renders the run as it happens:
+تعرض المحادثة التشغيل وهو يحدث:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **الاستدلال**، يُعرَض في السطر بينما يفكّر الوكيل
+- **استدعاءات الأدوات**: قراءات الملفات وكتاباتها، وعمليات البحث، وأوامر الصدفة، كل منها مع نتيجته
+- **النص**: ملخصات وشروح وأسئلة لك
 
-If the agent asks something, answer in the conversation and it resumes.
+إن سألك الوكيل شيئًا، أجب في المحادثة فيستأنف.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+لمقاييس التشغيل نفسه وأزرار إيقافه مؤقتًا واستئنافه وإيقافه، اعثر على الوكيل الذي يعمل في قسم **الوكلاء** من لوحة **عام** للمساحة واختر **فتح النشاط**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+في لوحة النشاط، تقرأ شارة الحالة **قيد التشغيل**، ثم **نجح** حين ينتهي التشغيل. التشغيل الذي يتعثّر أو يدور في حلقة يقرأ **محظور**؛ والذي ينتهي بخطأ يقرأ **فشل**. في سجل الوكلاء تكون حلقة الكشف مجوّفة قبل أول تشغيل، ومصمتة ما إن يعود الوكيل إلى الخمول.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
+ما يحدّ التشغيل: شجرة العمل الخاصة به بالنسخ عند الكتابة، وبيانات الاعتماد التي تُصدَر له عند الإطلاق وتُسحَب عند التفكيك، وبيئة معقّمة، وسطح الأدوات الذي يبيحه وضعه، وضوابط الإجراء. الآثار مثل دفع فرع أو فتح طلب سحب لها بوابة مستقلة — انظر [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
 
-## Step 5: Check the result
+## الخطوة 5: تحقق من النتيجة
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. افتح **الإعدادات ← مساحة العمل ← الوكلاء** واختر وكيلك
+2. افتح علامة تبويب **السجلات**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**نقطة التحقق.** صف تشغيل واحد، يعرض حالته ومدته ووقتَي البدء والانتهاء والمحوّل الذي اشتغل عليه.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+تُودَع تغييرات الوكيل على فرع المحادثة، في شجرة عمله. تُؤلَّف الإيداعات باسم الوكيل، وتُنسَب أنت في تذييل `Co-Authored-By:`.
 
-## Getting a pull request
+## الحصول على طلب سحب
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+لا شيء يفتح طلب سحب من تلقاء نفسه. إن أردت واحدًا، اطلبه في المحادثة نفسها:
 
-> Push this branch and open a pull request against the default branch.
+> ادفع هذا الفرع وافتح طلب سحب مقابل الفرع الافتراضي.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+الدفع (`gitPush`) وإنشاء طلب السحب (`prCreate`) يطالبان بموافقتك افتراضيًا، فتوقع تأكيدًا قبل كل منهما. إن لم يكن معتمِد متصلًا حين يُطلَق السؤال، يُرفَض الإجراء ولا يُسمَح به — الضوابط مغلقة عند الفشل.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+يُفتَح طلب السحب بهوية GitHub التي استخدم التشغيل رمزها — هويتك، إن خزّنت رمز وصول شخصي — لا باسم الوكيل. يظهر تأليف الوكيل على الإيداعات.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+وتستطيع فتحه بنفسك أيضًا: في لوحة **التحكم بالمصدر** للمساحة زر **إنشاء طلب سحب** ينقل فرع المحادثة إلى شاشة الإنشاء، و**طلبات السحب ← PR جديد** يفتح الشاشة نفسها فارغة. من هناك يتابع الدرس التالي.
 
-## Recap
+## الخلاصة
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+أنشأت وكيلًا، وهيّأت محوّله ونموذجه، وأعطيته مساحة ومهمة، وشاهدت تشغيلًا حقيقيًا يكتمل في شجرة عمل معزولة من غير أن يمس نسخة عملك.
 
-**Next:** [Review your first pull request](/ar-SA/دليل-المستخدم/دروس/أول-طلب-سحب/) to learn the review workflow.
+**التالي:** [راجع أول طلب سحب](/ar-SA/دليل-المستخدم/دروس/أول-طلب-سحب/) لتتعرّف على مسار المراجعة.
 
-For more on agents: [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/). For dispatch details: [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/).
+للمزيد عن الوكلاء: [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/). لتفاصيل الإرسال: [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/).

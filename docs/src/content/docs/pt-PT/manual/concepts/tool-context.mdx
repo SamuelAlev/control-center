@@ -1,89 +1,186 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Contexto de ferramentas e cache de prompts
+description: Porque é que um agente vê um conjunto reduzido de ferramentas em vez de todas, como chega às restantes e as regras que mantêm quente a cache de prompts do fornecedor ao longo de uma execução.
 slug: pt-PT/manual/conceitos/contexto-de-ferramentas
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Há duas coisas verdadeiras em cada pedido que o harness integrado faz: as
+definições das ferramentas são o maior custo fixo do pedido e quase nenhuma
+delas chegará a ser usada. Esta página explica o que o Control Center faz quanto
+a isto e porque é que a resposta não é simplesmente «enviar menos ferramentas».
 
-## The problem is attention, not bytes
+## O problema é a atenção, não os bytes
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+O Control Center regista cerca de 126 ferramentas. Enviadas na íntegra, as suas
+definições custam aproximadamente **23 000 tokens em cada pedido** — um custo que
+nenhuma compactação consegue tocar, porque as definições das ferramentas viajam
+numa parte do pedido separada da conversa.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+A fatura dos tokens é a queixa óbvia e, com a cache de prompts, é também a
+menor. O custo real é a **precisão de seleção**. As avaliações publicadas sobre
+chamadas de ferramentas concordam que os modelos escolhem a ferramenta certa de
+forma fiável até cerca de 30–50 ferramentas em contexto e pioram
+progressivamente a partir daí. A causa apontada não é a contagem de tokens, mas
+a **sobreposição semântica**: quando um catálogo contém várias ferramentas cujas
+descrições soam iguais, o modelo está a escolher entre parecidas em vez de se
+lembrar de uma capacidade.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Com 126 ferramentas, um agente está bem para lá dessa faixa em todos os turnos —
+incluindo os muitos turnos em que só precisava de ler um ficheiro.
 
-## The two-tier surface
+## A superfície em dois níveis
 
-A run is therefore shown two things:
+Uma execução vê, por isso, duas coisas:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- um conjunto **residente** — cerca de duas dúzias de ferramentas, enviadas com
+  esquemas completos em cada pedido;
+- um **índice de nomes** de todo o resto, agrupado sob títulos como «Tickets and
+  projects» ou «Memory and knowledge», que custa algumas centenas de tokens para
+  o catálogo inteiro.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Medido no catálogo atual, isto faz o bloco de ferramentas passar de **~23,1k
+tokens para ~5,0k, cerca de 78 % menos**, e coloca o conjunto sempre visível
+dentro da faixa em que a seleção é fiável.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/pt-PT/manual/conceitos/modos) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+O conjunto residente é o das ferramentas que uma execução usa na *maioria* das
+execuções: o vocabulário de ficheiros e shell (`read`, `write`, `edit`, `search`,
+`bash`, …), as ferramentas de descoberta, a lista de tarefas, a pesquisa na
+memória e o verbo que o [modo](/pt-PT/manual/conceitos/modos) atual tem de chamar
+para entregar o seu resultado. O próprio verbo de saída de um modo é sempre
+residente — uma execução nunca deve ter de procurar a chamada que produz o seu
+entregável.
 
-### Deferred does not mean unavailable
+### Diferido não significa indisponível
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+É esta a parte que torna o desenho seguro e não apenas barato. **Uma ferramenta
+diferida pode ser chamada desde o primeiro turno.** Só o seu esquema fica
+retido.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+O agente vê o nome no seu prompt. Se chamar esse nome diretamente, o harness
+carrega o esquema e executa a ferramenta no mesmo passo — sem erro, sem ida e
+volta. O modelo não precisa de saber que a ferramenta alguma vez esteve
+«descarregada».
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Quando o agente conhece a tarefa mas não o nome, o `search_tools` recebe uma
+descrição em linguagem natural («atribuir um ticket a alguém»), ordena toda a
+superfície da execução e devolve as correspondências *já com os respetivos
+esquemas carregados*, para que o turno imediatamente seguinte possa chamar uma
+delas. Se uma pesquisa não encontrar nada, di-lo claramente e sugere outra
+formulação ou uma pesquisa mais ampla — deliberadamente, porque um agente que lê
+uma pesquisa vazia como «esta capacidade não existe» vai inventar um substituto
+em vez de voltar a procurar.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+O `search_tools` existe apenas no harness integrado. Os clientes MCP externos
+têm, em vez dele, o `search_tool_bm25`, que ordena o mesmo índice mas apenas
+descreve as correspondências — esses clientes já receberam todos os esquemas a
+partir do `tools/list`, pelo que não há nada a carregar.
 
-### What deferral never does
+### O que o diferimento nunca faz
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/pt-PT/manual/conceitos/barreiras) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+O diferimento é aplicado **depois** do filtro de ferramentas do modo, nunca em
+vez dele. Esconde um esquema; não consegue revelar uma ferramenta que o modo
+negou. Uma ferramenta ativada continua a passar pelo pedido de aprovação e pelas
+[barreiras de ação](/pt-PT/manual/conceitos/barreiras) exatamente como uma
+residente, e uma ferramenta não pode carregar um nome que não estivesse já na
+superfície da execução.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+A superfície MCP que os clientes externos veem **não** é afetada. O `tools/list`
+continua a devolver o catálogo completo. Uma tentativa anterior de o reduzir
+quebrou os agentes por completo: os clientes MCP validam os nomes das
+ferramentas contra a sua própria lista em cache e recusam tudo o que não esteja
+listado sem nunca perguntar ao servidor, pelo que uma ferramenta «escondida mas
+chamável» era simplesmente inalcançável. O diferimento vive no harness, onde
+carregar uma ferramenta a meio de uma execução é algo que o harness consegue
+mesmo fazer.
 
-### Turning it off
+### Desativar isto
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/pt-PT/manual/referencia/cc-server-cli).
+`--tool-deferral=off` (ou `CC_SERVER_TOOL_DEFERRAL=off`) volta a tornar
+residentes todas as ferramentas admitidas, produzindo exatamente os pedidos que
+o servidor fazia antes de o diferimento existir. Consulta a
+[referência da CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli).
 
-## Prompt caching
+## Cache de prompts
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+As cargas de trabalho dos agentes são desequilibradas: enviam prompts enormes e
+recebem respostas pequenas, turno após turno, sempre com o mesmo prefixo. Os
+fornecedores colocam esse prefixo em cache, e uma leitura de cache custa cerca
+de um décimo de uma nova. A taxa de acerto de cache é, por isso, uma propriedade
+de primeira ordem do harness e não uma otimização — e na Anthropic também
+melhora o débito, porque os tokens em cache não contam para o limite de entrada
+por minuto.
 
-Caching works on an exact prefix match, which yields one governing rule.
+A cache funciona por correspondência exata de prefixo, o que dá origem a uma
+regra soberana.
 
-### Never rewrite what was already sent
+### Nunca reescrever o que já foi enviado
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Qualquer byte que mude invalida a cache a partir desse ponto. Por isso o harness
+só alguma vez **acrescenta**: mensagens novas no fim e esquemas de ferramentas
+recém-ativados *depois* do bloco de ferramentas em cache, em vez de fundidos
+nele. É essa ordem que torna a ativação barata — o prefixo em cache mantém-se
+idêntico e a execução paga apenas pelos esquemas que acabou de carregar.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+O ciclo também corta a saída de ferramentas obsoleta de turnos mais antigos para
+recuperar contexto. Espera até haver o suficiente para recuperar que valha a
+pena a reescrita, pelo que um corte é uma reescrita profunda e rara em vez de
+uma falha de cache contínua.
 
-### Where the breakpoints go
+### Onde ficam os pontos de interrupção
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Um fornecedor permite um número limitado de marcadores de cache, e o Control
+Center gasta-os deliberadamente:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Marcador                       | Abrange                         | Duração |
+| ------------------------------ | ------------------------------- | ------- |
+| Última ferramenta **residente** | O bloco de ferramentas          | 1 hora  |
+| Último bloco de sistema        | Ferramentas + prompt de sistema | 1 hora  |
+| Cauda do turno anterior        | Histórico até ao último pedido  | 5 min   |
+| Cauda do turno atual           | O histórico completo            | 5 min   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Os dois últimos são um par rotativo, e a razão do par é subtil: uma consulta à
+cache procura para trás um número limitado de blocos algo que um pedido anterior
+guardou. Um único turno que execute muitas ferramentas em paralelo pode emitir
+mais blocos do que essa janela, e nesse momento um marcador de cauda falha
+silenciosamente e o pedido paga o preço completo sem que nada na resposta o
+diga. Marcar o ponto exato onde o pedido anterior parou torna o acerto
+estrutural em vez de uma corrida.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+O prefixo de ferramentas e sistema recebe a duração longa porque é constante ao
+longo de toda a execução, é partilhado por todas as execuções e subagentes com a
+mesma forma e porque o relógio começa quando um pedido *inicia* — um turno que
+transmite durante vários minutos já gastou a maior parte de uma janela curta
+antes de o pedido seguinte se formar.
 
-### Subagents share one prefix
+### Os subagentes partilham um prefixo
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Subagentes do mesmo tipo produzem prefixos de prompt idênticos byte a byte, pelo
+que devem ler uma única entrada de cache em vez de cada um escrever a sua. Mas
+uma entrada só se torna legível quando o pedido que a escreveu começa a
+responder, pelo que um fan-out lançado de uma só vez tem todos os filhos a pagar
+o preço extra por um prefixo que todos partilham.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+O harness deixa arrancar o primeiro filho de uma dada forma e depois liberta os
+seus irmãos assim que este começa a transmitir. A espera é limitada: um primeiro
+filho lento custa um acerto de cache, nunca o fan-out em si. Pela mesma razão,
+todos os subagentes recebem o mesmo conjunto residente de ferramentas
+independentemente do seu perfil — variá-lo por perfil fragmentaria o prefixo
+partilhado sem qualquer ganho, já que o perfil já decidiu o que o filho pode
+chamar.
 
-## Watching it work
+## Vê-lo a funcionar
 
-Both halves are observable rather than assumed:
+Ambas as metades são observáveis em vez de presumidas:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- O **explorador de contexto** de uma conversa indica as ferramentas residentes,
+  o índice diferido e quanto cada esquema retido *custaria*, construído a partir
+  do mesmo caminho de código que uma execução real usa.
+- Cada execução regista que ferramentas diferidas carregou e o que o
+  desencadeou, pelo que uma pesquisa que não encontra nada é visível como uma
+  falha de recuperação, em vez de desaparecer num agente que faz silenciosamente
+  algo adjacente.
+- A Observabilidade apresenta a **Taxa de cache** como as leituras de cache
+  sobre todos os tokens de prompt processados, incluindo as escritas de cache —
+  uma execução que não para de reconstruir o seu prefixo obtém uma pontuação
+  baixa, em vez de ser pontuada como uma que nunca precisou de cache.

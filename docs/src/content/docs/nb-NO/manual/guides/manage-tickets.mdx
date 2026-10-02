@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Opprett og administrer saker
+description: Opprett saker, flytt dem gjennom livssyklusen, sett etiketter på og koble dem sammen, og registrer hvem som eier hva.
 slug: nb-NO/handbok/slik-gjor-du/administrer-saker
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Denne veiledningen viser deg hvordan du oppretter og administrerer saker.
 
-## Create a ticket
+## Opprett en sak
 
-### From the UI
+### Fra brukergrensesnittet
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Klikk **Saker** i sidepanelet til arbeidsområdet.
+2. Trykk **Ny sak**.
+3. Fyll inn:
+   - **Tittel** — kort sammendrag. Det er det eneste obligatoriske feltet.
+   - **Beskrivelse** — markdown, med en verktøylinje for formatering.
+   - **Status** — **Åpen** (standarden) eller **Backlog**. Statusser som er i
+     gang, og sluttilstander, nås gjennom livssyklusen, ikke ved opprettelsen.
+   - **Prioritet** — ingen, haster, høy, middels eller lav.
+   - **Tildelt** — deg selv eller en hvilken som helst agent i arbeidsområdet.
+   - **Prosjekt** — valgfri gruppering.
+4. Trykk **Opprett**, eller slå på **Opprett flere** først for å holde dialogen
+   åpen for rask innskriving.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Det finnes ingen leverandørvelger i dialogen. Saken opprettes mot
+arbeidsområdets aktive saksleverandør.
 
-### From an agent
+### Fra en agent
 
-Ask an agent in a space:
+Be en agent i et område om:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Opprett en sak for å fikse problemet med påloggingstidsavbrudd på trege tilkoblinger.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Den kaller MCP-verktøyet `create_ticket`. Prioritet på det verktøyet er et
+**heltall**, ikke et navn:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
+| Verdi | Prioritet |
 | ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| `0`   | Ingen    |
+| `1`   | Haster   |
+| `2`   | Høy      |
+| `3`   | Middels  |
+| `4`   | Lav      |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Bare `workspace_id` og `title` er obligatoriske; `description`, `priority`,
+`assignee` (en agent-id) og `team_id` er valgfrie. Verktøyet er klassifisert som
+en skriving for leverandørsynkronisering og ber om godkjenning før det kjører.
 
-## Update ticket status
+## Oppdater saksstatus
 
-Tickets follow this lifecycle:
+Saker følger denne livssyklusen:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,130 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` og `cancelled` er sluttilstander. `cancelled` kan nås fra enhver
+ikke-terminal status. `done` og `failed` kan nås fra `inProgress` eller
+`inReview`; `open` kan også flyttes direkte til `blocked`. Statusvelgeren i
+brukergrensesnittet lister opp alle statuser unntatt `failed` — agenter markerer
+den med `fail_ticket`.
 
-To change it, use any of:
+Slik endrer du den — bruk én av:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- **Status**-raden i egenskapspanelet til saken,
+- **Status**-undermenyen på høyreklikkmenyen til en sak i listen,
+- **Status**-brikken på den flytende linjen etter at du har valgt flere saker.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Livssyklusgrafen binder agenter, ikke deg]
+Hver statusendring som gjøres fra brukergrensesnittet, tvinges gjennom og omgår
+grafen helt — du kan flytte en sak til hvilken som helst status velgeren lister
+opp, også gjenåpne en `done`-, `failed`- eller `cancelled`-sak. Velgeren tilbyr
+ikke `failed` som mål. Diagrammet ovenfor styrer agenter og automatisering:
+en ulovlig overgang som et MCP-verktøy eller en avstemmer forsøker seg på, logges
+og ignoreres, ikke brukes.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/).
+Statusendringer sender domenehendelser (`TicketStatusChanged`, `TicketCompleted`
+og andre) som kan utløse pipelines. Se
+[Sett opp pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/).
 
-## Assign a ticket
+## Tildel en sak
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Åpne saken.
+2. Sett **Tildelt** i egenskapspanelet — deg selv, et annet medlem av
+   arbeidsområdet eller en agent.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)).
+:::caution[Tildeling starter ikke noe arbeid]
+Tildeling registrerer eierskap og ingenting annet. Den oppretter ikke noe
+område, endrer ingen status og sender ikke ut noen agent — `TicketAssigned` er
+et rent revisjonssignal uten utsender bak. For å få en agent til å jobbe, sender
+du den en melding i et område (se
+[Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Det ene unntaket: `TicketAssigned` er en hendelsestype du kan koble en
+pipeline-utløser til, så en mal av din egen kan reagere på en tildeling.
 :::
 
-## Add labels
+## Legg til etiketter
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Etiketter brukes i bulk fra sakslisten, ikke fra en enkelt sak —
+egenskapspanelet har ingen etikettkontroll.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Hold musepekeren over en rad i sakslisten og kryss av i
+   avkrysningsboksen. Kryss av for så mange du trenger; en flytende linje vises
+   så snart noe er valgt.
+2. Åpne **Etiketter**-brikken i den linjen.
+3. Velg en etikett. Den legges til på hver valgte sak som mangler den;
+   eksisterende etiketter slettes aldri. **Fjern etiketter** fjerner alle.
+   Velgeren lister opp etiketter som allerede finnes på en sak i
+   arbeidsområdet. Agenter kan legge til et nytt navn gjennom `update_ticket`
+   eller `tickets.patch`.
 
-## Link tickets
+## Koble saker sammen
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Relasjoner ligger på **Relasjoner**-kortet til saken i egenskapspanelet, eller
+bak **Relater til** i høyreklikkmenyen i listen.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Åpne saken og finn **Relasjoner**-kortet.
+2. Trykk på legge-til-kontrollen og velg relasjonen:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relasjon          | Betydning                                |
+| ----------------- | ---------------------------------------- |
+| **Underissue av…** | Denne sakens overordnede er den andre   |
+| **Overordnet av…** | Den andre saken er et barn av denne     |
+| **Blokkert av…**   | Denne saken er blokkert av den andre    |
+| **Blokkerer…**     | Denne saken blokkerer den andre         |
+| **Relatert til…**  | Symmetrisk, ingen retning implisert     |
+| **Duplikat av…**   | Denne saken er en duplikat av den andre |
 
-3. Pick the target ticket.
+3. Velg målsaken.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Duplisert av** vises i kortet, men ikke i velgeren — det er inversen av
+**Duplikat av** og settes fra den andre saken. Hver relasjon i listen kan
+klikkes for å åpne den koblede saken og fjernes ved å holde musepekeren over den.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Relasjoner for overordnet og undersak lagres på selve saken i stedet for som
+koblingsrader, så sletting av en overordnet kaskaderer til barna (se nedenfor),
+mens blokkeringer og relaterte koblinger ikke gjør det.
 
-## Add collaborators
+## Legg til samarbeidspartnere
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Samarbeidspartnere er en oversikt på saken — hvem som er involvert, og i hvilken
+rolle.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Åpne saken.
+2. Trykk på person-pluss-kontrollen på **Legg til samarbeidspartner**-kortet.
+3. Velg en agent.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+De tre rollene er **tildelt**, **samarbeidspartner** (standarden) og
+**reviewer**. Velgeren i brukergrensesnittet lister bare opp agenter i
+arbeidsområdet og skriver alltid standardrollen; mennesker kan vises som rader,
+men tilbys ikke i den menyen. MCP-verktøyet `add_ticket_collaborator` godtar en
+`role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/nb-NO/handbok/slik-gjor-du/omrader/).
+Å legge til en samarbeidspartner skriver en rad og publiserer ingen
+domenehendelse; det gir ingen tilgang til området. For å sette en agent inn i en
+samtale, legger du den til som deltaker fra områdeoverskriften i stedet — se
+[Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/).
 
-## Delete a ticket
+## Slett en sak
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Bruk **Slett sak** nederst i egenskapspanelet, i høyreklikkmenyen eller i
+slettehandlingen på den flytende linjen etter at du har valgt flere saker.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Sletting er bare lokalt]
+En sak som kommer fra et eksternt oppfølgingssystem, slettes ikke der — ingen
+leverandør støtter det — så den kan dukke opp igjen ved neste synkronisering.
+Sletting kaskaderer også: samarbeidspartnerne til saken og eventuelle barnesaker
+forsvinner med den.
 :::
 
-## Related guides
+## Relaterte guider
 
-- [Delegate work to agents](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
-- [Organize work with projects](/nb-NO/handbok/slik-gjor-du/prosjekter/)
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [Ticket lifecycle reference](/nb-NO/handbok/referanse/livssyklus-for-saker/)
+- [Deleger arbeid til agenter](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
+- [Organiser arbeid med prosjekter](/nb-NO/handbok/slik-gjor-du/prosjekter/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [Livssyklus for saker](/nb-NO/handbok/referanse/livssyklus-for-saker/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Tickets](/nb-NO/handbok/konsepter/saker/)
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/)
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/)
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/)

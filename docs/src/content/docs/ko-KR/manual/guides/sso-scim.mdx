@@ -1,60 +1,58 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: SCIM으로 사용자 프로비저닝
+description: IdP가 Control Center 계정을 자동으로 생성, 업데이트, 디프로비저닝하도록 합니다.
 slug: ko-KR/매뉴얼/사용-가이드/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+수명주기 제어가 필요할 때 이 가이드를 사용합니다. 오프보딩에서는 향후 로그인을
+차단하는 데 그치지 않고 접근 권한까지 자동으로 회수해야 하기 때문입니다. SCIM은
+IdP(Okta, Entra ID 등)가 바로 이 목적에 사용하는 푸시 프로토콜입니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- SSO already working (the [SSO tutorial](/ko-KR/매뉴얼/튜토리얼/sso) or the
-  [OIDC guide](/ko-KR/매뉴얼/사용-가이드/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO가 이미 작동 중이어야 합니다([SSO 튜토리얼](/ko-KR/매뉴얼/튜토리얼/sso) 또는
+  [OIDC 가이드](/ko-KR/매뉴얼/사용-가이드/sso-oidc)).
+- **IdP가 HTTPS로 접근할 수 있는 서버**가 필요합니다. SCIM 호출은 사용자의
+  브라우저가 아니라 IdP에서 오기 때문입니다. 내장 터널
+  (설정 → 서버 → 연결 및 상태 → 이 서버 공유 → Cloudflared/ngrok/Tailscale)이나 공개 URL을 사용합니다. WebSocket
+  릴레이를 통해서만 접근할 수 있는 서버는 SCIM 푸시를 받을 수 없습니다. 그런
+  서버에서도 JIT 프로비저닝은 계속 작동하지만, 이 가이드는 해당되지 않습니다.
 
-## Steps
+## 단계
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+1. **설정 → 서버 → 싱글 사인온** → **사용자 프로비저닝(SCIM)** 카드를 엽니다.
+   카드에는 엔드포인트가 표시됩니다. 예: `https://<your-server>/scim/v2/Users`.
+2. **토큰 생성**(이미 토큰이 있으면 **토큰 재생성**)을 누릅니다. bearer 토큰이
+   대화 상자에 한 번 표시되고 클립보드에 복사됩니다. 비밀번호 관리자에
+   보관합니다. 서버는 상수 시간으로 검증할 수 있는 사본만 유지합니다.
+3. IdP의 프로비저닝 설정에서 다음 값으로 SCIM을 활성화합니다.
+   - **Base URL**: 위 엔드포인트
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName`(이메일) 또는 `externalId` — 둘 다 일치합니다
+4. 사용자 한 명으로 테스트합니다. IdP에서 해당 사용자를 푸시하고 계정이
+   나타나는지 확인합니다(SCIM 생성은 프로바이더의 `externalId`를 계정에
+   고정하는데, 이는 최초 SSO 로그인이 설정하는 것과 동일한 고정입니다).
 
-## What deprovisioning does
+## 디프로비저닝이 수행하는 작업
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+IdP가 `active: false`(또는 `DELETE`)를 보내면, SCIM은 해당 계정이 워크스페이스
+**소유자**인 경우 먼저 거부합니다(소유권을 먼저 이전하세요). 그렇지 않으면
+다음과 같이 처리합니다.
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. 모든 기기 자격 증명을 먼저 폐기합니다. 활성 세션은 몇 초 안에 종료됩니다.
+2. 모든 워크스페이스 멤버십을 제거합니다.
+3. 계정을 비활성화로 표시합니다(이후 IdP가 무엇을 보내든 명시적으로 다시
+   활성화할 때까지 로그인할 수 없습니다).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+사용자 행 자체는 남습니다. 티켓, 메시지, 커밋의 귀속 정보는 영구적입니다.
+재활성화(SCIM `active: true`)는 로그인을 복원하지만 멤버십은 **복원하지
+않습니다**. 멤버십에는 새 초대나 로그인 시 자동 멤버 정책이 필요합니다.
 
-## Troubleshooting
+## 문제 해결
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **모든 호출에서 401** — 토큰이 변경되었습니다. 토큰을 재생성하고 IdP를 업데이트합니다.
+- **엔드포인트에 접근할 수 없음** — 터널이 중단되었거나 서버가 릴레이
+  전용입니다. SCIM에는 직접 HTTPS가 필요하며, JIT는 그와 무관하게 계속 작동합니다.
+- **그룹 푸시 오류(501)** — 의도된 동작입니다. 그룹→역할 매핑은 푸시된
+  그룹이 아니라 로그인 시 SAML/OIDC 그룹 속성에서 수행됩니다.

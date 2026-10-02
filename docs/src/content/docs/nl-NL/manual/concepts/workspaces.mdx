@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Werkruimtes en isolatie
+description: Waarom een werkruimte een harde tenantgrens is, hoe de databasesplitsing die grens structureel maakt en wat er bewust overheen gaat.
 slug: nl-NL/handleiding/concepten/werkruimtes
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Wat is een werkruimte?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Een werkruimte is de isolatietenant op het hoogste niveau in Control Center. Hij groepeert agenten, repositories, ruimtes, tickets, geheugen, pipelines en leden in één begrensde context. Alles wat binnen een werkruimte gebeurt, blijft erbinnen.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Een typische werkruimte komt overeen met één project of één codebase. Je kunt aparte werkruimtes hebben voor "api-service", "frontend-v2" en "infrastructure".
 
-## Workspace-scoped data
+## Gegevens met werkruimtescope
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+De rijen van een werkruimte staan in het eigen SQLite-bestand van die werkruimte, op `<dataDir>/<workspaceId>/workspace.db`. Elke werkruimte krijgt een map in plaats van een kaal bestand, omdat een werkruimte meer verzamelt dan een database — worktrees per gesprek, de agent- en skillbestanden, chatbotreferenties — en een map geven betekent dat dat allemaal samen leeft en samen wordt verwijderd.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entiteit                                           | Scope                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| Agenten                                            | Horen bij precies één werkruimte                             |
+| Repository's                                       | Geregistreerd in één werkruimte (zie hieronder)              |
+| Ruimtes, gesprekken en berichten                   | Werkruimtegebonden                                           |
+| Tickets, projecten, plannen, orkestraties          | Werkruimtegebonden                                           |
+| Geheugenfeiten, beleidsregels, domeinen, toegangsrechten | Werkruimtegebonden                                     |
+| Pipeline-runs, sjablonen, triggers                 | Werkruimtegebonden                                           |
+| Pull request-status, reviewruimtes, reviewcohorten  | Werkruimtegebonden                                          |
+| Agent-runlogs en werkgeheugen                      | Werkruimtegebonden                                           |
+| Leden, uitnodigingen, rechten per repo             | Werkruimtegebonden                                           |
+| Symbolen en randen van de codegraph                | Afgebakend op `repoId` binnen het werkruimtebestand          |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+De meeste van deze rijen hebben een `workspaceId`-kolom; aparte databasebestanden handhaven de isolatie. Zie de isolatie-invariant hieronder.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repo's zijn werkruimtegebonden; identiteit over werkruimtes loopt via het pad
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Een rij voor een repo staat in het eigen databasebestand van zijn werkruimte — het bestand _is_ de scope, dus de tabel heeft geen `workspaceId`-kolom en geen koppeltabel.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Je voegt een repo aan een werkruimte toe via Instellingen → Werkruimte → Repository's. Dezelfde checkout in twee werkruimtes registreren maakt twee onafhankelijke rijen met twee id's; de identiteit van een repo _over_ werkruimtes loopt via het bestandssysteempad (of GitHub-eigenaar/naam), nooit via het id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Registratie is strikt: het pad moet binnen een git-worktree liggen, er moet een `origin`-remote zijn en die remote moet naar een ondersteunde forge wijzen (github.com, gitlab.com of bitbucket.org). De forge wordt uit de remote gelezen en op de repo opgeslagen, dus één werkruimte kan repo's van alle drie bevatten. Al het andere wordt geweigerd. De mappenbrowser waarin je kiest toont het bestandssysteem van de **serverhost**, beperkt tot de allow-list `--repo-roots` van de server (die standaard de homedirectory van de servergebruiker is).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Een repository uit een werkruimte verwijderen wist de rij in één keer en laat de symbolen, randen, bestanden, indexcheckpoints en rechten per lid van de codegraph mee verwijderen. De checkout op schijf blijft onaangeroerd.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+De codegraph staat in hetzelfde bestand, gesleuteld op `repoId`, omdat verschillende werkruimtes dezelfde repository op verschillende branches met verschillende code kunnen hebben.
 
-## The isolation invariant
+## De isolatie-invariant
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Gegevenslekken tussen werkruimtes worden als bugs behandeld. Isolatie is **structureel** en wordt op meerdere niveaus gehandhaafd:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Databaselaag.** Elke werkruimte heeft zijn eigen SQLite-bestand, uitgedeeld door `WorkspaceDatabaseManager.of(workspaceId)`. Een werkruimtedatabase declareert `users`, `workspaces` of de tabellen van een andere werkruimte niet, dus een cross-workspace-leesopdracht is geen bug die je kunt schrijven — hij compileert niet. Repositories zoeken hun DAO per call op in plaats van er een te cachen, en omdat elke repositorymethode een verplichte `workspaceId` aanneemt, kan de werkruimte nooit worden afgeleid of standaard gekozen.
+- **Het werkruimte-id is een padsegment.** Omdat het id een mapnaam wordt, moet het overeenkomen met een veilig patroon van één segment (begint alfanumeriek, daarna alfanumerieke tekens, punten, underscores, koppeltekens; geen `..`). Id's zijn overal in het product UUID's. Al het andere gooit een fout in plaats van te worden opgeschoond — dat is de pad-traversal-guard, en hij faalt luidruchtig in plaats van de gegevens van een werkruimte naar een pad te schrijven dat iemand anders heeft gekozen.
+- **Verdediging in de diepte.** De `workspaceId`-kolommen staan er nog steeds en worden nog steeds geschreven. Hoewel ze binnen één bestand overbodig zijn, houden ze de sync-feed-triggers, FTS-indexen en bestaande rijvormen ongewijzigd, en maken ze een bestand zelfbeschrijvend wanneer je het op zichzelf bekijkt — precies waarop export en import vertrouwen.
+- **Domeinlaag.** Services die entiteiten op id muteren, controleren `entity.workspaceId == workspaceId` op één chokepoint voordat ze doorgaan, en gooien `WorkspaceMismatchException` bij een mismatch — de luidruchtige fout voor een id dat uit de verkeerde context kwam. Luidruchtig weigeren is belangrijk: een stille no-op verbergt de bug en doorgaan lekt.
+- **RPC-laag.** De repo-RPC-dispatcher is het chokepoint. Elke operatie met werkruimtescope moet `workspace_id` in zijn eigen argumenten meedragen — er is geen "huidige werkruimte" per sessie om te lekken, en een onbekend id wordt al als niet-gevonden geweigerd _voordat_ er iets een database opent, zodat een slecht id geen spook-`workspace.db` kan materialiseren. Echt globale operaties (de nieuwsfeed, de fleetwachtrij) verklaren zichzelf unscoped als een expliciete, getoetste beslissing. MCP-tools volgen dezelfde regel: elke tool die gegevens met werkruimtescope aanraakt, vereist `workspace_id`.
+- **Cross-workspace-fan-out is opsombaar.** Een vraag over meerdere werkruimtes beantwoorden betekent meerdere databases openen. Die fan-out is beperkt tot één helper, `CrossWorkspaceQueries`, zodat de volledige lijst van zaken die de grens legitiem overschrijden in de call sites van één bestand woont in plaats van te verdwijnen achter doc-comments. Die call sites zijn: serverbrede aggregatie, opstart-reconcilers, retentie- en GC-sweeps, back-up, event-routers — en de lidmaatschapzoekopdracht hieronder.
+- **Alleen toegang op id is niet genoeg.** Een entiteit opzoeken op zijn UUID bewijst niet dat hij bij de werkruimte van de aanroeper hoort. De bestandssplitsing maakt het verkeerde bestand onbereikbaar; de validatie in de domeinlaag vangt een verkeerd id af dat via een legitiem bestand binnenkomt.
 
-## Membership, not the pairing key, is what grants access
+## Lidmaatschap geeft toegang, niet de koppelingssleutel
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Het bezitten van een apparaatreferentie authenticeert een _apparaat_. Het machtigt niets binnen een werkruimte. Elke operatie met werkruimtescope bepaalt de lidmaatschapsrol van de aanroeper en handhaaft een ondergrens die van het soort operatie is afgeleid — lezen vereist `guest`, een mutatie vereist `member`, een destructieve bewerking vereist `admin` — en operaties die repo-inhoud blootstellen controleren daarnaast de toegang per repo van de aanroeper. Een geldige koppelingssleutel zonder lidmaatschap krijgt `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Het gevolg voor isolatie is fraai: lidmaatschapsrijen staan in het _eigen_ bestand van de werkruimte, dus "wie zit in deze werkruimte?" is een gewone leesopdracht met werkruimtescope. De omgekeerde vraag — "in welke werkruimtes zit ik?" — is per definitie over bestanden verdeeld, dus het is een van de weinige goedgekeurde fan-outs van `CrossWorkspaceQueries`, en dat is wat de werkruimtekiezer uitvoert voordat er een werkruimte is gekozen.
 
-See [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/) for the role ladder and repo grants.
+Zie [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/) voor de rollenladder en de rechten per repo.
 
-## The global registry
+## Het globale register
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Niet alles is werkruimtegebonden. Een tweede database, `<dataDir>/global.db`, bevat wat echt serverbreed is:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- het **werkruimteregister**, zodat de wisselaar elke werkruimte kan tonen zonder ook maar één werkruimtebestand te openen — en zodat de naam, het logo, de eigenaar, de handmatige volgorde en de markering voor zachte verwijdering van een werkruimte buiten het bestand wonen dat ze beschrijven;
+- **identiteit**: gebruikers, gebruikersvoorkeuren en gekoppelde apparaten, omdat één mens één gebruiker is in elke werkruimte en een gekoppeld apparaat het verwijderen van een werkruimte overleeft;
+- de **fleetwachtrij** (workers, jobs, plaatsingslog), waarvan de scheduler bij elke tick de hele wachtrij tegen elke worker matcht;
+- de **nieuwsfeed**, die per gebruiker is (niet per werkruimte) — een feed toevoegen volgt je in elke werkruimte;
+- **`workspace_routes`**, de pre-auth-index die antwoordt op "welke werkruimte bezit deze sleutel?" voor entreepunten die alleen met een secret of een ondoorzichtig id aankomen (een uitnodigingshash, een webhooktoken, een deeplink) en zonder werkruimte. Een misser daar is een niet-gevonden; er is bewust geen scan-fallback;
+- **installatiebrede instellingen en identiteit**: het installatie-id, instellingen op hostniveau, SSO-verbindingen en beheerde actiebeleidsregels (een installatiebrede begrenzing die de beveiligingen van werkruimtes alleen maar strenger kan maken).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Bij het opstarten wordt alleen dit bestand geopend. Werkruimtebestanden worden lazy geopend bij het eerste gebruik, zodat de opstartkosten vlak blijven ongeacht hoeveel geschiedenis de werkruimtes opbouwen, en de `quick_check` per bestand wordt betaald bij het eerste gebruik in plaats van op de weg naar de ready-banner.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Een werkruimtebestand bevat alleen een `workspace_meta` met één rij voor zelfidentificatie (het id, de installatie die het heeft aangemaakt, de schemaversie waarmee het is aangemaakt, en wanneer). Alles wat een werkruimte beschrijft, staat in het register.
 
-## Creating a workspace
+## Een werkruimte aanmaken
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Een werkruimte aanmaken doet meer dan een rij in het register invoegen. In één bewerking stempelt de server de aanmakende gebruiker als `ownerUserId`, legt hij het lidmaatschap met de eigenaarsrol van die gebruiker vast en publiceert hij een `WorkspaceCreated`-domeingebeurtenis. Luisteraars op die gebeurtenis zaaien vervolgens, idempotent en op de achtergrond:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- een **CEO-agent** plus vier specialisten — `qa`, `architect`, `engineer`, `librarian` — waarbij de specialisten aan de CEO rapporteren;
+- de **ingebouwde pipelinesjablonen** en hun triggers (triggers op gebeurtenissen en handmatige triggers worden ingeschakeld geleverd; geplande zijn opt-in, behalve de dagelijkse worktree-GC-sweep);
+- de **starter-evalsuites**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/nl-NL/handleiding/concepten/agentmodel/).
+Dit gebeurt voor _elke_ werkruimte, niet alleen de eerste. De geseede agenten worden zonder adapter aangemaakt, dus ze draaien op **Control Center (built-in)** met Anthropics standaardmodel (`claude-opus-4-8`, tenzij je een ander vastzet) totdat je per agent een adapter en model instelt via Instellingen → Werkruimte → Agenten. Zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Het wegschrijven van het eigenaarslidmaatschap is belangrijker dan het lijkt: zonder dat zou de pas aangemaakte werkruimte geen leden hebben en zou elke call met werkruimtescope die de maker daarna doet, worden geweigerd.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agenten kunnen geen werkruimte aanmaken]
+Er is geen MCP-tool `create_workspace`. Mensen maken een werkruimte aan via `workspace.create` (chokepoint met alleen een naam) of `workspace.upsert` (volledig record, ook gebruikt voor updates). Beide stempelen de aanmakende gebruiker als `owner` en publiceren `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Verwijderen, exporteren, importeren
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Een werkruimte verwijderen **markeert de registerrij en ontkoppelt de map**. De werkruimte verdwijnt uit elke lijst en zoekopdracht. De registerrij blijft staan (zacht verwijderd), zodat het id nog bekend is bij back-up en onderhoud, maar `workspace.delete` gooit de map van die werkruimte onmiddellijk weg — database, worktrees, agentbestanden en de rest — via `WorkspaceDatabaseManager.dropAndClose`. Alleen de **eigenaar** van de werkruimte kan hem verwijderen.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Omdat één werkruimte één bestand is, is een werkruimte doorgeven een bestandsbewerking in plaats van een dump tabel voor tabel:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` is één `VACUUM INTO` — een consistente, gedefragmenteerde momentopname die onder een leestransactie wordt gemaakt terwijl de server blijft serveren.
+- `workspace.import` neemt zo'n bestand over en vervangt alles wat de doelwerkruimte nu bevat. De ingebedde `workspace_meta` laat een import onderscheid maken tussen "mijn eigen bestand, opnieuw overgenomen" en "een bestand van een andere installatie" (dat laatste is toegestaan, maar wordt gelogd in plaats van onzichtbaar te blijven).
+- `server.backupNow` maakt een momentopname van de hele installatie in een map met tijdstempel die de live datadir spiegelt — `manifest.json`, `global.db` en één `<workspaceId>/workspace.db` per werkruimte — dus herstellen is hem terugkopiëren.
+- `server.listBackups` leest die map terug, nieuwste eerst, met de grootte en de werkruimtelijst van elke momentopname. Een momentopname waarvan het manifest ontbreekt of bestanden noemt die er niet zijn, wordt nog steeds gerapporteerd, gemarkeerd als onvolledig — hem verbergen is hoe een operator gaat geloven dat hij een back-up heeft die hij niet heeft.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+De back-upbewerkingen staan onder **Instellingen → Server → Back-up en herstel**:
+**Nu back-uppen** maakt een momentopname van de installatie, de lijst toont welke momentopnamen
+volledig zijn en laat de eigenaar van de installatie er na bevestiging een verwijderen, en elke
+werkruimte biedt exporteren en importeren. De ingebouwde pipeline **Workspace backup**
+neemt volgens een wekelijks schema alleen de database van die werkruimte mee en verwijdert zijn eigen
+back-ups die ouder zijn dan de ingestelde bewaartermijn. Een werkruimte herstellen uit een
+momentopname van de installatie is `workspace.import` richten op de
+`<workspaceId>/workspace.db` van de momentopname; een hele installatie herstellen blijft een
+terugkopieeractie van de momentopnamemap met de server gestopt.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/nl-NL/handleiding/referentie/backup/#what-a-backup-does-not-contain) has the full table.
+Wat geen van alle meeneemt, is de rest van de werkruimtemap. Een werkruimte verzamelt meer dan een database — geplakte afbeeldingen, skill- en agentbestanden, chatreferenties, worktrees — en export en import verplaatsen het **bestand**, dus alles ernaast blijft waar het staat. Dat is bewust voor referenties en wegwerpbaar voor worktrees; voor de rest is het een grens die je moet kennen in plaats van een functie. De [back-upreferentie](/nl-NL/handleiding/referentie/backup/#what-a-backup-does-not-contain) bevat de volledige tabel.
 
-## Moving a backup between the server and your device
+## Een back-up verplaatsen tussen de server en je apparaat
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/nl-NL/handleiding/referentie/backup/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Elke operatie hierboven spreekt in paden op de **server**, wat alleen een volledig antwoord is als de server je eigen machine is. Drie ondertekende HTTP-routes — [`/backup/workspace`, `/backup/snapshot` en `/backup/restore`](/nl-NL/handleiding/referentie/backup/#transfer-routes) — dragen de bytes voor elke andere topologie, op dezelfde geauthenticeerde baan die de mediaproxy en het afbeeldingsarchief al gebruiken. Op de pagina is dit een knop **Downloaden** naast elke export en elke momentopname (jij kiest waar hij landt), en **Bestand kiezen en uploaden** om te herstellen uit een bestand dat op de machine staat die je gebruikt. De upload is degene die werkt als de server niet je machine is: `workspace.import` heeft het bestand al op de host nodig, en zo komt het daar.
 
-Three properties are worth knowing:
+Drie eigenschappen zijn het kennen waard:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Een download maakt een verse kopie en de server houdt er niets van.** Downloaden is niet "het bestand ophalen dat de exportknop heeft gemaakt" — er wordt opnieuw geëxporteerd, dat wordt gestreamd en daarna verwijderd. Het antwoord is `no-store` met `Accept-Ranges: none` om dezelfde reden: een hervat bereik zou twee verschillende exports aan elkaar plakken tot één bestand dat geldig lijkt maar het niet is.
+- **Een upload wordt naar schijf gestreamd, nooit gebufferd**, aan beide kanten, en de klaargezette kopie wordt op elk uitpad verwijderd — ook bij een weigering. Een werkruimtedatabase is geen schermafbeelding.
+- **Een doorgestuurde verbinding heeft geen HTTP-origin**, dus daar zijn de overdrachtsbedieningselementen uitgeschakeld met een melding waarom. Alles wat in paden aan de serverkant spreekt, blijft via de relay werken; alleen de byte-banen hebben een directe verbinding nodig.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Welke paden van wie zijn]
+De paden die de pagina *toont* — de momentopnamemap, het bestand dat een export heeft geschreven, de bron die een import leest — staan op de machine waar `cc_server` draait. Het pad dat een **download** meldt, staat op de machine waar jij zit. Dat onderscheid is waarom beide bestaan: het eerste is wat een onderhoudsscript of een ssh-sessie nodig heeft, het tweede is wat iemand die een back-up verzamelt nodig heeft.
 :::
 
-## Multiple workspaces
+## Meerdere werkruimtes
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Je kunt meerdere werkruimtes naast elkaar draaien. Elke werkruimte werkt onafhankelijk: agenten in de ene werkruimte kunnen geen berichten sturen naar agenten in een andere, kunnen het geheugen van een andere werkruimte niet lezen en zien de tickets ervan niet. Het bepalen van de ontvanger voor berichten tussen agenten is exact en gaat nooit een werkruimte over.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Er is geen dashboard over werkruimtes heen. Het analytics-oppervlak op `/workspaces/:workspaceId/observability` abonneert zich op een begrensde globale feed van recente runs en vernauwt die meteen tot de actieve werkruimte, dus wat je daar ziet is één werkruimte tegelijk. De enige echt multi-werkruimte-oppervlakken die een mens aanraakt, zijn de werkruimtekiezer en de wisselaar.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Eén praktische grens die het kennen waard is: een werkruimte die iemand gebruikt blijft open — er is geen LRU. Voorbij 32 daarvan waarschuwt de server in plaats van te weigeren, omdat elk geopend bestand een achtergrond-isolate en een page-cache vasthoudt. Cross-workspace-fan-out opent bestanden kortstondig en sluit ze daarna als niets anders ze heeft opgeëist.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): agents belong to exactly one workspace
-- [Memory and knowledge](/nl-NL/handleiding/concepten/geheugen-en-kennis/): memory is workspace-scoped
-- [Architecture](/nl-NL/handleiding/concepten/architectuur/): where the databases sit in the client/server split
-- [Back up and restore](/nl-NL/handleiding/gidsen/back-uppen-en-herstellen/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/nl-NL/handleiding/referentie/backup/): every operation, route, manifest field and limit
-- [Add repositories](/nl-NL/handleiding/gidsen/repos-toevoegen/): registering a checkout into a workspace
+- [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/): lidmaatschap, rollen en rechten per repo — de toegangskant van isolatie
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): agenten horen bij precies één werkruimte
+- [Geheugen en kennis](/nl-NL/handleiding/concepten/geheugen-en-kennis/): geheugen is werkruimtegebonden
+- [Architectuur](/nl-NL/handleiding/concepten/architectuur/): waar de databases zitten in de client/server-splitsing
+- [Back-uppen en herstellen](/nl-NL/handleiding/gidsen/back-uppen-en-herstellen/): een momentopname maken, een werkruimte verplaatsen, kopieën elders bewaren
+- [Backup, export en import](/nl-NL/handleiding/referentie/backup/): elke bewerking, route, manifestveld en limiet
+- [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/): een checkout in een werkruimte registreren

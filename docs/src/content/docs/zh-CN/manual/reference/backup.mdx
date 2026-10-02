@@ -1,29 +1,28 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: 备份、导出与导入
+description: 快照的目录布局、清单、每一项备份操作与传输路由，以及备份究竟包含和不包含哪些文件。
 slug: zh-CN/手册/参考/备份
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/zh-CN/手册/操作指南/备份与恢复/); for why persistence is
-split this way, see [Workspaces and isolation](/zh-CN/手册/概念/工作区/).
+Control Center 能够复制、移交或接纳的一切，以及每种产物的确切形态。要实际执行一次
+备份，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/)；至于持久化为何这样
+拆分，请参阅[工作区与隔离](/zh-CN/手册/概念/工作区/)。
 
-## Artifacts
+## 产物
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+共有三种数据库副本产物，它们的作用范围和删除策略各不相同。
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| 产物                    | 写入方                       | 形态                                   | 覆盖范围                         |
+| ----------------------- | ---------------------------- | -------------------------------------- | -------------------------------- |
+| **安装快照**            | `server.backupNow`           | 一个带时间戳的**目录**                 | 该安装上的每一个数据库           |
+| **工作区备份**          | `Workspace backup` 流水线    | 带时间戳、内含一个 `.db` 的目录        | 一个工作区的数据库               |
+| **工作区导出**          | `workspace.export`           | 单个 `.db` **文件**                    | 一个工作区的数据库               |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+三者都用 SQLite `VACUUM INTO` 写出，这对活跃的 WAL 数据库是安全的：它会开启一个读
+事务，生成一份已整理碎片、事务上一致的副本，并且从不需要停止服务器。
 
-## Snapshot layout
+## 快照布局
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +31,110 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+该布局与实时数据目录完全一致，这正是让恢复一次安装成为原样复制回来、而不是一次转换
+的原因。目录名是 UTC 时间戳，其中的 `:` 和 `.` 被替换为 `-`，因此它在 Windows 上对
+文件系统安全，作为普通字符串也能按时间顺序排序。
 
-Scheduled workspace backups live separately at
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+计划性的工作区备份单独存放在
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`。
+它们既不包含清单，也不包含 `global.db`，并不是安装快照。
+每周流水线的保留步骤只会删除它自己所属工作区中早于所配置期限（默认 30 天）的备份；
+手动创建的安装快照绝不会被该步骤轮换掉。`server.listBackups` 只列出安装快照，
+包括未完成的那些。
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| 字段                       | 类型            | 含义                                                                |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | 清单格式版本。目前为 `1`                                            |
+| `created_at`               | ISO-8601 UTC    | 快照的生成时间                                                      |
+| `global.file`              | string          | 始终为 `global.db`                                                  |
+| `global.schema_version`    | int             | 捕获时 `GlobalDatabase` 的 schema 版本                              |
+| `global.bytes`             | int             | 写出的 `global.db` 的大小                                           |
+| `workspace_schema_version` | int             | 每个工作区文件共用的 `WorkspaceDatabase` schema 版本                |
+| `workspaces[]`             | array           | 每个被捕获的工作区一个条目                                          |
+| `workspaces[].workspace_id`| string          | 该文件所属的工作区                                                  |
+| `workspaces[].file`        | string          | 相对于快照根目录的路径，`<workspaceId>/workspace.db`                |
+| `workspaces[].bytes`       | int             | 该文件的大小                                                        |
+| `skipped_workspaces[]`     | array of string | 备份**未能**捕获的工作区                                            |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+当某个工作区已注册但从未被写入过（因此文件尚不存在），或者它的 `VACUUM INTO` 失败
+时，该工作区就会被跳过。无论哪种情况，快照仍会完成，只是清单会指明缺失了什么。
 
-### Completeness
+### 完整性
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` 会为每个快照报告一个 `complete` 标志。当清单缺失或无法解析、
+`global.db` 缺失，或者清单指向的工作区文件不在磁盘上时，该标志为 false。
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+未完成的快照仍会被列出，因为运维人员看不到的快照，就是他们自以为拥有的快照。当清单
+无法读取时，列表会退回到目录结构本身，并报告它找到的任何 `<workspaceId>/workspace.db`
+文件——即使整个快照无法恢复一次安装，这些文件仍可以逐个通过 `workspace.import` 被
+接纳。
 
-## What a backup does not contain
+## 备份不包含什么
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+两种产物都**只是数据库**。一个工作区目录所持有的东西远不止它的数据库，而其余的都不会
+被带走：
 
-| Path                                | In a snapshot? | In a workspace export? |
+| 路径                                | 在快照中？     | 在工作区导出中？       |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | 是             | 否                     |
+| `<workspaceId>/workspace.db`        | 是             | 是（它*就是*那个文件） |
+| `<workspaceId>/blobs/`              | 否             | 否                     |
+| `<workspaceId>/skills/`             | 否             | 否                     |
+| `<workspaceId>/agents/`             | 否             | 否                     |
+| `<workspaceId>/chat_credentials/`   | 否             | 否                     |
+| `<workspaceId>/spaces/<spaceId>/`   | 否             | 否                     |
+| `<workspaceId>/pr_clones/`          | 否             | 否                     |
+| `secrets.json`                      | 否             | 否                     |
+| `models/`                           | 否             | 否                     |
+| `meetings/<meetingId>/`             | 否             | 否                     |
+| `rigs/`                             | 否             | 否                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/zh-CN/手册/操作指南/备份与恢复/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/zh-CN/手册/参考/聊天桥接/).
+其中有些是可丢弃的——`spaces/` 保存的是从仓库重新预配的写时复制工作树，`pr_clones/`
+是缓存，`models/` 可重新下载，`rigs/` 是机器状态。有些则不是：`blobs/` 保存着数据库
+行所指向的粘贴图片，`skills/` 和 `agents/` 保存着智能体运行时使用的文件，而
+`secrets.json` 保存着该安装上的每一个配对密钥、提供商凭据和 SSO 设置。如何覆盖其余
+内容，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/#copy-backups-off-the-machine)。
+:::note[聊天令牌被刻意留在原处]
+`chat_credentials/` 位于数据库旁边而不是其中，正因如此，交给别人的工作区不会携带
+任何有效的机器人令牌。参见[聊天桥接参考](/zh-CN/手册/参考/聊天桥接/)。
 :::
 
-## Operations
+## 操作
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+安装级备份 RPC 以及工作区导出/导入仅限 `fullClient`：已配对的手机无法触发它们。在
+没有接入备份端口的服务器上（例如演示服务器），它们会完全不存在——不是被拒绝，而是在
+结构上缺失。
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| 操作                 | 类型   | 范围      | 最低角色          | 参数          | 返回                          |
+| -------------------- | ------ | --------- | ----------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | mutate | 安装      | 安装**所有者**    | 无            | `{ok, path}`                  |
+| `server.listBackups` | read   | 安装      | 安装**所有者**    | 无            | `{backups: [...]}`            |
+| `server.deleteBackup` | mutate | 安装     | 安装**所有者**    | `name`        | `{ok}`                        |
+| `workspace.export`   | read   | 工作区    | `admin`           | 无            | `{ok, path}`                  |
+| `workspace.import`   | mutate | 工作区    | `owner`           | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | mutate | 安装*     | `owner`           | `id`          | 注册表行被标记为已删除        |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` 没有作用范围，是因为它标记的那一行位于全局注册表中；其处理程序
+会检查调用者对所指工作区的成员身份，并要求 `owner`。
 
-`path` in every response is a path on the **server host**.
+每个响应中的 `path` 都是 **服务器主机**上的路径。
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[整个安装的快照在两条通道上都由所有者把关]
+`server.backupNow`、`server.listBackups` 和 `server.deleteBackup` 都要求安装
+**所有者**（`ServerAuthority.serverOwner`），与 `GET /backup/snapshot` 是同一道
+关卡。一份快照会捕获每个工作区的数据库，因此仅仅是一个工作区的管理员，还不足以管理
+其它工作区。删除只接受列表中出现的那个时间戳目录名，而不是任意的服务器路径，并且会
+移除整个快照（包括未完成的快照）。按工作区进行的导出/导入仍然只要求工作区管理员/
+所有者，而不是安装所有者。
 :::
 
-### `server.listBackups` response
+### `server.listBackups` 的响应
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+按最新优先，以目录名排序（目录名就是时间戳，因此即使某个快照的清单无法读取，这个顺序
+依然成立）。
 
 ```json
 {
@@ -169,99 +158,93 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+当清单无法读取时，`created_at` 会被省略。顶层的 `bytes` 是整个目录在磁盘上的实际
+大小，而不是清单自己汇总出的和——运维人员清理快照时，问的是这个目录占了多少空间，
+而不是这次备份原本打算写多少。
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+每个 `workspaces[].path` 正是 `workspace.import` 接受为 `source_path` 的值。这是
+刻意的：“从这个快照恢复这个工作区”*就是*导入操作，因此两者不可能对同一个文件演变出
+不同的处理方式。
 
-### `workspace.import` validation
+### `workspace.import` 的校验
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+在替换任何内容之前，候选文件会以一个短生命周期的原生 SQLite 连接以只读方式打开，并
+读取它的 `workspace_meta` 行。
 
-| Condition                                        | Result                                                          |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| 条件                                             | 结果                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------- |
+| 不是可读的 SQLite 数据库，或者没有 `workspace_meta` | 拒绝。不会触碰任何内容                                     |
+| 记录的工作区 id ≠ 目标                            | **允许**，并记录日志。这正是把一个工作区复制或恢复到一个新 id 之下的方式 |
+| 记录的安装 id ≠ 本安装                            | **允许**，并记录日志。它已配对的设备与用户 id 属于那次安装，在这里无法解析 |
+| 工作区 id 无效，或者文件不存在                    | 拒绝                                                          |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+一旦接受，目标工作区的数据库会先被关闭并从管理器上卸下，然后才把文件复制覆盖上去
+（一个仍然打开的漂移连接会占用该文件及其 `-wal`），随后再重新打开，好让 `beforeOpen`
+重新装上 FTS 与同步触发器，并重建 FTS 索引——导入文件的内容表是有数据的，但它的索引
+可能已经过期。
 
-## Transfer routes
+## 传输路由
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+上面每个操作都以服务器端路径来表达，只有当服务器就是你自己的机器时，这才算一个完整的
+答案。这三条路由负责运送字节，走的是媒体代理和 blob 存储所用的同一条 PSK 签名通道。
+调用方用自己设备的预共享密钥对一个目标字符串签名，并把签名作为 `s` 传入。
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| 路由                    | 方法   | 查询参数        | 签名目标                         | 要求                 |
+| ----------------------- | ------ | --------------- | -------------------------------- | -------------------- |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 工作区**管理员**     |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 安装**所有者**       |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 工作区**所有者**     |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` 是工作区 id，`n` 是快照目录名，`d` 是发起调用的设备 id，`s` 是签名。`n` 是依据
+备份列表解析的，而不是直接拼接到备份根目录上，因此这条路由无法被指向一个列表本不会
+展示的目录。
 
-| Status | Cause                                                                              |
+| 状态码 | 原因                                                                                |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | 缺少必需的查询参数，或者上传正文为空                                                  |
+| `403`  | 设备未知或已吊销、签名错误，或者调用方不具备该角色                                    |
+| `404`  | 此主机上没有备份端口，或者所指的快照/工作区文件不存在                                 |
+| `405`  | 用 `POST` 以外的方法调用 `/backup/restore`                                            |
+| `413`  | 上传正文超过 8 GiB，无论是按声明的 content-length 还是按实际读取的字节数              |
+| `500`  | 导出或归档在服务器端失败                                                              |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+两个下载都会返回 `Cache-Control: no-store` 与 `Accept-Ranges: none`。每个请求都会
+新生成一份**全新的**副本，并在流式发送完毕后删除它，因此被缓存或被续传的响应会把两次
+不同导出的字节拼接成一个看起来有效、实则无效的文件。
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` 返回 `<name>.zip`，其中的条目都相对于快照根目录，因此解包后会
+重现 `manifest.json` + `global.db` + `<workspaceId>/workspace.db`。条目按排序后的
+顺序写入，因此同一快照的两次归档会得到完全相同的归档。
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` 会把正文直接流式写入暂存文件，而不是缓冲它；它在读取前和读取过程中
+都对大小设限，并且在**每一条**退出路径上都会删除暂存文件，包括被拒绝时。
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[中继连接没有 HTTP 源]
+经代理的中继承载的是 RPC 帧，而不是文件传输。一切以服务器端路径来表达的东西在中继上
+都能继续工作；这三条传输路由需要直连，界面会禁用它们并给出说明，而不是在下载进行到
+一半时才失败。
 :::
 
-## Paths and limits
+## 路径与限制
 
-| Thing                          | Value                                                        |
-| ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| 项                       | 值                                                            |
+| ------------------------ | ------------------------------------------------------------- |
+| 快照                     | `<dataDir>/backups/<timestamp>/`                              |
+| 计划性的工作区备份       | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| 工作区导出               | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`      |
+| 传输暂存                 | `<dataDir>/backups/transfer/`——一块临时工作台，由写入它的那条路由负责清扫 |
+| 快照归档文件名           | `<snapshot directory name>.zip`                               |
+| 上传上限                 | 每次 `POST /backup/restore` 8 GiB                             |
+| 保留策略                 | 安装快照：手动删除。工作区备份：每周流水线，默认 30 天         |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+`exports/`、`transfer/` 和 `workspace-backups/` 目录都不是安装快照，也不在
+`server.listBackups` 的范围内。只有最后一个目录有计划的保留策略；删除安装快照需要
+安装所有者明确操作。
 
-## See also
+## 另请参阅
 
-- [Back up and restore](/zh-CN/手册/操作指南/备份与恢复/) — the recipes these operations belong to
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/) — why one workspace is one file
-- [`cc_server` CLI](/zh-CN/手册/参考/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/zh-CN/手册/参考/路由图/) — where the UI lives
-- [Architecture](/zh-CN/手册/概念/架构/) — the client/server split the paths follow
+- [备份与恢复](/zh-CN/手册/操作指南/备份与恢复/) — 这些操作所属的配方
+- [工作区与隔离](/zh-CN/手册/概念/工作区/) — 为什么一个工作区就是一个文件
+- [`cc_server` CLI](/zh-CN/手册/参考/cc-server-cli/) — 这些路径所处的数据目录
+- [路由图](/zh-CN/手册/参考/路由图/) — 界面所在的位置
+- [架构](/zh-CN/手册/概念/架构/) — 这些路径所遵循的客户端/服务器切分

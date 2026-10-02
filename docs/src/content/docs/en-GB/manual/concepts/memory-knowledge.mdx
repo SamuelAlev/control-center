@@ -2,6 +2,7 @@
 title: Memory and knowledge
 description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
 slug: en-GB/manual/concepts/memory-knowledge
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
 ## What memory is for
@@ -63,7 +64,7 @@ reaching everyone else.
 ## Domains
 
 A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
+knowledge organisational structure and they are the unit access grants are
 written against — but see the caution below before treating a domain as a
 confidentiality boundary.
 
@@ -95,7 +96,7 @@ does not restrict who can read it unless you have explicitly written a `none`
 grant for every role that should not see it.
 
 There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
+has Facts, Policies and Knowledge graph tabs and nothing else; grants are reachable only
 over the `memory_access_grant.*` RPC ops.
 :::
 
@@ -172,7 +173,7 @@ in the UI is not evidence the agent will not find it.
 ## Where memory lives and who writes it
 
 The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+(`/workspaces/<id>/settings/memory`), with Facts, Policies and Knowledge graph tabs.
 
 There is an asymmetry there that surprises people: **you can edit and delete
 memory, but you cannot create it.** Neither the Facts tab nor the Policies tab

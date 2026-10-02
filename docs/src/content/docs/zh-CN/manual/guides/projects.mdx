@@ -1,94 +1,73 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: 用项目组织工作
+description: 从侧边栏将工单归入项目，跟踪进度，并在项目完成后将其归档。
 slug: zh-CN/手册/操作指南/项目
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+项目是工作区内围绕共同目标对工单的一种分组。项目仅存在于 Control Center——永远不会同步到 Linear 等外部提供方。
 
-## Create a project
+## 创建项目
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. 展开工作区侧边栏中的**工单**分组。该分组依次列出**全部工单**、每个未归档项目各占一行，然后是**新建项目**。
+2. 点击**新建项目**。
+3. 填写**项目名称**、可选的**描述**，并选择一种**颜色**。
+4. 点击**创建项目**。
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+随后你会进入新项目的概览页，该项目也会作为一行出现在侧边栏的**工单**下。
 
-## Add tickets to a project
+## 将工单归入项目
 
-Project is a single-ticket field, set in either of two places:
+项目是单个工单上的字段，可在以下两个位置之一设置：
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- 打开该工单，在其属性栏中设置**项目**。
+- 在列表中右键点击该工单，使用**项目**子菜单。
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+属性栏中的选择器也提供**新建项目**，因此你可以把工单归入当场创建的项目。**无项目**会清除该字段。
 
-A ticket belongs to at most one project.
+一个工单最多属于一个项目。
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[项目不是批量操作]
+选中多个工单时出现的浮动栏涵盖状态、优先级、负责人、标签和删除，但不提供项目一项，因此要归入多个工单只能逐个进行。
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+你也可以从项目入手：项目概览页上的**新建工单**会创建一个工单并将其归入该项目。
 
-## Read project progress
+## 查看项目进度
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+从侧边栏中的项目行打开项目，或访问 `/workspaces/<workspace-id>/projects/<project-id>`。
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+概览页会显示项目的图标和名称、状态徽章、描述，以及一条显示已完成数与总数的进度条。下方则按状态对项目中的工单进行分组。
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+它不会汇总其他任何内容——没有负责人分布，也没有优先级分布。若要看这些，请改为筛选主工单列表。
 
-## Change project status
+## 更改项目状态
 
-Projects have three states:
+项目有三种状态：
 
-| Status        | Meaning              |
+| 状态        | 含义                 |
 | ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| **进行中**    | 工作正在进行         |
+| **已完成**    | 所有工作均已完成     |
+| **已归档**    | 供历史查阅           |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+使用项目页顶部的 **⋯** 菜单。它提供**编辑项目**、**标记为已完成**/**标记为进行中**、**归档**/**恢复**以及**删除项目**。
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+归档会把项目从侧边栏列表和工单选择器中隐藏。该操作可逆——**恢复**会将项目重新置为进行中——但项目在归档期间只能通过 URL 访问。
 
-## Projects created for you
+## 自动创建的项目
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/zh-CN/手册/操作指南/运行编排/).
+批准编排会创建一个项目，并把父工单归入其中，与你手动归入的内容并列。生成的工作项是流水线步骤，而非工单行，因此不会出现在项目看板上。这是唯一的自动化路径：没有任何流水线节点会创建工单，因此流水线无法向项目填充内容。参见[运行编排](/zh-CN/手册/操作指南/运行编排/)。
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[项目是面向操作员的界面]
+项目的创建、列出、更新和删除都在应用中进行。智能体没有项目相关的工具。
 
-## Related guides
+## 相关指南
 
-- [Create and manage tickets](/zh-CN/手册/操作指南/管理工单/)
-- [Delegate work to agents](/zh-CN/手册/操作指南/委派工单/)
-- [Run an orchestration](/zh-CN/手册/操作指南/运行编排/)
+- [创建和管理工单](/zh-CN/手册/操作指南/管理工单/)
+- [将工作委派给智能体](/zh-CN/手册/操作指南/委派工单/)
+- [运行编排](/zh-CN/手册/操作指南/运行编排/)
 
-## Related concepts
+## 相关概念
 
-- [Tickets](/zh-CN/手册/概念/工单/)
+- [工单](/zh-CN/手册/概念/工单/)

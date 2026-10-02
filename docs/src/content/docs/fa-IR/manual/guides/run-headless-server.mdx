@@ -1,31 +1,32 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: اجرای سرور بدون رابط
+description: باینری بدون‌رابط cc_server یا ایمیج Docker آن را اجرا کنید، یک کلاینت را به آن جفت کنید و آن را با تمام فلگ‌ها و متغیرهای محیطی CLI پیکربندی کنید.
 dateModified: 2026-09-10
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+`cc_server` را روی ماشینی که همیشه روشن می‌ماند اجرا کنید، سپس از رومیزی، مرورگر
+یا تلفن‌تان به آن متصل شوید. این سرور یک باینری بومی Dart خالص است — بدون موتور
+Flutter — پس بدون رابط روی macOS، Linux یا Windows اجرا می‌شود. پایگاه‌داده در
+اختیار آن است، عامل‌ها را اجرا می‌کند و هر فراخوانی API خارجی را انجام می‌دهد؛
+کلاینت‌ها فقط رندر می‌کنند.
 
-## Run in Docker (prebuilt images)
+## اجرا در Docker (ایمیج‌های پیش‌ساخته)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+هر انتشار یک پشتهٔ خودمیزبان از چهار ایمیج GHCR منتشر می‌کند — بک‌اند، دو کلاینت
+سبک ایستا و رلهٔ جفت‌سازی اختیاری — به‌علاوهٔ یک ایمیج جداگانهٔ `cc-server-demo`
+برای میزبان دموی عمومی. نصب خودمیزبان به چک‌اوت کد منبع نیازی ندارد. یک تگ نسخه را
+پین کنید (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) یا از `latest` پیروی کنید.
 
-| Image                                             | What it is                                   | Publishes        |
+| ایمیج                                             | چیست                                         | منتشر می‌کند     |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | بک‌اند: پایگاه‌داده، عامل‌ها، MCP، وبهوک‌ها      | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | کلاینت وب (nginx ایستا)                       | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA همراه تلفن (nginx ایستا)                  | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | رلهٔ جفت‌سازی WebRTC (اختیاری)                 | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+کل پشته به‌صورت یک فایل compose:
 
 ```yaml
 services:
@@ -51,91 +52,92 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+نکته‌هایی که پیش از بیرون‌بردن هر یک از این‌ها از لوپ‌بک ارزش دانستن دارند:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **ایمیج `cc-server` مقدار `CC_SERVER_INSECURE=1` را همراه دارد** (باید `0.0.0.0`
+  را بایند کند تا ترافیک پورت منتشرشده را دریافت کند)، که تنها پشت یک پروکسی
+  معکوس پایان‌دهندهٔ TLS — Caddy، Traefik، nginx یا یک تونل Cloudflare — روی یک
+  شبکهٔ قابل‌اعتماد ایمن است. برای پایان‌دادن TLS درون خود فرایند، به‌جایش یک گواهی
+  مانت کنید و `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` را تنظیم کنید (سپس
+  `CC_SERVER_INSECURE` را حذف کنید). همه‌چیز با `docker run -e …` یا بلوک
+  `environment:` در compose قابل بازنویسی است.
+- **`/data` تنها وضعیت است.** پایگاه‌داده‌های SQLite، کلیدهای محرمانهٔ دستگاه‌های
+  جفت‌شده، مدل‌های دانلودشده و صدای جلسه‌ها همگی در این والیوم زندگی می‌کنند — از آن
+  پشتیبان بگیرید و کانتینر یک‌بارمصرف می‌شود.
+- **یک کلاینت را از داخل ایمیج جفت کنید** پیش از نخستین اتصال؛ معادل کانتینریِ
+  [گام ۳](#گام-۳-پیش-از-نخستین-راهاندازی-یک-کلاینت-را-جفت-کنید):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **دو ایمیج کلاینت میزبان‌های nginx ایستا هستند** — چیزی برای پیکربندی در زمان
+  اجرا ندارند؛ فرم اتصال هر کلاینت، URL سرور، شناسهٔ دستگاه و کلید جفت‌سازی شما را
+  می‌گیرد. رلهٔ سیگنالینگ هم به همین ترتیب فقط به پورت خودش نیاز دارد
+  (`SIGNALING_HOST` / `SIGNALING_PORT` قابل بازنویسی)؛ بی‌حالت است، هیچ رازی نگه
+  نمی‌دارد و یک **جایگزین** است — تلفن وقتی مسیری از لوپ‌بک، LAN، tailnet یا مسیر
+  مستقیم `wss://` در دسترس باشد از آن استفاده می‌کند و تنها وقتی هیچ‌کدام در دسترس
+  نباشد به رله بازمی‌گردد. اگر کلاینت‌هایتان همیشه مستقیماً به سرور می‌رسند، از آن
+  صرف‌نظر کنید.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+بقیهٔ این راهنما سرور را از کد منبع می‌سازد؛ فلگ‌ها و رفتارهایی که پوشش می‌دهد
+همان‌هایی هستند که متغیرهای محیطی ایمیج تغذیه‌شان می‌کنند.
 
-## Prerequisites
+## پیش‌نیازها
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). این مخزن SDK خود را با [fvm](https://fvm.app) تثبیت می‌کند، پس هر فرمان را با `fvm` آغاز کنید.
+- این مخزن چک‌اوت‌شده باشد.
+- زنجیرهٔ ابزار بومی که اسکریپت آماده‌سازی لازم دارد — Rust/`cargo`، به‌علاوهٔ `meson`، `ninja`، `pkg-config`، `git` و یک کامپایلر C++. هر اسکریپت ساخت، هر چه را پیدا نکند و روش نصبش را نام می‌برد.
+- یک میزبان قابل‌دسترسی: لوپ‌بک برای استفادهٔ محلی، یا یک نشانی LAN/عمومی همراه TLS برای کلاینت‌های راه دور.
 
-## Step 1: Stage the native libraries
+## گام ۱: کتابخانه‌های بومی را آماده کنید
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+کتابخانه‌های بومی **الزامی** هستند — هیچ حالت تنزل‌یافته‌ای وجود ندارد. پیش از هر
+کار دیگری آن‌ها را از ریشهٔ مخزن بسازید:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+این کار `rift`، `fff`، tree-sitter به‌همراه گرامرهایش، `aec`، `lame`،
+`ccpty`، `cc_watcher`، `cc_inference` و بومیِ SAML را در
+`build/natives/` می‌سازد. هوک ساخت `cc_server`
+هر آنچه را که آنجا آماده شده باشد دوباره در بسته جای می‌دهد، پس رد کردن این گام
+یا ساخت را مستقیماً شکست می‌دهد یا — با راه فرار زیر — باینری‌ای تولید می‌کند که
+پیش‌بررسی راه‌اندازی‌اش از شروع سر باز می‌زند و کتابخانهٔ گمشده را نام می‌برد.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[راه فرار مخصوص کامپایل]
+ساختن یک فایل خالی `.cc_natives_allow_missing` در ریشهٔ مخزن، شکست ساخت به‌خاطر
+کتابخانه‌های بومی گمشده را به یک هشدار تنزل می‌دهد. این برای بررسی نحوی یک
+چک‌اوت تازه است؛ سروری که این‌طور ساخته شود نمی‌تواند بوت شود. باید یک **فایل**
+باشد — اجراکنندهٔ هوک ساخت محیط فراخوان را منتقل نمی‌کند، پس متغیر محیطی نادیده
+گرفته می‌شود.
 :::
 
-## Step 2: Build the binary
+## گام ۲: ساخت باینری
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+بستهٔ خروجی `libsqlite3` و کتابخانه‌های بومی آماده‌شده را در کنار باینری ارائه
+می‌کند — نه SQLite سیستمی لازم است و نه موتور Flutter. فایل اجرایی در
+`./build/cli/<os_arch>/bundle/bin/cc_server` می‌نشیند.
 
-## Step 3: Pair a client before first start
+## گام ۳: پیش از نخستین راه‌اندازی یک کلاینت را جفت کنید
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+یک پوشهٔ دادهٔ تازه هیچ دستگاه جفت‌شده و هیچ کلید پیش‌اشتراکی ندارد، پس درخواست
+کلید جفت‌سازی یک کلاینت هنوز برآورده‌شدنی نیست. با زیرفرمان `pair` یکی بسازید.
+این فرمان `global.db` و `secrets.json` را مستقیماً می‌نویسد؛ سروری که از قبل آن
+پوشهٔ داده را سرو می‌کند، دستگاه تازه را بدون راه‌اندازی مجدد برمی‌دارد:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+سه مقدار چاپ می‌کند تا در فرم اتصال یک کلاینت بچسبانید:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +146,44 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+فلگ‌های مفید: `--device` (پیش‌فرض `web-client`؛ شناسه ردهٔ دستگاه را هم تعیین
+می‌کند — `desktop`، `ios`، `android` و هر چیز دیگری یک کلاینت وب است)، `--label`
+(به‌طور پیش‌فرض نام سیستمعامل به‌همراه نام میزبان این ماشین)، `--host` (میزبانی
+که در URL چاپ می‌شود، چون لوپ‌بک از ماشینی دیگر قابل‌دسترسی نیست) و `--client-url`.
+اجرای دوبارهٔ `pair` کلید آن دستگاه را می‌چرخاند و نشست‌های زندهٔ آن را می‌اندازد.
+جفت‌سازی هرگز فضای کاری نمی‌سازد: راه‌اندازی اولیهٔ کلاینت متصل، اولین فضای کاری
+را نام‌گذاری و ایجاد می‌کند.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+با `--client-url` همچنین یک QR قابل‌اسکن در ترمینال چاپ می‌کند که کلاینت وب را
+از قبل پرشده باز می‌کند:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/).
+:::caution[این QR، QR تلفن نیست]
+`--client-url` یک پیوند برای **کلاینت وب** می‌سازد — URL سرور، شناسهٔ دستگاه و
+کلید در قطعهٔ URL. اپ تلفن **Remote** انتظار بار دادهٔ متفاوتی دارد (توصیف‌گر کامل
+اتصال سرور به‌همراه یک انقضا) که از **تنظیمات ← شما ← دستگاه‌های شما** در یک
+کلاینت در حال اجرا ساخته می‌شود. این دو قابل‌جایگزینی با یکدیگر نیستند.
+[جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/) را ببینید.
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+اعتبارنامه‌ای که `cc_server pair` می‌سازد **هیچ انقضایی** ندارد؛ اعتبارنامه‌ای که
+در برنامه ساخته می‌شود همیشه پس از ۳۰ روز منقضی می‌شود. وقتی کارتان با دستگاهی که
+CLI ساخته تمام شد، آن را از **تنظیمات ← شما ← دستگاه‌های شما** ابطال کنید.
 
-## Step 4: Start the server
+## گام ۴: راه‌اندازی سرور
 
-On loopback — the default and all you need for a client on the same machine:
+روی لوپ‌بک — مقدار پیش‌فرض و هر آنچه برای کلاینتی روی همان ماشین لازم دارید:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+برای دسترسی از ماشینی دیگر، همهٔ رابط‌های شبکه را بایند کنید. بایند غیرلوپ‌بک
+بدون TLS **در زمان راه‌اندازی رد می‌شود** (`Refusing to bind non-loopback address … without TLS`)، پس یک گواهی تأمین کنید:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +191,41 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+یا TLS را در یک پروکسی معکوس روی یک شبکهٔ خصوصی قابل‌اعتماد پایان دهید و پشت آن
+یک بایند متن ساده را انتخاب کنید:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+وقتی هم `--tls-cert` و هم `--tls-key` تنظیم شده باشند، `--insecure` نادیده گرفته
+می‌شود — TLS همیشه برنده است. سرور حالت متن ساده را در `GET /healthz` به‌صورت
+`insecure: true` اعلام می‌کند و کلاینت‌ها چنین اتصالی را ناایمن نشان می‌دهند.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+سرور تا `SIGINT`/`SIGTERM` اجرا می‌شود، سپس پاک خاموش می‌شود.
 
-## Step 5: Connect a client
+## گام ۵: اتصال یک کلاینت
 
-Point a client at the server URL and pairing key from step 3:
+یک کلاینت را به URL سرور و کلید جفت‌سازی از گام ۳ اشاره دهید:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/).
+- **برنامهٔ رومیزی**: در صفحهٔ نخستین اجرا (**Control Center چطور اجرا شود؟**) به‌جای **اجرا در این برنامه** فیلدهای اتصال را پر کنید، یا بعداً سرور را در **تنظیمات ← سرور ← اتصال و وضعیت** اضافه کنید. [اتصال به سرور راه دور(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/) را ببینید.
+- **کلاینت وب**: [app.usectrl.dev](https://app.usectrl.dev) (یا نسخهٔ خودتان از ساخت وب) را باز کنید و URL سرور، شناسهٔ دستگاه و کلید جفت‌سازی را وارد کنید.
+- **تلفن**: اپ **Remote** را از یک کلاینت در حال اجرا جفت کنید — [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/) را ببینید.
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server هیچ بستهٔ وب را سرو نمی‌کند]
+یک `cc_server` مستقل هرگز ریشهٔ وب را مانت نمی‌کند، پس `GET /` مقدار 404 برمی‌گرداند.
+کلاینت وب جداگانه میزبانی می‌شود — از `app.usectrl.dev` استفاده کنید، یا ساخت وب را
+خودتان روی هر میزبان HTTPS ایستا میزبانی کنید (ایمیج `cc-webapp` بالا دقیقاً همین
+است). هر مبدأ مرورگری غیر از لوپ‌بک باید در `--allowed-origins` باشد، وگرنه ارتقای
+WebSocket به `/rpc` رد می‌شود؛ فهرست پیش‌فرض `https://app.usectrl.dev` است و
+`localhost` / `127.0.0.1` همیشه مجازند.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## گام ۶: اتصال یک Google Calendar (اختیاری)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+برای همگام‌سازی تقویم یک فضای کاری بدون هیچ رابط گرافیکی متصل، از جریان کد دستگاه
+استفاده کنید:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +233,65 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/).
+یک کد و یک URL برای تأیید روی دستگاهی دیگر چاپ می‌کند، توکن تازه‌سازی را سمت سرور
+ذخیره می‌کند و خارج می‌شود. نسخه‌ای که از کد منبع ساخته می‌شود هیچ کلاینت Google
+همراه ندارد، پس متغیرهای محیطی شناسه و کلید محرمانه الزامی‌اند — هیچ فلگ
+`--google-client-id` وجود ندارد. [اتصال Google Calendar(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/) را ببینید.
 
-## Configuration
+## پیکربندی
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/).
+فلگ‌های استفاده‌شده در بالا همان‌هایی هستند که یک راه‌اندازی نخست لازم دارد. سطح
+کامل — ۲۳ جفت فلگ و متغیر محیطی، چهار زیرفرمان و چیدمان پوشهٔ داده — در
+[مرجع CLI مربوط به `cc_server`(/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli/) است.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[فلگ‌های ناشناخته بی‌صدا نادیده گرفته می‌شوند]
+تجزیه‌گر آرگومان‌ها دست‌ساز است و هر چیزی را که تشخیص ندهد رد می‌کند، پس یک غلط
+تایپی (`--tls-key-file`، `--bindany`) هیچ خطایی تولید نمی‌کند — سرور فقط با مقدار
+پیش‌فرض راه می‌افتد. وقتی به نظر می‌رسد یک فلگ اثری ندارد، خطوط گزارش راه‌اندازی
+را بررسی کنید.
 :::
 
-The four you are most likely to need:
+آن چهارتایی که بیشتر از همه به آن‌ها نیاز پیدا می‌کنید:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| فلگ            | پیش‌فرض                              | معنا                                                                                             |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | پوشهٔ دادهٔ برنامهٔ هر کاربر در سیستم‌عامل | پایگاه‌داده‌ها، کلیدهای محرمانه، مدل‌ها و رسانهٔ کش‌شده                                            |
+| `--port`       | `9030`                               | پورت TCP (`0` = موقت)                                                                            |
+| `--bind`       | `loopback`                           | `loopback`، یا `any` برای همهٔ رابط‌ها (نیازمند TLS یا `--insecure`)                              |
+| `--public-url` | برگرفته از بایند                     | URL مربوط به RPC که به کلاینت‌های جفت‌شده اعلام می‌شود. **پشت پروکسی، NAT یا تونل این را صریح تنظیم کنید** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+پوشهٔ دادهٔ پیش‌فرض روی macOS مسیر `~/Library/Application Support/control-center`،
+روی Windows مسیر `%APPDATA%\control-center` و در جاهای دیگر
+`$XDG_DATA_HOME/control-center` (وگرنه `~/.local/share/control-center`) است. یک
+`.cc_server` نسبی به cwd تنها وقتی استفاده می‌شود که هیچ پوشهٔ خانه یا پوشهٔ دادهٔ
+برنامه‌ای حل نشود.
 
-## What the server serves
+## سرور چه چیزی سرو می‌کند
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` تمام سطح محصول است، نه زیرمجموعه‌ای از آن: مسیر داده و اشتراک‌های
+repo-RPC، نقطهٔ پایانی ابزار MCP در `POST /mcp` و `GET /sse` روی همان پورت،
+وبهوک‌های ورودی، پروکسی‌های رسانه و قلم، بازخوان‌های ورود یکپارچه، پروتکل اجارهٔ
+ناوگان، واکشی RSS سمت سرور با زمان‌بندی ۳۰ دقیقه‌ای و جستجوی برداری (افزونهٔ
+`sqlite_vector` به‌صورت یک افزونهٔ خودکار سراسریِ فرایند ثبت می‌شود و تنها جایی که
+آن افزونه در دسترس نباشد به جستجوی متن کامل تنزل می‌کند).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+توزیع‌کننده **بی‌حالت** است: هیچ اتصال فضای کاری به‌ازای هر نشست وجود ندارد. هر
+فراخوانی در محدودهٔ فضای کاری، `workspace_id` خودش را حمل می‌کند و دسترسی بر پایهٔ
+عضویت و نقش فراخوان در فضای کاری تعیین می‌شود — نه با در دست داشتن کلید جفت‌سازی.
 
-Two things to know before you expose the port beyond loopback:
+دو نکته که پیش از بیرون‌بردن پورت از لوپ‌بک باید بدانید:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP بیرون از میزبان بسته شکست می‌خورد.** یک سطح MCP بدون توکن فقط به لوپ‌بک پاسخ می‌دهد. بایند کردن `any` آن را گسترده نمی‌کند — درخواستی از بیرون میزبان با "MCP requires a bearer token to answer non-loopback clients" رد می‌شود تا وقتی یکی را پیکربندی کنید (`mcp.setToken`، یا **تنظیمات ← سرور ← سرورهای MCP**).
+- **`GET /healthz` طبق طراحی بدون احراز هویت است**، با CORS عام، و شناسه، نام، اثر انگشت هویت و نسخهٔ ساخت سرور را منتشر می‌کند. کلاینت‌ها برای پین کردن سرور به اثر انگشت نیاز دارند، پس این عمدی است — اما یعنی هر `cc_server` قابل‌دسترسی، همین مقدار را به هر کسی که بپرسد افشا می‌کند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Connect to a remote server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/)
-- [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)
-- [Run a fleet worker](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-کارگر-ناوگان/)
-- [Connect a Google Calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
+- [اتصال به سرور راه دور(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/)
+- [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)
+- [اجرای یک کارگر ناوگان(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-کارگر-ناوگان/)
+- [اتصال Google Calendar(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)
-- [Remote control and mobile](/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/)
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)
+- [کنترل از راه دور و موبایل(/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/)

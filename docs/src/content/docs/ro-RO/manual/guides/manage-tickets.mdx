@@ -1,39 +1,41 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Creează și gestionează tichete
+description: Creează tichete, du-le prin ciclul lor de viață, etichetează-le și leagă-le, și consemnează cine este responsabil pentru ce.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-tichete
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Acest ghid arată cum să creezi și să gestionezi tichete.
 
-## Create a ticket
+## Creează un tichet
 
-### From the UI
+### Din interfață
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Dă clic pe **Tichete** în bara laterală a spațiului de lucru.
+2. Apasă **Tichet nou**.
+3. Completează:
+   - **Titlu** — un rezumat scurt. Este singurul câmp obligatoriu.
+   - **Descriere** — markdown, cu o bară de instrumente de formatare.
+   - **Stare** — **De făcut** (valoarea implicită) sau **Backlog**. Stările de
+     început și cele finale se ating prin ciclul de viață, nu la creare.
+   - **Prioritate** — niciuna, urgent, ridicată, medie sau scăzută.
+   - **Asignat** — pe tine sau pe orice agent din spațiul de lucru.
+   - **Proiect** — grupare opțională.
+4. Apasă **Creează** sau activează mai întâi **Creează încă** pentru a ține
+   dialogul deschis și a introduce rapid mai multe tichete.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Nu există niciun selector de furnizori în dialog. Tichetul este creat pe
+furnizorul de tichete activ al spațiului de lucru.
 
-### From an agent
+### De la un agent
 
-Ask an agent in a space:
+Cere unui agent într-un spațiu:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Creează un tichet pentru repararea problemei de expirare a autentificării pe
+> conexiuni lente.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+El apelează instrumentul MCP `create_ticket`. Prioritatea la acel instrument
+este un **întreg**, nu un nume:
 
 ```
 create_ticket(
@@ -44,21 +46,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Valoare | Prioritate |
+| ------- | ---------- |
+| `0`     | Niciuna    |
+| `1`     | Urgent     |
+| `2`     | Ridicată   |
+| `3`     | Medie      |
+| `4`     | Scăzută    |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Doar `workspace_id` și `title` sunt obligatorii; `description`, `priority`,
+`assignee` (un id de agent) și `team_id` sunt opționale. Instrumentul este
+clasificat ca scriere de sincronizare către un furnizor și cere aprobarea ta
+înainte de a rula.
 
-## Update ticket status
+## Actualizează starea unui tichet
 
-Tickets follow this lifecycle:
+Tichetele urmează acest ciclu de viață:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,133 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` și `cancelled` sunt finale. `cancelled` este accesibilă din
+orice stare nefinală. `done` și `failed` sunt accesibile din `inProgress` sau
+`inReview`; `open` poate trece și direct în `blocked`. Selectorul de stări din
+interfață listează toate stările, cu excepția lui `failed` — agenții o
+marchează cu `fail_ticket`.
 
-To change it, use any of:
+Pentru a o schimba, folosește oricare dintre:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- rândul **Stare** din panoul de proprietăți al tichetului,
+- submeniul **Stare** din meniul de clic dreapta al unui tichet din listă,
+- butonul **Stare** din bara flotantă, după ce selectezi mai multe tichete.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Graful ciclului de viață îi leagă pe agenți, nu pe tine]
+Orice schimbare de stare făcută din interfață este forțată, ocolind complet
+graful — poți muta un tichet în orice stare listată de selector, inclusiv
+redeschiderea unuia `done`, `failed` sau `cancelled`. Selectorul nu oferă
+`failed` ca țintă. Diagrama de mai sus guvernează agenții și automatizarea:
+o tranziție ilegală încercată de un instrument MCP sau de un reconciliator este
+înregistrată în jurnal și ignorată, nu aplicată.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/).
+Schimbările de stare emit evenimente de domeniu (`TicketStatusChanged`,
+`TicketCompleted` și altele) care pot declanșa pipeline-uri. Vezi
+[Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/).
 
-## Assign a ticket
+## Atribuie un tichet
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Deschide tichetul.
+2. În panoul de proprietăți, setează **Asignat** — pe tine, pe un alt membru al
+   spațiului de lucru sau pe un agent.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)).
+:::caution[Atribuirea nu pornește nicio muncă]
+Atribuirea consemnează proprietatea și nimic altceva. Nu creează niciun spațiu,
+nu schimbă nicio stare și nu trimite niciun agent — `TicketAssigned` este un
+semnal pur de audit, fără niciun dispecer în spate. Ca să pui un agent la
+treabă, trimite-i un mesaj într-un spațiu
+(vezi [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Singura excepție: `TicketAssigned` este un tip de eveniment la care poți lega un
+trigger de pipeline, așa că un șablon al tău poate reacționa la o atribuire.
 :::
 
-## Add labels
+## Adaugă etichete
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Etichetele se aplică în bloc din lista de tichete, nu dintr-un singur tichet —
+panoul de proprietăți nu are niciun control pentru etichete.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Treci cu cursorul peste un rând din lista de tichete și bifează caseta lui de
+   selectare. Bifează câte ai nevoie; bara flotantă apare de îndată ce ceva este
+   selectat.
+2. În acea bară, deschide butonul **Etichete**.
+3. Alege o etichetă. Ea se adaugă la fiecare tichet selectat care nu o are;
+   etichetele existente nu se șterg niciodată. **Șterge etichetele** le elimină
+   pe toate. Selectorul listează etichetele deja prezente pe un tichet din
+   spațiul de lucru. Agenții pot adăuga un nume nou prin `update_ticket` sau
+   `tickets.patch`.
 
-## Link tickets
+## Leagă tichete
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Relațiile stau pe cardul **Relații** al tichetului, în panoul de proprietăți,
+sau în spatele opțiunii **Leagă de** din meniul de clic dreapta al listei.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Deschide tichetul și găsește cardul **Relații**.
+2. Apasă controlul lui de adăugare și alege relația:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relație            | Semnificație                              |
+| ------------------ | ----------------------------------------- |
+| **Sub-issue al…**  | Părintele acestui tichet este celălalt    |
+| **Părinte al…**    | Celălalt tichet este copilul acestuia     |
+| **Blocat de…**     | Acest tichet este blocat de celălalt      |
+| **Blochează…**     | Acest tichet îl blochează pe celălalt     |
+| **Legat de…**      | Simetrică, fără direcție implicită        |
+| **Duplicat al…**   | Acest tichet îl duplică pe celălalt       |
 
-3. Pick the target ticket.
+3. Alege tichetul țintă.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Duplicat de** apare pe card, dar nu în selector — este inversul lui
+**Duplicat al** și se setează din celălalt tichet. Fiecare relație listată este
+clicabilă pentru a deschide tichetul legat și se poate elimina la trecerea
+cursorului.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Relațiile de părinte și de sub-sarcină sunt stocate pe tichetul însuși, nu ca
+rânduri de legătură, așa că ștergerea unui părinte se propagă în cascadă la
+copiii lui (vezi mai jos), în timp ce legăturile de blocare și de înrudire nu fac
+asta.
 
-## Add collaborators
+## Adaugă colaboratori
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Colaboratorii sunt o listă de persoane pe tichet — cine este implicat și în ce
+calitate.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Deschide tichetul.
+2. Apasă controlul cu simbolul persoană-plus de pe cardul **Adaugă colaborator**.
+3. Alege un agent.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Cele trei roluri sunt **assignee**, **collaborator** (valoarea implicită) și
+**reviewer**. Selectorul din interfață listează doar agenți din spațiul de lucru
+și scrie întotdeauna rolul implicit; oamenii pot apărea ca rânduri, dar nu sunt
+oferiți în acel meniu. Instrumentul MCP `add_ticket_collaborator` acceptă un
+`role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ro-RO/manual/ghiduri-practice/spatii/).
+Adăugarea unui colaborator scrie un rând și nu publică niciun eveniment de
+domeniu; nu acordă acces la niciun spațiu. Ca să pui un agent într-o conversație,
+adaugă-l ca participant din antetul spațiului — vezi
+[Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/).
 
-## Delete a ticket
+## Șterge un tichet
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Folosește **Șterge tichetul** în partea de jos a panoului de proprietăți, în
+meniul de clic dreapta sau acțiunea de ștergere a barei flotante, după ce
+selectezi mai multe tichete.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Ștergerea este doar locală]
+Un tichet care provine dintr-un tracker extern nu este șters acolo — niciun
+furnizor nu suportă asta — așa că poate reapărea la următoarea sincronizare.
+Ștergerea se propagă și în cascadă: colaboratorii tichetului și eventualele
+tichete copil dispar împreună cu el.
 :::
 
-## Related guides
+## Ghiduri conexe
 
-- [Delegate work to agents](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
-- [Organize work with projects](/ro-RO/manual/ghiduri-practice/proiecte/)
-- [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
-- [Ticket lifecycle reference](/ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor/)
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Organizează munca cu proiecte](/ro-RO/manual/ghiduri-practice/proiecte/)
+- [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
+- [Referință: ciclul de viață al tichetelor](/ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor/)
 
-## Related concepts
+## Concepte conexe
 
-- [Tickets](/ro-RO/manual/concepte/tichete/)
-- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/)
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/)
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/)

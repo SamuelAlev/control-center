@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Sambungkan hos kod
+description: Sambungkan GitHub, GitLab atau Bitbucket supaya permukaan PR, pendaftaran repositori dan larian ejen berfungsi — satu ruang kerja boleh menggunakan ketiga-tiganya.
 slug: ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center berfungsi dengan tiga hos kod, yang dipanggil **forge** sepanjang apl: **GitHub**, **GitLab** dan **Bitbucket Cloud**. Tiada satu pun daripadanya menjadi lalai. Sambungkan satu dan semuanya berfungsi; sambungkan beberapa dan satu ruang kerja boleh memegang repositori daripada kesemuanya sekali gus.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Forge ialah sifat bagi setiap **repo**, dibaca daripada remote `origin`-nya apabila anda mendaftarkannya. Anda tidak pernah memilihnya, dan tiada tetapan per-ruang-kerja yang boleh disalah tetapkan.
 
-## Connect a forge
+## Sambungkan forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Buka **Tetapan → Ruang kerja → Profil & identiti** (`/settings/workspace/profile`).
+2. Cari kad **Hos kod**. Setiap forge yang disokong disenaraikan, sama ada disambungkan atau tidak.
+3. Tekan **Log masuk dengan …** jika baris itu menawarkannya, atau **Tambah token** dan tampal satu.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Log masuk** muncul untuk forge yang pelayan anda mempunyai apl berdaftar baginya — pada masa ini iaitu GitHub, melalui aliran peranti (lihat [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)). Selebihnya ialah token yang ditampal, yang merupakan afordans yang jujur dan bukannya butang yang tidak boleh diselesaikan.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Sama ada cara, kelayakan itu **milik anda dan berada pada pelayan**, dikunci mengikut id pengguna anda: tiada token disimpan pada mesin yang anda taipkannya, setiap peranti yang anda daftar masuk menggunakannya yang sama, dan tiada ahli lain boleh membacanya. Ia berkuat kuasa pada **permintaan seterusnya** — tiada apa yang perlu dimulakan semula, dan memutuskan sambungan menghentikannya dihantar serta-merta.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Setiap baris memberitahu anda dari mana kelayakannya datang, kerana itulah perbezaan antara "token saya tidak berfungsi" dan "token lain yang menjawab":
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Subtajuk                                      | Maksud                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `Log masuk sebagai octocat`                   | Kelayakan anda sendiri sedang digunakan                                          |
+| `Log masuk sebagai octocat · melalui apl pelayan ini` | Identiti apl pelayan yang menjawab — anda belum daftar masuk              |
+| `Log masuk sebagai octocat · dari persekitaran` | Pemboleh ubah persekitaran pelayan yang menjawab, bukan kelayakan anda        |
+| `Tidak disambungkan`                          | Anda tiada kelayakan untuk forge ini                                             |
 
-### What token each forge wants
+### Token yang dikehendaki oleh setiap forge
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| Forge         | Token                                                     | Di mana menciptanya                                        |
+| ------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| **GitHub**    | Classic: `repo` dan `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Token akses peribadi dengan `api`                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Token API Atlassian, serta e-mel akaun anda              | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket mengesahkan dengan **e-mel akaun anda sebagai nama pengguna** dan token sebagai kata laluan. Tetapkan `BITBUCKET_EMAIL` dalam persekitaran pelayan supaya ia tahu e-mel mana yang perlu dipasangkan dengan token itu.
 
-### Or use the environment
+### Atau gunakan persekitaran
 
-For a headless or CI install, the server reads these:
+Untuk pemasangan tanpa kepala atau CI, pelayan membaca yang berikut:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, kemudian `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, kemudian `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, kemudian `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Ini ialah kelayakan **pelayan**, bukan milik anda, dan perbezaan itu penting: permintaan yang dibuat bagi pihak anda menggunakan kelayakan anda dan tiada yang lain, jadi persekitaran tidak pernah diam-diam menggantikan anda. Kerja tanpa manusia di belakangnya — webhook, pengundian PR, segerak tiket — meleraikan identiti apl pelayan dahulu, kemudian kelayakan pemilik pelayan, kemudian persekitaran. Susunannya tetap supaya "saya daftar masuk dan tiada apa yang berubah" tidak pernah menjadi hasil yang disokong.
 
-## You are a different person on each forge
+## Anda ialah orang yang berbeza pada setiap forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Manusia yang sama ialah `octocat` di GitHub dan sesuatu yang sama sekali berbeza di GitLab. Control Center meleraikan identiti anda **bagi setiap forge** dan menggunakan yang betul untuk setiap repositori, itulah yang menjadikan "perlu semakan saya", "dicipta oleh saya" dan "anda meluluskan ini" betul dalam ruang kerja bercampur.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Jika identiti sesuatu forge belum dileraikan, repositorinya tidak menyumbang apa-apa kepada peti masuk dan bukannya memadankan semuanya. Peti masuk menyatakannya dan bukannya mendakwa anda sudah mengejar semuanya.
 
-## One inbox, every forge
+## Satu peti masuk, setiap forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Peti masuk dan baris gilir PR menyebar merentas setiap forge yang diwakili dalam ruang kerja dan menggabungkan hasilnya menjadi satu aliran — pull request GitHub dan pull request Bitbucket duduk bersebelahan, disusun mengikut masa dan bukannya dikelompokkan mengikut vendor.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Kegagalan diasingkan. Forge yang tidak berfungsi, dihadkan kadar atau tidak disambungkan tidak menyumbang apa-apa dan membiarkan yang lain tidak tersentuh; ia tidak pernah mengosongkan seluruh peti masuk. Repositorinya sendiri terus memaparkan keadaan terakhir yang diketahui sehingga ia pulih.
 
-## What each forge can do
+## Apa yang boleh dilakukan oleh setiap forge
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Setiap forge menyokong gelung teras: menyenaraikan dan membuka pull request, membaca diff, mengomen secara sebaris dan pada peringkat atas, menyemak, mencantum dan menutup. Selebihnya ia benar-benar berbeza, dan Control Center menyembunyikan apa yang tidak boleh dilakukan oleh sesuatu forge dan bukannya menunjukkan kawalan yang gagal secara senyap.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Keupayaan                          | GitHub | GitLab | Bitbucket |
+| ---------------------------------- | :----: | :----: | :-------: |
+| Semakan berkumpulan (tertunda)     |   ✓    |   ✓    |     —     |
+| Minta perubahan                    |   ✓    |   ✓    |     ✓     |
+| Keadaan "dilihat" setiap fail disegerakkan |   ✓    |   —    |     —     |
+| Tindak balas emoji                 |   ✓    |   ✓    |     —     |
+| Penyemak pasukan / kumpulan        |   ✓    |   ✓    |     —     |
+| Penyemak dicadangkan               |   ✓    |   —    |     ✓     |
+| Hasil CI pada PR                   |   ✓    |   ✓    |     ✓     |
+| Telusuri langkah/log sesuatu kerja CI |   ✓    |   ✓    |     —     |
+| Pull request bertindan             |   ✓    |   —    |     —     |
+| Templat perihalan PR               |   ✓    |   ✓    |     —     |
+| Pengundian pemberitahuan           |   ✓    |   —    |     —     |
+| Profil pengguna yang kaya          |   ✓    |   ✓    |     —     |
+| Ref kepala PR di sisi pelayan      |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Apabila sesuatu keupayaan tiada, ciri itu merosot dengan jujur:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Keadaan dilihat** masih berfungsi, tetapi hanya pada peranti anda menetapkannya.
+- **Semakan berkumpulan** pada Bitbucket disiarkan komen demi komen, jadi penyemak melihatnya tiba satu per satu dan bukannya sekaligus.
+- **Tiada ref kepala PR** pada Bitbucket bermakna checkout sesuatu pull request mengambil cawangan sumbernya mengikut nama, yang gagal sebaik sahaja cawangan itu dipadam.
 
-## Vocabulary
+## Istilah
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab memanggil pull request sebagai **merge request**. Control Center menyebut "pull request" sepanjang modelnya sendiri, dan menggunakan kata nama setiap forge sendiri apabila ia bercakap tentang forge itu.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### The PR list is empty and says a forge is not connected
+### Senarai PR kosong dan menyatakan sesuatu forge tidak disambungkan
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Anda tiada kelayakan untuk forge itu. Daftar masuk atau tampal token dalam **Tetapan → Ruang kerja → Profil & identiti → Hos kod**. Repositori forge lain tidak terjejas.
 
-### I connected a forge but its repos still show nothing
+### Saya menyambungkan forge tetapi repositorinya masih tidak menunjukkan apa-apa
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Semak subtajuk baris itu. Jika ia berbunyi "melalui apl pelayan ini" atau "dari persekitaran", kelayakan yang berbeza daripada yang anda jangkakan sedang menjawab — kelayakan anda sendiri menang untuk apa sahaja yang anda minta, jadi jika ia menyatakan sebaliknya, milik anda tidak disimpan.
 
-### A repo will not register
+### Sesuatu repo tidak boleh didaftarkan
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/).
+Pendaftaran memerlukan ketiga-tiganya: laluan itu berada di dalam pokok kerja git, ia mempunyai remote `origin`, dan remote itu menunjuk ke github.com, gitlab.com atau bitbucket.org. Lihat [Tambah repositori ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/).
 
-### Everything stops working for a while after heavy use
+### Semuanya berhenti berfungsi untuk seketika selepas penggunaan berat
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Itulah pemutus litar had kadar. Forge yang memberi isyarat had utamanya menyebabkan klien menggagalkan permintaan selanjutnya secara setempat, tanpa panggilan rangkaian, sehingga tetingkap itu berlalu — jadi ribut cuba semula tidak boleh mendalamkan had itu. Kegagalan sementara dicuba semula dengan undur eksponen.
 
-## Related guides
+## Panduan berkaitan
 
-- [Add repos to a workspace](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)
-- [Set up GitHub integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
-- [Review and merge a PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
-- [Triage the inbox](/ms-MY/manual-pengguna/panduan-cara/triage-peti-masuk/)
+- [Tambah repositori ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)
+- [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
+- [Semak dan cantumkan PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
+- [Triage peti masuk](/ms-MY/manual-pengguna/panduan-cara/triage-peti-masuk/)

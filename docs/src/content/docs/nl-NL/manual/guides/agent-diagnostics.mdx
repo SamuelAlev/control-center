@@ -1,109 +1,195 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Een agent diagnosticeren
+description: Loop het runlog, de adapterdetectie, de serverstatus en de hostdiagnose door wanneer een agent geen runs meer produceert.
 slug: nl-NL/handleiding/gidsen/agent-diagnosticeren
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Deze gids laat zien hoe je erachter komt waarom een agent geen runs produceert.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Werk van boven naar beneden: eerst de eigen runs van de agent, dan zijn backend,
+dan de server, dan de host.
 
-## 1. Check the agent's run history
+## 1. Controleer de runhistorie van de agent
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Instellingen → Werkruimte → Agenten** → selecteer de agent → **Logboeken**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Elke run toont een statusbadge, een duur ("Running…" zolang hij loopt), de begin-
+en eindtijd, de PID en de adapter die is gebruikt. **Bekijken** opent de ruwe
+gebeurtenissenstroom van die run. **Stoppen** beëindigt een lopend proces en zet
+de run op "Killed by user"; **Actieve stoppen** in de kop doet hetzelfde voor
+elke lopende run van die agent.
 
-Read it like this:
+Lees het zo:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Helemaal geen runs** — de dispatch heeft nooit plaatsgevonden. Vermeldingen
+  in de composer bestaan uit `@` plus woordtekens (letters, cijfers, underscore).
+  Resolutie is een exacte of prefixmatch op de agentnaam, dus `@code-reviewer`
+  wordt geparseerd als `code` en kan alsnog een agent met de naam
+  `code-reviewer` wekken. Een naam met een spatie kan niet als één token worden
+  vermeld. Ga dan naar stap 2.
+- **Een run die meteen met een fout eindigde** — open **Bekijken**. Een fout bij
+  het starten van de backend verschijnt hier als een procesfout.
+- **Een run die blijft hangen op "Running…"** — stop hem en controleer daarna de
+  **Stilte-time-out** van de agent op het tabblad **Instellingen**. Zonder
+  ingestelde time-out geldt de standaardwaarde per modus.
+- **Een voltooide run zonder bruikbare uitvoer** — de status in het runlog blijft
+  `completed` voor een run die eindigde zonder het resultaat dat zijn modus
+  vereiste; het eerlijke signaal is de samenvattingstekst, niet de badge.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Het tabblad **Logboeken** toont geen kosten. Gebruik voor uitgaven de tabel per
+agent in **Observeerbaarheid → Overzicht**.
 
-## 2. Check the agent's backend
+## 2. Controleer de backend van de agent
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Instellingen → Server → Modelaanbieders** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+De lijst **Gedetecteerde runners** toont elke adapter met zijn detectieresultaat —
+een geïnstalleerde versie, "Controleren…" of "Niet gevonden" — plus het gevonden
+pad en de chips met mogelijkheden voor een gevonden CLI. Druk in de paginakop op
+**Vernieuwen** om opnieuw te detecteren.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+De detectie draait op de machine die `cc_server` host, niet op de machine waarnaar
+je kijkt. Als je de webclient of een gekoppeld apparaat gebruikt, betekent "Niet
+gevonden" dat de CLI op de serverhost ontbreekt.
 
-Two things to confirm:
+Twee dingen om te controleren:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Of de agent überhaupt een adapter heeft ingesteld.** Een agent met een lege
+  adapter wordt gedispatcht naar **Control Center (built-in)** en het runlog
+  registreert `cc-harness`, zodat het transcript vermeldt wat er werkelijk
+  draaide. Zonder model erbij vraagt hij Anthropic om zijn standaardmodel — wat
+  mislukt met `No credential for provider "anthropic"` tenzij je een
+  Anthropic-account hebt verbonden. De meegeleverde specialisten worden zonder
+  adapter geleverd.
+- **Of de ingebouwde adapter een model heeft.** Zijn modellenlijst wordt live
+  samengesteld uit de providers die verderop op deze pagina zijn verbonden, dus
+  een provider zonder opgeslagen referentie levert nul modellen.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+De adaptercatalogus zelf ligt vast — je kunt geen nieuwe adapter registreren. Wat
+je hier per adapter kunt aanpassen, zijn de opstartargumenten en de
+omgevingsvariabelen. Let op: een omgevings-override per adapter verslaat stil een
+verbonden provideraccount wanneer referenties worden bepaald.
 
-## 3. Check the server
+## 3. Controleer de server
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Instellingen → Server → Verbinding en status** (`/settings/server/connection`)
+laat zien met welke server deze client praat en wat die rapporteert.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Voor een headless server is `GET /healthz` dezelfde informatie zonder client. Het
+is bewust ongeauthenticeerd en CORS-open:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Het retourneert de status van de server, de uptime in seconden, het aantal live
+verbindingen, de gebonden poort, de buildversie en git-SHA, de schemaversie van de
+werkruimte, de RPC-catalogusversie, de server-id, -naam en
+identiteitsvingerafdruk, of de binding onveilig is en een `codeGraph`-blok met
+tellers voor `watching` / `indexing` / `pending`. Als een cache verkeer heeft
+gezien, bevat het ook een `caches`-blok; een demoserver voegt `demo: true` toe.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Twee dingen die je moet weten wanneer een wijziging "in tests werkt, maar niet in
+de app":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- De desktop start bij voorkeur een **vooraf gebouwde** `cc_server`-binary in
+  plaats van de bron. Een nieuwe RPC-op of MCP-tool verschijnt pas nadat de binary
+  opnieuw is gebouwd, en het opstartlog waarschuwt wanneer de git-SHA van het
+  kindproces afwijkt van die van de app.
+- De desktop beëindigt een gestarte server die binnen 20 seconden zijn
+  gereedheidsbanner niet heeft geprint, en valt terug op een foutscherm.
 
-## 4. Check the host
+## 4. Controleer de host
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Instellingen → Server → Diagnose en privacy** (`/settings/server/diagnostics`)
+is de pagina op hostniveau. Die bevat:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Sandboxing** — de hoofdschakelaar, de gedetecteerde backend, een
+  installatiehint en de schakelaars voor standaardmogelijkheden. Alleen de
+  gedetecteerde backend komt van de server; zie de waarschuwing hieronder. Er is
+  geen resetknop.
+- **Semantisch zoeken** — de levenscyclus van het embeddingmodel op het apparaat:
+  geïnstalleerd, bezig met downloaden met een percentage, niet geïnstalleerd of
+  een installatiefout. Tot het is geïnstalleerd, blijven geheugen en codezoeken
+  alleen op trefwoorden.
+- **Systeemgedrag** — houd de computer wakker terwijl agenten draaien.
+- **Synchronisatie-engine** — noodschakelaars per store voor tickets, berichten en
+  notities. Dit zijn noodluiken terug naar abonnementen op volledige snapshots;
+  een wijziging geldt alleen voor nieuwe abonnementen, dus hij wordt pas volledig
+  van kracht na het herladen van de app.
+- **Logniveau** — verhoog het voordat je een fout reproduceert.
+- **Privacy** — of ruwe diffinhoud naar het model van de agent mag worden
+  doorgestuurd en of crashrapporten worden verzonden.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Deze sectie rapporteert de host; de bedieningselementen zijn client-side]
+Detectie en handhaving komen nu overeen: waar de detector een native backend
+rapporteert, zijn agentruns op die host er echt in omhuld. Maar de detector is het
+enige live onderdeel in deze sectie. De hoofdschakelaar, de backendkiezer en de
+schakelaars voor standaardmogelijkheden zijn voorkeuren die op jouw apparaat zijn
+opgeslagen, en de server leest ze geen van alle — de eigen schakelaar van de
+server is `--sandbox` (`on` standaard, `off` om af te zien van sandboxing) en
+voor elke agent die op "Werkruimtestandaard gebruiken" blijft staan, valt de
+server terug op zijn conservatieve standaard: geen git push, geen GitHub-API, geen
+ticketing-sleutel, netwerk aan.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Een waarschuwing hier is dus het waard om er iets mee te doen, maar het is
+meestal niet de reden waarom een agent faalt. Lees het opstartlog om te
+bevestigen in welke toestand de server verkeert: het print `agent sandbox ON` met
+de backendnotitie, `no OS-native agent sandbox on this host` met een
+installatiehint, of `agent sandbox DISABLED by --sandbox off`. `GET /healthz`
+bevat geen sandboxveld.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Waar geen backend is — altijd Windows, Linux of WSL2 zonder `bwrap` en `socat` —
+worden runs **niet** gesandboxed, en wat ze begrenst is de eigen checkout van het
+gesprek, de mogelijkheden die bepalen welke inloggegevens erin terechtkomen, de
+actiebeveiligingen, het saneren van de omgeving en het tooloppervlak dat de modus
+van het gesprek toestaat.
 :::
 
-## Common failures
+## Veelvoorkomende storingen
 
-### The run never starts and the adapter shows "Not found"
+### De run start nooit en de adapter toont "Niet gevonden"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Installeer de CLI **op de serverhost** en druk dan op **Vernieuwen** op de pagina
+Modelaanbieders. Of schakel de agent over naar de ingebouwde adapter, die geen CLI
+nodig heeft, en verbind een provider op dezelfde pagina.
 
-### The agent cannot push or open a pull request
+### De agent kan niet pushen en geen pull request openen
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Zijn mogelijkheden zijn de poort. Open **Instellingen → Werkruimte → Agenten** →
+de agent → **Sandbox-machtigingen**, zet de schakelaar aan en schakel **git push
+toestaan** en **GitHub API-aanroepen toestaan** in. Als de schakelaar op
+"Werkruimtestandaard gebruiken" blijft staan, krijgt de agent ze geen van alle.
 
-### Semantic search returns nothing useful
+### Semantisch zoeken levert niets bruikbaars op
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Controleer **Instellingen → Server → Diagnose en privacy → Semantisch zoeken**. Tot
+het embeddingmodel is geïnstalleerd, gebeurt zoeken alleen op trefwoorden. Rijen
+die zijn geschreven voordat het model was geïnstalleerd, worden nooit bijgevuld en
+blijven dus ook daarna alleen op trefwoorden doorzoekbaar.
 
-### The server will not boot at all
+### De server start helemaal niet op
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Native bibliotheken zijn vereist en er is geen terugvalmodus. Een ontbrekende
+dylib zorgt dat `cc_server` weigert te starten en noemt de boosdoener in de fout.
+Zet de natives klaar met `scripts/natives/build_natives.sh` en bouw de
+serverbinary opnieuw.
 
-### An action is silently denied
+### Een actie wordt stil geweigerd
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Een `prompt`-beslissing van een beveiliging zonder verbonden goedkeurder wordt
+geweigerd, en dat is bewust. Controleer de regels van de werkruimte onder
+**Instellingen → Werkruimte → Agentmachtigingen**.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
-- [Manage adapters and models](/nl-NL/handleiding/gidsen/adapters/)
-- [Configure guardrails](/nl-NL/handleiding/gidsen/beveiligingen-configureren/)
-- [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
+- [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/)
+- [Beveiligingen configureren](/nl-NL/handleiding/gidsen/beveiligingen-configureren/)
+- [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)

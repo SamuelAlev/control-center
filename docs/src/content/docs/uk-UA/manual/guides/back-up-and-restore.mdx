@@ -1,162 +1,164 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Резервне копіювання та відновлення
+description: Зробіть знімок інсталяції, перенесіть робочий простір між машинами, відновіть один робочий простір чи всі одразу та зберігайте копії деінде.
 slug: uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/uk-UA/керівництво/довідка/резервне-копіювання/).
+Цей посібник охоплює п’ять речей, які люди насправді роблять із резервними копіями:
+зробити копію, забрати її, перенести робочий простір, повернути його назад і зберігати
+копії поза машиною. Точний вигляд кожного артефакту й операції дивіться в
+[довідці з резервного копіювання](/uk-UA/керівництво/довідка/резервне-копіювання/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Усе описане тут міститься в розділі **Налаштування → Сервер → Резервні копії та відновлення**.
 
-## Prerequisites
+## Передумови
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **Повноцінний клієнт** — настільний застосунок або вебзастосунок. Спарений телефон не може запустити нічого з цього — так задумано.
+- Щоб зробити, переглянути, завантажити чи видалити **знімок інсталяції**, потрібно бути **власником** інсталяції.
+- Для дій з окремим робочим простором: **адмін** цього робочого простору для експорту, **власник** — для імпорту чи видалення.
+- Для завантажень і вивантажень: **пряме** з’єднання із сервером. Ретранслятор-посередник передає кадри RPC, а не файли, тож за роботи через нього елементи керування передаванням вимикаються із поясненням.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Знімки інсталяції створюються вручну]
+**Зробити знімок зараз** так само створює знімок усієї інсталяції лише на запит.
+Вбудований конвеєр **Workspace backup** натомість може раз на тиждень робити резервну
+копію бази даних робочого простору й видаляти копії цього робочого простору, старші за
+30 днів. Він не копіює `global.db`, інші робочі простори чи файли поряд із базою даних.
+Зберігайте копії поза машиною окремо.
 :::
 
-## What a backup covers
+## Що охоплює резервна копія
 
-Both artifacts are **databases only**:
+Обидва артефакти — це **лише бази даних**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **Знімок інсталяції** — це каталог із часовою міткою: `manifest.json`, `global.db` та один `<workspaceId>/workspace.db` на кожен робочий простір.
+- **Експорт робочого простору** — це той самий один файл `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/uk-UA/керівництво/довідка/резервне-копіювання/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Жоден із них не несе решти каталогу даних: `secrets.json` (ключі спарювання, облікові
+дані провайдерів, SSO), `blobs/` робочого простору (зображення, вставлені в повідомлення),
+`skills/`, `agents/`, `chat_credentials/`, записане аудіо зустрічей чи зображення rig.
+Частина цього — одноразове, а частина — ні: [повна таблиця є в довідці](/uk-UA/керівництво/довідка/резервне-копіювання/#what-a-backup-does-not-contain),
+а покрити його покликаний розділ [про копії поза машиною](#копіювати-резервні-копії-поза-машиною).
 
-## Take a snapshot of the whole install
+## Зробити знімок усієї інсталяції
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Відкрийте **Налаштування → Сервер → Резервні копії та відновлення**.
+2. У розділі **Знімки інсталяції** натисніть **Зробити знімок зараз**.
+3. Спливаюче повідомлення називає каталог, який було записано, на хості сервера. Новий знімок з’являється вгорі списку.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Сервер увесь час працює. Кожен файл записується через `VACUUM INTO`, що дає узгоджений
+результат навіть для живої бази даних, тож жодного вікна обслуговування не потрібно і
+зупиняти агентів не доведеться.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Кожен рядок у списку показує часову мітку, розмір на диску, скільки робочих просторів
+було захоплено та чи знімок **Повний** або **Неповний**. Неповний означає, що маніфест
+відсутній або вказує на файли, яких немає, — копія, перервана збоєм чи переповненим
+диском. Такі знімки все одно показуються навмисно: знімок, якого ви не бачите, — це
+знімок, який ви вважаєте наявним. Неповний знімок не може відновити всю інсталяцію, але
+файли робочих просторів, які в ньому все ж є, можна приймати по одному.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Рядок також може казати **_n_ робочих просторів не потрапило до знімка**. Це робочий
+простір, зареєстрований, але жодного разу не записаний (файлу ще немає), або той, чию
+копію не вдалося зробити, — перевірте журнал сервера.
 
-## Schedule workspace backups and retention
+## Запланувати резервні копії робочого простору та термін їхнього зберігання
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Відкрийте **Налаштування → Конвеєри → Шаблони конвеєрів** для цього робочого простору й
+знайдіть **Workspace backup**. Його увімкнений розклад запускається щонеділі о 03:00 UTC:
+**Back up workspace**, а далі **Delete backups older than** (типово 30 днів). Другий вузол
+виконується лише після успішного копіювання. Ви можете змінити кількість днів зберігання
+у вузлі або вимкнути розклад. Якщо сервер офлайн у запланований час, розклад надолужить
+пропущене один раз, коли знову підніметься, а не відтворюватиме кожен пропущений тиждень.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Резервні копії робочого простору лежать на сервері за шляхом
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Вузол зберігання
+видаляє лише старі копії цього робочого простору; він ніколи не видаляє знімки
+інсталяції чи копії інших робочих просторів. Ці файли містять лише базу даних. Для
+зберігання поза машиною копіюйте їх окремо.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Ці копії окремі від списку **Знімки інсталяції**. Щоб відновити одну з них, скористайтеся
+**Дані робочого простору → Імпортувати**, вказавши серверний шлях `workspace.db` цієї
+копії. Імпорт замінює поточну базу даних цього робочого простору, тож спершу експортуйте
+її, якщо може знадобитися скасувати відновлення.
 
-## Delete an install snapshot
+## Видалити знімок інсталяції
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+У розділі **Знімки інсталяції** розгорніть знімок, навіть неповний, і скористайтеся
+**Видалити знімок** у небезпечній зоні. Підтвердьте його назву. Увесь каталог знімка
+остаточно видаляється із сервера; спершу завантажте його, якщо потрібна копія. Конвеєр
+резервного копіювання робочого простору ніколи не видаляє ці знімки.
 
-## Collect a copy on your own machine
+## Зібрати копію на власній машині
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Шляхи, які показує ця сторінка, — на машині, де працює `cc_server`. Коли це не та машина,
+за якою ви сидите, скористайтеся кнопками **Завантажити**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Біля кожного **робочого простору** в розділі **Дані робочого простору** → **Завантажити**, для одного файлу `.db`.
+- Біля кожного **знімка** в розділі **Знімки інсталяції** → **Завантажити**, для всього знімка як `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+У настільній програмі ви обираєте, куди потрапить файл, і спливаюче повідомлення називає
+його; у вебверсії він потрапляє до завантажень браузера. Так чи так обидва показують
+поступ у байтах, бо це ті два вантажі, які сягають гігабайтів.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Обидва створюють свіжу копію в момент натискання кнопки, передають її потоком і після
+цього видаляють копію на сервері — завантаження не означає «взяти файл, який кнопка
+експорту створила раніше».
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Розпакування архіву знімка точно відтворює структуру знімка — саме тому його відновлення
+зводиться до зворотного копіювання.
 
-## Move a workspace to another install
+## Перенести робочий простір в іншу інсталяцію
 
-One workspace is one database file, so handing it over is a file operation.
+Один робочий простір — це один файл бази даних, тож передати його — це файлова операція.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. На **вихідному** сервері відкрийте **Налаштування → Сервер → Резервні копії та відновлення → Дані робочого простору**, розгорніть робочий простір і натисніть **Завантажити**.
+2. На **цільовому** сервері створіть (або виберіть) робочий простір, який його прийме.
+3. Розгорніть цей робочий простір і в розділі **Відновити з цього пристрою** натисніть **Вибрати файл і вивантажити**. Виберіть `.db`, який ви завантажили.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Якщо обидва сервери — це та сама машина, за якою ви сидите, **Зберегти на сервері** разом
+з **Імпортувати** → **Вибрати файл** робить те саме без зайвого кола; шляхи в діалозі
+імпорту розв’язуються на хості сервера.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Імпорт замінює все]
+Імпорт перезаписує все, що наразі містить цільовий робочий простір, і його не можна
+скасувати. Спершу експортуйте ціль, якщо в ній є щось, що ви могли б захотіти повернути.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Дві речі дозволені й записуються в журнал, а не відхиляються: імпорт файлу, чий записаний
+ідентифікатор робочого простору відрізняється від цільового (так ви дублюєте робочий
+простір або відновлюєте його під новим ідентифікатором), та імпорт файлу з **іншої
+інсталяції**. У другому випадку спарені пристрої та ідентифікатори користувачів цього
+файлу належать інсталяції, з якої він прийшов, і не розв’яжуться на цій — власні дані
+робочого простору цілі, але після його прийняття перевірте членство.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Токени чат-бота лежать поряд із базою даних, а не всередині неї, тож робочий простір,
+який ви передаєте комусь, не несе жодних живих облікових даних. Приймальна інсталяція
+під’єднує власні.
 
-## Restore one workspace from a snapshot
+## Відновити один робочий простір зі знімка
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. У розділі **Знімки інсталяції** розгорніть потрібний знімок.
+2. Знайдіть рядок робочого простору й натисніть **Відновити**.
+3. Підтвердьте. Усе, що робочий простір зробив після створення знімка, буде втрачено.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Це та сама операція, що й імпорт, націлена на копію файлу цього робочого простору зі
+знімка — навмисно, щоб не було другого механізму, який міг би повестися з тим самим
+файлом інакше.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Рядок може казати **Більше немає на цьому сервері**, а **Відновити** буде вимкнено: знімок
+містить робочий простір, якого ця інсталяція вже не має. Поверніть його вручну — створіть
+робочий простір, а тоді в розділі **Дані робочого простору** імпортуйте в нього з
+`<snapshot path>/<old workspace id>/workspace.db`. Розгорнутий знімок показує власний
+**Шлях на сервері** в полі для копіювання, а заголовок рядка — старий ідентифікатор
+робочого простору, тож у вас перед очима обидві половини цього шляху.
 
-## Restore a whole install
+## Відновити всю інсталяцію
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Для цього немає кнопки, і не повинно бути: воно замінює бази даних, які відкрито тримає
+запущений сервер.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Зупиніть `cc_server`.** Якщо ви запускаєте настільну програму з її вбудованим сервером, вийдіть із програми.
+2. Скопіюйте вміст знімка поверх каталогу даних. Структура знімка повторює живу, тож це звичайне копіювання:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +173,25 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Видаліть будь-які файли `-wal` і `-shm`, що лежать поряд із заміненими базами даних. Вони належать старим файлам, а застарілий такий файл поряд із відновленою базою — це ризик пошкодження.
+4. Запустіть сервер знову.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Знімок не містить `secrets.json`, тож інсталяція, відновлена на **новому** хості, зберігає
+свої дані, але не облікові дані: спарені пристрої, токени провайдерів і налаштування SSO
+доведеться налаштувати заново або відновити з того місця, де ви зберігали цей файл.
+Відновлення на тому самому хості, де `secrets.json` ніколи не втрачався, зберігає все.
 
-## Copy backups off the machine
+## Копіювати резервні копії поза машиною
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Знімок на тому самому диску, що й база даних, яку він скопіював, захищає вас від
+невдалого імпорту, а не від диска. Ніщо в Control Center нікуди не надсилає копію, тож ця
+частина — на вас.
 
-### Sync the snapshots
+### Синхронізувати знімки
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Знімки незмінні після запису й названі за часовою міткою, тож будь-який інструмент
+синхронізації добре з ними впорається. Виключіть `transfer/` — це робоча область для
+завантажень і вивантажень, що тривають:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +208,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` віддзеркалює ваше локальне прибирання на віддалений бік. Приберіть його, якщо
+хочете, щоб віддалений бік зберігав знімки довше за хост.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Ніколи не синхронізуйте живі бази даних напряму]
+Не наводьте rsync, `aws s3 sync` чи агент резервного копіювання рівня файлів на `global.db`
+або `<workspaceId>/workspace.db`, поки сервер працює. У живої бази даних SQLite є супутній
+файл `-wal`, а копіювання файл за файлом захоплює ці два в різні моменти — результат —
+файл, який часто відкривається і мовчки втрачає недавні записи, або не відкривається
+взагалі. Копіюйте **знімок**, записаний у транзакції читання, або зробіть його через
+`VACUUM INTO`, як показано нижче.
 :::
 
-### Include what a snapshot leaves out
+### Долучити те, чого знімок не містить
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Щоб мати змогу відбудувати інсталяцію, а не лише її дані, скопіюйте й це. Це звичайні
+файли, безпечні для копіювання під час роботи сервера:
 
 ```bash
 rsync -a \
@@ -234,20 +238,22 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` має права `0600` і містить кожен ключ спарювання, облікові дані провайдера
+та налаштування SSO в інсталяції. Місце, куди він потрапить, має бути захищене щонайменше
+так само, як хост сервера, — зашифроване в стані спокою і не бакет, який може прочитати
+будь-хто інший.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Пропустіть `spaces/` (робочі дерева з копіюванням під час запису, які створюються заново з
+ваших репозиторіїв), `pr_clones/` (кеш), `models/` (завантажуються знову), `media_cache/` і
+`rigs/` (стан машини, до того ж великі). Записане аудіо зустрічей у `meetings/` варто
+включити, якщо ви зберігаєте зустрічі.
 
-### Schedule a whole-install snapshot outside the app
+### Запланувати знімок усієї інсталяції поза застосунком
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Вбудований конвеєр робить копію лише одного робочого простору. Для автоматичного знімка
+**всієї інсталяції** немає підкоманди CLI, а RPC знімка вимагає спареного повноцінного
+клієнта, який є власником інсталяції. Таймер на боці хоста може використати `VACUUM INTO`
+щодо живих баз даних:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +272,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Запускайте його від того самого користувача, який володіє каталогом даних, із cron або
+таймера systemd, а потім синхронізуйте `DEST` поза хостом. `VACUUM INTO` потребує SQLite
+3.27 або новішого.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Записуйте його **поза** `<dataDir>/backups/`. Створений вручну каталог там не має
+`manifest.json`, тож застосунок показав би його як неповний знімок, і список перестав би
+бути чесним записом того, що створив сам сервер.
 
-### Prune old whole-install snapshots
+### Прибирати старі знімки всієї інсталяції
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Окремі знімки інсталяції можна видаляти із застосунку. Для політики зберігання на боці
+хоста тримайте каталог резервних копій робочого простору окремо від знімків інсталяції:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +291,51 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Перевірте вивід запуску з `-print`, перш ніж додавати `-exec`. Зберігайте більше ніж одну
+копію: збій, від якого ви захищаєтесь, часто звучить як «остання копія теж має цю
+проблему».
 
-## Check that a backup is good
+## Перевірити, чи придатна резервна копія
 
-A backup nobody has restored is a hypothesis.
+Резервна копія, яку ніхто не відновлював, — це лише гіпотеза.
 
-Cheap check — the file opens and its pages are intact:
+Дешева перевірка — файл відкривається і його сторінки цілі:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Справжня перевірка — прийміть її. Створіть тимчасовий робочий простір на непродуктивній
+інсталяції, імпортуйте в нього файл робочого простору й подивіться, чи на місці простори,
+тікети та повідомлення, які ви очікуєте. Це проходить той самий шлях, що й справжнє
+відновлення, включно з перебудовою FTS, і це єдина перевірка, яка каже, що копію можна
+відновити, а не лише прочитати.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Зробіть це один раз, коли налаштовуєте резервні копії, і ще раз щоразу, коли змінюєте
+місце їхнього зберігання.
 
-## Troubleshooting
+## Усунення проблем
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Симптом                                                                  | Причина та виправлення                                                                                                            |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Елементи керування завантаженням і вивантаженням вимкнено із приміткою про ретранслятор | Ви підключені через ретранслятор-посередник, який не передає файли. Підключіться напряму                          |
+| «Сервер відмовив»                                                        | Роль. Щоб зробити чи переглянути знімок інсталяції, потрібен operator інсталяції. Щоб завантажити робочий простір, потрібен адмін, щоб відновити — власник, а для ZIP-архіву цілого знімка — operator інсталяції |
+| «На цьому сервері немає поверхні резервного копіювання»                  | На хості не під’єднано порт резервного копіювання — це демонстраційний сервер. Операції відсутні, а не відхилені                          |
+| «Файл більший, ніж приймає сервер»                                       | Вивантаження обмежене 8 GiB. Покладіть файл на хост сервера й скористайтеся **Імпортувати** → **Вибрати файл**                 |
+| Імпорт відхилено: це не база даних робочого простору Control Center      | У файлі немає рядка `workspace_meta` — це не експорт робочого простору або файл обрізано. Нічого не було замінено             |
+| Знімок позначено як **Неповний**                                        | Його маніфест відсутній або вказує на відсутні файли. Зробіть новий знімок; тим часом приймайте з нього окремі файли робочих просторів |
+| Знімок каже, що частину робочих просторів не захоплено                  | До цих робочих просторів ніколи не записували, або їхню копію не вдалося зробити. Перевірте журнал сервера                  |
+| У відновленій інсталяції немає облікових даних хостингу коду чи SSO     | `secrets.json` не входить до знімка. Відновіть його з місця, де ви його зберігали, або під’єднайте провайдерів заново         |
+| У відновленому робочому просторі бракує вставлених зображень            | Блоби лежать поряд із базою даних, а не в ній. Скопіюйте також `<workspaceId>/blobs/`                                        |
 
-## Related guides
+## Пов’язані посібники
 
-- [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/): where the data directory comes from
-- [Connect to a remote server](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/): direct versus relayed connections
-- [Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): the credential the transfer routes sign with
+- [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/): звідки береться каталог даних
+- [Під’єднатися до віддаленого сервера](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/): прямі чи ретрансльовані з’єднання
+- [Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): облікові дані, якими підписуються маршрути передавання
 
-## Related concepts and reference
+## Пов’язані поняття та довідка
 
-- [Backup, export and import](/uk-UA/керівництво/довідка/резервне-копіювання/): every operation, route, field and limit
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/): why one workspace is one file
-- [`cc_server` CLI](/uk-UA/керівництво/довідка/cc-server-cli/): the data directory layout
+- [Резервне копіювання, експорт і імпорт](/uk-UA/керівництво/довідка/резервне-копіювання/): кожна операція, маршрут, поле та обмеження
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/): чому один робочий простір — це один файл
+- [`cc_server` CLI](/uk-UA/керівництво/довідка/cc-server-cli/): структура каталогу даних

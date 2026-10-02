@@ -1,241 +1,268 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Pipeline-sablon létrehozása
+description: DAG-munkafolyamat-sablon készítése a pipelineszerkesztőben — csomópontok hozzáadása, összekötése, bemenetek deklarálása, és futtathatóvá tétele.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+A pipeline-sablonokat a munkaterület beállításaiban hozza létre. A munkaterület
+oldalsávjában a **Pipeline-ok** elem a _futtatási várólista_, nem a sablonok
+listája — nincs „sablon létrehozása” művelete.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/hu-HU/kezikonyv/referencia/pipeline-lepesek/).
+Hogy mit jelentenek az egyes lépésfajták, törzskulcsok és konfigurációs mezők,
+lásd a
+[pipeline-lépések referenciáját](/hu-HU/kezikonyv/referencia/pipeline-lepesek/).
 
-## Create a template
+## Sablon létrehozása
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Nyissa meg a **Beállítások → Munkaterület → Pipeline-sablonok** helyet
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Nyomja meg az **Új sablon** gombot.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Nincs azonosító-párbeszédablak. A szerkesztő azonnal megnyílik egy **Új
+pipeline** nevű, előre feltöltött vázon, automatikusan kiosztott azonosítóval
+(`pipeline_1`, majd `pipeline_2`, …). A fejlécben a címre kattintva nevezheti át.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+A vászon nem üres: van rajta egy **Trigger** belépő csomópont, egy **Step**
+címkéjű prompt-agent csomópont, és egy terminál-őrszem, amely befejezi a
+futtatást. Az őrszem nincs kirajzolva. A szerkesztő ezt a rejtett terminált
+minden elérhető nyelőhöz átkötözi, így a **Step** után csatolt munka is lefut.
 
-## Add nodes
+## Csomópontok hozzáadása
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+A **Csomópontkönyvtár** oldalsáv állandóan a szerkesztő bal oldalán van. Szűrje
+a **Csomópontok keresése** mezővel, és húzzon egy elemet a vászonra — a
+csomópont oda kerül, ahová ejti, bejövő kapcsolat nélkül.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palettacsomópont                | Lépésfajta | Mit tesz                                                                             |
+| ------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| **Bash script**                 | listen     | Shellszkriptet futtat `{{state}}` helyettesítéssel; nem indul ügynök                 |
+| **Open conversation**           | listen     | Megnyitja a futtatás egyetlen látható terét és annak checkoutját; az ügynökcsomópontok ebbe a szobába csatlakoznak |
+| **Clone PR branch**             | listen     | A `gh pr view` segítségével felderíti a PR fejágát, és a futtatási könyvtárba klónozza |
+| **Post PR comment**             | listen     | A konszolidált megállapításokat GitHub-átnézési megjegyzésként közzéteszi a PR-en    |
+| **Reviewer (prompt)**           | listen     | Szakértő átnéző ügynököt oszt ki; felfüggeszti magát, amíg az ügynök be nem küldi az eredményét |
+| **Consolidate (join)**          | join       | Megvár több felsőbb ágat, majd megkér egy ügynököt, hogy konszolidálja a kimeneteiket |
+| **Custom prompt**               | listen     | Általános, promptvezérelt csomópont, amely a `promptAgent` törzsön keresztül halad    |
+| **Post to space**               | listen     | Üzenetet küld egy üzenetküldő térbe                                                   |
+| **Condition / switch (router)** | router     | Egy állapotérték alapján elágaztatja a folyamatot                                    |
+| **If file exists (router)**     | router     | `"true"` útvonalra visz, ha egy útvonal létezik a klón alatt, egyébként `"false"`-ra |
+| **Any file exists (OR router)** | router     | `"true"`-ra visz, ha bármelyik felsorolt útvonal létezik                             |
+| **All conditions (AND router)** | router     | Csak akkor visz `"true"`-ra, ha minden felsorolt útvonal létezik                     |
+| **Team dispatch**               | listen     | Egy egész csapatot kioszt, és felfüggeszti magát, amíg az be nem fejezi               |
+| **Approval gate**               | listen     | Megáll egy jóváhagyási döntésre várva                                                |
+| **For each (map)**              | forEach   | Elemenként megjelenít egy promptot, majd egyszer osztja ki az ügynököt az összefűzött promptokkal |
+| **Call sub-pipeline**           | listen     | Egy másik sablont futtat beágyazott lépésként                                        |
+| **Clean up worktrees**          | listen     | Eltávolítja az elavult elszigetelt worktree-ket; determinisztikus, nem indul ügynök  |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+A könyvtár ezeket a **Folyamat és logika**, **PR-átnézés**, **Ügynökök**,
+**Üzenetküldés** és **Kód** csoportba rendezi. Nincs Demo csoport.
 
-## Wire nodes together
+## Csomópontok összekötése
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Minden munkacsomópont jobb szélén van egy kör alakú **kimeneti port**. Húzzon
+erről a portról egy másik csomópontra az összekötésükhöz. Az indító
+eseményindítók ugyanilyenek: mindegyik a saját portjával rendelkezik, így egy
+**Ütemezés** felőli vezeték nem indul ki a **Kézi futtatás**ból is. Nyomja meg a
+**Lépés hozzáadása** (`+`) gombot egy csomópont után, hogy beszúrjon oda egy
+típust. Vigye az egérmutatót egy meglévő él felezőpontjára, és nyomja meg a ×
+jelet a leválasztáshoz.
 
-Connections are also edited from the node that _receives_ them:
+A kapcsolatok abból a csomópontból is szerkeszthetők, amely _fogadja_ őket:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Jelölje ki az alsóbb csomópontot. A konfigurációs panelje a jobb oldalon
+   nyílik meg.
+2. Görgessen a **Triggers from** részhez, és kattintson minden olyan felsőbb
+   csomópont címkéjére, amelyre ennek figyelnie kell. Egy kijelölt címkére
+   kattintva megszűnik a kapcsolat.
+3. Ha egy felsőbb csomópont router, a címkék alatt megjelenik egy
+   **Útvonalkulcsok** blokk, minden router-élhez egy **Útvonalkulcs innen:
+   &lt;node&gt;** mezővel. Adja meg azt a kulcsot, amelyre az az él tüzel —
+   `true` vagy `false` a fájllétezés-routereknél, vagy az eset neve egy
+   kapcsolónál.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Minden eseményindító-csomópont belépési pont. Egy csomópont több felsőbb lépésre
+is figyelhet (fan-in), és több alsóbb lépést is táplálhat (fan-out), a gráfnak
+pedig körmentesnek kell maradnia — a szerkesztőben semmi sem akadályozza meg,
+hogy kört kössön össze, ezért ellenőrizze a munkáját.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+A terminál-őrszem ki van szűrve a vászonról, így nem jelölhető ki. A szerkesztő
+a gráf minden változásakor minden elérhető nyelőhöz átkötözi, így az alapból
+létrehozott **Step** után csatolt munka is lefut. Egy üres gráf (munka utód
+nélküli eseményindító) magát az eseményindítót sorolja fel, hogy a futtatás
+azonnal befejeződjön.
 
-## Configure a node
+## Csomópont konfigurálása
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Jelöljön ki egy csomópontot a konfigurációs paneljének megnyitásához. Az, hogy
+mely mezők jelennek meg, a csomópont törzsétől függ.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Minden csomóponton van **Címke**, **Bemeneti kulcsok** (vesszővel elválasztott
+állapotkulcsok, amelyek végrehajtáskor olvasódnak), valamint a **Haladó** alatt
+**Reducer**, **Időtúllépés (ms)**, **Újrapróbálkozások**, **Folytatás, ha ez a
+lépés sikertelen** és **Kimeneti séma**. A listen és join csomópontok a **Típus**
+mezőben válthatnak is a kettő között.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Hozzáad egy **repóhatókör**-választót (a munkaterület mely repóit kell
+checkoutolni; üresen hagyva egyet sem), egy **Tér neve** mezőt és egy
+**Beszélgetés megnyitása benne** jelölőnégyzetet. Ha ez a jelölőnégyzet be van
+kapcsolva, egy **Beszélgetés neve** mező elnevezi azt az adatfolyamot, amellyel a
+szoba megnyílik. Az ügynökcsomópontok ebbe a szobába csatlakoznak — nem nyitnak
+sajátot.
 
 ### Prompt agent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Hozzáad egy **Ügynök** mezőt (melyik ügynököt ossza ki), egy **Prompt** mezőt (a
+`{{key}}` segítségével hivatkozhat a bemenetekre vagy a felsőbb lépések
+kimeneteire) és egy **Kimeneti kulcs** mezőt.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+Az **Időtúllépés (ms)** _ezredmásodpercben_ van, nem másodpercben — a `900000`
+15 percet jelent. A `900` megadása 0,9 másodpercet ad a lépésnek.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Annak a beszélgetésmódnak, amely alatt egy prompt-agent csomópont fut, nincs
+szerkesztői mezője az ügynökcsomóponton. Az `extras['mode']` (`chat`, `plan`
+vagy `review`) hordozza azon az **Open conversation** csomóponton, amely
+létrehozta a szobát (alapértelmezés: `review`). Az ügynöklépésen beállítva
+figyelmen kívül marad. A kulcsot pontosan egyezteti: minden más írásmód csendben
+figyelmen kívül marad.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Hozzáad egy **Bash szkript** mezőt. Nincs munkakönyvtár- vagy környezetmező,
+mert egyik sem állítható be:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Egy futtatás minden bash-lépése ugyanazt a munkakönyvtárat használja:
+  `<cc_root>/pipelines/<runId>/`.
+- A `GITHUB_TOKEN` a hitelesítőadat-tárból injektálódik, így a `gh` és a
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` beállítás nélkül működik.
+- A szkript a szó szerinti `bash` végrehajtható fájlként indul, ezért a `bash`-nek
+  szerepelnie kell a szerverkiszolgáló `PATH`-jában. Ez Windows esetén szempont.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+A router kiértékel egy feltételt, és visszaad egy útvonalkulcsot; a motor csak
+az ahhoz illeszkedő útvonalkulcsú alsóbb élt tüzeli, a többi ágat pedig
+kihagyottnak jelöli.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Egy router kijelölése lecseréli a **Kimeneti kulcs** mezőt a
+feltételszerkesztőre. Válasszon a négy módja közül:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Fájl(ok) léteznek — bármelyik** — `"true"`-ra visz, ha bármelyik felsorolt
+  útvonal létezik.
+- **Fájlok léteznek — mind** — csak akkor visz `"true"`-ra, ha minden felsorolt
+  útvonal létezik.
+- **Összehasonlítás** — egy állapotértéket hasonlít össze egy literállal.
+- **Kapcsoló** — egy állapotkulcs értéke alapján visz tovább, alapértelmezett
+  esettel.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Ezután állítsa be a hozzáillő útvonalkulcsokat a kimenő éleken (lásd:
+[Csomópontok összekötése](#csomópontok-összekötése)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/hu-HU/kezikonyv/referencia/pipeline-lepesek/).
+A logikai `and` / `or` / `not` csoportokat a törzs támogatja, de ebből az
+űrlapból nem szerkeszthetők — kézzel írt predikátumfa kell hozzájuk az
+`extras.predicate` alatt. A teljes predikátum- és operátorszótár a
+[pipeline-lépések referenciájában](/hu-HU/kezikonyv/referencia/pipeline-lepesek/)
+található.
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Nincs saját konfigurációja: megvárja az összes felsőbb lépését.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+A kapu elindítja a jóváhagyó ügynököt egy rejtett beszélgetésbe a kapu
+promptjával, majd felfüggeszti magát. A jóváhagyó a beszélgetésben kéri ki a
+döntését, és a `submit_output` hívással küldi be `{ "decision": "approved" |
+"rejected", "reason": "..." }` formában. A döntés a kimeneti kulcs alá kerül
+(alapértelmezés: `approval_decision`), így egy alsóbb kapcsoló-router elágazhat
+rá.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Állítsa az **Ügynök** mezőt a jóváhagyóra, a **Prompt** mezőt pedig a kapu
+kérdésére. A kapu a `submit_output` híváson keresztül oldódik fel `{ "decision":
+"approved" | "rejected", "reason": "..." }` formában. A Reviewer (prompt)
+csomópontok ugyanígy küldenek be.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Hozzáad egy **Csapat-ID** és egy **Kiosztási mód** mezőt. A választó pontosan két
+módot kínál:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — tagonként egy feladat, felfüggeszti magát, amíg mind be nem
+  fejeződik.
+- `manager` — a vezetőt osztja ki, aki delegál.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Bármely más tárolt érték az `allParallel` módként viselkedik. Állítsa a
+**Reducer** mezőt `append` értékre, hogy minden tag eredményét egy listába
+gyűjtse a kimeneti kulcs alatt.
 
 ### For each and Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+A **For each** alapértelmezés szerint az `items` állapotkulcson képez le
+(`extras.iterableKey` / `extras.itemKey` a csomóponton). Elemenként egyszer
+jeleníti meg a promptját (alapértelmezés: `{{item}}`), és **egyszer** osztja ki
+az ügynököt az így összefűzött promptokkal. Egy üres gyűjtemény azonnal
+befejeződik egy üres listával. Ez nem elemenkénti párhuzamos kiosztás.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+A **Call sub-pipeline** felfüggeszti magát, amíg a gyermekfuttatás végállapotba
+nem kerül, majd a gyermek végleges állapotát a kimeneti kulcs alá fésüli
+(alapértelmezés: `subflow_result`). Az `extras.templateId` értékkel mutathat rá
+egy gyermekre. Egy sablon nem hívhatja meg önmagát; egy sikertelen vagy
+megszakított gyermek sikertelenné teszi a szülő lépést, amely ezután az adott
+lépés újrapróbálkozási és hiba esetén folytatási szabályzatát táplálja.
 
-## Declare inputs and allow manual runs
+## Bemenetek deklarálása és kézi futtatások engedélyezése
 
-Both live behind **Manual run** in the editor header.
+Mindkettő a szerkesztő fejlécében a **Kézi futtatás** mögött érhető el.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Nyomja meg a **Kézi futtatás** gombot.
+2. Kapcsolja be a **Kézi futtatás engedélyezése** lehetőséget. Ez a kapcsoló
+   azonnal érvényesül — létrehozza (vagy törli) azt a `manual`
+   eseményindító-sort, amelytől a sablon megjelenik a futtatási oldalon.
+3. Állítsa be a **Max. párhuzamos futtatás** értékét, ha korlátot szeretne
+   (hagyja üresen a korlátlanhoz). A további indítások `queued` állapotban
+   várnak, amíg fel nem szabadul egy hely.
+4. Nyomja meg a **Bemenet hozzáadása** gombot minden űrlapmezőhöz, amelyet egy
+   kézi futtatásnak be kell gyűjtenie:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Mező                    | Leírás                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| **Kulcs**               | Állapotkulcs, amely alatt az érték tárolódik; a `{{key}}` formában hivatkozhat rá |
+| **Címke**               | Megjelenő címke (alapértelmezés a kulcs)                                        |
+| **Típus**               | Szöveg, Többsoros szöveg, Szám, Kapcsoló, Választó, Tároló                       |
+| **Opciók**              | Vesszővel elválasztott választási lehetőségek, csak Választó típusnál            |
+| **Alapértelmezett érték** | Előre kitöltött érték                                                         |
+| **Helyőrző**            | A mezőben megjelenő tippszöveg, ha üres                                          |
+| **Súgószöveg**          | A mező alatti segédszöveg                                                        |
+| **Kötelező**            | Hogy a futtatási űrlap megakadjon-e üres értéknél                                |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Egy **Tároló** bemenet választót jelenít meg a munkaterület repói fölött, és a
+futtatás hasznos terhébe írja a `repo_id`, `repo_local_path`, `repo_full_name`,
+valamint — ha a repónak van GitHub-távolija — a `repo_owner` és a `repo_name`
+értékét.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Nyomja meg a **Mentés** gombot a párbeszédablakban. A bemeneti módosítások
+   bekerülnek a vázlatba; a sablon mentésekor válnak véglegessé.
 
-## Save and enable
+## Mentés és engedélyezés
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/).
+1. Nyomja meg a **Mentés** gombot a szerkesztő fejlécében. Addig a fejléc a
+   „Mentetlen módosítások” jelzést mutatja.
+2. Térjen vissza a **Beállítások → Munkaterület → Pipeline-sablonok** helyre, és
+   ellenőrizze, hogy a sablon sorában a kapcsoló be van kapcsolva. A motor
+   elutasítja egy letiltott sablon indítását, és egy letiltott sablon soha nem
+   jelenik meg a futtatási oldalon.
+3. Az automatikus indításhoz húzzon egy eseményindítót a csomópontkönyvtárból a
+   vászonra — lásd:
+   [Pipeline-eseményindítók beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Run a pipeline manually](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)
-- [Set up pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
-- [Monitor pipeline runs](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/)
-- [Pipeline steps reference](/hu-HU/kezikonyv/referencia/pipeline-lepesek/)
+- [Pipeline kézi futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-futtatasa/)
+- [Pipeline-eseményindítók beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/)
+- [Pipeline-futtatások figyelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/)
+- [Pipeline-lépések referenciája](/hu-HU/kezikonyv/referencia/pipeline-lepesek/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Pipelines](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)
+- [Pipeline-ok](/hu-HU/kezikonyv/fogalmak/pipeline-ok/)

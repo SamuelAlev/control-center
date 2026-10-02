@@ -1,310 +1,313 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: Nástroje MCP
+description: Úplný katalog nástrojů MCP, které cc_server registruje, po rodinách.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se dají přemostit do stejného registru jako dynamická vrstva.
 
-## Registry size
+## Velikost registru
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Ukazatel                                                                          | Počet |
+| --------------------------------------------------------------------------------- | ----- |
+| Nástroje registrované `cc_server`                                                 | 110   |
+| Z `packages/cc_mcp`                                                               | 108   |
+| Z `packages/cc_mcp_client` (objevování nástrojů)                                  | 2     |
+| Registrované v základním registru (`server_mcp_registry.dart`)                    | 63    |
+| Registrované po startu, jak jejich služby nabíhají (`cc_server_runtime.dart`)     | 47    |
+| Z 63 v základním registru podmíněné repozitářem grafu kódu                        | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Těch pět nástrojů grafu kódu se registruje jen tehdy, když hostitel předá `buildServerMcpRegistry` repozitář grafu kódu. `cc_server` ho předává vždy, takže v dodávané binárce je živých všech 110.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Celý registr se v `tools/list` nabízí bez brány objevování. Úpravy ticketů jsou typované nástroje.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Externí klienti vždy vidí celý katalog]
+`tools/list` se nikdy neořezává. Klienti MCP ověřují jména nástrojů proti vlastní kopii toho seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj skrytý tam je nedosažitelný, ne jen tichý.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/cs-CZ/prirucka/koncepty/kontext-nastroju).
+**Vestavěný harness** je jiný: na každý požadavek načte jen rezidentní podmnožinu definic a zbytek dotáhne při prvním použití. Je to chování na straně harnessu a tenhle registr se tím nemění. Viz [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Každá třída nástroje je registrovaná]
+Soubor pod `packages/cc_mcp/lib/src/tools/` je nástroj, který agent umí
+zavolat. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+shodí build, když novou třídu nástroje nic nekonstruuje.
 :::
 
-## Common parameters
+## Společné parametry
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Povinné** u každého nástroje, který sahá na data vázaná na pracovní prostor. Chybějící nebo neplatné `workspace_id` vrátí výslovnou chybu a hodnota, která nesedí na pracovní prostor cílové entity, se odmítne, místo aby se tiše ignorovala. Vynech ho u nástrojů, které jsou opravdu globální: `list_workspaces` a šest nástrojů kanálu novinek (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), které jedou po seznamu kanálů vlastníka serveru, zvlášť pro každého uživatele. Nástroje objevování (`search_tool_bm25`, `list_my_tools`) ho berou volitelně, aby uměly klasifikovat volatelnost podle režimu konverzace. Když agenta odešle server, pracovní prostor se vynutí na straně serveru, takže se agent do jiného pracovního prostoru nedostane tím, že předá cizí id.
 
-## Tool discovery
+## Objevování nástrojů
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Oba pocházejí z `cc_mcp_client`, ne z `cc_mcp`, a oba se radí s bránou režimu, takže hlásí, co je volatelné v _aktuálním_ režimu konverzace.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Nástroj            | Popis                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | Prohledá katalog nástrojů podle klíčových slov; vrátí shodné nástroje, jejich schémata argumentů a to, jestli je každý právě teď volatelný |
+| `list_my_tools`    | Vypíše nástroje volatelné právě teď v téhle konverzaci, filtrované jejím režimem                                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Třetí nástroj objevování, **`search_tools`**, existuje jen uvnitř vestavěného harnessu a do tohohle registru MCP nepatří. Řadí vlastní plochu nástrojů běhu a na rozdíl od `search_tool_bm25` **načte** schémata toho, co najde, takže agent může shodu zavolat v dalším tahu. Agenti na harnessu mají dát přednost jemu; klienti MCP mají `search_tool_bm25`.
 
-## Agent tools
+## Nástroje agentů
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Nástroj       | Popis                                          |
+| ------------- | ---------------------------------------------- |
+| `list_agents` | Vypíše registrované agenty v pracovním prostoru |
 
-## Agent peer messaging and delegation
+## Zprávy mezi agenty a delegování
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Agenti spolu mluví přes prostory (trvalé, viditelné v sestavě). `ask_agent` je požadavek a odpověď s povinným časovým limitem; `delegate_task` hlídá server stropem hloubky, detekcí cyklů, obálkou rozpočtu a stropem autonomie.
 
-| Tool            | Description                                                                                    |
+| Nástroj         | Popis                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | Pošle jednosměrnou zprávu jinému agentovi, adresovanou `to_agent_id` nebo přesným `to_agent_name` |
+| `ask_agent`     | Položí jinému agentovi otázku a počká na odpověď, nebo vyprší čas                              |
+| `delegate_task` | Deleguje úkol jinému agentovi jako sledovaný podřízený ticket                                 |
+| `consult_agent` | Přidá do prostoru specialistu, který se skilly shoduje nejlíp, a odešle ho se soustředěným zadáním |
+| `todo_read`     | Přečte uložený kontrolní seznam úkolů téhle konverzace                                         |
 
-## Skill tools
+## Nástroje skillů
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Každá instalace i aktualizace projde bránou skenu, která při selhání odmítne, ještě než se jakýkoli obsah skillu dostane na disk nebo do promptu agenta.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Nástroj              | Popis                                                                         |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `list_skills`        | Vypíše slugy skillů dostupné v pracovním prostoru                             |
+| `create_skill`       | Založí nový skill z obsahu v markdownu                                        |
+| `install_skill`      | Nainstaluje celý adresář skillu z repozitáře GitHub na připnutém refu        |
+| `update_skill`       | Aktualizuje nainstalovaný skill z GitHubu na nový ref, znovu ho proskenuje a připne |
+| `list_skill_updates` | Vypíše skilly, u kterých je novější verze                                    |
+| `verify_skills`      | Ověří zamčené skilly proti hashům jejich obsahu na disku                     |
+| `pin_skill`          | Zahashuje existující skill na disku do `skills-lock.json`                    |
 
-## Plan, playbook and artifact tools
+## Nástroje plánu, playbooku a artefaktů
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| Nástroj            | Popis                                                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `submit_plan`      | Výstupní kontrakt režimu plánu: vydá typovaný `PlanDocument`, který se otevře v Plan Studio                      |
+| `create_playbook`  | Uloží plán jako pojmenovanou verzovanou šablonu s typovanými zástupnými symboly `{{param}}`                      |
+| `run_playbook`     | Zinstancuje playbook hodnotami parametrů a vyrobí plán, který operátor schválí                                   |
+| `publish_artifact` | Zveřejní uspořádaný seznam typovaných bloků (markdown, table, chart, mermaid, code, JSON), které klient vykreslí nativně |
+| `revise_artifact`  | Nahradí obsah zveřejněného artefaktu                                                                              |
+| `list_artifacts`   | Vypíše artefakty pracovního prostoru                                                                              |
+| `get_artifact`     | Přečte jeden artefakt                                                                                             |
+| `complete_goal`    | Prohlásí aktivní trvalý cíl konverzace (založený přes `/goal` nebo `/loop`) za dosažený                           |
 
-## Workspace tools
+## Nástroje pracovního prostoru
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Nástroj           | Popis                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `list_workspaces` | Vypíše všechny pracovní prostory s jejich id a názvy (globální; bez `workspace_id`) |
 
-## Repo tools
+## Nástroje repozitářů
 
-| Tool         | Description                                                                                                                                              |
+| Nástroj      | Popis                                                                                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | Vypíše repozitáře registrované v pracovním prostoru. Volající agenti dostanou cesty izolovaného copy-on-write worktree své konverzace, nikdy původní checkouty |
 
-## Messaging tools
+## Nástroje zpráv
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Nástroj              | Popis                                                                       |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_spaces`        | Vypíše prostory zpráv v pracovním prostoru                                  |
+| `get_messages`       | Načte zprávy z prostoru                                                     |
+| `send_message`       | Pošle zprávu do prostoru jako pojmenovaný odesílající agent                 |
+| `get_space_notes`    | Přečte sdílený předávací dokument prostoru                                  |
+| `update_space_notes` | Nahradí sdílený předávací dokument prostoru                                 |
+| `todo_write`         | Nahradí kontrolní seznam úkolů téhle konverzace jedním voláním (předej celý seznam) |
 
-## Review tools
+## Nástroje kontroly
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Nástroj                    | Popis                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | Spustí AI kontrolu PR: spočítá oblasti kontroly, rozvětví specializované recenzenty do prostoru PR, sepíše průvodce a kontrolu dokončí |
+| `add_review_node`          | Přidá strukturované zjištění kontroly (soubor, řádek, priorita P0–P3) do prostoru kontroly                |
+| `confirm_review_node`      | Potvrdí zjištění kolegy; autor ho nemůže potvrdit sám                                                      |
+| `resolve_review_node`      | Označí zjištění za opravené, až se změna opravdu udělá; zapíše stopu do prostoru kontroly                  |
+| `dismiss_review_node`      | Zavrhne zjištění, které neplatí; zapíše fakt potlačení, aby ho recenzenti přestali znovu označovat         |
+| `request_peer_review`      | Požádá jiného review agenta o druhý pohled na zjištění                                                     |
+| `dispatch_reviewers`       | Odešle odpovídající review agenty do prostoru kontroly, souběžně                                          |
+| `submit_reviewer_verdict`  | Zveřejní verdikt Ship/Hold/Block za recenzenta, s jistotou a vysvětlením                                   |
+| `finalize_review`          | Spočítá shodu po uzlech a verdikt za PR a kontrolu uzavře                                                  |
+| `set_cohort_summary`       | Nastaví souhrn kohorty kontroly v běžném jazyce                                                            |
+| `add_review_diagram`       | Připojí ke kohortě strukturovaný diagram ověřený proti grafu (`sequence`, `entityRelation`, `stateMachine`) |
+| `publish_review_to_github` | Zveřejní dokončenou kontrolu na GitHub jako vložené komentáře a souhrnné tělo                              |
 
-## Memory tools
+## Nástroje paměti
 
-| Tool                    | Description                                                                                         |
+| Nástroj                 | Popis                                                                                               |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| `search_memory`         | Hledá fakta a politiky (keyword, semantic nebo hybrid — hybrid je výchozí)                          |
+| `propose_fact`          | Uloží krátký fakt v markdownu do domény                                                             |
+| `supersede_fact`        | Označí fakt jako nahrazený jiným                                                                    |
+| `propose_policy`        | Uloží normativní pravidlo do domény (vyžaduje na ní oprávnění k zápisu)                             |
+| `supersede_policy`      | Vyřadí politiku — označí ji jako neaktivní a nechá ji pro audit                                     |
+| `list_policies`         | Vypíše aktivní politiky, volitelně filtrované podle domény                                          |
+| `list_memory_domains`   | Vypíše domény paměti pracovního prostoru s počty fakt a politik                                     |
+| `record_observation`    | Zapíše syrové pozorování do pracovní paměti agenta                                                  |
+| `get_my_notes`          | Přečte zápisník pracovní paměti volajícího agenta                                                   |
+| `update_my_notes`       | Aktualizuje zápisník pracovní paměti volajícího agenta                                              |
+| `remember`              | Přidá poznámku do horké pracovní paměti agenta pro tuhle relaci (omezené TTL i počtem)              |
+| `consolidate_memory`    | Spustí průchod konsolidace („spánek“): vyhodí prošlé horké položky a trvalé sroluje do dlouhodobých fakt |
+| `harmonize_memory`      | Spustí sladění přesvědčení mezi agenty (SHMR) a označí rozpory                                      |
+| `list_memory_conflicts` | Vypíše nalezené rozpory a jak se každý vyřešil                                                      |
 
-## Governance tools
+## Nástroje správy
 
-| Tool                         | Description                                                                                           |
+| Nástroj                      | Popis                                                                                                 |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | Založí organizační cíl (úroveň firmy, týmu, agenta nebo úkolu)                                        |
+| `list_goals`                 | Vypíše cíle s úrovní, stavem a souhrnným postupem                                                     |
+| `update_goal_progress`       | Nastaví postup cíle                                                                                   |
+| `create_approval`            | Otevře schválení ve správě pro řízenou akci (odchod z plánu, sloučení, vydání, nábor, vlastní)        |
+| `list_approvals`             | Vypíše schválení, volitelně filtrovaná podle stavu                                                   |
+| `decide_approval`            | Zapíše rozhodnutí: schválit, zamítnout, požádat o revizi, nebo podat znovu                           |
+| `comment_approval`           | Okomentuje schválení ve správě                                                                        |
+| `exit_plan_mode`             | Otevře (a po schválení spotřebuje) schválení `plan_exit` a přepne konverzaci z režimu plánu           |
+| `agent_heartbeat`            | Nahlásí životnost (alive, idle, stuck); ticho přepne zdraví runtime na recently-lost a pak na offline |
+| `list_runtime_health`        | Vypíše zdraví runtime každého agenta                                                                  |
+| `list_agent_presence`        | Vypíše přítomnost každého agenta (zdraví, životní cyklus, počty běžících a ve frontě, kapacita)       |
+| `get_org_chart`              | Přečte strom podřízenosti, CEO v kořeni, vnořený podle `reports_to`                                   |
+| `create_work_product`        | Založí trvalý pracovní produkt připojený k ticketu                                                    |
+| `save_work_product_revision` | Uloží novou revizi; předáním `base_revision_id` se při souběžné úpravě odmítne                        |
+| `list_work_products`         | Vypíše pracovní produkty, volitelně filtrované na jeden ticket                                        |
+| `get_work_product`           | Přečte pracovní produkt i s historií revizí                                                           |
+| `create_runtime_profile`     | Definuje znovupoužitelný runtime profil (rodina protokolu, příkaz CLI, pevné argumenty spuštění)      |
+| `list_runtime_profiles`      | Vypíše runtime profily pracovního prostoru                                                            |
 
-## Code graph tools
+## Nástroje grafu kódu
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Registrují se jen tehdy, když hostitel dodá repozitář grafu kódu. Index pokrývá dodávanou sadu gramatik (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symboly v jakémkoli jiném jazyce v něm nejsou.
 
-| Tool           | Description                                                                        |
+| Nástroj        | Popis                                                                              |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Hledá indexované symboly podle jména, signatury a dokumentačního komentáře (hybridní BM25 + sémantika) |
+| `code_symbol`  | Vyhledá symboly podle přesného jména; vrací `file:line` a signaturu                |
+| `code_callers` | Vypíše symboly, které symbol volají nebo na něm závisí (příchozí hrany)           |
+| `code_callees` | Vypíše symboly, které symbol volá nebo na kterých závisí (odchozí hrany)          |
+| `code_impact`  | Spočítá tranzitivní poloměr dopadu symbolu, do dané hloubky                        |
 
-## Ticketing tools
+## Nástroje ticketů
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| Nástroj                   | Popis                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `create_ticket`           | Založí ticket u nakonfigurovaného poskytovatele                                                                          |
+| `get_ticket`              | Načte jeden ticket podle id                                                                                              |
+| `list_tickets`            | Vypíše tickety, volitelně filtrované podle stavu nebo přiřazení                                                         |
+| `update_ticket`           | Aktualizuje stav, název, popis, prioritu nebo štítky (stav bere aliasy jako `in_progress` / `completed`)                 |
+| `assign_ticket`           | Přiřadí ticket agentovi a/nebo týmu                                                                                     |
+| `reassign_ticket`         | Přeřadí ticket jinému agentovi                                                                                           |
+| `add_ticket_collaborator` | Pozve agenta ke spolupráci na ticketu (přidá ho do jeho prostoru)                                                       |
+| `comment_on_ticket`       | Okomentuje ticket                                                                                                        |
+| `close_ticket`            | Uzavře ticket (označí ho jako hotový) s volitelným výstupem                                                              |
+| `fail_ticket`             | Označí ticket jako selhaný, s chybovou zprávou                                                                           |
+| `delegate_ticket`         | Deleguje ticket agentovi a založí sledovaný ticket                                                                      |
+| `ticket_pr_link`          | Propojí nebo odpojí ticket a pull request podle id uzlu PR (`action`: `link` \| `unlink`)                                |
+| `ticket_relation`         | Přidá nebo odebere vazbu mezi dvěma tickety — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Vypíše rodiče ticketu, podúkoly a vazby závislostí                                                                       |
 
-## Team and pipeline tools
+## Nástroje týmu a pipeline
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Nástroj                | Popis                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | Zapíše záznam aktivity vedoucího týmu k ticketu                                                                            |
+| `preview_trigger`      | Nanečisto zjistí, které běhy pipeline by hypotetická událost spustila, a nic nezapíše                                     |
+| `submit_output`        | Odešle strukturovaný výstupní payload pro aktuální běh pipeline volajícího; ověří se proti deklarovanému výstupnímu schématu běhu |
 
-## Orchestration tools
+## Nástroje orchestrace
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Nástroj                 | Popis                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | Vydá strukturovaný plán orchestrace pro více agentů k jednomu předběžnému schválení; ověří ho a vrátí případná porušení |
 
-## Newsfeed tools
+## Nástroje kanálu novinek
 
-| Tool                | Description                                                  |
+| Nástroj             | Popis                                                        |
 | ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| `list_feeds`        | Vypíše registrované kanály RSS/Atom                          |
+| `list_articles`     | Vypíše články, volitelně filtrované podle kanálu, nepřečtených nebo uložených |
+| `get_article`       | Načte jeden článek                                           |
+| `set_article_read`  | Označí článek jako přečtený nebo nepřečtený                  |
+| `set_article_saved` | Uloží článek, nebo uložení zruší                             |
+| `refresh_feeds`     | Znovu stáhne každý zapnutý kanál teď                         |
 
-## Enclosure (rig) tools
+## Nástroje izolace (stanice)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/cs-CZ/prirucka/koncepty/guardraily/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/cs-CZ/prirucka/referencni-prirucka/stanice/#action-verbs).
+Řídí jednorázové stroje — uzavřený prohlížeč nebo linuxový desktop, emulátor
+Androidu, nebo iOS Simulator — zevnitř běhu. Registrují se po startu,
+bezpodmínečně: jestli stroj opravdu naběhne, je otázka sondy, na kterou
+nástroje odpovídají u každého volání. Opakovaná volání v jedné konverzaci
+znovu použijí jeden stroj; snímky obrazovky se vracejí jako obrazový obsah
+s rozpočtem jednoho obrázku na výsledek a vytažený obsah stránky nebo
+rozhraní je ohrazený jako nedůvěryhodná data. Čtyři use nástroje plus
+`rig_close` deklarují `enclosureControl` [třídu akcí](/cs-CZ/prirucka/koncepty/guardraily/)
+(use nástroje deklarují taky `networkEgress` a `processSpawn`; `mobile_use` a
+`ios_use` deklarují taky `packageInstall`), takže režimy jen pro čtení je
+odmítnou. `rig_list` nedeklaruje žádnou — jen čte stav pracovního prostoru.
+Úplný slovník sloves po plochách je v
+[referenci stanic](/cs-CZ/prirucka/referencni-prirucka/stanice/#slovesa-akcí).
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Nástroj        | Popis                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `computer_use` | Řídí linuxový desktop v uzavřeném VM: pohyb, klik, tažení, posun, psaní, změna velikosti, schránka, snímek obrazovky |
+| `browser_use`  | Řídí headless Chromium, Firefox nebo WebKit (`engine`): navigace, klik, vyplnění, extrakce (a11y/DOM/konzole), schránka, snímek obrazovky |
+| `mobile_use`   | Řídí Android přes ADB: inspekce a vstup, snímky obrazovky, instalace, start, stop, reset a odinstalace aplikací, deep linky a příkazy zařízení ve tvaru argv |
+| `ios_use`      | Řídí iOS Simulator přes WebDriverAgent/CoreSimulator: inspekce a vstup, snímky obrazovky, instalace, start, stop a odinstalace aplikací, deep linky a procesy simulátoru ve tvaru argv |
+| `rig_list`     | Vypíše stanice pracovního prostoru s plochou, stavem, velikostí displeje a řadičem |
+| `rig_close`    | Zničí stanici a zahodí stav stroje, který vlastní |
 
-## Not exposed over MCP
+## Přes MCP se nevystavuje
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/cs-CZ/prirucka/koncepty/schuzky/), not as a tool an agent can call.
+Kalendář a schůzky nemají nástroje MCP. Agenti nemohou číst tvůj kalendář, schůzky, přepisy, akční položky ani rozhodnutí. Shrnutí, ze kterého vzniknou akční položky a rozhodnutí, běží jako vestavěná [pipeline `meeting_summary`](/cs-CZ/prirucka/koncepty/schuzky/), ne jako nástroj, který agent může zavolat.
 
-## Tool gating by mode
+## Brána nástrojů podle režimu
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Brána se vynucuje dvakrát z jedné tabulky (`ModeToolPolicy`): jednou v dispečeru MCP pro adaptér Claude Code a jednou v registru vestavěného harnessu. Odmítnuté volání vrátí důvod.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| Režim         | Plocha nástrojů                                                                                                                                                                                                                     |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | Každý registrovaný nástroj; žádný seznam povolených                                                                                                                                                                                 |
+| `plan`        | Sestavený seznam povolených. Žádné zápisy do worktree a žádná slovesa ticketů `create` / `assign` / `delegate`, ale paměť, artefakty, úkoly, `submit_plan`, `exit_plan_mode` a slovesa dokončení ticketu na odeslaném ticketu jsou povolená |
+| `review`      | Sestavený seznam povolených: účast na kontrole, komunikace, načítání kontextu jen pro čtení a celá sada sloves ticketů včetně `create_ticket` a `assign_ticket`                                                                     |
+| `orchestrate` | Sestavený seznam povolených: nástroje na výzkum a čtení plus `propose_orchestration`, `create_playbook` a `run_playbook`. Nábor, rozklad a dokončení ticketu proběhnou deterministicky po schválení, nikdy uprostřed běhu             |
 
-Permitted in every mode regardless of allow-list:
+Povolené v každém režimu bez ohledu na seznam povolených:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| Sada                 | Nástroje                                                                                                                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Paměť a artefakty    | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Graf kódu            | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Mechanika běhu       | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+To, že nástroj je na seznamu povolených, ho ještě neudělá volatelným, a platí to i naopak: schopnost zeptat se operátora je nástroj **harnessu** (`ask_user`), takže se v tomhle katalogu MCP vůbec neobjeví.
 
-## Approval-gated tools
+## Nástroje za schválením
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Nástroj smí deklarovat `requiresApproval`. Dispečer pak sestaví `ApprovalPayload` a vystaví ho přes `ConfirmationPort` ještě před během nástroje; `cc_server` ten port zapojí, takže brána je živá.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Registrované nástroje, které to deklarují: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/).
+Nezávisle na tom sjednocené guardraily akcí brání každý nástroj, který deklaruje neprázdnou množinu `ActionClass`. Rozhodnutí `prompt` bez připojeného schvalovatele se odmítne. Viz [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/).
 
-## Capabilities with no tool behind them
+## Schopnosti, za kterými není nástroj
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Ne každá schopnost v produktu je pro agenta dosažitelná. Tyhle nemají nástroj
+vůbec, takže jméno, které jsi mohl vidět jinde, vrátí „unknown tool“:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/cs-CZ/prirucka/navody/projekty/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/cs-CZ/prirucka/navody/diagnostika-agenta/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Schopnost                              | Kde žije místo toho                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Nabírání, propouštění nebo úprava agenta | Rozhraní agentů. Nástroj `hire_agent` / `fire_agent` / `update_agent` není                       |
+| Vytvoření pracovního prostoru          | `workspace.upsert` přes RPC, které pracovní prostor založí a orazítkuje vlastnictví              |
+| Projekty (založení / výpis / úprava / zařazení) | Rozhraní ticketů. Projekty jsou plocha operátora — viz [Projekty](/cs-CZ/prirucka/navody/projekty/) |
+| Blokující otázka operátorovi           | Nástroj **harnessu** `ask_user`, ne MCP. Vykreslí formulář v konverzaci a čeká na odpověď        |
+| Diagnostika po agentech                | Nic. `doctor` není — viz [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/)     |
+| Kalendář a schůzky                     | RPC jen pro lidské klienty (viz výše)                                                            |
 
-## See also
+## Viz také
 
-- [Use Control Center as an MCP server](/cs-CZ/prirucka/navody/mcp-server/)
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/)
+- [Používejte MCP server](/cs-CZ/prirucka/navody/mcp-server/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/)

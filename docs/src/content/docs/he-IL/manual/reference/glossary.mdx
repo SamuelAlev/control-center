@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: מילון מונחים
+description: הגדרות של המונחים המרכזיים שבשימוש בכל רחבי Control Center.
 slug: he-IL/מדריך-למשתמש/עזר/מילון-מונחים
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['סוכן', 'עובד AI בעל זהות, תפקיד, מיומנויות ויכולות. משתייך בדיוק לסביבת עבודה אחת. הפועל הראשי במערכת.'],
+['מתאם', 'המריץ שמבצע תור של סוכן. שניים נכללים: Control Center (מובנה) — מנגנון ההרצה שבתוך התהליך שמדבר עם ספקי המודלים — ו-Claude Code דרך ה-CLI ‏claude. Cursor, Codex ושאר ספקי המודלים מתחברים למתאם המובנה, ולא כמריצים נפרדים.'],
+['סביבת עבודה', 'הדייר העליון של הבידוד. מקבץ סוכנים, מאגרים, מרחבים, כרטיסים, זיכרון ופייפליינים. הבידוד מבני, לא הסכמי: לכל סביבת עבודה יש קובץ SQLite משלה, כך שקריאה חוצת סביבות עבודה אינה מתקמפלת. כל נתיב באפליקציה מתחיל ב-/workspaces/:workspaceId.'],
+['מארח קוד', 'שירות אחסון קוד — GitHub, GitLab או Bitbucket Cloud. מאפיין של כל מאגר, הנקרא מה-remote ‏origin שלו בעת הרישום. סביבת עבודה אחת יכולה להחזיק מאגרים בכל השלושה.'],
+['מאגר', 'מאגר Git הרשום בתוך סביבת עבודה אחת. תחום לסביבת עבודה: אותו צ׳קאאוט הרשום בשתי סביבות עבודה הוא שתי שורות עם שני מזהים, וזהות המאגר בין סביבות עבודה נקבעת לפי נתיב במערכת הקבצים, ולעולם לא לפי מזהה. הרישום דורש עץ עבודה של git שה-remote ‏origin שלו מצביע על מארח קוד נתמך (GitHub, GitLab או Bitbucket Cloud).'],
+['מאגר מבודד', 'עץ עבודה תחום לסביבת עבודה של מאגר רשום. העתקה בעת כתיבה דרך rift בכל מקום שבו הנייטיב הזה נכלל; ‏git worktree ב-Windows. מסופק לפי מרחב, כך שכל שיחה במרחב הזה חולקת צ׳קאאוט אחד; סוכנים לעולם אינם משנים את המקור.'],
+['מרחב', 'מיכל שיתוף פעולה תחום לסביבת עבודה, עם משתתפים אנושיים וסוכנים, Mode נשמר, סטטוס אספקה ו-SpaceKind (topic, agentPeer, system, pr או slack) שקובע כיצד הוא מחולק, מושתק, מסומן בתג ומנוקה באסוף זבל. הוא הבעלים של עצי העבודה המבודדים שהשיחות שלו חולקות (העתקה בעת כתיבה דרך rift; ‏git worktree ב-Windows).'],
+['שיחה', 'זרם הודעות אחד בתוך מרחב, עם מזהה, היסטוריה והקשר הרצת סוכן משלו. השיחות במרחב שטוחות ושוות זו לזו — אין זרם ראשי או "מרכזי". כל אחת נפתחת כלשונית עורך; מצב לא־נקרא של מרחב מצטבר על פני כולן.'],
+['שרשור', 'שיחה שה-anchorMessageId שלה מוגדר: מעוגנת להודעה אחת של שיחה אחות באותו מרחב, עם הקשר סוכן טרי שנזרע מאותה הודעת עוגן. רמה אחת בלבד — שרשורים לעולם אינם מעוגנים לשרשורים.'],
+['כרטיס', 'הצובר של יחידת העבודה. ניטרלי ביחס לספק: local כברירת מחדל, עם מתאמי סנכרון ל-Linear, GitHub Issues, Jira Cloud ו-ClickUp, אף ששום משטח בתוך האפליקציה אינו יוצר חיבור סנכרון. תומך בהיררכיה, בקישורים ובהאצלה. הקצאה לסוכן רושמת בעלות ואינה שולחת דבר; הקצאה לצוות היא החריג (TeamRoutingService שולח את המוביל).'],
+['פייפליין', 'זרימת עבודה מבוססת DAG שמשרשרת שלבים (שליחת סוכן, סקריפטים, תנאים) זה לזה. מוגדרת בתבניות; מבוצעת כהרצות.'],
+['פגישה', 'סשן פגישה שמוקלט ומתומלל מקומית. קולט אודיו של מיקרופון ושל המערכת, מתמלל על המכשיר עם מודל ASR נבחר (Parakeet TDT v3 כברירת מחדל; Parakeet TDT v2, Whisper large-v3-turbo ו-Whisper base.en הן חלופות), מפריד דוברים ומסכם להערות, פריטי משימה לביצוע והחלטות. מודל ה-ASR הנבחר מותקן בכפייה באתחול, ופעולות ההקלטה נדלקות לאחר הפעלה מחדש אחת. תחום לסביבת עבודה.'],
+['CalendarEvent', 'ערך מסונכרן מ-Google Calendar, תחום לסביבת עבודה ולחשבון מחובר. נבדל מפגישה: אירוע הוא התחייבות מתוזמנת, ופגישה היא סשן מוקלט.'],
+['CalendarAccount', 'חשבון Google מחובר, לפי סביבת עבודה ולפי כתובת דוא"ל. אסימוני רענון של OAuth נשמרים בצד השרת כמפתחות google_* בקובץ secrets.json שתחת תיקיית הנתונים ולעולם אינם מגיעים ללקוח; דגל authExpiredAt מניע את באנר החיבור מחדש.'],
+['AgentRole', 'תפקיד ספור (CEO, coder, reviewer, QA, designer, security, devops, PM, general). קובע פרסונה, גישה לזיכרון והיררכיה.'],
+['AgentSkills', 'קבוצה שאינה תלוית רישיות של מזהי מיומנויות שמזריקה הקשר רלוונטי להנחיות בזמן השליחה.'],
+['מקור מיומנות', 'מאגר GitHub הרשום לפי סביבת עבודה כקטלוג מיומנויות. לא מהימן מעצם המבנה: המטא-דאטה של המאגר היא לתצוגה בלבד, וכל התקנה עוברת את שער הסריקה שנכשל לחסימה לפני שכל תוכן מגיע לדיסק או להנחיה.'],
+['skills-lock.json', 'המניפסט לפי סביבת עבודה של המיומנויות המותקנות: לכל אחת מהן מאגר המקור שלה, נתיב במאגר, הקומיט שהיא מוצמדת אליו וגיבוב תוכן מגולגל. התקנות, עדכונים והסרות משאירים אותו מעודכן; verify_skills בודק אותו מול הדיסק.'],
+['AgentCapabilities', 'ארבעה דגלים (דחיפה למאגר, API של GitHub, כרטוס, תעבורה יוצאת) שנקבעים לכל שליחה: ברירת המחדל של הסוכן, ואז ברירת המחדל של המשתמש, עם עקיפה לכל שיחה. נאכף בהיעדר, מפני שיכולת מבוטלת פירושה שהאסימון או התעבורה היוצאת פשוט אינם מוזרקים לעולם.'],
+['מצב', 'chat, plan, review או orchestrate. נשמר לפי מרחב, כך שסוכן אחד יכול להיות במצבים שונים במרחבים שונים; כל שיחה במרחב חולקת אותו. משער את הנחיית המערכת, כללי הכתיבה בארגז החול ורשימת ההיתר של כלי MCP.'],
+['SandboxBackend', 'microvm (VM מבודד — הבקאנד היחיד עם גבול ליבה, שמוחל על מסופים אינטראקטיביים), native (Seatbelt המקורי של macOS, bubblewrap ב-Linux וב-WSL2) או none. נבדק פעם אחת באתחול; ‏native עוטף שליחת סוכנים כשהוא זמין. ל-Windows אין בקאנד מקורי ול-Linux נדרשים bwrap ו-socat, כך שהרצות שם אינן עטופות; --sandbox off מוותר על כך במכוון.'],
+['תחנה', 'מכונה חד-פעמית שסוכן מפעיל בזמן אמת: דפדפן או שולחן עבודה של Linux מבודדים, אמולטור Android או סימולטור iOS המנוהלים במארח, או מסוף מבודד. נצפית בזמן אמת בערוץ משלה ברזולוציה מלאה, עם השתלטות שנאכפת בצד השרת. תחומה לשיחה, כך שהלשונית האנושית וכלי הסוכן פונים למכונה אחת.'],
+['מתחם מבודד', 'תכונת הבידוד החזקה יותר העומדת לרשות תחנות מבוססות VM: גבול ליבה, דיסק שכבת-על חד-פעמי, שער רשת שדוחה כברירת מחדל ומתווך פרטי גישה. תחנות Android ו-iOS הן חד-פעמיות אך משתמשות ברשת מנוהלת-מארח, ולכן אינן טוענות לגבול הזה. הפעלת כל תחנה עוברת במחלקת מעקות הבטיחות enclosureControl.'],
+['RunCost', 'מונה אסימונים ועלויות (אסימוני קלט, אסימוני פלט, עלות משוערת בסנטים) להרצת סוכן בודדת.'],
+['WakeReason', 'מדוע סוכן נשלח. שישה ערכים: הודעת משתמש, הקצאת כרטיס, שליחה חוזרת לשחזור אחרי כשל, השלמת כרטיס בן, פעימת המשך מתוזמנת ושלב פייפליין.'],
+['SandboxPort', 'מנהל את מחזור החיים של ארגז החול (בדיקה, הפעלה, אירועים, exec, השמדה).'],
+['CredentialBrokerPort', 'מנפיק פרטי גישה תחומים ומשוערי יכולת להפעלת ארגז חול, ומבטל אותם עם הסגירה.'],
+['GitRepoInspectorPort', 'מחלץ מטא-דאטה (בעלים, מאגר, ענף) מנתיב של מאגר Git מקומי.'],
+['EmbeddingPort', 'מפיק וקטורי הטמעת טקסט בעלי נורמה 1 לחיפוש סמנטי.'],
+['NotificationPort', 'מציג התראות מקוריות של שולחן העבודה בכפוף לשער הקטגוריה והנתיב.'],
+['TicketProviderPort', 'גבול אגנוסטי לספק מול בקאנד כרטוס (יצירה, שליפה, רשימה, עדכון, מעבר סטטוס, הקצאה).'],
+['PipelineEnginePort', 'מתחיל הרצת פייפליין מתבנית, ומנתק את הקוראים מהמנוע הקונקרטי.'],
+['AgentDispatchService', 'מפעיל הרצות סוכן: מספק מאגרים מבודדים, בונה הנחיות, יוצר יומני הרצה ומחזיר זרמי אירועים חיים.'],
+['TicketWorkflowService', 'מנוע מחזור חיים של כרטיסים בדומיין טהור, עם נקודת חנק לשינויים בהתאמה אופטימית ואכיפת בידוד סביבות עבודה. גרף המעברים שהוא אוכף מחייב סוכנים ואוטומציה בלבד; שינויי ממשק שמניע אדם מעבירים force true ועוקפים אותו.'],
+['PipelineEngine', 'מתזמר את ביצוע ההרצות: מפעיל הרצות, מתזמן שלבים, שומר מצב, מטפל ב־router/join/continue-on-fail ומחדש הרצות בתעופה לאחר אתחול.'],
+['PipelineTriggerDispatcher', 'נרשם לאירועי תחום ומפעיל אוטומטית הרצות פייפליין תואמות עבור טריגרים מופעלים.'],
+['MemoryAccessPolicy', 'מפענח ואוכף הרשאות זיכרון של תפקיד הסוכן על דומיינים.'],
+['HarnessCostCalculator', 'מתמחר שימוש באסימונים של מנגנון ההרצה המובנה ל-RunCost מתוך קטלוג models.dev. השליחה משמרת את המונה הזה על יומן ההרצה.'],
+['BudgetEnforcementService', 'מחשב הוצאה חודשית לפי סוכן וחסימה לפני שליחה (checkInvocationBlock). בחסימה הזו משתמשים רק מנגנוני התאמת המצב של השחזור (OrphanRunReaper, StrandedTicketReconciler), ולעולם לא שליחה רגילה.'],
+['BudgetGovernanceService', 'מעריך הוצאה חודשית לפי סוכן אחרי כל הרצה: סף רך רושם תקרית אזהרה; ניצול מלא רושם תקרית חמורה ומעביר את מחזור החיים של הסוכן ל-paused.'],
+['DomainEventBus', 'אפיק פרסום/מינוי שידורי בתהליך לתקשורת בין תכונות. האירועים טיפוסיים; המנויים צורכים זרמים לפי טיפוס.'],
+['DomainEvent', 'ממשק בסיס. לכל אירוע יש occurredAt. קטגוריות עיקריות: סביבת עבודה/סוכן, PR/סקירה, הודעות, כרטוס, פייפליין, פגישות/לוח שנה, זהות, תחנות, ניטור.'],
+['ארכיטקטורה נקייה', 'כלל תלויות: Presentation אל Application/Providers אל Domain, עם Infrastructure שמצביע פנימה. לדומיין אין ייבוא תשתית כלשהו.'],
+['יציאות ומתאמים', 'הדומיין מגדיר ממשקים מופשטים (יציאות); התשתית מספקת מימושים קונקרטיים (מתאמים). שורש ההרכבה מאגד אותם.'],
+['ליבה משותפת', 'יישויות, אובייקטי ערך, יציאות ושירותים תחת core/domain/ המשותפים ל-3 תכונות או יותר.'],
+['מבנה מבוסס תכונות', 'הקוד מאורגן לפי תחום עסקי (סוכנים, פייפליינים, הודעות) ולא לפי שכבה טכנית.'],
+['ארכיטקטורת לקוח דק', 'שום לקוח אינו פותח את מסד הנתונים; תהליך cc_server ללא ממשק הוא הבעלים של הנתונים ומגיש אותם דרך WebSocket RPC. כל לקוח (מחשב, ווב, טלפון) הוא מרנדר מעל אותו חיבור RPC אחד.'],
+['cc_server', 'בינארי השרת ללא ממשק (Dart טהור, בלי מנוע Flutter). הבעלים של מסד הנתונים Drift/SQLite, מגיש repo-RPC דרך WebSocket ומריץ את שירותי הרקע (פייפליינים, MCP, מנגנוני התאמת מצב).'],
+['ServerConnectionMode', 'כיצד שולחן העבודה מגיע לשרת שלו: local (הפעלת cc_server על המכונה הזו) או remote (חיוג לאחד במקום אחר). לקוח הווב תמיד remote.'],
+['RemoteRpcClient', 'לקוח ה-JSON-RPC שאינו תלוי בתעבורה, שכל לקוח דק משתמש בו כדי לדבר עם השרת שלו: דרך WSS, loopback או הממסר המתווך.'],
+['תחימת סביבת עבודה לכל קריאה', 'השרת חסר מצב: אין כריכה של סביבת עבודה לפי סשן, כך שלקוחות מרובים על שרת אחד לעולם אינם חולקים סביבת עבודה נוכחית. כל repo/call ו-sub/subscribe תחום לסביבת עבודה חייב לשאת workspace_id בארגומנטים שלו; מזהה חסר או לא רשום נדחה לפני שכל מסד נתונים נפתח. לאחר מכן הגישה משערת לפי חברות בסביבת העבודה ולתפקיד, ולא לפי הסשן.'],
+['cc_remote', 'לקוח הדק של הטלפון — PWA של Flutter לווב ששולט מרחוק בצי דרך הממסר המתווך, עם מדיניות כלים שדוחה כברירת מחדל.'],
+['cc_signaling_server', 'broker לממסר WebSocket חסר מצב שמארח חדרים המשוערים בהזמנה. ממסר טיפש: הוא מעביר רק מסגרות חתומות מקצה לקצה, אינו מחזיק נתוני אפליקציה ולעולם אינו רואה את ה-PSK של הצימוד.'],
+['ישות ראשית', 'ערך אטום שמאחד אנשים וסוכנים להפשטת הפועל היחידה. UserPrincipal(userId) או AgentPrincipal(agentId). כל הודעה, כרטיס, סקירה, תוכנית ויומן הרצה מיוחסים דרך ישות ראשית.'],
+['משתמש', 'זהות אנושית, הנשמרת ב-global.db ולכן גלובלית בכל סביבות העבודה. הישות הראשית שיוצרת סביבת עבודה הופכת לבעלים שלה, נחתמת על Workspace.ownerUserId עם שורת חברות בתפקיד בעלים; אחרים מצטרפים בהזמנה או ב-SSO.'],
+['WorkspaceMember', 'שורת חברות שקושרת משתמש לסביבת עבודה בתפקיד WorkspaceRole. החברות — ולא מפתח צימוד — היא גבול הגישה.'],
+['WorkspaceRole', 'תפקיד חברות מדורג: owner, admin, member, viewer או guest. נקודת החנק של פעולות המאגר גוזרת רצפת תפקיד מינימלית לכל סוג פעולה.'],
+['ParticipantPresence', 'מודעות ארעית לישות ראשית (סטטוס, מיקום, סמן, הקלדה, הסטטוס החי של הסוכן והעלות השוטפת שלו). לעולם אינה נשמרת; מרוכזת בשרת; מסוננת לפי הרשאת מאגר לפני ההפצה.'],
+['מצב מעקב', 'לוחצים על משתתף כדי לרכוב על חלון התצוגה שלו עד שתפעלו, ואז מתנתקים. עובד לאנשים ולסוכנים ("לצפות בסוכן עובד").'],
+['חוגת האוטונומיה', 'בקרה לכל מרחב ולכל סוכן — propose-only / act-with-approval / act-freely — שממומשת כפרופיל בעל שם מעל מאגר מעקות הבטיחות של הפעולות.'],
+['cc_worker', 'בינארי מבצע צי ללא ממשק, ב-Dart טהור. מצומד ל-cc_server, מצהיר על היכולות שלו, מושך משימות מוחכרות, מבצע אותן ומזרים אירועים בחזרה. אינו מחזיק שום מצב עמיד.'],
+['JobSpec', 'המפרט הטיפוסי של כל מה שאפשר להריץ (הרצת סוכן, שלב פייפליין, אינדקס קוד, רינדור גולדן, בנצ׳מרק, אצוות הערכה): יכולות נדרשות, עדיפות, תקציב, סביבת עבודה.'],
+['ActionClass', 'קבוצה סגורה של 13 מחלקות אפקט (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). כל כלי משנה מצב מצהיר על המחלקות שלו; מנוע מעקות הבטיחות מכריע allow / prompt / deny לכל טווח.'],
+['WriteLedger', 'פנקס אידמפוטנטיות תחום לסביבת עבודה. כל שינוי נושא מפתח אידמפוטנטיות לפי פעולה לוגית; הרצה חוזרת מחזירה את התוצאה המקורית הזהה בית-בבית. הופך חיבור מחדש וריבוי לקוחות לבטוחים מעצם המבנה.'],
+['מפתח אידמפוטנטיות', 'UUIDv7 שנוצר בצד הלקוח לכל פעולה לוגית (ולא לכל ניסיון). מסלק כפילויות של ניסיונות חוזרים בין חיבורים מחדש ולקוחות.'],
+['דואר נכנס "נדרש לי"', 'תור חוצה עמודי תווך עם כלל נוקשה: פריט מופיע רק אם הוא חוסם משהו (סוכן, מיזוג, סנכרון) או מבקש במפורש את המפעיל.'],
+['Plan Studio', 'משטח התכנון האינטראקטיבי: הצעת תזמור או תוכנית של סוכן בודד המרונדרת כ-DAG טיפוסי שניתן לערוך, עם הערכות עלות/זמן/סיכון לכל שלב, ניהול גרסאות של הבדלי תוכנית ואישור חלקי.'],
+['חישוב סקירה', 'חישוב סקירה בצד השרת ל-PR: קבוצות קבצים נגזרות מגרף, תרשימי סיור טיפוסיים, הבדלי תצוגה חזותיים, הבדלי חוזה OpenAPI, מפת רדיוס השפעה ושערים לפי ציר, המוגשים דרך review_studio.* ומקופלים להכרעת לשונית הסקירה.'],
+['מרחב סקירה', 'מרחב הבסיס היחיד של PR (מצב review, סוג pr), שנוצר באופן אידמפוטנטי ומקושר ל-PR באמצעות ReviewSpaceAssociation. כל סוקר רושם בו את ממצאיו, וזה מה שהופך אותם ברי-השוואה; עץ העבודה המבודד שלו מחזיק את ה-PR בצ׳קאאוט שבראשו.'],
+['צומת סקירה', 'היחידה המובנית של ממצא בסקירת AI: סוג (bug, suggestion, recommendation, question, ticket), עדיפות P0-P3, שלשת טריאז׳ של קטגוריה/חומרה/מאמץ, עוגן לקובץ ולשורה, תיקון מוצע אופציונלי וציון ביטחון. נרשם עם add_review_node; ההכרעה מחושבת מצמתים, לא מפרוזה.'],
+['Consensus-ready', 'הסטטוס של צומת סקירה שאליו מגיעים רק כשסוקר עמית מאשר ממצא — סוכן אינו יכול לאשר ממצא של עצמו. כפתור הפרסום בלשונית הסקירה שולח כל ממצא פתוח שנותר; כלי ה-MCP ‏publish_review_to_github עדיין מגיע כברירת מחדל לממצאים שאושרו על ידי עמיתים בלבד.'],
+['רמת סקירה', 'מדיניות של סביבת עבודה (light, balanced, thorough) שקובעת אילו סוקרים מתפצלים (מהנדס בלבד; ‏+qa+architect; ‏+security+perf) והיכן ממצאים מתחת לסף מוצגים. לעולם אינה מוחקת ממצא.'],
+['ציר סקירה', 'אחד מחמישה מסלולי ניקוד לכל סקירה: correctness, security ו-testGap נגזרים מממצאי הסוקרים; visual ו-apiContract דטרמיניסטיים. צירים משעורים מתקפלים לתוך ההכרעה ויכולים רק להחמיר אותה — שער partial או unavailable מחזיק את ההכרעה במקום להעביר אותה.'],
+['הכרעת סקירה', 'ship, hold או block. כל ממצא P0 עם ביטחון >= 0.7 חוסם; כל P0 אחר או כל P1 מחזיק; אחרת ship. ציר משעור שנכשל כופה block ואי אפשר לגבור עליו בהצבעת ממצאים.'],
+['SessionRecording', 'זרם אירועים בתוספת קסטות HTTP/LLM וקלט/פלט כלים שנלכדו להרצה אחת, בצירוף AgentConfigHash.'],
+['סשן גולדן', 'SessionRecording מבורך ומוצמד לפי סוכן או לפי פלייבוק.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "מילון המונחים של Control Center",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## ישויות ליבה
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**סוכן**: עובד AI בעל זהות, תפקיד, מיומנויות ויכולות. משתייך בדיוק לסביבת עבודה אחת. הפועל הראשי במערכת.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
+**מתאם**: המריץ שמבצע תור של סוכן. שניים נכללים: **Control Center (מובנה)** — מנגנון ההרצה שבתוך התהליך שמדבר עם ספקי המודלים — ו**Claude Code** דרך `claude -p`. Cursor, Codex, Anthropic, OpenAI והשאר הם ספקים על המתאם המובנה, ולא CLIs נפרדים. ראו [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/).
+**סביבת עבודה**: הדייר העליון של הבידוד. מקבץ סוכנים, מאגרים, מרחבים, כרטיסים, זיכרון ופייפליינים. הבידוד מבני, לא הסכמי: לכל סביבת עבודה יש קובץ SQLite משלה (`<dataDir>/<workspaceId>/workspace.db`), כך שקריאה חוצת סביבות עבודה אינה מתקמפלת. כל נתיב באפליקציה מתחיל ב-`/workspaces/:workspaceId` — ראו את [מפת הנתיבים](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/).
+**מארח קוד**: שירות אחסון קוד — **GitHub**, **GitLab** או **Bitbucket Cloud**. מארח הקוד הוא מאפיין של כל מאגר, הנקרא מה-remote ‏`origin` שלו בעת הרישום, והוא בוחר את מתאם ה-API ואת פרטי הגישה של אותו מאגר. סביבת עבודה אחת יכולה להחזיק מאגרים בכל השלושה; משטחים מצטברים (דואר הנכנס, תור בקשות המשיכה) מתפצלים על פני כל מארח קוד מיוצג וממזגים את התוצאות, ומבודדים כשלים כך שמארח קוד שאינו נגיש לעולם אינו מרוקן את האחרים. מארחי הקוד נבדלים במה שהם תומכים בו — ראו את טבלת היכולות ב[חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/).
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**מאגר**: מאגר Git הרשום בתוך סביבת עבודה אחת. **תחום לסביבת עבודה** — אותו צ׳קאאוט הרשום בשתי סביבות עבודה הוא שתי שורות בלתי תלויות עם שני מזהים; זהות המאגר בין סביבות עבודה היא לפי נתיב במערכת הקבצים, ולעולם לא לפי מזהה. הרישום דורש עץ עבודה של git שה-remote ‏`origin` שלו מצביע על מארח קוד נתמך. כל מאגר נושא את **מארח הקוד** שלו (`github` / `gitlab` / `bitbucket`), שבוחר את מתאם ה-API ואת פרטי הגישה שבשימוש עבורו.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**מאגר מבודד**: עץ עבודה תחום לסביבת עבודה של מאגר רשום. העתקה בעת כתיבה דרך `rift` בכל מקום שבו הנייטיב הזה נכלל; `git worktree` ב-Windows. מסופק **לפי מרחב** — כל שיחה במרחב הזה חולקת צ׳קאאוט אחד — כך שסוכנים לעולם אינם משנים את המקור.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**מרחב**: מיכל שיתוף פעולה תחום לסביבת עבודה, עם משתתפים אנושיים וסוכנים, `Mode` נשמר, סטטוס אספקה ו-`SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) שקובע כיצד הוא מחולק, מושתק, מסומן בתג ומנוקה באסוף זבל. הוא הבעלים של עצי העבודה המבודדים שהשיחות שלו חולקות (העתקה בעת כתיבה דרך `rift`; `git worktree` ב-Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**שיחה**: זרם הודעות אחד בתוך מרחב, עם מזהה, היסטוריה והקשר הרצת סוכן משלו. השיחות במרחב שטוחות ושוות זו לזו — אין זרם ראשי או "מרכזי". כל אחת נפתחת כלשונית עורך; מצב הקריאה של מרחב מצטבר על פני כולן.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**שרשור**: שיחה שה-`anchorMessageId` שלה מוגדר: מעוגנת להודעה אחת של שיחה אחות באותו מרחב, עם הקשר סוכן טרי שנזרע מאותה הודעת עוגן. רמה אחת בלבד — שרשורים לעולם אינם מעוגנים לשרשורים.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**כרטיס**: הצובר של יחידת העבודה. ניטרלי ביחס לספק: `local` כברירת מחדל, עם מתאמי סנכרון ל-Linear, GitHub Issues, Jira Cloud ו-ClickUp — אף ששום משטח בתוך האפליקציה אינו יוצר חיבור סנכרון. תומך בהיררכיה, בקישורים ובהאצלה. הקצאה לסוכן רושמת בעלות ואינה שולחת דבר; הקצאה לצוות היא החריג (`TeamRoutingService` שולח את המוביל).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**פייפליין**: זרימת עבודה מבוססת DAG שמשרשרת שלבים (שליחת סוכן, סקריפטים, תנאים) זה לזה. מוגדרת בתבניות; מבוצעת כהרצות.
 
-## Value objects
+## אובייקטי ערך
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: תפקיד ספור (CEO, coder, reviewer, QA, designer, security, devops, PM, general). קובע פרסונה, גישה לזיכרון והיררכיה.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: קבוצה שאינה תלוית רישיות של מזהי מיומנויות שמזריקה הקשר רלוונטי להנחיות בזמן השליחה.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-מיומנויות/).
+**מקור מיומנות**: מאגר GitHub הרשום לפי סביבת עבודה כקטלוג מיומנויות. לא מהימן מעצם המבנה: המטא-דאטה של המאגר היא לתצוגה בלבד, וכל התקנה עוברת את שער הסריקה שנכשל לחסימה לפני שכל תוכן מגיע לדיסק או להנחיה. ראו [התקנה וניהול מיומנויות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-מיומנויות/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: המניפסט לפי סביבת עבודה של המיומנויות המותקנות: לכל אחת מהן מאגר המקור שלה, נתיב במאגר, הקומיט שהיא מוצמדת אליו וגיבוב תוכן מגולגל. התקנות, עדכונים והסרות משאירים אותו מעודכן; `verify_skills` בודק אותו מול הדיסק.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: ארבעה דגלים (דחיפה למאגר, API של GitHub, כרטוס, תעבורה יוצאת) שנקבעים לכל שליחה — ברירת המחדל של הסוכן → ברירת המחדל של המשתמש, עם עקיפה לכל שיחה. נאכף בהיעדר: יכולת מבוטלת פירושה שהאסימון או התעבורה היוצאת פשוט אינם מוזרקים לעולם.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**מצב**: `chat`, `plan`, `review` או `orchestrate`. נשמר **לפי מרחב**, כך שסוכן אחד יכול להיות במצבים שונים במרחבים שונים; כל שיחה במרחב חולקת אותו. משער את הנחיית המערכת, את כללי הכתיבה בארגז החול ואת רשימת ההיתר של כלי MCP. תיבת הכתיבה מציעה רק `chat`, `plan` ו-`orchestrate`; ‏`chat` מסומן "סוכן".
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (VM מבודד — הבקאנד היחיד עם גבול ליבה, שמוחל על מסופים אינטראקטיביים), `native` (Seatbelt ב-macOS, bubblewrap ב-Linux וב-WSL2) או `none`. נבדק פעם אחת באתחול; ‏`native` **מוחל על שליחת סוכנים** כשהוא זמין, ועוטף את ה-CLI של Claude Code ואת כלי ה-`bash` של מנגנון ההרצה. ל-Windows אין בקאנד מקורי, ול-Linux נדרשים `bwrap` ו-`socat`, כך שהרצות שם אינן עטופות; `--sandbox off` מוותר על כך במכוון.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/he-IL/מדריך-למשתמש/מושגים/תחנות/).
+**תחנה**: מכונה חד-פעמית שסוכן מפעיל בזמן אמת — דפדפן או שולחן עבודה של Linux מבודדים, אמולטור Android או סימולטור iOS המנוהלים במארח, או מסוף מבודד. נצפית בזמן אמת בערוץ משלה ברזולוציה מלאה, עם השתלטות שנאכפת בצד השרת. תחומה לשיחה, כך שהלשונית האנושית וקריאות ה-`browser_use` / `computer_use` / `mobile_use` / `ios_use` של הסוכן פונות למכונת ברירת מחדל אחת. ראו [תחנות ומתחמים מבודדים](/he-IL/מדריך-למשתמש/מושגים/תחנות/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**מתחם מבודד**: גבול הבידוד החזק יותר של תחנות מבוססות VM — גבול ליבה, דיסק שכבת-על חד-פעמי, שער רשת שדוחה כברירת מחדל ומתווך פרטי גישה. תחנות Android ו-iOS הן חד-פעמיות אך משתמשות ברשת מנוהלת-מארח ואינן טוענות לגבול הזה. הפעלת כל תחנה עוברת במחלקת מעקות הבטיחות `enclosureControl`.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: מונה אסימונים ועלויות (אסימוני קלט, אסימוני פלט, עלות משוערת בסנטים) להרצת סוכן בודדת.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: מדוע סוכן נשלח. שישה ערכים: הודעת משתמש, הקצאת כרטיס, שליחה חוזרת לשחזור אחרי כשל, השלמת כרטיס בן, פעימת המשך מתוזמנת ושלב פייפליין.
 
-## Ports
+## יציאות
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: מנהל את מחזור החיים של ארגז החול (בדיקה, הפעלה, אירועים, exec, השמדה).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: מנפיק פרטי גישה תחומים ומשוערי יכולת להפעלת ארגז חול, ומבטל אותם עם הסגירה.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: מחלץ מטא-דאטה (בעלים, מאגר, ענף) מנתיב של מאגר Git מקומי.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: מפיק וקטורי הטמעת טקסט בעלי נורמה 1 לחיפוש סמנטי.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: מציג התראות מקוריות של שולחן העבודה בכפוף לשער הקטגוריה והנתיב.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: גבול אגנוסטי לספק מול בקאנד כרטוס (יצירה, שליפה, רשימה, עדכון, מעבר סטטוס, הקצאה).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: מתחיל הרצת פייפליין מתבנית, ומנתק את הקוראים מהמנוע הקונקרטי.
 
-## Domain services
+## שירותי דומיין
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: מפעיל הרצות סוכן: מספק מאגרים מבודדים, בונה הנחיות, יוצר יומני הרצה ומחזיר זרמי אירועים חיים.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: מנוע מחזור חיים של כרטיסים בדומיין טהור, עם נקודת חנק לשינויים בהתאמה אופטימית ואכיפת בידוד סביבות עבודה. גרף המעברים שהוא אוכף מחייב סוכנים ואוטומציה בלבד; שינויי ממשק שמניע אדם מעבירים `force: true` ועוקפים אותו. אין שולח כרטיסים עבור מוקצה שהוא סוכן — `AgentDispatchService` הוא הבעלים של השליחה, והקצאת כרטיס לסוכן אינה מתחילה הרצה. הקצאת כרטיס לצוות היא החריג (`TeamRoutingService` שולח את המוביל).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: מתזמר את ביצוע ההרצות: מפעיל הרצות, מתזמן שלבים, שומר מצב, מטפל ב־router/join/continue-on-fail ומחדש הרצות בתעופה לאחר אתחול.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: נרשם לאירועי תחום ומפעיל אוטומטית הרצות פייפליין תואמות עבור טריגרים מופעלים.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: מפענח ואוכף הרשאות זיכרון של תפקיד הסוכן על דומיינים.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: מתמחר שימוש באסימונים של מנגנון ההרצה המובנה ל-`RunCost` מתוך הקטלוג models.dev. השליחה משמרת את המונה הזה על יומן ההרצה.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: מחשב הוצאה חודשית לפי סוכן וחסימה לפני שליחה (`checkInvocationBlock`). בחסימה הזו משתמשים רק מנגנוני התאמת המצב של השחזור (`OrphanRunReaper`, `StrandedTicketReconciler`), ולעולם לא שליחה רגילה של משתמש או סוכן.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: מעריך הוצאה חודשית לפי סוכן אחרי כל הרצה — סף רך רושם תקרית אזהרה; ניצול מלא רושם תקרית חמורה ומעביר את מחזור החיים של הסוכן ל-`paused`.
 
-## Events
+## אירועים
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: אפיק פרסום/מינוי שידורי בתהליך לתקשורת בין תכונות. האירועים טיפוסיים; המנויים צורכים זרמים של `on<T>()`.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: ממשק בסיס. לכל אירוע יש `occurredAt`. קטגוריות עיקריות: סביבת עבודה/סוכן, PR/סקירה, הודעות, כרטוס, פייפליין, פגישות/לוח שנה, זהות, תחנות, ניטור.
 
-## Meetings and calendar
+## פגישות ולוח שנה
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**פגישה**: סשן פגישה שמוקלט ומתומלל מקומית. קולט אודיו של מיקרופון ושל המערכת, מתמלל על המכשיר עם מודל ASR נבחר (Parakeet TDT v3 כברירת מחדל; Parakeet TDT v2, Whisper large-v3-turbo ו-Whisper base.en הן חלופות), מפריד דוברים ומסכם להערות, פריטי משימה לביצוע והחלטות. מודל ה-ASR הנבחר מותקן בכפייה באתחול, ופעולות ההקלטה נדלקות לאחר הפעלה מחדש אחת. תחום לסביבת עבודה; נשאר על המכונה.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: חלון אודיו מתומלל אחד, מתויג לפי דובר (`me`/`them`), עם תווית הפרדת דוברים והיסטים במילישניות.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: פלטים מובנים שחולצו על ידי פייפליין הסיכום ונשמרו כשורות נפרדות. פריטי משימה לביצוע יכולים להיות מקושרים לכרטיס.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: ערך מסונכרן מ-Google Calendar, תחום לסביבת עבודה ולחשבון מחובר. נבדל מפגישה: אירוע הוא התחייבות מתוזמנת; פגישה היא סשן מוקלט. מקושר אחד-לאחד דרך `MeetingCalendarLink`.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: חשבון Google מחובר, לפי סביבת עבודה ולפי כתובת דוא"ל. אסימוני רענון של OAuth נשמרים בצד השרת כמפתחות `google_*` ב-`<dataDir>/secrets.json` ולעולם אינם מגיעים ללקוח; זרימת קוד המכשיר מושלמת בשרת. דגל `authExpiredAt` מניע את באנר החיבור מחדש.
 
-## Architecture terms
+## מונחי ארכיטקטורה
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**ארכיטקטורה נקייה**: כלל תלויות: Presentation → Application/Providers → Domain ← Infrastructure. לדומיין אין ייבוא תשתית כלשהו.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**יציאות ומתאמים**: הדומיין מגדיר ממשקים מופשטים (יציאות); התשתית מספקת מימושים קונקרטיים (מתאמים). שורש ההרכבה מאגד אותם.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**ליבה משותפת**: יישויות, אובייקטי ערך, יציאות ושירותים תחת `core/domain/` המשותפים ל-3 תכונות או יותר.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**מבנה מבוסס תכונות**: הקוד מאורגן לפי תחום עסקי (סוכנים, פייפליינים, הודעות) ולא לפי שכבה טכנית.
 
-## Multiplayer, identity and velocity
+## ריבוי משתתפים, זהות ומהירות
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**ישות ראשית**: ערך אטום שמאחד אנשים וסוכנים להפשטת הפועל היחידה — `UserPrincipal(userId)` או `AgentPrincipal(agentId)`. כל הודעה, כרטיס, סקירה, תוכנית ויומן הרצה מיוחסים דרך ישות ראשית.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**משתמש**: זהות אנושית, הנשמרת ב-`global.db` ולכן גלובלית בכל סביבות העבודה. הישות הראשית שיוצרת סביבת עבודה הופכת ל**בעלים** שלה — נחתמת על `Workspace.ownerUserId` עם שורת חברות בתפקיד בעלים באותה פעולה. אחרים מצטרפים בהזמנה או ב-SSO.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: שורת חברות שקושרת משתמש לסביבת עבודה בתפקיד (`owner` / `admin` / `member` / `viewer` / `guest`). **החברות — ולא מפתח צימוד — היא גבול הגישה.** הרשאות לפי מאגר מונעות מהחברות להעניק הרשאות עודפות על מארח הקוד.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: מודעות ארעית לישות ראשית (סטטוס, מיקום, סמן, הקלדה, הסטטוס החי של הסוכן והעלות השוטפת שלו). לעולם אינה נשמרת; מרוכזת בשרת; מסוננת לפי הרשאת מאגר לפני ההפצה.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**מצב מעקב**: לוחצים על משתתף כדי לרכוב על חלון התצוגה שלו עד שתפעלו, ואז מתנתקים. עובד לאנשים ולסוכנים ("לצפות בסוכן עובד").
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**חוגת האוטונומיה**: בקרה לכל מרחב ולכל סוכן — `propose-only` / `act-with-approval` / `act-freely` — שממומשת כפרופיל בעל שם מעל מאגר מעקות הבטיחות של הפעולות.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: קבוצה סגורה של 13 מחלקות אפקט (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). כל כלי משנה מצב מצהיר על המחלקות שלו; מנוע מעקות הבטיחות מכריע `allow` / `prompt` / `deny` לכל טווח (מרחב > סוכן > סביבת עבודה > ערכת מצב > ברירת מחדל מובנית).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **מפתח אידמפוטנטיות**: כל שינוי נושא מפתח אידמפוטנטיות שנוצר בצד הלקוח (UUIDv7, לפי פעולה לוגית). הפנקס התחום לסביבת עבודה מסלק כפילויות לפני שהמטפל רץ; הרצה חוזרת מחזירה את התוצאה המקורית הזהה בית-בבית. הופך חיבור מחדש וריבוי לקוחות לבטוחים מעצם המבנה.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**דואר נכנס "נדרש לי"**: תור חוצה עמודי תווך עם כלל נוקשה — פריט מופיע רק אם הוא _חוסם_ משהו (סוכן, מיזוג, סנכרון) או מבקש במפורש את המפעיל.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: משטח התכנון האינטראקטיבי — תוכניות DAG טיפוסיות שניתן לערוך, עם עלות, זמן וסיכון לכל שלב, ואישור חלקי.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**חישוב סקירה**: חישוב סקירת PR בצד השרת (קבוצות נגזרות מגרף, תרשימים טיפוסיים, הבדלי תצוגה חזותיים, הבדלי חוזה API, שערים רב-ציריים) המוגש דרך `review_studio.*` ומקופל ללשונית הסקירה.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**מרחב סקירה**: מרחב הבסיס היחיד של PR (מצב `review`, סוג `pr`), שנוצר באופן אידמפוטנטי ומקושר ל-PR באמצעות `ReviewSpaceAssociation`. כל סוקר רושם בו את ממצאיו, וזה מה שהופך אותם ברי-השוואה; עץ העבודה המבודד שלו מחזיק את ה-PR בצ׳קאאוט שבראשו.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**צומת סקירה**: היחידה המובנית של ממצא בסקירת AI: סוג (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), עדיפות P0–P3, שלשת טריאז׳ של קטגוריה/חומרה/מאמץ, עוגן לקובץ ולשורה, תיקון מוצע אופציונלי וציון ביטחון. נרשם עם `add_review_node`; ההכרעה מחושבת מצמתים, לא מפרוזה.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Consensus-ready**: הסטטוס של צומת סקירה שאליו מגיעים רק כשסוקר עמית מאשר ממצא — סוכן אינו יכול לאשר ממצא של עצמו. כפתור **Publish to GitHub** בלשונית הסקירה שולח כל ממצא פתוח שנותר (`selection: all_open`); כלי ה-MCP ‏`publish_review_to_github` עדיין מגיע כברירת מחדל לממצאים שאושרו על ידי עמיתים בלבד.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**רמת סקירה**: מדיניות של סביבת עבודה (`light`, `balanced`, `thorough`) שקובעת אילו סוקרים מתפצלים (מהנדס בלבד; ‏+qa+architect; ‏+security+perf) והיכן ממצאים מתחת לסף מוצגים. לעולם אינה מוחקת ממצא.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**ציר סקירה**: אחד מחמישה מסלולי ניקוד לכל סקירה: `correctness`, `security` ו-`testGap` נגזרים מממצאי הסוקרים; `visual` ו-`apiContract` דטרמיניסטיים. צירים משעורים מתקפלים לתוך ההכרעה ויכולים רק להחמיר אותה — שער `partial` או `unavailable` מחזיק את ההכרעה במקום להעביר אותה.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**הכרעת סקירה**: `ship`, `hold` או `block`. כל ממצא P0 עם ביטחון ≥ 0.7 חוסם; כל P0 אחר או כל P1 מחזיק; אחרת ship. ציר משעור שנכשל כופה block ואי אפשר לגבור עליו בהצבעת ממצאים.
 
-## Fleet and evals
+## צי והערכות
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: בינארי מבצע צי ללא ממשק, ב-Dart טהור. מצומד ל-`cc_server`, מצהיר על יכולות המארח שלו, מושך משימות מוחכרות, מבצע אותן ומזרים אירועי תהליך בחזרה. אינו מחזיק **שום מצב עמיד** — שרת סמכותי אחד, N גפיים טיפשות.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: המפרט הטיפוסי של כל מה שאפשר להריץ (הרצת סוכן, שלב פייפליין, אינדקס קוד, רינדור גולדן, בנצ׳מרק, אצוות הערכה).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**חבילת הערכה**: הגדרת הערכה תחומה לסביבת עבודה (הנחיה, סוכן יעד ומצב, מדרגים). חמש חבילות התחלתיות נזרעות עם יצירת סביבת עבודה; ניטור → איכות מציג אותן.
 
-## Deployment and clients
+## פריסה ולקוחות
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**ארכיטקטורת לקוח דק**: שום לקוח אינו פותח את מסד הנתונים; תהליך `cc_server` ללא ממשק הוא הבעלים של הנתונים ומגיש אותם דרך WebSocket RPC. כל לקוח (מחשב, ווב, טלפון) הוא מרנדר מעל אותו חיבור RPC אחד.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: בינארי השרת ללא ממשק (Dart טהור, בלי מנוע Flutter). הוא הבעלים של מסד הנתונים Drift/SQLite, מגיש repo-RPC דרך WebSocket ומריץ את שירותי הרקע (פייפליינים, MCP, מנגנוני התאמת מצב).
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: כיצד שולחן העבודה מגיע לשרת שלו — `local` (הפעלת `cc_server` על המכונה הזו, ברירת המחדל) או `remote` (חיוג לאחד במקום אחר). לקוח הווב הוא תמיד `remote`.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: לקוח ה-JSON-RPC שאינו תלוי בתעבורה, שכל לקוח דק משתמש בו כדי לדבר עם השרת שלו — דרך WSS, loopback או הממסר המתווך.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**תחימת סביבת עבודה לכל קריאה**: השרת חסר מצב — **אין** כריכה של סביבת עבודה לפי סשן, כך שלקוחות מרובים על שרת אחד לעולם אינם חולקים "סביבת עבודה נוכחית". כל `repo/call` ו-`sub/subscribe` תחום לסביבת עבודה חייב לשאת `workspace_id` בארגומנטים שלו; מזהה חסר או שאינו רשום נדחה לפני שכל מסד נתונים נפתח. לאחר מכן הגישה משערת לפי חברות בסביבת העבודה ולתפקיד, ולא לפי הסשן.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: לקוח הדק של הטלפון — PWA של Flutter לווב ששולט מרחוק בצי דרך הממסר המתווך, עם מדיניות כלים שדוחה כברירת מחדל.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: broker לממסר WebSocket חסר מצב, שמארח חדרים המשוערים בהזמנה — ממסר טיפש שמעביר רק מסגרות חתומות מקצה לקצה, אינו מחזיק נתוני אפליקציה ולעולם אינו רואה את ה-PSK של הצימוד.
 
-## See also
+## ראו גם
 
-- [Route map](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/)
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/)
-- [Workspaces](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
-- [Domain events](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/)
+- [מפת נתיבים](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/)
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/)
+- [סביבות עבודה](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
+- [אירועי תחום](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/)

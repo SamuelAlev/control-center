@@ -1,132 +1,142 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: レビューコンピュート（コホート、軸、決定論的 diff）
+description: レビューコンピュートのパスがサーバー側で何を生成するのか — コホート、API コントラクトとビジュアルの diff、軸ごとのゲート — と、それがレビュータブにどう折り込まれるのかを説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/レビューコンピュート
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+PR の**レビュー**タブに映るのは、レビューパイプラインが動作している間はそのライブの
+進捗であり、動作が終わればパイプラインが公開した成果物と、そこに付いたアクション
+です。1 つのタブが 2 つの状態を取るのは、同じものの 2 つの時点だからです。これは
+既定のタブではありません。誰かが要求するまで PR にレビューは存在しないため、それを
+開くのは **AIに質問**です。
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+そのタブの背後で、`cc_server` はファイルのコホートを構築し、決定論的な軸を実行し、
+それらを `review_studio.*` の RPC オペレーション（`cohorts`、`blastRadius`、
+`cohortImpact`、`ciSignals`、`dependencyDiffs`、`setContractDecision`、
+`approveVisual`、`compute` と、それぞれの `watch*` 版）として提供します。
+`pr.reviewStudio` という名前が残る永続化済みレイアウトも、この同じレビュータブを
+開きます。
 
-On the Review tab:
+レビュータブでは：
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- 統合エージェントは `publish_artifact` で通常の会話成果物を公開するため、タブは
+  チャットバブルが開くのと同じ成果物ビューアを通してそれをレンダリングします —
+  レビュー専用の成果物システムのコピーは存在しません。
+- 指摘はその横のレールに並び、判定はダッシュボードのヘッダーではなく、成果物の上の
+  細いバーに乗ります。
+- PR の head がレビューより先に進むと、レビューが古くなったことを示すバナーが
+  表示されます。
 
-See [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/) for the flow and
-[Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/) for acting on it.
+流れについては [AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/) を、
+それに対する操作については
+[PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/) を
+参照してください。
 
-## Cohorts
+## コホート
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+コホートは、PR の変更ファイルを、内容から導かれたバケット — 意味の上でひとまとまりに
+なるファイルの集まり — にグループ化し、影響度で順位付けするため、最もリスクの高い
+グループから読むことになります。コホートは head SHA が変わるたびに再計算され、
+まるごと置き換えられます。各コホートは push をまたいでも安定したキーを持つため、
+要約とレビューの進捗は rebase を越えて生き残ります。
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+リポジトリがコードインデックスされていない場合、コホートはパスによるグループ化に
+フォールバックします。リポジトリをインデックスするには、
+**設定 → ワークスペース → リポジトリ**を使います — 各リポジトリの行には
+**コードをインデックス**アクションがあり、`index_code` パイプラインを実行し、その場で
+進行状況を報告します。
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+コードグラフがパースするのは、同梱の文法を持つ言語だけです（Dart、JS/TS、PHP、
+Python、Rust、Zig、C/C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、
+MATLAB、Ada）。それ以外の言語のリポジトリは、何度インデックスしても意味論的な
+コホートを生成できません。
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+エージェントは `set_cohort_summary` でコホートの markdown 要約を記録し、
+`add_review_diagram` で構造化されたウォークスルー図を添付できます — 型付きの
+シーケンス、エンティティリレーション、ステートマシンのオブジェクトであり、
+mermaid テキストではありません。すべてのエッジは実際のコードグラフと照合され、
+グラフが裏付けられないエッジは、事実として描画されるのではなく未検証としてマーク
+されます。
 
-## The API-contract axis
+## API コントラクトの軸
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+コントラクトの軸が diff を取るのは、**明示的な**スペックファイルだけです。6 つの
+既定の名前 — `openapi.yaml`、`openapi.yml`、`openapi.json`、`swagger.yaml`、
+`swagger.yml`、`swagger.json` — に加えて、名前に `openapi` または `swagger` を
+含み、`.yaml`、`.yml`、`.json` のいずれかで終わる変更ファイルにも一致します。
+ハンドラーコードから推測されたコントラクトは対象外であり、GraphQL スキーマの diff は
+取りません。
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+各変更は分類され — エンドポイント、パラメーター、スキーマ、レスポンスの追加、削除、
+変更 —、重大度を持ちます：**breaking**（エンドポイントやパラメーターの削除、型の
+厳格化、新しい必須パラメーター）、非破壊的（追加のみ）、または情報提供です。却下
+された変更はコントラクトゲートを失敗させ、未決定のままの breaking 変更も同じです。
+breaking だが承認済みの場合は警告になり、breaking 変更がなければパスします。
+**派生（参考）**とマークされた diff は決してゲートしません。
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+変更の承認または却下は `review_studio.setContractDecision` です。
 
-## The visual axis
+## ビジュアルの軸
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+PR が Widgetbook アプリのある Flutter リポジトリで UI コンポーネントを変更すると、
+コンピュートパスは、PR の base と head のワークツリーでヘッドレスの `flutter test`
+ゴールデンパスを使って変更前後のコンポーネントをレンダリングし、そのピクセルを
+diff します。
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[サーバーホストに Flutter SDK が必要です]
+純粋な Dart のサーバーは Flutter ウィジェットをプロセス内でレンダリングできないため、
+`flutter test` を別プロセスで呼び出します。SDK は `cc_server` を実行しているマシンに
+インストールする必要があり、クライアント側ではありません。これがないと、軸は理由
+「no Flutter SDK on host」を添えて **unavailable** を報告します。獲得していないパスを
+報告することは決してありません。
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+**changed** または **removed** とマークされたスナップショットは、承認されるまで
+ビジュアルゲートを保留します。**unchanged**、**added**、**approved** の
+スナップショットはゲートを解除します。利用不可には 4 つの理由のいずれかがあります：
+ホストに Flutter SDK がない、リポジトリに Widgetbook アプリがない、ゴールデン
+テスト可能なユースケースがない、またはゴールデンハーネスのエラーです。
 
-Approving an intended change is `review_studio.approveVisual`.
+意図した変更の承認は `review_studio.approveVisual` です。
 
-## The axes and the verdict
+## 軸と判定
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| 軸             | 駆動するもの                     |
+| -------------- | -------------------------------- |
+| 正確性         | レビュアーエージェント（トークン） |
+| セキュリティ   | レビュアーエージェント（トークン） |
+| テストギャップ | レビュアーエージェント（トークン） |
+| ビジュアル     | 決定論的（ゴールデンハーネス）    |
+| API コントラクト | 決定論的（スペック diff）      |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+3 つのトークン軸は、リードエージェントが `finalize_review` を呼び出したときに記録
+されます。2 つの決定論的な軸は、コンピュートパスによって記録されます。
 
-Each axis reports one of:
+各軸は次のいずれかを報告します：
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| 状態            | 意味                                                 |
+| --------------- | ---------------------------------------------------- |
+| **Pass**        | 実行され、ブロックするものは見つからなかった          |
+| **Warn**        | 実行され、ブロックしない懸念がある                    |
+| **Fail**        | 実行され、ブロックする問題が見つかった                |
+| **Partial**     | 実行されたが完了できず、結果は不完全                  |
+| **Unavailable** | まったく実行できなかった                              |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+ゲート対象の軸を解除できるのは **pass** と **warn** だけです。**Partial** と
+**unavailable** は **fail** とは意図的に区別されており、どちらもゲートを解除しません。
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+軸は **Ship**、**Hold**、**Block** に集約され、軸は判定を*より*厳しくすることしか
+できません — 決して格下げされることはありません。**失敗**したゲート対象の軸は
+**Block** を強制し、**partial** または **unavailable** の軸は少なくとも **Hold** を
+強制します。つまり、ブロックする軸が実行できなかった場合、その軸は判定を*引き留め*
+ます。証拠がないことは、決してゲートをグリーンにしません。
 
-The verdict on the Review tab is the one `finalize_review` posted.
+レビュータブに表示される判定は、`finalize_review` が投稿した判定です。
 
-## Related guides
+## 関連するガイド
 
-- [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/)
-- [Dispatch reviewer agents](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)
-- [Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
-- [Search code with the code graph](/ja-JP/マニュアル/ハウツーガイド/コード検索/)
+- [AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/)
+- [レビュアーエージェントをディスパッチ](/ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ/)
+- [PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
+- [コードグラフでコードを検索](/ja-JP/マニュアル/ハウツーガイド/コード検索/)

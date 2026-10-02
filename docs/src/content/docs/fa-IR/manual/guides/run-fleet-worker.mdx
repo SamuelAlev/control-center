@@ -1,166 +1,168 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: اجرای یک کارگر ناوگان
+description: اجراکنندهٔ بدون‌رابط cc_worker را بسازید، جفت کنید و اجرا کنید تا با یک cc_server ثبت شود و در پنل ناوگان ظاهر شود.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-کارگر-ناوگان
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+`cc_worker` را روی یک ماشین یدکی اجرا کنید تا به ناوگانتان ظرفیت اجرا اضافه شود.
+این یک باینری خالص Dart است — بدون موتور Flutter — که با یک `cc_server` جفت
+می‌شود، توانمندی‌های میزبان را اعلام می‌کند، ضربان می‌فرستد، کارهای اجاره‌ای را
+می‌کشد، آن‌ها را اجرا می‌کند و رویدادهای فرایند را بازمی‌گرداند. هیچ حالت دیرپایی
+نگه نمی‌دارد: یک سرپرست آن را دوباره راه‌اندازی می‌کند و از نو ثبت می‌شود.
 
-You need a running `cc_server` first — see [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/).
+نخست به یک `cc_server` در حال اجرا نیاز دارید — [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/) را ببینید.
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+یک کارگر جفت‌شده ثبت می‌شود، ضربان می‌فرستد و منتظر کارهای اجاره‌ای می‌ماند. کار
+را با `fleet.submitJob` ارسال کنید. اعزام عامل روی این سرور از ناوگان نمی‌گذرد؛
+نشانهٔ موفقیت در این راهنما این است که کارگر با یک ضربان تازه در پنل ناوگان ظاهر
+شود. کارگر درون‌فرایندی که هنگام راه‌اندازی ثبت می‌شود نگاشت اجراکنندهٔ خالی دارد،
+پس کاری که روی آن گذاشته شود `No local runner for
+job kind …` را برمی‌گرداند.
 
-## Prerequisites
+## پیش‌نیازها
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). این مخزن SDK خود را با [fvm](https://fvm.app) تثبیت می‌کند، پس فرمان‌ها را با `fvm` آغاز کنید.
+- این مخزن روی ماشین کارگر چک‌اوت‌شده باشد.
+- یک `cc_server` قابل‌دسترسی (برای توسعه لوپ‌بک، برای تولید LAN یا راه دور).
+- `git` روی `PATH` — کارگر مخزن‌ها را مادی می‌کند و کاوش‌های `git` اجرا می‌کند.
 
-## Step 1: Build the binary
+## گام ۱: ساخت باینری
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+این یک بستهٔ خودبسنده در `./build/cli/<os_arch>/bundle/bin/cc_worker` تولید می‌کند.
 
-## Step 2: Mint the worker's credential
+## گام ۲: ساخت اعتبارنامهٔ کارگر
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+یک `cc_server` تنها کارگری را می‌پذیرد که شناسهٔ دستگاه جفت‌شده و کلید
+پیش‌اشتراکی ارائه دهد — از جمله یک سرور لوپ‌بک. آن‌ها را روی ماشین **سرور**
+بسازید (`pair` می‌تواند در حالی که سرور بالاست اجرا شود؛ دستگاه جدید بدون
+راه‌اندازی دوباره شناسایی می‌شود):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+این فرمان یک `Device id` و یک `Pairing key` چاپ می‌کند — همان‌هایی که
+`--device-id` و `--psk` / `--psk-file` / `CC_WORKER_PSK` می‌گیرند.
 
-## Step 3: Start the worker
+## گام ۳: راه‌اندازی کارگر
 
-Against a paired server:
+در برابر یک سرور جفت‌شده:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+در برابر یک سرور لوپ‌بک (باز هم جفت‌شده — `cc_server` همیشه دست‌دادن PSK را
+اجرا می‌کند):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| فلگ                 | توضیح                                                                                                        | پیش‌فرض     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ----------- |
+| `--server <url>`     | نشانی `cc_server` (`ws://`/`wss://`؛ `http(s)` و مسیر غایب `/rpc` به‌اجبار تبدیل می‌شوند). **الزامی.**        | —           |
+| `--name <name>`      | نام کارگر که اپراتور می‌بیند.                                                                                 | نام میزبان  |
+| `--device-id <id>`   | شناسهٔ پایدار دستگاه جفت‌شده که به‌عنوان شناسهٔ کارگر هم به کار می‌رود.                                        | `cc-worker` |
+| `--psk-file <path>`  | فایلی که نخستین خط ناتهی‌اش کلید جفت‌سازی است. بر `--psk` ترجیح دارد.                                          | —           |
+| `--psk <key>`        | کلید جفت‌سازی روی خط فرمان. در `ps` و تاریخچهٔ پوسته دیده می‌شود — باینری هشدار می‌دهد.                        | —           |
+| `--max-jobs <n>`     | سقف سخت تعداد کارهایی که این فرایند هم‌زمان اجرا می‌کند (عدد صحیح مثبت).                                      | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+ترتیب تشخیص کلید `--psk-file` → `CC_WORKER_PSK` → `--psk` است. نادیده‌گرفتن همهٔ
+منابع، دست‌دادن احراز هویت کارگر را رد می‌کند؛ آن‌گاه یک `cc_server` واقعی به‌جای
+پذیرش یک کارگر احرازنشده، نشست را رد می‌کند (`auth_denied`). فلگ‌های ناشناخته یک
+خطای کاربرد هستند (`exit 64`) — برخلاف `cc_server`، این باینری از `package:args`
+استفاده می‌کند و اشتباهات تایپی را نادیده نمی‌گیرد.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` پوشهٔ کش مادی‌سازی worktree را بازنویسی می‌کند (پیش‌فرض:
+پوشه‌ای `cc_worker_cache` زیر پوشهٔ موقت سیستم).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+کارگر با `fleet.registerWorker` ثبت می‌شود، سپس هر ۲۰ ثانیه ضربان می‌فرستد و هر ۲
+ثانیه برای اجاره‌ها بررسی می‌کند. تا `SIGINT`/`SIGTERM` اجرا می‌شود؛ آن را زیر
+systemd یا launchd بگذارید تا پس از سقوط یا راه‌اندازی دوباره، از نو راه‌اندازی و
+ثبت شود.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
+:::caution[هیچ پنجرهٔ سازگاری پروتکلی وجود ندارد]
+کارگری که نسخهٔ پروتکل ناوگانش با سرور تفاوت دارد **ناسازگار** ثبت می‌شود، هرگز
+اجاره‌ای به آن پیشنهاد نمی‌شود و خودِ `cc_worker` با پیام
 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+to match the server release` خاتمه می‌یابد. کارگر را از همان نسخهٔ سرور بسازید.
 :::
 
-## Step 4: Verify it in the fleet panel
+## گام ۴: راستی‌آزمایی در پنل ناوگان
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+در اپ رومیزی یا وب **مشاهده‌پذیری** را باز کنید، به زبانهٔ **زنده** بروید و تا
+پایین اسکرول کنید. **کارگران** هر کارگر ثبت‌شده را همراه با پلتفرم، هسته‌ها،
+کلیدهای توانمندی و آخرین ضربان فهرست می‌کند؛ **کارها** کارهای توزیع‌شده میان
+آن‌ها را فهرست می‌کند.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+ظاهر‌شدن کارگر شما با یک ضربان تازه همان تأییدی است که جفت‌سازی و ثبت کار
+کرده‌اند.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+از کاشی یک کارگر می‌توانید آن را **تخلیه** کنید (کارهای جاری را تمام کند، اجارهٔ
+تازه‌ای نگیرد)، یک کارگر در حال تخلیه را **ازسرگیری** کنید، اعتبارنامه‌اش را
+**لغو** کنید یا سطرش را **بردارید**.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+سطرهای کارگر و کار در `global.db` سرور زندگی می‌کنند — خودِ کارگر چیزی فراتر از
+کش مادی‌سازی روی دیسک نمی‌نویسد.
 
-## What the worker advertises
+## کارگر چه چیزی اعلام می‌کند
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+هنگام ثبت، کارگر توانمندی‌های خود را به‌طور خودکار تشخیص می‌دهد و زمان‌بند
+کارها را با آن‌ها تطبیق می‌دهد. این‌ها را دستی پیکربندی نمی‌کنید:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **سیستم‌عامل و معماری** (`macos`/`linux`/`windows`، `arm64`/`x64`) — کاوش دقیق، با بازگشت به `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **هسته‌ها و RAM** — تعداد دقیق هسته؛ RAM هرگاه کاوش‌پذیر نباشد به `0` تنزل می‌یابد
+- **`flutter`** — وقتی یک SDK Flutter در دسترس باشد تنظیم می‌شود (`flutter` تنها، سپس `fvm flutter`)؛ کارهای رندر طلایی به آن نیاز دارند
+- **`sandbox`** — روی macOS `native-macos` و روی Linux `native-linux`. این یک اشارهٔ جای‌گذاری است، نه یک وعده: کارگر بک‌اندی را که پلتفرمش _دارد_ اعلام می‌کند، اما کارهایی را که اجرا می‌کند در آن نمی‌پیچد. برخلاف `cc_server`، `cc_worker` یک کار اجاره‌ای را مستقیماً راه‌اندازی می‌کند
+- **`always-on` و `parallel`** — یک `cc_worker` اختصاصی همیشه هر دو را اعلام می‌کند، پس واجد شرایط دسته‌های ارزیابی و دیگر ظرفیت موازی یک‌بارمصرف است
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+تشخیص به‌بهترین‌تلاش است: هر چیزی که نتواند کاوش کند، به‌جای شکست راه‌اندازی، به
+یک پیش‌فرض ایمن تنزل می‌یابد.
 
-## What the worker would execute
+## کارگر چه چیزی اجرا می‌کند
 
-The lease protocol carries six job kinds:
+پروتکل اجاره شش گونهٔ کار را حمل می‌کند:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| گونه           | چیست                                                |
+| -------------- | --------------------------------------------------- |
+| `agentRun`     | یک اجرای منفرد عامل (اعزام)                         |
+| `pipelineStep` | اجرای یک گام پایپ‌لاین                              |
+| `codeIndex`    | ساخت ایندکس کد یک مخزن                              |
+| `goldenRender` | یک رندر طلایی بصری رابط کاربری (به `flutter` نیاز دارد) |
+| `benchmark`    | اجرای یک محک کارایی                                 |
+| `evalBatch`    | یک دستهٔ ارزیابی (ظرفیت `parallel` را ترجیح می‌دهد) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+اجرا یک پیاده‌سازی واقعی جریان‌سازی زیرفرایند است، نه یک زمان اجرای کامل عامل
+جاسازی‌شده. وقتی یک اجاره `repoRemote` را حمل کند، کارگر `git clone --depth 1` را
+در یک پوشهٔ کش کلیدخورده با remote و SHA انجام می‌دهد، سپس `git fetch` و
+`git checkout`. برای `agentRun` فرمان موجود در `CC_JOB_COMMAND` محیط اجاره را در
+پوشهٔ کار اجرا می‌کند و stdout و stderr را به‌صورت رویداد بازمی‌گرداند؛ بدون
+`CC_JOB_COMMAND` پرامپت را بازتاب می‌دهد تا انتقال باز هم سرتاسر آزموده شود.
+گونه‌های دیگر فرمان‌های کوچک واقعی (`git rev-parse HEAD`، `git --version`) را
+به‌عنوان کاوش‌های صادق اجرا می‌کنند. اعتبارنامه‌های محدود به کار در محیط اجاره به
+هر زیرفرایند تزریق می‌شوند و هرگز در لاگ نوشته نمی‌شوند.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+رویدادها دسته‌دسته می‌شوند و هر ۲۵۰ میلی‌ثانیه یا هر ۳۲ رویداد تخلیه می‌شوند؛ هر
+کار با یک رویداد پایانی و یک گزارش تکمیل پایان می‌یابد. مدل همان ضربان‌ها
+به‌علاوهٔ اجاره‌های با TTL کوتاه است: اگر کارگر تماسش را از دست بدهد، اجاره‌اش
+منقضی می‌شود و سرور کار را برای تلاش دوباره برمی‌دارد. هیچ حالت دیرپایی روی کارگر
+و هیچ اجماع یا دزدیدن کاری میان کارگرها نیست.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
-- [Connect to a remote server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/)
-- [Pair a device](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)
+- [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
+- [اتصال به سرور راه دور(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-به-سرور-راه-دور/)
+- [جفت‌کردن دستگاه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/جفت-کردن-دستگاه/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Deployment and clients](/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)
+- [استقرار و کلاینت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/استقرار/)

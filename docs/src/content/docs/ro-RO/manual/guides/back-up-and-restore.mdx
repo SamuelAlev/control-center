@@ -1,162 +1,168 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Backup și restaurare
+description: Fă un snapshot al instalării, mută un spațiu de lucru între mașini, restaurează un spațiu de lucru sau toate, și păstrează copii în altă parte.
 slug: ro-RO/manual/ghiduri-practice/backup-si-restaurare
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/ro-RO/manual/referinta/backup/).
+Acest ghid acoperă cele cinci lucruri pe care oamenii le fac de fapt cu backup-urile:
+să faci unul, să-l colectezi, să muți un spațiu de lucru, să-l pui la loc și să păstrezi
+copii în afara mașinii. Pentru forma exactă a fiecărui artefact și a fiecărei operațiuni,
+vezi [referința pentru backup](/ro-RO/manual/referinta/backup/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Tot ce este aici se află în **Setări → Server → Backup și restaurare**.
 
-## Prerequisites
+## Cerințe preliminare
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- Un **client complet** — aplicația desktop sau cea web. Un telefon asociat nu poate declanșa nimic din toate acestea, prin design.
+- Pentru a face, lista, descărca sau șterge un **snapshot de instalare**: **proprietarul** instalării.
+- Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru export, **proprietar** pentru import sau ștergere.
+- Pentru descărcări și încărcări: o conexiune **directă** la server. Releul intermediat transportă cadre RPC, nu transferuri de fișiere, iar controalele de transfer se dezactivează cu o notă când ești pe una.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Snapshot-urile de instalare sunt manuale]
+**Fă backup acum** creează în continuare un snapshot al întregii instalări doar la cerere.
+Pipeline-ul integrat **Workspace backup** poate în schimb să facă o copie de rezervă a
+bazei de date a unui spațiu de lucru o dată pe săptămână și să elimine backup-urile acelui
+spațiu de lucru mai vechi de 30 de zile. Nu copiază `global.db`, alte spații de lucru sau
+fișierele de lângă baza de date. Păstrează copiile din afara mașinii separat.
 :::
 
-## What a backup covers
+## Ce acoperă un backup
 
-Both artifacts are **databases only**:
+Ambele artefacte sunt **doar baze de date**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- Un **snapshot de instalare** este un director cu marcă de timp: `manifest.json`, `global.db` și un `<workspaceId>/workspace.db` pentru fiecare spațiu de lucru.
+- Un **export de spațiu de lucru** este acel singur fișier `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Niciunul nu include restul directorului de date: `secrets.json` (chei de asociere,
+acreditări de provider, SSO), `blobs/` al unui spațiu de lucru (imagini lipite în mesaje),
+`skills/`, `agents/`, `chat_credentials/`, audio-ul întâlnirilor înregistrate sau
+imaginile de rig. O parte din asta este de unică folosință, iar o parte nu —
+[tabelul complet este în referință](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain),
+iar acoperirea lui este scopul [secțiunii despre copiile din afara mașinii](#copiază-backup-urile-în-afara-mașinii).
 
-## Take a snapshot of the whole install
+## Fă un snapshot al întregii instalări
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Deschide **Setări → Server → Backup și restaurare**.
+2. La **Snapshot-uri de instalare**, apasă **Fă backup acum**.
+3. Notificarea indică directorul care a fost scris, pe hostul serverului. Noul snapshot apare în fruntea listei.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Serverul rulează în tot acest timp. Fiecare fișier este scris cu `VACUUM INTO`, care este
+consistent față de o bază de date activă, așa că nu există fereastră de mentenanță și nu
+e nevoie să oprești agenții.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Fiecare rând din listă arată marca de timp, dimensiunea pe disc, câte spații de lucru au
+fost capturate și dacă snapshot-ul este **Complet** sau **Incomplet**. Incomplet
+înseamnă că manifestul lipsește sau numește fișiere care nu sunt acolo — un backup
+întrerupt de o cădere sau de un disc plin. Acestea sunt totuși listate intenționat: un
+snapshot pe care nu îl vezi este unul despre care crezi că îl ai. Un snapshot incomplet
+nu poate restaura o instalare întreagă, dar fișierele de spațiu de lucru pe care le
+conține pot fi totuși adoptate unul câte unul.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Un rând poate spune de asemenea **_n_ spații de lucru necaptate**. Acesta este un spațiu
+de lucru înregistrat, dar în care nu s-a scris niciodată (nu există încă un fișier), sau
+unul a cărui copiere a eșuat — verifică jurnalul serverului.
 
-## Schedule workspace backups and retention
+## Programează backup-uri de spațiu de lucru și retenția
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Deschide **Setări → Pipeline-uri → Șabloane pipeline** pentru spațiul de lucru și găsește
+**Workspace backup**. Programarea lui activată rulează în fiecare duminică la 03:00 UTC:
+**Back up workspace**, urmat de **Delete backups older than** (30 de zile implicit). Al
+doilea nod rulează doar după ce backup-ul reușește. Poți schimba zilele de retenție la
+nod sau dezactiva programarea. Dacă serverul este offline la ora programată, programarea
+se recuperează o dată când revine, în loc să reia fiecare săptămână ratată.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Backup-urile de spațiu de lucru se află pe server sub
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Nodul de retenție
+șterge doar backup-urile vechi pentru acest spațiu de lucru; nu șterge niciodată
+snapshot-uri de instalare sau backup-uri pentru alte spații de lucru. Aceste fișiere sunt
+doar baze de date. Pentru retenție în afara mașinii, copiază-le independent.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Aceste backup-uri sunt separate de lista **Snapshot-uri de instalare**. Pentru a restaura
+unul, folosește **Date spațiu de lucru → Importă** cu calea `workspace.db` a backup-ului
+de pe server. Importul înlocuiește baza de date actuală a acelui spațiu de lucru, așa că
+export-o mai întâi dacă s-ar putea să ai nevoie să anulezi restaurarea.
 
-## Delete an install snapshot
+## Șterge un snapshot de instalare
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+La **Snapshot-uri de instalare**, extinde snapshot-ul, inclusiv unul incomplet, și
+folosește **Șterge snapshotul** în secțiunea de pericol. Confirmă-i numele. Întregul
+director al snapshot-ului este eliminat definitiv de pe server; descarcă-l mai întâi dacă
+ai nevoie de o copie. Un pipeline de backup de spațiu de lucru nu șterge niciodată aceste
+snapshot-uri.
 
-## Collect a copy on your own machine
+## Colectează o copie pe propria mașină
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Căile pe care le arată pagina sunt pe mașina care rulează `cc_server`. Când aceea nu este
+mașina la care stai, folosește butoanele **Descarcă**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Lângă fiecare **spațiu de lucru** de la **Date spațiu de lucru** → **Descarcă**, pentru un singur fișier `.db`.
+- Lângă fiecare **snapshot** de la **Snapshot-uri de instalare** → **Descarcă**, pentru întregul snapshot ca `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Pe desktop alegi unde ajunge fișierul, iar notificarea îl indică; pe web ajunge în
+descărcările browserului. În ambele cazuri, amândouă raportează progresul în octeți,
+pentru că acestea sunt cele două payload-uri care ajung la gigaocteți.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Ambele creează o copie proaspătă în momentul în care apeși butonul, o transmit în flux și
+șterg copia serverului după aceea — o descărcare nu este „adu fișierul pe care l-a făcut
+butonul de export mai devreme”.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Dezarhivarea unui snapshot reproduce exact structura snapshot-ului, ceea ce face ca
+restaurarea lui să fie o simplă copiere la loc.
 
-## Move a workspace to another install
+## Mută un spațiu de lucru într-o altă instalare
 
-One workspace is one database file, so handing it over is a file operation.
+Un spațiu de lucru este un fișier de bază de date, așa că predarea lui este o operațiune
+pe fișiere.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Pe serverul **sursă**, **Setări → Server → Backup și restaurare → Date spațiu de lucru**, extinde spațiul de lucru și apasă **Descarcă**.
+2. Pe serverul **destinație**, creează (sau alege) spațiul de lucru care îl va primi.
+3. Extinde acel spațiu de lucru și, la **Restaurează de pe acest dispozitiv**, apasă **Alege un fișier și încarcă**. Alege `.db`-ul pe care l-ai descărcat.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Dacă ambele servere sunt aceeași mașină la care stai, **Salvează pe server** plus
+**Importă** → **Alege fișier** fac același lucru fără drumul dus-întors; căile din
+dialogul de import se rezolvă pe hostul serverului.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Importul înlocuiește tot]
+Importul suprascrie tot ce conține în prezent spațiul de lucru țintă și nu poate fi
+anulat. Exportă mai întâi ținta dacă conține ceva ce s-ar putea să vrei înapoi.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Două lucruri sunt permise și înregistrate în jurnal, în loc să fie refuzate: importul unui
+fișier al cărui id de spațiu de lucru înregistrat diferă de cel al țintei (așa duplici un
+spațiu de lucru sau îl restaurezi sub un id nou) și importul unui fișier dintr-o **altă
+instalare**. În al doilea caz, dispozitivele asociate și id-urile de utilizator ale
+fișierului aparțin instalării din care provine și nu se vor rezolva pe aceasta — datele
+proprii ale spațiului de lucru sunt intacte, dar reverifică apartenența după ce îl adopți.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Token-urile botului de chat stau lângă baza de date, nu în ea, așa că un spațiu de lucru
+pe care îl predai altcuiva nu conține acreditări active. Instalarea primitoare le
+reconectează pe ale sale.
 
-## Restore one workspace from a snapshot
+## Restaurează un spațiu de lucru dintr-un snapshot
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. La **Snapshot-uri de instalare**, extinde snapshot-ul dorit.
+2. Găsește rândul spațiului de lucru și apasă **Restaurează**.
+3. Confirmă. Tot ce a făcut acel spațiu de lucru de la crearea snapshot-ului este pierdut.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Aceasta este aceeași operațiune ca un import, îndreptată spre copia din snapshot a
+fișierului acelui spațiu de lucru — în mod deliberat, ca să nu existe un al doilea
+mecanism care ar putea trata diferit același fișier.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Un rând poate spune **Nu mai e pe acest server**, cu **Restaurează** dezactivat:
+snapshot-ul conține un spațiu de lucru pe care această instalare nu îl mai are. Readu-l
+manual — creează un spațiu de lucru, apoi, la **Date spațiu de lucru**, importă în el din
+`<snapshot path>/<old workspace id>/workspace.db`. Snapshot-ul extins își arată propria
+**Cale pe server** într-un câmp de copiere, iar titlul rândului este id-ul vechiului
+spațiu de lucru, așa că ai ambele jumătăți ale acelei căi în față.
 
-## Restore a whole install
+## Restaurează o instalare întreagă
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Nu există niciun buton pentru asta și nici nu ar trebui să existe: înlocuiește bazele de
+date pe care serverul care rulează le ține deschise.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Oprește `cc_server`.** Dacă rulezi aplicația desktop cu serverul ei încorporat, închide aplicația.
+2. Copiază conținutul snapshot-ului peste directorul de date. Structura snapshot-ului o oglindește pe cea activă, așa că este o simplă copiere:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +177,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Șterge orice fișiere `-wal` și `-shm` care stau lângă bazele de date pe care le-ai înlocuit. Aparțin fișierelor vechi, iar unul rămas în urmă alături de o bază de date restaurată este un risc de corupere.
+4. Pornește din nou serverul.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Snapshot-ul nu conține `secrets.json`, așa că o instalare restaurată pe un host **nou**
+își păstrează datele, dar nu și acreditările: dispozitivele asociate, token-urile de
+provider și setările SSO trebuie re-stabilite sau restaurate din locul unde ai păstrat
+acel fișier. Restaurarea pe același host, unde `secrets.json` nu s-a pierdut niciodată,
+păstrează totul.
 
-## Copy backups off the machine
+## Copiază backup-urile în afara mașinii
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Un snapshot aflat pe același disc ca baza de date pe care a copiat-o te protejează de un
+import prost, nu de disc. Nimic din Control Center nu trimite o copie nicăieri, așa că
+această parte îți revine.
 
-### Sync the snapshots
+### Sincronizează snapshot-urile
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Snapshot-urile sunt imuabile după ce au fost scrise și sunt denumite după marca de timp,
+așa că orice instrument de sincronizare le gestionează bine. Exclude `transfer/`, care
+este un atelier pentru descărcările și încărcările în curs:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +213,23 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` oglindește curățarea locală către remote. Scoate-l dacă vrei ca remote-ul să
+păstreze snapshot-urile mai mult decât hostul.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Nu sincroniza niciodată direct bazele de date active]
+Nu îndrepta rsync, `aws s3 sync` sau un agent de backup la nivel de fișier spre `global.db`
+sau `<workspaceId>/workspace.db` în timp ce serverul rulează. O bază de date SQLite
+activă are un fișier secundar `-wal`, iar o copiere fișier cu fișier le surprinde pe cele
+două în momente diferite — rezultatul este un fișier care deseori se deschide și în care
+lipsesc în tăcere scrierile recente sau care nu se deschide deloc. Copiază
+**snapshot-ul**, care a fost scris într-o tranzacție de citire, sau fă unul cu
+`VACUUM INTO`, ca mai jos.
 :::
 
-### Include what a snapshot leaves out
+### Include ce lasă pe dinafară un snapshot
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Ca să poți reconstrui instalarea, nu doar datele ei, copiază-le și pe acestea. Sunt
+fișiere obișnuite, sigure de copiat în timp ce serverul rulează:
 
 ```bash
 rsync -a \
@@ -234,20 +244,22 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` are modul `0600` și conține fiecare cheie de asociere, acreditare de
+provider și setare SSO din instalare. Oriunde ajunge trebuie să fie cel puțin la fel de
+protejat ca hostul serverului — criptat în repaus și nu un bucket pe care îl poate citi
+oricine altcineva.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Omite `spaces/` (worktree-uri copy-on-write, reprovisionate din repo-urile tale),
+`pr_clones/` (un cache), `models/` (descărcate din nou), `media_cache/` și `rigs/` (stare
+de mașină și voluminoase). Audio-ul întâlnirilor înregistrate din `meetings/` merită
+inclus dacă păstrezi întâlniri.
 
-### Schedule a whole-install snapshot outside the app
+### Programează un snapshot al întregii instalări în afara aplicației
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Pipeline-ul integrat face backup doar pentru un singur spațiu de lucru. Pentru un snapshot
+**al întregii instalări** nesupravegheat, nu există subcomandă CLI, iar RPC-ul de snapshot
+necesită un client complet asociat care este proprietarul instalării. Un timer de pe host
+poate folosi `VACUUM INTO` pe bazele de date active:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +278,19 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Rulează-l ca același utilizator care deține directorul de date, din cron sau dintr-un timer
+systemd, și sincronizează `DEST` în afara hostului după aceea. `VACUUM INTO` necesită
+SQLite 3.27 sau mai nou.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Scrie-l **în afara** `<dataDir>/backups/`. Un director făcut manual acolo nu are
+`manifest.json`, așa că aplicația l-ar lista ca pe un snapshot incomplet, iar lista ar
+înceta să mai fie o evidență onestă a ceea ce a produs serverul însuși.
 
-### Prune old whole-install snapshots
+### Curăță snapshot-urile vechi ale întregii instalări
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Poți șterge snapshot-uri de instalare individuale din aplicație. Pentru o politică de
+retenție pe host, ține directorul de backup al spațiilor de lucru separat de
+snapshot-urile de instalare:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +298,51 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Verifică rezultatul unei rulări cu `-print` înainte de a adăuga `-exec`. Păstrează mai
+mult de unul: defecțiunea de care te protejezi este adesea „și ultimul backup are
+problema”.
 
-## Check that a backup is good
+## Verifică dacă un backup este bun
 
-A backup nobody has restored is a hypothesis.
+Un backup pe care nu l-a restaurat nimeni este o ipoteză.
 
-Cheap check — the file opens and its pages are intact:
+Verificare ieftină — fișierul se deschide și paginile lui sunt intacte:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Verificarea reală — adoptă-l. Creează un spațiu de lucru de probă pe o instalare care nu
+este de producție, importă în el un fișier de spațiu de lucru și uită-te dacă spațiile,
+tichetele și mesajele pe care le aștepți sunt acolo. Aceasta exercită aceeași cale pe care
+o parcurge o restaurare reală, inclusiv reconstruirea FTS, și este singura verificare care
+îți spune că backup-ul este restaurabil, nu doar citibil.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Fă asta o dată când configurezi backup-urile și din nou ori de câte ori schimbi locul unde
+sunt stocate.
 
-## Troubleshooting
+## Depanare
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| Simptom                                                                  | Cauză și soluție                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Controalele de descărcare și încărcare sunt dezactivate cu o notă despre un releu | Ești conectat prin releul intermediat, care nu transportă fișiere. Conectează-te direct                          |
+| „Serverul a refuzat”                                                     | Rol. Crearea sau listarea unui snapshot de instalare necesită operatorul instalării. Descărcarea unui spațiu de lucru necesită admin, restaurarea unuia necesită proprietar, un zip cu snapshot complet necesită operatorul instalării |
+| „Acest server nu are o suprafață de backup”                              | Hostul nu are conectat niciun port de backup — un server demo. Operațiunile lipsesc, în loc să fie refuzate                          |
+| „Fișierul e mai mare decât acceptă serverul”                             | Încărcările sunt limitate la 8 GiB. Pune fișierul pe hostul serverului și folosește în schimb **Importă** → **Alege fișier**                 |
+| Import refused: not a Control Center workspace database                  | Fișierul nu are niciun rând `workspace_meta` — nu este un export de spațiu de lucru sau este trunchiat. Nu s-a înlocuit nimic             |
+| Un snapshot este listat **Incomplet**                                    | Manifestul lui lipsește sau numește fișiere absente. Fă unul nou; între timp, adoptă din el fișierele individuale de spațiu de lucru |
+| Un snapshot spune că nu au fost capturate spații de lucru                | În acele spații de lucru nu s-a scris niciodată sau copierea lor a eșuat. Verifică jurnalul serverului                                  |
+| O instalare restaurată nu are acreditări de forge sau SSO                | `secrets.json` nu este într-un snapshot. Restaurează-l de unde l-ai păstrat sau reconectează providerii                     |
+| Unui spațiu de lucru restaurat îi lipsesc imaginile lipite               | Blob-urile stau lângă baza de date, nu în ea. Copiază și `<workspaceId>/blobs/`                                     |
 
-## Related guides
+## Ghiduri conexe
 
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): where the data directory comes from
-- [Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/): direct versus relayed connections
-- [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): the credential the transfer routes sign with
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/): de unde vine directorul de date
+- [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/): conexiuni directe versus prin releu
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): acreditarea cu care semnează rutele de transfer
 
-## Related concepts and reference
+## Concepte și referință conexe
 
-- [Backup, export and import](/ro-RO/manual/referinta/backup/): every operation, route, field and limit
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): why one workspace is one file
-- [`cc_server` CLI](/ro-RO/manual/referinta/cc-server-cli/): the data directory layout
+- [Backup, export și import](/ro-RO/manual/referinta/backup/): fiecare operațiune, rută, câmp și limită
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): de ce un spațiu de lucru este un singur fișier
+- [`cc_server` CLI](/ro-RO/manual/referinta/cc-server-cli/): structura directorului de date

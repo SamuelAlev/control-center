@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: 派送你的第一個代理
+description: 建立代理、給它一個空間和一項任務，然後看著這次執行即時串流回來。
 slug: zh-TW/手冊/教學/第一個代理
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## 你將建立什麼
 
-By the end of this tutorial, you will have:
+完成本教學後，你將擁有：
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- 一個由你親自建立並設定的代理
+- 一個讓你與該代理對話的空間
+- 一次完成的執行，在隔離的工作樹中有已提交的工作，代理的執行記錄中也有一列
 
-Prerequisites: [Your first workspace](/zh-TW/手冊/教學/第一個工作區/) completed, so this workspace has a repo registered and at least one model provider connected.
+先決條件：已完成[你的第一個工作區](/zh-TW/手冊/教學/第一個工作區/)，讓這個工作區已註冊一個儲存庫，並連接了至少一個模型供應商。
 
-## Step 1: Create an agent
+## 步驟 1：建立代理
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. 前往 **設定 → 工作區 → 代理**
+2. 點擊 **新增代理**。系統會立即建立一個名為「未命名代理」的代理，並在名冊中選取它——沒有建立對話框，也沒有任何需要確認的步驟。你就在原處設定它。
+3. 在 **設定** 分頁中填寫：
+   - **名稱**：簡短好記，例如 `alice`。這就是你在 `@` 之後輸入的內容。
+   - **標題**：它的職責，例如「後端工程師」
+   - **配接器**：`Control Center (built-in)`。請刻意選擇這一個——只有內建執行環境可以在執行途中被操控，並在回合邊界暫停，而且它不需要在伺服器主機上安裝任何 CLI。
+   - **模型**：從已連接供應商所提供的清單中選擇
+   - **技能**：附加任何合適的技能，例如 `testing` 或 `architecture`
+4. 按下 **儲存變更**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[沒有配接器的代理會在內建迴圈上執行]
+當配接器欄位未設定時，派送會退回 **Control Center (built-in)**——伺服器內部的代理迴圈，因此主機上沒有東西需要安裝。它仍然需要一個模型：若未設定任何模型，它會向 Anthropic 索取其預設模型；如果你已連接 Anthropic 帳號，這樣可行，否則會以 `No credential for provider "anthropic"` 失敗。無論如何，請明確設定兩者，否則你就會在你並未選擇的模型上執行。
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**檢查點。** 名冊中的資料列會顯示你代理的名稱，以及一個空心狀態環。
 
-## Step 2: Start a space
+## 步驟 2：建立空間
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. 在側邊欄中找到 **空間** 區段，然後點擊 **+** 按鈕
+2. 為空間命名
+3. 在 **新增代理** 之下，選取你剛才建立的代理
+4. 如果工作區有任何儲存庫，請選擇這個空間應在哪幾個儲存庫上工作
+5. 點擊 **建立**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+空間隨即開啟。Control Center 會在背景為這則對話，在所選儲存庫的獨立分支上佈建寫入時複製的工作樹。你的原始簽出絕不會被更動。
 
-## Step 3: Send a task
+## 步驟 3：傳送任務
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+針對你已註冊的儲存庫，輸入一項具體而小型的任務。有可檢查結果的任務效果最好——加入測試、修正 lint 問題、重新命名符號。
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+按下 Enter。你不需要 `@` 提及任何人：空間中只有一個代理時，一則普通訊息就會喚醒它。空間中有多個代理時，`@name` 會選定其中一個。
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center 會從代理的指示、人設、技能和空間的情境組裝出提示，然後派送這次執行。
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**檢查點。** 輸入區的送出按鈕會變成停止按鈕——有代理正在這則對話中工作——文字也開始送達。
 
-## Step 4: Watch it work
+## 步驟 4：看著它工作
 
-The conversation renders the run as it happens:
+對話會隨著執行發生而即時呈現：
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **推理**，在代理思考時即時內嵌顯示
+- **工具呼叫**：檔案讀取與寫入、搜尋、shell 命令，每項都附有結果
+- **文字**：摘要、說明，以及向你提出的問題
 
-If the agent asks something, answer in the conversation and it resumes.
+如果代理提出問題，就在對話中回答，它便會繼續。
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+若要查看某次執行本身的指標，以及其暫停、繼續和停止控制項，請在空間「一般」面板的 **代理** 區段中找到正在執行的代理，然後選擇 **開啟活動**。
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+在活動窗格中，狀態徽章會顯示 **執行中**，執行結束時則顯示 **已成功**。停滯或陷入迴圈的執行會顯示 **已封鎖**；發生錯誤的則顯示 **失敗**。在代理登錄表中，名冊狀態環在首次執行前是空心的，代理再次閒置後則變成實心。
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/zh-TW/手冊/概念/護欄/).
+約束這次執行的因素包括：它自己專屬的寫入時複製工作樹；在啟動時為它仲介、並在拆除時撤銷的憑證；清理過的環境；其模式所允許的工具介面，以及動作護欄。推送分支或開啟 pull request 之類的效果會另行設閘門——見[護欄](/zh-TW/手冊/概念/護欄/)。
 
-## Step 5: Check the result
+## 步驟 5：檢查結果
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. 開啟 **設定 → 工作區 → 代理** 並選取你的代理
+2. 開啟 **日誌** 分頁
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**檢查點。** 一列執行記錄，顯示其狀態、持續時間、開始與結束時間，以及它執行時所用的配接器。
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+代理的變更會提交到該對話的分支上、它自己的工作樹中。提交的作者是代理，並在 `Co-Authored-By:` 尾註中記入你的貢獻。
 
-## Getting a pull request
+## 取得 pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+沒有任何東西會自行開啟 pull request。如果你想要一個，就在同一則對話中提出要求：
 
-> Push this branch and open a pull request against the default branch.
+> 推送這個分支，並對預設分支開啟一個 pull request。
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+推送（`gitPush`）與建立 PR（`prCreate`）預設都會提示你核准，因此預期每次之前都會先要求確認。如果提示出現時沒有已連接的核准者，該動作會被拒絕，而不是獲准——護欄會失效即拒絕。
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+這個 PR 會以該次執行所用權杖所屬的 GitHub 身分開啟——如果你儲存了個人權杖，那就是你的身分——而不是以代理的名義。代理的作者身分則顯示在提交上。
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+你也可以自行開啟：空間的 **原始檔控制** 面板有一個 **建立 pull request** 按鈕，會把該對話的分支帶進撰寫介面，而 **Pull requests → 新增 PR** 則會以空白狀態開啟同一個畫面。下一個教學就從這裡接續。
 
-## Recap
+## 回顧
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+你建立了一個代理、設定它的配接器和模型、給它一個空間和一項任務，並看著一次真實的執行在隔離的工作樹中完成，而沒有碰觸你的簽出。
 
-**Next:** [Review your first pull request](/zh-TW/手冊/教學/第一個-pr/) to learn the review workflow.
+**下一步：**[審查你的第一個 pull request](/zh-TW/手冊/教學/第一個-pr/)，了解審查工作流程。
 
-For more on agents: [The agent model](/zh-TW/手冊/概念/代理模型/). For dispatch details: [Agent dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/).
+想進一步了解代理：[代理模型](/zh-TW/手冊/概念/代理模型/)。想了解派送細節：[代理派送生命週期](/zh-TW/手冊/概念/派送生命週期/)。

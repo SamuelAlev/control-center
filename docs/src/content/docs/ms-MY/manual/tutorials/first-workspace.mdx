@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Ruang kerja pertama anda
+description: Cipta ruang kerja, daftarkan repo ke dalamnya dan saksikan sendiri sempadan pengasingannya.
 slug: ms-MY/manual-pengguna/tutorial/ruang-kerja-pertama
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Apa yang akan anda bina
 
-By the end of this tutorial, you will have:
+Menjelang akhir tutorial ini, anda akan mempunyai:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Ruang kerja yang dinamakan sempena projek anda
+- Repositori Git yang didaftarkan ke dalamnya
+- Lima ejen yang disemai, satu daripadanya telah anda konfigurasikan dengan cukup baik untuk dijalankan
+- Ruang kerja kedua yang kosong, yang membuktikan sempadan pengasingan
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Onboarding sudah mencipta satu ruang kerja untuk anda. Tutorial ini sengaja mencipta satu yang baharu, supaya anda melihat setiap bahagian proses itu.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Sebelum anda mula, pilih checkout Git yang memenuhi ketiga-tiga syarat ini — langkah pendaftaran menolak apa-apa selainnya:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- ia berada di dalam pokok kerja git
+- ia mempunyai remote `origin`
+- remote itu menunjuk ke github.com, gitlab.com atau bitbucket.org
 
-## Step 1: Create a workspace
+## Langkah 1: Cipta ruang kerja
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Klik cip ruang kerja pada bar tajuk
+2. Pilih **Tambah ruang kerja…**
+3. Masukkan nama yang mengenal pasti projek itu, seperti "api-service" atau "frontend-v2"
+4. Secara pilihan, pilih logo
+5. Klik **Tambah ruang kerja**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center bertukar ke ruang kerja baharu itu dan membuka peti masuknya (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Di sebaliknya, pelayan menerbitkan peristiwa `WorkspaceCreated` dan menyemai ruang kerja itu dengan:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- seorang **ejen CEO**, yang personanya ialah penyelarasan dan perwakilan
+- empat pakar — `qa`, `architect`, `engineer` dan `librarian` — masing-masing dengan arahan dan kemahirannya sendiri
+- templat pipeline terbina dalam dan baris pencetusnya
 
-Every workspace you create gets all of this, not just the first one.
+Setiap ruang kerja yang anda cipta mendapat semua ini, bukan hanya yang pertama.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Titik semak: buka **Tetapan → Ruang kerja → Ejen**. Lima ejen berada dalam senarai itu, masing-masing dengan cincin status berongga.
 
-## Step 2: Register a repository
+## Langkah 2: Daftarkan repositori
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Pergi ke **Tetapan → Ruang kerja → Repositori**
+2. Klik **Tambah repositori**
+3. Semak imbas ke checkout anda. Dialog itu menelusuri folder pada mesin yang menjalankan `cc_server` — bukan klien anda — dan kekal di dalam root yang didedahkan oleh pelayan itu (direktori utama penggunanya secara lalai). Satu checkout git mendapat ikon folder yang tersendiri dan kotak centang; folder biasa tidak mendapat kedua-duanya, jadi hanya checkout boleh dipilih.
+4. Tandakan satu atau lebih checkout dan daftarkan kelompok itu. Pilihan kekal semasa anda bernavigasi, jadi anda boleh mengumpulkan beberapa dalam satu pusingan dan satu pilihan yang salah tidak pernah menggugurkan yang lain.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center membaca remote `origin` setiap checkout, menyelesaikan pemilik dan repo lalu mencipta baris repositori **di dalam ruang kerja ini**. Tiada langkah kedua untuk memautkannya: pendaftaran itulah yang menskopkannya.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Mendaftarkan checkout yang sama dalam ruang kerja lain kemudiannya mencipta baris repositori kedua yang bebas dengan id tersendiri. Merentas ruang kerja, sesuatu checkout dikenal pasti melalui laluan sistem failnya, tidak pernah melalui id.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Titik semak: repo itu muncul dalam senarai bersama `owner/repo` dan cawangan semasanya.
 
-## Step 3: Make one agent runnable
+## Langkah 3: Jadikan seorang ejen boleh dijalankan
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+Lima ejen yang baru disemai oleh ruang kerja ini tiada penyesuai dan tiada model. Penghantaran menjalankan mereka pada **Control Center (built-in)** dan, dengan tiada model ditetapkan, meminta model lalai daripada Anthropic — jadi mereka berfungsi hanya jika anda telah menyambungkan akaun Anthropic, dan pada model yang anda tidak pilih jika anda telah berbuat demikian. Onboarding kali pertama mengecap pilihannya pada setiap ejen dalam ruang kerja pertama, sekali sahaja; ruang kerja yang anda cipta selepas itu bermula dengan kelima-limanya tidak ditetapkan. Tetapkan satu sekarang.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Buka **Tetapan → Ruang kerja → Ejen**
+2. Pilih `engineer` dalam senarai ejen
+3. Pada tab **Tetapan**, tetapkan **Penyesuai** kepada `Control Center (built-in)` dan pilih **Model** daripada penyedia yang anda sambungkan di bawah Tetapan → Pelayan → Penyedia model
+4. Tekan **Simpan perubahan**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Titik semak: buka semula ejen itu dan kedua-dua medan itu mengekalkan pilihan anda.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/) covers the rest of the form.
+Setiap ejen membawa penyesuai dan modelnya sendiri, jadi ulangi ini untuk mana-mana ejen lain yang anda ingin gunakan. [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/) merangkumi selebihnya borang itu.
 
-## Step 4: See the isolation boundary
+## Langkah 4: Lihat sempadan pengasingan
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Cipta ruang kerja kedua daripada cip bar tajuk, tepat seperti dalam langkah 1. Kemudian perhatikannya:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Tetapan → Ruang kerja → Repositori** kosong. Repo yang anda daftarkan sebentar tadi tidak ada di sana.
+- **Tetapan → Ruang kerja → Ejen** mengandungi lima ejen, tetapi ia baris yang berbeza — penyesuai yang anda tetapkan dalam langkah 3 sudah tiada.
+- Senarai ruang, tiket dan memori semuanya kosong.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Tiada apa-apa yang bocor, kerana tiada apa untuk dibocorkan: baris setiap ruang kerja berada dalam fail pangkalan data ruang kerja itu sendiri. Bacaan merentas ruang kerja bukan pertanyaan yang ditapis, ia pertanyaan yang tiada tempat untuk dijalankan. Memadam ruang kerja ialah menyahpaut satu fail.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Tukar kembali dengan cip bar tajuk, atau buka **Urus ruang kerja** untuk melihatnya bersebelahan.
 
-For the full model, read [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
+Untuk model penuhnya, baca [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
 
-## Recap
+## Ringkasan
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Anda mencipta satu ruang kerja, menyaksikannya menyemai seorang CEO dan empat pakar, mendaftarkan repo ke dalamnya, memberikan seorang ejen penyesuai dan model serta mengesahkan bahawa ruang kerja kedua tidak berkongsi satu pun daripadanya.
 
-**Next:** [Dispatch your first agent](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) to put the workspace to work.
+**Seterusnya:** [Hantar ejen pertama anda](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) untuk menggerakkan ruang kerja itu.

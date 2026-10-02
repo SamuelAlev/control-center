@@ -1,39 +1,41 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Skapa och hantera ärenden
+description: Skapa ärenden, flytta dem genom deras livscykel, etikettera och länka dem och registrera vem som äger vad.
 slug: sv-SE/handbok/how-to-guider/hantera-arenden
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Den här guiden visar hur du skapar och hanterar ärenden.
 
-## Create a ticket
+## Skapa ett ärende
 
-### From the UI
+### Från gränssnittet
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Klicka på **Ärenden** i arbetsytans sidopanel.
+2. Tryck på **Nytt ärende**.
+3. Fyll i:
+   - **Titel** — kort sammanfattning. Det är det enda obligatoriska fältet.
+   - **Beskrivning** — markdown, med ett formateringsverktygsfält.
+   - **Status** — **Att göra** (standardvärdet) eller **Backlog**. Startade och
+     terminala tillstånd nås genom livscykeln, inte vid skapandet.
+   - **Prioritet** — ingen, brådskande, hög, medel eller låg.
+   - **Tilldelad** — du själv eller valfri agent i arbetsytan.
+   - **Projekt** — valfri gruppering.
+4. Tryck på **Skapa**, eller slå på **Skapa fler** först för att hålla
+   dialogrutan öppen för snabb inmatning.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Det finns ingen leverantörsväljare i dialogrutan. Ärendet skapas mot arbetsytans
+aktiva ärendeleverantör.
 
-### From an agent
+### Från en agent
 
-Ask an agent in a space:
+Be en agent i en yta:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Skapa ett ärende för att åtgärda problemet med inloggningstimeout vid
+> långsamma anslutningar.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Den anropar MCP-verktyget `create_ticket`. Prioriteten i det verktyget är ett
+**heltal**, inte ett namn:
 
 ```
 create_ticket(
@@ -44,21 +46,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Värde | Prioritet    |
+| ----- | ------------ |
+| `0`   | Ingen        |
+| `1`   | Brådskande   |
+| `2`   | Hög          |
+| `3`   | Medel        |
+| `4`   | Låg          |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Endast `workspace_id` och `title` är obligatoriska; `description`, `priority`,
+`assignee` (ett agent-id) och `team_id` är valfria. Verktyget klassas som en
+skrivning till ett externt ärendesystem och begär ditt godkännande innan det
+körs.
 
-## Update ticket status
+## Uppdatera ärendestatus
 
-Tickets follow this lifecycle:
+Ärenden följer den här livscykeln:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,128 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` och `cancelled` är terminala. `cancelled` nås från vilken
+icke-terminal status som helst. `done` och `failed` nås från `inProgress` eller
+`inReview`; `open` kan också flyttas direkt till `blocked`. Gränssnittets
+statusväljare listar alla statusar utom `failed` — agenter markerar den med
+`fail_ticket`.
 
-To change it, use any of:
+Du ändrar statusen på något av följande sätt:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- raden **Status** i ärendets egenskapspanel,
+- undermenyn **Status** i ett ärendes högerklicksmeny i listan,
+- taggen **Status** på den flytande listen när du har markerat flera ärenden.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Livscykelgrafen binder agenter, inte dig]
+Varje statusändring som görs från gränssnittet tvingas igenom och kringgår grafen
+helt — du kan flytta ett ärende till vilken status som helst som väljaren
+listar, inklusive att återöppna ett `done`-, `failed`- eller `cancelled`-ärende.
+Väljaren erbjuder inte `failed` som mål. Diagrammet ovan styr agenter och
+automatisering: en otillåten övergång som ett MCP-verktyg eller en avstämmare
+försöker göra loggas och ignoreras, den tillämpas inte.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/).
+Statusändringar skickar domänhändelser (`TicketStatusChanged`, `TicketCompleted`
+och andra) som kan utlösa pipelines. Se
+[Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/).
 
-## Assign a ticket
+## Tilldela ett ärende
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Öppna ärendet.
+2. Ange **Tilldelad** i egenskapspanelen — du själv, en annan medlem i
+   arbetsytan eller en agent.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)).
+:::caution[Att tilldela startar inget arbete]
+Tilldelning registrerar ägande och inget annat. Den skapar ingen yta, ändrar
+ingen status och skickar ut ingen agent — `TicketAssigned` är en ren
+revisionssignal utan någon dispatcher bakom sig. Om du vill få en agent att
+arbeta skickar du ett meddelande till den i en yta
+(se [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Det enda undantaget: `TicketAssigned` är en händelsetyp som du kan koppla en
+pipelinetrigger till, så en egen mall kan reagera på en tilldelning.
 :::
 
-## Add labels
+## Lägg till etiketter
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Etiketter läggs på i bulk från ärendelistan, inte från ett enskilt ärende —
+egenskapspanelen har ingen etikettkontroll.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Håll muspekaren över en rad i ärendelistan och markera kryssrutan. Markera så
+   många du behöver; en flytande list visas så snart något är markerat.
+2. Öppna taggen **Etiketter** i den listen.
+3. Välj en etikett. Den läggs till på varje markerat ärende som saknar den;
+   befintliga etiketter raderas aldrig. **Rensa etiketter** tar bort alla.
+   Väljaren listar etiketter som redan finns på ett ärende i arbetsytan. Agenter
+   kan lägga till ett nytt namn via `update_ticket` eller `tickets.patch`.
 
-## Link tickets
+## Länka ärenden
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Relationer finns på ärendets **Relationer**-kort i egenskapspanelen, eller
+bakom **Relatera till** i listans högerklicksmeny.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Öppna ärendet och leta upp **Relationer**-kortet.
+2. Tryck på dess lägg till-kontroll och välj relationen:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Relation              | Betydelse                                    |
+| --------------------- | -------------------------------------------- |
+| **Underärende till…** | Det här ärendets förälder är det andra       |
+| **Förälder till…**   | Det andra ärendet är ett barn till det här   |
+| **Blockerad av…**     | Det här ärendet blockeras av det andra       |
+| **Blockerar…**        | Det här ärendet blockerar det andra          |
+| **Relaterad till…**   | Symmetrisk, ingen riktning antyds            |
+| **Dubblett av…**      | Det här ärendet är en dubblett av det andra  |
 
-3. Pick the target ticket.
+3. Välj målärendet.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Duplicerad av** visas på kortet men inte i väljaren — den är inversen av
+**Dubblett av** och ställs in från det andra ärendet. Varje listad relation går
+att klicka på för att öppna det länkade ärendet och kan tas bort genom att hålla
+muspekaren över den.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Relationer mellan förälder och underärende lagras på själva ärendet i stället
+för som länkrader, så att ta bort en förälder kaskaderar till dess barn (se
+nedan), medan blockerings- och relaterade länkar inte gör det.
 
-## Add collaborators
+## Lägg till medarbetare
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Medarbetare är en förteckning på ärendet — vilka som är inblandade och i vilken
+roll.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Öppna ärendet.
+2. Tryck på person-plus-kontrollen på kortet **Lägg till medarbetare**.
+3. Välj en agent.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+De tre rollerna är **Tilldelad**, **Medarbetare** (standard) och **Granskare**.
+Gränssnittets väljare listar bara agenter i arbetsytan och skriver alltid
+standardrollen; människor kan visas som rader men erbjuds inte i den menyn.
+MCP-verktyget `add_ticket_collaborator` tar emot en `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/sv-SE/handbok/how-to-guider/ytor/).
+Att lägga till en medarbetare skriver en rad och publicerar ingen domänhändelse;
+det ger ingen åtkomst till någon yta. Om du vill få in en agent i ett samtal
+lägger du i stället till den som deltagare från ytans huvud — se
+[Använd ytor](/sv-SE/handbok/how-to-guider/ytor/).
 
-## Delete a ticket
+## Ta bort ett ärende
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Använd **Ta bort ärende** längst ner i egenskapspanelen, i högerklicksmenyn
+eller den flytande listans borttagningsåtgärd när du har markerat flera.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Borttagning är endast lokal]
+Ett ärende som kommer från ett externt ärendehanteringssystem tas inte bort där —
+ingen leverantör stöder det — så det kan dyka upp igen vid nästa synkning.
+Borttagningen kaskaderar också: ärendets medarbetare och eventuella barnärenden
+följer med.
 :::
 
-## Related guides
+## Relaterade guider
 
-- [Delegate work to agents](/sv-SE/handbok/how-to-guider/delegera-arenden/)
-- [Organize work with projects](/sv-SE/handbok/how-to-guider/projekt/)
-- [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
-- [Ticket lifecycle reference](/sv-SE/handbok/referens/arendelivscykel/)
+- [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)
+- [Organisera arbete med projekt](/sv-SE/handbok/how-to-guider/projekt/)
+- [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
+- [Ärendelivscykel](/sv-SE/handbok/referens/arendelivscykel/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Tickets](/sv-SE/handbok/koncept/arenden/)
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/)
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/)
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/)

@@ -1,94 +1,99 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Организовать работу через проекты
+description: Группируйте тикеты в проекты из боковой панели, отслеживайте прогресс и архивируйте проект, когда он завершён.
 slug: ru-RU/руководство/практические-руководства/проекты
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Проект — это группировка тикетов в рамках рабочего пространства ради общей
+цели. Проекты существуют только в Control Center и никогда не синхронизируются с
+внешним провайдером, таким как Linear.
 
-## Create a project
+## Создать проект
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Разверните группу **Тикеты** на боковой панели рабочего пространства. В ней
+   перечислены **Все тикеты**, по одной строке на каждый неархивированный проект,
+   а затем **Новый проект**.
+2. Нажмите **Новый проект**.
+3. Укажите **Название проекта**, при необходимости — **Описание** и выберите
+   **Цвет**.
+4. Нажмите **Создать проект**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Вы попадаете на обзор нового проекта, и проект появляется строкой на боковой
+панели в группе **Тикеты**.
 
-## Add tickets to a project
+## Добавить тикеты в проект
 
-Project is a single-ticket field, set in either of two places:
+Проект — поле отдельного тикета, и задать его можно в одном из двух мест:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Откройте тикет и укажите **Проект** в панели свойств.
+- Щёлкните по тикету правой кнопкой мыши в списке и воспользуйтесь подменю
+  **Проект**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Средство выбора в панели свойств также предлагает **Новый проект**, так что
+тикет можно сразу отнести в проект, созданный на месте. **Без проекта** очищает
+поле.
 
-A ticket belongs to at most one project.
+Тикет принадлежит не более чем одному проекту.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Проект не входит в массовые действия]
+Плавающая панель, которая появляется при выборе нескольких тикетов, охватывает
+статус, приоритет, исполнителя, метки и удаление. Чипа проекта в ней нет, поэтому
+проставлять проект многим тикетам приходится по одному.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Начать можно и с проекта: **Новый тикет** на обзоре проекта создаёт тикет и
+сразу относит его туда.
 
-## Read project progress
+## Смотреть прогресс проекта
 
-Open a project from its sidebar row, or go to
+Откройте проект из его строки на боковой панели или перейдите по адресу
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+На обзоре показаны значок и название проекта, бейдж статуса, описание и
+индикатор прогресса «выполнено из общего числа». Ниже тикеты проекта
+сгруппированы по статусу.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Больше он ничего не агрегирует — ни разбивки по исполнителям, ни распределения
+по приоритетам здесь нет. Для этого фильтруйте основной список тикетов.
 
-## Change project status
+## Изменить статус проекта
 
-Projects have three states:
+У проектов три состояния:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Статус        | Значение            |
+| ------------- | ------------------- |
+| **Активный**  | Работа продолжается |
+| **Завершён**  | Вся работа сделана  |
+| **В архиве**  | Историческая справка |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Используйте меню **⋯** в заголовке проекта. В нём есть **Изменить проект**,
+**Отметить завершённым** / **Отметить активным**, **Архивировать** /
+**Восстановить** и **Удалить проект**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Архивация скрывает проект из списка на боковой панели и из средств выбора
+тикетов. Её можно отменить — **Восстановить** возвращает проект в активное
+состояние, — но, пока проект в архиве, попасть в него можно только по URL.
 
-## Projects created for you
+## Проекты, создаваемые за вас
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/).
+Утверждение оркестрации создаёт проект и относит в него родительский тикет
+вместе со всем, что вы отнесли туда вручную. Сгенерированные рабочие элементы —
+это шаги конвейера, а не строки тикетов, поэтому на доске проекта они не
+появляются. Это единственный автоматический путь: ни один узел конвейера не
+создаёт тикеты, поэтому конвейер не может наполнить проект. См.
+[Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Проекты — это поверхность оператора]
+Создавайте проекты, просматривайте их список, обновляйте и удаляйте их в
+приложении. У агентов нет инструментов для работы с проектами.
 
-## Related guides
+## Связанные руководства
 
-- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
-- [Delegate work to agents](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
-- [Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
+- [Создавать и управлять тикетами](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
+- [Делегировать работу агентам](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
+- [Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
 
-## Related concepts
+## Связанные понятия
 
-- [Tickets](/ru-RU/руководство/понятия/тикеты/)
+- [Тикеты](/ru-RU/руководство/понятия/тикеты/)

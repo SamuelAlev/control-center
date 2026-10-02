@@ -1,172 +1,186 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Chat dengan agen
+description: Buat space bersama agen, kirimkan pekerjaan kepadanya, arahkan saat sedang berjalan, lalu hentikan.
 slug: id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Panduan ini menunjukkan cara bekerja dengan agen di dalam sebuah space.
 
-## Create a space
+## Buat space
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Buka **Ruang** di bilah sisi
+2. Klik tombol **+** di samping judul Ruang
+3. Ketik **nama** — ini wajib. Nama kosong akan ditolak;
+   dialognya tetap terbuka
+4. Secara opsional, tambahkan agen dari ruang kerja
+5. Jika ruang kerja memiliki repo, pemilih repo akan muncul. Awalnya semua repo
+   terpilih; persempit pilihan itu (termasuk dengan membatalkan centang satu repo)
+   ke repo yang worktree-nya perlu disediakan oleh space ini
+6. Konfirmasi
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center membuka space tersebut dan mulai menyediakan satu worktree
+copy-on-write per repo terpilih di latar belakang.
 
-## Send the first message
+## Kirim pesan pertama
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Ketik pesan Anda di composer lalu tekan Enter. Agen akan dikirim dan mulai
+mengalirkan responsnya.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Jika space masih dalam tahap penyediaan, pesan Anda ditahan sementara, bukan
+hilang — composer menyimpannya dan mengirimnya secara otomatis begitu worktree
+sudah siap.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+Saat agen bekerja, Anda melihat gilirannya mengalir masuk: segmen penalaran,
+panggilan alat (pembacaan file, penulisan, perintah shell) dan teks jawaban,
+semuanya di dalam satu pesan giliran agen.
 
-## Steer a running agent
+## Arahkan agen yang sedang berjalan
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+Saat agen bekerja, teks percakapan biasa **tidak** mengantrekan giliran baru.
+Teks itu menjadi kartu pengarahan dalam antrean di strip di atas composer dan
+disuntikkan ke run yang sedang berjalan pada batas giliran berikutnya. Tidak ada
+toast — kartunya sendiri adalah umpan baliknya.
 
-Three things change that behaviour:
+Tiga hal mengubah perilaku itu:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Pesan yang berisi **@mention** selalu dikirim sebagai pesan, bukan sebagai
+  pengarahan
+- Pesan yang diawali **perintah slash** selalu ditangani sebagai perintah
+  tersebut
+- Pesan dengan **lampiran** selalu dikirim sebagai pesan — antrean pengarahan
+  hanya menerima teks
+- Jika semua run yang aktif sudah selesai, teks itu diteruskan dan dikirim
+  sebagai pesan biasa
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Pengarahan memerlukan harness bawaan]
+Hanya harness bawaan Control Center yang menyuntikkan di tengah run. Pada adapter
+Claude Code, teks itu tetap diantrekan sebagai kartu pengarahan; saat run
+berakhir, apa pun yang masih dalam antrean diubah menjadi pesan biasa.
 :::
 
-## Approve a blocked action
+## Setujui aksi yang diblokir
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+Saat agen menemui aksi yang digerbangi pagar pengamannya — perintah destruktif,
+alat dengan hak istimewa — server **memblokir run** dan menerbitkan permintaan
+persetujuan ke setiap klien yang terhubung. Jika percakapan itu sedang Anda buka,
+permintaan tersebut muncul **di dalam chat**, di atas composer, sebagai kartu
+opsi bernomor yang sama seperti yang dipakai untuk `ask_user` (tolak, setujui,
+dan opsional setujui selama delapan jam). Tidak ada opsi lewati: agen yang
+diblokir sedang menunggu keputusan.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Jika Anda sedang berada di bagian lain aplikasi, panel yang selalu tampil di atas
+di dalam shell tetap mencantumkan apa yang menunggu, sehingga Anda dapat membuka
+blokir agen tanpa harus mencari space-nya. Overlay menyembunyikan permintaan
+begitu percakapan space tersebut tampil di layar, jadi Anda tidak pernah menjawab
+permintaan yang sama dua kali.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Tidak ada batas waktu: agen yang diblokir menunggu sampai ada yang memutuskan.
+Permintaan yang sama juga muncul di strip perhatian kotak masuk dan di klien
+ponsel.
 
-## Answer an agent's question
+## Jawab pertanyaan agen
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+Agen yang membutuhkan preferensi, persyaratan yang belum ada, atau pilihan yang
+benar-benar bercabang **wajib** memanggil `ask_user`. Menuliskan pertanyaannya
+sebagai pesan chat akan mengakhiri giliran dan Anda harus meminta ulang. Alat ini
+merender kartu bernomor di dalam percakapan — opsi, teks bebas opsional, atau
+keduanya — dan run menunggu jawaban Anda.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Ketuk satu opsi untuk mengirimkannya (angka di ujungnya berubah menjadi panah
+saat kursor diarahkan). Pilihan ganda dan jawaban yang diketik menggunakan
+**Lanjutkan** (`⌘↵` / `Ctrl↵`). **Lewati** memberi tahu agen agar memilih default
+yang wajar dan tidak bertanya lagi.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+Ini mekanisme yang terpisah dari kartu persetujuan di atas: persetujuan adalah
+“bolehkah saya melakukan ini?”, sedangkan pertanyaan adalah “yang mana yang Anda
+maksud?”. Bertanya tersedia pada harness bawaan di setiap mode, termasuk mode
+yang hanya-baca (karena tidak mengubah apa pun), dan sengaja tidak dibungkus
+dalam prompt persetujuan — dialog di depan dialog akan gagal-tertutup saat tidak
+ada penyetuju yang terhubung. Run yang tidak punya percakapan sebagai tempat
+merender memang tidak mendapatkan alat itu.
 
-## Stop an agent
+## Hentikan agen
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Selama ada run yang aktif, tombol kirim composer berubah menjadi tombol **stop**.
+Kosongkan composer lalu tekan tombol itu — tindakan ini menghentikan setiap agen
+yang berjalan di percakapan tersebut.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+Tidak ada kontrol stop di header space dan tidak ada pintasan keyboard untuknya.
+Untuk menghentikan hanya satu run saat ada beberapa yang aktif, buka tab aktivitas
+run tersebut — headernya memuat jeda/lanjutkan dan stop yang bercakupan run itu
+(tombol stop meminta konfirmasi Anda). **Observabilitas → Langsung** mencantumkan
+setiap agen yang berjalan di ruang kerja dengan kontrol yang sama.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+Run yang dihentikan ditandai sebagai berhenti. Kirim pesan baru untuk mengirim
+lagi.
 
-## Use slash commands
+## Gunakan perintah slash
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Ketik `/` di composer untuk melihat daftar perintah. Perintah yang mengubah
+perilaku percakapan:
 
-| Command        | What it does                                                                                                                         |
+| Perintah       | Yang dilakukannya                                                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | Mengalihkan space ke mode rencana. `/plan` saja hanya mengaktifkan mode; `/plan <request>` mengaktifkannya sekaligus mengirim sisanya sebagai pesan Anda |
+| `/goal <text>` | Mencatat tujuan kerja percakapan ini                                                                                                 |
+| `/loop <text>` | Mengiterasi suatu tugas sampai selesai                                                                                               |
+| `/compact`     | Melipat riwayat lama menjadi ringkasan berjangkar dan melanjutkan pada konteks yang telah dipadatkan                                  |
+| `/todo …`      | Melihat dan mengedit daftar todo percakapan ini yang tersimpan                                                                        |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+Skill muncul di daftar yang sama di bawah namespace `skill:`-nya sendiri,
+sehingga tidak pernah bentrok dengan perintah di atas — skill bernama `plan` atau
+`compact` tetap dapat dijangkau:
 
-| Command                     | What it runs                                                       |
+| Perintah                    | Yang dijalankannya                                                 |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | Skill yang terinstal di ruang kerja, atau yang dilampirkan ke agen  |
+| `/skill:<repo>:<name>`      | Skill yang disertakan salah satu repo yang di-checkout di space ini |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+Skill repo diberi lencana berupa repo asalnya, karena nama saja tidak menunjukkan
+konvensi layanan mana yang dikodekannya dan dua repo bisa sama-sama menyertakan
+`testing`. Anda tidak perlu mengetik prefiksnya untuk menemukan satu skill:
+mengetik nama skill telanjang juga mencocokkan entri yang ber-namespace.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+Agen hanya membawa skill repo tempat ia sedang bekerja —
+lihat [Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
+Composer tidak dibatasi seperti itu: Anda dapat memanggil skill repo mana pun
+dengan menyebut namanya.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` dan `/todo` dicegat oleh klien dan tidak pernah disimpan sebagai
+pesan — baris `/compact` di transkrip akan memundurkan batas pemadatan berikutnya
+satu giliran. `/plan` membalik mode space yang tersimpan, bukan ikut terkirim
+sebagai teks. Jadi ketiganya bukanlah “pesan yang Anda kirimkan ke agen”; jangan
+berharap melihatnya di riwayat.
 
-## Ask for a plan first
+## Minta rencana terlebih dahulu
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/).
+Sebelum perubahan yang kompleks, alihkan space ke mode rencana dengan `/plan`,
+dropdown mode di bilah alat composer, atau Shift+Tab. Agen kemudian meneliti
+secara hanya-baca dan memberikan rencana bertipe yang Anda setujui sebelum
+pekerjaan apa pun dimulai. Lihat
+[Gunakan mode rencana](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/).
 
-## Reach an agent without a dedicated space
+## Jangkau agen tanpa space khusus
 
-You do not need a space per agent. In any space:
+Anda tidak perlu satu space untuk setiap agen. Di space mana pun:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/) for how names are
-matched.
+Agen yang disebutkan akan ditambahkan ke space itu dan dikirim dengan konteks
+space tersebut. Lihat
+[@-mention agen](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/) untuk cara
+nama dicocokkan.
 
-## Related guides
+## Panduan terkait
 
-- [Use spaces](/id-ID/panduan-pengguna/panduan-praktis/space/)
-- [@-mention agents](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/)
-- [Use plan mode](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/)
-- [Set up Slack integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/) to do the same from Slack
+- [Gunakan space](/id-ID/panduan-pengguna/panduan-praktis/space/)
+- [@-mention agen](/id-ID/panduan-pengguna/panduan-praktis/mention-agen/)
+- [Gunakan mode rencana](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/)
+- [Siapkan integrasi Slack](/id-ID/panduan-pengguna/panduan-praktis/integrasi-slack/) untuk melakukan hal yang sama dari Slack
 
-## Related concepts
+## Konsep terkait
 
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)

@@ -1,126 +1,84 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: اجرای یک ارکستراسیون
+description: از یک ارکستراسر برنامه بخواهید، آن را در Plan Studio بازبینی و ویرایش کنید، یک‌بار تأییدش کنید و بگذارید یک پایپ‌لاین تولیدشده کار را انجام دهد.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) for how it works.
+این راهنما نشان می‌دهد چگونه یک هدف بزرگ را به برنامه‌ای برای کل تیم تبدیل کنید که خودش اجرا می‌شود. برای اینکه این سازوکار چگونه کار می‌کند، [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) را ببینید.
 
-## When to use an orchestration
+## چه زمانی از ارکستراسیون استفاده کنید
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/); for a process you can spell out by
-hand, build a [pipeline template](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/).
+وقتی درخواست از یک عامل بزرگ‌تر است و گام‌های دقیق را از پیش نمی‌دانید، سراغ ارکستراسیون بروید. برای یک کار تکی، در یک [فضا(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/) به یک عامل پیام بدهید؛ برای فرایندی که می‌توانید دستی بنویسید، یک [قالب پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/) بسازید.
 
-## Step 1: Ask for the plan
+## گام ۱: درخواست برنامه
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. یک فضا و یک **تیکت لنگر** باز کنید (یا بسازید). هر پیشنهاد به یکی از آن‌ها نیاز دارد (`propose_orchestration` پارامتر `ticket_id` را می‌گیرد)؛ فضای مشترک از همان تیکت می‌آید.
+2. در صورت تمایل، منوی کشویی حالت در نویسندهٔ پیام را روی **ارکستر** بگذارید. آن حالت دامنهٔ عامل را به خواندن و پیشنهاد دادن محدود می‌کند — حافظه، گراف کد، خواندن مخزن و تیکت، `propose_orchestration` و ابزارهای کتابچه — تا نتواند به‌جای برنامه‌ریزی، شروع به نوشتن کد کند.
+3. ارکستراسر خود (معمولاً عامل CEO) را با @ منشن کنید و هدف را به زبان ساده بگویید:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo فضای رقابتی یک ضبط‌کنندهٔ جلسهٔ آفلاین‌محور را پژوهش کن و یک سند جایگاه‌یابی یک‌صفحه‌ای بنویس.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+ارکستراسر با یک کارت **پیشنهاد** ساخت‌یافته در فضا پاسخ می‌دهد: نقش‌هایی که لازم دارد، کاری که به زیرتیکت‌ها شکسته شده، یک فاز پژوهش و بحث اختیاری، یک گام ترکیب که محصول تحویلی را تولید می‌کند و یک بودجه.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+چون پیشنهاد یک شیء نوع‌دار است، اپلیکیشن پیش از اجرای هر چیزی آن را اعتبارسنجی می‌کند (نقش‌های خوش‌ساخت، شِماهای خروجی اعلام‌شده، یک DAG بدون چرخه). پیشنهادی که اعتبارسنجی را نگذراند، نمی‌تواند تأیید شود.
 
-## Step 2: Review and edit the proposal
+## گام ۲: بازبینی و ویرایش پیشنهاد
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+کارتِ درون گفتگو سه کنش در اختیارتان می‌گذارد: **تأیید برنامه**، **رد** و **باز کردن** — که برنامه را به‌صورت یک زبانهٔ ویرایشگر در Plan Studio باز می‌کند. خودِ کارت قابل ویرایش نیست.
 
-To change anything, press **Open** and work in the right-hand inspector:
+برای تغییر هر چیزی، **باز کردن** را بزنید و در بازرسِ سمت راست کار کنید:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **عنوان**، **شرح**، **نقش**، **وابستگی‌ها** و **شِمای خروجی** هر گام کار. منظور از نقش در اینجا این است که کدام‌یک از کلیدهای نقش موجود در برنامه مالک گام است — نمی‌توانید نقشی را به یک عامل نام‌دار سنجاق کنید یا فهرست استخدام را از داخل بازرس ویرایش کنید، و نمی‌توانید بودجه را ویرایش کنید.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+دو چیز فقط‌خواندنی است: گره‌های ساختاری (پژوهش، بحث، ترکیب) و هر گره‌ای که کارش پیش‌تر اجرا شده است. ویرایش فقط تا وقتی ممکن است که ارکستراسیون هنوز `proposed` باشد.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/plan-studio/) for the full editor.
+پیش از تصمیم‌گیری، **برآورد** را در نوار تأیید بزنید تا بازه‌های هزینه، مدت و شعاع اثر را ببینید. ویرایشگر کامل را در [کار در Plan Studio(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/plan-studio/) ببینید.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/).
+:::note[بودجه سقف هزینه نیست]
+بودجهٔ یک پیشنهاد با _برآورد_ در نوار تأیید مقایسه می‌شود: وقتی سرِ بالای برآورد از آن فراتر برود، جمع کل سرخ می‌شود و هشدار فراتر از بودجه می‌دهد. هنگام اجرای برنامه هیچ‌چیز مخارج را بررسی نمی‌کند، پس اجرا را متوقف یا ناموفق نمی‌کند. برای توقفی واقعی روی هزینه، از سیاست‌های بودجهٔ هر عامل استفاده کنید — [مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/) را ببینید.
 :::
 
-## Step 3: Approve
+## گام ۳: تأیید
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+برنامه را تأیید کنید، از کارت گفتگو یا از نوار تأیید Plan Studio.
+**این تنها تصمیمی است که می‌گیرید.** تأیید فقط در اختیار اپراتور است — ابزار MCPای برای آن وجود ندارد، بنابراین یک عامل می‌تواند پیشنهاد بدهد و بازبینی کند، اما هرگز نمی‌تواند برنامهٔ خودش را تأیید کند.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) and creates the
-scaffolding:
+از اینجا یک ماده‌ساز قطعی (تابعی خالص، بدون LLM) پیشنهاد را به یک [پایپ‌لاین(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) واقعی تبدیل می‌کند و داربست را می‌سازد:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- نقش‌های جدید را استخدام می‌کند (و شناسه‌های عامل‌های استخدام‌شده را ثبت می‌کند تا سقوطی در میانهٔ تأیید بتواند بدون استخدام تکراری ادامه دهد)
+- نقش‌ها را در یک **تیم** گروه‌بندی می‌کند
+- یک **پروژه** می‌سازد و تیکت والد را زیر آن ثبت می‌کند
+- **اجرای پایپ‌لاین**ی را شروع می‌کند که همهٔ این‌ها را به پیش می‌برد
 
-The status moves to `approved`, then `executing`.
+وضعیت به `approved` و سپس `executing` می‌رود.
 
-## Step 4: Watch it run
+## گام ۴: تماشای اجرا
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+زیرتیکت‌ها به‌صورت گام‌های پایپ‌لاین اجرا می‌شوند؛ اگر دور بحث را روشن کرده باشید، هر نقش نخست یک موضع منتشر می‌کند. پیشرفت همان‌جاهایی پدیدار می‌شود که پیش‌تر هم می‌پاییدید:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
-- the **project** the parent ticket was filed under
+- **تیکت والد**ی که ارکستراسیون به آن لنگر انداخته است
+- **فضای** مشترکی که تیم در آن گفتگو می‌کند و ردیف برنامه در آن وضعیت هر گره را دنبال می‌کند
+- جزئیات **اجرای پایپ‌لاین**، با آبشار زمانی و هزینهٔ هر گامِ همیشگی‌اش — [نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/) را ببینید
+- **پروژه**ای که تیکت والد زیر آن ثبت شده است
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+وقتی زیرتیکت‌ها تمام شدند، وضعیت به `synthesizing` می‌رود و گام ترکیب محصول تحویلی را تولید می‌کند. آن متن در فضای مشترک منتشر می‌شود و تیکت والد کامل علامت می‌خورد، سپس `completed`.
 
-## Stop it early
+## توقف زودهنگام
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+**لغو ارکستراسیون** را روی کارت گفتگو بزنید، یا **لغو اجرا** را در نوار تأیید Plan Studio. لغو کردن، کارهای در جریان را برمی‌چیند.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+ارکستراسیون زمانی شکست می‌خورد که ماده‌سازی شکست بخورد، یا اجرای پایپ‌لاین تولیدشده‌اش شکست بخورد (پژوهش، بحث، ترکیب یا ماندگارسازی — آن گام‌ها در صورت شکست ادامه نمی‌دهند). گام‌های **کارِ** تولیدشده همیشه در صورت شکست ادامه می‌دهند، پس یک زیرتیکت ناموفق اجرا را ناموفق نمی‌کند. هیچ مسیر شکستی برای فراتر رفتن از بودجه و هیچ آستانهٔ «همهٔ زیرتیکت‌ها شکست خوردند» وجود ندارد.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Work in Plan Studio](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/): where the parent ticket is filed
-- [Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/): the roles an orchestration fills or hires
+- [کار در Plan Studio(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/plan-studio/): ویرایش، برآورد، دیف و تأیید برنامه
+- [ایجاد و مدیریت تیکت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/): تیکت والدی که ارکستراسیون به آن لنگر انداخته است
+- [سازمان‌دهی کار با پروژه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/): جایی که تیکت والد ثبت می‌شود
+- [نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/): ارکستراسیون ماده‌سازی‌شده در موتور چه شکلی است
+- [ساخت تیم عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/): نقش‌هایی که ارکستراسیون پر می‌کند یا استخدام می‌کند
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)

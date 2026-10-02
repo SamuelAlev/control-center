@@ -1,155 +1,153 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: 티켓과 위임
+description: 티켓이 실행을 디스패치하지 않고도 작업을 추적하는 이유, 위임이 어떻게 보호되는지, 공급업체 미러가 소유하는 것과 소유하지 않는 것.
 slug: ko-KR/매뉴얼/개념/티켓
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+티켓은 Control Center가 추적하는 작업 단위입니다. 티켓은 의도적으로 _단순한_
+산출물입니다. 제목, 본문, 상태, 담당자, 그리고 트리 안에서의 위치만 담습니다.
+티켓은 에이전트가 실행하는 대상이 아닙니다. 에이전트의 작업은 대화에 있고, 실행의
+구조화된 출력은 실행 로그에 있습니다.
 
-## Assignment records ownership; it dispatches nothing
+## 배정은 소유권을 기록할 뿐, 아무것도 디스패치하지 않습니다
 
-This is the single most important thing to get right about tickets.
+티켓에 관해 가장 중요하게 바로 이해해야 할 점입니다.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ko-KR/매뉴얼/개념/도메인-이벤트/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+`assignedAgentId`를 설정하면 필드 하나를 기록하고 `TicketAssigned`
+[도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/)를 발행합니다. 이 이벤트는 감사
+및 알림 신호이자 파이프라인 트리거입니다. **에이전트에 배정해도 실행은 시작되지
+않습니다.** `assignedAgentId`를 지켜보다가 그 에이전트를 깨우는 티켓 디스패처는
+없습니다.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+예외는 팀입니다. `assignedTeamId`가 설정되면 `TeamRoutingService`가 운영
+프로토콜과 팀 구성원 명단을 갖춘 팀 리더를 디스패치합니다.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+특정 에이전트가 티켓을 처리하게 하려면 대화에서 요청하거나, 파이프라인 단계가 그
+에이전트를 디스패치하거나, 다른 에이전트가 그 에이전트에 위임해야 합니다. 티켓을
+에이전트에 배정해 놓고 기다리는 것은 결코 작업을 만들어 내지 못하는 유일한
+방법입니다.
 
-## Mirror and overlay
+## 미러와 오버레이
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+티켓은 순전히 로컬일 수도 있고 외부 트래커를 기반으로 할 수도 있으며, 두 경우
+모두 하나의 행에 담깁니다.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**미러**(공급자, 외부 키, URL, 제목, 설명, 우선순위, 레이블, 원시 및 정규화 상태,
+타임스탬프)는 티켓이 원격일 때 캐시 역할을 합니다. 그 경우 원격이 진실의
+원천이고, 새로 고침은 미러를 통째로 다시 씁니다.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**오버레이**(배정, 위임, 스페이스 연결, 상위 티켓, 프로젝트, 연결된 PR)는 Control
+Center에만 있습니다. 트래커는 이에 대해 아무것도 모르며, 새로 고침이 이를
+건드리는 일도 없습니다.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+이러한 분리가 동기화를 애초에 안전하게 만듭니다. 공급업체에서 데이터를 가져와도
+미러만 덮어쓸 뿐, 그 위에 얹힌 오케스트레이션 메타데이터를 잃지 않습니다.
 
-## The lifecycle graph binds agents, not you
+## 수명주기 그래프는 사용자가 아니라 에이전트를 구속합니다
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+상태는 `backlog → open → inProgress → inReview → done` 순으로 흐르고, `blocked`는
+곁가지 루프이며 `failed` / `cancelled`는 나머지 종료 상태입니다.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+전이 그래프는 **에이전트와 자동화 경로**, 즉 MCP 도구와 조정기에만 강제됩니다. 이
+경로에서 허용되지 않는 전이는 로그에 기록되고 무시되므로, 혼란에 빠진 에이전트가
+티켓을 거꾸로 되돌려 종료 상태에서 빼내는 일은 없습니다.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+UI에서 사용자가 일으키는 모든 변경은 `force: true`를 전달해 그래프를 완전히
+우회합니다. 사람은 선택기에 나열된 어떤 상태로든 티켓을 옮길 수 있으며, 종료된
+상태를 다시 여는 것도 가능합니다. 선택기는 `failed`를 제공하지 않으며, 에이전트는
+`fail_ticket`을 통해 이를 설정합니다. 그래프는 자동화를 위한 가드레일이지, 작업이
+어떻게 진행되어야 하는지에 대한 규칙이 아닙니다.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService`는 모든 변경을 단일 병목 지점에서 처리합니다. 이 지점은
+행을 로드하고, 호출자의 워크스페이스에 속하는지 확인한 뒤 기대하는 `version`과
+함께 기록하므로, 동시에 일어난 두 편집이 서로를 조용히 덮어쓰는 일이 없습니다.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/).
+전체 상태 표, 전이, 필드 목록, 관계 종류는
+[티켓 수명주기](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/)를 참고하세요.
 
-## Provenance: how a ticket came to exist
+## 출처: 티켓은 어떻게 생겨났는가
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+모든 티켓에는 `originKind`가 있습니다. 이 열거형은 `manual`, `pipelineStep`,
+`agentDelegation`, `externalSync`, `recovery`라는 다섯 값을 가지지만, 오늘날 실제로
+기록되는 값은 두 개뿐입니다. `manual`(`createTicket`의 기본값이며 위임된 하위
+티켓도 포함)과 `externalSync`(공급업체에서 데이터를 가져올 때 동기화 엔진이
+기록)입니다. `TicketWorkflowService.createTicket`은 출처 인자를 받지 않으므로
+`pipelineStep`, `agentDelegation`, `recovery`는 행에 기록되지 않습니다.
 
-## Guarded delegation
+## 보호되는 위임
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+위임은 한 에이전트가 다른 에이전트를 위해 작업을 만드는 지점이며, 권한이 새어
+나갈 수 있는 곳입니다. 그래서 가드는 프롬프트 지시문이 아니라 서버 측 병목
+지점에 있습니다.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task`는 `TicketWorkflowService.delegateGuarded`를 거치며, 이 메서드는
+상위 체인에서 하위 티켓의 깊이와 루트를 계산한 다음 네 가지 `DelegationGuards`
+검사를 모두 실행합니다. **깊이 상한 3**을 넘어서는 홉, 이미 체인에 있는
+에이전트로 되돌아가는 홉(**순환 감지**), **자율성 상한**(스페이스에서 위임받는
+에이전트의 실효 레벨이 위임하는 쪽을 넘을 수 없음), **예산 한도**(위임은 위임하는
+쪽의 남은 강제 중단 예산을 청구하며 그 이상을 만들어 낼 수 없음)입니다. 프로덕션
+배선은 두 리졸버 포트를 모두 제공합니다. `from_agent_id`를 생략하면 자율성과 예산
+검사는 건너뜁니다(예산이 무제한이거나 정책이 없는 경우도 통과합니다). 거부는
+`DelegationRefusedException`으로 던져지며, 그 메시지는 위임한 에이전트에 그대로
+전달됩니다. 조용한 무시가 아니라 소리 내어 거부하는 것입니다.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket`은 더 오래된, **보호되지 않는** 형제 도구입니다. `createTicket`을
+직접 호출하고 모든 가드를 건너뜁니다. `delegate_task`를 사용하세요.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+위임 깊이 상한(`delegate_task` 체인에서 3)과 내장 하네스의 서브에이전트 중첩
+상한(2)을 혼동하지 마세요. 서로 다른 메커니즘에 걸린 서로 다른 한도입니다.
 
-## Hierarchy, links and projects
+## 계층, 링크, 프로젝트
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+상위 및 하위 이슈 관계는 `tickets.parent_ticket_id`에 있으며 `setParent` /
+`clearParent`가 관리합니다. 이들은 `ticket_links` 행이 **아니므로**, 티켓의
+관계를 읽는 모든 코드는 두 출처를 병합해야 합니다.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links`는 서로 관련 없는 티켓 사이의 방향성 간선을 담습니다.
 
-| Link type     | Meaning                                 |
+| 링크 유형     | 의미                                    |
 | ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| `blocks`      | 소스가 대상을 차단합니다                |
+| `relatesTo`   | 두 티켓이 관련되어 있습니다(대칭)       |
+| `duplicateOf` | 소스가 대상의 중복입니다                |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**프로젝트**는 공동 목표를 향한 티켓을 워크스페이스 범위로 묶은 그룹입니다.
+프로젝트는 Control Center에만 있으며 외부 공급자와 동기화되지 않습니다.
 
-## Collaborators
+## 협업자
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+`TicketCollaborator` 행은 하나의 티켓에 둘 이상의 주체를 연결하는 방식이며, 역할은
+`assignee`, `collaborator`, `reviewer` 중 하나입니다. 사람과 에이전트는
+`principalId`와 `collaboratorType`으로 이루어진 동등한 행이며, "사용자"를 나타내는
+센티널 값도, 어느 테이블로 향하는 외래 키도 없습니다.
 
-## External sync
+## 외부 동기화
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Center의 티켓이 원본입니다. 티켓 삭제는 **로컬에서만** 일어나므로,
+공급업체 기반 티켓을 삭제해도 트래커에서는 삭제되지 않고 다음 동기화 때 다시
+나타날 수 있습니다. 협업자와 하위 티켓은 함께 삭제됩니다.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+어댑터 자격 증명은 서버의 자격 증명 저장소에서 해석됩니다(설정에 붙여 넣은 Linear
+키나 GitHub 토큰은 다음 요청에서 반영되며, 환경 변수는 이 저장소를 초기값으로
+채울 뿐입니다).
 
-## Tickets and pipelines
+## 티켓과 파이프라인
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+어떤 파이프라인 노드도 티켓을 생성, 완료, 취소하지 않습니다. 팔레트에 그런 단계가
+없고 엔진도 `TicketWorkflowService`를 호출하지 않습니다. 그래도 파이프라인
+트리거는 `TicketAssigned`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`에서
+여전히 발동할 수 있습니다(`EventPayloadMapper`가 실제로 매핑하는 티켓 이벤트는 이
+네 가지입니다). 티켓에는 `pipelineRunId` 열이 없으며, 파이프라인과의 결합은
+에이전트 실행 로그에 있습니다.
 
-## See also
+## 함께 보기
 
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/): ticket events can trigger a pipeline
-- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/): where a DAG of sub-tickets comes from
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): who a ticket is assigned to
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/): the ticket lifecycle events
-- [Ticket lifecycle](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
-- [Delegate work to agents](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
-- [Organize work with projects](/ko-KR/매뉴얼/사용-가이드/프로젝트/)
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/): 티켓 이벤트로 파이프라인을 트리거할 수 있습니다
+- [오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/): 하위 티켓의 DAG가 어디에서 오는지
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 티켓이 누구에게 배정되는지
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/): 티켓 수명주기 이벤트
+- [티켓 수명주기](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/): 상태, 필드, 전이, 관계
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
+- [에이전트에 작업 위임](/ko-KR/매뉴얼/사용-가이드/티켓-위임/)
+- [프로젝트로 작업 정리](/ko-KR/매뉴얼/사용-가이드/프로젝트/)

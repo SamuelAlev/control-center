@@ -1,123 +1,133 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Ủy quyền — ai được phép làm gì và cách bạn chứng minh điều đó
+description: Danh mục quyền đằng sau các vai trò của Control Center, dấu vết kiểm toán chống sửa đổi mà mọi quyết định ủy quyền đều ghi vào, và những kiểm soát toàn bản cài đặt mà người vận hành có thể ấn định.
 slug: vi-VN/so-tay/khai-niem/uy-quyen
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/).
+Control Center trả lời hai câu hỏi về ủy quyền, và chúng thực sự khác nhau.
+**"Người này có được phép gọi thao tác này không?"** là về con người, vai trò
+và kho mã. **"Agent này có được phép gây ra hiệu ứng này không?"** là về hành
+động, đối số và phạm vi tác động — câu hỏi đó thuộc về [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/).
 
-This page is the first question, plus the record both of them leave behind.
+Trang này bàn về câu hỏi thứ nhất, cùng với hồ sơ mà cả hai câu hỏi để lại.
 
-## One decision point
+## Một điểm ra quyết định
 
-Every human-side authorization decision resolves through a single function:
+Mọi quyết định ủy quyền phía con người đều được giải quyết qua một hàm duy nhất:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Một **quyền** có dạng `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Danh mục này được **suy ra**, chứ không
+viết tay: nó được tính từ chính bề mặt thao tác (tiền tố tên của thao tác cho
+ra miền, còn vai trò tối thiểu mà thao tác vốn đã thực thi cho ra bậc), nên cả
+~550 thao tác đều có một quyền mà không ai phải gõ tay.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Cách suy ra đó chính là đặc tính đáng bảo vệ. Nó có nghĩa là một thao tác MỚI
+mặc định đều được kiểm soát qua cổng — kiểu hỏng của mô hình chú thích bằng
+tay là có người quên gắn, và thứ họ quên chính là cái cổng. Một bài kiểm thử
+ratchet ghim tập miền kết quả lại, nên việc thêm một thao tác dưới tiền tố mới
+là quyết định đặt tên do con người chủ động đưa ra chứ không xảy ra tình cờ.
 
-The four tiers map exactly onto the built-in roles:
+Bốn bậc khớp chính xác với các vai trò tích hợp sẵn:
 
-| Tier | Role floor | Example |
+| Bậc | Vai trò tối thiểu | Ví dụ |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Khách | `tickets:read` |
+| `write` | Thành viên | `tickets:write` |
+| `administer` | Quản trị viên | `members:administer` |
+| `own` | Chủ sở hữu | `workspace:own` |
 
-## Roles
+## Vai trò
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Năm vai trò tích hợp sẵn — **Chủ sở hữu, Quản trị viên, Thành viên, Người xem,
+Khách** — là các preset dựa trên danh mục đó. Quyền sở hữu là một ghế duy nhất
+cho mỗi không gian làm việc, được chuyển giao tường minh bằng **Chuyển quyền
+sở hữu** (nếu không thì một chủ sở hữu rời đi sẽ không thể bị gỡ bỏ: việc hủy
+cấp phát qua SCIM từ chối mọi chủ sở hữu không gian làm việc — hãy chuyển giao
+trước).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Vai trò tùy chỉnh mang tính trừ dần.** Một vai trò tùy chỉnh chỉ định một
+preset gốc (`admin`, `member`, `viewer` hoặc `guest` — không bao giờ là
+`owner`) và một tập quyền BỊ GỠ khỏi preset đó — "admin, nhưng không quản lý
+được thành viên". Nó không bao giờ cấp được nhiều hơn preset gốc, và chính
+điều đó khiến chúng an toàn khi đưa vào một bản cài đặt đang vận hành: mọi
+kiểm tra hiện có vẫn là một giới hạn trên đúng đắn. Thành viên giữ chúng dưới
+dạng `custom:<id>`, và một client quá cũ để hiểu giá trị đó sẽ quay về Khách
+thay vì đoán mò.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Bên dưới vai trò là các **cấp quyền theo từng kho mã** (`none` / `read` /
+`review` / `write`): tư cách thành viên không gian làm việc không bao giờ âm
+thầm vượt quyền trên máy chủ mã. Mọi bề mặt phơi ra mã đều kiểm tra chúng — kể
+cả những bề mặt chạm tới mã theo đường vòng, như terminal hay phiên trình soạn
+thảo mở trên worktree của một space.
 
-## Server authority
+## Thẩm quyền máy chủ
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Một số thao tác hoàn toàn không liên quan đến không gian làm việc: cấu hình áp
+dụng cho toàn bản cài đặt, cấu hình SSO, thông tin xác thực của nhà cung cấp,
+quản lý mô hình, sao lưu toàn bộ bản cài đặt. Những thao tác này khai báo
+**thẩm quyền máy chủ** và bị từ chối với tất cả mọi người trừ người vận hành
+của bản cài đặt (chủ sở hữu máy chủ đã được ghi nhận). Ở đây cố ý chỉ có một
+danh tính người vận hành và một định nghĩa duy nhất về nó.
 
-## The audit trail
+## Dấu vết kiểm toán
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Mọi quyết định ủy quyền — **cho phép lẫn từ chối** — đều được ghi nối tiếp vào
+dấu vết kiểm toán nối chuỗi hash của từng không gian làm việc.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Một nhật ký chỉ ghi từ chối trả lời được câu "chúng ta đã chặn những gì?"
+nhưng không trả lời được "agent này thực sự đã làm gì, và ai đã ủy quyền cho
+nó?", vốn là câu hỏi mà một cuộc điều tra sự cố bắt đầu từ đó. Vì vậy mỗi mục
+ghi lại toàn bộ chuỗi quy kết: chủ thể hành động, con người mà nó hành động
+thay, ủy thác mà nó đến qua, hành động cùng các đối số (dưới dạng digest),
+quyết định, và **quy tắc đã đưa ra quyết định**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Các mục được nối chuỗi: hash của mỗi mục bao trùm hash của mục trước, nên việc
+sửa, xóa hay sắp xếp lại bất kỳ dòng nào đều phá vỡ mọi hash phía sau nó.
+**Xác minh chuỗi** tính lại toàn bộ chuỗi và chỉ ra mắt xích đầu tiên không
+hợp lệ. Một nhật ký kiểm toán bạn không thể kiểm tra thì chỉ là nhật ký; một
+nhật ký bạn có thể tính lại mới là bằng chứng.
 
-Two consequences worth knowing:
+Hai hệ quả đáng lưu ý:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Bảng kiểm toán được **miễn trừ khỏi việc cắt tỉa theo thời gian**. Không thể
+  cắt bỏ phần giữa của một chuỗi hash. Việc lưu giữ diễn ra theo trình tự xuất
+  rồi cắt, và thao tác cắt để lại một checkpoint mang hash cuối của đoạn bị
+  bỏ, nên phần còn lại vẫn xác minh ngược về tận đầu chuỗi.
+- Nó nằm **bên cạnh** dòng thời gian hoạt động, chứ không nằm trên đó. Dòng
+  thời gian là những gì con người đã làm; còn đây là những gì đã được cho phép
+  và bị từ chối. Một correlation id dùng chung giúp đọc xuyên suốt cả hai cho
+  một lần gọi.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Nó xuất ra dưới dạng JSON phân tách bằng dòng mới và có thể truyền trực tiếp
+tới một SIEM (Splunk, Elastic, Sentinel — một endpoint HTTP kèm bearer token).
+Việc truyền được thiết kế theo kiểu nỗ lực tối đa: một SIEM chết không bao giờ
+được phép chặn lời gọi công cụ của agent, và dù thế nào thì bản sao bền vững,
+có thể xác minh vẫn nằm trên đĩa.
 
-## Sessions
+## Phiên
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Một bản cài đặt có thể đặt **tuổi thọ phiên tối đa** và **thời gian chờ khi
+không hoạt động**. Cả hai đều được thực thi tại điểm kiểm tra thông tin xác
+thực thiết bị mà mọi luồng đã xác thực đều đi qua — một phiên mà client có thể
+phớt lờ thì chỉ trả lời được bảng hỏi, chứ không chặn được kẻ tấn công. Bản
+cài đặt cũng có thể yêu cầu SSO, điều này vô hiệu hóa việc ghép nối thủ công
+cho thiết bị mới (kèm một biện pháp chống tự khóa: nó từ chối khi chưa có kết
+nối SSO nào hoạt động).
 
-## What this is not
+## Đây không phải là gì
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Không phải ACL theo từng đối tượng.** Cố ý không có quyền riêng cho từng
+  phiếu hay từng tin nhắn. Phân tách ở cấp kho mã mới là thứ các đội thực sự
+  cần và nó đã tồn tại; chia sẻ theo từng đối tượng là một bề mặt tổ hợp với
+  nhu cầu chưa được chứng minh ở đây.
+- **Không phải một công cụ chính sách mà bạn cấu hình bằng DSL.** Từ vựng được
+  đóng lại một cách có chủ đích, nhờ đó toàn bộ chính sách có thể được hiển
+  thị, giải thích và liệt kê.
+- **Không được thực thi ở đâu ngoài máy chủ.** Các kiểm tra phía client chỉ
+  tồn tại để tránh đưa ra một điều khiển sẽ bị từ chối. Quyết định có thẩm
+  quyền luôn thuộc về máy chủ.

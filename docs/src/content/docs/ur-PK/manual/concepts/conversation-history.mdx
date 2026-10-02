@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: گفتگو کی تاریخ
+description: ایک رن اپنے کانٹیکسٹ کو کیسے رکھتا، سمیٹتا، شاخوں میں بانٹتا اور دوبارہ شروع کرتا ہے — کمپیکشن کی حکمت عملیاں، سیشن کا درخت، اور "دوبارہ شروع" سے دراصل کیا مراد ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/گفتگو-کی-تاریخ
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+لمبی گفتگو ایک سخت دیوار سے ٹکرا جاتی ہے: ماڈل کی کانٹیکسٹ ونڈو۔ اس صفحے کا ہر حصہ اسی دیوار کی وجہ سے موجود ہے، اور دلچسپ بات یہ ہے کہ کیا پھینکا جاتا ہے، کیا رکھا جاتا ہے، اور کیا واپس حاصل کیا جا سکتا ہے۔
 
-## Four ways to reclaim context
+## کانٹیکسٹ واپس لینے کے چار طریقے
 
-They are not alternatives so much as a ladder, cheapest first.
+یہ متبادل سے زیادہ ایک سیڑھی ہیں، سب سے سستا سب سے پہلے۔
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| طریقہ | لاگت | رکھتا ہے | کھو دیتا ہے |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **حذف**    | کچھ نہیں        | بیانیے کا ہر لفظ          | پرانی، غیر اہم ٹول نتائج     |
+| **تصاویر کا اخراج** | کچھ نہیں        | ان کے ارد گرد کا متن                 | پرانی اسکرین شاٹس                   |
+| **اسنیپ شاٹس**  | کچھ نہیں        | ہر لفظ، پکسلز کی صورت میں                | بغیر وژن والے ماڈل کے لیے خواندگی  |
+| **خلاصہ**    | ایک ماڈل کال | ایک بیانیہ                          | وہ تفصیلات جو اس نے منتخب نہیں کیں       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+حذف اور تصاویر کا اخراج سب سے پہلے چلتے ہیں کیونکہ وہ مفت ہیں اور جس پہلو میں یہ اہم ہے، اُس میں بے نقصان بھی: وہ ایسا حجم گرا دیتے ہیں جسے کوئی دوبارہ پڑھنے والا نہیں تھا۔
 
-### Why summarizing is the last resort
+### خلاصہ کیوں آخری چارہ ہے
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+چاروں میں سے صرف خلاصہ ہی ایسا ہے جو **ایک ماڈل کال خرچ کرتا ہے** اور صرف یہی ہے جو **آپ کی جگہ فیصلہ کرتا ہے** کہ اہم کیا تھا۔ دونوں حقیقی لاگتیں ہیں۔ کال اس لیے زیادہ دلچسپ ہے کہ وہ کب ہوتی ہے۔
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+کمپیکشن عام طور پر دیوار سے *پہلے* چلتا ہے، کسی حد پر۔ مگر یہ **ردِ عمل کے طور پر** بھی چلتا ہے، یعنی جب فراہم کنندہ خود کوئی درخواست حد سے بڑی قرار دے کر مسترد کر دیتا ہے — اندازہ لگانے والا تخمینہ اُس سے کم نکلا جو فراہم کنندہ نے واقعی ناپا تھا۔ ایسی صورت میں خلاصہ کرنے والے کمپیکٹر کو کانٹیکسٹ سکیڑنے کے لیے ایک درخواست بھیجنی پڑتی ہے، اور وہ جو درخواست بھیجتا ہے وہی ہوتی ہے جو ابھی سرریز ہوئی تھی۔
 
-### Snapshots
+### اسنیپ شاٹس
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+اسنیپ شاٹ کمپیکشن پھینکی گئی تاریخ کو پکسل گلفس کے گھنے صفحوں پر بناتا ہے اور انہیں تصویروں کی صورت میں واپس دے دیتا ہے۔
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+بنیاد بلنگ کی ایک عجیب بات ہے: وژن ماڈل تصویر کا معاوضہ ایک مقررہ یا رقبے کے تناسب سے لیتا ہے، جس کا اس سے کوئی تعلق نہیں کہ اس میں کتنے حروف ہیں۔ بارہ ہزار حروف کی پھینکی گئی گفتگو کی لاگت بارہ ہزار حروف کے برابر ٹیکسٹ ٹوکنز بنتی ہے۔ وہی حروف ایک صفحے پر بنائے جائیں تو لاگت ایک تصویر کی بنتی ہے۔
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+اسے محض ہوشیار کے بجائے واقعی کارآمد بنانے والی بات یہ ہے کہ اسے **نہ ماڈل کال چاہیے، نہ کلید اور نہ نیٹ ورک**۔ سرریز سے بحالی کے دوران ہمیشہ دستیاب رہنے والی واحد حکمت عملی یہی ہے۔
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+دوبارہ تشکیل کی صورت یہ ہے: شروع حرف بحرف، درمیان تصویر کی صورت میں، آخر حرف بحرف۔ شروع وہ کام اور وہ پابندیاں ہیں جن کی طرف اس کے بعد کا سب کچھ رجوع کرتا ہے؛ آخر وہاں ہے جہاں کام اس وقت موجود ہے۔ درمیانی حصہ وہ ہے جو سب سے کم دوبارہ پڑھا جاتا ہے اور سب سے زیادہ مہنگا پڑتا ہے۔
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[یہ دیانت داری سے تنزل کرتا ہے]
+وژن کے بغیر ماڈل پکسلز کے صفحے نہیں پڑھ سکتا، اور ایسا متن بنانا جسے کوئی دیکھ ہی نہ سکے کمزور کمپیکشن نہیں بلکہ حذف شدہ گفتگو ہے۔ اس لیے فیصلہ پڑھنے والے کی صلاحیت کرتی ہے، اور بغیر وژن والے ماڈل کو ہمیشہ خلاصہ ہی ملتا ہے۔
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[صفحے کی شکل کی قیمت API کے لیے لگتی ہے، وزنوں کے لیے نہیں]
+Gemini فی تصویر ایک مقررہ قیمت لیتا ہے، اس لیے صفحے کا ہر اضافی حرف مفت ہے اور اسی کے صفحات سب سے چوڑے ہوتے ہیں۔ OpenAI اور Anthropic رقبے کے حساب سے بل کرتے ہیں، اس لیے بڑا صفحہ کچھ نہیں خریدتا۔ کچھ پروسیسرز ایک حد سے آگے قرارداد گھٹا دیتے ہیں، جس سے 5 پکسل کے گلفس خاموشی سے تباہ ہو جاتے ہیں، اس لیے ان کے صفحات اسی حد سے نیچے رہتے ہیں۔ گیٹ وے کے ذریعے چلنے والے Claude کا بل گیٹ وے لگاتا ہے، اس لیے شکل اسی ماڈل آئی ڈی کے پیچھے چلتی ہے جس نام سے روٹ اسے پکارتا ہے۔
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+اسنیپ شاٹس ہر پاس میں **محفوظ شدہ ماخذ متن** سے دوبارہ بنائے جاتے ہیں، کبھی پچھلے پاس کے پکسلز سے نہیں۔ تصویر کی تصویر بنانے سے گلفس ہر کمپیکشن پر ایک نسل کمزور ہوتے جاتے ہیں، یہاں تک کہ کوئی انہیں پڑھ نہیں سکتا۔
 
-## What a run actually resumes from
+## رن دراصل کہاں سے دوبارہ شروع ہوتا ہے
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+تاریخی طور پر ہر ہارنس رن خالی تاریخ سے شروع ہوتا تھا اور تسلسل کو پرامپٹ میں موجود `<context>` بلاک سے دوبارہ بناتا تھا — گفتگو کا *خلاصہ*، خود گفتگو نہیں۔ اس سے تین باتیں نکلیں:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **دوبارہ شروع کرنا صرف دوبارہ سنانا تھا۔** ماڈل نے اپنی پہلے کی استدلال یا اپنے ٹولز کے واپس کیے گئے اصل بائٹس کبھی نہیں دیکھے، صرف اُن کی تفصیل دیکھی۔
+- **واپس جانا پروسیس کے ساتھ مر گیا۔** `checkpoint` لائیو پیغام فہرست میں ایک انڈیکس ہے، اس لیے دوبارہ آغاز نے ماڈل کے لگائے ہر لیبل کو کھو دیا۔
+- **دوبارہ کوشش "دوبارہ کرنے کو کچھ نہیں" اور "کچھ لوڈ ہی نہیں ہوا" میں فرق نہیں کر سکی۔** دوبارہ آغاز کے بعد ناکام باری دونوں صورتوں میں لائیو حالت سے غائب ہوتی ہے۔
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+تینوں باتیں ٹرانسکرپٹ کو محفوظ رکھنے سے درست ہو جاتی ہیں۔ یہ ہر **باری کی حد** پر محفوظ ہوتا ہے اور کبھی باری کے وسط میں نہیں: ٹول کال اور اس کے نتیجے کے درمیان پکڑی گئی تاریخ ایسی ہوتی ہے جو کوئی بھی فراہم کنندہ قبول نہیں کرے گا، اس لیے اُس لمحے کا کریش *پچھلی* باری بحال کرتا ہے، نہ کہ ایسی آدھی باری جو دوبارہ نہیں چلائی جا سکتی۔
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+دوبارہ شروع کیا گیا رن اپنے تازہ ترین پیغامات تک تراش دیا جاتا ہے، اور کٹائی ایسی حد پر ہوتی ہے جو کوئی یتیم ٹول نتیجہ نہ ہو — جس نتیجے کی کال تراش دی گئی ہو وہ ایسی درخواست ہے جسے فراہم کنندہ صاف مسترد کر دیتے ہیں، اور جو ٹرانسکرپٹ بھیجا ہی نہ جا سکے وہ مختصر ٹرانسکرپٹ سے بدتر ہے۔
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[یہ رہتا کہاں ہے]
+ہر گفتگو اور ایجنٹ کے لیے ایک JSON فائل، ورک اسپیس کی اپنی ڈائریکٹری میں اس کے ڈیٹا بیس کے ساتھ۔ ایک گفتگو میں دو ایجنٹ دو تاریخیں رکھتے ہیں: انہوں نے مختلف ٹول نتائج دیکھے اور انہیں مختلف سسٹم پرامپٹ دیے گئے، اس لیے انہیں ملا دینے سے ہر ایک کو دوسرے کی استدلال اپنی سمجھ کر دے دی جاتی۔
 :::
 
-## The session tree
+## سیشن کا درخت
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+ہر پیغام یہ درج کرتا ہے کہ وہ کس سے آگے چلتا ہے، اور ہر گفتگو اپنی موجودہ **برانچ کے سرے** کا نام دیتی ہے۔ یہی ایک فیصلہ پوری خصوصیت ہے۔
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**شاخ بنانا کچھ نہیں لکھتا۔** یہ صرف پوائنٹر ہلاتا ہے۔ جو راستہ آپ نے چھوڑا وہ اب بھی موجود ہے، اس لیے واپس جانا کسی بحالی کے بجائے پوائنٹر کی ایک اور حرکت ہے — اور کسی پرامپٹ میں ترمیم کر کے اسے دوبارہ چلانا اب آپ کو وہ جواب نہیں گنواتا جس سے آپ موازنہ کر رہے تھے۔
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+اس کے بغیر واپس جانے کی ہر صورت کو پیغامات چھپانے یا حذف کرنے پڑتے ہیں، اور چھپانا ایسا جھوٹ ہے جس کی تہہ تک اگلا پڑھنے والا پہنچ نہیں سکتا۔
 
-### Branch versus fork
+### برانچ بمقابلہ فورک
 
-|                | Branch              | Fork                        |
+|                | برانچ              | فورک                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| کیا ہوتا ہے   | پوائنٹر حرکت کرتا ہے   | راستہ کاپی ہو جاتا ہے          |
+| کہاں جاتا ہے  | وہی گفتگو   | نئی گفتگو          |
+| لاگت           | کچھ نہیں             | برانچ کی ایک کاپی      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+فورک قطاریں بانٹنے کے بجائے **نئی آئی ڈیز** کے ساتھ کاپی کرتا ہے۔ قطاریں بانٹنے والی دو گفتگوئیں ایک دوسرے کے بعد کے پیغامات دکھانے لگتیں، اور یہی وہ واحد چیز ہے جو فورک کو ہرگز نہیں کرنی چاہیے۔
 
-### Rewind rides the same pointer
+### واپس جانا اسی پوائنٹر پر سوار ہے
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+رن کے دوران چلنے والا `checkpoint` / `rewind` جوڑا ایک صاف باری کی حد نشان زد کرتا ہے اور کھوج کے بعد اسی پر لوٹ آتا ہے، ساتھ ایک ڈائجسٹ رکھتے ہوئے۔ چونکہ چیک پوائنٹس ٹرانسکرپٹ کے ساتھ محفوظ رہتے ہیں، دوبارہ آغاز سے پہلے ماڈل کا لگایا ہوا لیبل اب بھی وہیں اترتا ہے جہاں وہ لگایا گیا تھا۔ ایسا چیک پوائنٹ جس کا ہدف تراش کے بعد نہ بچا ہو، **گرا دیا جاتا ہے**، قریب ترین جگہ پر نہیں ٹھونکا جاتا — "لیبل تک" واپس جانا اور کہیں اور اتر جانا بالکل وہی ناکامی ہے جسے روکنے کے لیے لیبل موجود ہے۔
 
-## Related
+## متعلقہ
 
-- [Branch a conversation](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گفتگو-کی-شاخ/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ/) — the other half of what fills a context window
-- [Slash commands](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/) — `/compact`, `/shake`, `/context`, `/tree`
+- [گفتگو کی شاخ بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گفتگو-کی-شاخ/) — درخت کا نیویگیٹر، فورک کرنا اور برآمد
+- [ٹول کانٹیکسٹ اور پرامپٹ کیشنگ](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ/) — کانٹیکسٹ ونڈو بھرنے والی چیز کا دوسرا حصہ
+- [سلیش کمانڈز](/ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز/) — `/compact`، `/shake`، `/context`، `/tree`

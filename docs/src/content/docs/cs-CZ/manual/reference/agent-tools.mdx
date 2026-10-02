@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Vestavěné nástroje agentů
+description: Plocha nástrojů, kterou vestavěný harness dává agentovi — jazykový server, strukturální hledání, debugger, kernely a řízení workerů — s každou operací a jejími argumenty.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-agentu
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Tohle jsou nástroje **vázané na server**, které vestavěný runtime agenta registruje přímo — jazykový server, strukturální hledání, debugger, kernely, otázky a řízení workerů — na rozdíl od [nástrojů MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/), které si přemosťuje, a od obecných nástrojů na soubory, hledání a shell z runtime harnessu. Na registru MCP nejsou: externí klient MCP je neuvidí, protože každý je vázaný na živý prostředek na straně serveru — proces jazykového serveru, ladicí adaptér, interpret — a ten patří jednomu běhu.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Každý nástroj se tu registruje jen tehdy, když je pro běh zapojený prostředek, na kterém stojí — dohled jazykového serveru nebo debuggeru, parser tree-sitter, továrna kernelů, port pro otázky, sestava režimu vibe. Zjištění, jestli pro *tenhle checkout* existuje jazykový server nebo ladicí adaptér, je samostatná pozdější kontrola (`status` / `adapters`): ty nástroje na ploše zůstanou, aby se agent mohl zeptat, proč nejde nic použít, místo aby hádal.
 
-## Approval tiers
+## Úrovně schválení
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Každý nástroj deklaruje úroveň a ta rozhoduje, **které plochy ho vidí** — nejen jestli se ptá na schválení. Režim Plan a podagenti jen pro čtení jsou zastropovaní na `read`, takže nástroj úrovně `write` nebo `exec` v jejich schématu vůbec není.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Úroveň  | Význam                                 | Nástroje tady                                      |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Bez vedlejších účinků                  | `lsp`, `ast_grep`, `ask_user`, pětice `vibe_*`     |
+| `write` | Mění soubory                           | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Spouští nebo řídí proces               | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — dotazy na jazykový server
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Registruje se, když má běh dohled jazykového serveru a pracovní adresář. Jestli server opravdu umí odpovědět, se zjistí až při volání, jako **průnik**: musí existovat kořenová značka *a zároveň* se musí najít binárka serveru. Jedno z toho samo znamená, že se server nespustí — řekne to `status` — místo tichého odhadu.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Pozice se adresují řádkem `line` a podřetězcem `symbol`, nikdy sloupcem. Model, který má uvést sloupec, hádá, a špatný odhad trefí jiný symbol na stejném řádku — odpověď, která vypadá správně a je o něčem jiném. Vynechat `symbol` u navigační akce je chyba, ne odhad prvního sloupce.
 
-| Action            | Arguments                        | Returns                                    |
+| Akce              | Argumenty                        | Vrací                                      |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (nebo `"*"`)              | Chyby a varování; `"*"` místo toho spustí kontrolu projektu |
+| `definition`      | `file`, `line`, `symbol`         | Kde je symbol deklarovaný                 |
+| `type_definition` | `file`, `line`, `symbol`         | Kde je deklarovaný jeho typ               |
+| `implementation`  | `file`, `line`, `symbol`         | Konkrétní implementace                     |
+| `references`      | `file`, `line`, `symbol`         | Každé použití, strop 50                    |
+| `hover`           | `file`, `line`, `symbol`         | Signatura a dokumentační komentář          |
+| `symbols`         | `query` nebo `file`              | Hledání v pracovním prostoru přes `query` (strop 100); symboly dokumentu přes `file` (strop 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Rychlé opravy, které server nabízí         |
+| `status`          | —                                | Které servery běží a pro které kořeny      |
+| `reload`          | —                                | Restartuje server pro tenhle kořen         |
 
-### Diagnostics on write
+### Diagnostiky při zápisu
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Přínos není samotný nástroj. `write`, `edit` a `apply_patch` jsou **obalené**: po zápisu se soubor přes jazykový server synchronizuje a uloží a do výsledku nástroje se složí jen **nově zavedené** diagnostiky. Agent se dozví, že rozbil sestavení, v okamžiku, kdy ho rozbil, a nemusí si vzpomenout, že se má zeptat.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Už nahlášené diagnostiky potlačuje evidence daného běhu, klíčovaná závažností, kódem a textem zprávy — pozice je schválně vynechaná, takže diagnostika, která jen sjela o čtyři řádky níž, se znovu nehlásí jako nová.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — přejmenování napříč projektem
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Samostatný nástroj úrovně `write` z jediného důvodu: úroveň rozhoduje o viditelnosti. Složit přejmenování do `lsp` by buď dalo průzkumníkovi jen pro čtení možnost přepsat repozitář, nebo by každé `hover` schovalo za výzvu ke schválení.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argument   | Význam                                     |
+| ---------- | ------------------------------------------ |
+| `file`     | Kde symbol je                              |
+| `line`     | Řádek číslovaný od 1                       |
+| `symbol`   | Podřetězec, který ho na tom řádku identifikuje |
+| `new_name` | Jak se má jmenovat                         |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — strukturální hledání
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Hledá kód podle **tvaru**, ne podle textu. `$NAME` sedí na libovolný uzel, `$$$NAME` na řadu sourozenců a `$_` je zástupný znak, který nic nezachytí.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Vlastnost, která z něj dělá porovnávač, a ne regulární výraz s pár kroky navíc: metaproměnná zopakovaná v jednom vzoru musí zachytit tentýž text.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+sedí na guard, který zavolá dispose na to, co právě otestoval, a **nesedí** na ten, který dispose zavolá na něco jiného.
 
-| Argument      | Meaning                                                     |
+| Argument      | Význam                                                      |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Fragment kódu s metaproměnnými                              |
+| `path`        | Soubor nebo adresář k prohledání; výchozí je celý pracovní prostor |
+| `language`    | Identifikátor dodávané gramatiky (`dart`, `python`, `rust`, `c`, …). Odvozený, když `path` pojmenuje soubor |
+| `max_results` | Výchozí 50                                                  |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Vzor parsuje stejná gramatika jako soubor]
+`dispose(x)` proto sedí na volání, ať je oddělené mezerami, zalomené, nebo proložené komentářem — a tytéž znaky uvnitř řetězcového literálu nebo komentáře neshodí nikdy.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Fragment se parsuje v opoře, ne holý]
+`dispose(x)` rozparsované na nejvyšší úrovni Dartu je platná *signatura funkce*. Kompilátor vzorů zkouší žebříček kontextů (příkaz, výraz, člen třídy, deklarace) a použije první, který fragment přijme. Vzor, který nepřijme žádný kontext, se nahlásí jako nerozparsovatelný, místo aby se hledal a tiše nenašel.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — strukturální přepis, připravený
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Stejné párování a k tomu šablona `rewrite`, do které se metaproměnné dosadí zpátky. **Nic se nezapíše.** Změna se připraví a výsledek pojmenuje `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Argument   | Význam                                              |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Co se má shodovat                                   |
+| `rewrite`  | Co tam přijde, s dosazeným `$NAME`                  |
+| `path`     | Rozsah; výchozí je celý pracovní prostor            |
+| `language` | Identifikátor jazyka                                |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — potvrď nebo zahoď připravenou změnu
 
-| Argument  | Meaning                          |
+| Argument  | Význam                           |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Z výsledku `(proposed)`          |
+| `action`  | `accept` nebo `discard`          |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Každý soubor se porovná s obsahem zachyceným při přípravě a **jakýkoli** nesoulad odmítne celou změnu. Částečně provedený strukturální přepis nechá strom, který se nepřeloží ani ve starém tvaru, ani v novém.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — řízení debuggeru
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Registruje se, když má běh dohled ladicí relace, pracovní adresář a identifikátor konverzace. Jestli adaptér opravdu umí nastartovat, se zjistí až při volání, stejným pravidlem průniku jako u jazykového serveru (kořenová značka *a zároveň* binárka). Úroveň `exec`; není bezpečný pro paralelní volání (relace je stav napříč voláními, takže `continue`, které předběhne `stack`, by četlo rámec, který se už posunul).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne, místo aby první tiše nahradil.
 
-| Op            | Arguments                     | Notes                                          |
+| Operace       | Argumenty                     | Poznámky                                       |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Které adaptéry se tu dají použít a proč ne     |
+| `status`      | —                             | Jestli relace běží a kde se zastavila          |
+| `breakpoints` | `file`, `lines[]`             | Prázdné `lines` soubor vyčistí. Lze nastavit **před** spuštěním |
+| `launch`      | `program`, `args[]`           | Spustí program zastavený na tvých zarážkách    |
+| `attach`      | `port`                        | Připojí se k už běžícímu laděnému procesu      |
+| `continue`    | `thread_id?`                  | Běží do dalšího zastavení                      |
+| `pause`       | `thread_id?`                  | Zastaví ho tam, kde právě je                   |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Posune o jeden krok                     |
+| `threads`     | —                             | Identifikátory a názvy vláken                  |
+| `stack`       | `thread_id?`                  | Rámce, strop 30                                |
+| `scopes`      | `frame_id`                    | Rozsahy na rámci, každý s `reference`          |
+| `variables`   | `reference`                   | Potomci, strop 50, hodnoty strop 400 znaků     |
+| `evaluate`    | `expression`, `frame_id?`     | Vyhodnoceno ve vlastním rozsahu rámce          |
+| `output`      | —                             | stdout/stderr laděného procesu, ohraničené     |
+| `terminate`   | —                             | Ukončí relaci a zabije adaptér                 |
 
-### Adapters
+### Adaptéry
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Příkaz                     | Kořenové značky                                 |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` dává přednost projektovému `.venv/bin` nebo `venv/bin` před `$PATH`: python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — persistentní interprety
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Buňka Pythonu nebo JavaScriptu, jejíž proměnné, importy a načtená data mezi voláními přežijí. Úroveň `exec`; není bezpečný pro paralelní volání.
 
-| Argument      | Meaning                                          |
+| Argument      | Význam                                           |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | Buňka                                            |
+| `description` | Povinné. 5–10 slov pro popisek v přepisu         |
+| `language`    | `python` (výchozí) nebo `javascript`             |
+| `reset`       | Zahodí interpret a nejdřív spustí čistý          |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Poslední výraz se vypíše jako v notebooku.
+- `display()` funguje, frame z pandas se vykreslí jako tabulka a figura z matplotlib se vrátí jako **obrázek, který ukáže přepis**.
+- Idiomy IPython, které se píšou reflexivně — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — se přepíšou na obyčejný kód. `%pip` navíc vyklidí `sys.modules`, takže další `import` uvidí právě nainstalované.
 
-### Calling your own tools from inside a cell
+### Volání vlastních nástrojů z buňky
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Most **znovu vstoupí do registru nástrojů harnessu**, takže guardraily, schválení i každý obal platí přesně jako u volání, které vydal model. Jede po vlastní rouře kernelu, ne po loopback socketu: žádný port, žádné tajemství, žádné pravidlo odchozího provozu.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Časový limit buňky je rozpočet *nečinnosti* (výchozí 5 minut) a po dobu nevyřízeného volání přes most je **pozastavený**, takže buňka, která se rozvětví na podagenty, se uprostřed rozvětvení nezabije.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Kde kernel běží]
+V izolovaném prostředí konverzace, pokud nějaké má, jinak na hostiteli. Izolované prostředí kvůli tomu nenabootuje — stejné pravidlo, které brání kartě stanice naběhnout sama.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — zeptej se člověka
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Úroveň `read`. **Jediný** způsob, jak se běh na cokoli zeptá operátora. V konverzaci vykreslí očíslovanou kartu a blokuje, dokud někdo neodpoví, nepřeskočí, nebo dokud otázka nevyprší. Otázku nikdy nepiš jako zprávu do chatu — to ukončí tah.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argument          | Význam                                     |
+| ----------------- | ------------------------------------------ |
+| `question`        | Na co se zeptat                            |
+| `context`         | Volitelné: proč se ptáš a co na odpovědi visí |
+| `options[]`       | Volby, každá `{label, description?}`       |
+| `allow_free_text` | Jestli se přijme napsaná odpověď           |
+| `multi_select`    | Jestli lze zvolit několik možností         |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Přeskočení je úspěch: pokračuj na vysloveném předpokladu a neptej se znovu. Vypršení je chyba se stejným pokynem. Výzvy k oprávnění („smím to udělat?“) jsou samostatná brána a vykreslí se jako stejná karta v konverzaci.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Registruje se jen tehdy, když existuje port pro otázky i cílový prostor. Bez připojeného člověka volání **selže**, místo aby blokovalo navždy — stejný uzavřený postoj, jaký zaujme `prompt` guardrailu, když není připojený schvalovatel.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — řízení workerů na pozadí
 
-Registered only while [vibe mode](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Registruje se jen tehdy, když je zapnutý [režim vibe](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/). Všech pět je na úrovni `read`: brána patří na nástroje workera, tam, kde se úprava opravdu děje.
 
-| Tool         | Arguments                                | Notes                                       |
+| Nástroj      | Argumenty                                | Poznámky                                    |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Vrátí se hned; worker běží dál              |
+| `vibe_send`  | `worker_id`, `message`                   | Připojí k zadání a spustí znovu             |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blokuje, dokud se neusadí                   |
+| `vibe_kill`  | `worker_id`                              | Zastaví ho                                  |
+| `vibe_list`  | —                                        | Úroveň, stav, uplynulý čas a poslední výsledek |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` je `fast` (mechanická práce s jasnou specifikací) nebo `good` (návrh, úsudek, nebo revize výstupu workera `fast`).

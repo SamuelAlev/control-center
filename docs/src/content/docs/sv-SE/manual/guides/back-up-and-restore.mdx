@@ -1,162 +1,168 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Säkerhetskopiera och återställ
+description: Ta en ögonblicksbild av installationen, flytta en arbetsyta mellan maskiner, återställ en arbetsyta eller alla, och förvara kopior någon annanstans.
 slug: sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/sv-SE/handbok/referens/sakerhetskopia/).
+Den här guiden täcker de fem saker folk faktiskt gör med säkerhetskopior: tar en,
+hämtar hem den, flyttar en arbetsyta, lägger tillbaka en och förvarar kopior utanför
+maskinen. Den exakta formen på varje artefakt och operation finns i
+[referensen för säkerhetskopia](/sv-SE/handbok/referens/sakerhetskopia/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Allt här finns under **Inställningar → Server → Säkerhetskopiering och återställning**.
 
-## Prerequisites
+## Förutsättningar
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- En **fullständig klient** – skrivbordsappen eller webbappen. En parkopplad telefon kan inte starta något av detta, och det är avsiktligt.
+- För att ta, lista, hämta eller radera en **ögonblicksbild av installationen**: installationens **ägare**.
+- För åtgärder per arbetsyta: **admin** för arbetsytan att exportera, **ägare** att importera eller radera den.
+- För hämtningar och uppladdningar: en **direkt** anslutning till servern. Det förmedlade reläet transporterar RPC-ramar, inte filöverföringar, och överföringskontrollerna inaktiverar sig själva med en notis när du är på ett.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Ögonblicksbilder av installationen är manuella]
+**Säkerhetskopiera nu** skapar fortfarande en ögonblicksbild av hela installationen bara
+på begäran. Den inbyggda pipelinen **Workspace backup** kan i stället ta en
+säkerhetskopia av arbetsytans databas en gång i veckan och ta bort den arbetsytans
+säkerhetskopior som är äldre än 30 dagar. Den kopierar inte `global.db`, andra
+arbetsytor eller filer bredvid databasen. Förvara kopior utanför maskinen separat.
 :::
 
-## What a backup covers
+## Vad en säkerhetskopia omfattar
 
-Both artifacts are **databases only**:
+Båda artefakterna är **enbart databaser**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- En **ögonblicksbild av installationen** är en katalog med tidsstämpel: `manifest.json`, `global.db` och en `<workspaceId>/workspace.db` per arbetsyta.
+- En **arbetsytaexport** är just den enda filen `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/sv-SE/handbok/referens/sakerhetskopia/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Ingen av dem tar med resten av datakatalogen: `secrets.json` (parkopplingsnycklar,
+leverantörsuppgifter, SSO), en arbetsytas `blobs/` (bilder som klistrats in i
+meddelanden), `skills/`, `agents/`, `chat_credentials/`, inspelat mötesljud eller
+rig-bilder. En del av det är umbärligt och en del inte – den
+[fullständiga tabellen finns i referensen](/sv-SE/handbok/referens/sakerhetskopia/#what-a-backup-does-not-contain),
+och det är vad [avsnittet om utanför maskinen](#kopiera-säkerhetskopior-bort-från-maskinen) handlar om.
 
-## Take a snapshot of the whole install
+## Ta en ögonblicksbild av hela installationen
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Öppna **Inställningar → Server → Säkerhetskopiering och återställning**.
+2. Under **Installationsögonblicksbilder** trycker du på **Säkerhetskopiera nu**.
+3. Notisen anger katalogen som skrevs, på servervärden. Den nya ögonblicksbilden visas högst upp i listan.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Servern fortsätter köra hela tiden. Varje fil skrivs med `VACUUM INTO`, som är
+konsekvent mot en levande databas, så det behövs inget underhållsfönster och inga
+agenter behöver stoppas.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Varje rad i listan visar tidsstämpeln, storleken på disken, hur många arbetsytor som
+fångades och om ögonblicksbilden är **Komplett** eller **Ofullständig**. Ofullständig
+betyder att manifestet saknas eller anger filer som inte finns – en säkerhetskopia som
+avbröts av en krasch eller en full disk. De listas fortfarande med avsikt: en
+ögonblicksbild du inte kan se är en du tror att du har. En ofullständig ögonblicksbild
+kan inte återställa en hel installation, men de arbetsytefiler den ändå innehåller kan
+fortfarande tas över en i taget.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+En rad kan också säga **_n_ arbetsytor inte fångade**. Det är en arbetsyta som är
+registrerad men aldrig har skrivits till (det finns ingen fil ännu), eller en vars kopia
+misslyckades – kontrollera serverloggen.
 
-## Schedule workspace backups and retention
+## Schemalägg säkerhetskopior av arbetsytan och bevarande
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Öppna **Inställningar → Pipelines → Pipelinemallar** för arbetsytan och leta upp
+**Workspace backup**. Dess aktiverade schema körs varje söndag kl. 03:00 UTC:
+**Back up workspace**, följt av **Delete backups older than** (30 dagar som
+standard). Den andra noden körs bara efter att säkerhetskopieringen har lyckats.
+Du kan ändra bevarandedagarna på noden eller stänga av schemat. Om servern är
+offline vid den schemalagda tiden tar schemat igen en gång när den är tillbaka,
+i stället för att spela upp varje missad vecka.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Säkerhetskopior av arbetsytan ligger på servern under
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Bevarandenoden
+raderar bara gamla säkerhetskopior för den här arbetsytan; den raderar aldrig
+ögonblicksbilder av installationen eller säkerhetskopior för andra arbetsytor. De här
+filerna är enbart databasen. För bevarande utanför maskinen kopierar du dem separat.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+De här säkerhetskopiorna är åtskilda från listan **Installationsögonblicksbilder**.
+För att återställa en använder du **Arbetsytedata → Importera** med
+säkerhetskopians `workspace.db`-sökväg på serversidan. Importen ersätter arbetsytans
+aktuella databas, så exportera den först om du kan behöva ångra återställningen.
 
-## Delete an install snapshot
+## Radera en ögonblicksbild av installationen
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Under **Installationsögonblicksbilder** fäller du ut ögonblicksbilden, även en
+ofullständig, och använder **Radera ögonblicksbild** i faroavsnittet. Bekräfta
+namnet. Hela katalogen för ögonblicksbilden tas bort permanent från servern;
+hämta den först om du behöver en kopia. En pipeline för säkerhetskopiering av
+arbetsytan raderar aldrig dessa ögonblicksbilder.
 
-## Collect a copy on your own machine
+## Hämta en kopia till din egen maskin
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Sökvägarna som sidan visar finns på maskinen som kör `cc_server`. När det inte är
+maskinen du sitter vid använder du knapparna **Hämta**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Bredvid varje **arbetsyta** under **Arbetsytedata** → **Hämta**, för en `.db`-fil.
+- Bredvid varje **ögonblicksbild** under **Installationsögonblicksbilder** → **Hämta**, för hela ögonblicksbilden som en `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+I skrivbordsappen väljer du var filen hamnar och notisen anger den; i webbappen går
+den till webbläsarens hämtningar. I båda fallen rapporterar båda förloppet i byte,
+eftersom det här är de två nyttolaster som kan uppgå till gigabyte.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Båda skapar en färsk kopia i samma stund du trycker på knappen, strömmar den och
+raderar serverns kopia efteråt – en hämtning är inte "hämta filen som exportknappen
+skapade tidigare".
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Att packa upp ett arkiv med en ögonblicksbild återskapar ögonblicksbildens layout
+exakt, vilket är det som gör att återställningen blir en tillbakakopiering.
 
-## Move a workspace to another install
+## Flytta en arbetsyta till en annan installation
 
-One workspace is one database file, so handing it over is a file operation.
+En arbetsyta är en databasfil, så överlämningen är en filoperation.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. På **källservern**: **Inställningar → Server → Säkerhetskopiering och återställning → Arbetsytedata**, fäll ut arbetsytan och tryck på **Hämta**.
+2. På **målservern** skapar du (eller väljer) arbetsytan som ska ta emot den.
+3. Fäll ut den arbetsytan och tryck på **Välj en fil och ladda upp** under **Återställ från den här enheten**. Välj den `.db` du hämtade.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Om båda servrarna är samma maskin som du sitter vid gör **Spara på servern** plus
+**Importera** → **Välj fil** samma sak utan omvägen; sökvägarna i importdialogen löses
+upp på servervärden.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Importen ersätter allt]
+En import skriver över allt som målarbetsytan just nu innehåller, och den går inte att
+ångra. Exportera målet först om det innehåller något du kan vilja ha tillbaka.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Två saker tillåts och loggas i stället för att avvisas: att importera en fil vars
+registrerade arbetsyte-id skiljer sig från målets (så här duplicerar du en arbetsyta
+eller återställer den under ett nytt id), och att importera en fil från en **annan
+installation**. I det andra fallet tillhör filens parkopplade enheter och användar-id:n
+installationen den kom från och löses inte upp i den här – arbetsytans egna data är
+intakta, men kontrollera medlemskapet igen efter att du tagit över den.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Chattbottens tokens ligger bredvid databasen, inte i den, så en arbetsyta du lämnar
+till någon annan bär inga levande uppgifter. Den mottagande installationen återansluter
+sina egna.
 
-## Restore one workspace from a snapshot
+## Återställ en arbetsyta från en ögonblicksbild
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Under **Installationsögonblicksbilder** fäller du ut ögonblicksbilden du vill ha.
+2. Leta upp arbetsytans rad och tryck på **Återställ**.
+3. Bekräfta. Allt arbetsytan har gjort sedan ögonblicksbilden togs går förlorat.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Det här är samma operation som en import, riktad mot ögonblicksbildens kopia av
+arbetsytans fil – med avsikt, så att det inte finns någon andra mekanism som skulle
+kunna behandla samma fil annorlunda.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+En rad kan säga **Inte på den här servern längre**, med **Återställ** inaktiverat:
+ögonblicksbilden innehåller en arbetsyta som den här installationen inte längre har. Ta
+tillbaka den för hand – skapa en arbetsyta och importera sedan in i den under
+**Arbetsytedata** från `<snapshot path>/<old workspace id>/workspace.db`. Den utfällda
+ögonblicksbilden visar sin egen **Sökväg på servern** i ett kopieringsfält, och radens
+titel är det gamla arbetsyte-id:t, så du har båda halvorna av sökvägen framför dig.
 
-## Restore a whole install
+## Återställ en hel installation
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Det finns ingen knapp för det här, och det bör det inte göra heller: den ersätter de
+databaser som den körande servern håller öppna.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Stoppa `cc_server`.** Om du kör skrivbordsappen med dess inbäddade server stänger du av appen.
+2. Kopiera ögonblicksbildens innehåll över datakatalogen. Ögonblicksbildens layout speglar den levande, så det här är en vanlig kopiering:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +177,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Radera alla `-wal`- och `-shm`-filer som ligger bredvid databaserna du ersatte. De tillhör de gamla filerna, och en inaktuell sådan bredvid en återställd databas är en risk för korruption.
+4. Starta servern igen.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Ögonblicksbilden innehåller ingen `secrets.json`, så en installation som återställs på
+en **färsk** värd behåller sina data men inte sina uppgifter: parkopplade enheter,
+leverantörstokens och SSO-inställningar måste återupprättas, eller återställas från var
+du än förvarade den filen. En återställning på samma värd, där `secrets.json` aldrig
+förlorades, behåller allt.
 
-## Copy backups off the machine
+## Kopiera säkerhetskopior bort från maskinen
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+En ögonblicksbild på samma disk som databasen den kopierade skyddar dig mot en dålig
+import, inte mot disken. Inget i Control Center skickar någon kopia någonstans, så den
+här delen är din.
 
-### Sync the snapshots
+### Synkronisera ögonblicksbilderna
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Ögonblicksbilder är oföränderliga när de väl har skrivits och namnges efter tidsstämpel,
+så alla synkverktyg hanterar dem bra. Uteslut `transfer/`, som är en arbetsbänk för
+pågående hämtningar och uppladdningar:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +213,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` speglar din lokala rensning till fjärren. Hoppa över det om du vill att
+fjärren behåller ögonblicksbilder längre än värden gör.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Synkronisera aldrig de levande databaserna direkt]
+Rikta inte rsync, `aws s3 sync` eller en filbaserad säkerhetskopieringsagent mot
+`global.db` eller `<workspaceId>/workspace.db` medan servern körs. En levande
+SQLite-databas har en `-wal`-sidofil, och en kopiering fil för fil fångar de två vid
+olika tidpunkter – resultatet är en fil som ofta öppnas och tyst saknar de senaste
+skrivningarna, eller inte öppnas alls. Kopiera **ögonblicksbilden**, som skrevs under en
+lästransaktion, eller ta en med `VACUUM INTO` enligt nedan.
 :::
 
-### Include what a snapshot leaves out
+### Ta med det en ögonblicksbild lämnar utanför
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+För att kunna bygga upp installationen igen och inte bara dess data kopierar du även
+dessa. De är vanliga filer, säkra att kopiera medan servern kör:
 
 ```bash
 rsync -a \
@@ -234,20 +243,23 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` har behörigheten `0600` och innehåller varje parkopplingsnyckel,
+leverantörsuppgift och SSO-inställning i installationen. Var den än hamnar måste den
+vara minst lika skyddad som servervärden – krypterad i vila och inte en bucket som
+någon annan kan läsa.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Hoppa över `spaces/` (copy-on-write-worktrees som återetableras från dina repos),
+`pr_clones/` (en cache), `models/` (hämtas igen), `media_cache/` och `rigs/`
+(maskintillstånd, och stora). Inspelat mötesljud under `meetings/` är värt att ta med om
+du behåller möten.
 
-### Schedule a whole-install snapshot outside the app
+### Schemalägg en ögonblicksbild av hela installationen utanför appen
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Den inbyggda pipelinen säkerhetskopierar bara en arbetsyta. För en obevakad
+ögonblicksbild av **hela installationen** finns det inget CLI-underkommando, och
+RPC-anropet för ögonblicksbilder kräver en parkopplad fullständig klient som är
+installationens ägare. En timer på värdsidan kan använda `VACUUM INTO` mot de levande
+databaserna:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +278,19 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Kör den som samma användare som äger datakatalogen, från cron eller en systemd-timer,
+och synkronisera `DEST` bort från värden efteråt. `VACUUM INTO` kräver SQLite 3.27 eller
+nyare.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Skriv den **utanför** `<dataDir>/backups/`. En handgjord katalog där har inget
+`manifest.json`, så appen skulle lista den som en ofullständig ögonblicksbild och listan
+skulle sluta vara en ärlig redogörelse för vad servern själv har skapat.
 
-### Prune old whole-install snapshots
+### Rensa gamla ögonblicksbilder av hela installationen
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Du kan radera enskilda ögonblicksbilder av installationen i appen. För en bevarandepolicy
+på värdsidan håller du katalogen för arbetsytans säkerhetskopior åtskild från
+ögonblicksbilderna av installationen:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +298,50 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Kontrollera utdata från en körning med `-print` innan du lägger till `-exec`. Behåll mer
+än en: felet du skyddar dig mot är ofta "även den senaste säkerhetskopian har problemet".
 
-## Check that a backup is good
+## Kontrollera att en säkerhetskopia är bra
 
-A backup nobody has restored is a hypothesis.
+En säkerhetskopia som ingen har återställt är en hypotes.
 
-Cheap check — the file opens and its pages are intact:
+Billig kontroll – filen öppnas och dess sidor är intakta:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Riktig kontroll – ta över den. Skapa en tillfällig arbetsyta i en icke-produktiv
+installation, importera en arbetsytefil till den och se efter om ytorna, ärendena och
+meddelandena du förväntar dig finns där. Det övar samma väg som en riktig återställning
+tar, inklusive FTS-ombyggnaden, och det är den enda kontrollen som säger att
+säkerhetskopian går att återställa och inte bara att läsa.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Gör det här en gång när du ställer in säkerhetskopior, och igen varje gång du ändrar var
+de lagras.
 
-## Troubleshooting
+## Felsökning
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Symtom                                                                   | Orsak och åtgärd                                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Kontrollerna för hämtning och uppladdning är inaktiverade med en notis om ett relä | Du är ansluten via det förmedlade reläet, som inte transporterar några filöverföringar. Anslut direkt                       |
+| "Servern nekade"                                                         | Roll. Att ta eller lista en ögonblicksbild av installationen kräver installationens operatör. Att hämta en arbetsyta kräver admin, att återställa en kräver ägare, en zip för hela ögonblicksbilden kräver installationens operatör |
+| "Den här servern har ingen säkerhetskopieringsyta"                       | Värden har ingen säkerhetskopieringsport inkopplad – en demoserver. Operationerna saknas i stället för att nekas              |
+| "Filen är större än vad servern accepterar"                              | Uppladdningar är begränsade till 8 GiB. Lägg filen på servervärden och använd **Importera** → **Välj fil** i stället          |
+| Import nekad: inte en arbetsytedatabas från Control Center               | Filen har ingen `workspace_meta`-rad – den är inte en arbetsytaexport, eller så är den trunkerad. Inget ersattes              |
+| En ögonblicksbild listas som **Ofullständig**                            | Dess manifest saknas eller anger filer som inte finns. Ta en ny; ta under tiden över enskilda arbetsytefiler från den        |
+| En ögonblicksbild säger att arbetsytor inte fångades                     | De arbetsytorna har aldrig skrivits till, eller så misslyckades deras kopia. Kontrollera serverloggen                        |
+| En återställd installation har inga uppgifter för kodvärd eller SSO      | `secrets.json` finns inte i en ögonblicksbild. Återställ den från var du än förvarade den, eller återanslut leverantörerna   |
+| En återställd arbetsyta saknar inklistrade bilder                        | Blobs ligger bredvid databasen, inte i den. Kopiera `<workspaceId>/blobs/` också                                             |
 
-## Related guides
+## Relaterade guider
 
-- [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/): where the data directory comes from
-- [Connect to a remote server](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/): direct versus relayed connections
-- [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/): the credential the transfer routes sign with
+- [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/): varifrån datakatalogen kommer
+- [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/): direkta anslutningar kontra anslutningar via relä
+- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/): uppgiften som överföringsrutterna signerar med
 
-## Related concepts and reference
+## Relaterade koncept och referens
 
-- [Backup, export and import](/sv-SE/handbok/referens/sakerhetskopia/): every operation, route, field and limit
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/): why one workspace is one file
-- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/): the data directory layout
+- [Säkerhetskopia, export och import](/sv-SE/handbok/referens/sakerhetskopia/): varje operation, rutt, fält och gräns
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/): varför en arbetsyta är en fil
+- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/): datakatalogens layout

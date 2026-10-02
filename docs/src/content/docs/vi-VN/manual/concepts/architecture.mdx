@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: "Kiến trúc"
+description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Tổng quan
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center đi theo Clean Architecture hướng tính năng với mẫu cổng và adapter. Cơ sở mã được tổ chức quanh các miền nghiệp vụ (tính năng), với những quy tắc phụ thuộc nghiêm ngặt được thực thi bằng một bài kiểm thử kiến trúc tự động.
 
-## A thin client over a headless server
+## Máy khách mỏng trên một máy chủ không giao diện
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center là một **kiến trúc máy khách mỏng**. Không máy khách nào mở cơ sở dữ liệu — một tiến trình **`cc_server`** không giao diện sở hữu dữ liệu (một `global.db` nhỏ cùng một tệp SQLite cho mỗi không gian làm việc, mở theo nhu cầu) và phục vụ dữ liệu ấy qua RPC WebSocket. Ứng dụng desktop, bản web và ứng dụng đồng hành trên điện thoại đều là những trình hiển thị trên cùng một kết nối RPC đó.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Ứng dụng desktop chọn cách tiếp cận máy chủ của mình trong lần khởi chạy đầu tiên: **cục bộ** (nó khởi tạo một `cc_server` trên chính máy này và trao đổi qua loopback — mặc định) hoặc **từ xa** (nó quay số tới một `cc_server` ở nơi khác qua WebSocket bảo mật). Máy khách web luôn là từ xa. Bộ phân giải lúc khởi động (`bootstrap/server_backend.dart`) chọn đường đi trước khi Riverpod tồn tại, rồi ghi đè `rpcClientProvider` bằng máy khách đã kết nối — nhờ vậy mọi tính năng đọc và ghi qua máy chủ chứ không qua cơ sở dữ liệu cục bộ.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Bản thân tầng RPC là **không trạng thái**: một phiên được xác thực, nhưng không bị ràng buộc vào một không gian làm việc. Mọi lời gọi theo phạm vi không gian làm việc đều mang `workspace_id` của riêng nó trong các tham số, và bộ điều phối từ chối lời gọi như thế nếu thiếu tham số ấy. Chính điều đó cho phép hai máy khách trên một máy chủ nắm giữ những không gian làm việc đang hoạt động khác nhau mà không có một "không gian làm việc hiện tại" do máy chủ giữ để chúng mâu thuẫn với nhau — và nghĩa là việc cô lập được thực thi theo từng lời gọi, chứ không theo từng kết nối.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/) for the full client matrix and what runs where.
+Đây là một **không gian làm việc Dart** dùng chung một lockfile đã giải, gồm hai mươi mốt thành viên — mười lăm gói cộng sáu ứng dụng — với ứng dụng desktop+web (`control_center`) làm gốc của không gian làm việc. Sáu ứng dụng là binary máy chủ không giao diện (`cc_server`), bộ thực thi đội máy không giao diện (`cc_worker`), PWA điện thoại (`cc_remote`), broker chuyển tiếp WebSocket (`cc_signaling_server`), phòng trưng bày Widgetbook (`cc_gallery`) và máy chủ demo công khai (`cc_demo_server`). Mười lăm gói là `cc_ui` (hệ thống thiết kế), `cc_domain` (kernel dùng chung thuần Dart: thực thể, đối tượng giá trị, cổng, sự kiện và tầng miền của mọi tính năng), `cc_harness` (kernel agent tích hợp: một vòng lặp agent thuần Dart — tin nhắn, cổng nhà cung cấp, công cụ, nén, điều hướng, hook, subagent — không dùng `dart:io` và không phụ thuộc `cc_*` nào khác), `cc_harness_runtime` (adapter runtime harness tích hợp: nhà cung cấp truyền phát chỉ chạy trên VM, môi giới thông tin xác thực OAuth/PKCE, kho thông tin xác thực và bộ công cụ chung — chạy agent mà không cần cài CLI bên ngoài), `cc_rpc` (transport máy khách), `cc_host` (kernel máy chủ), `cc_data` (repository từ xa), `cc_persistence` (DB phía máy chủ), `cc_server_core` (tổ hợp ứng dụng–máy chủ + runtime danh tính/hiện diện/đội máy/đánh giá), `cc_infra` (adapter chỉ chạy trên VM), `cc_mcp` (công cụ MCP), `cc_mcp_client` (máy khách cho các máy chủ MCP bên ngoài, cầu nối công cụ của chúng vào sổ đăng ký cục bộ), `cc_markdown` (engine markdown trong kho), `cc_natives` (nút lá FFI) và `system_audio_capture`. Xem [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) để biết ma trận máy khách đầy đủ và thứ gì chạy ở đâu.
 
-## Dependency rule
+## Quy tắc phụ thuộc
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Tầng miền**: các thực thể, đối tượng giá trị, giao diện repository, cổng và dịch vụ miền thuần Dart. Không import hạ tầng nào (không dio, drift hay mô hình mạng).
+- **Tầng trình bày**: màn hình, widget, notifier. Không truy cập trực tiếp drift/DAO/tầng dữ liệu; mọi thứ đều đi qua provider Riverpod → repository.
+- **Tầng hạ tầng**: những triển khai cụ thể của cổng miền và giao diện repository. Phụ thuộc vào miền, chứ không bao giờ ngược lại.
 
-## Feature structure
+## Cấu trúc tính năng
 
-The full feature shape is:
+Cấu trúc đầy đủ của một tính năng là:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Rất ít tính năng dưới `lib/features/` thực sự có đủ cả bốn thư mục, và những khoảng trống ấy mang thông tin chứ không phải ngẫu nhiên. Kernel dùng chung đã thu mọi `domain/` của các tính năng vào `cc_domain`, còn máy khách mỏng không giữ triển khai repository nào, nên hầu hết tính năng dưới `lib/` chỉ có `presentation/` cộng `providers/` và không gì khác. Một thư mục `data/` hoặc `domain/` còn sót lại trong máy khách đánh dấu thứ gì đó thực sự thuộc phía máy khách.
 
-Two named exceptions are worth knowing:
+Có hai ngoại lệ được nêu tên đáng để biết:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** chỉ có providers. Giao diện cài đặt và trạng thái của nó nằm dưới `settings/`, còn bề mặt công cụ tự nó là một gói (`cc_mcp`), không phải một thư mục tính năng.
+- **`orchestration`** và **`plan_studio`** chỉ có `presentation/` và `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) for the model.
+Tính năng **`guardrails`** đặt tầng miền của nó trong `cc_domain/features/guardrails/` thay vì ứng dụng gốc, bởi máy chủ mới là nơi thực thi nó: một quy tắc ánh xạ một `ActionClass` (hoặc một `commandPrefix` của shell) thành một quyết định — `allow`, `prompt` hoặc `deny` — tại một phạm vi; các quy tắc được lưu theo từng không gian làm việc và mọi hành động có kiểm soát của agent đều được phân giải qua chuỗi chính sách trước khi chạy. Việc phân giải đi theo `space > agent > workspace > mode preset > built-in default` và **phạm vi đầu tiên có quy tắc khớp sẽ quyết định**; mức hạn chế nhất chỉ có vai trò phân xử khi hòa trong cùng một phạm vi và khi kết hợp nhiều lớp mà một hành động khai báo. Bề mặt dành cho người vận hành là Cài đặt → Không gian làm việc → Quyền của agent, tại `/workspaces/<id>/settings/workspace/permissions`. Xem [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) để biết mô hình.
 
-## Shared kernel
+## Kernel dùng chung
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` chứa các thực thể và repository được chia sẻ giữa 3+ tính năng. Nó thuần Dart và không có phụ thuộc hạ tầng nào, nhờ đó cả máy khách Flutter lẫn binary máy chủ không dùng Flutter đều import được cùng những định nghĩa ấy:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Thực thể lõi: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Danh tính và đa người dùng: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Thực thể bộ nhớ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Đối tượng giá trị dùng chung: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Cổng dùng chung: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Dịch vụ miền: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + các loại sự kiện (không gian làm việc/agent, PR/đánh giá, nhắn tin, phiếu, quy trình, điều phối, bộ nhớ, lịch/cuộc họp, danh tính và tư cách thành viên, khả năng quan sát)
 
-## Identity & multiplayer
+## Danh tính và đa người dùng
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center là hệ thống đa người dùng: con người và agent là những tác nhân bình đẳng, được hợp nhất qua một `Principal`. Một thành viên không gian làm việc là một `User` được gắn với một `Workspace` ở một `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Tư cách thành viên chính là ranh giới truy cập** — không phải một khóa ghép nối — và các quyền cấp theo từng kho mã ngăn không cho tư cách thành viên không gian làm việc tạo ra đặc quyền cao hơn máy chủ mã. Người dùng đầu tiên được tạo trên một máy chủ mới sở hữu bản cài đặt; những người khác tham gia qua lời mời hoặc OIDC. Việc tạo một không gian làm việc đánh dấu người dùng đó là `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Cộng tác thời gian thực dùng **máy chủ có thẩm quyền + last-writer-wins (LWW) theo từng trường**, chứ không dùng CRDT. Hiện diện (ai đang ở đây, họ ở đâu, con trỏ, đang gõ, trạng thái trực tiếp và chi phí đang chạy của một agent) là một **làn tạm thời không bao giờ được lưu lại**; trạng thái bền vững chạy trên một xương sống gồm thay đổi lạc quan + tái cơ sở từ máy chủ + LWW. Con người và agent cùng chung một danh sách thành viên. Khi chỉ có một người vận hành là con người, làn hiện diện nằm im và không có phần giao diện danh sách nào xuất hiện — tính năng đa người dùng không khiến người dùng đơn lẻ phải trả giá gì.
 
-## Ports and adapters
+## Cổng và adapter
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Cổng là những giao diện trừu tượng trong tầng miền. Adapter là những triển khai cụ thể trong tầng hạ tầng. Vì máy chủ không giao diện sở hữu dữ liệu và phải build được mà không cần Flutter, gần như mọi adapter chỉ chạy trên VM và nằm trong `packages/cc_infra/lib/src/`, được tổ chức theo mối quan tâm:
 
-| Port                   | Adapter location                                                                                            |
+| Cổng                   | Vị trí adapter                                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (phía máy khách: hiển thị sự kiện từ máy chủ ngay tại chỗ)                        |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp và GitHub Issues là những adapter đồng bộ phiếu trong `cc_infra/lib/src/tickets/sync/`; phiếu cục bộ nằm trong cơ sở dữ liệu của không gian làm việc và không dùng `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (một dịch vụ miền thuần Dart — nó không cần hạ tầng nào)  |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Gốc tổ hợp của ứng dụng (`di/providers.dart`) gắn các cổng phía máy khách với những triển khai thông qua provider Riverpod; máy chủ tổ hợp các adapter của mình trong `cc_server_core`.
 
-## State management
+## Quản lý trạng thái
 
-**Riverpod** for all client state:
+**Riverpod** cho toàn bộ trạng thái phía máy khách:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` và `AsyncNotifier<T>` cho trạng thái có thể thay đổi
+- `FutureProvider<T>` cho dữ liệu bất đồng bộ
+- Danh sách và các hàng trực tiếp đến qua đăng ký RPC dưới dạng `AsyncValue<List<T>>` — máy chủ dùng Drift `.watch()` ở bên trong; không máy khách nào mở Drift
+- Các công cụ MCP nhận phụ thuộc dưới dạng tham số khởi tạo có kiểu, không bao giờ qua `Ref`
 
-## Database
+## Cơ sở dữ liệu
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), được chia thành hai cơ sở dữ liệu, cả hai đều nằm trong `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — một danh sách ngắn những bảng thực sự thuộc phạm vi toàn máy chủ: sổ đăng ký không gian làm việc, người dùng/tùy chọn/thiết bị đã ghép nối, kết nối SSO, cài đặt máy chủ toàn bản cài, chính sách hành động được quản lý (một giới hạn toàn bản cài chỉ có thể siết chặt thêm rào chắn của không gian làm việc), bảng tin của từng người dùng, hàng đợi đội máy (worker/job/nhật ký xếp chỗ), chỉ mục `workspace_routes` dùng trước khi xác thực và siêu dữ liệu bản cài. Lúc khởi động chỉ tệp này được mở, nên chi phí khởi động giữ nguyên không đổi dù các không gian làm việc tích lũy bao nhiêu lịch sử. Thêm một bảng vào đây là một quyết định về cô lập mà một bài kiểm thử kiểu bánh cóc buộc bạn phải biện luận cho nó.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — một _thư mục_ cho mỗi không gian làm việc, chứa một tệp SQLite cộng mọi thứ khác chỉ thuộc về không gian làm việc đó, nên worktree và tệp agent của một cuộc hội thoại nằm cạnh cơ sở dữ liệu và bị xóa cùng với nó. Gần như mọi thứ đều sống ở đây: agent, space, phiếu, bộ nhớ, quy trình, cuộc họp, đồ thị mã, đánh giá, kho mã. Các tệp được mở theo nhu cầu ngay lần chạm đầu tiên thông qua `WorkspaceDatabaseManager.of(workspaceId)` và khi đó tự trả chi phí `quick_check`, cài đặt FTS/trigger và `vector_init` của riêng mình.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Cả hai nửa đều bắt đầu từ một đường cơ sở v1 đã được gộp gọn — `onCreate` dựng nên lược đồ hiện tại — với các bước migration chỉ được nối thêm khi một cơ sở dữ liệu đã triển khai cần được mang tiếp.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Vì một không gian làm việc là một tệp, việc xuất một không gian làm việc chỉ là một câu lệnh `VACUUM INTO` duy nhất (`workspace.export`), chứ không phải kết xuất từng bảng; `workspace.import` nhận một tệp như vậy và dùng `workspace_meta` nhúng sẵn để phân biệt tệp của chính nó được nhận lại với một tệp đến từ bản cài khác.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Cả hai cơ sở dữ liệu đều thuộc sở hữu của `cc_persistence` và chỉ `cc_server` mở chúng; không máy khách nào mở DB — mọi máy khách đọc/ghi qua RPC. Các bảng được định nghĩa trong `packages/cc_persistence/lib/database/tables/`, DAO trong `.../daos/`; thực thể miền là Dart thuần, tách biệt khỏi các lớp bảng Drift, với phần ánh xạ nằm trong các tầng dữ liệu. FTS5 xử lý tìm kiếm toàn văn và `sqlite_vector` lo phần embeddings, cả hai đều chỉ chạy phía máy chủ; cả hai cơ sở dữ liệu đều chạy `PRAGMA foreign_keys=ON` ở chế độ journal WAL.
 
-## Routing
+## Định tuyến
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, với một sự thật chi phối tất cả phần còn lại: **mọi đích đến trong ứng dụng đều có tiền tố không gian làm việc** dưới dạng `/workspaces/:workspaceId/…`. Id không gian làm việc trong URL là nguồn chân lý duy nhất cho không gian làm việc đang hoạt động — `activeWorkspaceIdProvider` được điều khiển từ tuyến, chứ không phải theo chiều ngược lại — đó là lý do vì sao việc đọc dữ liệu theo phạm vi không gian làm việc bên ngoài một tuyến có tiền tố không có chỗ nào để lấy id của nó.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- Các _hàm_ dựng tuyến trong `router/routes.dart`, mỗi hàm nhận id không gian làm việc làm tham số đầu tiên, chứ không dùng hằng chuỗi
+- Bốn tuyến nằm ngoài ngữ cảnh không gian làm việc nên không mang tiền tố: `/splash`, `/onboarding`, `/signed-out` và `/workspaces` (trình chọn)
+- `ShellRoute` bao quanh vỏ ứng dụng; bốn bề mặt đó hiển thị toàn màn hình bên ngoài nó
+- Chốt chặn xác thực: phần thiết lập chưa hoàn tất sẽ chuyển đến `/onboarding`; phần thiết lập đã hoàn tất nhưng thông tin xác thực máy chủ mã đã mất sẽ chuyển đến `/signed-out`. Hoàn tất nghĩa là có ít nhất một máy chủ mã được kết nối cho người dùng đã đăng nhập và có ít nhất một không gian làm việc tồn tại — không nhất thiết là GitHub, và CLI `gh` không phải một phương thức xác thực
+- Cổng onboarding nằm trong `features/auth/providers/`
 
-## Networking (server-side)
+## Mạng (phía máy chủ)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Toàn bộ HTTP ra bên ngoài đều nằm ở máy chủ. Máy khách không bao giờ gọi trực tiếp GitHub, Linear hay Google — chúng gọi các thao tác RPC của máy chủ, và ngay cả media từ xa cũng được lấy qua endpoint `/proxy/media` của máy chủ thay vì lấy trực tiếp từ nguồn gốc.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Các máy khách **dio** trong `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` và `GoogleCalendarApiClient`
+- Việc tiêm token xác thực qua các interceptor, bao gồm một interceptor Google OAuth theo từng tài khoản trong `cc_server_core` để làm mới token khi gặp 401
+- Mọi lỗi đều được ánh xạ qua `packages/cc_infra/lib/src/network/error_mapper.dart` → các lớp con `AppException` được định kiểu, định nghĩa trong `cc_domain`
 
-## Security
+## Bảo mật
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Máy chủ nắm giữ những thông tin xác thực thực sự quan trọng: token GitHub và token hệ thống phiếu dùng cho việc khởi chạy agent, khóa nhà cung cấp LLM và token OAuth đều nằm dưới thư mục dữ liệu của máy chủ hoặc trong môi trường của nó. Thứ mà keychain của máy khách vẫn giữ là thông tin xác thực thiết bị của chính nó và khóa ghép nối cho một máy chủ từ xa.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Bí mật nằm trong `flutter_secure_storage` (keychain macOS, trình quản lý thông tin xác thực Windows, libsecret trên Linux) — đó là thông tin xác thực thiết bị và khóa ghép nối từ xa của máy khách, không phải token của nhà cung cấp
+- `shared_preferences` chỉ dành cho các tùy chọn không nhạy cảm (giao diện, phông chữ, bố cục)
+- Những bí mật nhà cung cấp còn sót lại từ các bản cài cũ được chuyển giao một lần cho máy chủ bởi `features/auth/providers/credential_migration.dart`, rồi bị xóa khỏi keychain của máy khách
 
-## Architecture enforcement
+## Thực thi kiến trúc
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Các ràng buộc kiến trúc được kiểm chứng bởi `test/core/architecture_constraints_test.dart`; bài kiểm thử này thất bại nếu các quy tắc phụ thuộc bị vi phạm.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): how isolation is enforced
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): the dispatch flow
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): cross-feature communication
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/): the thin-client server model and the client matrix
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): cách việc cô lập được thực thi
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): luồng điều phối
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): giao tiếp giữa các tính năng
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/): mô hình máy chủ với máy khách mỏng và ma trận máy khách

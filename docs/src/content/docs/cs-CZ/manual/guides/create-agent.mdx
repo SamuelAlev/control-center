@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Vytvořte a nakonfigurujte agenta
+description: Přidej agenta do pracovního prostoru, dej mu adaptér, model, skilly a oprávnění a ověř, že běží.
 slug: cs-CZ/prirucka/navody/vytvoreni-agenta
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Tenhle návod ukazuje, jak do pracovního prostoru přidat agenta a nastavit ho tak, aby opravdu běžel.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Každý pracovní prostor vznikne s pěti agenty: CEO a `qa`, `architect`, `engineer` a `librarian`. Agenty tedy obvykle máš dřív, než jsi nějakého nastavil. Postup níže platí stejně pro založeného agenta i pro nového.
 
-## Before you start
+## Než začneš
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Jsi uvnitř pracovního prostoru. Celá plocha je v **Nastavení → Pracovní prostor → Agenti** (`/settings/workspace/agents`).
+- Agent potřebuje backend. Buď připoj poskytovatele pro vestavěný harness v **Nastavení → Server → Poskytovatelé modelů**, nebo na stroj, na kterém běží `cc_server`, nainstaluj CLI Claude Code.
+- Má-li agent nést skilly, nainstaluj je nejdřív v **Nastavení → Pracovní prostor → Dovednosti**. Formulář agenta umí jen přepínat skilly, které v pracovním prostoru už jsou.
 
-## Add the agent
+## Přidej agenta
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Otevři **Nastavení → Pracovní prostor → Agenti**.
+2. Klepni na **Nový agent**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Žádný dialog a žádný výběr role. Agent jménem „Nepojmenovaný agent“ vznikne hned a vybere se v detailním panelu vpravo.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+V soupisce vlevo teď uvidíš „Nepojmenovaný agent“, s otevřenou kartou **Nastavení** detailního panelu a polem **Název**, ve kterém je „Nepojmenovaný agent“.
 
-## Name it
+## Pojmenuj ho
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Název** — krátký identifikátor pro zmínky přes @, například `alice`. Parsování zmínky bere `@` a za ním znaky slova, takže jméno s pomlčkou, tečkou nebo mezerou zmínit nejde.
+- **Název** — lidsky čitelný popisek, například „Seniorní vývojář“.
+- **Systémový prompt** — volitelné další pokyny, vložené jako sekce „Agent instructions“. Zbytek složeného promptu nenahrazují.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Klepni na **Uložit změny** dole ve formuláři. Všechna pole na téhle stránce ukládá tohle jediné tlačítko.
 
-## Give it an adapter and a model
+## Dej mu adaptér a model
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Rozbalovací seznam **Adaptér** vypisuje runnery, které hostitel serveru opravdu má. Vestavěný adaptér se najde vždy, protože je to server. Claude Code se objeví jen tehdy, když se na tom hostiteli našlo jeho CLI:
 
-| Adapter                   | Backend                                     |
+| Adaptér                   | Backend                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | Smyčka agenta v procesu, bez externího CLI |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Režimy, řízení uprostřed běhu, pozastavení a obnovení, kontrakty dokončení a subagenty vynucuje jen vestavěný adaptér. Claude Code z toho neumí nic. Cursor, Codex a ostatní poskytovatelé modelů se připojují k vestavěnému adaptéru jako jeho poskytovatelé.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Prázdný adaptér znamená vestavěnou smyčku]
+Agent bez nastaveného adaptéru se odešle na **Control Center (built-in)**, smyčku uvnitř serveru, takže na hostiteli není co instalovat. Není-li nastavený ani model, požádá Anthropic o jeho výchozí, takže úplně nenastavený agent běží jen tehdy, když máš připojený účet Anthropic. Založení specialisté nemají nastavené ani jedno. U každého agenta, kterého chceš používat, nastav obojí.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Rozbalovací seznam **Model** řídí adaptér, který jsi vybral. U vestavěného adaptéru se seznam bere živě od poskytovatelů připojených v **Nastavení → Server → Poskytovatelé modelů**, takže poskytovatel bez uloženého přihlašovacího údaje nepřidá žádný model.
 
-## Add skills
+## Přidej skilly
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Dovednosti** je výběr chipů nad balíčky skillů nainstalovanými v tomhle pracovním prostoru. Klepnutím chip přepneš; značka zaškrtnutí označuje vybrané. Nemá-li pracovní prostor žádné skilly, pole hlásí „No skills available. Create skills in Settings → Skills first.“
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/cs-CZ/prirucka/koncepty/model-agentu/#repo-scoped-skills).
+Skilly vlastního repozitáře tady nevybíráš. Repozitář, který si je veze (v `.agents/skills/`, `.claude/skills/` nebo `.opencode/skills/`), je automaticky přidá tomu agentovi, který v tom repozitáři pracuje, a při přesunu do jiného se vymění. Viz [Skilly vázané na repozitář](/cs-CZ/prirucka/koncepty/model-agentu/#skilly-vázané-na-repozitář).
 
-## Set the reporting line and persona
+## Nastav nadřízeného a personu
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Nadřízený** — vyber jiného agenta podle jména. Z toho se skládá strom nadřízenosti, který ukazuje tlačítko **Organizační schéma** v záhlaví stránky. Soupiska, podle které vedoucí týmu deleguje, je jiná věc: vychází ze členů týmu a jejich skillů.
+- **Persona** — volný text, který tvaruje tón a chování, například: „Dává přednost jednoduchým, čitelným řešením. Ke každému novému kódu píše testy.“
 
-## Tune the run
+## Vylaď běh
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Úsilí uvažování** — volby přicházejí z úrovní, které vybraný model sám publikuje: Low / Medium / High, u modelů ve stylu OpenAI navíc Extra High a u modelů ve stylu Claude Extra High + Max. Pole je celé schované, když vybraný model žádné úrovně myšlení nedeklaruje, a jinak se předvyplní vlastní výchozí hodnotou modelu.
+- **Velikost kontextového okna** — při každé změně modelu se předvyplní z kontextového okna modelu, s chipy na jedno klepnutí pro výchozí modelu, 200k, 500k a 1M. Hodnota, kterou po výběru modelu napíšeš, platí až do další změny modelu.
+- **Časový limit ticha (minuty)** — po tolika minutách bez výstupu se běh ukončí. Necháš-li pole prázdné, použije se výchozí hodnota daného režimu.
 
-## Grant permissions
+## Přiděl oprávnění
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Oprávnění sandboxu** začíná na „Použít výchozí pracovního prostoru“. Zapni přepínač, když je chceš nastavit pro tohohle agenta, a pak přepínej:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Povolit git push** — vloží token GitHub, který agent potřebuje, aby mohl pushovat
+- **Povolit volání GitHub API** — agent smí číst PR, issues a metadata repozitáře
+- **Povolit volání ticketing API** — vloží klíč poskytovatele ticketů
+- **Povolit obecný přístup k síti** — zároveň zapne nástroje vestavěného harnessu `web_fetch` a `web_search`
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Každý přepínač kontroluje broker přihlašovacích údajů při spuštění běhu. Vypnutá schopnost znamená, že se odpovídající token do prostředí běhu nikdy nevloží.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Výchozí pracovního prostoru znamená konzervativní sadu serveru]
+Agent ponechaný na „Použít výchozí pracovního prostoru“ běží s git push, GitHub API i ticketingem **vypnutými** a sítí **zapnutou**. Výchozí schopnosti v Nastavení → Server → Diagnostika a soukromí jsou preference na straně klienta. Má-li agent pushovat nebo otevírat PR, zapni přepínač a schopnosti přiděl výslovně.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/) for the full set of boundaries.
+Tyhle schopnosti pouštějí přihlašovací údaje a nástroje harnessu. To je jiná vrstva než sandbox operačního systému. `cc_server` obalí běhy agenta sandboxem hostitele, pokud tam nějaký je. Windows nativní backend nemá a Linux a WSL2 potřebují `bwrap` a `socat`. Úplnou sadu hranic popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
-## Verify it runs
+## Ověř, že běží
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Otevři **Nastavení → Server → Poskytovatelé modelů** a ověř, že zvolený adaptér hlásí nainstalovanou verzi, ne „Nenalezeno“. Klepni na **Obnovit** a sonda se spustí znovu. Běží na stroji, na kterém je `cc_server`, ne na stroji, na který se díváš.
+2. Otevři prostor s tím agentem a pošli mu zprávu, nebo ho v existujícím prostoru zmiň přes @.
+3. Vrať se do **Nastavení → Pracovní prostor → Agenti**, vyber agenta a otevři kartu **Protokoly**. Měl by se objevit běh s odznakem stavu, dobou trvání, časem začátku a adaptérem, který použil. **Zobrazit** otevře proud událostí toho běhu.
 
-If no run appears at all, work through [Run agent diagnostics](/cs-CZ/prirucka/navody/diagnostika-agenta/).
+Neobjeví-li se žádný běh, projdi [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/).
 
-## Delete an agent
+## Smaž agenta
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Vyber ho v soupisce. Na kartě **Nastavení** sjeď k **Nebezpečná zóna** dole ve formuláři a klepni na **Smazat**.
 
-## Related guides
+## Související návody
 
-- [Run agents in parallel](/cs-CZ/prirucka/navody/paralelni-agenti/)
-- [Build an agent team](/cs-CZ/prirucka/navody/sestaveni-tymu-agentu/)
-- [Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/)
-- [Run agent diagnostics](/cs-CZ/prirucka/navody/diagnostika-agenta/)
-- [Agent configuration reference](/cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu/)
+- [Spouštějte agenty paralelně](/cs-CZ/prirucka/navody/paralelni-agenti/)
+- [Sestavte tým agentů](/cs-CZ/prirucka/navody/sestaveni-tymu-agentu/)
+- [Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/)
+- [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/)
+- [Konfigurace agentů](/cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu/)
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/)
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/)
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/)
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/)
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)

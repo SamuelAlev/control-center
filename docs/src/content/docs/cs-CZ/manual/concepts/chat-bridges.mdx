@@ -1,249 +1,249 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Chatové mosty
+description: Proč integrace Slack volá ven, místo aby poslouchala, co skutečně autorizuje zprávu z chatu a jak jeden most obslouží libovolný chatový produkt.
 slug: cs-CZ/prirucka/koncepty/chatove-mosty
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Chatový most udělá z externího chatového produktu, dnes ze Slacku, plnohodnotnou
+cestu do pracovního prostoru Control Center. Zmíníš bota a agent se probudí,
+odpovíš ve vláknu Slacku a konverzace pokračuje, napíšeš příkaz s lomítkem a
+založí se ticket. Pod tím jsou stejné prostory, přepisy, tickety a přisouzení,
+které používá desktopová aplikace. Chat je _plocha_ na pracovním prostoru, ne
+jeho kopie.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Dodává se jen Slack.** Implementace Discordu, Telegramu, Teams ani Matrixu v
+produktu nikde není. Funkce je schválně napsaná tak, aby poskytovatele neznala.
+Přidat druhý produkt je jedna hodnota výčtu, jeden adaptér a jeden plugin. Dnes
+ale „chat“ znamená Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Dvě plochy to pokryjí a každá patří někomu jinému. Připojení pracovního
+prostoru ke Slacku a úprava bota jsou akce **admina** v Nastavení → Pracovní
+prostor → Obecné. Propojení vlastního chatového účtu s identitou v Control
+Center je akce **člena** v Nastavení → Pracovní prostor → Profil a identita.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Celou funkci určují tři rozhodnutí: **kterým směrem spojení běží**, **co
+autorizuje zprávu, která přijde zvenku**, a **kde smí žít znalost konkrétního
+produktu**.
 
-## Outbound by design
+## Záměrně odchozí
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Most na poskytovatele nikdy neposlouchá. Ke Slacku se dostane přes **Socket
+Mode**: server si od Slacku vyžádá URL socketu a zavolá ven, pak po tom spojení
+přijímá zmínky, přímé zprávy a příkazy s lomítkem.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+O ten důsledek jde. Notebook za NAT, domácí server bez domény, stroj, který
+střídá sítě. Všechny můžou most spustit bez příchozího portu, bez tunelu, bez
+certifikátu TLS a bez veřejné URL, která by se při změně musela střídat.
+Koncový bod webhooku, který by bylo třeba zabezpečit, neexistuje, protože žádný
+koncový bod webhooku není. Když Control Center skládá definici aplikace, vynutí
+Socket Mode a zahodí každou request URL. Aplikace nastavená na obojí by
+fungovala jen napůl.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Platí se za spojení, které musí zůstat naživu, a to je práce serveru. Opětovné
+připojení je exponenciální backoff s jitterem, nanejvýš 30 sekund. Když socket
+otočí sám poskytovatel, most se připojí znovu a ten backoff přitom nezvyšuje.
+_Odmítnuté přihlašovací údaje_ jsou konečné. Opakovat zrušený token donekonečna
+by vedlo jen k limitu četnosti, takže most zastaví, počká na nové tokeny a v
+nastavení ukáže chybu poskytovatele doslovně.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Pracovní prostor bez chatové aplikace nestojí nic: žádný socket, žádné
+časovače, žádný provoz. A celé to startuje _až po_ hlášce, že je server
+připravený. Chatová aplikace, která odpovídá pomalu, nesmí zdržet start.
 
-## Membership authorizes, not token possession
+## Autorizuje členství, ne držení tokenu
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Kdo aplikaci nainstaloval, není ten, kdo posílá zprávu. Každá příchozí událost
+se proto nejdřív převede na **principála** a když to nejde, selže uzavřeně, s
+vysvětlením:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Nepropojený chatový účet** dostane ve vláknu Slacku, do kterého psal, návod,
+  jak se propojit.
+- **Propojený účet, jehož uživatel není členem** tohoto pracovního prostoru,
+  dostane pokyn, ať požádá admina o pozvánku.
+- **Člen s rolí jen ke čtení** (`viewer`, `guest`) se dozví, že jeho role nemůže
+  začít práci.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/)
-for the membership model this leans on.
+Žádná z těch cest nepokračuje. Chatová zpráva se nikdy nepřiřadí někomu, kdo ji
+neposlal. Právě to drží v pravdě auditní záznam, limity četnosti na principála i
+nahlašovatele ticketů. Model členství, o který se to opírá, je v
+[Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/).
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Propojení je určení identity, **ne** udělení přístupu. Členství se kontroluje
+znovu při každé události, takže propojení někoho, kdo byl mezitím odebrán,
+skončí odmítnutím, ne jeho starými oprávněními. Propojení vzniká dvěma cestami:
+krátkodobým jednorázovým kódem, který člen napíše do chatu, nebo automatickou
+shodou na _ověřeném_ e-mailu poskytovatele. I cesta e-mailem vyžaduje, aby
+shodný uživatel už byl členem. Cizí člověk, jehož adresa na serveru náhodou
+existuje, se nepropojí s ničím.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Kódy zůstávají schválně jen v paměti, s platností 15 minut. Uložit takový kód
+by vytvořilo trvalý řádek ve tvaru přihlašovacích údajů pro něco, co má zmizet.
+Restart serveru, který zneplatní každý nevyužitý kód, je správné chování, ne
+regrese. Člen znovu stiskne „Propojit“.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Odmítnutí přijde **ve vláknu Slacku, které zpráva otevřela**, jako skutečná
+odpověď. Odpověď ve vláknu označí zprávu, na kterou reaguje, dojde k tomu
+jednomu člověku, který to potřebuje, a „účet není propojený“ zůstane mimo
+samotný kanál. Odeslat zprávu je taky jediná schopnost, kterou má každý
+poskytovatel, takže vysvětlení nezávisí na funkci, kterou aplikace třeba nemá.
 
-## Provenance and the echo problem
+## Původ a problém ozvěny
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Most, který zrcadlí oběma směry, se zacyklí, pokud něco oba směry nerozliší.
+Každá zpráva, kterou most přinese, dostane razítko `metadata['chat']`:
+poskytovatel, tým, konverzace, vlákno, zpráva a odesílatel. Odchozí zrcadlo
+každou zprávu s tím razítkem přeskočí.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+To jediné pravidlo dělá obousměrné zrcadlení bezpečné. Lidská zpráva napsaná v
+Control Center se předá do propojeného vlákna, s jménem autora na začátku.
+Zpráva, která přišla _z_ chatu, skončí tam, kde vstoupila.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Ven jde schválně málo. **Odpověď** agenta se předá jako obyčejný chatový text.
+Krátká myšlenka se může objevit na řádku `Thinking…` karty. Výstup nástroje je
+zeď diffů a zůstane v Control Center, kam ukazuje i zkrácená odpověď.
 
-## A card reports the work; the text is still the message
+## Karta hlásí práci; text zůstává zprávou
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Tam, kde je poskytovatel vykreslí, nese tah **jednu kartu úkolu**. Upravuje se
+na místě, dokud tah běží, a stojí nad odpovědí, kterou vysvětluje.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Karta je jeden seskupený plán, ne slité odstavce. Slack slepí `details` a
+`output` na stejný úkol, takže podrobnosti řádku se pošlou jednou (myšlenka na
+`Thinking…`) a `output` se nikdy nestreamuje. Příprava je jeden řádek, jehož
+nadpis se nahrazuje (`Working on it…`, `Cloning …`). Uvažování přidá řádek
+`Thinking…`. Každý nástroj má vlastní řádek (`Read lib/main.dart`). Odpověď je
+obyčejný text pod kartou. Pohled na plán ve Slacku ji čte z markdownu přidaného
+později, ne z kusu zamíchaného do úkolů. Nic dalšího: žádný výstup nástroje a z
+argumentů nástroje jen to, co je na krátkém seznamu povolených. Argumenty
+neznámého nástroje můžou být celé tělo souboru a řádek je jeden řádek.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Karta pokryje i čekání _před_ tahem. První zmínka vytvoří konverzaci a její
+vytvoření naklonuje každý repozitář, ve kterém bude agent pracovat. Na
+skutečném repozitáři jsou to minuty, kdy se agenta ještě nikdo na nic neptal a
+vlákno vypadá, jako by bot požadavek ignoroval. Karta se proto otevře v
+okamžiku, kdy je zmínka přijata (`Working on it…`), a řádek přípravy se pak
+aktualizuje stejnými slovy, která ukazuje desktopová aplikace:
+`Cloning acme/widgets…`, `Setting up
+Reviewer…`, `Starting the agent…`, pak
+řádek `Thinking…`, jakmile agent začne uvažovat, a pak řádek na každý nástroj.
+Jedna karta, jedna zpráva, od „slyšel jsem tě“ až po odpověď jako obyčejný text
+pod ní. O přípravě se hlásí jen tam, kde na ni v chatu někdo čeká. Konverzace
+připravovaná v aplikaci, nebo přerušená a obnovená při startu serveru, se
+připraví úplně bez karty.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Karta nese jediné, co chat čtenáři dát neumí: odkaz **View in Control Center**
+na konverzaci za odpovědí. Chatové produkty v odkazu přijmou `http(s)` a nic
+jiného, takže tlačítko míří na malou stránku, kterou obsluhuje tento server. Ta
+prohlížeč přesměruje na odkaz `control-center://` desktopové aplikace. Ta
+stránka nic nečte a nic nevyhledá. Identifikátory v její URL se jen propíšou do
+deep linku a nikam jinam. Server bez dosažitelné veřejné URL vyrobí kartu bez
+tlačítka, ne s rozbitým.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Karty jsou schopnost jako každá jiná. Poskytovatel bez nich se chová jako dřív,
+jen text. Poskytovatel, který jednu odmítne v okamžiku volání, si stream nechá.
+Odpověď má vždycky přednost před kartou, která ji popisuje. Když je streamování
+vypnuté úplně, hotová karta přijde s jedinou odeslanou zprávou. Založený ticket
+dostane totéž. Potvrzení `/cc ticket` je dokončená karta a důvod, proč existuje,
+je odkaz na právě vytvořený ticket.
 
-## Capabilities are negotiated, then remembered
+## Schopnosti se vyjednají a pak zapamatují
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Chatové produkty se liší v tom, co umí vykreslit, takže most je napsaný proti
+nejbohatší ploše. Odpověď, která ve vláknu roste živě, pomíjivý stav „is
+thinking…“, vlákno s nadpisem, efemérní odpověď na příkaz s lomítkem. Pak ubírá
+jednu schopnost po druhé. Poskytovatel, který z toho nemá nic, pořád funguje.
+Odpovědi prostě přijdou jako jedna zpráva.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Ohlásit schopnost neznamená slíbit ji. Streamované odpovědi Slacku potřebují
+funkci placeného plánu a Slack odmítne až v okamžiku volání. Odmítnutí označené
+jako trvalé se pamatuje **po celou dobu života spojení**. Most přestane žádat a
+od té chvíle posílá celé odpovědi a nastavení to napíše jasně, protože na
+„přestaly mi streamovat odpovědi“ má jít odpovědět bez čtení logu. Karty úkolů
+se zahodí stejně, když Slack jednu odmítne.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Každý limit patří poskytovateli, ne vrstvě, která zprávy předává: strop zprávy,
+strop kusu streamu a jestli stream potřebuje kotvu vlákna. Všechno to deklaruje
+adaptér a dlouhá odpověď se dělí na hranici odstavce, řádku nebo slova, ne
+uprostřed slova.
 
-## One bridge, one adapter per product
+## Jeden most, jeden adaptér na produkt
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Všechno specifické pro produkt žije za portem. Obecné jádro zná markdown,
+chatové konverzace, chatová vlákna a členy. O obálkách Slacku, o `mrkdwn` ani o
+gateway intents neví nic. Funguje to díky třem kusům:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Adaptér** sjednotí jeden produkt: jeho přenos, volání API, textový kodek a
+  zvláštnosti obálky. Zvláštnosti Slacku jsou poučné. Zmínka v kanálu přijde
+  dvakrát, jako `app_mention` _a_ jako `message`, a většina podtypů zpráv je
+  obal, ne nové požadavky. Obojí se vyřeší v adaptéru, takže jádro se nikdy
+  nedozví, že Slack doručuje dvakrát.
+- **Deskriptor** je veřejný tvar poskytovatele: jaké přihlašovací údaje
+  potřebuje, v jakých formátech, které URL pomůžou je najít, co umí a jestli se
+  jeho aplikace dá vytvořit nebo upravit odsud. Karta nastavení, dialog
+  připojení i kontrola argumentů se z něj _generují_. Klient pošle zpátky
+  poskytovatele a mapu s klíčem podle id pole.
+- **Plugin** je složení na straně serveru: jak se z přihlašovacích údajů stane
+  ověřené spojení, jak se postaví adaptér a jak se spravuje aplikace u
+  poskytovatele.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Přidat produkt je tedy jedna hodnota výčtu, jeden adaptér a jeden plugin. Žádná
+nová RPC operace, žádná změna schématu, žádná změna klienta. A klient zůstane
+přesný, protože pole, o kterém nikdy neslyšel, se stejně vykreslí s popiskem,
+který dodal server.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Dva detaily brání tomu, aby abstrakce prosakovala nahoru. Kroky správy
+aplikace, pro které poskytovatel nemá API (vygenerovat token, nainstalovat
+aplikaci, znovu nainstalovat po změně oprávnění), se vracejí jako **pojmenované
+kroky s vlastními odkazy**. Obrazovka dokončení nastavení je ukáže, aniž by
+věděla, který poskytovatel to je. A každá instrukce, kterou most napíše, jmenuje
+poskytovatele a příkaz, který aplikace opravdu používá. Přejmenovaný příkaz nebo
+druhý poskytovatel se tak přečte správně bez nového textu.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Znovu nainstalovat po změně oprávnění]
+Úprava jména, popisu nebo ikony bota platí hned. Změna **oprávnění** potřebuje
+novou instalaci. Slack použije nový manifest, ale udělení nechá na tom, co bylo
+nainstalované. Úprava vrátí zbývající krok s odkazem na stránku Slacku
+„Reinstall to Workspace“.
 :::
 
-## Where credentials live
+## Kde leží přihlašovací údaje
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Chatové tokeny pracovního prostoru leží v **jeho vlastním adresáři, vedle
+databáze**, jako prosté JSON v
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, ne v databázi a
+schválně ne v systémové klíčence. Dva důsledky se později snadno ztratí.
+Smazání pracovního prostoru adresář odlinkuje a tokeny odcházejí s ním. Export
+nebo záloha pracovního prostoru kopíruje `workspace.db`, takže pracovní prostor
+předaný někomu jinému v sobě nenese živé tokeny bota. Soubor dědí hranici
+důvěry souborového systému stroje, na kterém server běží. Kdokoli s právem číst
+datový adresář přečte token bota, a za tou samou hranicí sedí i databáze.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Jeden soubor na poskytovatele, zápis je atomický a práva má jen vlastník.
+Zrušená aplikace zmizí odlinkováním jednoho souboru a poškozený soubor stojí
+jednoho poskytovatele, ne všechny. Přihlašovací údaje putují _dovnitř_ operací
+připojení a nikdy se nevracejí ven. Čtení stavu odpoví jen metadaty spojení.
 
-## What is deliberately not offered
+## Co se záměrně nenabízí
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Strukturální nastavení aplikace.** Přenos, scopes a odběry událostí se
+  vynucují, nevystavují. Aplikace, kterou jde z obrazovky nastavení umlčet, je
+  ticket na podporu, ne funkce.
+- **Konverzace a příkazy s lomítkem.** Plocha Slacku jsou zprávy, odpovědi ve
+  vláknech a příkazy s lomítkem.
+- **Druhý zdroj pravdy.** Chat není místo, kde se práce ukládá. Vlákno Slacku je
+  prostor, odpověď je přepis, ticket je ticket. Všechno v pracovním prostoru,
+  dostupné z každého klienta.
 
-## See also
+## Viz také
 
-- [Multiplayer — identity, membership and presence](/cs-CZ/prirucka/koncepty/multiplayer/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): why links and credentials are per workspace
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): what wakes when a mention arrives
-- [Tickets and delegation](/cs-CZ/prirucka/koncepty/tickety/): what `/cc ticket` files
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/)
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
-- [Link your Slack account](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
-- [Customize the chat bot](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
-- [PR conversations](/cs-CZ/prirucka/koncepty/konverzace-v-pr/): the same three decisions, made for a forge
+- [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): principálové a role, přes které most zprávu rozřeší
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): proč jsou propojení a přihlašovací údaje na každý pracovní prostor
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): co se probudí, když dorazí zmínka
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/): co založí `/cc ticket`
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/): kde most sedí mezi serverem a klienty
+- [Propojte Slack s pracovním prostorem](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Propojte účet Slack](/cs-CZ/prirucka/navody/propojeni-chatoveho-uctu/)
+- [Přizpůsobte chatbota](/cs-CZ/prirucka/navody/prizpusobeni-chatbota/)
+- [Konverzace v PR](/cs-CZ/prirucka/koncepty/konverzace-v-pr/): stejná tři rozhodnutí, tentokrát pro forge

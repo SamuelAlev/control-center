@@ -1,130 +1,140 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Формуйте свою стрічку новин
+description: Додавайте стрічки RSS/Atom і керуйте ними, читайте статті з блокуванням вмісту та знайте, що ваші стрічки супроводжують вас у кожному робочому просторі.
 dateModified: 2026-09-19
 slug: uk-UA/керівництво/практичні-посібники/стрічка-новин
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Цей посібник показує, як формувати стрічку новин: з яких джерел вона бере
+матеріали, як читаються статті та що робить блокування вмісту.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Стрічка новин належить користувачу, а не робочому простору]
+Стрічки та статті належать користувачу, який увійшов: ваш список стрічок, стан
+прочитання та закладки супроводжують вас у кожному робочому просторі й на
+кожному пристрої, де ви входите, і жоден інший користувач їх не бачить. Стрічки
+зберігаються в глобальній базі даних сервера, тож URL `/newsfeed` містить
+ідентифікатор робочого простору лише тому, що так робить кожен маршрут у
+застосунку.
 :::
 
-## Read articles
+## Читання статей
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Натисніть **Стрічка новин** на бічній панелі
+2. Перемикайтеся між **Усі**, **Непрочитані** та **Збережені** за допомогою
+   сегментів на панелі інструментів
+3. Звузьте список полем пошуку або вибором джерела
+4. Перемикайтеся між журнальною сіткою та щільним списком кнопками компонування
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Відкриття статті позначає її прочитаною. Скористайтеся командою **Позначити все
+як прочитане** в заголовку сторінки — вона з’являється, лише коли щось
+непрочитане, — щоб очистити весь список одразу, а елемент керування закладкою на
+картці, щоб зберегти статтю на потім.
 
-The layout choice persists across launches.
+Вибір компонування зберігається між запусками.
 
-## Add a feed
+## Додавання стрічки
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Відкрийте **Налаштування → Ви → Стрічка новин** (значок налаштувань у
+   заголовку стрічки новин веде одразу туди)
+2. Натисніть **Додати стрічку**
+3. Заповніть **назву** та **URL стрічки** (RSS або Atom)
+4. За потреби розгорніть **Розширені** та задайте власний **User-Agent** — деякі
+   видавці відповідають інакше на стандартний клієнт
+5. Натисніть **Додати стрічку**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Перевірка: стрічка з’являється у списку **Стрічки**, а її статті надходять після
+першого завантаження. URL, на який ви вже підписані, відхиляється з
+повідомленням «Стрічка з цим URL уже існує».
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Під час першого використання для кожного користувача додається чотирнадцять
+стрічок: Control Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product
+Hunt, TLDR AI, Import AI, The Pragmatic Engineer, Martin Fowler, Irrational
+Exuberance Вілла Ларсона, The Engineering Manager, Lea Verou і CSS-Tricks.
 
-## Manage feeds
+## Керування стрічками
 
-Each row in the **Feeds** list gives you three controls:
+Кожен рядок у списку **Стрічки** має три елементи керування:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Елемент керування | Дія                                                                        |
+| ----------------- | -------------------------------------------------------------------------- |
+| Перемикач         | Вимкнути стрічку. Вимкнений рядок тьмяніє, і його більше не завантажують    |
+| Значок оновлення  | Завантажити цю стрічку зараз                                                |
+| Значок кошика     | Видалити стрічку після підтвердження                                        |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Оновити все** вгорі списку завантажує всі увімкнені стрічки.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Підзаголовок стрічки показує її опис і те, як давно її завантажували; у стрічки,
+яка зазнала помилки, на цьому місці показано помилку кольором попередження.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Редагування не передбачено — щоб змінити назву стрічки, URL або user agent,
+видаліть її та додайте знову.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Завантаження повністю виконується на сервері: раз на користувача під час запуску
+(і під час першого використання для облікових записів, створених пізніше), а далі
+кожні 30 хвилин.
 
-## Block ads and trackers in the reader
+## Блокування реклами та трекерів у читачі
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. У розділі Налаштування → Ви → Стрічка новин знайдіть **Налаштування читача**
+2. Залиште **Відкривати статті в застосунку** увімкненим, щоб користуватися
+   вбудованим читачем, або вимкніть його, щоб передавати статті системному
+   браузеру
+3. Залиште **Блокувати рекламу, трекери та банери cookies** увімкненим
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Блокування увімкнено за замовчуванням. Вбудований читач доступний лише на macOS і
+Windows: у вебзбірці та на Linux системний браузер _і є_ читачем, і стаття
+відкривається там (у вебі — у новій вкладці). У вебі перемикач блокування, картка
+**Фільтрувати списки** та картка **Довірені сайти** приховані.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Читач у застосунку не переформатовує статтю. Він відображає сторінку видавця у
+вбудованому webview і пригнічує рекламу, трекери та банери cookies за допомогою
+кешованих списків фільтрів.
 
-### Check or update the filter lists
+### Перевірка та оновлення списків фільтрів
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Картка **Фільтрувати списки** показує, скільки правил приховування cookies,
+приховування реклами та мережевого блокування завантажено, а також які параметри
+відстеження вона вирізає і коли списки востаннє оновлювалися. Натисніть
+**Перевірити оновлення**, щоб оновити їх.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Джерела — EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, кілька
+списків uBlock Origin і список параметрів відстеження uBO. Доки завантаження не
+завершиться успішно, картка позначає списки як вбудовані стандартні, які ніколи
+не оновлювалися — кількість правил для реклами, cookies і мережі залишається
+нульовою; вирізання параметрів відстеження все одно використовує вбудований
+стандартний набір.
 
-### Allowlist a site
+### Додавання сайту до дозволених
 
-Some sites break under blocking.
+Деякі сайти ламаються, коли блокування ввімкнено.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. У розділі Налаштування → Ви → Стрічка новин перейдіть до **Довірені сайти**
+2. Натисніть **Додати довірений сайт** і введіть домен
 
-Blocking is skipped there.
+Там блокування пропускається.
 
-## Troubleshooting
+## Вирішення проблем
 
-### A feed I added shows up in another workspace
+### Додана стрічка з’являється в іншому робочому просторі
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Це очікувано. Стрічка новин належить користувачу, а не робочому простору — ваші
+стрічки супроводжують вас усюди, де ви ввійшли. Див. застереження на початку.
 
-### A feed row shows an error instead of a description
+### Рядок стрічки показує помилку замість опису
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Останнє завантаження не вдалося, і рядок показує причину дослівно. Натисніть
+значок оновлення, щоб повторити спробу, і перевірте, чи URL усе ще віддає RSS або
+Atom. Видавцю, який відхиляє невідомих клієнтів, може знадобитися власний user
+agent — для цього видаліть стрічку та додайте її знову.
 
-### An article page renders badly
+### Сторінка статті відображається погано
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Вимкніть **Блокувати рекламу, трекери та банери cookies** для цього домену через
+**Довірені сайти** або вимкніть **Відкривати статті в застосунку** і прочитайте
+статтю в браузері.
 
-## Related guides
+## Пов’язані посібники
 
-- [Configure notifications](/uk-UA/керівництво/практичні-посібники/сповіщення/)
-- [Triage your inbox](/uk-UA/керівництво/практичні-посібники/розібрати-вхідні/)
+- [Налаштувати сповіщення](/uk-UA/керівництво/практичні-посібники/сповіщення/)
+- [Розібрати вхідні](/uk-UA/керівництво/практичні-посібники/розібрати-вхідні/)

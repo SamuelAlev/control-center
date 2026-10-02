@@ -1,137 +1,154 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: Σταθμοί
+description: Κάθε επιφάνεια σταθμού, υποσύστημα, ρήμα ενέργειας, κατάσταση κύκλου ζωής, θύρα, προεπιλογή και σύμβαση — ο πλήρης κατάλογος γεγονότων.
 slug: el-GR/εγχειρίδιο/αναφορά/σταθμοί
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/); to open a machine, follow [the
-guide](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/).
+Μόνο γεγονότα. Για το μοντέλο πίσω από αυτά, διαβάστε [Σταθμοί και
+περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/)· για να ανοίξετε μια μηχανή,
+ακολουθήστε [τον οδηγό](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/).
 
-## Surfaces and backends
+## Επιφάνειες και υποσυστήματα
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Επιφάνεια | Οδηγεί | Υποσύστημα | Τιμή | Περιορισμένη εξερχόμενη κίνηση |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Τερματικό (exec) | Ένα κέλυφος πάνω από το κανάλι εκτέλεσης της VM | microVM | `smolvm` | Ναι |
+| Περιηγητής | Headless Chromium (CDP), Firefox (WebDriver BiDi) ή WebKit (W3C WebDriver) | microVM | `smolvm` | Ναι |
+| Υπολογιστής | Επιφάνεια εργασίας X11: είσοδος μέσω του υπερεπόπτη, σύλληψη μέσω του πράκτορα του φιλοξενούμενου | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (μη επιταχυνόμενη εφεδρική λύση, δεν επιλέγεται ποτέ αυτόματα) | Ναι |
+| Android | Android μέσω ADB | Ο εξομοιωτής της Google | `android-emulator` | **Όχι** — ο εξομοιωτής διαχειρίζεται μόνος του τη δικτύωσή του |
+| iOS | Προσομοιωτής iOS μέσω WebDriverAgent | CoreSimulator | `ios-simulator` | **Όχι** — το δίκτυο ακολουθεί τον Mac του ξενιστή |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Το τερματικό και η επιφάνεια `computer_use` μοιράζονται την τιμή επιφάνειας
+`computer`· το τερματικό ξεχωρίζει από τον δείκτη της εικόνας εκτέλεσής του και
+δεν επαναχρησιμοποιείται ποτέ ως οδηγήσιμη επιφάνεια εργασίας (ούτε το
+αντίστροφο). Μία συνομιλία επαναχρησιμοποιεί μία μηχανή τερματικού.
 
-## Browser engines
+## Μηχανές περιήγησης
 
-| Engine | Value | Protocol | Live view | Stills |
+| Μηχανή | Τιμή | Πρωτόκολλο | Ζωντανή προβολή | Ακίνητες εικόνες |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (προεπιλογή) | Chrome DevTools Protocol | Screencast — ο περιηγητής σπρώχνει καρέ καθώς η σελίδα επαναζωγραφίζεται | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Ακίνητες εικόνες με δειγματοληψία (το BiDi δεν έχει screencast), με ανώτατο όριο 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (κλασικό) | Ακίνητες εικόνες με δειγματοληψία, με κωδικοποίηση από το ffmpeg του ξενιστή | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Ένας σταθμός εκτελεί **μία** μηχανή σε όλη του τη ζωή. Μία συνομιλία μπορεί να
+κρατά έναν σταθμό **ανά μηχανή**, κι αυτό είναι που κάνει δυνατή τη σύγκριση
+δίπλα-δίπλα: το άνοιγμα του «Firefox (VM)» δίπλα στο «Chromium (VM)» είναι δύο
+μηχανές, και το κλείσιμο της μίας αφήνει την άλλη σε λειτουργία.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Περάστε το `engine` στο `rig.open` ή στο εργαλείο `browser_use`. Ένα άγνωστο
+όνομα απορρίπτεται αντί να πέσει στην προεπιλογή — το να ζητήσετε έναν
+περιηγητή και να πάρετε σιωπηλά έναν άλλον απαντά σε ένα ερώτημα συμβατότητας
+με λάθος απάντηση.
 
-Engine-specific limits, stated rather than worked around:
+Όρια ειδικά για κάθε μηχανή, που δηλώνονται αντί να παρακάμπτονται:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- Ο **Firefox** δεν έχει επαναφόρτωση με παράκαμψη της κρυφής μνήμης
+  (απορρίπτει ευθέως το `ignoreCache` του BiDi), οπότε μια σκληρή
+  επαναφόρτωση είναι μια απλή επαναφόρτωση.
+- Το **WebKit** δεν έχει ούτε αυτό επαναφόρτωση με παράκαμψη της κρυφής
+  μνήμης, ούτε ροή κονσόλας (η έξοδος συλλαμβάνεται με άγκιστρο στο `console.*`
+  μετά από κάθε πλοήγηση, οπότε ό,τι καταγράφεται κατά τη φόρτωση χάνεται —
+  κάθε εξαγωγή κονσόλας το δηλώνει), και χρειάζεται `ffmpeg` στον ξενιστή για
+  τη ζωντανή προβολή του.
+- **Καμία από τις δύο** δεν εκθέτει δέντρο προσβασιμότητας της πλατφόρμας
+  μέσω του πρωτοκόλλου της, οπότε το `extract (a11y)` επιστρέφει μια
+  προσέγγιση που παράγεται από το DOM, χαρακτηρισμένη ως τέτοια.
+- **Καμία από τις δύο** δεν δέχεται πραγματική απόθεση αρχείου· μια είσοδος
+  αρχείου μπορεί ωστόσο να δείξει σε διαδρομές μέσα στη μηχανή.
 
-## Machine images
+## Εικόνες μηχανής
 
-| Surface | Image | Fetched |
+| Επιφάνεια | Εικόνα | Λήψη |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Τερματικό | `ubuntu:24.04`, καθηλωμένη σε digest | Αυτόματα στην πρώτη εκκίνηση, μέσω του δικού της φραγμένου δικτύου της μηχανής |
+| Περιηγητής (Chromium, Firefox, WebKit) | `debian:trixie-slim`, καθηλωμένη σε digest, συν τα δικά της πακέτα της μηχανής | Αυτόματα στην πρώτη εκκίνηση και μετά στην προσωρινή μνήμη ως προθερμασμένο πακέτο |
+| Υπολογιστής | Μια εικόνα επιφάνειας εργασίας qcow2 με Chromium, Firefox, WebKit και την ίδια βάση CLI τύπου runner φιλοξενημένου στο GitHub που προθερμαίνει το τερματικό | **Εισαγωγή** στις Ρυθμίσεις → Διακομιστής → Σταθμοί (λήψεις καθηλωμένες σε άθροισμα ελέγχου όπου δημοσιεύονται) |
+| Android | Οι εικόνες συστήματος της Google | Μέσω του Android SDK |
+| iOS | Ένα runtime του Προσομοιωτή Xcode συν WebDriverAgent καθηλωμένο σε άθροισμα ελέγχου | Το runtime μέσω Xcode· η γέφυρα αυτοματοποίησης από τις Ρυθμίσεις → Διακομιστής → Σταθμοί |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Μετά την πρώτη εκκίνηση κάθε είδους microVM, ο διακομιστής αποθηκεύει
+προσωρινά ένα προ-εξαγμένο αντίγραφο στον κατάλογο δεδομένων και εκκινεί κάθε
+επόμενη μηχανή από αυτό — συμπεριλαμβανομένων προθερμασμένων εικόνων με τα
+πακέτα ήδη εγκατεστημένα. Το τερματικό προθερμαίνει ένα σύνολο εργαλείων CLI
+τύπου runner φιλοξενημένου στο GitHub (`git`, `gcc`, `python3`, `jq`, `rsync`,
+εργαλεία αρχειοθέτησης και την υπόλοιπη βάση του apt· όχι Docker ή toolcache
+γλωσσών). Το qcow2 του Υπολογιστή ενσωματώνει τα ίδια ονόματα CLI κατά την
+κατασκευή της εικόνας, δίπλα στο XFCE και στους τρεις περιηγητές. Κάθε
+περιηγητής προθερμαίνει τη μηχανή του. Και οι τρεις μηχανές μοιράζονται μια
+βάση Debian αλλά δεν μοιράζονται ποτέ πακέτο: η κρυφή μνήμη κλειδώνεται με
+βάση την εικόνα, τη μηχανή **και** μια αναθεώρηση ήχου (`audio-v1-<engine>`),
+επειδή μια μηχανή που προθερμάνθηκε για μία μηχανή — ή πριν το PulseAudio και
+το ffmpeg γίνουν μέρος του φόρτου — δεν έχει μέσα της καμία από τις άλλες. Το
+πακέτο του τερματικού κλειδώνεται με βάση μια αναθεώρηση συνόλου εργαλείων
+(`tools-v1`) για τον ίδιο λόγο: ένα πακέτο που προθερμάνθηκε πριν ο
+μεταγλωττιστής γίνει μέρος της εικόνας δεν πρέπει να εξυπηρετεί μια μηχανή που
+υποτίθεται ότι έχει έναν.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Δεν αξίζει να πάρει κανείς μια έτοιμη εικόνα αυτοματοποίησης — το
+`chromedp/headless-shell` του Chromium αποκλείει κατά τη μεταγλώττιση και το
+ALSA και το PulseAudio, οπότε δεν μπορεί ποτέ να βγάλει ήχο· η μόνη
+συντηρούμενη για Firefox είναι 33× το μέγεθος της βάσης Debian και
+εξακολουθεί να μη διαθέτει `socat`· για WebKit δεν υπάρχει καμία
+συντηρούμενη. Έτσι κάθε μηχανή περιήγησης εγκαθίσταται στην πρώτη εκκίνηση
+(`chromium`, `firefox-esr` ή `webkit2gtk-driver`) και φτάνει στα αποθετήρια
+Debian (`deb.debian.org`, `security.debian.org`, `cloudfront.debian.net`) κατά
+τη διάρκεια. Ο Chromium είναι το δυαδικό της διανομής, που εκκινείται ως
+`chromium --headless=new`.
 
-### Per-workspace custom images
+### Προσαρμοσμένες εικόνες ανά χώρο εργασίας
 
-| Setting key | Overrides |
+| Κλειδί ρύθμισης | Παρακάμπτει |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Την εικόνα του Τερματικού (VM) |
+| `rigs.smolvm.browserImage` | Την εικόνα του Περιηγητή (VM) Chromium |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Γράφονται μέσω της αποθήκης ρυθμίσεων χώρου εργασίας που ελέγχεται από
+διαχειριστή (Ρυθμίσεις → Διακομιστής → Σταθμοί → Προσαρμοσμένες εικόνες (αυτός
+ο χώρος εργασίας)). Η τιμή πρέπει να είναι αναφορά registry — τοπικές
+διαδρομές, αρχεία αρχειοθέτησης και συμβολοσειρές που μοιάζουν με σημαίες
+απορρίπτονται, και στο πεδίο και πάλι στην εκκίνηση. Μια άκυρη αποθηκευμένη
+τιμή αγνοείται με θόρυβο και αντί γι' αυτής εκκινεί η προεπιλογή. Το δικό της
+registry της εικόνας (συν γνωστούς συνοδούς blob-CDN για Docker Hub, GHCR,
+Quay, GitLab και GCR) γίνεται δεκτό μέσω της πύλης εξερχόμενης κίνησης για το
+pull.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Σύμβαση εικόνας τερματικού** — παρουσία του `bash`· τα `git`, `curl`,
+`socat` προεγκατεστημένα *ή* μια βάση apt Debian/Ubuntu (το περίβλημα
+εγκαθιστά αυτά τα τρία συν ένα σύνολο εργαλείων CLI τύπου runner φιλοξενημένου
+στο GitHub στην πρώτη εκκίνηση: μεταγλωττιστές, Python 3, `jq`, εργαλεία
+αρχειοθέτησης, `rsync`. Toolcache γλωσσών και Docker δεν εγκαθίστανται).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Σύμβαση εικόνας περιηγητή** — μια βάση apt Debian/Ubuntu (ή τα πακέτα ήδη
+εγκατεστημένα) με `bash` και `socat`, συν ένα δυαδικό `chromium` που ο
+διακομιστής εκκινεί μόνος του ως `chromium --headless=new` με το DevTools στο
+loopback του φιλοξενούμενου `9223`, αναμεταδιδόμενο στη θύρα `9222` του
+φιλοξενούμενου. Τα PulseAudio και ffmpeg εγκαθίστανται στην πρώτη εκκίνηση για
+τη δίοδο ήχου. Μην κάνετε build `FROM chromedp/headless-shell`: το
+`headless.gn` των ανάντη αποκλείει κατά τη μεταγλώττιση και το ALSA και το
+PulseAudio, οπότε αυτό το δυαδικό δεν μπορεί να βγάλει ήχο. Η παράκαμψη ισχύει
+**μόνο για σταθμούς Chromium** — η εντολή φόρτου που εκκινεί είναι του
+Chromium, και το να τη δώσετε σε Firefox ή WebKit θα εκκινούσε ένα δυαδικό που
+δεν υπάρχει. Ένας σταθμός Firefox ή WebKit την αγνοεί με θόρυβο και εκκινεί
+την καθηλωμένη του εικόνα.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Θύρες αυτοματοποίησης** — κάθε μηχανή περιηγητή προωθεί ακριβώς μία θύρα
+loopback του ξενιστή στη θύρα `9222` του φιλοξενούμενου. Πίσω από αυτήν: το
+DevTools του Chromium και ο απομακρυσμένος πράκτορας του Firefox βρίσκονται
+στο loopback του φιλοξενούμενου `9223` με ένα ρελέ `socat` μπροστά (και τα δύο
+δεσμεύουν το loopback χωρίς όρους)· ο οδηγός του WebKit δέχεται ένα `--host`
+και δεσμεύει ο ίδιος την κάρτα δικτύου του φιλοξενούμενου. Ο Firefox επιπλέον
+επικυρώνει την κεφαλίδα `Host` ως προς τη δική του θύρα, οπότε ο πελάτης
+στέλνει το authority της πλευράς του φιλοξενούμενου αντί για εκείνο στο οποίο
+κατέφυγε.
 
-## Action verbs
+## Ρήματα ενεργειών
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Κάθε ενέργεια αναλύεται ολικά: ένα κακοσχηματισμένο φορτίο επιστρέφει ένα
+μήνυμα που ονομάζει το πεδίο, ποτέ μια εξαίρεση. Τα ρήματα παρατήρησης
+(σημειωμένα με ○) παραμένουν επιτρεπτά όσο ένας άνθρωπος κρατά τον έλεγχο· τα
+μεταλλακτικά ρήματα απορρίπτονται.
 
 ### `computer_use`
 
@@ -141,219 +158,243 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Οι συντεταγμένες είναι pixel του φιλοξενούμενου στην τρέχουσα λειτουργία του
+φιλοξενούμενου· κάθε στιγμιότυπο δηλώνει το μέγεθος της οθόνης. Οι συνδυασμοί
+πλήκτρων χρησιμοποιούν τη γραφή του X11 (`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+Το `clipboard_read` δέχεται ένα `selection`: `clipboard` (ό,τι γεμίζει το
+ctrl+C, η προεπιλογή), `primary` (επιλογή-για-αντιγραφή του X11) ή `xdnd` (ένα
+σύρσιμο σε εξέλιξη). Ένα κενό αποτέλεσμα είναι κανονική απάντηση και για τα
+τρία. Το `clipboard_write` δέχεται μόνο `text` — οι εικόνες και τα αρχεία
+ταξιδεύουν στη δίοδο αρχείων, επειδή τα ορίσματα μιας ενέργειας διατηρούνται
+στο μητρώο ελέγχου και τα byte μιας εικόνας δεν έχουν καμία δουλειά εκεί. Το
+περιεχόμενο του προχείρου επιστρέφει περιφραγμένο ως μη αξιόπιστα δεδομένα.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
-`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
+`navigate` (μόνο http/https), `reload` (`hard` προαιρετικό), `stop_loading`,
+`click` (επιλογέας ή συντεταγμένη), `fill`, `type`, `key` (ονόματα πλήκτρων
+DOM), `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+προαιρετικό), `set_viewport` (ελάχιστο 320×240), `history`, `wait_for`○
+(επιλογέας, 0.1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Το περιεχόμενο της εξαγόμενης σελίδας επιστρέφει περιφραγμένο ως μη αξιόπιστα
+δεδομένα.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Ο περιηγητής έχει ακριβώς ένα πρόχειρο, οπότε το `clipboard_read` δεν δέχεται
+`selection`. Και τα δύο ρήματα του προχείρου χρειάζονται **ασφαλές
+περιβάλλον**: μια σελίδα που σερβίρεται μέσω απλού `http://` δεν έχει καθόλου
+API προχείρου, και το ρήμα το λέει αντί να αναφέρει ένα κενό — χρησιμοποιήστε
+εκεί το `type`, που εισάγει στο σημείο του κέρσορα χωρίς να περάσει από
+πρόχειρο.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (ψευδώνυμα `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`menu`, `volume_up`, `volume_down`, `power`, ή οποιοδήποτε `KEYCODE_*`),
+`screenshot`○, `ui_dump`○, `install_apk` (περιορισμένο στο worktree του σταθμού
+και στον κατάλογο δεδομένων του διακομιστή), `start_app`, `stop_app`,
+`clear_app_data`, `uninstall_app`, `open_url` και `shell`. Το `shell` δέχεται
+μια λίστα argv και εκτελείται μέσα στο Android, ποτέ μέσω κελύφους του
+ξενιστή· καλύπτει διαγνωστικά προγραμματιστή όπως τα `logcat`, `dumpsys` και
+`pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+Το `mobile_use` δεν έχει ρήματα προχείρου. Από το Android 10, μόνο η εφαρμογή
+που έχει την εστίαση μπορεί να διαβάσει το πρόχειρο.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, πλήκτρα βέλους ή έναν εκτυπώσιμο χαρακτήρα· προαιρετικούς
+τροποποιητές `command`, `control`, `option` και `shift`), `home`, `lock`,
+`unlock`, `screenshot`○, `ui_dump`○, `install_app` (ένας κατάλογος `.app` του
+προσομοιωτή, περιορισμένος στο worktree του σταθμού ή στον κατάλογο δεδομένων
+του διακομιστή), `start_app`, `stop_app`, `uninstall_app`, `open_url` και
+`spawn`. Το `spawn` δέχεται argv και εκτελεί μέσα στον προσομοιωτή μέσω
+`simctl`· δεν καλεί ποτέ κέλυφος του ξενιστή.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Οι συντεταγμένες είναι **points** της οθόνης iOS, όχι pixel του στιγμιότυπου.
+Η ζωντανή ροή διατηρεί το σταθερό μέγεθος του προσομοιωτή και τον τοποθετεί με
+letterbox αντί να αλλάξει το μέγεθος της συσκευής. Η μεταφορά κειμένου
+προχείρου από τον ξενιστή στον προσομοιωτή και αντίστροφα χρησιμοποιεί την
+ίδια πολιτική άδειας ανά χρήστη και ανά κατεύθυνση όπως οι άλλοι σταθμοί·
+αρχεία και εικόνες δεν γίνονται δεκτά από τη δίοδο pasteboard του iOS.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Κάθε σταθμός δημιουργεί μια συσκευή CoreSimulator που του ανήκει και μια
+συνεδρία WebDriverAgent. Το κλείσιμό του σταματά το WebDriverAgent, τερματίζει
+και διαγράφει αυτή τη συσκευή και αφαιρεί την καταχώρισή της από το μητρώο. Οι
+σταθμοί iOS εκτελούνται μόνο σε διακομιστή macOS με Xcode, εγκατεστημένο
+runtime iOS και την καθηλωμένη γέφυρα αυτοματοποίησης. Δεν παρέχουν εγγύηση
+για ήχο, μικρόφωνο, απόθεση αρχείων, κέλυφος ξενιστή ή περίκλειστο δίκτυο.
 
-### Management tools
+### Εργαλεία διαχείρισης
 
-| Tool | Description |
+| Εργαλείο | Περιγραφή |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Παραθέτει τους σταθμούς ενός χώρου εργασίας με επιφάνεια, κατάσταση, οθόνη και ελεγκτή |
+| `rig_close` | Καταστρέφει έναν σταθμό και απορρίπτει τον δίσκο του |
 
-## Lifecycle
+## Κύκλος ζωής
 
-| Phase | Meaning |
+| Φάση | Σημασία |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Εκκίνηση· η λεπτομέρεια κατάστασης μεταφέρει το τρέχον βήμα αυτολεξεί |
+| `ready` | Προσβάσιμος και δέχεται ενέργειες |
+| `parked` | Σε παύση αδράνειας: οι vCPU σταματούν, η RAM παραμένει στη μνήμη· η επόμενη ενέργεια τον ξυπνά |
+| `closing` | Τερματισμός |
+| `closed` | Έφυγε· η εγγραφή επιβιώνει για το ίχνος ελέγχου |
+| `failed` | Πέθανε ή δεν ξεκίνησε ποτέ· ξεχωρίζει ώστε η διεπαφή να μπορεί να προσφέρει επανάληψη |
 
-| Close reason | Fired when |
+| Αιτία κλεισίματος | Ενεργοποιείται όταν |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Το ζήτησε ένας άνθρωπος ή ένας πράκτορας |
+| `idleTimeout` | Αδράνεια πέραν του διπλάσιου του παραθύρου αδράνειας, ή αποβολή λόγω μνήμης |
+| `ttlExpired` | Εξαντλήθηκε η σκληρή διάρκεια ζωής |
+| `conversationEnded` | Η συνομιλία που τον κατέχει τερματίστηκε |
+| `workspaceGone` | Ο χώρος εργασίας διαγράφηκε ή χάθηκε η ιδιότητα μέλους |
+| `serverShutdown` | Ο διακομιστής σταματά |
+| `backendFailure` | Ο υπερεπόπτης πέθανε από κάτω του |
 
-## Defaults and ceilings
+## Προεπιλογές και ανώτατα όρια
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Τιμή | Τερματικό | Περιηγητής | Υπολογιστής | Κινητό |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| Μνήμη | 512 MB | 2048 MB (Chromium)· 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Σκληρό TTL | 8 h | 2 h | 2 h | 2 h |
+| Παράθυρο αδράνειας | 45 min | 15 min | 15 min | 15 min |
+| Οθόνη εκκίνησης | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Οι ακίνητες εικόνες της διόδου του πράκτορα έχουν ανώτατο όριο **1280×800**·
+  η ανθρώπινη δίοδος διαπραγματεύεται έως **2560×1600**.
+- Ο προϋπολογισμός μνήμης που παραμένει δεσμευμένη στον ξενιστή για όλους τους
+  σταθμούς έχει προεπιλογή **12 GB**, μετρημένο σε megabyte που παραμένουν
+  δεσμευμένα (μια σταθμευμένη VM κρατά ακόμη τη RAM της). Η αποβολή γίνεται με
+  κριτήριο τη λιγότερο πρόσφατη χρήση και δεν παίρνει ποτέ μια μηχανή που
+  κάποιος οδηγεί, παρακολουθεί ή έχει ανοιχτό τερματικό μέσα της.
+- Ένα ανοιχτό τερματικό ή μια δίοδος παρακολούθησης καθηλώνει τον σταθμό ώστε
+  να μην παρκάρει και να μη συγκομίζεται λόγω αδράνειας· το σκληρό TTL ισχύει
+  ακόμη.
 
-## Ports and dev domains
+## Θύρες και domains ανάπτυξης
 
-| Port | Where | Reserved for |
+| Θύρα | Πού | Δεσμευμένη για |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Φιλοξενούμενο τερματικού | Τον πολυπλέκτη θυρών πάνω στον οποίο ταξιδεύει κάθε προώθηση |
+| `9222`, `9223` | Φιλοξενούμενο περιηγητή | Το ρελέ και το τελικό σημείο αυτοματοποίησης (το WebKit δεσμεύει απευθείας το `9222` και δεν χρησιμοποιεί ρελέ) |
+| `80`, `443` | Loopback φιλοξενούμενου περιηγητή | Τις διόδους HTTP/HTTPS των domains ανάπτυξης |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Η ανακάλυψη δειγματοληπτεί τις θύρες TCP σε ακρόαση του φιλοξενούμενου
+  τερματικού κάθε ~4 s, στην πλευρά του διακομιστή.
+- Το πολύ **16** θύρες προωθούνται αυτόματα ανά σταθμό· περισσότερες
+  καταγράφονται στο αρχείο καταγραφής, δεν προωθούνται.
+- Η προώθηση στην πλευρά του ξενιστή δεσμεύει loopback, προτιμώντας τον ίδιο
+  αριθμό θύρας του φιλοξενούμενου· η **Κοινή χρήση στο τοπικό δίκτυο**
+  προσθέτει μια θύρα LAN που εκχωρεί το λειτουργικό σύστημα.
+- Τα domains ανάπτυξης πρέπει να ταιριάζουν με `name.test` ή `name.localhost`
+  (πεζά, ετικέτα έως 63 χαρακτήρες). Ένα domain αντιστοιχίζεται σε μία θύρα.
+- Το HTTPS των domains ανάπτυξης χρησιμοποιεί μια τοπική για τον διακομιστή
+  αρχή έκδοσης πιστοποιητικών (EC P-256, κάτω από `<dataDir>/rigs/tls/`, κλειδιά
+  0600 και ποτέ μέσα σε φιλοξενούμενο) με ένα φύλλο μπαλαντέρ για `*.test` /
+  `*.localhost`. Χωρίς `openssl` στον ξενιστή δεν υπάρχει δίοδος HTTPS· το
+  απλό HTTP δρομολογείται ακόμη.
 
-## Egress defaults
+## Προεπιλογές εξερχόμενης κίνησης
 
-| Surface | Default allowlist |
+| Επιφάνεια | Προεπιλεγμένη λίστα επιτρεπόμενων |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Τερματικό | Η βασική γραμμή του προγραμματιστή στο sandbox (κεντρικοί υπολογιστές κώδικα, μητρώα πακέτων, πάροχοι μοντέλων) + οι καθρέφτες apt του Ubuntu + ο δικός του κεντρικός υπολογιστής κώδικα του worktree |
+| Περιηγητής | `usectrl.dev` (ο ιστότοπος του προϊόντος) — συν τα αποθετήρια Debian στην πρώτη εκκίνηση κάθε μηχανής, όσο εγκαθιστά τα πακέτα της. Η αρχική σελίδα είναι ένα τοπικό έγγραφο `file://` και δεν χρειάζεται εξερχόμενη κίνηση |
+| Υπολογιστής | Κενή — απόρριψη όλων — μέχρι ο καλών να παραχωρήσει κεντρικούς υπολογιστές |
+| Κινητό | Δεν επιβάλλεται (δικτύωση διαχειριζόμενη από τον εξομοιωτή) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Κάθε microVM παίρνει επιπλέον τους κεντρικούς υπολογιστές του registry της
+εικόνας του, μόνο για το pull. Το σύνολο επιτρεπόμενων κεντρικών υπολογιστών
+του μεσίτη διαπιστευτηρίων προκύπτει από την ίδια λίστα επιτρεπόμενων: δεν
+εκδίδεται token για κεντρικό υπολογιστή που το φιλοξενούμενο δεν μπορεί να
+προσεγγίσει.
 
-## Clipboard and file transfer
+## Πρόχειρο και μεταφορά αρχείων
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Και οι δύο κατευθύνσεις αντιγραφής/επικόλλησης, καθώς και το σύρσιμο αρχείων
+μέσα και έξω. Διαθέσιμα σε έναν άνθρωπο που οδηγεί έναν σταθμό· ένας
+πράκτορας παίρνει το πρόχειρο μέσα από τα παραπάνω ρήματα και καμία μεταφορά
+αρχείων (έχει ήδη ένα κέλυφος μέσα στο περίβλημα).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Η διέλευση του προχείρου είναι ανά χρήστη και ανά κατεύθυνση. Η επικόλληση από
+τον ξενιστή στον σταθμό επιτρέπεται εξ ορισμού· η αντιγραφή από τον σταθμό
+στον ξενιστή ζητά επιβεβαίωση (παραχώρηση δέκα λεπτών ή «Να επιτρέπεται
+πάντα» στις Ρυθμίσεις → Διακομιστής → Σταθμοί → Πρόσβαση στο πρόχειρο). Οι δύο
+επιλογές είναι ανεξάρτητες και δεν αποτελούν ποτέ ρύθμιση χώρου εργασίας.
 
-| Lane | Route | Carries |
+| Δίοδος | Διαδρομή | Μεταφέρει |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Πρόχειρο | `GET`/`POST /rig/clipboard/<rigId>` | Κείμενο, ένα PNG/JPEG (≤16 MB) και τις διαδρομές των αρχείων στο πρόχειρο μέσα στο φιλοξενούμενο |
+| Αρχεία | `POST /rig/files/<rigId>` | Έως 64 αρχεία, ≤256 MB το καθένα και ≤512 MB ανά απόθεση, με προαιρετικό σημείο απόθεσης σε pixel του φιλοξενούμενου |
+| Αρχεία | `GET /rig/files/<rigId>?p=<base64url path>` | Τα byte ενός αρχείου, προς τα έξω |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, όχι RPC.** Η υποδοχή RPC κλείνει μια σύνδεση σε εισερχόμενο πλαίσιο
+  πάνω από 256 KB — έναν φραγμό DoS σωστό για εντολές JSON και θανάσιμο για ένα
+  επικολλημένο στιγμιότυπο. Τα byte ταξιδεύουν στο ίδιο είδος διαδρομής που
+  χρησιμοποιούν ήδη τα καρέ των σταθμών και ο ήχος των συσκέψεων.
+- **Επαλήθευση ταυτότητας** είναι ο υπογεγραμμένος στόχος
+  `rig-files:<workspaceId>/<rigId>` συν η ιδιότητα μέλους του χώρου εργασίας —
+  ένας δικός του στόχος, ώστε ένα URL που εκδόθηκε για να *παρακολουθεί* μια
+  μηχανή να μην μπορεί επίσης να γράψει αρχεία μέσα της.
+- **Η ανάληψη ελέγχου ισχύει.** Η εγγραφή στο πρόχειρο και η απόθεση αρχείων
+  είναι μεταλλακτικές και απορρίπτονται όσο κάποιος άλλος κρατά τον έλεγχο· η
+  ανάγνωση του προχείρου και η ανάγνωση ενός αρχείου προς τα έξω είναι
+  παρατήρηση και δεν απορρίπτονται.
+- **Πού προσγειώνονται οι αποθέσεις:** `~/Drops` (επιφάνεια εργασίας),
+  `~/drops` (τερματικό — δίπλα στο worktree, ποτέ μέσα του, ώστε μια απόθεση να
+  μην εμφανίζεται ποτέ ως μη παρακολουθούμενη αλλαγή), `/tmp/cc-drops`
+  (περιηγητής). Ο διακομιστής επιλέγει τον κατάλογο· ο καλών δεν μπορεί να τον
+  ονομάσει. Τα υπάρχοντα αρχεία δεν αντικαθίστανται ποτέ — ένα όνομα που
+  συγκρούεται προσγειώνεται ως `2-name.ext`.
+- **Τι μαθαίνει το φιλοξενούμενο:** μια σελίδα περιηγητή λαμβάνει ένα
+  πραγματικό συμβάν απόθεσης στο ζητούμενο σημείο
+  (`Input.dispatchDragEvent`)· μια επιφάνεια εργασίας παίρνει τα αρχεία μαζί με
+  τα URI τους στο πρόχειρό της, επειδή κανένας ξενιστής δεν μπορεί να συνθέσει
+  σύρσιμο XDND μέσα σε μια αυθαίρετη εργαλειοθήκη χωρίς προνομιούχο δαίμονα
+  μέσα στο φιλοξενούμενο. Η απάντηση δηλώνει ποιο από τα δύο συνέβη.
+- **Το σύρσιμο προς τα έξω** λειτουργεί μόνο στην επιφάνεια εργασίας και
+  διαβάζει το `XdndSelection` του φιλοξενούμενου όσο ένα σύρσιμο είναι σε
+  εξέλιξη. Ένα φορτίο πανομοιότυπο με αυτό που κρατούσε ήδη το φιλοξενούμενο
+  όταν άρχισε το πάτημα αντιμετωπίζεται ως παρωχημένη επιλογή από ένα
+  ολοκληρωμένο σύρσιμο, όχι ως νέα — το X δεν έχει βήμα «το σύρσιμο τελείωσε».
+- **Απαιτήσεις εικόνας:** η εικόνα της επιφάνειας εργασίας πρέπει να είναι
+  πρωτοκόλλου 2 ή νεότερου (κατασκευασμένη αφού προστέθηκε η υποστήριξη
+  προχείρου). Μια παλαιότερη εικόνα απαντά 404 και η εφαρμογή λέει να την
+  ξαναχτίσετε αντί να αναφέρει μια χαλασμένη μηχανή.
+- **Το μητρώο ελέγχου καταγράφει το σχήμα, ποτέ το περιεχόμενο**: οι εγγραφές
+  των `clipboard_read`, `clipboard_write`, `drop_files` και `read_file`
+  μεταφέρουν πλήθη, μεγέθη και διαδρομές. Ένα πρόχειρο είναι το μέρος όπου τα
+  διαπιστευτήρια ζουν για λίγα δευτερόλεπτα κάθε φορά, και τίποτα από αυτά δεν
+  γράφεται.
 
-## Guardrails, events, storage
+## Περιορισμοί, γεγονότα, αποθήκευση
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Τα εργαλεία σταθμών δηλώνουν την κατηγορία ενεργειών **`enclosureControl`**
+  (συν `networkEgress` και `processSpawn` στα εργαλεία χρήσης· τα `mobile_use`
+  και `ios_use` δηλώνουν επίσης `packageInstall`). Το `rig_close` δηλώνει
+  `enclosureControl`· το `rig_list` δεν δηλώνει καμία. Επιτρέπεται εξ ορισμού·
+  οι λειτουργίες μόνο για ανάγνωση την αρνούνται στο σύνολό της· ο δείκτης
+  αυτονομίας ανά χώρο μπορεί να την υποβιβάσει σε «ρώτα πρώτα».
+- Γεγονότα τομέα: `RigClosedEvent` (με την αιτία κλεισίματός του),
+  `RigControlChanged` (ανάληψη ελέγχου / επιστροφή ελέγχου), `RigReaped`
+  (συγκομιδή λόγω αδράνειας, TTL ή μνήμης, μαζί με τον πράκτορα που το
+  οδηγούσε). Το άνοιγμα ενός σταθμού δεν είναι γεγονός. Δείτε τα [γεγονότα
+  τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/).
+- Αποθήκευση: `rig_sessions` και `rig_action_log` στη βάση δεδομένων κάθε
+  χώρου εργασίας. Το αρχείο καταγραφής ενεργειών καταγράφει κάθε συμβάν
+  εισόδου με την οντότητα που το προκάλεσε και μια μονότονη ακολουθία ανά
+  σταθμό· το κείμενο που πληκτρολογήθηκε αποκρύπτεται σε ένα μήκος και ένα
+  hash πριν γραφτεί.
+- Κατάλογος δεδομένων: `rigs/images/` (εισηγμένες εικόνες qcow2),
+  `rigs/smolvm/` (κατάσταση χρόνου εκτέλεσης ανά σταθμό), `rigs/smolvm-packs/`
+  (προ-εξαγμένα πακέτα μηχανής), `rigs/tls/` (η αρχή έκδοσης πιστοποιητικών
+  των domains ανάπτυξης), `rigs/run/` (overlay και seeds του QEMU).
+- Διαδρομές: η ζωντανή προβολή είναι μια καρτέλα σε έναν χώρο ή σε μια σελίδα
+  PR· το `/settings/server/rigs` είναι η οθόνη ρυθμίσεων των Σταθμών.

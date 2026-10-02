@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: บทนำ
+description: Control Center คือศูนย์บัญชาการสำหรับการพัฒนาซอฟต์แวร์ด้วยเอเจนต์หลายตัว
 slug: th-TH/คู่มือ
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center ให้คุณควบคุมฟลีตของเอเจนต์เขียนโค้ด AI สปอว์นเอเจนต์ เฝ้าดูมันทำงานแบบเรียลไทม์ รีวิว PR ของมัน และจัดการรีโป เวิร์กสเปซ และการผสานระบบ — จากแอปเดสก์ท็อปแบบเนทีฟ เบราว์เซอร์ หรือโทรศัพท์ของคุณ
 
 <div className="docs-start not-content">
-  <LinkButton href="/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/th-TH/คู่มือ/ติดตั้ง/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/" icon="right-arrow">เริ่มอย่างรวดเร็ว</LinkButton>
+  <LinkButton href="/th-TH/คู่มือ/ติดตั้ง/" variant="minimal" icon="download">ติดตั้ง Control Center</LinkButton>
 </div>
 
-## What you can do
+## สิ่งที่คุณทำได้
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **ส่งข้อความหาเอเจนต์**: สเปซเป็นวิธีหลักในการขับเคลื่อนฟลีต @-mention เอเจนต์ตัวหนึ่ง แล้วมันจะถูกส่งเข้าสู่ worktree แบบ copy-on-write ของตัวเอง หลายตัวจึงเขียนโค้ดและรีวิวขนานกันได้โดยไม่แตะเช็กเอาต์ของคุณ
+- **ประสานงานคำขอใหญ่**: บอกเป้าหมายให้ตัวประสานงาน อนุมัติแผนของทั้งทีมที่มันเสนอเพียงครั้งเดียว แล้ว[ไปป์ไลน์](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)ที่สร้างขึ้นจะรันแผนนั้น
+- **รีวิวและรวม PR** ด้วยตัวดู diff ในตัว ความคิดเห็นแบบอินไลน์ และรีวิวที่ขับเคลื่อนด้วย AI
+- **มอบเครื่องใช้แล้วทิ้งให้เอเจนต์**: [ริก](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/) คือ VM แบบใช้แล้วทิ้ง — เบราว์เซอร์ เดสก์ท็อป โทรศัพท์ หรือเทอร์มินัลในเอนโคลเจอร์ — ที่เอเจนต์ขับเคลื่อนขณะคุณดูสด ๆ และเข้ายึดต่อได้ เซิร์ฟเวอร์ dev ข้างในถูกส่งต่อไปยัง `localhost` เบราว์เซอร์ของเอเจนต์ และ `https://myapp.test`
+- **ทำให้เวิร์กโฟลว์เป็นอัตโนมัติ** ด้วยไปป์ไลน์แบบ DAG ที่ทริกเกอร์ด้วยเหตุการณ์หรือกำหนดเวลา
+- **จัดการความรู้** ด้วยหน่วยความจำ ข้อเท็จจริง และนโยบายที่จำกัดขอบเขตไว้ที่เวิร์กสเปซ
+- **ติดตามงาน** ด้วยตั๋วงาน โปรเจกต์ และการมอบหมายที่ไม่ผูกกับผู้ขายรายใด
+- **บันทึกการประชุม** ด้วยการเก็บเสียง ถอดเสียง และแยกผู้พูดบนอุปกรณ์ แล้วสรุปเป็นโน้ต รายการสิ่งที่ต้องทำ และการตัดสินใจ
+- **ดูวันของคุณ** ด้วยการซิงค์ Google Calendar การตอบรับ (RSVP) การแจ้งเตือนการประชุม และการบันทึกแล้วเชื่อมโยง
+- **ติดตามฟลีตจากโทรศัพท์**: จับคู่อุปกรณ์กับเซิร์ฟเวอร์ของคุณ แล้วอ่านข้อความ ตอบกลับ และคัดแยกตั๋วงาน โทรศัพท์เลือกเส้นทางที่ดีที่สุดเท่าที่เข้าถึงได้ — ลูปแบ็ก LAN tailnet หรือ TLS — และถอยไปใช้รีเลย์ที่ปิดผนึกแบบต้นทางถึงปลายทางซึ่งส่งต่อเฟรมที่มันอ่านไม่ได้
+- **ขับเคลื่อนเอเจนต์จาก Slack**: เชื่อมเวิร์กสเปซเข้ากับแอปแชทแล้ว mention บอต ตอบกลับในเธรด Slack หรือเปิดตั๋วงานด้วยคำสั่งสแลช — ผ่านการเชื่อมต่อขาออก จึงไม่ต้องมีปลายทางสาธารณะ
+- **ผสานระบบ** กับ GitHub, Linear, Slack, Google Calendar และเครื่องมือ MCP กว่า 100 รายการ
 
-## You do not have to install it
+## คุณไม่จำเป็นต้องติดตั้ง
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+แอปเดียวกันนี้ทำงานในเบราว์เซอร์ของคุณที่
+[app.usectrl.dev](https://app.usectrl.dev) พร้อมฟีเจอร์เดียวกัน
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+ทุกไคลเอนต์ — เดสก์ท็อป เว็บ และโทรศัพท์ — เป็นตัวเรนเดอร์แบบบางบนเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
+ที่เป็นเจ้าของข้อมูลของคุณและลงมือทำงาน เดสก์ท็อปสปอว์นเซิร์ฟเวอร์นั้นให้คุณได้ แต่แท็บ
+เบราว์เซอร์ทำไม่ได้ แอปเว็บจึงเชื่อมต่อกับเซิร์ฟเวอร์ที่คุณรันเอง เซิร์ฟเวอร์นั้นจะวางอยู่บน
+เครื่องของคุณเอง (`ws://localhost:9030` ไม่ต้องใช้ใบรับรอง) หรือบนโฮสต์ระยะไกลที่เข้าถึงได้ผ่าน
+TLS, VPN หรือทันเนลก็ได้
 
-See [Install](/th-TH/คู่มือ/ติดตั้ง/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) for how the three clients relate.
+ดู[ติดตั้ง](/th-TH/คู่มือ/ติดตั้ง/#use-it-in-your-browser) สำหรับเส้นทางเบราว์เซอร์ และ
+[การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) สำหรับความสัมพันธ์ของไคลเอนต์ทั้งสาม
 
-## Next steps
+## ขั้นถัดไป
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/th-TH/คู่มือ/ติดตั้ง/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/th-TH/คู่มือ/บทสอน/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/th-TH/คู่มือ/วิธีทำ/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/th-TH/คู่มือ/แนวคิด/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/th-TH/คู่มือ/อ้างอิง/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="ติดตั้ง" href="/th-TH/คู่มือ/ติดตั้ง/" description="ดาวน์โหลด ความต้องการของระบบ และตำแหน่งที่เซิร์ฟเวอร์รัน" />
+  <LinkCard title="เริ่มอย่างรวดเร็ว" href="/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/" description="เส้นทางสั้นที่สุดที่ครบถ้วนสู่เอเจนต์ที่ทำงานบนรีโปของคุณ" />
+  <LinkCard title="บทสอน" href="/th-TH/คู่มือ/บทสอน/" description="บทเรียนที่ยาวขึ้น เรียงตามลำดับ เริ่มจากเวิร์กสเปซแรกของคุณ" />
+  <LinkCard title="คู่มือวิธีทำ" href="/th-TH/คู่มือ/วิธีทำ/" description="สูตรสำเร็จทีละหนึ่งงาน: เพิ่มรีโป ตั้งค่ากฎคุม หรือจับคู่โทรศัพท์" />
+  <LinkCard title="แนวคิด" href="/th-TH/คู่มือ/แนวคิด/" description="ทำไมผลิตภัณฑ์จึงทำงานเช่นนี้ เริ่มจากการปรับใช้และไคลเอนต์" />
+  <LinkCard title="อ้างอิง" href="/th-TH/คู่มือ/อ้างอิง/" description="ตารางครบถ้วนของเส้นทาง เครื่องมือ MCP ทางลัดแป้นพิมพ์ และเหตุการณ์โดเมน" />
 </div>

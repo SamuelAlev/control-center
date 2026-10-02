@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Agenten parallel uitvoeren
+description: Start meerdere agenten tegelijk en zorg dat hun werk niet met elkaar botst.
 slug: nl-NL/handleiding/gidsen/parallelle-agenten
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Deze gids laat zien hoe je meerdere agenten tegelijk laat draaien zonder dat ze elkaars werk overschrijven.
 
-## The unit of isolation is the space, not the agent
+## De eenheid van isolatie is de ruimte, niet de agent
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Wanneer er werk in een ruimte start, provisioneert Control Center één copy-on-write-checkout per geregistreerde repo onder de eigen root van die ruimte, op een branch die is afgeleid van het branch-sjabloon van de werkruimte. Elke agent in de ruimte krijgt vervolgens zijn eigen overlay-werkmap — maar de overlays **delen** de map `repos/` van die ruimte.
 
-So:
+Dus:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Twee agenten in **verschillende ruimtes** werken in verschillende checkouts, op verschillende branches. Dat is echte isolatie.
+- Twee agenten in **dezelfde ruimte** werken in dezelfde checkout, op dezelfde branch. Hun overlaypaden verschillen, dus de dispatchpad-vergrendeling (die runs alleen serialiseert wanneer ze dezelfde werkmap aanvragen) serialiseert hen evenmin. Ze kunnen op hetzelfde moment dezelfde bestanden schrijven.
 
-The rule that follows: **one space per parallel task.**
+De regel die daaruit volgt: **één ruimte per parallelle taak.**
 
-## Run tasks in parallel — separate spaces
+## Taken parallel uitvoeren — aparte ruimtes
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Open een ruimte met agent A en stuur er een taak naartoe.
+2. Open een tweede ruimte met agent B en stuur er een andere taak naartoe.
+3. Beide starten meteen, elk in de checkout van zijn eigen ruimte op zijn eigen branch.
 
-This is the recipe to use whenever the agents will be editing files.
+Dit is het recept om te gebruiken wanneer de agenten bestanden gaan bewerken.
 
-## Work together in one space — several mentions
+## Samenwerken in één ruimte — meerdere vermeldingen
 
-In a single space, @-mention more than one agent:
+Vermeld in één ruimte meer dan één agent met @:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Beide agenten starten parallel en streamen naar dezelfde ruimte, met de afzender erbij gemarkeerd. Omdat ze de checkout van de ruimte delen, gebruik je dit voor samenwerking — de één schrijft, de ander leest, of twee agenten redeneren over dezelfde tree — niet voor twee onafhankelijke bewerkingen.
 
-## Fan out from a pipeline
+## Uitwaaieren vanuit een pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Het ingebouwde `pr_review`-sjabloon is het meegeleverde voorbeeld van een fan-out: meerdere reviewernodes draaien gelijktijdig vanuit één trigger en een node **Consolidate (join)** vouwt hun bevindingen samen tot één rapport. Draai het vanaf het pipelinescherm en elke reviewer start parallel.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+De pipeline-editor verbergt de terminale sentinel en verbindt hem opnieuw zodat hij op elke actieve sink wacht wanneer je een stap toevoegt of verbindt, dus takken die je zelf tekent draaien wel.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Een ticket toewijzen start niets]
+Een ticket aan een agent toewijzen legt eigenaarschap vast. Er is geen ticketdispatcher — `TicketAssigned` is een auditsignaal en er begint geen werk mee. De enige uitzondering is een ticket dat aan een _team_ is toegewezen, want dat maakt de leider van dat team wakker.
 :::
 
-## Watch them run
+## Ze aan het werk zien
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observeerbaarheid → Live** (voettekst van de zijbalk → Observeerbaarheid, dan het tabblad Live) toont de agentenlijst van deze werkruimte, die elke seconde opnieuw bijwerkt: status (actief / inactief / geparkeerd / afgebroken), wat elke agent doet, tokens en kosten van zijn laatste run en een stopknop voor een draaiend proces. Als je een rij selecteert, wordt er een lade met het live transcript vastgezet.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Instellingen → Werkruimte → Agenten** toont dezelfde lijst met een andere statusvocabulaire die op aandacht is gericht en is afgeleid van de rungeschiedenis van elke agent — actief, geblokkeerd, mislukt, inactief, nog geen uitvoeringen — gesorteerd zodat alles wat aandacht nodig heeft bovenaan komt. Het tabblad **Logboeken** van elke agent bevat zijn eigen rungeschiedenis.
 
-Both surfaces are scoped to the active workspace.
+Beide oppervlakken zijn beperkt tot de actieve werkruimte.
 
-## Handle conflicts
+## Conflicten oplossen
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Tussen ruimtes staat elke ruimte op zijn eigen branch, dus een botsing komt naar boven als een gewoon Git-mergeconflict wanneer je de tweede pull request merget. Los het op zoals je elk mergeconflict zou oplossen.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Binnen één ruimte is er geen branchgrens en geen vergrendeling: de agenten schrijven live naar dezelfde bestanden en de verliezer wordt gewoon overschreven. Wil je twee agenten in één ruimte laten bewerken, splits het werk dan in plaats daarvan in twee ruimtes.
 
-To reduce collisions either way:
+Om botsingen te beperken, in beide gevallen:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/).
-- Review and merge each agent's pull request promptly.
+- Geef elke agent een eigen scope — andere bestanden, andere modules.
+- Gebruik de codegraph om te controleren wat een wijziging raakt voordat je hem dispatcht. Zie [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/).
+- Review en merge de pull request van elke agent snel.
 
-## Resource considerations
+## Overwegingen rond resources
 
-Each running agent costs:
+Elke draaiende agent kost:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Een checkout van de ruimte — verwaarloosbaar op schijf zolang copy-on-write beschikbaar is; op Windows een `git worktree`. Een bestandssysteem dat niet kan reflinken laat de provisioning mislukken in plaats van te kopiëren.
+- Een proces op de serverhost
+- Modeltokens, die per agent oplopen
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/nl-NL/handleiding/gidsen/kosten-beheren/) for the two commands that do have one.
+Kosten komen terecht in **Observeerbaarheid → Overzicht**. Let op: een normale interactieve beurt heeft geen bestedingsplafond; zie [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/) voor de twee commando's die er wel een hebben.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/)
-- [Build an agent team](/nl-NL/handleiding/gidsen/agententeam-opbouwen/)
-- [Manage costs](/nl-NL/handleiding/gidsen/kosten-beheren/)
-- [Add repos to a workspace](/nl-NL/handleiding/gidsen/repos-toevoegen/)
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/)
+- [Een agententeam opbouwen](/nl-NL/handleiding/gidsen/agententeam-opbouwen/)
+- [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/)
+- [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/)

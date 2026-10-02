@@ -1,129 +1,129 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: نصب و مدیریت مهارت‌ها
+description: افزودن مخزن‌های GitHub به‌عنوان منبع مهارت، مرور فهرست‌های آن‌ها، و نصب، به‌روزرسانی یا حذف نصب مهارت‌ها از دروازهٔ اسکن آنتی‌ویروس.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-مهارتها
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+این راهنما نشان می‌دهد چگونه یک فضای کاری را با مهارت‌هایی از GitHub پر کنید: یک
+مخزن را به‌عنوان منبع اضافه کنید، مهارت‌های دلخواه‌تان را از آن نصب کنید و آن‌ها را
+در طول زمان به‌روز نگه دارید.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/); this page stays
-on the doing.
+نکتهٔ مهمی که پیش از شروع باید بدانید: **مخزن منبع مورد اعتماد نیست.** نام، توضیح
+و تعداد ستارهٔ آن را هر کسی که مالکش است می‌نویسد. تنها سیگنال ایمنی‌ای که Control
+Center به آن اعتماد می‌کند حکم اسکن آنتی‌ویروس است که هر نصب پیش از رسیدن هر چیزی
+به دیسک یا پرامپت یک عامل از آن می‌گذرد. اگر می‌خواهید استدلالش را بخوانید،
+[بخش مهارت‌های مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) را ببینید؛ این
+صفحه به جنبهٔ عملی می‌پردازد.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+مهارت‌ها در **تنظیمات → فضای کاری → مهارت‌ها**
+(`/workspaces/<id>/settings/workspace/skills`) قرار دارند. دامنهٔ آن‌ها فضای کاری
+است: مهارت‌هایی که اینجا نصب می‌کنید فقط به همین فضای کاری تعلق دارند. این صفحه
+شامل دو زبانه است: **نصب‌شده** (مهارت‌های محلی، همراه با یک ویرایشگر
+**مهارت جدید**) و **منابع** (فهرست‌های GitHub). هر دو نوشتن از همان دروازهٔ اسکن
+عبور می‌کنند.
 
-## Add a skill repository
+## افزودن یک مخزن مهارت
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. **تنظیمات → فضای کاری → مهارت‌ها** را باز کنید و به زبانهٔ **منابع** بروید.
+2. روی **افزودن مخزن** بزنید.
+3. نشانی یک مخزن GitHub، مثلاً `https://github.com/anthropics/skills`، را
+   جای‌گذاری کنید و تأیید کنید.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+سرور بررسی می‌کند که مخزن وجود دارد و با اعتبارنامه‌هایش قابل مشاهده است، سپس آن
+را به نوار سمت چپ می‌افزاید. هیچ فروشگاه گزینش‌شده‌ای در میان نیست: هر مخزن
+GitHub کار می‌کند، و همین یعنی داوری دربارهٔ اعتبار آن کار خودتان است — تعداد
+ستاره شاهد است، نه تضمین.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+مهارت‌های یک مخزن همان پوشه‌هایی هستند که یک `SKILL.md` دارند (تا سه سطح عمق،
+به‌علاوهٔ چیدمان بازار افزونهٔ Claude با قالب
+`plugins/<plugin>/skills/<skill>`، و با نادیده گرفتن درخت‌های وابستگی و فروشنده).
+اگر شبکه بعداً بگوید این مخزن مهارتی ندارد، معنایش همین است: هیچ پوشه‌ای در آن با
+قرارداد مهارت مطابقت نمی‌کند.
 
-## Inspect a skill before installing
+## بررسی یک مهارت پیش از نصب
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+یک مخزن را در نوار انتخاب کنید؛ مهارت‌هایش به‌صورت شبکه‌ای در سمت راست نمایان
+می‌شوند و بالای آن یک فیلد فیلتر قرار دارد که فهرست را بر پایهٔ نام، توضیح یا
+slug محدود می‌کند. برای باز کردن نمای جزئیات روی یک کارت کلیک کنید. سه چیز را
+نشان می‌دهد:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**، که به‌صورت مارک‌داون رندر می‌شود — فایل `README.md` پوشهٔ مهارت،
+  یا بدنهٔ `SKILL.md` وقتی README وجود ندارد.
+- **پیش‌نمایش اسکن** — حکم (`pass`، `warn` یا `quarantine`)، قابلیت‌هایی که
+  محتوای مهارت اعلام می‌کند (اجرای شل، نوشتن فایل، دسترسی به شبکه…) و هر یافته‌ای
+  که اسکنر ثبت کرده است.
+- **تعداد فایل‌ها** — نصب، تمام پوشهٔ مهارت را می‌نویسد، نه فقط `SKILL.md` آن.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+پیش‌نمایش دقیقاً همان بایت‌هایی را اسکن می‌کند که نصب خواهد نوشت، پس حکمی که
+می‌بینید همان حکمی است که نصب دریافت می‌کند؛ هیچ چیزی پشت سر شما بازداوری
+نمی‌شود.
 
-## Install a skill
+## نصب یک مهارت
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. نمای جزئیات مهارت را باز کنید.
+2. حکم اسکن را بخوانید. برای حکم `warn` یا `pass`، روی **نصب** بزنید.
+3. برای حکم `quarantine`، دکمهٔ نصب غیرفعال می‌ماند تا
+   **ریسک را می‌فهمم — به‌هرحال نصب کن** را تیک بزنید. این نادیده‌گرفتن ثبت
+   می‌شود، نه فرض.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+نصب پوشهٔ مهارت را در فضای کاری می‌نویسد، یک pin در `skills-lock.json` ثبت
+می‌کند (مخزن منبع، مسیر، کامیتی که از آن آمده و هش محتوا) و مهارت برای عامل‌های
+آن فضای کاری در دسترس قرار می‌گیرد. کارتی که **نام در حال استفاده** خورده باشد
+یعنی مهارت دیگری از قبل آن نام را به‌صورت محلی در اختیار دارد — ابتدا آن یکی را
+حذف نصب کنید.
 
-## Update skills over time
+## به‌روزرسانی مهارت‌ها در طول زمان
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+کارت‌های مهارت‌های نصب‌شده نشان حمل می‌کنند: **نصب‌شده**، یا
+**به‌روزرسانی موجود** وقتی مخزن از کامیتی که pin کرده‌اید جلوتر رفته باشد. نمای
+جزئیات را باز کنید و روی **به‌روزرسانی** بزنید تا در کامیت جدید دوباره واکشی شود.
+به‌روزرسانی از همان دروازهٔ اسکن نصب می‌گذرد — مهارتی که نسخهٔ جدیدش قرنطینه شود
+رد می‌شود و همان نسخه‌ای که داشتید سر جای خود می‌ماند. هش نسخهٔ قدیمی به‌عنوان
+مرجع بازگردانی در قفل نگه داشته می‌شود.
 
-## Uninstall a skill, remove a repository
+## حذف نصب یک مهارت، برداشتن یک مخزن
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**حذف نصب** (در نمای جزئیات یک مهارت نصب‌شده، یا حذف در زبانهٔ نصب‌شده) پوشهٔ
+مهارت و pin قفلش را با هم برمی‌دارد — مهارت حذف‌نصب‌شده چیزی پشت سر نمی‌گذارد.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**برداشتن یک مخزن** از نوار فقط فهرست را برمی‌دارد: مهارت‌هایی که از آن نصب
+کرده‌اید نصب‌شده می‌مانند و همچنان به‌روزرسانی می‌شوند، چون یک pin مخزن را با نام
+ثبت می‌کند نه با ارجاع به مدخل منبع. اگر می‌خواهید دوباره مرورش کنید، مخزن را
+بازافزودن کنید.
 
-## Invoke a skill
+## فراخوانی یک مهارت
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+مهارت‌ها زیر فضای نام خودشان فراخوانی می‌شوند، پس هرگز با دستورات اسلش داخلی
+(`/plan`، `/goal`، `/loop`، `/compact`) برخورد نمی‌کنند:
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — مهارتی که در این فضای کاری نصب شده، یا به عامل پیوست شده است
+- `/skill:<repo>:<name>` — مهارتی که از مخزنی که در این فضا چک‌اوت شده عرضه می‌شود
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+یک نام لخت غیرداخلی هم هنوز حل می‌شود، برای پیام‌هایی که پیش از وجود فضای نام
+نوشته شده‌اند. چیزی که به مهارتی به نام `plan` می‌رسد `/skill:plan` است؛ `/plan`
+همیشه دستور داخلی است.
 
-## Repo-scoped skills
+## مهارت‌های محدود به مخزن
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+یک مخزن چک‌اوت‌شده می‌تواند مهارت‌های خودش را در `.agents/skills/`،
+`.agent/skills/`، `.claude/skills/`، `.opencode/skills/` یا `skills/` عرضه کند.
+آن‌ها از این صفحه **نصب نمی‌شوند**. یک عامل فقط مهارت‌های مخزنی را که هم‌اکنون در
+آن کار می‌کند با خود دارد؛ با جابه‌جایی، آن‌ها عوض می‌شوند. ویرایشگر پیام این‌طور
+محدود نشده است: `/skill:<repo>:<name>` به هر مخزنی در فضا می‌رسد.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+مهارت‌های مخزن پیش از رسیدن فرانت‌مترشان به پرامپت، از همان اسکن بسته‌در‌برابر‌خطا
+(`pass` / `warn` / `quarantine`) می‌گذرند. `warn` پذیرفته می‌شود؛ `quarantine`
+نگه داشته می‌شود، بدون هیچ نادیده‌گرفتن از سوی اپراتور در آن مسیر.
 
-See [Repo-scoped skills](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills) and
-[Slash commands](/fa-IR/راهنمای-کاربر/مرجع/دستورات-اسلش/).
+[مهارت‌های محدود به مخزن(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills) و
+[دستورات اسلش(/fa-IR/راهنمای-کاربر/مرجع/دستورات-اسلش/) را ببینید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)

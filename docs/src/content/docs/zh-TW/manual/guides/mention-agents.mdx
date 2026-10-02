@@ -1,121 +1,79 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@提及代理"
+description: 在空間中提及代理即可派送它們，提及隊友則會通知他們。
 slug: zh-TW/手冊/操作指南/提及代理
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+本指南說明如何在空間中 @提及代理與隊友。
 
-## Mention an agent
+## 提及代理
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+在輸入區輸入 `@`，從自動補全中挑選一個代理，或自行輸入名稱：
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+被提及的代理若還不是該空間的參與者，會以參與者身分加入該空間，並帶著該空間的情境與模式被派送。未被提及的參與者會看到訊息，但不會被派送。
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+如果你送出一則沒有提及任何代理的訊息，Control Center 會自行挑選回應者：先是該對話中最後發言的代理，否則在對話有擁有者時選該擁有者，再否則選空間參與者中的第一個頂層代理。在只有一個代理的空間裡，那永遠是那唯一的代理。
 
-## Know how a name is matched
+## 了解名稱如何比對
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+一個提及 token 以**不區分大小寫**的方式，依**精確名稱或前綴**比對。因此 `@arch` 能觸及名為 `architect` 的代理，`@Alice` 能觸及 `alice`。
 
-Two consequences worth planning around:
+有兩個後果值得事先規劃：
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **短 token 不是錯誤。** 如果兩個代理共用一個前綴，先被找到的那個勝出，而究竟是哪一個取決於排序——不是取決於任何平局規則。名稱有重疊時，請一律使用完整名稱。
+- **只有字母、數字與底線屬於 token 的一部分。** 解析器比對 `@(\w+)`，因此 `@code-reviewer` 會被讀成 token `code`，`@my agent` 會被讀成 `my`。名稱中含有連字號、點或空格的代理無法被可靠地提及——包括透過自動補全，因為它會把名稱當作純文字插入。命名代理時請用單一詞彙，或使用底線。
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+提及會在文字送達代理之前從文字中被剝除。因此，一則*只有*提及的訊息（`@alice`）不會派送任何東西——給它一點事情做。
 
-## Mention several agents at once
+## 一次提及多個代理
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+兩個代理會並行派送進同一個對話，而且都會收到完整訊息。
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+它們也會**共用該空間的工作樹**。儲存庫工作樹是按空間佈建，而不是按代理；每個代理都會取得自己的覆蓋層工作目錄，用來放它的 `AGENTS.md`、技能與設定，而共用的儲存庫則以讀寫方式連結進來。因此被一起提及的兩個代理，會看見彼此的修改——也會與之衝突。
 
-## Mention a teammate
+## 提及隊友
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+任何沒有比對到代理的 `@token`，都會以同樣不區分大小寫的精確或前綴規則，依代稱與工作區的人類成員比對。
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+一個解析成功的人類提及**不會派送任何東西**。它只是搭在訊息的詮釋資料上，純粹是為了讓通知路由器能提醒那個人。
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+代理名稱一律優先嘗試，而已經被某個代理取用的 token 絕不會再提供給成員清單——一個 `@word` 永遠只能解析到一個主體。
 
-## What the agent receives
+## 代理會收到什麼
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+被派送的代理會在它的提示詞中取得一個「Summons」區塊，寫明是誰召喚了它，並列出空間名冊——其他代理（標示為頂層或從屬）與人類成員——好讓它知道自己可以向誰交接。該區塊也會告訴它，在回覆中提及另一個代理會喚醒那個代理，而提及它自己則會被忽略。
 
-## When an agent mentions an agent
+## 當代理提及另一個代理
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+代理可以在自己的回覆中交接。當一個回合**乾淨地結束**時，它文字中的提及會被解析，那些代理會被加入該空間，並被派送進同一個對話，以該次提及所在的回合作為它們的提示詞。失敗或被中斷的回合不會喚醒任何人——它在思考到一半時就停了。
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+這些規則刻意比輸入區的規則更嚴格，因為沒有任何人在盯著看，好在猜錯時加以糾正：
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **只比對精確名稱。** 不做前綴比對。人類輸入 `@arch` 會觸及 `architect`；來自代理時，它誰也觸及不了。一個會比對到兩個代理的名稱同樣誰也觸及不了。
+- **程式碼不算一般文字。** 圍欄程式碼區塊或 `` `backticks` `` 內的提及會被忽略，因此引用 `@Override` 註解或 `pip install foo@1.2` 是安全的。未閉合的圍欄會讓其後的一切失效。
+- **緊黏在前一個 token 上的 `@` 不算提及**——`sam@host.com`、`pkg/@scope` 與 `node@20` 都解析不到任何人。
+- **連字號會被保留**，因此 `@code-reviewer` 會解析為它本身，而不是 token `code`。
+- **每個回合最多三個代理。** 一個代理在摘要中列出六個隊友，是在列出它們，而不是在召喚它們。
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+喚醒鏈的界線方式與委派相同：**深度 3**，而已經在這條鏈上的代理不能再被它喚醒（不得出現 `A → B → A`）。一個有序配對也會跨鏈受到速率限制。被拒絕的喚醒會向對話發布一則系統訊息，說明哪個提及未被送達以及原因——無法解析的名稱則不會，否則句子裡任何一個 `@` 都會自說自話。
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+如果一次交接不能依賴一般文字——例如請求／回覆，或要觸及空間之外的代理——請改用 `send_to_agent`、`ask_agent` 與 `delegate_task` 這些工具。
 
-## Related guides
+## 相關指南
 
-- [Chat with an agent](/zh-TW/手冊/操作指南/與代理聊天/)
-- [Use spaces](/zh-TW/手冊/操作指南/空間/)
-- [Run agents in parallel](/zh-TW/手冊/操作指南/並行代理/)
+- [與代理聊天](/zh-TW/手冊/操作指南/與代理聊天/)
+- [使用空間](/zh-TW/手冊/操作指南/空間/)
+- [並行執行代理](/zh-TW/手冊/操作指南/並行代理/)
 
-## Related concepts
+## 相關概念
 
-- [Dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/)
+- [代理派送生命週期](/zh-TW/手冊/概念/派送生命週期/)

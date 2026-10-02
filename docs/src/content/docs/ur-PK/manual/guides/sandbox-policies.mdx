@@ -1,193 +1,196 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: سینڈ باکس پالیسیاں کنفیگر کریں
+description: کسی ایجنٹ کے رن کو کیا محدود کرتا ہے، یہ کیسے جانیں کہ OS سینڈ باکس اسے لپیٹ رہا ہے یا نہیں، اور سرور اصل میں کون سی قابلیت کی سیٹنگز پڑھتا ہے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/سینڈ-باکس-پالیسیاں
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+کسی ایجنٹ کا رن سینڈ باکس میں چلے گا یا نہیں، یہ سرور پر، بوٹ کے وقت طے ہوتا ہے
+(`--sandbox`)۔ **سینڈ باکسنگ فعال کریں** ٹوگل، **بیک اینڈ** چننے والا کنٹرول اور
+**ترتیبات → سرور → تشخیص اور پرائیویسی** کے تحت **ڈیفالٹ صلاحیتیں · نئی اسپیسز**
+ٹوگلز آپ کے ڈیوائس پر محفوظ ترجیحات ہیں۔ **سینڈ باکسنگ** کارڈ کی ہوسٹ جانچ بتاتی
+ہے کہ سرور کا ہوسٹ کس چیز کو لپیٹ سکتا ہے۔
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+کسی رن تک دو کنٹرول پہنچتے ہیں اور یہ گائیڈ دونوں کا احاطہ کرتی ہے: نیچے دی گئی
+فی ایجنٹ **سینڈ باکس اجازتیں** اور سرور کا اپنا `--sandbox` فلیگ۔
 
-## What constrains an agent run
+## ایک ایجنٹ کے رن کو کیا محدود کرتا ہے
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+ایک ایجنٹ کو چھ چیزیں باندھتی ہیں۔ پہلی OS سینڈ باکس ہے اور یہی وہ ہے جو مشروط
+ہے — باقی پانچ ہر ہوسٹ پر قائم رہتی ہیں۔
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| حد | یہ کیا کرتی ہے |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| OS سینڈ باکس | macOS پر Seatbelt، Linux اور WSL2 پر bubblewrap۔ Claude Code CLI، ACP اڈاپٹرز اور ہارنس کے `bash` ٹول کو لپیٹتا ہے۔ **Windows پر اور اُن Linux ہوسٹس پر موجود نہیں جہاں `bwrap` اور `socat` نہ ہوں** |
+| اس کی اپنی worktree | ہر گفتگو کو copy-on-write چیک آؤٹ ملتا ہے۔ اصل چیک آؤٹ رن میں رائٹ سے انکار والے پاتھ کے طور پر شامل کر دیا جاتا ہے اور اسی کو نافذ کرنے والی چیز سینڈ باکس ہے |
+| بروکر کے ذریعے جاری کریڈنشلز | کریڈنشل بروکر ایجنٹ کی صلاحیتوں سے ہر رن کے لیے ماحول تیار کرتا ہے اور رن کے اختتام پر اسے منسوخ کر دیتا ہے۔ قابلیت نہ ہو تو ماحول میں ٹوکن بھی نہیں ہوتا |
+| ایکشن گارڈریلز | ہر تبدیلی لانے والا ٹول اپنی اثر کلاسز ظاہر کرتا ہے اور گارڈ کال چلنے سے پہلے اُن کا تعین کرتا ہے۔ کوئی `prompt` جس سے کوئی منظور کنندہ منسلک نہ ہو، مسترد کر دیا جاتا ہے |
+| ماحول کی صفائی | ACP اور ہارنس کے `bash` ٹول کو چھنا ہوا ماحول ملتا ہے۔ `NoSandboxAdapter` کے ذریعے Claude Code ہوسٹ کا ماحول ورثے میں پاتا ہے |
+| موڈ کا ٹول سرفیس | ریڈ اونلی موڈ worktree میں تبدیلی کرنے والے ٹولز سرے سے نکال دیتا ہے اور موڈ کے اپنے آؤٹ پٹ فعل کو پن کر دیتا ہے تاکہ وہ پھر بھی حوالے کر سکے |
 
-Three things stay weaker than they look:
+تین چیزیں دکھنے سے زیادہ کمزور رہ جاتی ہیں:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- صرف **بلٹ اِن ہارنس** ہی ٹول گیٹ، تکمیل کے معاہدے اور موڈ کے ساختی قواعد نافذ
+  کرتا ہے۔ Claude Code اڈاپٹر نہیں کرتا۔ خاص طور پر Claude Code کو
+  `--dangerously-skip-permissions` کے ساتھ لانچ کیا جاتا ہے، کیونکہ غیر تعاملی
+  `claude -p` ورنہ اپنے ہی پرامپٹ پر ہمیشہ کے لیے بلاک ہو جاتا — چنانچہ Claude کی
+  اپنی read، write، edit اور bash کالز نہ Control Center دیکھتا ہے اور نہ اُن پر
+  گیٹ لگاتا ہے۔ جہاں سینڈ باکس آن ہو، وہی اُن کے گرد سرحد ہے۔
+- ہارنس کے اِن پروسیس فائل ٹولز (read، write، edit، apply patch، search،
+  find، search_files) سرور پروسیس کے اندر چلتے ہیں، اس لیے کوئی سینڈ باکس
+  پروفائل اُنہیں محدود نہیں کرتا۔ صرف `bash` ٹول سینڈ باکس شدہ کمانڈ رنر سے
+  گزرتا ہے۔ وہ ٹولز اپنے پاتھ کنفائنمنٹ کے ساتھ ایکشن گارڈریلز سے بندھے ہوتے
+  ہیں۔
+- جس ہوسٹ کے پاس کوئی بیک اینڈ نہ ہو وہاں پہلی قطار بالکل لاگو نہیں ہوتی۔ ACP
+  اور ہارنس کا `bash` ٹول ماحول کی صفائی کے علاوہ کمانڈ پالیسی پر واپس چلے
+  جاتے ہیں؛ Claude Code `NoSandboxAdapter` کے ذریعے ہوسٹ کا ماحول ورثے میں
+  پاتا ہے۔ سرور یہ اپنے اسٹارٹ اپ لاگ میں بتا دیتا ہے۔ نیچے اپنا معاملہ جانچیں۔
 
-## Set an agent's capabilities
+## ایجنٹ کی صلاحیتیں مقرر کریں
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+یہ واحد قابلیت کنٹرول ہے جو سرور پڑھتا ہے۔ یہ فی ایجنٹ ہوتا ہے اور طے کرتا ہے کہ
+کریڈنشل بروکر اُس ایجنٹ کے ماحول میں کیا رکھتا ہے۔
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. **ترتیبات → ورک اسپیس → ایجنٹس** پر جائیں
+2. فہرست میں سے ایجنٹ منتخب کریں
+3. **ترتیبات** ٹیب پر **سینڈ باکس اجازتیں** تک اسکرول کریں
+4. سوئچ آن کریں — قطار کا کیپشن **ورک اسپیس ڈیفالٹ استعمال کریں** سے بدل جاتا ہے
+5. چاروں ٹوگلز مقرر کریں:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| ٹوگل | یہ کس چیز کا گیٹ ہے |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **git push کی اجازت دیں** | اس کے بند ہونے پر رن کو `GIT_ASKPASS=/usr/bin/false` اور `GIT_TERMINAL_PROMPT=0` ملتا ہے، اس لیے کوئی پش کریڈنشل مانگ ہی نہیں سکتا |
+| **GitHub API کالز کی اجازت دیں** | **git push کی اجازت دیں** کے ساتھ مل کر طے کرتا ہے کہ بروکر GitHub ٹوکن کو `GH_TOKEN` / `GITHUB_TOKEN` کے طور پر انجیکٹ کرتا ہے یا نہیں |
+| **ٹکٹنگ API کالز کی اجازت دیں** | طے کرتا ہے کہ بروکر `TICKETING_API_KEY` انجیکٹ کرتا ہے یا نہیں |
+| **عام نیٹ ورک رسائی کی اجازت دیں** | جہاں سینڈ باکس آن ہو، یہ حقیقی ایگریس گیٹ ہے: اس کے بند ہونے پر رن کی allowlist خالی ہوتی ہے اور ہر آؤٹ باؤنڈ درخواست پراکسی پر مسترد ہو جاتی ہے۔ جہاں کوئی بیک اینڈ نہ ہو، یہ رن پر درج تو ہوتا ہے مگر اسپان کیے گئے پروسیس کے کسی فعل کو نہیں روکتا |
 
-6. Save
+6. محفوظ کریں
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+چیک پوائنٹ: ایجنٹ دوبارہ کھولیں تو سوئچ اب بھی آن ہوگا اور آپ کے ٹوگلز برقرار
+رہیں گے — محفوظ شدہ قابلیت کا سیٹ سرور سے گزر کر واپس آتا ہے اور جس ایجنٹ کے پاس
+کوئی سیٹ نہ ہو وہ محتاط ڈیفالٹ پر واپس چلا جاتا ہے (پش بند، GitHub API بند،
+ٹکٹنگ بند، نیٹ ورک آن)۔
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[دو طرح سے یہ نقصان دیتا ہے]
+کیپشن **ورک اسپیس ڈیفالٹ استعمال کریں** کہتا ہے، مگر ایسی کوئی ورک اسپیس سطح کی
+قابلیت سیٹنگ نہیں جسے سرور پڑھتا ہو۔ جو ایجنٹ سوئچ بند رکھے، اُسے بلٹ اِن محتاط
+ڈیفالٹ ملتا ہے۔
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+اس کے علاوہ، رن کا GitHub کریڈنشل صرف بروکر کا ہوتا ہے — ریپو دائرے کا GitHub App
+انسٹالیشن ٹوکن، یا ماحول کا PAT فال بیک — کبھی درخواست کرنے والے رکن کا اپنا
+محفوظ ٹوکن نہیں۔ `actingUserId` اس لیے بھیجا جاتا ہے کہ بروکر ایسے رکن سے سرور کا
+PAT *روک* سکے جو مالک نہ ہو اور جس نے GitHub منسلک نہ کیا ہو؛ یہ کسی بند قابلیت پر
+ذاتی ٹوکن اوپر نہیں چڑھاتا۔ جس ہوسٹ پر OS سینڈ باکس نہ ہو وہاں **GitHub API کالز
+کی اجازت دیں** کو سخت ایگریس سرحد نہ سمجھیں: اسپان کیا گیا پروسیس پھر بھی نیٹ ورک
+تک پہنچ سکتا ہے۔
 :::
 
-## Check whether your agent runs are sandboxed
+## جانچیں کہ آپ کے ایجنٹ رنز سینڈ باکس میں چلتے ہیں یا نہیں
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+اس کا فیصلہ دو چیزیں کرتی ہیں، اور دونوں سرور پر ہیں: ہوسٹ کوئی بیک اینڈ پیش کرتا
+ہے یا نہیں، اور `--sandbox` آن ہے یا نہیں۔ اسی ترتیب سے جانچیں۔
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. **ترتیبات → سرور → تشخیص اور پرائیویسی** پر جائیں
+2. **سینڈ باکسنگ** کارڈ پڑھیں۔ **ہوسٹ** والی حقیقت وہ مشین ہے جس پر `cc_server`
+   چلتا ہے، نہ کہ وہ مشین جو آپ سامنے دیکھ رہے ہیں۔ **بیک اینڈ** فیلڈ **نیٹو
+   سینڈ باکس** (macOS پر Seatbelt، Linux اور WSL2 پر bubblewrap) یا **کوئی
+   علیحدگی نہیں** بتاتی ہے۔ **نافذ** والی حقیقت اِس ڈیوائس کی ترجیح ہے، وہ رَیپ
+   نہیں جو سرور واقعی استعمال کرتا ہے۔
+3. سرور کا اسٹارٹ اپ لاگ پڑھیں۔ یہ تین میں سے ٹھیک ایک لائن چھاپتا ہے:
+   - `agent sandbox ON` اور ساتھ بیک اینڈ کا نوٹ — رنز لپیٹے جاتے ہیں
+   - `no OS-native agent sandbox on this host` اور جہاں کوئی ہو وہاں انسٹالیشن کا
+     اشارہ — رنز لپیٹے نہیں جاتے
+   - `agent sandbox DISABLED by --sandbox off` — جان بوجھ کر باہر نکلنا
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` سینڈ باکس کی حالت نہیں بتاتا، اس لیے جانچ اسٹارٹ اپ لاگ ہی ہے۔
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+سینڈ باکس جان بوجھ کر بند کرنے کے لیے — جس ہوسٹ پر پروفائل بے ڈھنگ برتاؤ کرے،
+وہی اس کے بند ہونے کی وجہ ہے — سرور کو `--sandbox off` کے ساتھ شروع کریں، یا
+`CC_SERVER_SANDBOX=off` سیٹ کریں۔ ڈیفالٹ `on` ہے اور `on` کا مطلب ہے ”ہوسٹ کے پاس
+ہو تو بیک اینڈ استعمال کرو“، ہرگز ”بیک اینڈ لازم کرو“ نہیں۔
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+دو صورتوں کو کبھی نیٹو سینڈ باکس رَیپ نہیں ملتا۔ **Windows** پر نیٹو پروب ہمیشہ
+ناقابلِ دستیاب بتاتا ہے اور انسٹال کرنے کو کچھ نہیں ہوتا — ایجنٹ ڈسپیچ `none`
+استعمال کرتا ہے۔ `microvm` بیک اینڈ الگ ہے (انٹرایکٹو ٹرمنلز اور رگز) اور اپنے رن
+ٹائم پر پروب گیٹڈ ہے۔ **Linux اور WSL2** پر `bwrap` اور `socat` دونوں کا `PATH` پر
+ہونا لازم ہے؛ اُن کے بغیر پروب ناقابلِ دستیاب بتاتا ہے اور غائب پیکیجز کے نام
+گنواتا ہے۔
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+bubblewrap انسٹال ہونے کے ساتھ Linux/WSL2 پر، ایجنٹ کی بعد میں بنائی گئی فائلوں کے
+لیے معیاری پالیسی کے خفیہ فائل گلوبز نافذ نہیں کیے جا سکتے۔ ایسا نیٹو رن اب قواعد
+کو خاموشی سے نظرانداز کرنے کے بجائے ناکام ہو جاتا ہے۔ چنانچہ بوٹ پروب کا کامیاب
+ہونا اس بات کی ضمانت نہیں کہ Linux ڈسپیچ شروع ہو سکے گا۔ `--sandbox off` جان بوجھ
+کر بغیر پابندی چلنے کا انتخاب ہے، سیکیورٹی سرحد کا نعم البدل نہیں۔
 
-## Know what a mode already forbids
+## جانیں کہ کوئی موڈ پہلے ہی کس چیز سے منع کرتا ہے
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+موڈ فی اسپیس محفوظ ہوتا ہے اور گارڈریل ریزالور کو **موڈ پری سیٹ** کی تہہ کے طور پر
+کھلایا جاتا ہے۔ چار میں سے تین موڈ ریڈ اونلی ہیں اور کوئی ریڈ اونلی موڈ گیارہ اثر
+کلاسز سے سرے سے انکار کر دیتا ہے:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| موڈ | worktree | پری سیٹ سے مسترد |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **ایجنٹ** (`chat`) | قابلِ تحریر | کچھ نہیں — بلٹ اِن ڈیفالٹس لاگو ہوتے ہیں |
+| **پلان** | ریڈ اونلی | فائل حذف کریں، worktree سے باہر لکھیں، کمیٹ بنائیں، ریموٹ پر پش کریں، pull request کھولیں، ریویو شائع کریں یا مرج کریں، بیرونی ٹریکر پر لکھیں، پیکیج انسٹال کریں، پراسیس چلائیں، ورک اسپیس کا ڈھانچہ بدلیں، انکلوژر بوٹ کریں یا چلائیں |
+| **ریویو** | ریڈ اونلی | وہی گیارہ۔ صارف کے لیے منتخب کرنے کے قابل نہیں — کمپوزر صرف ایجنٹ، پلان اور آرکیسٹریٹ پیش کرتا ہے |
+| **آرکیسٹریٹ** | ریڈ اونلی | وہی گیارہ |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+نیٹ ورک رسائی اور راز تک رسائی سے کوئی ریڈ اونلی موڈ جان بوجھ کر _انکار نہیں_
+کرتا: تحقیق ہی تو اُس کا مقصد ہے۔
 
-## Require approval before an action runs
+## کسی ایکشن کے چلنے سے پہلے منظوری لازمی کریں
 
-Approval is a guardrail decision, not a sandbox setting.
+منظوری گارڈریل کا فیصلہ ہے، سینڈ باکس کی سیٹنگ نہیں۔
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. **ترتیبات → ورک اسپیس → ایجنٹ اجازتیں** پر جائیں
+2. ایکشن کلاس کو ورک اسپیس، ایجنٹ یا اسپیس دائرے پر **پہلے پوچھیں** کر دیں
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/) for the full
-resolution order.
+**پہلے پوچھیں** کا فیصلہ رن کو روک کر آپ سے پوچھتا ہے۔ کوئی منظور کنندہ منسلک نہ
+ہو تو یہ بند ہو کر ناکام ہوتا ہے اور ایکشن مسترد کر دیا جاتا ہے۔ تعین کی مکمل
+ترتیب کے لیے
+[گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/) دیکھیں۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### An agent cannot push and I never denied it
+### کوئی ایجنٹ پش نہیں کر پاتا اور میں نے کبھی منع نہیں کیا
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+ایجنٹ کی **سینڈ باکس اجازتیں** دیکھیں۔ جس ایجنٹ کے پاس کوئی حسب ضرورت قابلیت سیٹ
+نہ ہو، اُسے محتاط ڈیفالٹ ملتا ہے جس میں **git push کی اجازت دیں** بند ہوتا ہے —
+چنانچہ بروکر کوئی GitHub ٹوکن انجیکٹ نہیں کرتا اور git کے پاس تصدیق کا کوئی راستہ
+نہیں رہتا۔
 
-### The Sandboxing card reports no native sandbox
+### سینڈ باکسنگ کارڈ کوئی نیٹو سینڈ باکس نہ ہونے کی اطلاع دیتا ہے
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/).
+تو اُس ہوسٹ پر ایجنٹ رنز Seatbelt یا bubblewrap میں لپیٹے نہیں جاتے اور جو سرحدیں
+باقی ہیں وہی آپ کے پاس ہیں۔ Linux اور WSL2 پر دونوں غائب ٹولز انسٹال کریں —
+`sudo apt-get install bubblewrap socat` — اور سرور دوبارہ شروع کریں؛ پھر اسٹارٹ اپ
+لاگ بتائے گا کہ سینڈ باکس آن ہے۔ Windows پر انسٹال کرنے کو کوئی نیٹو بیک اینڈ نہیں،
+اس لیے اس کے بجائے گارڈریلز سخت کریں:
+[گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/) دیکھیں۔
 
-### An agent reached a file outside its worktree
+### کوئی ایجنٹ اپنی worktree سے باہر کی فائل تک پہنچ گیا
 
-Which tool reached it decides whether this is expected.
+یہ متوقع ہے یا نہیں، اس کا فیصلہ اس بات سے ہوتا ہے کہ کون سا ٹول وہاں پہنچا۔
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+ہارنس کے اِن پروسیس فائل ٹولز (read، write، edit، apply patch، search، find،
+search_files) سرور پروسیس میں چلتے ہیں، اس لیے اُن پر کوئی سینڈ باکس پروفائل لاگو
+نہیں ہوتا — اُن کی حد ان کا اپنا پاتھ کنفائنمنٹ اور گارڈریلز ہیں۔ کوئی `bash`
+کمانڈ یا Claude Code CLI، جہاں بیک اینڈ موجود ہو، وہاں _لپیٹا جاتا ہے_ اور آپ کے
+رجسٹرڈ چیک آؤٹ اُس رَیپ کے اندر ہر موڈ میں رائٹ سے انکار والے ہوتے ہیں، بشمول اُن
+کی symlink سے حل شدہ ہجوں کے (macOS پر `/tmp` یا `/var/folders` کے ذریعے پہنچا پاتھ
+`/private` کے تحت حل ہوتا ہے اور اب دونوں ہجے مسترد کیے جاتے ہیں)۔ جس ہوسٹ پر کوئی
+بیک اینڈ نہ ہو، وہاں اس میں سے کچھ بھی لاگو نہیں ہوتا۔ دونوں صورتوں میں، گارڈریلز
+**worktree سے باہر لکھیں** سے سرے سے انکار کر سکتے ہیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Configure guardrails](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/)
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Diagnose an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
-- [Sandbox backends](/ur-PK/ہدایت-نامہ/حوالہ/سینڈ-باکس-بیک-اینڈز/)
-- [cc_server CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/): the `--sandbox` flag
+- [گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
+- [سینڈ باکس بیک اینڈز](/ur-PK/ہدایت-نامہ/حوالہ/سینڈ-باکس-بیک-اینڈز/)
+- [cc_server CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/): `--sandbox` فلیگ
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)

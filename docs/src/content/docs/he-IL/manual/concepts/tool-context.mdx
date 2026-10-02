@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: הקשר כלים ומטמון הנחיות
+description: למה לסוכן מוצגת קבוצה קטנה של כלים ולא כולם, איך הוא מגיע לשאר, ומה הם הכללים ששומרים על מטמון ההנחיות של הספק חם לאורך הרצה.
 slug: he-IL/מדריך-למשתמש/מושגים/הקשר-כלים
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+שני דברים נכונים לגבי כל בקשה שהרתמה המובנית שולחת: הגדרות הכלים הן העלות הקבועה הגדולה ביותר בה, וכמעט אף אחת מהן לא תשמש. העמוד הזה מסביר מה Control Center עושה בנוגע לכך, ולמה התשובה אינה פשוט „לשלוח פחות כלים".
 
-## The problem is attention, not bytes
+## הבעיה היא קשב, לא בייטים
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center רושם כ־126 כלים. כשהם נשלחים במלואם, ההגדרות שלהם עולות בערך **23,000 אסימונים בכל בקשה** — עלות ששום דחיסה לא יכולה לגעת בה, מפני שהגדרות הכלים נוסעות בחלק של הבקשה הנפרד מהשיחה.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+חשבון האסימונים הוא התלונה המובנת מאליה, ועם מטמון הנחיות הוא גם הבעיה הקטנה יותר. העלות האמיתית היא **דיוק הבחירה**. הערכות שפורסמו בנושא קריאה לכלים מסכימות שמודלים בוחרים את הכלי הנכון באופן מהימן עד לאזור של 30–50 כלים בהקשר, ומתדרדרים בהדרגה מעבר לכך. הסיבה הנקובה אינה מספר האסימונים אלא **חפיפה סמנטית**: ברגע שקטלוג מכיל כמה כלים שתיאוריהם נקראים דומה, המודל בוחר בין דומים־מראה במקום להיזכר ביכולת.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+עם 126 כלים, סוכן נמצא הרבה מעבר לטווח הזה בכל תור ותור — כולל התורים הרבים שבהם הוא רק היה צריך לקרוא קובץ.
 
-## The two-tier surface
+## המשטח הדו־שכבתי
 
-A run is therefore shown two things:
+הרצה מוצגת אפוא שני דברים:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- קבוצה **תושבת** — כשני תריסר כלים, הנשלחים עם סכימות מלאות בכל בקשה;
+- **מדד שמות** של כל השאר, מקובץ תחת כותרות כמו „Tickets and projects" או „Memory and knowledge", בעלות של כמה מאות אסימונים עבור הקטלוג כולו.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+כשמודדים על הקטלוג הנוכחי, זה מעביר את בלוק הכלים מ־**~23.1k אסימונים ל־~5.0k, כ־78% פחות**, ומכניס את הקבוצה הנראית תמיד לתוך הטווח שבו הבחירה מהימנה.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/he-IL/מדריך-למשתמש/מושגים/מצבים) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+הקבוצה התושבת היא הכלים שהרצה משתמשת בהם ב*רוב* ההרצות: אוצר המילים של קבצים ומעטפת (`read`, `write`, `edit`, `search`, `bash`, …), כלי הגילוי, רשימת המשימות, חיפוש בזיכרון, וכל פועל שה[מצב](/he-IL/מדריך-למשתמש/מושגים/מצבים) הנוכחי חייב לקרוא לו כדי למסור את הפלט שלו. הפועל של המצב עצמו תמיד תושב — הרצה לעולם אסור שתצטרך לחפש את הקריאה האחת שמפיקה את התוצר שלה.
 
-### Deferred does not mean unavailable
+### טעינה לפי דרישה אינה חוסר זמינות
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+זה החלק שהופך את התכנון לבטוח ולא רק לזול. **ניתן לקרוא לכלי שנטען לפי דרישה כבר מהתור הראשון.** רק הסכימה שלו לא נשלחת.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+הסוכן רואה את השם בהנחיה שלו. אם הוא קורא לשם הזה ישירות, הרתמה טוענת את הסכימה ומריצה את הכלי באותו צעד — בלי שגיאה, בלי סבב הלוך ושוב. המודל לא צריך לדעת שהכלי אי פעם היה „לא טעון".
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+כשהסוכן מכיר את המשימה אבל לא את השם, `search_tools` מקבל תיאור בשפה חופשית („להקצות כרטיס למישהו"), מדרג את כל המשטח של ההרצה, ומחזיר את ההתאמות *כשהסכימות שלהן כבר טעונות*, כך שהתור הבא ממש יכול לקרוא לאחת מהן. אם חיפוש לא מוצא דבר, הוא אומר זאת בפשטות ומציע ניסוח אחר או חיפוש רחב יותר — במכוון, מפני שסוכן שמפרש חיפוש ריק כ„היכולת הזו אינה קיימת" ימציא תחליף במקום לחפש שוב.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` קיים רק ברתמה המובנית. ללקוחות MCP חיצוניים יש במקום זאת את `search_tool_bm25`, שמדרג את אותו מדד אבל רק מתאר את ההתאמות — הלקוחות האלה כבר קיבלו כל סכימה מ־`tools/list`, כך שאין מה לטעון.
 
-### What deferral never does
+### מה שטעינה לפי דרישה לא עושה לעולם
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+טעינה לפי דרישה מוחלת **אחרי** סינון הכלים של המצב, ולעולם לא במקומו. היא מסתירה סכימה; היא לא יכולה לחשוף כלי שהמצב חסם. כלי שהופעל עדיין עובר את בקשת האישור ואת [מעקות הבטיחות של הפעולות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות) בדיוק כפי שכלי תושב היה עובר, וכלי לא יכול לטעון שם שלא היה על משטח ההרצה מלכתחילה.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+משטח ה-MCP שלקוחות חיצוניים רואים **אינו** מושפע. `tools/list` עדיין מחזיר את הקטלוג המלא. ניסיון מוקדם לקצץ אותו שבר את הסוכנים לחלוטין: לקוחות MCP מאמתים שמות כלים מול הרשימה המטמונת שלהם ומסרבים לכל דבר שלא מופיע בה בלי לשאול את השרת בכלל, כך שכלי „מוסתר אבל קריא" היה פשוט בלתי נגיש. טעינה לפי דרישה חיה ברתמה, שם טעינת כלי באמצע הרצה היא משהו שהרתמה באמת יכולה לעשות.
 
-### Turning it off
+### כיבויו
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/he-IL/מדריך-למשתמש/עזר/cc-server-cli).
+`--tool-deferral=off` (או `CC_SERVER_TOOL_DEFERRAL=off`) מחזיר להיות תושב כל כלי שהתקבל, ומייצר בדיוק את הבקשות שהשרת שלח לפני שטעינה לפי דרישה הייתה קיימת. ראו את [תיעוד ה-CLI של `cc_server`](/he-IL/מדריך-למשתמש/עזר/cc-server-cli).
 
-## Prompt caching
+## מטמון הנחיות
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+עומסי העבודה של סוכנים אינם מאוזנים: הם שולחים הנחיות עצומות ומקבלים תשובות קטנות, תור אחר תור, עם אותה קידומת בכל פעם. הספקים מטמינים את הקידומת הזו, וקריאה מהמטמון עולה בערך עשירית מקריאה טרייה. שיעור הפגיעות במטמון הוא אפוא תכונה ממדרגה ראשונה של הרתמה ולא אופטימיזציה — וב-Anthropic הוא גם קונה תפוקה, מפני שאסימונים שנמצאים במטמון לא נספרים במגבלת הקלט לדקה.
 
-Caching works on an exact prefix match, which yields one governing rule.
+המטמון עובד לפי התאמת קידומת מדויקת, ומכאן כלל מנחה אחד.
 
-### Never rewrite what was already sent
+### לעולם לא לשכתב את מה שכבר נשלח
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+כל בייט שמשתנה מבטל את המטמון מאותה נקודה והלאה. לכן הרתמה רק **מוסיפה בסוף**: הודעות חדשות בסוף, וסכימות כלים שהופעלו זה עתה *אחרי* בלוק הכלים שנמצא במטמון ולא ממוזגות לתוכו. הסדר הזה הוא הסיבה שההפעלה זולה — הקידומת שבמטמון נשארת זהה וההרצה משלמת רק על הסכימות שהיא זה עתה טענה.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+הלולאה גם מקצצת פלט כלים מיושן מתורים ישנים יותר כדי להחזיר הקשר. היא ממתינה עד שיש מספיק להחזיר כדי שהשכתוב יהיה שווה, כך שקיצוץ הוא שכתוב עמוק ונדיר במקום החמצת מטמון מתמשכת.
 
-### Where the breakpoints go
+### היכן ממוקמות נקודות השבירה
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+ספק מאפשר מספר מוגבל של סמני מטמון, ו-Control Center מוציא אותם במכוון:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| סמן                       | מכסה                              | זמן חיים |
+| ------------------------- | --------------------------------- | -------- |
+| הכלי ה**תושב** האחרון     | בלוק הכלים                        | שעה אחת  |
+| בלוק המערכת האחרון        | כלים + הנחיית מערכת               | שעה אחת  |
+| זנב התור הקודם            | היסטוריה עד הבקשה האחרונה        | 5 דקות   |
+| זנב התור הנוכחי           | ההיסטוריה המלאה                   | 5 דקות   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+שני האחרונים הם זוג מתגלגל, והסיבה לזוג היא עדינה: חיפוש במטמון מחפש אחורה מספר מוגבל של בלוקים אחר משהו שבקשה קודמת שמרה. תור בודד שמריץ הרבה כלים במקביל יכול לפלוט יותר בלוקים מהחלון הזה, ואז סמן זנב אחד מפספס בשקט והבקשה משלמת מחיר מלא בלי שדבר בתשובה יאמר זאת. סימון הנקודה המדויקת שבה הבקשה הקודמת נעצרה הופך את הפגיעה למבנית במקום למרוץ.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+הקידומת של כלים ומערכת מקבלת את זמן החיים הארוך מפני שהיא קבועה לכל אורך ההרצה, משותפת לכל הרצה ותת־סוכן בעלי אותה צורה, ומפני שהשעון מתחיל כשבקשה *מתחילה* — תור שזורם במשך כמה דקות כבר בילה את רובו של חלון קצר לפני שהבקשה הבאה נוצרת.
 
-### Subagents share one prefix
+### תת־סוכנים חולקים קידומת אחת
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+תת־סוכנים מאותו סוג מפיקים קידומות הנחיה זהות בייט אחר בייט, ולכן הם אמורים לקרוא רשומת מטמון אחת במקום שכל אחד יכתוב משלו. אבל רשומה נעשית קריאה רק כשהבקשה שכתבה אותה מתחילה להשיב, כך שפיזור שמשוגר בבת אחת גורם לכל ילד לשלם את הפרמיה על קידומת שכולם חולקים.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+הרתמה נותנת לילד הראשון בעל צורה נתונה להתחיל, ואז משחררת את אחיו ברגע שהוא מתחיל לזרום. ההמתנה מוגבלת: ילד ראשון איטי עולה פגיעת מטמון, ולעולם לא את הפיזור עצמו. מאותה סיבה, כל תת־סוכן מקבל את אותה קבוצת כלים תושבת בלי קשר לפרופיל שלו — שינוי שלה לפי פרופיל היה מפצל את הקידומת המשותפת בלי שום רווח, מפני שהפרופיל כבר הכריע מה הילד רשאי לקרוא.
 
-## Watching it work
+## לראות את זה עובד
 
-Both halves are observable rather than assumed:
+שני החצאים ניתנים לצפייה ולא מונחים כהנחה:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **סייר ההקשר** בשיחה מדווח על הכלים התושבים, על מדד הטעינה לפי דרישה ועל מה שכל סכימה שלא נשלחת *הייתה* עולה, ונבנה מאותו מסלול קוד שהרצה אמיתית משתמשת בו.
+- כל הרצה מתעדת אילו כלים שנטענים לפי דרישה היא טענה ומה הפעיל אותם, כך שחיפוש שלא מוצא דבר נראה כהחמצת שליפה במקום להיעלם אל תוך סוכן שעושה בשקט משהו סמוך.
+- מסך הניטור מדווח על **שיעור מטמון** כיחס בין קריאות מטמון לכלל אסימוני ההנחיה שעובדו, כולל כתיבות למטמון — הרצה שממשיכה לבנות מחדש את הקידומת שלה מקבלת ציון נמוך, במקום ציון של הרצה שמעולם לא נזקקה למטמון.

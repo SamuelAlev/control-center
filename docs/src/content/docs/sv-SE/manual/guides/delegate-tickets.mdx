@@ -1,131 +1,136 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Delegera arbete till agenter
+description: Lämna över ett ärende till en agent i ett samtal och låt agenter delegera deluppgifter till varandra inom ramen för djup- och cykelspärrarna.
 slug: sv-SE/handbok/how-to-guider/delegera-arenden
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Den här guiden handlar om att få arbete av ditt bord och över till en agent, och
+om vad som händer när agenter skickar arbete mellan varandra.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Att tilldela ett ärende till en agent startar ingen dispatch]
+Det finns ingen ärendedispatcher för en agent som tilldelats ett ärende.
+Tilldelning registrerar ägande och ingenting mer — ingen yta skapas, ingen status
+ändras, ingen agent startar. Undantaget är ett ärende som tilldelats ett
+**team**, vilket väcker teamets ledare. Agentarbete för en namngiven tilldelad
+agent lever i samtal, så det är där du startar det.
 :::
 
-## Hand a ticket to an agent
+## Lämna över ett ärende till en agent
 
-1. [Create the ticket](/sv-SE/handbok/how-to-guider/hantera-arenden/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Skapa ärendet](/sv-SE/handbok/how-to-guider/hantera-arenden/) med en titel
+   och en beskrivning som är tillräckligt precis för att arbeta utifrån.
+2. Sätt dess **Tilldelad** till agenten, så att ägandet finns dokumenterat.
+3. Öppna (eller skapa) en yta och @-nämn den agenten.
+4. Referera till ärendet med ett `#`-omnämnande i ditt meddelande —
+   meddelandefältet autokompletterar arbetsytans ärenden — och berätta vad du
+   vill ska göras.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agenten plockar upp arbetet från samtalet. Dess framsteg strömmar in i den
+ytan.
 
-## What the agent receives
+## Vad agenten får
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Ditt meddelande, inklusive ärendereferensen du taggade.
+- Ytan att arbeta och rapportera i.
+- En isolerad worktree från arbetsytans länkade repos.
+- Ytans **läge**, som är det som styr körningens verktygsyta.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/sv-SE/handbok/koncept/lagen/).
+Läget är en egenskap hos ytan, inte hos ärendet — ett ärende har inget läge. En
+och samma agent kan därför vara i `chat` i en yta och `plan` i en annan. Välj
+det i meddelandefältets lägesväljare (**Agent**, **Plan** eller **Orkestrera**);
+`review` sätts av PR-granskningsytor och går inte att välja.
+Se [Lägen](/sv-SE/handbok/koncept/lagen/).
 
-## Require a structured result
+## Kräv ett strukturerat resultat
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Ett utdatakontrakt deklareras på dispatchen, inte på ärendet:
+`expected_output_schema` plus `output_contract_mode` (strikt som standard).
+Agenten uppfyller det genom att anropa `submit_output`, som validerar
+nyttolasten mot schemat och avvisar en som inte följer det.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Både den accepterade utdatan och eventuella avvisningar hamnar i **agentens
+körningslogg**. Själva ärendets status påverkas inte av detta — ett misslyckat
+kontrakt gör inte att ärendet misslyckas.
 
-## Monitor progress
+## Följ framstegen
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Ytan** — agenternas live-aktivitet, huvudvyn.
+- **Ärendet** — dess status, så som den som flyttar det sätter den.
+- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — den
+  aktuella agentlistan.
+- **Observability → Insikter** — körningsloggen, med kostnad och varaktighet.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Det finns ingen instrumentpanelsvy; en arbetsyte-URL utan underliggande sökväg
+omdirigeras till inkorgen.
 
-## Let agents delegate to each other
+## Låt agenter delegera till varandra
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+En agent som stöter på ett delproblem delegerar med MCP-verktyget
+`delegate_task`. Det skapar ett barnärende tilldelat en annan agent och — när du
+skickar `parent_ticket_id` — registrerar kedjan så att spärrarna kan se den.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Två strukturella spärrar körs alltid vid ärendenas flaskhals, aldrig via
+promptinstruktioner:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Djupstak** — en kedja djupare än 3 hopp avvisas.
+- **Cykeldetektering** — ett hopp tillbaka till en agent som redan finns i
+  kedjan avvisas.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+När du skickar `from_agent_id` körs två spärrar till (produktionen
+tillhandahåller alltid resolverportarna):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Autonomitak** — delegatens effektiva nivå i ytan får inte överskrida
+  delegerarens.
+- **Budgetram** — delegering debiterar delegerarens återstående
+  hårdstoppsbudget och kan inte skapa mer. Ingen policy, eller en obegränsad
+  policy, passerar.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+En vägran är högljudd: verktyget returnerar spärrens skäl ordagrant, så den
+delegerande agenten ser exakt varför. Fältet `delegatedByAgentId` registrerar
+vem som delegerade och bildar ett delegeringsträd.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` hoppar över alla spärrar]
+Det äldre verktyget `delegate_ticket` är fortfarande registrerat och anropar
+`createTicket` direkt — inget djupstak, ingen cykelkontroll, inget autonomitak,
+ingen budgetram. Föredra `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Detta delegeringsdjupstak på 3 är en annan gräns än den inbyggda harnessens
+nästningsgräns på 2 för subagenter — den ena begränsar ärenden mellan agenter,
+den andra begränsar subagenter inom en enda körning.
 
-## Put several agents on one ticket
+## Sätt flera agenter på ett ärende
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Lägg till dem som **medarbetare** på ärendet (roller: tilldelad, medarbetare,
+granskare). Det är en personallista — ett register över vilka som är inblandade
+— och ger ingenting i sig.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/sv-SE/handbok/how-to-guider/ytor/).
+För att faktiskt sätta agenter i samma samtal lägger du till dem som deltagare
+från ytans sidhuvud. De kan då @-nämna varandra där. Se
+[Använd ytor](/sv-SE/handbok/how-to-guider/ytor/).
 
-## Automated ticket creation
+## Automatiserad ärendeskapning
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Ingen nod i pipelinepaletten skapar ärenden, så en pipeline kan inte sprida ut
+arbete som tilldelade ärenden.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/sv-SE/handbok/how-to-guider/kor-orkestrering/).
+Vägen som faktiskt finns är orkestrering: att godkänna ett förslag skapar ett
+projekt och ett team, kompilerar förslagets DAG av underärenden till en
+**pipelinemall** (ett `promptAgent`-steg per underärende, inte en `Ticket`-rad
+för varje) och startar den körningen. Se
+[Kör en orkestrering](/sv-SE/handbok/how-to-guider/kor-orkestrering/).
 
-## Related guides
+## Relaterade guider
 
-- [Create and manage tickets](/sv-SE/handbok/how-to-guider/hantera-arenden/)
-- [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
-- [Run an orchestration](/sv-SE/handbok/how-to-guider/kor-orkestrering/)
-- [Organize work with projects](/sv-SE/handbok/how-to-guider/projekt/)
-- [Ticket lifecycle reference](/sv-SE/handbok/referens/arendelivscykel/)
+- [Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/)
+- [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
+- [Kör en orkestrering](/sv-SE/handbok/how-to-guider/kor-orkestrering/)
+- [Organisera arbete med projekt](/sv-SE/handbok/how-to-guider/projekt/)
+- [Ärendelivscykel](/sv-SE/handbok/referens/arendelivscykel/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Tickets](/sv-SE/handbok/koncept/arenden/)
-- [Dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
-- [Modes](/sv-SE/handbok/koncept/lagen/)
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)

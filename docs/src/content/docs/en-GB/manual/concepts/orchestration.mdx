@@ -2,13 +2,14 @@
 title: Orchestration
 description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
 slug: en-GB/manual/concepts/orchestration
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
 A single agent is good at one thing. Some asks are bigger than that: "research
 the market for X and write a positioning doc", "ship this feature end to end",
 "audit this module and fix what you find". An **orchestration** is how Control
 Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
+whole-team plan, you approve it **once** and a deterministic materialiser turns
 it into a pipeline that does the work.
 
 It sits between the two existing ways of getting work done:
@@ -118,11 +119,11 @@ proposed → approved → executing → synthesizing → completed
 | Status         | Meaning                                                                          |
 | -------------- | -------------------------------------------------------------------------------- |
 | `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
+| `approved`     | You approved it; materialisation is in progress (hires, team, project, pipeline) |
 | `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
 | `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
 | `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
+| `failed`       | Materialisation failed, or the generated pipeline run failed                     |
 | `cancelled`    | You cancelled it                                                                 |
 
 A monotonic **revision** number tracks the proposal as the orchestrator revises
@@ -152,7 +153,7 @@ the top of them rather than a separate runtime.
 
 ## See also
 
-- [Pipelines and automation](/en-GB/manual/concepts/pipelines/): the engine a materialized orchestration runs on
+- [Pipelines and automation](/en-GB/manual/concepts/pipelines/): the engine a materialised orchestration runs on
 - [Tickets and delegation](/en-GB/manual/concepts/tickets/): the parent ticket an orchestration is anchored on
 - [The agent model](/en-GB/manual/concepts/agent-model/): the roles an orchestration fills or hires
 - [Run an orchestration](/en-GB/manual/guides/run-orchestration/)

@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Chạy agent song song
+description: Điều phối nhiều agent cùng lúc và giữ cho công việc của chúng không va chạm nhau.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Hướng dẫn này chỉ cho bạn cách chạy nhiều agent cùng lúc mà chúng không ghi đè lên nhau.
 
-## The unit of isolation is the space, not the agent
+## Đơn vị cô lập là space, không phải agent
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Khi công việc bắt đầu trong một space, Control Center cấp phát một bản checkout copy-on-write cho mỗi kho mã đã đăng ký, nằm dưới thư mục gốc riêng của space đó, trên một nhánh dẫn xuất từ mẫu nhánh của không gian làm việc. Sau đó mỗi agent trong space nhận một thư mục làm việc overlay riêng — nhưng các overlay **chia sẻ** thư mục `repos/` của space đó.
 
-So:
+Vì vậy:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Hai agent trong **các space khác nhau** làm việc trong các bản checkout khác nhau, trên các nhánh khác nhau. Đó là cô lập thực sự.
+- Hai agent trong **cùng một space** làm việc trên cùng một bản checkout, cùng một nhánh. Đường dẫn overlay của chúng khác nhau, nên khóa đường dẫn điều phối (vốn chỉ tuần tự hóa các lượt chạy khi chúng yêu cầu đúng cùng một thư mục làm việc) cũng không tuần tự hóa chúng. Chúng có thể ghi vào cùng những tệp tại cùng một thời điểm.
 
-The rule that follows: **one space per parallel task.**
+Quy tắc rút ra: **mỗi tác vụ song song dùng một space.**
 
-## Run tasks in parallel — separate spaces
+## Chạy tác vụ song song — các space riêng biệt
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Mở một space với agent A và gửi cho nó một tác vụ.
+2. Mở space thứ hai với agent B và gửi cho nó một tác vụ khác.
+3. Cả hai được điều phối ngay lập tức, mỗi agent trong bản checkout của space riêng trên nhánh riêng.
 
-This is the recipe to use whenever the agents will be editing files.
+Đây là công thức để dùng mỗi khi các agent sẽ chỉnh sửa tệp.
 
-## Work together in one space — several mentions
+## Phối hợp trong một space — nhiều lượt mention
 
-In a single space, @-mention more than one agent:
+Trong một space, hãy @-mention nhiều hơn một agent:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Cả hai agent được điều phối song song và truyền vào cùng một space, có gắn thẻ người gửi. Vì chúng chia sẻ bản checkout của space, hãy dùng cách này để phối hợp — một agent viết, một agent đọc, hoặc hai agent cùng suy luận về một cây làm việc — chứ không phải cho hai chỉnh sửa độc lập.
 
-## Fan out from a pipeline
+## Tỏa nhánh từ một quy trình
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Mẫu `pr_review` tích hợp sẵn là ví dụ được phát hành của kiểu tỏa nhánh: nhiều node đánh giá chạy đồng thời từ một trình kích hoạt và một node **Consolidate (join)** gộp các phát hiện của chúng thành một báo cáo. Chạy nó từ màn hình quy trình và mọi người đánh giá đều được điều phối song song.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Trình biên tập quy trình ẩn sentinel kết thúc và nối lại nó để chờ mọi nút đích đang hoạt động khi bạn thêm hoặc nối một bước, nhờ đó các nhánh bạn tự vẽ vẫn chạy.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Giao phiếu không điều phối gì cả]
+Giao một phiếu cho agent chỉ ghi nhận quyền sở hữu. Không có bộ điều phối phiếu — `TicketAssigned` là một tín hiệu kiểm toán và không có công việc nào bắt đầu từ nó. Ngoại lệ duy nhất là phiếu được giao cho một _nhóm_, việc này đánh thức trưởng nhóm đó.
 :::
 
-## Watch them run
+## Theo dõi chúng chạy
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Quan sát → Trực tiếp** (chân thanh bên → Quan sát, rồi đến thẻ Trực tiếp) hiển thị danh sách agent của không gian làm việc này, cập nhật lại mỗi giây: trạng thái (đang chạy / nhàn rỗi / đỗ / đã hủy), mỗi agent đang làm gì, token và chi phí cho lượt chạy gần nhất, cùng nút dừng cho một tiến trình đang chạy. Chọn một dòng sẽ neo mở một ngăn kéo bản ghi trực tiếp.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Cài đặt → Không gian làm việc → Agent** hiển thị cùng danh sách đó với một bộ từ vựng trạng thái khác, ưu tiên mức độ cần chú ý, được suy ra từ lịch sử chạy của từng agent — đang chạy, bị chặn, thất bại, nhàn rỗi, chưa từng chạy — sắp xếp sao cho bất cứ thứ gì cần chú ý đều nổi lên đầu. Thẻ **Nhật ký** của mỗi agent lưu lịch sử chạy riêng của nó.
 
-Both surfaces are scoped to the active workspace.
+Cả hai bề mặt đều giới hạn trong không gian làm việc đang hoạt động.
 
-## Handle conflicts
+## Xử lý xung đột
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Giữa các space, mỗi space nằm trên nhánh riêng, nên va chạm xuất hiện dưới dạng một xung đột merge Git thông thường khi bạn merge pull request thứ hai. Hãy xử lý như với bất kỳ xung đột merge nào.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Bên trong một space không có ranh giới nhánh và cũng không có khóa: các agent đang ghi trực tiếp vào cùng những tệp và bên thua đơn giản là bị ghi đè. Nếu bạn thấy mình muốn hai agent cùng chỉnh sửa trong một space, hãy tách công việc thành hai space.
 
-To reduce collisions either way:
+Để giảm va chạm theo cả hai cách:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/).
-- Review and merge each agent's pull request promptly.
+- Cho mỗi agent một phạm vi riêng — tệp khác nhau, mô-đun khác nhau.
+- Dùng đồ thị mã để kiểm tra một thay đổi chạm tới những gì trước khi điều phối. Xem [Tìm mã bằng đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/).
+- Xem xét và merge pull request của từng agent một cách kịp thời.
 
-## Resource considerations
+## Cân nhắc về tài nguyên
 
-Each running agent costs:
+Mỗi agent đang chạy tiêu tốn:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Một bản checkout của space — không đáng kể trên đĩa khi có copy-on-write; trên Windows là một `git worktree`. Hệ thống tệp không thể reflink sẽ làm việc cấp phát thất bại thay vì sao chép.
+- Một tiến trình trên máy chủ
+- Token mô hình, tích lũy theo từng agent
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/) for the two commands that do have one.
+Chi phí được ghi vào **Quan sát → Phân tích**. Lưu ý rằng một lượt tương tác thông thường không có giới hạn chi tiêu; xem [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/) để biết hai lệnh có giới hạn chi tiêu.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Build an agent team](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/)
-- [Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
-- [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Xây dựng đội agent](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/)
+- [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
+- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)

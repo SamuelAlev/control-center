@@ -1,152 +1,149 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: استخدام المراجعة المدعومة بالذكاء الاصطناعي
+description: شغّل خط الأنابيب pr_review على طلب سحب، واقرأ النتائج والحكم، ثم انشر المراجعة على GitHub.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+يشرح هذا الدليل كيف تطلب من وكلاء المراجعة مراجعة طلب سحب، وكيف تنشر
+النتيجة على GitHub.
 
-## Start an AI review
+## ابدأ مراجعة بالذكاء الاصطناعي
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. افتح طلب السحب وانتقل إلى لسان **نظرة عامة**
+2. افتح ⋯ (**مزيد من الإجراءات**) في صف الإجراءات واختر **اسأل الذكاء الاصطناعي**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+لا يظهر البند إلا حين يكون طلب السحب مفتوحًا، فهو إجراء يسبق الدمج. الزر نفسه
+يُعرَض باسم **اسأل الذكاء الاصطناعي** في الحالة الفارغة للسان **مراجعة**، قبل
+أن توجد أي مراجعة.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+يبدأ Control Center خط الأنابيب `pr_review` المُنشأ مع مساحة العمل، ويفتح لسان
+**مراجعة** لطلب السحب حتى تتابعه. يقوم خط الأنابيب بما يلي:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. يفتح مساحة المراجعة الخاصة بطلب السحب، وفي شجرة عملها المعزولة يُسحب الطلب
+   عند مرجع head
+2. يوزّع المراجعين حسب مستوى المراجعة في مساحة العمل، ثلاثة افتراضيًا (الوكلاء
+   المُنشَؤون مع مساحة العمل **qa** و**architect** و**engineer**، بالتوازي). لا
+   يُكشَف عن اللغة ولا عن المجال
+3. يكلّف الوكيل القائد (CEO) بتجميع نتائجهم في استعراض موجّه
+4. يُنهي: يصنّف النتائج في سلال الإجماع ويحسب الحكم. حين يبلغ ارتباط مساحة
+   المراجعة `awaiting approval`، يظهر **النشر على GitHub** في لسان المراجعة
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+عمق المراجعة هو **مستوى المراجعة** لمساحة العمل: `light` (مراجع واحد)،
+و`balanced` (ثلاثة، وهو الافتراضي)، و`thorough` (الخمسة جميعًا، مع متخصصَي
+الأمان والأداء). يُضبط من **الإعدادات ← مساحة العمل ← عام**، على بطاقة **سياسة
+مساحة العمل**. المستوى الأخف يودع عدد النتائج نفسه، ويُبرز عددًا أقل منها في
+الصدارة.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/) for how the pieces fit together.
+ينشر المراجعون كلهم في مساحة المراجعة الواحدة لطلب السحب، وهذا ما يجعل نتائجهم
+قابلة للمقارنة. انظر
+[مراجعة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/)
+لترى كيف تتركّب الأجزاء.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/).
+يأتي `pr_review` بمشغّل يدوي فقط. لينطلق عند كل طلب سحب يُنشر، أضف مشغّلًا
+بنفسك. انظر
+[إرسال وكلاء مراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/).
+وتستطيع أيضًا بدء مراجعة من GitHub نفسه، من غير مشغّل لخط الأنابيب: اذكر بوت
+الخادم على طلب السحب، أو أضف الوسم `ai-review`. انظر
+[التحدث إلى Control Center من طلب سحب على GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+إذا قال إشعار منبثق «هناك مراجعة قيد التشغيل بالفعل لطلب السحب هذا»، فهناك
+مراجعة جارية. ابقَ في لسان **مراجعة**، أو افتح **خطوط الأنابيب** لتجدها.
 
-## Read the findings
+## اقرأ النتائج
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+يسجّل المراجعون النتائج في **عُقد مراجعة** داخل مساحة المراجعة. تحمل كل عقدة:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| الحقل | الوصف |
+| --- | --- |
+| النوع | `bug`، `suggestion`، `recommendation`، `question` أو `ticket` |
+| الأولوية | P0 (حرج) إلى P3 (ملاحظة طفيفة) |
+| الفئة | `security`، `stability`، `data_integrity`، `correctness`، `performance` أو `maintainability` |
+| الملف والسطر | موضع ارتكاز النتيجة |
+| الشفرة الأصلية | الشفرة التي تتناولها النتيجة |
+| الشفرة المقترحة | الإصلاح المقترح |
+| الثقة | مدى ثقة المراجع |
+| الحالة | `open` ثم `consensus-ready` ثم `resolved` أو `dismissed` |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+لا تبلغ النتيجة **consensus-ready** إلا حين يؤكّدها مراجع _نظير_. لا يستطيع
+الوكيل تأكيد نتيجته هو، فرأي مراجع واحد لا يترقّى من تلقاء نفسه.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/) for what the pass produces.
+يعرض لسان **مراجعة** قائمة النتائج، ويمكن تصفيتها حسب النوع والحالة، مع مفتاح
+للنتائج المتجاهَلة، إلى جانب المُخرَج الذي نشره الوكيل المُجمِّع. العرض الحتمي
+— المجموعات، ولوحة المحاور المتعددة، وفروق العقد والفروق البصرية — يُحسب على
+الخادم ولا سطح له في التطبيق. انظر
+[حوسبة المراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/)
+لما تنتجه هذه الجولة.
 
-## Check the disagreements panel
+## افحص لوحة الخلافات
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+حين يرسّخ مراجعان نتيجتين على الملف والسطر نفسهما ويقيّمانهما تقييمًا شديد
+الاختلاف — بفارق مستويين أو أكثر في الأولوية، أو يسمّيها أحدهما `bug` والآخر
+`suggestion` — تظهر لوحة الخلافات فوق قائمة النتائج. اقرأها أولًا: هناك يفترق
+رأي المراجعين، وهناك يكون حكمك أجدى ما يكون.
 
-## Read the verdict
+## اقرأ الحكم
 
-When the lead agent finalizes, it computes a **verdict**:
+حين يُنهي الوكيل القائد، يحسب **حكمًا**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| الحكم | المعنى |
+| --- | --- |
+| **Ship** | لم يُعثر على ما يعيق |
+| **Hold** | مسائل ينبغي معالجتها قبل الدمج |
+| **Block** | مسائل حرجة يجب إصلاحها |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+يحمل الحكم درجة ثقة مجمّعة، وتعداد النتائج لكل أولوية.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+ثم تنضم محاور المراجعة إلى الحكم، ولا تستطيع إلا أن تجعله **أشد**. محور عليه
+بوابة وفشل يفرض **Block**. ومحور عليه بوابة لم يكتمل (`partial`) أو لم يستطع
+العمل أصلًا (`unavailable`) يفرض **Hold** على الأقل. غياب الدليل لا يتحوّل إلى
+بوابة خضراء.
 
-## Publish the review to GitHub
+## انشر المراجعة على GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+النشر خطوة منفصلة، ويُقصَد أن يبادر بها المستخدم. يُبقي خط الأنابيب `pr_review`
+المراجعة داخل Control Center، ولا يرسلها إلى GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. في لسان **مراجعة**، انتظر حتى يظهر **النشر على GitHub**
+2. اضغط **النشر على GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+يرسل Control Center مراجعة **واحدة** على GitHub. تُتخطى النتائج المحلولة أو
+المتجاهَلة أصلًا. يضم الزر كل نتيجة مفتوحة متبقية، وعند **Ship** يقدّم
+`APPROVE`. (أداة MCP `publish_review_to_github` ما زالت تفترض النتائج التي
+أكّدها الأقران فقط، ولا تُصدِر موافقة إلا إذا مرّرت `approve_on_ship`.) النتائج
+التي تحمل مرساة ملف وسطر تصبح تعليقات مضمّنة، وما عداها يُطوى في متن الملخص،
+ويحمل كل منها تذييل "— Control Center AI review" حتى يبقى المصدر واضحًا.
+يُقدَّم حكم **Block** بصفة `REQUEST_CHANGES`، و**Hold** بصفة `COMMENT`، و**Ship**
+بصفة `APPROVE` من هذا الزر. ثم يقرأ الإشعار المنبثق **منشور**. تُنشر المراجعة
+بهوية تطبيق الخادم.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+إذا رفض GitHub مرساة مضمّنة لأن السطر ليس جزءًا من الفروق، تُرسَل المراجعة كلها
+من جديد وكل نتيجة مطوية في المتن، حتى لا يسقط شيء في صمت.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[النشر مشروط بالضوابط]
+يصرّح `pr_review.publishReview` بفئة الإجراء `prPublish` ويمر بنقطة الاختناق في
+الضوابط. إذا كان القرار المحسوم `prompt` ولم يكن هناك معتمِد متصل، يُرفض النشر،
+فالضوابط تفشل مغلقة. ضع قاعدة صريحة في الإعدادات ← مساحة العمل ← أذونات الوكلاء إن أردت أن يجري بلا انتظار موافقة.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+خطوط الأنابيب المضمّنة الأخرى ترسل إلى GitHub مباشرة: ينتهي كل من
+`cross_review` و`pr_triage` و`ticket_to_pr` و`pre_merge_gate` بخطوة تعليق.
+`pr_review` وحده يُبقي ناتجه لديك.
 
-## Dispatch reviewers yourself
+## أرسل المراجعين بنفسك
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/).
+للتحكم في الأدوار التي تراجع طلب السحب والملفات التي ينظر فيها كل دور، استخدم
+أداة MCP `dispatch_reviewers` داخل مساحة مراجعة قائمة، أو أضف عُقد مراجعين إلى
+خط أنابيب. المساران، مع توقيع الأداة بحذافيره، في
+[إرسال وكلاء مراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Review and merge a PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
-- [Dispatch reviewer agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/)
-- [Review compute (cohorts and axes)](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/)
+- [مراجعة طلب سحب ودمجه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-ودمج-طلب-سحب/)
+- [إرسال وكلاء مراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/)
+- [حوسبة المراجعة (المجموعات والمحاور)](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [AI review](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/)
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)
+- [مراجعة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/)
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)

@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Ciclul de viață al tichetelor
+description: Câmpurile, stările, tranzițiile și relațiile tichetelor, plus punctul de trecere al mutațiilor.
 slug: ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Stările tichetelor
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Stare        | Șir stocat   | Descriere                                         |
+| ------------ | ------------ | ------------------------------------------------- |
+| `backlog`    | `backlog`    | Înregistrat, încă netriat în coada activă         |
+| `open`       | `open`       | Triat și pregătit de lucru, dar neînceput         |
+| `inProgress` | `inProgress` | Se lucrează efectiv la el                        |
+| `blocked`    | `blocked`    | Început, dar blocat de ceva extern                |
+| `inReview`   | `inReview`   | Munca este gata, în așteptarea revizuirii         |
+| `done`       | `done`       | Finalizat cu succes (stare finală)                |
+| `failed`     | `failed`     | Finalizat cu o eroare (stare finală)              |
+| `cancelled`  | `cancelled`  | Abandonat (stare finală)                          |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Valorile de stare sunt stocate în camelCase (`inProgress`, `inReview`), niciodată `in_progress`. O valoare stocată null este interpretată ca `open`; o valoare necunoscută aruncă o excepție în loc să fie convertită.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` acceptă aliasuri furnizate de agent, ignorând majusculele și caracterele `-` / `_` / spațiu:
 
-| Status       | Accepted aliases                              |
+| Stare        | Aliasuri acceptate                            |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Tranzițiile de stare
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,159 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Acest graf îi leagă doar pe agenți și pe automatizări.** `TicketWorkflowService.transitionStatus` îl verifică atunci când `force` este false — instrumentele MCP și reconciliatorii. O tranziție ilegală acolo este înregistrată în jurnal și ignorată. Orice schimbare de stare făcută de utilizator din interfață transmite `force: true` și ocolește complet graful, așa că un om poate muta un tichet în orice stare listată de selector (orice stare în afară de `failed`), inclusiv redeschiderea uneia finale. Agenții marchează `failed` cu `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+O stare poate trece oricând în ea însăși. Stările finale nu au muchii de ieșire.
 
-| From         | Allowed targets                                      |
+| Din          | Ținte permise                                        |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (finală)                                           |
+| `failed`     | — (finală)                                           |
+| `cancelled`  | — (finală)                                           |
 
-## Ticket priorities
+## Prioritățile tichetelor
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Stocată ca întreg pe scara nativă 0–4 a Linear. O valoare necunoscută este interpretată ca `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Prioritate | Stocat ca |
+| ---------- | --------- |
+| `none`     | `0`       |
+| `urgent`   | `1`       |
+| `high`     | `2`       |
+| `medium`   | `3`       |
+| `low`      | `4`       |
 
-## Ticket providers
+## Furnizorii de tichete
 
-An unknown or null stored value parses to `local`.
+O valoare stocată necunoscută sau null este interpretată ca `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Furnizor | Stare                                                    |
+| -------- | -------------------------------------------------------- |
+| `local`  | Stocat în întregime în baza de date a spațiului de lucru; valoarea implicită |
+| `linear` | Deținut la distanță, oglindit local                      |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Adaptoarele de sincronizare se află în `packages/cc_infra/lib/src/tickets/sync/` pentru Linear,
+GitHub Issues, Jira Cloud și ClickUp. GitHub Issues este doar un furnizor de adaptor
+de sincronizare (`vendorId: github`) — nu este o valoare `TicketProvider`, așa că
+un issue GitHub preluat este stocat cu `originKind: externalSync` și cu
+`provider: local` implicit. Maparea furnizorului se află în `ticket_sync_links`.
 
-## Ticket origin
+## Proveniența tichetelor
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` scrie `manual`. O preluare de la un furnizor scrie `externalSync`.
+Copiii delegați rămân `manual`.
 
-| Value          | Meaning                                                      |
+| Valoare        | Semnificație                                                 |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | Implicit la `createTicket` (rânduri umane, ale agenților și cele delegate) |
+| `externalSync` | Setat de `TicketSyncEngine` la o preluare de la un furnizor  |
 
-## Ticket fields
+## Câmpurile tichetului
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Agregatul acoperă două preocupări pe un singur rând. **Oglinda** (furnizor, chei, titlu, descriere, prioritate, etichete, stări, marcaje temporale) este un cache pentru un furnizor de la distanță și este rescrisă în întregime de o reîmprospătare. **Suprapunerea** (atribuire, delegare, spațiu, părinte, proiect, PR-uri legate) există doar în Control Center și o reîmprospătare nu o atinge niciodată.
 
-| Field                    | Type                       | Description                                                                                |
+| Câmp                     | Tip                        | Descriere                                                                                  |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Spațiul de lucru proprietar                                                               |
+| `provider`               | `TicketProvider`           | Backend-ul care deține datele canonice (implicit `local`)                                  |
+| `externalKey`            | `String?`                  | Cheie nativă a furnizorului (de ex. `LIN-123`). `createTicket` local scrie aici un UUID *separat*, nu `id`-ul rândului |
+| `url`                    | `String?`                  | URL web la furnizorul de la distanță                                                      |
+| `title`                  | `String`                   | Rezumat scurt; nu poate fi gol                                                            |
+| `description`            | `String?`                  | Conținut Markdown mai lung                                                                |
+| `priority`               | `TicketPriority`           | Implicit `none`                                                                           |
+| `labels`                 | `List<String>`             | Etichete libere                                                                           |
+| `status`                 | `TicketStatus`             | Starea normalizată canonică                                                               |
+| `rawStatus`              | `String?`                  | Numele stării native al furnizorului de la distanță, păstrat pentru afișare fără pierderi  |
+| `externalSyncedAt`       | `DateTime?`                | Ultima sincronizare multi-furnizor; null până la prima. Maparea per furnizor se află în `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Părintele din arborele de delegare / descompunere                                         |
+| `projectId`              | `String?`                  | Proiectul proprietar; nu este trimis niciodată către un sistem de la distanță             |
+| `assignedAgentId`        | `String?`                  | Id-ul principalului atribuit (doar metadate — atribuirea nu trimite nimic)                 |
+| `assigneeType`           | `PrincipalType`            | Ce fel de principal numește `assignedAgentId` — `user` sau `agent` (implicit `agent`)      |
+| `createdByType`          | `PrincipalType?`           | Felul principalului care a creat tichetul (`user` sau `agent`); null pentru rândurile vechi/de sistem |
+| `createdById`            | `String?`                  | Id-ul principalului care a creat tichetul                                                 |
+| `assignedTeamId`         | `String?`                  | Echipa atribuită (doar metadate)                                                          |
+| `delegatedByAgentId`     | `String?`                  | Agentul care a delegat acest tichet                                                       |
+| `delegationDepth`        | `int`                      | Adâncimea în lanțul de delegare; rădăcina este `0`, verificată față de plafonul de adâncime maximă |
+| `delegationRootTicketId` | `String?`                  | Rădăcina lanțului de delegare; null pentru un tichet rădăcină                             |
+| `spaceId`                | `String?`                  | Conversația din care a provenit tichetul sau spațiul agentului care deleagă               |
+| `errorMessage`           | `String?`                  | Setat când `status` este `failed`                                                         |
+| `linkedPrIds`            | `List<String>`             | Id-urile nodurilor PR la care este legat acest tichet                                     |
+| `metadata`               | `Map<String, dynamic>`     | Colecție liberă de valori                                                                 |
+| `createdAt`              | `DateTime`                 | Momentul creării                                                                          |
+| `startedAt`              | `DateTime?`                | Când a început munca                                                                      |
+| `blockedAt`              | `DateTime?`                | Când a fost blocat tichetul                                                               |
+| `cancelledAt`            | `DateTime?`                | Când a fost anulat tichetul                                                               |
+| `completedAt`            | `DateTime?`                | Când s-a finalizat cu succes tichetul                                                     |
+| `finishedAt`             | `DateTime?`                | Când tichetul a ajuns în orice stare finală                                               |
+| `updatedAt`              | `DateTime`                 | Ultima mutație (reîmprospătare a oglinzii sau modificare a suprapunerii)                   |
+| `version`                | `int`                      | Contor de concurență optimistă, incrementat la fiecare mutație                            |
+| `originKind`             | `TicketOriginKind`         | Cum a fost creat tichetul (implicit `manual`)                                             |
+| `collaborators`          | `List<TicketCollaborator>` | Populate de către depozit la cerere                                                       |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Derivate: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` și `displayKey` (`externalKey ?? id` — tichetele locale afișează așadar UUID-ul separat de la creare, nu `id`-ul rândului).
 
-## Ticket relations
+## Relațiile dintre tichete
 
-Stored edges are directional rows in `ticket_links`:
+Muchiile stocate sunt rânduri direcționate în `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
+| Tip           | Șir stocat     | Semnificație                    |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | Sursa o blochează pe cea țintă  |
+| `relatesTo`   | `relates_to`   | Relație simetrică               |
+| `duplicateOf` | `duplicate_of` | Sursa este un duplicat al țintei |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Vocabularul folosit de interfață și de `ticket_relation` este `TicketRelationKind`, derivat dintr-o muchie stocată plus capătul pe care se află subiectul:
 
-| Kind           | Derived from                                         |
+| Fel            | Derivat din                                          |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Un rând `blocks` în care subiectul este ținta       |
+| `blocking`     | Un rând `blocks` în care subiectul este sursa       |
+| `relatedTo`    | Un rând `relates_to` (simetric)                      |
+| `duplicateOf`  | Un rând `duplicate_of` în care subiectul este sursa |
+| `duplicatedBy` | Un rând `duplicate_of` în care subiectul este ținta |
+| `subIssueOf`   | `tickets.parent_ticket_id` pe subiect                |
+| `parentOf`     | `tickets.parent_ticket_id` pe celălalt tichet        |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Legăturile de părinte și de sub-sarcină **nu** sunt rânduri `ticket_links` — ele se află în `tickets.parent_ticket_id`.
 
-## Domain events
+## Evenimente de domeniu
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Aceste opt clase se află în `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Nu există `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` sau `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| Eveniment                 | Declanșat când                                        |
+| ------------------------- | ----------------------------------------------------- |
+| `TicketCreated`           | Tichetul este creat                                   |
+| `TicketAssigned`          | Tichetul este atribuit unui principal sau unei echipe |
+| `TicketCompleted`         | Munca se încheie cu succes                            |
+| `TicketFailed`            | Munca eșuează                                         |
+| `TicketCancelled`         | Tichetul este anulat                                  |
+| `TicketStatusChanged`     | Orice schimbare de stare                              |
+| `TicketReassigned`        | Tichetul este reatribuit                              |
+| `TicketDetailsUpdated`    | Titlul, descrierea, prioritatea sau etichetele se schimbă |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` este un semnal de audit și de notificare și un trigger de pipeline. Atribuirea către un agent nu pornește nicio rulare — nu există niciun dispecer de tichete care să supravegheze `assignedAgentId`. Atribuirea către o echipă este excepția: `TeamRoutingService` îl trimite pe liderul echipei. Adăugarea unui colaborator scrie un rând și nu publică nimic. Un webhook de la un furnizor este aplicat prin `TicketSyncEngine` fără un eveniment de domeniu.
 
-## Mutation chokepoint
+## Punctul de trecere al mutațiilor
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` deține fiecare mutație.
 
-| Mechanism              | Detail                                                                                                                                            |
+| Mecanism               | Detaliu                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Punct de trecere unic  | Toate mutațiile trec prin `_mutate`, care încarcă rândul și apelează `_assertWorkspace` înainte de a aplica                                     |
+| Izolarea spațiilor de lucru | `_assertWorkspace` aruncă `WorkspaceMismatchException` când `workspaceId` al rândului încărcat nu corespunde celui al apelantului            |
+| Concurență optimistă   | `_mutate` scrie cu `expectedVersion` setat la `version`-ul tocmai citit și reîncearcă la `ConcurrencyConflictException`, recitind starea proaspătă |
+| Revendicare exclusivă  | `tryCheckout` / `releaseCheckout`; un al doilea agent care revendică un tichet deja rezervat primește `CheckoutConflictException`                |
+| Garda de tranziție     | `canTransitionTo`, aplicată doar când `force` este false                                                                                          |
 
-## See also
+## Vezi și
 
-- [Tickets](/ro-RO/manual/concepte/tichete/)
-- [Manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
-- [Delegate tickets](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
-- [Domain events](/ro-RO/manual/referinta/evenimente-de-domeniu/)
+- [Tichete](/ro-RO/manual/concepte/tichete/)
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Evenimente de domeniu](/ro-RO/manual/referinta/evenimente-de-domeniu/)

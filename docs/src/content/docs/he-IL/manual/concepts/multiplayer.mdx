@@ -1,216 +1,194 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: רב־משתמשים — זהות, חברות ונוכחות
+description: איך Control Center ממדל בני אדם וסוכנים כמשתתפים שווי־מעמד, מה באמת שולט בגישה לסביבת עבודה, ולמה מודעות חיה ורשומות משותפות נוסעות בשני מסלולים שונים.
 slug: he-IL/מדריך-למשתמש/מושגים/רב-משתמשים
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center עובד למפעיל יחיד, אבל המודל שמתחתיו מרובה־שחקנים מלכתחילה. בני
+אדם וסוכנים שולחים הודעות באותם מרחבים, עורכים את אותם כרטיסים ומופיעים באותו
+סגל. הפיכת זה לבטוח ולמובן מסתכמת בשלוש החלטות: **מי נחשב לשחקן**, **מה שולט
+בגישה** ו**איזה מצב משותף באופן עמיד לעומת משודר רק באופן חי**.
 
-## Principals: users and agents are co-equal actors
+## ישויות ראשיות: משתמשים וסוכנים הם שחקנים שווי־מעמד
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+כל דבר שמתעד "מי עשה זאת" — הודעות, כרטיסים, סקירות, תוכניות, יומני הרצה,
+רשומות ביקורת — נפתר דרך **ישות ראשית**, איחוד אטום של `UserPrincipal`
+ו-`AgentPrincipal` עם צורה תמציתית ברשת
+(`user:<id>` / `agent:<id>`). ייחוס אינו ממוטט N בני אדם (או N סוכנים)
+לחשבון מייצג יחיד, ולכן סקירה שהשאיר סוכן וסקירה שהשאיר אדם ניתנות להבחנה בכל
+מקום שבו הן מופיעות.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+מכיוון שהישות הראשית היא יחידת הזהות, היא גם יחידת ההכלה:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **מגבלות קצב הן לפי ישות ראשית, לא לפי סשן.** מגן ההצפה על קריאות כלים
+  מרחוק מתקצב לפי משתמש, לא לפי חיבור: כל המכשירים של חבר יונקים מחלון נע
+  משותף אחד (120 קריאות בדקה, ומהן לכל היותר 30 רשאיות לשנות), כך שפתיחת
+  שלושה מכשירים אינה משלישה לאיש את המכסה וחבר רועש אחד לא יכול להרעיב את
+  האחרים.
+- **הביטול הוא לפי ישות ראשית.** יומן הפעולות של כל לקוח מתעד רק את השינויים
+  שהישות הראשית _שלו_ ביצעה. אפשר לבטל עם ⌘Z עריכה משלכם בכרטיס; אי אפשר לבטל
+  עריכה של חבר לצוות — עד שתראו אותה, המסלול העמיד כבר הכריע בה (ראו בהמשך).
 
-## Membership is the access boundary — not the pairing key
+## החברות היא גבול הגישה — לא מפתח הצימוד
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+שני פרטי גישה נפרדים עונים על שתי שאלות נפרדות. **מפתח הצימוד**
+(ראו [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/))
+מאמת _מכשיר_ מול השרת. **החברות** מעניקה למשתמש של אותו מכשיר הרשאה לפעול
+בתוך _סביבת עבודה_. מכשיר מצומד שהמשתמש שלו אינו מחזיק בחברות בסביבת עבודה
+אינו יכול לא לקרוא בה ולא לשנות בה.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+החברות היא שורה אחת לכל (סביבת עבודה, משתמש), והיא נשמרת **בקובץ מסד הנתונים
+של אותה סביבת עבודה עצמה** — כך ש"מי נמצא בסביבת העבודה הזו?" היא קריאה תחומה
+רגילה, ואילו השאלה ההפוכה, "באילו סביבות עבודה אני נמצא?", חייבת לפרוש על פני
+קבצים והיא אחד הפיזורים הבודדים בין סביבות עבודה שמותרים. זה מה שבורר סביבות
+העבודה מריץ לפני שנבחרה סביבת עבודה כלשהי.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+כל שורה נושאת תפקיד מסולם בן חמש דרגות, מסודר לפי דרג:
 
-| Role     | May                                                                                                        |
+| תפקיד   | מה מותר                                                                                                        |
 | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| `owner`  | שליטה מלאה, כולל מחיקת סביבת העבודה; בדיוק אחד לכל סביבת עבודה                                      |
+| `admin`  | ניהול חברים, הזמנות, הגדרות ופעולות הרסניות                                                  |
+| `member` | קריאה וכתיבה יומיומית: הודעות, כרטיסים, הרצות סוכנים                                                       |
+| `viewer` | קריאה בלבד בכל סביבת העבודה; תבניות glob להחרגת סודות מסתירות נתיבים תואמים במשטחים הנושאים קוד |
+| `guest`  | אותה רצפת קריאה בלבד כמו צופה, בדרגה הנמוכה ביותר בסולם |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+כל החלטת גישה מצטמצמת ל"האם התפקיד של הקורא הוא לפחות X". הרצפה נגזרת מסוג
+הפעולה, אלא אם היא מצהירה על רצפה מפורשת: קריאה דורשת `guest`, שינוי דורש
+`member`, ופעולה הרסנית דורשת `admin`. ACL לפי אובייקט, מעבר להענקות לפי מאגר
+שמתוארות בהמשך, נמצא מחוץ להיקף במכוון.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**הזמנות** הן הדרך להעניק חברות, מתוך הגדרות ← סביבת עבודה ← חברים. מנהל מפיק
+קוד חד-פעמי (כקישור או כ-QR) שפג תוקפו אחרי שבעה ימים כברירת מחדל; השרת שומר
+רק את גיבוב ה-SHA-256 של הקוד, והקוד עצמו מוצג פעם אחת בדיוק. מימושו מקצה את
+המשתמש ב-JIT, רושם חברות בתפקיד של ההזמנה (לעולם לא `owner` — בעלות מועברת
+במפורש, ולעולם אינה מוענקת בהזמנה) ומעביר לצימוד המכשיר. פרטי הגישה של מכשיר
+שמונפקים אחרי הצימוד מוגבלים בעצמם ל-30 יום, כך שצימוד אינו מפתח קבוע.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**הענקות לפי מאגר** יושבות מתחת לחברות. מכיוון שהשרת מחזיק עותקי עבודה מלאים,
+החברות בסביבת העבודה לבדה אסור לה שתעניק הרשאה גבוהה מזו של מארח הקוד: כל משטח
+הנושא קוד — קבצים, diffs, סקירת בקשות משיכה, חיפוש קוד — בודק את ההענקה של
+החבר על _אותו מאגר_. ההענקות הן לכל (סביבת עבודה, משתמש, מאגר) ומדורגות
+`none` → `read` → `review` → `write`, כאשר `write` פירושה הפעלת הרצות סוכנים
+שכותבות למאגר. היעדר שורה פירושו `none`; בעלים ומנהלים מחזיקים באופן משתמע
+ב-`write` על כל מאגר מקושר ואינם נושאים שורות כלל.
 
-## Two lanes of collaboration state
+## שני מסלולים של מצב שיתוף פעולה
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center מפצל את המצב המשותף לשני מסלולים עם כללי עמידות הפוכים, מפני
+ששני סוגי המצב נכשלים בדרכים הפוכות.
 
-### The ephemeral presence lane
+### מסלול הנוכחות הארעי
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+נוכחות — מי מחובר, היכן הוא נמצא, מה הוא מקליד, מה סוכן עושה כרגע — חסרת ערך
+ברגע שהיא מיושנת. אילו נשמרה, כל התחברות מחדש הייתה צריכה ליישב בין "מסד
+הנתונים אומר שסם עורך את הכרטיס הזה" לבין המציאות. לכן נוכחות **לעולם אינה
+נכתבת למסד הנתונים**. היא שוכנת ב**מרכז נוכחות** בזיכרון בשרת: לקוחות מפרסמים
+עם `presence.update`, עמיתים נרשמים עם `presence.watch`, ורשומות פגות אוטומטית
+אחרי שלוש פעימות לב שהוחמצו (פעימות הלב רצות כל 10 שניות; המרכז סורק כל 5).
+אין מה ליישב — רק לתת לפקוע.
 
-Two properties keep the lane trustworthy:
+שתי תכונות שומרות על מהימנות המסלול:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **הזהות מגיעה מהסשן, ולעולם לא מארגומנטים של הלקוח.** השרת ממפה את המכשיר
+  המאומת של החיבור למזהה משתמש; לקוח יכול תמיד לעדכן רק את הנוכחות של עצמו,
+  כך שאיש אינו יכול להתחזות לסטטוס או למיקום של משתתף אחר. עדכון `offline`
+  מפורש (ניתוק או מתג ההיעדרות) מסיר את הרשומה מיד.
+- **הסגל מרוכז בשרת.** עמיתים לעולם אינם מחליפים נוכחות ישירות, כך שכל משתתף
+  רואה את אותו סגל ללא תלות בטופולוגיה. לסוכנים אין לקוח, ולכן השרת _מסנתז_
+  את הרשומות שלהם ממצב ההרצה החי — חושב, פועל, חסום על שער אישור, סיים — כשהרצה
+  מייצגת אחת מכריעה את המצב והמיקום של הסוכן, כדי שהרצות מקבילות לא יגרמו לסגל
+  להבהב.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+הפיזור מדורג לפי צרכן: מחשב ואינטרנט נוסעים ברמה מלאה (לכל היותר פליטת סגל אחת
+ל-100 מילישניות), והטלפון ברמת תקציר (ל-500 מילישניות), כך שעדכונים בקצב של סמן
+לא יכולים להתיך את ה-PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+ה**מיקום** של משתתף — היכן הוא נמצא כעת, עד לרמת החפץ — הוא איחוד אטום:
+`Space`, `File` (מאגר + נתיב + שורה אופציונלית), `Pr`, `Ticket`, `PlanNode`.
+לא לכל מיקום יש לאן לקפוץ: אין נתיב של מציג קבצים, ולכן מיקום `File` מוצג
+כתווית ולא כיעד. המסלול נושא גם **הצהרות בעלות רכות** ("סם עורך את הכרטיס
+הזה", "סוכן מחזיק את עץ העבודה הזה"): _נראות_ של התנגשות, לא נעילות. סוגי
+מיקום לא מוכרים מנותחים ל-null, כך שלקוח ישן פשוט אינו מציג את מה שאינו מבין.
 
-### The durable shared lane
+### המסלול המשותף העמיד
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+רשומות שחייבות לשרוד — כרטיסים, מסמך ההערות המשותף של המרחב, הודעות — הולכות
+במסלול ההפוך: סמכותיות, מסודרות ונשמרות. עריכות מקבילות מוכרעות לפי **"הכותב
+האחרון מנצח" לפי סדר קבלה בשרת**, ולעולם לא לפי שעונים של לקוחות. ההכרעה
+מכוונת לעדינות: עריכות בכרטיס הן _לפי עמודה_, כך ששני אנשים שעורכים שדות שונים
+של אותו כרטיס מגיעים ליעדם ואף אחד לא מוחק את של האחר (מעברי זרימת עבודה
+שומרים במקום זאת על נעילה אופטימית); מסמך ההערות של המרחב הוא עמודה אחת, ולכן
+כל המסמך כפוף ל-LWW, כשהצהרות בעלות רכות במסלול הנוכחות הופכות עריכה מקבילה
+לגלויה במקום לנעולה. הוא במכוון אינו CRDT — נטל ההוכחה מוטל על ה-CRDT, ו-LWW
+לפי סדר קבלה בתוספת הצהרות גלויות מכסה את דפוסי שיתוף הפעולה בפועל.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"הכותב האחרון" פירושו **סדר קבלה בשרת**, ולעולם לא שעון של לקוח — מחשב נייד עם
+שעון מוסט אינו יכול לזכות בעריכה שהפסיד. מאחורי המסלול העמיד יושבת **הזנת
+הסנכרון**: טריגרים של SQLite מוסיפים כל שינוי ליומן שינויים לפי סביבת עבודה
+_בתוך טרנזקציית הכתיבה_, ומקצים מספר סידורי מונוטוני לפי סביבת עבודה באותה
+טרנזקציה של השינוי עצמו. שירות בשרת עוקב אחרי היומן הזה והופך אותו למסגרות
+דלתא מגורסאות לפי סדר הרצף. לקוחות מתפתחים מתמונות מצב מלאות לדלתאות; פער
+ברצף מפיל את המאגר הזה חזרה למצב תמונת מצב במקום להחיל מסגרות באופן שגוי.
 
-## Follow, steer, take over, hand back
+## מעקב, היגוי, השתלטות והחזרת שליטה
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+מסלול הנוכחות אינו רק סגל — הוא מניע את פעלי שיתוף הפעולה:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **מצב מעקב.** לוחצים על משתתף והלקוח שלכם רוכב על המיקום שלו ומנווט כפי שהוא
+  מנווט. המעקב הוא "עד שתפעלו": ברגע שאתם מנווטים בכוחות עצמכם, המעקב מתנתק.
+  באנר שניתן לסגור מודיע כשמשתתף אחר עושה זרקור (מציג) על מרחב שאתם נמצאים בו.
+- **היגוי.** הודעה לסוכן פעיל נכנסת לתור כהיגוי; הסוכן קורא אותה מחדש לפני
+  שהוא ממשיך לתור הבא שלו, כך שאפשר לדחוף הרצה באמצע הדרך בלי להרוג אותה.
+- **השתלטות.** נטילת שליטה בשיחה מפסיקה כל הרצה פעילה בגבול התור הנקי הבא שלה
+  (הרצת Claude Code, שאין לה גבול בטוח, נעצרת) מאחורי תמונת מצב של git לכל תור,
+  כך שההשתלטות הפיכה. סמן עמיד חוסם שליחות חדשות למרחב ושורד הפעלה מחדש של
+  השרת — השרת לעולם אינו ממשיך אוטומטית לתוך עריכה חצי-גמורה של אדם. עורך חי
+  אחד לכל עץ עבודה הוא הצהרת בעלות רכה: השתלטות שנייה נראית ומסורבת, ולא ממוזגת
+  בשקט.
+- **החזרת שליטה.** החזרת השליטה מפרסמת סיכום diff מובנה של עץ העבודה למרחב,
+  מכניסה אותו לתור כהיגוי עבור ההרצות המושהות, ממשיכה אותן ומנקה את הסמן.
 
-## The autonomy dial
+## מחוון האוטונומיה
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+היגוי והשתלטות הם התערבויות בדיעבד. **מחוון האוטונומיה** הוא ההגדרה הקבועה:
+לכל מרחב, לכל סוכן, נקבע מכותרת המרחב, והוא מכריע מה קורה כשסוכן מגיע לפעולה
+מגודרת.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
+| רמה             | ערך ברשת        | השפעה על קריאת כלי מגודרת                                                                                   |
 | ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| הצעה בלבד      | `proposeOnly`     | נדחית על הסף, עם סיבה שאומרים לסוכן להעביר הלאה — הוא יכול לתאר את הפעולה אך לא לבצע אותה        |
+| פעולה באישור | `actWithApproval` | שער האישור שכשלו סגור: בקשת אישור אחת מוצגת למפעיל מחובר, ואין מאשר פירושו דחייה |
+| פעולה חופשית        | `actFreely`       | מאושרות מראש, למעט מקום שבו חל כלל `deny` קשיח ממעקות הבטיחות — כלל דחייה תמיד מנצח                     |
+| (לא מוגדר)           | `null`            | זהה לפעולה באישור: ברירת המחדל של השרת                                                               |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+שני דברים יושבים מחוץ למחוון בשני הכיוונים. פעולת הפלט של המצב עצמו מוצמדת
+ואי אפשר לדחות אותה לעולם, יאמר המחוון מה שיאמר — מצב התזמור היה פעם חסר
+יכולת מבנית לפלוט את התוצר היחיד שלו, מפני שערכת מצב דחתה את מחלקת ההשפעה
+שהפעולה הזו מצהירה עליה. ודחיית `deny` קשיחה ממעקות הבטיחות של הפעולות אינה
+ניתנת לעקיפה על ידי `actFreely`.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
+:::note[המחוון מגדר רק את ה-harness המובנה]
+הוא נבדק על ידי ה-callback של האישור בלולאת ה-harness. סוכן שרץ על
+מתאם Claude Code מבצע את קריאות הכלים שלו בתוך התהליך שלו עצמו,
+שם ל-Control Center אין מה לגדר — ראו
+[מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
 :::
 
-## Solo zero-regression
+## אפס רגרסיה למפעיל בודד
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+כל זה תוספתי. זרימת העבודה של מפעיל בודד אינה משתנה: עם אדם אחד ובלי סוכנים,
+למרכז הנוכחות אין מה לשדר, ולכן המסלול פולט את תמונת המצב הראשונית שלו ואז עומד
+בחוסר פעילות, בלי תעבורה; מנגנון ה-LWW והסנכרון הוא אותו נתיב של כותב יחיד שהיה
+תמיד; ומפתח הצימוד נשאר פרט הגישה של המכשיר שהיה תמיד. החברות היא ממילא גבול
+הגישה — עם אדם אחד יש שורת בעלים אחת ואין ממשק סגל.
 
-## Related concepts
+## מושגים קשורים
 
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): the boundary membership enforces
-- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/): the pairing key and device credential side of identity
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): the agent half of the principal union
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/): the runs that steering and take-over pause and resume
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): the effect-class policy the autonomy dial composes with
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): the bus that live updates ride
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): הגבול שהחברות אוכפת
+- [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/): צד הזהות של מפתח הצימוד ופרטי הגישה של המכשיר
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): החצי הסוכני של איחוד הישויות הראשיות
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/): ההרצות שהיגוי והשתלטות מפסיקים וממשיכים
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): מדיניות מחלקות ההשפעה שמחוון האוטונומיה משתלב איתה
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/): האפיק שהעדכונים החיים נוסעים עליו

@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Verktygskontext och promptcache
+description: Varför en agent bara får se en liten delmängd av sina verktyg i stället för alla, hur den når resten, och reglerna som håller leverantörens promptcache varm under en körning.
 slug: sv-SE/handbok/koncept/verktygskontext
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Två saker gäller för varje förfrågan som den inbyggda harnessen skickar: verktygsdefinitionerna är den största fasta kostnaden i den, och nästan inga av dem kommer att användas. Den här sidan förklarar vad Control Center gör åt det, och varför svaret inte helt enkelt är ”skicka färre verktyg”.
 
-## The problem is attention, not bytes
+## Problemet är uppmärksamhet, inte byte
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center registrerar omkring 126 verktyg. Skickade i sin helhet kostar deras definitioner ungefär **23 000 tokens vid varje förfrågan** — en kostnad som ingen komprimering kan röra, eftersom verktygsdefinitionerna färdas i en annan del av förfrågan än samtalet.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+Tokensnotan är det självklara klagomålet, och med promptcache är den också den mindre. Den verkliga kostnaden är **träffsäkerheten i valet**. Publicerade utvärderingar av verktygsanrop är ense om att modeller väljer rätt verktyg pålitligt upp till någonstans kring 30–50 verktyg i kontexten, och blir successivt sämre bortom det. Den angivna orsaken är inte antalet tokens utan **semantisk överlappning**: när en katalog innehåller flera verktyg vars beskrivningar läser likadant väljer modellen mellan snarlika alternativ i stället för att minnas en förmåga.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Med 126 verktyg ligger en agent långt förbi det intervallet i varje enskild tur — inklusive de många turer där den bara behövde läsa en fil.
 
-## The two-tier surface
+## Ytan i två nivåer
 
-A run is therefore shown two things:
+En körning visas därför två saker:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- en **resident** uppsättning — ett tjugotal verktyg, som skickas med fullständiga scheman vid varje förfrågan;
+- ett **namnindex** över allt annat, grupperat under rubriker som ”Ärenden och projekt” eller ”Minne och kunskap”, som kostar några hundra tokens för hela katalogen.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Mätt på den aktuella katalogen tar det verktygsblocket från **~23,1k tokens till ~5,0k, cirka 78 % mindre**, och placerar den ständigt synliga uppsättningen inom det intervall där valet är pålitligt.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/sv-SE/handbok/koncept/lagen) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+Den residenta uppsättningen är de verktyg en körning använder i *de flesta* körningar: fil- och skalordförrådet (`read`, `write`, `edit`, `search`, `bash`, …), upptäcktsverktygen, uppgiftschecklistan, minnessökningen och vilket verb som helst som det aktuella [läget](/sv-SE/handbok/koncept/lagen) måste anropa för att leverera sin utdata. Ett läges eget utdataverb är alltid resident — en körning ska aldrig behöva leta efter det anrop som producerar dess leverans.
 
-### Deferred does not mean unavailable
+### Uppskjutet betyder inte otillgängligt
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Det här är delen som gör designen säker och inte bara billig. **Ett uppskjutet verktyg går att anropa redan från första turen.** Bara dess schema hålls tillbaka.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Agenten ser namnet i sin prompt. Om den anropar namnet direkt läser harnessen in schemat och kör verktyget i samma steg — inget fel, ingen tur och retur. Modellen behöver inte veta att verktyget någonsin var ”urladdat”.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+När agenten känner till uppgiften men inte namnet tar `search_tools` en beskrivning i klartext (”tilldela någon ett ärende”), rangordnar körningens hela yta och returnerar träffarna *med schemana redan inlästa*, så att nästa tur kan anropa ett av dem. Om en sökning inte hittar något säger den det rakt ut och föreslår andra formuleringar eller en bredare sökning — med avsikt, eftersom en agent som tolkar en tom sökning som ”den här förmågan finns inte” hittar på en ersättning i stället för att leta igen.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` finns bara i den inbyggda harnessen. Externa MCP-klienter har `search_tool_bm25` i stället, som rangordnar samma index men bara beskriver träffarna — de klienterna har redan fått varje schema från `tools/list`, så det finns inget att läsa in.
 
-### What deferral never does
+### Vad uppskjutning aldrig gör
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/sv-SE/handbok/koncept/racken) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Uppskjutning tillämpas **efter** lägets verktygsfilter, aldrig i stället för det. Den döljer ett schema; den kan inte avslöja ett verktyg som läget har nekat. Ett aktiverat verktyg passerar fortfarande godkännandegrinden och [åtgärdsräcken](/sv-SE/handbok/koncept/racken) precis som ett resident verktyg skulle göra, och ett verktyg kan inte läsa in ett namn som inte fanns på körningens yta från början.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+MCP-ytan som externa klienter ser påverkas **inte**. `tools/list` returnerar fortfarande hela katalogen. Ett tidigare försök att banta den slog sönder agenter helt och hållet: MCP-klienter validerar verktygsnamn mot sin egen cachade lista och avvisar allt som inte står där utan att någonsin fråga servern, så ett ”dolt men anropbart” verktyg var helt enkelt onåbart. Uppskjutningen bor i harnessen, där det att läsa in ett verktyg mitt i en körning är något harnessen faktiskt kan göra.
 
-### Turning it off
+### Stänga av det
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/sv-SE/handbok/referens/cc-server-cli).
+`--tool-deferral=off` (eller `CC_SERVER_TOOL_DEFERRAL=off`) gör varje tillåtet verktyg resident igen och producerar exakt de förfrågningar som servern skickade innan uppskjutningen fanns. Se [CLI-referensen för `cc_server`](/sv-SE/handbok/referens/cc-server-cli).
 
-## Prompt caching
+## Promptcache
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Agentarbetslaster är sneda: de skickar enorma prompter och får små svar, tur efter tur, med samma prefix varje gång. Leverantörerna cachar det prefixet, och en cacheläsning kostar ungefär en tiondel av en färsk. Cachens träffrekvens är därför en förstklassig egenskap hos harnessen snarare än en optimering — och hos Anthropic köper den dessutom genomströmning, eftersom cachade tokens inte räknas mot gränsen för indata per minut.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Cachning bygger på en exakt prefixmatchning, vilket ger en enda styrande regel.
 
-### Never rewrite what was already sent
+### Skriv aldrig om det som redan har skickats
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Varje byte som ändras ogiltigförklarar cachen från den punkten och framåt. Så harnessen **lägger bara till**: nya meddelanden i slutet, och nyligen aktiverade verktygsscheman *efter* det cachade verktygsblocket i stället för sammanslagna med det. Den ordningen är skälet till att aktivering är billig — det cachade prefixet förblir identiskt och körningen betalar bara för de scheman den just läste in.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+Loopen trimmar också bort inaktuell verktygsutdata från äldre turer för att återvinna kontext. Den väntar tills det finns tillräckligt att återvinna för att omskrivningen ska vara värd besväret, så en trimning är en sällsynt djup omskrivning i stället för en ständig cachemiss.
 
-### Where the breakpoints go
+### Var brytpunkterna hamnar
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+En leverantör tillåter ett begränsat antal cachemarkörer, och Control Center använder dem med avsikt:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Markör                    | Täcker                            | Livstid |
+| ------------------------- | --------------------------------- | ------- |
+| Sista **residenta** verktyget | Verktygsblocket               | 1 timme |
+| Sista systemblocket       | Verktyg + systemprompt            | 1 timme |
+| Föregående turs svans     | Historik fram till den senaste förfrågan | 5 min   |
+| Aktuell turs svans        | Hela historiken                   | 5 min   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+De två sista är ett rullande par, och skälet till paret är subtilt: en cacheuppslagning söker bakåt ett begränsat antal block efter något som en tidigare förfrågan lagrade. En enda tur som kör många verktyg parallellt kan skriva ut fler block än det fönstret, och då missar en svansmarkör tyst och förfrågan betalar fullt pris utan att något i svaret säger det. Genom att markera exakt den punkt där föregående förfrågan slutade blir träffen strukturell i stället för en kapplöpning.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Prefixet för verktyg och system får den långa livstiden eftersom det är konstant under hela körningen, delas av varje körning och subagent med samma form, och eftersom klockan startar när en förfrågan *börjar* — en tur som streamar i flera minuter har redan gjort slut på större delen av ett kort fönster innan nästa förfrågan formas.
 
-### Subagents share one prefix
+### Subagenter delar ett prefix
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Subagenter av samma typ producerar byte-identiska promptprefix, så de bör läsa en gemensam cachepost i stället för att var och en skriver sin egen. Men en post blir läsbar först när förfrågan som skrev den börjar svara, så en fan-out som startas på en gång får varje barn att betala överpriset för ett prefix de alla delar.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+Harnessen låter det första barnet av en given form starta och släpper sedan dess syskon så snart det börjar streama. Väntan är begränsad: ett långsamt första barn kostar en cacheträff, aldrig själva fan-outen. Av samma skäl får varje subagent samma residenta verktygsuppsättning oavsett sin profil — att variera den per profil skulle fragmentera det delade prefixet utan vinst, eftersom profilen redan har avgjort vad barnet får anropa.
 
-## Watching it work
+## Se hur det fungerar
 
-Both halves are observable rather than assumed:
+Båda halvorna går att observera i stället för att antas:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **Kontextutforskaren** i ett samtal rapporterar de residenta verktygen, det uppskjutna indexet och vad varje tillbakahållet schema *skulle* kosta, byggd från samma kodväg som en verklig körning använder.
+- Varje körning registrerar vilka uppskjutna verktyg den läste in och vad som utlöste det, så en sökning som inte hittar något syns som en hämtningsmiss i stället för att försvinna in i en agent som tyst gör något angränsande.
+- Observability rapporterar **Cachefrekvens** som cacheläsningar över alla bearbetade prompttokens, inklusive cacheskrivningar — en körning som ständigt bygger om sitt prefix får låg siffra i stället för att se ut som en som aldrig behövde någon cache.

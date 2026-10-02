@@ -1,359 +1,384 @@
 ---
 title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+description: Setiap permukaan rig, backend, verb tindakan, status siklus hidup, port, default, dan kontrak — katalog faktual yang lengkap.
 slug: id-ID/panduan-pengguna/referensi/rigs
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/id-ID/panduan-pengguna/konsep/rigs/); to open a machine, follow [the
-guide](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/).
+Hanya fakta. Untuk model di baliknya, baca [Rigs dan
+lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/); untuk membuka mesin, ikuti
+[panduannya](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/).
 
-## Surfaces and backends
+## Permukaan dan backend
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Permukaan | Mengemudikan | Backend | Nilai | Egress terkurung |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminal (exec) | Shell di atas kanal exec VM | microVM | `smolvm` | Ya |
+| Browser | Chromium headless (CDP), Firefox (WebDriver BiDi), atau WebKit (W3C WebDriver) | microVM | `smolvm` | Ya |
+| Computer | Desktop X11: masukan melalui hypervisor, tangkapan melalui agen sistem tamu | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (fallback tanpa akselerasi, tidak pernah dipilih otomatis) | Ya |
+| Android | Android melalui ADB | Emulator Google | `android-emulator` | **Tidak** — emulator mengelola jaringannya sendiri |
+| iOS | Simulator iOS melalui WebDriverAgent | CoreSimulator | `ios-simulator` | **Tidak** — jaringan mengikuti Mac host |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Terminal dan permukaan `computer_use` berbagi nilai permukaan `computer`;
+terminal dibedakan oleh penanda image exec-nya dan tidak pernah dipakai ulang
+sebagai desktop yang dapat dikemudikan (atau sebaliknya). Satu percakapan
+menggunakan ulang satu mesin terminal.
 
-## Browser engines
+## Engine browser
 
-| Engine | Value | Protocol | Live view | Stills |
+| Engine | Nilai | Protokol | Tampilan langsung | Gambar diam |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — browser mendorong frame saat halaman digambar ulang | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Gambar diam yang di-poll (BiDi tidak punya screencast), dibatasi 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (klasik) | Gambar diam yang di-poll, ditranskode oleh ffmpeg host | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Sebuah rig menjalankan **satu** engine sepanjang masa hidupnya. Satu percakapan
+dapat memuat satu rig **per engine**, dan itulah yang memungkinkan perbandingan
+berdampingan: membuka "Firefox (VM)" di samping "Chromium (VM)" berarti dua
+mesin, dan menutup salah satunya membiarkan yang lain tetap berjalan.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Teruskan `engine` ke `rig.open` atau ke alat `browser_use`. Nama yang tidak
+dikenal ditolak alih-alih dijadikan default — meminta satu browser lalu
+diam-diam mendapat browser lain berarti menjawab pertanyaan kompatibilitas
+dengan jawaban yang salah.
 
-Engine-specific limits, stated rather than worked around:
+Batas khusus tiap engine, dinyatakan apa adanya alih-alih diakali:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** tidak punya muat ulang yang melewati cache (ia menolak
+  `ignoreCache` milik BiDi mentah-mentah), sehingga muat ulang keras sama
+  dengan muat ulang biasa.
+- **WebKit** juga tidak punya muat ulang yang melewati cache maupun umpan
+  konsol (keluarannya ditangkap dengan mengaitkan `console.*` setelah setiap
+  navigasi, sehingga apa pun yang dicatat selama pemuatan terlewat — setiap
+  ekstraksi konsol menyatakan hal itu), dan membutuhkan `ffmpeg` di host
+  untuk tampilan langsungnya.
+- **Keduanya tidak** mengekspos pohon aksesibilitas platform melalui
+  protokolnya, sehingga `extract (a11y)` mengembalikan hampiran turunan DOM,
+  yang diberi label demikian.
+- **Keduanya tidak** dapat menerima penyeretan berkas sungguhan; input berkas
+  tetap dapat diarahkan ke path di dalam mesin.
 
-## Machine images
+## Image mesin
 
-| Surface | Image | Fetched |
+| Permukaan | Image | Cara memperoleh |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminal | `ubuntu:24.04`, dipin dengan digest | Otomatis saat boot pertama, melalui jaringan bergerbang milik mesin itu sendiri |
+| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, dipin dengan digest, plus paket milik engine itu sendiri | Otomatis saat boot pertama, lalu di-cache sebagai paket yang dihangatkan |
+| Computer | Image desktop qcow2 dengan Chromium, Firefox, WebKit, dan baseline CLI ala runner yang dihosting GitHub yang sama dengan yang dihangatkan terminal | **Impor** di Pengaturan → Server → Rigs (unduhan yang dipin checksum jika dipublikasikan) |
+| Android | Image sistem Google | Melalui Android SDK |
+| iOS | Runtime Xcode Simulator plus WebDriverAgent yang dipin checksum | Runtime melalui Xcode; jembatan otomasi dari Pengaturan → Server → Rigs |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Setelah boot pertama setiap jenis microVM, server menyimpan salinan yang sudah
+diekstrak di bawah direktori data dan mem-boot setiap mesin berikutnya dari
+salinan itu — termasuk image yang sudah dihangatkan dengan paket yang telah
+terpasang. Terminal menghangatkan toolset CLI ala runner yang dihosting GitHub
+(`git`, `gcc`, `python3`, `jq`, `rsync`, alat arsip, dan sisa baseline apt;
+bukan Docker atau toolcache bahasa). Qcow2 Komputer menanamkan nama CLI yang
+sama pada waktu build image, di samping XFCE dan ketiga browser. Setiap browser
+menghangatkan engine-nya. Ketiga engine berbagi basis Debian tetapi tidak
+pernah berbagi paket: cache-nya dikunci pada image, engine **dan** revisi audio
+(`audio-v1-<engine>`), karena mesin yang dihangatkan untuk satu engine — atau
+sebelum PulseAudio dan ffmpeg menjadi bagian dari beban kerjanya — tidak memuat
+engine lain di dalamnya. Paket terminal dikunci pada revisi toolset
+(`tools-v1`) dengan alasan yang sama: paket yang dihangatkan sebelum compiler
+menjadi bagian dari image tidak boleh melayani mesin yang seharusnya
+memilikinya.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Tidak ada image otomasi siap pakai yang layak diambil — `chromedp/headless-shell`
+milik Chromium mengompilasi ALSA dan PulseAudio keluar, sehingga ia tidak akan
+pernah bisa mengeluarkan suara; satu-satunya image Firefox yang dipelihara
+ukurannya 33× basis Debian dan tetap tidak menyertakan `socat`; image WebKit
+yang dipelihara tidak ada sama sekali. Jadi setiap engine memasang dirinya saat
+mulai pertama (`chromium`, `firefox-esr`, atau `webkit2gtk-driver`) dan
+menjangkau arsip Debian (`deb.debian.org`, `security.debian.org`,
+`cloudfront.debian.net`) saat melakukannya. Chromium adalah biner distribusi
+yang diluncurkan sebagai `chromium --headless=new`.
 
-### Per-workspace custom images
+### Image kustom per ruang kerja
 
-| Setting key | Overrides |
+| Kunci pengaturan | Menimpa |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Image Terminal (VM) |
+| `rigs.smolvm.browserImage` | Image Browser Chromium (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Ditulis melalui penyimpanan pengaturan ruang kerja yang bergerbang admin
+(Pengaturan → Server → Rigs → Image kustom (ruang kerja ini)). Nilainya harus
+berupa referensi registry — path lokal, arsip, dan string mirip flag ditolak,
+baik di kolomnya maupun sekali lagi saat boot. Nilai tersimpan yang tidak
+valid diabaikan dengan berisik dan default-nya yang di-boot. Registry milik
+image itu sendiri (plus pendamping blob-CDN yang dikenal untuk Docker Hub,
+GHCR, Quay, GitLab, dan GCR) diizinkan melewati gerbang egress untuk
+penarikannya.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Kontrak image Terminal** — `bash` tersedia; `git`, `curl`, `socat` terpasang
+sebelumnya *atau* basis apt Debian/Ubuntu (enclosure memasang ketiga paket itu
+plus toolset CLI ala runner yang dihosting GitHub saat mulai pertama:
+compiler, Python 3, `jq`, alat arsip, `rsync`. Toolcache bahasa dan Docker
+tidak dipasang).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Kontrak image Browser** — basis apt Debian/Ubuntu (atau paket yang sudah
+terpasang) dengan `bash` dan `socat`, plus biner `chromium` yang diluncurkan
+server sendiri sebagai `chromium --headless=new` dengan DevTools pada loopback
+sistem tamu `9223`, diteruskan ke port sistem tamu `9222`. PulseAudio dan
+ffmpeg dipasang saat mulai pertama untuk jalur audio. Jangan membuat image
+`FROM chromedp/headless-shell`: `headless.gn` hulu mengompilasi ALSA dan
+PulseAudio keluar, sehingga biner itu tidak dapat mengeluarkan suara. Penimpaan
+berlaku untuk **rig Chromium saja** — perintah beban kerja yang di-boot adalah
+milik Chromium, dan menyerahkannya ke Firefox atau WebKit akan meluncurkan
+biner yang tidak ada di sana. Rig Firefox atau WebKit mengabaikannya dengan
+berisik dan mem-boot image yang dipin.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Port otomasi** — setiap mesin browser meneruskan tepat satu port loopback
+host ke sistem tamu `9222`. Di baliknya: DevTools milik Chromium dan agen jarak
+jauh milik Firefox berada pada loopback sistem tamu `9223` dengan relai `socat`
+di depannya (keduanya mengikat loopback tanpa syarat); driver WebKit menerima
+`--host` dan mengikat NIC sistem tamu sendiri. Firefox juga memvalidasi header
+`Host` terhadap port-nya sendiri, sehingga klien mengirim otoritas sisi sistem
+tamu, bukan otoritas yang dihubunginya.
 
-## Action verbs
+## Verb tindakan
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Setiap tindakan diurai secara total: payload yang cacat mengembalikan pesan
+yang menyebut kolomnya, bukan pengecualian. Verb pengamatan (ditandai ○) tetap
+diizinkan selama manusia memegang kendali; verb yang memutasi ditolak.
 
 ### `computer_use`
 
 `screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
 `right_click`, `middle_click`, `double_click`, `triple_click`,
 `left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
+`hold_key` (0–60 detik), `type`, `wait`○ (0–60 detik), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+Koordinat adalah piksel sistem tamu dalam mode sistem tamu saat itu; setiap
+tangkapan layar menyatakan ukuran tampilan. Kombinasi tombol memakai ejaan X11
+(`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` menerima `selection`: `clipboard` (yang diisi oleh ctrl+C,
+default), `primary` (pilih-untuk-salin X11), atau `xdnd` (penyeretan yang
+sedang berlangsung). Hasil kosong adalah jawaban normal untuk ketiganya.
+`clipboard_write` hanya menerima `text` — gambar dan berkas melintas di jalur
+berkas, karena argumen sebuah tindakan disimpan permanen di log audit dan byte
+gambar tidak layak berada di sana. Konten papan klip kembali dipagari sebagai
+data yang tidak tepercaya.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (hanya http/https), `reload` (`hard` opsional), `stop_loading`,
+`click` (selector atau koordinat), `fill`, `type`, `key` (nama tombol DOM),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+opsional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
+0,1–30 detik), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Konten halaman yang diekstrak kembali dipagari sebagai data yang tidak
+tepercaya.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Browser hanya punya satu papan klip, sehingga `clipboard_read` tidak menerima
+`selection`. Kedua verb papan klip membutuhkan **konteks aman**: halaman yang
+disajikan melalui `http://` polos sama sekali tidak punya API papan klip, dan
+verb-nya menyatakan hal itu alih-alih melaporkan papan klip yang kosong —
+gunakan `type` di sana, yang menyisipkan di posisi kursor tanpa melewati
+papan klip.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (alias `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power`, atau `KEYCODE_*` apa pun),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(terbatas pada worktree rig dan direktori data server), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, dan `shell`.
+`shell` menerima daftar argv dan berjalan di dalam Android, tidak pernah
+melalui shell host; ia mencakup diagnosis pengembang seperti `logcat`,
+`dumpsys`, dan `pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` tidak punya verb papan klip. Sejak Android 10, hanya aplikasi
+yang sedang difokuskan yang boleh membaca papan klip.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, tombol panah, atau satu karakter yang dapat dicetak; pengubah
+`command`, `control`, `option`, dan `shift` bersifat opsional), `home`, `lock`,
+`unlock`, `screenshot`○, `ui_dump`○, `install_app` (direktori `.app` simulator
+yang terbatas pada worktree rig atau direktori data server), `start_app`,
+`stop_app`, `uninstall_app`, `open_url`, dan `spawn`. `spawn` menerima argv dan
+menjalankannya di dalam simulator melalui `simctl`; ia tidak pernah memanggil
+shell host.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Koordinat adalah **point** layar iOS, bukan piksel tangkapan layar. Aliran
+langsung mempertahankan ukuran tetap simulator dan memberinya letterbox
+alih-alih mengubah ukuran perangkat. Transfer papan klip teks dari host ke
+simulator dan sebaliknya memakai kebijakan izin per pengguna, per arah yang
+sama dengan rig lain; berkas dan gambar tidak diterima oleh jalur papan klip
+iOS.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Setiap rig membuat perangkat CoreSimulator dan sesi WebDriverAgent yang
+dimilikinya. Menutupnya menghentikan WebDriverAgent, mematikan dan menghapus
+perangkat tersebut, serta menghapus entri registrinya. Rig iOS hanya berjalan
+di server macOS dengan Xcode, runtime iOS yang terpasang, dan jembatan otomasi
+yang dipin. Rig ini tidak menyediakan audio, mikrofon, penyeretan berkas, shell
+host, maupun jaminan jaringan yang terkurung.
 
-### Management tools
+### Alat pengelolaan
 
-| Tool | Description |
+| Alat | Deskripsi |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Daftar rig milik sebuah ruang kerja beserta permukaan, status, tampilan, dan pengendalinya |
+| `rig_close` | Hancurkan rig dan buang disknya |
 
-## Lifecycle
+## Siklus hidup
 
-| Phase | Meaning |
+| Fase | Arti |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Sedang boot; detail status memuat langkah saat itu apa adanya |
+| `ready` | Dapat dijangkau dan menerima tindakan |
+| `parked` | Diparkir karena idle: vCPU dihentikan, RAM tetap residen; tindakan berikutnya membangunkannya |
+| `closing` | Sedang dimatikan |
+| `closed` | Sudah hilang; barisnya tetap ada untuk jejak audit |
+| `failed` | Mati atau tidak pernah menyala; dapat dibedakan agar UI dapat menawarkan coba lagi |
 
-| Close reason | Fired when |
+| Alasan penutupan | Dipicu saat |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Seseorang atau agen memintanya |
+| `idleTimeout` | Idle melewati 2× jendela idle, atau digusur karena memori |
+| `ttlExpired` | Masa hidup kerasnya habis |
+| `conversationEnded` | Percakapan pemiliknya berakhir |
+| `workspaceGone` | Ruang kerja dihapus atau keanggotaan hilang |
+| `serverShutdown` | Server sedang berhenti |
+| `backendFailure` | Hypervisor di bawahnya mati |
 
-## Defaults and ceilings
+## Default dan batas atas
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Nilai | Terminal | Browser | Computer | Mobile |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Memori | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU | 2 | 2 | 4 | 4 |
+| TTL keras | 8 jam | 2 jam | 2 jam | 2 jam |
+| Jendela idle | 45 menit | 15 menit | 15 menit | 15 menit |
+| Tampilan saat boot | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Gambar diam di jalur agen dibatasi pada **1280×800**; jalur manusia
+  menegosiasikan hingga **2560×1600**.
+- Anggaran memori residen host untuk semua rig default-nya **12 GB**, dihitung
+  dalam megabyte residen (VM yang diparkir tetap memegang RAM-nya). Penggusuran
+  memakai kebijakan paling lama tidak digunakan dan tidak pernah mengambil
+  mesin yang sedang dikemudikan seseorang, sedang ditonton, atau yang di
+  dalamnya ada terminal terbuka.
+- Terminal atau jalur tontonan yang terbuka menahan rig agar tidak diparkir dan
+  tidak disapu karena idle; TTL keras tetap berlaku.
 
-## Ports and dev domains
+## Port dan domain dev
 
-| Port | Where | Reserved for |
+| Port | Di mana | Direservasikan untuk |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Sistem tamu terminal | Multiplekser port yang ditumpangi setiap penerusan |
+| `9222`, `9223` | Sistem tamu browser | Relai dan endpoint otomasi (WebKit mengikat `9222` secara langsung dan tidak memakai relai) |
+| `80`, `443` | Loopback sistem tamu browser | Jalur HTTP/HTTPS domain dev |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Penemuan melakukan polling port TCP yang didengarkan sistem tamu terminal
+  setiap ~4 detik, di sisi server.
+- Paling banyak **16** port diteruskan otomatis per rig; selebihnya dicatat di
+  log, tidak diteruskan.
+- Penerusan di sisi host mengikat loopback, dan mengutamakan nomor port milik
+  sistem tamu; **Bagikan di jaringan lokal** menambahkan port LAN yang
+  ditetapkan OS.
+- Domain dev harus cocok dengan `name.test` atau `name.localhost` (huruf kecil,
+  label maksimal 63 karakter). Satu domain memetakan ke satu port.
+- HTTPS domain dev memakai CA lokal server (EC P-256, di bawah
+  `<dataDir>/rigs/tls/`, kunci 0600 dan tidak pernah masuk ke sistem tamu mana
+  pun) dengan satu leaf wildcard untuk `*.test` / `*.localhost`. Tanpa
+  `openssl` di host berarti tidak ada jalur HTTPS; HTTP polos tetap dirutekan.
 
-## Egress defaults
+## Default egress
 
-| Surface | Default allowlist |
+| Permukaan | Daftar izin default |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminal | Baseline pengembang sandbox (forge, registry paket, penyedia model) + mirror apt Ubuntu + host forge milik worktree itu sendiri |
+| Browser | `usectrl.dev` (situs produk) — plus arsip Debian pada boot pertama setiap engine, selama ia memasang paketnya. Halaman berandanya adalah dokumen `file://` lokal dan tidak membutuhkan egress |
+| Computer | Kosong — tolak semuanya — sampai pemanggil memberikan host |
+| Mobile | Tidak ditegakkan (jaringan dikelola emulator) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Setiap microVM juga mendapat host registry milik image-nya, hanya untuk
+penarikan. Himpunan host yang diizinkan milik broker kredensial diturunkan dari
+daftar izin yang sama: tidak ada token yang dicetak untuk host yang tidak dapat
+dijangkau sistem tamu.
 
-## Clipboard and file transfer
+## Papan klip dan transfer berkas
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Salin/tempel di kedua arah, serta menyeret berkas masuk dan keluar. Tersedia
+bagi orang yang mengemudikan rig; agen mendapat papan klip melalui verb di atas
+dan sama sekali tidak mendapat transfer berkas (ia sudah punya shell di dalam
+enclosure).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Pelintasan papan klip bersifat per pengguna dan per arah. Menempel dari host ke
+rig diizinkan secara default; menyalin dari rig ke host meminta konfirmasi
+(izin sepuluh menit, atau selalu izinkan di Pengaturan → Server → Rigs → Akses
+papan klip). Kedua pilihan itu independen dan tidak pernah menjadi pengaturan
+ruang kerja.
 
-| Lane | Route | Carries |
+| Jalur | Rute | Membawa |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Papan klip | `GET`/`POST /rig/clipboard/<rigId>` | Teks, satu PNG/JPEG (≤16 MB), dan path sistem tamu dari berkas yang ada di papan klip |
+| Berkas | `POST /rig/files/<rigId>` | Hingga 64 berkas, ≤256 MB masing-masing dan ≤512 MB per penyeretan, dengan titik jatuh dalam piksel sistem tamu yang opsional |
+| Berkas | `GET /rig/files/<rigId>?p=<base64url path>` | Byte satu berkas, ke luar |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, bukan RPC.** Soket RPC menutup koneksi pada frame masuk yang
+  melebihi 256 KB — penjaga DoS yang tepat untuk perintah JSON dan fatal untuk
+  tangkapan layar yang ditempel. Byte melintas di jenis rute yang sama dengan
+  yang sudah dipakai frame rig dan audio rapat.
+- **Autentikasi** adalah target bertanda tangan `rig-files:<workspaceId>/<rigId>`
+  plus keanggotaan ruang kerja — target tersendiri, sehingga URL yang dicetak
+  untuk *menonton* sebuah mesin tidak dapat sekaligus menulis berkas ke
+  dalamnya.
+- **Pengambilalihan berlaku.** Menulis papan klip dan menjatuhkan berkas
+  bersifat memutasi dan ditolak selama orang lain memegang kendali; membaca
+  papan klip dan membaca berkas keluar bersifat pengamatan dan tidak ditolak.
+- **Ke mana berkas yang dijatuhkan mendarat:** `~/Drops` (desktop), `~/drops`
+  (terminal — di samping worktree, tidak pernah di dalamnya, sehingga
+  penyeretan tidak pernah muncul sebagai perubahan yang tidak dilacak),
+  `/tmp/cc-drops` (browser). Server yang memilih direktorinya; pemanggil tidak
+  dapat menamainya. Berkas yang sudah ada tidak pernah ditimpa — nama yang
+  bentrok mendarat sebagai `2-name.ext`.
+- **Apa yang diberitahukan ke sistem tamu:** halaman browser menerima
+  peristiwa drop sungguhan pada titik yang diminta
+  (`Input.dispatchDragEvent`); desktop menerima berkasnya plus URI-nya di
+  papan klipnya, karena tidak ada host yang dapat menyintesis penyeretan XDND
+  ke toolkit sembarang tanpa daemon berhak istimewa di dalam sistem tamu.
+  Balasannya menyatakan mana dari keduanya yang terjadi.
+- **Menyeret keluar** hanya untuk desktop dan membaca `XdndSelection` milik
+  sistem tamu selama penyeretan berlangsung. Payload yang identik dengan yang
+  sudah dipegang sistem tamu saat penekanan dimulai diperlakukan sebagai
+  seleksi basi dari penyeretan yang sudah selesai, bukan seleksi baru — X tidak
+  punya langkah "penyeretan selesai".
+- **Persyaratan image:** image desktop harus berprotokol 2 atau lebih baru
+  (dibangun setelah dukungan papan klip ada). Image yang lebih lama menjawab
+  404 dan aplikasi menyuruh membangunnya ulang alih-alih melaporkan mesin yang
+  rusak.
+- **Log audit mencatat bentuknya, tidak pernah isinya**: baris
+  `clipboard_read`, `clipboard_write`, `drop_files`, dan `read_file` membawa
+  jumlah, ukuran, dan path. Papan klip adalah tempat kredensial hidup selama
+  beberapa detik setiap kalinya, dan tidak satu pun dari itu yang dicatat.
 
-## Guardrails, events, storage
+## Pagar pengaman, peristiwa, penyimpanan
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/id-ID/panduan-pengguna/referensi/peristiwa-domain/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Alat rig mendeklarasikan kelas aksi **`enclosureControl`** (plus
+  `networkEgress` dan `processSpawn` pada alat use; `mobile_use` dan `ios_use`
+  juga mendeklarasikan `packageInstall`). `rig_close` mendeklarasikan
+  `enclosureControl`; `rig_list` tidak mendeklarasikan apa pun. Diizinkan
+  secara default; mode hanya-baca menolaknya sepenuhnya; dial otonomi per space
+  dapat menurunkannya menjadi minta persetujuan lebih dulu.
+- Peristiwa domain: `RigClosedEvent` (beserta alasan penutupannya),
+  `RigControlChanged` (pengambilalihan / pengembalian), `RigReaped` (penggusuran
+  karena idle, TTL, atau memori, beserta agen yang mengemudikannya). Membuka
+  rig bukanlah peristiwa. Lihat [peristiwa domain](/id-ID/panduan-pengguna/referensi/peristiwa-domain/).
+- Penyimpanan: `rig_sessions` dan `rig_action_log` di setiap basis data ruang
+  kerja. Log tindakan mencatat setiap peristiwa masukan beserta principal-nya
+  dan urutan monotonik per rig; teks yang diketik disunting menjadi panjang dan
+  hash sebelum ditulis.
+- Direktori data: `rigs/images/` (image qcow2 yang diimpor), `rigs/smolvm/`
+  (status runtime per rig), `rigs/smolvm-packs/` (paket mesin yang sudah
+  diekstrak), `rigs/tls/` (CA domain dev), `rigs/run/` (overlay dan seed QEMU).
+- Rute: tampilan langsung adalah tab di halaman space atau PR;
+  `/settings/server/rigs` adalah layar pengaturan Rigs.

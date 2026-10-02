@@ -1,172 +1,192 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Adapterek és modellek kezelése
+description: Csatlakoztassa a modellszolgáltatókat, válassza ki, melyik modellen fut az ügynök, és nézze meg, milyen ügynökfuttató CLI-k vannak a szervergépen.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Ez az útmutató bemutatja, hogyan csatlakoztathat modellszolgáltatókat, és hogyan
+választhatja ki, min fusson egy ügynök.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Minden itt leírt beállítás egyetlen oldalon található: **Beállítások → Szerver →
+Modellszolgáltatók**. Az alsó oldalsáv bejegyzése „Modellszolgáltatók”, az oldal
+címsora pedig „Adapterek”.
 
-## What an adapter is
+## Mi az az adapter
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Az adapter az a _futtató_, amely végrehajtja az ügynök egy körét. Kettő van belőle,
+és a lista rögzített — harmadikat nem adhat hozzá.
 
-| Adapter                   | CLI      | Transport                                           |
+| Adapter                   | CLI      | Átvitel                                             |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (beépített) | nincs    | Folyamaton belüli ügynökciklus, HTTP-n keresztül beszél a szolgáltatókkal |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+A Cursor, a Codex, az Anthropic, az OpenAI és a többi a beépített adapter
+**szolgáltatója**, nem külön CLI. Amit viszont _hozzáadhat_, az egy további
+szolgáltató — bármely OpenAI- vagy Anthropic-kompatibilis végpont. Erről szól a
+következő szakasz.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[A felismerés a szervert vizsgálja, nem az Ön gépét]
+A **Felismert futtatók** kártya azt listázza, amit a `cc_server` a _szervergép_
+`PATH`-jában talált. Egy vékony kliensen vagy webes kliensen ez más gép, mint
+amelyiket éppen nézi. A CLI-t arra a gépre telepítse, amely a `cc_server`-t
+futtatja.
 :::
 
-## Connect a model provider
+## Modellszolgáltató csatlakoztatása
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+A beépített adapter csak akkor tud futni, ha legalább egy szolgáltató
+csatlakoztatva van hozzá. A katalógus alapból tizennégy szolgáltatót tartalmaz.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Lépjen a **Beállítások → Szerver → Modellszolgáltatók** oldalra
+2. Görgessen a **Szolgáltatók és modellek** szakaszig
+3. Keresse meg a szolgáltatóját, és csatlakoztassa:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Szolgáltató                                                                                              | Hogyan csatlakoztatható                                                                                                        |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API-kulcs. A Claude Pro/Max előfizetés nem Anthropic API-bejelentkezés — ilyen csomaghoz a Claude Code adaptert használja     |
+| OpenAI, Codex, Cursor                                                                                    | Böngészős OAuth-bejelentkezés vagy API-kulcs. A Codex a Codex Responses háttérrendszeren keresztül elért ChatGPT Plus/Pro, nem külön elindított CLI |
+| Kimi Code                                                                                                | Csak böngészős OAuth — eszközkódos folyamat. Átalánydíjas csomag, ezért nincs tokenenkénti ára                                 |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API-kulcs                                                                                                                       |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Ellenőrzőpont: a sor jelvénye „csatlakoztatva” állapotra vált, és a sor
+kinyitásakor megjelenik az adott szolgáltató összes modellje, mindegyiknél az
+egymillió tokenre jutó ár és a kontextusablak.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+Az OAuth-tokenek a szerver saját hitelesítőadat-tárába kerülnek, és a lejáratuk
+előtt frissülnek. A szolgáltatói hitelesítő adatok **hoszt-szintűek** — a
+telepítés minden munkaterülete megosztja őket, egyikhez sincsenek hozzákötve.
 
-### Add a custom provider
+### Egyéni szolgáltató hozzáadása
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Ezt Ollamához, LM Studio-hoz, vLLM-hez vagy saját telepítésű végponthoz
+használja.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. A **Szolgáltatók és modellek** alatt, az **Egyéni szolgáltatók** csoportban
+   nyomja meg a **Szolgáltató hozzáadása** gombot
+2. Adjon meg egy **nevet**, válassza ki az **API típusát** (OpenAI-kompatibilis
+   vagy Anthropic-kompatibilis), és adja meg az **Alap-URL**-t (például
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Ha a végpont igényli, adjon meg **API-kulcsot**, majd nyomja meg a
+   **Szolgáltató hozzáadása** gombot
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Az egyéni szolgáltató ugyanabban a listában jelenik meg, olyan törlésgombbal,
+amellyel a beépített társai nem rendelkeznek.
 
-## Pick a model for an agent
+## Modell kiválasztása egy ügynökhöz
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Lépjen a **Beállítások → Munkaterület → Ügynökök** oldalra, és válassza ki az
+   ügynököt
+2. A **Beállítások** lapon válassza ki az **adaptert**
+3. A mellette lévő legördülő listából válassza ki a **modellt**
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+A beépített adapternél a legördülő lista élőben, a csatlakoztatott szolgáltatók
+saját katalógusából áll össze. Az a szolgáltató, amelyhez nincs tárolt hitelesítő
+adat, nulla modellt ad hozzá, ezért az üres legördülő lista szinte mindig azt
+jelenti, hogy „még nincs semmi csatlakoztatva”, nem pedig azt, hogy „nincs
+elérhető modell”.
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[A models.dev kiegészítés, soha nem azonosítók forrása]
+A csomagolt [models.dev](https://models.dev) katalógus az élő listában már
+szereplő modellhez ad árat és kontextusablakot. Modellazonosítót soha nem ad
+hozzá. Ha egy várt modell hiányzik, akkor a szolgáltató végpontja nem adja vissza.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+A beépített adapter modellazonosítói `provider/model` formában minősítettek, és
+`|` karakterrel elválasztott tartalék láncot is hordozhatnak. Tartalék lánc
+esetén a költség annak a modellnek az árán számolódik, amelyik ténylegesen
+kiszolgálta a kört, nem annak, amelyiket kérte.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Az adapter nélküli ügynök a beépített cikluson fut]
+Minden munkaterület öt ügynököt hoz létre — egy CEO-t, valamint a `qa`,
+`architect`, `engineer` és `librarian` ügynököt —, adapter és modell nélkül. Az
+indítás a **Control Center (beépített)** adapterre esik vissza, nem az ezen az
+oldalon található **Alapértelmezett futtatók** beállításra, amely kliensoldali
+preferencia, és az indítási útvonal soha nem olvassa. A futtatási napló ezeknél a
+futásoknál `cc-harness`-t rögzít, így az átirat megnevezi, mi futott valójában.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Ha modell sincs beállítva, a beépített ciklus az Anthropic alapértelmezett
+modelljét kéri. Az így teljesen beállítatlan ügynök ezért akkor fut, ha
+csatlakoztatott egy Anthropic-fiókot, egyébként pedig meghiúsul a
+`No credential for provider "anthropic"` hibával.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+A kezdeti beállítás adapterlépésének befejezése utólag **minden** olyan ügynökre
+ráírja az Ön által választott párost, amelyből még hiányzik az adapter vagy a
+modell — a CEO-ra és a szakértőkre egyaránt, minden abban a pillanatban létező
+munkaterületen. A később létrehozott munkaterületek továbbra is mind az ötöt
+beállítatlanul hozzák létre. Minden használni kívánt ügynökön állítsa be
+kifejezetten az adaptert és a modellt.
 :::
 
-## Install a runner CLI
+## Futtató CLI telepítése
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+A beépített adapter nem igényel telepítést. A Claude Code esetében telepítse a
+CLI-jét **a szervergépre** az adott eszköz saját csomagkezelőjével, például:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Ezután nyomja meg az oldal tetején a **Frissítés** gombot. Minden felismert sor
+mutatja a feloldott verziót és útvonalat, valamint jelzőcímkéket arról, hogy
+támogatja-e a JSON módot és a modellválasztást.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+A külső CLI a saját hitelesítő adatait a saját konfigurációjában, a szervergépen
+tartja. A Control Center nem kezeli ezeket.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Az adapter extra argumentumai és környezeti változói ezen az eszközön maradnak]
+Minden adaptersor kínál egy **Extra argumentumok** mezőt és egy **Környezeti
+változók** párbeszédablakot. Ezek az értékek az Ön eszközén tárolódnak. A szerver
+az indítási argv-t és a környezeti változókat a saját beállítástárából olvassa. A
+szolgáltatói kulcsokat a szerveren helyezze el (OAuth vagy a Modellszolgáltatók
+oldalon található kulcsmező), ne ebben a két mezőben.
 :::
 
-## Restrict which providers a workspace may use
+## Annak korlátozása, mely szolgáltatókat használhat egy munkaterület
 
-Provider governance is per workspace and is evaluated last-match-wins.
+A szolgáltatók szabályozása munkaterületenként történik, és kiértékelése az
+utolsó egyezés nyer elven működik.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. A **Szolgáltatók és modellek** alatt kapcsolja ki egy szolgáltató sorában az
+   **Engedélyezés** kapcsolót
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Ezzel egy `deny` utasítás íródik az adott szolgáltatóhoz az aktív munkaterületen,
+és a modelljei kiesnek annak a munkaterületnek a katalógusából. A kapcsoló
+visszakapcsolása eltávolítja az utasítást.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### A runner shows as not found
+### Egy futtató nem találhatóként jelenik meg
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Ellenőrizze, hogy a CLI a **szervergép** `PATH`-jában szerepel-e, nem csak az
+  Önében
+- A grafikus felületről indított asztali alkalmazás minimális `PATH`-tal indítja a
+  szerverét; egy csak shellből elérhető útvonalra telepített CLI láthatatlan lehet
+  számára
+- Telepítés után nyomja meg a **Frissítés** gombot
 
-### The model dropdown is empty
+### A modell legördülő listája üres
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- A beépített adapter van kiválasztva, és nincs csatlakoztatva szolgáltató —
+  csatlakoztasson egyet a **Szolgáltatók és modellek** alatt
+- Vagy a szolgáltató csatlakoztatva van, de a munkaterület szabályozási kapcsolója
+  tiltja
 
-### A model runs but the price shows as unknown
+### A modell fut, de az ár ismeretlenként jelenik meg
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Az élő modellista hordozza az azonosítót; az árat és a kontextust a models.dev
+adja. Egy vadonatúj modellnek vagy egy egyéni szolgáltatótól származó modellnek
+még nincs bejegyzése a katalógusban.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
-- [Manage API keys](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
-- [Diagnose an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)
-- [Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [API-kulcsok kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
+- [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)
+- [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/)
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/)
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)

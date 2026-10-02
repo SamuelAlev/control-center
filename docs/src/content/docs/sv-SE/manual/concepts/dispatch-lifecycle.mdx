@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Livscykel för agentdispatch
+description: Vad som händer mellan att ett meddelande kommer in och att en körningslogg stängs — promptsammansättning, worktrees, identitet, vad som begränsar en körning och hur utfallet registreras ärligt.
 slug: sv-SE/handbok/koncept/livscykel-agentdispatch
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Vad en dispatch är
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+En dispatch är en körning av en agent, i ett samtal, på en adapter. Allt som rör den sker på `cc_server`: klienten skickar ett meddelande och tittar sedan på när händelser strömmar tillbaka. Det finns ingen dispatchväg i någon klient.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Agenter väcks av sex anledningar, som körningen bär med sig som sin **väckningskontext** så att agenten vet _varför_ den är vaken:
 
-| Wake reason      | Trigger                                                      |
+| Väckningsorsak   | Utlösare                                                     |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Någon skickade ett meddelande i en yta, eller nämnde agenten |
+| `assignment`     | Ett ärende tilldelades agenten                               |
+| `pipelineStep`   | Ett pipelinesteg dispatchade den                             |
+| `childCompleted` | Ett underärende slutfördes                                   |
+| `followUp`       | En schemalagd uppföljningspuls                               |
+| `recovery`       | Återställningsvägen dispatchade om efter ett fel             |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Väckningskontexten bär de id:n som hör till orsaken — ärende, yta, meddelande, pipelinekörning — och de injiceras i agentens miljö och prompt.
 
-## Prompt assembly
+## Promptsammansättning
 
-The prompt is built in layers, each one a labelled section:
+Prompten byggs upp i lager, där varje lager är en märkt sektion:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identitet** — agentens eget id, namn och arbetsyte-id, med en uttrycklig instruktion att skicka exakt dessa UUID:n till verktyg som är begränsade till arbetsytan. Arbetsytan är inneboende i agenten, så den finns alltid med.
+- **Verktygskatalog och resursprotokoll**, därefter **arbetsytans layout**.
+- **Åsidosättning av systemprompt**, om agenten har en, därefter **persona** (parametriserad efter roll) och **teambriefen**.
+- **Skills** — namnen på agenten.
+- **Exekveringskontrakt och procedur** för det aktuella läget.
+- **Väckningskontext** och **omnämnandekontext**: vem som kallade på agenten och närvarolistan runt den.
+- **Lägesblock** — genererat från lägets kapacitetsprofil _och dess materialiserade verktygslista_, så att en prompt aldrig kan namnge ett verktyg som körningen faktiskt inte har.
+- **Minneskontext** — fakta som hämtats för uppgiften.
+- **Samtalskontext** — den senaste ythistoriken, begränsad till 50 000 tecken ordagrant fönster oavsett agentens konfigurerade kontextstorlek. Äldre historik trunkeras inte bort: agenten hämtar den vid behov med `get_messages`, och äldre meddelanden med semantisk relevans dyker fortfarande upp.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Slash-kommandon tolkas från användarens råtext]
+Den skiktade prompten börjar med ett kontextblock och inleds därför inte med ett snedstreck. Kommandon tolkas ordagrant från användarens meddelande och klipps sedan bort från svansen av den skiktade prompten så att varje kontextlager överlever.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Kommandon hanteras på två olika ställen. `/todo` och `/compact` fångas upp i meddelandefältet och sparas medvetet aldrig som meddelanden och skickas aldrig till agenten — att spara `/compact` skulle flytta komprimeringssnittet en tur bakåt och förorena transkriptet. `/plan` hanteras på båda ställena: meddelandefältet växlar ytans läge, vilket är det som gör att verktygsytan, räckesförinställningen och prompten stämmer överens för den här turen och varje tur därefter. `/goal`, `/loop` och `/skill:<name>` hanteras inuti körningen själv och bara i den inbyggda harnessen — `/goal` och `/loop` startar autonomt arbete med en kostnadsbudget, och ett namn med prefixet `skill:` slås upp som en skill vars `SKILL.md`-innehåll blir turens direktiv. Namnrymden är det som håller de två vokabulärerna åtskilda: att matcha ett bart namn mot skills innebar att en skill som hette `plan` eller `compact` permanent skuggades av det inbyggda kommandot. Ett bart namn som inte är inbyggt matchas fortfarande, för meddelanden som skrevs innan namnrymden fanns. Ett okänt namn faller helt enkelt igenom som vanlig text.
 
-## Worktree provisioning
+## Worktree-etablering
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Innan något körs får samtalet sin egen arbetsrot, med en isolerad copy-on-write-worktree per repo under den. Som standard är det varje repo som är länkat till arbetsytan; en PR-yta — eller en yta som skapats med ett uttryckligt urval — etablerar bara de tillåtna, och ett PR-granskningssamtal låser sitt enda repo till pull requestens head-ref medan de övriga ligger kvar på sin standardgren. Källkodsutcheckningen ändras aldrig, och hela samtalskatalogen återtas när ytan tas bort.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write är den **enda** implementationen överallt där `rift` levereras, med den medföljande nativa binären som grund. Ett filsystem som inte kan reflinka — eller en datakatalog på en annan volym än repot — gör att etableringen misslyckas i stället för att falla tillbaka. `git worktree` är backend på Windows, där det inte finns någon copy-on-write-backend att bygga, och det är inte en tyst degradering på andra värdar. En saknad `rift` på en plattform som levererar den är en trasig installation — servern vägrar starta i stället för att tyst falla tillbaka, eftersom en tyst återgång gömmer felet bakom en långsammare väg för alltid.
 
-## Identity and credentials
+## Identitet och autentiseringsuppgifter
 
-Two identities are resolved per run, before any process launches.
+Två identiteter fastställs per körning, innan någon process startas.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git-författarskap.** Commits som en agent gör är författade _som agenten_ — `<Name> (agent) <agentId@agents.control-center.local>` i både `GIT_AUTHOR_*` och `GIT_COMMITTER_*` — aldrig genom att utge sig för att vara en människa. Den lokala delen är agentens UUID, inte dess namnslug. Den människa som begärde körningen krediteras med en `Co-Authored-By:`-trailer, som finns med i miljön och instrueras om i systemprompten. En uttrycklig identitet satt av anroparen vinner alltid över båda.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Forge-identitet.** Körningens GitHub-uppgifter är alltid bara brokerns — en appinstallationstoken begränsad till repot, eller dess PAT-reservväg via miljön — aldrig den begärande medlemmens egen sparade token. `actingUserId` begränsar PAT-reservvägen så att en medlem som inte äger servern inte ärver serverns räckvidd; den lägger inte en personlig token ovanpå agentmiljön.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Uppgifter för modellleverantörer** fastställs i en fast ordning, och ordningen spelar roll:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. ett miljöåsidosättande per adapter,
+2. anroparens miljö,
+3. serverns uppgiftslager (där en OAuth-token förnyas om den närmar sig utgång),
+4. processens miljö.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Eftersom åsidosättandet per adapter kommer först slår det tyst ett leverantörskonto som är anslutet i appen. Om en körning debiterar fel konto är det åsidosättandet det första du bör titta på. Leverantörsuppgifter är globala för värden — delade mellan alla arbetsytor i installationen.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/sv-SE/handbok/koncept/agentmodell/).
+Tokens som styrs av kapabiliteter (GitHub, ärendehantering) kommer från uppgiftsbrokern, som bara injicerar det körningens kapabiliteter tillåter. Se [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/).
 
-## Launch
+## Start
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Körningen startas med sin worktree som arbetskatalog och — för Claude Code — en genererad MCP-konfiguration så att agenten kan nå Control Centers verktygsyta. ACP och harnessens `bash` får en rensad miljö; Claude Code via `NoSandboxAdapter` ärver värdens miljö.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Operativsystemets sandlåda omsluter bara en körning där värden har en backend]
+`cc_server` avsöker värden en gång vid start och omsluter, när en backend finns tillgänglig, agentprocesser i den — Seatbelt på macOS, bubblewrap på Linux och WSL2. Båda dispatchsömmarna omsluts, eftersom de inte delar någon: Claude Code-CLI:t går genom sandlådeporten; ACP-adaptrar och den inbyggda harnessens `bash`-verktyg går genom sandlådehanteraren. Det är också den som tillämpar körningens skyddade sökvägar: dina registrerade repo-utcheckningar är skrivskyddade inuti sandlådan, i varje läge.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Där det inte finns någon backend är körningen **inte** sandlådad och inget annat ändras för att kompensera. Det gäller alltid Windows (ingen inbyggd omslutning — `microvm` är en separat, avsökningsstyrd väg för terminaler och stationer) och Linux eller WSL2 utan `bwrap` och `socat` i `PATH`. Servern anger vilket läge den är i på sin startlogg-rad, och `--sandbox off` är ett avsiktligt val att avstå.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Två luckor kvarstår trots sandlådan även när den är på. Harnessens filverktyg i processen (read, write, edit, apply patch, search, find, search_files) körs inuti serverprocessen, så ingen profil begränsar dem — deras gräns är verktygens egen sökvägsbegränsning plus räckena. Och Claude Code startas med `--dangerously-skip-permissions`, så dess egna fil- och skalanrop grindas inte av Control Center; operativsystemets sandlåda är gränsen runt dem.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+De återstående gränserna gäller på varje värd, med eller utan sandlåda: körningens egen worktree (copy-on-write där `rift` levereras; `git worktree` på Windows), kapabilitetsstyrda uppgifter som brokeras per start och återkallas vid avveckling, de enhetliga åtgärdsräckena (fail-closed — ett `prompt`-beslut utan ansluten godkännare nekas) och den verktygsyta som samtalets läge tillåter. ACP och harnessens `bash` rensar fortfarande miljön; Claude Code via `NoSandboxAdapter` ärver värdens miljö.
 :::
 
-## Streaming
+## Strömning
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Körningen strömmar tillbaka en typad händelsesekvens, som strömprocessorn sparar som meddelandedeltan, fogar samman till transkriptssegment och omvandlar till meddelandehändelser:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| Händelse           | Vad den innehåller                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `thinking`         | Resonemangsutdata, renderad direkt i texten                                                                           |
+| `text`             | Synlig utdata                                                                                                         |
+| `toolCall`         | Ett verktygsanrop, med sitt id och strukturerade argument                                                             |
+| `toolResult`       | Det matchande resultatet, flaggat när det innehåller ett fel eller är en partiell ström                                |
+| `usage`            | Tokenantal och kostnad för ett mätfönster                                                                             |
+| `error`            | Ett fel, med adapterns strukturerade kod när den rapporterade en                                                       |
+| `sandboxViolation` | Operativsystemet nekade en systemkallning. Skickas bara där en sandlåda faktiskt omsluter processen — se noten ovan     |
+| `debug`            | Körningsdiagnostik (startmarkörer, räckesbeslut, kontraktspåminnelser)                                                 |
+| `done`             | Körningen är klar                                                                                                     |
 
-## What bounds a run
+## Vad som begränsar en körning
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Det finns medvetet **inget tak för antalet turer någonstans**. Ett hårt iterationsantal dödar legitimt långt arbete (migreringar, städning efter fan-out) och fångar inget som skydden nedan fångar tidigare. En körning tar slut när:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **modellen stannar** av sig själv;
+- **en människa stoppar den**, eller tar över samtalet (vilket pausar den inbyggda harnessen vid nästa rena turbrytpunkt — en Claude Code-körning, som inte har någon säker brytpunkt, stoppas i stället);
+- **tystnadsvakten utlöses.** Ingen utdata under tröskelvärdet och sessionen avslutas med ett `silentRun`-fel. Standardvärdet är 15 minuter, som sjunker till 10 i de läsdominerade lägena (review och plan); en agent kan åsidosätta det mellan 1 och 240 minuter. Vakten aktiveras när en barnprocess rapporterar sitt PID, så den täcker Claude Code-CLI:t — **inte** den inbyggda harnessen, som inte startar några processer;
+- **ett kostnadstak slår till** — men bara för autonoma kommandon.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Doom-loop-skyddet är ingen terminator: tre identiska verktygsanrop i rad och loopen _styr_ agenten att byta angreppssätt.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[En vanlig tur har inget kostnadstak]
+Kostnadsskyddet i sessionen är bara kopplat för `/goal` och `/loop`; alla andra körningar skickar ingen budget alls. För dessa kommandon kan ett obevakat segment som standard bränna 500 cent ($5.00), med en mjuk styrning vid 80 % som ber agenten att avsluta snyggt före det hårda stoppet, och en hållbar målbudget på 5 000 cent ($50.00) över segmenten. En uttrycklig `/goal --budget` överskrids aldrig med ett helt segment.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Sammantaget har en vanlig interaktiv tur i den inbyggda harnessen inget tak för antalet turer, inget kostnadstak och ingen tystnadsvakt. Den tar slut när modellen stannar eller när du stoppar den. Det är en medveten avvägning — alternativen dödar allt legitimt långt arbete — men det betyder att en obevakad interaktiv körning inte begränsas av något annat än modellens egen bedömning.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Under en körning köas ett meddelande som skickas till en körande agent som **styrning** och töms vid nästa turbrytpunkt, så du kan knuffa en körning utan att döda den. Styrning, pausning, subagenter och slutförandekontraktet är funktioner i den inbyggda harnessen; Claude Code har inga av dem.
 
-## How a run is recorded
+## Hur en körning registreras
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Varje dispatch skriver en `AgentRunLog`: start- och sluttid, sammanfattning, tokenantal och uppskattad kostnad (inklusive kostnad som rullats upp från subagenter), adapter och modell, process-id och loggsökväg, samtalet och eventuellt ärende eller pipelinekörning som den tillhör, plus två klassificeringsfält som bär det mesta av sanningen.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Status** är grov: `pending`, `running`, `completed`, `error`.
+- **Livsstatus** är den finare läsningen: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Felfamilj** grupperar fel på ett användbart sätt: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` betyder inte "levererat"]
+När en körning slutar utan den leverabel dess läge krävde — en planlägeskörning som aldrig anropade `submit_plan`, en orkestreringskörning som aldrig föreslog något — står statusen kvar som `completed`, eftersom processen faktiskt avslutades rent. Den ärliga signalen ligger på livsstatus (`empty`), felfamilj (`silentRun`) och en sammanfattning som säger exakt vad som inte producerades. Den sammanfattningen är skyddad: slutförandet skriver inte över den med modellens sista pladder.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Detta är avsiktligt. Att flippa statusen skulle flytta ärende- och pipelinestate-maskiner som inte har något med den saknade artefakten att göra. Det betyder också att "status: completed" ensamt aldrig räcker för att dra slutsatsen att en körning lyckades — läs sammanfattningen.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Att stänga körningen publicerar `AgentRunCompleted`, och mycket hänger på den: notisramen och dess hållbara flödespost, den live-vidarebefordrare som skickar den till anslutna klienter, upprullning av pipelinekostnad, återupptagning av ett pipelinesteg som väntade på körningen, slutförande av det bakomliggande ärendet, mappning av en orkestrering till ett terminaltillstånd, målövervakarens beslut att fortsätta eller stoppa, kontrollantrollen och budgetutvärderingen efter körningen. Närvarolistan följer separat, genom att titta på de senaste körningsloggarna i stället för på händelsen.
 
-## Budgets, after the fact
+## Budgetar i efterhand
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Budgetupprätthållande är en _reaktion_, inte en grind. När en körning slutförs jämför utvärderaren agentens hittillsvarande månadsspendering mot dess effektiva tak (en länkad budgetpolicy om det finns en, annars agentens egen månadssiffra; noll betyder obegränsat). Att passera den mjuka tröskeln registrerar en varningsincident; att förbruka budgeten registrerar en hård incident och flippar agentens livscykelstatus till `paused` i organisationsschemat. Dispatch tar fortfarande emot arbete från den agenten. En pipelinetrigger för `BudgetThresholdCrossed` kan starta uppföljningsarbete från samma händelse.
 
-## Retry lineage
+## Omförsökskedja
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Varje körningslogg kan bära en omförsökskedja — ett överordnat körnings-id, en försöksräknare och en fortsättningssammanfattning. Samtalets körningsträd visar försöksnumret när det inte är noll. Ett "försök igen" från chatten är en ny dispatch med en ny körningslogg.
 
-## Related concepts
+## Relaterade koncept
 
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): what the adapter can and cannot enforce
-- [Modes](/sv-SE/handbok/koncept/lagen/): where the tool surface and the completion contract come from
-- [Guardrails](/sv-SE/handbok/koncept/racken/): the effect-class policy every gated call passes
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): the isolation story in full
-- [Multiplayer](/sv-SE/handbok/koncept/multiplayer/): steering, take-over and the autonomy dial
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/): what `AgentRunCompleted` sets off
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vad adaptern kan och inte kan upprätthålla
+- [Lägen](/sv-SE/handbok/koncept/lagen/): varifrån verktygsytan och slutförandekontraktet kommer
+- [Räcken](/sv-SE/handbok/koncept/racken/): effektklasspolicyn som varje grindat anrop passerar
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): hela isoleringshistorien
+- [Multiplayer och närvaro](/sv-SE/handbok/koncept/multiplayer/): styrning, övertagande och autonomivredet
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): vad `AgentRunCompleted` sätter igång

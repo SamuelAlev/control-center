@@ -1,185 +1,199 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Folosește modul focus și peisajele sonore
+description: Rulează o sesiune de focus cronometrată, cu o pastilă flotantă de numărătoare inversă și notificări suprimate, și modelează peisajul sonor adaptiv care rulează sub ea.
 dateModified: 2026-08-17
 slug: ro-RO/manual/ghiduri-practice/modul-focus
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Acest ghid arată cum să rulezi o sesiune de focus: un interval cronometrat în
+care Control Center suprimă notificările neurgente și afișează o pastilă de
+numărătoare inversă peste celelalte ferestre ale tale. Acoperă și peisajul sonor
+care rulează (implicit) sub ea — o pistă ambientală fără sfârșit, pe care
+serverul tău o sintetizează în direct, modelată de dispoziția pe care o alegi,
+de vremea de afară și de ora din zi.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+O sesiune de focus este o funcție de nivel de shell. Nu este legată de niciun
+pilon — nu schimbă layoutul, nu ascunde bara laterală și nu modifică nicio
+suprafață de revizuire a PR.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Doar pe desktop]
+Pastila flotantă și mini-playerul detașabil al peisajului sonor sunt ferestre
+native înrudite, montate doar de bootstrap-ul de desktop. Versiunea web de la
+`app.usectrl.dev` nu are niciuna dintre ele și nicio conductă de notificări a
+sistemului de operare, așa că o sesiune de focus nu are ce să afișeze sau să
+suprime acolo. Panoul peisajului sonor și redarea lui funcționează oriunde te
+conectezi la un server.
 :::
 
-## Start a focus session
+## Pornește o sesiune de focus
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Dă clic pe pictograma de focus din dreapta barei de titlu (tooltip **Pornește
+   sesiunea de focus**)
+2. În dialog, scrie un **Obiectiv** opțional — la ce lucrezi
+3. Alege o **Durată**: 25m, 50m, 1h, 1h 30m sau 2h. Valoarea implicită este 50m,
+   iar ultima alegere este reținută
+4. Apasă **Pornește**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Punct de control: butonul din bara de titlu este înlocuit de un chip în culoarea
+de accent care arată minutele rămase, pastila flotantă apare peste celelalte
+ferestre ale tale și — cu **Pornește cu modul focus** activat — peisajul sonor
+începe să ruleze.
 
-Two other entry points reach the same session:
+Alte două puncte de intrare ajung la aceeași sesiune:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Pornește sesiunea de focus** deschide același dialog.
+- **⌘⇧⌥F** pornește imediat o sesiune cu durata reținută și fără obiectiv — sare
+  peste dialog. Dacă apeși din nou, sesiunea se încheie.
 
-## Read the floating pill
+## Citește pastila flotantă
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Pastila este o fereastră mică, fără chenar, pe care o poți trage oriunde.
+Afișează:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Un punct de prezență în timp real și timpul rămas în formatul `mm:ss`
+- Obiectivul tău sau „Focus session” atunci când nu ai setat unul
+- O bară de progres subțire de-a lungul marginii de jos
 
-Hover it to reveal two actions:
+Treci cu cursorul peste ea pentru a dezvălui două acțiuni:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — oprește numărătoarea inversă. Pauza este locală
+  pastilei; sesiunea în sine rămâne activă.
+- **Complete** — încheie sesiunea.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Pastila folosește întotdeauna paleta întunecată, indiferent de tema pe care o
+folosește fereastra principală, pentru că plutește peste conținut arbitrar de pe
+desktop.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Dacă închizi pastila din bara de titlu, sesiunea continuă să ruleze. Apasă
+butonul de imagine în imagine de lângă chipul de focus (tooltip **Minimizează în
+bară**) pentru a o readuce.
 
-## Know what gets suppressed
+## Află ce se suprimă
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+În timp ce o sesiune este activă, Control Center elimină toate notificările cu
+excepția a două categorii, care sunt livrate întotdeauna:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Întâlnirea începe curând** — o alertă de întâlnire pe care o vezi abia după
+  ce s-a întâmplat nu are nicio valoare
+- **PR publicat**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Tot restul este suprimat în tăcere pe toată durata sesiunii — fără sunet, fără
+toast al sistemului de operare. Notificările suprimate nu sunt puse în coadă
+pentru o livrare ulterioară.
 
-## Play a soundscape
+## Redă un peisaj sonor
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Dă clic pe pictograma de difuzor din dreapta barei de titlu (tooltip
+   **Soundscapes**) pentru a deschide panoul
+2. Alege o **Dispoziție** — **Focus**, **Avânt**, **Relaxare** sau **Somn**
+3. Apasă **Redă**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Punct de control: cardul **Se redă acum** numește scena curentă — vremea de la
+locația spațiului tău de lucru, temperatura în °C și eticheta locației. Cât timp
+afișează „Se acordează ambianța…”, scena este încă în curs de rezolvare.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Pista nu este o buclă. Serverul tău o sintetizează continuu din dispoziție,
+vremea în timp real de la locația spațiului de lucru și ora din zi. Ploaia sună
+luminos și agitat, furtuna tare și cu rafale, ceața înăbușit; noaptea este mai
+întunecată și mai reverberantă decât la amiază. Dispoziția stabilește
+vocabularul:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Dispoziție | Sunet                                                                              |
+| ---------- | ---------------------------------------------------------------------------------- |
+| Focus      | Ambianță blândă și alertă, cu un puls scăzut — menită să stea sub munca ta        |
+| Avânt      | Melodie plină de avânt cu un puls moale — pentru când munca apasă greu             |
+| Relaxare   | Pad-uri mai calde, mai consonante, fără ritm                                       |
+| Somn       | Drone grave, aproape fără evenimente, cu reverb profund                            |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Schimbarea dispoziției în timpul redării predă redarea noii dispoziții fără a o
+opri.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Panoul este accesibil și din ⌘K, în categoria **Focus**, chiar lângă sesiunea de
+focus.
 
-## Shape the sound
+## Modelează sunetul
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Acordează** (Focus, Avânt și Relaxare) — un pad pătrat cu un cursor care
+  poate fi tras. Orizontala merge de la **Mellow** la **Energetic** (cât de multe
+  se întâmplă), verticala de la **Spacy** la **Bright** (cât de deschis sună).
+  Atinge de două ori padul pentru a reveni la centrul neutru; tastele cu săgeți
+  mișcă ușor cursorul. Acordajul tău este reținut pentru fiecare dispoziție, iar
+  ajustările se topesc în mixajul care rulează — fluxul nu repornește niciodată.
+  Dispoziția Somn nu poate fi acordată, prin concepție.
+- **Volum** — un glisor de la 0 la 100%, cu valoarea implicită 60%. Este separat
+  de volumul sistemului și este reținut.
+- **Locație** — detectată automat din spațiul de lucru. Apasă **Reîmprospătează
+  vremea** pentru a reîncărca scena.
 
-## Pop out the mini player
+## Desprinde mini-playerul
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+În timp ce se redă audio, bara de titlu primește un al doilea buton (tooltip
+**Desprinde playerul**). Acesta afișează plutind un mic HUD aflat mereu deasupra
+celorlalte ferestre, cu redare/pauză, simbolul meteo, numele scenei și un buton
+**Revino în aplicație** — util atunci când o sesiune de focus te-a dus cu totul
+într-o altă aplicație.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Dacă pui pe pauză din mini-player, acesta nu se închide; doar butonul lui de
+închidere (sau închiderea aplicației) îl elimină.
 
-## Run them together
+## Folosește-le împreună
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+Cele două funcționalități sunt cuplate printr-un singur comutator din panoul
+peisajului sonor: **Pornește cu modul focus**, activat implicit.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Pornirea unei sesiuni de focus pornește peisajul sonor dacă nu se redă deja
+  nimic.
+- Încheierea sesiunii — indiferent cum se încheie, inclusiv la expirarea
+  cronometrului — îl oprește, chiar dacă ai pornit peisajul sonor manual.
 
-Turn the switch off to keep the two independent.
+Dezactivează comutatorul pentru a le menține independente.
 
-## End a session
+## Încheie o sesiune
 
-Any one of these ends it:
+Oricare dintre acestea o încheie:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Dă clic pe chipul de focus din bara de titlu (tooltip **Modul focus este activ
+  — apasă pentru a încheia**)
+- Apasă **Complete** pe pastilă
+- Apasă **⌘⇧⌥F**
+- Alege **Exit focus mode** în ⌘K
+- Lasă cronometrul să expire — sesiunea se încheie automat la zero
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Pastila se închide, notificările se reiau imediat și peisajul sonor se oprește.
 
-## Understand what does not persist
+## Înțelege ce nu persistă
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+O sesiune trăiește exact cât o rulare a aplicației. Închide și redeschide
+Control Center și pornești inactiv, cu un cronometru resetat, chiar și în mijlocul
+sesiunii — nu există recuperare după o cădere și nici istoric de sesiuni.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Doar două lucruri se păstrează: durata preferată și starea de blocare a
+notificărilor. Obiectivul, timpul scurs și starea deschisă a pastilei, nu.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Redarea este la fel de efemeră — peisajul sonor este întotdeauna oprit la
+lansare. Dispoziția, volumul și acordajele pe dispoziție persistă; fluxul în
+sine nu reia niciodată de unul singur.
 
-## Troubleshooting
+## Depanare
 
-### The tune pad is missing
+### Padul de acordare lipsește
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Ești pe dispoziția Somn, care este în mod deliberat neacordabilă. Treci pe Focus
+sau pe Relaxare pentru a recupera padul.
 
-### Nothing plays after restarting the app
+### Nu se redă nimic după repornirea aplicației
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Prin concepție — redarea este întotdeauna oprită la lansarea aplicației. Deschide
+panoul și apasă din nou **Redă**. Dacă tot nu se aude nimic, verifică glisorul de
+volum din panou, care este separat de volumul sistemului.
 
-### The weather or temperature looks wrong
+### Vremea sau temperatura par greșite
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Scena urmează locația spațiului de lucru activ. Apasă **Reîmprospătează vremea**
+în panou pentru a o reîncărca.
 
-## Related guides
+## Ghiduri conexe
 
-- [Configure notifications](/ro-RO/manual/ghiduri-practice/notificari/)
-- [Keyboard shortcuts](/ro-RO/manual/referinta/scurtaturi-de-tastatura/)
+- [Configurează notificările](/ro-RO/manual/ghiduri-practice/notificari/)
+- [Scurtături de tastatură](/ro-RO/manual/referinta/scurtaturi-de-tastatura/)

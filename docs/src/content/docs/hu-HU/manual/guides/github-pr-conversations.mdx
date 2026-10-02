@@ -1,97 +1,104 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: Beszélgetés a Control Centerrel GitHub PR-ből
+description: Kérjen átnézést vagy tegyen fel kérdést a szerver GitHub App botjának magából a PR-beszélgetésből, webhook és nyilvános URL nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+Ez az útmutató bemutatja, hogyan dolgozhat a Control Centerrel anélkül, hogy
+elhagyná a GitHubot: kérjen MI-átnézést a PR oldaláról, tegyen fel kérdést a
+botnak egy hozzászólásban, és folytassa a beszélgetést az átnézési szálaiban.
 
-The bot is your server's own [GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+A bot a szerver saját [GitHub Appja](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) — ugyanaz,
+amely már bejelentkezteti az embereket és háttérmunkát futtat. Semmi újat nem
+regisztrál, és semminek nem kell elérhetőnek lennie az internetről: a szerver
+lekérdezéssel deríti fel, mi hangzott el a GitHubon, így egy NAT mögötti laptop
+pontosan úgy viselkedik, mint egy nyilvános telepítés.
 
-## Prerequisites
+## Előfeltételek
 
-- The server has its GitHub App [registered and
-  installed](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- A szerveren a GitHub App [regisztrálva és
+  telepítve](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) van, **Pull requests: read and write**
+  (hozzászólásokhoz, szálakhoz és reakciókhoz) és **Issues: read** (a
+  hozzászóláskereséshez) jogosultsággal. Mindkettő szerepel már abban az
+  útmutató jogosultságlistájában
+- A tároló egy munkaterülethez van kapcsolva a Control Centerben
+- Nincs webhook URL, nincs alagút, nincs callback — a hálózat oldalán nincs mit
+  beállítani
 
-## Find your bot's name
+## A bot nevének megkeresése
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+A bot bejelentkezési neve `<appslug>[bot]`, ahol az `appslug` az a név, amelyet
+az alkalmazásnak a regisztráláskor adott.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt, és
+   görgessen a **Szolgáltatói alkalmazások** kártyához
+2. Nyissa meg a **GitHub** blokkot, és kattintson a **Teszt** elemre
+3. Másolja ki a **Bot bejelentkezési név** értékét, amikor kitöltődik. Ha még
+   mindig az üres súgószöveget mutatja, a bejelentkezési név mindig
+   `<appslug>[bot]` — gépelje be, vagy használja a rövid `@appslug` alakot
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+A GitHub nem kínál alkalmazásfiókokat a `@`-automatikus kiegészítésében, ezért
+a bejelentkezési nevet be kell gépelni — éppen ezért teszi a beállításkártya
+egyetlen kattintással másolhatóvá. A `[bot]` utótag elhagyható: a `@myapp` és a
+`@myapp[bot]` egyaránt a botot szólítja meg.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[Válasszon jellegzetes alkalmazásnevet]
+A rövid alak szövegként kerül illesztésre. Ha egy emberi GitHub-felhasználónak
+véletlenül ugyanaz a slugja, mint az alkalmazásának, akkor a rövid alakkal való
+említés is eléri a botot. A teljes `@myapp[bot]` alak mindig egyértelmű.
 :::
 
-## Request a review from GitHub
+## Átnézés kérése a GitHubból
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+Kétféleképpen, mindkettő ugyanazt az alapból létrehozott `pr_review` pipeline-t
+indítja el, amelyet a **Kérdezze az AI-t** gomb is:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **Adja hozzá az `ai-review` címkét** a PR-hez. Ez áll a legközelebb ahhoz,
+  amit a GitHub a bot átnézőként való hozzárendelésére kínál — az
+  alkalmazásfiókok nem foglalhatják el a natív kért-átnéző helyet. Nincs
+  hozzászólás, amelyre reagálni lehetne, így semmi nem kerül fel a GitHubra; az
+  átnézés a Control Centerben indul el
+- **Szóljon hozzá `@myapp review`** (vagy csak `@myapp`) formában a PR
+  beszélgetéséhez. A bot 👀 reakcióval válaszol, majd jelentkezik, hogy elindult
+  az átnézés (vagy hogy már fut egy)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+Az átnézők a PR átnézési terében dolgoznak; a megállapításokat ugyanúgy olvassa
+el és tegye közzé, mint az [MI-alapú átnézés
+használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/) oldalon. A GitHubra való visszaközzététel
+továbbra is az Ön döntése marad a Control Centerben — a GitHubról indított
+átnézés önmagában semmit nem tesz közzé a GitHubon.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+A címke PR-enként egyszer fut le: a hozzáadása maga a kérés, és nem élesedik
+újra, ha eltávolítja, majd ismét hozzáadja. Átnézés újbóli futtatásához —
+mondjuk egy push után — említse meg a botot.
 
-## Ask a question
+## Kérdés feltevése
 
-Comment on the PR conversation:
+Szóljon hozzá a PR beszélgetéséhez:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+Mi történik, sorrendben:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. A bot 👀 reakcióval jelzi, hogy észrevette a hozzászólást
+2. A kérdés **az Ön nevében** kerül be a PR átnézési terébe — ugyanazzal az
+   attribúcióval, mintha a Control Centerben gépelte volna be
+3. Egy ügynök válaszol a térben, és a válasz visszakerül a PR-re egy olyan
+   hozzászólásként, amely @-megemlíti Önt
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+Egy olyan PR-en feltett kérdés, amelyen még nem futott átnézés, a munkaterület
+vezető (CEO) ügynökét ébreszti fel; ha már lefutott egy átnézés, az utoljára
+megszólaló ügynök válaszol, így az utánkövetések ahhoz kerülnek, akinél a
+kontextus van.
 
-## Follow up in a review thread
+## Utánkövetés egy átnézési szálban
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+Válaszoljon egy olyan beágyazott átnézési szálon belül, amelynek a bot is része
+— egy általa hagyott diff-hozzászólásban vagy egy abban a szálban közzétett
+válaszban. Nem kell említés; maga a szál **a** megszólítás:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +106,81 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+A többfordulós működés ugyanígy megy: minden válasz egy újabb kérdés ugyanabban
+a beszélgetésben, az átnézési tér mint kontextus mellett, és a válasz a szálban
+érkezik vissza.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+A PR-beszélgetés idővonalán tett utánkövetés egy új, legfelső szintű hozzászólás,
+ezért ott továbbra is kell az @-említés.
 
-## Who the bot talks to
+## Kihez beszél a bot
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+Egy GitHub-hozzászólás alig többet hoz magával, mint egy bejelentkezési nevet,
+ezért a bot minden művelet előtt feloldja a szerzőt:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **A GitHub-fiókját össze kell kapcsolni az identitásával** a Control
+  Centerben — [jelentkezzen be a GitHubdal](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/),
+  vagy illesszen be egy tokent, a **Beállítások → Munkaterület → Profil és
+  identitás → Kódtárhely** helyen
+- **Írási jogosultságú szerepkörrel rendelkező tagnak kell lennie**
+  (`member`, `admin` vagy `owner`) abban a munkaterületben, amely a tárolót
+  kapcsolja
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+Mindenki más egyetlen udvarias választ kap arról, mi hiányzik — egy ismeretlen
+bejelentkezési név (nincs összekapcsolva, vagy össze van kapcsolva, de nem tag
+itt) és egy csak olvasásra jogosult szerepkör a két eset —, és a szavai soha nem
+lépnek be a munkaterületre. Az `ai-review` címke nincs így kapuzva: nincs
+szerzője, ezért abban a munkaterületben indítja el az átnézést, amely már
+kapcsolódik a repóhoz.
 
-## What to expect
+## Amire számíthat
 
-| Thing               | Behaviour                                                                 |
+| Dolog                | Viselkedés                                                                |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| Visszaigazolás      | 👀 egy hozzászóláson körülbelül egy percen belül — a pásztázási intervallum. Az `ai-review` címkének nincs hozzászólása, amelyre reagálni lehetne |
+| Válaszok            | A bot (az alkalmazás) nevében közzétéve, abban a szálban, amelyben a kérdést feltették |
+| Attribúció a térben | A kérdés az Öné; az ügynök az Ön nevében fut, a tér autonómiatárcsája szerint |
+| Átnézések           | A megállapítások az átnézési térbe kerülnek; a GitHubra való közzététel kézi |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+A körülbelül egyperces késleltetés az ára annak, hogy egyáltalán nincs szükség
+bejövő hálózati hozzáférésre. A pásztázás miatt semmi sem sürgős, és semmi sem
+vész el, amíg a szerver offline — egy leállás alatt érkező hozzászólást a
+következő pásztázás elkapja.
 
-## Troubleshooting
+## Hibaelhárítás
 
-**Nothing happens for a comment that mentions the bot.**
+**Semmi sem történik egy olyan hozzászólásnál, amely megemlíti a botot.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- Telepítve van az alkalmazás a repót birtokló fiókon, és a repó **hozzá van
+  kapcsolva** egy munkaterülethez? Egy nem kapcsolt repó kihagyásra kerül,
+  mielőtt bármi rögzítésre kerülne, így a későbbi összekapcsolás még mindig
+  leszállítja
+- Össze van kapcsolva a GitHub-fiókja, és írási jogosultságú szerepkörű tag?
+  Nézze meg a PR-en a bot elutasító válaszát — az megmondja, melyik eset
+- Még mindig semmi? A szervernapló megnevezi a pásztázást és a PR-t, amikor
+  valami elszáll; keresse a `pr_conversation:` (a lekérdező) és a
+  `github_pr_conversation:` (a híd) bejegyzést
 
-**The label does not start a review.**
+**A címke nem indít átnézést.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+PR-enként egyszer fut le. Ha már lefutott egy átnézés, vagy a címkét még azelőtt
+adták hozzá, hogy a szerver valaha is látta volna a PR-t (az első pásztázás
+csendben rögzíti a hátralékot, ahelyett hogy elárasztaná), említse meg inkább a
+botot — a `@myapp review` mindig elindít egyet, hacsak nem fut már átnézés.
 
-**The bot's answer never arrived on GitHub.**
+**A bot válasza soha nem érkezett meg a GitHubra.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+Maga a válasz soha nem vész el — a PR átnézési terében van a Control Centerben.
+Egy közzétételi hiba (a GitHub elérhetetlen, megváltoztak a jogosultságok)
+naplózásra kerül, és a válasz nem kerül újrapróbálásra; kérdezzen rá újra a
+szálban, ha számít.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/): the room all of this lands in
+- [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/): a regisztráció, amelyből a
+  bot megszületik
+- [MI-alapú átnézés használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/): egy említéssel indított
+  átnézés megállapításainak elolvasása
+- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/): a saját
+  GitHub-fiókja összekapcsolása, ami alapján a bot Önt feloldja
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/): a helyiség, ahová mindez megérkezik

@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Bản đồ tuyến
+description: Mọi tuyến mà Control Center đăng ký, kèm màn hình và tham số truy vấn của nó.
 slug: vi-VN/so-tay/tham-chieu/ban-do-tuyen
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Khung ứng dụng
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+Khung ứng dụng (`ControlCenterLayout`) bọc mọi tuyến bên trong không gian làm việc qua một `ShellRoute`. **Mọi đích đến trong khung đều mang tiền tố không gian làm việc — `/workspaces/:workspaceId/…` — và id không gian làm việc trong URL là nguồn chân lý duy nhất cho không gian làm việc đang hoạt động.** Chỉ những bề mặt trước ngữ cảnh là không có tiền tố: `/splash`, `/onboarding`, `/signed-out` và trình chọn `/workspaces` trần, tất cả đều toàn màn hình và nằm ngoài khung.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+Chốt chặn hoàn tất khi có ít nhất một máy chủ mã được kết nối **cho người dùng đã đăng nhập** và có ít nhất một không gian làm việc tồn tại.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thiếu là hai màn hình khác nhau, và yếu tố phân biệt là `users.onboarding_finished_at` đọc từ chính `identity.me` của người gọi — không bao giờ là "đã có không gian làm việc tồn tại", vì điều đó sai ngay khi ai đó được mời vào một không gian làm việc mà họ chưa từng tạo. Khi không có máy chủ mã nào được kết nối, một tài khoản đã hoàn tất thiết lập ban đầu sẽ đến `/signed-out` để xác thực lại; tài khoản chưa hoàn tất thì đến `/onboarding`. Khi cờ này vẫn chưa rõ, chốt chặn giữ nguyên màn hình splash thay vì đoán, bởi nó không bao giờ chuyển hướng ngược ra khỏi onboarding.
 
-## Unprefixed routes
+## Tuyến không có tiền tố
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| Đường dẫn                 | Màn hình                                         |
+| ------------------------- | ------------------------------------------------ |
+| `/splash`                 | Màn hình splash lúc khởi động, nơi phân giải chốt chặn thiết lập ban đầu |
+| `/onboarding`             | Kết nối một máy chủ mã, tạo hoặc tham gia một không gian làm việc, sandbox, adapter mặc định, rồi đến giọng nói. Bước không gian làm việc bị bỏ qua khi tài khoản đã thuộc về một không gian làm việc |
+| `/signed-out`             | Xác thực lại: đúng thẻ kết nối máy chủ mã mà Cài đặt hiển thị, không có thanh bước và không có nút tiếp tục — bộ định tuyến tự rời đi khi một máy chủ mã báo về |
+| `/workspaces`             | Danh sách và trình chọn không gian làm việc      |
+| `/workspaces/:workspaceId` | Chuyển hướng đến `/workspaces/:workspaceId/inbox` |
 
-## Workspace routes
+## Tuyến trong không gian làm việc
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Các đường dẫn bên dưới lược bỏ tiền tố `/workspaces/:workspaceId`.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| Đường dẫn                              | Tham số truy vấn                          | Màn hình                                                                                                                                                                 |
+| -------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/inbox`                               | —                                         | Hộp thư hợp nhất: các PR được phân loại theo vòng đời đánh giá cùng công việc không phải PR đang chặn người vận hành. Tuyến đích sau chốt chặn; một `/workspaces/:workspaceId` trần sẽ chuyển hướng đến đây |
+| `/spaces`                              | —                                         | Bề mặt space, chưa chọn space nào                                                                                                                                        |
+| `/spaces/:spaceId`                     | `?m=<messageId>`, `?tab=<key>`            | Một space; `m` liên kết sâu tới một tin nhắn và chỉ được dùng một lần khi mở                                                                                              |
+| `/tickets`                             | —                                         | Bảng phiếu                                                                                                                                                               |
+| `/tickets/:ticketId`                   | —                                         | Phiếu dạng chính - chi tiết                                                                                                                                              |
+| `/projects/:projectId`                 | —                                         | Tổng quan dự án                                                                                                                                                          |
+| `/pull-requests`                       | `?repo=<owner/name>`                      | Danh sách PR; `repo` chọn kho lưu trữ đó trong ray bên trái                                                                                                               |
+| `/pull-requests/compose`               | `?space=<spaceId>`                        | Soạn một pull request mới; `space` chỉ định space có worktree cách ly cung cấp nhánh                                                                                       |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | Chi tiết PR kèm trình xem diff; `comment` là id REST dạng số của một bình luận                                                                                             |
+| `/pipelines`                           | —                                         | Danh sách lần chạy quy trình                                                                                                                                             |
+| `/pipelines/run`                       | `?templateId=<id>`                        | Trình khởi chạy thủ công                                                                                                                                                 |
+| `/pipelines/:runId`                    | —                                         | Chi tiết lần chạy quy trình (dòng thời gian các bước)                                                                                                                     |
+| `/plans`                               | —                                         | Trung tâm Studio kế hoạch: kế hoạch đang hoạt động, tài liệu kế hoạch, playbook                                                                                           |
+| `/plans/:kind/:id`                     | —                                         | Studio kế hoạch cho một kế hoạch; `kind` là `orchestration` hoặc `document`                                                                                                |
+| `/meetings`                            | —                                         | Danh sách cuộc họp                                                                                                                                                       |
+| `/meetings/record`                     | —                                         | Màn hình ghi cuộc họp trực tiếp                                                                                                                                           |
+| `/meetings/:meetingId`                 | —                                         | Chi tiết cuộc họp: ghi chú, bản phiên âm, việc cần làm, quyết định                                                                                                        |
+| `/calendar`                            | —                                         | Lịch: chế độ xem tháng, tuần và lịch trình                                                                                                                                |
+| `/calendar/:eventId`                   | —                                         | Chi tiết sự kiện lịch (tuyến ngang cấp; dùng chung khóa trang lịch)                                                                                                        |
+| `/newsfeed`                            | —                                         | Danh sách bảng tin                                                                                                                                                       |
+| `/newsfeed/article/:articleId`         | —                                         | Trình đọc bài viết                                                                                                                                                       |
+| `/observability`                       | —                                         | Trung tâm Quan sát: các thẻ Mức dùng, Phân tích, Trực tiếp và Chất lượng trên luồng nhật ký chạy của không gian làm việc. Mặc định mở thẻ Mức dùng                       |
+| `/users/:login`                        | —                                         | Hồ sơ người dùng GitHub                                                                                                                                                  |
+| `/teams/:organization/:slug`           | —                                         | Hồ sơ nhóm của tổ chức GitHub                                                                                                                                             |
+| `/api-keys`                            | —                                         | Quản lý khóa API. **Không có điểm vào nào từ điều hướng** — chỉ truy cập được bằng URL                                                                                     |
+| `/settings/…`                          | —                                         | Các màn hình cài đặt (bên dưới)                                                                                                                                           |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+Hội thoại và luồng **không có tuyến riêng** — một luồng là một hội thoại bên trong `/spaces/:spaceId`, được mở dưới dạng thẻ trình soạn thảo chứ không được định địa chỉ bằng URL.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+Không có **tuyến `/dashboard`** và cũng không có màn hình bảng điều khiển. Bề mặt phân tích là `/observability`, truy cập từ chân thanh bên.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+Không có **mục "Kế hoạch" nào trên thanh bên**. Studio kế hoạch mở dưới dạng thẻ trình soạn thảo từ hàng của kế hoạch trong hội thoại đã tạo ra nó; `/plans` và `/plans/:kind/:id` là những liên kết sâu.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` và `/pull-requests/compose` không có mục nào trong sổ đăng ký tiêu đề tuyến hay đường dẫn điều hướng, nên cả hai đều hiển thị tên ứng dụng trần trong tiêu đề cửa sổ và không có vệt đường dẫn điều hướng.
 
-## Settings routes
+## Tuyến cài đặt
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` chuyển hướng đến `/settings/you/appearance`. Nút cài đặt trên thanh bên và `Cmd/Ctrl + ,` đều dẫn đến `/settings/you/appearance`.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+Các đường dẫn cài đặt được đặt trong không gian tên theo **phạm vi** — `you/`, `workspace/`, `server/` — vì đoạn đó cho biết thay đổi ảnh hưởng đến ai. Hai đường dẫn có trước cơ chế không gian tên nên không mang phạm vi trong URL: `/settings/memory` và `/settings/pipelines`.
 
-### You
+### Bạn
 
-| Path                          | Screen                                                                     |
+| Đường dẫn                     | Màn hình                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | Chủ đề, ngôn ngữ, kiểu chữ, chủ đề trình soạn thảo (trang đích của cài đặt) |
+| `/settings/you/notifications` | Công tắc theo từng sự kiện, giờ yên tĩnh                                    |
+| `/settings/you/keybindings`   | Tham chiếu phím tắt (chỉ đọc)                                              |
+| `/settings/you/audio`         | Micro, đọc chính tả, phát hiện cuộc họp và đầu ra cảnh âm                  |
+| `/settings/you/devices`       | Điện thoại đã ghép nối và điều khiển từ xa                                 |
+| `/settings/you/newsfeed`      | Quản lý bảng tin: nguồn, làm mới, trạng thái đã đọc                        |
 
-### Workspace
+### Không gian làm việc
 
-| Path                               | Screen                                                                                              |
+| Đường dẫn                          | Màn hình                                                                                            |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | Hồ sơ và danh tính trong không gian làm việc này: tên, tác giả git, nơi lưu trữ mã, lịch |
+| `/settings/workspace/general`      | Tên, logo, mẫu glob bí mật, số đánh giá đồng thời, cách đặt tên nhánh, tình trạng đồng bộ, cầu nối chat, vùng nguy hiểm |
+| `/settings/workspace/meetings`     | Mẫu ghi chú cuộc họp và hồ sơ giọng nói đã lưu                                                      |
+| `/settings/workspace/members`      | Danh sách thành viên, lời mời, nhật ký kiểm tra. Nhật ký kiểm tra phân trang bằng `?cursor=` tùy chọn |
+| `/settings/workspace/repositories` | Các kho lưu trữ đã đăng ký trong không gian làm việc này                                             |
+| `/settings/workspace/agents`       | Danh tính agent đã đăng ký                                                                          |
+| `/settings/workspace/skills`       | Cấu hình kỹ năng                                                                                    |
+| `/settings/memory`                 | Bộ nhớ không gian làm việc: dữ kiện, chính sách, đồ thị tri thức                                     |
+| `/settings/workspace/permissions`  | Quyền của agent: ma trận rào chắn và phép thử giả định                                              |
+| `/settings/pipelines`              | Mẫu quy trình                                                                                       |
+| `/settings/pipelines/:templateId`  | Trình soạn mẫu quy trình (canvas kéo thả)                                                           |
 
-### Server
+### Máy chủ
 
-| Path                           | Screen                                                                                |
+| Đường dẫn                      | Màn hình                                                                               |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | Kết nối & trạng thái                                                                  |
+| `/settings/server/sso`         | Đăng nhập một lần (SAML, OIDC, cấp phát SCIM)                                         |
+| `/settings/server/providers`   | Nhà cung cấp mô hình và adapter                                                       |
+| `/settings/server/mcp`         | Máy chủ MCP tích hợp sẵn và bên ngoài                                                 |
+| `/settings/server/voice`       | Mô hình giọng nói và cuộc họp (ASR, phân tách người nói)                              |
+| `/settings/server/rigs`        | Rigs: máy chủ này có thể khởi động những gì, ảnh nền, ảnh tùy chỉnh, máy đang chạy     |
+| `/settings/server/sandbox`     | Quyền cấp exec sandbox: các chương trình agent được phép chạy từ bản sao làm việc trong kho lưu trữ của bạn |
+| `/settings/server/diagnostics` | Chẩn đoán và quyền riêng tư: sandbox, embedding, công cụ đồng bộ, ghi nhật ký, báo cáo sự cố |
+| `/settings/server/backup`      | Sao lưu và khôi phục: ảnh chụp bản cài, xuất theo từng không gian làm việc, nhập và xóa |
+| `/settings/server/about`       | Giới thiệu và cập nhật                                                                |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`kSettingsNav` trong `lib/features/settings/settings_nav.dart` là nguồn chân lý duy nhất cho danh sách này. `settings_nav_test.dart` ghim id duy nhất, tuyến duy nhất, thứ tự J/K đã làm phẳng và ba phạm vi. Nó không duyệt mọi `GoRoute` đã đăng ký.
 
-## Route configuration
+## Cấu hình tuyến
 
-| Concern             | File                                                    |
-| ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Mối quan tâm       | Tệp                                                     |
+| ------------------ | ------------------------------------------------------- |
+| Bộ định tuyến      | `lib/router/app_router.dart`                            |
+| Hàm dựng tuyến      | `lib/router/routes.dart`                                |
+| Chốt chặn xác thực | `lib/router/guards.dart`                                |
+| Chốt chặn thiết lập ban đầu | `lib/features/auth/providers/onboarding_providers.dart` |
+| Điều hướng cài đặt | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## Xem thêm
 
-- [Workspaces](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/)
-- [Keyboard shortcuts](/vi-VN/so-tay/tham-chieu/phim-tat/)
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/)
+- [Phím tắt](/vi-VN/so-tay/tham-chieu/phim-tat/)

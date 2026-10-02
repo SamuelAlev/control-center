@@ -1,132 +1,145 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Calculul revizuirii (cohorte, axe și diff-uri deterministe)
+description: Ce produce pe server trecerea de calcul a revizuirii — cohorte, diff-uri de contract de API și vizuale, porți pe fiecare axă — și cum se reflectă asta în tab-ul Revizuire.
 slug: ro-RO/manual/ghiduri-practice/calculul-revizuirii
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Tab-ul **Revizuire** al unui PR este progresul în direct al pipeline-ului de
+revizuire cât timp acesta lucrează, apoi artefactul pe care l-a publicat, cu
+acțiunile de pe el. Un singur tab cu două stări, pentru că sunt același lucru în
+două momente. Nu este un tab implicit: un PR nu are revizuire până când nu o cere
+cineva, așa că **Întreabă AI** este cel care îl deschide.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
+În spatele acelui tab, `cc_server` construiește cohorte de fișiere, rulează axele
+deterministe și le servește prin operațiunile RPC `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+`setContractDecision`, `approveVisual`, `compute` și perechile lor `watch*`). Un
+layout persistat care încă numește `pr.reviewStudio` deschide același tab
+Revizuire.
 
-On the Review tab:
+În tab-ul Revizuire:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Agentul care consolidează publică un artefact obișnuit de conversație cu
+  `publish_artifact`, așa că tab-ul îl redă prin același vizualizator de
+  artefacte pe care îl deschide o bulă de chat — nu există o copie în formă de
+  revizuire a sistemului de artefacte.
+- Constatările stau într-o bară laterală alături, iar verdictul stă pe o bară
+  subțire deasupra artefactului, nu într-un antet de tablou de bord.
+- Apare un banner de învechire când vârful PR-ului a avansat dincolo de
+  revizuire.
 
-See [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/) for the flow and
-[Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/) for acting on it.
+Vezi [Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/) pentru
+flux și
+[Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/) pentru cum să acționezi pe baza lui.
 
-## Cohorts
+## Cohorte
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Cohortele grupează fișierele modificate ale PR-ului în grupe derivate din
+conținut, de fișiere care aparțin împreună prin semnificație, ordonate după
+impact, astfel încât grupul cel mai riscant se citește primul. Sunt recalculate la
+fiecare schimbare a SHA-ului de vârf și înlocuite în întregime; fiecare cohortă
+are o cheie stabilă la push, așa că un rezumat și progresul revizuirii
+supraviețuiesc unui rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Dacă depozitul nu este indexat ca cod, cohortele se reduc la gruparea după cale.
+Ca să indexezi un depozit, folosește **Setări → Spațiu de lucru → Depozite** —
+fiecare rând de depozit are o acțiune **Indexează codul** care rulează
+pipeline-ul `index_code` și raportează progresul pe loc.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+Graful de cod analizează doar limbajele pentru care există o gramatică livrată
+(Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R,
+Assembly, MATLAB, Ada). Un depozit într-un alt limbaj nu poate produce niciodată
+cohorte semantice, oricât de des l-ai indexa.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Un agent poate înregistra un rezumat markdown pentru o cohortă cu
+`set_cohort_summary` și poate atașa o diagramă structurată de parcurgere cu
+`add_review_diagram` — un obiect tipizat de secvență, entitate-relație sau mașină
+de stări, niciodată text mermaid. Fiecare muchie este verificată încrucișat cu
+graful de cod real, iar o muchie pe care graful nu o poate corobora este marcată
+ca neverificată, nu desenată ca fapt.
 
-## The API-contract axis
+## Axa contractului de API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Axa contractului face diff doar pe fișierele de specificație **explicite**.
+Potrivește cele șase nume implicite — `openapi.yaml`, `openapi.yml`,
+`openapi.json`, `swagger.yaml`, `swagger.yml`, `swagger.json` — plus orice fișier
+modificat al cărui nume conține `openapi` sau `swagger` și se termină în `.yaml`,
+`.yml` sau `.json`. Un contract dedus din codul de handler este în afara
+domeniului, iar pe schemele GraphQL nu se face diff.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Fiecare modificare este clasificată — adăugări, eliminări și modificări de
+endpoint, parametru, schemă și răspuns — și are o severitate: **breaking**
+(endpoint sau parametru eliminat, tip restrâns, parametru nou obligatoriu),
+non-breaking (aditivă) sau informativă. O modificare respinsă eșuează poarta
+contractului, la fel ca o modificare breaking lăsată nedecisă; breaking dar
+aprobată dă un avertisment; fără modificări breaking, poarta trece. Un diff
+marcat **derived (advisory)** nu impune niciodată o poartă.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Aprobarea sau respingerea unei modificări se face cu
+`review_studio.setContractDecision`.
 
-## The visual axis
+## Axa vizuală
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Dacă PR-ul modifică componente de UI într-un depozit Flutter cu o aplicație
+Widgetbook, trecerea de calcul randează componentele modificate înainte și după
+printr-o trecere golden `flutter test` fără interfață, în worktree-urile de bază
+și de vârf ale PR-ului, apoi face diff pe pixeli.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Pe gazda serverului e nevoie de un SDK Flutter]
+Serverul pur Dart nu poate randa widgeturi Flutter în proces, așa că apelează
+`flutter test`. SDK-ul trebuie instalat pe mașina care rulează `cc_server` — nu pe
+clientul tău. Fără el, axa raportează **unavailable** cu motivul „no Flutter SDK
+on host”. Nu raportează niciodată o trecere pe care nu a meritat-o.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Snapshot-urile marcate **changed** sau **removed** țin poarta vizuală până la
+aprobare; snapshot-urile **unchanged**, **added** și **approved** o eliberează.
+Indisponibilitatea are unul dintre cele patru motive: „no Flutter SDK on host”,
+„no Widgetbook app in repo”, „no golden-testable use-cases” sau „golden harness
+error”.
 
-Approving an intended change is `review_studio.approveVisual`.
+Aprobarea unei modificări intenționate se face cu `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Axele și verdictul
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Axă             | Determinată de                     |
+| --------------- | ---------------------------------- |
+| Corectitudine   | Agenți recenzori (tokenuri)        |
+| Securitate      | Agenți recenzori (tokenuri)        |
+| Lipsă de teste  | Agenți recenzori (tokenuri)        |
+| Vizual          | Deterministe (harnes golden)       |
+| Contract de API | Deterministe (diff de specificație) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Cele trei axe bazate pe tokenuri sunt înregistrate când un agent lider apelează
+`finalize_review`; cele două axe deterministe sunt înregistrate de trecerea de
+calcul.
 
-Each axis reports one of:
+Fiecare axă raportează una dintre stările:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Stare           | Semnificație                                              |
+| --------------- | --------------------------------------------------------- |
+| **Pass**        | A rulat, nu a găsit nimic blocant                         |
+| **Warn**        | A rulat, probleme neblocante                              |
+| **Fail**        | A rulat, a găsit o problemă blocantă                      |
+| **Partial**     | A rulat, dar nu a putut finaliza; rezultatele sunt incomplete |
+| **Unavailable** | Nu a putut rula deloc                                     |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Doar **pass** și **warn** eliberează o axă cu poartă. **Partial** și
+**unavailable** sunt distincte în mod deliberat de **fail** și niciuna nu
+eliberează o poartă.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Axele se agregă în **Ship**, **Hold** sau **Block** și pot face verdictul doar
+_mai_ sever — nu este niciodată retrogradat. O axă cu poartă care **eșuează**
+forțează **Block**; una care este **partial** sau **unavailable** forțează cel
+puțin **Hold**. Așadar, o axă blocantă care nu a putut rula _menține_ verdictul:
+absența dovezilor nu trece niciodată o poartă.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Verdictul din tab-ul Revizuire este cel postat de `finalize_review`.
 
-## Related guides
+## Ghiduri conexe
 
-- [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/)
-- [Dispatch reviewer agents](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/)
-- [Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/)
+- [Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/)
+- [Trimite agenți revizori](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/)
+- [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
+- [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/)

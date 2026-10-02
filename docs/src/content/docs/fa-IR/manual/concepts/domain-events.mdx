@@ -1,153 +1,159 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: رویدادهای دامنه
+description: چرا قابلیت‌ها از طریق یک گذرگاه رویداد درون‌فرایندی با هم گفت‌وگو می‌کنند به‌جای آنکه یکدیگر را وارد کنند، گذرگاه برای چه چیزی منبع حقیقت است و برای چه چیزی نیست، و کدام رویدادها واقعاً می‌توانند خودکارسازی را به حرکت درآورند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## یک رویداد دامنه چیست
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+رویدادهای دامنه سازوکار جداسازی‌ای هستند که به قابلیت‌ها امکان می‌دهند بدون
+وابستگی مستقیم با هم ارتباط برقرار کنند. به‌جای آنکه قابلیت A قابلیت B را
+فراخوانی کند، قابلیت A رویدادی منتشر می‌کند و قابلیت B در آن مشترک می‌شود.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` یک گذرگاه انتشار/اشتراک پخش‌همگانی درون‌فرایندی است. ناشران
+`publish(event)` را فراخوانی می‌کنند؛ مشترکان یک جریان نوع‌دار `on<T>()` را
+مصرف می‌کنند. هر رویداد `DomainEvent` را پیاده‌سازی می‌کند و `occurredAt` را
+با خود دارد.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**گذرگاه درون `cc_server` اجرا می‌شود.** هر ناشر و هر مشترک زنده همان‌جا
+زندگی می‌کند. هیچ کلاینتی این گذرگاه را نمی‌بیند. آنچه کلاینت می‌بیند
+زیرمجموعه‌ای گزینش‌شده است که سرور آن را به‌صورت فریم‌های JSON-RPC با نام
+`notifications/*` بازپخش می‌کند.
 
-## Why a bus at all
+## چرا اصلاً گذرگاه
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+بدون رویدادها، هر واکنش میان‌قابلیتی یک واردکردن است. مسیر اعلان‌ها باید
+فقط برای اینکه بداند کِی یک اعلان شناور نشان دهد، قابلیت عامل‌ها، قابلیت
+pull request، تیکتینگ و جلسه‌ها را وارد کند — و آن‌وقت هرکدام از آن‌ها هم
+باید از وجود اعلان‌ها باخبر باشد. تیکتینگ باید پایپ‌لاین‌ها را وارد کند تا
+یک تیکت کامل‌شده بتواند یک اجرا را جلو ببرد. گراف وابستگی گره می‌خورد و
+هستهٔ مشترک دیگر مشترک نمی‌ماند.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+انتشار یک رویداد این چرخه را می‌شکند. مسیر اعلان‌ها در بیست‌ویک کلاس رویداد
+مشترک می‌شود و هیچ‌یک از قابلیت‌هایی که آن‌ها را برمی‌انگیزند وارد نمی‌کند.
+اعزام‌کنندهٔ تریگر پایپ‌لاین در کل گذرگاه مشترک می‌شود و هیچ چیزی دربارهٔ
+pull requestها، تیکت‌ها یا جلسه‌ها نمی‌داند. رصدپذیری نتایج اجرا را بدون
+دست بردن در اعزام تجمیع می‌کند.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+هزینه‌اش همان هزینهٔ همیشگی است: ناشر نمی‌تواند بفهمد کسی به آن گوش می‌دهد
+یا نه، و شنونده‌ای که هرگز ساخته نمی‌شود بی‌صدا بی‌اثر می‌ماند.
+`TicketRemoteSyncHandler` نمونهٔ همیشگی این وضع است: اعلام شده، تست‌ها آن را
+پوشش می‌دهند، و هرگز در محیط تولید سیم‌کشی نمی‌شود.
 
-## What the bus is not
+## گذرگاه چه چیزی نیست
 
-It is worth being precise about one thing the bus does _not_ own.
+ارزشش را دارد که دربارهٔ یک چیز که گذرگاه مالک آن _نیست_ دقیق باشیم.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**ردپای حسابرسی فرافکنشی از جریان رویداد نیست.** هر عملیات RPC تغیردهنده
+به‌طور پیش‌فرض حسابرسی می‌شود — `RepoOp.audited` به‌طور پیش‌فرض true است و یک
+عملیات تنها با اعلام `audited: false` از آن کنار می‌کشد، اقدامی آگاهانه که
+روی خود عملیات دیده می‌شود. اعزام‌کننده بلافاصله پس از یک فراخوانی موفق، سطر
+«چه کسی چه کاری، از کجا» را می‌افزاید. `DomainEventAuditBridge` وجود ندارد.
+`ActivityLogPersister` سطرهای `activity_log` را از رویدادهای `ActivityLogged`
+می‌نویسد؛ آن جریانی جداست از حسابرسی RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+گذرگاه رویداد _همان_ مسیر انتقال برای اعلان‌ها و خودکارسازی است. اما سیستم
+دفترداری مرجع نیست.
 
-## What the bus does drive
+## گذرگاه چه چیزهایی را به حرکت درمی‌آورد
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **اعلان‌ها.** سرور بیست‌ویک کلاس رویداد را به فریم‌های شبکه‌ای
+  `notifications/*` تبدیل می‌کند، آن‌ها را در یک خوراک پایدار به‌ازای هر فضای
+  کاری ثبت می‌کند و به نشست‌های متصل پخش می‌کند. فریمی که `workspace_id` آن
+  به فضای کاری‌ای اشاره کند که کاربر نشست عضو آن نیست، در سرور حذف می‌شود؛
+  سپس کلاینت باقی را به فضای کاری‌ای که در حال مشاهدهٔ آن است فیلتر می‌کند.
+- **خودکارسازی رویدادمحور.** تریگرهای پایپ‌لاین در گذرگاه مشترک می‌شوند و
+  پایپ‌لاین‌های منطبق را خودکار شروع می‌کنند (پایین را ببینید).
+- **واکنش‌های چرخهٔ عمر.** ساختن یک فضای کاری، CEO و عامل‌های متخصص آن،
+  قالب‌های پایپ‌لاین داخلی و مجموعه‌های ارزیابی آغازین را می‌کارد. یک اجرای
+  کامل‌شدهٔ عامل، گام پایپ‌لاین معلق‌شده را از سر می‌گیرد، یک وظیفه را
+  می‌بندد، ناظر هدف را تغذیه می‌کند، می‌تواند یک بررسی‌کنندهٔ نام‌برده را
+  بیدار کند و می‌تواند رهبر تیم را دوباره برانگیزد. ادغام یک PR یا حذف یک
+  فضا، جمع‌آوری زبالهٔ worktree را راه می‌اندازد.
+- **همگام‌سازی میان سرویس‌دهنده‌ها.** تغییرات محلی تیکت‌ها با یک
+  هماهنگ‌کننده که به پنج رویداد تیکت گوش می‌دهد، به سرویس‌دهنده‌های تیکت
+  پیکربندی‌شده فرستاده می‌شود.
 
-## Event categories
+## دسته‌های رویداد
 
-Events span the whole product surface. At a high level:
+رویدادها سراسر سطح محصول را در بر می‌گیرند. در یک نگاه کلی:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **فضاهای کاری، عامل‌ها و مخزن‌ها** — ساخت فضای کاری، اتمام اجرا، ثبت مخزن، به‌روزرسانی مهارت‌ها
+- **Pull requestها** — انتشار، تغییر وضعیت، ادغام‌ها، درخواست‌های بازبینی، منشن‌ها، پایش PRهای تألیف‌شده، PRهای شناسایی‌شده از بیرون
+- **پیام‌رسانی** — پیام‌ها، فضاها و پیشرفت تأمین فضا
+- **تیکت‌ها** — ایجاد، تخصیص، تخصیص مجدد، جزئیات، وضعیت و سه پیامد پایانی
+- **وظیفه‌ها** — فریم‌های چرخهٔ عمر مرتب‌شده برای یک اجرای اعزام‌شده، تا کلاینت‌ها بتوانند آن‌ها را مرتب و تکراری‌زدایی کنند
+- **پایپ‌لاین‌ها** — فقط رویدادهای پایانی اجرا (کامل‌شده، لغوشده، ناموفق)
+- **رصدپذیری** — ورودی‌های گزارش فعالیت و آستانه‌های بودجه
+- **هویت و عضویت** — افزودن عضو، حذف عضو، تغییر نقش
+- **تقویم و جلسه‌ها** — انقضای احراز هویت، شروع جلسه‌ها و پایان ضبط‌ها
+- **ریگ‌ها** — تحویل گرفتن، بازپس‌گیری و بسته‌شدن غیرمنتظره
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+حافظه، ارکستراسیون، اسناد برنامه، مصنوعات، تأییدها، دریافت همگام‌سازی تیکت،
+بازتازه‌سازی تقویم، ادغام‌های worktree، ساخت کاربر، دعوت‌ها و لغو دستگاه
+رویداد دامنه نیستند؛ مرجع را ببینید.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/). That page is the
-inventory; this one is the model.
+برای فهرست کامل — همهٔ ۵۳ کلاس رویداد مشخص، بار داده‌هایشان و ۲۴ مشترکی که
+آن‌ها را مصرف می‌کنند — [مرجع رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/) را ببینید. آن صفحه
+سیاهه است؛ این صفحه مدل.
 
-## Live access control rides two different mechanisms
+## کنترل دسترسی زنده بر دو سازوکار متفاوت سوار است
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+رویدادهای عضویت و دستگاه متقارن به نظر می‌رسند و چنین نیستند، و این اگر
+دربارهٔ سرعت اثرگذاری یک لغو استدلال می‌کنید اهمیت دارد.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**لغو یک دستگاه، نشست‌های آن را واقعاً پایان می‌دهد.** سرور جدول
+دستگاه‌های جفت‌شده را زیر نظر دارد و هر نشست زنده‌ای را که دستگاهش از
+مجموعهٔ فعال خارج شده باشد، ظرف چند ثانیه قطع می‌کند.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**حذف یک عضو سوکت را نمی‌بندد.** `WorkspaceMemberRemoved` مصرف می‌شود:
+`LocalRpcServer` و `RemoteRelayHost` اشتراک‌های فضای کاری متصل آن کاربر را
+می‌اندازند و `RemoteEventForwarder` کش عضویت خود را باطل می‌کند تا فریم‌های
+بعدی برای آن فضای کاری فرستاده نشوند. آنچه RPC بعدی را رد می‌کند همچنان
+دروازهٔ نقش است، که عضویت را در **هر** فراخوانی دوباره حل می‌کند — پس
+درخواست بعدی آن‌ها با «Not a member of this workspace» رد می‌شود. اثر آن
+برای هر کاری که بخواهند انجام دهند فوری است؛ فقط با قطع کردن ارتباطشان
+به‌دست نمی‌آید.
 
-## Pipeline triggers
+## تریگرهای پایپ‌لاین
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+تریگرهای پایپ‌لاین در رویدادهای دامنه مشترک می‌شوند و پایپ‌لاین‌های منطبق را
+خودکار شروع می‌کنند. `PipelineTriggerDispatcher` به کل گذرگاه گوش می‌دهد و
+سپس:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. اگر نوع رویداد از آن‌هایی نباشد که می‌داند چطور به بار داده نگاشت شوند، بلافاصله بازمی‌گردد
+2. تریگرهای فعال منطبق با آن نوع رویداد را در همهٔ فضاهای کاری جست‌وجو می‌کند
+3. هرکدام را به فضای کاری خودش فیلتر می‌کند و فیلتر تطبیق بار داده‌اش را اعمال می‌کند
+4. برای هر تریگری که باقی می‌ماند یک اجرا شروع می‌کند
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
-`ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
-`PrMerged`, `MessageReceived`, `TicketAssigned`,
-`TicketCompleted`, `TicketFailed`, `TicketCancelled`,
-`BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+محدودیت مهم گام ۱ است. گذرگاه ۵۳ نوع رویداد را حمل می‌کند؛ انتخابگر افزودن
+تریگر برای این چهارده مورد یک اجرا شروع می‌کند (شاخه‌های بار دادهٔ
+`EventPayloadMapper`):
+`ExternalPrDetected`، `PullRequestPublished`، `PullRequestStatusChanged`،
+`PrMerged`، `MessageReceived`، `TicketAssigned`،
+`TicketCompleted`، `TicketFailed`، `TicketCancelled`،
+`BudgetThresholdCrossed`، `RepoAdded`، `MeetingRecordingStopped`، `SkillUpdated`
+و `SpaceDeleted`. هیچ چیز دیگری نمی‌تواند یک پایپ‌لاین را شروع کند.
 
-## How a client sees any of this
+## کلاینت چگونه هر یک از این‌ها را می‌بیند
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/fa-IR/راهنمای-کاربر/مفهومها/معماری/).
+`RemoteEventForwarder` رویدادهای کلاس اعلان را به فریم‌های شبکه‌ای ترجمه
+می‌کند و آن‌ها را روی RPC به نشست‌های متصل می‌فرستد، جایی که یک نگاشت‌گر
+فریم آن‌ها را به اعلان‌های درون‌برنامه‌ای تبدیل می‌کند. بنابراین یک کلاینت
+سبک فقط فرافکنشی از جریان رویداد سرور را می‌بیند، بدون آنکه مالک هیچ اجرایی
+باشد — که تمام هدف [تفکیک کلاینت
+سبک(/fa-IR/راهنمای-کاربر/مفهومها/معماری/) است.
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+با این حال، هر فریم فرستاده‌شده یک اعلان نیست. جریان چرخهٔ عمر وظیفه و
+تخصیص مجدد تیکت به‌صورت زنده برای به حرکت درآوردن رابط کاربری فرستاده
+می‌شوند، اما در خوراک اعلان‌ها ثبت نمی‌شوند و اعلان شناوری نشان نمی‌دهند.
 
-## See also
+## همچنین ببینید
 
-- [Pipelines and automation](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/): what a trigger starts
-- [Tickets and delegation](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/): assignment to an agent vs a team
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/): how events fit the dependency rule
-- [Domain events reference](/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
-- [Configure notifications](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/): تریگر چه چیزی را شروع می‌کند
+- [تیکت‌ها و واگذاری(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/): تخصیص به یک عامل در برابر یک تیم
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/): رویدادها چگونه در قاعدهٔ وابستگی جا می‌گیرند
+- [مرجع رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/): فهرست کامل و مشترکان آن
+- [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+- [پیکربندی اعلان‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)

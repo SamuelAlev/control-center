@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: اشکال‌زدایی تست ناموفق با یک عامل
+description: به یک عامل بسپارید تا به‌جای افزودن دستورهای print، نقطهٔ توقف بگذارد، زیر اشکال‌زدا اجرا کند و یک فریم پشتهٔ واقعی را بخواند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اشکالزدایی-تست-ناموفق
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+این راهنما نشان می‌دهد چگونه از یک عامل بخواهید روی شکستی که دستورهای print آن را توضیح نمی‌دهند، از یک اشکال‌زدا استفاده کند.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+ابزار `debug` یک نشست واقعی Debug Adapter Protocol را هدایت می‌کند. یک فریم متوقف‌شده هم‌زمان به همهٔ پرسش‌ها دربارهٔ آن لحظه پاسخ می‌دهد — هر متغیر محلی، هر فراخوان، و عبارتی که در حوزهٔ خودِ فریم ارزیابی می‌شود — در حالی که یک دستور print تنها به پرسشی پاسخ می‌دهد که پیش از اجرا به ذهنتان رسیده بود.
 
-## Before you start
+## پیش از شروع
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+این ابزار روی سطح باقی می‌ماند تا عامل بتواند بپرسد چرا هیچ‌چیز قابل‌استفاده نیست، به‌جای اینکه حدس بزند. یک آداپتور تنها زمانی واقعاً می‌تواند آغاز به کار کند که **هر دو** مورد زیر برقرار باشند:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- یک نشانگر پروژه در چک‌اوت، و
+- پیدا شدن باینری آداپتور.
 
-Ask the agent to check:
+از عامل بخواهید بررسی کند:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+با آنچه یافته پاسخ می‌دهد، یا توضیح می‌دهد که یک آداپتور به هر دو نیمه نیاز دارد.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| زبان           | آداپتور                      | نشانگر                                          | نصب                                |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                  | همراه SDK عرضه می‌شود — کاری لازم نیست |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  | همراه LLVM عرضه می‌شود              |
+| Go             | `dlv dap`                    | `go.mod`                                        | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python مفسر پروژه را برمی‌گزیند]
+`debugpy` پیش از `$PATH` در `.venv/bin` یا `venv/bin` جست‌وجو می‌شود. یک python از `$PATH` محیطی متفاوت است، و اتصال از محیط اشتباه به شکلی شکست می‌خورد که مانند کد خراب خوانده می‌شود، نه مانند مفسر اشتباه.
 :::
 
-## Set the breakpoint first, then launch
+## نخست نقطهٔ توقف را بگذارید، سپس اجرا کنید
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+ترتیب مهم است و ابزار آن را تحمیل می‌کند: نقطه‌های توقف را می‌توان **پیش از** وجود یک نشست گذاشت، چون پروتکل همین توالی را می‌طلبد.
 
-Ask the agent something like:
+چیزی شبیه این از عامل بخواهید:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> تابع `compute` در `bin/main.dart` مقدار اشتباهی برمی‌گرداند. روی خطی که `product` را مقداردهی می‌کند نقطهٔ توقف بگذار، آن را زیر اشکال‌زدا اجرا کن و بگو `a` و `b` در واقع چه هستند.
 
-It will run roughly:
+تقریباً این‌ها را اجرا می‌کند:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+اجرا گزارش می‌دهد کجا متوقف شده است:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[اگر به‌جایش گزارش دهد که برنامه خارج شده است]
+نقطهٔ توقف متصل نشد. خطی که خالی است، یک کامنت است، یا در بیلد کامپایل نشده، نمی‌تواند میزبان نقطهٔ توقف باشد. فراخوانی `breakpoints` روی یک نشست زنده گزارش می‌دهد که از میان نقطه‌های توقعی که گذاشتید، چند مورد واقعاً قرار گرفته‌اند.
 :::
 
-## Read the frame
+## فریم را بخوانید
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+سپس داخل آن قدم بگذارید:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+شیئی که فرزند دارد `[expand: reference N]` را گزارش می‌کند — اما تنها زمانی که واقعاً چیزی پشت آن باشد؛ پس بسط‌دادنی که عامل نتواند از آن استفاده کند، هرگز ارائه نمی‌شود.
 
-For anything not visible as a local:
+برای هر چیزی که به‌صورت متغیر محلی دیده نمی‌شود:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## گام‌به‌گام پیش بروید
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| آنچه می‌خواهید            | عملیات      |
+| ------------------------- | ----------- |
+| اجرا تا توقف بعدی         | `continue`  |
+| خط بعدی، همان فریم        | `step_over` |
+| ورود به فراخوان          | `step_in`   |
+| خروج به فراخوان‌کننده     | `step_out`  |
+| متوقف‌کردن برنامه‌ای در حال اجرا | `pause` |
 
-## Attach to something already running
+## اتصال به چیزی که همین حالا در حال اجراست
 
-For a wedged process rather than one you are starting:
+برای فرایندی گیرکرده، نه فرایندی که خودتان در حال راه‌اندازی آن هستید:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## پایان دادن
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+همیشه نشست را پایان دهید. یک آداپتور اشکال‌زدا مالک یک **فرایند متوقف‌شده** است که هر آنچه آن فرایند نگه داشته را نگه می‌دارد — یک پورت، یک قفل، یک اتصال پایگاه داده.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[نمی‌تواند از دست شما بگریزد]
+هر نشست یک TTL سخت دارد که نمی‌تواند آن را تمدید کند، دقیقاً یکی به‌ازای هر گفتگو وجود دارد، و هنگام توقف سرور همه‌چیز جمع‌آوری می‌شود. `launch` دوم رد می‌شود، نه اینکه جای اولی را بگیرد: عاملی که دومی را بدون پایان دادن به اولی شروع کند، تقریباً قطعاً اولی را از دست داده است.
 :::
 
-## Bounded output
+## خروجی کران‌دار
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+بسط‌دادن `variables` روی یک گراف شیء عمیق طبیعتاً کران‌دار نیست — یک ویجت Flutter به کل درخت عناصر می‌رسد. فرزندان هر حوزه حداکثر ۵۰ مورد، مقادیر حداکثر ۴۰۰ نویسه و فریم‌های پشته حداکثر ۳۰ مورد محدود شده‌اند. نتیجهٔ ابزاری که پنجرهٔ بافت را پر کند، ابزاری است که همان نوبتی را که داشت کمکش می‌کرد پایان می‌دهد.
 
-## Related
+## مرتبط
 
-- [Code intelligence](/fa-IR/راهنمای-کاربر/مفهومها/هوش-کد/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — every `debug` op and argument
-- [Diagnose an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/) — when the problem is the agent, not the code
+- [هوش کد(/fa-IR/راهنمای-کاربر/مفهومها/هوش-کد/) — چرا اشکال‌زدا، کامپایلر و تطبیق‌دهنده هرکدام به پرسش متفاوتی پاسخ می‌دهند
+- [ابزارهای داخلی عامل(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — هر عملیات و آرگومان `debug`
+- [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/) — وقتی مشکل خودِ عامل است، نه کد

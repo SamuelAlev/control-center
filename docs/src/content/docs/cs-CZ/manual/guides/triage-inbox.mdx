@@ -1,164 +1,172 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Třídění doručené pošty
+description: Vyřiď sjednocenou doručenou poštu. Ukliď, co tě blokuje, zkontroluj, co na tebe čeká, a sleduj vlastní PR.
 slug: cs-CZ/prirucka/navody/trideni-dorucene-posty
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Tenhle návod ukazuje, jak pracovat s doručenou poštou: jednou plochou, na které
+se sejde všechno, co tě blokuje nebo o tebe výslovně žádá — čekající potvrzení
+agentů, selhané synchronizace ticketů a každý pull request, ve kterém jsi
+recenzent nebo autor.
 
-## Open the inbox
+## Otevři doručenou poštu
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Klikni na **Doručená pošta** v postranním panelu. Odznak počítá čekající
+   potvrzení agentů, selhané synchronizace a otevřené PR, které čekají na
+   tvoji kontrolu.
+2. Nebo stiskni <kbd>⌘K</kbd> a spusť navigační příkaz **Doručená pošta**.
+3. Nebo otevři přímo `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Položka v postranním panelu vždy ukazuje aktuální počet, takže vidíš, jak se
+práce k třídění hromadí, aniž bys stránku otevřel.
 
-## Read severity at a glance
+## Závažnost na první pohled
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Prohlédni ji shora dolů. Doručená pošta je už seřazená podle naléhavosti:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. Připnutý pruh **Vyžaduje vaši pozornost** sedí nad sekcemi PR. Každá karta
+   nese štítek závažnosti. Registrované zdroje (agent, který uvízl na výzvě k
+   potvrzení, synchronizace ticketu, jejíž zrcadlo u dodavatele je zastaralé)
+   hlásí **Blokováno**.
+2. Uvnitř pruhu jde nejdřív nejnaléhavější závažnost. Při shodě vyhraje
+   položka, která čeká nejdéle.
+3. Pod pruhem jsou PR seskupené do pevných sekcí životního cyklu kontroly —
+   **Potřebuje vaši kontrolu**, **Vráceno vám**, **Schváleno**, **Koncepty**,
+   **Čeká na recenzenty**, **Slučuje se a nedávno sloučené**, **Čeká na
+   autora**. Horní sekce jsou to, co potřebuje _tebe_. Zbytek ukazuje, jak na
+   tom jsou _tvoje_ PR. **Potřebuje vaši kontrolu** zahrnuje i PR, které pořád
+   žádají tým, do kterého patříš, na forge, které týmy mají (GitHub tým
+   odebere, jakmile ho zkontroluje kdokoli z týmu).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Do doručené pošty se položka dostane jen tehdy, když něco blokuje, nebo o tebe
+výslovně žádá. Prázdný pruh spolu s prázdným seznamem sekcí ukáže **Máte
+všechno přečtené** jen tehdy, když se na tu prázdnotu dá spolehnout.
 
-## One inbox across every forge
+## Jedna doručená pošta napříč všemi forge
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Když pracovní prostor drží repozitáře na víc než jednom hostiteli kódu,
+doručená pošta je sloučí do jednoho proudu — pull request z GitHubu a pull
+request z Bitbucketu sedí ve stejné sekci, seřazené podle času, ne podle
+dodavatele. Od sebe je odliší meta řádku `repo #number`.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+Co je „tvoje“, se určuje **u každé forge**, protože na každé jsi jiný účet.
+Pull request se počítá jako tvůj, nebo jako žádost o tvoji kontrolu, jen když
+odpovídá tvé identitě na forge, na které ten repozitář opravdu leží.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Forge, která je nedostupná nebo nepřipojená, nepřispěje ničím a zbytek
+doručené pošty nechá být — jedno rozbité připojení nikdy nevyprázdní celý
+seznam. Prázdný stav místo **Máte všechno přečtené** uvede výhradu, když je
+přihlášení u všech forge pořád nevyřešené (**Váš účet GitHub se nepodařilo
+potvrdit** — text pořád jmenuje GitHub), když githubstatus.com hlásí incident,
+nebo když je pozastavená instalace GitHub App, která pokrývá propojené
+repozitáře.
 
-## Clear the attention strip
+## Ukliď pruh pozornosti
 
-Each strip card has one next action:
+Každá karta v pruhu má jednu další akci:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Když je karta čekající potvrzení agenta, klikni na **Kontrola** — ocitneš
+   se v prostoru toho agenta u čekajícího potvrzení. Tam ho schval, nebo
+   zamítni (viz [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)).
+2. Když karta u dodavatele říká **Synchronizace selhala**, klikni na
+   **Otevřít** — ocitneš se v **Nastavení → Pracovní prostor → Obecné**. Karta
+   **Zdraví synchronizace** tam ukazuje u každého připojení poslední
+   synchronizaci, sérii po sobě jdoucích selhání a poslední výsledek. V
+   doručené poště se u každého dodavatele objeví jen poslední selhání, takže
+   obnovená synchronizace kartu odstraní.
+3. Karty zmizí samy, jakmile se podkladový stav vyřeší (agent dostane
+   odpověď, synchronizace se vzpamatuje) — ručně je zavírat nejde.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Jsou to potvrzení na jeden tah, ne schválení ve správě]
+Karta „schválení agenta“ je běžící agent, který se ve vlastní konverzaci
+zastaví a požádá o svolení k jedné akci. Od záznamu `Approval` ve správě,
+který agenti zakládají nástroji MCP pro schválení, se liší. Pro ty záznamy
+nikde v aplikaci není obrazovka pro člověka a sem se nikdy nedostanou.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Zdraví synchronizace je jen ke čtení]
+Karta podává zprávu o připojeních synchronizace ticketů. Kromě tlačítka
+**Synchronizovat teď** neumí připojení vytvořit, upravit ani znovu připojit a
+žádná jiná obrazovka to neumí taky. Když žádné připojení nastavené není,
+prostě píše „Zatím žádná připojení synchronizace“, což ukáže čerstvý pracovní
+prostor.
 :::
 
-## Filter to what is blocking
+## Filtruj na to, co blokuje
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Stiskni <kbd>f</kbd> (když kurzor není v textovém poli) a otevři nabídku
+   filtrů, nebo klikni na tlačítko filtru v nástrojové liště.
+2. Vyber libovolnou kombinaci stavu, autora, recenzentů, obsahu, vlastníka
+   nebo názvu repozitáře, časových oken, nebo **Rychlé ke kontrole**. Počty u
+   voleb v nabídce ukážou, kolika položkám doručené pošty každá možnost
+   odpovídá.
+3. Aktivní filtry se ukážou jako štítky v liště nad seznamem. Kliknutím na ✕
+   u štítku to kritérium zahodíš.
+4. Levou lištou skákej mezi sekcemi — každá položka ukazuje aktuální počet a
+   zvýraznění sleduje, kam jsi odroloval. Kliknutím na záhlaví sekce sbalíš
+   ty, které netřídíš (třeba **Koncepty**, když vyřizuješ kontroly).
+5. Klikni na záhlaví sloupce (**Název**, **Změny** nebo **Aktualizováno**) a
+   seřadíš každou sekci. Dalším kliknutím na aktivní sloupec otočíš směr.
+   Tlačítko **Možnosti zobrazení** řídí zobrazení konceptů, okno sloučení,
+   zobrazené vlastnosti, řazení a seskupení (rozložení doručené pošty změní
+   jen seskupení podle autora).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Filtry tady jsou nezávislé na frontě PR — zúžení doručené pošty nikdy nezmění
+filtry fronty a naopak.
 
-## Act on a PR item
+## Jednej u položky PR
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/cs-CZ/prirucka/navody/odeslani-review-agentu/) and
-   [the dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).
+1. Klikni na libovolný řádek a otevřeš stránku detailu PR.
+2. Když je PR v sekci **Potřebuje vaši kontrolu**, zkontroluj ho a odešli
+   rozhodnutí — viz
+   [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/).
+3. Když je PR v sekci **Vráceno vám** (vyžádány změny, nebo selhalo CI), pošli
+   opravy ze svého checkoutu, nebo navazující práci předej agentovi.
+4. Když je PR v sekci **Schváleno**, slouč ho ze stránky detailu.
+5. Když chceš kontrolu raději předat, než ji dělat sám, viz
+   [Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/) a
+   [životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Jakmile se podkladový stav změní (dorazí tvoje kontrola, PR se sloučí),
+klasifikátor PR sám zařadí do nové sekce.
 
-## Undo a mistaken action
+## Vezmi zpět chybnou akci
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Stiskni <kbd>⌘Z</kbd> a vezmi poslední akci zpět, <kbd>⌘⇧Z</kbd> ji udělej
+   znovu.
+2. Když je kurzor v textovém poli, ⌘Z upraví text v poli — nejdřív klikni mimo
+   pole, ať vezmeš zpět akci na úrovni aplikace.
 
-## Look up shortcuts in place
+## Najdi zkratky na místě
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/).
+Stiskni <kbd>?</kbd> (když kurzor není v textovém poli) a otevřeš přehled
+klávesových zkratek. Vypíše každou zkratku platnou na aktuální trase, včetně
+filtru doručené pošty <kbd>f</kbd>. Celá mapa je v
+[Klávesové zkratky](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/).
 
-## Drive it from the command palette
+## Ovládej ji z palety příkazů
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Stiskni <kbd>⌘K</kbd> kdekoli a otevři paletu příkazů.
+2. Napiš **Doručená pošta** a skočíš na stránku, nebo napiš název PR — paleta
+   vypíše odpovídající pull requesty a otevře ten, který vybereš.
+3. Když máš doručenou poštu otevřenou, spusť **Kopírovat odkaz na tuto
+   stránku** a zkopíruj tu adresu ke sdílení. Příkaz kopíruje aktuální trasu,
+   takže je to adresa doručené pošty jen tehdy, když jsi na téhle stránce.
 
-## Refresh on demand
+## Obnov na požádání
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Doručená pošta se aktualizuje živě. Když máš podezření na zastaralá data,
+klikni na ovládání obnovení v nástrojové liště — vynutí okamžitý průchod na
+serveru přes každou připojenou forge a znovu načte překryvy sloučených a
+zkontrolovaných. Ikona se točí, dokud každé načtení nedoběhne.
 
-## Related guides
+## Související návody
 
-- [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Dispatch reviewers](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
+- [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
 
-## Related concepts
+## Související koncepty
 
-- [Dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)

@@ -1,152 +1,166 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Usa la revisione basata sull'IA
+description: Esegui la pipeline pr_review su una PR, leggi i rilievi e il verdetto, poi pubblica la revisione su GitHub.
 slug: it-IT/manuale/guide/revisione-ia
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Questa guida mostra come far revisionare una pull request agli agenti revisori e
+come pubblicare il risultato su GitHub.
 
-## Start an AI review
+## Avvia una revisione IA
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Apri la PR e vai nella sua scheda **Panoramica**
+2. Apri il menu a comparsa ⋯ nella riga delle azioni e scegli **Ask AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+La voce compare solo mentre la PR è aperta: è un'azione pre-merge. Lo stesso
+pulsante è offerto come **Ask AI** nello stato vuoto della scheda **Revisione**,
+prima che esista una revisione.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center avvia la pipeline `pr_review` preconfigurata e apre la scheda
+**Revisione** della PR così puoi seguirla. La pipeline:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Apre lo spazio di revisione della PR, il cui worktree isolato ha la PR in
+   checkout al suo head ref
+2. Distribuisce i revisori in base al livello di revisione dello spazio di
+   lavoro — tre per impostazione predefinita (gli agenti preconfigurati **qa**,
+   **architect** e **engineer**, in parallelo). Non c'è alcun rilevamento per
+   linguaggio o dominio
+3. Fa consolidare i loro rilievi in un percorso guidato all'agente lead (CEO)
+4. Finalizza: ordina i rilievi in gruppi di consenso e calcola il verdetto.
+   Quando l'associazione raggiunge `awaiting approval`, nella scheda Revisione
+   compare **Pubblica su GitHub**
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Quanto è profonda la revisione dipende dal **Livello di revisione** dello spazio
+di lavoro — `light` (un revisore), `balanced` (tre, il valore predefinito) o
+`thorough` (tutti e cinque, con l'aggiunta degli specialisti di sicurezza e
+prestazioni) — impostato in **Impostazioni → Spazio di lavoro → Generale**, sulla
+scheda **Criteri dello spazio di lavoro**. Un livello più leggero deposita
+esattamente altrettanti rilievi; ne mette in evidenza meno.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/it-IT/manuale/concetti/revisione-ia/) for how the pieces fit together.
+Tutti i revisori pubblicano nell'unico spazio di revisione della PR, ed è ciò che
+rende confrontabili i loro rilievi. Vedi
+[Revisione IA](/it-IT/manuale/concetti/revisione-ia/) per capire come si
+combinano i vari pezzi.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/it-IT/manuale/guide/invia-revisori/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/it-IT/manuale/guide/conversazioni-pr-github/).
+`pr_review` viene fornita solo con un trigger manuale. Per farla scattare su ogni
+PR pubblicata, aggiungi tu stesso un trigger — vedi
+[Invia agenti revisori](/it-IT/manuale/guide/invia-revisori/). Puoi anche
+avviarne una da GitHub stesso, senza bisogno di un trigger di pipeline: menziona
+il bot del server sulla PR oppure aggiungi l'etichetta `ai-review` — vedi
+[Parla con Control Center da una PR GitHub](/it-IT/manuale/guide/conversazioni-pr-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Se un avviso dice che per questa pull request è già in corso una revisione, ce
+n'è già una in volo; resta nella scheda **Revisione** oppure apri **Pipelines**
+per trovarla.
 
-## Read the findings
+## Leggi i rilievi
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+I revisori registrano i rilievi come **nodi di revisione** nello spazio di
+revisione. Ciascuno porta con sé:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Campo           | Descrizione                                                   |
+| --------------- | ------------------------------------------------------------- |
+| Tipo            | `bug`, `suggestion`, `recommendation`, `question` o `ticket`  |
+| Priorità        | P0 (critico) → P3 (dettaglio)                                 |
+| Categoria       | `security`, `stability`, `data_integrity`, `correctness`, `performance` o `maintainability` |
+| File e riga     | Dove è ancorato il rilievo                                    |
+| Codice originale | Il codice a cui si riferisce il rilievo                      |
+| Codice suggerito | La correzione proposta                                       |
+| Confidenza      | Quanto è sicuro il revisore                                   |
+| Stato           | `open` → `consensus-ready` → `resolved` o `dismissed`         |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Un rilievo raggiunge **consensus-ready** solo quando un revisore _pari_ lo
+conferma. Un agente non può confermare un proprio rilievo, quindi l'opinione di
+un singolo revisore non viene mai promossa da sola.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/it-IT/manuale/guide/calcolo-revisione/) for what the pass produces.
+La scheda **Revisione** mostra l'elenco dei rilievi, filtrabile per tipo e stato,
+con un interruttore per i rilievi scartati, accanto all'artefatto pubblicato
+dall'agente di consolidamento. La vista deterministica — coorti, dashboard
+multi-asse, diff di contratto e visivi — è calcolata lato server ma non ha alcuna
+superficie nell'app; vedi
+[Calcolo della revisione (coorti e assi)](/it-IT/manuale/guide/calcolo-revisione/)
+per ciò che produce la passata.
 
-## Check the disagreements panel
+## Controlla il pannello dei disaccordi
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Quando due revisori ancorano rilievi allo stesso file e alla stessa riga ma li
+valutano in modo molto diverso — priorità distanti due o più livelli, oppure uno
+che lo chiama `bug` e l'altro che lo chiama `suggestion` — sopra l'elenco dei
+rilievi compare un pannello dei disaccordi. Leggili per primi: sono i punti in
+cui le opinioni dei revisori divergono e in cui il tuo giudizio vale di più.
 
-## Read the verdict
+## Leggi il verdetto
 
-When the lead agent finalizes, it computes a **verdict**:
+Quando l'agente lead finalizza, calcola un **verdetto**:
 
-| Verdict   | Meaning                                      |
+| Verdetto  | Significato                                  |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Nessun problema bloccante rilevato           |
+| **Hold**  | Problemi da risolvere prima del merge        |
+| **Block** | Problemi critici che devono essere corretti  |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Il verdetto porta con sé un punteggio di confidenza aggregato e il conteggio dei
+rilievi per priorità.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Gli assi di revisione poi vi confluiscono e possono solo renderlo **più** severo.
+Un asse con gate che fallisce forza **Block**; un asse con gate che non ha potuto
+completarsi (`partial`) o non ha potuto essere eseguito affatto (`unavailable`)
+forza almeno **Hold**. L'assenza di prove non supera mai un gate.
 
-## Publish the review to GitHub
+## Pubblica la revisione su GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+La pubblicazione è un passaggio separato, deliberatamente soggetto al controllo
+dell'utente. La pipeline `pr_review` mantiene la revisione in Control Center; non
+la pubblica su GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Nella scheda **Revisione**, attendi che compaia **Pubblica su GitHub**
+2. Premi **Pubblica su GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center invia **una sola** revisione GitHub. I rilievi già risolti o
+scartati vengono saltati. Il pulsante include ogni rilievo ancora aperto e, con
+**Ship**, invia `APPROVE`. (Lo strumento MCP `publish_review_to_github` usa ancora
+come impostazione predefinita solo i rilievi confermati dai pari e non approva,
+a meno che tu non passi `approve_on_ship`.) I rilievi ancorati a un file e a una
+riga diventano commenti inline; tutto il resto si ripiega nel corpo del
+riepilogo, ciascuno con un piè di pagina “— Control Center AI review” perché la
+fonte sia inequivocabile. Un verdetto **Block** viene inviato come
+`REQUEST_CHANGES`; **Hold** come `COMMENT`; **Ship** come `APPROVE` da questo
+pulsante. Poi un avviso recita **Pubblicato**. La revisione viene pubblicata
+sotto l'identità dell'app del server.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Se GitHub rifiuta un ancoraggio inline perché la riga non fa parte del diff,
+l'intera revisione viene inviata di nuovo con ogni rilievo ripiegato nel corpo,
+così nulla viene perso in silenzio.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[La pubblicazione è soggetta ai guardrail]
+`pr_review.publishReview` dichiara la classe di azione `prPublish` e passa dal
+punto di strozzatura dei guardrail. Se la decisione risolta è `prompt` e non è
+connesso alcun approvatore, la pubblicazione viene negata: i guardrail
+falliscono in modo restrittivo. Imposta una regola esplicita in
+Impostazioni → Spazio di lavoro → Autorizzazioni degli agenti se vuoi che venga
+eseguita senza supervisione.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Altre pipeline integrate pubblicano invece direttamente su GitHub: `cross_review`,
+`pr_triage`, `ticket_to_pr` e `pre_merge_gate` terminano ciascuna con un passaggio
+di commento. Solo `pr_review` trattiene il proprio output per te.
 
-## Dispatch reviewers yourself
+## Invia tu stesso i revisori
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/it-IT/manuale/guide/invia-revisori/).
+Per controllare quali ruoli revisionano la PR e quali file esamina ciascuno, usa
+lo strumento MCP `dispatch_reviewers` dentro uno spazio di revisione esistente,
+oppure aggiungi nodi revisori a una pipeline. Entrambi i percorsi, con la firma
+esatta dello strumento, sono in
+[Invia agenti revisori](/it-IT/manuale/guide/invia-revisori/).
 
-## Related guides
+## Guide correlate
 
-- [Review and merge a PR](/it-IT/manuale/guide/revisiona-e-unisci-pr/)
-- [Dispatch reviewer agents](/it-IT/manuale/guide/invia-revisori/)
-- [Review compute (cohorts and axes)](/it-IT/manuale/guide/calcolo-revisione/)
+- [Revisiona e unisci una PR](/it-IT/manuale/guide/revisiona-e-unisci-pr/)
+- [Invia agenti revisori](/it-IT/manuale/guide/invia-revisori/)
+- [Calcolo della revisione (coorti e assi)](/it-IT/manuale/guide/calcolo-revisione/)
 
-## Related concepts
+## Concetti correlati
 
-- [AI review](/it-IT/manuale/concetti/revisione-ia/)
-- [Guardrails](/it-IT/manuale/concetti/guardrail/)
+- [Revisione IA](/it-IT/manuale/concetti/revisione-ia/)
+- [Guardrail](/it-IT/manuale/concetti/guardrail/)

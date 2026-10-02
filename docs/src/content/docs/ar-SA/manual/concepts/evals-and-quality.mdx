@@ -1,33 +1,31 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: التقييمات والجودة
+description: حزم التقييم، والمجموعة المبدئية التي تُبذَر في كل مساحة عمل، وأين تظهر في قابلية الملاحظة.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تقييمات-وجودة
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**حزمة التقييم** تعريف على نطاق مساحة العمل لمهمّة تُشغَّل على وكيل: مطالبة،
+ووكيل مستهدف ووضع، وإعداد اختياري، وتركيبة اختيارية مع SHA مثبّت، وقائمة
+بالمقيّمين. الأولوية للمقيّمين الحتميين، ويغطي محكّم بمعيار LLM ما لا تستطيع
+تلك الفحوصات التعبير عنه.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+تُبذَر خمس حزم مبدئية عند إنشاء مساحة العمل. تغطي اقتراحات التنسيق، ومراجعة
+تجد خللًا مبذورًا، وبقاء وضع الخطة للقراءة فقط، وإنتاج خطة من وضع الخطة، وذهاب
+تذكرة وإيابها. يستمع البذر إلى `WorkspaceCreated` (`workspace.upsert` أو
+`workspace.create`)، ويتجاوز اسمًا موجودًا أصلًا، ولا يبذر مساحات العمل الأقدم
+بأثر رجعي.
 
-## Where they appear
+## أين تظهر
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**قابلية الملاحظة ← الجودة** (`/workspaces/<id>/observability`) تسرد كل حزمة
+في مساحة العمل.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+تُنشأ الحزم وتُسرَد وتُحرَّر وتُحذف عبر `evals.upsertSuite` و`evals.deleteSuite`
+و`evals.watchSuites`. تبويب الجودة هو القائمة، وتلك العمليات هي المحرّر.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): the configuration a suite
-  pins
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): the autonomy dial
-- [Manage costs and budgets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/): spend recorded
-  alongside a run
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): التهيئة التي تثبّتها الحزمة
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): مؤشر الاستقلالية
+- [إدارة التكاليف والميزانيات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/): الإنفاق المُسجَّل إلى جانب التشغيل

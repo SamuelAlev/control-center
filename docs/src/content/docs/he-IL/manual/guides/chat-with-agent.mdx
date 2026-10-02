@@ -1,172 +1,170 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: צ'אט עם סוכן
+description: צרו מרחב עם סוכן, שלחו לו עבודה, כוונו אותו תוך כדי הרצה ועצרו אותו.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+המדריך הזה מראה כיצד לעבוד עם סוכן במרחב.
 
-## Create a space
+## יצירת מרחב
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. עברו אל **מרחבים** בסרגל הצד
+2. לחצו על כפתור ה־**+** שלצד הכותרת **מרחבים**
+3. הקלידו **שם** — זהו שדה חובה. שם ריק נדחה;
+   תיבת הדו־שיח נשארת פתוחה
+4. אפשר להוסיף סוכנים מסביבת העבודה
+5. אם בסביבת העבודה יש מאגר כלשהו, מופיע בורר מאגרים. הוא מתחיל כשכולם
+   נבחרים; צמצמו אותו (כולל ביטול הבחירה של מאגר בודד) למאגרים
+   שהמרחב הזה אמור להקצות עבורם עצי עבודה
+6. אשרו
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center פותח את המרחב ומתחיל להקצות ברקע עץ עבודה בהעתקה בעת כתיבה
+לכל מאגר נבחר.
 
-## Send the first message
+## שליחת ההודעה הראשונה
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+הקלידו את ההודעה בתיבת הכתיבה ולחצו על Enter. הסוכן נשלח ומתחיל
+להזרים את תגובתו.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+אם המרחב עדיין בהקצאה, ההודעה שלכם מושהית ולא אובדת —
+תיבת הכתיבה מחזיקה אותה ושולחת אותה אוטומטית ברגע שעצי העבודה מוכנים.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+בזמן שהסוכן עובד אתם רואים את התור שלו נזרם פנימה: מקטעי חשיבה, קריאות כלים
+(קריאה וכתיבה של קבצים ופקודות מעטפת) וטקסט תשובה, הכול בתוך
+הודעת תור אחת של הסוכן.
 
-## Steer a running agent
+## היגוי של סוכן פעיל
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+בזמן שסוכן עובד, טקסט שיחה רגיל **אינו** ממתין בתור כתור חדש.
+הוא הופך לכרטיס היגוי בתור ברצועה שמעל תיבת הכתיבה, ומוזרק
+להרצה החיה בגבול התור הבא. אין טוסט — הכרטיס הוא
+המשוב.
 
-Three things change that behaviour:
+שלושה דברים משנים את ההתנהגות הזו:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- הודעה שמכילה **אזכור ב־@** נשלחת תמיד כהודעה, ולעולם לא
+  כהיגוי
+- הודעה שמתחילה ב**פקודת קו נטוי** מטופלת תמיד כאותה פקודה
+- הודעה עם **קובץ מצורף** נשלחת תמיד כהודעה — תור
+  ההיגוי מיועד לטקסט בלבד
+- אם כל ההרצות החיות כבר הסתיימו, הטקסט עובר הלאה ונשלח
+  כהודעה רגילה
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[היגוי דורש את מנגנון ההרצה המובנה]
+רק מנגנון ההרצה המובנה של Control Center מזריק תוך כדי הרצה. במתאם
+Claude Code הטקסט עדיין נכנס לתור ככרטיס היגוי; כשההרצה מסתיימת, כל מה
+שעדיין בתור מומר להודעה רגילה.
 :::
 
-## Approve a blocked action
+## אישור של פעולה חסומה
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+כשסוכן נתקל בפעולה שמעקות הבטיחות שלו מגבילים — פקודה הרסנית, כלי בעל
+הרשאות — השרת **חוסם את ההרצה** ומפרסם בקשת אישור לכל לקוח מחובר. אם השיחה
+הזו פתוחה אצלכם, הבקשה מופיעה **בצ'אט**, מעל תיבת הכתיבה, כאותו כרטיס עם
+אפשרויות ממוספרות שמשמש את `ask_user` (דחייה, אישור, ובאופן אופציונלי אישור
+לשמונה שעות). אין דילוג: סוכן חסום ממתין להחלטה.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+אם אתם במקום אחר באפליקציה, חלונית שתמיד למעלה במסגרת היישום עדיין
+מציגה את מה שממתין, כך שתוכלו לשחרר את הסוכן בלי לחפש את
+המרחב. שכבת־העל מסתירה בקשה ברגע שהשיחה של אותו מרחב נמצאת
+על המסך, כך שלעולם לא תענו פעמיים על אותה בקשה.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+אין הגבלת זמן: סוכן חסום ממתין עד שמישהו יחליט. אותה
+בקשה מופיעה גם ברצועת תשומת הלב של דואר הנכנס וגם בלקוח הטלפון.
 
-## Answer an agent's question
+## מענה על שאלה של סוכן
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+סוכן שזקוק להעדפה, לדרישה חסרה או לפיצול אמיתי **חייב** לקרוא ל־`ask_user`.
+כתיבת השאלה כהודעת צ'אט מסיימת את התור ואתם תצטרכו לשלוח הנחיה מחדש. הכלי
+מציג כרטיס ממוספר בשיחה — אפשרויות, טקסט חופשי אופציונלי, או שניהם — וההרצה
+ממתינה לתשובתכם.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+הקישו על אפשרות בודדת כדי לשלוח אותה (המספר שבקצה הופך לחץ במעבר עכבר).
+בחירה מרובה ותשובות מוקלדות משתמשות ב־**המשך** (`⌘↵` / `Ctrl↵`). **דילוג**
+אומר לסוכן לבחור בברירת מחדל סבירה ולא לשאול שוב.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+זהו מנגנון נפרד מכרטיס האישור שלמעלה: אישור הוא "האם מותר לי לעשות את זה?",
+ושאלה היא "איזו מהאפשרויות האלה התכוונת?". השאלה זמינה במנגנון ההרצה המובנה
+בכל מצב, כולל במצבים לקריאה בלבד (היא אינה משנה דבר), והיא בכוונה אינה עטופה
+בבקשת אישור — דיאלוג לפני דיאלוג ייכשל באופן סגור בלי מאשר מחובר. הרצה שאין
+לה שיחה שאליה אפשר להציג פשוט לא מקבלת את הכלי.
 
-## Stop an agent
+## עצירת סוכן
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+כשהרצות פעילות, כפתור השליחה של תיבת הכתיבה הופך לכפתור **עצור**. נקו
+את תיבת הכתיבה ולחצו עליו — הפעולה עוצרת כל סוכן שרץ בשיחה הזו.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+אין אמצעי עצירה בכותרת המרחב ואין קיצור מקלדת לכך. כדי לעצור הרצה אחת בלבד
+כשכמה מהן פעילות, פתחו את לשונית הפעילות של אותה הרצה — הכותרת שלה
+נושאת השהיה/חידוש ועצירה בהיקף ההרצה (העצירה מבקשת אישור).
+**ניטור ← בזמן אמת** מציג את כל סוכן שרץ בסביבת העבודה עם אותו
+אמצעי שליטה.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+הרצה שנעצרה מסומנת כנעצרה. שלחו הודעה חדשה כדי לשלוח את הסוכן מחדש.
 
-## Use slash commands
+## שימוש בפקודות קו נטוי
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+הקלידו `/` בתיבת הכתיבה כדי לראות את רשימת הפקודות. אלה שמשנות את אופן
+ההתנהגות של השיחה:
 
-| Command        | What it does                                                                                                                         |
+| פקודה          | מה היא עושה                                                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | מעביר את המרחב למצב תוכנית. `/plan` לבדו רק מפעיל את המצב; `/plan <request>` מפעיל אותו ושולח את ההמשך כהודעה שלכם |
+| `/goal <text>` | רושם את מטרת העבודה של השיחה                                                                                                          |
+| `/loop <text>` | מבצע איטרציות על משימה עד להשלמתה                                                                                                     |
+| `/compact`     | מקפל היסטוריה ישנה לסיכום מעוגן וממשיך על ההקשר המקופל                                                                                 |
+| `/todo …`      | מציג ועורך את רשימת המשימות השמורה של השיחה הזו                                                                                        |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+מיומנויות מופיעות באותה רשימה תחת מרחב השמות `skill:` שלהן, כך שהן לעולם
+אינן מתנגשות עם הפקודות שלמעלה — מיומנות בשם `plan` או `compact` נשארת
+נגישה:
 
-| Command                     | What it runs                                                       |
+| פקודה                       | מה היא מריצה                                                        |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | מיומנות שמותקנת בסביבת העבודה, או שמצורפת לסוכן                       |
+| `/skill:<repo>:<name>`      | מיומנות שאחד המאגרים שבוצע להם checkout במרחב הזה מספק                |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+מיומנויות של מאגרים מסומנות בתג של המאגר שממנו הגיעו, כי שם לבדו אינו
+אומר אילו מוסכמות של איזה שירות הוא מקודד, ושני מאגרים עשויים לספק כל אחד
+`testing` משלו. אין צורך להקליד את הקידומת כדי למצוא אחת: הקלדת שם המיומנות
+בלבד מתאימה גם לערכים עם מרחב השמות.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+סוכן נושא תמיד רק את המיומנויות של המאגר שהוא עובד בו כעת —
+ראו [מיומנויות בהיקף מאגר](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/#repo-scoped-skills). תיבת
+הכתיבה אינה מוגבלת כך: אפשר להפעיל מיומנות של כל מאגר פשוט בשמה.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` ו־`/todo` נתפסות בידי הלקוח ולעולם אינן נשמרות
+כהודעות — שורת `/compact` בתמלול תדחוף את נקודת החיתוך של הקיפול הבא תור
+אחד אחורה. `/plan` מחליף את המצב השמור של המרחב במקום לנסוע
+כטקסט. כך שאף אחת מהשלוש אינה "הודעה שאתם שולחים לסוכן"; אל תצפו לראות
+אותן בהיסטוריה.
 
-## Ask for a plan first
+## לבקש תוכנית תחילה
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/).
+לפני שינוי מורכב, העבירו את המרחב למצב תוכנית באמצעות `/plan`, תפריט המצב
+הנפתח בסרגל הכלים של תיבת הכתיבה, או Shift+Tab. הסוכן אז חוקר
+במצב לקריאה בלבד ומספק תוכנית עם טיפוסים שאתם מאשרים לפני שהעבודה מתחילה. ראו
+[שימוש במצב תוכנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/).
 
-## Reach an agent without a dedicated space
+## להגיע לסוכן בלי מרחב ייעודי
 
-You do not need a space per agent. In any space:
+אין צורך במרחב נפרד לכל סוכן. בכל מרחב:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אזכור-סוכנים/) for how names are
-matched.
+הסוכן המוזכר מתווסף למרחב ונשלח עם ההקשר של אותו מרחב. ראו [אזכור סוכנים ב־@](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אזכור-סוכנים/) לאופן שבו שמות
+מותאמים.
 
-## Related guides
+## מדריכים קשורים
 
-- [Use spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/)
-- [@-mention agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אזכור-סוכנים/)
-- [Use plan mode](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/)
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/) to do the same from Slack
+- [שימוש במרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/)
+- [אזכור סוכנים ב־@](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אזכור-סוכנים/)
+- [שימוש במצב תוכנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/) כדי לעשות את אותו הדבר מ-Slack
 
-## Related concepts
+## מושגים קשורים
 
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)

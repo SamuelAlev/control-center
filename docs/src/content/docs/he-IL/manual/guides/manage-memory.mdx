@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: ניהול זיכרון סביבת העבודה
+description: סקירה, תיקון וגיזום של העובדות והמדיניות שסוכנים כתבו אל סביבת עבודה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-זיכרון
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+מדריך זה מראה כיצד לעבוד עם מאגר הידע של סביבת עבודה.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+הדבר החשוב לדעת לפני שמתחילים: **ממשק הזיכרון הוא משטח סקירה, לא משטח כתיבה.** עובדות ומדיניות נכתבות בידי סוכנים — דרך `propose_fact` ו-`propose_policy`, כאשר `supersede_fact` ו-`supersede_policy` מחליפים אותן. `remember` כותב פריט בשכבה החמה שתחום לסשן, ש-`consolidate_memory` עשוי לקדם בהמשך לעובדה. החלטות מפגישות שנרשמו נאספות אל תחום `decisions`; אין איסוף בהרצות סוכן שהושלמו. מה שאתם עושים כאן הוא לקרוא את מה שהם כתבו, לתקן אותו, להשבית אותו או למחוק אותו.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+הזיכרון נמצא ב**הגדרות → סביבת עבודה → זיכרון** (`/workspaces/<id>/settings/memory`). הוא אינו יעד ברמה העליונה בסרגל הצד.
 
-## The three tabs
+## שלוש הלשוניות
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+בדף יש בדיוק שלוש לשוניות. עובדות וכללי מדיניות מציגים מונה חי; הגרף לא:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **עובדות** — כל עובדה בסביבת העבודה, עם מונה של אלה שלא הוחלפו
+- **כללי מדיניות** — כללים נורמטיביים המקובצים לפי תחום, עם מונה של הפעילים
+- **גרף ידע** — קנבס אינטראקטיבי של תחומים, נושאים, עובדות ומדיניות
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+תחומים אינם משהו שאתם יוצרים. תחום נוצר כאשר סוכן כותב לתוכו את העובדה או המדיניות הראשונה; אין שום בקרה ליצירת תחום בשום מקום בממשק.
 
-## Review and correct a fact
+## סקירה ותיקון של עובדה
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. פתחו את הלשונית **עובדות**.
+2. השתמשו בתיבת החיפוש כדי לצמצם את הרשימה. זהו סינון פשוט של תת־מחרוזת על התחום, הנושא והתוכן של כל עובדה — בלי אינדקס מילות מפתח ובלי דירוג.
+3. השתמשו במסנן הטווח כדי להציג את כל הטווחים, עובדות ברמת סביבת העבודה בלבד, או עובדות של מאגר אחד.
+4. השתמשו במתג המיון כדי לסדר לפי עדכניות או לפי רמת ביטחון.
+5. לחצו על בקרת העריכה של עובדה.
 
-The edit dialog lets you change:
+תיבת הדו-שיח לעריכה מאפשרת לשנות:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **תחום** — העברת עובדה בין תחומים
+- **נושא** — התווית הקצרה שלה
+- **תוכן** — טקסט הידע
+- **רמת ביטחון** — מחוון בצעדים של 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+שמרו כדי לכתוב אותה בחזרה. אין כפתור **הוספת עובדה**; תיבת הדו-שיח נפתחת רק על שורה קיימת.
 
-## See superseded facts
+## הצגת עובדות שהוחלפו
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+בלשונית עובדות יש מתג **הצג עובדות שהוחלפו**. עובדות שהוחלפו מוסתרות כברירת מחדל ונחשפות באמצעות המתג הזה, וזה המקום שבו חי יומן הביקורת — החלפה לעולם אינה מוחקת.
 
-## Delete a fact
+## מחיקת עובדה
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+השתמשו בבקרת המחיקה של עובדה ואשרו. זוהי מחיקה אמיתית, לא החלפה: השתמשו בה בעובדות שפשוט היה שגוי לתעד, והניחו לסוכנים להחליף עובדות שה_תוכן_ שלהן התפתח מאז.
 
-## Manage policies
+## ניהול מדיניות
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+הלשונית **כללי מדיניות** מקבצת מדיניות פעילה לפי תחום ומעבירה מדיניות לא פעילה לקטע בסוף. בכל מדיניות תוכלו:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **לערוך** אותה
+- **למחוק** אותה
+- **להשבית** / **להפעיל** אותה — האפשרות הפיכה ובדרך כלל הנכונה. רק מדיניות פעילה מגיעה להנחיות של סוכן.
 
-As with facts, there is no create control.
+כמו בעובדות, אין בקרה ליצירה.
 
-## Explore the knowledge graph
+## חקירת גרף הידע
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+הלשונית **גרף ידע** פורשת תחומים, נושאים, עובדות ומדיניות כקנבס צמתים לניווט — הזזה, זום וגרירת צמתים. הקשה על צומת פותחת את גיליון הפרטים שלו, ומשם אפשר להגיע לאותן תיבות דו-שיח לעריכה. זוהי הדרך המהירה ביותר לראות אילו תחומים באמת מאוכלסים.
 
-## Edit an agent's working memory
+## עריכת זיכרון העבודה של סוכן
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+זיכרון העבודה הוא פנקס רשימות פרטי לכל סוכן, המוזרק להנחיה שלו בזמן השליחה. הסוכנים כותבים אותו בעצמם באמצעות `record_observation` ו-`update_my_notes`, אבל אתם יכולים לקרוא ולערוך אותו ישירות:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**הגדרות → סביבת עבודה → סוכנים** → בחרו את הסוכן → הלשונית **זיכרון**.
 
-## Access grants
+## הענקות גישה
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+הענקות גישה לזיכרון ממפות תפקיד של סוכן להרשאה (`none`, `read`, `write`) לפי תחום. כתבו אותן עם הפעולות `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+שני דברים שכדאי להבין על אופן ההכרעה שלהן:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **קריאות הן כשל פתוח.** כשאין שורת הענקה עבור צמד (תפקיד, תחום), ההרשאה האפקטיבית היא `read`. הכתיבה היחידה שזורקת שגיאה בלי `write` היא `propose_policy`. כתיבת עובדות אינה מותנית בהענקת גישה.
+- **ההענקות ממופתחות לפי התפקיד של הסוכן.** כלי ההצעה משלימים `agent_role` חסר כברירת מחדל ל-`general`. הענקה שנכתבה לתפקיד אחר אינה מחייבת את הסוכנים האלה; הענקה של `general` כן.
 
-## Search is not the same everywhere
+## החיפוש אינו זהה בכל מקום
 
-Three different things are called "memory search" and they do not agree:
+שלושה דברים שונים נקראים “חיפוש בזיכרון” והם אינם מסכימים:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| היכן                                | מה זה עושה                                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| תיבת החיפוש בלשונית עובדות          | סינון תת־מחרוזת על העובדות שכבר נטענו בלקוח                                                                       |
+| פעולת ה-RPC של `memory_fact.search` | חיפוש מילות מפתח ב-FTS5 בלבד — לקוח דק אינו יכול לשלוח הטמעת שאילתה, ולכן החיפוש ההיברידי נשאר פנימי למארח         |
+| הכלי `search_memory` שבצד הסוכן     | `keyword`, `semantic` או `hybrid` (ברירת המחדל). ההיברידי ממזג ארבעה קולות: לקסיקלי, סמנטי, זמני וגרף              |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+לכן סוכן ודף הזיכרון לא ידרגו את אותה שאילתה באותה צורה. כשאתם בודקים מה סוכן באמת מצליח להיזכר בו, שאלו את הסוכן.
 
-## Embeddings
+## הטמעות
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+עובדות מוטמעות **בזמן הכתיבה** ורק כשמודל ההטמעה שעל המכשיר מותקן. בדקו את מצבו תחת **הגדרות → שרת → אבחון ופרטיות → חיפוש סמנטי**. התקינו את המודל לפני שסוכנים מתחילים לכתוב זיכרון אם אתם רוצים שליפה סמנטית.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [Use the MCP server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [שימוש בשרת MCP](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שרת-mcp/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Memory and knowledge](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/)
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
+- [זיכרון וידע](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/)
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)

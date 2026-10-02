@@ -1,64 +1,66 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Concepten
+description: Hoe Control Center werkt en waarom het zo is gebouwd — de achtergrondlectuur bij de gidsen.
 slug: nl-NL/handleiding/concepten
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/nl-NL/handleiding/gidsen/); when you want to look
-something up, go to the [reference](/nl-NL/handleiding/referentie/).
+Deze pagina's leggen uit **hoe Control Center werkt en waarom**. Ze zijn bedoeld om te
+begrijpen, niet om te doen: geen enkele pagina hier is een procedure die je volgt. Wil je
+een specifieke taak uitvoeren, ga dan naar de
+[how-to-gidsen](/nl-NL/handleiding/gidsen/); wil je iets opzoeken, ga dan naar de
+[referentie](/nl-NL/handleiding/referentie/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Lees ze in willekeurige volgorde. Ben je nieuw, begin dan bij het kernmodel.
 
-## Core model
+## Kernmodel
 
-The four ideas everything else is built on.
+De vier ideeën waarop al het andere voortbouwt.
 
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) — what happens between your message and the agent's first token
-- [Modes](/nl-NL/handleiding/concepten/modi/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/nl-NL/handleiding/concepten/toolcontext/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/nl-NL/handleiding/concepten/code-intelligentie/) — the code graph, language server, structural search and debugger
-- [Conversation history](/nl-NL/handleiding/concepten/gespreksgeschiedenis/) — persistence, compaction and forking a transcript
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/) — de tenantgrens en waarom die door de databaseopzet wordt afgedwongen in plaats van door querydiscipline
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/) — waaruit een agent bestaat: identiteit, rol, skills, mogelijkheden, adapter en model
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) — wat er gebeurt tussen je bericht en het eerste token van de agent
+- [Modi](/nl-NL/handleiding/concepten/modi/) — hoe `chat`, `plan`, `review` en `orchestrate` veranderen wat een agent mag doen
+- [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/) — waarom een agent maar een deel van zijn tools ziet, hoe hij bij de rest komt en wat de providercache warm houdt
+- [Code-intelligentie](/nl-NL/handleiding/concepten/code-intelligentie/) — de codegraph, de languageserver, het structureel zoeken en de debugger
+- [Gespreksgeschiedenis](/nl-NL/handleiding/concepten/gespreksgeschiedenis/) — persistentie, compactie en het vertakken van een transcript
 
-## Safety and control
+## Veiligheid en controle
 
-What an agent is allowed to touch and who decides.
+Waar een agent aan mag komen en wie dat bepaalt.
 
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) — what actually constrains an agent run today
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/nl-NL/handleiding/concepten/autorisatie/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/nl-NL/handleiding/concepten/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) — wat een agentuitvoering vandaag daadwerkelijk beperkt
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) — één policy-engine voor elke actie die iets wijzigt en hoe een regel wordt bepaald
+- [Autorisatie](/nl-NL/handleiding/concepten/autorisatie/) — rollen, de machtigingscatalogus en het auditlogboek
+- [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/) — waarom agents wegwerp-VM's krijgen in plaats van je eigen machine, en waar de grens echt ligt
 
-## Directing the work
+## Het werk sturen
 
-Turning intent into work that gets done.
+Van intentie naar werk dat gedaan wordt.
 
-- [Tickets and delegation](/nl-NL/handleiding/concepten/tickets/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/nl-NL/handleiding/concepten/orkestratie/) — one goal, one approval, a generated pipeline
-- [AI review](/nl-NL/handleiding/concepten/ai-review/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/nl-NL/handleiding/concepten/pr-gesprekken/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/nl-NL/handleiding/concepten/geheugen-en-kennis/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/nl-NL/handleiding/concepten/evals-en-kwaliteit/) — eval suites and the Quality tab
+- [Tickets en delegatie](/nl-NL/handleiding/concepten/tickets/) — de leverancierneutrale werkeenheid die de hele fleet deelt
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/) — DAG-workflows, triggers en hervatbare uitvoeringen
+- [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/) — één doel, één goedkeuring, een gegenereerde pipeline
+- [AI-review](/nl-NL/handleiding/concepten/ai-review/) — hoe een PR een gereviewde PR wordt: reviewruimtes, consensus tussen peers, assen en het Ship/Hold/Block-oordeel
+- [PR-gesprekken](/nl-NL/handleiding/concepten/pr-gesprekken/) — een GitHub-vermelding of het label `ai-review` beantwoorden vanuit de forge zelf
+- [Geheugen en kennis](/nl-NL/handleiding/concepten/geheugen-en-kennis/) — feiten, beleidsregels en wat een agent mag weten
+- [Evals en kwaliteit](/nl-NL/handleiding/concepten/evals-en-kwaliteit/) — eval-suites en het tabblad Kwaliteit
 
-## People and reach
+## Mensen en bereik
 
-Working with other humans and reaching the fleet from elsewhere.
+Samenwerken met andere mensen en de fleet vanaf elders bereiken.
 
-- [Multiplayer and presence](/nl-NL/handleiding/concepten/multiplayer/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/nl-NL/handleiding/concepten/sso/) — SAML and OIDC logins
-- [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/nl-NL/handleiding/concepten/afstandsbediening/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/nl-NL/handleiding/concepten/vergaderingen/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/nl-NL/handleiding/concepten/agenda/) — Google Calendar sync and meeting alerts
+- [Multiplayer en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/) — mensen en agents als gelijkwaardige deelnemers en wat de toegang bepaalt
+- [Eenmalige aanmelding](/nl-NL/handleiding/concepten/sso/) — aanmeldingen via SAML en OIDC
+- [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/) — waarom de Slack-brug uitgaand verbindt en wat een bericht uit de chat autoriseert
+- [Afstandsbediening en mobiel](/nl-NL/handleiding/concepten/afstandsbediening/) — hoe een telefoon je server bereikt en het beveiligingsmodel eromheen
+- [Vergaderingen en transcriptie](/nl-NL/handleiding/concepten/vergaderingen/) — opnemen op het apparaat, transcriptie en samenvatting
+- [Agenda en planning](/nl-NL/handleiding/concepten/agenda/) — synchronisatie met Google Calendar en vergaderwaarschuwingen
 
-## Under the hood
+## Onder de motorkap
 
-The shape of the system itself.
+De vorm van het systeem zelf.
 
-- [Architecture](/nl-NL/handleiding/concepten/architectuur/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/nl-NL/handleiding/concepten/deployment/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/) — the in-process bus features talk over
+- [Architectuur](/nl-NL/handleiding/concepten/architectuur/) — gelaagdheid, de gedeelde kernel, poorten en adapters
+- [Deployment en clients](/nl-NL/handleiding/concepten/deployment/) — hoe de desktop-, web- en telefoonclients zich tot één server verhouden
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/) — de bus binnen het proces waarover de features met elkaar praten

@@ -1,98 +1,122 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Personalizza il bot di chat
+description: Rinomina il bot, cambia ciò che dice di sé o cambia il suo comando slash da Control Center.
 slug: it-IT/manuale/guide/personalizza-bot-di-chat
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Questa guida mostra come rimodellare l'app del bot lato provider senza uscire da
+Control Center.
 
-## Prerequisites
+## Prerequisiti
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Il ruolo `owner` o `admin` nello spazio di lavoro
+- Un provider **connesso**. La riga **Personalizza il bot** compare solo quando lo spazio di lavoro è connesso
+- Un'app che Control Center possa gestire. Per Slack questo significa che la connessione contiene un token di aggiornamento della configurazione dell'app (`xoxe-…`); se non lo contiene, la riga lo dice e resta disattivata
 
-## What you can change
+## Cosa puoi cambiare
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Campo | Significato | Limite |
+| --- | --- | --- |
+| **Nome dell'app** | Come il provider elenca l'app | 1–35 caratteri |
+| **Nome del bot (ciò che si digita dopo @)** | Ciò che i membri digitano dopo `@` | 1–80 caratteri |
+| **Descrizione breve** | Una riga che il provider mostra | 140 caratteri o meno |
+| **Ciò che il bot dice di saper fare** | Mostrato sopra un messaggio diretto con il bot | 300 caratteri o meno |
+| **Comando** | Il comando che i membri invocano, senza la barra | In minuscolo, solo `a–z 0–9 _ -`, troncato a 32 caratteri |
+| **Messaggi diretti** | Se il bot espone l'esperienza di messaggi diretti e agente | Attivo o disattivo |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center convalida i quattro campi di testo prima di chiamare il provider,
+così ottieni «the app name must be between 1 and 35 characters» invece di un
+opaco `invalid_manifest` da un server che non puoi vedere. Il comando non viene
+rifiutato ma normalizzato: una barra iniziale viene rimossa, il resto passa in
+minuscolo, tutto ciò che sta fuori da `a–z 0–9 _ -` viene eliminato e un
+risultato vuoto ripiega su `cc`.
 
-## Edit the bot
+## Modifica il bot
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Vai in **Impostazioni → Spazio di lavoro → Generale** e scorri fino alla scheda **Ponti di chat**
+2. Nel blocco del provider, fai clic su **Personalizza il bot**
+3. La finestra si apre sui valori _live_ dell'app, riletti dal provider — quindi il punto di partenza è una modifica che qualcuno ha fatto nell'interfaccia di Slack stessa
+4. Modifica ciò che ti serve e salva
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Leggere quei valori live costa una rotazione di token lato Slack, ed è per questo
+che la riga richiede un clic deliberato invece di essere qualcosa che la pagina
+fa al caricamento.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+La scrittura sovrappone le tue modifiche alla definizione attuale dell'app.
+Tutto ciò che Control Center non modella — un secondo comando slash che hai
+aggiunto in Slack, un passaggio di workflow, un'impostazione che non c'entra —
+sopravvive intatto. Scope ed eventi vengono uniti, mai sottratti.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Dopo il salvataggio, Control Center rilegge l'identità del bot, così il nome
+nelle impostazioni corrisponde al nome nell'app di chat.
 
-## Reinstall when permissions change
+## Reinstalla quando cambiano i permessi
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Reinstalla dopo una modifica dei permessi]
+Slack applica subito la nuova definizione dell'app, ma mantiene l'autorizzazione
+installata com'era. Reinstalla l'app perché la modifica dei permessi abbia
+effetto. Il ponte continua a girare sull'autorizzazione precedente finché non lo
+fai.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Quando un salvataggio cambia i permessi, la finestra resta aperta e dice «Slack
+ha modificato i permessi dell'app. Reinstallala perché abbiano effetto», con un
+pulsante **Reinstalla l'app** che apre la pagina di installazione nel team di
+Slack per quell'app. In Slack la voce è **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Rinomina il comando slash
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Cambia **Comando** e salva. Il ponte scrive poi le istruzioni usando il comando
+con cui è stato invocato l'ultima volta, quindi il testo di aiuto e le istruzioni
+di collegamento seguono la rinomina invece di nominare un comando che non esiste
+più.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+La rinomina non rompe i thread già collegati tramite il ponte: i thread sono
+indicizzati per conversazione, non per comando.
 
-## What Control Center will not change
+## Cosa Control Center non cambia
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Impostazioni strutturali.** Il trasporto (Socket Mode), gli scope richiesti e le sottoscrizioni agli eventi sono imposti, non offerti. Un'app che si può configurare fino a farla tacere da una schermata di impostazioni è un ticket di assistenza, non una funzione
+- **L'icona del bot.** Può cambiarla solo l'impostazione dell'app del provider, e la finestra lo dice
+- **Le migrazioni delle funzionalità del provider.** Un'app già sulla vecchia forma di assistente di Slack la mantiene; questa finestra modifica una descrizione, non migra un'app
 
-## Troubleshooting
+## Risoluzione dei problemi
 
-### There is no Customize bot row at all
+### La riga Personalizza il bot non compare affatto
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/it-IT/manuale/guide/integrazione-slack/).
+Lo spazio di lavoro non è ancora connesso. La riga compare solo quando il blocco
+del provider mostra una connessione attiva. Vedi [Configura l'integrazione
+Slack](/it-IT/manuale/guide/integrazione-slack/).
 
-### The Customize bot row is disabled
+### La riga Personalizza il bot è disattivata
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+La connessione non ha alcuna credenziale di gestione dell'app — il sottotitolo
+della riga dice «Control Center ha bisogno di un token di configurazione
+dell'app per modificare il bot. Riconnettiti includendone uno.» Per Slack, genera
+una coppia di token di configurazione dell'app su
+[api.slack.com/apps](https://api.slack.com/apps) e riconnettiti con il token di
+aggiornamento compilato. È previsto per un'app costruita a mano o creata tramite
+**Crea in Slack**, perché Slack non segnala mai quale app ha creato.
 
-### "Control Center does not know which app to edit"
+### «Control Center does not know which app to edit»
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+La connessione archiviata non porta alcun id dell'app — tipicamente un'app
+connessa a mano prima che un id venisse registrato. Riconnetti lo spazio di
+lavoro, oppure crea l'app da Control Center.
 
-### The bot's new name has not appeared in chat
+### Il nuovo nome del bot non è comparso nella chat
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+I provider mettono brevemente in cache i metadati dell'app. Se il nome è ancora
+vecchio dopo un minuto, controlla se il salvataggio ti ha chiesto di reinstallare
+l'app.
 
-## Related guides
+## Guide correlate
 
-- [Set up Slack integration](/it-IT/manuale/guide/integrazione-slack/)
-- [Link your Slack account](/it-IT/manuale/guide/collega-account-chat/)
-- [Chat bridge](/it-IT/manuale/riferimento/ponte-di-chat/)
+- [Configura l'integrazione Slack](/it-IT/manuale/guide/integrazione-slack/)
+- [Collega il tuo account Slack](/it-IT/manuale/guide/collega-account-chat/)
+- [Ponte di chat](/it-IT/manuale/riferimento/ponte-di-chat/)
 
-## Related concepts
+## Concetti correlati
 
-- [Chat bridges](/it-IT/manuale/concetti/ponti-di-chat/)
+- [Ponti di chat](/it-IT/manuale/concetti/ponti-di-chat/)

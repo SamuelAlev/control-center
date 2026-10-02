@@ -1,26 +1,26 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: 派发审查智能体
+description: 从 PR 视图、MCP 工具或流水线步骤向某个 PR 派出专门的审查智能体。
 slug: zh-CN/手册/操作指南/派发审查智能体
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+本指南介绍如何派发审查智能体来审查 pull request。
 
-## From the PR view
+## 从 PR 视图
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. 打开该 PR，进入它的**概览**标签页
+2. 打开 ⋯ 溢出菜单，选择**询问 AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+这会启动预置的 `pr_review` 流水线，它会打开该 PR 的审查空间，并按工作区的
+审阅级别派出审查者——默认三个（预置的 **qa**、**architect** 和 **engineer**
+智能体）——然后由主导智能体进行汇总。在这条路径上，你无法选择角色。如果你想
+控制由哪些角色审查、以及每个角色查看哪些文件，请使用下面的 MCP 工具或流水线
+步骤。
 
-## Via the `dispatch_reviewers` MCP tool
+## 通过 `dispatch_reviewers` MCP 工具
 
-Call it from inside an existing review space:
+在已有的审查空间内部调用它：
 
 ```
 dispatch_reviewers(
@@ -33,109 +33,101 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`、`workspace_id` 和 `reviewers` 都是必填项。每个审查者条目接受一个
+`role`，以及可选的、用于文件通配的 `scope`，还有一个会替换默认任务说明的
+`prompt_override`。可选的 `concurrency`（1–8）会限制并行派发的数量；省略时，
+将采用工作区的 `review_concurrency` 设置（默认 3，在**设置 → 工作区 → 通用**中
+设置）。
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+该工具会立即返回 `dispatched` 和 `unmatched` 两个列表。每个被派发的审查者都会
+作为参与者加入该空间，并会以一条系统消息公告，然后带着自己的任务说明被派发。
+发现项会以 `review_node` 消息的形式落到该空间中。
 
-## From a pipeline step
+## 通过流水线步骤
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+打开 **设置 → 工作区 → 流水线模板**，打开一个模板，然后：
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. 从节点库中添加一个 **Reviewer (prompt)** 节点
+2. 选择要派发的智能体并编写审查者提示词，使用 `{{key}}` 占位符引用上游输出
+   （例如 `{{repo_local_path}}`、`{{pr_number}}`）
+3. 设置输出键（默认 `reviewer_findings`），以便下游步骤可以读取发现项
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+该步骤会派发智能体，并挂起，直到那次运行结束。随后，引擎会把该次运行的
+`submit_output` 载荷收集到流水线状态中，存放在该节点的输出键下。（节点库中的
+说明仍然称该步骤会等待一次 `complete_task` 调用——该工具并不存在，请忽略这段
+文字。）
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+把多个审查者节点接到同一个上游步骤即可实现扇出，然后用一个
+**Consolidate (join)** 节点汇总它们的输出。
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+编辑器会把隐藏的终端重新接到每一个可达的汇点，因此你在预置的 Step 之后添加的
+节点仍会运行。接到同一个上游步骤的扇出节点会并行运行。
 
-## Automatic dispatch on a new PR
+## 在新 PR 上自动派发
 
-To have a review pipeline fire by itself:
+要让审查流水线自行触发：
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. 在 **设置 → 工作区 → 流水线模板** 中打开该模板
+2. 从节点库的**触发器**区域把 **PR 已发布** 或 **外部 PR 已打开** 拖到画布上
+   （或从**添加触发器**占位磁贴中选取）
+3. 选中新节点，在其检查器中打开 **已启用**，然后启用该模板
 
-Two events matter here and they are not interchangeable:
+这里有两个事件很重要，它们不能互换：
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| 事件                   | 触发时机                                                                                                          | 载荷键                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | 某个 PR **通过 Control Center** 打开时——经由撰写界面，或由智能体调用 `pr_lifecycle.publish`                        | `pr_id`、`workspace_id`、`repo_owner`、`repo_name`                 |
+| `ExternalPrDetected`   | PR 轮询服务发现某个 PR 直接在 GitHub 上打开时                                                                     | `repo_owner`、`repo_name`、`pr_number`、`pr_title`、`author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+在 github.com 上打开的 PR 绝不会触发 `PullRequestPublished`，因此只接了该事件的
+模板不会看到它。还要注意，`PullRequestPublished` 不携带 `pr_number`——脚本或
+提示词中引用了 `{{pr_number}}` 的步骤，必须由 `ExternalPrDetected` 提供该值，
+或者由一次手动运行提供。
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+检查点：启用后，打开**流水线**，确认下一个匹配的 PR 会出现一次运行。模板若一直
+处于禁用状态，它的触发器触发的将是空转——引擎会拒绝已禁用的模板并直接返回，不会
+启动运行。
 
-## How a role is matched to an agent
+## 角色如何匹配到智能体
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` 会把工作区中的每个智能体与每个请求的角色标签逐一评分比对，
+不区分大小写：
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| 匹配方式                       | 分值 |
+| ------------------------------ | ---- |
+| 技能中包含该角色标签           | +3   |
+| 标题中包含该角色标签           | +2   |
+| 智能体名称中包含该角色标签     | +1   |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+分值会累加，总分最高者胜出（分数相同时，取最先找到的候选者）。如果没有任何候选者
+的得分高于零，该条目会出现在工具的 `unmatched` 列表里，而不会被派发——因此没有人
+匹配的角色会被报告出来，绝不会被悄悄跳过。
 
-## The review space
+## 审查空间
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+一个 PR 恰好有**一个**审查空间，而不是每个审查者一个。它由 `pr.ensureSpace`
+幂等地创建，通过 `ReviewSpaceAssociation` 与 PR 关联，并针对 PR 的 head ref 完成
+预配。每个被派发的审查者都会加入该空间，并把自己的 `review_node` 发现项发布在
+那里——正是这一点让各项发现项可以相互比较，并让主导智能体能够在它们之间达成
+共识。
 
-## Monitor the dispatch
+## 监控派发
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+每个被派发的审查者都有自己的 `AgentRunLog`。你可以在以下位置跟踪进度：
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **审查空间**，发现项会实时流入
+- PR 的**评审**标签页，其中显示审查状态栏和判定
+- **可观测性 → 实时**（`/workspaces/:id/observability`），即智能体名册，包含每次
+  运行的状态、实时已用时长、转录抽屉和终止控件。它没有键盘快捷键——从侧边栏页脚
+  进入。
 
-## Related guides
+## 相关指南
 
-- [Use AI-powered review](/zh-CN/手册/操作指南/ai-审查/)
-- [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/)
-- [Set up pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/)
+- [使用 AI 审查](/zh-CN/手册/操作指南/ai-审查/)
+- [审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)
+- [设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)
 
-## Related concepts
+## 相关概念
 
-- [AI review](/zh-CN/手册/概念/ai-审查/)
-- [Pipelines](/zh-CN/手册/概念/流水线/)
+- [AI 审查](/zh-CN/手册/概念/ai-审查/)
+- [流水线与自动化](/zh-CN/手册/概念/流水线/)

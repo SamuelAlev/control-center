@@ -1,37 +1,40 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Skrypty repozytorium
+description: Skrypty konfiguracyjne i archiwizacyjne dla poszczególnych repozytoriów, uruchamiane w worktree przestrzeni.
 slug: pl-PL/podrecznik/poradniki/skrypty-repozytorium
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Skrypty repozytorium to skrypty powłoki, które konfigurujesz dla poszczególnych
+repozytoriów (Ustawienia → Repozytoria → ikona terminala w wierszu
+repozytorium), a które serwer Control Center uruchamia względem **worktree
+przestrzeni** tego repozytorium — izolowanego checkoutu pod
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`, w którym pracują
+agenci.
 
-There are two kinds:
+Wyróżniamy dwa rodzaje:
 
-| Script | When it runs | Use it for |
+| Skrypt | Kiedy się uruchamia | Do czego służy |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Skrypt konfiguracyjny** | Zaraz po przygotowaniu worktree dla przestrzeni | Instalowanie zależności, generowanie plików, kopiowanie `.env` |
+| **Skrypt archiwizacji** | Tuż przed zniszczeniem worktree lub odzyskaniem go przez GC | Sprzątanie zasobów poza worktree (sieci Dockera, tunele, stan zewnętrzny) |
 
-## Where scripts run
+## Gdzie uruchamiają się skrypty
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Oba skrypty uruchamiają się przez `bash -lc` (powłoka logowania, więc
+zainstalowane przez Homebrew/nvm narzędzia są dostępne w `PATH`), z **worktree
+jako katalogiem roboczym** i ustawionymi następującymi zmiennymi środowiskowymi:
 
-| Variable | Value |
+| Zmienna | Wartość |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktree (katalog roboczy skryptu) |
+| `CC_ROOT_PATH` | Zarejestrowane repozytorium źródłowe — Twój własny checkout |
+| `CC_SPACE_ID` | Przestrzeń, do której należy worktree |
+| `CC_SPACE_NAME` | Nazwa wyświetlana przestrzeni |
+| `CC_REPO_NAME` | Nazwa wyświetlana repozytorium |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Na przykład skrypt konfiguracyjny, który instaluje zależności i dociąga
+ignorowany przez gita plik `.env` repozytorium:
 
 ```bash
 pnpm install
@@ -39,28 +42,36 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Zachowanie w przypadku niepowodzenia
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Skrypt **konfiguracyjny**, który zakończy się kodem wyjścia różnym od zera
+  (albo przekroczy swój 5-minutowy limit czasu), powoduje niepowodzenie
+  przygotowania przestrzeni: przestrzeń pokazuje stan niepowodzenia z
+  możliwością ponowienia, a końcówka danych wyjściowych uruchomienia zostaje
+  zapisana. Ponowienie przygotowuje przestrzeń od zera, z czystego worktree, i
+  uruchamia skrypt ponownie — pisz skrypty konfiguracyjne tak, aby ponowne
+  uruchomienie po częściowej instalacji działało (menedżery pakietów już tak
+  się zachowują).
+- Skrypt **archiwizacji** działa w trybie najlepszych starań: niepowodzenie
+  (lub jego 2-minutowy limit czasu) zostaje zapisane, ale **nigdy nie blokuje
+  usunięcia**. Archiwizacja uruchamia się na ścieżkach GC, na których nie ma
+  nikogo, kto mógłby odpowiedzieć na monit (usunięcie przestrzeni, scalenie
+  PR-a, zaplanowane sprzątanie).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Skrypt konfiguracyjny uruchamia się wyłącznie na **świeżym** worktree: ponowne
+wysłanie agentów do ciepłej przestrzeni używa ponownie istniejącego checkoutu i
+nie płaci drugi raz za instalację.
 
-## Run history
+## Historia uruchomień
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Każde wykonanie jest zapisywane wraz ze swoim statusem, czasem trwania, kodem
+wyjścia i ograniczoną końcówką danych wyjściowych; widać je w tym samym oknie
+ustawień, pod „Ostatnie uruchomienia” (subskrypcja `repos.watchScriptRuns`
+strumieniuje je na żywo).
 
-## Permissions
+## Uprawnienia
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Skrypty to powłoka, którą wykonuje **serwer**, więc ich pisanie jest ograniczone
+do administratorów obszaru roboczego i chronione przez klasę akcji
+`processSpawn` — tę samą siatkę guardraili, która obejmuje każdą inną operację
+uruchamiającą proces.

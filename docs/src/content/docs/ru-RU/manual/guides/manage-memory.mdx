@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Управлять памятью рабочего пространства
+description: Просматривайте, исправляйте и прореживайте факты и политики, которые агенты записали в рабочее пространство.
 slug: ru-RU/руководство/практические-руководства/управлять-памятью
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Это руководство показывает, как работать с хранилищем знаний рабочего пространства.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Важно понимать перед началом: **интерфейс памяти — это поверхность для проверки, а не для создания.** Факты и политики записывают агенты — через `propose_fact` и `propose_policy`, а для замены — `supersede_fact` и `supersede_policy`. `remember` записывает элемент горячего уровня, привязанный к сессии, который `consolidate_memory` позже может повысить до факта. Решения из записанных встреч извлекаются в домен `decisions`; при завершении запусков агентов такого извлечения нет. Здесь вы читаете то, что они записали, исправляете, деактивируете или удаляете.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Память находится в разделе **Настройки → Рабочее пространство → Память** (`/workspaces/<id>/settings/memory`). Это не отдельный пункт верхнего уровня в боковой панели.
 
-## The three tabs
+## Три вкладки
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+На странице ровно три вкладки. Для «Фактов» и «Политик» показывается актуальное число; для графа — нет:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Факты** — все факты рабочего пространства со счётчиком тех, что не заменены
+- **Политики** — нормативные правила, сгруппированные по доменам, со счётчиком активных
+- **Граф знаний** — интерактивный холст из доменов, тем, фактов и политик
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Домены вручную не создаются. Домен появляется, когда агент записывает в него первый факт или политику; элемента для создания домена в интерфейсе нет.
 
-## Review and correct a fact
+## Проверить и исправить факт
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Откройте вкладку **Факты**.
+2. Сузьте список через поле поиска. Это обычный фильтр по подстроке по домену, теме и содержимому каждого факта — без индексного поиска по ключевым словам и без ранжирования.
+3. С помощью фильтра области покажите все области, только факты уровня рабочего пространства или факты одного репозитория.
+4. Переключателем сортировки задайте порядок по недавности или по уверенности.
+5. Нажмите элемент редактирования у факта.
 
-The edit dialog lets you change:
+В диалоге редактирования можно изменить:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Домен** — перенос факта между доменами
+- **Тема** — её короткая метка
+- **Содержимое** — текст знания
+- **Уверенность** — ползунок с шагом 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Нажмите «Сохранить», чтобы записать изменения. Кнопки **Новый факт** нет; диалог открывается только для существующей строки.
 
-## See superseded facts
+## Посмотреть заменённые факты
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+На вкладке «Факты» есть переключатель **Показывать заменённые**. Заменённые факты по умолчанию скрыты и показываются этим переключателем — именно в них заключается история изменений: замена никогда не удаляет.
 
-## Delete a fact
+## Удалить факт
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Нажмите элемент удаления у факта и подтвердите. Это настоящее удаление, а не замена: используйте его для фактов, которые вообще не стоило записывать, а факты, чьё _содержимое_ устарело, пусть заменяют агенты.
 
-## Manage policies
+## Управлять политиками
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Вкладка **Политики** группирует активные политики по доменам, а неактивные выносит в раздел в конце. Для каждой политики можно:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Изменить** её
+- **Удалить** её
+- **Деактивировать** / **Активировать** её — обратимый вариант, обычно именно он и нужен. В промпты агентов попадают только активные политики.
 
-As with facts, there is no create control.
+Как и для фактов, элемента создания здесь нет.
 
-## Explore the knowledge graph
+## Изучить граф знаний
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Вкладка **Граф знаний** раскладывает домены, темы, факты и политики в виде навигационного холста узлов — перемещение, масштабирование, перетаскивание узлов. Нажатие на узел открывает панель сведений, из которой доступны те же диалоги редактирования. Так быстрее всего увидеть, какие домены действительно наполнены.
 
-## Edit an agent's working memory
+## Редактировать рабочую память агента
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Рабочая память — это приватный черновик каждого агента, который подставляется в его промпт в момент запуска. Агенты пишут в него сами через `record_observation` и `update_my_notes`, но вы можете читать и редактировать его напрямую:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Настройки → Рабочее пространство → Агенты** → выберите агента → вкладка **Память**.
 
-## Access grants
+## Разрешения на доступ
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Разрешения на доступ к памяти сопоставляют роль агента с разрешением (`none`, `read`, `write`) для каждого домена. Создавайте их операциями `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Вот что важно понимать о том, как они применяются:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Чтение разрешается при сбое.** Если для пары (роль, домен) нет строки разрешения, действующее разрешение — `read`. Единственная запись, которая выдаёт ошибку без `write`, — `propose_policy`. Запись фактов разрешением не ограничена.
+- **Разрешения привязаны к роли агента.** Инструменты предложения по умолчанию подставляют `general`, если `agent_role` не указан. Разрешение, созданное для другой роли, на таких агентов не распространяется; разрешение для `general` — распространяется.
 
-## Search is not the same everywhere
+## Поиск везде разный
 
-Three different things are called "memory search" and they do not agree:
+Три разные вещи называются «поиском по памяти», и они не согласованы между собой:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Где                                    | Что делает                                                                                                                                    |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Поле поиска на вкладке «Факты»         | Фильтр по подстроке по фактам, уже загруженным в клиент                                                                                        |
+| RPC-операция `memory_fact.search`      | Только поиск по ключевым словам через FTS5: тонкий клиент не может отправить эмбеддинг запроса, поэтому гибридный поиск остаётся внутри хоста  |
+| Инструмент `search_memory` у агента    | `keyword`, `semantic` или `hybrid` (по умолчанию). Гибридный режим объединяет четыре голоса: лексический, семантический, временной и графовый  |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Поэтому агент и страница «Память» ранжируют один и тот же запрос по-разному. Когда нужно проверить, что агент действительно может вспомнить, спросите агента.
 
-## Embeddings
+## Эмбеддинги
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Факты получают эмбеддинг **в момент записи** и только если установлена локальная модель эмбеддингов. Проверить её состояние можно в разделе **Настройки → Сервер → Диагностика и конфиденциальность → Семантический поиск**. Установите модель до того, как агенты начнут писать в память, если хотите семантическое извлечение.
 
-## Related guides
+## Связанные руководства
 
-- [Create and configure an agent](/ru-RU/руководство/практические-руководства/создать-агента/)
-- [Use the MCP server](/ru-RU/руководство/практические-руководства/mcp-сервер/)
+- [Создать и настроить агента](/ru-RU/руководство/практические-руководства/создать-агента/)
+- [Использовать MCP-сервер](/ru-RU/руководство/практические-руководства/mcp-сервер/)
 
-## Related concepts
+## Связанные понятия
 
-- [Memory and knowledge](/ru-RU/руководство/понятия/память-и-знания/)
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/)
+- [Память и знания](/ru-RU/руководство/понятия/память-и-знания/)
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/)

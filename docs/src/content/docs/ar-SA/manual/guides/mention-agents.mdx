@@ -1,121 +1,118 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: الإشارة إلى الوكلاء بـ @
+description: أشر إلى وكلاء في مساحة لإرسالهم، وإلى زملاء لتنبيههم.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/الإشارة-إلى-الوكلاء
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+يبيّن هذا الدليل كيف تشير بـ @ إلى الوكلاء والزملاء داخل مساحة.
 
-## Mention an agent
+## الإشارة إلى وكيل
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+اكتب `@` في حقل الكتابة واختر وكيلًا من الإكمال التلقائي، أو اكتب الاسم
+بنفسك:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+يُضاف الوكيل المشار إليه إلى المساحة مشاركًا إن لم يكن كذلك أصلًا، ويُرسَل
+مع سياق المساحة ووضعها. المشاركون الذين لم يُشَر إليهم يرون الرسالة ولا
+يُرسَلون.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+إن أرسلت رسالة بلا إشارة إلى وكيل، اختار Control Center المجيب بنفسه: الوكيل
+الذي تكلم آخر مرة في المحادثة، وإلا مالك المحادثة إن كان لها مالك، وإلا أول
+وكيل من المستوى الأعلى بين مشاركي المساحة. في المساحة ذات الوكيل الواحد يكون
+ذلك الوكيل هو الوحيد دائمًا.
 
-## Know how a name is matched
+## كيف يُطابَق الاسم
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+يُطابَق رمز الإشارة **بلا تفرقة بين الحرف الكبير والصغير**، **بتطابق تام أو
+ببادئة**. فيصل `@arch` إلى وكيل اسمه `architect`، ويصل `@Alice` إلى `alice`.
 
-Two consequences worth planning around:
+نتيجتان يحسن التخطيط لهما:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **الرمز القصير ليس خطأ.** إن اشترك وكيلان في بادئة، فاز أول من يُعثَر عليه،
+  وأيّهما ذلك يتوقف على الترتيب — لا على قاعدة لكسر التعادل. استخدم الاسم
+  الكامل كلما تداخلت الأسماء.
+- **لا يدخل في الرمز إلا محارف الكلمة: حروف، وأرقام، وشرطة سفلية.** يطابق
+  التحليل `@(\w+)`، فيُحلَّل `@code-reviewer` على أنه `code`، و`@my agent`
+  على أنه `my`. والوكيل الذي في اسمه واصلة أو نقطة أو مسافة لا يُشار إليه
+  بموثوقية — بما في ذلك عبر الإكمال التلقائي، الذي يدرج الاسم نصًا عاديًا.
+  سمِّ الوكلاء بكلمة واحدة، أو بشرطات سفلية.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+تُنزَع الإشارات من النص قبل أن يبلغ الوكيل. لذلك فالرسالة التي لا تضم _سوى_
+إشارات (`@alice`) لا تُرسِل شيئًا — أعطها عملًا.
 
-## Mention several agents at once
+## الإشارة إلى عدة وكلاء دفعة واحدة
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+يُرسَل الوكيلان بالتوازي في المحادثة نفسها، ويتلقى كل منهما الرسالة كاملة.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+وهما **يشتركان في أشجار عمل تلك المساحة**. تُجهَّز أشجار عمل المستودعات لكل
+مساحة لا لكل وكيل، ويحصل كل وكيل على دليل عمل متراكب خاص به لملف `AGENTS.md`
+ومهاراته وإعداده، وتُربَط فيه المستودعات المشتركة للقراءة والكتابة. فيستطيع
+وكيلان أُشير إليهما معًا أن يريا تعديلات بعضهما — وأن يصطدما بها.
 
-## Mention a teammate
+## الإشارة إلى زميل
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+كل `@token` لا يطابق وكيلًا يُجرَّب على أعضاء مساحة العمل من البشر، بالمعرّف
+القصير، وبقاعدة المطابقة نفسها: بلا تفرقة بين الحرف الكبير والصغير، وبتطابق
+تام أو ببادئة.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+الإشارة إلى إنسان بعد حلّها **لا تُرسِل شيئًا**. تُرفَق بالبيانات الوصفية
+للرسالة لغرض واحد: أن ينبّه موجّه الإشعارات ذلك الشخص.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+تُجرَّب أسماء الوكلاء أولًا دائمًا، والرمز الذي يحوزه وكيل لا يُعرَض على قائمة
+الأعضاء — وكلمة `@word` واحدة لا تُحَل إلا إلى طرف واحد.
 
-## What the agent receives
+## ما يتلقاه الوكيل
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+يحصل الوكيل المُرسَل على كتلة "Summons" في مطالبته، تسمّي من استدعاه وتسرد
+كشف المساحة — الوكلاء الآخرون (موسومون بـ top-level agent أو subordinate agent)
+والأعضاء من البشر — حتى يعرف لمن يستطيع أن يسلّم. وتخبره الكتلة أيضًا أن
+الإشارة إلى وكيل آخر في رده توقظ ذلك الوكيل، وأن الإشارة إلى نفسه تُتجاهَل.
 
-## When an agent mentions an agent
+## حين يشير وكيل إلى وكيل
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+يستطيع الوكيل أن يسلّم في رده نفسه. حين **تكتمل الجولة بنظافة**، تُحَل
+الإشارات في نصه، ويُضاف أولئك الوكلاء إلى المساحة ويُرسَلون في المحادثة نفسها،
+وتصير الجولة التي أشارت إليهم مطالبتهم. الجولة التي فشلت أو قُطعت لا توقظ
+أحدًا — فقد توقفت في منتصف الفكرة.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+القواعد هنا أشد عمدًا مما في حقل الكتابة، فلا أحد يراقب ليصحّح تخمينًا
+خاطئًا:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **الأسماء المطابقة تمامًا فقط.** بلا مطابقة بالبادئة. `@arch` يصل إلى
+  `architect` حين يكتبه إنسان، ومن وكيل لا يصل إلى أحد. والاسم الذي يطابق
+  وكيلين لا يصل إلى أحد أيضًا.
+- **الشفرة ليست نثرًا.** تُتجاهَل الإشارات داخل الكتل المسيّجة أو `` `backticks` ``،
+  فاقتباس التعليق التوضيحي `@Override` أو الأمر `pip install foo@1.2` آمن.
+  والسياج الذي لا يُغلَق يُسقِط كل ما بعده.
+- **إلصاق `@` بالرمز السابق ليس إشارة** — `sam@host.com` و`pkg/@scope`
+  و`node@20` لا تُحَل إلى أحد.
+- **الواصلات تُحفَظ**، فيُحَل `@code-reviewer` كما هو لا على أنه الرمز `code`.
+- **ثلاثة وكلاء على الأكثر في الجولة.** الوكيل الذي يسرد ستة زملاء في ملخص
+  يسردهم ولا يستدعيهم.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+تُحدَّ سلسلة الإيقاظ كما يُحدَّ التفويض: **عمق 3**، والوكيل الموجود أصلًا على
+السلسلة لا يُوقَظ بها مرة أخرى (لا `A → B → A`). والزوج المرتّب يخضع لحد
+المعدّل عبر السلاسل أيضًا. الإيقاظ المرفوض يكتب رسالة نظام في المحادثة تسمّي
+الإشارة التي لم تُسلَّم وسبب ذلك — والاسم الذي لم يُحَل لا يفعل ذلك، وإلا روت
+كل `@` في الجملة عن نفسها.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+للتسليم الذي يجب ألا يعتمد على النثر — طلب وردّ، أو بلوغ وكيل خارج المساحة —
+استخدم أدوات `send_to_agent` و`ask_agent` و`delegate_task`.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
-- [Use spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
-- [Run agents in parallel](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/)
+- [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
+- [تشغيل الوكلاء بالتوازي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/)

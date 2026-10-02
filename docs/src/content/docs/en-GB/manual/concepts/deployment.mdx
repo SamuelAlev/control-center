@@ -2,6 +2,7 @@
 title: Deployment and clients
 description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
 slug: en-GB/manual/concepts/deployment
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
 Control Center is not one program. It is a **thin-client architecture**: a
@@ -31,7 +32,7 @@ disagree about. Isolation is enforced per call instead, in four steps:
 1. The op declares whether it is workspace-scoped; if it is and no
    `workspace_id` arrived, the call is rejected.
 2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
+   opens a database — otherwise an unknown id would materialise an empty ghost
    `workspace.db` on every request. A miss is a not-found.
 3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
    read needs guest, mutate needs member, destructive needs admin.
@@ -44,7 +45,7 @@ membership is.**
 
 ## Why split it this way
 
-Three pressures pushed toward a server:
+Three pressures pushed towards a server:
 
 1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
    should see the same fleet state. If each owned its own database, they would
@@ -191,8 +192,8 @@ that has one. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security
 for what bounds a run in each case.
 
 Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
+meeting's audio — a server in a cupboard cannot record your call. The recording
+is then summarised by the server's pipeline and the notes are stored where
 every client can read them.
 
 The web client records too, which the table's shape can obscure: it captures

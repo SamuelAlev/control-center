@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Tambahkan repo ke ruang kerja
+description: Daftarkan checkout Git ke ruang kerja agar agen dapat mengerjakannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/tambah-repo
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Panduan ini menunjukkan cara mendaftarkan checkout Git ke sebuah ruang kerja, mengindeksnya ulang, dan menghapusnya lagi.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repo bersifat **bercakupan ruang kerja**. Tidak ada registri global dan tidak ada langkah penautan: menambahkan repo dan menaruhnya di ruang kerja adalah tindakan yang sama. Checkout yang sama yang didaftarkan di dua ruang kerja menjadi dua baris independen dengan dua id yang berbeda — lintas ruang kerja, identitas sebuah repo adalah jalur sistem berkasnya, tidak pernah id-nya.
 
-## Before you start
+## Sebelum memulai
 
-A folder can only be registered if all three of these hold:
+Sebuah folder hanya dapat didaftarkan jika ketiga syarat berikut terpenuhi:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Folder itu berada di dalam **work tree git**.
+2. Work tree tersebut memiliki **remote `origin`**.
+3. Remote `origin` menunjuk ke **forge yang didukung**: github.com, gitlab.com atau bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Apa pun selain itu ditolak pada saat pendaftaran dengan pesan eksplisit: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", atau "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Tidak ada mode yang hanya berjalan secara lokal.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forge-nya dibaca dari remote dan disimpan pada repo — Anda tidak pernah memilihnya. Sebuah ruang kerja dapat memuat repo dari ketiganya sekaligus, dan masing-masing diajak berkomunikasi melalui API-nya sendiri dengan kredensialnya sendiri. Namespace bertingkat milik GitLab dipertahankan, sehingga `gitlab.com/group/subgroup/project` terdaftar dengan owner `group/subgroup`, name `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Folder itu juga harus berada di mesin yang menghosting `cc_server`, di dalam salah satu direktori `--repo-roots` milik server tersebut. Daftar izin itu default-nya adalah direktori home pengguna server, dan menelusuri di atas sebuah root akan ditolak.
 
-## Register a checkout
+## Daftarkan checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Buka **Pengaturan → Ruang kerja → Repositori** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Klik **Tambah repositori**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Dialog itu adalah peramban yang dapat dinavigasi atas sistem berkas **server**, bukan sistem berkas Anda. Alirannya sama di desktop, web, dan ponsel, karena pemilih folder native akan memilih folder di mesin yang salah.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Telusuri di dalam root yang dikonfigurasi server. Folder yang merupakan checkout git akan ditandai.
+4. Centang sebanyak yang Anda inginkan. Pilihan itu tetap tersimpan saat Anda menelusuri, sehingga Anda dapat mengumpulkan checkout dari beberapa folder.
+5. Daftarkan semuanya dalam satu batch.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Satu pilihan yang gagal tidak pernah menggugurkan sisa batch — Anda mendapatkan id yang berhasil dibuat plus galat per jalur untuk setiap pilihan yang ditolak. Mendaftarkan ulang jalur yang sudah ada di ruang kerja ini akan mengembalikan repo yang sudah ada, bukan membuat duplikat.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Setiap repo yang terdaftar muncul di daftar dengan `owner/name`, lencana yang menyebutkan forge-nya, dan jalurnya di server. Repo GitHub juga menampilkan avatar pemiliknya; forge lain tidak memiliki URL avatar pemilik yang dapat ditebak, sehingga mereka beralih ke inisial.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Lencana forge penting di ruang kerja campuran: dua repo bisa sama-sama bernama `acme/web` di forge yang berbeda, dan keduanya berperilaku berbeda — apa yang dapat dilakukan sebuah tinjauan, dan ke mana sebuah tautan mengarah.
 
-## What happens next
+## Apa yang terjadi selanjutnya
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Pendaftaran memicu peristiwa `RepoAdded` yang bercakupan ruang kerja ini, yang menjalankan pipeline `index_code` untuk checkout tersebut. Itulah yang mengisi graf kode, sehingga pencarian dan analisis dampak memiliki bahan untuk menjawabnya.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/).
+Hanya berkas yang bahasanya memiliki grammar yang disertakan yang diindeks (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, dan Ada). Lihat [Cari kode dengan graf kode](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/).
 
-## Re-index a repo
+## Indekskan ulang repo
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Setiap baris memiliki tombol **Indekskan kode**. Klik tombol itu untuk menjalankan ulang pengindeks bagi checkout tersebut; selama berjalan, tombol tersebut berubah menjadi tampilan progres yang menunjukkan berkas yang selesai dari totalnya, beserta kontrol pembatalan. Setelah selesai, tombol itu menetap menjadi tanda centang dengan jumlah simbol, atau peringatan jika eksekusinya gagal.
 
-## Reorder repos
+## Ubah urutan repo
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Seret tuas pada sebuah baris. Urutan yang Anda tetapkan adalah urutan yang dibaca kembali oleh setiap daftar repo di aplikasi.
 
-## Fix the GitHub link
+## Perbaiki tautan GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Ikon tautan pada sebuah baris membuka editor untuk owner dan nama repositori GitHub milik repo tersebut — berguna ketika remote-nya diganti nama atau dialihkan.
 
-## Remove a repo
+## Hapus repo
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Buka **Pengaturan → Ruang kerja → Repositori**.
+2. Klik ikon tempat sampah pada baris tersebut.
+3. Konfirmasi "Hapus repositori dari ruang kerja?"
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Dialog itu menjelaskan apa yang dilakukannya: "_name_ akan dihapus dari ruang kerja ini. File lokal di disk tidak diubah."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Penghapusan akan menghapus baris repo dari ruang kerja ini dan menggugurkan baris-baris graf kodenya secara berantai — simbol, edge, berkas, dan checkpoint indeks — plus setiap pemberian izin repo per anggota padanya, tautan space-repo miliknya, dan catatan checkout terisolasinya. Checkout yang sama yang terdaftar di ruang kerja lain adalah baris independen dan tidak terpengaruh. Worktree di disk yang ditunjuk oleh catatan tersebut tidak dibongkar oleh penghapusan ini.
 
-## Related guides
+## Panduan terkait
 
-- [Search code with the code graph](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/)
-- [Run agents in parallel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
-- [Set up GitHub integration](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
-- [Your first workspace](/id-ID/panduan-pengguna/tutorial/ruang-kerja-pertama/)
+- [Cari kode dengan graf kode](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/)
+- [Jalankan agen secara paralel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
+- [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
+- [Ruang kerja pertama Anda](/id-ID/panduan-pengguna/tutorial/ruang-kerja-pertama/)
 
-## Related concepts
+## Konsep terkait
 
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/)
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/)

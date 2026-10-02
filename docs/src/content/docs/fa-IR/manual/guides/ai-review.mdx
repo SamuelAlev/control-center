@@ -1,152 +1,161 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: استفاده از بازبینی مبتنی بر هوش مصنوعی
+description: پایپ‌لاین pr_review را روی یک PR اجرا کنید، یافته‌ها و حکم را بخوانید و سپس بازبینی را در GitHub منتشر کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+این راهنما نشان می‌دهد چگونه عامل‌های بازبین را وادار کنید یک pull request را
+بازبینی کنند و چگونه نتیجه را در GitHub منتشر کنید.
 
-## Start an AI review
+## شروع یک بازبینی هوش مصنوعی
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. PR را باز کنید و به زبانهٔ **نمای کلی** آن بروید
+2. منوی سرریز ⋯ را در ردیف کنش‌ها باز کنید و **پرسش از AI** را انتخاب کنید
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+این گزینه تنها تا وقتی PR باز است نمایان می‌شود — کنشی پیش از ادغام است. همان
+دکمه در وضعیت خالی زبانهٔ **بازبینی**، پیش از آنکه هیچ بازبینی‌ای وجود داشته باشد،
+با نام **پرسش از AI** ارائه می‌شود.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center پایپ‌لاین از پیش تعریف‌شدهٔ `pr_review` را شروع می‌کند و زبانهٔ
+**بازبینی** PR را باز می‌کند تا بتوانید تماشایش کنید. این پایپ‌لاین:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. فضای بازبینی خود PR را باز می‌کند؛ worktree جداشدهٔ آن، PR را روی head خودش
+   checkout کرده دارد
+2. بازبین‌ها را بر اساس سطح بازبینی فضای کاری پخش می‌کند — به‌طور پیش‌فرض سه مورد
+   (عامل‌های از پیش تعریف‌شدهٔ **qa**، **architect** و **engineer**، به‌صورت موازی).
+   هیچ تشخیص زبان یا دامنه‌ای وجود ندارد
+3. عامل راهبر (CEO) را وادار می‌کند یافته‌هایشان را در قالب یک مرور گام‌به‌گام
+   یکپارچه کند
+4. نهایی‌سازی می‌کند: یافته‌ها را در گروه‌های اجماع مرتب می‌کند و حکم را محاسبه
+   می‌کند. وقتی این پیوند به `awaiting approval` می‌رسد، **انتشار در GitHub** در
+   زبانهٔ بازبینی نمایان می‌شود
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+اینکه بازبینی تا چه عمقی می‌رود، **سطح بازبینی** فضای کاری است — `light` (یک
+بازبین)، `balanced` (سه مورد، پیش‌فرض) یا `thorough` (هر پنج مورد، با افزودن
+متخصصان امنیت و عملکرد) — که در
+**تنظیمات → فضای کاری → عمومی**، روی کارت **سیاست فضای کاری** تنظیم می‌شود. سطح
+سبک‌تر دقیقاً همان تعداد یافته را ثبت می‌کند؛ فقط تعداد کمتری از آن‌ها را در صدر
+گزارش می‌دهد.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/) for how the pieces fit together.
+همهٔ بازبین‌ها در تنها فضای بازبینی PR می‌نویسند و همین است که یافته‌هایشان را
+قابل مقایسه می‌کند. برای اینکه ببینید اجزا چگونه کنار هم می‌نشینند،
+[بازبینی هوش مصنوعی(/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/) را ببینید.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگوهای-pr-در-github/).
+`pr_review` تنها با یک تریگر دستی ارائه می‌شود. برای اینکه روی هر PR منتشرشده
+اجرا شود، خودتان یک تریگر اضافه کنید —
+[اعزام عامل‌های بازبین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/) را ببینید. همچنین
+می‌توانید آن را از خود GitHub شروع کنید، بدون نیاز به تریگر پایپ‌لاین: ربات سرور
+را در PR منشن کنید یا برچسب `ai-review` را اضافه کنید —
+[گفتگو با Control Center از یک pull request در GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگوهای-pr-در-github/) را ببینید.
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+اگر یک اعلان بگوید بازبینی‌ای از قبل برای این pull request در حال اجراست، یعنی
+یکی در جریان است؛ در زبانهٔ **بازبینی** بمانید یا **پایپ‌لاین‌ها** را باز کنید تا
+پیدایش کنید.
 
-## Read the findings
+## خواندن یافته‌ها
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+بازبین‌ها یافته‌ها را به‌صورت **گره‌های بازبینی** در فضای بازبینی ثبت می‌کنند.
+هرکدام این‌ها را همراه دارد:
 
-| Field          | Description                                                   |
+| فیلد           | توضیح                                                         |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| نوع            | `bug`، `suggestion`، `recommendation`، `question` یا `ticket` |
+| اولویت         | P0 (بحرانی) → P3 (جزئی)                                       |
+| دسته           | `security`، `stability`، `data_integrity`، `correctness`، `performance` یا `maintainability` |
+| فایل و خط      | جایی که یافته لنگر انداخته است                                |
+| کد اصلی        | کدی که یافته دربارهٔ آن است                                   |
+| کد پیشنهادی    | اصلاح پیشنهادی                                                |
+| اطمینان        | میزان اطمینان بازبین                                          |
+| وضعیت          | `open` → `consensus-ready` → `resolved` یا `dismissed`        |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+یک یافته تنها زمانی به **consensus-ready** می‌رسد که یک بازبین _همتا_ تأییدش کند.
+یک عامل نمی‌تواند یافتهٔ خودش را تأیید کند، بنابراین نظر یک بازبین تنها هرگز
+به‌خودی‌خود ارتقا نمی‌یابد.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/) for what the pass produces.
+زبانهٔ **بازبینی** فهرست یافته‌ها را نشان می‌دهد که بر اساس نوع و وضعیت فیلترپذیر
+است و کلید چرخشی‌ای برای یافته‌های ردشده دارد، در کنار آرتیفکتی که عامل
+یکپارچه‌ساز منتشر کرده است. نمای قطعی — گروه‌ها، داشبورد چندمحوره، و دیف‌های
+قرارداد و بصری — سمت سرور محاسبه می‌شود اما هیچ سطحی در اپ ندارد؛ برای اینکه
+ببینید این گذر چه چیزی تولید می‌کند،
+[محاسبهٔ بازبینی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/) را ببینید.
 
-## Check the disagreements panel
+## بررسی پنل اختلاف‌ها
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+وقتی دو بازبین یافته‌ها را به یک فایل و خط یکسان لنگر می‌اندازند اما آن‌ها را
+بسیار متفاوت ارزیابی می‌کنند — اولویت‌هایی با فاصلهٔ دو سطح یا بیشتر، یا اینکه
+یکی آن را `bug` می‌نامد و دیگری `suggestion` — یک پنل اختلاف بالای فهرست
+یافته‌ها نمایان می‌شود. این‌ها را اول بخوانید: همان‌جاست که نظر بازبین‌ها واگرا
+می‌شود و قضاوت شما بیشترین ارزش را دارد.
 
-## Read the verdict
+## خواندن حکم
 
-When the lead agent finalizes, it computes a **verdict**:
+وقتی عامل راهبر نهایی‌سازی می‌کند، یک **حکم** محاسبه می‌کند:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| حکم       | معنا                                          |
+| --------- | --------------------------------------------- |
+| **Ship**  | هیچ چیز بازدارنده‌ای یافت نشد                  |
+| **Hold**  | مسائلی که باید پیش از ادغام بررسی شوند        |
+| **Block** | مسائل بحرانی‌ای که باید برطرف شوند            |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+حکم یک امتیاز اطمینان تجمعی و شمار یافته‌ها به‌ازای هر اولویت را همراه دارد.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+سپس محورهای بازبینی در آن وارد می‌شوند و فقط می‌توانند آن را **سخت‌تر** کنند. یک
+محور دروازه‌بانی‌شده که مردود شود، **Block** را تحمیل می‌کند؛ محور
+دروازه‌بانی‌شده‌ای که نتواند کامل شود (`partial`) یا اصلاً نتواند اجرا شود
+(`unavailable`)، حداقل **Hold** را تحمیل می‌کند. نبود شواهد هرگز یک دروازه را باز
+نمی‌کند.
 
-## Publish the review to GitHub
+## انتشار بازبینی در GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+انتشار گامی جداگانه و آگاهانه دروازه‌بانی‌شده به دست کاربر است. پایپ‌لاین
+`pr_review` بازبینی را در Control Center نگه می‌دارد؛ به GitHub ارسال نمی‌کند.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. در زبانهٔ **بازبینی**، صبر کنید تا **انتشار در GitHub** نمایان شود
+2. **انتشار در GitHub** را فشار دهید
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center **یک** بازبینی GitHub می‌فرستد. یافته‌هایی که پیش‌تر رفع یا رد شده‌اند
+نادیده گرفته می‌شوند. این دکمه هر یافتهٔ باز باقی‌مانده را شامل می‌شود و در حالت
+**Ship**، `APPROVE` ثبت می‌کند. (ابزار MCP `publish_review_to_github` همچنان
+به‌طور پیش‌فرض فقط یافته‌های تأییدشدهٔ همتا را می‌فرستد و تا وقتی `approve_on_ship`
+را نفرستید، تأیید نمی‌کند.) آن‌هایی که لنگر فایل و خط دارند به نظرهای درون‌خطی
+تبدیل می‌شوند؛ هر چیز دیگری در بدنهٔ خلاصه گنجانده می‌شود و هرکدام یک پایین‌بند
+"— Control Center AI review" همراه دارد تا منبع بی‌ابهام باشد. حکم **Block**
+به‌صورت `REQUEST_CHANGES` ثبت می‌شود؛ **Hold** به‌صورت `COMMENT`؛ **Ship** از
+طریق این دکمه به‌صورت `APPROVE`. سپس یک اعلان **منتشرشده** را نشان می‌دهد.
+بازبینی تحت هویت برنامهٔ سرور ارسال می‌شود.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+اگر GitHub یک لنگر درون‌خطی را رد کند چون آن خط بخشی از دیف نیست، کل بازبینی
+دوباره فرستاده می‌شود و هر یافته در بدنه گنجانده می‌شود، تا چیزی بی‌سروصدا از قلم
+نیفتد.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[انتشار از دروازهٔ گاردریل می‌گذرد]
+`pr_review.publishReview` کلاس کنش `prPublish` را اعلام می‌کند و از گلوگاه
+گاردریل عبور می‌کند. اگر تصمیم نهایی `prompt` باشد و هیچ تأییدکننده‌ای متصل
+نباشد، انتشار رد می‌شود — گاردریل‌ها به‌صورت بسته شکست می‌خورند. اگر می‌خواهید
+بدون نظارت اجرا شود، در تنظیمات → فضای کاری → مجوزهای عامل یک قاعدهٔ صریح
+بگذارید.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+پایپ‌لاین‌های توکار دیگر مستقیماً به GitHub ارسال می‌کنند: `cross_review`،
+`pr_triage`، `ticket_to_pr` و `pre_merge_gate` هرکدام با یک گام نظرپردازی پایان
+می‌یابند. تنها `pr_review` خروجی‌اش را برای شما نگه می‌دارد.
 
-## Dispatch reviewers yourself
+## خودتان بازبین‌ها را اعزام کنید
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/).
+برای کنترل اینکه کدام نقش‌ها PR را بازبینی کنند و هرکدام به چه فایل‌هایی نگاه
+کنند، از ابزار MCP `dispatch_reviewers` درون یک فضای بازبینی موجود استفاده کنید،
+یا گره‌های بازبین را به یک پایپ‌لاین اضافه کنید. هر دو مسیر، همراه با امضای دقیق
+ابزار، در
+[اعزام عامل‌های بازبین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/) آمده است.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Review and merge a PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
-- [Dispatch reviewer agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/)
-- [Review compute (cohorts and axes)](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/)
+- [بازبینی و ادغام یک PR(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
+- [اعزام عامل‌های بازبین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین/)
+- [محاسبهٔ بازبینی (گروه‌ها و محورها)(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/محاسبه-بازبینی/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [AI review](/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/)
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
+- [بازبینی هوش مصنوعی(/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/)
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)

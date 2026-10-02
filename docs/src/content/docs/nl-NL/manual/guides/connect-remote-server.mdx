@@ -1,109 +1,113 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Verbinden met een externe server
+description: Wijs de desktopapp of de webclient naar een cc_server die ergens anders draait en wissel tussen servers zonder opnieuw te starten.
 slug: nl-NL/handleiding/gidsen/externe-server-verbinden
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Elke client is een renderer bovenop een `cc_server` die de gegevens bezit. De
+desktop kan er zelf een draaien; de webapp op [app.usectrl.dev](https://app.usectrl.dev)
+kan dat niet, omdat een browsertab geen server kan hosten. Hoe dan ook wijst deze
+gids een client naar een server die ergens anders draait — een kleine machine, een
+cloud-VM, een buildserver.
 
-## Prerequisites
+## Vereisten
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Een draaiende `cc_server`. Heb je er geen, zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
+- Ofwel de drie koppelingswaarden die de server heeft aangemaakt — de **server-URL** (`ws://…/rpc` of `wss://…/rpc`), een **apparaat-id** en een **koppelingssleutel** — **ofwel** een eenmalige **uitnodigingscode** van een werkruimtebeheerder. Als je een uitnodiging inwisselt, wordt je gebruiker ingericht, je lidmaatschap vastgelegd en de referentie van deze client voor je aangemaakt, zodat je nooit zelf een apparaat-id of sleutel hoeft te verwerken.
 
-### Make sure the server is reachable
+### Zorg dat de server bereikbaar is
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Een lokale server heeft niets nodig: `ws://localhost:9030/rpc` werkt zowel vanaf de
+desktop als vanuit de browser, omdat browsers loopback als een vertrouwde origin
+beschouwen.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Een server op een andere machine is anders. `app.usectrl.dev` wordt via HTTPS
+geserveerd, dus de browser opent alleen een `wss://`-socket met een certificaat dat
+hij al vertrouwt — en `cc_server` weigert sowieso een niet-loopbackadres te binden
+zonder TLS. Geef hem een van de volgende:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- een certificaat rechtstreeks, met `--tls-cert` en `--tls-key`
+- een TLS-beëindigende reverse proxy ervoor, met de server gestart met `--insecure` (plaintext achter de proxy, alleen op een vertrouwd netwerk)
+- een tunnel of VPN die het certificaat levert — Tailscale, cloudflared of vergelijkbaar. **Instellingen → Server → Verbinding en status** heeft de ingebouwde tunneloptie onder **Deze server delen**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Twee instellingen aan de serverkant zijn makkelijk te missen. Stel achter een proxy,
+NAT of tunnel `--public-url` in op het adres dat clients daadwerkelijk moeten
+aanspreken — standaard wordt het lokale bindadres gebruikt, dus zonder deze instelling
+proberen clients de verkeerde host. En als je je eigen kopie van de webbuild host,
+voeg dan de origin daarvan toe aan `--allowed-origins`, dat standaard alleen
+`https://app.usectrl.dev` toestaat; loopback en native clients zijn altijd toegestaan.
 
-## Connect the desktop app
+## De desktopapp verbinden
 
-On a fresh install:
+Bij een nieuwe installatie:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Start Control Center. Het eerste scherm vraagt **Hoe moet Control Center draaien?**
+2. Vul in plaats van **In deze app uitvoeren** de verbindingsvelden in: de server-URL, plus een uitnodigingscode of een apparaat-id en koppelingssleutel.
+3. Klik op **Verbinden**. Control Center maakt verbinding met de server en komt uit in het postvak van de werkruimte.
 
-On a desktop that already runs its own server:
+Op een desktop die al zijn eigen server draait:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Open **Instellingen → Server → Verbinding en status**.
+2. Klik op **Server toevoegen**. Voer de server-URL in (`wss://host:9030/rpc`) en een uitnodigingscode of een apparaat-id en koppelingssleutel. Met de knop aan het einde van het URL-veld worden `cc_server`-instanties op je LAN of tailnet ontdekt.
+3. Klik op **Verbinden** en daarna op **Wisselen** in de rij van de nieuwe server.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Wisselen gebeurt live: de app wordt ter plaatse rond de nieuwe sessie opnieuw
+opgebouwd, zonder herstart. Als het verbinden mislukt, blijf je op de huidige server
+en zie je de fout. De rij van de server waarop je zit heeft geen **Wisselen**-actie;
+de lokale server is de eerste rij, met het label **In deze app uitvoeren**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Zodra je gewisseld bent, bezit de desktop geen database meer. Elk scherm leest en
+schrijft via de externe server over een WebSocket.
 
-## Connect the web client
+## De webclient verbinden
 
-The web build is always remote.
+De webbuild is altijd extern.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Open [app.usectrl.dev](https://app.usectrl.dev), of je eigen kopie van de webbuild.
+2. Voer de server-URL in plus een uitnodigingscode of een apparaat-id en koppelingssleutel.
+3. De client maakt verbinding met de server en rendert dezelfde interface als de desktop.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Als er een koppelingsdeeplink in de URL staat, zijn de velden al ingevuld. De
+koppelingssleutel reist mee in het **fragment** van de URL, dat browsers nooit naar
+de server sturen die de pagina host, zodat de statische host hem nooit te zien krijgt.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media en beveiliging]
+Media (avatars, feedafbeeldingen, PR-screenshots) wordt via de verbonden server
+geleid, zodat de browser nooit rechtstreeks een upstream-host benadert. Een
+Content-Security Policy per verzoek, afgeleid van een niet-gevoelige cookie, staat
+alleen de origin van de verbonden server toe.
 :::
 
-### What the browser does not do
+### Wat de browser niet doet
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+De webclient leest en schrijft naar dezelfde server als de desktop, maar een paar
+onderdelen hebben een native venster of de apparaten van de machine zelf nodig:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- geen toastmeldingen van het OS, geen meldingsgeluiden en geen ambient bannerrail (het meldingencentrum in de app werkt nog wel)
+- geen LAN- of tailnet-serverdetectie in het dialoogvenster **Server toevoegen**
+- geen lezer voor artikelen in de app — nieuwsfeedartikelen openen in een nieuw tabblad
+- geen vergadersamenvatting opnieuw uitvoeren en een nog verwerkende samenvatting niet annuleren
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Twee dingen gedragen zich anders in plaats van dat ze ontbreken. Het **opnemen** van
+vergaderingen werkt in de browser, waarbij je microfoon plus een schermopname met een
+audiotrack worden vastgelegd. **Openen in IDE** werkt ook, maar vraagt de server de
+editor op het scherm van de _server_ te starten, dus tegen een headless host zonder
+editors verbergt de knop zichzelf.
 
-## Troubleshooting
+## Problemen oplossen
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/).
+- **Verbinding krijgt een time-out**: de server moet vanaf de client bereikbaar zijn. Controleer de bind (`--bind any`), of de poort open is en of `--public-url` het adres noemt dat de client daadwerkelijk kan aanspreken. Over het open internet is TLS verplicht — een plaintext niet-loopbackbind wordt bij het opstarten geweigerd, tenzij de server achter een proxy met `--insecure` is gestart.
+- **De browser weigert te verbinden maar een native client werkt**: de origin van de browser staat niet in de `--allowed-origins`-lijst van de server. De standaardwaarde staat alleen `https://app.usectrl.dev` toe (plus loopback).
+- **Koppelingssleutel geweigerd**: voer `cc_server pair` opnieuw uit op de server om de sleutel van dat apparaat te roteren en voer daarna de nieuwe in. Een ingetrokken apparaat merkt dat zijn referentie verdwenen is en faalt gesloten; intrekking verbreekt een live-sessie binnen enkele seconden.
+- **Verkeerde werkruimte**: de werkruimte maakt deel uit van de URL (`/workspaces/:workspaceId/…`) en reist mee met elke aanroep, dus van werkruimte wisselen in de ene client verandert alleen je eigen weergave. Je kunt alleen werkruimtes bereiken waarvan je lid bent — al het andere wordt geweigerd met "Not a member of this workspace". Zie [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/)
-- [Pair a device](/nl-NL/handleiding/gidsen/apparaat-koppelen/): the phone relay path
+- [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/)
+- [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/): het pad via de telefoonrelais
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Deployment and clients](/nl-NL/handleiding/concepten/deployment/)
-- [Remote control and mobile](/nl-NL/handleiding/concepten/afstandsbediening/)
+- [Deployment en clients](/nl-NL/handleiding/concepten/deployment/)
+- [Afstandsbediening en mobiel](/nl-NL/handleiding/concepten/afstandsbediening/)

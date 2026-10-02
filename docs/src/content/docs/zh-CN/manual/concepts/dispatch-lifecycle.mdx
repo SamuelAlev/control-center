@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: 智能体派发生命周期
+description: 从消息到达、到运行日志关闭之间发生了什么——提示词组装、工作树、身份、什么限制一次运行，以及它的结果如何被如实记录。
 slug: zh-CN/手册/概念/派发生命周期
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## 什么是派发
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+一次派发就是一个智能体、在一个对话里、通过一个适配器的一次运行。与它有关的一切都发生在 `cc_server` 上：客户端发送一条消息，然后看着事件流式返回。任何客户端里都没有派发路径。
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+智能体有六种被唤醒的原因，运行会把它们作为**唤醒上下文**携带，好让智能体知道自己_为什么_醒着：
 
-| Wake reason      | Trigger                                                      |
+| 唤醒原因         | 触发条件                                                     |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | 有人在空间里发了条消息，或提到了该智能体                     |
+| `assignment`     | 一个工单被分派给了该智能体                                   |
+| `pipelineStep`   | 一个流水线步骤派发了它                                       |
+| `childCompleted` | 一个子工单完成了                                             |
+| `followUp`       | 一次计划好的后续心跳                                         |
+| `recovery`       | 恢复路径在一次失败后重新派发                                 |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+唤醒上下文携带与原因相配的各种 id——工单、空间、消息、流水线运行——它们会被注入智能体的环境和提示词。
 
-## Prompt assembly
+## 提示词组装
 
-The prompt is built in layers, each one a labelled section:
+提示词分层构建，每一层都是一个带标签的区块：
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **身份**——智能体自己的 id、名称和工作区 id，并明确要求把这些确切的 UUID 传给作用域限定为工作区的工具。工作区是智能体固有的，因此始终存在。
+- **工具目录和资源协议**，然后是**工作区布局**。
+- **系统提示词覆盖**（如果智能体设置了），然后是**角色设定**（按角色参数化）和**团队简报**。
+- **技能**——挂在智能体上的名称。
+- 当前模式的**执行契约和流程**。
+- **唤醒上下文**和**提及上下文**：谁召唤了该智能体，以及它周围的名册。
+- **模式区块**——根据模式的能力配置_及其物化后的工具列表_生成，因此提示词永远不会写出这次运行实际上没有的工具。
+- **记忆上下文**——为任务检索到的事实。
+- **对话上下文**——最近的空间历史，无论智能体配置的上下文大小是多少，逐字窗口都封顶在 50,000 个字符。更早的历史不会被截掉：智能体用 `get_messages` 按需检索，语义上相关的更早消息仍会浮现。
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[斜杠命令是从原始用户文本中解析的]
+分层提示词以一个上下文区块开头，所以它并不是以斜杠开头的。命令从用户消息逐字解析出来，然后从分层提示词的尾部剪掉，这样每一层上下文都能保留下来。
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+命令分散在两处处理。`/todo` 和 `/compact` 在编辑器里被拦截，并且刻意从不作为消息持久化，也不会发送给智能体——持久化 `/compact` 会把压缩切点往回推一轮，并污染转录。`/plan` 两处都会处理：编辑器翻转空间的模式，正是这一点让工具集、护栏预设和提示词在本轮以及之后的每一轮都保持一致。`/goal`、`/loop` 和 `/skill:<name>` 只在运行内部处理，而且只在内置运行器上——`/goal` 和 `/loop` 会以费用预算启动自主工作，带 `skill:` 前缀的名称则会作为技能查找，其 `SKILL.md` 正文成为本轮的指令。命名空间正是把这两套词汇区分开的东西：直接拿裸名称去匹配技能，意味着名为 `plan` 或 `compact` 的技能会被内置命令永久遮蔽。对于在命名空间出现之前写下的消息，裸的非内置名称仍能解析。无法识别的名称则直接作为纯文本处理。
 
-## Worktree provisioning
+## 工作树准备
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+在任何东西运行之前，对话会得到自己的工作根目录，其下每个仓库都有一个隔离的写时复制工作树。默认情况下，那就是链接到工作区的每个仓库；一个 PR 空间——或用显式选择创建的空间——只准备允许列表中的仓库，而 PR 审查对话会把它的那一个仓库固定到该 pull request 的 head ref，其余仓库则停在各自的默认分支上。源检出永远不会被改动，空间被删除时整个对话目录都会被回收。
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+在 `rift` 随附发行的所有地方，写时复制都是**唯一**的实现，由随附的原生组件支撑。无法执行 reflink 的文件系统——或数据目录与仓库不在同一个卷上——会让准备失败，而不是回退。`git worktree` 是 Windows 上的后端，因为那里没有可构建的写时复制后端，而且在其他宿主上它也不是一种静默降级。在随附它的平台上缺少 `rift` 就是安装已损坏——服务器会拒绝启动，而不是悄悄回退，因为静默回退会把这种损坏永远藏在一条更慢的路径背后。
 
-## Identity and credentials
+## 身份与凭据
 
-Two identities are resolved per run, before any process launches.
+每次运行都会在任何进程启动之前解析两种身份。
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git 作者身份。** 智能体所做的提交都是_以智能体的身份_署名的——`GIT_AUTHOR_*` 和 `GIT_COMMITTER_*` 中都是 `<Name> (agent) <agentId@agents.control-center.local>`——绝不冒充人类。local-part 是智能体的 UUID，而不是它的名称 slug。发起的人类通过一条 `Co-Authored-By:` 尾行署名，这条尾行会放在环境里，并在系统提示词中作出交代。调用方显式设置的身份总是压过这两者。
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**代码托管身份。** 运行的 GitHub 凭据永远只是代理的——一个限定到仓库的 App 安装令牌，或它的环境 PAT 回退——绝不是发起成员自己存的令牌。`actingUserId` 限定了 PAT 回退的范围，这样不是服务器所有者的成员就不会继承服务器的权限范围；它不会把个人令牌叠加到智能体环境中。
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**模型提供商凭据**按固定顺序解析，而这个顺序很重要：
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. 按适配器的环境变量覆盖，
+2. 调用方的环境，
+3. 服务器的凭据存储（如果 OAuth 令牌临近过期就刷新它），
+4. 进程环境。
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+因为按适配器的覆盖排在最前面，它会静默压过在应用里连接的提供商账号。如果一次运行记到了错误的账号上，这个覆盖就是第一个该查的地方。提供商凭据是主机全局的——在这个安装的所有工作区之间共享。
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/zh-CN/手册/概念/智能体模型/).
+受能力限制的令牌（GitHub、工单）来自凭据代理，它只注入这次运行的能力所允许的内容。参见[智能体模型](/zh-CN/手册/概念/智能体模型/)。
 
-## Launch
+## 启动
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+运行的启动方式是：以它的工作树作为工作目录，并且——对 Claude Code 而言——带上一份生成的 MCP 配置，好让智能体能够到 Control Center 的工具集。ACP 和运行器的 `bash` 拿到的是清理过的环境；通过 `NoSandboxAdapter` 的 Claude Code 则继承宿主环境。
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[OS 沙盒只在宿主有后端的地方包裹一次运行]
+`cc_server` 在启动时探测一次宿主，在有可用后端时把智能体进程包裹在其中——macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap。两个派发接缝都会被包裹，因为它们并不共用同一个后端：Claude Code CLI 走沙盒端口；ACP 适配器和内置运行器的 `bash` 工具走沙盒管理器。它也是负责施加这次运行的受保护路径的东西：在所有模式下，你注册的仓库检出在沙盒内都是禁止写入的。
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+没有后端的地方，运行就**不会**被沙盒包裹，也不会有别的改动来弥补。这意味着 Windows 永远如此（没有原生包裹——`microvm` 是一条独立的、受探测门控的路径，用于终端和机台），以及 `PATH` 上没有 `bwrap` 和 `socat` 的 Linux 或 WSL2。服务器会在启动日志行里说明自己处于哪种状态，而 `--sandbox off` 是主动选择退出。
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+即使沙盒开着，也仍有两个缺口。运行器的进程内文件工具（read、write、edit、apply patch、search、find、search_files）跑在服务器进程内部，因此没有任何配置文件能约束它们——它们的边界是这些工具自身的路径限制加上护栏。而 Claude Code 是以 `--dangerously-skip-permissions` 启动的，所以它自己的文件和 shell 调用不受 Control Center 把关；OS 沙盒是它们周围的边界。
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+其余约束在所有宿主上都成立，无论有没有沙盒：运行自己的工作树（`rift` 随附的地方用写时复制；Windows 上用 `git worktree`）、按每次启动经代理发放并在拆除时撤销的受能力限制凭据、统一的操作护栏（默认拒绝——一条 `prompt` 决定在没有审批人连接时会被拒绝），以及对话模式所允许的工具集。ACP 和运行器的 `bash` 仍会清理环境；通过 `NoSandboxAdapter` 的 Claude Code 继承宿主环境。
 :::
 
-## Streaming
+## 流式传输
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+运行会回传一个带类型的事件序列，流处理器把它持久化为消息增量，合并为转录分段，并转换为消息事件：
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| 事件               | 承载内容                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `thinking`         | 推理输出，内联渲染                                                                           |
+| `text`             | 可见输出                                                                                     |
+| `toolCall`         | 一次工具调用，带它的 id 和结构化参数                                                         |
+| `toolResult`       | 对应的结果，在出错或属于部分流时会被标记                                                     |
+| `usage`            | 某个计量窗口内的令牌数和费用                                                                 |
+| `error`            | 一个错误；适配器报告了结构化错误码时也会带上                                                 |
+| `sandboxViolation` | OS 拒绝了一次系统调用。只在沙盒确实在包裹进程时才会发出——见上方说明                          |
+| `debug`            | 运行时诊断信息（启动标记、护栏决定、契约提醒）                                               |
+| `done`             | 运行结束                                                                                     |
 
-## What bounds a run
+## 什么限制一次运行
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+任何地方都刻意**没有回合上限**。硬性的迭代计数会杀掉合法的长任务（迁移、扇出清理），却又抓不到下面这些护栏更早就能抓到的东西。运行会在以下情况结束：
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **模型自行停止**；
+- **人工停止它**，或接管对话（这会在内置运行器下一个干净的回合边界处将其暂停——而 Claude Code 运行没有安全边界，会被直接停止）；
+- **静默看门狗触发。** 超过阈值仍无输出，会话就会以 `silentRun` 失败终止。默认是 15 分钟，在以读取为主的模式（review 和 plan）下降为 10 分钟；智能体可以在 1 到 240 分钟之间覆盖它。看门狗是在子进程报告自己的 PID 时才武装的，所以它覆盖 Claude Code CLI——而**不**覆盖内置运行器，后者不会生成任何子进程；
+- **费用上限生效**——但只对自主命令。
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+死循环防护不是终止器：连续三次相同的工具调用，循环会_引导_智能体改变做法。
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[普通回合没有费用上限]
+会话内的费用护栏只为 `/goal` 和 `/loop` 接线；其他每次运行根本不传预算。对那些命令，默认情况下一个无人值守的段可能烧掉 500 美分（$5.00），在 80% 处会有一次软性引导，要求智能体在硬停之前干净收尾，跨段还有一个 5000 美分（$50.00）的持久目标预算。显式指定的 `/goal --budget` 从不会被超出整整一个段。
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+综合来看，在内置运行器上，普通的一次交互回合没有回合上限、没有费用上限，也没有静默看门狗。它会在模型停止或你停止它时结束。这是一次刻意的取舍——其他方案都会杀掉合法的长任务——但这确实意味着，无人值守的交互运行除了模型自身的判断之外不受任何约束。
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+运行中途发给正在运行的智能体的消息会作为**引导**排队，并在下一个回合边界被消费，因此你能推动一次运行而不必杀掉它。引导、暂停、子智能体和完成契约都是内置运行器的特性；Claude Code 一个都没有。
 
-## How a run is recorded
+## 一次运行如何被记录
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+每次派发都会写入一条 `AgentRunLog`：开始和结束时间、摘要、令牌数和估算费用（包括从子智能体汇总上来的费用）、适配器和模型、进程 id 和日志路径、所属的对话以及任何工单或流水线运行，外加两个承载了大部分真相的分类字段。
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **状态**是粗粒度的：`pending`、`running`、`completed`、`error`。
+- **存活状态**是更细的解读：`alive`、`productive`、`completed`、`blocked`、`empty`、`looping`、`failed`、`stalled`、`dead`。
+- **错误类别**把失败有效地归组：`transientUpstream`、`sandboxInfrastructure`、`budgetExceeded`、`processLost`、`silentRun`、`unknown`。
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` 并不表示“已交付”]
+当一次运行结束时没有产出其模式所要求的交付物——比如一次计划模式运行从未调用 `submit_plan`，一次 orchestrate 运行从未提出方案——状态仍会保持 `completed`，因为进程确实干净退出了。诚实的信号体现在存活状态（`empty`）、错误类别（`silentRun`）以及一段准确说明未产出什么的摘要上。那段摘要是受保护的：收尾流程不会用模型最后的絮语覆盖它。
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+这是刻意为之。翻转状态会牵动那些与缺失产物毫无关系的工单和流水线状态机。这也意味着仅凭“status: completed”永远不足以断定一次运行成功——要读摘要。
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+关闭这次运行会发布 `AgentRunCompleted`，很多东西都挂在它上面：通知帧及其持久化的动态条目、把它推送给已连接客户端的实时转发器、流水线费用汇总、恢复等待这次运行的流水线步骤、完成背后的工单、把一次编排映射到终态、目标监督器的继续或停止决定、检查者角色，以及运行后的预算评估。在线状态名册则另行更新，方式是观察最近的运行日志，而不是这个事件。
 
-## Budgets, after the fact
+## 预算，事后处理
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+预算执行是一种_反应_，不是一道门禁。一次运行完成时，评估器会把该智能体当月至今的支出与其有效上限作比较（有链接的预算策略就用它，否则用智能体自己的月度数字；零表示不限）。越过软阈值会记录一条警告事故；耗尽预算会记录一条硬性事故，并把智能体在组织架构图上的生命周期状态翻转为 `paused`。派发仍然会接受来自该智能体的工作。一个 `BudgetThresholdCrossed` 流水线触发器可以从同一个事件启动后续工作。
 
-## Retry lineage
+## 重试谱系
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+每条运行日志都可以携带重试谱系——一个父运行 id、一个尝试计数器，以及一份续跑摘要。对话的运行树会在尝试编号非零时把它渲染出来。从聊天里点“重试”是一次新的派发，带一条全新的运行日志。
 
-## Related concepts
+## 相关概念
 
-- [The agent model](/zh-CN/手册/概念/智能体模型/): what the adapter can and cannot enforce
-- [Modes](/zh-CN/手册/概念/模式/): where the tool surface and the completion contract come from
-- [Guardrails](/zh-CN/手册/概念/护栏/): the effect-class policy every gated call passes
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/): the isolation story in full
-- [Multiplayer](/zh-CN/手册/概念/多人协作/): steering, take-over and the autonomy dial
-- [Domain events](/zh-CN/手册/概念/领域事件/): what `AgentRunCompleted` sets off
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：适配器能强制执行什么、不能强制执行什么
+- [模式](/zh-CN/手册/概念/模式/)：工具集和完成契约从何而来
+- [护栏](/zh-CN/手册/概念/护栏/)：每次受门控调用都要经过的效果类别策略
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)：完整的隔离说明
+- [多人协作](/zh-CN/手册/概念/多人协作/)：引导、接管和自主程度旋钮
+- [领域事件](/zh-CN/手册/概念/领域事件/)：`AgentRunCompleted` 会引发什么

@@ -1,73 +1,73 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: 设置 Slack 集成
+description: 将 Slack 应用连接到 Control Center 工作区，让成员可以直接从 Slack 指挥智能体。
 slug: zh-CN/手册/操作指南/slack-集成
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+本指南介绍如何把 Slack 连接到 Control Center 工作区——既可以由 Control Center 创建应用，也可以自行构建。
 
-For a guided first run, see [Bridge Slack to your workspace](/zh-CN/手册/教程/第一个聊天桥接/).
+想要一次有引导的初次体验，请参见[将 Slack 桥接到工作区](/zh-CN/手册/教程/第一个聊天桥接/)。
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack 是唯一的聊天提供方]
+桥接在设计上就不感知具体提供方——它是一个由描述符驱动的界面，每种提供方下对应一个适配器——
+但实际存在的适配器只有 Slack。产品中没有任何 Discord、Telegram、Teams 或 Matrix 实现。
 :::
 
-## Prerequisites
+## 前提条件
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- 在 Control Center 工作区中拥有 `owner` 或 `admin` 角色——连接聊天应用属于工作区设置变更
+- 有权在 Slack 工作区中创建并安装应用
+- 不需要任何可公网访问的资源：连接是主动外连的（Socket Mode），因此服务器不需要入站端口、隧道或域名
 
-## Three ways to get the app
+## 获取应用的三种方式
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| 方式 | 你需要提供 | Control Center 会做什么 |
+| --- | --- | --- |
+| **引导式** | 一个应用配置令牌（`xoxe-…`） | 创建应用并配好正确的权限范围、事件、Socket Mode 和斜杠命令；把 Slack 没有提供 API 的两个步骤交给你手动完成 |
+| **在 Slack 中创建** | 无需提供任何内容 | 打开 Slack 并预填相同的配置；由你选择工作区并确认 |
+| **手工创建** | 已完成应用的令牌 | 校验这些令牌并建立连接 |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/zh-CN/手册/操作指南/自定义聊天机器人/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+只有引导式方式还会让应用可以由 Control Center _管理_，而这正是[自定义聊天机器人](/zh-CN/手册/操作指南/自定义聊天机器人/)得以实现的前提。通过 **在 Slack 中创建** 生成的应用，之后可以在连接对话框中粘贴一个应用配置令牌，从而提升为受管应用。
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+产品刻意不提供“安装 Control Center 的 Slack 应用”按钮。安装一个分发的 Slack 应用需要共享的客户端密钥（Slack 没有 PKCE），而 Socket Mode 会把同一应用的事件随机分发到它的各条连接上——因此一个共享应用会把你的工作区消息投递到别人的服务器上。所以每个工作区都拥有自己的应用，而这三种方式要解决的，正是如何把这份代价压到最低。
 
-## Option A: let Control Center create the app
+## 方式 A：让 Control Center 创建应用
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. 在 [api.slack.com/apps](https://api.slack.com/apps) 生成一对应用配置令牌，并复制 **刷新** 令牌（`xoxe-…`）
+2. 在 Control Center 中前往 **设置 → 工作区 → 通用**，向下滚动到 **聊天桥接** 卡片
+3. 在 Slack 区块上点击 **为我创建应用**
+4. 粘贴令牌，调整应用名称、机器人名称、描述和斜杠命令，然后点击 **创建应用**
+5. 按对话框显示的两个剩余步骤操作，每一步都是一个跳转到 Slack 的链接：
+   - **Basic Information → App-Level Tokens**：生成一个带有 `connections:write` 权限范围的令牌（`xapp-…`）
+   - **Install App**：安装到工作区，并复制 **Bot User OAuth Token**（`xoxb-…`）
+6. 点击 **粘贴凭据**，然后继续[连接](#连接)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+配置令牌每次使用后都会轮换。Control Center 会随手保存轮换后的值，因此你无需再次粘贴。
 
-## Option B: create it in Slack, pre-filled
+## 方式 B：在 Slack 中创建，配置已预填
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+同样的应用，但不需要配置令牌——Slack 会打开它自己的创建界面，整个 manifest 都已经填好。
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. 在 Control Center 中前往 **设置 → 工作区 → 通用**，向下滚动到 **聊天桥接** 卡片
+2. 在 Slack 区块上点击 **为我创建应用**
+3. 调整应用名称、机器人名称、描述和斜杠命令——这些内容会随链接一起传递
+4. 点击 **在 Slack 中创建**。浏览器会打开 Slack 的应用创建页面，配置已预填
+5. 选择 Slack 工作区并确认。权限范围、事件、Socket Mode 和斜杠命令都已经正确
+6. 回到 Control Center，按对话框显示的两个剩余步骤操作：
+   - **Basic Information → App-Level Tokens**：生成一个带有 `connections:write` 权限范围的令牌（`xapp-…`）
+   - **Install App**：安装到工作区，并复制 **Bot User OAuth Token**（`xoxb-…`）
+7. 点击 **粘贴凭据**，然后继续[连接](#连接)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack 不会报告它创建的是哪个应用，因此 Control Center 无从得知应用 id，第 6 步中的链接会指向你的应用列表，而不是直接打开那个应用。**自定义机器人** 需要配置令牌。
 
-## Option C: build the app yourself
+## 方式 C：自行构建应用
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+在 [api.slack.com/apps](https://api.slack.com/apps) 创建一个应用，然后按以下方式配置。
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**：启用它，并把所有请求 URL 留空。如果一份 manifest 同时要求 Socket Mode 和 webhook 投递，Slack 会拒绝。
 
-**Bot token scopes** (OAuth & Permissions):
+**机器人 token 权限范围**（OAuth & Permissions）：
 
 ```text
 app_mentions:read
@@ -81,7 +81,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**事件订阅**（机器人事件）：
 
 ```text
 app_home_opened
@@ -91,134 +91,130 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+正是 `message.channels` 和 `message.groups` 让已桥接的 Slack 话题中的 _回复_ 能够生效。没有它们，只有第一条提及会送达。
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**斜杠命令**：`/cc`（名称可以任意——桥接使用的是它最后一次被调用时所用的命令）。
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**：启用 Messages 标签页并保持其可写，这样成员就能给机器人发私信。
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**令牌**：生成一个带有 `connections:write` 权限范围的应用级令牌，然后安装应用并复制机器人用户 OAuth token。
 
-## Connect
+## 连接
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. 前往 **设置 → 工作区 → 通用**，向下滚动到 **聊天桥接** 卡片
+2. 在 Slack 区块上点击 **连接 Slack**
+3. 填写以下字段：
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| 字段 | 值 | 在 Slack 中的位置 |
+| --- | --- | --- |
+| **机器人用户 OAuth token** | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token |
+| **应用级 token** | `xapp-…` | Basic Information → App-Level Tokens（`connections:write`） |
+| **应用配置刷新 token**（可选） | `xoxe-…` | api.slack.com/apps 上的一对应用配置令牌 |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+每个值的前缀都会在发送任何内容之前由两侧校验，因此粘贴到错误输入框里的值，无论在哪一侧，都会被同一句话拒绝。
 
-4. Click **Connect**
+4. 点击 **连接**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center 会在存储任何内容 _之前_ 用 Slack 的 `auth.test` 校验机器人 token，因此一个拼写错误会直接报告给你，而不是变成一条悄悄从不工作的套接字。应用级令牌只能通过打开套接字来验证，因此有问题的令牌会在片刻之后，以同一行上的连接错误呈现。
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+没有可选的应用配置 token 时，连接照常工作——只是无法从 Control Center 编辑机器人。
 
-## What connecting does
+## 连接会做什么
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- 把凭据存放在工作区自己的目录中、数据库旁边，仅属主可读。它们绝不会回传到客户端
+- 为该工作区打开一条 Socket Mode 连接，并开始接收提及、Slack 话题回复、私信和斜杠命令
+- 重新接管此前已桥接的每个 Slack 话题，因此重新连接会延续既有对话，而不是把它们搁置
+- 对没有聊天应用的工作区毫无开销：没有套接字、没有定时器、没有流量
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[令牌存放在哪里，以及为什么不放进钥匙串]
+机器人凭据是每个提供方一个纯 JSON 文件，位于
+`<dataDir>/<workspaceId>/chat_credentials/`，原子写入并收紧为仅属主可访问。这是刻意为之，而不是
+疏忽：删除工作区会解除该目录的链接，其中的令牌也随之而去；而 `workspace.export` 和备份复制的是
+`workspace.db`——不是该目录——因此你交给别人的工作区里，绝不会夹带仍然有效的机器人令牌。由此
+推出的一个结果是：把工作区恢复到别处，就意味着要在那里重新连接 Slack。
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+对桥接的访问权来自工作区**成员身份**，而不是持有某个令牌。Slack 账户必须关联到一位持有可写角色
+的 Control Center 成员用户。连接、断开连接、引导式设置、设置链接和机器人自定义全部仅限管理员
+操作。
 :::
 
-## Verify
+## 验证
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Slack 行会显示一个状态标签：**已连接**、**连接中…**、**连接错误**（旁边是 Slack 自己的错误），或 **未连接**。要端到端检查：
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. 在 Slack 中把机器人邀请到某个频道：`/invite @your-bot-name`
+2. 用一条请求提及它
+3. 会出现一条 Slack 话题回复，同时在 Control Center 中出现对应的空间
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/zh-CN/手册/操作指南/关联聊天账号/).
+之后，每位想使用桥接的成员都要关联自己的账号——参见[关联你的 Slack 账号](/zh-CN/手册/操作指南/关联聊天账号/)。
 
-## What a reply looks like in Slack
+## 回复在 Slack 中是什么样子
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+在流式输出的文字上方，是一张分组卡片，每个步骤各占一行。初始化占一行，其标题会从 `Working on it…` 变为 `Cloning …`，再变为 `Starting the agent…`。推理过程会新增一行 `Thinking…`；该步骤结束时，这一行上可以出现一句简短的思考。每个工具各占一行（`Read lib/main.dart`）。回答以普通文本的形式出现在卡片下方。轮次结束时卡片会变为已完成状态；运行失败、被中断或达到轮次上限时，则变为出错状态。
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+卡片在机器人接受提及的那一刻就打开——`Working on it…`——因此当工作区还在构建时，Slack 话题不会一片沉默。你在 Slack 频道中的第一次提及会创建对话，而创建对话会克隆智能体工作的仓库，所以那一行初始化信息随后会依次显示 `Cloning acme/widgets…`、`Setting up Reviewer…`、`Starting the agent…`，然后等智能体真正开始推理时出现一行 `Thinking…`。在大型仓库上，第一次初始化要花上一段时间；卡片就是让你知道它正在干活，而不是无视你的方式。同一 Slack 话题中后续的提及仍然以 `Working on it…` 开场，然后跳过克隆步骤，因为工作区已经存在。
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+整面文字墙式的推理和工具输出绝不会离开 Control Center——`Thinking…` 行上的思考只是一句短话，而不是完整转录。卡片上的 **View in Control Center** 会在桌面应用中打开完整对话——该链接指向你自己的 Control Center 服务器，由它把浏览器交给桌面应用。
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+如果点击后没有任何反应，说明发送该消息的服务器无法从你点击的那台机器访问（例如从手机点击一台仅侦听回环地址的服务器），或者那台机器上并没有运行 Control Center。没有可达地址的服务器发出的卡片不会带按钮，而不是带一个指向死路的按钮。
 
-## Rotate a token
+## 轮换令牌
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+在连接对话框中重新粘贴新值，然后点击 **连接**。连接会替换该工作区上正在运行的任何连接，因此套接字会用新凭据重新拨号。
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+两个必需令牌在每次连接时都必须填写。可选的应用配置 token 在你把输入框留空时会保留已存储的值，因此轮换机器人 token 绝不会让你失去编辑应用的能力。
 
-## Disconnect
+## 断开连接
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+在 Slack 行上点击 **断开连接**（仅限管理员）。套接字关闭，凭据被遗忘。
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+空间和用户关联会被刻意保留：重新连接同一个应用会恢复每一个已桥接的 Slack 话题。它们是按工作区归属的数据行，因此删除工作区时本来也会一并消失。
 
-## Troubleshooting
+## 故障排查
 
-### The row says "Connection error"
+### 该行显示“连接错误”
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+请阅读标签旁边显示的错误。被拒绝的凭据（`invalid_auth`、`not_authed`、`token_revoked`、`account_inactive`）属于终态——桥接会停止重试并等待新令牌，因为无限重试一个已吊销的令牌只会换来速率限制。请在连接对话框中重新粘贴令牌。
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+`missing_scope` 错误意味着应用安装时授予的权限范围少于桥接所需。补上缺失的权限范围，在 Slack 中重新安装应用，然后重新连接。
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+任何暂时性问题（套接字断开、Slack 打嗝）都会自行重连，采用上限为 30 秒的指数退避；Slack 例行的套接字轮换不会抬高该退避。
 
-### The bot does not answer a mention
+### 机器人不回应提及
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/zh-CN/手册/操作指南/关联聊天账号/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **机器人在频道里吗？** Slack 只会把频道消息投递给属于成员的应用程序。请运行 `/invite @your-bot-name`
+- **你完成关联了吗？** 未关联的成员会在该 Slack 话题中收到一条说明如何关联的回复。参见[关联你的 Slack 账号](/zh-CN/手册/操作指南/关联聊天账号/)
+- **你是该工作区中持有可写角色的成员吗？** `viewer` 或 `guest` 会被告知其角色是只读的。桥接绝不会代表一个它无法归属的人启动工作
+- **该工作区里有智能体吗？** 没有任何智能体时，消息会被存储，却无人应答
 
-### It answers in a channel but ignores plain messages
+### 它在频道里会回答，却忽略普通消息
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+这是有意为之。在私信之外，桥接只对提及机器人的消息、或它已经拥有的 Slack 话题中的回复作出反应。其他一切都属于别人的对话。
 
-### Replies arrive as one big message instead of streaming
+### 回复以一条完整消息送达，而不是流式输出
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+该行会显示“此 Slack 应用未开启实时流式传输——回复会作为一条消息送达。”Slack 的流式回复需要付费套餐中的 Agents & AI Apps 功能；当 Slack 拒绝该功能时，桥接会在整条连接的生命周期内不再请求，改为直接发出完整回复。什么都不会丢失——完整转录始终都在 Control Center。
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+流式输出还需要一个 Slack 话题锚点，因此没有 Slack 话题可供展开的回复会整条发出。无论哪种情况，任务卡片都照常送达：整条回复时，卡片搭同一条消息一起来，且已经是完成状态。
 
-### The reply has no card above it
+### 回复上方没有卡片
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Slack 的任务卡片与流式输出属于同一个新的 Agents & AI Apps 界面，而 Slack 只在调用时才拒绝。一旦被拒绝，Control Center 会在整条连接的生命周期内保留回复、放弃卡片——有答案而没有状态行，胜于有状态行而没有答案。
 
-### "Control Center needs an app configuration token to edit the bot"
+### “Control Center 需要应用配置 token 才能编辑机器人”
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+**自定义机器人** 这一行处于禁用状态，因为该连接没有应用配置 token。对于手工创建的应用，或通过 **在 Slack 中创建** 创建的应用，这是预期情况——Slack 从未告诉过 Control Center 它是哪个应用。请在 api.slack.com/apps 上生成一对令牌，并带上填写好的刷新令牌重新连接。
 
-### A long answer is cut off
+### 较长的回答被截断
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack 把单条消息限制在 40,000 个字符，因此桥接会在 39,000 处截断，并追加一个指向 Control Center 的指引——缩短的回复胜于被 Slack 直接拒收的回复。完整文本始终在空间的转录里。
 
-## Related guides
+## 相关指南
 
-- [Link your Slack account](/zh-CN/手册/操作指南/关联聊天账号/)
-- [Customize the chat bot](/zh-CN/手册/操作指南/自定义聊天机器人/)
-- [Chat bridge](/zh-CN/手册/参考/聊天桥接/)
+- [关联你的 Slack 账号](/zh-CN/手册/操作指南/关联聊天账号/)
+- [自定义聊天机器人](/zh-CN/手册/操作指南/自定义聊天机器人/)
+- [聊天桥接](/zh-CN/手册/参考/聊天桥接/)
 
-## Related concepts
+## 相关概念
 
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/)
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/)

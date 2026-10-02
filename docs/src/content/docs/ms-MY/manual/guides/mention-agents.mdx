@@ -1,121 +1,135 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-sebut ejen"
+description: Sebut ejen dalam sesuatu ruang untuk menghantarnya, dan rakan sepasukan untuk memberitahu mereka.
 slug: ms-MY/manual-pengguna/panduan-cara/sebut-ejen
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Panduan ini menunjukkan cara untuk @-sebut ejen dan rakan sepasukan dalam sesuatu
+ruang.
 
-## Mention an agent
+## Sebut ejen
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Taip `@` dalam penggubah mesej dan pilih ejen daripada autolengkap, atau taip nama
+itu sendiri:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Ejen yang disebut ditambahkan ke dalam ruang sebagai peserta jika ia belum menjadi
+peserta, lalu dihantar dengan konteks dan modus ruang itu. Peserta yang tidak
+disebut melihat mesej itu tetapi tidak dihantar.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Jika anda menghantar mesej tanpa sebutan ejen, Control Center memilih sendiri
+siapa yang menjawab: ejen yang terakhir bercakap dalam perbualan itu, jika tidak
+pemilik perbualan itu apabila ada, jika tidak ejen peringkat atas pertama antara
+peserta ruang itu. Dalam ruang yang hanya ada satu ejen, itu sentiasa ejen
+tunggal tersebut.
 
-## Know how a name is matched
+## Ketahui cara nama dipadankan
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Token sebutan dipadankan **tanpa mengira huruf besar-kecil**, melalui **nama tepat
+atau awalan**. Jadi `@arch` mencapai ejen bernama `architect` dan `@Alice`
+mencapai `alice`.
 
-Two consequences worth planning around:
+Dua akibat yang wajar dirancang:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Token pendek bukan satu ralat.** Jika dua ejen berkongsi awalan, ejen pertama
+  yang dijumpai menang, dan yang mana satu itu bergantung pada susunan — bukan
+  pada mana-mana peraturan pemutus seri. Gunakan nama penuh apabila nama
+  bertindih.
+- **Hanya huruf, digit dan garis bawah menjadi sebahagian daripada token.**
+  Penghurai memadankan `@(\w+)`, jadi `@code-reviewer` dibaca sebagai token `code`
+  dan `@my agent` sebagai `my`. Ejen yang namanya mengandungi sempang, titik atau
+  ruang tidak boleh disebut dengan pasti — termasuk melalui autolengkap, yang
+  memasukkan nama itu sebagai teks biasa. Namakan ejen dengan satu perkataan, atau
+  dengan garis bawah.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Sebutan dibuang daripada teks sebelum ia sampai kepada ejen. Mesej yang _hanya_
+mengandungi sebutan (`@alice`) oleh itu tidak menghantar apa-apa — berikan ia
+sesuatu untuk dilakukan.
 
-## Mention several agents at once
+## Sebut beberapa ejen sekaligus
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Kedua-dua ejen dihantar secara selari ke dalam perbualan yang sama dan kedua-duanya
+menerima mesej penuh itu.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Mereka juga **berkongsi worktree ruang itu**. Worktree repositori disediakan
+mengikut ruang, bukan mengikut ejen; setiap ejen mendapat direktori kerja overlay
+sendiri untuk `AGENTS.md`, kemahiran dan konfigurasinya, dengan repositori yang
+dikongsi dipautkan secara baca-tulis. Jadi dua ejen yang disebut bersama boleh
+melihat — dan berlanggar dengan — suntingan masing-masing.
 
-## Mention a teammate
+## Sebut rakan sepasukan
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Mana-mana `@token` yang tidak sepadan dengan ejen akan dicuba terhadap ahli manusia
+ruang kerja itu, mengikut handle, dengan peraturan nama tepat atau awalan tanpa
+mengira huruf besar-kecil yang sama.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Sebutan manusia yang berjaya diselesaikan **tidak menghantar apa-apa**. Ia hanya
+menaiki metadata mesej semata-mata supaya penghala pemberitahuan boleh menghantar
+ping kepada orang itu.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Nama ejen sentiasa dicuba dahulu dan token yang diambil oleh ejen tidak pernah
+ditawarkan kepada senarai ahli — satu `@word` hanya boleh diselesaikan kepada satu
+prinsipal sahaja.
 
-## What the agent receives
+## Apa yang diterima oleh ejen
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Ejen yang dihantar menerima blok "Summons" dalam promptnya yang menamakan siapa
+yang memanggilnya dan menyenaraikan senarai ruang — ejen lain (ditanda sebagai
+peringkat atas atau bawahan) dan ahli manusia — supaya ia tahu kepada siapa ia
+boleh menyerahkan kerja. Blok itu juga memberitahunya bahawa menyebut ejen lain
+dalam balasannya membangunkan ejen itu, dan menyebut dirinya sendiri diabaikan.
 
-## When an agent mentions an agent
+## Apabila ejen menyebut ejen
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Ejen boleh menyerahkan kerja dalam balasannya sendiri. Apabila satu giliran
+**selesai dengan bersih**, sebutan dalam teksnya diselesaikan dan ejen-ejen itu
+ditambahkan ke dalam ruang lalu dihantar ke dalam perbualan yang sama, dengan
+giliran yang menyebut itu sebagai prompt mereka. Giliran yang gagal atau terganggu
+tidak membangunkan sesiapa — ia berhenti di tengah-tengah pemikiran.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Peraturan ini sengaja lebih ketat daripada peraturan penggubah mesej, kerana tiada
+siapa yang memerhati untuk membetulkan tekaan yang salah:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Nama tepat sahaja.** Tiada padanan awalan. `@arch` mencapai `architect`
+  apabila manusia menaipnya; daripada ejen ia tidak mencapai sesiapa. Nama yang
+  sepadan dengan dua ejen juga tidak mencapai sesiapa.
+- **Kod bukan prosa.** Sebutan di dalam blok berpagar atau `` `backticks` ``
+  diabaikan, jadi memetik anotasi `@Override` atau `pip install foo@1.2` adalah
+  selamat. Pagar yang tidak ditamatkan mengosongkan semua yang selepasnya.
+- **`@` yang terlekat pada token sebelumnya bukan sebutan** — `sam@host.com`,
+  `pkg/@scope` dan `node@20` tidak diselesaikan kepada sesiapa.
+- **Sempang dikekalkan**, jadi `@code-reviewer` diselesaikan sebagai dirinya
+  sendiri dan bukan sebagai token `code`.
+- **Paling banyak tiga ejen setiap giliran.** Ejen yang menyenaraikan enam rakan
+  sepasukan dalam satu ringkasan sedang menyenaraikan mereka, bukan memanggil
+  mereka.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Rantaian kebangkitan dibatasi sama seperti perwakilan: **kedalaman 3**, dan ejen
+yang sudah berada dalam rantaian itu tidak boleh dibangunkan lagi olehnya (tiada
+`A → B → A`). Pasangan tersusun juga dihadkan kadarnya merentas rantaian.
+Kebangkitan yang ditolak menyiarkan mesej sistem ke dalam perbualan yang
+menyatakan sebutan mana yang tidak disampaikan dan mengapa — nama yang tidak
+diselesaikan tidak berbuat demikian, kerana jika tidak, mana-mana `@` dalam ayat
+akan menceritakan dirinya sendiri.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Untuk penyerahan yang tidak boleh bergantung pada prosa — permintaan/balasan, atau
+mencapai ejen di luar ruang — gunakan alat `send_to_agent`, `ask_agent` dan
+`delegate_task` sebagai gantinya.
 
-## Related guides
+## Panduan berkaitan
 
-- [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
-- [Use spaces](/ms-MY/manual-pengguna/panduan-cara/ruang/)
-- [Run agents in parallel](/ms-MY/manual-pengguna/panduan-cara/ejen-selari/)
+- [Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
+- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/)
+- [Jalankan ejen secara selari](/ms-MY/manual-pengguna/panduan-cara/ejen-selari/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Kitaran hayat penghantaran](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)

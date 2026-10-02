@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Code-intelligentie
+description: Waarom een agent de compiler, een structurele matcher en een debugger nodig heeft — en wat elk daarvan beantwoordt wat de andere niet kunnen.
 slug: nl-NL/handleiding/concepten/code-intelligentie
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center geeft een agent vier manieren om code te begrijpen buiten het alleen lezen ervan. Ze beantwoorden echt verschillende vragen, en de reden dat het er vier zijn in plaats van één is dat geen enkel mechanisme ze allemaal beantwoordt.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mechanisme            | Beantwoordt                                       | Kosten                                 |
+| --------------------- | ------------------------------------------------- | -------------------------------------- |
+| **Codegraph**         | Wat hier staat, en wat ervan afhangt              | Een indexeringsronde; goedkoop om te bevragen |
+| **Taalserver**        | Of dit echt compileert, en wat dit type is        | Een serverproces per project           |
+| **Structureel zoeken**| Waar deze VORM voorkomt                           | Een parse per bestand                  |
+| **Debugger**          | Wat op dit moment waar was, in dit frame          | Een gestopt proces                     |
 
-## The gap the language server closes
+## Het gat dat de taalserver dicht
 
-The [code graph](/nl-NL/handleiding/gidsen/code-zoeken/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+De [codegraph](/nl-NL/handleiding/gidsen/code-zoeken/) is gebouwd op tree-sitter: symbolen, aanroeprelaties, een impactradius. Hij is snel, hij is goedkoop, en hij weet niets van **typen**. Hij kan je niet vertellen of de aanroep die je net hebt geschreven compileert, of dat veld op het object bestaat, of dat je hernoeming een herexport heeft gemist.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Zonder taalserver komt een agent daar pas achter tijdens het testen — of nooit. Hij schrijft iets wat aannemelijk lijkt, gaat verder, en de fout duikt drie beurten later op, vastgeplakt aan een andere wijziging.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+De winst zit dus niet echt in de `lsp`-tool. Die zit erin dat `write`, `edit` en `apply_patch` zijn omhuld: na elke schrijfactie gaat het bestand door de taalserver en wordt **nieuw geïntroduceerde** diagnostiek in het resultaat van de tool verwerkt. De agent merkt dat hij de build heeft gebroken op het moment dat hij hem breekt, of hij er nu aan dacht om ernaar te vragen of niet.
 
-### Only new diagnostics
+### Alleen nieuwe diagnostiek
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Herhalen wat de agent al te horen heeft gekregen is erger dan niets zeggen: het vult het resultaat met ruis waar de agent overheen leert lezen, en de ene nieuwe fout verdwijnt daarin mee. Een register per run houdt bij wat er is gemeld, met ernst, code en bericht als sleutel — **niet** de positie, zodat een diagnose die alleen vier regels is opgeschoven niet opnieuw als nieuw wordt gemeld.
 
-### Lazy, and honest about being absent
+### Lui, en eerlijk over afwezigheid
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Geen enkele server start bij het opstarten. Er start er één bij het eerste verzoek dat hem nodig heeft, wat bijna altijd de eerste bewerking is van een bestand dat hij opeist, en inactieve servers worden opgeruimd. Een host die nooit Dart aanraakt, start nooit een analyzer.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Detectie is een **doorsnede**: er moet een marker in de root van de checkout staan *en* de binary moet te vinden zijn. Alleen een marker zegt “dit project is Python” en niets over of de server is geïnstalleerd; alleen een vindbare binary zegt dat de host een toolchain heeft en niets over deze checkout. Alleen beide samen betekenen dat een query kan slagen, en een tool die wordt aangeboden en altijd faalt is erger dan een die er niet is.
 
-## Why structural search, when grep exists
+## Waarom structureel zoeken, als grep al bestaat
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` matcht tekens. Dat is het juiste gereedschap voor een naam en het verkeerde voor een vorm.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Een structureel patroon wordt geparseerd met **dezelfde grammatica als het bestand**, dus `dispose($X)` vindt de aanroep hoe die ook is gespatieerd, afgebroken of over regels verdeeld, en matcht nooit dezelfde tekens binnen een letterlijke tekenreeks of commentaar.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+De eigenschap die het meer maakt dan een regex met extra stappen is dat een metavariabele die in één patroon wordt herhaald dezelfde tekst moet vastleggen:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+matcht een controle die opruimt wat hij heeft getest, en matcht niet een controle die iets anders opruimt. Dat is een klasse bugs die je tekstueel helemaal niet kunt uitdrukken.
 
-### It runs on the tree-sitter already linked
+### Het draait op de tree-sitter die al gelinkt is
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Er is geen tweede engine. `cc_natives` laadt tree-sitter en de grammatica's al voor de codegraph, met een cache voor gecompileerde query's en een tabel met talen. De matcher is pure Dart over trees die toch al werden geparseerd. Een tweede structurele engine zou een tweede parser betekenen, een tweede set grammatica's om op elk platform te bouwen en klaar te zetten, en twee antwoorden op “wat is een aanroepexpressie”.
 
-### A fragment needs somewhere to live
+### Een fragment moet ergens wonen
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Een grammatica definieert alleen wat een heel *bestand* is. Kaal op het topniveau van Dart geparseerd is `dispose(x)` een volkomen geldige **functiesignatuur** — een declaratie met de naam `dispose` die een parameter `x` aanneemt — zonder dat er ergens een fout is die het verraadt. Een matcher die op die parse is gebouwd, zoekt naar declaraties, vindt geen aanroepen, en meldt “geen resultaten” voor een patroon dat nooit werd gelezen zoals het eruitziet.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Daarom wordt een patroon in een ladder van hulpconstructies geprobeerd — instructie, expressie, klasselid, topniveau — en de eerste die het accepteert wint. Een fragment dat geen enkele context accepteert, wordt gemeld als niet te parsen in plaats van te worden gezocht en stilletjes niet gevonden.
 
-## Why a rewrite stages instead of writing
+## Waarom een herschrijving eerst wordt klaargezet in plaats van meteen geschreven
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Een structurele herschrijving is de breedste bewerking die een agent kan doen: één patroon, veertig bestanden, en niemand leest het resultaat regel voor regel — niet het model, en niet de persoon die erom vroeg. Hem schrijven en “klaar” melden betekent dat de eerste eerlijke blik op de wijziging achteraf een `git diff` is.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Daarom rapporteert `ast_edit` wat het *zou* doen — het aantal, de bestanden, de gematchte plekken — en wordt de wijziging pas doorgevoerd wanneer `resolve` dat doet. Dat is ook wat ervoor zorgt dat een mens eerst een diff met de keuze tussen accepteren en negeren te zien krijgt voordat er iets naar schijf gaat.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+De doorvoering is alles-of-niets en elk bestand wordt gecontroleerd tegen de inhoud die op het moment van klaarzetten is vastgelegd. Tussen het klaarzetten en het doorvoeren kan de agent een van die bestanden met de hand hebben bewerkt, kan een diagnostiekronde het hebben herschreven, of kan een formatter het hebben aangeraakt — alsnog doorvoeren zou dat werk weggooien en dan zou de diff opzettelijk lijken. Elke afwijking weigert de hele wijziging, want een gedeeltelijk toegepaste structurele herschrijving laat een boomstructuur achter die onder geen van beide vormen compileert.
 
-## What a debugger answers that a print statement cannot
+## Wat een debugger wel beantwoordt en een printinstructie niet
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+De lus met printinstructies is: een print toevoegen, het hele ding opnieuw draaien, de uitvoer lezen, de print verwijderen. Die kost een volledige testrun per vraag, en beantwoordt alleen de vraag die je *vóór* het draaien bedacht had.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Een gestopt frame beantwoordt in één keer elke vraag over dat moment — elke local, elke aanroeper, en een expressie die in de eigen scope van het frame wordt geëvalueerd. Voor een vastgelopen proces of een fout die één op de tien runs optreedt, is dat het verschil tussen een middag en een minuut.
 
-### Bounded like an enclosure, and for the same reason
+### Begrensd als een omhulling, en om dezelfde reden
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Een debugadapter bezit een **gestopt proces** dat vasthoudt wat dat proces ook vasthoudt — een poort, een lock, een databaseverbinding. Een sessie die niemand aanstuurt is een lek dat langer leeft dan de beurt die hem startte. Daarom is er een harde TTL, precies één sessie per gesprek, en wordt een tweede `launch` geweigerd in plaats van de eerste stil te vervangen: een agent die een tweede start zonder de eerste te beëindigen, is de eerste vrijwel zeker kwijtgeraakt.
 
-### One transport, two protocols
+### Eén transport, twee protocollen
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Het Debug Adapter Protocol deelt de `Content-Length`-framing van het Language Server Protocol en niets daarboven — andere correlatiesleutels, een andere foutvorm, en een derde berichttype (gebeurtenissen) zonder LSP-equivalent. De framing staat op één plek; de protocollen zitten er apart bovenop.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+De framing twee keer schrijven zou twee antwoorden betekenen op “een bericht beslaat twee chunks”, “een chunk bevat drie berichten” en “de server schreef een banner naar stdout vóór zijn eerste frame”, en slechts één daarvan zou de oplossing krijgen.
 
-## Related
+## Gerelateerd
 
-- [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/) — the symbol and impact side
-- [Debug a failing test](/nl-NL/handleiding/gidsen/falende-test-debuggen/) — the debugger, end to end
-- [Refactor structurally](/nl-NL/handleiding/gidsen/structureel-refactoren/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/nl-NL/handleiding/referentie/agenttools/) — every operation and argument
+- [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/) — de symbolen- en impactkant
+- [Een falende test debuggen](/nl-NL/handleiding/gidsen/falende-test-debuggen/) — de debugger, van begin tot eind
+- [Structureel refactoren](/nl-NL/handleiding/gidsen/structureel-refactoren/) — `ast_grep` en `ast_edit`
+- [Ingebouwde agenttools](/nl-NL/handleiding/referentie/agenttools/) — elke bewerking en elk argument

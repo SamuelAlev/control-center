@@ -1,213 +1,219 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Toplantılar ve transkripsiyon
+description: Control Center bir görüşmeyi nasıl kaydeder, sunucuda nasıl transkripte edip konuşmacılara ayırır ve ana makineden çıkan tek adım hangisidir.
 slug: tr-TR/kilavuz/kavramlar/toplantilar
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center bir görüşmeyi kaydedip size temiz bir yazılı çıktı — bir özet,
+eylem öğeleri ve kararlar — sunabilir; konuşma tanıma ve konuşmacı ayırma kendi
+donanımınızda çalışır. Granola’yı düşünün, ama kendi sunucunuzda barındırılan ve
+ajanlarınızın yaşadığı aynı çalışma alanına bağlı.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Kayıt için bir ses modeli ve sunucu yeniden başlatması gerekir]
+Kayıt ve dikte, bir konuşma (ASR) modeli diskte olduktan **ve** sunucu yeniden
+başlatıldıktan sonra başlar. Normal bir açılış, seçili modeli (varsayılan olarak
+Parakeet TDT 0.6B v3) arka planda zorla yükler; ancak sunucu, ses modeli
+yollarını açılışın başlarında tam olarak bir kez çözer — bu indirme
+tamamlanmadan dakikalar önce. Model kurulduğunu bildirdikten sonra `cc_server`’ı
+yeniden başlatın. Farklı bir derleme seçmek için Ayarlar → Sunucu → Ses ve
+toplantı modelleri yolunu kullanın — bu da yeniden başlatma gerektirir.
 :::
 
-## What a meeting is
+## Toplantı nedir
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/tr-TR/kilavuz/kavramlar/takvim/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Bir **toplantı**, kaydedilmiş ve transkripte edilmiş bir oturumdur. Bir
+[takvim etkinliğiyle](/tr-TR/kilavuz/kavramlar/takvim/) aynı şey _değildir_:
+etkinlik, Google’dan eşitlenen planlı bir taahhüttür; toplantıysa gerçekten
+kaydettiğiniz bir şeydir. İkisi bağlanabilir, çünkü bir etkinlikten kayıt
+başlatabilirsiniz; ama ayrı kayıtlar olarak kalırlar.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Her toplantı, Control Center’daki her şey gibi çalışma alanına özgüdür. Bir
+çalışma alanında kaydedilen toplantılar başka birinde asla görünmez.
 
-## Where the work happens
+## İş nerede gerçekleşir
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+"Cihaz üzerinde" doğru bir içgüdü ama yanlış bir adlandırma. İstemci sesi
+yakalar ve 16 kHz PCM16 çerçevelerini **`cc_server` çalıştıran makineye**
+akıtır. Geri kalan her şeyi o ana makine yapar: kanal başına WAV’ları
+`<dataDir>/meetings/<meetingId>/` altına yazar, bir worker isolate içinde
+transkript çıkarır, yankıyı filtreler ve sonradan diarizasyon uygular. Tek başına
+çalışan bir masaüstünde o ana makine aynı makinedir. Uzak bir sunucuya
+yönlendirildiğinde değildir — yani "dizüstü bilgisayarımdan hiçbir şey çıkmıyor"
+yalnızca sunucu dizüstü bilgisayarınız olduğunda doğrudur.
 
-There is one further exception and it is the important one.
+Bir istisna daha var ve önemli olan da o.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Özet ana makineden çıkar]
+Transkript ve notlarınız, özetleyen ajanın karşısında yapılandırıldığı model
+sağlayıcısına gönderilir. Herhangi bir bulut sağlayıcı için bu, tam transkriptin
+o sağlayıcının API’sine gittiği anlamına gelir. Bir transkriptin ana makineden
+çıkmaması gerekiyorsa, özetleyen ajanı yerel bir uç noktaya (Ollama, LM Studio
+veya başka bir yerel sunucu) yönlendirin.
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Özetten önceki her şey — yakalama, transkripsiyon, yankı iptali, diarizasyon, ses
+izi eşleştirme — ağ çağrısı yapılmadan sunucuda çalışır.
 
-## Which models ship
+## Hangi modeller birlikte geliyor
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+**Gömme, diarizasyon ve konuşma (ASR)** modelleri ilk açılışta zorla kurulur
+(bir demoda atlanır); böylece konuşmacı ayırma ve kayıt, ayarlara uğramadan
+hazır olur. ASR yine de **seçilebilir** — birkaç yüz megabayttır ve seçicide dört
+derleme bulunur. Konuşma modeli, o ilk indirmeden sonra bir kez daha yeniden
+başlatma gerektirir; çünkü transkript çıkarıcı, modelini indirme
+tamamlanmadan önce çözer.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Boyut, dil kapsamı ve doğruluk açısından farklılaşan dört seçici girdisi:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — çok dilli, önerilen varsayılan (~600 MB)
+- Parakeet TDT 0.6B v2 — İngilizce (~480 MB)
+- Whisper large-v3-turbo — çok dilli (~626 MB)
+- Whisper base.en — yalnızca İngilizce, küçük tarihsel varsayılan (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Modeller, sunucunun çalışma zamanında indirdiği tek yapıtlardır; tüm yerel
+kütüphaneler paketle birlikte gelir.
 
-## How capture works
+## Yakalama nasıl çalışır
 
-A meeting records **two audio channels at once**:
+Bir toplantı **aynı anda iki ses kanalı** kaydeder:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Siz ("me")**: mikrofonunuz.
+- **Onlar ("them")**: toplantının ses çıkışı; sürücüsüz bir loopback ile
+  yakalanır — macOS’te Core Audio süreç/aygıt tap’leri, Windows’ta WASAPI
+  loopback, Linux’ta bir PipeWire / PulseAudio monitörü.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+İki kanal ayrı ayrı yakalandığı için transkript baştan konuşmacıya atanır: sizin
+sözleriniz `me`, görüşmedeki herkes `them` olarak etiketlenir.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Kendi sesiniz sistem çıkışından mikrofona sızar ve aksi halde iki kez transkripte
+edilirdi. İki filtre bunu engeller. Sinyal düzeyinde **AEC3 her uzak mod
+kaydında çalışır ve zorunludur** — yerel AEC kütüphanesi yüklenemezse, kayıt
+yankıyla kirlenmiş bir mikrofonu sessizce akıtmak yerine başlamayı reddeder.
+(Yüz yüze modda iptal edilecek bir karşı uç referansı yoktur, bu yüzden AEC orada
+etkisiz bir geçiştir.) Üstüne, ana makine tarafında metin düzeyinde bir yankı
+filtresi her platformda çalışır.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Tüm işletim sistemi düzeyindeki mikrofon işleme kasten devre dışıdır. macOS’te
+platformun kendi yankı iptalini veya otomatik kazancını etkinleştirmek,
+mikrofonu Voice Processing I/O’ya geçirir; bu derlemede bu, hem mikrofonu _hem
+de_ sistem sesi tap’ini öldürdü.
 
-## Transcription and diarization
+## Transkripsiyon ve diarizasyon
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Siz kaydederken ses, **kayan pencereler** halinde — kısa bir sondaki sessizlikte
+ya da azami pencere uzunluğunda kesilerek — UI iş parçacığının dışında çözülür.
+Her pencere, milisaniye cinsinden konumlarla konuşmacı etiketli bir transkript
+bölümüne dönüşür.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Bir RMS eşiğinin üzerine hiç çıkmayan pencereler **hiç çözülmeden** atlanır;
+çünkü bir konuşma modeli sessizliği halüsinasyon görmüş konuşma dışı token’lar
+olarak üretir ve çözme boşa CPU harcar. Bunun pratik sonucu: sürekli çok sessiz
+konuşan bir kişi transkript üretmez. Birinin çıktısı boş gelirse, modeli
+suçlamadan önce giriş düzeyini kontrol edin.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Durdurduktan sonra **diarizasyon** kayıt üzerinde çevrimdışı çalışır ve uzak
+kanalı yeniden adlandırabileceğiniz ayrı konuşmacılara (`Person 1`, `Person 2`,
+…) böler. Konuşmacı sayısı, sizin girdiğiniz bir sayıdan değil, bir kümeleme
+eşiğinden çıkarılır — yani bu bir eşik yan ürünüdür ve sessiz ya da üst üste
+konuşan bir konuşmacı bir komşusuna birleştirilebilir. Transkript,
+`[mm:ss] SPEAKER: text` satırları olarak gösterilir.
 
-## Voice profiles
+## Ses profilleri
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Bir konuşmacıyı yeniden adlandırmak, tek bir transkripti etiketlemekten fazlasını
+yapar. Control Center, konuşmacının ses izini bir **ses profili** olarak
+kaydedebilir; böylece onu gelecekteki toplantılarda otomatik tanır.
+Diarizasyonla ayrılmış bir konuşmacıya ad verdiğinizde, ses izinin kaydedilip
+kaydedilmeyeceği sorulur; kaydederseniz, o ad için sürekli güncellenen bir merkeze
+karıştırılır ve yeni konuşmacılarla kosinüs benzerliğine göre eşleştirilir;
+böylece aynı kişi bir dahaki sefere yeniden etiketlemenize gerek kalmadan adıyla
+görünür.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Ses profilleri çalışma alanına özgüdür ve sınırı asla aşmaz. Bunları
+**Ayarlar → Çalışma alanı → Toplantılar** altından yönetin. Daha önce
+kaydedilmiş bir konuşmacıyı yeniden adlandırmak, eski adın kaydını kaldırır ve
+yeni adı kaydetmeyi önerir; bir profili silmek saklanan ses izini kaldırır ama
+geçmiş toplantılara uygulanmış adları olduğu gibi bırakır.
 
-## The summary pipeline
+## Özet pipeline’ı
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/tr-TR/kilavuz/kavramlar/alan-olaylari/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Bir kayıt durduğunda sunucu bir `MeetingRecordingStopped`
+[alan olayı](/tr-TR/kilavuz/kavramlar/alan-olaylari/) yayımlar. Yerleşik
+**`meeting_summary`** pipeline şablonu bu olayla tetiklenir. Kaydedici bunu
+beklemez; toplantı yalnızca durum yaşam döngüsünden geçer:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Özet ajanı başlığı, kaba canlı notlarınızı ve transkripti alır ve
+**yapılandırılmış JSON** döndürür. Hangi bölümleri yazacağı, çalışma alanının
+**etkin toplantı notu şablonu** ile belirlenir (Ayarlar → Çalışma alanı →
+Toplantılar); etkin şablon yeni ve yeniden çalıştırılan özetlere uygulanır.
+Ardından pipeline’ın kalıcılaştırma adımları bu JSON’u ayrı satırlara yazar:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` ve `summary` → toplantının notları
+- her eylem öğesi → bir `MeetingActionItem` satırı (içerik, sahip, isteğe bağlı bilet bağlantısı)
+- her karar → bir `MeetingDecision` satırı
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Eylem öğeleri ve kararlar serbest biçimli markdown’dan **asla** ayrıştırılmaz;
+yalnızca ajanın yapılandırılmış dizilerinden alınır. Bir çalıştırma
+yapılandırılmış çıktı üretmezse, kalıcılaştırma adımları atlanır ve ham transkript
+yedek olarak saklanır; böylece kaydı asla kaybetmezsiniz. Pipeline’da hiçbir şey
+toplantıyı `done` olarak işaretlemez — bunu, çalıştırmanın terminal olayından tek
+bir uzlaştırıcı yapar; böylece kardeş bir adımın başarısız olması, zaten bitmiş
+görünen yarı yazılmış bir toplantıyı ortada bırakamaz.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Ajanlar toplantılarınızı okuyamaz]
+Toplantı veya takvim MCP araçları yoktur.
+[MCP](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/) üzerinden bağlanan bir ajan
+toplantıları listeleyemez, bir transkripti okuyamaz ya da eylem öğelerini ve
+kararları göremez — bu veriler insan istemcilere yalnızca RPC üzerinden ulaşır.
+Kararlar ajanlara dolaylı olarak, `decisions` alanındaki bellek olguları
+biçiminde ulaşır.
 :::
 
-## Where meetings show up
+## Toplantılar nerede görünür
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Yüzey                   | Ne gösterir                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `/meetings`             | Toplantı listesi; eylem öğesi ve karar sayılarıyla                                      |
+| `/meetings/record`      | Canlı kayıt HUD’ı: bir yanda notlarınız, diğer yanda akan transkript                    |
+| `/meetings/:meetingId`  | Bir toplantının ayrıntısı: Notlar, Transkript, Eylem öğeleri ve Kararlar sekmeleri      |
+| Ayarlar → Çalışma alanı → Toplantılar | Bu çalışma alanının not şablonları ve kayıtlı ses profilleri               |
 
-## Platform support
+## Platform desteği
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Yakalama, üç masaüstü platformunda da sürücüsüzdür (macOS’te Core Audio tap’leri,
+Windows’ta WASAPI, Linux’ta PipeWire).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Web istemcisi de kaydeder** — bu sayfanın geri kalanındaki masaüstü anlatımı
+bunu gizleyebilir: tarayıcı mikrofonunuzu `getUserMedia` ile, toplantı sesini
+`getDisplayMedia` (ekran paylaşımı) ile alır, 16 kHz PCM16’ya düşürür ve aynı ana
+makineye akıtır. Burada üç uyarı geçerlidir:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Paylaşılan yüzey **bir ses parçası taşımalıdır**. Safari, Firefox ve macOS tam
+  ekran paylaşımı ses parçası vermez ve kayıt başlamayı reddeder.
+- Yerel AEC3 yoktur. Mikrofonda tarayıcının kendi yankı iptali istenir; ana
+  makine tarafındaki metin yankı filtresi yine çalışır. HUD, mikrofon PCM’inden
+  beslenen bir giriş düzeyi ölçeri gösterir.
+- Özeti yeniden çalıştırma ve işlemeyi iptal etme yalnızca masaüstünde çalışır.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Takvimin **Kaydı başlat ve bağla** eylemi yalnızca masaüstünde çalışır ve web’de
+bunu açıkça bildirir; oysa toplantılar ekranının kendi kayıt akışı orada çalışır.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Bir toplantıyı silmek sesini geride bırakır]
+Bir toplantıyı silmek yalnızca veritabanı satırlarını kaldırır. Saklanan kanal
+başına ses dizini `<dataDir>/meetings/<meetingId>/` asla temizlenmez — bunun için
+bir saklama ilkesi, boyut sınırı ya da GC taraması yoktur. O diski geri kazanmak,
+sunucu ana makinesinde elle yapılan bir iştir.
 :::
 
-## See also
+## Ayrıca bakınız
 
-- [Calendar and scheduling](/tr-TR/kilavuz/kavramlar/takvim/): record a meeting straight from a calendar event
-- [Pipelines and automation](/tr-TR/kilavuz/kavramlar/pipelinelar/): the engine behind `meeting_summary`
-- [Tickets and delegation](/tr-TR/kilavuz/kavramlar/biletler/): link a meeting's action items to tickets
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/)
+- [Takvim ve zamanlama](/tr-TR/kilavuz/kavramlar/takvim/): bir toplantıyı doğrudan bir takvim etkinliğinden kaydedin
+- [Pipeline’lar ve otomasyon](/tr-TR/kilavuz/kavramlar/pipelinelar/): `meeting_summary` arkasındaki motor
+- [Biletler ve devretme](/tr-TR/kilavuz/kavramlar/biletler/): bir toplantının eylem öğelerini biletlere bağlayın
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `MeetingRecordingStopped` ve `MeetingStartingSoon`
+- [Bir toplantıyı kaydetme ve özetleme](/tr-TR/kilavuz/nasil-yapilir/toplanti-kaydetme/)

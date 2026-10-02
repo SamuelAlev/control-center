@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Creează și configurează un agent
+description: Adaugă un agent într-un spațiu de lucru, dă-i un adaptor, un model, abilități și permisiuni și confirmă că rulează.
 slug: ro-RO/manual/ghiduri-practice/creeaza-agent
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Acest ghid arată cum să adaugi un agent într-un spațiu de lucru și să îl configurezi până când poate rula cu adevărat.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Fiecare spațiu de lucru este populat cu cinci agenți — un CEO plus `qa`, `architect`, `engineer` și `librarian` — așa că de obicei ai agenți înainte să fi configurat vreunul. Pașii de mai jos se aplică în egală măsură unui agent populat și unuia nou.
 
-## Before you start
+## Înainte de a începe
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Te afli într-un spațiu de lucru. Întreaga suprafață se află la **Setări → Spațiu de lucru → Agenți** (`/settings/workspace/agents`).
+- Agentul va avea nevoie de un backend. Fie conectezi un provider pentru harness-ul încorporat la **Setări → Server → Provideri de modele**, fie instalezi CLI-ul Claude Code pe mașina care găzduiește `cc_server`.
+- Dacă vrei ca agentul să poarte abilități, instalează-le mai întâi la **Setări → Spațiu de lucru → Abilități**. Formularul agentului îți permite doar să comuți abilitățile care există deja în spațiul de lucru.
 
-## Add the agent
+## Adaugă agentul
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Deschide **Setări → Spațiu de lucru → Agenți**.
+2. Apasă **Agent nou**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Nu există niciun dialog și niciun selector de rol. Un agent numit „Agent fără nume" este creat imediat și selectat în panoul de detalii din dreapta.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Ar trebui să vezi acum „Agent fără nume" în lista din stânga, cu fila **Setări** a panoului său de detalii deschisă și un câmp **Nume** care conține „Agent fără nume".
 
-## Name it
+## Dă-i un nume
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Nume** — identificatorul scurt folosit în mențiunile cu @, de exemplu `alice`. Analizarea mențiunilor potrivește `@` urmat de caractere de cuvânt, așa că un nume care conține o cratimă, un punct sau un spațiu nu poate fi niciodată menționat.
+- **Titlu** — eticheta lizibilă pentru oameni, de exemplu „Programator senior".
+- **Prompt de sistem** — instrucțiuni suplimentare opționale, injectate ca o secțiune „Agent instructions"; ele nu înlocuiesc restul promptului compus.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Apasă **Salvează modificările** în partea de jos a formularului. Toate câmpurile de pe această pagină sunt salvate de acel singur buton.
 
-## Give it an adapter and a model
+## Dă-i un adaptor și un model
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Lista derulantă **Adaptor** enumeră runnerii pe care îi are efectiv gazda serverului. Adaptorul încorporat este întotdeauna găsit (este serverul). Claude Code apare doar când CLI-ul său a fost detectat pe acea gazdă:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| Adaptor                   | Backend                                       |
+| ------------------------- | --------------------------------------------- |
+| Control Center (built-in) | Bucla de agent din proces — niciun CLI extern |
+| Claude Code               | `claude -p --output-format stream-json`       |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Doar adaptorul încorporat impune moduri, dirijare, pauză/reluare, contracte de finalizare și subagenți. Claude Code nu îți oferă niciunul dintre ele. Cursor, Codex și ceilalți provideri de modele se atașează la adaptorul încorporat, nu ca runneri separați.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Un adaptor gol înseamnă bucla încorporată]
+Un agent al cărui adaptor nu este setat este trimis către **Control Center (built-in)**, bucla din interiorul serverului, așa că nu trebuie instalat nimic pe gazdă. Dacă nici modelul nu este setat, cere de la Anthropic valoarea lui implicită, așa că un agent complet nesetat rulează doar dacă ai conectat un cont Anthropic. Specialiștii populați vin fără niciunul dintre ele; setează-le pe amândouă pe orice agent pe care intenționezi să îl folosești.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Lista derulantă **Model** este determinată de adaptorul pe care l-ai ales. Pentru adaptorul încorporat, lista vine în timp real de la providerii pe care i-ai conectat la **Setări → Server → Provideri de modele**, așa că un provider fără acreditare stocată contribuie cu zero modele.
 
-## Add skills
+## Adaugă abilități
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Abilități** este un selector cu cipuri pentru pachetele de abilități instalate în acest spațiu de lucru. Atinge un cip pentru a-l comuta; simbolul de bifă le marchează pe cele selectate. Dacă spațiul de lucru nu are abilități, câmpul afișează „No skills available. Create skills in Settings → Skills first."
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
+Aici nu alegi abilitățile proprii ale unui repo. Un repo care le livrează (în `.agents/skills/`, `.claude/skills/` sau `.opencode/skills/`) le contribuie automat agentului care lucrează în acel repo, iar ele se schimbă când acesta se mută în altul — vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Setează linia de raportare și personajul
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Raportează către** — alege un alt agent după nume. Astfel se construiește arborele de raportare afișat de butonul **Organigramă** din antetul paginii. Nu este lista pe care o folosește un lider de echipă când deleagă — aceea provine din membrii echipei și abilitățile lor.
+- **Personaj** — text liber care modelează tonul și comportamentul, de exemplu: „Preferă soluții simple și lizibile. Scrie teste pentru tot codul nou."
 
-## Tune the run
+## Ajustează rularea
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Efort de raționament** — opțiunile provin din nivelurile publicate ale modelului selectat: Low / Medium / High, plus Extra High la modelele în stil OpenAI și Extra High + Max la cele în stil Claude. Câmpul este ascuns complet când modelul selectat nu declară niveluri de gândire și folosește valoarea implicită a modelului.
+- **Dimensiunea ferestrei de context** — precompletată din fereastra de context a modelului ori de câte ori schimbi modelul, cu cipuri de un singur clic pentru valoarea implicită a modelului, 200k, 500k și 1M. O valoare tastată după ce alegi modelul are prioritate până la următoarea schimbare de model.
+- **Timeout de tăcere (minute)** — încheie o rulare după acest interval fără nicio ieșire. Lasă-l gol pentru a folosi valoarea implicită pentru fiecare mod.
 
-## Grant permissions
+## Acordă permisiuni
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Permisiuni sandbox** pornește pe „Folosește implicitul spațiului de lucru". Activează comutatorul pentru a le seta pentru acest agent, apoi comută:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Permite git push** — injectează tokenul GitHub de care are nevoie agentul pentru a face push
+- **Permite apeluri GitHub API** — îi permite agentului să citească PR-uri, issues și metadate de repo
+- **Permite apeluri ticketing API** — injectează cheia providerului de ticketing
+- **Permite accesul general la rețea** — activează și instrumentele `web_fetch` și `web_search` ale harness-ului încorporat
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Fiecare comutator este verificat de brokerul de acreditări la lansarea rulării: o capacitate oprită înseamnă pur și simplu că tokenul corespunzător nu este niciodată emis în mediul rulării.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Implicitul spațiului de lucru înseamnă setul conservator al serverului]
+Un agent lăsat pe „Folosește implicitul spațiului de lucru" rulează cu git push, GitHub API și ticketing toate **oprite** și rețeaua **pornită**. Valorile implicite ale capacităților afișate la Setări → Server → Diagnosticări și confidențialitate sunt o preferință de client. Dacă vrei ca un agent să facă push sau să deschidă PR-uri, activează comutatorul și acordă capacitățile în mod explicit.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/) for the full set of boundaries.
+Aceste capacități controlează acreditările și instrumentele harness-ului, un strat separat de sandbox-ul sistemului de operare. `cc_server` învelește rulările agenților în sandbox-ul gazdei acolo unde există unul — Windows nu are niciun backend nativ, iar Linux și WSL2 au nevoie de `bwrap` și `socat`. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru setul complet de granițe.
 :::
 
-## Verify it runs
+## Verifică dacă rulează
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Deschide **Setări → Server → Provideri de modele** și confirmă că adaptorul pe care l-ai ales raportează o versiune instalată, nu „Negăsit". Apasă **Reîmprospătează** pentru a re-sonda — sondarea rulează pe mașina care găzduiește `cc_server`, nu pe mașina la care te uiți.
+2. Deschide un spațiu cu agentul și trimite-i un mesaj, sau menționează-l cu @ într-un spațiu existent.
+3. Revino la **Setări → Spațiu de lucru → Agenți**, selectează agentul și deschide fila **Jurnale**. Ar trebui să apară o rulare cu un ecuson de stare, o durată, o oră de începere și adaptorul folosit. **Vizualizează** deschide fluxul de evenimente al acelei rulări.
 
-If no run appears at all, work through [Run agent diagnostics](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/).
+Dacă nu apare nicio rulare, parcurge [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/).
 
-## Delete an agent
+## Șterge un agent
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Selectează-l în listă. Pe fila **Setări**, derulează până la **Zonă periculoasă** din partea de jos a formularului și apasă **Șterge**.
 
-## Related guides
+## Ghiduri conexe
 
-- [Run agents in parallel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
-- [Build an agent team](/ro-RO/manual/ghiduri-practice/construieste-echipa/)
-- [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/)
-- [Run agent diagnostics](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/)
-- [Agent configuration reference](/ro-RO/manual/referinta/configurarea-agentilor/)
+- [Rulează agenți în paralel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
+- [Construiește o echipă de agenți](/ro-RO/manual/ghiduri-practice/construieste-echipa/)
+- [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/)
+- [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/)
+- [Configurarea agenților](/ro-RO/manual/referinta/configurarea-agentilor/)
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/)
-- [Modes](/ro-RO/manual/concepte/moduri/)
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/)
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/)

@@ -2,6 +2,7 @@
 title: Guardrails — one policy for every mutating action
 description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
 slug: en-GB/manual/concepts/guardrails
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
 Agents in Control Center can delete files, push branches, publish pull
@@ -94,7 +95,7 @@ operator's own "remember this decision" rather than by anything turn-scoped.
 
 A rule can constrain the ARGUMENTS of an action, not just its verb. "May
 push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
+is a control — a capability gate that authorises the verb alone is the shape
 behind most published agent incidents.
 
 A constraint may name:
@@ -234,7 +235,7 @@ a guardrail system is claiming coverage that does not exist.
 The guardrails live at **Settings → Workspace → Agent permissions**
 (`/workspaces/<id>/settings/workspace/permissions`). The screen has the
 policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+authorisation audit trail and the adapter honesty matrix.
 
 The probe takes an action class (or a command) and a scope and shows which rule
 decided and why. Because resolution is pure and deterministic — same action,

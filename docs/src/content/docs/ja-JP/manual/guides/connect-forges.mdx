@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: コードホストを接続
+description: GitHub、GitLab、Bitbucket を接続して、PR サーフェス、リポジトリ登録、エージェント実行を機能させます。1 つのワークスペースで 3 つすべてを併用できます。
 slug: ja-JP/マニュアル/ハウツーガイド/コードホスト接続
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center は 3 つのコードホストに対応しています。アプリ全体ではこれらを**フォージ**と呼びます: **GitHub**、**GitLab**、**Bitbucket Cloud** です。どれも既定ではありません。1 つ接続すればすべてが機能し、複数接続すれば 1 つのワークスペースでそれらすべてのリポジトリを同時に保持できます。
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+コードホストは各**リポジトリ**のプロパティであり、登録時にその `origin` リモートから読み取られます。自分で選ぶことはなく、ワークスペースごとに設定を間違える余地もありません。
 
-## Connect a forge
+## コードホストを接続
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. **設定 → ワークスペース → プロフィールと識別情報**を開きます（`/settings/workspace/profile`）。
+2. **コードホスティング**カードを探します。対応するコードホストは接続の有無にかかわらずすべて一覧表示されます。
+3. 行に **…でサインイン** があればそれを押し、なければ **トークンを追加** を押してトークンを貼り付けます。
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**サインイン** が表示されるのは、サーバーにアプリが登録されているコードホストです。現在は GitHub で、デバイスフローを使用します（[GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)を参照）。それ以外はトークンの貼り付けになります。これは、完了できないボタンを見せるよりも正直な操作です。
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+どちらの場合も、資格情報は**あなたのものでありサーバー上に存在し**、ユーザー ID をキーとして管理されます。入力したマシンにはトークンは保存されず、サインインしたすべてのデバイスが同じものを使い、他のメンバーが読み取ることもできません。反映されるのは**次のリクエスト**からで、再起動するものは何もなく、切断すれば送信は即座に止まります。
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+各行にはその資格情報の出どころが表示されます。「自分のトークンが動かない」のか「別のトークンが応答している」のかを分けるのは、そこだからです:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| サブタイトル                                              | 意味                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------- |
+| `octocat としてサインインしています`                      | あなた自身の資格情報が使われています                                |
+| `octocat としてサインインしています · このサーバーのアプリ経由` | サーバーのアプリのアイデンティティが応答しています — あなたはサインインしていません |
+| `octocat としてサインインしています · 環境変数から`        | サーバーの環境変数が応答しており、あなたの資格情報ではありません    |
+| `未接続`                                                  | このコードホストに対する資格情報がありません                        |
 
-### What token each forge wants
+### 各コードホストに必要なトークン
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| コードホスト  | トークン                                                                                                              | 作成場所                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **GitHub**    | クラシック: `repo` と `read:org`。きめ細かい: Contents + Pull requests (read/write)、Checks + Actions (read)           | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | `api` を持つパーソナルアクセストークン                                                                                | gitlab.com → User settings → Access tokens          |
+| **Bitbucket** | Atlassian の API トークンと、アカウントのメールアドレス                                                               | id.atlassian.com → Security → API tokens            |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket は**アカウントのメールアドレスをユーザー名として**、トークンをパスワードとして認証します。トークンと組み合わせるメールアドレスをサーバーが判別できるよう、サーバーの環境に `BITBUCKET_EMAIL` を設定します。
 
-### Or use the environment
+### 環境変数を使う場合
 
-For a headless or CI install, the server reads these:
+ヘッドレス環境または CI へのインストールでは、サーバーは次のものを読み取ります:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`、次に `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`、次に `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`、次に `BITBUCKET_TOKEN`（`BITBUCKET_EMAIL` と併用）
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+これらはあなたのものではなく**サーバーの**資格情報であり、この区別は重要です。あなたの代理で行われるリクエストはあなたの資格情報だけを使うため、環境が黙ってあなたの代わりになることはありません。人の介在しない処理 — Webhook、PR のポーリング、チケット同期 — は、まずサーバーのアプリのアイデンティティを、次にサーバー所有者の資格情報を、最後に環境を解決します。この順序は固定されているため、「サインインしたのに何も変わらなかった」がサポートされる結果になることはありません。
 
-## You are a different person on each forge
+## コードホストごとに別人になる
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+同じ人間でも、GitHub では `octocat`、GitLab ではまったく別の名前になります。Control Center はあなたのアイデンティティを**コードホストごと**に解決し、リポジトリごとに適切なものを使用します。これにより、混在したワークスペースでも「自分のレビューが必要」「自分が作成」「あなたが承認済み」が正しくなります。
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+コードホストのアイデンティティが解決されていない場合、そのリポジトリは受信トレイに何も寄与しません（すべてに一致させることはしません）。受信トレイは、あなたがすべて確認済みだと主張する代わりに、その旨を表示します。
 
-## One inbox, every forge
+## 1 つの受信トレイ、すべてのコードホスト
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+受信トレイと PR キューは、ワークスペースに存在するすべてのコードホストにファンアウトし、結果を 1 つのストリームに統合します。GitHub のプルリクエストと Bitbucket のプルリクエストは、ベンダーごとにまとめられるのではなく時間順に並び、隣り合って表示されます。
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+障害は隔離されます。ダウンしている、レート制限中、または未接続のコードホストは何も寄与せず、他のコードホストには影響しません。受信トレイ全体が空になることはありません。そのコードホスト自身のリポジトリは、復旧するまで最後に判明した状態を表示し続けます。
 
-## What each forge can do
+## 各コードホストにできること
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+どのコードホストも基本のループはサポートしています。プルリクエストの一覧表示とオープン、差分の読み取り、インラインおよびトップレベルでのコメント、レビュー、マージ、クローズです。それ以外の部分は本当に異なっており、Control Center は、黙って失敗する操作を表示するのではなく、そのコードホストにできないことを非表示にします。
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| 機能                                        | GitHub | GitLab | Bitbucket |
+| ------------------------------------------- | :----: | :----: | :-------: |
+| 一括（保留中）レビュー                      |   ✓    |   ✓    |     —     |
+| 変更をリクエスト                            |   ✓    |   ✓    |     ✓     |
+| ファイルごとの「閲覧済み」状態の同期        |   ✓    |   —    |     —     |
+| 絵文字リアクション                          |   ✓    |   ✓    |     —     |
+| チーム / グループのレビュアー               |   ✓    |   ✓    |     —     |
+| レビュアーの提案                            |   ✓    |   —    |     ✓     |
+| PR の CI 結果                               |   ✓    |   ✓    |     ✓     |
+| CI ジョブのステップ/ログの詳細表示          |   ✓    |   ✓    |     —     |
+| スタックされたプルリクエスト                |   ✓    |   —    |     —     |
+| PR 説明テンプレート                         |   ✓    |   ✓    |     —     |
+| 通知のポーリング                            |   ✓    |   —    |     —     |
+| リッチなユーザープロフィール                |   ✓    |   ✓    |     —     |
+| サーバー側の PR head ref                    |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+機能が欠けている場合、その機能は正直に縮退します:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **閲覧済み状態**は引き続き機能しますが、設定したデバイス上でのみです。
+- Bitbucket の**一括レビュー**はコメントを 1 件ずつ投稿するため、レビュアーにはまとめてではなく個別に届きます。
+- Bitbucket には**PR head ref がない**ため、プルリクエストをチェックアウトするとソースブランチを名前で取得します。これはそのブランチが削除されると失敗します。
 
-## Vocabulary
+## 用語
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab はプルリクエストを**マージリクエスト**と呼びます。Control Center は自身のモデル全体では「プルリクエスト」と呼び、コードホストについて述べるときは各コードホスト自身の呼び方を使います。
 
-## Troubleshooting
+## トラブルシューティング
 
-### The PR list is empty and says a forge is not connected
+### PR 一覧が空で、コードホストが未接続と表示される
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+そのコードホストの資格情報がありません。**設定 → ワークスペース → プロフィールと識別情報 → コードホスティング**でサインインするか、トークンを貼り付けてください。他のコードホストのリポジトリには影響しません。
 
-### I connected a forge but its repos still show nothing
+### コードホストを接続したのに、そのリポジトリが何も表示されない
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+その行のサブタイトルを確認します。「このサーバーのアプリ経由」または「環境変数から」と表示されている場合、期待したものとは別の資格情報が応答しています。自分が要求したものには自分の資格情報が優先されるため、そう表示される場合は自分の資格情報が保存されていません。
 
-### A repo will not register
+### リポジトリを登録できない
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/).
+登録には次の 3 つすべてが必要です。パスが git ワークツリーの内部にあること、`origin` リモートがあること、そしてそのリモートが github.com、gitlab.com、bitbucket.org のいずれかを指していることです。[ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)を参照してください。
 
-### Everything stops working for a while after heavy use
+### 集中的に使ったあと、しばらく何も動かなくなる
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+それはレート制限のサーキットブレーカーです。コードホストがプライマリ制限を通知すると、クライアントはウィンドウが経過するまで、ネットワーク呼び出しを行わずに以降のリクエストをローカルで失敗させます。これにより、リトライの嵐が制限を深刻化させることはありません。一時的な失敗は指数バックオフで再試行されます。
 
-## Related guides
+## 関連ガイド
 
-- [Add repos to a workspace](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
-- [Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
-- [Triage the inbox](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)
+- [ワークスペースにリポジトリを追加](/ja-JP/マニュアル/ハウツーガイド/リポジトリ追加/)
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
+- [PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
+- [受信トレイをトリアージ](/ja-JP/マニュアル/ハウツーガイド/受信トレイのトリアージ/)

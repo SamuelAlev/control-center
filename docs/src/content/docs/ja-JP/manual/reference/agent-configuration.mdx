@@ -1,111 +1,111 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: エージェント設定
+description: エージェントエンティティのすべてのフィールドと、それが使用する列挙型をまとめます。
 slug: ja-JP/マニュアル/リファレンス/エージェント設定
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/).
+このリファレンスでは、エージェントエンティティのすべてのフィールドと、それが使用する列挙型およびフラグを一覧します。アプリでエージェントを作成または編集する手順を追った説明については、[エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)を参照してください。
 
-## Agent entity fields
+## エージェントエンティティのフィールド
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| フィールド              | 型                     | 必須   | 説明                                                                                                                                                                                                                        |
+| ----------------------- | ---------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | はい   | エージェントの一意な識別子                                                                                                                                                                                                  |
+| `name`                  | `String`               | はい   | @メンション用の短い識別子                                                                                                                                                                                                   |
+| `title`                 | `String`               | はい   | 人が読める職種名                                                                                                                                                                                                            |
+| `agentMdPath`           | `String`               | はい   | エージェントの `.md` 定義ファイルへの絶対パス                                                                                                                                                                                |
+| `workspaceId`           | `String`               | はい   | 所有ワークスペース（null 以外）                                                                                                                                                                                             |
+| `reportsTo`             | `String?`              | いいえ | 親エージェントの ID                                                                                                                                                                                                         |
+| `skills`                | `AgentSkills`          | はい   | スキル識別子の集合                                                                                                                                                                                                          |
+| `persona`               | `String?`              | いいえ | 自由記述の振る舞いに関する指示                                                                                                                                                                                              |
+| `systemPrompt`          | `String?`              | いいえ | デフォルトのシステムプロンプトを上書きする                                                                                                                                                                                  |
+| `adapterId`             | `String?`              | いいえ | 推論アダプターの id                                                                                                                                                                                                         |
+| `modelId`               | `String?`              | いいえ | アダプター内のモデル id                                                                                                                                                                                                     |
+| `strictMode`            | `bool`                 | いいえ | デフォルトは `false`。行とエージェントの `AGENTS.md` に書き込まれる                                                                                                                                                         |
+| `effort`                | `String?`              | いいえ | 推論レベルの id（例: `'low'`、`'xhigh'`）。選択したモデルの `thinkingLevels` から取得される                                                                                                                                    |
+| `contextSize`           | `int?`                 | いいえ | コンテキストウィンドウの最大サイズ                                                                                                                                                                                          |
+| `role`                  | `AgentRole?`           | いいえ | エージェントのロール                                                                                                                                                                                                        |
+| `capabilities`          | `AgentCapabilities?`   | いいえ | エージェント単位のケイパビリティのデフォルト。null の場合はディスパッチ時にユーザーレベルのデフォルトが適用され、会話による上書きも可能                                                                                     |
+| `monthlyBudgetCents`    | `int`                  | いいえ | 月間の支出上限（セント単位。デフォルト `0` で無制限）                                                                                                                                                                        |
+| `silenceTimeoutMinutes` | `int?`                 | いいえ | 無応答タイムアウトの上書き（分単位）。null または 1–240 のいずれかでなければならない（コンストラクターでアサート）                                                                                                           |
+| `maxConcurrentTasks`    | `int`                  | いいえ | デフォルトは `1`。プレゼンスモデルが報告するキャパシティ値（実行中とキューの件数がこれと比較される）                                                                                                                        |
+| `visibility`            | `AgentVisibility`      | いいえ | デフォルトは `workspace`                                                                                                                                                                                                    |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | いいえ | ガバナンスステータス（デフォルトは `active`）。予算のハードストップによって書き込まれ、組織図とプレゼンス名簿に表示される。ディスパッチは `paused` のエージェントからの作業も引き続き受け入れる                              |
+| `budgetPolicyId`        | `String?`              | いいえ | 共有予算ポリシーの id。null の場合は `monthlyBudgetCents` が直接適用される                                                                                                                                                   |
+| `runtimeProfileId`      | `String?`              | いいえ | カスタムランタイムプロファイルの id                                                                                                                                                                                          |
+| `createdAt`             | `DateTime`             | はい   | 作成タイムスタンプ                                                                                                                                                                                                          |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` と `title` はどちらも空であってはならない（コンストラクターでアサート）。`monthlyBudgetCents` のデフォルトである `0` は無制限を意味する。上限を書き込むには `agents.upsert` を使う。
 
-## AgentRole enum
+## AgentRole 列挙型
 
-| Role       | Label    | Description                      |
+| ロール     | ラベル   | 説明                             |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | 調整と委任                       |
+| `coder`    | Coder    | コードの実装                     |
+| `reviewer` | Reviewer | PR レビューと分析                |
+| `qa`       | QA       | テストと品質保証                 |
+| `designer` | Designer | UI/UX の実装                     |
+| `security` | Security | セキュリティレビューと監査       |
+| `devops`   | DevOps   | インフラストラクチャとデプロイメント |
+| `pm`       | PM       | プロダクトマネジメント           |
+| `general`  | General  | 柔軟な汎用                       |
 
-## AgentVisibility enum
+## AgentVisibility 列挙型
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| 値          | 説明                                                           |
+| ----------- | -------------------------------------------------------------- |
+| `workspace` | デフォルト。不明な値と null の保存値はこれにパースされる        |
+| `private`   | 作成したユーザーだけが利用できる                                |
 
-## AgentLifecycleStatus enum
+## AgentLifecycleStatus 列挙型
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| 値         | 説明                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `active`   | デフォルト。`isDispatchable` が true になるのはこの値のときだけ                              |
+| `paused`   | 予算のハードストップによって設定される。プレゼンス名簿に表示されるが、ディスパッチは引き続き作業を受け入れる |
+| `archived` | 引退扱いとなり、アクティブな名簿からは非表示になる                                          |
 
-## AgentCapabilities flags
+## AgentCapabilities のフラグ
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+ディスパッチごとに解決される。エージェントのデフォルトを使い、null の場合はユーザーレベルのデフォルトにフォールバックし、その上に会話単位の上書きが重なる。強制は「存在しないこと」によって行われる — 無効なケイパビリティが対象とするものを、資格情報ブローカーが発行も注入もしないだけである。
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| フラグ             | 型     | デフォルト | 説明                                                                                     |
+| ------------------ | ------ | ---------- | ---------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false`    | リモートへのコミットのプッシュ。`canCallGitHubApi` とともに GitHub トークンの注入を制御する |
+| `canCallGitHubApi` | `bool` | `false`    | api.github.com の呼び出し。`GH_TOKEN` の注入と GitHub のエグレスドメインを制御する        |
+| `canCallTicketing` | `bool` | `false`    | チケットプロバイダーの API の呼び出し。プロバイダーの API キーの注入とそのエグレスドメインを制御する |
+| `canAccessNetwork` | `bool` | `true`     | 任意の外向きエグレス。ハーネスの `web_fetch` と `web_search` ツールも制御する             |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` は 4 つすべてについてコンストラクターのデフォルトである。`legacyDefault`（4 つすべてが true）は、ケイパビリティが存在する前に作成された会話を遡って埋めたマイグレーションだけが使用する。形式が不正な、または空の保存ブロブは `safeDefault` にパースされる。レガシーキー `canCallLinear` は `canCallTicketing` として読み取られる。
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+スキル識別子の不変で大文字小文字を区別しない集合。ディスパッチ時にそれらのスラッグはエージェントのオーバーレイ内のスキルリンクとして同期され、その後ハーネスがリンクされたスキルのフロントマターをプロンプトに自動読み込みする。
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState（派生）
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+保存されない。7 つの値がある。宣言順が優先順位（`sortPriority`、テストで固定されている）であり、名簿が並べ替えに使う順序でもある:
 
-| State       | `sortPriority` | Condition                                                                                                           |
+| 状態        | `sortPriority` | 条件                                                                                                                |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| `running`   | 0              | いずれかの実行ログのステータスが `running`                                                                          |
+| `blocked`   | 1              | 最新の実行の生存状態が `blocked`、`stalled`、または `looping`                                                       |
+| `failed`    | 2              | 最新の実行のステータスが `error`、またはその生存状態が `failed` か `dead`                                           |
+| `queued`    | 3              | 実行はディスパッチ済みだが実行中ではない — 同じエージェントの別の実行の後ろで待機しているか、書き込まれたがまだ開始されていない |
+| `succeeded` | 4              | 実行が正常に完了した                                                                                                |
+| `idle`      | 5              | エージェントは以前に実行されたことがあり、進行中のものは何もない                                                    |
+| `neverRun`  | 6              | 実行ログが存在しない                                                                                                |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` と `succeeded` は**実行単位にのみ**存在する。エージェントの名簿状態を計算する `deriveAgentLiveState` がこれらを生成することはない — 返すのは `neverRun`、`running`、`failed`、`blocked`、または `idle` である。
 
-## See also
+## 関連項目
 
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)

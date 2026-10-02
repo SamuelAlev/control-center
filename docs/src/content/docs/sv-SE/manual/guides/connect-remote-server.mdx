@@ -1,109 +1,113 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Anslut till en fjärrserver
+description: Rikta skrivbordsappen eller webbklienten mot en cc_server som körs någon annanstans och byt mellan servrar utan att starta om.
 slug: sv-SE/handbok/how-to-guider/anslut-fjarrserver
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Varje klient är en renderare över en `cc_server` som äger datan. Skrivbordsappen
+kan köra en inuti sig själv; webbappen på [app.usectrl.dev](https://app.usectrl.dev)
+kan inte det, eftersom en webbläsarflik inte kan vara värd för en server. Hur som
+helst riktar den här guiden en klient mot en server som körs någon annanstans — en
+liten burk, en moln-VM, en byggserver.
 
-## Prerequisites
+## Förutsättningar
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- En `cc_server` som körs. Har du ingen, se [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
+- Antingen de tre parkopplingsvärden som servern har skapat — **server-URL:en** (`ws://…/rpc` eller `wss://…/rpc`), ett **enhets-ID** och en **parkopplingsnyckel** — **eller** en engångs-**inbjudningskod** från en admin för arbetsytan. Att lösa in en inbjudan skapar din användare, registrerar ditt medlemskap och utfärdar den här klientens autentiseringsuppgift åt dig, så du hanterar aldrig ett enhets-ID eller en nyckel.
 
-### Make sure the server is reachable
+### Se till att servern är nåbar
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+En lokal server behöver ingenting: `ws://localhost:9030/rpc` fungerar från både
+skrivbordsappen och webbläsaren, eftersom webbläsare betraktar loopback som en
+pålitlig origin.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+En server på en annan maskin är en annan sak. `app.usectrl.dev` levereras över
+HTTPS, så webbläsaren öppnar bara en `wss://`-socket med ett certifikat som den
+redan litar på — och `cc_server` vägrar binda en adress utanför loopback utan TLS.
+Ge den något av:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- ett certifikat direkt, med `--tls-cert` och `--tls-key`
+- en TLS-avslutande proxy framför, med servern startad `--insecure` (klartext bakom proxyn, endast i ett betrott nätverk)
+- en tunnel eller ett VPN som bidrar med certifikatet — Tailscale, cloudflared eller liknande. **Inställningar → Server → Anslutning och status** har den inbyggda tunnel-opt-in under **Dela den här servern**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Två inställningar på serversidan är lätta att missa. Bakom en proxy, NAT eller
+tunnel ställer du in `--public-url` på den adress som klienterna faktiskt ska
+ringa — den har den lokala bind-adressen som standard, så utan den försöker
+klienterna med fel värd. Och om du hostar din egen kopia av webbbygget lägger du
+till dess origin i `--allowed-origins`, som bara har `https://app.usectrl.dev` som
+standard; loopback och inbyggda klienter är alltid tillåtna.
 
-## Connect the desktop app
+## Anslut skrivbordsappen
 
-On a fresh install:
+Vid en ny installation:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Starta Control Center. Skärmen vid första starten frågar **Hur ska Control Center köras?**
+2. I stället för **Kör i den här appen** fyller du i anslutningsfälten: server-URL:en, plus antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel.
+3. Klicka på **Anslut**. Control Center ringer upp servern och landar i arbetsytans inkorg.
 
-On a desktop that already runs its own server:
+På en skrivbordsapp som redan kör sin egen server:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Öppna **Inställningar → Server → Anslutning och status**.
+2. Klicka på **Lägg till server**. Ange server-URL:en (`wss://host:9030/rpc`) och antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel. Knappen i slutet av URL-fältet upptäcker `cc_server`-instanser i ditt LAN eller tailnet.
+3. Klicka på **Anslut** och sedan på **Byt** i den nya serverns rad.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Bytet sker live: appen bygger om sig själv kring den nya sessionen på plats, utan
+omstart. Om anslutningen misslyckas stannar du kvar på den aktuella servern och ser
+felet. Raden för servern du är på har ingen **Byt**-åtgärd; den lokala servern är
+den första raden, märkt **Kör i den här appen**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+När du har bytt äger skrivbordsappen ingen databas. Varje skärm läser och skriver
+via fjärrservern över en WebSocket.
 
-## Connect the web client
+## Anslut webbklienten
 
-The web build is always remote.
+Webbbygget är alltid fjärranslutet.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Öppna [app.usectrl.dev](https://app.usectrl.dev), eller din egen kopia av webbbygget.
+2. Ange server-URL:en plus antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel.
+3. Klienten ringer upp servern och renderar samma gränssnitt som skrivbordsappen.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Om en parkopplings-deep-link finns i URL:en är fälten förifyllda.
+Parkopplingsnyckeln färdas i URL-**fragmentet**, som webbläsare aldrig skickar
+till servern som hostar sidan, så den statiska värden ser den aldrig.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media och säkerhet]
+Media (avatars, flödesbilder, PR-skärmbilder) dirigeras via den anslutna servern,
+så webbläsaren hämtar aldrig en uppströmsvärd direkt. En Content-Security Policy
+per begäran, satt utifrån en icke-känslig cookie, tillåter bara den anslutna
+serverns origin.
 :::
 
-### What the browser does not do
+### Vad webbläsaren inte gör
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Webbklienten läser och skriver samma server som skrivbordsappen, men några ytor
+behöver ett inbyggt fönster eller maskinens egna enheter:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- inga OS-aviseringar, inga aviseringsljud och ingen rad med ambienta banners (aviseringscentret i appen fungerar fortfarande)
+- ingen upptäckt av servrar i LAN eller tailnet i dialogen **Lägg till server**
+- ingen artikelläsare i appen — artiklar i nyhetsflödet öppnas i en ny flik
+- ingen omkörning av en mötessammanfattning och ingen avbrytning av en som bearbetas
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Två av dem beter sig annorlunda i stället för att saknas. Mötes-**inspelning**
+fungerar i webbläsaren och fångar din mikrofon plus en skärmdelning som innehåller
+ett ljudspår. **Öppna i IDE** fungerar också, men ber servern starta redigeraren på
+_serverns_ skärm, så knappen döljer sig mot en headless-värd utan installerade
+redigerare.
 
-## Troubleshooting
+## Felsökning
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/).
+- **Anslutningen tar timeout**: servern måste vara nåbar från klienten. Kontrollera bindningen (`--bind any`), att porten är öppen och att `--public-url` anger den adress klienten faktiskt kan ringa. Över det öppna internet är TLS obligatoriskt — en klartextbindning utanför loopback avvisas vid start om inte servern startades `--insecure` bakom en proxy.
+- **Webbläsaren vägrar ansluta men en inbyggd klient fungerar**: webbläsarens origin finns inte i serverns `--allowed-origins`-lista. Standardvärdet tillåter bara `https://app.usectrl.dev` (plus loopback).
+- **Parkopplingsnyckeln avvisas**: kör `cc_server pair` igen på servern för att rotera den enhetens nyckel och ange sedan den nya. En återkallad enhet upptäcker att dess autentiseringsuppgift är borta och faller stängt; en återkallning släpper en live-session inom några sekunder.
+- **Fel arbetsyta**: arbetsytan är en del av URL:en (`/workspaces/:workspaceId/…`) och följer med varje anrop, så att byta arbetsyta i en klient ändrar bara din egen vy. Du kan bara nå arbetsytor där du är medlem — allt annat avvisas med "Not a member of this workspace". Se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
 
-## Related guides
+## Relaterade guider
 
-- [Run a headless server](/sv-SE/handbok/how-to-guider/kor-headless-server/)
-- [Pair a device](/sv-SE/handbok/how-to-guider/para-enhet/): the phone relay path
+- [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/)
+- [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/): telefonens reläväg
 
-## Related concepts
+## Relaterade koncept
 
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/)
-- [Remote control and mobile](/sv-SE/handbok/koncept/fjarrstyrning/)
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/)
+- [Fjärrstyrning och mobil](/sv-SE/handbok/koncept/fjarrstyrning/)

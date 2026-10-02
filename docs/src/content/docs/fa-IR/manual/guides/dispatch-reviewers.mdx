@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: اعزام عامل‌های بازبین
+description: اعزام عامل‌های بازبین متخصص به یک PR از نمای PR، یک ابزار MCP یا یک گام پایپ‌لاین.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+این راهنما نشان می‌دهد چگونه عامل‌های بازبین را برای بازبینی pull requestها اعزام کنید.
 
-## From the PR view
+## از نمای PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. PR را باز کنید و به زبانهٔ **نمای کلی** آن بروید
+2. منوی ⋯ را باز کنید و **پرسش از AI** را انتخاب کنید
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+این کار پایپ‌لاین از پیش تعریف‌شدهٔ `pr_review` را شروع می‌کند؛ این پایپ‌لاین
+فضای بازبینی PR را باز می‌کند و بازبین‌ها را بر پایهٔ سطح بازبینی فضای کاری
+اعزام می‌کند — به‌طور پیش‌فرض سه بازبین (عامل‌های از پیش تعریف‌شدهٔ **qa**،
+**architect** و **engineer**) — و سپس عامل راهبر را وامی‌دارد تا یافته‌ها را
+یکپارچه کند. در این مسیر شما نقش‌ها را انتخاب نمی‌کنید. برای کنترل اینکه کدام
+نقش‌ها اجرا شوند و هرکدام به چه فایل‌هایی نگاه کند، از ابزار MCP یا یک گام
+پایپ‌لاین (در ادامه) استفاده کنید.
 
-## Via the `dispatch_reviewers` MCP tool
+## از طریق ابزار MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+آن را از داخل یک فضای بازبینی موجود فراخوانی کنید:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,112 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`، `workspace_id` و `reviewers` هر سه الزامی‌اند. هر مشخصات بازبین یک
+`role` می‌گیرد، به‌همراه یک `scope` اختیاری از نوع glob فایل و یک
+`prompt_override` که شرح مأموریت پیش‌فرض را جایگزین می‌کند. یک `concurrency`
+اختیاری (1–8) سقف اعزام‌های موازی را تعیین می‌کند؛ اگر ذکر نشود، تنظیم
+`review_concurrency` فضای کاری اعمال می‌شود (پیش‌فرض 3، تنظیم‌شده در
+**تنظیمات → فضای کاری → عمومی**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+این ابزار بی‌درنگ با دو فهرست `dispatched` و `unmatched` برمی‌گردد. هر بازبین
+اعزام‌شده به‌عنوان یک مشارکت‌کننده به فضا افزوده می‌شود، با یک پیام سیستمی
+اعلام می‌گردد و با شرح مأموریت خود اعزام می‌شود. یافته‌ها به‌صورت پیام‌های
+`review_node` در همان فضا می‌نشینند.
 
-## From a pipeline step
+## از یک گام پایپ‌لاین
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+**تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** را باز کنید، قالبی را باز کنید،
+سپس:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. یک گرهٔ **Reviewer (prompt)** از پالت بیفزایید
+2. عاملی را که باید اعزام شود انتخاب کنید و پرامپت بازبین را بنویسید، با
+   استفاده از جانگهدارهای `{{key}}` برای خروجی‌های بالادستی (برای نمونه
+   `{{repo_local_path}}`، `{{pr_number}}`)
+3. کلید خروجی را تنظیم کنید (پیش‌فرض `reviewer_findings`) تا گام‌های پایین‌دستی
+   بتوانند یافته‌ها را بخوانند
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+این گام عامل را اعزام می‌کند و تا پایان آن اجرا معلق می‌ماند. سپس موتور بار
+دادهٔ `submit_output` آن اجرا را زیر کلید خروجی گره در حالت پایپ‌لاین برداشت
+می‌کند. (توضیح پالت هنوز می‌گوید این گام منتظر فراخوانی `complete_task` می‌ماند
+— آن ابزار وجود ندارد؛ این رشته را نادیده بگیرید.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+با سیم‌کشی چند گرهٔ بازبین به همان گام بالادستی پخش کنید، و سپس خروجی‌هایشان
+را با یک گرهٔ **Consolidate (join)** یکپارچه کنید.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+ویرایشگر پایانهٔ پنهان را به هر مقصد قابل‌وصول بازسیم‌کشی می‌کند، پس گرهی که
+بعد از **Step** از پیش تعریف‌شده اضافه می‌کنید نیز اجرا می‌شود. گره‌های پخشی که
+به همان گام بالادستی سیم‌کشی شده‌اند، موازی اجرا می‌شوند.
 
-## Automatic dispatch on a new PR
+## اعزام خودکار هنگام یک PR جدید
 
-To have a review pipeline fire by itself:
+برای اینکه یک پایپ‌لاین بازبینی خودبه‌خود فعال شود:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. قالب را در **تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** باز کنید
+2. **PR منتشر شد** یا **PR خارجی باز شد** را از بخش تریگرها در کتابخانهٔ
+   گره‌ها روی بوم بکشید (یا آن را از کاشی شبح **افزودن تریگر** انتخاب کنید)
+3. گرهٔ جدید را انتخاب کنید و **فعال** را در بازرسش روشن کنید، سپس قالب را
+   فعال کنید
 
-Two events matter here and they are not interchangeable:
+دو رویداد اینجا مهم‌اند و جایگزین یکدیگر نمی‌شوند:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| رویداد                 | زمان فعال‌شدن                                                                                                    | کلیدهای بار داده                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | یک PR **از طریق Control Center** باز شود — سطح ساخت PR، یا عاملی که `pr_lifecycle.publish` را فراخوانی می‌کند     | `pr_id`، `workspace_id`، `repo_owner`، `repo_name`                 |
+| `ExternalPrDetected`   | سرویس پایش PR، PRی را بیابد که مستقیماً روی GitHub باز شده است                                                   | `repo_owner`، `repo_name`، `pr_number`، `pr_title`، `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PRی که روی github.com باز می‌شود هرگز `PullRequestPublished` را منتشر نمی‌کند،
+پس قالبی که فقط به آن رویداد سیم‌کشی شده باشد آن را نخواهد دید. همچنین توجه
+کنید که `PullRequestPublished` هیچ `pr_number`ی حمل نمی‌کند — گامی که اسکریپت یا
+پرامپتش به `{{pr_number}}` ارجاع می‌دهد باید از سوی `ExternalPrDetected` تغذیه
+شود، یا از سوی یک اجرای دستی که آن را فراهم می‌کند.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+نقطهٔ کنترل: پس از فعال‌سازی، **پایپ‌لاین‌ها** را باز کنید و تأیید کنید که برای
+PR منطبق بعدی یک اجرا پدیدار می‌شود. قالبی که غیرفعال بماند، تریگرش را بی‌اثر
+فعال می‌کند — موتور قالب غیرفعال را رد می‌کند و بدون شروع اجرا بازمی‌گردد.
 
-## How a role is matched to an agent
+## چگونه یک نقش با یک عامل تطبیق داده می‌شود
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` هر عامل در فضای کاری را در برابر هر برچسب نقش درخواستی،
+بدون حساسیت به بزرگی و کوچکی حروف، امتیاز می‌دهد:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| تطبیق                             | امتیاز |
+| --------------------------------- | ------ |
+| مهارتی که برچسب نقش را در خود دارد | +3     |
+| عنوانی که برچسب نقش را در خود دارد | +2     |
+| نام عاملی که برچسب نقش را در خود دارد | +1  |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+امتیازها روی هم جمع می‌شوند و بالاترین مجموع برنده است (در تساوی، نخستین نامزد
+یافته‌شده). اگر امتیاز هیچ نامزدی بالاتر از صفر نرود، مشخصات به‌جای اعزام‌شدن
+در فهرست `unmatched` ابزار برمی‌گردد — پس نقشی که هیچ‌کس با آن تطبیق نمی‌یابد
+گزارش می‌شود و هرگز بی‌سروصدا نادیده گرفته نمی‌شود.
 
-## The review space
+## فضای بازبینی
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+هر PR دقیقاً **یک** فضای بازبینی دارد، نه یکی برای هر بازبین. این فضا
+به‌شکل خودتکرار توسط `pr.ensureSpace` ساخته می‌شود، از طریق یک
+`ReviewSpaceAssociation` به PR پیوند می‌خورد و در برابر head ref آن PR تأمین
+می‌شود. هر بازبین اعزام‌شده به آن فضا می‌پیوندد و یافته‌های `review_node` خود را
+همان‌جا می‌گذارد؛ همین است که یافته‌ها را قابل مقایسه می‌کند و به عامل راهبر
+اجازه می‌دهد میان آن‌ها به اجماع برسد.
 
-## Monitor the dispatch
+## پایش اعزام
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+هر بازبین اعزام‌شده `AgentRunLog` خودش را می‌گیرد. پیشرفت را در این‌ها دنبال
+کنید:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **فضای بازبینی**، جایی که یافته‌ها به‌صورت زنده جریان می‌یابند
+- زبانهٔ **بازبینی** PR، که نوار وضعیت بازبینی و حکم را نشان می‌دهد
+- **مشاهده‌پذیری → زنده** (`/workspaces/:id/observability`)، فهرست عامل‌ها با
+  وضعیت هر اجرا، زمان سپری‌شدهٔ زنده، یک کشوی رونوشت و یک کنترل کشتن. میانبر
+  صفحه‌کلید برای آن وجود ندارد — از پایین نوار کناری به آن برسید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/)
-- [Review and merge a PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
-- [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+- [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/)
+- [بازبینی و ادغام یک PR(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
+- [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [AI review](/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/)
-- [Pipelines](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)
+- [بازبینی هوش مصنوعی(/fa-IR/راهنمای-کاربر/مفهومها/بازبینی-هوش-مصنوعی/)
+- [پایپ‌لاین‌ها(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)

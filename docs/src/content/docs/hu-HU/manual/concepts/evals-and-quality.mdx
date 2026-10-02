@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Kiértékelések és minőség
+description: Kiértékelési csomagok, a munkaterületekbe betöltött kezdőkészlet és hogy hol jelennek meg a Megfigyelhetőségben.
 slug: hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+A **kiértékelési csomag** egy munkaterület-hatókörű definíció egy ügynökkel
+futtatandó feladatra: egy prompt, egy célügynök és -mód, opcionális előkészítés,
+egy opcionális, rögzített SHA-jú fixture és az értékelők listája. Az értékelők
+elsősorban determinisztikusak; egy LLM-rubrikán alapuló bíráló fedi le azt,
+amit ezek az ellenőrzések nem tudnak kifejezni.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+A munkaterület létrehozásakor öt kezdő csomag töltődik be. Ezek lefedik az
+orchestrációs javaslatokat, egy olyan átnézést, amely megtalál egy beültetett
+hibát, a tervmód csak olvasható maradását, a tervmód tervkészítését és egy jegy
+oda-vissza útját. A betöltés a `WorkspaceCreated` eseményre figyel
+(`workspace.upsert` vagy `workspace.create`), kihagyja a már létező nevet, és
+nem tölti fel visszamenőleg a régebbi munkaterületeket.
 
-## Where they appear
+## Hol jelennek meg
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+A **Megfigyelhetőség → Minőség** (`/workspaces/<id>/observability`) listázza a
+munkaterület összes csomagját.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+A csomagokat az `evals.upsertSuite`, az `evals.deleteSuite` és az
+`evals.watchSuites` műveletekkel hozhatja létre, listázhatja, szerkesztheti és
+törölheti. A Minőség lap maga a lista; ezek a műveletek pedig a szerkesztő.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): the configuration a suite
-  pins
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/): the autonomy dial
-- [Manage costs and budgets](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/): spend recorded
-  alongside a run
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): az a
+  konfiguráció, amelyet egy csomag rögzít
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az autonómiaszabályzó
+- [Költségek és keretek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/):
+  a futtatás mellett rögzített költés

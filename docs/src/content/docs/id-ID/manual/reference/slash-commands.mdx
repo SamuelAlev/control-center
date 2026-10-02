@@ -1,156 +1,158 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Perintah slash
+description: Semua perintah yang dapat Anda ketik di composer, apa fungsinya, dan di mana perintah itu berjalan.
 slug: id-ID/panduan-pengguna/referensi/perintah-slash
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Perintah yang diketik di composer sebuah space. Perintah-perintah ini terbagi menjadi tiga kelompok berdasarkan tempat pengaruhnya, dan perbedaannya penting: perintah **lokal** tidak pernah terkirim sebagai pesan, sehingga ia tidak muncul di transkrip dan tidak menjangkau agen.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Tempat perintah berjalan | Artinya                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| **Lokal**          | Ditangani di klien (atau operasi server yang diinisiasi klien). Perintah ini tidak pernah terkirim sebagai pesan, sehingga tidak ada agen yang melihatnya. |
+| **Sisi server**    | Satu panggilan model di sisi server tentang percakapan. Percakapan tidak diubah.     |
+| **Pengiriman**     | Menyetel mode atau direktif untuk run yang dimulai oleh pesan tersebut.              |
 
 ---
 
-## Directing a run
+## Mengarahkan run
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Lokal → pengiriman.** Mengaktifkan mode rencana pada percakapan: worktree yang sepenuhnya hanya baca dan permukaan alat yang dibatasi pada `read`. Hasil kerja agen adalah rencana, bukan pengeditan. `/plan` saja hanya membalik mode dan tidak pernah terkirim sebagai pesan; dengan sebuah prompt, sisa baris itulah yang memulai run.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Pengiriman.** Memulai tujuan otonom yang dikirim ulang oleh supervisor tujuan lintas segmen dan restart.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Mengetik `/goal` beserta teksnya lebih dulu membuka **wawancara tujuan** — proses singkat yang menolak menerima draf sampai kelima hal berikut lengkap: kriteria keberhasilan yang dapat diputuskan evaluator tanpa penilaian subjektif, perintah verifikasi yang persis, batas percobaan, batas cakupan, dan kondisi berhenti. Setiap langkah menawarkan *Lewati dan jalankan apa adanya*: wawancara ini adalah default, bukan gerbang.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume`, dan `/goal drop` bukan perintah slash. Jeda, lanjutkan, dan hentikan ada di daftar tujuan percakapan di sidebar. Flag awal pada tujuan itu sendiri adalah `--budget <dollars>`, `--max <N>` (anggaran run), dan `--days <N>` (tenggat). Tujuan yang mencapai batas biayanya hanya dapat dilanjutkan dengan menaikkan batas itu, dari kontrol sidebar yang sama.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Mengapa ini menyela sama sekali]
+Tujuan otonom adalah satu-satunya tempat di mana arahan yang kabur benar-benar mahal. Run bekerja berjam-jam atas tujuan yang "selesai"-nya tidak pernah didefinisikan siapa pun, lalu melaporkan keberhasilan dengan ukurannya sendiri. Lima pertanyaan lebih murah daripada satu run sepanjang malam yang berakhir kapan pun ia merasa sudah berakhir.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Pengiriman.** Bekerja secara iteratif sampai selesai. Menerima batas: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Token yang *terlihat* seperti batas (dimulai dengan angka atau tanda) tetapi gagal diuraikan adalah kesalahan keras. Prosa hanyalah prosa, jadi `/loop keep going until the tests pass` adalah loop tanpa batas dengan prompt inline, bukan salah urai.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/id-ID/panduan-pengguna/panduan-praktis/arahkan-pekerja-latar-belakang/).
+**Pengiriman.** Mengubah sesi menjadi **pengarah**: alatnya sendiri menyusut menjadi `read` plus lima kata kerja pekerja, dan pekerja latar belakang yang melakukan pengeditan. Lihat [Arahkan pekerja latar belakang](/id-ID/panduan-pengguna/panduan-praktis/arahkan-pekerja-latar-belakang/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Pekerja tidak pernah hidup lebih lama dari mode — keluar dari mode mematikan semuanya.
 
 ---
 
-## Managing context
+## Mengelola konteks
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Lokal → server.** Melipat riwayat lama menjadi ringkasan berjangkar dan melanjutkan pada konteks yang telah dipadatkan. Tidak ada argumen yang menghadap model: perintah ini tidak pernah terkirim sebagai pesan, dan proses pemadatan tidak menerima petunjuk fokus.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Lokal → server.** Membuang konten yang berat **tanpa** meringkas: tidak ada panggilan model, setiap kata dipertahankan, hanya bagian besar yang tidak akan dibaca ulang siapa pun yang dikosongkan.
 
-| Target        | Drops                             |
+| Sasaran       | Yang dibuang                      |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Hasil alat lama yang tidak penting (default) |
+| `images`      | Tangkapan layar lama, dengan teksnya tetap disimpan |
+| `all`         | Keduanya                          |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Ini adalah jalan keluar untuk "konteks saya gemuk tetapi saya tidak mau ringkasan".
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Lokal.** Membuka penjelajah konteks untuk agen percakapan ini di tabnya
+sendiri: setiap segmen dan bagian dari jendela konteksnya — prompt sistem, skill,
+file konteks, skema alat, riwayat, dan gambar — beserta berapa biaya
+masing-masing dan konten verbatim di baliknya.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Tab ini dikunci berdasarkan pasangan (space, agen), sehingga menjalankannya dua
+kali akan memfokuskan ulang satu tab, bukan menumpuk salinan rincian yang sama.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Di space dengan **lebih dari satu agen**, `/context` saja membuka jendela yang
+sedang dibaca oleh indikator konteks di tajuk — agen mana pun yang terakhir
+bekerja di sini, yaitu agen yang pesannya ada di bagian bawah jejak — dan tabnya
+diberi label `Context · <name>` sehingga menjelaskan milik siapa. Sebutkan nama
+lain untuk beralih: `/context qa` (`@` bersifat opsional). Nama yang diketik
+diselesaikan secara persis, tidak pernah samar: dua agen memegang dua jendela
+yang berbeda, sehingga nyaris keliru yang membuka jendela lain akan menjadi
+jawaban yang tampak masuk akal untuk pertanyaan yang tidak Anda ajukan.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Penjelajah yang sama ada di balik chip indikator konteks di tajuk space, yang
+mengikuti agen yang sama — perintah dan chip itu tidak pernah bisa berbeda
+pendapat tentang apa arti "konteks" di sini.
 
 ---
 
-## Asking about the conversation
+## Bertanya tentang percakapan
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Ini menghabiskan satu panggilan model dan **tidak pernah mengubah percakapan**. Giliran nyata berikutnya dari agen melihat persis apa yang akan dilihatnya pula, dan itulah keseluruhan nilai dari bertanya.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Sisi server.** Menulis dokumen serah terima untuk siapa pun yang mengambil alih pekerjaan ini tanpa bekal: apa tugasnya, apa yang telah dipelajari, apa yang tersisa.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Sisi server.** Menjawab pertanyaan tentang pekerjaan sejauh ini tanpa menambahkan pertanyaan atau jawabannya ke transkrip.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Dua perintah, satu implementasi]
+Keduanya berbentuk sama — ambil percakapan apa adanya, ajukan satu pertanyaan tentangnya, jangan simpan salah satu sisinya. Diimplementasikan sekali agar keduanya tidak melenceng menjadi dua gagasan berbeda tentang "konteks sejauh ini".
 :::
 
 ---
 
-## Navigating and exporting
+## Menavigasi dan mengekspor
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/id-ID/panduan-pengguna/panduan-praktis/cabangkan-percakapan/).
+**Lokal.** Membuka navigator cabang: di mana percakapan bercabang, jalur mana yang sedang ditempuh, dan cara kembali ke jalur yang Anda tinggalkan. Lihat [Cabangkan percakapan](/id-ID/panduan-pengguna/panduan-praktis/cabangkan-percakapan/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Lokal.** Menulis percakapan ke file HTML mandiri — kartu alat yang dapat dilipat, tanpa stylesheet, tanpa skrip, tanpa host gambar. Berada di `Documents/ControlCenter/exports/` di desktop dan diunduh di web.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Lokal.** Menyalin transkrip ke papan klip sebagai markdown, dengan panggilan alat dalam blok yang dapat dilipat. Penalaran sengaja dikecualikan: transkrip yang ditempelkan ke laporan bug dibaca oleh manusia.
 
 ---
 
-## Everything else
+## Semua lainnya
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Lokal.** Melihat dan mengedit daftar todo percakapan yang tersimpan. `/todo` saja membuka editornya. Subperintah: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Pengiriman.** Menerapkan skill yang terinstal. Skill berada di bawah prefiks `skill:`-nya sendiri sehingga tidak berbagi namespace dengan bawaan — tanpa itu, skill bernama `plan` akan selamanya tidak dapat dijangkau.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Pengiriman.** File markdown mana pun di bawah `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands`, atau `.opencode/commands` di repo. `foo/bar.md` yang bersarang juga dapat dijangkau sebagai `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Templat: `$1`, `$@`, `$@[start:length]`, dan `$ARGUMENTS`. Frontmatter dapat menyetel `description` (pelengkapan otomatis composer). `allowed-tools` dan `model` diuraikan dari file, tetapi pemanggilan perintah pengguna saat ini hanya mengganti argumen ke dalam isi — keduanya tidak mengubah model atau permukaan alat run tersebut.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Perintah buatan pengguna menang atas skill dengan nama yang sama — ini adalah pintasan yang dipanggil manusia dengan sengaja, beserta argumennya.
 
 ---
 
-## Magic keywords
+## Kata kunci ajaib
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Bukan perintah. Satu kata huruf kecil yang berdiri sendiri di mana pun dalam prompt melampirkan instruksi tersembunyi untuk giliran itu.
 
-| Word          | Effect                                                             |
-| ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| Kata          | Efek                                                              |
+| ------------- | ----------------------------------------------------------------- |
+| `ultrathink`  | Upaya penalaran maksimum untuk giliran ini                        |
+| `orchestrate` | Delegasikan pekerjaan independen secara paralel dan verifikasi setiap fase |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Pencocoknya sengaja ketat soal batas. `orchestrate,` cocok; `orchestrated`, `orchestrate.ts`, `foo::orchestrate`, dan `orchestrate()` tidak, dan blok kode berpagar, span inline, serta bagian XML ditutupi terlebih dahulu. Tanpa itu, menempelkan stack trace akan mengubah perilaku agen.
 
 ---

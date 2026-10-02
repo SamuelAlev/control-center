@@ -1,7 +1,8 @@
 ---
 title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+description: Complete catalogue of the 53 domain events, their payloads and the server-side subscribers that consume them.
 slug: en-GB/manual/reference/domain-events
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
 ## Event bus
@@ -16,7 +17,7 @@ The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publisher
 | Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
 | Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Every event in the catalogue below lives in that one directory; there are no domain events declared elsewhere.
 
 ## Workspace, agent and repo events
 
@@ -148,8 +149,8 @@ Several subsystems that look event-driven from the outside are not. They are lis
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
 | Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
 | Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
+| Plan documents      | `submit_plan` writes a revision; approval materialises an orchestration. Neither is announced           |
+| Artefacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
 | Approvals           | Escalation is handled inside the approval workflow service                                              |
 | Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
 | Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |

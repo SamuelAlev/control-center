@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: بافت ابزار و کش پرامپت
+description: چرا به یک عامل مجموعهٔ کوچکی از ابزارها نشان داده می‌شود و نه همهٔ آن‌ها، چگونه به باقی آن‌ها می‌رسد، و قواعدی که کش پرامپت ارائه‌دهنده را در طول یک اجرا گرم نگه می‌دارد.
 slug: fa-IR/راهنمای-کاربر/مفهومها/بافت-ابزار
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+دو چیز دربارهٔ هر درخواستی که هارنس داخلی می‌فرستد درست است: تعریف‌های ابزار بزرگ‌ترین هزینهٔ ثابت آن است، و تقریباً هیچ‌یک از آن‌ها به کار نخواهد آمد. این صفحه توضیح می‌دهد که Control Center در این باره چه می‌کند و چرا پاسخش به‌سادگی «ابزارهای کمتری بفرست» نیست.
 
-## The problem is attention, not bytes
+## مسئله توجه است، نه بایت
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center حدود ۱۲۶ ابزار ثبت می‌کند. اگر کامل فرستاده شوند، تعریف‌هایشان در **هر درخواست** حدود **۲۳٬۰۰۰ توکن** هزینه دارد — هزینه‌ای که هیچ فشرده‌سازی‌ای به آن دست نمی‌یابد، چون تعریف‌های ابزار جدا از گفتگو و در بخش دیگری از درخواست سفر می‌کنند.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+صورت‌حساب توکن شکایت آشکار است، و همراه با کش پرامپت هزینهٔ کوچک‌تر هم هست. هزینهٔ واقعی **دقت انتخاب** است. ارزیابی‌های منتشرشدهٔ فراخوانی ابزار هم‌داستان‌اند که مدل‌ها تا حدود ۳۰ تا ۵۰ ابزار در بافت، ابزار درست را به‌طور قابل‌اعتماد انتخاب می‌کنند و پس از آن به‌تدریج بدتر می‌شوند. علت نام‌برده‌شده شمارش توکن نیست، بلکه **هم‌پوشانی معنایی** است: وقتی کاتالوگی چند ابزار دارد که توضیحاتشان شبیه هم خوانده می‌شود، مدل میان هم‌شکل‌ها دست به انتخاب می‌زند، نه اینکه یک قابلیت را به یاد بیاورد.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+با ۱۲۶ ابزار، یک عامل در هر نوبت به‌خوبی از آن باند گذشته است — از جمله آن نوبت‌های بسیاری که فقط باید یک فایل را می‌خواند.
 
-## The two-tier surface
+## سطح دوسطحی
 
-A run is therefore shown two things:
+بنابراین یک اجرا دو چیز را می‌بیند:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- یک مجموعهٔ **ساکن** — حدود بیست‌وچند ابزار، که در هر درخواست با اسکیمای کامل فرستاده می‌شوند؛
+- یک **نمایهٔ نام** از باقی چیزها، گروه‌بندی‌شده زیر عنوان‌هایی مانند «Tickets and projects» یا «Memory and knowledge»، که برای کل کاتالوگ چند صد توکن هزینه دارد.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+سنجش روی کاتالوگ کنونی نشان می‌دهد که این کار بلوک ابزار را **از ~۲۳٫۱ هزار توکن به ~۵٫۰ هزار، حدود ۷۸٪ کوچک‌تر** می‌رساند و مجموعهٔ همیشه‌نمایان را درون باندی می‌گذارد که انتخاب در آن قابل‌اعتماد است.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/fa-IR/راهنمای-کاربر/مفهومها/حالتها) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+مجموعهٔ ساکن ابزارهایی است که یک اجرا در *بیشتر* اجراها به کار می‌برد: واژگان فایل و شل (`read`, `write`, `edit`, `search`, `bash`, …)، ابزارهای کشف، چک‌لیست کار، جست‌وجوی حافظه، و هر فعلی که [حالت(/fa-IR/راهنمای-کاربر/مفهومها/حالتها) کنونی باید برای تحویل خروجی‌اش فراخوانی کند. فعل خروجی خودِ یک حالت همیشه ساکن است — یک اجرا هرگز نباید به دنبال تنها فراخوانی‌ای بگردد که تحویل‌دادنی‌اش را تولید می‌کند.
 
-### Deferred does not mean unavailable
+### به تعویق افتادن به معنای در دسترس نبودن نیست
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+این همان بخشی است که طراحی را به‌جای صرفاً ارزان، ایمن می‌کند. **یک ابزار به‌تعویق‌افتاده از همان نوبت نخست قابل فراخوانی است.** تنها اسکیمای آن بازداشته می‌شود.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+عامل نام را در پرامپت خود می‌بیند. اگر آن نام را مستقیم فراخوانی کند، هارنس اسکیما را بارگذاری می‌کند و ابزار را در همان گام اجرا می‌کند — بی‌در خطا و بی‌در رفت‌وبرگشت. مدل لازم نیست بداند که آن ابزار زمانی «از بار خارج شده» بود.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+وقتی عامل کار را می‌داند ولی نام را نه، `search_tools` یک توصیف به زبان ساده («یک تیکت را به کسی واگذار کن») می‌گیرد، تمام سطح اجرا را رتبه‌بندی می‌کند و تطبیق‌ها را *با اسکیماهای از‌پیش‌بارگذاری‌شده* برمی‌گرداند، تا همان نوبت بعدی بتواند یکی را فراخوانی کند. اگر جست‌وجو چیزی پیدا نکند، صریح همین را می‌گوید و عبارت دیگری یا جست‌وجوی گسترده‌تری پیشنهاد می‌دهد — عمداً، چون عاملی که جست‌وجوی خالی را «این قابلیت وجود ندارد» بخواند، به‌جای جست‌وجوی دوباره بدلی از خودش می‌سازد.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` فقط در هارنس داخلی وجود دارد. کارخواه‌های بیرونی MCP به‌جایش `search_tool_bm25` را دارند که همان نمایه را رتبه‌بندی می‌کند، ولی تنها تطبیق‌ها را توصیف می‌کند — آن کارخواه‌ها از قبل همهٔ اسکیماها را از `tools/list` گرفته‌اند، پس چیزی برای بارگذاری نمانده است.
 
-### What deferral never does
+### تعویق هرگز چه کاری نمی‌کند
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+تعویق **پس از** پالایهٔ ابزار حالت اعمال می‌شود، نه به‌جای آن. اسکیمایی را پنهان می‌کند؛ نمی‌تواند ابزاری را که حالت رد کرده آشکار کند. یک ابزار فعال‌شده هنوز دقیقاً مانند یک ابزار ساکن از درخواست تأیید و [گاردریل‌های کنش(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها) می‌گذرد، و یک ابزار نمی‌تواند نامی را بارگذاری کند که از ابتدا در سطح اجرا نبوده است.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+سطح MCP که کارخواه‌های بیرونی می‌بینند **تحت تأثیر قرار نمی‌گیرد**. `tools/list` هنوز کاتالوگ کامل را برمی‌گرداند. تلاشی پیشین برای پیراستن آن، عامل‌ها را یک‌سره از کار انداخت: کارخواه‌های MCP نام ابزارها را با فهرست کش‌شدهٔ خودشان اعتبارسنجی می‌کنند و هر چیزی را که در آن فهرست نباشد، بی‌آنکه از سرور بپرسند، رد می‌کنند؛ پس ابزاری «پنهان ولی قابل فراخوانی» به‌سادگی دست‌نیافتنی بود. تعویق در هارنس زندگی می‌کند، جایی که بارگذاری یک ابزار در میانهٔ اجرا کاری است که هارنس واقعاً می‌تواند انجام دهد.
 
-### Turning it off
+### خاموش کردن آن
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli).
+`--tool-deferral=off` (یا `CC_SERVER_TOOL_DEFERRAL=off`) هر ابزار پذیرفته‌شده را دوباره ساکن می‌کند و دقیقاً همان درخواست‌هایی را تولید می‌کند که سرور پیش از وجود تعویق می‌فرستاد. به [مرجع CLI مربوط به `cc_server`(/fa-IR/راهنمای-کاربر/مرجع/cc-server-cli) نگاه کنید.
 
-## Prompt caching
+## کش پرامپت
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+بارهای کاری عامل نامتقارن‌اند: نوبت به نوبت، پرامپت‌های عظیم می‌فرستند و پاسخ‌های کوچک می‌گیرند، هر بار با همان پیشوند. ارائه‌دهندگان آن پیشوند را کش می‌کنند و خواندن از کش حدود یک‌دهم یک خواندن تازه هزینه دارد. بنابراین نرخ اصابت کش یک ویژگی درجه‌یک هارنس است، نه یک بهینه‌سازی — و روی Anthropic توان عبوری هم می‌خرد، چون توکن‌های کش‌شده در سقف ورودی در دقیقه حساب نمی‌شوند.
 
-Caching works on an exact prefix match, which yields one governing rule.
+کش روی تطبیق دقیق پیشوند کار می‌کند، و همین یک قاعدهٔ حاکم به دست می‌دهد.
 
-### Never rewrite what was already sent
+### هرگز آنچه را پیش‌تر فرستاده شده بازنویسی نکن
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+هر بایتی که تغییر کند، کش را از همان نقطه به بعد بی‌اعتبار می‌کند. پس هارنس همیشه تنها **می‌افزاید**: پیام‌های تازه در انتها، و اسکیماهای ابزار تازه‌فعال‌شده *پس از* بلوک کش‌شدهٔ ابزار و نه درهم‌آمیخته با آن. همین ترتیب دلیل ارزان‌بودن فعال‌سازی است — پیشوند کش‌شده یکسان می‌ماند و اجرا تنها هزینهٔ اسکیماهایی را می‌پردازد که تازه بارگذاری کرده است.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+حلقه همچنین خروجی کهنهٔ ابزار را از نوبت‌های قدیمی‌تر هرس می‌کند تا بافت را بازپس بگیرد. صبر می‌کند تا آن‌قدری که ارزش بازنویسی را داشته باشد فراهم شود، پس یک هرس، بازنویسی کمیاب و عمیق است و نه یک بی‌درکش پیوسته.
 
-### Where the breakpoints go
+### نقاط شکست کجا می‌نشینند
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+ارائه‌دهنده تنها شمار محدودی نشانگر کش اجازه می‌دهد، و Control Center آن‌ها را آگاهانه خرج می‌کند:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| نشانگر                        | پوشش                             | عمر      |
+| ---------------------------- | -------------------------------- | -------- |
+| آخرین ابزار **ساکن**         | بلوک ابزار                       | ۱ ساعت   |
+| آخرین بلوک سیستمی            | ابزارها + پرامپت سیستمی          | ۱ ساعت   |
+| دُم نوبت پیشین               | تاریخچه تا آخرین درخواست         | ۵ دقیقه  |
+| دُم نوبت کنونی               | تمام تاریخچه                     | ۵ دقیقه  |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+دو مورد آخر یک جفت غلتان‌اند، و دلیل این جفت ظریف است: جست‌وجوی کش به عقب و در تعداد محدودی بلوک می‌گردد تا چیزی را بیابد که درخواستی پیش‌تر ذخیره کرده است. یک نوبت واحد که بسیاری از ابزارها را موازی اجرا می‌کند می‌تواند بلوک‌های بیشتری از آن پنجره بیرون بدهد، و آن‌جاست که یکی از نشانگرهای دُم بی‌سروصدا از دست می‌رود و درخواست بهای کامل را می‌پردازد، بی‌آنکه پاسخ چیزی در این باره بگوید. علامت‌زدن دقیقاً همان جایی که درخواست پیشین ایستاده بود، اصابت را به‌جای یک مسابقه ساختاری می‌کند.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+پیشوند ابزارها و سیستم عمر بلند را می‌گیرد چون در سراسر اجرا ثابت است، میان هر اجرا و زیرعاملی با همان شکل مشترک است، و چون ساعت از لحظه‌ای شروع می‌شود که یک درخواست *آغاز* می‌شود — نوبتی که چند دقیقه پیوسته جریان می‌دهد، پیش از آنکه درخواست بعدی شکل بگیرد بیشتر پنجرهٔ کوتاه را خرج کرده است.
 
-### Subagents share one prefix
+### زیرعامل‌ها یک پیشوند را شریک‌اند
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+زیرعامل‌های هم‌نوع پیشوندهای پرامپت بایت‌به‌بایت یکسان تولید می‌کنند، پس باید یک ورودی کش را بخوانند، نه اینکه هر کدام ورودی خودش را بنویسد. اما یک ورودی تنها وقتی خواندنی می‌شود که درخواستی که آن را نوشته شروع به پاسخ‌دادن کند، پس پخشی که یک‌جا راه می‌افتد، هر فرزندش را وادار می‌کند برای پیشوندی که همه شریک‌اند بهای اضافی بپردازد.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+هارنس می‌گذارد نخستین فرزند از یک شکل مشخص آغاز کند، سپس به‌محض آنکه جریان‌سازی را شروع کند، بقیهٔ فرزندان همان شکل را رها می‌کند. انتظار محدود است: فرزند نخستِ کند، بهای یک اصابت کش را می‌دهد، نه خود پخش را. به همین دلیل، هر زیرعامل صرف‌نظر از پروفایلش همان مجموعهٔ ابزار ساکن را می‌گیرد — تغییر آن به‌ازای هر پروفایل، پیشوند مشترک را بی‌دریافت تکه‌تکه می‌کند، چون پروفایل از قبل تصمیم گرفته است که فرزند چه چیزی را می‌تواند فراخوانی کند.
 
-## Watching it work
+## تماشای کار در عمل
 
-Both halves are observable rather than assumed:
+هر دو نیمه مشاهده‌شدنی‌اند، نه فرضی:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **کاوشگر بافت** روی یک گفتگو ابزارهای ساکن، نمایهٔ به‌تعویق‌افتاده و آنچه هر اسکیمای بازداشته‌شده *هزینه می‌داشت* را گزارش می‌دهد؛ این گزارش از همان مسیر کدی ساخته شده که یک اجرای واقعی به کار می‌برد.
+- هر اجرا ثبت می‌کند کدام ابزارهای به‌تعویق‌افتاده را بارگذاری کرده و چه چیزی آن را برانگیخته، پس جست‌وجویی که چیزی پیدا نمی‌کند به‌جای گم‌شدن در میان عاملی که بی‌سروصدا کاری مجاور می‌کند، به‌عنوان یک خطای بازیابی دیده می‌شود.
+- مشاهده‌پذیری **نرخ کش** را به‌عنوان نسبت خواندن‌های کش به همهٔ توکن‌های پرامپت پردازش‌شده — با احتساب نوشتن‌های کش — گزارش می‌دهد: اجرایی که پیوسته پیشوندش را از نو می‌سازد نمرهٔ پایین می‌گیرد، نه نمره‌ای مانند اجرایی که هرگز نیازی به کش نداشته است.

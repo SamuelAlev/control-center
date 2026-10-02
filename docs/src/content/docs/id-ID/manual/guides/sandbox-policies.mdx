@@ -1,193 +1,203 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Konfigurasi kebijakan sandbox
+description: Apa yang membatasi sebuah run agen, cara mengetahui apakah sandbox OS membungkusnya, dan pengaturan kemampuan mana yang benar-benar dibaca server.
 slug: id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Apakah sebuah run agen di-sandbox ditentukan di server, saat boot
+(`--sandbox`). Tombol **Aktifkan sandboxing**, pemilih **Backend**, dan
+tombol-tombol **Kemampuan default · ruang baru** di bawah **Pengaturan → Server
+→ Diagnostik & privasi** adalah preferensi yang disimpan di perangkat Anda.
+Deteksi host pada kartu **Sandboxing** melaporkan apa yang dapat dibungkus oleh
+host server.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Dua kontrol menjangkau sebuah run dan panduan ini membahas keduanya: **Izin
+sandbox** per agen di bawah ini dan flag `--sandbox` milik server sendiri.
 
-## What constrains an agent run
+## Apa yang membatasi sebuah run agen
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Seorang agen dibatasi oleh enam hal. Yang pertama adalah sandbox OS dan itulah
+yang bersyarat — lima sisanya berlaku di setiap host.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Batas                    | Apa yang dilakukannya                                                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sandbox OS               | Seatbelt di macOS, bubblewrap di Linux dan WSL2. Membungkus Claude Code CLI, adapter ACP, dan alat `bash` harness. **Tidak ada di Windows dan di Linux tanpa `bwrap` dan `socat`** |
+| Worktree-nya sendiri     | Setiap percakapan mendapat checkout copy-on-write. Checkout asli dilipat ke dalam run sebagai jalur tolak-tulis dan sandbox-lah yang menegakkannya                                                  |
+| Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dari kemampuan agen dan mencabutnya saat pembongkaran. Tanpa kemampuan, tidak ada token di lingkungan                                              |
+| Pagar pengaman tindakan  | Setiap alat yang memutasi mendeklarasikan kelas efeknya dan pagar menyelesaikannya sebelum panggilan berjalan. Sebuah `prompt` tanpa penyetuju yang terhubung ditolak                              |
+| Sanitasi lingkungan      | ACP dan alat `bash` harness mendapat lingkungan yang difilter. Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host                                                                   |
+| Permukaan alat mode      | Mode hanya-baca menghapus alat yang memutasi worktree mentah-mentah dan menyematkan verb keluaran mode itu sendiri agar tetap dapat menyerahkan hasil                                           |
 
-Three things stay weaker than they look:
+Tiga hal tetap lebih lemah daripada tampilannya:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Hanya **harness bawaan** yang menegakkan gerbang alat, kontrak penyelesaian, dan
+  aturan mode yang struktural. Adapter Claude Code tidak. Khususnya Claude
+  Code diluncurkan dengan `--dangerously-skip-permissions`, karena `claude -p`
+  yang non-interaktif akan tersendat selamanya pada prompt-nya sendiri —
+  sehingga panggilan read, write, edit, dan bash milik Claude tidak terlihat
+  maupun dijaga oleh Control Center. Di tempat sandbox menyala, sandbox itulah
+  batas di sekelilingnya.
+- Alat berkas dalam proses milik harness (read, write, edit, apply patch, search,
+  find, search_files) berjalan di dalam proses server, jadi tidak ada profil sandbox
+  yang membatasinya. Hanya alat `bash` yang melewati runner perintah yang di-sandbox.
+  Alat-alat itu dibatasi oleh pembatasan jalur miliknya sendiri plus pagar pengaman
+  tindakan.
+- Di host tanpa backend, baris pertama sama sekali tidak berlaku. ACP dan alat
+  `bash` harness kembali ke sanitasi lingkungan plus kebijakan perintah;
+  Claude Code mewarisi lingkungan host melalui `NoSandboxAdapter`. Server
+  mengatakannya di log startup-nya. Periksa milik Anda di bawah.
 
-## Set an agent's capabilities
+## Tetapkan kemampuan agen
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Inilah satu-satunya kontrol kemampuan yang dibaca server. Sifatnya per agen dan
+menentukan apa yang dimasukkan broker kredensial ke lingkungan agen tersebut.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Buka **Pengaturan → Ruang kerja → Agen**
+2. Pilih agen di daftar
+3. Di tab **Pengaturan**, gulir ke **Izin sandbox**
+4. Nyalakan tombolnya — keterangan baris itu berubah dari **Gunakan default ruang kerja**
+5. Atur keempat tombol:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| Tombol                           | Apa yang dijaganya                                                                                                                                                                                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **Izinkan git push**             | Jika mati, run mendapat `GIT_ASKPASS=/usr/bin/false` dan `GIT_TERMINAL_PROMPT=0`, sehingga push tidak dapat meminta kredensial                                                                                                                   |
+| **Izinkan panggilan API GitHub** | Bersama **Izinkan git push**, menentukan apakah broker menyuntikkan token GitHub sebagai `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                            |
+| **Izinkan panggilan API ticketing** | Menentukan apakah broker menyuntikkan `TICKETING_API_KEY`                                                                                                                                                                                     |
+| **Izinkan akses jaringan umum**  | Di tempat sandbox menyala, ini adalah gerbang keluar yang nyata: bila mati, daftar izin run kosong dan setiap permintaan keluar ditolak di proxy. Di tempat tanpa backend, hal ini dicatat pada run tetapi tidak memblokir apa pun yang dilakukan proses yang dijalankan |
 
-6. Save
+6. Simpan
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Titik periksa: buka lagi agennya dan tombolnya masih menyala dengan tombol
+pilihan Anda — kumpulan kemampuan yang tersimpan melakukan perjalanan bolak-balik
+melalui server dan agen tanpa kemampuan apa pun kembali ke default yang
+konservatif (push mati, API GitHub mati, ticketing mati, jaringan menyala).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Dua cara ini bisa menggigit]
+Keterangannya berbunyi **Gunakan default ruang kerja**, tetapi tidak ada
+pengaturan kemampuan tingkat ruang kerja yang dibaca server. Agen dengan tombol
+yang mati mendapat default konservatif bawaan.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Secara terpisah, kredensial GitHub milik run selalu hanya milik broker — token
+instalasi GitHub App dengan cakupan repo, atau fallback PAT dari lingkungan —
+tidak pernah token tersimpan milik anggota yang meminta. `actingUserId`
+diteruskan agar broker dapat *menahan* PAT server dari anggota yang bukan
+pemilik dan belum menghubungkan GitHub; hal itu tidak menggabungkan token
+pribadi di atas kemampuan yang mati. Jangan memperlakukan **Izinkan panggilan
+API GitHub** sebagai batas keluar yang keras di host tanpa sandbox OS: proses
+yang dijalankan tetap dapat menjangkau jaringan.
 :::
 
-## Check whether your agent runs are sandboxed
+## Periksa apakah run agen Anda di-sandbox
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Dua hal yang menentukannya, keduanya di server: apakah host menyediakan backend
+dan apakah `--sandbox` menyala. Periksa keduanya dalam urutan itu.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Buka **Pengaturan → Server → Diagnostik & privasi**
+2. Baca kartu **Sandboxing**. Fakta **Host** adalah mesin tempat `cc_server`
+   berjalan, bukan mesin yang sedang Anda lihat. Kolom **Backend** mencantumkan
+   **Sandbox native** (Seatbelt di macOS, bubblewrap di Linux dan WSL2) atau
+   **Tanpa isolasi**. Fakta **Berlaku** adalah preferensi perangkat ini, bukan
+   pembungkus yang sebenarnya digunakan server.
+3. Baca log startup server. Log itu mencetak tepat salah satu dari tiga baris:
+   - `agent sandbox ON` plus catatan backend — run dibungkus
+   - `no OS-native agent sandbox on this host` plus petunjuk pemasangan bila ada
+     — run tidak dibungkus
+   - `agent sandbox DISABLED by --sandbox off` — pengabaian yang disengaja
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` tidak melaporkan status sandbox, jadi log startup-lah
+pemeriksaannya.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Untuk mematikan sandbox secara sengaja — host tempat profil berperilaku salah
+adalah alasan fitur ini ada — jalankan server dengan `--sandbox off`, atau
+setel `CC_SERVER_SANDBOX=off`. Default-nya `on` dan `on` berarti "gunakan
+backend bila host memilikinya", tidak pernah "wajibkan satu".
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Dua situasi tidak pernah mendapat pembungkus sandbox native. Di **Windows**,
+probe native selalu melaporkan tidak tersedia dan tidak ada yang perlu dipasang
+— pengiriman agen memakai `none`. Backend `microvm` terpisah (terminal
+interaktif dan rig) dan digerbangi probe pada runtime-nya sendiri. Di **Linux
+dan WSL2**, baik `bwrap` maupun `socat` harus ada di `PATH`; tanpa keduanya,
+probe melaporkan tidak tersedia dan menyebutkan paket yang hilang.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Di Linux/WSL2 dengan bubblewrap terpasang, glob berkas rahasia milik kebijakan
+standar tidak dapat ditegakkan untuk berkas yang dibuat agen belakangan. Run
+native semacam itu sekarang gagal alih-alih diam-diam mengabaikan aturannya.
+Probe boot yang positif karena itu tidak menjamin bahwa pengiriman di Linux
+dapat dimulai. `--sandbox off` adalah pengabaian tanpa kurungan yang disengaja,
+bukan pengganti batas keamanan.
 
-## Know what a mode already forbids
+## Ketahui apa yang sudah dilarang oleh sebuah mode
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Mode disimpan per space dan menjadi masukan bagi penyelesai pagar pengaman
+sebagai lapisan **preset mode**. Tiga dari empat mode bersifat hanya-baca dan
+mode hanya-baca menolak sebelas kelas efek mentah-mentah:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Mode                 | Worktree   | Ditolak oleh prasetel                                                                                                                                                            |
+| -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agen** (`chat`)    | Dapat ditulisi | Tidak ada — default bawaan yang berlaku                                                                                                                                      |
+| **Rencana**          | Hanya-baca | Hapus file, tulis di luar pohon kerja, buat commit, push ke remote, buka pull request, publikasikan review atau merge, tulis ke pelacak eksternal, instal paket, jalankan proses, ubah struktur ruang kerja, boot atau kendalikan enclosure (rig) |
+| **Tinjauan**         | Hanya-baca | Sebelas hal yang sama. Tidak dapat dipilih pengguna — penyusun pesan hanya menawarkan Agen, Rencana, dan Orkestrasi                                                              |
+| **Orkestrasi**       | Hanya-baca | Sebelas hal yang sama                                                                                                                                                            |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Akses jaringan dan akses secret sengaja _tidak_ ditolak oleh mode hanya-baca:
+penelitian adalah inti dari mode itu.
 
-## Require approval before an action runs
+## Wajibkan persetujuan sebelum sebuah tindakan berjalan
 
-Approval is a guardrail decision, not a sandbox setting.
+Persetujuan adalah keputusan pagar pengaman, bukan pengaturan sandbox.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Buka **Pengaturan → Ruang kerja → Izin agen**
+2. Setel kelas tindakan ke **Tanyakan dulu** pada cakupan ruang kerja, agen, atau space
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/) for the full
-resolution order.
+Keputusan **Tanyakan dulu** menginterupsi run dan menanyakan kepada Anda. Tanpa
+penyetuju yang terhubung, keputusan ini fail-closed dan tindakannya ditolak.
+Lihat [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
+untuk urutan penyelesaian selengkapnya.
 
-## Troubleshooting
+## Pemecahan masalah
 
-### An agent cannot push and I never denied it
+### Agen tidak dapat push dan saya tidak pernah menolaknya
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Periksa **Izin sandbox** milik agen. Agen tanpa kumpulan kemampuan kustom
+mendapat default konservatif, yang memiliki **Izinkan git push** dalam keadaan
+mati — sehingga broker tidak menyuntikkan token GitHub dan git tidak punya cara
+untuk mengautentikasi.
 
-### The Sandboxing card reports no native sandbox
+### Kartu Sandboxing melaporkan tidak ada sandbox native
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/).
+Berarti run agen di host itu tidak dibungkus oleh Seatbelt atau bubblewrap dan
+batas-batas yang tersisa itulah yang Anda miliki. Di Linux dan WSL2, pasang
+kedua alat yang hilang — `sudo apt-get install bubblewrap socat` — lalu jalankan
+ulang server; log startup selanjutnya akan menyebutkan sandbox menyala. Di
+Windows tidak ada backend native untuk dipasang, jadi perketat pagar pengamannya
+sebagai gantinya: lihat
+[Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/).
 
-### An agent reached a file outside its worktree
+### Agen menjangkau berkas di luar worktree-nya
 
-Which tool reached it decides whether this is expected.
+Alat mana yang menjangkaunya menentukan apakah ini wajar.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Alat berkas dalam proses milik harness (read, write, edit, apply patch, search,
+find, search_files) berjalan di dalam proses server, jadi tidak ada profil
+sandbox yang berlaku untuknya — batasnya adalah pembatasan jalur miliknya
+sendiri plus pagar pengaman. Perintah `bash` atau CLI Claude Code _memang_
+dibungkus di tempat backend ada dan checkout terdaftar Anda bersifat tolak-tulis
+di dalam pembungkus itu pada setiap mode, termasuk ejaan yang telah diselesaikan
+symlink-nya (di macOS jalur yang dicapai melalui `/tmp` atau `/var/folders`
+diselesaikan di bawah `/private` dan kedua ejaan itu kini ditolak). Di host tanpa
+backend, tidak satu pun dari itu berlaku. Apa pun caranya, pagar pengaman dapat
+menolak **Tulis di luar pohon kerja** mentah-mentah.
 
-## Related guides
+## Panduan terkait
 
-- [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Diagnose an agent](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/)
-- [Sandbox backends](/id-ID/panduan-pengguna/referensi/backend-sandbox/)
-- [cc_server CLI](/id-ID/panduan-pengguna/referensi/cli-cc-server/): the `--sandbox` flag
+- [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/)
+- [Backend sandbox](/id-ID/panduan-pengguna/referensi/backend-sandbox/)
+- [CLI cc_server](/id-ID/panduan-pengguna/referensi/cli-cc-server/): flag `--sandbox`
 
-## Related concepts
+## Konsep terkait
 
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)

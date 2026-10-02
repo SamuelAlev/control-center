@@ -1,102 +1,103 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: สร้างไปป์ไลน์แรกของคุณ
+description: สร้างเทมเพลตไปป์ไลน์ กำหนดค่าขั้นตอนของมัน อนุญาตการรันด้วยตนเอง แล้วเริ่มสักหนึ่งครั้ง
 slug: th-TH/คู่มือ/บทสอน/ไปป์ไลน์แรก
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะได้:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- เทมเพลตไปป์ไลน์ที่บันทึกแล้ว ซึ่งสั่งงานเอเจนต์ด้วยพรอมต์
+- การรันด้วยตนเองที่เปิดใช้บนเทมเพลตนั้น เพื่อให้เริ่มมันได้ด้วยมือ
+- การรันที่เสร็จสมบูรณ์หนึ่งครั้ง โดยมองเห็นอินพุตและเอาต์พุตของขั้นตอนได้
 
-Prerequisites: [Dispatch your first agent](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) completed, so you have an agent with an adapter and a model.
+สิ่งที่ต้องเตรียม: ทำ[สั่งงานเอเจนต์ตัวแรก](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) ให้เสร็จ เพื่อให้คุณมีเอเจนต์ที่มาพร้อมอะแดปเตอร์และโมเดล
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/); for the full step vocabulary, [Pipeline step kinds](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/).
+ไปป์ไลน์คือ DAG ของขั้นตอน เทมเพลตเป็นตัวกำหนดกราฟ ส่วนการรันคือการลงมือทำ สำหรับโมเดลที่อยู่เบื้องหลัง อ่าน[ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/); สำหรับคำศัพท์ขั้นตอนฉบับเต็ม [ชนิดขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
 
-## Step 1: Create a template
+## ขั้นตอนที่ 1: สร้างเทมเพลต
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → เทมเพลตไปป์ไลน์**
+2. คลิก **เทมเพลตใหม่**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+ตัวแก้ไขเปิดขึ้นบนโครงเริ่มต้นที่ให้มาซึ่งชื่อ **ไปป์ไลน์ใหม่** (id `pipeline_N`)
+คลิกชื่อเรื่องในส่วนหัวแล้วเปลี่ยนชื่อ — สำหรับบทสอนนี้
+`code_quality_check` เป็นชื่อที่ดี ไม่มีกล่องโต้ตอบให้กรอก id และไม่มีฟิลด์
+คำอธิบาย
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+แคนวาสไม่ได้ว่างเปล่า เทมเพลตใหม่มาต่อสายไว้ล่วงหน้าเป็น **Trigger → Step →
+terminal** โดย “Step” คือโหนดเอเจนต์พรอมต์ และเทอร์มินัลคือเซนติเนลที่มองไม่เห็น
+ซึ่งตัวแก้ไขต่อสายใหม่ไปยังทุกปลายทางที่เข้าถึงได้
 
-You configure the Step that is already there.
+คุณกำหนดค่าโหนด Step ที่มีอยู่แล้ว
 
-## Step 2: Configure the step
+## ขั้นตอนที่ 2: กำหนดค่าขั้นตอน
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. คลิกโหนด **Step** บนแคนวาส
+2. ในแผง **การตั้งค่าโหนด** ทางขวา ตั้งค่า:
+   - **เอเจนต์**: เอเจนต์ของคุณจากบทสอนก่อนหน้า
+   - **เทมเพลตพรอมต์**: “ตรวจสอบโค้ดบนสาขาปัจจุบันว่ามีปัญหาด้านคุณภาพหรือไม่ แล้วระบุรายการสิ่งที่พบ”
+3. ปล่อย **Triggers from** ไว้ตามเดิม — โหนดนี้ต่อสายไว้แล้วให้ยิงหลัง Trigger
 
-## Step 3: Save
+## ขั้นตอนที่ 3: บันทึก
 
-Press **Save** in the editor header.
+กด **บันทึก** ในส่วนหัวของตัวแก้ไข
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**จุดตรวจสอบ.** ข้อความ “มีการเปลี่ยนแปลงที่ยังไม่บันทึก” จะหายไป
 
-## Step 4: Allow manual runs
+## ขั้นตอนที่ 4: อนุญาตการรันด้วยตนเอง
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. คลิกไทล์เส้นประ **เพิ่มทริกเกอร์** บนแคนวาส (หรือลาก **รันด้วยตนเอง**
+   จากส่วนทริกเกอร์ของคลังโหนด) แล้วเลือก **รันด้วยตนเอง**
+2. เลือกโหนดนั้น ในแผงตรวจสอบทางขวา เปิด **เปิดใช้** —
+   “แสดงในหน้ารันและเริ่มด้วยตนเอง”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+นี่ไม่ใช่ตัวเลือกเสริมและเป็นสิ่งที่มองข้ามได้ง่าย เทมเพลตใหม่ถูกสร้างขึ้นโดย**ไม่มีแถวทริกเกอร์เลย** ดังนั้นจนกว่าคุณจะเปิดสวิตช์นี้ หน้ารันจะไม่แสดงมัน และไม่มีอะไรให้เริ่ม สวิตช์นี้เขียนทริกเกอร์ทันที มันไม่รอการบันทึกครั้งถัดไป
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+สวิตช์เดียวกันนี้อยู่เบื้องหลัง **รันด้วยตนเอง** ในส่วนหัวของตัวแก้ไข โดยวางอยู่ข้างอินพุตที่เทมเพลตประกาศไว้
 
-## Step 5: Run it
+## ขั้นตอนที่ 5: รันไปป์ไลน์
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. คลิก **ไปป์ไลน์** ในแถบข้าง
+2. คลิก **รันไปป์ไลน์** ในส่วนหัว
+3. เลือก `code_quality_check` ในรางด้านซ้าย
+4. คลิก **รันไปป์ไลน์** บนฟอร์ม — เทมเพลตของคุณไม่ได้ประกาศอินพุต จึงไม่มีอะไรต้องกรอก
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**จุดตรวจสอบ.** การแจ้งเตือนแบบทอสต์ยืนยันว่าการรันเริ่มแล้ว และ Control Center เปิดรายละเอียดการรัน
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+เอนจินสร้างบันทึกการรัน ทำให้ทริกเกอร์เสร็จสิ้น จัดตารางขั้นตอน สั่งงานเอเจนต์ และทำให้การรันเสร็จสิ้นเมื่อสาขาขาเข้าของเทอร์มินัลเสร็จ
 
-## Step 6: Inspect the result
+## ขั้นตอนที่ 6: ตรวจดูผลลัพธ์
 
-Click the step in the run to open its detail panel:
+คลิกขั้นตอนในการรันเพื่อเปิดแผงรายละเอียดของมัน:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- การประทับเวลา **เริ่มแล้ว** และ **จบแล้ว** พร้อมทั้ง **ระยะเวลา**
+- **อินพุต**: สถานะที่ส่งเข้าขั้นตอน
+- **เอาต์พุต**: สิ่งที่มันผลิตออกมา — ในที่นี้คือคำตอบของเอเจนต์
+- **กิจกรรมของเอเจนต์** พร้อมลิงก์ต่อไปยังการสนทนาที่ขั้นตอนนี้ขับเคลื่อน
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**จุดตรวจสอบ.** ขั้นตอนแสดงว่าจบแล้ว และเอาต์พุตของมันมีการรีวิวของเอเจนต์
 
-## Adding more steps
+## การเพิ่มขั้นตอนเพิ่มเติม
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+เพิ่มโหนดได้โดยลากรายการจากคลังโหนดทางซ้ายลงบน
+แคนวาส หรือกด **เพิ่มขั้นตอน** (`+`) ถัดจากโหนดหนึ่ง ลากจาก
+พอร์ตเอาต์พุตของโหนดไปยังอีกโหนดเพื่อเชื่อมต่อทั้งสอง หรือเลือกโหนดใหม่
+แล้วติ๊กขั้นตอนต้นทางของมันใต้ **Triggers from**
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+โหนดเทอร์มินัลไม่ถูกวาดและเลือกไม่ได้ ตัวแก้ไขต่อสายมันใหม่
+ไปยังทุกปลายทางที่เข้าถึงได้ ดังนั้นโหนดที่คุณเพิ่มต่อจาก Step ที่ให้มาจึงยังรัน
 
-## Recap
+## สรุป
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+คุณสร้างเทมเพลต กำหนดค่าโหนดเอเจนต์พรอมต์ที่มันให้มา บันทึกมัน ทำให้มันรันด้วยตนเองได้ เริ่มการรันหนึ่งครั้ง และอ่านอินพุตและเอาต์พุตของขั้นตอน
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+ไปป์ไลน์ใหญ่กว่านี้ได้มาก — เราเตอร์แบบมีเงื่อนไข สาขาขนาน โหนด join การกระจายแบบ for-each เกตที่คนตัดสิน — แต่รูปร่างไม่เคยเปลี่ยน: ขั้นตอนต่าง ๆ ใน DAG ที่ส่งต่อสถานะ
 
-**Next:** [Bridge Slack to your workspace](/th-TH/คู่มือ/บทสอน/สะพานแชทแรก/), the last tutorial in this sequence.
+**ถัดไป:** [เชื่อม Slack เข้ากับเวิร์กสเปซ](/th-TH/คู่มือ/บทสอน/สะพานแชทแรก/) บทสอนสุดท้ายในลำดับนี้
 
-- [Set up pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/) to start pipelines from events or a schedule
-- [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) for the model underneath
-- [Pipeline step kinds](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/) for every step type
+- [ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/) เพื่อเริ่มไปป์ไลน์จากเหตุการณ์หรือกำหนดเวลา
+- [ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) สำหรับโมเดลที่อยู่เบื้องหลัง
+- [ชนิดขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/) สำหรับทุกชนิดของขั้นตอน

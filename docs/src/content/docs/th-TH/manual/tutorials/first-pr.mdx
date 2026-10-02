@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: รีวิว Pull request แรกของคุณ
+description: เปิด PR ในเวิร์กเบนช์ อ่าน diff แสดงความคิดเห็น อนุมัติ และรวม
 slug: th-TH/คู่มือ/บทสอน/pr-แรก
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะได้:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- เปิด pull request ในเวิร์กเบนช์ PR ของ Control Center
+- อ่าน diff ของมันและฝากความคิดเห็นแบบอินไลน์
+- ส่งคำตัดสินการรีวิว
+- รวม PR
 
-Prerequisites: [Dispatch your first agent](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+สิ่งที่ต้องเตรียม: ทำ[สั่งงานเอเจนต์ตัวแรก](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) ให้เสร็จ และมี pull request ที่เปิดอยู่หนึ่งใบในรีโปที่ลงทะเบียนไว้กับเวิร์กสเปซนี้ สำหรับขั้นตอนการรีวิว ให้เลือก PR ที่คุณไม่ได้เปิดเอง — ปุ่ม **รีวิว** จะถูกซ่อนไว้บน PR ของคุณเอง แต่การรวมยังใช้ได้กับ PR ที่คุณเป็นผู้เขียน
 
-## Step 1: Open the pull request
+## ขั้นตอนที่ 1: เปิด pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. คลิก **Pull request** ในแถบข้าง
+2. ค้นหา PR ของคุณแล้วคลิกที่มัน
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**จุดตรวจสอบ.** PR จะเปิดเป็นเวิร์กเบนช์แบบมีแท็บ — ภาพรวม, Diff, การควบคุมซอร์ส, แชท, การกระทำ — โดยโฟกัสที่ **ภาพรวม**: ชื่อเรื่องและการกระทำ คำอธิบายและไทม์ไลน์กิจกรรม และแถบด้านข้างที่มีสถานะ ผู้รีวิว ผู้รับมอบหมาย การตรวจ และไฟล์ที่เปลี่ยนแปลง การคลิกไฟล์ตรงนั้นจะพาไปยังไฟล์นั้นในแท็บ Diff แท็บ **รีวิว PR** จะยังไม่เปิดจนกว่าจะมีใครขอให้ AI รีวิว
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[คิวว่างพร้อมข้อความชวน “เชื่อมต่อ GitHub”]
+สถานะนั้นหมายความว่า_เซิร์ฟเวอร์_ไม่มีโทเค็น GitHub — ไคลเอนต์ของคุณไม่เคยมีเลย ตั้งค่าได้ที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด** แล้วรีเฟรชรายการ
 :::
 
-## Step 2: Read the diff
+## ขั้นตอนที่ 2: อ่าน diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+เปิดแท็บ **Diff** แผนผังไฟล์ที่ย่อและขยายได้อยู่ทางซ้าย ส่วนแถบเหนือ diff มีตัวเลือกช่วงคอมมิต — จำกัด diff ให้เหลือคอมมิตเดียวหรือหลายคอมมิตติดกัน — พร้อมจำนวนไฟล์และยอดเพิ่มลบสะสม
 
-The settings button in the diff toolbar controls how it renders:
+ปุ่มการตั้งค่าในแถบเครื่องมือของ diff ควบคุมวิธีแสดงผล:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- มุมมองแบบ **แยก** หรือ **รวม**
+- **ตัดบรรทัด** หรือเลื่อนบรรทัดยาว
+- **ลิเกเจอร์แบบอักษรโค้ด**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/).
+ทำเครื่องหมายว่าไฟล์ถูกดูแล้วเพื่อติดตามความคืบหน้าของคุณใน diff ขนาดใหญ่ การนำทางด้วยแป้นพิมพ์อยู่ใน[ทางลัดแป้นพิมพ์](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/)
 
-## Step 3: Leave an inline comment
+## ขั้นตอนที่ 3: ฝากความคิดเห็นแบบอินไลน์
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. ชี้เมาส์ไปที่บรรทัดหนึ่งใน diff — ป้าย `+` เล็ก ๆ จะปรากฏขึ้นที่รางด้านข้าง
+2. คลิกที่มันเพื่อแสดงความคิดเห็นบนบรรทัดนั้น หรือลากขึ้นลงก่อนเพื่อเลือกช่วงบรรทัด
+3. พิมพ์ความคิดเห็นของคุณ กล่องเขียนความคิดเห็นมีปุ่มส่งสองแบบ:
+   - **เริ่มรีวิว** (หรือ **เพิ่มในรีวิว** หากมีการรีวิวที่กำลังดำเนินอยู่แล้ว) จะเข้าคิวความคิดเห็นไว้ เธรดจะแสดง **รีวิวที่ค้าง** จนกว่าคุณจะส่งคำตัดสินในขั้นตอนที่ 4
+   - **เพิ่มความคิดเห็นเดี่ยว** จะโพสต์ไปยัง GitHub ทันที เธรดจะแสดง **กำลังโพสต์…** จากนั้น **ซิงค์แล้ว** และเสนอให้ลองใหม่หากการโพสต์ล้มเหลว
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+ในบทสอนนี้ ให้ใช้ **เริ่มรีวิว** เพื่อให้ความคิดเห็นออกไปพร้อมกับคำตัดสิน
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[ความคิดเห็นที่เข้าคิวแล้วยังไม่ได้อยู่บน GitHub]
+**เริ่มรีวิว** / **เพิ่มในรีวิว** จะเก็บความคิดเห็นไว้ในเครื่องจนกว่าคุณจะส่งคำตัดสิน มีเพียง **เพิ่มความคิดเห็นเดี่ยว** เท่านั้นที่โพสต์ทันที ส่วน_เนื้อหา_รีวิวที่คุณเขียนในขั้นตอนที่ 4 เป็นฉบับร่างแยกต่างหาก
 :::
 
-## Step 4: Submit a review
+## ขั้นตอนที่ 4: ส่งรีวิว
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. คลิก **รีวิว** ในแถวการกระทำของภาพรวม — ปุ่มเดียวกันนี้ก็อยู่ในแถบเครื่องมือของแท็บ Diff ด้วย มันถูกซ่อนบน PR ที่คุณเป็นผู้เขียน และบน PR ที่ปิดหรือรวมแล้ว
+2. เขียนบทสรุปในกล่องเขียนรีวิว มันบันทึกอัตโนมัติเป็นฉบับร่าง คุณจึงปิดโอเวอร์เลย์แล้วกลับมาใหม่ได้
+3. เลือกคำตัดสิน:
+   - **ขอให้แก้ไข**
+   - **ความคิดเห็น**
+   - **อนุมัติ**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+คำตัดสินคือปุ่มนั้นเอง หลังจาก **อนุมัติ** หรือ **ขอให้แก้ไข** ปุ่มจะเปลี่ยนป้ายของตัวเองเป็น **อนุมัติแล้ว** หรือ **ขอให้แก้ไขแล้ว** ส่วนคำตัดสิน **ความคิดเห็น** จะทำให้ปุ่มยังมีป้ายว่า **รีวิว**
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**จุดตรวจสอบ.** ปุ่มจะแสดงข้อความ “อนุมัติแล้ว” หรือ “ขอให้แก้ไขแล้ว” หากคุณเลือกหนึ่งในสองอย่างนั้น
 
-## Step 5: Merge
+## ขั้นตอนที่ 5: รวม
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+ปุ่ม **รวม** จะปรากฏทุกครั้งที่ GitHub รายงานว่า PR รวมได้ — มันไม่ได้ถูกกั้นด้วยการอนุมัติของคุณเอง สีของมันบอกความพร้อมมากกว่าสิทธิ์: เป็นแบบหลักเมื่อการอนุมัติที่จำเป็นและการตรวจผ่านครบ เป็นแบบรองขณะที่การตรวจยังรันอยู่ และเป็นแบบอันตรายเมื่อผู้รีวิวที่ถูกร้องขอไม่อนุมัติ หรือมีการตรวจที่ล้มเหลว
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. คลิก **รวม**
+2. เลือกวิธีการ: **สควอชแล้วรวม**, **สร้างคอมมิตการรวม** หรือ **รีเบสแล้วรวม**
+3. สำหรับสองวิธีแรก ให้แก้ชื่อคอมมิตและข้อความคอมมิตที่กรอกไว้ล่วงหน้า
+4. ยืนยัน
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+ปัญหาที่ค้างอยู่ทั้งหมด — “การตรวจล้มเหลว”, “มีรีวิวที่รออยู่” — จะแสดงในเมนูลอยก่อนที่คุณจะยืนยัน
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[การรวมย้อนกลับไม่ได้]
+การรวมจะพุชคอมมิตไปยัง GitHub มันไม่เคยเข้าสแตกเลิกทำของ Control Center และไม่สามารถเลิกทำจากที่นี่ได้
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน/) for what else listens.
+หลังการรวม เหตุการณ์โดเมน `PrMerged` จะถูกยิงขึ้นมา โดยการวิเคราะห์และการแจ้งเตือนเป็นผู้บริโภคมัน ดู[เหตุการณ์โดเมน](/th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน/) ว่ายังมีอะไรที่ฟังอยู่
 
-## Reviewing with AI
+## รีวิวด้วย AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center วางไปป์ไลน์รีวิวเวอร์บน PR ที่เปิดอยู่ได้ แต่เฉพาะเมื่อคุณสั่งเท่านั้น: เทมเพลต `pr_review` มีทริกเกอร์แบบสั่งด้วยตนเองและไม่มีอย่างอื่น
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. เปิดเมนู ⋯ ในแถวการกระทำของภาพรวม แล้วเลือก **ถาม AI** Control Center จะเริ่มการรันและเปิดแท็บ **รีวิว PR** เพื่อให้คุณดูผู้เชี่ยวชาญทำงานได้
+2. เอเจนต์รีวิวเวอร์บันทึกข้อค้นพบของพวกมันเป็นโหนดรีวิวในสเปซของ PR จากนั้นขั้นตอนสุดท้ายจะรวบรวมมันเป็นรายงานเดียว
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/).
+ไปป์ไลน์นี้จงใจไม่โพสต์ไปยัง GitHub — มันจบลงหลังการรวบรวม การเผยแพร่เป็นขั้นตอนแยกต่างหากที่คุณทำเอง ด้วยปุ่ม **เผยแพร่ไปยัง GitHub** บนแท็บ **รีวิว PR** ดู[ใช้รีวิวด้วย AI](/th-TH/คู่มือ/วิธีทำ/รีวิวด้วย-ai/)
 
-## Recap
+## สรุป
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+คุณเปิด PR ในเวิร์กเบนช์ อ่าน diff พร้อมการไฮไลต์ไวยากรณ์ ฝากความคิดเห็นแบบอินไลน์ ส่งคำตัดสิน และรวม — โดยไม่ต้องออกจากแอปเลย
 
-**Next:** [Build your first pipeline](/th-TH/คู่มือ/บทสอน/ไปป์ไลน์แรก/) to automate multi-step workflows.
+**ถัดไป:** [สร้างไปป์ไลน์แรกของคุณ](/th-TH/คู่มือ/บทสอน/ไปป์ไลน์แรก/) เพื่อทำให้เวิร์กโฟลว์หลายขั้นตอนเป็นอัตโนมัติ

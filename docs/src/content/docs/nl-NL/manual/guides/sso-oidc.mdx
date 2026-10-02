@@ -1,95 +1,102 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Een OpenID Connect-provider verbinden
+description: Koppel elke OIDC-issuer — Pocket ID, Keycloak, Auth0, Zitadel — aan het aanmelden bij Control Center.
 slug: nl-NL/handleiding/gidsen/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Gebruik deze gids wanneer je identiteitsprovider **OpenID Connect** spreekt in
+plaats van SAML. Elke OIDC-gecertificeerde issuer werkt — Pocket ID, Keycloak,
+Auth0, Zitadel, Google Workspace en soortgelijken volgen allemaal dezelfde
+stappen; alleen de plek waar je provider de waarden toont verschilt.
 
-## Prerequisites
+## Vereisten
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- een OIDC-provider waar je een client kunt aanmaken — noteer het
+  **client-id** en de **issuer-URL** (de basis waaronder het document
+  `.well-known/openid-configuration` staat), plus het **clientsecret**
+  wanneer de client van het vertrouwelijke soort is (openbare PKCE-clients
+  hebben er geen),
+- een Control Center-server die je beheert (de **servereigenaar**).
 
-## Steps
+## Stappen
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Open **Instellingen → Server → Single sign-on** en schakel over naar
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Vul de **Issuer-URL** en het **Client-ID** in, en het **Clientsecret
+   (optioneel)** wanneer de provider er een heeft uitgegeven. Control
+   Center ontdekt de endpoints uit het standaard discovery-document van de
+   issuer — geen configuratie per provider.
+3. Registreer bij de provider de redirect
+   `https://<your-server>/oidc/callback` op die client.
+4. Als je groepen onder een andere claim dan `groups` vallen, stel je de
+   naam van de **Groepen-claim** in; koppel groepen aan rollen als je wilt
+   (SSO kan nooit de rol eigenaar verlenen).
+5. Kies het lidmaatschapsbeleid (automatisch toevoegen aan elke werkruimte,
+   of een uitnodiging per werkruimte vereisen), zet **OpenID Connect
+   gebruiken om aan te melden** aan en druk op **Verbinding opslaan**.
+6. Druk op **Verbinding testen** — de server haalt het discovery-document
+   van de issuer op en bevestigt de endpoints, dus een groene melding
+   betekent dat alles behalve de browser-roundtrip werkt. Gebruik de
+   [controle hieronder](#controleer-je-configuratie-vanaf-deze-pagina) om ook de
+   clientregistratie te controleren.
+7. Meld je aan: het verbindingsscherm van de webclient toont **Inloggen met
+   OpenID Connect**, of open `https://<your-server>/oidc/login` direct.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claims (e-mail, naam, groepen) worden door je server via TLS gelezen van het
+token-endpoint van de issuer — de browser levert ze nooit aan, dus er komt
+geen lokale verificatie van de JWT-handtekening aan te pas. De client moet de
+scope `openid profile email` mogen aanvragen, precies wat Control Center
+vraagt.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Omdat dat TLS-kanaal het enige is dat de claims authenticeert, moet de
+issuer-URL **https** zijn — een issuer in platte tekst zou elke aanvaller op
+het pad in staat stellen om identiteiten massaal te vervalsen. `http` wordt
+alleen geaccepteerd voor loopback-issuers (`localhost`, `127.0.0.1`, `::1`),
+voor lokale ontwikkeling.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Openbare client of vertrouwelijke client?]
+De standaardvorm — en de aanbevolen vorm — is een **openbare client** met de
+autorisatiecodestroom en **PKCE** (RFC 7636): de eenmalige codeverifier die
+de server vasthoudt vervangt het secret, en de tokenuitwisseling is gebonden
+aan het autorisatieverzoek dat ermee begon. Er is geen secret dat kan lekken,
+en een gestolen autorisatiecode is waardeloos zonder de verifier. Sommige
+providers noemen dit clienttype "SPA" of "native" wanneer je het aanmaakt.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Als je provider in plaats daarvan een **vertrouwelijke** client heeft
+uitgegeven, markeer de client dan als openbaar bij de provider (PKCE blijft
+in beide gevallen aan), of plak het clientsecret in het veld **Clientsecret
+(optioneel)** van de verbinding. Het secret wordt opgeslagen in het
+secrets-bestand met modus 0600 van de server (nooit in de database), naar het
+token-endpoint gestuurd als `client_secret_post` en nooit via RPC
+teruggegeven; laat je het veld leeg bij het opslaan, dan blijft het opgeslagen
+secret behouden. Wanneer een aanmelding mislukt bij de tokenuitwisseling,
+noemt het serverlogboek de eigen fout van de provider (`invalid_client`
+betekent bijna altijd dat het secret ontbreekt of onjuist is).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/nl-NL/handleiding/gidsen/sso-scim).
+:::note[Bereikbaarheid]
+De aanmelding zelf verloopt via de browser: de issuer verwijst de browser van
+de gebruiker alleen terug naar `/oidc/callback`, en je server doet een
+uitgaande HTTPS-aanroep naar het token-endpoint — er is geen inkomende
+verbinding van de issuer nodig, dus een server achter NAT werkt zolang de
+browsers van gebruikers hem kunnen bereiken (LAN, VPN, Tailscale of een
+tunnel). **SCIM-provisionering is de uitzondering**: de IdP roept je server
+rechtstreeks aan, wat een tunnel of een openbare URL vereist — zie
+[gebruikers provisioneren met SCIM](/nl-NL/handleiding/gidsen/sso-scim).
 :::
 
-## Check your configuration from this page
+## Controleer je configuratie vanaf deze pagina
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+De controle hieronder draait in je browser. Hij haalt het discovery-document
+van je issuer rechtstreeks op, dus deze site ziet het nooit, en past de regels
+van de server toe: een https-issuer die overeenkomt met het document,
+endpoints op de eigen origin van de issuer, PKCE S256 en de
+tokenauthenticatiemethode die je clienttype nodig heeft. Met een client-id en
+serveradres kan hij een testaanmelding openen die laat zien of de client en
+zijn redirect-URI geregistreerd zijn. Er wordt nooit om het clientsecret
+gevraagd.
 
 <SsoCheck kind="oidc" />

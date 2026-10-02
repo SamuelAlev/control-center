@@ -1,180 +1,195 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Работать в Plan Studio
+description: Просматривайте, редактируйте, оценивайте, сравнивайте и утверждайте план в редакторе Plan Studio и запускайте параметризованные плейбуки.
 slug: ru-RU/руководство/практические-руководства/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/ru-RU/руководство/понятия/оркестрация/) and
-[Use plan mode](/ru-RU/руководство/практические-руководства/режим-плана/).
+Это руководство показывает, как работать с планами в Plan Studio. О том, что
+такое оркестрации и документы планов, см.
+[Оркестрация](/ru-RU/руководство/понятия/оркестрация/) и
+[Использовать режим плана](/ru-RU/руководство/практические-руководства/режим-плана/).
 
-## Open a plan
+## Открыть план
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+План принадлежит разговору, в котором он возник, поэтому обычно вы попадаете к
+нему именно оттуда: у строки плана в разговоре есть действие **Открыть**, и Plan
+Studio открывается как вкладка редактора рядом с разговором.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[В боковой панели нет пункта «Планы»]
+Это сделано намеренно, а не по недосмотру. Хаб по адресу
+`/workspaces/<workspace-id>/plans` — это только маршрутизируемая глубокая
+ссылка, поэтому добавьте его в закладки, если хотите иметь постоянный список.
 :::
 
-The hub lists three sections:
+Хаб содержит три раздела:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/ru-RU/руководство/практические-руководства/режим-плана/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Активные планы** — оркестрации, сначала предложенные, с их статусом, числом
+  шагов и номером ревизии.
+- **Документы планов** — планы, которые один агент отправил с помощью
+  `submit_plan` в [режиме плана](/ru-RU/руководство/практические-руководства/режим-плана/), пока они предложены или утверждены.
+- **Плейбуки** — сохранённые параметризованные шаблоны планов.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Нажмите на карточку, чтобы открыть её в Plan Studio. Маршрут —
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, где `kind` — это
+`orchestration` или `document`, так что на отдельный план тоже можно дать
+глубокую ссылку.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Если вы открыли **оркестрацию**, вы получаете редактируемый холст, временную
+шкалу версий и панель утверждения. Если вы открыли **документ плана**, тот же
+граф отображается только для чтения — документы планов пишут агенты; вы
+просматриваете их, оцениваете и утверждаете или отклоняете, а утверждённый
+документ показывает живое состояние выполнения по каждому узлу из оркестрации,
+в которую он скомпилировался.
 
-## Edit the DAG
+## Редактировать DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Редактирование возможно для **оркестрации**, пока она находится в состоянии
+`proposed`. Все правки на холсте выполняются с клавиатуры:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Нажмите на холст, затем перемещайте выделение **клавишами со стрелками**.
+2. Нажмите **n**, чтобы добавить шаг. Он появится выделенным как «Новый шаг»;
+   переименуйте его в инспекторе справа.
+3. Нажмите **e** на шаге, который должен выполниться первым, затем нажмите
+   зависимый шаг (или выделите его и нажмите **Enter**), чтобы соединить
+   зависимость. Нажмите **Esc**, чтобы отменить незавершённое соединение.
+4. Нажмите **x**, чтобы отсечь самую новую зависимость выделенного шага, или
+   переключайте точные зависимости в редакторе зависимостей инспектора.
+5. Нажмите **Delete**, чтобы удалить выделенный шаг; ссылки на него удаляются
+   из зависимостей остальных шагов.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+В инспекторе вы также можете редактировать описание шага, роль и схему вывода.
+Правки автоматически сохраняются как новая ревизия после короткой паузы; ошибка
+валидации (показанная на панели утверждения) блокирует сохранение, пока вы её
+не исправите.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Редактировать можно только рабочие шаги. Структурные узлы — исследование,
+обсуждение и синтез — доступны только для чтения, как и любой шаг, работа
+которого уже выполнена (он помечен «уже выполнено», потому что правка ответвила
+бы план).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Сохранение использует оптимистичный параллелизм относительно ревизии, с которой
+вы начали. Если оркестратор перепланирует у вас под руками, ваше сохранение
+отклоняется с сообщением «план ушёл вперёд», а не сливается и не перезаписывается
+молча; перечитайте текущую ревизию и повторите правку. Перепланирования,
+инициированные агентом, сами ограничены частотой — одно раз в две минуты, —
+поэтому это остаётся редким.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+На холсте нет перетаскивания для смены положения: раскладка вычисляется из
+структуры зависимостей, поэтому «переместить» шаг означает перестроить его
+зависимости.
 :::
 
-## Read cost, time and risk estimates
+## Читать оценки стоимости, времени и риска
 
-Press **Estimate** in the approval bar.
+Нажмите **Оценить** на панели утверждения.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Каждый шаг на холсте получает значок с диапазоном стоимости и размером
+  выборки, на которой он основан, либо «Истории пока нет», если роль шага ещё ни
+  разу не запускалась. Выберите шаг, чтобы увидеть подробности в инспекторе:
+  диапазон стоимости с размером выборки, диапазон длительности и радиус
+  воздействия (файлы и символы), выведенный из происхождения шага, — или
+  «неизвестно», если у шага нет происхождения.
+- Панель утверждения показывает итог по плану: общий диапазон стоимости,
+  диапазон длительности для критического пути (параллельные ветви перекрываются,
+  поэтому это не сумма) и потолок бюджета, если план его задаёт.
+- Если история есть только у части шагов, итог помечается как **частично** и
+  охватывает только оцениваемые шаги. Если верхняя граница оценки превышает
+  потолок бюджета, итог становится красным с предупреждением о превышении
+  бюджета.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Оценки либо честные, либо их нет: шаг, для роли которого нет истории
+завершённых запусков, сообщает размер выборки, равный нулю, вообще без
+диапазонов и показывается как неизвестный, а не выдуманный. Воспринимайте
+«Истории пока нет» как «никто не знает», а не как «дёшево».
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/ru-RU/руководство/практические-руководства/управлять-затратами/) for controls that actually stop
-spending.
+Потолок бюджета — это отображение сравнения с этой оценкой. После запуска плана
+его ничто не обеспечивает — о средствах контроля, которые действительно
+останавливают расходы, см.
+[Управлять затратами](/ru-RU/руководство/практические-руководства/управлять-затратами/).
 
-## Diff a revision against an earlier proposal
+## Сравнить ревизию с более ранним предложением
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Каждая правка и каждое перепланирование оркестратора добавляются в шкалу
+ревизий, доступную только на добавление, которая показана на панели **Версии**
+слева от плана оркестрации.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Нажмите на ревизию, чтобы сравнить её с текущим предложением. Без выделения
+   панель сравнивает предыдущую ревизию с текущей.
+2. Читайте diff в нижней половине панели: шаги, добавленные, удалённые или
+   изменённые между двумя ревизиями.
+3. Если план всё ещё `proposed`, нажмите значок перемотки на ревизии, чтобы
+   вернуться к ней. Перемотка сохраняет то предложение как **новую** ревизию —
+   ничего не теряется.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` и редактор оба отказывают в изменениях, как только план
+перестаёт быть `proposed`, поэтому выполняющийся запуск не подхватывает
+перепланирование посреди выполнения.
 
-## Approve, reject, or widen a plan
+## Утвердить, отклонить или расширить план
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+В приложении предложенный план — это одно решение, принимаемое целиком:
+**Утвердить план** или **Отклонить** на панели утверждения. **Утвердить план**
+всегда утверждает каждый шаг — сначала выбрать подмножество нельзя. Утверждение
+блокируется, пока в предложении есть ошибки валидации, которые показываются
+рядом с кнопками.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Утверждать может только оператор. Для этого нет инструмента MCP, поэтому агент
+может предложить и доработать план, но никогда не может его утвердить.
 
-Once an orchestration is executing, the bar changes:
+Как только оркестрация выполняется, панель меняется:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Если шаг остановился, чтобы задать вопрос посреди запуска, выберите его и
+  нажмите **Продолжить узел**, чтобы возобновить его.
+- Нажмите **Утвердить выбранные**, чтобы расширить _частичное_ утверждение на
+  выбранный шаг плюс всё, от чего он транзитивно зависит (шаг никогда не может
+  быть утверждён без своих зависимостей). Этот элемент управления есть на
+  панели выполнения для каждой оркестрации; он ничего не делает, если план был
+  утверждён целиком.
+- Нажмите **Отменить запуск**, чтобы остановить всю оркестрацию.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Шаги вне частично утверждённого набора отображаются как отложенные и не
+выполняются, пока вы не расширите набор.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Частичные утверждения не могут возникать в приложении]
+Частичное утверждение существует только тогда, когда что-то вызвало
+`orchestration.approve` по RPC с явным списком `approved_node_keys`.
+**Утвердить план** в приложении всегда утверждает каждый шаг. Документы планов в
+любом случае утверждаются целиком, поэтому у выполняющегося документа доступно
+только **Отменить запуск**.
 :::
 
-## Run a playbook with parameters
+## Запустить плейбук с параметрами
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/ru-RU/руководство/практические-руководства/создать-конвейер/) instead.
+Плейбук — это сохранённый шаблон плана с типизированными подстановками
+`{{param}}` в цели, заголовках шагов, описаниях и промптах. Подстановка
+буквальная — языка выражений нет; если вам нужна логика, используйте вместо
+этого [конвейер](/ru-RU/руководство/практические-руководства/создать-конвейер/).
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. В разделе **Плейбуки** хаба нажмите **Запустить** у плейбука (или откройте
+   палитру по ⌘K и выберите плейбук там).
+2. Заполните параметры. Параметры-перечисления отображаются как раскрывающиеся
+   списки; параметры репозитория и агента принимают ссылку на репозиторий или
+   агента; необязательные параметры используют значение по умолчанию.
+3. Выберите **Якорный тикет**, относительно которого предлагается план, затем
+   подтвердите.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Запуск плейбука только **предлагает** план — инстанцированная оркестрация
+открывается в Plan Studio в состоянии `proposed`, и ничего не выполняется, пока
+вы не утвердите её там. Чтобы удалить плейбук, нажмите значок корзины на его
+карточке.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/ru-RU/руководство/справка/инструменты-mcp/).
+Агенты создают и запускают плейбуки с помощью инструментов MCP `create_playbook`
+и `run_playbook`; см. [Инструменты MCP](/ru-RU/руководство/справка/инструменты-mcp/).
 
-## Related guides
+## Связанные руководства
 
-- [Use plan mode](/ru-RU/руководство/практические-руководства/режим-плана/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/ru-RU/руководство/практические-руководства/создать-конвейер/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/): the engine view of an approved plan
+- [Использовать режим плана](/ru-RU/руководство/практические-руководства/режим-плана/): как агент создаёт документ плана с помощью `submit_plan`
+- [Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/): жизненный цикл «утвердить один раз» со стороны разговора
+- [Создать шаблон конвейера](/ru-RU/руководство/практические-руководства/создать-конвейер/): когда нужна логика, которую плейбук выразить не может
+- [Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/): представление движка для утверждённого плана
 
-## Related concepts
+## Связанные понятия
 
-- [Orchestration](/ru-RU/руководство/понятия/оркестрация/)
+- [Оркестрация](/ru-RU/руководство/понятия/оркестрация/)

@@ -1,39 +1,42 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Cipta dan urus tiket
+description: Cipta tiket, gerakkannya melalui kitaran hayatnya, beri label dan pautkannya, serta rekod siapa yang memiliki apa.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-tiket
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Panduan ini menunjukkan cara mencipta dan mengurus tiket.
 
-## Create a ticket
+## Cipta tiket
 
-### From the UI
+### Dari UI
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Klik **Tiket** pada bar sisi ruang kerja.
+2. Tekan **Tiket baharu**.
+3. Isikan:
+   - **Tajuk** — ringkasan pendek. Ini satu-satunya medan yang wajib.
+   - **Perihalan** — markdown, dengan bar alat pemformatan.
+   - **Status** — **Untuk dilakukan** (lalai) atau **Backlog**. Keadaan bermula
+     dan keadaan terminal dicapai melalui kitaran hayat, bukan semasa
+     penciptaan.
+   - **Keutamaan** — tiada, mendesak, tinggi, sederhana atau rendah.
+   - **Penerima tugasan** — diri anda sendiri atau mana-mana ejen dalam ruang
+     kerja.
+   - **Projek** — pengelompokan pilihan.
+4. Tekan **Cipta**, atau hidupkan **Cipta lagi** dahulu untuk membiarkan dialog
+   terbuka bagi kemasukan pantas.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Tiada pemilih penyedia dalam dialog ini. Tiket dicipta terhadap penyedia tiket
+aktif ruang kerja.
 
-### From an agent
+### Daripada ejen
 
-Ask an agent in a space:
+Minta ejen dalam sesuatu ruang:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Cipta tiket untuk membaiki isu tamat masa log masuk pada sambungan perlahan.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Ia memanggil alat MCP `create_ticket`. Keutamaan pada alat itu ialah **integer**,
+bukan nama:
 
 ```
 create_ticket(
@@ -44,21 +47,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Nilai | Keutamaan |
+| ----- | --------- |
+| `0`   | Tiada     |
+| `1`   | Mendesak  |
+| `2`   | Tinggi    |
+| `3`   | Sederhana |
+| `4`   | Rendah    |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Hanya `workspace_id` dan `title` yang wajib; `description`, `priority`,
+`assignee` (id ejen) dan `team_id` bersifat pilihan. Alat ini dikelaskan sebagai
+penulisan segerak vendor dan meminta persetujuan anda sebelum ia dijalankan.
 
-## Update ticket status
+## Kemas kini status tiket
 
-Tickets follow this lifecycle:
+Tiket mengikut kitaran hayat ini:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +71,131 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` dan `cancelled` bersifat terminal. `cancelled` boleh dicapai
+daripada mana-mana status bukan terminal. `done` dan `failed` boleh dicapai
+daripada `inProgress` atau `inReview`; `open` juga boleh bergerak terus ke
+`blocked`. Pemilih status UI menyenaraikan setiap status kecuali `failed` — ejen
+menandakannya dengan `fail_ticket`.
 
-To change it, use any of:
+Untuk menukarnya, gunakan mana-mana yang berikut:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- baris **Status** dalam bar sifat tiket,
+- submenu **Status** pada menu klik kanan tiket dalam senarai,
+- cip **Status** pada bar terapung selepas memilih berbilang tiket.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Graf kitaran hayat mengikat ejen, bukan anda]
+Setiap perubahan status yang dibuat dari UI dipaksa masuk, melangkau graf itu
+sepenuhnya — anda boleh memindahkan tiket ke mana-mana status yang
+disenaraikan oleh pemilih, termasuk membuka semula tiket yang `done`, `failed`
+atau `cancelled`. Pemilih tidak menawarkan `failed` sebagai sasaran. Rajah di
+atas mengawal ejen dan automasi: peralihan tidak sah yang dicuba oleh alat MCP
+atau penyelaras akan dilog dan diabaikan, bukan digunakan.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/).
+Perubahan status memancarkan acara domain (`TicketStatusChanged`,
+`TicketCompleted` dan lain-lain) yang boleh mencetuskan pipeline. Lihat
+[Sediakan pencetus pipeline](/ms-MY/manual-pengguna/panduan-cara/pencetus-pipeline/).
 
-## Assign a ticket
+## Tugaskan tiket
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Buka tiket.
+2. Dalam bar sifat, tetapkan **Penerima tugasan** — diri anda sendiri, ahli
+   ruang kerja lain, atau ejen.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)).
+:::caution[Menugaskan tidak memulakan apa-apa kerja]
+Penugasan merekodkan pemilikan dan tidak melakukan apa-apa lagi. Ia tidak
+mencipta ruang, tidak mengubah status dan tidak menghantar ejen —
+`TicketAssigned` ialah isyarat audit tulen tanpa penghantar di belakangnya.
+Untuk membuat ejen bekerja, hantar mesej kepadanya dalam sesuatu ruang (lihat
+[Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Satu pengecualian: `TicketAssigned` ialah jenis acara yang boleh anda
+sambungkan pencetus pipeline, jadi templat anda sendiri boleh bertindak balas
+terhadap penugasan.
 :::
 
-## Add labels
+## Tambah label
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Label digunakan secara pukal daripada senarai tiket, bukan daripada tiket
+tunggal — bar sifat tiada kawalan label.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Tudingkan kursor pada satu baris dalam senarai tiket dan tandakan kotak
+   semaknya. Tandakan sebanyak yang anda perlukan; bar terapung muncul sebaik
+   sahaja ada yang dipilih.
+2. Dalam bar itu, buka cip **Label**.
+3. Pilih satu label. Ia ditambah pada setiap tiket terpilih yang belum
+   memilikinya; label sedia ada tidak pernah dipadamkan. **Kosongkan label**
+   membuang kesemuanya. Pemilih menyenaraikan label yang sudah ada pada tiket
+   dalam ruang kerja. Ejen boleh menambah nama baharu melalui `update_ticket`
+   atau `tickets.patch`.
 
-## Link tickets
+## Pautkan tiket
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Hubungan berada pada kad **Hubungan** tiket dalam bar sifat, atau di sebalik
+**Kaitkan dengan** dalam menu klik kanan senarai.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Buka tiket dan cari kad **Hubungan**.
+2. Tekan kawalan tambahnya dan pilih hubungan:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Hubungan              | Maksud                                    |
+| --------------------- | ----------------------------------------- |
+| **Sub-isu bagi…**     | Induk tiket ini ialah tiket yang satu lagi |
+| **Induk bagi…**       | Tiket yang satu lagi ialah anak tiket ini |
+| **Disekat oleh…**     | Tiket ini disekat oleh tiket yang satu lagi |
+| **Menyekat…**         | Tiket ini menyekat tiket yang satu lagi   |
+| **Berkaitan dengan…** | Simetri, tiada arah yang tersirat         |
+| **Pendua bagi…**      | Tiket ini menduakan tiket yang satu lagi  |
 
-3. Pick the target ticket.
+3. Pilih tiket sasaran.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Diduakan oleh** muncul dalam kad tetapi bukan dalam pemilih — ia ialah
+songsangan **Pendua bagi** dan ditetapkan daripada tiket yang satu lagi. Setiap
+hubungan yang disenaraikan boleh diklik untuk membuka tiket yang dipautkan dan
+boleh dibuang apabila kursor ditundingkan ke atasnya.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Hubungan induk dan sub-isu disimpan pada tiket itu sendiri dan bukan sebagai
+baris pautan, jadi memadam induk melata kepada anak-anaknya (lihat di bawah),
+manakala pautan menyekat dan berkaitan tidak.
 
-## Add collaborators
+## Tambah rakan kolaborasi
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Rakan kolaborasi ialah senarai nama pada tiket — siapa yang terlibat, dalam
+kapasiti apa.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Buka tiket.
+2. Tekan kawalan tambah orang pada kad **Tambah rakan kolaborasi**.
+3. Pilih ejen.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Tiga peranan itu ialah **assignee**, **collaborator** (lalai) dan **reviewer**.
+Pemilih UI hanya menyenaraikan ejen ruang kerja dan sentiasa menulis peranan
+lalai; manusia boleh muncul sebagai baris tetapi tidak ditawarkan dalam menu
+itu. Alat MCP `add_ticket_collaborator` menerima `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/ms-MY/manual-pengguna/panduan-cara/ruang/).
+Menambah rakan kolaborasi menulis satu baris dan tidak menerbitkan acara domain;
+ia tidak memberikan akses ruang. Untuk memasukkan ejen ke dalam perbualan,
+tambahkannya sebagai peserta dari pengepala ruang — lihat
+[Ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/).
 
-## Delete a ticket
+## Padamkan tiket
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Gunakan **Padam tiket** di bahagian bawah bar sifat, menu klik kanan, atau
+tindakan padam pada bar terapung selepas memilih berbilang tiket.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Pemadaman adalah tempatan sahaja]
+Tiket yang datang daripada penjejak luar tidak dipadamkan di sana — tiada
+penyedia yang menyokongnya — jadi ia boleh muncul semula pada penyegerakan
+seterusnya. Pemadaman juga melata: rakan kolaborasi tiket dan mana-mana tiket
+anak ikut bersama.
 :::
 
-## Related guides
+## Panduan berkaitan
 
-- [Delegate work to agents](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
-- [Organize work with projects](/ms-MY/manual-pengguna/panduan-cara/projek/)
-- [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
-- [Ticket lifecycle reference](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/)
+- [Wakilkan kerja kepada ejen](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
+- [Susun kerja dengan projek](/ms-MY/manual-pengguna/panduan-cara/projek/)
+- [Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
+- [Rujukan kitaran hayat tiket](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Tickets](/ms-MY/manual-pengguna/konsep/tiket/)
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/)
+- [Tiket](/ms-MY/manual-pengguna/konsep/tiket/)
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/)

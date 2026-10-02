@@ -1,129 +1,123 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: ติดตั้งและจัดการสกิล
+description: เพิ่มรีโพสิทอรี GitHub เป็นแหล่งสกิล เรียกดูแค็ตตาล็อกของมัน และติดตั้ง อัปเดต หรือถอนการติดตั้งสกิลผ่านด่านการสแกนแอนติไวรัส
 slug: th-TH/คู่มือ/วิธีทำ/จัดการสกิล
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+คู่มือนี้แสดงวิธีเติมสกิลจาก GitHub ให้เวิร์กสเปซ: เพิ่มรีโพสิทอรีเป็นแหล่ง
+ติดตั้งสกิลที่คุณต้องการจากมัน และทำให้มันเป็นปัจจุบันอยู่เสมอ
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/); this page stays
-on the doing.
+สิ่งสำคัญที่ควรรู้ก่อนเริ่ม: **รีโพสิทอรีต้นทางไม่น่าเชื่อถือ** ชื่อ คำอธิบาย
+และจำนวนดาวของมันเขียนขึ้นโดยเจ้าของของมัน สัญญาณความปลอดภัยเดียวที่ Control
+Center เชื่อถือได้คือคำตัดสินจากการสแกนแอนติไวรัส ซึ่งการติดตั้งทุกครั้งต้องผ่าน
+ก่อนที่สิ่งใดจะไปถึงดิสก์หรือพรอมต์ของเอเจนต์ หากต้องการเหตุผล อ่าน
+[ส่วนว่าด้วยสกิลของโมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/) หน้านี้มุ่งอยู่
+ที่การลงมือทำ
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+สกิลอยู่ที่ **การตั้งค่า → เวิร์กสเปซ → สกิล**
+(`/workspaces/<id>/settings/workspace/skills`) สกิลมีขอบเขตอยู่ที่เวิร์กสเปซ:
+สกิลที่คุณติดตั้งที่นี่เป็นของเวิร์กสเปซนี้เท่านั้น หน้านี้มีสองแท็บ:
+**ติดตั้งแล้ว** (สกิลในเครื่อง รวมถึงตัวแก้ไข **สกิลใหม่**) และ **แหล่ง**
+(แค็ตตาล็อก GitHub) การเขียนทั้งสองแบบผ่านด่านสแกนเดียวกัน
 
-## Add a skill repository
+## เพิ่มรีโพสิทอรีสกิล
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → สกิล** แล้วสลับไปที่แท็บ **แหล่ง**
+2. กด **เพิ่มรีโพสิทอรี**
+3. วาง URL ของรีโพสิทอรี GitHub เช่น `https://github.com/anthropics/skills`
+   แล้วยืนยัน
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+เซิร์ฟเวอร์ตรวจว่ารีโพสิทอรีมีอยู่จริงและมองเห็นได้ด้วยข้อมูลรับรองของมัน
+จากนั้นเพิ่มมันลงในแถบด้านซ้าย ไม่มีที่เก็บที่คัดสรรอยู่ตรงกลาง: รีโพสิทอรี GitHub
+ใดก็ได้ ซึ่งหมายความว่าชื่อเสียงเป็นสิ่งที่คุณต้องตัดสินเอง — จำนวนดาวเป็นหลักฐาน
+ไม่ใช่สิ่งรับประกัน
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+สกิลของรีโพสิทอรีคือไดเรกทอรีที่มี `SKILL.md` (ลึกได้ถึงสามระดับ บวกกับเลย์เอาต์
+Claude plugin-marketplace `plugins/<plugin>/skills/<skill>` โดยข้ามทรีของ
+dependency และ vendor) หากภายหลังตารางการ์ดบอกว่ารีโพสิทอรีไม่มีสกิล
+นั่นคือความหมายของมัน: ไม่มีไดเรกทอรีใดในนั้นตรงกับธรรมเนียมของสกิล
 
-## Inspect a skill before installing
+## ตรวจดูสกิลก่อนติดตั้ง
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+เลือกรีโพสิทอรีในแถบด้านซ้าย สกิลของมันจะปรากฏเป็นตารางการ์ดทางขวา
+พร้อมช่องตัวกรองด้านบนที่จำกัดแค็ตตาล็อกตามชื่อ คำอธิบาย หรือ slug คลิกการ์ด
+เพื่อเปิดมุมมองรายละเอียด ซึ่งแสดงสามอย่าง:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README** ที่เรนเดอร์เป็น markdown — `README.md` ของไดเรกทอรีสกิล หรือ
+  เนื้อหา `SKILL.md` เมื่อไม่มี README
+- **ตัวอย่างการสแกน** — คำตัดสิน (`pass`, `warn` หรือ `quarantine`)
+  ความสามารถที่เนื้อหาของสกิลประกาศไว้ (รันเชลล์ เขียนไฟล์ เข้าถึงเครือข่าย…)
+  และข้อค้นพบทุกข้อที่ตัวสแกนบันทึกไว้
+- **จำนวนไฟล์** — การติดตั้งจะเขียนไดเรกทอรีทั้งหมดของสกิล ไม่ใช่แค่
+  `SKILL.md` ของมัน
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+ตัวอย่างนี้สแกนไบต์ชุดเดียวกับที่การติดตั้งจะเขียน ดังนั้นคำตัดสินที่คุณเห็นคือ
+คำตัดสินที่การติดตั้งจะได้รับ ไม่มีสิ่งใดถูกตัดสินใหม่ลับหลังคุณ
 
-## Install a skill
+## ติดตั้งสกิล
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. เปิดมุมมองรายละเอียดของสกิล
+2. อ่านคำตัดสินการสแกน สำหรับคำตัดสิน `warn` หรือ `pass` ให้กด **ติดตั้ง**
+3. สำหรับคำตัดสิน `quarantine` ปุ่มติดตั้งจะยังใช้ไม่ได้จนกว่าคุณจะติ๊ก
+   **เข้าใจความเสี่ยง — ติดตั้งต่อไป** การข้ามนี้ถูกบันทึกไว้ ไม่ใช่สันนิษฐาน
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+การติดตั้งจะเขียนไดเรกทอรีของสกิลลงในเวิร์กสเปซ บันทึกหมุดใน
+`skills-lock.json` (รีโพสิทอรีต้นทาง พาธ คอมมิตที่มันมาจาก และแฮชเนื้อหา)
+และสกิลจะพร้อมใช้กับเอเจนต์ในเวิร์กสเปซ การ์ดที่ทำเครื่องหมาย **ชื่อนี้ถูกใช้แล้ว**
+หมายความว่าสกิลอื่นเป็นเจ้าของชื่อนั้นในเครื่องอยู่แล้ว — ถอนการติดตั้งตัวนั้นก่อน
 
-## Update skills over time
+## อัปเดตสกิลเมื่อเวลาผ่านไป
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+การ์ดของสกิลที่ติดตั้งแล้วมีป้าย: **ติดตั้งแล้ว** หรือ **มีอัปเดต**
+เมื่อรีโพสิทอรีเดินหน้าไปไกลกว่าคอมมิตที่คุณปักหมุดไว้ เปิดมุมมองรายละเอียด
+แล้วกด **อัปเดต** เพื่อดึงใหม่ที่คอมมิตใหม่ การอัปเดตผ่านด่านสแกนเดียวกับการติดตั้ง
+— สกิลที่เวอร์ชันใหม่ถูกกักกันจะถูกปฏิเสธ และเวอร์ชันที่คุณมีอยู่จะคงเดิม
+แฮชของเวอร์ชันเก่าถูกเก็บไว้เป็นข้อมูลอ้างอิงสำหรับย้อนกลับในไฟล์ล็อก
 
-## Uninstall a skill, remove a repository
+## ถอนการติดตั้งสกิล ลบรีโพสิทอรีออก
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**ถอนการติดตั้ง** (บนมุมมองรายละเอียดของสกิลที่ติดตั้งแล้ว หรือลบในแท็บ
+ติดตั้งแล้ว) จะลบไดเรกทอรีของสกิลและหมุดในไฟล์ล็อกไปพร้อมกัน — สกิลที่ถอน
+การติดตั้งแล้วไม่เหลืออะไรไว้ข้างหลัง
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**การลบรีโพสิทอรี** ออกจากแถบด้านซ้ายลบเฉพาะแค็ตตาล็อก: สกิลที่คุณติดตั้งจากมัน
+ยังคงติดตั้งอยู่และยังอัปเดตได้ เพราะหมุดบันทึกรีโพสิทอรีด้วยชื่อ ไม่ใช่ด้วย
+การอ้างอิงถึงรายการต้นทาง เพิ่มรีโพสิทอรีกลับหากคุณต้องการเรียกดูมันอีกครั้ง
 
-## Invoke a skill
+## เรียกใช้สกิล
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+สกิลถูกเรียกใช้ภายใต้เนมสเปซของตัวเอง จึงไม่ชนกับคำสั่งสแลชในตัว
+(`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — สกิลที่ติดตั้งในเวิร์กสเปซนี้ หรือที่แนบกับเอเจนต์
+- `/skill:<repo>:<name>` — สกิลที่รีโปซึ่งเช็กเอาต์ในสเปซนี้จัดส่งมา
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+ชื่อเปล่า ๆ ที่ไม่ใช่คำสั่งในตัวยังคงแปลงได้ สำหรับข้อความที่เขียนไว้ก่อนที่
+เนมสเปซจะมีอยู่ `/skill:plan` คือสิ่งที่ไปถึงสกิลชื่อ `plan`; `/plan`
+เป็นคำสั่งในตัวเสมอ
 
-## Repo-scoped skills
+## สกิลที่จำกัดขอบเขตตามรีโป
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+รีโปที่เช็กเอาต์มาสามารถจัดส่งสกิลของตัวเองได้ ใน `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` หรือ `skills/` เหล่านั้น
+**ไม่**ได้ติดตั้งผ่านหน้านี้ เอเจนต์ถือเฉพาะสกิลของรีโปที่มันกำลังทำงานอยู่เท่านั้น
+พวกมันจะสลับไปเมื่อมันย้าย ช่องเขียนข้อความไม่ได้จำกัดขอบเขตแบบนั้น:
+`/skill:<repo>:<name>` ไปถึงรีโปใดก็ได้ในสเปซ
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+สกิลของรีโปผ่านการสแกนแบบปิดเมื่อล้มเหลวเช่นเดียวกัน
+(`pass` / `warn` / `quarantine`) ก่อนที่ฟรอนต์แมตเทอร์ของมันจะไปถึงพรอมต์
+`warn` ผ่านเข้าได้ ส่วน `quarantine` ถูกระงับไว้ โดยไม่มีทางข้ามของผู้ปฏิบัติการ
+บนเส้นทางนั้น
 
-See [Repo-scoped skills](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills) and
-[Slash commands](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/).
+ดู [สกิลที่จำกัดขอบเขตตามรีโป](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills) และ
+[คำสั่งสแลช](/th-TH/คู่มือ/อ้างอิง/คำสั่งสแลช/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)

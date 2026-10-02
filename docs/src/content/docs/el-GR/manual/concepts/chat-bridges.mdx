@@ -1,249 +1,288 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Γέφυρες συνομιλίας
+description: Γιατί η ενσωμάτωση Slack καλεί προς τα έξω αντί να ακούει, τι εξουσιοδοτεί πραγματικά ένα μήνυμα που φτάνει από τη συνομιλία και πώς μία γέφυρα εξυπηρετεί οποιοδήποτε προϊόν συνομιλίας.
 slug: el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Μια γέφυρα συνομιλίας κάνει ένα εξωτερικό προϊόν συνομιλίας — σήμερα το Slack —
+έναν πρώτης τάξης τρόπο εισόδου σε έναν χώρο εργασίας του Control Center. Κάντε
+@-αναφορά στο bot και ένας πράκτορας ξυπνά· απαντήστε στο νήμα του Slack και η
+συνομιλία συνεχίζεται· πληκτρολογήστε μια εντολή slash και ένα εισιτήριο
+καταχωρείται. Κάτω από αυτά, οι ίδιοι χώροι, οι ίδιες μεταγραφές, τα ίδια
+εισιτήρια και η ίδια απόδοση που χρησιμοποιεί η εφαρμογή υπολογιστή. Η
+συνομιλία είναι μια _επιφάνεια_ πάνω στον χώρο εργασίας, όχι ένα αντίγραφό του.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Το Slack είναι ο μόνος πάροχος που διατίθεται.** Δεν υπάρχει υλοποίηση για
+Discord, Telegram, Teams ή Matrix πουθενά στο προϊόν. Η λειτουργία είναι
+γραμμένη σκόπιμα τυφλή ως προς τον πάροχο — η προσθήκη ενός δεύτερου προϊόντος
+είναι μία τιμή enum, ένας προσαρμογέας και ένα plugin — αλλά σήμερα «συνομιλία»
+σημαίνει Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Δύο επιφάνειες την καλύπτουν και ανήκουν σε διαφορετικούς ανθρώπους. Η σύνδεση
+ενός χώρου εργασίας με το Slack και η προσαρμογή του bot είναι ενέργειες
+**διαχειριστή** στις Ρυθμίσεις → Χώρος εργασίας → Γενικά. Η σύνδεση του δικού
+σας λογαριασμού συνομιλίας με την ταυτότητά σας στο Control Center είναι ενέργεια
+**μέλους** στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Τρεις αποφάσεις διαμορφώνουν ολόκληρη τη λειτουργία: **προς ποια κατεύθυνση
+τρέχει η σύνδεση**, **τι εξουσιοδοτεί ένα μήνυμα που φτάνει από έξω** και **πού
+επιτρέπεται να ζει η γνώση για συγκεκριμένα προϊόντα**.
 
-## Outbound by design
+## Εξερχόμενη εκ σχεδιασμού
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Η γέφυρα δεν ακούει ποτέ για λογαριασμό του παρόχου. Στο Slack φτάνει μέσω
+**Socket Mode**: ο διακομιστής ζητά από το Slack ένα URL socket και καλεί προς τα
+έξω, και μετά λαμβάνει αναφορές, άμεσα μηνύματα και εντολές slash μέσα από αυτή
+τη σύνδεση.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Η συνέπεια είναι το νόημα. Ένας φορητός υπολογιστής πίσω από NAT, ένας οικιακός
+διακομιστής χωρίς domain, ένα μηχάνημα που αλλάζει δίκτυα — όλα τους μπορούν να
+εκτελέσουν τη γέφυρα χωρίς θύρα εισόδου, χωρίς tunnel, χωρίς πιστοποιητικό TLS
+και χωρίς δημόσιο URL προς εναλλαγή όταν αλλάζει. Δεν υπάρχει τελικό σημείο
+webhook προς ασφάλιση, γιατί δεν υπάρχει τελικό σημείο webhook. Όταν το Control
+Center συνθέτει τον ορισμό της εφαρμογής, επιβάλλει το Socket Mode και αφαιρεί
+κάθε request URL, γιατί μια εφαρμογή ρυθμισμένη και για τα δύο θα ήταν μια
+εφαρμογή που δουλεύει μισά.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Το κόστος είναι μια σύνδεση που πρέπει να κρατηθεί ζωντανή, κάτι που είναι
+δουλειά του διακομιστή: η επανασύνδεση γίνεται με εκθετική καθυστέρηση
+επανάληψης με τυχαία διακύμανση, με ανώτατο όριο τα 30 δευτερόλεπτα, μια
+εναλλαγή socket που ξεκινά ο πάροχος επανασυνδέεται χωρίς να κλιμακώσει αυτή την
+καθυστέρηση και ένα _απορριφθέν διαπιστευτήριο_ είναι τελειωτικό — η αέναη
+επανάληψη ενός ανακληθέντος token θα κέρδιζε μόνο ένα όριο ρυθμού, οπότε η
+γέφυρα σταματά και περιμένει νέα token, αναφέροντας αυτούσιο το σφάλμα του ίδιου
+του παρόχου στις ρυθμίσεις.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Ένας χώρος εργασίας χωρίς εφαρμογή συνομιλίας δεν κοστίζει απολύτως τίποτα:
+κανένα socket, κανένα χρονόμετρο, καμία κίνηση. Και το όλο πράγμα ξεκινά _μετά_
+το μήνυμα ετοιμότητας του διακομιστή, γιατί μια εφαρμογή συνομιλίας που αργεί να
+απαντήσει δεν πρέπει ποτέ να καθυστερήσει την εκκίνηση.
 
-## Membership authorizes, not token possession
+## Εξουσιοδοτεί η ιδιότητα μέλους, όχι η κατοχή token
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Ο άνθρωπος που εγκατέστησε την εφαρμογή δεν είναι ο άνθρωπος που στέλνει το
+μήνυμα. Έτσι, κάθε εισερχόμενο συμβάν επιλύεται σε ένα **υποκείμενο** πριν
+συμβεί οτιδήποτε και κλείνει κατά την αποτυχία με μια εξήγηση:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Ένας λογαριασμός συνομιλίας χωρίς σύνδεση** ενημερώνεται πώς να συνδεθεί,
+  μέσα στο νήμα του Slack όπου έγραψε.
+- **Ένας συνδεδεμένος λογαριασμός του οποίου ο χρήστης δεν είναι μέλος** αυτού
+  του χώρου εργασίας καλείται να ζητήσει πρόσκληση από έναν διαχειριστή.
+- **Ένα μέλος με ρόλο μόνο για ανάγνωση** (`viewer`, `guest`) ενημερώνεται ότι ο
+  ρόλος του δεν μπορεί να ξεκινήσει εργασία.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/)
-for the membership model this leans on.
+Καμία από αυτές τις περιπτώσεις δεν προχωρά. Ένα μήνυμα συνομιλίας δεν
+αποδίδεται ποτέ σε κάποιον που δεν το έστειλε — αυτό είναι που κρατά ειλικρινή
+το ίχνος ελέγχου, τα όρια ρυθμού ανά υποκείμενο και όποιον αναφέρει ένα
+εισιτήριο. Δείτε τη
+[Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/)
+για το μοντέλο ιδιότητας μέλους στο οποίο στηρίζεται.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Η σύνδεση είναι επίλυση ταυτότητας, **όχι** παραχώρηση πρόσβασης. Η ιδιότητα
+μέλους ελέγχεται ξανά σε κάθε συμβάν, οπότε μια σύνδεση που ανήκει σε κάποιον
+που έχει στο μεταξύ αφαιρεθεί καταλήγει σε άρνηση και όχι στα παλιά του
+προνόμια. Δύο διαδρομές καθιερώνουν μια σύνδεση: ένας βραχύβιος κωδικός μίας
+χρήσης που το μέλος πληκτρολογεί στη συνομιλία, ή μια αυτόματη αντιστοίχιση στο
+_επαληθευμένο_ email του παρόχου — και η διαδρομή του email απαιτεί ακόμη ο
+αντιστοιχισμένος χρήστης να είναι ήδη μέλος, οπότε ένας άγνωστος του οποίου η
+διεύθυνση τυχαίνει να υπάρχει στον διακομιστή δεν συνδέεται με τίποτα.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Οι κωδικοί κρατούνται σκόπιμα στη μνήμη, με διάρκεια ζωής 15 λεπτά. Η αποθήκευση
+ενός θα δημιουργούσε μια διαρκή γραμμή σε σχήμα διαπιστευτηρίου για κάτι που
+προορίζεται να εξατμιστεί, και μια επανεκκίνηση του διακομιστή που ακυρώνει κάθε
+εκκρεμή κωδικό είναι η σωστή συμπεριφορά, όχι παλινδρόμηση — το μέλος πατά ξανά
+«σύνδεση».
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Μια άρνηση απαντιέται **μέσα στο νήμα του Slack όπου άνοιξε το μήνυμα**, ως
+πραγματική απάντηση. Μια απάντηση σε νήμα επισημαίνει το μήνυμα στο οποίο
+απαντά, φτάνει στον έναν άνθρωπο που τη χρειάζεται και κρατά ακόμη το «δεν έχεις
+συνδεθεί» έξω από το ίδιο το κανάλι. Η ανάρτηση μηνύματος είναι επίσης η μία
+δυνατότητα που έχει κάθε πάροχος, οπότε η εξήγηση δεν εξαρτάται ποτέ από μια
+λειτουργία που η εφαρμογή μπορεί να μην φέρει.
 
-## Provenance and the echo problem
+## Προέλευση και το πρόβλημα της ηχούς
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Μια γέφυρα που καθρεφτίζει και προς τις δύο κατευθύνσεις θα μπει σε βρόχο,
+εκτός αν κάτι ξεχωρίζει τις δύο κατευθύνσεις. Κάθε μήνυμα που φέρνει μέσα η
+γέφυρα σφραγίζεται με `metadata['chat']` — πάροχο, ομάδα, συνομιλία, νήμα,
+μήνυμα και αποστολέα. Ο εξερχόμενος καθρέφτης παραλείπει κάθε μήνυμα που φέρει
+αυτή τη σφραγίδα.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Αυτός ο μοναδικός κανόνας είναι που κάνει ασφαλές το αμφίδρομο καθρέφτισμα: ένα
+ανθρώπινο μήνυμα που πληκτρολογείται στο Control Center προωθείται έξω στο
+συνδεδεμένο νήμα (με πρόθεμα το όνομα του συντάκτη), ενώ ένα μήνυμα που ήρθε
+_από_ τη συνομιλία σταματά εκεί όπου μπήκε.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Αυτό που περνά προς τα έξω είναι σκόπιμα στενό. Η **απάντηση** του πράκτορα
+προωθείται ως συνηθισμένο κείμενο συνομιλίας. Μια σύντομη σκέψη μπορεί να
+εμφανιστεί στη γραμμή `Thinking…` της κάρτας. Η έξοδος των εργαλείων είναι ένας
+τοίχος από diffs και παραμένει στο Control Center, όπου δείχνει επίσης μια
+περικομμένη απάντηση.
 
-## A card reports the work; the text is still the message
+## Μια κάρτα αναφέρει την εργασία· το κείμενο παραμένει το μήνυμα
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Όπου ο πάροχος τα αποδίδει, μια στροφή φέρει **μία κάρτα εργασίας**, που
+επεξεργάζεται επί τόπου για όσο διαρκεί η στροφή και κάθεται πάνω από την
+απάντηση που εξηγεί.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Η κάρτα είναι ένα ομαδοποιημένο σχέδιο, όχι μια λιωμένη παράγραφος. Το Slack
+συνενώνει τα `details` και το `output` στην ίδια εργασία, οπότε τα details μιας
+γραμμής στέλνονται μία φορά (η σκέψη στο `Thinking…`) και το `output` δεν
+μεταδίδεται ποτέ σε ροή. Η προετοιμασία είναι μία γραμμή της οποίας ο τίτλος
+αντικαθίσταται (`Working on it…`, `Cloning …`). Η συλλογιστική προσθέτει μια
+γραμμή `Thinking…`. Κάθε εργαλείο έχει τη δική του γραμμή (`Read lib/main.dart`).
+Η απάντηση είναι συνηθισμένο κείμενο κάτω από την κάρτα — η προβολή σχεδίου του
+Slack τη διαβάζει από ένα μεταγενέστερο markdown append και όχι από ένα τμήμα
+ανακατεμένο στις εργασίες. Τίποτα άλλο: καμία έξοδος εργαλείου και μόνο ένα
+όρισμα εργαλείου από μια σύντομη λίστα επιτρεπομένων, γιατί τα ορίσματα ενός
+άγνωστου εργαλείου μπορεί να είναι ολόκληρο το σώμα ενός αρχείου και μια γραμμή
+χωρά μόνο μία γραμμή.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Η κάρτα καλύπτει επίσης την αναμονή _πριν_ τη στροφή. Μια πρώτη αναφορά
+δημιουργεί τη συνομιλία και η δημιουργία της κλωνοποιεί κάθε αποθετήριο στο οποίο
+θα δουλέψει ο πράκτορας — που σε ένα πραγματικό αποθετήριο είναι λεπτά κατά τα
+οποία δεν έχει ζητηθεί ακόμη τίποτα από τον πράκτορα και το νήμα μοιάζει σαν το
+bot να αγνόησε το αίτημα. Έτσι, η κάρτα ανοίγει τη στιγμή που η αναφορά γίνεται
+δεκτή (`Working on it…`) και μετά αυτή η γραμμή προετοιμασίας ενημερώνεται με τα
+ίδια λόγια που δείχνει η εφαρμογή υπολογιστή — `Cloning acme/widgets…`,
+`Setting up Reviewer…`, `Starting the agent…` — έπειτα μια γραμμή `Thinking…`
+μόλις ο πράκτορας αρχίσει να συλλογίζεται, και μετά μια γραμμή ανά εργαλείο. Μία
+κάρτα, ένα μήνυμα, από το «σε άκουσα» μέχρι την απάντηση ως συνηθισμένο κείμενο
+από κάτω. Η προετοιμασία αναφέρεται μόνο όπου κάποιος στη συνομιλία την περιμένει:
+μια συνομιλία που ετοιμάζεται στην εφαρμογή, ή μια εγκαταλελειμμένη που
+συνεχίζεται στην εκκίνηση του διακομιστή, εφοδιάζεται χωρίς καμία κάρτα.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Φέρει το μόνο πράγμα που δεν μπορεί να δώσει η συνομιλία στον αναγνώστη: έναν
+σύνδεσμο **View in Control Center** προς τη συνομιλία πίσω από την απάντηση. Τα
+προϊόντα συνομιλίας δέχονται `http(s)` σε έναν σύνδεσμο και τίποτα άλλο, οπότε
+το κουμπί δείχνει σε μια μικρή σελίδα που σερβίρει αυτός ο διακομιστής, η οποία
+ανακατευθύνει τον περιηγητή στον σύνδεσμο `control-center://` της εφαρμογής
+υπολογιστή. Αυτή η σελίδα δεν διαβάζει τίποτα και δεν επιλύει τίποτα — τα ids
+στο URL της αντηχούν σε έναν βαθύ σύνδεσμο και πουθενά αλλού — και ένας
+διακομιστής χωρίς προσβάσιμο δημόσιο URL απλώς παράγει μια κάρτα χωρίς κουμπί
+και όχι μια χαλασμένη.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Οι κάρτες είναι μια δυνατότητα όπως κάθε άλλη. Ένας πάροχος χωρίς αυτές
+συμπεριφέρεται ακριβώς όπως πριν, μόνο με κείμενο, και ένας πάροχος που αρνείται
+μια κάρτα τη στιγμή της κλήσης κρατά τη ροή του: η απάντηση υπερισχύει πάντα της
+κάρτας που την περιγράφει. Όταν η ροή είναι εντελώς κλειστή, η ολοκληρωμένη
+κάρτα ταξιδεύει με το ένα και μοναδικό αναρτημένο μήνυμα. Ένα καταχωρισμένο
+εισιτήριο τυγχάνει της ίδιας μεταχείρισης — η επιβεβαίωση του `/cc ticket` είναι
+μια ολοκληρωμένη κάρτα της οποίας ο λόγος ύπαρξης είναι ο σύνδεσμος προς το
+εισιτήριο που μόλις δημιουργήθηκε.
 
-## Capabilities are negotiated, then remembered
+## Οι δυνατότητες διαπραγματεύονται και μετά θυμούνται
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Τα προϊόντα συνομιλίας διαφέρουν ως προς το τι μπορούν να αποδώσουν, οπότε η
+γέφυρα είναι γραμμένη απέναντι στην πλουσιότερη επιφάνεια — μια απάντηση που
+μεγαλώνει ζωντανά μέσα σε ένα νήμα, μια παροδική κατάσταση «σκέφτεται…», ένα
+νήμα με τίτλο, μια εφήμερη απάντηση σε μια εντολή slash — και υποβαθμίζεται μία
+δυνατότητα τη φορά. Ένας πάροχος χωρίς τίποτα από αυτά δουλεύει ακόμη· οι
+απαντήσεις απλώς φτάνουν ως ένα μήνυμα.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Το να διαφημίζεις μια δυνατότητα δεν σημαίνει ότι την υπόσχεσαι. Οι απαντήσεις
+σε ροή του Slack χρειάζονται μια λειτουργία επί πληρωμή και το Slack αρνείται
+μόνο τη στιγμή της κλήσης. Μια άρνηση που χαρακτηρίζεται μόνιμη θυμάται για
+**όλη τη ζωή της σύνδεσης**: η γέφυρα σταματά να ρωτά και αναρτά ολόκληρες
+απαντήσεις από εκεί και πέρα, και οι ρυθμίσεις το λένε στα ίσια, γιατί στο «οι
+απαντήσεις μου σταμάτησαν να έρχονται σε ροή» πρέπει να μπορεί κανείς να
+απαντήσει χωρίς να διαβάσει ένα αρχείο καταγραφής. Οι κάρτες εργασίας
+απορρίπτονται με τον ίδιο τρόπο αν το Slack αρνηθεί μια.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Κάθε όριο ανήκει στον πάροχο και όχι στη γέφυρα: το ανώτατο όριο μηνύματος, το
+ανώτατο όριο τμήματος ροής και το αν μια ροή χρειάζεται άγκυρα νήματος
+δηλώνονται όλα από τον προσαρμογέα, και μια μακριά απάντηση χωρίζεται σε όριο
+παραγράφου, γραμμής ή λέξης και όχι στη μέση λέξης.
 
-## One bridge, one adapter per product
+## Μία γέφυρα, ένας προσαρμογέας ανά προϊόν
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Ό,τι έχει σχήμα προϊόντος ζει πίσω από μια θύρα. Ο γενικός πυρήνας ξέρει για
+markdown, συνομιλίες, νήματα συνομιλίας και μέλη· δεν ξέρει τίποτα για φακέλους
+του Slack, `mrkdwn` ή gateway intents. Τρία κομμάτια το κάνουν αυτό να δουλέψει:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Ο προσαρμογέας** ομαλοποιεί ένα προϊόν: το μέσο μεταφοράς του, τις κλήσεις
+  του στο API, τον κωδικοποιητή κειμένου του και τις ιδιομορφίες των φακέλων του.
+  Εκείνες του Slack είναι διδακτικές — μια αναφορά σε κανάλι φτάνει δύο
+  φορές (ως `app_mention` _και_ ως `message`) και οι περισσότεροι υποτύποι
+  μηνυμάτων είναι διακοσμητικοί και όχι νέα αιτήματα. Και τα δύο διευθετούνται
+  στον προσαρμογέα, οπότε ο πυρήνας δεν μαθαίνει ποτέ ότι το Slack παραδίδει
+  διπλά.
+- **Ο περιγραφέας** είναι το δημόσιο σχήμα του παρόχου: ποια διαπιστευτήρια
+  χρειάζεται, ποιες είναι οι μορφές τους, ποια URL βοηθούν έναν χρήστη να τα
+  βρει, τι μπορεί να κάνει και αν η εφαρμογή του μπορεί να δημιουργηθεί ή να
+  επεξεργαστεί από εδώ. Η κάρτα ρυθμίσεων, ο διάλογος σύνδεσης και η επικύρωση
+  ορισμάτων _παράγονται_ όλα από αυτόν — ο πελάτης στέλνει πίσω έναν πάροχο και
+  έναν χάρτη με κλειδιά τα αναγνωριστικά των πεδίων.
+- **Το plugin** είναι η σύνθεση στην πλευρά του διακομιστή: πώς τα διαπιστευτήρια
+  γίνονται επαληθευμένη σύνδεση, πώς χτίζεται ένας προσαρμογέας και πώς
+  διαχειρίζεται η εφαρμογή στην πλευρά του παρόχου.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Άρα η προσθήκη ενός προϊόντος είναι μία τιμή enum, ένας προσαρμογέας και ένα
+plugin. Καμία νέα πράξη RPC, καμία αλλαγή σχήματος, καμία αλλαγή πελάτη — και ο
+πελάτης μένει ειλικρινής, γιατί ένα πεδίο που δεν έχει ακούσει ποτέ αποδίδεται
+ακόμη με την ετικέτα που έδωσε ο διακομιστής.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Δύο λεπτομέρειες κρατούν την αφαίρεση από το να διαρρεύσει προς τα πάνω. Τα
+βήματα διαχείρισης της εφαρμογής για τα οποία ένας πάροχος δεν έχει API
+(δημιουργία token, εγκατάσταση της εφαρμογής, επανεγκατάσταση μετά από αλλαγή
+δικαιωμάτων) επιστρέφονται ως **ονομασμένα βήματα με δικούς τους συνδέσμους**,
+ώστε η οθόνη ολοκλήρωσης της ρύθμισης να τα δείχνει χωρίς να ξέρει ποιος
+πάροχος είναι. Και κάθε οδηγία που γράφει η γέφυρα ονομάζει τον πάροχο και την
+εντολή που χρησιμοποιεί όντως η εφαρμογή, ώστε μια μετονομασμένη εντολή ή ένας
+δεύτερος πάροχος να διαβάζεται σωστά χωρίς νέα συμβολοσειρά.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Επανεγκατάσταση μετά από αλλαγή δικαιωμάτων]
+Η επεξεργασία του ονόματος, της περιγραφής ή του εικονιδίου του bot έχει άμεσο
+αποτέλεσμα. Μια αλλαγή **δικαιωμάτων** χρειάζεται επανεγκατάσταση: το Slack
+εφαρμόζει το νέο manifest αλλά κρατά την παραχώρηση σε ό,τι είχε εγκατασταθεί. Η
+επεξεργασία επιστρέφει ένα εναπομένον βήμα με σύνδεσμο προς τη σελίδα «Reinstall
+to Workspace» του Slack.
 :::
 
-## Where credentials live
+## Πού ζουν τα διαπιστευτήρια
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Τα token συνομιλίας ενός χώρου εργασίας βρίσκονται στον **δικό του κατάλογο,
+δίπλα στη βάση δεδομένων του** — ως απλό JSON στο
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, όχι στη βάση
+δεδομένων και σκόπιμα όχι στο keychain του λειτουργικού συστήματος. Δύο
+συνέπειες χάνονται εύκολα αργότερα: η διαγραφή ενός χώρου εργασίας αποσυνδέει
+τον κατάλογο και τα token του φεύγουν μαζί του, και η εξαγωγή ή η δημιουργία
+αντιγράφου ασφαλείας ενός χώρου εργασίας αντιγράφει το `workspace.db`, οπότε
+ένας χώρος εργασίας που παραδίδεται σε κάποιον άλλο δεν κουβαλά ζωντανά token bot
+μέσα του. Το αρχείο κληρονομεί το όριο εμπιστοσύνης του συστήματος αρχείων του
+κεντρικού υπολογιστή του διακομιστή — ό,τι έχει πρόσβαση ανάγνωσης στον κατάλογο
+δεδομένων μπορεί να διαβάσει ένα token bot, που είναι το ίδιο όριο πίσω από το
+οποίο βρίσκονται οι βάσεις δεδομένων.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Ένα αρχείο ανά πάροχο, γραμμένο ατομικά και με δικαιώματα μόνο του ιδιοκτήτη: μια
+ανακληθείσα εφαρμογή διαγράφεται αποσυνδέοντας ένα αρχείο, και ένα κατεστραμμένο
+αρχείο κοστίζει έναν πάροχο και όχι όλους. Τα διαπιστευτήρια ταξιδεύουν _προς τα
+μέσα_ με τη λειτουργία σύνδεσης και δεν βγαίνουν ποτέ ξανά έξω — οι αναγνώσεις
+κατάστασης απαντούν μόνο με μεταδεδομένα σύνδεσης.
 
-## What is deliberately not offered
+## Τι δεν προσφέρεται σκόπιμα
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Δομικές ρυθμίσεις της εφαρμογής.** Το μέσο μεταφοράς, τα scopes και οι
+  συνδρομές σε συμβάντα επιβάλλονται, δεν εκτίθενται. Μια εφαρμογή που μπορεί να
+  ρυθμιστεί σε σιωπή από μια οθόνη ρυθμίσεων είναι αίτημα υποστήριξης, όχι
+  λειτουργία.
+- **Συνομιλία και εντολές slash.** Η επιφάνεια του Slack είναι μηνύματα,
+  απαντήσεις σε νήματα και εντολές slash.
+- **Μια δεύτερη πηγή αλήθειας.** Η συνομιλία δεν είναι μέρος όπου αποθηκεύεται
+  εργασία. Το νήμα του Slack είναι ένας χώρος, η απάντηση είναι μια μεταγραφή, το
+  εισιτήριο είναι ένα εισιτήριο — όλα τους στον χώρο εργασίας, προσβάσιμα από κάθε
+  πελάτη.
 
-## See also
+## Δείτε επίσης
 
-- [Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): why links and credentials are per workspace
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): what wakes when a mention arrives
-- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): what `/cc ticket` files
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/)
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
-- [Link your Slack account](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
-- [Customize the chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
-- [PR conversations](/el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr/): the same three decisions, made for a forge
+- [Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): τα υποκείμενα και οι ρόλοι μέσα από τους οποίους επιλύει η γέφυρα
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): γιατί οι σύνδεσμοι και τα διαπιστευτήρια είναι ανά χώρο εργασίας
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): τι ξυπνά όταν φτάνει μια αναφορά
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): τι καταχωρεί το `/cc ticket`
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): πού κάθεται η γέφυρα ανάμεσα στον διακομιστή και τους πελάτες
+- [Συνδέστε το Slack στον χώρο εργασίας σας](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Σύνδεση λογαριασμού Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας/)
+- [Προσαρμογή του chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
+- [Συνομιλίες PR](/el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr/): οι ίδιες τρεις αποφάσεις, φτιαγμένες για έναν κεντρικό υπολογιστή κώδικα

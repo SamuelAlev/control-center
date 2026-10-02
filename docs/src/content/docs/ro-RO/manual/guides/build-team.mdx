@@ -1,69 +1,70 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: Construiește o echipă de agenți
+description: Grupează agenții sub un lider, astfel încât munca asignată să treacă printr-un singur coordonator.
 slug: ro-RO/manual/ghiduri-practice/construieste-echipa
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+Acest ghid arată cum să creezi o echipă, să îi dai un lider și să direcționezi munca spre ea.
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+O echipă este un grup de agenți cu nume, dintr-un singur spațiu de lucru, în care un agent este desemnat drept **lider**. Când asignezi un tichet echipei, liderul este trezit, descompune munca și deleagă către membri; când o rulare de membru se încheie, liderul este trezit din nou ca să decidă ce urmează.
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+Creezi, redenumești și completezi echipe din **Setări → Spațiu de lucru → Agenți → Echipe**. Direcționezi munca spre o echipă în unul dintre două moduri: un agent apelează `assign_ticket` cu `team_id`-ul acelei echipe, sau un nod de pipeline **Team dispatch** trimite echipa (fără să asigneze un tichet). Selectorul de asignați ai tichetului te listează pe tine și pe agenții individuali.
 
-## Create a team
+## Creează o echipă
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. Deschide **Setări → Spațiu de lucru → Agenți** (`/settings/workspace/agents`).
+2. Apasă **Echipe** în antetul paginii.
+3. Apasă **Adaugă echipă**.
+4. Introdu un **nume** (de exemplu „backend” sau „review squad”) și o **descriere** opțională, apoi apasă **Creează**.
 
-The team is created and selected and its editor opens in the right-hand pane.
+Echipa este creată și selectată, iar editorul ei se deschide în panoul din dreapta.
 
-## Set the leader
+## Setează liderul
 
-This is the step the whole feature depends on. In the team's editor:
+Acesta este pasul de care depinde întreaga funcționalitate. În editorul echipei:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. La **Lider**, alege un agent. Textul de ajutor îl descrie exact: „Coordonatorul care primește munca asignată echipei și o deleagă membrului cel mai potrivit.”
+2. Opțional, completează **Instrucțiuni de operare** — text liber transmis liderului împreună cu fiecare tichet direcționat.
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+Promovarea unui agent la rolul de lider îl face și membru, dacă nu era deja. O echipă lăsată pe **Fără lider** este inertă: nu se trimite nimic când munca este direcționată spre ea, iar scoaterea liderului actual din lista de membri lasă din nou echipa fără lider.
 
-## Add members
+## Adaugă membri
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+În același editor, folosește cardul de membri ca să adaugi agenți din spațiul de lucru și să îi elimini. Membrii formează lista din care liderul deleagă.
 
-Teams are workspace-scoped: only agents in this workspace can join.
+Echipele sunt limitate la un spațiu de lucru: doar agenții din acest spațiu de lucru se pot alătura.
 
-## Give the team a space
+## Oferă echipei un spațiu
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+Nu există un spațiu de echipă automat. Dacă vrei unul, creează un spațiu obișnuit din **Spații** și adaugă în el agenții echipei. Un `Team` poartă un nume, o descriere, un lider, instrucțiuni și membri — fără nicio asociere cu un spațiu.
 
-## Reporting lines are a separate thing
+## Liniile de raportare sunt o chestiune separată
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+Fiecare agent are și un câmp **Raportează către**, setat în **Setări → Spațiu de lucru → Agenți**. Acesta construiește arborele de raportare al spațiului de lucru, pe care îl poți vedea cu butonul **Organigramă** din pagina de agenți.
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+El nu guvernează direcționarea către echipe. Un lider alege un delegat din lista de membri ai echipei, după skill-uri și rol, nu din lanțul de raportare. Drepturile de acces la memorie se acordă după rolul agentului, nu după lanțul de raportare, iar nicio suprafață de analiză nu agregă pe echipe sau pe ierarhie. Gărzile de delegare plafonează adâncimea și detectează ciclurile, dar nu cer niciodată ca ținta să fie un subordonat.
 
-## What a routed ticket does
+## Ce face un tichet direcționat
 
-When a ticket does carry a team assignment:
+Când un tichet are într-adevăr o asignare de echipă:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. Liderul echipei este trimis împreună cu tichetul, cu instrucțiunile lui de operare și cu lista de membri.
+2. Liderul deleagă către membri și își înregistrează evaluarea cu instrumentul `record_team_activity` — `action` (a delegat), `no_action` (nu mai este nimic de făcut, ceea ce oprește declanșările ulterioare) sau `failed`.
+3. Fiecare rulare de membru care se încheie trezește din nou liderul, în limita impusă de garda no-action.
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+Nodul de pipeline **Team dispatch** este celălalt punct de intrare. Primește un ID de echipă, un prompt și un mod de dispatch:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel` — câte o sarcină pentru fiecare membru, într-o conversație ascunsă comună, cu suspendare până când se încheie toate rulările, iar rezultatul fiecărui membru este colectat sub cheia de ieșire a nodului
+- `manager` — trimite doar liderul, care coordonează în conversație
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Run agents in parallel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
-- [Delegate work to agents](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Rulează agenți în paralel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
 
-## Related concepts
+## Concepte conexe
 
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/)
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/)
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/)
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/)

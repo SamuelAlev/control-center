@@ -1,79 +1,121 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: 워크스페이스에 저장소 추가
+description: 에이전트가 작업할 수 있도록 Git 체크아웃을 워크스페이스에 등록합니다.
 slug: ko-KR/매뉴얼/사용-가이드/저장소-추가
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+이 가이드에서는 Git 체크아웃을 워크스페이스에 등록하고, 다시 인덱싱한 다음,
+제거하는 방법을 설명합니다.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+저장소는 **워크스페이스 범위**입니다. 전역 레지스트리도, 연결 단계도 없습니다.
+저장소를 추가하는 일과 그것을 워크스페이스에 넣는 일은 같은 동작입니다. 같은
+체크아웃을 두 워크스페이스에 등록하면 서로 다른 두 개의 id를 가진 두 개의
+독립된 행이 됩니다. 워크스페이스를 넘어서는 순간 저장소의 정체성은 파일 시스템
+경로이며, id는 결코 아닙니다.
 
-## Before you start
+## 시작하기 전에
 
-A folder can only be registered if all three of these hold:
+폴더는 다음 세 가지를 모두 충족할 때만 등록할 수 있습니다:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. **git 워크트리** 안에 있어야 합니다.
+2. 그 워크트리에 **`origin` 원격**이 있어야 합니다.
+3. `origin` 원격이 **지원되는 forge**를 가리켜야 합니다: github.com, gitlab.com,
+   bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+그 밖의 경우는 등록 시점에 명시적인 메시지와 함께 거부됩니다: "Folder is not
+inside a git work tree.", "No `origin` remote configured for this repository.",
+"The `origin` remote is not hosted on a supported forge (github.com, gitlab.com,
+bitbucket.org).". 로컬 전용 모드는 없습니다.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+forge는 원격에서 읽어 저장소에 저장되며, 사용자가 직접 고르는 값이 아닙니다.
+워크스페이스 하나가 세 forge의 저장소를 동시에 담을 수 있고, 각 저장소와는 자체
+자격 증명을 가진 자체 API로 통신합니다. GitLab의 중첩 네임스페이스는 그대로
+유지되므로, `gitlab.com/group/subgroup/project`는 소유자 `group/subgroup`, 이름
+`project`로 등록됩니다.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+폴더는 `cc_server`를 호스팅하는 머신에 있어야 하며, 그 서버의 `--repo-roots`
+디렉터리 중 하나 안에 있어야 합니다. 이 허용 목록의 기본값은 서버 사용자의 홈
+디렉터리이며, 루트보다 위로 탐색하는 것은 거부됩니다.
 
-## Register a checkout
+## 체크아웃 등록
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. **설정 → 워크스페이스 → 리포지토리**(`/workspaces/<id>/settings/workspace/repositories`)를
+   엽니다.
+2. **리포지토리 추가**를 클릭합니다.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+이 대화 상자는 사용자의 파일 시스템이 아니라 **서버**의 파일 시스템을 탐색하는
+브라우저입니다. 데스크톱, 웹, 휴대폰에서 흐름이 같습니다. 네이티브 폴더
+선택기를 쓰면 엉뚱한 머신의 폴더를 고르게 되기 때문입니다.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. 서버에 구성된 루트 안에서 탐색합니다. git 체크아웃인 폴더에는 표시가 붙습니다.
+4. 원하는 만큼 선택합니다. 탐색하는 동안 선택이 유지되므로, 여러 폴더에서
+   체크아웃을 모을 수 있습니다.
+5. 한 번에 일괄 등록합니다.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+선택 하나가 실패해도 나머지 일괄 처리분이 버려지지 않습니다. 생성된 id와 함께,
+거부된 경로마다 개별 오류가 표시됩니다. 이 워크스페이스에 이미 있는 경로를 다시
+등록하면 중복을 만들지 않고 기존 저장소를 반환합니다.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+등록된 각 저장소는 목록에 `owner/name`, forge를 나타내는 배지, 서버상의 경로와
+함께 표시됩니다. GitHub 저장소는 소유자의 아바타도 보여 주지만, 다른 forge는
+소유자 아바타 URL을 유추할 수 없어 이니셜로 대체합니다.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+forge 배지는 여러 forge가 섞인 워크스페이스에서 중요합니다. 서로 다른 forge의 두
+저장소가 모두 `acme/web`이라고 불릴 수 있는데, 리뷰로 무엇을 할 수 있는지, 링크가
+어디로 향하는지가 서로 다르게 동작합니다.
 
-## What happens next
+## 다음에 일어나는 일
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+등록은 이 워크스페이스 범위의 `RepoAdded` 이벤트를 발생시키고, 이것이 해당
+체크아웃의 `index_code` 파이프라인을 시작합니다. 이 파이프라인이 코드 그래프를
+채우므로, 검색과 영향 분석이 답할 수 있는 대상이 생깁니다.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ko-KR/매뉴얼/사용-가이드/코드-검색/).
+언어별 문법이 함께 제공되는 파일만 인덱싱됩니다(Dart, JavaScript, TypeScript,
+TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R,
+Assembly, MATLAB, Ada).
+[코드 그래프로 코드 검색](/ko-KR/매뉴얼/사용-가이드/코드-검색/)을 참고하세요.
 
-## Re-index a repo
+## 저장소 다시 인덱싱
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+각 행에는 **코드 인덱싱** 버튼이 있습니다. 클릭하면 그 체크아웃의 인덱서가 다시
+실행됩니다. 실행되는 동안 버튼은 전체 파일 수 대비 완료한 파일 수를 보여 주는 진행
+표시로 바뀌고 취소 컨트롤이 함께 나타납니다. 실행이 끝나면 심볼 개수와 함께 체크
+표시로 바뀌고, 실행이 실패했다면 경고가 표시됩니다.
 
-## Reorder repos
+## 저장소 순서 변경
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+행의 핸들을 끌어 옮깁니다. 설정한 순서가 앱의 모든 저장소 목록이 읽어 들이는
+순서가 됩니다.
 
-## Fix the GitHub link
+## GitHub 링크 수정
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+행의 링크 아이콘을 누르면 저장소의 GitHub 소유자와 리포지토리 이름을 편집하는
+화면이 열립니다. 원격의 이름이 바뀌었거나 다른 곳으로 이전되었을 때 유용합니다.
 
-## Remove a repo
+## 저장소 제거
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. **설정 → 워크스페이스 → 리포지토리**를 엽니다.
+2. 행의 휴지통 아이콘을 클릭합니다.
+3. "워크스페이스에서 리포지토리를 제거할까요?"를 확인합니다.
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+대화 상자는 수행할 작업을 그대로 알려 줍니다: "*name*이(가) 이 워크스페이스에서
+제거됩니다. 디스크의 로컬 파일은 변경되지 않습니다."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+제거하면 이 워크스페이스에서 저장소 행이 삭제되고, 그 저장소의 코드 그래프 행 —
+심볼, 엣지, 파일, 인덱스 체크포인트 — 이 연쇄적으로 정리됩니다. 여기에 더해 그
+저장소에 대한 멤버별 저장소 부여, 스페이스-저장소 연결, 격리된 체크아웃 기록도
+함께 삭제됩니다. 다른 워크스페이스에 등록된 같은 체크아웃은 독립된 행이므로
+영향을 받지 않습니다. 그 기록들이 가리키던 디스크상의 워크트리는 이 삭제로 함께
+정리되지 않습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Search code with the code graph](/ko-KR/매뉴얼/사용-가이드/코드-검색/)
-- [Run agents in parallel](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/)
-- [Set up GitHub integration](/ko-KR/매뉴얼/사용-가이드/github-통합/)
-- [Your first workspace](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/)
+- [코드 그래프로 코드 검색](/ko-KR/매뉴얼/사용-가이드/코드-검색/)
+- [에이전트 병렬 실행](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/)
+- [GitHub 통합 설정](/ko-KR/매뉴얼/사용-가이드/github-통합/)
+- [첫 워크스페이스](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/)
 
-## Related concepts
+## 관련 개념
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/)
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)

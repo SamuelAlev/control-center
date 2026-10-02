@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: エージェントの作成と設定
+description: ワークスペースにエージェントを追加し、アダプター、モデル、スキル、権限を設定して、実際に実行できることを確認します。
 slug: ja-JP/マニュアル/ハウツーガイド/エージェント作成
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+このガイドでは、ワークスペースにエージェントを追加し、実際に実行できるようになるまで設定する方法を説明します。
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+すべてのワークスペースには 5 体のエージェント — CEO と `qa`、`architect`、`engineer`、`librarian` — があらかじめシードされているため、何も設定していなくてもエージェントは存在します。以下の手順は、シードされたエージェントにも新しいエージェントにも同じように当てはまります。
 
-## Before you start
+## 開始する前に
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- ワークスペース内で作業していることが前提です。画面全体は **設定 → ワークスペース → エージェント**（`/settings/workspace/agents`）にあります。
+- エージェントにはバックエンドが必要です。**設定 → サーバー → モデルプロバイダー**で組み込みハーネス用のプロバイダーを接続するか、`cc_server` をホストしているマシンに Claude Code CLI をインストールしてください。
+- エージェントにスキルを持たせる場合は、先に **設定 → ワークスペース → スキル**でインストールしてください。エージェントのフォームでは、ワークスペースにすでに存在するスキルしか切り替えられません。
 
-## Add the agent
+## エージェントを追加する
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. **設定 → ワークスペース → エージェント**を開きます。
+2. **新しいエージェント**をクリックします。
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+ダイアログもロールの選択もありません。「名前なしエージェント」という名前のエージェントがすぐに作成され、右側の詳細パネルで選択されます。
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+ここで、左側の名簿に「名前なしエージェント」が表示され、その詳細パネルの **設定** タブが開き、**名前** フィールドに「名前なしエージェント」が入っているはずです。
 
-## Name it
+## 名前を付ける
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **名前** — @メンションで使われる短い識別子です。たとえば `alice`。メンションの解析は `@` に続く単語文字に一致するため、ハイフン、ドット、スペースを含む名前はメンションできません。
+- **タイトル** — 人が読むためのラベルです。たとえば「Senior coder」。
+- **システムプロンプト** — 任意の追加指示で、「Agent instructions」セクションとして注入されます。組み立てられたプロンプトの残りを置き換えるものではありません。
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+フォーム下部の **変更を保存** をクリックします。このページのすべてのフィールドは、この 1 つのボタンで保存されます。
 
-## Give it an adapter and a model
+## アダプターとモデルを設定する
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**アダプター** ドロップダウンには、サーバーホストに実際にあるランナーが一覧表示されます。組み込みアダプターは常に検出されます（それがサーバーです）。Claude Code は、そのホストで CLI が検出された場合にのみ表示されます:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| アダプター                | バックエンド                                                |
+| ------------------------- | ----------------------------------------------------------- |
+| Control Center (built-in) | プロセス内のエージェントループ — 外部 CLI は不要            |
+| Claude Code               | `claude -p --output-format stream-json`                     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+組み込みアダプターだけが、モード、ステアリング、一時停止と再開、完了契約、サブエージェントを強制します。Claude Code はそのいずれも提供しません。Cursor、Codex、その他のモデルプロバイダーは、別個のランナーではなく、組み込みアダプターに接続します。
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[アダプターが空の場合は組み込みループになります]
+アダプターが未設定のエージェントは **Control Center (built-in)**、つまりサーバー内のループにディスパッチされるため、ホストに何もインストールする必要はありません。モデルも設定されていない場合は Anthropic にそのデフォルトを問い合わせるため、完全に未設定のエージェントが実行されるのは Anthropic アカウントを接続している場合だけです。シードされたスペシャリストはどちらも持たずに提供されます。使用する予定のエージェントには両方を設定してください。
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**モデル** ドロップダウンは、選んだアダプターによって決まります。組み込みアダプターの場合、一覧は **設定 → サーバー → モデルプロバイダー** で接続したプロバイダーからリアルタイムに取得されるため、資格情報が保存されていないプロバイダーはモデルを 1 つも提供しません。
 
-## Add skills
+## スキルを追加する
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**スキル** は、このワークスペースにインストールされているスキルバンドルを対象とするチップピッカーです。チップをタップして切り替えます。チェックのグリフが選択済みのものを示します。ワークスペースにスキルがない場合、このフィールドには「No skills available. Create skills in Settings → Skills first.」と表示されます。
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills).
+ここではリポジトリ自身のスキルを選ぶことはありません。スキルを同梱するリポジトリ（`.agents/skills/`、`.claude/skills/`、`.opencode/skills/`）は、そのリポジトリで作業するエージェントにスキルを自動的に提供し、エージェントが別のリポジトリへ移動すると入れ替わります — [リポジトリ単位のスキル](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills) を参照してください。
 
-## Set the reporting line and persona
+## 報告ラインとペルソナを設定する
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **報告先** — 名前で別のエージェントを選びます。これはページヘッダーの **組織図** ボタンに表示される報告ツリーを構築します。チームリーダーが委任するときに使う名簿ではありません — それはチームのメンバーとそのスキルから決まります。
+- **ペルソナ** — 口調と振る舞いを形作る自由記述です。たとえば「シンプルで読みやすい解決策を好む。新しいコードにはすべてテストを書く。」
 
-## Tune the run
+## 実行を調整する
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **推論の程度** — 選択肢は、選択したモデル自身が公開しているレベルから来ます: Low / Medium / High、OpenAI 系のモデルでは Extra High、Claude 系のモデルでは Extra High + Max が加わります。選択したモデルが思考レベルを宣言していない場合、このフィールドは完全に非表示になり、モデル自身のデフォルトが使われます。
+- **コンテキストウィンドウサイズ** — モデルを変更するたびに、そのモデルのコンテキストウィンドウから事前入力されます。モデルのデフォルト、200k、500k、1M のワンタップチップもあります。モデルを選んだ後に入力した値は、次にモデルを変更するまで優先されます。
+- **無応答タイムアウト（分）** — 出力がないままこの時間が経過した実行を終了します。空のままにすると、モードごとのデフォルトが使われます。
 
-## Grant permissions
+## 権限を付与する
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**サンドボックスの権限** は「ワークスペースのデフォルトを使用」から始まります。スイッチをオンにするとこのエージェント用に設定できるようになるので、各項目を切り替えます:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **git push を許可** — エージェントがプッシュするために必要な GitHub トークンを注入します
+- **GitHub API の呼び出しを許可** — エージェントが PR、Issue、リポジトリのメタデータを読み取れるようにします
+- **チケット API の呼び出しを許可** — チケットプロバイダーのキーを注入します
+- **一般的なネットワークアクセスを許可** — 組み込みハーネスの `web_fetch` と `web_search` ツールも有効にします
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+各トグルの状態は、実行の起動時に資格情報ブローカーが確認します。オフのケイパビリティとは、対応するトークンが実行環境に発行されないというだけのことです。
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[ワークスペースのデフォルトはサーバーの保守的なセットを意味します]
+「ワークスペースのデフォルトを使用」のままにしたエージェントは、git push、GitHub API、チケットがいずれも **オフ**、ネットワークが **オン** で実行されます。設定 → サーバー → 診断とプライバシーに表示されるケイパビリティのデフォルトは、クライアント側の設定です。エージェントにプッシュや PR の作成をさせたい場合は、スイッチをオンにしてケイパビリティを明示的に付与してください。
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) for the full set of boundaries.
+これらのケイパビリティが制御するのは資格情報とハーネスのツールであり、OS サンドボックスとは別の層です。`cc_server` は、存在する場合はホストのサンドボックスでエージェントの実行を包みます — Windows にはネイティブのバックエンドがなく、Linux と WSL2 には `bwrap` と `socat` が必要です。境界の全体像については [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) を参照してください。
 :::
 
-## Verify it runs
+## 実行できることを確認する
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. **設定 → サーバー → モデルプロバイダー**を開き、選択したアダプターが「見つかりません」ではなくインストール済みのバージョンを報告することを確認します。**更新**をクリックして再プローブします — プローブは、いま見ているマシンではなく `cc_server` をホストしているマシンで実行されます。
+2. エージェントを含むスペースを開いてメッセージを送るか、既存のスペースで @メンションします。
+3. **設定 → ワークスペース → エージェント**に戻り、エージェントを選択して **ログ** タブを開きます。ステータスバッジ、所要時間、開始時刻、使用されたアダプターを伴う実行が表示されるはずです。**表示** でその実行のイベントストリームが開きます。
 
-If no run appears at all, work through [Run agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/).
+実行がまったく表示されない場合は、[エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/) を順に確認してください。
 
-## Delete an agent
+## エージェントを削除する
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+名簿でエージェントを選択します。**設定** タブで、フォーム最下部の **危険ゾーン** までスクロールし、**削除** をクリックします。
 
-## Related guides
+## 関連ガイド
 
-- [Run agents in parallel](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/)
-- [Build an agent team](/ja-JP/マニュアル/ハウツーガイド/エージェントチーム構築/)
-- [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
-- [Run agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
-- [Agent configuration reference](/ja-JP/マニュアル/リファレンス/エージェント設定/)
+- [エージェントを並列実行](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/)
+- [エージェントチームを構築](/ja-JP/マニュアル/ハウツーガイド/エージェントチーム構築/)
+- [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
+- [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
+- [エージェント設定](/ja-JP/マニュアル/リファレンス/エージェント設定/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)

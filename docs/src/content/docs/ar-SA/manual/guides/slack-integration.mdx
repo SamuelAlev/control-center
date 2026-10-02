@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: إعداد تكامل Slack
+description: وصّل تطبيق Slack بمساحة عمل في Control Center حتى يوجّه الأعضاء الوكلاء من Slack.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+يبيّن هذا الدليل كيف توصل Slack بمساحة عمل في Control Center: إما أن تدع Control Center ينشئ التطبيق، وإما أن تبنيه بنفسك.
 
-For a guided first run, see [Bridge Slack to your workspace](/ar-SA/دليل-المستخدم/دروس/أول-جسر-دردشة/).
+لأول تشغيل موجّه، انظر [اربط Slack بمساحة عملك](/ar-SA/دليل-المستخدم/دروس/أول-جسر-دردشة/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack هو مزوّد الدردشة الوحيد]
+الجسر لا يعرف المزوّد بالتصميم: واجهة يحرّكها واصف فوق محوّل واحد لكل مزوّد.
+وSlack هو المحوّل الوحيد الموجود. لا تنفيذ لـ Discord ولا لـ Telegram ولا
+لـ Teams ولا لـ Matrix.
 :::
 
-## Prerequisites
+## المتطلبات
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- دور `owner` أو `admin` في مساحة عمل Control Center. توصيل تطبيق دردشة تغيير في إعدادات مساحة العمل
+- إذن بإنشاء التطبيقات وتثبيتها في مساحة عمل Slack
+- لا شيء يبلغه العموم: الاتصال صادر (Socket Mode)، فلا يحتاج الخادم إلى منفذ وارد ولا نفق ولا نطاق
 
-## Three ways to get the app
+## ثلاث طرق للحصول على التطبيق
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| المسار | ما تقدّمه | ما يفعله Control Center |
+| --- | --- | --- |
+| **موجّه** | رمز وصول تكوين التطبيق (`xoxe-…`) | ينشئ التطبيق بالنطاقات والأحداث وSocket Mode وأمر الشرطة المائلة الصحيحة، ويسلّمك الخطوتين اللتين لا واجهة لـ Slack لهما |
+| **إنشاء في Slack** | لا شيء | يفتح Slack بالتكوين نفسه معبّأً مسبقًا، فتختار مساحة عمل وتؤكّد |
+| **يدوي** | رموز التطبيق الجاهز | يتحقق منها ويتصل |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+المسار الموجّه هو الوحيد الذي يُبقي التطبيق أيضًا _قابلًا للإدارة_ من Control Center، وهذا ما يتيح [تخصيص بوت الدردشة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/). يمكن لاحقًا ترقية تطبيق أُنشئ عبر **إنشاء في Slack** إلى تطبيق مُدار، بلصق رمز وصول تكوين التطبيق في حوار الاتصال.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+لا يوجد عمدًا زر «ثبّت تطبيق Slack الخاص بـ Control Center». تثبيت تطبيق Slack موزَّع يقتضي سر عميل مشتركًا (لا PKCE لدى Slack)، وSocket Mode يوزّع أحداث التطبيق عشوائيًا على اتصالاته، فيسلّم تطبيق مشترك واحد رسائل مساحة عملك إلى خوادم أناس آخرين. لذلك تملك كل مساحة عمل تطبيقها، وهذه المسارات الثلاثة عن أقل ما يكلفك ذلك من عمل.
 
-## Option A: let Control Center create the app
+## الخيار أ: دع Control Center ينشئ التطبيق
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. ولّد زوج رموز تكوين التطبيق من [api.slack.com/apps](https://api.slack.com/apps) وانسخ رمز **التحديث** (`xoxe-…`)
+2. في Control Center، انتقل إلى **الإعدادات ← مساحة العمل ← عام** ومرّر إلى بطاقة **جسور الدردشة**
+3. في كتلة Slack، انقر **أنشئ التطبيق نيابةً عني**
+4. الصق الرمز، وعدّل اسم التطبيق واسم البوت والوصفين وأمر الشرطة المائلة، ثم انقر **إنشاء التطبيق**
+5. اتبع الخطوتين المتبقيتين اللتين يعرضهما الحوار، وكل منهما رابط إلى Slack:
+   - **Basic Information → App-Level Tokens**: ولّد رمزًا بنطاق `connections:write` (`xapp-…`)
+   - **Install App**: ثبّت التطبيق في مساحة العمل وانسخ **Bot User OAuth Token** (`xoxb-…`)
+6. انقر **لصق بيانات الاعتماد** وتابع مع [الاتصال](#الاتصال)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+يُدوَّر رمز التكوين عند كل استخدام. يخزّن Control Center القيمة المدوَّرة كلما استخدمه، فلا تلصقه مرة أخرى.
 
-## Option B: create it in Slack, pre-filled
+## الخيار ب: أنشئه في Slack، معبّأً مسبقًا
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+التطبيق نفسه، بلا رمز تكوين. يسلّمك Slack شاشة الإنشاء الخاصة به والبيان معبّأً بأكمله.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. في Control Center، انتقل إلى **الإعدادات ← مساحة العمل ← عام** ومرّر إلى بطاقة **جسور الدردشة**
+2. في كتلة Slack، انقر **أنشئ التطبيق نيابةً عني**
+3. عدّل اسم التطبيق واسم البوت والوصفين وأمر الشرطة المائلة. هذه تنتقل مع الرابط
+4. انقر **إنشاء في Slack**. يفتح المتصفح صفحة إنشاء التطبيق في Slack والتكوين معبّأ مسبقًا
+5. اختر مساحة عمل Slack وأكّد. النطاقات والأحداث وSocket Mode وأمر الشرطة المائلة صحيحة أصلًا
+6. عُد إلى Control Center، واتبع الخطوتين المتبقيتين اللتين يعرضهما الحوار:
+   - **Basic Information → App-Level Tokens**: ولّد رمزًا بنطاق `connections:write` (`xapp-…`)
+   - **Install App**: ثبّت التطبيق في مساحة العمل وانسخ **Bot User OAuth Token** (`xoxb-…`)
+7. انقر **لصق بيانات الاعتماد** وتابع مع [الاتصال](#الاتصال)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+لا يُبلغ Slack عن التطبيق الذي أنشأه، فلا يعرف Control Center معرّف التطبيق، وروابط الخطوة 6 تذهب إلى قائمة تطبيقاتك لا إلى التطبيق نفسه. **تخصيص البوت** يحتاج رمز وصول تكوين التطبيق.
 
-## Option C: build the app yourself
+## الخيار ج: ابنِ التطبيق بنفسك
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+أنشئ تطبيقًا من [api.slack.com/apps](https://api.slack.com/apps)، ثم اضبطه كما يلي.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: فعّله واترك كل request URL فارغًا. يرفض Slack بيانًا يطلب Socket Mode وتسليم webhook معًا.
 
-**Bot token scopes** (OAuth & Permissions):
+**نطاقات رمز البوت** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**اشتراكات الأحداث** (أحداث البوت):
 
 ```text
 app_home_opened
@@ -91,134 +92,131 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` و`message.groups` هما ما يجعل _الرد_ داخل خيط Slack مربوط بالجسر أصلًا يعمل. بدونهما لا تصل إلا الإشارة الأولى.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**أمر الشرطة المائلة**: `/cc` (أي اسم يصلح، والجسر يستخدم الأمر الذي استُدعي به آخر مرة).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: فعّل تبويب Messages واتركه قابلًا للكتابة، حتى يستطيع الأعضاء مراسلة البوت برسالة مباشرة.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**الرموز**: ولّد رمزًا على مستوى التطبيق بنطاق `connections:write`، ثم ثبّت التطبيق وانسخ رمز وصول OAuth الخاص بمستخدم البوت.
 
-## Connect
+## الاتصال
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. انتقل إلى **الإعدادات ← مساحة العمل ← عام** ومرّر إلى بطاقة **جسور الدردشة**
+2. في كتلة Slack، انقر **الاتصال بـSlack**
+3. املأ الحقول:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| الحقل | القيمة | موضعه في Slack |
+| --- | --- | --- |
+| **رمز وصول البوت** | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token |
+| **رمز وصول على مستوى التطبيق** | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **رمز وصول تكوين التطبيق** (اختياري) | `xoxe-…` | زوج رموز تكوين التطبيق في api.slack.com/apps |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+تُفحص بادئة كل قيمة من الجهتين قبل أن يُرسَل شيء، فالقيمة الملصقة في الخانة الخطأ تُرفض بالجملة نفسها في الحالين.
 
-4. Click **Connect**
+4. انقر **اتصال**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+يتحقق Control Center من رمز البوت باستدعاء `auth.test` لدى Slack _قبل_ أن يخزّن شيئًا، فيُبلَّغ إليك الخطأ الإملائي بدل أن يصير مقبسًا لا يعمل بصمت. لا يُثبَت رمز الوصول على مستوى التطبيق إلا بفتح المقبس، فيظهر الخاطئ بعد لحظة كخطأ في الاتصال على الصف نفسه.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+بلا رمز تكوين التطبيق الاختياري يعمل الاتصال، ولا يمكنك تعديل البوت من Control Center.
 
-## What connecting does
+## ماذا يفعل الاتصال
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- يخزّن بيانات الاعتماد في دليل مساحة العمل نفسه، إلى جانب قاعدتها، وللمالك وحده قراءتها. لا تعود أبدًا إلى عميل
+- يفتح اتصال Socket Mode واحدًا لمساحة العمل هذه، ويبدأ استقبال الإشارات وردود خيوط Slack والرسائل المباشرة وأوامر الشرطة المائلة
+- يعيد تسليح كل خيط Slack كان مربوطًا بالجسر من قبل، فإعادة الاتصال تتابع المحادثات القائمة ولا تتركها معلّقة
+- لا يكلف مساحات العمل التي بلا تطبيق دردشة شيئًا: لا مقبس، ولا مؤقتات، ولا حركة
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[أين تعيش الرموز ولماذا لا في سلسلة المفاتيح]
+بيانات اعتماد البوت ملف JSON عادي واحد لكل مزوّد، في
+`<dataDir>/<workspaceId>/chat_credentials/`، يُكتب كتابة ذرية ويُضيَّق على
+المالك فقط. هذا مقصود لا سهو: حذف مساحة العمل يفصل ذلك الدليل فتذهب رموزه معه،
+و`workspace.export` والنسخ الاحتياطية تنسخ `workspace.db` لا الدليل، فمساحة عمل
+تسلّمها إلى غيرك لا تحمل في داخلها رموز بوت حيّة. ويترتب على ذلك أن استعادة
+مساحة عمل في موضع آخر تعني إعادة توصيل Slack هناك.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+الوصول إلى الجسر هو **عضوية** مساحة العمل، لا حيازة رمز. يجب أن يُربَط حساب
+Slack بمستخدم Control Center هو عضو بدور كتابة. الاتصال وقطع الاتصال والإعداد
+الموجّه ورابط الإعداد وتخصيص البوت، كلها لا يفتحها إلا المسؤول.
 :::
 
-## Verify
+## التحقق
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+يعرض صف Slack وسم حالة: **مباشر**، أو **جارٍ الاتصال…**، أو **خطأ في الاتصال** (وإلى جانبه خطأ Slack نفسه)، أو **غير متصل**. للتحقق من الطرف إلى الطرف:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. في Slack، ادعُ البوت إلى قناة: `/invite @your-bot-name`
+2. أشر إليه بطلب
+3. يظهر رد في خيط Slack، وتظهر مساحة مطابقة في Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/).
+كل عضو يريد استخدام الجسر يربط حسابه بعد ذلك. انظر [ربط حساب Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/).
 
-## What a reply looks like in Slack
+## كيف يبدو الرد في Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+فوق الكلمات المبثوثة بطاقة مجمّعة واحدة، صف لكل خطوة. الإعداد صف واحد ينتقل عنوانه من `Working on it…` إلى `Cloning …` ثم إلى `Starting the agent…`. يضيف الاستدلال صف `Thinking…`، وحين تنتهي تلك الخطوة قد تظهر عليها فكرة قصيرة. كل أداة صفها (`Read lib/main.dart`). يصل الجواب نصًا عاديًا تحت البطاقة. تكتمل البطاقة حين تنتهي الجولة، وتصير خاطئة حين يفشل التشغيل أو يُقاطَع أو يبلغ حد الجولة.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+تبدأ البطاقة لحظة قبول البوت للإشارة، عند `Working on it…`، فلا يصمت خيط Slack بينما التجهيز ما زال جاريًا. أول إشارة لك في قناة Slack تنشئ المحادثة، وهي تستنسخ المستودعات التي يعمل فيها الوكيل، فيقرأ صف الإعداد بعدها `Cloning acme/widgets…`، ثم `Setting up Reviewer…`، ثم `Starting the agent…`، ثم صف `Thinking…` ما إن يبدأ الوكيل الاستدلال فعلًا. على مستودع كبير يأخذ هذا الإعداد الأول وقتًا، والبطاقة هي كيف تعرف أنه يعمل لا أنه يتجاهلك. الإشارات اللاحقة في خيط Slack نفسه تُفتتح أيضًا بـ `Working on it…`، ثم تتجاوز خطوات الاستنساخ لأن التجهيز قائم أصلًا.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+جدار الاستدلال النصي ومخرجات الأدوات لا يغادران Control Center. الفكرة على صف `Thinking…` سطر قصير، لا نسخة نصية. **عرض في Control Center** على البطاقة يفتح المحادثة كاملة في تطبيق الحاسوب. يذهب الرابط إلى خادم Control Center الخاص بك، وهو يسلّم المتصفح إلى التطبيق.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+إن لم يحدث شيء حين تنقر، فالخادم الذي أرسل الرسالة لا يبلغه الجهاز الذي نقرت منه (خادم لا يستمع إلا على الاسترجاع المحلي، والنقر من هاتف مثلًا)، أو أن Control Center غير شغّال هناك. الخادم الذي بلا عنوان يمكن بلوغه يرسل بطاقة بلا زر، لا زرًا لا يوصل إلى موضع.
 
-## Rotate a token
+## تدوير رمز
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+ألصق القيمة الجديدة من جديد في حوار الاتصال وانقر **اتصال**. الاتصال يستبدل أي اتصال كان قائمًا لمساحة العمل هذه، فيُعاد فتح المقبس ببيانات الاعتماد الجديدة.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+يجب أن يحضر الرمزان المطلوبان في كل اتصال. يحتفظ رمز تكوين التطبيق الاختياري بقيمته المخزَّنة إذا تركت خانته فارغة، فتدوير رمز البوت لا يفقدك القدرة على تعديل التطبيق.
 
-## Disconnect
+## قطع الاتصال
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+انقر **قطع الاتصال** في صف Slack (للمسؤولين فقط). يُغلق المقبس وتُنسى بيانات الاعتماد.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+تبقى روابط المساحات وربط المستخدمين عمدًا: إعادة توصيل التطبيق نفسه تستعيد كل خيط Slack كان مربوطًا بالجسر. وهي صفوف بنطاق مساحة العمل، فحذف مساحة العمل يزيلها على أي حال.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The row says "Connection error"
+### يقول الصف «خطأ في الاتصال»
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+اقرأ الخطأ المعروض إلى جانب الوسم. بيانات الاعتماد المرفوضة (`invalid_auth` أو `not_authed` أو `token_revoked` أو `account_inactive`) حالة نهائية: يتوقف الجسر عن إعادة المحاولة وينتظر رموزًا جديدة، لأن إعادة محاولة رمز مُلغى بلا نهاية لا تُقابل إلا بحد المعدّل. ألصق الرموز من جديد في حوار الاتصال.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+خطأ `missing_scope` يعني أن التطبيق مثبَّت بنطاقات أقل مما يحتاج الجسر. أضف النطاق الناقص، وأعد تثبيت التطبيق في Slack، ثم أعد الاتصال.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+أي عارض عابر (مقبس انقطع، أو عثرة من Slack) يعيد الجسر الاتصال بعده من تلقاء نفسه، بتراجع أسي سقفه 30 ثانية، وتدوير المقبس الروتيني لدى Slack لا يرفع ذلك التراجع.
 
-### The bot does not answer a mention
+### لا يجيب البوت على إشارة
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **هل البوت في القناة؟** لا يسلّم Slack رسائل القناة إلا إلى التطبيقات الأعضاء. نفّذ `/invite @your-bot-name`
+- **هل أنت مربوط؟** يتلقى العضو غير المربوط ردًا في خيط Slack ذاك يشرح كيف يربط نفسه. انظر [ربط حساب Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
+- **هل أنت عضو في مساحة العمل بدور كتابة؟** يُخبَر من دوره `viewer` أو `guest` أن دوره للقراءة فقط. لا يبدأ الجسر عملًا نيابة عن شخص لا يستطيع أن ينسب الرسالة إليه
+- **هل في مساحة العمل وكلاء؟** بلا وكلاء تُخزَّن الرسالة، ولا أحد يجيبها
 
-### It answers in a channel but ignores plain messages
+### يجيب في القناة ويتجاهل الرسائل العادية
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+هذا مقصود. خارج الرسالة المباشرة لا يتصرف الجسر إلا على رسالة تشير إلى البوت، أو على رد داخل خيط Slack يملكه أصلًا. ما عدا ذلك حديث أناس آخرين.
 
-### Replies arrive as one big message instead of streaming
+### تصل الردود رسالة واحدة كبيرة بدل البث
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+يقول الصف «البث المباشر متوقف لتطبيق Slack هذا — تصل الردود كرسالة واحدة.» ردود Slack المتدفقة تحتاج ميزة Agents & AI Apps في خطة مدفوعة. حين يرفضها Slack يتوقف الجسر عن الطلب بقية عمر ذلك الاتصال، وينشر الردود كاملة. لا يضيع شيء، والنسخة النصية الكاملة دائمًا في Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+البث يحتاج أيضًا مرساة خيط في Slack، فالرد الذي لا خيط Slack ينمو فيه يُنشر كاملًا. وتصل بطاقة المهمة في الحالين: على الرد الكامل تُحمَل مع الرسالة نفسها، مكتملة أصلًا.
 
-### The reply has no card above it
+### الرد بلا بطاقة فوقه
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+بطاقات مهام Slack جزء من سطح Agents & AI Apps الجديد نفسه الذي يشمل البث، وSlack لا يرفض إلا وقت الاستدعاء. حين يرفض، يُبقي Control Center الرد ويُسقط البطاقة بقية عمر ذلك الاتصال. جواب بلا سطر حالة أولى من سطر حالة بلا جواب.
 
-### "Control Center needs an app configuration token to edit the bot"
+### «يحتاج Control Center إلى رمز وصول تكوين التطبيق لتعديل البوت»
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+صف **تخصيص البوت** معطّل لأن الاتصال بلا رمز وصول تكوين التطبيق. هذا متوقَّع لتطبيق بُني يدويًا أو أُنشئ عبر **إنشاء في Slack**، فلم يُبلغ Slack مطلقًا Control Center أي تطبيق هو. ولّد زوج رموز تكوين التطبيق من api.slack.com/apps وأعد الاتصال بعد ملء رمز التحديث.
 
-### A long answer is cut off
+### جواب طويل مقطوع
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+يحد Slack الرسالة الواحدة بـ 40,000 حرف، فيقطع الجسر عند 39,000 ويلحق مؤشرًا إلى Control Center. رد أقصر أولى من رد يرفضه Slack رفضًا باتًا. النص الكامل دائمًا في النسخة النصية للمساحة.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Link your Slack account](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
-- [Customize the chat bot](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/)
-- [Chat bridge](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
+- [ربط حساب Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-حساب-الدردشة/)
+- [تخصيص بوت الدردشة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تخصيص-بوت-الدردشة/)
+- [جسر الدردشة](/ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)
+- [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/)

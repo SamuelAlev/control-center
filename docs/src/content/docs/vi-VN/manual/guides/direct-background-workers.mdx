@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Điều khiển worker nền
+description: Dùng chế độ vibe để ngừng tự tay làm việc và bắt đầu điều khiển nhiều agent làm việc đó song song.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Hướng dẫn này cho bạn cách chạy một cuộc hội thoại với vai trò **người điều khiển** thay vì worker: phiên làm việc đọc và xác minh, còn các agent nền làm phần chỉnh sửa.
 
-## What changes when you type `/vibe`
+## Điều gì thay đổi khi bạn gõ `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Hai điều, và chỉ điều thứ nhất được bộ máy cưỡng chế:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Công cụ của chính phiên bị hạ xuống chỉ đọc**, cộng thêm năm động từ worker. Cách duy nhất để nó tác động tới kho mã là thông qua một worker, và cách duy nhất để nó biết chuyện gì đã xảy ra là đọc những tệp mà worker đã động vào.
+2. **Nó được yêu cầu xác minh bằng cách đọc, chứ không phải bằng cách tin.** Báo cáo của một worker là lời khai về việc nó đã làm, không phải bằng chứng rằng việc đó đã thành công.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Điều thứ nhất mới là điểm tựa. Một người điều khiển vẫn còn grep và edit được sẽ tự tay làm việc khi bị áp lực, và đó chính là kiểu hỏng hóc mà cơ chế này ra đời để ngăn.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Worker bắt đầu từ số không
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Một worker chưa bao giờ thấy cuộc hội thoại của bạn và sẽ không bao giờ thấy. Bản giao việc là toàn bộ ngữ cảnh của nó.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Đó là điều giữ cho mô hình này rẻ — hai mươi worker, mỗi worker giữ lịch sử của người điều khiển, sẽ tốn ngữ cảnh gấp hai mươi lần người điều khiển — và cũng chính là điều khiến việc viết bản giao việc trở nên khó. “Giờ làm nốt cái kia đi” đọc lên là một chỉ dẫn trọn vẹn với người điều khiển và chẳng là gì cả với một phiên hoàn toàn mới.
 
-A good brief names files, commands and the definition of done:
+Một bản giao việc tốt nêu rõ tệp, lệnh và định nghĩa hoàn thành:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> Trong `lib/features/auth/`, thay mọi lời gọi `SessionStore.read(key)` bằng `SessionStore.get(key)`. Phương thức mới trả về `Future<String?>` trong khi phương thức cũ trả về `String?`, nên phía gọi cần `await`. Chạy `fvm flutter analyze lib/features/auth` khi xong và báo lại mọi lỗi bạn không sửa được.
 
-## The five verbs
+## Năm động từ
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| Động từ      | Việc nó làm                                                 |
+| ------------ | ----------------------------------------------------------- |
+| `vibe_spawn` | Khởi động một worker theo bản giao việc. **Trả về ngay lập tức.** |
+| `vibe_list`  | Hạng, trạng thái, thời gian đã chạy và kết quả cuối của từng worker |
+| `vibe_send`  | Một lượt tiếp nối cho worker đã chạy xong                     |
+| `vibe_wait`  | Chặn cho đến khi một worker kết thúc                          |
+| `vibe_kill`  | Dừng một worker                                               |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Việc sinh worker là bất đồng bộ theo đúng thiết kế. Một người điều khiển chặn ở mỗi lần sinh worker là đang chạy từng worker một, tức là một cách làm chậm hơn của chính việc nó vốn đã tự làm. Chỉ dùng `vibe_wait` khi bạn thật sự không thể tiếp tục nếu thiếu một câu trả lời cụ thể.
 
-## Two tiers
+## Hai hạng
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| Hạng   | Dành cho                                                          |
+| ------ | ----------------------------------------------------------------- |
+| `fast` | Công việc cơ học với đặc tả rõ ràng — chỉnh sửa, đổi tên, phác thảo, chạy lệnh |
+| `good` | Thiết kế, phán đoán, hoặc đánh giá thứ mà một worker `fast` tạo ra  |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Một cách bố trí phổ biến là rải worker `fast` ra các tệp độc lập, rồi sinh một worker `good` để đánh giá những gì chúng cùng làm.
 
-## Verifying
+## Xác minh
 
-This is the part that decides whether the pattern is worth anything.
+Đây chính là phần quyết định mô hình này có đáng gì hay không.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Sau đó **hãy đọc những tệp nó đã nêu tên**. Người điều khiển có `read`, `search`, `lsp` và `ast_grep`; giữ lại chúng chính là vì lý do đó. Một người điều khiển tin ngay vào báo cáo chỉ còn là kẻ tóm tắt sự lạc quan của các agent khác.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` sau một vòng worker thường là phép kiểm tra nhanh nhất.
 
-## When a worker loses the thread
+## Khi worker mất mạch
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Hãy dừng nó và giao việc lại. Một bản giao việc mới, đã chỉnh sửa thì rẻ hơn một cuộc tranh cãi, và `vibe_send` chỉ hoạt động với worker đã chạy xong lượt của mình.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Giới hạn
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Tám worker chạy đồng thời.** Đây là mức trần về chi phí, không phải giới hạn kỹ thuật: mỗi worker là một phiên mô hình đầy đủ, và một người điều khiển rải ra hai mươi worker thì đã hết theo dõi nổi chúng đang làm gì.
+- **Không worker nào sống lâu hơn chế độ.** Khi lượt chạy kết thúc, tất cả chúng đều bị dừng và bản ghi hội thoại cho biết đã dừng bao nhiêu. Một agent nền vẫn còn sửa tệp sau khi cuộc hội thoại đã đi tiếp là kiểu hỏng hóc duy nhất mà cơ chế này không được phép có.
+- **Bên dưới, worker vẫn là subagent bình thường.** Cùng giới hạn độ sâu, cùng chính sách rào chắn, cùng bản ghi lượt chạy con. Vibe chỉ đổi ai lái chúng, chứ không đổi thứ chúng được phép làm — nên lời nhắc phê duyệt vẫn xuất hiện cho các lệnh write và exec của worker.
 
-## When not to use it
+## Khi nào không nên dùng
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/) or an [orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Chế độ vibe dành cho công việc có thể tách thành những bản giao việc độc lập. Nếu bước tiếp theo phụ thuộc vào đầu ra của bước trước, thì thứ bạn đang mô tả là một [quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/) hoặc một [điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/), và cả hai đều diễn đạt phụ thuộc một cách đúng đắn thay vì bắt người điều khiển mô phỏng chúng bằng `vibe_wait`.
 
-## Related
+## Liên quan
 
-- [Run agents in parallel](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/) — the other ways to fan out
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/) — when the work has a shape
-- [Built-in agent tools](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — the verbs and their arguments
+- [Chạy agent song song](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/) — những cách rải việc khác
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/) — khi công việc có hình dạng rõ ràng
+- [Công cụ agent tích hợp](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — các động từ và tham số của chúng

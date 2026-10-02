@@ -1,95 +1,107 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Σύνδεση παρόχου OpenID Connect
+description: Συνδέστε οποιονδήποτε εκδότη OIDC — Pocket ID, Keycloak, Auth0, Zitadel — με τη σύνδεση στο Control Center.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Χρησιμοποιήστε αυτόν τον οδηγό όταν ο πάροχος ταυτότητάς σας μιλά **OpenID
+Connect** αντί για SAML. Κάθε πιστοποιημένος εκδότης OIDC λειτουργεί — οι
+Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace και άλλοι παρόμοιοι
+ακολουθούν όλοι τα ίδια βήματα· το μόνο που διαφέρει είναι το σημείο όπου ο
+πάροχός σας εμφανίζει τις τιμές.
 
-## Prerequisites
+## Προϋποθέσεις
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- έναν πάροχο OIDC όπου μπορείτε να δημιουργήσετε έναν πελάτη — σημειώστε το
+  **Client ID** του και το **URL εκδότη** του (τη βάση κάτω από την οποία
+  βρίσκεται το έγγραφο `.well-known/openid-configuration`), καθώς και το
+  **Μυστικό πελάτη** του όταν ο πελάτης είναι του εμπιστευτικού τύπου (οι
+  δημόσιοι πελάτες PKCE δεν έχουν),
+- έναν διακομιστή Control Center που διαχειρίζεστε εσείς (ο **ιδιοκτήτης
+  διακομιστή**).
 
-## Steps
+## Βήματα
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Ανοίξτε **Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση** και μεταβείτε στο
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Συμπληρώστε το **URL εκδότη**, το **Client ID** και το **Μυστικό πελάτη
+   (προαιρετικό)** όταν ο πάροχος έχει εκδώσει κάποιο. Το Control Center
+   ανακαλύπτει τα endpoints από το τυπικό έγγραφο ανακάλυψης του εκδότη — καμία
+   ρύθμιση ανά πάροχο.
+3. Στον πάροχο, δηλώστε την ανακατεύθυνση
+   `https://<your-server>/oidc/callback` σε αυτόν τον πελάτη.
+4. Αν οι ομάδες σας βρίσκονται κάτω από διεκδίκηση διαφορετική από το `groups`,
+   ορίστε το όνομα του πεδίου **Διεκδίκηση ομάδων**· αντιστοιχίστε ομάδες σε
+   ρόλους αν θέλετε (η ενιαία σύνδεση δεν μπορεί ποτέ να εκχωρήσει τον ρόλο του
+   ιδιοκτήτη).
+5. Επιλέξτε την πολιτική συμμετοχής (αυτόματη προσθήκη σε κάθε χώρο εργασίας ή
+   απαίτηση πρόσκλησης ανά χώρο εργασίας), ενεργοποιήστε τη **Χρήση OpenID
+   Connect για σύνδεση** και πατήστε **Αποθήκευση σύνδεσης**.
+6. Πατήστε **Δοκιμή σύνδεσης** — ο διακομιστής ανακτά το έγγραφο ανακάλυψης του
+   εκδότη και επιβεβαιώνει τα endpoints του, οπότε ένα πράσινο μήνυμα σημαίνει
+   ότι όλα λειτουργούν εκτός από τον κύκλο ανταλλαγής μέσω του προγράμματος
+   περιήγησης. Για να ελέγξετε και τη δήλωση του πελάτη, χρησιμοποιήστε τον
+   [έλεγχο παρακάτω](#ελέγξτε-τη-διαμόρφωσή-σας-από-αυτή-τη-σελίδα).
+7. Κάντε μια σύνδεση: η οθόνη σύνδεσης στον ιστό εμφανίζει **Σύνδεση με OpenID
+   Connect**, ή ανοίξτε απευθείας το `https://<your-server>/oidc/login`.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Οι διεκδικήσεις (email, όνομα, ομάδες) διαβάζονται από το endpoint token του
+εκδότη μέσω TLS από τον διακομιστή σας — το πρόγραμμα περιήγησης δεν τις
+παρέχει ποτέ, οπότε δεν εμπλέκεται τοπική επαλήθευση υπογραφής JWT. Ο πελάτης
+πρέπει να έχει το δικαίωμα να ζητά το scope `openid profile email`, που είναι
+ακριβώς αυτό που ζητά το Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Επειδή αυτό το κανάλι TLS είναι το μόνο που αυθεντικοποιεί τις διεκδικήσεις, το
+URL του εκδότη πρέπει να είναι **https** — ένας εκδότης σε απλό κείμενο θα
+επέτρεπε σε οποιονδήποτε επιτιθέμενο στην πορεία να πλαστογραφεί ταυτότητες
+μαζικά. Το `http` γίνεται δεκτό μόνο για εκδότες loopback (`localhost`,
+`127.0.0.1`, `::1`), για τοπική ανάπτυξη.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Δημόσιος ή εμπιστευτικός πελάτης;]
+Η προεπιλεγμένη — και συνιστώμενη — μορφή είναι ένας **δημόσιος πελάτης** που
+χρησιμοποιεί ροή κωδικού εξουσιοδότησης με **PKCE** (RFC 7636): ο μοναδικός
+επαληθευτής κωδικού που κρατά ο διακομιστής αντικαθιστά το μυστικό και η
+ανταλλαγή token είναι δεσμευμένη στο αίτημα εξουσιοδότησης που την ξεκίνησε.
+Δεν υπάρχει μυστικό που μπορεί να διαρρεύσει και ένας κλεμμένος κωδικός
+εξουσιοδότησης είναι άχρηστος χωρίς τον επαληθευτή. Ορισμένοι πάροχοι το
+αποκαλούν τύπο πελάτη «SPA» ή «native» όταν τον δημιουργείτε.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Αν ο πάροχός σας εξέδωσε αντ' αυτού έναν **εμπιστευτικό** πελάτη, είτε δηλώστε
+τον πελάτη ως δημόσιο στον πάροχο (το PKCE παραμένει ενεργό και στις δύο
+περιπτώσεις), είτε επικολλήστε το μυστικό του πελάτη στο πεδίο **Μυστικό πελάτη
+(προαιρετικό)** της σύνδεσης. Το μυστικό αποθηκεύεται στο αρχείο μυστικών 0600
+του διακομιστή (ποτέ στη βάση δεδομένων), αποστέλλεται στο endpoint token ως
+`client_secret_post` και δεν επιστρέφεται ποτέ μέσω RPC· αν αφήσετε το πεδίο
+κενό κατά την αποθήκευση, διατηρείται το αποθηκευμένο μυστικό. Όταν μια σύνδεση
+αποτυγχάνει στην ανταλλαγή token, το αρχείο καταγραφής του διακομιστή αναφέρει
+το σφάλμα του ίδιου του παρόχου (το `invalid_client` σημαίνει σχεδόν πάντα ότι
+το μυστικό λείπει ή είναι λάθος).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim).
+:::note[Δυνατότητα πρόσβασης]
+Η ίδια η σύνδεση γίνεται με τη διαμεσολάβηση του προγράμματος περιήγησης: ο
+εκδότης απλώς ανακατευθύνει το πρόγραμμα περιήγησης του χρήστη πίσω στο
+`/oidc/callback` και ο διακομιστής σας κάνει μια εξερχόμενη κλήση HTTPS στο
+endpoint token — δεν απαιτείται εισερχόμενη σύνδεση από τον εκδότη, οπότε ένας
+διακομιστής πίσω από NAT λειτουργεί αρκεί τα προγράμματα περιήγησης των χρηστών
+να μπορούν να τον φτάσουν (LAN, VPN, Tailscale ή σήραγγα). **Η παροχή μέσω SCIM
+αποτελεί την εξαίρεση**: ο IdP καλεί απευθείας τον διακομιστή σας, κάτι που
+απαιτεί σήραγγα ή δημόσιο URL — δείτε [παροχή χρηστών με
+SCIM](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/sso-scim).
 :::
 
-## Check your configuration from this page
+## Ελέγξτε τη διαμόρφωσή σας από αυτή τη σελίδα
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Ο έλεγχος παρακάτω εκτελείται στο πρόγραμμα περιήγησής σας. Ανακτά απευθείας το
+έγγραφο ανακάλυψης του εκδότη σας, επομένως αυτός ο ιστότοπος δεν το βλέπει
+ποτέ, και εφαρμόζει τους κανόνες του διακομιστή: έναν εκδότη https που ταιριάζει
+με το έγγραφο, endpoints στην ίδια προέλευση του εκδότη, PKCE S256 και τη μέθοδο
+αυθεντικοποίησης token που χρειάζεται ο τύπος του πελάτη σας. Με ένα Client ID
+και τη διεύθυνση του διακομιστή, μπορεί να ανοίξει μια δοκιμαστική σύνδεση που
+δείχνει αν ο πελάτης και το redirect URI του είναι δηλωμένα. Δεν ζητά ποτέ το
+μυστικό του πελάτη.
 
 <SsoCheck kind="oidc" />

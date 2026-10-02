@@ -1,248 +1,226 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: מעקות בטיחות — מדיניות אחת לכל פעולה משנה־מצב
+description: למה Control Center מעביר כל תוצאת לוואי של סוכן דרך מנוע allow/prompt/deny אחד, איך טקסונומיית ActionClass נשארת קטנה במכוון ומה חוגת האוטונומיה באמת משנה.
 slug: he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+סוכנים ב-Control Center יכולים למחוק קבצים, לדחוף ענפים, לפרסם בקשות משיכה
+ולקרוא ל-API חיצוניים. כל אחד מאלה הוא _סוג_ שונה של סיכון, ובמשך זמן רב רק
+לאחד מהם — פקודות מעטפת — הייתה מדיניות. מעקות הבטיחות נועדו להשיב באופן אחיד
+על שאלה אחת, לגבי כל פעולה משנה־מצב שסוכן יכול לבצע, בלי קשר למנוע ההרצה או
+לכלי שמציע אותה: **האם היא מותרת, האם היא מחייבת אישור, או שהיא חסומה?**
 
-## One engine, every chokepoint
+## מנוע אחד, כל נקודת מעבר
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+יש מנוע מדיניות אחד בדיוק. הוא נשאל בכל נקודה שבה פעולה יכולה לצאת מהמערכת:
+רישום הכלים של מנגנון ההרצה המובנה, השער של מפעיל ה-MCP בצד השרת ופעולות שינוי
+במאגרים. כלל שנכתב פעם אחת חל אפוא גם על מנוע ההרצה המובנה וגם על CLI של סוכנים
+חיצוניים — אין נתיב שני ושקט יותר לעקוף אותו. מדיניות הפקודות הישנה, שמוגבלת
+ל-bash, עדיין עובדת: כלל יכול להתאים לקידומת פקודה במקום למחלקת השפעה, ושתי
+הצורות מתקיימות יחד באותו מאגר.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+המנוע הזה, עם זאת, אינו תחליף לארגז החול של מערכת ההפעלה, וארגז החול אינו תחליף
+לו. הם עונים על שאלות שונות: מעקות הבטיחות מכריעים אם קריאה ש-Control Center
+רואה בכלל מותרת, ואילו ארגז החול תוחם לאן התהליך שנוצר רשאי להגיע. `cc_server`
+מחיל את ארגז החול במקום שבו המארח מציע מנוע — אבל [ב-Windows אין כזה, וב-Linux
+נדרשים `bwrap` ו-`socat`](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/). במארחים
+כאלה מעקות הבטיחות הם שכבת האכיפה החיצונית ביותר ולא מדיניות שיושבת מעל רצפה,
+וכדאי לדעת זאת כשאתם מחליטים עד כמה להתיר.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: טקסונומיה סגורה במכוון
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+כל כלי משנה־מצב מצהיר לאילו **ActionClasses** הוא שייך, מתוך קבוצה סגורה של
+שלושה־עשר סוגי השפעה. חמישה מהם מבקשים אישור כברירת מחדל; השאר מאפשרים, ורק כלל
+משנה זאת.
 
-| Class                      | Built-in default | What it covers                                                   |
+| מחלקה                      | ברירת מחדל מובנית | מה היא מכסה                                                      |
 | -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| `fileDelete`               | **prompt**       | מחיקת קובץ (כתיבה בצורת מחיקה, `rm`)                             |
+| `gitPush`                  | **prompt**       | דחיפה למאגר git מרוחק                                            |
+| `prCreate`                 | **prompt**       | יצירת בקשת משיכה                                                 |
+| `prPublish`                | **prompt**       | פרסום סקירה, מיזוג בקשת משיכה                                    |
+| `vendorSyncWrite`          | **prompt**       | כתיבה לספק כרטיסים חיצוני (Linear, Jira, סנכרון GitHub)          |
+| `fileWriteOutsideWorktree` | allow            | כתיבת קובץ מחוץ לעץ העבודה המבודד                                |
+| `gitCommit`                | allow            | יצירת קומיט ב-git                                                |
+| `networkEgress`            | allow            | יציאה לרשת (שליפת דפים, HTTP שרירותי)                            |
+| `secretAccess`             | allow            | קריאת סוד או פרטי גישה                                           |
+| `packageInstall`           | allow            | התקנת חבילה (npm, pip, pub, brew)                                |
+| `processSpawn`             | allow            | הרצת תהליך (מעטפת וכל דבר שמריץ מעטפת)                           |
+| `workspaceMutation`        | allow            | שינוי מבנה סביבת העבודה (מאגרים, מרחבים, סוכנים)                 |
+| `enclosureControl`         | allow            | השליטה במתחם מבודד (תחנה): אתחול VM, שליחת קלט אליו              |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+שמונת הסוגים שמאפשרים כברירת מחדל נבחרו מתוך הנחה שרצפת ארגז החול חלה מתחתם. היא
+חלה במקום שבו המארח מציע מנוע, ואינה חלה ב-Windows או במכונת Linux שחסרים בה
+`bwrap` ו-`socat` — לכן אם אתם רוצים ש-`fileWriteOutsideWorktree` או
+`packageInstall` יעברו שם דרך שער, זה כלל שעליכם לכתוב.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+הקבוצה סגורה במכוון. כלי משנה־מצב חדש שמצהיר על אף מחלקה נכשל בבדיקת הראצ'ט, כך
+שהטקסונומיה יכולה לגדול רק בהחלטה מפורשת ומנומקת — "התפשטות טקסונומיה היא מותה
+של התכונה הזו." שלושה־עשר סוגים מספיקים כדי לבטא את המדיניות שאנשים באמת כותבים
+(לעולם לא לדחוף בלי לשאול, לעולם לא למחוק מחוץ לעץ עבודה, תמיד לאפשר קריאות)
+ומעטים מספיק כדי שממשק ההגדרות יישאר מובן.
 
-## Rules and scope resolution
+## כללים ופתרון טווחים
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+כלל ממפה `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+הטווחים מקוננים מהספציפי ביותר לכללי ביותר:
 
-**space > agent > workspace > mode preset > built-in default**
+**מרחב > סוכן > סביבת עבודה > ערכת מצב > ברירת מחדל מובנית**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+ההכרעה היא **קודם כול לפי ספציפיות**: הטווח הראשון שיש בו כלל מתאים מכריע, ושם
+ההכרעה נעצרת. "המחמיר ביותר" הוא רק שובר שוויון — בין שני כללים ספציפיים באותה
+מידה באותו טווח, וכאשר משלבים את מספר המחלקות שפעולה אחת מצהירה עליהן. בתוך
+טווח, כלל פקודה מתאים לפי קידומת הפקודה הארוכה ביותר. allow אינו גובר על deny
+בשום מקום.
 
-Two decisions carry hard guarantees:
+שתי החלטות נושאות הבטחות קשיחות:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **בקשות אישור שנכשלות לחסימה.** `prompt` בלי מאשר מחובר מוכרע כ-_denied_.
+  שאלה שלא נענתה היא לעולם לא "כן".
+- **שילוב מחמיר.** פעולה שפורשת על פני כמה מחלקות משלבת אותן באופן המחמיר ביותר;
+  כאשר כמה מחלקות מבקשות אישור, אישור אחד מפרט את כולן.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+במכוון אין נעילה שתלויה בסבב. כל קריאת כלי מכריעה את המדיניות מחדש מאפס, ולכן
+חזרה על בקשת אישור לאותה פעולה מוגבלת רק בכך שהמפעיל עצמו בחר "לזכור את ההחלטה
+הזו", ולא בשום דבר שתלוי בסבב.
 
-## Argument-level rules
+## כללים ברמת הארגומנטים
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+כלל יכול להגביל את הארגומנטים של פעולה, ולא רק את הפועל שלה. "רשאי לדחוף"
+ו"רשאי לדחוף אל `feature/*`" הן שתי טענות שונות, ורק השנייה היא בקרה — שער
+הרשאה שמאשר את הפועל בלבד הוא הצורה שעומדת מאחורי רוב התקריות המפורסמות עם
+סוכנים.
 
-A constraint may name:
+אילוץ יכול לציין:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **נתיבים** — תבניות glob (`repos/**`, `!**/.env`)
+- **מפנים** — מפנים של git, עם שלילה ב-`!` (`['**', '!main']` נקרא כ"כל ענף
+  מלבד main")
+- **מארחים** — יעדי רשת, עם תווים כלליים לתת־תחומים (`*.internal`)
+- **פקודות** — קידומות של פקודות, בהתאמה על גבול מילה
+- **תקרות** — `maxCount` / `maxCents`, כך שאפשר לבטא "מחיקה של עד 50 קבצים"
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+שלוש תכונות נובעות מכך שהדקדוק נשאר סגור וחסר לולאות, ושלושתן הן העיקר: כל כלל
+מתורגם למשפט שאפשר לקרוא בחזרה, כל דחייה יכולה לנקוב בשם האילוץ שהתאים, ואת כל
+המדיניות אפשר למנות — אתם יכולים לראות מה סוכן רשאי לעשות *לפני* שהוא רץ.
 
-Three rules that matter:
+שלושה כללים שחשוב להכיר:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **כלל עם אילוץ ספציפי יותר** מכלל בלי אילוץ באותו טווח, ולכן "כלל שחוסם דחיפה
+  אל `main`" גובר על "כלל שמתיר דחיפה" בלי שאיש יצטרך לחשוב על סדר.
+- כלל **מגביל** (חסום / שאל קודם) חל כאשר הבקשה נוגעת ב*כלשהו* מהערכים שהוא
+  מציין; כלל **מתיר** (אפשר) חל רק כאשר הבקשה כולה *בתוך* הערכים האלה. קריאה
+  זהה של שניהם הייתה מאפשרת לסוכן "להלבין" נתיב אסור על ידי צירוף נתיב תמים
+  לצידו.
+- כלל שמציין היבט שהבקשה אינה אומרת עליו דבר אינו מיושם ואינו מדולג: הוא
+  **מסלים לבקשת אישור**. דילוג שקט היה הופך כל כלל על ענף מוגן לחסר תוקף מול
+  כלי שאינו מדווח על ה-ref שלו; חסימה שקטה הייתה דוחה כל דחיפה שהמחלץ אינו מצליח
+  לתאר. כשמאשר אינו מחובר, כלל הכשל־סגור הקיים הופך את ההסלמה הזו לדחייה.
 
-## What a command rule can and cannot catch
+## מה כלל פקודה תופס ומה לא
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+כלל `commandPrefix` מתאים על גבול מילה: `git push` מכסה את
+`git push origin main` ולא את `git pushx`. הוא **אינו** מנרמל את המעטפת.
+`git  push` (שני רווחים), `cd sub && git push` ו-`GIT_DIR=… git push` הם כולם
+מחרוזות שונות, ואף אחד מהם אינו מתאים לכלל על `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+זו מגבלה אמיתית, והיא נאמרת בגלוי ולא מטואטאת: כללי פקודה הם נוחות למפעיל לצורך
+עיצוב ההתנהגות הרגילה של סוכן, **לא** גבול מול סוכן עוין. הגבולות הם מחלקות
+ההשפעה (שכלי מצהיר עליהן ואינו יכול לאיית אותן מחדש), רשת הפקודות של המצב
+שמתחת למאגר המדיניות, וארגז החול של מערכת ההפעלה שמתחת לשניהם. כלל פקודה שמוכרע
+כ-`allow` לעולם אינו מרפה את אחד משני אלה — רשת המצב רצה אחריו, וה-`deny` שלה
+הוא סופי.
 
-## Standing approvals
+## אישורים מתמשכים
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+מענה לבקשת אישור עם "לזכור את זה" כותב כלל מדיניות אמיתי: בעל טווח (מרחב / סוכן
+/ סביבת עבודה), **מוגבל בארגומנטים** (אישור דחיפה אל `feature/login` מקנה
+`feature/**`, לא את `main`) ו**מבטל את עצמו** בתום TTL מפורש. אמירת "כן" לשעות
+הקרובות אינה אותו דבר כמו שכתוב שקט מחדש של המדיניות הקבועה שלכם, והכללים שהוא
+כותב נוחתים באותו מאגר עם מקור `remembered` ותפוגה, כך שאפשר לבטל אותם מוקדם.
 
-## Enforcement levels
+## רמות אכיפה
 
-Each rule carries one:
+לכל כלל יש אחת:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — לאפשר, אבל לתעד שהכלל התאים. זהו נתיב האימוץ: פורסים כלל מחמיר
+  במצב advisory, קוראים את יומן הביקורת למשך שבוע כדי לראות בדיוק מה הוא *היה*
+  חוסם, ואז מקדמים אותו. בלי הרמה הזו, מדיניות מחמירה לעולם לא נדלקת.
+- **soft** — לחסום, עם אפשרות עקיפה למי שמחזיק בהרשאת העקיפה, בתיעוד נימוק.
+  העקיפה עצמה היא אירוע שנרשם ביומן הביקורת.
+- **hard** (ברירת המחדל) — לחסום. שום דבר אינו עוקף זאת.
 
-## The managed tier
+## הרמה המנוהלת
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+מפעיל של התקנה יכול לנעול מדיניות שאיש ממנהלי סביבות העבודה לא יוכל להרפות.
+כללים מנוהלים יושבים בצד השרת וממוזגים **באופן המחמיר ביותר** עם השרשרת של כל
+סביבת עבודה — הם אינם טווח בראש השרשרת, מפני ש-`allow` מנוהל בראש השרשרת היה
+מאפשר להתקנה לעקוף חסימה של סביבת עבודה, ההיפך ממה שמנגנון הגבלה מלמעלה נועד
+לעשות. כלל מנוהל יכול אפוא רק להחמיר.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+הגדרת `CC_SERVER_MANAGED_POLICY` לקובץ JSON גוברת על הכללים השמורים לחלוטין, וזה
+מה שמאפשר למפעיל לנעול עמדה ששום ממשק ניהול לא יכול להפוך — התשובה לשאלה "אפשר
+למנוע מהמפתחים שלי לכבות את בקרות הבטיחות?".
 
-## The autonomy dial is a profile, not a parallel system
+## חוגת האוטונומיה היא פרופיל, לא מערכת מקבילה
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+חוגת האוטונומיה לכל מרחב היא פרופיל בעל שם מעל אותו מאגר מדיניות, ולא מנגנון
+שני. שלוש ההגדרות שלה נשמרות ונשלחות כ-`proposeOnly`, `actWithApproval`
+ו-`actFreely` (הצורות הכתובות במקפים הן טקסט ממשק בלבד, ו-`autonomy.setForSpace`
+דוחה כל דבר אחר). השארתה ללא הגדרה מתנהגת כ-`actWithApproval`.
 
-What each one does to a resolved decision:
+מה כל אחת מהן עושה להחלטה שהוכרעה:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** חוסם לחלוטין כל כלי שעובר דרך שער. הסוכן עדיין יכול לחשוב
+  ולהשיב; הוא פשוט אינו יכול לפעול, וההודעה שלו מסבירה למה.
+- **`actWithApproval`** (וגם מצב ללא הגדרה) הוא שער האישור שנכשל לחסימה שתואר
+  למעלה.
+- **`actFreely`** מאשר מראש כל דבר שלא הוכרע כ-`deny` קשיח.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+את האחרונה ראוי לנסח בפשטות בלי לרכך: תחת `actFreely` החלטת `prompt` **אינה**
+מוסלמת למאשר — היא מאושרת, ואיש לא נשאל. רק כלל `deny` מפורש שורד את החוגה.
+כלומר `actFreely` היא הענקה מכוונת של אוטונומיה, לא הגדרת נוחות, וכלל הכשל־סגור
+מגן בדיוק על המקרה שבו הוא חשוב (`actWithApproval`, ברירת המחדל).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+האצלה בין סוכנים נשמרת בנקודת המעבר של `delegate_task` על ידי כל ארבעת השומרים:
+תקרת עומק (ברירת מחדל 3), זיהוי מעגלים, **תקרת אוטונומיה** (סוכן מואצל אינו יכול
+לפעול לעולם באוטונומיה גדולה מזו של המאציל — אי אפשר "להלבין" הרשאה על ידי
+העברת עבודה לסוכן חופשי יותר) ו**מעטפת תקציב** (האצלה מחייבת את התקציב שנותר
+למאציל ואינה יכולה להנפיק עוד). כל אחת נדחית בקול רם, כשהנימוק של השומר מוחזר
+לסוכן כפי שהוא.
 
-## The adapter honesty matrix
+## מטריצת היושר של המתאמים
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+לא כל מנוע הרצה מאפשר ל-Control Center ליירט כל פעולה. CLI של סוכנים חיצוניים
+מריצים חלק מהכלים באופן מקורי, בתוך התהליך, במקום שאין בו שער. במקום להעמיד פנים
+אחרת, כל מתאם נושא **מטריצת יושר**: לפי מתאם, אם Control Center מסנן את משטח
+הכלים, מיירט קריאות כלים, רואה את חוזה ההשלמה, מצליח לראות את הכלים המובנים של
+מנוע ההרצה, ואם כלים שבתוך התהליך מכוסים בפרופיל ארגז חול.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+שתי רשומות כדאי לקרוא לפני שאתם סומכים על תצורה. מנגנון ההרצה המובנה מצהיר
+שכלי הקבצים שלו שבתוך התהליך **אינם** בארגז חול — משטח הכלים ומנוע המדיניות הזה
+הם גבול מערכת הקבצים היחיד שיש לו. Claude Code מצהיר שקריאות הכלים שלו **אינן
+ניתנות ליירוט**, מפני שהוא מופעל עם `--dangerously-skip-permissions`; Control
+Center רואה רק את קריאות ה-`mcp__*` שלו, וכלי הקריאה, הכתיבה, העריכה והמעטפת
+שלו עצמו רצים בלי שנראים.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+מסך ההגדרות מציג את המטריצה הזו, מפני שהכישלון היחיד שאין לסלוח לו במערכת מעקות
+בטיחות הוא להצהיר על כיסוי שאינו קיים.
 
-## Probing policy before it bites
+## לבדוק את המדיניות לפני שהיא נושכת
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+מעקות הבטיחות נמצאים ב**הגדרות → סביבת עבודה → הרשאות סוכנים**
+(`/workspaces/<id>/settings/workspace/permissions`). במסך יש את מטריצת המדיניות
+שבה נכתבים הכללים, תבניות מדיניות, בדיקת "מה אם?", יומן ביקורת ההרשאות ומטריצת
+היושר של המתאמים.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+הבדיקה מקבלת מחלקת השפעה (או פקודה) וטווח, ומראה איזה כלל הכריע ולמה. מכיוון
+שההכרעה טהורה ודטרמיניסטית — אותה פעולה, אותו טווח, אותה החלטה — התשובה של
+הבדיקה היא התשובה שהסוכן יקבל.
 
-## Related concepts
+## מושגים קשורים
 
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/): writing and testing rules in practice
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/): מה באמת מגביל הרצת סוכן ועד לאן מגיעה רצפת מערכת ההפעלה שמתחת למנוע הזה
+- [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): מרחבים, גורמים פועלים והיכן יושבת חוגת האוטונומיה
+- [הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/): כתיבה ובדיקה של כללים בפועל

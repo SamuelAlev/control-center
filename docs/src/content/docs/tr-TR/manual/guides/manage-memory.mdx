@@ -1,101 +1,146 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Çalışma alanı belleğini yönetme
+description: Ajanların bir çalışma alanına yazdığı olguları ve politikaları gözden geçirin, düzeltin ve ayıklayın.
 slug: tr-TR/kilavuz/nasil-yapilir/bellegi-yonetme
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Bu kılavuz, bir çalışma alanının bilgi deposuyla nasıl çalışacağınızı gösterir.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Başlamadan önce bilmeniz gereken önemli şey şu: **bellek arayüzü bir inceleme
+yüzeyidir, yazma yüzeyi değil.** Olgular ve politikaları ajanlar yazar —
+`propose_fact` ve `propose_policy` ile; onların yerine geçmek için de
+`supersede_fact` ve `supersede_policy` vardır. `remember`, oturumla sınırlı bir
+sıcak katman öğesi yazar ve `consolidate_memory` bunu daha sonra bir olguya
+terfi ettirebilir. Kaydedilen toplantı kararları `decisions` bilgi alanına
+toplanır; tamamlanmış ajan çalıştırmaları üzerinde böyle bir toplama yoktur.
+Burada yaptığınız şey, onların yazdıklarını okumak, düzeltmek, devre dışı
+bırakmak veya silmektir.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Bellek **Ayarlar → Çalışma alanı → Bellek**
+(`/workspaces/<id>/settings/memory`) yolunda yaşar. Üst düzey bir kenar çubuğu
+hedefi değildir.
 
-## The three tabs
+## Üç sekme
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Sayfada tam olarak üç sekme vardır. Olgular ve Politikalar canlı bir sayı
+gösterir; grafik göstermez:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Olgular** — çalışma alanındaki her olgu; yerine geçilmemiş olanların
+  sayısıyla birlikte
+- **Politikalar** — bilgi alanına göre gruplanmış normatif kurallar; etkin
+  olanların sayısıyla birlikte
+- **Bilgi grafiği** — bilgi alanları, konular, olgular ve politikaların
+  etkileşimli tuvali
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Bilgi alanları sizin oluşturduğunuz bir şey değildir. Bir bilgi alanı, bir ajan
+ona ilk olguyu ya da politikayı yazdığında var olur; arayüzün hiçbir yerinde
+bilgi alanı oluşturma denetimi yoktur.
 
-## Review and correct a fact
+## Bir olguyu gözden geçirme ve düzeltme
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. **Olgular** sekmesini açın.
+2. Listeyi daraltmak için arama kutusunu kullanın. Bu, her olgunun bilgi alanı,
+   konusu ve içeriği üzerinde düz bir alt dize filtresidir — anahtar sözcük
+   dizini yok, sıralama yok.
+3. Tüm kapsamları, yalnızca çalışma alanı geneli olguları ya da tek bir deponun
+   olgularını göstermek için kapsam filtresini kullanın.
+4. Yeniliğe veya güvene göre sıralamak için sıralama anahtarını kullanın.
+5. Bir olgunun düzenleme denetimine tıklayın.
 
-The edit dialog lets you change:
+Düzenleme iletişim kutusu şunları değiştirmenizi sağlar:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Alan** — bir olguyu bilgi alanları arasında taşıma
+- **Konu** — kısa etiketi
+- **İçerik** — bilgi metni
+- **Güven** — %5 adımlı bir kaydırıcı
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Geri yazmak için kaydedin. **Olgu ekle** düğmesi yoktur; iletişim kutusu
+yalnızca var olan bir satırda açılır.
 
-## See superseded facts
+## Yerine geçilmiş olguları görme
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Olgular sekmesinde bir **Geçersiz kılınanları göster** anahtarı vardır. Yerine
+geçilmiş olgular varsayılan olarak gizlidir ve bu anahtarla görünür olur;
+denetim izi tam da buradadır — yerine geçme hiçbir zaman silmez.
 
-## Delete a fact
+## Bir olguyu silme
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Bir olgunun silme denetimini kullanın ve onaylayın. Bu gerçek bir silmedir,
+yerine geçme değil: kaydedilmesi baştan yanlış olan olgular için bunu kullanın;
+içeriği değişmiş olguların yerine geçmesini ise ajanlara bırakın.
 
-## Manage policies
+## Politikaları yönetme
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+**Politikalar** sekmesi etkin politikaları bilgi alanına göre gruplar ve etkin
+olmayanları sona eklenen bir bölüme indirir. Politika başına şunları
+yapabilirsiniz:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Düzenle**
+- **Sil**
+- **Devre dışı bırak** / **Etkinleştir** — geri alınabilir seçenek ve genellikle
+  doğru olanı. Ajan istemlerine yalnızca etkin politikalar ulaşır.
 
-As with facts, there is no create control.
+Olgularda olduğu gibi oluşturma denetimi yoktur.
 
-## Explore the knowledge graph
+## Bilgi grafiğini keşfetme
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+**Bilgi grafiği** sekmesi bilgi alanlarını, konuları, olguları ve politikaları
+gezilebilir bir düğüm tuvali olarak yerleştirir — kaydırın, yakınlaştırın,
+düğümleri sürükleyin. Bir düğüme dokunmak ayrıntı panelini açar; aynı düzenleme
+iletişim kutularına oradan ulaşılır. Hangi bilgi alanlarının gerçekten
+dolduğunu görmenin en hızlı yoludur.
 
-## Edit an agent's working memory
+## Bir ajanın çalışma belleğini düzenleme
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Çalışma belleği, her ajan için özel bir karalama defteridir ve gönderim
+sırasında istemine enjekte edilir. Ajanlar onu `record_observation` ve
+`update_my_notes` ile kendileri yazar; ancak siz doğrudan okuyup
+düzenleyebilirsiniz:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Ayarlar → Çalışma alanı → Ajanlar** → ajanı seçin → **Bellek** sekmesi.
 
-## Access grants
+## Erişim yetkileri
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Bellek erişim yetkileri, bir ajanın rolünü her bilgi alanı için bir izne
+(`none`, `read`, `write`) eşler. Bunları `memory_access_grant.*` işlemleriyle
+yazın.
 
-Two things to understand about how they resolve:
+Nasıl çözümlendiklerine dair anlaşılması gereken iki şey var:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Okumalar hata durumunda izin verir.** Bir (rol, bilgi alanı) çifti için
+  yetki satırı yoksa geçerli izin `read` olur. `write` olmadan hata fırlatan tek
+  yazma `propose_policy` işlemidir. Olgu yazmaları yetkiye bağlı değildir.
+- **Yetkiler ajanın rolüne göre anahtarlanır.** Öneri araçları, eksik bir
+  `agent_role` değerini `general` olarak varsayar. Başka bir rol için yazılmış
+  bir yetki o ajanları bağlamaz; `general` yetkisi bağlar.
 
-## Search is not the same everywhere
+## Arama her yerde aynı değildir
 
-Three different things are called "memory search" and they do not agree:
+“Bellek araması” denen üç farklı şey var ve bunlar uyuşmaz:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Nerede                                 | Ne yapar                                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Olgular sekmesinin arama kutusu        | İstemcide zaten yüklü olan olgular üzerinde alt dize filtresi                                                             |
+| `memory_fact.search` RPC işlemi        | Yalnızca FTS5 anahtar sözcük araması — ince bir istemci sorgu gömmesi gönderemez, bu yüzden karma arama ana makinede kalır |
+| Ajan tarafındaki `search_memory` aracı | `keyword`, `semantic` veya `hybrid` (varsayılan). Karma, dört sesi kaynaştırır: sözlüksel, anlamsal, zamansal ve grafik   |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Dolayısıyla bir ajan ile Bellek sayfası aynı sorguyu aynı şekilde sıralamaz. Bir
+ajanın gerçekte neleri hatırlayabildiğini kontrol ederken ajana sorun.
 
-## Embeddings
+## Gömmeler
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Olgular **yazma anında** gömülür ve yalnızca cihaz üzerindeki gömme modeli
+kuruluysa. Durumunu **Ayarlar → Sunucu → Tanılama ve gizlilik → Anlamsal arama**
+altından denetleyin. Anlamsal geri çağırma istiyorsanız modeli, ajanlar bellek
+yazmaya başlamadan önce kurun.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Use the MCP server](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [MCP sunucusunu kullanma](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Memory and knowledge](/tr-TR/kilavuz/kavramlar/bellek-ve-bilgi/)
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+- [Bellek ve bilgi](/tr-TR/kilavuz/kavramlar/bellek-ve-bilgi/)
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)

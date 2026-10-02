@@ -1,102 +1,102 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Vytvořte první pipeline
+description: Vytvoř šablonu pipeline, nastav její krok, povol ruční běhy a spusť jeden běh.
 slug: cs-CZ/prirucka/tutorialy/prvni-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Co budeš mít
 
-By the end of this tutorial, you will have:
+Na konci tohohle tutoriálu budeš mít:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- uloženou šablonu pipeline, která odešle agenta s promptem
+- zapnuté ruční spuštění, takže ji spustíš ručně
+- jeden dokončený běh, u kterého je vidět vstup a výstup kroku
 
-Prerequisites: [Dispatch your first agent](/cs-CZ/prirucka/tutorialy/prvni-agent/) completed, so you have an agent with an adapter and a model.
+Předpoklad: dokončený tutoriál [Odešlete prvního agenta](/cs-CZ/prirucka/tutorialy/prvni-agent/), takže máš agenta s adaptérem a modelem.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/); for the full step vocabulary, [Pipeline step kinds](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/).
+Pipeline je DAG kroků. Šablony definují graf, běhy jsou provedení. Model za tím popisuje [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/); úplný slovník kroků je v [typech kroků pipeline](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/).
 
-## Step 1: Create a template
+## Krok 1: Vytvoř šablonu
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Jdi do **Nastavení → Pracovní prostor → Šablony pipeline**
+2. Stiskni **Nová šablona**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Editor se otevře na založené kostře pojmenované **Nový pipeline** (id `pipeline_N`).
+Klikni na název v záhlaví a přejmenuj ho — pro tenhle tutoriál se hodí
+`code_quality_check`. Dialog pro id tu není a pole pro popis taky ne.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Plátno není prázdné. Nová šablona přijde předem zapojená jako **Trigger → Step →
+koncová zarážka**, kde „Step“ je uzel agenta s promptem a zarážka je
+neviditelná. Editor ji přepojí na každý dosažitelný konec.
 
-You configure the Step that is already there.
+Nastavíš Step, který už tam je.
 
-## Step 2: Configure the step
+## Krok 2: Nastav krok
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Klikni na uzel **Step** na plátně
+2. V panelu **Konfigurace uzlu** vpravo nastav:
+   - **Agent**: tvůj agent z předchozího tutoriálu
+   - **Šablona promptu**: „Zkontroluj kód na aktuální větvi a vypiš problémy s kvalitou. Sepiš, co najdeš.“
+3. Pole **Spouští se z** nech být — uzel je už zapojený, takže vystřelí po Trigger
 
-## Step 3: Save
+## Krok 3: Ulož
 
-Press **Save** in the editor header.
+V záhlaví editoru stiskni **Uložit**.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Kontrolní bod.** Popisek „Neuložené změny“ zmizí.
 
-## Step 4: Allow manual runs
+## Krok 4: Povol ruční běhy
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Klikni na čárkovanou dlaždici **Přidat spouštěč** na plátně (nebo přetáhni **Ruční spuštění**
+   ze sekce **Spouštěče** v knihovně uzlů) a vyber **Ruční spuštění**.
+2. Vyber ten uzel. V inspektoru vpravo zapni **Zapnuto** —
+   „Zobrazit na stránce běhů a spustit ručně.“
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Tohle je povinné a snadno to přehlédneš. Nová šablona vznikne **bez jediného řádku spouštěče**, takže dokud tohle nezapneš, stránka běhů ji nevypíše a není co spustit. Přepínač zapíše spouštěč hned a na další uložení nečeká.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Stejný přepínač je za **Ruční spuštění** v záhlaví editoru, vedle deklarovaných vstupů šablony.
 
-## Step 5: Run it
+## Krok 5: Spusť ji
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Klikni na **Pipelines** v postranním panelu
+2. V záhlaví stiskni **Spustit pipeline**
+3. V levé liště vyber `code_quality_check`
+4. Na formuláři stiskni **Spustit pipeline** — šablona nedeklaruje žádné vstupy, takže není co vyplňovat
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Kontrolní bod.** Toast potvrdí, že běh začal, a Control Center otevře detail běhu.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Engine založí záznam běhu, dokončí spouštěč, naplánuje krok, odešle agenta a běh dokončí, jakmile doběhne příchozí větev koncové zarážky.
 
-## Step 6: Inspect the result
+## Krok 6: Prohlédni výsledek
 
-Click the step in the run to open its detail panel:
+Klikni na krok v běhu a otevře se panel jeho detailu:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- časové značky **Spuštěno** a **Dokončeno** a **Trvání**
+- **Vstup**: stav předaný do kroku
+- **Výstup**: co krok vyrobil — tady odpověď agenta
+- **Aktivita agenta**, s odkazem do konverzace, kterou krok vedl
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Kontrolní bod.** Krok je dokončený a jeho výstup drží revizi agenta.
 
-## Adding more steps
+## Přidej další kroky
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Uzly přidáš přetažením položky z knihovny uzlů vlevo na plátno, nebo
+stiskem **Přidat krok** (`+`) hned za uzlem. Táhni z výstupního portu uzlu na
+jiný uzel a propojíš je, nebo vyber nový uzel a pod **Spouští se z** klepni na
+čip jeho předchozího kroku.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Koncová zarážka se nekreslí a nejde vybrat. Editor ji přepojí na každý
+dosažitelný konec, takže uzel přidaný za založený Step pořád běží.
 
-## Recap
+## Shrnutí
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Vytvořil jsi šablonu, nastavil uzel agenta s promptem, se kterým se založila, uložil ji, udělal ji ručně spustitelnou, spustil běh a přečetl vstup a výstup kroku.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipeline narostou daleko nad tohle — podmíněné routery, paralelní větve, uzly join, rozvětvení for-each, brány schválení — a tvar zůstává stejný: kroky v DAGu, které si předávají stav.
 
-**Next:** [Bridge Slack to your workspace](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/), the last tutorial in this sequence.
+**Další:** [Propojte Slack s pracovním prostorem](/cs-CZ/prirucka/tutorialy/prvni-chatovy-most/), poslední tutoriál v téhle řadě.
 
-- [Set up pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/) to start pipelines from events or a schedule
-- [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/) for the model underneath
-- [Pipeline step kinds](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/) for every step type
+- [Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/), ať pipeline startují z události nebo podle plánu
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/) pro model pod tím
+- [Typy kroků pipeline](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/) pro každý typ kroku

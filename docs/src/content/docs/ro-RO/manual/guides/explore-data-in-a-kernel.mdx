@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Explorează datele într-un kernel persistent
+description: Oferă unui agent un interpretor Python sau JavaScript care își păstrează variabilele între apeluri, desenează grafice în chat și își poate apela propriile instrumente din interiorul unei celule.
 slug: ro-RO/manual/ghiduri-practice/exploreaza-date-in-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Acest ghid arată cum să faci un agent să încarce o dată ceva costisitor și apoi să pună mai multe întrebări despre acel lucru, în loc să plătească încărcarea la fiecare întrebare.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Instrumentul `eval` rulează un **interpretor persistent**. Variabilele, importurile și datele încărcate supraviețuiesc între apeluri.
 
-## Why not just run a script
+## De ce să nu rulezi pur și simplu un script
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Un `python -c` de o singură folosire plătește pregătirea la fiecare întrebare. Încărcarea unui dataframe costă secunde și o sută de megabaiți; desenarea lui costă milisecunde. Când fiecare întrebare costă încărcarea, un agent pune mai puține întrebări decât ar trebui — iar fiecare răspuns se întoarce ca text pe care apoi trebuie să îl reanalizeze.
 
-## Load once, then ask
+## Încarcă o dată, apoi întreabă
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Încarcă `data/runs.csv` și spune-mi durata p95 pe agent.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Ultima expresie este afișată așa cum face un notebook, așa că `len(runs)` raportează numărul de rânduri fără un `print`.
 
-Then, in a **separate call**:
+Apoi, într-un **apel separat**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` este încă încărcat. Un dataframe pandas se întoarce redat ca tabel, nu ca un repr.
 
-## Charts land in the chat
+## Graficele ajung în chat
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Figurile sunt capturate după celulă și returnate ca imagini, pe care transcrierea le redă. Tu vezi graficul; la fel îl vede și agentul.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Figurile sunt închise după capturare. O figură necolectată ar fi redesenată și retrimisă și de *următoarea* celulă, așa că o sesiune de cinci celule ar emite primul grafic de cinci ori.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Fără Jupyter, fără pip, fără pas de instalare]
+Runner-ul este un simplu `python3 -u` care vorbește un protocol pe linii pe stdio. Implementează singur `display()`, dispecerizarea pachetelor MIME și capturarea figurilor, așa că funcționează pe orice Python 3 — inclusiv într-un sandbox unde instalarea este exact lucrul pe care sandbox-ul există ca să îl împiedice.
 :::
 
-## The idioms you would type anyway
+## Idiomurile pe care oricum le-ai tasta
 
-These are rewritten into plain code rather than erroring:
+Acestea sunt rescrise în cod simplu, în loc să dea eroare:
 
-| You type    | What happens                                        |
+| Tastezi    | Ce se întâmplă                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Rulează pip, apoi **golește cache-ul de module**, așa că următorul `import` îl vede |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | Un subproces capturat                               |
+| `%%bash`    | Restul celulei ca script de shell              |
+| `%%timeit`  | 1000 de rulări cronometrate                                     |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Evacuarea cache-ului de la `%pip` este cea care contează: instalarea într-un interpretor activ nu face nimic pentru un modul care a fost deja importat, așa că fără ea versiunea pe care tocmai ai instalat-o nu este cea care rulează.
 
-## Calling your own tools from inside a cell
+## Apelarea propriilor instrumente din interiorul unei celule
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` reintră în registrul de instrumente propriu al agentului. Asta înseamnă că o celulă se poate ramifica peste o sută de fișiere sau poate delega prin `task`, fără ca modelul să consume un tur pentru fiecare element.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Puntea nu ocolește guardrail-urile tale]
+Un apel prin punte se rezolvă împotriva **aceluiași** registru de instrumente ca un apel emis de un model, așa că politica `ActionClass`, solicitările de aprobare și fiecare înveliș se aplică identic. O punte care ar ajunge dincolo de registru ar fi o gaură cu exact forma „scrie un one-liner Python”.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Un apel prin punte **suspendă timeout-ul celulei** cât timp este în curs. Bugetul măsoară inactivitatea, nu timpul de ceas — o celulă care se ramifică spre subagenți și așteaptă patru minute nu este blocată, iar oprirea ei la mijlocul ramificării ar pierde întreaga stare a kernelului.
 
-## Starting over
+## A porni de la zero
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Aruncă interpretorul și pornește unul curat. Tot ce era încărcat s-a pierdut, iar acesta este scopul.
 
-## Where the kernel runs
+## Unde rulează kernelul
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+În **mediul izolat** al conversației, atunci când conversația are unul, altfel pe gazdă.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Un interpretor persistent condus de un model care citește un repo nesigur este exact pentru ce există execuția doar în mediu izolat: un apel `bash` de o singură folosire cel puțin se termină, în timp ce un kernel este un shell care ține minte.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/ro-RO/manual/ghiduri-practice/foloseste-statii/).
+Nu pornește un mediu izolat pentru a ajunge acolo — aceeași regulă care împiedică pornirea automată a unui tab de stație. Dacă vrei ca kernelul să fie izolat, deschide mai întâi shell-ul conversației. Vezi [Oferă unui agent o mașină pe care să testeze](/ro-RO/manual/ghiduri-practice/foloseste-statii/).
 
-## Limits
+## Limite
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **O singură celulă odată pentru fiecare kernel.** Două celule care concurează într-un interpretor înseamnă două jumătăți din două programe intercalate într-un singur namespace.
+- **Ieșirea este plafonată.** O celulă aflată într-o buclă de afișare este trunchiată, în loc să i se permită să umple fereastra de context.
+- **Patru imagini per celulă.** O buclă de desenare poate emite o figură la fiecare iterație, iar fiecare imagine este un cost fix mare în cererea care o transportă.
+- **Kernelul moare odată cu rularea.** Unul care mai ține un dataframe după ce conversația s-a încheiat este o scurgere.
 
-## Related
+## Vezi și
 
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/) — what "enclosed" means here
-- [Give an agent a machine to test on](/ro-RO/manual/ghiduri-practice/foloseste-statii/) — opening the enclosure
-- [Built-in agent tools](/ro-RO/manual/referinta/instrumente-agent/) — the arguments
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) — ce înseamnă „izolat” aici
+- [Oferă unui agent o mașină pe care să testeze](/ro-RO/manual/ghiduri-practice/foloseste-statii/) — deschiderea mediului izolat
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/) — argumentele

@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Połącz host kodu
+description: Połącz GitHub, GitLab lub Bitbucket, aby powierzchnia pull requestów, rejestracja repozytoriów i uruchomienia agentów działały — jeden obszar roboczy może korzystać ze wszystkich trzech.
 slug: pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center współpracuje z trzema hostami kodu, które w całej aplikacji nazywane są **forge**: **GitHub**, **GitLab** i **Bitbucket Cloud**. Żaden z nich nie jest domyślny. Połącz jeden i wszystko działa; połącz kilka, a jeden obszar roboczy może naraz przechowywać repozytoria ze wszystkich.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Forge jest właściwością każdego **repozytorium**, odczytywaną ze zdalnego repozytorium `origin` w chwili jego rejestracji. Nigdy nie wybierasz forge ręcznie i nie ma żadnego ustawienia na poziomie obszaru roboczego, które dałoby się pomylić.
 
-## Connect a forge
+## Połącz forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Otwórz **Ustawienia → Obszar roboczy → Profil i tożsamość** (`/settings/workspace/profile`).
+2. Znajdź kartę **Hosting kodu**. Wymienione są wszystkie obsługiwane forge — połączone i niepołączone.
+3. Kliknij **Zaloguj się przez …**, jeśli wiersz to oferuje, albo **Dodaj token** i wklej token.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/pl-PL/podrecznik/poradniki/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Zaloguj się** pojawia się dla forge, dla którego Twój serwer ma zarejestrowaną aplikację — dziś jest to GitHub, przez przepływ urządzenia (zobacz [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)). Wszystko inne to wklejony token, czyli uczciwa propozycja zamiast przycisku, który nie może się powieść.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Tak czy inaczej poświadczenie jest **Twoje i znajduje się na serwerze**, przypisane do Twojego identyfikatora użytkownika: żaden token nie jest zapisywany na maszynie, na której go wpisano, każde urządzenie, z którego się logujesz, korzysta z tego samego, a żaden inny członek nie może go odczytać. Działa od **następnego żądania** — nie ma nic do zrestartowania, a rozłączenie natychmiast wstrzymuje jego wysyłanie.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Każdy wiersz mówi, skąd pochodzi jego poświadczenie, bo to różnica między „mój token nie działa” a „odpowiada inny token”:
 
-| Subtitle                         | Meaning                                                            |
+| Podtytuł                         | Znaczenie                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `Zalogowano jako octocat`           | Używane są Twoje własne poświadczenia                                   |
+| `Zalogowano jako octocat · przez aplikację tego serwera` | Odpowiada tożsamość aplikacji serwera — nie jesteś zalogowany |
+| `Zalogowano jako octocat · ze środowiska` | Odpowiada zmienna środowiskowa serwera, a nie Twoje poświadczenie |
+| `Nie połączono`                  | Nie masz poświadczenia dla tego forge                               |
 
-### What token each forge wants
+### Jakiego tokenu wymaga każde forge
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Forge         | Token                                                     | Gdzie go utworzyć                                        |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Klasyczny: `repo` i `read:org`. Drobnoziarnisty: Contents + Pull requests (odczyt/zapis), Checks + Actions (odczyt) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Osobisty token dostępu z zakresem `api`                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Token API Atlassian oraz adres e-mail Twojego konta           | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket uwierzytelnia się **adresem e-mail konta jako nazwą użytkownika** i tokenem jako hasłem. Ustaw `BITBUCKET_EMAIL` w środowisku serwera, aby wiedział, z którym adresem e-mail ma połączyć token.
 
-### Or use the environment
+### Albo użyj środowiska
 
-For a headless or CI install, the server reads these:
+W instalacji headless lub w CI serwer odczytuje następujące zmienne:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, potem `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, potem `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, potem `BITBUCKET_TOKEN` (razem z `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+To **poświadczenia serwera**, nie Twoje, a rozróżnienie ma kluczowe znaczenie: żądanie wysłane w Twoim imieniu używa wyłącznie Twoich poświadczeń, więc środowisko nigdy po cichu Cię nie zastępuje. Praca bez człowieka w tle — webhooki, odpytywanie PR-ów, synchronizacja zgłoszeń — sięga najpierw po tożsamość aplikacji serwera, potem po poświadczenia właściciela serwera, a na końcu po środowisko. Kolejność jest stała, więc „zalogowałem się i nic się nie zmieniło” nigdy nie jest obsługiwanym wynikiem.
 
-## You are a different person on each forge
+## Na każdym forge jesteś inną osobą
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Ta sama osoba to `octocat` na GitHubie i zupełnie ktoś inny na GitLabie. Control Center rozwiązuje Twoją tożsamość **dla każdego forge osobno** i używa właściwej dla danego repozytorium, dzięki czemu „wymaga mojej recenzji”, „utworzone przeze mnie” i „zatwierdzone przez Ciebie” są poprawne w mieszanym obszarze roboczym.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Jeśli tożsamość w danym forge nie została rozwiązana, jego repozytoria nie wnoszą nic do skrzynki, zamiast dopasowywać wszystko. Skrzynka mówi o tym wprost, zamiast twierdzić, że jesteś na bieżąco.
 
-## One inbox, every forge
+## Jedna skrzynka, każde forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Skrzynka i kolejka PR-ów rozchodzą się po wszystkich forge obecnych w obszarze roboczym i scalają wyniki w jeden strumień — pull request z GitHuba i pull request z Bitbucket leżą obok siebie, uporządkowane według czasu, a nie pogrupowane według dostawcy.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Awarie są izolowane. Forge, który nie działa, ma wyczerpany limit żądań albo nie jest połączony, nie wnosi nic i nie rusza pozostałych; nigdy nie opróżnia całej skrzynki. Jego repozytoria nadal pokazują ostatni znany stan, dopóki nie wróci do działania.
 
-## What each forge can do
+## Co potrafi każde forge
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Każde forge obsługuje podstawowy cykl: wyświetlanie i otwieranie pull requestów, czytanie diffów, komentowanie w linii i na poziomie całego PR-a, recenzowanie, scalanie i zamykanie. Poza tym naprawdę się różnią, a Control Center ukrywa to, czego dane forge nie potrafi, zamiast pokazywać kontrolkę, która po cichu zawodzi.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| Możliwość                        | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Recenzje wsadowe (oczekujące)     |   ✓    |   ✓    |     —     |
+| Żądanie zmian                     |   ✓    |   ✓    |     ✓     |
+| Synchronizowany stan „obejrzane” dla pliku |   ✓    |   —    |     —     |
+| Reakcje emoji                     |   ✓    |   ✓    |     —     |
+| Recenzenci z zespołu / grupy      |   ✓    |   ✓    |     —     |
+| Sugerowani recenzenci             |   ✓    |   —    |     ✓     |
+| Wyniki CI w pull requeście        |   ✓    |   ✓    |     ✓     |
+| Zagłębianie się w kroki i logi zadania CI |   ✓    |   ✓    |     —     |
+| Pull requesty układane w stos     |   ✓    |   —    |     —     |
+| Szablony opisów pull requestów    |   ✓    |   ✓    |     —     |
+| Odpytywanie powiadomień           |   ✓    |   —    |     —     |
+| Rozbudowane profile użytkowników  |   ✓    |   ✓    |     —     |
+| Referencja head PR-a po stronie serwera |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Tam, gdzie jakiejś możliwości brakuje, funkcja degraduje się uczciwie:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Stan „obejrzane”** nadal działa, ale tylko na urządzeniu, na którym go ustawisz.
+- **Recenzje wsadowe** w Bitbucket publikują komentarz po komentarzu, więc recenzenci widzą, jak pojawiają się pojedynczo, a nie wszystkie naraz.
+- **Brak referencji head PR-a** w Bitbucket oznacza, że pobranie pull requesta sprowadza się do pobrania jego gałęzi źródłowej po nazwie, co przestaje działać, gdy ta gałąź zostanie usunięta.
 
-## Vocabulary
+## Słownictwo
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab nazywa pull request **merge request**. Control Center w całym swoim modelu mówi „pull request”, a gdy mówi o konkretnym forge, używa jego własnego określenia.
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-### The PR list is empty and says a forge is not connected
+### Lista PR-ów jest pusta i informuje, że forge nie jest połączony
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Nie masz poświadczenia dla tego forge. Zaloguj się albo wklej token w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**. Repozytoria innych forge pozostają bez zmian.
 
-### I connected a forge but its repos still show nothing
+### Połączyłem forge, ale jego repozytoria nadal nic nie pokazują
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Sprawdź podtytuł wiersza. Jeśli widnieje w nim „przez aplikację tego serwera” lub „ze środowiska”, odpowiada inne poświadczenie niż oczekiwane — Twoje własne poświadczenie ma pierwszeństwo przy wszystkim, o co prosisz, więc jeśli podtytuł mówi co innego, Twoje nie zostało zapisane.
 
-### A repo will not register
+### Repozytorium nie chce się zarejestrować
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/).
+Rejestracja wymaga wszystkich trzech warunków: ścieżka znajduje się w drzewie roboczym Gita, repozytorium ma zdalne `origin`, a to zdalne repozytorium wskazuje na github.com, gitlab.com lub bitbucket.org. Zobacz [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/).
 
-### Everything stops working for a while after heavy use
+### Po intensywnym użytkowaniu wszystko na jakiś czas przestaje działać
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+To wyłącznik bezpieczeństwa przy limicie żądań. Forge, który zgłasza swój główny limit, sprawia, że klient odrzuca kolejne żądania lokalnie, bez wywołania sieciowego, aż upłynie okno — dzięki temu burza ponowień nie pogłębia limitu. Przejściowe błędy są ponawiane z wykładniczym opóźnieniem.
 
-## Related guides
+## Powiązane poradniki
 
-- [Add repos to a workspace](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)
-- [Set up GitHub integration](/pl-PL/podrecznik/poradniki/integracja-github/)
-- [Review and merge a PR](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/)
-- [Triage the inbox](/pl-PL/podrecznik/poradniki/przeglad-skrzynki/)
+- [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)
+- [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
+- [Zrecenzuj i scal PR](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/)
+- [Przeglądaj skrzynkę](/pl-PL/podrecznik/poradniki/przeglad-skrzynki/)

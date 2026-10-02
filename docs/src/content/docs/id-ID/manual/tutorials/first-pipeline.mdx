@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Bangun pipeline pertama Anda
+description: Buat templat pipeline, konfigurasikan langkahnya, izinkan eksekusi manual, lalu jalankan satu.
 slug: id-ID/panduan-pengguna/tutorial/pipeline-pertama
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Apa yang akan Anda bangun
 
-By the end of this tutorial, you will have:
+Pada akhir tutorial ini, Anda akan memiliki:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Templat pipeline tersimpan yang mengirim agen dengan sebuah prompt
+- Eksekusi manual yang aktif padanya, sehingga templat itu dapat dijalankan dengan tangan
+- Satu eksekusi yang selesai, dengan input dan output langkahnya terlihat
 
-Prerequisites: [Dispatch your first agent](/id-ID/panduan-pengguna/tutorial/agen-pertama/) completed, so you have an agent with an adapter and a model.
+Prasyarat: [Kirim agen pertama Anda](/id-ID/panduan-pengguna/tutorial/agen-pertama/) sudah selesai, sehingga Anda memiliki agen dengan adapter dan model.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/); for the full step vocabulary, [Pipeline step kinds](/id-ID/panduan-pengguna/referensi/langkah-pipeline/).
+Pipeline adalah DAG berisi langkah-langkah. Templat mendefinisikan grafnya; eksekusi adalah pelaksanaannya. Untuk model di baliknya, baca [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/); untuk kosakata langkah selengkapnya, [Jenis langkah pipeline](/id-ID/panduan-pengguna/referensi/langkah-pipeline/).
 
-## Step 1: Create a template
+## Langkah 1: Buat templat
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Buka **Pengaturan → Ruang kerja → Template pipeline**
+2. Klik **Template baru**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Editor terbuka pada kerangka yang telah disemai bernama **Pipeline baru** (id `pipeline_N`).
+Klik judul di header dan ganti namanya — untuk tutorial ini,
+`code_quality_check` adalah nama yang bagus. Tidak ada dialog id dan tidak ada
+kolom deskripsi.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Kanvasnya tidak kosong. Templat baru sudah terkabel sebelumnya sebagai **Trigger → Step →
+terminal**, di mana "Step" adalah node agen prompt dan terminal adalah
+sentinel tak terlihat yang disambungkan ulang oleh editor ke setiap sink yang
+dapat dijangkau.
 
-You configure the Step that is already there.
+Anda mengonfigurasi Step yang sudah ada di sana.
 
-## Step 2: Configure the step
+## Langkah 2: Konfigurasikan langkah
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Klik node **Step** di kanvas
+2. Di panel **Konfigurasi node** di sebelah kanan, setel:
+   - **Agen**: agen Anda dari tutorial sebelumnya
+   - **Template prompt**: "Tinjau kode di branch saat ini untuk masalah kualitas. Daftarkan apa yang Anda temukan."
+3. Biarkan **Pemicu dari** apa adanya — node sudah terkabel untuk terpicu setelah Trigger
 
-## Step 3: Save
+## Langkah 3: Simpan
 
-Press **Save** in the editor header.
+Tekan **Simpan** di header editor.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Titik pemeriksaan.** Keterangan "Perubahan belum disimpan" menghilang.
 
-## Step 4: Allow manual runs
+## Langkah 4: Izinkan eksekusi manual
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Klik ubin bergaris putus-putus **Tambah trigger** di kanvas (atau seret **Run manual**
+   dari bagian **Trigger** di pustaka node) lalu pilih **Run manual**.
+2. Pilih node itu. Di inspector di sebelah kanan, nyalakan **Aktif** —
+   "Tampilkan di halaman run dan mulai secara manual."
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Ini bukan opsional dan mudah terlewat. Templat baru dibuat **tanpa baris pemicu sama sekali**, jadi sampai Anda menyalakannya, halaman eksekusi tidak akan mencantumkannya dan tidak ada yang bisa dijalankan. Sakelar itu langsung menulis pemicunya; ia tidak menunggu penyimpanan berikutnya.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Sakelar yang sama ada di balik **Eksekusi manual** di header editor, tempatnya berdampingan dengan input yang dideklarasikan templat.
 
-## Step 5: Run it
+## Langkah 5: Jalankan
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Klik **Pipeline** di bilah sisi
+2. Klik **Jalankan pipeline** di header
+3. Pilih `code_quality_check` di bilah kiri
+4. Klik **Jalankan pipeline** di formulir — templat Anda tidak mendeklarasikan input, jadi tidak ada yang perlu diisi
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Titik pemeriksaan.** Toast mengonfirmasi bahwa eksekusi dimulai dan Control Center membuka detail eksekusi.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Mesin membuat catatan eksekusi, menyelesaikan pemicunya, menjadwalkan langkahnya, mengirim agen, lalu menyelesaikan eksekusi saat cabang hulu terminal selesai.
 
-## Step 6: Inspect the result
+## Langkah 6: Periksa hasilnya
 
-Click the step in the run to open its detail panel:
+Klik langkah di dalam eksekusi itu untuk membuka panel detailnya:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Stempel waktu **Dimulai** dan **Selesai** serta **Durasi**
+- **Input**: state yang diteruskan ke langkah itu
+- **Output**: apa yang dihasilkannya — di sini, respons agen
+- **Aktivitas agen**, dengan tautan menuju percakapan yang dijalankan langkah itu
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Titik pemeriksaan.** Langkah itu berstatus selesai dan outputnya memuat tinjauan dari agen.
 
-## Adding more steps
+## Menambahkan lebih banyak langkah
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Node ditambahkan dengan menyeret entri dari pustaka node di sebelah kiri ke
+kanvas, atau dengan menekan **Tambah langkah** (`+`) tepat setelah sebuah node.
+Seret dari port output sebuah node ke node lain untuk menghubungkannya, atau
+pilih node baru itu dan centang langkah hulunya di bawah **Pemicu dari**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Node terminal tidak digambar dan tidak dapat dipilih. Editor menyambungkannya
+ulang ke setiap sink yang dapat dijangkau, sehingga node yang Anda tambahkan
+setelah Step yang telah disemai tetap berjalan.
 
-## Recap
+## Rekap
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Anda membuat templat, mengonfigurasi node agen prompt yang disemai bersamanya, menyimpannya, membuatnya dapat dijalankan secara manual, memulai eksekusi, lalu membaca input dan output langkahnya.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipeline bisa jauh lebih besar dari ini — router bersyarat, cabang paralel, node join, fan-out for-each, gerbang manusia — tetapi bentuknya tidak pernah berubah: langkah-langkah dalam sebuah DAG, yang meneruskan state.
 
-**Next:** [Bridge Slack to your workspace](/id-ID/panduan-pengguna/tutorial/jembatan-chat-pertama/), the last tutorial in this sequence.
+**Berikutnya:** [Jembatani Slack ke ruang kerja Anda](/id-ID/panduan-pengguna/tutorial/jembatan-chat-pertama/), tutorial terakhir dalam rangkaian ini.
 
-- [Set up pipeline triggers](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/) to start pipelines from events or a schedule
-- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/) for the model underneath
-- [Pipeline step kinds](/id-ID/panduan-pengguna/referensi/langkah-pipeline/) for every step type
+- [Siapkan pemicu pipeline](/id-ID/panduan-pengguna/panduan-praktis/pemicu-pipeline/) untuk memulai pipeline dari peristiwa atau jadwal
+- [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/) untuk model di baliknya
+- [Jenis langkah pipeline](/id-ID/panduan-pengguna/referensi/langkah-pipeline/) untuk setiap jenis langkah

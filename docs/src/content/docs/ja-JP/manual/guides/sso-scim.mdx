@@ -1,60 +1,67 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: SCIM でユーザーをプロビジョニング
+description: IdP に Control Center アカウントの作成・更新・プロビジョニング解除を自動で行わせます。
 slug: ja-JP/マニュアル/ハウツーガイド/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+ライフサイクルを制御したいときにこのガイドを使ってください — オフボーディングでは、
+今後のログインを遮断するだけでなく、アクセスを自動的に取り消す必要があります。
+SCIM は、まさにそのために IdP（Okta、Entra ID など）が使うプッシュプロトコルです。
 
-## Prerequisites
+## 前提条件
 
-- SSO already working (the [SSO tutorial](/ja-JP/マニュアル/チュートリアル/sso) or the
-  [OIDC guide](/ja-JP/マニュアル/ハウツーガイド/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO がすでに機能していること（[SSO チュートリアル](/ja-JP/マニュアル/チュートリアル/sso) または
+  [OIDC ガイド](/ja-JP/マニュアル/ハウツーガイド/sso-oidc)）、
+- **IdP が HTTPS 経由で到達できるサーバー** — SCIM の呼び出しはユーザーの
+  ブラウザーからではなく、IdP から届きます。組み込みのトンネル
+  （設定 → サーバー → 接続とステータス → このサーバーを共有 → Cloudflared/ngrok/Tailscale）
+  または公開 URL を使ってください。WebSocket リレー経由でしか到達できない
+  サーバーは SCIM プッシュを受け取れません。そこでは JIT プロビジョニングは
+  引き続き機能しますが、このガイドの手順は機能しません。
 
-## Steps
+## ステップ
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+1. **設定 → サーバー → シングルサインオン** を開き、
+   **ユーザープロビジョニング（SCIM）** カードを表示します。カードには
+   エンドポイントが表示されます（例:
+   `https://<your-server>/scim/v2/Users`）。
+2. **トークンを生成**（すでに存在する場合は **トークンを再生成**）を押します —
+   ベアラートークンはダイアログに一度だけ表示され、クリップボードに
+   コピーされます。パスワードマネージャーに保存してください。サーバーが
+   保持するのは、定数時間で検証できるコピーだけです。
+3. IdP のプロビジョニング設定で、次の内容で SCIM を有効にします:
+   - **ベースURL**: 上記のエンドポイント
+   - **認証**: `Authorization: Bearer <token>`
+   - **ユーザー ID**: `userName`（メール）または `externalId` — どちらも一致します
+4. 1 人のユーザーでテストします。IdP からそのユーザーをプッシュし、表示される
+   ことを確認します（SCIM の作成はプロバイダーの `externalId` をアカウントに
+   固定します。これは初回の SSO ログインが設定する固定と同じです）。
 
-## What deprovisioning does
+## プロビジョニング解除が行うこと
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+IdP が `active: false`（または `DELETE`）を送ると、SCIM はまず、その
+アカウントがワークスペースの **オーナー** である場合に拒否します（先に
+所有権を譲渡してください）。それ以外の場合は次のとおりです:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. まずすべてのデバイス認証情報が取り消されます — ライブセッションは
+   数秒以内に切断されます、
+2. すべてのワークスペースメンバーシップが削除されます、
+3. アカウントは無効化済みとして記録されます（明示的に再有効化されるまで、
+   その後 IdP が何を言おうと、ログインできることは決してありません）。
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+ユーザー行自体は残ります — チケット、メッセージ、コミットの帰属は永続的です。
+再有効化（SCIM の `active: true`）はログインを復元しますが、メンバーシップは
+**復元しません**。メンバーシップには新しい招待か、ログイン時の
+自動メンバーポリシーが必要です。
 
-## Troubleshooting
+## トラブルシューティング
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **すべての呼び出しで 401** — トークンが変更されています。再生成して
+  IdP を更新してください。
+- **エンドポイントに到達できない** — トンネルが停止しているか、サーバーが
+  リレー専用です。SCIM には直接の HTTPS が必要です。JIT は関係なく
+  機能し続けます。
+- **グループプッシュのエラー（501）** — これは意図的です。グループ→ロールの
+  マッピングは、プッシュされたグループではなく、ログイン時に SAML/OIDC の
+  グループ属性から行われます。

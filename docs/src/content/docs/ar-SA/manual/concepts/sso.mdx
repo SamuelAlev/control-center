@@ -1,19 +1,19 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: تسجيل الدخول الموحّد
+description: كيف يعمل تسجيل الدخول عبر SAML وOIDC، وما الذي يُتحقَّق منه، وكيف تبقى الحسابات آمنة.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تسجيل-الدخول-الموحد
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+يتيح تسجيل الدخول الموحّد لموفّر هوية خارجي (IdP) أن يقرر من يجوز له
+تسجيل الدخول إلى خادم Control Center لديك. البروتوكولان المدعومان —
+SAML 2.0 وOpenID Connect — يصلان إلى الموضع نفسه: بيانات اعتماد جهاز
+تُصدَر للتو، لا يميّزها أي مسار لاحق عن دعوة أو اقتران برمز QR.
 
-## The shape of a login
+## شكل تسجيل الدخول
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+تسجيلات الدخول عبر SAML تتم **بوساطة المتصفح**. لا يفتح IdP اتصالًا
+بخادمك أبدًا، ومتصفح المستخدم هو الذي يحمل كل شيء:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +26,79 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+لأن المتصفح هو الناقل، **يصلح خادم خلف NAT** لتسجيل الدخول: localhost
+أو LAN أو Tailscale أو VPN أو نفق، كلها تفي بالغرض — والشرط الوحيد أن
+يبلغ متصفح المستخدم عنوان ACS. مرحّل WebSocket الذي يستخدمه التحكم عن
+بُعد من الهاتف لا يستطيع حمل جولة HTTP ذهابًا وإيابًا، ولهذا تستهدف
+نقاط دخول SSO دائمًا أصل HTTP الخاص بالخادم.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+يتبع OpenID Connect الشكل نفسه بجولة رمز تفويض مع PKCE، وتُقرأ
+المطالبات من نقطة نهاية الرمز لدى المُصدِر عبر TLS، فلا يقدّم المتصفح
+بيانات الهوية أصلًا.
 
-## The adapters
+## المحوّلات
 
-Control Center splits the responsibility deliberately:
+تفصل Control Center المسؤولية عن قصد:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| الجزء | الموضع | يملك |
+| --- | --- | --- |
+| `cc_saml` الأصلي | `packages/cc_natives/native/saml/` | التحقق من XML-DSig، والتحويل إلى الصيغة القياسية، والتحقق من ملف تعريف SAML — تُسنَد إلى حزمة `saml` المكتوبة بـ Rust خالص والمُثبَّت إصدارها، خلف واجهة C ABI بلا حالة |
+| `SamlService` / `OidcService` | `cc_server_core` | حالة تسجيل الدخول (متتبعات الطلبات المعلّقة، وكشف تكرار إعادة الإرسال)، وعناصر ضبط سياسة التحقق، واستدعاء التوفير المشترك |
+| `SsoProvisioner` | `cc_server_core` | إيجاد المستخدم أو إنشاؤه، وتثبيت المعرّف الثابت لدى الموفّر، ومنح العضويات وفق سياسة الإضافة التلقائية إلى كل مساحة عمل |
+| `ScimService` | `cc_server_core` | سطح الدفع في SCIM 2.0 (دورة حياة التوفير وإلغاء التوفير) |
+| `SsoSettingsService` | `cc_server_core` | صفوف الاتصال المحفوظة، وإعادة تطبيقها فورًا، ورمز وصول SCIM |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+هناك، عن قصد، **لا مسار تراجع لتشفير SAML بـ Dart خالص**: التنفيذ اليدوي
+لـ XML-DSig وللتحويل إلى الصيغة القياسية هو بالضبط حيث تكمن ثغرات التفاف
+التوقيع، فغياب مكتبة `cc_saml` يرفض تسجيل الدخول عبر SAML وإقلاع الخادم
+معًا. المكتبة الأصلية بلا حالة عن تصميم — الحالة العابرة بين الطلبات
+تعيش في خدمات Dart، وهي أحادية الاستخدام وقصيرة العمر.
 
-## What a login verifies
+## ما يتحقق منه تسجيل الدخول
 
-Inside the verified native and the service, in order:
+داخل المكتبة الأصلية التي تُجري التحقق، وفي الخدمة، بالترتيب:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **توقيع** التأكيد (مطلوب دائمًا، وتوقيع مغلّف الاستجابة اختياري حسب
+   التهيئة) — وهو مقاوم من حيث البنية لالتفاف التوقيع، لأن الحمولة
+   المتحقَّق منها مربوطة بالعنصر الذي جرى التحقق من توقيعه،
+2. **المُصدِر** يطابق IdP المُهيَّأ،
+3. **الجمهور** يسمّي موفّر الخدمة هذا،
+4. **الوجهة** هي عنوان ACS الخاص بنا،
+5. يطابق `InResponseTo` طلب AuthnRequest معلّقًا أصدرناه (الاستجابات غير
+   المطلوبة، المبدوءة من IdP، متوقفة افتراضيًا)،
+6. تبقى نوافذ **مدة الصلاحية** سارية ضمن انحراف الساعة (الافتراضي 90
+   ثانية)، و
+7. **معرّف التأكيد** لم يُرَ من قبل (ذاكرة منع إعادة الإرسال).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+تعود الإخفاقات برموز مسمّاة — signature، expired، audience،
+destination، issuer، request-match — وترد نقاط النهاية بأخطاء عامة، فلا
+يتبيّن المهاجم سبب فشل التزوير.
 
-## Accounts and subject pinning
+## الحسابات وتثبيت المعرّف الثابت
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+يثبّت أول تسجيل دخول عبر SSO المعرّف الثابت لدى الموفّر (`issuer` مع
+NameID في SAML أو `sub` في OIDC، أو externalId في SCIM) على الحساب. من
+بعد ذلك، هذا المعرّف — لا البريد الإلكتروني — هو الذي يحدّد تسجيل
+الدخول. إذا قدّم شخص آخر لاحقًا البريد نفسه من IdP نفسه أو من غيره،
+يرفضه الحساب الذي ثُبّت عليه هذا المعرّف. هذا ما يمنع بريدًا أعاد
+الموفّر تخصيصه من أن يصير استيلاءً على الحساب.
 
-## Provisioning and deprovisioning
+## التوفير وإلغاء التوفير
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+يحدث توفير JIT عند تسجيل الدخول (`SsoProvisioner`). SCIM سطح دفع منفصل
+(`ScimService`) يثبّت المعرّف الثابت نفسه على صف المستخدم، ولا يمنح
+عضويات في مساحات العمل. إلغاء التوفير — `active: false` أو `DELETE` في
+SCIM — يُرفض إذا كان الحساب مالك مساحة عمل (انقل الملكية أولًا). وإلا
+يُبطِل أولًا كل بيانات اعتماد جهاز (تسقط الجلسات خلال ثوانٍ عبر مراقبة
+الأجهزة)، ويزيل كل عضوية في مساحات العمل، ويختم الحساب بأنه مُعطَّل.
+يبقى صف المستخدم: الإسناد دائم. إعادة التفعيل تعيد تسجيل الدخول، ولا
+تعيد منح العضويات أبدًا.
 
-## What stays out
+## ما يبقى خارجًا
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **يحدث تعيين المجموعات إلى الأدوار عند تسجيل الدخول** من سمات SAML
+  ومطالبات OIDC — مجموعات SCIM التي تُدفَع لا تُخزَّن.
+- **لا يمكن بلوغ دور المالك من SSO** — لا بوصفه الدور الافتراضي ولا عبر
+  تعيين مجموعة.
+- مرحّل WebSocket ليس قناة SSO أبدًا، والهواتف التي لا تصل إلى الخادم
+  إلا عبر المرحّل لا تستطيع إكمال جولة المتصفح ذهابًا وإيابًا مقابله.

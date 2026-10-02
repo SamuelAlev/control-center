@@ -1,68 +1,75 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Bir pipeline’ı elle çalıştırın
+description: Başlatıcıdan bir pipeline çalıştırması başlatın, girdilerini doldurun ve çalıştırma ayrıntısına ulaşın.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/).
+Bu kılavuz bir çalıştırmayı elle başlatmayı ele alır. Bir çalıştırmayı izlemek,
+adım çıktısını okumak ve bir hatadan kurtulmak için
+[Pipeline çalıştırmalarını izleyin](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
+sayfasına bakın.
 
-## Start a run
+## Bir çalıştırma başlatın
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. Çalışma alanı kenar çubuğunda **Pipelines**’a tıklayın.
+2. Başlıktaki **Pipeline çalıştır** düğmesine basın. Başlatıcıya
+   (`/workspaces/<workspace-id>/pipelines/run`) gelirsiniz.
+3. Sol raydan bir şablon seçin. Her kart şablonun adını, açıklamasını ve girdi
+   alıp almadığını gösterir.
+4. Sağdaki girdi formunu doldurun. Zorunlu alanlar bir değere sahip olana kadar
+   düğmeyi engeller; girdisi olmayan bir şablon bunu belirtir.
+5. **Pipeline çalıştır** düğmesine basın.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Çalıştırmanın ayrıntı sayfasına gelirsiniz; zamanlama şelalesi ve grafik tuvali
+canlıdır.
 
-## If the rail is empty
+## Ray boşsa
 
-The launcher shows a template only when **both** are true:
+Başlatıcı bir şablonu yalnızca **ikisi de** doğru olduğunda gösterir:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Şablonun anahtarı **Ayarlar → Çalışma alanı → Pipeline şablonları** altında
+  açıktır.
+- Şablon düzenleyicisinin **Manuel çalıştırma** iletişim kutusunda **Manuel
+  çalıştırmaya izin ver** açıktır — başlatıcının okuduğu `manual`
+  tetikleyicisini oluşturan şey bu anahtardır.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+Yerleşik on üç şablonun sekizi devre dışı olarak gelir: `external_pr_welcome`,
 `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+`dep_audit` ve `pr_digest`. Motor devre dışı bir şablonu başlatmayı reddeder;
+bu yüzden burada onu aramadan önce anahtarını açın.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Şablonlar listesinde şablon başına bir **Çalıştır** eylemi yoktur ve
+düzenleyicinin içinde çalıştır düğmesi bulunmaz — tek elle giriş noktası
+başlatıcıdır.
 
-## Fill in a repository input
+## Bir depo girdisini doldurun
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+**Depo** türünde bir girdi, çalışma alanının kayıtlı depoları üzerinde bir
+seçici görüntüler. Birini seçmek, çalıştırma yüküne `repo_id`,
+`repo_local_path`, `repo_full_name` ve — deponun GitHub uzak deposu varsa —
+`repo_owner` ile `repo_name` değerlerini doldurur; böylece alt adımlar ihtiyaç
+duyduklarını okuyabilir.
 
-## Watch it run
+## Çalışmasını izleyin
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Çalıştırma ayrıntı sayfasının üç bölümü vardır: bir meta şerit (başlangıç
+zamanı, etkin süre, adım ilerlemesi, bir başarısızlık başlığı, **Yeniden dene**
+ve **Sil**), adım başına süreyi ve maliyeti gösteren katlanabilir bir zamanlama
+şelalesi ve grafik tuvali. Bir düğüm seçmek, o adımın ayrıntı panelini açar.
 
-[Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Pipeline çalıştırmalarını izleyin](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
+bunların hepsini ele alır; askıya alınmış bir adımın nasıl okunacağı ve bir adım
+başarısız olduğunda ne yapılacağı dahil.
 
-Every run you start from the app is a real one.
+Uygulamadan başlattığınız her çalıştırma gerçek bir çalıştırmadır.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create a pipeline template](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
-- [Set up pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
-- [Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
+- [Bir pipeline şablonu oluşturun](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
+- [Pipeline tetikleyicilerini kurun](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/)
+- [Pipeline çalıştırmalarını izleyin](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/)
+- [Pipeline’lar](/tr-TR/kilavuz/kavramlar/pipelinelar/)

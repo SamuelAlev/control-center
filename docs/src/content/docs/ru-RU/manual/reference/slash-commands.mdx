@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: "Slash-команды"
+description: "Все команды, которые можно набрать в композере: что они делают и где выполняются."
 slug: ru-RU/руководство/справка/slash-команды
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Команды, которые набирают в композере пространства. По тому, где они срабатывают, они делятся на три группы, и разница важна: **локальная** команда никогда не уходит как сообщение, поэтому она не появляется в транскрипте и не доходит до агента.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Где выполняется | Что это значит                                                                     |
+| --------------- | ---------------------------------------------------------------------------------- |
+| **Локальная**   | Обрабатывается в клиенте (или в серверной операции, запущенной клиентом). Команда никогда не уходит как сообщение, поэтому её не видит ни один агент. |
+| **Побочная**    | Один серверный вызов модели о разговоре. Разговор не меняется.                      |
+| **Диспетчеризация** | Задаёт режим или директиву для запуска, который начинает сообщение.             |
 
 ---
 
-## Directing a run
+## Направление запуска
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Локальная → диспетчеризация.** Взводит режим плана для разговора: полностью доступный только для чтения worktree и поверхность инструментов, ограниченная `read`. Результат работы агента — план, а не правка. Голое `/plan` только переключает режим и никогда не уходит как сообщение; если добавить промпт, именно остаток строки запускает работу.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Диспетчеризация.** Запускает автономную цель, которую супервизор целей перераспределяет по сегментам и перезапускает.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Если набрать `/goal` с текстом, сначала открывается **интервью по цели** — короткий проход, который не принимает черновик, пока в нём не будет всех пяти пунктов: критериев успеха, которые проверяющий может разрешить без суждения; точной команды проверки; предела числа попыток; границ области; условий остановки. На каждом шаге предлагается *Пропустить и запустить как есть*: интервью — это вариант по умолчанию, а не обязательное условие.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` и `/goal drop` — не slash-команды. Пауза, возобновление и остановка живут в списке целей разговора на боковой панели. Стартовые флаги самой цели — это `--budget <dollars>`, `--max <N>` (бюджет запусков) и `--days <N>` (срок). Цель, упёршаяся в потолок стоимости, возобновляется только повышением этого потолка — из того же элемента управления на боковой панели.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Зачем это вообще прерывает работу]
+Автономная цель — единственное место, где расплывчатое задание действительно дорого обходится. Запуск часами работает над целью, чьё «готово» никто не определил, а потом отчитывается об успехе по собственным меркам. Пять вопросов дешевле, чем один ночной запуск, который завершился тогда, когда сам счёл нужным.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Диспетчеризация.** Работает итеративно до завершения. Принимает ограничение: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Токен, который *выглядит* как ограничение (начинается с цифры или знака) и не разбирается, — это жёсткая ошибка. Проза остаётся прозой, поэтому `/loop keep going until the tests pass` — это неограниченный цикл со встроенным промптом, а не ошибка разбора.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ru-RU/руководство/практические-руководства/направлять-фоновые-воркеры/).
+**Диспетчеризация.** Превращает сессию в **директора**: его собственные инструменты опускаются до `read` плюс пять глаголов воркера, а редактированием занимаются фоновые воркеры. См. [Направлять фоновые воркеры](/ru-RU/руководство/практические-руководства/направлять-фоновые-воркеры/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Воркеры никогда не переживают режим — выход убивает их всех.
 
 ---
 
-## Managing context
+## Управление контекстом
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Локальная → сервер.** Сворачивает старую историю в закреплённое резюме и продолжает на сжатом контексте. Аргумента, видимого модели, нет: команда никогда не уходит как сообщение, а проход сжатия не принимает подсказку о фокусе.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Локальная → сервер.** Отбрасывает тяжёлое содержимое, **не** суммируя его: никакого вызова модели, каждое слово сохраняется, стирается только та масса, которую всё равно никто не стал бы перечитывать.
 
-| Target        | Drops                             |
-| ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| Объект        | Что отбрасывается                          |
+| ------------- | ------------------------------------------ |
+| `tool_output` | Ничем не примечательные старые результаты инструментов (по умолчанию) |
+| `images`      | Старые скриншоты с сохранением их текста   |
+| `all`         | И то, и другое                             |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Это аварийный выход для случая «контекст раздулся, но резюме мне не нужно».
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Локальная.** Открывает обозреватель контекста для агента этого разговора в отдельной вкладке: каждый сегмент и часть его контекстного окна — системный промпт, навыки, файлы контекста, схемы инструментов, историю и изображения — с тем, во сколько обходится каждый из них, и дословным содержимым за ним.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Вкладка привязана к паре (пространство, агент), поэтому повторный вызов перефокусирует одну вкладку, а не нагромождает копии одной и той же разбивки.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+В пространстве с **несколькими агентами** голое `/context` открывает окно, которое читает индикатор контекста в заголовке, — того агента, который работал здесь последним, то есть того, чьё сообщение находится внизу цепочки, — а вкладка подписана `Контекст · <name>`, так что видно, чьё это окно. Назовите другого, чтобы переключиться: `/context qa` (`@` необязателен). Набранное имя сопоставляется точно, никогда не приблизительно: у двух агентов два разных окна, поэтому почти-попадание, открывшее другое, было бы правдоподобным ответом на вопрос, которого вы не задавали.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Тот же обозреватель стоит за чипом индикатора контекста в заголовке пространства, а он следует за тем же агентом, — поэтому команда и чип никогда не разойдутся в том, что здесь означает «контекст».
 
 ---
 
-## Asking about the conversation
+## Вопросы о разговоре
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Эти команды тратят один вызов модели и **никогда не меняют разговор**. Следующий настоящий ход агента видит ровно то, что он и так увидел бы, — в этом вся ценность самого вопроса.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Побочная.** Пишет документ передачи для того, кто подхватит работу с нуля: в чём задача, что выяснилось, что осталось.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Побочная.** Отвечает на вопрос о проделанной работе, не добавляя ни вопрос, ни ответ в транскрипт.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Две команды, одна реализация]
+Обе устроены одинаково: берут разговор как он есть, задают о нём один вопрос и не сохраняют ни то, ни другое. Реализованы один раз, чтобы они не разошлись в двух разных представлениях о «контексте на текущий момент».
 :::
 
 ---
 
-## Navigating and exporting
+## Навигация и экспорт
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ru-RU/руководство/практические-руководства/ответвить-разговор/).
+**Локальная.** Открывает навигатор по ветвям: где разговор разветвился, на каком пути он сейчас и как вернуться к тому, который вы оставили. См. [Ответвить разговор](/ru-RU/руководство/практические-руководства/ответвить-разговор/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Локальная.** Записывает разговор в самодостаточный HTML-файл — сворачиваемые карточки инструментов, ни таблицы стилей, ни скрипта, ни хостинга изображений. В десктопном приложении попадает в `Documents/ControlCenter/exports/`, а в веб-версии скачивается.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Локальная.** Копирует транскрипт в буфер обмена в формате markdown, с вызовами инструментов в сворачиваемых блоках. Рассуждения намеренно исключены: транскрипт, вставленный в отчёт об ошибке, читает человек.
 
 ---
 
-## Everything else
+## Всё остальное
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Локальная.** Просматривает и редактирует сохранённый список задач разговора. Голое `/todo` открывает редактор. Подкоманды: `append`, `start`, `done`, `drop` (псевдоним `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Диспетчеризация.** Применяет установленный навык. Навыки живут под собственным префиксом `skill:`, поэтому не делят пространство имён со встроенными командами — без этого навык с именем `plan` был бы навсегда недостижим.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Диспетчеризация.** Любой markdown-файл в `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` или `.opencode/commands` в репозитории. Вложенный `foo/bar.md` тоже доступен как `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Шаблонизация: `$1`, `$@`, `$@[start:length]` и `$ARGUMENTS`. Frontmatter может задавать `description` (автодополнение в композере). `allowed-tools` и `model` разбираются из файла, но вызов пользовательской команды сейчас только подставляет аргументы в тело — они не меняют модель или поверхность инструментов запуска.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Команда, написанная пользователем, побеждает навык с тем же именем: это сокращение, которое человек вызвал намеренно, с аргументами.
 
 ---
 
-## Magic keywords
+## Магические ключевые слова
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Не команды. Отдельное слово в нижнем регистре в любом месте промпта прикрепляет скрытую инструкцию для этого хода.
 
-| Word          | Effect                                                             |
+| Слово         | Действие                                                           |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Максимальное усилие рассуждений для этого хода                     |
+| `orchestrate` | Делегировать независимую работу параллельно и проверять каждую фазу |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Сопоставитель намеренно строг к границам. `orchestrate,` совпадает; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` и `orchestrate()` — нет, а блоки кода в ограждении, строчные фрагменты и разделы XML сначала маскируются. Без этого вставка трассировки стека изменила бы поведение агента.
 
 ---

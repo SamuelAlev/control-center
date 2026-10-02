@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: 調整代理的工具上下文
+description: 檢視一次執行實際送出的內容、變更哪些工具會預先載入，並判斷一次差劣的工具選擇究竟是檢索未命中，還是提示本身有問題。
 slug: zh-HK/手冊/操作指南/調整工具上下文
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/zh-HK/手冊/概念/工具上下文).
+本指南涵蓋兩層式工具介面的實務工作：看清一次執行送出了什麼、如何更改它，以及診斷一個拿錯了工具的代理。若要了解它為何這樣設計，請參閱[工具上下文與提示快取](/zh-HK/手冊/概念/工具上下文)。
 
-## Look at what a run actually sends
+## 檢視一次執行實際送出的內容
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+開啟一則對話，然後點按對話頁首的上下文用量指示器。它會重建下一次派發將會送出的確切介面，而不會實際執行任何東西。**查看更多**（或 `/context` 指令）會開啟完整的上下文瀏覽器，讓你逐一檢視每個工具。
 
-Two segments matter here:
+這裡有兩個區段值得留意：
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **工具定義**與 **MCP 與動態工具**——即常駐集合，並顯示每個工具實際的 token 成本。
+- **隨需載入的工具**——即隨需載入索引。每一筆只按名稱計費，因為請求所攜帶的僅是名稱；展開某一項仍會顯示完整的描述與 schema，讓你看到這次執行若把它拉進來*原本會*付出多少成本。
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/zh-HK/手冊/參考/cc-server-cli).
+如果隨需載入區段是空的，表示這部伺服器已關閉隨需載入。請查閱 [`cc_server` CLI](/zh-HK/手冊/參考/cc-server-cli) 上的 `--tool-deferral`。
 
-## Change which tools load up front
+## 變更哪些工具會預先載入
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+常駐集合是政策，而非設定——它存在於 `ModeToolPolicy`（`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`）之中，並套用於每一次執行：
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/zh-HK/手冊/概念/模式) uses on nearly every turn.
+- `residentBuiltins`——檔案與 shell 詞彙。
+- `residentDiscovery`——`search_tools` 與 `list_my_tools`。請勿移除它們；它們是代理觸及所有其他工具的方式。
+- `residentMcpTools`——少數幾個值得在每次請求都帶上其 schema 的 Control Center 工具。
+- 一個按模式劃分的區塊，用於某個指定[模式](/zh-HK/手冊/概念/模式)幾乎每個回合都會用到的工具。
 
-Two rules when editing it:
+編輯它時有兩條規則：
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**只在大多數執行都會用到某個工具時，才把它加進去。** 每一個名稱都會在每一次執行的每一個請求中，永遠付出其 schema 的成本。一個在用到時很重要、但整體而言罕見的工具，屬於隨需載入的那一半——代理仍然找得到它。
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**使用工具的真實名稱。** 對應不到任何工具的常駐名稱是沒有作用的：不會報錯、不會警告，該工具只會被隨需載入。`test/tooling/resident_tool_names_test.dart` 會捕捉這種情況，也會讓每個模式的常駐工具數維持在 40 個以下，而這正是這項練習的重點——超出這個區間之後，工具選擇的表現會明顯變差。
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+模式所需的與釘選的動詞會自動加入，所以你永遠不需要列出模式自身的輸出動詞。
 
-## Diagnose a bad tool choice
+## 診斷差劣的工具選擇
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+當代理用錯了工具，或聲稱自己做不了某件事時，請判斷究竟是以下三種情況中的哪一種。
 
-### 1. Did it look?
+### 1. 它有沒有找過？
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+每一次執行都會記錄它載入了哪些隨需載入工具，以及觸發載入的原因——直接按名稱呼叫，或一次 `search_tools` 查詢。開啟該次執行的事件串流（**設定 → 工作區 → 代理** → 該代理 → **日誌** → **檢視**），並尋找 `[harness] loaded N deferred tool(s)`。
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **沒有記錄任何東西，而代理說這項能力不存在**——它根本沒有找過。這是提示的問題，而不是檢索的問題：隨需載入索引就在它的系統提示中，並附有指示，要求在搜尋回傳空結果之前，不得宣稱某項能力不存在。
+- **記錄了一次搜尋，但沒有載入任何東西**——這是真正的檢索未命中。請前往第 2 步。
+- **載入了工具，卻用錯了其中一個**——它找到的工具太相似了。請前往第 3 步。
 
-### 2. Fix a retrieval miss
+### 2. 修正檢索未命中
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` 會比對名稱、描述與引數名稱。檢索未命中幾乎總是意味著描述裡沒有代理所用的字詞。
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+請把它們加進去。描述就是檢索索引，所以**寧可加長，也不要裁剪**——要寫下操作者真正會輸入的詞彙（"assign"、"hand off"、"give to"），而不只是內部用的名詞。為了節省 token 而裁剪描述，會同時賠上搜尋命中與選擇準確度，而相對於 schema 而言幾乎省不了什麼。
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+如果正確的工具確實存在，但排名偏低，那正是 `limit` 引數的用途；工具自身的描述會告訴代理，當搜尋看似接近卻仍落空時要擴大搜尋範圍。
 
-### 3. Fix look-alike tools
+### 3. 修正過於相似的工具
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+如果兩個工具的描述，對於本來就不知道其中差異的人來說讀起來一模一樣，那麼模型就只是在猜。請把它們合併成一個帶有區辨引數的工具。
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` 與 `ticket_pr_link` 就遵循這個模式：兩者都透過一個區辨引數來處理連結與取消連結。在單一次呼叫*之中*、手握請求完整上下文所作的選擇，比在兩個雷同描述之間所作的選擇更可靠。
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+當工具需要不同的核准閘門、不同的稽核或不同的呈現方式時，就讓它們保持分開——這些都是合併會讓你付出真實代價的理由。
 
-## Check the prompt cache is working
+## 確認提示快取運作正常
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+快取命中率會顯示在 **可觀測性 → 洞察** 中，名為 **快取率**。一段健康、長時間運作的對話會維持在偏高的水平；如果它持續偏低，那就是有東西在每個回合改寫前綴。
 
-Common causes, in order of likelihood:
+常見成因，按可能性排序：
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **提示前段的任何非確定性內容。** 一個時間戳、一個請求 id，或以不同順序反覆運算的集合，都足以造成這個情況。
+- **對話中途更換模型或推理力度。** 兩者都會改變前綴。子代理在這方面特別容易出錯：為了省錢而以較低的力度執行子代理，因失去快取共用而付出的代價，可能比省下來的還多。
+- **頻繁壓縮。** 壓縮本來就會改寫歷史，所以它的代價是真實的；解決之道是少而深地壓縮，而不是多而淺。
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+以 `--tool-deferral=off` 關閉隨需載入，是隔離某項行為改變是否源自兩層式介面的有效 A/B 做法。它會完全重現隨需載入出現之前的請求，因此如果關掉之後該行為仍然持續，那麼這個介面就不是成因。

@@ -1,192 +1,194 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: Бекенди пісочниці
+description: Бекенди пісочниці, де вони застосовуються, і кожен об’єкт значення, який використовує середовище виконання пісочниці.
 slug: uk-UA/керівництво/довідка/бекенди-пісочниці
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[Чи потрапляє запуск у пісочницю, залежить від хоста]
+`cc_server` один раз під час завантаження зондує хост і загортає диспетчеризацію агентів у нативний бекенд, коли зонд повідомляє, що бекенд доступний, а `--sandbox` не дорівнює `off`. Загорнуто обидва шви диспетчеризації: CLI Claude Code — через порт пісочниці, а ACP разом із вбудованим інструментом `bash` harness — через менеджер пісочниці.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/uk-UA/керівництво/поняття/обмеження/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+Там, де зонд не повідомляє про бекенд — **у Windows це завжди так**, як і в Linux або WSL2 без `bwrap` і `socat` — запуски агентів **не** ізольовані пісочницею. ACP та інструмент `bash` harness усе одно запускаються з очищеним середовищем; Claude Code проходить через `NoSandboxAdapter` і успадковує середовище хоста. Решта меж — це власний worktree запуску (copy-on-write там, де постачається `rift`; `git worktree` у Windows), облікові дані, обмежені можливостями, які брокер видає на кожен запуск і відкликає під час згортання, політика команд для кожного режиму, уніфіковані [обмеження дій](/uk-UA/керівництво/поняття/обмеження/) (fail-closed), очищення середовища на шляхах ACP та `bash` harness і поверхня інструментів, яку дозволяє режим.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+Внутрішньопроцесні файлові інструменти harness (read, write, edit, apply patch, search, find, search_files) перебувають поза пісочницею на кожному хості: вони виконуються в процесі сервера, тож загортається лише `bash`.
 :::
 
-## Backend overview
+## Огляд бекендів
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
-| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/uk-UA/керівництво/поняття/rigs/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| Бекенд        | Значення  | Платформа                                     | Доступність                                                                                                                                                                        |
+| ------------- | --------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ізольована ВМ | `microvm` | macOS, Linux, Windows (гіпервізор мікроВМ)    | Доступний лише після зондування середовища виконання мікроВМ; застосовується до інтерактивних терміналів — шел виконується всередині [rig](/uk-UA/керівництво/поняття/rigs/), а не на хості |
+| Нативний      | `native`  | macOS (Seatbelt), Linux і WSL2 (bubblewrap)   | Зондується під час завантаження; Linux відмовляє в запуску, який вимагає заборон запису за глобом імені файлу, яких bubblewrap не може забезпечити                              |
+| Немає         | `none`    | Усі                                           | Типове значення розбору, типове значення термінала та запасний варіант, коли жоден бекенд недоступний або задано `--sandbox off`                                                   |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` повертає `none` для null або нерозпізнаного збереженого значення. Збережене `"docker"` зіставляється з `native`.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/uk-UA/керівництво/довідка/rigs/).
+**`microvm` — єдиний бекенд із межею ядра** — робоче навантаження
+справді не виконується на хості. Він ніколи не буває тихим запасним варіантом у
+жодному напрямку: явний запит на нього на хості, який не може завантажити ВМ,
+гучно зривається («я просив ВМ, а отримав ноутбук» — це єдина деградація, яку
+оболонка не може собі дозволити), і лише *незазначене типове значення*
+знижується до `native`, про що є рядок у журналі. Фактичний бекенд сесії
+повертається клієнту й позначається бейджем, тож термінал ніколи не може
+стверджувати, що він ізольований, виконуючись на хості. Життєвий цикл, образи й
+вихідний трафік самої ВМ описано в [довідці про rigs](/uk-UA/керівництво/довідка/rigs/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**У Windows нативної пісочниці немає.** `NativeSandboxAdapter.probe` повертає `available: false` на кожному хості, який не є macOS або Linux/WSL2. Тож диспетчеризація агентів у Windows використовує `none`. Бекенд `microvm` — окремий: він доступний лише після зондування середовища виконання мікроВМ і застосовується до інтерактивних терміналів і rigs, а не до загортання `bash` на хості.
 
-## Probe results
+## Результати зондування
 
-The probe is what gates enforcement. It runs once, at server boot.
+Саме зонд визначає, чи буде примус. Він виконується один раз, під час завантаження сервера.
 
-| Host                                   | `available` | Note / hint                                                               |
-| -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| Хост                                    | `available` | Примітка / підказка                                                        |
+| --------------------------------------- | ----------- | -------------------------------------------------------------------------- |
+| macOS                                   | `true`      | `sandbox-exec` (Seatbelt) — ізоляція просторів імен, без межі ядра          |
+| Linux або WSL2 з `bwrap` і `socat`      | `true`      | bubblewrap — ізоляція просторів імен, без межі ядра                        |
+| Linux або WSL2, де бракує одного з інструментів | `false`     | `requiresInstall: true`, з підказкою щодо встановлення, яка називає відсутні пакети |
+| Будь-яка інша платформа                 | `false`     | Нативна пісочниця на цій платформі не пропонується                          |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Сервер записує результат одним рядком під час запуску: `agent sandbox ON` разом із приміткою, `no OS-native agent sandbox on this host` разом із підказкою або `agent sandbox DISABLED by --sandbox off`. `GET /healthz` не несе поля про пісочницю.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` приймає `on` (типово) або `off`. Це відмова від застосування, а не ввімкнення: `on` означає «загортати, коли хост пропонує бекенд», а не «вимагати його».
 
-## Native backend
+## Нативний бекенд
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Використовує механізм пісочниці Seatbelt від Apple (ту саму систему, яку застосовує macOS App Sandbox).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+Згенерований профіль **типово дозвільний** (`(allow default)`) і вирізає заборони, бо цілком заборонний за замовчуванням профіль робить інтерактивний шел непридатним — викликів dyld, XPC і Mach забагато, щоб їх перелічити. Практичний наслідок: агент усе ще може читати більшість хоста; ваші зареєстровані робочі копії захищені явними заборонами запису й перейменування, а не невидимістю.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **Читання файлової системи**: заборонено для шляхів із секретами (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` і решти набору заборон на читання)
+- **Запис у файлову систему**: скидається до заборони, далі явні дозволи для підшляхів, а обов’язково заборонені шляхи (файли rc шела, `.git/hooks`, конфігурація Claude, захищені робочі копії) заблоковано навіть усередині кореня з правом запису. `file-write-unlink` заборонено на кожному забороненому шляху та його предках, тож перейменування не може обійти заборону запису
+- **Процеси**: заборони `process-exec` для завжди небезпечних бінарників, плюс блокування виконання будь-чого з каталогу з правом запису
+- **Мережа**: обмежена портами проксі в процесі плюс DNS — loopback не дозволено цілком, і Unix-сокети не дозволені. Проксі забезпечують список дозволених доменів для кожної сесії (див. [Вихідний трафік](#вихідний-трафік))
+- **Конфігурація**: профілі генеруються на кожен запуск із `SandboxSpec`
 
-Requirements:
+Вимоги:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), частина кожного встановлення macOS — додаткові інструменти не потрібні
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+Використовує bubblewrap (`bwrap`) для створення просторів імен монтування та PID.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **Файлова система**: створює простір імен монтування, у якому видно лише змонтовані шляхи
+- **Мережа**: працює в неспільному просторі імен мережі; трафік досягає проксі хоста через Unix-сокетні мости `socat`
+- **Процеси**: ізоляція простору імен PID
 
-Requirements:
+Вимоги:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- Встановлені `bubblewrap` і `socat` (`sudo apt-get install bubblewrap socat` у Debian/Ubuntu)
+- Підтримка просторів імен ядра (стандартна в сучасному Linux)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap може затіняти наявний шлях, але не може заборонити *новий* файл
+`.env`, `*.key` чи `*.pem` усередині придатного для запису bind. Стандартна
+політика диспетчеризації вимагає цих заборон за глобом імені файлу, тож нативна
+диспетчеризація агентів наразі **зривається із забороною за замовчуванням на
+Linux/WSL2, навіть коли зонд знаходить bubblewrap**. Вона не виконується з тихо
+послабленою політикою. Щоб відновити нативну диспетчеризацію в Linux, потрібен
+бекенд із правилами імен файлів на етапі створення. Вимкнення пісочниці — це
+явна відмова від обмежень, а не рівноцінний обхідний шлях.
 
-## None backend
+## Бекенд «Немає»
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+Жодної пісочниці. Процес виконується безпосередньо на хості, з доступом хоста до файлової системи, мережі та процесів. ACP та інструмент `bash` harness усе одно отримують очищення середовища й політику команд; Claude Code через `NoSandboxAdapter` успадковує середовище хоста. Саме до цього відкочується диспетчеризація агентів на хості без доступного бекенда або з `--sandbox off`, і це типове значення термінала, коли клієнт не називає жодного.
 
-## Server-hosted terminal
+## Термінал на сервері
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+Термінал потрапляє в пісочницю на власних умовах, а не за рішенням зонда диспетчеризації. `defaultBackend` у `TerminalSessionService` — це `none`, і `cc_server` його не перевизначає, тож сесія термінала виконує шел хоста, якщо клієнт явно не попросить `native`; панель термінала застосунку для робочого столу цього не робить.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+Коли запитують `native`, шел загортається через `SandboxManager` під фіксованим профілем термінала: `$HOME` і робочий каталог сесії доступні для запису, мережа відкрита, а `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` і `~/Library/Keychains` заборонені для читання. Обмеження за можливостями тут не діє — це справа диспетчеризації. Якщо загортання не підтримується, сесія зривається, а не показує бейдж нативного бекенда на PTY шела хоста.
 
-## Network egress
+## Вихідний трафік
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+Коли пісочниця запускається, вихідний доступ до мережі забезпечують проксі в процесі, а не правила брандмауера ядра. На хості без доступного бекенда ніщо з цього не діє, і породжений процес дістається мережі так само, як це зробив би користувач сервера.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- Середовище виконання пісочниці запускає проксі HTTP/HTTPS і проксі SOCKS5 на `127.0.0.1` усередині процесу `cc_server`, **по одній парі на кожну обмежену сесію** (`http_proxy.dart`, `socks_proxy.dart`). Паралельні запуски не ділять пару.
+- Процеси в пісочниці отримують змінні середовища проксі (`HTTP_PROXY`/`HTTPS_PROXY` → проксі HTTP, `ALL_PROXY` → проксі SOCKS; `GIT_SSH_COMMAND` спрямовує git-over-SSH через проксі SOCKS). У Linux простір імен мережі неспільний, тож проксі — єдиний шлях назовні; у macOS пісочниця ділить loopback хоста й спілкується з ними напряму.
+- Цільовий хост кожного з’єднання зіставляється зі списком дозволених доменів сесії; усе інше відхиляється. Дві форми шаблону з рівно одним `*` кожна: на початку `*.example.com` збігається з будь-яким піддоменом (зокрема `a.b.example.com`), але не з самим доменом; у середній мітці `bedrock.*.amazonaws.com` збігається рівно з однією міткою (`bedrock.us-east-1.amazonaws.com`, а не `bedrock.evil.attacker.amazonaws.com`).
+- Список дозволених розв’язується для кожної сесії з дбайливо підібраного базового набору (`kBaselineAllowedDomains`: провайдери LLM, хостинг Git, реєстри пакетів), плюс домени GitHub, коли агент має можливості GitHub або надсилання, плюс `SandboxSpec.egressAllowlist`. Розв’язувач також приймає домени провайдерів тікетів, коли агент може звертатися до тікетів, але шлях диспетчеризації ніколи не передає цей список (чи додаткові записи `egressAllowlist`), тож на практиці кожен запуск отримує базовий набір плюс домени GitHub, які заслужили його можливості.
+- Фіксований список заборонених (`kBaselineDeniedDomains`: кінцеві точки метаданих хмари, стоки телеметрії) має перевагу над усіма дозволами.
+- `networkEnabled: false` (або агент без можливості мережі) усе одно запускає проксі для сесії, але список дозволених порожній, тож кожне вихідне з’єднання відхиляється.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+Специфікація, яку передають у `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
-| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| Поле              | Тип                                         | Опис                                                                                                                                                     |
+| ----------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionId`       | `String`                                    | Стабільний ідентифікатор сесії (зазвичай id простору)                                                                                                    |
+| `workspaceId`     | `String`                                    | Id робочого простору-власника                                                                                                                           |
+| `agentId`         | `String?`                                   | Агент, наразі прив’язаний до пісочниці, якщо є                                                                                                           |
+| `bindMounts`      | `List<SandboxBindMount>`                    | Монтування хост→гість; пісочниця бачить лише перелічені тут шляхи хоста                                                                                  |
+| `networkEnabled`  | `bool` (типово `true`)                      | Поєднується з можливістю мережі в агента. Коли вимкнено, проксі для сесії все одно стартують, але список дозволених порожній, тож кожне вихідне з’єднання відхиляється |
+| `egressAllowlist` | `List<String>` (типово `[]`)                | Додаткові дозволені домени вихідного трафіку; шаблони підтримуються (`*.example.com`, а також середня форма з однією міткою). Диспетчеризація ніколи це не заповнює, тож загорнутий запуск отримує дбайливо підібраний базовий набір плюс домени GitHub, які заслужили його можливості |
+| `guestWorkdir`    | `String?`                                   | Типовий робочий каталог усередині пісочниці; окремі виклики `exec` можуть його перевизначити                                                              |
+| `mode`            | `Mode` (типово `chat`)                      | Вирізає правила запису у файлову систему: `chat` лишає bind-монтування доступними для запису; `review`, `plan` та `orchestrate` — лише для читання        |
+| `capabilities`    | `AgentCapabilities` (типово `safeDefault`)  | Виводить рішення про ввімкнення мережі та домени вихідного трафіку GitHub. Домени тікетів — це аргумент розв’язувача, який шлях диспетчеризації ніколи не надає |
+| `protectedPaths`  | `List<String>` (типово `[]`)                | Шляхи хоста, які ніколи не повинні бути доступними для запису всередині пісочниці, в жодному режимі                                                     |
+| `runnerStateDirs` | `List<String>` (типово `[]`)                | Каталоги хоста, у яких раннер тримає власний стан, доступні для запису в кожному режимі (нині це керований Control Center `CLAUDE_CONFIG_DIR`)           |
+| `execGrantRoots`  | `List<String>` (типово `[]`)                | Схвалені оператором дерева каталогів, які знову відкривають блокування exec для каталогів із правом запису в macOS. Linux їх ігнорує — у bwrap немає блокування exec для `$HOME`, яке можна знову відкрити |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` містить оригінальні зареєстровані робочі копії репозиторіїв, розв’язані на кожну диспетчеризацію з репозиторіїв робочого простору. Агенти працюють виключно у власних worktree з copy-on-write для кожної розмови, тож оригінали ніколи не повинні бути доступними для запису зсередини пісочниці — інакше в macOS загальний дозвіл Seatbelt на запис у `$HOME` лишав би їх доступними для запису через `bash`. Вони долучаються до набору заборон на запис для секретів у кожному режимі, включно з `chat`.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+Кожен шлях заборони читання й заборони запису видається і в буквальному написанні, і в розв’язаному через символьні посилання. Ядро зіставляє правило заборони з розв’язаним шляхом, тож правило, написане проти шляху із символьним посиланням, ніколи не спрацьовує — а в macOS це радше звичайний, ніж екзотичний випадок, адже `/tmp` розв’язується в `/private/tmp`, а `/var/folders/…` — у `/private/var/folders/…`. Записи, що містять `*` або `?`, вважаються глобами й лишаються без змін; шлях, який не розв’язується, зберігається як написано.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
-| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| Поле        | Тип                      | Опис                                                                                                     |
+| ----------- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `hostPath`  | `String`                 | Абсолютний шлях на хості                                                                                 |
+| `guestPath` | `String`                 | Шлях усередині пісочниці (з нативною пісочницею дорівнює `hostPath`; збережено для симетрії адаптерів)   |
+| `readOnly`  | `bool` (типово `false`)  | Монтувати лише для читання, коли true                                                                    |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+Повертає `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| Поле        | Тип                    | Опис                                                                     |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | Ідентифікатор сесії                                                      |
+| `backend`   | `SandboxBackend`       | Який бекенд виконується                                                  |
+| `state`     | `SandboxState`         | Стан життєвого циклу                                                     |
+| `error`     | `Object?`              | Встановлюється, коли `state` дорівнює `error`                            |
+| `details`   | `Map<String, Object?>` | Внутрішній облік адаптера (робочий каталог, PID, шлях до профілю тощо)   |
 
 ### SandboxState
 
-| State       | Description                                 |
-| ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| Стан        | Опис                                         |
+| ----------- | -------------------------------------------- |
+| `created`   | Специфікацію створено, але ВМ ще не запущено |
+| `warm`      | Виконується й готова приймати команди exec   |
+| `active`    | Наразі виконує команду                       |
+| `suspended` | Призупинено / знято контрольну точку на диск, щоб заощадити RAM |
+| `destroyed` | Згорнуто; дескриптор більше не чинний        |
+| `error`     | Запуск не вдався — див. `SandboxHandle.error` |
 
-## Sandbox events
+## Події пісочниці
 
-| Event type  | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| Тип події   | Опис                                                        |
+| ----------- | ----------------------------------------------------------- |
+| `stdout`    | Стандартний вивід із пісочниці                              |
+| `stderr`    | Стандартна помилка з пісочниці                              |
+| `exit`      | Процес пісочниці завершився (несе `exitCode`)               |
+| `starting`  | Пісочниця запускається                                      |
+| `ready`     | Пісочниця готова приймати виклики exec                      |
+| `killed`    | Процес убито хостом (OOM, тайм-аут, ручна зупинка)          |
+| `violation` | Порушено політику пісочниці (несе `SandboxViolation`)       |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| Поле                  | Тип       | Опис                                                                       |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | Заборонене дієслово (наприклад, `file-read*`, `network-outbound`)          |
+| `target`              | `String`  | Шлях або хост, що був ціллю забороненої операції                           |
+| `suggestedCapability` | `String?` | Прапорець можливості, який дозволив би цю дію (наприклад, `canCallGitHubApi`) |
+| `raw`                 | `String?` | Сирий рядок журналу, корисний для зневадження                              |
 
-## See also
+## Дивіться також
 
-- [Sandbox security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
-- [Sandbox policies](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/)
-- [cc_server CLI](/uk-UA/керівництво/довідка/cc-server-cli/): the `--sandbox` flag
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
+- [Політики пісочниці](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/)
+- [CLI cc_server](/uk-UA/керівництво/довідка/cc-server-cli/): прапорець `--sandbox`

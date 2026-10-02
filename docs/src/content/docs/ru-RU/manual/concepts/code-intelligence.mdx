@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Интеллект кода
+description: Зачем агенту компилятор, структурный сопоставитель и отладчик — и на что каждый из них отвечает так, как не могут остальные.
 slug: ru-RU/руководство/понятия/интеллект-кода
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center даёт агенту четыре способа понимать код помимо его чтения. Они отвечают на по-настоящему разные вопросы, и четыре их не один только потому, что ни один механизм в одиночку не отвечает на все.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Механизм             | На что отвечает                                   | Цена                                   |
+| -------------------- | ------------------------------------------------- | -------------------------------------- |
+| **Граф кода**        | Что здесь есть и что от этого зависит             | Проход индексации; дёшево запрашивать  |
+| **Языковой сервер**  | Это вообще компилируется и что это за тип         | Процесс сервера на каждый проект       |
+| **Структурный поиск**| Где встречается эта ФОРМА                         | Разбор на каждый файл                  |
+| **Отладчик**         | Что было истинно в этот момент, в этом кадре      | Остановленный процесс                  |
 
-## The gap the language server closes
+## Разрыв, который закрывает языковой сервер
 
-The [code graph](/ru-RU/руководство/практические-руководства/поиск-кода/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Граф кода](/ru-RU/руководство/практические-руководства/поиск-кода/) строится из tree-sitter: символы, рёбра вызовов, радиус влияния. Он быстрый, он дешёвый и ничего не знает о **типах**. Он не скажет, компилируется ли только что написанный вами вызов, существует ли это поле у объекта и не пропустило ли ваше переименование реэкспорт.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Без языкового сервера агент узнаёт об этом во время тестов — или не узнаёт никогда. Он пишет что-то правдоподобное, идёт дальше, и ошибка всплывает три хода спустя, привязанная к другому изменению.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Так что выигрыш не столько в инструменте `lsp`. Он в том, что `write`, `edit` и `apply_patch` обёрнуты: после каждой записи файл проходит через языковой сервер, и **впервые возникшие** диагностики подмешиваются в результат инструмента. Агент узнаёт, что сломал сборку, в тот самый момент, когда сломал её, — независимо от того, догадался ли он спросить.
 
-### Only new diagnostics
+### Только новые диагностики
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Повторять то, что агенту уже сказали, хуже, чем молчать: это наполняет результат шумом, который агент учится пропускать взглядом, и вместе с ним уходит единственная новая ошибка. Журнал на каждый запуск отслеживает, что уже сообщалось, с ключом по серьёзности, коду и сообщению — **не** по позиции, поэтому диагностика, просто сдвинувшаяся на четыре строки вниз, не считается новой и не сообщается повторно.
 
-### Lazy, and honest about being absent
+### Ленивый — и честно говорит, что его нет
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Ни один сервер не запускается при старте. Сервер запускается при первом запросе, которому он нужен, — а это почти всегда первая правка файла, на который он претендует, — и простаивающие серверы вычищаются. Хост, который никогда не касается Dart, никогда не запускает анализатор.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Обнаружение — это **пересечение**: в рабочей копии должен существовать корневой маркер *и* должен резолвиться бинарник. Один маркер говорит «этот проект на Python» и ничего — об установленном сервере; один резолвящийся бинарник говорит, что на хосте есть тулчейн, и ничего — об этой рабочей копии. Запрос может завершиться успешно, только когда есть и то и другое, а инструмент, который предлагается и всегда падает, хуже отсутствующего.
 
-## Why structural search, when grep exists
+## Зачем структурный поиск, если есть grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` сопоставляет символы. Это правильный инструмент для имени и неправильный для формы.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Структурный шаблон разбирается **той же грамматикой, что и файл**, поэтому `dispose($X)` находит вызов независимо от пробелов, переносов и разбиения по строкам и никогда не сопоставляет те же символы внутри строкового литерала или комментария.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Свойство, которое делает его не просто регулярным выражением с лишними шагами, — повторяющаяся в одном шаблоне метапеременная должна захватить один и тот же текст:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+находит проверку, которая освобождает то же, что проверяла, и не находит ту, что освобождает что-то другое. Это целый класс ошибок, который текстом не выразить вообще.
 
-### It runs on the tree-sitter already linked
+### Он работает на уже подключённом tree-sitter
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Второго движка нет. `cc_natives` уже загружает tree-sitter и его грамматики для графа кода, вместе с кэшем скомпилированных запросов и таблицей языков. Сопоставитель — чистый Dart над деревьями, которые и так разбирались. Второй структурный движок означал бы второй парсер, второй набор грамматик, который нужно собирать и ставить на каждой платформе, и два ответа на вопрос «что такое выражение вызова».
 
-### A fragment needs somewhere to live
+### Фрагменту нужно где-то жить
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Грамматика определяет, что такое целый *файл*, и только. Разобранный в голом виде на верхнем уровне Dart, `dispose(x)` — совершенно допустимая **сигнатура функции**: объявление с именем `dispose`, принимающее параметр `x`, — и нигде нет ошибки, которая выдала бы подвох. Сопоставитель, построенный на таком разборе, ищет объявления, не находит вызовов и сообщает «нет совпадений» для шаблона, который никогда не читался так, как выглядит.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Поэтому шаблон пробуется в лестнице каркасов — инструкция, выражение, член класса, верхний уровень — и побеждает первый, который его принимает. Фрагмент, который не принимает ни один контекст, сообщается как неразбираемый, а не ищется и тихо не находится.
 
-## Why a rewrite stages instead of writing
+## Почему перезапись сначала готовит изменение, а не записывает его
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Структурная перезапись — самое широкое изменение, которое может сделать агент: один шаблон, сорок файлов, и никто не читает результат строка за строкой — ни модель, ни человек, который об этом попросил. Записать её и отчитаться «готово» означало бы, что первым честным взглядом на изменение станет `git diff` после факта.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Поэтому `ast_edit` сообщает, что он *сделал бы*, — количество, файлы, найденные места, — и изменение попадает на диск только когда `resolve` его фиксирует. Именно это также позволяет показать человеку diff и кнопки «Принять/Отклонить», прежде чем что-либо дойдёт до диска.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Фиксация идёт по принципу «всё или ничего», и каждый файл сверяется с содержимым, зафиксированным на момент подготовки. Между подготовкой и фиксацией агент мог править один из этих файлов вручную, проход диагностики мог его перезаписать, а форматтер — его тронуть; фиксация в любом случае отбросила бы эту работу, а diff выглядел бы намеренным. Любое расхождение отклоняет всё изменение целиком, потому что частично применённая структурная перезапись оставляет дерево, которое не компилируется ни в одной из форм.
 
-## What a debugger answers that a print statement cannot
+## На что отладчик отвечает так, как не может оператор print
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Цикл с оператором print таков: добавить print, запустить всё заново, прочитать вывод, удалить print. Он стоит полного прогона тестов на каждый вопрос и отвечает только на тот вопрос, который вы догадались задать *до* запуска.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Остановленный кадр отвечает сразу на все вопросы об этом моменте: каждая локальная переменная, каждый вызывающий, выражение, вычисленное в собственной области видимости кадра. Для зависшего процесса или ошибки, воспроизводящейся один раз из десяти запусков, это разница между половиной дня и минутой.
 
-### Bounded like an enclosure, and for the same reason
+### Ограничен, как огороженная площадка, и по той же причине
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Отладочный адаптер владеет **остановленным процессом**, который держит всё, что держит этот процесс: порт, блокировку, соединение с базой данных. Сессия, которой никто не управляет, — это утечка, живущая дольше хода, который её запустил. Поэтому здесь жёсткий TTL, ровно одна сессия на разговор, а второй `launch` отклоняется, вместо того чтобы молча заменить первый: агент, запускающий вторую, не завершив первую, почти наверняка потерял первую из виду.
 
-### One transport, two protocols
+### Один транспорт, два протокола
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol разделяет с Language Server Protocol кадрирование по `Content-Length` и ничего выше него: другие ключи корреляции, другая форма ошибок и третий тип сообщений (события), у которого нет аналога в LSP. Кадрирование живёт в одном месте; протоколы лежат на нём отдельно.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Написать кадрирование дважды означало бы два ответа на вопросы «сообщение занимает два фрагмента», «во фрагменте три сообщения» и «сервер написал баннер в stdout до своего первого кадра», и исправление получил бы только один из них.
 
-## Related
+## См. также
 
-- [Search code with the code graph](/ru-RU/руководство/практические-руководства/поиск-кода/) — the symbol and impact side
-- [Debug a failing test](/ru-RU/руководство/практические-руководства/отладить-падающий-тест/) — the debugger, end to end
-- [Refactor structurally](/ru-RU/руководство/практические-руководства/структурный-рефакторинг/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ru-RU/руководство/справка/инструменты-агента/) — every operation and argument
+- [Искать код через граф кода](/ru-RU/руководство/практические-руководства/поиск-кода/) — о символах и влиянии
+- [Отладить падающий тест](/ru-RU/руководство/практические-руководства/отладить-падающий-тест/) — отладчик от начала до конца
+- [Отрефакторить код структурно](/ru-RU/руководство/практические-руководства/структурный-рефакторинг/) — `ast_grep` и `ast_edit`
+- [Встроенные инструменты агента](/ru-RU/руководство/справка/инструменты-агента/) — каждая операция и аргумент

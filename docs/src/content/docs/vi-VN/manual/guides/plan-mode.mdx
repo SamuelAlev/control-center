@@ -1,135 +1,145 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Dùng chế độ kế hoạch
+description: Chuyển một space sang chế độ kế hoạch, nhận một kế hoạch có kiểu và phê duyệt nó thành công việc đang chạy.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Hướng dẫn này chỉ cho bạn cách lấy một kế hoạch có cấu trúc từ một agent trước
+khi nó viết bất kỳ dòng mã nào.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+Ở chế độ kế hoạch, agent nghiên cứu chỉ đọc và thứ duy nhất nó giao là một **kế
+hoạch có kiểu**: một đồ thị phụ thuộc gồm các bước do bạn phê duyệt, rồi Control
+Center biên dịch thành công việc thật. Hãy dùng nó khi bạn muốn thấy phạm vi của
+một thay đổi, xem các bước được chia nhỏ, hay muốn rủi ro và phụ thuộc được nêu
+tên trước khi có bất cứ thứ gì bị đụng tới.
 
-## Switch a space into plan mode
+## Chuyển một space sang chế độ kế hoạch
 
-Any of these flips the space's mode and the change is persisted:
+Bất kỳ cách nào sau đây cũng chuyển chế độ của space và thay đổi được lưu lại:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Chọn **Kế hoạch** từ hộp chọn chế độ ở tận cùng bên trái của thanh công cụ
+  trình soạn
+- Nhấn **Shift+Tab**
+- Gửi `/plan`. Một `/plan` trần chỉ nạp chế độ; `/plan <request>` nạp nó và
+  gửi phần còn lại làm tin nhắn của bạn
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` không bao giờ được truyền dưới dạng văn bản — nó đặt chế độ đã lưu, thứ
+là thẩm quyền mà bề mặt công cụ, preset rào chắn và prompt đều đọc. Vì vậy chế
+độ giữ nguyên cho lượt này và mọi lượt sau đó, cho tới khi bạn đổi lại.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Chế độ được lưu trên space, nên cùng một agent có thể ở chế độ kế hoạch tại đây
+và ở chế độ agent ở nơi khác.
 
-## What the agent produces
+## Thứ mà agent tạo ra
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Nó nghiên cứu chỉ đọc — bộ nhớ, chỉ mục mã, các tệp
+2. Nó gọi `submit_plan` **đúng một lần**, với một `goal` cùng `nodes`, mỗi nút
+   mang một `key` ổn định, một `title`, một `description` và các khóa nút mà nó
+   `dependsOn` (chính điều này cho phép công việc độc lập chạy song song)
+3. Nó dừng lại
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Công cụ xác thực đồ thị — khóa trùng, phụ thuộc treo, chu trình — và trả về các
+vi phạm để agent sửa thay vì chấp nhận một kế hoạch hỏng.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Kế hoạch xuất hiện **trong cuộc hội thoại** dưới dạng một hàng gọn hiển thị mục
+tiêu, trạng thái và số bước. **Plan Studio** — đồ thị phụ thuộc, trình kiểm tra
+từng nút và ước tính chi phí — mở ra thành một tab bên cạnh cuộc hội thoại: nhấn
+**Mở** trên hàng đó, hoặc chỉ cần chờ, vì một kế hoạch về đích trong vòng 30 giây
+khi bạn đang xem cuộc hội thoại sẽ tự mở tab của nó.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Bảo đảm chỉ đọc mang tính cấu trúc, nhưng chỉ trên harness tích hợp]
+Harness của chính Control Center dựng sổ đăng ký công cụ của agent từ đặc tả bề
+mặt của chế độ kế hoạch, nên đơn giản là không có công cụ ghi, sửa hay lệnh nào
+để gọi — hạn chế này không phải một chỉ thị trong prompt mà mô hình có thể tự
+thuyết phục để lách qua.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Adapter Claude Code không nhận được kiểu lọc đó: chế độ tới nó như một yêu cầu mà
+runner của chính nó có thể tôn trọng hoặc không, và Control Center chỉ luôn nhìn
+thấy các lời gọi `mcp__*` của nó. Huy hiệu thực thi bên cạnh hộp chọn chế độ xuất
+hiện đúng khi rơi vào trường hợp đó.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Agent có thể hỏi bạn những câu làm rõ]
+Khi yêu cầu mơ hồ, một agent kế hoạch có thể tạm dừng và hỏi bạn tối đa ba câu
+hỏi chặn bằng công cụ `ask_user`. Nó hiển thị một biểu mẫu trong cuộc hội thoại —
+các lựa chọn, hoặc văn bản tự do — và lượt chạy bị chặn cho tới khi bạn trả lời.
+Công cụ này thuộc cấp đọc, nên nó tồn tại được trên bề mặt chỉ đọc của chế độ kế
+hoạch, và nó được miễn khỏi lớp bọc phê duyệt (một lời nhắc đặt trước một lời
+nhắc sẽ thất bại theo hướng đóng khi không có người phê duyệt nào được kết nối,
+tước của agent chính hành vi hỏi).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Nó cần một space để hiển thị vào, nên một lượt điều phối một lần không có cuộc
+hội thoại sẽ không có nó. Việc nêu sẵn phạm vi, kho mã đích và tiêu chí chấp nhận
+ngay trong tin nhắn đầu tiên vẫn nhanh hơn một vòng hỏi đáp.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Văn xuôi không phải là kết quả giao ở đây. Một lượt chạy kết thúc mà không gọi
+`submit_plan` sẽ đăng một dòng hiển thị "Đã kết thúc mà không gửi kế hoạch (không
+có lời gọi `submit_plan`)." trong cuộc hội thoại và đánh dấu lượt chạy là đã bỏ
+lỡ kết quả giao. Trạng thái của lượt chạy cố ý giữ nguyên ở _completed_ — điều đó
+giữ máy trạng thái của quy trình và phiếu không bị đụng tới — nên hãy đọc dòng
+đó, chứ không phải huy hiệu trạng thái.
 
-## Approve the plan
+## Phê duyệt kế hoạch
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Từ hàng của kế hoạch trong cuộc hội thoại, nhấn **Phê duyệt và chạy**. Từ thanh
+phê duyệt của Plan Studio, nhấn **Phê duyệt kế hoạch** (hoặc **Từ chối** bên
+cạnh; việc phê duyệt bị vô hiệu hóa khi đồ thị có lỗi xác thực).
 
-Then:
+Sau đó:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center biên dịch kế hoạch thành một điều phối và hiện thực hóa nó — các
+   phiếu và lượt chạy. Không có mô hình nào tham gia ở bước này; nó mang tính tất
+   định
+2. Kế hoạch thực thi với tư cách chính agent đã viết ra nó. Việc có kéo thêm ai
+   khác vào hay không là quyết định của agent đó lúc chạy — nó có thể
+   `delegate_task` một bước cho một đồng đội phù hợp hơn, trong giới hạn độ sâu ủy
+   thác của không gian làm việc
+3. Mục tiêu của kế hoạch trở thành **mục tiêu của cuộc hội thoại** và công việc
+   chạy **trong chính cuộc hội thoại đó**: mỗi bước đăng thứ agent được yêu cầu và
+   truyền trực tiếp lượt của nó về, nên bạn theo dõi nó (và có thể dừng một lượt)
+   ngay tại nơi bạn đang ở
+4. Hàng mục tiêu trong bảng bên **Chung** của cuộc hội thoại (dưới Việc cần làm)
+   mang tiến độ của lượt chạy dưới dạng `settled/total` cùng nút dừng của nó; Plan
+   Studio hiển thị trạng thái từng nút trên đồ thị và cũng hủy được ở đó
 
-## Keep working without approving
+## Tiếp tục làm việc mà không phê duyệt
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Nếu bạn muốn ở lại cuộc hội thoại này hơn là phê duyệt kế hoạch, agent có thể gọi
+`exit_plan_mode`. Đó là lối thoát duy nhất được cho phép: nó mở một yêu cầu phê
+duyệt bền vững gắn với cuộc hội thoại và trả về `pending` — space vẫn ở chế độ kế
+hoạch và agent không được hành động. Khi yêu cầu được phê duyệt, lời gọi
+`exit_plan_mode` kế tiếp của agent sẽ chuyển space từ chế độ kế hoạch sang chế độ
+agent và mở khóa các công cụ thay đổi của nó. Một lần từ chối cho phép nó mở một
+yêu cầu mới cho một kế hoạch đã chỉnh sửa.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Để rời chế độ kế hoạch, hãy đổi hộp chọn của trình soạn (hoặc Shift+Tab), hay phê
+duyệt kế hoạch đã gửi. `exit_plan_mode` mở một phê duyệt bền vững được quyết định
+bằng công cụ MCP `decide_approval`. Lớp phủ rào chắn cho các lời gọi công cụ bị
+chặn là một hàng đợi khác, nằm trong bộ nhớ, và không mang các yêu cầu thoát chế
+độ kế hoạch.
 
-## Plan mode in a pipeline step
+## Chế độ kế hoạch trong một bước quy trình
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Một nút quy trình `messaging.createSpace` đọc chế độ hội thoại từ **extra** `mode`
+trong cấu hình nút — `extras['mode']: 'plan'`. Khóa này khớp chính xác: mọi cách
+viết khác, kể cả `conversationMode` hay `dispatchMode`, đều bị bỏ qua âm thầm và
+phòng sẽ quay về mặc định của body, tức chế độ **Rà soát**, chứ không phải trò
+chuyện. Một bước `promptAgent` tham gia vào phòng mà nó không tạo ra và không cấp
+lại quyền cho phòng đó. Hộp chọn **Chế độ điều phối** trong trình soạn cấu hình
+nút (`allParallel` / `manager`) dành cho các nút điều phối đội. Hãy đặt chế độ hội
+thoại bằng `extras['mode']` trên một mẫu mở space, hoặc trên cấu hình của nút đó
+thông qua API.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
-- [Use spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/)
-- [Work in Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/)
-- [Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
+- [Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
+- [Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/)
+- [Làm việc trong Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/)
+- [Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/)

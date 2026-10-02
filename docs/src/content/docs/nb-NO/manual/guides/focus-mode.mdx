@@ -1,185 +1,192 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Bruk fokusmodus og lydlandskap
+description: Kjør en tidsavgrenset fokusøkt med en flytende nedtellingspille og undertrykte varsler, og form det adaptive lydlandskapet som spilles under den.
 dateModified: 2026-08-17
 slug: nb-NO/handbok/slik-gjor-du/fokusmodus
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Denne veiledningen viser hvordan du kjører en fokusøkt: en tidsavgrenset blokk
+der Control Center undertrykker ikke-hastende varsler og viser en flytende
+nedtellingspille over de andre vinduene dine. Den dekker også lydlandskapet som
+(som standard) spilles under den — et endeløst ambient-spor som serveren din
+syntetiserer direkte, formet av stemningen du velger, været utenfor og timen på
+døgnet.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+En fokusøkt er en funksjon på skallnivå. Den er ikke knyttet til noen søyle — den
+endrer ikke oppsettet, skjuler ikke sidepanelet og endrer ikke en
+PR-gjennomgangsflate.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Kun skrivebord]
+Den flytende pillen og lydlandskapets løsnbare miniavspiller er innebygde
+søskenvinduer som bare monteres av skrivebords-oppstarten. Nettbyggingen på
+`app.usectrl.dev` har ingen av dem, og ingen pipeline for OS-varsler, så en
+fokusøkt har ingenting å vise eller undertrykke der. Lydlandskapspanelet og
+avspillingen fungerer uansett hvor du kobler til en server.
 :::
 
-## Start a focus session
+## Start en fokusøkt
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Klikk på fokusikonet til høyre i tittellinjen (verktøytips **Start fokusøkt**)
+2. Skriv inn et valgfritt **Mål** i dialogen — det du jobber med
+3. Velg en **Varighet**: 25m, 50m, 1h, 1h 30m eller 2h. Standard er 50m, og det
+   siste valget ditt huskes
+4. Trykk **Start**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Kontrollpunkt: knappen i tittellinjen erstattes av en aksentbrikke som viser
+gjenstående minutter, den flytende pillen vises over de andre vinduene dine, og
+— når **Start med fokusmodus** er på — begynner lydlandskapet å spille.
 
-Two other entry points reach the same session:
+To andre inngangspunkter fører til den samme økten:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start fokusøkt** åpner den samme dialogen.
+- **⌘⇧⌥F** starter en økt umiddelbart med den huskede varigheten og uten mål — den
+  hopper over dialogen. Trykker du på den igjen, avsluttes økten.
 
-## Read the floating pill
+## Les den flytende pillen
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Pillen er et lite vindu uten ramme som du kan dra hvor som helst. Den viser:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- En levende tilstedeværelsesprikk og gjenstående tid som `mm:ss`
+- Målet ditt, eller «Fokusøkt» når du ikke har angitt noe
+- En tynn fremdriftslinje langs nederkanten
 
-Hover it to reveal two actions:
+Hold markøren over den for å vise to handlinger:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Fortsett** — stopper nedtellingen. Pausen gjelder bare pillen;
+  selve økten forblir aktiv.
+- **Fullfør** — avslutter økten.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Pillen holder seg til den mørke paletten uansett hvilket tema hovedvinduet
+bruker, fordi den flyter over vilkårlig skrivebordsinnhold.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Hvis du lukker pillen fra tittellinjen, fortsetter økten å kjøre. Trykk på
+bilde-i-bilde-knappen ved siden av fokusbrikken (verktøytips **Minimer til
+linje**) for å hente den tilbake.
 
-## Know what gets suppressed
+## Vet hva som blir undertrykt
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Mens en økt er aktiv, forkaster Control Center alle varsler unntatt to
+kategorier, som alltid leveres:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Møte starter snart** — et møtevarsel du først ser i ettertid, er verdiløst
+- **Pull request publisert**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Alt annet undertrykkes i stillhet gjennom hele økten — ingen lyd, ingen
+varselboble fra operativsystemet. Undertrykte varsler legges ikke i kø for
+senere levering.
 
-## Play a soundscape
+## Spill av et lydlandskap
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Klikk på høyttalerikonet til høyre i tittellinjen (verktøytips
+   **Lydlandskap**) for å åpne panelet
+2. Velg en **Stemning** — **Fokus**, **Stigning**, **Avslapp** eller **Søvn**
+3. Trykk **Spill av**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Kontrollpunkt: **Spilles nå**-kortet angir den gjeldende scenen — været på
+arbeidsområdets sted, temperaturen i °C og stedsbetegnelsen. Så lenge det står
+«Stiller inn atmosfæren…», er scenen fortsatt under klargjøring.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Sporet er ikke en løkke. Serveren din syntetiserer det fortløpende ut fra
+stemningen, det aktive været på arbeidsområdets sted og tiden på døgnet. Regn
+høres lyst og travelt ut, en storm høy og full av kast, tåke dempet; natten er
+mørkere og mer etterklangsrik enn midt på dagen. Stemningen bestemmer
+ordforrådet:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Stemning | Lyd                                                                          |
+| -------- | ---------------------------------------------------------------------------- |
+| Fokus    | Rolig, årvåken atmosfære med en lav puls — ment å ligge under arbeidet        |
+| Stigning | Lett melodi med en myk puls — for når arbeidet føles tungt                   |
+| Avslapp  | Varmere, mer velklingende pad-klanger, ingen takt                            |
+| Søvn     | Lave droner med nesten ingen hendelser, dyp romklang                         |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Å bytte stemning mens det spilles, overlater avspillingen til den nye
+stemningen uten å stoppe.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Panelet nås også fra ⌘K under kategorien **Fokus**, ved siden av selve
+fokusøkten.
 
-## Shape the sound
+## Form lyden
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Tone** (Fokus, Stigning og Avslapp) — et kvadratisk felt med en liten,
+  flyttbar markør. Horisontalt går **Myk** til **Energisk** (hvor mye som
+  skjer), vertikalt går **Romlig** til **Lys** (hvor åpent det klinger).
+  Dobbelttrykk på feltet for å tilbakestille til det nøytrale midten; piltastene
+  flytter markøren litt. Tonen din huskes per stemning, og justeringer glir inn i
+  miksen som kjører — strømmen starter aldri på nytt. Stemningen Søvn er bevisst
+  uten tonejustering.
+- **Volum** — en glidebryter fra 0 til 100 %, med 60 % som standard. Den er
+  atskilt fra systemvolumet og huskes.
+- **Sted** — oppdages automatisk fra arbeidsområdet. Trykk **Oppdater været** for
+  å hente scenen på nytt.
 
-## Pop out the mini player
+## Løsne miniavspilleren
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Mens lyd spilles av, får tittellinjen en ny knapp (verktøytips **Løsne
+avspiller**). Den viser en liten HUD som alltid ligger øverst, med spill
+av/pause, værsymbolet, scenenavnet og en **Tilbake til appen**-knapp — praktisk
+når en fokusøkt har deg i en helt annen app.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Hvis du setter på pause fra miniavspilleren, lukkes den ikke; bare lukkeknappen
+(eller å avslutte appen) fjerner den.
 
-## Run them together
+## Kjør dem sammen
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+De to funksjonene kobles sammen av én bryter i lydlandskapspanelet: **Start med
+fokusmodus**, på som standard.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Å starte en fokusøkt starter lydlandskapet hvis ingenting allerede spilles av.
+- Å avslutte økten — uansett hvordan den avsluttes, også når nedtellingen går ut
+  — stopper det, selv når du startet lydlandskapet manuelt.
 
-Turn the switch off to keep the two independent.
+Slå bryteren av for å holde de to uavhengige.
 
-## End a session
+## Avslutt en økt
 
-Any one of these ends it:
+Én av disse avslutter den:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Klikk på fokusbrikken i tittellinjen (verktøytips **Fokusmodus aktiv — trykk
+  for å avslutte**)
+- Trykk **Fullfør** på pillen
+- Trykk **⌘⇧⌥F**
+- Velg **Avslutt fokusmodus** i ⌘K
+- La nedtellingen gå ut — økten fullføres automatisk ved null
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Pillen lukkes, varslene gjenopptas umiddelbart og lydlandskapet stopper.
 
-## Understand what does not persist
+## Forstå hva som ikke varer
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+En økt lever i nøyaktig én appkjøring. Avslutt og åpne Control Center på nytt, og
+du starter inaktiv med en tilbakestilt nedtelling, selv midt i en økt — det
+finnes ingen gjenoppretting etter krasj og ingen økthistorikk.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Bare to ting videreføres: den foretrukne varigheten din og flagget for
+varslingsblokkering. Målet, den medgåtte tiden og pillens åpne tilstand gjør det
+ikke.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Avspillingen er like flyktig — lydlandskapet er alltid stoppet ved oppstart.
+Stemningen, volumet og tonen per stemning varer; selve strømmen gjenopptas aldri
+av seg selv.
 
-## Troubleshooting
+## Feilsøking
 
-### The tune pad is missing
+### Tonefeltet mangler
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Du er på stemningen Søvn, som bevisst ikke kan tones. Bytt til Fokus eller
+Avslapp for å få feltet tilbake.
 
-### Nothing plays after restarting the app
+### Ingenting spilles av etter omstart av appen
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Med vilje — avspillingen er alltid stoppet ved appstart. Åpne panelet og trykk
+**Spill av** igjen. Hvis det fortsatt er stille, sjekk volumglidebryteren i
+panelet, som er atskilt fra systemvolumet.
 
-### The weather or temperature looks wrong
+### Været eller temperaturen ser feil ut
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Scenen følger det aktive arbeidsområdets sted. Trykk **Oppdater været** i panelet
+for å hente det på nytt.
 
-## Related guides
+## Relaterte guider
 
-- [Configure notifications](/nb-NO/handbok/slik-gjor-du/varsler/)
-- [Keyboard shortcuts](/nb-NO/handbok/referanse/tastatursnarveier/)
+- [Konfigurer varsler](/nb-NO/handbok/slik-gjor-du/varsler/)
+- [Tastatursnarveier](/nb-NO/handbok/referanse/tastatursnarveier/)

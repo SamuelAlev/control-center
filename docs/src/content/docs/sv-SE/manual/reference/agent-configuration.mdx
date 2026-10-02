@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Agentkonfiguration
+description: Alla fält på agententiteten och de uppräkningar den använder.
 slug: sv-SE/handbok/referens/agentkonfiguration
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/).
+Den här referensen listar alla fält på agententiteten, plus de uppräkningar och flaggor den använder. En steg-för-steg-genomgång av att skapa eller redigera en agent i appen finns i [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/).
 
-## Agent entity fields
+## Fält på agententiteten
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Fält | Typ | Obligatoriskt | Beskrivning |
+| ---- | --- | ------------- | ----------- |
+| `id` | `String` | Ja | Unikt agent-id |
+| `name` | `String` | Ja | Kort identifierare för @-omnämnanden |
+| `title` | `String` | Ja | Människoläsbar rolltitel |
+| `agentMdPath` | `String` | Ja | Absolut sökväg till agentens `.md`-definitionsfil |
+| `workspaceId` | `String` | Ja | Ägande arbetsyta (icke-null) |
+| `reportsTo` | `String?` | Nej | Förälderagentens id |
+| `skills` | `AgentSkills` | Ja | Uppsättning skillidentifierare |
+| `persona` | `String?` | Nej | Fritext med beteendeinstruktioner |
+| `systemPrompt` | `String?` | Nej | Åsidosätt den förvalda systemprompten |
+| `adapterId` | `String?` | Nej | Id för inferensadaptern |
+| `modelId` | `String?` | Nej | Modell-id inom adaptern |
+| `strictMode` | `bool` | Nej | Standard `false`. Skrivs till raden och till agentens `AGENTS.md` |
+| `effort` | `String?` | Nej | Id för resonemangsnivå (t.ex. `'low'`, `'xhigh'`), hämtat från den valda modellens `thinkingLevels` |
+| `contextSize` | `int?` | Nej | Maximal storlek på kontextfönstret |
+| `role` | `AgentRole?` | Nej | Agentens roll |
+| `capabilities` | `AgentCapabilities?` | Nej | Standard för förmågor per agent; när den är null gäller användarnivåns standard vid dispatch och ett samtal kan fortfarande skriva över |
+| `monthlyBudgetCents` | `int` | Nej | Månatligt utgiftstak i cent (standard `0`, obegränsat) |
+| `silenceTimeoutMinutes` | `int?` | Nej | Överstyrning av tystnadsövervakningen i minuter; måste vara null eller mellan 1 och 240 (kontrolleras i konstruktorn) |
+| `maxConcurrentTasks` | `int` | Nej | Standard `1`. Kapacitetssiffran som närvaromodellen rapporterar (antalet körande och köade jämförs mot den) |
+| `visibility` | `AgentVisibility` | Nej | Standard `workspace` |
+| `lifecycleStatus` | `AgentLifecycleStatus` | Nej | Styrningsstatus (standard `active`). Skrivs av budgetens hårda stopp och visas i organisationsschemat och närvarolistan. Dispatch tar fortfarande emot arbete från en agent med statusen `paused` |
+| `budgetPolicyId` | `String?` | Nej | Id för delad budgetpolicy; när den är null gäller `monthlyBudgetCents` direkt |
+| `runtimeProfileId` | `String?` | Nej | Id för anpassad runtime-profil |
+| `createdAt` | `DateTime` | Ja | Tidsstämpel för skapandet |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+Både `name` och `title` måste vara icke-tomma (kontrolleras i konstruktorn). Standardvärdet `0` för
+`monthlyBudgetCents` betyder obegränsat. Sätt ett tak med `agents.upsert`.
 
-## AgentRole enum
+## AgentRole-uppräkningen
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| Roll | Etikett | Beskrivning |
+| ---- | ------- | ----------- |
+| `ceo` | CEO | Samordning och delegering |
+| `coder` | Coder | Kodimplementering |
+| `reviewer` | Reviewer | PR-granskning och analys |
+| `qa` | QA | Testning och kvalitetssäkring |
+| `designer` | Designer | UI/UX-implementering |
+| `security` | Security | Säkerhetsgranskning och revision |
+| `devops` | DevOps | Infrastruktur och driftsättning |
+| `pm` | PM | Produkthantering |
+| `general` | General | Flexibel, mångsidig |
 
-## AgentVisibility enum
+## AgentVisibility-uppräkningen
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Värde | Beskrivning |
+| ----- | ----------- |
+| `workspace` | Standardvärdet; okända och null-lagrade värden tolkas som det |
+| `private` | Privat för användaren som skapade den |
 
-## AgentLifecycleStatus enum
+## AgentLifecycleStatus-uppräkningen
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Värde | Beskrivning |
+| ----- | ----------- |
+| `active` | Standardvärdet. `isDispatchable` är sant endast för det här värdet |
+| `paused` | Sätts av budgetens hårda stopp. Visas i närvarolistan; dispatch tar fortfarande emot arbete |
+| `archived` | Pensionerad och dold från aktiva personallistor |
 
-## AgentCapabilities flags
+## AgentCapabilities-flaggor
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Löses upp per dispatch: agentens standard, med fallback till användarnivåns standard när den är null, och med en överstyrning per samtal ovanpå. Framtvingas genom frånvaro — mäklaren för inloggningsuppgifter skapar eller injicerar helt enkelt inte det som en avstängd förmåga omfattar.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Flagga | Typ | Standard | Beskrivning |
+| ------ | --- | -------- | ----------- |
+| `canPushToRepo` | `bool` | `false` | Pusha commits till fjärren; styr injicering av GitHub-token tillsammans med `canCallGitHubApi` |
+| `canCallGitHubApi` | `bool` | `false` | Anropa api.github.com; styr injicering av `GH_TOKEN` och GitHubs utgående domäner |
+| `canCallTicketing` | `bool` | `false` | Anropa ärendehanteringsleverantörens API; styr injicering av leverantörens API-nyckel och dess utgående domäner |
+| `canAccessNetwork` | `bool` | `true` | Godtycklig utgående trafik. Styr även harnessens `web_fetch`- och `web_search`-verktyg |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` är konstruktorns fyra standardvärden. `legacyDefault` (alla fyra sanna) används bara av migreringen som efterfyllde samtal som skapades innan förmågor fanns. En felaktig eller tom lagrad blob tolkas som `safeDefault`; den äldre nyckeln `canCallLinear` läses som `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+En oföränderlig, skiftlägesokänslig uppsättning skillidentifierare. Vid dispatch synkas dessa sluggar som skillänkar i agentens överlägg; harnessen läser sedan automatiskt in de länkade skillsens frontmatter i prompten.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (härledd)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Lagras inte. Sju värden. Deklarationsordningen är prioritetsordningen (`sortPriority`, låst av ett test), som är den ordning personallistan sorterar efter:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| Tillstånd | `sortPriority` | Villkor |
+| --------- | -------------- | ------- |
+| `running` | 0 | Någon körningslogg har statusen `running` |
+| `blocked` | 1 | Den senaste körningens livsstatus är `blocked`, `stalled` eller `looping` |
+| `failed` | 2 | Den senaste körningens status är `error`, eller dess livsstatus är `failed` eller `dead` |
+| `queued` | 3 | En körning är dispatchad men körs inte — parkerad bakom en annan körning av samma agent, eller skriven men ännu inte startad |
+| `succeeded` | 4 | Körningen slutfördes framgångsrikt |
+| `idle` | 5 | Agenten har kört tidigare och har inget i luften |
+| `neverRun` | 6 | Inga körningsloggar finns |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` och `succeeded` finns **endast per körning**. `deriveAgentLiveState`, som beräknar personallistans tillstånd för en agent, producerar aldrig något av dem — den returnerar `neverRun`, `running`, `failed`, `blocked` eller `idle`.
 
-## See also
+## Se även
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/)
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)

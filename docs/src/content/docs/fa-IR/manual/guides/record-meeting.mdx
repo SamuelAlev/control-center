@@ -1,118 +1,122 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: ضبط و خلاصه‌کردن یک جلسه
+description: یک تماس را ضبط کنید، رونوشت بگیرید و آن را به یادداشت، موارد اقدام و تصمیم‌ها تبدیل کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/ضبط-جلسه
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) for how it works.
+این راهنما نشان می‌دهد چگونه یک جلسه را ضبط کنید و یک نوشتهٔ تولیدشده با هوش
+مصنوعی بگیرید. برای اینکه بدانید این کار چگونه انجام می‌شود،
+[جلسه‌ها و رونویسی(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/) را ببینید.
 
-## Before you start
+## پیش از شروع
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **منتظر مدل گفتار بمانید، سپس سرور را دوباره راه‌اندازی کنید.** یک راه‌اندازی
+  عادی، مدل ASR انتخاب‌شده (Parakeet TDT 0.6B v3، پیش‌فرض چندزبانه، حدود 600
+  MB) را در پس‌زمینه به‌زور نصب می‌کند. سرور مدل را **تنها یک بار در زمان
+  راه‌اندازی** حل می‌کند، بنابراین اجرای نخست تا وقتی دوباره راه‌اندازی نکنید
+  هیچ عملیات ضبطی ندارد. بدون مدل روی دیسک، ضبط با
+  `Could not start recording on the host: …` شکست می‌خورد. برای انتخاب بیلد
+  دیگر، به **تنظیمات → سرور → مدل‌های صدا و جلسه** بروید — آن هم به
+  راه‌اندازی مجدد نیاز دارد.
+- هنگام نخستین ضبط، وقتی سیستم‌عامل درخواست کرد، مجوز **میکروفون** را بدهید.
+- در **macOS 14.4+**، صدای سیستم با tapهای فرایند Core Audio گرفته می‌شود — هیچ درایوری برای نصب نیست، اما سیستم‌عامل بار دوم یک مجوز _گرفتن صدا_ را می‌پرسد. آن مجوز ضبط صفحه نیست و هرگز نشانگر ضبط صفحه را روشن نمی‌کند. رد کردنش، شروع را با `System-audio capture permission denied.` شکست می‌دهد. پیش از macOS 14.4 هیچ گرفتن صدای سیستمی وجود ندارد.
+- در **Linux**، یا `parecord` (pulseaudio-utils) یا `pw-record` (pipewire) باید روی `PATH` باشد — گرفتن صدا یکی از آن‌ها را روی یک منبع پایش PipeWire/PulseAudio اجرا می‌کند. بدون هیچ‌کدام، شروع با `No system-audio capture tool found` شکست می‌خورد.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[صدای جلسهٔ شما کجا می‌رود]
+گرفتن صدا، رونویسی، حذف پژواک و تفکیک گوینده همگی روی دستگاه اجرا می‌شوند،
+بدون هیچ فراخوان ابری — اما «دستگاه» یعنی **میزبان cc_server**، که وقتی سرور
+را از راه دور اجرا می‌کنید ماشین دیگری است. و نوشتهٔ نهایی یک اجرای معمولی عامل
+است: پایپ‌لاین `meeting_summary` رونوشت کامل و یادداشت‌های خام شما را به هر
+ارائه‌دهندهٔ مدلی که آن عامل استفاده می‌کند می‌فرستد. اگر رونوشت نباید از ماشین
+بیرون برود، آن عامل را به یک ارائه‌دهندهٔ محلی اشاره دهید.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+صفحهٔ ضبط هنگام ضبط این را بیان می‌کند، پس تصمیم پیش از آنکه رونوشتی برای
+فرستادن وجود داشته باشد روبه‌روی شماست.
 :::
 
-## Start a recording
+## شروع ضبط
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. **جلسات** را در نوار کناری باز کنید.
+2. روی **ضبط جلسه** کلیک کنید. HUD ضبط زنده در `/meetings/record` باز می‌شود.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+ضبط بی‌درنگ آغاز می‌شود و میکروفون شما به‌علاوهٔ صدای خروجی سیستم — یعنی دیگر
+شرکت‌کنندگان — را می‌گیرد. هیچ اعلان انتخاب حالت و هیچ انتخابگر منبع صدا وجود
+ندارد: حالت تک‌میکروفون حضوری در API هست اما امروز رابط کاربری ندارد.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+در مرورگر همین جریان کار می‌کند، با یک تفاوت: «صدای سیستم» یک اشتراک صفحه است
+که باید یک مسیر صوتی داشته باشد. یک زبانهٔ مرورگر (یا کل صفحه‌تان) را به اشتراک
+بگذارید و در انتخابگر، «Share tab audio» / «Share system audio» را فعال کنید.
+Safari و Firefox و اشتراک تمام‌صفحه در macOS اغلب نمی‌توانند یکی فراهم کنند.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD یک نشانگر سطح، زمان سپری‌شده و یک رونوشت زنده که در یک سو ساخته می‌شود را
+نشان می‌دهد.
 
-## During the meeting
+## در طول جلسه
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **یادداشت‌های خام بردارید** در پنجرهٔ یادداشت. همان‌طور که تایپ می‌کنید ذخیره می‌شوند و بعداً به عامل خلاصه‌ساز تحویل داده می‌شوند، پس هر چیزی را که ممکن است رونوشت از دست بدهد یادداشت کنید.
+- **قالب یادداشت را انتخاب کنید** در سطر **قالب فعال**. این قالب خلاصهٔ همین جلسه را شکل می‌دهد و همراه ضبط ثبت می‌شود، بنابراین اجرای دوبارهٔ بعدی همان قالبی را بازتولید می‌کند که اینجا انتخاب کردید.
+- با کنترل مکث **مکث و ازسرگیری** کنید. در زمان مکث رونویسی متوقف می‌شود و زمان‌سنج می‌ایستد.
+- رونوشت با برچسب گوینده جریان می‌یابد: واژه‌های شما به‌عنوان **شما**، همهٔ افراد روی تماس به‌عنوان **دیگران** — تا اینکه تفکیک گوینده «دیگران» را به `Person 1`، `Person 2`، … می‌شکند که می‌توانید نامشان را تغییر دهید.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[گویندهٔ بسیار آرام ممکن است رونویسی نشود]
+رونویسی هر پنجرهٔ صوتی‌ای را که هرگز از آستانهٔ سکوت بالاتر نرفته باشد نادیده
+می‌گیرد، بدون آنکه اصلاً رمزگشایی‌اش کند. این کار مانع می‌شود یک کانال آرام با
+توکن‌های غیرگفتاری توهمی CPU بسوزاند، اما یعنی گویندهٔ ضعیف یا دور هم می‌تواند
+رونوشتی تولید نکند. نشانگر سطح را زود بررسی کنید نه در پایان.
 :::
 
-## Stop and summarize
+## توقف و خلاصه‌سازی
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. روی **توقف و خلاصه** کلیک کنید.
+2. Control Center شما را مستقیم به نمای جزئیات جلسه می‌برد، با نشان **در حال پردازش**: تفکیک گوینده کانال راه دور را به گویندگان جداگانه می‌شکند و پایپ‌لاین `meeting_summary` نوشته را تولید می‌کند.
+3. وقتی آن پایپ‌لاین تمام شود، وضعیت جلسه به **انجام‌شده** تغییر می‌کند. لازم نیست منتظرش بمانید — نمای جزئیات خودش را به‌روزرسانی می‌کند.
 
-## Review the writeup
+## مرور نوشته
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+جزئیات جلسه (`/meetings/:meetingId`) چهار زبانه دارد:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| زبانه           | چه چیزی آنجاست                                                                  |
+| --------------- | ------------------------------------------------------------------------------- |
+| **یادداشت‌ها**  | خلاصهٔ هوش مصنوعی و یادداشت‌های غنی‌شده، ساخته‌شده از یادداشت‌های خام شما + رونوشت |
+| **رونوشت**      | رونوشت کامل با برچسب گوینده و زمان‌نماها                                         |
+| **موارد اقدام** | کارهای استخراج‌شده، هر یک با یک مسئول اختیاری                                    |
+| **تصمیم‌ها**    | تصمیم‌های ثبت‌شده در طول تماس                                                    |
 
-From here you can:
+از اینجا می‌توانید:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **تغییر نام گوینده‌ها**: `Person 1` را به یک نام واقعی تغییر دهید؛ روی کل رونوشت اعمال می‌شود.
+- **موارد اقدام را تیک بزنید** همان‌طور که کاملشان می‌کنید.
+- **ایجاد تیکت** از یک مورد اقدام: این کار یک تیکت جدید و بدون واگذاری با عنوان همان مورد اقدام ثبت می‌کند و آن را به آن سطر پیوند می‌دهد. از خود تیکت به یک عامل واگذارش کنید (به [واگذاری کار به عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/) نگاه کنید).
+- **اجرای دوبارهٔ خلاصه** برای یک پاس تازه (برای نمونه پس از تغییر نام گوینده‌ها). از همان قالبی استفاده می‌کند که هنگام ضبط جلسه ثبت شده بود. قالب فعال را در **تنظیمات → فضای کاری → جلسات** انتخاب کنید.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+ویرایش یادداشت‌ها، عنوان، موارد اقدام و تصمیم‌ها همه‌جا کار می‌کند.
+**اجرای دوبارهٔ خلاصه** و لغو یک جلسهٔ در حال پردازش **فقط مخصوص دسکتاپ** است —
+در مرورگر هر دو دکمه هیچ کاری نمی‌کنند.
 
-## Record straight from a calendar event
+## ضبط مستقیم از یک رویداد تقویم
 
-If you've [connected a calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+اگر [تقویمی متصل کرده‌اید(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)،
+می‌توانید شروع دستی را نادیده بگیرید. این **فقط مخصوص دسکتاپ** است؛ کلاینت وب
+آن را رد می‌کند.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. رویداد را از **تقویم** باز کنید.
+2. روی **شروع ضبط و پیوند** کلیک کنید.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+ضبط با عنوان رویداد مقدار می‌گیرد و به آن پیوند داده می‌شود، بنابراین یادداشت‌ها
+و مدخل تقویم به هم متصل می‌مانند.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[حذف یک جلسه، صدای آن را حذف نمی‌کند]
+حذف یک جلسه سطرهایش را برمی‌دارد، اما فایل‌های WAV ضبط‌شده زیر
+`<dataDir>/meetings/<meetingId>/` روی دیسک می‌مانند — هیچ سیاست نگهداری، سقف
+حجم یا پاک‌سازی دوره‌ای وجود ندارد. اگر صدا مهم است خودتان آن پوشه را بردارید.
 :::
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Connect a Google Calendar](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
-- [Delegate work to agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
+- [اتصال یک Google Calendar(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-تقویم/)
+- [واگذاری کار به عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Meetings and transcription](/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/)
+- [جلسه‌ها و رونویسی(/fa-IR/راهنمای-کاربر/مفهومها/جلسه-ها/)

@@ -1,94 +1,101 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Οργάνωση εργασίας με έργα
+description: Ομαδοποιήστε εισιτήρια σε έργα από την πλαϊνή στήλη, παρακολουθήστε την πρόοδο και αρχειοθετήστε ένα έργο όταν ολοκληρωθεί.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Ένα έργο είναι μια ομαδοποίηση εισιτηρίων με εμβέλεια χώρου εργασίας προς έναν
+κοινό στόχο. Τα έργα υπάρχουν μόνο στο Control Center — δεν συγχρονίζονται ποτέ
+με εξωτερικό πάροχο όπως το Linear.
 
-## Create a project
+## Δημιουργία έργου
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Αναπτύξτε την ομάδα **Εισιτήρια** στην πλαϊνή στήλη του χώρου εργασίας.
+   Παραθέτει τα **Όλα τα εισιτήρια**, μία γραμμή ανά μη αρχειοθετημένο έργο και
+   μετά το **Νέο έργο**.
+2. Κάντε κλικ στο **Νέο έργο**.
+3. Συμπληρώστε το **Όνομα έργου**, μια προαιρετική **Περιγραφή** και επιλέξτε
+   ένα **Χρώμα**.
+4. Πατήστε **Δημιουργία έργου**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Προσγειώνεστε στην επισκόπηση του νέου έργου και το έργο εμφανίζεται ως γραμμή
+στην πλαϊνή στήλη κάτω από τα **Εισιτήρια**.
 
-## Add tickets to a project
+## Προσθήκη εισιτηρίων σε ένα έργο
 
-Project is a single-ticket field, set in either of two places:
+Το **Έργο** είναι πεδίο μεμονωμένου εισιτηρίου και ορίζεται σε μία από δύο
+θέσεις:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Ανοίξτε το εισιτήριο και ορίστε το **Έργο** στη λωρίδα ιδιοτήτων του.
+- Κάντε δεξί κλικ στο εισιτήριο στη λίστα και χρησιμοποιήστε το υπομενού
+  **Έργο**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Ο επιλογέας στη λωρίδα ιδιοτήτων προσφέρει επίσης **Νέο έργο**, ώστε να
+καταχωρίσετε ένα εισιτήριο σε έργο που δημιουργείτε επιτόπου. Το **Χωρίς έργο**
+καθαρίζει το πεδίο.
 
-A ticket belongs to at most one project.
+Ένα εισιτήριο ανήκει σε ένα έργο το πολύ.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Το έργο δεν είναι μαζική ενέργεια]
+Η πλωτή γραμμή που εμφανίζεται όταν επιλέγετε πολλά εισιτήρια καλύπτει
+κατάσταση, προτεραιότητα, ανατεθειμένο, ετικέτες και διαγραφή. Δεν έχει τσιπ
+έργου, οπότε η καταχώριση πολλών εισιτηρίων γίνεται ένα κάθε φορά.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Μπορείτε επίσης να ξεκινήσετε από το έργο: το **Νέο εισιτήριο** στην επισκόπηση
+του έργου δημιουργεί ένα εισιτήριο και το καταχωρίζει εκεί.
 
-## Read project progress
+## Ανάγνωση της προόδου του έργου
 
-Open a project from its sidebar row, or go to
+Ανοίξτε ένα έργο από τη γραμμή του στην πλαϊνή στήλη ή μεταβείτε στη διαδρομή
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Η επισκόπηση δείχνει το σύμβολο και το όνομα του έργου, ένα σήμα κατάστασης, την
+περιγραφή και μια γραμμή προόδου με τα ολοκληρωμένα προς το σύνολο. Κάτω από
+αυτά, τα εισιτήρια του έργου ομαδοποιούνται κατά κατάσταση.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Δεν συγκεντρώνει τίποτε άλλο — δεν υπάρχει ανάλυση ανά ανατεθειμένο ούτε
+κατανομή προτεραιοτήτων. Για αυτά, φιλτράρετε την κύρια λίστα εισιτηρίων.
 
-## Change project status
+## Αλλαγή κατάστασης έργου
 
-Projects have three states:
+Τα έργα έχουν τρεις καταστάσεις:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Κατάσταση          | Σημασία                        |
+| ------------------ | ------------------------------ |
+| **Ενεργό**         | Η εργασία βρίσκεται σε εξέλιξη |
+| **Ολοκληρωμένο**   | Όλη η εργασία έχει ολοκληρωθεί |
+| **Αρχειοθετημένο** | Ιστορική αναφορά               |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Χρησιμοποιήστε το μενού **⋯** στην κεφαλίδα του έργου. Προσφέρει **Επεξεργασία
+έργου**, **Σήμανση ως ολοκληρωμένο** / **Σήμανση ως ενεργό**,
+**Αρχειοθέτηση** / **Επαναφορά** και **Διαγραφή έργου**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Η αρχειοθέτηση κρύβει το έργο από τη λίστα της πλαϊνής στήλης και από τους
+επιλογείς εισιτηρίων. Είναι αναστρέψιμη — η **Επαναφορά** επαναφέρει το έργο σε
+ενεργό — αλλά όσο είναι αρχειοθετημένο το έργο είναι προσβάσιμο μόνο μέσω URL.
 
-## Projects created for you
+## Έργα που δημιουργούνται για εσάς
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/).
+Η έγκριση μιας ενορχήστρωσης δημιουργεί ένα έργο και καταχωρίζει το γονικό
+εισιτήριο κάτω από αυτό, μαζί με ό,τι καταχωρίσατε με το χέρι. Τα παραγόμενα
+στοιχεία εργασίας είναι βήματα pipeline, όχι γραμμές εισιτηρίων, οπότε δεν
+εμφανίζονται στον πίνακα του έργου. Αυτή είναι η μόνη αυτοματοποιημένη διαδρομή:
+κανένας κόμβος pipeline δεν δημιουργεί εισιτήρια, οπότε ένα pipeline δεν μπορεί
+να γεμίσει ένα έργο. Δείτε
+[Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Τα έργα είναι επιφάνεια χειριστή]
+Δημιουργήστε, παραθέστε, ενημερώστε και διαγράψτε έργα στην εφαρμογή. Οι
+πράκτορες δεν έχουν εργαλεία έργων.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
-- [Delegate work to agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
-- [Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
+- [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
+- [Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
+- [Εισιτήρια](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)

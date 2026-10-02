@@ -1,121 +1,129 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-mention agent"
+description: Nhắc đến agent trong một space để điều phối chúng, và nhắc đến đồng đội để thông báo cho họ.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/mention-agent
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Hướng dẫn này chỉ cách @-mention agent và đồng đội trong một space.
 
-## Mention an agent
+## Nhắc đến một agent
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Nhập `@` trong trình soạn và chọn một agent từ gợi ý tự động, hoặc tự nhập tên:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Agent được nhắc đến sẽ được thêm vào space với tư cách người tham gia nếu chưa
+phải, rồi được điều phối với ngữ cảnh và chế độ của space. Những người tham gia
+không được nhắc đến vẫn thấy tin nhắn nhưng không được điều phối.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Nếu bạn gửi một tin nhắn không nhắc đến agent nào, Control Center tự chọn người
+trả lời: agent nói cuối cùng trong cuộc hội thoại; nếu không có thì chủ sở hữu
+cuộc hội thoại khi cuộc hội thoại có chủ sở hữu; nếu vẫn không có thì agent cấp
+cao nhất đầu tiên trong số những người tham gia của space. Với một space chỉ có
+một agent, người trả lời luôn là agent duy nhất đó.
 
-## Know how a name is matched
+## Hiểu cách một tên được khớp
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Một token nhắc đến được khớp **không phân biệt chữ hoa chữ thường**, theo **tên
+chính xác hoặc tiền tố**. Vì vậy `@arch` tới được một agent tên `architect` và
+`@Alice` tới được `alice`.
 
-Two consequences worth planning around:
+Hai hệ quả bạn nên tính đến trước:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Một token ngắn không phải là lỗi.** Nếu hai agent dùng chung một tiền tố,
+  agent được tìm thấy trước sẽ thắng, và đó là agent nào thì phụ thuộc vào thứ tự
+  — chứ không theo quy tắc phân định nào. Hãy dùng tên đầy đủ mỗi khi các tên
+  trùng tiền tố.
+- **Chỉ chữ cái, chữ số và dấu gạch dưới thuộc về một token.** Bộ phân tích khớp
+  `@(\w+)`, nên `@code-reviewer` bị đọc thành token `code` và `@my agent` thành
+  `my`. Một agent có tên chứa dấu gạch nối, dấu chấm hoặc dấu cách thì không thể
+  được nhắc đến một cách đáng tin cậy — kể cả qua gợi ý tự động, vốn chèn tên
+  dưới dạng văn bản thuần. Hãy đặt tên agent bằng một từ, hoặc dùng dấu gạch dưới.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Các nhắc đến bị loại khỏi văn bản trước khi văn bản tới agent. Vì vậy một tin nhắn
+_chỉ_ toàn nhắc đến (`@alice`) không điều phối gì cả — hãy cho nó việc gì đó để làm.
 
-## Mention several agents at once
+## Nhắc đến nhiều agent cùng lúc
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Cả hai agent được điều phối song song vào cùng một cuộc hội thoại và cả hai đều
+nhận được toàn bộ tin nhắn.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Chúng cũng **dùng chung worktree của space đó**. Worktree của repo được cấp phát
+theo từng space, chứ không theo từng agent; mỗi agent có thư mục làm việc lớp phủ
+riêng cho `AGENTS.md`, skill và cấu hình của nó, còn các repo dùng chung được liên
+kết ở chế độ đọc-ghi. Vì vậy hai agent được nhắc đến cùng nhau có thể thấy — và
+đụng độ với — những thay đổi của nhau.
 
-## Mention a teammate
+## Nhắc đến một đồng đội
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Mọi `@token` không khớp với agent nào sẽ được thử với các thành viên con người của
+không gian làm việc, theo handle, với cùng quy tắc khớp chính xác hoặc tiền tố,
+không phân biệt chữ hoa chữ thường.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Một nhắc đến con người đã phân giải **không điều phối gì cả**. Nó nằm trong
+metadata của tin nhắn chỉ để bộ định tuyến thông báo có thể báo cho người đó.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Tên agent luôn được thử trước, và một token đã thuộc về một agent sẽ không bao giờ
+được đưa sang danh sách thành viên — một `@word` chỉ có thể phân giải thành một chủ
+thể duy nhất.
 
-## What the agent receives
+## Điều agent nhận được
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Một agent được điều phối nhận được khối “Summons” trong prompt, nêu tên người đã
+triệu tập nó và liệt kê danh sách người tham gia của space — những agent khác (được
+đánh dấu là cấp cao nhất hoặc cấp dưới) cùng các thành viên con người — để nó biết
+mình có thể bàn giao cho ai. Khối này cũng cho nó biết rằng nhắc đến một agent
+khác trong câu trả lời sẽ đánh thức agent đó, và tự nhắc đến chính mình thì bị bỏ
+qua.
 
-## When an agent mentions an agent
+## Khi một agent nhắc đến một agent
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Một agent có thể bàn giao ngay trong câu trả lời của mình. Khi một lượt **kết thúc
+sạch sẽ**, các nhắc đến trong văn bản của lượt đó được phân giải, và những agent
+đó được thêm vào space rồi điều phối vào cùng cuộc hội thoại, với lượt nhắc đến
+làm prompt cho chúng. Một lượt thất bại hoặc bị ngắt thì không đánh thức ai cả —
+nó đã dừng giữa dòng suy nghĩ.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Các quy tắc này cố ý nghiêm ngặt hơn quy tắc của trình soạn, vì không có ai đứng
+xem để sửa lại một phỏng đoán sai:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Chỉ khớp tên chính xác.** Không khớp tiền tố. `@arch` tới được `architect` khi
+  con người gõ nó; còn từ một agent thì không tới được ai. Một tên khớp với hai
+  agent cũng không tới được ai.
+- **Mã không phải văn xuôi.** Các nhắc đến bên trong khối rào hoặc `` `backticks` ``
+  bị bỏ qua, nên trích một annotation `@Override` hay một lệnh `pip install foo@1.2`
+  đều an toàn. Một khối rào không có dấu đóng sẽ vô hiệu hóa mọi thứ phía sau nó.
+- **Một `@` dính liền vào token phía trước không phải là nhắc đến** — `sam@host.com`,
+  `pkg/@scope` và `node@20` không phân giải thành ai cả.
+- **Dấu gạch nối được giữ nguyên**, nên `@code-reviewer` phân giải thành chính nó
+  thay vì thành token `code`.
+- **Tối đa ba agent mỗi lượt.** Một agent liệt kê sáu đồng đội trong một bản tóm
+  tắt là đang liệt kê họ, chứ không phải triệu tập họ.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Chuỗi đánh thức bị giới hạn giống như ủy thác: **độ sâu 3**, và một agent đã nằm
+trong chuỗi thì không thể bị chuỗi đó đánh thức lần nữa (không có `A → B → A`). Một
+cặp có thứ tự cũng bị giới hạn tần suất xuyên các chuỗi. Một lần đánh thức bị từ
+chối sẽ đăng một tin nhắn hệ thống vào cuộc hội thoại, nói rõ nhắc đến nào đã không
+được chuyển tới và vì sao — còn một tên không phân giải được thì không, vì nếu
+không thì mọi `@` trong một câu sẽ tự thuật lại chính nó.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Với một lần bàn giao không được phép phụ thuộc vào văn xuôi — một yêu cầu/phản hồi,
+hoặc tiếp cận một agent ngoài space — hãy dùng các công cụ `send_to_agent`,
+`ask_agent` và `delegate_task` thay thế.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
-- [Use spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/)
-- [Run agents in parallel](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
+- [Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
+- [Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/)
+- [Chạy agent song song](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)

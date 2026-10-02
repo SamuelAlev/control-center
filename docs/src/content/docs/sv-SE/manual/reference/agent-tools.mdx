@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Inbyggda agentverktyg
+description: Verktygsytan den inbyggda harnessen ger en agent – språkserver, strukturell sökning, felsökare, kernlar och workerstyrning – med varje operation och dess argument.
 slug: sv-SE/handbok/referens/agentverktyg
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/sv-SE/handbok/referens/mcp-verktyg/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+De här är de **serverbundna** verktyg som den inbyggda agentköraren registrerar direkt – språkserver, strukturell sökning, felsökare, kernlar, frågor och workerstyrning – till skillnad från de [MCP-verktyg](/sv-SE/handbok/referens/mcp-verktyg/) den bryggar in och de generiska fil-, sök- och shellverktygen från harnessens körare. De finns inte i MCP-registret: en extern MCP-klient ser dem inte, eftersom var och en är bunden till en levande resurs på serversidan – en språkserverprocess, en felsökningsadapter, en tolk – som hör till en enda körning.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Varje verktyg här registreras bara när dess underliggande resurs är inkopplad för körningen – en språkserver- eller felsökningsövervakare, en tree-sitter-parser, en kernelfabrik, en frågeport, en vibe-trupp. Detekteringen av en språkserver eller felsökningsadapter för *den här utcheckningen* är en separat, senare kontroll (`status` / `adapters`): de verktygen ligger kvar på ytan så att agenten kan fråga varför inget går att använda, i stället för att gissa.
 
-## Approval tiers
+## Godkännandenivåer
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Varje verktyg deklarerar en nivå, och nivån avgör **vilka ytor som ser det** – inte bara om det frågar först. Planläget och skrivskyddade subagenter begränsas till `read`, så ett verktyg på `write`- eller `exec`-nivån saknas helt i deras schema.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Nivå    | Innebörd                               | Verktyg här                                        |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Inga sidoeffekter                      | `lsp`, `ast_grep`, `ask_user`, de fem `vibe_*`     |
+| `write` | Ändrar filer                           | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Startar eller styr en process          | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — språkserverfrågor
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Registreras när körningen har en språkserverövervakare och en arbetskatalog. Huruvida en server faktiskt kan svara upptäcks vid anropstillfället, som en **skärning**: en rotmarkör måste finnas *och* serverns binärfil måste gå att slå upp. Bara en av dem betyder att ingen server startar – det säger `status` – i stället för en tyst gissning.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Positioner anges med `line` plus en delsträng i `symbol`, aldrig med kolumn. En modell som ombeds ange en kolumn gissar, och en felaktig gissning pekar ut en annan symbol på samma rad – ett svar som ser rätt ut men handlar om något annat. Att utelämna `symbol` i en navigeringsåtgärd är ett fel, inte en gissning på första kolumnen.
 
-| Action            | Arguments                        | Returns                                    |
+| Åtgärd            | Argument                         | Returnerar                                 |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (eller `"*"`)             | Fel och varningar; `"*"` kör projektkontrollen i stället |
+| `definition`      | `file`, `line`, `symbol`         | Var symbolen är deklarerad                 |
+| `type_definition` | `file`, `line`, `symbol`         | Var dess typ är deklarerad                 |
+| `implementation`  | `file`, `line`, `symbol`         | Konkreta implementationer                  |
+| `references`      | `file`, `line`, `symbol`         | Varje användning, högst 50                 |
+| `hover`           | `file`, `line`, `symbol`         | Signatur och dokumentationskommentar       |
+| `symbols`         | `query` eller `file`             | Sökning i arbetsytan med `query` (högst 100); dokumentsymboler med `file` (högst 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Snabbkorrigeringar som servern erbjuder    |
+| `status`          | —                                | Vilka servrar som körs, och för vilka rötter |
+| `reload`          | —                                | Startar om servern för den här roten       |
 
-### Diagnostics on write
+### Diagnostik vid skrivning
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Vinsten är inte verktyget. `write`, `edit` och `apply_patch` är **omslutna**: efter skrivningen synkas och sparas filen genom språkservern, och bara **nyintroducerad** diagnostik vävs in i verktygets resultat. En agent får veta att den bröt bygget i samma stund som den bröt det, utan att behöva komma ihåg att fråga.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Diagnostik som redan har rapporterats dämpas av en liggare per körning, nycklad på allvarlighetsgrad, kod och meddelande – positionen medvetet utesluten, så en diagnostik som bara flyttade ned fyra rader rapporteras inte om som ny.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — namnbyte i hela projektet
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Ett separat verktyg på `write`-nivån, av exakt en anledning: nivån avgör synligheten. Att lägga in namnbyte i `lsp` skulle antingen ge en skrivskyddad utforskare förmågan att skriva om repot, eller sätta varje `hover` bakom en godkännandeförfrågan.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argument   | Innebörd                               |
+| ---------- | -------------------------------------- |
+| `file`     | Var symbolen finns                     |
+| `line`     | 1-indexerad rad                        |
+| `symbol`   | Delsträng som identifierar den på raden |
+| `new_name` | Vad den ska heta                       |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — strukturell sökning
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Hittar kod efter **form** i stället för efter text. `$NAME` matchar vilken nod som helst, `$$$NAME` matchar en följd av syskon, och `$_` är ett jokertecken som inte binder något.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Egenskapen som gör det till en matchare i stället för ett regex med extra steg: en metavariabel som upprepas i ett mönster måste fånga samma text.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+matchar ett skydd som frigör det det testade, och matchar **inte** ett som frigör något annat.
 
-| Argument      | Meaning                                                     |
+| Argument      | Innebörd                                                    |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Ett kodfragment med metavariabler                           |
+| `path`        | Fil eller katalog att söka i; standard är hela arbetsytan   |
+| `language`    | Ett medföljande grammatik-id (`dart`, `python`, `rust`, `c`, …). Härleds när `path` anger en fil |
+| `max_results` | Standard 50                                                 |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Mönstret parsas med samma grammatik som filen]
+Så `dispose(x)` matchar anropet hur det än är blankstegsindelat, omslutet eller kommenterat – och matchar aldrig samma tecken inne i en strängliteral eller en kommentar.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Ett fragment parsas i ett skal, inte bart]
+`dispose(x)` parsat på Dart:s toppnivå är en giltig *funktionssignatur*. Mönsterkompilatorn provar en stege av kontexter (sats, uttryck, klassmedlem, deklaration) och använder den första som accepterar fragmentet. Ett mönster som ingen kontext accepterar rapporteras som oparsbart i stället för att sökas efter och tyst inte hittas.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — strukturell omskrivning, mellanlagrad
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Samma matchning, plus en `rewrite`-mall där metavariablerna sätts tillbaka. **Ingenting skrivs.** Ändringen mellanlagras och resultatet namnger ett `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Argument   | Innebörd                                            |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Vad som ska matchas                                 |
+| `rewrite`  | Vad som ska stå där i stället, med `$NAME` substituerat |
+| `path`     | Omfång; standard är hela arbetsytan                 |
+| `language` | Språk-id                                            |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — committa eller kasta en mellanlagrad ändring
 
-| Argument  | Meaning                          |
-| --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| Argument  | Innebörd                      |
+| --------- | ----------------------------- |
+| `edit_id` | Från resultatet `(proposed)`  |
+| `action`  | `accept` eller `discard`      |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Varje fil jämförs mot innehållet som fångades vid mellanlagringen, och **varje** avvikelse avvisar hela ändringen. En delvis tillämpad strukturell omskrivning lämnar ett träd som inte kompilerar i någon av formerna, varken den gamla eller den nya.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — styr en felsökare
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Registreras när körningen har en övervakare för felsökningssessioner, en arbetskatalog och ett samtals-id. Huruvida en adapter faktiskt kan starta upptäcks vid anropstillfället, enligt samma skärningsregel som för språkservern (rotmarkör *och* binärfil). Nivån `exec`; inte parallellsäker (en session är tillstånd mellan anrop, så om `continue` kör om `stack` läses en ram som redan har flyttat sig).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+En session per samtal, med en hård TTL (30 minuter). En andra `launch` avvisas i stället för att tyst ersätta den första.
 
-| Op            | Arguments                     | Notes                                          |
+| Op            | Argument                      | Anmärkningar                                   |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Vilka adaptrar som går att använda här, och varför inte |
+| `status`      | —                             | Om en session körs, och var den stoppade       |
+| `breakpoints` | `file`, `lines[]`             | Tomma `lines` rensar filen. Kan sättas **före** start |
+| `launch`      | `program`, `args[]`           | Startar programmet stoppat vid dina brytpunkter |
+| `attach`      | `port`                        | Ansluter till ett redan körande felsökningsobjekt |
+| `continue`    | `thread_id?`                  | Kör tills nästa stopp                          |
+| `pause`       | `thread_id?`                  | Stoppar det där det är                         |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Flyttar ett steg                    |
+| `threads`     | —                             | Tråd-id och namn                               |
+| `stack`       | `thread_id?`                  | Ramar, högst 30                                |
+| `scopes`      | `frame_id`                    | Omfång på en ram, varje med en `reference`     |
+| `variables`   | `reference`                   | Barn, högst 50, värden högst 400 tecken        |
+| `evaluate`    | `expression`, `frame_id?`     | Utvärderas i ramens eget omfång                |
+| `output`      | —                             | Felsökningsobjektets stdout/stderr, begränsad  |
+| `terminate`   | —                             | Avslutar sessionen och dödar adaptern          |
 
-### Adapters
+### Adaptrar
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Kommando                   | Rotmarkörer                                     |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` föredrar ett projektlokalt `.venv/bin` eller `venv/bin` framför `$PATH`: en python från `$PATH` är en annan miljö, och att ansluta från fel miljö misslyckas på ett sätt som läses som trasig kod.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — persistenta tolkar
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+En Python- eller JavaScript-cell vars variabler, importer och inlästa data överlever mellan anrop. Nivån `exec`; inte parallellsäker.
 
-| Argument      | Meaning                                          |
-| ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| Argument      | Innebörd                                        |
+| ------------- | ----------------------------------------------- |
+| `code`        | Cellen                                          |
+| `description` | Obligatorisk. 5–10 ord för transkriptets etikett |
+| `language`    | `python` (standard) eller `javascript`          |
+| `reset`       | Kasta tolken och börja med en ren först         |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Det sista uttrycket skrivs ut på samma sätt som i en notebook.
+- `display()` fungerar, en pandas-DataFrame renderas som en tabell, och en matplotlib-figur kommer tillbaka som en **bild som transkriptet visar**.
+- IPython-idiomen som folk skriver per reflex – `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` – skrivs om till vanlig kod. `%pip` rensar också `sys.modules`, så nästa `import` ser det som just installerades.
 
-### Calling your own tools from inside a cell
+### Anropa dina egna verktyg inifrån en cell
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Bryggan **går in i harnessens verktygsregister igen**, så räcken, godkännande och varje wrapper gäller precis som för ett anrop som modellen utfärdar. Den går över kernens egen pipe i stället för en loopback-socket: ingen port, ingen hemlighet, ingen utgångsregel.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Cellens tidsgräns är en *inaktivitets*budget (standard 5 minuter) och den **pausas** medan ett bryggat anrop pågår, så en cell som sprider ut arbetet till subagenter dödas inte mitt i utspridningen.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Var kerneln körs]
+I samtalets avskilda miljö när det har en, annars på värden. Den startar inte en avskild miljö för att komma dit – samma regel som hindrar en stationsflik från att starta automatiskt.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — ställ en fråga till människan
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Nivån `read`. Det **enda** sättet en körning frågar operatören något. Det visar ett numrerat kort i samtalet och blockerar tills någon svarar, hoppar över eller frågan når sin tidsgräns. Skriv aldrig frågan som ett chattmeddelande – det avslutar turen.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argument          | Innebörd                                |
+| ----------------- | --------------------------------------- |
+| `question`        | Vad du frågar                           |
+| `context`         | Valfritt: varför du frågar och vad som hänger på svaret |
+| `options[]`       | Alternativ, varje `{label, description?}` |
+| `allow_free_text` | Om ett skrivet svar accepteras          |
+| `multi_select`    | Om flera alternativ får väljas          |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+En överhoppning är framgång: fortsätt på ett uttalat antagande och fråga inte igen. En tidsgräns är ett fel med samma instruktion. Behörighetsförfrågningar (”får jag göra det här?”) är en egen grind och visas som samma kort i samtalet.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Registreras bara när både en frågeport och en målyta finns. Utan en ansluten människa **misslyckas** anropet i stället för att blockera för evigt – samma hållning med stängning vid fel som en räckes-`prompt` intar när ingen godkännare är ansluten.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — styra bakgrundsworkers
 
-Registered only while [vibe mode](/sv-SE/handbok/how-to-guider/styr-bakgrundsworkers/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Registreras bara medan [vibe-läget](/sv-SE/handbok/how-to-guider/styr-bakgrundsworkers/) är på. Alla fem har nivån `read`: grinden hör hemma på workerns verktyg, där redigeringen faktiskt sker.
 
-| Tool         | Arguments                                | Notes                                       |
+| Verktyg      | Argument                                 | Anmärkningar                                |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Återvänder omedelbart; workern fortsätter   |
+| `vibe_send`  | `worker_id`, `message`                   | Lägger till i briefen och kör igen          |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blockerar tills den är klar                 |
+| `vibe_kill`  | `worker_id`                              | Stoppar den                                 |
+| `vibe_list`  | —                                        | Nivå, status, förfluten tid och senaste resultat |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` är `fast` (mekaniskt arbete med en tydlig specifikation) eller `good` (design, omdöme eller granskning av en `fast`-workers utdata).

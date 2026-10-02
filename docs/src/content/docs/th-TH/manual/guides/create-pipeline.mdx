@@ -1,241 +1,235 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: สร้างเทมเพลตไปป์ไลน์
+description: เขียนเทมเพลตเวิร์กโฟลว์แบบ DAG ในตัวแก้ไขไปป์ไลน์ — เพิ่มโหนด เชื่อมต่อโหนด ประกาศอินพุต และทำให้มันรันได้
 slug: th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+เทมเพลตไปป์ไลน์เขียนขึ้นใน การตั้งค่าของเวิร์กสเปซ รายการ **ไปป์ไลน์** ใน
+แถบข้างของเวิร์กสเปซคือ _คิวการรัน_ ไม่ใช่รายการเทมเพลต — มันไม่มีคำสั่ง
+“สร้างเทมเพลต”
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/).
+สำหรับความหมายของชนิดขั้นตอน คีย์บอดี และฟิลด์คอนฟิกแต่ละอย่าง ดู
+[ขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
 
-## Create a template
+## สร้างเทมเพลต
 
-1. Go to **Settings → Workspace → Pipeline templates**
-   (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → เทมเพลตไปป์ไลน์**
+   (`/workspaces/<workspace-id>/settings/pipelines`)
+2. กด **เทมเพลตใหม่**
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+ไม่มีกล่องโต้ตอบให้กรอก id ตัวแก้ไขเปิดขึ้นทันทีบนโครงเริ่มต้นที่ให้มาซึ่งชื่อ
+**ไปป์ไลน์ใหม่** พร้อม id ที่จัดสรรให้อัตโนมัติ (`pipeline_1` แล้วก็
+`pipeline_2`, …) คลิกชื่อเรื่องในส่วนหัวเพื่อเปลี่ยนชื่อ
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+แคนวาสไม่ได้ว่างเปล่า: มีโหนดทางเข้า **Trigger** หนึ่งตัว โหนดเอเจนต์พรอมต์
+ที่ติดป้าย **Step** หนึ่งตัว และเซนติเนลปลายทางที่ปิดท้ายการรัน เซนติเนลไม่ถูก
+วาด ตัวแก้ไขต่อสายเทอร์มินัลที่ซ่อนอยู่นั้นใหม่ไปยังทุกปลายทางที่เข้าถึงได้
+งานที่คุณต่อท้าย **Step** จึงยังรัน
 
-## Add nodes
+## เพิ่มโหนด
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+แถบข้าง **คลังโหนด** อยู่ทางซ้ายของตัวแก้ไขอย่างถาวร กรองมันด้วยช่อง
+**ค้นหาโหนด** แล้วลากรายการหนึ่งลงบนแคนวาส — โหนดจะไปอยู่ตรงที่คุณปล่อย
+โดยไม่มีการเชื่อมต่อขาเข้า
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| โหนดในพาเลต                    | ชนิดขั้นตอน | มันทำอะไร                                                                                |
+| ------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen      | รันสคริปต์เชลล์โดยแทนค่า `{{state}}`; ไม่มีการสั่งงานเอเจนต์                             |
+| **Open conversation**           | listen      | เปิดสเปซที่มองเห็นได้หนึ่งเดียวของการรันและเช็กเอาต์ของมัน; โหนดเอเจนต์เข้าร่วมห้องนี้   |
+| **Clone PR branch**             | listen      | ค้นหาสาขาเฮดของ PR ผ่าน `gh pr view` แล้วโคลนลงไดเรกทอรีของการรัน                        |
+| **Post PR comment**             | listen      | โพสต์ข้อค้นพบที่รวบรวมไว้ไปยัง PR เป็นคอมเมนต์รีวิวของ GitHub                            |
+| **Reviewer (prompt)**           | listen      | สั่งงานเอเจนต์รีวิวเวอร์เฉพาะทาง; ระงับไว้จนกว่าเอเจนต์จะส่งผลลัพธ์                      |
+| **Consolidate (join)**          | join        | รอหลายสาขาต้นทาง แล้วขอให้เอเจนต์รวบรวมเอาต์พุตของสาขาเหล่านั้น                          |
+| **Custom prompt**               | listen      | โหนดทั่วไปที่ขับด้วยพรอมต์ เส้นทางผ่านบอดี `promptAgent`                                 |
+| **Post to space**               | listen      | ส่งข้อความไปยังสเปซข้อความ                                                               |
+| **Condition / switch (router)** | router      | แยกสาขาของโฟลว์ตามค่าสถานะ                                                               |
+| **If file exists (router)**     | router      | ส่งเส้นทาง `"true"` เมื่อมีพาธอยู่ใต้เช็กเอาต์ มิฉะนั้น `"false"`                          |
+| **Any file exists (OR router)** | router      | ส่งเส้นทาง `"true"` เมื่อมีพาธใดพาธหนึ่งในรายการอยู่                                     |
+| **All conditions (AND router)** | router      | ส่งเส้นทาง `"true"` เฉพาะเมื่อมีพาธทุกรายการอยู่                                         |
+| **Team dispatch**               | listen      | สั่งงานทั้งทีมและระงับไว้จนกว่าจะเสร็จ                                                    |
+| **Approval gate**               | listen      | หยุดรอการตัดสินใจอนุมัติ                                                                 |
+| **For each (map)**              | forEach     | เรนเดอร์พรอมต์ต่อหนึ่งรายการ แล้วสั่งงานเอเจนต์ครั้งเดียวด้วยพรอมต์เหล่านั้นที่ต่อกัน     |
+| **Call sub-pipeline**           | listen      | รันเทมเพลตอื่นเป็นขั้นตอนซ้อน                                                            |
+| **Clean up worktrees**          | listen      | ลบ worktree ที่แยกไว้และค้างเก่า; ทำงานแน่นอน ไม่มีการสั่งงานเอเจนต์                      |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+คลังจัดกลุ่มเหล่านี้ไว้ใต้ **โฟลว์และตรรกะ**, **รีวิว PR**, **เอเจนต์**,
+**ข้อความ** และ **โค้ด** ไม่มีกลุ่ม Demo
 
-## Wire nodes together
+## เชื่อมต่อโหนดเข้าด้วยกัน
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+โหนดงานแต่ละโหนดมี**พอร์ตเอาต์พุต**วงกลมอยู่ที่ขอบขวา ลากจากพอร์ตนั้นไปยัง
+โหนดอื่นเพื่อเชื่อมต่อทั้งสอง ทริกเกอร์เริ่มต้นก็เหมือนกัน: แต่ละตัวมีพอร์ตของ
+ตัวเอง เส้นเชื่อมจาก **ตารางเวลา** จึงไม่ออกจาก **รันด้วยตนเอง** ด้วย กด
+**เพิ่มขั้นตอน** (`+`) ถัดจากโหนดหนึ่งเพื่อแทรกชนิดไว้ข้างหลังมัน ชี้ที่
+จุดกึ่งกลางของเส้นเชื่อมที่มีอยู่แล้วกด × เพื่อตัดการเชื่อมต่อ
 
-Connections are also edited from the node that _receives_ them:
+การเชื่อมต่อยังแก้ไขได้จากโหนดที่ _รับ_ มัน:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. เลือกโหนดปลายน้ำ แผงคอนฟิกของมันจะเปิดทางด้านขวา
+2. เลื่อนไปที่ **Triggers from** แล้วแตะชิปของแต่ละโหนดต้นทางที่โหนดนี้ควรฟัง
+   การแตะชิปที่เลือกไว้จะลบการเชื่อมต่อ
+3. ถ้าโหนดต้นทางเป็นเราเตอร์ บล็อก **คีย์เส้นทาง** จะปรากฏใต้ชิป พร้อมฟิลด์
+   **คีย์เส้นทางจาก &lt;node&gt;** หนึ่งฟิลด์ต่อหนึ่งเส้นเชื่อมของเราเตอร์
+   ป้อนคีย์ที่เส้นเชื่อมนั้นยิง — `true` หรือ `false` สำหรับเราเตอร์แบบมีไฟล์อยู่
+   หรือชื่อกรณีสำหรับสวิตช์
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+โหนดทริกเกอร์แต่ละตัวเป็นจุดเริ่มต้น โหนดหนึ่งอาจฟังหลายต้นทาง (fan-in) และ
+ส่งต่อหลายปลายทาง (fan-out) และกราฟต้องไม่เป็นวงจร — ไม่มีอะไรในตัวแก้ไข
+หยุดคุณจากการต่อเป็นวงจร โปรดตรวจงานของคุณ
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+เซนติเนลปลายทางถูกกรองออกจากแคนวาส จึงเลือกไม่ได้ ตัวแก้ไขจะต่อสายมันใหม่
+ไปยังทุกปลายทางที่เข้าถึงได้ทุกครั้งที่กราฟเปลี่ยน งานที่คุณต่อท้าย **Step**
+ที่ให้มาจึงยังรัน กราฟว่างเปล่า (ทริกเกอร์ที่ไม่มีโหนดงานสืบทอด) จะระบุ
+ทริกเกอร์เอง เพื่อให้การรันเสร็จสิ้นทันที
 
-## Configure a node
+## กำหนดค่าโหนด
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+เลือกโหนดเพื่อเปิดแผงคอนฟิกของมัน ฟิลด์ใดจะปรากฏขึ้นอยู่กับบอดีของโหนด
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+ทุกโหนดมี **ป้าย**, **คีย์อินพุต** (คีย์สถานะคั่นด้วยจุลภาค อ่านตอนรัน) และใต้
+**ขั้นสูง** มี **ตัวลดทอน**, **หมดเวลา (ms)**, **ครั้งที่ลองใหม่**,
+**ทำต่อหากขั้นตอนนี้ล้มเหลว** และ **สคีมาเอาต์พุต** โหนด listen และ join
+ยังสลับ **ชนิด** ระหว่างสองแบบได้ด้วย
 
-### Open conversation
+### เปิดการสนทนา
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+เพิ่มตัวเลือก **ขอบเขตรีโพสิทอรี** (จะเช็กเอาต์รีโพใดในเวิร์กสเปซ; ว่างเปล่า
+หมายถึงไม่เอาเลย) **ชื่อสเปซ** และกล่องทำเครื่องหมาย **เปิดการสนทนาในนั้น**
+เมื่อกล่องนั้นเปิดอยู่ ฟิลด์ **ชื่อการสนทนา** จะตั้งชื่อสตรีมที่ห้องเปิดขึ้นมา
+ด้วย โหนดเอเจนต์เข้าร่วมห้องนี้ — พวกมันไม่เปิดห้องของตัวเอง
 
-### Prompt agent
+### เอเจนต์พรอมต์
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+เพิ่ม **เอเจนต์** (เอเจนต์ตัวไหนที่จะสั่งงาน) **พรอมต์** (ใช้ `{{key}}` เพื่อ
+อ้างอิงอินพุตหรือเอาต์พุตต้นทาง) และ **คีย์เอาต์พุต**
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**หมดเวลา (ms)** มีหน่วยเป็น _มิลลิวินาที_ ไม่ใช่วินาที — `900000` คือ 15 นาที
+การป้อน `900` ให้เวลา 0.9 วินาทีกับขั้นตอน
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+โหมดการสนทนาที่โหนดเอเจนต์พรอมต์รันภายใต้นั้นไม่มีฟิลด์ในตัวแก้ไขบนโหนด
+เอเจนต์ มันเดินทางไปกับ `extras['mode']` (`chat`, `plan` หรือ `review`) บนโหนด
+**Open conversation** ที่สร้างห้อง (ค่าเริ่มต้น `review`) การตั้งค่าบนขั้นตอน
+เอเจนต์จะถูกละเลย คีย์นี้ต้องตรงกันเป๊ะ: การสะกดแบบอื่นใดจะถูกละเลยโดยไม่แจ้ง
 
-### Bash script
+### สคริปต์ Bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+เพิ่ม **สคริปต์ Bash** ไม่มีฟิลด์ไดเรกทอรีทำงานหรือฟิลด์สภาพแวดล้อม เพราะ
+ทั้งสองอย่างกำหนดค่าไม่ได้:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- ทุกขั้นตอน bash ในการรันหนึ่งใช้ cwd ร่วมกันที่ `<cc_root>/pipelines/<runId>/`
+- `GITHUB_TOKEN` ถูกฉีดมาจากที่เก็บข้อมูลรับรอง ดังนั้น `gh` และ
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` จึงใช้ได้โดยไม่ต้องตั้งค่า
+- สคริปต์ถูกสปอว์นเป็นไฟล์รัน `bash` ตามตัวอักษร ดังนั้น `bash` ต้องอยู่ใน
+  `PATH` ของโฮสต์เซิร์ฟเวอร์ นี่เป็นข้อควรพิจารณาบน Windows
 
-### Router
+### เราเตอร์
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+เราเตอร์ประเมินเงื่อนไขและคืนคีย์เส้นทาง; เอนจินยิงเฉพาะเส้นเชื่อมปลายน้ำที่
+คีย์เส้นทางตรงกัน และทำเครื่องหมายสาขาอื่นว่าถูกข้าม
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+การเลือกเราเตอร์จะแทนที่ฟิลด์ **คีย์เอาต์พุต** ด้วยตัวแก้ไขเงื่อนไข เลือกหนึ่ง
+ในสี่โหมดของมัน:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **มีไฟล์อยู่ — อย่างใดอย่างหนึ่ง** — ส่งเส้นทาง `"true"` เมื่อมีพาธใด
+  พาธหนึ่งในรายการอยู่
+- **มีไฟล์อยู่ — ทั้งหมด** — ส่งเส้นทาง `"true"` เฉพาะเมื่อพาธทุกรายการอยู่
+- **การเปรียบเทียบ** — เปรียบเทียบค่าสถานะกับค่าคงที่
+- **สวิตช์** — ส่งเส้นทางตามค่าของคีย์สถานะ พร้อมกรณีเริ่มต้น
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+จากนั้นตั้งคีย์เส้นทางที่ตรงกันบนเส้นเชื่อมขาออก (ดู
+[เชื่อมต่อโหนดเข้าด้วยกัน](#เชื่อมต่อโหนดเข้าด้วยกัน))
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/).
+กลุ่ม `and` / `or` / `not` แบบบูลีนนั้นบอดีรองรับ แต่สร้างจากฟอร์มนี้ไม่ได้ —
+ต้องเขียนทรีเพรดิเคตด้วยมือใต้ `extras.predicate` คำศัพท์เพรดิเคตและตัวดำเนินการ
+ฉบับเต็มอยู่ใน[ขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
 
-### Join
+### การรวม
 
-No configuration of its own: it waits for all of its upstream steps.
+ไม่มีคอนฟิกของตัวเอง: มันรอทุกขั้นตอนต้นทางของมัน
 
-### Approval gate
+### เกตการอนุมัติ
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+เกตสั่งงานเอเจนต์ผู้อนุมัติเข้าสู่การสนทนาที่ซ่อนอยู่พร้อมพรอมต์ของเกต แล้ว
+ระงับไว้ ผู้อนุมัติจะหาการตัดสินใจของคุณในการสนทนาและส่งมันด้วย `submit_output`
+เป็น `{ "decision": "approved" | "rejected", "reason": "..." }` การตัดสินใจ
+จะไปอยู่ใต้คีย์เอาต์พุต (ค่าเริ่มต้น `approval_decision`) เราเตอร์สวิตช์ปลายน้ำ
+จึงแยกสาขาตามมันได้
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+ตั้ง **เอเจนต์** เป็นผู้อนุมัติ และ **พรอมต์** เป็นคำถามของเกต เกตจะคลี่คลาย
+ผ่าน `submit_output` เป็น `{ "decision": "approved" | "rejected",
+"reason": "..." }` โหนด Reviewer (prompt) ส่งในแบบเดียวกัน
 
-### Team dispatch
+### การกระจายงานให้ทีม
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+เพิ่ม **ID ทีม** และ **โหมดจัดส่ง** ตัวเลือกมีให้สองโหมดเท่านั้น:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — หนึ่งงานต่อหนึ่งสมาชิก ระงับไว้จนกว่าจะเสร็จทั้งหมด
+- `manager` — สั่งงานหัวหน้าทีม ซึ่งมอบหมายต่อ
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+ค่าอื่นใดที่เก็บไว้จะทำงานเหมือน `allParallel` ตั้ง **ตัวลดทอน** เป็น `append`
+เพื่อรวบรวมผลลัพธ์ของสมาชิกแต่ละคนไว้ในรายการใต้คีย์เอาต์พุต
 
-### For each and Call sub-pipeline
+### For each และ Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** แมปเหนือคีย์สถานะ `items` โดยค่าเริ่มต้น (`extras.iterableKey` /
+`extras.itemKey` บนโหนด) มันเรนเดอร์พรอมต์หนึ่งครั้งต่อหนึ่งรายการ (`{{item}}`
+โดยค่าเริ่มต้น) และสั่งงานเอเจนต์ **ครั้งเดียว** ด้วยพรอมต์เหล่านั้นที่ต่อกัน
+คอลเลกชันว่างเปล่าจะเสร็จสิ้นทันทีด้วยรายการว่าง มันไม่ใช่การสั่งงานขนาน
+หนึ่งครั้งต่อหนึ่งรายการ
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** ระงับไว้จนกว่าการรันลูกจะถึงสถานะสิ้นสุด แล้วรวมสถานะ
+สุดท้ายของลูกไว้ใต้คีย์เอาต์พุต (ค่าเริ่มต้น `subflow_result`) ชี้มันไปยังลูก
+ด้วย `extras.templateId` เทมเพลตหนึ่งเรียกตัวเองไม่ได้; ลูกที่ล้มเหลวหรือถูก
+ยกเลิกจะทำให้ขั้นตอนแม่ล้มเหลว ซึ่งจากนั้นจะป้อนนโยบายลองใหม่และ
+ทำต่อเมื่อล้มเหลวของขั้นตอนนั้น
 
-## Declare inputs and allow manual runs
+## ประกาศอินพุตและอนุญาตการรันด้วยตนเอง
 
-Both live behind **Manual run** in the editor header.
+ทั้งสองอย่างอยู่เบื้องหลัง **รันด้วยตนเอง** ในส่วนหัวของตัวแก้ไข
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. กด **รันด้วยตนเอง**
+2. เปิด **อนุญาตการรันด้วยตนเอง** สวิตช์นี้บันทึกทันที — มันสร้าง (หรือลบ)
+   แถวทริกเกอร์ `manual` ที่ทำให้เทมเพลตปรากฏในตัวเลือกการรัน
+3. ตั้ง **รันขนานสูงสุด** หากต้องการเพดาน (เว้นว่างไว้เพื่อไม่จำกัด) การเริ่ม
+   เพิ่มเติมจะรอในสถานะ `queued` จนกว่าจะมีช่องว่าง
+4. กด **เพิ่มอินพุต** สำหรับแต่ละฟิลด์ฟอร์มที่การรันด้วยตนเองควรเก็บ:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| ฟิลด์              | คำอธิบาย                                                          |
+| ------------------ | ------------------------------------------------------------------ |
+| **คีย์**           | คีย์สถานะที่เก็บค่าไว้; อ้างอิงเป็น `{{key}}`                       |
+| **ป้าย**           | ป้ายที่แสดง (ค่าเริ่มต้นคือคีย์)                                   |
+| **ชนิด**           | ข้อความ, ข้อความหลายบรรทัด, ตัวเลข, สวิตช์, เลือก, รีโพสิทอรี      |
+| **ตัวเลือก**       | รายการคั่นด้วยจุลภาค ใช้กับชนิด **เลือก** เท่านั้น                 |
+| **ค่าเริ่มต้น**    | ค่าที่เติมไว้ล่วงหน้า                                             |
+| **ข้อความตัวอย่าง** | ข้อความบอกใบ้ภายในฟิลด์ว่าง                                       |
+| **ข้อความช่วยเหลือ** | ข้อความช่วยเหลือใต้ฟิลด์                                         |
+| **จำเป็น**         | ว่าฟอร์มการรันปิดกั้นเมื่อค่าว่างหรือไม่                          |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+อินพุตชนิด **รีโพสิทอรี** จะแสดงตัวเลือกเหนือรีโพของเวิร์กสเปซ และเติม
+`repo_id`, `repo_local_path`, `repo_full_name` และ — เมื่อรีโพมีรีโมต GitHub —
+`repo_owner` และ `repo_name` ลงในเพย์โหลดการรัน
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. กด **บันทึก** ในกล่องโต้ตอบ การแก้ไขอินพุตจะถูกพับเข้าไปในฉบับร่าง; มันจะ
+   คงอยู่เมื่อคุณบันทึกเทมเพลต
 
-## Save and enable
+## บันทึกและเปิดใช้งาน
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/).
+1. กด **บันทึก** ในส่วนหัวของตัวแก้ไข ส่วนหัวจะแสดง “มีการเปลี่ยนแปลงที่ยังไม่
+   บันทึก” จนกว่าคุณจะทำ
+2. กลับไปที่ **การตั้งค่า → เวิร์กสเปซ → เทมเพลตไปป์ไลน์** แล้วตรวจว่าสวิตช์ของ
+   แถวเทมเพลตเปิดอยู่ เอนจินปฏิเสธไม่เริ่มเทมเพลตที่ปิดใช้งาน และเทมเพลตที่
+   ปิดใช้งานไม่เคยปรากฏในตัวเลือกการรัน
+3. หากต้องการเริ่มมันโดยอัตโนมัติ ลากทริกเกอร์จากคลังโหนดลงบนแคนวาส — ดู
+   [ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Run a pipeline manually](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
-- [Set up pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
-- [Monitor pipeline runs](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/)
-- [Pipeline steps reference](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
+- [รันไปป์ไลน์ด้วยตนเอง](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
+- [ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
+- [ติดตามรันไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์/)
+- [ขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Pipelines](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)
+- [ไปป์ไลน์](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)

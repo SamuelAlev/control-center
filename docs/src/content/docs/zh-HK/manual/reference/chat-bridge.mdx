@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: 聊天橋接
+description: 聊天橋接的提供方、指令、憑證、能力、RPC 操作與儲存方式。
 slug: zh-HK/手冊/參考/聊天橋接
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## 提供方
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| 提供方 | 傳輸值 | 傳輸方式                   | 空間類型 |
+| ------ | ------ | -------------------------- | -------- |
+| Slack  | `slack` | Socket Mode（對外 WSS）   | `slack`  |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack 是唯一的提供方。** `ChatProvider` 是單值枚舉，而 `cc_server` 只註冊一個外掛。結構描述、每一次查詢，以及每一個唯一索引都以 `provider` 為鍵，因此 id 永遠不會跨提供方，而新增一個提供方只是伺服器端的變更。
 
-One provider-side app per **workspace × provider**.
+每個**工作區 × 提供方**對應一個提供方端的應用。
 
-## Chat commands
+## 聊天指令
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+指令名稱是每個應用各自的（預設為 `cc`，即 `/cc`）。管理員可以為它改名；此後橋接會沿用最後一次叫用時所用的名稱。
 
-| Command                               | Effect                                                        |
+| 指令                                  | 效果                                                          |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help`（或沒有動詞的 `/cc`）      | 列出機械人可以做什麼                                          |
+| `/cc link <code>`                     | 兌換一組一次性代碼，並連結發送者的聊天身分                    |
+| `/cc ticket <title>`                  | 為已連結成員回報的問題開立一張本機工單                        |
+| `/cc ticket <title> \| <description>` | 同上，並以第一個 `\|` 之後的全部內容作為描述                   |
+| 未知動詞                              | 回報該未知動詞，並附上說明文字                                |
 
-Ways to reach an agent:
+觸達代理的方式：
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| 手勢                           | 行為                                                                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 在頻道中使用 `@bot …`          | 開啟一個 Slack 討論串和一個對應的 Control Center 空間；代理會在該 Slack 討論串中回覆                                        |
+| 在已橋接的 Slack 討論串中回覆  | 延續同一個 Control Center 空間——毋須提及                                                                                   |
+| 頻道中的普通訊息               | 忽略（既非向機械人發送，也不在已橋接的 Slack 討論串中）                                                                    |
+| 私訊機械人                     | 每個私訊對話對應一個 Control Center 空間；在代理工作期間設定 Slack 討論串標題和「正在思考…」狀態                            |
 
-## Credential fields (Slack)
+## 憑證欄位（Slack）
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+由提供方描述符宣告；連接對話框正是由它產生，提交內容也由它驗證。
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| 欄位 id              | 標籤                            | 必填 | 前置詞  | 所在位置                                                          |
+| -------------------- | ------------------------------- | ---- | ------- | ----------------------------------------------------------------- |
+| `botToken`           | Bot user OAuth token            | 是   | `xoxb-` | OAuth & Permissions                                               |
+| `appToken`           | App-level token                 | 是   | `xapp-` | Basic Information → App-Level Tokens，權限範圍 `connections:write` |
+| `configRefreshToken` | App configuration refresh token | 否   | `xoxe`  | api.slack.com/apps 上的 App configuration tokens                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` 是應用管理憑證：沒有它，連接仍然可用，但無法從 Control Center 建立或編輯機械人。它每次使用都會輪換，而輪換後的值會立即儲存。
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+值會去除首尾空白，未宣告的鍵會被捨棄，而前置詞不符會被拒絕，且客戶端與伺服器會回傳同一句話。每次連接都必須提供必填欄位；選填欄位留空會保留已儲存的值。
 
-## Slack app requirements
+## Slack 應用要求
 
-Bot token scopes:
+機械人權杖權限範圍：
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+機械人事件訂閱：
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Control Center 在建立或編輯應用時強制施加的結構性設定：已啟用 Socket Mode、沒有請求 URL、Messages 分頁已啟用且可寫入、機械人 `always_online`、把所需的權限範圍和事件合併進應用已有的內容（絕不減去），以及一條斜線指令，其描述為 `File a ticket or link your Control Center account`——這是在匯出的 manifest 中識別 Control Center 自有指令的標記。
 
-## Connection states
+## 連接狀態
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| 狀態     | 傳輸值         | 含義                                                           |
+| -------- | -------------- | -------------------------------------------------------------- |
+| 未連接   | `disconnected` | 此工作區 × 提供方未儲存任何憑證                                |
+| 連接中…  | `connecting`   | 憑證已儲存，傳輸正在撥號或重新撥號                             |
+| 運作中   | `connected`    | 傳輸已建立並正在接收事件                                       |
+| 連接錯誤 | `error`        | 已儲存但失敗；提供方自身的錯誤會一併顯示                       |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+重連採用帶抖動的指數退避，上限為 30 秒。由提供方發起的通訊端輪換會立即重連，不會推高退避。被拒絕的憑證（`invalid_auth`、`not_authed`、`token_revoked`、`account_inactive`、`token_expired`、`invalid_app_id`）或缺少權限範圍屬於終局：橋接會停止重試，直到有新憑證到達。
 
-## Provider capabilities (Slack)
+## 提供方能力（Slack）
 
-The bridge is written against the richest surface and degrades per capability.
+橋接是照着最豐富的功能面編寫，並逐項能力降級。
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| 能力                      | Slack  | 缺失時的效果                                                                                   |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | 是     | 整段回覆會在結束時一次性發出                                                                   |
+| `streamingRequiresThread` | 是     | 沒有討論串錨點的回覆目標只會發出完整回覆                                                       |
+| `ephemeralMessages`       | 是     | 沒有可用回覆句柄的斜線指令應答會被丟棄（拒絕一律在討論串內發出）                               |
+| `threadStatus`            | 是     | 沒有短暫的「正在思考…」狀態行                                                                  |
+| `threadTitle`             | 是     | 聊天討論串會保留其預設標題                                                                     |
+| `slashCommands`           | 是     | 沒有 `/cc` 介面                                                                                |
+| `taskCards`               | 是     | 只有文字——回覆上方沒有卡片，也沒有「View in Control Center」連結                               |
+| `maxMessageLength`        | 39,000 | 較長的回覆會被截斷，並附上指向 Control Center 的提示                                           |
+| `maxStreamChunkLength`    | 3,800  | 追加內容會按段落、行或空格邊界切分                                                             |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+宣告串流並不等於承諾串流：Slack 的串流需要付費方案中的 Agents & AI Apps 功能。呼叫時被拒絕（`streaming_not_supported`、`feature_not_enabled`、`paid_only`、……）會**在整條連線的生命週期內**被記住，並以 `streamingAvailable: false` 呈現。Slack 的任務卡片與同一次呼叫同行，因此一個拒絕卡片顯示模式的 Slack 會保留自己的串流，只在整條連線的生命週期內失去一次卡片。
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+一條串流還必須指明它是為哪位讀者開啟的。Slack 要求在**頻道**中開啟串流時同時提供接收者用戶及其團隊（私訊則不需要），否則會以 `missing_recipient_user_id` / `missing_recipient_team_id` 拒絕——這是每次呼叫都會發生的拒絕，因此橋接會繼續嘗試，而該回合在此期間會以一條已發出的回覆形式到達。接收者就是發問的那個人，取自入站訊息（取其團隊，而非應用程式的團隊，這樣 Slack Connect 頻道才能正確解析）。對於沒有人從聊天發起的回合——即在 Control Center 中就一個已橋接對話啟動的工作——接收者就是其連結建立了該橋接的成員；如果此人之後已解除其聊天帳戶的連結，該回合就會整體發出，而不是以串流傳送。
 
-## Task cards
+## 任務卡片
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+每個代理回合一張分組卡片（`task_display_mode: plan`），每個步驟一行。每一行是一次 `task_update`，由 `id` + `title` + `status` 組成，並在思考就緒時附上一次性的 `details`。相同 id 的 `details` 與 `output` 會無分隔符地串接，因此 `details` 只發送一次，而 `output` 從不以串流傳送。計劃的標題就是該請求；回答則是之後單獨追加的一段內容，攜帶一個 `markdown_text` 分塊。
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| 部分       | 內容                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 計劃標題   | 所提出的請求                                                                                                                                                  |
+| 初始化行   | `Working on it…`，然後 `Cloning …`，再然後 `Starting the agent…`——同一行，標題被取代                                                                          |
+| 思考行     | `Thinking…`，在代理開始推理時加入；思考內容是這一行的 `details`，在推理結束時發送一次                                                                         |
+| 工具行     | 每個工具一行（`Bash which swift`），id 唯一，因此彼此並排                                                                                                     |
+| 狀態       | 該行執行期間為進行中；當下一行開始或回合結束時為完成；失敗、中斷及達到回合上限時為錯誤                                                                        |
+| 行動呼籲   | 回合結束時作為末尾一行出現的 `View in Control Center`——工作仍在進行時不出現，伺服器沒有可達公網 URL 時也不出現                                               |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+卡片絕不承載：工具輸出、該允許清單以外的引數，或任何從資料庫讀取的內容。推理文字只是 `Thinking…` 行的 details（上限 256 個字元），而不是訊息本文。不會重發一張說不出新內容的卡片。提及會立即開啟串流，以免 Slack 討論串陷入沉默；若隨後的回合完全沒有產生文字，就會用一條簡短說明結束同一張卡片，而不是再發一條訊息。在一個從未開啟過串流的空間（沒有卡片，或串流已被拒絕）上，沒有文字的回合仍會發出一條訊息，攜帶已完成的卡片和那條說明。
 
-Streamed and posted cards are different payloads:
+以串流傳送的卡片與發出的卡片是兩種不同的載荷：
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| 形式       | 形態                                                 | 文字                                            |
+| ---------- | ---------------------------------------------------- | ----------------------------------------------- |
+| 以串流傳送 | `plan_update` 加上以 `id` 為鍵的 `task_update` 分塊   | 純字串，每塊上限 256 個字元                     |
+| 發出       | 一個 `plan` 區塊，包裹以 `task_id` 為鍵的 `task_card` | 富文字                                          |
 
-Failure handling:
+失敗處理：
 
-| Situation                                    | Behavior                                                                                                                    |
+| 情況                                         | 行為                                                                                                                        |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| 提供方在追加時拒絕卡片                       | 該追加會立即在不帶卡片的情況下重試；文字仍會即時到達，而在整條連線的生命週期內卡片都被放棄                                  |
+| 提供方也拒絕了文字                           | 串流會被關閉，回覆整體發出                                                                                                  |
+| 串流在部分回覆已到達後中斷                   | 串流會被關閉，且不會重新發出任何內容                                                                                        |
 
-See [Chat bridges](/zh-HK/手冊/概念/聊天橋接/) for why the payload is split this way.
+關於載荷為何這樣拆分，參見[聊天橋接](/zh-HK/手冊/概念/聊天橋接/)。
 
-### Setup, before there is a turn
+### 回合開始之前的初始化
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+卡片在提及被接受時開啟，此時尚未複製程式庫，也尚未產生第一個權杖；隨後的回合沿用同一張卡片和同一條串流。之後的敘述來自領域事件匯流排上的 `SpaceProvisioningChanged`——與桌面端佈建橫幅從空間列上讀到的進展完全相同。
 
-| Provisioning state          | Narration                                                      |
+| 佈建狀態                    | 敘述                                                           |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| 提及已被接受                | `Working on it…`                                               |
+| 步驟 `repo`                 | `Cloning <repo>…`                                              |
+| 步驟 `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| 步驟 `script`               | `Running the setup script for <repo>…`                         |
+| 步驟 `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`，尚無步驟    | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| 代理正在推理                | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+初始化敘述需要同時滿足以下四個條件：
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| 條件                                       |
+| ------------------------------------------ |
+| 提供方能夠渲染卡片                         |
+| 此連線上可使用串流                         |
+| 該空間有一個正在進行中的聊天請求           |
+| 該處尚未有卡片正在報告某個回合             |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+請求會一直處於進行中，直到某個回合開始或設定失敗。若 `ready` 事件發生時尚未有卡片開啟，代表這是一個已預熱的空間，會被保持靜默；而聊天中無人等待的佈建——在應用程式中開啟的對話，或在啟動時恢復的滯留對話——完全不產生卡片。
 
-## The `/open` bounce page
+## `/open` 跳轉頁
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+聊天產品在連結中只接受 `http(s)`，其他一概不行，因此行動呼籲無法直接寫出桌面應用程式的 scheme。
 
-| Property   | Value                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| 屬性   | 值                                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 路由   | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| 來源   | 由伺服器的公網 URL 推導（`ws` → `http`，`wss` → `https`）；回環位址會保留                                                                    |
+| 回應   | 一個很小的 no-store HTML 頁面，會導覽至 `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>`，並顯示一個手動按鈕               |
+| 驗證   | id 必須匹配 `[A-Za-z0-9_.-]{1,128}`；其他任何情況都是 404                                                                                    |
+| 存取   | 公開且惰性——它不讀取任何資料庫，因此不是存在性判定的依據；授權由它開啟的應用程式負責                                                          |
 
-## Bot profile fields
+## 機械人資料欄位
 
-| Field              | Limit       | Notes                                                                                             |
-| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| 欄位               | 限制              | 說明                                                                                                   |
+| ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| `appName`          | 1–35 個字元       | 預設為 `Control Center · <workspace name>`                                                             |
+| `botDisplayName`   | 1–80 個字元       | 預設為 `control-center`                                                                                |
+| `description`      | 不超過 140 個字元 |                                                                                                        |
+| `agentDescription` | 不超過 300 個字元 | 顯示在與機械人的私訊上方                                                                               |
+| `command`          | 不超過 32 個字元  | 正規化：移除開頭的斜線、轉為小寫、移除 `[^a-z0-9_-]`、留空則回退為 `cc`                                 |
+| `agentEnabled`     | —                 | 是否開放私訊／代理體驗                                                                                 |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+空白的輸入框代表「保持原樣」，而不是「清空」。這些限制是 Slack 的，也是所有被建模產品中最嚴格的一套。
 
-## Link codes
+## 連結代碼
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| 屬性     | 值                                                                                        |
+| -------- | ----------------------------------------------------------------------------------------- |
+| 長度     | 6 個字元                                                                                  |
+| 字母表   | `23456789ABCDEFGHJKLMNPQRSTVWXYZ`（不含 `0`/`O`、`1`/`I`、`U`）                           |
+| 有效期   | 15 分鐘                                                                                   |
+| 使用次數 | 一次                                                                                      |
+| 儲存     | 記憶體中——伺服器重啟會使尚未使用的代碼失效                                                |
+| 範圍     | 一個工作區和一個提供方；簽發新代碼會使該成員之前的一組失效                                |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+兌換時以不區分大小寫的方式比對。未知、已過期、屬於其他工作區和來自錯誤提供方的代碼，都會故意以完全相同的方式失敗。
 
-## Link methods
+## 連結方式
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| 方式 | 傳輸值  | 如何                                                                            |
+| ---- | ------- | ------------------------------------------------------------------------------- |
+| 代碼 | `code`  | 成員兌換了 `/cc link <code>`                                                    |
+| 電郵 | `email` | 提供方已驗證的電郵匹配到一位已是工作區成員的用戶                                |
 
-## RPC operations
+## RPC 操作
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+全部以工作區為範圍。伺服器是無狀態的，因此每次呼叫都會在 args 中攜帶自己的 `workspace_id`；分派器會在開啟任何資料庫之前，拒絕省略它的工作區範圍操作。憑證只會_進去_——狀態讀取從不回傳它們。
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| 操作                    | 種類        | 最低角色                                       | 操作類別                        |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | 對自己為 `member`，對任何其他人則為 `admin`     | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+讀取操作會從其種類繼承 `guest` 下限；沒有明確下限的變更操作需要 `member`。
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` 會根據機械人資料組裝出提供方的應用建立 URL。它不宣告任何操作類別，因為它不讀取任何密鑰，也不撥打任何連線——唯一的呼叫由用戶自己的瀏覽器發出。
 
-One reactive query completes the surface:
+一個回應式查詢補全了整個介面：
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| 查詢                  | 種類  | 發出                                                      |
+| --------------------- | ----- | --------------------------------------------------------- |
+| `chat.watchUserLinks` | watch | 名冊，每當有連結建立或移除時重新推送                      |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+它之所以存在，是因為連結發生在_另一_端：成員把一次性代碼輸入到機械人裏，因此客戶端的任何回應都無法把結果帶回來。設定中的名冊和已開啟的「連結我的帳戶」對話框都會跟隨它，一旦成員自己的連結建立，對話框就會切換為確認狀態。
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` 一律為呼叫者自己的身分簽發一組代碼。`chat.updateBotProfile` 僅在仍有剩餘步驟時（通常是重新安裝）才回傳 `remaining_step`；沒有該欄位代表這次編輯已生效。
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` 為每個提供的提供方回傳一個項目——描述符，以及在有連線狀態時的連線狀態。設定介面渲染的一切都來自該載荷，這正是新增一個提供方只是伺服器端變更的原因。
 
-## Storage
+## 儲存
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| 內容                       | 位置                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 連接憑證                   | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| 尚未完成的引導式設定       | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| 舊版 Slack 檔案            | `<dataDir>/<workspaceId>/slack_credentials.json` 和 `slack_app_setup.json`，讀取一次並原地遷移               |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+憑證存放在工作區資料庫旁邊，而不是裏面：刪除工作區會帶走它的聊天權杖，而 `workspace.export` 或備份只會複製 `workspace.db`——因此交給別人的工作區不會夾帶仍然有效的機械人權杖。寫入是原子的（暫存檔加上重新命名），並收緊為僅限擁有者存取。
 
-## Database tables
+## 資料庫表
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+兩者都存放在工作區資料庫中，而該資料庫帶有一份壓平的 v1 基線——因此跨工作區的讀取根本無法編譯。
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links`——一個外部對話 ↔ 一個 Control Center 空間：
 
-| Column                                                 | Notes                                                                      |
-| ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
-| `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
-| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
-| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+| 欄                                                     | 備註                                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `id`                                                   | UUID v4                                                                           |
+| `workspace_id`                                         | 工作區範圍                                                                        |
+| `provider`                                             | `ChatProvider.wire`                                                               |
+| `external_team_id`                                     | Slack 團隊 `T…`，對沒有此概念的提供方為空                                          |
+| `external_channel_id`                                  | Slack 頻道 `C…`、群組 `G…`、私訊 `D…`                                              |
+| `external_thread_id`                                   | Slack 討論串錨點；當整個對話就是錨點時（機械人私訊）為 null                        |
+| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                         |
+| `created_by_user_id`、`created_at`、`last_activity_at` |                                                                                   |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+在 `(workspace_id, provider, external_channel_id, external_thread_id)` 上唯一，並以一個部分索引對 null 討論串 id 施加同樣的約束（SQLite 把 NULL 視為彼此不同）。
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links`——一個外部成員 ↔ 一個 Control Center 用戶：
 
-| Column                                 | Notes                                           |
-| -------------------------------------- | ----------------------------------------------- |
-| `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
-| `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
-| `linked_at`                            |                                                 |
+| 欄                                     | 備註                                             |
+| -------------------------------------- | ------------------------------------------------ |
+| `id`                                   | UUID v4                                          |
+| `workspace_id`                         | 工作區範圍                                       |
+| `provider`                             | `ChatProvider.wire`                              |
+| `external_team_id`、`external_user_id` | Slack 成員 `U…`                                  |
+| `user_id`                              | Control Center 用戶（全域，因此沒有外鍵）        |
+| `method`                               | `code` 或 `email`                                |
+| `linked_at`                            |                                                  |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+在 `(workspace_id, provider, external_team_id, external_user_id)` 和 `(workspace_id, provider, user_id)` 上唯一——兩個方向的歸屬都是單值的，而同一個人可以在多個提供方上建立連結。
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+連結是身分解析，而**不是**存取授權：成員身分會在每個入站事件上重新檢查，因此指向一個後來已被移除之人的連結會解析為一次拒絕。
 
-## Space kind and message metadata
+## 空間類型與訊息中繼資料
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+橋接空間在建立時會使用提供方的 `SpaceKind`（`slack`）。它的行為與面向普通人的空間一樣——像 `topic` 一樣發出通知和分區——而 `isExternalChat` 是每種行為（鏡像、徽章、保留）都會經過的檢查。
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+橋接帶進來的每條訊息都帶有一個 `metadata['chat']` 戳記：
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+這個戳記同時也是回聲防護：出站鏡像會跳過任何帶有它的訊息，正是這一點阻止了入站聊天訊息被直接原樣發回去。
 
-## Relay behavior
+## 轉發行為
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| 行為                                | 細節                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 向外轉發的內容                      | 只有代理的**文字**，加上任務卡片的狀態行。推理文字和工具輸出留在 Control Center 中                               |
+| 串流節奏                            | 回合執行期間節流為每秒刷新一次；卡片和它所解釋的文字在同一次呼叫中傳輸                                          |
+| 在 Control Center 中輸入的人類訊息  | 鏡像到已連結的討論串，並以作者的顯示名稱作為前置詞                                                              |
+| 空白回合                            | 以一條簡短說明回報（執行失敗、被中斷，或在其回合上限處停止），而不是沉默                                        |
+| 去重                                | 以提供方自己的事件 id 為鍵；記住最近 512 條                                                                     |
+| 入口代理                            | 新的已橋接對話會喚醒工作區的 CEO 代理，否則喚醒其第一個代理，再沒有則誰也不喚醒                                  |
+| 空間命名                            | Slack 頻道討論串為 `#channel · <request>`，私訊為 `Slack DM · <request>`，標題上限為 48 個字元                  |
+| 故障隔離                            | 單一壞事件絕不會令橋接停擺；連線會繼續服務其他所有對話                                                          |
 
-## See also
+## 另請參閱
 
-- [Set up Slack integration](/zh-HK/手冊/操作指南/slack-整合/)
-- [Link your Slack account](/zh-HK/手冊/操作指南/連結聊天帳戶/)
-- [Customize the chat bot](/zh-HK/手冊/操作指南/自訂聊天機械人/)
-- [Chat bridges](/zh-HK/手冊/概念/聊天橋接/)
-- [Guardrails](/zh-HK/手冊/概念/護欄/) for the action classes the ops declare
+- [設定 Slack 整合](/zh-HK/手冊/操作指南/slack-整合/)
+- [連結你的 Slack 帳戶](/zh-HK/手冊/操作指南/連結聊天帳戶/)
+- [自訂聊天機械人](/zh-HK/手冊/操作指南/自訂聊天機械人/)
+- [聊天橋接](/zh-HK/手冊/概念/聊天橋接/)
+- [護欄](/zh-HK/手冊/概念/護欄/)——了解這些操作所宣告的操作類別

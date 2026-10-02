@@ -1,96 +1,99 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: ڈیوائس پیئر کریں
+description: اپنے فون (یا دوسرے براؤزر یا ڈیسک ٹاپ) کو اپنے Control Center سرور کے ساتھ پیئر کریں تاکہ آپ فلیٹ کو دور سے فالو کر سکیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) for how the link
-works and its security model.
+یہ گائیڈ دکھاتی ہے کہ فون کو Control Center کے ساتھ کیسے پیئر کریں، تاکہ آپ
+پیغامات اور ٹکٹس کہیں سے بھی پڑھ اور جواب دے سکیں۔ یہی فلو دوسرے براؤزر یا
+ڈیسک ٹاپ ایپ کو بھی پیئر کرتا ہے۔ لنک کیسے کام کرتا ہے اور اس کا سیکیورٹی
+ماڈل کیا ہے، یہ
+[ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/) میں دیکھیں۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- آپ کے سرور سے منسلک ایک ڈیسک ٹاپ یا ویب کلائنٹ اور ایک سیٹ اپ ورک اسپیس۔ پیئرنگ کے عمل کے لیے مکمل کلائنٹ درکار ہوتا ہے، اس لیے پیئر شدہ فون کبھی کسی دوسری ڈیوائس کو پیئر — یا منسوخ — نہیں کر سکتا۔
+- سرور اُس ڈیوائس سے قابلِ رسائی ہو جسے آپ پیئر کر رہے ہیں۔ ایک ہی نیٹ ورک پر یہ خود بخود چل جاتا ہے؛ دور سے بروکرڈ ریلے ٹریفک لے جاتا ہے۔ اگر پینل QR یا اسناد کے بجائے **پہنچ سے باہر** دکھائے تو پہلے کوئی راستہ شائع کریں — **ترتیبات → سرور → کنکشن اور اسٹیٹس** پر ٹنل آپٹ اِن (**یہ سرور شیئر کریں**)، یا سرور کا `--public-url` (دیکھیں [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/))۔
+- فون کے لیے: کچھ انسٹال کرنے کی ضرورت نہیں۔ QR **Remote** ویب ایپ کھولتا ہے (بطور ڈیفالٹ [remote.usectrl.dev](https://remote.usectrl.dev/))۔
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**خود میزبانی۔** Remote اور ریلے بروکر اس ریپو میں اوپن سورس ہیں: فون ایپ
+(`apps/cc_remote`، ایک Flutter ویب PWA جسے آپ اپنے `wrangler.jsonc` کے ذریعے
+Cloudflare Pages پر، `docker/cc_remote` nginx ایمیج پر، یا HTTPS کے ساتھ کسی بھی
+اسٹیٹک ہوسٹ پر ڈیپلائے کر سکتے ہیں — سروس ورکرز اور IndexedDB سیکیور کانٹیکسٹ
+تک محدود ہیں) اور ریلے (`apps/cc_signaling_server`، ایک واحد اسٹیٹ لیس Dart
+بائنری جو کوئی ایپ ڈیٹا نہیں رکھتا اور پیئرنگ سیکرٹ کبھی نہیں دیکھتا — یہ صرف
+اینڈ ٹو اینڈ سیل شدہ فریمز فارورڈ کرتا ہے)۔ بلڈ اور رن کے مراحل کے لیے ان کے
+READMEs دیکھیں۔
 
-## Step 1: Open the pairing panel
+## مرحلہ 1: پیئرنگ پینل کھولیں
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+**ترتیبات → آپ → آپ کی ڈیوائسز** کھولیں۔ **آپ کی ڈیوائسز** سیکشن اس سرور پر آپ کے
+اکاؤنٹ سے پیئر شدہ کلائنٹس کی فہرست دکھاتا ہے۔ (سرور کا مالک سرور کی ہر ڈیوائس
+دیکھتا ہے؛ باقی سب صرف اپنی ڈیوائسز دیکھتے ہیں۔)
 
-## Step 2: Pair a new client
+## مرحلہ 2: نیا کلائنٹ پیئر کریں
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+صفحے کے ہیڈر میں **نیا کلائنٹ پیئر کریں** پر کلک کریں، اسے کوئی لیبل دیں
+(مثلاً "میرا فون")، قسم منتخب کریں — **ویب براؤزر**، **ڈیسک ٹاپ ایپ**، یا
+**فون** — اور **پیئر کریں** پر کلک کریں۔
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- **فون** کے لیے ایک QR کوڈ ظاہر ہوتا ہے۔ اسے فون کے کیمرے سے اسکین کریں، یا لنک کاپی کر کے کسی بھی براؤزر میں کھولیں۔ یہ Remote ایپ کو آپ کے سرور کی طرف اشارہ کرتا ہے اور اسناد ساتھ لے جاتا ہے۔
+- **براؤزر** یا **ڈیسک ٹاپ** کے لیے، دکھایا گیا لنک (یا ڈیوائس ID اور پیئرنگ کلید) نئے کلائنٹ میں کاپی کریں۔ ایک ٹیپ والا لنک صرف اُس وقت ملتا ہے جب آپ ویب کلائنٹ سے پیئر کر رہے ہوں، کیونکہ ڈیسک ٹاپ بائنری کے پاس ایسا لنک بنانے کے لیے کوئی ویب اوریجن نہیں ہوتا۔
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+فون کا QR اور وہ لنک جو CLI پر `cc_server pair --client-url` پرنٹ کرتا ہے،
+**مختلف پے لوڈز ہیں اور ایک دوسرے کے متبادل نہیں**: CLI والا لنک ویب کلائنٹ کے
+کنیکٹ فارم کو بھرتا ہے، جبکہ یہ QR Remote PWA کے لیے سرور کا مکمل کنکشن
+ڈسکرپٹر اور شناخت کی فنگر پرنٹ ساتھ لے جاتا ہے۔
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+فون کی طرف، پیئرنگ لنک کھولنے سے خاموشی سے پیئرنگ نہیں ہوتی۔ Remote سرور کا
+اشتہار کردہ نام دکھاتا ہے اور کچھ بھی محفوظ کرنے سے پہلے آپ سے تصدیق مانگتا ہے،
+اس لیے جعلی لنک ایپ کو کسی اور کے سرور پر ہائی جیک نہیں کر سکتا۔
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[اسکین شدہ QR فوراً رسائی دے دیتا ہے]
+کوئی زیرِ التوا پھر منظوری والا مرحلہ نہیں: جاری کردہ ڈیوائس بنتے ہی فعال ہو جاتی
+ہے اور کنیکٹ گیٹ صرف یہ چیک کرتا ہے کہ اسناد فعال اور غیر منقضی ہیں۔ QR اور
+پیئرنگ کلید کو پاس ورڈ کی طرح سمجھیں اور جو چیز آپ دینا نہیں چاہتے تھے اسے منسوخ
+کر دیں۔
 :::
 
-## Manage paired devices
+## پیئر شدہ ڈیوائسز منظم کریں
 
-From **Settings → You → Your devices** you can:
+**ترتیبات → آپ → آپ کی ڈیوائسز** سے آپ یہ کر سکتے ہیں:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- کسی ڈیوائس کا **نام بدلیں**
+- کسی ایسی ڈیوائس کو **منسوخ کریں** جس پر آپ کو مزید بھروسا نہیں۔ منسوخی اس کی اسناد تباہ کر دیتی ہے اور اس کا لائیو سیشن چند سیکنڈ میں ختم کر دیتی ہے، چنانچہ دوبارہ کنیکٹ کرنے پر رسائی خود بخود مسترد ہو جاتی ہے
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+گمشدہ یا تبدیل شدہ فون کے لیے منسوخی ہی درست اقدام ہے۔ ڈیوائس کی نظر سے یہ
+فوری اور ناقابلِ واپسی ہے۔
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+اس پینل سے جاری کردہ اسناد وقت تک محدود ہیں: یہ جاری ہونے کے 30 دن بعد ختم ہو
+جاتی ہیں اور اس کے بعد کنیکٹ گیٹ انہیں مسترد کر دیتا ہے۔ کمانڈ لائن پر
+`cc_server pair` سے جاری کردہ اسناد کی **کوئی میعاد ایکسپائری نہیں ہوتی** — جس
+مشین کے لیے یہ بنی تھی وہ ریٹائر ہونے پر اسے خود ہاتھ سے منسوخ کر دیں۔
 
-## Switch workspaces from the phone
+## فون سے ورک اسپیسز تبدیل کریں
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+پیئر شدہ فون ڈیسک ٹاپ سے آزادانہ طور پر ورک اسپیسز کے درمیان تبدیل ہو سکتا ہے۔
+فون ہر کال کے ساتھ ورک اسپیس بھیجتا ہے اور سرور ہر کال پر اُس ورک اسپیس میں آپ
+کی رکنیت اور کردار چیک کرتا ہے — لہٰذا فون صرف انہی ورک اسپیسز تک پہنچتا ہے جن
+کے آپ رکن ہیں اور وہاں تبدیلی کرنے سے ڈیسک ٹاپ پر دکھائی دینے والی چیزوں پر کوئی
+فرق نہیں پڑتا۔
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+فون سیشن مزید ایک چھوٹی سی اجازت یافتہ فہرست تک محدود ہے جس میں زیادہ تر پڑھنے
+والے ٹولز شامل ہیں: یہ ٹکٹس، ایجنٹس، اسپیسز، پیغامات اور فیڈ مضامین کی فہرست اور
+مطالعہ کر سکتا ہے اور کسی ٹکٹ کو اپ ڈیٹ یا تفویض کر سکتا ہے، کسی اسپیس میں پیغام
+بھیج سکتا ہے اور کسی مضمون کو پڑھا ہوا یا محفوظ شدہ نشان زد کر سکتا ہے۔ اس فہرست
+سے باہر کی کوئی بھی چیز سرور کے ڈسپیچر تک پہنچنے سے پہلے مسترد کر دی جاتی ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): make the server reachable in the first place
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): point a full client at it
-- [Use spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/): what you'll mostly do from the phone
-- [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/): triage from the road
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): سب سے پہلے سرور کو قابلِ رسائی بنائیں
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): مکمل کلائنٹ کو اُس کی طرف اشارہ کریں
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/): جو آپ فون سے زیادہ تر کریں گے
+- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/): راستے میں ٹرائیج کریں
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)

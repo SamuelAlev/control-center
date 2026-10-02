@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Lệnh slash
+description: Mọi lệnh bạn có thể gõ trong trình soạn, nó làm gì và chạy ở đâu.
 slug: vi-VN/so-tay/tham-chieu/lenh-slash
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Các lệnh được gõ trong trình soạn của một space. Chúng chia thành ba nhóm theo nơi chúng có hiệu lực, và sự khác biệt này rất quan trọng: một lệnh **cục bộ** không bao giờ được truyền đi dưới dạng tin nhắn, nên nó không xuất hiện trong bản ghi và cũng không tới được agent nào.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Nơi nó chạy       | Điều đó nghĩa là gì                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| **Cục bộ**        | Được xử lý trong máy khách (hoặc một thao tác máy chủ do máy khách khởi tạo). Lệnh không bao giờ được truyền đi dưới dạng tin nhắn, nên không agent nào thấy nó. |
+| **Phía máy chủ**  | Một lần gọi mô hình phía máy chủ về cuộc hội thoại. Cuộc hội thoại không bị thay đổi. |
+| **Điều phối**     | Đặt một chế độ hoặc chỉ thị cho lượt chạy mà tin nhắn khởi động.                    |
 
 ---
 
-## Directing a run
+## Điều hướng một lượt chạy
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Cục bộ → điều phối.** Bật chế độ kế hoạch cho cuộc hội thoại: một worktree hoàn toàn chỉ đọc và bề mặt công cụ bị giới hạn ở `read`. Sản phẩm giao nộp của agent là một kế hoạch, không phải một chỉnh sửa. Một `/plan` trần chỉ đảo chế độ và không bao giờ được truyền đi dưới dạng tin nhắn; khi có prompt, phần còn lại của dòng chính là thứ khởi động lượt chạy.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Điều phối.** Khởi động một mục tiêu tự chủ mà bộ giám sát mục tiêu điều phối lại qua các phân đoạn và lần khởi động lại.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Gõ `/goal` cùng văn bản trước sẽ mở **buổi phỏng vấn mục tiêu** — một lượt ngắn từ chối chấp nhận bản nháp cho đến khi có đủ cả năm thứ: tiêu chí thành công mà một bộ đánh giá có thể phân định mà không cần phán đoán, một lệnh xác minh chính xác, một trần số lần thử, ranh giới phạm vi và các điều kiện dừng. Mỗi bước đều đưa ra *Bỏ qua và chạy như đã viết*: buổi phỏng vấn là một mặc định, không phải một cổng chặn.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` và `/goal drop` không phải là lệnh slash. Tạm dừng, tiếp tục và dừng nằm trong danh sách mục tiêu của cuộc hội thoại ở thanh bên. Các cờ khởi đầu trên chính mục tiêu là `--budget <dollars>`, `--max <N>` (ngân sách lượt chạy) và `--days <N>` (hạn chót). Một mục tiêu đã chạm trần chi phí chỉ tiếp tục được bằng cách nâng trần đó, từ chính điều khiển ở thanh bên.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Vì sao nó lại chen ngang]
+Mục tiêu tự chủ là nơi duy nhất mà một bản giao việc mơ hồ thật sự tốn kém. Lượt chạy làm việc hàng giờ cho một mục tiêu mà không ai định nghĩa "xong" là gì, rồi báo cáo thành công theo cách hiểu của chính nó. Năm câu hỏi rẻ hơn một lượt chạy qua đêm kết thúc bất cứ lúc nào nó thấy là kết thúc.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Điều phối.** Làm việc lặp đi lặp lại cho đến khi hoàn tất. Nhận một giới hạn: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Một token *trông* như một giới hạn (bắt đầu bằng một chữ số hoặc một dấu) mà phân tích cú pháp thất bại là một lỗi cứng. Văn xuôi thì vẫn là văn xuôi, nên `/loop keep going until the tests pass` là một vòng lặp không giới hạn với một prompt nội tuyến chứ không phải một lần phân tích sai.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/).
+**Điều phối.** Biến phiên làm việc thành một **người điều khiển**: công cụ của chính nó hạ xuống còn `read` cộng năm động từ worker, và các worker nền làm phần chỉnh sửa. Xem [Điều khiển worker nền](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Worker không bao giờ sống lâu hơn chế độ — thoát khỏi chế độ sẽ dừng tất cả chúng.
 
 ---
 
-## Managing context
+## Quản lý ngữ cảnh
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Cục bộ → máy chủ.** Gộp lịch sử cũ hơn vào một bản tóm tắt được neo và tiếp tục trên ngữ cảnh đã nén. Không có tham số hướng tới mô hình: lệnh không bao giờ được truyền đi dưới dạng tin nhắn, và lượt nén không nhận gợi ý trọng tâm.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Cục bộ → máy chủ.** Loại bỏ nội dung nặng **mà không** tóm tắt: không gọi mô hình, giữ lại mọi từ, chỉ khối lượng lớn mà không ai định đọc lại bị xóa trắng.
 
-| Target        | Drops                             |
+| Đích          | Nội dung bị loại bỏ               |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Kết quả công cụ cũ không có gì đáng chú ý (mặc định) |
+| `images`      | Ảnh chụp màn hình cũ, giữ lại phần văn bản của chúng |
+| `all`         | Cả hai                            |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Đây là lối thoát cho tình huống "ngữ cảnh của tôi phình to nhưng tôi không muốn một bản tóm tắt".
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Cục bộ.** Mở trình khám phá ngữ cảnh cho agent của cuộc hội thoại này trong một tab
+riêng: mọi phân đoạn và phần của cửa sổ ngữ cảnh của nó — prompt hệ thống, skill,
+tệp ngữ cảnh, lược đồ công cụ, lịch sử và hình ảnh — cùng mức chi phí của từng phần và
+nội dung nguyên văn đằng sau nó.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Tab được khóa theo cặp (space, agent), nên chạy lệnh hai lần sẽ tập trung lại một
+tab thay vì chồng thêm các bản sao của cùng một phân tích.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Trong một space có **nhiều hơn một agent**, một `/context` trần sẽ mở cửa sổ mà
+đồng hồ đo ngữ cảnh trên thanh tiêu đề đang đọc — bất kể agent nào làm việc ở đây gần nhất, tức là
+agent có tin nhắn nằm ở cuối vệt hội thoại — và tab được dán nhãn
+`Context · <name>` để cho biết đó là của ai. Gõ tên một agent khác để chuyển: `/context qa` (dấu `@` là tùy chọn). Tên được gõ
+phân giải chính xác, không bao giờ mờ: hai agent giữ hai cửa sổ khác nhau, nên một
+lần khớp gần đúng mở nhầm cửa sổ kia sẽ là một câu trả lời trông có vẻ hợp lý cho một
+câu hỏi bạn không hề hỏi.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Trình khám phá tương tự nằm sau chip đồng hồ đo ngữ cảnh trên thanh tiêu đề của space, chip này
+đi theo chính agent đó — lệnh và chip không bao giờ có thể bất đồng về
+ý nghĩa của "ngữ cảnh" ở đây.
 
 ---
 
-## Asking about the conversation
+## Hỏi về cuộc hội thoại
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Những lệnh này tốn một lần gọi mô hình và **không bao giờ thay đổi cuộc hội thoại**. Lượt thật tiếp theo của agent thấy đúng những gì nó vốn sẽ thấy, và đó chính là toàn bộ giá trị của việc hỏi.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Phía máy chủ.** Viết một tài liệu chuyển giao cho bất kỳ ai tiếp nhận công việc từ đầu: nhiệm vụ là gì, đã học được gì, còn lại những gì.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Phía máy chủ.** Trả lời một câu hỏi về công việc đến giờ mà không thêm câu hỏi hay câu trả lời vào bản ghi.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Hai lệnh, một cách triển khai]
+Cả hai cùng một dạng — lấy cuộc hội thoại nguyên trạng, hỏi một câu về nó, không lưu lại phía nào. Được triển khai một lần để chúng không thể trôi dạt thành hai quan niệm khác nhau về "ngữ cảnh đến giờ".
 :::
 
 ---
 
-## Navigating and exporting
+## Điều hướng và xuất
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/vi-VN/so-tay/huong-dan-thuc-hanh/nhanh-hoi-thoai/).
+**Cục bộ.** Mở trình điều hướng nhánh: nơi cuộc hội thoại rẽ nhánh, nó đang ở đường nào và cách quay lại đường bạn đã rời bỏ. Xem [Nhánh một cuộc hội thoại](/vi-VN/so-tay/huong-dan-thuc-hanh/nhanh-hoi-thoai/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Cục bộ.** Ghi cuộc hội thoại ra một tệp HTML khép kín — thẻ công cụ thu gọn được, không có stylesheet, không có script, không có máy chủ ảnh. Nằm trong `Documents/ControlCenter/exports/` trên máy tính để bàn và được tải xuống trên web.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Cục bộ.** Sao chép bản ghi vào clipboard dưới dạng markdown, với các lời gọi công cụ trong những khối thu gọn được. Phần suy luận bị loại trừ có chủ đích: một bản ghi được dán vào báo cáo lỗi là để con người đọc.
 
 ---
 
-## Everything else
+## Mọi thứ còn lại
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Cục bộ.** Xem và chỉnh sửa danh sách việc cần làm được lưu của cuộc hội thoại. Một `/todo` trần sẽ mở trình chỉnh sửa. Các lệnh con: `append`, `start`, `done`, `drop` (bí danh `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Điều phối.** Áp dụng một skill đã cài. Các skill nằm dưới tiền tố `skill:` riêng của chúng nên chúng không dùng chung không gian tên với các lệnh tích hợp sẵn — nếu không có điều đó, một skill tên là `plan` sẽ vĩnh viễn không thể gọi được.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Điều phối.** Bất kỳ tệp markdown nào nằm trong `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` hoặc `.opencode/commands` trong kho mã. Một tệp lồng nhau `foo/bar.md` cũng gọi được bằng `foo:bar`.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Tạo mẫu: `$1`, `$@`, `$@[start:length]` và `$ARGUMENTS`. Frontmatter có thể đặt `description` (tự động hoàn thành của trình soạn). `allowed-tools` và `model` được phân tích từ tệp nhưng hiện tại việc gọi một lệnh người dùng chỉ thay tham số vào phần thân — chúng không thay đổi mô hình hay bề mặt công cụ của lượt chạy.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Một lệnh do người dùng tạo sẽ thắng một skill cùng tên — đó là lối tắt mà một con người cố ý gọi kèm tham số.
 
 ---
 
-## Magic keywords
+## Từ khóa ma thuật
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Không phải lệnh. Một từ viết thường đứng riêng ở bất kỳ đâu trong prompt sẽ gắn một chỉ dẫn ẩn cho lượt đó.
 
-| Word          | Effect                                                             |
+| Từ            | Tác dụng                                                          |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Nỗ lực suy luận tối đa cho lượt đó                                 |
+| `orchestrate` | Ủy thác công việc độc lập song song và xác minh từng giai đoạn      |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Bộ so khớp cố ý nghiêm ngặt về ranh giới. `orchestrate,` khớp; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` và `orchestrate()` thì không, và các khối mã có hàng rào, đoạn nội tuyến cùng các phần XML được che đi trước. Nếu không như vậy, việc dán một vết ngăn xếp sẽ làm thay đổi cách agent hành xử.
 
 ---

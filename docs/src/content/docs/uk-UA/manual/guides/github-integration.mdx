@@ -1,166 +1,173 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Налаштувати інтеграцію GitHub
+description: Увійдіть у GitHub, щоб працювали поверхня PR, реєстрація репозиторіїв і запуски агентів.
 slug: uk-UA/керівництво/практичні-посібники/інтеграція-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/uk-UA/керівництво/практичні-посібники/підключити-хост-коду/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Цей посібник охоплює частини налаштування, специфічні для GitHub. GitHub — один
+із трьох підтримуваних хостингів коду; див.
+[Підключити хост коду](/uk-UA/керівництво/практичні-посібники/підключити-хост-коду/)
+про підключення GitLab чи Bitbucket і про те, як робочий простір поєднує їх.
 
-## Prerequisites
+## Передумови
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Обліковий запис GitHub із доступом до репозиторіїв, з якими хочете працювати
+- Або зареєстрований для вашого сервера GitHub App (див.
+  [Створити GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)), щоб ви могли **увійти**, **або**
+  персональний токен доступу з `repo` і `read:org`, який можна вставити
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Облікові дані живуть на сервері й прив’язані до вас]
+Нічого не зберігається на машині, з якої ви друкуєте. Ваші облікові дані тримає
+`cc_server`, з прив’язкою до вашого ідентифікатора користувача, і кожен пристрій,
+з якого ви входите, користується ними — комп’ютер, веб і телефон. Інший учасник
+того самого сервера не може їх прочитати, а вхід для них — це те, що вони
+роблять самі.
 :::
 
-## Sign in with GitHub
+## Увійти через GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**device flow**: GitHub показує вам короткий код, ви підтверджуєте його на
+github.com, і сервер отримує облікові дані — без URL зворотного виклику, без
+порту, нічого не треба відкривати назовні. Доступний завжди, коли на сервері є ID
+клієнта, — офіційна збірка вже його містить.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Перейдіть у **Налаштування → Робочий простір → Профіль і ідентичність → Хостинг коду** (або
+   перший крок початкового налаштування)
+2. У рядку **GitHub** натисніть **Увійти через GitHub**
+3. У діалоговому вікні з’явиться код із восьми символів і відкриється
+   [github.com/login/device](https://github.com/login/device) у вашому браузері.
+   Код уже в буфері обміну
+4. Вставте його, підтвердьте застосунок і поверніться. Рядок сам зміниться на
+   «Ви увійшли як _your-username_»
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Діалогове вікно можна закрити, поки ви завершуєте справу в браузері — сервер
+продовжує опитувати, доки код не спливе (приблизно 15 хвилин), тож вхід усе одно
+зарахується.
 
-## Or paste a token
+## Або вставте токен
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Запасний варіант, коли на сервері немає застосунку, коли застосунок не
+встановлено на потрібному вам обліковому записі або коли ви просто волієте
+скористатися PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Перейдіть у **Налаштування → Робочий простір → Профіль і ідентичність → Хостинг коду**
+2. У рядку **GitHub** натисніть **Додати токен**
+3. Вставте токен із `repo` і `read:org` (класичний) і збережіть. **Fine-grained**
+   токену потрібні для репозиторію **Contents** і **Pull requests** (читання й
+   запис), а також **Checks** і **Actions** (читання).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Токен перевіряють одразу під час збереження, тож рядок може назвати обліковий
+запис, якому він належить. Натисніть **Від’єднатися**, щоб його прибрати.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Контрольна точка: рядок **GitHub** показує «Ви увійшли як _your-username_». Коли
+відповідають не ваші облікові дані, суфікс називає джерело — «через застосунок
+цього сервера» або «із середовища».
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Порядок пріоритету фіксований]
+Запит, зроблений від вашого імені, використовує **ваші** облікові дані й більше
+нічого — середовище — це облікові дані сервера, а не ваші, тож воно ніколи не
+підміняє вас. Робота, за якою не стоїть людина (вебхуки, опитування PR,
+синхронізація тікетів), використовує ідентичність застосунку сервера, потім
+облікові дані власника сервера, а потім середовище.
 :::
 
-## What the integration gives you
+## Що дає інтеграція
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Можливість             | Як                                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Список PR і подробиці  | GitHub REST API, із сервера, від ідентичності застосунку або ваших власних облікових даних                      |
+| Запуски перевірок      | GitHub Checks API                                                                                               |
+| Публікація рев’ю       | Крок, який запускає користувач і який публікує ваше рев’ю в PR                                                   |
+| Реєстрація репозиторію | Копію приймають, якщо її remote `origin` указує на github.com — або на gitlab.com / bitbucket.org              |
+| Доступ агента до GitHub | Брокер облікових даних впорскує токен як `GH_TOKEN` / `GITHUB_TOKEN`, з урахуванням можливостей агента         |
+| Сповіщення             | Серверне опитування вашої скриньки сповіщень GitHub породжує «Згадка в pull request» і «Запит на рев’ю»        |
+| Профілі користувачів   | Картки профілю при наведенні та фільтрування PR за автором                                                       |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Деякі шляхи використовують GraphQL API замість REST там, де це дешевше —
+активність гілки для вибору гілки під час створення PR і живий стан рев’ю, який
+вирішує, чи запит на рев’ю ще чинний.
 
-## Watch for GitHub outages
+## Стежте за збоями GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+У рядку заголовка з’являється індикатор стану, коли в провайдера проблеми, — це
+стосується GitHub, Claude, OpenAI і Kimi. **Поки все гаразд, він прихований** —
+присутність повідомляє про проблему, а не про її відсутність.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Натисніть індикатор, щоб відкрити висувну панель зі станом кожного провайдера та
+кнопкою оновлення. Статуси оновлюються самі кожні дві хвилини.
 
-## Know how agents act on GitHub
+## Знайте, як агенти діють у GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Агент отримує токен GitHub, лише якщо в нього ввімкнено **Дозволити виклики GitHub API** або
+  **Дозволити git push**. Див.
+  [Налаштувати політики пісочниці](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
+- Коміти, які створює агент, автором мають **самого агента** — ім’я для
+  відображення плюс ` (agent)`, за синтетичною адресою, прив’язаною до
+  ідентифікатора агента — і ніколи людину. Людину, яка зробила запит, зазначають
+  трейлером `Co-Authored-By`
+- Коли налаштовано GitHub App, брокер для кожного запуску карбує fine-grained
+  токени інсталяції з обмеженням на репозиторій і строком близько однієї години,
+  замість того щоб віддавати широкий токен. Інсталяцію визначають за
+  **власником** репозиторію запуску, тож один застосунок, установлений на кількох
+  облікових записах, правильно прив’язується до того, якого торкається запуск.
+  Без застосунку агенти отримують токен із середовища
+- Запуск, який попросив учасник, що ввійшов, діє від **ідентичності GitHub цього
+  учасника** — його облікові дані додають після середовища брокера, тож коміт чи
+  коментар, який агент робить для нього, приписують йому
 
-## Troubleshooting
+## Усунення несправностей
 
-### The PR list is empty and says GitHub is not connected
+### Список PR порожній і повідомляє, що GitHub не підключено
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+У вас немає облікових даних GitHub на цьому сервері. Увійдіть або вставте токен у
+розділі **Хостинг коду**. Репозиторіїв інших хостингів коду це не зачіпає —
+нічого не додають лише репозиторії GitHub.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Рядок пропонує «Додати токен», але не «Увійти через GitHub»
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+На сервері немає ID клієнта — це нормальний стан для збірки з вихідного коду,
+адже облікові дані вшито лише в офіційні збірки. Див.
+[Створити GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/): це займає близько двох хвилин
+і зробити це має лише власник сервера — один раз.
 
-### The sign-in dialog says the provider returned no device code
+### Діалогове вікно входу каже, що провайдер не повернув код пристрою
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App існує, але його прапорець **Device flow** вимкнено. Увімкніть його в
+налаштуваннях застосунку (General → Device flow) і спробуйте знову.
 
-### The row says "via this server's app" when I expected my own account
+### Рядок каже «через застосунок цього сервера», хоча я чекав на власний обліковий запис
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Ви не ввійшли; те, що ви бачите, — це відповідь ідентичності застосунку сервера.
+Натисніть **Увійти через GitHub** у цьому рядку.
 
-### A fine-grained PAT shows no merge button or check status
+### У fine-grained PAT немає кнопки злиття чи стану перевірок
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Токену потрібні **Contents** і **Pull requests** (читання й запис), а також
+**Checks** і **Actions** (читання). Змінивши його, вставте його знову в розділі
+Хостинг коду.
 
-### Adding a repo is rejected
+### Додавання репозиторію відхилено
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/).
+Для реєстрації потрібні всі три умови: шлях лежить усередині робочого дерева git,
+у нього є remote `origin`, і цей remote указує на підтримуваний хостинг коду
+(github.com, gitlab.com або bitbucket.org). Див.
+[Додати репозиторії до робочого простору](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/).
 
-### Everything stops working for a while after heavy use
+### Після інтенсивного використання все на якийсь час перестає працювати
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Це запобіжник на випадок обмеження частоти запитів. GitHub повідомляє про
+досягнення основного ліміту відповіддю `403` із заголовком
+`x-ratelimit-remaining: 0` і часом скидання; побачивши таку, клієнт локально
+відхиляє подальші запити, без мережевого звернення, доки не спливе вікно, — тож
+шквал повторних спроб не може поглибити ліміт. Тимчасові збої повторюють до трьох
+разів з експоненційною затримкою, поважаючи `retry-after`.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create the GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)
-- [Connect a code host](/uk-UA/керівництво/практичні-посібники/підключити-хост-коду/)
-- [Manage API keys](/uk-UA/керівництво/практичні-посібники/api-ключі/)
-- [Add repos to a workspace](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
-- [Review and merge a PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/)
-- [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
+- [Створити GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)
+- [Підключити хост коду](/uk-UA/керівництво/практичні-посібники/підключити-хост-коду/)
+- [Керувати API-ключами](/uk-UA/керівництво/практичні-посібники/api-ключі/)
+- [Додати репозиторії до робочого простору](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
+- [Перевірити й змерджити PR](/uk-UA/керівництво/практичні-посібники/перевірити-й-змерджити-pr/)
+- [Налаштувати інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)

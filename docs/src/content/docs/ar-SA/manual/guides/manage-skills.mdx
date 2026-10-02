@@ -1,129 +1,76 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: تثبيت المهارات وإدارتها
+description: أضف مستودعات GitHub مصادر للمهارات، وتصفّح كتالوجاتها، وثبّت المهارات أو حدّثها أو ألغِ تثبيتها عبر بوابة فحص مكافحة الفيروسات.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-المهارات
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+يبيّن هذا الدليل كيف تملأ مساحة عمل بمهارات من GitHub: تضيف مستودعًا مصدرًا، وتثبّت منه المهارات التي تريدها، وتبقيها محدَّثة مع الوقت.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/); this page stays
-on the doing.
+قبل أن تبدأ، هذا ما يلزم معرفته: **مستودع المصدر غير موثوق.** يكتب مالكه اسمه ووصفه وعدد نجومه. إشارة الأمان الوحيدة التي يثق بها Control Center هي حكم فحص مكافحة الفيروسات، وكل تثبيت يعبر هذا الحكم قبل أن يصل شيء إلى القرص أو إلى مطالبة وكيل. إن أردت التعليل، اقرأ [قسم المهارات في نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/)، وهذه الصفحة تبقى عند التنفيذ.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+تجد المهارات في **الإعدادات ← مساحة العمل ← المهارات** (`/workspaces/<id>/settings/workspace/skills`). نطاقها مساحة العمل: ما تثبّته هنا يخص مساحة العمل هذه وحدها. للصفحة علامتان: **المثبتة** (المهارات المحلية، ومنها محرّر **مهارة جديدة**) و**المصادر** (كتالوجات GitHub). كلتا عمليتي الكتابة تعبران بوابة الفحص نفسها.
 
-## Add a skill repository
+## إضافة مستودع مهارات
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. افتح **الإعدادات ← مساحة العمل ← المهارات** وانتقل إلى علامة تبويب **المصادر**.
+2. اضغط **إضافة مستودع**.
+3. الصق عنوان مستودع على GitHub، مثل `https://github.com/anthropics/skills`، ثم أكّد.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+يتحقق الخادم من أن المستودع موجود ومرئي ببيانات اعتماده، ثم يضيفه إلى الشريط الأيسر. لا يوجد متجر مُنتقى في الوسط: أي مستودع GitHub يصلح، فتقدير السمعة عليك. عدد النجوم قرينة، ولا يقوم مقام الضمان.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+مهارات المستودع هي المجلدات التي تحتوي `SKILL.md` (بعمق يصل إلى ثلاثة مستويات، إضافة إلى تخطيط سوق الإضافات في Claude `plugins/<plugin>/skills/<skill>`، مع تخطي أشجار التبعيات والمورّدين). إن أظهرت الشبكة لاحقًا أن المستودع بلا مهارات، فالمعنى أنه لا مجلد فيه يطابق اصطلاح المهارة.
 
-## Inspect a skill before installing
+## فحص مهارة قبل تثبيتها
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+اختر مستودعًا في الشريط، فتظهر مهاراته شبكة على اليمين، وفوقها حقل تصفية يضيّق الكتالوج بالاسم أو الوصف أو المعرّف. انقر بطاقة لفتح عرض التفاصيل. يعرض ثلاثة أشياء:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**، يُعرَض بصيغة markdown — ملف `README.md` في مجلد المهارة، أو متن `SKILL.md` حين لا يوجد README.
+- **معاينة الفحص** — الحكم (`pass` أو `warn` أو `quarantine`)، والقدرات التي يعلنها محتوى المهارة (تشغيل الصدفة، وكتابة الملفات، والوصول إلى الشبكة…)، وكل نتيجة سجّلها الماسح.
+- **عدد الملفات** — التثبيت يكتب مجلد المهارة كاملًا، لا `SKILL.md` وحده.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+تمسح المعاينة البايتات نفسها التي سيكتبها التثبيت، فالحكم الذي تراه هو الحكم الذي يناله التثبيت، ولا يُعاد الحكم من دونك.
 
-## Install a skill
+## تثبيت مهارة
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. افتح عرض تفاصيل المهارة.
+2. اقرأ حكم الفحص. مع حكم `warn` أو `pass`، اضغط **تثبيت**.
+3. مع حكم `quarantine` يبقى التثبيت معطّلًا حتى تضع علامة على **أفهم المخاطرة — التثبيت على أي حال**. يُسجَّل هذا التجاوز، ولا يُفترَض حصوله.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+يكتب التثبيت مجلد المهارة في مساحة العمل، ويسجّل تثبيت الإيداع في `skills-lock.json` (مستودع المصدر، والمسار، والإيداع الذي جاءت منه، وتجزئة المحتوى)، وتصير المهارة متاحة للوكلاء في مساحة العمل. البطاقة التي تحمل **الاسم مستخدم** تعني أن مهارة أخرى تملك هذا الاسم محليًا — ألغِ تثبيت تلك أولًا.
 
-## Update skills over time
+## تحديث المهارات مع الوقت
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+تحمل بطاقات المهارات المثبّتة شارات: **مثبتة**، أو **يتوفر تحديث** حين يصير المستودع على إيداع أحدث من الإيداع المُثبَّت. افتح عرض التفاصيل واضغط **تحديث** لإعادة الجلب عند الإيداع الجديد. يمر التحديث ببوابة الفحص نفسها التي يمر بها التثبيت — إن حُجرت النسخة الجديدة تُرفض المهارة، ويبقى الإصدار الذي عندك. تُحفَظ تجزئة الإصدار القديم في القفل مرجعًا للتراجع.
 
-## Uninstall a skill, remove a repository
+## إلغاء تثبيت مهارة، وإزالة مستودع
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**إلغاء التثبيت** (في عرض تفاصيل مهارة مثبّتة، أو **حذف** في علامة تبويب **المثبتة**) يزيل مجلد المهارة وسطر تثبيتها في القفل معًا — المهارة بعد إلغاء تثبيتها لا تخلّف شيئًا.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**إزالة مستودع** من الشريط تزيل الكتالوج وحده: المهارات التي ثُبِّتت منه تبقى مثبّتة ويستمر تحديثها، لأن سطر التثبيت يسجّل المستودع بالاسم لا بإحالة إلى مدخل المصدر. أعد إضافة المستودع إن أردت تصفّحه من جديد.
 
-## Invoke a skill
+## استدعاء مهارة
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+تُستدعى المهارات تحت نطاقها الخاص، فلا تتصادم مع أوامر الشرطة المائلة المضمّنة (`/plan` و`/goal` و`/loop` و`/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — مهارة مثبّتة في مساحة العمل هذه، أو مرفقة بالوكيل
+- `/skill:<repo>:<name>` — مهارة يشحنها مستودع مُخرَج في هذه المساحة
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+الاسم المجرّد، إن لم يكن أمرًا مضمّنًا، يظل يُحَل في الرسائل المكتوبة قبل وجود النطاق. `/skill:plan` هو ما يصل إلى مهارة اسمها `plan`، و`/plan` هو الأمر المضمّن دائمًا.
 
-## Repo-scoped skills
+## مهارات على نطاق المستودع
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+يستطيع المستودع المُخرَج أن يشحن مهاراته في `.agents/skills/` أو `.agent/skills/` أو `.claude/skills/` أو `.opencode/skills/` أو `skills/`. هذه **لا** تُثبَّت من هذه الصفحة. لا يحمل الوكيل إلا مهارات المستودع الذي يعمل فيه الآن، وتتبدل حين ينتقل. حقل الكتابة ليس محصورًا كذلك: يصل `/skill:<repo>:<name>` إلى أي مستودع في المساحة.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+تمر مهارات المستودع بالفحص المغلق عند الفشل نفسه (`pass` / `warn` / `quarantine`) قبل أن تصل بياناتها الأمامية إلى مطالبة. يُقبَل `warn`، ويُحجَب `quarantine`، بلا تجاوز للمشغّل على هذا المسار.
 
-See [Repo-scoped skills](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/#repo-scoped-skills) and
-[Slash commands](/ar-SA/دليل-المستخدم/مرجع/أوامر-الشرطة-المائلة/).
+انظر [مهارات على نطاق المستودع](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/#مهارات-على-نطاق-المستودع) و[أوامر الشرطة المائلة](/ar-SA/دليل-المستخدم/مرجع/أوامر-الشرطة-المائلة/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Chat with an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [الدردشة مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/)
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/)

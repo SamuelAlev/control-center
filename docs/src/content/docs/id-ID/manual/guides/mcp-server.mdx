@@ -1,45 +1,48 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Gunakan server MCP
+description: Arahkan klien MCP eksternal ke server alat Control Center, tetapkan token bearer, dan ketahui apa yang diekspos permukaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/server-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Panduan ini menunjukkan cara menghubungkan klien MCP eksternal — Claude Code,
+sebuah editor, MCP Inspector — ke server alat milik Control Center sendiri.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center mendaftarkan **110** alat dan menyajikannya melalui Model Context
+Protocol pada versi protokol `2024-11-05`. Seluruh keluarga alat yang mungkin
+Anda harapkan tidak ada: tidak ada alat rapat atau kalender dan tidak ada alat
+proyek.
 
-## Find the endpoint
+## Temukan endpoint
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Permukaan MCP berbagi listener utama `cc_server`. Tidak ada port MCP terpisah.
 
-| Endpoint | Method   | Purpose                                                  |
+| Endpoint | Metode   | Tujuan                                                   |
 | -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| `/mcp`   | `POST`   | Transport HTTP Streamable — inilah yang dipakai klien    |
+| `/mcp`   | `DELETE` | Akhiri sesi                                              |
+| `/sse`   | `GET`    | Aliran notifikasi yang dikirim server                    |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Jadi instalasi lokal bawaan berada di `http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Buka **Pengaturan → Server → Server MCP**
+2. Baca kartu **Server MCP** — kartu itu menunjukkan berjalan atau berhenti dan
+   port yang sedang didengarkannya
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Permukaan ini aktif secara bawaan pada instalasi baru, sehingga klien loopback
+berfungsi tanpa perlu mengutak-atik pengaturan. **Mulai saat aplikasi
+diluncurkan** mengontrol apakah permukaan itu kembali setelah mulai ulang;
+**Mulai** / **Berhenti** adalah kontrol sesi yang tidak mengubah preferensi
+tersebut.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Server ini mengikat loopback secara bawaan, sehingga endpoint-nya hanya dapat
+dijangkau dari mesin tempat `cc_server` berjalan kecuali Anda memulainya dengan
+`--bind any`.
 
-## Connect a client
+## Hubungkan klien
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Arahkan klien Anda ke endpoint HTTP Streamable. Bentuk konfigurasi yang tepat
+adalah urusan klien Anda; URL-nya sama saja.
 
 ```json
 {
@@ -54,41 +57,44 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code tidak akan mengambil ini dari `.mcp.json` proyek — ia menahan server
+MCP bercakupan proyek di balik prompt persetujuan yang tidak pernah dijawab oleh
+`claude -p` noninteraktif. Berikan konfigurasinya secara eksplisit:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` membuat Claude hanya memakai file itu, sehingga server yang
+sama tidak juga ditemukan dari proyek dan didaftarkan dua kali.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Titik periksa: minta klien menampilkan daftar alatnya. Anda semestinya melihat
+entri `mcp__*` yang mencakup tiket, space, memori, graf kode, dan tinjauan.
 
-## Serve MCP beyond the host
+## Layani MCP di luar host
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. Di **Pengaturan → Server → Server MCP**, pada baris **Token autentikasi**,
+   tekan **Atur** dan tempelkan token
+2. Kirimkan sebagai `Authorization: Bearer <token>` pada setiap permintaan
+   `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Permukaan tanpa token menolak setiap pemanggil non-loopback dengan 403. Itu
+memang fail-closed menurut desainnya: token itulah yang membuat layanan di luar
+host mungkin sama sekali.
 
-Token changes apply to the live surface immediately — no restart.
+Perubahan token langsung berlaku pada permukaan yang aktif — tanpa mulai ulang.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` menerima token di string kueri]
+Aliran notifikasi diperiksa tokennya seperti setiap rute lain, tetapi `EventSource`
+peramban tidak dapat mengirim header `Authorization` — jadi `/sse` juga menerima
+token sebagai `?token=<token>`. Tanpa token, ia menjawab 401.
 :::
 
-## Scope every call to a workspace
+## Batasi setiap panggilan ke satu ruang kerja
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Setiap alat yang menyentuh data bercakupan ruang kerja mewajibkan `workspace_id`
+dan panggilan tanpanya ditolak, bukan diselesaikan terhadap semacam ruang kerja
+"saat ini":
 
 ```json
 {
@@ -98,56 +104,60 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Id itu adalah id yang ada di peramban atau URL aplikasi Anda:
+`/workspaces/<workspace_id>/…`. Satu-satunya pengecualian adalah alat yang
+memang mencakup banyak ruang kerja, seperti `list_workspaces` dan alat umpan
+berita — umpan berita bersifat per pengguna dan agen tidak punya pengguna
+sendiri, sehingga alat-alat itu beroperasi pada feed milik pemilik server.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Alat bercakupan repo juga memeriksa bahwa repo tersebut ditautkan ke ruang kerja
+itu.
 
-## Know what the surface will refuse
+## Ketahui apa yang akan ditolak permukaan
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Gerbang mode.** Sebuah panggilan diselesaikan terhadap mode space agen
+  pemanggilnya, di sisi server. Agen dalam mode hanya baca tidak dapat mencapai
+  alat tulis dengan menghilangkan `space_id` — modenya dicari dari run aktifnya
+  sebagai gantinya.
+- **Pagar pengaman tindakan.** Alat yang mengubah keadaan mendeklarasikan kelas
+  efeknya dan melewati kebijakan yang sama dengan yang dipakai seluruh produk
+  lainnya. Lihat
+  [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/).
+- **Konfirmasi.** Sebagian alat destruktif menyusun muatan konfirmasi yang harus
+  disetujui sebelum panggilan berlanjut.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Katalog lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan — klien MCP
+eksternal menolak memanggil alat yang tidak ada dalam daftar cache-nya, jadi
+menyembunyikan alat justru merusaknya alih-alih merapikannya.
 
-## Troubleshooting
+## Pemecahan masalah
 
-### The client sees no tools
+### Klien tidak melihat alat apa pun
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Periksa kartu **Server MCP** menyatakan berjalan
+- Periksa portnya cocok dengan port `cc_server` Anda
+- Pada Claude Code, periksa Anda sudah memberikan `--mcp-config` dan
+  `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 403 dari mesin yang bukan server
 
-No bearer token is configured. Set one and send it.
+Tidak ada token bearer yang dikonfigurasi. Tetapkan satu dan kirimkan.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Panggilan alat gagal dengan "Missing or invalid argument: workspace_id"
 
-Add `workspace_id`. There is no implicit workspace.
+Tambahkan `workspace_id`. Tidak ada ruang kerja implisit.
 
-### A tool call is refused as unknown
+### Panggilan alat ditolak sebagai tidak dikenal
 
-[MCP tools](/id-ID/panduan-pengguna/referensi/alat-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[Alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/) mencantumkan katalognya.
+Panggil namanya persis seperti yang tertera di sana.
 
-## Related guides
+## Panduan terkait
 
-- [MCP tools](/id-ID/panduan-pengguna/referensi/alat-mcp/)
-- [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
+- [Alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/)
+- [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/)
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)
 
-## Related concepts
+## Konsep terkait
 
-- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/)
+- [Arsitektur](/id-ID/panduan-pengguna/konsep/arsitektur/)

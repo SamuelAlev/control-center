@@ -1,113 +1,124 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orkestrasi
+description: Bagaimana satu "permintaan besar" menjadi rencana seluruh tim yang Anda setujui sekali, lalu pipeline yang dihasilkan yang menjalankannya.
 slug: id-ID/panduan-pengguna/konsep/orkestrasi
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Satu agen bagus untuk satu hal. Sebagian permintaan lebih besar dari itu: "riset
+pasar untuk X dan tulis dokumen positioning", "kirim fitur ini dari awal sampai
+akhir", "audit modul ini dan perbaiki apa yang Anda temukan". **Orkestrasi**
+adalah cara Control Center menangani permintaan semacam itu: seorang orkestrator
+(biasanya agen CEO Anda) mengusulkan rencana seluruh tim, Anda menyetujuinya
+**sekali**, dan materializer deterministik mengubahnya menjadi pipeline yang
+mengerjakan pekerjaan tersebut.
 
-It sits between the two existing ways of getting work done:
+Ia berada di antara dua cara menyelesaikan pekerjaan yang sudah ada:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/) |
-| Encode a process you already know, by hand        | A [pipeline template](/id-ID/panduan-pengguna/konsep/pipeline/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Jika Anda ingin…                                     | Gunakan                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| Menyerahkan satu tugas ke satu agen                  | Sebuah [pesan di sebuah space](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/) |
+| Menyusun sendiri proses yang sudah Anda ketahui      | Sebuah [templat pipeline](/id-ID/panduan-pengguna/konsep/pipeline/)        |
+| Menyebut tujuan dan membiarkan tim menyusun rencananya | **Sebuah orkestrasi**                                        |
 
-## The shape of a proposal
+## Bentuk sebuah proposal
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Saat Anda memberi orkestrator sebuah tujuan, ia mengembalikan
+**`OrchestrationProposal`** yang terstruktur: rencana bertipe yang dapat
+divalidasi dan dijalankan aplikasi, bukan prosa bebas. Sebuah proposal memuat:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/id-ID/panduan-pengguna/konsep/tiket/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Tujuan**: permintaan tingkat tinggi Anda, yang dinyatakan ulang.
+- **Peran**: siapa yang mengerjakan. Setiap peran adalah **agen yang sudah ada**
+  yang Anda pilih, atau **rekrut baru** yang dibuat orkestrasi saat disetujui.
+- **Sub-tiket**: pekerjaannya, dipecah menjadi DAG berisi [tiket](/id-ID/panduan-pengguna/konsep/tiket/).
+- **Riset** _(opsional)_: fase riset yang berjalan lebih dulu dan memasok sisanya.
+- **Diskusi** _(opsional)_: satu putaran terbatas tempat setiap peran memposting
+  posisi terstruktur sebelum pekerjaan dimulai.
+- **Sintesis**: langkah terakhir yang menghasilkan hasil kerja.
+- **Anggaran**: batas biaya yang dinyatakan.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Anggaran bersifat anjuran]
+Batas biaya proposal dibandingkan dengan estimasi total rencana dan menandai
+rencana yang melebihi anggaran di bilah persetujuan _sebelum_ Anda menyetujuinya.
+Tidak ada yang membacanya setelah proses berjalan, jadi nilainya tidak
+menghentikan atau menggagalkan orkestrasi yang melewati batas. Kebijakan
+anggaran per agen dan per ruang kerja adalah mekanisme terpisah, dan itulah yang
+sebenarnya menghentikan pengeluaran.
 :::
 
-## Where you review it
+## Tempat Anda meninjaunya
 
-Two surfaces show the same orchestration.
+Dua permukaan menampilkan orkestrasi yang sama.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Kartu proposal** berada di percakapan yang menghasilkan rencana tersebut. Ia
+adalah satu pesan yang dirender ulang sepanjang siklus hidupnya — diusulkan,
+dijalankan, selesai — dengan tindakan setujui dan batalkan di dalamnya.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** adalah editornya: kanvas DAG, inspector node, laci revisi dan
+diff, serta bilah persetujuan yang membawa estimasi. Ia terbuka sebagai tab
+editor langsung dari kartu tersebut. Di sidebar memang sengaja tidak ada item
+"Rencana"; `/plans` dan `/plans/:kind/:id` tersedia sebagai deep link untuk
+berbagi.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Persetujuan hanya dapat dilakukan **operator**. Tidak ada alat MCP untuk itu:
+agen dapat mengusulkan (`propose_orchestration`), mengirim rencana
+(`submit_plan`), atau membuat instance playbook (`run_playbook`), tetapi hanya
+manusia yang menyetujui. Revisi yang dimulai agen juga dibatasi lajunya dengan
+jeda dua menit, sehingga loop perencanaan ulang akan menggabung alih-alih
+membanjiri umpan Anda.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Apa yang dapat Anda ubah sebelum menyetujui adalah apa yang ditampilkan
+inspector node: mengganti judul atau menulis ulang sub-tiket, mengubah **peran**
+yang memilikinya, menyambungkan ulang dependensinya, mengedit skema output-nya,
+atau menghapus node tersebut sepenuhnya. Node struktural (riset, diskusi,
+sintesis) dan node yang sudah dijalankan bersifat hanya baca. Anda tidak dapat
+menyematkan peran ke agen bernama tertentu, dan Anda tidak dapat mengedit
+anggaran dari editor.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Dua editor pada satu rencana diselesaikan dengan konkurensi optimistis, bukan
+penggabungan. Setiap edit membawa `base_revision` yang menjadi dasarnya; edit
+yang didasarkan pada revisi basi ditolak dengan "the plan moved on", bukan
+diam-diam menimpa milik orang lain. Memundurkan juga bukan penghapusan — ia
+menambahkan proposal lama sebagai revisi baru, sehingga garis waktu revisi hanya
+bertambah.
 
-## Honest estimates, or none
+## Estimasi jujur, atau tidak sama sekali
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Estimasi di bilah persetujuan dibangun dari riwayat proses yang benar-benar
+selesai untuk tiap peran, sebagai rentang interkuartil (p25–p75). Total biaya
+adalah **jumlah** node yang dapat diestimasi; durasi adalah **jalur kritis**
+melalui DAG, bukan penjumlahannya (cabang paralel saling tumpang tindih).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Node yang perannya **tidak punya riwayat proses selesai** melaporkan
+`sampleSize: 0` dan rentang null. Itu dirender persis seperti itu — tidak
+diketahui — tidak pernah sebagai nilai titik yang dibuat-buat, karena estimasi
+yang tidak dapat Anda percayai lebih buruk daripada tanpa estimasi. Jika
+sebagian node punya riwayat dan sebagian tidak, totalnya ditandai sebagian.
+Radius dampak muncul hanya jika node mendeklarasikan ref asal-usul `symbol` atau
+`file`; node tanpa itu tetap "tidak diketahui" alih-alih menyimpulkannya dari
+prosa.
 
-## One approval, then deterministic execution
+## Satu persetujuan, lalu eksekusi deterministik
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+Inilah ide intinya: **agen merencanakan; fungsi deterministik yang
+mengeksekusi.** Saat Anda menyetujui, `OrchestrationMaterializer`, fungsi murni
+tanpa LLM dan tanpa I/O, mengubah proposal menjadi [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/)
+sungguhan. Dengan proposal yang sama dan peran yang sudah diresolusi sama, ia
+selalu menghasilkan DAG yang sama. Itu penting karena pipeline yang dihasilkan
+mewarisi semua yang sudah dilakukan mesin secara cuma-cuma: penangguhan dan
+pelanjutan lintas restart, pemulihan dari crash, akumulasi biaya dan token per
+proses, serta UI detail proses.
 
-Approval also creates the scaffolding the work needs:
+Persetujuan juga membuat perancah yang dibutuhkan pekerjaan:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **merekrut** setiap peran yang ditandai baru (dan mencatat id agen yang
+  direkrut agar crash di tengah persetujuan dapat dilanjutkan tanpa rekrutan
+  ganda)
+- sebuah **tim** yang mengelompokkan peran-peran tersebut
+- sebuah **proyek** yang mencatat tiket induk
+- **templat pipeline + proses** yang menggerakkan semuanya
 
-## The lifecycle
+## Siklus hidup
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +126,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| Status         | Arti                                                                             |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | Rencana sudah siap dan menunggu satu persetujuan di muka dari Anda               |
+| `approved`     | Anda menyetujuinya; materialisasi sedang berjalan (rekrutan, tim, proyek, pipeline) |
+| `executing`    | Pipeline yang dihasilkan sedang berjalan: sub-tiket, diskusi, pekerjaan          |
+| `synthesizing` | Sub-tiket sudah selesai; langkah sintesis sedang menghasilkan hasil kerja        |
+| `completed`    | Selesai: tiket induk ditandai selesai dan hasil kerjanya diposting di space bersama |
+| `failed`       | Materialisasi gagal, atau proses pipeline yang dihasilkan gagal                  |
+| `cancelled`    | Anda membatalkannya                                                              |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
+Nomor **revisi** yang monoton melacak proposal saat orkestrator merevisinya
+selagi statusnya masih `proposed`; aplikasi mencatat revisi mana yang Anda
+setujui. `propose_orchestration` menolak revisi begitu statusnya bukan lagi
 `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Orkestrasi selalu dibuka terhadap sebuah **tiket induk** dan berbagi satu
+**space** diskusi, sehingga seluruh upaya dapat dilacak ke satu item pekerjaan
+dan timnya berbicara di satu ruangan.
 
-## What happens when it finishes
+## Apa yang terjadi saat selesai
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Pendengar yang dijaga tetap hidup memantau pipeline yang dihasilkan dan
+memetakan status akhirnya kembali ke orkestrasi dan tiket induk, sehingga
+penyelesaian dan kegagalan muncul di tempat yang sudah Anda pantau. Fitur
+orkestrasi tidak memerlukan mesin eksekusinya sendiri.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Anda dapat membatalkan orkestrasi kapan saja; pembatalan itu membongkar
+pekerjaan yang sedang berjalan.
 
 ::::note
-Orchestration builds on [pipelines](/id-ID/panduan-pengguna/konsep/pipeline/) and
-[tickets](/id-ID/panduan-pengguna/konsep/tiket/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orkestrasi dibangun di atas [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) dan
+[tiket](/id-ID/panduan-pengguna/konsep/tiket/). Ia adalah lapisan perencanaan dan persetujuan di
+atas keduanya, bukan runtime terpisah.
 ::::
 
-## See also
+## Lihat juga
 
-- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/): the parent ticket an orchestration is anchored on
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): the roles an orchestration fills or hires
-- [Run an orchestration](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/)
-- [Work in Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/)
+- [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/): mesin tempat orkestrasi yang dimaterialisasi berjalan
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/): tiket induk tempat orkestrasi dijangkar
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): peran yang diisi atau direkrut oleh orkestrasi
+- [Jalankan orkestrasi](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/)
+- [Bekerja di Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/)

@@ -1,138 +1,149 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: GitHub App oluşturma
+description: Üyelerin oturum açabilmesi ve arka plan işlerinin bir kişi yerine uygulama olarak çalışması için sunucunuz adına bir GitHub App kaydedin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Bu kılavuz, sunucunuza kendi GitHub kimliğini nasıl kazandıracağınızı gösterir.
+Yaklaşık iki dakika sürer, bunu yalnızca sunucu sahibi yapar ve sunucu başına
+yalnızca bir kez yapılması gerekir.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Buna ihtiyacınız olmayabilir]
+Resmî bir derleme zaten bir GitHub **istemci id**'siyle gelir, bu nedenle
+[GitHub ile oturum açma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/) hiçbir şey
+kaydetmeden kutudan çıktığı gibi çalışır — bir cihaz akışı yalnızca istemci id ile
+kimlik doğrular, dolayısıyla dağıtılması güvenlidir. Kendi uygulamanızı, SUNUCUnun
+kendisi olarak hareket etmesini istediğinizde (webhook'lar, PR yoklaması ve bilet
+eşitlemesi bir kişinin kimlik bilgisi yerine bir uygulama kurulumu üzerinde
+çalışır) ya da kaynaktan derleme yaptığınızda kaydedin.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/).
+Kendi hesabınızı sonradan bağlamak için
+[GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+sayfasına bakın.
 
-## Why your server needs its own app
+## Sunucunuzun neden kendi uygulamasına ihtiyacı var
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Tek bir kayıttan iki farklı iş çıkar ve ikisini de dürüst kılan şey uygulamadır:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| İş                     | Bunu ne yanıtlar                                | Neden önemli                                                                                          |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Bir kişi oturum açıyor** | Uygulamanın istemci id'si, cihaz akışı üzerinden | Sunucuda, her cihazda size ait bir kimlik bilgisi edinirsiniz — yapıştıracak ya da döndürecek belirteç yok |
+| **Sunucu hareket ediyor** | Uygulamanın id'si + özel anahtar → kurulum belirteci | Webhook'lar, PR yoklaması ve bilet eşitlemesi artık bir insanın belirtecinin hâlâ geçerli olmasına bağlı kalmaz |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Bu tabloda **olmayan** şeye dikkat edin: bir istemci gizli anahtarı. GitHub'ın
+cihaz akışı — hem cihaz kodu isteği hem de belirteç yoklaması — yalnızca istemci
+id ile kimlik doğrular, dolayısıyla oturum açmak için saklanacak bir gizli
+anahtar yoktur.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Kendi uygulamanız olmadan da birincisi, derlemenin getirdiği istemci id
+üzerinden çalışır; ikincisi sunucu sahibinin kimlik bilgisine geri düşer,
+böylece arka plan işi ilk kurulumu yapan kişinin üzerine biner.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note["Control Center'ın GitHub App'ini kur" diye bir düğme yok]
+Dağıtılmış bir GitHub App, herkesin sunucusu genelinde paylaşılan tek bir istemci
+gizli anahtarı ve tek bir kurulum anlamına gelirdi; böylece her çalışma alanının
+depo erişimi, o çalışma alanındaki hiç kimsenin denetlemediği kimlik
+bilgilerinden geçerdi. Bu nedenle her sunucu kendi uygulamasına sahiptir — bu
+kılavuz, bunun ne kadar az maliyetli olduğuyla ilgilidir.
 :::
 
-## Prerequisites
+## Önkoşullar
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Siz **sunucu sahibisiniz** — `providerApps.*` işlemleri ona kapılıdır ve kart
+  herkese görünmez
+- Bir GitHub hesabı ya da uygulama oluşturabileceğiniz bir organizasyon
+- Genel erişime açık hiçbir şey: oturum açma bir **cihaz akışıdır**, dolayısıyla
+  sunucunun gelen bağlantı noktasına, tünele, geri çağırma URL'sine veya alan
+  adına ihtiyacı yok
 
-## Register the app
+## Uygulamayı kaydetme
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. [github.com/settings/apps/new](https://github.com/settings/apps/new) adresine
+   gidin (bir organizasyon için: **Settings → Developer settings → GitHub Apps →
+   New GitHub App**)
+2. **GitHub App name** — herhangi bir şey; `Control Center (yourname)` olur.
+   Sunucunun yaptığı commit'lerde ve yorumlarda görünür
+3. **Homepage URL** — herhangi bir şey, örneğin `https://github.com/your-name`
+4. **Callback URL** — boş bırakın. Cihaz akışında yoktur
+5. **Enable Device Flow**'u işaretleyin. Oturum açmanın onsuz çalışamayacağı tek
+   ayar budur
+6. Webhook'ları ayrıca bağlamıyorsanız **Webhook → Active** işaretini kaldırın
+7. **Repository permissions** altında en az şunları verin:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (zorunlu)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write — biletler için GitHub Issues kullanıyorsanız ve
+     botun PR konuşması yorum araması için
+     (bkz. [Bir GitHub PR'dan Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/))
+   - **Checks**: Read-only — PR sayfasındaki CI durumu için
+8. **Where can this GitHub App be installed?** altında uygun olanı seçin —
+   kişisel bir sunucu için "Only on this account" doğrudur
+9. **Create GitHub App**'e tıklayın
 
-## Collect the three values
+## Üç değeri toplama
 
-On the app's page, immediately after creation:
+Uygulamanın sayfasında, oluşturduktan hemen sonra:
 
-| Value           | Where                                             |
+| Değer           | Yeri                                              |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | **General** sekmesi, üst tarafta                  |
+| **Client ID**   | **General** sekmesi, "Client secrets" altında     |
+| **Private key** | **Generate a private key** — bir `.pem` indirilir |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Özel anahtar dosyası bir kez indirilir ve GitHub onu bir daha göstermez.
+Yapıştırana kadar saklayın; her zaman yenisini oluşturabilirsiniz.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+Bir **istemci gizli anahtarı** isteğe bağlıdır ve tam olarak tek bir şey sağlar:
+"Expire user authorization tokens" ayarını AÇIK bırakırsanız, her sekiz saatte
+bir yeniden oturum açmasını istemek yerine birinin belirtecini sessizce
+yenileyen şey odur. Oturum açmanın kendisi onu hiç kullanmaz.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Daha basit kurulum, bu süre sonunu KAPALI bırakmaktır; o zaman hiçbir yerde
+gizli anahtar gerekmez. Açık bırakırsanız bir gizli anahtar oluşturun ve
+**Ayarlar → Sunucu → Tek oturum açma** (**Sağlayıcı uygulamaları** kartı)
+bölümüne yapıştırın — bunun için bir ortam değişkeni yoktur ve hiçbiri derlemeye
+gömülmez, böylece sunucunuzda kalır.
 
-## Install it on your account
+## Hesabınıza kurma
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Kayıtlı olup kurulmamış bir uygulama kişilerin kimliğini doğrulayabilir ama
+hiçbir şey okuyamaz.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Uygulamanın sayfasında **Install App**'i açın
+2. Hesabınıza ya da organizasyonunuza kurun
+3. **All repositories**'i seçin ya da bu sunucunun görmesi gereken depoları
+   seçin
 
-## Paste it into Control Center
+## Control Center'a yapıştırma
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve **Sağlayıcı
+   uygulamaları** kartına kaydırın
+2. **GitHub** bloğunda her alanı ayarlayın:
+   - **Uygulama id** — sayısal App ID
+   - **Özel anahtar** — `.pem` dosyasının tamamını, `BEGIN` ve `END` satırları
+     dahil yapıştırın
+   - **İstemci id** — aynı sayfadan
+   - **İstemci gizli anahtarı** — yalnızca bir tane oluşturduysanız (belirteç
+     yenileme için)
+3. **Test**'e tıklayın
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Anahtar kaydedilirken ayrıştırılır, böylece kesilmiş ya da yanlış biçimde bir
+yapıştırma, saatler sonra arka plandaki bir istekte başarısız olmak yerine
+oracıkta reddedilir. **Test** daha ileri gider ve GitHub'a uygulamanın hangi
+hesaplara kurulu olduğunu sorar — "kaydedildi" ile "çalışıyor" farklı
+iddialardır ve yalnızca ikincisi bir şeyin çalışacağı anlamına gelir.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Kontrol noktası: GitHub bloğu "Sunucu kendisi olarak hareket edebilir ve kişiler
+oturum açabilir." yazar ve **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod
+barındırma** altındaki **GitHub** satırı artık **GitHub ile oturum aç**
+seçeneğini sunar.
 
-## Configure it with environment variables instead
+## Bunun yerine ortam değişkenleriyle yapılandırma
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Headless ya da betikli bir kurulumda sunucu, kayıtlı bir değeri olmadığı ilk
+seferde her alanı ortamdan tohumlar:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +151,69 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Bunlar için komut satırı bayrağı yoktur — komut satırındaki bir gizli anahtar,
+ana makinedeki her süreç tarafından `ps` ile okunabilir. Bunları
+yapılandırmanın tek yeri ortamdır ve ortam, derlemenin getirdiği her şeyden
+üstündür. `.env.template` tam listedir.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Yerel geliştirme için depo kökündeki `.env` aynı değerleri taşır ve masaüstü
+uygulaması bunları başlattığı sunucuya aktarır. Anahtarı orada **tek satıra**
+koyun: bir `.env` değeri tek satırdır ve çift tırnak içindeki `\n`, yeni satıra
+çözülür.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` ve `GITHUB_APP_PRIVATE_KEY`, sandbox belirteç aracısının zaten
+okuduğu adların aynısıdır; bu nedenle ince taneli ajan belirteçleri
+yapılandırmış bir ana makine oturum açma şeridini bedavaya alır. Tohumlama
+**alan başına bir kez** olur — ondan sonra kayıtlı değer kazanır, böylece
+Ayarlar'da yapılan düzenlemeler sonraki yeniden başlatmada geri alınmaz.
 
-## Do the same for Linear
+## Aynısını Linear için yapma
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear'da cihaz akışı yoktur, dolayısıyla oturum açması tarayıcıda gidiş
+dönüştür ve bir geri çağırma URL'sine ihtiyaç duyar — **Sağlayıcı uygulamaları**
+kartı, kaydetmeniz gereken tam URL'yi gösterir.
 
-1. Create an OAuth application at
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+   adresinde bir OAuth uygulaması oluşturun
+2. **Callback URL**'yi kartın gösterdiği URL'nin aynısı olarak ayarlayın
+3. **İstemci id** ve **İstemci gizli anahtarı** değerlerini Linear bloğuna
+   yapıştırın
+4. İsteğe bağlı olarak bir çalışma alanı **API anahtarı** ekleyin — hiçbir insan
+   istemediğinde sunucunun biletleri eşitlemek için kullandığı kimlik bilgisi
+   budur
 
-## Troubleshooting
+## Sorun giderme
 
-### The sign-in dialog says the provider returned no device code
+### Oturum açma iletişim kutusu sağlayıcının cihaz kodu döndürmediğini söylüyor
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+Uygulamada **Enable Device Flow** kapalı. **General** altında açın ve yeniden
+deneyin.
 
-### Test says the credentials work but the app is not installed anywhere
+### Test, kimlik bilgilerinin çalıştığını ama uygulamanın hiçbir yere kurulmadığını söylüyor
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Kayıt ve kurulum ayrı adımlardır. Uygulamanın sayfasında **Install App**'i açın
+ve kurun.
 
-### Test says the private key could not be read
+### Test, özel anahtarın okunamadığını söylüyor
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+`.pem` dosyasının tamamını, `-----BEGIN` ve `-----END` satırları dahil
+yapıştırın. `ed25519` ya da EC anahtarı kullanılamaz — GitHub Apps RSA ile
+imzalar.
 
-### A member signed in but sees no repositories
+### Bir üye oturum açtı ama hiçbir depo göremiyor
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Uygulama, bu depoları sahiplenen hesaba kurulu değildir ya da kurulumu farklı
+depoları seçer. Üyenin kendi oturum açması yalnızca uygulamanın görmesine izin
+verilen kadarını sağlar.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-- [Talk to Control Center from a GitHub PR](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/)
-- [Connect a code host](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
-- [Manage API keys](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [Bir GitHub PR'dan Control Center ile konuşma](/tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari/)
+- [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/)
+- [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)

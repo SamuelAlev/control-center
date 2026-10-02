@@ -1,115 +1,127 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: API-kulcsok kezelése
+description: Hol él az egyes hitelesítő adat — a szerveren lévő felhasználói fiókjában, magán a szerveren vagy egy külső CLI-ben —, és hogyan állíthatja be, forgathatja és távolíthatja el.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Ez az útmutató bemutatja, hol tárolja a Control Center az általa használt
+hitelesítő adatokat, és hogyan módosíthatja őket.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Semmi nem tárolódik azon a gépen, amelyen éppen gépel.** Minden hitelesítő
+adat a szerveren él; hogy egy adott kérésre melyik válaszol, az attól függ,
+van-e mögötte ember.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Hitelesítő adat | Hol tárolódik | Ki használja |
+| --- | --- | --- |
+| A kódhoszt- / jegykezelő hitelesítő adata | A szerver 0600 jogosultságú titkosfájlja, a felhasználói azonosítójához rendelve | Minden, amit kér: a PR-felület, az ügynökfuttatásai, a képei |
+| A szerver alkalmazásidentitása | Ugyanaz a fájl, plusz a `server_settings` a nem titkos beállításokhoz | Olyan munka, amelyet nem ember kért: webhookok, PR-lekérdezés, jegyszinkronizálás |
+| Modellszolgáltatói kulcsok és OAuth-tokenek | A szerver saját hitelesítőadat-tára | A beépített adapter, a telepítés minden munkaterületén |
+| Slack-bot tokenek | `<dataDir>/<workspaceId>/chat_credentials/` a szerveren | Az adott munkaterület csevegőhídja |
+| Külső CLI-k hitelesítő adatai | Amit az adott CLI használ | A Claude Code, a szervergépen |
 
-## Two GitHub credentials, and they answer different questions
+## Két GitHub-hitelesítő adat, amelyek különböző kérdésekre válaszolnak
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Az Öné**, a bejelentkezésből (eszközkódos folyamat) vagy egy token
+  beillesztéséből. Minden, az *Ön nevében* tett kérés ezt használja, így az Ön
+  számára közzétett hozzászólás az Ön nevét viseli. Egy másik tag nem tudja
+  kiolvasni, és a sajátját csatlakoztatja
+- **A szerveré**, az üzemeltető által regisztrált GitHub Appból. Minden olyan
+  kérésre válaszol, amely mögött nincs hívó — így a kódhoszt-hozzáférés nem
+  tűnik el, amikor valaki távozik vagy leforgat egy tokent
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
-and [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/).
+Az Öné a **Kódtárhely** kártyán van beállítva a **Beállítások → Munkaterület →
+Profil és identitás** alatt; a szerveré a **Szolgáltatói alkalmazások** alatt a
+**Beállítások → Szerver → Egyszeri bejelentkezés** útvonalon. Lásd a
+[GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+és a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt.
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Van egy kizárólag URL-lel elérhető képernyő is]
+A `/workspaces/<workspaceId>/api-keys` ugyanazt a két kártyát jeleníti meg,
+mint a bevezető első lépése. **A felületen sehol nincs navigációs bejegyzése**;
+csak az URL beírásával érhető el. Használja helyette inkább a Beállítások →
+Munkaterület → Profil és identitás útvonalat.
 :::
 
-## Set model provider keys
+## Modellszolgáltatói kulcsok beállítása
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+A beépített adapter maga hitelesíti a szolgáltatókat, és ezek a hitelesítő
+adatok a szerveren élnek.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Lépjen a **Beállítások → Szerver → Modellszolgáltatók** oldalra
+2. Görgessen a **Szolgáltatók és modellek** szakaszig
+3. Csatlakoztassa a szolgáltatót — böngészős OAuth az OpenAI, a Codex, a Cursor
+   és a Kimi Code esetében; API-kulcs az Anthropic és a többi szolgáltatóhoz
 
-See [Manage adapters and models](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/) for the full list and
-for adding a custom endpoint.
+A teljes listát és egyéni végpont hozzáadását az
+[Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/)
+oldalon találja.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Ezek a hitelesítő adatok **hoszt-szintűek**: egyetlen kulcs szolgálja ki a
+telepítés minden munkaterületét. Az OAuth-tokenek a lejáratuk előtt frissülnek.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+A külső adapterek CLI-jei a saját hitelesítő adataikat a saját
+konfigurációjukban, a szervergépen tartják — a Control Center nem kezeli ezeket.
+A Claude Code-ot a saját dokumentációja szerint hitelesítse, azon a gépen,
+amelyen a `cc_server` fut.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/).
+Az adapterenkénti **Környezeti változók** párbeszédablak úgy tűnik, mintha
+alkalmas lenne egy kulcs elhelyezésére valamelyikükhöz, de nem az: az eszközére
+ír, a szerver viszont a saját példányát olvassa, és a kettőt semmi sem köti
+össze. Lásd az
+[Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/) oldalt.
 
-## Connect a ticketing vendor
+## Jegykezelő szolgáltató csatlakoztatása
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+A **Jegykezelés** kártya a **Beállítások → Munkaterület → Általános** alatt egy
+döntés mindkét felét tartalmazza: hogy melyik szolgáltatónál élnek a jegyei, és
+az ahhoz tartozó hitelesítő adatot. A **Helyi** választása elrejti a hitelesítő
+adat sorát — a helyi jegyek e szerver saját adatbázisában élnek, és nincs
+mihez hitelesíteniük.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/).
+A kulcsa a szerveren, a felhasználói azonosítójához rendelve tárolódik,
+akárcsak a kódhoszthoz tartozó. A szerver külön tartja a saját Linear-kulcsát
+(**Szolgáltatói alkalmazások**), és a jegyszinkronizálás ezen fut, amikor nem
+ember kérte. Az ügynök csak akkor kap kulcsot, ha rendelkezik a **Jegykezelő
+API-hívások engedélyezése** képességgel. Lásd a
+[Linear-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/) oldalt.
 
-## Rotate or revoke
+## Forgatás vagy visszavonás
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- **Az Ön GitHub-hitelesítő adata**: nyomja meg a **Leválasztás** gombot, majd
+  jelentkezzen be újra, vagy illessze be az új tokent. A régit a GitHubon vonja
+  vissza
+- **A szerver alkalmazása**: hozzon létre új privát kulcsot vagy client
+  secretet az alkalmazás GitHub-oldalán, illessze be a **Szolgáltatói
+  alkalmazások** alatt, és nyomja meg a **Teszt** gombot
+- **Egy modellszolgáltató**: a sorában jelentkezzen ki (OAuth), vagy távolítsa
+  el a kulcsot, majd csatlakoztassa újra
+- **Slack**: illessze be újra a tokeneket a csatlakozási párbeszédablakban.
+  Lásd a [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) oldalt
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The PR list is empty but my token works in `curl`
+### A PR-lista üres, de a token működik a `curl`-ben
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Ellenőrizze a **Kódtárhely** sorának alcímét. Ha másik forrást nevez meg („a
+szerver alkalmazásán keresztül", „a környezetből"), akkor nem az a hitelesítő
+adat válaszol, amelyet éppen tesztel — az Öné nem került mentésre.
 
-### The token is accepted but later requests fail
+### A token elfogadott, de a későbbi kérések meghiúsulnak
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+A tokent a tárolásakor ellenőrzi a rendszer, így a sor megnevezi a mögötte lévő
+fiókot — de csak a fiókot, a hatóköröket nem. A túl kevés hatókörrel rendelkező
+token csatlakozik, majd az egyes kérések meghiúsulnak. Ellenőrizze a
+hatóköröket és a lejáratot:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
-- [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)
-- [Manage adapters and models](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/)
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
-- [Set up Linear integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/)
+- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+- [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)
+- [Adapterek és modellek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Linear-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/)

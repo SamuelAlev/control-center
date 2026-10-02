@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: 첫 워크스페이스
+description: 워크스페이스를 만들고 리포지토리를 등록한 뒤 격리 경계를 직접 확인합니다.
 slug: ko-KR/매뉴얼/튜토리얼/첫-워크스페이스
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## 만들게 될 것
 
-By the end of this tutorial, you will have:
+이 튜토리얼을 마치면 다음을 갖추게 됩니다.
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- 프로젝트 이름을 딴 워크스페이스
+- 그 안에 등록된 Git 리포지토리
+- 시드된 에이전트 다섯 개, 그중 실행할 수 있을 만큼 구성한 에이전트 하나
+- 격리 경계를 입증하는 두 번째 빈 워크스페이스
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+온보딩이 이미 워크스페이스를 하나 만들어 두었습니다. 이 튜토리얼에서는 과정의 모든 부분을 볼 수 있도록 일부러 새 워크스페이스를 만듭니다.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+시작하기 전에 다음 세 가지를 모두 충족하는 Git 체크아웃을 고르세요. 등록 단계는 그 밖의 것은 거부합니다.
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- git 작업 트리 안에 있습니다
+- `origin` 리모트가 있습니다
+- 그 리모트가 github.com, gitlab.com 또는 bitbucket.org를 가리킵니다
 
-## Step 1: Create a workspace
+## 1단계: 워크스페이스 만들기
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. 제목 표시줄의 워크스페이스 칩을 클릭합니다
+2. **워크스페이스 추가…**를 선택합니다
+3. "api-service"나 "frontend-v2"처럼 프로젝트를 식별하는 이름을 입력합니다
+4. 선택적으로 로고를 고릅니다
+5. **워크스페이스 추가**를 클릭합니다
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center가 새 워크스페이스로 전환하고 그 받은편지함(`/workspaces/<id>/inbox`)으로 이동합니다.
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+그 뒤에서 서버는 `WorkspaceCreated` 이벤트를 발행하고 워크스페이스에 다음을 시드합니다.
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **CEO 에이전트** 하나 — 페르소나는 조정과 위임입니다
+- 전문가 넷 — `qa`, `architect`, `engineer`, `librarian` — 각자 자체 지침과 스킬을 가집니다
+- 내장 파이프라인 템플릿과 그 트리거 행
 
-Every workspace you create gets all of this, not just the first one.
+만드는 모든 워크스페이스가 이것을 모두 받습니다. 첫 번째만 그런 것이 아닙니다.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+확인: **설정 → 워크스페이스 → 에이전트**를 엽니다. 로스터에 에이전트 다섯 개가 있고, 각각 속이 빈 상태 링이 붙어 있습니다.
 
-## Step 2: Register a repository
+## 2단계: 리포지토리 등록하기
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. **설정 → 워크스페이스 → 리포지토리**로 이동합니다
+2. **리포지토리 추가**를 클릭합니다
+3. 체크아웃을 찾아 들어갑니다. 대화 상자는 클라이언트가 아니라 `cc_server`를 실행하는 머신의 폴더를 탐색하며, 그 서버가 노출하는 루트(기본값은 서버 사용자의 홈 디렉터리) 안에 머뭅니다. Git 체크아웃에는 구별되는 폴더 아이콘과 확인란이 붙고, 일반 폴더에는 둘 다 없으므로 체크아웃만 선택할 수 있습니다.
+4. 체크아웃을 하나 이상 선택하고 일괄 등록합니다. 탐색하는 동안에도 선택이 유지되므로 한 번에 여러 개를 모을 수 있고, 잘못 고른 하나가 나머지를 떨어뜨리지 않습니다.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center는 각 체크아웃의 `origin` 리모트를 읽어 소유자와 리포지토리를 해석하고, 리포지토리 행을 **이 워크스페이스 안에** 만듭니다. 연결하는 두 번째 단계는 없습니다. 등록 자체가 범위를 정합니다.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+나중에 같은 체크아웃을 다른 워크스페이스에 등록하면 자체 id를 가진 두 번째 독립 리포지토리 행이 만들어집니다. 워크스페이스를 넘나드는 체크아웃 식별은 파일 시스템 경로로 정해지며 결코 id로 정해지지 않습니다.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+확인: 리포지토리가 목록에 `owner/repo`와 현재 브랜치와 함께 나타납니다.
 
-## Step 3: Make one agent runnable
+## 3단계: 에이전트 하나를 실행 가능하게 만들기
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+이 워크스페이스가 방금 시드한 에이전트 다섯 개에는 어댑터도 모델도 없습니다. 디스패치는 이들을 **Control Center (built-in)** 에서 실행하고, 모델이 설정되어 있지 않으면 Anthropic에 기본 모델을 물어봅니다. 따라서 Anthropic 계정을 연결한 경우에만 동작하고, 연결했다면 직접 고르지 않은 모델로 동작합니다. 첫 실행 온보딩은 첫 워크스페이스의 모든 에이전트에 자신의 선택을 한 번만 찍어 둡니다. 그 뒤에 만든 워크스페이스는 다섯 개 모두 미설정 상태로 시작합니다. 지금 하나를 설정하세요.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. **설정 → 워크스페이스 → 에이전트**를 엽니다
+2. 로스터에서 `engineer`를 선택합니다
+3. **설정** 탭에서 **어댑터**를 `Control Center (built-in)`로 설정하고, 설정 → 서버 → 모델 제공업체에서 연결한 제공자의 **모델**을 고릅니다
+4. **변경 사항 저장**을 누릅니다
 
-Confirm it: reopen the agent and the two fields hold your choices.
+확인: 에이전트를 다시 열면 두 필드에 선택한 값이 남아 있습니다.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/) covers the rest of the form.
+에이전트마다 자체 어댑터와 모델을 가지므로, 사용할 다른 에이전트에도 이를 반복합니다. 나머지 양식은 [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)에서 다룹니다.
 
-## Step 4: See the isolation boundary
+## 4단계: 격리 경계 확인하기
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+1단계에서처럼 제목 표시줄 칩에서 두 번째 워크스페이스를 만듭니다. 그런 다음 살펴봅니다.
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **설정 → 워크스페이스 → 리포지토리**가 비어 있습니다. 1분 전에 등록한 리포지토리가 거기에 없습니다.
+- **설정 → 워크스페이스 → 에이전트**에 에이전트 다섯 개가 있지만 서로 다른 행입니다. 3단계에서 설정한 어댑터는 사라졌습니다.
+- 스페이스 목록, 티켓, 메모리가 모두 비어 있습니다.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+아무것도 새어 나가지 않았습니다. 새어 나갈 것이 없기 때문입니다. 각 워크스페이스의 행은 그 워크스페이스 자체 데이터베이스 파일에 있습니다. 워크스페이스를 넘나드는 읽기는 걸러지는 쿼리가 아니라 실행될 곳이 없는 쿼리입니다. 워크스페이스를 삭제하는 것은 파일 연결을 끊는 일입니다.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+제목 표시줄 칩으로 되돌아가거나, **워크스페이스 관리**를 열어 나란히 봅니다.
 
-For the full model, read [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/).
+전체 모델은 [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)에서 읽어 보세요.
 
-## Recap
+## 요약
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+워크스페이스를 만들고, CEO와 전문가 넷이 시드되는 것을 지켜보고, 리포지토리를 등록하고, 에이전트 하나에 어댑터와 모델을 지정하고, 두 번째 워크스페이스가 그중 아무것도 공유하지 않음을 확인했습니다.
 
-**Next:** [Dispatch your first agent](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/) to put the workspace to work.
+**다음:** [첫 에이전트 디스패치](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/)로 워크스페이스를 실제로 활용해 보세요.

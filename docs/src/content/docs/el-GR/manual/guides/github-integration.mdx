@@ -1,166 +1,178 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Ρύθμιση ενσωμάτωσης GitHub
+description: Συνδεθείτε στο GitHub ώστε να λειτουργούν η επιφάνεια PR, η καταχώριση αποθετηρίων και οι εκτελέσεις πρακτόρων.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Αυτός ο οδηγός καλύπτει τα ειδικά για το GitHub μέρη της ρύθμισης. Το GitHub
+είναι ένας από τους τρεις υποστηριζόμενους κεντρικούς υπολογιστές κώδικα — δείτε
+[Σύνδεση κεντρικού υπολογιστή κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
+για τη σύνδεση του GitLab ή του Bitbucket και για το πώς ένας χώρος εργασίας τα
+συνδυάζει.
 
-## Prerequisites
+## Προϋποθέσεις
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Λογαριασμός GitHub με πρόσβαση στα αποθετήρια στα οποία θέλετε να εργαστείτε
+- Είτε μια GitHub App καταχωρισμένη για τον διακομιστή σας (δείτε
+  [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)) ώστε να μπορείτε να **συνδεθείτε**,
+  **είτε** ένα προσωπικό token πρόσβασης με `repo` και `read:org` για επικόλληση
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Τα διαπιστευτήρια μένουν στον διακομιστή, προσαρτημένα σε εσάς]
+Τίποτα δεν αποθηκεύεται στο μηχάνημα στο οποίο πληκτρολογείτε. Το διαπιστευτήριό
+σας το κρατά το `cc_server` σας, με κλειδί το αναγνωριστικό χρήστη σας, και κάθε
+συσκευή από την οποία συνδέεστε το χρησιμοποιεί — επιφάνεια εργασίας, web και
+τηλέφωνο. Άλλο μέλος του ίδιου διακομιστή δεν μπορεί να το διαβάσει, και η
+σύνδεσή του είναι κάτι που το κάνει το ίδιο.
 :::
 
-## Sign in with GitHub
+## Σύνδεση με GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Μια **ροή με κωδικό συσκευής**: το GitHub σας δείχνει έναν σύντομο κωδικό, τον
+εγκρίνετε στο github.com και ο διακομιστής παραλαμβάνει το διαπιστευτήριο — χωρίς
+URL επανάκλησης, χωρίς θύρα, τίποτα να εκτεθεί. Διαθέσιμη όποτε ο διακομιστής έχει
+client id, τον οποίο φέρνει ήδη μια επίσημη έκδοση.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα** (ή στο πρώτο
+   βήμα της εισαγωγής)
+2. Στη γραμμή **GitHub**, πατήστε **Σύνδεση με GitHub**
+3. Ένα παράθυρο διαλόγου εμφανίζει έναν κωδικό οκτώ χαρακτήρων και ανοίγει το
+   [github.com/login/device](https://github.com/login/device) στο πρόγραμμα περιήγησής σας.
+   Ο κωδικός βρίσκεται ήδη στο πρόχειρό σας
+4. Επικολλήστε τον, εγκρίνετε την εφαρμογή και επιστρέψτε. Η γραμμή αλλάζει από
+   μόνη της σε «Συνδεθήκατε ως _your-username_»
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Το παράθυρο διαλόγου μπορεί να κλείσει όσο ολοκληρώνετε τη διαδικασία στο πρόγραμμα
+περιήγησης — ο διακομιστής συνεχίζει να ερωτά μέχρι να λήξει ο κωδικός (περίπου 15
+λεπτά), οπότε η σύνδεση ολοκληρώνεται κανονικά.
 
-## Or paste a token
+## Ή επικολλήστε ένα token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Η εφεδρική λύση όταν ο διακομιστής δεν έχει εφαρμογή, όταν η εφαρμογή δεν είναι
+εγκατεστημένη σε λογαριασμό που χρειάζεστε ή όταν απλώς προτιμάτε να
+χρησιμοποιήσετε ένα PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα**
+2. Στη γραμμή **GitHub**, πατήστε **Προσθήκη token**
+3. Επικολλήστε ένα token με `repo` και `read:org` (classic) και αποθηκεύστε. Ένα
+   **εκλεπτυσμένο** token χρειάζεται **Contents** και **Pull requests** (ανάγνωση και
+   εγγραφή) στο αποθετήριο, καθώς και **Checks** και **Actions** (ανάγνωση).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Το token ελέγχεται τη στιγμή που αποθηκεύεται, οπότε η γραμμή μπορεί να ονομάσει τον
+λογαριασμό στον οποίο ανήκει. Πατήστε **Αποσύνδεση** για να το αφαιρέσετε.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Σημείο ελέγχου: η γραμμή **GitHub** γράφει «Συνδεθήκατε ως _your-username_». Ένα
+επίθεμα ονομάζει την πηγή όταν το διαπιστευτήριο που απαντά δεν είναι δικό σας —
+«μέσω της εφαρμογής αυτού του διακομιστή» ή «από το περιβάλλον».
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Η σειρά προτεραιότητας είναι σταθερή]
+Ένα αίτημα που γίνεται για λογαριασμό σας χρησιμοποιεί το **δικό σας** διαπιστευτήριο
+και τίποτα άλλο — το περιβάλλον είναι το διαπιστευτήριο του διακομιστή, όχι το δικό
+σας, οπότε δεν σας αναπληρώνει ποτέ. Η εργασία χωρίς άνθρωπο πίσω της (webhooks,
+περιοδικός έλεγχος PR, συγχρονισμός εισιτηρίων) χρησιμοποιεί την ταυτότητα εφαρμογής
+του διακομιστή και μετά, κατά σειρά, το διαπιστευτήριο του ιδιοκτήτη του διακομιστή
+και το περιβάλλον.
 :::
 
-## What the integration gives you
+## Τι σας προσφέρει η ενσωμάτωση
 
-| Feature             | How                                                                                                            |
+| Δυνατότητα             | Πώς                                                                                                            |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Λίστα και λεπτομέρειες PR  | Το GitHub REST API, από τον διακομιστή, με την ταυτότητα της εφαρμογής ή το δικό σας διαπιστευτήριο                              |
+| Εκτελέσεις ελέγχων          | Το GitHub Checks API                                                                                          |
+| Δημοσίευση ανασκόπησης   | Ένα βήμα που το ελέγχει ο χρήστης και αναρτά την ανασκόπησή σας στο PR                                                             |
+| Καταχώριση αποθετηρίου   | Ένα checkout γίνεται δεκτό αν το απομακρυσμένο `origin` του δείχνει στο github.com — ή στο gitlab.com / bitbucket.org          |
+| Πρόσβαση πράκτορα στο GitHub | Ο μεσίτης διαπιστευτηρίων εγχέει το token ως `GH_TOKEN` / `GITHUB_TOKEN`, φραγμένο από τις δυνατότητες του πράκτορα      |
+| Σήματα ειδοποιήσεων  | Ένας περιοδικός έλεγχος στην πλευρά του διακομιστή των εισερχομένων ειδοποιήσεων του GitHub σας εγείρει «Αναφορά σε pull request» και «Ζητήθηκε ανασκόπηση» |
+| Προφίλ χρηστών       | Κάρτες προφίλ στο hover και φιλτράρισμα PR ανά συντάκτη                                                                |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Ορισμένες διαδρομές χρησιμοποιούν το GraphQL API αντί για το REST όπου είναι
+φθηνότερο — τη δραστηριότητα κλάδων για τον επιλογέα σύνταξης PR και τη ζωντανή
+κατάσταση ανασκόπησης που αποφασίζει αν μια ειδοποίηση αιτήματος ανασκόπησης
+εκκρεμεί ακόμη.
 
-## Watch for GitHub outages
+## Προσέξτε τις διακοπές του GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Η γραμμή τίτλου εμφανίζει ένα σήμα κατάστασης όταν ένας πάροχος είναι
+υποβαθμισμένος, καλύπτοντας τα GitHub, Claude, OpenAI και Kimi. **Κρύβεται όσο όλα
+είναι υγιή** — η παρουσία αναφέρει πρόβλημα, όχι η απουσία της.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Πατήστε το σήμα για να ανοίξει ένα αναδυόμενο πλαίσιο με την κατάσταση κάθε παρόχου
+και ένα κουμπί ανανέωσης. Οι καταστάσεις ανανεώνονται από μόνες τους κάθε δύο λεπτά.
 
-## Know how agents act on GitHub
+## Μάθετε πώς ενεργούν οι πράκτορες στο GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Ένας πράκτορας παίρνει token GitHub μόνο αν έχει **Να επιτρέπονται κλήσεις GitHub API** ή
+  **Να επιτρέπεται git push**. Δείτε
+  [Ρύθμιση πολιτικών sandbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/)
+- Τα commits που κάνει ένας πράκτορας συντάσσονται **ως ο πράκτορας** — το
+  εμφανιζόμενο όνομα συν ` (agent)`, σε συνθετική διεύθυνση με κλειδί το αναγνωριστικό
+  του πράκτορα — ποτέ ως άνθρωπος. Το άτομο που το ζήτησε πιστώνεται με ένα trailer
+  `Co-Authored-By`
+- Με ρυθμισμένη GitHub App, ο μεσίτης εκδίδει εκλεπτυσμένα token εγκατάστασης με
+  εμβέλεια αποθετηρίου και διάρκεια περίπου μίας ώρας ανά εκκίνηση, αντί να
+  παραδώσει ένα ευρύ token. Η εγκατάσταση επιλύεται από τον **ιδιοκτήτη** του
+  αποθετηρίου της εκτέλεσης, οπότε μια εφαρμογή εγκατεστημένη σε πολλούς λογαριασμούς
+  περιορίζεται σωστά σε όποιον αγγίζει η εκτέλεση. Χωρίς εφαρμογή, οι πράκτορες
+  λαμβάνουν το token του περιβάλλοντος
+- Μια εκτέλεση που τη ζήτησε μέλος το οποίο έχει συνδεθεί ενεργεί με την ταυτότητα
+  GitHub **αυτού του μέλους** — το διαπιστευτήριό του συγχωνεύεται μετά το περιβάλλον
+  του μεσίτη, οπότε ένα commit ή σχόλιο που κάνει ένας πράκτορας για αυτό το μέλος του
+  αποδίδεται
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The PR list is empty and says GitHub is not connected
+### Η λίστα PR είναι κενή και λέει ότι το GitHub δεν είναι συνδεδεμένο
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Δεν έχετε διαπιστευτήριο GitHub σε αυτόν τον διακομιστή. Συνδεθείτε ή επικολλήστε ένα
+token στη **Φιλοξενία κώδικα**. Τα αποθετήρια σε άλλα forge δεν επηρεάζονται — μόνο
+τα αποθετήρια του GitHub δεν συνεισφέρουν τίποτα.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Η γραμμή προσφέρει «Προσθήκη token» αλλά όχι «Σύνδεση με GitHub»
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Ο διακομιστής δεν έχει client id — κάτι που είναι η κανονική κατάσταση για μια έκδοση
+από πηγαίο κώδικα, αφού τα διαπιστευτήρια ενσωματώνονται μόνο στις επίσημες εκδόσεις.
+Δείτε [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/): διαρκεί περίπου δύο λεπτά
+και μόνο ο ιδιοκτήτης του διακομιστή χρειάζεται να το κάνει, μία φορά.
 
-### The sign-in dialog says the provider returned no device code
+### Το παράθυρο σύνδεσης λέει ότι ο πάροχος δεν επέστρεψε κωδικό συσκευής
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+Η GitHub App υπάρχει αλλά το πλαίσιο ελέγχου **Device flow** είναι ανενεργό.
+Ενεργοποιήστε το στις ρυθμίσεις της εφαρμογής (General → Device flow) και δοκιμάστε
+ξανά.
 
-### The row says "via this server's app" when I expected my own account
+### Η γραμμή λέει «μέσω της εφαρμογής αυτού του διακομιστή» ενώ περίμενα τον δικό μου λογαριασμό
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Δεν έχετε συνδεθεί· αυτό που βλέπετε είναι η ταυτότητα εφαρμογής του διακομιστή να
+απαντά. Πατήστε **Σύνδεση με GitHub** σε αυτή τη γραμμή.
 
-### A fine-grained PAT shows no merge button or check status
+### Ένα εκλεπτυσμένο PAT δεν εμφανίζει κουμπί συγχώνευσης ή κατάσταση ελέγχου
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Το token χρειάζεται **Contents** και **Pull requests** (ανάγνωση και εγγραφή), καθώς
+και **Checks** και **Actions** (ανάγνωση). Αφού το αλλάξετε, επικολλήστε το ξανά στη
+Φιλοξενία κώδικα.
 
-### Adding a repo is rejected
+### Η προσθήκη αποθετηρίου απορρίπτεται
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
+Η καταχώριση απαιτεί και τα τρία: η διαδρομή βρίσκεται μέσα σε ένα δέντρο εργασίας
+git, υπάρχει απομακρυσμένο `origin` και αυτό το απομακρυσμένο δείχνει σε ένα
+υποστηριζόμενο forge (github.com, gitlab.com ή bitbucket.org). Δείτε
+[Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/).
 
-### Everything stops working for a while after heavy use
+### Όλα σταματούν να λειτουργούν για λίγο μετά από εντατική χρήση
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Αυτός είναι ο διακόπτης κυκλώματος του ορίου ρυθμού. Το GitHub σηματοδοτεί το κύριο
+όριό του με ένα `403` που φέρει `x-ratelimit-remaining: 0` και χρόνο επαναφοράς· όταν
+δει ένα τέτοιο, ο πελάτης αποτυγχάνει περαιτέρω αιτήματα τοπικά χωρίς κλήση δικτύου
+μέχρι να περάσει το παράθυρο, ώστε μια καταιγίδα επαναλήψεων να μην μπορεί να βαθύνει
+το όριο. Οι παροδικές αποτυχίες επαναλαμβάνονται έως τρεις φορές με εκθετική
+υποχώρηση, τηρώντας το `retry-after`.
 
-## Related guides
+## Σχετικοί οδηγοί πρακτικής
 
-- [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)
-- [Connect a code host](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
-- [Manage API keys](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κλειδιά-api/)
-- [Add repos to a workspace](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
-- [Review and merge a PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)
+- [Σύνδεση κεντρικού υπολογιστή κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/)
+- [Διαχείριση κλειδιών API](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κλειδιά-api/)
+- [Προσθήκη αποθετηρίων σε χώρο εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων/)
+- [Έλεγχος και συγχώνευση PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)

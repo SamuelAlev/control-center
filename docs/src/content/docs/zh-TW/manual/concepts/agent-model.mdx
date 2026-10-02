@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: 代理模型
+description: 代理在 Control Center 中實際上是什麼、其中哪些欄位會改變行為，以及它所執行的配接器如何決定哪些規則能被強制執行。
 slug: zh-TW/手冊/概念/代理模型
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## 什麼是代理？
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+代理是具名的行為者，擁有角色人格、一組技能、要在其上執行的配接器，以及一組能力。代理和人類一樣都是主體：它們撰寫訊息、擁有工單、留下審查意見，並出現在同一份名冊上。它們才是真正做事的角色。
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+每個代理只屬於一個工作區。這是硬性不變條件 — `agent.workspaceId` 不可為 null，決定代理的資料列會寫入哪個資料庫檔案的，正是代理自己所屬的工作區，而建立不屬於任何工作區的代理會被拒絕。
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+代理同時也是一個目錄。它的定義位於工作區資料目錄下的 `agents/<slug>/AGENTS.md`，其持有的技能則以符號連結連到 `agents/<slug>/.agents/skills`。資料庫資料列與檔案會一起寫入。植入程序具等冪性：若代理資料列已存在，磁碟上的檔案與技能連結仍會重新寫入。正式環境中呼叫此流程的是建立工作區，而不是每次啟動伺服器。
 
-## What an agent carries
+## 代理包含哪些內容
 
-| Attribute               | What it does                                                                          |
+| 屬性                    | 作用                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | 簡短的類 slug 識別碼（`architect`、`qa`）。也是 `@mentions` 解析的對象                |
+| `title`                 | 人類可讀的職稱                                                                        |
+| `persona`               | 自由文字的性格與行為指示，會以提示區段的形式注入                                      |
+| `systemPrompt`          | 選用的額外指示，會以「代理指示」區段注入 — 它們不會取代組裝後提示的其餘部分           |
+| `skills`                | 不區分大小寫的技能名稱集合，會以磁碟上的技能連結呈現                                  |
+| `adapterId`             | 代理派送至哪個執行器。**null 會回退至內建迴圈**                                        |
+| `modelId`               | 該配接器中的哪個模型                                                                  |
+| `effort`                | 推論等級，取自所選模型本身的詞彙                                                      |
+| `contextSize`           | 情境視窗的覆寫值                                                                      |
+| `capabilities`          | 憑證與對外連線旗標，在啟動時檢查                                                      |
+| `silenceTimeoutMinutes` | 每位代理對靜默監控的覆寫值（1–240）                                                   |
+| `reportsTo`             | 上層代理 id — 組織圖所描繪的回報鏈                                                    |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+你可以在 設定 → 工作區 → 代理 編輯上述所有項目。**新增代理** 會建立一個未命名的代理，之後再由你填寫。
 
-## Skills
+## 技能
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+技能是代理實體上不區分大小寫的名稱。它們會引發兩件各自獨立的事：
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- 這些名稱會列在組裝後的提示中，位於「技能」標題之下。實體上的技能集合本身就只有這個作用 — 並不存在以它為索引的個別技能提示庫。
+- 每個具名技能的目錄（工作區中的 `skills/<slug>/SKILL.md`）會連結至代理自己的資料夾。在內建執行環境上，已連結技能的 frontmatter 會自動載入系統提示，代理再視需要讀取本文；在對話中輸入 `/skill:<name>` 會載入該技能本文，作為該回合的指令。
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/zh-TW/手冊/操作指南/管理技能/).
+從外部取得的技能會在取得與寫入之間通過失效即拒絕的供應鏈掃描 — 未取得判定結果之前，任何技能內容都不會寫入磁碟或進入提示。所謂外部，指的是你自己註冊為技能來源的 GitHub 儲存庫：這裡沒有經過策畫的市集，因此儲存庫自身的中繼資料（其說明、其星星數、技能名稱）都是不受信任的顯示資料，掃描判定結果才是唯一的安全訊號。安裝時會取得技能的整個目錄，並在 `skills-lock.json` 中將其固定於來源提交，之後更新時會先再次通過同一道關卡，才會取代任何內容。做法說明請見[安裝與管理技能](/zh-TW/手冊/操作指南/管理技能/)。
 
-### Repo-scoped skills
+### 儲存庫範圍的技能
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+儲存庫可以自帶技能，放在任何慣例位置（`.agents/skills/`、`.claude/skills/`、`.opencode/skills/`）。空間會將每個已連結的儲存庫並排簽出至 `repos/<name>/` 下，但代理一次只在一個儲存庫中工作 — 因此它只攜帶**該儲存庫的**技能，並在移動時整組換掉。
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+哪個儲存庫處於作用中，是由代理碰觸的檔案推斷：在 `repos/<name>/` 下寫入檔案會使該儲存庫成為作用中的儲存庫，而只是跨儲存庫讀取則不會，因此為了追查某個符號而進入同層服務，絕不會在任務進行中把技能組整組換掉。在單一儲存庫的空間中，第一次回合之前就能知道答案。
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+這種範圍劃分是基於情境預算的決定。技能索引在每個回合都會留在提示中，而技能本文不會，因此一次列出每個儲存庫的技能會持續耗費 token — 而且當工作實際落在另一個服務時，某個服務的 `testing` 技能會產生誤導。同樣的道理也說明了為何代理的索引只帶一個儲存庫，但訊息輸入區卻不採這種範圍劃分：自己指名技能是一個明確的動作，因此 `/skill:<repo>:<name>` 可觸及空間中的任何儲存庫。
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+儲存庫技能會為**每一種**配接器載入，不只是內建執行環境。作用中儲存庫的技能會實際寫入代理的工作目錄，也就是 Claude Code 本來就會掃描的路徑；同一份索引也會組成內建執行環境所讀取的 `AGENTS.md`。儲存庫的技能在上述一切發生之前，會先通過與已安裝技能相同的失效即拒絕掃描 — 已簽出的儲存庫是複製而來的內容，其 frontmatter 會進入提示。
 
-## Capabilities
+## 能力
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+能力管制的是單次執行被_交付_了什麼，而不是其檔案系統允許它碰觸什麼。憑證仲介會在啟動時檢查這些能力：若某項能力為關閉，對應的權杖就不會被注入。
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **推送至儲存庫** — 管制用於 `git push` 的 GitHub 權杖是否注入。
+- **GitHub API** — 管制 `GH_TOKEN` 是否注入，以及對 api.github.com 的對外連線。
+- **工單** — 管制工單供應商的 API 金鑰，以及對其網域的對外連線。
+- **網路對外連線** — 任意的對外請求。
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+一次執行會從代理自己的資料列解析這些能力。當代理沒有設定時，會套用一組固定的保守預設值：三個憑證旗標關閉，網路對外連線開啟。代理表單中的「沙箱權限」切換鈕，會在上述回退預設值與儲存在代理上的自訂組合之間擇一。
 
-See [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/) for the other half of the story, including what is and is not enforced at the filesystem level.
+故事的另一半，包括檔案系統層級實際有強制執行與未強制執行的部分，請見[沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)。
 
-## The adapter decides what can be enforced
+## 配接器決定哪些規則能被強制執行
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+代理身上影響最深遠的單一欄位就是它的配接器，因為配接器的傳輸方式決定了 Control Center 的原則有多少真的能被強制執行。
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| 傳輸方式         | 配接器                    | Control Center 強制執行的內容                                                                                                                                                                                                                                              |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| 內建執行環境     | Control Center（內建）    | 全部。工具介面是依模式_建構_出來的，因此不允許的工具是看不見的，而不只是被拒絕；每次呼叫都會通過核准關卡與動作護欄；完成契約可以催促執行，並在該次執行結束時仍未交付成果時使其失敗                                                 |
+| Claude CLI       | Claude Code               | 只有提供給它的 `mcp__*` 工具。Claude 自己的讀取、寫入、編輯與 shell 工具存在於其行程中並在看不見的情況下執行 — 而且它以 `--dangerously-skip-permissions` 啟動，因為非互動式的 `claude -p` 否則會永遠卡在自己的提示上    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+具體來說，**只有內建執行環境支援子代理、執行中操控、暫停與繼續（因此也支援接手），以及結構性的模式強制執行。** Claude Code 這些全都沒有。
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[作業系統沙箱是下限，不是模式強制執行機制，而且並非每個主機都有]
+上述矩陣談的是 Control Center 能_看見與管制_什麼。在其底下，只要主機有的話，`cc_server` 會把 Claude Code CLI 包裝在主機的作業系統沙箱中 — macOS 上是 Seatbelt，Linux 與 WSL2 上是 bubblewrap — 因此看不見的 `rm` 或看不見的寫入仍受作業系統約束。在 **Windows 上完全沒有後端**，而在沒有 `bwrap` 與 `socat` 的 Linux 或 WSL2 上，探測結果會回報沒有，因此在那些地方，這些執行會退回環境清理、由仲介提供的憑證、對 Control Center 看得見之呼叫的護欄，以及對話自己的工作樹（`rift` 有提供時採寫入時複製；Windows 上則用 `git worktree`）。
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/).
+沙箱不是什麼：它不是一道_關卡_。它限制行程可讀取、寫入與連線的範圍 — 唯讀模式確實會用到它，以唯讀綁定掛載的形式 — 但它無法攔截呼叫、發出核准要求，或在事後告訴你 CLI 嘗試過什麼。這一點，加上剛才提到的四項能力，仍然是內建執行環境擁有而其他配接器沒有的。請見[沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)。
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+**沒有**配接器的代理會回退至 **Control Center（內建）** — 也就是伺服器內的迴圈，因此沒有 CLI 需要安裝 — 而其執行日誌會記下 `cc-harness`。每個植入的代理建立時都沒有配接器或模型，因此全新工作區的五個代理全都會在該處執行，使用 Anthropic 的預設模型，直到你為每個代理設定配接器與模型。上線流程中的「預設配接器」選項是用戶端偏好設定，伺服器從不讀取，也不會回溯套用到已建立的代理。
 
-## Where agents come from
+## 代理從何而來
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/zh-TW/手冊/概念/工作區/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **隨工作區植入。** 每個工作區 — 不只是第一個 — 都會取得一個 CEO 加上四位專責代理（`qa`、`architect`、`engineer`、`librarian`）向其回報，並在建立工作區時於背景以等冪方式建立。請見[工作區與隔離](/zh-TW/手冊/概念/工作區/)。
+- **手動新增**：在 設定 → 工作區 → 代理。要求代理雇用同事並不會建立資料列；請使用該畫面。
 
-## Live state
+## 即時狀態
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+代理沒有儲存狀態的欄位。每次讀取時，其即時狀態都是從最近的執行日誌推導而來：
 
-| State      | Meaning                                                              |
+| 狀態       | 含義                                                                 |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | 不存在任何執行日誌                                                   |
+| `running`  | 至少有一個執行正在進行中                                             |
+| `failed`   | 最近一次執行發生錯誤，或其存活狀態為 failed 或 dead                  |
+| `blocked`  | 最近一次執行的存活狀態為 blocked、stalled 或 looping                 |
+| `idle`     | 其他所有情況 — 代理先前執行過，且目前沒有進行中的工作                 |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+另有兩個狀態 `queued` 與 `succeeded`，存在於對話執行樹中的個別執行；名冊從不產生它們，因為已完成的執行顯示為綠色，是關於該次執行的事實，而不是關於代理的事實。
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/zh-TW/手冊/概念/多人協作/).
+線上狀態名冊會顯示一幅平行、較粗略的圖像，由伺服器端依據即時執行事件合成 — 思考中、執行中、等待核准、完成 — 這正是代理能與人類並列出現的原因。請見[多人協作](/zh-TW/手冊/概念/多人協作/)。
 
-## Related concepts
+## 相關概念
 
-- [Agent dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/): what happens when an agent is actually run
-- [Modes](/zh-TW/手冊/概念/模式/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/zh-TW/手冊/概念/多人協作/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/): what constrains a run today
-- [Agent configuration reference](/zh-TW/手冊/參考/代理設定/): the full field list
+- [代理派送生命週期](/zh-TW/手冊/概念/派送生命週期/)：代理實際被執行時會發生什麼
+- [模式](/zh-TW/手冊/概念/模式/)：塑造代理工具介面的每個對話設定
+- [多人協作](/zh-TW/手冊/概念/多人協作/)：代理作為主體、線上狀態，以及自主程度調節
+- [沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)：今日有哪些機制在約束執行
+- [代理設定參考](/zh-TW/手冊/參考/代理設定/)：完整欄位清單

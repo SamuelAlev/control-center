@@ -1,248 +1,259 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Обмеження — одна політика для кожної дії, що змінює стан
+description: Чому Control Center пропускає кожен побічний ефект агента через єдиний рушій allow/prompt/deny, чому таксономія ActionClass навмисно лишається малою і що насправді змінює регулятор автономності.
 slug: uk-UA/керівництво/поняття/обмеження
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Агенти в Control Center можуть видаляти файли, надсилати гілки, публікувати
+pull request і викликати зовнішні API. Кожна з цих дій — це інший _різновид_
+ризику, і довгий час політику мала лише одна з них — shell-команди. Обмеження
+існують, щоб однаково відповідати на одне запитання для кожної дії, що змінює
+стан, яку може виконати агент, незалежно від того, яке середовище виконання чи
+інструмент її пропонує: **це дозволено, потребує затвердження чи заборонено?**
 
-## One engine, every chokepoint
+## Один рушій, кожна точка перехоплення
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Є рівно один рушій політик. До нього звертаються в кожній точці, де дія може
+вийти за межі системи: реєстр інструментів вбудованого harness, шлюз
+диспетчера MCP на сервері та мутації операцій з репозиторіями. Тому правило,
+написане один раз, застосовується і до вбудованого середовища виконання, і до
+зовнішніх CLI агентів — немає другого, тихішого шляху в обхід. Старіша
+політика команд лише для bash досі працює: правило може збігатися з префіксом
+команди замість класу дій, і обидві форми співіснують в одному сховищі.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/uk-UA/керівництво/поняття/пісочниця-та-безпека/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Утім, рушій не замінює пісочницю ОС, а пісочниця не замінює його. Вони
+відповідають на різні запитання: обмеження вирішують, чи виклик, який Control
+Center бачить, узагалі може відбутися, а пісочниця окреслює, куди може
+дістатися породжений процес. `cc_server` застосовує пісочницю там, де хост
+надає бекенд — але [Windows не надає жодного, а Linux потребує `bwrap` і
+`socat`](/uk-UA/керівництво/поняття/пісочниця-та-безпека/). На таких хостах
+обмеження — це найзовнішній рівень примусу, а не політика, що лежить поверх
+базового рівня; це варто знати, коли ви вирішуєте, наскільки дозвільними
+бути.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: навмисно закрита таксономія
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Кожен інструмент, що змінює стан, оголошує, до яких **ActionClasses** він
+належить, із закритої множини з тринадцяти класів ефектів. П’ять із них за
+замовчуванням запитують підтвердження; решта дозволяє, і це змінює вже
+правило.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Клас                       | Вбудований стандарт | Що він охоплює                                                                                   |
+| -------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
+| `fileDelete`               | **prompt**          | Видалення файлу (запис у формі видалення, `rm`)                                                  |
+| `gitPush`                  | **prompt**          | Надсилання на віддалений git-репозиторій                                                         |
+| `prCreate`                 | **prompt**          | Створення pull request                                                                           |
+| `prPublish`                | **prompt**          | Публікація рецензії, злиття PR                                                                   |
+| `vendorSyncWrite`          | **prompt**          | Запис у зовнішній трекер тікетів (Linear, Jira, синхронізація з GitHub)                          |
+| `fileWriteOutsideWorktree` | allow               | Запис файлу поза ізольованим робочим деревом                                                     |
+| `gitCommit`                | allow               | Створення git-коміту                                                                             |
+| `networkEgress`            | allow               | Вихід у мережу (веб-вибірка, довільний HTTP)                                                     |
+| `secretAccess`             | allow               | Читання секрету чи облікових даних                                                               |
+| `packageInstall`           | allow               | Установлення пакета (npm, pip, pub, brew)                                                        |
+| `processSpawn`             | allow               | Запуск процесу (shell і все, що викликає shell)                                                  |
+| `workspaceMutation`        | allow               | Зміна структури робочого простору (репозиторії, простори, агенти)                                |
+| `enclosureControl`         | allow               | Керування ізольованим середовищем (rig): завантаження віртуальної машини, надсилання їй введення |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Вісім класів із дозволом за замовчуванням обрано з припущення, що під ними діє
+базовий рівень пісочниці. Він діє там, де хост надає бекенд, і не діє у Windows
+чи на Linux-машині без `bwrap` і `socat` — тож якщо ви хочете поставити
+`fileWriteOutsideWorktree` чи `packageInstall` під шлюз там, це правило
+доведеться написати.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Множина закрита навмисно. Новий інструмент, що змінює стан, який не оголошує
+жодного класу, не проходить тест храповика, тож таксономія може зростати лише
+через явне, обґрунтоване рішення — «розростання таксономії — це смерть цієї
+функції». Тринадцяти класів достатньо, щоб висловити політики, які люди
+справді пишуть (ніколи не надсилати без запиту, ніколи не видаляти поза
+робочим деревом, завжди дозволяти читання), і достатньо мало, щоб інтерфейс
+налаштувань лишався зрозумілим.
 
-## Rules and scope resolution
+## Правила та розв’язання областей
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Правило відображає `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Області вкладаються від найконкретнішої до найширшої:
 
-**space > agent > workspace > mode preset > built-in default**
+**простір > агент > робочий простір > пресет режиму > вбудований стандарт**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Розв’язання йде **спершу за конкретністю**: вирішує перша область із
+відповідним правилом, і на ній розв’язання зупиняється. Найсуворіше правило —
+лише розв’язувач нічиєї: між двома однаково конкретними правилами в межах
+однієї області та під час поєднання кількох класів, які оголошує одна дія. У
+межах області правило команди збігається з найдовшим префіксом команди.
+allow ніде не перемагає deny.
 
-Two decisions carry hard guarantees:
+Два рішення мають тверді гарантії:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Запити, закриті за замовчуванням (fail-closed).** `prompt` без
+  під’єднаного затверджувача розв’язується як _denied_. Питання без відповіді
+  ніколи не означає «так».
+- **Найсуворіше поєднання.** Дія, що охоплює кілька класів, поєднує їх
+  найсуворіше; коли кілька класів запитують підтвердження, одне підтвердження
+  перелічує їх усі.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Навмисно немає фіксатора на хід. Кожен виклик інструмента розв’язує політику
+заново, тож повторні запити для тієї самої дії обмежує лише власне
+«запам’ятати це рішення» оператора, а не щось прив’язане до ходу.
 
-## Argument-level rules
+## Правила на рівні аргументів
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Правило може обмежувати АРГУМЕНТИ дії, а не лише її дієслово. «Може
+надсилати» і «може надсилати до `feature/*`» — це різні твердження, і лише
+друге є контролем. Шлюз можливостей, який дозволяє саме лише дієслово, — це
+форма, що стоїть за більшістю опублікованих інцидентів з агентами.
 
-A constraint may name:
+Обмеження може називати:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **шляхи** — glob-шаблони (`repos/**`, `!**/.env`)
+- **refs** — git-референси, із запереченням `!` (`['**', '!main']` читається як
+  «будь-яка гілка, крім main»)
+- **хости** — мережеві призначення, з шаблонами піддоменів (`*.internal`)
+- **команди** — префікси команд, що збігаються на межі слова
+- **стелі** — `maxCount` / `maxCents`, тож «видалити до 50 файлів» можна
+  висловити
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Три властивості випливають із того, що граматика лишається закритою й без
+циклів, і всі три — це і є сенс: кожне правило читається як речення, яке можна
+прочитати назад, кожна відмова може назвати обмеження, що збіглося, а всю
+політику можна перелічити — ви бачите, що агент може робити, *перш ніж* він
+запуститься.
 
-Three rules that matter:
+Три правила, які мають значення:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **Обмежене правило конкретніше** за необмежене в тій самій області, тож
+  «заборонити надсилання до `main`» перемагає «дозволити надсилання», і нікому
+  не треба думати про порядок.
+- **Обмежувальне** правило (deny / prompt) застосовується, коли запит
+  торкається *будь-якого* названого ним значення; **дозвільне** (allow)
+  застосовується лише коли запит *цілком* у ньому. Якби обидва читалися
+  однаково, агент міг би відмити заборонений шлях, додавши поруч невинний.
+- Правило, яке називає аспект, про який запит нічого не каже, не застосовується
+  й не пропускається: воно **ескалює до затвердження**. Тихе пропускання
+  зробило б кожне правило захищеної гілки безсилим проти інструмента, який не
+  повідомляє свій ref; тиха відмова відхиляла б кожне надсилання, яке екстрактор
+  не може описати. Без під’єднаного затверджувача наявне правило fail-closed
+  перетворює цю ескалацію на відмову.
 
-## What a command rule can and cannot catch
+## Що правило команди може й не може зловити
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Правило `commandPrefix` збігається на межі слова: `git push` охоплює
+`git push origin main`, але не `git pushx`. Воно **не** нормалізує shell.
+`git  push` (два пробіли), `cd sub && git push` і `GIT_DIR=… git push` — це всі
+різні рядки, і жоден із них не збігається з правилом про `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Це справжнє обмеження, і про нього сказано прямо, а не замасковано: правила
+команд — це зручність для оператора, щоб формувати звичайну поведінку агента,
+**а не** межа проти ворожого. Межі — це класи ефектів (які інструмент оголошує
+й не може переписати по-іншому), запобіжна мережа команд режиму під сховищем
+політик і пісочниця ОС під обома. Правило команди, що розв’язується як `allow`,
+ніколи не послаблює жодну з них — мережа режиму запускається після, і її `deny`
+остаточний.
 
-## Standing approvals
+## Постійні затвердження
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Відповідь на запит «запам’ятати це» записує справжнє правило політики: з
+областю (простір / агент / робочий простір), **обмежене аргументами**
+(затвердження надсилання до `feature/login` надає `feature/**`, а не `main`) і
+**самоскасоване** за явним TTL. Сказати «так» на найближчі кілька годин — це
+не те саме, що тихо переписати свою постійну політику, і правила, які воно
+записує, потрапляють у те саме сховище з походженням `remembered` і терміном
+дії, тож їх можна скасувати достроково.
 
-## Enforcement levels
+## Рівні примусу
 
-Each rule carries one:
+Кожне правило має один із них:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — дозволити, але зафіксувати, що правило збіглося. Це шлях
+  упровадження: розгорніть суворе правило в режимі advisory, тиждень читайте
+  журнал аудиту, щоб побачити, що воно *заблокувало б*, а потім підвищте його.
+  Без цього рівня суворі політики ніколи не вмикають.
+- **soft** — заборонити, з можливістю перевизначення для того, хто має
+  відповідний дозвіл, із зафіксованим обґрунтуванням. Саме перевизначення — це
+  подія в журналі аудиту.
+- **hard** (типовий) — заборонити. Ніщо його не перевизначає.
 
-## The managed tier
+## Керований рівень
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Оператор встановлення може закріпити політику, яку жоден адміністратор
+робочого простору не може послабити. Керовані правила живуть на сервері й
+зливаються **найсуворіше** з власним ланцюгом кожного робочого простору — вони
+не є областю на його чолі, бо керований `allow` на чолі ланцюга дозволив би
+встановленню перевизначити deny робочого простору, тобто протилежне до
+призначення обмежувача. Тому кероване правило може лише посилювати.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Якщо вказати `CC_SERVER_MANAGED_POLICY` на JSON-файл, він цілком переважає
+збережені правила — саме це дає оператору змогу закріпити позицію, яку не
+перемкне жоден адмін-інтерфейс. Це відповідь на «чи можу я завадити своїм
+розробникам вимикати елементи контролю безпеки?».
 
-## The autonomy dial is a profile, not a parallel system
+## Регулятор автономності — це профіль, а не паралельна система
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Регулятор автономності для кожного простору — це іменований профіль поверх
+того самого сховища політик, а не другий механізм. Його три налаштування
+зберігаються й надсилаються як `proposeOnly`, `actWithApproval` і `actFreely`
+(форми з дефісами — лише текст інтерфейсу, а `autonomy.setForSpace` відхиляє
+будь-що інше). Невстановлений регулятор поводиться як `actWithApproval`.
 
-What each one does to a resolved decision:
+Що кожне з них робить із розв’язаним рішенням:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** відхиляє кожен інструмент під шлюзом напряму. Агент усе ще
+  може міркувати й відповідати; він просто не може діяти, і його повідомлення
+  каже чому.
+- **`actWithApproval`** (і невстановлений стан) — це шлюз затвердження
+  fail-closed, описаний вище.
+- **`actFreely`** заздалегідь затверджує все, що не розв’язалося як тверде
+  `deny`.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Останнє варто сказати прямо, а не пом’якшувати: за `actFreely` рішення `prompt`
+**не** ескалює до затверджувача — його дозволяють, і нікого не запитують.
+Регулятор переживає лише явне правило `deny`. Тож `actFreely` — це свідоме
+надання автономності, а не зручність, і правило fail-closed захищає саме той
+випадок, де це важливо (`actWithApproval`, типовий).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Делегування між агентами охороняється в точці перехоплення `delegate_task`
+усіма чотирма охоронцями: обмеженням глибини (типово 3), виявленням циклів,
+**стелею автономності** (делегат ніколи не може діяти з більшою автономністю,
+ніж той, хто делегує, — привілеї не можна відмити, передавши роботу вільнішому
+агентові) і **бюджетними рамками** (делегування списує залишок бюджету того,
+хто делегує, і не може створити більше). Кожен відмовляє гучно, а причина
+охоронця повертається агентові дослівно.
 
-## The adapter honesty matrix
+## Матриця чесності адаптерів
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Не кожне середовище виконання дозволяє Control Center перехоплювати кожну дію.
+Зовнішні CLI агентів виконують частину інструментів нативно, всередині
+процесу, де жоден шлюз не може стояти. Замість вдавати інше, кожен адаптер
+несе **матрицю чесності**: для кожного адаптера — чи Control Center фільтрує
+поверхню інструментів, перехоплює виклики інструментів, спостерігає за
+контрактом завершення, бачить нативні інструменти раннера і чи покриті
+внутрішньопроцесні інструменти профілем пісочниці.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Два записи варто прочитати, перш ніж довіряти конфігурації. Вбудований harness
+оголошує, що його внутрішньопроцесні файлові інструменти **не** поміщені в
+пісочницю — поверхня інструментів і цей рушій політик є його єдиною межею
+файлової системи. Claude Code оголошує, що його власні виклики інструментів
+**не** можна перехопити, бо він запускається з `--dangerously-skip-permissions`;
+Control Center бачить лише його виклики `mcp__*`, а його власні інструменти
+читання, запису, редагування та shell виконуються непомітно.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Екран налаштувань показує цю матрицю, бо єдина непрощенна вада для системи
+обмежень — заявляти про охоплення, якого немає.
 
-## Probing policy before it bites
+## Перевірка політики до того, як вона вкусить
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Обмеження живуть за адресою **Налаштування → Робочий простір → Дозволи агента**
+(`/workspaces/<id>/settings/workspace/permissions`). На екрані є матриця
+політик, де пишуть правила, шаблони політик, перевірка «Що якщо?», журнал
+аудиту авторизації та матриця чесності адаптерів.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Перевірка приймає клас дії (або команду) та область і показує, яке правило
+вирішило й чому. Оскільки розв’язання чисте й детерміноване — та сама дія, та
+сама область, те саме рішення — відповідь перевірки і є відповіддю, яку
+отримає агент.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/): writing and testing rules in practice
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/): що насправді обмежує запуск агента і як далеко сягає базовий рівень ОС під цим рушієм
+- [Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/): простори, суб’єкти та де живе регулятор автономності
+- [Налаштувати обмеження](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/): написання й перевірка правил на практиці

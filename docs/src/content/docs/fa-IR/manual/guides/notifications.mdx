@@ -1,149 +1,153 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: پیکربندی اعلان‌ها
+description: دسته‌ها را روشن یا خاموش کنید، Quiet hours و یک صدا را تنظیم کنید و بدانید کدام اعلان‌ها کجا به شما می‌رسند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+این راهنما نشان می‌دهد چگونه اعلان‌ها را پیکربندی کنید و هر تنظیم واقعاً چه چیزی را
+کنترل می‌کند.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+اعلان‌ها روی دو سطح می‌رسند. **مرکز اعلان** — همان زنگ در نوار عنوان — یک خوراک
+پایدار به‌ازای هر فضای کاری روی سرور را می‌خواند. **توست‌های سیستم‌عامل** مسیری
+جداگانه و فقط برای دسکتاپ‌اند که فریم‌های زندهٔ ارسالی از سرور آن را تغذیه می‌کنند.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[نسخهٔ وب هیچ اعلان سیستم‌عاملی نشان نمی‌دهد]
+خط لولهٔ توست فقط توسط بوت‌استرپ دسکتاپ ساخته می‌شود. روی
+`app.usectrl.dev` هیچ توست سیستم‌عاملی، هیچ صدای اعلان و هیچ بنر محیطی‌ای وجود
+ندارد — زنگ و تاریخچه‌اش همچنان کار می‌کنند، چون خوراک سرور را می‌خوانند. کلاینت
+تلفن به‌کلی هیچ سطح اعلانی ندارد.
 :::
 
-## Turn categories on or off
+## روشن یا خاموش کردن دسته‌ها
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. به **تنظیمات → شما → اعلان‌ها** بروید
+2. **فعال‌سازی اعلان‌ها** را روشن بگذارید
+3. دسته‌هایی را که می‌خواهید روشن یا خاموش کنید. دقیقاً شانزده مورد وجود دارد:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| دسته                        | زمان فعال‌شدن                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| عامل تمام کرد               | یک عامل یک اجرا را تمام کرد                                                    |
+| PR منتشر شد                 | یک عامل یک PR منتشر کرد                                                        |
+| PR ادغام شد                 | یک PR ادغام شد                                                                 |
+| پیام‌های جدید               | پیامی در فضایی رسید که به آن نگاه نمی‌کنید                                     |
+| در pull request منشن شدید   | پیمایش اعلان‌های GitHub دید که در یک PR منشن شده‌اید                            |
+| درخواست بازبینی             | بازبینی شما واقعاً روی یک PR غیرپیش‌نویس درخواست شد                             |
+| بازبینی کهنه                | کامیت‌های تازه روی pull requestی که پیش‌تر بازبینی کرده‌اید فرود آمدند          |
+| آمادهٔ ادغام                | pull requestی که نوشته‌اید قابل‌ادغام شد، یا دیگر نیست                          |
+| تصمیم‌های بازبینی            | یک بازبین تأیید کرد، درخواست تغییر داد، یا تأییدی رد شد                        |
+| بررسی‌ها                    | CI روی pull requestی که نوشته‌اید ناموفق شد، یا بهبود یافت                      |
+| رشته‌های بازبینی            | کسی در رشته‌ای که شما در آن هستید پاسخ داد یا آن را حل کرد                     |
+| تیکت تخصیص یافت             | یک تیکت تخصیص یافت                                                             |
+| وضعیت تیکت تغییر کرد        | وضعیت یک تیکت تغییر کرد                                                        |
+| جلسه به‌زودی شروع می‌شود    | یک جلسهٔ تقویمی داخل پنجرهٔ پیش‌هشدار شماست                                     |
+| تقویم قطع شد                | توکن OAuth یک تقویم متصل منقضی شد                                              |
+| به‌روزرسانی‌های محفظه        | یک محفظه تصاحب، بازپس گرفته یا ناموفق شد                                       |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+هر چیزی بیرون از این فهرست نه اعلان‌پذیر است و نه قابل فیلتر — دستهٔ «هر چیز
+دیگر» وجود ندارد.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+این ترجیحات همراه کاربر شما روی همهٔ دستگاه‌ها می‌رود، پس تلفن و لپ‌تاپ هم‌گام
+می‌مانند. بلندی صدا استثنای عمدی است و به‌ازای هر دستگاه جدا می‌ماند.
 
-## Set quiet hours
+## تنظیم Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. در همان صفحه، **Quiet hours** را روشن کنید
+2. یک زمان شروع و پایان در قالب `HH:MM` وارد کنید (پنجرهٔ پیش‌فرض 22:00–08:00 است)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+در طول Quiet hours، اعلان‌های غیرفوری دور ریخته می‌شوند — نه در صف می‌مانند و نه
+بعداً بازپخش می‌شوند.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+دو دسته **فوری** هستند و همیشه می‌رسند و هم Quiet hours _و هم_ حالت تمرکز را دور
+می‌زنند: **جلسه به‌زودی شروع می‌شود** و **PR منتشر شد**. هشدار جلسه‌ای که فقط بعد
+از آن ببینید بی‌ارزش است؛ دلیلش همین است.
 
-## Choose a sound
+## انتخاب یک صدا
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. تا **صدای اعلان** پایین بروید
+2. یکی از یازده صدای همراه، یا **هیچ** را انتخاب کنید
+3. دکمهٔ **آزمایش** را فشار دهید تا آن را بشنوید و بلندی صدا را با لغزنده تنظیم کنید
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+خود اپ صدا را پخش می‌کند؛ اعلان سیستم‌عامل بی‌صدا تحویل داده می‌شود تا هرگز آن را
+دو بار نشنوید.
 
-## Set the meeting lead time
+## تنظیم زمان پیش‌هشدار جلسه
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. تا **زمان پیش‌هشدار** پایین بروید
+2. **۵**، **۱۰**، **۱۵** یا **۳۰** دقیقه را انتخاب کنید
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+این مقدار مشخص می‌کند اعلان **جلسه به‌زودی شروع می‌شود** چه‌قدر پیش از یک رویداد
+تقویمی فعال شود. پیش‌فرض ۵ دقیقه است.
 
-## Know when a notification is suppressed
+## دانستن اینکه چه زمانی یک اعلان سرکوب می‌شود
 
-A notification is dropped, silently, when any of these is true:
+یک اعلان، بی‌صدا، وقتی هر یک از این‌ها درست باشد کنار گذاشته می‌شود:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- اعلان‌ها به‌طور کلی خاموش باشند، یا دستهٔ آن خاموش باشد
+- شما از قبل در همان مسیری باشید که اعلان شما را به آن می‌برد — و در مورد یک
+  پیام، از قبل در همان فضا باشید
+- حالت تمرکز فعال باشد و دسته فوری نباشد
+- Quiet hours فعال باشند و دسته فوری نباشد
 
-Those checks apply to OS toasts. The durable bell still records the event.
+این بررسی‌ها به توست‌های سیستم‌عامل مربوط‌اند. زنگ پایدار همچنان رویداد را ثبت
+می‌کند.
 
-Two more suppressions live further upstream, in what the server sends at all:
+دو سرکوب دیگر بالادست‌تر، در همان چیزی که سرور اصلاً می‌فرستد، قرار دارند:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- پیامی از یک **انسان** دیگر که در آن منشن نشده‌اید هرگز اعلان نمی‌شود
+- فضاهای عامل‌به‌عامل در نوار کناری بی‌صدا هستند، پس هرگز نشان خوانده‌نشدهٔ انسان
+  را بالا نمی‌برند
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+درون یک فضا گوشهٔ بی‌صدایی وجود ندارد: هر گفتگو به‌یک‌اندازه اعلان می‌دهد، از جمله
+رشته‌ها. وضعیت خوانده‌شدن در محدودهٔ فضا است، پس خوانده‌نشده در سراسر گفتگوهای یک
+فضا تجمیع می‌شود، نه به‌ازای هر گفتگو.
 
-## Read and clear the notification centre
+## خواندن و پاک‌کردن مرکز اعلان
 
-1. Click the bell in the title bar
+1. روی زنگ در نوار عنوان کلیک کنید
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+پاپ‌اور فعالیت اخیر را نشان می‌دهد و هر ورودی را مستقیم به همان چیزی که دربارهٔ آن
+است پیوند می‌دهد. بازکردن آن همه‌چیز را خوانده‌شده علامت **نمی‌زند** — از **علامت
+همه خوانده‌شده** در سرصفحه استفاده کنید، یا یک ردیف را جداگانه علامت بزنید. وضعیت
+خوانده‌شدن همراه کاربر شما روی همهٔ دستگاه‌ها می‌رود.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[پاک کردن همه یک واترمارک است، نه حذف]
+**پاک کردن همه** یک واترمارک به‌ازای هر کاربر می‌زند که همه‌چیز قدیمی‌تر را پنهان
+می‌کند؛ ردیف‌ها می‌مانند. جدا از آن، هر فضای کاری فقط **۲۰۰** ردیف خوراک تازه‌ترین
+خود را نگه می‌دارد و با رسیدن ردیف‌های جدید هرس می‌کند، در حالی که زنگ روی **۵۰**
+مورد تازه‌تر مشترک می‌شود و پاپ‌اور حداکثر **۱۵** از آن‌ها را فهرست می‌کند.
+تاریخچهٔ پیش از آن، بی‌توجه به وضعیت خوانده‌شدن، از دست رفته است.
 :::
 
-## Troubleshooting
+## عیب‌یابی
 
-### No OS notifications on macOS
+### روی macOS اعلان سیستم‌عاملی نمی‌آید
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+هنگام اجرای اپ، مجوز به‌صورت بومی درخواست می‌شود. اگر آن را رد کرده‌اید، Control
+Center را در **تنظیمات سیستم → اعلان‌ها** دوباره فعال کنید؛ هیچ درخواست
+درون‌برنامه‌ای برای دوباره راه‌انداختن آن وجود ندارد.
 
-### Nothing arrives on the web build
+### در نسخهٔ وب هیچ چیزی نمی‌رسد
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+طبیعی است — نسخهٔ وب هیچ خط لولهٔ اعلان سیستم‌عاملی ندارد. از زنگ استفاده کنید.
 
-### The bell badge shows zero but there is clearly new activity
+### نشان زنگ صفر است اما آشکارا فعالیت تازه وجود دارد
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+تا وقتی جریان علامت‌های خوانده‌شدن پس از اتصال تثبیت شود، ورودی‌ها خوانده‌شده
+نمایش داده می‌شوند تا نشانگری که برق بزند و بعد خالی شود شکل نگیرد. به‌محض
+بارگذاری علامت، تثبیت می‌شود.
 
-### An agent's run finished but nothing pinged me
+### اجرای یک عامل تمام شد اما هیچ‌چیز به من خبر نداد
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+بررسی کنید که از قبل در همان فضایی که رخ داده نبوده‌اید — یک مسیر فعال توست
+سیستم‌عامل خودش را سرکوب می‌کند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Use focus mode and soundscapes](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-تمرکز/)
-- [Triage your inbox](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)
-- [Curate your newsfeed](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/خوراک-خبری/)
+- [استفاده از حالت تمرکز و منظرهای صوتی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-تمرکز/)
+- [تریاژ صندوق ورودی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)
+- [خوراک خبری خود را بچینید(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/خوراک-خبری/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/)

@@ -1,132 +1,120 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: 審查運算（群組、軸與確定性差異）
+description: 審查運算階段在伺服器端產出什麼 —— 群組、API 合約與視覺差異、依軸劃分的閘門 —— 以及它如何納入檢閱分頁。
 slug: zh-TW/手冊/操作指南/審查運算
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+PR 的**檢閱**分頁在審查管線運作期間顯示它的即時進度，之後則顯示它所發佈的產物，
+以及其上的各種操作。一個分頁、兩種狀態，因為它們是同一件事在兩個時刻的樣子。它不是
+預設分頁：除非有人主動要求，否則 PR 不會有審查，因此開啟它的是**詢問 AI**。
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+在那個分頁背後，`cc_server` 建立檔案群組、執行確定性軸，並透過 `review_studio.*`
+RPC 操作把它們提供出去（`cohorts`、`blastRadius`、`cohortImpact`、`ciSignals`、
+`dependencyDiffs`、`setContractDecision`、`approveVisual`、`compute`，以及它們各自
+對應的 `watch*` 孿生操作）。仍指名 `pr.reviewStudio` 的持久化版面配置，開啟的也是
+這個檢閱分頁。
 
-On the Review tab:
+在檢閱分頁上：
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- 彙整代理用 `publish_artifact` 發佈一個普通的對話產物，因此分頁會透過聊天泡泡所
+  開啟的同一個產物檢視器來呈現它 —— 產物系統並沒有專為審查打造的副本。
+- 發現位於它旁邊的側欄中，判定則顯示在產物上方的一條細窄橫條上，而不是儀表板頁首。
+- 當 PR 的 head 已經越過這次審查時，會出現一條過時橫幅。
 
-See [Use AI-powered review](/zh-TW/手冊/操作指南/ai-審查/) for the flow and
-[Review and merge a PR](/zh-TW/手冊/操作指南/審查並合併-pr/) for acting on it.
+流程請見[使用 AI 審查](/zh-TW/手冊/操作指南/ai-審查/)，如何據此採取行動請見
+[審查並合併 PR](/zh-TW/手冊/操作指南/審查並合併-pr/)。
 
-## Cohorts
+## 群組
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+群組把 PR 中變更的檔案，歸入依內容衍生的分類桶——讓含義上屬於同一組的檔案聚在一起
+——並依影響程度排序，使風險最高的一組最先被讀到。每次 head-SHA 變更時都會重新計算
+並整個替換；每個群組都有跨 push 穩定的鍵，因此摘要與審查進度能挺過一次 rebase。
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+如果儲存庫尚未建立程式碼索引，群組會退回依路徑分組。若要為儲存庫建立索引，請使用
+**設定 → 工作區 → 存放庫** —— 每個儲存庫列都帶有一個**建立程式碼索引**操作，它會
+執行 `index_code` 管線並就地回報進度。
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+程式碼圖只解析隨附文法的語言（Dart、JS/TS、PHP、Python、Rust、Zig、C/C++、Go、Java、
+Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada）。任何其他語言的儲存庫都永遠
+無法產生語意群組，無論你索引它多少次。
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+代理可以用 `set_cohort_summary` 為群組記錄一份 markdown 摘要，並用
+`add_review_diagram` 附加一張結構化的導覽圖 —— 一個帶型別的序列、實體關係或狀態機
+物件，絕不是 mermaid 文字。每一條邊都會與真實程式碼圖交叉核對，程式碼圖無法證實的
+邊會被標記為未經驗證，而不是被當成事實繪出。
 
-## The API-contract axis
+## API 合約軸
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+合約軸只對**明確**的規格檔案做差異比對。它會匹配六個預設檔名 —— `openapi.yaml`、
+`openapi.yml`、`openapi.json`、`swagger.yaml`、`swagger.yml`、`swagger.json` ——
+再加上任何檔名含有 `openapi` 或 `swagger`，且以 `.yaml`、`.yml` 或 `.json` 結尾的
+變更檔案。從處理常式程式碼推斷出的合約不在範圍內，GraphQL 綱要也不做差異比對。
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+每個變更都會被分類 —— endpoint、parameter、schema 與 response 的新增、移除與修改
+—— 並帶有一個嚴重程度：**breaking**（移除 endpoint 或 param、收緊型別、新增必填
+param）、non-breaking（附加式），或 informational。被拒絕的變更會讓合約閘門失敗，
+未作出決定的 breaking 變更亦然；breaking 但已核准的會提出警告；沒有 breaking 變更
+則通過。標記為 **derived (advisory)** 的差異永不參與閘門。
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+核准或拒絕一個變更用的是 `review_studio.setContractDecision`。
 
-## The visual axis
+## 視覺軸
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+如果 PR 在一個帶有 Widgetbook 應用程式的 Flutter 儲存庫中改動了 UI 元件，運算階段
+會透過在該 PR 的 base 與 head 工作樹中進行一次無介面的 `flutter test` golden 執行，
+渲染出這些變更元件的前後狀態，然後對像素做差異比對。
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[這需要在伺服器主機上安裝 Flutter SDK]
+純 Dart 伺服器無法在行程內渲染 Flutter widget，因此它會以外部命令呼叫
+`flutter test`。SDK 必須安裝在執行 `cc_server` 的那台機器上 —— 而不是你的用戶端。
+沒有它，這個軸會回報 **unavailable**，原因是「no Flutter SDK on host」。它絕不會
+回報一個它並未掙得的通過。
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+標記為 **changed** 或 **removed** 的快照會扣住視覺閘門，直到被核准；**unchanged**、
+**added** 與 **approved** 的快照則會放行。無法使用的原因有四種：主機上沒有 Flutter
+SDK、儲存庫中沒有 Widgetbook 應用程式、沒有可進行 golden 測試的使用案例，或 golden
+測試裝置發生錯誤。
 
-Approving an intended change is `review_studio.approveVisual`.
+核准一個有意為之的變更用的是 `review_studio.approveVisual`。
 
-## The axes and the verdict
+## 各軸與判定
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| 軸       | 驅動來源                  |
+| -------- | ------------------------- |
+| 正確性   | 審查代理（token）         |
+| 安全性   | 審查代理（token）         |
+| 測試缺口 | 審查代理（token）         |
+| 視覺     | 確定性（golden 測試裝置） |
+| API 合約 | 確定性（規格差異）        |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+三個 token 軸會在主導代理呼叫 `finalize_review` 時記錄下來；兩個確定性軸則由運算階段
+記錄。
 
-Each axis reports one of:
+每個軸會回報下列狀態之一：
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| 狀態            | 含義                         |
+| --------------- | ---------------------------- |
+| **Pass**        | 已執行，未發現任何阻擋性問題 |
+| **Warn**        | 已執行，有非阻擋性的顧慮     |
+| **Fail**        | 已執行，發現阻擋性問題       |
+| **Partial**     | 已執行但無法完成；結果不完整 |
+| **Unavailable** | 完全無法執行                 |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+只有 **pass** 和 **warn** 能放行受閘門控管的軸。**Partial** 和 **unavailable** 刻意與
+**fail** 區分開來，兩者都不會放行閘門。
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+各軸會彙總成 **Ship**、**Hold** 或 **Block**，而且它們只會讓判定變_更_嚴厲 ——
+判定絕不會被降級。受閘門控管且**失敗**的軸會強制給出 **Block**；**partial** 或
+**unavailable** 的軸則至少強制給出 **Hold**。因此，一個無法執行的阻擋性軸會_扣住_
+判定：缺乏證據永遠不會讓閘門變綠。
 
-The verdict on the Review tab is the one `finalize_review` posted.
+檢閱分頁上的判定，就是 `finalize_review` 所發佈的那一個。
 
-## Related guides
+## 相關指南
 
-- [Use AI-powered review](/zh-TW/手冊/操作指南/ai-審查/)
-- [Dispatch reviewer agents](/zh-TW/手冊/操作指南/派送審查代理/)
-- [Review and merge a PR](/zh-TW/手冊/操作指南/審查並合併-pr/)
-- [Search code with the code graph](/zh-TW/手冊/操作指南/程式碼搜尋/)
+- [使用 AI 審查](/zh-TW/手冊/操作指南/ai-審查/)
+- [派送審查代理](/zh-TW/手冊/操作指南/派送審查代理/)
+- [審查並合併 PR](/zh-TW/手冊/操作指南/審查並合併-pr/)
+- [用程式碼圖搜尋程式碼](/zh-TW/手冊/操作指南/程式碼搜尋/)

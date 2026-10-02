@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Ιστορικό συνομιλιών
+description: Πώς μια εκτέλεση διατηρεί, διπλώνει, διακλαδίζει και συνεχίζει τα συμφραζόμενά της — στρατηγικές συμπύκνωσης, το δέντρο συνεδριών και τι σημαίνει στην πραγματικότητα η «συνέχεια».
 slug: el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Μια μεγάλη συνομιλία προσκρούει σε έναν σκληρό τοίχο: το παράθυρο συμφραζομένων του μοντέλου. Όλα σε αυτή τη σελίδα υπάρχουν εξαιτίας αυτού του τοίχου, και το ενδιαφέρον είναι τι πετιέται, τι διατηρείται και τι μπορεί να ανακτηθεί.
 
-## Four ways to reclaim context
+## Τέσσερις τρόποι ανάκτησης συμφραζομένων
 
-They are not alternatives so much as a ladder, cheapest first.
+Δεν είναι τόσο εναλλακτικές όσο μια σκάλα, με το φθηνότερο πρώτο.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Μηχανισμός        | Κόστος          | Διατηρεί                             | Χάνει                                       |
+| ----------------- | --------------- | ------------------------------------ | ------------------------------------------- |
+| **Απάλειψη**      | Τίποτα          | Κάθε λέξη της αφήγησης               | Παλαιότερα αποτελέσματα εργαλείων χωρίς ενδιαφέρον |
+| **Απόρριψη εικόνων** | Τίποτα       | Το κείμενο γύρω τους                 | Παλιά στιγμιότυπα οθόνης                    |
+| **Στιγμιότυπα**   | Τίποτα          | Κάθε λέξη, ως pixel                  | Την αναγνωσιμότητα από μοντέλο χωρίς όραση  |
+| **Σύνοψη**        | Μία κλήση μοντέλου | Μια αφήγηση                       | Τις λεπτομέρειες που δεν διάλεξε            |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Η απάλειψη και η απόρριψη εκτελούνται πρώτες, επειδή είναι δωρεάν και χωρίς απώλειες με τον τρόπο που έχει σημασία: πετούν όγκο που κανείς δεν επρόκειτο να ξαναδιαβάσει.
 
-### Why summarizing is the last resort
+### Γιατί η σύνοψη είναι η τελευταία λύση
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Η σύνοψη είναι η μόνη από τις τέσσερις που **ξοδεύει μια κλήση μοντέλου** και η μόνη που **αποφασίζει για λογαριασμό σας** τι είχε σημασία. Και τα δύο είναι πραγματικό κόστος. Η κλήση είναι το πιο ενδιαφέρον, λόγω του πότε συμβαίνει.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Η συμπύκνωση συνήθως εκτελείται *πριν* τον τοίχο, σε ένα κατώφλι. Αλλά εκτελείται και **αντιδραστικά**, αφού ο ίδιος ο πάροχος απορρίψει ένα αίτημα ως πολύ μεγάλο — η ευρετική εκτίμηση υπολόγισε λιγότερα από όσα μέτρησε στην πραγματικότητα ο πάροχος. Σε αυτή την περίπτωση, ένας συμπυκνωτής που συνοψίζει πρέπει να κάνει ένα αίτημα για να συρρικνώσει τα συμφραζόμενα, και το αίτημα που κάνει είναι αυτό που μόλις υπερχείλισε.
 
-### Snapshots
+### Στιγμιότυπα
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Η συμπύκνωση με στιγμιότυπα αποδίδει το απορριπτόμενο ιστορικό σε πυκνές σελίδες από γλυφικά pixel και το επιστρέφει ως εικόνες.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Η βάση της είναι μια ιδιορρυθμία χρέωσης: ένα μοντέλο όρασης χρεώνει μια εικόνα με σταθερή ή ανάλογη του εμβαδού τιμή, που δεν έχει καμία σχέση με το πόσοι χαρακτήρες περιέχονται σε αυτή. Δώδεκα χιλιάδες χαρακτήρες απορριπτόμενης συνομιλίας κοστίζουν όσο tokens κειμένου για δώδεκα χιλιάδες χαρακτήρες. Οι ίδιοι χαρακτήρες αποδοσμένοι σε μία σελίδα κοστίζουν μία εικόνα.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Αυτό που την κάνει αξιόλογη και όχι απλώς έξυπνη είναι ότι δεν χρειάζεται **καμία κλήση μοντέλου, κανένα κλειδί και κανένα δίκτυο**. Είναι η μία στρατηγική που είναι πάντα διαθέσιμη κατά την ανάκτηση από υπερχείλιση.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Το σχήμα ανακατασκευής είναι: αυτολεξεί κεφαλή, μέση ως εικόνα, αυτολεξεί ουρά. Η κεφαλή είναι η εργασία και οι περιορισμοί στους οποίους αναφέρεται ό,τι ακολουθεί· η ουρά είναι εκεί όπου βρίσκεται αυτή τη στιγμή η δουλειά. Η μέση είναι αυτό που ξαναδιαβάζεται λιγότερο και κοστίζει περισσότερο.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Υποβαθμίζεται ειλικρινά]
+Ένα μοντέλο χωρίς όραση δεν μπορεί να διαβάσει σελίδες από pixel, και η απόδοση κειμένου που κανείς δεν μπορεί να κοιτάξει δεν είναι υποβαθμισμένη συμπύκνωση — είναι διαγραμμένη συνομιλία. Έτσι, αποφασίζει η ικανότητα του αναγνώστη, και ένα μοντέλο χωρίς όραση παίρνει πάντα τη σύνοψη.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Το σχήμα της σελίδας κοστολογείται για το API, όχι για τα βάρη]
+Το Gemini χρεώνει σταθερή τιμή ανά εικόνα, οπότε κάθε επιπλέον χαρακτήρας στη σελίδα είναι δωρεάν και οι σελίδες του είναι οι πλατύτερες. Το OpenAI και το Anthropic χρεώνουν με βάση το εμβαδόν, οπότε μια μεγαλύτερη σελίδα δεν προσφέρει τίποτα. Ορισμένοι επεξεργαστές υποβαθμίζουν την ανάλυση πέρα από ένα κατώφλι, καταστρέφοντας σιωπηλά τα γλυφικά των 5 pixel, οπότε οι σελίδες τους μένουν κάτω από αυτό. Ένα Claude που σερβίρεται μέσω πύλης χρεώνεται από την πύλη, οπότε το σχήμα ακολουθεί το αναγνωριστικό μοντέλου όπως το ονομάζει η διαδρομή.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Τα στιγμιότυπα επαναποδίδονται από το **διατηρούμενο κείμενο προέλευσης** σε κάθε πέρασμα, ποτέ από τα pixel του προηγούμενου περάσματος. Η απεικόνιση μιας εικόνας υποβαθμίζει τα γλυφικά κατά μία γενιά ανά συμπύκνωση, ώσπου τίποτα να μην μπορεί να τα διαβάσει.
 
-## What a run actually resumes from
+## Από τι συνεχίζει στην πραγματικότητα μια εκτέλεση
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Ιστορικά, κάθε εκτέλεση harness ξεκινούσε από κενό ιστορικό και ξανάχτιζε τη συνέχεια από ένα μπλοκ `<context>` στην προτροπή — μια *σύνοψη* της συνομιλίας και όχι την ίδια τη συνομιλία. Τρία πράγματα προέκυπταν από αυτό:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Η συνέχεια ήταν μια επανάληψη της αφήγησης.** Το μοντέλο δεν έβλεπε ποτέ τη δική του προηγούμενη συλλογιστική πορεία ή τα πραγματικά bytes που επέστρεψαν τα εργαλεία του, μόνο μια περιγραφή τους.
+- **Η επαναφορά χανόταν μαζί με τη διεργασία.** Ένα `checkpoint` είναι δείκτης σε θέση της ζωντανής λίστας μηνυμάτων, οπότε μια επανεκκίνηση έχανε κάθε ετικέτα που είχε ορίσει το μοντέλο.
+- **Η επανάληψη δεν μπορούσε να ξεχωρίσει το «τίποτα για επανάληψη» από το «τίποτα φορτωμένο».** Μετά από επανεκκίνηση, η αποτυχημένη σειρά λείπει από τη ζωντανή κατάσταση και στις δύο περιπτώσεις.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Και τα τρία διορθώνονται με τη μόνιμη αποθήκευση του αρχείου καταγραφής. Αυτό αποθηκεύεται σε κάθε **όριο σειράς** και ποτέ στη μέση μιας σειράς: ένα ιστορικό που αποτυπώνεται ανάμεσα σε μια κλήση εργαλείου και το αποτέλεσμά της είναι κάτι που κανένας πάροχος δεν θα δεχτεί, οπότε μια κατάρρευση τη στιγμή εκείνη επαναφέρει τη σειρά *πριν* από αυτήν και όχι μισή σειρά που δεν μπορεί να αναπαραχθεί.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Μια εκτέλεση που συνεχίζεται περικόπτεται στα νεότερα μηνύματά της, κόβοντας σε ένα όριο που δεν είναι ορφανό αποτέλεσμα εργαλείου — ένα αποτέλεσμα του οποίου η κλήση έχει περικοπεί αποτελεί αίτημα που οι πάροχοι απορρίπτουν απευθείας, και ένα αρχείο καταγραφής που δεν μπορεί να σταλεί είναι χειρότερο από ένα σύντομο.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Πού βρίσκεται]
+Ένα αρχείο JSON ανά συνομιλία και πράκτορα, στον κατάλογο του ίδιου του χώρου εργασίας, δίπλα στη βάση δεδομένων του. Δύο πράκτορες σε μία συνομιλία κρατούν δύο ιστορικά: είδαν διαφορετικά αποτελέσματα εργαλείων και τους δόθηκαν διαφορετικές προτροπές συστήματος, οπότε η συγχώνευσή τους θα έδινε στον καθένα τη συλλογιστική πορεία του άλλου ως δική του.
 :::
 
-## The session tree
+## Το δέντρο συνεδριών
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Κάθε μήνυμα καταγράφει αυτό από το οποίο συνεχίζει, και κάθε συνομιλία ονομάζει το τρέχον **άκρο της διακλάδωσης**. Αυτή η μία απόφαση είναι όλο το χαρακτηριστικό.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Η διακλάδωση δεν γράφει τίποτα.** Μετακινεί τον δείκτη. Η διαδρομή που αφήσατε είναι ακόμη εκεί, οπότε η επιστροφή σε αυτήν είναι άλλη μια μετακίνηση του δείκτη και όχι επαναφορά — και η επεξεργασία μιας προτροπής για επανεκτέλεσή της παύει να σας κοστίζει την απάντηση με την οποία τη συγκρίνατε.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Χωρίς αυτό, κάθε μορφή επιστροφής πρέπει να κρύβει ή να διαγράφει μηνύματα, και η απόκρυψη είναι ένα ψέμα που ο επόμενος αναγνώστης δεν μπορεί να διαπεράσει.
 
-### Branch versus fork
+### Διακλάδωση έναντι fork
 
-|                | Branch              | Fork                        |
+|                | Διακλάδωση          | fork                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Τι συμβαίνει   | Ο δείκτης μετακινείται | Η διαδρομή αντιγράφεται  |
+| Πού πηγαίνει   | Ίδια συνομιλία      | Νέα συνομιλία               |
+| Κόστος         | Τίποτα              | Ένα αντίγραφο της διακλάδωσης |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Ένα fork αντιγράφει με **νέα ids** αντί να μοιράζεται γραμμές. Δύο συνομιλίες που μοιράζονται γραμμές θα εμφάνιζαν η μία τα μεταγενέστερα μηνύματα της άλλης, πράγμα που είναι το ένα πράγμα που δεν πρέπει να κάνει ένα fork.
 
-### Rewind rides the same pointer
+### Η επαναφορά κινείται στον ίδιο δείκτη
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Το ζεύγος `checkpoint` / `rewind` εντός εκτέλεσης σηματοδοτεί ένα καθαρό όριο σειράς και επιστρέφει σε αυτό μετά από μια εξερεύνηση, διατηρώντας μια σύνοψη. Επειδή τα σημεία ελέγχου αποθηκεύονται μόνιμα μαζί με το αρχείο καταγραφής, μια ετικέτα που όρισε το μοντέλο πριν από μια επανεκκίνηση προσγειώνεται ακόμη εκεί όπου ορίστηκε. Ένα σημείο ελέγχου του οποίου ο στόχος δεν επέζησε μιας περικοπής **απορρίπτεται**, δεν περιορίζεται — η επαναφορά «στην ετικέτα» με προσγείωση κάπου αλλού είναι ακριβώς η αποτυχία που υπάρχει για να αποτρέπει μια ετικέτα.
 
-## Related
+## Σχετικά
 
-- [Branch a conversation](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακλάδωση-συνομιλίας/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων/) — the other half of what fills a context window
-- [Slash commands](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Διακλάδωση συνομιλίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακλάδωση-συνομιλίας/) — ο περιηγητής δέντρου, το fork και η εξαγωγή
+- [Πλαίσιο εργαλείων και προσωρινή αποθήκευση προτροπών](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων/) — το άλλο μισό αυτού που γεμίζει ένα παράθυρο συμφραζομένων
+- [Εντολές slash](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/) — `/compact`, `/shake`, `/context`, `/tree`

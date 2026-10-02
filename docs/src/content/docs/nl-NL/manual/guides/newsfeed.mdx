@@ -1,130 +1,143 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
-dateModified: 2026-09-19
+title: Je nieuwsfeed samenstellen
+description: Voeg RSS/Atom-feeds toe en beheer ze, lees artikelen met inhoudsblokkering en weet dat je feeds je in elke werkruimte volgen.
 slug: nl-NL/handleiding/gidsen/nieuwsfeed
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Deze gids laat zien hoe je de nieuwsfeed vormgeeft: welke bronnen hij ophaalt,
+hoe artikelen worden gelezen en wat inhoudsblokkering doet.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[De nieuwsfeed is per gebruiker, niet per werkruimte]
+Feeds en artikelen horen bij de aangemelde gebruiker: je feedlijst, leesstatus en
+bladwijzers volgen je in elke werkruimte en naar elk apparaat waarop je je
+aanmeldt, en geen enkele andere gebruiker ziet ze. Feeds staan in de globale
+database van de server, dus de URL `/newsfeed` bevat alleen daarom een
+werkruimte-id, omdat elke route in de app dat doet.
 :::
 
-## Read articles
+## Artikelen lezen
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Klik in de zijbalk op **Nieuwsfeed**
+2. Wissel met de segmenten in de werkbalk tussen **Alle**, **Ongelezen** en
+   **Opgeslagen**
+3. Verklein de lijst met het zoekvak of de bronkiezer
+4. Wissel met de indelingsknoppen tussen het raster in magazinestijl en de
+   compacte lijst
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Als je een artikel opent, wordt het als gelezen gemarkeerd. Gebruik **Alles als
+gelezen markeren** in de paginakop — dit verschijnt alleen zolang er iets
+ongelezen is — om de achterstand in één keer weg te werken, en de
+bladwijzerknop op een kaart om er een te bewaren voor later.
 
-The layout choice persists across launches.
+De indelingskeuze blijft bewaard bij het opnieuw starten.
 
-## Add a feed
+## Een feed toevoegen
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Open **Instellingen → Jij → Nieuwsfeed** (het instellingenpictogram in de kop
+   van de nieuwsfeed brengt je er rechtstreeks heen)
+2. Druk op **Feed toevoegen**
+3. Vul een **naam** en de **Feed-URL** in (RSS of Atom)
+4. Klap eventueel **Geavanceerd** open en stel een aangepaste **User-Agent** in —
+   sommige uitgevers geven een andere respons aan een standaardclient
+5. Druk op **Feed toevoegen**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Controlepunt: de feed verschijnt in de lijst **Feeds** en zijn artikelen komen
+binnen na de eerste fetch. Een URL waarop al een abonnement loopt, wordt
+geweigerd met “Er bestaat al een feed met deze URL.”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Bij het eerste gebruik worden voor elke gebruiker veertien feeds klaargezet:
+Control Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt,
+TLDR AI, Import AI, The Pragmatic Engineer, Martin Fowler, Will Larson's
+Irrational Exuberance, The Engineering Manager, Lea Verou en CSS-Tricks.
 
-## Manage feeds
+## Feeds beheren
 
-Each row in the **Feeds** list gives you three controls:
+Elke rij in de lijst **Feeds** geeft je drie bedieningselementen:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Bediening             | Effect                                                                    |
+| --------------------- | ------------------------------------------------------------------------- |
+| Schakelaar            | De feed uitschakelen. Een uitgeschakelde rij wordt gedimd en niet meer opgehaald |
+| Vernieuwen-pictogram  | Deze ene feed nu ophalen                                                  |
+| Prullenbakpictogram   | De feed verwijderen, na een bevestiging                                   |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+Met **Alles vernieuwen** bovenaan de lijst worden alle ingeschakelde feeds
+opgehaald.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+De ondertitel van een feed toont de beschrijving en hoe lang geleden hij is
+opgehaald; een mislukte feed toont in plaats daarvan de fout, in een
+waarschuwingskleur.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Er is geen bewerkingsoptie — om de naam, URL of user agent van een feed te
+wijzigen, verwijder je hem en voeg je hem opnieuw toe.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Het ophalen gebeurt volledig op de server: één keer per gebruiker bij het
+opstarten (en bij het eerste gebruik voor accounts die later worden aangemaakt),
+daarna elke 30 minuten.
 
-## Block ads and trackers in the reader
+## Advertenties en trackers blokkeren in de lezer
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Zoek in Instellingen → Jij → Nieuwsfeed naar **Lezersvoorkeuren**
+2. Laat **Artikelen in app openen** aan om de ingebouwde lezer te gebruiken, of
+   zet dit uit om artikelen aan je systeembrowser te geven
+3. Laat **Advertenties, trackers en cookiebanners blokkeren** aan
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Blokkeren staat standaard aan. De ingebouwde lezer is alleen beschikbaar op
+macOS en Windows: op de webbuild en op Linux _is_ de systeembrowser de lezer en
+een artikel opent daar (op web in een nieuw tabblad). Op web zijn de
+blokkeerschakelaar en de kaarten **Filterlijsten** en **Vertrouwde sites**
+verborgen.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+De lezer in de app herformatteert het artikel niet. Hij rendert de pagina van de
+uitgever in een ingebedde webview en onderdrukt advertenties, trackers en
+cookiebanners met behulp van gecachte filterlijsten.
 
-### Check or update the filter lists
+### De filterlijsten controleren of bijwerken
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+De kaart **Filterlijsten** toont hoeveel regels voor het verbergen van cookies,
+het verbergen van advertenties en het blokkeren van netwerkverkeer er zijn
+geladen, plus de trackingparameters die hij verwijdert en wanneer de lijsten
+voor het laatst zijn bijgewerkt. Druk op **Controleren op updates** om ze te
+vernieuwen.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+De bronnen zijn EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster,
+meerdere uBlock Origin-lijsten en de trackingparameterlijst van uBO. Totdat een
+download slaagt, bestempelt de kaart de lijsten als vooraf geïnstalleerde
+standaardwaarden die nooit zijn bijgewerkt — de tellers voor advertentie-,
+cookie- en netwerkregels blijven op nul; het verwijderen van trackingparameters
+gebruikt nog steeds een ingebouwde standaardset.
 
-### Allowlist a site
+### Een site toestaan
 
-Some sites break under blocking.
+Sommige sites werken niet goed wanneer er geblokkeerd wordt.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Ga in Instellingen → Jij → Nieuwsfeed naar **Vertrouwde sites**
+2. Druk op **Vertrouwde site toevoegen** en voer het domein in
 
-Blocking is skipped there.
+Daar wordt het blokkeren overgeslagen.
 
-## Troubleshooting
+## Problemen oplossen
 
-### A feed I added shows up in another workspace
+### Een feed die ik heb toegevoegd, verschijnt in een andere werkruimte
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Dat is verwacht gedrag. De nieuwsfeed is per gebruiker, niet per werkruimte — je
+feeds volgen je overal waar je bent aangemeld. Zie de waarschuwing bovenaan.
 
-### A feed row shows an error instead of a description
+### Een feedrij toont een fout in plaats van een beschrijving
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+De laatste fetch is mislukt en de rij toont de reden letterlijk. Druk op het
+vernieuwen-pictogram om het opnieuw te proberen en controleer of de URL nog
+steeds RSS of Atom levert. Een uitgever die onbekende clients weigert, heeft
+mogelijk een aangepaste user agent nodig; dat betekent dat je de feed verwijdert
+en opnieuw toevoegt.
 
-### An article page renders badly
+### Een artikelpagina wordt slecht weergegeven
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Zet **Advertenties, trackers en cookiebanners blokkeren** uit voor dat domein via
+**Vertrouwde sites**, of zet **Artikelen in app openen** uit en lees het artikel
+in je browser.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Configure notifications](/nl-NL/handleiding/gidsen/meldingen/)
-- [Triage your inbox](/nl-NL/handleiding/gidsen/postvak-in-trieren/)
+- [Meldingen configureren](/nl-NL/handleiding/gidsen/meldingen/)
+- [Je postvak in triëren](/nl-NL/handleiding/gidsen/postvak-in-trieren/)

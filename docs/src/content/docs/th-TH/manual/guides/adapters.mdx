@@ -1,172 +1,129 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: จัดการอะแดปเตอร์และโมเดล
+description: เชื่อมต่อผู้ให้บริการโมเดล เลือกโมเดลที่เอเจนต์ใช้รัน และตรวจดูว่าโฮสต์เซิร์ฟเวอร์มี CLI ตัวรันเอเจนต์ใดอยู่บ้าง
 slug: th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+คู่มือนี้แสดงวิธีเชื่อมต่อผู้ให้บริการโมเดลและเลือกสิ่งที่เอเจนต์ใช้รัน
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+ทุกอย่างในนี้อยู่ในหน้าเดียว: **การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล** รายการในแถบข้างย่อยเขียนว่า “ผู้ให้บริการโมเดล” ส่วนหัวเรื่องของหน้าเขียนว่า “อะแดปเตอร์”
 
-## What an adapter is
+## อะแดปเตอร์คืออะไร
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+อะแดปเตอร์คือ_ตัวรัน_ที่รันเทิร์นของเอเจนต์ มีอยู่สองตัวและรายการนี้ตายตัว — คุณเพิ่มตัวที่สามไม่ได้
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| อะแดปเตอร์                | CLI      | การขนส่ง                                              |
+| ------------------------- | -------- | ----------------------------------------------------- |
+| Control Center (built-in) | ไม่มี    | ลูปเอเจนต์ในโปรเซสเดียวกัน สื่อสารกับผู้ให้บริการผ่าน HTTP |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`               |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI และอื่น ๆ เป็น**ผู้ให้บริการ**บนอะแดปเตอร์ในตัว ไม่ใช่ CLI แยกต่างหาก สิ่งที่คุณ_เพิ่มได้_คือผู้ให้บริการอีกราย — ปลายทางใดก็ตามที่เข้ากันได้กับ OpenAI หรือ Anthropic นั่นคือหัวข้อถัดไป
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[การตรวจจับตรวจสอบเซิร์ฟเวอร์ ไม่ใช่เครื่องของคุณ]
+การ์ด **ตัวรันที่ตรวจพบ** แสดงรายการสิ่งที่ `cc_server` พบบน `PATH` ของ_โฮสต์เซิร์ฟเวอร์_ บนไคลเอนต์แบบบางหรือไคลเอนต์เว็บ นั่นคือเครื่องคนละเครื่องกับที่คุณกำลังดูอยู่ ให้ติดตั้ง CLI บนเครื่องที่รัน `cc_server`
 :::
 
-## Connect a model provider
+## เชื่อมต่อผู้ให้บริการโมเดล
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+อะแดปเตอร์ในตัวต้องมีผู้ให้บริการที่เชื่อมต่ออย่างน้อยหนึ่งรายก่อนจึงจะรันได้ แค็ตตาล็อกมีมาให้ 14 ราย
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. ไปที่ **การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล**
+2. เลื่อนไปที่ **ผู้ให้บริการและโมเดล**
+3. ค้นหาผู้ให้บริการของคุณแล้วเชื่อมต่อ:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| ผู้ให้บริการ                                                                                             | วิธีเชื่อมต่อ                                                                                                                  |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | คีย์ API การสมัครสมาชิก Claude Pro/Max ไม่ใช่การลงชื่อเข้าใช้ API ของ Anthropic — ให้ใช้อะแดปเตอร์ Claude Code สำหรับแพ็กเกจนั้น |
+| OpenAI, Codex, Cursor                                                                                    | ลงชื่อเข้าใช้ OAuth ผ่านเบราว์เซอร์ หรือใช้คีย์ API Codex คือ ChatGPT Plus/Pro ผ่านแบ็กเอนด์ Codex Responses ไม่ใช่การสปอว์น CLI |
+| Kimi Code                                                                                                | OAuth ผ่านเบราว์เซอร์เท่านั้น — เป็นโฟลว์ device code เป็นแพ็กเกจเหมาจ่าย จึงไม่มีราคาต่อโทเคน                                   |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | คีย์ API                                                                                                                      |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+จุดตรวจสอบ: แบดจ์ของแถวจะเปลี่ยนเป็น “เชื่อมต่อแล้ว” และเมื่อขยายแถวจะแสดงโมเดลที่ผู้ให้บริการรายนั้นให้บริการ แต่ละโมเดลมีราคาต่อโทเคนหนึ่งล้านและหน้าต่างบริบทกำกับอยู่
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+โทเคน OAuth จะไปอยู่ในที่เก็บข้อมูลรับรองของเซิร์ฟเวอร์เอง และถูกต่ออายุใหม่ก่อนหมดอายุ ข้อมูลรับรองของผู้ให้บริการเป็น**ระดับโฮสต์** — ใช้ร่วมกันโดยทุกเวิร์กสเปซในการติดตั้งนี้ ไม่ได้จำกัดขอบเขตไว้ที่เวิร์กสเปซใดเวิร์กสเปซหนึ่ง
 
-### Add a custom provider
+### เพิ่มผู้ให้บริการที่กำหนดเอง
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+ใช้วิธีนี้กับ Ollama, LM Studio, vLLM หรือการติดตั้งใช้งานส่วนตัว
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. ใน **ผู้ให้บริการและโมเดล** ใต้ **ผู้ให้บริการที่กำหนดเอง** กด **เพิ่มผู้ให้บริการ**
+2. กรอก **ชื่อ** เลือก **ชนิด API** (ที่เข้ากันได้กับ OpenAI หรือ Anthropic) และใส่ **Base URL** (ตัวอย่าง `http://localhost:11434/v1`)
+3. เพิ่ม **คีย์ API** หากปลายทางต้องใช้ แล้วกด **เพิ่มผู้ให้บริการ**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+ผู้ให้บริการที่กำหนดเองจะปรากฏในรายการเดียวกัน พร้อมปุ่มลบที่ผู้ให้บริการในตัวรายอื่นไม่มี
 
-## Pick a model for an agent
+## เลือกโมเดลให้เอเจนต์
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** แล้วเลือกเอเจนต์
+2. บนแท็บ **การตั้งค่า** เลือก **อะแดปเตอร์**
+3. เลือก **โมเดล** จากเมนูแบบเลื่อนลงข้าง ๆ
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+สำหรับอะแดปเตอร์ในตัว เมนูแบบเลื่อนลงถูกประกอบขึ้นสด ๆ จากแค็ตตาล็อกของผู้ให้บริการที่เชื่อมต่อทุกราย ผู้ให้บริการที่ไม่มีข้อมูลรับรองที่เก็บไว้จะไม่มีโมเดลมาให้เลย เพราะฉะนั้นเมนูที่ว่างเปล่าเกือบทุกครั้งจึงหมายถึง “ยังไม่ได้เชื่อมต่ออะไรเลย” มากกว่า “ไม่มีอะไรให้ใช้”
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev เป็นเพียงข้อมูลเสริม ไม่เคยเป็นแหล่งของ id]
+แค็ตตาล็อก [models.dev](https://models.dev) ที่มาพร้อมระบบให้ราคาและหน้าต่างบริบทสำหรับโมเดลที่อยู่ในรายการสดแล้วเท่านั้น มันไม่เคยเพิ่ม id ของโมเดล หากโมเดลที่คุณคาดว่าจะมีหายไป แปลว่าปลายทางของผู้ให้บริการไม่ได้ส่งโมเดลนั้นกลับมา
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+id ของโมเดลสำหรับอะแดปเตอร์ในตัวอยู่ในรูปแบบที่ระบุคุณสมบัติ `provider/model` และอาจมีเชนสำรองที่คั่นด้วย `|` เมื่อใช้ตัวสำรอง ต้นทุนจะคิดราคาตามโมเดลที่ให้บริการเทิร์นนั้นจริง ๆ ไม่ใช่โมเดลที่คุณขอไป
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[เอเจนต์ที่ไม่มีอะแดปเตอร์จะรันบนลูปในตัว]
+ทุกเวิร์กสเปซสร้างเอเจนต์เริ่มต้นห้าตัว — CEO หนึ่งตัว บวก `qa`, `architect`, `engineer` และ `librarian` — โดยไม่มีอะแดปเตอร์และไม่มีโมเดล การสั่งงานจะถอยกลับไปใช้ **Control Center (built-in)** ไม่ใช่การตั้งค่า **ตัวรันเริ่มต้น** ในหน้านี้ ซึ่งเป็นค่ากำหนดฝั่งไคลเอนต์ที่เส้นทางการสั่งงานไม่เคยอ่าน บันทึกการรันจะบันทึก `cc-harness` สำหรับการรันเหล่านั้น บันทึกการสนทนาจึงระบุได้ว่าอะไรคือสิ่งที่รันจริง
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+และเมื่อไม่มีโมเดลด้วย ลูปในตัวจะขอโมเดลเริ่มต้นจาก Anthropic เอเจนต์ที่ไม่ได้ตั้งค่าไว้เลยจึงรันได้หากคุณเชื่อมต่อบัญชี Anthropic ไว้ และถ้าไม่ก็จะล้มเหลวด้วย `No credential for provider "anthropic"`
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+การทำขั้นตอนอะแดปเตอร์ของการเริ่มต้นใช้งานให้เสร็จจะเติมย้อนหลังให้กับ**ทุก**เอเจนต์ที่ยังขาดอะแดปเตอร์หรือโมเดล — ทั้ง CEO และผู้เชี่ยวชาญ ทั่วทุกเวิร์กสเปซที่มีอยู่ในขณะนั้น — ด้วยคู่ที่คุณเลือก เวิร์กสเปซที่สร้างขึ้นภายหลังยังคงสร้างเอเจนต์เริ่มต้นทั้งห้าแบบไม่ตั้งค่าไว้ ให้ตั้งอะแดปเตอร์และโมเดลอย่างชัดเจนให้กับทุกเอเจนต์ที่คุณตั้งใจจะใช้
 :::
 
-## Install a runner CLI
+## ติดตั้ง CLI ของตัวรัน
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+อะแดปเตอร์ในตัวไม่ต้องติดตั้งอะไร สำหรับ Claude Code ให้ติดตั้ง CLI ของมัน **บนโฮสต์เซิร์ฟเวอร์** ด้วยตัวจัดการแพ็กเกจของเครื่องมือนั้น ตัวอย่างเช่น:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+จากนั้นกด **รีเฟรช** ที่ด้านบนของหน้า แต่ละแถวที่ตรวจพบจะแสดงเวอร์ชันและพาธที่แก้ไขแล้ว พร้อมชิปที่บอกว่ารองรับโหมด JSON และการเลือกโมเดลหรือไม่
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+CLI ภายนอกเก็บข้อมูลรับรองของตัวเองไว้ในการกำหนดค่าของตัวเอง บนโฮสต์เซิร์ฟเวอร์ Control Center ไม่ได้จัดการสิ่งเหล่านั้น
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[อาร์กิวเมนต์ของอะแดปเตอร์และตัวแปรสภาพแวดล้อมอยู่บนอุปกรณ์นี้]
+แต่ละแถวของอะแดปเตอร์มีฟิลด์ **อาร์กิวเมนต์** และกล่องโต้ตอบ **ตัวแปรสภาพแวดล้อม** ค่าเหล่านั้นถูกเก็บไว้บนอุปกรณ์ของคุณ เซิร์ฟเวอร์อ่าน argv และ env สำหรับการเปิดใช้งานจากที่เก็บการตั้งค่าของตัวเอง ให้ใส่คีย์ของผู้ให้บริการไว้บนเซิร์ฟเวอร์ (OAuth หรือช่องกรอกคีย์ในหน้าผู้ให้บริการโมเดล) ไม่ใช่ในสองฟิลด์นั้น
 :::
 
-## Restrict which providers a workspace may use
+## จำกัดว่าผู้ให้บริการรายใดที่เวิร์กสเปซใช้ได้
 
-Provider governance is per workspace and is evaluated last-match-wins.
+การกำกับผู้ให้บริการเป็นรายเวิร์กสเปซ และประเมินแบบรายการที่ตรงท้ายสุดมีผล
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. ใน **ผู้ให้บริการและโมเดล** ปิดสวิตช์ **อนุญาต** บนแถวของผู้ให้บริการ
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+การทำเช่นนี้จะเขียนคำสั่ง `deny` สำหรับผู้ให้บริการรายนั้นในเวิร์กสเปซที่ใช้งานอยู่ และโมเดลของรายนั้นจะหลุดออกจากแค็ตตาล็อกของเวิร์กสเปซนั้น การเปิดสวิตช์กลับจะลบคำสั่งนั้นออก
 
-## Troubleshooting
+## การแก้ไขปัญหา
 
-### A runner shows as not found
+### ตัวรันแสดงว่าไม่พบ
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- ตรวจสอบว่า CLI อยู่บน `PATH` ของ**โฮสต์เซิร์ฟเวอร์** ไม่ใช่แค่ของเครื่องคุณ
+- แอปเดสก์ท็อปที่เปิดผ่าน GUI จะสปอว์นเซิร์ฟเวอร์ของมันด้วย `PATH` ที่จำกัด CLI ที่ติดตั้งไว้ในพาธที่เข้าถึงได้จากเชลล์เท่านั้นอาจมองไม่เห็นสำหรับมัน
+- กด **รีเฟรช** หลังติดตั้ง
 
-### The model dropdown is empty
+### เมนูแบบเลื่อนลงของโมเดลว่างเปล่า
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- อะแดปเตอร์เป็นแบบในตัวและยังไม่ได้เชื่อมต่อผู้ให้บริการ — ให้เชื่อมต่อรายหนึ่งใน **ผู้ให้บริการและโมเดล**
+- หรือผู้ให้บริการเชื่อมต่ออยู่แต่ถูกปฏิเสธโดยสวิตช์กำกับของเวิร์กสเปซนี้
 
-### A model runs but the price shows as unknown
+### โมเดลรันได้แต่ราคาแสดงเป็นไม่ทราบ
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+รายการโมเดลสดมี id อยู่ ส่วนราคาและบริบทมาจาก models.dev โมเดลที่ใหม่เอี่ยม หรือโมเดลจากผู้ให้บริการที่กำหนดเอง ยังไม่มีรายการในแค็ตตาล็อก
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Manage API keys](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
-- [Diagnose an agent](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
-- [Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [จัดการคีย์ API](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
+- [วินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
+- [จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

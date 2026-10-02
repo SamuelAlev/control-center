@@ -1,118 +1,134 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: تسجيل اجتماع وتلخيصه
+description: سجّل مكالمة، واحصل على تفريغ نصي، وحوّله إلى ملاحظات وبنود عمل وقرارات.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) for how it works.
+يبيّن هذا الدليل كيف تسجّل اجتماعًا وتحصل على ملخص يولّده الذكاء الاصطناعي.
+انظر [الاجتماعات والنسخ النصي](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) لمعرفة كيف يعمل.
 
-## Before you start
+## قبل أن تبدأ
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **انتظر نموذج الكلام، ثم أعد تشغيل الخادم.** الإقلاع العادي
+  يثبّت نموذج ASR المختار قسرًا (Parakeet TDT 0.6B v3، الافتراضي متعدد
+  اللغات، نحو 600 MB) في الخلفية. يحلّ الخادم النموذج
+  **مرة واحدة عند الإقلاع**، فيبقى التشغيل الأول بلا عمليات تسجيل حتى
+  تعيد تشغيل الخادم. من غير نموذج على القرص، يفشل التسجيل برسالة
+  `Could not start recording on the host: …`. لاختيار بناء آخر، انتقل إلى
+  **الإعدادات ← الخادم ← نماذج الصوت والاجتماعات** — وهذا يحتاج إعادة تشغيل أيضًا.
+- امنح إذن **الميكروفون** حين يطلبه نظام التشغيل عند أول تسجيل.
+- على **macOS 14.4+** يُلتقط صوت النظام بتقاطات عمليات Core Audio — بلا
+  مشغّل لتثبيته، لكن النظام يسأل مرة ثانية عن إذن _التقاط الصوت_. هذا ليس
+  تسجيل الشاشة، ولا يضيء مؤشر تسجيل الشاشة أبدًا. رفض الإذن يُفشل البدء
+  برسالة `System-audio capture permission denied.` وتحت macOS 14.4 لا
+  يوجد التقاط لصوت النظام.
+- على **Linux** يجب أن يكون `parecord` (pulseaudio-utils) أو `pw-record`
+  (pipewire) على `PATH` — يشغّل الالتقاط أحدهما مقابل مصدر مراقبة في
+  PipeWire/PulseAudio. من غير أحدهما يفشل البدء برسالة
+  `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[أين يذهب صوت اجتماعك]
+يجري الالتقاط والنسخ وإلغاء الصدى وفصل المتحدثين كلها على الجهاز، بلا
+استدعاء سحابي — لكن «الجهاز» يعني **مضيف cc_server**، وهو جهاز آخر حين
+تشغّل الخادم عن بُعد. والملخص النهائي تشغيل وكيل عادي: يرسل خط أنابيب
+`meeting_summary` التفريغ النصي كاملًا وملاحظاتك التقريبية إلى مزوّد النموذج
+الذي يستخدمه ذلك الوكيل. وجّه ذلك الوكيل إلى مزوّد محلي إذا كان يجب ألا
+يغادر التفريغ الجهاز.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+تبيّن شاشة التسجيل هذا أثناء التسجيل، فيكون القرار أمامك قبل أن يوجد
+تفريغ يُرسَل.
 :::
 
-## Start a recording
+## بدء التسجيل
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. افتح **الاجتماعات** في الشريط الجانبي.
+2. انقر **تسجيل اجتماع**. تُفتح شاشة التسجيل الحي على `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+يبدأ التسجيل فورًا ويلتقط ميكروفونك مع خرج صوت النظام — المشاركون
+الآخرون. لا يوجد سؤال عن الوضع ولا منتقي لمصدر الصوت: وضع الحضور الشخصي
+بميكروفون واحد موجود في API، لكن بلا واجهة اليوم.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+في المتصفح يعمل التدفق نفسه، بفارق واحد: «صوت النظام» مشاركة شاشة يجب
+أن تتضمن مسارًا صوتيًا. شارك علامة تبويب في المتصفح (أو شاشتك كاملة)
+وفعّل «مشاركة صوت علامة التبويب» / «مشاركة صوت النظام» في المنتقي. كثيرًا
+ما لا توفّر مشاركة Safari وFirefox، ومشاركة الشاشة الكاملة على macOS،
+مسارًا.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+تعرض الشاشة مقياس مستوى، والوقت المنقضي، وتفريغًا نصيًا مباشرًا يتكوّن
+في أحد الجانبين.
 
-## During the meeting
+## أثناء الاجتماع
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **دوّن ملاحظات تقريبية** في لوحة الملاحظات. تُحفظ وأنت تكتب وتُسلَّم
+  لاحقًا إلى وكيل التلخيص، فدوّن ما قد يفوته التفريغ.
+- **اختر قالب الملاحظات** في صف **القالب النشط**. يشكّل ملخص هذا الاجتماع
+  ويُلتقَط مع التسجيل، فإعادة التشغيل لاحقًا تُعيد القالب الذي اخترته هنا.
+- **أوقف مؤقتًا واستأنف** بزر الإيقاف المؤقت. يتوقف النسخ أثناء الإيقاف
+  المؤقت ويتجمد المؤقت.
+- يصل التفريغ موسومًا بالمتحدث: تُوسَم كلماتك بـ **أنت**، ويُوسَم كل من في
+  المكالمة بـ **آخرون** — إلى أن يقسم فصل المتحدثين «آخرون» إلى `Person 1`
+  و`Person 2` و… ويمكنك إعادة تسميتهم.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[قد لا يُنسَخ متحدث هادئ جدًا]
+يتخطى النسخ أي نافذة صوت لم ترتفع فوق عتبة الصمت، من غير فكها أصلًا.
+يمنع ذلك القناة الهادئة من إهدار المعالج على رموز مهلوسة لغير الكلام،
+ويعني أيضًا أن متحدثًا خافتًا أو بعيدًا قد لا يُنتج تفريغًا. افحص مقياس
+المستوى في البداية، لا في النهاية.
 :::
 
-## Stop and summarize
+## الإيقاف والتلخيص
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. انقر **إيقاف وتلخيص**.
+2. ينقلك Control Center مباشرة إلى عرض تفاصيل الاجتماع، وعلامته
+   **قيد المعالجة**: يقسم فصل المتحدثين القناة البعيدة إلى متحدثين
+   منفردين، ويولّد خط أنابيب `meeting_summary` الملخص.
+3. ينتقل الاجتماع إلى **تم** حين ينتهي خط الأنابيب. لا يلزمك انتظاره —
+   يحدّث عرض التفاصيل نفسه.
 
-## Review the writeup
+## مراجعة الملخص
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+لتفاصيل الاجتماع (`/meetings/:meetingId`) أربع علامات تبويب:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| علامة التبويب | ما فيها |
+| --- | --- |
+| **الملاحظات** | ملخص الذكاء الاصطناعي والملاحظات المحسَّنة، مبنيان من ملاحظاتك التقريبية والتفريغ النصي |
+| **التفريغ النصي** | التفريغ الكامل الموسوم بالمتحدث، مع الطوابع الزمنية |
+| **بنود العمل** | مهام مستخرجة، لكل منها مالك اختياري |
+| **القرارات** | قرارات التُقطت أثناء المكالمة |
 
-From here you can:
+من هنا تستطيع:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **إعادة تسمية المتحدثين**: غيّر `Person 1` إلى اسم حقيقي، فيسري ذلك على التفريغ كله.
+- **علّم بنود العمل منجزة** حين تُنجزها.
+- **إنشاء تذكرة** من بند عمل: يُنشئ هذا تذكرة جديدة غير مُسنَدة عنوانها بند العمل، ويربطها بالصف. عيّنها لوكيل من التذكرة نفسها (انظر [تفويض العمل إلى الوكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)).
+- **إعادة تشغيل التلخيص** لجولة جديدة (مثلًا بعد إعادة تسمية المتحدثين). يعيد استخدام القالب الذي التُقط عند تسجيل الاجتماع. اختر القالب النشط من **الإعدادات ← مساحة العمل ← الاجتماعات**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+تحرير الملاحظات والعنوان وبنود العمل والقرارات يعمل في كل مكان.
+**إعادة تشغيل التلخيص** وإلغاء اجتماع قيد المعالجة متاحان **على الحاسوب فقط** — في
+المتصفح لا يفعل الزران شيئًا.
 
-## Record straight from a calendar event
+## التسجيل مباشرة من حدث في التقويم
 
-If you've [connected a calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+إذا [ربطت تقويمًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)، تستطيع تخطي
+البدء اليدوي. هذا **على الحاسوب فقط**، ويرفضه عميل الويب.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. افتح الحدث من **التقويم**.
+2. انقر **بدء التسجيل والربط**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+يُنشأ التسجيل بعنوان الحدث ويُربَط به، فتبقى الملاحظات مربوطة بقيد التقويم.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[حذف الاجتماع لا يحذف صوته]
+حذف الاجتماع يزيل صفوفه، لكن ملفات WAV المسجَّلة تحت
+`<dataDir>/meetings/<meetingId>/` تبقى على القرص — لا سياسة احتفاظ، ولا
+سقف للحجم، ولا عملية تنظيف. احذف ذلك الدليل بنفسك إن كان الصوت يهمّك.
 :::
 
-## Related guides
+## أدلة ذات صلة
 
-- [Connect a Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)
-- [Delegate work to agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
+- [ربط Google Calendar](/ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم/)
+- [تفويض العمل إلى الوكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Meetings and transcription](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/)
+- [الاجتماعات والنسخ النصي](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/)

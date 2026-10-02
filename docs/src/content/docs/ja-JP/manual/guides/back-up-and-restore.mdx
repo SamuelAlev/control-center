@@ -1,162 +1,170 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: バックアップと復元
+description: インストールのスナップショットを取得し、ワークスペースをマシン間で移動し、1 つのワークスペースまたはすべてを復元し、コピーを別の場所に保管する方法について説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/バックアップと復元
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/ja-JP/マニュアル/リファレンス/バックアップ/).
+このガイドでは、バックアップに関して実際によく行われる 5 つの作業、つまり取得、回収、
+ワークスペースの移動、復元、マシン外へのコピー保持を扱います。各アーティファクトと
+各操作の正確な形については、
+[バックアップのリファレンス](/ja-JP/マニュアル/リファレンス/バックアップ/)を参照してください。
 
-Everything here lives at **Settings → Server → Backup & restore**.
+ここで説明する内容はすべて **設定 → サーバー → バックアップと復元** にあります。
 
-## Prerequisites
+## 前提条件
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **フルクライアント**（デスクトップまたは Web アプリ）が必要です。ペアリングされたスマートフォンでは、これらはいずれも設計上実行できません。
+- **インストール全体のスナップショット**の取得、一覧表示、ダウンロード、削除には、インストールの**オーナー**である必要があります。
+- ワークスペース単位の操作では、エクスポートにはそのワークスペースの**管理者**、インポートまたは削除には**オーナー**が必要です。
+- ダウンロードとアップロードには、サーバーへの**直接**接続が必要です。ブローカー経由のリレーが運ぶのは RPC フレームであり、ファイル転送ではありません。リレー経由の場合、転送コントロールは注記とともに無効になります。
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[インストール全体のスナップショットは手動です]
+**今すぐバックアップ**は、要求されたときにのみインストール全体のスナップショットを作成します。
+組み込みの **Workspace backup** パイプラインを使えば、代わりにワークスペースのデータベース
+バックアップを週に 1 回取得し、そのワークスペースの 30 日より古いバックアップを削除できます。
+`global.db`、他のワークスペース、データベースの隣にあるファイルはコピーしません。マシン外の
+コピーは別途保管してください。
 :::
 
-## What a backup covers
+## バックアップに含まれる範囲
 
-Both artifacts are **databases only**:
+どちらのアーティファクトも**データベースのみ**です。
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **インストール全体のスナップショット**はタイムスタンプ付きのディレクトリで、`manifest.json`、`global.db`、およびワークスペースごとの `<workspaceId>/workspace.db` から成ります。
+- **ワークスペースのエクスポート**は、その単一の `workspace.db` ファイルです。
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/ja-JP/マニュアル/リファレンス/バックアップ/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+どちらもデータディレクトリの残りの部分は含みません。`secrets.json`（ペアリングキー、
+プロバイダーの認証情報、SSO）、ワークスペースの `blobs/`（メッセージに貼り付けられた
+画像）、`skills/`、`agents/`、`chat_credentials/`、録画したミーティングの音声、リグ画像
+などです。その一部は捨ててよいものですが、そうでないものもあります。
+[完全な表はリファレンスにあり](/ja-JP/マニュアル/リファレンス/バックアップ/#what-a-backup-does-not-contain)、
+これらをカバーするのが[マシン外のセクション](#バックアップをマシン外にコピーする)の目的です。
 
-## Take a snapshot of the whole install
+## インストール全体のスナップショットを取得する
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. **設定 → サーバー → バックアップと復元**を開きます。
+2. **インストール全体のスナップショット**で、**今すぐバックアップ**を押します。
+3. トーストに、サーバーホスト上で書き込まれたディレクトリ名が表示されます。新しいスナップショットは一覧の先頭に表示されます。
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+サーバーはその間も動き続けます。各ファイルは `VACUUM INTO` で書き込まれ、これは
+稼働中のデータベースに対しても整合性が保たれるため、メンテナンスウィンドウは不要で、
+エージェントを停止する必要もありません。
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+一覧の各行には、タイムスタンプ、ディスク上のサイズ、取得されたワークスペースの数、
+およびスナップショットが**完了**か**不完全**かが表示されます。不完全とは、マニフェストが
+存在しないか、存在しないファイルを指定している場合です。クラッシュやディスク容量不足で
+中断されたバックアップです。これらも意図的に一覧に残されます。見えないスナップショットは、
+持っていると思い込んでしまうスナップショットだからです。不完全なスナップショットでは
+インストール全体を復元できませんが、そこに含まれるワークスペースファイルは 1 つずつ
+採用できます。
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+行に **_n_ ワークスペースを取得せず**と表示されることもあります。これは、登録されている
+ものの一度も書き込まれていないワークスペース（ファイルがまだ存在しない）、または
+コピーに失敗したワークスペースです。サーバーログを確認してください。
 
-## Schedule workspace backups and retention
+## ワークスペースのバックアップと保持をスケジュールする
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+そのワークスペースの **設定 → パイプライン → パイプラインテンプレート**を開き、
+**Workspace backup** を見つけます。有効になっているスケジュールは毎週日曜日の
+03:00 UTC に実行され、**Back up workspace** の後に **Delete backups older than**
+（既定では 30 日）が続きます。2 つ目のノードはバックアップが成功した後にのみ
+実行されます。保持日数はノードで変更でき、スケジュールを無効にすることもできます。
+予定時刻にサーバーがオフラインだった場合、スケジュールは復帰時に 1 回だけ追いつき、
+逃した週をすべて再生することはありません。
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+ワークスペースのバックアップはサーバー上の
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` にあります。
+保持ノードが削除するのはこのワークスペースの古いバックアップだけで、インストール全体の
+スナップショットや他のワークスペースのバックアップを削除することはありません。これらの
+ファイルにはデータベースしか含まれません。マシン外で保持するには、これらを別途
+コピーしてください。
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+これらのバックアップは**インストール全体のスナップショット**の一覧とは別です。復元するには、
+**ワークスペースデータ → インポート**でバックアップのサーバー側 `workspace.db`
+パスを指定します。インポートはそのワークスペースの現在のデータベースを置き換えるため、
+復元を元に戻す必要があるかもしれない場合は先にエクスポートしておいてください。
 
-## Delete an install snapshot
+## インストール全体のスナップショットを削除する
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+**インストール全体のスナップショット**でスナップショット（不完全なものも含む）を展開し、
+危険セクションの**スナップショットを削除**を使います。名前を確認します。スナップショットの
+ディレクトリ全体がサーバーから完全に削除されます。コピーが必要な場合は先に
+ダウンロードしてください。ワークスペースのバックアップパイプラインがこれらの
+スナップショットを削除することはありません。
 
-## Collect a copy on your own machine
+## 手元のマシンにコピーを回収する
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+このページに表示されるパスは、`cc_server` を実行しているマシン上のものです。それが自分が
+操作しているマシンでない場合は、**ダウンロード**ボタンを使います。
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- **ワークスペースデータ**の各**ワークスペース**の横にある **ダウンロード**。1 つの `.db` ファイル用です。
+- **インストール全体のスナップショット**の各**スナップショット**の横にある **ダウンロード**。スナップショット全体を `.zip` として取得します。
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+デスクトップではファイルの保存先を選択し、トーストにその場所が表示されます。Web では
+ブラウザーのダウンロード先に保存されます。どちらの場合も、進捗はバイト単位で報告されます。
+これはギガバイト規模になりうる 2 つのペイロードだからです。
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+どちらも、ボタンを押した時点で新しいコピーを作成してストリーミングし、その後サーバー側の
+コピーを削除します。ダウンロードは「エクスポートボタンが以前に作成したファイルを
+取りに行く」ことではありません。
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+スナップショットのアーカイブを展開すると、スナップショットのレイアウトがそのまま
+再現されます。だからこそ、その復元はコピーを戻すだけの操作になります。
 
-## Move a workspace to another install
+## ワークスペースを別のインストールへ移動する
 
-One workspace is one database file, so handing it over is a file operation.
+1 つのワークスペースは 1 つのデータベースファイルなので、その受け渡しはファイル操作です。
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. **ソース**サーバーで **設定 → サーバー → バックアップと復元 → ワークスペースデータ**を開き、ワークスペースを展開して**ダウンロード**を押します。
+2. **移動先**サーバーで、受け取るワークスペースを作成（または選択）します。
+3. そのワークスペースを展開し、**このデバイスから復元**の下にある**ファイルを選んでアップロード**を押します。ダウンロードした `.db` を選択します。
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+両方のサーバーが自分が操作している同じマシンであれば、**サーバーに保存**と
+**インポート** → **ファイルを選択**で、往復なしに同じことができます。インポート
+ダイアログのパスはサーバーホスト上で解決されます。
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[インポートはすべてを置き換えます]
+インポートすると、対象ワークスペースが現在保持しているすべてが上書きされ、元に戻すことは
+できません。取り戻したいものがある場合は、先に対象をエクスポートしてください。
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+拒否されずに許可され、ログに記録されるケースが 2 つあります。記録されたワークスペース ID が
+対象と異なるファイルをインポートする場合（これがワークスペースを複製したり、新しい
+ID で復元したりする方法です）と、**別のインストール**のファイルをインポートする場合です。
+後者の場合、そのファイルのペアリング済みデバイスとユーザー ID は元のインストールに
+属しており、こちらでは解決されません。ワークスペース自身のデータは無傷ですが、採用後に
+メンバーシップを再確認してください。
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+チャットボットのトークンはデータベースの中ではなく隣にあります。そのため、他人に渡す
+ワークスペースに有効な認証情報は含まれません。受け取ったインストールが自身のトークンを
+再接続します。
 
-## Restore one workspace from a snapshot
+## スナップショットから 1 つのワークスペースを復元する
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. **インストール全体のスナップショット**で、目的のスナップショットを展開します。
+2. そのワークスペースの行を見つけて**復元**を押します。
+3. 確認します。スナップショット取得後にそのワークスペースが行ったことはすべて失われます。
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+これはインポートと同じ操作を、スナップショット内のそのワークスペースのファイルの
+コピーに対して行うものです。意図的にそうしてあり、同じファイルを別の扱いにする
+第 2 の仕組みが存在しないようにしています。
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+行に**このサーバーにはもう存在しません**と表示され、**復元**が無効になっていることが
+あります。スナップショットが、このインストールにもはや存在しないワークスペースを
+保持しているのです。手作業で戻します。ワークスペースを作成し、次に**ワークスペース
+データ**で `<snapshot path>/<old workspace id>/workspace.db` からそのワークスペースへ
+インポートします。展開したスナップショットには、自身の**サーバー上のパス**がコピー用
+フィールドに表示され、行のタイトルが古いワークスペース ID なので、そのパスの前半と
+後半の両方が目の前にそろうことになります。
 
-## Restore a whole install
+## インストール全体を復元する
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+これ用のボタンはありませんし、あるべきでもありません。稼働中のサーバーが開いている
+データベースを置き換える操作だからです。
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **`cc_server` を停止します。** 組み込みサーバー付きのデスクトップアプリを実行している場合は、アプリを終了します。
+2. スナップショットの内容をデータディレクトリにコピーします。スナップショットのレイアウトは稼働中のものと同じなので、単純なコピーです。
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +179,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. 置き換えたデータベースの隣にある `-wal` および `-shm` ファイルを削除します。これらは古いファイルのもので、復元したデータベースの隣に古いものが残っていると破損のリスクがあります。
+4. サーバーを再起動します。
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+スナップショットには `secrets.json` が含まれないため、**新しい**ホストに復元した
+インストールはデータは保ちますが認証情報は保ちません。ペアリング済みデバイス、
+プロバイダートークン、SSO 設定を再設定するか、そのファイルを保管しておいた場所から
+復元する必要があります。`secrets.json` が失われていない同じホストに復元する場合は、
+すべてが保たれます。
 
-## Copy backups off the machine
+## バックアップをマシン外にコピーする
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+コピー元のデータベースと同じディスク上にあるスナップショットが守ってくれるのは、
+誤ったインポートからであって、ディスクからではありません。Control Center はどこかへ
+コピーを送ることはしないので、この部分は自分の責任です。
 
-### Sync the snapshots
+### スナップショットを同期する
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+スナップショットは一度書き込まれると不変で、タイムスタンプで命名されるため、どの同期
+ツールでもうまく扱えます。進行中のダウンロードとアップロードの作業場である `transfer/` は
+除外してください。
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +215,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` はローカルでの削除をリモートに反映します。リモートにホストより長く
+スナップショットを保持させたい場合は外してください。
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[稼働中のデータベースを直接同期しないでください]
+サーバーの稼働中は、rsync、`aws s3 sync`、またはファイルレベルのバックアップエージェントを
+`global.db` や `<workspaceId>/workspace.db` に向けないでください。稼働中の SQLite
+データベースには `-wal` のサイドカーがあり、ファイル単位のコピーは両者を異なる瞬間に
+取得します。その結果できるファイルは、開けても直近の書き込みが黙って欠けているか、
+まったく開けないかのどちらかです。読み取りトランザクションの下で書き込まれた
+**スナップショット**をコピーするか、後述のように `VACUUM INTO` で取得してください。
 :::
 
-### Include what a snapshot leaves out
+### スナップショットが含まないものを含める
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+データだけでなくインストールそのものを再構築できるようにするには、これらもコピーします。
+これらは通常のファイルで、サーバーの稼働中でも安全にコピーできます。
 
 ```bash
 rsync -a \
@@ -234,20 +245,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` は `0600` で、インストール上のすべてのペアリングキー、プロバイダーの
+認証情報、SSO 設定を保持します。その保存先は、少なくともサーバーホストと同じ程度に
+保護されている必要があります。保存時に暗号化し、誰でも読めるバケットは避けてください。
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+`spaces/`（コピーオンライトのワークツリー。リポジトリから再プロビジョニングされます）、
+`pr_clones/`（キャッシュ）、`models/`（再ダウンロードされる）、`media_cache/` と
+`rigs/`（マシンの状態で、サイズも大きい）は対象外にしてかまいません。`meetings/` に
+ある録画したミーティング音声は、ミーティングを保存しているなら含める価値があります。
 
-### Schedule a whole-install snapshot outside the app
+### アプリの外でインストール全体のスナップショットをスケジュールする
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+組み込みのパイプラインがバックアップするのは 1 つのワークスペースだけです。無人で
+**インストール全体**のスナップショットを取得するための CLI サブコマンドはなく、
+スナップショットの RPC にはインストールのオーナーであるペアリング済みフルクライアントが
+必要です。ホスト側のタイマーで、稼働中のデータベースに対して `VACUUM INTO` を使えます。
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +278,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+データディレクトリを所有するのと同じユーザーで、cron または systemd タイマーから実行し、
+その後 `DEST` をホスト外へ同期します。`VACUUM INTO` には SQLite 3.27 以降が必要です。
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+出力先は `<dataDir>/backups/` の**外**にしてください。そこに手作業で作ったディレクトリには
+`manifest.json` がないため、アプリはそれを不完全なスナップショットとして一覧に載せ、
+その一覧はサーバー自身が生成したものの正直な記録ではなくなってしまいます。
 
-### Prune old whole-install snapshots
+### 古いインストール全体のスナップショットを整理する
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+インストール全体のスナップショットはアプリで個別に削除できます。ホスト側の保持ポリシーを
+設ける場合は、ワークスペースのバックアップディレクトリをインストール全体の
+スナップショットとは分けておいてください。
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +297,49 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+`-exec` を付ける前に、`-print` での実行結果を確認してください。1 つだけでなく複数を
+保持してください。備えたい障害は多くの場合「最後のバックアップにも同じ問題がある」
+だからです。
 
-## Check that a backup is good
+## バックアップが良好か確認する
 
-A backup nobody has restored is a hypothesis.
+誰も復元したことのないバックアップは、仮説にすぎません。
 
-Cheap check — the file opens and its pages are intact:
+手軽な確認 — ファイルが開き、ページが無傷であること。
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+本格的な確認 — 実際に採用してみます。非本番のインストールに使い捨てのワークスペースを
+作成し、そこにワークスペースファイルをインポートして、期待するスペース、チケット、
+メッセージがあるかを確認します。これは FTS の再構築を含め、実際の復元と同じ経路を
+通り、バックアップが単に読めるだけでなく復元可能であることを教えてくれる唯一の確認です。
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+バックアップを設定したときに一度、保管場所を変更するたびに再度行ってください。
 
-## Troubleshooting
+## トラブルシューティング
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| 症状                                                                  | 原因と対処                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| ダウンロードとアップロードのコントロールが、リレーに関する注記とともに無効になっている      | ブローカー経由のリレーを通じて接続しており、これはファイル転送を運びません。直接接続してください                          |
+| 「サーバーに拒否されました」                                                     | ロールの問題です。インストール全体のスナップショットの取得または一覧表示にはインストールのオペレーターが必要です。ワークスペースのダウンロードには管理者、復元にはオーナー、スナップショット全体の zip にはインストールのオペレーターが必要です |
+| 「このサーバーにはバックアップの仕組みがありません」                                      | ホストにバックアップポートが接続されていません — デモサーバーです。操作は拒否されるのではなく存在しません                          |
+| 「ファイルがサーバーの受け入れ可能なサイズを超えています」                             | アップロードは 8 GiB が上限です。ファイルをサーバーホストに置き、代わりに **インポート** → **ファイルを選択**を使ってください                 |
+| Import refused: not a Control Center workspace database                  | そのファイルには `workspace_meta` の行がありません — ワークスペースのエクスポートではないか、切り詰められています。何も置き換えられていません             |
+| スナップショットが**不完全**として一覧に表示される                                      | マニフェストが存在しないか、存在しないファイルを指定しています。新しいものを取得してください。それまでの間は、そこから個々のワークスペースファイルを採用できます |
+| スナップショットにワークスペースを取得していないと表示される                             | それらのワークスペースは一度も書き込まれていないか、コピーに失敗しています。サーバーログを確認してください                                  |
+| 復元したインストールにコードホストまたは SSO の認証情報がない                       | `secrets.json` はスナップショットに含まれません。保管しておいた場所から復元するか、プロバイダーを再接続してください                     |
+| 復元したワークスペースに貼り付けた画像がない                            | Blob はデータベースの中ではなく隣にあります。`<workspaceId>/blobs/` も併せてコピーしてください                                     |
 
-## Related guides
+## 関連ガイド
 
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): where the data directory comes from
-- [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): direct versus relayed connections
-- [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): the credential the transfer routes sign with
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/): データディレクトリがどこから来るのか
+- [リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/): 直接接続とリレー経由の接続
+- [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): 転送ルートが署名に使う認証情報
 
-## Related concepts and reference
+## 関連するコンセプトとリファレンス
 
-- [Backup, export and import](/ja-JP/マニュアル/リファレンス/バックアップ/): every operation, route, field and limit
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): why one workspace is one file
-- [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/): the data directory layout
+- [バックアップ、エクスポート、インポート](/ja-JP/マニュアル/リファレンス/バックアップ/): すべての操作、ルート、フィールド、制限
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): なぜ 1 つのワークスペースが 1 つのファイルなのか
+- [`cc_server` CLI](/ja-JP/マニュアル/リファレンス/cc-server-cli/): データディレクトリのレイアウト

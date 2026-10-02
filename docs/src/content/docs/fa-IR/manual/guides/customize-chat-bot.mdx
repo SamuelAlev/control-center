@@ -1,98 +1,97 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: سفارشی‌سازی ربات گفتگو
+description: نام ربات را عوض کنید، متنش دربارهٔ خودش را بازنویسی کنید، یا فرمان اسلش آن را از Control Center تغییر دهید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/سفارشیسازی-ربات-گفتگو
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+این راهنما نشان می‌دهد چگونه می‌توانید برنامهٔ ربات سمت ارائه‌دهنده را بدون ترک Control Center بازآرایی کنید.
 
-## Prerequisites
+## پیش‌نیازها
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- نقش `owner` یا `admin` در فضای کاری
+- یک ارائه‌دهندهٔ **متصل**. سطر **سفارشی‌سازی ربات** تنها زمانی ظاهر می‌شود که فضای کاری متصل باشد
+- برنامه‌ای که Control Center بتواند مدیریتش کند. برای Slack این یعنی اتصال یک توکن نوسازی پیکربندی برنامه (`xoxe-…`) نگه می‌دارد؛ اگر نداشته باشد، سطر همین را می‌گوید و غیرفعال می‌ماند
 
-## What you can change
+## آنچه می‌توانید تغییر دهید
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| فیلد                                          | معنا                                                  | محدودیت                                                |
+| --------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| **نام برنامه**                                | نحوهٔ فهرست‌کردن برنامه توسط ارائه‌دهنده               | 1–35 نویسه                                             |
+| **نام ربات (آنچه اعضا بعد از @ تایپ می‌کنند)** | آنچه اعضا بعد از `@` تایپ می‌کنند                     | 1–80 نویسه                                             |
+| **شرح کوتاه**                                 | یک خط که ارائه‌دهنده نشان می‌دهد                       | حداکثر 140 نویسه                                       |
+| **آنچه ربات می‌گوید می‌تواند انجام دهد**      | بالای یک DM با ربات نشان داده می‌شود                   | حداکثر 300 نویسه                                       |
+| **فرمان اسلش**                                | فرمانی که اعضا فراخوانی می‌کنند، بدون اسلش             | با حروف کوچک، فقط `a–z 0–9 _ -`، بریده‌شده در 32 نویسه |
+| **پیام‌های مستقیم**                           | اینکه ربات تجربهٔ DM/عامل را عرضه می‌کند یا نه         | روشن یا خاموش                                          |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center چهار فیلد متنی را پیش از فراخوانی ارائه‌دهنده اعتبارسنجی می‌کند، بنابراین به‌جای یک `invalid_manifest` مبهم از سروری که نمی‌توانید ببینید، پیام «the app name must be between 1 and 35 characters» را می‌گیرید. فرمان رد نمی‌شود بلکه به‌نجار می‌شود: اسلش ابتدایی حذف می‌شود، بقیه با حروف کوچک نوشته می‌شود، هر چیزی بیرون از `a–z 0–9 _ -` انداخته می‌شود و نتیجهٔ خالی به `cc` بازمی‌گردد.
 
-## Edit the bot
+## ویرایش ربات
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. به **تنظیمات ← فضای کاری ← عمومی** بروید و تا کارت **پل‌های گفتگو** پایین بیایید
+2. روی بلوک ارائه‌دهنده، روی **سفارشی‌سازی ربات** کلیک کنید
+3. دیالوگ با مقادیر _زندهٔ_ برنامه باز می‌شود که از ارائه‌دهنده بازخوانی شده‌اند — پس چیزی که کسی در رابط خود Slack عوض کرده، همان چیزی است که از آن شروع می‌کنید
+4. آنچه لازم دارید را ویرایش کنید و ذخیره کنید
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+خواندن آن مقادیر زنده در سمت Slack هزینهٔ یک چرخش توکن دارد؛ به همین دلیل آن سطر یک کلیک عمدی است، نه چیزی که صفحه هنگام بارگذاری انجام دهد.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+نوشتن، تغییرات شما را روی تعریف کنونی برنامه می‌نشاند. هر چیزی که Control Center مدل نمی‌کند — یک فرمان اسلش دوم که در Slack افزوده‌اید، یک گام گردش‌کار، یک تنظیم بی‌ربط — دست‌نخورده می‌ماند. اسکوپ‌ها و رویدادها ادغام می‌شوند، هرگز کم نمی‌شوند.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+پس از ذخیره، Control Center هویت ربات را دوباره بازخوانی می‌کند تا نام در تنظیمات با نام در برنامهٔ گفتگو یکی باشد.
 
-## Reinstall when permissions change
+## نصب مجدد هنگام تغییر مجوزها
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[نصب مجدد پس از تغییر مجوز]
+Slack تعریف جدید برنامه را بی‌درنگ اعمال می‌کند اما مجوز نصب‌شده را
+همان‌طور که بود نگه می‌دارد. برای اعمال یک تغییر مجوز، برنامه را دوباره نصب
+کنید. پل تا آن زمان روی مجوز قبلی به کار خود ادامه می‌دهد.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+وقتی ذخیره‌کردنی مجوزها را تغییر می‌دهد، دیالوگ باز می‌ماند و می‌گوید «Slack مجوزهای برنامه را عوض کرد. برای اعمال، برنامه را دوباره نصب کنید.»، همراه با دکمه‌ای **نصب مجدد برنامه** که صفحهٔ نصب آن برنامه در تیم Slack را باز می‌کند. در خود Slack این مسیر **Install App → Reinstall to Workspace** است.
 
-## Rename the slash command
+## تغییر نام فرمان اسلش
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+**فرمان اسلش** را تغییر دهید و ذخیره کنید. پل سپس دستورالعمل‌ها را با هر فرمانی می‌نویسد که آخرین بار با آن فراخوانی شده است، بنابراین متن راهنما و دستورالعمل‌های پیوند از تغییر نام پیروی می‌کنند، نه اینکه فرمانی را نام ببرند که دیگر وجود ندارد.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+تغییر نام، رشته‌های پل‌شدهٔ موجود را نمی‌شکند: کلید رشته‌ها گفتگوست، نه فرمان.
 
-## What Control Center will not change
+## چیزهایی که Control Center تغییر نمی‌دهد
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **تنظیمات ساختاری.** انتقال (Socket Mode)، اسکوپ‌های لازم و اشتراک‌های رویداد اعمال می‌شوند، نه اینکه به انتخاب گذاشته شوند. برنامه‌ای که بتوان از یک صفحهٔ تنظیمات به سکوتش واداشت، یک تیکت پشتیبانی است، نه یک قابلیت
+- **آیکون ربات.** تنها تنظیمات خود برنامهٔ ارائه‌دهنده می‌تواند آن را تغییر دهد و دیالوگ همین را می‌گوید
+- **مهاجرت‌های قابلیت خود ارائه‌دهنده.** برنامه‌ای که از پیش روی شکل دستیار قدیمی Slack است همان را نگه می‌دارد؛ این دیالوگ یک شرح را ویرایش می‌کند و برنامه‌ای را مهاجرت نمی‌دهد
 
-## Troubleshooting
+## عیب‌یابی
 
-### There is no Customize bot row at all
+### سطر سفارشی‌سازی ربات اصلاً وجود ندارد
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/).
+فضای کاری هنوز متصل نشده است. سطر تنها زمانی ظاهر می‌شود که بلوک ارائه‌دهنده
+یک اتصال زنده نشان دهد. [راه‌اندازی یکپارچه‌سازی Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/) را ببینید.
 
-### The Customize bot row is disabled
+### سطر سفارشی‌سازی ربات غیرفعال است
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+اتصال هیچ اعتبارنامهٔ مدیریت برنامه‌ای ندارد — زیرنویس سطر می‌گوید
+«Control Center برای ویرایش ربات به توکن پیکربندی برنامه نیاز دارد. دوباره وصل
+شوید و یکی را شامل کنید.» برای Slack، یک جفت توکن پیکربندی برنامه در
+[api.slack.com/apps](https://api.slack.com/apps) بسازید و با توکن نوسازی پرشده
+دوباره وصل شوید. این برای برنامه‌ای که دستی ساخته شده یا از طریق
+**Create in Slack** ساخته شده انتظار می‌رود، چون Slack هرگز گزارش نمی‌دهد کدام
+برنامه را ساخته است.
 
-### "Control Center does not know which app to edit"
+### «Control Center does not know which app to edit»
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+اتصال ذخیره‌شده هیچ شناسهٔ برنامه‌ای حمل نمی‌کند — معمولاً برنامه‌ای که پیش از ثبت یک شناسه، دستی وصل شده است. فضای کاری را دوباره وصل کنید، یا برنامه را از Control Center بسازید.
 
-### The bot's new name has not appeared in chat
+### نام جدید ربات در گفتگو ظاهر نشده است
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+ارائه‌دهنده‌ها فرادادهٔ برنامه را کوتاه‌مدت کش می‌کنند. اگر نام پس از یک دقیقه هنوز کهنه است، بررسی کنید که آیا ذخیره از شما خواسته برنامه را دوباره نصب کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Set up Slack integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
-- [Link your Slack account](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-حساب-گفتگو/)
-- [Chat bridge](/fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو/)
+- [راه‌اندازی یکپارچه‌سازی Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-slack/)
+- [اتصال حساب Slack(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-حساب-گفتگو/)
+- [پل گفتگو(/fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)
+- [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/)

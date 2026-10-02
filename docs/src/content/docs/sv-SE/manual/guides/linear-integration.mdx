@@ -1,34 +1,37 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Konfigurera Linear-integration
+description: Lagra en Linear-API-nyckel på servern så att agenter kan anropa Linear, och välj Linear som ärendeleverantör för nya ärenden.
 slug: sv-SE/handbok/how-to-guider/linear-integration
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/sv-SE/handbok/how-to-guider/hantera-arenden/).
+Klistra in en Linear-API-nyckel på servern kopplad till din användare, på samma
+sätt som du ansluter en kodvärd. Ärenden, projekt, länkar, medarbetare,
+delegering och tilldelning fungerar alla mot Control Centers egen databas utan
+att någon extern tjänst krävs — se
+[Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/).
 
-## Store your Linear key
+## Lagra din Linear-nyckel
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**API-nyckel för ärenden** finns under **Inställningar → Arbetsyta → Allmänt**,
+på kortet **Ärenden**. Den lagrar nyckeln på servern kopplad till ditt
+användar-id. Serverns egen nyckel för obevakat arbete kommer från
+`LINEAR_API_KEY` eller kortet **Leverantörsappar** och injiceras som
+`TICKETING_API_KEY` endast när den agenten har behörigheten **Tillåt API-anrop
+för ärenden**.
 
-## Stamp new tickets as Linear
+## Stämpla nya ärenden som Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Ärendeleverantör** (onboardingens första steg, och
+`/workspaces/<workspaceId>/api-keys`) erbjuder `local` och `linear`. Väljer du
+`linear` stämplas `provider: linear` på ärenden du skapar från och med då.
 
-## Related guides
+## Relaterade guider
 
-- [Create and manage tickets](/sv-SE/handbok/how-to-guider/hantera-arenden/)
-- [Set up GitHub integration](/sv-SE/handbok/how-to-guider/github-integration/)
-- [Manage API keys](/sv-SE/handbok/how-to-guider/api-nycklar/)
+- [Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/)
+- [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
+- [Hantera API-nycklar](/sv-SE/handbok/how-to-guider/api-nycklar/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/)
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/)
